@@ -1,0 +1,360 @@
+{
+  "schema": "crispembed-moedern-scifact-native-q4k-v1",
+  "variant": "27M",
+  "completed": false,
+  "source": "3f82073eea0ec7f14512e7d57ace161eb688c7a9",
+  "phase": "rejected",
+  "default_enabled": false,
+  "publication_qualified": false,
+  "original_rerun": false,
+  "source_closure": {
+    "base": "4ad95dbc4a2f643c1af4dd0733151686042d0c99",
+    "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+    "contract_sha256": "401e341a45e524ded73a30e2379c2fd28b93b49b928556373986b9d887fbf794",
+    "protected_files": 413,
+    "owned_files": 20,
+    "linked_src_tree": "0c4341808c7136b84f0085da85e8c22b951c27a1"
+  },
+  "resources": {
+    "available_ram_bytes": 15696220160,
+    "free_disk_bytes": 89470644224,
+    "threads": 2,
+    "cpu_count": 4,
+    "packages": {
+      "pip": {
+        "version": "26.2.2",
+        "metadata_sha256": "fe157a60a970b288770fad79a124001f538a325b0a2270c594792b6a475eb798",
+        "inside_venv": true
+      },
+      "numpy": {
+        "version": "2.2.6",
+        "metadata_sha256": "22d648f53848429464ca643b40d73b49a920d47876fc77c395d4dca4e834904a",
+        "inside_venv": true
+      },
+      "gguf": {
+        "version": "0.17.1",
+        "metadata_sha256": "a5af3f71ee6e7e858a1ead73ce1f7b1dee771198c5b5114e3450d6b65ee69002",
+        "inside_venv": true
+      },
+      "PyYAML": {
+        "version": "6.0.2",
+        "metadata_sha256": "f7ea1d141e6c7aee2918f704bfb13c8b2c4d179d7fb8a9da3468cb021cf696da",
+        "inside_venv": true
+      },
+      "tqdm": {
+        "version": "4.67.1",
+        "metadata_sha256": "688a1632df525a198fec52dcfefb1246d31eacee9c035aacac2d7eaf8d8ff669",
+        "inside_venv": true
+      }
+    },
+    "gpu_execution": false,
+    "provider": {
+      "provider": "GitHub Actions hosted CPU",
+      "run": 40777203075,
+      "attempt": 1,
+      "workflow_source": "82b687ae5c3a5d23ab5da765181c39cf0934696e",
+      "checkout_source": "3f82073eea0ec7f14512e7d57ace161eb688c7a9",
+      "available_ram_bytes": 15696449536,
+      "free_disk_bytes": 89470644224,
+      "cpu_count": 4,
+      "threads": 2,
+      "gpu_execution": false,
+      "secrets_present": true,
+      "resource_budget_lowered": false
+    }
+  },
+  "original": {
+    "reviewed": true,
+    "version_label": "v1",
+    "source": "2a872f9fe7ac5637286ff7bda2b5c19afee23cd7",
+    "report_bytes": 18786,
+    "report_sha256": "297d8ddc6f436ee35f1fcd6665d7e9d1b2135467765ac09012542c766e9bd166",
+    "public_report": "tests/results/moedern-colbert/scifact-original-27m.json",
+    "metrics": {
+      "ndcg_at_10": 0.7273556949036691,
+      "mrr_at_10": 0.6967632275132275,
+      "recall_at_100": 0.9353333333333335
+    },
+    "arrays": {
+      "rows.json": {
+        "bytes": 93169451,
+        "sha256": "407eda580aace7e96175c1782a5b36fc5ae592ddd78f218b177b48d191a1dd7f"
+      },
+      "scores.npy": {
+        "bytes": 12439328,
+        "sha256": "81a74da687de21a36c7e2c064b88269488a7117efe4d15ccd404347ec4c1f4e1"
+      },
+      "rankings.json": {
+        "bytes": 2423396,
+        "sha256": "cc8925675534379cc72d6324d17697a08fd313cd5e9c5f30013d7a8f5311ef43"
+      },
+      "data.json": {
+        "bytes": 8114088,
+        "sha256": "e707f8b657e858415ba6093abcc96a40ea867c8ff5e9d8c5359f9bc5eadfe522"
+      },
+      "selected.f32": {
+        "bytes": 779530240,
+        "sha256": "fb9e2d54c5175b75ba1c31a46b251479a24bfe1dc6ba255de55b05abfdeb61d2"
+      },
+      "all.f32": {
+        "bytes": 883461632,
+        "sha256": "a74f802640c1b2e5564dcf5e34d5e84713b5b015740c273b4c5c5f1338d9fc8a"
+      }
+    },
+    "rows": 5483,
+    "all_raw_sha256_verified": true,
+    "data_sha256": "9c6cfb6d8f0c41eea1473b163981bffb27cc6c0b53ba7daf6b9152f3b7ef62d6",
+    "old_authored_report_sha256": "00472cb369e935dd37cccf89b7027b12489de1586b916963d0ae560059de30d3",
+    "old_query_expansion_tensors": 4
+  },
+  "build": {
+    "root_configure": {
+      "exit": 0,
+      "termination_signal": null,
+      "timed_out": false,
+      "seconds": 2.3424723389999826,
+      "maximum_rss_kib": 266564,
+      "maximum_rss_bytes": 272961536,
+      "resource_accounting": "linux-wait4-per-child",
+      "direct_child_pid": 7028,
+      "reaped": true,
+      "log": "root-configure.log",
+      "sha256": "6d8d7e7cb72b93d9eb1c74263ee5d1a8c43ea483ed0151aa62c53e0d39ea1867"
+    },
+    "root_build": {
+      "exit": 0,
+      "termination_signal": null,
+      "timed_out": false,
+      "seconds": 328.12725241600003,
+      "maximum_rss_kib": 580504,
+      "maximum_rss_bytes": 594436096,
+      "resource_accounting": "linux-wait4-per-child",
+      "direct_child_pid": 7107,
+      "reaped": true,
+      "log": "root-build.log",
+      "sha256": "e68c5046a017d5a93ad20ae443227a9212ca29402f2aa43d04db2209a4ab68d4"
+    },
+    "tests_configure": {
+      "exit": 0,
+      "termination_signal": null,
+      "timed_out": false,
+      "seconds": 0.5016169780000155,
+      "maximum_rss_kib": 266564,
+      "maximum_rss_bytes": 272961536,
+      "resource_accounting": "linux-wait4-per-child",
+      "direct_child_pid": 8829,
+      "reaped": true,
+      "log": "tests-configure.log",
+      "sha256": "f567937801bf2de7849abce89369ab46bcf209bb0b779c4456810c46c9440f60"
+    },
+    "tests_build": {
+      "exit": 0,
+      "termination_signal": null,
+      "timed_out": false,
+      "seconds": 7.167100457999936,
+      "maximum_rss_kib": 266564,
+      "maximum_rss_bytes": 272961536,
+      "resource_accounting": "linux-wait4-per-child",
+      "direct_child_pid": 8945,
+      "reaped": true,
+      "log": "tests-build.log",
+      "sha256": "ab899b84a44bcc5ef8f03261873d57a2251aa940a7174dce09c92ea51b409988"
+    },
+    "q4k_controls": {
+      "exit": 0,
+      "termination_signal": null,
+      "timed_out": false,
+      "seconds": 0.050530690000073264,
+      "maximum_rss_kib": 266564,
+      "maximum_rss_bytes": 272961536,
+      "resource_accounting": "linux-wait4-per-child",
+      "direct_child_pid": 9097,
+      "reaped": true,
+      "log": "q4k-controls.log",
+      "sha256": "20e230e466d54096fff6d840aeb92a7f2a1e53d672c960bd033831b57e12d1cb"
+    },
+    "root_library_sha256": "41a60d8620f2e1e27b63c1f114c94fbc802dfcf8a4cb45612c901f8664e3fcc3",
+    "root_profile": "LLAMAFILE ON; CPU2; native/BLAS/CUDA/Metal OFF",
+    "observer_exclusion": true,
+    "actual_compile_commands_sha256": "8948b54d23c613a09201d3c7b6b005b69a4b9fe56a5a7bf333c1d9ad867d2203"
+  },
+  "ref_controls": [
+    {
+      "control": "same",
+      "process": {
+        "exit": 0,
+        "termination_signal": null,
+        "timed_out": false,
+        "seconds": 0.050641202999941015,
+        "maximum_rss_kib": 266564,
+        "maximum_rss_bytes": 272961536,
+        "resource_accounting": "linux-wait4-per-child",
+        "direct_child_pid": 9106,
+        "reaped": true,
+        "log": "ref.log",
+        "sha256": "f493cd73e2bb5b49b74b1e45f2638350f955883ef4cc786222017ddc07ed961f"
+      },
+      "adapters": {
+        "original": {
+          "bytes": 3232,
+          "sha256": "83251dff686a0d5c9ef62924053bcee2e9d03e7a2844c9481a8441f34e3ceb1d",
+          "tensors": {
+            "normalized_all": {
+              "shape": [
+                3,
+                128
+              ],
+              "bytes": 1536,
+              "span_sha256": "d1ecabe6993c4870968d589a74d7dc3f26dd9691a254816fc9bd250486f5a99a",
+              "stream_offset": 0
+            },
+            "normalized_selected": {
+              "shape": [
+                3,
+                128
+              ],
+              "bytes": 1536,
+              "span_sha256": "d1ecabe6993c4870968d589a74d7dc3f26dd9691a254816fc9bd250486f5a99a",
+              "stream_offset": 0
+            }
+          },
+          "reconstructible_from_authenticated_streams": true,
+          "rows_transformed": false
+        },
+        "native": {
+          "bytes": 3232,
+          "sha256": "83251dff686a0d5c9ef62924053bcee2e9d03e7a2844c9481a8441f34e3ceb1d",
+          "tensors": {
+            "normalized_all": {
+              "shape": [
+                3,
+                128
+              ],
+              "bytes": 1536,
+              "span_sha256": "d1ecabe6993c4870968d589a74d7dc3f26dd9691a254816fc9bd250486f5a99a",
+              "stream_offset": 0
+            },
+            "normalized_selected": {
+              "shape": [
+                3,
+                128
+              ],
+              "bytes": 1536,
+              "span_sha256": "d1ecabe6993c4870968d589a74d7dc3f26dd9691a254816fc9bd250486f5a99a",
+              "stream_offset": 0
+            }
+          },
+          "reconstructible_from_authenticated_streams": true,
+          "rows_transformed": false
+        }
+      }
+    },
+    {
+      "control": "badrow",
+      "process": {
+        "exit": 1,
+        "termination_signal": null,
+        "timed_out": false,
+        "seconds": 0.050552731000038875,
+        "maximum_rss_kib": 266564,
+        "maximum_rss_bytes": 272961536,
+        "resource_accounting": "linux-wait4-per-child",
+        "direct_child_pid": 9107,
+        "reaped": true,
+        "log": "ref.log",
+        "sha256": "40870307b0fe894bb80198391bbd2f3ce6e1e6173540077e3dd8cbb931aa361f"
+      },
+      "adapters": {
+        "original": {
+          "bytes": 3232,
+          "sha256": "83251dff686a0d5c9ef62924053bcee2e9d03e7a2844c9481a8441f34e3ceb1d",
+          "tensors": {
+            "normalized_all": {
+              "shape": [
+                3,
+                128
+              ],
+              "bytes": 1536,
+              "span_sha256": "d1ecabe6993c4870968d589a74d7dc3f26dd9691a254816fc9bd250486f5a99a",
+              "stream_offset": 0
+            },
+            "normalized_selected": {
+              "shape": [
+                3,
+                128
+              ],
+              "bytes": 1536,
+              "span_sha256": "d1ecabe6993c4870968d589a74d7dc3f26dd9691a254816fc9bd250486f5a99a",
+              "stream_offset": 0
+            }
+          },
+          "reconstructible_from_authenticated_streams": true,
+          "rows_transformed": false
+        },
+        "native": {
+          "bytes": 3232,
+          "sha256": "666d06f7cb3c612c9f55e32fc6bbcf157f5fbc1b03fb679deb794da6637bf401",
+          "tensors": {
+            "normalized_all": {
+              "shape": [
+                3,
+                128
+              ],
+              "bytes": 1536,
+              "span_sha256": "908ea986d60952be5bcc392aa40c93f10b99c19e8383783442912ec15e7a1479",
+              "stream_offset": 0
+            },
+            "normalized_selected": {
+              "shape": [
+                3,
+                128
+              ],
+              "bytes": 1536,
+              "span_sha256": "908ea986d60952be5bcc392aa40c93f10b99c19e8383783442912ec15e7a1479",
+              "stream_offset": 0
+            }
+          },
+          "reconstructible_from_authenticated_streams": true,
+          "rows_transformed": false
+        }
+      }
+    }
+  ],
+  "model": {
+    "status": "published and re-verified",
+    "variant": "27M",
+    "repo": "cstr/SauerkrautLM-MoEdernColBERT-27M-CrispEmbed-GGUF",
+    "commit": "351adfad4a52edf9e66baceb244e46d12856ca69",
+    "sha256": "e836acbb507ebf9d26ad6a3f5e5712487f1b90f1430b1174acb07de07e85ce18",
+    "bytes": 109596000,
+    "url": "https://huggingface.co/cstr/SauerkrautLM-MoEdernColBERT-27M-CrispEmbed-GGUF/resolve/351adfad4a52edf9e66baceb244e46d12856ca69/moedern-27m-text-f32.gguf",
+    "source": "758653da22f6fa198f7ce5d4b04d29ca0f444185",
+    "run": 40502127177
+  },
+  "f32": {
+    "tokens": {
+      "completed": true,
+      "rows": 5483,
+      "mismatches": 0,
+      "first_mismatches": [],
+      "passed": true,
+      "process": {
+        "exit": 0,
+        "termination_signal": null,
+        "timed_out": false,
+        "seconds": 1.7046053749999146,
+        "maximum_rss_kib": 272412,
+        "maximum_rss_bytes": 278949888,
+        "resource_accounting": "linux-wait4-per-child",
+        "direct_child_pid": 9108,
+        "reaped": true,
+        "log": "tokens.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "original_expansion_provenance": "Derived fixed32 pad positions from observed supplied mask; not a new captured original tensor.",
+      "journal_sha256": "3d452e23699eda44d6f3bae5ee635de6e1ae71e75b9c73d2ee6a004e94fb73ac"
+    }
+  },
+  "failed_phase": "authored-f32",
+  "error": "TypeError: dict() got multiple values for keyword argument 'process'"
+}

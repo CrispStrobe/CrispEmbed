@@ -37,9 +37,14 @@ def fake_root(cfg_patch=None, parity_patch=None, bench=None):
 
 
 def bench_receipt(exact):
-    cases = [{"id": c, "ids_exact": exact or c != "tall"} for c in ("line", "para-en", "table", "tall", "tiny")]
-    return {"commit": "c" * 40, "arms": [{"name": "q8_0-t4", "dtype": "q8_0", "cases": cases},
-                                         {"name": "f16-t4", "dtype": "f16", "cases": cases}]}
+    cfg,_=p.load()
+    frozen=json.loads((ROOT/cfg['receipts']['parity']).read_text())
+    cases=[dict(id=c['id'],ids_exact=exact or c['id']!='tall',exit=0,text_exact=True,cer=0,
+                first_id_difference=None,n_tokens=len(c['reference_ids']),n_ref_tokens=len(c['reference_ids']))
+           for c in frozen['cases']]
+    return dict(schema='crispembed-minicpm-ocr-bench-v1',completed=True,
+                reference_revision=cfg['upstream']['revision'],max_new_tokens=frozen['max_new_tokens'],commit='c'*40,
+                arms=[dict(name=name,dtype='q8_0',cases=copy.deepcopy(cases)) for name in ('q8_0-t4','q8_0-t2')])
 
 
 class Protocol(unittest.TestCase):
@@ -65,6 +70,25 @@ class Protocol(unittest.TestCase):
             with self.assertRaises(ValueError):
                 p.parse_variants(bad, self.cfg)
 
+    def test_precision_rejects_partial_wrong_source_or_incomplete_selected_arms(self):
+        for key,value in [('completed',False),('schema','other'),('reference_revision','0'*40),
+                          ('max_new_tokens',1023),('commit','main')]:
+            with self.subTest(key=key):
+                report=bench_receipt(True);report[key]=value
+                root=fake_root(bench=report);cfg,_=p.load(root)
+                with self.assertRaises(ValueError):p.precision(cfg,'Q8_0',root)
+        for change in ('missing-arm','duplicate-arm','failed-exit','missing-text','wrong-count','first-difference'):
+            with self.subTest(change=change):
+                report=bench_receipt(True)
+                if change=='missing-arm':report['arms'].pop()
+                elif change=='duplicate-arm':report['arms'].append(copy.deepcopy(report['arms'][0]))
+                elif change=='failed-exit':report['arms'][1]['cases'][0]['exit']=1
+                elif change=='missing-text':report['arms'][1]['cases'][0]['text_exact']=False
+                elif change=='wrong-count':report['arms'][1]['cases'][0]['n_tokens']+=1
+                else:report['arms'][1]['cases'][0]['first_id_difference']=0
+                root=fake_root(bench=report);cfg,_=p.load(root)
+                with self.assertRaises(ValueError):p.precision(cfg,'Q8_0',root)
+
     def test_plan(self):
         steps, drop = p.plan(self.cfg, ["F16"])
         self.assertEqual([(s[0], s[1], s[3]) for s in steps], [("convert", "F16", ["--dtype", "f16"])])
@@ -72,7 +96,7 @@ class Protocol(unittest.TestCase):
         steps, drop = p.plan(self.cfg, ["Q8_0", "F16"])
         self.assertEqual([(s[0], s[1]) for s in steps], [("convert", "F32"), ("convert", "F16"), ("quantize", "Q8_0")])
         self.assertEqual(steps[0][3], ["--dtype", "f32"])
-        self.assertEqual(steps[2][3], ["q8_0"])
+        self.assertEqual(steps[2][3], ["q8_0", "--tensor-type", "v.emb.patch_embedding.weight=f16"])
         self.assertTrue(drop)
 
     def test_parity_receipt(self):
@@ -106,7 +130,7 @@ class Protocol(unittest.TestCase):
         root = fake_root(bench=bench_receipt(exact=True))
         r = p.precision(p.load(root)[0], "Q8_0", root)
         self.assertTrue(r["ids_exact"])
-        self.assertEqual(r["arms"], ["q8_0-t4"])
+        self.assertEqual(r["arms"], ["q8_0-t4", "q8_0-t2"])
 
     def test_unapproved_or_rerouted(self):
         for patch in (lambda c: c.update(approved_by_owner=False), lambda c: c.update(destination="cstr/other"),

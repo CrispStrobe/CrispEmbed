@@ -1,0 +1,14 @@
+[{"stream_name":"stderr","time":922.79649287,"data":"Traceback (most recent call last):\n"}
+,{"stream_name":"stderr","time":922.798919159,"data":"  File \"/kaggle/src/script.py\", line 114, in \u003cmodule\u003e\n"}
+,{"stream_name":"stderr","time":922.798950517,"data":"    run(['curl', '--fail', '--location', '--retry', '2', F16_URL, '--output', model], 2400)\n"}
+,{"stream_name":"stderr","time":922.798956212,"data":"    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n"}
+,{"stream_name":"stderr","time":922.798961281,"data":"  File \"/kaggle/src/script.py\", line 49, in run\n"}
+,{"stream_name":"stderr","time":922.798965894,"data":"    raise RuntimeError('hosted command rejected: ' + str(number))\n"}
+,{"stream_name":"stderr","time":922.798970386,"data":"RuntimeError: hosted command rejected: 17\n"}
+,{"stream_name":"stderr","time":925.774815842,"data":"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":925.774875922,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":926.167297223,"data":"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":926.167332416,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":927.322921369,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":928.738249068,"data":"[NbConvertApp] Writing 310189 bytes to __results__.html\n"}
+]

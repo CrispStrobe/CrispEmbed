@@ -1,0 +1,165 @@
+{
+  "schema": "crispembed-minicpm-graph-patch-override-failure-review-v1",
+  "status": "rejected-before-model-forward",
+  "source": "7858c8b5afd1f1f0224d7147da21576aea752de6",
+  "service": {
+    "kernel_slug": "crispembed-minicpm-ocr-graph",
+    "version_label": "v2",
+    "status": "ERROR"
+  },
+  "producer": {
+    "file": "tests/results/minicpm-ocr/initial-graph-patch-override-producer.json",
+    "bytes": 688596,
+    "sha256": "a64e726f83f80ba28d58ab8a6433d62fc21b694012fc92d823888a39c3e5c36f",
+    "unchanged": true
+  },
+  "setup_remote_producer": {
+    "bytes": 7970,
+    "sha256": "f73ae09745b1c3b06a0860858987bc079fd74828bf727e561425973cc9017363",
+    "private_mount_identity_retained_remotely": true,
+    "public_copy_policy": "No raw setup copy: original command argv contains a private mounted-source owner; source/errors/exits/log hashes reviewed below without that identity"
+  },
+  "independent_review": {
+    "source_file_hashes_rederived_from_immutable_git": 328,
+    "protocol_sha256": "07d61734ca2e08442a0e9b877be9a80484a403e0213434dd1bfbee44966c213c",
+    "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+    "all25_command_log_hashes_rechecked": true,
+    "command_exits": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      2
+    ],
+    "command_log_sha256": {
+      "command-0.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "command-1.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "command-2.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "command-3.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "command-4.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "command-5.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "command-6.log": "fdd70b33eb1e2ee595a348b3ceb17ecd2adc87804fa392cc8ca48eba3d2ea4b0",
+      "command-7.log": "2d014bb427120fb1a5014d7499096989061fd0fdf40acb471c2e2667de60e71e",
+      "command-8.log": "7805442f4f35914edd71d22d6d9867f2f61e6db3e24cb80eac02fd74eb9305a6",
+      "command-9.log": "bb076667452beca7a1fdbb5f819d5e5b62baf61315feac030c5754fc10708d27",
+      "command-10.log": "bf9e4a98688d20f048d9bc3524c78ef49ee891f9b2094517444375d03d486347",
+      "command-11.log": "369056f9d9d817031ff189b1f609248d336198e2d4c7f3c525d65e2ce1789934",
+      "command-12.log": "a200d7ce6a4bd1f60067100a0d2a3a530f7aa5e22ba5237c02a5e505c3a6d908",
+      "command-13.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "command-14.log": "33fbf7014d3c6295bcf33209f9064e36d7724b28a332ce4ca1885920bdafe862",
+      "command-15.log": "364b7955606a391faf264ab2fc8d95c92fd2e4ac8fca1a716ffb3d494630494e",
+      "command-16.log": "134346fec644a79fdeb3bcadce3b26f91869c6459b0124f8caf29ac5f0c43cd1",
+      "command-17.log": "e110a2b4707b3eb07aea4137fab49f062b55482d61b8d90208c551d5f7abc7ac",
+      "command-18.log": "3165151e980b4dc03a16027ecf9cfe7bb7fd219ec792b9834f6feb13cf05a7a7",
+      "command-19.log": "ab470ad78e8c14326f74297dfcc82b3851b44ed6ea8753fefd6318db0c211821",
+      "command-20.log": "002699db1296168928a0f8d4853492478bf6150bd43f7c9374d601b7e942264e",
+      "command-21.log": "405ca3326b5f906466f202ba7778e1c3d99fccbb35afb75be91a621c88008559",
+      "command-22.log": "4a3682b0c1cb8ad34ac46baa06cd4451fafa05c4dbcd1332309933a795d8a39c",
+      "command-23.log": "8a24789fd2ee54f98226ed6693d3662a0bb9579ad474d559458a9eff6a5d08bf",
+      "command-24.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "resources": {
+      "mem_available": 32707813376,
+      "disk_free": 1126151983104,
+      "cpu_count": 4
+    },
+    "root_and_standalone_actual_build_profile_passed": true,
+    "profile_sha256": "0d97e923a51b52c72f679bc45563bddff62f9915848dd76658e28e9aafab26e9",
+    "stored_type_component_controls_passed": true,
+    "actual_ref_0_1_2_controls_passed": true,
+    "ultrabert_profile_controls_passed": true,
+    "josev_quant_controls_passed": true,
+    "ordinary_observer_symbol_exclusion_assertion_passed": true,
+    "zero_model_cases_or_forwards": true
+  },
+  "patch_inventory": {
+    "f32": {
+      "type": 0,
+      "shape": [
+        14,
+        14,
+        3,
+        1152
+      ],
+      "bytes": 2709504,
+      "sha256": "50376d0e1829f9c9357f48e73ced5c893fdbca683de55590fef306248bbf4b32"
+    },
+    "f16": {
+      "type": 1,
+      "shape": [
+        14,
+        14,
+        3,
+        1152
+      ],
+      "bytes": 1354752,
+      "sha256": "8ea62a4ca524ee684fb1883421c3a1e2fb21da75f4aaf183da447c487a75ef21"
+    },
+    "q8_0": {
+      "type": 0,
+      "shape": [
+        588,
+        1152
+      ],
+      "bytes": 2709504,
+      "sha256": "50376d0e1829f9c9357f48e73ced5c893fdbca683de55590fef306248bbf4b32"
+    },
+    "q4_k": {
+      "type": 1,
+      "shape": [
+        14,
+        14,
+        3,
+        1152
+      ],
+      "bytes": 1354752,
+      "sha256": "8ea62a4ca524ee684fb1883421c3a1e2fb21da75f4aaf183da447c487a75ef21"
+    }
+  },
+  "q4_typed_protection": {
+    "selected_actual_q4_k": 186,
+    "protected_exact_tensors": 593,
+    "quality_qualified": false
+  },
+  "attribution": {
+    "first_failure": "Q8 patch dtype precondition",
+    "underlying_shape_failure": [
+      588,
+      1152
+    ],
+    "expected_shape": [
+      14,
+      14,
+      3,
+      1152
+    ],
+    "source": "tools/quantize.cpp pre-scan flattens every4DF32 tensor before Guard1 protected-patch copy; literal F16 override was never applied",
+    "numeric_model_result": false
+  },
+  "pending_correction": "Exact-name F16 casting for safe four-dimensional F32 patch weights before legacy flattening, with real C++ quantizer round/shape/default/critical controls before conversion. No weakened shape/type or numerical guard; no corrected execution yet.",
+  "limits": [
+    "No model inference or numerical/decoded/performance qualification occurred.",
+    "Q4 inventory protection and model-free component controls do not establish Q4 model quality.",
+    "All arrays/GGUFs/binaries remain remote; local review fetched only42 small JSON/log members totalling1129801bytes."
+  ]
+}

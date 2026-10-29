@@ -7,6 +7,7 @@
 
 #include "unlimited_ocr.h"
 #include "unlimited_ocr2_dash.h"
+#include "unlimited_ocr2_text.h"
 #include "unlimited_ocr2_tiles.h"
 #include <functional>
 #include "crispembed_diff.h"
@@ -212,6 +213,14 @@ struct uocr_ctx {
     // 100 tokens/tile). Off only with CRISPEMBED_UNLIMITED_OCR2_TILES_LEGACY_UPSAMPLE=1,
     // which restores the old (wrong) bilinear 16x16 upsample = 256 tokens/tile.
     bool sam_native_tile_grid = false;
+    // Vision invariants reused across gundam tiles and pages: dequantised weights and the
+    // pos-embed / rel-pos tables derived from them (weights are immutable after load). Same
+    // functions on the same inputs, so bit-identical to recomputing; the projector also runs
+    // its per-token linear on n_threads (each token's dot order unchanged). On by default;
+    // CRISPEMBED_UNLIMITED_OCR2_VISION_CACHE=0 restores the per-call recomputation (A/B).
+    bool vision_cache = false;
+    std::map<const ggml_tensor *, std::vector<float>> f32_cache;
+    std::map<std::string, std::vector<float>> derived_cache;
 };
 
 // ---------------------------------------------------------------------------
@@ -249,6 +258,31 @@ static std::vector<float> to_f32(const ggml_tensor * t) {
             memset(out.data(), 0, n * sizeof(float));
     }
     return out;
+}
+
+// to_f32(t), memoised per context when ctx.vision_cache (else computed into `tmp`).
+static const std::vector<float> & f32_cached(uocr_ctx & ctx, const ggml_tensor * t, std::vector<float> & tmp) {
+    if (!ctx.vision_cache) {
+        tmp = to_f32(t);
+        return tmp;
+    }
+    auto it = ctx.f32_cache.find(t);
+    if (it == ctx.f32_cache.end()) it = ctx.f32_cache.emplace(t, to_f32(t)).first;
+    return it->second;
+}
+
+// make(), memoised under `key` when ctx.vision_cache (else computed into `tmp`). The key must
+// name every input the table depends on besides the (immutable) weights.
+template <class F>
+static const std::vector<float> & derived_cached(uocr_ctx & ctx, const std::string & key, std::vector<float> & tmp,
+                                                 F && make) {
+    if (!ctx.vision_cache) {
+        tmp = make();
+        return tmp;
+    }
+    auto it = ctx.derived_cache.find(key);
+    if (it == ctx.derived_cache.end()) it = ctx.derived_cache.emplace(key, make()).first;
+    return it->second;
 }
 
 static void layernorm_cpu(const float * in, float * out, int D, const float * w, const float * b, float eps = 1e-6f) {
@@ -1206,20 +1240,22 @@ static bool encode_sam(uocr_ctx & ctx, const float * pixels, int sam_img_size, s
     };
 
     // Patch embedding
-    auto pe_w = to_f32(ctx.m.patch_embed_w);
-    auto pe_b = to_f32(ctx.m.patch_embed_b);
-    auto pos_orig = to_f32(ctx.m.pos_embed);
+    std::vector<float> pe_w_tmp, pe_b_tmp, pos_tmp;
+    const std::vector<float> & pe_w = f32_cached(ctx, ctx.m.patch_embed_w, pe_w_tmp);
+    const std::vector<float> & pe_b = f32_cached(ctx, ctx.m.patch_embed_b, pe_b_tmp);
     // Interpolate position embedding if running at reduced resolution
-    std::vector<float> pos;
-    if (nP != nP_orig) {
-        pos.resize((size_t)N * C);
+    const std::string pos_key = "sam_pos/" + std::to_string(nP) + "/" + std::to_string((int)ctx.pos_aa_bicubic) + "/" +
+                                std::to_string((int)ctx.uocr2_ref_prep);
+    const std::vector<float> & pos = derived_cached(ctx, pos_key, pos_tmp, [&]() {
+        std::vector<float> pos_orig = to_f32(ctx.m.pos_embed);
+        if (nP == nP_orig) return pos_orig;
+        std::vector<float> p((size_t)N * C);
         if (ctx.pos_aa_bicubic)
-            interpolate_pos_embed_2d_aa_bicubic(pos_orig.data(), pos.data(), nP_orig, nP, C, ctx.uocr2_ref_prep);
+            interpolate_pos_embed_2d_aa_bicubic(pos_orig.data(), p.data(), nP_orig, nP, C, ctx.uocr2_ref_prep);
         else
-            interpolate_pos_embed_2d(pos_orig.data(), pos.data(), nP_orig, nP, C);
-    } else {
-        pos = std::move(pos_orig);
-    }
+            interpolate_pos_embed_2d(pos_orig.data(), p.data(), nP_orig, nP, C);
+        return p;
+    });
     int patch_dim = 3 * PS * PS;
     std::vector<float> hidden(N * C);
 
@@ -1308,11 +1344,12 @@ static bool encode_sam(uocr_ctx & ctx, const float * pixels, int sam_img_size, s
     }
 
     // Pre-dequant LN weights for windowed layers
-    std::vector<std::vector<float>> ln1_ws(s.depth), ln1_bs(s.depth);
+    std::vector<std::vector<float>> ln1_tw(s.depth), ln1_tb(s.depth);
+    std::vector<const std::vector<float> *> ln1_ws(s.depth, nullptr), ln1_bs(s.depth, nullptr);
     for (int li = 0; li < s.depth; li++)
         if (!ctx.m.sam_blocks[li].is_global) {
-            ln1_ws[li] = to_f32(ctx.m.sam_blocks[li].ln1_w);
-            ln1_bs[li] = to_f32(ctx.m.sam_blocks[li].ln1_b);
+            ln1_ws[li] = &f32_cached(ctx, ctx.m.sam_blocks[li].ln1_w, ln1_tw[li]);
+            ln1_bs[li] = &f32_cached(ctx, ctx.m.sam_blocks[li].ln1_b, ln1_tb[li]);
         }
 
     // Hoist ggml metadata buffer outside the per-layer loop (UOCR_OPT_REUSE_CTX)
@@ -1342,8 +1379,8 @@ static bool encode_sam(uocr_ctx & ctx, const float * pixels, int sam_img_size, s
         if (skip_ln1) {
             ln1_hidden.resize(N * C);
             for (int n = 0; n < N; n++)
-                layernorm_cpu(hidden.data() + n * C, ln1_hidden.data() + n * C, C, ln1_ws[li].data(), ln1_bs[li].data(),
-                              1e-6f);
+                layernorm_cpu(hidden.data() + n * C, ln1_hidden.data() + n * C, C, ln1_ws[li]->data(),
+                              ln1_bs[li]->data(), 1e-6f);
         }
 
         std::vector<float> graph_input, residual_input;
@@ -1365,30 +1402,36 @@ static bool encode_sam(uocr_ctx & ctx, const float * pixels, int sam_img_size, s
                     ctx.rp_h_per_layer[li].size());
         // RPE tables: use precomputed if sizes match, else recompute for reduced resolution
         const float *rp_h_ptr, *rp_w_ptr;
-        std::vector<float> rp_h_recomp, rp_w_recomp, rp_h_ggml_rc, rp_w_ggml_rc;
+        std::vector<float> rp_tmp;
         bool rpe_size_match =
             !ctx.rp_h_ggml_per_layer[li].empty() && (int)ctx.rp_h_ggml_per_layer[li].size() == aH * aH * hd;
         if (rpe_size_match) {
             rp_h_ptr = ctx.rp_h_ggml_per_layer[li].data();
             rp_w_ptr = ctx.rp_w_ggml_per_layer[li].data();
         } else {
-            // Recompute RPE for reduced resolution (global layers change from nP_orig to nP)
-            auto & blk2 = ctx.m.sam_blocks[li];
-            auto rph = to_f32(blk2.rel_pos_h), rpw = to_f32(blk2.rel_pos_w);
-            int L_h = (int)blk2.rel_pos_h->ne[1], L_w = (int)blk2.rel_pos_w->ne[1];
-            if (ctx.uocr2_ref_prep) {
-                rp_h_recomp = get_rel_pos_torch(aH, aH, rph.data(), L_h, hd);
-                rp_w_recomp = get_rel_pos_torch(aW, aW, rpw.data(), L_w, hd);
-            } else {
-                rp_h_recomp = get_rel_pos(aH, aH, rph.data(), L_h, hd);
-                rp_w_recomp = get_rel_pos(aW, aW, rpw.data(), L_w, hd);
-            }
-            rp_h_ggml_rc.resize((size_t)aH * aH * hd);
-            rp_w_ggml_rc.resize((size_t)aW * aW * hd);
-            reformat_rp_table(rp_h_recomp.data(), rp_h_ggml_rc.data(), aH, hd);
-            reformat_rp_table(rp_w_recomp.data(), rp_w_ggml_rc.data(), aW, hd);
-            rp_h_ptr = rp_h_ggml_rc.data();
-            rp_w_ptr = rp_w_ggml_rc.data();
+            // Recompute RPE for reduced resolution (global layers change from nP_orig to nP).
+            // Cached as [h table | w table] per (layer, grid, numerics).
+            const std::string rp_key = "sam_rpe/" + std::to_string(li) + "/" + std::to_string(aH) + "/" +
+                                       std::to_string(aW) + "/" + std::to_string((int)ctx.uocr2_ref_prep);
+            const std::vector<float> & rp = derived_cached(ctx, rp_key, rp_tmp, [&]() {
+                auto & blk2 = ctx.m.sam_blocks[li];
+                auto rph = to_f32(blk2.rel_pos_h), rpw = to_f32(blk2.rel_pos_w);
+                int L_h = (int)blk2.rel_pos_h->ne[1], L_w = (int)blk2.rel_pos_w->ne[1];
+                std::vector<float> rp_h_recomp, rp_w_recomp;
+                if (ctx.uocr2_ref_prep) {
+                    rp_h_recomp = get_rel_pos_torch(aH, aH, rph.data(), L_h, hd);
+                    rp_w_recomp = get_rel_pos_torch(aW, aW, rpw.data(), L_w, hd);
+                } else {
+                    rp_h_recomp = get_rel_pos(aH, aH, rph.data(), L_h, hd);
+                    rp_w_recomp = get_rel_pos(aW, aW, rpw.data(), L_w, hd);
+                }
+                std::vector<float> both((size_t)aH * aH * hd + (size_t)aW * aW * hd);
+                reformat_rp_table(rp_h_recomp.data(), both.data(), aH, hd);
+                reformat_rp_table(rp_w_recomp.data(), both.data() + (size_t)aH * aH * hd, aW, hd);
+                return both;
+            });
+            rp_h_ptr = rp.data();
+            rp_w_ptr = rp.data() + (size_t)aH * aH * hd;
         }
 
         ggml_init_params ip = { meta_sz, mb.data(), true };
@@ -1462,10 +1505,15 @@ static bool encode_sam(uocr_ctx & ctx, const float * pixels, int sam_img_size, s
     out_features.resize((size_t)n_vis * vis_D);
 
     if (!core_env::on("UOCR_SAM_CONV_CPU")) {
-        auto nc1 = to_f32(ctx.m.neck_conv1_w), nc2 = to_f32(ctx.m.neck_conv2_w);
-        auto n2 = to_f32(ctx.m.net_2_w), n3 = to_f32(ctx.m.net_3_w);
-        auto l1w = to_f32(ctx.m.neck_ln1_w), l1b = to_f32(ctx.m.neck_ln1_b);
-        auto l2w = to_f32(ctx.m.neck_ln2_w), l2b = to_f32(ctx.m.neck_ln2_b);
+        std::vector<float> tmp[8];
+        const auto & nc1 = f32_cached(ctx, ctx.m.neck_conv1_w, tmp[0]);
+        const auto & nc2 = f32_cached(ctx, ctx.m.neck_conv2_w, tmp[1]);
+        const auto & n2 = f32_cached(ctx, ctx.m.net_2_w, tmp[2]);
+        const auto & n3 = f32_cached(ctx, ctx.m.net_3_w, tmp[3]);
+        const auto & l1w = f32_cached(ctx, ctx.m.neck_ln1_w, tmp[4]);
+        const auto & l1b = f32_cached(ctx, ctx.m.neck_ln1_b, tmp[5]);
+        const auto & l2w = f32_cached(ctx, ctx.m.neck_ln2_w, tmp[6]);
+        const auto & l2b = f32_cached(ctx, ctx.m.neck_ln2_b, tmp[7]);
         size_t meta_sz = 16 * 1024 * 1024;
         std::vector<uint8_t> mb(meta_sz);
         ggml_init_params ip = { meta_sz, mb.data(), true };
@@ -1677,23 +1725,29 @@ static bool encode_clip(uocr_ctx & ctx, const float * sam_features, int n_vis, i
     int T = 1 + n_patches; // 257 (CLS + patches)
 
     // Build input: CLS token + SAM features as patch embeddings + position embeddings
-    auto cls = to_f32(ctx.m.cls_token);      // [1024]
-    auto pos = to_f32(ctx.m.clip_pos_embed); // [257, 1024] — stored as [257 * 1024]
-    // Gundam tiles (640 input -> 10x10 patches): resize the 16x16 patch grid of the
-    // position table like the reference get_abs_pos (bicubic, antialias); CLS kept.
-    if (ctx.pos_aa_bicubic && (int)(pos.size() / D) != T) {
-        int n_pos = (int)(pos.size() / D);
+    std::vector<float> cls_tmp, pos_tmp;
+    const std::vector<float> & cls = f32_cached(ctx, ctx.m.cls_token, cls_tmp); // [1024]
+    // [257, 1024] — stored as [257 * 1024]. Gundam tiles (640 input -> 10x10 patches): resize
+    // the 16x16 patch grid like the reference get_abs_pos (bicubic, antialias); CLS kept.
+    // An empty table signals a grid mismatch.
+    const std::string pos_key = "clip_pos/" + std::to_string(T) + "/" + std::to_string((int)ctx.pos_aa_bicubic) + "/" +
+                                std::to_string((int)ctx.uocr2_ref_prep);
+    const std::vector<float> & pos = derived_cached(ctx, pos_key, pos_tmp, [&]() {
+        std::vector<float> p = to_f32(ctx.m.clip_pos_embed);
+        if (!ctx.pos_aa_bicubic || (int)(p.size() / D) == T) return p;
+        int n_pos = (int)(p.size() / D);
         int src_side = (int)lroundf(sqrtf((float)(n_pos - 1)));
         int dst_side = (int)lroundf(sqrtf((float)n_patches));
         if (src_side * src_side + 1 != n_pos || dst_side * dst_side != n_patches) {
             fprintf(stderr, "unlimited_ocr: CLIP pos-embed grid mismatch (%d -> %d)\n", n_pos, T);
-            return false;
+            return std::vector<float>();
         }
         std::vector<float> np((size_t)T * D);
-        memcpy(np.data(), pos.data(), (size_t)D * sizeof(float));
-        interpolate_pos_embed_2d_aa_bicubic(pos.data() + D, np.data() + D, src_side, dst_side, D, ctx.uocr2_ref_prep);
-        pos = std::move(np);
-    }
+        memcpy(np.data(), p.data(), (size_t)D * sizeof(float));
+        interpolate_pos_embed_2d_aa_bicubic(p.data() + D, np.data() + D, src_side, dst_side, D, ctx.uocr2_ref_prep);
+        return np;
+    });
+    if (pos.empty()) return false;
 
     std::vector<float> input(T * D);
     // Position 0: CLS token
@@ -1826,13 +1880,30 @@ static bool fuse_and_project(uocr_ctx & ctx, const float * clip_features, const 
     // Project: Linear(2048, 1280)
     auto & lhp = ctx.m.lhp;
     int out_dim = lhp.hidden; // 1280
-    auto pw = to_f32(ctx.m.projector_w);
-    auto pb = to_f32(ctx.m.projector_b);
+    std::vector<float> pw_tmp, pb_tmp;
+    const std::vector<float> & pw = f32_cached(ctx, ctx.m.projector_w, pw_tmp);
+    const std::vector<float> & pb = f32_cached(ctx, ctx.m.projector_b, pb_tmp);
 
     proj_out.resize((size_t)n_tokens * out_dim);
-    for (int t = 0; t < n_tokens; t++)
-        linear_cpu(fused.data() + t * fused_dim, proj_out.data() + t * out_dim, fused_dim, out_dim, pw.data(),
-                   pb.empty() ? nullptr : pb.data());
+    // Tokens are independent and each keeps linear_cpu's dot order, so the threaded split is
+    // bit-identical to the serial loop (which CRISPEMBED_UNLIMITED_OCR2_VISION_CACHE=0 keeps).
+    auto proj_rows = [&](int t0, int t1) {
+        for (int t = t0; t < t1; t++)
+            linear_cpu(fused.data() + (size_t)t * fused_dim, proj_out.data() + (size_t)t * out_dim, fused_dim, out_dim,
+                       pw.data(), pb.empty() ? nullptr : pb.data());
+    };
+    const int nt = ctx.vision_cache ? std::max(1, std::min(ctx.n_threads, n_tokens)) : 1;
+    if (nt <= 1) {
+        proj_rows(0, n_tokens);
+    } else {
+        std::vector<std::thread> pool;
+        const int per = (n_tokens + nt - 1) / nt;
+        for (int k = 0; k < nt; k++) {
+            const int t0 = k * per, t1 = std::min(n_tokens, t0 + per);
+            if (t0 < t1) pool.emplace_back(proj_rows, t0, t1);
+        }
+        for (auto & th : pool) th.join();
+    }
 
     // Diff: projector output
     if (!ctx.diff_ref_path.empty()) {
@@ -2732,7 +2803,12 @@ static bool run_llm_decoder_v2_fast(uocr_ctx & ctx, const float * prompt_embeds,
     } kv_owner_{ kv_ctx, kv_buf };
 
     std::vector<uocr2::router_keys> rks(L);
-    int chunk = 256; // prefill query rows per attention/FFN graph (bounds the [Lk, rows, NH] scores)
+    // Prefill query rows per attention/FFN graph (bounds the [Lk, rows, NH] scores). Every op in
+    // graph B is row-wise (mat-mul dot products, mask, softmax, norms, routing), so the chunking
+    // does not change any row's result; one chunk for prompts up to 2048 rows (a tiled page is
+    // <= 1917) reads each layer's expert weights once instead of ceil(S/256) times.
+    // UOCR2_FAST_CHUNK=256 restores the previous split.
+    int chunk = 2048;
     if (const char * c = getenv("UOCR2_FAST_CHUNK")) chunk = std::max(1, atoi(c));
     const float NEG = -std::numeric_limits<float>::infinity();
     const float attn_scale = 1.0f / sqrtf((float)HDm);
@@ -3672,6 +3748,16 @@ static bool run_llm_decoder(uocr_ctx & ctx, const float * prompt_embeds, int n_p
 // ---------------------------------------------------------------------------
 
 static std::string decode_tokens(const uocr_ctx & ctx, const int32_t * ids, int n) {
+    // Unlimited-OCR-2: the original's tokenizer.decode(gen, skip_special_tokens=False),
+    // byte-exact (src/unlimited_ocr2_text.h). CRISPEMBED_UNLIMITED_OCR2_OUTPUT=clean selects
+    // the layout-stripped rendering, =legacy the old marker-dropping text below.
+    if (ctx.m.lhp.variant == 2) {
+        const auto mode = uocr2_text::parse_output_mode(getenv("CRISPEMBED_UNLIMITED_OCR2_OUTPUT"));
+        if (mode != uocr2_text::output_mode::legacy) {
+            std::string raw = uocr2_text::decode_raw(ctx.id_to_piece, ids, n, ctx.m.lhp.eos_token_id);
+            return mode == uocr2_text::output_mode::clean ? uocr2_text::clean(raw) : raw;
+        }
+    }
     // Concatenate byte-encoded pieces (skip special <...> markers), then map
     // the utf-8 codepoints back to raw bytes via the shared core_bpe decoder.
     std::string merged;
@@ -3721,6 +3807,10 @@ unlimited_ocr_context * unlimited_ocr_init(const char * model_path, int n_thread
         delete c;
         return nullptr;
     }
+
+    // Only the separately measured second-generation path opts into this
+    // cache and row-parallel projector. Keep the first-generation route intact.
+    ctx.vision_cache = ctx.m.lhp.variant == 2 && !core_env::explicitly_off("CRISPEMBED_UNLIMITED_OCR2_VISION_CACHE");
 
     ctx.backend = crispasr_init_gpu_backend();
     if (!ctx.backend) {
@@ -3805,7 +3895,7 @@ void unlimited_ocr_free(unlimited_ocr_context * ctx) {
 }
 
 // ---------------------------------------------------------------------------
-// Unlimited-OCR-2 gundam tiling (gate CRISPEMBED_UNLIMITED_OCR2_TILES, variant 2)
+// Unlimited-OCR-2 gundam tiling (variant 2; default on, CRISPEMBED_UNLIMITED_OCR2_TILES=0 opts out)
 // ---------------------------------------------------------------------------
 // Reference dynamic_preprocess(min_num=2, max_num=16, image_size=640) +
 // find_closest_aspect_ratio. Candidate order: Python sorts a *set* of (i,j) by
@@ -3924,9 +4014,19 @@ static bool uocr2_encode_local_tiles(uocr_ctx & ctx, const uint8_t * px, int w, 
             if (tile_px_dump) fwrite(pixels.data(), sizeof(float), pixels.size(), tile_px_dump);
             std::vector<float> sam_f, clip_f, proj;
             int n_tok = 0, sam_dim = 0;
-            ok = encode_sam(ctx, pixels.data(), T, sam_f, n_tok, sam_dim) &&
-                 encode_clip(ctx, sam_f.data(), n_tok, sam_dim, clip_f) &&
-                 fuse_and_project(ctx, clip_f.data(), sam_f.data(), n_tok, ctx.m.chp.hidden, sam_dim, proj);
+            auto t0 = std::chrono::steady_clock::now();
+            ok = encode_sam(ctx, pixels.data(), T, sam_f, n_tok, sam_dim);
+            auto t1 = std::chrono::steady_clock::now();
+            ok = ok && encode_clip(ctx, sam_f.data(), n_tok, sam_dim, clip_f);
+            auto t2 = std::chrono::steady_clock::now();
+            ok = ok && fuse_and_project(ctx, clip_f.data(), sam_f.data(), n_tok, ctx.m.chp.hidden, sam_dim, proj);
+            if (core_env::on("UOCR_DBG")) {
+                auto ms = [](std::chrono::steady_clock::time_point a, std::chrono::steady_clock::time_point b) {
+                    return (long long)std::chrono::duration_cast<std::chrono::milliseconds>(b - a).count();
+                };
+                fprintf(stderr, "  [time] tile %d,%d sam %lldms clip %lldms proj %lldms\n", tx, ty, ms(t0, t1),
+                        ms(t1, t2), ms(t2, std::chrono::steady_clock::now()));
+            }
             if (ok) {
                 int side = (int)lroundf(sqrtf((float)n_tok));
                 if (side * side != n_tok || (nq && side != nq)) ok = false;
@@ -4012,11 +4112,14 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx, const uint
     int ox = (imgS - rw) / 2;
     int oy = (imgS - rh) / 2;
 
-    // Tiled Unlimited-OCR-2 pages (gate on, > 640): the global view goes through
-    // the Pillow-exact ImageOps.pad port + bf16 rounding (reference-exact prep).
-    // Every other path keeps the legacy letterbox below byte-for-byte.
-    const bool uocr2_tiled =
-        ctx->inner.m.lhp.variant == 2 && core_env::on("CRISPEMBED_UNLIMITED_OCR2_TILES") && (w > 640 || h > 640);
+    // Unlimited-OCR-2 tiles like the original by default: infer(crop_mode=None) with one
+    // image => cropping=True (modeling_unlimitedocr.py:541), and a page is tiled iff
+    // w > 640 or h > 640 (:554-558). CRISPEMBED_UNLIMITED_OCR2_TILES=0 forces the untiled
+    // global-only view (faster; original crop_mode=False). Tiled pages' global view goes
+    // through the Pillow-exact ImageOps.pad port + bf16 rounding (reference-exact prep);
+    // every other path keeps the legacy letterbox below byte-for-byte.
+    const bool uocr2_tiled = ctx->inner.m.lhp.variant == 2 &&
+                             !core_env::explicitly_off("CRISPEMBED_UNLIMITED_OCR2_TILES") && (w > 640 || h > 640);
     const bool uocr2_pil_global = uocr2_tiled && imgS == s.image_size && uocr2_ref_prep_enabled();
     std::vector<float> pixels(3 * imgS * imgS);
     if (uocr2_pil_global) pixels = uocr2_global_view_pil(px, w, h, ch, imgS, s.image_mean, s.image_std);
@@ -4205,7 +4308,7 @@ const char * unlimited_ocr_recognize_raw(unlimited_ocr_context * ctx, const uint
         fprintf(stderr, "unlimited_ocr: stages done — sam=%d/%d clip=%d/%d proj=%d vis=%d\n", n_sam_tokens, sam_dim,
                 (int)clip_out.size() / clip_dim, clip_dim, n_sam_tokens, n_vis_total);
 
-        // 5. Unlimited-OCR-2 gundam tiling (default OFF). Variant 2 only, and only for
+        // 5. Unlimited-OCR-2 gundam tiling (default ON, =0 opts out). Variant 2 only, and only for
         //    pages larger than 640 in either dimension; the local grid goes FIRST,
         //    then the global view (+ view_separator) built above. Otherwise untouched.
         int dump_wt = 1, dump_ht = 1, dump_nq = 0;

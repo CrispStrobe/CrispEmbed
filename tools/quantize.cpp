@@ -20,6 +20,8 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <array>
+#include <cmath>
 
 static const std::map<std::string, enum ggml_ftype> FTYPE_MAP = {
     { "f16", GGML_FTYPE_MOSTLY_F16 },       { "q4_0", GGML_FTYPE_MOSTLY_Q4_0 }, { "q4_1", GGML_FTYPE_MOSTLY_Q4_1 },
@@ -62,6 +64,23 @@ static bool tensor_name_matches(const std::string & pattern, const std::string &
     }
     while (p < pattern.size() && pattern[p] == '*') ++p;
     return p == pattern.size();
+}
+
+// A literal F16 request may preserve a floating patch kernel's four axes.
+// Wildcards and block-quant requests retain the existing protected-conv policy.
+// This narrow exception does not alter norms/biases/LoRA/host-only kernels.
+static bool exact_f16_patch_cast(const ggml_tensor * tensor, const std::string & name) {
+    if (!tensor || tensor->type != GGML_TYPE_F32 || ggml_n_dims(tensor) != 4 ||
+        name.find("patch_embed") == std::string::npos || name.size() < 7 ||
+        name.compare(name.size() - 7, 7, ".weight") != 0)
+        return false;
+    for (const char * protected_name : { "norm", "bias", "lora.", "downsample", "downsampling", "dwconv", "enc.bb",
+                                         "enc.proj", "enc.embed.patch", ".ds.conv", ".dw.", "positional", "merger" })
+        if (name.find(protected_name) != std::string::npos) return false;
+    bool selected = false;
+    for (const auto & rule : g_tensor_types)
+        if (tensor_name_matches(rule.pattern, name)) selected = rule.pattern == name && rule.type == GGML_TYPE_F16;
+    return selected;
 }
 
 // Per-tensor importance vectors loaded from a CrispEmbed imatrix file
@@ -279,12 +298,15 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
     }
 
     // Pre-scan: flatten 4D conv weights to 2D [OC, IC*KH*KW] in the tensor
-    // metadata so the output header has correct shapes. Data is transposed
+    // metadata so the output header has correct shapes. The explicitly selected
+    // floating patch exception keeps its original axes. Data is transposed
     // during the per-tensor write loop below.
+    std::vector<bool> patch_f16(n_tensors, false);
     for (int i = 0; i < n_tensors; i++) {
         const char * name = gguf_get_tensor_name(ctx_in, i);
         struct ggml_tensor * t = ggml_get_tensor(ctx_in_ggml, name);
-        if (ggml_n_dims(t) == 4 && t->type == GGML_TYPE_F32) {
+        patch_f16[i] = !is_ppocrv6 && !is_tesseract_lstm && exact_f16_patch_cast(t, name);
+        if (ggml_n_dims(t) == 4 && t->type == GGML_TYPE_F32 && !patch_f16[i]) {
             // Flatten [KW, KH, IC, OC] → [IC*KH*KW, OC]
             int64_t flat_cols = t->ne[0] * t->ne[1] * t->ne[2];
             int64_t OC = t->ne[3];
@@ -344,7 +366,56 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         // - Token/position/type embeddings: only Q8_0/F16, skip aggressive quants
         std::string sname(name);
 
-        // Guard 1: patch_embed tensors — always copy as-is (they are conv2d kernels)
+        if (patch_f16[i]) {
+            // The pre-scan deliberately retained all four original axes.
+            // Cast only this explicit safe patch request; stream fixed chunks
+            // rather than materializing a whole convolution weight twice.
+#ifdef _WIN32
+            _fseeki64(fin, (int64_t)offset, SEEK_SET);
+#else
+            fseeko(fin, (off_t)offset, SEEK_SET);
+#endif
+            std::array<float, 16384> input;
+            std::array<ggml_fp16_t, 16384> output;
+            const size_t elements = size_t(ggml_nelements(t));
+            size_t remaining = elements;
+            while (remaining) {
+                const size_t count = remaining < input.size() ? remaining : input.size();
+                if (fread(input.data(), sizeof(float), count, fin) != count) {
+                    fprintf(stderr, "failed to read explicit F16 patch tensor\n");
+                    fclose(fin);
+                    fclose(fout);
+                    return false;
+                }
+                for (size_t j = 0; j < count; ++j) {
+                    output[j] = ggml_fp32_to_fp16(input[j]);
+                    if (!std::isfinite(input[j]) || !std::isfinite(ggml_fp16_to_fp32(output[j]))) {
+                        fprintf(stderr, "explicit F16 patch tensor is nonfinite or overflows F16\n");
+                        fclose(fin);
+                        fclose(fout);
+                        return false;
+                    }
+                }
+                if (fwrite(output.data(), sizeof(ggml_fp16_t), count, fout) != count) {
+                    fprintf(stderr, "failed to write explicit F16 patch tensor\n");
+                    fclose(fin);
+                    fclose(fout);
+                    return false;
+                }
+                remaining -= count;
+            }
+            const size_t bytes = elements * sizeof(ggml_fp16_t);
+            gguf_set_tensor_type(ctx_out, name, GGML_TYPE_F16);
+            for (size_t j = bytes; j < GGML_PAD(bytes, GGUF_DEFAULT_ALIGNMENT); ++j) fputc(0, fout);
+            total_orig += size;
+            total_new += bytes;
+            ++n_kept;
+            printf("explicit F16 patch cast, original 4D axes retained\n");
+            continue;
+        }
+
+        // Guard 1: default patch policy copies as-is (conv2d kernels); the
+        // exact-name floating 4D exception has already returned above.
         // patch_embed, downsample, merger — used in host-side computation,
         // must stay F32 (ggml_backend_tensor_get reads as float).
         // SMT ConvNext: dwconv/downsampling are conv2d kernels; smt.positional_1d
@@ -960,6 +1031,7 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "  --tensor-type GLOB=TYPE  override eligible matrix precision (f32/f16/q8_0/q6_k/q5_k)\n");
         fprintf(stderr,
                 "                          * and ? match tensor names; last match wins; norm/conv guards remain\n");
+        fprintf(stderr, "                         exact-name =f16 on safe F32 4D patch weights preserves all axes\n");
         fprintf(stderr, "  --decoder-f16  keep LLM decoder weights (prefix 'l.') at F16\n");
         fprintf(stderr, "                 (optional; NOT required for correctness — small decoders\n");
         fprintf(stderr, "                  like GOT-OCR2's 0.5B quantize cleanly to q4_k/q8_0.\n");

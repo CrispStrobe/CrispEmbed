@@ -1,0 +1,109 @@
+{
+  "source": "52739ca5838148adf8f27f8df816ad61b7097eb2",
+  "protocol_sha256": "1af4d10450c00255b4a95d1c59f7cbcc082d6e253f3690db54eec39894b6ee1d",
+  "qualification": false,
+  "services": {
+    "trace": {
+      "id": 40424064413,
+      "head_sha": "dfd7bb4f35d3460f1ea67f6f5ce35cc408e2e6f6",
+      "path": ".github/workflows/ovisocr2-metadata.yml",
+      "status": "completed",
+      "conclusion": "success",
+      "event": "workflow_dispatch",
+      "run_attempt": 1
+    },
+    "fixture": {
+      "id": 40354251257,
+      "head_sha": "49161f608af811154bfeb816ac38caea34224cae",
+      "path": ".github/workflows/ovisocr2-metadata.yml",
+      "status": "completed",
+      "conclusion": "failure",
+      "event": "workflow_dispatch",
+      "run_attempt": 1
+    }
+  },
+  "artifacts": {
+    "review": {
+      "id": 12702046203,
+      "name": "wasm-layer3-attribution-v1-review-40424064413",
+      "size_in_bytes": 1031136,
+      "digest": "sha256:4847ab1b9f2f10680e9647bc19fc462bbbea212379756fffd896bba9cd122e05"
+    },
+    "raw": {
+      "id": 12702610607,
+      "name": "wasm-layer3-attribution-v1-raw-40424064413",
+      "size_in_bytes": 24900090,
+      "digest": "sha256:1444edaf1e3751ee7f0c6d5a05faef0af16f476b2c8fce4bd7785ec950e52721"
+    },
+    "fixture": {
+      "id": 12671621333,
+      "name": "successor-minilm-fixture-40354251257",
+      "size_in_bytes": 18259261,
+      "digest": "sha256:a67abb8439d2af274c175dad9cefb8ba9606bec9c4ba024cf568a7359f41c8bf"
+    }
+  },
+  "service": {
+    "id": 40749050064,
+    "head_sha": "52739ca5838148adf8f27f8df816ad61b7097eb2",
+    "path": ".github/workflows/wasm-f32-operators-v1.yml",
+    "event": "workflow_dispatch",
+    "run_attempt": 1
+  },
+  "raw_authentication": {
+    "members": 289,
+    "aliases": [
+      "native-build/libcrispembed.so.0",
+      "native-build/libcrispembed.so.0.17.14"
+    ],
+    "all_sha256_exact": true
+  },
+  "retained_native_ggml_exports": false,
+  "epsilon": {
+    "value": 9.999999960041972e-13,
+    "key": "bert.attention.layer_norm_epsilon",
+    "source": "model metadata"
+  },
+  "coefficient_sources": {
+    "attn_output.bias": {
+      "actual_name": "blk.3.attn_output.bias",
+      "sha256": "712c84d39a6a5a9c06a09da8fd9939ba0d5525524a4bba61ea4de09b48f45cae"
+    },
+    "attn_q.bias": {
+      "actual_name": "blk.3.attn_q.bias",
+      "sha256": "f4e34385e75d8108b6b3bd336106e2133a8c9be0cc343dfe5dc48c32a823c7cb"
+    },
+    "layer_output_norm.bias": {
+      "actual_name": "blk.3.layer_output_norm.bias",
+      "sha256": "1ed630021b25c6c6fc93fd32988b9907df966d4982a93081f639aac3044618ab"
+    },
+    "attn_k.bias": {
+      "actual_name": "blk.3.attn_k.bias",
+      "sha256": "40b8067b641a56014cee42548240aa8930820958b1933004892b5f04fbaef39e"
+    },
+    "ffn_up.bias": {
+      "actual_name": "blk.3.ffn_up.bias",
+      "sha256": "06a4296dda16f452675c51f108079fe7722552d6521c737d97734943818b9a2b"
+    },
+    "attn_v.bias": {
+      "actual_name": "blk.3.attn_v.bias",
+      "sha256": "b528c56212e66931fdbe267ac327a9c2f87cd03baff3ea719e30afe681da15f1"
+    },
+    "layer_output_norm.weight": {
+      "actual_name": "blk.3.layer_output_norm.weight",
+      "sha256": "a1dfeb7b5a51dd56447312ca41e2ad2f361a3ea12ddc355127f5f4219fb0a482"
+    },
+    "attn_output_norm.bias": {
+      "actual_name": "blk.3.attn_output_norm.bias",
+      "sha256": "ea31a1c73146234c50e0e43f485c458413714867b8e2703af66482f7db2d6c40"
+    },
+    "ffn_down.bias": {
+      "actual_name": "blk.3.ffn_down.bias",
+      "sha256": "2c8e67831d28a3bf613fc7912ae3259b63d72abcaf4d30efd8800758400158de"
+    },
+    "attn_output_norm.weight": {
+      "actual_name": "blk.3.attn_output_norm.weight",
+      "sha256": "d1ffac88e675592ff72f8a617be32b4a381d443b2f8f2645dbe44a1e5745aac0"
+    }
+  },
+  "packets_sha256": "af3473cf86f3eabcc430b7b2f140192bbb3ed9fc5c280ccfa6ef4db692e69390"
+}

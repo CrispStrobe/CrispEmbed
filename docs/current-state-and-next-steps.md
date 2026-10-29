@@ -1,36 +1,6 @@
 # CrispMath and CrispEmbed: current state and executable lanes
 
-<!-- BEGIN CURRENT VENDOR EXECUTION -->
-## Vendor execution — 28 October 2026
-
-Use the [current portfolio handoff](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/handoff-2026-10-28.md)
-and candidate branch `work/portfolio-closure-q4k-20261028`; main has no new runtime
-release or app-pin change. Five quantized fronts and final integration remain open.
-
-- Josev new20 original passes predeclared floors:56/60 fields; all four original
-  mistakes remain. Corrected four-case Q4 is running before native20 admission.
-- All three MoEdern SciFact originals are frozen. Corrected archive discovery at
- 1543475b8 enables1.5M retry/115M first replay; corrected27M provider3f82073e is
- submitted as [40777203075](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40777203075).
-- UltraBERT full F32/three Q4 recipes and Unlimited mixed-Q4 v3 are running.
-- MiniCPM graph v3 exhausted hosted disk after23/30 decoded-exact arms;15 strict
- numerical negatives remain. Analyze retained intermediates and complete only7
- missing arms with bounded canonical-output retention.
-- WASM [40771950208](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40771950208)
- passes64 anchors/48 same-input F32 operators, worst absolute1.90735e-6. Earlier
- whole-model quantized failures remain; natural drift propagation is unresolved.
-- Exact form bytes and missing MiniCPM original are recovered. The20-image RGB
- decode-only audit is submitted as [40776499260](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40776499260);
- remaining model mismatches still need intermediate/decoded attribution.
-- Old Ovis source passes gate0's eleven F16 cases; gate1 completed eight before
- a document timeout. New bounded document-only audit budget is prepared, but
- final source declaration, full14/11 replay, artifacts/consumers/main CI remain.
-
-All large work remains hosted; keep initial failures and unchanged quality gates.
-Queued/running work is not qualification. The app remains on immutable0.17.12.
-<!-- END CURRENT VENDOR EXECUTION -->
-
-Current vendor execution: [28 October portfolio continuation](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/handoff-2026-10-28.md).
+Current vendor execution: [28 October continuation handoff](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/handoff-2026-10-28.md).
 Main documentation records verified branch results; experimental runtimes remain
 on their stated branches, with no new release or application pin.
 

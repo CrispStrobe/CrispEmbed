@@ -6986,3 +6986,99 @@ gives per-process peaks118.453125MiB released,119.40625MiB candidate unset,
 119.078125MiB literal1 and117.296875MiB legacy0. These include each full50-case
 process. No paired timing/memory improvement, portfolio, mobile-device, final
 integrated-source or successor-release qualification follows from this diagnostic.
+
+## MiniCPM completed scalar benchmark — 28 October 2026
+
+The unchanged [v3 producer](tests/results/minicpm-ocr/bench.json) at `c9718788`
+and [independent source/receipt review](tests/results/minicpm-ocr/bench-review.json)
+retain all five cases per arm. Both Q8 thread arms fail patch-shape loading before
+inference; this is a format failure and gives no Q8 quality or speed result.
+The subsequent quantizer repair and graph replay remain separate.
+
+| Case | F16 vision seconds | F32 vision seconds | F16/F32 vision ratio |
+| --- | ---: | ---: | ---: |
+| line | 27.700 | 14.051 | 1.97 |
+| paragraph | 137.854 | 65.875 | 2.09 |
+| table | 140.186 | 66.850 | 2.10 |
+| tall page | 260.325 | 130.493 | 1.99 |
+| tiny | 29.149 | 14.101 | 2.07 |
+
+Whole CLI totals are2,781.378s F16/no decoder cache and2,309.681s F32 at four
+threads; timing-off F16 totals2,791.370s. These are sequential same-job panels,
+not repeated alternating trials. F32/F16 timed outputs have ten producer-asserted
+exact ID/text flags; actual ID vectors were discarded by that old driver.
+Timing-off has five exact text flags and no observed ID proof. Prefill has no
+broad F32 advantage: the paragraph/tall/tiny F32 times are slightly higher.
+
+This supports a bounded future cache that promotes the *same* F16 vision values
+to F32 once, with explicit memory accounting and decoded/intermediate A/B.
+It does not establish that cache's speed or justify a default change. In the
+separate initial v2 F16 panel, cached decoding is63.4% of aggregate wall time,
+vision21.67% and prefill14.18%; the tiny case's roughly half-time vision share
+must not be generalized to the full panel. The stored-type decoder graph remains
+the first optimization to qualify.
+
+## Full original MoEdern SciFact baselines — 28 October 2026
+
+The new original-first captures use all300 queries/5,183 documents and exact
+float32-dot/float64-sum MaxSim. Source/runtime/weight authentication and13
+ordinary/observer/public-slice controls precede each full corpus. Large arrays
+remain remote and require hosted rehashing before native replay.
+
+| Original model | NDCG@10 | MRR@10 | Recall@100 |
+| --- | ---: | ---: | ---: |
+| [1.5M](tests/results/moedern-colbert/scifact-original-1p5m-review.json) | 0.6973488925 | 0.6663637566 | 0.9110000000 |
+| [27M](tests/results/moedern-colbert/scifact-original-27m-review.json) | 0.7273556949 | 0.6967632275 | 0.9353333333 |
+
+The1.5M aggregates exactly equal the earlier native quality-only measurement;
+this does not establish all-vector/token/ranking parity on the integrated source.
+The115M original and full native/Q4 comparisons remain separate pending work.
+Six author-score checks per completed model differ from the ranking reduction
+by at most4.918e-7. No quantized or cross-client retrieval verdict follows yet.
+
+### Bounded28 October portfolio measurements
+
+WASM F32 same-input operator replay40771950208 passes48/48 comparisons at
+0.002 maximum absolute/0.99999 minimum row cosine, after64 exact own-output
+byte checks.38/48 comparisons are bit exact; worst absolute error1.9073486e-6
+and minimum row cosine0.9999999999999738. Natural layer3 down-projection
+still reaches0.003311038 and the old whole-model candidate remains rejected.
+Do not turn local positive controls into a composed parity or speed claim;
+see [the complete bounded receipt](tests/results/packaging/wasm-f32-operators-v1.json).
+
+Josev's original new20 authored panel scores56/60 fields (English29/30,
+German27/30, NOUL20/20, choice18/20, score18/20), request accuracy0.85.
+All four misses belong to the ordering stratum. These20 correlated requests
+represent10 translated scenario pairs, not60 independent benchmark samples.
+Native/Q4 task parity and broad quality remain pending. Independent scalar
+softmax reconstruction of retained logits differs by at most1.1437108e-7.
+See [the original review](tests/results/josev2b/task-quality-original-review.json).
+
+Josev's first Q4_K four-request replay uses2.94452GB against published F32's
+7.65918GB. Plain child wall113.662s/F32 versus95.741s/Q4 and peak RSS6.09090GB
+versus1.53205GB include fresh context/model load and the same four requests;
+these are bounded diagnostics, not a warm-service benchmark. Quality rejects
+the candidate: five discrete decisions match but ordinal errors0.0472567 and
+0.0110667 exceed0.001, with203 strict stage negatives. See
+[the complete result](tests/results/josev2b/q4k-v4-review.json) before using size
+or latency as a reason to promote it. A/B/C sizes remain predictions until
+actual quantizer readback and task review.
+
+MiniCPM's completed real-scan nativev2 reports median1,209.31s/page and summed
+31,724.57s across20 pages; original comparisons median204.2s. The median paired
+wall ratio5.73764 is descriptive across different CPU models (EPYC7B12 versus
+Xeon) and different residency (fresh native CLI/context per page versus a
+resident original model). It is not a controlled backend speed ratio. Native
+per-child RSS is5,049.1–5,145.4MiB; original RSS is cumulative and cannot support
+a memory-win claim. Native mean CER0.05147 versus original0.051485, with19/20
+ID sequences exact. See [all scopes and limits](tests/results/ocr-real-scans/minicpm-initial-native-v2-review.json).
+A controlled plain graph/scalar benchmark remains pending after the seven-arm
+continuation; exclude dumps/projection-capture overhead and match model hashes,
+threads, hardware and residency before judging production speed.
+
+MoEdern1.5M full source93 corpus replay: all5,483 tokenizations match, but six
+of10,966 matrices fail strict F32 parity (worst absolute0.055745665,
+minimum row cosine0.974025100). NDCG@10=0.697348892463,
+MRR@10=0.666363756614, recall@100=0.911 and top-one agreement1.0 match the frozen
+original. No Q4 execution or publication qualification follows from that quality
+agreement. See [the authenticated rejection](tests/results/moedern-colbert/scifact-native-1p5m-v3-review.json).

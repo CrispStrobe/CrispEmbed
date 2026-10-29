@@ -1,0 +1,56 @@
+{
+  "schema": "crispembed-moedern-scifact-parity-v1",
+  "original_first": true,
+  "variants": [
+    "1.5M",
+    "27M",
+    "115M"
+  ],
+  "queries": 300,
+  "documents": 5183,
+  "max_tokens": 512,
+  "query_tokens": 32,
+  "threads": 2,
+  "encode_budget_seconds": 28800,
+  "gates": {
+    "max_absolute": 0.002,
+    "min_row_cosine": 0.99999,
+    "max_metric_drop": 0.001,
+    "min_top1_agreement": 0.99
+  },
+  "quantized_policy": "Report unchanged F32 numerical gates separately; candidate retrieval qualification requires exact IDs/masks and every full-panel ranking gate. No quality gate is inferred from authored components.",
+  "author_score_pairs": [
+    [
+      0,
+      0
+    ],
+    [
+      0,
+      5182
+    ],
+    [
+      1,
+      1
+    ],
+    [
+      1,
+      5181
+    ],
+    [
+      299,
+      0
+    ],
+    [
+      299,
+      5182
+    ]
+  ],
+  "source_sha256": {
+    "tools/moedern-colbert/scifact_original.py": "bd1676501b2383e7110c9543149204624774ddb4ab75505ded2cf913dcb4c150",
+    "tools/moedern-colbert/contract.py": "5e4f0f19ddf74c358d81cef61665149d09a131642a258393ae8409a71afe3611",
+    "tools/moedern-colbert/reference.py": "bcaa2a9eee67a9ad9e77a794d35e87b9141d8587284759f7894aadf903580856",
+    "tools/moedern_scifact.py": "ce5e23583411423628c3b1407b61d6225cec64fe57f1fc8a3ab1ac84aa5080a8",
+    "tools/ci-heavy/moedern_scifact.py": "db932e55333863d1737144968b26632673ce2d67e50fc034a07bcc17b1ed4697",
+    "docs/moedern-colbert-source-contract.json": "9717685ed64ef0f9915204602c2721b0b10ad8284419f162f6bf25edf4644b8d"
+  }
+}

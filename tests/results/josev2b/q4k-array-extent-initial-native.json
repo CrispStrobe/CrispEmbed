@@ -1,0 +1,30 @@
+{
+  "schema": "crispembed-josev-q4k-hosted-v1",
+  "source": "765c758fee1fad529530ca3bc6fd0424a9c7aed3",
+  "completed": false,
+  "default_enabled": false,
+  "publication_qualified": false,
+  "independent_task_quality": false,
+  "commands": {},
+  "phase": "rejected",
+  "resources": {
+    "available_ram_bytes": 32593420288,
+    "free_disk_bytes": 1125767426048,
+    "cpu_count": 4,
+    "threads": 2,
+    "backend": "cpu",
+    "gpu_execution": false
+  },
+  "environment": {
+    "python": [
+      3,
+      13,
+      15
+    ],
+    "numpy": "2.2.6",
+    "isolated_prefix": true,
+    "torch_imported": false,
+    "numpy_owner_metadata_sha256": "22d648f53848429464ca643b40d73b49a920d47876fc77c395d4dca4e834904a"
+  },
+  "error": "ValueError: original array payload bytes differ"
+}

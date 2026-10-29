@@ -1,0 +1,32 @@
+{
+  "schema": "crispembed-josev-q4k-array-extent-review-v1",
+  "source": "765c758fee1fad529530ca3bc6fd0424a9c7aed3",
+  "version_label": "v3",
+  "completed": false,
+  "all_251_array_file_hashes_passed_before_rejection": true,
+  "model_accessed": false,
+  "native_compiled": false,
+  "inference_executed": false,
+  "classification": "NPY file extents were incorrectly compared with tensor-only payload extent",
+  "arrays": 251,
+  "file_bytes": 279119988,
+  "tensor_payload_bytes": 279087860,
+  "npy_header_bytes": 32128,
+  "header_bytes_per_array": 128,
+  "initial_producer": {
+    "setup.json": {
+      "bytes": 2730,
+      "sha256": "aa354c52401931126011c6aaa48bfaea25674b359dfa59809b19457232c6fff2"
+    },
+    "hosted.json": {
+      "bytes": 773,
+      "sha256": "a63682693b81dbd459204ac4c33c7d592944b4724cd1e76f7d082ab3a6fb115d"
+    },
+    "actual-model-panel.log": {
+      "bytes": 1016,
+      "sha256": "d58d9016b6b97f8c5b6080862e74b832337df32a6114a2b8464cbceced555aa9"
+    }
+  },
+  "correction": "Independently calculate and require both frozen tensor and file extents; preserve every original per-file SHA, shape, dtype and reference digest.",
+  "publication_qualified": false
+}

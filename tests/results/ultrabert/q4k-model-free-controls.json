@@ -1,0 +1,93 @@
+{
+  "schema": "crispembed-portfolio-q4k-controls-review-v1",
+  "run": 40722418008,
+  "source": "4b095f0f990026defff68ab00884dd98742a6b8f",
+  "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/40722418008",
+  "status": "model-free controls passed",
+  "model_inference": false,
+  "quantized_model_qualified": false,
+  "checks": [
+    {
+      "name": "Set up job",
+      "conclusion": "success"
+    },
+    {
+      "name": "Run actions/checkout@v4",
+      "conclusion": "success"
+    },
+    {
+      "name": "Run actions/setup-python@v5",
+      "conclusion": "success"
+    },
+    {
+      "name": "Run python tests/test_ovisocr2_metadata.py -v",
+      "conclusion": "success"
+    },
+    {
+      "name": "Post Run actions/setup-python@v5",
+      "conclusion": "success"
+    },
+    {
+      "name": "Post Run actions/checkout@v4",
+      "conclusion": "success"
+    },
+    {
+      "name": "Complete job",
+      "conclusion": "success"
+    },
+    {
+      "name": "Set up job",
+      "conclusion": "success"
+    },
+    {
+      "name": "Run actions/checkout@v4",
+      "conclusion": "success"
+    },
+    {
+      "name": "Run actions/setup-python@v5",
+      "conclusion": "success"
+    },
+    {
+      "name": "Exact array tooling for authored quantizer fixtures only",
+      "conclusion": "success"
+    },
+    {
+      "name": "Configure portable root targets without models",
+      "conclusion": "success"
+    },
+    {
+      "name": "Compile actual metadata profile and production quantizer",
+      "conclusion": "success"
+    },
+    {
+      "name": "Legacy F32, explicit mixed Q4_K and malformed critical-type controls",
+      "conclusion": "success"
+    },
+    {
+      "name": "Existing shared quantizer policy and override controls",
+      "conclusion": "success"
+    },
+    {
+      "name": "Run actions/upload-artifact@v4",
+      "conclusion": "success"
+    },
+    {
+      "name": "Post Run actions/setup-python@v5",
+      "conclusion": "success"
+    },
+    {
+      "name": "Post Run actions/checkout@v4",
+      "conclusion": "success"
+    }
+  ],
+  "artifact": {
+    "id": 12832749439,
+    "bytes": 6391,
+    "sha256": "d10e985affcae294ca6878e77bd2854e7f2f9caa18178e4f9d99dbd3efde23b9"
+  },
+  "cache": {
+    "bytes": 29086,
+    "sha256": "58cdb56dc2afd42195cf452fb5536736fb8f917cad7f73c2d8ae94afb4674214"
+  },
+  "limits": "Production quantizer authored fixtures and UltraBERT metadata guards only; no checkpoint conversion, embeddings, OCR output or retrieval qualification."
+}

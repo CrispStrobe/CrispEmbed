@@ -1,0 +1,33 @@
+{
+  "schema": "crispembed-moedern-scifact-original-review-v1",
+  "variant": "1.5M",
+  "source": "2a872f9fe7ac5637286ff7bda2b5c19afee23cd7",
+  "completed": true,
+  "provider": "Kaggle CPU",
+  "version_label": "v1",
+  "submitted_script_sha256": "a862c10cda1cff3f29545f9c1c1f2907f83623e9828dc46f2c03b690c8a572c5",
+  "producer_json": {
+    "bytes": 18708,
+    "sha256": "4fa1f8ded4a2f7b5c28272915539f83e187358d32b330690080f300f75358040"
+  },
+  "rows": 5483,
+  "queries": 300,
+  "documents": 5183,
+  "all_driver_source_hashes_checked": true,
+  "original_only": true,
+  "preflight_observer_public_slice_checks": 13,
+  "author_maxsim_pairs": 6,
+  "author_protocol_max_absolute": 4.76837158203125e-07,
+  "metrics": {
+    "ndcg_at_10": 0.6973488924629391,
+    "mrr_at_10": 0.6663637566137566,
+    "recall_at_100": 0.911
+  },
+  "native_qualified": false,
+  "quantized_qualified": false,
+  "limits": [
+    "Raw1.7GB vectors and93MB row journal remain remote; their identities are frozen by the unchanged producer report and must all be rehashed on a hosted native worker before model access.",
+    "Aggregate metrics exactly equal the earlier native1.5M quality-only run; this does not replace an all-vector/token/mask/ranking replay on the integrated source.",
+    "No original outputs were replaced or repeated: this is new full-SciFact coverage."
+  ]
+}

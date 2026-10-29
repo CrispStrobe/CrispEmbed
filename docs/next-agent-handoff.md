@@ -1,8 +1,8 @@
-> **Current starting point:** [27 October wrap-up and executable handoff](handoff-2026-10-27.md).
+> **Current starting point:** [28 October portfolio continuation](handoff-2026-10-28.md).
 > It supersedes older preparation/status instructions below. Main receives audit
 > documentation; candidate runtimes and in-flight jobs remain explicitly separate.
 
-# Executable handoff — updated 27 October 2026
+# Executable handoff — updated 28 October 2026
 
 Read this file, [PLAN](../PLAN.md), [the model contract](ultrabert.md),
 [contributing](contributing.md) and [the shared consumer handoff](current-state-and-next-steps.md).

@@ -49,6 +49,7 @@ struct composed_context::implementation {
     josev2b_head::context * head = nullptr;
     int threads = 0;
     bool packed = false;
+    bool quantized = false;
     ~implementation() {
         josev2b_head::free(head);
         core_gguf::free_weights(owner);
@@ -117,13 +118,17 @@ std::unique_ptr<composed_context> composed_context::load_packed(const char * pat
             std::unique_ptr<ggml_context, decltype(&ggml_free)> tensors(raw_tensors, ggml_free);
             std::unique_ptr<gguf_context, decltype(&gguf_free)> metadata(raw_metadata, gguf_free);
             require(metadata && tensors, "Cannot read packed tensor metadata");
-            require(josev2b_packed::metadata_valid(metadata.get(), error), "Packed source/profile rejected");
+            require(josev2b_packed::metadata_valid(metadata.get(), error, core_env::on("CRISPEMBED_JOSEV_QUANT")),
+                    "Packed source/profile rejected");
+            p.quantized = josev2b_packed::quantized(metadata.get());
             core_gguf::tensor_map all, backbone, head;
             for (auto * t = ggml_get_first_tensor(tensors.get()); t; t = ggml_get_next_tensor(tensors.get(), t))
                 require(all.emplace(ggml_get_name(t), t).second, "Duplicate packed GGML tensor name");
             partition(all, backbone, head);
             qwen35_ocr::decoder_weights validated;
-            require(josev2b_backbone::map(backbone, validated), "Packed backbone metadata schema rejected");
+            require(p.quantized ? josev2b_backbone::map_quantized(backbone, validated)
+                                : josev2b_backbone::map(backbone, validated),
+                    "Packed backbone metadata schema rejected");
             require(josev2b_head::validate_packed_shapes(head, error), "Packed head metadata schema rejected");
         }
         p.backend = ggml_backend_cpu_init();
@@ -133,7 +138,9 @@ std::unique_ptr<composed_context> composed_context::load_packed(const char * pat
                 "Packed F32 weight load failed");
         core_gguf::tensor_map backbone, head;
         partition(p.owner.tensors, backbone, head);
-        require(josev2b_backbone::map(backbone, p.weights), "Packed backbone tensor map rejected");
+        require(p.quantized ? josev2b_backbone::map_quantized(backbone, p.weights)
+                            : josev2b_backbone::map(backbone, p.weights),
+                "Packed backbone tensor map rejected");
         p.head = josev2b_head::init_borrowed_cpu(head, threads, error);
         require(p.head != nullptr, "Packed borrowed head rejected");
         p.threads = threads;
@@ -162,7 +169,9 @@ bool composed_context::decide(const std::string & request, composed_result & res
         require(p.frontend.encode_record(request, encoded, error), "Josev request rejected");
         const std::vector<int> ids(encoded.input_ids.begin(), encoded.input_ids.end());
         qwen35_ocr::decoder_outputs backbone;
-        require(josev2b_backbone::run(p.weights, ids, p.threads, backbone), "Josev native backbone failed");
+        require(p.quantized ? josev2b_backbone::run_quantized(p.weights, ids, p.threads, backbone)
+                            : josev2b_backbone::run(p.weights, ids, p.threads, backbone),
+                "Josev native backbone failed");
         require(backbone.norm.size() == ids.size() * 2048 && backbone.logits.empty(),
                 "Josev native hidden-only output shape differs");
         josev2b_head::input input;

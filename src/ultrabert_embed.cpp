@@ -114,7 +114,10 @@ ultrabert_context * ultrabert_init(const char * path, int threads) {
     try {
         auto ctx = std::make_unique<ultrabert_context>();
         std::unique_ptr<gguf_context, decltype(&gguf_free)> meta(core_gguf::open_metadata(path), gguf_free);
-        ultrabert_profile::validate(meta.get());
+        const bool quantized = core_gguf::kv_u32(meta.get(), "general.file_type", UINT32_MAX) != GGML_FTYPE_ALL_F32;
+        require(!quantized || core_env::on("CRISPEMBED_ULTRABERT_QUANT"),
+                "UltraBERT quantized profile requires CRISPEMBED_ULTRABERT_QUANT=1");
+        ultrabert_profile::validate(meta.get(), quantized);
         require(ultrabert_profile::load_tokenizer(meta.get(), ctx->tokenizer, ctx->vocab), "unsupported vocabulary");
         ctx->backend = ggml_backend_cpu_init();
         require(ctx->backend != nullptr, "CPU backend unavailable");

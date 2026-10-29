@@ -235,6 +235,9 @@ public:
     // GPT-2 path uses a simpler whitespace-split pre-tokenizer (Qwen3 decoder).
     // Set separately from load() so a merges reload does not clear it.
     void set_gpt2_regex_pretok(bool v) { gpt2_regex_pretok_ = v; }
+    // Model-specific context selection, never a process-global GPT2/CLIP mode.
+    // Only the UltraBERT profile configures this default-off alternative.
+    void set_ultrabert_unicode_gpt2(bool v) { ultrabert_unicode_gpt2_ = v; }
 
     // Enable the o200k_base regex pre-tokenizer (tokenizer.ggml.pre = "o200k";
     // granite-embedding-97m-multilingual-r2). Takes precedence over the GPT-2
@@ -274,6 +277,7 @@ private:
     bool spm_style_ = false;              // SentencePiece BPE mode
     bool spm_dummy_prefix_ = false;       // SentencePiece add_dummy_prefix
     bool clip_style_ = false;             // OpenAI CLIP text BPE (</w> end-of-word suffix)
+    bool ultrabert_unicode_gpt2_ = false; // Snapshotted UltraBERT-only Unicode alternative.
     bool gpt2_regex_pretok_ = false;      // GPT-2 ByteLevel regex pre-tokenizer (ModernBERT)
     bool o200k_regex_pretok_ = false;     // o200k_base regex pre-tokenizer (granite-r2 97m)
     bool ministral_regex_pretok_ = false; // Ministral3/Tekken case-aware ByteLevel split
@@ -301,4 +305,5 @@ private:
     // Returns raw-byte pre-tokens (before byte-level encoding). Used by the
     // GPT-2 path when gpt2_regex_pretok_ is set (ModernBERT).
     std::vector<std::string> gpt2_pretokenize(const std::string & text) const;
+    std::vector<std::string> ultrabert_unicode_gpt2_pretokenize(const std::string & text) const;
 };
