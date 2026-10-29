@@ -1,0 +1,47 @@
+{
+  "schema": "crispembed-unlimited-retained-get-empty-member-rejection-v1",
+  "run_id": 40834740153,
+  "source": "fbd8f68f6753a64751a02f42771fc475670f64e4",
+  "conclusion": "failure",
+  "small_artifact": {
+    "id": 12880749761,
+    "name": "unlimited-retained-get-review-40834740153",
+    "size_in_bytes": 14713,
+    "digest": "sha256:81eae1e1a1bad10d1fa0bae9ce9ea4635eca22dec9425220b08ad215fdea111d",
+    "expires_at": "2027-01-27T07:19:56Z"
+  },
+  "members": {
+    "retained-source.json": {
+      "bytes": 40,
+      "sha256": "f38ae4ddca1b117ddc22840870cb9d861e663eeda3d41bd8cb39a61b55ad20ce"
+    },
+    "retained-review/transfer.json": {
+      "bytes": 108453,
+      "sha256": "a06cda650d7f1d62aae3f4b824c2ab2af50ca5731198cc19d261899457760bef"
+    }
+  },
+  "phase": "authenticate-540-payloads",
+  "failed_member": "quantize-last1/stderr",
+  "service": {
+    "version_label": "v3",
+    "state": "ERROR",
+    "pages": 7,
+    "listed_members": 674,
+    "producer_source": "410541f9c2587d345fb0d575a3315ce3c032a02a",
+    "submitted_script_bytes": 7899,
+    "submitted_script_sha256": "dd11f6e7b530489fa3bcf09b858051b47230cd3f77871b7c7beafe74ec396b6e"
+  },
+  "panel": {
+    "bytes": 514832,
+    "sha256": "9c0aae284ef9af732c51bf3ccfe5996b71cb5d8b448dc1bf5f6802468cf53ba9",
+    "ranged_get": false
+  },
+  "journaled_authenticated_files": 537,
+  "journaled_authenticated_bytes": 1419601456,
+  "native_forwards": 0,
+  "original_forwards": 0,
+  "quantizer_runs": 0,
+  "structural_audit_started": false,
+  "publication_qualified": false,
+  "limits": "Zero-byte stderr was rejected by an overly strict transfer-size precondition. The second IO worker may have streamed later members; no all540 admission, array analysis or Q4 inference occurred. Large inputs remain at immutable v3."
+}

@@ -68,7 +68,7 @@ def download(url, path, pin, *, opener=urllib.request.urlopen):
     A bad response never becomes an admitted file. No signed URL is serialized.
     """
     path = Path(path)
-    c.require(type(pin['bytes']) is int and 0 < pin['bytes'] <= 8 * 2**30 and
+    c.require(type(pin['bytes']) is int and 0 <= pin['bytes'] <= 8 * 2**30 and
               re.fullmatch('[0-9a-f]{64}', pin['sha256']), 'Explicit retained byte/SHA pin required')
     partial = path.with_name(path.name + '.partial')
     c.require(not path.exists() and not partial.exists() and not path.is_symlink() and not partial.is_symlink(),
@@ -78,7 +78,9 @@ def download(url, path, pin, *, opener=urllib.request.urlopen):
     ranged = size >= 2**30
     try:
         with partial.open('xb') as out:
-            for start in range(0, size, 64 * 2**20 if ranged else size):
+            # Empty producer logs are real manifest members: authenticate a
+            # zero-length GET and the empty SHA, rather than skipping them.
+            for start in (range(0, size, 64 * 2**20) if ranged else (0,)):
                 end = min(size - 1, start + 64 * 2**20 - 1) if ranged else size - 1
                 headers = {'Accept-Encoding': 'identity'}
                 if ranged:

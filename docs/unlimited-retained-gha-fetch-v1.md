@@ -50,3 +50,12 @@ output. Reuse the first candidate; the2/8/22 selected stacked-expert recipes and
 all their higher-precision exclusions remain unchanged. No quantizer rerun,
 original/native model forward, build, model alias or default change belongs in
 this read-only delivery workflow.
+
+Actual40834740153 atfbd8f68f passes exact-v3 service/script/all-seven-page
+admission and authenticates the panel plus537 journaled files/1,419,601,456 bytes.
+It then rejects the producer's zero-byte `quantize-last1/stderr`, because the
+first downloader required positive file lengths. The [initial review](../tests/results/unlimited-ocr2/retained-get-empty-member-initial-review.json)
+retains that failure. The correction accepts a zero-length member only after
+a real200 GET, Content-Length0, no extra byte and exact empty-file SHA; it never
+skips an empty member. All540-file, source, model, structure and numerical gates
+remain unchanged. The initial run never reaches array analysis or Q4 inference.

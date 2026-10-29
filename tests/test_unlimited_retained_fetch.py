@@ -45,6 +45,19 @@ class Controls(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'Fresh'):
             f.download('https://example.invalid/signed', path, pin, opener=opener)
 
+    def test_empty_manifest_member_requires_actual_empty_get_and_sha(self):
+        path, pin, opener = self.run_transfer(b'')
+        proof = f.download('https://example.invalid/empty', path, pin, opener=opener)
+        self.assertEqual(path.read_bytes(), b'')
+        self.assertEqual(proof['bytes'], 0)
+        self.assertEqual(proof['sha256'], hashlib.sha256(b'').hexdigest())
+        for response, digest in [(Response(b'x', headers={'Content-Length': '0'}), pin['sha256']),
+                                 (Response(b''), '0' * 64)]:
+            path, bad, opener = self.run_transfer(b'', pin=dict(bytes=0, sha256=digest), response=response)
+            with self.assertRaisesRegex(ValueError, 'Retained GET rejected'):
+                f.download('https://example.invalid/empty', path, bad, opener=opener)
+            self.assertFalse(path.exists())
+
     def test_corrupt_truncated_excess_encoded_or_error_response_never_admitted(self):
         body = b'unchanged producer bytes'
         for response in [Response(body, status=404), Response(body[:-1], headers={'Content-Length': str(len(body))}),
