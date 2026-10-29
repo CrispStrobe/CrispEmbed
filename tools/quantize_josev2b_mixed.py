@@ -13,6 +13,7 @@ import struct
 import sys
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'tools'))
+from gguf_file_type_values import q4_k_file_type
 import quantize_josev2b_q4k as old
 SOURCE=old.SOURCE
 PARAMETERS=old.PARAMETERS
@@ -188,7 +189,9 @@ def verify_conversion(source,output,expected,identity,*,seal=False,vector=False)
     for p in (a,b):
         scalar(p,'general.architecture',8,'josev2b_systemone');scalar(p,'general.license',8,'apache-2.0')
         scalar(p,'josev2b.packed.format',8,OLD_FORMAT)
-    scalar(b,'general.file_type',4,12);scalar(b,'general.quantization_version',4,2)
+    require(b['metadata'].get('general.file_type',{}).get('kind')==4 and
+            q4_k_file_type(b['metadata']['general.file_type']['value']),'unsupported Q4_K file-type metadata')
+    scalar(b,'general.quantization_version',4,2)
     changed={'general.file_type','general.quantization_version'}
     require(set(b['metadata'])==set(a['metadata'])|changed,'metadata names differ')
     for name in set(a['metadata'])-changed:
@@ -220,7 +223,7 @@ def verify_conversion(source,output,expected,identity,*,seal=False,vector=False)
         for name in set(b['metadata'])-{'josev2b.packed.format'}:
             require(final['metadata'][name]['raw_sha256']==b['metadata'][name]['raw_sha256'],'seal changed other metadata')
     return dict(recipe=identity,tensors=records,counts={TYPES[t]:n for t,n in counts.items()},parameters=PARAMETERS,
-                output_bytes=b['bytes'],sealed=seal,critical292_f32_byte_exact=True,independent_f16_rounding_exact=True,
+                output_bytes=b['bytes'],general_file_type=b['metadata']['general.file_type']['value'],sealed=seal,critical292_f32_byte_exact=True,independent_f16_rounding_exact=True,
                 semantic_shapes_unchanged=True,publication_qualified=False)
 
 

@@ -29,7 +29,7 @@ quantization gates, architecture/source metadata, critical precision, real-Q4
 presence and shape checks remain. A generic Q3/Q6 file is not admitted merely
 because its header integer collides. MiniCPM and Unlimited use actual tensor
 types rather than this file header; their new publication contracts still need
-canonical metadata. Valid F32 behavior is unchanged. No gate default, C ABI,
+canonical metadata. Valid F32 behavior is unchanged. No runtime gate default, C ABI,
 release version, app0.17.12 pin or model alias changes here.
 
 ## Frozen source boundaries
@@ -38,8 +38,10 @@ The whole baseline is633f435bdee220a7f424a9cfcf54847f5bf20878, with source tree
 `0c4341808c7136b84f0085da85e8c22b951c27a1` and exact a06 GGML. It already
 contains six MoEdern padded-Q4 source differences from9c475d0d; those objects
 are preserved and declared separately. All other baseline source, including the
-Josev/Qwen arithmetic, matches9c. This successor changes only three profile
-metadata headers and the writer, and adds the shared standard constants header.
+Josev/Qwen arithmetic, matches9c. This successor changes three profile metadata headers, the writer and the
+metadata-only checks in three current converter entry points, and adds shared
+standard constants. The converter checks accept standard14/legacy12 only while
+retaining all actual-Q4 storage, shape, finite and critical-byte requirements.
 The source closure pins all runtime/build/old-scorer/frozen-reference inputs,
 all six existing MoE object pairs, and every new helper. It never widens a
 historical whole-tree guard. Current mixed recipe producer633/06 stays frozen.
@@ -118,7 +120,9 @@ No selected models or actual bridge results are declared by this preparation.
 NEW20 owner must separately pin and review exact successor runtime objects,
 canonicalization proof, legacy/canonical whole-model hashes and same-payload
 report before any new holdout output. Ultra/MoE actual model continuity and their
-unchanged vector/ranking/task gates remain necessary before publication. Future
-converter wrappers need explicit new standard metadata contracts; old converters
-that assert12 are intentionally not edited or silently bypassed. Source controls
+unchanged vector/ranking/task gates remain necessary before publication. The three current converters now validate standard14 and legacy12 metadata
+through one typed stdlib predicate; their full actual tensor inventory checks
+remain unchanged. Original commits and their strict source contracts remain
+frozen; future source-closed callers must explicitly declare these metadata-only
+source deltas rather than bypassing a historical guard. Source controls
 alone do not qualify any model. No workflow is dispatched here.

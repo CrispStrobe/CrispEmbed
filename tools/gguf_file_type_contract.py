@@ -7,7 +7,9 @@ from pathlib import Path
 import subprocess
 ROOT=Path(__file__).resolve().parents[1]
 PATH=ROOT/'docs/gguf-standard-file-type-v1.json'
-EXISTING={'src/josev2b_packed_profile.h','src/ultrabert_profile.h','src/moedern_q4k_profile.h','tools/quantize.cpp'}
+EXISTING={'src/josev2b_packed_profile.h','src/ultrabert_profile.h','src/moedern_q4k_profile.h','tools/quantize.cpp',
+          'tools/quantize_josev2b_q4k.py','tools/quantize_josev2b_mixed.py','tools/moedern-colbert/quantize_q4k_padded.py'}
+BINDINGS=('python','crispembed','crispembed-sys','flutter','Cargo.toml','Cargo.lock')
 NEW_HEADER='src/core/gguf_file_type.h'
 MOE={'src/moedern_family_engine.cpp','src/moedern_family_engine.h','src/moedern_q4k_profile.h',
      'src/moedern_text.cpp','src/moedern_text_frontend.cpp','src/moedern_text_frontend.h'}
@@ -39,11 +41,11 @@ def validate(cfg):
         require(git('rev-parse',cfg['base']+':'+name).decode().strip()==pin['base_blob'],'preserved633 object differs')
         if pin['old_blob']is not None:require(git('rev-parse',cfg['baseline_9c']+':'+name).decode().strip()==pin['old_blob'],'old9c object differs')
         else:require(name not in git('ls-tree','-r','--name-only',cfg['baseline_9c'],'src').decode().splitlines(),'old absent object differs')
-    require(not git('diff','--name-only',cfg['baseline_9c'],cfg['base'],'--','CMakeLists.txt','bindings'),'baseline CMake/bindings changed')
-    required=set(git('ls-tree','-r','--name-only',cfg['base'],'src','tests/josev-q4k','tests/josev-packed','bindings').decode().splitlines())-EXISTING
+    require(not git('diff','--name-only',cfg['baseline_9c'],cfg['base'],'--','CMakeLists.txt',*BINDINGS),'baseline CMake/bindings changed')
+    required=set(git('ls-tree','-r','--name-only',cfg['base'],'src','tests/josev-q4k','tests/josev-packed',*BINDINGS).decode().splitlines())-EXISTING
     legacy=json.loads((ROOT/'docs/josev2b-q4k-v1.json').read_text())
     required|=(set(legacy['owned_sha256'])|set(legacy['protected_sha256']))-EXISTING
-    required|={'docs/josev2b-q4k-v1.json','tools/quantize_josev2b_mixed.py','tools/ci-heavy/josev2b_mixed_recipes.py',
+    required|={'docs/josev2b-q4k-v1.json','tools/ci-heavy/josev2b_mixed_recipes.py',
                'tools/josev2b_mixed_contract.py','docs/josev2b-mixed-recipes-v1.json'}
     require(required<=set(cfg['protected_sha256']),'complete source/build/scorer/original/legacy closure required')
     require({p for p in cfg['owned_sha256']if p.startswith('src/')}=={NEW_HEADER},'only declared standard metadata header may be new runtime source')

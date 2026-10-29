@@ -149,6 +149,39 @@ class Controls(unittest.TestCase):
         methods_source=(ROOT/'tools/ci-heavy/gguf_file_type_controls.py').read_text()
         self.assertIn('actual_cli_methods=13',methods_source)
 
+    def test_all_three_current_converter_header_checks_accept_only12_or14(self):
+        import gguf_file_type_values as values
+        for value in (12,14):self.assertTrue(values.q4_k_file_type(value))
+        for value in (0,1,11,13,15,16,18,True,False,12.,'12',None):self.assertFalse(values.q4_k_file_type(value))
+        def load(path,name):
+            spec=importlib.util.spec_from_file_location(name,ROOT/path);module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
+        legacy_tests=load('tests/test_josev_q4k_packer.py','old_q4_fixtures')
+        mixed_tests=load('tests/test_josev_mixed_recipes.py','old_mixed_fixtures')
+        for helper,fixtures in ((legacy_tests.q,legacy_tests.Controls),(mixed_tests.q,mixed_tests.Controls)):
+            for value in (12,14,0,11,13,15,16):
+                fixture_owner=fixtures();self.addCleanup(fixture_owner.doCleanups)
+                authored=fixture_owner.authored();rows,source,out=authored[:3]
+                parsed=helper.parse(out,rows);offset=parsed['metadata']['general.file_type']['value_offset']
+                with out.open('r+b')as stream:stream.seek(offset);stream.write(struct.pack('<I',value))
+                parameters=sum(__import__('math').prod(v)for v in rows.values())
+                with patch.object(helper,'PARAMETERS',parameters):
+                    def verify():
+                        if helper is legacy_tests.q:return helper.verify_conversion(source,out,rows)
+                        return helper.verify_conversion(source,out,rows,'A')
+                    if value in (12,14):self.assertEqual(verify()['general_file_type'],value)
+                    else:
+                        with self.assertRaisesRegex(ValueError,'file-type'):verify()
+        moe=load('tools/moedern-colbert/quantize_q4k_padded.py','moe_current_header')
+        class Field:
+            types=[4]
+            def __init__(self,value):self.value=value
+            def contents(self):return self.value
+        for value in (12,14):moe.validate_file_type(Field(value))
+        for value in (0,11,13,15,16,12.,True):
+            with self.assertRaises(ValueError):moe.validate_file_type(Field(value))
+        bad=Field(14);bad.types=[6]
+        with self.assertRaises(ValueError):moe.validate_file_type(bad)
+
     def test_writer_has_explicit_standard_and_legacy_policy(self):
         source=(ROOT/'tools/quantize.cpp').read_text();header=(ROOT/'src/core/gguf_file_type.h').read_text()
         self.assertIn('--legacy-file-type-header',source);self.assertIn('core_gguf_file_type::standard(ftype)',source)
