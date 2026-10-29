@@ -1335,3 +1335,13 @@ capacity before submission. Avoid duplicate model runs: if moving to Kaggle,
 cancel only our still-queued/never-started Gemma40868968991 after checking
 service/job steps and preserve its cancellation/source receipt. Do not cancel
 other work. New protocol/source review is required before hosted execution.
+
+Router real-input source checkpoint: the separately closed
+[protocol](docs/moedern-router-real-v1.json) and
+[hosted commands/limits](docs/moedern-router-real-v1.md) admit29 hash-pinned
+selected files plus two canonical native I64 streams bound pointwise to the
+actual original IDs and frozen one-row difference. The two native SHAs are
+first-observed hosted values, never invented prior pins or new gold. Twelve
+source/stdlib controls pass; compilation, own-byte anchors, component comparisons
+and actual exact-version hosted evidence remain pending. No job is submitted by
+this source preparation and no production/precision change is made.
