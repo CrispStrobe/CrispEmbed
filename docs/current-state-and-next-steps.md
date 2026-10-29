@@ -1,49 +1,59 @@
 # CrispMath and CrispEmbed: current state and executable lanes
 
 <!-- BEGIN CURRENT VENDOR EXECUTION -->
-## Vendor execution —29 October2026,07:25 UTC
+## Vendor execution —29 October2026,10:32 UTC
 
 Read the [current portfolio execution handoff](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/handoff-2026-10-29.md)
 and [precision/task matrix](https://github.com/CrispStrobe/CrispEmbed/blob/main/PLAN.md).
-The app stays pinned to immutable0.17.12. Feature runtime, queued experiments
-and successful component checks do not constitute a release or model qualification.
+The app stays pinned to immutable0.17.12. Experimental runtime and component
+checks do not establish a release or model qualification.
 
-- **Josev:** A/B/C actual40787077302 is reviewed and all three are rejected.
-  C first fails at layer20 and still misses one0.001 ordinal gate. The new
-  [protected Q8/two-matrix Q4 job40834737477](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40834737477)
-  preserves292 critical F32 tensors, all original budgets and four development
-  cases; NEW20 native remains closed.
-- **MoEdern:**1.5M full-token/retrieval control passes but six matrices remain
-  strict-negative; fresh original drift is diagnostic.27M/115M stop at one/two
-  exact-router ties. [Retained18-comparison40834748271](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40834748271)
-  completes only saved attribution inputs, without model/original forwards.
-  Actual hosted protected-Q8 fixture remains separately claimed.
-- **UltraBERT:** full5483-row F32/eight-Ref/300-ranking control is positive;
-  first Q4 times out with no candidate result. The overbroad whole-library
-  symbol audit is repaired in [freeze40834743025](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40834743025).
-  Review durable retained freeze before one last-four-FFN Q4 shard; no full
-  F32/original repeat and no Q4 qualification from timeout.
-- **Unlimited:** all16 F16 modes pass; initial Q4 stops at protected physical
-  rank before any Q4 forward. [Exact-v3 GET/read-only40834740153](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40834740153)
-  authenticates all540 retained files before arrays, avoiding the failed mount.
-  Corrected native form separately matches934 IDs/full text/EOS exactly.
-- **MiniCPM:** corrected retained [40831080193](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40831080193)
-  completes138 comparisons with zero forwards:99 pass/39 strict failures;
-  all23 input pixels exact, original merger LIST[0] maps only overview. Only
-  seven missing arms follow independent review; no23-arm/original recapture.
-- **WASM:** actual compare-only40831082898 confirms stored-weight-F32 rejection,
-  7/25 pass and18 fail against unchanged native targets. [Norm-risk40834745535](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40834745535)
-  requires30 byte anchors and12 norm bit recoveries before56 test comparisons.
-  No production/default change follows from operator parity.
-- **Shared tooling:** actual standard-header and Q8 controls pass13 real C
-  quantizer/readback pairs and payload-preserving profile stamps. This is
-  model-free. Require both Q8/Q4_K, intermediate errors/magnitudes plus actual
-  task output, full public consumers, final-source Ovis14/11 on both gates,
-  assets/platforms and immutable HF readback before release/publication.
+- **Josev:** [protected40838785499](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/josev2b-protected-recipes-v1-result.md)
+  completes with strict F32 controls; allfour candidates rejected. Final-pair Q4
+  passes ordinal but misses two probability gates; extra F32 down projections
+  have negligible effect on these four cases. New source3cc96dbab isolates
+  final gate Q4/up Q4/pair Q8 in queued40853720400. NEW20 remains closed.
+- **MoEdern:** [retained18](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/moedern-three-doc-compare-v2-result.md)
+  yields6 pass/12 failures without forwards, with one fresh-original/native
+  document mismatch and separate frozen-original drift. One-document actual
+  capture CPUv1/e7ff stops at disk admission before any command/reference/model;
+  a separately declared one-case resource profile is in progress. The
+  [Q8 authored component40837105606](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/moedern-q8-component-controls-result.md)
+  passes; no real-model Q8 qualification.27M/115M router failures remain;
+  [authored top-k operator](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/moedern-router-topk-component-result.md)
+  retains126 pass/18 routed failures across144 Ref stages, with source selector
+  matching198 ordered index rows. No real-model causal conclusion follows.
+- **UltraBERT:** [retained freeze](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/ultrabert-retained-freeze-result.md)
+  passes all5483 F32 rows/eight Ref/300 rankings without repeated forwards.
+  First conservative Q4 model40843704011 completes conversion only:
+  576,997,440 bytes,12 Q4 plus206 F32 tensors. [Inventory review](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/ultrabert-first-conservative-q4-model-result.md)
+  is positive for storage only. Queued40855927708 at a5feac83e permits only
+  shard0/686 rows, no original/F32 rerun, other shard or Q8 qualification.
+- **Unlimited:** exact retained-v3 GET40840732942 completes authentication of
+  all540 files/7,901,314,457 bytes before array imports; no forwards or quantizer.
+  [Structural proof](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/unlimited-retained-v3-structural-result.md)
+  is reviewed. A separately closed first-candidate reuse caller is in progress;
+  same-host F16 gates precede Q4. Initial zero-byte failure remains preserved.
+- **MiniCPM:** [retained138](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/minicpm-retained-analysis-v2-result.md)
+  completes99 pass/39 strict failures,23 exact input pixels, without forwards.
+  Seven-only40838280839 fails before model execution with missing`sha256` key;
+  the
+  first checkpoint attributes entry has only a Git blob identity. Reviewed v3
+  source2fde0c64b/queued40855153707 repairs that verification, preserving all
+  earlier sources and the seven-only body. Never recapture23 originals.
+- **WASM:** stored-weight-F32 remains rejected7/25 pass. Norm-risk component
+  recovery is positive; full live-input norm A/B40852835039 is running at64eef684,
+  with12 actual component byte recoveries/Ref controls passed and full model
+  A/B pending. Actual returned-byte anchors include signed zero; old OFF controls
+  before ON, and unchanged ten-case/eight-stage budgets. No default flip.
+- **Remaining closure:** both Q8/Q4_K require actual original intermediates,
+  errors/magnitudes and final task outputs; component cosine alone is insufficient.
+  Final integrated-source Ovis14/11 on both gates, public consumers, portable
+  assets/platforms and immutable HF readback remain required before publication.
 
-The five new submissions above were queued at07:20 UTC: query their actual
-state before reuse. Use one bounded lane, isolated worktrees and hosted heavy
-work; retain large raw artifacts remotely and keep private continuity outside Git.
+Check actual service outcomes before reuse; source preparation or a service-level
+success is not numerical qualification. Use isolated bounded lanes and hosted
+heavy work. Keep large artifacts remote and private continuity outside Git.
 <!-- END CURRENT VENDOR EXECUTION -->
 
 Current vendor execution: [29 October portfolio continuation](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/handoff-2026-10-29.md).

@@ -7114,3 +7114,31 @@ max0.09980–0.12817; its worst layer26 error639.711914/cosine0.93838806 is
 reported against original magnitude2037.914429. Structural completion and all23
 prior decoded-exact arms remain distinct from these failures. No speed or
 production-quality improvement follows from this compare-only analysis.
+
+## Ultra retained F32 retrieval boundary (29 October)
+
+[Zero-forward freeze40834743025](docs/ultrabert-retained-freeze-result.md) retains
+5483 positive F32 vectors: worst raw absolute0.00109803677/cosine0.999999996825,
+normalized max1.09114e-5 and reported300 ranking metrics exact/top1=1. No new
+F32 timing, Q4 quality or speed claim follows; the first conservative Q4 model
+conversion and686-row shard0 require separate immutable source/model pins.
+
+## MoEdern first strict mismatch after retained comparison (29 October)
+
+The [18-matrix diagnostic](docs/moedern-three-doc-compare-v2-result.md) leaves
+12 strict negatives. Fresh original versus retained native agrees for two
+documents;24726600 differs in one eligible token, input58/token29084, selected
+row57/component19: original0.02338916995 versus native0.00055977370, absolute
+0.02282939624/cosine0.9957477159. Capture actual intermediate/selection values
+under ordinary-anchor and byte-neutral observation gates before inferring cause.
+
+### 29 October — Josev protected storage versus final task error
+
+[Actual protected recipes](docs/josev2b-protected-recipes-v1-result.md) occupy
+3,630,289,376 /4,517,384,672 /5,483,909,600 /4,879,929,824 bytes. Last-pair Q4
+with F16 down first fails at layer23 (first-case max0.820132, RMS0.0195813,
+cosine0.99865779, original magnitude16.7336); minimum first-failure cosine
+across cases0.99848469. Both ordinal errors pass0.001, but probabilities
+0.000145704/0.000179201 fail0.0001. Keeping24 down projections F32 changes
+these probability errors only~1e-7 on the oldfour. No qualified quantized model
+or whole-task/held-out quality improvement is established.
