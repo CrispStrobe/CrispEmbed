@@ -1,33 +1,41 @@
 # CrispMath and CrispEmbed: current state and executable lanes
 
 <!-- BEGIN CURRENT VENDOR EXECUTION -->
-## Vendor execution — 28 October 2026
+## Vendor execution — 29 October 2026
 
 Use the [current portfolio handoff](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/handoff-2026-10-28.md)
-and candidate branch `work/portfolio-closure-q4k-20261028`; main has no new runtime
-release or app-pin change. Five quantized fronts and final integration remain open.
+and candidate branch `work/portfolio-closure-q4k-20261028`; experimental runtimes
+remain separate from main. Five quantized fronts and final integration are open.
 
-- Josev new20 original passes predeclared floors:56/60 fields; all four original
-  mistakes remain. Corrected four-case Q4 is running before native20 admission.
-- All three MoEdern SciFact originals are frozen. Corrected archive discovery at
- 1543475b8 enables1.5M retry/115M first replay; corrected27M provider3f82073e is
- submitted as [40777203075](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40777203075).
-- UltraBERT full F32/three Q4 recipes and Unlimited mixed-Q4 v3 are running.
-- MiniCPM graph v3 exhausted hosted disk after23/30 decoded-exact arms;15 strict
- numerical negatives remain. Analyze retained intermediates and complete only7
- missing arms with bounded canonical-output retention.
-- WASM [40771950208](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40771950208)
- passes64 anchors/48 same-input F32 operators, worst absolute1.90735e-6. Earlier
- whole-model quantized failures remain; natural drift propagation is unresolved.
-- Exact form bytes and missing MiniCPM original are recovered. The20-image RGB
- decode-only audit is submitted as [40776499260](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40776499260);
- remaining model mismatches still need intermediate/decoded attribution.
-- Old Ovis source passes gate0's eleven F16 cases; gate1 completed eight before
- a document timeout. New bounded document-only audit budget is prepared, but
- final source declaration, full14/11 replay, artifacts/consumers/main CI remain.
+- Josev Q4 v4 completed: strict F32 passes227 stages/four typed cases; Q4 retains
+  203 stage negatives and two ordinal failures. A/B/C development40787077302 is
+  queued before candidate selection and NEW20 native admission. Original56/60
+  decisions and all four original mistakes remain frozen.
+- MoEdern1.5M source93 reaches all5,483 rows with exact tokens and retrieval
+  metrics, but three documents/six matrices fail strict F32; Q4 correctly stops.
+  Diagnose only those documents with intermediate observers and frozen anchors.
+ 115M remains running; corrected27M40784484013 is queued. Preserve initial
+ build/import/receipt-packaging failures and all-size consumer requirements.
+- UltraBERT full F32/three Q4 recipes and Unlimited mixed-Q4 v3 remain running.
+- MiniCPM graph v3 retains23/30 decoded-exact arms and15 numerical negatives.
+ Retained analysis40783734766 precedes only seven missing arms. Native real20
+ matches19/20 eligible original ID/text pairs; one842-token page differs at
+ token124. Different hardware/residency prevents a controlled speed claim.
+- WASM workspace intervention40780061239 reproduces activation-quantization
+ amplification inside either runtime; identical workspaces agree within9.54e-7.
+ Earlier whole-model failures remain. Test a stored-weight F32 operator arm
+ against unchanged native targets before any production correction.
+- Real RGB audit completed19 valid inputs and rejected drifted form bytes before
+ decode. Exact form-only40783738840 is queued. MiniCPM native form already
+ matches627 original IDs; only Unlimited native form remains to run.
+- Standard GGUF header repair is prepared with same-payload canonicalization;
+ current converter compatibility and actual hosted C-quantizer controls remain.
+- Ovis gate0 eleven F16 cases pass; gate1 completed eight before a document
+ timeout. Final source declaration, both14/11 replays, fresh artifacts,
+ consumers/platforms/main CI and qualified-only publication remain open.
 
-All large work remains hosted; keep initial failures and unchanged quality gates.
-Queued/running work is not qualification. The app remains on immutable0.17.12.
+Large work stays hosted. Queued/running work is not qualification. Preserve all
+initial negatives and quality gates. The app remains on immutable0.17.12.
 <!-- END CURRENT VENDOR EXECUTION -->
 
 Current vendor execution: [28 October portfolio continuation](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/handoff-2026-10-28.md).
