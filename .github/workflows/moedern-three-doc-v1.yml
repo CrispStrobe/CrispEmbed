@@ -1,0 +1,70 @@
+name: MoEdern1.5M three retained failed documents v1
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  diagnostic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_TOKEN }}
+      KAGGLE_ACCOUNT: ${{ secrets.KAGGLE_ACCOUNT }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+      TOKENIZERS_PARALLELISM: 'false'
+      HF_HUB_DISABLE_TELEMETRY: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Tiny source controls; existing secrets required before optional packages
+        run: |
+          test -n "$KAGGLE_API_TOKEN" && test -n "$KAGGLE_ACCOUNT"
+          python tests/test_moedern_three_doc_v1.py -v
+          python -m venv "$RUNNER_TEMP/three-doc-env"
+          echo "$RUNNER_TEMP/three-doc-env/bin" >> "$GITHUB_PATH"
+      - name: Existing small SDK only; authenticate frozen inputs before original framework
+        run: |
+          python -m pip install kaggle==2.2.2
+          python -I tools/moedern-three-doc/prepare.py --reviewed-source "$GITHUB_SHA" --out "$RUNNER_TEMP/three-doc-input" --scratch "$RUNNER_TEMP/three-doc-retained"
+      - name: Exact original CPU runtime from frozen source contract
+        run: |
+          python -m pip install torch==2.8.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install numpy==2.2.6 transformers==5.3.0 'sentence-transformers @ git+https://github.com/huggingface/sentence-transformers.git@b0bf39968ba461c34b29372144794eff1be06f6d' gguf==0.17.1
+          python -m pip freeze > "$RUNNER_TEMP/three-doc-requirements.txt"
+      - name: Actual root backend, native original anchors and three-document stages
+        run: |
+          python -I tools/ci-heavy/moedern_three_doc_v1.py --reviewed-source "$GITHUB_SHA" --input "$RUNNER_TEMP/three-doc-input" --scratch "$RUNNER_TEMP/three-doc-build" --out "$RUNNER_TEMP/three-doc-out"
+      - name: Small failure or complete reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: moedern-three-doc-review-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/three-doc-input/prepare.json
+            ${{ runner.temp }}/three-doc-input/input-packet.json
+            ${{ runner.temp }}/three-doc-out/review/
+            ${{ runner.temp }}/three-doc-out/raw/original/original.json
+            ${{ runner.temp }}/three-doc-out/raw/comparisons/diagnostic.json
+            ${{ runner.temp }}/three-doc-requirements.txt
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Canonical three-document raw observations and anchors remotely
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: moedern-three-doc-raw-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/three-doc-input/
+            ${{ runner.temp }}/three-doc-out/
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 1

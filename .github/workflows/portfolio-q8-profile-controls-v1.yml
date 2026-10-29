@@ -1,0 +1,31 @@
+name: Q8 packed profile and actual quantizer controls v1
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  controls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Closed source before compilation
+        run: python tools/portfolio/q8_profile_controls.py --reviewed-source "$GITHUB_SHA" --source-only
+      - name: Actual Q8/Q4 admission, quantizer and metadata-stamp fixtures
+        run: python tools/portfolio/q8_profile_controls.py --reviewed-source "$GITHUB_SHA" --out "$RUNNER_TEMP/q8-profile-out" --build "$RUNNER_TEMP/q8-profile-build"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: portfolio-q8-profile-controls-${{ github.run_id }}
+          path: ${{ runner.temp }}/q8-profile-out/
+          if-no-files-found: warn
+          retention-days: 90

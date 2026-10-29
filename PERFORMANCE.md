@@ -6992,3 +6992,14 @@ Unlimited mixed-Q4 v3 completes four F16 original ID/full-text controls
 and vision identity. First conversion protection rejects before Q4 inference;
 there is no Q4 quality or speed result. The retained first candidate is
 6,481,651,840 bytes. [Exact source and rejection](tests/results/unlimited-ocr2/mixed-q4-v3-review.json).
+## Josev protected-precision development result (29 October)
+
+Actual40787077302 preserves a passing227-stage F32 control. A/B/C sizes are
+3.613774304 /4.651864544 /5.375381984 GB, with203/201/118 strict stage
+failures. C retains316 F32 +118 F16 +8 Q4 tensors; all292 critical tensors
+are byte-exact F32. Its first case first fails at layer20: cosine0.99826210,
+max error0.110197, RMS0.010144 and original magnitude17.50167. Its ordinal
+errors0.001585498/0.000765428 retain the fixed0.001 threshold, leaving the
+first negative. All five discrete choices alone do not qualify probability or
+ordinal behavior. See the [review](tests/results/josev2b/mixed-recipes-v1-review.json).
+No speed claim or published precision follows from these role ablations.
