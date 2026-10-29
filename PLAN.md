@@ -1026,3 +1026,27 @@ Source peer review and hosted execution remain pending; no candidate selection
 or NEW20 native access is authorized by the model-free controls.
 The executable feature source owns its contract and callers; the workflow
 registration here does not merge that runtime or qualify a model.
+
+### Reviewed hosted continuations (29 October)
+
+- Josev protected precision source`d339be99c` fixes the independently spotted
+  standalone numeric-report flag to require actual Ref success; the unchanged
+  combined F32 barrier was already strict. Six corruption controls/source closure
+  and independent source peer review pass. Run only the fixed four development
+  cases before any selection/NEW20 native access.
+- Unlimited read-only exact-v3 delivery source`fbd8f68f6` uses existing hosted
+  service configuration, blocks all array/framework imports before full540-file
+  authentication and resolves the SDK package shadow explicitly. Seven mocked
+  delivery/import/pagination controls pass; hosted SDK access and structure are
+  pending. No model/quantizer/original rerun.
+- Ultra freeze correction`08b0a5727` preserves initial40831085595: the old
+  global symbol grep rejected27 pre-existing unrelated comparator symbols after
+  compilation, before any payload. Audit the actual compiled Ultra object plus
+  whole-library inventory, retain exact unrelated names, then retry freeze only.
+- Norm-risk format successor`e7f3ab64d` preserves frozenf781 token identity,
+ 30 old byte anchors and12 native norm recoveries before56 candidate comparisons.
+  This is a test-only replay, with no production/model forward/default change.
+- MoEdern compare-only`92f75550a` retains failed40825166813 and uses bijective
+  safe adapter names to finish18 saved comparisons. A structurally completed run
+  must still exit nonzero when numerical failures remain; fresh Python drift
+  cannot replace frozen gold or prove native causality.

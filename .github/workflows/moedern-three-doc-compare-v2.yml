@@ -1,0 +1,73 @@
+name: MoEdern retained three-document compare-only v2
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Exact reviewed forty-hex compare-only source
+        type: string
+        required: true
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: moedern-three-doc-compare-only-v2
+  cancel-in-progress: false
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      SOURCE: ${{ inputs.source_ref }}
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Stdlib source controls and exact failed-producer inputs before NumPy
+        run: |
+          python tests/test_moedern_three_doc_compare_v2.py -v
+          python -I tools/ci-heavy/moedern_three_doc_compare_v2.py fetch --reviewed-source "$SOURCE" --out "$RUNNER_TEMP/three-doc-compare"
+      - name: Independent numerical tools and exact header-only Ref comparator
+        run: |
+          python -m venv "$RUNNER_TEMP/compare-env"
+          "$RUNNER_TEMP/compare-env/bin/python" -m pip install --no-deps --only-binary=:all: numpy==2.2.6
+          "$RUNNER_TEMP/compare-env/bin/python" -m pip check
+          c++ --version > "$RUNNER_TEMP/three-doc-compare/review/compiler.log"
+          c++ -std=c++17 -O2 -ffp-contract=off -I "$GITHUB_WORKSPACE/src" "$GITHUB_WORKSPACE/tests/moedern-native-v2/diff.cpp" -o "$RUNNER_TEMP/compare-diff" > "$RUNNER_TEMP/three-doc-compare/review/compile.log" 2>&1
+          python - <<'PY'
+          import hashlib,json,os,pathlib
+          root=pathlib.Path(os.environ['GITHUB_WORKSPACE']);out=pathlib.Path(os.environ['RUNNER_TEMP'])/'three-doc-compare'
+          binary=pathlib.Path(os.environ['RUNNER_TEMP'])/'compare-diff'
+          def identity(p):return dict(bytes=p.stat().st_size,sha256=hashlib.sha256(p.read_bytes()).hexdigest())
+          record=dict(argv=['c++','-std=c++17','-O2','-ffp-contract=off','-I',str(root/'src'),str(root/'tests/moedern-native-v2/diff.cpp'),'-o',str(binary)],comparator=identity(binary),logs={n:identity(out/'review'/n)for n in ['compiler.log','compile.log']},model_forward=False,ggml_runtime_compiled=False)
+          (out/'review/build-proof.json').write_text(json.dumps(record,indent=2)+'\n')
+          PY
+      - name: All18 retained matrices; numeric rejection remains a nonzero result
+        run: |
+          "$RUNNER_TEMP/compare-env/bin/python" -I tools/ci-heavy/moedern_three_doc_compare_v2.py compare --reviewed-source "$SOURCE" --out "$RUNNER_TEMP/three-doc-compare" --diff "$RUNNER_TEMP/compare-diff" --build-proof "$RUNNER_TEMP/three-doc-compare/review/build-proof.json"
+      - name: Small reports, source/build proof and complete numeric negatives
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: moedern-three-doc-compare-v2-review-${{ github.run_id }}
+          path: ${{ runner.temp }}/three-doc-compare/review/
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Exact original ZIP copies, retained matrices and lossless adapters
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: moedern-three-doc-compare-v2-raw-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/three-doc-compare/raw/
+            ${{ runner.temp }}/three-doc-compare/fetch.json
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 1

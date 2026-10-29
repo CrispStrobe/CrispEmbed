@@ -97,8 +97,14 @@ jobs:
           c++ -std=c++17 -O2 -ffp-contract=off -I "$RUNNER_TEMP/ultra-runtime/src" "$RUNNER_TEMP/ultra-runtime/tests/moedern-native-v2/diff.cpp" -o "$RUNNER_TEMP/ultra-build/vector-diff" > "$RUNNER_TEMP/ultra-output/comparator-build.log" 2>&1
           cp "$RUNNER_TEMP/ultra-build/CMakeCache.txt" "$RUNNER_TEMP/ultra-output/"
           cp "$RUNNER_TEMP/ultra-build/compile_commands.json" "$RUNNER_TEMP/ultra-output/"
-          nm -C "$RUNNER_TEMP/ultra-build/libcrispembed.so" > "$RUNNER_TEMP/ultra-output/symbols.txt"
-          if grep -E 'ultrabert.*(observe|probe)|crispembed_diff::' "$RUNNER_TEMP/ultra-output/symbols.txt"; then exit 1; fi
+          python - <<'PYCODE'
+          import importlib.util, os, pathlib
+          p=pathlib.Path('tools/portfolio/ultrabert_q4k_sharded.py')
+          s=importlib.util.spec_from_file_location('audit',p);m=importlib.util.module_from_spec(s);s.loader.exec_module(m)
+          temporary=pathlib.Path(os.environ['RUNNER_TEMP']);runtime=temporary/'ultra-runtime'
+          m.source(runtime,os.environ['SOURCE'])
+          m.symbol_audit(runtime,temporary/'ultra-build',temporary/'ultra-output')
+          PYCODE
       - name: One explicit phase; raw and normalized public calls checkpoint each row
         run: |
           # Fresh interpreter sees the EXISTING exact library directory at startup.
