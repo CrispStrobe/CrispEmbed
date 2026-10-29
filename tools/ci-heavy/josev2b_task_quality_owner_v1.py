@@ -33,6 +33,7 @@ def admission(scratch):
 
 def stage(args):
  proof=admission(args.scratch);cfg=c.config();args.inputs.mkdir(parents=True,exist_ok=False);review=args.out/'review';review.mkdir(parents=True,exist_ok=True)
+ write(review/'runtime-source-proof.json',c.runtime_source_proof(cfg))
  w=worker();proof['original']=provider.original(cfg,args.inputs/'original',review,w.original_guard)
  proof['old_four_negative']=provider.old_four(cfg,args.inputs,review)
  model,report,proof['candidate']=provider.candidate(cfg,args.inputs/'candidate',review)

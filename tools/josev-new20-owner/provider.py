@@ -104,11 +104,16 @@ def api(path):
  with urllib.request.urlopen(request,timeout=90)as response:data=response.read(2*2**20+1)
  require(len(data)<=2*2**20,'Bounded artifact metadata required');return json.loads(data)
 
-def artifact(selected,pin,target,maximum):
+def artifact_metadata(selected,pin,maximum):
  run=api('actions/runs/'+str(pin['run']))
  require(run['head_sha']==selected['service_source']and run['path']==selected['workflow']and run['status']=='completed'and run['conclusion']=='success'and run['run_attempt']==selected['run_attempt'],'Exact completed mixed development service differs')
  row=api('actions/artifacts/'+str(pin['id']))
  require(row['workflow_run']['id']==pin['run']and row['size_in_bytes']==pin['bytes']and row['digest']=='sha256:'+pin['sha256']and not row['expired'],'Exact artifact descriptor differs')
+ require(type(pin['bytes'])is int and 0<pin['bytes']<=maximum,'Bounded immutable artifact required')
+ return {k:row[k]for k in ['id','name','size_in_bytes','digest']}, {k:run[k]for k in ['id','head_sha','path','run_attempt','conclusion']}
+
+def artifact(selected,pin,target,maximum):
+ artifact_metadata(selected,pin,maximum)
  class Stop(urllib.request.HTTPRedirectHandler):
   def redirect_request(self,*args,**kwargs):return None
  request=urllib.request.Request('https://api.github.com/repos/CrispStrobe/CrispEmbed/actions/artifacts/'+str(pin['id'])+'/zip',headers={'Authorization':'Bearer '+os.environ['GH_TOKEN']})
@@ -174,10 +179,29 @@ def candidate(cfg,root,review):
  report_path=root/'selected-report.json';member(small,s['review_artifact']['member'],report_path,dict(bytes=s['report_bytes'],sha256=s['report_sha256']),8*2**20)
  report=json.loads(report_path.read_text());require(report['source']==s['checkout_source']and report['protocol_sha256']==s['protocol_sha256'],'Selected development report source/protocol differs')
  choice=eligible(report);require(choice['selected']==s['recipe'],'Candidate not selected by frozen original-four development screen')
- conv=report['recipes'][s['recipe']]['conversion'];require(conv['output_sha256']==s['model_sha256']and conv['output_bytes']==s['model_bytes'],'Reviewed candidate conversion/model identity differs')
+ conv=report['recipes'][s['recipe']]['conversion'];require(conv['output_sha256']==s['legacy_model_sha256']and conv['output_bytes']==s['legacy_model_bytes'],'Reviewed candidate conversion/model identity differs')
  write(review/'development-selection.json',choice)
- raw=root/'selected-raw.zip';proof['raw_artifact']=artifact(s,s['raw_artifact'],raw,20*2**30)
- model=root/'selected-mixed.gguf';member(raw,s['raw_artifact']['member'],model,dict(bytes=s['model_bytes'],sha256=s['model_sha256']),6*2**30)
- raw.unlink() # task-owned authenticated scratch only; complete archive stays remote.
- proof.update(selected=s['recipe'],report_sha256=s['report_sha256'],model_sha256=s['model_sha256'],model_bytes=s['model_bytes'],complete_remote_archive_preserved=True,verified_local_archive_removed=True,holdout_used_for_selection=False)
+ # Preserve/authenticate the legacy raw artifact descriptor, without copying
+ # or forwarding its multi-GB model into this held-out task.
+ proof['legacy_raw_artifact_descriptor'],proof['legacy_service']=artifact_metadata(s,s['raw_artifact'],20*2**30)
+ import canonical
+ migration=__import__('josev2b_task_quality_native_v1').canonical_prerequisites(cfg)
+ bridge=migration['bridge_service'];small_bridge=root/'canonical-review.zip'
+ proof['canonical_review_artifact']=artifact(bridge,migration['review_artifact'],small_bridge,16*2**20)
+ documents={}
+ for key in ['descriptor','proof','same_payload_control']:
+  row=migration[key];path=root/('canonical-'+key+'.json')
+  member(small_bridge,row['member'],path,dict(bytes=row['bytes'],sha256=row['sha256']),8*2**20)
+  def unique(pairs):
+   result={}
+   for name,value in pairs:require(name not in result,'Duplicate canonical JSON key');result[name]=value
+   return result
+  documents[key]=json.loads(path.read_text(),object_pairs_hook=unique,parse_constant=lambda _:require(False,'Nonfinite canonical JSON'))
+ proof['canonical_small_evidence']=canonical.reports(cfg,documents['descriptor'],documents['proof'],documents['same_payload_control'],report)
+ write(review/'canonical-evidence.json',proof['canonical_small_evidence'])
+ raw=root/'canonical-raw.zip';proof['canonical_raw_artifact']=artifact(bridge,migration['raw_artifact'],raw,20*2**30)
+ model=root/'selected-canonical.gguf';member(raw,migration['raw_artifact']['member'],model,migration['canonical_model'],6*2**30)
+ proof['canonical_model_verification']=canonical.verify_model(model,cfg,documents['proof'])
+ raw.unlink() # Only this authenticated scratch ZIP; immutable remote source stays.
+ proof.update(selected=s['recipe'],report_sha256=s['report_sha256'],legacy_model_sha256=s['legacy_model_sha256'],legacy_model_bytes=s['legacy_model_bytes'],canonical_model=migration['canonical_model'],complete_remote_archive_preserved=True,verified_local_canonical_archive_removed=True,legacy_model_downloaded=False,holdout_used_for_selection=False)
  write(review/'candidate-service.json',proof);return model,report_path,proof

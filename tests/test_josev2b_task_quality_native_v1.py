@@ -4,6 +4,7 @@ from unittest import mock
 ROOT=pathlib.Path(__file__).resolve().parents[1];sys.path[:0]=[str(ROOT/'tools'),str(ROOT/'tools/josev-new20-owner')]
 import josev2b_task_quality_native_v1 as c
 import provider
+import canonical
 
 def module(name,path):
  spec=importlib.util.spec_from_file_location(name,ROOT/path);m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m);return m
@@ -21,6 +22,26 @@ def development():
   conv=dict(completed=True,recipe=recipe,counts=types,output_bytes=size,tensors=[{}]*442,critical292_f32_byte_exact=True,independent_f16_rounding_exact=True,semantic_shapes_unchanged=True)
   result['recipes'][recipe]=dict(conversion=conv,panel=dict(structural_passed=True,compared_stages=227,strict_original_numeric_passed=False,quant_task_decisions=dict(cases=cases)))
  return result
+
+def canonical_fixture():
+ d=copy.deepcopy(c.config());dev=development();s=d['selected_candidate']
+ s.update(recipe='A',checkout_source='a'*40,report_bytes=100,report_sha256='2'*64,legacy_model_bytes=3613774304,legacy_model_sha256='1'*64)
+ m=d['canonicalization'];m['legacy_model']={'bytes':s['legacy_model_bytes'],'sha256':s['legacy_model_sha256']};m['canonical_model']={'bytes':s['legacy_model_bytes'],'sha256':'4'*64};m['proof']['sha256']='5'*64;m['descriptor']['sha256']='3'*64
+ rows=[];inventory=[];proof_rows=[];offset=0
+ for i in range(442):
+  kind=0 if i<292 else 1 if i<370 else 12;label={0:'F32',1:'F16',12:'Q4_K'}[kind];size={0:1024,1:512,12:144}[kind];h={0:'a',1:'b',12:'c'}[kind]*64;name='tensor'+str(i)
+  rows.append(dict(name=name,type=label,semantic_shape=[256],output_storage_rank=1,bytes=size,stored_sha256=h,source_f32_sha256=h if kind==0 else'd'*64,critical_f32=i<292))
+  inventory.append(dict(name=name,type=kind,semantic_shape=[256],stored_shape=[256],bytes=size,sha256=h))
+  proof_rows.append(dict(name=name,type=kind,semantic_shape=[256],stored_shape=[256],storage_rank=1,offset=offset,bytes=size,source_sha256=h,canonical_sha256=h));offset=(offset+size+31)//32*32
+ dev['recipes']['A']['conversion']['tensors']=rows
+ descriptor=dict(schema='crispembed-gguf-file-type-input-v1',reviewed=True,family='josev',recipe='A',producer_source=s['checkout_source'],producer_report={'bytes':100,'sha256':'2'*64},source_model=m['legacy_model'],architecture='josev2b_systemone',profile_markers={'josev2b.packed.format':'crispembed-josev-packed-q4k-v1','josev2b.packed.profile':'official-pytorch-text-batch1-512-no-extra-temperature'},inventory=inventory,report_model_sha256_path=['recipes','A','conversion','output_sha256'],report_model_bytes_path=['recipes','A','conversion','output_bytes'],report_recipe_path=['recipes','A','conversion','recipe'])
+ m['descriptor']['canonical_json_sha256']=canonical.digest(json.dumps(descriptor,sort_keys=True,separators=(',',':')).encode())
+ proof=dict(schema='crispembed-gguf-file-type-canonicalization-v1',completed=True,family='josev',recipe='A',producer_source=s['checkout_source'],producer_report=descriptor['producer_report'],source_model=m['legacy_model'],canonical_model=m['canonical_model'],runtime_source=c.METADATA_RUNTIME,source_profile_sha256=c.METADATA_PROFILE_SHA,input_descriptor_file_sha256='3'*64,input_descriptor_sha256=m['descriptor']['canonical_json_sha256'],allowed_changes=[{'key':'general.file_type','kind':'UINT32','offset':128,'old':12,'new':14}],unchanged_prefix_sha256='6'*64,unchanged_suffix_sha256='7'*64,unchanged_metadata_sha256='8'*64,tensors=proof_rows,payloads_byte_exact=True,semantic_shapes_unchanged=True,source_preserved=True,metadata_only_bridge=True,numerical_qualified=False,publication_qualified=False,original_rerun=False)
+ cases=[dict(id=str(i),modes=[dict(mode=mode,stages=57 if i<3 else 56,all_payload_sha_exact=True,response_bytes_exact=True)for mode in ['plain','observed','repeat']])for i in range(4)]
+ response=[json.dumps({'case':i})for i in range(4)];arm=dict(response_texts=response,response_sha256=[canonical.digest(x.encode())for x in response],null_rejected=True,recovery_exact=True,gate_controls=[dict(gate=g,value=v,init_rejected=True,run_rejected=True)for g in ['CRISPEMBED_JOSEV_QUANT','CRISPEMBED_QWEN35_QUANT']for v in [None,'','0']])
+ public=dict(completed=True,source=c.METADATA_RUNTIME,library_sha256='9'*64,cases=4,arms={'legacy':copy.deepcopy(arm),'canonical':copy.deepcopy(arm)},all_public_capi_response_bytes_exact=True,production_observers_excluded=True,publication_qualified=False)
+ same=dict(schema='crispembed-gguf-file-type-same-payload-v1',completed=True,runtime_source=c.METADATA_RUNTIME,source_profile_sha256=c.METADATA_PROFILE_SHA,canonicalization_report_sha256='5'*64,source_model=m['legacy_model'],canonical_model=m['canonical_model'],four_cases=cases,all_mapped_stage_bytes_exact=True,all_typed_response_bytes_exact=True,all_public_capi_response_bytes_exact=True,public_capi=public,f32={'compared_stages':227,'strict_original_f32_numeric_and_typed_passed':True},old_numeric_results_replaced=False,numerical_qualified=False,publication_qualified=False)
+ return d,descriptor,proof,same,dev
 
 class Controls(unittest.TestCase):
  def test_pending_candidate_rejects_before_api_or_model(self):
@@ -124,6 +145,54 @@ class Controls(unittest.TestCase):
  def test_metadata_runtime_and_canonical_proofs_cannot_activate_checkpoint(self):
   with self.assertRaisesRegex(ValueError,'pending'):c.runtime_prerequisites()
   with self.assertRaisesRegex(ValueError,'pending'):c.canonical_prerequisites()
+ def test_exact56_runtime_source_and_preserved_six_baseline_files(self):
+  r=c.runtime_source_proof();self.assertEqual(r['source'],c.METADATA_RUNTIME);self.assertEqual(len(r['baseline_633']['preserved_moedern_delta']),6);self.assertEqual(len(r['metadata_admission_delta']),7)
+  self.assertNotEqual(r['git_objects']['src'],c.config()['baseline_runtime_git_objects']['src'])
+  for category in ['baseline','metadata','math','objects']:
+   d=copy.deepcopy(c.config());r=d['runtime_activation']
+   if category=='baseline':r['baseline_633']['preserved_moedern_delta'].pop(next(iter(r['baseline_633']['preserved_moedern_delta'])))
+   if category=='metadata':r['metadata_admission_delta'].pop('tools/quantize.cpp')
+   if category=='math':r['linked_josev_math_paths'].pop('src/qwen35_decoder.cpp')
+   if category=='objects':r['git_objects']['src']='0'*40
+   with self.assertRaises(ValueError):c.runtime_source_proof(d)
+ def test_complete_synthetic_canonical_evidence_positive(self):
+  result=canonical.reports(*canonical_fixture());self.assertEqual(result['tensors'],442);self.assertEqual(result['old_four_stage_bytes'],dict(plain=227,observed=227,repeat=227));self.assertFalse(result['qualification'])
+ def test_semantic_trailing_singleton_preserves_existing_storage_rank(self):
+  args=canonical_fixture()
+  for row in [args[1]['inventory'][0],args[2]['tensors'][0],args[4]['recipes']['A']['conversion']['tensors'][0]]:row['semantic_shape']=[256,1]
+  h=canonical.digest(json.dumps(args[1],sort_keys=True,separators=(',',':')).encode());args[0]['canonicalization']['descriptor']['canonical_json_sha256']=h;args[2]['input_descriptor_sha256']=h
+  self.assertEqual(canonical.reports(*args)['tensors'],442)
+  args[2]['tensors'][0]['stored_shape']=[256,1];args[2]['tensors'][0]['storage_rank']=2
+  with self.assertRaises(ValueError):canonical.reports(*args)
+ def test_canonical_header_tensor_identity_and_no_qualification_negatives(self):
+  for kind in ['header','source','canonical','payload','rank','shape','duplicate','qualification']:
+   args=canonical_fixture();proof=args[2]
+   if kind=='header':proof['allowed_changes'][0]['new']=12
+   if kind=='source':proof['runtime_source']=c.RUNTIME
+   if kind=='canonical':proof['canonical_model']=proof['source_model']
+   if kind=='payload':proof['tensors'][0]['canonical_sha256']='0'*64
+   if kind=='rank':proof['tensors'][0]['storage_rank']=2
+   if kind=='shape':proof['tensors'][0]['semantic_shape']=[255]
+   if kind=='duplicate':proof['tensors'][-1]['name']=proof['tensors'][0]['name']
+   if kind=='qualification':proof['numerical_qualified']=True
+   with self.subTest(kind=kind),self.assertRaises(ValueError):canonical.reports(*args)
+ def test_same_payload_all_modes_all_four_public_gates_and_f32_control(self):
+  for kind in ['mode','stage','response','public','gate','f32']:
+   args=canonical_fixture();same=args[3]
+   if kind=='mode':same['four_cases'][0]['modes'].pop()
+   if kind=='stage':same['four_cases'][0]['modes'][0]['stages']=56
+   if kind=='response':same['four_cases'][0]['modes'][0]['response_bytes_exact']=False
+   if kind=='public':same['public_capi']['arms']['canonical']['response_texts'][0]='changed'
+   if kind=='gate':same['public_capi']['arms']['canonical']['gate_controls'][0]['run_rejected']=False
+   if kind=='f32':same['f32']['strict_original_f32_numeric_and_typed_passed']=False
+   with self.subTest(kind=kind),self.assertRaises(ValueError):canonical.reports(*args)
+ def test_canonical_provider_checks_reports_before_large_model_and_never_downloads_legacy(self):
+  s=(ROOT/'tools/josev-new20-owner/provider.py').read_text();body=ast.get_source_segment(s,next(n for n in ast.parse(s).body if isinstance(n,ast.FunctionDef)and n.name=='candidate'))
+  self.assertLess(body.index('canonical.reports('),body.index("raw=root/'canonical-raw.zip'"));self.assertLess(body.index('canonical.verify_model('),body.index('raw.unlink()'))
+  self.assertNotIn("raw=root/'selected-raw.zip'",body);self.assertIn('legacy_model_downloaded=False',body)
+ def test_canonical_payload_helper_rejects_unhosted_before_model_read(self):
+  with mock.patch.dict('os.environ',{},clear=True),self.assertRaisesRegex(ValueError,'hosted'):
+   canonical.verify_model(pathlib.Path('never-access-model'),c.config(),{})
  def test_new_cli_help_has_no_payload_imports(self):
   for name in ['tools/ci-heavy/josev2b_task_quality_owner_v1.py','tools/ci-heavy/josev2b_task_quality_native_v1.py']:
    result=subprocess.run([sys.executable,'-I','-S',str(ROOT/name),'--help'],capture_output=True,text=True,timeout=15);self.assertEqual(result.returncode,0,result.stderr)
