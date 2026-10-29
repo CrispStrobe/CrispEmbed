@@ -1,0 +1,179 @@
+{
+  "schema": "crispembed-wasm-live-norm-first-component-review-v1",
+  "run": 40867038915,
+  "source": "ff3b8a0171d2cdb5cfcdd65701fadaa49a99d265",
+  "completed": false,
+  "small_artifact": {
+    "id": 12896608181,
+    "name": "wasm-live-norm-operands-v1-review-40867038915",
+    "size_in_bytes": 50253,
+    "digest": "sha256:20846a376abc6b07954af639913ffe2405399d58ea4cb98d47faada30663a11a",
+    "expires_at": "2027-01-27T11:39:15Z"
+  },
+  "small_members": {
+    "review/candidate-raw-artifact.json": {
+      "bytes": 201,
+      "sha256": "e39eb68986c0df521856100a24c483508c0de27dc67f2790145282ef65df4d3e"
+    },
+    "review/candidate-raw-service.json": {
+      "bytes": 257,
+      "sha256": "a470f27183a966017305ff36e80656bfb3a44a01f9d1f6ff400481547a4ec7d1"
+    },
+    "review/candidate-review-artifact.json": {
+      "bytes": 203,
+      "sha256": "541b31ff70c261bef2ab07d58f0c610a2b161937ca6a17f7c256c95ded47af6f"
+    },
+    "review/candidate-review-service.json": {
+      "bytes": 257,
+      "sha256": "a470f27183a966017305ff36e80656bfb3a44a01f9d1f6ff400481547a4ec7d1"
+    },
+    "review/component-attention_candidate-1-command.json": {
+      "bytes": 675,
+      "sha256": "f82f4b2fc8d370d290a73bfe4479146c11a914075771289b4bea0c684d3125ef"
+    },
+    "review/component-attention_candidate-1.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "review/component-attention_candidate-2-command.json": {
+      "bytes": 675,
+      "sha256": "c9f1ec4cc1c7e671a49fe21643214b157a32a2b6c37a6a540d96699519ba3186"
+    },
+    "review/component-attention_candidate-2.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "review/component-attention_native-1-command.json": {
+      "bytes": 667,
+      "sha256": "58a599dcd73c39e68ed94299ba6d2e7aa2d897423e075e196c97dccf4fc0403f"
+    },
+    "review/component-attention_native-1.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "review/component-attention_native-2-command.json": {
+      "bytes": 666,
+      "sha256": "94a2d396cea24e5fab786dcf378855f941a198de0a1b0f29098f23506c815727"
+    },
+    "review/component-attention_native-2.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "review/component-authored-command.json": {
+      "bytes": 488,
+      "sha256": "aa50b2b55be5761ef9c9b5c22ffb60252d628ba4b1641bcea71fe8ca202462b8"
+    },
+    "review/component-authored.log": {
+      "bytes": 38,
+      "sha256": "15214c8b917d582d2eda76747beea572e10dcbe5e286910411207243caac45d1"
+    },
+    "review/component-ffn_candidate-1-command.json": {
+      "bytes": 657,
+      "sha256": "2834732485285440672b5b272857506446ddd36178c79780d9a014e913a0b0cd"
+    },
+    "review/component-ffn_candidate-1.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "review/component-ffn_candidate-2-command.json": {
+      "bytes": 658,
+      "sha256": "aecd11fc07a2465cb04cbcf9536ff1b9521f1b39d4b7f49ce6a1ac27afbeee65"
+    },
+    "review/component-ffn_candidate-2.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "review/component-ffn_native-1-command.json": {
+      "bytes": 649,
+      "sha256": "ec70c90c3240e9eb9029526e2001f883672006eadebe926fc5977e4035aed24e"
+    },
+    "review/component-ffn_native-1.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "review/component-ffn_native-2-command.json": {
+      "bytes": 648,
+      "sha256": "c173e58404f587f92454f69b2e393ae9279ff0ac321be54eb68ddb9f334b4831"
+    },
+    "review/component-ffn_native-2.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "review/component-native-build-command.json": {
+      "bytes": 623,
+      "sha256": "5413fb27e29f000d6688da03bb137809db8b1086be9bf92d8c1e528ca2bfa24c"
+    },
+    "review/component-native-build.log": {
+      "bytes": 14200,
+      "sha256": "e211fbd0e27776bc213e98ae8d2db2805ef84cb8b6c8a91a6d18dcd8268f65ac"
+    },
+    "review/component-native-configure-command.json": {
+      "bytes": 606,
+      "sha256": "eda1f5573b812d23855f98ee558fbf1f9c22fc8a500040ed009dbe4b63d54c14"
+    },
+    "review/component-native-configure.log": {
+      "bytes": 1252,
+      "sha256": "f3526ab676c26a2720d3c81de8a80835eb2db49e175168fe2d9d9c28b89f2a55"
+    },
+    "review/component-wasm-build-command.json": {
+      "bytes": 592,
+      "sha256": "20c417425ae3a4440e9dd6bd79c6a7f96ccc23290d8d4cbd1d977fab3814a644"
+    },
+    "review/component-wasm-build.log": {
+      "bytes": 3709,
+      "sha256": "1b4e3b2a557cfd7c3cca2b0f31db3c0366e08df34634720eaa7ad4e6916e4754"
+    },
+    "review/component-wasm-configure-command.json": {
+      "bytes": 725,
+      "sha256": "f9b8f232718999fcd95ea80374194bd47ba7a30f87003866f6b9da896e6b3d6e"
+    },
+    "review/component-wasm-configure.log": {
+      "bytes": 1405,
+      "sha256": "e66f4c7761396b2f8f5774e25844cc813771d0d20a6a133313a72bcf0f832955"
+    },
+    "review/file-manifest.json": {
+      "bytes": 9668,
+      "sha256": "d8942b45dac53479e4938856986fb76ff85ab1e4ca39bdb59c2ded8cfa8163d8"
+    },
+    "review/live-observer-controls-command.json": {
+      "bytes": 484,
+      "sha256": "1688b61d8f81370010d56bd5bccc7fa9e1b5ffe7beb77277633752441fd14161"
+    },
+    "review/live-observer-controls.log": {
+      "bytes": 62,
+      "sha256": "f728ca02aa544424172890a8b1bcc2723fe5c87ae9f6947178d1903762324b8a"
+    },
+    "review/old-wasm-compile.json": {
+      "bytes": 334186,
+      "sha256": "e2a7318d71bc7d492ea4da24b181c75ec92303889554baac387bd7d61fb50974"
+    },
+    "review/prepared.json": {
+      "bytes": 166,
+      "sha256": "afe8bbaf4f24bd5e3c6e9edb8fe4e1240b5b60922a9bd7930bcd6403b01e03c6"
+    },
+    "review/rejection-component-build.json": {
+      "bytes": 190,
+      "sha256": "268a0b507c897eda38c399890be410b70eabbde2e8c088e5a98feb9a3cab1ffa"
+    },
+    "review/resources.json": {
+      "bytes": 91,
+      "sha256": "262da71ac8fb96a557c70660ed94bbbdc84ee5a93c0fd175b497b2c5770cab09"
+    },
+    "review/source.json": {
+      "bytes": 4054,
+      "sha256": "d7b15b2e6597b136901000193f1b4bfde3a5d4cb9edeb30f104bd2d21ff41ebd"
+    },
+    "browser/frozen.json": {
+      "bytes": 61515,
+      "sha256": "640f8cc27a4771d23e34d0eaf9e2323d7abd6740e880c0893674cb87c6518348"
+    }
+  },
+  "phase": "component-build",
+  "error": "Actual component rounding flags differ",
+  "connected_observer_controls_passed": true,
+  "native_and_wasm_component_builds_exit_zero": true,
+  "new_full_model_forwards": 0,
+  "new_original_forwards": 0,
+  "qualification": false,
+  "limits": "All39 small artifact members authenticated. Component compile-profile guard rejected before browser recovery/model acquisition/full capture. Exact expression expects one wasm_native_order_norm.cpp compile entry; new frozen-controls/live-replay target inventory needs explicit source review, not a numerical waiver."
+}

@@ -12,14 +12,15 @@ The app remains immutable0.17.12. No new runtime release or quantized qualificat
   probability/ordinal screen (worst probability0.0000433922), but75 strict
   stages and complete serialization remain negative. Single Q4 gate/up recipes
   fail106/105 strict stages and probability gates. All292 critical tensors stay
-  F32; other projections F16. No recipe selected; NEW20 remains closed.
+  F32; other projections F16. No recipe selected; NEW20 remains closed. Calibration source208fbefe is
+  ready for review/registration, not yet executed (40 native prefills maximum).
 - **MoEdern:** [exact CPUv4/f336 actual capture](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/moedern-first-row-actual-v4-result.md)
   completes after both ordinary barriers/93 native anchors. All real operator/
   observer/repeat/public-slice controls pass;44 floating Ref stages give39 pass,
   five fail. First strict difference is layer1 row58 top-k: original[2,4],
   native[2,6] after roughly1e-7 unequal probability reordering; final normalized
   max0.02282943/cosine0.99574771 remains negative. Router weights already F32.
-  Next is same-input/same-weight router replay using exact retained inputs,
+  Replay source81fa4e26 is pushed but needs independent review/execution with exact retained inputs,
   no new original/full-model forward. Aggregate original calls8 stay frozen.
 - **UltraBERT:** [first Q4 shard40855927708](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/ultrabert-first-q4-shard0-result.md)
   completes686 rows/1372 public raw-normalized calls. Minimum cosine0.98075227;
@@ -38,21 +39,19 @@ The app remains immutable0.17.12. No new runtime release or quantized qualificat
   50 fail; F32/F16 each50/60, Q4_K25/30, Q8_0 5/30.96 later crop parts lack
   original tensors. Same-input F32 attribution precedes further precision
   recipes; no original recapture or qualification from high cosine/exact text.
-- **WASM:** [full norm40852835039](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/wasm-native-order-norm-full-result.md)
-  passes12 component recoveries but rejects16/20 final and6/16 stage checks.
-  Gate changes9/10 actual outputs. New one-sentence live-operand capture
-  [40867038915](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40867038915)
-  is queued atff3b8a017:13 actual norm input/output pairs plus layer3 boundaries,
-  208 same-input/196 natural comparisons, old stage hashes first. Natural
-  numerical negatives make the complete report fail; default remains off.
+- **WASM:** full norm64 remains rejected16/20 final and6/16 stage checks.
+  One-sentence40867038915/ff3 now fails its component compile-profile guard
+  before model acquisition or forwards; [initial evidence](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/packaging/wasm-live-norm-initial-build-review.json)
+  preserves39 small members. Repair exact target inventory/flags before any
+  model capture. All rounding/norm defaults remain unchanged.
 - **LFM/typed Gemma:** [source/evidence audit](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/encoder-precision-evidence-20261029.md)
   distinguishes existing masked230M LFM Q8/Q4 failures from other models;
   mixed330 precision improves but one masked prediction remains wrong.
   Typed Gemma has published Q8 approximation evidence; current-source Q4
   [genuine CPUv1/92ee](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/gemma-first-q4-cpu-v1-initial-result.md)
   rejects before Q4: all five pooled embeddings pass, but125 saved-stage
-  failures and a768-wide bank-adapter error block the F32 barrier. Only an
-  independently reviewed one-probe live-capture repair may activate next.
+  failures and a768-wide bank-adapter error block the F32 barrier. Only the
+  design0ee3fb674 is frozen: implement/review it before a three-call first probe.
   Rust/Dart Q8 and broader current-source consumer gaps remain explicit.
 
 Both Q8/Q4_K require actual original intermediates, errors/magnitudes and final

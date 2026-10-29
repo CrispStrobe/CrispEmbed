@@ -2,6 +2,7 @@
 
 Start with [the current execution handoff](docs/handoff-2026-10-29.md). It lists
 exact active jobs/branches, completed evidence and remaining acceptance gates.
+PLAN now contains only active work; dated claims/snapshots are archived in HISTORY.
 This main update documents experimental branches; it does not merge their runtime.
 
 ## Read first: public task handoff

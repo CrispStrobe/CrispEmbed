@@ -1,17 +1,13 @@
-> **Current starting point:** [28 October continuation and executable handoff](handoff-2026-10-28.md).
+# Current entry —29 October2026 wrap-up
 
-## Current entry —29 October2026
+Start with [the executable wrap-up handoff](handoff-2026-10-29.md),
+[active PLAN](../PLAN.md) and [current state](current-state-and-next-steps.md).
+They distinguish completed evidence, two queued jobs, executable source-only
+checkpoints and Gemma's design-only repair. Exact next steps/acceptance gates
+are written there; the earlier conversation is unnecessary.
 
-Use [the29 October executable portfolio handoff](handoff-2026-10-29.md) before
-older snapshots below. It gives actual five-job source pins, reviewed precision
-failures, retained Mini138 comparisons, only-seven continuation, immutable
-originals, artifact/Ref/final-output gates and final integration/release order.
-A queued job is not a candidate result. Preserve both Q8 and Q4_K tasks in PLAN,
-critical-tensor evidence and every negative; never tune on held-out native outputs.
-The28 October sections below remain source-specific history, not live job state.
-
-> It supersedes older preparation/status instructions below. Main receives audit
-> documentation; candidate runtimes and in-flight jobs remain explicitly separate.
+Older sections below are retained source-specific history. Do not repeat their
+preparation commands or infer current status from a dated queued snapshot.
 
 # Executable handoff — updated 27 October 2026
 

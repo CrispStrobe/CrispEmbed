@@ -1,0 +1,152 @@
+{
+  "schema": "crispembed-gemma-live-snapshot-repair-design-v1",
+  "status": "design-only",
+  "implementation_completed": false,
+  "activation_reviewed": false,
+  "dispatch_authorized": false,
+  "base": "80382e35ed83682fe6eb6c81158468ccb75e9708",
+  "previous_source": "92ee94a77c95df33b272abfcbf4f365550c20a47",
+  "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+  "preserved_initial_review": {
+    "path": "tests/results/gemma-decision/first-q4-cpu-v1-initial-review.json",
+    "bytes": 302549,
+    "sha256": "227885a153ac49486cd71b7c6c9a7a76895dc4d270484542bed0078931d7ce72"
+  },
+  "retained_source": {
+    "kernel_slug": "crispembed-typed-gemma-protected-q4-cpu-v2",
+    "version_label": "v1",
+    "status": "ERROR",
+    "submitted_script_sha256": "d5ac6a794cf53c0a71e58b72daceb781e250be83cdceb9883e057aff680d4926",
+    "exact_typed_Get_Status_every_List_page_required": true,
+    "owner_from_existing_secret_only": true,
+    "late_array_hashes_not_previously_frozen": true
+  },
+  "first_activation": {
+    "probe_index": 0,
+    "token_ids": 18,
+    "encoder_forwards": 3,
+    "call_order": [
+      "ordinary",
+      "observed",
+      "repeat"
+    ],
+    "original_forwards": 0,
+    "typed_forwards": 0,
+    "quantizer_runs": 0,
+    "quantized_forwards": 0,
+    "automatic_full_panel": false,
+    "original_stage_count": 29,
+    "immediate_connected_nodes": 28,
+    "stage_min_row_cosine": 0.99999,
+    "stage_max_relative_l2": 0.003,
+    "absolute_stage_budget": null,
+    "pooled_and_ids_ordinary_observed_repeat_byte_exact": true,
+    "pooled_and_ids_retained_v1_byte_exact": true,
+    "collect_live_and_late_same_observed_forward": true,
+    "retain_prior_125_stage_negatives": true
+  },
+  "intended_observer": {
+    "disposable_source_overlay": true,
+    "production_source_edit": false,
+    "math_or_numeric_node_change": false,
+    "pointer_registry": true,
+    "scheduler_eval_callback": true,
+    "require_exact_connected_node_inventory": true,
+    "required_metadata": [
+      "name",
+      "op",
+      "graph_index",
+      "ne",
+      "nb",
+      "flags",
+      "source_connections",
+      "storage_overlap_groups",
+      "ask_count",
+      "capture_count",
+      "bytes",
+      "sha256",
+      "finite"
+    ],
+    "callback_failure_state_must_be_checked": true,
+    "copy_actual_bytes_immediately": true,
+    "retain_existing_late_gguf": true,
+    "restore_callback_on_every_exit": true,
+    "ordinary_observed_repeat_pooled_byte_neutral": true,
+    "plain_archive_observer_exclusion_required": true
+  },
+  "adapter": {
+    "path": "tools/minicpm-ocr/graph_adapter.py",
+    "bytes": 8618,
+    "sha256": "44416372347f0620709e1626b0af8948a104677be64410e248eda177f8aff630",
+    "maximum_axis": 300000,
+    "maximum_tensor_elements": 16777216,
+    "maximum_payload_bytes": 268435456,
+    "reuse_only": [
+      "write_pair",
+      "write_gguf",
+      "read_gguf"
+    ],
+    "do_not_reuse_minicpm_numeric_budgets": true,
+    "gemma_bank_c_order_shapes": [
+      [
+        13,
+        768
+      ],
+      [
+        11,
+        768
+      ],
+      [
+        6,
+        768
+      ]
+    ],
+    "required_controls": [
+      "lossless_768_wide_readback",
+      "signed_zero_bits",
+      "exact_shape_mismatch_rejection",
+      "altered_sha_rejection",
+      "nonfinite_rejection",
+      "truncated_extent_rejection",
+      "over_limit_shape_rejection"
+    ],
+    "old_moe_adapter_unchanged": true
+  },
+  "allocator_hypothesis": {
+    "status": "source-backed-unconfirmed",
+    "ordinary_plan_precedes_observed_flags": true,
+    "plan_reuse_checks_node_counts_and_allocation_sizes": true,
+    "reuse_checks_output_flag_change": false,
+    "fresh_reservation_protects_output_flags": true,
+    "future_fresh_observer_context_control": "not activated; separate declared forwards required",
+    "no_allocator_or_runtime_fix_authorized": true
+  },
+  "future_dependencies": [
+    "implement closed observer/driver/workflow/source and meaningful controls",
+    "authenticate explicit retained v1 source/index before fetching only required first-probe anchors remotely",
+    "derive and journal previously-unfrozen late-array SHA only after authenticated fetch",
+    "prove plain exclusion, all28 connected callback hits, raw byte extents and pooled/ID neutrality",
+    "independently review first-probe live-versus-late actual Ref and independent metrics",
+    "separately declare retained typed zero-forward recovery and full145/eight-typed F32 activation before any candidate"
+  ],
+  "public_capi_qualified": false,
+  "publication_qualified": false,
+  "recipe_selected": false,
+  "protected_git_objects": {
+    "src": "6f198b453a77c35fe7a3eafdf57ce49cafecc882",
+    "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+    "CMakeLists.txt": "1da19a8737ca79f8bd99e2844a4bea5d160a0b6c",
+    "cmake": "9a76ffe127104d815de41d1da09335d2937ba50b",
+    "tests/gemma-decision-q4": "12e25fcc5d18a8d9ba608b0e54543f1ad04661b7",
+    "tools/gemma-decision-q4-v1": "0f3aab02b0129193fd8a29d79e8851a2af0907df",
+    "tools/gemma-decision-q4-cpu-v2": "26a0cf193e61a1fcfab54e40d005349992458d72",
+    "tools/ci-heavy/gemma_decision_first_q4.py": "beecb43478c44e91dc964d3486b16c29563fe1dc",
+    "tools/ci-heavy/gemma_decision_q4_cpu_v2.py": "aff09cb23a7f9b7613bb29bc50c5c72a8b3545ad",
+    "tools/moedern-native-v2/diff_adapter.py": "64fd36e5ea8cb6ce0d58d2b91315bbe290f0d9c7",
+    "tools/minicpm-ocr/graph_adapter.py": "3c8270c5d1590ed03e5bdda8d578c712fe7276ff",
+    "tools/ci_process.py": "983a72fb3e8f7f212dd3be04d1560f157c7a57e4",
+    "docs/gemma-decision-first-q4-v1.json": "6af91d18f881f8592a561b0d774441ea120471cc",
+    "docs/gemma-decision-q4-cpu-v2.json": "e916ae7bb0b9d296a64db58063b92196cafdefd8",
+    "tests/results/gemma-decision/first-q4-cpu-v1-initial-review.json": "7a7a727759d3a2d5d7cd7dacb2ba333f68794a8e"
+  }
+}
