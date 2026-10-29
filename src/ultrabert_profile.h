@@ -45,8 +45,9 @@ inline void validate(gguf_context * g, bool quantized = false) {
                 str("ultrabert.source.weight_sha256") ==
                     "da8be29564b69e4f90fc8f2683e1f369c3d3575e75f7fe798643e28de02e2b9c",
             "unsupported source profile");
+    const auto file_type = core_gguf::kv_u32(g, "general.file_type", UINT32_MAX);
     if (quantized)
-        require(core_gguf_file_type::known_q4_k(core_gguf::kv_u32(g, "general.file_type", UINT32_MAX)),
+        require(core_gguf_file_type::known_q4_k(file_type) || file_type == core_gguf_file_type::q8_0,
                 "unsupported quantized general.file_type");
     else
         u("general.file_type", GGML_FTYPE_ALL_F32);
@@ -98,10 +99,13 @@ inline void validate(gguf_context * g, bool quantized = false) {
                 "unsupported tensor shape/precision: " + item.first);
     }
     if (quantized) {
-        bool actual_q4_k = false;
-        for (int64_t i = 0; i < gguf_get_n_tensors(g); ++i)
-            actual_q4_k = actual_q4_k || gguf_get_tensor_type(g, i) == GGML_TYPE_Q4_K;
-        require(actual_q4_k, "Q4_K profile requires actual Q4_K tensors");
+        uint64_t actual_q8 = 0, actual_q4 = 0;
+        for (int64_t i = 0; i < gguf_get_n_tensors(g); ++i) {
+            actual_q8 += gguf_get_tensor_type(g, i) == GGML_TYPE_Q8_0;
+            actual_q4 += gguf_get_tensor_type(g, i) == GGML_TYPE_Q4_K;
+        }
+        require(core_gguf_file_type::matches_quantized_payload(file_type, actual_q8, actual_q4, true),
+                "Quantized header requires matching actual Q8_0/Q4_K tensors");
     }
 }
 inline bool load_tokenizer(gguf_context * g, BPETokenizer & raw, std::vector<std::string> & vocab) {

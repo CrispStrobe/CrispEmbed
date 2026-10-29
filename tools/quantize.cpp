@@ -37,6 +37,7 @@ static const std::map<std::string, enum ggml_ftype> FTYPE_MAP = {
 // sensitive to q8_0/k-quant weights — llm_layer_0 cos drops to ~0.936 (vs 0.9999 at
 // F16) and the OCR output degenerates. Enable with --decoder-f16. See issue #25.
 static bool g_legacy_file_type_header = false; // Explicit frozen-output reproduction only.
+static std::map<std::string, std::string> g_metadata_strings;
 static bool g_decoder_f16 = false;
 static bool g_decoder_attn_q8 = false;
 static bool g_ppocrv6_q8_head = false;
@@ -229,6 +230,19 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
     gguf_set_val_u32(ctx_out, "general.file_type", file_type);
     fprintf(stderr, "GGUF general.file_type=%u (%s header); tensor encoding unchanged\n", file_type,
             g_legacy_file_type_header ? "legacy internal enum: reproduction only" : "standard");
+    // Profile stamps may change string lengths. Apply before computing/writing
+    // the output header, so GGUF recomputes offsets instead of patching bytes.
+    for (const auto & item : g_metadata_strings) {
+        const auto key = gguf_find_key(ctx_in, item.first.c_str());
+        if (key < 0 || gguf_get_kv_type(ctx_in, key) != GGUF_TYPE_STRING) {
+            fprintf(stderr, "--metadata-string requires an existing string key: %s\n", item.first.c_str());
+            gguf_free(ctx_out);
+            gguf_free(ctx_in);
+            ggml_free(ctx_in_ggml);
+            return false;
+        }
+        gguf_set_val_str(ctx_out, item.first.c_str(), item.second.c_str());
+    }
 
     const int n_tensors = gguf_get_n_tensors(ctx_in);
     // Reject misspelled patterns before opening/truncating the output file.
@@ -1001,7 +1015,20 @@ int main(int argc, char ** argv) {
             g_decoder_attn_q8 = true;
         else if (a == "--ppocrv6-q8-head")
             g_ppocrv6_q8_head = true;
-        else if (a == "--tensor-type") {
+        else if (a == "--metadata-string") {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "--metadata-string requires KEY=VALUE\n");
+                return 1;
+            }
+            const std::string spec = argv[++i];
+            const auto equals = spec.find('=');
+            if (equals == std::string::npos || equals == 0 || equals > 256 || equals + 1 == spec.size() ||
+                spec.size() - equals - 1 > 4096 ||
+                !g_metadata_strings.emplace(spec.substr(0, equals), spec.substr(equals + 1)).second) {
+                fprintf(stderr, "Invalid or duplicate --metadata-string KEY=VALUE\n");
+                return 1;
+            }
+        } else if (a == "--tensor-type") {
             if (i + 1 >= argc) {
                 fprintf(stderr, "--tensor-type requires GLOB=TYPE\n");
                 return 1;
@@ -1031,9 +1058,12 @@ int main(int argc, char ** argv) {
     if (pos.size() != 3) {
         fprintf(stderr,
                 "usage: %s <input.gguf> <output.gguf> <type> [--decoder-f16] [--decoder-attn-q8] "
-                "[--ppocrv6-q8-head] [--imatrix <file>] [--tensor-type GLOB=TYPE]... [--legacy-file-type-header]\n\n",
+                "[--ppocrv6-q8-head] [--imatrix <file>] [--tensor-type GLOB=TYPE]... [--metadata-string KEY=VALUE]... "
+                "[--legacy-file-type-header]\n\n",
                 argv[0]);
         fprintf(stderr, "  --legacy-file-type-header  reproduce old internal-enum header; not for publication\n");
+        fprintf(stderr,
+                "  --metadata-string KEY=VALUE  replace an existing string profile key; tensor policy unchanged\n");
         fprintf(stderr, "  --imatrix <f> use a CrispEmbed importance matrix (from a calibration run\n");
         fprintf(stderr, "                with CRISPEMBED_IMATRIX_OUT set) to improve k-quant/IQ accuracy\n");
         fprintf(stderr, "  --tensor-type GLOB=TYPE  override eligible matrix precision (f32/f16/q8_0/q6_k/q5_k)\n");

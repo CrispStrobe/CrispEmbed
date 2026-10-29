@@ -20,6 +20,6 @@ class Controls(unittest.TestCase):
         self.assertIn('bool quantized = false',(ROOT/'src/ultrabert_profile.h').read_text())
     def test_actual_q4_and_critical_guards_not_global_relaxation(self):
         text=(ROOT/'src/ultrabert_profile.h').read_text()
-        for required in ['GGML_FTYPE_MOSTLY_Q4_K','GGML_FTYPE_ALL_F32','item.first == "token_embd.weight"','!critical','require(actual_q4_k']:
+        for required in ['core_gguf_file_type::known_q4_k','GGML_FTYPE_ALL_F32','item.first == "token_embd.weight"','!critical','matches_quantized_payload','actual_q8','actual_q4']:
             self.assertIn(required,text)
 if __name__=='__main__': unittest.main()

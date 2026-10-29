@@ -35,7 +35,8 @@ inline bool projection(const std::string & name) {
     return false;
 }
 inline bool quantized(const gguf_context * g) {
-    return g && text(g, "josev2b.packed.format", "crispembed-josev-packed-q4k-v1");
+    return g && (text(g, "josev2b.packed.format", "crispembed-josev-packed-q4k-v1") ||
+                 text(g, "josev2b.packed.format", "crispembed-josev-packed-mixed-v2"));
 }
 inline bool file_bounds(const char * path, std::string & error, bool allow_quantized = false) {
     try {
@@ -105,7 +106,7 @@ inline bool file_bounds(const char * path, std::string & error, bool allow_quant
             throw std::runtime_error("packed GGUFv3/442 tensors required");
         const uint64_t count = r.integer(8);
         if (count > 4096) throw std::runtime_error("packed metadata count exceeds4096");
-        bool mixed = false;
+        bool mixed = false, mixed_v2 = false;
         uint32_t file_type = UINT32_MAX;
         std::set<std::string> keys;
         for (uint64_t i = 0; i < count; ++i) {
@@ -117,16 +118,19 @@ inline bool file_bounds(const char * path, std::string & error, bool allow_quant
                 if (kind != 4 || r.integer(4) != 32) throw std::runtime_error("packed alignment must be32");
             } else if (name == "josev2b.packed.format") {
                 if (kind != 8) throw std::runtime_error("packed format must be string");
-                mixed = r.string() == "crispembed-josev-packed-q4k-v1";
+                const auto format = r.string();
+                mixed_v2 = format == "crispembed-josev-packed-mixed-v2";
+                mixed = mixed_v2 || format == "crispembed-josev-packed-q4k-v1";
             } else if (name == "general.file_type") {
                 if (kind != 4) throw std::runtime_error("packed file type must be uint32");
                 file_type = uint32_t(r.integer(4));
             } else
                 r.value(kind);
         }
-        if (mixed && (!allow_quantized || !core_gguf_file_type::known_q4_k(file_type)))
-            throw std::runtime_error("Josev mixed Q4_K profile gate/type rejected");
-        uint64_t actual_q4 = 0;
+        if (mixed && (!allow_quantized || !(core_gguf_file_type::known_q4_k(file_type) ||
+                                            (mixed_v2 && file_type == core_gguf_file_type::q8_0))))
+            throw std::runtime_error("Josev mixed quantized profile gate/type rejected");
+        uint64_t actual_q4 = 0, actual_q8 = 0;
         std::set<std::string> names;
         std::vector<std::pair<uint64_t, uint64_t>> ranges;
         uint64_t total = 0;
@@ -151,9 +155,10 @@ inline bool file_bounds(const char * path, std::string & error, bool allow_quant
                     throw std::runtime_error("packed critical/legacy tensor requires F32");
                 if (type == GGML_TYPE_F16)
                     bytes = elements * 2;
-                else if (type == GGML_TYPE_Q8_0 && width % 32 == 0)
+                else if (type == GGML_TYPE_Q8_0 && width % 32 == 0) {
                     bytes = elements / 32 * 34;
-                else if (type == GGML_TYPE_Q4_K && width % 256 == 0) {
+                    ++actual_q8;
+                } else if (type == GGML_TYPE_Q4_K && width % 256 == 0) {
                     bytes = elements / 256 * 144;
                     ++actual_q4;
                 } else
@@ -165,7 +170,8 @@ inline bool file_bounds(const char * path, std::string & error, bool allow_quant
             ranges.emplace_back(offset, offset + bytes);
             total += elements;
         }
-        if (mixed && !actual_q4) throw std::runtime_error("Q4_K profile requires actual Q4_K tensors");
+        if (mixed && !core_gguf_file_type::matches_quantized_payload(file_type, actual_q8, actual_q4, mixed_v2))
+            throw std::runtime_error("Quantized header requires matching actual Q8_0/Q4_K storage");
         if (total != uint64_t(1881825088 + 30472708)) throw std::runtime_error("packed parameter inventory differs");
         const auto start = (r.at + 31) / 32 * 32;
         const auto padding = start - r.at;
@@ -202,7 +208,9 @@ inline bool metadata_valid(const gguf_context * g, std::string & error, bool all
         !(text(g, "josev2b.packed.format", "crispembed-josev-packed-f32-v1") ||
           (allow_quantized && quantized(g) &&
            (number(g, "general.file_type", core_gguf_file_type::q4_k_s) ||
-            number(g, "general.file_type", core_gguf_file_type::legacy_q4_k)))) ||
+            number(g, "general.file_type", core_gguf_file_type::legacy_q4_k) ||
+            (text(g, "josev2b.packed.format", "crispembed-josev-packed-mixed-v2") &&
+             number(g, "general.file_type", core_gguf_file_type::q8_0))))) ||
         !text(g, "josev2b.packed.profile", "official-pytorch-text-batch1-512-no-extra-temperature") ||
         !text(g, "josev2b.packed.backbone_gguf_sha256",
               "8dc144a89e4b2bbf253fe395eeb9bc4d1eb7b3a27474442847535e55c79b361c") ||
