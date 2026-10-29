@@ -457,12 +457,24 @@
   },
   "owned_sha256": {
     ".github/workflows/unlimited-reused-q4-first-panel-v1.yml": "e411d4542f1bdd75b7e17fe47433c4883ea16c54a91cf66de7e428f52edb266a",
-    "docs/unlimited-reused-q4-first-panel-v1.md": "03c4393ab425f90a13d0bee8e3b32793f2eead6f6ab432309ce7f3208f14f026",
-    "tests/test_unlimited_reused_q4_v1.py": "e1b70e1e1d0dc0c88cb5a32159bc3397bf38542e77ad9a951dbf19f04bf45cad",
+    "docs/unlimited-reused-q4-first-panel-v1.md": "afc6adda95afa3dd55dc445271c3b1e3ff57ee0f6667408eb29f599dae3fb572",
+    "tests/test_unlimited_reused_q4_v1.py": "63e56429dd8d7adee1139d076074223afeaa2f4f27807d3c299933c6912ee652",
     "tools/unlimited-reused-q4-v1/fetch.py": "8eb971792716344ac55e8c3cc3ccdbdc795dbe1dcfebeab462101efd2c2e21b5",
-    "tools/unlimited-reused-q4-v1/lane.py": "8007a61796e23b1e8635ffb21c4b27126f5d8cb756bb9b44a9a92b7d3a02381b",
+    "tools/unlimited-reused-q4-v1/lane.py": "c1f0eb08c8da535ff14288383eac4183051e3c8c0befbc71b8a7b34c44126021",
     "tools/unlimited-reused-q4-v1/process.py": "f482067438e5d5cec00436f4c54c3636e0b8cf886620feaed4ea8e0ab4e6eed9",
-    "tools/unlimited-reused-q4-v1/replay.py": "a2de172a4cbae3630be2a8598437026a68f2db2477f7e79b8e36bd69bd53254e",
+    "tools/unlimited-reused-q4-v1/replay.py": "b90014b95312db5bb13c9e02885bbb7c227da4604472daeaa43378f6bdc56056",
     "tools/unlimited-reused-q4-v1/run.py": "158c21b991c6cd2b72d020d5c2ef07332ddae2c5282c4c4ca4595b8dd040ec0d"
-  }
+  },
+  "f16_admission": {
+    "cross_old_float_stages": 47,
+    "additional_assembled_vision_stages": 1,
+    "cross_old_integer_stages": 11,
+    "cross_old_floating_sha_admission": false,
+    "cross_old_vision_sha_admission": false,
+    "current_stage_repeat_byte_exact": true,
+    "current_vision_repeat_byte_exact": true,
+    "cross_old_decoded_bytes_exact": true
+  },
+  "initial_source_checkpoint": "d716234dbda79a0d9b2ff54bb079fc7adb050d4b",
+  "source_followup": "Before execution: restore unchanged cross-host float gates, keep cross-host SHA diagnostic, add separately labeled vision numerical screen; no historical gate/reference change."
 }

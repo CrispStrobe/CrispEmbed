@@ -14,7 +14,7 @@ from process import run as child
 def equal_stage(a,b):return all(a[k]==b[k]for k in ('shape','type','bytes','sha256'))
 
 def barrier(current,retained,refs):
-    """Strict bytes include signed zero; never replace a failed byte check with cosine."""
+    """Current-host repeat bits are exact; cross-host float admission is numerical."""
     c.require(set(current)==set(retained)=={'plain','ordinary','observed','repeat'},'four F16 modes required')
     for mode,row in current.items():
         target=retained[mode]
@@ -22,13 +22,33 @@ def barrier(current,retained,refs):
         c.require(row['output_count']==target['output_count']and row['token_cap_reached']is False and
             row['eos_observed']==target['eos_observed']is False and row['stop_contract']==target['stop_contract'],'F16 exact no-cap/source-derived stop contract differs')
     a,b=current['observed'],current['repeat']
-    c.require(a['vision']==b['vision']==retained['observed']['vision']==retained['repeat']['vision'],'F16 retained/current/repeat vision bytes differ')
+    c.require(a['vision']==b['vision']and retained['observed']['vision']==retained['repeat']['vision'],'F16 within-host vision repeat bytes differ')
+    c.require(a['vision']['bytes']==retained['observed']['vision']['bytes'],'F16 cross-host vision extent differs')
     c.require(set(a['stages'])==set(b['stages'])==set(retained['observed']['stages'])==set(retained['repeat']['stages']),'F16 exact58 coverage differs')
     c.require(len(a['stages'])==58,'exact58 F16 observations required')
+    floating={};integer={}
     for name in a['stages']:
-        c.require(all(equal_stage(a['stages'][name],v)for v in (b['stages'][name],retained['observed']['stages'][name],retained['repeat']['stages'][name])),'F16 retained/current/repeat raw stage differs: '+name)
-    return dict(passed=True,modes=4,stages=58,ids_text_exact=True,vision_byte_exact=True,observed_repeat_retained_byte_exact=True,
+        value=a['stages'][name];old_value=retained['observed']['stages'][name]
+        c.require(equal_stage(value,b['stages'][name])and equal_stage(old_value,retained['repeat']['stages'][name]),'F16 within-host raw repeat differs: '+name)
+        c.require(all(value[k]==old_value[k]for k in ('shape','type','bytes')),'F16 cross-host stage shape/type/extent differs: '+name)
+        exact=value['sha256']==old_value['sha256']
+        if value['type']=='i32':
+            c.require(exact,'F16 cross-host integer router IDs differ: '+name);integer[name]=True
+        else:
+            c.require(value['type']=='f32','F16 explicit stage scalar type required');floating[name]=exact
+    c.require(len(floating)==47 and len(integer)==11,'47 F32/11 integer control coverage required')
+    return dict(passed=True,modes=4,stages=58,ids_text_exact=True,current_observed_repeat_stages_byte_exact=True,
+        current_observed_repeat_vision_byte_exact=True,cross_old_integer_stages_exact=integer,
+        cross_old_floating_stage_sha_diagnostic=floating,cross_old_vision_sha_diagnostic=a['vision']['sha256']==retained['observed']['vision']['sha256'],
+        cross_old_floating_sha_is_admission=False,cross_old_vision_sha_is_admission=False,
         eos_id_observed=False,stop_contract=a['stop_contract'])
+
+
+def vision_spec(path,identity):
+    # Protected unlimited_ocr.cpp4340 emits row-major [n_vis_total,D], D1280.
+    c.require(identity['bytes']>0 and identity['bytes']%(1280*4)==0,'exact assembled-vision F32 row extent required')
+    return dict(path=str(path),shape=[identity['bytes']//(1280*4),1280],sha256=identity['sha256'])
+
 
 
 def run(a):
@@ -109,6 +129,12 @@ def run(a):
             c.require(len(pairs)==47,'47 F32 and11 integer original native stages required')
             entry['retained_stage_actual_ref']=compare(pairs,'f16/'+case+'/retained-comparison');save()
             c.require(entry['retained_stage_actual_ref']['passed'],'retained/current F16 actual Ref control rejected')
+            old_vision=old_case['modes']['observed']['vision'];new_vision=current['observed']['vision']
+            c.require(old_vision['bytes']==new_vision['bytes'],'retained/current assembled-vision logical shape differs')
+            vision_pair=dict(name='assembled_vision',original=vision_spec(retained/'baseline'/case/'observed-trace/assembled-vision.f32',old_vision),
+                native=vision_spec(a.out/'f16'/case/'observed-trace/assembled-vision.f32',new_vision))
+            entry['additional_assembled_vision_actual_ref']=compare([vision_pair],'f16/'+case+'/additional-vision-comparison');save()
+            c.require(entry['additional_assembled_vision_actual_ref']['passed'],'additional retained/current vision numerical screen rejected')
             entry['barrier']=barrier(current,old_case['modes'],refs[case]);entry['completed']=True;controls[case]=current['observed']['stages'];save()
         c.require(report['actual_calls']['f16_commands_completed']==16 and all(r['completed']for r in report['baseline']),'all16 original-matched F16 controls required')
         report.update(f16_all_four_strict_retained_barrier_passed=True,phase='immutable-last1-only');save()

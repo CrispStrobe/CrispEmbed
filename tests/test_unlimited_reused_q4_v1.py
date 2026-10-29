@@ -21,7 +21,7 @@ spec=importlib.util.spec_from_file_location('new_last1_fetch',ROOT/'tools/unlimi
 
 class Controls(unittest.TestCase):
     def fixture(self):
-        stages={k:dict(shape=[1,1,4],type='f32',bytes=16,sha256=hashlib.sha256(struct.pack('<4f',0.,1.,2.,3.)).hexdigest())for k in ['layer_'+str(i)for i in range(58)]}
+        stages={k:dict(shape=[1,1,4],type='i32'if i<11 else'f32',bytes=16,sha256=hashlib.sha256(struct.pack('<4f',0.,1.,2.,3.)).hexdigest())for i in range(58)for k in ['layer_'+str(i)]}
         row=dict(ids=[7,8],text='complete\ntext',output_count=2,token_cap_reached=False,eos_observed=False,
             stop_contract='source-derived EOS/page guard; generated IDs exclude EOS',command=dict(stdout_sha256=hashlib.sha256(b'complete\ntext\n').hexdigest()),vision=dict(bytes=5120,sha256='f'*64),stages=stages)
         current={m:copy.deepcopy(row)for m in ('plain','ordinary','observed','repeat')}
@@ -35,16 +35,36 @@ class Controls(unittest.TestCase):
                 with self.assertRaises(ValueError):r.barrier(a,b,ref)
         for mode in ('observed','repeat'):
             for field,value in [('shape',[2,1,2]),('type','i32'),('bytes',12),('sha256','0'*64)]:
-                a,b,ref=self.fixture();a[mode]['stages']['layer_3'][field]=value
+                a,b,ref=self.fixture();a[mode]['stages']['layer_13'][field]=value
                 with self.assertRaises(ValueError):r.barrier(a,b,ref)
             a,b,ref=self.fixture();a[mode]['vision']['sha256']='0'*64
             with self.assertRaises(ValueError):r.barrier(a,b,ref)
+    def test_cross_host_float_hash_is_diagnostic_but_integer_hash_is_exact(self):
+        a,b,ref=self.fixture()
+        for mode in ('observed','repeat'):
+            a[mode]['stages']['layer_13']['sha256']='a'*64
+            a[mode]['vision']['sha256']='b'*64
+        proof=r.barrier(a,b,ref)
+        self.assertFalse(proof['cross_old_floating_stage_sha_diagnostic']['layer_13'])
+        self.assertFalse(proof['cross_old_vision_sha_diagnostic']);self.assertFalse(proof['cross_old_floating_sha_is_admission'])
+        for mode in ('observed','repeat'):a[mode]['stages']['layer_3']['sha256']='c'*64
+        with self.assertRaisesRegex(ValueError,'integer router'):r.barrier(a,b,ref)
+
+    def test_additional_vision_is_separate_from_all47_original_float_gates(self):
+        value=r.vision_spec(Path('owned.f32'),dict(bytes=3*1280*4,sha256='0'*64));self.assertEqual(value['shape'],[3,1280])
+        for size in (0,1279*4,1280*4+1):
+            with self.assertRaises(ValueError):r.vision_spec(Path('owned.f32'),dict(bytes=size,sha256='0'*64))
+        text=(ROOT/'tools/unlimited-reused-q4-v1/replay.py').read_text()
+        self.assertIn("len(pairs)==47",text)
+        self.assertLess(text.index("entry['additional_assembled_vision_actual_ref']['passed']"),text.index('f16_all_four_strict_retained_barrier_passed=True'))
+        self.assertIn('all_metrics_agree',text)
+
     def test_raw_stdout_change_cannot_hide_behind_normalized_text(self):
         a,b,ref=self.fixture();a['ordinary']['command']['stdout_sha256']=hashlib.sha256(b'complete\r\ntext\n').hexdigest()
         with self.assertRaises(ValueError):r.barrier(a,b,ref)
 
     def test_signed_zero_is_not_byte_neutral(self):
-        a,b,ref=self.fixture();a['repeat']['stages']['layer_3']['sha256']=hashlib.sha256(struct.pack('<4f',-0.,1.,2.,3.)).hexdigest()
+        a,b,ref=self.fixture();a['repeat']['stages']['layer_13']['sha256']=hashlib.sha256(struct.pack('<4f',-0.,1.,2.,3.)).hexdigest()
         with self.assertRaises(ValueError):r.barrier(a,b,ref)
     def test_import_blocker_covers_framework_array_and_image_before_544(self):
         block=f.NoPayloadImports()

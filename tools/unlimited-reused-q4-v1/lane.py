@@ -46,6 +46,9 @@ def declaration():
     require(c['images']=={case:dict(member='unlimited-q4k/pages/'+case+'.png',sha256=images[case],maximum_bytes=2*2**20)for case in frozen.CASES},'only four original frozen PNG identities admitted')
     require(c['publication_qualified']is False and c['original_intermediate_gold']is False and c['original_rerun']is False and c['default_enabled']is False,'diagnostic scope differs')
     require(c['threads']==4 and c['max_tokens']==1024 and c['chunk']==2048 and c['workflow_minutes']==360 and c['panel_seconds']==18000,'predeclared profile/bounds differ')
+    require(c['f16_admission']==dict(cross_old_float_stages=47,additional_assembled_vision_stages=1,cross_old_integer_stages=11,
+        cross_old_floating_sha_admission=False,cross_old_vision_sha_admission=False,current_stage_repeat_byte_exact=True,
+        current_vision_repeat_byte_exact=True,cross_old_decoded_bytes_exact=True),'cross-host/current-host baseline scope differs')
     required=set(git('ls-tree','-r','--name-only',c['base'],*frozen.PREFIXES,'tools/unlimited-ocr2-q4k','tests/unlimited-q4k',
         'tools/kaggle/unlimited-ocr2-q4k','tools/unlimited-ocr2','tests/unlimited-real-decode').decode().splitlines())
     required.discard('ggml')

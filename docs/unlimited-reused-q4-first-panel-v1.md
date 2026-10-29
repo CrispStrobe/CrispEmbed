@@ -45,12 +45,33 @@ All four development pages first execute the existing F16 modes: plain CLI,
 ordinary overlay CLI, observed overlay and repeat overlay. **All16 F16 forwards
 must finish before any Q4 forward.** Generated IDs, complete raw text and no-cap/
 source-derived stop contracts must match the retained modes and original trial.
-All58 observed/repeated stage shapes, types, byte extents and SHA256 values must
-match both each other and the retained traces. Vision bytes must also match.
-SHA comparisons preserve signed zero. Each page additionally compares its47 F32
-stages against retained F16 through actual `crispembed_diff::Ref` and independent
-metrics; eleven router-ID stages retain exact integer identity. A failed F16
-barrier blocks Q4 and retains partial evidence.
+All58 current observed/repeated stage shapes, types, byte extents and SHA256
+values must match each other, including signed zero. All current vision bytes
+must repeat exactly. Against the old host, the58 stage shapes/types/extents must
+match; all eleven integer router-ID payloads remain byte exact. The47 floating
+stage SHA comparisons against the old host are explicitly diagnostic; their
+admission uses actual `crispembed_diff::Ref` and independent metrics at unchanged
+max absolute0.002/minimum row cosine0.99999. The retained historical stage flags
+and native repeats are not changed.
+
+Assembled vision is a separate F32 payload, not one of those47 stages. The
+protected production source emits it as row-major `[n_vis_total,1280]`. Add one
+separately labeled current/old assembled-vision numerical comparison per page
+under the same0.002/0.99999 gates. Its cross-host SHA flag is diagnostic; current
+observed/repeated vision bytes remain mandatory. Thus the F16 baseline has47+1
+numeric comparisons per page, with the extra vision screen declared before
+outputs. A failed F16 numerical, integer, decoded or current-repeat barrier blocks
+Q4 and retains partial evidence. All16 retained stdout hashes independently equal
+UTF8(raw OCR text plus the CLI's single appended newline); no timing or command
+JSON is compared for cross-run identity.
+
+The initial source-only checkpoint
+[`d716234db`](https://github.com/CrispStrobe/CrispEmbed/commit/d716234dbda79a0d9b2ff54bb079fc7adb050d4b)
+required cross-host floating/vision SHA equality in addition to numerical gates.
+It was never dispatched. This pre-execution followup corrects that newly added
+cross-host bit gate, retains diagnostic byte flags and the unchanged historical
+numerical gates, and preserves the initial checkpoint. It does not waive an
+executed or historical failure.
 
 Only then execute candidate plain/observed/repeat modes for each page:12 Q4 full
 forwards maximum. Require observer decoded neutrality, all58 repeated stage bytes
