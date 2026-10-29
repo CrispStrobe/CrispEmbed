@@ -1278,3 +1278,18 @@ ISA helper/a06/LLAMAFILE, actual C quantizer and original Ref. Registered
 `gemma-decision-first-q4-v1.yml` must execute this exact branch, with strict
 F32145 stages/eight typed/30 bank gates before either predeclared recipe.
 Maximum264 encoder forwards/zero original. No public CAPI or publication claim.
+
+### Critical-tensor precision decisions and MiniCPM Q8 follow-up
+
+Use [the measured per-model precision audit](docs/critical-tensor-precision-20261029.md).
+MiniCPM's positive vision similarity for Q4 comes from retaining vision source
+precision:186 decoder matrices selected,593 excluded, while Q8 quantizes vision
+linears. The next separately closed Q8 recipe should use the SAME186 decoder
+names as the frozen Q4 selection and actual Q8 storage, preserving all593
+source-F16-model payloads/types/shapes (including F32 norms) byte-exact. No new
+generic quantizer default. Verify full779-role census/header and actual C
+quantizer use before all five decoded/intermediate cases with a same-source
+F32/F16 control. Reuse immutable original/frozen inputs; no23-case original
+recapture. Report unchanged F32 layer26 failures and96 unmapped crop parts
+separately; this ablation cannot waive either. Source/model/forward counts,
+reference receipts and review precede hosted execution/publication.

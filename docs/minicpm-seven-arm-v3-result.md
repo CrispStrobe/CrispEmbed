@@ -20,6 +20,14 @@ The Q8 tiny arm already differs at vision layer0. Preserve all numerical
 flags; high cosine cannot erase an absolute rejection. Higher precision alone
 cannot explain or fix failures shared by F32/F16/Q4.
 
+The recipes protect different groups: Q4_K changes186 decoder projection
+matrices and preserves593 tensors from the F16-source model, including vision.
+Q8 quantizes vision linears while retaining the exact F16 patch embedding.
+Its tiny first vision block has max0.0706520/RMS0.00215511/cosine0.999984931;
+patch protection alone is insufficient. A new decoder-only Q8 ablation should
+retain all593 exclusions byte-exact before inference; this is not evidence
+that four-bit storage is inherently more accurate than eight-bit storage.
+
 The original merger hook captured LIST element0 only. Overview correspondence
 is explicit;96 later crop parts across all30 arms remain unmapped to original
 tensors. Next, declare a one-case source-derived vision operator attribution
