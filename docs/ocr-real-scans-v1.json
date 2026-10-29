@@ -1,0 +1,961 @@
+{
+ "schema": "crispembed-ocr-real-scans-v1",
+ "description": "Real document scans with permissive licences and ground truth for OCR quality measurement. Images are fetched at runtime by URL and verified by sha256 (not committed).",
+ "builder": "tools/ocr-real-scans/build_manifest.py",
+ "normalization": "see tools/kaggle/ocr-real-scans/score.py",
+ "pages": [
+  {
+   "id": "en-prose-constitution-13",
+   "tags": [
+    "en",
+    "prose",
+    "clean"
+   ],
+   "priority": 1,
+   "source": "wikisource",
+   "image": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/35/The_English_Constitution_%281894%29.djvu/page13-1280px-The_English_Constitution_%281894%29.djvu.jpg",
+    "sha256": "36c1b61692719239b011442ad4670655374d8c219b333b054fbcb05a46a38a86",
+    "bytes": 330404,
+    "width": 1600,
+    "height": 2596,
+    "derived_from": {
+     "file": "File:The English Constitution (1894).djvu",
+     "page": "13",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/3/35/The_English_Constitution_%281894%29.djvu",
+     "file_sha1": "7f6b5e76bbd421d072c7b41ffcdf12f8770c44a3",
+     "host": "commons.wikimedia.org"
+    }
+   },
+   "image_license": {
+    "license": "Public domain",
+    "usage_terms": "Public domain",
+    "copyrighted": false,
+    "attribution": "Bagehot, Walter, 1826-1877; scan: archive.org"
+   },
+   "ground_truth": "INTRODUCTION\nTO THE\nSECOND EDITION\nThere is a great difficulty in the way of a writer who attempts to sketch a living Constitution—a Constitution that is in actual work and power. The difficulty is that the object is in constant change. An historical writer does not feel this difficulty: he deals only with the past; he can say definitely, the Constitution worked in such and such a manner in the year at which he begins, and in a manner in such and such respects different in the year at which he ends; he begins with a definite point of time and ends with one also. But a contemporary writer who tries to paint what is before him is puzzled and perplexed; what he sees is changing daily. He must paint it as it stood at some one time, or else he will be putting side by side in his representations things which never were contemporaneous in reality. The difficulty is the greater because a writer who deals with a living government",
+   "ground_truth_provenance": {
+    "kind": "Wikisource proofread transcription, status Validated (quality 4)",
+    "wiki": "en.wikisource.org",
+    "page": "Page:The English Constitution (1894).djvu/13",
+    "revision_id": 11964236,
+    "revision_timestamp": "2021-12-22T09:13:09Z",
+    "revision_url": "https://en.wikisource.org/w/index.php?oldid=11964236",
+    "derivation": "rendered page HTML -> text (tables row-major, cells space-joined; quality banner, hidden padding and de.wikisource navigation headings/metadata header removed)",
+    "manual_edits": [],
+    "scope": "full page incl. running head/page number"
+   },
+   "ground_truth_license": "CC BY-SA 4.0 (Wikisource contributors; transcription of a public-domain work, see the page history at the revision URL)",
+   "max_tokens": 816
+  },
+  {
+   "id": "de-fraktur-grimm-319",
+   "tags": [
+    "de",
+    "fraktur",
+    "umlauts",
+    "prose"
+   ],
+   "priority": 1,
+   "source": "wikisource",
+   "image": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/a/aa/Kinder-_und_Haus-M%C3%A4rchen_1837_Band_2.djvu/page319-1280px-Kinder-_und_Haus-M%C3%A4rchen_1837_Band_2.djvu.jpg",
+    "sha256": "83e1cabd6fd70576dc3351c1c5655d40a7056fd49ca6e0e3192dd14abc9d42b5",
+    "bytes": 281817,
+    "width": 1600,
+    "height": 2247,
+    "derived_from": {
+     "file": "File:Kinder- und Haus-Märchen 1837 Band 2.djvu",
+     "page": "319",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/a/aa/Kinder-_und_Haus-M%C3%A4rchen_1837_Band_2.djvu",
+     "file_sha1": "6ad26a871eac2e330be35cd43f45bc5420bcb161",
+     "host": "commons.wikimedia.org"
+    }
+   },
+   "image_license": {
+    "license": "Public domain",
+    "usage_terms": "Public domain",
+    "copyrighted": false,
+    "attribution": "Brüder Grimm; scan: Staatsbibliothek zu Berlin"
+   },
+   "ground_truth": "— 310 —\n155.\nDie Brautschau.\nEs war ein junger Hirte, der wollte gern heirathen, und kannte drei Schwestern, davon war eine so schön wie die andere, daß ihm die Wahl schwer wurde, und er sich nicht entschließen konnte einer davon den Vorzug zu geben. Da fragte er seine Mutter um Rath, die sprach „lad alle dreie ein, und setz ihnen Käs vor, und hab acht wie sie ihn anschneiden.“ Das that der Jüngling, die erste aber verschlang den Käs mit der Rinde, die zweite schnitt in der Hast die Rinde vom Käs ab, weil sie aber so hastig war, ließ sie noch viel Gutes daran, und warf das mit weg; die dritte schälte ordentlich die Rinde ab, nicht zu viel und nicht zu wenig. Der Hirt erzählte das alles seiner Mutter, da sprach sie „nimm die dritte zu deiner Frau.“ Das that er, und lebte zufrieden und glücklich mit ihr.",
+   "ground_truth_provenance": {
+    "kind": "Wikisource proofread transcription, status Validated (quality 4)",
+    "wiki": "de.wikisource.org",
+    "page": "Seite:Kinder- und Haus-Märchen 1837 Band 2.djvu/319",
+    "revision_id": 3337041,
+    "revision_timestamp": "2018-08-01T01:21:48Z",
+    "revision_url": "https://de.wikisource.org/w/index.php?oldid=3337041",
+    "derivation": "rendered page HTML -> text (tables row-major, cells space-joined; quality banner, hidden padding and de.wikisource navigation headings/metadata header removed)",
+    "manual_edits": [
+     [
+      "prepend",
+      "— 310 —"
+     ]
+    ],
+    "scope": "full page; running head/page number added by manual edit where printed"
+   },
+   "ground_truth_license": "CC BY-SA 4.0 (Wikisource contributors; transcription of a public-domain work, see the page history at the revision URL)",
+   "max_tokens": 768
+  },
+  {
+   "id": "en-table-climatic-26",
+   "tags": [
+    "en",
+    "table"
+   ],
+   "priority": 1,
+   "source": "wikisource",
+   "image": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/59/Climatic_Cycles_and_Tree-Growth_-_1919.djvu/page26-1280px-Climatic_Cycles_and_Tree-Growth_-_1919.djvu.jpg",
+    "sha256": "1e72426a797315540ad1b06f52eaac948fe109c80301738b5c69aa114bda3635",
+    "bytes": 700043,
+    "width": 1600,
+    "height": 2559,
+    "derived_from": {
+     "file": "File:Climatic Cycles and Tree-Growth - 1919.djvu",
+     "page": "26",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/5/59/Climatic_Cycles_and_Tree-Growth_-_1919.djvu",
+     "file_sha1": "368eca9c670b8eecfb59189cf517238462da9bd7",
+     "host": "commons.wikimedia.org"
+    }
+   },
+   "image_license": {
+    "license": "Public domain",
+    "usage_terms": "Public domain",
+    "copyrighted": false,
+    "attribution": "Creator:Andrew Ellicott Douglass; scan: The Internet Archive: https://archive.org/details/climaticcyclestr01douguoft"
+   },
+   "ground_truth": "20\nCLIMATIC CYCLES AND TREE-GROWTH.\nwere cut during various months from May to November. Naturally, those cut in May are in the midst of their most rapid growth, while those cut in summer may or may not show the double ring just forming. The conditions are shown in table 2.\nTable 2.\nGroup. Altitude. Date of cutting. Cutting season. Remarks.\n1 feet. 6,125 1911 May, June 9 out of 10 show white tissue only.\n2 and 4 6420 1909 July to Sept. 30 out of 33 show red ring just forming, probably a doubling.\n5 5,800 1909 Summer 3 or 4 out of 10 show red ring just forming, probably a doubling.\n3 6,800 1910 Oct. and Nov. All 12 show white without red, probably a large single.\nBy reference to figure 1, showing the curves of monthly rainfall for 1909 and 1910, it will be seen that 1910 would be likely to carry its growth through the year and produce a single line, as in group 3 above. The year 1909 is of intermediate character, having heavy winter precipitation and a severe spring drought of 3 months. In the groups cut at this time 33 out of 43 show a red ring forming in July, August, or September, doubtless the preliminary ring of a double. This lesser red ring is due to the spring drought, and its appearance at this time indicates a lag of a couple of months, more or less, in the response of the tree to rain. The whole matter of the relative thickness of the red and white portions of the rings is illustrated in figure 2. The heavy sinuous line shows the rainfall month by month at Prescott throughout the 43 years under consideration. The total rainfall for the year is indicated by the dotted rectangles while the size and character of the, rings is shown in the solid rectangles. In these the white portion indicates the white tissue and the shaded portion indicates red tissue.\nSignificance of subdivisions in rings.—The normal ring consists of a soft, light-colored tissue which forms in the spring, merging into a harder reddish portion which abruptly ends as the tree ceases growth for the year. The present subject (namely, the time of year of ring formation) indicates that the red tissue appears as the tree feels lack of sufficient moisture. Therefore, the great diversity in relative size of the red tissue and the occasional appearance of false rings undoubtedly has a real significance as to distribution of precipitation during the growing-season. This subject is a very promising one, but has received little attention in the present work. The trees of the Prescott group offer a few interesting examples of two or three false red rings in one year; they also have exceptionally many cases of omitted rings; both of these peculiarities are explained by the fact that these trees are close to the lowest elevation at which the climate permits them to live; they are therefore greatly affected by rainfall distribution and probably exaggerate its changes.",
+   "ground_truth_provenance": {
+    "kind": "Wikisource proofread transcription, status Validated (quality 4)",
+    "wiki": "en.wikisource.org",
+    "page": "Page:Climatic Cycles and Tree-Growth - 1919.djvu/26",
+    "revision_id": 7691194,
+    "revision_timestamp": "2018-07-25T01:01:54Z",
+    "revision_url": "https://en.wikisource.org/w/index.php?oldid=7691194",
+    "derivation": "rendered page HTML -> text (tables row-major, cells space-joined; quality banner, hidden padding and de.wikisource navigation headings/metadata header removed)",
+    "manual_edits": [
+     [
+      "insert_before",
+      "1 feet. 6,125",
+      "Group. Altitude. Date of cutting. Cutting season. Remarks."
+     ]
+    ],
+    "scope": "full page incl. running head/page number"
+   },
+   "ground_truth_license": "CC BY-SA 4.0 (Wikisource contributors; transcription of a public-domain work, see the page history at the revision URL)",
+   "max_tokens": 1982
+  },
+  {
+   "id": "de-antiqua-kafka-schloss-211",
+   "tags": [
+    "de",
+    "antiqua",
+    "umlauts",
+    "prose"
+   ],
+   "priority": 1,
+   "source": "wikisource",
+   "image": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/0/01/De_Kafka_Schlo%C3%9F_211.jpg",
+    "sha256": "4758ee30dc4d6fa9766e05c81efbbc57a490f4ba0b11b8fa875ba67dfcbad593",
+    "bytes": 117978,
+    "width": 1600,
+    "height": 2500,
+    "derived_from": {
+     "file": "File:De Kafka Schloß 211.jpg",
+     "page": null,
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/0/01/De_Kafka_Schlo%C3%9F_211.jpg",
+     "file_sha1": "e3ffab4360e7fa183e8d41d93c67a1ef9ad03e49",
+     "host": "commons.wikimedia.org"
+    }
+   },
+   "image_license": {
+    "license": "Public domain",
+    "usage_terms": "Public domain",
+    "copyrighted": false,
+    "attribution": "Franz Kafka; scan: scan from original book"
+   },
+   "ground_truth": "an das Zimmer und die Leute hier gewöhnen mußte und es mit Widerwillen tat, sagte K., nicht um sich etwas bestätigen zu lassen, was er wußte, sondern um einem Angriff zuvorzukommen, den er fast fürchtete, so verletzlich war es jetzt: „Ist also Klamm schon fortgefahren?“ Die Wirtin ging stumm an ihm vorüber, aber der Herr sagte von seinem Tischchen her; „Ja, gewiß. Da Sie Ihren Wachtposten aufgegeben hatten, konnte ja Klamm fahren. Aber wunderbar ist es, wie empfindlich der Herr ist. Bemerkten Sie, Frau Wirtin, wie unruhig Klamm ringsumher sah?“ Die Wirtin schien das nicht bemerkt zu haben, aber der Herr fuhr fort: „Nun, glücklicherweise war ja nichts mehr zu sehen, der Kutscher hatte auch die Fußspuren im Schnee glattgekehrt.“ „Die Frau Wirtin hat nichts bemerkt,“ sagte K., aber er sagte es nicht aus irgendeiner Hoffnung, sondern nur gereizt durch des Herrn Behauptung, die so abschließend und inappellabel hatte klingen wollen. „Vielleicht war ich gerade nicht beim Schlüsselloch“, sagte die Wirtin zunächst, um den Herrn in Schutz zu nehmen, dann aber wollte sie auch Klamm sein Recht geben und fügte hinzu: „Allerdings,\n[211]",
+   "ground_truth_provenance": {
+    "kind": "Wikisource proofread transcription, status Validated (quality 4)",
+    "wiki": "de.wikisource.org",
+    "page": "Seite:De Kafka Schloß 211.jpg",
+    "revision_id": 3249631,
+    "revision_timestamp": "2018-07-31T13:42:45Z",
+    "revision_url": "https://de.wikisource.org/w/index.php?oldid=3249631",
+    "derivation": "rendered page HTML -> text (tables row-major, cells space-joined; quality banner, hidden padding and de.wikisource navigation headings/metadata header removed)",
+    "manual_edits": [
+     [
+      "append",
+      "[211]"
+     ]
+    ],
+    "scope": "full page; running head/page number added by manual edit where printed"
+   },
+   "ground_truth_license": "CC BY-SA 4.0 (Wikisource contributors; transcription of a public-domain work, see the page history at the revision URL)",
+   "max_tokens": 940
+  },
+  {
+   "id": "en-form-economic-journal-67",
+   "tags": [
+    "en",
+    "form",
+    "table"
+   ],
+   "priority": 1,
+   "source": "wikisource",
+   "image": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/92/The_Economic_Journal_Volume_1.djvu/page67-1920px-The_Economic_Journal_Volume_1.djvu.jpg",
+    "sha256": "4d6e0d71fe7efdbce4947ccadc4dac2b15743026ea3bac9d84a45ef959a7051a",
+    "bytes": 709225,
+    "width": 1600,
+    "height": 2487,
+    "derived_from": {
+     "file": "File:The Economic Journal Volume 1.djvu",
+     "page": "67",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/9/92/The_Economic_Journal_Volume_1.djvu",
+     "file_sha1": "1408a155aa7aa71fac34e42920c798636cd7ae6e",
+     "host": "commons.wikimedia.org"
+    }
+   },
+   "image_license": {
+    "license": "Public domain",
+    "usage_terms": "Public domain",
+    "copyrighted": false,
+    "attribution": "ed. F. Y. Edgeworth; scan: Google Books"
+   },
+   "ground_truth": "THE ELEVENTH CENSUS OF THE UNITED STATES\n47\nSchedule No. 1.—Population and Social Statistics\nA. No. of dwelling-house in the order of visitation. B. No. of families in this dwelling-house. C. No. of persons in this dwelling-house. D. No. of family in the order of visitation. E. No. of persons in this family.\n1 Christian name in full, and initial of middle name.\nSurname.\n2 Whether a soldier, sailor, or marine during the civil war (U.S. or Conf.), or widow of such person.\n3 Relationship to head of family\n4 Whether white, black, mulatto, quadroon, octoroon, Chinese, Japanese, or Indian.\n5 Sex.\n6 Age at nearest birthday. If under one year, give age in months.\n7 Whether single, married, widowed, or divorced.\n8 Whether married during the census year (June 1, 1889 to May 31, 1890).\n9 Mother of how many children, and number of these children living.\n10 Place of birth.\n11 Place of birth of Father.\n12 Place of birth of Mother.\n13 Number of years in the United States.\n14 Whether naturalized.\n15 Whether naturalization papers have been taken out.\n16 Profession, trade, or occupation.\n17 Months unemployed during the census year (June 1, 1889, to May 31, 1890).\n18 Attendance at school (in months) during the census year (June 1, 1889, to May 31, 1890).\n19 Able to Read.\n20 Able to Write.\n21 Able to speak English. If not, the language or dialect spoken.\n22 Whether suffering from acute or chronic disease, with name of disease and length of time afflicted.\n23 Whether defective in mind, sight, hearing, or speech, or whether crippled, maimed, or deformed, with name of defect.\n24 Whether a prisoner, convict, homeless child, or pauper.\n25 Supplemental schedule and page.\n26 Is the home you live in hired, or is it owned by the head or by a member of the family?\n27 If owned by head or member of family, is the home free from mortgage incumbrance?\n28 If the head of family is a farmer, is the farm which he cultivates hired, or is it owned by him or by a member of his family?\n29 If owned by head or member of family, is the farm free from mortgage incumbrance?\n30 If the home or farm is owned by head or member of family, and mortgaged, give the post-office address of owner.",
+   "ground_truth_provenance": {
+    "kind": "Wikisource proofread transcription, status Validated (quality 4)",
+    "wiki": "en.wikisource.org",
+    "page": "Page:The Economic Journal Volume 1.djvu/67",
+    "revision_id": 12470063,
+    "revision_timestamp": "2022-07-08T16:34:26Z",
+    "revision_url": "https://en.wikisource.org/w/index.php?oldid=12470063",
+    "derivation": "rendered page HTML -> text (tables row-major, cells space-joined; quality banner, hidden padding and de.wikisource navigation headings/metadata header removed)",
+    "manual_edits": [],
+    "scope": "full page incl. running head/page number"
+   },
+   "ground_truth_license": "CC BY-SA 4.0 (Wikisource contributors; transcription of a public-domain work, see the page history at the revision URL)",
+   "max_tokens": 1562
+  },
+  {
+   "id": "de-degraded-freiligrath-46",
+   "tags": [
+    "de",
+    "fraktur",
+    "degraded",
+    "bleed-through",
+    "verse"
+   ],
+   "priority": 1,
+   "source": "wikisource",
+   "image": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/3a/%C3%87a_ira%21_Freiligrath-1846.pdf/page46-960px-%C3%87a_ira%21_Freiligrath-1846.pdf.jpg",
+    "sha256": "1673be87eec8e4dac9d5d2f7a0341e88e6e0498b8044e10dd282220773603bfd",
+    "bytes": 154017,
+    "width": 1600,
+    "height": 2262,
+    "derived_from": {
+     "file": "File:Ça ira! Freiligrath-1846.pdf",
+     "page": "46",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/3/3a/%C3%87a_ira%21_Freiligrath-1846.pdf",
+     "file_sha1": "11c3930a3e533305457c01fda61c484f12e41225",
+     "host": "commons.wikimedia.org"
+    }
+   },
+   "image_license": {
+    "license": "Public domain",
+    "usage_terms": "Public domain",
+    "copyrighted": false,
+    "attribution": "Ferdinand Freiligrath; scan: Lippische Landesbibliothek"
+   },
+   "ground_truth": "44\nHier die Formen, hier die Tiegel! auch die Kohlen facht’ ich an!\nUnd die Pforten sind verrammelt, daß uns Niemand stören kann!\nAn die Arbeit denn, ihr Herren! Alle, die ihr setzt und preßt!\nHelft mir auf die Beine bringen dieses Freiheitsmanifest!“\nSpricht’s, und wirft die ersten Lettern in den Tiegel frischer Hand.\nVon der Hitze bald geschmolzen, brodeln Perl und Diamant;\nBrodeln Colonel und Corpus; hier Antiqua, dort Fraktur\nWerfen radikale Blasen, dreist umgehend die Censur.",
+   "ground_truth_provenance": {
+    "kind": "Wikisource proofread transcription, status Validated (quality 4)",
+    "wiki": "de.wikisource.org",
+    "page": "Seite:Ça ira! Freiligrath-1846.pdf/46",
+    "revision_id": 3414080,
+    "revision_timestamp": "2018-08-01T10:47:13Z",
+    "revision_url": "https://de.wikisource.org/w/index.php?oldid=3414080",
+    "derivation": "rendered page HTML -> text (tables row-major, cells space-joined; quality banner, hidden padding and de.wikisource navigation headings/metadata header removed)",
+    "manual_edits": [
+     [
+      "drop_line",
+      "5"
+     ],
+     [
+      "drop_line",
+      "10"
+     ],
+     [
+      "prepend",
+      "44"
+     ]
+    ],
+    "scope": "full page; running head/page number added by manual edit where printed"
+   },
+   "ground_truth_license": "CC BY-SA 4.0 (Wikisource contributors; transcription of a public-domain work, see the page history at the revision URL)",
+   "max_tokens": 768
+  },
+  {
+   "id": "receipt-cord-test-29",
+   "tags": [
+    "receipt",
+    "photo",
+    "id-en-mixed"
+   ],
+   "priority": 1,
+   "source": "cord-v2",
+   "image": {
+    "hf_parquet": {
+     "url": "https://huggingface.co/datasets/naver-clova-ix/cord-v2/resolve/7f0115a4b758a71d6473b8d085751692da2fef98/data/test-00000-of-00001-9c204eb3f4e11791.parquet",
+     "sha256": "51c65f1788faff392abe2a0b55b023eb23e9be551c509138eaa3a832514224e7",
+     "row": 29,
+     "column": "image.bytes"
+    },
+    "sha256": "1f065c268473d727282005e57441c55c3249afe0da54f3bc08823d0cbe730610",
+    "bytes": 1390407,
+    "width": 864,
+    "height": 1296
+   },
+   "image_license": {
+    "license": "CC BY 4.0",
+    "attribution": "CORD: A Consolidated Receipt Dataset for Post-OCR Parsing, Park et al., NAVER CLOVA (naver-clova-ix/cord-v2)"
+   },
+   "ground_truth": "COLD OCHA 1 10,909\nBCA PROMO 1 54,455\nABURA UDON SPICY 1 0\n:-KAKE UDON 1 0\nSKEWERED SHUMAI 1 12,727\nSKEWERED TOFU ROLL 1 12,727\nEBI TEMPURA 1 13,636\nKITSUNE UDON (KIDS) 1 28,182\nSUB, TOTAL 132,636\nRESTAURANT TAX 13,264\nGRAND TOTAL\n~ BCA EDC [145,900] 145,900",
+   "ground_truth_provenance": {
+    "kind": "CORD-v2 valid_line word annotations",
+    "dataset": "naver-clova-ix/cord-v2",
+    "revision": "7f0115a4b758a71d6473b8d085751692da2fef98",
+    "derivation": "words grouped by row_id, rows sorted by mean quad y, words by x, space-joined",
+    "manual_edits": [],
+    "scope": "PARTIAL: only annotated fields (menu/subtotal/total); store header is blurred in the image and not annotated, separators/dashes not annotated. Use word recall as the primary metric."
+   },
+   "ground_truth_license": "CC BY 4.0",
+   "max_tokens": 1024
+  },
+  {
+   "id": "de-2col-meyers-b13-103",
+   "tags": [
+    "de",
+    "fraktur",
+    "multi-column",
+    "dense",
+    "umlauts"
+   ],
+   "priority": 2,
+   "source": "wikisource",
+   "image": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/5/59/Meyers_b13_s0103.jpg",
+    "sha256": "65adda61b339c48c5b8992e63ac3069bf0deae467fcfa07518a39fb33e080dad",
+    "bytes": 389497,
+    "width": 1600,
+    "height": 2550,
+    "derived_from": {
+     "file": "File:Meyers b13 s0103.jpg",
+     "page": null,
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/5/59/Meyers_b13_s0103.jpg",
+     "file_sha1": "b48d3ede8d2866ccf42da889d57689fea0c075d8",
+     "host": "commons.wikimedia.org"
+    }
+   },
+   "image_license": {
+    "license": "Public domain",
+    "usage_terms": "Public domain",
+    "copyrighted": false,
+    "attribution": "Joseph Meyer; scan: MKL online at Retro Bibliothek, work 149, 2009, webpage: retrobib-work-149."
+   },
+   "ground_truth": "Plagiocephalus — Planché. 103\ndie Leistungen eines andern für die seinigen ausgibt (s. Urheberrecht).\nPlagiocephălus, s. Brachykephalen.\nPlagioklāse, s. Feldspat.\nPlagionīt, Mineral aus der Ordnung der Sulfosalze, kristallisiert monoklinisch in kleinen, dick tafelartigen oder säulenförmigen Kristallen, findet sich traubig, nierenförmig, derb, in körnigen Aggregaten, ist schwärzlich bleigrau, Härte 2,5, spez. Gew. 5,4, besteht aus Schwefelblei mit Schwefelantimon 9PbS + 7Sb2S3 und findet sich bei Wolfsberg am Harz, Goldkronach, Arnsberg in Westfalen.\nPlagĭophyllen, Ordnung im natürlichen Pflanzensystem Brauns unter den Dikotyledonen, charakterisiert durch eingeschlechtige Blüten mit Perigon, ein zentrales Büschel von Staubgefäßen in den männlichen, einen unterständigen, dreikantigen, dreifächerigen, vielsamigen Fruchtknoten in den weiblichen Blüten, enthält nur die Familie der Begoniaceen, die neuerdings von Eichler zu den Passiflorinen gebracht werden, so daß dann die Ordnung der P. überhaupt in Wegfall kommt.\nPlagiostōmen (Quermäuler), s. Selachier.\nPlagĭum (lat.), Menschenraub (s. d.); P. literarium, s. v. w. Plagiat.\nPlagoskōp (griech.), Windfahne, auch ein dadurch gedrehter Windzeiger innerhalb eines Gebäudes.\nPlagwitz, 1) Dorf im preuß. Regierungsbezirk Liegnitz, Kreis Löwenberg, am Bober, Löwenberg gegenüber, hat Sandsteinbrüche und (1885) 702 Einw.; dabei das gleichnamige Schloß mit einer Irrenanstalt. Hier Gefechte 19., 21. und namentlich 29. Aug. 1813 (s. Löwenberg). – 2) Dorf in der sächs. Kreis- und Amtshauptmannschaft Leipzig, an der Elster und den Linien Leipzig-Zeitz der Preußischen, Gaschwitz-P. und P.-Leipzig der Sächsischen Staatsbahn, unmittelbar südlich bei Lindenau, Vorort von Leipzig und mit diesem noch durch die schiffbare Elster und eine Pferdebahn verbunden, hat eine neue Kirche, viele Villen, bedeutende Maschinenfabrikation, Eisengießereien, Fabrikation von Papier- und Gummiwäsche, Gummiwaren, Nickelblech, Zement, Drahtwaren, Farben, Geschäftsbüchern, Mineralwässern, Parkettfußböden, Pianofortes, Velocipeden, Rauchwarenzurichterei und -Färberei, mechanische Stickerei und (1885) 9168 meist evang. Einwohner.\nPlaid (engl., spr. plehd, richtiger plädd, Tartan), der lange deckenartige Überwurf der Bergschotten, aus einem einzigen Stück groben, je nach den Clans auf verschiedene Art gewürfelten oder bunt karrierten Tuches bestehend, wird bei gutem Wetter, zusammengeschlagen, auf einer Schulter getragen; in neuerer Zeit auch außerhalb Schottlands viel auf Reisen gebraucht und daher allgemein übliche Bezeichnung für eine dicke, wollene, bunt gemusterte Reisedecke, welche mittels Riemen zusammengeschnallt und an einem Griff in der Hand getragen wird. Von England ausgehend, hat die Fabrikation von Plaids auch in Deutschland große Ausdehnung angenommen.\nPlaidieren (franz., spr. plä-), eine Sache vor Gericht mündlich vertreten, verteidigen; in mündlicher Rede und Gegenrede für etwas eintreten; Plaideur (spr. -dȫr), Sachwalter, Verteidiger; Plaidoyer (spr. plädŏajeh), die Verteidigungsrede des Anwalts, auch die Rede des Staatsanwalts, in welcher er die öffentliche Klage vertritt.\nPlain-chant (franz., spr. pläng-schāng), s. v. w. Cantus planus, s. Choral.\nPlainfield (spr. plähnfihld), Landstadt im nordamerikan. Staat New Jersey, 35 km westl. von New York, in lieblicher Gegend, als Sommerfrische vielbesucht, hat (1885) 8913 Einw.\nPlaisant (franz., spr. pläsāng) kurzweilig, ergötzlich; Plaisanterie (spr. pläsangt’rih), Scherz, Spaß.\nPlaisir (franz., spr. pläsihr), Vergnügen.\nPlaka (Kastro-P.), Stadt auf der griech. Insel Milo, an der Nordküste, mit Häusern von türkischer und venezianischer Bauart, einem Hafen und (1879) 844 Einw. Dabei die Ruinen des alten Melos.\nPlakābel (lat.), versöhnlich.\nPlakāt (lat.), s. Anschlag.\nPlakatsäulen, in größern Städten Säulen von ca. 3–5 m Höhe und 1–1,40 m Durchmesser, die auf Straßen und Plätzen aufgestellt sind behufs Anklebens öffentlicher Anzeigen.\nPlakatschriften (Affichenschriften), die großen, besonders auf öffentlichen Anschlägen zur Verwendung kommenden Typen (s. Schriftarten).\nPlakieren (plaquieren, franz.), s. v. w. plattieren, mit einer dünnen Platte eines bessern Stoffes belegen; daher Plaqué, plattierte Ware.\nPlakodérmen (Panzerganoiden), s. Fische, S. 298.\nPlakodónten, s. Reptilien.\nPlakoïden, s. Fische, S. 298.\nPlamutzen, s. Fliesen.\nPlān (lat.), eben, flach; klar, verständlich.\nPlān, im subjektiven Sinn die bewußtvoll überlegende Vorstellung der Zwecke, welche der Mensch in seinem Handeln verfolgt, vereint mit der Vorstellung der Mittel, die zur Erreichung des Zwecks angewendet werden sollen; im objektiven Sinn das System der Regeln, welche man zur Erreichung eines Zwecks verfolgt, daher s. v. w. Entwurf, Disposition. So spricht man von einem Schulplan, Kriegsplan, dem P. eines Kunstwerkes etc. Endlich ist P. auch die sichtbare Darstellung, wie sich ein Ganzes aus seinen Teilen zusammenstellt, namentlich wenn dies Ganze ein räumliches, in verjüngtem Maßstab darstellbares ist (s. Planzeichnen).\nPlan, Stadt im westlichen Böhmen, an der Mies und der Bahnlinie Pilsen-Eger, Sitz einer Bezirkshauptmannschaft und eines Bezirksgerichts, hat ein Schloß mit schönem Park, ein Rathaus, eine alte Pfarrkirche, Bierbrauerei, Brettsäge, Sparkasse und (1880) 3591 Einw. Dabei das Eisenwerk Josephihütte.\nPlana, Giovanni Antonio Amedeo, Baron, Astronom und Mathematiker, geb. 8. Nov. 1781 zu Voghera, Neffe des berühmten Mathematikers Lagrange, wirkte lange als Professor der Astronomie und Direktor der Sternwarte zu Turin, daneben als Senator und starb 20. Jan. 1864. Er schrieb: „Théorie du mouvement de la lune“ (Turin 1832, 3 Bde.).\nPlanch., bei botan. Namen Abkürzung für J. C. Planchon, Professor der Botanik in Montpellier. „Hortus Donatensis“ (1854–58).\nPlanche (spr. plāngsch), Jean Baptiste Gustave, franz. Kritiker, geb. 16. Febr. 1808 zu Paris, gest. 18. Sept. 1857 daselbst. Ein langer Aufenthalt in Italien (1838–46) war auf die Ausbildung seines Kunstsinns von großem Einfluß gewesen. Seine für verschiedene Zeitschriften, namentlich die „Revue des Deux Mondes“, verfaßten Aufsätze, die ihn als einen folgerichtig und treffend urteilenden Kritiker bekunden, erschienen gesammelt unter den Titeln: „Portraits littéraires“ (1836–49, 4 Bde.); „Portraits d’artistes“ (1853, 2 Bde.); „Nouveaux portraits littéraires“ (1854); „Études sur l’école française“ (1855, 2 Bde.); „Études sur les arts“ (1856, 2 Bde.).\nPlanché (spr. plangschē), James Robinson, engl. Dramatiker und Schriftsteller, geb. 27. Febr. 1796",
+   "ground_truth_provenance": {
+    "kind": "Wikisource proofread transcription, status Validated (quality 4)",
+    "wiki": "de.wikisource.org",
+    "page": "Seite:Meyers b13 s0103.jpg",
+    "revision_id": 4106987,
+    "revision_timestamp": "2022-09-14T14:59:00Z",
+    "revision_url": "https://de.wikisource.org/w/index.php?oldid=4106987",
+    "derivation": "rendered page HTML -> text (tables row-major, cells space-joined; quality banner, hidden padding and de.wikisource navigation headings/metadata header removed)",
+    "manual_edits": [
+     [
+      "prepend",
+      "Plagiocephalus — Planché. 103"
+     ]
+    ],
+    "scope": "full page; running head/page number added by manual edit where printed"
+   },
+   "ground_truth_license": "CC BY-SA 4.0 (Wikisource contributors; transcription of a public-domain work, see the page history at the revision URL)",
+   "max_tokens": 4096
+  },
+  {
+   "id": "en-2col-eb1911-v04-246",
+   "tags": [
+    "en",
+    "multi-column",
+    "figures"
+   ],
+   "priority": 2,
+   "source": "wikisource",
+   "image": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bc/EB1911_-_Volume_04.djvu/page246-1920px-EB1911_-_Volume_04.djvu.jpg",
+    "sha256": "0a45ad3aa1b3585c70acb42f17b3c51bd3f507858936da5ece15e2ab06295ef3",
+    "bytes": 1499108,
+    "width": 1600,
+    "height": 2219,
+    "derived_from": {
+     "file": "File:EB1911 - Volume 04.djvu",
+     "page": "246",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/b/bc/EB1911_-_Volume_04.djvu",
+     "file_sha1": "7fcefd9adf3b2ed14f7201e4a965bce8c8261a5f",
+     "host": "commons.wikimedia.org"
+    }
+   },
+   "image_license": {
+    "license": "Public domain",
+    "usage_terms": "Public domain",
+    "copyrighted": false,
+    "attribution": "Various authors: see the Wikisource pages for the contibutors of each article.; scan: Internet Archive: https://archive.org/details/EncyclopaediaBritannica1911HQDJVU"
+   },
+   "ground_truth": "232\nBOOK-PLATES\nornamental accessories are symmetrical palms and sprays, wreaths and ribands. The architectural boss is also an important factor. In many plates, indeed, the shield of arms takes quite a subsidiary position by the side of the predominantly architectural urn. From the beginning of the 19th century, until\ncomparatively recent days, no special style of decoration seems to have established itself. The immense majority of examples display a plain shield of arms with motto on a scroll below, and crest on a fillet above. Of late years, however, a rapid impetus appears to have been given to the designing of ex-libris; a new era, in fact, has begun for the book-plate, one of great interest.\nFig. 4.—Book-plate of P. A. Convers, 1762.\nFig. 5.—Book-plate of Francis Gwyn of Lansanor, 1698.\nThe main styles of decoration (and these, other data being\nabsent, must always in the case of old examples remain the criteria of date) have already been noticed. It is, however, necessary to point out that certain styles of composition were also prevalent at certain periods. Many of the older plates (like the majority of the most modern ones) were essentially pictorial. Of this kind the best-defined English genus may be recalled: the library interior—a term which explains itself—and book-piles, exemplified by the ex-libris (fig. 6) of W. Hewer, Samuel Pepys’s secretary. We have also many portrait-plates, of which, perhaps, the most notable are those of Samuel Pepys himself and of John Gibbs, the architect; allegories, such as were engraved by Hogarth, Bartolozzi, John Pine and George Vertue; landscape-plates, by wood engravers of the Bewick school (see Plate), &c. In most of these the armorial element plays but a secondary part.\nThe value attached to book-plates, otherwise than as an object of purely personal interest, is comparatively modern. The study of and the taste for collecting these private tokens of book-ownership hardly date farther back than the year 1875. The first real impetus was given by the appearance of the Guide to the Study of Book-Plates, by Lord de Tabley (then the Hon. Leicester Warren) in 1880. This work, highly interesting from many points of view, established what is now accepted as the general classification of styles: early armorial (i.e. previous to Restoration, exemplified by the Nicholas Bacon plate); Jacobean, a somewhat misleading term, but distinctly understood to include\nthe heavy decorative manner of the Restoration, Queen Anne and early Georgian days (the Lansanor plate, fig. 5, is typically Jacobean); Chippendale (the style above described as rococo, tolerably well represented by the French plate of Convers); wreath and ribbon, belonging to the period described as that of the urn, &c. Since then the literature on the subject has grown considerably. Societies of collectors have been founded, first in England, then in Germany and France, and in the United States, most of them issuing a journal or archives: The Journal of the Ex-libris Society (London), the Archives de la société française de collectionneurs d’ex-libris (Paris), both of these monthlies; the Ex-libris Zeitschrift (Berlin), a quarterly.\nFig. 6.—Book-plate of William Hewer, 1699.\nMuch has been written for and against book-plate collecting. If, on the one hand, the more enthusiastic ex-librists (for such a word has actually been coined) have made the somewhat ridiculous claim of science for “ex-librisme,” the bitter animadversion, on the other, of a certain class of intolerant bibliophiles upon the vandalism of removing book-plates from old books has at times been rather extravagant. Book-plates are undoubtedly very often of high interest (and of a value often far greater than the odd volume in which they are found affixed), either as specimens of bygone decorative fashion or as personal relics of well-known personages. There can be no",
+   "ground_truth_provenance": {
+    "kind": "Wikisource proofread transcription, status Validated (quality 4)",
+    "wiki": "en.wikisource.org",
+    "page": "Page:EB1911 - Volume 04.djvu/246",
+    "revision_id": 12160477,
+    "revision_timestamp": "2022-02-19T09:42:56Z",
+    "revision_url": "https://en.wikisource.org/w/index.php?oldid=12160477",
+    "derivation": "rendered page HTML -> text (tables row-major, cells space-joined; quality banner, hidden padding and de.wikisource navigation headings/metadata header removed)",
+    "manual_edits": [],
+    "scope": "full page incl. running head/page number"
+   },
+   "ground_truth_license": "CC BY-SA 4.0 (Wikisource contributors; transcription of a public-domain work, see the page history at the revision URL)",
+   "max_tokens": 2591
+  },
+  {
+   "id": "en-report-amtrak-23",
+   "tags": [
+    "en",
+    "prose",
+    "modern"
+   ],
+   "priority": 2,
+   "source": "wikisource",
+   "image": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c9/Derailment_of_Amtrak_Passenger_Train_188_Philadelphia%2C_Pennsylvania_May_12%2C_2015.djvu/page23-1920px-Derailment_of_Amtrak_Passenger_Train_188_Philadelphia%2C_Pennsylvania_May_12%2C_2015.djvu.jpg",
+    "sha256": "0cdddf9600147df5ec88840dc9d8a33a2e470f27b69ae03727cfbe189ad38c13",
+    "bytes": 683690,
+    "width": 1600,
+    "height": 2071,
+    "derived_from": {
+     "file": "File:Derailment of Amtrak Passenger Train 188 Philadelphia, Pennsylvania May 12, 2015.djvu",
+     "page": "23",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/c/c9/Derailment_of_Amtrak_Passenger_Train_188_Philadelphia%2C_Pennsylvania_May_12%2C_2015.djvu",
+     "file_sha1": "040f3305fee5403b18539ff207aff1d271cf8c9d",
+     "host": "commons.wikimedia.org"
+    }
+   },
+   "image_license": {
+    "license": "Public domain",
+    "usage_terms": "Public domain",
+    "copyrighted": false,
+    "attribution": "National Transportation Safety Board; scan: https://www.ntsb.gov/investigations/AccidentReports/Reports/RAR1602.pdf"
+   },
+   "ground_truth": "NTSB\nRailroad Accident Report\nand effectively managing multiple concurrent tasks and prolonged atypical situations to sustain their attention on current and upcoming train operations, and distribute those criteria to their members.\nIn this accident, the engineer likely would have benefitted from technology that showed\nhim the location of his train in real time, which would have also helped him establish and\nmaintain his situational awareness. The NTSB has advocated the use of memory aids, visual\ndisplays, alerting systems, and other strategies and technologies to reduce operator workload and\nprevent errors. This situational information would assist crews operating in high traffic areas, at\nnight, or in adverse weather conditions. Although there will be less need for such situational\ninformation in PTC-compliant territory, and this technology will be available in some\nlocomotives operating in PTC-compliant territories, there are many areas where PTC will not be\nimplemented. Therefore, the NTSB recommends that the FRA require railroads to install devices\nand develop procedures that will help crewmembers identify their current location and display\ntheir upcoming route in territories where positive train control will not be implemented.\n1.5 Signal and Train Control Information\nAll Amtrak main tracks on the Northeast Corridor are equipped with a cab signal system.\nAll trains operating there are equipped with automatic train control (ATC) consisting of cab\nsignals with automatic speed control and automatic train supervision capabilities. Automatic\nspeed control prevents the locomotive from exceeding speed limits established by wayside\nsignals, while automatic train supervision ensures the locomotive engineer recognizes and\nacknowledges track signal downgrades. The cab signal system in the area of the derailment\nconsisted of four cab signal indications in the following table from the NORAC rulebook.\nTable 2. Cab Signal Indications\nNORAC Rule Name Indication Speed Enforced\n280 Clear Proceed not exceeding Normal Speed (Normal Speed is Maximum Authorized Speed by Timetable) Limited only by speed governor on locomotive\n282 Approach Medium Proceed approaching the next signal at Medium Speed 45 mph\n285 Approach Proceed prepared to stop at the next signal. Trains exceeding Medium Speed must begin reduction to Medium Speed. 30 mph\n290 Restricting Proceed at Restricted Speed 20 mph\nAn audible warning is sounded in the cab when the cab signal changes from clear to any of the other named signals. The engineer must respond to the audible alarm and slow the train to the speed associated with the signal name. If the engineer fails to slow the train, the system applies the brakes and reduces the power. The cab signals indicate specific speeds associated with signal indications from wayside signals; however, even in the absence of wayside signals, the signal department can permanently configure the cab signal system by installing a signal change point to enforce a slower speed on a curve for an approaching train.\n13",
+   "ground_truth_provenance": {
+    "kind": "Wikisource proofread transcription, status Validated (quality 4)",
+    "wiki": "en.wikisource.org",
+    "page": "Page:Derailment of Amtrak Passenger Train 188 Philadelphia, Pennsylvania May 12, 2015.djvu/23",
+    "revision_id": 14938195,
+    "revision_timestamp": "2025-03-15T09:49:07Z",
+    "revision_url": "https://en.wikisource.org/w/index.php?oldid=14938195",
+    "derivation": "rendered page HTML -> text (tables row-major, cells space-joined; quality banner, hidden padding and de.wikisource navigation headings/metadata header removed)",
+    "manual_edits": [],
+    "scope": "full page incl. running head/page number"
+   },
+   "ground_truth_license": "CC BY-SA 4.0 (Wikisource contributors; transcription of a public-domain work, see the page history at the revision URL)",
+   "max_tokens": 2084
+  },
+  {
+   "id": "de-table-rgbl-1867-403",
+   "tags": [
+    "de",
+    "fraktur",
+    "table",
+    "dot-leaders",
+    "umlauts"
+   ],
+   "priority": 2,
+   "source": "wikisource",
+   "image": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e1/Reichsgesetzblatt_%28Austria%29_1867_0403.jpg/1920px-Reichsgesetzblatt_%28Austria%29_1867_0403.jpg",
+    "sha256": "ecf3f575a3589ae62e28aadd2dd5d7914e40a5c3c8e1c2287e3240918da60f42",
+    "bytes": 870591,
+    "width": 1600,
+    "height": 2212,
+    "derived_from": {
+     "file": "File:Reichsgesetzblatt (Austria) 1867 0403.jpg",
+     "page": null,
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/e/e1/Reichsgesetzblatt_%28Austria%29_1867_0403.jpg",
+     "file_sha1": "6119207b167a69b73828759274c75f7d4e3b923a",
+     "host": "commons.wikimedia.org"
+    }
+   },
+   "image_license": {
+    "license": "Public domain",
+    "usage_terms": "Public domain",
+    "copyrighted": false,
+    "attribution": "official juridical document; scan: Scan from the original work"
+   },
+   "ground_truth": "LXI. Stück. 146. Gesetz vom 21. December 1867. 403\n§. 7. Die Delegation des Reichsrathes zählt sechzig Mitglieder, wovon ein Drittheil dem Herrenhause und zwei Drittheile dem Hause der Abgeordneten entnommen werden.\n§. 8. Das Herrenhaus hat die auf dasselbe entfallenden zwanzig Mitglieder der Delegation mittelst absoluter Stimmenmehrheit aus seiner Mitte zu wählen.\nDie auf das Haus der Abgeordneten entfallenden vierzig Mitglieder werden in der Weise gewählt, daß die Abgeordneten der einzelnen Landtage nach dem nachstehenden Vertheilungsmodus die Delegirten entsenden, wobei ihnen freisteht, dieselben aus ihrer Mitte oder aus dem Plenum des Hauses zu wählen.\nEs haben mittelst absoluter Stimmenmehrheit zu wählen die Abgeordneten aus\ndem Königreiche Böhmen 10\ndem Königreiche Dalmatien 1\ndem Königreiche Galizien und Lodomerien mit dem Großherzogthume Krakau 7\ndem Erzherzogthume Oesterreich unter der Enns 3\ndem Erzherzogthume Oesterreich ob der Enns 2\ndem Herzogthume Salzburg 1\ndem Herzogthume Steiermark 2\ndem Herzogthume Kärnthen 1\ndem Herzogthume Krain 1\ndem Herzogthume Bukowina 1\nder Markgrafschaft Mähren 4\ndem Herzogthume Ober- und Nieder-Schlesien 1\nder gefürsteten Grafschaft Tirol 2\ndem Lande Vorarlberg 1\nder Markgrafschaft Istrien 1\nder gefürsteten Grafschaft Görz und Gradiska 1\nder Stadt Triest mit ihrem Gebiete 1\n40\n§. 9. In gleicher Weise hat jeder der beiden Häuser des Reichsrathes Ersatzmänner der Delegirten zu wählen, deren Anzahl für das Herrenhaus zehn und für das Abgeordnetenhaus zwanzig beträgt.\nDie Zahl der aus dem Abgeordnetenhause zu wählenden Ersatzmänner wird auf die aus demselben zu entsendenden Delegirten derart vertheilt, daß auf Einen bis drei Delegirte je Ein Ersatzmann, auf vier und mehr Delegirte je zwei Ersatzmänner entfallen. Die Wahl jedes Ersatzmannes ist gesondert vorzunehmen.\n§. 10. Die Wahl der Delegirten und ihrer Ersatzmänner wird von den beiden Häusern der Reichsrathes alljährlich erneuert.\nBis dahin verbleiben die Delegirten und Ersatzmänner in ihrer Function.\nDie abgetretenen Mitglieder der Delegation können in dieselbe wieder gewählt werden.\n§. 11. Die Delegationen werden alljährlich vom Kaiser einberufen; der Versammlungsort wird vom Kaiser bestimmt.\n§. 12. Die Delegation des Reichsrathes wählt aus ihren Mitgliedern den Präsidenten und Vicepräsidenten, sowie auch die Schriftführer und übrigen Functionäre.",
+   "ground_truth_provenance": {
+    "kind": "Wikisource proofread transcription, status Validated (quality 4)",
+    "wiki": "de.wikisource.org",
+    "page": "Seite:Reichsgesetzblatt (Austria) 1867 0403.jpg",
+    "revision_id": 3384246,
+    "revision_timestamp": "2018-08-01T06:54:58Z",
+    "revision_url": "https://de.wikisource.org/w/index.php?oldid=3384246",
+    "derivation": "rendered page HTML -> text (tables row-major, cells space-joined; quality banner, hidden padding and de.wikisource navigation headings/metadata header removed)",
+    "manual_edits": [
+     [
+      "prepend",
+      "LXI. Stück. 146. Gesetz vom 21. December 1867. 403"
+     ]
+    ],
+    "scope": "full page; running head/page number added by manual edit where printed"
+   },
+   "ground_truth_license": "CC BY-SA 4.0 (Wikisource contributors; transcription of a public-domain work, see the page history at the revision URL)",
+   "max_tokens": 1685
+  },
+  {
+   "id": "de-antiqua-kafka-betrachtung-94",
+   "tags": [
+    "de",
+    "antiqua",
+    "umlauts",
+    "prose"
+   ],
+   "priority": 2,
+   "source": "wikisource",
+   "image": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/2/22/De_Kafka_Betrachtung_%281908%29_94.jpg",
+    "sha256": "e736273f999f2c402e74dab2d07afd271b1cb3373f018b5a3c08350129a9b2c0",
+    "bytes": 103026,
+    "width": 1600,
+    "height": 2168,
+    "derived_from": {
+     "file": "File:De Kafka Betrachtung (1908) 94.jpg",
+     "page": null,
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/2/22/De_Kafka_Betrachtung_%281908%29_94.jpg",
+     "file_sha1": "9e7e2f76c08d47d9d2968d6e2ad27eec51b762f9",
+     "host": "commons.wikimedia.org"
+    }
+   },
+   "image_license": {
+    "license": "Public domain",
+    "usage_terms": "Public domain",
+    "copyrighted": false,
+    "attribution": "Franz Kafka; scan: Textkritik"
+   },
+   "ground_truth": "Ihr Gesicht ist braun, die Nase, an den Seiten schwach gepreßt, schließt rund und breit ab. Sie hat viel braunes Haar und verwehte Härchen an der rechten Schläfe. Ihr kleines Ohr liegt eng an, doch sehe ich, da ich nahe stehe, den ganzen Rücken der rechten Ohrmuschel und den gebogenen Schatten an der Wurzel.\nIch fragte mich damals: Wieso kommt es, daß sie nicht über sich verwundert ist, daß sie den Mund geschlossen hält und nichts dergleichen sagt.\nVII Wenn ich einem schönen Mädchen begegne und sie bitte: »Sei so gut, komm mit mir« und sie stumm vorübergeht, so meint sie damit:\n»Du bist kein Herzog mit fliegendem Namen, kein breiter Amerikaner mit indianischem Wuchs, mit wagrecht ruhenden Augen, mit einer von der Luft der Rasenplätze und der sie durchströmenden Flüsse massierten Haut, du hast keine Reisen gemacht zu den großen Seen und auf ihnen, die ich weiß nicht wo zu finden sind. Also ich bitte, warum soll ich, ein schönes Mädchen, mit dir gehn?«\n»Du vergißt, dich trägt kein Automobil in langen Stößen schaukelnd durch die Gasse; ich sehe nicht die in ihre Kleider gepreßten Herren deines Gefolges, die Segenssprüche für dich murmelnd in genauem Halbkreis hinter dir gehn; deine Brüste sind im Mieder gut geordnet, aber deine Schenkel und Hüften entschädigen sich für jene Enthaltsamkeit; du trägst ein Taffetkleid mit plissierten Falten, wie es im vorigen Herbste uns durchaus allen Freude machte und doch lächelst du — diese Lebensgefahr auf dem Leibe — bisweilen.«\n»Ja, wir haben beide recht und, um uns dessen nicht unwiderleglich bewußt zu werden, wollen wir, nicht wahr, lieber jeder allein nach Hause gehn.«\nVIII Denn wir sind wie Baumstämme im Schnee. Scheinbar liegen sie glatt auf und mit kleinem Anstoß sollte man sie wegschieben können. Nein, das kann man nicht, denn sie sind fest mit dem Boden verbunden. Aber sieh, sogar das ist nur scheinbar.\n94",
+   "ground_truth_provenance": {
+    "kind": "Wikisource proofread transcription, status Validated (quality 4)",
+    "wiki": "de.wikisource.org",
+    "page": "Seite:De Kafka Betrachtung (1908) 94.jpg",
+    "revision_id": 3249289,
+    "revision_timestamp": "2018-07-31T13:37:05Z",
+    "revision_url": "https://de.wikisource.org/w/index.php?oldid=3249289",
+    "derivation": "rendered page HTML -> text (tables row-major, cells space-joined; quality banner, hidden padding and de.wikisource navigation headings/metadata header removed)",
+    "manual_edits": [
+     [
+      "replace",
+      "Wenn ich einem schönen",
+      "VII Wenn ich einem schönen"
+     ],
+     [
+      "replace",
+      "Denn wir sind wie",
+      "VIII Denn wir sind wie"
+     ],
+     [
+      "append",
+      "94"
+     ]
+    ],
+    "scope": "full page; running head/page number added by manual edit where printed"
+   },
+   "ground_truth_license": "CC BY-SA 4.0 (Wikisource contributors; transcription of a public-domain work, see the page history at the revision URL)",
+   "max_tokens": 1384
+  },
+  {
+   "id": "receipt-cord-test-4",
+   "tags": [
+    "receipt",
+    "photo",
+    "id-en-mixed"
+   ],
+   "priority": 2,
+   "source": "cord-v2",
+   "image": {
+    "hf_parquet": {
+     "url": "https://huggingface.co/datasets/naver-clova-ix/cord-v2/resolve/7f0115a4b758a71d6473b8d085751692da2fef98/data/test-00000-of-00001-9c204eb3f4e11791.parquet",
+     "sha256": "51c65f1788faff392abe2a0b55b023eb23e9be551c509138eaa3a832514224e7",
+     "row": 4,
+     "column": "image.bytes"
+    },
+    "sha256": "8f3eee7068c96e86cdb2e4b5c53085cb5e1439462edd55c373548cb1962801ad",
+    "bytes": 1643699,
+    "width": 864,
+    "height": 1296
+   },
+   "image_license": {
+    "license": "CC BY 4.0",
+    "attribution": "CORD: A Consolidated Receipt Dataset for Post-OCR Parsing, Park et al., NAVER CLOVA (naver-clova-ix/cord-v2)"
+   },
+   "ground_truth": "ICE BLACKCOFFE 2 82,000\nAVOCADO COFFEE 1 61,000\nCHIKEN KATSU FF 1 51,000\nSUB_TOTAL 194,000\nDISCOUNT 19,400\nTOTAL 174,600\nCASH 200,000\nCHANGE 25,400",
+   "ground_truth_provenance": {
+    "kind": "CORD-v2 valid_line word annotations",
+    "dataset": "naver-clova-ix/cord-v2",
+    "revision": "7f0115a4b758a71d6473b8d085751692da2fef98",
+    "derivation": "words grouped by row_id, rows sorted by mean quad y, words by x, space-joined",
+    "manual_edits": [],
+    "scope": "PARTIAL: only annotated fields (menu/subtotal/total); store header is blurred in the image and not annotated, separators/dashes not annotated. Use word recall as the primary metric."
+   },
+   "ground_truth_license": "CC BY 4.0",
+   "max_tokens": 1024
+  },
+  {
+   "id": "receipt-cord-test-16",
+   "tags": [
+    "receipt",
+    "photo",
+    "id-en-mixed"
+   ],
+   "priority": 2,
+   "source": "cord-v2",
+   "image": {
+    "hf_parquet": {
+     "url": "https://huggingface.co/datasets/naver-clova-ix/cord-v2/resolve/7f0115a4b758a71d6473b8d085751692da2fef98/data/test-00000-of-00001-9c204eb3f4e11791.parquet",
+     "sha256": "51c65f1788faff392abe2a0b55b023eb23e9be551c509138eaa3a832514224e7",
+     "row": 16,
+     "column": "image.bytes"
+    },
+    "sha256": "eef326565b3945217a69afd84c893afdffd03a2f487943661c2423e6d6ec0d7d",
+    "bytes": 1732233,
+    "width": 864,
+    "height": 1296
+   },
+   "image_license": {
+    "license": "CC BY 4.0",
+    "attribution": "CORD: A Consolidated Receipt Dataset for Post-OCR Parsing, Park et al., NAVER CLOVA (naver-clova-ix/cord-v2)"
+   },
+   "ground_truth": "1 [LG] BLACK SAKURA 59,091\n1 LONGAN 0\n1 ROASTED ALMOND 0\n1 IVANGGO 0\n1 IVINERAL WATER (bundling) 5k 4,545\nSub Total 63,636\nPB1 (10%) 6,364\nRounding 0\nTotal 70,000\nCash Payment 100,000\nChange 30,000",
+   "ground_truth_provenance": {
+    "kind": "CORD-v2 valid_line word annotations",
+    "dataset": "naver-clova-ix/cord-v2",
+    "revision": "7f0115a4b758a71d6473b8d085751692da2fef98",
+    "derivation": "words grouped by row_id, rows sorted by mean quad y, words by x, space-joined",
+    "manual_edits": [],
+    "scope": "PARTIAL: only annotated fields (menu/subtotal/total); store header is blurred in the image and not annotated, separators/dashes not annotated. Use word recall as the primary metric."
+   },
+   "ground_truth_license": "CC BY 4.0",
+   "max_tokens": 1024
+  },
+  {
+   "id": "de-mixed-welzheim-188",
+   "tags": [
+    "de",
+    "fraktur",
+    "latin-antiqua-mix",
+    "dense",
+    "umlauts"
+   ],
+   "priority": 3,
+   "source": "wikisource",
+   "image": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/e/e6/Oberamt_Welzheim_188.jpg",
+    "sha256": "8ef162bd88af7389353e9d9ba96a01f66454ea5145e63cb491e3b3e46f31477f",
+    "bytes": 367928,
+    "width": 1600,
+    "height": 2213,
+    "derived_from": {
+     "file": "File:Oberamt Welzheim 188.jpg",
+     "page": null,
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/e/e6/Oberamt_Welzheim_188.jpg",
+     "file_sha1": "2c0d90b254a55db22e4d4699471b4664a528de9b",
+     "host": "commons.wikimedia.org"
+    }
+   },
+   "image_license": {
+    "license": "Public domain",
+    "usage_terms": "Public domain",
+    "copyrighted": false,
+    "attribution": "Rudolph Friedrich von Moser (Finanzrath, Mitglied des königlich statistisch-topographisches Bureaus); scan: Scan of a facsimile reprint"
+   },
+   "ground_truth": "188 Ortsbeschreibung.\nwurden »tria altaria nova, Choro adjuncta« geweiht; der zur Rechten »in honore Crucis,« der zur Linken »in honore omnium Sanctorum,« und der obere »in honore S. Michaelis.« Außer diesen wurden noch fünf Altäre im Langhaus um diese Zeit neu errichtet und geweiht. Das Gemälde auf aller Heiligen Altar, von Meister Ludwig von Stuttgart um 40 fl. gefertigt, stiftete 1496 Lorenz Degan, Amtmann und zuletzt Pfründner im Kloster. – Die Kirche hatte mehrere Thürme. Gleich dem auf der südwestlichen Ecke, beim Eingang in das Langhaus, welcher noch großen Theils vorhanden ist (s. unten), stand auch einer auf der nordwestlichen Ecke; und außer diesen standen noch mindestens zwei Thürme am entgegengesetzten Ende, über dem Chore. Wir schließen dieß aus folgender Stelle: »MCCCCLXXXVIII. reconciliata sunt cimiteria« (i. e. Begräbnißplätze) »ecclesie adhaerentia, que circumdatione murorum et impositione terre et pulueris de antiqua collaterali turre, que destructa est, alterata et unum eorum ampliatum fuerunt.« Der nordöstliche Seitenthurm lag also schon 1488 ganz in Schutt. Ferner: »campana magna, que pependerat ab antiquo tempore diu in dextra collaterali turre« (dem noch stehenden) »confracta est sub abbate Nicolao Schenk, que per quendam artificem de Rütlingen, addito ere non modico, iterum fusa est et benedicta per Abbatem Jodocum, successorem D. Nicolai; suspensa est modo in majori turre Chori, circa alias campanas.« Diese Chorthürme stehen schon längst nicht mehr. – Die Kirche hatte ferner, außer den schon erwähnten zwei Seitencapellen, mehrere Capellen, theils verbunden mit derselben, theils abgesondert. Schon 1421 wurden »monasterium Lorch cum duabus capellis, videlicet S. Johannis Baptiste et S. Nicolai« geweiht, unter Zusage eines vierzig- bis hunderttägigen Ablasses für die Hilfeleistenden. Sie waren also schon vor dem Städtekrieg zerstört worden. Die Johanniscapelle stand längst zuvor; 1323 stiftet Priester Renhard von Göppingen, Pfarrer in Faurndau, eine tägliche Messe in dieselbe. »Vita et gesta utriusque Johannis, scilicet Baptiste et Evangeliste, in antiqua forma depicta et effigiata, cernuntur in eadem capella.« Die Nikolauscapelle wurde 1461 erneuert und 1463 aufs Neue geweiht. Wo diese Capellen standen und wann sie abgegangen, ist unbekannt. Eine der letztgenannten scheint letztmals zur Ruhestätte Irenens (oben S. 187) bestimmt worden zu seyn. Eine größere Capelle war die dem h. Egidius geweihte, welche »ante portam monasterii« lag. Sie wird auch „Kirche“ genannt und stand auf dem jetzt noch sogenannten „Gilgengarten.“ Am 4. April 1478 weihte der erzbischöfliche Generalvicar Ulrich »ecclesiam S. Egidii... que multis annis collapsa et negligenter",
+   "ground_truth_provenance": {
+    "kind": "Wikisource proofread transcription, status Validated (quality 4)",
+    "wiki": "de.wikisource.org",
+    "page": "Seite:Oberamt Welzheim 188.jpg",
+    "revision_id": 3376354,
+    "revision_timestamp": "2018-08-01T05:50:37Z",
+    "revision_url": "https://de.wikisource.org/w/index.php?oldid=3376354",
+    "derivation": "rendered page HTML -> text (tables row-major, cells space-joined; quality banner, hidden padding and de.wikisource navigation headings/metadata header removed)",
+    "manual_edits": [
+     [
+      "prepend",
+      "188 Ortsbeschreibung."
+     ]
+    ],
+    "scope": "full page; running head/page number added by manual edit where printed"
+   },
+   "ground_truth_license": "CC BY-SA 4.0 (Wikisource contributors; transcription of a public-domain work, see the page history at the revision URL)",
+   "max_tokens": 1885
+  },
+  {
+   "id": "en-old-statutes-v1-772",
+   "tags": [
+    "en",
+    "degraded",
+    "form",
+    "old"
+   ],
+   "priority": 3,
+   "source": "wikisource",
+   "image": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0e/United_States_Statutes_at_Large_Volume_1.djvu/page772-1280px-United_States_Statutes_at_Large_Volume_1.djvu.jpg",
+    "sha256": "163231969e7ac786adbe01f4c98703007061b30ce047c47957833b987b026796",
+    "bytes": 552901,
+    "width": 1600,
+    "height": 2637,
+    "derived_from": {
+     "file": "File:United States Statutes at Large Volume 1.djvu",
+     "page": "772",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/0/0e/United_States_Statutes_at_Large_Volume_1.djvu",
+     "file_sha1": "48b8385c5ef017592afb2b0d964b27797705e413",
+     "host": "commons.wikimedia.org"
+    }
+   },
+   "image_license": {
+    "license": "Public domain",
+    "usage_terms": "Public domain",
+    "copyrighted": false,
+    "attribution": "United States Congress; scan: http://homepages.uc.edu/~armstrty/statutes.html"
+   },
+   "ground_truth": "650\nFIFTH CONGRESS.Sess. III. Ch. 22.1796.\ngoods, wares and merchandise of any nature or kind whatsoever, than are contained in the report and manifest, subscribed and now delivered by me, I will immediately and without delay, make due report thereof to the collector of the port or district of (here insert the port or district entering at) and I do likewise swear (or affirm) that all matters whatsoever in the said report and manifest expressed, are to the best of my knowledge and belief just and true. (The following addition to the oath or affirmation is to be inserted in cases where the manifests shall not have been certified by some officer of the customs in manner provided.) I further swear (or affirm) that no officer of the customs has applied for an inspection of the manifest of the cargo on board the said vessel, and that no certificate or endorsement has been delivered to me on any manifest of such cargo. So help me God.\n(Signed)A. B.\nSworn (or affirmed) before me }\nthisday of\nC. D. Collector.\nAnd the master, Further report to be made of spirits, wines and teas.or other person having the charge or command of any ship or vessel, having on board distilled spirits, wines or teas, shall within forty-eight hours after his arrival as aforesaid, whether the same be at the first port of arrival of such ship or vessel, or not, shall, in addition to the requirements before mentioned, report in writing to the surveyor or officer acting as inspector of the revenue of the port, at which he shall so arrive, the foreign port or place from which he last sailed, the name of his vessel, his own name, the burthen and denomination of such ship or vessel, and whether a ship or vessel of the United States, or to what other nation belonging, together with the quantity, and kinds of spirits, wines and teas on board of the said ship or vessel, particularizing the number of casks, vessels, cases or other packages containing the same, with their marks and numbers, as also the quantity and kinds of spirits, wines and teas on board such ship or vessel, as sea stores, Penalty on failure therein.on pain of forfeiting and paying the sum of five hundred dollars, and of the loss of the spirits so omitted; and the form of said report shall be as follows, to wit:\nForm of report of spirits, wines and teas.\nReport of distilled spirits, wines, and teas, imported in the (here insert the name and denomination of the vessel) built in (here insert where built in the United States, or to what foreign nation belonging) burthen (here insert the tonnage of the vessel) whereof (here insert the name of the master) from (here insert the foreign port, from which the vessel last sailed) bound to (here insert the port or ports to which destined in the United States.)\nMarks.\nMarks.\nNumbers of casks, chests, and packages inclusive.\nDescription of casks, chests, and packages inclusive.\nKinds and qualities of spirits, wines, and teas.\nEstimated gallons of spirits of each kind.\nEstimated gallons of wines of each kind.\nEstimated pounds of teas of each kind.\nTo whom consigned.\nWhere consigned.",
+   "ground_truth_provenance": {
+    "kind": "Wikisource proofread transcription, status Validated (quality 4)",
+    "wiki": "en.wikisource.org",
+    "page": "Page:United States Statutes at Large Volume 1.djvu/772",
+    "revision_id": 10590963,
+    "revision_timestamp": "2020-10-28T14:59:06Z",
+    "revision_url": "https://en.wikisource.org/w/index.php?oldid=10590963",
+    "derivation": "rendered page HTML -> text (tables row-major, cells space-joined; quality banner, hidden padding and de.wikisource navigation headings/metadata header removed)",
+    "manual_edits": [],
+    "scope": "full page incl. running head/page number"
+   },
+   "ground_truth_license": "CC BY-SA 4.0 (Wikisource contributors; transcription of a public-domain work, see the page history at the revision URL)",
+   "max_tokens": 2114
+  },
+  {
+   "id": "en-prose-constitution-81",
+   "tags": [
+    "en",
+    "prose",
+    "clean"
+   ],
+   "priority": 3,
+   "source": "wikisource",
+   "image": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/3/35/The_English_Constitution_%281894%29.djvu/page81-1280px-The_English_Constitution_%281894%29.djvu.jpg",
+    "sha256": "56a70bc88b80113340f92598329a816a46f584a627cc9e1343c9858de09e9a6d",
+    "bytes": 351691,
+    "width": 1600,
+    "height": 2596,
+    "derived_from": {
+     "file": "File:The English Constitution (1894).djvu",
+     "page": "81",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/3/35/The_English_Constitution_%281894%29.djvu",
+     "file_sha1": "7f6b5e76bbd421d072c7b41ffcdf12f8770c44a3",
+     "host": "commons.wikimedia.org"
+    }
+   },
+   "image_license": {
+    "license": "Public domain",
+    "usage_terms": "Public domain",
+    "copyrighted": false,
+    "attribution": "Bagehot, Walter, 1826-1877; scan: archive.org"
+   },
+   "ground_truth": "THE\nENGLISH CONSTITUTION.\nNo. I.\nTHE CABINET.\n“On all great subjects,” says Mr. Mill, “much remains to be said,” and of none is this more true than of the English Constitution. The literature which has accumulated upon it is huge. But an observer who looks at the living reality will wonder at the contrast to the paper description. He will see in the life much which is not in the books; and he will not find in the rough practice many refinements of the literary theory.\nIt was natural—perhaps inevitable—that such an undergrowth of irrelevant ideas should gather round the British Constitution. Language is the tradition of nations; each generation describes what it sees, but it uses words transmitted from the past. When a great entity like the British Constitution has continued in connected outward sameness, but hidden inner change, for many ages, every generation inherits a series of inapt words—of maxims once true, but of which the truth is",
+   "ground_truth_provenance": {
+    "kind": "Wikisource proofread transcription, status Validated (quality 4)",
+    "wiki": "en.wikisource.org",
+    "page": "Page:The English Constitution (1894).djvu/81",
+    "revision_id": 13049066,
+    "revision_timestamp": "2023-03-06T02:03:18Z",
+    "revision_url": "https://en.wikisource.org/w/index.php?oldid=13049066",
+    "derivation": "rendered page HTML -> text (tables row-major, cells space-joined; quality banner, hidden padding and de.wikisource navigation headings/metadata header removed)",
+    "manual_edits": [],
+    "scope": "full page incl. running head/page number"
+   },
+   "ground_truth_license": "CC BY-SA 4.0 (Wikisource contributors; transcription of a public-domain work, see the page history at the revision URL)",
+   "max_tokens": 827
+  },
+  {
+   "id": "en-2col-eb1911-v25-5",
+   "tags": [
+    "en",
+    "multi-column",
+    "list"
+   ],
+   "priority": 3,
+   "source": "wikisource",
+   "image": {
+    "url": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f0/EB1911_-_Volume_25.djvu/page5-1920px-EB1911_-_Volume_25.djvu.jpg",
+    "sha256": "de1bf2bbd75acc6f9b452c8968b9333012ec28e64400ac0656efeb471dc0c9ac",
+    "bytes": 654435,
+    "width": 1600,
+    "height": 1733,
+    "derived_from": {
+     "file": "File:EB1911 - Volume 25.djvu",
+     "page": "5",
+     "file_url": "https://upload.wikimedia.org/wikipedia/commons/f/f0/EB1911_-_Volume_25.djvu",
+     "file_sha1": "f06750f7a16129c1706207252b949bed9997ed4c",
+     "host": "commons.wikimedia.org"
+    }
+   },
+   "image_license": {
+    "license": "Public domain",
+    "usage_terms": "Public domain",
+    "copyrighted": false,
+    "attribution": "Various authors: see the Wikisource pages for the contributors of each article.; scan: Internet Archive: https://archive.org/details/Encyclopedia_Britannica_1911_Complete"
+   },
+   "ground_truth": "INITIALS USED IN VOLUME XXV. TO IDENTIFY INDIVIDUAL\nCONTRIBUTORS,1 WITH THE HEADINGS OF THE\nARTICLES IN THIS VOLUME SO SIGNED.\nA. B. G. Rev. Alexander Balloch Grosart, LL.D., D.D. See the biographical article: Grosart, Alexander Balloch. Stirling, William Alexander, Earl of (in part).\nA. C. McG. Arthur Cushman McGiffert, M.A., Ph.D., D.D. Professor of Church History: Union Theological Seminary, New York. Author of History of Christianity in the Apostolic Age; &c. Editor of the Historia Ecclesia of Eusebius. Socrates (Church Historian) (in part); Sozomen (in part).\nA. D. Henry Austin Dobson, LL.D., D.C.L. See the biographical article: Dobson, H. Austin. Steele, Sir Richard (in part); Sterne, Laurence (in part).\nA. De. Arthur Dendy, D.Sc., F.R.S., F.Z.S., F.L.S. Professor of Zoology in King’s College, London. Zoological Secretary of the Linnean Society of London. Author of memoirs on systematic zoology, comparative anatomy, embryology, &c. Sponges.\nA. E. H. A. E. Houghton. Formerly Correspondent of the Standard in Spain. Author of Restoration of the Bourbons in Spain. Spain: History (in part).\nA. E. S. Arthur Everett Shipley, M.A., D.Sc., F.R.S. Master of Christ’s College, Cambridge. Reader in Zoology, Cambridge University. Joint-editor of the Cambridge Natural History. Sipunculoidea; Smith, William Robertson.\nA. F. E. Allen F. Everett. Commander, R.N. Formerly Superintendent of the Signal School, H.M.S. “Victory,” Portsmouth. Signal: Marine Signalling (in part).\nA. F. P. Albert Frederick Pollard, M.A., F.R.Hist.Soc. Fellow of All Souls College, Oxford. Professor of English History in the Uversity of London. Assistant Editor of the Dictionary of National Biography 1893 – 1901. Author of England under the Protector Somerset; Life of Thomas Cranmer; &c. Somerset, Edward Seymour, Duke of.\nA. Go.* Rev. Alexander Gordon, M.A. Lecturer in Church History in the University of Manchester. Socinus.\nA. Ha. Adolf Harnack, D.Ph. See the biographical article: Harnack, Adolf. Socrates (Church Historian) (in part); Sozomen (in part).\nA. H. S. Rev. Archibald Henry Sayce, Litt.D., LL.D. See the biographical article: Sayce, A. H. Sippara.\nA. J. G. Rev. Alexander James Grieve, M.A., B.D. Professor of New Testament and Church History at the United Independent College, Bradford. Sometime Registrar of Madras University and Member of Mysore Educational Service. Smyth, John.\nA. Ma. Alexander Macalister, M.A., LL.D., M.D., D.Sc., F.R.S. Professor of Anatomy in the University of Cambridge, and Fellow of St John’s College. Formerly Professor of Zoology in the University of Dublin. Author of Text-Book of Human Anatomy; &c. Stigmatization.\nA. Mel. Arthur Mellor. Of Messrs J. & T. Brocklehurst & Sons, Silk Manufacturers, Macclesfield. Silk: Spinning of “Silk Waste.”.\nA. M. C. Agnes Mary Clerke. See the biographical article: Clerke, Agnes M. Smyth, Charles Piazzi; Stone, Edward James.\nA. M. F.* Arthur Mostyn Field, F.R.S., F.R.A.S., F.R.G.S., F.R.Met.S. Vice-Admiral, R.N. Admiralty Representative on Port of London Authority. Hydrographer of the Royal Navy, 1904 – 1909. Sounding.\n1A complete list, showing all individual contributors, appears in the final volume.\nv",
+   "ground_truth_provenance": {
+    "kind": "Wikisource proofread transcription, status Validated (quality 4)",
+    "wiki": "en.wikisource.org",
+    "page": "Page:EB1911 - Volume 25.djvu/5",
+    "revision_id": 14845055,
+    "revision_timestamp": "2025-02-03T23:11:22Z",
+    "revision_url": "https://en.wikisource.org/w/index.php?oldid=14845055",
+    "derivation": "rendered page HTML -> text (tables row-major, cells space-joined; quality banner, hidden padding and de.wikisource navigation headings/metadata header removed)",
+    "manual_edits": [],
+    "scope": "full page incl. running head/page number"
+   },
+   "ground_truth_license": "CC BY-SA 4.0 (Wikisource contributors; transcription of a public-domain work, see the page history at the revision URL)",
+   "max_tokens": 2168
+  },
+  {
+   "id": "receipt-cord-test-20",
+   "tags": [
+    "receipt",
+    "photo",
+    "id-en-mixed"
+   ],
+   "priority": 3,
+   "source": "cord-v2",
+   "image": {
+    "hf_parquet": {
+     "url": "https://huggingface.co/datasets/naver-clova-ix/cord-v2/resolve/7f0115a4b758a71d6473b8d085751692da2fef98/data/test-00000-of-00001-9c204eb3f4e11791.parquet",
+     "sha256": "51c65f1788faff392abe2a0b55b023eb23e9be551c509138eaa3a832514224e7",
+     "row": 20,
+     "column": "image.bytes"
+    },
+    "sha256": "6213439292eb4c2ad7e04afab6bb5bc7d1d5925d18dc392c36f233d394ca7c19",
+    "bytes": 1638174,
+    "width": 864,
+    "height": 1296
+   },
+   "image_license": {
+    "license": "CC BY 4.0",
+    "attribution": "CORD: A Consolidated Receipt Dataset for Post-OCR Parsing, Park et al., NAVER CLOVA (naver-clova-ix/cord-v2)"
+   },
+   "ground_truth": "1 cashew nuts chkn 64,500\n1 garlic pepper beef 79,500\n1 red curry beef 69,500\n1 phad thai 64,500\n4 steamed rice 47,600\nSUBTOTAL 325,600\nService chrg 17,908\n10% PB1 34,351\nTOTAL 377,859",
+   "ground_truth_provenance": {
+    "kind": "CORD-v2 valid_line word annotations",
+    "dataset": "naver-clova-ix/cord-v2",
+    "revision": "7f0115a4b758a71d6473b8d085751692da2fef98",
+    "derivation": "words grouped by row_id, rows sorted by mean quad y, words by x, space-joined",
+    "manual_edits": [],
+    "scope": "PARTIAL: only annotated fields (menu/subtotal/total); store header is blurred in the image and not annotated, separators/dashes not annotated. Use word recall as the primary metric."
+   },
+   "ground_truth_license": "CC BY 4.0",
+   "max_tokens": 1024
+  },
+  {
+   "id": "receipt-cord-test-14",
+   "tags": [
+    "receipt",
+    "photo",
+    "id-en-mixed"
+   ],
+   "priority": 3,
+   "source": "cord-v2",
+   "image": {
+    "hf_parquet": {
+     "url": "https://huggingface.co/datasets/naver-clova-ix/cord-v2/resolve/7f0115a4b758a71d6473b8d085751692da2fef98/data/test-00000-of-00001-9c204eb3f4e11791.parquet",
+     "sha256": "51c65f1788faff392abe2a0b55b023eb23e9be551c509138eaa3a832514224e7",
+     "row": 14,
+     "column": "image.bytes"
+    },
+    "sha256": "9dcf1f9f86c909b762767cb07d1cc0db30773d556154ce42e0210f65270ee39d",
+    "bytes": 3670113,
+    "width": 1836,
+    "height": 3264
+   },
+   "image_license": {
+    "license": "CC BY 4.0",
+    "attribution": "CORD: A Consolidated Receipt Dataset for Post-OCR Parsing, Park et al., NAVER CLOVA (naver-clova-ix/cord-v2)"
+   },
+   "ground_truth": "1 RedVelvet Cheese Slc 38,000\n1 Chicken Baked Rice 55,000\n1 Fish n Chips 65,000\n1 Mushroom Soup 35,000\n1 Chamomile 25,000\n1 Iced Tea 20,000\nSUBTOTAL 238,000\nService 17,850\nPB1 25,585\nTOTAL 281,435\nCoupon 100,000\nCASH 200,000\nChange 18,565",
+   "ground_truth_provenance": {
+    "kind": "CORD-v2 valid_line word annotations",
+    "dataset": "naver-clova-ix/cord-v2",
+    "revision": "7f0115a4b758a71d6473b8d085751692da2fef98",
+    "derivation": "words grouped by row_id, rows sorted by mean quad y, words by x, space-joined",
+    "manual_edits": [],
+    "scope": "PARTIAL: only annotated fields (menu/subtotal/total); store header is blurred in the image and not annotated, separators/dashes not annotated. Use word recall as the primary metric."
+   },
+   "ground_truth_license": "CC BY 4.0",
+   "max_tokens": 1024
+  }
+ ],
+ "rejected_sources": [
+  {
+   "source": "FUNSD",
+   "reason": "licence restricts use to non-commercial research/education; rejected (non-commercial)"
+  },
+  {
+   "source": "SROIE (ICDAR 2019)",
+   "reason": "distributed under ICDAR RRC terms for research; no explicit permissive licence (unclear)"
+  },
+  {
+   "source": "DocVQA",
+   "reason": "RRC registration, research-only terms (non-commercial)"
+  },
+  {
+   "source": "Fox benchmark (ucsbnlp/Fox)",
+   "reason": "no licence stated on the dataset card; page images from third-party documents (unclear)"
+  },
+  {
+   "source": "OmniDocBench (opendatalab)",
+   "reason": "no dataset licence on the Hub card; pages collected from third-party PDFs with mixed rights (unclear)"
+  },
+  {
+   "source": "IAM Handwriting",
+   "reason": "non-commercial research licence from the FKI; Hub mirrors tagged MIT do not change the source terms (non-commercial)"
+  },
+  {
+   "source": "olmOCR-bench (allenai)",
+   "reason": "ODC-BY, but the PDFs come from third-party sources with their own rights and the ground truth is unit-test assertions, not full-page transcriptions (unfit for CER)"
+  },
+  {
+   "source": "Project Gutenberg",
+   "reason": "plain text only; no page scans aligned with the text"
+  },
+  {
+   "source": "Wikisource candidates with <ref> footnotes, chess diagrams or broken table markup",
+   "reason": "ground truth would not match the printed page (footnote markers relocated, diagram text); e.g. Through the Looking-Glass p.11, Federalist (Dawson) p.197, Popular Science Monthly v1 p.71, Burney Tagebuch p.55, Gartenlaube 1875 p.660, Whymper p.105"
+  }
+ ]
+}
