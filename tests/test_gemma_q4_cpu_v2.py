@@ -51,6 +51,10 @@ class Controls(unittest.TestCase):
    result=subprocess.run([sys.executable,'-I',str(ROOT/path),'--help'],cwd=tempfile.gettempdir(),capture_output=True,text=True)
    self.assertEqual(result.returncode,0,result.stderr);self.assertIn('--reviewed-source',result.stdout)
   for name in ['numpy','torch','transformers','gguf','safetensors']:self.assertNotIn(name,sys.modules)
+ def test_old_numeric_controls_precede_any_model_build(self):
+  text=(ROOT/'tools/gemma-decision-q4-cpu-v2/kernel.py').read_text()
+  self.assertIn("['preflight','numpy','numeric-controls','build','prepare','baseline','candidates']",text)
+  self.assertIn("K.ROOT/'tests/test_gemma_decision_first_q4.py','--numeric','-v'",text)
  def test_same_resource_bounds_and_honest_explicit_metadata(self):
   p=K.declaration();self.assertEqual(p['resources']['minimum_disk_bytes'],16*2**30);self.assertEqual(p['resources']['minimum_ram_bytes'],8*2**30)
   text=(ROOT/'tools/ci-heavy/gemma_decision_q4_cpu_v2.py').read_text();self.assertNotIn('GITHUB_',text);self.assertNotIn('old.source(',text)

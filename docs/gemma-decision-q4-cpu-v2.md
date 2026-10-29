@@ -17,7 +17,8 @@ List page/source-script verification remains required outside the worker.
 The same8GiB RAM/16GiB disk/two-CPU admission applies. Retained outputs cap at
 4GiB, single files2GiB, live disk reserve2GiB; no evidence is erased on failure.
 Only the existing locked NumPy wheel is installed in an isolated Python3.12
-venv after preflight. No Torch/original framework/forward is required. Same
+venv after preflight; both original NumPy controls run before building or model
+access. No Torch/original framework/forward is required. Same
 264 maximum native encoder calls, two recipes, zero original forwards. Source,
 binary/model/reference bytes and full current F32145-stage/eight-typed/30-bank
 barriers precede any model quantization. A negative F32 barrier forbids both

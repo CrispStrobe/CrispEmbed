@@ -66,10 +66,10 @@
     ".github/workflows/gemma-decision-first-q4-v1.yml": "8269cde9b5f0fa7175191d68a97830063e27ccc1"
   },
   "owned_sha256": {
-    "docs/gemma-decision-q4-cpu-v2.md": "9ff077bd14c3ce3b7d753d6b7a392c3c481ca061699591d80f1b86f5b771ce14",
-    "tests/test_gemma_q4_cpu_v2.py": "ba7ea0b458924066c86a73bc7d222b16b5643efb58634ad8460a15517a93e1a6",
+    "docs/gemma-decision-q4-cpu-v2.md": "2da3a65f1f2aef5e500d327e1a999f5c7569de02940dc1ca35bcd3f6907c03a3",
+    "tests/test_gemma_q4_cpu_v2.py": "a67769b5058577a9460c8a9b35daacdf444c7d6816a3d87f6bad6e03ea13e677",
     "tools/ci-heavy/gemma_decision_q4_cpu_v2.py": "f01807a4487f990730fd42b442ee27920ddcf57a617c8eb957ec55964d80b4cd",
     "tools/gemma-decision-q4-cpu-v2/cpu_contract.py": "2d0c38b428ca5b3bb9f493d83a115ee65e3573365077b4743bbee3167650fda1",
-    "tools/gemma-decision-q4-cpu-v2/kernel.py": "4d9b52eecc8f70106986d6c44d7744c876d97c2bddd531417926715eb8ee7388"
+    "tools/gemma-decision-q4-cpu-v2/kernel.py": "23ec28a0cff8f75ee9585fd17e64f288c8a8a07a93baca6a40169cfa54b2d96b"
   }
 }

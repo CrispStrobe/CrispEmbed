@@ -43,10 +43,11 @@ def main():
   status=run(args,log,cwd=K.ROOT,env=env,timeout=min(timeout,5*3600-(time.monotonic()-began)));report['commands'].append(dict(label=label,**status,log=log.name,**K.identity(log)));save()
   K.require(not status['timed_out'],'Phase timed out; partial evidence retained');return status['exit']
  try:
-  for phase in ['preflight','numpy','build','prepare','baseline','candidates']:
+  for phase in ['preflight','numpy','numeric-controls','build','prepare','baseline','candidates']:
    report['phase']=phase;save()
    args=[sys.executable,'-I',K.ROOT/'tools/ci-heavy/gemma_decision_q4_cpu_v2.py',phase,'--reviewed-source',a.reviewed_source,'--output',out]
    if phase=='numpy':args=[sys.executable,'-I','-m','pip','--isolated','install','--no-deps','--require-hashes','-r',K.ROOT/'tools/gemma-decision-q4-v1/requirements.lock']
+   if phase=='numeric-controls':args=[sys.executable,'-I',K.ROOT/'tests/test_gemma_decision_first_q4.py','--numeric','-v']
    code=command(phase,args,7200 if phase in ['baseline','candidates']else 3600)
    if out.exists():report['resource_final']=budget(out,cfg);save()
    if code:
