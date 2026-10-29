@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Small stdlib source/protocol controls; no backend, arrays or model execution."""
-import ast,importlib.util,json,math,struct,sys,unittest
+import ast,importlib.util,json,math,re,struct,sys,unittest
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1]
 sys.path.insert(0,str(ROOT/'tools/wasm-norm-order'))
@@ -24,20 +24,20 @@ class Controls(unittest.TestCase):
   for raw in [bytes(4895),bytes(4897),struct.pack('<e',math.nan)+bytes(4894),struct.pack('<e',math.inf)+bytes(4894)]:
    with self.assertRaises(ValueError):P.workspace(raw)
  def test_cpp_has_no_oracle_argument(self):
-  cpp=self.text('tests/wasm-norm-order/operator.cpp');signature=cpp.split('extern "C" int crispembed_norm_order(',1)[1].split('){',1)[0]
+  cpp=self.text('tests/wasm-norm-order/operator.cpp');signature=re.split(r'\)\s*\{',cpp.split('extern "C" int crispembed_norm_order(',1)[1],maxsplit=1)[0]
   self.assertIn('const float * x',signature)
   for forbidden in ['workspace','reference','expected','norm']:self.assertNotIn(forbidden,signature)
-  self.assertIn('computed=native_order(x)',cpp);self.assertIn('mode?computed.data():x',cpp)
+  cpp=re.sub(r'\s+','',cpp);self.assertIn('computed=native_order(x)',cpp);self.assertIn('mode?computed.data():x',cpp)
   self.assertIn('ggml_mul_mat(o.ctx,w,affine)',cpp);self.assertIn('GGML_TYPE_IQ4_NL',cpp)
  def test_portable_tree_and_finite_output_commit(self):
   cpp=self.text('tests/wasm-norm-order/operator.cpp');cm=self.text('tests/wasm-norm-order/CMakeLists.txt')
-  self.assertIn('volatile float',cpp);self.assertIn('add(add(a0,a2),add(a1,a3))',cpp)
+  cpp=re.sub(r'\s+','',cpp);self.assertIn('volatilefloat',cpp);self.assertIn('add(add(a0,a2),add(a1,a3))',cpp)
   self.assertIn('square_sum/double(H)',cpp);self.assertIn('std::sqrt(add(variance,1e-12f))',cpp)
   self.assertLess(cpp.index('!finite(pending.data(),required)'),cpp.index('std::copy(pending.begin()'))
   self.assertIn('target_compile_options(wasm-norm-order PRIVATE -ffp-contract=off)',cm)
  def test_actual_backend_context_and_conversion_capture(self):
   cpp=self.text('tests/wasm-norm-order/operator.cpp');driver=self.text('tools/ci-heavy/wasm_norm_order_v1.py')
-  self.assertIn('#ifdef __EMSCRIPTEN__\n        ggml_backend_cpu_set_wasm_q8_0_rounding(backend.get(),true);',cpp)
+  self.assertIn('#ifdef__EMSCRIPTEN__ggml_backend_cpu_set_wasm_q8_0_rounding(backend.get(),true);',re.sub(r'\s+','',cpp))
   self.assertIn("k['weight_type']==20 and k['vec_dot_type']==8",driver)
   self.assertIn("row['kernel']['wasm_round_plan']==int(backend=='wasm')",driver)
   self.assertIn("'.input.f32')).read_bytes()==raw[2*18432:3*18432]",driver)
@@ -67,6 +67,12 @@ class Controls(unittest.TestCase):
   self.assertEqual(s.count('if: always()'),2);self.assertEqual(s.count('retention-days: 90'),2)
  def test_python_ast_only(self):
   for path in ['tools/wasm-norm-order/protocol.py','tools/ci-heavy/wasm_norm_order_v1.py']:ast.parse(self.text(path))
+ def test_formatting_only_cpp_token_identity(self):
+  import subprocess
+  before=subprocess.check_output(['git','show','f78131c4616ece9f236ddab7695db6cd32a5521f:tests/wasm-norm-order/operator.cpp'],cwd=ROOT)
+  actual=(ROOT/'tests/wasm-norm-order/operator.cpp').read_bytes()
+  self.assertEqual(P.cpp_tokens(before),P.cpp_tokens(actual))
+  self.assertNotEqual(P.cpp_tokens(actual),P.cpp_tokens(actual.replace(b'1e-12f',b'1e-5f',1)))
  def test_exact_source_closure(self):
   cfg=P.source();self.assertEqual(cfg['gates'],{'max_absolute':.002,'minimum_row_cosine':.99999})
   self.assertEqual(cfg['operator']['run'],40771950208);self.assertEqual(cfg['operator']['report_sha256'],'fc9b8075f584b594b11fecc12c2e8f7e323aa39428b32dd841b3d64c0acd3ed6')

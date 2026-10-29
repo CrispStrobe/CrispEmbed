@@ -63,3 +63,10 @@ All ten old final targets and the first sentence's eight named stages still
 need unchanged0.002/0.99999 gates in a separately reviewed full-model A/B before
 any production proposal. No decoded/task-quality, release or default promotion
 is part of this workflow. Large arrays, modules and model bytes remain remote.
+
+The initial generic formatting run [40831805927](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40831805927)
+failed before this operator study. Its capped log includes inherited formatting
+violations, preserved in the [initial receipt](../tests/results/packaging/wasm-norm-risk-initial-lint.json).
+The successor formats only the new norm operator, requiring an identical C++
+token stream to frozenf781. Historical protected files remain byte-exact; fixes
+to unrelated inherited formatting belong to their respective integration owners.

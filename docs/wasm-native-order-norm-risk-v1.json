@@ -104,12 +104,18 @@
   },
   "owned_sha256": {
     ".github/workflows/wasm-native-order-norm-risk-v1.yml": "4e80f4ea6e16f8f1811fe25bc28c61dc77122382142bee99b2667bcccde66603",
-    "docs/wasm-native-order-norm-risk-v1.md": "4c2118bbdeba3f5103ab7d15a25b92b4acbcff54e71e50ef9dea61bfed169601",
-    "tests/test_wasm_norm_order_v1.py": "8bc568d8fa36eee4b5f198e9609f0bb214d32c2953f7b65d31d3058b77a55e97",
+    "docs/wasm-native-order-norm-risk-v1.md": "c4bc9406a90df6e5d2928c8ceb3040523c9ffa6f087c9e661387cae62870f8ab",
+    "tests/results/packaging/wasm-norm-risk-initial-lint.json": "b491002ce09cfdf984d5a9ea15fbe99ebf569054043a94f3c17909740ed03c05",
+    "tests/test_wasm_norm_order_v1.py": "864ef8bb148fc313e722e967d7df57c6c304d42594b0d96a53f48734d40cfe9d",
     "tests/wasm-norm-order/CMakeLists.txt": "38b88d851950231283db94d565c84d622ca13cf3ba01adca7d2b72428c3e1a83",
     "tests/wasm-norm-order/browser.cjs": "70f0d7dfa9ca91ce2fe9f68f36ea1acf1769ced4d7bc9cf1024351da813baf94",
-    "tests/wasm-norm-order/operator.cpp": "f566a97c6ede60cf73bad00ea97aa0820ae2871d45d664fb06dcaa6bc982be32",
+    "tests/wasm-norm-order/operator.cpp": "25e5465ae8cd8e29ffbfd5fb28b0b46cd2dcd5dc9ad7075f61428943543e0971",
     "tools/ci-heavy/wasm_norm_order_v1.py": "8f0ba869c76712d5dfacd5bf8947afc269fd28f6b530ba91f36beb068519a2b6",
-    "tools/wasm-norm-order/protocol.py": "4eeffdae61fd5ebd8f144b202385d0983667aaed6ee942d52e828e5ccd4f8b97"
+    "tools/wasm-norm-order/protocol.py": "73b0fbabd27df2a830c3942a743bf9671b93e36a6d0e01e3fdcbc7df9d459322"
+  },
+  "format_predecessor": {
+    "source": "f78131c4616ece9f236ddab7695db6cd32a5521f",
+    "cpp_sha256": "f566a97c6ede60cf73bad00ea97aa0820ae2871d45d664fb06dcaa6bc982be32",
+    "cpp_tokens_sha256": "6792651095e892caa260291ad18b50ce9a40a1dfa57df5b70ade181b439e33c5"
   }
 }

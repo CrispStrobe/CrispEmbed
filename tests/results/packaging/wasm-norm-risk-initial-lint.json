@@ -1,0 +1,16 @@
+{
+  "schema": "crispembed-wasm-norm-risk-initial-lint-v1",
+  "run": 40831805927,
+  "source": "f78131c4616ece9f236ddab7695db6cd32a5521f",
+  "job": 123307495895,
+  "job_name": "clang-format (style)",
+  "conclusion": "failure",
+  "earliest_failure": "Generic tools/format.sh --check reports inherited formatting violations; the new owned norm operator also requires formatting.",
+  "failed_log_bytes": 10884,
+  "failed_log_sha256": "9661fd6bea2ee308daa107ef7c280906bc71df18a2e1924cf04222a01a7c8686",
+  "inherited_paths_visible_in_capped_log": ["examples/server/server.cpp", "tests/wasm-layer3-f32/operator.cpp", "tests/unlimited_ocr2_text_fixture.h"],
+  "correction_scope": "Format only tests/wasm-norm-order/operator.cpp and retain exact C++ token identity; historical protected files and gates remain unchanged. Other inherited formatting requires its separate owner.",
+  "operator_execution_result": null,
+  "numerical_qualified": false,
+  "production_changed": false
+}
