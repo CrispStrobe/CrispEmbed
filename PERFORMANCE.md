@@ -7008,3 +7008,11 @@ max0.09980–0.12817; its worst layer26 error639.711914/cosine0.93838806 is
 reported against original magnitude2037.914429. Structural completion and all23
 prior decoded-exact arms remain distinct from these failures. No speed or
 production-quality improvement follows from this compare-only analysis.
+
+## Ultra retained F32 retrieval boundary (29 October)
+
+[Zero-forward freeze40834743025](docs/ultrabert-retained-freeze-result.md) retains
+5483 positive F32 vectors: worst raw absolute0.00109803677/cosine0.999999996825,
+normalized max1.09114e-5 and reported300 ranking metrics exact/top1=1. No new
+F32 timing, Q4 quality or speed claim follows; the first conservative Q4 model
+conversion and686-row shard0 require separate immutable source/model pins.

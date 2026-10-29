@@ -17006,3 +17006,14 @@ rehashes all134 small members and confirms99 pass/39 strict failures,36 old
 comparisons carried unchanged and102 newly measured. Packed pixels are exact;
 original merger LIST[0] maps overview only and88 later spans remain unmapped.
 No numerical/model qualification follows; only seven missing arms remain.
+
+## 29 October: Ultra retained full-corpus F32 freeze
+
+[Actual40834743025](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40834743025)
+at08b0a572 completes a zero-forward retained freeze after repairing the scoped
+production-object audit. The [independent review](docs/ultrabert-retained-freeze-result.md)
+authenticates all13 small members and77-member remote payload manifest,48
+streams/adapters, all5483 rows/eight16-stage Ref records and reported exact300
+rankings. Raw maximum error0.00109804/minimum cosine0.999999996825 remain
+within the unchanged F32 budgets. No Q4 recipe has qualified and earlier
+full-stage/M1 strict failures remain separate.
