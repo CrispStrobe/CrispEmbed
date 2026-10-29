@@ -40,6 +40,12 @@ def declaration():
     require(c['limits']==dict(original_targeted_forward_max=5,native_full_computations=14,native_plain_full=6,native_observed_full=8,
         native_encode_attempts=21,native_pre_math_observer_abort=1,native_frontend_rejections=6,native_init_rejections=6),'forward budgets differ')
     require(c['original_full_corpus_recaptured']is False and c['new_gold']is False and c['publication_qualified']is False,'diagnostic scope differs')
+    require(c['packed_initializer']==dict(predecessor_source='024f3e7a58cc4ed8e219689d1bea387342dd9556',
+        dispatch='init_packed iff both path strings are nonempty and exactly equal; otherwise init',scope='test executable only',
+        production_source_changed=False,expected_routes_per_probe=dict(packed_calls=5,component_calls=0),
+        failure_receipt='tests/results/moedern-colbert/first-row-packed-init-initial-review.json'),'explicit packed initializer test-only scope required')
+    require(c['attempt_history']==dict(previous_targeted_original_calls=1,retry_targeted_original_max=5,
+        aggregate_targeted_original_max=6,previous_native_full_computations=0,previous_observers_installed=False),'previous plus retry call counts differ')
     publisher=c['publisher_router_source']
     original=json.loads((ROOT/'docs/moedern-colbert-source-contract.json').read_text())['variants']['1.5M']['original']
     pin=original['files'][publisher['path']]
@@ -61,8 +67,8 @@ def declaration():
     require(protected==set(c['protected_sha256']),'complete exact protected closure required')
     owned={'tools/moedern-first-row/'+n+'.py'for n in ('common','prepare','original','compare','kernel')}
     owned|={'tools/ci-heavy/moedern_first_row_v1.py','tests/moedern-first-row/CMakeLists.txt','tests/moedern-first-row/probe.cpp',
-        'tests/test_moedern_first_row_v1.py','.github/workflows/moedern-first-row-stages-v1.yml','docs/moedern-first-row-stages-v1.md','tools/moedern-first-row/resource_profile.py','tests/test_moedern_first_row_resources.py'}
-    require(set(c['owned_sha256'])==owned,'exact resource-v2 thirteen-file diagnostic closure required')
+        'tests/test_moedern_first_row_v1.py','.github/workflows/moedern-first-row-stages-v1.yml','docs/moedern-first-row-stages-v1.md','tools/moedern-first-row/resource_profile.py','tests/test_moedern_first_row_resources.py','tests/results/moedern-colbert/first-row-packed-init-initial-review.json'}
+    require(set(c['owned_sha256'])==owned,'exact packed-initializer fourteen-file diagnostic closure required')
     return c
 
 def verify(source):

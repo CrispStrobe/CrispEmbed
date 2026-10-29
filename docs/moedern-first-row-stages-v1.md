@@ -161,3 +161,31 @@ kernel is prepared for the same existing service kernel's next version, with
 an unchanged approved credential-only input. Submission still requires source
 review and a fresh whole-account capacity check by the coordinator. No GPU,
 provider spoofing, numerical waiver or automatic retry is authorized here.
+
+## Packed initializer repair after actual CPU v2
+
+The [preserved v2 rejection](../tests/results/moedern-colbert/first-row-packed-init-initial-review.json)
+authenticates all48 small members (347,938 bytes). One ordinary original call
+matches both frozen final matrices bit for bit, and both actual Ref comparisons
+pass. The native executable then rejects `empty tokenizer component path` before
+any encode or native computation; no observer is installed. This is an initializer
+failure, not new numerical evidence about the existing native mismatch.
+
+The test caller now passes the authenticated packed model in both path slots.
+A test-executable adapter selects the existing `init_packed` constructor only
+when both paths are nonempty and exactly equal; different or empty paths retain
+the existing separate-component constructor. Passing the packed filename to
+`init` alone would still fail: its tokenizer loader requires zero tensors and
+architecture `moedern_unigram_tokenizer`, while the published32-tensor model is
+`modernbert_hash_moe_v10`. Production constructors, inference math and gates are
+unchanged. Compile-time function signatures and the scoped source regression
+protect this distinction. Each executable writes its constructor route counts;
+the three unset/empty/zero gate rejections and both successful owners must use
+the packed constructor before the new caller admits any result.
+
+A retry still requires a fresh ordinary original barrier on its own host, then
+an exact native93 ordinary barrier before either observer. The five original-call
+limit remains per job; the previous attempt used one, so previous plus retry is
+at most six targeted original calls. There is no full-corpus recapture or new gold.
+All other forward, rejection, resource and numerical budgets remain unchanged.
+This checkpoint prepares a reviewed retry; it does not claim an executed repair.

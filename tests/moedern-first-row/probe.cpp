@@ -21,6 +21,8 @@ namespace mt = moedern_text;
 static_assert(
     std::is_same_v<decltype(&mt::encode), bool (*)(mt::context *, const std::string &, mt::role, mt::result &)>,
     "ordinary API has no reference callback argument");
+static_assert(std::is_same_v<decltype(&mt::init), mt::context * (*)(const char *, const char *, int, std::string &)>);
+static_assert(std::is_same_v<decltype(&mt::init_packed), mt::context * (*)(const char *, int, std::string &)>);
 namespace {
 void require(bool ok, const char * why) {
     if (!ok) throw std::runtime_error(why);
@@ -98,6 +100,26 @@ void metadata(const std::filesystem::path & p, const mt::result & r) {
 }
 std::filesystem::path count_path;
 size_t attempts = 0, full = 0, rejected = 0, pre_math_abort = 0, init_rejections = 0;
+size_t packed_inits = 0, component_inits = 0;
+// Test-executable adapter only; the two production constructors remain unchanged.
+mt::context * init_context(const char * model, const char * tokenizer, int threads, std::string & error) {
+    const bool packed = model && tokenizer && *model && *tokenizer && std::strcmp(model, tokenizer) == 0;
+    if (packed)
+        ++packed_inits;
+    else
+        ++component_inits;
+    if (!count_path.empty()) {
+        auto path = count_path.parent_path() / "init-route.json";
+        auto tmp = path;
+        tmp += ".partial";
+        std::ofstream out(tmp);
+        out << "{\"packed_calls\":" << packed_inits << ",\"component_calls\":" << component_inits << "}\n";
+        out.close();
+        require(bool(out), "initializer route receipt failed");
+        std::filesystem::rename(tmp, path);
+    }
+    return packed ? mt::init_packed(model, threads, error) : mt::init(model, tokenizer, threads, error);
+}
 void save_counts() {
     if (count_path.empty()) return;
     auto tmp = count_path;
@@ -163,13 +185,13 @@ int run(int argc, char ** argv) {
     for (const char * g : { static_cast<const char *>(nullptr), "", "0" }) {
         gate(g);
         std::unique_ptr<mt::context, decltype(&mt::free)> c(
-            mt::init("must-not-open-model", "must-not-open-tokenizer", 2, error), mt::free);
+            init_context("must-not-open-packed", "must-not-open-packed", 2, error), mt::free);
         require(!c && error.find("OFF") != std::string::npos, "default-off guard failed");
         ++init_rejections;
         save_counts();
     }
     gate("1");
-    std::unique_ptr<mt::context, decltype(&mt::free)> ctx(mt::init(argv[1], argv[2], 2, error), mt::free);
+    std::unique_ptr<mt::context, decltype(&mt::free)> ctx(init_context(argv[1], argv[2], 2, error), mt::free);
     require(bool(ctx), error.c_str());
     size_t cases = 0;
     bool any_failed = false;
@@ -246,7 +268,8 @@ int run(int argc, char ** argv) {
             require(counted_encode(ctx.get(), row.text, task(row), repeat) && equal(ordinary, repeat),
                     "input recovery differs");
             {
-                std::unique_ptr<mt::context, decltype(&mt::free)> other(mt::init(argv[1], argv[2], 1, error), mt::free);
+                std::unique_ptr<mt::context, decltype(&mt::free)> other(init_context(argv[1], argv[2], 1, error),
+                                                                        mt::free);
                 require(bool(other), error.c_str());
                 require(counted_encode(other.get(), row.text, task(row), repeat), "second owner encode failed");
             }

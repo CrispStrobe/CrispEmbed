@@ -12,6 +12,15 @@ from common import PATH,CID,atomic,module,require,sha,verify,hosted,authenticate
 from ci_process import run as child
 
 
+def probe_argv(executable,model,text_packet,out):
+    require(bool(str(model)), 'authenticated packed model path required')
+    return [executable,model,model,text_packet,out]
+
+def packed_route(root):
+    route=json.loads((root/'init-route.json').read_text())
+    require(route==dict(packed_calls=5,component_calls=0),'packed initializer/three OFF checks/two owners required')
+    return route
+
 def main(args):
     cfg=verify(args.reviewed_source);provider=hosted(args.reviewed_source)
     import subprocess
@@ -73,7 +82,8 @@ def main(args):
         Path(str(text_packet)+'.pairs').write_text('')
         active=dict(env,CRISPEMBED_MOEDERN_PACKED='1',CRISPEMBED_MOEDERN_TEXT_FRONTEND='1',CRISPEMBED_MOEDERN_COLBERT='1',
                     CRISPEMBED_MOEDERN_PUBLIC_TEXT='1',CRISPEMBED_MOEDERN_FAMILY='1',CRISPEMBED_OFFLINE='1')
-        command('native-plain',[tests/'first-row-plain-probe',model,'',text_packet,raw/'plain'],active,timeout=1200)
+        command('native-plain',probe_argv(tests/'first-row-plain-probe',model,text_packet,raw/'plain'),active,timeout=1200)
+        report['plain_init_route']=packed_route(raw/'plain');save()
         counts=json.loads((raw/'plain/counts.json').read_text())
         require(counts==dict(encode_attempts=9,full_computations=6,frontend_rejections=3,pre_math_observer_abort=0,init_rejections=3),'plain computation budget differs')
         controls=json.loads((raw/'plain'/CID/'controls.json').read_text());tokens=json.loads((raw/'plain'/CID/'tokens.json').read_text())
@@ -91,7 +101,8 @@ def main(args):
         observed=json.loads((raw/'original/original.json').read_text())
         require(observed['completed']is True and observed['original_forward_completed']==4,'original observed/repeated coverage incomplete')
         report['original_forward_completed']=5;save()
-        command('native-observed',[tests/'first-row-observed-probe',model,'',text_packet,raw/'observed'],active,timeout=1200)
+        command('native-observed',probe_argv(tests/'first-row-observed-probe',model,text_packet,raw/'observed'),active,timeout=1200)
+        report['observed_init_route']=packed_route(raw/'observed');save()
         observed_counts=json.loads((raw/'observed/counts.json').read_text())
         require(observed_counts==dict(encode_attempts=12,full_computations=8,frontend_rejections=3,pre_math_observer_abort=1,init_rejections=3),'observed computation budget differs')
         report['native_counts']={k:counts[k]+observed_counts[k]for k in counts};save()
@@ -109,13 +120,14 @@ def main(args):
             path=raw/phase/'original.json'
             if path.is_file():
                 row=json.loads(path.read_text());original_counts.append(dict(phase=phase,attempts=row['original_forward_attempts'],completed=row['original_forward_completed']))
+        report['attempt_history']=dict(cfg['attempt_history'],retry_actual_attempts=sum(r['attempts']for r in original_counts),aggregate_actual_attempts=cfg['attempt_history']['previous_targeted_original_calls']+sum(r['attempts']for r in original_counts))
         report['actual_original_calls']=original_counts
         report['original_rerun']=any(r['attempts']for r in original_counts)
         report['original_forward_attempts']=sum(r['attempts']for r in original_counts)
         report['original_forward_completed']=sum(r['completed']for r in original_counts)
         files={}
         for path in raw.rglob('*'):
-            if path.is_file()and path.name in('ref.json','ref.log','anchor-ref.json','anchor-ref.log','diff.json','diff.log','controls.json','tokens.json','counts.json','original.json','barriers.json','diagnostic.json','stages.tsv'):
+            if path.is_file()and path.name in('ref.json','ref.log','anchor-ref.json','anchor-ref.log','diff.json','diff.log','controls.json','tokens.json','counts.json','init-route.json','original.json','barriers.json','diagnostic.json','stages.tsv'):
                 require(path.stat().st_size<=2*2**20,'small evidence exceeds declared bound')
                 target=review/'evidence'/path.relative_to(raw);target.parent.mkdir(parents=True,exist_ok=True);shutil.copyfile(path,target)
                 files[str(target.relative_to(review))]=dict(bytes=target.stat().st_size,sha256=sha(target))

@@ -235,7 +235,7 @@
     }
   ],
   "schema": "crispembed-moedern-first-row-stages-v1",
-  "base": "fb678e0c5c3d3918b5ef905df6aef8973c53d2cc",
+  "base": "1291fb176821c3c59b5963f0c71d0bae1cafafe3",
   "key": "d:24726600",
   "original_full_corpus_recaptured": false,
   "new_gold": false,
@@ -666,18 +666,19 @@
   },
   "owned_sha256": {
     ".github/workflows/moedern-first-row-stages-v1.yml": "c9d7da780971082e6f2b1104b078e32096228b4782f02c86271a01356ab6829d",
-    "docs/moedern-first-row-stages-v1.md": "079416561062e9867e8c49c24b7b1bd16e3946c04528c82359877f2b3a88f764",
+    "docs/moedern-first-row-stages-v1.md": "48339069ee3ecc5e6172cbabf728a0bdda3bc39592516af33c6ed003fa71b13e",
     "tests/moedern-first-row/CMakeLists.txt": "e706b4db19c3da0053f4983534a7b34fc92e4654135031fae8b99da003b62d5d",
-    "tests/moedern-first-row/probe.cpp": "e0240ef12a358f98938d27d95c01ad8b515c04bf862cb42e0b33c53d09e5e287",
+    "tests/moedern-first-row/probe.cpp": "a3dfcc28f6cb31f73120cc71ad16821e2082d156fce282ff666885a7b8a78616",
     "tests/test_moedern_first_row_v1.py": "a7d7ba96f4ebc691c1190ab6ed14a2a4d5efb4ee2d0b7dba7f6d1a8b376bd051",
-    "tools/ci-heavy/moedern_first_row_v1.py": "ba2c6cb90efe67bfdcf35355137479e16ff5caada41c16162050045173ce210f",
-    "tools/moedern-first-row/common.py": "bfd0e20cbd725028bbb41ff57681a226b99232a63667bf2fdeaff913a4afca1f",
+    "tools/ci-heavy/moedern_first_row_v1.py": "ed1af065ea4c93e8cf637a7123b80a30141c659fce1477dd1374ede21f9209e9",
+    "tools/moedern-first-row/common.py": "abeebe847708f193f220a19fdd190011ee95e091534e6c67ffe988621d9ad3e8",
     "tools/moedern-first-row/compare.py": "e1067e2e244843abfb4315e070d851dc01a967c117f93e94045fac6bae138612",
     "tools/moedern-first-row/kernel.py": "e5d0d2935de3bcd25c38a58439b1c41f74635cf1c135b9c86915663ca09d0844",
     "tools/moedern-first-row/original.py": "355c2ee8c04e8c419313d499149fa7bf247c8e3fe1feb1c32cdb76b97130b965",
     "tools/moedern-first-row/prepare.py": "b75f8c5c12c87bec10e90b1db482e351c3418f30188c840d45363a144e8c3694",
     "tools/moedern-first-row/resource_profile.py": "e28559e4353ba51dbe0b28778c2c97ebf694384a5fe71fd97795cd238975565b",
-    "tests/test_moedern_first_row_resources.py": "8964cfa4599fac2e4e25af3b68689ef9ae24261c1f2eb4f6562879b9e5eaaea4"
+    "tests/test_moedern_first_row_resources.py": "ebf62bba2ba6a664ebca3d539c2437cf671f4292dc6d512d26218ca0e78ae781",
+    "tests/results/moedern-colbert/first-row-packed-init-initial-review.json": "be42d5bd7fb9ab676d03fbc05bfd71cc5de0605fdf9349c00e27c3e73d43ba68"
   },
   "publisher_router_source": {
     "repository": "VAGOsolutions/SauerkrautLM-MoEdernColBERT-1.5M",
@@ -736,5 +737,23 @@
     "initial_commands": 0,
     "initial_disk_bytes": 20940525568,
     "old_minimum_disk_bytes": 25769803776
+  },
+  "packed_initializer": {
+    "predecessor_source": "024f3e7a58cc4ed8e219689d1bea387342dd9556",
+    "dispatch": "init_packed iff both path strings are nonempty and exactly equal; otherwise init",
+    "scope": "test executable only",
+    "production_source_changed": false,
+    "expected_routes_per_probe": {
+      "packed_calls": 5,
+      "component_calls": 0
+    },
+    "failure_receipt": "tests/results/moedern-colbert/first-row-packed-init-initial-review.json"
+  },
+  "attempt_history": {
+    "previous_targeted_original_calls": 1,
+    "retry_targeted_original_max": 5,
+    "aggregate_targeted_original_max": 6,
+    "previous_native_full_computations": 0,
+    "previous_observers_installed": false
   }
 }
