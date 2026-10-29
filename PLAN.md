@@ -1052,3 +1052,22 @@ registration here does not merge that runtime or qualify a model.
   safe adapter names to finish18 saved comparisons. A structurally completed run
   must still exit nonzero when numerical failures remain; fresh Python drift
   cannot replace frozen gold or prove native causality.
+
+### Actual hosted submissions,29 October07:20 UTC
+
+All five are newly declared bounded continuations; check actual service state
+before acting and never duplicate a running job. At submission they are queued:
+
+| Job | Exact source | Gate |
+|---|---|---|
+| [Josev40834737477](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40834737477) |`d339be99cfce99c1801fa3d1268deec122ae63e0` |Strict original F32, then four protected Q8/Q4 development recipes only. |
+| [Unlimited40834740153](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40834740153) |`fbd8f68f6753a64751a02f42771fc475670f64e4` |Exact-v3 GET/540-file authentication, then read-only structure; zero forwards. |
+| [Ultra freeze40834743025](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40834743025) |`08b0a5727aa25412a1181db4695efb01be578b24` |Actual Ultra-object symbol proof, retained F32 adapters/eight Ref/full rankings; no new F32/Q4 forward. |
+| [Norm risk40834745535](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40834745535) |`e7f3ab64dda2fdb42c8305637a258ce4b10bdef4` |30 byte anchors,12 native norm recoveries before56 actual Ref comparisons. |
+| [MoEdern40834748271](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40834748271) |`92f75550a0ce0f1486f6d7603164a6628aeb24a0` |18 retained three-document comparisons; numerical negatives must remain nonzero. |
+
+Mini-v2 [40831080193](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40831080193)
+atcec1faeb completes structurally:138 comparisons,36 carried+102 newly measured,
+all23 input pixels exact and all historical numerical negatives preserved. It
+remains unqualified. Independent small-proof review and the separately claimed
+seven-only continuation follow; no23-arm/original rerun.
