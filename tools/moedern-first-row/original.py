@@ -27,6 +27,12 @@ def fingerprint(value,torch):
     raise ValueError('Unsupported feature/operation argument type: '+type(value).__name__)
 
 
+def router_kind(operator):
+    # In inference mode the public composite spelling may remain exposed.
+    return {'aten.softmax.int':'softmax','aten._softmax.default':'softmax',
+            'aten.topk.default':'topk','aten.div.Tensor':'div'}.get(str(operator))
+
+
 def invalid():raise ValueError('Non-string feature mapping key')
 
 
@@ -86,10 +92,10 @@ def run(args):
         backbone=model[0].model;expected=baseline['feature_fingerprint'];total=0
         def traced(label):
             nonlocal total
-            counts={};operators=[];sdpa_dispatches=[];sdpa_active=[];rows=[];handles=[];stack=[];sdpa_count=0;seen={};raw= args.out/label;raw.mkdir()
+            counts={};operators=[];sdpa_dispatches=[];ffn_dispatches=[];sdpa_active=[];rows=[];handles=[];stack=[];sdpa_count=0;seen={};raw= args.out/label;raw.mkdir()
             # Mutable trace inventories survive an early structural/operation failure.
             prefix=''if label=='observed'else'observed_repeat_'
-            report[prefix+'arrays']=rows;report[prefix+'operators']=operators;report[prefix+'sdpa_dispatches']=sdpa_dispatches
+            report[prefix+'arrays']=rows;report[prefix+'operators']=operators;report[prefix+'sdpa_dispatches']=sdpa_dispatches;report[prefix+'ffn_dispatches']=ffn_dispatches
             def capture(stage,tree):
                 nonlocal total
                 with _disable_current_modes():
@@ -129,9 +135,12 @@ def run(args):
                     if sdpa_active:
                         require(len(sdpa_dispatches)<256,'bounded SDPA dispatch metadata exceeded')
                         sdpa_dispatches.append(dict(sequence=len(sdpa_dispatches),sdpa=sdpa_active[-1],operator=str(func),schema=str(func._schema)))
-                    selected=str(func)in('aten._softmax.default','aten.topk.default','aten.div.Tensor')and bool(stack)
+                    if stack:
+                        require(len(ffn_dispatches)<256,'bounded FFN dispatch metadata exceeded')
+                        ffn_dispatches.append(dict(sequence=len(ffn_dispatches),context=stack[-1],operator=str(func),schema=str(func._schema)))
+                    kind=router_kind(func);selected=kind is not None and bool(stack)
                     if selected:
-                        context=stack[-1];kind={'aten._softmax.default':'softmax','aten.topk.default':'topk','aten.div.Tensor':'div'}[str(func)]
+                        context=stack[-1]
                         name='actual.'+context+'.'+kind;require(name not in counts,'unexpected repeated actual router operation')
                         before=fingerprint(dict(args=args,kwargs=kwargs),torch);capture(name+'.input',dict(args=args,kwargs=kwargs))
                     value=func(*args,**kwargs)
@@ -164,17 +173,17 @@ def run(args):
             for field in ('supplied_ids','supplied_mask','effective_mask'):
                 require(list(map(int,seen[field]))==case['ids'if field=='supplied_ids'else field],'actual original IDs/masks differ')
             names={r['stage']for r in rows};require(set(actual_mapping(ref).values())<=names,'actual mandatory stages missing')
-            return rows,operators,sdpa_dispatches
-        first,ops,dispatches=traced('observed');report['arrays']=first;report['operators']=ops;report['sdpa_dispatches']=dispatches;save()
-        repeated,repeated_ops,repeated_dispatches=traced('observed-repeat')
+            return rows,operators,sdpa_dispatches,ffn_dispatches
+        first,ops,dispatches,ffn_ops=traced('observed');report['arrays']=first;report['operators']=ops;report['sdpa_dispatches']=dispatches;save()
+        repeated,repeated_ops,repeated_dispatches,repeated_ffn_ops=traced('observed-repeat')
         def identity(rows):return [{k:v for k,v in r.items()if k!='path'}for r in rows]
-        require(identity(first)==identity(repeated)and ops==repeated_ops and dispatches==repeated_dispatches,'captured module/actual ATen/SDPA args/returns or dispatch metadata are not repeat neutral')
+        require(identity(first)==identity(repeated)and ops==repeated_ops and dispatches==repeated_dispatches and ffn_ops==repeated_ffn_ops,'captured module/actual ATen/SDPA args/returns or dispatch metadata are not repeat neutral')
         repeated_features=call('unhooked-repeat',output_value=None)
         require(fingerprint(repeated_features,torch)==expected,'unhooked repeat feature bits differ')
         public=call('ordinary-public-selected')
         require(fingerprint(public,torch)==fingerprint(repeated_features['token_embeddings'][repeated_features['attention_mask'].bool()],torch),'public selected slice differs')
         report.update(completed=True,raw_bytes=total,observer_feature_raw_bits_neutral=True,repeat_feature_raw_bits_exact=True,
-            actual_operator_inputs_outputs_repeat_raw_bits_exact=True,sdpa_dispatch_metadata_repeat_exact=True,observed_repeat_sdpa_dispatches=repeated_dispatches,public_slice_raw_bits_exact=True,observed_repeat_arrays=repeated,
+            actual_operator_inputs_outputs_repeat_raw_bits_exact=True,ffn_dispatch_metadata_repeat_exact=True,sdpa_dispatch_metadata_repeat_exact=True,observed_repeat_sdpa_dispatches=repeated_dispatches,public_slice_raw_bits_exact=True,observed_repeat_arrays=repeated,
             original_forward_total_including_barrier=5,derived_router_gold_used=False);save();return report
     except Exception as error:report['error']=type(error).__name__+': '+str(error);save();raise
 

@@ -189,3 +189,27 @@ limit remains per job; the previous attempt used one, so previous plus retry is
 at most six targeted original calls. There is no full-corpus recapture or new gold.
 All other forward, rejection, resource and numerical budgets remain unchanged.
 This checkpoint prepares a reviewed retry; it does not claim an executed repair.
+
+## Exact-version v3 capture rejection and actual-softmax repair
+
+Source46bac/v3 passes both ordinary barriers, all93 frozen native anchors and
+six native full computations. Original observation completes one forward with
+feature raw bits unchanged, then the strict eight-operation check rejects six
+records: two SDPA, two topk and two out-of-place div; no softmax was observed.
+The complete small-member identities are retained in
+[the initial review](../tests/results/moedern-colbert/first-row-softmax-initial-review.json).
+
+The new dumper admits the two actual PyTorch2.8 operator names
+`aten.softmax.int` and `aten._softmax.default`, recording whichever real name,
+schema, arguments and return appears. No reconstructed probabilities are gold.
+It also retains at most256 ordered FFN ATen names/schemas per observed forward;
+missing or unexpected behavior still rejects the exact eight-operation/map gate.
+The schema alternatives follow the pinned
+[PyTorch2.8 declaration](https://github.com/pytorch/pytorch/blob/v2.8.0/aten/src/ATen/native/native_functions.yaml);
+which spelling this model uses remains unproven until hosted capture. Metadata
+and tensor fingerprints must repeat exactly; genuine function calls receive
+the same arguments and run once. Production arithmetic, native probe, constructor
+adapter, stage mappings, ordinary-before-observer barriers and strict budgets
+are unchanged. Previous targeted original calls3 plus retry maximum5 means
+aggregate8 across attempts; previous native full computations6 are retained
+separately from the next maximum14. No full original corpus recapture.

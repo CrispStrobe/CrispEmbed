@@ -235,7 +235,7 @@
     }
   ],
   "schema": "crispembed-moedern-first-row-stages-v1",
-  "base": "1291fb176821c3c59b5963f0c71d0bae1cafafe3",
+  "base": "bbe4a63f19f83be5bd210a0cfbc71c35e659cf00",
   "key": "d:24726600",
   "original_full_corpus_recaptured": false,
   "new_gold": false,
@@ -662,22 +662,23 @@
     "tools/moedern-three-doc/original.py": "b56bd3e6c94d2147c29186ff5728d98c6d4ce61928cde0c3d6773e15518c4c3a",
     "tools/moedern-three-doc/prepare.py": "c2df5ebd531d6260f5019be41cfddf732d4e04f900e986964d2847a00157cce7",
     "tools/moedern_scifact.py": "ce5e23583411423628c3b1407b61d6225cec64fe57f1fc8a3ab1ac84aa5080a8",
-    "tests/results/moedern-colbert/first-row-kaggle-disk-initial-review.json": "a1a38781b3506dfe67b4f62d007b0d0e889e6a07e848bb5e491f61d0ec6d5b87"
+    "tests/results/moedern-colbert/first-row-kaggle-disk-initial-review.json": "a1a38781b3506dfe67b4f62d007b0d0e889e6a07e848bb5e491f61d0ec6d5b87",
+    "tests/results/moedern-colbert/first-row-softmax-initial-review.json": "8fb48fe00292f64605e6cfa8fe770caa3adfd604a753f48e5fd7c9ebf3ec1032"
   },
   "owned_sha256": {
     ".github/workflows/moedern-first-row-stages-v1.yml": "c9d7da780971082e6f2b1104b078e32096228b4782f02c86271a01356ab6829d",
-    "docs/moedern-first-row-stages-v1.md": "48339069ee3ecc5e6172cbabf728a0bdda3bc39592516af33c6ed003fa71b13e",
+    "docs/moedern-first-row-stages-v1.md": "f6bf1df12970e6dc4d76cee5f8427cf31527d70fd5d4a4eab48e3995690d0d6e",
     "tests/moedern-first-row/CMakeLists.txt": "e706b4db19c3da0053f4983534a7b34fc92e4654135031fae8b99da003b62d5d",
     "tests/moedern-first-row/probe.cpp": "a3dfcc28f6cb31f73120cc71ad16821e2082d156fce282ff666885a7b8a78616",
-    "tests/test_moedern_first_row_v1.py": "a7d7ba96f4ebc691c1190ab6ed14a2a4d5efb4ee2d0b7dba7f6d1a8b376bd051",
+    "tests/test_moedern_first_row_v1.py": "da33970661108b543deab26dca6944d377c2d574c13fb5a57433bb7bf9d5b9d6",
     "tools/ci-heavy/moedern_first_row_v1.py": "ed1af065ea4c93e8cf637a7123b80a30141c659fce1477dd1374ede21f9209e9",
-    "tools/moedern-first-row/common.py": "abeebe847708f193f220a19fdd190011ee95e091534e6c67ffe988621d9ad3e8",
+    "tools/moedern-first-row/common.py": "ae48943d935f0601268c411b6ed4a344cf967beffcfe389910c26c48ecec93ba",
     "tools/moedern-first-row/compare.py": "e1067e2e244843abfb4315e070d851dc01a967c117f93e94045fac6bae138612",
     "tools/moedern-first-row/kernel.py": "e5d0d2935de3bcd25c38a58439b1c41f74635cf1c135b9c86915663ca09d0844",
-    "tools/moedern-first-row/original.py": "355c2ee8c04e8c419313d499149fa7bf247c8e3fe1feb1c32cdb76b97130b965",
+    "tools/moedern-first-row/original.py": "6225425354dc9bd18b6fb8da625c7a24ab5b8e81474c03dba742b5c36c8d666c",
     "tools/moedern-first-row/prepare.py": "b75f8c5c12c87bec10e90b1db482e351c3418f30188c840d45363a144e8c3694",
     "tools/moedern-first-row/resource_profile.py": "e28559e4353ba51dbe0b28778c2c97ebf694384a5fe71fd97795cd238975565b",
-    "tests/test_moedern_first_row_resources.py": "ebf62bba2ba6a664ebca3d539c2437cf671f4292dc6d512d26218ca0e78ae781",
+    "tests/test_moedern_first_row_resources.py": "d337814a9471da302fd8628cf889c65838cb99900d059917f033d8b9d6d5178a",
     "tests/results/moedern-colbert/first-row-packed-init-initial-review.json": "be42d5bd7fb9ab676d03fbc05bfd71cc5de0605fdf9349c00e27c3e73d43ba68"
   },
   "publisher_router_source": {
@@ -750,10 +751,23 @@
     "failure_receipt": "tests/results/moedern-colbert/first-row-packed-init-initial-review.json"
   },
   "attempt_history": {
-    "previous_targeted_original_calls": 1,
+    "previous_targeted_original_calls": 3,
     "retry_targeted_original_max": 5,
-    "aggregate_targeted_original_max": 6,
-    "previous_native_full_computations": 0,
-    "previous_observers_installed": false
+    "aggregate_targeted_original_max": 8,
+    "previous_native_full_computations": 6,
+    "previous_observers_installed": true
+  },
+  "softmax_capture": {
+    "predecessor_source": "46bac4e1dc7ab81ba66a7d3b37794307f9958041",
+    "initial_version": "v3",
+    "initial_operations": 6,
+    "required_operations": 8,
+    "accepted_softmax_dispatches": [
+      "aten.softmax.int",
+      "aten._softmax.default"
+    ],
+    "maximum_ffn_dispatch_entries": 256,
+    "repeat_exact_required": true,
+    "production_math_changed": false
   }
 }

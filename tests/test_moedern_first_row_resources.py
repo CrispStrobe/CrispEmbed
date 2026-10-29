@@ -1,4 +1,4 @@
-"""Resource and packed-initializer successor controls: no frameworks/compiler/model access."""
+"""Resource, packed-initializer and actual-softmax successor controls: no frameworks/compiler/model access."""
 import ast
 import copy
 import json
@@ -36,9 +36,16 @@ class Controls(unittest.TestCase):
   with patch.object(budget,'resource',fake):self.assertEqual(budget.single_file_limit()['maximum_single_file_bytes'],2*2**30)
   self.assertEqual(calls,[(1,(2*2**30,2*2**30))])
  def test_original_compare_cmake_byte_exact(self):
-  for name in ['tools/moedern-first-row/original.py','tools/moedern-first-row/compare.py',
+  for name in ['tools/moedern-first-row/compare.py',
        'tests/moedern-first-row/CMakeLists.txt']:
    self.assertEqual((ROOT/name).read_bytes(),subprocess.check_output(['git','show',OLD+':'+name],cwd=ROOT),name)
+ def test_original_ordinary_controls_and_actual_calls_unchanged(self):
+  before=subprocess.check_output(['git','show','46bac4e1dc7ab81ba66a7d3b37794307f9958041:tools/moedern-first-row/original.py'],cwd=ROOT,text=True)
+  after=(ROOT/'tools/moedern-first-row/original.py').read_text()
+  def functions(text):return {n.name:ast.get_source_segment(text,n)for n in ast.walk(ast.parse(text))if isinstance(n,ast.FunctionDef)and n.name in ('fingerprint','barriers','capture','sdpa','call')}
+  self.assertEqual(functions(before),functions(after))
+  def ordinary(text):return text.split("        if args.phase=='ordinary':",1)[1].split('        backbone=model[0].model',1)[0]
+  self.assertEqual(ordinary(before),ordinary(after))
  def test_masks_mapping_and_anchoring_functions_unchanged(self):
   def functions(text):return {n.name:ast.get_source_segment(text,n)for n in ast.parse(text).body if isinstance(n,ast.FunctionDef)}
   before=functions(subprocess.check_output(['git','show',OLD+':tools/moedern-first-row/common.py'],cwd=ROOT,text=True))
@@ -48,7 +55,9 @@ class Controls(unittest.TestCase):
   before=json.loads(subprocess.check_output(['git','show',OLD+':docs/moedern-first-row-stages-v1.json'],cwd=ROOT,text=True))
   after=common.declaration()
   changed={k for k in set(before)|set(after)if before.get(k)!=after.get(k)}
-  self.assertEqual(changed,{'base','owned_sha256','packed_initializer','attempt_history'})
+  self.assertEqual(changed,{'base','owned_sha256','protected_sha256','packed_initializer','attempt_history','softmax_capture'})
+  self.assertEqual(set(after['protected_sha256'])-set(before['protected_sha256']),{'tests/results/moedern-colbert/first-row-softmax-initial-review.json'})
+  self.assertTrue(all(after['protected_sha256'][k]==v for k,v in before['protected_sha256'].items()))
   self.assertEqual(after['limits'],before['limits']);self.assertEqual(after['gates'],before['gates'])
  def test_all_three_actual_admission_points_share_same_policy(self):
   for name in ['tools/moedern-first-row/prepare.py','tools/ci-heavy/moedern_first_row_v1.py','tools/moedern-first-row/kernel.py']:
@@ -108,5 +117,9 @@ class Controls(unittest.TestCase):
   self.assertEqual(r['native']['counts']['init_rejections'],3)
   self.assertEqual(r['small_member_count'],48);self.assertEqual(sum(p['bytes']for p in r['small_members'].values()),347938)
   self.assertTrue(all(p['max_absolute']==0 and p['cpp_ref']['passed']for p in r['original']['anchor'].values()))
-  self.assertEqual(c['attempt_history']['aggregate_targeted_original_max'],1+c['limits']['original_targeted_forward_max'])
+  current=json.loads((ROOT/'tests/results/moedern-colbert/first-row-softmax-initial-review.json').read_text())
+  self.assertEqual(current['original_targeted_forwards'],2);self.assertEqual(current['aggregate_original_targeted_forwards'],3)
+  self.assertEqual(c['attempt_history']['previous_targeted_original_calls'],3)
+  self.assertEqual(c['attempt_history']['previous_native_full_computations'],6)
+  self.assertEqual(c['attempt_history']['aggregate_targeted_original_max'],3+c['limits']['original_targeted_forward_max'])
 if __name__=='__main__':unittest.main()

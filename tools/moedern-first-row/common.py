@@ -44,8 +44,9 @@ def declaration():
         dispatch='init_packed iff both path strings are nonempty and exactly equal; otherwise init',scope='test executable only',
         production_source_changed=False,expected_routes_per_probe=dict(packed_calls=5,component_calls=0),
         failure_receipt='tests/results/moedern-colbert/first-row-packed-init-initial-review.json'),'explicit packed initializer test-only scope required')
-    require(c['attempt_history']==dict(previous_targeted_original_calls=1,retry_targeted_original_max=5,
-        aggregate_targeted_original_max=6,previous_native_full_computations=0,previous_observers_installed=False),'previous plus retry call counts differ')
+    require(c['attempt_history']==dict(previous_targeted_original_calls=3,retry_targeted_original_max=5,
+        aggregate_targeted_original_max=8,previous_native_full_computations=6,previous_observers_installed=True),'previous plus retry call counts differ')
+    require(c['softmax_capture']==dict(predecessor_source='46bac4e1dc7ab81ba66a7d3b37794307f9958041',initial_version='v3',initial_operations=6,required_operations=8,accepted_softmax_dispatches=['aten.softmax.int','aten._softmax.default'],maximum_ffn_dispatch_entries=256,repeat_exact_required=True,production_math_changed=False),'bounded actual softmax capture scope differs')
     publisher=c['publisher_router_source']
     original=json.loads((ROOT/'docs/moedern-colbert-source-contract.json').read_text())['variants']['1.5M']['original']
     pin=original['files'][publisher['path']]
@@ -63,7 +64,7 @@ def declaration():
         'docs/moedern-colbert-native-contract-v2.json','docs/moedern-three-doc-attribution-v1.json','docs/moedern-scifact-parity-v1.json',
         'tools/moedern_scifact.py','tools/ci-heavy/moedern_scifact.py','tests/results/moedern-colbert/scifact-original-1p5m.json',
         'tests/results/moedern-colbert/scifact-native-1p5m-v3-native.json','tests/results/moedern-colbert/scifact-native-1p5m-v3-review.json',
-        'tests/results/moedern-colbert/publication-1p5m.json','tests/results/moedern-colbert/first-row-kaggle-disk-initial-review.json'}
+        'tests/results/moedern-colbert/publication-1p5m.json','tests/results/moedern-colbert/first-row-kaggle-disk-initial-review.json','tests/results/moedern-colbert/first-row-softmax-initial-review.json'}
     require(protected==set(c['protected_sha256']),'complete exact protected closure required')
     owned={'tools/moedern-first-row/'+n+'.py'for n in ('common','prepare','original','compare','kernel')}
     owned|={'tools/ci-heavy/moedern_first_row_v1.py','tests/moedern-first-row/CMakeLists.txt','tests/moedern-first-row/probe.cpp',

@@ -96,7 +96,7 @@ class Controls(unittest.TestCase):
     def test_sdpa_dispatch_metadata_scope_order_and_passthrough(self):
         tree=ast.parse((ROOT/'tools/moedern-first-row/original.py').read_text())
         node=next(n for n in ast.walk(tree)if isinstance(n,ast.ClassDef)and n.name=='ActualOperations')
-        context=[];records=[];ns=dict(TorchDispatchMode=object,require=common.require,sdpa_active=context,sdpa_dispatches=records,stack=[])
+        context=[];records=[];ns=dict(TorchDispatchMode=object,require=common.require,sdpa_active=context,sdpa_dispatches=records,ffn_dispatches=[],router_kind=original.router_kind,stack=[])
         exec(compile(ast.Module(body=[node],type_ignores=[]),'owned-actual-operation-mode','exec'),ns)
         class Operator:
             def __init__(self,name):self.name=name;self._schema=name+'(Tensor input) -> Tensor';self.calls=[]
@@ -118,6 +118,29 @@ class Controls(unittest.TestCase):
         self.assertIn('dispatches==repeated_dispatches',source)
         self.assertIn("sdpa_dispatch_metadata_repeat_exact=True",source)
         self.assertIn('len(operators)==8',source)
+
+    def test_actual_softmax_spellings_preserve_real_call_and_reject_duplicates(self):
+        tree=ast.parse((ROOT/'tools/moedern-first-row/original.py').read_text())
+        node=next(n for n in ast.walk(tree)if isinstance(n,ast.ClassDef)and n.name=='ActualOperations')
+        class Operator:
+            def __init__(self,name):self.name=name;self._schema=name+'(Tensor input) -> Tensor';self.calls=0
+            def __str__(self):return self.name
+            def __call__(self,*args,**kwargs):self.calls+=1;return args[0]
+        for spelling in ('aten.softmax.int','aten._softmax.default'):
+            captures=[];ops=[];metadata=[];payload=object();counts={}
+            ns=dict(TorchDispatchMode=object,require=common.require,sdpa_active=[],sdpa_dispatches=[],ffn_dispatches=metadata,stack=['layers.0.ffn'],router_kind=original.router_kind,counts=counts,operators=ops,
+                fingerprint=lambda value,_torch: {'authored':True},torch=None,capture=lambda name,value:captures.append((name,value)))
+            exec(compile(ast.Module(body=[node],type_ignores=[]),'actual-router-mode','exec'),ns)
+            mode=ns['ActualOperations']();op=Operator(spelling)
+            self.assertIs(mode.__torch_dispatch__(op,(),(payload,),{}),payload)
+            self.assertEqual(op.calls,1);self.assertEqual(len(ops),1);self.assertEqual(ops[0]['operator'],spelling)
+            self.assertEqual([x[0]for x in captures],['actual.layers.0.ffn.softmax.input','actual.layers.0.ffn.softmax'])
+            self.assertIs(captures[-1][1],payload);self.assertEqual(metadata[0]['operator'],spelling)
+            with self.assertRaisesRegex(ValueError,'repeated actual router'):mode.__torch_dispatch__(op,(),(payload,),{})
+            self.assertEqual(op.calls,1)
+        self.assertIsNone(original.router_kind('aten._safe_softmax.default'))
+        self.assertIsNone(original.router_kind('aten.div_.Tensor'))
+        self.assertEqual(common.declaration()['attempt_history']['aggregate_targeted_original_max'],8)
 
     def test_pinned_out_of_place_publisher_router_proof(self):
         c=common.declaration();p=c['publisher_router_source']
@@ -176,7 +199,7 @@ class Controls(unittest.TestCase):
         o=(ROOT/'tools/moedern-first-row/original.py').read_text()
         self.assertLess(o.index('baseline=barriers('),o.index('    import torch'))
         self.assertIn('with _disable_current_modes()',o)
-        self.assertIn("('aten._softmax.default','aten.topk.default','aten.div.Tensor')",o)
+        self.assertIn('kind=router_kind(func)',o)
         self.assertNotIn('probabilities=value.detach().clone().softmax',o)
         self.assertNotIn('torch.equal',o.split('def fingerprint')[1].split('def invalid')[0].replace('never torch.equal','never equality'))
 
