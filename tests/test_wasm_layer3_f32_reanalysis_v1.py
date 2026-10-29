@@ -23,6 +23,10 @@ class Controls(unittest.TestCase):
    with zipfile.ZipFile(p,'w')as z:z.writestr('raw/fixture',b'authored')
    self.assertEqual(P.archive(p,100),{'raw/fixture':b'authored'})
    with self.assertRaises(ValueError):P.archive(p,2)
+   with zipfile.ZipFile(p,'w')as z:
+    z.writestr('raw/duplicate',b'a')
+    with self.assertWarns(UserWarning):z.writestr('raw/duplicate',b'b')
+   with self.assertRaises(ValueError):P.archive(p,100)
    for name in ['../escape','/absolute','raw\\bad']:
     with zipfile.ZipFile(p,'w')as z:z.writestr(name,b'x')
     with self.assertRaises(ValueError):P.archive(p,100)
