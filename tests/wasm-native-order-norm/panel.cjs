@@ -2,6 +2,7 @@
 // Actual public WASM C ABI; held Q8=1, independently snapshotted norm gate.
 const fs=require('fs'),path=require('path'),http=require('http'),crypto=require('crypto');
 const {chromium}=require('playwright');
+const {retainVector}=require('./vector_bytes.cjs');
 const root=path.resolve(process.argv[2]),phase=process.argv[3];
 if(!['baseline','candidate'].includes(phase))throw new Error('phase');
 const frozen=fs.readFileSync(path.join(root,'frozen-panel.json'));
@@ -53,7 +54,7 @@ const server=http.createServer((req,res)=>{
          for(const n of ['pool.mean.f32','pool.final.f32'])files[n]=Array.from(m.FS.readFile('/'+n));
          if(item.id==='original')files['stages.gguf']=Array.from(m.FS.readFile('/stages.gguf'));
         }
-        rows.push({vector,logs:logs.slice(start),files});
+        rows.push({vector,raw_bytes:Array.from(m.HEAPU8.slice(pointer,pointer+1536)),logs:logs.slice(start),files});
        }finally{if(pointer)m._free(pointer);m._free(size);}
       }
      }finally{m._wasm_embed_free(ctx);}
@@ -70,7 +71,10 @@ const server=http.createServer((req,res)=>{
      const rows=await evaluate(item,arm,mode==='observed');
      rows.forEach((r,i)=>{
       for(const [name,bytes]of Object.entries(r.files))fs.writeFileSync(path.join(root,'arrays',[arm,item.id,mode,i,name].join('-')),Buffer.from(bytes));
-      delete r.files;
+      Object.assign(r,retainVector(r.raw_bytes,r.vector));
+      r.vector_file=[arm,item.id,mode,i,'vector.f32'].join('-');
+      fs.writeFileSync(path.join(root,'arrays',r.vector_file),Buffer.from(r.raw_bytes));
+      delete r.raw_bytes;delete r.files;
      });
      report.cases[item.id][arm][mode]=rows;save();
     }
@@ -90,11 +94,12 @@ const server=http.createServer((req,res)=>{
      for(const gate of ['0','1','0']){set('CRISPEMBED_WASM_NATIVE_ORDER_NORM',gate);const ctx=m.ccall('wasm_embed_init','number',['string','number'],['/model.gguf',1]);if(!ctx)throw new Error('context');contexts.push(ctx);}
      set('CRISPEMBED_WASM_NATIVE_ORDER_NORM','1');
      for(const index of [0,1,2,0]){
-      const size=m._malloc(4);let p=0;try{p=m.ccall('wasm_embed_encode_copy','number',['number','string','number'],[contexts[index],text,size]);if(!p||m.getValue(size,'i32')!==384)throw new Error('context encode');rows.push({index,vector:Array.from(m.HEAPF32.slice(p/4,p/4+384))});}finally{if(p)m._free(p);m._free(size);}
+      const size=m._malloc(4);let p=0;try{p=m.ccall('wasm_embed_encode_copy','number',['number','string','number'],[contexts[index],text,size]);if(!p||m.getValue(size,'i32')!==384)throw new Error('context encode');rows.push({index,vector:Array.from(m.HEAPF32.slice(p/4,p/4+384)),raw_bytes:Array.from(m.HEAPU8.slice(p,p+1536))});}finally{if(p)m._free(p);m._free(size);}
      }
     }finally{contexts.forEach(c=>m._wasm_embed_free(c));}
     return rows;
    },panel.cases[0].text);await page.close();
+   report.interleaving.forEach((r,i)=>{Object.assign(r,retainVector(r.raw_bytes,r.vector));r.vector_file='context-'+i+'.vector.f32';fs.writeFileSync(path.join(root,'arrays',r.vector_file),Buffer.from(r.raw_bytes));delete r.raw_bytes;});
   }
   if(sha(fs.readFileSync(path.join(root,'frozen-panel.json')))!==report.frozen_sha256)throw new Error('Freeze mutated');
   report.completed=true;save();if(report.page_errors.length)throw new Error('page errors');

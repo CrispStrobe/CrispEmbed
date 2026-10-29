@@ -1,5 +1,10 @@
 """Source/geometry/metric controls only. Actual C++/WASM runs are hosted."""
 import ast
+import base64
+import hashlib
+import json
+import struct
+import subprocess
 import copy
 import importlib.util
 from pathlib import Path
@@ -64,6 +69,22 @@ class Controls(unittest.TestCase):
   self.assertLess(text.index(' component-check '),text.index(' prepare-panel '))
   self.assertLess(text.index(' off-check '),text.index('panel.cjs "$RUNNER_TEMP/norm-candidate/browser" candidate'))
   self.assertEqual(text.count('if: always()'),2);self.assertIn('retention-days: 90',text)
+ def test_raw_vector_preserves_negative_zero(self):
+  negative=struct.pack('<I',0x80000000)+bytes(1532);positive=bytes(1536)
+  row=dict(vector=[0.]*384,raw_base64=base64.b64encode(negative).decode(),raw_sha256=hashlib.sha256(negative).hexdigest())
+  self.assertEqual(D.actual_vector(json.loads(json.dumps(row))),negative)
+  self.assertNotEqual(D.actual_vector(row),positive)
+  self.assertNotEqual(row['raw_sha256'],hashlib.sha256(positive).hexdigest())
+  bad=copy.deepcopy(row);bad['raw_sha256']=hashlib.sha256(positive).hexdigest()
+  with self.assertRaises(ValueError):D.actual_vector(bad)
+  bad=copy.deepcopy(row);bad['vector'][0]=1.
+  with self.assertRaises(ValueError):D.actual_vector(bad)
+ def test_javascript_raw_capture_survives_json_zero_loss(self):
+  helper=ROOT/'tests/wasm-native-order-norm/vector_bytes.cjs'
+  script="const {retainVector}=require(process.argv[1]);const b=Buffer.alloc(1536);b.writeUInt32LE(0x80000000,0);const d=Array(384).fill(0);d[0]=-0;process.stdout.write(JSON.stringify({...retainVector(Array.from(b),d),vector:d}));"
+  row=json.loads(subprocess.check_output(['node','-e',script,str(helper)],text=True))
+  self.assertEqual(D.actual_vector(row)[:4],bytes.fromhex('00000080'))
+  self.assertEqual(row['vector'][0],0)
  def test_compile_flag_change_is_visible(self):
   a=D.arithmetic_flags('c++ -O3 -pthread -DGGML_FMA -I/x file.cpp')
   b=D.arithmetic_flags('c++ -O3 -pthread -DGGML_FMA -I/y file.cpp')

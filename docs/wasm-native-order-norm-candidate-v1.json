@@ -73,13 +73,14 @@
   },
   "owned_sha256": {
     ".github/workflows/wasm-native-order-norm-candidate-v1.yml": "dcdc5d9c258029be3b1dbb9a68a6db5850799c80a70157564bd82896110adb6a",
-    "docs/wasm-native-order-norm-candidate-v1.md": "0ec17716357ab18098fbbefc6baf5dbf8c9e3bff9565c73b3a130e4b854078fd",
-    "tests/test_wasm_native_order_norm_v1.py": "e7e3d1898115490b9f68c10da4ddd831d3e99a2274e732a8637bf956907c6968",
+    "docs/wasm-native-order-norm-candidate-v1.md": "706ace6c9f08c7e15e92a98703ffb11e28b9873d1957af604179502dd331b60c",
+    "tests/test_wasm_native_order_norm_v1.py": "f2c8b32fbc6eecfef808e58c83e7d0fc07f27f44f3e0ca413d0bfbed1d88838e",
     "tests/wasm-native-order-norm/CMakeLists.txt": "27992d4619a6c5a722f307bfd218e960302d33bba176977394e5dcaed217f3fc",
     "tests/wasm-native-order-norm/component.cjs": "56722e93eb80acc0a53e2763ac46eceb61368f47cb256a89d7f485c192dc7c35",
     "tests/wasm-native-order-norm/controls.cpp": "2cdeff69d767740103569df893412c76f1f8c16d7bb74e8defa82bc54eb7c75f",
-    "tests/wasm-native-order-norm/panel.cjs": "b872e24329bb8f700fd0de4ad30a4a118aed11ee7179c929377dda75e73a5800",
-    "tools/ci-heavy/wasm_native_order_norm_v1.py": "9f4fd382f88e355ff680fd3740a2cce2a3664d9dbbea72444167517eb983fc07",
+    "tests/wasm-native-order-norm/panel.cjs": "9c98a05b9d724f2616ec77fd436a8a165ddde6d195d083af1606ea36dff79ad1",
+    "tests/wasm-native-order-norm/vector_bytes.cjs": "2617ac58135f8bb76da148287c991e69c526bb3eb2276e248be5c4fb2c6a0f59",
+    "tools/ci-heavy/wasm_native_order_norm_v1.py": "1f319157c23f334a667283698cc54322eb311c4f85eaf5e5e8f70b2ea9477c66",
     "tools/wasm-native-order-norm-v1/contract.py": "9027acc6d6ebb71cbe2501952830cfa7d1abe49844530bbaeefdf09e9e5ef67f"
   },
   "risk": {

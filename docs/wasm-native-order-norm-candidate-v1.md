@@ -86,3 +86,9 @@ only. No saved output, precomputed activation workspace or reference buffer is
 injected into inference. Production includes no test control exports; environment
 and pooling observers exist only in the disposable hosted overlay. All small
 reports/failures and raw arrays/modules are retained remotely for90 days.
+
+The browser retains all 1,536 returned bytes before freeing every ordinary,
+observed, repeat and interleaved result. Files plus base64/SHA receipts carry
+byte identity; JSON numeric vectors are display data and preserve only logical
+values (JSON erases negative zero). Off anchors use authenticated old actual
+pooling-result buffers, while old JSON-derived hashes remain separately visible.

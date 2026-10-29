@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Closed live-input norm candidate and unchanged ten-output/eight-stage A/B."""
 import argparse
+import base64
+import hashlib
 import ctypes as C
 import importlib.util
 import json
@@ -141,7 +143,12 @@ def prepare_panel(out):
   for gate in ['0','1']:
    old_case=old_report['cases'][key][gate]
    value=old_case['vector'];K.require(__import__('hashlib').sha256(f32_bytes(value)).hexdigest()==old_case['sha256'],'Old WASM vector bits differ')
-   row['wasm'][gate]=dict(vector=value,sha256=old_case['sha256'])
+   # The old producer's JSON hash remains an immutable historical observation;
+   # new byte anchors use the authenticated old actual pooling-result buffer.
+   pool_name='browser/arrays/candidate-'+gate+'-'+key+'-pool.final.f32'
+   K.require(pool_name in raw and len(raw[pool_name])==1536 and floats(raw[pool_name])==value,'Old actual final buffer/display values differ')
+   row['wasm'][gate]=dict(vector=value,sha256=hashlib.sha256(raw[pool_name]).hexdigest(),raw_hex=raw[pool_name].hex(),
+        historical_json_sha256=old_case['sha256'],actual_buffer_source=pool_name)
   targets[key]=row
  for threads in [1,2]:
   name='trusted-trace/packaged-'+str(threads)+'-dump.gguf';K.require(name in raw,'Old native full stages absent')
@@ -288,6 +295,19 @@ def native_check(out):
   K.require(all(old_stages[n]['sha256']==current[n]['sha256']for n in STAGES),'Native observed stage bytes changed')
  K.write(out/'review/native-proof.json',dict(passed=True,anchors=20,stage_anchors=16,rows=rows))
 
+def actual_vector(row,browser=None):
+ # JSON numbers are display-only: JSON.stringify erases the sign of zero.
+ try:data=base64.b64decode(row['raw_base64'],validate=True)
+ except Exception:raise ValueError('Invalid captured vector base64')from None
+ K.require(len(data)==1536 and hashlib.sha256(data).hexdigest()==row['raw_sha256'],'Actual WASM byte extent/SHA differs')
+ values=floats(data);display=row['vector']
+ K.require(len(display)==384 and all(type(v)in [int,float]and math.isfinite(v)for v in display)
+           and values==display,'Captured bytes/display logical values differ')
+ if browser is not None:
+  name=row['vector_file'];K.require(re.fullmatch('[a-z0-9_.-]+',name)is not None,'Unsafe captured vector filename')
+  K.require((browser/'arrays'/name).read_bytes()==data,'Retained vector file differs from captured bytes')
+ return data
+
 def check_browser(out,phase):
  source();frozen_bytes=(out/'browser/frozen-panel.json').read_bytes();frozen=json.loads(frozen_bytes)
  result=K.read(out/'browser'/(phase+'-browser.json'));K.require(result['completed']and not result['page_errors']and result['source']==os.environ['GITHUB_SHA']
@@ -302,11 +322,11 @@ def check_browser(out,phase):
   key=case['id'];observed=result['cases'][key];K.require(set(observed)==set(arms),'Exact norm-gate coverage required')
   for arm in arms:
    rows=observed[arm];K.require(set(rows)=={'ordinary','observed'}and all(len(v)==2 for v in rows.values()),'Complete observer/repeat coverage required')
-   raw=f32_bytes(rows['ordinary'][0]['vector'])
+   raw=actual_vector(rows['ordinary'][0],out/'browser')
    for mode,values in rows.items():
     for repeat,v in enumerate(values):
      control(tokens('\n'.join(v['logs']))==case['token_ids'],key+'/'+arm+'/'+mode+'/'+str(repeat)+'/IDs')
-     control(f32_bytes(v['vector'])==raw,key+'/'+arm+'/'+mode+'/'+str(repeat)+'/neutral')
+     control(actual_vector(v,out/'browser')==raw,key+'/'+arm+'/'+mode+'/'+str(repeat)+'/neutral')
      if mode=='observed':
       prefix=out/'browser/arrays'/('-'.join([arm,key,mode,str(repeat)])+'-')
       control(Path(str(prefix)+'pool.final.f32').read_bytes()==raw,key+'/'+arm+'/'+str(repeat)+'/actualpool')
@@ -353,8 +373,8 @@ def check_browser(out,phase):
  interleaving=result.get('interleaving',[]);K.require([x['index']for x in interleaving]==[0,1,2,0],'Context0/1/0/repeat coverage required')
  first=next(c for c in frozen['cases']if c['id']=='original')
  for i,row in enumerate(interleaving):
-  expected=result['cases']['original']['1']['ordinary'][0]['vector']if row['index']==1 else first['wasm']['1']['vector']
-  control(f32_bytes(row['vector'])==f32_bytes(expected),'context-'+str(i))
+  expected=actual_vector(result['cases']['original']['1']['ordinary'][0],out/'browser')if row['index']==1 else bytes.fromhex(first['wasm']['1']['raw_hex'])
+  control(actual_vector(row,out/'browser')==expected,'context-'+str(i))
  report=dict(schema='crispembed-wasm-native-order-norm-full-ab-v1',source=os.environ['GITHUB_SHA'],completed=True,passed=not failures,
              failures=failures,controls=controls,comparison=comparison,final_comparisons=20,stage_comparisons=16,
              first_bit_differing_stage=first_difference,first_budget_failing_stage=first_failure,worst_comparison=worst,
