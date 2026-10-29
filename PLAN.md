@@ -982,3 +982,32 @@ this bridge and development selection are reviewed. Actual runtime release
 versioning remains a final integration task; app0.17.12 stays pinned.
 
 [Authoritative GGUF field definition](https://github.com/ggml-org/ggml/blob/6af560d55df03ad92116e3c0a697779584477e85/docs/gguf.md#general-metadata).
+
+### Required Q8_0 and Q4_K coverage for new permissive models (29 October)
+
+The owner explicitly requires both precisions, produced with the actual
+`crispembed-quantize` and tested with `crispembed-diff` plus final decoded/task
+outputs. A stored file is not qualification. Preserve frozen original references,
+existing rejects, per-tensor shapes/types/payload hashes, critical F16/F32 bytes,
+actual compiler/runtime provenance and full input/output gates.
+
+| Model/front | Q8_0 work | Q4_K work |
+| --- | --- | --- |
+| Josev-2B | Add a correctly named packed quantized profile/standard header7 and protected C-quantizer recipe; current admission is Q4-only despite low-level Q8 decoding. Strict old-four F32 control before actual Q8/native interfaces, then independently gated NEW20 only after development selection and same-payload evidence. | Actual full150 and A/B/C results remain immutable; C still misses one0.001 ordinal gate. Predeclare smaller late-layer recipes/calibration on the old four before any new holdout access; retain all292 critical tensors and evidence-driven down/gate/up precision. |
+| UltraBERT | Add explicit Q8 file-type admission with actual Q8 tensor inventory and protected vocabulary/norms; freeze/checkpointed original-bound sharding first. Do not mislabel Q8 as a Q4 header to pass old018 guards. | Reuse completed5483-row F32 control, durable per-row shards, all8 Ref shards and full300 rankings. First conservative existing last-four-FFN recipe/shard0 only; no unreviewed batch activation. |
+| MoEdern1.5M/27M/115M | Reuse the older protected Q8 diagnostic architecture but produce current candidates through the C quantizer. Keep hash embedding/projection, router, dense head, norms, biases and depthwise conv F32. Resolve full-corpus F32 routing/numerical blockers first; old ten-case Q8 cosine alone is insufficient. | Genuine padded Q4_K20/20/52 matrices; preserve critical bytes/semantic widths. Diagnose1.5M three numerical rows and27M/115M exact-router-tie rows before full F32→Q4 retrieval/client qualification. |
+| Unlimited-OCR-2 | Published Q8 exists with retained coordinate/ID differences. Revalidate protected higher-precision alternatives against the same four original pages, actual intermediate dumps and repaired output processing; retain earlier rejects. | Finish retained-v3 structural audit before the unexecuted2/8/22 stacked-expert recipes; same-host F16 controls and stage/operator/decoded metrics remain required. |
+| MiniCPM-OCR | Existing30-arm protocol includes Q8. Finish source-proven merger-span alignment, retained analysis and only seven missing arms; then scope higher-precision repairs from earliest vision/prefill differences. | Same source-bound30-arm protocol includes Q4_K; preserve23 decoded-exact arms/all numerical failures. Do not use tiny component cosines or observed timing as production quality/speed proof. |
+| LFM2.5 Encoder / typed EmbeddingGemma | Audit already published precision evidence before scheduling any missing Q8 work; representative task/GPU gates remain separate. | Preserve existing calibrated/critical-tensor evidence and qualify missing precision/task surfaces without recapturing originals. |
+| OvisOCR2 / OvisOCR3 | Keep Ovis2's measured Q8 rejection; scope targeted protected repairs, not a new default. Ovis3 needs its separate original-first task protocol before qualification. | Keep all Ovis2 plain/calibrated/mixed rejects and existing operator attribution. Ovis3 quantization remains contingent on its task/quality protocol. |
+
+For each repair, align the earliest differing actual intermediate with its tensor
+producers. Record minimum row/global cosine, maximum absolute/RMS errors and
+original/native magnitudes before deciding which precise tensors stay F16/F32.
+Embeddings, normalization, routing, output heads and vision/projector boundaries
+are initial protection candidates, not an excuse to skip measurement. Run the
+same decoded outputs/retrieval/scoring and failure/recovery probes after every
+selected precision recipe. Calibration uses development cases only; never tune
+on NEW20 or silently relax frozen gates. Architecture-dependent CNN/restoration
+quantization must have genuine supported stored tensor types; retaining every
+weight floating point cannot be advertised as a Q8/Q4 model.
