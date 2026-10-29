@@ -897,3 +897,5 @@ active corrected jobs, partial MiniCPM disk-failure scope, successful bounded
 WASM operators and remaining whole-model/quantized/final-source gates. See
 `docs/handoff-2026-10-28.md`. This main change contains documentation only;
 candidate runtime remains on `work/portfolio-closure-q4k-20261028`.
+
+- `audit/wasm-layer3-f32-reanalysis-20261029`: retained40791643276 report/raw authentication and compare-only consolidation; no build/operator/model forward or F64 reference coercion, all old targets/gates/negatives preserved.
