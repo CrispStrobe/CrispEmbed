@@ -1012,3 +1012,25 @@ this bridge and development selection are reviewed. Actual runtime release
 versioning remains a final integration task; app0.17.12 stays pinned.
 
 [Authoritative GGUF field definition](https://github.com/ggml-org/ggml/blob/6af560d55df03ad92116e3c0a697779584477e85/docs/gguf.md#general-metadata).
+
+### Unlimited v3 retained conversion audit and continuation
+
+The strict four-case F16 barrier is complete at410; do not repeat original model
+forwards. First authenticate all540 immutable stopped-v3 files/7,901,314,457 bytes
+and reparse the16 saved CLI outputs and observed/repeat stage journals. Then audit
+the retained `last1` candidate against the published F16 inventory. Only omission
+of trailing size-one physical axes may be recorded as canonicalization; semantic
+axes, actual tensor types, extents and every protected payload SHA must agree.
+Reject axis reordering, non-unit flattening, rank expansion, dtype changes and
+any changed payload. This read-only step runs no model, quantizer or compiler.
+
+After that actual structural proof, prepare a separately declared continuation
+for the still-unexecuted2/8/22-Q4 recipes. Reuse the retained first candidate and
+original references. Preserve all old F16 IDs/text/58-stage/vision evidence; any
+new build/host must prove its F16 observation matches the carried controls before
+claiming same-input attribution. Keep source410 production math and compiler
+profile frozen, current semantic-rank checks explicit and all numerical/decoded
+budgets unchanged. Avoid duplicate F16/original captures and known adapter disk
+inflation; authenticate retained bytes before compacting task-owned duplicates.
+Q4 decoded output and actual Ref/operator metrics remain necessary for selection;
+metadata-only canonicalization and final runtime/consumer qualification follow.

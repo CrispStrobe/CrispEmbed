@@ -6986,3 +6986,9 @@ gives per-process peaks118.453125MiB released,119.40625MiB candidate unset,
 119.078125MiB literal1 and117.296875MiB legacy0. These include each full50-case
 process. No paired timing/memory improvement, portfolio, mobile-device, final
 integrated-source or successor-release qualification follows from this diagnostic.
+
+Unlimited mixed-Q4 v3 completes four F16 original ID/full-text controls
+(146/138/306/164 IDs;754 total) and16 native forwards with observed/repeat stage
+and vision identity. First conversion protection rejects before Q4 inference;
+there is no Q4 quality or speed result. The retained first candidate is
+6,481,651,840 bytes. [Exact source and rejection](tests/results/unlimited-ocr2/mixed-q4-v3-review.json).
