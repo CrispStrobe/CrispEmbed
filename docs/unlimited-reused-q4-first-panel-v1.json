@@ -1,6 +1,6 @@
 {
   "schema": "crispembed-unlimited-reused-q4-first-panel-v1",
-  "base": "eb0d81500e683b5e8af82bb1cf3177e469efb5e3",
+  "base": "532679595b38e9854547d146f237de384e1ea27e",
   "runtime_source": "83eac856cc684808e417ebfed7db7c2f677dc09f",
   "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
   "recipe": "last1",
@@ -453,17 +453,19 @@
     "tools/unlimited-ocr2-q4k/retained_v3_gha.py": "cb9c0008f8c664e7880585d5d66a047eeb26ab219012ef87d9c6c19f05ba4a88",
     "tools/unlimited-ocr2/gen_text_fixture.py": "8363657237b9ec0c5d3f11f64f68b7aff234d053f494105568547d8a72b7fd93",
     "tools/unlimited-ocr2/reference.py": "d0ce94ecc7a495e713fca5624b2d0cc62b1a5a8bf46965f907a4802c2db3241b",
-    "tools/unlimited-ocr2/replay_real_decode.py": "9194a7d9206713d6a156474e093cc9b4f7ff84c8c66e3a38375aa76dd14aa7ca"
+    "tools/unlimited-ocr2/replay_real_decode.py": "9194a7d9206713d6a156474e093cc9b4f7ff84c8c66e3a38375aa76dd14aa7ca",
+    "tests/results/unlimited-ocr2/ref-control-import-initial-review.json": "146032b3468cc8e1afaaaf55a6af126048f6046d3c6bfb8646c6f83d4e59f8d0"
   },
   "owned_sha256": {
     ".github/workflows/unlimited-reused-q4-first-panel-v1.yml": "e411d4542f1bdd75b7e17fe47433c4883ea16c54a91cf66de7e428f52edb266a",
-    "docs/unlimited-reused-q4-first-panel-v1.md": "afc6adda95afa3dd55dc445271c3b1e3ff57ee0f6667408eb29f599dae3fb572",
-    "tests/test_unlimited_reused_q4_v1.py": "63e56429dd8d7adee1139d076074223afeaa2f4f27807d3c299933c6912ee652",
+    "docs/unlimited-reused-q4-first-panel-v1.md": "925a32e53814c19612024b43cd509fc38d4ca5dbf0d58a82f3a5c790a0c01f91",
+    "tests/test_unlimited_reused_q4_v1.py": "4963957d4c00a7e04b85596d41f5fbcd9fc45b6dbf096fe91a9139afc59a4f89",
     "tools/unlimited-reused-q4-v1/fetch.py": "8eb971792716344ac55e8c3cc3ccdbdc795dbe1dcfebeab462101efd2c2e21b5",
-    "tools/unlimited-reused-q4-v1/lane.py": "c1f0eb08c8da535ff14288383eac4183051e3c8c0befbc71b8a7b34c44126021",
+    "tools/unlimited-reused-q4-v1/lane.py": "27060da8e4c7dccf81cbd1c76edae4c917f1ce943c73ad21534c6a156534861c",
     "tools/unlimited-reused-q4-v1/process.py": "f482067438e5d5cec00436f4c54c3636e0b8cf886620feaed4ea8e0ab4e6eed9",
     "tools/unlimited-reused-q4-v1/replay.py": "b90014b95312db5bb13c9e02885bbb7c227da4604472daeaa43378f6bdc56056",
-    "tools/unlimited-reused-q4-v1/run.py": "158c21b991c6cd2b72d020d5c2ef07332ddae2c5282c4c4ca4595b8dd040ec0d"
+    "tools/unlimited-reused-q4-v1/run.py": "3300086f1644fe17cb6315596224910c248747d42a7382056cd9cae56c0205a2",
+    "tools/unlimited-reused-q4-v1/ref_controls.py": "16f82ba141d7acd747e4324dbc7b132f43320cda4b0175c100db7d88915db4be"
   },
   "f16_admission": {
     "cross_old_float_stages": 47,
@@ -476,5 +478,13 @@
     "cross_old_decoded_bytes_exact": true
   },
   "initial_source_checkpoint": "d716234dbda79a0d9b2ff54bb079fc7adb050d4b",
-  "source_followup": "Before execution: restore unchanged cross-host float gates, keep cross-host SHA diagnostic, add separately labeled vision numerical screen; no historical gate/reference change."
+  "source_followup": "Before execution: restore unchanged cross-host float gates, keep cross-host SHA diagnostic, add separately labeled vision numerical screen; no historical gate/reference change.",
+  "isolated_ref_entry_point": {
+    "predecessor_source": "299eedb67ecdfda337d7b37e360c599dcd30ead7",
+    "initial_run": 40859258832,
+    "initial_model_forwards": 0,
+    "python_isolation": true,
+    "frozen_controls_changed": false,
+    "wrapper": "tools/unlimited-reused-q4-v1/ref_controls.py"
+  }
 }

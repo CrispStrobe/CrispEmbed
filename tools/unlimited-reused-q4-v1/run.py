@@ -49,7 +49,7 @@ def run(a):
         strings=subprocess.check_output(['strings',plain/'root/crispembed'],text=True)
         c.require('uocr_q4_audit::'not in symbols and 'UOCR_Q4_AUDIT_DIR'not in strings and 'uocr_q4_audit::'in instrumented,'ordinary observer exclusion/positive control rejected')
         report.update(build_profile_sha256=c.digest(a.out/'build-profile.json'),production_observer_excluded=True);save()
-        command('actual-ref-controls',[sys.executable,'-I',c.ROOT/'tools/unlimited-ocr2-q4k/controls.py','--diff',plain/'unlimited-q4-diff','--output',a.out/'ref-controls'])
+        command('actual-ref-controls',[sys.executable,'-I',c.ROOT/'tools/unlimited-reused-q4-v1/ref_controls.py','--diff',plain/'unlimited-q4-diff','--output',a.out/'ref-controls'])
         control=a.build/'published-f16.gguf';command('published-f16',c.frozen.model_download_command(control),2400)
         c.require(control.stat().st_size==cfg['control']['bytes']and c.digest(control)==cfg['control']['sha256'],'published F16 exact extent/SHA differs')
         remaining=int(deadline-time.monotonic())-60;c.require(remaining>120,'insufficient declared time before any full forward')

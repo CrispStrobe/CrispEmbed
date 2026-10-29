@@ -92,6 +92,18 @@ class Controls(unittest.TestCase):
             response=io.BytesIO(data);response.headers=headers;response.status=status
             with tempfile.TemporaryDirectory()as d,patch.object(f.urllib.request,'urlopen',return_value=response):
                 with self.assertRaises(ValueError):f.image('https://example.org/frozen',Path(d)/'input.png',pin)
+    def test_isolated_ref_controls_import_frozen_helpers(self):
+        # Actual -I subprocess reproduces the failed entry boundary, with no build/model.
+        wrapper=ROOT/'tools/unlimited-reused-q4-v1/ref_controls.py'
+        result=subprocess.run([sys.executable,'-I',str(wrapper),'--help'],cwd=tempfile.gettempdir(),capture_output=True,text=True,env={**os.environ,'PYTHONPATH':'/invalid-untrusted-import'})
+        self.assertEqual(result.returncode,0,result.stderr)
+        self.assertIn('--diff',result.stdout);self.assertIn('--output',result.stdout)
+        for name in ('controls.py','adapter.py','panel.py','contract.py'):
+            target='tools/unlimited-ocr2-q4k/'+name
+            self.assertEqual((ROOT/target).read_bytes(),subprocess.check_output(['git','show','299eedb67ecdfda337d7b37e360c599dcd30ead7:'+target],cwd=ROOT))
+        driver=(ROOT/'tools/unlimited-reused-q4-v1/run.py').read_text()
+        self.assertIn("[sys.executable,'-I',c.ROOT/'tools/unlimited-reused-q4-v1/ref_controls.py'",driver)
+
     def test_process_helper_exact_reviewed_source(self):
         self.assertEqual((ROOT/'tools/unlimited-reused-q4-v1/process.py').read_bytes(),subprocess.check_output(['git','show','765c758fe:tools/ci_process.py'],cwd=ROOT))
 

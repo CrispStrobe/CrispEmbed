@@ -119,3 +119,16 @@ No local model, array, package or compiler execution is part of source preparati
 The four development pages are bounded evidence only. No Q8 result, whole-corpus
 quality, larger recipe, default flip, canonical metadata repair or publication
 qualification is claimed, even if this first candidate completes.
+
+## Isolated Ref entry point repair
+
+Initial [40859258832](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40859258832)
+at299eedb authenticates all544 inputs and passes actual native/observed builds,
+profile and production observer exclusion, then fails before any model forward:
+`python -I` omits the frozen script directory, so `adapter` cannot import.
+The new test-only `ref_controls.py` inserts only the exact frozen helper folder
+and executes the unchanged controls with `runpy`. A real isolated subprocess
+imports all helpers and reaches argument parsing, independent of cwd/PYTHONPATH.
+The frozen controls/adapter/panel/contract/runtime and all planned counts remain
+byte-identical; the retry still requires actual Ref controls before F16 access.
+No original/quantizer repeat, precision inference or qualification follows.

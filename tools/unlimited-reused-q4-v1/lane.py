@@ -49,6 +49,7 @@ def declaration():
     require(c['f16_admission']==dict(cross_old_float_stages=47,additional_assembled_vision_stages=1,cross_old_integer_stages=11,
         cross_old_floating_sha_admission=False,cross_old_vision_sha_admission=False,current_stage_repeat_byte_exact=True,
         current_vision_repeat_byte_exact=True,cross_old_decoded_bytes_exact=True),'cross-host/current-host baseline scope differs')
+    require(c['isolated_ref_entry_point']==dict(predecessor_source='299eedb67ecdfda337d7b37e360c599dcd30ead7',initial_run=40859258832,initial_model_forwards=0,python_isolation=True,frozen_controls_changed=False,wrapper='tools/unlimited-reused-q4-v1/ref_controls.py'),'isolated test-wrapper scope differs')
     required=set(git('ls-tree','-r','--name-only',c['base'],*frozen.PREFIXES,'tools/unlimited-ocr2-q4k','tests/unlimited-q4k',
         'tools/kaggle/unlimited-ocr2-q4k','tools/unlimited-ocr2','tests/unlimited-real-decode').decode().splitlines())
     required.discard('ggml')
@@ -56,11 +57,11 @@ def declaration():
         'docs/unlimited-retained-gha-fetch-v1.md','docs/unlimited-retained-v3-structural-result.md',str(REVIEW.relative_to(ROOT)),
         'tests/results/unlimited-ocr2/mixed-q4-v3-panel.json','tests/results/unlimited-ocr2/publication.json',
         'tools/unlimited-ocr2/gen_text_fixture.py','tests/test_unlimited_ocr2_q4k.py',
-        'tests/test_unlimited_retained_fetch.py','tests/test_unlimited_real_decode.py','tools/kaggle/ocr-real-scans/receipt.py','docs/ocr-real-scans-v1.json'}
+        'tests/test_unlimited_retained_fetch.py','tests/test_unlimited_real_decode.py','tools/kaggle/ocr-real-scans/receipt.py','docs/ocr-real-scans-v1.json','tests/results/unlimited-ocr2/ref-control-import-initial-review.json'}
     require(set(c['protected_sha256'])==required,'complete inherited source/evidence closure required')
-    owned={'tools/unlimited-reused-q4-v1/'+n+'.py'for n in ('lane','fetch','replay','run','process')}
+    owned={'tools/unlimited-reused-q4-v1/'+n+'.py'for n in ('lane','fetch','replay','run','process','ref_controls')}
     owned|={'.github/workflows/unlimited-reused-q4-first-panel-v1.yml','tests/test_unlimited_reused_q4_v1.py','docs/unlimited-reused-q4-first-panel-v1.md'}
-    require(set(c['owned_sha256'])==owned,'exact eight-file continuation closure required')
+    require(set(c['owned_sha256'])==owned,'exact nine-file continuation closure required')
     require((ROOT/'tools/unlimited-reused-q4-v1/process.py').read_bytes()==git('show',c['process_helper']['source']+':tools/ci_process.py'),'reviewed process helper must remain byte exact')
     return c
 
