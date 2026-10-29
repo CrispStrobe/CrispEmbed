@@ -1,0 +1,153 @@
+{
+  "schema": "crispembed-portfolio-q8-controls-review-v1",
+  "run_id": 40829558531,
+  "source": "6781befb66b5f65afd47c1b921ac9cd1cb8e568a",
+  "small_artifact": {
+    "id": 12878067599,
+    "name": "portfolio-q8-profile-controls-40829558531",
+    "size_in_bytes": 38992,
+    "digest": "sha256:3bf963f25a95a488898398f3b447dead14a3fde4407cd0df7c8f8a970259c9fe",
+    "expires_at": "2027-01-27T06:29:56Z"
+  },
+  "completed": true,
+  "model_forwards": 0,
+  "model_quality_qualified": false,
+  "actual_profile_controls_passed": true,
+  "actual_cli_methods": 13,
+  "independently_parsed_pairs": 13,
+  "methods": [
+    {
+      "method": "f16",
+      "actual_tensor_type": 1,
+      "legacy_header": 1,
+      "standard_header": 1,
+      "legacy_sha256": "0bb8eae4eb7393eafce5674961963323018e56d18edf4439e93b83570478b00f",
+      "standard_sha256": "0bb8eae4eb7393eafce5674961963323018e56d18edf4439e93b83570478b00f",
+      "all_non_header_bytes_exact": true
+    },
+    {
+      "method": "q4_0",
+      "actual_tensor_type": 2,
+      "legacy_header": 2,
+      "standard_header": 2,
+      "legacy_sha256": "4dc259c393e7aa82f883845af02bacf6d7905f6b5a4113fc473ab529f2ecf7cd",
+      "standard_sha256": "4dc259c393e7aa82f883845af02bacf6d7905f6b5a4113fc473ab529f2ecf7cd",
+      "all_non_header_bytes_exact": true
+    },
+    {
+      "method": "q4_1",
+      "actual_tensor_type": 3,
+      "legacy_header": 3,
+      "standard_header": 3,
+      "legacy_sha256": "d20c1c1bb02acf425c5c865ec958a9e98c31bb52999bc0f25d77396a934991d2",
+      "standard_sha256": "d20c1c1bb02acf425c5c865ec958a9e98c31bb52999bc0f25d77396a934991d2",
+      "all_non_header_bytes_exact": true
+    },
+    {
+      "method": "q5_0",
+      "actual_tensor_type": 6,
+      "legacy_header": 8,
+      "standard_header": 8,
+      "legacy_sha256": "6f8befcb774e3e913af5c29ea404546266ca48af1140e44f574e810f4b678527",
+      "standard_sha256": "6f8befcb774e3e913af5c29ea404546266ca48af1140e44f574e810f4b678527",
+      "all_non_header_bytes_exact": true
+    },
+    {
+      "method": "q5_1",
+      "actual_tensor_type": 7,
+      "legacy_header": 9,
+      "standard_header": 9,
+      "legacy_sha256": "8e63182576183b60898ebceb9b8889828b3c7290b8f1aafcdec3b251d98c1bc1",
+      "standard_sha256": "8e63182576183b60898ebceb9b8889828b3c7290b8f1aafcdec3b251d98c1bc1",
+      "all_non_header_bytes_exact": true
+    },
+    {
+      "method": "q8_0",
+      "actual_tensor_type": 8,
+      "legacy_header": 7,
+      "standard_header": 7,
+      "legacy_sha256": "dd9b068061306a4b861d516aa256fc20fe48d2586660a20509b43322ae380a1b",
+      "standard_sha256": "dd9b068061306a4b861d516aa256fc20fe48d2586660a20509b43322ae380a1b",
+      "all_non_header_bytes_exact": true
+    },
+    {
+      "method": "q2_k",
+      "actual_tensor_type": 10,
+      "legacy_header": 10,
+      "standard_header": 10,
+      "legacy_sha256": "bd8153177742ccfafc4da2328eaa1c7c32879fe3614f8aa354f6ede384f07f55",
+      "standard_sha256": "bd8153177742ccfafc4da2328eaa1c7c32879fe3614f8aa354f6ede384f07f55",
+      "all_non_header_bytes_exact": true
+    },
+    {
+      "method": "q3_k",
+      "actual_tensor_type": 11,
+      "legacy_header": 11,
+      "standard_header": 11,
+      "legacy_sha256": "8b07bbc1eff4d0fdeaee9f6d3fa9084d55cef0554df55b0220c2448a73f59d58",
+      "standard_sha256": "8b07bbc1eff4d0fdeaee9f6d3fa9084d55cef0554df55b0220c2448a73f59d58",
+      "all_non_header_bytes_exact": true
+    },
+    {
+      "method": "q4_k",
+      "actual_tensor_type": 12,
+      "legacy_header": 12,
+      "standard_header": 14,
+      "legacy_sha256": "726f23440a6b0285541528bed33eea4d26e6092b44bd3512bd450de8423196b0",
+      "standard_sha256": "46ed89927c10146ca36a390214b4993c79bc779dd7335f2732c966c44f70d306",
+      "all_non_header_bytes_exact": true
+    },
+    {
+      "method": "q5_k",
+      "actual_tensor_type": 13,
+      "legacy_header": 13,
+      "standard_header": 16,
+      "legacy_sha256": "2dc1507c35463f6aad66bc6d920c9566e6190c347cb3885a1926caa080449f56",
+      "standard_sha256": "e15273f248d5dcbf86d2389c45d10a9adcf6000878cdf90bea0f3b03c5f974b9",
+      "all_non_header_bytes_exact": true
+    },
+    {
+      "method": "q6_k",
+      "actual_tensor_type": 14,
+      "legacy_header": 14,
+      "standard_header": 18,
+      "legacy_sha256": "46b519c1c8bc0b58f4d2c0ad284b324dd5b102d3e7d7d12c4d08f8b22fd59a00",
+      "standard_sha256": "fcc8a8f6d8f2d18d976d3543f5d04e11465ae6abe4ea37bb54c1f6edc3171300",
+      "all_non_header_bytes_exact": true
+    },
+    {
+      "method": "iq4_nl",
+      "actual_tensor_type": 20,
+      "legacy_header": 19,
+      "standard_header": 25,
+      "legacy_sha256": "716371dfbab9cc5b2246f70b3b556f4fbf1e153114d17fa68f2d5ea48e628b6b",
+      "standard_sha256": "1a68e7b1504504694ba972fd677ce44a1778981d8e40d3336df35dcda3900c7f",
+      "all_non_header_bytes_exact": true
+    },
+    {
+      "method": "iq4_xs",
+      "actual_tensor_type": 23,
+      "legacy_header": 22,
+      "standard_header": 30,
+      "legacy_sha256": "be42193c9b8942636d2c94dde3639d8f4f4ad16dc93aaa9ae7e7af0d31b0c0c7",
+      "standard_sha256": "9e728a211d5abf74a664ad704e49b3315a2c1add23643b518c1f5c84eeca0645",
+      "all_non_header_bytes_exact": true
+    }
+  ],
+  "invalid_override_outputs_absent": true,
+  "metadata_stamp_payloads": [
+    {
+      "name": "fixture.weight",
+      "type": 8,
+      "bytes": 544,
+      "payload_sha256": "ec5731cd8597124620aa0c093409ba65c8a176b3aa7dcc52b58c657449a4e46b"
+    },
+    {
+      "name": "fixture_norm.weight",
+      "type": 0,
+      "bytes": 1024,
+      "payload_sha256": "893a106828fbdb9521e1d868c985aab7ad2ae2f606edc55329265a5e7676006c"
+    }
+  ],
+  "producer_sha256": "accb32fbca72217c59f14f98f553be1b69179422077929922bda65999eb7f1dd"
+}
