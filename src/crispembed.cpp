@@ -19,6 +19,7 @@
 #include "core/gpu_backend_pref.h"
 #include "ocr_pipeline.h"
 #include "core/env_gate.h"
+#include "core/wasm_native_order_norm.h"
 
 #include <algorithm>
 #include <atomic>
@@ -287,10 +288,14 @@ struct crispembed_context {
     bool pre_ln = false;            // pre-LN (ModernBERT) vs post-LN (BERT) ordering
     bool geglu_erf = false;         // gated FFN uses exact-erf gelu instead of the tanh approximation
     bool ffn_swiglu = false;        // gated FFN uses silu (SwiGLU) instead of any gelu flavour
-    bool dump_layers = false;       // dump per-layer intermediates (CRISPEMBED_DUMP_LAYERS=1)
-    int position_buckets = 0;       // DeBERTa log-bucket count (0 = linear positions)
-    int matryoshka_dim = 0;         // 0 = use model default
-    int image_deskew = 0;           // optional scan deskew on the file/RGB image paths
+#if defined(__EMSCRIPTEN__)
+    bool wasm_native_order_norm_enabled = false;
+    wasm_native_order_norm::parameters wasm_norm_parameters;
+#endif
+    bool dump_layers = false; // dump per-layer intermediates (CRISPEMBED_DUMP_LAYERS=1)
+    int position_buckets = 0; // DeBERTa log-bucket count (0 = linear positions)
+    int matryoshka_dim = 0;   // 0 = use model default
+    int image_deskew = 0;     // optional scan deskew on the file/RGB image paths
     float image_deskew_max_angle = 15.0f;
     int unk_id = -1;         // unknown-token id (for E6 UNK-ratio warning); -1 = not set
     bool unk_warned = false; // one-shot: suppress after first warning
@@ -1024,6 +1029,14 @@ static bool load_model(crispembed_context * ctx, const char * path, gguf_context
         fprintf(stderr, "crispembed: model validation failed\n");
         return false;
     }
+#if defined(__EMSCRIPTEN__)
+    // Snapshot once per context after actual layer discovery and model validation.
+    ctx->wasm_native_order_norm_enabled =
+        core_env::on("CRISPEMBED_WASM_NATIVE_ORDER_NORM") && ggml_backend_is_cpu(ctx->backend) &&
+        wasm_native_order_norm::eligible(gguf_arch == "bert", hp.n_embd, hp.n_layer, hp.n_head, hp.n_intermediate,
+                                         ctx->pre_ln, hp.layer_norm_eps);
+    ctx->wasm_norm_parameters.epsilon = hp.layer_norm_eps;
+#endif
     return true;
 }
 
@@ -1150,10 +1163,21 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
         ggml_set_input(rel_pos_expanded);
     }
 
+    auto bert_norm = [&](ggml_tensor * input) {
+#if defined(__EMSCRIPTEN__)
+        if (ctx->wasm_native_order_norm_enabled) {
+            auto * result = wasm_native_order_norm::make(gctx, input, &ctx->wasm_norm_parameters);
+            GGML_ASSERT(result != nullptr); // admitted F32/384 graph geometry
+            return result;
+        }
+#endif
+        return ggml_norm(gctx, input, ln_eps);
+    };
+
     // cur: [H, T*B] — all matmuls batch naturally
     ggml_tensor * cur = embd;
     if (m.embd_ln_w) {
-        cur = ggml_norm(gctx, cur, ln_eps);
+        cur = bert_norm(cur);
         cur = ggml_mul(gctx, cur, m.embd_ln_w);
         if (m.embd_ln_b) cur = ggml_add(gctx, cur, m.embd_ln_b);
     }
@@ -1336,7 +1360,7 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
         } else {
             // Post-LN: residual add then LN
             cur = ggml_add(gctx, inp, attn);
-            cur = ggml_norm(gctx, cur, ln_eps);
+            cur = bert_norm(cur);
             cur = ggml_mul(gctx, cur, L.ln1_w);
             if (L.ln1_b) cur = ggml_add(gctx, cur, L.ln1_b);
         }
@@ -1441,7 +1465,7 @@ static ggml_cgraph * build_encoder_graph(crispembed_context * ctx, int T, int B 
         } else {
             // Post-LN: residual add then LN
             cur = ggml_add(gctx, cur, ffn);
-            cur = ggml_norm(gctx, cur, ln_eps);
+            cur = bert_norm(cur);
             cur = ggml_mul(gctx, cur, L.ln2_w);
             if (L.ln2_b) cur = ggml_add(gctx, cur, L.ln2_b);
         }

@@ -1,0 +1,141 @@
+{
+  "schema": "crispembed-wasm-native-order-norm-candidate-v1",
+  "base": "c3d6c11715e744547f10d4011e11ef5b5e473753",
+  "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+  "gate": "CRISPEMBED_WASM_NATIVE_ORDER_NORM",
+  "default": false,
+  "qualification": false,
+  "dispatch_authorized_by_preparation": false,
+  "norm_gates": [
+    "unset",
+    "empty",
+    "0",
+    "1"
+  ],
+  "held_q8_rounding": "1",
+  "additional_legacy_q8_rounding": "0",
+  "frontend_simd": false,
+  "ggml_backend_simd": true,
+  "script_no_simd": true,
+  "pthreads": true,
+  "max_absolute": 0.002,
+  "minimum_row_cosine": 0.99999,
+  "runtime_delta": {
+    "CMakeLists.txt": {
+      "base_git_object": "1da19a8737ca79f8bd99e2844a4bea5d160a0b6c",
+      "sha256": "d4aea13dbd5df1702ee44564a73df2fcce6f72886c31b60fb27cf99efd806054"
+    },
+    "src/crispembed.cpp": {
+      "base_git_object": "aa27d617036ab70b3aed6b1e276bd8613b5397f7",
+      "sha256": "f8d172049c45c8389eb83d935b822a043b5bb8e8fb8ce4ef0f9845e2e6b40af2"
+    },
+    "src/core/wasm_native_order_norm.cpp": {
+      "base_git_object": null,
+      "sha256": "b89906ab16fab2f0a0291fe0da006824e410eb7e8fd032d67f737aacaa6955a1"
+    },
+    "src/core/wasm_native_order_norm.h": {
+      "base_git_object": null,
+      "sha256": "6f2646b08f85fcc98405ff3d1ebb21811b03e334266fd6073e5b6a7228eb248d"
+    }
+  },
+  "protected_git_objects": {
+    "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+    "cmake": "9a76ffe127104d815de41d1da09335d2937ba50b",
+    "VERSION": "1232e031f718d2622c198f0f64a2a58e2f7f46b0",
+    "Cargo.lock": "6f447bf1a3c2db7d2359b2e269f65d1f60000dc9",
+    "examples": "70360aea19f707ef83f416176eb886ac1fe2e741",
+    "python": "78daaa7413490beb089ce8800dad0257749a1d58",
+    "flutter": "727d667e01251cbdb4fb32862b569aa89eb07f5a",
+    "crispembed": "ab740c359c66927579737e3f986f4785d28d711f",
+    "crispembed-sys": "982b4229a8222678860f821a86be783bc9c8d310",
+    "wasm": "8c13a0e3fb4460b8fd8f853b9761c515becaf770",
+    "tools/quantize.cpp": "b9c94cc06760408f2acc4240f9732f492bc3484b",
+    "build-wasm.sh": "cce846a6a88cd42c6d167e803aaae6711e38cb4a",
+    "build-embed-wasm.sh": "dc6058ff9adc033f6fc19bb81feb65050a89aff0",
+    "scripts/check-cpu-baseline.py": "f61e0a405bfbdef91cf81c78e346aff9a0710947",
+    "scripts/check-bundled-deps.py": "c591cace178f888e3823f9fe739aa8831ff80df5",
+    "tools/successor_asset_manifest.py": "d5fc37cb406c5ae8fd10e3557f795ddee97c9609",
+    ".gitattributes": "a3e1e2ef055065cbef4644c050bb2e56f364a847",
+    ".github/workflows/release.yml": "dc5a19d5fac3944cb7ce644f9115ac39ee49a07c",
+    ".github/workflows/release-wasm.yml": "308671d0aec850755b7d8cd32d90ff4d7975aee9",
+    "README.md": "e3c5bd56baeca3886a8ce2ae85e5174ef3501c36",
+    "LICENSE": "bd6ec050511889fcec725b6c5807c686aafef368",
+    "tools/ci-heavy/successor_assets.py": "18da2ee1fc754a00ca985a4a4ec019ee0d57254c",
+    "tools/successor_wasm_trace_contract.py": "a16cbc3763d6d473fd2225ef9ceac570aeb23ed3",
+    "tools/ci-heavy/wasm_q8_rounding_ab_v1.py": "0d196b79d86988ebed6ca4efb4282adfbcfe5146",
+    "tools/wasm_q8_rounding_ab_v1.py": "84ab99d5d7bb5f73d27fcc0f23dcaf1f31de1d95",
+    "tools/ci_process.py": "983a72fb3e8f7f212dd3be04d1560f157c7a57e4",
+    "tools/moedern-native-v2/diff_adapter.py": "64fd36e5ea8cb6ce0d58d2b91315bbe290f0d9c7",
+    "tests/moedern-native-v2/diff.cpp": "7d01f2b79cfe72bbb1745930f136cc95470ed219",
+    "docs/wasm-q8-rounding-ab-v1.json": "2bce40011ab9da53ab94368ecc72555d7320047e",
+    "docs/wasm-q8-rounding-candidate.json": "676bdf0bee87d057616300d814e81695a6e1ea38",
+    "tests/results/packaging/wasm-rounding-ab-v1.json": "2f9e6849096f78947df7728fc5103ec547e47d01"
+  },
+  "owned_sha256": {
+    ".github/workflows/wasm-native-order-norm-candidate-v1.yml": "dcdc5d9c258029be3b1dbb9a68a6db5850799c80a70157564bd82896110adb6a",
+    "docs/wasm-native-order-norm-candidate-v1.md": "0ec17716357ab18098fbbefc6baf5dbf8c9e3bff9565c73b3a130e4b854078fd",
+    "tests/test_wasm_native_order_norm_v1.py": "e7e3d1898115490b9f68c10da4ddd831d3e99a2274e732a8637bf956907c6968",
+    "tests/wasm-native-order-norm/CMakeLists.txt": "27992d4619a6c5a722f307bfd218e960302d33bba176977394e5dcaed217f3fc",
+    "tests/wasm-native-order-norm/component.cjs": "56722e93eb80acc0a53e2763ac46eceb61368f47cb256a89d7f485c192dc7c35",
+    "tests/wasm-native-order-norm/controls.cpp": "2cdeff69d767740103569df893412c76f1f8c16d7bb74e8defa82bc54eb7c75f",
+    "tests/wasm-native-order-norm/panel.cjs": "b872e24329bb8f700fd0de4ad30a4a118aed11ee7179c929377dda75e73a5800",
+    "tools/ci-heavy/wasm_native_order_norm_v1.py": "9f4fd382f88e355ff680fd3740a2cce2a3664d9dbbea72444167517eb983fc07",
+    "tools/wasm-native-order-norm-v1/contract.py": "9027acc6d6ebb71cbe2501952830cfa7d1abe49844530bbaeefdf09e9e5ef67f"
+  },
+  "risk": {
+    "report_sha256": "2c8af6fe21ae3147c15a746bd5226c5c24e9e2e61efe0d994f92cbb154341172",
+    "review": {
+      "run": 40834745535,
+      "source": "e7f3ab64dda2fdb42c8305637a258ce4b10bdef4",
+      "name": "wasm-native-order-norm-risk-v1-review-40834745535",
+      "id": 12881157837,
+      "bytes": 179569,
+      "sha256": "cef04fd7d5948268f0b57156380e6d59be425e040a23b10ef919d4ef06f77cae",
+      "conclusion": "success",
+      "workflow": ".github/workflows/wasm-native-order-norm-risk-v1.yml"
+    },
+    "raw": {
+      "run": 40834745535,
+      "source": "e7f3ab64dda2fdb42c8305637a258ce4b10bdef4",
+      "name": "wasm-native-order-norm-risk-v1-raw-40834745535",
+      "id": 12881113369,
+      "bytes": 11434743,
+      "sha256": "3214d6a0064fe18a8da8d14a344bfe36081cc67d32765800b2b5fc658ddf8d1f",
+      "conclusion": "success",
+      "workflow": ".github/workflows/wasm-native-order-norm-risk-v1.yml"
+    }
+  },
+  "old_ab": {
+    "report_sha256": "85102ccff26f3579f050a62a2747ef3f423b2546fc4dd9454e5b12663be76526",
+    "review": {
+      "run": 40391544739,
+      "source": "580e3ae3be3671ddce5e945b0725d0583ec34110",
+      "name": "wasm-q8-rounding-ab-v1-review-40391544739",
+      "id": 12692262412,
+      "bytes": 503633,
+      "sha256": "6185d3a2b0776a157ab0dc10f25ddcc22406ba847dbb70b0b2638d43483bb047",
+      "conclusion": "failure",
+      "workflow": ".github/workflows/ovisocr2-metadata.yml"
+    },
+    "raw": {
+      "run": 40391544739,
+      "source": "580e3ae3be3671ddce5e945b0725d0583ec34110",
+      "name": "wasm-q8-rounding-ab-v1-arrays-40391544739",
+      "id": 12692387342,
+      "bytes": 2357641,
+      "sha256": "0ac59ef65d00c4f267791b47323dc5705a958bdfab4805e1f8337d2eb6da65da",
+      "conclusion": "failure",
+      "workflow": ".github/workflows/ovisocr2-metadata.yml"
+    }
+  },
+  "fixture": {
+    "run": 40354251257,
+    "source": "49161f608af811154bfeb816ac38caea34224cae",
+    "name": "successor-minilm-fixture-40354251257",
+    "id": 12671621333,
+    "bytes": 18259261,
+    "sha256": "a67abb8439d2af274c175dad9cefb8ba9606bec9c4ba024cf568a7359f41c8bf",
+    "conclusion": "failure",
+    "workflow": ".github/workflows/ovisocr2-metadata.yml"
+  }
+}

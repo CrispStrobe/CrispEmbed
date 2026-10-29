@@ -288,6 +288,7 @@ endif()
 # ---------------------------------------------------------------------------
 set(CRISPEMBED_SOURCES
     src/crispembed.cpp
+    src/core/wasm_native_order_norm.cpp
     src/imatrix.cpp
     src/decoder_embed.cpp
     src/tokenizer.cpp
@@ -296,6 +297,9 @@ set(CRISPEMBED_SOURCES
     src/image_preprocess.cpp
     examples/cli/model_mgr.cpp
 )
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    set_property(SOURCE src/core/wasm_native_order_norm.cpp APPEND PROPERTY COMPILE_OPTIONS -ffp-contract=off)
+endif()
 if(CRISPEMBED_HAS_CRISP_AUDIO)
     list(APPEND CRISPEMBED_SOURCES src/bidirlm_audio.cpp)
 endif()
