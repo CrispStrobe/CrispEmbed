@@ -347,8 +347,8 @@
   "owned_sha256": {
     ".github/workflows/unlimited-retained-gha-fetch-v1.yml": "f44f1c70d48ac0617cdea76fd47833d53718083c5a13c63dc1196a1ceea2459e",
     "docs/unlimited-retained-gha-fetch-v1.md": "c09a9126b297c2a3541b9107be9a013e0ed424e7eecf3c03f76aa00850071ab3",
-    "tests/test_unlimited_retained_fetch.py": "8a91a2cee9e7eb9b715568eccac15ad73281d4ee8f68daee8c082c9ff5de7692",
-    "tools/unlimited-ocr2-q4k/retained_fetch_gha.py": "6a44f5c3f7039621c4708bd6b7b51142813f5f82c825cbe5cb545cb0d2ee76c2",
+    "tests/test_unlimited_retained_fetch.py": "869f7746eb273541a756c2c89e97441c143830ff72586ee6903af68ec3df34e6",
+    "tools/unlimited-ocr2-q4k/retained_fetch_gha.py": "f844f8b532ac30d4aaa0d95d023ea1b14eda286fd9908ae00884e68f2555b97a",
     "tools/unlimited-ocr2-q4k/retained_v3_gha.py": "cb9c0008f8c664e7880585d5d66a047eeb26ab219012ef87d9c6c19f05ba4a88"
   }
 }

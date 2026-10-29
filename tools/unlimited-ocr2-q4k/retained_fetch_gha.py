@@ -2,6 +2,7 @@
 import argparse
 import concurrent.futures
 import hashlib
+import importlib
 import json
 import os
 from pathlib import Path, PurePosixPath
@@ -111,7 +112,9 @@ def download(url, path, pin, *, opener=urllib.request.urlopen):
 
 
 def output_urls(api, owner):
-    import kaggle.api.kaggle_api_extended as sdk
+    # Kaggle's package exports `api` as an authenticated instance, shadowing
+    # its subpackage. Resolve the exact module rather than parent attributes.
+    sdk = importlib.import_module('kaggle.api.kaggle_api_extended')
     def request(cls):
         value = cls()
         value.user_name = owner

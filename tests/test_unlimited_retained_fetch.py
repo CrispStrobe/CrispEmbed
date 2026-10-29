@@ -2,10 +2,13 @@
 import hashlib
 import importlib
 import io
+import json
 from pathlib import Path
 import sys
 import tempfile
 import unittest
+from types import SimpleNamespace, ModuleType
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tools/unlimited-ocr2-q4k'))
@@ -80,6 +83,47 @@ class Controls(unittest.TestCase):
                 self.assertNotIn(name, sys.modules)
         finally:
             sys.meta_path.remove(finder)
+
+    def test_shadowed_sdk_package_and_every_paginated_request_use_v3(self):
+        class Request:
+            def __str__(self):
+                return json.dumps({'versionLabel': self.version_label})
+        module = ModuleType('kaggle.api.kaggle_api_extended')
+        for name in ('ApiGetKernelRequest', 'ApiGetKernelSessionStatusRequest', 'ApiListKernelSessionOutputRequest'):
+            setattr(module, name, Request)
+        calls = []
+        script = f.audit.PRODUCER_SOURCE
+        def check(q):
+            self.assertEqual((q.user_name, q.kernel_slug, q.version_label), ('fixture', f.SLUG, 'v3'))
+            calls.append(q)
+        class Kernel:
+            def get_kernel(inner, q):
+                check(q)
+                return json.dumps({'blob': {'source': script}})
+            def get_kernel_session_status(inner, q):
+                check(q)
+                return SimpleNamespace(status='ERROR')
+            def list_kernel_session_output(inner, q):
+                check(q)
+                second = hasattr(q, 'page_token')
+                return SimpleNamespace(files=[SimpleNamespace(file_name='second' if second else 'first',
+                                           url='https://example.invalid/not-serialized')],
+                                       next_page_token=None if second else 'next')
+        class Client:
+            def __enter__(inner):
+                return SimpleNamespace(kernels=SimpleNamespace(kernels_api_client=Kernel()))
+            def __exit__(inner, *args):
+                pass
+        shadow = ModuleType('kaggle')
+        shadow.api = object()  # Exact top-level attribute shadow that broke dotted import.
+        with patch.dict(sys.modules, {'kaggle': shadow, module.__name__: module}), \
+                patch.object(f, 'SCRIPT_BYTES', len(script)), \
+                patch.object(f, 'SCRIPT_SHA', hashlib.sha256(script.encode()).hexdigest()):
+            urls, proof = f.output_urls(SimpleNamespace(build_kaggle_client=Client), 'fixture')
+        self.assertEqual(set(urls), {'first', 'second'})
+        self.assertEqual(len(calls), 4)
+        self.assertEqual(proof['pages'], 2)
+        self.assertNotIn('https://', json.dumps(proof))
 
     def test_old_audit_source_preserved_except_host_admission_in_new_copy(self):
         previous = (ROOT / 'tools/unlimited-ocr2-q4k/retained_v3.py').read_text()
