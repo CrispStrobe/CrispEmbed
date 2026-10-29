@@ -1,0 +1,920 @@
+{
+  "schema": "crispembed-wasm-layer3-f32-risk-initial-review-v1",
+  "service": {
+    "run": 40791643276,
+    "source": "e3df7cfd2e38f6f1bd20d68f1eb05dce11f7cd9d",
+    "workflow": ".github/workflows/wasm-layer3-f32-v1.yml",
+    "attempt": 1,
+    "status": "completed",
+    "conclusion": "failure"
+  },
+  "producer_protocol_sha256": "9ba1eb0135724e93af5794e8714b19d48a54bb9c6611940578c9f859ecaa33e2",
+  "artifacts": {
+    "review": {
+      "id": 12865362524,
+      "bytes": 28168,
+      "sha256": "aac1e16891a6fc39d74e1d6501db996c106877a62ced2f03a22cd45124c6cf31",
+      "downloaded_for_review": true
+    },
+    "raw": {
+      "id": 12865511872,
+      "bytes": 8648225,
+      "sha256": "58f82e19b7dac340c33d1961f8547d11cc2efe848b48412e77cf4a67e18ff392",
+      "expires_at": "2027-01-27T00:04:43Z",
+      "downloaded_for_review": false
+    }
+  },
+  "review_members": {
+    "native-build.log": {
+      "bytes": 13144,
+      "sha256": "68fbab2c30078c526a96b1ed48dc24b220fc30262348bf9d9207027580155ad9"
+    },
+    "native-configure.log": {
+      "bytes": 1248,
+      "sha256": "b7af85df326d689d86b4011fd971dd094268f365fba14343d65123662941d110"
+    },
+    "browser/cast-report.json": {
+      "bytes": 2144,
+      "sha256": "f5de0d1cd8927ab717de01232e2c8d68895ead3ab62dcd854ec04e863e6931a5"
+    },
+    "ref.log": {
+      "bytes": 3839,
+      "sha256": "bf95f57df7252f13b740c883e7cdfd7da8ceb5066e90f68f2667fef2e6930df7"
+    },
+    "review/build-artifacts.json": {
+      "bytes": 1825,
+      "sha256": "cb915bcacbf596e35c8f760dd607809cebca1db7dc4b640ef5ef7890e66ac486"
+    },
+    "review/cast-anchors.json": {
+      "bytes": 609,
+      "sha256": "5330b51772f1dcf4ebdd1a080fefa42727304af7bf9f196c0242d910804ee521"
+    },
+    "review/cast-prepared.json": {
+      "bytes": 2318,
+      "sha256": "600c9bf8d926b5de71cff64a94f030f2ee284ca13377b543509741d88afc608e"
+    },
+    "review/cast-rejection-compare.json": {
+      "bytes": 113,
+      "sha256": "b6d710fc5885075b16c482edd32fd99c0a8e7e327753cec93e7d07293c6ba975"
+    },
+    "review/compile-native.json": {
+      "bytes": 26567,
+      "sha256": "51dd89040eacdc12700c40ed1b19654d85f324080b4cb30353b316e6f6f78882"
+    },
+    "review/compile-profile-inputs.json": {
+      "bytes": 27855,
+      "sha256": "9895bd9981ccf024f4f1ee705701472258a2e84d2bc9df2ae3cc9600dbe3d9bd"
+    },
+    "review/compile-profile.json": {
+      "bytes": 21149,
+      "sha256": "7199436ca5656342cb48999a81fda185a00b9676491f93ed7878777ff4641b56"
+    },
+    "review/compile-wasm.json": {
+      "bytes": 23787,
+      "sha256": "6db17db6bcfcb02b3cdf5bd090b4a93cf859b3be88151cd99bdab6e920db1ad1"
+    },
+    "review/historical-subnodes.json": {
+      "bytes": 15881,
+      "sha256": "f7e4cb867efa8a42df438e24df7c1f47035431da3e93d2c0b33a0485940401af"
+    },
+    "review/native-build-command.json": {
+      "bytes": 251,
+      "sha256": "5ef7247fc8d6384938cdb9c02600bd9083cea8e5ddc2c08696cbf68b4a6bacb5"
+    },
+    "review/native-cast.json": {
+      "bytes": 3593,
+      "sha256": "a41118a0fe5c466e8c797490467026dfec296dc223a11ed1e0bc9f5a37a8b0db"
+    },
+    "review/native-configure-command.json": {
+      "bytes": 404,
+      "sha256": "d2347648161f37e3be78d837bafed2d8622a15467c809bd1bd9fcc8f18354d76"
+    },
+    "review/native-controls.json": {
+      "bytes": 246,
+      "sha256": "4f40fee47c64b21459c59b2ed08114e5bfc1b95cef4895c861302a2b281956a0"
+    },
+    "review/native-mappings.json": {
+      "bytes": 231,
+      "sha256": "c40e3953f9dac7405ae5aac7d6cb7f6248a23a9d58564353ef16f4151f01b085"
+    },
+    "review/packets.json": {
+      "bytes": 31483,
+      "sha256": "af3473cf86f3eabcc430b7b2f140192bbb3ed9fc5c280ccfa6ef4db692e69390"
+    },
+    "review/prepared.json": {
+      "bytes": 3844,
+      "sha256": "268fc5553bc581f107fbba7cfee1669a0a28348487e104b3e669723dc31914e1"
+    },
+    "review/ref-controls.json": {
+      "bytes": 377,
+      "sha256": "16f4475c6df64b332c0e32988ebff9e4127556d3574911174dfff119d15b3294"
+    },
+    "review/ref.json": {
+      "bytes": 15999,
+      "sha256": "2cb80ac417d02fc855bb60b279da5942d213f19968e4321bfd5c18512a5cc168"
+    },
+    "review/source-submodule-command.json": {
+      "bytes": 296,
+      "sha256": "02980765c5bc58e7cbf13a794dfd1c190aafeac8d8714a8b0ac41b9382950801"
+    },
+    "review/source-worktree-command.json": {
+      "bytes": 295,
+      "sha256": "5fa7581a896f870d3278996ef05a39269b51171c40ed1df22c038750c10e12c7"
+    },
+    "review/wasm-build-command.json": {
+      "bytes": 247,
+      "sha256": "1cf14f80425f8d9ba9e1d9d59311c3352fe196514cae8b66bd654cac3fbd5679"
+    },
+    "review/wasm-configure-command.json": {
+      "bytes": 457,
+      "sha256": "b6000592801443a34f066cf13f0806fde6e720395701c1032b843cb3006b357a"
+    },
+    "source-submodule.log": {
+      "bytes": 346,
+      "sha256": "4839b4c26bb0ca6b339031a4d146e6cf7c44beee48978c6b1075513cc84dad47"
+    },
+    "source-worktree.log": {
+      "bytes": 133,
+      "sha256": "4d058d7623e5dcd0c3b3f6c9095eb1a6b79ce381b57e231903b19c6bc46f8a83"
+    },
+    "wasm-build.log": {
+      "bytes": 2446,
+      "sha256": "d121476c6d6d7d295443bc4caf9e7f1cc00f52a7d7cd3bacdc352acdc409bd6a"
+    },
+    "wasm-configure.log": {
+      "bytes": 1408,
+      "sha256": "190d551985f37c425410d0100c5376c546e09f74cd4d3d52e52fe0c9c12c5cf3"
+    }
+  },
+  "actual_ref": {
+    "member": "review/ref.json",
+    "bytes": 15999,
+    "sha256": "2cb80ac417d02fc855bb60b279da5942d213f19968e4321bfd5c18512a5cc168",
+    "status": "numeric_rejection",
+    "pass_count": 7,
+    "fail_count": 18,
+    "gates": {
+      "max_absolute": 0.002,
+      "minimum_row_cosine": 0.99999
+    },
+    "rows": [
+      {
+        "name": "backend.candidate",
+        "ggml_shape": [
+          384,
+          12
+        ],
+        "row_axis": 0,
+        "found": true,
+        "elements": 4608,
+        "passed": true,
+        "max_absolute": 1.430511474609375e-06,
+        "mean_absolute": 8.006261964510486e-08,
+        "rms": 1.1383375664308915e-07,
+        "mean_error": 1.7700787995838456e-09,
+        "min_row_cosine": 1,
+        "original_l2": 55.30173873901367,
+        "native_l2": 55.30173873901367,
+        "original_min": -10.382331848144531,
+        "original_max": 47.74108123779297,
+        "original_abs_min": 0.00010561943054199219,
+        "original_abs_max": 47.74108123779297,
+        "native_min": -10.382332801818848,
+        "native_max": 47.74108123779297,
+        "native_abs_min": 0.00010557100176811218,
+        "native_abs_max": 47.74108123779297
+      },
+      {
+        "name": "backend.native",
+        "ggml_shape": [
+          384,
+          12
+        ],
+        "row_axis": 0,
+        "found": true,
+        "elements": 4608,
+        "passed": true,
+        "max_absolute": 1.9073486328125e-06,
+        "mean_absolute": 7.933481782629315e-08,
+        "rms": 1.1470697103277416e-07,
+        "mean_error": 8.951448964782887e-10,
+        "min_row_cosine": 1,
+        "original_l2": 55.30165481567383,
+        "native_l2": 55.30165481567383,
+        "original_min": -10.382331848144531,
+        "original_max": 47.74108123779297,
+        "original_abs_min": 5.0827860832214355e-05,
+        "original_abs_max": 47.74108123779297,
+        "native_min": -10.382333755493164,
+        "native_max": 47.74108123779297,
+        "native_abs_min": 5.078315734863281e-05,
+        "native_abs_max": 47.74108123779297
+      },
+      {
+        "name": "native1.natural_input_sensitivity",
+        "ggml_shape": [
+          384,
+          12
+        ],
+        "row_axis": 0,
+        "found": true,
+        "elements": 4608,
+        "passed": true,
+        "max_absolute": 0.0003650188446044922,
+        "mean_absolute": 5.66521703149192e-06,
+        "rms": 2.4730070435907692e-05,
+        "mean_error": -1.425188303174865e-07,
+        "min_row_cosine": 1,
+        "original_l2": 55.30165481567383,
+        "native_l2": 55.30173873901367,
+        "original_min": -10.382331848144531,
+        "original_max": 47.74108123779297,
+        "original_abs_min": 5.0827860832214355e-05,
+        "original_abs_max": 47.74108123779297,
+        "native_min": -10.382331848144531,
+        "native_max": 47.74108123779297,
+        "native_abs_min": 0.00010561943054199219,
+        "native_abs_max": 47.74108123779297
+      },
+      {
+        "name": "native1.old_native1.candidate",
+        "ggml_shape": [
+          384,
+          12
+        ],
+        "row_axis": 0,
+        "found": true,
+        "elements": 4608,
+        "passed": false,
+        "max_absolute": 0.07845640182495117,
+        "mean_absolute": 0.005459225736558437,
+        "rms": 0.008432731963694096,
+        "mean_error": -5.793952429182051e-05,
+        "min_row_cosine": 0.9997050166130066,
+        "original_l2": 55.30451202392578,
+        "native_l2": 55.30173873901367,
+        "original_min": -10.398974418640137,
+        "original_max": 47.73543930053711,
+        "original_abs_min": 3.6656856536865234e-05,
+        "original_abs_max": 47.73543930053711,
+        "native_min": -10.382331848144531,
+        "native_max": 47.74108123779297,
+        "native_abs_min": 0.00010561943054199219,
+        "native_abs_max": 47.74108123779297
+      },
+      {
+        "name": "native1.old_native1.native",
+        "ggml_shape": [
+          384,
+          12
+        ],
+        "row_axis": 0,
+        "found": true,
+        "elements": 4608,
+        "passed": false,
+        "max_absolute": 0.07845640182495117,
+        "mean_absolute": 0.005459255073219538,
+        "rms": 0.008433283306658268,
+        "mean_error": -5.7797005461503024e-05,
+        "min_row_cosine": 0.9997050166130066,
+        "original_l2": 55.30451202392578,
+        "native_l2": 55.30165481567383,
+        "original_min": -10.398974418640137,
+        "original_max": 47.73543930053711,
+        "original_abs_min": 3.6656856536865234e-05,
+        "original_abs_max": 47.73543930053711,
+        "native_min": -10.382331848144531,
+        "native_max": 47.74108123779297,
+        "native_abs_min": 5.0827860832214355e-05,
+        "native_abs_max": 47.74108123779297
+      },
+      {
+        "name": "native1.old_native2.candidate",
+        "ggml_shape": [
+          384,
+          12
+        ],
+        "row_axis": 0,
+        "found": true,
+        "elements": 4608,
+        "passed": false,
+        "max_absolute": 0.07845640182495117,
+        "mean_absolute": 0.005459225736558437,
+        "rms": 0.008432731963694096,
+        "mean_error": -5.793952429182051e-05,
+        "min_row_cosine": 0.9997050166130066,
+        "original_l2": 55.30451202392578,
+        "native_l2": 55.30173873901367,
+        "original_min": -10.398974418640137,
+        "original_max": 47.73543930053711,
+        "original_abs_min": 3.6656856536865234e-05,
+        "original_abs_max": 47.73543930053711,
+        "native_min": -10.382331848144531,
+        "native_max": 47.74108123779297,
+        "native_abs_min": 0.00010561943054199219,
+        "native_abs_max": 47.74108123779297
+      },
+      {
+        "name": "native1.old_native2.native",
+        "ggml_shape": [
+          384,
+          12
+        ],
+        "row_axis": 0,
+        "found": true,
+        "elements": 4608,
+        "passed": false,
+        "max_absolute": 0.07845640182495117,
+        "mean_absolute": 0.005459255073219538,
+        "rms": 0.008433283306658268,
+        "mean_error": -5.7797005461503024e-05,
+        "min_row_cosine": 0.9997050166130066,
+        "original_l2": 55.30451202392578,
+        "native_l2": 55.30165481567383,
+        "original_min": -10.398974418640137,
+        "original_max": 47.73543930053711,
+        "original_abs_min": 3.6656856536865234e-05,
+        "original_abs_max": 47.73543930053711,
+        "native_min": -10.382331848144531,
+        "native_max": 47.74108123779297,
+        "native_abs_min": 5.0827860832214355e-05,
+        "native_abs_max": 47.74108123779297
+      },
+      {
+        "name": "native1.same_input.candidate",
+        "ggml_shape": [
+          384,
+          12
+        ],
+        "row_axis": 0,
+        "found": true,
+        "elements": 4608,
+        "passed": false,
+        "max_absolute": 0.07845640182495117,
+        "mean_absolute": 0.0054588038474321365,
+        "rms": 0.008432003669440746,
+        "mean_error": -5.807855450257193e-05,
+        "min_row_cosine": 0.9997050166130066,
+        "original_l2": 55.30451202392578,
+        "native_l2": 55.30173873901367,
+        "original_min": -10.398974418640137,
+        "original_max": 47.73543930053711,
+        "original_abs_min": 8.90195369720459e-05,
+        "original_abs_max": 47.73543930053711,
+        "native_min": -10.382331848144531,
+        "native_max": 47.74108123779297,
+        "native_abs_min": 0.00010561943054199219,
+        "native_abs_max": 47.74108123779297
+      },
+      {
+        "name": "native1.same_input.native",
+        "ggml_shape": [
+          384,
+          12
+        ],
+        "row_axis": 0,
+        "found": true,
+        "elements": 4608,
+        "passed": false,
+        "max_absolute": 0.07845640182495117,
+        "mean_absolute": 0.005459255073219538,
+        "rms": 0.008433283306658268,
+        "mean_error": -5.7797005461503024e-05,
+        "min_row_cosine": 0.9997050166130066,
+        "original_l2": 55.30451202392578,
+        "native_l2": 55.30165481567383,
+        "original_min": -10.398974418640137,
+        "original_max": 47.73543930053711,
+        "original_abs_min": 3.6656856536865234e-05,
+        "original_abs_max": 47.73543930053711,
+        "native_min": -10.382331848144531,
+        "native_max": 47.74108123779297,
+        "native_abs_min": 5.0827860832214355e-05,
+        "native_abs_max": 47.74108123779297
+      },
+      {
+        "name": "native2.natural_input_sensitivity",
+        "ggml_shape": [
+          384,
+          12
+        ],
+        "row_axis": 0,
+        "found": true,
+        "elements": 4608,
+        "passed": true,
+        "max_absolute": 0.0003650188446044922,
+        "mean_absolute": 5.66521703149192e-06,
+        "rms": 2.4730070435907692e-05,
+        "mean_error": -1.425188303174865e-07,
+        "min_row_cosine": 1,
+        "original_l2": 55.30165481567383,
+        "native_l2": 55.30173873901367,
+        "original_min": -10.382331848144531,
+        "original_max": 47.74108123779297,
+        "original_abs_min": 5.0827860832214355e-05,
+        "original_abs_max": 47.74108123779297,
+        "native_min": -10.382331848144531,
+        "native_max": 47.74108123779297,
+        "native_abs_min": 0.00010561943054199219,
+        "native_abs_max": 47.74108123779297
+      },
+      {
+        "name": "native2.old_native1.candidate",
+        "ggml_shape": [
+          384,
+          12
+        ],
+        "row_axis": 0,
+        "found": true,
+        "elements": 4608,
+        "passed": false,
+        "max_absolute": 0.07845640182495117,
+        "mean_absolute": 0.005459225736558437,
+        "rms": 0.008432731963694096,
+        "mean_error": -5.793952429182051e-05,
+        "min_row_cosine": 0.9997050166130066,
+        "original_l2": 55.30451202392578,
+        "native_l2": 55.30173873901367,
+        "original_min": -10.398974418640137,
+        "original_max": 47.73543930053711,
+        "original_abs_min": 3.6656856536865234e-05,
+        "original_abs_max": 47.73543930053711,
+        "native_min": -10.382331848144531,
+        "native_max": 47.74108123779297,
+        "native_abs_min": 0.00010561943054199219,
+        "native_abs_max": 47.74108123779297
+      },
+      {
+        "name": "native2.old_native1.native",
+        "ggml_shape": [
+          384,
+          12
+        ],
+        "row_axis": 0,
+        "found": true,
+        "elements": 4608,
+        "passed": false,
+        "max_absolute": 0.07845640182495117,
+        "mean_absolute": 0.005459255073219538,
+        "rms": 0.008433283306658268,
+        "mean_error": -5.7797005461503024e-05,
+        "min_row_cosine": 0.9997050166130066,
+        "original_l2": 55.30451202392578,
+        "native_l2": 55.30165481567383,
+        "original_min": -10.398974418640137,
+        "original_max": 47.73543930053711,
+        "original_abs_min": 3.6656856536865234e-05,
+        "original_abs_max": 47.73543930053711,
+        "native_min": -10.382331848144531,
+        "native_max": 47.74108123779297,
+        "native_abs_min": 5.0827860832214355e-05,
+        "native_abs_max": 47.74108123779297
+      },
+      {
+        "name": "native2.old_native2.candidate",
+        "ggml_shape": [
+          384,
+          12
+        ],
+        "row_axis": 0,
+        "found": true,
+        "elements": 4608,
+        "passed": false,
+        "max_absolute": 0.07845640182495117,
+        "mean_absolute": 0.005459225736558437,
+        "rms": 0.008432731963694096,
+        "mean_error": -5.793952429182051e-05,
+        "min_row_cosine": 0.9997050166130066,
+        "original_l2": 55.30451202392578,
+        "native_l2": 55.30173873901367,
+        "original_min": -10.398974418640137,
+        "original_max": 47.73543930053711,
+        "original_abs_min": 3.6656856536865234e-05,
+        "original_abs_max": 47.73543930053711,
+        "native_min": -10.382331848144531,
+        "native_max": 47.74108123779297,
+        "native_abs_min": 0.00010561943054199219,
+        "native_abs_max": 47.74108123779297
+      },
+      {
+        "name": "native2.old_native2.native",
+        "ggml_shape": [
+          384,
+          12
+        ],
+        "row_axis": 0,
+        "found": true,
+        "elements": 4608,
+        "passed": false,
+        "max_absolute": 0.07845640182495117,
+        "mean_absolute": 0.005459255073219538,
+        "rms": 0.008433283306658268,
+        "mean_error": -5.7797005461503024e-05,
+        "min_row_cosine": 0.9997050166130066,
+        "original_l2": 55.30451202392578,
+        "native_l2": 55.30165481567383,
+        "original_min": -10.398974418640137,
+        "original_max": 47.73543930053711,
+        "original_abs_min": 3.6656856536865234e-05,
+        "original_abs_max": 47.73543930053711,
+        "native_min": -10.382331848144531,
+        "native_max": 47.74108123779297,
+        "native_abs_min": 5.0827860832214355e-05,
+        "native_abs_max": 47.74108123779297
+      },
+      {
+        "name": "native2.same_input.candidate",
+        "ggml_shape": [
+          384,
+          12
+        ],
+        "row_axis": 0,
+        "found": true,
+        "elements": 4608,
+        "passed": false,
+        "max_absolute": 0.07845640182495117,
+        "mean_absolute": 0.0054588038474321365,
+        "rms": 0.008432003669440746,
+        "mean_error": -5.807855450257193e-05,
+        "min_row_cosine": 0.9997050166130066,
+        "original_l2": 55.30451202392578,
+        "native_l2": 55.30173873901367,
+        "original_min": -10.398974418640137,
+        "original_max": 47.73543930053711,
+        "original_abs_min": 8.90195369720459e-05,
+        "original_abs_max": 47.73543930053711,
+        "native_min": -10.382331848144531,
+        "native_max": 47.74108123779297,
+        "native_abs_min": 0.00010561943054199219,
+        "native_abs_max": 47.74108123779297
+      },
+      {
+        "name": "native2.same_input.native",
+        "ggml_shape": [
+          384,
+          12
+        ],
+        "row_axis": 0,
+        "found": true,
+        "elements": 4608,
+        "passed": false,
+        "max_absolute": 0.07845640182495117,
+        "mean_absolute": 0.005459255073219538,
+        "rms": 0.008433283306658268,
+        "mean_error": -5.7797005461503024e-05,
+        "min_row_cosine": 0.9997050166130066,
+        "original_l2": 55.30451202392578,
+        "native_l2": 55.30165481567383,
+        "original_min": -10.398974418640137,
+        "original_max": 47.73543930053711,
+        "original_abs_min": 3.6656856536865234e-05,
+        "original_abs_max": 47.73543930053711,
+        "native_min": -10.382331848144531,
+        "native_max": 47.74108123779297,
+        "native_abs_min": 5.0827860832214355e-05,
+        "native_abs_max": 47.74108123779297
+      },
+      {
+        "name": "threads.candidate",
+        "ggml_shape": [
+          384,
+          12
+        ],
+        "row_axis": 0,
+        "found": true,
+        "elements": 4608,
+        "passed": true,
+        "max_absolute": 0,
+        "mean_absolute": 0,
+        "rms": 0,
+        "mean_error": 0,
+        "min_row_cosine": 1,
+        "original_l2": 55.30173873901367,
+        "native_l2": 55.30173873901367,
+        "original_min": -10.382331848144531,
+        "original_max": 47.74108123779297,
+        "original_abs_min": 0.00010561943054199219,
+        "original_abs_max": 47.74108123779297,
+        "native_min": -10.382331848144531,
+        "native_max": 47.74108123779297,
+        "native_abs_min": 0.00010561943054199219,
+        "native_abs_max": 47.74108123779297
+      },
+      {
+        "name": "threads.native",
+        "ggml_shape": [
+          384,
+          12
+        ],
+        "row_axis": 0,
+        "found": true,
+        "elements": 4608,
+        "passed": true,
+        "max_absolute": 0,
+        "mean_absolute": 0,
+        "rms": 0,
+        "mean_error": 0,
+        "min_row_cosine": 1,
+        "original_l2": 55.30165481567383,
+        "native_l2": 55.30165481567383,
+        "original_min": -10.382331848144531,
+        "original_max": 47.74108123779297,
+        "original_abs_min": 5.0827860832214355e-05,
+        "original_abs_max": 47.74108123779297,
+        "native_min": -10.382331848144531,
+        "native_max": 47.74108123779297,
+        "native_abs_min": 5.0827860832214355e-05,
+        "native_abs_max": 47.74108123779297
+      },
+      {
+        "name": "wasm.natural_input_sensitivity",
+        "ggml_shape": [
+          384,
+          12
+        ],
+        "row_axis": 0,
+        "found": true,
+        "elements": 4608,
+        "passed": true,
+        "max_absolute": 0.0003650188446044922,
+        "mean_absolute": 5.662748662871309e-06,
+        "rms": 2.4730024961172603e-05,
+        "mean_error": -1.4164389641438095e-07,
+        "min_row_cosine": 1,
+        "original_l2": 55.30165481567383,
+        "native_l2": 55.30173873901367,
+        "original_min": -10.382333755493164,
+        "original_max": 47.74108123779297,
+        "original_abs_min": 5.078315734863281e-05,
+        "original_abs_max": 47.74108123779297,
+        "native_min": -10.382332801818848,
+        "native_max": 47.74108123779297,
+        "native_abs_min": 0.00010557100176811218,
+        "native_abs_max": 47.74108123779297
+      },
+      {
+        "name": "wasm.old_native1.candidate",
+        "ggml_shape": [
+          384,
+          12
+        ],
+        "row_axis": 0,
+        "found": true,
+        "elements": 4608,
+        "passed": false,
+        "max_absolute": 0.07845497131347656,
+        "mean_absolute": 0.005459227133542299,
+        "rms": 0.008432729169726372,
+        "mean_error": -5.793775421302093e-05,
+        "min_row_cosine": 0.9997050166130066,
+        "original_l2": 55.30451202392578,
+        "native_l2": 55.30173873901367,
+        "original_min": -10.398974418640137,
+        "original_max": 47.73543930053711,
+        "original_abs_min": 3.6656856536865234e-05,
+        "original_abs_max": 47.73543930053711,
+        "native_min": -10.382332801818848,
+        "native_max": 47.74108123779297,
+        "native_abs_min": 0.00010557100176811218,
+        "native_abs_max": 47.74108123779297
+      },
+      {
+        "name": "wasm.old_native1.native",
+        "ggml_shape": [
+          384,
+          12
+        ],
+        "row_axis": 0,
+        "found": true,
+        "elements": 4608,
+        "passed": false,
+        "max_absolute": 0.07845544815063477,
+        "mean_absolute": 0.005459255073219538,
+        "rms": 0.00843327958136797,
+        "mean_error": -5.779611031660655e-05,
+        "min_row_cosine": 0.9997050166130066,
+        "original_l2": 55.30451202392578,
+        "native_l2": 55.30165481567383,
+        "original_min": -10.398974418640137,
+        "original_max": 47.73543930053711,
+        "original_abs_min": 3.6656856536865234e-05,
+        "original_abs_max": 47.73543930053711,
+        "native_min": -10.382333755493164,
+        "native_max": 47.74108123779297,
+        "native_abs_min": 5.078315734863281e-05,
+        "native_abs_max": 47.74108123779297
+      },
+      {
+        "name": "wasm.old_native2.candidate",
+        "ggml_shape": [
+          384,
+          12
+        ],
+        "row_axis": 0,
+        "found": true,
+        "elements": 4608,
+        "passed": false,
+        "max_absolute": 0.07845497131347656,
+        "mean_absolute": 0.005459227133542299,
+        "rms": 0.008432729169726372,
+        "mean_error": -5.793775421302093e-05,
+        "min_row_cosine": 0.9997050166130066,
+        "original_l2": 55.30451202392578,
+        "native_l2": 55.30173873901367,
+        "original_min": -10.398974418640137,
+        "original_max": 47.73543930053711,
+        "original_abs_min": 3.6656856536865234e-05,
+        "original_abs_max": 47.73543930053711,
+        "native_min": -10.382332801818848,
+        "native_max": 47.74108123779297,
+        "native_abs_min": 0.00010557100176811218,
+        "native_abs_max": 47.74108123779297
+      },
+      {
+        "name": "wasm.old_native2.native",
+        "ggml_shape": [
+          384,
+          12
+        ],
+        "row_axis": 0,
+        "found": true,
+        "elements": 4608,
+        "passed": false,
+        "max_absolute": 0.07845544815063477,
+        "mean_absolute": 0.005459255073219538,
+        "rms": 0.00843327958136797,
+        "mean_error": -5.779611031660655e-05,
+        "min_row_cosine": 0.9997050166130066,
+        "original_l2": 55.30451202392578,
+        "native_l2": 55.30165481567383,
+        "original_min": -10.398974418640137,
+        "original_max": 47.73543930053711,
+        "original_abs_min": 3.6656856536865234e-05,
+        "original_abs_max": 47.73543930053711,
+        "native_min": -10.382333755493164,
+        "native_max": 47.74108123779297,
+        "native_abs_min": 5.078315734863281e-05,
+        "native_abs_max": 47.74108123779297
+      },
+      {
+        "name": "wasm.same_input.candidate",
+        "ggml_shape": [
+          384,
+          12
+        ],
+        "row_axis": 0,
+        "found": true,
+        "elements": 4608,
+        "passed": false,
+        "max_absolute": 0.07845592498779297,
+        "mean_absolute": 0.0054588052444159985,
+        "rms": 0.008432002738118172,
+        "mean_error": -5.8076269548716177e-05,
+        "min_row_cosine": 0.9997050166130066,
+        "original_l2": 55.30451202392578,
+        "native_l2": 55.30173873901367,
+        "original_min": -10.398974418640137,
+        "original_max": 47.73543930053711,
+        "original_abs_min": 8.90018418431282e-05,
+        "original_abs_max": 47.73543930053711,
+        "native_min": -10.382332801818848,
+        "native_max": 47.74108123779297,
+        "native_abs_min": 0.00010557100176811218,
+        "native_abs_max": 47.74108123779297
+      },
+      {
+        "name": "wasm.same_input.native",
+        "ggml_shape": [
+          384,
+          12
+        ],
+        "row_axis": 0,
+        "found": true,
+        "elements": 4608,
+        "passed": false,
+        "max_absolute": 0.07845640182495117,
+        "mean_absolute": 0.005459255538880825,
+        "rms": 0.008433281444013119,
+        "mean_error": -5.779621733381646e-05,
+        "min_row_cosine": 0.9997050166130066,
+        "original_l2": 55.30451202392578,
+        "native_l2": 55.30165481567383,
+        "original_min": -10.39897346496582,
+        "original_max": 47.73543930053711,
+        "original_abs_min": 3.664381802082062e-05,
+        "original_abs_max": 47.73543930053711,
+        "native_min": -10.382333755493164,
+        "native_max": 47.74108123779297,
+        "native_abs_min": 5.078315734863281e-05,
+        "native_abs_max": 47.74108123779297
+      }
+    ]
+  },
+  "worst_saved_ref_row": {
+    "name": "native1.old_native1.candidate",
+    "ggml_shape": [
+      384,
+      12
+    ],
+    "row_axis": 0,
+    "found": true,
+    "elements": 4608,
+    "passed": false,
+    "max_absolute": 0.07845640182495117,
+    "mean_absolute": 0.005459225736558437,
+    "rms": 0.008432731963694096,
+    "mean_error": -5.793952429182051e-05,
+    "min_row_cosine": 0.9997050166130066,
+    "original_l2": 55.30451202392578,
+    "native_l2": 55.30173873901367,
+    "original_min": -10.398974418640137,
+    "original_max": 47.73543930053711,
+    "original_abs_min": 3.6656856536865234e-05,
+    "original_abs_max": 47.73543930053711,
+    "native_min": -10.382331848144531,
+    "native_max": 47.74108123779297,
+    "native_abs_min": 0.00010561943054199219,
+    "native_abs_max": 47.74108123779297
+  },
+  "six_quantized_anchors": {
+    "native1/native": "f8b59f454361095392e330ff22278f7fd68dcedd006cbf5d5ece4d337ff8b3d9",
+    "native1/candidate": "ea974ffde173640b888e500729edc9ede4e869eb55974b9651354c6d2132eed3",
+    "native2/native": "f8b59f454361095392e330ff22278f7fd68dcedd006cbf5d5ece4d337ff8b3d9",
+    "native2/candidate": "ea974ffde173640b888e500729edc9ede4e869eb55974b9651354c6d2132eed3",
+    "wasm/native": "296d8f42ed5775324fdf6a93aa7ea60b6b0a5ebfe3f106fcdbe48b0d8d04ff22",
+    "wasm/candidate": "7f70ffcc6dee2194907f897935d72b3fe0757b05cad6fe892abad52e44be486b"
+  },
+  "coefficient_identity": {
+    "bytes": 2359296,
+    "sha256": "f85e1f1a4a06267c41760e982ad4981c7adf282acb0a048aaed62e69a4a44ef3",
+    "independent_decoder_native1_native2_browser_exact": true
+  },
+  "native_threads_all_four_arms_bit_exact": true,
+  "all_ordinary_observed_repeat_inputs_controls_verified_from_small_report": true,
+  "compiler_profile_record_hashes_and_flags_rechecked": true,
+  "producer_binary_hashes": {
+    "native-build/libwasm-layer3-f32.so": {
+      "bytes": 17176,
+      "sha256": "b4ce1b66e6c7e397120e4c95d387c029ddcb618152794fca2547e15b6c054d6e"
+    },
+    "native-build/ggml/src/libggml-cpu.so": {
+      "bytes": 1157880,
+      "sha256": "b70160ab17dc062f26b5bac173a83d633f299d617a377a4d7dae2a6104aa01d6"
+    },
+    "native-build/ggml/src/libggml-base.so": {
+      "bytes": 917880,
+      "sha256": "bbe8ec6bc038ffa93f6d55696a470856ac7abe2e4af55f34eddff6eebcbe7491"
+    },
+    "native-build/ggml/src/libggml-cpu.so.0": {
+      "bytes": 1157880,
+      "sha256": "b70160ab17dc062f26b5bac173a83d633f299d617a377a4d7dae2a6104aa01d6"
+    },
+    "native-build/ggml/src/libggml-base.so.0.17.0": {
+      "bytes": 917880,
+      "sha256": "bbe8ec6bc038ffa93f6d55696a470856ac7abe2e4af55f34eddff6eebcbe7491"
+    },
+    "native-build/ggml/src/libggml-base.so.0": {
+      "bytes": 917880,
+      "sha256": "bbe8ec6bc038ffa93f6d55696a470856ac7abe2e4af55f34eddff6eebcbe7491"
+    },
+    "native-build/ggml/src/libggml.so.0": {
+      "bytes": 56376,
+      "sha256": "97287c88c82c6d077a4a0f1f70a59fde5a5c11f683473c5f87640296446e63d0"
+    },
+    "native-build/ggml/src/libggml.so": {
+      "bytes": 56376,
+      "sha256": "97287c88c82c6d077a4a0f1f70a59fde5a5c11f683473c5f87640296446e63d0"
+    },
+    "native-build/ggml/src/libggml-cpu.so.0.17.0": {
+      "bytes": 1157880,
+      "sha256": "b70160ab17dc062f26b5bac173a83d633f299d617a377a4d7dae2a6104aa01d6"
+    },
+    "native-build/ggml/src/libggml.so.0.17.0": {
+      "bytes": 56376,
+      "sha256": "97287c88c82c6d077a4a0f1f70a59fde5a5c11f683473c5f87640296446e63d0"
+    },
+    "browser/module/wasm-layer3-f32.wasm": {
+      "bytes": 855541,
+      "sha256": "45fe47036c8ab94658e8a8870b92506bdc4199943edcb0e1af75e1a325160c09"
+    },
+    "browser/module/wasm-layer3-f32.js": {
+      "bytes": 67698,
+      "sha256": "73dab558d360afc765678034b587f0cd60e8679d02144d38b3313520a88f1312"
+    }
+  },
+  "reporting_failure": {
+    "phase": "compare",
+    "error": "finite exact original/native F32 shape required",
+    "qualification": false
+  },
+  "interpretation": "The F32 weightcast preserves local native/browser agreement but changes the old quantized native target. Eighteen strict comparisons reject before a later optional F64 diagnostic reporting error. No production promotion or reference retargeting.",
+  "model_forward": false,
+  "production_change": false,
+  "operator_supported": false,
+  "qualification": false,
+  "limits": [
+    "Small ZIP/member hashes and saved Ref/anchor/neutrality/coefficient/compiler records independently reviewed; raw arrays and binaries were not downloaded, loaded or recomputed locally.",
+    "Saved Ref rows precede the optional F64 reporting error. Independent raw25-metric recollection is a new hosted compare-only task, not an executed result of this receipt.",
+    "The old exact source/protocol/targets/gates and whole-model WASM negative remain unchanged."
+  ]
+}
