@@ -1,4 +1,4 @@
-> **Current starting point:** [27 October wrap-up and executable handoff](handoff-2026-10-27.md).
+> **Current starting point:** [28 October continuation and executable handoff](handoff-2026-10-28.md).
 > It supersedes older preparation/status instructions below. Main receives audit
 > documentation; candidate runtimes and in-flight jobs remain explicitly separate.
 
