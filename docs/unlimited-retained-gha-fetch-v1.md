@@ -59,3 +59,8 @@ retains that failure. The correction accepts a zero-length member only after
 a real200 GET, Content-Length0, no extra byte and exact empty-file SHA; it never
 skips an empty member. All540-file, source, model, structure and numerical gates
 remain unchanged. The initial run never reaches array analysis or Q4 inference.
+
+Before retry, a separate exact-v3 Get/Status/all-seven-page read authenticated
+the same script and fetched only this empty stderr: actual status200,
+Content-Length0, no extra byte and SHA256 of the empty string. No model payload
+was fetched by that accessibility check.

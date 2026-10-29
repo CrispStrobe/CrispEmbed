@@ -43,5 +43,19 @@
   "quantizer_runs": 0,
   "structural_audit_started": false,
   "publication_qualified": false,
-  "limits": "Zero-byte stderr was rejected by an overly strict transfer-size precondition. The second IO worker may have streamed later members; no all540 admission, array analysis or Q4 inference occurred. Large inputs remain at immutable v3."
+  "limits": "Zero-byte stderr was rejected by an overly strict transfer-size precondition. The second IO worker may have streamed later members; no all540 admission, array analysis or Q4 inference occurred. Large inputs remain at immutable v3.",
+  "subsequent_exact_v3_empty_get": {
+    "version_label": "v3",
+    "producer_source": "410541f9c2587d345fb0d575a3315ce3c032a02a",
+    "script_sha256": "dd11f6e7b530489fa3bcf09b858051b47230cd3f77871b7c7beafe74ec396b6e",
+    "pages": 7,
+    "listed_members": 674,
+    "member": "quantize-last1/stderr",
+    "status": 200,
+    "content_length": 0,
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "no_extra_byte": true,
+    "signed_url_not_saved": true
+  }
 }
