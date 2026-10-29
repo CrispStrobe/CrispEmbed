@@ -135,7 +135,7 @@ def main(args):
                         all(c.get('completed')and c.get('ordinary_observer_repeat_raw_equal')and c['actual_ref']['all_metrics_agree']for c in comparison['cases']))
             require(structural,'structural/input/observer/metric consistency rejected for '+label)
             numeric=all(all(m['passed']for m in c['metrics'])and all(v['passed']for v in c['raw_finals'])and
-                        all(v['passed']for v in c['ordinal'])for c in comparison['cases'])
+                        all(v['passed']for v in c['ordinal'])and c['actual_ref']['exit_code']==0 for c in comparison['cases'])
             decisions=typed_decisions(freeze,gold,outputs['plain']);write(review/(label+'-typed.json'),decisions)
             result[label]=dict(commands=producer,compared_stages=227,structural_passed=True,
                                strict_original_numeric_passed=numeric,
