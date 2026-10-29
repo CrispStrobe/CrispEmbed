@@ -1,0 +1,90 @@
+name: Retained native-order norm risk v1
+on:
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: wasm-native-order-norm-risk-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  risk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      CMAKE_BUILD_PARALLEL_LEVEL: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Bounded source, rounding-tree and immutable protocol controls
+        run: python tests/test_wasm_norm_order_v1.py -v
+      - name: Authenticate all retained services, member bytes and stored coefficients
+        run: python tools/ci-heavy/wasm_norm_order_v1.py prepare --output "$RUNNER_TEMP/norm-risk"
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: '6.0.2'
+      - name: Exact frozen CPU profiles, actual preprocessor branches and Ref controls
+        run: python tools/ci-heavy/wasm_norm_order_v1.py build --output "$RUNNER_TEMP/norm-risk"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Pinned browser engine
+        run: |
+          npm install --prefix "$RUNNER_TEMP/norm-browser" --no-save playwright@1.56.0
+          "$RUNNER_TEMP/norm-browser/node_modules/.bin/playwright" install --with-deps chromium
+      - name: Native baseline ordinary, observed, repeat and local recovery
+        run: python tools/ci-heavy/wasm_norm_order_v1.py native-baseline --output "$RUNNER_TEMP/norm-risk"
+      - name: Browser baseline with isolated pthreads and selected Q8_0 converter
+        run: NODE_PATH="$RUNNER_TEMP/norm-browser/node_modules" node tests/wasm-norm-order/browser.cjs "$RUNNER_TEMP/norm-risk" baseline
+      - name: Require all30 original byte anchors before emulation
+        run: python tools/ci-heavy/wasm_norm_order_v1.py baseline --output "$RUNNER_TEMP/norm-risk"
+      - name: Native1/2 portable native-order norm only
+        run: python tools/ci-heavy/wasm_norm_order_v1.py native-norm --output "$RUNNER_TEMP/norm-risk"
+      - name: Browser portable native-order norm only
+        run: NODE_PATH="$RUNNER_TEMP/norm-browser/node_modules" node tests/wasm-norm-order/browser.cjs "$RUNNER_TEMP/norm-risk" norm
+      - name: Require all12 native norm bit recoveries before candidate projection
+        run: python tools/ci-heavy/wasm_norm_order_v1.py recovery --output "$RUNNER_TEMP/norm-risk"
+      - name: Native recomputed norm and affine into actual IQ4_NL Q8_0 projection
+        run: python tools/ci-heavy/wasm_norm_order_v1.py native-chain --output "$RUNNER_TEMP/norm-risk"
+      - name: Recheck all artifacts before candidate browser projection
+        run: python tools/ci-heavy/wasm_norm_order_v1.py verify --output "$RUNNER_TEMP/norm-risk"
+      - name: Browser recomputed norm and affine into actual selected Q8_0 projection
+        run: NODE_PATH="$RUNNER_TEMP/norm-browser/node_modules" node tests/wasm-norm-order/browser.cjs "$RUNNER_TEMP/norm-risk" chain
+      - name: Independent metrics only, no model framework
+        run: python -m pip install numpy==2.2.6
+      - name: All56 unchanged-target Ref comparisons and independent magnitudes
+        run: python tools/ci-heavy/wasm_norm_order_v1.py compare --output "$RUNNER_TEMP/norm-risk"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wasm-native-order-norm-risk-v1-review-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/norm-risk/review/
+            ${{ runner.temp }}/norm-risk/*.log
+            ${{ runner.temp }}/norm-risk/browser/norm-report.json
+          retention-days: 90
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wasm-native-order-norm-risk-v1-raw-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/norm-risk/raw/
+            ${{ runner.temp }}/norm-risk/browser/norm-inputs/
+            ${{ runner.temp }}/norm-risk/browser/norm-targets/
+            ${{ runner.temp }}/norm-risk/browser/module/
+            ${{ runner.temp }}/norm-risk/browser/norm-packets.json
+            ${{ runner.temp }}/norm-risk/native-build/**/*.so*
+            ${{ runner.temp }}/norm-risk/control.gguf
+            ${{ runner.temp }}/norm-risk/replay.gguf
+          retention-days: 90
+          if-no-files-found: warn

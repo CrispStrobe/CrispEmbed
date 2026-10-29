@@ -1,0 +1,1042 @@
+{
+  "schema": "crispembed-josev-mixed-recipes-reviewed-v1",
+  "run_id": 40787077302,
+  "source": "06a96cbc7a85fc8250a0cc0af5601f60706bd7bb",
+  "service_conclusion": "success",
+  "small_artifact": {
+    "id": 12863712074,
+    "name": "josev-mixed-development-review-40787077302",
+    "size_in_bytes": 662603,
+    "digest": "sha256:3b48b34f71460ddb0df25e55c2192c7dfee6d2664fd8be58885ab871354116fe",
+    "expires_at": "2027-01-26T23:23:56Z"
+  },
+  "original_rerun": false,
+  "holdout_native_access": false,
+  "recipes": {
+    "recipe-A": {
+      "strict_numeric_and_typed_parity": false,
+      "cases": [
+        {
+          "id": "mixed-de",
+          "stages": 68,
+          "failed_stages": 58,
+          "first_failure": {
+            "stage": "backbone/layer/0",
+            "occurrence": 0,
+            "shape": [
+              1,
+              319,
+              2048
+            ],
+            "elements": 653312,
+            "max_absolute": 0.03630650043487549,
+            "mean_absolute": 0.0015438458335177345,
+            "mean_error": -4.540648796705949e-06,
+            "rms": 0.002071082653743617,
+            "min_row_cosine": 0.9971275225296902,
+            "original_l2": 35.480506801691064,
+            "native_l2": 35.489070570838024,
+            "bit_exact": false,
+            "original_min": -1.9278165102005005,
+            "original_max": 0.40275126695632935,
+            "original_abs_min": 2.60770320892334e-08,
+            "original_abs_max": 1.9278165102005005,
+            "native_min": -1.9325809478759766,
+            "native_max": 0.4049134850502014,
+            "native_abs_min": 7.078051567077637e-08,
+            "native_abs_max": 1.9325809478759766,
+            "passed": false
+          },
+          "ordinal": [
+            {
+              "field": "sicherheit",
+              "original": 1.2168480455875397,
+              "native": 1.2198179215192795,
+              "absolute_error": 0.002969875931739807,
+              "budget": 0.001,
+              "passed": false
+            }
+          ],
+          "raw_finals": [
+            {
+              "field": "bezahlt",
+              "kind": "logits",
+              "max_absolute": 0.09079790115356445,
+              "passed": false
+            },
+            {
+              "field": "bezahlt",
+              "kind": "probabilities",
+              "max_absolute": 9.603449143469334e-06,
+              "passed": true
+            },
+            {
+              "field": "status",
+              "kind": "logits",
+              "max_absolute": 0.3845529556274414,
+              "passed": false
+            },
+            {
+              "field": "status",
+              "kind": "probabilities",
+              "max_absolute": 6.677169585600495e-05,
+              "passed": true
+            },
+            {
+              "field": "sicherheit",
+              "kind": "logits",
+              "max_absolute": 0.0626521110534668,
+              "passed": false
+            },
+            {
+              "field": "sicherheit",
+              "kind": "probabilities",
+              "max_absolute": 0.003990396857261658,
+              "passed": false
+            }
+          ],
+          "actual_ref": {
+            "exit_code": 1,
+            "status": "numeric_rejection",
+            "stages": 68,
+            "all_metrics_agree": true
+          }
+        },
+        {
+          "id": "null-and-options",
+          "stages": 59,
+          "failed_stages": 53,
+          "first_failure": {
+            "stage": "backbone/layer/0",
+            "occurrence": 0,
+            "shape": [
+              1,
+              197,
+              2048
+            ],
+            "elements": 403456,
+            "max_absolute": 0.031278371810913086,
+            "mean_absolute": 0.0016011995241609063,
+            "mean_error": -9.666158664438437e-06,
+            "rms": 0.0021494539865613547,
+            "min_row_cosine": 0.9968020232665254,
+            "original_l2": 27.863440395575594,
+            "native_l2": 27.872048220447624,
+            "bit_exact": false,
+            "original_min": -1.8961217403411865,
+            "original_max": 0.4027511477470398,
+            "original_abs_min": 8.89413058757782e-08,
+            "original_abs_max": 1.8961217403411865,
+            "native_min": -1.9120842218399048,
+            "native_max": 0.4049134850502014,
+            "native_abs_min": 7.008202373981476e-08,
+            "native_abs_max": 1.9120842218399048,
+            "passed": false
+          },
+          "ordinal": [],
+          "raw_finals": [
+            {
+              "field": "Leerstand",
+              "kind": "logits",
+              "max_absolute": 0.2619088888168335,
+              "passed": false
+            },
+            {
+              "field": "Leerstand",
+              "kind": "probabilities",
+              "max_absolute": 0.00866420567035675,
+              "passed": false
+            },
+            {
+              "field": "best\u00e4tigt",
+              "kind": "logits",
+              "max_absolute": 0.4639754891395569,
+              "passed": false
+            },
+            {
+              "field": "best\u00e4tigt",
+              "kind": "probabilities",
+              "max_absolute": 0.014658339321613312,
+              "passed": false
+            }
+          ],
+          "actual_ref": {
+            "exit_code": 1,
+            "status": "numeric_rejection",
+            "stages": 59,
+            "all_metrics_agree": true
+          }
+        },
+        {
+          "id": "json-unicode",
+          "stages": 50,
+          "failed_stages": 46,
+          "first_failure": {
+            "stage": "backbone/layer/0",
+            "occurrence": 0,
+            "shape": [
+              1,
+              165,
+              2048
+            ],
+            "elements": 337920,
+            "max_absolute": 0.03848367929458618,
+            "mean_absolute": 0.0015880066474776534,
+            "mean_error": -4.70263437489221e-06,
+            "rms": 0.002132087436360745,
+            "min_row_cosine": 0.9972805349849357,
+            "original_l2": 25.325275871644624,
+            "native_l2": 25.321158820548643,
+            "bit_exact": false,
+            "original_min": -1.8655524253845215,
+            "original_max": 0.4067792594432831,
+            "original_abs_min": 1.0035000741481781e-07,
+            "original_abs_max": 1.8655524253845215,
+            "native_min": -1.8754703998565674,
+            "native_max": 0.4091395437717438,
+            "native_abs_min": 1.0710209608078003e-08,
+            "native_abs_max": 1.8754703998565674,
+            "passed": false
+          },
+          "ordinal": [
+            {
+              "field": "Stufe",
+              "original": 0.8277701437473297,
+              "native": 0.8001878559589386,
+              "absolute_error": 0.027582287788391113,
+              "budget": 0.001,
+              "passed": false
+            }
+          ],
+          "raw_finals": [
+            {
+              "field": "Stufe",
+              "kind": "logits",
+              "max_absolute": 0.1816997528076172,
+              "passed": false
+            },
+            {
+              "field": "Stufe",
+              "kind": "probabilities",
+              "max_absolute": 0.022339582443237305,
+              "passed": false
+            }
+          ],
+          "actual_ref": {
+            "exit_code": 1,
+            "status": "numeric_rejection",
+            "stages": 50,
+            "all_metrics_agree": true
+          }
+        },
+        {
+          "id": "state-only-clip",
+          "stages": 50,
+          "failed_stages": 46,
+          "first_failure": {
+            "stage": "backbone/layer/0",
+            "occurrence": 0,
+            "shape": [
+              1,
+              512,
+              2048
+            ],
+            "elements": 1048576,
+            "max_absolute": 0.02747952938079834,
+            "mean_absolute": 0.0016237521190961418,
+            "mean_error": 1.0372093833602158e-05,
+            "rms": 0.0021449728776914956,
+            "min_row_cosine": 0.9973428251900123,
+            "original_l2": 51.349913386510174,
+            "native_l2": 51.42806125523678,
+            "bit_exact": false,
+            "original_min": -1.8655526638031006,
+            "original_max": 0.40275102853775024,
+            "original_abs_min": 5.21540641784668e-08,
+            "original_abs_max": 1.8655526638031006,
+            "native_min": -1.8754703998565674,
+            "native_max": 0.4049134850502014,
+            "native_abs_min": 2.421438694000244e-08,
+            "native_abs_max": 1.8754703998565674,
+            "passed": false
+          },
+          "ordinal": [],
+          "raw_finals": [
+            {
+              "field": "Bestellung",
+              "kind": "logits",
+              "max_absolute": 0.2953629493713379,
+              "passed": false
+            },
+            {
+              "field": "Bestellung",
+              "kind": "probabilities",
+              "max_absolute": 0.0028783082962036133,
+              "passed": false
+            }
+          ],
+          "actual_ref": {
+            "exit_code": 1,
+            "status": "numeric_rejection",
+            "stages": 50,
+            "all_metrics_agree": true
+          }
+        }
+      ],
+      "panel_sha256": "03a30a452c1bda4cd92bedeb10dfd703f4995645ceff0d9796d8f3042268078a",
+      "model": {
+        "counts": {
+          "F32": 292,
+          "F16": 78,
+          "Q4_K": 72
+        },
+        "output_bytes": 3613774304,
+        "output_sha256": "586b33b9bb5a0924c896ccc0598fb20416cbf95c4515ac89f2afef853775ac99",
+        "critical292_f32_byte_exact": true,
+        "independent_f16_rounding_exact": true,
+        "semantic_shapes_unchanged": true
+      },
+      "conversion_sha256": "8f95932983ab432a729bb4d8b72ecf56f6e5c372845021a2f3c324f95f6adc26"
+    },
+    "recipe-B": {
+      "strict_numeric_and_typed_parity": false,
+      "cases": [
+        {
+          "id": "mixed-de",
+          "stages": 68,
+          "failed_stages": 58,
+          "first_failure": {
+            "stage": "backbone/layer/0",
+            "occurrence": 0,
+            "shape": [
+              1,
+              319,
+              2048
+            ],
+            "elements": 653312,
+            "max_absolute": 0.027440786361694336,
+            "mean_absolute": 0.001126795350529363,
+            "mean_error": -1.1827344385433745e-05,
+            "rms": 0.0015236296189791152,
+            "min_row_cosine": 0.998438366386491,
+            "original_l2": 35.480506801691064,
+            "native_l2": 35.49127328066029,
+            "bit_exact": false,
+            "original_min": -1.9278165102005005,
+            "original_max": 0.40275126695632935,
+            "original_abs_min": 2.60770320892334e-08,
+            "original_abs_max": 1.9278165102005005,
+            "native_min": -1.922947645187378,
+            "native_max": 0.4039455056190491,
+            "native_abs_min": 1.2479722499847412e-07,
+            "native_abs_max": 1.922947645187378,
+            "passed": false
+          },
+          "ordinal": [
+            {
+              "field": "sicherheit",
+              "original": 1.2168480455875397,
+              "native": 1.2367977797985077,
+              "absolute_error": 0.019949734210968018,
+              "budget": 0.001,
+              "passed": false
+            }
+          ],
+          "raw_finals": [
+            {
+              "field": "bezahlt",
+              "kind": "logits",
+              "max_absolute": 0.1231234073638916,
+              "passed": false
+            },
+            {
+              "field": "bezahlt",
+              "kind": "probabilities",
+              "max_absolute": 3.5703182220458984e-05,
+              "passed": true
+            },
+            {
+              "field": "status",
+              "kind": "logits",
+              "max_absolute": 0.237532377243042,
+              "passed": false
+            },
+            {
+              "field": "status",
+              "kind": "probabilities",
+              "max_absolute": 3.034248948097229e-05,
+              "passed": true
+            },
+            {
+              "field": "sicherheit",
+              "kind": "logits",
+              "max_absolute": 0.10019373893737793,
+              "passed": false
+            },
+            {
+              "field": "sicherheit",
+              "kind": "probabilities",
+              "max_absolute": 0.015322357416152954,
+              "passed": false
+            }
+          ],
+          "actual_ref": {
+            "exit_code": 1,
+            "status": "numeric_rejection",
+            "stages": 68,
+            "all_metrics_agree": true
+          }
+        },
+        {
+          "id": "null-and-options",
+          "stages": 59,
+          "failed_stages": 52,
+          "first_failure": {
+            "stage": "backbone/layer/0",
+            "occurrence": 0,
+            "shape": [
+              1,
+              197,
+              2048
+            ],
+            "elements": 403456,
+            "max_absolute": 0.024378657341003418,
+            "mean_absolute": 0.0011639436628639904,
+            "mean_error": -1.3311753951736972e-05,
+            "rms": 0.001572492961109228,
+            "min_row_cosine": 0.9983611408085696,
+            "original_l2": 27.863440395575594,
+            "native_l2": 27.869589219929594,
+            "bit_exact": false,
+            "original_min": -1.8961217403411865,
+            "original_max": 0.4027511477470398,
+            "original_abs_min": 8.89413058757782e-08,
+            "original_abs_max": 1.8961217403411865,
+            "native_min": -1.9061212539672852,
+            "native_max": 0.4039455056190491,
+            "native_abs_min": 9.778887033462524e-09,
+            "native_abs_max": 1.9061212539672852,
+            "passed": false
+          },
+          "ordinal": [],
+          "raw_finals": [
+            {
+              "field": "Leerstand",
+              "kind": "logits",
+              "max_absolute": 0.09211647510528564,
+              "passed": false
+            },
+            {
+              "field": "Leerstand",
+              "kind": "probabilities",
+              "max_absolute": 0.001843184232711792,
+              "passed": false
+            },
+            {
+              "field": "best\u00e4tigt",
+              "kind": "logits",
+              "max_absolute": 0.27064287662506104,
+              "passed": false
+            },
+            {
+              "field": "best\u00e4tigt",
+              "kind": "probabilities",
+              "max_absolute": 0.006220221519470215,
+              "passed": false
+            }
+          ],
+          "actual_ref": {
+            "exit_code": 1,
+            "status": "numeric_rejection",
+            "stages": 59,
+            "all_metrics_agree": true
+          }
+        },
+        {
+          "id": "json-unicode",
+          "stages": 50,
+          "failed_stages": 46,
+          "first_failure": {
+            "stage": "backbone/layer/0",
+            "occurrence": 0,
+            "shape": [
+              1,
+              165,
+              2048
+            ],
+            "elements": 337920,
+            "max_absolute": 0.03464305400848389,
+            "mean_absolute": 0.0011592230834127138,
+            "mean_error": -1.0559651026395303e-05,
+            "rms": 0.0015679214300966364,
+            "min_row_cosine": 0.9983888493509654,
+            "original_l2": 25.325275871644624,
+            "native_l2": 25.325119648185634,
+            "bit_exact": false,
+            "original_min": -1.8655524253845215,
+            "original_max": 0.4067792594432831,
+            "original_abs_min": 1.0035000741481781e-07,
+            "original_abs_max": 1.8655524253845215,
+            "native_min": -1.8690369129180908,
+            "native_max": 0.41102296113967896,
+            "native_abs_min": 1.0011717677116394e-08,
+            "native_abs_max": 1.8690369129180908,
+            "passed": false
+          },
+          "ordinal": [
+            {
+              "field": "Stufe",
+              "original": 0.8277701437473297,
+              "native": 0.8231248110532761,
+              "absolute_error": 0.00464533269405365,
+              "budget": 0.001,
+              "passed": false
+            }
+          ],
+          "raw_finals": [
+            {
+              "field": "Stufe",
+              "kind": "logits",
+              "max_absolute": 0.1264328956604004,
+              "passed": false
+            },
+            {
+              "field": "Stufe",
+              "kind": "probabilities",
+              "max_absolute": 0.004688620567321777,
+              "passed": false
+            }
+          ],
+          "actual_ref": {
+            "exit_code": 1,
+            "status": "numeric_rejection",
+            "stages": 50,
+            "all_metrics_agree": true
+          }
+        },
+        {
+          "id": "state-only-clip",
+          "stages": 50,
+          "failed_stages": 45,
+          "first_failure": {
+            "stage": "backbone/layer/0",
+            "occurrence": 0,
+            "shape": [
+              1,
+              512,
+              2048
+            ],
+            "elements": 1048576,
+            "max_absolute": 0.02574014663696289,
+            "mean_absolute": 0.001188150579447475,
+            "mean_error": -2.8796667988356672e-06,
+            "rms": 0.0015802250800241368,
+            "min_row_cosine": 0.9985014975959067,
+            "original_l2": 51.349913386510174,
+            "native_l2": 51.394947905983365,
+            "bit_exact": false,
+            "original_min": -1.8655526638031006,
+            "original_max": 0.40275102853775024,
+            "original_abs_min": 5.21540641784668e-08,
+            "original_abs_max": 1.8655526638031006,
+            "native_min": -1.8690369129180908,
+            "native_max": 0.4039455056190491,
+            "native_abs_min": 2.1420419216156006e-08,
+            "native_abs_max": 1.8690369129180908,
+            "passed": false
+          },
+          "ordinal": [],
+          "raw_finals": [
+            {
+              "field": "Bestellung",
+              "kind": "logits",
+              "max_absolute": 0.11087402701377869,
+              "passed": false
+            },
+            {
+              "field": "Bestellung",
+              "kind": "probabilities",
+              "max_absolute": 0.0010483264923095703,
+              "passed": false
+            }
+          ],
+          "actual_ref": {
+            "exit_code": 1,
+            "status": "numeric_rejection",
+            "stages": 50,
+            "all_metrics_agree": true
+          }
+        }
+      ],
+      "panel_sha256": "de7bb0cfae242e05ee3d2c733e8d4f65bd38f34e1d22b2c939541d5b034a753d",
+      "model": {
+        "counts": {
+          "F32": 316,
+          "F16": 78,
+          "Q4_K": 48
+        },
+        "output_bytes": 4651864544,
+        "output_sha256": "7e85d2ef71a29f86b88e1d01c64cf222dac07c83dba7ae30863247acc02d8572",
+        "critical292_f32_byte_exact": true,
+        "independent_f16_rounding_exact": true,
+        "semantic_shapes_unchanged": true
+      },
+      "conversion_sha256": "e8ebe82d724facf9c62d62e29770c65ef32c798c79928aef066fc64581974ef7"
+    },
+    "recipe-C": {
+      "strict_numeric_and_typed_parity": false,
+      "cases": [
+        {
+          "id": "mixed-de",
+          "stages": 68,
+          "failed_stages": 37,
+          "first_failure": {
+            "stage": "backbone/layer/20",
+            "occurrence": 0,
+            "shape": [
+              1,
+              319,
+              2048
+            ],
+            "elements": 653312,
+            "max_absolute": 0.11019706726074219,
+            "mean_absolute": 0.0077893258336744564,
+            "mean_error": 9.030238640047584e-05,
+            "rms": 0.010143809949150838,
+            "min_row_cosine": 0.9982620999910886,
+            "original_l2": 395.80697069943733,
+            "native_l2": 395.7010952635461,
+            "bit_exact": false,
+            "original_min": -17.501670837402344,
+            "original_max": 6.187850475311279,
+            "original_abs_min": 7.82310962677002e-08,
+            "original_abs_max": 17.501670837402344,
+            "native_min": -17.48052215576172,
+            "native_max": 6.162119388580322,
+            "native_abs_min": 1.2889504432678223e-06,
+            "native_abs_max": 17.48052215576172,
+            "passed": false
+          },
+          "ordinal": [
+            {
+              "field": "sicherheit",
+              "original": 1.2168480455875397,
+              "native": 1.215262547135353,
+              "absolute_error": 0.0015854984521865845,
+              "budget": 0.001,
+              "passed": false
+            }
+          ],
+          "raw_finals": [
+            {
+              "field": "bezahlt",
+              "kind": "logits",
+              "max_absolute": 0.01558065414428711,
+              "passed": false
+            },
+            {
+              "field": "bezahlt",
+              "kind": "probabilities",
+              "max_absolute": 8.985225576907396e-07,
+              "passed": true
+            },
+            {
+              "field": "status",
+              "kind": "logits",
+              "max_absolute": 0.013934612274169922,
+              "passed": false
+            },
+            {
+              "field": "status",
+              "kind": "probabilities",
+              "max_absolute": 4.840199835598469e-06,
+              "passed": true
+            },
+            {
+              "field": "sicherheit",
+              "kind": "logits",
+              "max_absolute": 0.020247459411621094,
+              "passed": false
+            },
+            {
+              "field": "sicherheit",
+              "kind": "probabilities",
+              "max_absolute": 0.0008184909820556641,
+              "passed": false
+            }
+          ],
+          "actual_ref": {
+            "exit_code": 1,
+            "status": "numeric_rejection",
+            "stages": 68,
+            "all_metrics_agree": true
+          }
+        },
+        {
+          "id": "null-and-options",
+          "stages": 59,
+          "failed_stages": 31,
+          "first_failure": {
+            "stage": "backbone/layer/20",
+            "occurrence": 0,
+            "shape": [
+              1,
+              197,
+              2048
+            ],
+            "elements": 403456,
+            "max_absolute": 0.10840785503387451,
+            "mean_absolute": 0.007753767287519349,
+            "mean_error": 4.126321404175985e-05,
+            "rms": 0.01016993434275862,
+            "min_row_cosine": 0.9982620947546109,
+            "original_l2": 308.9668467564832,
+            "native_l2": 308.9908833692751,
+            "bit_exact": false,
+            "original_min": -18.185501098632812,
+            "original_max": 5.487076282501221,
+            "original_abs_min": 5.21540641784668e-07,
+            "original_abs_max": 18.185501098632812,
+            "native_min": -18.1961727142334,
+            "native_max": 5.488990783691406,
+            "native_abs_min": 2.473592758178711e-06,
+            "native_abs_max": 18.1961727142334,
+            "passed": false
+          },
+          "ordinal": [],
+          "raw_finals": [
+            {
+              "field": "Leerstand",
+              "kind": "logits",
+              "max_absolute": 0.01701986789703369,
+              "passed": false
+            },
+            {
+              "field": "Leerstand",
+              "kind": "probabilities",
+              "max_absolute": 0.0009449124336242676,
+              "passed": false
+            },
+            {
+              "field": "best\u00e4tigt",
+              "kind": "logits",
+              "max_absolute": 0.009356856346130371,
+              "passed": false
+            },
+            {
+              "field": "best\u00e4tigt",
+              "kind": "probabilities",
+              "max_absolute": 0.0003428459167480469,
+              "passed": false
+            }
+          ],
+          "actual_ref": {
+            "exit_code": 1,
+            "status": "numeric_rejection",
+            "stages": 59,
+            "all_metrics_agree": true
+          }
+        },
+        {
+          "id": "json-unicode",
+          "stages": 50,
+          "failed_stages": 25,
+          "first_failure": {
+            "stage": "backbone/layer/20",
+            "occurrence": 0,
+            "shape": [
+              1,
+              165,
+              2048
+            ],
+            "elements": 337920,
+            "max_absolute": 0.09811234474182129,
+            "mean_absolute": 0.007840431160000414,
+            "mean_error": 1.8815482172668094e-05,
+            "rms": 0.010353663428458322,
+            "min_row_cosine": 0.9982620863363088,
+            "original_l2": 273.9952131988332,
+            "native_l2": 274.0167078051173,
+            "bit_exact": false,
+            "original_min": -18.181093215942383,
+            "original_max": 5.487075328826904,
+            "original_abs_min": 1.0915100574493408e-06,
+            "original_abs_max": 18.181093215942383,
+            "native_min": -18.18511962890625,
+            "native_max": 5.488990783691406,
+            "native_abs_min": 3.2782554626464844e-07,
+            "native_abs_max": 18.18511962890625,
+            "passed": false
+          },
+          "ordinal": [
+            {
+              "field": "Stufe",
+              "original": 0.8277701437473297,
+              "native": 0.8270047158002853,
+              "absolute_error": 0.0007654279470443726,
+              "budget": 0.001,
+              "passed": true
+            }
+          ],
+          "raw_finals": [
+            {
+              "field": "Stufe",
+              "kind": "logits",
+              "max_absolute": 0.02530491352081299,
+              "passed": false
+            },
+            {
+              "field": "Stufe",
+              "kind": "probabilities",
+              "max_absolute": 0.001905977725982666,
+              "passed": false
+            }
+          ],
+          "actual_ref": {
+            "exit_code": 1,
+            "status": "numeric_rejection",
+            "stages": 50,
+            "all_metrics_agree": true
+          }
+        },
+        {
+          "id": "state-only-clip",
+          "stages": 50,
+          "failed_stages": 25,
+          "first_failure": {
+            "stage": "backbone/layer/20",
+            "occurrence": 0,
+            "shape": [
+              1,
+              512,
+              2048
+            ],
+            "elements": 1048576,
+            "max_absolute": 0.09706610441207886,
+            "mean_absolute": 0.007746164381742804,
+            "mean_error": 9.150887921849371e-05,
+            "rms": 0.009964310657447973,
+            "min_row_cosine": 0.9982621164737752,
+            "original_l2": 522.6956574668278,
+            "native_l2": 522.8559468594494,
+            "bit_exact": false,
+            "original_min": -17.095991134643555,
+            "original_max": 6.43135929107666,
+            "original_abs_min": 2.421438694000244e-08,
+            "original_abs_max": 17.095991134643555,
+            "native_min": -17.053037643432617,
+            "native_max": 6.424035549163818,
+            "native_abs_min": 3.2782554626464844e-07,
+            "native_abs_max": 17.053037643432617,
+            "passed": false
+          },
+          "ordinal": [],
+          "raw_finals": [
+            {
+              "field": "Bestellung",
+              "kind": "logits",
+              "max_absolute": 0.008148670196533203,
+              "passed": false
+            },
+            {
+              "field": "Bestellung",
+              "kind": "probabilities",
+              "max_absolute": 1.5193596482276917e-05,
+              "passed": true
+            }
+          ],
+          "actual_ref": {
+            "exit_code": 1,
+            "status": "numeric_rejection",
+            "stages": 50,
+            "all_metrics_agree": true
+          }
+        }
+      ],
+      "panel_sha256": "0f0a20c71c56d69b3e2f24a8b81983c83a9356e472558f1e20a787cb2b01c63c",
+      "model": {
+        "counts": {
+          "F32": 316,
+          "F16": 118,
+          "Q4_K": 8
+        },
+        "output_bytes": 5375381984,
+        "output_sha256": "29f224345cb259ec14d7809d580784c12d97bec02a240fc460de994b66888f77",
+        "critical292_f32_byte_exact": true,
+        "independent_f16_rounding_exact": true,
+        "semantic_shapes_unchanged": true
+      },
+      "conversion_sha256": "9a0439d9410198ce1a135e8b62a729c3a3c273a37fb188c8be9e442e0c8a0c52"
+    }
+  },
+  "qualified": [],
+  "limits": "Independent review of authenticated producer metrics and inventories; raw arrays/models remain remote. No new inference or single-operator causality claim.",
+  "f32_control": {
+    "strict_numeric_and_typed_parity": true,
+    "cases": [
+      {
+        "id": "mixed-de",
+        "stages": 68,
+        "failed_stages": 0,
+        "first_failure": null,
+        "ordinal": [
+          {
+            "field": "sicherheit",
+            "original": 1.2168480455875397,
+            "native": 1.2168454825878143,
+            "absolute_error": 2.562999725341797e-06,
+            "budget": 0.001,
+            "passed": true
+          }
+        ],
+        "raw_finals": [
+          {
+            "field": "bezahlt",
+            "kind": "logits",
+            "max_absolute": 3.814697265625e-06,
+            "passed": true
+          },
+          {
+            "field": "bezahlt",
+            "kind": "probabilities",
+            "max_absolute": 9.022187441587448e-10,
+            "passed": true
+          },
+          {
+            "field": "status",
+            "kind": "logits",
+            "max_absolute": 2.86102294921875e-06,
+            "passed": true
+          },
+          {
+            "field": "status",
+            "kind": "probabilities",
+            "max_absolute": 5.960464477539063e-08,
+            "passed": true
+          },
+          {
+            "field": "sicherheit",
+            "kind": "logits",
+            "max_absolute": 5.0067901611328125e-06,
+            "passed": true
+          },
+          {
+            "field": "sicherheit",
+            "kind": "probabilities",
+            "max_absolute": 1.430511474609375e-06,
+            "passed": true
+          }
+        ],
+        "actual_ref": {
+          "exit_code": 0,
+          "status": "passed",
+          "stages": 68,
+          "all_metrics_agree": true
+        }
+      },
+      {
+        "id": "null-and-options",
+        "stages": 59,
+        "failed_stages": 0,
+        "first_failure": null,
+        "ordinal": [],
+        "raw_finals": [
+          {
+            "field": "Leerstand",
+            "kind": "logits",
+            "max_absolute": 5.0067901611328125e-06,
+            "passed": true
+          },
+          {
+            "field": "Leerstand",
+            "kind": "probabilities",
+            "max_absolute": 6.556510925292969e-07,
+            "passed": true
+          },
+          {
+            "field": "best\u00e4tigt",
+            "kind": "logits",
+            "max_absolute": 5.245208740234375e-06,
+            "passed": true
+          },
+          {
+            "field": "best\u00e4tigt",
+            "kind": "probabilities",
+            "max_absolute": 2.4959444999694824e-07,
+            "passed": true
+          }
+        ],
+        "actual_ref": {
+          "exit_code": 0,
+          "status": "passed",
+          "stages": 59,
+          "all_metrics_agree": true
+        }
+      },
+      {
+        "id": "json-unicode",
+        "stages": 50,
+        "failed_stages": 0,
+        "first_failure": null,
+        "ordinal": [
+          {
+            "field": "Stufe",
+            "original": 0.8277701437473297,
+            "native": 0.8277684152126312,
+            "absolute_error": 1.7285346984863281e-06,
+            "budget": 0.001,
+            "passed": true
+          }
+        ],
+        "raw_finals": [
+          {
+            "field": "Stufe",
+            "kind": "logits",
+            "max_absolute": 1.633167266845703e-05,
+            "passed": true
+          },
+          {
+            "field": "Stufe",
+            "kind": "probabilities",
+            "max_absolute": 2.086162567138672e-06,
+            "passed": true
+          }
+        ],
+        "actual_ref": {
+          "exit_code": 0,
+          "status": "passed",
+          "stages": 50,
+          "all_metrics_agree": true
+        }
+      },
+      {
+        "id": "state-only-clip",
+        "stages": 50,
+        "failed_stages": 0,
+        "first_failure": null,
+        "ordinal": [],
+        "raw_finals": [
+          {
+            "field": "Bestellung",
+            "kind": "logits",
+            "max_absolute": 5.4836273193359375e-06,
+            "passed": true
+          },
+          {
+            "field": "Bestellung",
+            "kind": "probabilities",
+            "max_absolute": 5.4016709327697754e-08,
+            "passed": true
+          }
+        ],
+        "actual_ref": {
+          "exit_code": 0,
+          "status": "passed",
+          "stages": 50,
+          "all_metrics_agree": true
+        }
+      }
+    ],
+    "panel_sha256": "01844276e46d5787836e91126b7fb8ade385885101796fb097c22f3080c69ef6"
+  }
+}

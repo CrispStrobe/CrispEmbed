@@ -1,0 +1,141 @@
+name: UltraBERT retained F32 and bounded Q4 shard v1
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Exact reviewed controller source (forty hex)
+        required: true
+        type: string
+      phase:
+        description: Freeze first; later phases require immutable reviewed protocol pins
+        required: true
+        type: choice
+        options: [freeze, model, shard, aggregate]
+      freeze_artifact:
+        description: Reviewed whole freeze payload artifact ID (no latest lookup)
+        type: string
+        default: '0'
+      model_artifact:
+        description: Reviewed model preparation payload artifact ID
+        type: string
+        default: '0'
+      shard:
+        description: Original strided shard; first activation limited to0
+        type: string
+        default: '0'
+      shard_artifacts:
+        description: Eight reviewed shard artifact IDs in0..7 order (aggregate only)
+        type: string
+        default: ''
+      resume_artifact:
+        description: Explicit reviewed incomplete shard payload ID;0 starts fresh
+        type: string
+        default: '0'
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: ultrabert-q4k-sharded-${{ inputs.phase }}-${{ inputs.shard }}
+  cancel-in-progress: false
+jobs:
+  bounded:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      SOURCE: ${{ inputs.source_ref }}
+      PHASE: ${{ inputs.phase }}
+      FREEZE_ARTIFACT: ${{ inputs.freeze_artifact }}
+      MODEL_ARTIFACT: ${{ inputs.model_artifact }}
+      RESUME_ARTIFACT: ${{ inputs.resume_artifact }}
+      SHARD: ${{ inputs.shard }}
+      SHARD_ARTIFACTS: ${{ inputs.shard_artifacts }}
+      GH_TOKEN: ${{ github.token }}
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_TOKEN }}
+      KAGGLE_ACCOUNT: ${{ secrets.KAGGLE_ACCOUNT }}
+      OMP_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Stdlib controls and fail-closed reviewed phase admission
+        run: |
+          python tests/test_ultrabert_q4k_sharded.py -v
+          python - <<'PY'
+          import importlib.util, os, pathlib
+          p=pathlib.Path('tools/portfolio/ultrabert_q4k_sharded.py')
+          s=importlib.util.spec_from_file_location('guard',p);m=importlib.util.module_from_spec(s);s.loader.exec_module(m)
+          m.require(m.git('rev-parse','HEAD')==os.environ['SOURCE']==os.environ['GITHUB_SHA'],'exact reviewed source/service required')
+          m.admission(pathlib.Path(os.environ['RUNNER_TEMP'])/'ultra-output')
+          if os.environ['PHASE']=='freeze':m.require(os.environ.get('KAGGLE_ACCOUNT') and os.environ.get('KAGGLE_API_TOKEN'),'existing exact-version read secrets absent')
+          if os.environ['PHASE']!='freeze':m.approval('freeze')
+          if os.environ['PHASE'] in ('shard','aggregate'):m.approval('model')
+          if os.environ['PHASE']=='shard':
+              a=m.read(m.PROTOCOL)['activation'];m.require(a['reviewed'] and int(os.environ['SHARD']) in a['shards'],'pending explicit single-shard activation')
+          PY
+      - name: Exact frozen runtime and isolated numerical tooling
+        run: |
+          git worktree add --detach "$RUNNER_TEMP/ultra-runtime" 018cf85b7bb6ee2ac98011738aaa289d63b896ac
+          git -C "$RUNNER_TEMP/ultra-runtime" submodule update --init --depth 1 ggml
+          python -m venv "$RUNNER_TEMP/ultra-venv"
+          "$RUNNER_TEMP/ultra-venv/bin/python" -m pip install --only-binary=:all: numpy==2.2.6 gguf==0.17.1 huggingface-hub==0.36.0 safetensors==0.6.2
+          if [ "$PHASE" = freeze ]; then
+            "$RUNNER_TEMP/ultra-venv/bin/python" -m pip install --only-binary=:all: 'https://files.pythonhosted.org/packages/13/d7/ef195107ced87945b98104e783147ec17096f65ef913bff24dbaab08498a/kaggle-2.2.2-py3-none-any.whl#sha256=ebb70a5338cf8d75998668f4415da753065d8996ff315d78342091f44d2d2e71' kagglesdk==0.1.38
+          fi
+          "$RUNNER_TEMP/ultra-venv/bin/python" -m pip check
+      - name: Actual frozen018 root library and Ref; no model forward
+        run: |
+          mkdir -p "$RUNNER_TEMP/ultra-output" "$RUNNER_TEMP/ultra-scratch"
+          cmake -S "$RUNNER_TEMP/ultra-runtime" -B "$RUNNER_TEMP/ultra-build" -DCMAKE_BUILD_TYPE=Release -DCRISPEMBED_BUILD_SHARED=ON -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF -DGGML_LLAMAFILE=ON -DGGML_METAL=OFF -DGGML_CUDA=OFF -DGGML_BLAS=OFF -DCMAKE_EXPORT_COMPILE_COMMANDS=ON > "$RUNNER_TEMP/ultra-output/configure.log" 2>&1
+          cmake --build "$RUNNER_TEMP/ultra-build" --target crispembed-shared crispembed-quantize test-ultrabert-profile --parallel 2 > "$RUNNER_TEMP/ultra-output/build.log" 2>&1
+          "$RUNNER_TEMP/ultra-build/test-ultrabert-profile" > "$RUNNER_TEMP/ultra-output/profile-controls.log" 2>&1
+          c++ -std=c++17 -O2 -ffp-contract=off -I "$RUNNER_TEMP/ultra-runtime/src" "$RUNNER_TEMP/ultra-runtime/tests/moedern-native-v2/diff.cpp" -o "$RUNNER_TEMP/ultra-build/vector-diff" > "$RUNNER_TEMP/ultra-output/comparator-build.log" 2>&1
+          cp "$RUNNER_TEMP/ultra-build/CMakeCache.txt" "$RUNNER_TEMP/ultra-output/"
+          cp "$RUNNER_TEMP/ultra-build/compile_commands.json" "$RUNNER_TEMP/ultra-output/"
+          python - <<'PYCODE'
+          import importlib.util, os, pathlib
+          p=pathlib.Path('tools/portfolio/ultrabert_q4k_sharded.py')
+          s=importlib.util.spec_from_file_location('audit',p);m=importlib.util.module_from_spec(s);s.loader.exec_module(m)
+          temporary=pathlib.Path(os.environ['RUNNER_TEMP']);runtime=temporary/'ultra-runtime'
+          m.source(runtime,os.environ['SOURCE'])
+          m.symbol_audit(runtime,temporary/'ultra-build',temporary/'ultra-output')
+          PYCODE
+      - name: One explicit phase; raw and normalized public calls checkpoint each row
+        run: |
+          # Fresh interpreter sees the EXISTING exact library directory at startup.
+          PYTHON_LIB=$("$RUNNER_TEMP/ultra-venv/bin/python" -c 'import pathlib,sys;print(pathlib.Path(sys.base_prefix)/"lib")')
+          export LD_LIBRARY_PATH="$RUNNER_TEMP/ultra-build:$PYTHON_LIB"
+          "$RUNNER_TEMP/ultra-venv/bin/python" -c 'import ctypes,os,pathlib; p=pathlib.Path(os.environ["RUNNER_TEMP"])/"ultra-build/libcrispembed.so"; lib=ctypes.CDLL(str(p)); assert all(getattr(lib,n) for n in ("crispembed_init","crispembed_free","crispembed_encode","crispembed_encode_tokens_raw","crispembed_last_token_ids")); maps=pathlib.Path("/proc/self/maps").read_text(); paths={line.split()[-1] for line in maps.splitlines() if "libggml" in line or "libcrispembed" in line}; assert paths and all(pathlib.Path(x).resolve().parent==p.parent.resolve() for x in paths)' > "$RUNNER_TEMP/ultra-output/fresh-load.log" 2>&1
+          if [ "$PHASE" = shard ]; then
+            export CRISPEMBED_ULTRABERT=1 CRISPEMBED_ULTRABERT_UNICODE_PRETOKEN=1 CRISPEMBED_ULTRABERT_TRUNCATE=1 CRISPEMBED_ULTRABERT_QUANT=1
+          fi
+          read -r -a SHARD_IDS <<< "$SHARD_ARTIFACTS"
+          "$RUNNER_TEMP/ultra-venv/bin/python" tools/portfolio/ultrabert_q4k_sharded.py "$PHASE" --reviewed-source "$SOURCE" --runtime "$RUNNER_TEMP/ultra-runtime" --out "$RUNNER_TEMP/ultra-output/payload" --scratch "$RUNNER_TEMP/ultra-scratch" --library "$RUNNER_TEMP/ultra-build/libcrispembed.so" --quantizer "$RUNNER_TEMP/ultra-build/crispembed-quantize" --diff "$RUNNER_TEMP/ultra-build/vector-diff" --freeze-artifact "$FREEZE_ARTIFACT" --model-artifact "$MODEL_ARTIFACT" --shard "$SHARD" --resume-artifact "$RESUME_ARTIFACT" --shard-artifacts "${SHARD_IDS[@]}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ultrabert-q4k-sharded-${{ inputs.phase }}-${{ inputs.shard }}-review-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/ultra-output/*.log
+            ${{ runner.temp }}/ultra-output/*.txt
+            ${{ runner.temp }}/ultra-output/*.json
+            ${{ runner.temp }}/ultra-output/payload/freeze.json
+            ${{ runner.temp }}/ultra-output/payload/model.json
+            ${{ runner.temp }}/ultra-output/payload/shard.json
+            ${{ runner.temp }}/ultra-output/payload/aggregate.json
+            ${{ runner.temp }}/ultra-output/payload/manifest.json
+          retention-days: 90
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ultrabert-q4k-sharded-${{ inputs.phase }}-${{ inputs.shard }}-payload-${{ github.run_id }}
+          path: ${{ runner.temp }}/ultra-output/payload/
+          retention-days: 90
+          compression-level: 1
+          if-no-files-found: warn
