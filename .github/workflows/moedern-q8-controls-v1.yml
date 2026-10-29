@@ -1,0 +1,49 @@
+name: MoEdern protected Q8 model-free controls v1
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: moedern-q8-model-free-controls-v1
+  cancel-in-progress: false
+jobs:
+  controls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Tiny source and corruption controls; no optional packages or payloads
+        run: |
+          python tests/test_moedern_q8_controls_v1.py -v
+          python tests/test_moedern_q8_profile.py -v
+      - name: Actual authored Q8 profiles, gates, graphs and C quantizer fixture
+        run: |
+          python -I tools/ci-heavy/moedern_q8_controls_v1.py --reviewed-source "$GITHUB_SHA" --build "$RUNNER_TEMP/moedern-q8-build" --out "$RUNNER_TEMP/moedern-q8-controls"
+      - name: Preserve small source, command, compiler and fixture reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: moedern-q8-controls-review-${{ github.run_id }}
+          path: ${{ runner.temp }}/moedern-q8-controls/review/
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Retain authored fixtures and exact compiled binaries remotely
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: moedern-q8-controls-authored-${{ github.run_id }}
+          path: ${{ runner.temp }}/moedern-q8-controls/raw/
+          if-no-files-found: warn
+          retention-days: 90
