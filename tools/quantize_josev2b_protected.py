@@ -102,7 +102,11 @@ def verify_conversion(source, output, expected, identity, *, vector=False):
         scalar(header, 'general.architecture', 8, 'josev2b_systemone')
         scalar(header, 'general.license', 8, 'apache-2.0')
     scalar(a, 'josev2b.packed.format', 8, old.OLD_FORMAT)
-    scalar(a, 'general.file_type', 4, 0)
+    # The immutable published F32 pack predates quantization and omits both
+    # fields. Its full SHA and all442 F32 payloads establish source precision;
+    # only actual quantized outputs must carry the standard typed header.
+    require(not {'general.file_type', 'general.quantization_version'} & set(a['metadata']),
+            'immutable published F32 source header differs')
     scalar(b, 'josev2b.packed.format', 8, FORMAT)
     scalar(b, 'general.file_type', 4, 7 if identity.startswith('q8-') else 14)
     scalar(b, 'general.quantization_version', 4, 2)

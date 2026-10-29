@@ -22,8 +22,11 @@ def fixture(path, rows, identity=None):
     metadata = [('general.architecture', 8, 'josev2b_systemone'),
                 ('general.license', 8, 'apache-2.0'),
                 ('josev2b.packed.format', 8, q.FORMAT if identity else q.old.OLD_FORMAT),
-                ('general.file_type', 4, (7 if identity.startswith('q8-') else 14) if identity else 0),
-                ('general.quantization_version', 4, 2), ('tokenizer.fixture', 8, 'Ä [MASK]')]
+                ('tokenizer.fixture', 8, 'Ä [MASK]')]
+    # Match the actual published source: neither quantization field exists.
+    if identity:
+        metadata += [('general.file_type', 4, 7 if identity.startswith('q8-') else 14),
+                     ('general.quantization_version', 4, 2)]
     header = b'GGUF' + struct.pack('<IQQ', 3, len(rows), len(metadata))
     for name, kind, value in metadata:
         header += text(name) + struct.pack('<I', kind)
@@ -83,6 +86,18 @@ class Controls(unittest.TestCase):
             self.assertTrue(result['critical292_f32_byte_exact'])
             self.assertEqual(q.digest(output), before)
             self.assertEqual(result['counts'], {q.TYPES[t]: c for t, c in q.COUNTS[identity].items()})
+
+    def test_actual_source_omits_quantization_fields_output_still_requires_them(self):
+        rows, source, output = self.authored('q8-all')
+        self.assertFalse({'general.file_type', 'general.quantization_version'} & set(q.parse(source)['metadata']))
+        result = self.verify(rows, source, output, 'q8-all')
+        self.assertEqual(result['general_file_type'], 7)
+        with output.open('r+b') as stream:
+            field = q.parse(output)['metadata']['general.quantization_version']
+            stream.seek(field['offset'])
+            stream.write(struct.pack('<I', 0))
+        with self.assertRaisesRegex(ValueError, 'typed metadata'):
+            self.verify(rows, source, output, 'q8-all')
 
     def test_critical_and_half_corruption_reject(self):
         for kind in (0, 1):

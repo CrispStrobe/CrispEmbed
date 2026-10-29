@@ -64,3 +64,15 @@ candidate results before a separately versioned held-out owner admits any model.
 If none passes the declared development gates, preserve every rejection and
 scope source-fed replay at the earliest failing boundary; do not widen budgets
 or describe component cosine as task qualification.
+
+The first actual protected run40834737477 atd339be99 passes all227 F32 stages,
+then the new converter incorrectly requires source `general.file_type=0`. The
+[initial rejection](../tests/results/josev2b/protected-header-initial-review.json)
+and raw artifact stay retained. The immutable published F32 has46 metadata keys
+and omits both file_type and quantization_version, confirmed by a version-locked
+[header-only review](../tests/results/josev2b/published-f32-header-review.json).
+The corrected authored source fixture reproduces that absence. Full source SHA,
+all442 F32 source payloads, unchanged metadata and typed quantized output7/14
+remain mandatory. This is a metadata-only harness repair; recipes, quantizer,
+runtime, original arrays and every numerical/task budget remain unchanged. No
+Q8 candidate quality comparison occurred in the failed run.

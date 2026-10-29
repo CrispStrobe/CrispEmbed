@@ -1,0 +1,218 @@
+{
+  "schema": "crispembed-josev-protected-initial-header-rejection-v1",
+  "run_id": 40834737477,
+  "source": "d339be99cfce99c1801fa3d1268deec122ae63e0",
+  "conclusion": "failure",
+  "small_artifact": {
+    "id": 12881640341,
+    "name": "josev-protected-development-review-40834737477",
+    "size_in_bytes": 134033,
+    "digest": "sha256:f6191108824660d55bd93dc92c059e6d9765eb126454f6fa6f1b71dc71549bae",
+    "expires_at": "2027-01-27T07:19:55Z"
+  },
+  "small_members": {
+    "mixed-out/review/build.log": {
+      "bytes": 20542,
+      "sha256": "62a4b9ceed7cc24b10eb6e38165749f3c5060d3b52eeffedcb2fb4ad9dd0b820"
+    },
+    "mixed-out/review/build.log.process.json": {
+      "bytes": 356,
+      "sha256": "241f37db9fb8efa140453ab5df50c4fab7615f75009c253f4225bd166b21c4b3"
+    },
+    "mixed-out/review/compile-commands.json": {
+      "bytes": 10303,
+      "sha256": "7760c3db7fda463eb1dbe9605195112eab844fa68f1c653e10157547b2285f3f"
+    },
+    "mixed-out/review/configure.log": {
+      "bytes": 1391,
+      "sha256": "f33f34690781759e54dcb690739b340d9eafd792d8afd4cb4646c1a809b12446"
+    },
+    "mixed-out/review/configure.log.process.json": {
+      "bytes": 363,
+      "sha256": "249ad0fb4d81ad0ff8b16e63d0ccbc8d3dfe9b54c62d9f01816361ed4a083d5d"
+    },
+    "mixed-out/review/f32-observed.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "mixed-out/review/f32-observed.log.process.json": {
+      "bytes": 370,
+      "sha256": "6db986051f010d1bf96987e2c4aa13b4ed7471e71ebdd8fe52004930de05e6f1"
+    },
+    "mixed-out/review/f32-panel.json": {
+      "bytes": 374334,
+      "sha256": "01844276e46d5787836e91126b7fb8ade385885101796fb097c22f3080c69ef6"
+    },
+    "mixed-out/review/f32-plain.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "mixed-out/review/f32-plain.log.process.json": {
+      "bytes": 368,
+      "sha256": "54d4eb8e0a0217467cc6080a8cd439d39880b8807c154ea7ae0e4d058550ad85"
+    },
+    "mixed-out/review/f32-repeat.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "mixed-out/review/f32-repeat.log.process.json": {
+      "bytes": 363,
+      "sha256": "12cdbaa3d5424de258b43fad02a8dee8e4fff19a8106a94bb3f6e569befa842b"
+    },
+    "mixed-out/review/f32-typed.json": {
+      "bytes": 7086,
+      "sha256": "ffc39e2c644a229d29a585e74ab07e2cb03601f51fe045c3110cb57a2e81af93"
+    },
+    "mixed-out/review/gates-observed.log": {
+      "bytes": 45,
+      "sha256": "d144814ddcf394822a25c2625322651d6d9cc6a722e73f60bbb784f560e59831"
+    },
+    "mixed-out/review/gates-observed.log.process.json": {
+      "bytes": 370,
+      "sha256": "028425fbbdd129b4ad1b2b9788eb9539ed6b879b37cecfe40099bce23fb9da57"
+    },
+    "mixed-out/review/gates-plain.log": {
+      "bytes": 45,
+      "sha256": "d144814ddcf394822a25c2625322651d6d9cc6a722e73f60bbb784f560e59831"
+    },
+    "mixed-out/review/gates-plain.log.process.json": {
+      "bytes": 368,
+      "sha256": "0fbba1fd82ea0c49395ea66e9a678920eb7b30bfc5adbc71f4dd85da5101b769"
+    },
+    "mixed-out/review/metadata-controls.log": {
+      "bytes": 87,
+      "sha256": "4f04793ce3097363e2820238047d5719a1059ff4ef2f5fcfbb085013b1d2b47c"
+    },
+    "mixed-out/review/hosted.json": {
+      "bytes": 14666,
+      "sha256": "1c2329d3bbd93eabe6fd5074639e7fe0047c73fdb97be5196fa6353e10408646"
+    },
+    "mixed-out/review/metadata-controls.log.process.json": {
+      "bytes": 373,
+      "sha256": "43f643a888fff700604c9cdf50565f5703d68d99d7f38775057ac77251b1f7be"
+    },
+    "mixed-out/review/ordinary-symbols.txt": {
+      "bytes": 226691,
+      "sha256": "2def350baad5939ad4c72a8e5b4c826648f4e96cbf9344d169318ea6b37474e0"
+    },
+    "mixed-out/review/profile-controls.log": {
+      "bytes": 97,
+      "sha256": "ab470ad78e8c14326f74297dfcc82b3851b44ed6ea8753fefd6318db0c211821"
+    },
+    "mixed-out/review/profile-controls.log.process.json": {
+      "bytes": 372,
+      "sha256": "271be11cd8e7c1aaaef7b5b9b923d91b61a4265b658696b39e1e493b9c1f24cc"
+    },
+    "mixed-out/review/ref-controls/changed.f32": {
+      "bytes": 24,
+      "sha256": "edf2f0b7e8a4654c4180687fa144208caf9d8a4243cb7768362d04670a3c693d"
+    },
+    "mixed-out/review/ref-controls/controls.json": {
+      "bytes": 512,
+      "sha256": "954e7a62ed716c7f786156cd692c16b79effec559ef6e88d18d5e855f4ad3656"
+    },
+    "mixed-out/review/ref-controls/original.f32": {
+      "bytes": 24,
+      "sha256": "09077defc4c33f4fd0f089ecbd6bd86b6ec9d11723c3889ae1484292cb77004c"
+    },
+    "mixed-out/review/ref-controls/orthogonal-last-row/diff.json": {
+      "bytes": 555,
+      "sha256": "a24315e23fb595faa6f2e2713d78fd4be3d0a9e059854783b05076b928aaae9e"
+    },
+    "mixed-out/review/ref-controls/orthogonal-last-row/diff.log": {
+      "bytes": 361,
+      "sha256": "30421aa787c2959c0055db4ca415ebfbbe2dd853c0836e399c92859cb26717f8"
+    },
+    "mixed-out/review/ref-controls/orthogonal-last-row/native.gguf": {
+      "bytes": 120,
+      "sha256": "7795e869928106f7a774b129ca9d2d312726b5357f7f6cb593eb31123730ec10"
+    },
+    "mixed-out/review/ref-controls/orthogonal-last-row/original.gguf": {
+      "bytes": 120,
+      "sha256": "9904fff796125b25640b75fa91411fc34b6c0f95dce67a624b5436e0ec6c15ee"
+    },
+    "mixed-out/review/ref-controls/same/diff.json": {
+      "bytes": 508,
+      "sha256": "d47c4f7d99913d424d14cb1f00a950f8612cb3125bf67f964640d00fdf333d03"
+    },
+    "mixed-out/review/ref-controls/same/diff.log": {
+      "bytes": 311,
+      "sha256": "9296b9bec66c4f6f7df04cd3f99279fa7cbb20965950fcaba46b0e2b31723c06"
+    },
+    "mixed-out/review/ref-controls/same/native.gguf": {
+      "bytes": 120,
+      "sha256": "9904fff796125b25640b75fa91411fc34b6c0f95dce67a624b5436e0ec6c15ee"
+    },
+    "mixed-out/review/ref-controls/same/original.gguf": {
+      "bytes": 120,
+      "sha256": "9904fff796125b25640b75fa91411fc34b6c0f95dce67a624b5436e0ec6c15ee"
+    },
+    "mixed-out/review/ref-controls/structural.json": {
+      "bytes": 82,
+      "sha256": "d3112884450190db701bd35f51d334fa7da734c9863a241b7db4de80b0fd06b2"
+    },
+    "mixed-out/review/ref-controls/structural.log": {
+      "bytes": 285,
+      "sha256": "ada0fbba62361332b7f9d82a6c35dd74a0ff0cca46e227b152fc528d3d65dad5"
+    },
+    "mixed-out/review/ref-controls/wrong-name.gguf": {
+      "bytes": 120,
+      "sha256": "d8f0f02d83c7e48689a292c2f9c9d6680d7bed111b5865f2be84af4d0a1bc5d3"
+    },
+    "mixed-out/review/source-closure.json": {
+      "bytes": 38737,
+      "sha256": "ae4adb73c3a680daa9e144ebd718484313d1d9472a75f933c3ec7aae09c83c4b"
+    },
+    "mixed-reference/service-proof.json": {
+      "bytes": 8699,
+      "sha256": "67c15248fdf24060ae2c917af182dc23a7fe1164e3c6eaab55f5389cdc7ed14c"
+    },
+    "source-closure.json": {
+      "bytes": 38737,
+      "sha256": "ae4adb73c3a680daa9e144ebd718484313d1d9472a75f933c3ec7aae09c83c4b"
+    }
+  },
+  "raw_artifact": {
+    "id": 12880793983,
+    "bytes": 3867770437,
+    "sha256": "50990a1744ae737b2e1435935e74743d7ddd993f04d56d5f00a0881b1d7173ea"
+  },
+  "error": "ValueError: typed metadata differs: general.file_type",
+  "strict_f32_control_passed": true,
+  "compared_f32_stages": 227,
+  "actual_ref_controls": [
+    {
+      "id": "mixed-de",
+      "exit_code": 0,
+      "status": "passed",
+      "stages": 68,
+      "all_metrics_agree": true
+    },
+    {
+      "id": "null-and-options",
+      "exit_code": 0,
+      "status": "passed",
+      "stages": 59,
+      "all_metrics_agree": true
+    },
+    {
+      "id": "json-unicode",
+      "exit_code": 0,
+      "status": "passed",
+      "stages": 50,
+      "all_metrics_agree": true
+    },
+    {
+      "id": "state-only-clip",
+      "exit_code": 0,
+      "status": "passed",
+      "stages": 50,
+      "all_metrics_agree": true
+    }
+  ],
+  "candidate_comparisons": 0,
+  "source_metadata_assumption_rejected": true,
+  "original_rerun": false,
+  "publication_qualified": false,
+  "limits": "Actual run completes strict F32 then rejects source metadata before Q8 candidate comparisons; raw models/logs remain remote. No quantized quality result."
+}

@@ -1,6 +1,6 @@
 {
   "schema": "crispembed-josev-protected-recipes-v1",
-  "base": "c833f333290928781c1747ca61e7b0e62bc2007c",
+  "base": "07b009ac501a4c04672a148123770b255dd5e71f",
   "runtime_source": "6781befb66b5f65afd47c1b921ac9cd1cb8e568a",
   "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
   "default_enabled": false,
@@ -432,12 +432,14 @@
   },
   "owned_sha256": {
     ".github/workflows/josev-protected-recipes-v1.yml": "d9be56e6393b7dd62c3e78eac7bc85f1937ab7494dd595147c41b277e471377d",
-    "docs/josev2b-protected-recipes-v1.md": "17f7ca98e3140e506b2d6707773579ff0c30a1f67e4281e26ed4135d345536f9",
+    "docs/josev2b-protected-recipes-v1.md": "07b9575e32525f935de61536aafadb3ef8c03702ba78293fcbba30f7bd056718",
     "tests/results/josev2b/mixed-recipes-v1-review.json": "3e0c70b7c231f4f945928549f9f236dfe7f1b409291bbd001862ac6dbfe5b7f8",
     "tests/results/quantization/portfolio-q8-profile-controls-review.json": "73bde129458329e37a15e1a4c1482af3ce4b022f5614cfa2ac9486b98cb0de43",
-    "tests/test_josev_protected_recipes.py": "acb47b9eb666461c42a40aa9d0948b22289b6a23742a55bee3650476e891c2f3",
+    "tests/test_josev_protected_recipes.py": "fbb9beaa8cf2cb8aa0ab2c6964357131fa8d382a586cfa27d7f7f33e4b59915b",
     "tools/ci-heavy/josev2b_protected_recipes.py": "35c266fc727991987de29c941801014914058c445821174a1cb48d241f8902cc",
     "tools/josev2b_protected_contract.py": "23ad162b177c7401259f8e6ac200f9034541910f27e946cb1a5a7aca168ab67f",
-    "tools/quantize_josev2b_protected.py": "92cd5cd0034f7a4237faa46dc21cc46b66c1380d91228430a6627403faddc34a"
+    "tools/quantize_josev2b_protected.py": "4ff2f06e50ebfe889a49b26b77b23706ef7026f33cccec1daeb457304ccbbdfe",
+    "tests/results/josev2b/protected-header-initial-review.json": "f65399642649ca9839654d789e5671cea32d83268f163abfb7c6db813b4b6715",
+    "tests/results/josev2b/published-f32-header-review.json": "5f84726f69a2aeafa7ec8c1d6d46358ac4f147e20954bdfddba72d980ae4e63b"
   }
 }
