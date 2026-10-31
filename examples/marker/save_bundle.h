@@ -67,6 +67,13 @@ inline bool same_destination(const fs::path & left, const fs::path & right) {
     if (a == b) return true;
 #endif
     std::error_code error;
+    // A missing path cannot alias another. Check first: libstdc++ reports
+    // no_such_file_or_directory from equivalent(), libc++ reports not_supported.
+    if (!fs::exists(a, error) || error || !fs::exists(b, error) || error) {
+        if (error && error != std::errc::no_such_file_or_directory)
+            throw std::runtime_error("cannot compare Marker output destinations");
+        return false;
+    }
     const bool same = fs::equivalent(a, b, error);
     if (error && error != std::errc::no_such_file_or_directory)
         throw std::runtime_error("cannot compare Marker output destinations");

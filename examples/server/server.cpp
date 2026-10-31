@@ -491,13 +491,13 @@ int main(int argc, char ** argv) {
     std::string marker_model_path, marker_pdfium_path;
     int marker_mode = 0;
     bool marker_enabled = false;
-    std::string ocr_det_model_path;   // general OCR: text detection model (DBNet)
-    std::string ocr_rec_model_path;   // general OCR: text recognition model (TrOCR)
-    std::string ocr_engine_name;      // --ocr-engine: explicit orchestrator engine (CLI parity)
-    std::string ocr_cls_model_path;   // --ocr-cls: optional PP-LCNet 0/180 line-orientation classifier
-    std::string layout_model_path;    // layout detection model (RT-DETRv2)
-    std::string table_model_path;     // table cell OCR model (Tesseract-LSTM GGUF)
-    std::string formula_model_path;   // formula OCR model (PP-FormulaNet GGUF)
+    std::string ocr_det_model_path; // general OCR: text detection model (DBNet)
+    std::string ocr_rec_model_path; // general OCR: text recognition model (TrOCR)
+    std::string ocr_engine_name;    // --ocr-engine: explicit orchestrator engine (CLI parity)
+    std::string ocr_cls_model_path; // --ocr-cls: optional PP-LCNet 0/180 line-orientation classifier
+    std::string layout_model_path;  // layout detection model (RT-DETRv2)
+    std::string table_model_path;   // table cell OCR model (Tesseract-LSTM GGUF)
+    std::string formula_model_path; // formula OCR model (PP-FormulaNet GGUF)
     bool route_tables = false;
     bool route_formulas = false;
     std::string text_det_model_path;   // surya text detection model
