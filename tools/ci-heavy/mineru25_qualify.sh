@@ -114,14 +114,23 @@ for v in "${VARS[@]}"; do # diagnostic only: same budgets, not a gate for reduce
     [ "$v" = f32 ] || [ ! -f "$S/gguf/mineru25-$v.gguf" ] && continue
     run_report "stages-$v" bash -c "'$B/test-mineru25-diff' '$S/gguf/mineru25-$v.gguf' '$S/python.gguf' $THREADS 0.002 0.99999 > '$OUT/stages-$v.txt' 2>&1"
 done
+# A/B: CRISPEMBED_MINERU25_PRO_EXACT_GELU=1 evaluates the vision quick_gelu in F32
+# instead of ggml's CPU fp16 table. Same budgets; reported, not yet a gate.
+for v in f32 f16; do
+    [ -f "$S/gguf/mineru25-$v.gguf" ] || continue
+    run_report "stages-$v-xg" env CRISPEMBED_MINERU25_PRO_EXACT_GELU=1 bash -c "'$B/test-mineru25-diff' '$S/gguf/mineru25-$v.gguf' '$S/python.gguf' $THREADS 0.002 0.99999 > '$OUT/stages-$v-xg.txt' 2>&1"
+done
 echo "::endgroup::"
 
 GOLD_ARGS=()
 [ -f "$GOLD" ] && GOLD_ARGS=(--gold "$GOLD")
-compare() { # variant reuse
-    CRISPEMBED_MINERU25_PRO_REUSE_DECODE_GRAPH=$2 python tools/mineru25_validate.py compare \
+compare() { # variant reuse [exact_gelu]
+    local tag=$1
+    [ "${3:-0}" = 1 ] && tag=$1-xg
+    CRISPEMBED_MINERU25_PRO_REUSE_DECODE_GRAPH=$2 CRISPEMBED_MINERU25_PRO_EXACT_GELU=${3:-0} \
+        python tools/mineru25_validate.py compare \
         --reference "$OUT/python.json" --native "$B/test-mineru25-run" --gguf "$S/gguf/mineru25-$1.gguf" \
-        --image "$IMAGE" "${GOLD_ARGS[@]}" --max-slowdown 1.0 --output "$OUT/native-$1-reuse$2.json"
+        --image "$IMAGE" "${GOLD_ARGS[@]}" --max-slowdown 1.0 --output "$OUT/native-$tag-reuse$2.json"
 }
 echo "::group::decoded output and same-host speed"
 run_gate decode-f32 compare f32 0
@@ -129,6 +138,12 @@ run_gate decode-f32-reuse compare f32 1
 for v in "${VARS[@]}"; do
     [ "$v" = f32 ] || [ ! -f "$S/gguf/mineru25-$v.gguf" ] && continue
     run_report "decode-$v" compare "$v" 0
+done
+run_report decode-f32-xg compare f32 0 1
+run_report decode-f32-xg-reuse compare f32 1 1
+for v in "${VARS[@]}"; do
+    [ "$v" = f32 ] || [ ! -f "$S/gguf/mineru25-$v.gguf" ] && continue
+    run_report "decode-$v-xg" compare "$v" 0 1
 done
 echo "::endgroup::"
 

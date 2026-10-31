@@ -358,7 +358,7 @@ def compare(args):
     report.update({"reference_sha256": sha256(args.reference), "gguf_sha256": sha256(args.gguf),
                    "native_executable_sha256": sha256(args.native), "command": command,
                    "native_environment": {key: env.get(key) for key in [
-                       "CRISPEMBED_MINERU25_PRO", "CRISPEMBED_MINERU25_PRO_REUSE_DECODE_GRAPH",
+                       "CRISPEMBED_MINERU25_PRO", "CRISPEMBED_MINERU25_PRO_REUSE_DECODE_GRAPH", "CRISPEMBED_MINERU25_PRO_EXACT_GELU",
                        "QWEN2VL_OCR_FORCE_CPU", "CRISPEMBED_NO_KV_CACHE",
                        "CRISPEMBED_QWEN2VL_REF", "CRISPEMBED_BPE_LEGACY_WHITESPACE"]},
                    "native": native, "reference": ref, "native_subprocess_ms": elapsed})

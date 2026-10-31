@@ -910,6 +910,10 @@ vision_graph_result build_vision_graph(context & ctx, int n_patches, const int32
             if (vhp.has_position_embed) {
                 // PaddleOCR-VL: gelu_pytorch_tanh
                 ffn = ggml_gelu(g, ffn);
+            } else if (ctx.is_mineru25_pro && core_env::on("CRISPEMBED_MINERU25_PRO_EXACT_GELU")) {
+                // The CPU ggml_gelu_quick rounds input and output through an
+                // fp16 table (GGML_GELU_QUICK_FP16); HF evaluates it in F32.
+                ffn = ggml_mul(g, ffn, ggml_sigmoid(g, ggml_scale(g, ffn, 1.702f)));
             } else {
                 ffn = ggml_gelu_quick(g, ffn);
             }
