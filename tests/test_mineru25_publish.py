@@ -75,7 +75,7 @@ class Protocol(unittest.TestCase):
         self.assertEqual(p.plan(CFG, ["F16"]), ([("convert", "F16", "mineru25-pro-2604-f16.gguf", ["--dtype", "f16"])], False))
 
     def test_variants(self):
-        self.assertEqual(p.parse_variants("", CFG), ["F16"])
+        self.assertEqual(p.parse_variants("", CFG), ["F16", "Q8_0", "Q4_K_DQ8"])
         with self.assertRaises(ValueError):
             p.parse_variants("Q5_K", CFG)
         with self.assertRaises(ValueError):

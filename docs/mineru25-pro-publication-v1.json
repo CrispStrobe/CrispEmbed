@@ -31,7 +31,9 @@
     }
   },
   "default_variants": [
-    "F16"
+    "F16",
+    "Q8_0",
+    "Q4_K_DQ8"
   ],
   "recipes": {
     "F32": {
@@ -112,7 +114,8 @@
   "qualification": {
     "default_enabled": false,
     "gate": "F32 ordinary and reuse-graph arms token-ID exact on every case, plus the 64-stage numerical and preprocessing gates; reduced precisions publish only when token-ID exact on every case",
-    "registry_alias": "added only after upload, with the real published SHA256"
+    "registry_alias": "added only after upload, with the real published SHA256",
+    "recipe_note": "Plain Q4_K diverged at token 4 on the Arabic case (hosted 41214099109) while Q8_0 and Q4_K_DQ8 (vision Q4_K, decoder Q8_0) stayed token-exact; the per-variant receipt gate decides publication."
   },
   "case_inputs": {
     "formula": [

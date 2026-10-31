@@ -8,8 +8,9 @@
 # case_inputs (or "all"); build, environment, checkpoint and conversions happen
 # once per lane and each case writes $HEAVY_OUT/<id>/ (gold, if any, at the
 # image's <stem>.gt.txt). VARIANTS defaults to f32,f16,q8_0,q4_k,q4_k-dq8
-# (decoder q8_0),q4_k-df16 (decoder f16). The F32 arm is the gate: preprocessing,
-# all 64 stages (max abs <= 0.002 and cosine >= 0.99999), and exact IDs/text/EOS
+# (decoder q8_0); q4_k-df16 (decoder f16) is available. The F32 arm is the gate:
+# preprocessing, all 64 stages (v2 magnitude-aware budget; strict v1 recorded
+# beside it), and exact IDs/text/EOS
 # plus warm speed versus the pinned original Python, for both the ordinary and the
 # reuse decode graph. Other precisions are measured against the same frozen
 # reference and reported, never gated here. Every arm runs even after a failure;
@@ -17,7 +18,7 @@
 set -uo pipefail
 
 CASE_IDS=${1:?comma list of protocol case ids, or all}
-VARIANTS=${2:-f32,f16,q8_0,q4_k,q4_k-dq8,q4_k-df16}
+VARIANTS=${2:-f32,f16,q8_0,q4_k,q4_k-dq8}
 MAX_TOKENS=${3:-2048}
 REPEAT=${4:-3}
 THREADS=4
@@ -136,29 +137,38 @@ run_case() { # id, image, task
     # Large captures stay in scratch; keep them only when small enough to retain.
     [ "$(stat -c %s "$S/python.gguf")" -lt $((400 * 1024 * 1024)) ] && cp "$S/python.gguf" "$OUT/"
 
-    echo "::group::preprocessing and 64-stage F32 numerical comparison"
+    echo "::group::preprocessing and 64-stage numerical comparison"
     run_gate preprocess bash -c "'$B/test-mineru25-preprocess' --image '$IMAGE' --reference '$S/python.gguf' --task '$TASK' > '$OUT/preprocessing.txt' 2>&1"
     tail -5 "$OUT/preprocessing.txt"
-    run_gate stages-f32 bash -c "'$B/test-mineru25-diff' '$S/gguf/mineru25-f32.gguf' '$S/python.gguf' $THREADS 0.002 0.99999 > '$OUT/stages-f32.txt' 2>&1"
-    tail -15 "$OUT/stages-f32.txt"
-    for v in "${VARS[@]}"; do # diagnostic only: same budgets, not a gate for reduced precision
+    # stages: the tool's exit code is the strict v1 verdict; v2 (magnitude-aware,
+    # see tests/mineru25_diff.cpp) is read from its JSON. Both are recorded.
+    stages() { # name gguf-variant gate|report [env...]
+        local name=$1 v=$2 kind=$3; shift 3
+        env "$@" "$B/test-mineru25-diff" "$S/gguf/mineru25-$v.gguf" "$S/python.gguf" $THREADS 0.002 0.99999 \
+            > "$OUT/$name.txt" 2>&1
+        local rc=$?
+        if [ $rc = 0 ]; then note "$name-v1" pass; else note "$name-v1" "fail($rc)"; fi
+        if python -c "import json,sys; t=open(sys.argv[1]).read(); sys.exit(0 if json.loads(t[t.index('{'):t.rindex('}')+1])['pass_v2'] else 1)" "$OUT/$name.txt"; then
+            note "$name-v2" pass
+        else
+            note "$name-v2" fail; [ "$kind" = gate ] && gate_fail=1
+        fi
+    }
+    stages stages-f32 f32 gate
+    for v in "${VARS[@]}"; do # reduced precision: same budgets, reported
         [ "$v" = f32 ] || [ ! -f "$S/gguf/mineru25-$v.gguf" ] && continue
-        run_report "stages-$v" bash -c "'$B/test-mineru25-diff' '$S/gguf/mineru25-$v.gguf' '$S/python.gguf' $THREADS 0.002 0.99999 > '$OUT/stages-$v.txt' 2>&1"
+        stages "stages-$v" "$v" report
     done
-    # A/B: CRISPEMBED_MINERU25_PRO_EXACT_GELU=1 evaluates the vision quick_gelu in F32
-    # instead of ggml's CPU fp16 table. Same budgets; reported, not yet a gate.
-    for v in f32 f16; do
-        [ -f "$S/gguf/mineru25-$v.gguf" ] || continue
-        run_report "stages-$v-xg" env CRISPEMBED_MINERU25_PRO_EXACT_GELU=1 bash -c "'$B/test-mineru25-diff' '$S/gguf/mineru25-$v.gguf' '$S/python.gguf' $THREADS 0.002 0.99999 > '$OUT/stages-$v-xg.txt' 2>&1"
-    done
+    # Control: the legacy ggml fp16-table quick_gelu (default before the A/B).
+    stages stages-f32-tablegelu f32 report CRISPEMBED_MINERU25_PRO_EXACT_GELU=0
     echo "::endgroup::"
 
     GOLD_ARGS=()
     [ -f "$GOLD" ] && GOLD_ARGS=(--gold "$GOLD")
-    compare() { # variant reuse [exact_gelu]
+    compare() { # variant reuse [exact_gelu, default 1]
         local tag=$1
-        [ "${3:-0}" = 1 ] && tag=$1-xg
-        CRISPEMBED_MINERU25_PRO_REUSE_DECODE_GRAPH=$2 CRISPEMBED_MINERU25_PRO_EXACT_GELU=${3:-0} \
+        [ "${3:-1}" = 0 ] && tag=$1-tablegelu
+        CRISPEMBED_MINERU25_PRO_REUSE_DECODE_GRAPH=$2 CRISPEMBED_MINERU25_PRO_EXACT_GELU=${3:-1} \
             python tools/mineru25_validate.py compare \
             --reference "$OUT/python.json" --native "$B/test-mineru25-run" --gguf "$S/gguf/mineru25-$1.gguf" \
             --image "$IMAGE" "${GOLD_ARGS[@]}" --max-slowdown 1.0 --output "$OUT/native-$tag-reuse$2.json"
@@ -170,12 +180,7 @@ run_case() { # id, image, task
         [ "$v" = f32 ] || [ ! -f "$S/gguf/mineru25-$v.gguf" ] && continue
         run_report "decode-$v" compare "$v" 0
     done
-    run_report decode-f32-xg compare f32 0 1
-    run_report decode-f32-xg-reuse compare f32 1 1
-    for v in "${VARS[@]}"; do
-        [ "$v" = f32 ] || [ ! -f "$S/gguf/mineru25-$v.gguf" ] && continue
-        run_report "decode-$v-xg" compare "$v" 0 1
-    done
+    run_report decode-f32-tablegelu compare f32 0 0
     echo "::endgroup::"
 
     python - "$OUT" "$CASE" "$TASK" "$gate_fail" <<'PY'

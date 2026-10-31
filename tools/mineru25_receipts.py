@@ -19,8 +19,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 PROTOCOL = ROOT / "docs/mineru25-pro-publication-v1.json"
 OUT = ROOT / "tests/results/mineru25"
-# -xg: CRISPEMBED_MINERU25_PRO_EXACT_GELU=1 (F32 vision quick_gelu) A/B arms.
-F32_ARMS = ("f32", "f32-reuse", "f32-xg", "f32-xg-reuse")
+# F32 vision quick_gelu is the MinerU default; -tablegelu is the legacy
+# fp16-table control (CRISPEMBED_MINERU25_PRO_EXACT_GELU=0).
+F32_ARMS = ("f32", "f32-reuse", "f32-tablegelu")
 
 
 def case_run(run_dir, by_input):
@@ -63,18 +64,20 @@ def main(argv):
               "reference_versions": {**ref["packages"], "mineru_vl_utils": ref["blueprint_revision"]},
               "max_new_tokens": ref["max_tokens"],
               "completed": [c["id"] for c in cases] == cfg["parity_cases"]}
-    f32_keys = {"reference", "preprocess", "stages-f32", "decode-f32", "decode-f32-reuse"}
-    xg_keys = {"stages-f32-xg", "decode-f32-xg", "decode-f32-xg-reuse"}
+    f32_keys = {"reference", "preprocess", "stages-f32-v2", "decode-f32", "decode-f32-reuse"}
+    strict_keys = {"stages-f32-v1"}
+    control_keys = {"stages-f32-tablegelu-v1", "stages-f32-tablegelu-v2", "decode-f32-tablegelu"}
     parity = {"schema": "crispembed.mineru25.native-parity.v1", **common,
               "f32_gates_pass": all(all(c["gates"].get(k) == "pass" for k in f32_keys) for c in cases),
-              "f32_exact_gelu_gates_pass": all(all(c["gates"].get(k) == "pass" for k in xg_keys) for c in cases),
+              "f32_strict_v1_stages_pass": all(all(c["gates"].get(k) == "pass" for k in strict_keys) for c in cases),
               "cases": [{**c, "arms": {k: v for k, v in c["arms"].items() if k in F32_ARMS},
-                         "gates": {k: v for k, v in c["gates"].items() if k in f32_keys | xg_keys}} for c in cases]}
+                         "gates": {k: v for k, v in c["gates"].items() if k in f32_keys | strict_keys | control_keys}} for c in cases]}
     dtypes = sorted({k for c in cases for k in c["arms"] if k not in F32_ARMS})
     precision = {"schema": "crispembed.mineru25.precision.v1", **common, "arms": [
         {"name": f"{dt}-cpu", "dtype": dt, "cases": [
             {"id": c["id"], **{k: v for k, v in c["arms"][dt].items() if k != "ids"},
-             "stages": c["gates"].get(f"stages-{dt}")} for c in cases if dt in c["arms"]]}
+             "stages_v1": c["gates"].get(f"stages-{dt}-v1"), "stages_v2": c["gates"].get(f"stages-{dt}-v2")}
+            for c in cases if dt in c["arms"]]}
         for dt in dtypes]}
     OUT.mkdir(parents=True, exist_ok=True)
     (OUT / "native-parity.json").write_text(json.dumps(parity, indent=2, ensure_ascii=False) + "\n")

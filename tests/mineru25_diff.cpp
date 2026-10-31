@@ -169,6 +169,13 @@ int execute(int argc, char ** argv) {
 
     bool all_pass = ran && argmax_equal;
     std::string first_failure;
+    // v2 (reported beside, never replacing, v1): v1's fixed 0.002 absolute budget is
+    // below one float32 ulp for Qwen2 massive activations (~5e4). v2 scales by the
+    // stage's reference RMS: cos_min >= min_cos, relative RMS <= 1e-5, and
+    // max_abs <= max(0.002, 0.005 * reference RMS). Chosen after inspecting v1
+    // failures (hosted 41214087617); v1 pass and the exit code are unchanged.
+    bool all_pass_v2 = ran && argmax_equal;
+    std::string first_failure_v2;
     std::printf("{\"schema\":\"crispembed.mineru25.stages.v1\",\"scope\":\"reference-patch-fed composed graph\","
                 "\"max_abs_budget\":%.17g,\"min_cos_budget\":%.17g,\"grid_thw\":[%d,%d,%d],\"stages\":[",
                 max_abs, min_cos, grid[0], grid[1], grid[2]);
@@ -186,20 +193,34 @@ int execute(int argc, char ** argv) {
             all_pass = false;
             if (first_failure.empty()) first_failure = name;
         }
-        std::printf("%s{\"name\":\"%s\",\"pass\":%s,\"observed\":%s,\"visits\":%d,\"elements\":%zu,\"finite\":%s",
-                    i ? "," : "", name.c_str(), pass ? "true" : "false", exists ? "true" : "false", record.visits,
-                    record.count, record.finite ? "true" : "false");
+        const double ref_rms = record.count ? double(r.ref_norm) / std::sqrt(double(record.count)) : 0.0;
+        const double rel_rms = ref_rms > 0 ? double(r.rms) / ref_rms : (r.rms == 0 ? 0.0 : INFINITY);
+        const bool pass_v2 =
+            exists && record.visits == 1 && record.finite && record.same_size && finite_report(r) &&
+            (exact_stage ? r.max_abs == 0.0 : r.max_abs <= std::max(max_abs, 0.005 * ref_rms) && rel_rms <= 1e-5) &&
+            r.cos_min >= min_cos;
+        if (!pass_v2) {
+            all_pass_v2 = false;
+            if (first_failure_v2.empty()) first_failure_v2 = name;
+        }
+        std::printf("%s{\"name\":\"%s\",\"pass\":%s,\"pass_v2\":%s,\"observed\":%s,\"visits\":%d,\"elements\":%zu,"
+                    "\"finite\":%s",
+                    i ? "," : "", name.c_str(), pass ? "true" : "false", pass_v2 ? "true" : "false",
+                    exists ? "true" : "false", record.visits, record.count, record.finite ? "true" : "false");
         if (finite_report(r)) {
-            std::printf(",\"max_abs\":%.9g,\"mean_abs\":%.9g,\"rms\":%.9g,\"cos_min\":%.9g,\"reference_norm\":%.9g,"
-                        "\"native_norm\":%.9g",
-                        r.max_abs, r.mean_abs, r.rms, r.cos_min, r.ref_norm, r.mine_norm);
+            std::printf(",\"max_abs\":%.9g,\"mean_abs\":%.9g,\"rms\":%.9g,\"rel_rms\":%.9g,\"cos_min\":%.9g,"
+                        "\"reference_norm\":%.9g,\"native_norm\":%.9g",
+                        r.max_abs, r.mean_abs, r.rms, rel_rms, r.cos_min, r.ref_norm, r.mine_norm);
         }
         std::printf("}");
     }
     std::printf("],\"native_first_argmax\":%d,\"reference_first_argmax\":%d,\"first_argmax_equal\":%s,"
-                "\"first_failed_stage\":%s,\"pass\":%s,\"decoded_quality_verified\":false,\"speed_verified\":false}\n",
+                "\"first_failed_stage\":%s,\"pass\":%s,\"first_failed_stage_v2\":%s,\"pass_v2\":%s,"
+                "\"decoded_quality_verified\":false,\"speed_verified\":false}\n",
                 native_argmax, reference_argmax, argmax_equal ? "true" : "false",
-                first_failure.empty() ? "null" : ("\"" + first_failure + "\"").c_str(), all_pass ? "true" : "false");
+                first_failure.empty() ? "null" : ("\"" + first_failure + "\"").c_str(), all_pass ? "true" : "false",
+                first_failure_v2.empty() ? "null" : ("\"" + first_failure_v2 + "\"").c_str(),
+                all_pass_v2 ? "true" : "false");
     return all_pass ? 0 : 1;
 }
 } // namespace

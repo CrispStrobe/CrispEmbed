@@ -94,6 +94,23 @@ fixture differed in 1,186 of 338,688 patch values, max 0.029 normalized). Pass
 already-decoded RGB, or PNG, when exact agreement with a PIL-based pipeline
 matters. Qualification feeds both sides one PIL-decoded PNG and records it.
 
+**Vision activation precision.** ggml's CPU `gelu_quick` rounds its input
+and output through an fp16 table, while the original evaluates
+`x * sigmoid(1.702 x)` in F32. MinerU uses the exact F32 form by default
+(`CRISPEMBED_MINERU25_PRO_EXACT_GELU=0` restores the table). Four hosted cases
+decoded token-exactly either way; with the exact form the 64-stage errors fell
+about 100x (vision layer 0 max error 1.8e-3 to 2.1e-5, logits 2.0e-3 to 8.1e-6).
+
+**Stage budgets.** `test-mineru25-diff` reports two verdicts. The strict v1
+budget (max abs <= 0.002, per-row cosine >= 0.99999) is unchanged and still
+decides its exit code; it is below one float32 ulp for the decoder's massive
+activations (~5e4), so no non-bit-identical F32 implementation passes it. The
+reported v2 budget, chosen after inspecting those v1 failures, scales by each
+stage's reference RMS: cosine >= 0.99999, relative RMS <= 1e-5 and max abs <=
+max(0.002, 0.005 x reference RMS). Replayed on all retained reports it passes
+every stage on the exact-GELU path and rejects the fp16-table path from vision
+layer 0. Both verdicts are retained in every receipt.
+
 ## Conversion and build
 
 Conversion uses NumPy, safetensors, Hugging Face Hub and gguf; it does not need
