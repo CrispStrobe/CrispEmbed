@@ -120,15 +120,36 @@ def compare_arm(reference, arm):
     ids = list(arm["token_ids"])
     first = next((index for index, (left, right) in enumerate(zip(ids, ref_ids)) if left != right),
                  None if len(ids) == len(ref_ids) else min(len(ids), len(ref_ids)))
+    def stop(value):
+        if "stop_eos" in value:
+            return "EOS" if value["stop_eos"] else "not_eos"
+        if "stop_kind" in value:
+            return {1: "EOS", 2: "cap", 3: "context_limit"}.get(value["stop_kind"], "unknown")
+        return value.get("stop", "unknown")
+
     return {
         "ids_exact": ids == ref_ids,
         "text_exact": arm.get("text") == reference.get("text"),
-        "stop_exact": arm.get("stop") == reference.get("stop"),
+        "stop_exact": stop(arm) != "unknown" and stop(arm) == stop(reference),
         "first_divergent_step": first,
         "token_count": len(ids),
         "reference_token_count": len(ref_ids),
-        "stop": arm.get("stop"),
+        "stop": stop(arm),
     }
+
+
+def anchor_valid(cases):
+    return bool(cases) and all(
+        case.get("pixels_match_frozen") is True and
+        all(case.get("f16", {}).get("vs_frozen_original", {}).get(k) is True
+            for k in ("ids_exact", "text_exact", "stop_exact"))
+        for case in cases.values())
+
+
+def arms_completed(cases):
+    return bool(cases) and all(
+        all("token_ids" in case.get(arm, {}) and "error" not in case.get(arm, {})
+            for arm in ARMS) for case in cases.values())
 
 
 def read_types(path):
@@ -152,7 +173,7 @@ def quantize(model, output, kind, extra):
 
 def native(model, image, prompt=None):
     env = dict(os.environ, CRISPEMBED_QWEN35_OCR="1", CRISPEMBED_SURYA25_FRONTEND="1",
-               CRISPEMBED_SURYA25_INFERENCE="1")
+               CRISPEMBED_SURYA25_INFERENCE="1", CRISPEMBED_QWEN35_QUANT="1")
     command = [str(NATIVE), str(model), str(image), str(CAP), "4"]
     if prompt:
         command.append(prompt)
@@ -162,7 +183,7 @@ def native(model, image, prompt=None):
         return {"error": run.returncode, "stderr": run.stderr[-1500:]}
     data = json.loads(line.split(" ", 1)[1])
     data["text"] = bytes.fromhex(data.pop("raw_text_utf8_hex")).decode("utf-8", "replace")
-    data["stop"] = "EOS" if data.get("stop_kind") == "eos" else (data.get("stop_kind") or "unknown")
+    data["stop"] = {1: "EOS", 2: "cap", 3: "context_limit"}.get(data.get("stop_kind"), "unknown")
     return data
 
 
@@ -216,10 +237,13 @@ def main():
     save("checkpoint")
     from huggingface_hub import snapshot_download
 
-    patterns = list(profile.METADATA_FILES) + ["model.safetensors"]
     root = Path(snapshot_download(MODEL, revision=REVISION, token=False,
-                                  allow_patterns=patterns, local_dir=str(scratch / "checkpoint")))
+                                  allow_patterns=list(profile.METADATA_FILES),
+                                  local_dir=str(scratch / "checkpoint")))
     profile.verify_metadata(str(root))
+    root = Path(snapshot_download(MODEL, revision=REVISION, token=False,
+                                  allow_patterns=list(profile.METADATA_FILES) + ["model.safetensors"],
+                                  local_dir=str(root)))
     checkpoint = root / "model.safetensors"
     if checkpoint.stat().st_size != CHECKPOINT_BYTES or digest(checkpoint) != CHECKPOINT_SHA256:
         raise RuntimeError("downloaded checkpoint differs from the pinned revision digest")
@@ -237,6 +261,8 @@ def main():
                          "export_tensor_count": manifest["export_tensor_count"],
                          "checkpoint_tensor_count": manifest["checkpoint_tensor_count"],
                          "gguf_sha256": digest(f16)}
+    if REPORT["convert"]["gguf_sha256"] != "5f968d8321e8656e17a5b648725911ba83feaa948addd5eaa3768551e46c5358":
+        raise ValueError("F16 conversion differs from the retained hosted digest")
     print("CONVERTED", json.dumps(REPORT["convert"]), flush=True)
     save("convert")
 
@@ -283,11 +309,13 @@ def main():
                 if arm != ANCHOR_ARM and "token_ids" in case.get(arm, {}):
                     case[arm]["vs_anchor"] = compare_arm(anchor, case[arm])
         results[name] = case
+        REPORT["cases"] = results
+        save("compare")
     REPORT["cases"] = results
     save("compare")
 
     anchor_rows = [case[ANCHOR_ARM].get("vs_frozen_original", {}) for case in results.values()]
-    anchor_ok = all(row.get("ids_exact") and row.get("text_exact") for row in anchor_rows)
+    anchor_ok = anchor_valid(results)
     REPORT["anchor"] = {
         "arm": ANCHOR_ARM,
         "cases": len(anchor_rows),
@@ -311,14 +339,13 @@ def main():
     REPORT["claims"] = {"decoded_quality_claimed": False, "speed_claimed": False,
                         "registry_claimed": False, "publication_claimed": False,
                         "f16_anchor_is_the_only_gate": True}
-    if anchor_ok:
+    if anchor_ok and arms_completed(results):
         REPORT["status"] = ("completed: F16 anchor reproduced the frozen original ids and text, and "
                             "every quantized arm ran; quantized arms are measured, not qualified")
         save("complete")
         return 0
-    REPORT["status"] = ("completed without an anchor: the F16 arm did not reproduce the frozen "
-                        "original on this host, so the quantized comparison is not meaningful")
-    REPORT["error_type"] = "AnchorNotReproduced"
+    REPORT["status"] = "incomplete: anchor mismatch or an arm failed; quantized recipes are not qualified"
+    REPORT["error_type"] = "AnchorNotReproduced" if not anchor_ok else "ArmFailed"
     save("anchor-missing")
     return 1
 

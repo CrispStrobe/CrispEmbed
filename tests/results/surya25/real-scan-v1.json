@@ -1,0 +1,73 @@
+{
+  "scope": "First genuine scanned source crops, private hosted CPU A/B against the Python blueprint (HF F32 greedy). Two line crops only: not a full page, not CER/WER, no release or registry claim.",
+  "kernel": "private Kaggle CPU kernel",
+  "base_commit": "9498e67e3558a9a0b0ec20f93c40698b2434204e",
+  "source_sha256": "9dc0ca8b1d16fe2148a70e7057bb0cf9a4b2b67c2f8e416f8673d752aeb76f71",
+  "superseded_by": "src/qwen35_linear.cpp later gained leaf-only dispatch and atomic output validation; this receipt predates those changes",
+  "binary_sha256": "ae7d7eb430a7e4058f3b695638d8abce42b5767fc51e6fee648813d17cbc84a5",
+  "model": "datalab-to/surya-ocr-2.5",
+  "revision": "00c843e9cae45611dca0a6dc2c9bbbf2dadaaed3",
+  "checkpoint_sha256": "6940baca2d16a20b15b7302cac7253246c78c95469920fcdb064963f48b5cb17",
+  "f16_gguf_sha256": "5f968d8321e8656e17a5b648725911ba83feaa948addd5eaa3768551e46c5358",
+  "reference_stack": {
+    "package": "surya-ocr 0.23.0",
+    "scale_to_fit": "datalab-to/surya@9d5aadfebb07939755c24e8a80d0e61b3be80895 surya/inference/util.py sha256 d853246db9767d01c8648058b779047ad0d93b3c74c0f7783dcf9faeef33b11b",
+    "model_class": "Qwen3_5ForConditionalGeneration float32 CPU greedy",
+    "processor": "AutoProcessor min_pixels=3136 max_pixels=6291456"
+  },
+  "anonymous_download": true,
+  "host": {"platform": "Linux-6.18.55+-x86_64-with-glibc2.39", "cpus": 4, "threads": 4},
+  "build": "GGML_NATIVE=OFF GGML_BLAS=OFF (portable paths)",
+  "cases": {
+    "german": {
+      "source": "tests/regression/images/cc0/german_official_print.jpg",
+      "source_sha256": "cc3392810b29cf5a2d0b1831cff95d07a2cbf9e00a3e91e785779a96c0a12a2e",
+      "crop_box": [560, 1280, 1060, 1342],
+      "processor_grid": [1, 6, 40],
+      "reference_tokens": 10,
+      "off_vs_python": {"ids_exact": true, "text_exact": true, "stop_exact": true, "reference_stop": "EOS", "both_reached_eos": true},
+      "direct_vs_python": {"ids_exact": true, "text_exact": true, "stop_exact": true, "reference_stop": "EOS", "both_reached_eos": true},
+      "direct_vs_off": {"ids_exact": true, "text_exact": true, "stop_exact": true},
+      "confidence_direct_vs_python_max_abs": 9.541059570183918e-7,
+      "confidence_off_vs_python_max_abs": 7.75105957084854e-7,
+      "python_generate_seconds": [2.887491412999964, 2.9254662469999744],
+      "native_direct_recognition_seconds": [7.92806206, 8.00620462],
+      "native_direct_process_wall_seconds": [9.234368760999985, 9.327113294000014],
+      "native_off_recognition_seconds": [33.5893066, 34.0371193]
+    },
+    "receipt": {
+      "source": "tests/regression/images/cc0/receipt_historical.png",
+      "source_sha256": "ee74bdb8c9c4d5f9e8d66b128041c03bcaa3acf8194448a8e0157f9478ad3d97",
+      "crop_box": [130, 250, 620, 320],
+      "processor_grid": [1, 6, 36],
+      "reference_tokens": 30,
+      "off_vs_python": {"ids_exact": true, "text_exact": true, "stop_exact": true, "reference_stop": "EOS", "both_reached_eos": true},
+      "direct_vs_python": {"ids_exact": true, "text_exact": true, "stop_exact": true, "reference_stop": "EOS", "both_reached_eos": true},
+      "direct_vs_off": {"ids_exact": true, "text_exact": true, "stop_exact": true},
+      "confidence_direct_vs_python_max_abs": 1.8477377166759013e-5,
+      "confidence_off_vs_python_max_abs": 1.7702377166695094e-5,
+      "python_generate_seconds": [5.795702241000015, 5.8378651730000115],
+      "native_direct_recognition_seconds": [9.93385286, 10.0258258],
+      "native_direct_process_wall_seconds": [11.465454922000049, 12.127183726999988],
+      "native_off_recognition_seconds": [90.7209289, 94.8726598]
+    }
+  },
+  "conversion": {"bytes": 1381456960, "sha256": "5f968d8321e8656e17a5b648725911ba83feaa948addd5eaa3768551e46c5358", "checkpoint_tensor_count": 473, "export_tensor_count": 473},
+  "quality": {
+    "decoded_identity_vs_python_blueprint": "both crops and both native arms match token ids, text and stop/EOS",
+    "cer_wer": null,
+    "reason_no_cer_wer": "no independently human-reviewed crop gold; model output is not treated as ground truth"
+  },
+  "speed": {
+    "native_vs_python": "native direct recognition is about 1.7-2.8x slower than the Python generate_seconds figures on these two crops",
+    "like_for_like": false,
+    "reason": "Python generate excludes package scaling, processor, loading and score postprocessing; native recognition includes image decode and preprocessing. Fresh native process per call versus one loaded HF model. Do not divide as equivalent scopes."
+  },
+  "limits": [
+    "Two line crops of one German gazette page and one historical receipt; not full pages.",
+    "No independently reviewed transcript gold, so no accuracy metric.",
+    "Native direct dispatch is requested by flag; the CLI has no per-operation counter.",
+    "Binary digest does not attest linkage to the staged source.",
+    "Outputs, pixels and weights are private and may be subject to the model output licence."
+  ]
+}

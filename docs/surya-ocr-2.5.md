@@ -1,17 +1,53 @@
 # Surya OCR 2.5 (`datalab-to/surya-ocr-2.5`) — source contract and port plan
 
 Status (31 October 2026): **native output equals the original model on every
-tested crop; not yet qualified for quality, speed or publication.**
-Revision `00c843e9cae45611dca0a6dc2c9bbbf2dadaaed3` is pinned. On twelve owned
-crops (6 grid-aligned + 3 off-grid line crops, F32 and F16 each), native ids,
-decoded text and EOS step are identical to `transformers` 5.16.1
+tested crop; not yet faster than the reference, and not qualified for quality
+or publication.**
+Revision `00c843e9cae45611dca0a6dc2c9bbbf2dadaaed3` is pinned. The retained
+evidence describes nine owned crops: six grid-aligned, tested at F32 and F16
+both locally and in hosted run 41191185159, and three off-grid crops tested
+locally at both precisions. The local off-grid summary does not retain original
+token IDs or input hashes, so that part cannot be independently replayed from
+the summary alone. For the grid-aligned crops, native ids, decoded text and EOS
+step matched `transformers` 5.16.1
 `Qwen3_5ForConditionalGeneration` (float32 CPU, greedy, block prompt, vLLM pixel
 kwargs). This was checked twice: in the session container
 ([local](../tests/results/surya25/native-ab-local.json),
 [scale_to_fit end to end](../tests/results/surya25/native-scale-to-fit-e2e.json))
 and on hosted CI ([run 41191185159](../tests/results/surya25/native-ab-hosted.json)).
-The F32/F16 conversions are byte-identical across both hosts. There is no
-registry entry and no published GGUF; quality on real documents is unmeasured.
+The hosted receipt is a summary; the local receipt does not retain GGUF digests,
+so cross-host byte identity cannot be verified from the retained files alone.
+There is no CrispEmbed registry entry or published CrispEmbed GGUF; Datalab has
+published its own llama.cpp GGUFs. Quality on real documents is unmeasured.
+
+The private [Kaggle CPU quantization probe](../tests/results/surya25/kaggle-quant-v2-summary.json)
+converted the pinned checkpoint and produced Q8_0 and Q4_K files, but failed
+before decoding because the worker lacked the reference font. These temporary
+files were not retained; the probe does not qualify either quantized recipe.
+The [font-fixed retry](../tests/results/surya25/kaggle-quant-v3-summary.json)
+matched the frozen original's token IDs, text and stop on all six synthetic
+crops with F16, Q8_0 and Q4_K. All six input hashes matched the frozen inputs,
+and no norm or bias was quantized. This is a narrow measurement, not real-scan
+quality qualification or a release; its GGUFs were temporary and not retained.
+The output confidences differ between precisions. The default-off direct-F16
+matmul path passed a [weight-free operator test](../tests/results/surya25/direct-f16-green-v3.json)
+that also covers leaf-only dispatch and atomic output.
+On six synthetic crops the gate-on arm reproduced the frozen original's ids,
+text and stop exactly, and a three-pair timing diagnostic on one case measured
+a 4.5x median recognition speedup over the materialising path
+([private receipt](../tests/results/surya25/direct-f16-speed-v1.json)). That
+receipt predates later source hardening and its direct dispatch is requested,
+not observed. An Ovis regression is still outstanding.
+
+Two genuine scanned source crops — a German Imperial Law Gazette line and a
+historical receipt line — were then compared against the Python blueprint
+([private receipt](../tests/results/surya25/real-scan-v1.json)). Both native
+arms matched the blueprint's token IDs, text and stop/EOS on both crops. The
+blueprint was still faster: native direct recognition took 7.9-8.0 s against
+2.9 s, and 9.9-10.0 s against 5.8 s. Those two numbers have different
+boundaries (the Python figure excludes scaling, preprocessing and loading, and
+reuses a loaded model), so they are not a like-for-like ratio. No accuracy
+metric exists because there is no independently reviewed transcript gold.
 
 Usage (experimental):
 
@@ -69,9 +105,9 @@ null or empty prompt means `OCR this block image to HTML.`.
 | Format-4 frontend (`CRISPEMBED_SURYA25_FRONTEND`) | exact | rendered ids for all 4 package prompts, the empty (block) prompt and a custom prompt equal HF `apply_chat_template` + encode; `=0` and unset are off |
 | Image preprocessing (vLLM kwargs) | exact | five block-sized images: identical grids, patch max abs 0.0; a 192-DPI page is rejected (>1024 patches) |
 | Converter `--profile surya25` | written | NUL token carried as an explicit id, because gguf string arrays read back as C strings |
-| Inference (`CRISPEMBED_SURYA25_INFERENCE`) | exact on 12 crops | ids/text/EOS identical to original HF for F32 and F16; maximum confidence delta 6.6e-6 |
+| Inference (`CRISPEMBED_SURYA25_INFERENCE`) | exact on six hosted crops | 12 F32/F16 arms match original HF ids/text/EOS; three additional off-grid crops have a local-only summary |
 | Package `scale_to_fit` (Pillow LANCZOS, 28-px grid) | exact, on by default for this profile | `core/pil_resample_u8.h` matches Pillow on 32.1M samples; the port is byte-exact against the pinned package function on 13 sizes; `CRISPEMBED_SURYA25_SCALE_TO_FIT=0` passes pixels through |
-| Speed | **far slower than HF** | e.g. 24 s native vs 2.6 s HF for a 9-token crop. Profile: 8 decode steps 18.9 s, of which 17.3 s re-materialises F32 weights each step and about 1.1 s is compute. A 1 GiB `CRISPEMBED_QWEN35_WEIGHT_CACHE` gives 95–123 s → 73 s on the paragraph crop with exact ids | The existing `surya-det` text detector is a
+| Speed | **still slower than HF** | Direct F16 removed the per-step F32 re-materialisation (4.5x on one synthetic case) and cuts two real-crop recognitions to 7.9-10.0 s, but the Python blueprint still finishes those crops in 2.9 s and 5.8 s on unmatched boundaries. Portable no-BLAS build, scalar vision/attention and decoder weight streaming are the open levers. | The existing `surya-det` text detector is a
 different, older model (EfficientViT segformer) and is unaffected.
 
 ## What the model is (from the released package source)
@@ -116,11 +152,14 @@ and are pinned by `tools/ci-heavy/surya25_metadata.py`:
 - **MTP.** The `surya-ocr-2.5` checkpoint has no MTP head. MTP weights were a
   separate `surya-ocr-2.5-mtp` repository and were dropped from the README in
   `c4072feb`. The probe still records any `mtp` tensors in the header.
-- **Licence.** Package code is Apache-2.0; the model weights are OpenRAIL-M per
-  the package README badge (free under a revenue threshold, the same terms as
-  `surya-det`). Per POLICY §7 this belongs in the restricted registry class
-  behind CLI licence acceptance, and outside PLAN's permissive OCR queue. The
-  hosted probe records the card's declared licence; confirm it before any upload.
+- **Licence.** Package code is Apache-2.0; the checkpoint has a separately
+  pinned [modified AI Pubs OpenRAIL-M licence](https://huggingface.co/datalab-to/surya-ocr-2.5/raw/00c843e9cae45611dca0a6dc2c9bbbf2dadaaed3/LICENSE).
+  Attachment A includes revenue and funding thresholds (with personal and
+  research exceptions) and a competitor restriction. Section 8 purports to
+  apply the licence to output as well as model derivatives. Distribution has
+  notice, attribution and licence conditions. This is not simply a revenue
+  threshold; review the actual terms before deployment or redistribution.
+  No CrispEmbed GGUF is authorised for publication by this note.
 
 ### Inference contract (package defaults)
 

@@ -1,0 +1,21 @@
+{
+  "scope": "Weight-free direct-F16 operator GREEN test; not decoded quality or speed",
+  "kernel": "private Kaggle CPU kernel",
+  "base_commit": "9498e67e3558a9a0b0ec20f93c40698b2434204e",
+  "deployed_kernel_sha256": "8ffff65f7dfe9fe9ba944a5a80492e2549f07c7bc405cc4413683fa8b69832f2",
+  "raw_report_sha256": "586e3b78d6af9d5766cf5008a4d82944e255897adeadea93ed1de0fccd9fc8ca",
+  "test_sha256": "816734b7c77269b5b0684f35aabd6978e3f5913528c436a4aff501e7b8aa736c",
+  "source_sha256": "9dc0ca8b1d16fe2148a70e7057bb0cf9a4b2b67c2f8e416f8673d752aeb76f71",
+  "test_exit_code": 0,
+  "direct_source_reads": 0,
+  "direct_source_conversions": 0,
+  "large_matrix_shape": [1024, 3584],
+  "large_matrix_max_abs": 0.00000143051147,
+  "large_matrix_rms": 0.000000538348591,
+  "large_matrix_cos_min_reported": 1.0,
+  "gate": {"max_abs": 0.002, "row_cos_min": 0.99999},
+  "controls": ["default off", "empty and literal zero off", "F32 fallback", "mixed source types", "cache bypass", "invalid input", "nonfinite"],
+  "default_changed": false,
+  "model_quality_tested": false,
+  "speed_measured": false
+}

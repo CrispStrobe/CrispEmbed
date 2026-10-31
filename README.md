@@ -730,7 +730,7 @@ is governed by its **upstream** license. Check the **License** column in
 | **CC BY-NC 4.0** (non-commercial) | `jina-v5-*`, `jina-reranker-v2`, `jina-ocr-v1`, PosFormer (ours) | research/eval only; commercial needs a vendor license |
 | **LFM Open License v1.0** | `lfm2-embed*`, `lfm2-colbert`, `gliner-lfm` | free under $10M annual revenue |
 | **Gemma Terms** | `embeddinggemma-300m` | commercial OK, subject to Google's Prohibited Use Policy |
-| **Other restricted** | Surya weights (OpenRAIL-M, free < $5M), Texo (AGPL) | see the model card |
+| **Other restricted** | Surya weights (modified OpenRAIL-M), Texo (AGPL) | review the actual upstream terms, including restrictions on use and redistribution |
 
 Restricted entries are flagged with `*` in `--list-models` and require explicit
 consent to auto-download (interactive prompt, `--accept-license <spdx>`, or

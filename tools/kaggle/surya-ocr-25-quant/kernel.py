@@ -16,11 +16,16 @@ ids and text on this host, the quantized comparison is reported as
 non-meaningful rather than qualified. Nothing here changes a default, writes to
 the registry, or publishes a model.
 """
+import base64
+import hashlib
 import os
+from pathlib import Path
 import subprocess
 import sys
 
 COMMIT = "@COMMIT@"
+RUNNER_B64 = "@RUNNER_B64@"
+RUNNER_SHA256 = "@RUNNER_SHA256@"
 BUILD = "/kaggle/temp/build"
 REPO_DIR = "/kaggle/temp/ce"
 PYTHON = "/kaggle/temp/venv/bin/python"
@@ -41,6 +46,17 @@ def main():
                           check=True).stdout.strip()
     if head != COMMIT:
         raise SystemExit(f"checked out {head}, expected {COMMIT}")
+    runner = base64.b64decode(RUNNER_B64, validate=True)
+    if hashlib.sha256(runner).hexdigest() != RUNNER_SHA256:
+        raise SystemExit("embedded runner digest mismatch")
+    runner_path = Path(REPO_DIR) / "tools/kaggle/surya-ocr-25-quant/run.py"
+    runner_path.parent.mkdir(parents=True, exist_ok=True)
+    runner_path.write_bytes(runner)
+
+    # The CI reference crops use DejaVu Sans; Kaggle CPU images do not ship it.
+    # The runner independently checks every rendered PNG against the frozen hash.
+    sh("apt-get", "update", "-qq")
+    sh("apt-get", "install", "-y", "-qq", "fonts-dejavu-core")
 
     sh("cmake", "-S", ".", "-B", BUILD, "-DCMAKE_BUILD_TYPE=Release",
        "-DCRISPEMBED_NATIVE=OFF", "-DGGML_NATIVE=OFF", "-DGGML_BLAS=OFF", "-DGGML_METAL=OFF")
@@ -51,10 +67,14 @@ def main():
     sh(sys.executable, "-m", "pip", "install", "-q", "uv==0.8.17")
     sh(sys.executable, "-m", "uv", "venv", "-q", "--python", "3.12", "--seed", "/kaggle/temp/venv")
     sh(PYTHON, "-m", "pip", "install", "-q", "numpy==2.2.6", "gguf==0.19.0",
-       "safetensors==0.8.0", "huggingface-hub==1.33.0", "pillow==12.1.0", "tokenizers==0.23.3")
+       "safetensors==0.8.0", "huggingface-hub==1.33.0", "pillow==12.1.0", "tokenizers==0.23.3",
+       "transformers==5.16.1")
+    sh(PYTHON, "-m", "pip", "install", "-q", "torch==2.14.0", "torchvision==0.29.0",
+       "--index-url", "https://download.pytorch.org/whl/cpu")
 
     finished = subprocess.run([PYTHON, "tools/kaggle/surya-ocr-25-quant/run.py"],
-                              env=dict(os.environ, SURYA25_COMMIT=COMMIT))
+                              env=dict(os.environ, SURYA25_COMMIT=COMMIT,
+                                       HF_HUB_DISABLE_IMPLICIT_TOKEN="1"))
     os.makedirs("/kaggle/working", exist_ok=True)
     with open("/kaggle/working/commit.txt", "w") as handle:
         handle.write(COMMIT + "\n")

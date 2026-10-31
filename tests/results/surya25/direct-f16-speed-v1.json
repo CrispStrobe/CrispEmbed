@@ -1,0 +1,50 @@
+{
+  "scope": "Private hosted CPU diagnostic of the default-off direct-F16 projection path on six synthetic crops and one decoded timing case. Not a registry, release, default or general speed claim.",
+  "kernel": "private Kaggle CPU kernel",
+  "base_commit": "9498e67e3558a9a0b0ec20f93c40698b2434204e",
+  "deployed_kernel_sha256": "recorded in the private archive; not reproducible after later source changes",
+  "source_sha256": "9dc0ca8b1d16fe2148a70e7057bb0cf9a4b2b67c2f8e416f8673d752aeb76f71",
+  "superseded_by": "src/qwen35_linear.cpp later gained leaf-only dispatch and atomic output validation; this receipt predates those changes",
+  "binary_sha256": "f9976060415512ebe657b3ae539a80d056cb2db6365250d022c8541c25bf9cc8",
+  "model": "datalab-to/surya-ocr-2.5",
+  "revision": "00c843e9cae45611dca0a6dc2c9bbbf2dadaaed3",
+  "checkpoint_sha256": "6940baca2d16a20b15b7302cac7253246c78c95469920fcdb064963f48b5cb17",
+  "f16_gguf_sha256": "5f968d8321e8656e17a5b648725911ba83feaa948addd5eaa3768551e46c5358",
+  "convert_tensor_counts": {"checkpoint": 473, "export": 473},
+  "anonymous_download": true,
+  "host": {"platform": "Linux-6.18.55+-x86_64-with-glibc2.39", "machine": "x86_64", "logical_cpus": 4, "threads": 4},
+  "build": "GGML_NATIVE=OFF GGML_BLAS=OFF (portable paths; no CPU model or ISA flags recorded)",
+  "decoded_gate": {
+    "result": "passed",
+    "basis": "six synthetic crops: gate-off and direct arms both match the frozen original on token ids, text, stop and EOS",
+    "confidence_off_vs_direct_max_abs": 1.6099999999852344e-6
+  },
+  "direct_dispatch_evidence": "requested by flag only; the CLI has no per-operation dispatch counter",
+  "timing": {
+    "case": "invoice",
+    "pairs": 3,
+    "order": [["off", "direct"], ["direct", "off"], ["off", "direct"]],
+    "fresh_process_per_arm": true,
+    "profiling": false,
+    "recognition_off_over_direct_ratios": [4.498272717428313, 4.467898245186806, 5.137128422163882],
+    "recognition_median": 4.498272717428313,
+    "process_off_over_direct_ratios": [4.187425398167258, 4.162252611534346, 4.711761421901609],
+    "process_median": 4.187425398167258
+  },
+  "profiled_control_direct": {
+    "vision_seconds": 3.721795684,
+    "prefill_seconds": 3.927359374,
+    "decode_seconds": 0.988182099,
+    "ggml_compute_share": {"vision": 1.460319104, "prefill": 3.062020622, "decode": 0.606013687},
+    "note": "the remaining time is non-ggml scalar C++ (vision attention, norms, merge, decoder attention, softmax)"
+  },
+  "limits": [
+    "Timing is one synthetic single-line crop on one 4-vCPU host, not a real-scan or full-page result.",
+    "Python blueprint timing on the same inputs was not measured with matched boundaries, so no Python parity claim is made.",
+    "The direct flag is requested, not observed per operation.",
+    "Binary digest does not attest linkage to the staged source."
+  ],
+  "model_quality_tested": false,
+  "speed_claim_for_python_blueprint": "not established",
+  "default_changed": false
+}

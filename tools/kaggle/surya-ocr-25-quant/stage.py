@@ -8,6 +8,7 @@ directory or with a leftover placeholder.
 
 usage: python3 stage.py NEW_DIRECTORY [--commit <40-hex>]
 """
+import base64
 import hashlib
 import json
 from pathlib import Path
@@ -50,14 +51,16 @@ def main(argv):
         raise SystemExit("stage: staging directory already exists")
 
     kernel_text = (HERE / "kernel.py").read_text()
-    rendered = kernel_text.replace("@COMMIT@", commit)
+    runner = (HERE / "run.py").read_bytes()
+    rendered = (kernel_text.replace("@COMMIT@", commit)
+                .replace("@RUNNER_B64@", base64.b64encode(runner).decode("ascii"))
+                .replace("@RUNNER_SHA256@", digest(runner)))
     if "@COMMIT@" in rendered:
         raise SystemExit("stage: unrendered @COMMIT@ remains")
-    for name in ("@VARIANT@", "@PIN@"):
+    for name in ("@VARIANT@", "@PIN@", "@RUNNER_B64@", "@RUNNER_SHA256@"):
         if name in rendered:
             raise SystemExit(f"stage: unhandled placeholder {name}")
     compile(rendered, "staged-kernel.py", "exec")
-    runner = (HERE / "run.py").read_bytes()
     compile(runner.decode(), "staged-run.py", "exec")
 
     target.mkdir(parents=True)

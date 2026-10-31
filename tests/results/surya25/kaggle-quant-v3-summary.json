@@ -1,0 +1,31 @@
+{
+  "scope": "Private CPU conversion and same-input decoded comparison on six synthetic crops, not real-scan quality or a release",
+  "model": "datalab-to/surya-ocr-2.5",
+  "revision": "00c843e9cae45611dca0a6dc2c9bbbf2dadaaed3",
+  "base_commit": "9498e67e3558a9a0b0ec20f93c40698b2434204e",
+  "raw_private_report_sha256": "3b1b5eca855e12b50317cbb3848d02e5e466bbe2e2c756707b0db0a9029cdc2e",
+  "raw_report_policy": "The raw report and generated model outputs are retained privately outside Git.",
+  "checkpoint_sha256": "6940baca2d16a20b15b7302cac7253246c78c95469920fcdb064963f48b5cb17",
+  "checkpoint_download_anonymous": true,
+  "source_tensor_count": 473,
+  "export_tensor_count": 473,
+  "frozen_input_count": 6,
+  "frozen_input_hashes_match": 6,
+  "f16_anchor": {"ids_text_stop_exact_vs_frozen": 6, "required": 6},
+  "measured_not_promoted": {
+    "q8_0": {"ids_text_stop_exact_vs_f16_anchor": 6, "cases": 6},
+    "q4_k": {"ids_text_stop_exact_vs_f16_anchor": 6, "cases": 6}
+  },
+  "census": {
+    "f16": {"bytes": 1381456960, "sha256": "5f968d8321e8656e17a5b648725911ba83feaa948addd5eaa3768551e46c5358", "types": {"F16": 239, "F32": 234}},
+    "q8_0": {"bytes": 748673056, "sha256": "5788e926968cc7099cf5f485e02d5a8618e61599841c011c013a6211b224d447", "types": {"Q8_0": 236, "F16": 3, "F32": 234}},
+    "q4_k": {"bytes": 499865632, "sha256": "17e41b0408692c3b33c69710badd7051608c46c66799d02e161ccc272cbb99a1", "types": {"Q4_K": 186, "Q8_0": 50, "F16": 3, "F32": 234}}
+  },
+  "protected_norm_or_bias_quantized": false,
+  "confidence_values_identical": false,
+  "gguf_files_retained": false,
+  "decoded_quality_claimed": false,
+  "speed_claimed": false,
+  "registry_or_publication_authorized": false,
+  "exit_code": 0
+}

@@ -1,0 +1,20 @@
+{
+  "scope": "Private Kaggle CPU conversion and stored-type census only; no decoded quality claim",
+  "kernel": "private Kaggle CPU kernel",
+  "repo_commit": "9498e67e3558a9a0b0ec20f93c40698b2434204e",
+  "deployed_kernel_sha256": "c385bae38b18b6f4699e60248739f792a78d45f0a7febeb8c248b86f14ecc50a",
+  "model": "datalab-to/surya-ocr-2.5",
+  "revision": "00c843e9cae45611dca0a6dc2c9bbbf2dadaaed3",
+  "checkpoint_sha256": "6940baca2d16a20b15b7302cac7253246c78c95469920fcdb064963f48b5cb17",
+  "anonymous_download": true,
+  "source_tensors": 473,
+  "export_tensors": 473,
+  "f16": {"bytes": 1381456960, "sha256": "5f968d8321e8656e17a5b648725911ba83feaa948addd5eaa3768551e46c5358", "types": {"F16": 239, "F32": 234}},
+  "q8_0": {"bytes": 748673056, "sha256": "5788e926968cc7099cf5f485e02d5a8618e61599841c011c013a6211b224d447", "types": {"Q8_0": 236, "F16": 3, "F32": 234}},
+  "q4_k": {"bytes": 499865632, "sha256": "17e41b0408692c3b33c69710badd7051608c46c66799d02e161ccc272cbb99a1", "types": {"Q8_0": 50, "Q4_K": 186, "F16": 3, "F32": 234}},
+  "census_norm_or_bias_violations": 0,
+  "status": "failed before inference: worker lacked DejaVu Sans font; Pillow raised OSError: cannot open resource",
+  "native_decode_tested": false,
+  "quantized_output_quality_qualified": false,
+  "artifacts": "Temporary Kaggle worker files, not retained by this run"
+}

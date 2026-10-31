@@ -1,0 +1,30 @@
+{
+  "scope": "Weight-free direct-F16 operator GREEN test including leaf-only dispatch and atomic output; not decoded quality or speed",
+  "kernel": "private Kaggle CPU kernel",
+  "base_commit": "9498e67e3558a9a0b0ec20f93c40698b2434204e",
+  "deployed_kernel_sha256": "recorded in the private archive",
+  "raw_report_sha256": "6ff332c398dd85d0969e3aba2435189c1daee636c386317ce5b9788c281e8dca",
+  "test_sha256": "2a91576bcc12356070468754ff38c2927bbc90a6b9e1241efbfedf0b1e050217",
+  "source_sha256": "38e342810caff1aca42dfdae1bff67ed4fddc60049fcfbd68d7f01f076275af3",
+  "test_exit_code": 0,
+  "changes_under_test": [
+    "computed tensors and views are excluded from direct dispatch and fall back to materialisation",
+    "all projection outputs are validated before any output vector is appended"
+  ],
+  "observed": {
+    "direct_source_reads": 0,
+    "direct_source_conversions": 0,
+    "view_fallback_reads": 1,
+    "view_fallback_conversions": 1,
+    "multi_token_max_abs": 2.08616257e-7,
+    "single_token_max_abs": 1.78813934e-7,
+    "large_matrix_1024x3584_max_abs": 1.43051147e-6,
+    "mixed_f32_fallback_max_abs": 0.0,
+    "row_cos_min": 1.0,
+    "gate": {"max_abs": 0.002, "row_cos_min": 0.99999}
+  },
+  "controls": "gate off/unset/empty, view fallback, single token, large matrix, mixed F32 fallback, cache bypass and warm hit, invalid arguments, nonfinite F16 and F32 weights, nonfinite second matrix, OCR gate off",
+  "default_changed": false,
+  "model_quality_tested": false,
+  "speed_measured": false
+}

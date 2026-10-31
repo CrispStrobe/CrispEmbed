@@ -46,6 +46,16 @@ bool matrix_type_supported(const ggml_tensor * source) {
         return false;
     }
 }
+static bool direct_f16_supported(const ggml_tensor * source) {
+#if defined(__EMSCRIPTEN__)
+    (void)source;
+    return false;
+#else
+    return core_env::on("CRISPEMBED_QWEN35_DIRECT_F16") && source && source->type == GGML_TYPE_F16 && source->data &&
+           source->buffer && ggml_backend_buffer_is_host(source->buffer) && source->op == GGML_OP_NONE &&
+           !source->view_src && ggml_is_contiguous(source) && source->ne[2] == 1 && source->ne[3] == 1;
+#endif
+}
 int f16_conversion_workers(size_t elements, int threads) {
 #if defined(__EMSCRIPTEN__) && !defined(__EMSCRIPTEN_PTHREADS__)
     (void)elements;
@@ -173,10 +183,16 @@ bool project_cpu(const std::vector<ggml_tensor *> & matrices, const float * hidd
             if (!observer(ggml_get_name(matrix), hidden, width, tokens, observer_user)) return false;
     profile_timer stage(profile_event::project_setup);
     std::array<const float *, 4> cached{};
+    std::array<bool, 4> direct{};
     size_t scratch_elements = elements;
+    for (size_t i = 0; i < matrices.size(); ++i) {
+        direct[i] = direct_f16_supported(matrices[i]);
+        if (direct[i]) scratch_elements -= size_t(ggml_nelements(matrices[i]));
+    }
     if (weights_cache) {
         stage.next(profile_event::project_materialize);
         for (size_t i = 0; i < matrices.size(); ++i) {
+            if (direct[i]) continue;
             cached[i] = weights_cache->get(matrices[i], threads);
             if (cached[i]) scratch_elements -= size_t(ggml_nelements(matrices[i]));
         }
@@ -195,14 +211,17 @@ bool project_cpu(const std::vector<ggml_tensor *> & matrices, const float * hidd
     for (size_t i = 0; i < matrices.size(); ++i) {
         auto * matrix = matrices[i];
         stage.next(profile_event::project_materialize);
-        ggml_set_no_alloc(ctx.get(), cached[i] != nullptr);
-        auto * weight = ggml_new_tensor_2d(ctx.get(), GGML_TYPE_F32, matrix->ne[0], matrix->ne[1]);
-        ggml_set_no_alloc(ctx.get(), false);
-        if (cached[i]) {
-            weight->data = const_cast<float *>(cached[i]);
-        } else {
-            profile_matrix_scope materialize(matrix);
-            if (!tensor_floats(matrix, static_cast<float *>(weight->data), threads)) return false;
+        auto * weight = matrix;
+        if (!direct[i]) {
+            ggml_set_no_alloc(ctx.get(), cached[i] != nullptr);
+            weight = ggml_new_tensor_2d(ctx.get(), GGML_TYPE_F32, matrix->ne[0], matrix->ne[1]);
+            ggml_set_no_alloc(ctx.get(), false);
+            if (cached[i]) {
+                weight->data = const_cast<float *>(cached[i]);
+            } else {
+                profile_matrix_scope materialize(matrix);
+                if (!tensor_floats(matrix, static_cast<float *>(weight->data), threads)) return false;
+            }
         }
         stage.next(profile_event::project_graph);
         auto * result = ggml_mul_mat(ctx.get(), weight, input);
@@ -217,6 +236,10 @@ bool project_cpu(const std::vector<ggml_tensor *> & matrices, const float * hidd
         auto * values = static_cast<float *>(result->data);
         const size_t count = size_t(ggml_nelements(result));
         if (!std::all_of(values, values + count, [](float x) { return std::isfinite(x); })) return false;
+    }
+    for (auto * result : results) {
+        auto * values = static_cast<float *>(result->data);
+        const size_t count = size_t(ggml_nelements(result));
         output.emplace_back(values, values + count);
     }
     if (profile_active()) {

@@ -1,0 +1,15 @@
+{
+  "scope": "Weight-free operator RED test against unmodified baseline; no model inference",
+  "kernel": "private Kaggle CPU kernel",
+  "base_commit": "9498e67e3558a9a0b0ec20f93c40698b2434204e",
+  "kernel_sha256": "5e681187cbfe90cd82119c76830c20e26d0716d7fc3911efd973a9d575eb6426",
+  "test_sha256": "cd99661cc880b68f24db30d64984884813777d40cc9fbd1cea8d7193249782a6",
+  "test_exit_code": 1,
+  "expected_failure": true,
+  "failure": "FAIL direct multi-token",
+  "observed_source_reads": 2,
+  "expected_source_reads": 0,
+  "observed_source_conversions": 2,
+  "expected_source_conversions": 0,
+  "gate_off_controls": "unset, empty and literal zero each read and convert both matrices"
+}

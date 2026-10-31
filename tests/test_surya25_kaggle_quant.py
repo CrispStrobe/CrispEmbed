@@ -12,6 +12,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 ROOT = Path(__file__).resolve().parents[1]
 HERE = ROOT / "tools/kaggle/surya-ocr-25-quant"
@@ -116,6 +117,33 @@ class ArmComparisonTest(unittest.TestCase):
         self.assertEqual(row["first_divergent_step"], 3)
         self.assertEqual(row["stop"], "cap")
 
+    def test_frozen_eos_boolean_matches_native_numeric_stop(self):
+        row = load().compare_arm({"token_ids": [2], "text": "", "stop_eos": True},
+                                 {"token_ids": [2], "text": "", "stop_kind": 1})
+        self.assertTrue(row["stop_exact"])
+        wrong = load().compare_arm({"token_ids": [2], "text": "", "stop_eos": True},
+                                   {"token_ids": [2], "text": "", "stop_kind": 2})
+        self.assertFalse(wrong["stop_exact"])
+
+    def test_quant_gate_set_explicitly_for_native_runner(self):
+        module = load()
+        response = mock.Mock(returncode=3, stdout="", stderr="rejected")
+        with mock.patch.object(module.subprocess, "run", return_value=response) as run:
+            module.native(Path("model"), Path("image"))
+        self.assertEqual(run.call_args.kwargs["env"]["CRISPEMBED_QWEN35_QUANT"], "1")
+
+    def test_anchor_cannot_pass_when_pixel_hash_differs(self):
+        module = load()
+        good = {"f16": {"vs_frozen_original": {"ids_exact": True, "text_exact": True,
+                                                  "stop_exact": True}},
+                "pixels_match_frozen": False}
+        self.assertFalse(module.anchor_valid({"hello": good}))
+
+    def test_error_arm_cannot_make_run_successful(self):
+        module = load()
+        case = {"f16": {"token_ids": [2]}, "q8_0": {"error": 3}, "q4_k": {"token_ids": [2]}}
+        self.assertFalse(module.arms_completed({"hello": case}))
+
 
 class StageTest(unittest.TestCase):
     def test_stage_renders_the_commit_and_refuses_holders(self):
@@ -136,6 +164,17 @@ class StageTest(unittest.TestCase):
             staged = (target / "run.py").read_bytes()
             self.assertEqual(hashlib.sha256(staged).hexdigest(), manifest["files_sha256"]["run.py"])
             self.assertEqual(staged, RUNNER.read_bytes())
+            # Kaggle uploads only kernel.py: recover the runner embedded in it,
+            # not a separately staged file that the deployed kernel never sees.
+            import ast
+            import base64
+            tree = ast.parse(kernel)
+            values = {node.targets[0].id: ast.literal_eval(node.value)
+                      for node in tree.body if isinstance(node, ast.Assign)
+                      and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name)
+                      and node.targets[0].id in ("RUNNER_B64", "RUNNER_SHA256")}
+            self.assertEqual(base64.b64decode(values["RUNNER_B64"]), staged)
+            self.assertEqual(values["RUNNER_SHA256"], hashlib.sha256(staged).hexdigest())
             again = subprocess.run([sys.executable, str(STAGE), str(target),
                                     "--commit", "0123456789abcdef0123456789abcdef01234567"],
                                    text=True, capture_output=True)
@@ -148,6 +187,7 @@ class MetadataTest(unittest.TestCase):
         # Kaggle derives the slug from the title; keep both identical so a later
         # push updates this kernel instead of creating a second one.
         self.assertEqual(metadata["id"], "${KAGGLE_ACCOUNT}/crispembed-surya-ocr-25-convert-and-quantize")
+
         self.assertEqual(metadata["title"], "crispembed-surya-ocr-25-convert-and-quantize")
         self.assertEqual(metadata["code_file"], "kernel.py")
         self.assertEqual(metadata["kernel_type"], "script")
@@ -156,6 +196,10 @@ class MetadataTest(unittest.TestCase):
         self.assertEqual(metadata["is_private"], "true")
         self.assertEqual(metadata["dataset_sources"], [])
         self.assertEqual(metadata["model_sources"], [])
+
+    def test_kernel_installs_original_rendering_font(self):
+        kernel = (RUNNER.parent / "kernel.py").read_text()
+        self.assertIn('"fonts-dejavu-core"', kernel)
 
 
 if __name__ == "__main__":
