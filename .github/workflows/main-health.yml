@@ -133,7 +133,7 @@ jobs:
 
   pubdev-apple-consumer-baseline:
     # Temporary test-branch dispatch only. Do not merge this change into main.
-    if: github.event_name == 'workflow_dispatch'
+    if: ${{ false }}
     name: Published 0.16.1 fresh Apple consumer baseline
     runs-on: macos-15
     timeout-minutes: 45
@@ -195,3 +195,77 @@ jobs:
         run: |
           echo "macOS=$MACOS_OUTCOME iOS=$IOS_OUTCOME"
           test "$MACOS_OUTCOME" = success && test "$IOS_OUTCOME" = success
+
+  pubdev-android-consumer-probe:
+    # Temporary diagnostic; do not merge this workflow into main.
+    if: github.event_name == 'workflow_dispatch'
+    name: Candidate Gradle and historical Android consumer
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 3d8a30e58a4e81f422c4281d83e86aaca39f4cb0
+          submodules: false
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          channel: stable
+          flutter-version: '3.47.9'
+          cache: false
+      - name: Set up isolated consumer
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "PUB_CACHE=$RUNNER_TEMP/pubdev-android-pub-cache" >> "$GITHUB_ENV"
+          cp -R flutter/crispembed "$RUNNER_TEMP/plugin"
+          cd "$RUNNER_TEMP"
+          flutter create --platforms=android android_consumer
+          cd android_consumer
+          printf '\ndependency_overrides:\n  crispembed:\n    path: ../plugin\n' >> pubspec.yaml
+          flutter pub get
+          flutter pub add crispembed
+          flutter pub get
+      - name: Check Gradle version and invalid version rejection
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/android_consumer/android"
+          ./gradlew :crispembed:properties > "$RUNNER_TEMP/gradle-properties.log" 2>&1
+          grep -E '^version: 0\.17\.14$' "$RUNNER_TEMP/gradle-properties.log"
+          cp "$RUNNER_TEMP/plugin/pubspec.yaml" "$RUNNER_TEMP/plugin-pubspec-original.yaml"
+          python3 -c 'from pathlib import Path; p=Path("'"$RUNNER_TEMP"'/plugin/pubspec.yaml"); t=p.read_text(); assert "version: 0.17.14\n" in t; p.write_text(t.replace("version: 0.17.14\n", "version: invalid\n", 1))'
+          if ./gradlew :crispembed:properties > "$RUNNER_TEMP/gradle-invalid.log" 2>&1; then
+            echo 'Invalid package version unexpectedly accepted'; exit 1
+          fi
+          grep -F 'crispembed: missing or invalid version in pubspec.yaml' "$RUNNER_TEMP/gradle-invalid.log"
+          cp "$RUNNER_TEMP/plugin-pubspec-original.yaml" "$RUNNER_TEMP/plugin/pubspec.yaml"
+      - name: Verify candidate fetch targets development version
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP/android_consumer/android"
+          if ./gradlew :crispembed:fetchCrispembedLibs > "$RUNNER_TEMP/candidate-fetch.log" 2>&1; then
+            echo 'Development fetch unexpectedly succeeded; inspect before proceeding'; exit 1
+          fi
+          grep -F 'releases/download/v0.17.14/crispembed-android-arm64-v8a.tar.gz' "$RUNNER_TEMP/candidate-fetch.log"
+          grep -F 'FileNotFoundException' "$RUNNER_TEMP/candidate-fetch.log"
+      - name: Build historical-asset control
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 -c 'from pathlib import Path; p=Path("'"$RUNNER_TEMP"'/plugin/pubspec.yaml"); t=p.read_text(); assert "version: 0.17.14\n" in t; p.write_text(t.replace("version: 0.17.14\n", "version: 0.17.12\n", 1))'
+          cd "$RUNNER_TEMP/android_consumer"
+          flutter pub get
+          flutter build apk --release --target-platform android-arm,android-arm64 2>&1 | tee "$RUNNER_TEMP/historical-apk-build.log"
+          python3 -c 'import hashlib, pathlib, zipfile; apk=zipfile.ZipFile("build/app/outputs/flutter-apk/app-release.apk"); p=pathlib.Path("'"$RUNNER_TEMP"'/plugin/android/src/main/jniLibs"); [(print(abi, hashlib.sha256(apk.read("lib/"+abi+"/libcrispembed.so")).hexdigest()), (lambda a,b: a==b or (_ for _ in ()).throw(AssertionError(abi)))(apk.read("lib/"+abi+"/libcrispembed.so"), (p/abi/"libcrispembed.so").read_bytes())) for abi in ("arm64-v8a", "armeabi-v7a")]'
+      - name: Preserve probe logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pubdev-android-consumer-probe
+          path: |
+            ${{ runner.temp }}/gradle-properties.log
+            ${{ runner.temp }}/gradle-invalid.log
+            ${{ runner.temp }}/candidate-fetch.log
+            ${{ runner.temp }}/historical-apk-build.log
+          if-no-files-found: warn
