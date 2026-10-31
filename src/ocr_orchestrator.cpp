@@ -337,10 +337,10 @@ struct context {
     table_parse_context * table = nullptr;
     ppformulanet_ocr_context * formula = nullptr;
     ppformulanet_l_ocr_context * formula_l = nullptr;
-    got_ocr_context * got = nullptr;          // GOT-OCR2 (single-shot VLM)
-    glm_ocr_context * glm = nullptr;          // GLM-OCR (single-shot VLM)
-    qwen2vl_ocr_context * qwen = nullptr;     // Qwen2.5-VL (single-shot VLM)
-    qwen2vl_ocr_context * qwen3 = nullptr;    // Qwen3-VL (DeepStack + IMROPE)
+    got_ocr_context * got = nullptr;       // GOT-OCR2 (single-shot VLM)
+    glm_ocr_context * glm = nullptr;       // GLM-OCR (single-shot VLM)
+    qwen2vl_ocr_context * qwen = nullptr;  // Qwen2.5-VL (single-shot VLM)
+    qwen2vl_ocr_context * qwen3 = nullptr; // Qwen3-VL (DeepStack + IMROPE)
     crispembed_mineru_context * mineru = nullptr;
     std::string mineru_model_path;
     internvl2_ocr_context * intern = nullptr; // InternVL2 (single-shot VLM)
