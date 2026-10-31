@@ -72,13 +72,6 @@ bool teleocr_tensor_type_supported(ggml_type type, const int64_t * dimensions) {
 }
 
 ggml_tensor * model_matmul(context & ctx, ggml_context * g, ggml_tensor * weights, ggml_tensor * input) {
-    // MinerU, opt-in: CPU ggml quantizes the activations of a Q8_0/K-quant matmul
-    // to 8-bit blocks too, and the vision tower's outlier channels coarsen whole
-    // blocks (worst-row cosine 0.49 at vis_layer_30 with Q8_0 weights). Keep the
-    // compressed weights but multiply float32 activations against them.
-    if (ctx.is_mineru25_pro && ctx.building_vision && ggml_is_quantized(weights->type) &&
-        ggml_backend_is_cpu(ctx.backend) && core_env::on("CRISPEMBED_MINERU25_PRO_VISION_F32_ACT"))
-        return core_cpu::quant_f32_matmul(g, weights, ggml_cont(g, input));
     if (ctx.is_teleocr && ggml_backend_is_cpu(ctx.backend) && weights->type != GGML_TYPE_F32) {
         if (ggml_is_quantized(weights->type)) {
             return core_cpu::quant_f32_matmul(g, weights, ggml_cont(g, input));
@@ -1628,11 +1621,6 @@ void free_(context & ctx) {
 }
 
 bool encode_vision(context & ctx, const float * patches, int n_patches, const int32_t * grid_thw, vision_result & out) {
-    struct vision_scope {
-        context & c;
-        explicit vision_scope(context & ctx) : c(ctx) { c.building_vision = true; }
-        ~vision_scope() { c.building_vision = false; }
-    } scope(ctx);
     if (ctx.is_teleocr &&
         (!patches || !grid_thw || grid_thw[0] != 1 || grid_thw[1] <= 0 || grid_thw[2] <= 0 || grid_thw[1] % 2 ||
          grid_thw[2] % 2 || (int64_t)grid_thw[1] * grid_thw[2] != n_patches || !core_env::on("CRISPEMBED_TELEOCR")))

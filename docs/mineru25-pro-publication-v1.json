@@ -71,7 +71,7 @@
       "tensor_type": [],
       "precision_receipt": "tests/results/mineru25/precision.json",
       "precision_dtype": "q8_0",
-      "note": "all eligible matrices Q8_0"
+      "note": "decoder and embeddings Q8_0; vision tower F16 (crispembed-quantize MinerU policy, as for InternVL2: Q8_0 vision spiked to a 0.49 worst-row cosine on the CPU stage diff)"
     },
     "Q4_K": {
       "filename": "mineru25-pro-2604-q4_k.gguf",
@@ -81,17 +81,6 @@
       "precision_receipt": "tests/results/mineru25/precision.json",
       "precision_dtype": "q4_k",
       "note": "decoder mostly Q4_0 (896-wide rows fall back from Q4_K) with ffn_down Q4_K; the quantizer keeps vision and embeddings Q8_0"
-    },
-    "Q8_0_VF16": {
-      "filename": "mineru25-pro-2604-q8_0-vf16.gguf",
-      "from": "F32",
-      "type": "q8_0",
-      "tensor_type": [
-        "v.*=f16"
-      ],
-      "note": "vision tower F16, decoder and embeddings Q8_0",
-      "precision_receipt": "tests/results/mineru25/precision.json",
-      "precision_dtype": "q8_0-vf16"
     }
   },
   "receipts": {

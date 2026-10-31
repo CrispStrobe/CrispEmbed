@@ -261,6 +261,9 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
     const bool is_tesseract_lstm = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "tesseract_lstm";
     const bool is_internvl2 = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "internvl2";
     const bool is_teleocr = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "teleocr";
+    const int family_key = gguf_find_key(ctx_in, "qwen2vl.model_family");
+    const bool is_mineru25 =
+        family_key >= 0 && std::string(gguf_get_val_str(ctx_in, family_key)) == "mineru2.5-pro-2604";
     if (is_teleocr) {
         // ggml_ftype and the GGUF general.file_type enumeration differ for
         // K/IQ quants (see ggml/docs/gguf.md). This tool uses one requested
@@ -702,6 +705,24 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         if (quantize && is_internvl2_vision && qtype != GGML_TYPE_F16 && qtype != GGML_TYPE_F32) {
             qtype_used = GGML_TYPE_F16;
             printf("(internvl2-vision→F16) ");
+        }
+
+        // MinerU2.5-Pro vision tower (v.*, incl. merger): same policy, same scope.
+        // At Q8_0 the CPU stage diff spikes rather than decaying smoothly (formula
+        // case worst-row cosine 0.93 at vis_layer_18, 0.49 at vis_layer_30, 0.99
+        // again at 31; merger 0.95). A same-weight probe localised it: Q8_0 weights
+        // with float32 activations stay >= 0.999 against the original model, so
+        // the loss comes from the quantized-activation matmul meeting the vision
+        // tower's outlier channels, not from the stored weights. F16 vision stays
+        // >= 0.99999999 at every stage. Q8_0 target only; the Q4 size tier keeps
+        // the generic Q8_0 floor. CRISPEMBED_QUANTIZE_NO_VISION_F16=1 opts out.
+        bool is_mineru25_vision = is_mineru25 && ftype == GGML_FTYPE_MOSTLY_Q8_0 && sname.rfind("v.", 0) == 0;
+        if (const char * off = getenv("CRISPEMBED_QUANTIZE_NO_VISION_F16")) {
+            if (atoi(off)) is_mineru25_vision = false;
+        }
+        if (quantize && is_mineru25_vision && qtype != GGML_TYPE_F16 && qtype != GGML_TYPE_F32) {
+            qtype_used = GGML_TYPE_F16;
+            printf("(mineru25-vision→F16) ");
         }
 
         // MoE router / gating weights (DeepSeek-V2: "*.mlp_gate.weight", also

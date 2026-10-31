@@ -9,9 +9,11 @@
 # Q8_0 GGUF, tools/mineru25_validate.py --vision-weights-gguf). Then:
 #   f32-vs-A           control, native F32 (expected ~1.0 everywhere)
 #   q8-vs-A            native Q8_0 as shipped (the reported spikes)
-#   q8f32act-vs-B      native Q8_0 weights with float32 activations against the SAME
-#                      weights: any vision drift here is a native runtime error
-#   q8-vs-B            8-bit activation rounding alone
+#   q8-nollamafile-vs-A  same, without llamafile's tinyBLAS Q8_0 kernel
+#   q8-vs-B            native Q8_0 against the SAME weights: what remains is the
+#                      native quantized-activation path, not weight precision
+# The quantizer now keeps MinerU's vision tower F16 at the Q8_0 target; this
+# diagnostic quantizes with CRISPEMBED_QUANTIZE_NO_VISION_F16=1 to probe Q8_0 vision.
 # Diagnostic only: references B are never qualification references. Exit 0 always.
 set -uo pipefail
 CASE_IDS=${1:-formula,arabic}
@@ -48,7 +50,7 @@ snapshot_download(sys.argv[1], revision=sys.argv[2], local_dir=sys.argv[3])
 PY
 mkdir -p "$S/gguf"
 python models/convert-mineru25-pro-to-gguf.py --model "$S/checkpoint" --dtype f32 --output "$S/gguf/f32.gguf" || exit 5
-"$QUANT" "$S/gguf/f32.gguf" "$S/gguf/q8_0.gguf" q8_0 > "$TOP/quantize-q8_0.log" 2>&1 || exit 5
+CRISPEMBED_QUANTIZE_NO_VISION_F16=1 "$QUANT" "$S/gguf/f32.gguf" "$S/gguf/q8_0.gguf" q8_0 > "$TOP/quantize-q8_0.log" 2>&1 || exit 5
 
 CASES=$(python - "$CASE_IDS" <<'PY'
 import json, sys
@@ -76,9 +78,7 @@ while read -r id image task; do
     }
     run f32-vs-A f32 A
     run q8-vs-A q8_0 A
-    run q8f32act-vs-B q8_0 B CRISPEMBED_MINERU25_PRO_VISION_F32_ACT=1
     run q8-vs-B q8_0 B
-    run q8f32act-vs-A q8_0 A CRISPEMBED_MINERU25_PRO_VISION_F32_ACT=1
     "$DIFF_NOLF" "$S/gguf/q8_0.gguf" "$S/$id-A.gguf" $THREADS 0.002 0.99999 > "$OUT/q8-nollamafile-vs-A.txt" 2>&1
 done <<< "$CASES"
 
@@ -86,7 +86,7 @@ python - "$TOP" <<'PY'
 import json, sys
 from pathlib import Path
 top = Path(sys.argv[1]); lines = []
-NAMES = ("f32-vs-A", "q8-vs-A", "q8-nollamafile-vs-A", "q8f32act-vs-A", "q8f32act-vs-B", "q8-vs-B")
+NAMES = ("f32-vs-A", "q8-vs-A", "q8-nollamafile-vs-A", "q8-vs-B")
 for case in sorted(p for p in top.iterdir() if p.is_dir()):
     lines.append(f"### {case.name}")
     lines.append("| stage | " + " | ".join(n for n in NAMES) + " |")
