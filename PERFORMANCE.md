@@ -1,3 +1,38 @@
+## 31 October 2026 — Native Marker-style CPU document conversion
+
+These are individual conversion durations from
+[the retained pipeline receipts](tests/results/marker/summary.json), with
+two CPU threads and fixed 1024-token layout/recognition caps. Model loading is
+outside the per-case durations. All listed text metrics collapse whitespace
+only; punctuation, case and Unicode remain significant. These owned examples
+and diagnostic timings are not a representative corpus or controlled speed
+comparison with upstream Marker/Surya.
+
+| Precision/build | Input and mode | Seconds | Content CER / WER | Extra evidence |
+| --- | --- | ---: | --- | --- |
+| F16 initial full panel | Three-line image, auto | 126.277 | 0 / 0 | Native layout and crop recognition |
+| F16 initial full panel | Digital PDF, auto | 117.855 | 0 / 0 | Neural layout; embedded text reused, zero recognition tokens |
+| F16 initial full panel | Rasterized table, auto | 165.626 | 0 / 0 | Correct 4×3 cells; table header semantics unmeasured |
+| F16 final build | Same three-line image, auto | 129.878 | 0 / 0 | Exact initial raw layout/text/boxes retained |
+| Q8_0 final build | Same three-line image, auto | 129.758 | 0 / 0 | Same declared input/caps |
+| Q4_K final build | Same three-line image, auto | 124.335 | 0 / 0 | Same declared input/caps |
+| F16 final build | Digital PDF, force OCR | 135.745 | 0 / 0 | Embedded text bypassed; 73 layout + 17 recognition tokens |
+
+The F16 full panel peak process RSS is 4,986,436 KiB (approximately 4.76 GiB),
+including its loaded model and allocations. Other process peaks and exact
+model/library/source identities are in the receipts. Digital text mode needs
+no neural model; its native/CLI/HTTP tests are separate from these timings.
+The seven conversions reuse three distinct owned inputs. On the final
+synthetic run, peak RSS is 5,004,784 KiB for F16, 4,198,500 KiB for Q8_0 and
+3,768,260 KiB for Q4_K; these are separate process observations, not throughput
+or maximum-memory guarantees.
+
+On the short image, TeleOCR assigns three heading labels; the table title is
+a caption. Text success does not establish layout-label quality or box IoU.
+Confidence values are finite, but calibration is unmeasured. The inherited
+strict TeleOCR numerical qualification remains false for F16/Q8_0/Q4_K despite
+these exact decoded-content examples. No precision/default promotion follows.
+
 ## 31 October 2026 — TeleOCR bounded CPU validation timings and quality limits
 
 The [complete matrix](tests/results/teleocr/summary.json) records two threads per

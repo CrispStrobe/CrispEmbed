@@ -31,6 +31,8 @@ mod mineru;
 pub use mineru::MinerU;
 mod oxr;
 pub use oxr::Oxr;
+pub mod marker;
+pub use marker::{Marker, MarkerMode, MarkerOptions};
 
 pub mod moedern_text;
 pub use moedern_text::MoEdern;

@@ -1,0 +1,39 @@
+PASS conflicting asset is rejected
+PASS conflict preserves primary output and metadata
+PASS conflict preserves old asset
+PASS all assets preflighted before any creation
+PASS identical asset permits saving document
+PASS identical asset reused without write
+PASS new parent and binary asset saved
+PASS unsafe asset name 0
+PASS unsafe asset name 1
+PASS unsafe asset name 2
+PASS unsafe asset name 3
+PASS unsafe asset name 4
+PASS unsafe asset name 5
+PASS unsafe asset name 6
+PASS unsafe asset name 7
+PASS unsafe asset name 8
+PASS unsafe asset name 9
+PASS unsafe asset name 10
+PASS unsafe names preserve bundle before writes
+PASS asset cannot be primary output
+PASS asset cannot be metadata output
+PASS duplicate asset paths rejected
+PASS duplicate assets rejected before creation
+PASS directory output rejected
+PASS dot output rejected
+PASS output symlink rejected
+PASS output symlink target remains untouched
+PASS metadata symlink rejected
+PASS metadata symlink rejection precedes primary write
+PASS matching asset symlink rejected
+PASS asset symlink rejection preserves bundle
+PASS parent directory symlink rejected
+PASS symlink parent target remains untouched
+PASS asset hardlink to output rejected
+PASS metadata hardlink to output rejected
+PASS hardlink aliases preserve source bytes
+PASS duplicate asset hardlinks rejected
+PASS duplicate hardlinks preserve bundle
+38/38 Marker save checks passed

@@ -1,0 +1,1277 @@
+{
+  "schema_version": 2,
+  "kind": "independent-native-marker-text-comparison",
+  "status": "pass",
+  "cases": [
+    {
+      "id": "simpledigital",
+      "elapsed_seconds": 0.006611865996092092,
+      "block_types": {
+        "SectionHeader": 1,
+        "Text": 2
+      },
+      "owned_gold_profile": "body-only for declared running-header/footer fixture; all authored lines otherwise",
+      "native_vs_owned_gold": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 70,
+        "actual_characters": 70,
+        "expected_words": 10,
+        "actual_words": 10,
+        "character_edits": 0,
+        "word_edits": 0,
+        "cer": 0.0,
+        "wer": 0.0,
+        "exact_after_whitespace": true
+      },
+      "rendered_gold_profile": "Same body gold; explicitly declared list bullet markers are represented by list structure. All other characters unchanged.",
+      "native_vs_rendered_gold": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 70,
+        "actual_characters": 70,
+        "expected_words": 10,
+        "actual_words": 10,
+        "character_edits": 0,
+        "word_edits": 0,
+        "cer": 0.0,
+        "wer": 0.0,
+        "exact_after_whitespace": true
+      },
+      "structural_checks": {
+        "page_count": true,
+        "authored_order": true,
+        "all_body_content": true,
+        "rendered_text_exact": true,
+        "native_provenance": true,
+        "no_model_generation": true,
+        "no_image_assets_requested": true,
+        "chunks_have_blocks": true,
+        "authored_headings": true,
+        "block_geometry": true
+      },
+      "geometry": {
+        "all_bboxes_inside_pages": true,
+        "unique_block_ids": true,
+        "block_count": 3,
+        "errors": []
+      },
+      "details": {
+        "heading_texts": [
+          "Native document test"
+        ]
+      },
+      "metadata": {
+        "schema": "crispembed.marker/1",
+        "source": "simpledigital.pdf",
+        "backend": "pdfium-text",
+        "page_count": 1,
+        "generated_tokens": 0,
+        "layout_generated_tokens": 0,
+        "layout_capped_pages": 0,
+        "capped_blocks": 0,
+        "warning_count": 0,
+        "warnings": [],
+        "page_stats": [
+          {
+            "page_id": 0,
+            "width": 612,
+            "height": 792,
+            "text_extraction_method": "pdftext",
+            "block_count": 3,
+            "generated_tokens": 0,
+            "layout_generated_tokens": 0,
+            "layout_token_cap_reached": false,
+            "capped_blocks": 0,
+            "warnings": [],
+            "block_types": {
+              "SectionHeader": 1,
+              "Text": 2
+            }
+          }
+        ],
+        "assets": [],
+        "configuration": {
+          "elapsed_seconds": "0.003953",
+          "headers": "suppressed in rendered text; retained in JSON",
+          "implementation": "crispembed-marker-native",
+          "layout": "PDF font/geometry heuristics",
+          "layout_backend": "pdftext_heuristics",
+          "marker_source_revision": "71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4",
+          "processor": "native-marker-inspired-v1",
+          "schema": "crispembed.marker/1",
+          "software_version": "unknown",
+          "surya_model_parity": "not_claimed",
+          "surya_parity": "not claimed; alternative TeleOCR and deterministic processing",
+          "text_quality": "deterministic-unicode-glyph-and-repetition-v1",
+          "text_quality_check": "deterministic_unicode_heuristic",
+          "upstream_marker": "2.1.0@71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4"
+        }
+      },
+      "native_vs_original_html_text": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 70,
+        "actual_characters": 70,
+        "expected_words": 10,
+        "actual_words": 10,
+        "character_edits": 0,
+        "word_edits": 0,
+        "cer": 0.0,
+        "wer": 0.0,
+        "exact_after_whitespace": true
+      },
+      "reference_note": "Text comparison only; native structure and Markdown serialization may differ.",
+      "output_sha256": {
+        "chunks.json": "dd098c00ba3291bdd3bae2e8cbbec78ea3e4c42b9abf096442c83ba8a057fc92",
+        "document.html": "c4e87a4df7c9e0b79cabc6dc292fa49b57402f6b0f6e508f8f2db9e6eab10645",
+        "document.json": "64109cda523ee8e46792ed1473df6ca5b4c8876111572e69481b48cd8b042e30",
+        "document.md": "a0e2c05671388d24787d4767adfbcae5143f13c7d8a84dc4039b7a831999950c",
+        "metadata.json": "32c1f8b4aafe29a9f26709640719697825de9f342ceb3624e837a933bc7aafa6"
+      }
+    },
+    {
+      "id": "unicode",
+      "elapsed_seconds": 0.004581359004077967,
+      "block_types": {
+        "SectionHeader": 1,
+        "Text": 3
+      },
+      "owned_gold_profile": "body-only for declared running-header/footer fixture; all authored lines otherwise",
+      "native_vs_owned_gold": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 161,
+        "actual_characters": 161,
+        "expected_words": 22,
+        "actual_words": 22,
+        "character_edits": 0,
+        "word_edits": 0,
+        "cer": 0.0,
+        "wer": 0.0,
+        "exact_after_whitespace": true
+      },
+      "rendered_gold_profile": "Same body gold; explicitly declared list bullet markers are represented by list structure. All other characters unchanged.",
+      "native_vs_rendered_gold": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 161,
+        "actual_characters": 161,
+        "expected_words": 22,
+        "actual_words": 22,
+        "character_edits": 0,
+        "word_edits": 0,
+        "cer": 0.0,
+        "wer": 0.0,
+        "exact_after_whitespace": true
+      },
+      "structural_checks": {
+        "page_count": true,
+        "authored_order": true,
+        "all_body_content": true,
+        "rendered_text_exact": true,
+        "native_provenance": true,
+        "no_model_generation": true,
+        "no_image_assets_requested": true,
+        "chunks_have_blocks": true,
+        "authored_headings": true,
+        "literal_html_is_text": true,
+        "markdown_html_literals_escaped": true,
+        "block_geometry": true
+      },
+      "geometry": {
+        "all_bboxes_inside_pages": true,
+        "unique_block_ids": true,
+        "block_count": 4,
+        "errors": []
+      },
+      "details": {
+        "heading_texts": [
+          "Unicode and escaping"
+        ]
+      },
+      "metadata": {
+        "schema": "crispembed.marker/1",
+        "source": "unicode.pdf",
+        "backend": "pdfium-text",
+        "page_count": 1,
+        "generated_tokens": 0,
+        "layout_generated_tokens": 0,
+        "layout_capped_pages": 0,
+        "capped_blocks": 0,
+        "warning_count": 0,
+        "warnings": [],
+        "page_stats": [
+          {
+            "page_id": 0,
+            "width": 612,
+            "height": 792,
+            "text_extraction_method": "pdftext",
+            "block_count": 4,
+            "generated_tokens": 0,
+            "layout_generated_tokens": 0,
+            "layout_token_cap_reached": false,
+            "capped_blocks": 0,
+            "warnings": [],
+            "block_types": {
+              "SectionHeader": 1,
+              "Text": 3
+            }
+          }
+        ],
+        "assets": [],
+        "configuration": {
+          "elapsed_seconds": "0.003694",
+          "headers": "suppressed in rendered text; retained in JSON",
+          "implementation": "crispembed-marker-native",
+          "layout": "PDF font/geometry heuristics",
+          "layout_backend": "pdftext_heuristics",
+          "marker_source_revision": "71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4",
+          "processor": "native-marker-inspired-v1",
+          "schema": "crispembed.marker/1",
+          "software_version": "unknown",
+          "surya_model_parity": "not_claimed",
+          "surya_parity": "not claimed; alternative TeleOCR and deterministic processing",
+          "text_quality": "deterministic-unicode-glyph-and-repetition-v1",
+          "text_quality_check": "deterministic_unicode_heuristic",
+          "upstream_marker": "2.1.0@71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4"
+        }
+      },
+      "native_vs_original_html_text": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 161,
+        "actual_characters": 161,
+        "expected_words": 22,
+        "actual_words": 22,
+        "character_edits": 0,
+        "word_edits": 0,
+        "cer": 0.0,
+        "wer": 0.0,
+        "exact_after_whitespace": true
+      },
+      "reference_note": "Text comparison only; native structure and Markdown serialization may differ.",
+      "output_sha256": {
+        "chunks.json": "35c994c909385cb8f8ee80bd4d7eaf3f87211e994b3bec3b912440b1398620c5",
+        "document.html": "0c7d0dae3aca2c58597e500550b8f7dfc7c8141be3fe5cba121aa383691533a0",
+        "document.json": "cd284d179bc76d209fccaf3b678a8ab4f6a10ad8e8a9da3203ac6d05c0ac5ef3",
+        "document.md": "2417c54a8d2215001ee8201cd40c94eb43a640f740de37dbfc10bc30245de023",
+        "metadata.json": "854d93bf669ad653cb931e8242af3b3cfb8614af786bba6740fd9b2060b2b6f7"
+      }
+    },
+    {
+      "id": "structure",
+      "elapsed_seconds": 0.005417687993030995,
+      "block_types": {
+        "SectionHeader": 3,
+        "Text": 1,
+        "ListGroup": 1,
+        "ListItem": 2,
+        "Code": 1
+      },
+      "owned_gold_profile": "body-only for declared running-header/footer fixture; all authored lines otherwise",
+      "native_vs_owned_gold": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 185,
+        "actual_characters": 181,
+        "expected_words": 32,
+        "actual_words": 30,
+        "character_edits": 4,
+        "word_edits": 2,
+        "cer": 0.021621621621621623,
+        "wer": 0.0625,
+        "exact_after_whitespace": false
+      },
+      "rendered_gold_profile": "Same body gold; explicitly declared list bullet markers are represented by list structure. All other characters unchanged.",
+      "native_vs_rendered_gold": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 181,
+        "actual_characters": 181,
+        "expected_words": 30,
+        "actual_words": 30,
+        "character_edits": 0,
+        "word_edits": 0,
+        "cer": 0.0,
+        "wer": 0.0,
+        "exact_after_whitespace": true
+      },
+      "structural_checks": {
+        "page_count": true,
+        "authored_order": true,
+        "all_body_content": true,
+        "rendered_text_exact": true,
+        "native_provenance": true,
+        "no_model_generation": true,
+        "no_image_assets_requested": true,
+        "chunks_have_blocks": true,
+        "authored_headings": true,
+        "authored_list_items": true,
+        "code_bytes_and_indentation": true,
+        "block_geometry": true
+      },
+      "geometry": {
+        "all_bboxes_inside_pages": true,
+        "unique_block_ids": true,
+        "block_count": 8,
+        "errors": []
+      },
+      "details": {
+        "heading_texts": [
+          "Document structure",
+          "1. Overview",
+          "2. Code example"
+        ],
+        "list_item_texts": [
+          "First owned list item",
+          "Second owned list item"
+        ],
+        "code_expected": "if (left < right) {\n    print(\"safe & literal\");\n}",
+        "code_actual": [
+          "if (left < right) {\n    print(\"safe & literal\");\n}"
+        ],
+        "code_source_lines": [
+          [
+            {
+              "bbox": [
+                48.957,
+                284.585,
+                172.63,
+                295.354
+              ],
+              "spans": [
+                {
+                  "text": "if ",
+                  "bbox": [
+                    48.957,
+                    284.64,
+                    60.331,
+                    293
+                  ],
+                  "font_size": 11,
+                  "bold": false,
+                  "italic": false,
+                  "monospace": true,
+                  "url": ""
+                },
+                {
+                  "text": "(left ",
+                  "bbox": [
+                    70.154,
+                    284.585,
+                    99.898,
+                    294.441
+                  ],
+                  "font_size": 11,
+                  "bold": false,
+                  "italic": false,
+                  "monospace": true,
+                  "url": ""
+                },
+                {
+                  "text": "< ",
+                  "bbox": [
+                    108.071,
+                    286.862,
+                    113.747,
+                    292.241
+                  ],
+                  "font_size": 11,
+                  "bold": false,
+                  "italic": false,
+                  "monospace": true,
+                  "url": ""
+                },
+                {
+                  "text": "right) ",
+                  "bbox": [
+                    122.789,
+                    284.64,
+                    158.286,
+                    295.354
+                  ],
+                  "font_size": 11,
+                  "bold": false,
+                  "italic": false,
+                  "monospace": true,
+                  "url": ""
+                },
+                {
+                  "text": "{",
+                  "bbox": [
+                    168.384,
+                    284.64,
+                    172.63,
+                    294.782
+                  ],
+                  "font_size": 11,
+                  "bold": false,
+                  "italic": false,
+                  "monospace": true,
+                  "url": ""
+                }
+              ]
+            },
+            {
+              "bbox": [
+                75.511,
+                301.585,
+                230.842,
+                312.277
+              ],
+              "spans": [
+                {
+                  "text": "    print(\"safe ",
+                  "bbox": [
+                    75.511,
+                    301.64,
+                    146.681,
+                    312.277
+                  ],
+                  "font_size": 11,
+                  "bold": false,
+                  "italic": false,
+                  "monospace": true,
+                  "url": ""
+                },
+                {
+                  "text": "& ",
+                  "bbox": [
+                    154.26,
+                    301.838,
+                    160.508,
+                    310.143
+                  ],
+                  "font_size": 11,
+                  "bold": false,
+                  "italic": false,
+                  "monospace": true,
+                  "url": ""
+                },
+                {
+                  "text": "literal\");",
+                  "bbox": [
+                    168.054,
+                    301.585,
+                    230.842,
+                    311.529
+                  ],
+                  "font_size": 11,
+                  "bold": false,
+                  "italic": false,
+                  "monospace": true,
+                  "url": ""
+                }
+              ]
+            },
+            {
+              "bbox": [
+                49.188,
+                318.64,
+                53.434,
+                328.782
+              ],
+              "spans": [
+                {
+                  "text": "}",
+                  "bbox": [
+                    49.188,
+                    318.64,
+                    53.434,
+                    328.782
+                  ],
+                  "font_size": 11,
+                  "bold": false,
+                  "italic": false,
+                  "monospace": true,
+                  "url": ""
+                }
+              ]
+            }
+          ]
+        ]
+      },
+      "metadata": {
+        "schema": "crispembed.marker/1",
+        "source": "structure.pdf",
+        "backend": "pdfium-text",
+        "page_count": 1,
+        "generated_tokens": 0,
+        "layout_generated_tokens": 0,
+        "layout_capped_pages": 0,
+        "capped_blocks": 0,
+        "warning_count": 1,
+        "warnings": [],
+        "page_stats": [
+          {
+            "page_id": 0,
+            "width": 612,
+            "height": 792,
+            "text_extraction_method": "pdftext",
+            "block_count": 8,
+            "generated_tokens": 0,
+            "layout_generated_tokens": 0,
+            "layout_token_cap_reached": false,
+            "capped_blocks": 0,
+            "warnings": [
+              "3 collapsed monospace spaces restored from PDF glyph advances"
+            ],
+            "block_types": {
+              "Code": 1,
+              "ListGroup": 1,
+              "ListItem": 2,
+              "SectionHeader": 3,
+              "Text": 1
+            }
+          }
+        ],
+        "assets": [],
+        "configuration": {
+          "elapsed_seconds": "0.004291",
+          "headers": "suppressed in rendered text; retained in JSON",
+          "implementation": "crispembed-marker-native",
+          "layout": "PDF font/geometry heuristics",
+          "layout_backend": "pdftext_heuristics",
+          "marker_source_revision": "71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4",
+          "processor": "native-marker-inspired-v1",
+          "schema": "crispembed.marker/1",
+          "software_version": "unknown",
+          "surya_model_parity": "not_claimed",
+          "surya_parity": "not claimed; alternative TeleOCR and deterministic processing",
+          "text_quality": "deterministic-unicode-glyph-and-repetition-v1",
+          "text_quality_check": "deterministic_unicode_heuristic",
+          "upstream_marker": "2.1.0@71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4"
+        }
+      },
+      "native_vs_original_html_text": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 185,
+        "actual_characters": 181,
+        "expected_words": 32,
+        "actual_words": 30,
+        "character_edits": 4,
+        "word_edits": 2,
+        "cer": 0.021621621621621623,
+        "wer": 0.0625,
+        "exact_after_whitespace": false
+      },
+      "reference_note": "Text comparison only; native structure and Markdown serialization may differ.",
+      "output_sha256": {
+        "chunks.json": "c2f67fedeb880c17096d8d9e834953d49f19ae97930d6b7d79042a0f076a1513",
+        "document.html": "af1bccb65fffed7778c3d26fefcd1b102055c4b14ad6035563fd6b613ec85355",
+        "document.json": "dda183b5357084963490a176c31ddbf55a8483f93791336700373478cf8e527d",
+        "document.md": "23ac23dcaf0e8de6b5ab1e0366bc3eb5e88d106403060d2cf86441560e281064",
+        "metadata.json": "065da6c6980d45091662c220c3bfb0146d97f443cfd514bcd0847b9d2f30cbeb"
+      }
+    },
+    {
+      "id": "multicolumn",
+      "elapsed_seconds": 0.004261967995262239,
+      "block_types": {
+        "SectionHeader": 3,
+        "Text": 6
+      },
+      "owned_gold_profile": "body-only for declared running-header/footer fixture; all authored lines otherwise",
+      "native_vs_owned_gold": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 198,
+        "actual_characters": 198,
+        "expected_words": 33,
+        "actual_words": 33,
+        "character_edits": 0,
+        "word_edits": 0,
+        "cer": 0.0,
+        "wer": 0.0,
+        "exact_after_whitespace": true
+      },
+      "rendered_gold_profile": "Same body gold; explicitly declared list bullet markers are represented by list structure. All other characters unchanged.",
+      "native_vs_rendered_gold": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 198,
+        "actual_characters": 198,
+        "expected_words": 33,
+        "actual_words": 33,
+        "character_edits": 0,
+        "word_edits": 0,
+        "cer": 0.0,
+        "wer": 0.0,
+        "exact_after_whitespace": true
+      },
+      "structural_checks": {
+        "page_count": true,
+        "authored_order": true,
+        "all_body_content": true,
+        "rendered_text_exact": true,
+        "native_provenance": true,
+        "no_model_generation": true,
+        "no_image_assets_requested": true,
+        "chunks_have_blocks": true,
+        "authored_headings": true,
+        "columns_are_not_a_table": true,
+        "column_reading_order": true,
+        "block_geometry": true
+      },
+      "geometry": {
+        "all_bboxes_inside_pages": true,
+        "unique_block_ids": true,
+        "block_count": 9,
+        "errors": []
+      },
+      "details": {
+        "heading_texts": [
+          "Two-column reading order",
+          "Left column",
+          "Right column"
+        ]
+      },
+      "metadata": {
+        "schema": "crispembed.marker/1",
+        "source": "multicolumn.pdf",
+        "backend": "pdfium-text",
+        "page_count": 1,
+        "generated_tokens": 0,
+        "layout_generated_tokens": 0,
+        "layout_capped_pages": 0,
+        "capped_blocks": 0,
+        "warning_count": 1,
+        "warnings": [],
+        "page_stats": [
+          {
+            "page_id": 0,
+            "width": 612,
+            "height": 792,
+            "text_extraction_method": "pdftext",
+            "block_count": 9,
+            "generated_tokens": 0,
+            "layout_generated_tokens": 0,
+            "layout_token_cap_reached": false,
+            "capped_blocks": 0,
+            "warnings": [
+              "Reading order uses a deterministic two-column whitespace heuristic."
+            ],
+            "block_types": {
+              "SectionHeader": 3,
+              "Text": 6
+            }
+          }
+        ],
+        "assets": [],
+        "configuration": {
+          "elapsed_seconds": "0.003216",
+          "headers": "suppressed in rendered text; retained in JSON",
+          "implementation": "crispembed-marker-native",
+          "layout": "PDF font/geometry heuristics",
+          "layout_backend": "pdftext_heuristics",
+          "marker_source_revision": "71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4",
+          "processor": "native-marker-inspired-v1",
+          "schema": "crispembed.marker/1",
+          "software_version": "unknown",
+          "surya_model_parity": "not_claimed",
+          "surya_parity": "not claimed; alternative TeleOCR and deterministic processing",
+          "text_quality": "deterministic-unicode-glyph-and-repetition-v1",
+          "text_quality_check": "deterministic_unicode_heuristic",
+          "upstream_marker": "2.1.0@71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4"
+        }
+      },
+      "native_vs_original_html_text": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 198,
+        "actual_characters": 198,
+        "expected_words": 33,
+        "actual_words": 33,
+        "character_edits": 0,
+        "word_edits": 0,
+        "cer": 0.0,
+        "wer": 0.0,
+        "exact_after_whitespace": true
+      },
+      "reference_note": "Text comparison only; native structure and Markdown serialization may differ.",
+      "output_sha256": {
+        "chunks.json": "9562bc810a4e7b4f2c2a9b6449827eef8e0e13c6f6d19aeedb02733cb219dbcb",
+        "document.html": "7ff9468d7cb10e8649974d4b0c28d6930f43c810c9054a84693199742625bdcf",
+        "document.json": "94f644fe74fc295ac2d989c0cb462c25ab1c8631743e6d01c773a6e827f2dfe8",
+        "document.md": "f9169a51e236cf8a5e89a63e2c61c612eb9564c2e548e4cf17cf7b698678e084",
+        "metadata.json": "94f3daa77c1a80b552033719b3e6baee96ed19fadcc1d0c703fdb86c881f623b"
+      }
+    },
+    {
+      "id": "table",
+      "elapsed_seconds": 0.004096308002772275,
+      "block_types": {
+        "SectionHeader": 1,
+        "Table": 1,
+        "Text": 1
+      },
+      "owned_gold_profile": "body-only for declared running-header/footer fixture; all authored lines otherwise",
+      "native_vs_owned_gold": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 111,
+        "actual_characters": 111,
+        "expected_words": 21,
+        "actual_words": 21,
+        "character_edits": 0,
+        "word_edits": 0,
+        "cer": 0.0,
+        "wer": 0.0,
+        "exact_after_whitespace": true
+      },
+      "rendered_gold_profile": "Same body gold; explicitly declared list bullet markers are represented by list structure. All other characters unchanged.",
+      "native_vs_rendered_gold": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 111,
+        "actual_characters": 111,
+        "expected_words": 21,
+        "actual_words": 21,
+        "character_edits": 0,
+        "word_edits": 0,
+        "cer": 0.0,
+        "wer": 0.0,
+        "exact_after_whitespace": true
+      },
+      "structural_checks": {
+        "page_count": true,
+        "authored_order": true,
+        "all_body_content": true,
+        "rendered_text_exact": true,
+        "native_provenance": true,
+        "no_model_generation": true,
+        "no_image_assets_requested": true,
+        "chunks_have_blocks": true,
+        "authored_headings": true,
+        "authored_table_grid": true,
+        "block_geometry": true
+      },
+      "geometry": {
+        "all_bboxes_inside_pages": true,
+        "unique_block_ids": true,
+        "block_count": 3,
+        "errors": []
+      },
+      "details": {
+        "heading_texts": [
+          "Aligned table fixture"
+        ],
+        "table_grids": [
+          [
+            [
+              "Item",
+              "Quantity",
+              "Price"
+            ],
+            [
+              "Alpha",
+              "2",
+              "$10"
+            ],
+            [
+              "Beta",
+              "3",
+              "$15"
+            ],
+            [
+              "Gamma",
+              "4",
+              "$20"
+            ]
+          ]
+        ]
+      },
+      "metadata": {
+        "schema": "crispembed.marker/1",
+        "source": "table.pdf",
+        "backend": "pdfium-text",
+        "page_count": 1,
+        "generated_tokens": 0,
+        "layout_generated_tokens": 0,
+        "layout_capped_pages": 0,
+        "capped_blocks": 0,
+        "warning_count": 0,
+        "warnings": [],
+        "page_stats": [
+          {
+            "page_id": 0,
+            "width": 612,
+            "height": 792,
+            "text_extraction_method": "pdftext",
+            "block_count": 3,
+            "generated_tokens": 0,
+            "layout_generated_tokens": 0,
+            "layout_token_cap_reached": false,
+            "capped_blocks": 0,
+            "warnings": [],
+            "block_types": {
+              "SectionHeader": 1,
+              "Table": 1,
+              "Text": 1
+            }
+          }
+        ],
+        "assets": [],
+        "configuration": {
+          "elapsed_seconds": "0.003115",
+          "headers": "suppressed in rendered text; retained in JSON",
+          "implementation": "crispembed-marker-native",
+          "layout": "PDF font/geometry heuristics",
+          "layout_backend": "pdftext_heuristics",
+          "marker_source_revision": "71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4",
+          "processor": "native-marker-inspired-v1",
+          "schema": "crispembed.marker/1",
+          "software_version": "unknown",
+          "surya_model_parity": "not_claimed",
+          "surya_parity": "not claimed; alternative TeleOCR and deterministic processing",
+          "text_quality": "deterministic-unicode-glyph-and-repetition-v1",
+          "text_quality_check": "deterministic_unicode_heuristic",
+          "upstream_marker": "2.1.0@71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4"
+        }
+      },
+      "native_vs_original_html_text": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 111,
+        "actual_characters": 111,
+        "expected_words": 21,
+        "actual_words": 21,
+        "character_edits": 0,
+        "word_edits": 0,
+        "cer": 0.0,
+        "wer": 0.0,
+        "exact_after_whitespace": true
+      },
+      "reference_note": "Text comparison only; native structure and Markdown serialization may differ.",
+      "output_sha256": {
+        "chunks.json": "704804d3ac5b17bddd6a732fbf2f3d1b1ba47ba0de5ba69d6a3f7fd9d6093533",
+        "document.html": "2c5bbc46c33e3e4ae771d71bbdb17ce393fb4d1f0e05a5e351da0f22fcbc05d4",
+        "document.json": "b56e5334501ad8038f152c0f83b6334ab787a411fa7e03aba39589dc8252efce",
+        "document.md": "8c8cca1fda2c1c665b23cfa256eb7c4961a83e6a42cf1401db9e1a965b7d5750",
+        "metadata.json": "84c65ea6736d5537991b1307fc7b3e5a936e3317ed237c4e38f7b37687951008"
+      }
+    },
+    {
+      "id": "multipage",
+      "elapsed_seconds": 0.004289128999516834,
+      "block_types": {
+        "SectionHeader": 3,
+        "Text": 3
+      },
+      "owned_gold_profile": "body-only for declared running-header/footer fixture; all authored lines otherwise",
+      "native_vs_owned_gold": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 263,
+        "actual_characters": 263,
+        "expected_words": 48,
+        "actual_words": 48,
+        "character_edits": 0,
+        "word_edits": 0,
+        "cer": 0.0,
+        "wer": 0.0,
+        "exact_after_whitespace": true
+      },
+      "rendered_gold_profile": "Same body gold; explicitly declared list bullet markers are represented by list structure. All other characters unchanged.",
+      "native_vs_rendered_gold": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 263,
+        "actual_characters": 263,
+        "expected_words": 48,
+        "actual_words": 48,
+        "character_edits": 0,
+        "word_edits": 0,
+        "cer": 0.0,
+        "wer": 0.0,
+        "exact_after_whitespace": true
+      },
+      "structural_checks": {
+        "page_count": true,
+        "authored_order": true,
+        "all_body_content": true,
+        "rendered_text_exact": true,
+        "native_provenance": true,
+        "no_model_generation": true,
+        "no_image_assets_requested": true,
+        "chunks_have_blocks": true,
+        "running_header_removed": true,
+        "running_footers_removed": true,
+        "block_geometry": true
+      },
+      "geometry": {
+        "all_bboxes_inside_pages": true,
+        "unique_block_ids": true,
+        "block_count": 12,
+        "errors": []
+      },
+      "details": {},
+      "metadata": {
+        "schema": "crispembed.marker/1",
+        "source": "multipage.pdf",
+        "backend": "pdfium-text",
+        "page_count": 3,
+        "generated_tokens": 0,
+        "layout_generated_tokens": 0,
+        "layout_capped_pages": 0,
+        "capped_blocks": 0,
+        "warning_count": 6,
+        "warnings": [],
+        "page_stats": [
+          {
+            "page_id": 0,
+            "width": 612,
+            "height": 792,
+            "text_extraction_method": "pdftext",
+            "block_count": 4,
+            "generated_tokens": 0,
+            "layout_generated_tokens": 0,
+            "layout_token_cap_reached": false,
+            "capped_blocks": 0,
+            "warnings": [],
+            "block_types": {
+              "PageFooter": 1,
+              "PageHeader": 1,
+              "SectionHeader": 1,
+              "Text": 1
+            }
+          },
+          {
+            "page_id": 1,
+            "width": 612,
+            "height": 792,
+            "text_extraction_method": "pdftext",
+            "block_count": 4,
+            "generated_tokens": 0,
+            "layout_generated_tokens": 0,
+            "layout_token_cap_reached": false,
+            "capped_blocks": 0,
+            "warnings": [],
+            "block_types": {
+              "PageFooter": 1,
+              "PageHeader": 1,
+              "SectionHeader": 1,
+              "Text": 1
+            }
+          },
+          {
+            "page_id": 2,
+            "width": 612,
+            "height": 792,
+            "text_extraction_method": "pdftext",
+            "block_count": 4,
+            "generated_tokens": 0,
+            "layout_generated_tokens": 0,
+            "layout_token_cap_reached": false,
+            "capped_blocks": 0,
+            "warnings": [],
+            "block_types": {
+              "PageFooter": 1,
+              "PageHeader": 1,
+              "SectionHeader": 1,
+              "Text": 1
+            }
+          }
+        ],
+        "assets": [],
+        "configuration": {
+          "elapsed_seconds": "0.003102",
+          "headers": "suppressed in rendered text; retained in JSON",
+          "implementation": "crispembed-marker-native",
+          "layout": "PDF font/geometry heuristics",
+          "layout_backend": "pdftext_heuristics",
+          "marker_source_revision": "71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4",
+          "processor": "native-marker-inspired-v1",
+          "schema": "crispembed.marker/1",
+          "software_version": "unknown",
+          "surya_model_parity": "not_claimed",
+          "surya_parity": "not claimed; alternative TeleOCR and deterministic processing",
+          "text_quality": "deterministic-unicode-glyph-and-repetition-v1",
+          "text_quality_check": "deterministic_unicode_heuristic",
+          "upstream_marker": "2.1.0@71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4"
+        }
+      },
+      "native_vs_original_html_text": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 389,
+        "actual_characters": 263,
+        "expected_words": 72,
+        "actual_words": 48,
+        "character_edits": 126,
+        "word_edits": 24,
+        "cer": 0.32390745501285345,
+        "wer": 0.3333333333333333,
+        "exact_after_whitespace": false
+      },
+      "reference_note": "Original forced-text retains running marginalia; native intentionally removes repeated marginalia.",
+      "output_sha256": {
+        "chunks.json": "72eb3baa5b64c799cfc8ac6027be9ca2f905bc2b9ca0cbbc6f72e44a7eb028a8",
+        "document.html": "e092d8f67085ad723b7872c7e3c577bdc595bdc0565d4a30cd4f5f7da11d5fd3",
+        "document.json": "fce08dbba8b77f437de136148372b877310fe1db1118e0059a3de6cfbee606f7",
+        "document.md": "c0cc03c7437a53990d516d9d160cb867a113589d5f1725e6e2322a6255d52329",
+        "metadata.json": "1ee9a3d4a3b6309ab78837bfc23e64705365282974192ebda5550660d36be0a7"
+      }
+    },
+    {
+      "id": "rotated",
+      "elapsed_seconds": 0.003969167002651375,
+      "block_types": {
+        "SectionHeader": 1,
+        "Text": 1
+      },
+      "owned_gold_profile": "body-only for declared running-header/footer fixture; all authored lines otherwise",
+      "native_vs_owned_gold": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 46,
+        "actual_characters": 46,
+        "expected_words": 6,
+        "actual_words": 6,
+        "character_edits": 0,
+        "word_edits": 0,
+        "cer": 0.0,
+        "wer": 0.0,
+        "exact_after_whitespace": true
+      },
+      "rendered_gold_profile": "Same body gold; explicitly declared list bullet markers are represented by list structure. All other characters unchanged.",
+      "native_vs_rendered_gold": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 46,
+        "actual_characters": 46,
+        "expected_words": 6,
+        "actual_words": 6,
+        "character_edits": 0,
+        "word_edits": 0,
+        "cer": 0.0,
+        "wer": 0.0,
+        "exact_after_whitespace": true
+      },
+      "structural_checks": {
+        "page_count": true,
+        "authored_order": true,
+        "all_body_content": true,
+        "rendered_text_exact": true,
+        "native_provenance": true,
+        "no_model_generation": true,
+        "no_image_assets_requested": true,
+        "chunks_have_blocks": true,
+        "block_geometry": true
+      },
+      "geometry": {
+        "all_bboxes_inside_pages": true,
+        "unique_block_ids": true,
+        "block_count": 2,
+        "errors": []
+      },
+      "details": {},
+      "metadata": {
+        "schema": "crispembed.marker/1",
+        "source": "rotated.pdf",
+        "backend": "pdfium-text",
+        "page_count": 1,
+        "generated_tokens": 0,
+        "layout_generated_tokens": 0,
+        "layout_capped_pages": 0,
+        "capped_blocks": 0,
+        "warning_count": 1,
+        "warnings": [],
+        "page_stats": [
+          {
+            "page_id": 0,
+            "width": 612,
+            "height": 792,
+            "text_extraction_method": "pdftext",
+            "block_count": 2,
+            "generated_tokens": 0,
+            "layout_generated_tokens": 0,
+            "layout_token_cap_reached": false,
+            "capped_blocks": 0,
+            "warnings": [
+              "Vertical word-span progression indicates a 90-degree quarter-turn; reading order uses unrotated geometry."
+            ],
+            "block_types": {
+              "SectionHeader": 1,
+              "Text": 1
+            }
+          }
+        ],
+        "assets": [],
+        "configuration": {
+          "elapsed_seconds": "0.003102",
+          "headers": "suppressed in rendered text; retained in JSON",
+          "implementation": "crispembed-marker-native",
+          "layout": "PDF font/geometry heuristics",
+          "layout_backend": "pdftext_heuristics",
+          "marker_source_revision": "71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4",
+          "processor": "native-marker-inspired-v1",
+          "schema": "crispembed.marker/1",
+          "software_version": "unknown",
+          "surya_model_parity": "not_claimed",
+          "surya_parity": "not claimed; alternative TeleOCR and deterministic processing",
+          "text_quality": "deterministic-unicode-glyph-and-repetition-v1",
+          "text_quality_check": "deterministic_unicode_heuristic",
+          "upstream_marker": "2.1.0@71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4"
+        }
+      },
+      "native_vs_original_html_text": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 46,
+        "actual_characters": 46,
+        "expected_words": 6,
+        "actual_words": 6,
+        "character_edits": 26,
+        "word_edits": 4,
+        "cer": 0.5652173913043478,
+        "wer": 0.6666666666666666,
+        "exact_after_whitespace": false
+      },
+      "reference_note": "Original forced-text reverses heading/sentence order on this rotated page.",
+      "output_sha256": {
+        "chunks.json": "388f76b162c37dd4517c5e3ce6b25c72253f06ba2dcffe1e2e991a8761bce6c7",
+        "document.html": "2177fb035239780108f1d59510ec6d135b73c67f3b5a60133b9e2cfcf404329f",
+        "document.json": "d35c24626a7f5c3c403332b3be6cc1feca09505e1aef20f48fe17579fcd40f9a",
+        "document.md": "f54c51fa7fbb7d1cb26b5f27f02c0f2d3608419c4c5989bccb91ca3235f861c5",
+        "metadata.json": "8d4091f097b82fd71db344c3a25f39684d49a799c4a11a9709f6575f4440d63c"
+      }
+    },
+    {
+      "id": "encrypted",
+      "elapsed_seconds": 0.0038711989982402883,
+      "block_types": {
+        "SectionHeader": 1,
+        "Text": 1
+      },
+      "owned_gold_profile": "body-only for declared running-header/footer fixture; all authored lines otherwise",
+      "native_vs_owned_gold": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 60,
+        "actual_characters": 60,
+        "expected_words": 9,
+        "actual_words": 9,
+        "character_edits": 0,
+        "word_edits": 0,
+        "cer": 0.0,
+        "wer": 0.0,
+        "exact_after_whitespace": true
+      },
+      "rendered_gold_profile": "Same body gold; explicitly declared list bullet markers are represented by list structure. All other characters unchanged.",
+      "native_vs_rendered_gold": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 60,
+        "actual_characters": 60,
+        "expected_words": 9,
+        "actual_words": 9,
+        "character_edits": 0,
+        "word_edits": 0,
+        "cer": 0.0,
+        "wer": 0.0,
+        "exact_after_whitespace": true
+      },
+      "structural_checks": {
+        "page_count": true,
+        "authored_order": true,
+        "all_body_content": true,
+        "rendered_text_exact": true,
+        "native_provenance": true,
+        "no_model_generation": true,
+        "no_image_assets_requested": true,
+        "chunks_have_blocks": true,
+        "block_geometry": true
+      },
+      "geometry": {
+        "all_bboxes_inside_pages": true,
+        "unique_block_ids": true,
+        "block_count": 2,
+        "errors": []
+      },
+      "details": {},
+      "metadata": {
+        "schema": "crispembed.marker/1",
+        "source": "encrypted.pdf",
+        "backend": "pdfium-text",
+        "page_count": 1,
+        "generated_tokens": 0,
+        "layout_generated_tokens": 0,
+        "layout_capped_pages": 0,
+        "capped_blocks": 0,
+        "warning_count": 0,
+        "warnings": [],
+        "page_stats": [
+          {
+            "page_id": 0,
+            "width": 612,
+            "height": 792,
+            "text_extraction_method": "pdftext",
+            "block_count": 2,
+            "generated_tokens": 0,
+            "layout_generated_tokens": 0,
+            "layout_token_cap_reached": false,
+            "capped_blocks": 0,
+            "warnings": [],
+            "block_types": {
+              "SectionHeader": 1,
+              "Text": 1
+            }
+          }
+        ],
+        "assets": [],
+        "configuration": {
+          "elapsed_seconds": "0.003310",
+          "headers": "suppressed in rendered text; retained in JSON",
+          "implementation": "crispembed-marker-native",
+          "layout": "PDF font/geometry heuristics",
+          "layout_backend": "pdftext_heuristics",
+          "marker_source_revision": "71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4",
+          "processor": "native-marker-inspired-v1",
+          "schema": "crispembed.marker/1",
+          "software_version": "unknown",
+          "surya_model_parity": "not_claimed",
+          "surya_parity": "not claimed; alternative TeleOCR and deterministic processing",
+          "text_quality": "deterministic-unicode-glyph-and-repetition-v1",
+          "text_quality_check": "deterministic_unicode_heuristic",
+          "upstream_marker": "2.1.0@71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4"
+        }
+      },
+      "native_vs_original_html_text": null,
+      "reference_note": "skip: the pinned PdfProvider does not accept a password",
+      "output_sha256": {
+        "chunks.json": "f9ce44874868d2fd76a3b089dfbe1ee00497bb15d6416e80356020761264a5e9",
+        "document.html": "7702c2b931537537e99ac94826700cdfdc242e80e44c2437b8a24a291895f484",
+        "document.json": "f9d556b05214517ed6c4fb8b10f1ed6b9e6c683f43f17060f840a654466fdd91",
+        "document.md": "dcfb2e417d0f2faa74e7f3fb9b67e77e43d63073fcb624f611a006139061e248",
+        "metadata.json": "bca39274e02a5bdac19fa7c44c1631fb03035aee2db78a3a486d2bf128bc219e"
+      }
+    }
+  ],
+  "model_inference_tested": false,
+  "fixture_gold_sha256": "a250d007848a99028c33b74d96da66c77b8ca8d6841097e5dde52f7244a0e4c3",
+  "reference_receipt_sha256": "700eef02dc93d3a0d6c92af624cfda6c054a615e4bc2617fcbd54820404ded1b",
+  "reference_marker_revision": "71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4",
+  "native_library_sha256": "6453530ae6272064e4633ea7d7be0e80c5464cbaf9871108a02adced687c591d",
+  "pdfium_library_sha256": "cb59522bf0c48a6408fd2adc8c87120a1418bacbda193f898e8cdccda7d5ca27",
+  "same_pdfium_binary": true,
+  "pdfium_version": {
+    "major": 151,
+    "minor": 0,
+    "build": 7891,
+    "patch": 0,
+    "n_commits": 0,
+    "hash": null,
+    "origin": "pdfium-binaries",
+    "flags": []
+  },
+  "native_source_sha256": {
+    "src/marker.cpp": "00d892433a64497fb657cc31b95f7770d02aa101ddce624457f771931b297db2",
+    "src/marker_document.cpp": "43b26f348788bf8c861c7ecdb99049593e6e0dd49653e7b13012b4315792c2d9",
+    "src/marker_document.h": "6cfbd50d18e411c2f89c0df4183551beebc7d7bede4eb710a4383820e9e1425b",
+    "src/marker_backend.cpp": "ce0982e5e0278960bac0a8fde1aec83b32563f7571eedbbf17b35d1d02466bae",
+    "src/marker_backend.h": "e4f028f64d3a9aecd0b582064b574c4fa7d8edcca3fcf6bc149b4c1c7c50bbe6",
+    "src/crispembed.h": "872d2e8cab569320e984ee60f86a9ee07b5d5fe01b2e3faf859b3a9594bfe33c",
+    "python/crispembed/_marker.py": "6d766cb7b21a6f4dabfe243b832cbb1085d68b0bba39493087ddc9c30df47639",
+    "CMakeLists.txt": "2064c2ff29ee1f788982b1b8299c0b816c0c624d5f0e0085c169faf48ffbf94b"
+  },
+  "source_fingerprint_scope": "Workspace files observed at execution; binary hash is independent. Build correspondence requires the build receipt.",
+  "comparison_script_sha256": "706f967deade78e9a395aa0c3f23f476a5574d1f2a9e71692682ec458ea7ea14",
+  "metric_helper_sha256": "c784ddc780d0f10a1c84c11b8073a6488f093d4da9bfc6e6c9153377dbbed6a1",
+  "configuration": {
+    "mode": "text",
+    "n_threads": 1,
+    "dpi": 96,
+    "extract_images": false,
+    "include_page_headers": false
+  },
+  "summary": {
+    "pdf_cases": 8,
+    "checks_passed": 86,
+    "check_count": 86,
+    "owned_gold_zero_cer_wer_cases": 7,
+    "rendered_gold_zero_cer_wer_cases": 8,
+    "original_reference_zero_cer_wer_cases": 4,
+    "original_reference_cases": 7
+  },
+  "elapsed_seconds": 0.39257263200124726
+}

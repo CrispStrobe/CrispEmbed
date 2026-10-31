@@ -1,5 +1,41 @@
 # CrispEmbed active plan —29 October2026 wrap-up
 
+## Native Marker-style document pipeline — 31 October 2026
+
+The requested implementation and bounded validation are complete on
+`feat/marker-native`, preserving the completed TeleOCR
+branch and merges `origin/main@b8cd249` before code changes. Marker source is
+pinned to `71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4` (2.1.0, Apache-2.0).
+The requested GGUF/GGML route uses the existing native TeleOCR backend and a
+C++ document pipeline. Current Surya checkpoint inference/parity is outside
+this alternative backend: its separately restricted models are not downloaded.
+
+- Native C ABI/orchestration, optional PDFium, layout/crop OCR, document
+  processors/renderers, CLI, Python/Rust/Dart and HTTP are implemented. See
+  [usage](docs/marker.md), [coverage](docs/marker-feature-coverage.md),
+  [licenses](docs/marker-license.md) and [validation](docs/marker-validation.md).
+- Final document/backend/C API/save panels pass 86/39/38/38 checks; public
+  integration 112, compiled Rust/Dart 13/14, final ASAN/UBSAN 86 and actual
+  Python packaging 26. The independent native/reference panel passes 86
+  checks across eight PDFs/ten pages. Initial failures and corrections remain.
+- Real model runs use a declared, tiny owned panel. Final-source F16/Q8_0/Q4_K
+  recover the three-line image exactly; the initial F16 full panel also covers
+  neural PDF layout with text reuse and a 4×3 table. Keep raw label errors and
+  table-header semantics limitations visible. The separately declared final
+  force-OCR PDF also matches authored text with embedded extraction bypassed.
+  Seven mode/build/precision trials reuse three distinct inputs; complete
+  per-build receipts remain in [the aggregate](tests/results/marker/summary.json).
+- Keep `CRISPEMBED_MARKER` and `CRISPEMBED_TELEOCR` default-off. No model
+  publication, registry alias, runtime release or numerical qualification change.
+- Remaining qualification is representative multilingual/layout/reading-order
+  quality, more than two columns, complex tables, large-document resource
+  boundaries and non-Linux backends/consumers. This implementation does not
+  claim the original Surya model behavior, Office/EPUB providers or hosted LLM
+  processors. Upstream models retain their separate restrictions.
+- Resource check before bounded work: idle host, CPU-only inference sequentially,
+  no simultaneous model forwards. Reuse the frozen TeleOCR numerical evidence;
+  this pipeline does not waive its failed strict intermediate gates.
+
 ## TeleOCR GGUF/GGML integration — 31 October 2026
 
 The requested native implementation and bounded CPU validation are complete

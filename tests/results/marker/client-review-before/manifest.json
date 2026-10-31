@@ -1,0 +1,18 @@
+{
+  "kind": "marker-client-review-preimage",
+  "utc": "2026-10-31T19:16:28.867166+00:00",
+  "files": [
+    {
+      "path": "python/crispembed/_marker.py",
+      "snapshot": "tests/results/marker/client-review-before/_marker.py",
+      "sha256": "6d766cb7b21a6f4dabfe243b832cbb1085d68b0bba39493087ddc9c30df47639",
+      "bytes": 9276
+    },
+    {
+      "path": "examples/marker/main.cpp",
+      "snapshot": "tests/results/marker/client-review-before/main.cpp",
+      "sha256": "62d93966b84a8ead5389ff95e06f5ad1332bdd261887b498af35d68df73bd74b",
+      "bytes": 6037
+    }
+  ]
+}

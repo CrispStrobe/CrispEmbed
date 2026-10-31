@@ -1,0 +1,114 @@
+{
+  "kind": "marker-client-review-fixes",
+  "utc": "2026-10-31T19:24:32.762869+00:00",
+  "scope": [
+    "PIL images always convert to RGBA, resolving palette and RGB PNG transparency",
+    "Python and CLI preflight every output/metadata/asset destination before writes",
+    "Existing assets must be byte-identical; identical assets are reused without writing",
+    "Reject unsafe names, symlinks, output/metadata aliases and duplicate destinations",
+    "Exclusive asset creation and per-file atomic primary/metadata replacement"
+  ],
+  "limits": [
+    "Preflight protects detected conflicts; not an all-files transaction across I/O failure",
+    "No new native inference or native library build performed for these client tests",
+    "C++ tests executed on Linux; Windows compilation not executed"
+  ],
+  "before": [
+    {
+      "path": "python/crispembed/_marker.py",
+      "snapshot": "tests/results/marker/client-review-before/_marker.py",
+      "sha256": "6d766cb7b21a6f4dabfe243b832cbb1085d68b0bba39493087ddc9c30df47639",
+      "bytes": 9276
+    },
+    {
+      "path": "examples/marker/main.cpp",
+      "snapshot": "tests/results/marker/client-review-before/main.cpp",
+      "sha256": "62d93966b84a8ead5389ff95e06f5ad1332bdd261887b498af35d68df73bd74b",
+      "bytes": 6037
+    }
+  ],
+  "after": [
+    {
+      "path": "python/crispembed/_marker.py",
+      "sha256": "e766a803a010d05bf705746692e227fa6a0d03df4ab70e248e16eb51e138b6fc",
+      "bytes": 13836
+    },
+    {
+      "path": "examples/marker/main.cpp",
+      "sha256": "fee6cb1340b241d9e561886dc2c2f47d59396e5cbd7f5ff71840f8d5603e494d",
+      "bytes": 6573
+    },
+    {
+      "path": "examples/marker/save_bundle.h",
+      "sha256": "71d2bd6542cc0396e18b45034f23179177b024a6dff3c888397e13c56dd8c4b3",
+      "bytes": 8737
+    },
+    {
+      "path": "tests/test_marker_clients.py",
+      "sha256": "4382093748a5068879e5cd82700e123a5e85fbe4e2bfdb45f7183031032b21b9",
+      "bytes": 10002
+    },
+    {
+      "path": "tests/test-marker-save.cpp",
+      "sha256": "383a3c672406aae77a38f46150552983cafabe2db5aed4b48be5805604aa85db",
+      "bytes": 9676
+    }
+  ],
+  "file_convert_method": {
+    "byte_equivalent": true,
+    "bytes": 382,
+    "sha256": "212005e8d66f18eb6a005a1b35765c4420034c64fc03e90826ce5bebf976ad89"
+  },
+  "tests": [
+    {
+      "command": "../.teleocr-venv/bin/python tests/test_marker_clients.py",
+      "exit_code": 0,
+      "passed": 17,
+      "total": 17,
+      "log": "tests/results/marker/client-python.log"
+    },
+    {
+      "command": "g++ -std=c++17 -O2 -Wall -Wextra -Werror -Isrc tests/test-marker-save.cpp -o ../marker-work/test-marker-save-client-review",
+      "exit_code": 0,
+      "log": "tests/results/marker/client-cpp-build.log"
+    },
+    {
+      "command": "../marker-work/test-marker-save-client-review",
+      "exit_code": 0,
+      "passed": 38,
+      "total": 38,
+      "log": "tests/results/marker/client-cpp.log"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    }
+  ],
+  "formatting": {
+    "command": "../.teleocr-venv/bin/clang-format -i examples/marker/main.cpp examples/marker/save_bundle.h tests/test-marker-save.cpp",
+    "version": "18.1.8",
+    "exit_code": 0
+  },
+  "runtime": {
+    "python": "3.12.14",
+    "pillow": "13.0.0",
+    "numpy": "2.5.4"
+  },
+  "logs": [
+    {
+      "path": "tests/results/marker/client-python.log",
+      "sha256": "abe951eb9d955e70227b1cc1fbf9fa35c52319169b6b8f266d9488002fc2909c",
+      "bytes": 2409
+    },
+    {
+      "path": "tests/results/marker/client-cpp-build.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "tests/results/marker/client-cpp.log",
+      "sha256": "087bc3dfe299813a79ad2e168a3b4b1d5eeca8dd716678fe681bd2c7873b97d2",
+      "bytes": 1396
+    }
+  ]
+}

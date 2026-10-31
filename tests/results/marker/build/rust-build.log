@@ -1,0 +1,22 @@
+     Locking 3 packages to highest compatible versions
+   Compiling libc v0.2.191
+   Compiling crispembed-sys v0.17.14 (/workspace/scratch/960329398638/CrispEmbed-Marker/crispembed-sys)
+error: linking with `cc` failed: exit status: 1
+  |
+  = note:  "cc" "-m64" "/workspace/scratch/960329398638/marker-work/rust-public/../rust-target/release/build/crispembed-sys-e3f37d5ce4d7bbb3/rustcKhx3Vv/symbols.o" "<2 object files omitted>" "-Wl,--as-needed" "-Wl,-Bstatic" "<sysroot>/lib/rustlib/x86_64-unknown-linux-gnu/lib/{libstd-*,libpanic_unwind-*,libobject-*,libmemchr-*,libaddr2line-*,libgimli-*,libcfg_if-*,librustc_demangle-*,libstd_detect-*,libhashbrown-*,librustc_std_workspace_alloc-*,libminiz_oxide-*,libadler2-*,libunwind-*,liblibc-*,librustc_std_workspace_core-*,liballoc-*,libcore-*,libcompiler_builtins-*}.rlib" "-Wl,-Bdynamic" "-lgcc_s" "-lutil" "-lrt" "-lpthread" "-lm" "-ldl" "-lc" "-L" "/workspace/scratch/960329398638/marker-work/rust-public/../rust-target/release/build/crispembed-sys-e3f37d5ce4d7bbb3/rustcKhx3Vv/raw-dylibs" "-B<sysroot>/lib/rustlib/x86_64-unknown-linux-gnu/bin/gcc-ld" "-fuse-ld=lld" "-Wl,--eh-frame-hdr" "-Wl,-z,noexecstack" "-L" "<sysroot>/lib/rustlib/x86_64-unknown-linux-gnu/lib" "-o" "/workspace/scratch/960329398638/marker-work/rust-public/../rust-target/release/build/crispembed-sys-e3f37d5ce4d7bbb3/build_script_build-e3f37d5ce4d7bbb3" "-Wl,--gc-sections" "-pie" "-Wl,-z,relro,-z,now" "-Wl,--strip-debug" "-nodefaultlibs"
+  = note: some arguments are omitted. use `--verbose` to show all linker arguments
+  = note: lld-wrapper: could not get the path of the current executable: no /proc/self/exe available. Is /proc mounted?
+          collect2: error: ld returned 1 exit status
+          
+
+error: could not compile `crispembed-sys` (build script) due to 1 previous error
+warning: build failed, waiting for other jobs to finish...
+error: linking with `cc` failed: exit status: 1
+  |
+  = note:  "cc" "-m64" "/workspace/scratch/960329398638/marker-work/rust-public/../rust-target/release/build/libc-cda79ff38737910e/rustcBKTxSF/symbols.o" "<3 object files omitted>" "-Wl,--as-needed" "-Wl,-Bstatic" "<sysroot>/lib/rustlib/x86_64-unknown-linux-gnu/lib/{libstd-*,libpanic_unwind-*,libobject-*,libmemchr-*,libaddr2line-*,libgimli-*,libcfg_if-*,librustc_demangle-*,libstd_detect-*,libhashbrown-*,librustc_std_workspace_alloc-*,libminiz_oxide-*,libadler2-*,libunwind-*,liblibc-*,librustc_std_workspace_core-*,liballoc-*,libcore-*,libcompiler_builtins-*}.rlib" "-Wl,-Bdynamic" "-lgcc_s" "-lutil" "-lrt" "-lpthread" "-lm" "-ldl" "-lc" "-L" "/workspace/scratch/960329398638/marker-work/rust-public/../rust-target/release/build/libc-cda79ff38737910e/rustcBKTxSF/raw-dylibs" "-B<sysroot>/lib/rustlib/x86_64-unknown-linux-gnu/bin/gcc-ld" "-fuse-ld=lld" "-Wl,--eh-frame-hdr" "-Wl,-z,noexecstack" "-L" "<sysroot>/lib/rustlib/x86_64-unknown-linux-gnu/lib" "-o" "/workspace/scratch/960329398638/marker-work/rust-public/../rust-target/release/build/libc-cda79ff38737910e/build_script_build-cda79ff38737910e" "-Wl,--gc-sections" "-pie" "-Wl,-z,relro,-z,now" "-Wl,--strip-debug" "-nodefaultlibs"
+  = note: some arguments are omitted. use `--verbose` to show all linker arguments
+  = note: lld-wrapper: could not get the path of the current executable: no /proc/self/exe available. Is /proc mounted?
+          collect2: error: ld returned 1 exit status
+          
+
+error: could not compile `libc` (build script) due to 1 previous error

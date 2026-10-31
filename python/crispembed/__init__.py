@@ -19,8 +19,10 @@ from ._mineru import CrispMinerU
 from ._oxr import CrispOXR
 
 from ._systemone import CrispSystemOne
+from ._marker import CrispMarker
 
 __all__ = [
+    "CrispMarker",
     "CrispSystemOne",
     "CrispMoEdern",
     "CrispMinerU",

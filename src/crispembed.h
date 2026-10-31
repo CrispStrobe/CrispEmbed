@@ -9,6 +9,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stddef.h>
 
 // DLL export/import on Windows.
 // - CRISPEMBED_BUILD:  defined when building the shared library (exports)
@@ -1522,6 +1523,57 @@ CRISPEMBED_API const char * crispembed_systemone_run_json(crispembed_systemone_c
 // NULL ctx returns this thread's last initialization/invalid-handle error.
 CRISPEMBED_API const char * crispembed_systemone_error(const crispembed_systemone_context * ctx);
 CRISPEMBED_API const char * crispembed_systemone_profile(const crispembed_systemone_context * ctx);
+
+// ---------------------------------------------------------------------------
+// Native Marker-style document conversion. Apache-derived document processing,
+// optional native PDFium, and the separately gated TeleOCR GGUF/GGML backend.
+// This is an alternative inference pipeline, not a Surya model port.
+// ---------------------------------------------------------------------------
+typedef struct crispembed_marker_context crispembed_marker_context;
+
+typedef struct crispembed_marker_config {
+    size_t struct_size;       // Must equal sizeof(crispembed_marker_config).
+    const char * model_path;  // Local TeleOCR GGUF. Required for modes 0 and 2.
+    const char * pdfium_path; // Explicit native PDFium library; required for PDF.
+    const char * password;    // Optional PDF password; copied during init.
+    int mode;                 // 0=auto (PDF text + TeleOCR), 1=digital text only, 2=force OCR.
+    int n_threads;
+    int first_page; // Inclusive, zero-based.
+    int last_page;  // Inclusive; -1 selects the final page.
+    int dpi;
+    int max_tokens;
+    int max_layout_tokens;
+    int max_blocks;
+    int max_pages;
+    uint64_t max_pixels;
+    uint64_t max_asset_bytes;
+    int include_page_headers;
+    int extract_images;
+} crispembed_marker_config;
+
+/// Returns a fully initialized, versioned configuration.
+CRISPEMBED_API crispembed_marker_config crispembed_marker_default_config(void);
+/// Requires CRISPEMBED_MARKER=1. Modes 0/2 also require CRISPEMBED_TELEOCR=1.
+/// No model/library downloads. Copies strings; returns NULL with marker_error(NULL).
+CRISPEMBED_API crispembed_marker_context * crispembed_marker_init(const crispembed_marker_config * config);
+CRISPEMBED_API void crispembed_marker_free(crispembed_marker_context * ctx);
+/// Convert a PDF or an image file. 1=success, 0=failure. Failure clears old output.
+CRISPEMBED_API int crispembed_marker_convert(crispembed_marker_context * ctx, const char * file_path);
+/// Convert tightly packed gray/RGB/RGBA pixels as a single page (modes 0/2).
+CRISPEMBED_API int crispembed_marker_convert_raw(crispembed_marker_context * ctx, const uint8_t * pixels, int width,
+                                                 int height, int channels);
+/// Format is markdown, html, json or chunks. Owned result valid until next render,
+/// convert or free. JSON/chunks include provenance, warnings and block geometry.
+CRISPEMBED_API const char * crispembed_marker_render(crispembed_marker_context * ctx, const char * format);
+CRISPEMBED_API const char * crispembed_marker_metadata(crispembed_marker_context * ctx);
+/// NULL ctx returns this thread's last initialization/invalid-handle error.
+CRISPEMBED_API const char * crispembed_marker_error(const crispembed_marker_context * ctx);
+/// Image assets use safe generated basenames. Borrowed pointers remain valid
+/// until the next conversion or free. Client must synchronize borrowed reads.
+CRISPEMBED_API int crispembed_marker_asset_count(const crispembed_marker_context * ctx);
+CRISPEMBED_API const char * crispembed_marker_asset_name(const crispembed_marker_context * ctx, int index);
+CRISPEMBED_API const uint8_t * crispembed_marker_asset_data(const crispembed_marker_context * ctx, int index,
+                                                            size_t * out_size);
 
 #ifdef __cplusplus
 }

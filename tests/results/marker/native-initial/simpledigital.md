@@ -1,0 +1,5 @@
+# Native document test
+
+Hello from CrispEmbed.
+
+PDF text stays searchable.

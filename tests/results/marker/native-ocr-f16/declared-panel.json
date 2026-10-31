@@ -1,0 +1,64 @@
+{
+  "kind": "native-marker-real-model-panel",
+  "model_file": "teleocr-f16.gguf",
+  "expected_model_sha256": "6c52a2800e313964717cf4e5d06e0392c2b5936d8adeac423d563b8a026a2780",
+  "library_sha256": "6453530ae6272064e4633ea7d7be0e80c5464cbaf9871108a02adced687c591d",
+  "source_sha256": {
+    "src/marker.cpp": "00d892433a64497fb657cc31b95f7770d02aa101ddce624457f771931b297db2",
+    "src/marker_backend.cpp": "ce0982e5e0278960bac0a8fde1aec83b32563f7571eedbbf17b35d1d02466bae",
+    "src/marker_document.cpp": "43b26f348788bf8c861c7ecdb99049593e6e0dd49653e7b13012b4315792c2d9",
+    "src/qwen2vl_ocr.cpp": "a83dc3b0255f790a5272458c29b754ed1eba2d88eae3c2d5d254def03d20f8c9",
+    "tests/marker_native.py": "01fd044f1455acef389d393f7e63e138de67bb48221aa8b00b696c5e07debead"
+  },
+  "max_tokens": 1024,
+  "max_layout_tokens": 1024,
+  "threads": 2,
+  "backend": "CPU",
+  "cases": [
+    {
+      "id": "synthetic-image",
+      "input": "tests/fixtures/teleocr/synthetic-text.png",
+      "sha256": "54505c242287c7f666bb9fa8953a2f419a16a8b802e79ab0dd09945400703be8",
+      "gold_text": "Hello TeleOCR\nInvoice 42\nTotal: EUR 19.50",
+      "table": null
+    },
+    {
+      "id": "digital-auto",
+      "input": "tests/fixtures/marker/simpledigital.pdf",
+      "sha256": "5abed1c20795f862b63e3792f1964b2d5932c9d28ccaf8398e2e5b9ec0217374",
+      "gold_text": "Native document test\nHello from CrispEmbed.\nPDF text stays searchable.",
+      "table": null
+    },
+    {
+      "id": "table-image",
+      "input": "tests/fixtures/marker/table-page-1.png",
+      "sha256": "cce791c7de646d362321311f1894536da90b4d4ddd9de5764868eee677cd0f90",
+      "gold_text": "Aligned table fixture\nItem\nQuantity\nPrice\nAlpha\n2\n$10\nBeta\n3\n$15\nGamma\n4\n$20\nAll values are invented test data.",
+      "table": [
+        [
+          "Item",
+          "Quantity",
+          "Price"
+        ],
+        [
+          "Alpha",
+          "2",
+          "$10"
+        ],
+        [
+          "Beta",
+          "3",
+          "$15"
+        ],
+        [
+          "Gamma",
+          "4",
+          "$20"
+        ]
+      ]
+    }
+  ],
+  "quality_protocol": "Whitespace collapse only; preserve punctuation/case/Unicode; exact cells scored separately.",
+  "surya_parity": false,
+  "teleocr_strict_numerical_qualification": false
+}

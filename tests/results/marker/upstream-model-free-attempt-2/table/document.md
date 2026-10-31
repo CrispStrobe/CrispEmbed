@@ -1,0 +1,1 @@
+**Aligned table fixture Item Quantity Price** Alpha 2 \$10 Beta 3 \$15 Gamma 4 \$20 All values are invented test data.

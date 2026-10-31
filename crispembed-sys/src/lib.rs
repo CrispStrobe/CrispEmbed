@@ -4,6 +4,48 @@
 use std::ffi::{c_char, c_float, c_int};
 use std::os::raw::c_void;
 
+#[repr(C)]
+pub struct CrispembedMarkerContext(c_void);
+
+/// Versioned mirror of crispembed_marker_config; obtain defaults from C.
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct CrispembedMarkerConfig {
+    pub struct_size: usize,
+    pub model_path: *const c_char,
+    pub pdfium_path: *const c_char,
+    pub password: *const c_char,
+    pub mode: c_int,
+    pub n_threads: c_int,
+    pub first_page: c_int,
+    pub last_page: c_int,
+    pub dpi: c_int,
+    pub max_tokens: c_int,
+    pub max_layout_tokens: c_int,
+    pub max_blocks: c_int,
+    pub max_pages: c_int,
+    pub max_pixels: u64,
+    pub max_asset_bytes: u64,
+    pub include_page_headers: c_int,
+    pub extract_images: c_int,
+}
+
+extern "C" {
+    pub fn crispembed_marker_default_config() -> CrispembedMarkerConfig;
+    pub fn crispembed_marker_init(config: *const CrispembedMarkerConfig) -> *mut CrispembedMarkerContext;
+    pub fn crispembed_marker_free(ctx: *mut CrispembedMarkerContext);
+    pub fn crispembed_marker_convert(ctx: *mut CrispembedMarkerContext, file: *const c_char) -> c_int;
+    pub fn crispembed_marker_convert_raw(ctx: *mut CrispembedMarkerContext, pixels: *const u8,
+        width: c_int, height: c_int, channels: c_int) -> c_int;
+    pub fn crispembed_marker_render(ctx: *mut CrispembedMarkerContext, format: *const c_char) -> *const c_char;
+    pub fn crispembed_marker_metadata(ctx: *mut CrispembedMarkerContext) -> *const c_char;
+    pub fn crispembed_marker_error(ctx: *const CrispembedMarkerContext) -> *const c_char;
+    pub fn crispembed_marker_asset_count(ctx: *const CrispembedMarkerContext) -> c_int;
+    pub fn crispembed_marker_asset_name(ctx: *const CrispembedMarkerContext, index: c_int) -> *const c_char;
+    pub fn crispembed_marker_asset_data(ctx: *const CrispembedMarkerContext, index: c_int,
+        out_size: *mut usize) -> *const u8;
+}
+
 /// Opaque handle to a loaded crispembed model.
 #[repr(C)]
 pub struct CrispembedContext(c_void);

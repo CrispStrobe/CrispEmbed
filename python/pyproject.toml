@@ -69,6 +69,11 @@ crispembed = [
     # `pip install` user has the EU AI Act Art. 5 prohibitions and the GDPR
     # Art. 9 note on hand without visiting the repo.
     "POLICY.md",
+    # Required Apache attributions for bundled Marker/TeleOCR native code.
+    # setup.py stages them from the checkout or retains them from an sdist.
+    "NOTICE.marker",
+    "NOTICE.teleocr",
+    "Apache-2.0.txt",
 ]
 
 # cibuildwheel configuration: the actual lib compile happens in

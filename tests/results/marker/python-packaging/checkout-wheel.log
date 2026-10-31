@@ -1,0 +1,125 @@
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/setuptools/config/_apply_pyprojecttoml.py:82: SetuptoolsDeprecationWarning: `project.license` as a TOML table is deprecated
+!!
+
+        ********************************************************************************
+        Please use a simple string containing a SPDX expression for `project.license`. You can also use `project.license-files`. (Both options available on setuptools>=77.0.0).
+
+        By 2027-Feb-18, you need to update your project and remove deprecated calls
+        or your builds will no longer be supported.
+
+        See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license for details.
+        ********************************************************************************
+
+!!
+  corresp(dist, value, root_dir)
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/setuptools/config/_apply_pyprojecttoml.py:61: SetuptoolsDeprecationWarning: License classifiers are deprecated.
+!!
+
+        ********************************************************************************
+        Please consider removing the following classifiers in favor of a SPDX license expression:
+
+        License :: OSI Approved :: MIT License
+
+        See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license for details.
+        ********************************************************************************
+
+!!
+  dist._finalize_license_expression()
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/setuptools/dist.py:765: SetuptoolsDeprecationWarning: License classifiers are deprecated.
+!!
+
+        ********************************************************************************
+        Please consider removing the following classifiers in favor of a SPDX license expression:
+
+        License :: OSI Approved :: MIT License
+
+        See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license for details.
+        ********************************************************************************
+
+!!
+  self._finalize_license_expression()
+running bdist_wheel
+running build
+running build_py
+creating build/lib.linux-x86_64-cpython-312/crispembed
+copying crispembed/_moedern_text.py -> build/lib.linux-x86_64-cpython-312/crispembed
+copying crispembed/_systemone.py -> build/lib.linux-x86_64-cpython-312/crispembed
+copying crispembed/_marker.py -> build/lib.linux-x86_64-cpython-312/crispembed
+copying crispembed/image.py -> build/lib.linux-x86_64-cpython-312/crispembed
+copying crispembed/__init__.py -> build/lib.linux-x86_64-cpython-312/crispembed
+copying crispembed/_binding.py -> build/lib.linux-x86_64-cpython-312/crispembed
+running egg_info
+creating crispembed.egg-info
+writing crispembed.egg-info/PKG-INFO
+writing dependency_links to crispembed.egg-info/dependency_links.txt
+writing requirements to crispembed.egg-info/requires.txt
+writing top-level names to crispembed.egg-info/top_level.txt
+writing manifest file 'crispembed.egg-info/SOURCES.txt'
+reading manifest file 'crispembed.egg-info/SOURCES.txt'
+reading manifest template 'MANIFEST.in'
+warning: no files found matching '*.so.*' under directory 'crispembed'
+warning: no files found matching '*.dylib' under directory 'crispembed'
+warning: no files found matching '*.dll' under directory 'crispembed'
+warning: no files found matching '*.pyd' under directory 'crispembed'
+adding license file 'LICENSE'
+writing manifest file 'crispembed.egg-info/SOURCES.txt'
+copying crispembed/Apache-2.0.txt -> build/lib.linux-x86_64-cpython-312/crispembed
+copying crispembed/NOTICE.marker -> build/lib.linux-x86_64-cpython-312/crispembed
+copying crispembed/NOTICE.teleocr -> build/lib.linux-x86_64-cpython-312/crispembed
+copying crispembed/POLICY.md -> build/lib.linux-x86_64-cpython-312/crispembed
+copying crispembed/libcrispembed.so -> build/lib.linux-x86_64-cpython-312/crispembed
+running build_ext
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/setuptools/_distutils/cmd.py:90: SetuptoolsDeprecationWarning: setup.py install is deprecated.
+!!
+
+        ********************************************************************************
+        Please avoid running ``setup.py`` directly.
+        Instead, use pypa/build, pypa/installer or other
+        standards-based tools.
+
+        This deprecation is overdue, please update your project and remove deprecated
+        calls to avoid build errors in the future.
+
+        See https://blog.ganssle.io/articles/2021/10/setup-py-deprecated.html for details.
+        ********************************************************************************
+
+!!
+  self.initialize_options()
+installing to build/bdist.linux-x86_64/wheel
+running install
+running install_lib
+creating build/bdist.linux-x86_64/wheel
+creating build/bdist.linux-x86_64/wheel/crispembed
+copying build/lib.linux-x86_64-cpython-312/crispembed/_moedern_text.py -> build/bdist.linux-x86_64/wheel/./crispembed
+copying build/lib.linux-x86_64-cpython-312/crispembed/_systemone.py -> build/bdist.linux-x86_64/wheel/./crispembed
+copying build/lib.linux-x86_64-cpython-312/crispembed/NOTICE.teleocr -> build/bdist.linux-x86_64/wheel/./crispembed
+copying build/lib.linux-x86_64-cpython-312/crispembed/Apache-2.0.txt -> build/bdist.linux-x86_64/wheel/./crispembed
+copying build/lib.linux-x86_64-cpython-312/crispembed/libcrispembed.so -> build/bdist.linux-x86_64/wheel/./crispembed
+copying build/lib.linux-x86_64-cpython-312/crispembed/_marker.py -> build/bdist.linux-x86_64/wheel/./crispembed
+copying build/lib.linux-x86_64-cpython-312/crispembed/image.py -> build/bdist.linux-x86_64/wheel/./crispembed
+copying build/lib.linux-x86_64-cpython-312/crispembed/POLICY.md -> build/bdist.linux-x86_64/wheel/./crispembed
+copying build/lib.linux-x86_64-cpython-312/crispembed/__init__.py -> build/bdist.linux-x86_64/wheel/./crispembed
+copying build/lib.linux-x86_64-cpython-312/crispembed/_binding.py -> build/bdist.linux-x86_64/wheel/./crispembed
+copying build/lib.linux-x86_64-cpython-312/crispembed/NOTICE.marker -> build/bdist.linux-x86_64/wheel/./crispembed
+running install_egg_info
+Copying crispembed.egg-info to build/bdist.linux-x86_64/wheel/./crispembed-0.17.14-py3.12.egg-info
+running install_scripts
+creating build/bdist.linux-x86_64/wheel/crispembed-0.17.14.dist-info/WHEEL
+creating 'artifacts-wheel/crispembed-0.17.14-cp312-cp312-linux_x86_64.whl' and adding 'build/bdist.linux-x86_64/wheel' to it
+adding 'crispembed/Apache-2.0.txt'
+adding 'crispembed/NOTICE.marker'
+adding 'crispembed/NOTICE.teleocr'
+adding 'crispembed/POLICY.md'
+adding 'crispembed/__init__.py'
+adding 'crispembed/_binding.py'
+adding 'crispembed/_marker.py'
+adding 'crispembed/_moedern_text.py'
+adding 'crispembed/_systemone.py'
+adding 'crispembed/image.py'
+adding 'crispembed/libcrispembed.so'
+adding 'crispembed-0.17.14.dist-info/licenses/LICENSE'
+adding 'crispembed-0.17.14.dist-info/METADATA'
+adding 'crispembed-0.17.14.dist-info/WHEEL'
+adding 'crispembed-0.17.14.dist-info/top_level.txt'
+adding 'crispembed-0.17.14.dist-info/RECORD'
+removing build/bdist.linux-x86_64/wheel

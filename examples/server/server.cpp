@@ -488,6 +488,9 @@ int main(int argc, char ** argv) {
     std::string vit_model_path;       // standalone ViT model (SigLIP/CLIP)
     std::string clip_text_model_path; // CLIP text encoder
     std::string ocr_model_path;       // math OCR model (PP-FormulaNet, HMER, BTTR, PosFormer, etc.)
+    std::string marker_model_path, marker_pdfium_path;
+    int marker_mode = 0;
+    bool marker_enabled = false;
     std::string ocr_det_model_path;   // general OCR: text detection model (DBNet)
     std::string ocr_rec_model_path;   // general OCR: text recognition model (TrOCR)
     std::string ocr_engine_name;      // --ocr-engine: explicit orchestrator engine (CLI parity)
@@ -560,7 +563,18 @@ int main(int argc, char ** argv) {
             clip_text_model_path = argv[++i];
         else if (strcmp(argv[i], "--ocr") == 0 && i + 1 < argc)
             ocr_model_path = argv[++i];
-        else if (strcmp(argv[i], "--ocr-det") == 0 && i + 1 < argc)
+        else if (strcmp(argv[i], "--marker-model") == 0 && i + 1 < argc) {
+            marker_model_path = argv[++i];
+            marker_enabled = true;
+        } else if (strcmp(argv[i], "--marker-pdfium") == 0 && i + 1 < argc)
+            marker_pdfium_path = argv[++i];
+        else if (strcmp(argv[i], "--marker-text") == 0) {
+            marker_mode = 1;
+            marker_enabled = true;
+        } else if (strcmp(argv[i], "--marker-force-ocr") == 0) {
+            marker_mode = 2;
+            marker_enabled = true;
+        } else if (strcmp(argv[i], "--ocr-det") == 0 && i + 1 < argc)
             ocr_det_model_path = argv[++i];
         else if (strcmp(argv[i], "--ocr-rec") == 0 && i + 1 < argc)
             ocr_rec_model_path = argv[++i];
@@ -637,13 +651,13 @@ int main(int argc, char ** argv) {
     // --ocr-rec R` is a complete standalone configuration (it was rejected
     // with the usage text before, forcing an unrelated -m just to start the
     // OCR endpoint — noticed while smoke-testing the issue-#45 thread fix).
-    if (systemone_model_path.empty() && model_path.empty() && det_model_path.empty() && vit_model_path.empty() &&
-        ocr_model_path.empty() && ocr_det_model_path.empty() && ocr_engine_name.empty() && layout_model_path.empty() &&
-        ner_model_path.empty() && sr_model_path.empty() && pan_model_path.empty() && hat_model_path.empty() &&
-        dat_model_path.empty() && safmn_model_path.empty() && esrgan_model_path.empty() && swinir_model_path.empty() &&
-        moedern_model_path.empty() && tbsrn_model_path.empty() && restormer_model_path.empty() &&
-        scunet_model_path.empty() && instructir_model_path.empty() && adair_model_path.empty() &&
-        sam2_model_path.empty()) {
+    if (!marker_enabled && systemone_model_path.empty() && model_path.empty() && det_model_path.empty() &&
+        vit_model_path.empty() && ocr_model_path.empty() && ocr_det_model_path.empty() && ocr_engine_name.empty() &&
+        layout_model_path.empty() && ner_model_path.empty() && sr_model_path.empty() && pan_model_path.empty() &&
+        hat_model_path.empty() && dat_model_path.empty() && safmn_model_path.empty() && esrgan_model_path.empty() &&
+        swinir_model_path.empty() && moedern_model_path.empty() && tbsrn_model_path.empty() &&
+        restormer_model_path.empty() && scunet_model_path.empty() && instructir_model_path.empty() &&
+        adair_model_path.empty() && sam2_model_path.empty()) {
         fprintf(stderr, "Usage: crispembed-server -m MODEL [--port 8080] [--host 127.0.0.1]\n");
         fprintf(stderr, "  MODEL can be a .gguf path or a model name (auto-downloads from HuggingFace)\n");
         fprintf(stderr, "  Examples: -m all-MiniLM-L6-v2   -m octen-0.6b   -m model.gguf\n");
@@ -684,6 +698,9 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "\nOCR orchestrator (full pipeline with routing + cleanup + accept-gate):\n");
         fprintf(stderr, "  --ocr-pipeline    enable POST /ocr/pipeline endpoint\n");
         fprintf(stderr, "  --ocr-max-tokens N  generation cap for VLM OCR engines (0 = engine default)\n");
+        fprintf(stderr, "  --marker-model FILE native Marker-style processing with a local TeleOCR GGUF\n");
+        fprintf(stderr, "  --marker-text       model-free PDF text mode; --marker-force-ocr forces recognition\n");
+        fprintf(stderr, "  --marker-pdfium LIB explicit native PDFium library for PDF inputs\n");
         fprintf(stderr, "  --ocr-prompt TEXT   default instruction for prompt-following VLM OCR engines\n");
         fprintf(stderr,
                 "                      (qwen2vl/qwen3vl/olmocr/teleocr, internvl2, lfm2-vl, granite-vision);\n");
@@ -1492,6 +1509,21 @@ int main(int argc, char ** argv) {
     // ── Math OCR ──
     void * ocr_model_ctx = nullptr;
     std::mutex ocr_model_mutex;
+    crispembed_marker_context * marker_ctx = nullptr;
+    std::mutex marker_mutex;
+    if (marker_enabled) {
+        auto config = crispembed_marker_default_config();
+        config.model_path = marker_model_path.c_str();
+        config.pdfium_path = marker_pdfium_path.c_str();
+        config.mode = marker_mode;
+        if (n_threads != 0) config.n_threads = n_threads;
+        if (ocr_max_tokens > 0) config.max_tokens = ocr_max_tokens;
+        marker_ctx = crispembed_marker_init(&config);
+        if (!marker_ctx) {
+            fprintf(stderr, "Marker initialization failed: %s\n", crispembed_marker_error(nullptr));
+            return 1;
+        }
+    }
 
     if (!ocr_model_path.empty()) {
         std::string resolved = crispembed_mgr::resolve_model(ocr_model_path, true);
@@ -2197,6 +2229,63 @@ int main(int argc, char ** argv) {
         double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
         fprintf(stderr, "crispembed-server: /sparse %zu texts in %.1f ms\n", texts.size(), ms);
         res.set_content(js.str(), "application/json");
+    });
+
+    // PDF/image path confinement is shared with the existing image endpoints.
+    // A complete response owns its output, metadata and base64 PNG assets.
+    svr.Post("/ocr/marker", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!marker_ctx) {
+            res.status = 503;
+            res.set_content("{\"error\":\"Marker is not configured\"}", "application/json");
+            return;
+        }
+        const std::string file = extract_path_field(req.body, "file", g_image_root, "--image-root");
+        std::vector<std::string> formats;
+        json_extract_strings(req.body, "format", formats);
+        const std::string format = formats.empty() ? "json" : formats.front();
+        if (file.empty() || (format != "markdown" && format != "html" && format != "json" && format != "chunks")) {
+            res.status = 400;
+            res.set_content("{\"error\":\"valid file path and markdown/html/json/chunks format required\"}",
+                            "application/json");
+            return;
+        }
+        std::lock_guard<std::mutex> lock(marker_mutex);
+        if (!crispembed_marker_convert(marker_ctx, file.c_str())) {
+            res.status = 422;
+            res.set_content("{\"error\":\"" + core_json::json_escape_strict(crispembed_marker_error(marker_ctx)) +
+                                "\"}",
+                            "application/json");
+            return;
+        }
+        const char * rendered = crispembed_marker_render(marker_ctx, format.c_str());
+        if (!rendered) {
+            res.status = 500;
+            res.set_content("{\"error\":\"" + core_json::json_escape_strict(crispembed_marker_error(marker_ctx)) +
+                                "\"}",
+                            "application/json");
+            return;
+        }
+        std::ostringstream out;
+        out << "{\"format\":\"" << format << "\",\"output\":\"" << core_json::json_escape_strict(rendered)
+            << "\",\"metadata\":" << crispembed_marker_metadata(marker_ctx) << ",\"images\":{";
+        const char * alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        const int count = crispembed_marker_asset_count(marker_ctx);
+        for (int i = 0; i < count; ++i) {
+            if (i) out << ',';
+            size_t size = 0;
+            const auto * data = crispembed_marker_asset_data(marker_ctx, i, &size);
+            out << '\"' << core_json::json_escape_strict(crispembed_marker_asset_name(marker_ctx, i))
+                << "\":\"data:image/png;base64,";
+            for (size_t j = 0; j < size; j += 3) {
+                const unsigned v = (unsigned(data[j]) << 16) | (j + 1 < size ? unsigned(data[j + 1]) << 8 : 0) |
+                                   (j + 2 < size ? unsigned(data[j + 2]) : 0);
+                out << alphabet[(v >> 18) & 63] << alphabet[(v >> 12) & 63]
+                    << (j + 1 < size ? alphabet[(v >> 6) & 63] : '=') << (j + 2 < size ? alphabet[v & 63] : '=');
+            }
+            out << '\"';
+        }
+        out << "}}";
+        res.set_content(out.str(), "application/json");
     });
 
     // POST /ocr/model — single-model OCR recognition (math or text, auto-dispatched).
@@ -4280,6 +4369,7 @@ int main(int argc, char ** argv) {
     if (clip_text_ctx) fprintf(stderr, "  POST /clip/text       — {\"text\": \"query\"}\n");
     if (pix2struct_ctx)
         fprintf(stderr, "  POST /pix2struct/generate — {\"image\": \"doc.png\", \"max_tokens\": 256}\n");
+    if (marker_ctx) fprintf(stderr, "  POST /ocr/marker      — {\"file\": \"doc.pdf\", \"format\": \"json\"}\n");
     if (ocr_model_ctx) fprintf(stderr, "  POST /ocr/model       — {\"image\": \"formula.png\"}  (alias: /math/ocr)\n");
     if (ocr_pipeline_ctx)
         fprintf(stderr, "  POST /ocr             — {\"image\": \"document.png\"} (detect+recognize)\n");
@@ -4376,6 +4466,7 @@ int main(int argc, char ** argv) {
     if (ocr_orch_ctx) crispembed_ocr_pipeline_free(ocr_orch_ctx);
     if (ocr_pipeline_ctx) crispembed_ocr_free(ocr_pipeline_ctx);
     if (ocr_model_ctx) crispembed_ocr_model_free(ocr_model_ctx);
+    if (marker_ctx) crispembed_marker_free(marker_ctx);
     if (clip_text_ctx) crispembed_clip_text_free(clip_text_ctx);
     if (vit_ctx) crispembed_vit_free(vit_ctx);
     if (pix2struct_ctx) crispembed_pix2struct_free(pix2struct_ctx);

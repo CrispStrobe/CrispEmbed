@@ -1,3 +1,51 @@
+## 31 October 2026 — Native Marker-style document processing with TeleOCR
+
+The native PDF/image implementation adds optional dynamically loaded PDFium,
+TeleOCR layout/crop recognition, digital-text/auto/force-OCR modes, structure
+processing, tables, image assets and Markdown/HTML/JSON/chunks. C, Python,
+Rust, Dart, CLI and HTTP surfaces are implemented. Marker processing source
+is audited at `71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4` (2.1.0, Apache-2.0).
+The original Surya models are outside this alternative backend; their
+restricted checkpoint terms are documented separately. See [usage](docs/marker.md),
+[coverage](docs/marker-feature-coverage.md), [license](docs/marker-license.md)
+and [validation](docs/marker-validation.md).
+
+Final native tests pass 86 document, 39 backend, 38 C ABI and 38 save checks.
+Public Python/CLI/HTTP integration passes 112 checks; compiled Rust and Dart
+consumers pass 13 and 14. Final document source passes 86 ASAN/UBSAN checks.
+Python client regressions pass 17; actual wheel/sdist/isolated-sdist packaging
+passes 26. Shared and static-only CMake installs retain all four license/notice
+files. These panels overlap and are not a sum of independent quality cases.
+
+The actual original Marker model-free reference covers seven PDFs/nine pages,
+ten renderer probes and four rejection-guard controls, with no model or network
+calls. An independent native comparison passes 86 checks on eight PDFs/ten
+pages with zero rendered-content CER/WER. Literal bullet representation,
+running marginalia and the original rotated-order defect remain visible in
+the raw comparisons. All twenty fixture hashes reproduce exactly. Initial
+column/table, rotation and indentation bugs and the distinct scorer correction
+are preserved alongside final evidence.
+
+Actual native F16 layout/OCR passes the three declared image/PDF/table
+conversions; final-source F16/Q8_0/Q4_K synthetic runs each recover the exact
+authored text. Model labels are not gold-qualified: short text is classified
+as headings and the table title as a caption. The small panel does not establish
+representative layout/OCR or original Surya parity. The complete per-build,
+mode and precision results are in [the aggregate](tests/results/marker/summary.json)
+and PERFORMANCE.
+The final F16 force-OCR PDF also recovers the exact text with the embedded
+layer bypassed (73 layout and 17 recognition tokens). The seven mode/build/
+precision trials cover three distinct owned inputs, not seven independent
+document-quality cases.
+
+Final review fixes PNG palette/tRNS transparency, cross-document image-name
+collisions, Markdown C-string control bytes, shared-version provenance and
+notice packaging. Source snapshots, raw outputs and binary hashes are retained.
+Neural arithmetic/converter/quantizer bytes match the prior TeleOCR delivery;
+its failed strict intermediate gates remain failed. Both feature gates stay
+default-off. No model publication, registry alias, runtime version promotion,
+GPU/mobile/WASM qualification or downstream application change is made.
+
 ## 31 October 2026 — TeleOCR native CPU implementation and retained qualification limits
 
 TeleOCR is implemented as a default-off native GGUF/GGML path behind

@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/workspace/scratch/960329398638/validation/marker-packaging/isolated/crispembed-0.17.14/setup.py", line 93, in <module>
+    _stage_native_notices()
+  File "/workspace/scratch/960329398638/validation/marker-packaging/isolated/crispembed-0.17.14/setup.py", line 85, in _stage_native_notices
+    raise RuntimeError(
+RuntimeError: Cannot bundle native CrispEmbed libraries without their Apache notices: NOTICE.marker. Build from a complete checkout or an sdist retaining the staged notice files.

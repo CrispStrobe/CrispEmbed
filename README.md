@@ -40,7 +40,7 @@ Android, and in the browser.
 | **Retrieval** | Sparse + multi-vector + reranking | SPLADE / BGE-M3 sparse term weights, ColBERT per-token + MaxSim, cross-encoder & bi-encoder rerankers |
 | **Typed decisions** | State + question schemas → choices, integer scores or booleans | [EmbeddingGemma 2 fine-tune](docs/embeddinggemma2-typed-decision.md), complete encoder/head and fitted calibration; opt-in CPU. Python-reference parity checked; independent task accuracy unmeasured |
 | **OCR** | 15+ engines, image → text/LaTeX/notation | General (DBNet+TrOCR), scene-text (PARSeq), 7 math engines, 4 music (OMR) engines, 6 document VLMs, 12-language Tesseract-LSTM |
-| **Document AI** | Understand page structure | RT-DETRv2 layout (17 classes), Surya text detection, LiLT layout-aware KIE, hOCR/ALTO/searchable-PDF output |
+| **Document AI** | Understand page structure | RT-DETRv2 layout (17 classes), Surya text detection, LiLT layout-aware KIE, hOCR/ALTO/searchable-PDF output; [native Marker-style PDF/image conversion](docs/marker.md) to Markdown/HTML/JSON/chunks (experimental, opt-in, TeleOCR backend) |
 | **NER / KIE / LID** | Extract structured info | Zero-shot (GLiNER) + fixed-label (BERT/XLM-R) NER, receipt/form KIE, CLD3/GlotLID language ID |
 | **Vision & face** | Cross-modal + biometrics | CLIP/SigLIP text-image search, YuNet/SCRFD detect, ArcFace/SFace/AuraFace recognize |
 | **Preprocessing** | Clean & upscale before OCR | Classical deskew/binarize/dewarp, NAFNet denoise, TPS dewarp, 8 super-resolution engines, PDF-DPI auto-tuning |
@@ -744,7 +744,7 @@ is governed by its **upstream** license. Check the **License** column in
 | **CC BY-NC 4.0** (non-commercial) | `jina-v5-*`, `jina-reranker-v2`, `jina-ocr-v1`, PosFormer (ours) | research/eval only; commercial needs a vendor license |
 | **LFM Open License v1.0** | `lfm2-embed*`, `lfm2-colbert`, `gliner-lfm` | free under $10M annual revenue |
 | **Gemma Terms** | `embeddinggemma-300m` | commercial OK, subject to Google's Prohibited Use Policy |
-| **Other restricted** | Surya weights (OpenRAIL-M, free < $5M), Texo (AGPL) | see the model card |
+| **Other restricted** | Surya weights (modified OpenRAIL-M; revenue/funding and use restrictions), Texo (AGPL) | see the model card and [current Marker/Surya audit](docs/marker-license.md) |
 
 Restricted entries are flagged with `*` in `--list-models` and require explicit
 consent to auto-download (interactive prompt, `--accept-license <spdx>`, or

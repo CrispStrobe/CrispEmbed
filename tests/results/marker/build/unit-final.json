@@ -1,0 +1,39 @@
+{
+  "kind": "final combined source native model-free tests",
+  "library_sha256": "f117761723bc909b4c6194e096e6bbfe18ba6bf5576d24108b6af0b780f5a5e9",
+  "tests": [
+    {
+      "target": "test-marker-document",
+      "exit_code": 0,
+      "seconds": 0.005956991997663863,
+      "last_line": "marker document: 86 checks, 0 failures",
+      "log": "tests/results/marker/build/test-marker-document-final.log",
+      "log_sha256": "d47b9c2eeb785f32abe760b6c18e7ae6a3d69182581fb6e8846677ccdc166c4a"
+    },
+    {
+      "target": "test-marker-backend",
+      "exit_code": 0,
+      "seconds": 0.01156527700368315,
+      "last_line": "marker backend: 39 passed, 0 failed",
+      "log": "tests/results/marker/build/test-marker-backend-final.log",
+      "log_sha256": "487b1dc7f05ac39023fe13341c942423488b4028065d0ac928a44979c122eec6"
+    },
+    {
+      "target": "test-marker-api",
+      "exit_code": 0,
+      "seconds": 0.008257920999312773,
+      "last_line": "Marker C API: 38 checks passed",
+      "log": "tests/results/marker/build/test-marker-api-final.log",
+      "log_sha256": "144ca9aedf2d0d2e61b1525656c26a32c36ee328245b666148a45e772dc3f54d"
+    },
+    {
+      "target": "test-marker-save",
+      "exit_code": 0,
+      "seconds": 0.004645890003303066,
+      "last_line": "38/38 Marker save checks passed",
+      "log": "tests/results/marker/build/test-marker-save-final.log",
+      "log_sha256": "087bc3dfe299813a79ad2e168a3b4b1d5eeca8dd716678fe681bd2c7873b97d2"
+    }
+  ],
+  "passed": true
+}

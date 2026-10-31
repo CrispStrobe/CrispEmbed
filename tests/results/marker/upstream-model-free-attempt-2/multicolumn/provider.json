@@ -1,0 +1,347 @@
+[
+  {
+    "page_id": 0,
+    "lines": [
+      {
+        "text": "Two-column reading order",
+        "bbox": [
+          48.0,
+          55.280029296875,
+          375.38201904296875,
+          77.280029296875
+        ],
+        "spans": [
+          {
+            "text": "Two-column reading order",
+            "bbox": [
+              48.0,
+              55.280029296875,
+              375.38201904296875,
+              77.280029296875
+            ],
+            "font": "DejaVuSans-Bold",
+            "font_size": 22.0,
+            "formats": [
+              "bold",
+              "plain"
+            ]
+          },
+          {
+            "text": "\n",
+            "bbox": [
+              375.38201904296875,
+              72.0,
+              376.38201904296875,
+              73.0
+            ],
+            "font": "Unknown",
+            "font_size": 1.0,
+            "formats": [
+              "plain"
+            ]
+          }
+        ]
+      },
+      {
+        "text": "Left column",
+        "bbox": [
+          48.0,
+          118.5999755859375,
+          147.89999389648438,
+          133.5999755859375
+        ],
+        "spans": [
+          {
+            "text": "Left column",
+            "bbox": [
+              48.0,
+              118.5999755859375,
+              147.89999389648438,
+              133.5999755859375
+            ],
+            "font": "DejaVuSans-Bold",
+            "font_size": 15.0,
+            "formats": [
+              "bold",
+              "plain"
+            ]
+          },
+          {
+            "text": "\n",
+            "bbox": [
+              147.89999389648438,
+              130.0,
+              148.89999389648438,
+              131.0
+            ],
+            "font": "Unknown",
+            "font_size": 1.0,
+            "formats": [
+              "plain"
+            ]
+          }
+        ]
+      },
+      {
+        "text": "Left one stays together.",
+        "bbox": [
+          48.0,
+          149.6400146484375,
+          179.79098510742188,
+          160.6400146484375
+        ],
+        "spans": [
+          {
+            "text": "Left one stays together.",
+            "bbox": [
+              48.0,
+              149.6400146484375,
+              179.79098510742188,
+              160.6400146484375
+            ],
+            "font": "DejaVuSans",
+            "font_size": 11.0,
+            "formats": [
+              "plain"
+            ]
+          },
+          {
+            "text": "\n",
+            "bbox": [
+              179.79098510742188,
+              158.0,
+              180.79098510742188,
+              159.0
+            ],
+            "font": "Unknown",
+            "font_size": 1.0,
+            "formats": [
+              "plain"
+            ]
+          }
+        ]
+      },
+      {
+        "text": "Left two follows one.",
+        "bbox": [
+          48.0,
+          177.6400146484375,
+          161.60800170898438,
+          188.6400146484375
+        ],
+        "spans": [
+          {
+            "text": "Left two follows one.",
+            "bbox": [
+              48.0,
+              177.6400146484375,
+              161.60800170898438,
+              188.6400146484375
+            ],
+            "font": "DejaVuSans",
+            "font_size": 11.0,
+            "formats": [
+              "plain"
+            ]
+          },
+          {
+            "text": "\n",
+            "bbox": [
+              161.60800170898438,
+              186.0,
+              162.60800170898438,
+              187.0
+            ],
+            "font": "Unknown",
+            "font_size": 1.0,
+            "formats": [
+              "plain"
+            ]
+          }
+        ]
+      },
+      {
+        "text": "Left three ends this column.",
+        "bbox": [
+          48.0,
+          205.6400146484375,
+          202.74798583984375,
+          216.6400146484375
+        ],
+        "spans": [
+          {
+            "text": "Left three ends this column.",
+            "bbox": [
+              48.0,
+              205.6400146484375,
+              202.74798583984375,
+              216.6400146484375
+            ],
+            "font": "DejaVuSans",
+            "font_size": 11.0,
+            "formats": [
+              "plain"
+            ]
+          },
+          {
+            "text": "\n",
+            "bbox": [
+              202.74798583984375,
+              214.0,
+              203.74798583984375,
+              215.0
+            ],
+            "font": "Unknown",
+            "font_size": 1.0,
+            "formats": [
+              "plain"
+            ]
+          }
+        ]
+      },
+      {
+        "text": "Right column",
+        "bbox": [
+          326.0,
+          118.5999755859375,
+          437.7200012207031,
+          133.5999755859375
+        ],
+        "spans": [
+          {
+            "text": "Right column",
+            "bbox": [
+              326.0,
+              118.5999755859375,
+              437.7200012207031,
+              133.5999755859375
+            ],
+            "font": "DejaVuSans-Bold",
+            "font_size": 15.0,
+            "formats": [
+              "bold",
+              "plain"
+            ]
+          },
+          {
+            "text": "\n",
+            "bbox": [
+              437.7200012207031,
+              130.0,
+              438.7200012207031,
+              131.0
+            ],
+            "font": "Unknown",
+            "font_size": 1.0,
+            "formats": [
+              "plain"
+            ]
+          }
+        ]
+      },
+      {
+        "text": "Right one begins here.",
+        "bbox": [
+          326.0,
+          149.6400146484375,
+          450.78399658203125,
+          160.6400146484375
+        ],
+        "spans": [
+          {
+            "text": "Right one begins here.",
+            "bbox": [
+              326.0,
+              149.6400146484375,
+              450.78399658203125,
+              160.6400146484375
+            ],
+            "font": "DejaVuSans",
+            "font_size": 11.0,
+            "formats": [
+              "plain"
+            ]
+          },
+          {
+            "text": "\n",
+            "bbox": [
+              450.78399658203125,
+              158.0,
+              451.78399658203125,
+              159.0
+            ],
+            "font": "Unknown",
+            "font_size": 1.0,
+            "formats": [
+              "plain"
+            ]
+          }
+        ]
+      },
+      {
+        "text": "Right two follows one.",
+        "bbox": [
+          326.0,
+          177.6400146484375,
+          447.46197509765625,
+          188.6400146484375
+        ],
+        "spans": [
+          {
+            "text": "Right two follows one.",
+            "bbox": [
+              326.0,
+              177.6400146484375,
+              447.46197509765625,
+              188.6400146484375
+            ],
+            "font": "DejaVuSans",
+            "font_size": 11.0,
+            "formats": [
+              "plain"
+            ]
+          },
+          {
+            "text": "\n",
+            "bbox": [
+              447.46197509765625,
+              186.0,
+              448.46197509765625,
+              187.0
+            ],
+            "font": "Unknown",
+            "font_size": 1.0,
+            "formats": [
+              "plain"
+            ]
+          }
+        ]
+      },
+      {
+        "text": "Right three ends the page.",
+        "bbox": [
+          326.0,
+          205.6400146484375,
+          473.5979919433594,
+          216.6400146484375
+        ],
+        "spans": [
+          {
+            "text": "Right three ends the page.",
+            "bbox": [
+              326.0,
+              205.6400146484375,
+              473.5979919433594,
+              216.6400146484375
+            ],
+            "font": "DejaVuSans",
+            "font_size": 11.0,
+            "formats": [
+              "plain"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

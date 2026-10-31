@@ -398,6 +398,11 @@ list(APPEND CRISPEMBED_SOURCES src/esrgan_sr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/swinir_sr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/scunet_denoise.cpp)
 list(APPEND CRISPEMBED_SOURCES src/pdf_info.cpp)
+list(APPEND CRISPEMBED_SOURCES src/marker.cpp src/marker_document.cpp src/marker_backend.cpp)
+# The shared target compiles these sources separately from the static library.
+# Keep Marker provenance identical in both, without changing other backends.
+set_source_files_properties(src/marker.cpp PROPERTIES
+    COMPILE_DEFINITIONS CRISPEMBED_VERSION_STR="${CRISPEMBED_VERSION_RAW}")
 list(APPEND CRISPEMBED_SOURCES src/table_parse.cpp)
 # MoEdern1.5M raw-text/role public API: default-off gates, exact arithmetic.
 set(CRISPEMBED_MOEDERN_SOURCES src/moedern_text_engine.cpp src/moedern_text_frontend.cpp src/moedern_family_engine.cpp
@@ -434,6 +439,7 @@ target_link_libraries(crispembed PUBLIC
     ggml-base
     ggml-cpu
     Threads::Threads
+    ${CMAKE_DL_LIBS}
 )
 if(GGML_BLAS)
     find_package(BLAS)
@@ -482,6 +488,11 @@ set_target_properties(crispembed-cli PROPERTIES
     INSTALL_RPATH "${CRISPEMBED_BIN_INSTALL_RPATH}"
 )
 install(TARGETS crispembed-cli RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+add_executable(crispembed-marker examples/marker/main.cpp)
+target_link_libraries(crispembed-marker PRIVATE crispembed)
+set_target_properties(crispembed-marker PROPERTIES INSTALL_RPATH "${CRISPEMBED_BIN_INSTALL_RPATH}")
+install(TARGETS crispembed-marker RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 add_executable(crispembed-server
     examples/server/server.cpp
@@ -890,6 +901,18 @@ target_link_libraries(test-teleocr-diff PRIVATE crispembed)
 add_executable(test-teleocr-preprocess tests/test_teleocr_preprocess.cpp)
 target_link_libraries(test-teleocr-preprocess PRIVATE crispembed)
 
+add_executable(test-marker-document tests/test-marker-document.cpp)
+target_link_libraries(test-marker-document PRIVATE crispembed)
+
+add_executable(test-marker-api tests/test-marker-api.cpp)
+target_link_libraries(test-marker-api PRIVATE crispembed)
+
+add_executable(test-marker-backend tests/test-marker-backend.cpp)
+target_link_libraries(test-marker-backend PRIVATE crispembed)
+
+add_executable(test-marker-save tests/test-marker-save.cpp)
+target_include_directories(test-marker-save PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
 add_executable(test-teleocr-ffn tests/test_teleocr_ffn.cpp)
 target_link_libraries(test-teleocr-ffn PRIVATE crispembed)
 
@@ -1161,7 +1184,7 @@ if(CRISPEMBED_BUILD_SHARED)
     # set — consumers of crispembed::crispembed (find_package) only see the
     # C ABI in crispembed.h, never these internal symbols.
     target_link_libraries(crispembed-shared PRIVATE
-        crispembed-core ggml ggml-base ggml-cpu Threads::Threads
+        crispembed-core ggml ggml-base ggml-cpu Threads::Threads ${CMAKE_DL_LIBS}
     )
     if(CRISPEMBED_HAS_CRISP_AUDIO)
         target_link_libraries(crispembed-shared PRIVATE crisp_audio)
@@ -1234,17 +1257,6 @@ if(CRISPEMBED_BUILD_SHARED)
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/crispembed
     )
 
-    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE
-        DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/crispembed
-    )
-    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/NOTICE.teleocr
-        DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/crispembed
-    )
-    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/models/licenses/apache-2.0/LICENSE
-        DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/crispembed
-        RENAME Apache-2.0.txt
-    )
-
     # pkg-config for autotools / meson consumers.
     configure_file(
         ${CMAKE_CURRENT_SOURCE_DIR}/cmake/crispembed.pc.in
@@ -1255,6 +1267,22 @@ if(CRISPEMBED_BUILD_SHARED)
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
     )
 endif()
+
+# Static CLI installations also redistribute the Apache-derived integrations.
+install(FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE
+    ${CMAKE_CURRENT_SOURCE_DIR}/NOTICE.teleocr
+    ${CMAKE_CURRENT_SOURCE_DIR}/NOTICE.marker
+    ${CMAKE_CURRENT_SOURCE_DIR}/licenses/oxr-LICENSE
+    ${CMAKE_CURRENT_SOURCE_DIR}/licenses/oxr-NOTICE
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/crispembed
+    COMPONENT licenses
+)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/models/licenses/apache-2.0/LICENSE
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/crispembed
+    RENAME Apache-2.0.txt
+    COMPONENT licenses
+)
 
 option(CRISPEMBED_WASM_EMBED "Build WASM text-embedding target (Emscripten)" OFF)
 if(CRISPEMBED_WASM_EMBED AND EMSCRIPTEN)
