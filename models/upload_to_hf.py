@@ -769,6 +769,14 @@ MODELS = {
         "desc": "GOT-OCR2 (Qwen1.5-0.5B decoder). Non-commercial; no use to improve other LLMs.",
         "publish_files": [],
     },
+    "transcoda-omr": {  # license lineage only (registry-qwen-audit.json); never uploaded by this script
+        "base_model": "facebook/convnextv2-tiny-22k-224",
+        "arch": "OMR encoder-decoder", "dim": 0, "layers": 0, "params": "59M", "pooling": "n/a (OMR)", "tokenizer": "",
+        "license": "cc-by-nc-4.0",
+        "langs": [],
+        "desc": "Transcoda OMR; encoder fine-tuned from ConvNeXt V2 ImageNet weights (CC-BY-NC). Non-commercial.",
+        "publish_files": [],
+    },
     "TeleOCR": {
         "base_model": "Qwen/Qwen2.5-VL-3B-Instruct",
         "arch": "Qwen2.5-VL vision tower (from Qwen2.5-VL-3B) + Qwen3-0.6B-style decoder",

@@ -59,6 +59,17 @@
         "Qwen/Qwen1.5-0.5B": "tongyi-qianwen-research",
         "Qwen/Qwen1.5-0.5B-Chat": "tongyi-qianwen-research"
       }
+    },
+    {
+      "entries": [
+        "transcoda"
+      ],
+      "rehost": "cstr/transcoda-omr-GGUF",
+      "rehost_license": "cc-by-4.0",
+      "upstream": "btrkeks/transcoda-59M-zeroshot-v1 (declares cc-by-4.0, base_model facebook/convnextv2-tiny-22k-224, card says 'trained from scratch')",
+      "effective_license": "cc-by-nc-4.0",
+      "evidence": "encoder tensors vs facebook/convnextv2-tiny-22k-224: stage0 dwconv 0.9878, stage1 pwconv1 0.9511, stage2 pwconv2 0.9886, stage3 dwconv 0.9826, patch embed 0.9916 (fine-tuned, not from scratch); ConvNeXt-V2 README: 'MIT license except ImageNet pre-trained and fine-tuned models which are licensed under a CC-BY-NC'; the HF port's apache-2.0 tag is not the rights holder's statement",
+      "note": "not Qwen-derived; found while auditing music OMR models"
     }
   ],
   "soft_obligations": [
@@ -86,7 +97,10 @@
     "lightonocr": "Pixtral + Qwen3 (apache-2.0)",
     "mineru25-pro": "Qwen2-VL-2B + Qwen2-0.5B family (apache-2.0)",
     "qwen3-embed-*, octen-*, f2llm-*, harrier-*": "Qwen3 (apache-2.0) or own restrictive label already",
-    "jina-v5-*, jina-ocr-v1": "already cc-by-nc-4.0"
+    "jina-v5-*, jina-ocr-v1": "already cc-by-nc-4.0",
+    "smt-grandstaff, smt-fp": "mit (no declared base)",
+    "tromr": "apache-2.0",
+    "flova": "apache-2.0 (donut-swin + mbart, no declared base)"
   },
   "license_terms": {
     "qwen-research": "non-commercial only; redistribute with agreement + NOTICE line; 'Built with Qwen' when used to build distributed models; no anti-competition clause",

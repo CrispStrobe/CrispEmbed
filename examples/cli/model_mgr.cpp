@@ -2063,9 +2063,12 @@ static const ModelEntry k_registry[] = {
     // Transcoda-59M — zero-shot full-page OMR (ConvNeXt-V2 enc + 8L RoPE cross-attn
     // decoder, 59M). Score image→Humdrum **kern. OMR-NED SOTA on real historical
     // scans. Weights cc-by-4.0 (attribution required).
+    // License: the encoder is fine-tuned from facebook/convnextv2-tiny-22k-224 (stage cosines
+    // 0.95-0.99), whose ImageNet pre-trained weights Meta licenses CC-BY-NC; the upstream
+    // cc-by-4.0 tag and "trained from scratch" note do not match the weights.
     { "transcoda", "transcoda-q8_0.gguf",
       "https://huggingface.co/cstr/transcoda-omr-GGUF/resolve/main/transcoda-q8_0.gguf",
-      "Transcoda-59M zero-shot OMR: full-page score→Humdrum **kern (59M)", "69 MB", "cc-by-4.0",
+      "Transcoda-59M zero-shot OMR: full-page score→Humdrum **kern (59M; non-commercial)", "69 MB", "cc-by-nc-4.0",
       "https://huggingface.co/btrkeks/transcoda-59M-zeroshot-v1" },
 
     { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
