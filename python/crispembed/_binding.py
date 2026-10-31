@@ -4200,6 +4200,8 @@ class _CrispOcrPipelineParams(ctypes.Structure):
 # Append-only C stage selector; CRISPEMBED_TELEOCR=1 plus CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1
 # (non-commercial Qwen Research License vision tower) enable the native loader.
 OCR_ENGINE_TELEOCR = 24
+OCR_ENGINE_MINERU25_PRO = 25
+OCR_ENGINE_OXR = 26
 
 
 class _CrispOcrStage(ctypes.Structure):

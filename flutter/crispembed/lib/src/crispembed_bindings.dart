@@ -1261,7 +1261,8 @@ final class CrispembedOcrStageFFI extends Struct {
   external int sourceType;
   @Int32()
   // 20=qwen35_ocr; 21=ovisocr2 (format2); 22=ovisocr3 (format3).
-  // 23=minicpm_ocr; 24=teleocr (CRISPEMBED_TELEOCR), with explicit local models.
+  // 23=minicpm_ocr; 24=teleocr (CRISPEMBED_TELEOCR), 25=mineru25_pro
+  // (CRISPEMBED_MINERU25_PRO), 26=oxr (CRISPEMBED_OXR), with explicit local models.
   external int engine;
   external Pointer<Utf8> modelA;
   external Pointer<Utf8> modelB;

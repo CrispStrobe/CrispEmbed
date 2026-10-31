@@ -169,6 +169,8 @@ pub struct CrispembedOcrPipelineParams {
 
 /// TeleOCR stage selector. Requires `CRISPEMBED_TELEOCR=1` and a local TeleOCR GGUF.
 pub const CRISPEMBED_OCR_ENGINE_TELEOCR: c_int = 24;
+pub const CRISPEMBED_OCR_ENGINE_MINERU25_PRO: c_int = 25;
+pub const CRISPEMBED_OCR_ENGINE_OXR: c_int = 26;
 
 /// One fully-specified OCR pipeline stage (full per-stage builder). Field order
 /// must match `crispembed_ocr_stage` in crispembed.h exactly.

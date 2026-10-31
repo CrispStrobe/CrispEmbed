@@ -37,6 +37,7 @@ ORCH_PROMPT = {
     "lfm2_vl": "lfm2_vl_ocr_set_prompt",
     "unified": "crispembed_ocr_model_set_prompt",
     "qwen35_ocr": "qwen35_ocr_recognize_raw",
+    "oxr": "oxr_ocr_set_prompt",
 }
 
 # OCR_MODEL_* tags crispembed_ocr_model_set_prompt() must accept.
@@ -44,7 +45,7 @@ ABI_PROMPT = {"QWEN2VL", "INTERNVL2", "LFM2_VL", "GRANITE_VISION", "QWEN35_OCR"}
 
 # CLI engine ids (eng_id in examples/cli/main.cpp) that accept a prompt.
 CLI_PROMPT_NAMES = {"qwen2vl", "internvl2", "granite-vision", "qwen3vl", "unified", "olmocr", "lfm2-vl", "qwen35-ocr",
-                    "minicpm-ocr", "teleocr"}
+                    "minicpm-ocr", "teleocr", "oxr"}
 
 
 def read(rel: str) -> str:

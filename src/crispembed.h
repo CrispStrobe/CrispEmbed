@@ -1328,6 +1328,8 @@ CRISPEMBED_API int crispembed_scan_cleanup_process_simple(void * ctx, const uint
 
 // Explicit TeleOCR stage selector (append-only public ABI).
 #define CRISPEMBED_OCR_ENGINE_TELEOCR 24
+#define CRISPEMBED_OCR_ENGINE_MINERU25_PRO 25
+#define CRISPEMBED_OCR_ENGINE_OXR 26
 
 /// One pipeline stage: engine + models + cleanup + engine params + accept-gate.
 typedef struct crispembed_ocr_stage {

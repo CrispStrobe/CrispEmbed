@@ -46,6 +46,21 @@ its failed strict intermediate gates remain failed. Both feature gates stay
 default-off. No model publication, registry alias, runtime version promotion,
 GPU/mobile/WASM qualification or downstream application change is made.
 
+## 31 October 2026 (late) — Marker native pipeline reproduced on hosted CI
+
+Hosted [41241343084](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41241343084) at
+`835b9117` (`tools/ci-heavy/marker_qualify.sh`, Linux CPU, 2 threads) passes 14/14
+([receipt](tests/results/marker/hosted-41241343084/results.txt)), reproducing the delivery's
+author-machine panels on our CI: native document/backend/C API/save tests, Python/CLI/HTTP
+integration 112/112, compiled Rust 13/13 and Dart 14/14 consumers, refusal without the TeleOCR
+license acknowledgement, and the neural panels on the published TeleOCR GGUFs (Hub `1de0119f`):
+synthetic F16 and Q8_0, full F16 (image, digital auto, table) and force-OCR PDF F16, all
+functional and exact-content (92–118 s per case). PDFium is the delivery's paired pypdfium2
+5.10.1 binary (sha256 `cb59522b…`, identical). Earlier PR CI found two portability defects in
+the delivery, both fixed at `cee7f336`: macOS libc++ `fs::equivalent` error code (Marker save
+test) and an MSVC lambda-capture error in OXR. Functional/content checks only; no Surya
+parity, layout AP or representative corpus accuracy is claimed.
+
 ## 31 October 2026 — TeleOCR native CPU implementation and retained qualification limits
 
 TeleOCR is implemented as a default-off native GGUF/GGML path behind

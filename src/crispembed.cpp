@@ -5834,7 +5834,7 @@ static ocr_orchestrator::engine map_engine(int e) {
         return E::teleocr;
     case 25:
         return E::mineru25_pro;
-    case 25:
+    case 26:
         return E::oxr;
     default:
         return E::dbnet_trocr;

@@ -251,15 +251,38 @@ def reference(args):
         torch.backends.cuda.matmul.allow_tf32 = False
         torch.backends.cudnn.allow_tf32 = False
     dtype = {"f32": torch.float32, "f16": torch.float16, "bf16": torch.bfloat16}[args.dtype]
-    config = AutoConfig.from_pretrained(str(checkpoint), trust_remote_code=True, local_files_only=True)
+    # modeling_oxr registers Siglip2NavitConfig from its own copy of configuration_oxr.
+    # AutoConfig loads that file again as a separately hashed dynamic module, so its
+    # vit_config class would not be the registered one (AutoModel.from_config then
+    # raises). Build the config from the modeling module's own configuration module.
+    from transformers.dynamic_module_utils import get_class_from_dynamic_module
+    model_class = get_class_from_dynamic_module("modeling_oxr.OXR", str(checkpoint), local_files_only=True)
+    config_module = sys.modules[model_class.__module__.rsplit(".", 1)[0] + ".configuration_oxr"]
+    config = config_module.OXRConfig.from_pretrained(str(checkpoint), local_files_only=True)
     config.llm_config._attn_implementation = args.attention
     start = time.perf_counter()
-    model = AutoModelForCausalLM.from_pretrained(str(checkpoint), config=config,
+    model = model_class.from_pretrained(str(checkpoint), config=config,
         trust_remote_code=True, local_files_only=True, dtype=dtype,
         attn_implementation={"": "eager", "llm_config": args.attention, "vit_config": "eager"}).to(device=args.device, dtype=dtype).eval()
     if args.device == "cuda":
         torch.cuda.synchronize()
     load_ms = (time.perf_counter() - start) * 1000
+    # Transformers 5 builds the model on the meta device and loads checkpoint
+    # tensors; non-persistent buffers computed in __init__ are left uninitialised
+    # unless _init_weights rebuilds them, and modeling_oxr's does not. Rebuild them
+    # with the checkpoint module's own constants/classes (no formula is retyped).
+    remote = sys.modules[model_class.__module__]
+    restored = []
+    vocab = model.config.visual_vocab_size
+    indicator = torch.arange(vocab - len(remote.INDICATOR_IDS), vocab, dtype=torch.long, device=args.device)
+    model.indicator_token_indices = indicator
+    restored.append("indicator_token_indices")
+    for name, module in model.named_modules():
+        if isinstance(module, remote.VisionRotaryEmbedding):
+            module.inv_freq = remote.VisionRotaryEmbedding(module.dim, module.theta).inv_freq.to(args.device)
+            restored.append(name + ".inv_freq")
+    if int(model.indicator_token_indices.min()) < 0 or int(model.indicator_token_indices.max()) >= model.vte.num_embeddings:
+        raise ValueError("visual indicator indices fall outside the visual embedding table")
     # Reject silently substituted model classes/processors. Check source identity,
     # then execute the original checkpoint functions without a mathematical patch.
     model_source = Path(sys.modules[type(model).__module__].__file__)
@@ -449,6 +472,7 @@ def reference(args):
         "source_default_ms": source_default_ms, "cache_neutrality_pass": cache_neutral,
         "confidence": confidence, "confidence_token_probabilities": confidence_scores,
         "confidence_observer_neutral": True,
+        "restored_nonpersistent_buffers": restored,
         "timing": {"load_ms": load_ms, "runs_ms": timings,
                    "scope": "resident image preprocessing+vision+prefill+cached greedy decode+transfer+detokenize"},
         "stage_count": len(stage), "stages": list(stage),

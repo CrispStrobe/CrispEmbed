@@ -2716,12 +2716,14 @@ impl Default for OcrCleanupSpec {
 /// TeleOCR stage selector. Requires `CRISPEMBED_TELEOCR=1`, `CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1`
 /// (its vision tower is under the non-commercial Qwen Research License) and an explicit local GGUF.
 pub const OCR_ENGINE_TELEOCR: i32 = crispembed_sys::CRISPEMBED_OCR_ENGINE_TELEOCR;
+pub const OCR_ENGINE_MINERU25_PRO: i32 = crispembed_sys::CRISPEMBED_OCR_ENGINE_MINERU25_PRO;
+pub const OCR_ENGINE_OXR: i32 = crispembed_sys::CRISPEMBED_OCR_ENGINE_OXR;
 
 /// One fully-specified pipeline stage for [`CrispOcrPipeline::from_stages`].
 #[derive(Clone)]
 pub struct OcrStageSpec {
     pub source_type: i32, // 0=auto 1=screenshot 2=scanned_doc 3=photo
-    pub engine: i32, // 0..19 existing; 20=qwen35_ocr, 21=ovisocr2, 22=ovisocr3, 23=minicpm_ocr, 24=teleocr
+    pub engine: i32, // 0..19 existing; 20=qwen35_ocr, 21=ovisocr2, 22=ovisocr3, 23=minicpm_ocr, 24=teleocr, 25=mineru25_pro, 26=oxr
     pub model_a: String,
     pub model_b: String,
     pub cleanup: OcrCleanupSpec,

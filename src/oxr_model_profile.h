@@ -177,7 +177,7 @@ inline std::vector<int32_t> window_groups(int h, int w) {
 }
 
 inline void cubic_coeff(float t, float (&c)[4]) {
-    constexpr float a = -0.75f;
+    static constexpr float a = -0.75f; // static: MSVC will not use an uncaptured local constexpr in a lambda
     const auto cubic1 = [](float x) { return ((a + 2.0f) * x - (a + 3.0f)) * x * x + 1.0f; };
     const auto cubic2 = [](float x) { return ((a * x - 5.0f * a) * x + 8.0f * a) * x - 4.0f * a; };
     c[0] = cubic2(t + 1.0f);
