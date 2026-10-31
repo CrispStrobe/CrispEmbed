@@ -18609,3 +18609,12 @@ corpus comparison or speed benchmark was executed. Both runtime and decode
 reuse gates remain opt-in; [the guide](docs/mineru25-pro.md) defines the
 remaining hosted acceptance gates. No version, model alias or runtime release
 is promoted by this source work.
+
+Integration review (same day): the delivered tree and GGML match the patch and
+pin byte for byte. The delivered layout suite failed 1/28 on arm64 — the IoU
+union emulated `math.fsum` with `long double`, exact only on 80-bit x86 — so an
+exact-0.9 IoU box was suppressed versus the blueprint. A portable fsum port
+(0/200000 mismatches against CPython) restores 28/28; Python 28/28 pass with
+mocked inference. The failure stays recorded in
+[the integration review](tests/results/mineru25/integration-review.json).
+Linked build, model and speed gates remain hosted work.
