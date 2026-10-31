@@ -4534,6 +4534,7 @@ extern "C" int crispembed_colbert_score_batch(const float * query_vecs, int n_qu
 #include "posformer_ocr.h"
 #include "mixtex_ocr.h"
 #include "qwen2vl_ocr.h"
+#include "oxr_ocr.h"
 #include "internvl2_ocr.h"
 #include "parseq_ocr.h"
 #include "glm_ocr.h"
@@ -4594,7 +4595,8 @@ enum ocr_model_type {
     OCR_MODEL_PPOCRV6,
     OCR_MODEL_LFM2_VL,
     OCR_MODEL_QWEN35_OCR,
-    OCR_MODEL_MINICPM_OCR
+    OCR_MODEL_MINICPM_OCR,
+    OCR_MODEL_OXR
 };
 
 struct ocr_model {
@@ -4616,6 +4618,7 @@ static ocr_model_type detect_arch(const char * path) {
     if (!g) return OCR_MODEL_PIX2TEX;
     std::string arch = core_gguf::kv_str(g, "general.architecture", "pix2tex_mfr");
     core_gguf::free_metadata(g);
+    if (arch == "oxr") return OCR_MODEL_OXR;
     if (arch == "hmer") return OCR_MODEL_HMER;
     if (arch == "bttr") return OCR_MODEL_BTTR;
     if (arch == "ppformulanet") return OCR_MODEL_PPFORMULANET;
@@ -4681,6 +4684,9 @@ extern "C" void * crispembed_ocr_model_init(const char * path, int n_threads) {
         break;
     case OCR_MODEL_QWEN2VL:
         inner = qwen2vl_ocr_init(path, n_threads);
+        break;
+    case OCR_MODEL_OXR:
+        inner = oxr_ocr_init(path, n_threads);
         break;
     case OCR_MODEL_INTERNVL2:
         inner = internvl2_ocr_init(path, n_threads);
@@ -4770,6 +4776,9 @@ extern "C" void crispembed_ocr_model_free(void * ctx) {
     case OCR_MODEL_QWEN2VL:
         qwen2vl_ocr_free((qwen2vl_ocr_context *)u->ctx);
         break;
+    case OCR_MODEL_OXR:
+        oxr_ocr_free((oxr_ocr_context *)u->ctx);
+        break;
     case OCR_MODEL_INTERNVL2:
         internvl2_ocr_free((internvl2_ocr_context *)u->ctx);
         break;
@@ -4848,6 +4857,8 @@ extern "C" const char * crispembed_ocr_model_recognize(void * ctx, const uint8_t
         return mixtex_ocr_recognize((mixtex_ocr_context *)u->ctx, px, w, h, ch, ol);
     case OCR_MODEL_QWEN2VL:
         return qwen2vl_ocr_recognize_raw((qwen2vl_ocr_context *)u->ctx, px, w, h, ch, ol);
+    case OCR_MODEL_OXR:
+        return oxr_ocr_recognize_raw((oxr_ocr_context *)u->ctx, px, w, h, ch, ol);
     case OCR_MODEL_INTERNVL2:
         return internvl2_ocr_recognize_raw((internvl2_ocr_context *)u->ctx, px, w, h, ch, ol);
     case OCR_MODEL_PARSEQ:
@@ -4920,6 +4931,8 @@ extern "C" const char * crispembed_ocr_model_recognize_gray(void * ctx, const fl
         return mixtex_ocr_recognize_gray((mixtex_ocr_context *)u->ctx, px, w, h, ol);
     case OCR_MODEL_QWEN2VL:
         return qwen2vl_ocr_recognize((qwen2vl_ocr_context *)u->ctx, px, w, h, ol);
+    case OCR_MODEL_OXR:
+        return oxr_ocr_recognize((oxr_ocr_context *)u->ctx, px, w, h, ol);
     case OCR_MODEL_INTERNVL2:
         return internvl2_ocr_recognize((internvl2_ocr_context *)u->ctx, px, w, h, ol);
     case OCR_MODEL_PARSEQ:
@@ -5046,6 +5059,8 @@ extern "C" const float * crispembed_ocr_model_confidences(const void * ctx, int 
         return mixtex_ocr_confidences((const mixtex_ocr_context *)u->ctx, n_tokens);
     case OCR_MODEL_QWEN2VL:
         return qwen2vl_ocr_confidences((const qwen2vl_ocr_context *)u->ctx, n_tokens);
+    case OCR_MODEL_OXR:
+        return oxr_ocr_confidences((const oxr_ocr_context *)u->ctx, n_tokens);
     case OCR_MODEL_INTERNVL2:
         return internvl2_ocr_confidences((const internvl2_ocr_context *)u->ctx, n_tokens);
     case OCR_MODEL_PARSEQ:
@@ -5089,6 +5104,9 @@ extern "C" void crispembed_ocr_model_set_max_tokens(void * ctx, int max_tokens) 
     switch (u->type) {
     case OCR_MODEL_QWEN2VL:
         qwen2vl_ocr_set_max_tokens((qwen2vl_ocr_context *)u->ctx, max_tokens);
+        break;
+    case OCR_MODEL_OXR:
+        oxr_ocr_set_max_tokens((oxr_ocr_context *)u->ctx, max_tokens);
         break;
     case OCR_MODEL_INTERNVL2:
         internvl2_ocr_set_max_tokens((internvl2_ocr_context *)u->ctx, max_tokens);
@@ -5140,6 +5158,8 @@ extern "C" int crispembed_ocr_model_get_max_tokens(const void * ctx) {
     switch (u->type) {
     case OCR_MODEL_QWEN2VL:
         return qwen2vl_ocr_get_max_tokens((const qwen2vl_ocr_context *)u->ctx);
+    case OCR_MODEL_OXR:
+        return oxr_ocr_get_max_tokens((const oxr_ocr_context *)u->ctx);
     case OCR_MODEL_INTERNVL2:
         return internvl2_ocr_get_max_tokens((const internvl2_ocr_context *)u->ctx);
     case OCR_MODEL_GRANITE_VISION:
@@ -5208,6 +5228,10 @@ extern "C" int crispembed_ocr_model_set_prompt(void * ctx, const char * prompt) 
     case OCR_MODEL_QWEN2VL: {
         auto * c = (qwen2vl_ocr_context *)u->ctx;
         return apply(qwen2vl_ocr_get_prompt(c), [&](const char * p) { return qwen2vl_ocr_set_prompt(c, p); });
+    }
+    case OCR_MODEL_OXR: {
+        auto * c = (oxr_ocr_context *)u->ctx;
+        return apply(oxr_ocr_get_prompt(c), [&](const char * p) { return oxr_ocr_set_prompt(c, p); });
     }
     case OCR_MODEL_INTERNVL2: {
         auto * c = (internvl2_ocr_context *)u->ctx;
@@ -5810,6 +5834,8 @@ static ocr_orchestrator::engine map_engine(int e) {
         return E::teleocr;
     case 25:
         return E::mineru25_pro;
+    case 25:
+        return E::oxr;
     default:
         return E::dbnet_trocr;
     }

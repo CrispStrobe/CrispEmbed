@@ -11,6 +11,16 @@ import 'package:ffi/ffi.dart';
 // Opaque handle
 typedef CrispembedContext = Void;
 
+// OXR recognition/read-order context; enable CRISPEMBED_OXR.
+typedef OxrInitNative = Pointer<Void> Function(Pointer<Utf8>, Int32);
+typedef OxrInit = Pointer<Void> Function(Pointer<Utf8>, int);
+typedef OxrFreeNative = Void Function(Pointer<Void>);
+typedef OxrFree = void Function(Pointer<Void>);
+typedef OxrPredictNative = Pointer<Utf8> Function(Pointer<Void>, Pointer<Uint8>, Int32, Int32, Int32, Pointer<Utf8>, Int32, Float);
+typedef OxrPredict = Pointer<Utf8> Function(Pointer<Void>, Pointer<Uint8>, int, int, int, Pointer<Utf8>, int, double);
+typedef OxrStringNative = Pointer<Utf8> Function(Pointer<Void>);
+typedef OxrString = Pointer<Utf8> Function(Pointer<Void>);
+
 // Experimental MinerU2.5-Pro resident context; enable CRISPEMBED_MINERU25_PRO.
 typedef MineruInitNative = Pointer<Void> Function(Pointer<Utf8>, Int32);
 typedef MineruInit = Pointer<Void> Function(Pointer<Utf8>, int);

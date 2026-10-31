@@ -30,6 +30,7 @@
 #include "core/gguf_loader.h"
 #include "crispembed_diff.h"
 #include "image_preprocess.h"
+#include "mineru_graph_ops.h"
 #include "mineru_model_profile.h"
 #include "tokenizer.h"
 
@@ -1187,7 +1188,7 @@ vision_graph_result build_vision_graph(context & ctx, int n_patches, const int32
                 // fp16 table (GGML_GELU_QUICK_FP16); HF evaluates it in F32.
                 // Default for MinerU after a four-case A/B (decode exact both
                 // ways, stage error ~100x lower); =0 restores the table path.
-                ffn = ggml_mul(g, ffn, ggml_sigmoid(g, ggml_scale(g, ffn, 1.702f)));
+                ffn = mineru_graph_ops::quick_gelu_f32(g, ffn);
             } else {
                 ffn = ggml_gelu_quick(g, ffn);
             }

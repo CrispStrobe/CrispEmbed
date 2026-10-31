@@ -1,0 +1,104 @@
+{
+  "schema": "crispembed.oxr.source.v1",
+  "model_id": "SoMarkAI/OXR-1.0",
+  "revision": "c708407f9d2b4df658f2543d9132b62bb7221df4",
+  "blueprint_repository": "https://github.com/SoMarkAI/OXR",
+  "blueprint_revision": "c1a1dcb312ee9f691404f127785510453c0d9350",
+  "license": "OXR License: Apache-2.0 with additional terms; see LICENSE",
+  "files": {
+    "LICENSE": {
+      "size": 6588,
+      "sha256": "4577df88e499926976b390c4ea3992cc91baa9ebac29386f35b557bd3cb4a662"
+    },
+    "added_tokens.json": {
+      "size": 707,
+      "sha256": "c0284b582e14987fbd3d5a2cb2bd139084371ed9acbae488829a1c900833c680"
+    },
+    "chat_template.jinja": {
+      "size": 517,
+      "sha256": "8d6f5059459a1d4d91da3c9e7d17cb19d4544eaa2dc0c07a10b61be3c918e970"
+    },
+    "config.json": {
+      "size": 2794,
+      "sha256": "758481181d106aef0a0a22c6059f2ab2a224ec1cba2b2c8d8255cb3ce99a0b24"
+    },
+    "configuration_oxr.py": {
+      "size": 4183,
+      "sha256": "79b82be9ab046f095cda04a79b5cba3e0dcb4063759f3c11e39485b2242a2c50"
+    },
+    "generation_config.json": {
+      "size": 117,
+      "sha256": "ce3df60200308da1ed68ac498048baca9464e38b020b64761548cb3973d65948"
+    },
+    "modeling_oxr.py": {
+      "size": 45406,
+      "sha256": "3c3561057eb1f2ac8bea3da397e0f3ba959abcad9c8ff61a8b7b723f5bf56042"
+    },
+    "plugins/vllm/oxr_vllm/oxr_model.py": {
+      "size": 23573,
+      "sha256": "b66732cd5f97abed11ec13bc6a6e26fbac89a41d62d3995ad127031a6c92eda1"
+    },
+    "plugins/vllm/oxr_vllm/oxr_processor.py": {
+      "size": 14360,
+      "sha256": "3342c264bd901109368639ace12ecf7e9137fcaf29f400a7eba152512c6d0b33"
+    },
+    "preprocessor_config.json": {
+      "size": 394,
+      "sha256": "63ff380d3e424f93e6fbca5cc8e74eeed882e96fd6be2b7728aed308f3ad1513"
+    },
+    "special_tokens_map.json": {
+      "size": 616,
+      "sha256": "6676f091c8bc4d1b50146427cfde92073402866b87b6e39223227931b70083e9"
+    },
+    "tokenizer.json": {
+      "size": 11422654,
+      "sha256": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4"
+    },
+    "tokenizer_config.json": {
+      "size": 5447,
+      "sha256": "0e18563d7a30d4d8f8c344410fb256f0c4de7b66146872e5afb01caf7b767372"
+    },
+    "model.safetensors": {
+      "size": 3068857520,
+      "sha256": "795bb2f1faac579f58829913f2c606202531a96c1203e19ef7a70b103fb7ea51"
+    },
+    "merges.txt": {
+      "size": 1671853,
+      "sha256": "8831e4f1a044471340f7c0a83d7bd71306a5b867e95fd870f74d0c5308a904d5"
+    },
+    "plugins/vllm/oxr_vllm/__init__.py": {
+      "size": 307,
+      "sha256": "852b7622ba5695a4984341e90096ac18d0b18c54548e60fa7e97d3cfd7161a27"
+    },
+    "plugins/vllm/pyproject.toml": {
+      "size": 435,
+      "sha256": "ab03f77744242a516ce3fa8cc973ac0bddc2af26f90a20ed924d42a7f94a1d76"
+    },
+    "vocab.json": {
+      "size": 2776833,
+      "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+    }
+  },
+  "optional_layout_model": {
+    "path": "layout_analysis/last.pth",
+    "size": 78791307,
+    "sha256": "dff78ccf18439955362ca44a69eb28fb0b40222a7d278860589682de0176dc17",
+    "native_ggml_conversion": false
+  },
+  "profiles": {
+    "native_default": {
+      "processor": "Siglip PIL bilinear",
+      "min_pixels": 200704,
+      "max_pixels": 921600,
+      "repetition_history": "prompt_and_completion",
+      "reference": "published vLLM0.25.1 plugin"
+    },
+    "original_transformers_defaults": {
+      "transformers": "5.13.1",
+      "min_pixels": 200704,
+      "max_pixels": 2408448,
+      "repetition_history": "completion_only",
+      "reference": "pinned modeling_oxr.py"
+    }
+  }
+}

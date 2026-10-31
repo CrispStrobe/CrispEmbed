@@ -32,6 +32,16 @@ than replacing its detailed table/formula rules with approximations. Optional
 cross-page table merging additionally needs the original MinerU table-merge
 package; absent helpers or native inference errors are reported, not ignored.
 
+## QuickGELU operator helper (from the OXR delivery)
+
+The OXR delivery independently found the same F16-table QuickGELU rounding that
+the default-on `CRISPEMBED_MINERU25_PRO_EXACT_GELU` gate removes. Its
+`src/mineru_graph_ops.h` helper now owns the identical F32 expression
+`x * sigmoid(1.702 * x)` behind that unchanged gate (`=0` still selects the table
+path), and `test-mineru25-decode-graph` adds its 268-value operator control
+against an independent double reference. The expression is unchanged from the
+graph qualified on eight cases at `5c6005b9`; the control runs in hosted CI.
+
 ## Frozen sources
 
 | Source | Immutable revision |

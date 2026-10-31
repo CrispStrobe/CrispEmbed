@@ -29,6 +29,8 @@ mod systemone;
 pub use systemone::SystemOne;
 mod mineru;
 pub use mineru::MinerU;
+mod oxr;
+pub use oxr::Oxr;
 
 pub mod moedern_text;
 pub use moedern_text::MoEdern;

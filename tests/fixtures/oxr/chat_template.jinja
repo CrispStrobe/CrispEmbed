@@ -1,0 +1,18 @@
+{%- for message in messages -%}
+{{- '<|im_start|>' + message['role'] + '\n' -}}
+{%- if message['content'] is string -%}
+{{- message['content'] -}}
+{%- else -%}
+{%- for content in message['content'] -%}
+{%- if content['type'] == 'image_url' or content['type'] == 'image' -%}
+{{- '<image>' -}}
+{%- elif content['type'] == 'text' -%}
+{{- content['text'] -}}
+{%- endif -%}
+{%- endfor -%}
+{%- endif -%}
+{{- '<|im_end|>\n' -}}
+{%- endfor -%}
+{%- if add_generation_prompt -%}
+{{- '<|im_start|>assistant\n' -}}
+{%- endif -%}

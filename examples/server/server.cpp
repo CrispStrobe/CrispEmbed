@@ -1543,6 +1543,7 @@ int main(int argc, char ** argv) {
             if (n == "easyocr") return 17;
             if (n == "olmocr") return 18;
             if (n == "mineru25-pro" || n == "mineru25_pro") return 25;
+            if (n == "oxr" || n == "oxr-1.0") return 26;
             if (n == "minicpm-ocr" || n == "minicpm_ocr") return 23;
             if (n == "teleocr") return 24;
             return 0; // dbnet_trocr
@@ -1574,6 +1575,15 @@ int main(int argc, char ** argv) {
                 return 1;
             }
         }
+        // Experimental OXR-1.0: explicit model file and own gate (recognition stage only).
+        if (eid == 26 && (ocr_rec_model_path.empty() || !core_env::on("CRISPEMBED_OXR"))) {
+            fprintf(stderr, "error: oxr needs --ocr-rec FILE and CRISPEMBED_OXR=1; this stage runs recognition\n");
+            return 1;
+        }
+        if (eid == 26)
+            fprintf(stderr, "warning: OXR License section 3 forbids offering a hosted OCR/document-parsing API that\n"
+                            "         competes with SoMark's to third parties without their written license, and\n"
+                            "         section 2 requires crediting SoMark OXR in any online service.\n");
         // Experimental MinerU2.5-Pro: explicit model file, fixed task prompts, own gate.
         if (eid == 25 &&
             (ocr_rec_model_path.empty() || !ocr_prompt.empty() || !core_env::on("CRISPEMBED_MINERU25_PRO"))) {

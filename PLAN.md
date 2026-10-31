@@ -89,6 +89,31 @@ not offer these models without the acknowledgement; Apache-2.0 replacements for
 GOT's tasks are MinerU2.5-Pro, FireRed-OCR, Uni-MuMER-Qwen3-VL-2B and PaddleOCR-VL.
 
 
+### OXR-1.0 native integration (31 October 2026)
+
+The isolated `feat/oxr-1.0` worktree retains the earlier MinerU integration and
+merges upstream `b8cd2497765f2fd8db0b9c713d952898bdd9b996`. The OXR model pin is
+`c708407f9d2b4df658f2543d9132b62bb7221df4`; the document helper pin is
+`c1a1dcb312ee9f691404f127785510453c0d9350`. A dedicated native graph, strict
+converter, document adapter, public bindings, and original-reference qualification
+tools are implemented behind `CRISPEMBED_OXR=1`. This is a separate source lane
+under OXR's additional license terms, not an addition to the permissive-model
+publication queue. [The guide](docs/oxr.md) records exact scope and commands.
+
+Completed component evidence is in
+[the implementation receipt](tests/results/oxr/implementation-validation.json).
+Full library linking, the linked GGML contracts, checkpoint conversion/inference,
+all 66 original/native stages, representative document metrics, same-host F32
+speed, reusable-graph A/B, GPU/backends and Rust/Dart runtime checks remain open.
+The supplied [hosted workflow](.github/workflows/oxr.yml) has not been dispatched.
+Do not publish aliases, promote defaults or infer vLLM throughput from component
+checks. The original D-FINE layout service remains separate; supplied regions
+allow the adapter to avoid that service. A native D-FINE graph is not implemented.
+
+The shared-operator audit additionally replaces MinerU-only QuickGELU's F16 LUT
+with explicit F32 math. Its linked operator check and full-model replay remain
+pending; the earlier MinerU component receipt retains its original source hashes.
+
 ### MinerU2.5-Pro-2604 integration (31 October 2026)
 
 The isolated `feat/mineru25-pro-2604` source delivery adds the checkpoint

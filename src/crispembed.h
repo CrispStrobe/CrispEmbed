@@ -67,6 +67,26 @@ CRISPEMBED_API const char * crispembed_mineru_extract(crispembed_mineru_context 
 CRISPEMBED_API const char * crispembed_mineru_last_markdown(const crispembed_mineru_context * ctx);
 CRISPEMBED_API const char * crispembed_mineru_last_error(const crispembed_mineru_context * ctx);
 
+// Experimental OXR-1.0 recognition and reading order. Requires CRISPEMBED_OXR=1
+// and a pinned oxr GGUF. Layout detection is a separate model; the Python
+// CrispOXR document adapter accepts supplied regions or an external detector.
+// Model inference is native GGML. Serialize all calls on one context.
+typedef struct crispembed_oxr_context crispembed_oxr_context;
+CRISPEMBED_API crispembed_oxr_context * crispembed_oxr_init(const char * model_path, int n_threads);
+CRISPEMBED_API void crispembed_oxr_free(crispembed_oxr_context * ctx);
+// Exact arbitrary task prompt, uint8 gray/RGB/RGBA image (alpha discarded), or
+// NULL pixels with zero dimensions for text-only input. max_new_tokens=0 uses
+// the native default of 2048; explicit caps must fit the 32768-token context.
+// The published vLLM processor profile is used (200704..921600 pixels), with
+// repetition penalty over prompt+completion history. This does not imply
+// vLLM BF16 numerical or throughput equivalence. See docs/oxr.md.
+// Returns owned-by-context JSON with text/raw_text, input/completion IDs,
+// image grid, EOS/cap, finish_reason and timing. NULL means failure.
+CRISPEMBED_API const char * crispembed_oxr_predict(crispembed_oxr_context * ctx, const uint8_t * pixels, int width,
+                                                   int height, int channels, const char * prompt, int max_new_tokens,
+                                                   float repetition_penalty);
+CRISPEMBED_API const char * crispembed_oxr_last_error(const crispembed_oxr_context * ctx);
+
 // Model hyperparameters (read-only after init)
 typedef struct crispembed_hparams {
     int32_t n_vocab;
@@ -1324,6 +1344,7 @@ typedef struct crispembed_ocr_stage {
                           // 23=minicpm_ocr (experimental, CRISPEMBED_MINICPM_OCR)
                           // 24=teleocr (experimental, CRISPEMBED_TELEOCR; explicit local GGUF)
                           // 25=mineru25_pro (native basic page pipeline; CRISPEMBED_MINERU25_PRO)
+                          // 26=oxr (recognition/read-order only; CRISPEMBED_OXR)
     const char * model_a; // det / single-model GGUF
     const char * model_b; // rec GGUF (dbnet_trocr / surya)
     const char * model_c; // optional line-orientation GGUF (PP-LCNet 0/180)

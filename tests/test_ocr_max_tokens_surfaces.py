@@ -109,6 +109,7 @@ ENGINE_TO_OCR_MODEL = {
     "teleocr": "QWEN2VL", "minicpm_ocr": "MINICPM_OCR",
     "olmocr": "QWEN2VL", "internvl2": "INTERNVL2", "deepseek_ocr2": "DEEPSEEK_OCR2",
     "mineru25_pro": "QWEN2VL",  # crop --ocr shares Qwen; stage 25 owns the two-step basic page route
+    "oxr": "OXR",
     "minicpm_ocr": "MINICPM_OCR",  # existing engine was missing from the guard's inventory
     "granite_vision": "GRANITE_VISION", "lightonocr": "LIGHTONOCR",
     "unlimited_ocr": "UNLIMITED_OCR", "lfm2_vl": "LFM2_VL", "qwen35_ocr": "QWEN35_OCR",

@@ -12,6 +12,19 @@ pub struct CrispembedContext(c_void);
 #[repr(C)]
 pub struct MineruContext(c_void);
 
+/// Experimental resident OXR-1.0 context (CRISPEMBED_OXR=1).
+#[repr(C)]
+pub struct OxrContext(c_void);
+
+extern "C" {
+    pub fn crispembed_oxr_init(model_path: *const c_char, n_threads: c_int) -> *mut OxrContext;
+    pub fn crispembed_oxr_free(ctx: *mut OxrContext);
+    pub fn crispembed_oxr_predict(ctx: *mut OxrContext, pixels: *const u8,
+        width: c_int, height: c_int, channels: c_int, prompt: *const c_char,
+        max_new_tokens: c_int, repetition_penalty: c_float) -> *const c_char;
+    pub fn crispembed_oxr_last_error(ctx: *const OxrContext) -> *const c_char;
+}
+
 extern "C" {
     pub fn crispembed_mineru_init(model_path: *const c_char, n_threads: c_int) -> *mut MineruContext;
     pub fn crispembed_mineru_free(ctx: *mut MineruContext);
@@ -129,6 +142,7 @@ pub struct CrispembedOcrStage {
     // 19=lfm2_vl 20=qwen35_ocr (experimental) 21=ovisocr2 (explicit gated format2) 22=ovisocr3 (gated format3)
     // 23=minicpm_ocr (experimental), 24=teleocr (CRISPEMBED_TELEOCR),
     // 25=mineru25_pro (gated native basic page pipeline)
+    // 26=oxr (gated recognition/reading order; external layout remains separate)
     pub engine: c_int,
     pub model_a: *const c_char,
     pub model_b: *const c_char,

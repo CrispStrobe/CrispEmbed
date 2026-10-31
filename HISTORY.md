@@ -18683,3 +18683,32 @@ terms; TeleOCR was republished at 1de0119f with byte-identical GGUFs. MinerU2.5-
 (Qwen2-VL-2B + Qwen2-0.5B) and the other Qwen-family entries are consistent.
 `check_registry_licenses.py` now reads `license_name` when `license` is unset.
 [Evidence](tests/results/licenses/).
+
+
+## 31 October 2026 — OXR source integration and component evidence
+
+The source integration adds the pinned OXR-1.0 architecture, authenticated GGUF
+conversion, native request APIs, CLI/server recognition engine 25, Rust/Dart
+wrappers, and the original document helper with native recognition. The helper
+keeps external/supplied layout explicit. The dedicated model graph includes
+SigLIP2-NaViT window ordering/full attention, learned position interpolation,
+65,532-way visual token probabilities, VTE projection, and Qwen3 with F32 KV.
+The additional decode-graph reuse remains default-off.
+
+The current component run passes 44 Python tests (28 converter/protocol and 16
+binding/helper controls), 31 standalone profile checks, and 30 native C API checks
+with mocked inference. Preprocessing gold includes 3072 exact F32 patch values
+from independent Pillow/NumPy calculations. These are source/component results;
+no full checkpoint conversion or execution, linked GGML graph run, numerical
+model result or timing comparison occurred. See the
+[validation receipt](tests/results/oxr/implementation-validation.json).
+
+Independent review caught and corrected a wrong default recognition prompt, an
+illegal transposed VTE matmul stride, inconsistent zero-token-cap semantics,
+unused tokenizer output-ID handling, missing precision provenance in the speed
+gate, and implicit F16 GELU rounding in the pinned GGML CPU implementation.
+The native stage tool now requires observed/unobserved prefill neutrality.
+The same operator audit adds a MinerU-only F32 QuickGELU correction and a linked
+operator control. Those graph controls and full-model replay remain unexecuted.
+No OXR model alias, release, version bump, application pin or GitHub publication
+is created by this source delivery. See [the guide](docs/oxr.md).

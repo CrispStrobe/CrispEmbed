@@ -3,6 +3,7 @@
 // Verifies dynamic cache writes, 256-token bucket transitions, and request
 // isolation against the preserved graph path. This is not model quality proof.
 #include "qwen2vl_ocr.h"
+#include "mineru_graph_ops.h"
 #include "ggml-alloc.h"
 #include "ggml-cpu.h"
 
@@ -28,6 +29,43 @@ static void env(const char * name, const char * value) {
         }                                                                                                              \
     } while (0)
 
+static bool quick_gelu_control(ggml_backend_t backend) {
+    std::vector<float> values{ -100.0f,  -10.12345f, -3.12345f, -1.0003f,  -0.10007f, 0.0f,
+                               0.10007f, 1.0003f,    3.12345f,  10.12345f, 100.0f };
+    for (int i = 0; i <= 256; ++i) values.push_back(-8.0f + float(i) * 0.0625f + 0.000317f);
+    auto * gc = ggml_init({ 1024 * 1024, nullptr, false });
+    if (!gc) return false;
+    auto * input = ggml_new_tensor_1d(gc, GGML_TYPE_F32, int64_t(values.size()));
+    std::copy(values.begin(), values.end(), static_cast<float *>(input->data));
+    auto * output = mineru_graph_ops::quick_gelu_f32(gc, input);
+    auto * gf = ggml_new_graph_custom(gc, 128, false);
+    ggml_build_forward_expand(gf, output);
+    bool passed = ggml_backend_graph_compute(backend, gf) == GGML_STATUS_SUCCESS;
+    double error = 0.0, rounded_error = 0.0;
+    if (passed) {
+        const auto * actual = static_cast<const float *>(output->data);
+        for (size_t i = 0; i < values.size(); ++i) {
+            // Independent double scalar reference, without calling the helper
+            // or any GGML activation. Small absolute tolerance permits F32 math.
+            const double x = values[i];
+            const double expected = x / (1.0 + std::exp(-1.702 * x));
+            error = std::max(error, std::fabs(double(actual[i]) - expected));
+            // Verify the chosen inputs would detect an input/output F16 LUT.
+            // This is independent of whether a future backend changes its LUT.
+            const double half_x = ggml_fp16_to_fp32(ggml_fp32_to_fp16(values[i]));
+            const float half_result =
+                ggml_fp16_to_fp32(ggml_fp32_to_fp16(float(half_x / (1.0 + std::exp(-1.702 * half_x)))));
+            rounded_error = std::max(rounded_error, std::fabs(double(half_result) - expected));
+            passed = passed && std::isfinite(actual[i]);
+        }
+    }
+    passed = passed && error <= 2e-6 && rounded_error >= 1e-4;
+    std::printf("MinerU QuickGELU values=%zu max_abs=%.9g F16_rounding_control=%.9g %s\n", values.size(), error,
+                rounded_error, passed ? "PASS" : "FAIL");
+    ggml_free(gc);
+    return passed;
+}
+
 static bool run() {
     env("CRISPEMBED_MINERU25_PRO", "1");
     env("CRISPEMBED_NO_KV_CACHE", "0");
@@ -52,6 +90,10 @@ static bool run() {
     ctx.backend = ggml_backend_cpu_init();
     REQUIRE(ctx.backend);
     ggml_backend_cpu_set_n_threads(ctx.backend, 1);
+    if (!quick_gelu_control(ctx.backend)) {
+        qwen2vl_ocr::free_(ctx);
+        return false;
+    }
     ctx.sched = ggml_backend_sched_new(&ctx.backend, nullptr, 1, 32768, false, false);
     ctx.compute_meta.resize(32768 * ggml_tensor_overhead() + ggml_graph_overhead_custom(32768, false));
     ctx.model_ctx = ggml_init({ 128 * ggml_tensor_overhead() + 4096, nullptr, true });

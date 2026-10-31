@@ -7130,3 +7130,25 @@ This is an acceptance protocol, not a result. See [the guide](docs/mineru25-pro.
 and [actual implementation checks](tests/results/mineru25/implementation-validation.json).
 The reuse graph stays default-off; vLLM batching and GPU performance remain
 separate unmeasured targets.
+
+
+## OXR-1.0 — model measurements pending (31 October 2026)
+
+No native/Python latency, throughput, full-model error or representative document
+quality number is available from this implementation. The 31 profile checks,
+44 Python controls and 30 mocked C API checks do not establish those properties.
+
+The proposed primary speed gate compares ordinary resident F32 CPU inference on
+the same host/thread configuration, after exact prompt/input/completion IDs,
+raw/processed text, geometry, EOS/cap and repeated-context checks. Native median
+warm latency must be no greater than the original HF median for the same request.
+Different weight recipes cannot silently pass this same-precision gate. Model
+stages separately require all 66 observations and unchanged absolute/cosine budgets.
+The original HF cache/observer controls and native observer neutrality are required.
+
+The public default uses the original vLLM plugin's processor/history policy, but
+this native path has serial requests and does not reproduce vLLM continuous
+batching. Original vLLM BF16 quality/throughput and D-FINE service performance
+remain separate, unmeasured scopes. The optional 256-slot decode graph, GPU path,
+mixed-F16 quality/performance and Q8/Q4 recipes remain unqualified. See
+[the guide](docs/oxr.md) and [actual checks](tests/results/oxr/implementation-validation.json).

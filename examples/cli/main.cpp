@@ -175,7 +175,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --ocr-pipeline F full OCR pipeline: source-type routing + cleanup + accept-gate\n");
     fprintf(stderr, "       --ocr-engine N  primary engine "
                     "(dbnet_trocr|ppocrv6|easyocr|surya|tesseract|got|glm|qwen2vl|internvl2|lightonocr|qwen35-ocr|"
-                    "ovisocr2|ovisocr3|minicpm-ocr|teleocr|mineru25-pro|qwen3vl|"
+                    "ovisocr2|ovisocr3|minicpm-ocr|teleocr|mineru25-pro|oxr|qwen3vl|"
                     "unlimited_ocr|olmocr|lfm2-vl)\n");
     fprintf(stderr, "       --denoise       NAFNet pre-processor; --punct-model M  post-OCR punctuation/spacing\n");
     fprintf(stderr, "       --lid-model M   text LID for language detection + Tesseract auto-select\n");
@@ -1333,6 +1333,7 @@ static int cli_main(int argc, char ** argv) {
             if (n == "easyocr") return 17;
             if (n == "olmocr") return 18;
             if (n == "mineru25-pro" || n == "mineru25_pro") return 25;
+            if (n == "oxr" || n == "oxr-1.0") return 26;
             if (n == "lfm2-vl" || n == "lfm2_vl") return 19;
             return 0; // dbnet_trocr
         };
@@ -1362,12 +1363,13 @@ static int cli_main(int argc, char ** argv) {
             // no tokenizer, null patch embedding) and failed inside the vision
             // graph rather than at load.
             const bool is_vlm = (eid >= 2 && eid <= 5) || (eid >= 8 && eid <= 13) || eid == 14 || eid == 18 ||
-                                eid == 19 || eid == 20 || eid == 21 || eid == 22 || eid == 23 || eid == 24 || eid == 25;
+                                eid == 19 || eid == 20 || eid == 21 || eid == 22 || eid == 23 || eid == 24 ||
+                                eid == 25 || eid == 26;
             // Engines whose orchestrator stage forwards vlm_prompt: qwen2vl,
             // internvl2, granite-vision, qwen3vl, unified (model-dependent),
             // olmocr, lfm2-vl. Everywhere else the prompt cannot take effect.
             const bool takes_prompt = eid == 4 || eid == 5 || eid == 10 || eid == 12 || eid == 14 || eid == 18 ||
-                                      eid == 19 || eid == 20 || eid == 23 || eid == 24;
+                                      eid == 19 || eid == 20 || eid == 23 || eid == 24 || eid == 26;
             if (!ocr_prompt.empty() && !takes_prompt && eid != 21 && eid != 22) {
                 fprintf(stderr,
                         "warning: --ocr-prompt ignored: --ocr-engine %s runs a fixed task prompt "
@@ -1393,6 +1395,13 @@ static int cli_main(int argc, char ** argv) {
                     fprintf(stderr, "error: teleocr requires a local TeleOCR version 1 GGUF\n");
                     return 1;
                 }
+            }
+            // Experimental OXR-1.0: explicit model file and own gate. This stage runs
+            // recognition; the full document pipeline uses CrispOXR with supplied layout.
+            if (eid == 26 && (ocr_rec_path.empty() || !core_env::on("CRISPEMBED_OXR"))) {
+                fprintf(stderr, "error: oxr needs --ocr-rec FILE and CRISPEMBED_OXR=1; this stage runs recognition, "
+                                "while the full document pipeline uses CrispOXR with supplied/external layout\n");
+                return 1;
             }
             // Experimental MinerU2.5-Pro: explicit model file, fixed task prompts, own gate.
             if (eid == 25 &&

@@ -1,5 +1,11 @@
 # CrispEmbed
 
+**Experimental OXR-1.0 integration:** dedicated SigLIP2-NaViT / visual-tokenizer /
+Qwen3 GGML inference, F32 and mixed-F16 conversion, C/Python/Rust/Dart APIs, and
+the pinned official document helper with supplied regions or an explicit layout
+service. Enable `CRISPEMBED_OXR=1`. Full-model quality and speed are unverified;
+OXR has additional license terms. See [the implementation and validation guide](docs/oxr.md).
+
 **Experimental MinerU2.5-Pro-2604 integration:** native Qwen2-VL GGML inference,
 authenticated F32/F16 conversion, a complete Python document-helper adapter,
 and native basic page extraction are available behind
