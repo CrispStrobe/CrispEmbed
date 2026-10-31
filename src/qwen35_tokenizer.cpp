@@ -38,6 +38,16 @@ Rules:
 </think>
 
 )OVIS3";
+// Surya OCR 2.5 (datalab-to/surya-ocr-2.5@00c843e9, tokenizer.json sha256 4975...84c1).
+// The rendered chat template for one image followed by the prompt; see
+// models/qwen35_surya25_profile.py. HF spells the trailing <|im_end|> when the
+// prompt ends in '.' or ').' (".<" / ").<" are added tokens) and the native
+// WordLevel encoder reproduces that exactly, so no special casing is needed here.
+const char * surya_prefix = "<|im_start|>user\n<|vision_start|><|image_pad|><|vision_end|>";
+const char * surya_suffix = "<|im_end|>\n<|im_start|>assistant\n";
+const char * surya_block_prompt = "OCR this block image to HTML.";
+const char * surya_tokenizer_sha256 = "49753fd82a5800f975d18d301203450d42f1a46c2b0247343c93239f122684c1";
+const char * surya_checkpoint_sha256 = "6940baca2d16a20b15b7302cac7253246c78c95469920fcdb064963f48b5cb17";
 const char * ovis3_metadata_sha256 = "804799bdaa944ef572ed820a3ddb71aa14251073223c30cfe8fa9041bb80d5c2";
 const char * ovis3_reference_sha256 = "fbd71d4a40df55db3314ce4221ac036512c7c58711a5afe74f20dd5f7d1fccc3";
 std::string replace_invalid_utf8(const std::string & input) {
@@ -78,13 +88,71 @@ std::string replace_invalid_utf8(const std::string & input) {
 
 bool frontend_tokenizer::enabled() const {
     return core_env::on("CRISPEMBED_QWEN35_OCR") && (!ovis_ || core_env::on("CRISPEMBED_OVISOCR2_FRONTEND")) &&
-           (!ovis3_ || core_env::on("CRISPEMBED_OVISOCR3_FRONTEND"));
+           (!ovis3_ || core_env::on("CRISPEMBED_OVISOCR3_FRONTEND")) &&
+           (!surya_ || core_env::on("CRISPEMBED_SURYA25_FRONTEND"));
 }
 bool frontend_tokenizer::is_stop(int id) const {
     return enabled() && std::find(stops_.begin(), stops_.end(), id) != stops_.end();
 }
+bool frontend_tokenizer::load_surya25(gguf_context * meta) {
+    *this = {};
+    if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !core_env::on("CRISPEMBED_SURYA25_FRONTEND") || !meta ||
+        core_gguf::kv_str(meta, "tokenizer.ggml.model", "") != "surya25-wordlevel" ||
+        core_gguf::kv_str(meta, "tokenizer.ggml.pre", "") != "surya25" ||
+        core_gguf::kv_str(meta, "general.source.huggingface.repository", "") != "datalab-to/surya-ocr-2.5" ||
+        core_gguf::kv_str(meta, "general.source.huggingface.revision", "") !=
+            "00c843e9cae45611dca0a6dc2c9bbbf2dadaaed3" ||
+        core_gguf::kv_u32(meta, "qwen35_ocr.format_version", 0) != 4 ||
+        core_gguf::kv_str(meta, "qwen35_ocr.profile", "") != "surya25" ||
+        core_gguf::kv_str(meta, "qwen35_ocr.checkpoint_sha256", "") != surya_checkpoint_sha256 ||
+        core_gguf::kv_str(meta, "qwen35_ocr.tokenizer_json_sha256", "") != surya_tokenizer_sha256 ||
+        core_gguf::kv_str(meta, "qwen35_ocr.profile.render_prefix", "") != surya_prefix ||
+        core_gguf::kv_str(meta, "qwen35_ocr.profile.render_suffix", "") != surya_suffix ||
+        core_gguf::kv_u32(meta, "qwen35_ocr.image_min_pixels", 0) != 3136 ||
+        core_gguf::kv_u32(meta, "qwen35_ocr.image_max_pixels", 0) != 6291456 ||
+        core_gguf::kv_u32(meta, "qwen35_ocr.generation_eos_id", 0) != 2 ||
+        core_gguf::kv_u32(meta, "tokenizer.ggml.eos_token_id", 0) != 2 ||
+        core_gguf::kv_u32(meta, "tokenizer.ggml.padding_token_id", 0) != 0 ||
+        core_gguf::kv_u32(meta, "tokenizer.ggml.unknown_token_id", 0) != 65424 ||
+        core_gguf::kv_i32_array(meta, "qwen35_ocr.stop_token_ids") != std::vector<int>{ 2 } ||
+        core_gguf::kv_bool(meta, "qwen35_ocr.native_alias_qualified", true))
+        return false;
+    auto tokens = core_gguf::kv_str_array(meta, "tokenizer.ggml.tokens");
+    // gguf string arrays are read as C strings: the U+0000 token is stored empty
+    // under an explicit id and restored here. Every other token must be non-empty.
+    if (tokens.size() != 88526 || core_gguf::kv_u32(meta, "qwen35_ocr.nul_token_id", 0) != 1947 ||
+        !tokens[1947].empty())
+        return false;
+    tokens[1947] = std::string(1, '\0');
+    const auto model = core_gguf::kv_i32_array(meta, "qwen35_ocr.wordlevel_model_ids");
+    const auto raw = core_gguf::kv_i32_array(meta, "qwen35_ocr.added_token_ids");
+    const auto normalized = core_gguf::kv_i32_array(meta, "qwen35_ocr.normalized_added_token_ids");
+    const auto special = core_gguf::kv_i32_array(meta, "qwen35_ocr.special_token_ids");
+    if (model.size() != 65425 || raw.size() != 22240 || normalized.size() != 2809 || special.size() != 22) return false;
+    for (const auto & pair : std::vector<std::pair<int, const char *>>{ { 0, "<|endoftext|>" },
+                                                                        { 1, "<|im_start|>" },
+                                                                        { 2, "<|im_end|>" },
+                                                                        { 9, "<|vision_start|>" },
+                                                                        { 10, "<|vision_end|>" },
+                                                                        { 11, "<|image_pad|>" },
+                                                                        { 65424, "<unk>" } })
+        if (tokens[pair.first] != pair.second) return false;
+    frontend_tokenizer result;
+    std::vector<int32_t> model32(model.begin(), model.end()), raw32(raw.begin(), raw.end()),
+        normalized32(normalized.begin(), normalized.end()), special32(special.begin(), special.end());
+    if (!result.wordlevel_.load(std::move(tokens), model32, raw32, normalized32, special32, 65424) ||
+        !result.wordlevel_.is_special(2) || !result.wordlevel_.is_special(11))
+        return false;
+    result.surya_ = true;
+    result.special_ = special;
+    result.eos_ = 2;
+    result.stops_ = { 2 };
+    *this = std::move(result);
+    return true;
+}
 bool frontend_tokenizer::load(gguf_context * meta) {
     *this = {};
+    if (meta && core_gguf::kv_str(meta, "tokenizer.ggml.pre", "") == "surya25") return load_surya25(meta);
     if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !meta ||
         core_gguf::kv_str(meta, "tokenizer.ggml.pre", "") != "qwen35")
         return false;
@@ -254,6 +322,12 @@ bool frontend_tokenizer::load_minicpm_ocr(gguf_context * meta) {
 }
 bool frontend_tokenizer::encode(const std::string & text, std::vector<int> & ids) const {
     ids.clear();
+    if (surya_) {
+        std::vector<int32_t> out;
+        if (!enabled() || text.size() > 65536 || !wordlevel_.encode(text, out) || out.size() > 4096) return false;
+        ids.assign(out.begin(), out.end());
+        return true;
+    }
     if (!enabled() || vocab_.empty() || text.size() > 65536) return false;
     for (size_t start = 0; start < text.size();) {
         size_t next = text.size();
@@ -283,6 +357,11 @@ bool frontend_tokenizer::encode(const std::string & text, std::vector<int> & ids
 }
 bool frontend_tokenizer::decode(const std::vector<int> & ids, std::string & text) const {
     text.clear();
+    if (surya_) {
+        // Fuse decoder; special ids (including <unk>) skipped as vLLM/HF skip_special_tokens.
+        if (!enabled() || ids.size() > 4096) return false;
+        return wordlevel_.decode(std::vector<int32_t>(ids.begin(), ids.end()), text, true);
+    }
     if (!enabled() || vocab_.empty() || ids.size() > 4096) return false;
     for (int id : ids) {
         if (id < 0 || size_t(id) >= vocab_.size()) {
@@ -301,17 +380,20 @@ bool frontend_tokenizer::image_prompt(const std::string & prompt, int image_toke
     modalities.clear();
     rendered.clear();
     if (!enabled() || image_tokens < 1 || image_tokens > 1024 || ((ovis_ || ovis3_) && !prompt.empty())) return false;
-    rendered = (ovis_ || ovis3_) ? image_template_
+    const int pad = image_pad_id();
+    rendered = surya_                ? std::string(surya_prefix) + (prompt.empty() ? surya_block_prompt : prompt) +
+                                           surya_suffix
+               : (ovis_ || ovis3_) ? image_template_
                                  : "<|im_start|>user\n<|vision_start|><|image_pad|><|vision_end|>" + prompt +
                                        "<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n";
     std::vector<int> initial;
-    if (!encode(rendered, initial) || std::count(initial.begin(), initial.end(), 248056) != 1 ||
+    if (!encode(rendered, initial) || std::count(initial.begin(), initial.end(), pad) != 1 ||
         initial.size() + image_tokens - 1 > 4096) {
         rendered.clear();
         return false;
     }
     for (int id : initial) {
-        if (id == 248056) {
+        if (id == pad) {
             ids.insert(ids.end(), image_tokens, id);
             modalities.insert(modalities.end(), image_tokens, 1);
         } else {

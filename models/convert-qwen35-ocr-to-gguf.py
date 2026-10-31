@@ -43,6 +43,48 @@ def _ovis3_hf_profile():
     return module
 
 
+@lru_cache(maxsize=1)
+def _surya25_profile():
+    spec=importlib.util.spec_from_file_location('qwen35_surya25_profile',Path(__file__).with_name('qwen35_surya25_profile.py'))
+    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+    return module
+
+
+def write_surya25_metadata(writer, root):
+    """Format 4: character-level WordLevel vocabulary for the native core_wordlevel encoder."""
+    import gguf
+    policy = _surya25_profile()
+    data = policy.read_tokenizer(root)
+    writer.add_string("tokenizer.ggml.model", "surya25-wordlevel")
+    writer.add_string("tokenizer.ggml.pre", "surya25")
+    # ggml's gguf_get_arr_str() returns a C string, so the NUL token (U+0000) would read
+    # back empty. Write it empty and name its id explicitly; native restores "\0".
+    nul = [i for i, token in enumerate(data["tokens"]) if "\x00" in token]
+    if nul != [policy.NUL_ID] or data["tokens"][policy.NUL_ID] != "\x00":
+        raise ValueError("Unexpected NUL-bearing Surya tokens")
+    writer.add_array("tokenizer.ggml.tokens", ["" if i == policy.NUL_ID else t for i, t in enumerate(data["tokens"])])
+    writer.add_uint32(f"{ARCH}.nul_token_id", policy.NUL_ID)
+    for key, values in [("wordlevel_model_ids", data["model_ids"]), ("added_token_ids", data["raw_added_ids"]),
+                        ("normalized_added_token_ids", data["normalized_added_ids"]),
+                        ("special_token_ids", data["special_ids"]), ("stop_token_ids", [policy.EOS_ID])]:
+        writer.add_key_value(f"{ARCH}.{key}", values, gguf.GGUFValueType.ARRAY, gguf.GGUFValueType.INT32)
+    writer.add_uint32(f"{ARCH}.generation_eos_id", policy.EOS_ID)
+    writer.add_uint32("tokenizer.ggml.eos_token_id", policy.EOS_ID)
+    writer.add_uint32("tokenizer.ggml.padding_token_id", policy.PAD_ID)
+    writer.add_uint32("tokenizer.ggml.unknown_token_id", policy.UNK_ID)
+    writer.add_string(f"{ARCH}.tokenizer_json_sha256", data["tokenizer_json_sha256"])
+    writer.add_string(f"{ARCH}.profile", "surya25")
+    writer.add_string(f"{ARCH}.profile.render_prefix", policy.RENDER_PREFIX)
+    writer.add_string(f"{ARCH}.profile.render_suffix", policy.RENDER_SUFFIX)
+    writer.add_string(f"{ARCH}.profile.prompts", json.dumps(policy.PROMPTS, sort_keys=True))
+    writer.add_string(f"{ARCH}.checkpoint_sha256", policy.CHECKPOINT_SHA256)
+    writer.add_uint32(f"{ARCH}.image_min_pixels", policy.IMAGE_MIN_PIXELS)
+    writer.add_uint32(f"{ARCH}.image_max_pixels", policy.IMAGE_MAX_PIXELS)
+    writer.add_string("general.license", "openrail")
+    writer.add_bool(f"{ARCH}.image_max_qualified", False)
+    writer.add_bool(f"{ARCH}.native_alias_qualified", False)
+
+
 def precision_recipe(name):
     if name == "original-f16":
         return []
@@ -119,7 +161,9 @@ def validate_config(config, profile=None):
         "linear_attention", "full_attention"
     }:
         raise ValueError("Invalid or unsupported decoder layer schedule")
-    if profile is not None:
+    if profile is not None and profile.get("name") == "surya25":
+        _surya25_profile().validate_config(config)
+    elif profile is not None:
         if profile.get("qualification_kind") == "hf5.16.1-original-reference":
             _ovis3_hf_profile().validate_config(config,profile)
         elif profile.get("name") == "ovisocr3":
@@ -158,16 +202,28 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
     output = Path(output)
     if not re.fullmatch(r"[0-9a-f]{40}", source_revision):
         raise ValueError("An immutable 40-hex source revision is required")
-    if profile not in (None,"ovisocr2","ovisocr3","ovisocr3-hf-reference"):
+    if profile not in (None,"ovisocr2","ovisocr3","ovisocr3-hf-reference","surya25"):
         raise ValueError("Unknown export profile")
-    policy=(_ovis3_hf_profile() if profile=="ovisocr3-hf-reference" else
-            _ovis3_profile() if profile=="ovisocr3" else _ovis_profiles())
-    pinned=policy.load_profile(root,source_model,source_revision) if profile else None
+    surya = profile == "surya25"
+    if surya:
+        policy = _surya25_profile()
+        if (source_model, source_revision) != (policy.MODEL, policy.REVISION):
+            raise ValueError("Surya 2.5 export requires its pinned source/revision")
+        policy.verify_metadata(root)
+        pinned = {"name": "surya25", "format_version": 4}
+    else:
+        policy=(_ovis3_hf_profile() if profile=="ovisocr3-hf-reference" else
+                _ovis3_profile() if profile=="ovisocr3" else _ovis_profiles())
+        pinned=policy.load_profile(root,source_model,source_revision) if profile else None
     config = json.loads((root / "config.json").read_text())
     text, vision = validate_config(config,pinned)
     if dtype not in {"f32", "f16"}:
         raise ValueError("Establish full-precision parity before adding quantized exports")
-    if pinned:
+    if surya:
+        if (root/"model.safetensors.index.json").exists() or \
+                _surya25_profile().file_sha256(root/"model.safetensors") != _surya25_profile().CHECKPOINT_SHA256:
+            raise ValueError("Surya 2.5 checkpoint differs from the pinned single file")
+    elif pinned:
         if (root/"model.safetensors.index.json").exists():
             raise ValueError("Pinned Ovis checkpoint is a single file; unexpected shard index")
         policy.verify_checkpoint(root/"model.safetensors",pinned)
@@ -178,7 +234,7 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
     from safetensors import safe_open
     import transformers
     from transformers import AutoConfig, Qwen3_5ForConditionalGeneration
-    if pinned:
+    if pinned and not surya:
         expected=pinned['qualification']
         implementation=Path(inspect.getfile(Qwen3_5ForConditionalGeneration)).read_bytes().replace(b'\r\n',b'\n')
         if (transformers.__version__!=expected['transformers_version']
@@ -187,7 +243,7 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
 
     # Official implementation supplies the independent expected parameter schema.
     hf_config = AutoConfig.from_pretrained(root, local_files_only=True, trust_remote_code=False)
-    if pinned: hf_config._attn_implementation="eager"
+    if pinned and not surya: hf_config._attn_implementation="eager"
     with torch.device("meta"):
         official = Qwen3_5ForConditionalGeneration(hf_config)
     expected = {name: list(tensor.shape) for name, tensor in official.state_dict().items()}
@@ -237,8 +293,9 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
                                embed_file.get_tensor("model.language_model.embed_tokens.weight")):
                 raise ValueError("Checkpoint claims tied weights but stores unequal head/embedding")
 
-    tokenizer_data = read_tokenizer_metadata(root, text["vocab_size"],pinned["generation"] if pinned else None,
-                                            allow_generation_eos_list=profile in ("ovisocr3","ovisocr3-hf-reference"))
+    tokenizer_data = None if surya else read_tokenizer_metadata(
+        root, text["vocab_size"],pinned["generation"] if pinned else None,
+        allow_generation_eos_list=profile in ("ovisocr3","ovisocr3-hf-reference"))
 
     output.parent.mkdir(parents=True, exist_ok=True)
     pending = output.with_name(output.name + ".partial")
@@ -253,11 +310,14 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
     # Preserve every config field, rather than treating nested EOS ids as synonyms.
     for filename in ["config.json", "processor_config.json", "preprocessor_config.json",
                      "tokenizer_config.json", "generation_config.json"]:
-        if pinned and filename in pinned['missing_source_files']:
+        if pinned and filename in pinned.get('missing_source_files', ()):
             continue  # Preserve absence, never fabricate an upstream source file.
         writer.add_string(f"{ARCH}.{filename.removesuffix('.json')}", (root / filename).read_text())
     writer.add_string("tokenizer.chat_template", (root / "chat_template.jinja").read_text())
-    write_tokenizer_metadata(writer, tokenizer_data)
+    if surya:
+        write_surya25_metadata(writer, root)
+    else:
+        write_tokenizer_metadata(writer, tokenizer_data)
     if profile=="ovisocr2":
         writer.add_string(f"{ARCH}.profile",pinned['name'])
         writer.add_string(f"{ARCH}.profile.rendered_prompt",pinned['rendered_prompt'])
@@ -352,7 +412,7 @@ def main():
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", default=LIGHTON_MODEL)
-    parser.add_argument("--profile",choices=["ovisocr2","ovisocr3","ovisocr3-hf-reference"],
+    parser.add_argument("--profile",choices=["ovisocr2","ovisocr3","ovisocr3-hf-reference","surya25"],
                         help="Pinned experimental Ovis export-only profile; not a native alias")
     parser.add_argument("--revision", required=True)
     parser.add_argument("--output", required=True)
@@ -364,6 +424,16 @@ def main():
     args = parser.parse_args()
     if not re.fullmatch(r"[0-9a-f]{40}", args.revision):
         parser.error("--revision must be an immutable 40-hex commit")
+    if args.profile == "surya25" or args.model == _surya25_profile().MODEL:
+        policy = _surya25_profile()
+        if args.profile != "surya25" or args.model != policy.MODEL or args.revision != policy.REVISION:
+            parser.error("Surya 2.5 export requires its exact source/revision and --profile surya25")
+        directory = snapshot_download(args.model, revision=args.revision,
+                                      allow_patterns=list(policy.METADATA_FILES) + ["model.safetensors"])
+        manifest = convert(directory, args.output, args.model, args.revision, args.dtype,
+                           sorted(set(precision_recipe(args.precision_recipe) + args.keep_f32)), profile="surya25")
+        print(json.dumps({key: value for key, value in manifest.items() if key != "records"}, indent=2))
+        return
     if args.profile or args.model in ("ATH-MaaS/OvisOCR2", "ATH-MaaS/OvisOCR3"):
         policy=(_ovis3_hf_profile() if args.profile=="ovisocr3-hf-reference" else
                 _ovis3_profile() if args.profile=="ovisocr3" else _ovis_profiles())

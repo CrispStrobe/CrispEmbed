@@ -55,6 +55,9 @@ struct qwen35_ocr_context {
 };
 namespace {
 bool inference_enabled(const qwen35_ocr_context & c) {
+    if (c.tokenizer.is_surya25())
+        return core_env::on("CRISPEMBED_QWEN35_OCR") && core_env::on("CRISPEMBED_SURYA25_FRONTEND") &&
+               core_env::on("CRISPEMBED_SURYA25_INFERENCE");
     if (c.tokenizer.is_ovisocr3())
         return core_env::on("CRISPEMBED_QWEN35_OCR") && core_env::on("CRISPEMBED_OVISOCR3_FRONTEND") &&
                core_env::on("CRISPEMBED_OVISOCR3_INFERENCE");
@@ -70,8 +73,10 @@ bool shape(ggml_tensor * t, int x, int y = 1, int z = 1) {
 bool valid_weights(const qwen35_ocr_context & c) {
     const auto & d = c.decoder;
     const auto & v = c.vision;
-    if (c.loaded.tensors.size() != 473 || d.layers.size() != 24 || v.layers.size() != 12 ||
-        !shape(d.embedding, 1024, 248320) || d.head != d.embedding || !shape(d.norm, 1024) ||
+    // Surya 2.5 shares every decoder/vision shape except its 88526-row vocabulary.
+    const int vocab = c.tokenizer.is_surya25() ? 88526 : 248320;
+    if (c.tokenizer.vocab_size() != vocab || c.loaded.tensors.size() != 473 || d.layers.size() != 24 ||
+        v.layers.size() != 12 || !shape(d.embedding, 1024, vocab) || d.head != d.embedding || !shape(d.norm, 1024) ||
         !shape(v.patch, 1536, 768) || !shape(v.patch_bias, 768) || !shape(v.position, 768, 2304) ||
         !shape(v.merger_norm, 768) || !shape(v.merger_norm_bias, 768) || !shape(v.merger_up, 3072, 3072) ||
         !shape(v.merger_up_bias, 3072) || !shape(v.merger_down, 3072, 1024) || !shape(v.merger_down_bias, 1024))
@@ -163,7 +168,7 @@ const char * recognize(qwen35_ocr_context & c, const uint8_t * pixels, int w, in
         return c.fail("decoder prefill failed");
     for (int step = 0; step < c.max_tokens; ++step) {
         stage.next(profile_event::selection, profile_phase::other);
-        if (current.logits.size() != 248320 ||
+        if (current.logits.size() != size_t(c.tokenizer.vocab_size()) ||
             !std::all_of(current.logits.begin(), current.logits.end(), [](float x) { return std::isfinite(x); }))
             return c.fail("nonfinite or missing vocabulary scores");
         const auto best = std::max_element(current.logits.begin(), current.logits.end());
@@ -214,17 +219,20 @@ extern "C" qwen35_ocr_context * qwen35_ocr_init(const char * path, int threads) 
                                     (format == 2 && core_env::on("CRISPEMBED_OVISOCR2_INFERENCE") &&
                                      core_env::on("CRISPEMBED_OVISOCR2_FRONTEND")) ||
                                     (format == 3 && core_env::on("CRISPEMBED_OVISOCR3_INFERENCE") &&
-                                     core_env::on("CRISPEMBED_OVISOCR3_FRONTEND"));
+                                     core_env::on("CRISPEMBED_OVISOCR3_FRONTEND")) ||
+                                    (format == 4 && core_env::on("CRISPEMBED_SURYA25_INFERENCE") &&
+                                     core_env::on("CRISPEMBED_SURYA25_FRONTEND"));
         const bool ready = allowed_format && core_gguf::kv_str(meta, "general.architecture", "") == "qwen35_ocr" &&
                            core_gguf::kv_bool(meta, "qwen35_ocr.tie_word_embeddings", false) &&
                            core_gguf::kv_bool(meta, "qwen35_ocr.zero_centered_text_norm", false) &&
                            c->tokenizer.load(meta) && ((format == 2) == c->tokenizer.is_ovisocr2()) &&
-                           ((format == 3) == c->tokenizer.is_ovisocr3());
+                           ((format == 3) == c->tokenizer.is_ovisocr3()) &&
+                           ((format == 4) == c->tokenizer.is_surya25());
         metadata.reset();
         if (!ready) return nullptr;
         c->backend = ggml_backend_cpu_init();
         if (!c->backend || !core_gguf::load_weights(path, c->backend, "qwen35-ocr", c->loaded) ||
-            !qwen35_ocr::map_small_decoder(c->loaded.tensors, c->decoder) ||
+            !qwen35_ocr::map_small_decoder(c->loaded.tensors, c->decoder, c->tokenizer.vocab_size()) ||
             !qwen35_ocr::map_small_vision(c->loaded.tensors, c->vision) || !valid_weights(*c))
             return nullptr;
         return c.release();
@@ -245,6 +253,9 @@ extern "C" int qwen35_ocr_is_ovisocr2(const qwen35_ocr_context * c) {
 }
 extern "C" int qwen35_ocr_is_ovisocr3(const qwen35_ocr_context * c) {
     return c && c->tokenizer.is_ovisocr3();
+}
+extern "C" int qwen35_ocr_is_surya25(const qwen35_ocr_context * c) {
+    return c && c->tokenizer.is_surya25();
 }
 extern "C" int qwen35_ocr_get_max_tokens(const qwen35_ocr_context * c) {
     return c ? c->max_tokens : 0;

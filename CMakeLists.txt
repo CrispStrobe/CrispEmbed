@@ -791,6 +791,12 @@ add_library(crispembed-qwen35-delta STATIC src/qwen35_delta.cpp src/qwen35_linea
 target_include_directories(crispembed-qwen35-delta PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 # qwen35_linear.cpp uses std::thread; older manylinux glibc needs explicit pthread linkage.
 target_link_libraries(crispembed-qwen35-delta PUBLIC ggml ggml-base ggml-cpu crispembed-core Threads::Threads)
+# Surya OCR 2.5 character-level WordLevel tokenizer (hermetic; HF parity via
+# tests/test_surya25_tokenizer_parity.py <checkpoint> <this binary>).
+add_executable(test-wordlevel-added tests/test_wordlevel_added.cpp)
+target_include_directories(test-wordlevel-added PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+add_executable(test-surya25-frontend tests/test_surya25_frontend.cpp)
+target_link_libraries(test-surya25-frontend PRIVATE crispembed-qwen35-delta crispembed-core)
 add_executable(test-qwen35-public tests/test_qwen35_public.cpp)
 target_link_libraries(test-qwen35-public PRIVATE crispembed crispembed-core)
 add_executable(test-qwen35-context tests/test_qwen35_context.cpp tests/qwen35_context_header.c)

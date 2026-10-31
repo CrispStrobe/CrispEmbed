@@ -8,6 +8,10 @@ extern "C" {
 // CRISPEMBED_OVISOCR2_FRONTEND=1 and CRISPEMBED_OVISOCR2_INFERENCE=1.
 // Experimental OvisOCR3 format3 requires the separate OVISOCR3 frontend/inference
 // gates and a reviewed native profile; source-only exports are rejected.
+// Experimental Surya OCR 2.5 format4 (datalab-to/surya-ocr-2.5@00c843e9, character-
+// level WordLevel vocabulary) requires CRISPEMBED_SURYA25_FRONTEND=1 and
+// CRISPEMBED_SURYA25_INFERENCE=1; the prompt is the package prompt text
+// (null/empty = "OCR this block image to HTML."). Unqualified: no quality claim.
 // Q8_0/Q4_K/Q6_K matrices additionally
 // require CRISPEMBED_QWEN35_QUANT=1; small vectors/convolutions remain F32/F16.
 // One context is not reentrant; independent contexts own independent state.
@@ -24,6 +28,7 @@ void qwen35_ocr_free(qwen35_ocr_context * ctx);
 // Immutable loaded-profile query; null contexts return zero.
 int qwen35_ocr_is_ovisocr2(const qwen35_ocr_context * ctx);
 int qwen35_ocr_is_ovisocr3(const qwen35_ocr_context * ctx);
+int qwen35_ocr_is_surya25(const qwen35_ocr_context * ctx);
 // Invalid settings reject without changing the current setting.
 int qwen35_ocr_set_max_tokens(qwen35_ocr_context * ctx, int max_tokens);
 int qwen35_ocr_get_max_tokens(const qwen35_ocr_context * ctx);

@@ -1,0 +1,1580 @@
+{
+ "files": {
+  "chat_template.jinja": "{%- set image_count = namespace(value=0) %}\n{%- set video_count = namespace(value=0) %}\n{%- macro render_content(content, do_vision_count, is_system_content=false) %}\n    {%- if content is string %}\n        {{- content }}\n    {%- elif content is iterable and content is not mapping %}\n        {%- for item in content %}\n            {%- if 'image' in item or 'image_url' in item or item.type == 'image' %}\n                {%- if is_system_content %}\n                    {{- raise_exception('System message cannot contain images.') }}\n                {%- endif %}\n                {%- if do_vision_count %}\n                    {%- set image_count.value = image_count.value + 1 %}\n                {%- endif %}\n                {%- if add_vision_id %}\n                    {{- 'Picture ' ~ image_count.value ~ ': ' }}\n                {%- endif %}\n                {{- '<|vision_start|><|image_pad|><|vision_end|>' }}\n            {%- elif 'video' in item or item.type == 'video' %}\n                {%- if is_system_content %}\n                    {{- raise_exception('System message cannot contain videos.') }}\n                {%- endif %}\n                {%- if do_vision_count %}\n                    {%- set video_count.value = video_count.value + 1 %}\n                {%- endif %}\n                {%- if add_vision_id %}\n                    {{- 'Video ' ~ video_count.value ~ ': ' }}\n                {%- endif %}\n                {{- '<|vision_start|><|video_pad|><|vision_end|>' }}\n            {%- elif 'text' in item %}\n                {{- item.text }}\n            {%- else %}\n                {{- raise_exception('Unexpected item type in content.') }}\n            {%- endif %}\n        {%- endfor %}\n    {%- elif content is none or content is undefined %}\n        {{- '' }}\n    {%- else %}\n        {{- raise_exception('Unexpected content type.') }}\n    {%- endif %}\n{%- endmacro %}\n{%- if not messages %}\n    {{- raise_exception('No messages provided.') }}\n{%- endif %}\n{%- if messages[0].role == 'system' %}\n    {%- set content = render_content(messages[0].content, false, true)|trim %}\n    {{- '<|im_start|>system\\n' + content + '<|im_end|>\\n' }}\n{%- endif %}\n{%- for message in messages %}\n    {%- set content = render_content(message.content, true)|trim %}\n    {%- if message.role == \"system\" %}\n        {%- if not loop.first %}\n            {{- raise_exception('System message must be at the beginning.') }}\n        {%- endif %}\n    {%- elif message.role == \"user\" %}\n        {{- '<|im_start|>' + message.role + '\\n' + content + '<|im_end|>' + '\\n' }}\n    {%- elif message.role == \"assistant\" %}\n        {{- '<|im_start|>' + message.role + '\\n' + content }}\n        {{- '<|im_end|>\\n' }}\n    {%- else %}\n        {{- raise_exception('Unexpected message role.') }}\n    {%- endif %}\n{%- endfor %}\n{%- if add_generation_prompt %}\n    {{- '<|im_start|>assistant\\n' }}\n{%- endif %}",
+  "config.json": {
+   "architectures": [
+    "Qwen3_5ForConditionalGeneration"
+   ],
+   "bos_token_id": null,
+   "dtype": "bfloat16",
+   "eos_token_id": 2,
+   "image_token_id": 11,
+   "model_type": "qwen3_5",
+   "mtp_num_hidden_layers": 0,
+   "pad_token_id": 0,
+   "text_config": {
+    "attention_bias": false,
+    "attention_dropout": 0.0,
+    "attn_output_gate": true,
+    "bos_token_id": null,
+    "dtype": "bfloat16",
+    "eos_token_id": 2,
+    "full_attention_interval": 4,
+    "head_dim": 256,
+    "hidden_act": "silu",
+    "hidden_size": 1024,
+    "initializer_range": 0.02,
+    "intermediate_size": 3584,
+    "layer_types": [
+     "linear_attention",
+     "linear_attention",
+     "linear_attention",
+     "full_attention",
+     "linear_attention",
+     "linear_attention",
+     "linear_attention",
+     "full_attention",
+     "linear_attention",
+     "linear_attention",
+     "linear_attention",
+     "full_attention",
+     "linear_attention",
+     "linear_attention",
+     "linear_attention",
+     "full_attention",
+     "linear_attention",
+     "linear_attention",
+     "linear_attention",
+     "full_attention",
+     "linear_attention",
+     "linear_attention",
+     "linear_attention",
+     "full_attention"
+    ],
+    "linear_conv_kernel_dim": 4,
+    "linear_key_head_dim": 128,
+    "linear_num_key_heads": 16,
+    "linear_num_value_heads": 16,
+    "linear_value_head_dim": 128,
+    "mamba_ssm_dtype": "float32",
+    "max_position_embeddings": 262144,
+    "mlp_only_layers": [],
+    "model_type": "qwen3_5_text",
+    "mtp_num_hidden_layers": 0,
+    "mtp_use_dedicated_embeddings": false,
+    "num_attention_heads": 8,
+    "num_hidden_layers": 24,
+    "num_key_value_heads": 2,
+    "pad_token_id": null,
+    "partial_rotary_factor": 0.25,
+    "rms_norm_eps": 1e-06,
+    "rope_parameters": {
+     "mrope_interleaved": true,
+     "mrope_section": [
+      11,
+      11,
+      10
+     ],
+     "partial_rotary_factor": 0.25,
+     "rope_theta": 10000000,
+     "rope_type": "default"
+    },
+    "tie_word_embeddings": true,
+    "use_cache": true,
+    "vocab_size": 88526
+   },
+   "tie_word_embeddings": true,
+   "transformers_version": "5.12.1",
+   "video_token_id": 12,
+   "vision_config": {
+    "deepstack_visual_indexes": [],
+    "depth": 12,
+    "dtype": "bfloat16",
+    "hidden_act": "gelu_pytorch_tanh",
+    "hidden_size": 768,
+    "in_channels": 3,
+    "initializer_range": 0.02,
+    "intermediate_size": 3072,
+    "model_type": "qwen3_5_vision",
+    "num_heads": 12,
+    "num_position_embeddings": 2304,
+    "out_hidden_size": 1024,
+    "patch_size": 16,
+    "spatial_merge_size": 2,
+    "temporal_patch_size": 2
+   },
+   "vision_end_token_id": 10,
+   "vision_start_token_id": 9
+  },
+  "generation_config.json": {
+   "_from_model_config": true,
+   "eos_token_id": 2,
+   "pad_token_id": 0,
+   "transformers_version": "5.16.1",
+   "use_cache": true
+  },
+  "preprocessor_config.json": {
+   "image_mean": [
+    0.5,
+    0.5,
+    0.5
+   ],
+   "image_processor_type": "Qwen2VLImageProcessorFast",
+   "image_std": [
+    0.5,
+    0.5,
+    0.5
+   ],
+   "merge_size": 2,
+   "patch_size": 16,
+   "processor_class": "Qwen3VLProcessor",
+   "size": {
+    "longest_edge": 16777216,
+    "shortest_edge": 65536
+   },
+   "temporal_patch_size": 2
+  },
+  "processor_config.json": {
+   "image_processor": {
+    "do_convert_rgb": true,
+    "do_normalize": true,
+    "do_rescale": true,
+    "do_resize": true,
+    "image_mean": [
+     0.5,
+     0.5,
+     0.5
+    ],
+    "image_processor_type": "Qwen2VLImageProcessor",
+    "image_std": [
+     0.5,
+     0.5,
+     0.5
+    ],
+    "merge_size": 2,
+    "patch_size": 16,
+    "resample": 3,
+    "rescale_factor": 0.00392156862745098,
+    "size": {
+     "longest_edge": 16777216,
+     "shortest_edge": 65536
+    },
+    "temporal_patch_size": 2
+   },
+   "processor_class": "Qwen3VLProcessor",
+   "video_processor": {
+    "do_convert_rgb": true,
+    "do_normalize": true,
+    "do_rescale": true,
+    "do_resize": true,
+    "do_sample_frames": true,
+    "fps": 2,
+    "image_mean": [
+     0.5,
+     0.5,
+     0.5
+    ],
+    "image_std": [
+     0.5,
+     0.5,
+     0.5
+    ],
+    "max_frames": 768,
+    "merge_size": 2,
+    "min_frames": 4,
+    "patch_size": 16,
+    "resample": 3,
+    "rescale_factor": 0.00392156862745098,
+    "return_metadata": false,
+    "size": {
+     "longest_edge": 25165824,
+     "shortest_edge": 4096
+    },
+    "temporal_patch_size": 2,
+    "video_processor_type": "Qwen3VLVideoProcessor"
+   }
+  },
+  "tokenizer_config.json": {
+   "backend": "tokenizers",
+   "bos_token": null,
+   "eos_token": "<|im_end|>",
+   "extra_special_tokens": [
+    "<|im_start|>",
+    "<|object_ref_start|>",
+    "<|object_ref_end|>",
+    "<|box_start|>",
+    "<|box_end|>",
+    "<|quad_start|>",
+    "<|quad_end|>",
+    "<|vision_start|>",
+    "<|vision_end|>",
+    "<|image_pad|>",
+    "<|video_pad|>",
+    "<|vision_pad|>",
+    "<|audio_start|>",
+    "<|audio_end|>",
+    "<tts_pad>",
+    "<tts_text_bos>",
+    "<tts_text_eod>",
+    "<tts_text_bos_single>",
+    "<|audio_pad|>"
+   ],
+   "is_local": true,
+   "local_files_only": true,
+   "model_max_length": 1000000000000000019884624838656,
+   "pad_token": "<|endoftext|>",
+   "processor_class": "Qwen3VLProcessor",
+   "tokenizer_class": "TokenizersBackend",
+   "unk_token": "<unk>"
+  },
+  "video_preprocessor_config.json": {
+   "image_mean": [
+    0.5,
+    0.5,
+    0.5
+   ],
+   "image_std": [
+    0.5,
+    0.5,
+    0.5
+   ],
+   "merge_size": 2,
+   "patch_size": 16,
+   "processor_class": "Qwen3VLProcessor",
+   "size": {
+    "longest_edge": 25165824,
+    "shortest_edge": 4096
+   },
+   "temporal_patch_size": 2,
+   "video_processor_type": "Qwen3VLVideoProcessor"
+  }
+ },
+ "inventory": {
+  "files": [
+   {
+    "lfs_sha256": null,
+    "path": ".gitattributes",
+    "size": 3413
+   },
+   {
+    "lfs_sha256": null,
+    "path": "LICENSE",
+    "size": 14726
+   },
+   {
+    "lfs_sha256": null,
+    "path": "README.md",
+    "size": 33127
+   },
+   {
+    "lfs_sha256": null,
+    "path": "chat_template.jinja",
+    "size": 2872
+   },
+   {
+    "lfs_sha256": null,
+    "path": "config.json",
+    "size": 2695
+   },
+   {
+    "lfs_sha256": null,
+    "path": "generation_config.json",
+    "size": 132
+   },
+   {
+    "lfs_sha256": "6940baca2d16a20b15b7302cac7253246c78c95469920fcdb064963f48b5cb17",
+    "path": "model.safetensors",
+    "size": 1378772208
+   },
+   {
+    "lfs_sha256": null,
+    "path": "preprocessor_config.json",
+    "size": 390
+   },
+   {
+    "lfs_sha256": null,
+    "path": "processor_config.json",
+    "size": 1191
+   },
+   {
+    "lfs_sha256": null,
+    "path": "static/datalab-logo.png",
+    "size": 6169
+   },
+   {
+    "lfs_sha256": null,
+    "path": "static/docs/multilingual.md",
+    "size": 5021
+   },
+   {
+    "lfs_sha256": "6ae900a07a709d28576d04cc3688f66fbb89ddbc2b6e38d61d9cc468603c9ebf",
+    "path": "static/images/corporate.png",
+    "size": 386925
+   },
+   {
+    "lfs_sha256": "7cc6fdc5421b50e47f92eb77d70a42459bf48919abe5fb8b2eb99b9337df8897",
+    "path": "static/images/corporate_layout.png",
+    "size": 363294
+   },
+   {
+    "lfs_sha256": "81492fdce5a18d65045e5d8c123d185770f6af4fee141498b784986062a0b3c6",
+    "path": "static/images/corporate_reading.png",
+    "size": 365448
+   },
+   {
+    "lfs_sha256": "9efea9e0c167dad80f37356276a3cd5613540c64d2cf64002dd377044737d442",
+    "path": "static/images/corporate_text.png",
+    "size": 391688
+   },
+   {
+    "lfs_sha256": null,
+    "path": "static/images/excerpt.png",
+    "size": 63945
+   },
+   {
+    "lfs_sha256": null,
+    "path": "static/images/excerpt_layout.png",
+    "size": 64187
+   },
+   {
+    "lfs_sha256": null,
+    "path": "static/images/excerpt_reading.png",
+    "size": 63298
+   },
+   {
+    "lfs_sha256": null,
+    "path": "static/images/excerpt_text.png",
+    "size": 62254
+   },
+   {
+    "lfs_sha256": "4ca5ae30a2233efc9a0177460ff6affbe1ae972e52ab00b67fc44ef752cbb21f",
+    "path": "static/images/form.png",
+    "size": 281819
+   },
+   {
+    "lfs_sha256": "18b66cf842f38f04573a07d4f87e7310916673f3f5558813bb921ba4bddee7a0",
+    "path": "static/images/form_layout.png",
+    "size": 272860
+   },
+   {
+    "lfs_sha256": "6f79b8f4d4564178b6c8abdc9c750901f15e30ab60c8eac82bf70dec5a97eb98",
+    "path": "static/images/form_reading.png",
+    "size": 276383
+   },
+   {
+    "lfs_sha256": "6b8d3a0444a735d06f06d9a3c697c541c888ecf4d51fdfa6ea68d1fc108fc125",
+    "path": "static/images/form_text.png",
+    "size": 240290
+   },
+   {
+    "lfs_sha256": "05e03c947351ac33077c288cb71058c4f8c6fb3bd2bcbdc7db130094e2a1e42a",
+    "path": "static/images/handwritten.png",
+    "size": 339914
+   },
+   {
+    "lfs_sha256": "082b3c6529b20db0ef749554c5d8e70e58031c485f7d8cb92260c739df70c652",
+    "path": "static/images/handwritten_layout.png",
+    "size": 258049
+   },
+   {
+    "lfs_sha256": "b25c6f5f8e777086c9faa8ceba85321d071b539cfd232a79dda84068a57eaf2d",
+    "path": "static/images/handwritten_reading.png",
+    "size": 258637
+   },
+   {
+    "lfs_sha256": null,
+    "path": "static/images/handwritten_text.png",
+    "size": 84867
+   },
+   {
+    "lfs_sha256": "728510026418a8cf99b76c54e433d71fffae2d5f0929edf3ced65eaf9969196f",
+    "path": "static/images/japanese.png",
+    "size": 226261
+   },
+   {
+    "lfs_sha256": "30189df8221a95e6631572277aec671031460fc897a2b33059e438c4a2150e35",
+    "path": "static/images/japanese_layout.png",
+    "size": 220653
+   },
+   {
+    "lfs_sha256": "8d47d3b2987ad36b6eb762390f23d9c6b1e8ffae8e0aeea92c7cdcb36935c208",
+    "path": "static/images/japanese_reading.png",
+    "size": 218418
+   },
+   {
+    "lfs_sha256": "dabb5dcd24fe038cf21681c3a9a052b9d71c9cfbb2ff7c6037ef4dcc14f5c5e5",
+    "path": "static/images/japanese_text.png",
+    "size": 266359
+   },
+   {
+    "lfs_sha256": "922c588de3e1b8cc2f01a6c63cd9856ecf032be7df5e321e20bf29b6038cace1",
+    "path": "static/images/math.png",
+    "size": 183842
+   },
+   {
+    "lfs_sha256": "ec2c835c44b1a14a3e0a09067f68ecc806bc1ea4286933acd4f186da60eb1a12",
+    "path": "static/images/math_layout.png",
+    "size": 185455
+   },
+   {
+    "lfs_sha256": "fc5fe72f8a4372b6857a913995c59a27278055b77a05721a71bbc73cac4864db",
+    "path": "static/images/math_reading.png",
+    "size": 180518
+   },
+   {
+    "lfs_sha256": "30284efcddced07dfe2d2a954d55e3b061632f3163f0b64064274342aef93b28",
+    "path": "static/images/math_text.png",
+    "size": 174053
+   },
+   {
+    "lfs_sha256": "2d908b6f72a08fbb14adea01b2fb684407414cb1bb9af8360a2e929a3df4ad83",
+    "path": "static/images/newspaper.png",
+    "size": 816170
+   },
+   {
+    "lfs_sha256": "2fc821add30c94c1a76f9cda6d0f68916f77dcbc68fb627ddf4b767458954795",
+    "path": "static/images/newspaper_layout.png",
+    "size": 750084
+   },
+   {
+    "lfs_sha256": "47a8e06b80319913415d8ddb7fc0a33d18d1797f9b834ac29037e34e89390a55",
+    "path": "static/images/newspaper_reading.png",
+    "size": 759986
+   },
+   {
+    "lfs_sha256": "1abc4e81ec3c7e89d8cf17e2a1b5039f0f7221ebb69e1f8305a42f0afcc8d2bf",
+    "path": "static/images/newspaper_text.png",
+    "size": 432396
+   },
+   {
+    "lfs_sha256": "a94a4f5492275f842b140f0f5e0e8ece91c7470d4a0c59e078db0529943a9eee",
+    "path": "static/images/opb_size_chart.png",
+    "size": 149507
+   },
+   {
+    "lfs_sha256": "7a25b3c50f90b5381998ea9340c2843a19d691fd3b08677f49d30ab8331eae9b",
+    "path": "static/images/reference.png",
+    "size": 1034946
+   },
+   {
+    "lfs_sha256": "de15396f2322b017fc1f0f23fbc37a4428908caea53b704b63696705095f19ae",
+    "path": "static/images/reference_layout.png",
+    "size": 1065545
+   },
+   {
+    "lfs_sha256": "41a77baf4fa8441ae3dad74c3646be76908e2bdeac90d4426ea4f6ac0868d975",
+    "path": "static/images/reference_reading.png",
+    "size": 1072439
+   },
+   {
+    "lfs_sha256": "be26b80e2450a16b530b7eb2a664e66989fde00c281a11e1d453b2c60a0be096",
+    "path": "static/images/reference_text.png",
+    "size": 707934
+   },
+   {
+    "lfs_sha256": null,
+    "path": "tokenizer.json",
+    "size": 4228747
+   },
+   {
+    "lfs_sha256": null,
+    "path": "tokenizer_config.json",
+    "size": 775
+   },
+   {
+    "lfs_sha256": null,
+    "path": "video_preprocessor_config.json",
+    "size": 385
+   }
+  ],
+  "gated": false,
+  "library_name": "transformers",
+  "license": "openrail",
+  "license_name": null,
+  "pipeline_tag": "image-text-to-text",
+  "private": false,
+  "revision": "00c843e9cae45611dca0a6dc2c9bbbf2dadaaed3",
+  "tags": [
+   "arxiv:2105.15203",
+   "conversational",
+   "endpoints_compatible",
+   "image-text-to-text",
+   "layout",
+   "license:openrail",
+   "markdown",
+   "ocr",
+   "pdf",
+   "qwen3_5",
+   "region:us",
+   "safetensors",
+   "transformers"
+  ]
+ },
+ "metadata_files": {
+  "LICENSE": {
+   "sha256": "636dfb8eb19efc5835ed6efb878f8b694a93f028c715d2547d831e2a55440276",
+   "size": 14726
+  },
+  "README.md": {
+   "sha256": "ba8c3eda9c7c7823a2d2a2a2abd26a8a9ce32be7f46948566b966caae0a2a154",
+   "size": 33127
+  },
+  "chat_template.jinja": {
+   "sha256": "86f17a85672e7f367b5e6c6de6f67f53ede0fba4abb3d67c583a6ef647c1aa85",
+   "size": 2872
+  },
+  "config.json": {
+   "sha256": "37b7e37ff4ca2e6ec7c67e2808b61274c0d08aeef80bb03349637743ae7db2ec",
+   "size": 2695
+  },
+  "generation_config.json": {
+   "sha256": "b3bb9900f84f37fe8686fdb70f3a435d30ea89076810b5332b70fd21edde81e4",
+   "size": 132
+  },
+  "preprocessor_config.json": {
+   "sha256": "27225450ac9c6529872ee1924fcb0962ff5634834f817040f444118116f4e516",
+   "size": 390
+  },
+  "processor_config.json": {
+   "sha256": "d89ef49ce9cd37fbf510158e13c1ef063d9286411c1ec9049932dbe0487143b1",
+   "size": 1191
+  },
+  "static/docs/multilingual.md": {
+   "sha256": "d84cb92dda5ba96d15bba016806e5790cae3d218cb39b1b847a3bf44b34db5b2",
+   "size": 5021
+  },
+  "tokenizer.json": {
+   "sha256": "49753fd82a5800f975d18d301203450d42f1a46c2b0247343c93239f122684c1",
+   "size": 4228747
+  },
+  "tokenizer_config.json": {
+   "sha256": "273af4267d997926aea04103971a6f317c16c503f2ef924150f83ed0eb3bdcfd",
+   "size": 775
+  },
+  "video_preprocessor_config.json": {
+   "sha256": "7768af27c1fafa9cc9011c1dc20067e03f8915e03b63504550e11d5066986d13",
+   "size": 385
+  }
+ },
+ "model": "datalab-to/surya-ocr-2.5",
+ "observation_host": "session container (huggingface.co allowed; weight CDN blocked, so safetensors_headers failed)",
+ "processor": {
+  "grids_default": {
+   "1632x2112": {
+    "grid_thw": [
+     [
+      1,
+      132,
+      102
+     ]
+    ],
+    "pixel_values": [
+     13464,
+     1536
+    ],
+    "scaled": [
+     1624,
+     2100
+    ]
+   },
+   "1792x28": {
+    "grid_thw": [
+     [
+      1,
+      2,
+      128
+     ]
+    ],
+    "pixel_values": [
+     256,
+     1536
+    ],
+    "scaled": [
+     1792,
+     28
+    ]
+   },
+   "2048x3072": {
+    "grid_thw": [
+     [
+      1,
+      190,
+      128
+     ]
+    ],
+    "pixel_values": [
+     24320,
+     1536
+    ],
+    "scaled": [
+     2044,
+     3052
+    ]
+   },
+   "3072x2048": {
+    "grid_thw": [
+     [
+      1,
+      128,
+      190
+     ]
+    ],
+    "pixel_values": [
+     24320,
+     1536
+    ],
+    "scaled": [
+     3052,
+     2044
+    ]
+   },
+   "448x112": {
+    "grid_thw": [
+     [
+      1,
+      8,
+      32
+     ]
+    ],
+    "pixel_values": [
+     256,
+     1536
+    ],
+    "scaled": [
+     448,
+     112
+    ]
+   }
+  },
+  "grids_vllm_kwargs": {
+   "1632x2112": {
+    "grid_thw": [
+     [
+      1,
+      132,
+      102
+     ]
+    ],
+    "pixel_values": [
+     13464,
+     1536
+    ],
+    "scaled": [
+     1624,
+     2100
+    ]
+   },
+   "1792x28": {
+    "grid_thw": [
+     [
+      1,
+      2,
+      112
+     ]
+    ],
+    "pixel_values": [
+     224,
+     1536
+    ],
+    "scaled": [
+     1792,
+     28
+    ]
+   },
+   "2048x3072": {
+    "grid_thw": [
+     [
+      1,
+      190,
+      128
+     ]
+    ],
+    "pixel_values": [
+     24320,
+     1536
+    ],
+    "scaled": [
+     2044,
+     3052
+    ]
+   },
+   "3072x2048": {
+    "grid_thw": [
+     [
+      1,
+      128,
+      190
+     ]
+    ],
+    "pixel_values": [
+     24320,
+     1536
+    ],
+    "scaled": [
+     3052,
+     2044
+    ]
+   },
+   "448x112": {
+    "grid_thw": [
+     [
+      1,
+      8,
+      28
+     ]
+    ],
+    "pixel_values": [
+     224,
+     1536
+    ],
+    "scaled": [
+     448,
+     112
+    ]
+   }
+  },
+  "image_processor": {
+   "do_convert_rgb": true,
+   "do_normalize": true,
+   "do_rescale": true,
+   "do_resize": true,
+   "image_processor_type": "Qwen2VLImageProcessor",
+   "merge_size": 2,
+   "patch_size": 16,
+   "resample": 3,
+   "rescale_factor": 0.00392156862745098,
+   "size": {
+    "longest_edge": 16777216,
+    "shortest_edge": 65536
+   },
+   "temporal_patch_size": 2
+  },
+  "image_processor_class": "Qwen2VLImageProcessor",
+  "processor_class": "Qwen3VLProcessor",
+  "rendered": {
+   "block": {
+    "ids": [
+     1,
+     66503,
+     65654,
+     1957,
+     9,
+     11,
+     10,
+     67573,
+     2018,
+     68270,
+     75975,
+     70171,
+     68246,
+     68214,
+     67848,
+     2012,
+     68318,
+     2060,
+     65861,
+     2031,
+     68542,
+     2060,
+     1998,
+     1957,
+     1,
+     65443,
+     66387,
+     2051,
+     75166,
+     2052,
+     1957
+    ],
+    "sha256": "083c25f1eb1a9d42cbc64855fb1a3774044ddfcc5c9652c97ba3e7ebf2af84d4",
+    "text": "<|im_start|>user\n<|vision_start|><|image_pad|><|vision_end|>OCR this block image to HTML.<|im_end|>\n<|im_start|>assistant\n"
+   },
+   "high_accuracy_bbox": {
+    "ids": [
+     1,
+     66503,
+     65654,
+     1957,
+     9,
+     11,
+     10,
+     67573,
+     2018,
+     68270,
+     70171,
+     68246,
+     68214,
+     67848,
+     2012,
+     1992,
+     70646,
+     75975,
+     68263,
+     68181,
+     68520,
+     2054,
+     68254,
+     68240,
+     1991,
+     68356,
+     68244,
+     68240,
+     1991,
+     68504,
+     1979,
+     1986,
+     2056,
+     13,
+     68205,
+     13,
+     68204,
+     14,
+     68205,
+     14,
+     1990,
+     70232,
+     1979,
+     13,
+     1991,
+     1013,
+     70993,
+     2060,
+     65861,
+     2031,
+     68542,
+     2060,
+     1998,
+     1957,
+     1,
+     65443,
+     66387,
+     2051,
+     75166,
+     2052,
+     1957
+    ],
+    "sha256": "9f1cdd1a2ef8147bec241f1c4800fd4c336a9c1fff21007f77f456f5825005f7",
+    "text": "<|im_start|>user\n<|vision_start|><|image_pad|><|vision_end|>OCR this image to HTML. Each block is a div with data-label and data-bbox (x0 y0 x1 y1, normalized 0-1000).<|im_end|>\n<|im_start|>assistant\n"
+   },
+   "layout": {
+    "ids": [
+     1,
+     66503,
+     65654,
+     1957,
+     9,
+     11,
+     10,
+     79073,
+     68238,
+     75053,
+     68241,
+     68270,
+     70171,
+     68294,
+     68216,
+     67797,
+     2014,
+     1992,
+     70646,
+     71748,
+     68263,
+     68181,
+     68520,
+     65550,
+     68254,
+     1979,
+     1275,
+     68356,
+     68372,
+     1979,
+     1275,
+     68504,
+     68372,
+     68244,
+     1979,
+     1275,
+     68389,
+     1275,
+     70374,
+     1992,
+     68208,
+     65492,
+     2056,
+     68263,
+     68204,
+     13,
+     68205,
+     13,
+     68204,
+     14,
+     68205,
+     14,
+     1990,
+     70232,
+     1979,
+     13,
+     1991,
+     1013,
+     68318,
+     2060,
+     65861,
+     2031,
+     68542,
+     2060,
+     1998,
+     1957,
+     1,
+     65443,
+     66387,
+     2051,
+     75166,
+     2052,
+     1957
+    ],
+    "sha256": "8b5cbc700ce378866a7cd7a5c06c3203918ce4b6e2c1658d5cd98c4df2da1ecb",
+    "text": "<|im_start|>user\n<|vision_start|><|image_pad|><|vision_end|>Output the layout of this image as JSON. Each entry is a dict with \"label\", \"bbox\", and \"count\" fields. Bbox is x0 y0 x1 y1, normalized 0-1000.<|im_end|>\n<|im_start|>assistant\n"
+   },
+   "table_rec": {
+    "ids": [
+     1,
+     66503,
+     65654,
+     1957,
+     9,
+     11,
+     10,
+     79073,
+     68238,
+     70411,
+     75599,
+     68487,
+     74791,
+     68294,
+     68216,
+     67797,
+     2014,
+     1992,
+     70646,
+     71748,
+     68263,
+     68181,
+     68520,
+     65550,
+     68254,
+     1979,
+     1275,
+     68356,
+     1275,
+     1979,
+     73923,
+     1200,
+     1275,
+     68268,
+     1979,
+     1259,
+     1987,
+     68244,
+     1979,
+     1275,
+     68504,
+     1275,
+     1979,
+     1986,
+     2056,
+     13,
+     68205,
+     13,
+     68204,
+     14,
+     68205,
+     14,
+     1990,
+     70232,
+     1979,
+     13,
+     1991,
+     1013,
+     70993,
+     2060,
+     65861,
+     2031,
+     68542,
+     2060,
+     1998,
+     1957,
+     1,
+     65443,
+     66387,
+     2051,
+     75166,
+     2052,
+     1957
+    ],
+    "sha256": "b9672994283e2434f6eff9d88ddaa54bb33ead0a2a6c463c25940a187e9729fb",
+    "text": "<|im_start|>user\n<|vision_start|><|image_pad|><|vision_end|>Output the table rows then columns as JSON. Each entry is a dict with \"label\" (\"Row\" or \"Col\") and \"bbox\" (x0 y0 x1 y1, normalized 0-1000).<|im_end|>\n<|im_start|>assistant\n"
+   }
+  }
+ },
+ "scope": "weight-free source observation; no runtime/quality claim",
+ "steps": {
+  "metadata_files": {
+   "ok": true
+  },
+  "processor_render": {
+   "ok": true
+  },
+  "revision_and_inventory": {
+   "ok": true
+  },
+  "safetensors_headers": {
+   "detail": "<urlopen error Tunnel connection failed: 403 Forbidden>",
+   "error": "URLError",
+   "ok": false,
+   "trace": "           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n                        context=self._context)\n                        ^^^^^^^^^^^^^^^^^^^^^^\n  File \"<path>\", line 1334, in do_open\n    raise URLError(err)\nurllib.error.URLError: <urlopen error Tunnel connection failed: 403 Forbidden>\n"
+  },
+  "surya_package_source": {
+   "ok": true
+  },
+  "tokenizer_and_prompts": {
+   "ok": true
+  },
+  "tokenizer_json_summary": {
+   "ok": true
+  }
+ },
+ "surya_package": {
+  "git_commit": "9d5aadfebb07939755c24e8a80d0e61b3be80895",
+  "prompts": {
+   "block": "OCR this block image to HTML.",
+   "high_accuracy_bbox": "OCR this image to HTML. Each block is a div with data-label and data-bbox (x0 y0 x1 y1, normalized 0-1000).",
+   "layout": "Output the layout of this image as JSON. Each entry is a dict with \"label\", \"bbox\", and \"count\" fields. Bbox is x0 y0 x1 y1, normalized 0-1000.",
+   "table_rec": "Output the table rows then columns as JSON. Each entry is a dict with \"label\" (\"Row\" or \"Col\") and \"bbox\" (x0 y0 x1 y1, normalized 0-1000)."
+  },
+  "sources": {
+   "surya/inference/backends/openai_client.py": "431672016c553f1b30ba611d3bdcb24fb139c369d30ec622dfe65f4a72db9981",
+   "surya/inference/prompts.py": "e5557f0fb72283f86aea36e7a2bfeab885f962d324251e241983f87365b015d2",
+   "surya/inference/util.py": "d853246db9767d01c8648058b779047ad0d93b3c74c0f7783dcf9faeef33b11b",
+   "surya/scripts/build_gguf.py": "d20a1cd1526243ffd63798484463dce8f7377ae497a8f4cb99b8937b9856c383"
+  },
+  "wheel_sha256": "42d84a89c5eb81db9d2e681dd181bc451a1e0d70ed14bd797a33beb553a0264f"
+ },
+ "tokenizer": {
+  "bos_token": null,
+  "eos_token": "<|im_end|>",
+  "eos_token_id": 2,
+  "len": 88526,
+  "pad_token": "<|endoftext|>",
+  "pad_token_id": 0,
+  "prompts": {
+   "block": {
+    "eos_spelled": true,
+    "ids_with_end_marker": [
+     67573,
+     2018,
+     68270,
+     75975,
+     70171,
+     68246,
+     68214,
+     67848,
+     2012,
+     68318,
+     2060,
+     65861,
+     2031,
+     68542,
+     2060,
+     1998
+    ],
+    "pieces_tail": [
+     " image",
+     " to",
+     " H",
+     "TM",
+     "L",
+     ".<",
+     "|",
+     "im",
+     "_",
+     "end",
+     "|",
+     ">"
+    ],
+    "text": "OCR this block image to HTML."
+   },
+   "high_accuracy_bbox": {
+    "eos_spelled": true,
+    "ids_with_end_marker": [
+     67573,
+     2018,
+     68270,
+     70171,
+     68246,
+     68214,
+     67848,
+     2012,
+     1992,
+     70646,
+     75975,
+     68263,
+     68181,
+     68520,
+     2054,
+     68254,
+     68240,
+     1991,
+     68356,
+     68244,
+     68240,
+     1991,
+     68504,
+     1979,
+     1986,
+     2056,
+     13,
+     68205,
+     13,
+     68204,
+     14,
+     68205,
+     14,
+     1990,
+     70232,
+     1979,
+     13,
+     1991,
+     1013,
+     70993,
+     2060,
+     65861,
+     2031,
+     68542,
+     2060,
+     1998
+    ],
+    "pieces_tail": [
+     " normalized",
+     " ",
+     "0",
+     "-",
+     "1000",
+     ").<",
+     "|",
+     "im",
+     "_",
+     "end",
+     "|",
+     ">"
+    ],
+    "text": "OCR this image to HTML. Each block is a div with data-label and data-bbox (x0 y0 x1 y1, normalized 0-1000)."
+   },
+   "layout": {
+    "eos_spelled": true,
+    "ids_with_end_marker": [
+     79073,
+     68238,
+     75053,
+     68241,
+     68270,
+     70171,
+     68294,
+     68216,
+     67797,
+     2014,
+     1992,
+     70646,
+     71748,
+     68263,
+     68181,
+     68520,
+     65550,
+     68254,
+     1979,
+     1275,
+     68356,
+     68372,
+     1979,
+     1275,
+     68504,
+     68372,
+     68244,
+     1979,
+     1275,
+     68389,
+     1275,
+     70374,
+     1992,
+     68208,
+     65492,
+     2056,
+     68263,
+     68204,
+     13,
+     68205,
+     13,
+     68204,
+     14,
+     68205,
+     14,
+     1990,
+     70232,
+     1979,
+     13,
+     1991,
+     1013,
+     68318,
+     2060,
+     65861,
+     2031,
+     68542,
+     2060,
+     1998
+    ],
+    "pieces_tail": [
+     " normalized",
+     " ",
+     "0",
+     "-",
+     "1000",
+     ".<",
+     "|",
+     "im",
+     "_",
+     "end",
+     "|",
+     ">"
+    ],
+    "text": "Output the layout of this image as JSON. Each entry is a dict with \"label\", \"bbox\", and \"count\" fields. Bbox is x0 y0 x1 y1, normalized 0-1000."
+   },
+   "table_rec": {
+    "eos_spelled": true,
+    "ids_with_end_marker": [
+     79073,
+     68238,
+     70411,
+     75599,
+     68487,
+     74791,
+     68294,
+     68216,
+     67797,
+     2014,
+     1992,
+     70646,
+     71748,
+     68263,
+     68181,
+     68520,
+     65550,
+     68254,
+     1979,
+     1275,
+     68356,
+     1275,
+     1979,
+     73923,
+     1200,
+     1275,
+     68268,
+     1979,
+     1259,
+     1987,
+     68244,
+     1979,
+     1275,
+     68504,
+     1275,
+     1979,
+     1986,
+     2056,
+     13,
+     68205,
+     13,
+     68204,
+     14,
+     68205,
+     14,
+     1990,
+     70232,
+     1979,
+     13,
+     1991,
+     1013,
+     70993,
+     2060,
+     65861,
+     2031,
+     68542,
+     2060,
+     1998
+    ],
+    "pieces_tail": [
+     " normalized",
+     " ",
+     "0",
+     "-",
+     "1000",
+     ").<",
+     "|",
+     "im",
+     "_",
+     "end",
+     "|",
+     ">"
+    ],
+    "text": "Output the table rows then columns as JSON. Each entry is a dict with \"label\" (\"Row\" or \"Col\") and \"bbox\" (x0 y0 x1 y1, normalized 0-1000)."
+   }
+  },
+  "roundtrip_sample": {
+   "decoded": "Grüße, 東京 — ½ x² <b>bold</b>\n\tTab",
+   "decoded_skip_special": "Grüße, 東京 — ½ x² <b>bold</b>\n\tTab",
+   "ids": [
+    67138,
+    2188,
+    2159,
+    2037,
+    1990,
+    1979,
+    28417,
+    22076,
+    1979,
+    10148,
+    1979,
+    2125,
+    68204,
+    2114,
+    1979,
+    1059,
+    83095,
+    1116,
+    1957,
+    1956,
+    67810,
+    2034
+   ],
+   "pieces": [
+    "Gr",
+    "ü",
+    "ß",
+    "e",
+    ",",
+    " ",
+    "東",
+    "京",
+    " ",
+    "—",
+    " ",
+    "½",
+    " x",
+    "²",
+    " ",
+    "<b>",
+    "bold",
+    "</b>",
+    "\n",
+    "\t",
+    "Ta",
+    "b"
+   ]
+  },
+  "special_ids": {
+   "</think>": 87325,
+   "<think>": 87324,
+   "<|endoftext|>": 0,
+   "<|im_end!>": 65424,
+   "<|im_end|>": 2,
+   "<|im_start|>": 1,
+   "<|image_pad|>": 11,
+   "<|vision_end|>": 10,
+   "<|vision_start|>": 9
+  },
+  "tokenizer_class": "TokenizersBackend"
+ },
+ "tokenizer_json": {
+  "added_tokens_count": 25049,
+  "added_tokens_normalized_count": 2809,
+  "added_tokens_special": [
+   [
+    0,
+    "<|endoftext|>"
+   ],
+   [
+    1,
+    "<|im_start|>"
+   ],
+   [
+    2,
+    "<|im_end|>"
+   ],
+   [
+    3,
+    "<|object_ref_start|>"
+   ],
+   [
+    4,
+    "<|object_ref_end|>"
+   ],
+   [
+    5,
+    "<|box_start|>"
+   ],
+   [
+    6,
+    "<|box_end|>"
+   ],
+   [
+    7,
+    "<|quad_start|>"
+   ],
+   [
+    8,
+    "<|quad_end|>"
+   ],
+   [
+    9,
+    "<|vision_start|>"
+   ],
+   [
+    10,
+    "<|vision_end|>"
+   ],
+   [
+    11,
+    "<|image_pad|>"
+   ],
+   [
+    12,
+    "<|video_pad|>"
+   ],
+   [
+    65424,
+    "<unk>"
+   ],
+   [
+    87306,
+    "<|vision_pad|>"
+   ],
+   [
+    87307,
+    "<|audio_start|>"
+   ],
+   [
+    87308,
+    "<|audio_end|>"
+   ],
+   [
+    87309,
+    "<tts_pad>"
+   ],
+   [
+    87310,
+    "<tts_text_bos>"
+   ],
+   [
+    87311,
+    "<tts_text_eod>"
+   ],
+   [
+    87312,
+    "<tts_text_bos_single>"
+   ],
+   [
+    87313,
+    "<|audio_pad|>"
+   ]
+  ],
+  "decoder": {
+   "type": "Fuse"
+  },
+  "merges_present": false,
+  "model_keys": [
+   "type",
+   "unk_token"
+  ],
+  "model_type": "WordLevel",
+  "multichar_ending_lt_count": 0,
+  "multichar_ending_lt_sample": [],
+  "normalizer": null,
+  "padding": null,
+  "post_processor": {
+   "pair": [
+    {
+     "Sequence": {
+      "id": "A",
+      "type_id": 0
+     }
+    },
+    {
+     "Sequence": {
+      "id": "B",
+      "type_id": 1
+     }
+    }
+   ],
+   "single": [
+    {
+     "Sequence": {
+      "id": "A",
+      "type_id": 0
+     }
+    }
+   ],
+   "special_tokens": {},
+   "type": "TemplateProcessing"
+  },
+  "pre_tokenizer": {
+   "behavior": "Isolated",
+   "invert": false,
+   "pattern": {
+    "Regex": "[\\s\\S]"
+   },
+   "type": "Split"
+  },
+  "token_char_length_histogram": {
+   "1": 63488,
+   "10": 67,
+   "11": 46,
+   "12": 38,
+   "13": 36,
+   "14": 30,
+   "15": 33,
+   "16": 22,
+   "17": 14,
+   "18": 9,
+   "19": 6,
+   "2": 100,
+   "20": 4,
+   "21": 1,
+   "22": 3,
+   "23": 1,
+   "25": 2,
+   "29": 1,
+   "3": 941,
+   "30": 1,
+   "34": 2,
+   "35": 2,
+   "36": 1,
+   "37": 3,
+   "38": 1,
+   "4": 119,
+   "40": 3,
+   "41": 2,
+   "42": 1,
+   "43": 1,
+   "44": 3,
+   "47": 1,
+   "5": 100,
+   "6": 107,
+   "7": 98,
+   "8": 76,
+   "9": 62
+  },
+  "truncation": null,
+  "unk_token": "<unk>",
+  "vocab_entries": 65425,
+  "vocab_id_max": 65424,
+  "vocab_id_min": 0,
+  "vocab_ids_contiguous": true
+ }
+}
