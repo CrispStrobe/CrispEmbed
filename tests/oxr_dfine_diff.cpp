@@ -192,7 +192,7 @@ int run(int argc, char ** argv) {
     out += ",\"timing_ms\":{\"repeat\":" + std::to_string(repeat) + ",\"total_median\":" + fmt(median(total_ms)) +
            ",\"preprocess_median\":" + fmt(median(pre_ms)) + ",\"encoder_median\":" + fmt(median(enc_ms)) +
            ",\"decoder_median\":" + fmt(median(dec_ms)) + ",\"postprocess_median\":" + fmt(median(post_ms)) + "}";
-    bool pass = true;
+    bool stage_pass = true, selection_pass = true;
     if (have_ref) {
         std::vector<std::string> order = {
             "input",          "bb.stem",        "bb.stage0",   "bb.stage1",       "bb.stage2",
@@ -261,18 +261,23 @@ int run(int argc, char ** argv) {
             const bool nonfinite_ok = order[i] == "dec.topk_anchor" || order[i] == "dec.ref_unact";
             const auto r = compare(order[i], stages, ref, nonfinite_ok);
             if (order[i] == "dec.topk_index") topk_equal = r.found && r.max_abs == 0;
-            const bool bad = !r.found || !r.finite || r.rel > max_rel;
+            // post.* are top-k orderings over (query, class): near-tied scores
+            // may legitimately swap positions, so they are reported, not
+            // budgeted; final detections are gated by oxr_selection below.
+            const bool budgeted = order[i].rfind("post.", 0) != 0;
+            const bool bad = !r.found || !r.finite || (budgeted && r.rel > max_rel);
             if (bad && earliest.empty()) earliest = order[i];
-            out +=
-                std::string(i ? "," : "") + "{\"name\":\"" + r.name + "\",\"found\":" + (r.found ? "true" : "false") +
-                ",\"finite\":" + (r.finite ? "true" : "false") + ",\"count\":" + std::to_string(r.count) +
-                ",\"max_abs\":" + fmt(r.max_abs) + ",\"mean_abs\":" + fmt(r.mean_abs) +
-                ",\"ref_max_abs\":" + fmt(r.ref_max) + ",\"rel\":" + fmt(r.rel) + ",\"cosine\":" + fmt(r.cosine) +
-                ",\"worst_index\":" + std::to_string(r.worst) + ",\"within_budget\":" + (bad ? "false" : "true") + "}";
+            out += std::string(i ? "," : "") + "{\"name\":\"" + r.name +
+                   "\",\"found\":" + (r.found ? "true" : "false") + ",\"finite\":" + (r.finite ? "true" : "false") +
+                   ",\"count\":" + std::to_string(r.count) + ",\"max_abs\":" + fmt(r.max_abs) +
+                   ",\"mean_abs\":" + fmt(r.mean_abs) + ",\"ref_max_abs\":" + fmt(r.ref_max) +
+                   ",\"rel\":" + fmt(r.rel) + ",\"cosine\":" + fmt(r.cosine) +
+                   ",\"worst_index\":" + std::to_string(r.worst) + ",\"budgeted\":" + (budgeted ? "true" : "false") +
+                   ",\"within_budget\":" + (bad ? "false" : "true") + "}";
         }
         out += "],\"earliest_divergence\":" + (earliest.empty() ? std::string("null") : "\"" + earliest + "\"") +
                ",\"topk_query_selection_equal\":" + (topk_equal ? "true" : "false");
-        if (!earliest.empty()) pass = false;
+        stage_pass = earliest.empty();
 
         // Final candidates, position by position (service order).
         auto labels = ref.get_f32("post.labels"), scores = ref.get_f32("post.scores"),
@@ -357,9 +362,12 @@ int run(int argc, char ** argv) {
                    "\",\"score\":" + fmt(theirs[k].score) + ",\"bbox\":[" + fmt(theirs[k].x1) + "," +
                    fmt(theirs[k].y1) + "," + fmt(theirs[k].x2) + "," + fmt(theirs[k].y2) + "]}";
         out += "]}";
-        if (!sel_pass) pass = false;
+        selection_pass = sel_pass;
     }
-    out += ",\"pass\":" + std::string(pass ? "true" : "false") + "}";
+    const bool pass = stage_pass && selection_pass;
+    out += ",\"stage_budget_pass\":" + std::string(stage_pass ? "true" : "false") +
+           ",\"selection_pass\":" + (selection_pass ? "true" : "false") + ",\"pass\":" + (pass ? "true" : "false") +
+           "}";
     std::printf("%s\n", out.c_str());
     layout_detect::free(ctx);
     return pass ? 0 : 2;

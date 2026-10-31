@@ -11,6 +11,9 @@ Subcommands
   heron --lib L --model M --images ...  --output O.json
                              rt_detr_v2 (heron) regions through crispembed_layout_detect
                              with repr-exact floats, for base-vs-branch identity.
+  yardstick REF32.gguf REF64.gguf NATIVE_DUMP_DIR --output O.json
+                             distance of PyTorch FP32 and of native to the same model
+                             run in float64 (an exact-arithmetic yardstick), per stage.
   lineage --checkpoint last.pth --output O.json
                              compare backbone/full tensors with public D-FINE /
                              HGNetv2 checkpoints (Peterande releases, Apache-2.0).
@@ -126,6 +129,51 @@ def heron(args):
     print(Path(args.output).name, hashlib.sha256(text.encode()).hexdigest(), {k: len(v) for k, v in out.items()})
 
 
+def yardstick(args):
+    import gguf
+    import numpy as np
+    load = lambda p: {t.name: np.array(t.data, dtype=np.float64).reshape(-1) for t in gguf.GGUFReader(p).tensors}
+    r32, r64 = load(args.ref32), load(args.ref64)
+    index = json.loads((Path(args.native) / "index.json").read_text())
+    nat = {k: np.fromfile(Path(args.native) / f"{k}.f32", dtype=np.float32).astype(np.float64) for k in index}
+
+    def permutation(src):  # rows of src in f64 query order (queries identified by token)
+        t = src["dec.topk_index"].astype(int).tolist()
+        x = r64["dec.topk_index"].astype(int).tolist()
+        if set(t) != set(x):
+            return None
+        pos = {v: i for i, v in enumerate(t)}
+        return np.array([pos[v] for v in x])
+    perms = {"pytorch_fp32": permutation(r32), "native": permutation(nat)}
+    shared = ("dec.memory", "dec.output_memory", "dec.enc_logits", "dec.project")
+    rows = []
+    for name in sorted(set(r64) & set(r32) & set(nat)):
+        if name.startswith("post.") or name == "dec.topk_index":
+            continue
+        x = r64[name]
+        row = {"name": name}
+        for label, src in (("pytorch_fp32", r32), ("native", nat)):
+            a = src[name]
+            if a.size != x.size:
+                row[label] = None
+                continue
+            p = perms[label]
+            if name.startswith("dec.") and name not in shared and p is not None and a.size % 300 == 0:
+                a = a.reshape(300, -1)[p].reshape(-1)
+            ok = np.isfinite(a) & np.isfinite(x)
+            d = np.abs(a[ok] - x[ok])
+            row[label] = {"max_abs": float(d.max()) if d.size else 0.0, "mean_abs": float(d.mean()) if d.size else 0.0}
+        rows.append(row)
+    valid = [r for r in rows if r.get("native") and r.get("pytorch_fp32")]
+    closer = sum(1 for r in valid if r["native"]["mean_abs"] <= r["pytorch_fp32"]["mean_abs"])
+    result = {"schema": "crispembed.oxr-dfine.yardstick.v1",
+              "topk_same_set_as_f64": {k: v is not None for k, v in perms.items()},
+              "stages": rows, "stages_native_mean_closer_to_f64": closer, "stages_compared": len(valid)}
+    Path(args.output).write_text(json.dumps(result, indent=1) + "\n")
+    print(json.dumps({k: result[k] for k in ("topk_same_set_as_f64", "stages_native_mean_closer_to_f64",
+                                                "stages_compared")}))
+
+
 PUBLIC = {
     "PPHGNetV2_B2_stage1.pth": "https://github.com/Peterande/storage/releases/download/dfinev1.0/PPHGNetV2_B2_stage1.pth",
     "dfine_m_obj365.pth": "https://github.com/Peterande/storage/releases/download/dfinev1.0/dfine_m_obj365.pth",
@@ -191,11 +239,13 @@ def main():
     p = sub.add_parser("heron")
     p.add_argument("--lib", required=True); p.add_argument("--model", required=True)
     p.add_argument("--output", required=True); p.add_argument("--images", nargs="+", required=True)
+    p = sub.add_parser("yardstick")
+    p.add_argument("ref32"); p.add_argument("ref64"); p.add_argument("native"); p.add_argument("--output", required=True)
     p = sub.add_parser("lineage")
     p.add_argument("--checkpoint", required=True); p.add_argument("--output", required=True)
     p.add_argument("--workdir", required=True)
     args = ap.parse_args()
-    return {"refdiff": refdiff, "api": api, "heron": heron, "lineage": lineage}[args.cmd](args) or 0
+    return {"refdiff": refdiff, "api": api, "heron": heron, "lineage": lineage, "yardstick": yardstick}[args.cmd](args) or 0
 
 
 if __name__ == "__main__":

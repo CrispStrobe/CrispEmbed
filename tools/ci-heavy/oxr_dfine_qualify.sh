@@ -69,7 +69,12 @@ for entry in $PAGES; do
             > "$O/reference-$mode.log" 2>&1
         pn "reference_$mode" "$([ $? = 0 ] && echo pass || echo fail)"
     done
-    # PyTorch noise floor: same reference with one thread.
+    # Exact-arithmetic yardstick: the same original model in float64 (diagnostic only).
+    python tools/oxr_dfine_reference.py --blueprint "$S/oxr" --checkpoint "$CKPT" --image "$S/$id.png" \
+        --resize generic --threads 4 --repeat 1 --float64 --dump "$S/$id-f64.gguf" --output "$O/reference-f64.json" \
+        > "$O/reference-f64.log" 2>&1
+    pn reference_f64 "$([ $? = 0 ] && echo pass || echo fail)"
+    # PyTorch thread noise floor: same reference with one thread.
     python tools/oxr_dfine_reference.py --blueprint "$S/oxr" --checkpoint "$CKPT" --image "$S/$id.png" \
         --resize generic --threads 1 --repeat 1 --dump "$S/$id-generic-t1.gguf" --output "$O/reference-generic-t1.json" \
         > /dev/null 2>&1 && python tools/oxr_dfine_checks.py refdiff "$S/$id-generic-t1.gguf" "$S/$id-generic.gguf" \
@@ -82,9 +87,26 @@ for entry in $PAGES; do
         local arm=$1 model=$2 ref=$3; shift 3
         "$S/build/test-oxr-dfine-diff" --model "$model" --reference "$ref" --image "$S/$id.png" --threads 4 \
             --repeat 5 "$@" > "$O/diff-$arm.json" 2> "$O/diff-$arm.log"
-        pn "diff_$arm" "$(r=$?; [ $r = 0 ] && echo pass || echo "fail($r)")"
+        local rc=$?
+        # Stage budget and final selection are separate gates, both recorded.
+        python - "$O/diff-$arm.json" "$arm" "$rc" >> "$O/results.txt" <<'PY'
+import json, sys
+path, arm, rc = sys.argv[1:]
+try:
+    d = json.load(open(path))
+except Exception:
+    print(f"diff_{arm}=fail(rc={rc},no-json)"); sys.exit()
+for key, name in (("stage_budget_pass", "stages"), ("selection_pass", "selection")):
+    print(f"diff_{arm}_{name}={'pass' if d.get(key) else 'fail'}")
+print(f"diff_{arm}_earliest_divergence={d.get('earliest_divergence')}")
+PY
     }
-    run_arm generic "$S/oxr-dfine-f32.gguf" "$S/$id-generic.gguf"
+    mkdir -p "$S/$id-native"
+    run_arm generic "$S/oxr-dfine-f32.gguf" "$S/$id-generic.gguf" --dump-dir "$S/$id-native"
+    python tools/oxr_dfine_checks.py yardstick "$S/$id-generic.gguf" "$S/$id-f64.gguf" "$S/$id-native" \
+        --output "$O/yardstick-f64.json" > "$O/yardstick.log" 2>&1
+    pn yardstick_f64 "$([ $? = 0 ] && echo recorded || echo fail)"
+    rm -rf "$S/$id-native"
     run_arm service "$S/oxr-dfine-f32.gguf" "$S/$id-service.gguf"
     run_arm inject-service "$S/oxr-dfine-f32.gguf" "$S/$id-service.gguf" --inject-input
     run_arm f16-generic "$S/oxr-dfine-f16.gguf" "$S/$id-generic.gguf"

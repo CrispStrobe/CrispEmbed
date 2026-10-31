@@ -51,6 +51,8 @@ def main(argv=None) -> int:
     ap.add_argument("--resize", choices=("service", "generic"), default="service")
     ap.add_argument("--threads", type=int, default=4)
     ap.add_argument("--repeat", type=int, default=3)
+    ap.add_argument("--float64", action="store_true",
+                    help="diagnostic: run the same model in float64 as an exact-arithmetic yardstick")
     args = ap.parse_args(argv)
 
     import cv2
@@ -89,6 +91,9 @@ def main(argv=None) -> int:
     batch = batch_service if use_ipp else batch_generic
 
     model = load_model(args.checkpoint, torch.device("cpu"), num_classes=12, image_size=960)
+    if args.float64:
+        model = model.double()
+        batch = batch.double()
     dfine = model.model
     stages: dict[str, np.ndarray] = {}
 
@@ -223,7 +228,7 @@ def main(argv=None) -> int:
         "resize": "opencv_ipp_lanczos" if use_ipp else "opencv_generic_lanczos4",
         "ipp_available": ipp_default, "ipp_vs_generic_input_max_abs": ipp_input_diff,
         "versions": {"torch": torch.__version__, "opencv": cv2.__version__, "numpy": np.__version__},
-        "threads": args.threads, "precision": "fp32",
+        "threads": args.threads, "precision": "fp64-diagnostic" if args.float64 else "fp32",
         "preprocess_ms": pre_ms, "forward_ms": fwd_ms,
         "preprocess_ms_median": statistics.median(pre_ms), "forward_ms_median": statistics.median(fwd_ms),
         "stages": {k: list(v.shape) for k, v in sorted(stages.items())},
