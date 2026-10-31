@@ -1,0 +1,62 @@
+[
+  {
+    "case": "text",
+    "shape": [
+      952,
+      1176
+    ],
+    "max_abs": 0.0,
+    "unequal_count": 0,
+    "pass": true
+  },
+  {
+    "case": "table",
+    "shape": [
+      408,
+      1176
+    ],
+    "max_abs": 0.0,
+    "unequal_count": 0,
+    "pass": true
+  },
+  {
+    "case": "formula",
+    "shape": [
+      1856,
+      1176
+    ],
+    "max_abs": 0.0,
+    "unequal_count": 0,
+    "pass": true
+  },
+  {
+    "case": "code",
+    "shape": [
+      6732,
+      1176
+    ],
+    "max_abs": 0.0,
+    "unequal_count": 0,
+    "pass": true
+  },
+  {
+    "case": "layout",
+    "shape": [
+      5476,
+      1176
+    ],
+    "max_abs": 0.0,
+    "unequal_count": 0,
+    "pass": true
+  },
+  {
+    "case": "synthetic",
+    "shape": [
+      736,
+      1176
+    ],
+    "max_abs": 0.0,
+    "unequal_count": 0,
+    "pass": true
+  }
+]

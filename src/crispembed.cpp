@@ -4622,7 +4622,7 @@ static ocr_model_type detect_arch(const char * path) {
     if (arch == "ppformulanet_l") return OCR_MODEL_PPFORMULANET_L;
     if (arch == "posformer") return OCR_MODEL_POSFORMER;
     if (arch == "mixtex") return OCR_MODEL_MIXTEX;
-    if (arch == "qwen2vl" || arch == "qwen3vl") return OCR_MODEL_QWEN2VL;
+    if (arch == "qwen2vl" || arch == "qwen3vl" || arch == "teleocr") return OCR_MODEL_QWEN2VL;
     if (arch == "internvl2") return OCR_MODEL_INTERNVL2;
     if (arch == "parseq") return OCR_MODEL_PARSEQ;
     if (arch == "glm_ocr") return OCR_MODEL_GLM_OCR;
@@ -5165,6 +5165,25 @@ extern "C" int crispembed_ocr_model_get_max_tokens(const void * ctx) {
     default:
         return 0;
     }
+}
+
+extern "C" int crispembed_ocr_model_set_generation_params(void * ctx, float repetition_penalty, float presence_penalty,
+                                                          float frequency_penalty, int no_repeat_ngram) {
+    if (!ctx) return 0;
+    auto * u = (ocr_model *)ctx;
+    if (u->type != OCR_MODEL_QWEN2VL) return 0;
+    return qwen2vl_ocr_set_generation_params((qwen2vl_ocr_context *)u->ctx, repetition_penalty, presence_penalty,
+                                             frequency_penalty, no_repeat_ngram);
+}
+
+extern "C" int crispembed_ocr_model_get_generation_params(const void * ctx, float * repetition_penalty,
+                                                          float * presence_penalty, float * frequency_penalty,
+                                                          int * no_repeat_ngram) {
+    if (!ctx) return 0;
+    auto * u = (const ocr_model *)ctx;
+    if (u->type != OCR_MODEL_QWEN2VL) return 0;
+    return qwen2vl_ocr_get_generation_params((const qwen2vl_ocr_context *)u->ctx, repetition_penalty, presence_penalty,
+                                             frequency_penalty, no_repeat_ngram);
 }
 
 extern "C" int crispembed_ocr_model_set_prompt(void * ctx, const char * prompt) {
@@ -5787,6 +5806,8 @@ static ocr_orchestrator::engine map_engine(int e) {
         return E::ovisocr3;
     case 23:
         return E::minicpm_ocr;
+    case 24:
+        return E::teleocr;
     default:
         return E::dbnet_trocr;
     }

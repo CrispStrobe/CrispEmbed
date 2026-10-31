@@ -377,6 +377,7 @@ unified `crispembed_ocr_model_*` C API. Available through CLI (`--ocr`), server
 | **GLM-OCR** | CogViT + GLM-0.5B | 0.9B | Doc OCR (OmniDocBench #1, 8 langs) | MIT |
 | **InternVL2 / 2.5** | InternViT + Qwen2/InternLM2.5 | 0.9–2.1B | Edge/WASM & EN+DE VLM OCR | MIT |
 | **Qwen2.5-VL / Qwen3-VL** | ViT (+DeepStack) + Qwen LLM | 2.4–3.6B | General/multilingual VLM OCR | Apache-2.0 |
+| **[TeleOCR (experimental CPU)](docs/teleocr.md)** | Windowed ViT + QK-normalized Qwen decoder | 1.26B | Default-off; explicit local GGUF; CPU execution tested | Apache-2.0; see [provenance](docs/teleocr-license.md) |
 | **DeepSeek-OCR-2 / Unlimited-OCR** | dual ViT + DeepSeek-V2 MoE | 3–3.3B | Full-page doc OCR + layout grounding | Apache-2.0 / MIT |
 | **jina-ocr-v1** | SAM + CLIP-L + DeepSeek-V2 MoE (Unlimited-OCR engine) | 3.4B (570M active) | Doc OCR → Markdown; text exact vs transformers | CC BY-NC 4.0 |
 | **Qari-OCR** | Qwen2-VL-2B + LoRA | 2B | Arabic OCR with diacritics | Apache-2.0 |

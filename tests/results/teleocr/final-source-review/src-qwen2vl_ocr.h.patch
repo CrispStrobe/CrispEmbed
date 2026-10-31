@@ -1,0 +1,10 @@
+--- executed/src/qwen2vl_ocr.h
++++ final/src/qwen2vl_ocr.h
+@@ -344,6 +344,7 @@
+ // contexts belonging to another architecture.
+ int qwen2vl_ocr_set_generation_params(qwen2vl_ocr_context * ctx, float repetition_penalty, float presence_penalty,
+                                       float frequency_penalty, int no_repeat_ngram);
++// Each output pointer may be null to skip that value.
+ int qwen2vl_ocr_get_generation_params(const qwen2vl_ocr_context * ctx, float * repetition_penalty,
+                                       float * presence_penalty, float * frequency_penalty, int * no_repeat_ngram);
+ 

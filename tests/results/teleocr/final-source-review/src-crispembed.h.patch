@@ -1,0 +1,11 @@
+--- executed/src/crispembed.h
++++ final/src/crispembed.h
+@@ -671,7 +671,7 @@
+ CRISPEMBED_API int crispembed_ocr_model_set_generation_params(void * ctx, float repetition_penalty,
+                                                               float presence_penalty, float frequency_penalty,
+                                                               int no_repeat_ngram);
+-/// Read TeleOCR penalties; all four output pointers are required.
++/// Read TeleOCR penalties; each output pointer may be NULL to skip that value.
+ CRISPEMBED_API int crispembed_ocr_model_get_generation_params(const void * ctx, float * repetition_penalty,
+                                                               float * presence_penalty, float * frequency_penalty,
+                                                               int * no_repeat_ngram);

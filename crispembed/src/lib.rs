@@ -1459,6 +1459,34 @@ impl OcrModel {
             ) != 0
         })
     }
+    /// Set TeleOCR logit penalties. Returns false for unsupported engines or invalid values.
+    pub fn set_generation_params(
+        &mut self,
+        repetition: f32,
+        presence: f32,
+        frequency: f32,
+        ngram: i32,
+    ) -> bool {
+        unsafe {
+            crispembed_sys::crispembed_ocr_model_set_generation_params(
+                self.ctx, repetition, presence, frequency, ngram,
+            ) != 0
+        }
+    }
+    /// Read (repetition, presence, frequency, no-repeat-ngram), or None for other engines.
+    pub fn generation_params(&self) -> Option<(f32, f32, f32, i32)> {
+        let (mut repetition, mut presence, mut frequency, mut ngram) = (0.0, 0.0, 0.0, 0);
+        let ok = unsafe {
+            crispembed_sys::crispembed_ocr_model_get_generation_params(
+                self.ctx,
+                &mut repetition,
+                &mut presence,
+                &mut frequency,
+                &mut ngram,
+            )
+        };
+        (ok != 0).then_some((repetition, presence, frequency, ngram))
+    }
     /// Selected-token probabilities, including EOS for Qwen3.5 OCR.
     pub fn confidences(&self) -> Vec<f32> {
         let mut n = 0;
@@ -2679,11 +2707,14 @@ impl Default for OcrCleanupSpec {
     }
 }
 
+/// TeleOCR stage selector. Requires `CRISPEMBED_TELEOCR=1` and an explicit local GGUF.
+pub const OCR_ENGINE_TELEOCR: i32 = crispembed_sys::CRISPEMBED_OCR_ENGINE_TELEOCR;
+
 /// One fully-specified pipeline stage for [`CrispOcrPipeline::from_stages`].
 #[derive(Clone)]
 pub struct OcrStageSpec {
     pub source_type: i32, // 0=auto 1=screenshot 2=scanned_doc 3=photo
-    pub engine: i32, // 0..19 existing; 20=qwen35_ocr, 21=ovisocr2, 22=ovisocr3 (gated; matches map_engine)
+    pub engine: i32, // 0..19 existing; 20=qwen35_ocr, 21=ovisocr2, 22=ovisocr3, 23=minicpm_ocr, 24=teleocr
     pub model_a: String,
     pub model_b: String,
     pub cleanup: OcrCleanupSpec,
@@ -2835,10 +2866,10 @@ impl CrispOcrPipeline {
         let markdown = if markdown_ptr.is_null() || markdown_len <= 0 {
             String::new()
         } else {
-            unsafe { std::slice::from_raw_parts(markdown_ptr as *const u8, markdown_len as usize) }
-                .iter()
-                .map(|&b| b as char)
-                .collect()
+            String::from_utf8_lossy(unsafe {
+                std::slice::from_raw_parts(markdown_ptr as *const u8, markdown_len as usize)
+            })
+            .into_owned()
         };
         let mut regions = Vec::new();
         if !arr.is_null() && n > 0 {

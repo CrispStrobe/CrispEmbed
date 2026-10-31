@@ -1,0 +1,57 @@
+{
+  "kind": "teleocr-native-document-parser",
+  "independent_model_parity": false,
+  "model": "teleocr-f16.gguf",
+  "model_sha256": "6c52a2800e313964717cf4e5d06e0392c2b5936d8adeac423d563b8a026a2780",
+  "library_sha256": "96b1f5707fadabbf7f7060b2b2d2841d728d5f2c1268d4fdb8725247ed8539b5",
+  "image": "synthetic-text.png",
+  "image_sha256": "54505c242287c7f666bb9fa8953a2f419a16a8b802e79ab0dd09945400703be8",
+  "mode": "detection",
+  "max_tokens": 1024,
+  "threads": 2,
+  "backend": "cpu",
+  "test_sha256": "1442896fecb1dfe17e2f71f3e3ec729bc4f8870903fe29b792cca9331b9f1bca",
+  "parser_sha256": "9e9517fdc594bf56307bd719e82b9a5b5a90b29cffc7d113b19b28bd2214d7ea",
+  "checks": [
+    {
+      "name": "layout-and-extraction-ran",
+      "passed": true,
+      "generations": 4
+    },
+    {
+      "name": "typed-blocks",
+      "passed": true,
+      "count": 3,
+      "types": [
+        "title",
+        "title",
+        "title"
+      ]
+    },
+    {
+      "name": "confidence-finite-and-bounded",
+      "passed": true
+    },
+    {
+      "name": "no-generation-cap",
+      "passed": true
+    },
+    {
+      "name": "markdown-nonempty",
+      "passed": true
+    },
+    {
+      "name": "structured-json-roundtrip",
+      "passed": true
+    },
+    {
+      "name": "markdown-file-exact",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "warnings": [],
+  "generated_tokens": 92,
+  "elapsed_seconds": 164.68356313500044,
+  "generations_retained": 4
+}

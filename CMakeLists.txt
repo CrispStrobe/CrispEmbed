@@ -850,6 +850,19 @@ target_link_libraries(test-qwen2vl PRIVATE crispembed)
 add_executable(test-qwen2vl-diff tests/test_qwen2vl_diff.cpp)
 target_link_libraries(test-qwen2vl-diff PRIVATE crispembed)
 
+# TeleOCR observers exist only in this validation translation unit. The normal
+# static/shared libraries contain no observer setter or callback implementation.
+add_executable(test-teleocr-diff tests/test_teleocr_diff.cpp src/qwen2vl_ocr.cpp)
+target_compile_definitions(test-teleocr-diff PRIVATE CRISPEMBED_TELEOCR_TESTING=1)
+crispembed_apply_arch_flags(test-teleocr-diff)
+target_link_libraries(test-teleocr-diff PRIVATE crispembed)
+
+add_executable(test-teleocr-preprocess tests/test_teleocr_preprocess.cpp)
+target_link_libraries(test-teleocr-preprocess PRIVATE crispembed)
+
+add_executable(test-teleocr-ffn tests/test_teleocr_ffn.cpp)
+target_link_libraries(test-teleocr-ffn PRIVATE crispembed)
+
 add_executable(test-paddleocr-vl-diff tests/test_paddleocr_vl_diff.cpp)
 target_link_libraries(test-paddleocr-vl-diff PRIVATE crispembed)
 
@@ -1193,6 +1206,13 @@ if(CRISPEMBED_BUILD_SHARED)
 
     install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE
         DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/crispembed
+    )
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/NOTICE.teleocr
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/crispembed
+    )
+    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/models/licenses/apache-2.0/LICENSE
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/crispembed
+        RENAME Apache-2.0.txt
     )
 
     # pkg-config for autotools / meson consumers.

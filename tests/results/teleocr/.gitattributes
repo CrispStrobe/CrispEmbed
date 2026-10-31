@@ -1,0 +1,2 @@
+# Preserve executed receipts, logs and source snapshots byte-for-byte.
+* -text

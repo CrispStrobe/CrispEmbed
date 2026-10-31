@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "architecture": "teleocr",
+  "profile_version": 1,
+  "qualification": "Storage and provenance audit only; consult separate native validation reports for quality.",
+  "precision": "q4_k",
+  "precision_recipe": {
+    "schema_version": 1,
+    "tool": "crispembed-quantize",
+    "requested_type": "q4_K",
+    "decoder_f16": false,
+    "decoder_attn_q8": false,
+    "ppocrv6_q8_head": false,
+    "imatrix_requested": false,
+    "imatrix_vectors_loaded": 0,
+    "imatrix_qkv_mode": "direct",
+    "tensor_overrides": [
+      {
+        "pattern": "v.*",
+        "type": "f16"
+      },
+      {
+        "pattern": "l.embed_tokens.weight",
+        "type": "f16"
+      }
+    ],
+    "override_order": "last_match_wins",
+    "built_in_guards": true
+  },
+  "source_repository": "XingChen-AGI/TeleOCR",
+  "source_revision": "b3f6a0c084db72f971e19a779d2fd8a6bc9e3b8d",
+  "upstream_source_files": {
+    "config.json": "92c5e15f1768dcb54bceae170043fbfefd248508159700b2179824b88c33ae75",
+    "preprocessor_config.json": "f2058c716eef96ccaed1cc1e2d0c08306b62586d535b28d9d08e691b2fab7ca0",
+    "tokenizer.json": "9c5ae00e602b8860cbd784ba82a8aa14e8feecec692e7076590d014d7b7fdafa",
+    "model.safetensors": "9817b18041bd96403f75e38a33b28ed0cd5fb2641f67eead673afabd3c408109",
+    "generation_config.json": "50867494bddf9ddc8e289e6214be5a2263e68f16c127a3652c6eb9f17990e5d9",
+    "tokenizer_config.json": "e04be4dd17e9f661bc487ba848a37f66a8f1adf2eef412f5d4ecb40cab4d39e7"
+  },
+  "input_gguf": "teleocr-f16.gguf",
+  "input_gguf_sha256": "6c52a2800e313964717cf4e5d06e0392c2b5936d8adeac423d563b8a026a2780",
+  "input_manifest_sha256": "6a7a5df25a9a0e92b191a613014b51d8eef6c55860f6db1cb7c183e1b8aed335",
+  "initial_q4_gguf": "teleocr-q4_k-initial.gguf",
+  "initial_q4_sha256": "ebdf250c53dacb4ce7d86e97aa8642648a140c463f37374ab858bca7c2d809a6",
+  "initial_q4_metadata_defects": {
+    "general.file_type": 12,
+    "teleocr.precision_recipe": "f16"
+  },
+  "quantizer_source": "tools/quantize.cpp",
+  "quantizer_source_sha256": "97587b3801d38e3fae2f10e328e441d3a46ee4d0efcf531f099edac8c0544939",
+  "quantizer_binary_sha256": "87c7ba2431de87f508c7be72c709ac1215886a4d76f741fdc869017a392f474f",
+  "command": "build/crispembed-quantize teleocr-f16.gguf teleocr-q4_k.gguf q4_k --tensor-type 'v.*=f16' --tensor-type 'l.embed_tokens.weight=f16'",
+  "output_file": "teleocr-q4_k.gguf",
+  "output_size": 1893033088,
+  "output_sha256": "1933ab72f57d14bd0473a86ecadb4bd815e13003caa40ab94478727ac12770cd",
+  "source_tensor_count": 700,
+  "output_tensor_count": 700,
+  "tensor_types": {
+    "Q4_K": 196,
+    "F32": 340,
+    "F16": 164
+  },
+  "protected_tensor_count": 504,
+  "quantized_tensor_count": 196,
+  "all_700_payloads_identical_to_initial_q4": true,
+  "all_504_protected_payloads_identical_to_f16": true,
+  "all_shapes_unchanged": true,
+  "embedded_file_type": 14,
+  "embedded_type_census_verified": true
+}

@@ -1,0 +1,1623 @@
+//! Raw FFI bindings to libcrispembed.
+//! Mirrors the public C API in src/crispembed.h exactly.
+
+use std::ffi::{c_char, c_float, c_int};
+use std::os::raw::c_void;
+
+/// Opaque handle to a loaded crispembed model.
+#[repr(C)]
+pub struct CrispembedContext(c_void);
+
+/// Opaque joint-schema SystemOne context; separate from embedding/Gemma handles.
+#[repr(C)]
+pub struct CrispembedSystemoneContext(c_void);
+
+/// Read-only model hyperparameters returned by `crispembed_get_hparams`.
+#[repr(C)]
+pub struct CrispembedHparams {
+    pub n_vocab: i32,
+    pub n_max_tokens: i32,
+    pub n_embd: i32,
+    pub n_head: i32,
+    pub n_layer: i32,
+    pub n_intermediate: i32,
+    pub n_output: i32,
+    pub layer_norm_eps: f32,
+    // MoE fields, previously absent: 32 bytes here against the header's 40.
+    // crispembed_get_hparams returns a POINTER, so this never over-wrote
+    // anything — but the mirror was still a broken layout contract, and any
+    // by-value copy or array walk would have inherited the OCR bug.
+    pub n_experts: i32,         // 0 = dense FFN
+    pub n_experts_per_tok: i32, // MoE top-K routing
+}
+
+// ------------------------------------------------------------------
+// Face detection & recognition types
+// ------------------------------------------------------------------
+
+/// Opaque handle to a loaded face model (detector or recogniser).
+pub type CrispembedFaceContext = std::ffi::c_void;
+
+/// Opaque handle to an auto-dispatched OCR model context. Reads the GGUF
+/// architecture and routes to the matching backend — math (pix2tex, HMER,
+/// BTTR, PosFormer, PPFormulaNet/-L, MixTex) or text/document (PARSeq,
+/// Qwen2.5-VL, InternVL2, GLM-OCR, GOT-OCR, Tesseract-LSTM, Granite-Vision,
+/// LightOnOCR, DeepSeek-OCR2).
+#[repr(C)]
+pub struct OcrModelContext(c_void);
+
+/// Deprecated alias for [`OcrModelContext`] (pre-rename name).
+pub type MathOcrContext = OcrModelContext;
+
+/// OCR result for a single detected text region (from the general OCR pipeline).
+#[repr(C)]
+pub struct CrispembedOcrResult {
+    pub x: f32,
+    pub y: f32,
+    pub w: f32,
+    pub h: f32,
+    pub confidence: f32,
+    pub text: *const c_char,
+    pub text_len: c_int,
+    pub orientation_corrected: c_int,
+    // These two were missing, which made this struct 40 bytes against the C
+    // header's 48. Nothing reads them, but a `#[repr(C)]` mirror is a
+    // *layout* contract, not a field list: consumers walk the array with
+    // `ptr.offset(i)`, so an 8-byte deficit slides every element after the
+    // first out of alignment until `text` is a garbage pointer and
+    // `CStr::from_ptr` faults. Symptom was a segfault *after* OCR had
+    // recognised every region successfully — the crash is in the read-back,
+    // not the recognition, which is what made it look like a model problem.
+    pub orientation_angle: c_int,
+    pub orientation_confidence: c_float,
+}
+
+/// Flat config for the OCR pipeline orchestrator (slice A: DBNet+TrOCR).
+#[repr(C)]
+pub struct CrispembedOcrPipelineParams {
+    pub router: c_int,
+    pub cleanup_enabled: c_int,
+    pub min_chars: c_int,
+    pub min_confidence: c_float,
+    pub det_model: *const c_char,
+    pub rec_model: *const c_char,
+    pub nafnet_model: *const c_char,
+    pub sr_model: *const c_char,
+    pub vlm_model: *const c_char,
+    pub vlm_engine: c_int, // 0=GOT 1=GLM 2=Qwen2-VL/PaddleOCR-VL 3=InternVL2
+    pub punct_model: *const c_char,
+    pub lid_model: *const c_char,
+    pub truecase_model: *const c_char,
+    pub tess_model_dir: *const c_char,
+    pub layout_model: *const c_char,
+    pub table_model: *const c_char,
+    pub formula_model: *const c_char,
+    pub route_tables: c_int,
+    pub route_formulas: c_int,
+    pub image_text_fallback: c_int,
+}
+
+/// TeleOCR stage selector. Requires `CRISPEMBED_TELEOCR=1` and a local TeleOCR GGUF.
+pub const CRISPEMBED_OCR_ENGINE_TELEOCR: c_int = 24;
+
+/// One fully-specified OCR pipeline stage (full per-stage builder). Field order
+/// must match `crispembed_ocr_stage` in crispembed.h exactly.
+#[repr(C)]
+pub struct CrispembedOcrStage {
+    pub source_type: c_int, // 0=auto 1=screenshot 2=scanned_doc 3=photo
+    // Must match map_engine() in src/crispembed.cpp and the table on
+    // crispembed_ocr_stage in src/crispembed.h — that comment is the contract
+    // (docs/contributing.md 5c). 0=dbnet_trocr 1=surya 2=got 3=glm 4=qwen2vl
+    // 5=internvl2 6=tesseract 7=parseq 8=deepseek_ocr2 9=pix2struct
+    // 10=granite_vision 11=lightonocr 12=qwen3vl 13=unlimited_ocr
+    // 14=unified 15=tesseract_fraktur 16=ppocrv6 17=easyocr 18=olmocr
+    // 19=lfm2_vl 20=qwen35_ocr (experimental) 21=ovisocr2 (explicit gated format2) 22=ovisocr3 (gated format3)
+    // 23=minicpm_ocr (experimental), 24=teleocr (CRISPEMBED_TELEOCR)
+    pub engine: c_int,
+    pub model_a: *const c_char,
+    pub model_b: *const c_char,
+    // model_c was missing entirely, and it sits at field 5 — so EVERY field
+    // after it was at the wrong offset. Rust built a 14-field value and handed
+    // `*const` to C, which reads 22: C took `cleanup_enabled`'s bytes as the
+    // model_c pointer, and the per-element stride diverged from the first
+    // element on. Same defect class as the OCR-result mirror, on the input
+    // side, and strictly worse because C dereferences what it finds.
+    pub model_c: *const c_char,
+    pub cleanup_enabled: c_int,
+    pub denoise: c_int,
+    pub cleanup: ScanCleanupParams,
+    pub det_prob_threshold: c_float,
+    pub det_box_threshold: c_float,
+    pub det_target_short: c_int,
+    pub det_max_side: c_int,             // 0 = default 2000
+    pub det_min_height: c_int,           // 0 = default 30
+    pub det_width_height_ratio: c_float, // 0 = default 8; negative disables
+    pub det_max_candidates: c_int,       // 0 = default 1000; negative disables
+    pub det_dilation: c_int,             // 0 = default 1; negative disables
+    pub det_score_mode: c_int,           // 0 = fast, 1 = accurate
+    pub vlm_max_tokens: c_int,
+    pub vlm_prompt: *const c_char,
+    pub min_chars: c_int,
+    pub min_confidence: c_float,
+    pub page_segmentation: c_int, // tesseract: 0 = DBNet, 1 = classical
+}
+
+/// Opaque handle to a standalone ViT image embedding context (SigLIP, CLIP).
+#[repr(C)]
+pub struct VitContext(c_void);
+
+/// Bounding box, confidence score and 5-point facial landmarks returned by
+/// the face detector.
+#[repr(C)]
+pub struct CrispembedFaceDetection {
+    /// Left edge of the bounding box (pixels).
+    pub x: f32,
+    /// Top edge of the bounding box (pixels).
+    pub y: f32,
+    /// Width of the bounding box (pixels).
+    pub w: f32,
+    /// Height of the bounding box (pixels).
+    pub h: f32,
+    /// Detection confidence in `[0, 1]`.
+    pub confidence: f32,
+    /// Five facial landmarks as `[x0, y0, x1, y1, …, x4, y4]` (pixels).
+    pub landmarks: [f32; 10],
+}
+
+/// One entry returned by the full face pipeline: detection metadata paired
+/// with the recognition embedding for that face.
+#[repr(C)]
+pub struct CrispembedFaceResult {
+    /// Detection bounding box and landmarks.
+    pub det: CrispembedFaceDetection,
+    /// Pointer to the embedding floats (owned by the context).
+    pub embedding: *const f32,
+    /// Length of the `embedding` buffer.
+    pub embedding_dim: i32,
+}
+
+extern "C" {
+    pub fn crispembed_systemone_init(
+        path: *const c_char,
+        n_threads: c_int,
+    ) -> *mut CrispembedSystemoneContext;
+    pub fn crispembed_systemone_free(ctx: *mut CrispembedSystemoneContext);
+    pub fn crispembed_systemone_run_json(
+        ctx: *mut CrispembedSystemoneContext,
+        request: *const c_char,
+    ) -> *const c_char;
+    pub fn crispembed_systemone_error(ctx: *const CrispembedSystemoneContext) -> *const c_char;
+    pub fn crispembed_systemone_profile(ctx: *const CrispembedSystemoneContext) -> *const c_char;
+
+    pub fn crispembed_has_decision(ctx: *const CrispembedContext) -> c_int;
+    pub fn crispembed_decide_json(
+        ctx: *mut CrispembedContext,
+        request_json: *const c_char,
+    ) -> *const c_char;
+    pub fn crispembed_decision_scores(
+        ctx: *mut CrispembedContext,
+        state: *const c_float,
+        question: *const c_float,
+        options: *const c_float,
+        n_options: c_int,
+        question_type: c_int,
+        logits: *mut c_float,
+        probabilities: *mut c_float,
+    ) -> c_int;
+    pub fn crispembed_decision_error(ctx: *const CrispembedContext) -> *const c_char;
+
+    // ------------------------------------------------------------------
+    // Lifecycle
+    // ------------------------------------------------------------------
+
+    /// Load a GGUF model file and initialise backends.
+    /// `n_threads` = 0 for auto-detect. Returns NULL on failure.
+    pub fn crispembed_init(model_path: *const c_char, n_threads: c_int) -> *mut CrispembedContext;
+
+    /// Free all resources. Safe to call with NULL.
+    pub fn crispembed_free(ctx: *mut CrispembedContext);
+
+    // ------------------------------------------------------------------
+    // Configuration
+    // ------------------------------------------------------------------
+
+    /// Get model hyperparameters (valid for the lifetime of `ctx`).
+    pub fn crispembed_get_hparams(ctx: *const CrispembedContext) -> *const CrispembedHparams;
+
+    // ── LoRA adapter hot-swap ──
+
+    /// Activate a LoRA adapter by name. Pass NULL/"" to deactivate.
+    /// Returns 1 on success, 0 on failure.
+    pub fn crispembed_set_lora(ctx: *mut CrispembedContext, adapter_name: *const c_char) -> c_int;
+
+    /// Currently active adapter name ("" if none).
+    pub fn crispembed_get_lora(ctx: *const CrispembedContext) -> *const c_char;
+
+    /// List available adapters. Sets `*out_names` and `*out_count`.
+    /// Pointers owned by context (valid until `crispembed_free`).
+    /// Returns 0 if no adapters available.
+    pub fn crispembed_list_lora(
+        ctx: *const CrispembedContext,
+        out_names: *mut *const *const c_char,
+        out_count: *mut c_int,
+    ) -> c_int;
+
+    /// Set the process-global GPU backend preference ("metal", "cuda",
+    /// "vulkan", ...), matched case-insensitively against the ggml device and
+    /// registry names. Call once BEFORE any *_init. NULL or "" = auto.
+    /// An unavailable preference warns on stderr and falls back to auto.
+    pub fn crispembed_set_gpu_backend(name: *const c_char);
+
+    /// Truncate output to `dim` dimensions (Matryoshka). 0 = model default.
+    pub fn crispembed_set_dim(ctx: *mut CrispembedContext, dim: c_int);
+
+    /// Set a text prefix prepended to all inputs before tokenization.
+    /// Pass NULL or empty string to clear.
+    pub fn crispembed_set_prefix(ctx: *mut CrispembedContext, prefix: *const c_char);
+
+    /// Get the current prefix (empty string if none set).
+    pub fn crispembed_get_prefix(ctx: *const CrispembedContext) -> *const c_char;
+
+    /// Returns the shared model cache directory.
+    pub fn crispembed_cache_dir() -> *const c_char;
+
+    /// Resolve a model argument to a local GGUF path.
+    pub fn crispembed_resolve_model(arg: *const c_char, auto_download: c_int) -> *const c_char;
+
+    /// Offline mode: model resolution never downloads (also CRISPEMBED_OFFLINE
+    /// or a truthy HF_HUB_OFFLINE). `crispembed_is_offline` reports the
+    /// effective state.
+    pub fn crispembed_set_offline(offline: c_int);
+    pub fn crispembed_is_offline() -> c_int;
+
+    /// Registry accessors for wrapper-side model listing.
+    pub fn crispembed_n_models() -> c_int;
+    pub fn crispembed_model_name(index: c_int) -> *const c_char;
+    pub fn crispembed_model_desc(index: c_int) -> *const c_char;
+    pub fn crispembed_model_filename(index: c_int) -> *const c_char;
+    pub fn crispembed_model_size(index: c_int) -> *const c_char;
+    pub fn crispembed_model_license(index: c_int) -> *const c_char;
+    pub fn crispembed_model_card_url(index: c_int) -> *const c_char;
+
+    // ------------------------------------------------------------------
+    // Dense embedding
+    // ------------------------------------------------------------------
+
+    /// Encode a single text. Returns pointer to `*out_n_dim` floats.
+    /// Buffer is owned by `ctx` and valid until the next encode call.
+    pub fn crispembed_encode(
+        ctx: *mut CrispembedContext,
+        text: *const c_char,
+        out_n_dim: *mut c_int,
+    ) -> *const c_float;
+
+    /// Encode a batch of `n_texts` strings in one graph pass.
+    /// Returns flat `[n_texts * dim]` array. Buffer valid until next call.
+    pub fn crispembed_encode_batch(
+        ctx: *mut CrispembedContext,
+        texts: *const *const c_char,
+        n_texts: c_int,
+        out_n_dim: *mut c_int,
+    ) -> *const c_float;
+
+    // ------------------------------------------------------------------
+    // Capability queries
+    // ------------------------------------------------------------------
+
+    // ------------------------------------------------------------------
+    // Prefix lookup (name-table and GGUF metadata)
+    // ------------------------------------------------------------------
+
+    /// Query prefix for the named model from the built-in name table, or NULL.
+    pub fn crispembed_query_prefix(model_name: *const c_char) -> *const c_char;
+
+    /// Passage prefix for the named model from the built-in name table, or NULL.
+    pub fn crispembed_passage_prefix(model_name: *const c_char) -> *const c_char;
+
+    /// Query prefix from GGUF metadata (`colbert.query_prefix`), or NULL.
+    pub fn crispembed_ctx_query_prefix(ctx: *const CrispembedContext) -> *const c_char;
+
+    /// Passage/document prefix from GGUF metadata, or NULL.
+    pub fn crispembed_ctx_passage_prefix(ctx: *const CrispembedContext) -> *const c_char;
+
+    /// Returns 1 if the model has a sparse retrieval head (BGE-M3 sparse).
+    pub fn crispembed_has_sparse(ctx: *const CrispembedContext) -> c_int;
+
+    /// Returns 1 if the model has a ColBERT multi-vector head.
+    pub fn crispembed_has_colbert(ctx: *const CrispembedContext) -> c_int;
+
+    /// Returns 1 if the model is a reranker (cross-encoder with classifier).
+    pub fn crispembed_is_reranker(ctx: *const CrispembedContext) -> c_int;
+
+    // ------------------------------------------------------------------
+    // Sparse encode (BGE-M3 SPLADE-style)
+    // ------------------------------------------------------------------
+
+    /// Encode `text` to a sparse term-weight vector.
+    /// On success, `*out_indices[i]` = vocab token id, `*out_values[i]` = weight.
+    /// Both buffers are owned by `ctx` and valid until the next call.
+    /// Returns the number of non-zero entries, or 0 on failure.
+    pub fn crispembed_encode_sparse(
+        ctx: *mut CrispembedContext,
+        text: *const c_char,
+        out_indices: *mut *const i32,
+        out_values: *mut *const c_float,
+    ) -> c_int;
+
+    // ------------------------------------------------------------------
+    // Multi-vector encode (ColBERT)
+    // ------------------------------------------------------------------
+
+    /// Encode `text` to per-token L2-normalised embeddings.
+    /// Returns a flat `[*out_n_tokens × *out_dim]` array valid until next call.
+    /// Returns NULL on failure or if the model has no ColBERT head.
+    pub fn crispembed_encode_multivec(
+        ctx: *mut CrispembedContext,
+        text: *const c_char,
+        out_n_tokens: *mut c_int,
+        out_dim: *mut c_int,
+    ) -> *const c_float;
+
+    // ------------------------------------------------------------------
+    // Per-token contextual embeddings (any encoder model)
+    // ------------------------------------------------------------------
+
+    /// Encode `text` to per-token L2-normalised final hidden states from
+    /// any encoder model (BERT / XLM-R / etc.). Unlike `encode_multivec`,
+    /// this is NOT gated on the ColBERT head — it returns the raw
+    /// contextual hidden states. Designed for SimAlign-style word aligners.
+    pub fn crispembed_encode_tokens(
+        ctx: *mut CrispembedContext,
+        text: *const c_char,
+        out_n_tokens: *mut c_int,
+        out_dim: *mut c_int,
+    ) -> *const c_float;
+
+    pub fn crispembed_encode_tokens_raw(
+        ctx: *mut CrispembedContext,
+        text: *const c_char,
+        out_n_tokens: *mut c_int,
+        out_dim: *mut c_int,
+    ) -> *const c_float;
+
+    /// Enabled tied masked-LM head (LFM2 encoder).
+    pub fn crispembed_has_masked_lm(ctx: *const CrispembedContext) -> c_int;
+    /// Raw logits [n_masks, vocabulary], with BOS-inclusive mask positions.
+    pub fn crispembed_masked_logits(
+        ctx: *mut CrispembedContext,
+        text: *const c_char,
+        out_n_masks: *mut c_int,
+        out_vocab: *mut c_int,
+        out_positions: *mut *const i32,
+    ) -> *const c_float;
+    /// Decoded bytes (possibly partial UTF-8 or containing NUL).
+    pub fn crispembed_token_bytes(
+        ctx: *const CrispembedContext,
+        id: i32,
+        out_size: *mut c_int,
+    ) -> *const c_char;
+
+    /// Pointer to the token IDs from the most recent `encode_tokens` call.
+    /// `NULL` if `encode_tokens` has not been called or failed.
+    pub fn crispembed_last_token_ids(ctx: *const CrispembedContext) -> *const i32;
+
+    /// Look up the surface form of a vocab token by id. Returns a pointer
+    /// to an empty string on out-of-range ids; the pointer is owned by the
+    /// context and stable for its lifetime.
+    pub fn crispembed_token_str(ctx: *const CrispembedContext, id: i32) -> *const c_char;
+
+    /// Tokenizer family: 1=WordPiece, 2=SentencePiece, 3=BPE, 0=unknown.
+    /// Callers use this to interpret subword markers (`##` vs `▁`).
+    pub fn crispembed_tokenizer_kind(ctx: *const CrispembedContext) -> c_int;
+
+    // ------------------------------------------------------------------
+    // Reranker
+    // ------------------------------------------------------------------
+
+    /// Score a (query, document) pair. Returns raw logit (higher = more relevant).
+    /// The model must be a reranker (`crispembed_is_reranker` == 1).
+    pub fn crispembed_rerank(
+        ctx: *mut CrispembedContext,
+        query: *const c_char,
+        document: *const c_char,
+    ) -> c_float;
+
+    // ------------------------------------------------------------------
+    // Audio encoding (BidirLM-Omni and similar omnimodal models)
+    // ------------------------------------------------------------------
+
+    /// Returns 1 if this build of CrispEmbed has audio support compiled in.
+    /// Whether a particular *model* has an audio tower is determined at the
+    /// first `crispembed_encode_audio` call.
+    pub fn crispembed_has_audio(ctx: *const CrispembedContext) -> c_int;
+
+    /// Encode raw 16 kHz mono float32 PCM into the model's shared embedding
+    /// space. Returns NULL on failure (no audio tower, malformed input).
+    /// On success returns a buffer of `*out_dim` floats owned by `ctx`,
+    /// valid until the next call on this context.
+    pub fn crispembed_encode_audio(
+        ctx: *mut CrispembedContext,
+        pcm_samples: *const c_float,
+        n_samples: c_int,
+        out_dim: *mut c_int,
+    ) -> *const c_float;
+
+    // ------------------------------------------------------------------
+    // Image encoding (BidirLM-Omni vision tower)
+    // ------------------------------------------------------------------
+
+    /// Returns 1 if vision support is built in. Whether a *specific* GGUF
+    /// has a vision tower is determined at first `encode_image` call.
+    pub fn crispembed_has_vision(ctx: *const CrispembedContext) -> c_int;
+
+    /// Encode a flat (n_patches × 1536) pixel-patch buffer + grid_thw into
+    /// a single L2-normalized vector. Buffer owned by ctx, valid until the
+    /// next call.
+    pub fn crispembed_encode_image(
+        ctx: *mut CrispembedContext,
+        pixel_patches: *const c_float,
+        n_patches: c_int,
+        grid_thw: *const i32,
+        n_images: c_int,
+        out_dim: *mut c_int,
+    ) -> *const c_float;
+
+    /// Raw vision tower output (un-pooled, un-normalized). Layout of the
+    /// returned buffer:
+    ///   `[image_embeds, deepstack_0, deepstack_1, …]`
+    /// each slab being `(n_merged × dim)` row-major. Total floats =
+    /// `(1 + n_deepstack) * n_merged * dim`.
+    pub fn crispembed_encode_image_raw(
+        ctx: *mut CrispembedContext,
+        pixel_patches: *const c_float,
+        n_patches: c_int,
+        grid_thw: *const i32,
+        n_images: c_int,
+        out_n_merged: *mut c_int,
+        out_dim: *mut c_int,
+        out_n_deepstack: *mut c_int,
+    ) -> *const c_float;
+
+    /// Text-conditioned multimodal embedding. Splices vision tower image
+    /// embeds into the decoder at `image_token_id` placeholders in `text`.
+    /// Returns a single L2-normalized vector owned by `ctx`, valid until
+    /// the next call. Returns NULL if the model has no vision tower or the
+    /// placeholder count does not match the merged-token count.
+    pub fn crispembed_encode_text_with_image(
+        ctx: *mut CrispembedContext,
+        text: *const c_char,
+        pixel_patches: *const c_float,
+        n_patches: c_int,
+        grid_thw: *const i32,
+        n_images: c_int,
+        out_dim: *mut c_int,
+    ) -> *const c_float;
+
+    /// Pre-tokenized variant of `crispembed_encode_text_with_image`. Takes
+    /// int32 token ids instead of a text string. Skips CrispEmbed's internal
+    /// BPE tokenizer for byte-identical parity with the HF reference path.
+    /// Returns L2-normalized vector owned by `ctx`, valid until next call.
+    pub fn crispembed_encode_with_image_ids(
+        ctx: *mut CrispembedContext,
+        token_ids: *const i32,
+        n_tokens: c_int,
+        pixel_patches: *const c_float,
+        n_patches: c_int,
+        grid_thw: *const i32,
+        n_images: c_int,
+        out_dim: *mut c_int,
+    ) -> *const c_float;
+
+    /// In-process file-based image embedding. Loads the image from disk via
+    /// stb_image, runs the C++ preprocessor, then runs the vision tower.
+    /// Returns a single L2-normalized vector owned by `ctx`, valid until
+    /// the next call. Returns NULL on disk/decode failure or missing tower.
+    pub fn crispembed_encode_image_file(
+        ctx: *mut CrispembedContext,
+        image_path: *const c_char,
+        out_dim: *mut c_int,
+    ) -> *const c_float;
+
+    /// In-process file-based image-conditioned text embedding. `text` must
+    /// contain the right number of `image_token_id` placeholders for the
+    /// grid produced by `smart_resize` on `image_path`.
+    /// Same parity caveat as `crispembed_encode_image_file`.
+    pub fn crispembed_encode_text_with_image_file(
+        ctx: *mut CrispembedContext,
+        text: *const c_char,
+        image_path: *const c_char,
+        out_dim: *mut c_int,
+    ) -> *const c_float;
+
+    /// Standalone preprocessor (no inference). Runs the C++ image preprocessor
+    /// on `image_path` and returns the flat `(n_patches, 1536)` float buffer.
+    /// `out_grid_thw` receives the `(1, 3)` grid triplet `[t, h, w]`.
+    /// Buffers are owned by `ctx` and valid until the next preprocessor call.
+    /// Returns NULL on disk read / decode failure.
+    pub fn crispembed_preprocess_image(
+        ctx: *mut CrispembedContext,
+        image_path: *const c_char,
+        out_n_patches: *mut c_int,
+        out_row_dim: *mut c_int,
+        out_grid_thw: *mut i32,
+    ) -> *const c_float;
+
+    /// Preprocess an already-decoded interleaved uint8 RGB(A) buffer. Skips
+    /// the stb_image decode step. `channels` must be 3 or 4 (alpha dropped).
+    /// Same output contract as `crispembed_preprocess_image`. Buffers owned
+    /// by `ctx`, valid until the next preprocessor call.
+    pub fn crispembed_preprocess_image_rgb(
+        ctx: *mut CrispembedContext,
+        rgb: *const u8,
+        height: c_int,
+        width: c_int,
+        channels: c_int,
+        out_n_patches: *mut c_int,
+        out_row_dim: *mut c_int,
+        out_grid_thw: *mut i32,
+    ) -> *const c_float;
+
+    // ------------------------------------------------------------------
+    // Face detection & recognition
+    // ------------------------------------------------------------------
+
+    /// Opaque handle to a loaded face model (detector or recogniser).
+    /// The type alias is defined outside the extern block; the raw pointer
+    /// is used throughout this API.
+
+    /// Acknowledge that this process may run face *recognition* models, whose
+    /// output is a biometric template (GDPR Art. 9 special-category data).
+    /// Without this — or `CRISPEMBED_ACCEPT_BIOMETRIC=1` —
+    /// `crispembed_face_init` returns NULL for recognition models. Detection
+    /// is never gated. See POLICY.md.
+    pub fn crispembed_accept_biometric_use();
+
+    /// Load a face model from `model_path` and return an opaque context.
+    /// `n_threads` = 0 for auto-detect. Returns NULL on failure, including
+    /// when a recognition model is loaded without a biometric acknowledgement.
+    pub fn crispembed_face_init(
+        model_path: *const c_char,
+        n_threads: c_int,
+    ) -> *mut CrispembedFaceContext;
+
+    /// Returns the embedding dimension produced by a recognition model,
+    /// or 0 for a pure detection model.
+    pub fn crispembed_face_dim(ctx: *const CrispembedFaceContext) -> c_int;
+
+    /// Returns a NUL-terminated string identifying the model type
+    /// (e.g. `"scrfd"`, `"sface"`). Pointer valid for the lifetime of `ctx`.
+    pub fn crispembed_face_type(ctx: *const CrispembedFaceContext) -> *const c_char;
+
+    /// Detect faces in `image_path`.
+    /// Returns a pointer to `*out_n_faces` `CrispembedFaceDetection` structs
+    /// owned by `ctx`, valid until the next call on this context.
+    /// Returns NULL on failure.
+    pub fn crispembed_detect_faces(
+        ctx: *mut CrispembedFaceContext,
+        image_path: *const c_char,
+        conf_threshold: f32,
+        det_size: c_int,
+        out_n_faces: *mut c_int,
+    ) -> *const CrispembedFaceDetection;
+
+    /// Encode the face described by `landmarks` (10 floats: 5 × [x,y]) from
+    /// `image_path` into a face embedding.
+    /// Returns a pointer to `*out_dim` floats owned by `ctx`, valid until
+    /// the next call on this context. Returns NULL on failure.
+    pub fn crispembed_encode_face(
+        ctx: *mut CrispembedFaceContext,
+        image_path: *const c_char,
+        landmarks: *const f32,
+        out_dim: *mut c_int,
+    ) -> *const f32;
+
+    /// Run the full detect-then-recognise pipeline.
+    /// `det_ctx` must be a detection model; `rec_ctx` must be a recognition model.
+    /// Returns a pointer to `*out_n_faces` `CrispembedFaceResult` structs
+    /// owned by `det_ctx`, valid until the next call on either context.
+    /// Returns NULL on failure.
+    pub fn crispembed_face_pipeline(
+        det_ctx: *mut CrispembedFaceContext,
+        rec_ctx: *mut CrispembedFaceContext,
+        image_path: *const c_char,
+        conf_threshold: f32,
+        det_size: c_int,
+        out_n_faces: *mut c_int,
+    ) -> *const CrispembedFaceResult;
+
+    /// Free all resources held by a face context. Safe to call with NULL.
+    pub fn crispembed_face_free(ctx: *mut CrispembedFaceContext);
+
+    // ------------------------------------------------------------------
+    // Unified Math OCR — image → LaTeX. Auto-detects architecture from GGUF.
+    // ------------------------------------------------------------------
+
+    /// Initialize a unified math OCR context. Auto-detects architecture
+    /// (pix2tex, HMER, BTTR, PosFormer, PPFormulaNet, PPFormulaNet-L, Texo)
+    /// from GGUF metadata. `n_threads` = 0 for auto-detect. Returns NULL on failure.
+    pub fn crispembed_ocr_model_init(
+        model_path: *const c_char,
+        n_threads: c_int,
+    ) -> *mut OcrModelContext;
+
+    /// Recognize math in raw pixel bytes (RGB or RGBA).
+    /// `pixel_bytes` is `(height, width, channels)` row-major uint8.
+    /// `channels` must be 3 or 4.
+    /// Returns a NUL-terminated LaTeX string owned by the context, valid
+    /// until the next call. `out_len` receives the byte length (may be NULL).
+    /// Returns NULL on failure.
+    pub fn crispembed_ocr_model_recognize(
+        ctx: *mut OcrModelContext,
+        pixel_bytes: *const u8,
+        width: c_int,
+        height: c_int,
+        channels: c_int,
+        out_len: *mut c_int,
+    ) -> *const c_char;
+
+    /// Free all resources held by a math OCR context. Safe to call with NULL.
+    pub fn crispembed_ocr_model_free(ctx: *mut OcrModelContext);
+
+    /// Per-token confidence scores from the most recent math OCR call.
+    /// Returns a pointer to `*n_tokens` floats owned by the context,
+    /// valid until the next recognize call. Returns NULL on failure or
+    /// if the engine does not produce per-token scores.
+    pub fn crispembed_ocr_model_confidences(
+        ctx: *const OcrModelContext,
+        n_tokens: *mut c_int,
+    ) -> *const c_float;
+
+    /// Mean confidence score across all tokens from the most recent math OCR
+    /// call. Returns 0.0 if no recognition has been performed yet.
+    pub fn crispembed_ocr_model_mean_confidence(ctx: *const OcrModelContext) -> c_float;
+
+    /// Override the generation budget of a VLM OCR engine (no-op otherwise).
+    pub fn crispembed_ocr_model_set_max_tokens(ctx: *mut OcrModelContext, max_tokens: c_int);
+
+    /// Return the active generation budget (0 for non-generative engines).
+    pub fn crispembed_ocr_model_get_max_tokens(ctx: *const OcrModelContext) -> c_int;
+
+    /// Replace the instruction sent to a prompt-following VLM engine
+    /// (Qwen2/3-VL, InternVL2, LFM2-VL, Granite-Vision); NULL or "" restores
+    /// the engine default. Returns 1 when applied, 0 when the engine runs a
+    /// fixed task prompt.
+    pub fn crispembed_ocr_model_set_prompt(
+        ctx: *mut OcrModelContext,
+        prompt: *const c_char,
+    ) -> c_int;
+
+    /// TeleOCR-only generation controls. Returns 1 for valid settings, 0 otherwise.
+    pub fn crispembed_ocr_model_set_generation_params(
+        ctx: *mut OcrModelContext,
+        repetition_penalty: c_float,
+        presence_penalty: c_float,
+        frequency_penalty: c_float,
+        no_repeat_ngram: c_int,
+    ) -> c_int;
+    pub fn crispembed_ocr_model_get_generation_params(
+        ctx: *const OcrModelContext,
+        repetition_penalty: *mut c_float,
+        presence_penalty: *mut c_float,
+        frequency_penalty: *mut c_float,
+        no_repeat_ngram: *mut c_int,
+    ) -> c_int;
+
+    /// Recognize math from grayscale float pixels [0..1].
+    /// Returns a NUL-terminated LaTeX string owned by the context, valid
+    /// until the next call. Returns NULL on failure.
+    pub fn crispembed_ocr_model_recognize_gray(
+        ctx: *mut OcrModelContext,
+        pixels: *const c_float,
+        width: c_int,
+        height: c_int,
+        out_len: *mut c_int,
+    ) -> *const c_char;
+
+    // --- Deprecated aliases (pre-rename names; forward to crispembed_ocr_model_*).
+    pub fn crispembed_math_ocr_init(
+        model_path: *const c_char,
+        n_threads: c_int,
+    ) -> *mut OcrModelContext;
+    pub fn crispembed_math_ocr_recognize(
+        ctx: *mut OcrModelContext,
+        pixel_bytes: *const u8,
+        width: c_int,
+        height: c_int,
+        channels: c_int,
+        out_len: *mut c_int,
+    ) -> *const c_char;
+    pub fn crispembed_math_ocr_free(ctx: *mut OcrModelContext);
+    pub fn crispembed_math_ocr_confidences(
+        ctx: *const OcrModelContext,
+        n_tokens: *mut c_int,
+    ) -> *const c_float;
+    pub fn crispembed_math_ocr_mean_confidence(ctx: *const OcrModelContext) -> c_float;
+    pub fn crispembed_math_ocr_recognize_gray(
+        ctx: *mut OcrModelContext,
+        pixels: *const c_float,
+        width: c_int,
+        height: c_int,
+        out_len: *mut c_int,
+    ) -> *const c_char;
+
+    // ------------------------------------------------------------------
+    // General OCR Pipeline — text detection (DBNet) + recognition (TrOCR)
+    // ------------------------------------------------------------------
+
+    /// Load OCR pipeline (detection + recognition models).
+    /// Returns opaque context, or null on failure.
+    pub fn crispembed_ocr_init(
+        det_model_path: *const c_char,
+        rec_model_path: *const c_char,
+        n_threads: c_int,
+    ) -> *mut c_void;
+
+    /// Free OCR pipeline context.
+    pub fn crispembed_ocr_free(ctx: *mut c_void);
+
+    /// Run full OCR on an image file. Returns array of results.
+    /// Array owned by ctx, valid until next call.
+    pub fn crispembed_ocr(
+        ctx: *mut c_void,
+        image_path: *const c_char,
+        out_n_results: *mut c_int,
+    ) -> *const CrispembedOcrResult;
+
+    /// Run text recognition only on a single image crop.
+    /// Returns recognized text string owned by ctx.
+    pub fn crispembed_ocr_recognize(
+        ctx: *mut c_void,
+        image_path: *const c_char,
+        out_len: *mut c_int,
+    ) -> *const c_char;
+
+    // ── OCR pipeline orchestrator (cleanup + engine + accept-gate + routing) ──
+    pub fn crispembed_ocr_pipeline_defaults() -> CrispembedOcrPipelineParams;
+
+    pub fn crispembed_ocr_pipeline_init(
+        params: *const CrispembedOcrPipelineParams,
+        n_threads: c_int,
+    ) -> *mut c_void;
+
+    /// Run the pipeline. Returns the regions array (owned by ctx) and fills
+    /// `out_full_text` (owned by ctx) + `out_mean_confidence`.
+    pub fn crispembed_ocr_pipeline_run(
+        ctx: *mut c_void,
+        image_path: *const c_char,
+        out_n_results: *mut c_int,
+        out_full_text: *mut *const c_char,
+        out_mean_confidence: *mut c_float,
+    ) -> *const CrispembedOcrResult;
+
+    pub fn crispembed_ocr_pipeline_reading_order(
+        ctx: *mut c_void,
+        out_n: *mut c_int,
+    ) -> *const c_int;
+
+    pub fn crispembed_ocr_pipeline_markdown(ctx: *mut c_void, out_len: *mut c_int)
+        -> *const c_char;
+
+    pub fn crispembed_ocr_pipeline_free(ctx: *mut c_void);
+
+    /// Full per-stage builder: a flat array of stages grouped into per-source-
+    /// type chains in array order.
+    pub fn crispembed_ocr_pipeline_init_stages(
+        router: c_int,
+        nafnet_model: *const c_char,
+        sr_model: *const c_char,
+        punct_model: *const c_char,
+        lid_model: *const c_char,
+        truecase_model: *const c_char,
+        tess_model_dir: *const c_char,
+        stages: *const CrispembedOcrStage,
+        n_stages: c_int,
+        n_threads: c_int,
+    ) -> *mut c_void;
+
+    // ------------------------------------------------------------------
+    // Standalone ViT image embedding (SigLIP, CLIP)
+    // ------------------------------------------------------------------
+
+    /// Initialize a standalone ViT context from a SigLIP/CLIP GGUF model.
+    /// `n_threads` = 0 for auto-detect. Returns NULL on failure.
+    pub fn crispembed_vit_init(model_path: *const c_char, n_threads: c_int) -> *mut VitContext;
+
+    /// Returns the embedding dimension produced by the ViT model.
+    pub fn crispembed_vit_dim(ctx: *const VitContext) -> c_int;
+
+    /// Encode an image file to a dense embedding via the ViT model.
+    /// Returns a pointer to `*out_dim` floats owned by `ctx`, valid until
+    /// the next call. Returns NULL on failure.
+    pub fn crispembed_vit_encode_file(
+        ctx: *mut VitContext,
+        image_path: *const c_char,
+        out_dim: *mut c_int,
+    ) -> *const c_float;
+
+    /// Free all resources held by a ViT context. Safe to call with NULL.
+    pub fn crispembed_vit_free(ctx: *mut VitContext);
+
+    // ── Layout Detection (RT-DETRv2) ──
+
+    pub fn crispembed_layout_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_layout_free(ctx: *mut c_void);
+    pub fn crispembed_layout_detect(
+        ctx: *mut c_void,
+        image_path: *const c_char,
+        score_threshold: c_float,
+        out_n: *mut c_int,
+    ) -> *const LayoutRegion;
+
+    // ── Named Entity Recognition (GLiNER) ──
+
+    /// Load a NER model from GGUF. Auto-detects architecture.
+    /// Returns NULL on failure.
+    pub fn crispembed_ner_init(model_path: *const c_char, n_threads: c_int) -> *mut NerContext;
+
+    /// Free NER context. Safe to call with NULL.
+    pub fn crispembed_ner_free(ctx: *mut NerContext);
+
+    /// Extract named entities with zero-shot labels.
+    /// Returns entity count; sets `*out_entities` to result array (owned by ctx).
+    pub fn crispembed_ner_extract(
+        ctx: *mut NerContext,
+        text: *const c_char,
+        labels: *const *const c_char,
+        n_labels: c_int,
+        threshold: c_float,
+        out_entities: *mut *mut NerEntity,
+    ) -> c_int;
+
+    // ── Pix2Struct (image-to-text document understanding) ──
+
+    /// Load a Pix2Struct GGUF model. Returns NULL on failure.
+    pub fn crispembed_pix2struct_init(
+        model_path: *const c_char,
+        n_threads: c_int,
+    ) -> *mut Pix2StructContext;
+
+    /// Free all Pix2Struct resources. Safe to call with NULL.
+    pub fn crispembed_pix2struct_free(ctx: *mut Pix2StructContext);
+
+    /// Generate text from an image. Returns a malloc'd string; caller must
+    /// free with `crispembed_pix2struct_free_text`. Returns NULL on failure.
+    pub fn crispembed_pix2struct_generate(
+        ctx: *mut Pix2StructContext,
+        image: *const u8,
+        width: c_int,
+        height: c_int,
+        max_tokens: c_int,
+    ) -> *const c_char;
+
+    /// Free a string returned by `crispembed_pix2struct_generate`.
+    pub fn crispembed_pix2struct_free_text(text: *const c_char);
+
+    /// Per-token softmax confidence from the last generate call.
+    pub fn crispembed_pix2struct_confidences(
+        ctx: *const Pix2StructContext,
+        n_tokens: *mut c_int,
+    ) -> *const c_float;
+
+    /// Mean softmax confidence from the last generate call.
+    pub fn crispembed_pix2struct_mean_confidence(ctx: *const Pix2StructContext) -> c_float;
+
+    /// Encode image patches to hidden-state embeddings.
+    /// Returns pointer to `*out_dim` floats, owned by ctx, valid until next call.
+    pub fn crispembed_pix2struct_encode_patches(
+        ctx: *mut Pix2StructContext,
+        patches: *const c_float,
+        n_patches: c_int,
+        out_dim: *mut c_int,
+    ) -> *const c_float;
+}
+
+/// Opaque handle to a Pix2Struct context.
+#[repr(C)]
+pub struct Pix2StructContext(c_void);
+
+/// Opaque handle to a Granite Vision OCR context.
+#[repr(C)]
+pub struct GraniteVisionContext(c_void);
+
+/// Opaque handle to a LightOnOCR context.
+#[repr(C)]
+pub struct LightOnOcrContext(c_void);
+
+extern "C" {
+    // ── Granite Vision OCR ──
+
+    /// Load a Granite Vision GGUF model. Returns NULL on failure.
+    pub fn crispembed_granite_vision_init(
+        model_path: *const c_char,
+        n_threads: c_int,
+    ) -> *mut GraniteVisionContext;
+
+    /// Free Granite Vision context. Safe to call with NULL.
+    pub fn crispembed_granite_vision_free(ctx: *mut GraniteVisionContext);
+
+    /// Recognize text from raw pixel bytes. prompt may be null.
+    pub fn crispembed_granite_vision_recognize(
+        ctx: *mut GraniteVisionContext,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        channels: c_int,
+        prompt: *const c_char,
+        out_len: *mut c_int,
+    ) -> *const c_char;
+
+    // ── LightOnOCR ──
+
+    /// Load a LightOnOCR GGUF model. Returns NULL on failure.
+    pub fn crispembed_lightonocr_init(
+        model_path: *const c_char,
+        n_threads: c_int,
+    ) -> *mut LightOnOcrContext;
+
+    /// Free LightOnOCR context. Safe to call with NULL.
+    pub fn crispembed_lightonocr_free(ctx: *mut LightOnOcrContext);
+
+    /// Recognize text from raw pixel bytes (RGB/RGBA).
+    pub fn crispembed_lightonocr_recognize(
+        ctx: *mut LightOnOcrContext,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        channels: c_int,
+        out_len: *mut c_int,
+    ) -> *const c_char;
+}
+
+/// Opaque handle to a NER context (GLiNER zero-shot NER).
+#[repr(C)]
+pub struct NerContext(c_void);
+
+/// A single named entity extracted by GLiNER (matches `crispembed_ner_entity` in C).
+#[repr(C)]
+pub struct NerEntity {
+    pub start_char: c_int,
+    pub end_char: c_int,
+    pub text: *const c_char,
+    pub label: *const c_char,
+    pub score: c_float,
+}
+
+/// Layout detection result (matches `crispembed_layout_region` in C).
+#[repr(C)]
+pub struct LayoutRegion {
+    pub x1: c_float,
+    pub y1: c_float,
+    pub x2: c_float,
+    pub y2: c_float,
+    pub score: c_float,
+    pub label: c_int,
+    pub label_name: *const c_char,
+}
+
+// ---------------------------------------------------------------------------
+// Scan Cleanup — document scan preprocessing.
+// ---------------------------------------------------------------------------
+
+/// Scan cleanup parameters (matches `crispembed_scan_cleanup_params` in C).
+#[repr(C)]
+pub struct ScanCleanupParams {
+    pub deskew: c_int,
+    pub crop_borders: c_int,
+    pub whiten_background: c_int,
+    pub binarize: c_int,
+    pub binarize_method: c_int,
+    pub sauvola_k: c_float,
+    pub sauvola_window: c_int,
+    pub morph_kernel: c_int,
+    pub border_threshold: c_float,
+    pub deskew_max_angle: c_float,
+    pub despeckle: c_int,
+    pub despeckle_thresh: c_float,
+    pub blackfilter: c_int,
+    pub blackfilter_thresh: c_float,
+    pub deskew_consensus: c_int,
+}
+
+extern "C" {
+    pub fn crispembed_scan_cleanup_defaults() -> ScanCleanupParams;
+
+    pub fn crispembed_scan_cleanup_init(model_path: *const c_char, n_threads: c_int)
+        -> *mut c_void;
+
+    pub fn crispembed_scan_cleanup_free(ctx: *mut c_void);
+
+    pub fn crispembed_scan_cleanup_process(
+        ctx: *mut c_void,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        channels: c_int,
+        params: ScanCleanupParams,
+        out_pixels: *mut *mut u8,
+        out_width: *mut c_int,
+        out_height: *mut c_int,
+    ) -> c_int;
+
+    pub fn crispembed_scan_cleanup_free_image(pixels: *mut u8);
+
+    pub fn crispembed_scan_cleanup_detect_page_split(
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        channels: c_int,
+    ) -> c_int;
+
+    pub fn crispembed_scan_cleanup_content_bbox(
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        channels: c_int,
+        x0: *mut c_int,
+        y0: *mut c_int,
+        x1: *mut c_int,
+        y1: *mut c_int,
+    ) -> c_int;
+
+    // ── Text super-resolution ──
+    pub fn crispembed_text_sr_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_text_sr_free(ctx: *mut c_void);
+    pub fn crispembed_text_sr_upscale_factor(ctx: *const c_void) -> c_int;
+    pub fn crispembed_text_sr_process(
+        ctx: *mut c_void,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        tile_size: c_int,
+        tile_overlap: c_int,
+        out_pixels: *mut *mut u8,
+        out_width: *mut c_int,
+        out_height: *mut c_int,
+    ) -> c_int;
+    pub fn crispembed_text_sr_free_image(pixels: *mut u8);
+
+    // ── TBSRN text-line super-resolution ──
+    pub fn crispembed_tbsrn_sr_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_tbsrn_sr_free(ctx: *mut c_void);
+    pub fn crispembed_tbsrn_sr_process(
+        ctx: *mut c_void,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        out_pixels: *mut *mut u8,
+        out_width: *mut c_int,
+        out_height: *mut c_int,
+    ) -> c_int;
+    pub fn crispembed_tbsrn_sr_free_image(pixels: *mut u8);
+
+    // ── PAN super-resolution ──
+    pub fn crispembed_pan_sr_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_pan_sr_free(ctx: *mut c_void);
+    pub fn crispembed_pan_sr_scale(ctx: *const c_void) -> c_int;
+    pub fn crispembed_pan_sr_process(
+        ctx: *mut c_void,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        tile_size: c_int,
+        tile_overlap: c_int,
+        out_pixels: *mut *mut u8,
+        out_width: *mut c_int,
+        out_height: *mut c_int,
+    ) -> c_int;
+    pub fn crispembed_pan_sr_free_image(pixels: *mut u8);
+
+    // ── SAM 2.1 image segmentation (image mode) ──
+    pub fn crispembed_sam2_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_sam2_free(ctx: *mut c_void);
+    pub fn crispembed_sam2_image_size(ctx: *const c_void) -> c_int;
+    pub fn crispembed_sam2_mask_size(ctx: *const c_void) -> c_int;
+    pub fn crispembed_sam2_backend(ctx: *const c_void) -> *const c_char;
+    pub fn crispembed_sam2_set_image(
+        ctx: *mut c_void,
+        rgb: *const u8,
+        width: c_int,
+        height: c_int,
+    ) -> c_int;
+    pub fn crispembed_sam2_set_image_f32(ctx: *mut c_void, chw: *const f32) -> c_int;
+    pub fn crispembed_sam2_predict(
+        ctx: *mut c_void,
+        points_xy: *const f32,
+        labels: *const c_int,
+        n_points: c_int,
+        mask_logits: *mut f32,
+        scores: *mut f32,
+    ) -> c_int;
+    pub fn crispembed_sam2_process(
+        ctx: *mut c_void,
+        rgb: *const u8,
+        width: c_int,
+        height: c_int,
+        points_xy: *const f32,
+        labels: *const c_int,
+        n_points: c_int,
+        box_xyxy: *const f32,
+        multimask: c_int,
+        out_masks: *mut *mut u8,
+        out_scores: *mut f32,
+        out_count: *mut c_int,
+    ) -> c_int;
+    pub fn crispembed_sam2_free_masks(masks: *mut u8);
+
+    // ── HAT super-resolution (Hybrid Attention Transformer, CVPR 2023) ──
+    // FFI for the safe CrispHatSr wrapper. The C header (crispembed.h) and
+    // safe wrapper landed without these extern decls — same omission class as
+    // SAFMN/ESRGAN earlier.
+    pub fn crispembed_hat_sr_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_hat_sr_free(ctx: *mut c_void);
+    pub fn crispembed_hat_sr_scale(ctx: *const c_void) -> c_int;
+    pub fn crispembed_hat_sr_process(
+        ctx: *mut c_void,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        tile_size: c_int,
+        tile_overlap: c_int,
+        out_pixels: *mut *mut u8,
+        out_width: *mut c_int,
+        out_height: *mut c_int,
+    ) -> c_int;
+    pub fn crispembed_hat_sr_free_image(pixels: *mut u8);
+
+    // DAT super-resolution (Dual Aggregation Transformer, ICCV 2023)
+    pub fn crispembed_dat_sr_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_dat_sr_free(ctx: *mut c_void);
+    pub fn crispembed_dat_sr_process(
+        ctx: *mut c_void,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        tile_w: c_int,
+        tile_h: c_int,
+        out_pixels: *mut *mut u8,
+        out_width: *mut c_int,
+        out_height: *mut c_int,
+    ) -> c_int;
+    pub fn crispembed_dat_sr_free_image(pixels: *mut u8);
+
+    // SAFMN whole-image SR (the safe CrispSafmnSr wrapper referenced these but
+    // the FFI decls were never added — the C symbols exist in crispembed.h).
+    pub fn crispembed_safmn_sr_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_safmn_sr_free(ctx: *mut c_void);
+    pub fn crispembed_safmn_sr_scale(ctx: *const c_void) -> c_int;
+    pub fn crispembed_safmn_sr_process(
+        ctx: *mut c_void,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        tile_size: c_int,
+        tile_overlap: c_int,
+        out_pixels: *mut *mut u8,
+        out_width: *mut c_int,
+        out_height: *mut c_int,
+    ) -> c_int;
+    pub fn crispembed_safmn_sr_free_image(pixels: *mut u8);
+
+    // ── SwinIR-light super-resolution ──
+    pub fn crispembed_swinir_sr_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_swinir_sr_free(ctx: *mut c_void);
+    pub fn crispembed_swinir_sr_scale(ctx: *const c_void) -> c_int;
+    pub fn crispembed_swinir_sr_process(
+        ctx: *mut c_void,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        tile_size: c_int,
+        tile_overlap: c_int,
+        out_pixels: *mut *mut u8,
+        out_width: *mut c_int,
+        out_height: *mut c_int,
+    ) -> c_int;
+    pub fn crispembed_swinir_sr_free_image(pixels: *mut u8);
+
+    // Real-ESRGAN whole-image SR (same: safe wrapper present, FFI decls missing).
+    pub fn crispembed_esrgan_sr_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_esrgan_sr_free(ctx: *mut c_void);
+    pub fn crispembed_esrgan_sr_scale(ctx: *const c_void) -> c_int;
+    pub fn crispembed_esrgan_sr_process(
+        ctx: *mut c_void,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        tile_size: c_int,
+        tile_overlap: c_int,
+        out_pixels: *mut *mut u8,
+        out_width: *mut c_int,
+        out_height: *mut c_int,
+    ) -> c_int;
+    pub fn crispembed_esrgan_sr_free_image(pixels: *mut u8);
+
+    // ── Restormer image restoration ──
+    pub fn crispembed_restormer_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_restormer_free(ctx: *mut c_void);
+    pub fn crispembed_restormer_process(
+        ctx: *mut c_void,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        tile_size: c_int,
+        tile_overlap: c_int,
+        out_pixels: *mut *mut u8,
+    ) -> c_int;
+    pub fn crispembed_restormer_free_image(pixels: *mut u8);
+
+    // ── SCUNet image denoising ──
+    pub fn crispembed_scunet_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_scunet_free(ctx: *mut c_void);
+    pub fn crispembed_scunet_process(
+        ctx: *mut c_void,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        out_pixels: *mut *mut u8,
+    ) -> c_int;
+    pub fn crispembed_scunet_free_image(pixels: *mut u8);
+
+    // ── InstructIR all-in-one restoration ──
+    pub fn crispembed_instructir_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_instructir_free(ctx: *mut c_void);
+    pub fn crispembed_instructir_n_tasks(ctx: *const c_void) -> c_int;
+    pub fn crispembed_instructir_process(
+        ctx: *mut c_void,
+        task: c_int,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        out_pixels: *mut *mut u8,
+    ) -> c_int;
+    pub fn crispembed_instructir_free_image(pixels: *mut u8);
+
+    // ── AdaIR all-in-one restoration ──
+    pub fn crispembed_adair_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_adair_free(ctx: *mut c_void);
+    pub fn crispembed_adair_process(
+        ctx: *mut c_void,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        out_pixels: *mut *mut u8,
+    ) -> c_int;
+    pub fn crispembed_adair_free_image(pixels: *mut u8);
+
+    // ── OCR result rendering ──
+    pub fn crispembed_ocr_render(
+        results: *const CrispembedOcrResult,
+        n_results: c_int,
+        page_width: c_int,
+        page_height: c_int,
+        format: *const c_char,
+    ) -> *mut c_char;
+
+    // ── Classical preprocessing ──
+    /// PDF DPI profiling — analyse embedded images in a PDF page.
+    /// Returns 0 on success, -1 on error.
+    pub fn crispembed_pdf_page_dpi(
+        pdf_path: *const c_char,
+        page: c_int,
+        out_dpi: *mut f32,
+        out_n_images: *mut c_int,
+    ) -> c_int;
+
+    pub fn crispembed_dewarp(
+        gray: *const u8,
+        w: c_int,
+        h: c_int,
+        out: *mut u8,
+        out_w: *mut c_int,
+        out_h: *mut c_int,
+    ) -> c_int;
+
+    pub fn crispembed_tps_dewarp(
+        gray: *const u8,
+        w: c_int,
+        h: c_int,
+        src_x: *const f32,
+        src_y: *const f32,
+        dst_x: *const f32,
+        dst_y: *const f32,
+        n: c_int,
+        out: *mut u8,
+    ) -> c_int;
+    pub fn crispembed_tps_auto_dewarp(
+        gray: *const u8,
+        w: c_int,
+        h: c_int,
+        model_path: *const c_char,
+        out: *mut u8,
+    ) -> c_int;
+
+    pub fn crispembed_cc_detect(
+        gray: *const u8,
+        w: c_int,
+        h: c_int,
+        out_n: *mut c_int,
+    ) -> *mut CrispembedOcrResult;
+
+    pub fn crispembed_find_skew(
+        gray: *const u8,
+        w: c_int,
+        h: c_int,
+        angle: *mut f32,
+        confidence: *mut f32,
+    ) -> c_int;
+
+    pub fn crispembed_adaptive_binarize(gray: *const u8, w: c_int, h: c_int, out: *mut u8);
+
+    pub fn crispembed_background_norm(gray: *const u8, w: c_int, h: c_int, out: *mut u8);
+
+    pub fn crispembed_despeckle(
+        gray: *const u8,
+        w: c_int,
+        h: c_int,
+        max_w: c_int,
+        max_h: c_int,
+        out: *mut u8,
+    );
+
+    // ── Table structure recognition ──
+    pub fn crispembed_table_parse_init(
+        ocr_model_path: *const c_char,
+        n_threads: c_int,
+    ) -> *mut c_void;
+    pub fn crispembed_table_parse_free(ctx: *mut c_void);
+    pub fn crispembed_table_parse_to_html(
+        ctx: *mut c_void,
+        gray: *const u8,
+        width: c_int,
+        height: c_int,
+    ) -> *mut c_char;
+    pub fn crispembed_table_parse_free_string(s: *mut c_char);
+    pub fn crispembed_table_parse_detect_grid(
+        gray: *const u8,
+        width: c_int,
+        height: c_int,
+        out_n_rows: *mut c_int,
+        out_n_cols: *mut c_int,
+    ) -> c_int;
+
+    // ── LiLT layout-aware token classification ──
+    pub fn crispembed_lilt_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_lilt_free(ctx: *mut c_void);
+    /// input_ids: [n_tokens]; bbox: [n_tokens*4] (x0,y0,x1,y1 in [0,1000]).
+    /// Returns an array (owned by ctx, valid until the next call / free).
+    pub fn crispembed_lilt_classify(
+        ctx: *mut c_void,
+        input_ids: *const i32,
+        bbox: *const i32,
+        n_tokens: c_int,
+        out_n: *mut c_int,
+    ) -> *const CrispembedLiltToken;
+
+    // ── High-level KIE pipeline (image → structured fields) ──
+    pub fn crispembed_kie_init(
+        ocr_det_model: *const c_char,
+        ocr_rec_model: *const c_char,
+        ner_model: *const c_char,
+        n_threads: c_int,
+    ) -> *mut c_void;
+    pub fn crispembed_kie_init_lilt(
+        ocr_det_model: *const c_char,
+        ocr_rec_model: *const c_char,
+        ner_model: *const c_char,
+        lilt_model: *const c_char,
+        n_threads: c_int,
+    ) -> *mut c_void;
+    pub fn crispembed_kie_extract(
+        ctx: *mut c_void,
+        image_path: *const c_char,
+        labels: *const *const c_char,
+        n_labels: c_int,
+        threshold: c_float,
+    ) -> CrispembedKieResult;
+    pub fn crispembed_kie_free(ctx: *mut c_void);
+
+    // ── HMER handwritten math OCR ──
+    pub fn crispembed_hmer_ocr_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_hmer_ocr_free(ctx: *mut c_void);
+    pub fn crispembed_hmer_ocr_recognize(
+        ctx: *mut c_void,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        channels: c_int,
+    ) -> *const c_char;
+    pub fn crispembed_hmer_ocr_recognize_gray(
+        ctx: *mut c_void,
+        gray: *const u8,
+        width: c_int,
+        height: c_int,
+    ) -> *const c_char;
+
+    // ── BTTR handwritten math OCR ──
+    pub fn crispembed_bttr_ocr_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_bttr_ocr_free(ctx: *mut c_void);
+    pub fn crispembed_bttr_ocr_recognize(
+        ctx: *mut c_void,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        channels: c_int,
+    ) -> *const c_char;
+    pub fn crispembed_bttr_ocr_recognize_gray(
+        ctx: *mut c_void,
+        gray: *const u8,
+        width: c_int,
+        height: c_int,
+    ) -> *const c_char;
+
+    // ── CLIP text encoder ──
+    pub fn crispembed_clip_text_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_clip_text_free(ctx: *mut c_void);
+    pub fn crispembed_clip_text_dim(ctx: *const c_void) -> c_int;
+    pub fn crispembed_clip_text_encode(
+        ctx: *mut c_void,
+        text: *const c_char,
+        out_n: *mut c_int,
+    ) -> *const c_float;
+
+    // ── Text detection (DBNet/Surya) ──
+    pub fn crispembed_text_det_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_text_det_free(ctx: *mut c_void);
+    pub fn crispembed_text_det(
+        ctx: *mut c_void,
+        pixels: *const u8,
+        width: c_int,
+        height: c_int,
+        channels: c_int,
+        text_threshold: c_float,
+        low_threshold: c_float,
+        out_n: *mut c_int,
+    ) -> *const CrispembedTextDetResult;
+    pub fn crispembed_text_det_heatmap(
+        ctx: *mut c_void,
+        out_h: *mut c_int,
+        out_w: *mut c_int,
+    ) -> *const c_float;
+
+    // ── Punctuation restoration ──
+    pub fn crispembed_punct_init(model_path: *const c_char, n_threads: c_int) -> *mut c_void;
+    pub fn crispembed_punct_free(ctx: *mut c_void);
+    pub fn crispembed_punct_process(ctx: *mut c_void, text: *const c_char) -> *const c_char;
+
+    // ── ColBERT scoring ──
+    pub fn crispembed_colbert_score(
+        query_vecs: *const c_float,
+        n_query: c_int,
+        doc_vecs: *const c_float,
+        n_doc: c_int,
+        dim: c_int,
+    ) -> c_float;
+    pub fn crispembed_colbert_score_batch(
+        query_vecs: *const c_float,
+        n_query: c_int,
+        doc_vecs_list: *const *const c_float,
+        doc_n_tokens: *const c_int,
+        n_docs: c_int,
+        dim: c_int,
+        out_scores: *mut c_float,
+    ) -> c_int;
+
+    // ── OCR pipeline detected language ──
+    pub fn crispembed_ocr_pipeline_detected_lang(
+        ctx: *mut c_void,
+        out_confidence: *mut c_float,
+    ) -> *const c_char;
+
+    // ── OCR pipeline per-region / per-character confidence (last run) ──
+    pub fn crispembed_ocr_pipeline_region_rec_confidence(
+        ctx: *mut c_void,
+        region_idx: c_int,
+    ) -> c_float;
+    pub fn crispembed_ocr_pipeline_region_char_conf(
+        ctx: *mut c_void,
+        region_idx: c_int,
+        out_len: *mut c_int,
+    ) -> *const c_float;
+
+    // ── LiLT accessors ──
+    pub fn crispembed_lilt_num_labels(ctx: *mut c_void) -> c_int;
+    pub fn crispembed_lilt_label_name(ctx: *mut c_void, label_id: c_int) -> *const c_char;
+}
+
+/// Text detection result (matches `crispembed_text_det_result` in C).
+#[repr(C)]
+pub struct CrispembedTextDetResult {
+    pub x0: c_float,
+    pub y0: c_float,
+    pub x1: c_float,
+    pub y1: c_float,
+    pub confidence: c_float,
+}
+
+/// `crispembed_kie_field` — one extracted field (label + value + box + score).
+#[repr(C)]
+pub struct CrispembedKieField {
+    pub label: *const c_char,
+    pub value: *const c_char,
+    pub score: c_float,
+    pub x: c_float,
+    pub y: c_float,
+    pub w: c_float,
+    pub h: c_float,
+}
+
+/// `crispembed_kie_result` — extracted fields + OCR metadata.
+#[repr(C)]
+pub struct CrispembedKieResult {
+    pub fields: *const CrispembedKieField,
+    pub n_fields: c_int,
+    pub ocr_text: *const c_char,
+    pub ocr_confidence: c_float,
+    pub n_ocr_regions: c_int,
+}
+
+/// `crispembed_lilt_token` — one classified token.
+#[repr(C)]
+pub struct CrispembedLiltToken {
+    pub token_id: c_int,
+    pub label_id: c_int,
+    pub label: *const c_char,
+    pub score: c_float,
+}
+
+// ---------------------------------------------------------------------------
+// OCR result renderers — lower-level ocr_render.h API.
+//
+// Multi-page + binary-safe (output_size) rendering: create → begin → add_page*
+// → end → output/output_size → free. The one-shot `crispembed_ocr_render`
+// above is text-only (NUL-terminated char*); this API is needed for searchable
+// PDF (binary) and single-document multi-page hOCR/ALTO. The renderer copies
+// page data on add_page, so the input arrays only need to live for that call.
+// ---------------------------------------------------------------------------
+
+/// `ocr_render_word` — a recognized word/region with a pixel box.
+#[repr(C)]
+pub struct OcrRenderWord {
+    pub text: *const c_char,
+    pub x: c_int,
+    pub y: c_int,
+    pub w: c_int,
+    pub h: c_int,
+    pub confidence: c_float,
+}
+
+/// `ocr_render_line` — a group of words on one baseline.
+#[repr(C)]
+pub struct OcrRenderLine {
+    pub words: *const OcrRenderWord,
+    pub n_words: c_int,
+    pub x: c_int,
+    pub y: c_int,
+    pub w: c_int,
+    pub h: c_int,
+}
+
+/// `ocr_render_page` — one page of lines + image dimensions.
+#[repr(C)]
+pub struct OcrRenderPage {
+    pub lines: *const OcrRenderLine,
+    pub n_lines: c_int,
+    pub page_width: c_int,
+    pub page_height: c_int,
+    pub image_path: *const c_char,
+}
+
+extern "C" {
+    /// format: 0=text, 1=hocr, 2=alto, 3=pdf (matches `ocr_render_format`).
+    pub fn ocr_render_create(format: c_int) -> *mut c_void;
+    pub fn ocr_render_set_separator(r: *mut c_void, sep: *const c_char);
+    /// Enable PDF/A-2b compliance (XMP metadata + sRGB OutputIntent). Must be
+    /// called before `ocr_render_begin`; only affects the PDF format.
+    pub fn ocr_render_set_pdfa(r: *mut c_void, enabled: c_int);
+    pub fn ocr_render_begin(r: *mut c_void);
+    pub fn ocr_render_add_page(r: *mut c_void, page: *const OcrRenderPage);
+    pub fn ocr_render_end(r: *mut c_void);
+    /// Rendered output. For PDF this is binary — use `ocr_render_output_size`.
+    pub fn ocr_render_output(r: *const c_void) -> *const c_char;
+    pub fn ocr_render_output_size(r: *const c_void) -> c_int;
+    pub fn ocr_render_free(r: *mut c_void);
+}

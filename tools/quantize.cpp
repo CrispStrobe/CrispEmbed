@@ -13,6 +13,7 @@
 #include "gguf.h"
 
 #include "../src/core/imatrix_alias.h"
+#include "../src/core/json.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -69,6 +70,7 @@ static bool tensor_name_matches(const std::string & pattern, const std::string &
 // importance[c] = sum_of_squares[c] / count. Passed to ggml_quantize_chunk,
 // which uses it to minimise activation-weighted error for k-quants / IQ-quants.
 static std::map<std::string, std::vector<float>> g_imatrix;
+static bool g_imatrix_requested = false;
 
 // BERT-family runtimes pre-merge the per-layer attn q/k/v weights into one F32
 // tensor at load time, so the imatrix collector records that matmul's input
@@ -94,6 +96,38 @@ using core_imatrix::qkv_merged_alias;
 enum class qkv_imatrix_mode { direct, merged, sum };
 
 static qkv_imatrix_mode g_qkv_mode = qkv_imatrix_mode::direct;
+
+// TeleOCR's converter stores a precision recipe. Re-quantization must replace
+// that recipe, since inheriting "f16" would mislabel a mixed Q4/Q8 output.
+// Record requested policies rather than promising every tensor has one type:
+// built-in guards, overrides and row-width fallbacks still apply. The final
+// type census below describes the tensors actually written.
+static std::string teleocr_quantization_recipe(ggml_type requested_type) {
+    const auto boolean = [](bool value) { return value ? "true" : "false"; };
+    const char * mode = g_qkv_mode == qkv_imatrix_mode::merged ? "merged"
+                        : g_qkv_mode == qkv_imatrix_mode::sum  ? "sum"
+                                                               : "direct";
+    std::string result = "{\"schema_version\":1,\"tool\":\"crispembed-quantize\",\"requested_type\":\"";
+    result += ggml_type_name(requested_type);
+    result += "\",\"decoder_f16\":";
+    result += boolean(g_decoder_f16);
+    result += ",\"decoder_attn_q8\":";
+    result += boolean(g_decoder_attn_q8);
+    result += ",\"ppocrv6_q8_head\":";
+    result += boolean(g_ppocrv6_q8_head);
+    result += ",\"imatrix_requested\":";
+    result += boolean(g_imatrix_requested);
+    result += ",\"imatrix_vectors_loaded\":" + std::to_string(g_imatrix.size());
+    result += ",\"imatrix_qkv_mode\":\"" + std::string(mode) + "\",\"tensor_overrides\":[";
+    for (size_t i = 0; i < g_tensor_types.size(); ++i) {
+        if (i) result += ',';
+        result += "{\"pattern\":\"" + core_json::json_escape(g_tensor_types[i].pattern) + "\",\"type\":\"";
+        result += ggml_type_name(g_tensor_types[i].type);
+        result += "\"}";
+    }
+    result += "],\"override_order\":\"last_match_wins\",\"built_in_guards\":true}";
+    return result;
+}
 
 static void init_qkv_imatrix_mode() {
     const char * e = std::getenv("CRISPEMBED_QUANT_IMATRIX_QKV");
@@ -226,6 +260,46 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
     const bool is_ppocrv6 = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "ppocrv6";
     const bool is_tesseract_lstm = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "tesseract_lstm";
     const bool is_internvl2 = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "internvl2";
+    const bool is_teleocr = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "teleocr";
+    if (is_teleocr) {
+        // ggml_ftype and the GGUF general.file_type enumeration differ for
+        // K/IQ quants (see ggml/docs/gguf.md). This tool uses one requested
+        // matrix type, so select the corresponding uniform/S GGUF variant;
+        // explicit exceptions are retained in the recipe and exact census.
+        uint32_t container_type = (uint32_t)ftype;
+        switch (qtype) {
+        case GGML_TYPE_Q4_K:
+            container_type = 14;
+            break;
+        case GGML_TYPE_Q5_K:
+            container_type = 16;
+            break;
+        case GGML_TYPE_Q6_K:
+            container_type = 18;
+            break;
+        case GGML_TYPE_IQ4_NL:
+            container_type = 25;
+            break;
+        case GGML_TYPE_IQ4_XS:
+            container_type = 30;
+            break;
+        default:
+            break; // F16, legacy quants, Q2_K and Q3_K already agree.
+        }
+        gguf_set_val_u32(ctx_out, "general.file_type", container_type);
+        const std::string recipe = teleocr_quantization_recipe(qtype);
+        gguf_set_val_str(ctx_out, "teleocr.precision_recipe", recipe.c_str());
+        gguf_set_val_u32(ctx_out, "teleocr.quantization.tensor_count", (uint32_t)n_tensors);
+        gguf_set_val_u32(ctx_out, "teleocr.quantization.converted_tensor_count", 0);
+        gguf_set_val_u32(ctx_out, "teleocr.quantization.copied_tensor_count", 0);
+        gguf_set_val_u32(ctx_out, "teleocr.quantization.imatrix_applied_count", 0);
+        // Fixed-size fields are reserved before writing the metadata
+        // placeholder, then populated from final tensor types. Array index is
+        // the ggml_type enum value, not a preferred/advertised precision.
+        const std::vector<uint32_t> counts(GGML_TYPE_COUNT, 0);
+        gguf_set_arr_data(ctx_out, "teleocr.quantization.tensor_type_counts", GGUF_TYPE_UINT32, counts.data(),
+                          counts.size());
+    }
     const bool ppocr_q8_late = is_ppocrv6 && ftype == GGML_FTYPE_MOSTLY_Q8_0 && g_ppocrv6_q8_head;
     // Sub-Q8 on an InternVL2-family decoder is checkpoint-dependent: WARN, do
     // not refuse. Measured on h2ovl-mississippi-2b (2560d, 32H/8KV, head_dim 80)
@@ -891,6 +965,16 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         total_orig += size;
     }
 
+    if (is_teleocr) {
+        std::vector<uint32_t> counts(GGML_TYPE_COUNT, 0);
+        for (int i = 0; i < n_tensors; ++i) ++counts[(size_t)gguf_get_tensor_type(ctx_out, i)];
+        gguf_set_val_u32(ctx_out, "teleocr.quantization.converted_tensor_count", (uint32_t)n_quantized);
+        gguf_set_val_u32(ctx_out, "teleocr.quantization.copied_tensor_count", (uint32_t)n_kept);
+        gguf_set_val_u32(ctx_out, "teleocr.quantization.imatrix_applied_count", (uint32_t)n_imatrix);
+        gguf_set_arr_data(ctx_out, "teleocr.quantization.tensor_type_counts", GGUF_TYPE_UINT32, counts.data(),
+                          counts.size());
+    }
+
     // Rewrite metadata header now that tensor types/offsets are final
     rewind(fout);
     gguf_get_meta_data(ctx_out, meta_data.data());
@@ -947,6 +1031,7 @@ int main(int argc, char ** argv) {
                 return 1;
             }
             imatrix_path = argv[++i];
+            g_imatrix_requested = true;
         } else
             pos.push_back(a);
     }

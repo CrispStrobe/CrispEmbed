@@ -1,0 +1,72 @@
+{
+  "pages": [
+    {
+      "width": 640,
+      "height": 220,
+      "mode": "detection",
+      "layout_raw": "<box:048 152 430 300><label:title><up>\n<box:048 387 317 533><label:title><up>\n<box:048 618 472 760><label:title><up>",
+      "blocks": [
+        {
+          "type": "title",
+          "bbox": [
+            0.048,
+            0.152,
+            0.43,
+            0.3
+          ],
+          "polygon": null,
+          "angle": 0,
+          "raw": "Hello TeleOCR",
+          "content": "Hello TeleOCR",
+          "lang": null,
+          "generated_tokens": 4,
+          "token_cap_reached": false,
+          "confidence": 0.9965962767601013
+        },
+        {
+          "type": "title",
+          "bbox": [
+            0.048,
+            0.387,
+            0.317,
+            0.533
+          ],
+          "polygon": null,
+          "angle": 0,
+          "raw": "Invoice 42",
+          "content": "Invoice 42",
+          "lang": null,
+          "generated_tokens": 5,
+          "token_cap_reached": false,
+          "confidence": 0.9990274310112
+        },
+        {
+          "type": "title",
+          "bbox": [
+            0.048,
+            0.618,
+            0.472,
+            0.76
+          ],
+          "polygon": null,
+          "angle": 0,
+          "raw": "Total: EUR 19.50",
+          "content": "Total: EUR 19.50",
+          "lang": null,
+          "generated_tokens": 10,
+          "token_cap_reached": false,
+          "confidence": 0.9991251826286316
+        }
+      ],
+      "markdown": "# Hello TeleOCR\n\n# Invoice 42\n\n# Total: EUR 19.50",
+      "warnings": [],
+      "stats": {
+        "layout_ms": 150702.4438610024,
+        "extract_ms": 12095.052248001593,
+        "generated_tokens": 92,
+        "layout_token_cap_reached": false
+      },
+      "page": 1
+    }
+  ]
+}

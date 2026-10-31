@@ -1,0 +1,441 @@
+{
+  "kind": "teleocr-native-loader-metadata-validation",
+  "model_weights_used": false,
+  "model_parity_claimed": false,
+  "library_sha256": "6457d00ee2b15c927ca57a4e65fc92934ce5a0f4c7331b297a52800fa04b0031",
+  "checks": [
+    {
+      "name": "typed-array-control",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: unsupported or inconsistent model metadata",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/typed-array-control.gguf\nTeleOCR: unsupported or inconsistent model metadata\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "b24092bc369486e4f237222f945121d4b032013b792fc869538cb5bc03ae519e"
+    },
+    {
+      "name": "gate-unset",
+      "gate": null,
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR requires CRISPEMBED_TELEOCR=1 and a CrispEmbed TeleOCR GGUF v1",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/gate-unset.gguf\nTeleOCR requires CRISPEMBED_TELEOCR=1 and a CrispEmbed TeleOCR GGUF v1; convert the checkpoint with convert-teleocr-to-gguf.py.\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "b24092bc369486e4f237222f945121d4b032013b792fc869538cb5bc03ae519e"
+    },
+    {
+      "name": "gate-empty",
+      "gate": "",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR requires CRISPEMBED_TELEOCR=1 and a CrispEmbed TeleOCR GGUF v1",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/gate-empty.gguf\nTeleOCR requires CRISPEMBED_TELEOCR=1 and a CrispEmbed TeleOCR GGUF v1; convert the checkpoint with convert-teleocr-to-gguf.py.\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "b24092bc369486e4f237222f945121d4b032013b792fc869538cb5bc03ae519e"
+    },
+    {
+      "name": "gate-zero",
+      "gate": "0",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR requires CRISPEMBED_TELEOCR=1 and a CrispEmbed TeleOCR GGUF v1",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/gate-zero.gguf\nTeleOCR requires CRISPEMBED_TELEOCR=1 and a CrispEmbed TeleOCR GGUF v1; convert the checkpoint with convert-teleocr-to-gguf.py.\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "b24092bc369486e4f237222f945121d4b032013b792fc869538cb5bc03ae519e"
+    },
+    {
+      "name": "gate-nonempty-false-is-on",
+      "gate": "false",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: unsupported or inconsistent model metadata",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/gate-nonempty-false-is-on.gguf\nTeleOCR: unsupported or inconsistent model metadata\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "b24092bc369486e4f237222f945121d4b032013b792fc869538cb5bc03ae519e"
+    },
+    {
+      "name": "missing-format-version",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR requires CRISPEMBED_TELEOCR=1 and a CrispEmbed TeleOCR GGUF v1",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/missing-format-version.gguf\nTeleOCR requires CRISPEMBED_TELEOCR=1 and a CrispEmbed TeleOCR GGUF v1; convert the checkpoint with convert-teleocr-to-gguf.py.\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "5d79cb16f5b4e21dfd2f6399c3e80107f5e93b19355f1d3854f23b983f491a88"
+    },
+    {
+      "name": "unsupported-format-version",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR requires CRISPEMBED_TELEOCR=1 and a CrispEmbed TeleOCR GGUF v1",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/unsupported-format-version.gguf\nTeleOCR requires CRISPEMBED_TELEOCR=1 and a CrispEmbed TeleOCR GGUF v1; convert the checkpoint with convert-teleocr-to-gguf.py.\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "286b7c836ce990a7de3163a924b3da898199e1752ef4b0e773f9eb8104235521"
+    },
+    {
+      "name": "wrong-format-version-type",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR requires CRISPEMBED_TELEOCR=1 and a CrispEmbed TeleOCR GGUF v1",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/wrong-format-version-type.gguf\nTeleOCR requires CRISPEMBED_TELEOCR=1 and a CrispEmbed TeleOCR GGUF v1; convert the checkpoint with convert-teleocr-to-gguf.py.\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "b301ff13ff9b56eb357bc37a4ea3e59c2a1e8f7e95c53d5478219b7a6af58d36"
+    },
+    {
+      "name": "qwen2vl.vision.fullatt_block_indexes-missing",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/qwen2vl.vision.fullatt_block_indexes-missing.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "08cdea2d0cca8717ad00a93a18bc3e19462aac4f75381569f295e4b863ea699d"
+    },
+    {
+      "name": "qwen2vl.vision.fullatt_block_indexes-scalar",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/qwen2vl.vision.fullatt_block_indexes-scalar.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "0c2e901f42cbcbec8045f88e4551798916d20f315b941704c5fea2100f07c257"
+    },
+    {
+      "name": "qwen2vl.vision.fullatt_block_indexes-wrong-count",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/qwen2vl.vision.fullatt_block_indexes-wrong-count.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "cff480fa4781e7d85cd80ed9a5bdcf1d802093869e198b6fcd9b606f4c4bf28c"
+    },
+    {
+      "name": "qwen2vl.vision.fullatt_block_indexes-wrong-element-type",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/qwen2vl.vision.fullatt_block_indexes-wrong-element-type.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "f6dfe50afc596daf693076bc5a8ca9b519d603f7b0b32d779797354fcf4a1b3d"
+    },
+    {
+      "name": "qwen2vl.vision.image_mean-missing",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/qwen2vl.vision.image_mean-missing.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "0c65599dcb01234e964175fd453b4af92787019b6e1e0f9acdb19e2ad36eda44"
+    },
+    {
+      "name": "qwen2vl.vision.image_mean-scalar",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/qwen2vl.vision.image_mean-scalar.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "eee6631113da91c165b3dd3097c1e99d6cd978f51b4d18320408ca7170d82773"
+    },
+    {
+      "name": "qwen2vl.vision.image_mean-wrong-count",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/qwen2vl.vision.image_mean-wrong-count.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "e8bc23488b8d062f845e42a8600f712573c38d068b408ff8898cdb05f31c910c"
+    },
+    {
+      "name": "qwen2vl.vision.image_mean-wrong-element-type",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/qwen2vl.vision.image_mean-wrong-element-type.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "faa52415421ea087521116ba7bbc5c997d849bfd21ad5ec969bfe67a0902bca1"
+    },
+    {
+      "name": "qwen2vl.vision.image_std-missing",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/qwen2vl.vision.image_std-missing.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "9be52848e934bc9df69502161cc0876f8be2b646f4af38d88827e79dd3246872"
+    },
+    {
+      "name": "qwen2vl.vision.image_std-scalar",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/qwen2vl.vision.image_std-scalar.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "73ba758beb718019d731582c9d9b773653303c3d606c54db8702749a6ff82979"
+    },
+    {
+      "name": "qwen2vl.vision.image_std-wrong-count",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/qwen2vl.vision.image_std-wrong-count.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "10c148db473c66a33d8be8cc8b2ec5b421a08bf8823c271ff881a32fef1625a7"
+    },
+    {
+      "name": "qwen2vl.vision.image_std-wrong-element-type",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/qwen2vl.vision.image_std-wrong-element-type.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "58797fbf7763e6a5eb11fb3bf089720e9da6357c1b832b58023922cf556447cc"
+    },
+    {
+      "name": "qwen2vl.rope_sections-missing",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/qwen2vl.rope_sections-missing.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "e50cdbde591c5819f0f7783667849f2f80ed07f37ecfccb704b99fe08a939a6e"
+    },
+    {
+      "name": "qwen2vl.rope_sections-scalar",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/qwen2vl.rope_sections-scalar.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "0b1aa94e34c219310eae49000e5842f3cc1cc2c6260654b1c4e76d531f38aca0"
+    },
+    {
+      "name": "qwen2vl.rope_sections-wrong-count",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/qwen2vl.rope_sections-wrong-count.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "7a3781af6bf5fa031b2204cba1b50ff9b5532ab64b7c53fb23821ad4dcd916bd"
+    },
+    {
+      "name": "qwen2vl.rope_sections-wrong-element-type",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/qwen2vl.rope_sections-wrong-element-type.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "03f6cf5130fe7647387ace0df2c895c9fbb01887e0cca4865e1dfdec350d6a3b"
+    },
+    {
+      "name": "wrong-optional-norm-epsilon-type",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/wrong-optional-norm-epsilon-type.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "c661e2738da8a60b6fa2037f35d601c2eac788488c4ee483b3c374f25d3033bf"
+    },
+    {
+      "name": "conflicting-qwen3vl-prefix",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/conflicting-qwen3vl-prefix.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "42096ece9f445b68133b47be5f88dfcd7f48e417506d2596f9ffec15dbfae403"
+    },
+    {
+      "name": "v-blk-0-norm1-weight-f32-control",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: unsupported or inconsistent model metadata",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/v-blk-0-norm1-weight-f32-control.gguf\nTeleOCR: unsupported or inconsistent model metadata\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "9e484a73206a7041b7fce8c0ee528ca8e5db98069a2e2a6f46d034f0bdac3b29"
+    },
+    {
+      "name": "v-blk-0-norm1-weight-F16-rejected",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: incompatible tensor type or rank",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/v-blk-0-norm1-weight-F16-rejected.gguf\nTeleOCR: incompatible tensor type or rank: v.blk.0.norm1.weight (f16)\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "ee1d0f87319ff7b2bbf8ee8f9b90dd52aa8e2faeab39803ebacb2fe254d9759f"
+    },
+    {
+      "name": "v-blk-0-norm1-weight-Q8_0-rejected",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: incompatible tensor type or rank",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/v-blk-0-norm1-weight-Q8_0-rejected.gguf\nTeleOCR: incompatible tensor type or rank: v.blk.0.norm1.weight (q8_0)\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "cd6f3c4b06b736b47e2d80888a9557229bdd40b5a5338301261f73f1dd00bd5d"
+    },
+    {
+      "name": "l-blk-0-attn_q_norm-weight-f32-control",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: unsupported or inconsistent model metadata",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/l-blk-0-attn_q_norm-weight-f32-control.gguf\nTeleOCR: unsupported or inconsistent model metadata\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "d5bfe0661db89ccc0a562c98f0a1923bfd46542f955636d4e1ea699cae63fba4"
+    },
+    {
+      "name": "l-blk-0-attn_q_norm-weight-F16-rejected",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: incompatible tensor type or rank",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/l-blk-0-attn_q_norm-weight-F16-rejected.gguf\nTeleOCR: incompatible tensor type or rank: l.blk.0.attn_q_norm.weight (f16)\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "e6f420c7de96ae22c75b3f01bcdd73c1eb4867df4e25219adf9b83b3436986d3"
+    },
+    {
+      "name": "l-blk-0-attn_q_norm-weight-Q8_0-rejected",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: incompatible tensor type or rank",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/l-blk-0-attn_q_norm-weight-Q8_0-rejected.gguf\nTeleOCR: incompatible tensor type or rank: l.blk.0.attn_q_norm.weight (q8_0)\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "8d652232a2e66a6243a885c2b873b905abdc68ed9d86ef46b711ef7dcd18b799"
+    },
+    {
+      "name": "v-blk-0-attn_qkv-bias-f32-control",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: unsupported or inconsistent model metadata",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/v-blk-0-attn_qkv-bias-f32-control.gguf\nTeleOCR: unsupported or inconsistent model metadata\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "33800c1135eedc75b2c670fb9383c1aa646055328cf629f3f6a2ddc4bc0f7c79"
+    },
+    {
+      "name": "v-blk-0-attn_qkv-bias-F16-rejected",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: incompatible tensor type or rank",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/v-blk-0-attn_qkv-bias-F16-rejected.gguf\nTeleOCR: incompatible tensor type or rank: v.blk.0.attn_qkv.bias (f16)\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "b409b50c9df210037e6623e7d8ba02b93126bcc5b4aa8cb9309e4e8a7b41d9ab"
+    },
+    {
+      "name": "v-blk-0-attn_qkv-bias-Q8_0-rejected",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: incompatible tensor type or rank",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/v-blk-0-attn_qkv-bias-Q8_0-rejected.gguf\nTeleOCR: incompatible tensor type or rank: v.blk.0.attn_qkv.bias (q8_0)\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "f6358463722d301c8a29d826b345a6131f5fed0208d95a26b150a68906ce562a"
+    },
+    {
+      "name": "matrix-F32-control",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: unsupported or inconsistent model metadata",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/matrix-F32-control.gguf\nTeleOCR: unsupported or inconsistent model metadata\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "a12bc58676316099d97c29621ebcf89e408d973929c45c9f4847858638a9cb94"
+    },
+    {
+      "name": "matrix-F16-control",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: unsupported or inconsistent model metadata",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/matrix-F16-control.gguf\nTeleOCR: unsupported or inconsistent model metadata\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "a1b175c8131dfcbf9cb630bfd63c95a551c66b8d4ec1bd2b448844cf98db4a24"
+    },
+    {
+      "name": "matrix-BF16-control",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: unsupported or inconsistent model metadata",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/matrix-BF16-control.gguf\nTeleOCR: unsupported or inconsistent model metadata\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "ff0f432a8a9bcee1daaf09756805a2a043273abee472e42c6d9956b528a4e96b"
+    },
+    {
+      "name": "matrix-Q8_0-control",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: unsupported or inconsistent model metadata",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/matrix-Q8_0-control.gguf\nTeleOCR: unsupported or inconsistent model metadata\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "5fd8be6da9bf96f5e5dce992d77cc037683028aec11c844ea3d646455fd01bcc"
+    },
+    {
+      "name": "matrix-Q4_K-control",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: unsupported or inconsistent model metadata",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/matrix-Q4_K-control.gguf\nTeleOCR: unsupported or inconsistent model metadata\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "bda46556b21bcecf19f65382b99bcccaca2e63ab97d5ed47368f857542823607"
+    },
+    {
+      "name": "matrix-I32-rejected",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: incompatible tensor type or rank",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/matrix-I32-rejected.gguf\nTeleOCR: incompatible tensor type or rank: l.blk.0.attn_q.weight (i32)\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "36d2c173a72f00ff0ec77e541c25e88c84fb4f02d2ccbc39bbd7994ba00b8410"
+    },
+    {
+      "name": "matrix-F64-rejected",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: incompatible tensor type or rank",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/matrix-F64-rejected.gguf\nTeleOCR: incompatible tensor type or rank: l.blk.0.attn_q.weight (f64)\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "bd72125293136a966c86156bb987699cd9562a744f57e20760cb71dca92d87a9"
+    },
+    {
+      "name": "unflattened-patch-rank-rejected",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: incompatible tensor type or rank",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-mulva3jz/unflattened-patch-rank-rejected.gguf\nTeleOCR: incompatible tensor type or rank: v.patch_embed.weight (f32)\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "dae5d51b60594c5f6fb6d26df1965a55c7f0beb2cdf3810e823efa767bbd7352"
+    }
+  ],
+  "passed": true,
+  "passed_count": 43,
+  "total_count": 43
+}

@@ -1,0 +1,364 @@
+{
+  "kind": "teleocr-f32-paired-activation-advisory",
+  "run": "native-f32/text.json",
+  "changes_acceptance_thresholds": false,
+  "strict_numerical_pass_unchanged": false,
+  "decoded_pass_unchanged": true,
+  "interpretation": "These are measured paired errors, not a waiver of the fixed 0.002 absolute gate. ULP distance at near-zero values is not used as an acceptance criterion.",
+  "stages": [
+    {
+      "stage": "vis_layer_16",
+      "shape": [
+        952,
+        1280
+      ],
+      "strict_stage_pass_unchanged": true,
+      "maximum_absolute_error": 0.00026702880859375,
+      "worst_coordinate": [
+        926,
+        849
+      ],
+      "reference_at_worst": -64.7177963256836,
+      "native_at_worst": -64.71806335449219,
+      "relative_error_at_worst": 4.126049151147908e-06,
+      "ulp_distance_at_worst": 35,
+      "float32_spacing_at_worst_reference": 7.62939453125e-06,
+      "rms_error": 1.2424057195115908e-06,
+      "reference_rms": 1.610416087090479,
+      "rms_error_over_reference_rms": 7.714811901539258e-07,
+      "reference_absmax": 184.7184295654297,
+      "elements_over_absolute_gate": 0,
+      "rows_over_absolute_gate": 0,
+      "source_abs_range_for_violations": null,
+      "native_stage_sha256": "319e720b04facbfb3108b0cc25d1c74c874b3e3dbee9aeca9709275ee0e90cc3",
+      "largest_five_absolute_differences": [
+        {
+          "coordinate": [
+            926,
+            849
+          ],
+          "reference": -64.7177963256836,
+          "native": -64.71806335449219,
+          "absolute_error": 0.00026702880859375,
+          "relative_error": 4.126049151147908e-06,
+          "ulp_distance": 35
+        },
+        {
+          "coordinate": [
+            280,
+            849
+          ],
+          "reference": -138.54098510742188,
+          "native": -138.54119873046875,
+          "absolute_error": 0.000213623046875,
+          "relative_error": 1.541948375127844e-06,
+          "ulp_distance": 14
+        },
+        {
+          "coordinate": [
+            409,
+            849
+          ],
+          "reference": -173.3046112060547,
+          "native": -173.30477905273438,
+          "absolute_error": 0.0001678466796875,
+          "relative_error": 9.68506714965216e-07,
+          "ulp_distance": 11
+        },
+        {
+          "coordinate": [
+            913,
+            849
+          ],
+          "reference": -66.09028625488281,
+          "native": -66.09017181396484,
+          "absolute_error": 0.00011444091796875,
+          "relative_error": 1.7315845406902742e-06,
+          "ulp_distance": 15
+        },
+        {
+          "coordinate": [
+            945,
+            849
+          ],
+          "reference": -38.445457458496094,
+          "native": -38.44535827636719,
+          "absolute_error": 9.918212890625e-05,
+          "relative_error": 2.579813987473614e-06,
+          "ulp_distance": 26
+        }
+      ]
+    },
+    {
+      "stage": "vis_layer_17",
+      "shape": [
+        952,
+        1280
+      ],
+      "strict_stage_pass_unchanged": false,
+      "maximum_absolute_error": 0.08673095703125,
+      "worst_coordinate": [
+        913,
+        849
+      ],
+      "reference_at_worst": -926.9636840820312,
+      "native_at_worst": -926.876953125,
+      "relative_error_at_worst": 9.356456840824282e-05,
+      "ulp_distance_at_worst": 1421,
+      "float32_spacing_at_worst_reference": 6.103515625e-05,
+      "rms_error": 9.693462343785583e-05,
+      "reference_rms": 19.95230519431544,
+      "rms_error_over_reference_rms": 4.858316996147053e-06,
+      "reference_absmax": 7049.47802734375,
+      "elements_over_absolute_gate": 11,
+      "rows_over_absolute_gate": 7,
+      "source_abs_range_for_violations": [
+        227.3900146484375,
+        5876.28076171875
+      ],
+      "native_stage_sha256": "780880d902f92f89694e7fff62323497edebb4a9624268ca302160e3c4876184",
+      "largest_five_absolute_differences": [
+        {
+          "coordinate": [
+            913,
+            849
+          ],
+          "reference": -926.9636840820312,
+          "native": -926.876953125,
+          "absolute_error": 0.08673095703125,
+          "relative_error": 9.356456840824282e-05,
+          "ulp_distance": 1421
+        },
+        {
+          "coordinate": [
+            926,
+            849
+          ],
+          "reference": -2857.783203125,
+          "native": -2857.836669921875,
+          "absolute_error": 0.053466796875,
+          "relative_error": 1.8709185783069128e-05,
+          "ulp_distance": 219
+        },
+        {
+          "coordinate": [
+            913,
+            1109
+          ],
+          "reference": 227.3900146484375,
+          "native": 227.3668670654297,
+          "absolute_error": 0.0231475830078125,
+          "relative_error": 0.00010179683150819287,
+          "ulp_distance": 1517
+        },
+        {
+          "coordinate": [
+            926,
+            1109
+          ],
+          "reference": 745.0811157226562,
+          "native": 745.095458984375,
+          "absolute_error": 0.01434326171875,
+          "relative_error": 1.925060428466024e-05,
+          "ulp_distance": 235
+        },
+        {
+          "coordinate": [
+            280,
+            849
+          ],
+          "reference": -5876.28076171875,
+          "native": -5876.29296875,
+          "absolute_error": 0.01220703125,
+          "relative_error": 2.0773396889956584e-06,
+          "ulp_distance": 25
+        }
+      ]
+    },
+    {
+      "stage": "llm_layer_1",
+      "shape": [
+        268,
+        1024
+      ],
+      "strict_stage_pass_unchanged": true,
+      "maximum_absolute_error": 0.0009765625,
+      "worst_coordinate": [
+        158,
+        35
+      ],
+      "reference_at_worst": 364.2160949707031,
+      "native_at_worst": 364.2170715332031,
+      "relative_error_at_worst": 2.6812722268041255e-06,
+      "ulp_distance_at_worst": 32,
+      "float32_spacing_at_worst_reference": 3.0517578125e-05,
+      "rms_error": 1.2964731885079044e-05,
+      "reference_rms": 20.65732659609143,
+      "rms_error_over_reference_rms": 6.27609377465722e-07,
+      "reference_absmax": 771.552734375,
+      "elements_over_absolute_gate": 0,
+      "rows_over_absolute_gate": 0,
+      "source_abs_range_for_violations": null,
+      "native_stage_sha256": "ae386d89ff6cfa4bcdb87a1707168a7fd9be8140a08f5f210922f2cfa853da54",
+      "largest_five_absolute_differences": [
+        {
+          "coordinate": [
+            158,
+            35
+          ],
+          "reference": 364.2160949707031,
+          "native": 364.2170715332031,
+          "absolute_error": 0.0009765625,
+          "relative_error": 2.6812722268041255e-06,
+          "ulp_distance": 32
+        },
+        {
+          "coordinate": [
+            50,
+            35
+          ],
+          "reference": 562.1609497070312,
+          "native": 562.16162109375,
+          "absolute_error": 0.00067138671875,
+          "relative_error": 1.1942962582155368e-06,
+          "ulp_distance": 11
+        },
+        {
+          "coordinate": [
+            247,
+            35
+          ],
+          "reference": 280.2906799316406,
+          "native": 280.2912902832031,
+          "absolute_error": 0.0006103515625,
+          "relative_error": 2.1775663844722096e-06,
+          "ulp_distance": 20
+        },
+        {
+          "coordinate": [
+            44,
+            35
+          ],
+          "reference": 645.5639038085938,
+          "native": 645.564453125,
+          "absolute_error": 0.00054931640625,
+          "relative_error": 8.509094188959941e-07,
+          "ulp_distance": 9
+        },
+        {
+          "coordinate": [
+            218,
+            35
+          ],
+          "reference": 628.7810668945312,
+          "native": 628.7806396484375,
+          "absolute_error": 0.00042724609375,
+          "relative_error": 6.794830764547562e-07,
+          "ulp_distance": 7
+        }
+      ]
+    },
+    {
+      "stage": "llm_layer_2",
+      "shape": [
+        268,
+        1024
+      ],
+      "strict_stage_pass_unchanged": false,
+      "maximum_absolute_error": 0.03125,
+      "worst_coordinate": [
+        1,
+        35
+      ],
+      "reference_at_worst": 39418.69921875,
+      "native_at_worst": 39418.66796875,
+      "relative_error_at_worst": 7.927709594520446e-07,
+      "ulp_distance_at_worst": 8,
+      "float32_spacing_at_worst_reference": 0.00390625,
+      "rms_error": 0.00010039943915406846,
+      "reference_rms": 211.25938837584718,
+      "rms_error_over_reference_rms": 4.7524249656280317e-07,
+      "reference_absmax": 41430.4140625,
+      "elements_over_absolute_gate": 8,
+      "rows_over_absolute_gate": 8,
+      "source_abs_range_for_violations": [
+        22053.283203125,
+        41430.4140625
+      ],
+      "native_stage_sha256": "cd8e715f1456366e59ef15f3681d6d3e1160848172f5948fcddda79e6322580d",
+      "largest_five_absolute_differences": [
+        {
+          "coordinate": [
+            1,
+            35
+          ],
+          "reference": 39418.69921875,
+          "native": 39418.66796875,
+          "absolute_error": 0.03125,
+          "relative_error": 7.927709594520446e-07,
+          "ulp_distance": 8
+        },
+        {
+          "coordinate": [
+            12,
+            35
+          ],
+          "reference": 41430.4140625,
+          "native": 41430.44140625,
+          "absolute_error": 0.02734375,
+          "relative_error": 6.599921970065394e-07,
+          "ulp_distance": 7
+        },
+        {
+          "coordinate": [
+            7,
+            35
+          ],
+          "reference": 39924.7890625,
+          "native": 39924.765625,
+          "absolute_error": 0.0234375,
+          "relative_error": 5.870412981596451e-07,
+          "ulp_distance": 6
+        },
+        {
+          "coordinate": [
+            8,
+            35
+          ],
+          "reference": 39531.37890625,
+          "native": 39531.39453125,
+          "absolute_error": 0.015625,
+          "relative_error": 3.952556281189992e-07,
+          "ulp_distance": 4
+        },
+        {
+          "coordinate": [
+            6,
+            35
+          ],
+          "reference": 40554.3671875,
+          "native": 40554.375,
+          "absolute_error": 0.0078125,
+          "relative_error": 1.926426311592906e-07,
+          "ulp_distance": 2
+        }
+      ]
+    }
+  ],
+  "independent_propagation_crosscheck": {
+    "stage": "vis_layer_17",
+    "coordinate": [
+      913,
+      849
+    ],
+    "frozen_reference": -926.9636840820312,
+    "native_pipeline": -926.876953125,
+    "original_module_on_frozen_input": -926.9638061523438,
+    "original_module_on_native_previous_layer": -926.8772583007812,
+    "pipeline_error": 0.08673095703125,
+    "original_module_reproduced_error": 0.08642578125,
+    "fraction_reproduced": 0.9964813511611541,
+    "remaining_native_vs_original_module_same_previous_input": 0.00030517578125,
+    "interpretation": "The original licensed block amplifies the native previous-layer difference and reproduces 99.65% of this worst-coordinate gap. This supports propagated floating-point sensitivity; strict numerical acceptance still fails."
+  }
+}

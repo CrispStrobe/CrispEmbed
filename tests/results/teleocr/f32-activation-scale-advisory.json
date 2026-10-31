@@ -1,0 +1,170 @@
+{
+  "kind": "teleocr-f32-activation-scale-advisory",
+  "run": "native-f32-pillow-fix/text.json",
+  "changes_acceptance_thresholds": false,
+  "strict_numerical_pass_unchanged": false,
+  "decoded_pass_unchanged": true,
+  "caveat": "Source maximum spacing is scale context only, not paired ULP error at the worst-difference coordinate.",
+  "stages": [
+    {
+      "stage": "vis_layer_16",
+      "reference_shape": [
+        952,
+        1280
+      ],
+      "reference_absmax": 184.7184295654297,
+      "reference_rms": 1.610416087090479,
+      "float32_spacing_at_absmax": 1.52587890625e-05,
+      "reference_fraction_abs_gt_1000": 0.0,
+      "native_max_abs_error": 0.000267028808594,
+      "native_rms_error": 1.24240571951e-06,
+      "rms_error_over_reference_rms": 7.714811901529379e-07,
+      "max_error_over_reference_absmax": 1.4455991707065423e-06,
+      "strict_pass_unchanged": true
+    },
+    {
+      "stage": "vis_layer_17",
+      "reference_shape": [
+        952,
+        1280
+      ],
+      "reference_absmax": 7049.47802734375,
+      "reference_rms": 19.95230519431544,
+      "float32_spacing_at_absmax": 0.00048828125,
+      "reference_fraction_abs_gt_1000": 2.7081144957983192e-05,
+      "native_max_abs_error": 0.0867309570312,
+      "native_rms_error": 9.69346234379e-05,
+      "rms_error_over_reference_rms": 4.858316996149267e-06,
+      "max_error_over_reference_absmax": 1.2303174319401391e-05,
+      "strict_pass_unchanged": false
+    },
+    {
+      "stage": "vis_layer_31",
+      "reference_shape": [
+        952,
+        1280
+      ],
+      "reference_absmax": 7715.27587890625,
+      "reference_rms": 50.99844551099883,
+      "float32_spacing_at_absmax": 0.00048828125,
+      "reference_fraction_abs_gt_1000": 0.000294610031512605,
+      "native_max_abs_error": 0.073974609375,
+      "native_rms_error": 0.000117845077676,
+      "rms_error_over_reference_rms": 2.3107582298873085e-06,
+      "max_error_over_reference_absmax": 9.588070541618396e-06,
+      "strict_pass_unchanged": false
+    },
+    {
+      "stage": "vis_pre_merger",
+      "reference_shape": [
+        952,
+        1280
+      ],
+      "reference_absmax": 11.649101257324219,
+      "reference_rms": 0.41228884630852763,
+      "float32_spacing_at_absmax": 9.5367431640625e-07,
+      "reference_fraction_abs_gt_1000": 0.0,
+      "native_max_abs_error": 0.000170230865479,
+      "native_rms_error": 4.46303759948e-07,
+      "rms_error_over_reference_rms": 1.082502628785689e-06,
+      "max_error_over_reference_absmax": 1.4613218798486242e-05,
+      "strict_pass_unchanged": true
+    },
+    {
+      "stage": "merger_output",
+      "reference_shape": [
+        238,
+        1024
+      ],
+      "reference_absmax": 688.508544921875,
+      "reference_rms": 19.726793057431056,
+      "float32_spacing_at_absmax": 6.103515625e-05,
+      "reference_fraction_abs_gt_1000": 0.0,
+      "native_max_abs_error": 0.000640869140625,
+      "native_rms_error": 1.32046726909e-05,
+      "rms_error_over_reference_rms": 6.693775644351791e-07,
+      "max_error_over_reference_absmax": 9.308078241755436e-07,
+      "strict_pass_unchanged": true
+    },
+    {
+      "stage": "llm_layer_1",
+      "reference_shape": [
+        268,
+        1024
+      ],
+      "reference_absmax": 771.552734375,
+      "reference_rms": 20.65732659609143,
+      "float32_spacing_at_absmax": 6.103515625e-05,
+      "reference_fraction_abs_gt_1000": 0.0,
+      "native_max_abs_error": 0.0009765625,
+      "native_rms_error": 1.29647318851e-05,
+      "rms_error_over_reference_rms": 6.276093774667364e-07,
+      "max_error_over_reference_absmax": 1.2657106332350298e-06,
+      "strict_pass_unchanged": true
+    },
+    {
+      "stage": "llm_layer_2",
+      "reference_shape": [
+        268,
+        1024
+      ],
+      "reference_absmax": 41430.4140625,
+      "reference_rms": 211.25938837584718,
+      "float32_spacing_at_absmax": 0.00390625,
+      "reference_fraction_abs_gt_1000": 3.279500932835821e-05,
+      "native_max_abs_error": 0.03125,
+      "native_rms_error": 0.000100399439154,
+      "rms_error_over_reference_rms": 4.752424965624792e-07,
+      "max_error_over_reference_absmax": 7.542767965789022e-07,
+      "strict_pass_unchanged": false
+    },
+    {
+      "stage": "llm_layer_27",
+      "reference_shape": [
+        268,
+        1024
+      ],
+      "reference_absmax": 41811.59765625,
+      "reference_rms": 214.18184227004812,
+      "float32_spacing_at_absmax": 0.00390625,
+      "reference_fraction_abs_gt_1000": 5.830223880597015e-05,
+      "native_max_abs_error": 0.03125,
+      "native_rms_error": 0.00011254745971,
+      "rms_error_over_reference_rms": 5.254761959143863e-07,
+      "max_error_over_reference_absmax": 7.474002848903036e-07,
+      "strict_pass_unchanged": false
+    },
+    {
+      "stage": "llm_final_norm",
+      "reference_shape": [
+        268,
+        1024
+      ],
+      "reference_absmax": 56.60054397583008,
+      "reference_rms": 2.9426326133643848,
+      "float32_spacing_at_absmax": 3.814697265625e-06,
+      "reference_fraction_abs_gt_1000": 0.0,
+      "native_max_abs_error": 0.000491619110107,
+      "native_rms_error": 6.17073112956e-06,
+      "rms_error_over_reference_rms": 2.0970103782357155e-06,
+      "max_error_over_reference_absmax": 8.685766524027302e-06,
+      "strict_pass_unchanged": true
+    },
+    {
+      "stage": "logits_step0",
+      "reference_shape": [
+        1,
+        151936
+      ],
+      "reference_absmax": 21.681903839111328,
+      "reference_rms": 2.599833976736431,
+      "float32_spacing_at_absmax": 1.9073486328125e-06,
+      "reference_fraction_abs_gt_1000": 0.0,
+      "native_max_abs_error": 1.21593475342e-05,
+      "native_rms_error": 2.23764797137e-06,
+      "rms_error_over_reference_rms": 8.606887945125317e-07,
+      "max_error_over_reference_absmax": 5.608062661114713e-07,
+      "strict_pass_unchanged": true
+    }
+  ]
+}
