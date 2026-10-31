@@ -1,0 +1,115 @@
+name: OCR GGUF publication (owner-approved protocols only)
+# Converts and quantizes one experimental OCR model at the revision pinned in its publication
+# protocol (docs/mineru25-pro-publication-v1.json, docs/teleocr-publication-v1.json), only for
+# variants whose committed receipts are token-ID exact on every case, and uploads to the
+# protocol's allowlisted destination with the verbatim Apache-2.0 LICENSE, the upstream card,
+# a statement of changes and a manifest. tools/ci-heavy/ocr_gguf_publish.py holds every gate.
+on:
+  workflow_dispatch:
+    inputs:
+      protocol:
+        description: 'Publication protocol'
+        required: true
+        type: choice
+        options: [docs/mineru25-pro-publication-v1.json, docs/teleocr-publication-v1.json]
+      source_ref:
+        description: 'Exact commit containing the converter, quantizer, protocol and receipts'
+        required: true
+        type: string
+      variants:
+        description: 'Comma-separated recipes from the protocol (empty = its default_variants)'
+        required: false
+        default: ''
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: ocr-gguf-publish-${{ inputs.protocol }}
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    env:
+      PROTOCOL: ${{ inputs.protocol }}
+      VARIANTS: ${{ inputs.variants }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Publish-script controls (no network)
+        run: python tests/test_ocr_gguf_publish.py -v
+      - name: Protocol, receipts and build plan before any download or credential
+        run: |
+          set -euo pipefail
+          python tools/ci-heavy/ocr_gguf_publish.py plan "$PROTOCOL" "$VARIANTS" | tee "$RUNNER_TEMP/plan.txt"
+          echo "SOURCE_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+      - name: Pinned conversion and publication clients
+        run: |
+          req=$(python -c "import json,os;print(json.load(open(os.environ['PROTOCOL']))['converter']['requirements'])")
+          python -m pip install -q -r "$req" "huggingface_hub>=0.36,<2"
+      - name: Work area on the large runner disk
+        run: |
+          sudo mkdir -p /mnt/ocrpub && sudo chown "$USER" /mnt/ocrpub
+          mkdir -p /mnt/ocrpub/src /mnt/ocrpub/gguf /mnt/ocrpub/notices /mnt/ocrpub/scratch "$RUNNER_TEMP/out"
+          df -h / /mnt
+      - name: Upstream LICENSE and model card (pinned, hash-checked)
+        run: python tools/ci-heavy/ocr_gguf_publish.py notices "$PROTOCOL" /mnt/ocrpub/notices
+      - name: Pinned upstream checkpoint
+        env:
+          HF_HUB_DISABLE_XET: '1'
+        run: |
+          python - <<'PY'
+          import json, os
+          from huggingface_hub import snapshot_download
+          up = json.load(open(os.environ['PROTOCOL']))['upstream']
+          snapshot_download(up['repo'], revision=up['revision'], local_dir='/mnt/ocrpub/src', token=False)
+          PY
+      - name: Build crispembed-quantize
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF -DGGML_CUDA=OFF
+          cmake --build build --target crispembed-quantize --parallel 4
+      - name: Convert (the converter re-verifies its source pins) and quantize per plan
+        env:
+          OMP_NUM_THREADS: '1'
+          OPENBLAS_NUM_THREADS: '1'
+          TMPDIR: /mnt/ocrpub/scratch
+        run: |
+          set -euo pipefail
+          q=$(find build -type f -name crispembed-quantize -perm -u+x | head -1)
+          read -ra conv <<< "$(python -c "import json,os;c=json.load(open(os.environ['PROTOCOL']))['converter'];print(c['script'], *c['args'])")"
+          G=/mnt/ocrpub/gguf
+          while read -r kind variant name rest; do
+            case "$kind" in
+              convert)
+                args=("${conv[@]/\{src\}//mnt/ocrpub/src}"); args=("${args[@]/\{out\}/$G/$name}")
+                python "${args[@]}" $rest
+                mv "$G/$name.json" "$RUNNER_TEMP/out/$name.conversion.json" 2>/dev/null || true ;;
+              quantize)
+                read -ra qa <<< "$rest"
+                "$q" "$G/${qa[0]}" "$G/$name" "${qa[@]:1}" ;;
+              drop) rm -f "$G/$name" ;;
+            esac
+          done < "$RUNNER_TEMP/plan.txt"
+          rm -rf /mnt/ocrpub/src
+          ls -l "$G"; df -h /mnt
+      - name: Upload, immutable LFS identity, empty-cache readback
+        env:
+          HF_TOKEN: ${{ secrets.HF_PUBLISH_TOKEN }}
+          HF_HUB_DISABLE_XET: '1'
+          HEAVY_SCRATCH: /mnt/ocrpub/scratch
+        run: |
+          v="$VARIANTS"
+          [ -n "$v" ] || v=$(python -c "import json,os;print(','.join(json.load(open(os.environ['PROTOCOL']))['default_variants']))")
+          python tools/ci-heavy/ocr_gguf_publish.py publish "$PROTOCOL" "$v" /mnt/ocrpub/gguf /mnt/ocrpub/notices "$RUNNER_TEMP/out"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ocr-gguf-publication-${{ github.run_id }}
+          path: ${{ runner.temp }}/out/
+          if-no-files-found: warn
+          retention-days: 90
