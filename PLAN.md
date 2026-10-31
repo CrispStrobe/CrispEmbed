@@ -75,6 +75,20 @@ this handoff.
 
 ## Immediate executable order
 
+### Model weight licenses (31 October 2026)
+
+[The registry audit](tests/results/licenses/registry-qwen-audit.json) found
+five families labelled apache-2.0 whose weights inherit stricter Qwen terms:
+`qwen2vl-3b`, `nanonets-ocr-s`, `uni-mumer-qwen2.5-vl-3b` and `teleocr-*`
+(Qwen2.5-VL-3B: Qwen RESEARCH LICENSE, non-commercial) and `got-ocr2`
+(Qwen1.5-0.5B decoder: Tongyi Qianwen RESEARCH LICENSE, non-commercial and no
+use to improve other LLMs). Registry licenses, download acceptance, engine gates
+(`CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE`, `CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE`)
+and the published cstr/* cards are corrected. Open: CrispSorter/CrispCalc must
+not offer these models without the acknowledgement; Apache-2.0 replacements for
+GOT's tasks are MinerU2.5-Pro, FireRed-OCR, Uni-MuMER-Qwen3-VL-2B and PaddleOCR-VL.
+
+
 ### MinerU2.5-Pro-2604 integration (31 October 2026)
 
 The isolated `feat/mineru25-pro-2604` source delivery adds the checkpoint

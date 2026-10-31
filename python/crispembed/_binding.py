@@ -4273,7 +4273,7 @@ class CrispOcrOrchestrator:
 
     Usage::
 
-        orch = CrispOcrOrchestrator("surya-det", "qwen2vl-3b")
+        orch = CrispOcrOrchestrator("surya-det", "qwen3vl-2b")
         result = orch.run("document.png")
         print(result["text"])
         print(f"  {result['n_regions']} regions, confidence={result['mean_confidence']:.2f}")

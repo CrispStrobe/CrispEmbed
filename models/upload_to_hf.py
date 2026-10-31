@@ -737,6 +737,38 @@ MODELS = {
     # this script (empty publish_files). base_model is the authoritative ancestor: the
     # vision tower derives from Qwen2.5-VL-3B-Instruct (tests/results/licenses/
     # qwen-vision-lineage.json), so the Qwen RESEARCH LICENSE governs the weights.
+    "qwen2.5-vl-3b-crispembed": {  # license lineage only (registry-qwen-audit.json); never uploaded by this script
+        "base_model": "Qwen/Qwen2.5-VL-3B-Instruct",
+        "arch": "OCR VLM", "dim": 0, "layers": 0, "params": "", "pooling": "n/a (OCR)", "tokenizer": "",
+        "license": "qwen-research",
+        "langs": [],
+        "desc": "Qwen2.5-VL-3B OCR re-host. Non-commercial (Qwen Research License).",
+        "publish_files": [],
+    },
+    "nanonets-ocr-s-crispembed": {  # license lineage only (registry-qwen-audit.json); never uploaded by this script
+        "base_model": "Qwen/Qwen2.5-VL-3B-Instruct",
+        "arch": "OCR VLM", "dim": 0, "layers": 0, "params": "", "pooling": "n/a (OCR)", "tokenizer": "",
+        "license": "qwen-research",
+        "langs": [],
+        "desc": "Nanonets-OCR-s (Qwen2.5-VL-3B fine-tune; upstream declares no license). Non-commercial.",
+        "publish_files": [],
+    },
+    "uni-mumer-qwen2.5-vl-3b": {  # license lineage only (registry-qwen-audit.json); never uploaded by this script
+        "base_model": "Qwen/Qwen2.5-VL-3B-Instruct",
+        "arch": "OCR VLM", "dim": 0, "layers": 0, "params": "", "pooling": "n/a (OCR)", "tokenizer": "",
+        "license": "qwen-research",
+        "langs": [],
+        "desc": "Uni-MuMER handwritten math (Qwen2.5-VL-3B fine-tune). Non-commercial.",
+        "publish_files": [],
+    },
+    "got-ocr2-crispembed": {  # license lineage only (registry-qwen-audit.json); never uploaded by this script
+        "base_model": "Qwen/Qwen1.5-0.5B",
+        "arch": "OCR VLM", "dim": 0, "layers": 0, "params": "", "pooling": "n/a (OCR)", "tokenizer": "",
+        "license": "tongyi-qianwen-research",
+        "langs": [],
+        "desc": "GOT-OCR2 (Qwen1.5-0.5B decoder). Non-commercial; no use to improve other LLMs.",
+        "publish_files": [],
+    },
     "TeleOCR": {
         "base_model": "Qwen/Qwen2.5-VL-3B-Instruct",
         "arch": "Qwen2.5-VL vision tower (from Qwen2.5-VL-3B) + Qwen3-0.6B-style decoder",

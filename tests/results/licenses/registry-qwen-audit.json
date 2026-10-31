@@ -92,5 +92,21 @@
     "qwen-research": "non-commercial only; redistribute with agreement + NOTICE line; 'Built with Qwen' when used to build distributed models; no anti-competition clause",
     "qwen": "commercial allowed below 100M monthly active users; same attribution",
     "tongyi-qianwen / tongyi-qianwen-research": "older Qwen1/1.5 terms; prohibit using the materials or their outputs to improve any other LLM; the research variant is also non-commercial"
+  },
+  "remediation": {
+    "date": "2026-10-31",
+    "hf_relabel_commits": {
+      "cstr/qwen2.5-vl-3b-crispembed-GGUF": "6cd1ae05a3437a12a32f3d956803b28a281ac885",
+      "cstr/nanonets-ocr-s-crispembed-GGUF": "166a24025a635362033e258133eccd80e7564d10",
+      "cstr/uni-mumer-qwen2.5-vl-3b-GGUF": "38ec87ce640d4ff49c1799a14cc52aba32429967",
+      "cstr/got-ocr2-crispembed-GGUF": "5a0b0a1adcf5d1efbc17e77927b4fa32325d0316",
+      "cstr/TeleOCR-GGUF": "1de0119f27f470cfc7ef0be14327f5953730c7e8 (republished, GGUF bytes unchanged)"
+    },
+    "registry": "qwen2vl-3b, nanonets-ocr-s, uni-mumer-qwen2.5-vl-3b, teleocr-* -> qwen-research; got-ocr2 -> tongyi-qianwen-research (restricted list extended)",
+    "engine_gates": {
+      "CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE": "Qwen2.5-VL with 2048-wide 36-layer decoder, and TeleOCR",
+      "CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE": "every GOT-OCR2 GGUF"
+    },
+    "upstream_issues": "not opened (owner decision)"
   }
 }

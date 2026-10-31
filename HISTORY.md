@@ -18649,3 +18649,18 @@ exact-0.9 IoU box was suppressed versus the blueprint. A portable fsum port
 mocked inference. The failure stays recorded in
 [the integration review](tests/results/mineru25/integration-review.json).
 Linked build, model and speed gates remain hosted work.
+
+## 31 October 2026 — Qwen-derived weight licenses corrected
+
+Weight lineage (`tools/weight_lineage.py`, HTTP range reads of upstream
+safetensors) and Hub metadata established that TeleOCR's vision tower descends
+from Qwen2.5-VL-3B (deep-layer cosine 0.99 vs <=0.56 for every Apache-2.0
+Qwen2.5 tower) and GOT-OCR2's decoder from Qwen1.5-0.5B (config identity,
+cosine 0.86, paper wording); qwen2vl-3b, nanonets-ocr-s and
+uni-mumer-qwen2.5-vl-3b declare Qwen2.5-VL-3B bases. All were published as
+apache-2.0. Their registry licenses, engine acknowledgement gates and Hub cards
+(LICENSE + required NOTICE) are now the inherited Qwen / Tongyi Qianwen research
+terms; TeleOCR was republished at 1de0119f with byte-identical GGUFs. MinerU2.5-Pro
+(Qwen2-VL-2B + Qwen2-0.5B) and the other Qwen-family entries are consistent.
+`check_registry_licenses.py` now reads `license_name` when `license` is unset.
+[Evidence](tests/results/licenses/).

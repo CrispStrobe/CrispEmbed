@@ -1518,10 +1518,12 @@ static const ModelEntry k_registry[] = {
     { "text-sr", "text-sr-nafnet.gguf", "", "NAFNet-SR text super-resolution engine (custom trained model required)",
       "", "apache-2.0", "" },
 
+    // License: weights inherit the Qwen RESEARCH LICENSE of Qwen2.5-VL-3B (non-commercial);
+    // engine gate CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1. tests/results/licenses/registry-qwen-audit.json
     { "qwen2vl-3b", "qwen2.5-vl-3b-q4_k.gguf",
       "https://huggingface.co/cstr/qwen2.5-vl-3b-crispembed-GGUF/resolve/main/qwen2.5-vl-3b-q4_k.gguf",
-      "Qwen2.5-VL-3B VLM OCR (32-layer ViT + 36-layer Qwen2.5, German docs)", "2610 MB", "apache-2.0",
-      "https://huggingface.co/cstr/qwen2.5-vl-3b-crispembed-GGUF" },
+      "Qwen2.5-VL-3B VLM OCR (32-layer ViT + 36-layer Qwen2.5, German docs; non-commercial)", "2610 MB",
+      "qwen-research", "https://huggingface.co/cstr/qwen2.5-vl-3b-crispembed-GGUF" },
 
     { "olmocr-2-7b", "olmocr-2-7b-q4_k.gguf",
       "https://huggingface.co/cstr/olmOCR-2-7B-1025-GGUF/resolve/main/olmocr-2-7b-q4_k.gguf",
@@ -1543,9 +1545,11 @@ static const ModelEntry k_registry[] = {
       "German-OCR-3.1 VLM (Qwen2-VL-2B fine-tune, German invoices/forms/receipts)", "1684 MB", "apache-2.0",
       "https://huggingface.co/keyvan-ai/german-ocr-3.1" },
 
+    // License: weights inherit the Qwen RESEARCH LICENSE of Qwen2.5-VL-3B (non-commercial);
+    // engine gate CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1. tests/results/licenses/registry-qwen-audit.json
     { "nanonets-ocr-s", "nanonets-ocr-s-q4_k.gguf",
       "https://huggingface.co/cstr/nanonets-ocr-s-crispembed-GGUF/resolve/main/nanonets-ocr-s-q4_k.gguf",
-      "Nanonets-OCR-s VLM OCR (Qwen2.5-VL-3B fine-tune, 12+ languages)", "2610 MB", "apache-2.0",
+      "Nanonets-OCR-s VLM OCR (Qwen2.5-VL-3B fine-tune, 12+ languages; non-commercial)", "2610 MB", "qwen-research",
       "https://huggingface.co/cstr/nanonets-ocr-s-crispembed-GGUF" },
 
     { "nanonets-ocr2-1.5b", "nanonets-ocr2-1.5b-q4_k.gguf",
@@ -1616,25 +1620,28 @@ static const ModelEntry k_registry[] = {
     // apache-2.0 tag (tests/results/licenses/qwen-vision-lineage.json). The engine also
     // requires CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1.
     { "teleocr-f16", "teleocr-f16.gguf",
-      "https://huggingface.co/cstr/TeleOCR-GGUF/resolve/36f626c16f05fd4240565e7d33924917300aa00a/teleocr-f16.gguf",
+      "https://huggingface.co/cstr/TeleOCR-GGUF/resolve/1de0119f27f470cfc7ef0be14327f5953730c7e8/teleocr-f16.gguf",
       "TeleOCR experimental document OCR (Qwen2.5-VL vision + Qwen3-style decoder, f16; non-commercial Qwen Research "
       "License vision tower; gated CRISPEMBED_TELEOCR, CPU)",
       "2.526 GB", "qwen-research", "https://huggingface.co/cstr/TeleOCR-GGUF" },
     { "teleocr-q8_0", "teleocr-q8_0.gguf",
-      "https://huggingface.co/cstr/TeleOCR-GGUF/resolve/36f626c16f05fd4240565e7d33924917300aa00a/teleocr-q8_0.gguf",
+      "https://huggingface.co/cstr/TeleOCR-GGUF/resolve/1de0119f27f470cfc7ef0be14327f5953730c7e8/teleocr-q8_0.gguf",
       "TeleOCR experimental document OCR (Qwen2.5-VL vision + Qwen3-style decoder, q8_0 decoder, f16 vision; "
       "non-commercial Qwen Research License vision tower; gated CRISPEMBED_TELEOCR, CPU)",
       "2.113 GB", "qwen-research", "https://huggingface.co/cstr/TeleOCR-GGUF" },
     { "teleocr-q4_k-m", "teleocr-q4_k-m.gguf",
-      "https://huggingface.co/cstr/TeleOCR-GGUF/resolve/36f626c16f05fd4240565e7d33924917300aa00a/teleocr-q4_k-m.gguf",
+      "https://huggingface.co/cstr/TeleOCR-GGUF/resolve/1de0119f27f470cfc7ef0be14327f5953730c7e8/teleocr-q4_k-m.gguf",
       "TeleOCR experimental document OCR (Qwen2.5-VL vision + Qwen3-style decoder, q4_k-m decoder, f16 vision; "
       "non-commercial Qwen Research License vision tower; gated CRISPEMBED_TELEOCR, CPU)",
       "1.923 GB", "qwen-research", "https://huggingface.co/cstr/TeleOCR-GGUF" },
 
+    // License: GOT-OCR2's decoder is Qwen1.5-0.5B (config + weight lineage), so the Tongyi Qianwen
+    // RESEARCH LICENSE applies: non-commercial, and no use of the model or its outputs to improve
+    // other LLMs. Engine gate CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE=1.
     { "got-ocr2", "got-ocr2-q4_k.gguf",
       "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF/resolve/main/got-ocr2-q4_k.gguf",
-      "GOT-OCR2 document OCR (SAM-ViT-B + Qwen2-0.5B, 0.7B, text/LaTeX/tables)", "445 MB", "apache-2.0",
-      "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF" },
+      "GOT-OCR2 document OCR (SAM-ViT-B + Qwen1.5-0.5B, 0.7B, text/LaTeX/tables; non-commercial)", "445 MB",
+      "tongyi-qianwen-research", "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF" },
 
     // LFM2.5-VL-3B — LiquidAI's own GGUF export, used directly rather than
     // re-hosted: our loader reads it unchanged, so a cstr/* mirror would add a
@@ -2001,9 +2008,11 @@ static const ModelEntry k_registry[] = {
       "Uni-MuMER handwritten math→LaTeX (Qwen3-VL-2B, 82% CROHME)", "1509 MB", "apache-2.0",
       "https://huggingface.co/cstr/uni-mumer-qwen3-vl-2b-GGUF" },
 
+    // License: weights inherit the Qwen RESEARCH LICENSE of Qwen2.5-VL-3B (non-commercial);
+    // engine gate CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1. tests/results/licenses/registry-qwen-audit.json
     { "uni-mumer-qwen2.5-vl-3b", "uni-mumer-qwen2.5-vl-3b-q4_k.gguf",
       "https://huggingface.co/cstr/uni-mumer-qwen2.5-vl-3b-GGUF/resolve/main/uni-mumer-qwen2.5-vl-3b-q4_k.gguf",
-      "Uni-MuMER handwritten math→LaTeX (Qwen2.5-VL-3B, 82.25% CROHME)", "2614 MB", "apache-2.0",
+      "Uni-MuMER handwritten math→LaTeX (Qwen2.5-VL-3B, 82.25% CROHME; non-commercial)", "2614 MB", "qwen-research",
       "https://huggingface.co/cstr/uni-mumer-qwen2.5-vl-3b-GGUF" },
 
     // TexTeller 3.0 math OCR (ViT + TrOCR, 310M, printed + handwritten)
@@ -2265,10 +2274,20 @@ bool license_requires_acceptance(const char * spdx) {
     if (strncmp(spdx, "cc-by-nc", 8) == 0) return true;
     // Vendor licenses with use-restriction policies the user must accept.
     static const char * restricted[] = {
-        "gemma",    "llama2",        "llama3",
-        "llama3.1", "llama3.2",      "llama3.3",
-        "llama4",   "qwen-research", "mistral-ai-research",
-        "lfm1.0",   "other",         nullptr,
+        "gemma",
+        "llama2",
+        "llama3",
+        "llama3.1",
+        "llama3.2",
+        "llama3.3",
+        "llama4",
+        "qwen-research",
+        "mistral-ai-research",
+        "tongyi-qianwen-research",
+        "tongyi-qianwen",
+        "lfm1.0",
+        "other",
+        nullptr,
     };
     for (const char ** p = restricted; *p; ++p) {
         if (strcmp(spdx, *p) == 0) return true;

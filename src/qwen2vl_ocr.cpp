@@ -419,6 +419,23 @@ bool load_hparams(context & ctx, const char * path) {
         ctx.eos_token_id = 151645;
     }
 
+    // License gate for Qwen2.5-VL-3B derivatives (qwen2vl-3b, nanonets-ocr-s,
+    // uni-mumer-qwen2.5-vl-3b; tests/results/licenses/registry-qwen-audit.json).
+    // Only the 3B pairs the Qwen2.5-VL windowed vision tower with a 2048-wide,
+    // 36-layer decoder (7B is 3584 wide, Qwen3-VL-2B has 28 layers and DeepStack);
+    // it is released under the Qwen RESEARCH LICENSE: non-commercial use only.
+    const bool qwen25vl_3b = !ctx.is_teleocr && !ctx.is_mineru25_pro && vhp.window_size > 0 &&
+                             !vhp.fullatt_block_indexes.empty() && vhp.deepstack_indexes.empty() &&
+                             lhp.hidden_size == 2048 && lhp.num_hidden_layers == 36;
+    if (qwen25vl_3b && !core_env::on("CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE")) {
+        fprintf(stderr, "qwen2vl_ocr: this model derives from Qwen2.5-VL-3B-Instruct, released under the Qwen\n"
+                        "  RESEARCH LICENSE AGREEMENT (non-commercial use only; commercial use needs a license\n"
+                        "  from Alibaba Cloud). Set CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1 to acknowledge.\n"
+                        "  See: https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct/blob/main/LICENSE\n");
+        core_gguf::free_metadata(g);
+        return false;
+    }
+
     core_gguf::free_metadata(g);
     return true;
 }
