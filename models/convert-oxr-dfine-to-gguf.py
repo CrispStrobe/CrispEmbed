@@ -132,7 +132,7 @@ class Builder:
 
     def put(self, name, tensor, matrix=False):
         import torch
-        if len(name) >= 64:
+        if len(name.encode("utf-8")) > 63:  # GGML_MAX_NAME = 64 including NUL
             raise ValueError(f"GGUF tensor name too long: {name}")
         if name in self.out:
             raise ValueError(f"duplicate tensor {name}")
