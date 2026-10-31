@@ -573,9 +573,12 @@ bool load_tensors(context & ctx, const char * path) {
     if (m.lhp.head_dim == 0) m.lhp.head_dim = m.lhp.hidden_size / m.lhp.num_attention_heads;
 
     if (ctx.is_mineru25_pro) {
+        // Vectors (norms/biases) must stay float; weight matrices may also be
+        // crispembed-quantize outputs, which only ever feed mul_mat/get_rows.
         auto shape = [](const ggml_tensor * t, int64_t x, int64_t y = 1) {
-            return t && (t->type == GGML_TYPE_F32 || t->type == GGML_TYPE_F16) && t->ne[0] == x && t->ne[1] == y &&
-                   t->ne[2] == 1 && t->ne[3] == 1;
+            const bool type_ok =
+                t && (t->type == GGML_TYPE_F32 || t->type == GGML_TYPE_F16 || (y > 1 && ggml_is_quantized(t->type)));
+            return type_ok && t->ne[0] == x && t->ne[1] == y && t->ne[2] == 1 && t->ne[3] == 1;
         };
         bool valid = m.vhp.is_qwen2_vl && !m.patch_embed_b && !m.position_embed_w &&
                      shape(m.patch_embed_w, 1176, 1280) && shape(m.embed_tokens, 896, 151936) &&
