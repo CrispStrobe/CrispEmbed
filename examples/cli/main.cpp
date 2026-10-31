@@ -1380,8 +1380,9 @@ static int cli_main(int argc, char ** argv) {
                     return 1;
                 }
                 if (!core_env::on("CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE")) {
-                    fprintf(stderr, "error: teleocr's vision tower is under the Qwen RESEARCH LICENSE (non-commercial);\n"
-                                    "       set CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1 to acknowledge\n");
+                    fprintf(stderr,
+                            "error: teleocr's vision tower is under the Qwen RESEARCH LICENSE (non-commercial);\n"
+                            "       set CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1 to acknowledge\n");
                     return 1;
                 }
                 auto * meta = core_gguf::open_metadata(ocr_rec_path.c_str());
