@@ -23,7 +23,60 @@
 #include <vector>
 
 namespace {
+// Per-row detail: a worst-row cosine alone cannot tell a near-zero-norm row from a
+// normal row computed wrongly.
+struct row_stats {
+    bool valid = false;
+    size_t width = 0, rows = 0, worst = 0, below_099 = 0;
+    double worst_cos = 1, worst_ref_norm = 0, worst_native_norm = 0, median_ref_norm = 0, p01_cos = 1, p50_cos = 1;
+};
+
+size_t row_width(const std::string & name) {
+    if (name == "input_patches") return 1176;
+    if (name == "vis_patch_embed" || name.rfind("vis_layer_", 0) == 0) return 1280;
+    if (name == "vis_merger_output" || name == "llm_embed" || name == "llm_final_norm" ||
+        name.rfind("llm_layer_", 0) == 0)
+        return 896;
+    return 0;
+}
+
+row_stats rows_of(const std::string & name, const float * mine, const float * ref, size_t count) {
+    row_stats r;
+    r.width = row_width(name);
+    if (!r.width || count % r.width) return r;
+    r.rows = count / r.width;
+    std::vector<double> cosines(r.rows), ref_norms(r.rows);
+    for (size_t row = 0; row < r.rows; ++row) {
+        double dot = 0, a = 0, b = 0;
+        for (size_t j = row * r.width; j < (row + 1) * r.width; ++j) {
+            dot += double(mine[j]) * ref[j];
+            a += double(mine[j]) * mine[j];
+            b += double(ref[j]) * ref[j];
+        }
+        const double c = a == 0 && b == 0 ? 1.0 : a == 0 || b == 0 ? 0.0 : dot / std::sqrt(a * b);
+        cosines[row] = c;
+        ref_norms[row] = std::sqrt(b);
+        if (c < 0.99) ++r.below_099;
+        if (row == 0 || c < r.worst_cos) {
+            r.worst_cos = c;
+            r.worst = row;
+            r.worst_ref_norm = std::sqrt(b);
+            r.worst_native_norm = std::sqrt(a);
+        }
+    }
+    auto pick = [](std::vector<double> v, double q) {
+        std::nth_element(v.begin(), v.begin() + size_t(q * (v.size() - 1)), v.end());
+        return v[size_t(q * (v.size() - 1))];
+    };
+    r.median_ref_norm = pick(ref_norms, 0.5);
+    r.p01_cos = pick(cosines, 0.01);
+    r.p50_cos = pick(cosines, 0.5);
+    r.valid = true;
+    return r;
+}
+
 struct stage_record {
+    row_stats rows;
     crispembed_diff::Report result;
     bool finite = false;
     bool same_size = false;
@@ -54,7 +107,10 @@ void observe(void * user, const char * name, const float * data, size_t count) {
             }
         }
     }
-    if (record.finite && record.same_size) record.result = state.reference->compare(name, data, count);
+    if (record.finite && record.same_size) {
+        record.result = state.reference->compare(name, data, count);
+        record.rows = rows_of(name, data, expected.first, count);
+    }
 }
 
 std::vector<std::string> required_stages() {
@@ -211,6 +267,15 @@ int execute(int argc, char ** argv) {
             std::printf(",\"max_abs\":%.9g,\"mean_abs\":%.9g,\"rms\":%.9g,\"rel_rms\":%.9g,\"cos_min\":%.9g,"
                         "\"reference_norm\":%.9g,\"native_norm\":%.9g",
                         r.max_abs, r.mean_abs, r.rms, rel_rms, r.cos_min, r.ref_norm, r.mine_norm);
+            std::printf(",\"cos_mean\":%.9g", r.cos_mean);
+        }
+        if (record.rows.valid) {
+            const auto & w = record.rows;
+            std::printf(",\"rows\":{\"width\":%zu,\"count\":%zu,\"below_0_99\":%zu,\"p01_cos\":%.9g,\"p50_cos\":%.9g,"
+                        "\"worst_row\":%zu,\"worst_cos\":%.9g,\"worst_ref_norm\":%.9g,\"worst_native_norm\":%.9g,"
+                        "\"median_ref_norm\":%.9g}",
+                        w.width, w.rows, w.below_099, w.p01_cos, w.p50_cos, w.worst, w.worst_cos, w.worst_ref_norm,
+                        w.worst_native_norm, w.median_ref_norm);
         }
         std::printf("}");
     }

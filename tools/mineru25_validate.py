@@ -153,6 +153,35 @@ def verify_blueprint(path):
     return path
 
 
+def load_vision_weights(model, path):
+    """Diagnostic reference only: give the original vision tower the exact dequantized
+    weights a CrispEmbed GGUF stores for every quantized v.* matrix, so native arithmetic
+    can be compared against the same weights (separating runtime error from weight
+    precision). Tensors the GGUF keeps in F16/F32 are left as original F32."""
+    import importlib.util
+    import gguf
+    import numpy as np
+    spec = importlib.util.spec_from_file_location(
+        "mineru_converter", Path(__file__).resolve().parents[1] / "models/convert-mineru25-pro-to-gguf.py")
+    converter = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(converter)
+    targets = {t.target: t.source for t in converter.tensor_specs() if t.target.startswith("v.")}
+    visual = model.model.visual
+    replaced = []
+    with torch.no_grad():
+        for tensor in gguf.GGUFReader(str(path)).tensors:
+            source = targets.get(tensor.name)
+            if not source or tensor.tensor_type in (gguf.GGMLQuantizationType.F32, gguf.GGMLQuantizationType.F16):
+                continue
+            values = gguf.quants.dequantize(tensor.data, tensor.tensor_type).astype(np.float32)
+            parameter = visual.get_parameter(source.removeprefix("visual."))
+            parameter.copy_(torch.from_numpy(values.reshape(tuple(parameter.shape))))
+            replaced.append({"gguf": tensor.name, "source": source, "type": tensor.tensor_type.name})
+    if not replaced:
+        raise ValueError("no quantized vision tensors found in " + str(path))
+    return replaced
+
+
 def reference(args):
     blueprint = verify_blueprint(args.blueprint)
     import torch
@@ -185,6 +214,7 @@ def reference(args):
         raise RuntimeError("modelcard FAST image processor is required")
     model = Qwen2VLForConditionalGeneration.from_pretrained(source, torch_dtype=dtype,
         attn_implementation=args.attention, trust_remote_code=False, local_files_only=True).to(args.device).eval()
+    replaced = load_vision_weights(model, args.vision_weights_gguf) if args.vision_weights_gguf else []
     if args.device.startswith("cuda"):
         torch.cuda.synchronize()
     load_ms = (time.perf_counter() - start) * 1000
@@ -322,6 +352,8 @@ def reference(args):
         "timing": {"load_ms": load_ms, "runs_ms": runs,
                    "scope": "resident helper resize+processor+input transfer+vision+prefill+decode+output transfer+detokenize"},
         "stages": sorted(stage), "stage_reference_sha256": sha256(args.dump_reference) if args.dump_reference else None,
+        "vision_weights_gguf": ({"sha256": sha256(args.vision_weights_gguf), "replaced": replaced}
+                                if args.vision_weights_gguf else None),
     }
     write_json(args.output, report)
     print(json.dumps({"output": str(args.output), "generated_tokens": len(output), "eos": eos,
@@ -403,6 +435,8 @@ def main(argv=None):
     ref.add_argument("--attention", choices=["eager", "sdpa", "flash_attention_2"], default="sdpa")
     ref.add_argument("--output", type=Path, required=True)
     ref.add_argument("--dump-reference", type=Path)
+    ref.add_argument("--vision-weights-gguf", type=Path,
+                     help="diagnostic: replace quantized vision matrices with this GGUF's exact dequantized weights")
     ref.set_defaults(run=reference)
     comp = commands.add_parser("compare")
     comp.add_argument("--reference", type=Path, required=True)
