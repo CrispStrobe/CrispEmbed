@@ -1,0 +1,311 @@
+{
+  "kind": "native-marker-real-model-panel",
+  "model_file": "teleocr-f16.gguf",
+  "expected_model_sha256": "6c52a2800e313964717cf4e5d06e0392c2b5936d8adeac423d563b8a026a2780",
+  "library_sha256": "a37033bbf38722ac6545353bc73a1e12e31ee00913d233ecf520065f840660fa",
+  "source_sha256": {
+    "src/marker.cpp": "25f2d9e0e35f21bcf68013d79db7f0a0e3c4f71ee9707174413068b685ed14e4",
+    "src/marker_backend.cpp": "4bbbf5777b58a88d92d749e7387b7a1bb8ca3ad542b421da4d247aadb63bad07",
+    "src/marker_document.cpp": "58ec0d2c03bfe33798f5c04ae5b62de0b64f9e35ec9bf7eef48ff176115da1af",
+    "src/qwen2vl_ocr.cpp": "a6963ee61eb2b4a18438cb4ae01890097ff82744c3e1b936e80aaf62c598cee5",
+    "tests/marker_native.py": "5c997a0fc99829dcd3fbb1d3360bcd10abf438a95483f36924fd6f2043036679",
+    "python/crispembed/_marker.py": "e766a803a010d05bf705746692e227fa6a0d03df4ab70e248e16eb51e138b6fc"
+  },
+  "mode": "auto",
+  "pdfium_sha256": "cb59522bf0c48a6408fd2adc8c87120a1418bacbda193f898e8cdccda7d5ca27",
+  "max_tokens": 1024,
+  "max_layout_tokens": 1024,
+  "threads": 2,
+  "backend": "CPU",
+  "cases": [
+    {
+      "id": "synthetic-image",
+      "input": "tests/fixtures/teleocr/synthetic-text.png",
+      "sha256": "54505c242287c7f666bb9fa8953a2f419a16a8b802e79ab0dd09945400703be8",
+      "gold_text": "Hello TeleOCR\nInvoice 42\nTotal: EUR 19.50",
+      "table": null
+    },
+    {
+      "id": "digital-auto",
+      "input": "tests/fixtures/marker/simpledigital.pdf",
+      "sha256": "5abed1c20795f862b63e3792f1964b2d5932c9d28ccaf8398e2e5b9ec0217374",
+      "gold_text": "Native document test\nHello from CrispEmbed.\nPDF text stays searchable.",
+      "table": null
+    },
+    {
+      "id": "table-image",
+      "input": "tests/fixtures/marker/table-page-1.png",
+      "sha256": "cce791c7de646d362321311f1894536da90b4d4ddd9de5764868eee677cd0f90",
+      "gold_text": "Aligned table fixture\nItem\nQuantity\nPrice\nAlpha\n2\n$10\nBeta\n3\n$15\nGamma\n4\n$20\nAll values are invented test data.",
+      "table": [
+        [
+          "Item",
+          "Quantity",
+          "Price"
+        ],
+        [
+          "Alpha",
+          "2",
+          "$10"
+        ],
+        [
+          "Beta",
+          "3",
+          "$15"
+        ],
+        [
+          "Gamma",
+          "4",
+          "$20"
+        ]
+      ]
+    }
+  ],
+  "quality_protocol": "Whitespace collapse only; preserve punctuation/case/Unicode; exact cells scored separately.",
+  "surya_parity": false,
+  "teleocr_strict_numerical_qualification": false,
+  "EOS_or_generated_token_ID_parity_measured": false,
+  "model_sha256": "6c52a2800e313964717cf4e5d06e0392c2b5936d8adeac423d563b8a026a2780",
+  "results": [
+    {
+      "id": "synthetic-image",
+      "checks": {
+        "has_layout_tokens": true,
+        "no_layout_cap": true,
+        "no_block_cap": true,
+        "valid_confidences": true,
+        "document_nonempty": true,
+        "actual_backend": true,
+        "native_recognition_ran": true
+      },
+      "functional_passed": true,
+      "quality": {
+        "text_exact": true,
+        "CER": 0.0,
+        "WER": 0.0
+      },
+      "quality_passed": true,
+      "actual_text": "Hello TeleOCR Invoice 42 Total: EUR 19.50",
+      "metadata": {
+        "schema": "crispembed.marker/1",
+        "source": "synthetic-text.png",
+        "backend": "crispembed-teleocr",
+        "page_count": 1,
+        "generated_tokens": 19,
+        "layout_generated_tokens": 73,
+        "layout_capped_pages": 0,
+        "capped_blocks": 0,
+        "warning_count": 3,
+        "warnings": [],
+        "page_stats": [
+          {
+            "page_id": 0,
+            "width": 640,
+            "height": 220,
+            "text_extraction_method": "teleocr",
+            "block_count": 3,
+            "generated_tokens": 19,
+            "layout_generated_tokens": 73,
+            "layout_token_cap_reached": false,
+            "capped_blocks": 0,
+            "warnings": [],
+            "block_types": {
+              "SectionHeader": 3
+            }
+          }
+        ],
+        "assets": [],
+        "configuration": {
+          "elapsed_seconds": "92.799705",
+          "headers": "suppressed in rendered text; retained in JSON",
+          "implementation": "crispembed-marker-native",
+          "layout": "TeleOCR with PDF font/geometry fallback",
+          "layout_backend": "teleocr_ggml",
+          "marker_source_revision": "71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4",
+          "model_file": "teleocr-f16.gguf",
+          "processor": "native-marker-inspired-v1",
+          "schema": "crispembed.marker/1",
+          "software_version": "0.17.14",
+          "surya_model_parity": "not_claimed",
+          "surya_parity": "not claimed; alternative TeleOCR and deterministic processing",
+          "text_quality": "deterministic-unicode-glyph-and-repetition-v1",
+          "text_quality_check": "deterministic_unicode_heuristic",
+          "upstream_marker": "2.1.0@71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4"
+        }
+      },
+      "seconds": 92.80119343000001
+    },
+    {
+      "id": "digital-auto",
+      "checks": {
+        "has_layout_tokens": true,
+        "no_layout_cap": true,
+        "no_block_cap": true,
+        "valid_confidences": true,
+        "document_nonempty": true,
+        "actual_backend": true,
+        "embedded_text_used": true
+      },
+      "functional_passed": true,
+      "quality": {
+        "text_exact": true,
+        "CER": 0.0,
+        "WER": 0.0
+      },
+      "quality_passed": true,
+      "actual_text": "Native document test Hello from CrispEmbed. PDF text stays searchable.",
+      "metadata": {
+        "schema": "crispembed.marker/1",
+        "source": "simpledigital.pdf",
+        "backend": "crispembed-teleocr",
+        "page_count": 1,
+        "generated_tokens": 0,
+        "layout_generated_tokens": 73,
+        "layout_capped_pages": 0,
+        "capped_blocks": 0,
+        "warning_count": 0,
+        "warnings": [],
+        "page_stats": [
+          {
+            "page_id": 0,
+            "width": 612,
+            "height": 792,
+            "text_extraction_method": "pdftext",
+            "block_count": 3,
+            "generated_tokens": 0,
+            "layout_generated_tokens": 73,
+            "layout_token_cap_reached": false,
+            "capped_blocks": 0,
+            "warnings": [],
+            "block_types": {
+              "SectionHeader": 1,
+              "Text": 2
+            }
+          }
+        ],
+        "assets": [],
+        "configuration": {
+          "elapsed_seconds": "85.343230",
+          "headers": "suppressed in rendered text; retained in JSON",
+          "implementation": "crispembed-marker-native",
+          "layout": "TeleOCR with PDF font/geometry fallback",
+          "layout_backend": "teleocr_ggml",
+          "marker_source_revision": "71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4",
+          "model_file": "teleocr-f16.gguf",
+          "processor": "native-marker-inspired-v1",
+          "schema": "crispembed.marker/1",
+          "software_version": "0.17.14",
+          "surya_model_parity": "not_claimed",
+          "surya_parity": "not claimed; alternative TeleOCR and deterministic processing",
+          "text_quality": "deterministic-unicode-glyph-and-repetition-v1",
+          "text_quality_check": "deterministic_unicode_heuristic",
+          "upstream_marker": "2.1.0@71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4"
+        }
+      },
+      "seconds": 85.34545503599998
+    },
+    {
+      "id": "table-image",
+      "checks": {
+        "has_layout_tokens": true,
+        "no_layout_cap": true,
+        "no_block_cap": true,
+        "valid_confidences": true,
+        "document_nonempty": true,
+        "actual_backend": true,
+        "native_recognition_ran": true
+      },
+      "functional_passed": true,
+      "quality": {
+        "text_exact": true,
+        "CER": 0.0,
+        "WER": 0.0,
+        "cells_exact": true,
+        "cells_expected": [
+          "Item",
+          "Quantity",
+          "Price",
+          "Alpha",
+          "2",
+          "$10",
+          "Beta",
+          "3",
+          "$15",
+          "Gamma",
+          "4",
+          "$20"
+        ],
+        "cells_actual": [
+          "Item",
+          "Quantity",
+          "Price",
+          "Alpha",
+          "2",
+          "$10",
+          "Beta",
+          "3",
+          "$15",
+          "Gamma",
+          "4",
+          "$20"
+        ]
+      },
+      "quality_passed": true,
+      "actual_text": "Aligned table fixture Item Quantity Price Alpha 2 $10 Beta 3 $15 Gamma 4 $20 All values are invented test data.",
+      "metadata": {
+        "schema": "crispembed.marker/1",
+        "source": "table-page-1.png",
+        "backend": "crispembed-teleocr",
+        "page_count": 1,
+        "generated_tokens": 76,
+        "layout_generated_tokens": 76,
+        "layout_capped_pages": 0,
+        "capped_blocks": 0,
+        "warning_count": 2,
+        "warnings": [],
+        "page_stats": [
+          {
+            "page_id": 0,
+            "width": 1224,
+            "height": 1584,
+            "text_extraction_method": "teleocr",
+            "block_count": 3,
+            "generated_tokens": 76,
+            "layout_generated_tokens": 76,
+            "layout_token_cap_reached": false,
+            "capped_blocks": 0,
+            "warnings": [],
+            "block_types": {
+              "Caption": 1,
+              "Table": 1,
+              "Text": 1
+            }
+          }
+        ],
+        "assets": [],
+        "configuration": {
+          "elapsed_seconds": "117.812131",
+          "headers": "suppressed in rendered text; retained in JSON",
+          "implementation": "crispembed-marker-native",
+          "layout": "TeleOCR with PDF font/geometry fallback",
+          "layout_backend": "teleocr_ggml",
+          "marker_source_revision": "71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4",
+          "model_file": "teleocr-f16.gguf",
+          "processor": "native-marker-inspired-v1",
+          "schema": "crispembed.marker/1",
+          "software_version": "0.17.14",
+          "surya_model_parity": "not_claimed",
+          "surya_parity": "not claimed; alternative TeleOCR and deterministic processing",
+          "text_quality": "deterministic-unicode-glyph-and-repetition-v1",
+          "text_quality_check": "deterministic_unicode_heuristic",
+          "upstream_marker": "2.1.0@71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4"
+        }
+      },
+      "seconds": 117.815934535
+    }
+  ],
+  "seconds": 297.550871057,
+  "peak_rss_kib": 5012276,
+  "functional_passed": true,
+  "quality_passed": true
+}
