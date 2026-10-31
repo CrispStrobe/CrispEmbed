@@ -1,7 +1,53 @@
 # Surya OCR 2.5 (`datalab-to/surya-ocr-2.5`) — source contract and port plan
 
-Status: **source audit only.** No converter profile, native runtime path, registry
-entry or quality claim exists yet. The existing `surya-det` text detector is a
+Status (31 October 2026): **frontend parity proven, inference unverified.**
+Revision `00c843e9cae45611dca0a6dc2c9bbbf2dadaaed3` is pinned. The native
+tokenizer, rendered prompts and image preprocessing match the original HF
+processor exactly ([frontend parity](../tests/results/surya25/frontend-parity.json),
+[metadata](../tests/results/surya25/metadata.json)). The converter profile and
+gated format-4 runtime are written, but no weights have been converted or run
+yet: the session container cannot reach the HF weight CDN. There is no registry
+entry and no quality claim.
+
+### Confirmed checkpoint facts (weight-free observation)
+
+- `config.json`: `Qwen3_5ForConditionalGeneration`, `model_type: qwen3_5`,
+  `mtp_num_hidden_layers: 0`. Text and vision dimensions are *identical* to the
+  0.8B LightOn/Ovis shapes already implemented natively: 1024 hidden, 24 layers
+  (linear×3 + full repeating), 3584 FFN, 8/2 heads of 256, partial rotary 0.25
+  with MRoPE [11,11,10], θ 1e7, tied head; vision 12×768, patch 16, merge 2,
+  2304 position embeddings, output 1024. **Only the vocabulary differs: 88,526
+  ids.** Special ids: `<|endoftext|>`=0 (pad), `<|im_start|>`=1,
+  `<|im_end|>`=2 (EOS, the only generation stop), `<|vision_start|>`=9,
+  `<|vision_end|>`=10, `<|image_pad|>`=11, `<unk>`=65424, U+0000=1947.
+- Single `model.safetensors`, bf16, 1,378,772,208 bytes, LFS sha256
+  `6940baca2d16a20b15b7302cac7253246c78c95469920fcdb064963f48b5cb17`.
+  The card licence is `openrail`.
+- Tokenizer: WordLevel model of 65,425 entries, mostly single characters, plus
+  25,049 added tokens (22,240 non-normalized, 2,809 normalized, 22 special).
+  There is no normalizer, the pre-tokenizer is `Split [\s\S]` Isolated, and
+  the decoder is `Fuse`. Encoding runs leftmost-longest over the non-normalized
+  added tokens, then over the normalized ones, then looks up each remaining code
+  point (or `<unk>`). Added tokens such as `.<` and `).<` make HF spell out the
+  `<|im_end|>` after every package prompt, and the native encoder reproduces
+  this exactly.
+- The chat template renders `<|im_start|>user\n<|vision_start|><|image_pad|><|vision_end|>{prompt}<|im_end|>\n<|im_start|>assistant\n`.
+  There is no `<think>` block and no system prompt.
+- Processor: Qwen2VL (patch 16, merge 2, mean/std 0.5, bicubic). vLLM serves
+  with `min_pixels=3136, max_pixels=6291456`, which changes the grid for small
+  crops compared with the processor defaults (`448×112` gives 8×28 rather than
+  8×32). The native format-4 path uses the vLLM values.
+
+### Native implementation status
+
+| Piece | State | Evidence |
+|---|---|---|
+| `src/core/wordlevel_added.h` tokenizer | exact | 20,028 encode cases (prompts, spelled marker, random added-token, character and `<unk>` mixes) and 2,000 decodes identical to HF; the guard fails when the two added-token passes are merged |
+| Format-4 frontend (`CRISPEMBED_SURYA25_FRONTEND`) | exact | rendered ids for all 4 package prompts, the empty (block) prompt and a custom prompt equal HF `apply_chat_template` + encode; `=0` and unset are off |
+| Image preprocessing (vLLM kwargs) | exact | five block-sized images: identical grids, patch max abs 0.0; a 192-DPI page is rejected (>1024 patches) |
+| Converter `--profile surya25` | written | NUL token carried as an explicit id, because gguf string arrays read back as C strings |
+| Inference (`CRISPEMBED_SURYA25_INFERENCE`) | **unverified** | needs the converted weights and an original-model reference |
+| Caller-side `scale_to_fit` (PIL LANCZOS, 28-px grid) | not ported | callers must currently pass an already scaled crop | The existing `surya-det` text detector is a
 different, older model (EfficientViT segformer) and is unaffected.
 
 ## What the model is (from the released package source)
@@ -79,24 +125,22 @@ implements the Qwen3.5 dense decoder, with gated-delta linear attention and gate
 full attention using interleaved MRoPE, and the Qwen3.5 vision tower. It is pinned
 to the LightOnOCR-3-0.8B and OvisOCR2/3 sources:
 
-1. **Shapes.** `valid_weights` and the decoder mapping hard-code the 0.8B
-   dimensions (1024 hidden, 24 layers, 248,320 vocabulary, 12 vision blocks).
-   The decoder kernels are config-driven within bounds, and a 2048-wide mapping
-   also exists. The Surya 2.5 sizes come from the hosted probe below.
-2. **Tokenizer.** A WordLevel character tokenizer needs a new encode/decode
-   path, plus exact added-token matching and the spelled-`<|im_end|>` prompt
-   behaviour. Decode must keep NORMAL tokens as raw characters, not GPT-2
-   byte-unicode.
-3. **Context and image bounds.** Native limits are 1024 merged patches and 4096
-   total tokens. Full-page Surya needs about 4.4k visual tokens, about 2.4k
+1. **Shapes.** Resolved: every decoder and vision shape equals the implemented
+   0.8B schedule, and only the vocabulary row count is new (now taken from the
+   tokenizer).
+2. **Tokenizer.** Resolved: the WordLevel path above.
+3. **Context and image bounds.** Native limits are 1024 vision patches (256
+   merged image tokens) and 4096 total tokens. A 192-DPI letter page is 13,464
+   patches (3,366 merged tokens). Full-page Surya needs about 4.4k visual tokens, about 2.4k
    output tokens and up to 20.4k in the worst case. Only block-crop OCR fits
    under the current bounds, so full-page support requires a bounded,
    separately gated context extension.
-4. **Preprocessing.** The probe records the checkpoint processor (patch, merge,
-   resize and normalisation) next to the package's LANCZOS `scale_to_fit`. Both
-   must be reproduced, the second as the caller-side contract.
-5. **Stops.** Stop on the EOS id and on the spelled `<|im_end|>` text, and
-   record which one fired.
+4. **Preprocessing.** The processor resize is exact (see the table above). The
+   package's LANCZOS `scale_to_fit` (minimum 1792×28 area, so small crops are
+   upscaled) is caller-side and not yet ported.
+5. **Stops.** By default the package, vLLM and HF stop only on id 2, and the
+   native path matches that. The package's optional `SURYA_STOP_STRINGS`
+   (a spelled `<|im_end|>` in the output) is a later, separately gated option.
 
 ## Staged plan (each stage gated and evidenced before the next)
 
