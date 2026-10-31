@@ -1,0 +1,164 @@
+{
+  "bf16_vs_frozen_reference": {
+    "shape": [
+      1984,
+      768
+    ],
+    "max_abs": 0.0,
+    "mean_abs": 0.0,
+    "rms": 0.0,
+    "row_cos_min": 0.9999999999999998,
+    "row_cos_mean": 1.0,
+    "row_cos_max": 1.0000000000000002,
+    "cos_global": 1.0000000000000007,
+    "exact_fraction": 1.0,
+    "mismatch_count": 0,
+    "elements": 1523712,
+    "worst_index": [
+      0,
+      0
+    ],
+    "worst_abs": 0.0,
+    "worst_actual": -0.061767578125,
+    "worst_reference": -0.061767578125,
+    "actual_norm": 132.7803197928864,
+    "reference_norm": 132.7803197928864,
+    "strict_pass": true,
+    "bf16_budget_pass": true
+  },
+  "bf16_repeat_vs_first": {
+    "shape": [
+      1984,
+      768
+    ],
+    "max_abs": 0.0,
+    "mean_abs": 0.0,
+    "rms": 0.0,
+    "row_cos_min": 0.9999999999999998,
+    "row_cos_mean": 1.0,
+    "row_cos_max": 1.0000000000000002,
+    "cos_global": 1.0000000000000007,
+    "exact_fraction": 1.0,
+    "mismatch_count": 0,
+    "elements": 1523712,
+    "worst_index": [
+      0,
+      0
+    ],
+    "worst_abs": 0.0,
+    "worst_actual": -0.061767578125,
+    "worst_reference": -0.061767578125,
+    "actual_norm": 132.7803197928864,
+    "reference_norm": 132.7803197928864,
+    "strict_pass": true,
+    "bf16_budget_pass": true
+  },
+  "f32_vs_native_trace": {
+    "shape": [
+      1984,
+      768
+    ],
+    "max_abs": 1.0672956705093384e-06,
+    "mean_abs": 5.267699036827186e-10,
+    "rms": 7.961187610727518e-09,
+    "row_cos_min": 0.9999999999992472,
+    "row_cos_mean": 0.9999999999999973,
+    "row_cos_max": 1.0000000000000002,
+    "cos_global": 0.9999999999999818,
+    "exact_fraction": 0.9848494991179435,
+    "mismatch_count": 23085,
+    "elements": 1523712,
+    "worst_index": [
+      1469,
+      447
+    ],
+    "worst_abs": 1.0672956705093384e-06,
+    "worst_actual": -0.01336006261408329,
+    "worst_reference": -0.01335899531841278,
+    "actual_norm": 132.79823450714085,
+    "reference_norm": 132.79823460445414,
+    "strict_pass": true,
+    "bf16_budget_pass": false
+  },
+  "f32_vs_frozen_reference": {
+    "shape": [
+      1984,
+      768
+    ],
+    "max_abs": 0.018826961517333984,
+    "mean_abs": 0.00014037862226885426,
+    "rms": 0.0003102892366371467,
+    "row_cos_min": 0.9999891402273123,
+    "row_cos_mean": 0.9999965900068334,
+    "row_cos_max": 1.0,
+    "cos_global": 0.9999958492252521,
+    "exact_fraction": 0.0028397754956317202,
+    "mismatch_count": 1519385,
+    "elements": 1523712,
+    "worst_index": [
+      194,
+      690
+    ],
+    "worst_abs": 0.018826961517333984,
+    "worst_actual": -2.237576961517334,
+    "worst_reference": -2.21875,
+    "actual_norm": 132.79823450714085,
+    "reference_norm": 132.7803197928864,
+    "strict_pass": false,
+    "bf16_budget_pass": false
+  },
+  "native_vs_frozen_reference": {
+    "shape": [
+      1984,
+      768
+    ],
+    "max_abs": 0.018826961517333984,
+    "mean_abs": 0.00014037862556590388,
+    "rms": 0.0003102892505026601,
+    "row_cos_min": 0.9999891402273123,
+    "row_cos_mean": 0.9999965900067257,
+    "row_cos_max": 1.0,
+    "cos_global": 0.999995849224982,
+    "exact_fraction": 0.0028397754956317202,
+    "mismatch_count": 1519385,
+    "elements": 1523712,
+    "worst_index": [
+      194,
+      690
+    ],
+    "worst_abs": 0.018826961517333984,
+    "worst_actual": -2.237576961517334,
+    "worst_reference": -2.21875,
+    "actual_norm": 132.79823460445414,
+    "reference_norm": 132.7803197928864,
+    "strict_pass": false,
+    "bf16_budget_pass": false
+  },
+  "negative_shifted_rows_vs_frozen_reference": {
+    "shape": [
+      1984,
+      768
+    ],
+    "max_abs": 3.5751953125,
+    "mean_abs": 0.030790277221693873,
+    "rms": 0.0930268613790698,
+    "row_cos_min": 0.3482978264696046,
+    "row_cos_mean": 0.634740246628415,
+    "row_cos_max": 0.7437941905947806,
+    "cos_global": 0.6260425335209238,
+    "exact_fraction": 0.007148988785282258,
+    "mismatch_count": 1512819,
+    "elements": 1523712,
+    "worst_index": [
+      1312,
+      720
+    ],
+    "worst_abs": 3.5751953125,
+    "worst_actual": 3.640625,
+    "worst_reference": 0.0654296875,
+    "actual_norm": 132.7803197928864,
+    "reference_norm": 132.7803197928864,
+    "strict_pass": false,
+    "bf16_budget_pass": false
+  }
+}

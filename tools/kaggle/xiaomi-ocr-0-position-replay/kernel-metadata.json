@@ -1,0 +1,18 @@
+{
+  "id": "${KAGGLE_ACCOUNT}/crispembed-xiaomi-ocr-0-position-replay",
+  "title": "crispembed xiaomi ocr 0 position replay",
+  "code_file": "runner.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "false",
+  "enable_internet": "true",
+  "competition_sources": [],
+  "dataset_sources": [],
+  "kernel_sources": [
+    "${KAGGLE_ACCOUNT}/crispembed-xiaomi-ocr-0-blueprint",
+    "${KAGGLE_ACCOUNT}/crispembed-xiaomi-ocr-0-export-current-v2",
+    "${KAGGLE_ACCOUNT}/crispembed-xiaomi-ocr-0-vision-prefill"
+  ],
+  "model_sources": []
+}

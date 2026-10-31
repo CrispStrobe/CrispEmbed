@@ -1,0 +1,60 @@
+{
+  "scope": "attribution only; retained frozen artifacts are not executed natively here",
+  "reference_sha256": "2a58fc3fc2a4ae2d603ff600371cf71fa1f54e40ebd260d7680bfa4c1f868334",
+  "model_sha256": "1759b8da2a6fa2651de9cacdb5e90fe0551d7ab8b1fe783198f7339389451235",
+  "hosted_report_sha256": "43dd77098860f45a308cb960187aa93db7f9821791140c1a762812a1ff209f37",
+  "controls": {
+    "f32_operands_and_output": {
+      "max_abs": 0.011676549911499023,
+      "mean_abs": 0.0004302743046893203,
+      "rms": 0.000704641088324301,
+      "cos_min": 0.9999973131945428,
+      "cos_global": 0.99999826905471,
+      "exact_fraction": 3.937752016129032e-06,
+      "actual_norm": 466.7222295909247,
+      "reference_norm": 466.77092271250154
+    },
+    "bf16_operands_f32_output": {
+      "max_abs": 0.007810115814208984,
+      "mean_abs": 0.00033699860768817325,
+      "rms": 0.0006266069817282611,
+      "cos_min": 0.9999980172233774,
+      "cos_global": 0.999998627046571,
+      "exact_fraction": 1.64073000672043e-05,
+      "actual_norm": 466.77088773654543,
+      "reference_norm": 466.77092271250154
+    },
+    "bf16_operands_and_output": {
+      "max_abs": 0.00390625,
+      "mean_abs": 9.037413990402564e-09,
+      "rms": 3.839577153378932e-06,
+      "cos_min": 0.999999951833034,
+      "cos_global": 0.9999999999484508,
+      "exact_fraction": 0.9999028687836021,
+      "actual_norm": 466.77092945669466,
+      "reference_norm": 466.77092271250154
+    }
+  },
+  "hosted_native_f32_vs_original": {
+    "max_abs": 0.0116770267,
+    "rms": 0.000704641279,
+    "mean_abs": 0.000430274522,
+    "cos_min": 0.999997318,
+    "reference_norm": 466.770935,
+    "strict_pass": false
+  },
+  "hosted": {
+    "cpu_vs_original": 1,
+    "cuda_vs_original": 1,
+    "cpu_vs_cuda": {
+      "max_abs": 2.384185791015625e-06,
+      "mean_abs": 5.9571854374171966e-08,
+      "rms": 9.043077680997396e-08,
+      "cos_min": 0.9999999999999332,
+      "cpu_norm": 466.7222295080634,
+      "cuda_norm": 466.7222289960925,
+      "pass": true
+    }
+  },
+  "cpu_metric_line": "PATCH_METRIC pass=0 shape_ne=[768,1984] n=1523712 cos_min=0.999997318 cos_mean=0.999998331 cos_global=0.999998271 max_abs=0.0116770267 mean_abs=0.000430274522 rms=0.000704641279 native_norm=466.722229 reference_norm=466.770935"
+}

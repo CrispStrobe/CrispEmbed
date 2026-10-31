@@ -43,6 +43,13 @@ def _ovis3_hf_profile():
     return module
 
 
+@lru_cache(maxsize=1)
+def _xiaomi_profile():
+    spec=importlib.util.spec_from_file_location('qwen35_xiaomi_profile',Path(__file__).with_name('qwen35_xiaomi_profile.py'))
+    module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module)
+    return module
+
+
 def precision_recipe(name):
     if name == "original-f16":
         return []
@@ -109,6 +116,15 @@ def write_tokenizer_metadata(writer, data):
     writer.add_uint32("tokenizer.ggml.padding_token_id", data["pad"])
 
 
+def validate_transformers_implementation(version, implementation, qualification):
+    sources = qualification.get("loaded_source_sha256")
+    if (version != qualification.get("transformers_version")
+            or not isinstance(sources, dict)
+            or not isinstance(sources.get("model"), str)
+            or hashlib.sha256(implementation).hexdigest() != sources["model"]):
+        raise ValueError("Meta-model implementation differs from qualification")
+
+
 def validate_config(config, profile=None):
     if config.get("model_type") != "qwen3_5":
         raise ValueError("Only dense qwen3_5 checkpoints are supported")
@@ -124,6 +140,8 @@ def validate_config(config, profile=None):
             _ovis3_hf_profile().validate_config(config,profile)
         elif profile.get("name") == "ovisocr3":
             _ovis3_profile().validate_config(config,profile)
+        elif profile.get("name") == "xiaomi":
+            _xiaomi_profile().validate_config(config,profile)
         else:
             _ovis_profiles().validate_config(config,profile)
     if text.get("mtp_num_hidden_layers", 0) and profile is None:
@@ -137,6 +155,36 @@ def validate_config(config, profile=None):
     if not rope["mrope_interleaved"] or sum(rope["mrope_section"]) * 2 != rotary:
         raise ValueError("Inconsistent partial/interleaved MRoPE configuration")
     return text, vision
+
+
+def validate_xiaomi_tensor_counts(profile, main_count, auxiliary_count):
+    if profile and profile.get("name") == "xiaomi":
+        if main_count != profile["main_tensors"] or auxiliary_count != profile["auxiliary_tensors"]:
+            raise ValueError("Xiaomi audited main or auxiliary tensor count differs")
+
+
+def tensor_disposition(actual, excluded):
+    """Account for every checkpoint declaration, including excluded auxiliaries."""
+    excluded = list(excluded)
+    if len(excluded) != len(set(excluded)) or set(excluded) & set(actual):
+        raise ValueError("Invalid checkpoint tensor disposition")
+    return {"checkpoint_tensor_count": len(actual) + len(excluded),
+            "main_tensor_count": len(actual), "excluded_source_tensors": excluded}
+
+
+def export_source_names(shard, names, actual, dropped, tied):
+    """Apply the audited schema and exclusions to the serialization pass."""
+    missing = {name for name, (origin, _) in actual.items() if origin == shard} - set(names)
+    if missing:
+        raise ValueError(f"Tensor changed after schema validation: {sorted(missing)}")
+    for source in sorted(names):
+        if source in dropped:
+            continue
+        if source not in actual or actual[source][0] != shard:
+            raise ValueError(f"Tensor changed after schema validation: {source}")
+        if tied and source == "lm_head.weight":
+            continue
+        yield source
 
 
 def tensor_name(name):
@@ -158,10 +206,11 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
     output = Path(output)
     if not re.fullmatch(r"[0-9a-f]{40}", source_revision):
         raise ValueError("An immutable 40-hex source revision is required")
-    if profile not in (None,"ovisocr2","ovisocr3","ovisocr3-hf-reference"):
+    if profile not in (None,"ovisocr2","ovisocr3","ovisocr3-hf-reference","xiaomi"):
         raise ValueError("Unknown export profile")
     policy=(_ovis3_hf_profile() if profile=="ovisocr3-hf-reference" else
-            _ovis3_profile() if profile=="ovisocr3" else _ovis_profiles())
+            _ovis3_profile() if profile=="ovisocr3" else
+            _xiaomi_profile() if profile=="xiaomi" else _ovis_profiles())
     pinned=policy.load_profile(root,source_model,source_revision) if profile else None
     config = json.loads((root / "config.json").read_text())
     text, vision = validate_config(config,pinned)
@@ -181,9 +230,7 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
     if pinned:
         expected=pinned['qualification']
         implementation=Path(inspect.getfile(Qwen3_5ForConditionalGeneration)).read_bytes().replace(b'\r\n',b'\n')
-        if (transformers.__version__!=expected['transformers_version']
-                or hashlib.sha256(implementation).hexdigest()!=expected['loaded_source_sha256']['model']):
-            raise ValueError("Ovis meta-model implementation differs from qualification")
+        validate_transformers_implementation(transformers.__version__, implementation, expected)
 
     # Official implementation supplies the independent expected parameter schema.
     hf_config = AutoConfig.from_pretrained(root, local_files_only=True, trust_remote_code=False)
@@ -215,6 +262,22 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
     if mapping is not None and set(actual) != set(mapping):
         raise ValueError("Checkpoint index has missing or extra tensors")
     tied = bool(config.get("tie_word_embeddings", text.get("tie_word_embeddings", False)))
+    # An explicit, audited exclusion: auxiliary speculative-decoding heads are
+    # not executed by ordinary greedy generation and the native graph has no
+    # branch for them. Drop them from both sides and record the decision.
+    excluded = ()
+    if pinned:
+        selector = getattr(policy, "excluded_prefixes", None)
+        excluded = tuple(selector(pinned)) if selector else ()
+    dropped = sorted(name for name in actual if excluded and name.startswith(excluded))
+    if excluded:
+        for name in dropped:
+            del actual[name]
+        expected = {name: value for name, value in expected.items()
+                    if not (excluded and name.startswith(excluded))}
+        if not dropped:
+            raise ValueError("Pinned exclusion matched no checkpoint tensors")
+    validate_xiaomi_tensor_counts(pinned, len(actual), len(dropped))
     missing = set(expected) - set(actual)
     if tied and missing == {"lm_head.weight"}:
         missing.clear()
@@ -272,6 +335,22 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
         writer.add_uint32(f"{ARCH}.image_max_pixels",pinned['image_max_pixels'])
         writer.add_bool(f"{ARCH}.image_max_qualified",False)
         writer.add_bool(f"{ARCH}.native_alias_qualified",False)
+    elif profile=="xiaomi":
+        writer.add_string(f"{ARCH}.profile",pinned['name'])
+        writer.add_string(f"{ARCH}.profile.task",pinned['task'])
+        writer.add_string(f"{ARCH}.profile.rendered_prompt",pinned['rendered_prompt'])
+        writer.add_string(f"{ARCH}.profile.mtp_policy",pinned['mtp_policy'])
+        writer.add_string(f"{ARCH}.profile.qualification",json.dumps(pinned['qualification'],sort_keys=True))
+        writer.add_key_value(f"{ARCH}.stop_token_ids",pinned['stop_ids'],
+                             gguf.GGUFValueType.ARRAY,gguf.GGUFValueType.INT32)
+        writer.add_uint32(f"{ARCH}.primary_eos_id",pinned['primary_eos'])
+        writer.add_array(f"{ARCH}.missing_source_files",pinned['missing_source_files'])
+        writer.add_array(f"{ARCH}.excluded_source_tensors",dropped)
+        writer.add_string(f"{ARCH}.checkpoint_sha256",pinned['checkpoint_sha256'])
+        writer.add_uint32(f"{ARCH}.image_min_pixels",pinned['image_min_pixels'])
+        writer.add_uint32(f"{ARCH}.image_max_pixels",pinned['image_max_pixels'])
+        writer.add_bool(f"{ARCH}.image_max_qualified",False)
+        writer.add_bool(f"{ARCH}.native_alias_qualified",False)
     elif profile in ("ovisocr3","ovisocr3-hf-reference"):
         writer.add_array(f"{ARCH}.missing_source_files",pinned["missing_source_files"])
         writer.add_string(f"{ARCH}.profile",pinned['name'])
@@ -309,9 +388,7 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
     try:
         for shard in shards:
             with safe_open(root / shard, framework="pt", device="cpu") as handle:
-                for source in sorted(handle.keys()):
-                    if tied and source == "lm_head.weight":
-                        continue  # Native head must alias the exported embedding.
+                for source in export_source_names(shard, handle.keys(), actual, dropped, tied):
                     name = tensor_name(source)
                     tensor = handle.get_tensor(source).float().numpy()
                     source_shape = list(tensor.shape)
@@ -339,7 +416,7 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
     pending.replace(output)
     manifest = {"source_model": source_model, "source_revision": source_revision,
                 "architecture": ARCH, "dtype": dtype, "keep_f32": sorted(keep_f32), "tie_word_embeddings": tied,
-                "checkpoint_tensor_count": len(actual), "export_tensor_count": len(records),
+                **tensor_disposition(actual, dropped), "export_tensor_count": len(records),
                 "records": records, "bytes": output.stat().st_size}
     if pinned:
         manifest["profile"]={k:v for k,v in pinned.items() if k!="proof_marker"}
@@ -352,7 +429,7 @@ def main():
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", default=LIGHTON_MODEL)
-    parser.add_argument("--profile",choices=["ovisocr2","ovisocr3","ovisocr3-hf-reference"],
+    parser.add_argument("--profile",choices=["ovisocr2","ovisocr3","ovisocr3-hf-reference","xiaomi"],
                         help="Pinned experimental Ovis export-only profile; not a native alias")
     parser.add_argument("--revision", required=True)
     parser.add_argument("--output", required=True)
@@ -364,7 +441,14 @@ def main():
     args = parser.parse_args()
     if not re.fullmatch(r"[0-9a-f]{40}", args.revision):
         parser.error("--revision must be an immutable 40-hex commit")
-    if args.profile or args.model in ("ATH-MaaS/OvisOCR2", "ATH-MaaS/OvisOCR3"):
+    if args.profile=="xiaomi" or args.model==_xiaomi_profile().MODEL:
+        policy=_xiaomi_profile()
+        if args.profile!="xiaomi" or args.model!=policy.MODEL or args.revision!=policy.REVISION:
+            parser.error("Xiaomi export requires its exact source/revision and --profile xiaomi")
+        # Metadata before any weight byte is fetched.
+        metadata=snapshot_download(args.model,revision=args.revision,allow_patterns=list(policy.metadata_files()))
+        policy.load_profile(metadata,args.model,args.revision)
+    elif args.profile or args.model in ("ATH-MaaS/OvisOCR2", "ATH-MaaS/OvisOCR3"):
         policy=(_ovis3_hf_profile() if args.profile=="ovisocr3-hf-reference" else
                 _ovis3_profile() if args.profile=="ovisocr3" else _ovis_profiles())
         if args.profile not in ("ovisocr2","ovisocr3","ovisocr3-hf-reference") or args.model!=policy.MODEL or args.revision!=policy.REVISION:
@@ -373,7 +457,9 @@ def main():
                                   allow_patterns=list(policy.metadata_files()))
         policy.load_profile(metadata,args.model,args.revision)  # Before any weight download.
     directory = snapshot_download(args.model, revision=args.revision,
-                                  allow_patterns=(list(_ovis3_profile().metadata_files())+["*.safetensors"]
+                                  allow_patterns=(list(_xiaomi_profile().metadata_files())+["*.safetensors"]
+                                                  if args.profile=="xiaomi" else
+                                                  list(_ovis3_profile().metadata_files())+["*.safetensors"]
                                                   if args.profile in ("ovisocr3","ovisocr3-hf-reference") else
                                                   ["*.json", "*.jinja", "*.safetensors", "LICENSE*"]))
     retained = sorted(set(precision_recipe(args.precision_recipe) + args.keep_f32))

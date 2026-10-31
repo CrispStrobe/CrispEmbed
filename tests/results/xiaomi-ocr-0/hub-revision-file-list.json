@@ -1,0 +1,42 @@
+{
+  "scope": "Hub API sibling listing at the pinned revision; not payload authentication",
+  "model": "xiaomi-research/Xiaomi-OCR-0",
+  "revision": "bbd8cf8d21f256b3644b44cb860f3a7cecb93c30",
+  "api_url": "https://huggingface.co/api/models/xiaomi-research/Xiaomi-OCR-0/revision/bbd8cf8d21f256b3644b44cb860f3a7cecb93c30",
+  "siblings": [
+    ".eval_results/real5_omnidocbench.yaml",
+    ".gitattributes",
+    "README.md",
+    "README_zh.md",
+    "assets/data-engine.png",
+    "assets/omni-parameters.png",
+    "assets/real5-parameters.png",
+    "assets/takeaway-parsing-stages.png",
+    "assets/takeaway-training-compute.png",
+    "assets/vqa-parameters.png",
+    "assets/wild-parameters.png",
+    "assets/xiaomi-logo.svg",
+    "chat_template.jinja",
+    "config.json",
+    "example_pics/dense-equations.gif",
+    "example_pics/dense-equations.jpg",
+    "example_pics/dense-equations.md",
+    "example_pics/handwrite-formula.gif",
+    "example_pics/handwrite-formula.jpg",
+    "example_pics/handwrite-formula.md",
+    "example_pics/qianziwen.jpeg",
+    "example_pics/qianziwen.md",
+    "example_pics/receipt.jpg",
+    "example_pics/receipt.md",
+    "model.safetensors",
+    "processor_config.json",
+    "tokenizer.json",
+    "tokenizer_config.json"
+  ],
+  "absent": [
+    "generation_config.json",
+    "preprocessor_config.json",
+    "model.safetensors.index.json",
+    "LICENSE"
+  ]
+}

@@ -1,5 +1,6 @@
 #pragma once
 #include "core/gguf_loader.h"
+#include "qwen35_image_bounds.h"
 #include <cstdint>
 #include <string>
 #include <unordered_map>
@@ -7,6 +8,9 @@
 namespace qwen35_ocr {
 struct image_config {
     int min_pixels = 65536, max_pixels = 16777216;
+    // Unmerged patches admitted by the frontend. The default keeps the ordinary
+    // 1024-bound contract; only a validated profile may hand in a larger value.
+    int max_patches = kOrdinaryPatchLimit;
 };
 struct image_inputs {
     std::vector<uint8_t> resized_rgb;
@@ -15,7 +19,7 @@ struct image_inputs {
     int height = 0, width = 0;
 };
 // Pinned Qwen2VL torchvision CPU uint8 bicubic, fused .5 normalization, P16/T2/M2.
-// Still RGB only; maximum 1024 patches matches the current native vision bound.
+// Still RGB only. The patch bound comes from image_config and defaults to 1024.
 bool preprocess_rgb(const uint8_t * rgb, int height, int width, const image_config & config, image_inputs & output);
 class frontend_tokenizer {
     std::vector<std::string> vocab_;
@@ -24,6 +28,7 @@ class frontend_tokenizer {
     int eos_ = -1;
     bool ovis_ = false;
     bool ovis3_ = false;
+    bool xiaomi_ = false;
     std::string image_template_;
     std::vector<int> stops_;
     bool enabled() const;
@@ -43,9 +48,14 @@ public:
     int eos() const { return eos_; }
     bool is_ovisocr2() const { return ovis_; }
     bool is_ovisocr3() const { return ovis3_; }
+    // Experimental Xiaomi-OCR-0 (format 4): own pinned prompt, stops and pixel
+    // bounds; default off behind CRISPEMBED_XIAOMI_OCR_FRONTEND/_INFERENCE.
+    bool is_xiaomi() const { return xiaomi_; }
     bool is_stop(int id) const;
     image_config image_limits() const {
-        return (ovis_ || ovis3_) ? image_config{ 448 * 448, 2880 * 2880 } : image_config{};
+        if (xiaomi_) return image_config{ 65536, 16777216, xiaomi_patch_limit() };
+        if (ovis_ || ovis3_) return image_config{ 448 * 448, 2880 * 2880, ovisocr2_patch_limit() };
+        return image_config{};
     }
 };
 } // namespace qwen35_ocr

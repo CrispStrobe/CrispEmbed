@@ -1,0 +1,71 @@
+{
+  "scope": "F32 conversion and GGUF-fed original GPU control; no native parity",
+  "publication": "none",
+  "native_alias_qualified": false,
+  "status": "completed GGUF-fed original GPU control; no native parity claimed",
+  "phase": "complete",
+  "initial_free_bytes": 20940451840,
+  "source_closure": {
+    "base_commit": "15adb672f71f8470a23db1284dafa102515adae9",
+    "runner_template_sha256": "50a9aab7137651d34710051f4c41afaf9ce233b4bb3fd55dc9a20c9632d1f728",
+    "staged_runner_sha256": "8dc740cb6c9b557d8cfbc523a2fa2a2f5776269ac9523e9b42fe9d0f5ba62582",
+    "files_sha256": {
+      "models/convert-qwen35-ocr-to-gguf.py": "b4fcb7383ef6b4f8959ee955f8133fb4917f165c0dc424c1eb6a0355509a59c2",
+      "models/qwen35_xiaomi_profile.py": "b7b6d6122a22216171a368ba23908f7e236e2adb256953536be3c86167abf219",
+      "tests/results/xiaomi-ocr-0/kaggle-v3-evidence.json": "7a2c23460556e88f94e2632774d278a3f4eb8f7b792710b5e9b2304f7aa3b07d"
+    }
+  },
+  "versions": {
+    "transformers": "5.8.1",
+    "numpy": "2.1.3",
+    "torch": "2.11.0+cu128",
+    "tokenizers": "0.22.2",
+    "gguf": "0.19.0",
+    "safetensors": "0.8.0",
+    "huggingface-hub": "1.29.0"
+  },
+  "device": "Tesla T4",
+  "input_cases": [
+    "qianziwen",
+    "receipt",
+    "dense-equations"
+  ],
+  "export": {
+    "bytes": 3421929920,
+    "sha256": "1759b8da2a6fa2651de9cacdb5e90fe0551d7ab8b1fe783198f7339389451235",
+    "records": 473,
+    "dtype": "f32",
+    "manifest_sha256": "4915710ae55424466d995fc4a512d4ab5cec234e35d543abe6a8971b73d6f8ad"
+  },
+  "roundtrip_tensors": 473,
+  "checkpoint_equal_and_reloaded_tensors": 473,
+  "gpu_controls": [
+    {
+      "name": "qianziwen",
+      "ids_equal": true,
+      "text_sha256": "8db51e73e76a4f407a2c4195c0bf3f11cef57033df78e8b188d43c333fb0a702",
+      "text_equal": true,
+      "generated_count": 24,
+      "capped": false,
+      "seconds": 19.708402487000058
+    },
+    {
+      "name": "receipt",
+      "ids_equal": true,
+      "text_sha256": "e680f24e8b5fccebac7442ef16cb9a2e47e7542215f95422f8e38399ed162cb1",
+      "text_equal": true,
+      "generated_count": 298,
+      "capped": false,
+      "seconds": 57.361595294999915
+    },
+    {
+      "name": "dense-equations",
+      "ids_equal": true,
+      "text_sha256": "37efb60624c89a7641cdf69a767beb05d836ca6672d1f21d608f7bc1fa3af154",
+      "text_equal": true,
+      "generated_count": 512,
+      "capped": true,
+      "seconds": 92.550329638
+    }
+  ]
+}

@@ -58,6 +58,9 @@ bool inference_enabled(const qwen35_ocr_context & c) {
     if (c.tokenizer.is_ovisocr3())
         return core_env::on("CRISPEMBED_QWEN35_OCR") && core_env::on("CRISPEMBED_OVISOCR3_FRONTEND") &&
                core_env::on("CRISPEMBED_OVISOCR3_INFERENCE");
+    if (c.tokenizer.is_xiaomi())
+        return core_env::on("CRISPEMBED_QWEN35_OCR") && core_env::on("CRISPEMBED_XIAOMI_OCR_FRONTEND") &&
+               core_env::on("CRISPEMBED_XIAOMI_OCR_INFERENCE");
     return core_env::on("CRISPEMBED_QWEN35_OCR") &&
            (!c.tokenizer.is_ovisocr2() ||
             (core_env::on("CRISPEMBED_OVISOCR2_FRONTEND") && core_env::on("CRISPEMBED_OVISOCR2_INFERENCE")));
@@ -140,7 +143,9 @@ const char * recognize(qwen35_ocr_context & c, const uint8_t * pixels, int w, in
     if (!qwen35_ocr::image_positions(modalities, image.grid, 2, pos)) return c.fail("invalid multimodal positions");
     stage.next(profile_event::vision, profile_phase::vision);
     qwen35_ocr::vision_outputs visual;
-    if (!qwen35_ocr::vision_cpu(c.vision, {}, image.patches.data(), int(image.patches.size() / 1536), image.grid,
+    qwen35_ocr::vision_config vision;
+    vision.max_patches = c.tokenizer.image_limits().max_patches;
+    if (!qwen35_ocr::vision_cpu(c.vision, vision, image.patches.data(), int(image.patches.size() / 1536), image.grid,
                                 c.threads, visual))
         return c.fail("vision inference failed");
     stage.next(profile_event::embedding, profile_phase::other);
@@ -214,12 +219,14 @@ extern "C" qwen35_ocr_context * qwen35_ocr_init(const char * path, int threads) 
                                     (format == 2 && core_env::on("CRISPEMBED_OVISOCR2_INFERENCE") &&
                                      core_env::on("CRISPEMBED_OVISOCR2_FRONTEND")) ||
                                     (format == 3 && core_env::on("CRISPEMBED_OVISOCR3_INFERENCE") &&
-                                     core_env::on("CRISPEMBED_OVISOCR3_FRONTEND"));
+                                     core_env::on("CRISPEMBED_OVISOCR3_FRONTEND")) ||
+                                    (format == 4 && core_env::on("CRISPEMBED_XIAOMI_OCR_INFERENCE") &&
+                                     core_env::on("CRISPEMBED_XIAOMI_OCR_FRONTEND"));
         const bool ready = allowed_format && core_gguf::kv_str(meta, "general.architecture", "") == "qwen35_ocr" &&
                            core_gguf::kv_bool(meta, "qwen35_ocr.tie_word_embeddings", false) &&
                            core_gguf::kv_bool(meta, "qwen35_ocr.zero_centered_text_norm", false) &&
                            c->tokenizer.load(meta) && ((format == 2) == c->tokenizer.is_ovisocr2()) &&
-                           ((format == 3) == c->tokenizer.is_ovisocr3());
+                           ((format == 3) == c->tokenizer.is_ovisocr3()) && ((format == 4) == c->tokenizer.is_xiaomi());
         metadata.reset();
         if (!ready) return nullptr;
         c->backend = ggml_backend_cpu_init();

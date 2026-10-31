@@ -1,0 +1,14 @@
+{
+  "id": "${KAGGLE_ACCOUNT}/crispembed-xiaomi-ocr-0-export-gpu-control",
+  "title": "crispembed xiaomi ocr 0 export gpu control",
+  "code_file": "runner.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "true",
+  "enable_internet": "true",
+  "competition_sources": [],
+  "dataset_sources": [],
+  "kernel_sources": ["${KAGGLE_ACCOUNT}/crispembed-xiaomi-ocr-0-blueprint"],
+  "model_sources": []
+}

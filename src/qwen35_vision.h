@@ -31,6 +31,9 @@ struct vision_weights {
 struct vision_config {
     int width = 768, heads = 12, intermediate = 3072, output = 1024;
     int patch_width = 1536, merge = 2, position_side = 48;
+    // Unmerged patches this call may run. Default preserves the ordinary bound;
+    // a validated profile may pass its own frontend limit instead.
+    int max_patches = 1024;
     float eps = 1e-6f, theta = 10000.0f;
 };
 struct vision_layer_outputs {

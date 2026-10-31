@@ -1,0 +1,367 @@
+{
+  "script_version": "xiaomi-position-replay-v1",
+  "run_id": "xiaomi-position-replay-v1",
+  "scope": "hosted CPU-only attribution of the prefill.vision.position stage only; not a native parity run, no native graph construction, no decoder, no decoded text, no quantization, no speed measurement and no quality claim",
+  "strict_gate": {
+    "max_abs": 0.002,
+    "row_cos_min": 0.99999,
+    "unchanged": true,
+    "relaxed_for_dtype": false
+  },
+  "bf16_attribution_budget": {
+    "exact_fraction_min": 0.99,
+    "rms_max": 0.0001,
+    "purpose": "diagnostic only; neither exact reproduction nor a parity pass"
+  },
+  "geometry": {
+    "grid_thw": [
+      1,
+      62,
+      32
+    ],
+    "tokens": 1984,
+    "width": 768,
+    "position_dimensions": [
+      1984,
+      768
+    ],
+    "position_table_rows": 2304,
+    "spatial_merge_size": 2
+  },
+  "claims": {
+    "decoded_parity_claimed": false,
+    "decoded_quality_claimed": false,
+    "speed_claimed": false,
+    "native_graph_claimed": false,
+    "native_strict_gate_waived": false
+  },
+  "not_tested": [
+    "native graph construction or execution",
+    "native CPU/CUDA stage reproduction",
+    "full vision tower",
+    "decoder",
+    "decoded OCR text",
+    "quantization",
+    "speed"
+  ],
+  "status": "completed: pinned BF16 CPU output is bit-identical to the frozen reference; F32 output matches the native trace within the unchanged strict gate. This is consistent with a precision effect, not proof of sole causation; no native graph, decode, quality or speed claim",
+  "started_utc": "2026-10-31T10:24:54Z",
+  "phase": "complete",
+  "updated_utc": "2026-10-31T10:26:43Z",
+  "initial_free_bytes": 20940455936,
+  "device": "CPU",
+  "torch": {
+    "version": "2.11.0+cpu",
+    "cuda_build": null,
+    "threads": 4,
+    "device": "cpu"
+  },
+  "versions": {
+    "transformers": "5.8.1",
+    "torch": "2.11.0+cpu",
+    "numpy": "2.1.3",
+    "gguf": "0.19.0",
+    "safetensors": "0.8.0",
+    "huggingface-hub": "1.29.0"
+  },
+  "original_module": {
+    "module_file_sha256": "641da34484f6b9769e28615c680cc4e3202afbf5bdbf1da7d56d5a3d678918c7",
+    "module_sha_matches_pin": true,
+    "class": "transformers.models.qwen3_5.modeling_qwen3_5.Qwen3_5VisionModel",
+    "method": "fast_pos_embed_interpolate",
+    "method_qualname": "Qwen3_5VisionModel.fast_pos_embed_interpolate",
+    "class_declares_method": true,
+    "method_source_sha256": "d73a89d6fea1d0fa4708ad8057ae7b54288cf16cd75fa5f7047ea574f9b24352",
+    "method_source_pins": {
+      "torch.linspace(0, self.num_grid_per_side - 1, h)": true,
+      "dtype=self.pos_embed.weight.dtype": true,
+      "pos_embeds = self.pos_embed(idx_tensor)": true,
+      ".permute(0, 1, 3, 2, 4, 5)": true
+    }
+  },
+  "source_closure": {
+    "script_version": "xiaomi-position-replay-v1",
+    "base_commit": "15adb672f71f8470a23db1284dafa102515adae9",
+    "runner_sha256": "74a247c57b1bc2632d76c3c62b154534c1cef9b76cc4fde4a7989872242e0b57",
+    "pinned": {
+      "transformers": "5.8.1",
+      "tokenizers": "0.22.2",
+      "gguf": "0.19.0",
+      "safetensors": "0.8.0",
+      "model_repo": "xiaomi-research/Xiaomi-OCR-0",
+      "revision": "bbd8cf8d21f256b3644b44cb860f3a7cecb93c30",
+      "checkpoint_sha256": "d4551e9f6127ac9e35cff7b4f7a72a90410e03e6c8676a36f0e2b7eaeb5d5348",
+      "config_sha256": "2eb95982069a24336fe66b3a0869ea5a711aba7566787d4a599654907ecc070c",
+      "export_sha256": "1759b8da2a6fa2651de9cacdb5e90fe0551d7ab8b1fe783198f7339389451235",
+      "reference_sha256": "2a58fc3fc2a4ae2d603ff600371cf71fa1f54e40ebd260d7680bfa4c1f868334",
+      "source_module": "transformers/models/qwen3_5/modeling_qwen3_5.py",
+      "source_module_sha256": "641da34484f6b9769e28615c680cc4e3202afbf5bdbf1da7d56d5a3d678918c7",
+      "vision_prefill_runner_sha256": "18bfc3e880032e00e7ceadd6f7eea5e2cc2ef3cce28d6723561e2abd155e15d2",
+      "vision_prefill_report_sha256": "eae8d973500b2e3890e3dd408f051d67edc26ffa7b5de71f9b3429949470816d",
+      "native_position_sha256": "7e257d92b4acfd424684fe57c716e8e077661962cf68c9f91ddb52656af9ce1c",
+      "native_position_bytes": 6094848,
+      "grid_thw": [
+        1,
+        62,
+        32
+      ],
+      "tokens": 1984,
+      "width": 768
+    }
+  },
+  "vision_prefill_report": {
+    "byte_sha256": "eae8d973500b2e3890e3dd408f051d67edc26ffa7b5de71f9b3429949470816d",
+    "byte_sha256_matches_retained_copy": true,
+    "staged_runner_sha256": "18bfc3e880032e00e7ceadd6f7eea5e2cc2ef3cce28d6723561e2abd155e15d2",
+    "backend_evidence": "AUDIT_BACKEND CPU (qwen35_ocr::vision_cpu is CPU-only) threads=4 grid=1,62,32 tokens=1984 input_fnv1a=8bead67705b4f739",
+    "stage_pin_verified": true
+  },
+  "native_trace": {
+    "name": "prefill.vision.position.f32",
+    "bytes": 6094848,
+    "sha256": "7e257d92b4acfd424684fe57c716e8e077661962cf68c9f91ddb52656af9ce1c",
+    "fnv1a": "5c8c4c38aa47f346",
+    "fnv1a_matches_report": true,
+    "gguf_extents": [
+      768,
+      1984
+    ],
+    "shape_token_major": [
+      1984,
+      768
+    ],
+    "absmax": 3.643186330795288,
+    "norm": 132.79823460445414
+  },
+  "reference_activation": {
+    "name": "prefill.vision.position",
+    "shape": [
+      1984,
+      768
+    ],
+    "sha256": "59b8b5552d98a464ee51b437cfc430fb610debe8bd04e40433baa12d58a0770f",
+    "absmax": 3.640625,
+    "norm": 132.7803197928864,
+    "bf16_representable_fraction": 1.0
+  },
+  "geometry_checks": {
+    "grid_thw": [
+      1,
+      62,
+      32
+    ],
+    "grid_product": 1984,
+    "reference_shape": [
+      1984,
+      768
+    ],
+    "native_shape": [
+      1984,
+      768
+    ],
+    "elements": 1523712,
+    "ok": true
+  },
+  "checkpoint": {
+    "bytes": 1746937856,
+    "sha256": "d4551e9f6127ac9e35cff7b4f7a72a90410e03e6c8676a36f0e2b7eaeb5d5348",
+    "config_sha256": "2eb95982069a24336fe66b3a0869ea5a711aba7566787d4a599654907ecc070c",
+    "anonymous": true,
+    "token": false
+  },
+  "checkpoint_position": {
+    "name": "model.visual.pos_embed.weight",
+    "shape": [
+      2304,
+      768
+    ],
+    "dtype": "torch.bfloat16"
+  },
+  "weights_widening": {
+    "weight_bitwise_equal": true,
+    "checkpoint_widened_f32_sha256": "c8ef73745e573cfb3a36aebfeefc1ca38a2afeb2ca60b2f0488b6f861a429ae0",
+    "export_tensor_sha256": "c8ef73745e573cfb3a36aebfeefc1ca38a2afeb2ca60b2f0488b6f861a429ae0",
+    "export_tensor_sha256_matches_manifest": true,
+    "export_tensor_absmax": 3.671875
+  },
+  "vision_config": {
+    "hidden_size": 768,
+    "num_position_embeddings": 2304,
+    "spatial_merge_size": 2,
+    "patch_size": 16,
+    "temporal_patch_size": 2,
+    "in_channels": 3,
+    "depth": 12
+  },
+  "module_instance": {
+    "class": "transformers.models.qwen3_5.modeling_qwen3_5.Qwen3_5VisionModel",
+    "depth_forced": 0,
+    "checkpoint_depth": 12,
+    "pos_embed_is_nn_embedding": true,
+    "num_grid_per_side": 48,
+    "spatial_merge_size": 2,
+    "bf16_weight_dtype": "torch.bfloat16",
+    "f32_weight_dtype": "torch.float32",
+    "missing_unused_keys": [
+      "merger.linear_fc1.bias",
+      "merger.linear_fc1.weight",
+      "merger.linear_fc2.bias",
+      "merger.linear_fc2.weight",
+      "merger.norm.bias",
+      "merger.norm.weight",
+      "patch_embed.proj.bias",
+      "patch_embed.proj.weight"
+    ],
+    "unexpected_keys": [],
+    "method_is_pinned_class_method": true,
+    "random_but_unused_parameters": [
+      "merger.linear_fc1.bias",
+      "merger.linear_fc1.weight",
+      "merger.linear_fc2.bias",
+      "merger.linear_fc2.weight",
+      "merger.norm.bias",
+      "merger.norm.weight",
+      "patch_embed.proj.bias",
+      "patch_embed.proj.weight"
+    ]
+  },
+  "outputs": {
+    "bf16": {
+      "sha256": "59b8b5552d98a464ee51b437cfc430fb610debe8bd04e40433baa12d58a0770f",
+      "bf16_representable_fraction": 1.0,
+      "absmax": 3.640625
+    },
+    "f32": {
+      "sha256": "de908b939df9a84a84d76b1be4b28c0a73e8ac7bf32f114fa96488978e019973",
+      "bf16_representable_fraction": 0.0030189432123655913,
+      "absmax": 3.643186330795288
+    },
+    "bf16_repeat_bit_identical": true,
+    "negative_control_shift_rows": 993
+  },
+  "report_reproduction": {
+    "orientation": "1984 token rows of 768 contiguous features, as crispembed_diff groups them",
+    "tolerance_relative": 5e-07,
+    "checks": {
+      "max_abs": true,
+      "mean_abs": true,
+      "rms": true,
+      "cos_min": true,
+      "cos_mean": true,
+      "cos_global": true,
+      "native_norm": true,
+      "reference_norm": true
+    },
+    "ok": true,
+    "computed": {
+      "max_abs": 0.018826961517333984,
+      "mean_abs": 0.00014037862556590388,
+      "rms": 0.0003102892505026601,
+      "cos_min": 0.9999891402273123,
+      "cos_mean": 0.9999965900067257,
+      "cos_global": 0.999995849224982,
+      "native_norm": 132.79823460445414,
+      "reference_norm": 132.7803197928864
+    },
+    "pinned": {
+      "n": 1523712,
+      "shape": [
+        768,
+        1984
+      ],
+      "max_abs": 0.0188269615,
+      "mean_abs": 0.00014037863,
+      "rms": 0.000310289237,
+      "cos_min": 0.999989152,
+      "cos_mean": 0.999996603,
+      "cos_global": 0.999995828,
+      "native_norm": 132.798233,
+      "reference_norm": 132.780319,
+      "input_fnv1a": "5c8c4c38aa47f346"
+    }
+  },
+  "comparisons_sha256": "c36a69b13c92c668f747e00d61b08430d357d60166c7ab732e55624844d5891f",
+  "key_comparisons": {
+    "bf16_cpu_vs_frozen_gpu_reference": "bf16_vs_frozen_reference",
+    "f32_module_cpu_vs_native_f32_trace": "f32_vs_native_trace",
+    "native_trace_vs_frozen_reference": "native_vs_frozen_reference",
+    "negative_control": "negative_shifted_rows_vs_frozen_reference"
+  },
+  "conditions": {
+    "pinned_module_source_verified": true,
+    "geometry_matches_grid": true,
+    "checkpoint_bf16_widening_matches_export": true,
+    "frozen_reference_is_bf16_representable": true,
+    "bf16_module_repeat_is_bit_identical": true,
+    "bf16_cpu_reproduces_frozen_reference": true,
+    "f32_module_matches_native_trace": true,
+    "native_trace_reproduces_retained_report": true,
+    "retained_report_strict_failure_reproduced": true,
+    "negative_control_fails_both_gates": true
+  },
+  "attribute": {
+    "bf16": {
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "rms": 0.0,
+      "row_cos_min": 0.9999999999999998,
+      "row_cos_max": 1.0000000000000002,
+      "exact_fraction": 1.0,
+      "mismatch_count": 0,
+      "elements": 1523712,
+      "worst_index": [
+        0,
+        0
+      ],
+      "worst_abs": 0.0,
+      "worst_actual": -0.061767578125,
+      "worst_reference": -0.061767578125
+    },
+    "f32_vs_native": {
+      "max_abs": 1.0672956705093384e-06,
+      "mean_abs": 5.267699036827186e-10,
+      "rms": 7.961187610727518e-09,
+      "row_cos_min": 0.9999999999992472,
+      "row_cos_max": 1.0000000000000002,
+      "exact_fraction": 0.9848494991179435,
+      "mismatch_count": 23085,
+      "elements": 1523712,
+      "worst_index": [
+        1469,
+        447
+      ],
+      "worst_abs": 1.0672956705093384e-06,
+      "worst_actual": -0.01336006261408329,
+      "worst_reference": -0.01335899531841278
+    },
+    "native_vs_reference": {
+      "max_abs": 0.018826961517333984,
+      "mean_abs": 0.00014037862556590388,
+      "rms": 0.0003102892505026601,
+      "row_cos_min": 0.9999891402273123,
+      "cos_global": 0.999995849224982,
+      "exact_fraction": 0.0028397754956317202,
+      "mismatch_count": 1519385,
+      "elements": 1523712
+    },
+    "negative_control": {
+      "max_abs": 3.5751953125,
+      "rms": 0.0930268613790698,
+      "row_cos_min": 0.3482978264696046,
+      "exact_fraction": 0.007148988785282258
+    }
+  },
+  "attribution": {
+    "confirmed": true,
+    "cpu_gpu_bf16_ambiguity": false,
+    "native_deviation_beyond_precision": false,
+    "position_failure_consistent_with_reference_precision_regime": true,
+    "statement": "measured on CPU: BF16 pinned-module output vs frozen GPU reference max_abs=0 rms=0 exact_fraction=1.000000; F32 pinned-module output vs mounted native F32 trace max_abs=1.06729567e-06 cos_min=1; native trace vs frozen reference reproduces the retained report (max_abs=0.0188269615, cos_min=0.99998914).",
+    "strict_gate_waived": false,
+    "decoded_parity_claimed": false
+  },
+  "exit_code": 0,
+  "finished_utc": "2026-10-31T10:26:43Z",
+  "raw_report_sha256": "055dac556aa45ef322aabb9ba7d8357a0a41e4bbab89b10d994cfd3b484c796a",
+  "sanitization": "Removed hosted input paths, installed module path and source text; raw report retained separately."
+}

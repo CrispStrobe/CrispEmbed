@@ -1,0 +1,13 @@
+{
+  "base_commit": "15adb672f71f8470a23db1284dafa102515adae9",
+  "ggml_commit": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+  "runner_template_sha256": "2c187e5c6684f979852b1d2ac966ccaa8aaffe9f6484e655c1c5e522c75392cb",
+  "files_sha256": {
+    "audit/CMakeLists.txt": "b17c50331b9a47a9be6eca2bc374aa901a178b285a1ce1bf8ef55bb02bdccf63",
+    "src/qwen35_image_bounds.h": "9f8168efb1fc07690108a058d2c6411216bf1b0ff7eefe30f40aed5ba7f18f31",
+    "src/qwen35_vision.cpp": "114aac84ff5011cf7ef7996c6ae01605c0920926531ed27a0dd15f3aca7a16e5",
+    "src/qwen35_vision.h": "157c0b7090a8510ce48dc08585d034fd2a842494d528cc835e2e883abd6413f1",
+    "tests/test_xiaomi_vision_prefill.cpp": "c6cdba6816f085fc8148c9b3ddbe813519592eacdc3fa1542147fb3c76b7e73a"
+  },
+  "staged_runner_sha256": "18bfc3e880032e00e7ceadd6f7eea5e2cc2ef3cce28d6723561e2abd155e15d2"
+}

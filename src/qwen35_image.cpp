@@ -28,9 +28,8 @@ bool preprocess_rgb(const uint8_t * rgb, int height, int width, const image_conf
         rh = int(std::ceil(height * beta / 32)) * 32;
         rw = int(std::ceil(width * beta / 32)) * 32;
     }
-    const int bound =
-        config.min_pixels == 448 * 448 && config.max_pixels == 2880 * 2880 ? ovisocr2_patch_limit() : 1024;
-    if (rh < 32 || rw < 32 || int64_t(rh) * rw / 256 > bound) return false;
+    if (config.max_patches < kOrdinaryPatchLimit || config.max_patches > kXiaomiPatchLimit) return false;
+    if (rh < 32 || rw < 32 || int64_t(rh) * rw / 256 > config.max_patches) return false;
     image_inputs result;
     // Shared torch CPU uint8 AA bicubic (core/torch_bicubic_u8.h, moved from here).
     core_torch_resize::resize_rgb(rgb, height, width, rh, rw, result.resized_rgb);

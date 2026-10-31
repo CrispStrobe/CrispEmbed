@@ -1,0 +1,16 @@
+{
+  "script_version": "xiaomi-precision-replay-v1",
+  "base_commit": "15adb672f71f8470a23db1284dafa102515adae9",
+  "runner_sha256": "15f464f20cd00026853d8595fcda366fa08fc325f1e408b4268ce659b705f774",
+  "pinned": {
+    "transformers": "5.8.1",
+    "tokenizers": "0.22.2",
+    "gguf": "0.19.0",
+    "safetensors": "0.8.0",
+    "model_repo": "xiaomi-research/Xiaomi-OCR-0",
+    "revision": "bbd8cf8d21f256b3644b44cb860f3a7cecb93c30",
+    "checkpoint_sha256": "d4551e9f6127ac9e35cff7b4f7a72a90410e03e6c8676a36f0e2b7eaeb5d5348",
+    "export_sha256": "1759b8da2a6fa2651de9cacdb5e90fe0551d7ab8b1fe783198f7339389451235",
+    "reference_sha256": "2a58fc3fc2a4ae2d603ff600371cf71fa1f54e40ebd260d7680bfa4c1f868334"
+  }
+}

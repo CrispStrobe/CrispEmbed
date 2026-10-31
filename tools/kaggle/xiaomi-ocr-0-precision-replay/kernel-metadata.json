@@ -1,0 +1,18 @@
+{
+  "id": "${KAGGLE_ACCOUNT}/crispembed-xiaomi-ocr-0-precision-replay",
+  "title": "crispembed xiaomi ocr 0 precision replay",
+  "code_file": "runner.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": "true",
+  "enable_gpu": "true",
+  "enable_internet": "true",
+  "competition_sources": [],
+  "dataset_sources": [],
+  "kernel_sources": [
+    "${KAGGLE_ACCOUNT}/crispembed-xiaomi-ocr-0-blueprint",
+    "${KAGGLE_ACCOUNT}/crispembed-xiaomi-ocr-0-export-current-v2",
+    "${KAGGLE_ACCOUNT}/crispembed-xiaomi-ocr-0-native-patch-cuda"
+  ],
+  "model_sources": []
+}

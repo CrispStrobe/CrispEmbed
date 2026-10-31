@@ -1,0 +1,412 @@
+{
+  "scope": "local macOS CPU run of test-xiaomi-vision-prefill over the frozen qianziwen prefill; 21 composed vision stages",
+  "not_tested": [
+    "decoder",
+    "decoded OCR text",
+    "image frontend",
+    "quantized artifacts",
+    "speed",
+    "hosted pinned-ggml build"
+  ],
+  "reference_precision": "original BF16 vision activations widened to F32",
+  "gate": {
+    "max_abs": 0.002,
+    "cos_min": 0.99999,
+    "relaxed": false
+  },
+  "backend": "CPU (qwen35_ocr::vision_cpu)",
+  "link_caveat": "linked against locally built ggml 0.17.0 dylibs, not the pinned ggml a06fc0bb46b73cc10011fc90ae4054aee8438aeb; CPUs-only ops, so no CUDA path is claimed",
+  "negative_control_rejected": true,
+  "input_fnv1a": "8bead67705b4f739",
+  "stages_total": 21,
+  "stages_passed": 2,
+  "stages_failed": 19,
+  "passed_stages": [
+    "prefill.vision.rotary_cos",
+    "prefill.vision.rotary_sin"
+  ],
+  "first_failing_stage": "prefill.vision.patch_embed",
+  "native_exit": 1,
+  "raw_log_sha256": "b878b810f7e647d4b7293029680f3938ea76774e135b441f7ed220a9771f4047",
+  "log_sha256": "8e21b9d433634fe70b3004e60eb4d3aae6e883ae84ee521de083ac7cc24cc08d",
+  "stages": [
+    {
+      "name": "prefill.vision.patch_embed",
+      "n": 1523712,
+      "shape": [
+        768,
+        1984
+      ],
+      "pass": false,
+      "max_abs": 0.0116763115,
+      "mean_abs": 0.000430274435,
+      "rms": 0.000704641279,
+      "cos_min": 0.999997318,
+      "cos_mean": 0.999998331,
+      "cos_global": 0.999998271,
+      "native_norm": 466.722229,
+      "reference_norm": 466.770935,
+      "input_fnv1a": "4f2ece308f01c906"
+    },
+    {
+      "name": "prefill.vision.position",
+      "n": 1523712,
+      "shape": [
+        768,
+        1984
+      ],
+      "pass": false,
+      "max_abs": 0.0188269615,
+      "mean_abs": 0.000140378615,
+      "rms": 0.000310289237,
+      "cos_min": 0.999989152,
+      "cos_mean": 0.999996603,
+      "cos_global": 0.999995828,
+      "native_norm": 132.798233,
+      "reference_norm": 132.780319,
+      "input_fnv1a": "43b6143ee04bad44"
+    },
+    {
+      "name": "prefill.vision.embedded",
+      "n": 1523712,
+      "shape": [
+        768,
+        1984
+      ],
+      "pass": false,
+      "max_abs": 0.0178086758,
+      "mean_abs": 0.000555928505,
+      "rms": 0.000957455079,
+      "cos_min": 0.999993145,
+      "cos_mean": 0.999995947,
+      "cos_global": 0.999995947,
+      "native_norm": 413.532166,
+      "reference_norm": 413.607788,
+      "input_fnv1a": "2dcdc5cf87d1a787"
+    },
+    {
+      "name": "prefill.vision.rotary_cos",
+      "n": 126976,
+      "shape": [
+        64,
+        1984
+      ],
+      "pass": true,
+      "max_abs": 5.96046448e-08,
+      "mean_abs": 3.90671984e-09,
+      "rms": 1.42078163e-08,
+      "cos_min": 1,
+      "cos_mean": 1,
+      "cos_global": 1,
+      "native_norm": 312.147675,
+      "reference_norm": 312.147675,
+      "input_fnv1a": "4f218a6e1d46362d"
+    },
+    {
+      "name": "prefill.vision.rotary_sin",
+      "n": 126976,
+      "shape": [
+        64,
+        1984
+      ],
+      "pass": true,
+      "max_abs": 5.96046448e-08,
+      "mean_abs": 4.17628243e-09,
+      "rms": 1.53113167e-08,
+      "cos_min": 1,
+      "cos_mean": 1,
+      "cos_global": 1,
+      "native_norm": 171.871552,
+      "reference_norm": 171.871552,
+      "input_fnv1a": "c1d3a328eff24fd9"
+    },
+    {
+      "name": "prefill.vision.layer.0",
+      "n": 1523712,
+      "shape": [
+        768,
+        1984
+      ],
+      "pass": false,
+      "max_abs": 0.0336978436,
+      "mean_abs": 0.00107735186,
+      "rms": 0.00161888346,
+      "cos_min": 0.999947548,
+      "cos_mean": 0.999983907,
+      "cos_global": 0.999984026,
+      "native_norm": 353.476929,
+      "reference_norm": 353.509766,
+      "input_fnv1a": "dbbd0693f58fc51f"
+    },
+    {
+      "name": "prefill.vision.layer.1",
+      "n": 1523712,
+      "shape": [
+        768,
+        1984
+      ],
+      "pass": false,
+      "max_abs": 0.0511305332,
+      "mean_abs": 0.00134139834,
+      "rms": 0.00187983993,
+      "cos_min": 0.999890625,
+      "cos_mean": 0.999952555,
+      "cos_global": 0.999954164,
+      "native_norm": 242.288849,
+      "reference_norm": 242.293198,
+      "input_fnv1a": "d53cae2a50503be2"
+    },
+    {
+      "name": "prefill.vision.layer.2",
+      "n": 1523712,
+      "shape": [
+        768,
+        1984
+      ],
+      "pass": false,
+      "max_abs": 0.0690970421,
+      "mean_abs": 0.001475111,
+      "rms": 0.00198239833,
+      "cos_min": 0.999740243,
+      "cos_mean": 0.999927461,
+      "cos_global": 0.999931693,
+      "native_norm": 209.385086,
+      "reference_norm": 209.38974,
+      "input_fnv1a": "80ee5cde923f0052"
+    },
+    {
+      "name": "prefill.vision.layer.3",
+      "n": 1523712,
+      "shape": [
+        768,
+        1984
+      ],
+      "pass": false,
+      "max_abs": 0.0561008453,
+      "mean_abs": 0.00148148614,
+      "rms": 0.00195076922,
+      "cos_min": 0.999662876,
+      "cos_mean": 0.999935448,
+      "cos_global": 0.999938905,
+      "native_norm": 217.786407,
+      "reference_norm": 217.79335,
+      "input_fnv1a": "92e8621d3fbcda8a"
+    },
+    {
+      "name": "prefill.vision.layer.4",
+      "n": 1523712,
+      "shape": [
+        768,
+        1984
+      ],
+      "pass": false,
+      "max_abs": 0.0673117638,
+      "mean_abs": 0.00147154671,
+      "rms": 0.00193817972,
+      "cos_min": 0.999119878,
+      "cos_mean": 0.999933124,
+      "cos_global": 0.999937415,
+      "native_norm": 213.734818,
+      "reference_norm": 213.782272,
+      "input_fnv1a": "0cda228d70ebf8b0"
+    },
+    {
+      "name": "prefill.vision.layer.5",
+      "n": 1523712,
+      "shape": [
+        768,
+        1984
+      ],
+      "pass": false,
+      "max_abs": 0.670822144,
+      "mean_abs": 0.0014814547,
+      "rms": 0.00224850746,
+      "cos_min": 0.99558562,
+      "cos_mean": 0.999915123,
+      "cos_global": 0.999964237,
+      "native_norm": 327.91095,
+      "reference_norm": 327.983215,
+      "input_fnv1a": "b563d1940ef2c3fa"
+    },
+    {
+      "name": "prefill.vision.layer.6",
+      "n": 1523712,
+      "shape": [
+        768,
+        1984
+      ],
+      "pass": false,
+      "max_abs": 0.593223572,
+      "mean_abs": 0.00185507827,
+      "rms": 0.0028233442,
+      "cos_min": 0.99227041,
+      "cos_mean": 0.999897242,
+      "cos_global": 0.999954224,
+      "native_norm": 363.875336,
+      "reference_norm": 363.992218,
+      "input_fnv1a": "d528299ac6541055"
+    },
+    {
+      "name": "prefill.vision.layer.7",
+      "n": 1523712,
+      "shape": [
+        768,
+        1984
+      ],
+      "pass": false,
+      "max_abs": 0.567840576,
+      "mean_abs": 0.00248524803,
+      "rms": 0.0037265853,
+      "cos_min": 0.992039502,
+      "cos_mean": 0.999882221,
+      "cos_global": 0.999937892,
+      "native_norm": 411.061707,
+      "reference_norm": 411.44986,
+      "input_fnv1a": "014b005f9f63bbeb"
+    },
+    {
+      "name": "prefill.vision.layer.8",
+      "n": 1523712,
+      "shape": [
+        768,
+        1984
+      ],
+      "pass": false,
+      "max_abs": 0.461509705,
+      "mean_abs": 0.00360824051,
+      "rms": 0.00536479056,
+      "cos_min": 0.992119491,
+      "cos_mean": 0.999854863,
+      "cos_global": 0.999912083,
+      "native_norm": 499.440033,
+      "reference_norm": 499.444336,
+      "input_fnv1a": "77d2ae51ad5abd0c"
+    },
+    {
+      "name": "prefill.vision.layer.9",
+      "n": 1523712,
+      "shape": [
+        768,
+        1984
+      ],
+      "pass": false,
+      "max_abs": 0.625427246,
+      "mean_abs": 0.00542958686,
+      "rms": 0.00842979271,
+      "cos_min": 0.981457114,
+      "cos_mean": 0.999807477,
+      "cos_global": 0.999876499,
+      "native_norm": 662.025269,
+      "reference_norm": 662.067322,
+      "input_fnv1a": "83a7e1e52759fa91"
+    },
+    {
+      "name": "prefill.vision.layer.10",
+      "n": 1523712,
+      "shape": [
+        768,
+        1984
+      ],
+      "pass": false,
+      "max_abs": 0.679473877,
+      "mean_abs": 0.00757658575,
+      "rms": 0.0123165725,
+      "cos_min": 0.963822126,
+      "cos_mean": 0.999761403,
+      "cos_global": 0.999827743,
+      "native_norm": 819.047791,
+      "reference_norm": 819.02124,
+      "input_fnv1a": "559ab1a8b0f81ff2"
+    },
+    {
+      "name": "prefill.vision.layer.11",
+      "n": 1523712,
+      "shape": [
+        768,
+        1984
+      ],
+      "pass": false,
+      "max_abs": 394.847168,
+      "mean_abs": 0.120437928,
+      "rms": 1.14655697,
+      "cos_min": 0.989443123,
+      "cos_mean": 0.999966979,
+      "cos_global": 0.999617517,
+      "native_norm": 51168.1836,
+      "reference_norm": 51171.3906,
+      "input_fnv1a": "f15b1e89a5d56eed"
+    },
+    {
+      "name": "prefill.vision.merger.norm",
+      "n": 1523712,
+      "shape": [
+        768,
+        1984
+      ],
+      "pass": false,
+      "max_abs": 2.01947212,
+      "mean_abs": 0.00542847719,
+      "rms": 0.0143099697,
+      "cos_min": 0.970961154,
+      "cos_mean": 0.999673009,
+      "cos_global": 0.999434292,
+      "native_norm": 524.663147,
+      "reference_norm": 525.175415,
+      "input_fnv1a": "17d62ccb3fb615db"
+    },
+    {
+      "name": "prefill.vision.merger.up",
+      "n": 1523712,
+      "shape": [
+        3072,
+        496
+      ],
+      "pass": false,
+      "max_abs": 0.350934297,
+      "mean_abs": 0.00548628392,
+      "rms": 0.0106023187,
+      "cos_min": 0.987189293,
+      "cos_mean": 0.999816418,
+      "cos_global": 0.999770582,
+      "native_norm": 610.693604,
+      "reference_norm": 610.974609,
+      "input_fnv1a": "ac05bdff41d5123c"
+    },
+    {
+      "name": "prefill.vision.merger.activation",
+      "n": 1523712,
+      "shape": [
+        3072,
+        496
+      ],
+      "pass": false,
+      "max_abs": 0.232442379,
+      "mean_abs": 0.00165578304,
+      "rms": 0.00336427102,
+      "cos_min": 0.983258545,
+      "cos_mean": 0.999732256,
+      "cos_global": 0.999702215,
+      "native_norm": 170.102631,
+      "reference_norm": 170.179794,
+      "input_fnv1a": "20a8e247d18333ca"
+    },
+    {
+      "name": "prefill.vision.merger",
+      "n": 507904,
+      "shape": [
+        1024,
+        496
+      ],
+      "pass": false,
+      "max_abs": 0.133883715,
+      "mean_abs": 0.00119280268,
+      "rms": 0.00216779578,
+      "cos_min": 0.987080097,
+      "cos_mean": 0.999877095,
+      "cos_global": 0.999871373,
+      "native_norm": 96.3024216,
+      "reference_norm": 96.3198853,
+      "input_fnv1a": "df3b199c61521d03"
+    }
+  ]
+}

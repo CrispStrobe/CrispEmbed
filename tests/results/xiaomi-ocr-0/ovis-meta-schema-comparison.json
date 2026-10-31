@@ -1,0 +1,35 @@
+{
+  "scope": "Compare Xiaomi remote-header declarations with the retained OvisOCR2 Transformers 5.16.1 meta state_dict, not the Xiaomi Transformers 5.8.1 live schema; no checkpoint payload or inference",
+  "xiaomi_header_report_sha256": "429826d0b001231d4d44c5746c45ef42870d6fe16800ebb41e42a3f42b367082",
+  "ovis_reference_report_sha256": "f420a798c6236f51e76b4b4c3e7a13f4e565636e4efa544afcbd1c03aa9c535b",
+  "ovis_metadata_run": 39983101540,
+  "common_tensor_shapes_exact": 473,
+  "xiaomi_extra_tensor_names": [
+    "mtp.fc.weight",
+    "mtp.layers.0.input_layernorm.weight",
+    "mtp.layers.0.mlp.down_proj.weight",
+    "mtp.layers.0.mlp.gate_proj.weight",
+    "mtp.layers.0.mlp.up_proj.weight",
+    "mtp.layers.0.post_attention_layernorm.weight",
+    "mtp.layers.0.self_attn.k_norm.weight",
+    "mtp.layers.0.self_attn.k_proj.weight",
+    "mtp.layers.0.self_attn.o_proj.weight",
+    "mtp.layers.0.self_attn.q_norm.weight",
+    "mtp.layers.0.self_attn.q_proj.weight",
+    "mtp.layers.0.self_attn.v_proj.weight",
+    "mtp.norm.weight",
+    "mtp.pre_fc_norm_embedding.weight",
+    "mtp.pre_fc_norm_hidden.weight"
+  ],
+  "missing_from_xiaomi": [
+    {
+      "name": "lm_head.weight",
+      "ovis_reference_shape": [
+        248320,
+        1024
+      ]
+    }
+  ],
+  "shape_differences": [],
+  "xiaomi_tied_head_behavior_verified": false
+}

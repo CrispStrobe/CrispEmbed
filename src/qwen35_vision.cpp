@@ -90,8 +90,8 @@ static float linspace(int i, int count, int end) {
     const float step = float(end) / float(count - 1);
     return i < count / 2 ? step * i : float(end) - step * (count - i - 1);
 }
-// The pinned Transformers helper forms F32 index*(side-1)/(size-1).
-// Keep the existing linspace path unchanged behind the default-off alternative.
+// The pinned Transformers helper uses torch.linspace. The optional alternate
+// formula below is not established to be identical to that implementation.
 static float position_coordinate(int index, int size, int side, bool source_math) {
     if (!source_math) return linspace(index, size, side - 1);
     return (float(index) * float(side - 1)) / float(std::max(size - 1, 1));
@@ -145,10 +145,10 @@ static bool geometry(const vision_config & c, int tokens, const std::vector<int>
     for (size_t i = 0; i < grid.size(); i += 3) {
         const int t = grid[i], h = grid[i + 1], w = grid[i + 2];
         if (t < 1 || t > 16 || h < 1 || h > 1024 || w < 1 || w > 1024 || h % c.merge || w % c.merge ||
-            int64_t(h) * w > ovisocr2_patch_limit())
+            int64_t(h) * w > c.max_patches)
             return false;
         total += int64_t(t) * h * w;
-        if (total > tokens) return false;
+        if (total > tokens || total > c.max_patches) return false;
         for (int frame = 0; frame < t; ++frame) {
             for (int br = 0; br < h / c.merge; ++br)
                 for (int bc = 0; bc < w / c.merge; ++bc)
@@ -236,12 +236,13 @@ static std::vector<float> attention(const std::vector<float> & qkv, const vision
 bool vision_cpu(const vision_weights & w, const vision_config & c, const float * patches, int tokens,
                 const std::vector<int> & grid, int threads, vision_outputs & output) {
     output = {};
-    if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !patches || tokens < 1 || tokens > 4096 || threads < 1 ||
+    if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !patches || tokens < 1 || tokens > c.max_patches || threads < 1 ||
         threads > 256 || c.width < 1 || c.width > 2048 || c.heads < 1 || c.heads > 32 || c.width % c.heads ||
         (c.width / c.heads) % 4 || c.merge < 1 || c.merge > 4 || c.patch_width < 1 || c.patch_width > 4096 ||
         c.position_side < 1 || c.position_side > 128 || c.output < 1 || c.output > 8192 || c.intermediate < 1 ||
         c.intermediate > 8192 || w.layers.empty() || w.layers.size() > 32 || !std::isfinite(c.eps) || c.eps <= 0 ||
-        !std::isfinite(c.theta) || c.theta <= 1)
+        !std::isfinite(c.theta) || c.theta <= 1 || c.max_patches < kOrdinaryPatchLimit ||
+        c.max_patches > kXiaomiPatchLimit)
         return false;
     const int width = c.width, d = width / c.heads, group = c.merge * c.merge;
     if (!shape(w.patch, c.patch_width, width) || !shape(w.position, width, c.position_side * c.position_side) ||

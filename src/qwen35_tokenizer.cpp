@@ -1,4 +1,5 @@
 #include "qwen35_frontend.h"
+#include "xiaomi_profile_pin.h"
 #include "core/bpe.h"
 #include "core/nfc.h"
 #include "core/env_gate.h"
@@ -78,7 +79,8 @@ std::string replace_invalid_utf8(const std::string & input) {
 
 bool frontend_tokenizer::enabled() const {
     return core_env::on("CRISPEMBED_QWEN35_OCR") && (!ovis_ || core_env::on("CRISPEMBED_OVISOCR2_FRONTEND")) &&
-           (!ovis3_ || core_env::on("CRISPEMBED_OVISOCR3_FRONTEND"));
+           (!ovis3_ || core_env::on("CRISPEMBED_OVISOCR3_FRONTEND")) &&
+           (!xiaomi_ || core_env::on("CRISPEMBED_XIAOMI_OCR_FRONTEND"));
 }
 bool frontend_tokenizer::is_stop(int id) const {
     return enabled() && std::find(stops_.begin(), stops_.end(), id) != stops_.end();
@@ -94,7 +96,28 @@ bool frontend_tokenizer::load(gguf_context * meta) {
         source == "lightonai/LightOnOCR-3-0.8B" && revision == "36d8636925327c671bd8e479c517a004f7566bd9";
     const bool ovis = source == "ATH-MaaS/OvisOCR2" && revision == "cbdede82e048659b83310476ff807da825f8fe78";
     const bool ovis3 = source == "ATH-MaaS/OvisOCR3" && revision == "5f6ce6932efee9ec10c30746db55bd780214b7fd";
-    if (!lighton && !ovis && !ovis3) return false;
+    const bool xiaomi =
+        source == "xiaomi-research/Xiaomi-OCR-0" && revision == "bbd8cf8d21f256b3644b44cb860f3a7cecb93c30";
+    if (!lighton && !ovis && !ovis3 && !xiaomi) return false;
+    // Format 4 is the experimental Xiaomi-OCR-0 profile. The rendered document
+    // prompt, checkpoint digest and evidence digest are compiled in from the
+    // audited original capture; any mismatch fails closed before weight load.
+    if (xiaomi &&
+        (!core_env::on("CRISPEMBED_XIAOMI_OCR_FRONTEND") || !xiaomi_rendered_template || !*xiaomi_rendered_template ||
+         !xiaomi_checkpoint_sha256 || !*xiaomi_checkpoint_sha256 || !xiaomi_evidence_sha256 ||
+         std::strlen(xiaomi_evidence_sha256) != 64 || core_gguf::kv_u32(meta, "qwen35_ocr.format_version", 0) != 4 ||
+         core_gguf::kv_str(meta, "qwen35_ocr.profile", "") != "xiaomi" ||
+         core_gguf::kv_str(meta, "qwen35_ocr.profile.task", "") != "document" ||
+         core_gguf::kv_str(meta, "qwen35_ocr.profile.rendered_prompt", "") != xiaomi_rendered_template ||
+         core_gguf::kv_str(meta, "qwen35_ocr.profile.mtp_policy", "") != "excluded-non-speculative-main-model-only" ||
+         core_gguf::kv_str(meta, "qwen35_ocr.checkpoint_sha256", "") != xiaomi_checkpoint_sha256 ||
+         core_gguf::kv_u32(meta, "qwen35_ocr.primary_eos_id", 0) != 248046 ||
+         core_gguf::kv_u32(meta, "tokenizer.ggml.eos_token_id", 0) != 248046 ||
+         core_gguf::kv_i32_array(meta, "qwen35_ocr.stop_token_ids") != std::vector<int>{ 248046 } ||
+         core_gguf::kv_str_array(meta, "qwen35_ocr.missing_source_files") !=
+             std::vector<std::string>{ "generation_config.json", "preprocessor_config.json" } ||
+         core_gguf::kv_bool(meta, "qwen35_ocr.native_alias_qualified", true)))
+        return false;
     if (ovis && (!core_env::on("CRISPEMBED_OVISOCR2_FRONTEND") ||
                  core_gguf::kv_u32(meta, "qwen35_ocr.format_version", 0) != 2 ||
                  core_gguf::kv_str(meta, "qwen35_ocr.profile", "") != "ovisocr2" ||
@@ -142,7 +165,7 @@ bool frontend_tokenizer::load(gguf_context * meta) {
              std::vector<std::string>{ "processor_config.json" }))
         return false;
     const std::string actual_pattern =
-        (ovis || ovis3)
+        (ovis || ovis3 || xiaomi)
             ? R"((?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?[\p{L}\p{M}]+|\p{N}| ?[^\s\p{L}\p{M}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+)"
             : R"((?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\r\n\p{L}\p{N}]?\p{L}+|\p{N}| ?[^\s\p{L}\p{N}]+[\r\n]*|\s*[\r\n]+|\s+(?!\S)|\s+)";
     if (core_gguf::kv_str(meta, "qwen35_ocr.normalizer", "") != "NFC" ||
@@ -151,19 +174,25 @@ bool frontend_tokenizer::load(gguf_context * meta) {
     frontend_tokenizer result;
     result.ovis_ = ovis;
     result.ovis3_ = ovis3;
+    result.xiaomi_ = xiaomi;
     if (ovis || ovis3) result.image_template_ = ovis ? ovis_template : ovis3_rendered_template;
+    if (xiaomi) result.image_template_ = xiaomi_rendered_template;
     result.vocab_ = core_gguf::kv_str_array(meta, "tokenizer.ggml.tokens");
     result.added_ = core_gguf::kv_i32_array(meta, "qwen35_ocr.added_token_ids");
     result.special_ = core_gguf::kv_i32_array(meta, "qwen35_ocr.special_token_ids");
     const int generation_eos = int(core_gguf::kv_u32(meta, "qwen35_ocr.generation_eos_id", 0));
     if (generation_eos != ((ovis || ovis3) ? 248044 : 248046)) return false;
     result.eos_ = 248046;
+    // Xiaomi's resolved generation stops only at its model-config EOS (248046).
+    // The retained greedy generations never emitted 248044, which is padding;
+    // Ovis keeps its separately qualified dual-stop contract.
     result.stops_ = (ovis || ovis3) ? std::vector<int>{ 248044, 248046 } : std::vector<int>{ 248046 };
     const auto merges = core_gguf::kv_str_array(meta, "tokenizer.ggml.merges");
     if (result.vocab_.size() != 248320 || merges.empty() || result.added_.empty() || result.added_.size() > 256 ||
         result.special_.size() > result.added_.size())
         return false;
-    if ((ovis || ovis3) && (result.vocab_[248044] != "<|endoftext|>" || result.vocab_[248046] != "<|im_end|>"))
+    if ((ovis || ovis3 || xiaomi) &&
+        (result.vocab_[248044] != "<|endoftext|>" || result.vocab_[248046] != "<|im_end|>"))
         return false;
     for (size_t i = 0; i < result.vocab_.size(); ++i)
         if (!result.vocab_[i].empty() && !result.tokens_.emplace(result.vocab_[i], int32_t(i)).second) return false;
@@ -300,10 +329,11 @@ bool frontend_tokenizer::image_prompt(const std::string & prompt, int image_toke
     ids.clear();
     modalities.clear();
     rendered.clear();
-    if (!enabled() || image_tokens < 1 || image_tokens > 1024 || ((ovis_ || ovis3_) && !prompt.empty())) return false;
-    rendered = (ovis_ || ovis3_) ? image_template_
-                                 : "<|im_start|>user\n<|vision_start|><|image_pad|><|vision_end|>" + prompt +
-                                       "<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n";
+    if (!enabled() || image_tokens < 1 || image_tokens > 1024 || ((ovis_ || ovis3_ || xiaomi_) && !prompt.empty()))
+        return false;
+    rendered = (ovis_ || ovis3_ || xiaomi_) ? image_template_
+                                            : "<|im_start|>user\n<|vision_start|><|image_pad|><|vision_end|>" + prompt +
+                                                  "<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n";
     std::vector<int> initial;
     if (!encode(rendered, initial) || std::count(initial.begin(), initial.end(), 248056) != 1 ||
         initial.size() + image_tokens - 1 > 4096) {

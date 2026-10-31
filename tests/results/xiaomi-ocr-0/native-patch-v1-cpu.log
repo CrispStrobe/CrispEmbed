@@ -1,0 +1,4 @@
+crispembed_diff: loaded 31 tensors from /kaggle/input/notebooks/chr1s4/crispembed-xiaomi-ocr-0-blueprint/xiaomi-ocr-0-blueprint/qianziwen-prefill.gguf
+PATCH_NEGATIVE_CONTROL pass=1 shape_ne=[768,1984] n=1523712 cos_min=0.995062828 cos_mean=0.999997497 cos_global=0.999997675 max_abs=1 mean_abs=6.56292002e-07 rms=0.000810118509 native_norm=466.772064 reference_norm=466.770935
+PATCH_INPUT shape_ne=[1536,1984] weight=F32_export reference=BF16_widened_to_F32 stage=prefill.vision.patch_embed only input_fnv1a=8bead67705b4f739
+PATCH_METRIC pass=0 shape_ne=[768,1984] n=1523712 cos_min=0.999997318 cos_mean=0.999998331 cos_global=0.999998271 max_abs=0.0116770267 mean_abs=0.000430274522 rms=0.000704641279 native_norm=466.722229 reference_norm=466.770935

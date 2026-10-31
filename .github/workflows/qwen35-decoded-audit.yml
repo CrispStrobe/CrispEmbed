@@ -22,9 +22,45 @@ on:
       - 'src/qwen35_profile.*'
       - 'src/qwen35_linear.cpp'
       - 'src/qwen35_ocr.cpp'
+      - 'src/qwen35_image.cpp'
+      - 'src/qwen35_frontend.h'
+      - 'src/qwen35_tokenizer.cpp'
+      - 'tests/test_xiaomi_evidence.py'
+      - 'tests/test_xiaomi_converter_contract.py'
       - 'tools/ci-heavy/qwen35_profiling.py'
       - 'CMakeLists.txt'
       - 'tests/results/qwen35-ocr/page-parity.json'
+      - 'models/qwen35_xiaomi_profile.py'
+      - 'models/convert-qwen35-ocr-to-gguf.py'
+      - 'tests/results/xiaomi-ocr-0/**'
+      - 'tests/test_xiaomi_hosted_export.py'
+      - 'tests/test_xiaomi_export_evidence.py'
+      - 'tests/test_verify_gguf_export.py'
+      - 'models/verify-gguf-export.py'
+      - 'tools/kaggle/xiaomi-ocr-0-export/**'
+      - 'tools/kaggle/xiaomi-ocr-0-native-stage/**'
+      - 'tests/test_xiaomi_native_stage.py'
+      - 'tests/test_xiaomi_patch_embed.cpp'
+      - 'tests/test_xiaomi_patch_embed_cuda.cpp'
+      - 'tests/test_xiaomi_native_patch_evidence.py'
+      - 'models/attribute-xiaomi-patch-precision.py'
+      - 'tests/test_xiaomi_precision_replay.py'
+      - 'tests/test_xiaomi_position_replay.py'
+      - 'tests/test_xiaomi_layer0_replay.py'
+      - 'tests/test_xiaomi_position_replay_evidence.py'
+      - 'tests/test_xiaomi_vision_prefill_stage.py'
+      - 'tests/test_xiaomi_ci_vision_prefill.py'
+      - 'tests/test_xiaomi_vision_prefill_hosted_evidence.py'
+      - 'tests/test_xiaomi_vision_prefill_local.py'
+      - 'tests/test_xiaomi_bounds.cpp'
+      - 'tests/test_ovisocr2_image_bounds.cpp'
+      - 'tools/ci-heavy/xiaomi_vision_prefill.py'
+      - 'tools/kaggle/xiaomi-ocr-0-vision-prefill/**'
+      - 'tools/kaggle/xiaomi-ocr-0-precision-replay/**'
+      - 'tools/kaggle/xiaomi-ocr-0-position-replay/**'
+      - 'tools/kaggle/xiaomi-ocr-0-layer0-replay/**'
+      - 'src/qwen35_vision.*'
+      - 'src/qwen35_image_bounds.h'
   pull_request:
     paths:
       - '.github/workflows/qwen35-decoded-audit.yml'
@@ -46,9 +82,45 @@ on:
       - 'src/qwen35_profile.*'
       - 'src/qwen35_linear.cpp'
       - 'src/qwen35_ocr.cpp'
+      - 'src/qwen35_image.cpp'
+      - 'src/qwen35_frontend.h'
+      - 'src/qwen35_tokenizer.cpp'
+      - 'tests/test_xiaomi_evidence.py'
+      - 'tests/test_xiaomi_converter_contract.py'
       - 'tools/ci-heavy/qwen35_profiling.py'
       - 'CMakeLists.txt'
       - 'tests/results/qwen35-ocr/page-parity.json'
+      - 'models/qwen35_xiaomi_profile.py'
+      - 'models/convert-qwen35-ocr-to-gguf.py'
+      - 'tests/results/xiaomi-ocr-0/**'
+      - 'tests/test_xiaomi_hosted_export.py'
+      - 'tests/test_xiaomi_export_evidence.py'
+      - 'tests/test_verify_gguf_export.py'
+      - 'models/verify-gguf-export.py'
+      - 'tools/kaggle/xiaomi-ocr-0-export/**'
+      - 'tools/kaggle/xiaomi-ocr-0-native-stage/**'
+      - 'tests/test_xiaomi_native_stage.py'
+      - 'tests/test_xiaomi_patch_embed.cpp'
+      - 'tests/test_xiaomi_patch_embed_cuda.cpp'
+      - 'tests/test_xiaomi_native_patch_evidence.py'
+      - 'models/attribute-xiaomi-patch-precision.py'
+      - 'tests/test_xiaomi_precision_replay.py'
+      - 'tests/test_xiaomi_position_replay.py'
+      - 'tests/test_xiaomi_layer0_replay.py'
+      - 'tests/test_xiaomi_position_replay_evidence.py'
+      - 'tests/test_xiaomi_vision_prefill_stage.py'
+      - 'tests/test_xiaomi_ci_vision_prefill.py'
+      - 'tests/test_xiaomi_vision_prefill_hosted_evidence.py'
+      - 'tests/test_xiaomi_vision_prefill_local.py'
+      - 'tests/test_xiaomi_bounds.cpp'
+      - 'tests/test_ovisocr2_image_bounds.cpp'
+      - 'tools/ci-heavy/xiaomi_vision_prefill.py'
+      - 'tools/kaggle/xiaomi-ocr-0-vision-prefill/**'
+      - 'tools/kaggle/xiaomi-ocr-0-precision-replay/**'
+      - 'tools/kaggle/xiaomi-ocr-0-position-replay/**'
+      - 'tools/kaggle/xiaomi-ocr-0-layer0-replay/**'
+      - 'src/qwen35_vision.*'
+      - 'src/qwen35_image_bounds.h'
 
 permissions:
   contents: read
@@ -61,11 +133,27 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      # test_xiaomi_precision_replay.py exercises the numpy comparator directly.
+      - run: python -m pip install --disable-pip-version-check numpy
       - run: python tests/test_qwen35_decoded_panel.py -v
       - run: python tests/test_qwen35_profiling.py -v
       - run: python tests/test_qwen35_materialization.py -v
       - run: python tests/test_qwen35_receipt.py -v
-
+      - run: python tests/test_xiaomi_evidence.py -v
+      - run: python tests/test_xiaomi_converter_contract.py -v
+      - run: python tests/test_xiaomi_hosted_export.py -v
+      - run: python tests/test_xiaomi_export_evidence.py -v
+      - run: python tests/test_xiaomi_native_stage.py -v
+      - run: python tests/test_xiaomi_native_patch_evidence.py -v
+      - run: python tests/test_xiaomi_precision_replay.py -v
+      - run: python tests/test_xiaomi_position_replay.py -v
+      - run: python tests/test_xiaomi_layer0_replay.py -v
+      - run: python tests/test_xiaomi_position_replay_evidence.py -v
+      - run: python tests/test_xiaomi_vision_prefill_stage.py -v
+      - run: python tests/test_xiaomi_vision_prefill_hosted_evidence.py -v
+      - run: python tests/test_xiaomi_vision_prefill_local.py -v
+      - run: python tests/test_xiaomi_ci_vision_prefill.py -v
+      - run: python tests/test_verify_gguf_export.py -v
   profile-counters:
     strategy:
       fail-fast: false

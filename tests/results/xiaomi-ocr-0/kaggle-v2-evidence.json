@@ -1,0 +1,2922 @@
+{
+  "scope": "original blueprint only; no native inference or quantization",
+  "publication": "none",
+  "native_alias_qualified": false,
+  "started_utc": "2026-10-31T06:18:35Z",
+  "source_model": "xiaomi-research/Xiaomi-OCR-0",
+  "source_revision": "bbd8cf8d21f256b3644b44cb860f3a7cecb93c30",
+  "checkpoint_bytes": 1746937856,
+  "checkpoint_sha256": "d4551e9f6127ac9e35cff7b4f7a72a90410e03e6c8676a36f0e2b7eaeb5d5348",
+  "host": {
+    "python": "3.13.15",
+    "machine": "x86_64",
+    "cpu_count": 4
+  },
+  "phase": "complete",
+  "versions": {
+    "transformers": "5.8.1",
+    "tokenizers": "0.22.2",
+    "torch": "2.11.0+cu128",
+    "numpy": "2.1.3"
+  },
+  "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+  "cuda_capability": [
+    7,
+    5
+  ],
+  "checkpoint_files_sha256": {
+    "config.json": "2eb95982069a24336fe66b3a0869ea5a711aba7566787d4a599654907ecc070c",
+    "processor_config.json": "d89ef49ce9cd37fbf510158e13c1ef063d9286411c1ec9049932dbe0487143b1",
+    "tokenizer_config.json": "792fa3f0cb88b111e54ef3134c873531008c4df471d108da17903426e308aa7b",
+    "chat_template.jinja": "273d8e0e683b885071fb17e08d71e5f2a5ddfb5309756181681de4f5a1822d80",
+    "tokenizer.json": "06b9509352d2af50381ab2247e083b80d32d5c0aba91c272ca9ff729b6a0e523",
+    "README.md": "54f2dbecfe9aa354da5a568ec555f2ca5c2d9b06ec2c8cd54b882af516625d46"
+  },
+  "missing_source_files": [
+    "generation_config.json",
+    "preprocessor_config.json"
+  ],
+  "config_canonical_sha256": "1367ff440a3d165b7b5547c68ea609e409ad5d2053c638f79af6511a321ec845",
+  "checkpoint_verified_sha256": "d4551e9f6127ac9e35cff7b4f7a72a90410e03e6c8676a36f0e2b7eaeb5d5348",
+  "header": {
+    "tensors": 488,
+    "main": 473,
+    "auxiliary": 15,
+    "auxiliary_names": [
+      "mtp.fc.weight",
+      "mtp.layers.0.input_layernorm.weight",
+      "mtp.layers.0.mlp.down_proj.weight",
+      "mtp.layers.0.mlp.gate_proj.weight",
+      "mtp.layers.0.mlp.up_proj.weight",
+      "mtp.layers.0.post_attention_layernorm.weight",
+      "mtp.layers.0.self_attn.k_norm.weight",
+      "mtp.layers.0.self_attn.k_proj.weight",
+      "mtp.layers.0.self_attn.o_proj.weight",
+      "mtp.layers.0.self_attn.q_norm.weight",
+      "mtp.layers.0.self_attn.q_proj.weight",
+      "mtp.layers.0.self_attn.v_proj.weight",
+      "mtp.norm.weight",
+      "mtp.pre_fc_norm_embedding.weight",
+      "mtp.pre_fc_norm_hidden.weight"
+    ],
+    "header_bytes": 60280,
+    "dtypes": [
+      "BF16"
+    ]
+  },
+  "schema": {
+    "official_tensors": 474,
+    "missing": [
+      "lm_head.weight"
+    ],
+    "extra": [
+      "mtp.fc.weight",
+      "mtp.layers.0.input_layernorm.weight",
+      "mtp.layers.0.mlp.down_proj.weight",
+      "mtp.layers.0.mlp.gate_proj.weight",
+      "mtp.layers.0.mlp.up_proj.weight",
+      "mtp.layers.0.post_attention_layernorm.weight",
+      "mtp.layers.0.self_attn.k_norm.weight",
+      "mtp.layers.0.self_attn.k_proj.weight",
+      "mtp.layers.0.self_attn.o_proj.weight",
+      "mtp.layers.0.self_attn.q_norm.weight",
+      "mtp.layers.0.self_attn.q_proj.weight",
+      "mtp.layers.0.self_attn.v_proj.weight",
+      "mtp.norm.weight",
+      "mtp.pre_fc_norm_embedding.weight",
+      "mtp.pre_fc_norm_hidden.weight"
+    ],
+    "shape_differences": [],
+    "lm_head_absent": true,
+    "mtp_in_official": [],
+    "official_main": 474,
+    "shapes": {
+      "model.visual.patch_embed.proj.weight": [
+        768,
+        3,
+        2,
+        16,
+        16
+      ],
+      "model.visual.patch_embed.proj.bias": [
+        768
+      ],
+      "model.visual.pos_embed.weight": [
+        2304,
+        768
+      ],
+      "model.visual.blocks.0.norm1.weight": [
+        768
+      ],
+      "model.visual.blocks.0.norm1.bias": [
+        768
+      ],
+      "model.visual.blocks.0.norm2.weight": [
+        768
+      ],
+      "model.visual.blocks.0.norm2.bias": [
+        768
+      ],
+      "model.visual.blocks.0.attn.qkv.weight": [
+        2304,
+        768
+      ],
+      "model.visual.blocks.0.attn.qkv.bias": [
+        2304
+      ],
+      "model.visual.blocks.0.attn.proj.weight": [
+        768,
+        768
+      ],
+      "model.visual.blocks.0.attn.proj.bias": [
+        768
+      ],
+      "model.visual.blocks.0.mlp.linear_fc1.weight": [
+        3072,
+        768
+      ],
+      "model.visual.blocks.0.mlp.linear_fc1.bias": [
+        3072
+      ],
+      "model.visual.blocks.0.mlp.linear_fc2.weight": [
+        768,
+        3072
+      ],
+      "model.visual.blocks.0.mlp.linear_fc2.bias": [
+        768
+      ],
+      "model.visual.blocks.1.norm1.weight": [
+        768
+      ],
+      "model.visual.blocks.1.norm1.bias": [
+        768
+      ],
+      "model.visual.blocks.1.norm2.weight": [
+        768
+      ],
+      "model.visual.blocks.1.norm2.bias": [
+        768
+      ],
+      "model.visual.blocks.1.attn.qkv.weight": [
+        2304,
+        768
+      ],
+      "model.visual.blocks.1.attn.qkv.bias": [
+        2304
+      ],
+      "model.visual.blocks.1.attn.proj.weight": [
+        768,
+        768
+      ],
+      "model.visual.blocks.1.attn.proj.bias": [
+        768
+      ],
+      "model.visual.blocks.1.mlp.linear_fc1.weight": [
+        3072,
+        768
+      ],
+      "model.visual.blocks.1.mlp.linear_fc1.bias": [
+        3072
+      ],
+      "model.visual.blocks.1.mlp.linear_fc2.weight": [
+        768,
+        3072
+      ],
+      "model.visual.blocks.1.mlp.linear_fc2.bias": [
+        768
+      ],
+      "model.visual.blocks.2.norm1.weight": [
+        768
+      ],
+      "model.visual.blocks.2.norm1.bias": [
+        768
+      ],
+      "model.visual.blocks.2.norm2.weight": [
+        768
+      ],
+      "model.visual.blocks.2.norm2.bias": [
+        768
+      ],
+      "model.visual.blocks.2.attn.qkv.weight": [
+        2304,
+        768
+      ],
+      "model.visual.blocks.2.attn.qkv.bias": [
+        2304
+      ],
+      "model.visual.blocks.2.attn.proj.weight": [
+        768,
+        768
+      ],
+      "model.visual.blocks.2.attn.proj.bias": [
+        768
+      ],
+      "model.visual.blocks.2.mlp.linear_fc1.weight": [
+        3072,
+        768
+      ],
+      "model.visual.blocks.2.mlp.linear_fc1.bias": [
+        3072
+      ],
+      "model.visual.blocks.2.mlp.linear_fc2.weight": [
+        768,
+        3072
+      ],
+      "model.visual.blocks.2.mlp.linear_fc2.bias": [
+        768
+      ],
+      "model.visual.blocks.3.norm1.weight": [
+        768
+      ],
+      "model.visual.blocks.3.norm1.bias": [
+        768
+      ],
+      "model.visual.blocks.3.norm2.weight": [
+        768
+      ],
+      "model.visual.blocks.3.norm2.bias": [
+        768
+      ],
+      "model.visual.blocks.3.attn.qkv.weight": [
+        2304,
+        768
+      ],
+      "model.visual.blocks.3.attn.qkv.bias": [
+        2304
+      ],
+      "model.visual.blocks.3.attn.proj.weight": [
+        768,
+        768
+      ],
+      "model.visual.blocks.3.attn.proj.bias": [
+        768
+      ],
+      "model.visual.blocks.3.mlp.linear_fc1.weight": [
+        3072,
+        768
+      ],
+      "model.visual.blocks.3.mlp.linear_fc1.bias": [
+        3072
+      ],
+      "model.visual.blocks.3.mlp.linear_fc2.weight": [
+        768,
+        3072
+      ],
+      "model.visual.blocks.3.mlp.linear_fc2.bias": [
+        768
+      ],
+      "model.visual.blocks.4.norm1.weight": [
+        768
+      ],
+      "model.visual.blocks.4.norm1.bias": [
+        768
+      ],
+      "model.visual.blocks.4.norm2.weight": [
+        768
+      ],
+      "model.visual.blocks.4.norm2.bias": [
+        768
+      ],
+      "model.visual.blocks.4.attn.qkv.weight": [
+        2304,
+        768
+      ],
+      "model.visual.blocks.4.attn.qkv.bias": [
+        2304
+      ],
+      "model.visual.blocks.4.attn.proj.weight": [
+        768,
+        768
+      ],
+      "model.visual.blocks.4.attn.proj.bias": [
+        768
+      ],
+      "model.visual.blocks.4.mlp.linear_fc1.weight": [
+        3072,
+        768
+      ],
+      "model.visual.blocks.4.mlp.linear_fc1.bias": [
+        3072
+      ],
+      "model.visual.blocks.4.mlp.linear_fc2.weight": [
+        768,
+        3072
+      ],
+      "model.visual.blocks.4.mlp.linear_fc2.bias": [
+        768
+      ],
+      "model.visual.blocks.5.norm1.weight": [
+        768
+      ],
+      "model.visual.blocks.5.norm1.bias": [
+        768
+      ],
+      "model.visual.blocks.5.norm2.weight": [
+        768
+      ],
+      "model.visual.blocks.5.norm2.bias": [
+        768
+      ],
+      "model.visual.blocks.5.attn.qkv.weight": [
+        2304,
+        768
+      ],
+      "model.visual.blocks.5.attn.qkv.bias": [
+        2304
+      ],
+      "model.visual.blocks.5.attn.proj.weight": [
+        768,
+        768
+      ],
+      "model.visual.blocks.5.attn.proj.bias": [
+        768
+      ],
+      "model.visual.blocks.5.mlp.linear_fc1.weight": [
+        3072,
+        768
+      ],
+      "model.visual.blocks.5.mlp.linear_fc1.bias": [
+        3072
+      ],
+      "model.visual.blocks.5.mlp.linear_fc2.weight": [
+        768,
+        3072
+      ],
+      "model.visual.blocks.5.mlp.linear_fc2.bias": [
+        768
+      ],
+      "model.visual.blocks.6.norm1.weight": [
+        768
+      ],
+      "model.visual.blocks.6.norm1.bias": [
+        768
+      ],
+      "model.visual.blocks.6.norm2.weight": [
+        768
+      ],
+      "model.visual.blocks.6.norm2.bias": [
+        768
+      ],
+      "model.visual.blocks.6.attn.qkv.weight": [
+        2304,
+        768
+      ],
+      "model.visual.blocks.6.attn.qkv.bias": [
+        2304
+      ],
+      "model.visual.blocks.6.attn.proj.weight": [
+        768,
+        768
+      ],
+      "model.visual.blocks.6.attn.proj.bias": [
+        768
+      ],
+      "model.visual.blocks.6.mlp.linear_fc1.weight": [
+        3072,
+        768
+      ],
+      "model.visual.blocks.6.mlp.linear_fc1.bias": [
+        3072
+      ],
+      "model.visual.blocks.6.mlp.linear_fc2.weight": [
+        768,
+        3072
+      ],
+      "model.visual.blocks.6.mlp.linear_fc2.bias": [
+        768
+      ],
+      "model.visual.blocks.7.norm1.weight": [
+        768
+      ],
+      "model.visual.blocks.7.norm1.bias": [
+        768
+      ],
+      "model.visual.blocks.7.norm2.weight": [
+        768
+      ],
+      "model.visual.blocks.7.norm2.bias": [
+        768
+      ],
+      "model.visual.blocks.7.attn.qkv.weight": [
+        2304,
+        768
+      ],
+      "model.visual.blocks.7.attn.qkv.bias": [
+        2304
+      ],
+      "model.visual.blocks.7.attn.proj.weight": [
+        768,
+        768
+      ],
+      "model.visual.blocks.7.attn.proj.bias": [
+        768
+      ],
+      "model.visual.blocks.7.mlp.linear_fc1.weight": [
+        3072,
+        768
+      ],
+      "model.visual.blocks.7.mlp.linear_fc1.bias": [
+        3072
+      ],
+      "model.visual.blocks.7.mlp.linear_fc2.weight": [
+        768,
+        3072
+      ],
+      "model.visual.blocks.7.mlp.linear_fc2.bias": [
+        768
+      ],
+      "model.visual.blocks.8.norm1.weight": [
+        768
+      ],
+      "model.visual.blocks.8.norm1.bias": [
+        768
+      ],
+      "model.visual.blocks.8.norm2.weight": [
+        768
+      ],
+      "model.visual.blocks.8.norm2.bias": [
+        768
+      ],
+      "model.visual.blocks.8.attn.qkv.weight": [
+        2304,
+        768
+      ],
+      "model.visual.blocks.8.attn.qkv.bias": [
+        2304
+      ],
+      "model.visual.blocks.8.attn.proj.weight": [
+        768,
+        768
+      ],
+      "model.visual.blocks.8.attn.proj.bias": [
+        768
+      ],
+      "model.visual.blocks.8.mlp.linear_fc1.weight": [
+        3072,
+        768
+      ],
+      "model.visual.blocks.8.mlp.linear_fc1.bias": [
+        3072
+      ],
+      "model.visual.blocks.8.mlp.linear_fc2.weight": [
+        768,
+        3072
+      ],
+      "model.visual.blocks.8.mlp.linear_fc2.bias": [
+        768
+      ],
+      "model.visual.blocks.9.norm1.weight": [
+        768
+      ],
+      "model.visual.blocks.9.norm1.bias": [
+        768
+      ],
+      "model.visual.blocks.9.norm2.weight": [
+        768
+      ],
+      "model.visual.blocks.9.norm2.bias": [
+        768
+      ],
+      "model.visual.blocks.9.attn.qkv.weight": [
+        2304,
+        768
+      ],
+      "model.visual.blocks.9.attn.qkv.bias": [
+        2304
+      ],
+      "model.visual.blocks.9.attn.proj.weight": [
+        768,
+        768
+      ],
+      "model.visual.blocks.9.attn.proj.bias": [
+        768
+      ],
+      "model.visual.blocks.9.mlp.linear_fc1.weight": [
+        3072,
+        768
+      ],
+      "model.visual.blocks.9.mlp.linear_fc1.bias": [
+        3072
+      ],
+      "model.visual.blocks.9.mlp.linear_fc2.weight": [
+        768,
+        3072
+      ],
+      "model.visual.blocks.9.mlp.linear_fc2.bias": [
+        768
+      ],
+      "model.visual.blocks.10.norm1.weight": [
+        768
+      ],
+      "model.visual.blocks.10.norm1.bias": [
+        768
+      ],
+      "model.visual.blocks.10.norm2.weight": [
+        768
+      ],
+      "model.visual.blocks.10.norm2.bias": [
+        768
+      ],
+      "model.visual.blocks.10.attn.qkv.weight": [
+        2304,
+        768
+      ],
+      "model.visual.blocks.10.attn.qkv.bias": [
+        2304
+      ],
+      "model.visual.blocks.10.attn.proj.weight": [
+        768,
+        768
+      ],
+      "model.visual.blocks.10.attn.proj.bias": [
+        768
+      ],
+      "model.visual.blocks.10.mlp.linear_fc1.weight": [
+        3072,
+        768
+      ],
+      "model.visual.blocks.10.mlp.linear_fc1.bias": [
+        3072
+      ],
+      "model.visual.blocks.10.mlp.linear_fc2.weight": [
+        768,
+        3072
+      ],
+      "model.visual.blocks.10.mlp.linear_fc2.bias": [
+        768
+      ],
+      "model.visual.blocks.11.norm1.weight": [
+        768
+      ],
+      "model.visual.blocks.11.norm1.bias": [
+        768
+      ],
+      "model.visual.blocks.11.norm2.weight": [
+        768
+      ],
+      "model.visual.blocks.11.norm2.bias": [
+        768
+      ],
+      "model.visual.blocks.11.attn.qkv.weight": [
+        2304,
+        768
+      ],
+      "model.visual.blocks.11.attn.qkv.bias": [
+        2304
+      ],
+      "model.visual.blocks.11.attn.proj.weight": [
+        768,
+        768
+      ],
+      "model.visual.blocks.11.attn.proj.bias": [
+        768
+      ],
+      "model.visual.blocks.11.mlp.linear_fc1.weight": [
+        3072,
+        768
+      ],
+      "model.visual.blocks.11.mlp.linear_fc1.bias": [
+        3072
+      ],
+      "model.visual.blocks.11.mlp.linear_fc2.weight": [
+        768,
+        3072
+      ],
+      "model.visual.blocks.11.mlp.linear_fc2.bias": [
+        768
+      ],
+      "model.visual.merger.norm.weight": [
+        768
+      ],
+      "model.visual.merger.norm.bias": [
+        768
+      ],
+      "model.visual.merger.linear_fc1.weight": [
+        3072,
+        3072
+      ],
+      "model.visual.merger.linear_fc1.bias": [
+        3072
+      ],
+      "model.visual.merger.linear_fc2.weight": [
+        1024,
+        3072
+      ],
+      "model.visual.merger.linear_fc2.bias": [
+        1024
+      ],
+      "model.language_model.embed_tokens.weight": [
+        248320,
+        1024
+      ],
+      "model.language_model.layers.0.linear_attn.dt_bias": [
+        16
+      ],
+      "model.language_model.layers.0.linear_attn.A_log": [
+        16
+      ],
+      "model.language_model.layers.0.linear_attn.conv1d.weight": [
+        6144,
+        1,
+        4
+      ],
+      "model.language_model.layers.0.linear_attn.norm.weight": [
+        128
+      ],
+      "model.language_model.layers.0.linear_attn.out_proj.weight": [
+        1024,
+        2048
+      ],
+      "model.language_model.layers.0.linear_attn.in_proj_qkv.weight": [
+        6144,
+        1024
+      ],
+      "model.language_model.layers.0.linear_attn.in_proj_z.weight": [
+        2048,
+        1024
+      ],
+      "model.language_model.layers.0.linear_attn.in_proj_b.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.0.linear_attn.in_proj_a.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.0.mlp.gate_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.0.mlp.up_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.0.mlp.down_proj.weight": [
+        1024,
+        3584
+      ],
+      "model.language_model.layers.0.input_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.0.post_attention_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.1.linear_attn.dt_bias": [
+        16
+      ],
+      "model.language_model.layers.1.linear_attn.A_log": [
+        16
+      ],
+      "model.language_model.layers.1.linear_attn.conv1d.weight": [
+        6144,
+        1,
+        4
+      ],
+      "model.language_model.layers.1.linear_attn.norm.weight": [
+        128
+      ],
+      "model.language_model.layers.1.linear_attn.out_proj.weight": [
+        1024,
+        2048
+      ],
+      "model.language_model.layers.1.linear_attn.in_proj_qkv.weight": [
+        6144,
+        1024
+      ],
+      "model.language_model.layers.1.linear_attn.in_proj_z.weight": [
+        2048,
+        1024
+      ],
+      "model.language_model.layers.1.linear_attn.in_proj_b.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.1.linear_attn.in_proj_a.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.1.mlp.gate_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.1.mlp.up_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.1.mlp.down_proj.weight": [
+        1024,
+        3584
+      ],
+      "model.language_model.layers.1.input_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.1.post_attention_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.2.linear_attn.dt_bias": [
+        16
+      ],
+      "model.language_model.layers.2.linear_attn.A_log": [
+        16
+      ],
+      "model.language_model.layers.2.linear_attn.conv1d.weight": [
+        6144,
+        1,
+        4
+      ],
+      "model.language_model.layers.2.linear_attn.norm.weight": [
+        128
+      ],
+      "model.language_model.layers.2.linear_attn.out_proj.weight": [
+        1024,
+        2048
+      ],
+      "model.language_model.layers.2.linear_attn.in_proj_qkv.weight": [
+        6144,
+        1024
+      ],
+      "model.language_model.layers.2.linear_attn.in_proj_z.weight": [
+        2048,
+        1024
+      ],
+      "model.language_model.layers.2.linear_attn.in_proj_b.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.2.linear_attn.in_proj_a.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.2.mlp.gate_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.2.mlp.up_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.2.mlp.down_proj.weight": [
+        1024,
+        3584
+      ],
+      "model.language_model.layers.2.input_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.2.post_attention_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.3.self_attn.q_proj.weight": [
+        4096,
+        1024
+      ],
+      "model.language_model.layers.3.self_attn.k_proj.weight": [
+        512,
+        1024
+      ],
+      "model.language_model.layers.3.self_attn.v_proj.weight": [
+        512,
+        1024
+      ],
+      "model.language_model.layers.3.self_attn.o_proj.weight": [
+        1024,
+        2048
+      ],
+      "model.language_model.layers.3.self_attn.q_norm.weight": [
+        256
+      ],
+      "model.language_model.layers.3.self_attn.k_norm.weight": [
+        256
+      ],
+      "model.language_model.layers.3.mlp.gate_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.3.mlp.up_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.3.mlp.down_proj.weight": [
+        1024,
+        3584
+      ],
+      "model.language_model.layers.3.input_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.3.post_attention_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.4.linear_attn.dt_bias": [
+        16
+      ],
+      "model.language_model.layers.4.linear_attn.A_log": [
+        16
+      ],
+      "model.language_model.layers.4.linear_attn.conv1d.weight": [
+        6144,
+        1,
+        4
+      ],
+      "model.language_model.layers.4.linear_attn.norm.weight": [
+        128
+      ],
+      "model.language_model.layers.4.linear_attn.out_proj.weight": [
+        1024,
+        2048
+      ],
+      "model.language_model.layers.4.linear_attn.in_proj_qkv.weight": [
+        6144,
+        1024
+      ],
+      "model.language_model.layers.4.linear_attn.in_proj_z.weight": [
+        2048,
+        1024
+      ],
+      "model.language_model.layers.4.linear_attn.in_proj_b.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.4.linear_attn.in_proj_a.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.4.mlp.gate_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.4.mlp.up_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.4.mlp.down_proj.weight": [
+        1024,
+        3584
+      ],
+      "model.language_model.layers.4.input_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.4.post_attention_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.5.linear_attn.dt_bias": [
+        16
+      ],
+      "model.language_model.layers.5.linear_attn.A_log": [
+        16
+      ],
+      "model.language_model.layers.5.linear_attn.conv1d.weight": [
+        6144,
+        1,
+        4
+      ],
+      "model.language_model.layers.5.linear_attn.norm.weight": [
+        128
+      ],
+      "model.language_model.layers.5.linear_attn.out_proj.weight": [
+        1024,
+        2048
+      ],
+      "model.language_model.layers.5.linear_attn.in_proj_qkv.weight": [
+        6144,
+        1024
+      ],
+      "model.language_model.layers.5.linear_attn.in_proj_z.weight": [
+        2048,
+        1024
+      ],
+      "model.language_model.layers.5.linear_attn.in_proj_b.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.5.linear_attn.in_proj_a.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.5.mlp.gate_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.5.mlp.up_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.5.mlp.down_proj.weight": [
+        1024,
+        3584
+      ],
+      "model.language_model.layers.5.input_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.5.post_attention_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.6.linear_attn.dt_bias": [
+        16
+      ],
+      "model.language_model.layers.6.linear_attn.A_log": [
+        16
+      ],
+      "model.language_model.layers.6.linear_attn.conv1d.weight": [
+        6144,
+        1,
+        4
+      ],
+      "model.language_model.layers.6.linear_attn.norm.weight": [
+        128
+      ],
+      "model.language_model.layers.6.linear_attn.out_proj.weight": [
+        1024,
+        2048
+      ],
+      "model.language_model.layers.6.linear_attn.in_proj_qkv.weight": [
+        6144,
+        1024
+      ],
+      "model.language_model.layers.6.linear_attn.in_proj_z.weight": [
+        2048,
+        1024
+      ],
+      "model.language_model.layers.6.linear_attn.in_proj_b.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.6.linear_attn.in_proj_a.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.6.mlp.gate_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.6.mlp.up_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.6.mlp.down_proj.weight": [
+        1024,
+        3584
+      ],
+      "model.language_model.layers.6.input_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.6.post_attention_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.7.self_attn.q_proj.weight": [
+        4096,
+        1024
+      ],
+      "model.language_model.layers.7.self_attn.k_proj.weight": [
+        512,
+        1024
+      ],
+      "model.language_model.layers.7.self_attn.v_proj.weight": [
+        512,
+        1024
+      ],
+      "model.language_model.layers.7.self_attn.o_proj.weight": [
+        1024,
+        2048
+      ],
+      "model.language_model.layers.7.self_attn.q_norm.weight": [
+        256
+      ],
+      "model.language_model.layers.7.self_attn.k_norm.weight": [
+        256
+      ],
+      "model.language_model.layers.7.mlp.gate_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.7.mlp.up_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.7.mlp.down_proj.weight": [
+        1024,
+        3584
+      ],
+      "model.language_model.layers.7.input_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.7.post_attention_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.8.linear_attn.dt_bias": [
+        16
+      ],
+      "model.language_model.layers.8.linear_attn.A_log": [
+        16
+      ],
+      "model.language_model.layers.8.linear_attn.conv1d.weight": [
+        6144,
+        1,
+        4
+      ],
+      "model.language_model.layers.8.linear_attn.norm.weight": [
+        128
+      ],
+      "model.language_model.layers.8.linear_attn.out_proj.weight": [
+        1024,
+        2048
+      ],
+      "model.language_model.layers.8.linear_attn.in_proj_qkv.weight": [
+        6144,
+        1024
+      ],
+      "model.language_model.layers.8.linear_attn.in_proj_z.weight": [
+        2048,
+        1024
+      ],
+      "model.language_model.layers.8.linear_attn.in_proj_b.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.8.linear_attn.in_proj_a.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.8.mlp.gate_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.8.mlp.up_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.8.mlp.down_proj.weight": [
+        1024,
+        3584
+      ],
+      "model.language_model.layers.8.input_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.8.post_attention_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.9.linear_attn.dt_bias": [
+        16
+      ],
+      "model.language_model.layers.9.linear_attn.A_log": [
+        16
+      ],
+      "model.language_model.layers.9.linear_attn.conv1d.weight": [
+        6144,
+        1,
+        4
+      ],
+      "model.language_model.layers.9.linear_attn.norm.weight": [
+        128
+      ],
+      "model.language_model.layers.9.linear_attn.out_proj.weight": [
+        1024,
+        2048
+      ],
+      "model.language_model.layers.9.linear_attn.in_proj_qkv.weight": [
+        6144,
+        1024
+      ],
+      "model.language_model.layers.9.linear_attn.in_proj_z.weight": [
+        2048,
+        1024
+      ],
+      "model.language_model.layers.9.linear_attn.in_proj_b.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.9.linear_attn.in_proj_a.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.9.mlp.gate_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.9.mlp.up_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.9.mlp.down_proj.weight": [
+        1024,
+        3584
+      ],
+      "model.language_model.layers.9.input_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.9.post_attention_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.10.linear_attn.dt_bias": [
+        16
+      ],
+      "model.language_model.layers.10.linear_attn.A_log": [
+        16
+      ],
+      "model.language_model.layers.10.linear_attn.conv1d.weight": [
+        6144,
+        1,
+        4
+      ],
+      "model.language_model.layers.10.linear_attn.norm.weight": [
+        128
+      ],
+      "model.language_model.layers.10.linear_attn.out_proj.weight": [
+        1024,
+        2048
+      ],
+      "model.language_model.layers.10.linear_attn.in_proj_qkv.weight": [
+        6144,
+        1024
+      ],
+      "model.language_model.layers.10.linear_attn.in_proj_z.weight": [
+        2048,
+        1024
+      ],
+      "model.language_model.layers.10.linear_attn.in_proj_b.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.10.linear_attn.in_proj_a.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.10.mlp.gate_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.10.mlp.up_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.10.mlp.down_proj.weight": [
+        1024,
+        3584
+      ],
+      "model.language_model.layers.10.input_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.10.post_attention_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.11.self_attn.q_proj.weight": [
+        4096,
+        1024
+      ],
+      "model.language_model.layers.11.self_attn.k_proj.weight": [
+        512,
+        1024
+      ],
+      "model.language_model.layers.11.self_attn.v_proj.weight": [
+        512,
+        1024
+      ],
+      "model.language_model.layers.11.self_attn.o_proj.weight": [
+        1024,
+        2048
+      ],
+      "model.language_model.layers.11.self_attn.q_norm.weight": [
+        256
+      ],
+      "model.language_model.layers.11.self_attn.k_norm.weight": [
+        256
+      ],
+      "model.language_model.layers.11.mlp.gate_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.11.mlp.up_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.11.mlp.down_proj.weight": [
+        1024,
+        3584
+      ],
+      "model.language_model.layers.11.input_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.11.post_attention_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.12.linear_attn.dt_bias": [
+        16
+      ],
+      "model.language_model.layers.12.linear_attn.A_log": [
+        16
+      ],
+      "model.language_model.layers.12.linear_attn.conv1d.weight": [
+        6144,
+        1,
+        4
+      ],
+      "model.language_model.layers.12.linear_attn.norm.weight": [
+        128
+      ],
+      "model.language_model.layers.12.linear_attn.out_proj.weight": [
+        1024,
+        2048
+      ],
+      "model.language_model.layers.12.linear_attn.in_proj_qkv.weight": [
+        6144,
+        1024
+      ],
+      "model.language_model.layers.12.linear_attn.in_proj_z.weight": [
+        2048,
+        1024
+      ],
+      "model.language_model.layers.12.linear_attn.in_proj_b.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.12.linear_attn.in_proj_a.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.12.mlp.gate_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.12.mlp.up_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.12.mlp.down_proj.weight": [
+        1024,
+        3584
+      ],
+      "model.language_model.layers.12.input_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.12.post_attention_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.13.linear_attn.dt_bias": [
+        16
+      ],
+      "model.language_model.layers.13.linear_attn.A_log": [
+        16
+      ],
+      "model.language_model.layers.13.linear_attn.conv1d.weight": [
+        6144,
+        1,
+        4
+      ],
+      "model.language_model.layers.13.linear_attn.norm.weight": [
+        128
+      ],
+      "model.language_model.layers.13.linear_attn.out_proj.weight": [
+        1024,
+        2048
+      ],
+      "model.language_model.layers.13.linear_attn.in_proj_qkv.weight": [
+        6144,
+        1024
+      ],
+      "model.language_model.layers.13.linear_attn.in_proj_z.weight": [
+        2048,
+        1024
+      ],
+      "model.language_model.layers.13.linear_attn.in_proj_b.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.13.linear_attn.in_proj_a.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.13.mlp.gate_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.13.mlp.up_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.13.mlp.down_proj.weight": [
+        1024,
+        3584
+      ],
+      "model.language_model.layers.13.input_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.13.post_attention_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.14.linear_attn.dt_bias": [
+        16
+      ],
+      "model.language_model.layers.14.linear_attn.A_log": [
+        16
+      ],
+      "model.language_model.layers.14.linear_attn.conv1d.weight": [
+        6144,
+        1,
+        4
+      ],
+      "model.language_model.layers.14.linear_attn.norm.weight": [
+        128
+      ],
+      "model.language_model.layers.14.linear_attn.out_proj.weight": [
+        1024,
+        2048
+      ],
+      "model.language_model.layers.14.linear_attn.in_proj_qkv.weight": [
+        6144,
+        1024
+      ],
+      "model.language_model.layers.14.linear_attn.in_proj_z.weight": [
+        2048,
+        1024
+      ],
+      "model.language_model.layers.14.linear_attn.in_proj_b.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.14.linear_attn.in_proj_a.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.14.mlp.gate_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.14.mlp.up_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.14.mlp.down_proj.weight": [
+        1024,
+        3584
+      ],
+      "model.language_model.layers.14.input_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.14.post_attention_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.15.self_attn.q_proj.weight": [
+        4096,
+        1024
+      ],
+      "model.language_model.layers.15.self_attn.k_proj.weight": [
+        512,
+        1024
+      ],
+      "model.language_model.layers.15.self_attn.v_proj.weight": [
+        512,
+        1024
+      ],
+      "model.language_model.layers.15.self_attn.o_proj.weight": [
+        1024,
+        2048
+      ],
+      "model.language_model.layers.15.self_attn.q_norm.weight": [
+        256
+      ],
+      "model.language_model.layers.15.self_attn.k_norm.weight": [
+        256
+      ],
+      "model.language_model.layers.15.mlp.gate_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.15.mlp.up_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.15.mlp.down_proj.weight": [
+        1024,
+        3584
+      ],
+      "model.language_model.layers.15.input_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.15.post_attention_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.16.linear_attn.dt_bias": [
+        16
+      ],
+      "model.language_model.layers.16.linear_attn.A_log": [
+        16
+      ],
+      "model.language_model.layers.16.linear_attn.conv1d.weight": [
+        6144,
+        1,
+        4
+      ],
+      "model.language_model.layers.16.linear_attn.norm.weight": [
+        128
+      ],
+      "model.language_model.layers.16.linear_attn.out_proj.weight": [
+        1024,
+        2048
+      ],
+      "model.language_model.layers.16.linear_attn.in_proj_qkv.weight": [
+        6144,
+        1024
+      ],
+      "model.language_model.layers.16.linear_attn.in_proj_z.weight": [
+        2048,
+        1024
+      ],
+      "model.language_model.layers.16.linear_attn.in_proj_b.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.16.linear_attn.in_proj_a.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.16.mlp.gate_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.16.mlp.up_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.16.mlp.down_proj.weight": [
+        1024,
+        3584
+      ],
+      "model.language_model.layers.16.input_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.16.post_attention_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.17.linear_attn.dt_bias": [
+        16
+      ],
+      "model.language_model.layers.17.linear_attn.A_log": [
+        16
+      ],
+      "model.language_model.layers.17.linear_attn.conv1d.weight": [
+        6144,
+        1,
+        4
+      ],
+      "model.language_model.layers.17.linear_attn.norm.weight": [
+        128
+      ],
+      "model.language_model.layers.17.linear_attn.out_proj.weight": [
+        1024,
+        2048
+      ],
+      "model.language_model.layers.17.linear_attn.in_proj_qkv.weight": [
+        6144,
+        1024
+      ],
+      "model.language_model.layers.17.linear_attn.in_proj_z.weight": [
+        2048,
+        1024
+      ],
+      "model.language_model.layers.17.linear_attn.in_proj_b.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.17.linear_attn.in_proj_a.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.17.mlp.gate_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.17.mlp.up_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.17.mlp.down_proj.weight": [
+        1024,
+        3584
+      ],
+      "model.language_model.layers.17.input_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.17.post_attention_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.18.linear_attn.dt_bias": [
+        16
+      ],
+      "model.language_model.layers.18.linear_attn.A_log": [
+        16
+      ],
+      "model.language_model.layers.18.linear_attn.conv1d.weight": [
+        6144,
+        1,
+        4
+      ],
+      "model.language_model.layers.18.linear_attn.norm.weight": [
+        128
+      ],
+      "model.language_model.layers.18.linear_attn.out_proj.weight": [
+        1024,
+        2048
+      ],
+      "model.language_model.layers.18.linear_attn.in_proj_qkv.weight": [
+        6144,
+        1024
+      ],
+      "model.language_model.layers.18.linear_attn.in_proj_z.weight": [
+        2048,
+        1024
+      ],
+      "model.language_model.layers.18.linear_attn.in_proj_b.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.18.linear_attn.in_proj_a.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.18.mlp.gate_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.18.mlp.up_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.18.mlp.down_proj.weight": [
+        1024,
+        3584
+      ],
+      "model.language_model.layers.18.input_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.18.post_attention_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.19.self_attn.q_proj.weight": [
+        4096,
+        1024
+      ],
+      "model.language_model.layers.19.self_attn.k_proj.weight": [
+        512,
+        1024
+      ],
+      "model.language_model.layers.19.self_attn.v_proj.weight": [
+        512,
+        1024
+      ],
+      "model.language_model.layers.19.self_attn.o_proj.weight": [
+        1024,
+        2048
+      ],
+      "model.language_model.layers.19.self_attn.q_norm.weight": [
+        256
+      ],
+      "model.language_model.layers.19.self_attn.k_norm.weight": [
+        256
+      ],
+      "model.language_model.layers.19.mlp.gate_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.19.mlp.up_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.19.mlp.down_proj.weight": [
+        1024,
+        3584
+      ],
+      "model.language_model.layers.19.input_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.19.post_attention_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.20.linear_attn.dt_bias": [
+        16
+      ],
+      "model.language_model.layers.20.linear_attn.A_log": [
+        16
+      ],
+      "model.language_model.layers.20.linear_attn.conv1d.weight": [
+        6144,
+        1,
+        4
+      ],
+      "model.language_model.layers.20.linear_attn.norm.weight": [
+        128
+      ],
+      "model.language_model.layers.20.linear_attn.out_proj.weight": [
+        1024,
+        2048
+      ],
+      "model.language_model.layers.20.linear_attn.in_proj_qkv.weight": [
+        6144,
+        1024
+      ],
+      "model.language_model.layers.20.linear_attn.in_proj_z.weight": [
+        2048,
+        1024
+      ],
+      "model.language_model.layers.20.linear_attn.in_proj_b.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.20.linear_attn.in_proj_a.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.20.mlp.gate_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.20.mlp.up_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.20.mlp.down_proj.weight": [
+        1024,
+        3584
+      ],
+      "model.language_model.layers.20.input_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.20.post_attention_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.21.linear_attn.dt_bias": [
+        16
+      ],
+      "model.language_model.layers.21.linear_attn.A_log": [
+        16
+      ],
+      "model.language_model.layers.21.linear_attn.conv1d.weight": [
+        6144,
+        1,
+        4
+      ],
+      "model.language_model.layers.21.linear_attn.norm.weight": [
+        128
+      ],
+      "model.language_model.layers.21.linear_attn.out_proj.weight": [
+        1024,
+        2048
+      ],
+      "model.language_model.layers.21.linear_attn.in_proj_qkv.weight": [
+        6144,
+        1024
+      ],
+      "model.language_model.layers.21.linear_attn.in_proj_z.weight": [
+        2048,
+        1024
+      ],
+      "model.language_model.layers.21.linear_attn.in_proj_b.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.21.linear_attn.in_proj_a.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.21.mlp.gate_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.21.mlp.up_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.21.mlp.down_proj.weight": [
+        1024,
+        3584
+      ],
+      "model.language_model.layers.21.input_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.21.post_attention_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.22.linear_attn.dt_bias": [
+        16
+      ],
+      "model.language_model.layers.22.linear_attn.A_log": [
+        16
+      ],
+      "model.language_model.layers.22.linear_attn.conv1d.weight": [
+        6144,
+        1,
+        4
+      ],
+      "model.language_model.layers.22.linear_attn.norm.weight": [
+        128
+      ],
+      "model.language_model.layers.22.linear_attn.out_proj.weight": [
+        1024,
+        2048
+      ],
+      "model.language_model.layers.22.linear_attn.in_proj_qkv.weight": [
+        6144,
+        1024
+      ],
+      "model.language_model.layers.22.linear_attn.in_proj_z.weight": [
+        2048,
+        1024
+      ],
+      "model.language_model.layers.22.linear_attn.in_proj_b.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.22.linear_attn.in_proj_a.weight": [
+        16,
+        1024
+      ],
+      "model.language_model.layers.22.mlp.gate_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.22.mlp.up_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.22.mlp.down_proj.weight": [
+        1024,
+        3584
+      ],
+      "model.language_model.layers.22.input_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.22.post_attention_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.23.self_attn.q_proj.weight": [
+        4096,
+        1024
+      ],
+      "model.language_model.layers.23.self_attn.k_proj.weight": [
+        512,
+        1024
+      ],
+      "model.language_model.layers.23.self_attn.v_proj.weight": [
+        512,
+        1024
+      ],
+      "model.language_model.layers.23.self_attn.o_proj.weight": [
+        1024,
+        2048
+      ],
+      "model.language_model.layers.23.self_attn.q_norm.weight": [
+        256
+      ],
+      "model.language_model.layers.23.self_attn.k_norm.weight": [
+        256
+      ],
+      "model.language_model.layers.23.mlp.gate_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.23.mlp.up_proj.weight": [
+        3584,
+        1024
+      ],
+      "model.language_model.layers.23.mlp.down_proj.weight": [
+        1024,
+        3584
+      ],
+      "model.language_model.layers.23.input_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.layers.23.post_attention_layernorm.weight": [
+        1024
+      ],
+      "model.language_model.norm.weight": [
+        1024
+      ],
+      "lm_head.weight": [
+        248320,
+        1024
+      ]
+    }
+  },
+  "processor": {
+    "class": "Qwen3VLProcessor",
+    "image_class": "Qwen2VLImageProcessor",
+    "image_config": {
+      "size": {
+        "longest_edge": 16777216,
+        "shortest_edge": 65536
+      },
+      "do_convert_rgb": true,
+      "do_normalize": true,
+      "do_rescale": true,
+      "do_resize": true,
+      "image_mean": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "image_processor_type": "Qwen2VLImageProcessor",
+      "image_std": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "merge_size": 2,
+      "patch_size": 16,
+      "resample": 3,
+      "rescale_factor": 0.00392156862745098,
+      "temporal_patch_size": 2
+    },
+    "tokenizer_class": "Qwen2Tokenizer"
+  },
+  "resolved_generation": {
+    "use_cache": true,
+    "output_attentions": false,
+    "output_hidden_states": false,
+    "pad_token_id": 248044,
+    "eos_token_id": 248046,
+    "_from_model_config": true,
+    "transformers_version": "5.8.1"
+  },
+  "stop_ids": [
+    248044,
+    248046
+  ],
+  "tokenizer_eos": 248046,
+  "task": "document",
+  "task_prompt": "Extract all information from the main body of the document image and represent it in markdown format, ignoring headers and footers. Tables should be expressed in OTSL format, formulas in the document should be represented using LATEX format, and the parsing should be organized according to the reading order.",
+  "rendered_prompt": "<|im_start|>user\nExtract all information from the main body of the document image and represent it in markdown format, ignoring headers and footers. Tables should be expressed in OTSL format, formulas in the document should be represented using LATEX format, and the parsing should be organized according to the reading order.<|vision_start|><|image_pad|><|vision_end|><|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+  "rendered_prompt_sha256": "4ff183b02e15704fca62adbfaafc97644cd3dc693cad720347bb0f37e25d78a3",
+  "rendered_prompt_repr": "<|im_start|>user\\nExtract all information from the main body of the document image and represent it in markdown format, ignoring headers and footers. Tables should be expressed in OTSL format, formulas in the document should be represented using LATEX format, and the parsing should be organized according to the reading order.<|vision_start|><|image_pad|><|vision_end|><|im_end|>\\n<|im_start|>assistant\\n<think>\\n\\n</think>\\n\\n",
+  "main_tensor_count": 473,
+  "auxiliary_tensor_count": 15,
+  "transformers_version": "5.8.1",
+  "cases": [
+    {
+      "name": "qianziwen",
+      "rgb_shape": [
+        979,
+        510,
+        3
+      ],
+      "grid": [
+        [
+          1,
+          62,
+          32
+        ]
+      ],
+      "input_ids": 568,
+      "fields": {
+        "input_ids": [
+          [
+            1,
+            568
+          ],
+          "int64",
+          "c7efff031d804325c4ad6ddeb60dc981e876d158ef52b1cd1b02cec37806b740"
+        ],
+        "attention_mask": [
+          [
+            1,
+            568
+          ],
+          "int64",
+          "ba5efd3ed40e2ed362169f1e454ba379932c1e72c304944b27a6d29878ef1b18"
+        ],
+        "mm_token_type_ids": [
+          [
+            1,
+            568
+          ],
+          "int64",
+          "ab91cedb160c44d473733fa5d33e457e46bff9a533e1f4bc7c6c902b72181d24"
+        ],
+        "pixel_values": [
+          [
+            1984,
+            1536
+          ],
+          "float32",
+          "9cb5fa12514f6288a84edf0a0a12dd289a3aa977df6a1aea46feab1396b1de77"
+        ],
+        "image_grid_thw": [
+          [
+            1,
+            3
+          ],
+          "int64",
+          "dbde42b7690a521a292f75e8143f71b37d486c09640437835cb4033b67acc471"
+        ]
+      },
+      "processor_sha256": "c3fdcc19d108168ce34123ef1c09fccc3a5db0e5dc15526d168537c06d57e8d0"
+    },
+    {
+      "name": "receipt",
+      "rgb_shape": [
+        1644,
+        932,
+        3
+      ],
+      "grid": [
+        [
+          1,
+          102,
+          58
+        ]
+      ],
+      "input_ids": 1551,
+      "fields": {
+        "input_ids": [
+          [
+            1,
+            1551
+          ],
+          "int64",
+          "871078a04b5259af9c29b03facf4f57d27d3062f3b39de0eb2df018136a3f7be"
+        ],
+        "attention_mask": [
+          [
+            1,
+            1551
+          ],
+          "int64",
+          "1f0d0a530a28776be3706bf4baaac24a2ad331cf58a5c2694783d244a9c78651"
+        ],
+        "mm_token_type_ids": [
+          [
+            1,
+            1551
+          ],
+          "int64",
+          "c87da366f1e0ad44ae38eeeabc956696ba2c2af831dfcd716d15a046bccbe294"
+        ],
+        "pixel_values": [
+          [
+            5916,
+            1536
+          ],
+          "float32",
+          "28e5e67462e3d0feb85a6c5d0fefed57ac7008bdeb81a59b80048264df32f112"
+        ],
+        "image_grid_thw": [
+          [
+            1,
+            3
+          ],
+          "int64",
+          "7da8d85e6c81f2c88a8e1d34a8df2d0c1dd4c139431377de713c2b7db593e4eb"
+        ]
+      },
+      "processor_sha256": "8433732dc7d7ed65ec5090abc60a2fac1b570985be85164dd13ce77ddaa06e57"
+    },
+    {
+      "name": "dense-equations",
+      "rgb_shape": [
+        1303,
+        1800,
+        3
+      ],
+      "grid": [
+        [
+          1,
+          82,
+          112
+        ]
+      ],
+      "input_ids": 2368,
+      "fields": {
+        "input_ids": [
+          [
+            1,
+            2368
+          ],
+          "int64",
+          "51a38b47fb6cee51472ce8ad8ec95ba99b7d3b84201859b2d79c43b039425829"
+        ],
+        "attention_mask": [
+          [
+            1,
+            2368
+          ],
+          "int64",
+          "9e3c014ad1a195ccd43355b3b92f254debdeb845c619ef89836163a873f5db78"
+        ],
+        "mm_token_type_ids": [
+          [
+            1,
+            2368
+          ],
+          "int64",
+          "11905a03c4719adbe8b711f3cce432c56e1864deaf10547a625df4f9b225249d"
+        ],
+        "pixel_values": [
+          [
+            9184,
+            1536
+          ],
+          "float32",
+          "f282281508ed25f81b6e9e1a0a30b1c4fc5f033ad219acab2ee976ba649ac41b"
+        ],
+        "image_grid_thw": [
+          [
+            1,
+            3
+          ],
+          "int64",
+          "2cd472b38da2fb81853eaf21b5287705144776f477f64e5617d9810d273c7a7e"
+        ]
+      },
+      "processor_sha256": "80be7fb7748e70bce5d0e471da859d22757dd5be5cb37fcb83df0dbc6402749f"
+    }
+  ],
+  "attention_implementation": "sdpa",
+  "eager_control_scope": "exact decoded text and input pixel hashes for two pages, not token/logit parity",
+  "original_gpu": [
+    {
+      "name": "qianziwen",
+      "prompt_tokens": 568,
+      "generated_ids": [
+        95835,
+        96106,
+        96617,
+        95905,
+        271,
+        98495,
+        96045,
+        96063,
+        97058,
+        98373,
+        147518,
+        96384,
+        96600,
+        108175,
+        96157,
+        101147,
+        271,
+        101870,
+        98363,
+        96726,
+        101965,
+        122346,
+        114544,
+        248046
+      ],
+      "stop_hit": true,
+      "capped": false,
+      "text_sha256": "8db51e73e76a4f407a2c4195c0bf3f11cef57033df78e8b188d43c333fb0a702",
+      "matches_eager_v1_text": true,
+      "text_bytes": 82,
+      "seconds": [
+        15.544,
+        15.633
+      ],
+      "device": "cuda",
+      "dtype": "torch.bfloat16"
+    },
+    {
+      "name": "receipt",
+      "prompt_tokens": 1551,
+      "generated_ids": [
+        17896,
+        13,
+        414,
+        2367,
+        7272,
+        13,
+        7778,
+        45,
+        417,
+        18567,
+        271,
+        2929,
+        46,
+        14288,
+        38,
+        535,
+        22,
+        15,
+        19,
+        19,
+        17,
+        22,
+        9009,
+        847,
+        271,
+        15284,
+        220,
+        16,
+        23,
+        20,
+        16,
+        6481,
+        594,
+        220,
+        16,
+        23,
+        20,
+        16,
+        7428,
+        11,
+        604,
+        939,
+        1058,
+        710,
+        39297,
+        220,
+        21,
+        11,
+        271,
+        42,
+        14006,
+        211986,
+        17320,
+        5078,
+        8291,
+        4164,
+        1058,
+        66804,
+        11568,
+        7301,
+        11,
+        271,
+        19,
+        18,
+        18,
+        15,
+        15,
+        13582,
+        40,
+        710,
+        173602,
+        193729,
+        11,
+        39490,
+        5052,
+        842,
+        271,
+        6489,
+        759,
+        2937,
+        2233,
+        535,
+        15,
+        15,
+        16,
+        15,
+        24,
+        17,
+        23,
+        23,
+        21,
+        20,
+        17,
+        23,
+        8,
+        271,
+        7,
+        2080,
+        622,
+        1846,
+        10824,
+        1580,
+        4373,
+        380,
+        3787,
+        8,
+        271,
+        9009,
+        2860,
+        1897,
+        75249,
+        12,
+        271,
+        34,
+        1537,
+        3496,
+        387,
+        9097,
+        458,
+        12,
+        16,
+        19,
+        15,
+        348,
+        50,
+        271,
+        25544,
+        18,
+        21,
+        471,
+        220,
+        21,
+        14,
+        21,
+        15,
+        271,
+        24,
+        20,
+        20,
+        20,
+        16,
+        16,
+        17,
+        24,
+        15,
+        16,
+        19,
+        15,
+        21,
+        220,
+        16,
+        1543,
+        220,
+        20,
+        13,
+        24,
+        15,
+        220,
+        20,
+        13,
+        24,
+        15,
+        271,
+        1192,
+        1104,
+        8,
+        535,
+        220,
+        16,
+        73939,
+        1104,
+        8,
+        535,
+        220,
+        16,
+        271,
+        7354,
+        154738,
+        13,
+        31746,
+        31,
+        21,
+        4,
+        29808,
+        220,
+        20,
+        13,
+        24,
+        15,
+        271,
+        34,
+        9255,
+        29808,
+        220,
+        20,
+        13,
+        24,
+        15,
+        271,
+        72943,
+        20858,
+        212114,
+        2697,
+        44,
+        8,
+        14748,
+        2697,
+        44,
+        8,
+        271,
+        72943,
+        326,
+        31,
+        21,
+        4,
+        220,
+        20,
+        13,
+        20,
+        22,
+        220,
+        15,
+        13,
+        18,
+        18,
+        271,
+        9,
+        271,
+        16,
+        23,
+        12,
+        16,
+        15,
+        12,
+        16,
+        22,
+        220,
+        16,
+        20,
+        25,
+        16,
+        21,
+        6232,
+        15,
+        16,
+        1799,
+        51,
+        15,
+        24,
+        345,
+        18,
+        423,
+        15,
+        15,
+        15,
+        15,
+        15,
+        15,
+        16,
+        21,
+        18,
+        271,
+        44819,
+        11518,
+        469,
+        2080,
+        51,
+        471,
+        66749,
+        84044,
+        43,
+        162780,
+        271,
+        3152,
+        39524,
+        15359,
+        69805,
+        1425,
+        4616,
+        669,
+        271,
+        22,
+        79973,
+        4616,
+        40880,
+        230020,
+        13,
+        271,
+        759,
+        38170,
+        8662,
+        5486,
+        351,
+        9255,
+        36773,
+        12821,
+        13,
+        248046
+      ],
+      "stop_hit": true,
+      "capped": false,
+      "text_sha256": "e680f24e8b5fccebac7442ef16cb9a2e47e7542215f95422f8e38399ed162cb1",
+      "matches_eager_v1_text": true,
+      "text_bytes": 530,
+      "seconds": [
+        57.229,
+        56.298
+      ],
+      "device": "cuda",
+      "dtype": "torch.bfloat16"
+    },
+    {
+      "name": "dense-equations",
+      "prompt_tokens": 2368,
+      "generated_ids": [
+        1596,
+        1179,
+        6762,
+        279,
+        2614,
+        7101,
+        25,
+        1088,
+        11189,
+        10065,
+        12849,
+        90,
+        47,
+        18854,
+        72,
+        61,
+        73,
+        283,
+        1088,
+        19145,
+        14717,
+        83,
+        20741,
+        92,
+        61,
+        73,
+        19185,
+        10065,
+        12849,
+        90,
+        40,
+        92,
+        471,
+        1088,
+        18549,
+        516,
+        1088,
+        14394,
+        18218,
+        66755,
+        18854,
+        83,
+        1088,
+        14394,
+        18218,
+        66755,
+        18854,
+        83,
+        24094,
+        3369,
+        8,
+        1088,
+        258,
+        1088,
+        10065,
+        5876,
+        90,
+        49,
+        92,
+        46227,
+        67,
+        1088,
+        14695,
+        293,
+        10713,
+        681,
+        1088,
+        11189,
+        10065,
+        12849,
+        90,
+        39,
+        18854,
+        72,
+        61,
+        73,
+        283,
+        1088,
+        1200,
+        14717,
+        83,
+        20741,
+        92,
+        61,
+        73,
+        1088,
+        18549,
+        516,
+        19185,
+        14394,
+        18218,
+        90,
+        85,
+        18854,
+        83,
+        1088,
+        14394,
+        18218,
+        66755,
+        18854,
+        83,
+        24094,
+        3369,
+        8,
+        1088,
+        10065,
+        12849,
+        90,
+        47,
+        49798,
+        83,
+        10,
+        16,
+        92,
+        61,
+        73,
+        1088,
+        258,
+        1088,
+        10065,
+        5876,
+        90,
+        49,
+        92,
+        46227,
+        67,
+        1088,
+        14695,
+        293,
+        10713,
+        681,
+        1332,
+        567,
+        1042,
+        1088,
+        11189,
+        10065,
+        12849,
+        90,
+        47,
+        18854,
+        72,
+        61,
+        73,
+        283,
+        1088,
+        10065,
+        12849,
+        90,
+        40,
+        10713,
+        8,
+        14910,
+        17237,
+        72,
+        835,
+        492,
+        59,
+        553,
+        1286,
+        2983,
+        3032,
+        11,
+        1088,
+        11189,
+        10065,
+        12849,
+        90,
+        47,
+        18854,
+        72,
+        61,
+        73,
+        55821,
+        369,
+        279,
+        1001,
+        81585,
+        7911,
+        828,
+        310,
+        381,
+        8977,
+        310,
+        1088,
+        11189,
+        10065,
+        12849,
+        90,
+        50,
+        18854,
+        72,
+        55821,
+        364,
+        18436,
+        1088,
+        11189,
+        10065,
+        12849,
+        90,
+        50,
+        18854,
+        73,
+        59,
+        681,
+        321,
+        1088,
+        11189,
+        10065,
+        12849,
+        90,
+        39,
+        18854,
+        72,
+        61,
+        73,
+        55821,
+        10551,
+        279,
+        18453,
+        310,
+        1088,
+        11189,
+        10065,
+        12849,
+        90,
+        50,
+        18854,
+        73,
+        55821,
+        5732,
+        494,
+        3817,
+        17237,
+        72,
+        59,
+        553,
+        318,
+        39,
+        738,
+        1088,
+        11189,
+        10065,
+        12849,
+        90,
+        50,
+        18854,
+        83,
+        283,
+        1088,
+        10065,
+        12849,
+        90,
+        39,
+        18854,
+        16,
+        61,
+        83,
+        59,
+        4430,
+        561,
+        11540,
+        4334,
+        72632,
+        628,
+        1179,
+        381,
+        5158,
+        430,
+        11,
+        271,
+        59,
+        25223,
+        10065,
+        12849,
+        313,
+        50,
+        92,
+        696,
+        44074,
+        259,
+        2205,
+        92,
+        6108,
+        313,
+        81,
+        92,
+        283,
+        1088,
+        10065,
+        12849,
+        313,
+        50,
+        92,
+        696,
+        44074,
+        259,
+        2205,
+        92,
+        6108,
+        313,
+        15,
+        92,
+        1088,
+        10065,
+        12849,
+        313,
+        47,
+        92,
+        696,
+        44074,
+        259,
+        2205,
+        92,
+        6108,
+        313,
+        81,
+        92,
+        478,
+        1088,
+        10065,
+        12849,
+        313,
+        39,
+        92,
+        696,
+        44074,
+        259,
+        2205,
+        92,
+        6108,
+        313,
+        81,
+        92,
+        1088,
+        4429,
+        90,
+        20,
+        10713,
+        60,
+        271,
+        2777,
+        567,
+        6762,
+        279,
+        11540,
+        4334,
+        7101,
+        1088,
+        11189,
+        10065,
+        12849,
+        90,
+        50,
+        49798,
+        58,
+        83,
+        13587,
+        46227,
+        72,
+        92,
+        283,
+        1088,
+        10065,
+        12849,
+        90,
+        50,
+        49798,
+        83,
+        34,
+        478,
+        585,
+        10713,
+        681,
+        1088,
+        11189,
+        10065,
+        12849,
+        90,
+        47,
+        49798,
+        58,
+        83,
+        13587,
+        46227,
+        81,
+        92,
+        283,
+        1088,
+        10065,
+        12849,
+        90,
+        47,
+        49798,
+        83,
+        34,
+        478,
+        220,
+        16,
+        92,
+        46227,
+        83,
+        34,
+        478,
+        427,
+        10713,
+        681,
+        1088,
+        11189,
+        10065,
+        12849,
+        90,
+        39,
+        49798,
+        58,
+        83,
+        13587,
+        46227,
+        81,
+        92,
+        283,
+        1088,
+        10065,
+        12849,
+        90,
+        39,
+        49798,
+        83,
+        34,
+        478,
+        220,
+        16,
+        92,
+        46227,
+        83,
+        34,
+        478,
+        427,
+        10713,
+        553,
+        5514,
+        567,
+        599,
+        1088,
+        11189,
+        35790,
+        90,
+        43,
+        14728,
+        34,
+        10713,
+        8,
+        25903,
+        314,
+        1331,
+        17237,
+        34,
+        59,
+        553,
+        561,
+        13665,
+        369,
+        310,
+        1381,
+        28750,
+        3875,
+        279,
+        1088,
+        11189,
+        10065,
+        12849,
+        90,
+        47,
+        49798,
+        58,
+        83,
+        13587,
+        46227,
+        81,
+        2069,
+        1088,
+        10065,
+        12849,
+        90,
+        39,
+        49798,
+        58,
+        83,
+        13587,
+        46227,
+        81,
+        92,
+        1088,
+        258,
+        1088,
+        10065,
+        5876,
+        90,
+        49,
+        92,
+        46227,
+        67,
+        1088,
+        14695,
+        293,
+        10713,
+        8,
+        34030,
+        1608,
+        264,
+        4283,
+        5313
+      ],
+      "stop_hit": false,
+      "capped": true,
+      "text_sha256": "37efb60624c89a7641cdf69a767beb05d836ca6672d1f21d608f7bc1fa3af154",
+      "matches_eager_v1_text": null,
+      "text_bytes": 1214,
+      "seconds": [
+        92.322,
+        92.785
+      ],
+      "device": "cuda",
+      "dtype": "torch.bfloat16"
+    }
+  ],
+  "original_gpu_peak_vram_gib": 10.416,
+  "status": "completed original blueprint capture; no native parity claimed",
+  "finished_utc": "2026-10-31T06:28:02Z",
+  "evidence_canonical_sha256": "dcc750b0c06e02ccfeec1d8e37bf6bab94bb7472c9df9f0ade7711c536a835a3"
+}

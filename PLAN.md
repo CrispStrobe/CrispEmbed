@@ -127,8 +127,72 @@ immutable upload/readback, registry hashes and real consumers.
 
 Proceed smallest applicable backend first after the current closure:
 
-1. Xiaomi-OCR-0: source/base audit and exact Qwen3.5-0.8B frontend/native reuse;
-   community GGUF quality is unverified.
+1. Xiaomi-OCR-0: initial [source and checkpoint-header audit](docs/xiaomi-ocr-0-source-audit.md)
+   records 488 BF16 tensors including 15 MTP tensors. The first hosted GPU
+   original-only capture verified the complete checkpoint hash and 473 main
+   shapes against the live Transformers 5.8.1 meta schema, and decoded two
+   example pages before the third ran out of GPU memory. A second original-only
+   SDPA capture completed three pages; the first two text hashes matched the
+   eager run, but the third hit its generation cap. A third original-only run
+   captured the loaded implementation hash, tied-head alias and 31 qianziwen
+   input/prefill stages. A separately
+   staged [GPU export control](tests/results/xiaomi-ocr-0/kaggle-export-v1-report.json)
+   round-trips all 473 F32 tensors, compares values to the loaded checkpoint
+   and reproduces frozen IDs and text in the original model on all three pages;
+   the retained GGUF also re-verifies offline against its manifest
+   ([record](tests/results/xiaomi-ocr-0/kaggle-export-v1-verified.json)), with
+   488 declarations accounted as 473 exports plus 15 excluded `mtp.*` names.
+   The dense page still caps. This is not native or speed parity.
+   A [second export control](tests/results/xiaomi-ocr-0/kaggle-export-v2-report.json)
+   exercised the changed converter and produced the same GGUF hash; its manifest
+   records 488 = 473 + 15, and the three original-model reload controls match.
+   The first native stage is now measured on hosted Tesla T4
+   ([report](tests/results/xiaomi-ocr-0/native-patch-v1-report.json)): a test-only
+   probe replays the F32 patch projection on the native CPU backend and on a
+   standalone ggml CUDA graph, which agree to max `2.384e-06` and per-row cosine
+   `0.99999999999993`. Against the archived activation both miss the strict gate
+   (max `0.011677`); the [attribution record](tests/results/xiaomi-ocr-0/native-patch-v1-attribution.json)
+   shows a BF16 in/out reconstructed control matches `99.99 %` of elements
+   bit-exactly, but cannot by itself attribute the remaining gap or exclude a
+   native defect. Both original-reference strict comparisons fail. This is one
+   stage, not native or speed parity, and no production CUDA path exists. A
+   later [BF16 replay](tests/results/xiaomi-ocr-0/precision-replay/report.json)
+   reproduces all 1,523,712 original patch activations exactly, while native
+   F32 agrees with F32 Conv3D within `0.000004054`; 269 elements still differ
+   after the F32 control is rounded to BF16. The native-vs-original strict
+   failure remains unchanged. A [local 21-stage CPU audit](tests/results/xiaomi-ocr-0/vision-prefill-local-v1/summary.json)
+   passes only the two rotary tables and fails 19 stages; it used an unpinned
+   ggml build and does not establish decoded parity or the cause of later
+   errors. A [pinned-ggml hosted CPU audit](tests/results/xiaomi-ocr-0/vision-prefill-hosted-v3/report.json)
+   completed with the same 2 passing and 19 failing stages; its negative control
+   was rejected and its native exit was 1. Raw trace hashes are retained in the
+   report, while native traces remain in the hosted outputs. A separate
+   [hosted position replay](tests/results/xiaomi-ocr-0/position-replay-v1/report.json)
+   bit-exactly reproduces the frozen GPU position output using the pinned BF16
+   Python method on CPU (1,523,712 elements). Its F32 output matches the pinned
+   native F32 trace within the unchanged strict gate (max error 0.000001068).
+   This is consistent with a precision effect for this position case, not
+   proof of sole causation or parity of subsequent stages. Continue attribution
+   through the layers and merger; decoded quality and speed remain unmeasured.
+   The [hosted layer-0 replay](tests/results/xiaomi-ocr-0/layer0-replay-hosted-v3-summary.json)
+   reproduced the archived original T4 output exactly (1,523,712 elements) and
+   verified all 12 block tensors. Native versus original CPU F32 on the same
+   native input passes the unchanged strict gate (max abs 0.000011445; minimum
+   row cosine 0.999999999994). Native versus the archived original still fails:
+   max abs 0.033694148 and minimum row cosine 0.99994755. The decomposition
+   closes exactly, but does not prove all error is inherited, rule out a block
+   defect, establish a sole cause, or demonstrate decoded OCR parity.
+   A replacement profile-specific image and vision bound has a standalone
+   preprocessing check but is not verified through the full pipeline or hosted
+   build. Source review found the image-prompt 1,024-token guard still blocks
+   the receipt and dense pages, and the larger CPU path lacks a reviewed work
+   and memory bound; Ovis/multi-frame regression and Xiaomi Unicode-mark
+   tokenization also require real-call-site tests. Keep profile pins null.
+   The Ovis bounds regression is measured and fixed (pre-change test `FAIL`,
+   exit 1; profile-derived bound `PASS`, exit 0), and `test-xiaomi-bounds` is a
+   registered target admitting `1984`/`5916`/`9184` patches under both gates.
+   Upstream `fit_image` pre-resize, non-null native pins, native
+   intermediate parity, decoded quality, quantization and speed remain pending.
 2. LightOnOCR-3-1B: verify exact official preprocessing, tokenizer, transcription
    and grounding against the existing LightOn backend.
 3. TeleOCR: audit base/NaviDC provenance and structured output before reusing

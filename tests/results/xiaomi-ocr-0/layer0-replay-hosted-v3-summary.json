@@ -1,0 +1,23 @@
+{
+  "scope": "One frozen Xiaomi vision layer-0 case; no decoder, OCR, quality, quantization or speed claim",
+  "hosted_kernel": "https://www.kaggle.com/code/chr1s4/crispembed-xiaomi-ocr-0-layer0-replay",
+  "report_sha256": "96cf32c80e95a9406b3031d466194e9418c3d11cec1af1f07a8d9d44c935795e",
+  "comparisons_sha256": "bcccd18a0d3ee44e0432eaed86f006f3e8fd4b96a24f593f251d33cbfdab06ab",
+  "deployed_runner_sha256": "9f70b2bb9e511b6938336a08bc10d73a4b04bd7ec07aba0c4fc007e768891a13",
+  "device": "Tesla T4",
+  "source_checkpoint": "xiaomi-research/Xiaomi-OCR-0@bbd8cf8d21f256b3644b44cb860f3a7cecb93c30",
+  "checkpoint_sha256": "d4551e9f6127ac9e35cff7b4f7a72a90410e03e6c8676a36f0e2b7eaeb5d5348",
+  "anonymous_checkpoint_download": true,
+  "token_used": false,
+  "shape": [1984, 768],
+  "original_gpu_vs_archive": {"mismatches": 0, "elements": 1523712, "max_abs": 0.0},
+  "block_tensors_exact_bf16_widening": 12,
+  "native_vs_original_cpu_f32_same_input": {"max_abs": 0.000011444091796875, "row_cos_min": 0.9999999999941799, "strict_pass": true},
+  "original_cpu_f32_vs_archive_same_input": {"max_abs": 0.0189935564994812, "row_cos_min": 0.9999838274169895, "strict_pass": false},
+  "decomposition_max_abs": {"D_native_minus_archive": 0.03369414806365967, "B_native_minus_cpu_f32_same_input": 0.000011444091796875, "I_input_effect": 0.022712349891662598, "G_reference_regime_effect": 0.0189935564994812},
+  "decomposition_identity_max_abs": 0.0,
+  "strict_gate": {"max_abs": 0.002, "row_cos_min": 0.99999, "waived": false},
+  "conclusion": "Comparison consistency only: same-input block agreement does not rule out a block defect, prove inheritance, or establish a sole cause. The retained native versus original layer still fails the strict gate.",
+  "decoded_parity_claimed": false,
+  "speed_claimed": false
+}

@@ -1,0 +1,49 @@
+{
+  "scope": "test-only patch projection: native CPU and standalone ggml CUDA, no OCR parity",
+  "native_cuda_engine": false,
+  "status": "completed patch projection only; decoded and full vision parity not tested",
+  "phase": "complete",
+  "device": "Tesla T4",
+  "cuda_capability": [
+    7,
+    5
+  ],
+  "cuda_architecture": "75",
+  "input_sha256": {
+    "model": "1759b8da2a6fa2651de9cacdb5e90fe0551d7ab8b1fe783198f7339389451235",
+    "reference": "2a58fc3fc2a4ae2d603ff600371cf71fa1f54e40ebd260d7680bfa4c1f868334"
+  },
+  "source_closure": {
+    "base_commit": "15adb672f71f8470a23db1284dafa102515adae9",
+    "ggml_commit": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+    "runner_template_sha256": "91240b482f0379f56c14bb199e3a986dcdd59156082ee6a02dafcecdd06715c3",
+    "files_sha256": {
+      "CMakeLists.txt": "444467f40390e49a46949d0846a024b76d009c9d1614b1a6de260088ccfa4fc2",
+      "models/verify-gguf-export.py": "979ed38d5c926e2efaede8a78162dcdd666ef0d1216c6fdfba2efb4bbda86add",
+      "src/qwen35_frontend.h": "d35c193b0f7c2bb6b70b0d27e3a541670b08803f8c829222109faeebb2ca14de",
+      "src/qwen35_ocr.cpp": "d874f6be1f4fdc6c34e64a32cdb45e619f8208005b6e17c39d372464466025a8",
+      "src/qwen35_tokenizer.cpp": "57c0b0156a7334f18838b3bab2fad01d51eaf8e4d5513ef4d9ff1a82817d0f75",
+      "src/xiaomi_profile_pin.h": "57f1e77e33ecdf950bf4670ea6b3cd78780ea8691e60d7104f621d84803da02f",
+      "tests/results/xiaomi-ocr-0/kaggle-export-v2-manifest.json": "8e2ef2644650ebdefb0befdb06291ef1e1d0f737cda3a0c586a8fef18982cf24",
+      "tests/test_xiaomi_ocr.cpp": "942ab075a3fb4c2c71923233195000fd34d39d585414cd894a8d06e6d6a8c8d1",
+      "tests/test_xiaomi_patch_embed.cpp": "5a53044fd5e24a6151cd94150bf4ef8d4cb626a373fe165e195686287a7635e7",
+      "tests/test_xiaomi_patch_embed_cuda.cpp": "151fc8d6ab9a38af65d32da13ef4492417ba50cefe723fd0233fd2db30f623b5"
+    },
+    "staged_runner_sha256": "ae1f111034c7fd7edd121099595d1c0680f83388a7707ff1e8a707f234f289f8"
+  },
+  "cpu_vs_original_strict_exit": 1,
+  "cuda_vs_original_strict_exit": 1,
+  "cpu_vs_cuda_f32": {
+    "max_abs": 2.384185791015625e-06,
+    "mean_abs": 5.9571854374171966e-08,
+    "rms": 9.043077680997396e-08,
+    "cos_min": 0.9999999999999332,
+    "cpu_norm": 466.7222295080634,
+    "cuda_norm": 466.7222289960925,
+    "pass": true
+  },
+  "output_sha256": {
+    "cpu": "9938d4cb0ec97adb9856d891fd72405e775688d0337cc63efbad1b15c4244ce5",
+    "cuda": "3abb0fe64f143596c0d9b2060832f05accf6dfee7c93485a13bf4e460f97c45b"
+  }
+}

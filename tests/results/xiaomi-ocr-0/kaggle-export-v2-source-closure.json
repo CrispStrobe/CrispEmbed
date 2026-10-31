@@ -1,0 +1,10 @@
+{
+  "base_commit": "15adb672f71f8470a23db1284dafa102515adae9",
+  "runner_template_sha256": "50a9aab7137651d34710051f4c41afaf9ce233b4bb3fd55dc9a20c9632d1f728",
+  "staged_runner_sha256": "605dbc0bcdb3416c7462ad81a7e59b926f8f90b645f286b485b6333d33ca218a",
+  "files_sha256": {
+    "models/convert-qwen35-ocr-to-gguf.py": "ba1f2263a16eaff50ca6a1f539018cf71d8cdca0bffcc9682bb7ef8e887b04a2",
+    "models/qwen35_xiaomi_profile.py": "b7b6d6122a22216171a368ba23908f7e236e2adb256953536be3c86167abf219",
+    "tests/results/xiaomi-ocr-0/kaggle-v3-evidence.json": "7a2c23460556e88f94e2632774d278a3f4eb8f7b792710b5e9b2304f7aa3b07d"
+  }
+}

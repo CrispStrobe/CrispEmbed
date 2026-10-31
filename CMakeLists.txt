@@ -795,6 +795,20 @@ add_executable(test-qwen35-public tests/test_qwen35_public.cpp)
 target_link_libraries(test-qwen35-public PRIVATE crispembed crispembed-core)
 add_executable(test-qwen35-context tests/test_qwen35_context.cpp tests/qwen35_context_header.c)
 target_link_libraries(test-qwen35-context PRIVATE crispembed-qwen35-delta crispembed-core)
+# Test-only driver for the experimental Xiaomi-OCR-0 profile (format 4).
+add_executable(test-xiaomi-ocr tests/test_xiaomi_ocr.cpp)
+target_link_libraries(test-xiaomi-ocr PRIVATE crispembed-qwen35-delta crispembed-core)
+# Test-only frozen qianziwen patch projection parity against original BF16.
+add_executable(test-xiaomi-patch-embed tests/test_xiaomi_patch_embed.cpp)
+target_link_libraries(test-xiaomi-patch-embed PRIVATE crispembed-qwen35-delta crispembed-core)
+# Weight-free profile bounds: 1024 ordinary, 9184 only under both Xiaomi gates.
+add_executable(test-xiaomi-bounds tests/test_xiaomi_bounds.cpp)
+target_link_libraries(test-xiaomi-bounds PRIVATE crispembed-qwen35-delta crispembed-core)
+# Isolated CUDA probe only; direct linking is unavailable for module backends.
+if(GGML_CUDA AND NOT GGML_BACKEND_DL)
+    add_executable(test-xiaomi-patch-embed-cuda EXCLUDE_FROM_ALL tests/test_xiaomi_patch_embed_cuda.cpp)
+    target_link_libraries(test-xiaomi-patch-embed-cuda PRIVATE crispembed-core ggml-cuda)
+endif()
 add_executable(test-qwen35-quant tests/test_qwen35_quant.cpp)
 target_link_libraries(test-qwen35-quant PRIVATE crispembed-qwen35-delta crispembed-core)
 add_executable(test-qwen35-materialize tests/test_qwen35_materialize.cpp)

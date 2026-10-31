@@ -1,0 +1,30 @@
+{
+  "script_version": "xiaomi-position-replay-v1",
+  "base_commit": "15adb672f71f8470a23db1284dafa102515adae9",
+  "runner_sha256": "74a247c57b1bc2632d76c3c62b154534c1cef9b76cc4fde4a7989872242e0b57",
+  "pinned": {
+    "transformers": "5.8.1",
+    "tokenizers": "0.22.2",
+    "gguf": "0.19.0",
+    "safetensors": "0.8.0",
+    "model_repo": "xiaomi-research/Xiaomi-OCR-0",
+    "revision": "bbd8cf8d21f256b3644b44cb860f3a7cecb93c30",
+    "checkpoint_sha256": "d4551e9f6127ac9e35cff7b4f7a72a90410e03e6c8676a36f0e2b7eaeb5d5348",
+    "config_sha256": "2eb95982069a24336fe66b3a0869ea5a711aba7566787d4a599654907ecc070c",
+    "export_sha256": "1759b8da2a6fa2651de9cacdb5e90fe0551d7ab8b1fe783198f7339389451235",
+    "reference_sha256": "2a58fc3fc2a4ae2d603ff600371cf71fa1f54e40ebd260d7680bfa4c1f868334",
+    "source_module": "transformers/models/qwen3_5/modeling_qwen3_5.py",
+    "source_module_sha256": "641da34484f6b9769e28615c680cc4e3202afbf5bdbf1da7d56d5a3d678918c7",
+    "vision_prefill_runner_sha256": "18bfc3e880032e00e7ceadd6f7eea5e2cc2ef3cce28d6723561e2abd155e15d2",
+    "vision_prefill_report_sha256": "eae8d973500b2e3890e3dd408f051d67edc26ffa7b5de71f9b3429949470816d",
+    "native_position_sha256": "7e257d92b4acfd424684fe57c716e8e077661962cf68c9f91ddb52656af9ce1c",
+    "native_position_bytes": 6094848,
+    "grid_thw": [
+      1,
+      62,
+      32
+    ],
+    "tokens": 1984,
+    "width": 768
+  }
+}
