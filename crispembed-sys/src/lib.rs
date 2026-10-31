@@ -67,6 +67,20 @@ extern "C" {
     pub fn crispembed_oxr_last_error(ctx: *const OxrContext) -> *const c_char;
 }
 
+/// Experimental OXR-1.0 D-FINE layout context (CRISPEMBED_OXR=1 and
+/// CRISPEMBED_ACCEPT_OXR_LICENSE=1).
+#[repr(C)]
+pub struct OxrLayoutContext(c_void);
+
+extern "C" {
+    pub fn crispembed_oxr_layout_init(model_path: *const c_char, n_threads: c_int) -> *mut OxrLayoutContext;
+    pub fn crispembed_oxr_layout_free(ctx: *mut OxrLayoutContext);
+    pub fn crispembed_oxr_layout_detect(ctx: *mut OxrLayoutContext, pixels: *const u8, width: c_int,
+        height: c_int, channels: c_int, confidence: c_float) -> *const c_char;
+    pub fn crispembed_oxr_layout_timings(ctx: *mut OxrLayoutContext) -> *const c_char;
+    pub fn crispembed_oxr_layout_last_error(ctx: *const OxrLayoutContext) -> *const c_char;
+}
+
 extern "C" {
     pub fn crispembed_mineru_init(model_path: *const c_char, n_threads: c_int) -> *mut MineruContext;
     pub fn crispembed_mineru_free(ctx: *mut MineruContext);

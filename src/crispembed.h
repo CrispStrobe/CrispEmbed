@@ -69,8 +69,9 @@ CRISPEMBED_API const char * crispembed_mineru_last_markdown(const crispembed_min
 CRISPEMBED_API const char * crispembed_mineru_last_error(const crispembed_mineru_context * ctx);
 
 // Experimental OXR-1.0 recognition and reading order. Requires CRISPEMBED_OXR=1
-// and a pinned oxr GGUF. Layout detection is a separate model; the Python
-// CrispOXR document adapter accepts supplied regions or an external detector.
+// and a pinned oxr GGUF. Layout detection is a separate model: the native
+// crispembed_oxr_layout_* D-FINE detector below, supplied regions, or an
+// external detector service.
 // Model inference is native GGML. Serialize all calls on one context.
 typedef struct crispembed_oxr_context crispembed_oxr_context;
 CRISPEMBED_API crispembed_oxr_context * crispembed_oxr_init(const char * model_path, int n_threads);
@@ -87,6 +88,28 @@ CRISPEMBED_API const char * crispembed_oxr_predict(crispembed_oxr_context * ctx,
                                                    int height, int channels, const char * prompt, int max_new_tokens,
                                                    float repetition_penalty);
 CRISPEMBED_API const char * crispembed_oxr_last_error(const crispembed_oxr_context * ctx);
+
+// Experimental OXR-1.0 D-FINE layout detector (layout_analysis/last.pth via
+// models/convert-oxr-dfine-to-gguf.py), a JSON view over layout_detect's
+// `dfine` architecture. Requires CRISPEMBED_OXR=1 and
+// CRISPEMBED_ACCEPT_OXR_LICENSE=1 (OXR License). Serialize calls per context.
+typedef struct crispembed_oxr_layout_context crispembed_oxr_layout_context;
+CRISPEMBED_API crispembed_oxr_layout_context * crispembed_oxr_layout_init(const char * model_path, int n_threads);
+CRISPEMBED_API void crispembed_oxr_layout_free(crispembed_oxr_layout_context * ctx);
+// One uint8 gray/RGB/RGBA page (alpha discarded, like cv2.IMREAD_COLOR). Returns
+// owned-by-context JSON identical in structure to the OXR layout service's
+// /inference body for a one-page batch:
+//   {"status":"success","params":{},"data":{"labels":[[int...]],
+//    "boxes":[[[x1,y1,x2,y2]...]],"scores":[[float...]]}}
+// with all 300 candidates in service order (top-k score descending). A finite
+// confidence in [0,1] applies the service's `confidence` form field (keep
+// score >= confidence; params echo it); NaN or a negative value means none.
+// NULL means failure (see last_error).
+CRISPEMBED_API const char * crispembed_oxr_layout_detect(crispembed_oxr_layout_context * ctx, const uint8_t * pixels,
+                                                         int width, int height, int channels, float confidence);
+// Timings (ms) of the last detect call as JSON: preprocess/encoder/decoder/postprocess/total.
+CRISPEMBED_API const char * crispembed_oxr_layout_timings(crispembed_oxr_layout_context * ctx);
+CRISPEMBED_API const char * crispembed_oxr_layout_last_error(const crispembed_oxr_layout_context * ctx);
 
 // Model hyperparameters (read-only after init)
 typedef struct crispembed_hparams {
