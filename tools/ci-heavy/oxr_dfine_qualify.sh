@@ -110,6 +110,9 @@ PY
     run_arm service "$S/oxr-dfine-f32.gguf" "$S/$id-service.gguf"
     run_arm inject-service "$S/oxr-dfine-f32.gguf" "$S/$id-service.gguf" --inject-input
     run_arm f16-generic "$S/oxr-dfine-f16.gguf" "$S/$id-generic.gguf"
+    # Speed A/B of opt-in convolution paths (same budgets; defaults unchanged).
+    CRISPEMBED_OXR_LAYOUT_DW_DIRECT=1 run_arm dw-direct "$S/oxr-dfine-f32.gguf" "$S/$id-generic.gguf"
+    LAYOUT_CONV_DIRECT=1 run_arm conv-direct "$S/oxr-dfine-f32.gguf" "$S/$id-generic.gguf"
     python tools/oxr_dfine_checks.py api --lib "$LIB" --model "$S/oxr-dfine-f32.gguf" --image "$S/$id.png" \
         --reference "$O/reference-generic.json" --blueprint "$S/oxr" --output "$O/api.json" > "$O/api.log" 2>&1
     pn api "$([ $? = 0 ] && echo pass || echo fail)"

@@ -2517,8 +2517,12 @@ enum class dact { none, relu, silu };
 ggml_tensor * dfine_conv_fwd(ggml_context * g, ggml_tensor * x, const dfine_conv & c, int stride, int pad,
                              bool depthwise, dact act) {
     ggml_tensor * w = f32(g, c.w);
-    ggml_tensor * y =
-        depthwise ? ggml_conv_2d_dw(g, w, x, stride, stride, pad, pad, 1, 1) : conv2d_dispatch(g, w, x, stride, pad);
+    // CRISPEMBED_OXR_LAYOUT_DW_DIRECT=1 (opt-in, A/B): direct depthwise kernel
+    // instead of im2col + mul_mat. Default stays the im2col path.
+    static const bool dw_direct = core_env::on("CRISPEMBED_OXR_LAYOUT_DW_DIRECT");
+    ggml_tensor * y = !depthwise  ? conv2d_dispatch(g, w, x, stride, pad)
+                      : dw_direct ? ggml_conv_2d_dw_direct(g, w, x, stride, stride, pad, pad, 1, 1)
+                                  : ggml_conv_2d_dw(g, w, x, stride, stride, pad, pad, 1, 1);
     const int oc = (int)c.w->ne[3];
     if (c.scale) y = ggml_mul(g, y, ggml_reshape_3d(g, f32(g, c.scale), 1, 1, oc));
     if (c.shift) y = ggml_add(g, y, ggml_reshape_3d(g, f32(g, c.shift), 1, 1, oc));
