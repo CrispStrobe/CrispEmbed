@@ -20,6 +20,14 @@ static void env(const char * name, const char * value) {
 #endif
 }
 
+#define REQUIRE(cond)                                                                                                  \
+    do {                                                                                                               \
+        if (!(cond)) {                                                                                                 \
+            std::fprintf(stderr, "FAIL line %d: %s\n", __LINE__, #cond);                                               \
+            return false;                                                                                              \
+        }                                                                                                              \
+    } while (0)
+
 static bool run() {
     env("CRISPEMBED_MINERU25_PRO", "1");
     env("CRISPEMBED_NO_KV_CACHE", "0");
@@ -42,15 +50,12 @@ static bool run() {
     h.rope_sections[3] = 0;
 
     ctx.backend = ggml_backend_cpu_init();
-    if (!ctx.backend) return false;
+    REQUIRE(ctx.backend);
     ggml_backend_cpu_set_n_threads(ctx.backend, 1);
     ctx.sched = ggml_backend_sched_new(&ctx.backend, nullptr, 1, 32768, false, false);
     ctx.compute_meta.resize(32768 * ggml_tensor_overhead() + ggml_graph_overhead_custom(32768, false));
     ctx.model_ctx = ggml_init({ 128 * ggml_tensor_overhead() + 4096, nullptr, true });
-    if (!ctx.sched || !ctx.model_ctx) {
-        qwen2vl_ocr::free_(ctx);
-        return false;
-    }
+    REQUIRE(ctx.sched && ctx.model_ctx);
 
     std::vector<std::pair<ggml_tensor *, bool>> weights;
     auto weight = [&](int in, int out = 1, bool norm = false) {
@@ -77,10 +82,7 @@ static bool run() {
         layer.ffn_down_w = weight(48, 32);
     }
     ctx.model_buf = ggml_backend_alloc_ctx_tensors(ctx.model_ctx, ctx.backend);
-    if (!ctx.model_buf) {
-        qwen2vl_ocr::free_(ctx);
-        return false;
-    }
+    REQUIRE(ctx.model_buf);
     ggml_backend_buffer_set_usage(ctx.model_buf, GGML_BACKEND_BUFFER_USAGE_WEIGHTS);
     for (size_t wi = 0; wi < weights.size(); ++wi) {
         auto * tensor = weights[wi].first;
@@ -98,11 +100,10 @@ static bool run() {
         for (int i = 0; i < prompt_size; ++i) prompt[i] = (i * 7 + 3) % 64;
         qwen2vl_ocr::generate_result baseline, cached, repeat;
         env("CRISPEMBED_MINERU25_PRO_REUSE_DECODE_GRAPH", "0");
-        passed = passed && qwen2vl_ocr::generate(ctx, nullptr, 0, 0, nullptr, prompt.data(), prompt_size, 17, baseline);
+        REQUIRE(qwen2vl_ocr::generate(ctx, nullptr, 0, 0, nullptr, prompt.data(), prompt_size, 17, baseline));
         env("CRISPEMBED_MINERU25_PRO_REUSE_DECODE_GRAPH", "1");
-        passed = passed && qwen2vl_ocr::generate(ctx, nullptr, 0, 0, nullptr, prompt.data(), prompt_size, 17, cached);
-        passed = passed && qwen2vl_ocr::generate(ctx, nullptr, 0, 0, nullptr, prompt.data(), prompt_size, 17, repeat);
-        if (!passed) break;
+        REQUIRE(qwen2vl_ocr::generate(ctx, nullptr, 0, 0, nullptr, prompt.data(), prompt_size, 17, cached));
+        REQUIRE(qwen2vl_ocr::generate(ctx, nullptr, 0, 0, nullptr, prompt.data(), prompt_size, 17, repeat));
         passed = baseline.token_ids.size() == 17 && baseline.token_ids == cached.token_ids &&
                  cached.token_ids == repeat.token_ids && baseline.token_confidences.size() == 17 &&
                  cached.token_confidences.size() == 17 && repeat.token_confidences.size() == 17 &&
@@ -113,15 +114,18 @@ static bool run() {
             error = std::max(error, std::fabs(cached.token_confidences[i] - repeat.token_confidences[i]));
         }
         passed = passed && error <= 1e-6f;
-        std::printf("MinerU synthetic decode prompt=%d ids=%zu probability_max_abs=%.9g %s\n", prompt_size,
-                    cached.token_ids.size(), error, passed ? "PASS" : "FAIL");
+        std::printf("MinerU synthetic decode prompt=%d ids=%zu/%zu/%zu probability_max_abs=%.9g %s\n", prompt_size,
+                    baseline.token_ids.size(), cached.token_ids.size(), repeat.token_ids.size(), error,
+                    passed ? "PASS" : "FAIL");
         if (!passed) break;
     }
     qwen2vl_ocr::generate_result invalid;
     const int32_t token = 1;
     env("CRISPEMBED_MINERU25_PRO", "0");
-    passed = passed && !qwen2vl_ocr::generate(ctx, nullptr, 0, 0, nullptr, &token, 1, 1, invalid) &&
-             invalid.token_ids.empty();
+    const bool gate_refused =
+        !qwen2vl_ocr::generate(ctx, nullptr, 0, 0, nullptr, &token, 1, 1, invalid) && invalid.token_ids.empty();
+    if (!gate_refused) std::fprintf(stderr, "FAIL: generate ran with CRISPEMBED_MINERU25_PRO=0\n");
+    passed = passed && gate_refused;
     qwen2vl_ocr::free_(ctx);
     return passed;
 }
