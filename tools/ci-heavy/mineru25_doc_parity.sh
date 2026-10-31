@@ -20,7 +20,7 @@ CASE_IDS=${1:-all}
 MAX_TOKENS=${2:-2048}
 SYNTHETIC=${3:-300}
 THREADS=4
-GGUF_URL=https://huggingface.co/cstr/MinerU2.5-Pro-2604-1.2B-GGUF/resolve/e63c95cfd4e9f753783f588a187b9a3b89a7c201/mineru25-pro-f16.gguf
+GGUF_URL=https://huggingface.co/cstr/MinerU2.5-Pro-2604-1.2B-GGUF/resolve/e63c95cfd4e9f753783f588a187b9a3b89a7c201/mineru25-pro-2604-f16.gguf
 GGUF_SHA=7d464d375f7c20dd3e2bae7e20fed1f80485ae9ca69aaad201897652c74d746b
 OUT=${HEAVY_OUT:?}
 S=${HEAVY_SCRATCH:?}
@@ -66,7 +66,7 @@ gate fuzz_postprocess python -I tools/mineru_doc/fuzz_postprocess.py "$DOC" --ca
     --report "$OUT/weight-free/fuzz_postprocess.json" > "$OUT/weight-free/fuzz_postprocess.txt" 2>&1
 gate synthetic_pages python -I tools/mineru_doc/page_parity.py "$DOC" "$S/synthetic" --synthetic "$SYNTHETIC" --seed 21 \
     --report "$OUT/weight-free/synthetic_pages.json" > "$OUT/weight-free/synthetic_pages.txt" 2>&1
-tail -3 "$OUT/weight-free/"*.txt
+for f in "$OUT"/weight-free/*.txt; do tail -n 3 "$f"; done
 echo "::endgroup::"
 
 echo "::group::model"
