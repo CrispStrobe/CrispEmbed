@@ -29,6 +29,25 @@ Build/install notices and archive integrity are checked separately. No GPU,
 broad quality, publication, registry alias, runtime release or default flip is
 claimed. Remaining qualification work stays in PLAN.
 
+## 2026-10-31 — OCR wrappers on real TeleOCR and MinerU2.5-Pro models
+
+Hosted [41234539932](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41234539932)
+at `7362f9c2` (`tools/ci-heavy/ocr_wrappers.sh`, Linux CPU, cargo 1.99.1, Dart 3.13.7)
+passes 14/14 ([receipt](tests/results/ocr-wrappers/41234539932/results.txt)):
+TeleOCR published F16 (Hub `1de0119f`) C/Python/stage/CLI/HTTP, Rust and Dart consumers
+on the same anchor, license-gate refusal; MinerU converted F16 Python predict/native_extract/
+two_step_extract (7 blocks, tables intact on the receipt), new Rust and Dart consumers
+reproducing the Python anchor text and token IDs, CLI and HTTP pipeline, feature-gate refusal.
+Interface consistency only, not reference parity.
+
+MinerU final lane [41227287301](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41227287301)
+at `5c6005b9` (receipt 46×36, German print 102×78): every arm (F32, F32 reuse, F32 table-GELU
+control, F16, Q8_0 with F16 vision) decodes identically to Python (202 / 389 tokens, EOS).
+F32 warm 0.70–0.93× Python; F16 1.27–1.59× and Q8_0 1.11–1.43× fail the speed gate.
+Strict stage budgets fail first at vision layers 29–31 (rel_rms 1.2e-5 against the post-hoc
+1e-5 v2 cap, cos_min 1.000000; F32 final logits rel_rms ≤ 2.7e-6) — the documented large-grid
+numerical limit, not a new divergence. The initial failure verdict is retained; no budget changes.
+
 ## 28 October 2026 — Unlimited-OCR-2 tiled exact + published; MiniCPM-OCR-1.0 native exact + published
 
 **Unlimited-OCR-2.** Tile-token bug found by the vision diff: native fed 256 instead of
