@@ -190,7 +190,7 @@ out, case, task, gate_fail = Path(sys.argv[1]), sys.argv[2], sys.argv[3], sys.ar
 ref = json.loads((out / "python.json").read_text())
 warm = lambda r: sorted(r["timing"]["runs_ms"][1:])[len(r["timing"]["runs_ms"][1:]) // 2] if len(r["timing"]["runs_ms"]) > 1 else None
 rows, arms = [], {}
-for f in sorted(out.glob("native-*-reuse*.json")):
+for f in sorted(out.glob("native-*-reuse[01].json")):
     r = json.loads(f.read_text())
     n = r.get("native", {})
     arm = {k: r.get(k) for k in ("status", "request_parity_pass", "speed_comparable", "speed_pass", "native_over_python")}

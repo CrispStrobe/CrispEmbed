@@ -33,7 +33,7 @@ def case_run(run_dir, by_input):
     gates = dict(line.split("=", 1) for line in (d / "results.txt").read_text().split() if "=" in line)
     case_id = by_input[(summary["case"], summary["task"])]
     arms = {}
-    for f in sorted(d.glob("native-*-reuse*.json")):
+    for f in sorted(d.glob("native-*-reuse[01].json")):
         m = re.fullmatch(r"native-(.+)-reuse([01])", f.stem)
         r = json.loads(f.read_text())
         n = r.get("native", {})
