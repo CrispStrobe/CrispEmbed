@@ -4069,6 +4069,12 @@ class CrispTableParse {
 /// vision tower) and supply a local GGUF.
 const int crispOcrEngineTeleocr = 24;
 
+/// MinerU2.5-Pro native basic page stage (CRISPEMBED_MINERU25_PRO=1, local GGUF).
+const int crispOcrEngineMineru25Pro = 25;
+
+/// OXR-1.0 recognition stage (CRISPEMBED_OXR=1 and CRISPEMBED_ACCEPT_OXR_LICENSE=1, local GGUF).
+const int crispOcrEngineOxr = 26;
+
 /// Stage selection for the native explicit builder (cleanup disabled).
 class CrispOcrStageSpec {
   final int engine, sourceType, maxTokens, minChars;
