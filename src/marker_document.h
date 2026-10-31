@@ -45,6 +45,9 @@ struct block {
     int order = 0, heading_level = 0, angle = 0, generated_tokens = 0;
     double confidence = 0;
     bool token_cap_reached = false, ignored = false, continuation = false;
+    // Additive (2026-10-31): provider-specific exact metadata, e.g. the MinerU
+    // upstream-profile fields ("mineru.*"). Ignored by the Marker renderers.
+    std::map<std::string, std::string> attributes;
 };
 struct page {
     int index = 0;
