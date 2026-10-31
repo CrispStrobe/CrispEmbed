@@ -97,7 +97,10 @@ struct graph {
     }
     void observe(const std::string & name, ggml_tensor * t, std::initializer_list<int64_t> shape) {
         if (!owner.observer) return;
-        if (!ggml_is_contiguous(t)) t = ggml_cont(ctx, t);
+        // A view (e.g. ggml_set_rows' result) shares its source's buffer, which
+        // ggml_set_output does not protect: the allocator reused llm.input's rows
+        // for a later layer, so the observer read llm.layer.1. Copy views.
+        if (!ggml_is_contiguous(t) || t->view_src) t = ggml_cont(ctx, t);
         ggml_set_output(t);
         ggml_build_forward_expand(gf, t);
         observations.push_back({ name, t, shape });
