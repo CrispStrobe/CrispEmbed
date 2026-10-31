@@ -251,10 +251,17 @@ def reference(args):
         torch.backends.cuda.matmul.allow_tf32 = False
         torch.backends.cudnn.allow_tf32 = False
     dtype = {"f32": torch.float32, "f16": torch.float16, "bf16": torch.bfloat16}[args.dtype]
-    config = AutoConfig.from_pretrained(str(checkpoint), trust_remote_code=True, local_files_only=True)
+    # modeling_oxr registers Siglip2NavitConfig from its own copy of configuration_oxr.
+    # AutoConfig loads that file again as a separately hashed dynamic module, so its
+    # vit_config class would not be the registered one (AutoModel.from_config then
+    # raises). Build the config from the modeling module's own configuration module.
+    from transformers.dynamic_module_utils import get_class_from_dynamic_module
+    model_class = get_class_from_dynamic_module("modeling_oxr.OXR", str(checkpoint), local_files_only=True)
+    config_module = sys.modules[model_class.__module__.rsplit(".", 1)[0] + ".configuration_oxr"]
+    config = config_module.OXRConfig.from_pretrained(str(checkpoint), local_files_only=True)
     config.llm_config._attn_implementation = args.attention
     start = time.perf_counter()
-    model = AutoModelForCausalLM.from_pretrained(str(checkpoint), config=config,
+    model = model_class.from_pretrained(str(checkpoint), config=config,
         trust_remote_code=True, local_files_only=True, dtype=dtype,
         attn_implementation={"": "eager", "llm_config": args.attention, "vit_config": "eager"}).to(device=args.device, dtype=dtype).eval()
     if args.device == "cuda":
