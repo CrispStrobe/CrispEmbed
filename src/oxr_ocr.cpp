@@ -69,7 +69,9 @@ namespace {
 constexpr int graph_nodes = 8192;
 constexpr int vdim = 1152, vheads = 16, vhead_dim = 72, vlayers = 27;
 constexpr int dim = 1024, layers = 28, heads = 16, kv_heads = 8, head_dim = 128;
-constexpr const char * vision = "visual_tokenizer.vit.vision_model.";
+// The converter stores the source prefix "visual_tokenizer.vit.vision_model." as
+// "vit." (GGML_MAX_NAME) and records it in oxr.vision_tensor_prefix.
+constexpr const char * vision = "vit.";
 
 struct observation {
     std::string name;
@@ -241,6 +243,8 @@ void load(oxr_ocr_context & c, const char * path) {
         { "oxr.tokenizer.vocab_size", 151669 }, { "oxr.processor.min_pixels", 200704 },
         { "oxr.processor.max_pixels", 921600 }
     };
+    if (core_gguf::kv_str(meta.get(), "oxr.vision_tensor_prefix", "") != vision)
+        throw std::runtime_error("OXR GGUF predates the short vision tensor names; reconvert it");
     for (const auto & item : integers)
         if (core_gguf::kv_u32(meta.get(), item.first, 0) != item.second)
             throw std::runtime_error(std::string("OXR incompatible metadata: ") + item.first);
