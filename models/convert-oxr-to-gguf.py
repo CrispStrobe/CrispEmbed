@@ -292,6 +292,19 @@ def read_tensor(path: Path, entry: dict, dtype: str):
     return np.ascontiguousarray(converted)
 
 
+# GGML caps tensor names at GGML_MAX_NAME (64 bytes incl. NUL); 415 of the 752
+# source names exceed it under this prefix. The GGUF stores the short prefix
+# and records it, and src/oxr_ocr.cpp requires the same mapping.
+SOURCE_VISION_PREFIX, GGUF_VISION_PREFIX = "visual_tokenizer.vit.vision_model.", "vit."
+
+
+def gguf_name(name):
+    out = GGUF_VISION_PREFIX + name[len(SOURCE_VISION_PREFIX):] if name.startswith(SOURCE_VISION_PREFIX) else name
+    if len(out.encode()) > 63:
+        raise ValueError(f"GGUF tensor name exceeds GGML_MAX_NAME: {out}")
+    return out
+
+
 def write_metadata(writer, config, processor, tokens, types, merges, hashes, dtype):
     writer.add_string("general.name", "SoMarkAI OXR-1.0")
     writer.add_string("general.license", "OXR License (Apache-2.0 with additional terms)")
@@ -317,6 +330,7 @@ def write_metadata(writer, config, processor, tokens, types, merges, hashes, dty
     writer.add_float32("oxr.visual_head.layer_norm_eps", 1e-5)
     writer.add_uint32("oxr.processor.min_pixels", 200704)
     writer.add_uint32("oxr.processor.max_pixels", 921600)
+    writer.add_string("oxr.vision_tensor_prefix", GGUF_VISION_PREFIX)
     writer.add_uint32("oxr.context_length", 32768)
     writer.add_uint32("oxr.visual_vocab_size", 65536)
     writer.add_uint32("oxr.tokenizer.vocab_size", len(tokens))
@@ -373,7 +387,7 @@ def main(argv=None):
         write_metadata(writer, config, processor, tokens, types, merges, hashes, args.dtype)
         for spec in specs:
             dtype = np.dtype(storage_dtype(spec, args.dtype))
-            writer.add_tensor_info(spec.name, spec.shape, dtype, math.prod(spec.shape) * dtype.itemsize,
+            writer.add_tensor_info(gguf_name(spec.name), spec.shape, dtype, math.prod(spec.shape) * dtype.itemsize,
                                    raw_dtype=gguf.GGMLQuantizationType.F32 if dtype.itemsize == 4 else gguf.GGMLQuantizationType.F16)
         writer.write_header_to_file()
         writer.write_kv_data_to_file()
