@@ -97,6 +97,9 @@ pub struct CrispembedOcrPipelineParams {
     pub image_text_fallback: c_int,
 }
 
+/// TeleOCR stage selector. Requires `CRISPEMBED_TELEOCR=1` and a local TeleOCR GGUF.
+pub const CRISPEMBED_OCR_ENGINE_TELEOCR: c_int = 24;
+
 /// One fully-specified OCR pipeline stage (full per-stage builder). Field order
 /// must match `crispembed_ocr_stage` in crispembed.h exactly.
 #[repr(C)]
@@ -109,6 +112,7 @@ pub struct CrispembedOcrStage {
     // 10=granite_vision 11=lightonocr 12=qwen3vl 13=unlimited_ocr
     // 14=unified 15=tesseract_fraktur 16=ppocrv6 17=easyocr 18=olmocr
     // 19=lfm2_vl 20=qwen35_ocr (experimental) 21=ovisocr2 (explicit gated format2) 22=ovisocr3 (gated format3)
+    // 23=minicpm_ocr (experimental), 24=teleocr (CRISPEMBED_TELEOCR)
     pub engine: c_int,
     pub model_a: *const c_char,
     pub model_b: *const c_char,
@@ -680,6 +684,22 @@ extern "C" {
     pub fn crispembed_ocr_model_set_prompt(
         ctx: *mut OcrModelContext,
         prompt: *const c_char,
+    ) -> c_int;
+
+    /// TeleOCR-only generation controls. Returns 1 for valid settings, 0 otherwise.
+    pub fn crispembed_ocr_model_set_generation_params(
+        ctx: *mut OcrModelContext,
+        repetition_penalty: c_float,
+        presence_penalty: c_float,
+        frequency_penalty: c_float,
+        no_repeat_ngram: c_int,
+    ) -> c_int;
+    pub fn crispembed_ocr_model_get_generation_params(
+        ctx: *const OcrModelContext,
+        repetition_penalty: *mut c_float,
+        presence_penalty: *mut c_float,
+        frequency_penalty: *mut c_float,
+        no_repeat_ngram: *mut c_int,
     ) -> c_int;
 
     /// Recognize math from grayscale float pixels [0..1].

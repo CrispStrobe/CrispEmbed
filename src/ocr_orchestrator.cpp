@@ -340,6 +340,10 @@ struct context {
     glm_ocr_context * glm = nullptr;          // GLM-OCR (single-shot VLM)
     qwen2vl_ocr_context * qwen = nullptr;     // Qwen2.5-VL (single-shot VLM)
     qwen2vl_ocr_context * qwen3 = nullptr;    // Qwen3-VL (DeepStack + IMROPE)
+    qwen2vl_ocr_context * teleocr = nullptr;  // TeleOCR owns its model/prompt independently of Qwen stages
+    std::string teleocr_model_path;
+    std::string teleocr_default_prompt;
+    int teleocr_default_max_tokens = 4096;
     internvl2_ocr_context * intern = nullptr; // InternVL2 (single-shot VLM)
     deepseek_ocr2_context * dsocr2 = nullptr; // DeepSeek-OCR-2 (MoE VLM)
     pix2struct_context * p2s = nullptr;       // Pix2Struct (doc/chart understanding)
@@ -941,6 +945,61 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         int nconf = 0;
         const float * conf = qwen2vl_ocr_confidences(ctx->qwen, &nconf);
         auto out = wrap_fulltext(t, w, h, conf, nconf, qwen2vl_ocr_mean_confidence(ctx->qwen));
+        if (loaded) stbi_image_free(loaded);
+        return out;
+    }
+    case engine::teleocr: {
+        if (!core_env::on("CRISPEMBED_TELEOCR")) {
+            fprintf(stderr, "ocr_orchestrator: teleocr needs CRISPEMBED_TELEOCR=1\n");
+            return {};
+        }
+        if (st.model_a != ctx->teleocr_model_path) {
+            if (ctx->teleocr) qwen2vl_ocr_free(ctx->teleocr);
+            ctx->teleocr = nullptr;
+            ctx->teleocr_model_path.clear();
+            ctx->teleocr_default_prompt.clear();
+        }
+        if (!ctx->teleocr) {
+            if (st.model_a.empty()) {
+                fprintf(stderr, "ocr_orchestrator: teleocr stage needs an explicit local model_a\n");
+                return {};
+            }
+            auto * meta = core_gguf::open_metadata(st.model_a.c_str());
+            const bool profile = meta && core_gguf::kv_str(meta, "general.architecture", "") == "teleocr" &&
+                                 core_gguf::kv_u32(meta, "teleocr.gguf_version", 0) == 1;
+            if (meta) core_gguf::free_metadata(meta);
+            if (!profile) {
+                fprintf(stderr, "ocr_orchestrator: teleocr requires a TeleOCR version 1 GGUF\n");
+                return {};
+            }
+            ctx->teleocr = qwen2vl_ocr_init(st.model_a.c_str(), ctx->n_threads);
+            if (!ctx->teleocr) return {};
+            ctx->teleocr_model_path = st.model_a;
+            const char * initial_prompt = qwen2vl_ocr_get_prompt(ctx->teleocr);
+            ctx->teleocr_default_prompt = initial_prompt ? initial_prompt : "";
+            ctx->teleocr_default_max_tokens = qwen2vl_ocr_get_max_tokens(ctx->teleocr);
+        }
+        // Reset both knobs on every stage: a previous stage/request must not
+        // leak a custom prompt or generation cap into this one.
+        qwen2vl_ocr_set_max_tokens(ctx->teleocr, st.params.vlm_max_tokens > 0 ? st.params.vlm_max_tokens
+                                                                              : ctx->teleocr_default_max_tokens);
+        if (!qwen2vl_ocr_set_prompt(ctx->teleocr, st.params.vlm_prompt.empty() ? ctx->teleocr_default_prompt.c_str()
+                                                                               : st.params.vlm_prompt.c_str()))
+            return {};
+        int w = pw, h = ph;
+        unsigned char * loaded = nullptr;
+        const unsigned char * img = px;
+        if (!img) {
+            int channels = 0;
+            loaded = stbi_load(path, &w, &h, &channels, 3);
+            img = loaded;
+        }
+        if (!img) return {};
+        int len = 0;
+        const char * text = qwen2vl_ocr_recognize_raw(ctx->teleocr, img, w, h, 3, &len);
+        int nconf = 0;
+        const float * conf = qwen2vl_ocr_confidences(ctx->teleocr, &nconf);
+        auto out = wrap_fulltext(text, w, h, conf, nconf, qwen2vl_ocr_mean_confidence(ctx->teleocr));
         if (loaded) stbi_image_free(loaded);
         return out;
     }
@@ -2206,6 +2265,8 @@ static const char * engine_name(engine e) {
         return "qwen2vl";
     case engine::qwen3vl:
         return "qwen3vl";
+    case engine::teleocr:
+        return "teleocr";
     case engine::internvl2:
         return "internvl2";
     case engine::tesseract:
@@ -2263,6 +2324,7 @@ static bool is_vlm_engine(engine e) {
     case engine::olmocr:
     case engine::qwen2vl:
     case engine::qwen3vl:
+    case engine::teleocr:
     case engine::got:
     case engine::glm:
     case engine::internvl2:
@@ -2547,6 +2609,7 @@ void free(context * ctx) {
     if (ctx->glm) glm_ocr_free(ctx->glm);
     if (ctx->qwen) qwen2vl_ocr_free(ctx->qwen);
     if (ctx->qwen3) qwen2vl_ocr_free(ctx->qwen3);
+    if (ctx->teleocr) qwen2vl_ocr_free(ctx->teleocr);
     if (ctx->intern) internvl2_ocr_free(ctx->intern);
     if (ctx->dsocr2) deepseek_ocr2_free(ctx->dsocr2);
     if (ctx->p2s) pix2struct_free(ctx->p2s);

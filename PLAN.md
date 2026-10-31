@@ -1,5 +1,40 @@
 # CrispEmbed active plan —29 October2026 wrap-up
 
+## TeleOCR GGUF/GGML integration — 31 October 2026
+
+The requested native implementation and bounded CPU validation are complete
+on `feat/teleocr-ggml`, based on `15adb672f71f8470a23db1284dafa102515adae9`;
+ggml remains pinned to `a06fc0bb46b73cc10011fc90ae4054aee8438aeb`. The complete
+source delivery includes ggml, an applicable patch and retained evidence.
+See [usage](docs/teleocr.md), [license audit](docs/teleocr-license.md),
+[validation](docs/teleocr-validation.md) and the [matrix](tests/results/teleocr/summary.json).
+
+- Sources: `XingChen-AGI/TeleOCR@b3f6a0c084db72f971e19a779d2fd8a6bc9e3b8d`
+  and Apache-2.0 `rzafiamy/teleocr-rs@957cdbabe80e86d652c5fcc938ed7fbcf1eb2bbe`.
+  The pinned HF model module has an explicit Apache source header. Official
+  unlicensed document-client/postprocessor files were not directly translated.
+- Converter checks 701 source tensors and writes 700; F32/F16 and protected
+  Q8_0/Q4_K artifacts were actually converted and tested. C/Python/CLI/HTTP,
+  stage 24, compiled Rust/Dart and the native-backed document parser are wired.
+- All 24 CPU cases reach EOS with complete 75-stage coverage and valid
+  confidences. F32/F16/Q8_0 each match six complete original sequences; Q4_K
+  matches five and adds a trailing newline on code. Raw and normalized scores
+  remain separate. Final loader guards pass 43 metadata/header cases and the
+  rebuilt production CLI repeats the full 66-token text result exactly.
+- **Strict numerical qualification remains false for every precision** under
+  the unchanged 0.002 absolute / 0.99999 row-cosine gates. Preserve the initial
+  failures, original references and current decoded results. The limited
+  F32 ULP/propagation diagnosis does not waive the gates or explain all errors.
+- Keep `CRISPEMBED_TELEOCR=1` default-off and CPU placement default. Next work is
+  numerical qualification against the same frozen source, representative
+  independent OCR/layout gold, then actual CUDA/Metal/Vulkan/mobile/WASM and
+  resource-boundary qualification. Quantized raw differences must remain visible.
+- Model publication, immutable registry aliases, release tags and downstream
+  app changes remain separate. No runtime version or default is promoted here.
+
+Unrelated portfolio work and downstream application pins remain with their
+existing owners. Completed details are recorded in HISTORY and PERFORMANCE.
+
 Start with [the executable handoff](docs/handoff-2026-10-29.md). It gives exact
 sources, job states, inputs, commands, limits and acceptance gates. Completed
 results and superseded task claims are in [HISTORY](HISTORY.md); measurements
@@ -159,8 +194,9 @@ Proceed smallest applicable backend first after the current closure:
    community GGUF quality is unverified.
 2. LightOnOCR-3-1B: verify exact official preprocessing, tokenizer, transcription
    and grounding against the existing LightOn backend.
-3. TeleOCR: audit base/NaviDC provenance and structured output before reusing
-   Qwen2.5-VL.
+3. TeleOCR: the gated CPU implementation and bounded panel are complete;
+   continue its numerical/representative-quality and provenance limits in
+   the TeleOCR lane above before publication or platform promotion.
 4. LightOnOCR-3-4B and Qwen3.5-9B: separate long-page/memory/GPU reference and
    task protocols after small dense-model parity.
 5. Qwen3.6-27B: dense64-layer config and resource-qualified long-context port.

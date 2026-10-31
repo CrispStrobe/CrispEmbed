@@ -1,3 +1,34 @@
+## 31 October 2026 — TeleOCR native CPU implementation and retained qualification limits
+
+TeleOCR is implemented as a default-off native GGUF/GGML path behind
+`CRISPEMBED_TELEOCR=1`, with a strict format/profile loader, 701-to-700 tensor
+converter, protected Q8_0/Q4_K recipes, explicit stage 24, C/Python/CLI/HTTP
+surfaces, compiled Rust/Dart wrappers, and a native-backed document parser.
+The pinned HF model module is explicitly Apache-2.0; its adaptations and the
+Apache Rust-derived parser retain notices alongside the project's MIT license.
+See [usage](docs/teleocr.md), [license audit](docs/teleocr-license.md) and
+[full validation](docs/teleocr-validation.md).
+
+The actual original-module six-case CPU reference contains 1,668 generated IDs.
+All [24 native comparisons](tests/results/teleocr/summary.json) reach EOS and
+retain 1,800 observations with exact preprocessing/positions and valid
+confidence counts. F32/F16/Q8_0 each reproduce all six complete sequences.
+Q4_K reproduces five; its code output adds one trailing newline, preserving a
+raw decoded failure despite zero whitespace-normalized CER/WER. **Every strict
+numerical case remains failed** under the original 0.002/0.99999 gates. The
+F32 same-input/propagation/ULP probes explain investigated differences without
+waiving them. Pillow pass-order and observer-coverage initial failures remain
+retained beside the corrections.
+
+The 32-check public suite and actual compiled Rust/Dart consumers pass. Both
+parser modes pass bounded native smoke checks; the owned three-line gold has
+CER/WER zero. Final review adds loader-only dtype/rank checks, passes all 43
+metadata/header cases and repeats the full 66-token production CLI output.
+Source-delta review preserves the exact earlier arithmetic and raw snapshots.
+Build/install notices and archive integrity are checked separately. No GPU,
+broad quality, publication, registry alias, runtime release or default flip is
+claimed. Remaining qualification work stays in PLAN.
+
 ## 28 October 2026 — Unlimited-OCR-2 tiled exact + published; MiniCPM-OCR-1.0 native exact + published
 
 **Unlimited-OCR-2.** Tile-token bug found by the vision diff: native fed 256 instead of

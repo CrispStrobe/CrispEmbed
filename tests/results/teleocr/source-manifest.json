@@ -1,0 +1,101 @@
+{
+  "repo": "XingChen-AGI/TeleOCR",
+  "revision": "b3f6a0c084db72f971e19a779d2fd8a6bc9e3b8d",
+  "files": [
+    {
+      "path": "config.json",
+      "bytes": 3516,
+      "sha256": "92c5e15f1768dcb54bceae170043fbfefd248508159700b2179824b88c33ae75"
+    },
+    {
+      "path": "generation_config.json",
+      "bytes": 244,
+      "sha256": "50867494bddf9ddc8e289e6214be5a2263e68f16c127a3652c6eb9f17990e5d9"
+    },
+    {
+      "path": "preprocessor_config.json",
+      "bytes": 350,
+      "sha256": "f2058c716eef96ccaed1cc1e2d0c08306b62586d535b28d9d08e691b2fab7ca0"
+    },
+    {
+      "path": "tokenizer.json",
+      "bytes": 11421896,
+      "sha256": "9c5ae00e602b8860cbd784ba82a8aa14e8feecec692e7076590d014d7b7fdafa"
+    },
+    {
+      "path": "tokenizer_config.json",
+      "bytes": 4730,
+      "sha256": "e04be4dd17e9f661bc487ba848a37f66a8f1adf2eef412f5d4ecb40cab4d39e7"
+    },
+    {
+      "path": "special_tokens_map.json",
+      "bytes": 613,
+      "sha256": "76862e765266b85aa9459767e33cbaf13970f327a0e88d1c65846c2ddd3a1ecd"
+    },
+    {
+      "path": "added_tokens.json",
+      "bytes": 605,
+      "sha256": "58b54bbe36fc752f79a24a271ef66a0a0830054b4dfad94bde757d851968060b"
+    },
+    {
+      "path": "merges.txt",
+      "bytes": 1671853,
+      "sha256": "8831e4f1a044471340f7c0a83d7bd71306a5b867e95fd870f74d0c5308a904d5"
+    },
+    {
+      "path": "vocab.json",
+      "bytes": 2776833,
+      "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+    },
+    {
+      "path": "chat_template.jinja",
+      "bytes": 1017,
+      "sha256": "a0bc6f6fc7a29a80017a433e8f03a1cc1236e838a944a2d034295a60c4f2fddb"
+    },
+    {
+      "path": "modeling_naviocr.py",
+      "bytes": 84057,
+      "sha256": "7adac1cc17009f9f1b8e0c58284d7c0b9989a590f017b9e5964cc42270207922"
+    },
+    {
+      "path": "README.md",
+      "bytes": 16801,
+      "sha256": "176c705cd92eeb9006c048e72274741e839f2bafa2bae858e64c3277264eb0db"
+    },
+    {
+      "path": "assets/text.png",
+      "bytes": 61959,
+      "sha256": "462ec6c1aa47504cf55a53bca8e3ad04a5270c0e5583d6a5d2b66c0ec16257e7"
+    },
+    {
+      "path": "assets/formula.png",
+      "bytes": 30609,
+      "sha256": "b8b18551c426ca59744e69f24d6084b13acfb5348065560ad8190054bfc2a925"
+    },
+    {
+      "path": "assets/table.png",
+      "bytes": 35870,
+      "sha256": "fadfc0d58be495f292eb45361e10305a983383217ef2b8d45dba15b9800ea73d"
+    },
+    {
+      "path": "assets/code.png",
+      "bytes": 195315,
+      "sha256": "741314175f5bbf26dbaa7e4f35a4294d4f81525aa8d4a1c361a1ee3ff95de956"
+    },
+    {
+      "path": "assets/layout.jpg",
+      "bytes": 749370,
+      "sha256": "2ae27f3a9284810bf7ce479ac8921359ccf00b7ebee1017b5e8da3e28ebe4af4"
+    },
+    {
+      "path": "assets/layout_distorted.jpg",
+      "bytes": 612968,
+      "sha256": "86000b5847dca0464838c9672650b7688fa942d92c241b2ec778ca613cd25dcd"
+    },
+    {
+      "path": "model.safetensors",
+      "bytes": 2830223488,
+      "sha256": "9817b18041bd96403f75e38a33b28ed0cd5fb2641f67eead673afabd3c408109"
+    }
+  ]
+}

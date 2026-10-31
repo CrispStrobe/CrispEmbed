@@ -1,0 +1,91 @@
+{
+  "kind": "teleocr-native-quantization-partial-peer-review",
+  "scope": "Completed Q8 large cases and Q4_K code; Q4_K layout excluded while still running",
+  "inference_rerun": false,
+  "raw_reports_modified": false,
+  "reviewed_aggregator_sha256": "c1a35ffcaff9e0fd000c744c9612a33ad6e7ae65919fa32850452287786fef86",
+  "tokenizer_sha256": "9c5ae00e602b8860cbd784ba82a8aa14e8feecec692e7076590d014d7b7fdafa",
+  "q8_large": [
+    {
+      "case": "code",
+      "report_sha256": "92a5afc7be0c402395f92e0e7ff6584029b8d14d534b54c326ceb8082f858398",
+      "raw_text_exact": true,
+      "ids_exact": true,
+      "tokens": 366,
+      "coverage_complete": true,
+      "confidence_pass": true,
+      "numerical_pass": false,
+      "decoded_pass": true
+    },
+    {
+      "case": "layout",
+      "report_sha256": "f58bf0dd1bd6449cdbba1a44fd384d753069fe12fc6523aeb33b83674811c7b6",
+      "raw_text_exact": true,
+      "ids_exact": true,
+      "tokens": 768,
+      "coverage_complete": true,
+      "confidence_pass": true,
+      "numerical_pass": false,
+      "decoded_pass": true
+    }
+  ],
+  "q4_k_code": {
+    "native_report_sha256": "9a7b0f8ddc891a637e72681d299ed2af222b57147c3c78dbead3663a3c72fbae",
+    "reference_report_sha256": "f237540d1ddb1b110cba8a79898fa355db688ab050ae49727754dfee8d393ec7",
+    "receipt_report_hash_matches": true,
+    "receipt_model_sha256": "1933ab72f57d14bd0473a86ecadb4bd815e13003caa40ab94478727ac12770cd",
+    "reference_characters": 1260,
+    "native_characters": 1261,
+    "native_text_is_reference_plus_one_newline": true,
+    "text_edit": {
+      "operation": "insert",
+      "reference_index": 1260,
+      "native_index": 1260,
+      "text": "\n",
+      "codepoint": "U+000A"
+    },
+    "generated_id_count": 366,
+    "id_mismatches": [
+      {
+        "index": 364,
+        "reference_id": 92,
+        "native_id": 532
+      }
+    ],
+    "reference_token_text": "}",
+    "native_token_text": "}\n",
+    "full_tokenizer_decodes_match_both_report_strings": true,
+    "metrics_vs_frozen_reference": {
+      "raw_cer": {
+        "edits": 1,
+        "reference_units": 1260,
+        "rate": 0.0007936507936507937
+      },
+      "whitespace_normalized_cer": {
+        "edits": 0,
+        "reference_units": 1031,
+        "rate": 0.0
+      },
+      "wer": {
+        "edits": 0,
+        "reference_units": 134,
+        "rate": 0.0
+      }
+    },
+    "raw_cer_percent": 0.07936507936507936,
+    "stage_count": 75,
+    "confidence_count": 366,
+    "eos_id": 151645,
+    "flags": {
+      "pass": false,
+      "numerical_pass": false,
+      "decoded_pass": false,
+      "coverage_complete": true,
+      "confidence_pass": true,
+      "reached_eos": true
+    },
+    "aggregator_preserves_raw_decoded_failure": true,
+    "normalization_used_only_for_separate_metrics": true
+  },
+  "issues": []
+}

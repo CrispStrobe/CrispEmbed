@@ -70,6 +70,7 @@
 #include <cmath>
 #include <filesystem>
 #include <iomanip>
+#include <limits>
 #include <system_error>
 
 #ifdef _WIN32
@@ -684,7 +685,8 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "  --ocr-pipeline    enable POST /ocr/pipeline endpoint\n");
         fprintf(stderr, "  --ocr-max-tokens N  generation cap for VLM OCR engines (0 = engine default)\n");
         fprintf(stderr, "  --ocr-prompt TEXT   default instruction for prompt-following VLM OCR engines\n");
-        fprintf(stderr, "                      (qwen2vl/qwen3vl/olmocr, internvl2, lfm2-vl, granite-vision);\n");
+        fprintf(stderr,
+                "                      (qwen2vl/qwen3vl/olmocr/teleocr, internvl2, lfm2-vl, granite-vision);\n");
         fprintf(stderr, "                      POST /ocr/model also takes a per-request \"prompt\"\n");
         fprintf(stderr, "  --ocr-det MODEL   detection model (required with --ocr-pipeline unless --ocr-engine)\n");
         fprintf(stderr, "  --ocr-rec MODEL   recognition model (required with --ocr-pipeline unless --ocr-engine)\n");
@@ -1496,6 +1498,7 @@ int main(int argc, char ** argv) {
         if (!resolved.empty()) ocr_model_path = resolved;
         ocr_model_ctx = crispembed_ocr_model_init(ocr_model_path.c_str(), n_threads);
         if (!ocr_model_ctx) fprintf(stderr, "Warning: failed to load math OCR model '%s'\n", ocr_model_path.c_str());
+        if (ocr_model_ctx && ocr_max_tokens > 0) crispembed_ocr_model_set_max_tokens(ocr_model_ctx, ocr_max_tokens);
         if (ocr_model_ctx && !ocr_prompt.empty() && !crispembed_ocr_model_set_prompt(ocr_model_ctx, ocr_prompt.c_str()))
             fprintf(stderr, "Warning: --ocr-prompt ignored: OCR model '%s' runs a fixed task prompt\n",
                     ocr_model_path.c_str());
@@ -1540,14 +1543,30 @@ int main(int argc, char ** argv) {
             if (n == "easyocr") return 17;
             if (n == "olmocr") return 18;
             if (n == "minicpm-ocr" || n == "minicpm_ocr") return 23;
+            if (n == "teleocr") return 24;
             return 0; // dbnet_trocr
         };
         const int eid = eng_id(ocr_engine_name);
         const bool is_vlm = (eid >= 2 && eid <= 5) || (eid >= 8 && eid <= 13) || eid == 14 || eid == 18 || eid == 20 ||
-                            eid == 21 || eid == 22 || eid == 23;
-        if ((eid == 14 || eid == 15 || eid == 20 || eid == 21 || eid == 22) && ocr_rec_model_path.empty()) {
+                            eid == 21 || eid == 22 || eid == 23 || eid == 24;
+        if ((eid == 14 || eid == 15 || eid == 20 || eid == 21 || eid == 22 || eid == 24) &&
+            ocr_rec_model_path.empty()) {
             fprintf(stderr, "error: --ocr-engine %s needs the model via --ocr-rec FILE\n", ocr_engine_name.c_str());
             return 1;
+        }
+        if (eid == 24) {
+            if (!core_env::on("CRISPEMBED_TELEOCR")) {
+                fprintf(stderr, "error: teleocr needs CRISPEMBED_TELEOCR=1\n");
+                return 1;
+            }
+            auto * meta = core_gguf::open_metadata(ocr_rec_model_path.c_str());
+            const bool profile = meta && core_gguf::kv_str(meta, "general.architecture", "") == "teleocr" &&
+                                 core_gguf::kv_u32(meta, "teleocr.gguf_version", 0) == 1;
+            if (meta) core_gguf::free_metadata(meta);
+            if (!profile) {
+                fprintf(stderr, "error: teleocr requires a local TeleOCR version 1 GGUF\n");
+                return 1;
+            }
         }
         // Experimental MiniCPM-OCR-1.0 reuses the qwen35 decoder kernels, so both gates are required.
         if (eid == 23 && (!core_env::on("CRISPEMBED_MINICPM_OCR") || !core_env::on("CRISPEMBED_QWEN35_OCR"))) {
@@ -2189,6 +2208,38 @@ int main(int argc, char ** argv) {
         }
 
         std::lock_guard<std::mutex> lock(ocr_model_mutex);
+        const bool has_generation_params =
+            core_json::json_find_key_value(body, "repetition_penalty") != std::string::npos ||
+            core_json::json_find_key_value(body, "presence_penalty") != std::string::npos ||
+            core_json::json_find_key_value(body, "frequency_penalty") != std::string::npos ||
+            core_json::json_find_key_value(body, "no_repeat_ngram") != std::string::npos;
+        float previous_repetition = 0, previous_presence = 0, previous_frequency = 0;
+        int previous_ngram = 0;
+        if (has_generation_params) {
+            if (!crispembed_ocr_model_get_generation_params(ocr_model_ctx, &previous_repetition, &previous_presence,
+                                                            &previous_frequency, &previous_ngram)) {
+                res.status = 400;
+                res.set_content("{\"error\":\"generation penalties require a TeleOCR model\"}", "application/json");
+                return;
+            }
+            auto penalty = [&](const char * key, double fallback) {
+                return core_json::json_find_key_value(body, key) == std::string::npos
+                           ? fallback
+                           : json_extract_number(body, key, std::numeric_limits<double>::quiet_NaN());
+            };
+            const double rep = penalty("repetition_penalty", previous_repetition);
+            const double pres = penalty("presence_penalty", previous_presence);
+            const double freq = penalty("frequency_penalty", previous_frequency);
+            const double ngram = penalty("no_repeat_ngram", previous_ngram);
+            if (!std::isfinite(rep) || !std::isfinite(pres) || !std::isfinite(freq) || !std::isfinite(ngram) ||
+                ngram < 0 || ngram > 4096 || std::floor(ngram) != ngram ||
+                !crispembed_ocr_model_set_generation_params(ocr_model_ctx, (float)rep, (float)pres, (float)freq,
+                                                            (int)ngram)) {
+                res.status = 400;
+                res.set_content("{\"error\":\"invalid TeleOCR generation penalties\"}", "application/json");
+                return;
+            }
+        }
         const int previous_max_tokens = crispembed_ocr_model_get_max_tokens(ocr_model_ctx);
         if (req_max_tokens > 0) crispembed_ocr_model_set_max_tokens(ocr_model_ctx, req_max_tokens);
         int prompt_applied = -1; // -1 = no per-request prompt
@@ -2199,11 +2250,19 @@ int main(int argc, char ** argv) {
             int previous_max_tokens;
             bool prompt_active;
             bool max_tokens_active;
+            bool generation_active;
+            float repetition, presence, frequency;
+            int ngram;
             ~request_state_restore() {
                 if (prompt_active) crispembed_ocr_model_set_prompt(ctx, dflt.empty() ? nullptr : dflt.c_str());
                 if (max_tokens_active) crispembed_ocr_model_set_max_tokens(ctx, previous_max_tokens);
+                if (generation_active)
+                    crispembed_ocr_model_set_generation_params(ctx, repetition, presence, frequency, ngram);
             }
-        } restore{ ocr_model_ctx, ocr_prompt, previous_max_tokens, prompt_applied == 1, req_max_tokens > 0 };
+        } restore{ ocr_model_ctx,       ocr_prompt,         previous_max_tokens,
+                   prompt_applied == 1, req_max_tokens > 0, has_generation_params,
+                   previous_repetition, previous_presence,  previous_frequency,
+                   previous_ngram };
         auto t0 = std::chrono::steady_clock::now();
 
         int w = 0, h = 0, ch = 0;

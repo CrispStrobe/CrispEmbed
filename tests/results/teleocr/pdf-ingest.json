@@ -1,0 +1,12 @@
+{
+  "pass": true,
+  "scope": "PDF render/ingest; native OCR is tested separately with the PNG fixture",
+  "pages": 1,
+  "size": [
+    640,
+    220
+  ],
+  "mode": "RGB",
+  "pdfium_version": "5.14.0",
+  "dpi": 72
+}

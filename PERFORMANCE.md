@@ -1,3 +1,29 @@
+## 31 October 2026 — TeleOCR bounded CPU validation timings and quality limits
+
+The [complete matrix](tests/results/teleocr/summary.json) records two threads per
+forward, Linux x86_64 CPU, fixed 1024-token caps and the pinned original module.
+All cases reach EOS. Times below are native reported forward durations and
+original-model reference durations. Some executions overlapped bounded
+validation work; model loading and instrumentation differ. **These are
+individual diagnostic timings, not a controlled speed comparison or benchmark.**
+
+| Case | Original F32 seconds | Native F32 | Native F16 | Native Q8_0 | Native Q4_K |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| text | 29.04 | 22.07 | 52.74 | 35.24 | 37.45 |
+| formula | 71.97 | 50.14 | 110.96 | 80.87 | 77.90 |
+| table | 71.96 | 33.40 | 132.42 | 64.45 | 63.76 |
+| code | 259.06 | 186.07 | 307.98 | 245.17 | 246.91 |
+| layout | 389.97 | 205.22 | 439.85 | 303.27 | 297.38 |
+| synthetic | 13.79 | 14.75 | 24.21 | 19.68 | 20.90 |
+
+F32/F16/Q8_0 have six exact raw sequences each. Q4_K has five; code adds one
+trailing newline (raw CER 1/1260, normalized CER 0/1031, WER 0/134). Every strict
+numerical case fails; F32's largest floating-stage error is 1.39697265625 even
+though its worst first-logit error is only 0.0000495910644531. Confidence validity
+is not calibration. The [validation record](docs/teleocr-validation.md) retains
+all layer metrics, failure attribution, source/binary hashes and corpus limits.
+No throughput, GPU, maximum-context or representative OCR-quality claim follows.
+
 ## Unlimited-OCR-2 and MiniCPM-OCR CPU timings (28 October 2026, Kaggle 4 vCPU)
 
 | engine | page | variant | seconds | note |

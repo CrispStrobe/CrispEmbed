@@ -1,0 +1,1 @@
+OK: all 197 one-shot main()s route through core_util::clean_exit.

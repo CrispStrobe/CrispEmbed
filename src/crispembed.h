@@ -620,7 +620,8 @@ CRISPEMBED_API void crispembed_free(crispembed_context * ctx);
 //   math:  pix2tex (printed), PP-FormulaNet / PP-FormulaNet-L, Texo-Distill,
 //          HMER / BTTR / PosFormer (handwritten), MixTex (zh+en LaTeX)
 //   text:  PARSeq (scene text), Qwen2.5-VL, InternVL2.5/2-1B, GLM-OCR,
-//          GOT-OCR, Tesseract-LSTM, Granite-Vision, LightOnOCR, DeepSeek-OCR2
+//          GOT-OCR, Tesseract-LSTM, Granite-Vision, LightOnOCR, DeepSeek-OCR2,
+//          TeleOCR (opt-in CRISPEMBED_TELEOCR=1; explicit local GGUF)
 //
 // This is the single-model recognizer. For detection + recognition see the
 // crispembed_ocr_* pipeline, and for source-routing + cleanup + escalation see
@@ -656,12 +657,24 @@ CRISPEMBED_API void crispembed_ocr_model_set_max_tokens(void * ctx, int max_toke
 CRISPEMBED_API int crispembed_ocr_model_get_max_tokens(const void * ctx);
 
 /// Replace the instruction text sent to an instruction-following VLM engine
-/// (Qwen2-VL / Qwen2.5-VL / Qwen3-VL / PaddleOCR-VL / olmOCR, InternVL2,
+/// (Qwen2-VL / Qwen2.5-VL / Qwen3-VL / PaddleOCR-VL / olmOCR / TeleOCR, InternVL2,
 /// LFM2-VL, Granite-Vision). NULL or "" restores the engine's default prompt.
 /// Returns 1 when the loaded engine accepts a custom prompt, 0 when it does not
 /// (formula/line recognizers and fixed-task document VLMs) — in that case the
 /// call has no effect. Applies to subsequent crispembed_ocr_model_recognize calls.
 CRISPEMBED_API int crispembed_ocr_model_set_prompt(void * ctx, const char * prompt);
+
+/// TeleOCR generation penalties. Returns 1 on success, 0 for other engines or
+/// invalid arguments. Repetition applies to prompt + generated IDs; presence
+/// and frequency apply to generated IDs only. no_repeat_ngram=0 disables it.
+/// Model-card defaults are 1.05, 0, 0, 0. The document parser sets task presets.
+CRISPEMBED_API int crispembed_ocr_model_set_generation_params(void * ctx, float repetition_penalty,
+                                                              float presence_penalty, float frequency_penalty,
+                                                              int no_repeat_ngram);
+/// Read TeleOCR penalties; each output pointer may be NULL to skip that value.
+CRISPEMBED_API int crispembed_ocr_model_get_generation_params(const void * ctx, float * repetition_penalty,
+                                                              float * presence_penalty, float * frequency_penalty,
+                                                              int * no_repeat_ngram);
 
 // --- Deprecated aliases (pre-rename names; forward to crispembed_ocr_model_*).
 // Kept for ABI compatibility; prefer the crispembed_ocr_model_* names above.
@@ -1266,6 +1279,9 @@ CRISPEMBED_API int crispembed_scan_cleanup_process_simple(void * ctx, const uint
 // (not by the other crispembed_ocr_pipeline_* decls) because crispembed_ocr_stage
 // embeds crispembed_scan_cleanup_params, defined just above.
 
+// Explicit TeleOCR stage selector (append-only public ABI).
+#define CRISPEMBED_OCR_ENGINE_TELEOCR 24
+
 /// One pipeline stage: engine + models + cleanup + engine params + accept-gate.
 typedef struct crispembed_ocr_stage {
     int source_type;      // 0=auto 1=screenshot 2=scanned_doc 3=photo
@@ -1280,6 +1296,7 @@ typedef struct crispembed_ocr_stage {
                           // 21=ovisocr2 (explicit gated format2; no registry default)
                           // 22=ovisocr3 (explicit gated format3 plain OCR)
                           // 23=minicpm_ocr (experimental, CRISPEMBED_MINICPM_OCR)
+                          // 24=teleocr (experimental, CRISPEMBED_TELEOCR; explicit local GGUF)
     const char * model_a; // det / single-model GGUF
     const char * model_b; // rec GGUF (dbnet_trocr / surya)
     const char * model_c; // optional line-orientation GGUF (PP-LCNet 0/180)

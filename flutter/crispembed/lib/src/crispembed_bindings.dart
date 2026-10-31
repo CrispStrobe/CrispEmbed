@@ -1238,7 +1238,8 @@ final class CrispembedOcrStageFFI extends Struct {
   @Int32()
   external int sourceType;
   @Int32()
-  // 20=qwen35_ocr; 21=ovisocr2 (format2); 22=ovisocr3 (format3), each with three opt-in gates.
+  // 20=qwen35_ocr; 21=ovisocr2 (format2); 22=ovisocr3 (format3).
+  // 23=minicpm_ocr; 24=teleocr (CRISPEMBED_TELEOCR), with explicit local models.
   external int engine;
   external Pointer<Utf8> modelA;
   external Pointer<Utf8> modelB;
@@ -1335,8 +1336,38 @@ typedef CrispembedOcrSetMaxDart = void Function(Pointer<Void>, int);
 typedef CrispembedOcrGetMaxNative = Int32 Function(Pointer<Void>);
 typedef CrispembedOcrGetMaxDart = int Function(Pointer<Void>);
 typedef CrispembedOcrSetPromptNative = Int32 Function(
-    Pointer<Void>, Pointer<Utf8>);
+  Pointer<Void>,
+  Pointer<Utf8>,
+);
 typedef CrispembedOcrSetPromptDart = int Function(Pointer<Void>, Pointer<Utf8>);
+typedef CrispembedOcrSetGenerationNative = Int32 Function(
+  Pointer<Void>,
+  Float,
+  Float,
+  Float,
+  Int32,
+);
+typedef CrispembedOcrSetGenerationDart = int Function(
+  Pointer<Void>,
+  double,
+  double,
+  double,
+  int,
+);
+typedef CrispembedOcrGetGenerationNative = Int32 Function(
+  Pointer<Void>,
+  Pointer<Float>,
+  Pointer<Float>,
+  Pointer<Float>,
+  Pointer<Int32>,
+);
+typedef CrispembedOcrGetGenerationDart = int Function(
+  Pointer<Void>,
+  Pointer<Float>,
+  Pointer<Float>,
+  Pointer<Float>,
+  Pointer<Int32>,
+);
 typedef CrispembedOcrConfidenceNative = Pointer<Float> Function(
     Pointer<Void>, Pointer<Int32>);
 typedef CrispembedOcrConfidenceDart = Pointer<Float> Function(

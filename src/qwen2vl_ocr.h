@@ -30,6 +30,11 @@
 #include <string>
 #include <vector>
 
+namespace image_preproc {
+struct config;
+struct result;
+} // namespace image_preproc
+
 namespace qwen2vl_ocr {
 
 // ── Hyperparameters ──────────────────────────────────────────────────
@@ -182,6 +187,20 @@ struct context {
     int verbosity = 1;
     bool bench = false;
 
+    // TeleOCR combines a Qwen2.5-VL vision encoder with a Qwen3-style
+    // decoder. This profile is admitted only with CRISPEMBED_TELEOCR=1.
+    bool is_teleocr = false;
+    float repetition_penalty = 1.0f;
+    float presence_penalty = 0.0f;
+    float frequency_penalty = 0.0f;
+
+#ifdef CRISPEMBED_TELEOCR_TESTING
+    // Test-only live tensor observer; absent from production builds.
+    using observer_fn = void (*)(void *, const char *, const float *, size_t, int64_t);
+    observer_fn observer = nullptr;
+    void * observer_data = nullptr;
+#endif
+
     // Generation stop token. Qwen2/2.5/3-VL use <|im_end|> (151645); ERNIE-4.5
     // (PaddleOCR-VL) uses <|end_of_sentence|> (100272). Set at load time.
     int eos_token_id = 151645;
@@ -226,6 +245,11 @@ struct context {
 // pass the vision encoder mmproj GGUF as the second path.
 bool load(context & ctx, const char * gguf_path, int n_threads = 1, int verbosity = 1,
           const char * mmproj_path = nullptr);
+
+// TeleOCR's slow processor: Pillow 13 bicubic, Python half-to-even geometry,
+// float32 normalization and temporal/merge-block patch order.
+bool preprocess_teleocr(const uint8_t * pixels, int height, int width, int channels, const image_preproc::config & cfg,
+                        image_preproc::result & out);
 
 // Free model resources.
 void free_(context & ctx);
@@ -313,6 +337,21 @@ const char * qwen2vl_ocr_get_prompt(const qwen2vl_ocr_context * ctx);
 
 // Set max generation tokens (default: 512)
 void qwen2vl_ocr_set_max_tokens(qwen2vl_ocr_context * ctx, int max_tokens);
+int qwen2vl_ocr_get_max_tokens(const qwen2vl_ocr_context * ctx);
+
+// TeleOCR sampling contract: repetition covers prompt+output; presence and
+// frequency cover generated tokens only. Returns 0 for invalid values or
+// contexts belonging to another architecture.
+int qwen2vl_ocr_set_generation_params(qwen2vl_ocr_context * ctx, float repetition_penalty, float presence_penalty,
+                                      float frequency_penalty, int no_repeat_ngram);
+// Each output pointer may be null to skip that value.
+int qwen2vl_ocr_get_generation_params(const qwen2vl_ocr_context * ctx, float * repetition_penalty,
+                                      float * presence_penalty, float * frequency_penalty, int * no_repeat_ngram);
+
+#ifdef CRISPEMBED_TELEOCR_TESTING
+void qwen2vl_ocr_test_set_observer(qwen2vl_ocr_context * ctx, qwen2vl_ocr::context::observer_fn callback,
+                                   void * user_data);
+#endif
 
 // Run OCR on raw pixel bytes (RGB/RGBA/grayscale).
 // Returns generated text (owned by ctx, valid until next call or free).

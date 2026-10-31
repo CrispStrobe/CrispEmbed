@@ -1,0 +1,83 @@
+{
+  "pages": [
+    {
+      "width": 482,
+      "height": 164,
+      "mode": "segmentation",
+      "layout_raw": "<box:347 033 654 036 653 104 346 104><label:table_caption><up>\n<box:011 123 263 128 385 125 633 126 991 123 991 918 871 918 750 915 012 915><label:table><up>",
+      "blocks": [
+        {
+          "type": "table_caption",
+          "bbox": [
+            0.346,
+            0.033,
+            0.654,
+            0.104
+          ],
+          "polygon": [
+            0.347,
+            0.033,
+            0.654,
+            0.036,
+            0.653,
+            0.104,
+            0.346,
+            0.104
+          ],
+          "angle": 0,
+          "raw": "表 8 出厂检验和型式检验项目",
+          "content": "表 8 出厂检验和型式检验项目",
+          "lang": null,
+          "generated_tokens": 13,
+          "token_cap_reached": false,
+          "confidence": 0.9820054173469543
+        },
+        {
+          "type": "table",
+          "bbox": [
+            0.011,
+            0.123,
+            0.991,
+            0.918
+          ],
+          "polygon": [
+            0.011,
+            0.123,
+            0.263,
+            0.128,
+            0.385,
+            0.125,
+            0.633,
+            0.126,
+            0.991,
+            0.123,
+            0.991,
+            0.918,
+            0.871,
+            0.918,
+            0.75,
+            0.915,
+            0.012,
+            0.915
+          ],
+          "angle": 0,
+          "raw": "<fcel>要求的条文和名称<lcel><fcel>对应的试验方法条文<fcel>出厂检验<fcel>型式检验<nl><fcel>4.1 外现<lcel><fcel>5.1 外观检查<fcel>√<fcel>√<nl><fcel>4.2 尺寸<lcel><fcel>5.2 尺寸检查<fcel>√<fcel>√<nl><fcel>4.3性能<fcel>拉伸强度<fcel>5.3.2 拉伸强度试验<ecel><fcel>√<nl><ucel><fcel>维卡软化温度<fcel>5.3.3 维卡软化温度试验<ecel><fcel>√<nl><ucel><fcel>线热收缩率<fcel>5.3.4 线热收缩率试验<ecel><fcel>√<nl><ucel><fcel>化学性能(耐腐蚀性)<fcel>5.4 化学性能(耐腐蚀性)试验<ecel><fcel>√<nl>",
+          "content": "<table border=\"1\"><tr><td colspan=\"2\">要求的条文和名称</td><td>对应的试验方法条文</td><td>出厂检验</td><td>型式检验</td></tr><tr><td colspan=\"2\">4.1 外现</td><td>5.1 外观检查</td><td>√</td><td>√</td></tr><tr><td colspan=\"2\">4.2 尺寸</td><td>5.2 尺寸检查</td><td>√</td><td>√</td></tr><tr><td rowspan=\"4\">4.3性能</td><td>拉伸强度</td><td>5.3.2 拉伸强度试验</td><td></td><td>√</td></tr><tr><td>维卡软化温度</td><td>5.3.3 维卡软化温度试验</td><td></td><td>√</td></tr><tr><td>线热收缩率</td><td>5.3.4 线热收缩率试验</td><td></td><td>√</td></tr><tr><td>化学性能(耐腐蚀性)</td><td>5.4 化学性能(耐腐蚀性)试验</td><td></td><td>√</td></tr></table>",
+          "lang": null,
+          "generated_tokens": 254,
+          "token_cap_reached": false,
+          "confidence": 0.9928774833679199
+        }
+      ],
+      "markdown": "表 8 出厂检验和型式检验项目\n\n<table border=\"1\"><tr><td colspan=\"2\">要求的条文和名称</td><td>对应的试验方法条文</td><td>出厂检验</td><td>型式检验</td></tr><tr><td colspan=\"2\">4.1 外现</td><td>5.1 外观检查</td><td>√</td><td>√</td></tr><tr><td colspan=\"2\">4.2 尺寸</td><td>5.2 尺寸检查</td><td>√</td><td>√</td></tr><tr><td rowspan=\"4\">4.3性能</td><td>拉伸强度</td><td>5.3.2 拉伸强度试验</td><td></td><td>√</td></tr><tr><td>维卡软化温度</td><td>5.3.3 维卡软化温度试验</td><td></td><td>√</td></tr><tr><td>线热收缩率</td><td>5.3.4 线热收缩率试验</td><td></td><td>√</td></tr><tr><td>化学性能(耐腐蚀性)</td><td>5.4 化学性能(耐腐蚀性)试验</td><td></td><td>√</td></tr></table>",
+      "warnings": [],
+      "stats": {
+        "layout_ms": 179157.75187200052,
+        "extract_ms": 107797.8009010003,
+        "generated_tokens": 391,
+        "layout_token_cap_reached": false
+      },
+      "page": 1
+    }
+  ]
+}

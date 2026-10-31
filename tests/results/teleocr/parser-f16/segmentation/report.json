@@ -1,0 +1,60 @@
+{
+  "kind": "teleocr-native-document-parser",
+  "independent_model_parity": false,
+  "model": "teleocr-f16.gguf",
+  "model_sha256": "6c52a2800e313964717cf4e5d06e0392c2b5936d8adeac423d563b8a026a2780",
+  "library_sha256": "96b1f5707fadabbf7f7060b2b2d2841d728d5f2c1268d4fdb8725247ed8539b5",
+  "image": "table.png",
+  "image_sha256": "7087b4508d71b9ac7de17d16342a251ccd6b0db76f22faef6480f4ca9eb7b259",
+  "mode": "segmentation",
+  "max_tokens": 1024,
+  "threads": 2,
+  "backend": "cpu",
+  "test_sha256": "1442896fecb1dfe17e2f71f3e3ec729bc4f8870903fe29b792cca9331b9f1bca",
+  "parser_sha256": "9e9517fdc594bf56307bd719e82b9a5b5a90b29cffc7d113b19b28bd2214d7ea",
+  "checks": [
+    {
+      "name": "layout-and-extraction-ran",
+      "passed": true,
+      "generations": 3
+    },
+    {
+      "name": "typed-blocks",
+      "passed": true,
+      "count": 2,
+      "types": [
+        "table_caption",
+        "table"
+      ]
+    },
+    {
+      "name": "segmentation-polygons",
+      "passed": true
+    },
+    {
+      "name": "confidence-finite-and-bounded",
+      "passed": true
+    },
+    {
+      "name": "no-generation-cap",
+      "passed": true
+    },
+    {
+      "name": "markdown-nonempty",
+      "passed": true
+    },
+    {
+      "name": "structured-json-roundtrip",
+      "passed": true
+    },
+    {
+      "name": "markdown-file-exact",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "warnings": [],
+  "generated_tokens": 391,
+  "elapsed_seconds": 288.5602422680022,
+  "generations_retained": 3
+}

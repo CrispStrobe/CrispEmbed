@@ -1,0 +1,40 @@
+{
+  "kind": "teleocr-post-review-production-build",
+  "build_exit_code": 0,
+  "backend": "Linux x86_64 CPU",
+  "build_options": {
+    "BUILD_SHARED_LIBS": "OFF",
+    "CMAKE_BUILD_TYPE": "Release",
+    "CMAKE_CXX_COMPILER": "/usr/bin/c++",
+    "CMAKE_C_COMPILER": "/usr/bin/cc",
+    "CRISPEMBED_BUILD_SHARED": "ON",
+    "CRISPEMBED_NATIVE": "OFF",
+    "GGML_AVX2": "ON",
+    "GGML_CUDA": "OFF",
+    "GGML_F16C": "ON",
+    "GGML_FMA": "ON",
+    "GGML_METAL": "OFF",
+    "GGML_NATIVE": "OFF",
+    "GGML_OPENMP": "OFF",
+    "GGML_VULKAN": "OFF"
+  },
+  "compiler_version": "13.3.0",
+  "cmake_version": "cmake version 4.4.4",
+  "binary_sha256": {
+    "crispembed": "d96c6a0c3ad12b19c234b30a5562b3f718c17da6ef606aa8e201d4ccdb477694",
+    "crispembed-server": "cbebc02d484bbb3f6307cb6037ff57242e5820716026c2db1fd5d88388b1cfe2",
+    "libcrispembed.so.0.17.14": "6457d00ee2b15c927ca57a4e65fc92934ce5a0f4c7331b297a52800fa04b0031",
+    "crispembed-quantize": "87c7ba2431de87f508c7be72c709ac1215886a4d76f741fdc869017a392f474f",
+    "test-teleocr-diff": "f529c4c46fd2a77d9a8fec5ed6a4dfd19a984dffa8efaf11da8c28ee40fef527",
+    "test-teleocr-preprocess": "33887aee881849054fbf114ee0e477ac0afee9e1f66f857bb0a402329c8aa883",
+    "test-teleocr-ffn": "6ac26ea453a6caf24929b17306925195052cd7f4bbac6b4f8691ca9f31832166"
+  },
+  "runtime_source_sha256": "a83dc3b0255f790a5272458c29b754ed1eba2d88eae3c2d5d254def03d20f8c9",
+  "public_header_sha256": "ba543d0765f098a6bf2eafb10a256511600fb930e09270071891e45392ee44e4",
+  "loader_test_sha256": "8ba90cc388273fab4fcdcd330ff18078ad15a2ca6497552125d44a0f164bf3f7",
+  "test_observer_exported_in_production_library": false,
+  "generation_parameter_c_api_exports_present": true,
+  "forward_math_changed_since_completed_matrix": false,
+  "source_delta_receipt": "final-source-review/source-delta.json",
+  "platform_qualification": "Linux CPU execution only; no GPU/Apple/Windows/mobile/WASM model qualification"
+}

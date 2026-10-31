@@ -1,0 +1,10 @@
+# Validation only. Native inference and GGUF conversion do not need PyTorch.
+# Install CPU torch/torchvision wheels from the official CPU wheel index.
+torch==2.8.0
+torchvision==0.23.0
+transformers==4.57.1
+Pillow==13.0.0
+numpy==2.5.4
+gguf==0.19.0
+safetensors==0.8.0
+huggingface_hub==0.36.2

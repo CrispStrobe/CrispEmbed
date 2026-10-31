@@ -1,0 +1,42 @@
+-- Install configuration: "Release"
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/lib/libggml-cpu.a
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/lib/libggml.a
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/include/ggml.h
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/include/ggml-cpu.h
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/include/ggml-alloc.h
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/include/ggml-backend.h
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/include/ggml-blas.h
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/include/ggml-cann.h
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/include/ggml-cpp.h
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/include/ggml-cuda.h
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/include/ggml-opt.h
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/include/ggml-metal.h
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/include/ggml-rpc.h
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/include/ggml-virtgpu.h
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/include/ggml-sycl.h
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/include/ggml-vulkan.h
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/include/ggml-webgpu.h
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/include/ggml-zendnn.h
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/include/ggml-openvino.h
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/include/gguf.h
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/lib/libggml-base.a
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/lib/cmake/ggml/ggml-config.cmake
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/lib/cmake/ggml/ggml-version.cmake
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/bin/crispembed
+-- Set non-toolchain portion of runtime path of "/workspace/scratch/960329398638/validation/install-post-review/bin/crispembed" to "$ORIGIN/../lib"
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/bin/crispembed-server
+-- Set non-toolchain portion of runtime path of "/workspace/scratch/960329398638/validation/install-post-review/bin/crispembed-server" to "$ORIGIN/../lib"
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/bin/crispembed-quantize
+-- Set non-toolchain portion of runtime path of "/workspace/scratch/960329398638/validation/install-post-review/bin/crispembed-quantize" to "$ORIGIN/../lib"
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/lib/libcrispembed.so.0.17.14
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/lib/libcrispembed.so.0
+-- Set non-toolchain portion of runtime path of "/workspace/scratch/960329398638/validation/install-post-review/lib/libcrispembed.so.0.17.14" to "$ORIGIN"
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/lib/libcrispembed.so
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/include/crispembed.h
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/include/moedern_text_api.h
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/lib/cmake/crispembed/crispembed-config.cmake
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/lib/cmake/crispembed/crispembed-config-version.cmake
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/share/licenses/crispembed/LICENSE
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/share/licenses/crispembed/NOTICE.teleocr
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/share/licenses/crispembed/Apache-2.0.txt
+-- Installing: /workspace/scratch/960329398638/validation/install-post-review/lib/pkgconfig/crispembed.pc

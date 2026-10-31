@@ -106,6 +106,7 @@ def run_engine_cases_applying_cap() -> set[str]:
 # (src/crispembed.cpp detect_arch). Several engines share one tag.
 ENGINE_TO_OCR_MODEL = {
     "got": "GOT_OCR", "glm": "GLM_OCR", "qwen2vl": "QWEN2VL", "qwen3vl": "QWEN2VL",
+    "teleocr": "QWEN2VL", "minicpm_ocr": "MINICPM_OCR",
     "olmocr": "QWEN2VL", "internvl2": "INTERNVL2", "deepseek_ocr2": "DEEPSEEK_OCR2",
     "granite_vision": "GRANITE_VISION", "lightonocr": "LIGHTONOCR",
     "unlimited_ocr": "UNLIMITED_OCR", "lfm2_vl": "LFM2_VL", "qwen35_ocr": "QWEN35_OCR",

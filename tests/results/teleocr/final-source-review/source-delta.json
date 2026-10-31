@@ -1,0 +1,28 @@
+{
+  "kind": "teleocr-final-source-delta-review",
+  "basis": "Executed public suite source snapshot, with its recorded SHA-256 values verified before comparison",
+  "source_receipt": "../public-f16/suite.json",
+  "changed_recorded_sources": [
+    "src/crispembed.h",
+    "src/qwen2vl_ocr.cpp",
+    "src/qwen2vl_ocr.h"
+  ],
+  "runtime_delta": "Only type/rank admission before allocation and type/contiguity admission after load; no graph, arithmetic, decoding, preprocessing, or threshold changes",
+  "exact_reconstruction_of_executed_runtime_after_removing_loader_checks": true,
+  "header_code_unchanged_after_comment_and_whitespace_removal": true,
+  "all_other_recorded_source_files_byte_identical": true,
+  "validated_artifacts_satisfy_guard_receipt": "../final-dtype-guard-preflight.json",
+  "numerical_qualification_pass": false,
+  "native_execution_after_change": "Pending sequential rebuild, focused loader tests, final production CLI control, and Q4 large cases; see their separate receipts",
+  "executed_source_sha256": {
+    "src/crispembed.h": "3497373c915a3545c0c7b72a4b1ea8abd30278826eb231bff2aa23d9e7ebd201",
+    "src/qwen2vl_ocr.cpp": "e8c3e6a023678a00eb60636cfd06f32fb0f32dabd4ad6ad38d00e322518ddc35",
+    "src/qwen2vl_ocr.h": "15483e1394e5a016047042bee74de8d15b70b103bf29e6d4aa8c8e43566ae717"
+  },
+  "final_source_sha256": {
+    "src/crispembed.h": "ba543d0765f098a6bf2eafb10a256511600fb930e09270071891e45392ee44e4",
+    "src/qwen2vl_ocr.cpp": "a83dc3b0255f790a5272458c29b754ed1eba2d88eae3c2d5d254def03d20f8c9",
+    "src/qwen2vl_ocr.h": "e5a15e5095bc8c9ee1365badf04bed8700b1cb63c1415c5464130929384fb061"
+  },
+  "review_method": "Exact byte reconstruction of the prior runtime by removing the three explicitly reviewed load-validation edits; exact comparison of all other recorded source files"
+}

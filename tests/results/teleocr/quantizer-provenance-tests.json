@@ -1,0 +1,313 @@
+{
+  "kind": "teleocr-quantizer-provenance-regression",
+  "model_weights_used": false,
+  "quantizer_sha256": "87c7ba2431de87f508c7be72c709ac1215886a4d76f741fdc869017a392f474f",
+  "passed": true,
+  "checks": [
+    {
+      "name": "protected-q4",
+      "returncode": 0,
+      "stdout": "Loading model from '/workspace/scratch/960329398638/CrispEmbed-TeleOCR/teleocr-quantizer-6dy9olzu/source.gguf'\nWriting quantized model to '/workspace/scratch/960329398638/CrispEmbed-TeleOCR/teleocr-quantizer-6dy9olzu/protected-q4.gguf'\n[  1/  7] l.blk.0.attn_q.weight                         -    f16, quantizing to q4_K... 0.0 MB -> 0.0 MB\n[  2/  7] l.blk.0.ffn_up.weight                         -    f16, quantizing to q4_K... 0.0 MB -> 0.0 MB\n[  3/  7] l.blk.0.quoted\"weight                         -    f16, quantizing to q4_K... 0.0 MB -> 0.0 MB\n[  4/  7] l.embed_tokens.weight                         -    f16, copy 0.0 MB\n[  5/  7] v.blk.0.attn_qkv.weight                       -    f16, (vision\u2192Q8_0) copy 0.0 MB\n[  6/  7] v.patch_embed.weight                          -    f16, note: v.patch_embed.weight \u2014 copying as-is (host-side computation)\n[  7/  7] l.blk.0.attn_norm.weight                      -    f32, copy 0.0 MB\n\n3 quantized, 4 kept\n0 MB -> 0 MB (1.5x compression)\n",
+      "stderr": "",
+      "recipe": {
+        "schema_version": 1,
+        "tool": "crispembed-quantize",
+        "requested_type": "q4_K",
+        "decoder_f16": false,
+        "decoder_attn_q8": false,
+        "ppocrv6_q8_head": false,
+        "imatrix_requested": false,
+        "imatrix_vectors_loaded": 0,
+        "imatrix_qkv_mode": "direct",
+        "tensor_overrides": [
+          {
+            "pattern": "v.*",
+            "type": "f16"
+          },
+          {
+            "pattern": "l.embed_tokens.weight",
+            "type": "f16"
+          }
+        ],
+        "override_order": "last_match_wins",
+        "built_in_guards": true
+      },
+      "passed": true,
+      "tensor_types": {
+        "Q4_K": 3,
+        "F16": 3,
+        "F32": 1
+      },
+      "output_sha256": "03647a42cc488f27006de791dc1b13aa674fe8fd04457135171801426b897b7c"
+    },
+    {
+      "name": "ordered-overrides-and-flags",
+      "returncode": 0,
+      "stdout": "Loading model from '/workspace/scratch/960329398638/CrispEmbed-TeleOCR/teleocr-quantizer-6dy9olzu/source.gguf'\nWriting quantized model to '/workspace/scratch/960329398638/CrispEmbed-TeleOCR/teleocr-quantizer-6dy9olzu/ordered-overrides-and-flags.gguf'\n[  1/  7] l.blk.0.attn_q.weight                         -    f16, (decoder\u2192F16) quantizing to q8_0... 0.0 MB -> 0.0 MB\n[  2/  7] l.blk.0.ffn_up.weight                         -    f16, (decoder\u2192F16) quantizing to q8_0... 0.0 MB -> 0.0 MB\n[  3/  7] l.blk.0.quoted\"weight                         -    f16, (decoder\u2192F16) copy 0.0 MB\n[  4/  7] l.embed_tokens.weight                         -    f16, (decoder\u2192F16) copy 0.0 MB\n[  5/  7] v.blk.0.attn_qkv.weight                       -    f16, (vision\u2192Q8_0) copy 0.0 MB\n[  6/  7] v.patch_embed.weight                          -    f16, note: v.patch_embed.weight \u2014 copying as-is (host-side computation)\n[  7/  7] l.blk.0.attn_norm.weight                      -    f32, copy 0.0 MB\n\n2 quantized, 5 kept\n0 MB -> 0 MB (1.2x compression)\n",
+      "stderr": "",
+      "recipe": {
+        "schema_version": 1,
+        "tool": "crispembed-quantize",
+        "requested_type": "q4_K",
+        "decoder_f16": true,
+        "decoder_attn_q8": true,
+        "ppocrv6_q8_head": true,
+        "imatrix_requested": false,
+        "imatrix_vectors_loaded": 0,
+        "imatrix_qkv_mode": "direct",
+        "tensor_overrides": [
+          {
+            "pattern": "v.*",
+            "type": "f16"
+          },
+          {
+            "pattern": "l.blk.*",
+            "type": "q8_0"
+          },
+          {
+            "pattern": "l.blk.0.quoted\"weight",
+            "type": "f16"
+          }
+        ],
+        "override_order": "last_match_wins",
+        "built_in_guards": true
+      },
+      "passed": true,
+      "tensor_types": {
+        "Q8_0": 2,
+        "F16": 4,
+        "F32": 1
+      },
+      "output_sha256": "2e001457f7a618cddbc3c6814604fe5f93c1d6d6b90cf345bf9cd9ed36843493"
+    },
+    {
+      "name": "loaded-imatrix",
+      "returncode": 0,
+      "stdout": "Loading model from '/workspace/scratch/960329398638/CrispEmbed-TeleOCR/teleocr-quantizer-6dy9olzu/source.gguf'\nWriting quantized model to '/workspace/scratch/960329398638/CrispEmbed-TeleOCR/teleocr-quantizer-6dy9olzu/loaded-imatrix.gguf'\n[  1/  7] l.blk.0.attn_q.weight                         -    f16, quantizing to q4_K... (imatrix) 0.0 MB -> 0.0 MB\n[  2/  7] l.blk.0.ffn_up.weight                         -    f16, quantizing to q4_K... 0.0 MB -> 0.0 MB\n[  3/  7] l.blk.0.quoted\"weight                         -    f16, quantizing to q4_K... 0.0 MB -> 0.0 MB\n[  4/  7] l.embed_tokens.weight                         -    f16, copy 0.0 MB\n[  5/  7] v.blk.0.attn_qkv.weight                       -    f16, (vision\u2192Q8_0) copy 0.0 MB\n[  6/  7] v.patch_embed.weight                          -    f16, note: v.patch_embed.weight \u2014 copying as-is (host-side computation)\n[  7/  7] l.blk.0.attn_norm.weight                      -    f32, copy 0.0 MB\n\n3 quantized, 4 kept, 1 with imatrix\n0 MB -> 0 MB (1.5x compression)\n",
+      "stderr": "imatrix: loaded importance vectors for 1 tensors from '/workspace/scratch/960329398638/CrispEmbed-TeleOCR/teleocr-quantizer-6dy9olzu/imatrix.gguf'\nimatrix: attn q/k/v importance mode = sum\n",
+      "recipe": {
+        "schema_version": 1,
+        "tool": "crispembed-quantize",
+        "requested_type": "q4_K",
+        "decoder_f16": false,
+        "decoder_attn_q8": false,
+        "ppocrv6_q8_head": false,
+        "imatrix_requested": true,
+        "imatrix_vectors_loaded": 1,
+        "imatrix_qkv_mode": "sum",
+        "tensor_overrides": [
+          {
+            "pattern": "v.*",
+            "type": "f16"
+          },
+          {
+            "pattern": "l.embed_tokens.weight",
+            "type": "f16"
+          }
+        ],
+        "override_order": "last_match_wins",
+        "built_in_guards": true
+      },
+      "passed": true,
+      "tensor_types": {
+        "Q4_K": 3,
+        "F16": 3,
+        "F32": 1
+      },
+      "output_sha256": "cb7eef19487c8fb9ca444a320632b34bf3c2df2803f5797c1907fb7c1f9bfea4"
+    },
+    {
+      "name": "missing-imatrix-is-recorded",
+      "returncode": 0,
+      "stdout": "Loading model from '/workspace/scratch/960329398638/CrispEmbed-TeleOCR/teleocr-quantizer-6dy9olzu/source.gguf'\nWriting quantized model to '/workspace/scratch/960329398638/CrispEmbed-TeleOCR/teleocr-quantizer-6dy9olzu/missing-imatrix-is-recorded.gguf'\n[  1/  7] l.blk.0.attn_q.weight                         -    f16, quantizing to q4_K... 0.0 MB -> 0.0 MB\n[  2/  7] l.blk.0.ffn_up.weight                         -    f16, quantizing to q4_K... 0.0 MB -> 0.0 MB\n[  3/  7] l.blk.0.quoted\"weight                         -    f16, quantizing to q4_K... 0.0 MB -> 0.0 MB\n[  4/  7] l.embed_tokens.weight                         -    f16, copy 0.0 MB\n[  5/  7] v.blk.0.attn_qkv.weight                       -    f16, (vision\u2192Q8_0) copy 0.0 MB\n[  6/  7] v.patch_embed.weight                          -    f16, note: v.patch_embed.weight \u2014 copying as-is (host-side computation)\n[  7/  7] l.blk.0.attn_norm.weight                      -    f32, copy 0.0 MB\n\n3 quantized, 4 kept\n0 MB -> 0 MB (1.5x compression)\n",
+      "stderr": "gguf_init_from_file: failed to open GGUF file '/workspace/scratch/960329398638/CrispEmbed-TeleOCR/teleocr-quantizer-6dy9olzu/missing.gguf' (No such file or directory)\nimatrix: failed to open '/workspace/scratch/960329398638/CrispEmbed-TeleOCR/teleocr-quantizer-6dy9olzu/missing.gguf'\nimatrix: attn q/k/v importance mode = merged\n",
+      "recipe": {
+        "schema_version": 1,
+        "tool": "crispembed-quantize",
+        "requested_type": "q4_K",
+        "decoder_f16": false,
+        "decoder_attn_q8": false,
+        "ppocrv6_q8_head": false,
+        "imatrix_requested": true,
+        "imatrix_vectors_loaded": 0,
+        "imatrix_qkv_mode": "merged",
+        "tensor_overrides": [
+          {
+            "pattern": "v.*",
+            "type": "f16"
+          },
+          {
+            "pattern": "l.embed_tokens.weight",
+            "type": "f16"
+          }
+        ],
+        "override_order": "last_match_wins",
+        "built_in_guards": true
+      },
+      "passed": true,
+      "tensor_types": {
+        "Q4_K": 3,
+        "F16": 3,
+        "F32": 1
+      },
+      "output_sha256": "effdadabf50fe9947a98caf32f405c3645e06a18f006e15dd16895d540e17c99"
+    },
+    {
+      "name": "other-architecture-unchanged",
+      "returncode": 0,
+      "stdout": "Loading model from '/workspace/scratch/960329398638/CrispEmbed-TeleOCR/teleocr-quantizer-6dy9olzu/generic.gguf'\nWriting quantized model to '/workspace/scratch/960329398638/CrispEmbed-TeleOCR/teleocr-quantizer-6dy9olzu/other-architecture-unchanged.gguf'\n[  1/  7] l.blk.0.attn_q.weight                         -    f16, quantizing to q4_K... 0.0 MB -> 0.0 MB\n[  2/  7] l.blk.0.ffn_up.weight                         -    f16, quantizing to q4_K... 0.0 MB -> 0.0 MB\n[  3/  7] l.blk.0.quoted\"weight                         -    f16, quantizing to q4_K... 0.0 MB -> 0.0 MB\n[  4/  7] l.embed_tokens.weight                         -    f16, copy 0.0 MB\n[  5/  7] v.blk.0.attn_qkv.weight                       -    f16, (vision\u2192Q8_0) copy 0.0 MB\n[  6/  7] v.patch_embed.weight                          -    f16, note: v.patch_embed.weight \u2014 copying as-is (host-side computation)\n[  7/  7] l.blk.0.attn_norm.weight                      -    f32, copy 0.0 MB\n\n3 quantized, 4 kept\n0 MB -> 0 MB (1.5x compression)\n",
+      "stderr": "",
+      "passed": true,
+      "tensor_types": {
+        "Q4_K": 3,
+        "F16": 3,
+        "F32": 1
+      },
+      "output_sha256": "b6d14dc88f86c899e5d7d63f99a671b72efb144c0e6cad6bf7ee45c8a1e21e2d"
+    },
+    {
+      "name": "q5-provenance",
+      "returncode": 0,
+      "stdout": "Loading model from '/workspace/scratch/960329398638/CrispEmbed-TeleOCR/teleocr-quantizer-6dy9olzu/source.gguf'\nWriting quantized model to '/workspace/scratch/960329398638/CrispEmbed-TeleOCR/teleocr-quantizer-6dy9olzu/q5-provenance.gguf'\n[  1/  7] l.blk.0.attn_q.weight                         -    f16, quantizing to q5_K... 0.0 MB -> 0.0 MB\n[  2/  7] l.blk.0.ffn_up.weight                         -    f16, quantizing to q5_K... 0.0 MB -> 0.0 MB\n[  3/  7] l.blk.0.quoted\"weight                         -    f16, quantizing to q5_K... 0.0 MB -> 0.0 MB\n[  4/  7] l.embed_tokens.weight                         -    f16, copy 0.0 MB\n[  5/  7] v.blk.0.attn_qkv.weight                       -    f16, copy 0.0 MB\n[  6/  7] v.patch_embed.weight                          -    f16, note: v.patch_embed.weight \u2014 copying as-is (host-side computation)\n[  7/  7] l.blk.0.attn_norm.weight                      -    f32, copy 0.0 MB\n\n3 quantized, 4 kept\n0 MB -> 0 MB (1.4x compression)\n",
+      "stderr": "",
+      "recipe": {
+        "schema_version": 1,
+        "tool": "crispembed-quantize",
+        "requested_type": "q5_K",
+        "decoder_f16": false,
+        "decoder_attn_q8": false,
+        "ppocrv6_q8_head": false,
+        "imatrix_requested": false,
+        "imatrix_vectors_loaded": 0,
+        "imatrix_qkv_mode": "direct",
+        "tensor_overrides": [
+          {
+            "pattern": "v.*",
+            "type": "f16"
+          },
+          {
+            "pattern": "l.embed_tokens.weight",
+            "type": "f16"
+          }
+        ],
+        "override_order": "last_match_wins",
+        "built_in_guards": true
+      },
+      "passed": true,
+      "tensor_types": {
+        "Q5_K": 3,
+        "F16": 3,
+        "F32": 1
+      },
+      "output_sha256": "91b941dfac479fc02f56079b41902dc6f75137ebeb75e762895c903ff5404947"
+    },
+    {
+      "name": "q6-provenance",
+      "returncode": 0,
+      "stdout": "Loading model from '/workspace/scratch/960329398638/CrispEmbed-TeleOCR/teleocr-quantizer-6dy9olzu/source.gguf'\nWriting quantized model to '/workspace/scratch/960329398638/CrispEmbed-TeleOCR/teleocr-quantizer-6dy9olzu/q6-provenance.gguf'\n[  1/  7] l.blk.0.attn_q.weight                         -    f16, quantizing to q6_K... 0.0 MB -> 0.0 MB\n[  2/  7] l.blk.0.ffn_up.weight                         -    f16, quantizing to q6_K... 0.0 MB -> 0.0 MB\n[  3/  7] l.blk.0.quoted\"weight                         -    f16, quantizing to q6_K... 0.0 MB -> 0.0 MB\n[  4/  7] l.embed_tokens.weight                         -    f16, copy 0.0 MB\n[  5/  7] v.blk.0.attn_qkv.weight                       -    f16, copy 0.0 MB\n[  6/  7] v.patch_embed.weight                          -    f16, note: v.patch_embed.weight \u2014 copying as-is (host-side computation)\n[  7/  7] l.blk.0.attn_norm.weight                      -    f32, copy 0.0 MB\n\n3 quantized, 4 kept\n0 MB -> 0 MB (1.4x compression)\n",
+      "stderr": "",
+      "recipe": {
+        "schema_version": 1,
+        "tool": "crispembed-quantize",
+        "requested_type": "q6_K",
+        "decoder_f16": false,
+        "decoder_attn_q8": false,
+        "ppocrv6_q8_head": false,
+        "imatrix_requested": false,
+        "imatrix_vectors_loaded": 0,
+        "imatrix_qkv_mode": "direct",
+        "tensor_overrides": [
+          {
+            "pattern": "v.*",
+            "type": "f16"
+          },
+          {
+            "pattern": "l.embed_tokens.weight",
+            "type": "f16"
+          }
+        ],
+        "override_order": "last_match_wins",
+        "built_in_guards": true
+      },
+      "passed": true,
+      "tensor_types": {
+        "Q6_K": 3,
+        "F16": 3,
+        "F32": 1
+      },
+      "output_sha256": "31e8c23a37c5f8e85d4f4469a7f85bf6dd6aa420b6226f50919bbdbd7c61d811"
+    },
+    {
+      "name": "iq4-nl-provenance",
+      "returncode": 0,
+      "stdout": "Loading model from '/workspace/scratch/960329398638/CrispEmbed-TeleOCR/teleocr-quantizer-6dy9olzu/source.gguf'\nWriting quantized model to '/workspace/scratch/960329398638/CrispEmbed-TeleOCR/teleocr-quantizer-6dy9olzu/iq4-nl-provenance.gguf'\n[  1/  7] l.blk.0.attn_q.weight                         -    f16, quantizing to iq4_nl... 0.0 MB -> 0.0 MB\n[  2/  7] l.blk.0.ffn_up.weight                         -    f16, quantizing to iq4_nl... 0.0 MB -> 0.0 MB\n[  3/  7] l.blk.0.quoted\"weight                         -    f16, quantizing to iq4_nl... 0.0 MB -> 0.0 MB\n[  4/  7] l.embed_tokens.weight                         -    f16, copy 0.0 MB\n[  5/  7] v.blk.0.attn_qkv.weight                       -    f16, (vision\u2192Q8_0) copy 0.0 MB\n[  6/  7] v.patch_embed.weight                          -    f16, note: v.patch_embed.weight \u2014 copying as-is (host-side computation)\n[  7/  7] l.blk.0.attn_norm.weight                      -    f32, copy 0.0 MB\n\n3 quantized, 4 kept\n0 MB -> 0 MB (1.5x compression)\n",
+      "stderr": "",
+      "recipe": {
+        "schema_version": 1,
+        "tool": "crispembed-quantize",
+        "requested_type": "iq4_nl",
+        "decoder_f16": false,
+        "decoder_attn_q8": false,
+        "ppocrv6_q8_head": false,
+        "imatrix_requested": false,
+        "imatrix_vectors_loaded": 0,
+        "imatrix_qkv_mode": "direct",
+        "tensor_overrides": [
+          {
+            "pattern": "v.*",
+            "type": "f16"
+          },
+          {
+            "pattern": "l.embed_tokens.weight",
+            "type": "f16"
+          }
+        ],
+        "override_order": "last_match_wins",
+        "built_in_guards": true
+      },
+      "passed": true,
+      "tensor_types": {
+        "IQ4_NL": 3,
+        "F16": 3,
+        "F32": 1
+      },
+      "output_sha256": "6caa957c18d964c48ecc0a68dbde17d5871708a0d2b26d1e907029fd42b86421"
+    },
+    {
+      "name": "iq4-xs-provenance",
+      "returncode": 0,
+      "stdout": "Loading model from '/workspace/scratch/960329398638/CrispEmbed-TeleOCR/teleocr-quantizer-6dy9olzu/source.gguf'\nWriting quantized model to '/workspace/scratch/960329398638/CrispEmbed-TeleOCR/teleocr-quantizer-6dy9olzu/iq4-xs-provenance.gguf'\n[  1/  7] l.blk.0.attn_q.weight                         -    f16, quantizing to iq4_xs... 0.0 MB -> 0.0 MB\n[  2/  7] l.blk.0.ffn_up.weight                         -    f16, quantizing to iq4_xs... 0.0 MB -> 0.0 MB\n[  3/  7] l.blk.0.quoted\"weight                         -    f16, quantizing to iq4_xs... 0.0 MB -> 0.0 MB\n[  4/  7] l.embed_tokens.weight                         -    f16, copy 0.0 MB\n[  5/  7] v.blk.0.attn_qkv.weight                       -    f16, (vision\u2192Q8_0) copy 0.0 MB\n[  6/  7] v.patch_embed.weight                          -    f16, note: v.patch_embed.weight \u2014 copying as-is (host-side computation)\n[  7/  7] l.blk.0.attn_norm.weight                      -    f32, copy 0.0 MB\n\n3 quantized, 4 kept\n0 MB -> 0 MB (1.5x compression)\n",
+      "stderr": "",
+      "recipe": {
+        "schema_version": 1,
+        "tool": "crispembed-quantize",
+        "requested_type": "iq4_xs",
+        "decoder_f16": false,
+        "decoder_attn_q8": false,
+        "ppocrv6_q8_head": false,
+        "imatrix_requested": false,
+        "imatrix_vectors_loaded": 0,
+        "imatrix_qkv_mode": "direct",
+        "tensor_overrides": [
+          {
+            "pattern": "v.*",
+            "type": "f16"
+          },
+          {
+            "pattern": "l.embed_tokens.weight",
+            "type": "f16"
+          }
+        ],
+        "override_order": "last_match_wins",
+        "built_in_guards": true
+      },
+      "passed": true,
+      "tensor_types": {
+        "IQ4_XS": 3,
+        "F16": 3,
+        "F32": 1
+      },
+      "output_sha256": "9d6e19d40e10c718e5bc0a96f0e2fee47bf972f0b7e02176bb61b77fb7011adc"
+    }
+  ]
+}
