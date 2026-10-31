@@ -20,6 +20,8 @@ typedef OxrPredictNative = Pointer<Utf8> Function(Pointer<Void>, Pointer<Uint8>,
 typedef OxrPredict = Pointer<Utf8> Function(Pointer<Void>, Pointer<Uint8>, int, int, int, Pointer<Utf8>, int, double);
 typedef OxrStringNative = Pointer<Utf8> Function(Pointer<Void>);
 typedef OxrString = Pointer<Utf8> Function(Pointer<Void>);
+typedef OxrLayoutDetectNative = Pointer<Utf8> Function(Pointer<Void>, Pointer<Uint8>, Int32, Int32, Int32, Float);
+typedef OxrLayoutDetect = Pointer<Utf8> Function(Pointer<Void>, Pointer<Uint8>, int, int, int, double);
 
 // Experimental MinerU2.5-Pro resident context; enable CRISPEMBED_MINERU25_PRO.
 typedef MineruInitNative = Pointer<Void> Function(Pointer<Utf8>, Int32);

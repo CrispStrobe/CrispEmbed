@@ -1,3 +1,19 @@
+## 1 November 2026 — OXR-1.0 D-FINE layout detector native in layout_detect
+
+`feat/oxr-dfine`: converter `models/convert-oxr-dfine-to-gguf.py` (pinned
+`layout_analysis/last.pth` + `metadata.json`, size/SHA-256 before
+`torch.load(weights_only=True)`, 533 tensors, names <= 63 bytes), `dfine`
+architecture in `src/layout_detect.cpp` sharing AIFI/CCFM/decoder/deformable
+helpers with heron, bit-exact OpenCV Lanczos4 port, `crispembed_oxr_layout_*`
+service-format JSON API with Python/Rust/Dart wrappers, `CrispOXR(layout_model=)`.
+Hosted run [41250159815](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41250159815)
+(receipts `tests/results/oxr-dfine/hosted-41250159815/`): F32 selected regions
+equal on 5/5 pages and all arms; earliest stage over the 5e-3 budget
+`dec.2.cross` on receipt and german (initial failure retained); float64
+yardstick favours native on 55-56/56 stages; API contract and heron identity
+pass; F16 rejected (147 px box on receipt); native 2.6x slower than PyTorch CPU.
+Lineage: no bit-equal public tensors; nearest D-FINE-M Objects365 (cosine 0.95/0.93/0.94).
+
 ## 31 October 2026 — Native Marker-style document processing with TeleOCR
 
 The native PDF/image implementation adds optional dynamically loaded PDFium,

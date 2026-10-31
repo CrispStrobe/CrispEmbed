@@ -1,0 +1,373 @@
+{
+ "schema": "crispembed.oxr-dfine.refdiff.v1",
+ "a": "receipt_t1.gguf",
+ "b": "receipt_example.gguf",
+ "stages": [
+  {
+   "name": "bb.stage0",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "bb.stage1",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "bb.stage2",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "bb.stage3",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "bb.stem",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.0.bbox",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.0.corners",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.0.cross",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.0.gate",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.0.out",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.0.qpos",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.0.self",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.1.bbox",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.1.corners",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.1.cross",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.1.gate",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.1.out",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.1.qpos",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.1.self",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.2.bbox",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.2.corners",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.2.cross",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.2.gate",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.2.out",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.2.qpos",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.2.self",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.3.bbox",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.3.corners",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.3.cross",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.3.gate",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.3.out",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.3.qpos",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.3.self",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.content",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.enc_bbox_delta",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.enc_logits",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.logits",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.memory",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.output_memory",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.pre_bbox_delta",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.project",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.ref_initial",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.ref_unact",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.topk_anchor",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.topk_index",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "enc.aifi",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "enc.down0",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "enc.down1",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "enc.fpn0",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "enc.fpn1",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "enc.lat0",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "enc.lat1",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "enc.pan0",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "enc.pan1",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "enc.proj0",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "enc.proj1",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "enc.proj2",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "input",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "post.boxes",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "post.labels",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "post.scores",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  }
+ ]
+}

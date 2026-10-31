@@ -83,7 +83,14 @@
     "path": "layout_analysis/last.pth",
     "size": 78791307,
     "sha256": "dff78ccf18439955362ca44a69eb28fb0b40222a7d278860589682de0176dc17",
-    "native_ggml_conversion": false
+    "metadata": {
+      "path": "layout_analysis/metadata.json",
+      "size": 718,
+      "sha256": "658be5162a15bd16de7745d1f658c57594b67497aaea61aedb7772ee7bc8c756"
+    },
+    "native_ggml_conversion": true,
+    "converter": "models/convert-oxr-dfine-to-gguf.py",
+    "native_runtime": "src/layout_detect.cpp (layout.arch=dfine)"
   },
   "profiles": {
     "native_default": {
