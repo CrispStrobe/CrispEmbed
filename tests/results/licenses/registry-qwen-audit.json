@@ -53,8 +53,12 @@
       "rehost_license": "apache-2.0",
       "upstream": "stepfun-ai/GOT-OCR2_0 (declares apache-2.0, no base_model)",
       "effective_license": "tongyi-qianwen-research",
-      "evidence": "decoder shapes [1024,1024]/[1024,2816] only fit Qwen1.5-0.5B; cosine to Qwen1.5-0.5B 0.855 (layer 0), 0.612 (12), 0.426 (23); Qwen2-0.5B is 896-wide",
-      "note": "Tongyi Qianwen RESEARCH LICENSE: non-commercial and 'can not use the Materials or any output therefrom to improve any other large language model'; registry description says Qwen2-0.5B, which is wrong"
+      "evidence": "decoder config equals Qwen1.5-0.5B (hidden 1024, FFN 2816, 24 layers, 16 heads / 16 KV heads, rope 1e6) and differs from Qwen2-0.5B (896/4864, 14/2 heads); weight cosine to Qwen1.5-0.5B 0.855 (layer 0), 0.612 (12), 0.426 (23); GOT paper (arXiv:2409.01704 sec. 3.3.1) 'we adopt the Qwen [4] with 500M parameters as the decoder', citing the 2023 Qwen technical report; the first 0.5B Qwen was Qwen1.5-0.5B",
+      "note": "Tongyi Qianwen RESEARCH LICENSE: non-commercial and 'can not use the Materials or any output therefrom to improve any other large language model'; registry description says Qwen2-0.5B, which is wrong",
+      "upstream_base_licenses": {
+        "Qwen/Qwen1.5-0.5B": "tongyi-qianwen-research",
+        "Qwen/Qwen1.5-0.5B-Chat": "tongyi-qianwen-research"
+      }
     }
   ],
   "soft_obligations": [
@@ -70,7 +74,7 @@
   "consistent": {
     "qari-ocr": "Qwen2-VL-2B-Instruct (apache-2.0)",
     "nanonets-ocr2-1.5b": "Qwen2-VL-2B-Instruct (apache-2.0)",
-    "german-ocr-3.1": "Qwen2-VL-2B-Instruct per its GGUF general.base_model (apache-2.0)",
+    "german-ocr-3.1": "Qwen2-VL-2B-Instruct (apache-2.0) per its GGUF metadata (general.architecture qwen2vl, base_model Qwen/Qwen2-VL-2B-Instruct, projector qwen2vl_merger). Both keyvan-ai/ and Keyven/german-ocr-3.1 ship the same files; their card's 'Aufgebaut auf Qwen3.5' does not match the files (a Qwen3.5 model cannot be a qwen2vl GGUF). Either base is apache-2.0, so the license conclusion is unchanged; the registry description (Qwen2-VL-2B) matches the files.",
     "olmocr-2-7b": "Qwen2.5-VL-7B-Instruct (apache-2.0)",
     "firered-ocr": "Qwen3-VL-2B-Instruct (apache-2.0)",
     "uni-mumer-qwen3-vl-2b": "Qwen3-VL-2B-Instruct (apache-2.0)",
