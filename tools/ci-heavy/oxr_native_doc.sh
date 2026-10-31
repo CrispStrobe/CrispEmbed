@@ -17,7 +17,7 @@
 set -uo pipefail
 TOP=${HEAVY_OUT:?}
 S=${HEAVY_SCRATCH:?}
-STAGES=${*:-"helpers replay dfine native"}
+STAGES=${*:-"helpers replay bindings dfine native"}
 BLUEPRINT=c1a1dcb312ee9f691404f127785510453c0d9350
 export CRISPEMBED_OXR=1 CRISPEMBED_ACCEPT_OXR_LICENSE=1 CRISPEMBED_OXR_FORCE_CPU=1 \
     OMP_NUM_THREADS=4 MKL_NUM_THREADS=4 OPENBLAS_NUM_THREADS=4 PYTHONPATH=$PWD/python
@@ -55,6 +55,14 @@ if has replay; then
     python tools/oxr_doc_parity.py replay --binary "$S/build/test-oxr-document" --cases 80 --seed 20261031 \
         --output "$TOP/replay.json" > "$TOP/replay.log" 2>&1
     note replay "$([ $? = 0 ] && echo pass || echo fail)"
+    echo "::endgroup::"
+fi
+
+if has bindings && command -v cargo >/dev/null; then
+    echo "::group::Rust wrapper compile check"
+    (cd crispembed && CARGO_TARGET_DIR="$S/cargo-target" timeout 3000 cargo check -q) > "$TOP/cargo-check.log" 2>&1
+    note rust_check "$([ $? = 0 ] && echo pass || echo fail)"
+    tail -20 "$TOP/cargo-check.log"; rm -rf "$S/cargo-target"
     echo "::endgroup::"
 fi
 
