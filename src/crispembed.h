@@ -132,6 +132,13 @@ CRISPEMBED_API const char * crispembed_oxr_process_pages(crispembed_oxr_context 
                                                          int n_pages, const crispembed_oxr_layout_region * regions,
                                                          const int * region_counts, const char * layout_json,
                                                          const char * options_json);
+// Attach the default layout provider: an OXR D-FINE GGUF (layout.arch="dfine",
+// models/convert-oxr-dfine-to-gguf.py, F32). With it, process_pages accepts
+// NULL regions and NULL layout_json and detects each page natively; the route
+// then filters candidates exactly as for a service response. NULL/"" detaches.
+// Returns 1 on success, 0 on failure (see last_error).
+CRISPEMBED_API int crispembed_oxr_document_layout_model(crispembed_oxr_context * ctx, const char * model_path,
+                                                        int n_threads);
 // JSON array of every native request of the last document call (kept on failure).
 CRISPEMBED_API const char * crispembed_oxr_last_trace(const crispembed_oxr_context * ctx);
 // Render the last native document through CrispEmbed's shared document model:

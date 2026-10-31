@@ -73,15 +73,25 @@ class CrispOXR {
   /// translated pinned OXR document helper over a supplied D-FINE batch
   /// response. Each page is tightly packed RGB. Returns the upstream-shaped
   /// document (outputs.json, outputs.markdown, metadata).
+  /// Attach the native OXR D-FINE GGUF as the default layout provider; then
+  /// pass `layoutResponse: null` to [processPagesRgb].
+  void setDocumentLayoutModel(DynamicLibrary lib, String modelPath, {int nThreads = 4}) {
+    final attach = lib.lookupFunction<OxrAttachLayoutNative, OxrAttachLayout>('crispembed_oxr_document_layout_model');
+    final p = modelPath.toNativeUtf8();
+    try {
+      if (attach(_ctx, p, nThreads) != 1) throw StateError(_error(_ctx).toDartString());
+    } finally { calloc.free(p); }
+  }
+
   Map<String, dynamic> processPagesRgb(DynamicLibrary lib, List<Uint8List> pages, List<int> widths,
-      List<int> heights, Map<String, dynamic> layoutResponse, {Map<String, dynamic>? options}) {
+      List<int> heights, Map<String, dynamic>? layoutResponse, {Map<String, dynamic>? options}) {
     if (_ctx == nullptr) throw StateError('OXR context is disposed');
     final n = pages.length;
     if (n == 0 || widths.length != n || heights.length != n) throw ArgumentError('Page lists must match');
     final process = lib.lookupFunction<OxrProcessPagesNative, OxrProcessPages>('crispembed_oxr_process_pages');
     final ptrs = calloc<Pointer<Uint8>>(n);
     final w = calloc<Int32>(n), h = calloc<Int32>(n), c = calloc<Int32>(n);
-    final layout = jsonEncode(layoutResponse).toNativeUtf8();
+    final Pointer<Utf8> layout = layoutResponse == null ? nullptr : jsonEncode(layoutResponse).toNativeUtf8();
     final opts = jsonEncode(options ?? {}).toNativeUtf8();
     try {
       for (var i = 0; i < n; i++) {
@@ -100,7 +110,8 @@ class CrispOXR {
         if (ptrs[i] != nullptr) calloc.free(ptrs[i]);
       }
       calloc.free(ptrs); calloc.free(w); calloc.free(h); calloc.free(c);
-      calloc.free(layout); calloc.free(opts);
+      if (layout != nullptr) calloc.free(layout);
+      calloc.free(opts);
     }
   }
 

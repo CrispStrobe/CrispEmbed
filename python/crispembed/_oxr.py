@@ -241,6 +241,7 @@ class CrispOXR:
             raise ValueError("Pass layout_model (native D-FINE) or layout_url (service), not both")
         self._native_layout = None
         self._layout_model = None if layout_model is None else os.fspath(layout_model)
+        self._n_threads = n_threads
         self._layout_options = dict(
             url=layout_url, score_threshold=layout_score_threshold,
             nms_iou_threshold=layout_nms_iou_threshold,
@@ -552,12 +553,15 @@ class CrispOXR:
         the same pinned helper (SoMarkAI/OXR @ c1a1dcb3); exact parity is
         established per case by tools/oxr_doc_parity.py. ``asset_dir``,
         table-image placeholders and Markdown table output are not ported.
-        Every native request is available in ``last_trace``.
+        Every native request is available in ``last_trace``. Without layouts
+        or layout_response the native D-FINE ``layout_model`` given to the
+        constructor is the layout provider (C++ end to end).
         """
         if layouts is not None and layout_response is not None:
             raise ValueError("Pass layouts or layout_response, not both")
-        if layouts is None and layout_response is None:
-            raise ValueError("The native document route requires supplied layouts or layout_response")
+        native_layout = layouts is None and layout_response is None
+        if native_layout and self._layout_model is None:
+            raise ValueError("The native document route requires layout_model, supplied layouts or layout_response")
         if layouts is not None:
             layout_response = self.layout_response_from_regions(layouts)
         pages = [self._rgb(image) for image in images]
@@ -593,8 +597,15 @@ class CrispOXR:
         channels = (C.c_int * n)(*[3] * n)
         with self._lock:
             self._require_open()
+            if native_layout and not getattr(self, "_document_layout_attached", False):
+                attach = self._lib.crispembed_oxr_document_layout_model
+                attach.argtypes, attach.restype = [C.c_void_p, C.c_char_p, C.c_int], C.c_int
+                if not attach(self._ctx, self._layout_model.encode("utf-8"), self._n_threads):
+                    raise RuntimeError(self._error())
+                self._document_layout_attached = True
+            layout_arg = None if native_layout else json.dumps(layout_response).encode("utf-8")
             raw = fn(self._ctx, ptrs, widths, heights, channels, n, None, None,
-                     json.dumps(layout_response).encode("utf-8"), json.dumps(options).encode("utf-8"))
+                     layout_arg, json.dumps(options).encode("utf-8"))
             trace = json.loads(trace_fn(self._ctx).decode("utf-8"))
             self.last_trace = [dict(prompt=t["prompt"], width=t["width"], height=t["height"],
                                     rgb_sha256=t["rgb_sha256"], max_tokens=t["max_tokens"],

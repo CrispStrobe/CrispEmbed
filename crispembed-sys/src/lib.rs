@@ -71,6 +71,8 @@ extern "C" {
         widths: *const c_int, heights: *const c_int, channels: *const c_int, n_pages: c_int,
         regions: *const OxrLayoutRegion, region_counts: *const c_int,
         layout_json: *const c_char, options_json: *const c_char) -> *const c_char;
+    pub fn crispembed_oxr_document_layout_model(ctx: *mut OxrContext, model_path: *const c_char,
+        n_threads: c_int) -> c_int;
     pub fn crispembed_oxr_last_trace(ctx: *const OxrContext) -> *const c_char;
     pub fn crispembed_oxr_render_document(ctx: *mut OxrContext, format: *const c_char) -> *const c_char;
 }

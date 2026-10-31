@@ -70,7 +70,8 @@ CASES=()
 for id in formula table receipt german japanese; do CASES+=("$id=tests/regression/images/${IMAGE[$id]}"); done
 if has dfine || has native; then
     echo "::group::original D-FINE layout fixtures"
-    python -m pip install -q torch==2.11.0 torchvision==0.26.0 --index-url https://download.pytorch.org/whl/cpu || exit 3
+    python -m pip install -q torch==2.11.0 torchvision==0.26.0 --index-url https://download.pytorch.org/whl/cpu &&
+        python -m pip install -q huggingface_hub gguf || exit 3
     python -m pip freeze > "$TOP/packages-dfine.txt"
     mkdir -p "$TOP/layouts"
     python tools/oxr_dfine_fixtures.py --oxr-source "$S/oxr-src" --out "$TOP/layouts" "${CASES[@]}" \
@@ -93,6 +94,10 @@ PY
         > "$S/convert.log" 2>&1 || { tail -30 "$S/convert.log"; exit 5; }
     cp "$S/oxr-f32.gguf.json" "$TOP/conversion.json" 2>/dev/null
     rm -rf "$S/checkpoint"
+    # Native OXR D-FINE (F32; F16 is rejected) for the native default layout provider.
+    python models/convert-oxr-dfine-to-gguf.py --model SoMarkAI/OXR-1.0 --dtype f32 --output "$S/oxr-dfine-f32.gguf" \
+        > "$S/convert-dfine.log" 2>&1 || { tail -30 "$S/convert-dfine.log"; exit 5; }
+    cp "$S/oxr-dfine-f32.gguf.json" "$TOP/conversion-dfine.json" 2>/dev/null
     echo "::endgroup::"
     echo "::group::native model parity"
     ARGS=()
@@ -100,7 +105,8 @@ PY
         [ -f "$TOP/layouts/$id.json" ] && ARGS+=(--case "$id=tests/regression/images/${IMAGE[$id]}:$TOP/layouts/$id.json")
     done
     python tools/oxr_doc_parity.py native --binary "$S/build/test-oxr-document" --lib "$LIB" \
-        --gguf "$S/oxr-f32.gguf" --workdir "$TOP/native" --threads 4 "${ARGS[@]}" \
+        --gguf "$S/oxr-f32.gguf" --layout-gguf "$S/oxr-dfine-f32.gguf" --workdir "$TOP/native" --threads 4 \
+        "${ARGS[@]}" \
         --output "$TOP/native.json" > "$TOP/native.log" 2>&1
     note native "$([ $? = 0 ] && echo pass || echo fail)"
     tail -20 "$TOP/native.log"

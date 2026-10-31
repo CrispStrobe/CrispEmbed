@@ -491,14 +491,15 @@ int main(int argc, char ** argv) {
     std::string marker_model_path, marker_pdfium_path;
     int marker_mode = 0;
     bool marker_enabled = false;
-    std::string ocr_det_model_path; // general OCR: text detection model (DBNet)
-    std::string ocr_rec_model_path; // general OCR: text recognition model (TrOCR)
-    std::string ocr_engine_name;    // --ocr-engine: explicit orchestrator engine (CLI parity)
-    std::string ocr_cls_model_path; // --ocr-cls: optional PP-LCNet 0/180 line-orientation classifier
-    std::string layout_model_path;  // layout detection model (RT-DETRv2)
-    std::string oxr_doc_model_path; // --oxr-doc-model: native OXR document route (CRISPEMBED_OXR_NATIVE_DOC)
-    std::string table_model_path;   // table cell OCR model (Tesseract-LSTM GGUF)
-    std::string formula_model_path; // formula OCR model (PP-FormulaNet GGUF)
+    std::string ocr_det_model_path;  // general OCR: text detection model (DBNet)
+    std::string ocr_rec_model_path;  // general OCR: text recognition model (TrOCR)
+    std::string ocr_engine_name;     // --ocr-engine: explicit orchestrator engine (CLI parity)
+    std::string ocr_cls_model_path;  // --ocr-cls: optional PP-LCNet 0/180 line-orientation classifier
+    std::string layout_model_path;   // layout detection model (RT-DETRv2)
+    std::string oxr_doc_model_path;  // --oxr-doc-model: native OXR document route (CRISPEMBED_OXR_NATIVE_DOC)
+    std::string oxr_doc_layout_path; // --oxr-doc-layout-model: native OXR D-FINE default layout provider
+    std::string table_model_path;    // table cell OCR model (Tesseract-LSTM GGUF)
+    std::string formula_model_path;  // formula OCR model (PP-FormulaNet GGUF)
     bool route_tables = false;
     bool route_formulas = false;
     std::string text_det_model_path;   // surya text detection model
@@ -583,6 +584,8 @@ int main(int argc, char ** argv) {
             layout_model_path = argv[++i];
         else if (strcmp(argv[i], "--oxr-doc-model") == 0 && i + 1 < argc)
             oxr_doc_model_path = argv[++i];
+        else if (strcmp(argv[i], "--oxr-doc-layout-model") == 0 && i + 1 < argc)
+            oxr_doc_layout_path = argv[++i];
         else if (strcmp(argv[i], "--table") == 0 && i + 1 < argc)
             table_model_path = argv[++i];
         else if (strcmp(argv[i], "--formula") == 0 && i + 1 < argc)
@@ -1818,6 +1821,11 @@ int main(int argc, char ** argv) {
             fprintf(stderr, "error: cannot load OXR model '%s'\n", oxr_doc_model_path.c_str());
             return 1;
         }
+        if (!oxr_doc_layout_path.empty() &&
+            !crispembed_oxr_document_layout_model(oxr_doc_ctx, oxr_doc_layout_path.c_str(), n_threads)) {
+            fprintf(stderr, "error: %s\n", crispembed_oxr_last_error(oxr_doc_ctx));
+            return 1;
+        }
     }
 
     // Surya text detection
@@ -2610,9 +2618,10 @@ int main(int argc, char ** argv) {
         std::vector<std::string> fmt;
         json_extract_strings(body, "format", fmt);
         const std::string format = fmt.empty() ? "upstream" : fmt[0];
-        if (paths.empty() || layout.empty()) {
+        if (paths.empty() || (layout.empty() && oxr_doc_layout_path.empty())) {
             res.status = 400;
-            res.set_content("{\"error\": \"images and layout_response are required\"}", "application/json");
+            res.set_content("{\"error\": \"images and layout_response (or --oxr-doc-layout-model) are required\"}",
+                            "application/json");
             return;
         }
         std::vector<unsigned char *> images;

@@ -5,6 +5,7 @@
 #include "oxr_document.h"
 #include "oxr_ocr.h"
 
+#include <memory>
 #include <string>
 
 struct crispembed_oxr_context {
@@ -14,6 +15,9 @@ struct crispembed_oxr_context {
     std::string document_json, trace_json, rendered;
     oxr_document::result document;
     bool has_document = false;
+    // Optional native D-FINE layout provider (layout_detect context, owned via
+    // a type-erased deleter so this header needs no layout_detect symbols).
+    std::shared_ptr<void> layout_model;
     ~crispembed_oxr_context() { oxr_ocr_free(model); }
 };
 

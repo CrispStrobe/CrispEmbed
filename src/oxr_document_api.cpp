@@ -2,6 +2,7 @@
 // See src/oxr_document.h, licenses/oxr-LICENSE and licenses/oxr-NOTICE.
 #include "core/env_gate.h"
 #include "core/json.h"
+#include "layout_detect.h"
 #include "marker_document.h"
 #include "oxr_api_internal.h"
 
@@ -63,14 +64,22 @@ const char * crispembed_oxr_process_pages(crispembed_oxr_context * ctx, const ui
             throw std::invalid_argument("OXR requires at least one page with pixels and dimensions");
         if ((regions || region_counts) && layout_json)
             throw std::invalid_argument("Pass regions or layout_json, not both");
-        if (!layout_json && !region_counts)
-            throw std::invalid_argument("Document processing requires supplied layout regions or layout_json");
+        if (!layout_json && !region_counts && !ctx->layout_model)
+            throw std::invalid_argument(
+                "Document processing requires a native layout model (crispembed_oxr_document_layout_model), "
+                "supplied layout regions or layout_json");
         std::vector<std::vector<uint8_t>> storage;
         std::vector<oxr_document::rgb_page> pages;
         for (int p = 0; p < n_pages; ++p) storage.push_back(to_rgb(pixels[p], widths[p], heights[p], channels[p]));
         for (int p = 0; p < n_pages; ++p) pages.push_back({ widths[p], heights[p], storage[size_t(p)].data() });
         core_json_value::value layout;
-        if (layout_json) {
+        std::string layout_source = "provided";
+        if (!layout_json && !region_counts) {
+            // Default provider: native OXR D-FINE.
+            layout = oxr_document::detect_layout_response(
+                static_cast<layout_detect::context *>(ctx->layout_model.get()), pages);
+            layout_source = "native_dfine";
+        } else if (layout_json) {
             layout = core_json_value::parse(layout_json);
         } else {
             std::vector<oxr_document::page_layout> supplied(static_cast<size_t>(n_pages));
@@ -85,7 +94,8 @@ const char * crispembed_oxr_process_pages(crispembed_oxr_context * ctx, const ui
             }
             layout = oxr_document::layout_response(supplied);
         }
-        const oxr_document::options opts = oxr_document::parse_options(options_json ? options_json : "");
+        oxr_document::options opts = oxr_document::parse_options(options_json ? options_json : "");
+        opts.layout_source = layout_source;
         oxr_document::recognizer rec = [ctx](const oxr_document::rec_request & r) {
             oxr_document::rec_result out;
             out.native_json = oxr_predict_json(ctx, r.rgb, r.width, r.height, 3, r.prompt.c_str(), r.max_tokens,
@@ -107,6 +117,31 @@ const char * crispembed_oxr_process_pages(crispembed_oxr_context * ctx, const ui
     } catch (const std::exception & error) {
         ctx->error = error.what();
         return nullptr;
+    }
+}
+
+int crispembed_oxr_document_layout_model(crispembed_oxr_context * ctx, const char * model_path, int n_threads) {
+    if (!ctx) return 0;
+    ctx->error.clear();
+    try {
+        if (!model_path || !*model_path) {
+            ctx->layout_model.reset();
+            return 1;
+        }
+        if (!core_env::on("CRISPEMBED_OXR") || !core_env::on("CRISPEMBED_ACCEPT_OXR_LICENSE"))
+            throw std::runtime_error("OXR D-FINE requires CRISPEMBED_OXR=1 and CRISPEMBED_ACCEPT_OXR_LICENSE=1");
+        layout_detect::context * model = nullptr;
+        if (!layout_detect::load(&model, model_path, n_threads < 1 ? 1 : n_threads))
+            throw std::runtime_error(std::string("cannot load layout model ") + model_path);
+        std::shared_ptr<void> owned(model,
+                                    [](void * p) { layout_detect::free(static_cast<layout_detect::context *>(p)); });
+        if (layout_detect::arch(model) != layout_detect::arch_id::dfine)
+            throw std::invalid_argument("layout model is not an OXR D-FINE GGUF (layout.arch=dfine)");
+        ctx->layout_model = owned;
+        return 1;
+    } catch (const std::exception & error) {
+        ctx->error = error.what();
+        return 0;
     }
 }
 

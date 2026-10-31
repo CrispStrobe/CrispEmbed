@@ -173,7 +173,8 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --detect-split F detect a two-up book spread; print JSON {pages,split_x} (no OCR)\n");
     fprintf(stderr, "  --detect-content F detect the printed content bbox; print JSON {x0,y0,x1,y1} (no OCR)\n");
     fprintf(stderr, "  --oxr-document F native OXR document route (repeat per page; CRISPEMBED_OXR=1,\n"
-                    "       CRISPEMBED_OXR_NATIVE_DOC=1, -m oxr GGUF). --oxr-layout F: D-FINE batch response JSON;\n"
+                    "       CRISPEMBED_OXR_NATIVE_DOC=1, -m oxr GGUF). --oxr-layout-model F: native OXR D-FINE GGUF\n"
+                    "       (default provider), or --oxr-layout F: D-FINE batch response JSON;\n"
                     "       --oxr-doc-options JSON; --oxr-doc-format upstream|markdown|html|json|chunks\n");
     fprintf(stderr, "  --ocr-pipeline F full OCR pipeline: source-type routing + cleanup + accept-gate\n");
     fprintf(stderr, "       --ocr-engine N  primary engine "
@@ -322,7 +323,7 @@ static int cli_main(int argc, char ** argv) {
     std::string sam2_model;                 // --sam2-model: SAM 2.1 GGUF or registry name
     std::string sam2_path;                  // --sam2 FILE: SAM 2.1 segmentation
     std::vector<std::string> oxr_doc_pages; // --oxr-document FILE (repeatable): native OXR document route
-    std::string oxr_doc_layout, oxr_doc_options, oxr_doc_format = "upstream";
+    std::string oxr_doc_layout, oxr_doc_layout_model, oxr_doc_options, oxr_doc_format = "upstream";
     std::vector<float> sam2_points; // --sam2-point X,Y[:LABEL] (repeatable), image pixels
     std::vector<int> sam2_labels;
     std::vector<float> sam2_box;     // --sam2-box X0,Y0,X1,Y1
@@ -545,6 +546,8 @@ static int cli_main(int argc, char ** argv) {
             oxr_doc_pages.push_back(argv[++i]);
         } else if (strcmp(argv[i], "--oxr-layout") == 0 && i + 1 < argc) {
             oxr_doc_layout = argv[++i];
+        } else if (strcmp(argv[i], "--oxr-layout-model") == 0 && i + 1 < argc) {
+            oxr_doc_layout_model = argv[++i];
         } else if (strcmp(argv[i], "--oxr-doc-options") == 0 && i + 1 < argc) {
             oxr_doc_options = argv[++i];
         } else if (strcmp(argv[i], "--oxr-doc-format") == 0 && i + 1 < argc) {
@@ -796,17 +799,19 @@ static int cli_main(int argc, char ** argv) {
         return 0;
     }
     if (!oxr_doc_pages.empty()) {
-        if (model_arg.empty() || oxr_doc_layout.empty()) {
-            fprintf(stderr, "error: --oxr-document requires -m <oxr GGUF> and --oxr-layout <D-FINE response JSON>\n");
+        if (model_arg.empty() || (oxr_doc_layout.empty() == oxr_doc_layout_model.empty())) {
+            fprintf(stderr, "error: --oxr-document requires -m <oxr GGUF> and either --oxr-layout-model <OXR D-FINE "
+                            "GGUF> (native layout) or --oxr-layout <D-FINE response JSON>\n");
             return 1;
         }
-        std::ifstream lf(oxr_doc_layout, std::ios::binary);
-        if (!lf) {
+        std::ifstream lf;
+        if (!oxr_doc_layout.empty()) lf.open(oxr_doc_layout, std::ios::binary);
+        if (!oxr_doc_layout.empty() && !lf) {
             fprintf(stderr, "error: cannot read %s\n", oxr_doc_layout.c_str());
             return 1;
         }
         std::stringstream layout_buf;
-        layout_buf << lf.rdbuf();
+        if (lf) layout_buf << lf.rdbuf();
         std::string layout = layout_buf.str();
         // Accept a frozen fixture {"response": {...}, "provenance": {...}} as well.
         const size_t key = layout.find("\"response\"");

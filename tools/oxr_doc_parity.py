@@ -545,7 +545,7 @@ def run_replay(binary, cases, seed, out_dir):
     return results
 
 
-def run_native(binary, lib, gguf, cases, workdir, threads, live):
+def run_native(binary, lib, gguf, cases, workdir, threads, live, layout_gguf=None):
     """Real native model. The original helper (CrispOXR.process_pages) runs once
     and its native requests are recorded; the C++ route replays exactly those
     results. Optionally the C++ route also runs live on the same model."""
@@ -560,8 +560,9 @@ def run_native(binary, lib, gguf, cases, workdir, threads, live):
         img_dir = os.path.join(workdir, name + "-imgs")
         options = {"file_name": Path(image_path).name, "image_output_dir": img_dir}
         entry = {"case": name}
+        extra = {"layout_model": layout_gguf} if layout_gguf else {}
         with crisp_oxr.CrispOXR(gguf, n_threads=threads, lib_path=lib, allow_truncated_content=True,
-                                image_output_dir=img_dir) as model:
+                                image_output_dir=img_dir, **extra) as model:
             try:
                 py = {"value": model.process_pages([page], layout_response=layout, file_name=options["file_name"])}
             except Exception as e:  # noqa: BLE001
@@ -584,6 +585,29 @@ def run_native(binary, lib, gguf, cases, workdir, threads, live):
                          replay_first_difference=where, python_requests=len(trace),
                          replay_requests=replay.get("native_requests"), python_error=py.get("error"),
                          replay_error=replay.get("error"))
+            if layout_gguf:
+                case_nl = dict(case)
+                case_nl.pop("layout_response")
+                case_nl["layout_gguf"] = layout_gguf
+                nl_path = Path(workdir, name + "-replay-native-layout.json")
+                nl_path.write_text(json.dumps(case_nl, ensure_ascii=False))
+                out = subprocess.run([binary, "--replay", str(nl_path)], capture_output=True, text=True, encoding="utf-8")
+                nl = json.loads(out.stdout)
+                same, where = compare_documents(py, nl)
+                entry.update(native_layout_replay_identical=same, native_layout_replay_first_difference=where,
+                             native_layout_replay_error=nl.get("error"))
+                if "native_layout_response" in nl:
+                    size = [(arr.shape[1], arr.shape[0])]
+                    ref_blocks = layout_pp.parse_layout_batch(layout, size, 0.5, 0.6)
+                    nat_blocks = layout_pp.parse_layout_batch(nl["native_layout_response"], size, 0.5, 0.6)
+                    as_t = lambda pages: [[(b.type.value, [round(v, 3) for v in b.bbox]) for b in p] for p in pages]
+                    entry["layout_blocks_reference"] = len(ref_blocks[0])
+                    entry["layout_blocks_native"] = len(nat_blocks[0])
+                    entry["layout_blocks_identical_types"] = [b.type for b in ref_blocks[0]] == [b.type for b in nat_blocks[0]]
+                    entry["layout_blocks_exact"] = [(b.type, b.bbox, b.layout_score) for b in ref_blocks[0]] == \
+                        [(b.type, b.bbox, b.layout_score) for b in nat_blocks[0]]
+                    entry["layout_blocks_identical_rounded"] = as_t(ref_blocks) == as_t(nat_blocks)
+                    Path(workdir, name + "-native-layout.json").write_text(json.dumps(nl["native_layout_response"]))
             if "value" in py:
                 meta = py["value"]["metadata"].get("crispembed", {})
                 entry["unresolved_capped_requests"] = meta.get("unresolved_capped_requests")
@@ -604,6 +628,19 @@ def run_native(binary, lib, gguf, cases, workdir, threads, live):
                              live_error=nat.get("error"))
                 Path(workdir, name + "-native.json").write_text(json.dumps({"native": nat, "trace": ntrace},
                                                                             ensure_ascii=False, indent=1))
+                if layout_gguf:
+                    # End to end: native D-FINE + native C++ assembly vs the
+                    # original service-backed Python pipeline (reference layout).
+                    try:
+                        e2e = {"result": model.process_pages_native([page], file_name=options["file_name"])}
+                    except Exception as e:  # noqa: BLE001
+                        e2e = {"error": f"{type(e).__name__}: {e}"}
+                    same, where = compare_documents(py, e2e)
+                    entry.update(e2e_identical=same, e2e_first_difference=where, e2e_requests=len(model.last_trace),
+                                 e2e_layout_source=(e2e.get("result") or {}).get("metadata", {}).get(
+                                     "crispembed", {}).get("layout_source"), e2e_error=e2e.get("error"))
+                    Path(workdir, name + "-e2e.json").write_text(json.dumps({"native": e2e, "trace": model.last_trace},
+                                                                             ensure_ascii=False, indent=1))
                 try:
                     entry["render_markdown_chars"] = len(model.render_native_document("markdown"))
                     entry["render_html_chars"] = len(model.render_native_document("html"))
@@ -623,6 +660,7 @@ def main():
     ap.add_argument("--workdir", default="oxr-native-doc-work")
     ap.add_argument("--threads", type=int, default=4)
     ap.add_argument("--no-live", action="store_true")
+    ap.add_argument("--layout-gguf", help="native mode: OXR D-FINE GGUF for the end-to-end native-layout checks")
     ap.add_argument("--binary", required=True)
     ap.add_argument("--cases", type=int, default=300)
     ap.add_argument("--seed", type=int, default=1)
@@ -635,9 +673,12 @@ def main():
                   "failures": chk.failures}
         ok = not chk.failures
     elif args.mode == "native":
-        res = run_native(args.binary, args.lib, args.gguf, args.case, args.workdir, args.threads, not args.no_live)
+        res = run_native(args.binary, args.lib, args.gguf, args.case, args.workdir, args.threads, not args.no_live,
+                         args.layout_gguf)
         report = {"mode": "native", "cases": res}
-        ok = all(r.get("replay_identical") and r.get("live_identical", True) for r in res)
+        ok = bool(res) and all(r.get("replay_identical") and r.get("live_identical", True)
+                               and r.get("e2e_identical", True) and r.get("native_layout_replay_identical", True)
+                               for r in res)
     else:
         res = run_replay(args.binary, args.cases, args.seed, args.output)
         report = {"mode": "replay", "seed": args.seed, "cases": res,

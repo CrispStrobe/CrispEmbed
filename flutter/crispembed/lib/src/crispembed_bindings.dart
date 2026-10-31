@@ -26,6 +26,8 @@ typedef OxrProcessPagesNative = Pointer<Utf8> Function(Pointer<Void>, Pointer<Po
     Pointer<Int32>, Pointer<Int32>, Int32, Pointer<Void>, Pointer<Int32>, Pointer<Utf8>, Pointer<Utf8>);
 typedef OxrProcessPages = Pointer<Utf8> Function(Pointer<Void>, Pointer<Pointer<Uint8>>, Pointer<Int32>,
     Pointer<Int32>, Pointer<Int32>, int, Pointer<Void>, Pointer<Int32>, Pointer<Utf8>, Pointer<Utf8>);
+typedef OxrAttachLayoutNative = Int32 Function(Pointer<Void>, Pointer<Utf8>, Int32);
+typedef OxrAttachLayout = int Function(Pointer<Void>, Pointer<Utf8>, int);
 typedef OxrRenderNative = Pointer<Utf8> Function(Pointer<Void>, Pointer<Utf8>);
 typedef OxrRender = Pointer<Utf8> Function(Pointer<Void>, Pointer<Utf8>);
 

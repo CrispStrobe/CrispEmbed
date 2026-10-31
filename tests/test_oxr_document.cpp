@@ -10,6 +10,7 @@
 #include "core/json_value.h"
 #include "core/py_str.h"
 #include "cv_compat.h"
+#include "layout_detect.h"
 #include "oxr_document.h"
 #include "xycut_plus_plus.h"
 
@@ -199,6 +200,33 @@ static std::string helper(const value & req) {
     throw std::invalid_argument("unknown fn " + fn);
 }
 
+// Compact JSON of a layout response value (numbers via Python repr).
+static std::string layout_json_text(const value & v) {
+    switch (v.kind) {
+    case value::null_t:
+        return "null";
+    case value::bool_t:
+        return v.b ? "true" : "false";
+    case value::int_t:
+        return std::to_string(v.i);
+    case value::float_t:
+        return py_str::float_repr(v.f);
+    case value::string_t:
+        return q(v.s);
+    case value::array_t: {
+        std::string out = "[";
+        for (size_t i = 0; i < v.a.size(); ++i) out += (i ? "," : "") + layout_json_text(v.a[i]);
+        return out + "]";
+    }
+    default: {
+        std::string out = "{";
+        for (size_t i = 0; i < v.o.size(); ++i)
+            out += (i ? "," : "") + q(v.o[i].first) + ":" + layout_json_text(v.o[i].second);
+        return out + "}";
+    }
+    }
+}
+
 static int run_helpers() {
     std::string line;
     while (std::getline(std::cin, line)) {
@@ -262,8 +290,26 @@ static int run_replay(const std::string & path) {
                                  " sha=" + py_str::sha256_hex(r.rgb, size_t(r.width) * r.height * 3));
     };
     try {
-        const result res = process_pages(pages, need(c, "layout_response"), opts, rec);
-        std::cout << "{\"result\":" << res.json << ",\"native_requests\":" << res.native_requests << "}\n";
+        // "layout_gguf": native OXR D-FINE default provider instead of a supplied response.
+        value layout;
+        std::string native_layout;
+        if (const value * g = c.get("layout_gguf")) {
+            layout_detect::context * dfine = nullptr;
+            if (!layout_detect::load(&dfine, g->s.c_str(), 4)) throw std::runtime_error("cannot load " + g->s);
+            try {
+                layout = detect_layout_response(dfine, pages);
+            } catch (...) {
+                layout_detect::free(dfine);
+                throw;
+            }
+            layout_detect::free(dfine);
+            native_layout = ",\"native_layout_response\":" + layout_json_text(layout);
+        } else {
+            layout = need(c, "layout_response");
+        }
+        const result res = process_pages(pages, layout, opts, rec);
+        std::cout << "{\"result\":" << res.json << ",\"native_requests\":" << res.native_requests << native_layout
+                  << "}\n";
     } catch (const std::exception & e) {
         std::cout << "{\"error\":" << q(e.what()) << "}\n";
     }

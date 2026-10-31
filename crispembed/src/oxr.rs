@@ -71,6 +71,11 @@ impl Oxr {
     /// upstream-shaped document JSON (outputs.json, outputs.markdown, metadata).
     pub fn process_pages_rgb(&mut self, pages: &[(&[u8], i32, i32)], layout_json: &str,
                              options_json: &str) -> Result<String, String> {
+        self.process_pages_impl(pages, Some(layout_json), options_json)
+    }
+
+    fn process_pages_impl(&mut self, pages: &[(&[u8], i32, i32)], layout_json: Option<&str>,
+                          options_json: &str) -> Result<String, String> {
         if pages.is_empty() { return Err("OXR requires at least one page".to_owned()); }
         let mut ptrs = Vec::with_capacity(pages.len());
         let (mut widths, mut heights, mut channels) = (Vec::new(), Vec::new(), Vec::new());
@@ -84,12 +89,28 @@ impl Oxr {
             heights.push(*height);
             channels.push(3);
         }
-        let layout = CString::new(layout_json).map_err(|e| e.to_string())?;
+        let layout = match layout_json { Some(j) => Some(CString::new(j).map_err(|e| e.to_string())?), None => None };
         let options = CString::new(options_json).map_err(|e| e.to_string())?;
+        let layout_ptr = layout.as_ref().map_or(std::ptr::null(), |c| c.as_ptr());
         let result = unsafe { ffi::crispembed_oxr_process_pages(self.ctx.as_ptr(), ptrs.as_ptr(),
             widths.as_ptr(), heights.as_ptr(), channels.as_ptr(), pages.len() as i32,
-            std::ptr::null(), std::ptr::null(), layout.as_ptr(), options.as_ptr()) };
+            std::ptr::null(), std::ptr::null(), layout_ptr, options.as_ptr()) };
         self.copy_result(result)
+    }
+
+    /// Attach the native OXR D-FINE GGUF as the default layout provider; then
+    /// `process_pages_native` (empty `layout_json`) detects layout in C++.
+    pub fn set_document_layout_model(&mut self, model: &str, threads: i32) -> Result<(), String> {
+        let path = CString::new(model).map_err(|e| e.to_string())?;
+        if unsafe { ffi::crispembed_oxr_document_layout_model(self.ctx.as_ptr(), path.as_ptr(), threads) } == 1 {
+            return Ok(());
+        }
+        Err(self.copy_result(std::ptr::null()).unwrap_err())
+    }
+
+    /// Native route with the attached D-FINE layout provider.
+    pub fn process_pages_native(&mut self, pages: &[(&[u8], i32, i32)], options_json: &str) -> Result<String, String> {
+        self.process_pages_impl(pages, None, options_json)
     }
 
     /// Every native request of the last document call, as a JSON array.

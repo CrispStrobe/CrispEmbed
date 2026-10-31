@@ -34,7 +34,9 @@
 
 namespace layout_detect {
 struct region;
-}
+struct candidate;
+struct context;
+} // namespace layout_detect
 
 namespace oxr_document {
 
@@ -75,6 +77,17 @@ using page_layout = std::vector<layout_region>;
 page_layout from_layout_detect(const std::vector<layout_detect::region> & regions);
 // Build the official batch response {"status","params","data":{labels,boxes,scores}}.
 core_json_value::value layout_response(const std::vector<page_layout> & pages);
+// Same response from native D-FINE candidates (layout_detect::detect_candidates,
+// all queries in service order, no thresholding): what the OXR layout service
+// returns and what the original pipeline hands to parse_layout_batch.
+core_json_value::value layout_response(const std::vector<std::vector<layout_detect::candidate>> & pages);
+
+struct rgb_page;
+// Default native layout provider: run OXR D-FINE (layout_detect arch "dfine")
+// on each RGB page and return the batch response. The document route then
+// applies its own threshold, clipping and class-wise NMS (parse_layout_batch),
+// exactly as for a supplied or service response. Throws on detector failure.
+core_json_value::value detect_layout_response(layout_detect::context * dfine, const std::vector<rgb_page> & pages);
 
 struct block {
     int idx = 0;
@@ -124,6 +137,7 @@ struct options {
     bool full_overlap_dedupe = false;
     bool table_image_placeholders = false; // rejected when true
     int retry_times = 2;
+    std::string layout_source = "provided"; // metadata.crispembed.layout_source
 };
 // Parse/validate the options JSON accepted by the C API (see docs/oxr.md).
 options parse_options(const std::string & json);

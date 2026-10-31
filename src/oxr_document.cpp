@@ -156,6 +156,31 @@ value layout_response(const std::vector<page_layout> & pages) {
     return root;
 }
 
+value layout_response(const std::vector<std::vector<layout_detect::candidate>> & pages) {
+    std::vector<page_layout> converted;
+    for (const auto & page : pages) {
+        page_layout regions;
+        for (const auto & c : page)
+            regions.push_back({ c.raw_class, double(c.box[0]), double(c.box[1]), double(c.box[2]), double(c.box[3]),
+                                double(c.score) });
+        converted.push_back(regions);
+    }
+    return layout_response(converted);
+}
+
+value detect_layout_response(layout_detect::context * dfine, const std::vector<rgb_page> & pages) {
+    if (!dfine || layout_detect::arch(dfine) != layout_detect::arch_id::dfine)
+        throw std::invalid_argument("the native OXR layout provider requires an OXR D-FINE GGUF (layout.arch=dfine)");
+    std::vector<std::vector<layout_detect::candidate>> all;
+    for (const auto & p : pages) {
+        std::vector<layout_detect::candidate> c;
+        if (!layout_detect::detect_candidates(dfine, p.rgb, p.width, p.height, 3, c))
+            throw std::runtime_error(std::string("Layout analysis failed: ") + layout_detect::last_error(dfine));
+        all.push_back(std::move(c));
+    }
+    return layout_response(all);
+}
+
 namespace helpers {
 
 namespace {
@@ -1651,8 +1676,8 @@ static result process_pages_impl(const std::vector<rgb_page> & pages, const valu
                "},\"metadata\":{\"page_num\":" + std::to_string(pages.size()) +
                ",\"file_type\":" + quote(ascii_lower(py_str::splitext(opts.file_name).second)) +
                ",\"processing_time_ms\":" + std::to_string(ms) +
-               ",\"crispembed\":{\"engine\":\"oxr-1.0\",\"layout_source\":\"provided\",\"native_requests\":" +
-               std::to_string(out.native_requests) +
+               ",\"crispembed\":{\"engine\":\"oxr-1.0\",\"layout_source\":" + quote(opts.layout_source) +
+               ",\"native_requests\":" + std::to_string(out.native_requests) +
                ",\"unresolved_capped_requests\":" + std::to_string(out.unresolved) + ",\"blueprint_revision\":\"" +
                k_blueprint_revision + "\",\"document_route\":\"native\"}}}";
     return out;
