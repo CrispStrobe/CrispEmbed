@@ -1,0 +1,112 @@
+{
+ "source": "hosted run 41191185159 (surya25-native.yml @ a799bc2), job 124508126607 log SURYA25_NATIVE_SUMMARY",
+ "revision": "00c843e9cae45611dca0a6dc2c9bbbf2dadaaed3",
+ "arms": {
+  "f32": {
+   "bytes": 2758921280,
+   "tensors": 473,
+   "gguf_sha256": "a4de45e880753213b2da86b3320a9135e16c5dd5c9313d42918afaffc8fe449b"
+  },
+  "f16": {
+   "bytes": 1381456960,
+   "tensors": 473,
+   "gguf_sha256": "5f968d8321e8656e17a5b648725911ba83feaa948addd5eaa3768551e46c5358"
+  }
+ },
+ "reproducible_conversion": "session-container conversions are byte-identical to both hosted GGUF digests",
+ "max_confidence_delta": {
+  "f32": 4.1728e-06,
+  "f16": 3.2778e-06
+ },
+ "native_wall_seconds_range": {
+  "f32": [
+   7.8,
+   32.5
+  ],
+  "f16": [
+   9.6,
+   38.8
+  ]
+ },
+ "timing_note": "hosted 4-vCPU runner; diagnostic only",
+ "cases": {
+  "hello": {
+   "original": "<p>Hello, world.</p>",
+   "f32": {
+    "ids_exact": true,
+    "text_exact": true,
+    "stop": "EOS"
+   },
+   "f16": {
+    "ids_exact": true,
+    "text_exact": true,
+    "stop": "EOS"
+   }
+  },
+  "invoice": {
+   "original": "<p><b>Invoice No. 2026-10-31: 1,234.56 EUR</b></p>",
+   "f32": {
+    "ids_exact": true,
+    "text_exact": true,
+    "stop": "EOS"
+   },
+   "f16": {
+    "ids_exact": true,
+    "text_exact": true,
+    "stop": "EOS"
+   }
+  },
+  "german": {
+   "original": "<p>Grüße aus München, Straße 5</p>",
+   "f32": {
+    "ids_exact": true,
+    "text_exact": true,
+    "stop": "EOS"
+   },
+   "f16": {
+    "ids_exact": true,
+    "text_exact": true,
+    "stop": "EOS"
+   }
+  },
+  "paragraph": {
+   "original": "<p>The quick brown fox jumps over the lazy dog. 42% of tests pass (n=17).</p>",
+   "f32": {
+    "ids_exact": true,
+    "text_exact": true,
+    "stop": "EOS"
+   },
+   "f16": {
+    "ids_exact": true,
+    "text_exact": true,
+    "stop": "EOS"
+   }
+  },
+  "bold": {
+   "original": "<p><b>Total: $99.95</b></p>",
+   "f32": {
+    "ids_exact": true,
+    "text_exact": true,
+    "stop": "EOS"
+   },
+   "f16": {
+    "ids_exact": true,
+    "text_exact": true,
+    "stop": "EOS"
+   }
+  },
+  "short": {
+   "original": "<h2>OCR test 7</h2>",
+   "f32": {
+    "ids_exact": true,
+    "text_exact": true,
+    "stop": "EOS"
+   },
+   "f16": {
+    "ids_exact": true,
+    "text_exact": true,
+    "stop": "EOS"
+   }
+  }
+ }
+}

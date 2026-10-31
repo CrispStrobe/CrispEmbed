@@ -1,13 +1,32 @@
 # Surya OCR 2.5 (`datalab-to/surya-ocr-2.5`) — source contract and port plan
 
-Status (31 October 2026): **frontend parity proven, inference unverified.**
-Revision `00c843e9cae45611dca0a6dc2c9bbbf2dadaaed3` is pinned. The native
-tokenizer, rendered prompts and image preprocessing match the original HF
-processor exactly ([frontend parity](../tests/results/surya25/frontend-parity.json),
-[metadata](../tests/results/surya25/metadata.json)). The converter profile and
-gated format-4 runtime are written, but no weights have been converted or run
-yet: the session container cannot reach the HF weight CDN. There is no registry
-entry and no quality claim.
+Status (31 October 2026): **native output equals the original model on every
+tested crop; not yet qualified for quality, speed or publication.**
+Revision `00c843e9cae45611dca0a6dc2c9bbbf2dadaaed3` is pinned. On twelve owned
+crops (6 grid-aligned + 3 off-grid line crops, F32 and F16 each), native ids,
+decoded text and EOS step are identical to `transformers` 5.16.1
+`Qwen3_5ForConditionalGeneration` (float32 CPU, greedy, block prompt, vLLM pixel
+kwargs). This was checked twice: in the session container
+([local](../tests/results/surya25/native-ab-local.json),
+[scale_to_fit end to end](../tests/results/surya25/native-scale-to-fit-e2e.json))
+and on hosted CI ([run 41191185159](../tests/results/surya25/native-ab-hosted.json)).
+The F32/F16 conversions are byte-identical across both hosts. There is no
+registry entry and no published GGUF; quality on real documents is unmeasured.
+
+Usage (experimental):
+
+```bash
+python models/convert-qwen35-ocr-to-gguf.py --model datalab-to/surya-ocr-2.5 \
+    --revision 00c843e9cae45611dca0a6dc2c9bbbf2dadaaed3 --profile surya25 --dtype f16 --output surya25-f16.gguf
+```
+
+```bash
+CRISPEMBED_QWEN35_OCR=1 CRISPEMBED_SURYA25_FRONTEND=1 CRISPEMBED_SURYA25_INFERENCE=1 \
+    ./build/test-surya25-run surya25-f16.gguf crop.png 512 4 ["<package prompt>"]
+```
+
+Through the C API this is `qwen35_ocr_init` + `qwen35_ocr_recognize_*`; a
+null or empty prompt means `OCR this block image to HTML.`.
 
 ### Confirmed checkpoint facts (weight-free observation)
 
@@ -50,8 +69,9 @@ entry and no quality claim.
 | Format-4 frontend (`CRISPEMBED_SURYA25_FRONTEND`) | exact | rendered ids for all 4 package prompts, the empty (block) prompt and a custom prompt equal HF `apply_chat_template` + encode; `=0` and unset are off |
 | Image preprocessing (vLLM kwargs) | exact | five block-sized images: identical grids, patch max abs 0.0; a 192-DPI page is rejected (>1024 patches) |
 | Converter `--profile surya25` | written | NUL token carried as an explicit id, because gguf string arrays read back as C strings |
-| Inference (`CRISPEMBED_SURYA25_INFERENCE`) | **unverified** | needs the converted weights and an original-model reference |
-| Caller-side `scale_to_fit` (PIL LANCZOS, 28-px grid) | not ported | callers must currently pass an already scaled crop | The existing `surya-det` text detector is a
+| Inference (`CRISPEMBED_SURYA25_INFERENCE`) | exact on 12 crops | ids/text/EOS identical to original HF for F32 and F16; maximum confidence delta 6.6e-6 |
+| Package `scale_to_fit` (Pillow LANCZOS, 28-px grid) | exact, on by default for this profile | `core/pil_resample_u8.h` matches Pillow on 32.1M samples; the port is byte-exact against the pinned package function on 13 sizes; `CRISPEMBED_SURYA25_SCALE_TO_FIT=0` passes pixels through |
+| Speed | **far slower than HF** | e.g. 24 s native vs 2.6 s HF for a 9-token crop. Profile: 8 decode steps 18.9 s, of which 17.3 s re-materialises F32 weights each step and about 1.1 s is compute. A 1 GiB `CRISPEMBED_QWEN35_WEIGHT_CACHE` gives 95–123 s → 73 s on the paragraph crop with exact ids | The existing `surya-det` text detector is a
 different, older model (EfficientViT segformer) and is unaffected.
 
 ## What the model is (from the released package source)
@@ -145,6 +165,33 @@ to the LightOnOCR-3-0.8B and OvisOCR2/3 sources:
 5. **Stops.** By default the package, vLLM and HF stop only on id 2, and the
    native path matches that. The package's optional `SURYA_STOP_STRINGS`
    (a spelled `<|im_end|>` in the output) is a later, separately gated option.
+
+## Reused from the codebase
+
+- The Qwen3.5 decoder, vision tower, MRoPE positions and torchvision-exact
+  resize (`src/qwen35_*`, `core/torch_bicubic_u8.h`) are used unchanged.
+- Pillow fixed-point resampling is adapted from
+  `image_preproc::resize_bicubic_pil_u8_hwc` into `core/pil_resample_u8.h`
+  with a LANCZOS filter. The original is untouched; the smoldocling float
+  Lanczos is not Pillow-exact.
+- Candidates for the next steps: `surya_det` text-line detection to produce
+  crops for full-page OCR inside the 1024-patch bound, and the
+  `tools/dump_surya_*` forward-hook pattern for stage dumps if a divergence
+  appears.
+
+## Next steps
+
+1. **Speed (shared backend).** Behind a new gate, run decoder matmuls directly
+   on F16/quantised weights instead of re-materialising F32 every step. A/B it
+   against the current path, which is also used by the published OvisOCR2 F16,
+   before changing any default.
+2. **Real-document quality.** Freeze original HF/vLLM outputs on owned real
+   scans and compare CER/WER, not only synthetic crops.
+3. **Full page.** Either a `surya_det` line-crop pipeline (fits the current
+   bounds) or a separately gated larger patch/context bound for the
+   `high_accuracy_bbox` full-page prompt (a page is about 13.5k patches).
+4. **Q8_0/Q4_K** after the above, under PLAN's quantisation rules. Then
+   registry with licence acceptance (openrail) and an immutable upload.
 
 ## Staged plan (each stage gated and evidenced before the next)
 

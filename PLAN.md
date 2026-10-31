@@ -146,10 +146,14 @@ outside this lane. Do not infer weight permission from a public repository.
 ## Surya OCR 2.5 (owner-requested; restricted OpenRAIL-M weights)
 
 Qwen3.5 VLM with a character-level WordLevel tokenizer; outside the permissive
-queue, registry only behind licence acceptance like `surya-det`. Contract, gaps
-and staged plan: [docs/surya-ocr-2.5.md](docs/surya-ocr-2.5.md). Next: review the
-hosted weight-free metadata run (`surya25-metadata.yml`), pin the revision, then
-freeze an original HF reference before any converter profile or native gate.
+queue, registry only behind licence acceptance like `surya-det`. Gated format 4
+(`CRISPEMBED_SURYA25_FRONTEND`/`_INFERENCE`) is token-exact against original HF on
+12 owned crops (F32/F16, local and hosted run 41191185159); tokenizer, prompts,
+processor and package `scale_to_fit` are exact. Open, in order: F16 direct matmul
+speed gate (decode re-materialises F32 weights each step; 24 s vs 2.6 s HF),
+real-scan CER/WER against frozen original outputs, full page via `surya_det`
+line crops or a gated larger bound, then Q8/Q4 and registry/upload. Details:
+[docs/surya-ocr-2.5.md](docs/surya-ocr-2.5.md).
 
 ## Issue71, packaging and downstream delivery
 

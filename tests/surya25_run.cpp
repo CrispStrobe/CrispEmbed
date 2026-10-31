@@ -3,6 +3,7 @@
 // Requires CRISPEMBED_QWEN35_OCR=1, CRISPEMBED_SURYA25_FRONTEND=1, CRISPEMBED_SURYA25_INFERENCE=1.
 #include "core/clean_exit.h"
 #include "qwen35_ocr.h"
+#include "qwen35_profile.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "../ggml/examples/stb_image.h"
 #include <cerrno>
@@ -37,7 +38,13 @@ static int run(int argc, char ** argv) {
     const double init = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
     const auto recognition = std::chrono::steady_clock::now();
     int length = 0;
-    const char * text = qwen35_ocr_recognize_file(context.get(), argv[2], prompt, &length);
+    qwen35_ocr::profile_record record;
+    const char * text = nullptr;
+    {
+        qwen35_ocr::profile_capture capture(record); // CRISPEMBED_QWEN35_PROFILE=1 only
+        text = qwen35_ocr_recognize_file(context.get(), argv[2], prompt, &length);
+        if (capture.enabled()) qwen35_ocr::profile_print(record, true);
+    }
     const double seconds = std::chrono::duration<double>(std::chrono::steady_clock::now() - recognition).count();
     int n = 0, m = 0;
     const int * ids = qwen35_ocr_token_ids(context.get(), &n);
