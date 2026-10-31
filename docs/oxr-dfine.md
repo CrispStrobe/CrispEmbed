@@ -131,5 +131,83 @@ Dart `CrispOXRLayout`.
 
 ## Qualification
 
-Hosted CI lane: `tools/ci-heavy/oxr_dfine_qualify.sh`. Results and their
-interpretation: [`tests/results/oxr-dfine/`](../tests/results/oxr-dfine/).
+Hosted CI lane: `tools/ci-heavy/oxr_dfine_qualify.sh`. First complete run:
+[41250159815](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41250159815)
+(Linux x86-64, AMD EPYC 9V74, 4 threads, torch 2.11.0 CPU, OpenCV 4.11.0.86),
+receipts in [`tests/results/oxr-dfine/hosted-41250159815/`](../tests/results/oxr-dfine/hosted-41250159815/).
+Budgets fixed before the run (`tests/oxr_dfine_diff.cpp`): every stage
+`max_abs / max|ref| <= 5e-3`; OXR-selected regions (score >= 0.5, clip,
+class-wise NMS 0.6) with identical labels in order, boxes within 0.5 px and
+scores within 1e-3. Five pages, JPEGs decoded once with PIL to PNG for both sides.
+
+| Page | OXR regions native/ref | max box err (px) | max score err | earliest stage over 5e-3 (rel) | candidates ≥0.05 matched (IoU ≥ 0.99) |
+| --- | ---: | ---: | ---: | --- | --- |
+| receipt_example | 21 / 21 | 3.1e-4 | 1.8e-4 | dec.2.cross (worst dec.3.cross 0.065) | 219/220, 0.54 px |
+| german_official_print | 17 / 17 | 4.4e-4 | 1.5e-5 | dec.2.cross (worst dec.3.gate 0.023) | 90/90, 0.42 px |
+| scan_page_pd | 9 / 9 | 6.1e-5 | 3.6e-7 | none (worst dec.logits 0.0022) | 58/58, 0.012 px |
+| simple_table | 2 / 2 | 1.9e-5 | 4.2e-6 | none (worst dec.2.cross 0.0018) | 7/7, 2e-4 px |
+| japanese_print | 1 / 1 | 1.7e-4 | 7.1e-6 | none (worst dec.2.gate 0.0048) | 58/58, 0.074 px |
+
+* **Preprocessing is exact**: the native 960×960 input equals the service's
+  input bit for bit on all pages (max_abs 0), on x86 with the shipped OpenCV
+  (IPP enabled; its Lanczos4 output equalled the generic kernel on all five
+  pages) and on macOS arm64.
+* **Backbone and encoder**: all stages within rel 7e-5; the top-300 query
+  selection picks the same token set on every page (near-tied scores may be
+  ordered differently, so per-query stages are compared after aligning queries
+  by token).
+* **Decoder**: errors grow in layers 2–3 for a few low-score queries (4 of 300
+  on receipt) whose distribution-head logits (|x| ~ 200) are near ties. The stage
+  budget fails there on two pages; this failure is retained. A float64 run of
+  the same original model is the yardstick: the native result is closer to
+  float64 than PyTorch FP32 is on 56/56 stages for four pages and 55/56 for
+  german (`yardstick-f64.json`). The remaining stage difference is therefore
+  PyTorch-FP32 rounding, not a port error; it does not reach the selected regions.
+* PyTorch with 1 vs 4 threads changes only `post.*` ordering (near ties).
+* The service JSON contract passes on all pages (`api.json`): compact
+  Starlette serialization and float repr reproduce byte-for-byte when
+  re-serialized, keys/counts/types match, `confidence` handling matches, the
+  Python wrapper returns the same object, and OXR's own `parse_layout_batch`
+  yields equivalent blocks for native and reference responses.
+* Heron (`rt_detr_v2`) regions are byte-identical to the base branch
+  (`9b718fd7`) on the five pages at threshold 0 (300 regions each, sha256
+  `252f60b1…`), so the shared-helper refactor did not change heron.
+* **F16 is rejected**: on receipt one selected box differs by 147 px; stage
+  budgets fail from the encoder (`enc.pan1`).
+
+### Speed (same host, 4 threads, CPU, FP32)
+
+| | median per page |
+| --- | ---: |
+| PyTorch service model forward (`DfineWithPostProcessor`) | 0.86–0.92 s |
+| PyTorch preprocessing (decode + Lanczos + tensor) | 6–93 ms |
+| Native total (preprocess + network + postprocess) | 2.30–2.33 s |
+| — native encoder graph (backbone + hybrid encoder + query head) | 2.22–2.26 s |
+| — native decoder (4 layers, CPU deformable sampling) | 53–56 ms |
+
+The native detector is **about 2.6× slower than PyTorch CPU**. The backbone/encoder
+graph dominates; the decoder is fast. Opt-in A/B arms
+(`CRISPEMBED_OXR_LAYOUT_DW_DIRECT=1`, `LAYOUT_CONV_DIRECT=1`) are measured in the
+next lane run; the defaults stay unchanged until an A/B shows equal regions and
+better speed.
+
+### Weight lineage
+
+No checkpoint tensor is bit-identical to the public HGNetv2-B2 stage-1 weights or
+to D-FINE-M COCO/Objects365 (`lineage.json`). Mean cosine similarity per group is
+highest for `dfine_m_obj365.pth` (backbone 0.952, encoder 0.932, decoder 0.939;
+6 decoder buffers bit-equal), then COCO (0.888 / 0.483 / 0.260) and the stage-1
+backbone (0.876). This is consistent with fine-tuning from the public D-FINE-M
+Objects365 checkpoint (Apache-2.0) with the backbone not actually frozen, but it
+does not prove it; the checkpoint's own terms are the OXR License either way. The
+`dfine_m_obj2coco` URL returned HTTP 404 and is recorded as such.
+
+## Not done / open
+
+* Speed parity (native 2.6× slower than PyTorch CPU).
+* F16 or quantized recipes (F16 rejected).
+* GPU backends (`CRISPEMBED_OXR_LAYOUT_GPU=1` is unqualified).
+* Per-class `class_confidences` overrides of the service.
+* End-to-end OXR document output with `CrispOXR(layout_model=)` against the
+  service-backed pipeline (the layout boundary itself is verified above).
+* Rust is type-checked (`cargo check`); Rust and Dart wrappers are not runtime-tested.
