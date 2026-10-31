@@ -1,3 +1,21 @@
+## 1 November 2026 — MinerU2.5-Pro complete native document route (feat/mineru-native-doc)
+
+Translated every mineru-vl-utils `c9797cde` document branch to C++ and composed
+it from the shared layout-provider / `ocr_region_router` / `crisp_marker`
+document-model components, behind `CRISPEMBED_MINERU25_PRO_FULL_DOC` (default
+off; basic route unchanged). Exposed through `crispembed_mineru_extract_document`
+/ `crispembed_mineru_last_document`, engine 25 (gated), Python
+`native_two_step_extract`/`native_render`, Rust `extract_document`, Dart
+`extractDocument`. Extracted the shared `otsl_table.h` (profiles
+upstream_docling / mineru_basic_v1 / marker_strict; existing callers
+byte-identical on 617 golden rows). Weight-free evidence (local CPython
+3.11.8): 56,700 regex and 66,000 function differential cases, 120 Pillow JPEGs
+and 300 branch-covering synthetic pages all identical
+(`tests/results/mineru25/native-doc-synthetic-parity.json`). Exceptions by
+construction: approximate token glyph pixels in image-bearing table crops;
+cross-page table merge not ported. Model-backed lane:
+`tools/ci-heavy/mineru25_doc_parity.sh`.
+
 ## 31 October 2026 — Native Marker-style document processing with TeleOCR
 
 The native PDF/image implementation adds optional dynamically loaded PDFium,
