@@ -186,10 +186,22 @@ scores within 1e-3. Five pages, JPEGs decoded once with PIL to PNG for both side
 | — native decoder (4 layers, CPU deformable sampling) | 53–56 ms |
 
 The native detector is **about 2.6× slower than PyTorch CPU**. The backbone/encoder
-graph dominates; the decoder is fast. Opt-in A/B arms
-(`CRISPEMBED_OXR_LAYOUT_DW_DIRECT=1`, `LAYOUT_CONV_DIRECT=1`) are measured in the
-next lane run; the defaults stay unchanged until an A/B shows equal regions and
-better speed.
+graph dominates; the decoder is fast.
+
+Second run [41251744740](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41251744740)
+(AMD EPYC 9V45; receipts `hosted-41251744740/`) repeats every result above and adds
+the opt-in convolution A/B on the same host:
+
+| Arm | native total | encoder | OXR regions | stage budget |
+| --- | ---: | ---: | --- | --- |
+| PyTorch forward | 0.51–0.55 s | | reference | |
+| default (im2col depthwise) | 1.43–1.47 s | 1.38–1.42 s | equal 5/5 | fails receipt, german |
+| `CRISPEMBED_OXR_LAYOUT_DW_DIRECT=1` | 1.14–1.20 s | 1.10–1.14 s | equal 5/5 | fails receipt, german, japanese (`dec.2.gate` 0.0051) |
+| `LAYOUT_CONV_DIRECT=1` | 1.54–1.64 s | 1.50–1.59 s | equal 5/5 | fails receipt, german |
+
+Direct depthwise is ~18% faster with identical selected regions but adds a stage
+budget failure (japanese), so it stays opt-in; even with it the native path is
+~2.2× slower than PyTorch. The default is unchanged.
 
 ### Weight lineage
 

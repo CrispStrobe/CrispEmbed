@@ -1,0 +1,45 @@
+{
+ "schema": "crispembed.oxr-dfine.api.v1",
+ "image": "japanese.png",
+ "checks": {
+  "compact_python_json_text": true,
+  "top_level_keys": true,
+  "data_keys": true,
+  "params_empty": true,
+  "page_count": true,
+  "candidate_count": true,
+  "label_types": true,
+  "box_arity": true,
+  "confidence_params": true,
+  "confidence_filter": true,
+  "python_wrapper_equal": true,
+  "oxr_parse_layout_batch_equivalent": true
+ },
+ "pass": true,
+ "parsed": {
+  "native": [
+   {
+    "type": "Text",
+    "bbox": [
+     18.126331329345703,
+     13.511968612670898,
+     699.2708129882812,
+     190.49732971191406
+    ],
+    "score": 0.7620498538017273
+   }
+  ],
+  "reference": [
+   {
+    "type": "Text",
+    "bbox": [
+     18.12649917602539,
+     13.512035369873047,
+     699.2708129882812,
+     190.49732971191406
+    ],
+    "score": 0.7620569467544556
+   }
+  ]
+ }
+}

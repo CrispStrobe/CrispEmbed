@@ -157,9 +157,10 @@ byte-identical; stage budget 5e-3 fails in decoder layers 2-3 on receipt/german
 (native closer to float64 than PyTorch FP32 on 55-56/56 stages); F16 rejected.
 Open, in order:
 
-1. Speed: native 2.30 s vs PyTorch 0.89 s per page (4 threads). Read the
-   dw-direct/conv-direct A/B, then profile the encoder graph per op before any
-   default change; keep both paths gated.
+1. Speed: native 1.44 s vs PyTorch 0.52 s per page (run 41251744740, 4 threads;
+   2.6-2.7x). Opt-in dw-direct is 18% faster, same regions, one extra stage-budget
+   failure; conv-direct is slower. Next: per-op profile of the encoder graph
+   (im2col 3x3 convs, concat chains) before any default change; keep paths gated.
 2. End-to-end `CrispOXR(layout_model=)` document output vs the service-backed
    pipeline on the same pages (JSON/Markdown), once the document-assembly lane lands.
 3. Optional: `class_confidences`, GPU backend qualification, Rust/Dart runtime tests.
