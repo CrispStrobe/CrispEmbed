@@ -336,11 +336,11 @@ struct context {
     table_parse_context * table = nullptr;
     ppformulanet_ocr_context * formula = nullptr;
     ppformulanet_l_ocr_context * formula_l = nullptr;
-    got_ocr_context * got = nullptr;          // GOT-OCR2 (single-shot VLM)
-    glm_ocr_context * glm = nullptr;          // GLM-OCR (single-shot VLM)
-    qwen2vl_ocr_context * qwen = nullptr;     // Qwen2.5-VL (single-shot VLM)
-    qwen2vl_ocr_context * qwen3 = nullptr;    // Qwen3-VL (DeepStack + IMROPE)
-    qwen2vl_ocr_context * teleocr = nullptr;  // TeleOCR owns its model/prompt independently of Qwen stages
+    got_ocr_context * got = nullptr;         // GOT-OCR2 (single-shot VLM)
+    glm_ocr_context * glm = nullptr;         // GLM-OCR (single-shot VLM)
+    qwen2vl_ocr_context * qwen = nullptr;    // Qwen2.5-VL (single-shot VLM)
+    qwen2vl_ocr_context * qwen3 = nullptr;   // Qwen3-VL (DeepStack + IMROPE)
+    qwen2vl_ocr_context * teleocr = nullptr; // TeleOCR owns its model/prompt independently of Qwen stages
     std::string teleocr_model_path;
     std::string teleocr_default_prompt;
     int teleocr_default_max_tokens = 4096;

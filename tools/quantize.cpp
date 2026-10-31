@@ -104,8 +104,9 @@ static qkv_imatrix_mode g_qkv_mode = qkv_imatrix_mode::direct;
 // type census below describes the tensors actually written.
 static std::string teleocr_quantization_recipe(ggml_type requested_type) {
     const auto boolean = [](bool value) { return value ? "true" : "false"; };
-    const char * mode = g_qkv_mode == qkv_imatrix_mode::merged ? "merged" :
-                       g_qkv_mode == qkv_imatrix_mode::sum ? "sum" : "direct";
+    const char * mode = g_qkv_mode == qkv_imatrix_mode::merged ? "merged"
+                        : g_qkv_mode == qkv_imatrix_mode::sum  ? "sum"
+                                                               : "direct";
     std::string result = "{\"schema_version\":1,\"tool\":\"crispembed-quantize\",\"requested_type\":\"";
     result += ggml_type_name(requested_type);
     result += "\",\"decoder_f16\":";
@@ -267,12 +268,23 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         // explicit exceptions are retained in the recipe and exact census.
         uint32_t container_type = (uint32_t)ftype;
         switch (qtype) {
-        case GGML_TYPE_Q4_K: container_type = 14; break;
-        case GGML_TYPE_Q5_K: container_type = 16; break;
-        case GGML_TYPE_Q6_K: container_type = 18; break;
-        case GGML_TYPE_IQ4_NL: container_type = 25; break;
-        case GGML_TYPE_IQ4_XS: container_type = 30; break;
-        default: break; // F16, legacy quants, Q2_K and Q3_K already agree.
+        case GGML_TYPE_Q4_K:
+            container_type = 14;
+            break;
+        case GGML_TYPE_Q5_K:
+            container_type = 16;
+            break;
+        case GGML_TYPE_Q6_K:
+            container_type = 18;
+            break;
+        case GGML_TYPE_IQ4_NL:
+            container_type = 25;
+            break;
+        case GGML_TYPE_IQ4_XS:
+            container_type = 30;
+            break;
+        default:
+            break; // F16, legacy quants, Q2_K and Q3_K already agree.
         }
         gguf_set_val_u32(ctx_out, "general.file_type", container_type);
         const std::string recipe = teleocr_quantization_recipe(qtype);
@@ -285,8 +297,8 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         // placeholder, then populated from final tensor types. Array index is
         // the ggml_type enum value, not a preferred/advertised precision.
         const std::vector<uint32_t> counts(GGML_TYPE_COUNT, 0);
-        gguf_set_arr_data(ctx_out, "teleocr.quantization.tensor_type_counts", GGUF_TYPE_UINT32,
-                          counts.data(), counts.size());
+        gguf_set_arr_data(ctx_out, "teleocr.quantization.tensor_type_counts", GGUF_TYPE_UINT32, counts.data(),
+                          counts.size());
     }
     const bool ppocr_q8_late = is_ppocrv6 && ftype == GGML_FTYPE_MOSTLY_Q8_0 && g_ppocrv6_q8_head;
     // Sub-Q8 on an InternVL2-family decoder is checkpoint-dependent: WARN, do
@@ -959,8 +971,8 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         gguf_set_val_u32(ctx_out, "teleocr.quantization.converted_tensor_count", (uint32_t)n_quantized);
         gguf_set_val_u32(ctx_out, "teleocr.quantization.copied_tensor_count", (uint32_t)n_kept);
         gguf_set_val_u32(ctx_out, "teleocr.quantization.imatrix_applied_count", (uint32_t)n_imatrix);
-        gguf_set_arr_data(ctx_out, "teleocr.quantization.tensor_type_counts", GGUF_TYPE_UINT32,
-                          counts.data(), counts.size());
+        gguf_set_arr_data(ctx_out, "teleocr.quantization.tensor_type_counts", GGUF_TYPE_UINT32, counts.data(),
+                          counts.size());
     }
 
     // Rewrite metadata header now that tensor types/offsets are final

@@ -1570,7 +1570,8 @@ int main(int argc, char ** argv) {
         }
         // Experimental MiniCPM-OCR-1.0 reuses the qwen35 decoder kernels, so both gates are required.
         if (eid == 23 && (!core_env::on("CRISPEMBED_MINICPM_OCR") || !core_env::on("CRISPEMBED_QWEN35_OCR"))) {
-            fprintf(stderr, "error: experimental minicpm-ocr needs CRISPEMBED_MINICPM_OCR=1 and CRISPEMBED_QWEN35_OCR=1\n");
+            fprintf(stderr,
+                    "error: experimental minicpm-ocr needs CRISPEMBED_MINICPM_OCR=1 and CRISPEMBED_QWEN35_OCR=1\n");
             return 1;
         }
         if (eid == 22 &&
