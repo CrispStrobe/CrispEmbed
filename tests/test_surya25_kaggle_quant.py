@@ -145,7 +145,10 @@ class StageTest(unittest.TestCase):
 class MetadataTest(unittest.TestCase):
     def test_cpu_kernel_with_internet_and_no_datasets(self):
         metadata = json.loads(METADATA.read_text())
-        self.assertEqual(metadata["id"], "${KAGGLE_ACCOUNT}/crispembed-surya-ocr-25-quant")
+        # Kaggle derives the slug from the title; keep both identical so a later
+        # push updates this kernel instead of creating a second one.
+        self.assertEqual(metadata["id"], "${KAGGLE_ACCOUNT}/crispembed-surya-ocr-25-convert-and-quantize")
+        self.assertEqual(metadata["title"], "crispembed-surya-ocr-25-convert-and-quantize")
         self.assertEqual(metadata["code_file"], "kernel.py")
         self.assertEqual(metadata["kernel_type"], "script")
         self.assertEqual(metadata["enable_gpu"], "false")

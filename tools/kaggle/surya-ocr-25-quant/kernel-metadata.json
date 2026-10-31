@@ -1,6 +1,6 @@
 {
-  "id": "${KAGGLE_ACCOUNT}/crispembed-surya-ocr-25-quant",
-  "title": "crispembed surya ocr 25 convert and quantize",
+  "id": "${KAGGLE_ACCOUNT}/crispembed-surya-ocr-25-convert-and-quantize",
+  "title": "crispembed-surya-ocr-25-convert-and-quantize",
   "code_file": "kernel.py",
   "language": "python",
   "kernel_type": "script",
