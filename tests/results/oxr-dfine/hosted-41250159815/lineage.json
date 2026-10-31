@@ -1,0 +1,68 @@
+{
+ "schema": "crispembed.oxr-dfine.lineage.v1",
+ "oxr_tensors": 993,
+ "candidates": {
+  "PPHGNetV2_B2_stage1.pth": {
+   "url": "https://github.com/Peterande/storage/releases/download/dfinev1.0/PPHGNetV2_B2_stage1.pth",
+   "sha256": "41272985db6136ac11732b246c7ea794dcc203d0a8cbc463152c840b9d9f22d1",
+   "shape_matched": {
+    "backbone": 382,
+    "encoder": 0,
+    "decoder": 0
+   },
+   "bit_equal": {
+    "backbone": 0,
+    "encoder": 0,
+    "decoder": 0
+   },
+   "mean_cosine": {
+    "backbone": 0.8756945647825901,
+    "encoder": null,
+    "decoder": null
+   }
+  },
+  "dfine_m_obj365.pth": {
+   "url": "https://github.com/Peterande/storage/releases/download/dfinev1.0/dfine_m_obj365.pth",
+   "sha256": "20b0c3d2a725d3bc6b6b34b257ad453553d0ad3a3c585f967cac94d63a5181b3",
+   "shape_matched": {
+    "backbone": 382,
+    "encoder": 377,
+    "decoder": 146
+   },
+   "bit_equal": {
+    "backbone": 0,
+    "encoder": 0,
+    "decoder": 6
+   },
+   "mean_cosine": {
+    "backbone": 0.9517822490312666,
+    "encoder": 0.9317903125001518,
+    "decoder": 0.9386180498420376
+   }
+  },
+  "dfine_m_coco.pth": {
+   "url": "https://github.com/Peterande/storage/releases/download/dfinev1.0/dfine_m_coco.pth",
+   "sha256": "b44a7586bf490858c7b8bce9e44bd025cb88724df9a07a8deb3ae1c12e608195",
+   "shape_matched": {
+    "backbone": 382,
+    "encoder": 377,
+    "decoder": 146
+   },
+   "bit_equal": {
+    "backbone": 0,
+    "encoder": 0,
+    "decoder": 6
+   },
+   "mean_cosine": {
+    "backbone": 0.887981722199636,
+    "encoder": 0.48294682028043806,
+    "decoder": 0.26003705237215474
+   }
+  },
+  "dfine_m_obj2coco.pth": {
+   "url": "https://github.com/Peterande/storage/releases/download/dfinev1.0/dfine_m_obj2coco_e25.pth",
+   "error": "HTTPError: HTTP Error 404: Not Found"
+  }
+ },
+ "oxr_backbone_float_tensors": 382
+}
