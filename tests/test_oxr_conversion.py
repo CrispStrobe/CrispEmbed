@@ -39,6 +39,10 @@ class ConverterTests(unittest.TestCase):
         self.assertEqual(len(specs), 752)
         self.assertEqual(sum(__import__("math").prod(s.shape) for s in specs), 1534378216)
         self.assertIn("visual_tokenizer.vit.vision_model.post_layernorm.weight", actual)
+        written = [converter.gguf_name(s.name) for s in specs]
+        self.assertEqual(len(set(written)), len(written))
+        self.assertTrue(all(len(n.encode()) <= 63 for n in written), max(written, key=len))
+        self.assertIn("vit.post_layernorm.weight", written)
 
     def test_missing_tensor_fails(self):
         header = read("safetensors-header.json")
