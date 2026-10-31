@@ -172,6 +172,9 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --deskew         deskew scanned documents before --image embedding (off by default)\n");
     fprintf(stderr, "  --detect-split F detect a two-up book spread; print JSON {pages,split_x} (no OCR)\n");
     fprintf(stderr, "  --detect-content F detect the printed content bbox; print JSON {x0,y0,x1,y1} (no OCR)\n");
+    fprintf(stderr, "  --oxr-document F native OXR document route (repeat per page; CRISPEMBED_OXR=1,\n"
+                    "       CRISPEMBED_OXR_NATIVE_DOC=1, -m oxr GGUF). --oxr-layout F: D-FINE batch response JSON;\n"
+                    "       --oxr-doc-options JSON; --oxr-doc-format upstream|markdown|html|json|chunks\n");
     fprintf(stderr, "  --ocr-pipeline F full OCR pipeline: source-type routing + cleanup + accept-gate\n");
     fprintf(stderr, "       --ocr-engine N  primary engine "
                     "(dbnet_trocr|ppocrv6|easyocr|surya|tesseract|got|glm|qwen2vl|internvl2|lightonocr|qwen35-ocr|"
@@ -295,30 +298,32 @@ static int cli_main(int argc, char ** argv) {
     std::string kie_path;   // image for KIE extraction
     std::string kie_labels; // comma-separated field names (defaults to ner_labels)
     float kie_threshold = 0.5f;
-    std::string lilt_path;           // JSON file for LiLT token classification
-    std::string det_model;           // detection model for --face-pipeline
-    bool accept_biometric = false;   // --accept-biometric: ack face-recognition use
-    std::string ocr_det_path;        // general OCR: text detection model (DBNet)
-    std::string ocr_rec_path;        // general OCR: text recognition model (TrOCR)
-    std::string ocr_cls_path;        // optional line-orientation classifier (PP-LCNet 0/180)
-    std::string ocr_layout_path;     // optional RT-DETR layout GGUF (enables region routing)
-    std::string ocr_table_path;      // optional table-cell OCR GGUF (routes layout table regions)
-    std::string ocr_formula_path;    // optional formula GGUF (routes layout formula regions)
-    bool ocr_markdown = false;       // print the assembled document markdown after regions
-    bool cleanup_mode = false;       // --cleanup: preprocess before OCR
-    cleanup_overrides cleanup_ov;    // --no-deskew / --binarize / ... recipe tweaks
-    bool image_deskew = false;       // --deskew: deskew before --image embedding
-    std::string cleanup_only_path;   // --cleanup-only FILE: standalone cleanup
-    std::string detect_split_path;   // --detect-split FILE: report two-up page split
-    std::string detect_content_path; // --detect-content FILE: report content bbox
-    std::string ocr_pipeline_path;   // --ocr-pipeline FILE: full orchestrator
-    bool pipeline_denoise = false;   // --denoise: NAFNet tier-2 in the pipeline
-    std::string sr_model;            // --sr-model: text super-resolution GGUF
-    std::string pan_model;           // --pan-model: PAN super-resolution GGUF
-    std::string pan_sr_path;         // --pan-sr FILE: standalone PAN upscaling
-    std::string sam2_model;          // --sam2-model: SAM 2.1 GGUF or registry name
-    std::string sam2_path;           // --sam2 FILE: SAM 2.1 segmentation
-    std::vector<float> sam2_points;  // --sam2-point X,Y[:LABEL] (repeatable), image pixels
+    std::string lilt_path;                  // JSON file for LiLT token classification
+    std::string det_model;                  // detection model for --face-pipeline
+    bool accept_biometric = false;          // --accept-biometric: ack face-recognition use
+    std::string ocr_det_path;               // general OCR: text detection model (DBNet)
+    std::string ocr_rec_path;               // general OCR: text recognition model (TrOCR)
+    std::string ocr_cls_path;               // optional line-orientation classifier (PP-LCNet 0/180)
+    std::string ocr_layout_path;            // optional RT-DETR layout GGUF (enables region routing)
+    std::string ocr_table_path;             // optional table-cell OCR GGUF (routes layout table regions)
+    std::string ocr_formula_path;           // optional formula GGUF (routes layout formula regions)
+    bool ocr_markdown = false;              // print the assembled document markdown after regions
+    bool cleanup_mode = false;              // --cleanup: preprocess before OCR
+    cleanup_overrides cleanup_ov;           // --no-deskew / --binarize / ... recipe tweaks
+    bool image_deskew = false;              // --deskew: deskew before --image embedding
+    std::string cleanup_only_path;          // --cleanup-only FILE: standalone cleanup
+    std::string detect_split_path;          // --detect-split FILE: report two-up page split
+    std::string detect_content_path;        // --detect-content FILE: report content bbox
+    std::string ocr_pipeline_path;          // --ocr-pipeline FILE: full orchestrator
+    bool pipeline_denoise = false;          // --denoise: NAFNet tier-2 in the pipeline
+    std::string sr_model;                   // --sr-model: text super-resolution GGUF
+    std::string pan_model;                  // --pan-model: PAN super-resolution GGUF
+    std::string pan_sr_path;                // --pan-sr FILE: standalone PAN upscaling
+    std::string sam2_model;                 // --sam2-model: SAM 2.1 GGUF or registry name
+    std::string sam2_path;                  // --sam2 FILE: SAM 2.1 segmentation
+    std::vector<std::string> oxr_doc_pages; // --oxr-document FILE (repeatable): native OXR document route
+    std::string oxr_doc_layout, oxr_doc_options, oxr_doc_format = "upstream";
+    std::vector<float> sam2_points; // --sam2-point X,Y[:LABEL] (repeatable), image pixels
     std::vector<int> sam2_labels;
     std::vector<float> sam2_box;     // --sam2-box X0,Y0,X1,Y1
     bool sam2_multimask = false;     // --sam2-multimask
@@ -536,6 +541,14 @@ static int cli_main(int argc, char ** argv) {
             pan_model = argv[++i];
         } else if (strcmp(argv[i], "--sam2-model") == 0 && i + 1 < argc) {
             sam2_model = argv[++i];
+        } else if (strcmp(argv[i], "--oxr-document") == 0 && i + 1 < argc) {
+            oxr_doc_pages.push_back(argv[++i]);
+        } else if (strcmp(argv[i], "--oxr-layout") == 0 && i + 1 < argc) {
+            oxr_doc_layout = argv[++i];
+        } else if (strcmp(argv[i], "--oxr-doc-options") == 0 && i + 1 < argc) {
+            oxr_doc_options = argv[++i];
+        } else if (strcmp(argv[i], "--oxr-doc-format") == 0 && i + 1 < argc) {
+            oxr_doc_format = argv[++i];
         } else if (strcmp(argv[i], "--sam2") == 0 && i + 1 < argc) {
             sam2_path = argv[++i];
         } else if (strcmp(argv[i], "--sam2-point") == 0 && i + 1 < argc) {
@@ -781,6 +794,87 @@ static int cli_main(int argc, char ** argv) {
         }
         if (regions) free(regions);
         return 0;
+    }
+    if (!oxr_doc_pages.empty()) {
+        if (model_arg.empty() || oxr_doc_layout.empty()) {
+            fprintf(stderr, "error: --oxr-document requires -m <oxr GGUF> and --oxr-layout <D-FINE response JSON>\n");
+            return 1;
+        }
+        std::ifstream lf(oxr_doc_layout, std::ios::binary);
+        if (!lf) {
+            fprintf(stderr, "error: cannot read %s\n", oxr_doc_layout.c_str());
+            return 1;
+        }
+        std::stringstream layout_buf;
+        layout_buf << lf.rdbuf();
+        std::string layout = layout_buf.str();
+        // Accept a frozen fixture {"response": {...}, "provenance": {...}} as well.
+        const size_t key = layout.find("\"response\"");
+        if (key != std::string::npos && layout.find("\"provenance\"") != std::string::npos) {
+            const size_t start = layout.find('{', key);
+            size_t depth = 0, end = start;
+            bool in_str = false;
+            for (; end < layout.size(); ++end) {
+                const char c = layout[end];
+                if (in_str) {
+                    if (c == '\\')
+                        ++end;
+                    else if (c == '"')
+                        in_str = false;
+                } else if (c == '"')
+                    in_str = true;
+                else if (c == '{')
+                    ++depth;
+                else if (c == '}' && --depth == 0)
+                    break;
+            }
+            layout = layout.substr(start, end - start + 1);
+        }
+        std::vector<unsigned char *> images;
+        std::vector<const uint8_t *> ptrs;
+        std::vector<int> ws, hs, cs;
+        for (const auto & path : oxr_doc_pages) {
+            int w = 0, h = 0, ch = 0;
+            unsigned char * data = stbi_load(path.c_str(), &w, &h, &ch, 3);
+            if (!data) {
+                fprintf(stderr, "error: cannot load %s\n", path.c_str());
+                for (auto * d : images) stbi_image_free(d);
+                return 1;
+            }
+            images.push_back(data);
+            ptrs.push_back(data);
+            ws.push_back(w);
+            hs.push_back(h);
+            cs.push_back(3);
+        }
+        crispembed_oxr_context * octx = crispembed_oxr_init(model_arg.c_str(), n_threads);
+        if (!octx) {
+            for (auto * d : images) stbi_image_free(d);
+            fprintf(stderr, "error: cannot load OXR model '%s' (CRISPEMBED_OXR=1 and license acceptance required)\n",
+                    model_arg.c_str());
+            return 1;
+        }
+        const char * json = crispembed_oxr_process_pages(octx, ptrs.data(), ws.data(), hs.data(), cs.data(),
+                                                         (int)ptrs.size(), nullptr, nullptr, layout.c_str(),
+                                                         oxr_doc_options.empty() ? nullptr : oxr_doc_options.c_str());
+        for (auto * d : images) stbi_image_free(d);
+        int rc = 0;
+        if (!json) {
+            fprintf(stderr, "error: %s\n", crispembed_oxr_last_error(octx));
+            rc = 1;
+        } else if (oxr_doc_format == "upstream") {
+            printf("%s\n", json);
+        } else {
+            const char * rendered = crispembed_oxr_render_document(octx, oxr_doc_format.c_str());
+            if (rendered)
+                fputs(rendered, stdout);
+            else {
+                fprintf(stderr, "error: %s\n", crispembed_oxr_last_error(octx));
+                rc = 1;
+            }
+        }
+        crispembed_oxr_free(octx);
+        return rc;
     }
     if (!sam2_path.empty()) {
         if (sam2_model.empty() || (sam2_labels.empty() && sam2_box.empty())) {

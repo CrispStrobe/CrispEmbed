@@ -20,6 +20,12 @@ typedef OxrPredictNative = Pointer<Utf8> Function(Pointer<Void>, Pointer<Uint8>,
 typedef OxrPredict = Pointer<Utf8> Function(Pointer<Void>, Pointer<Uint8>, int, int, int, Pointer<Utf8>, int, double);
 typedef OxrStringNative = Pointer<Utf8> Function(Pointer<Void>);
 typedef OxrString = Pointer<Utf8> Function(Pointer<Void>);
+typedef OxrProcessPagesNative = Pointer<Utf8> Function(Pointer<Void>, Pointer<Pointer<Uint8>>, Pointer<Int32>,
+    Pointer<Int32>, Pointer<Int32>, Int32, Pointer<Void>, Pointer<Int32>, Pointer<Utf8>, Pointer<Utf8>);
+typedef OxrProcessPages = Pointer<Utf8> Function(Pointer<Void>, Pointer<Pointer<Uint8>>, Pointer<Int32>,
+    Pointer<Int32>, Pointer<Int32>, int, Pointer<Void>, Pointer<Int32>, Pointer<Utf8>, Pointer<Utf8>);
+typedef OxrRenderNative = Pointer<Utf8> Function(Pointer<Void>, Pointer<Utf8>);
+typedef OxrRender = Pointer<Utf8> Function(Pointer<Void>, Pointer<Utf8>);
 
 // Experimental MinerU2.5-Pro resident context; enable CRISPEMBED_MINERU25_PRO.
 typedef MineruInitNative = Pointer<Void> Function(Pointer<Utf8>, Int32);

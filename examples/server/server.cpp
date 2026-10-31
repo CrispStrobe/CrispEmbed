@@ -496,6 +496,7 @@ int main(int argc, char ** argv) {
     std::string ocr_engine_name;    // --ocr-engine: explicit orchestrator engine (CLI parity)
     std::string ocr_cls_model_path; // --ocr-cls: optional PP-LCNet 0/180 line-orientation classifier
     std::string layout_model_path;  // layout detection model (RT-DETRv2)
+    std::string oxr_doc_model_path; // --oxr-doc-model: native OXR document route (CRISPEMBED_OXR_NATIVE_DOC)
     std::string table_model_path;   // table cell OCR model (Tesseract-LSTM GGUF)
     std::string formula_model_path; // formula OCR model (PP-FormulaNet GGUF)
     bool route_tables = false;
@@ -580,6 +581,8 @@ int main(int argc, char ** argv) {
             ocr_rec_model_path = argv[++i];
         else if (strcmp(argv[i], "--layout") == 0 && i + 1 < argc)
             layout_model_path = argv[++i];
+        else if (strcmp(argv[i], "--oxr-doc-model") == 0 && i + 1 < argc)
+            oxr_doc_model_path = argv[++i];
         else if (strcmp(argv[i], "--table") == 0 && i + 1 < argc)
             table_model_path = argv[++i];
         else if (strcmp(argv[i], "--formula") == 0 && i + 1 < argc)
@@ -1799,6 +1802,24 @@ int main(int argc, char ** argv) {
         if (!layout_ctx) fprintf(stderr, "Warning: failed to load layout model '%s'\n", layout_model_path.c_str());
     }
 
+    // Experimental native OXR document route (explicit local GGUF, both gates).
+    crispembed_oxr_context * oxr_doc_ctx = nullptr;
+    std::mutex oxr_doc_mutex;
+    if (!oxr_doc_model_path.empty()) {
+        if (!core_env::on("CRISPEMBED_OXR") || !core_env::on("CRISPEMBED_OXR_NATIVE_DOC")) {
+            fprintf(stderr, "error: --oxr-doc-model needs CRISPEMBED_OXR=1 and CRISPEMBED_OXR_NATIVE_DOC=1\n");
+            return 1;
+        }
+        fprintf(stderr, "warning: OXR License section 3 forbids offering a hosted OCR/document-parsing API that\n"
+                        "         competes with SoMark's to third parties without their written license, and\n"
+                        "         section 2 requires crediting SoMark OXR in any online service.\n");
+        oxr_doc_ctx = crispembed_oxr_init(oxr_doc_model_path.c_str(), n_threads);
+        if (!oxr_doc_ctx) {
+            fprintf(stderr, "error: cannot load OXR model '%s'\n", oxr_doc_model_path.c_str());
+            return 1;
+        }
+    }
+
     // Surya text detection
     void * text_det_ctx = nullptr;
     std::mutex text_det_mutex;
@@ -2564,6 +2585,81 @@ int main(int argc, char ** argv) {
 
         fprintf(stderr, "crispembed-server: /layout/detect in %.1f ms (%d regions)\n", ms, n_regions);
         res.set_content(js.str(), "application/json");
+    });
+
+    // POST /oxr/document — native OXR document route over supplied layout.
+    // Request:  {"images": ["/path/page1.png", ...], "layout_response": {D-FINE batch},
+    //            "options": {...}, "format": "upstream"|"markdown"|"html"|"json"|"chunks"}
+    // Response: upstream-shaped OXR document JSON, or the rendered document.
+    svr.Post("/oxr/document", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!oxr_doc_ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"no OXR document model loaded (use --oxr-doc-model)\"}", "application/json");
+            return;
+        }
+        const std::string & body = req.body;
+        std::vector<std::string> paths;
+        json_extract_strings(body, "images", paths);
+        auto raw_value = [&](const char * key) -> std::string {
+            const size_t at = core_json::json_find_key_value(body, key);
+            if (at == std::string::npos) return {};
+            const size_t end = core_json::json_skip_value(body, at);
+            return end == std::string::npos ? std::string() : body.substr(at, end - at);
+        };
+        const std::string layout = raw_value("layout_response"), options = raw_value("options");
+        std::vector<std::string> fmt;
+        json_extract_strings(body, "format", fmt);
+        const std::string format = fmt.empty() ? "upstream" : fmt[0];
+        if (paths.empty() || layout.empty()) {
+            res.status = 400;
+            res.set_content("{\"error\": \"images and layout_response are required\"}", "application/json");
+            return;
+        }
+        std::vector<unsigned char *> images;
+        std::vector<const uint8_t *> ptrs;
+        std::vector<int> ws, hs, cs;
+        for (const auto & path : paths) {
+            int w = 0, h = 0, ch = 0;
+            unsigned char * data = stbi_load(path.c_str(), &w, &h, &ch, 3);
+            if (!data) {
+                for (auto * d : images) stbi_image_free(d);
+                res.status = 400;
+                res.set_content("{\"error\": \"cannot load image\"}", "application/json");
+                return;
+            }
+            images.push_back(data);
+            ptrs.push_back(data);
+            ws.push_back(w);
+            hs.push_back(h);
+            cs.push_back(3);
+        }
+        std::lock_guard<std::mutex> lock(oxr_doc_mutex);
+        const char * json =
+            crispembed_oxr_process_pages(oxr_doc_ctx, ptrs.data(), ws.data(), hs.data(), cs.data(), (int)ptrs.size(),
+                                         nullptr, nullptr, layout.c_str(), options.empty() ? nullptr : options.c_str());
+        for (auto * d : images) stbi_image_free(d);
+        if (!json) {
+            res.status = 422;
+            res.set_content("{\"error\": \"" + core_json::json_escape_strict(crispembed_oxr_last_error(oxr_doc_ctx)) +
+                                "\"}",
+                            "application/json");
+            return;
+        }
+        if (format == "upstream") {
+            res.set_content(json, "application/json");
+            return;
+        }
+        const char * rendered = crispembed_oxr_render_document(oxr_doc_ctx, format.c_str());
+        if (!rendered) {
+            res.status = 400;
+            res.set_content("{\"error\": \"" + core_json::json_escape_strict(crispembed_oxr_last_error(oxr_doc_ctx)) +
+                                "\"}",
+                            "application/json");
+            return;
+        }
+        res.set_content(rendered, format == "html"       ? "text/html"
+                                  : format == "markdown" ? "text/markdown"
+                                                         : "application/json");
     });
 
     // POST /table/parse — rule-based table structure recognition

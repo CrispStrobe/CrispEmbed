@@ -30,7 +30,7 @@ note() { echo "$1=$2" | tee -a "$TOP/results.txt"; }
 
 echo "::group::build"
 cmake -S . -B "$S/build" -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF >/dev/null &&
-    cmake --build "$S/build" --target test-oxr-document crispembed-shared -j4 > "$S/build.log" 2>&1 ||
+    cmake --build "$S/build" --target test-oxr-document crispembed-shared crispembed-cli crispembed-server -j4 > "$S/build.log" 2>&1 ||
     { tail -80 "$S/build.log"; exit 4; }
 "$S/build/test-oxr-document" > "$TOP/self-checks.txt" 2>&1
 note self_checks "$([ $? = 0 ] && echo pass || echo fail)"
