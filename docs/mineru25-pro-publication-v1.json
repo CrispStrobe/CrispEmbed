@@ -41,8 +41,7 @@
   },
   "default_variants": [
     "F16",
-    "Q8_0",
-    "Q4_K_DQ8"
+    "Q8_0"
   ],
   "recipes": {
     "F32": {
@@ -81,30 +80,7 @@
       "tensor_type": [],
       "precision_receipt": "tests/results/mineru25/precision.json",
       "precision_dtype": "q4_k",
-      "note": "all eligible matrices Q4_K (rows not divisible by 256 fall back to 32-wide types)"
-    },
-    "Q4_K_DQ8": {
-      "filename": "mineru25-pro-2604-q4_k-dq8.gguf",
-      "from": "F32",
-      "type": "q4_k",
-      "tensor_type": [
-        "l.*=q8_0"
-      ],
-      "note": "vision Q4_K, decoder (l.*) Q8_0",
-      "precision_receipt": "tests/results/mineru25/precision.json",
-      "precision_dtype": "q4_k-dq8"
-    },
-    "Q4_K_DF16": {
-      "filename": "mineru25-pro-2604-q4_k-df16.gguf",
-      "from": "F32",
-      "type": "q4_k",
-      "tensor_type": [],
-      "extra_args": [
-        "--decoder-f16"
-      ],
-      "note": "vision Q4_K, decoder (l.*) F16",
-      "precision_receipt": "tests/results/mineru25/precision.json",
-      "precision_dtype": "q4_k-df16"
+      "note": "decoder mostly Q4_0 (896-wide rows fall back from Q4_K) with ffn_down Q4_K; the quantizer keeps vision and embeddings Q8_0"
     }
   },
   "receipts": {
@@ -128,7 +104,7 @@
     "default_enabled": false,
     "gate": "F32 ordinary and reuse-graph arms token-ID exact on every case, plus the 64-stage numerical and preprocessing gates; reduced precisions publish only when token-ID exact on every case",
     "registry_alias": "added only after upload, with the real published SHA256",
-    "recipe_note": "Plain Q4_K diverged at token 4 on the Arabic case (hosted 41214099109) while Q8_0 and Q4_K_DQ8 (vision Q4_K, decoder Q8_0) stayed token-exact; the per-variant receipt gate decides publication."
+    "recipe_note": "crispembed-quantize keeps the vision tower at Q8_0 for any k-quant request, and the 896-wide decoder rows fall back from Q4_K to Q4_0, so 'Q4_K' is 1,099 MB vs 1,269 MB for Q8_0 and diverged on the Arabic case (41218174350). A 'decoder Q8_0' variant measured earlier was tensor-for-tensor Q8_0 and is not a recipe."
   },
   "case_inputs": {
     "formula": [

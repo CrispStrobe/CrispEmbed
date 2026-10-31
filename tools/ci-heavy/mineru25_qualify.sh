@@ -18,7 +18,7 @@
 set -uo pipefail
 
 CASE_IDS=${1:?comma list of protocol case ids, or all}
-VARIANTS=${2:-f32,f16,q8_0,q4_k,q4_k-dq8}
+VARIANTS=${2:-f32,f16,q8_0,q4_k}
 MAX_TOKENS=${3:-2048}
 REPEAT=${4:-3}
 THREADS=4

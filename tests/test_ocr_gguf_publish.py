@@ -84,12 +84,10 @@ class Protocols(unittest.TestCase):
 
     def test_plans(self):
         mineru = cfg_of("mineru")
-        steps, drop = p.plan(mineru, ["Q4_K_DQ8", "F16"])
-        self.assertEqual([s[:2] for s in steps], [("convert", "F32"), ("convert", "F16"), ("quantize", "Q4_K_DQ8")])
-        self.assertEqual(steps[-1][3], ["mineru25-pro-2604-f32.gguf", "q4_k", "--tensor-type", "l.*=q8_0"])
+        steps, drop = p.plan(mineru, ["Q8_0", "F16"])
+        self.assertEqual([s[:2] for s in steps], [("convert", "F32"), ("convert", "F16"), ("quantize", "Q8_0")])
+        self.assertEqual(steps[-1][3], ["mineru25-pro-2604-f32.gguf", "q8_0"])
         self.assertEqual(drop, ["mineru25-pro-2604-f32.gguf"])
-        df16 = p.plan(mineru, ["Q4_K_DF16"])[0][-1][3]
-        self.assertEqual(df16, ["mineru25-pro-2604-f32.gguf", "q4_k", "--decoder-f16"])
         tele = cfg_of("teleocr")
         steps, drop = p.plan(tele, ["Q4_K", "Q8_0"])
         self.assertEqual([s[:2] for s in steps], [("convert", "F16"), ("convert", "Q8_0"), ("quantize", "Q4_K")])
@@ -99,7 +97,7 @@ class Protocols(unittest.TestCase):
 
     def test_variants(self):
         cfg = cfg_of("mineru")
-        self.assertEqual(p.parse_variants("", cfg), ["F16", "Q8_0", "Q4_K_DQ8"])
+        self.assertEqual(p.parse_variants("", cfg), ["F16", "Q8_0"])
         for bad in ("Q5_K", "F16,f16"):
             with self.assertRaises(ValueError):
                 p.parse_variants(bad, cfg)
