@@ -29,7 +29,7 @@ Build/install notices and archive integrity are checked separately. No GPU,
 broad quality, publication, registry alias, runtime release or default flip is
 claimed. Remaining qualification work stays in PLAN.
 
-## 2026-10-31 — OCR wrappers on real TeleOCR and MinerU2.5-Pro models
+## 31 October 2026 (late) — OCR wrappers on real TeleOCR and MinerU2.5-Pro models
 
 Hosted [41234539932](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41234539932)
 at `7362f9c2` (`tools/ci-heavy/ocr_wrappers.sh`, Linux CPU, cargo 1.99.1, Dart 3.13.7)
