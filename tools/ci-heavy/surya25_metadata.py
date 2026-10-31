@@ -338,8 +338,15 @@ def main():
                                                      for t in compact["tokenizer_json"]["added_tokens"]]
     body = json.dumps(compact, sort_keys=True, ensure_ascii=True, default=str)
     print("SURYA25_REPORT_SHA256", sha_bytes(text.encode()))
-    for index in range(0, len(body), 3000):
+    for index in range(0, len(body) if os.environ.get("SURYA25_LOG_FULL") == "1" else 0, 3000):
         print("SURYA25_REPORT_CHUNK %05d %s" % (index // 3000, body[index:index + 3000]))
+    tensors = report.get("tensors") or {}
+    summary = {"revision": (listing or {}).get("revision"), "official_schema": report.get("official_schema"),
+               "tensor_count": tensors.get("count"), "dtypes": tensors.get("dtypes"),
+               "mtp_tensors": tensors.get("mtp_tensors"), "nonlayer_shapes": tensors.get("nonlayer_shapes"),
+               "group_counts": tensors.get("group_counts")}
+    print("SURYA25_SUMMARY", json.dumps(summary, sort_keys=True, default=str))
+    print("SURYA25_LAYER0", json.dumps(tensors.get("layer0_shapes"), sort_keys=True))
     print("SURYA25_STEPS", json.dumps(STEPS, sort_keys=True))
     return 0
 
