@@ -545,9 +545,84 @@ def run_replay(binary, cases, seed, out_dir):
     return results
 
 
+def run_native(binary, lib, gguf, cases, workdir, threads, live):
+    """Real native model. The original helper (CrispOXR.process_pages) runs once
+    and its native requests are recorded; the C++ route replays exactly those
+    results. Optionally the C++ route also runs live on the same model."""
+    from PIL import Image
+    results = []
+    os.makedirs(workdir, exist_ok=True)
+    for spec in cases:
+        name, image_path, layout_path = spec.split("=", 1)[0], *spec.split("=", 1)[1].split(":", 1)
+        with Image.open(image_path) as opened:
+            page = opened.convert("RGB")
+        layout = json.loads(Path(layout_path).read_text())["response"]
+        img_dir = os.path.join(workdir, name + "-imgs")
+        options = {"file_name": Path(image_path).name, "image_output_dir": img_dir}
+        entry = {"case": name}
+        with crisp_oxr.CrispOXR(gguf, n_threads=threads, lib_path=lib, allow_truncated_content=True,
+                                image_output_dir=img_dir) as model:
+            try:
+                py = {"value": model.process_pages([page], layout_response=layout, file_name=options["file_name"])}
+            except Exception as e:  # noqa: BLE001
+                py = {"error": f"{type(e).__name__}: {e}"}
+            trace = model.last_trace
+            Path(workdir, name + "-python.json").write_text(json.dumps({"python": py, "trace": trace},
+                                                                        ensure_ascii=False, indent=1))
+            arr = np.ascontiguousarray(np.asarray(page), dtype=np.uint8)
+            rgb_path = Path(workdir, name + ".rgb")
+            rgb_path.write_bytes(arr.tobytes())
+            case = {"pages": [{"w": arr.shape[1], "h": arr.shape[0], "rgb_path": str(rgb_path)}],
+                    "layout_response": layout, "trace": trace,
+                    "options_json": json.dumps(dict(options, allow_truncated_content=True))}
+            case_path = Path(workdir, name + "-replay-case.json")
+            case_path.write_text(json.dumps(case, ensure_ascii=False))
+            out = subprocess.run([binary, "--replay", str(case_path)], capture_output=True, text=True, encoding="utf-8")
+            replay = json.loads(out.stdout)
+            same, where = compare_documents(py, replay)
+            entry.update(replay_identical=same and ("error" in replay or replay.get("native_requests") == len(trace)),
+                         replay_first_difference=where, python_requests=len(trace),
+                         replay_requests=replay.get("native_requests"), python_error=py.get("error"),
+                         replay_error=replay.get("error"))
+            if "value" in py:
+                meta = py["value"]["metadata"].get("crispembed", {})
+                entry["unresolved_capped_requests"] = meta.get("unresolved_capped_requests")
+                entry["blocks"] = len(py["value"]["outputs"]["json"]["pages"][0]["blocks"])
+                entry["markdown_sha256"] = hashlib.sha256(py["value"]["outputs"]["markdown"].encode()).hexdigest()
+            if live:
+                os.environ["CRISPEMBED_OXR_NATIVE_DOC"] = "1"
+                try:
+                    nat = {"result": model.process_pages_native([page], layout_response=layout,
+                                                                file_name=options["file_name"])}
+                except Exception as e:  # noqa: BLE001
+                    nat = {"error": f"{type(e).__name__}: {e}"}
+                ntrace = model.last_trace
+                same, where = compare_documents(py, nat)
+                key = lambda t: (t["prompt"], t["rgb_sha256"], t["max_tokens"], round(float(t["repetition_penalty"]), 6))
+                entry.update(live_identical=same, live_first_difference=where, live_requests=len(ntrace),
+                             live_request_set_identical=sorted(map(key, trace)) == sorted(map(key, ntrace)),
+                             live_error=nat.get("error"))
+                Path(workdir, name + "-native.json").write_text(json.dumps({"native": nat, "trace": ntrace},
+                                                                            ensure_ascii=False, indent=1))
+                try:
+                    entry["render_markdown_chars"] = len(model.render_native_document("markdown"))
+                    entry["render_html_chars"] = len(model.render_native_document("html"))
+                except Exception as e:  # noqa: BLE001
+                    entry["render_error"] = str(e)
+        results.append(entry)
+        print(json.dumps(entry), flush=True)
+    return results
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("mode", choices=["helpers", "replay"])
+    ap.add_argument("mode", choices=["helpers", "replay", "native"])
+    ap.add_argument("--lib", help="native library (native mode)")
+    ap.add_argument("--gguf", help="OXR GGUF (native mode)")
+    ap.add_argument("--case", action="append", default=[], help="native mode: name=image:dfine.json")
+    ap.add_argument("--workdir", default="oxr-native-doc-work")
+    ap.add_argument("--threads", type=int, default=4)
+    ap.add_argument("--no-live", action="store_true")
     ap.add_argument("--binary", required=True)
     ap.add_argument("--cases", type=int, default=300)
     ap.add_argument("--seed", type=int, default=1)
@@ -559,6 +634,10 @@ def main():
                   "families": {k: {"checks": v[0], "mismatches": v[1]} for k, v in sorted(chk.counts.items())},
                   "failures": chk.failures}
         ok = not chk.failures
+    elif args.mode == "native":
+        res = run_native(args.binary, args.lib, args.gguf, args.case, args.workdir, args.threads, not args.no_live)
+        report = {"mode": "native", "cases": res}
+        ok = all(r.get("replay_identical") and r.get("live_identical", True) for r in res)
     else:
         res = run_replay(args.binary, args.cases, args.seed, args.output)
         report = {"mode": "replay", "seed": args.seed, "cases": res,
@@ -570,7 +649,8 @@ def main():
     text = json.dumps(report, ensure_ascii=False, indent=1)
     if args.output:
         Path(args.output).write_text(text + "\n", encoding="utf-8")
-    summary = report.get("families") or {"identical": report.get("identical"), "total": report.get("total")}
+    summary = report.get("families") or {"identical": report.get("identical"), "total": report.get("total"),
+                                         "native": report.get("cases") if args.mode == "native" else None}
     print(json.dumps(summary, indent=1))
     return 0 if ok else 1
 
