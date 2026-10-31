@@ -1,0 +1,16 @@
+{
+  "schema": "crispembed-pubdev-preflight-contract-v2",
+  "candidate_base": "f5c2423f",
+  "source_state": "uncommitted worktree changes",
+  "hosted_runner": "private Kaggle CPU kernel",
+  "green_source_sha256": {
+    "flutter/crispembed/android/build.gradle": "8090cdcc4836d58bac3e96c676e487b5edcad2af9e313c892b14c3aae90a0cf7",
+    "tests/test_pubdev_release_gate.py": "937fdfd001e0531cfd56de73f2115cbe3c2ea85489885b99bd6f9ab4c52530c4",
+    "tools/ci-heavy/pubdev_release_gate.py": "7f199062c1c87e441bf2d7a51c802a2ceb37d51430b9412af0e942c2d7284cda"
+  },
+  "red": "7 tests: 3 failures in the added multiline field and heading rejection test",
+  "green": "7 tests passed, exit 0",
+  "scope": "Model-free preflight logic only; archive contents, Gradle builds, consumer execution, source qualification, Actions execution, OIDC and publication are not established.",
+  "publication_enabled": false,
+  "preserved_evidence": "Private retained hosted-run artifacts, SHA-256 verified"
+}

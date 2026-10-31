@@ -1006,3 +1006,65 @@ jobs:
             dist/android-arm64-v8a/*.tar.gz
             dist/android-armeabi-v7a/*.tar.gz
             dist/ios-arm64/*.tar.gz
+
+  pub-preflight:
+    name: Verify pub.dev release inputs
+    # create-release is deliberately best-effort for GPU builds, so check
+    # the required CPU/mobile jobs explicitly as well as the release job.
+    needs: [build, build-android, build-ios, create-release]
+    if: >-
+      always() && !cancelled() && github.event_name == 'push' &&
+      startsWith(github.ref, 'refs/tags/v') &&
+      needs.build.result == 'success' &&
+      needs.build-android.result == 'success' &&
+      needs.build-ios.result == 'success' &&
+      needs.create-release.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compare published assets to this workflow run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          workflow_assets="$RUNNER_TEMP/pubdev-workflow-assets"
+          release_assets="$RUNNER_TEMP/pubdev-release-assets"
+          mkdir -p "$workflow_assets" "$release_assets"
+          for artifact in linux-x86_64 linux-arm64 macos-arm64 windows-x86_64 \
+                          android-arm64-v8a android-armeabi-v7a ios-arm64; do
+            gh run download "$GITHUB_RUN_ID" --name "$artifact" --dir "$workflow_assets/$artifact"
+          done
+          gh api "repos/$GITHUB_REPOSITORY/releases/tags/$GITHUB_REF_NAME" > "$RUNNER_TEMP/pubdev-release.json"
+          gh release download "$GITHUB_REF_NAME" --dir "$release_assets" \
+            --pattern 'crispembed-linux-x86_64.tar.gz' \
+            --pattern 'crispembed-linux-arm64.tar.gz' \
+            --pattern 'crispembed-macos-arm64.tar.gz' \
+            --pattern 'crispembed-windows-x86_64.zip' \
+            --pattern 'crispembed-android-arm64-v8a.tar.gz' \
+            --pattern 'crispembed-android-armeabi-v7a.tar.gz' \
+            --pattern 'crispembed-ios-arm64.tar.gz'
+          python3 tools/ci-heavy/pubdev_release_gate.py \
+            --tag "$GITHUB_REF_NAME" --version-file VERSION \
+            --pubspec flutter/crispembed/pubspec.yaml \
+            --changelog flutter/crispembed/CHANGELOG.md \
+            --release-json "$RUNNER_TEMP/pubdev-release.json" \
+            --workflow-assets "$workflow_assets" --downloaded-assets "$release_assets"
+
+  publish-pubdev:
+    name: Publish Flutter package to pub.dev (not yet qualified)
+    needs: pub-preflight
+    # Fail closed: byte-identical release assets are not package or consumer
+    # qualification. Enable only after source-matched qualification and clean
+    # consumers are enforced, and the pub.dev OIDC configuration is confirmed.
+    if: ${{ false }}
+    permissions:
+      contents: read
+      id-token: write
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@6afc89df92d6eb3834022f73cd65adc8cdfcb92d
+    with:
+      working-directory: flutter/crispembed
+      environment: pub.dev

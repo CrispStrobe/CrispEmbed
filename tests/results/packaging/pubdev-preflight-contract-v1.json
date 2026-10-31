@@ -1,0 +1,36 @@
+{
+  "schema": "crispembed-pubdev-preflight-contract-v1",
+  "base_commit": "15adb672f71f8470a23db1284dafa102515adae9",
+  "candidate_branch": "fix/pubdev-next-release-20261031",
+  "candidate_commit": "d414da542230545cac1d1675dc882576725dac83",
+  "hosted_runner": "private Kaggle CPU kernel (model-free contract tests only)",
+  "tests": {
+    "test_pubdev_release_gate.py": "b9783baf1c490bd66e0b8b1c1fe1497814ace1e0975c5d63568e2726fe5dc0e5",
+    "tools/ci-heavy/pubdev_release_gate.py": "c3a1751f095644f7339cb37730b44c4f1b3e719be0b5173a1433510e096d43cb",
+    "flutter/crispembed/android/build.gradle": "8090cdcc4836d58bac3e96c676e487b5edcad2af9e313c892b14c3aae90a0cf7"
+  },
+  "red": {
+    "gate_missing": "5 tests, exit 1, one intended failure: gate script absent",
+    "android_version": "6 tests, exit 1, one intended failure: build.gradle had no pubspec derivation"
+  },
+  "green": {
+    "gate": "5 tests, exit 0",
+    "gate_and_android": "6 tests, exit 0"
+  },
+  "checks_that_pass": [
+    "tag must equal v<stable VERSION> and pubspec name/version must match",
+    "current non-draft, non-prerelease GitHub release with seven uploaded assets",
+    "each published asset byte-identical to this workflow run's artifact",
+    "current CHANGELOG.md entry present",
+    "Android plugin version derived from the shipped pubspec"
+  ],
+  "not_established": [
+    "workflow YAML execution semantics and reusable OIDC publication",
+    "Android Gradle configuration/build on a real toolchain",
+    "CocoaPods prepare_command behavior for path-based Flutter consumers",
+    "archive contents, ABI/link compatibility, installability or consumer execution",
+    "portfolio, WASM, source-matched successor qualification",
+    "pub.dev admin trusted-publisher state and any actual publication"
+  ],
+  "preserved_evidence": "Private retained hosted-run artifacts (29 SHA-256 verified files)"
+}
