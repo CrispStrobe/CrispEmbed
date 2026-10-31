@@ -33,6 +33,13 @@ cmake -S . -B "$S/build" -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF -DCRISPEMB
     cmake --build "$S/build" -j4 --target test-mineru25-diff crispembed-quantize > "$S/build.log" 2>&1 ||
     { tail -40 "$S/build.log"; exit 4; }
 DIFF=$(find "$S/build" -type f -name test-mineru25-diff -perm -u+x | head -1)
+# Second build without llamafile's tinyBLAS: separates its Q8_0 x Q8_0 kernel from
+# ggml's generic quantized-activation path.
+cmake -S . -B "$S/build-nollamafile" -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF \
+    -DGGML_CUDA=OFF -DGGML_LLAMAFILE=OFF >/dev/null &&
+    cmake --build "$S/build-nollamafile" -j4 --target test-mineru25-diff > "$S/build-nollamafile.log" 2>&1 ||
+    { tail -40 "$S/build-nollamafile.log"; exit 4; }
+DIFF_NOLF=$(find "$S/build-nollamafile" -type f -name test-mineru25-diff -perm -u+x | head -1)
 QUANT=$(find "$S/build" -type f -name crispembed-quantize -perm -u+x | head -1)
 python - "$MODEL" "$REV" "$S/checkpoint" <<'PY' || exit 5
 import sys
@@ -72,24 +79,26 @@ while read -r id image task; do
     run q8f32act-vs-B q8_0 B CRISPEMBED_MINERU25_PRO_VISION_F32_ACT=1
     run q8-vs-B q8_0 B
     run q8f32act-vs-A q8_0 A CRISPEMBED_MINERU25_PRO_VISION_F32_ACT=1
+    "$DIFF_NOLF" "$S/gguf/q8_0.gguf" "$S/$id-A.gguf" $THREADS 0.002 0.99999 > "$OUT/q8-nollamafile-vs-A.txt" 2>&1
 done <<< "$CASES"
 
 python - "$TOP" <<'PY'
 import json, sys
 from pathlib import Path
 top = Path(sys.argv[1]); lines = []
+NAMES = ("f32-vs-A", "q8-vs-A", "q8-nollamafile-vs-A", "q8f32act-vs-A", "q8f32act-vs-B", "q8-vs-B")
 for case in sorted(p for p in top.iterdir() if p.is_dir()):
     lines.append(f"### {case.name}")
-    lines.append("| stage | " + " | ".join(n for n in ("f32-vs-A", "q8-vs-A", "q8f32act-vs-B", "q8-vs-B", "q8f32act-vs-A")) + " |")
+    lines.append("| stage | " + " | ".join(n for n in NAMES) + " |")
     lines.append("|---" * 6 + "|")
     data = {}
-    for n in ("f32-vs-A", "q8-vs-A", "q8f32act-vs-B", "q8-vs-B", "q8f32act-vs-A"):
+    for n in NAMES:
         f = case / f"{n}.txt"
         if f.exists() and "{" in f.read_text():
             t = f.read_text(); data[n] = {s["name"]: s for s in json.loads(t[t.index("{"):t.rindex("}") + 1])["stages"]}
     for stage in [f"vis_layer_{i}" for i in range(32)] + ["vis_merger_output", "llm_layer_0", "llm_final_norm", "llm_logits_last"]:
         cells = []
-        for n in ("f32-vs-A", "q8-vs-A", "q8f32act-vs-B", "q8-vs-B", "q8f32act-vs-A"):
+        for n in NAMES:
             s = data.get(n, {}).get(stage)
             r = (s or {}).get("rows") or {}
             cells.append("-" if not s else f"min {s['cos_min']:.4f} p01 {r.get('p01_cos', float('nan')):.4f} "

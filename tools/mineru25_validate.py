@@ -164,6 +164,7 @@ def load_vision_weights(model, path):
     spec = importlib.util.spec_from_file_location(
         "mineru_converter", Path(__file__).resolve().parents[1] / "models/convert-mineru25-pro-to-gguf.py")
     converter = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = converter  # dataclasses resolve their module through sys.modules
     spec.loader.exec_module(converter)
     targets = {t.target: t.source for t in converter.tensor_specs() if t.target.startswith("v.")}
     visual = model.model.visual
