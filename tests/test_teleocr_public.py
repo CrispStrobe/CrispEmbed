@@ -74,6 +74,8 @@ def main():
               returncode=run.returncode, stderr_tail=run.stderr[-3000:] if run.returncode else "")
         return run
 
+    # This harness exercises interfaces, not the license gate (tests/test_teleocr_loader.py does).
+    os.environ["CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE"] = "1"
     previous_gate = os.environ.get("CRISPEMBED_TELEOCR")
     try:
         for gate in (None, "", "0"):

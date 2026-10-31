@@ -1860,7 +1860,8 @@ class CrispOcrModel:
     HMER (handwritten math), BTTR (handwritten math), PosFormer (handwritten),
     MixTex (Chinese+English LaTeX), PARSeq (scene text),
     Qwen2.5-VL (VLM, German docs), Qwen3-VL-2B (VLM, DeepStack),
-    TeleOCR (CRISPEMBED_TELEOCR=1; explicit local GGUF),
+    TeleOCR (CRISPEMBED_TELEOCR=1 and CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1, non-commercial;
+    explicit local GGUF),
     InternVL2.5/2-1B (VLM, EN+DE),
     GLM-OCR (VLM, 8 langs, OmniDocBench #1).
     Experimental Qwen3.5/LightOnOCR-3-0.8B requires CRISPEMBED_QWEN35_OCR=1.
@@ -4196,7 +4197,8 @@ class _CrispOcrPipelineParams(ctypes.Structure):
     ]
 
 
-# Append-only C stage selector; CRISPEMBED_TELEOCR=1 enables the native loader.
+# Append-only C stage selector; CRISPEMBED_TELEOCR=1 plus CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1
+# (non-commercial Qwen Research License vision tower) enable the native loader.
 OCR_ENGINE_TELEOCR = 24
 
 
@@ -4265,7 +4267,8 @@ class CrispOcrOrchestrator:
 
     TeleOCR uses ``stages=[{"engine": OCR_ENGINE_TELEOCR,
     "model_a": "teleocr-f16.gguf", "vlm_max_tokens": 1024}]`` and requires
-    ``CRISPEMBED_TELEOCR=1``. The stage accepts an optional exact task prompt
+    ``CRISPEMBED_TELEOCR=1`` plus ``CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1``
+    (its vision tower is under the non-commercial Qwen Research License). The stage accepts an optional exact task prompt
     through ``vlm_prompt``; an empty value restores the model's text task.
 
     Usage::

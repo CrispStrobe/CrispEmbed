@@ -1556,6 +1556,11 @@ int main(int argc, char ** argv) {
             return 1;
         }
         if (eid == 24) {
+            if (!core_env::on("CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE")) {
+                fprintf(stderr, "error: teleocr's vision tower is under the Qwen RESEARCH LICENSE (non-commercial);\n"
+                                "       set CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1 to acknowledge\n");
+                return 1;
+            }
             if (!core_env::on("CRISPEMBED_TELEOCR")) {
                 fprintf(stderr, "error: teleocr needs CRISPEMBED_TELEOCR=1\n");
                 return 1;

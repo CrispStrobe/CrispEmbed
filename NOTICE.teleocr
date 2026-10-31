@@ -7,6 +7,15 @@ incorporate work under the Apache License, Version 2.0. The complete Apache
 license is in models/licenses/apache-2.0/LICENSE. Retain this notice and that
 license when redistributing these portions or a binary containing them.
 
+Model weights license
+---------------------
+Qwen is licensed under the Qwen RESEARCH LICENSE AGREEMENT, Copyright (c) Alibaba Cloud. All Rights Reserved.
+Built with Qwen.
+TeleOCR's vision encoder derives from Qwen2.5-VL-3B-Instruct (docs/teleocr-license.md);
+the TeleOCR weights may be used for non-commercial purposes only. The agreement
+text is in models/licenses/qwen-research/LICENSE. This applies to the model
+weights, not to CrispEmbed's source code.
+
 Inference architecture and reference
 ------------------------------------
 XingChen-AGI / China Telecom: TeleOCR model and checkpoint.

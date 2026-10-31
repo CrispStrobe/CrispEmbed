@@ -2709,7 +2709,8 @@ impl Default for OcrCleanupSpec {
     }
 }
 
-/// TeleOCR stage selector. Requires `CRISPEMBED_TELEOCR=1` and an explicit local GGUF.
+/// TeleOCR stage selector. Requires `CRISPEMBED_TELEOCR=1`, `CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1`
+/// (its vision tower is under the non-commercial Qwen Research License) and an explicit local GGUF.
 pub const OCR_ENGINE_TELEOCR: i32 = crispembed_sys::CRISPEMBED_OCR_ENGINE_TELEOCR;
 
 /// One fully-specified pipeline stage for [`CrispOcrPipeline::from_stages`].

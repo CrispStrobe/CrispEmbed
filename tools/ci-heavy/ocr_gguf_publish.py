@@ -30,7 +30,9 @@ import urllib.request
 
 ROOT = Path(__file__).resolve().parents[2]
 SCHEMA = "crispembed-ocr-gguf-publication-v1"
-FIXED_FILES = ("README.md", "LICENSE", "UPSTREAM_README.md", "manifest.json", ".gitattributes")
+FIXED_FILES = ("README.md", "LICENSE", "LICENSE-APACHE-2.0", "NOTICE", "UPSTREAM_README.md", "manifest.json",
+               ".gitattributes")
+LICENSES = ("apache-2.0", "qwen-research")
 ALLOWED_DESTINATIONS = {"cstr/MinerU2.5-Pro-2604-1.2B-GGUF", "cstr/TeleOCR-GGUF"}
 
 
@@ -54,10 +56,11 @@ def load(protocol, root=ROOT):
     require(cfg.get("approved_by_owner") is True, "publication not approved by the owner; nothing accessed")
     require(cfg.get("destination") in ALLOWED_DESTINATIONS, "unreviewed publication destination")
     up = cfg["upstream"]
-    require(re.fullmatch("[0-9a-f]{40}", up["revision"]) and up["license"] == "apache-2.0",
+    require(re.fullmatch("[0-9a-f]{40}", up["revision"]) and up["license"] in LICENSES,
             "upstream pin or license malformed")
-    lf = up["license_file"]
-    require(re.fullmatch("[0-9a-f]{64}", lf["sha256"]) and lf["url"].startswith("https://"), "LICENSE pin malformed")
+    for lf in license_files(cfg):
+        require(lf["name"] in FIXED_FILES and re.fullmatch("[0-9a-f]{64}", lf["sha256"]) and
+                lf["url"].startswith("https://"), "license file pin malformed: " + lf.get("name", "?"))
     require(re.fullmatch("[0-9a-f]{64}", up["readme"]["sha256"]), "README pin malformed")
     conv = cfg["converter"]
     require((root / conv["script"]).is_file() and "{src}" in conv["args"] and "{out}" in conv["args"],
@@ -66,6 +69,13 @@ def load(protocol, root=ROOT):
         require(rec["from"] in ("convert", *cfg["recipes"]) and rec["from"] != name, f"recipe {name} source invalid")
     cfg["_protocol"] = protocol
     return cfg
+
+
+def license_files(cfg):
+    """Pinned license texts shipped with the files: protocol `license_files`, or the single
+    upstream LICENSE pin for protocols that predate it."""
+    files = cfg.get("license_files")
+    return files if files else [{"name": "LICENSE", **cfg["upstream"]["license_file"]}]
 
 
 def parse_variants(text, cfg):
@@ -157,7 +167,10 @@ def notices(cfg, out_dir, opener=urllib.request.urlopen):
     up = cfg["upstream"]
     out = Path(out_dir)
     out.mkdir(parents=True, exist_ok=True)
-    (out / "LICENSE").write_bytes(fetch(up["license_file"]["url"], up["license_file"], opener))
+    for lf in license_files(cfg):
+        (out / lf["name"]).write_bytes(fetch(lf["url"], lf, opener))
+    if cfg.get("notice_text"):
+        (out / "NOTICE").write_text(cfg["notice_text"])
     readme = f"https://huggingface.co/{up['repo']}/resolve/{up['revision']}/README.md"
     (out / "UPSTREAM_README.md").write_bytes(fetch(readme, up["readme"], opener))
 
@@ -174,9 +187,13 @@ def card(cfg, files, parity, prec, source_commit):
     quantized = any(cfg["recipes"][v].get("type") for v in names)
     recipes = "\n".join(f"- **{v}**: {cfg['recipes'][v].get('note', 'see manifest.json')}" for v in names)
     first = files[0]["filename"]
+    front = c.get("license_frontmatter", "license: apache-2.0\nlicense_link: LICENSE")
+    license_md = c.get("license_md") or f"""- The original model is released under the **Apache License 2.0** ({up['copyright']}).
+  These derived files are distributed under the same license.
+- `LICENSE`: {c['license_note']} (SHA256 `{up['license_file']['sha256']}`). Upstream ships no NOTICE file,
+  so none is included."""
     return f"""---
-license: apache-2.0
-license_link: LICENSE
+{front}
 base_model: {up['repo']}
 base_model_relation: quantized
 pipeline_tag: image-text-to-text
@@ -192,10 +209,7 @@ All credit for the model belongs to the original authors; these files only chang
 
 ## License and attribution
 
-- The original model is released under the **Apache License 2.0** ({up['copyright']}).
-  These derived files are distributed under the same license.
-- `LICENSE`: {c['license_note']} (SHA256 `{up['license_file']['sha256']}`). Upstream ships no NOTICE file,
-  so none is included.
+{license_md}
 - `UPSTREAM_README.md` is the unmodified upstream model card at revision `{up['revision']}`
   (SHA256 `{up['readme']['sha256']}`).
 
@@ -253,15 +267,20 @@ def publish(cfg, variants, gguf_dir, notice_dir, out, source_commit):
         path = Path(gguf_dir) / name
         require(path.is_file() and path.stat().st_size > 3 * 10**8, "missing or truncated GGUF: " + name)
         files.append({"variant": v, "filename": name, "bytes": path.stat().st_size, "sha256": digest(path)})
-    lic, readme = Path(notice_dir) / "LICENSE", Path(notice_dir) / "UPSTREAM_README.md"
+    readme = Path(notice_dir) / "UPSTREAM_README.md"
     up = cfg["upstream"]
-    require(digest(lic) == up["license_file"]["sha256"] and digest(readme) == up["readme"]["sha256"],
-            "upstream notices differ")
+    require(digest(readme) == up["readme"]["sha256"], "upstream model card differs")
+    legal = {}
+    for lf in license_files(cfg):
+        path = Path(notice_dir) / lf["name"]
+        require(digest(path) == lf["sha256"], "pinned license text differs: " + lf["name"])
+        legal[lf["name"]] = path.read_bytes()
+    if cfg.get("notice_text"):
+        legal["NOTICE"] = cfg["notice_text"].encode()
     card_bytes = card(cfg, files, parity, prec, source_commit).encode()
     card_sha = hashlib.sha256(card_bytes).hexdigest()
     man_bytes = (json.dumps(manifest(cfg, files, parity, prec, source_commit, card_sha), indent=2) + "\n").encode()
-    small = {"README.md": card_bytes, "manifest.json": man_bytes, "LICENSE": lic.read_bytes(),
-             "UPSTREAM_README.md": readme.read_bytes()}
+    small = {"README.md": card_bytes, "manifest.json": man_bytes, **legal, "UPSTREAM_README.md": readme.read_bytes()}
     (out / "README.md").write_bytes(card_bytes)
     (out / "manifest.json").write_bytes(man_bytes)
     expected = {f["filename"]: f["sha256"] for f in files}

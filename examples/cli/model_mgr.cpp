@@ -1611,18 +1611,25 @@ static const ModelEntry k_registry[] = {
       "https://huggingface.co/cstr/OvisOCR2-GGUF/resolve/b7229e46f31bcf342d0999966bae8a03bf02bb07/ovisocr2-f16.gguf",
       "OvisOCR2 experimental CPU OCR (853M, f16, format2; gated, <=1024 patches)", "1.717 GB", "apache-2.0",
       "https://huggingface.co/cstr/OvisOCR2-GGUF" },
+    // TeleOCR: vision tower derives from Qwen2.5-VL-3B-Instruct, so the Qwen RESEARCH
+    // LICENSE (non-commercial) governs these weights despite the upstream card's
+    // apache-2.0 tag (tests/results/licenses/qwen-vision-lineage.json). The engine also
+    // requires CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1.
     { "teleocr-f16", "teleocr-f16.gguf",
       "https://huggingface.co/cstr/TeleOCR-GGUF/resolve/36f626c16f05fd4240565e7d33924917300aa00a/teleocr-f16.gguf",
-      "TeleOCR experimental document OCR (Qwen2.5-VL vision + Qwen3-style decoder, f16; gated CRISPEMBED_TELEOCR, CPU)",
-      "2.526 GB", "apache-2.0", "https://huggingface.co/cstr/TeleOCR-GGUF" },
+      "TeleOCR experimental document OCR (Qwen2.5-VL vision + Qwen3-style decoder, f16; non-commercial Qwen Research "
+      "License vision tower; gated CRISPEMBED_TELEOCR, CPU)",
+      "2.526 GB", "qwen-research", "https://huggingface.co/cstr/TeleOCR-GGUF" },
     { "teleocr-q8_0", "teleocr-q8_0.gguf",
       "https://huggingface.co/cstr/TeleOCR-GGUF/resolve/36f626c16f05fd4240565e7d33924917300aa00a/teleocr-q8_0.gguf",
-      "TeleOCR experimental document OCR (Qwen2.5-VL vision + Qwen3-style decoder, q8_0 decoder, f16 vision; gated CRISPEMBED_TELEOCR, CPU)",
-      "2.113 GB", "apache-2.0", "https://huggingface.co/cstr/TeleOCR-GGUF" },
+      "TeleOCR experimental document OCR (Qwen2.5-VL vision + Qwen3-style decoder, q8_0 decoder, f16 vision; "
+      "non-commercial Qwen Research License vision tower; gated CRISPEMBED_TELEOCR, CPU)",
+      "2.113 GB", "qwen-research", "https://huggingface.co/cstr/TeleOCR-GGUF" },
     { "teleocr-q4_k-m", "teleocr-q4_k-m.gguf",
       "https://huggingface.co/cstr/TeleOCR-GGUF/resolve/36f626c16f05fd4240565e7d33924917300aa00a/teleocr-q4_k-m.gguf",
-      "TeleOCR experimental document OCR (Qwen2.5-VL vision + Qwen3-style decoder, q4_k-m decoder, f16 vision; gated CRISPEMBED_TELEOCR, CPU)",
-      "1.923 GB", "apache-2.0", "https://huggingface.co/cstr/TeleOCR-GGUF" },
+      "TeleOCR experimental document OCR (Qwen2.5-VL vision + Qwen3-style decoder, q4_k-m decoder, f16 vision; "
+      "non-commercial Qwen Research License vision tower; gated CRISPEMBED_TELEOCR, CPU)",
+      "1.923 GB", "qwen-research", "https://huggingface.co/cstr/TeleOCR-GGUF" },
 
     { "got-ocr2", "got-ocr2-q4_k.gguf",
       "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF/resolve/main/got-ocr2-q4_k.gguf",

@@ -5,6 +5,31 @@ checkpoint, licensed model-code facts, CrispEmbed's existing native engine,
 and the Apache-2.0 Rust reference. It does not include or directly translate
 the official GitHub document client's unlicensed Python files.
 
+## Weight license lineage
+
+**The TeleOCR weights are governed by the Qwen RESEARCH LICENSE AGREEMENT
+(non-commercial), not only by the model card's `apache-2.0`.** The paper
+(arXiv:2608.12898, Section 4) says the vision encoder is "inherited from
+Qwen2.5-VL" without naming the size; per-tensor weight cosines settle it
+([evidence](../tests/results/licenses/qwen-vision-lineage.json),
+`tools/weight_lineage.py`): TeleOCR's block-31 attention projection is 0.9926
+against Qwen2.5-VL-3B-Instruct and 0.52-0.56 against every Apache-2.0 tower
+(Qwen2.5-VL-7B, 32B, Omni-7B). Qwen2.5-VL-3B (and Omni-3B) are released under
+the Qwen RESEARCH LICENSE AGREEMENT: use, reproduction, distribution and
+derivative works for non-commercial purposes only (section 2), redistribution
+with the agreement, a NOTICE line and "Built with Qwen" (sections 3-4), and
+added terms only where they otherwise comply (section 3d). The decoder derives
+from Qwen3-0.6B (Apache-2.0). No Apache-2.0 Qwen release carries the 3B tower,
+and TeleOCR fine-tuned it, so it cannot be swapped without retraining.
+
+Consequences in CrispEmbed: loading needs `CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1`
+(engine gate, like LFM2-VL's), the `teleocr-*` registry entries are
+`qwen-research` (download needs `--accept-license qwen-research`), and the
+published `cstr/TeleOCR-GGUF` ships the agreement as `LICENSE`, the Apache text as
+`LICENSE-APACHE-2.0` and the required `NOTICE`. CrispEmbed's own source code is
+unaffected. MinerU2.5-Pro, by contrast, descends from Apache-2.0 Qwen2-VL-2B and
+Qwen2-0.5B weights and is consistently Apache-2.0.
+
 ## Findings
 
 The absence of a root `LICENSE` in the official GitHub repository is real, but

@@ -32,6 +32,7 @@ GATE_ERROR = "TeleOCR requires CRISPEMBED_TELEOCR=1 and a CrispEmbed TeleOCR GGU
 TYPE_ERROR = "TeleOCR: malformed metadata array or conflicting architecture prefix"
 PROFILE_ERROR = "TeleOCR: unsupported or inconsistent model metadata"
 TENSOR_TYPE_ERROR = "TeleOCR: incompatible tensor type or rank"
+LICENSE_ERROR = "Set CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1 to acknowledge"
 
 
 def probe(library: str, model: str) -> int:
@@ -163,7 +164,7 @@ def main() -> int:
         for name, metadata, gate, expected, tensors in fixtures:
             model = Path(tmp) / (name + ".gguf")
             write_fixture(model, metadata, tensors)
-            env = os.environ.copy()
+            env = dict(os.environ, CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE="1")
             if gate is None:
                 env.pop("CRISPEMBED_TELEOCR", None)
             else:
@@ -181,6 +182,18 @@ def main() -> int:
             row["fixture_sha256"] = hashlib.sha256(model.read_bytes()).hexdigest()
             rows.append(row)
             print(f"{'PASS' if row['passed'] else 'FAIL'} {name}", flush=True)
+            if gate == "1" and expected != GATE_ERROR and not any(r["name"].startswith("license-") for r in rows):
+                # The same enabled, version-1 fixture without the license acknowledgement
+                # must stop at the Qwen Research License gate before any other check.
+                env.pop("CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE", None)
+                result = subprocess.run(argv, capture_output=True, text=True, timeout=30, env=env)
+                lic = {"name": "license-gate-" + name, "gate": gate,
+                       "passed": result.returncode == 0 and LICENSE_ERROR in result.stderr and
+                                 "native loader returned null" in result.stdout,
+                       "returncode": result.returncode, "expected_diagnostic": LICENSE_ERROR,
+                       "stdout": result.stdout, "stderr": result.stderr}
+                rows.append(lic)
+                print(f"{'PASS' if lic['passed'] else 'FAIL'} {lic['name']}", flush=True)
     report = {
         "kind": "teleocr-native-loader-metadata-validation",
         "model_weights_used": False,

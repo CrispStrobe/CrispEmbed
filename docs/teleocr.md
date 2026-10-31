@@ -10,6 +10,13 @@ See the [retained validation record](teleocr-validation.md) for the actual CPU
 results and reproducibility details. **Strict numerical qualification remains
 false**, so this implementation remains experimental and disabled by default.
 
+**License: non-commercial.** TeleOCR's vision tower derives from
+Qwen2.5-VL-3B-Instruct, released under the Qwen RESEARCH LICENSE AGREEMENT
+(research/evaluation only), although the TeleOCR card declares `apache-2.0`.
+See [the weight-license finding](teleocr-license.md#weight-license-lineage).
+Loading therefore also requires `CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1`, and
+the registry download requires `--accept-license qwen-research`.
+
 The new path is opt-in with `CRISPEMBED_TELEOCR=1`, following the repository's
 new-backend policy. An unset, empty, or literal `0` variable rejects TeleOCR
 loading. The shared repository gate treats any other nonempty value (including
@@ -125,7 +132,7 @@ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
   -DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF
 cmake --build build --target crispembed-cli crispembed-shared crispembed-server --parallel 2
 
-export CRISPEMBED_TELEOCR=1
+export CRISPEMBED_TELEOCR=1 CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1
 ./build/crispembed -m teleocr-f16.gguf --ocr page.png \
   --ocr-max-tokens 4096 -t 2 --json
 ```
@@ -218,7 +225,7 @@ existing native image and context ownership APIs.
 ### HTTP
 
 ```sh
-CRISPEMBED_TELEOCR=1 ./build/crispembed-server \
+CRISPEMBED_TELEOCR=1 CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1 ./build/crispembed-server \
   --ocr teleocr-f16.gguf --ocr-max-tokens 4096 -t 2 \
   --host 127.0.0.1 --port 8080 --image-root ./pages
 
@@ -251,18 +258,18 @@ orchestrator endpoint `/ocr/pipeline`.
 
 ```sh
 python -m pip install numpy Pillow
-CRISPEMBED_TELEOCR=1 python tools/teleocr_parse.py page.png \
+CRISPEMBED_TELEOCR=1 CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1 python tools/teleocr_parse.py page.png \
   --model teleocr-f16.gguf --lib build/libcrispembed.so \
   --output page.md --json page.json --threads 2
 
 # Photograph/curved-page layout uses polygons:
-CRISPEMBED_TELEOCR=1 python tools/teleocr_parse.py photo.jpg \
+CRISPEMBED_TELEOCR=1 CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1 python tools/teleocr_parse.py photo.jpg \
   --model teleocr-f16.gguf --lib build/libcrispembed.so \
   --mode segmentation --output photo.md --json photo.json
 
 # Optional PDF input renders pages through PDFium:
 python -m pip install pypdfium2
-CRISPEMBED_TELEOCR=1 python tools/teleocr_parse.py document.pdf \
+CRISPEMBED_TELEOCR=1 CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1 python tools/teleocr_parse.py document.pdf \
   --model teleocr-f16.gguf --lib build/libcrispembed.so \
   --pdf-dpi 200 --output document.md --json document.json
 ```

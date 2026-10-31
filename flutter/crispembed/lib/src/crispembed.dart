@@ -4064,7 +4064,9 @@ class CrispTableParse {
 // OCR Orchestrator (source-type routing + cleanup + accept-gate)
 // ---------------------------------------------------------------------------
 
-/// TeleOCR stage selector. Enable CRISPEMBED_TELEOCR=1 and supply a local GGUF.
+/// TeleOCR stage selector. Enable CRISPEMBED_TELEOCR=1 and
+/// CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1 (non-commercial Qwen Research License
+/// vision tower) and supply a local GGUF.
 const int crispOcrEngineTeleocr = 24;
 
 /// Stage selection for the native explicit builder (cleanup disabled).

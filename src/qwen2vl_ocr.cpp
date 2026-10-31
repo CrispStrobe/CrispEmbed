@@ -134,6 +134,17 @@ bool load_hparams(context & ctx, const char * path) {
         core_gguf::free_metadata(g);
         return false;
     }
+    // License gate (same pattern as LFM2-VL). TeleOCR's vision tower derives from
+    // Qwen2.5-VL-3B-Instruct (tests/results/licenses/qwen-vision-lineage.json),
+    // which is under the Qwen RESEARCH LICENSE: non-commercial use only.
+    if (ctx.is_teleocr && !core_env::on("CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE")) {
+        fprintf(stderr, "TeleOCR: its vision tower derives from Qwen2.5-VL-3B-Instruct, released under the Qwen\n"
+                        "  RESEARCH LICENSE AGREEMENT (non-commercial use only; commercial use needs a license\n"
+                        "  from Alibaba Cloud). Set CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1 to acknowledge.\n"
+                        "  See: https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct/blob/main/LICENSE\n");
+        core_gguf::free_metadata(g);
+        return false;
+    }
     if (ctx.is_teleocr) {
         auto array_type = [&](const char * key, gguf_type type, size_t count) {
             const int index = gguf_find_key(g, key);

@@ -50,7 +50,7 @@ def main() -> int:
     model = args.model.resolve(strict=True)
     refs = args.reference_dir.resolve(strict=True)
     args.out.mkdir(parents=True, exist_ok=True)
-    environment = dict(os.environ, CRISPEMBED_TELEOCR="1", CRISPEMBED_TELEOCR_GPU="0",
+    environment = dict(os.environ, CRISPEMBED_TELEOCR="1", CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE="1", CRISPEMBED_TELEOCR_GPU="0",
                        QWEN2VL_OCR_FORCE_CPU="1")
     summary = {
         "model": model.name, "model_sha256": sha256(model),

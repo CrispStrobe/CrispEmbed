@@ -61,17 +61,29 @@ class Protocols(unittest.TestCase):
             with self.subTest(name=name):
                 cfg = cfg_of(name)
                 self.assertIn(cfg["destination"], p.ALLOWED_DESTINATIONS)
-                self.assertEqual(cfg["upstream"]["license"], "apache-2.0")
+                self.assertEqual(cfg["upstream"]["license"], {"mineru": "apache-2.0", "teleocr": "qwen-research"}[name])
                 self.assertTrue(set(cfg["default_variants"]) <= set(cfg["recipes"]))
                 self.assertEqual(len(set(cfg["parity_cases"])), len(cfg["parity_cases"]))
 
     def test_vendored_license_bytes_match_pins(self):
-        pairs = {"mineru": "licenses/mineru-vl-utils-LICENSE", "teleocr": "models/licenses/apache-2.0/LICENSE"}
-        for name, rel in pairs.items():
-            with self.subTest(name=name):
-                lf = cfg_of(name)["upstream"]["license_file"]
+        vendored = {("mineru", "LICENSE"): "licenses/mineru-vl-utils-LICENSE",
+                    ("teleocr", "LICENSE"): "models/licenses/qwen-research/LICENSE",
+                    ("teleocr", "LICENSE-APACHE-2.0"): "models/licenses/apache-2.0/LICENSE"}
+        for (name, shipped), rel in vendored.items():
+            with self.subTest(name=name, file=shipped):
+                lf = {f["name"]: f for f in p.license_files(cfg_of(name))}[shipped]
                 data = (ROOT / rel).read_bytes()
                 self.assertEqual((len(data), hashlib.sha256(data).hexdigest()), (lf["bytes"], lf["sha256"]))
+
+    def test_teleocr_qwen_research_obligations(self):
+        cfg = cfg_of("teleocr")
+        self.assertEqual([f["name"] for f in p.license_files(cfg)], ["LICENSE", "LICENSE-APACHE-2.0"])
+        self.assertIn("Qwen/Qwen2.5-VL-3B-Instruct/resolve/", p.license_files(cfg)[0]["url"])
+        notice = cfg["notice_text"]
+        self.assertIn("Qwen is licensed under the Qwen RESEARCH LICENSE AGREEMENT, Copyright (c) Alibaba Cloud. "
+                      "All Rights Reserved.", notice)  # agreement section 3c, verbatim
+        self.assertIn("Built with Qwen", notice)  # section 4b
+        self.assertTrue((ROOT / cfg["upstream"]["license_lineage"]["evidence"]).is_file())
 
     def test_mineru_source_pins_match_contract(self):
         cfg = cfg_of("mineru")
@@ -143,7 +155,13 @@ class Card(unittest.TestCase):
                 fname = cfg["recipes"]["F16"]["filename"]
                 files = [{"variant": "F16", "filename": fname, "bytes": 10, "sha256": "0" * 64}]
                 text = p.card(cfg, files, par, {"F16": {"receipt": "r.json"}}, "b" * 40)
-                self.assertTrue(text.startswith("---\nlicense: apache-2.0\n"))
+                head = {"mineru": "---\nlicense: apache-2.0\n",
+                        "teleocr": "---\nlicense: other\nlicense_name: qwen-research\nlicense_link: LICENSE\n"}[name]
+                self.assertTrue(text.startswith(head))
+                if name == "teleocr":
+                    for needle in ("Non-commercial use only", "Built with Qwen", "CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1",
+                                   "qwen-vision-lineage.json"):
+                        self.assertIn(needle, text)
                 for needle in ("Statement of changes", cfg["upstream"]["revision"], gate, fname,
                                "**F16** is token-ID exact", cfg["_protocol"]):
                     self.assertIn(needle, text)

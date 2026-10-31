@@ -1379,6 +1379,11 @@ static int cli_main(int argc, char ** argv) {
                     fprintf(stderr, "error: teleocr needs --ocr-rec FILE and CRISPEMBED_TELEOCR=1\n");
                     return 1;
                 }
+                if (!core_env::on("CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE")) {
+                    fprintf(stderr, "error: teleocr's vision tower is under the Qwen RESEARCH LICENSE (non-commercial);\n"
+                                    "       set CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1 to acknowledge\n");
+                    return 1;
+                }
                 auto * meta = core_gguf::open_metadata(ocr_rec_path.c_str());
                 const bool profile = meta && core_gguf::kv_str(meta, "general.architecture", "") == "teleocr" &&
                                      core_gguf::kv_u32(meta, "teleocr.gguf_version", 0) == 1;

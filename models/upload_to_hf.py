@@ -733,6 +733,23 @@ MODELS = {
         "desc": ("Nomic Embed Vision v1.5 — image embeddings in the nomic-embed-text-v1.5 space. "
                  "Card published separately (tools/ci-heavy/nomic_vision.py parity)."),
     },
+    # License lineage only: published by .github/workflows/ocr-gguf-publish.yml, never by
+    # this script (empty publish_files). base_model is the authoritative ancestor: the
+    # vision tower derives from Qwen2.5-VL-3B-Instruct (tests/results/licenses/
+    # qwen-vision-lineage.json), so the Qwen RESEARCH LICENSE governs the weights.
+    "TeleOCR": {
+        "base_model": "Qwen/Qwen2.5-VL-3B-Instruct",
+        "arch": "Qwen2.5-VL vision tower (from Qwen2.5-VL-3B) + Qwen3-0.6B-style decoder",
+        "dim": 1024,
+        "layers": 28,
+        "params": "1.2B",
+        "pooling": "n/a (OCR)",
+        "tokenizer": "Qwen2 BPE",
+        "license": "qwen-research",
+        "langs": [],
+        "desc": "XingChen-AGI/TeleOCR document OCR. Non-commercial (Qwen Research License vision tower).",
+        "publish_files": [],
+    },
     "jina-ocr-v1": {
         "base_model": "jinaai/jina-ocr-v1",
         "arch": "SAM ViT-B + CLIP-L/14 + DeepSeek-V2 MoE (Unlimited-OCR engine)",
