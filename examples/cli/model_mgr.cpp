@@ -1634,6 +1634,20 @@ static const ModelEntry k_registry[] = {
       "TeleOCR experimental document OCR (Qwen2.5-VL vision + Qwen3-style decoder, q4_k-m decoder, f16 vision; "
       "non-commercial Qwen Research License vision tower; gated CRISPEMBED_TELEOCR, CPU)",
       "1.923 GB", "qwen-research", "https://huggingface.co/cstr/TeleOCR-GGUF" },
+    // MinerU2.5-Pro-2604 (apache-2.0): every published variant decodes the pinned Python
+    // reference token-exactly on the 8-case protocol (tests/results/mineru25/). Gated
+    // CRISPEMBED_MINERU25_PRO=1; run as --ocr-engine mineru25-pro --ocr-rec FILE.
+    { "mineru25-pro-f16", "mineru25-pro-2604-f16.gguf",
+      "https://huggingface.co/cstr/MinerU2.5-Pro-2604-1.2B-GGUF/resolve/e63c95cfd4e9f753783f588a187b9a3b89a7c201/"
+      "mineru25-pro-2604-f16.gguf",
+      "MinerU2.5-Pro-2604 document parsing (layout + text/table/formula, 1.2B, f16; gated "
+      "CRISPEMBED_MINERU25_PRO, CPU)",
+      "2.592 GB", "apache-2.0", "https://huggingface.co/cstr/MinerU2.5-Pro-2604-1.2B-GGUF" },
+    { "mineru25-pro-q8_0", "mineru25-pro-2604-q8_0.gguf",
+      "https://huggingface.co/cstr/MinerU2.5-Pro-2604-1.2B-GGUF/resolve/e63c95cfd4e9f753783f588a187b9a3b89a7c201/"
+      "mineru25-pro-2604-q8_0.gguf",
+      "MinerU2.5-Pro-2604 document parsing (1.2B, q8_0 decoder, f16 vision; gated CRISPEMBED_MINERU25_PRO, CPU)",
+      "1.921 GB", "apache-2.0", "https://huggingface.co/cstr/MinerU2.5-Pro-2604-1.2B-GGUF" },
 
     // License: GOT-OCR2's decoder is Qwen1.5-0.5B (config + weight lineage), so the Tongyi Qianwen
     // RESEARCH LICENSE applies: non-commercial, and no use of the model or its outputs to improve
