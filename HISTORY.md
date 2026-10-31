@@ -18595,3 +18595,17 @@ the guard's exact target-count/rounding-profile assumptions require source
 review. Full norm64 numerical negatives remain unchanged. Unlimited40868634374
 and Ultra40871150002 are already queued on their exact reviewed sources;
 fresh agents must inspect/reuse them instead of duplicating model runs.
+
+## 31 October 2026 — MinerU2.5-Pro source integration
+
+The isolated source delivery adds the pinned MinerU2.5-Pro-2604 profile to
+the Qwen2-VL GGML implementation, authenticated F32/F16 conversion, native
+request/basic-page interfaces, full original-helper Python composition and
+qualification tools. The [validation receipt](tests/results/mineru25/implementation-validation.json)
+records 28 Python controls, 28 C++ layout checks, the C++ profile suite,
+translation-unit syntax checks and surface guards. Model inference in binding
+tests is mocked. No full model, linked synthetic GGML test, numerical/decoded
+corpus comparison or speed benchmark was executed. Both runtime and decode
+reuse gates remain opt-in; [the guide](docs/mineru25-pro.md) defines the
+remaining hosted acceptance gates. No version, model alias or runtime release
+is promoted by this source work.

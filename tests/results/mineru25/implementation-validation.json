@@ -1,0 +1,175 @@
+{
+  "schema": "crispembed.mineru25.implementation-validation.v1",
+  "date": "2026-10-31",
+  "base_commit": "15adb672f71f8470a23db1284dafa102515adae9",
+  "model_revision": "d3f5e08d073c21466bbabe21c71bb1e9c2e595da",
+  "blueprint_revision": "c9797cde8f54cc48306196fc6aebe73ea31dd4a3",
+  "ggml_commit": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+  "checks": [
+    {
+      "name": "Python converter/comparator controls",
+      "status": "passed",
+      "tests": 17,
+      "uses_model_weights": false
+    },
+    {
+      "name": "Python binding and real pinned helper controls",
+      "status": "passed",
+      "tests": 11,
+      "native_inference": "mocked",
+      "uses_model_weights": false,
+      "covered": [
+        "lifetime",
+        "source drift",
+        "rotated crops",
+        "RGBA conversion",
+        "formula repairs",
+        "OTSL",
+        "table-image masking/restoration",
+        "image analysis",
+        "caps",
+        "optional cross-page dependency rejection"
+      ]
+    },
+    {
+      "name": "C++ layout/geometry/OTSL executable",
+      "status": "passed",
+      "checks": 28,
+      "compiler": "g++ -std=c++17 -O0 -Wall -Wextra -Werror",
+      "uses_model_weights": false
+    },
+    {
+      "name": "C++ native profile/preprocessing/decoding executable",
+      "status": "passed",
+      "compiler": "g++ -std=c++17 -O0 -Wall -Wextra -Werror",
+      "uses_model_weights": false
+    },
+    {
+      "name": "C++ syntax check",
+      "status": "passed",
+      "translation_units": [
+        "src/mineru_ocr.cpp",
+        "src/qwen2vl_ocr.cpp",
+        "src/ocr_orchestrator.cpp",
+        "src/crispembed.cpp",
+        "examples/cli/main.cpp",
+        "examples/server/server.cpp",
+        "tests/mineru25_run.cpp",
+        "tests/mineru25_diff.cpp",
+        "tests/mineru25_preprocess.cpp",
+        "tests/test_mineru25_decode_graph.cpp"
+      ],
+      "method": "g++ -std=c++17 -fsyntax-only with repository include directories",
+      "linked_or_executed": false
+    },
+    {
+      "name": "CLI engine name coverage",
+      "status": "passed",
+      "engine_ids": 25
+    },
+    {
+      "name": "OCR generation-cap surface coverage",
+      "status": "passed",
+      "vlm_engines": 17,
+      "initial_baseline_issue": "Upstream test inventory omitted existing minicpm_ocr; same baseline failure reproduced and inventory corrected without weakening assertions."
+    },
+    {
+      "name": "one-shot clean_exit guard",
+      "status": "passed",
+      "main_functions": 201
+    },
+    {
+      "name": "YAML workflow parse",
+      "status": "passed",
+      "jobs": [
+        "components",
+        "model-smoke"
+      ]
+    },
+    {
+      "name": "C++ formatter",
+      "status": "passed",
+      "version": "18.1.8",
+      "scope": "new C++ files and changed lines in existing C++ files"
+    },
+    {
+      "name": "git diff --check",
+      "status": "passed"
+    }
+  ],
+  "not_run": [
+    "Complete native library/executable build and link",
+    "Actual linked synthetic GGML decode/cache/bucket-boundary execution",
+    "Full 1.2B checkpoint conversion and loading",
+    "Model-backed native preprocessing comparison against original fast processor",
+    "64-stage composed numerical comparison",
+    "Actual completion IDs/raw text/EOS comparison",
+    "Representative full-document corpus CER/WER/table/formula quality",
+    "Same-host Python/native latency or throughput measurement",
+    "Persistent decode graph model-backed A/B and speedup",
+    "GPU or cross-platform native execution",
+    "Rust compilation and Dart analysis/runtime",
+    "Successful optional cross-page-table model-backed integration",
+    "Q8/Q4 quantization and qualification",
+    "Hosted workflow dispatch",
+    "GitHub push, pull request, merge or release publication"
+  ],
+  "qualification": {
+    "source_implementation": true,
+    "model_numerical_parity": false,
+    "representative_quality_parity": false,
+    "python_speed_parity": false,
+    "optimized_graph_default_enabled": false
+  },
+  "source_sha256": {
+    ".github/workflows/mineru25-pro.yml": "f5751139cd4afa91ec7a30864765d9e804faf0f59b4ef9656b47b0e8c1ae8521",
+    "CMakeLists.txt": "ff677e2d6e1d2d2a8123fc027af4fc790898258b330c3468c4c28878901ac339",
+    "HISTORY.md": "f88dfe25116acc8fad07c6b3832eb9df9ea6f40f99ed5f50620a5ebcb9c4d051",
+    "PERFORMANCE.md": "a96f0d38e65f55a3ec6fe86dbec63169913e494091e6b62178bf4349f2f56d05",
+    "PLAN.md": "c342ae0f057a1c5bbbf7398388b2701f48261d95e8c683cec3d961e22a6b84fb",
+    "README.md": "fb5beb8910d8967702c3803bb16c8ba392840cb9df93c9cf4503aaf9ec86cd5e",
+    "crispembed-sys/src/lib.rs": "0ee3ade74b5a9b2e495fe5018701f2d541ed35458ff5b5dc84a88344cf44cda1",
+    "crispembed/src/lib.rs": "c3402f635a8389ef8c957bb5cf11ad7c0f3aafd945e1cf7ff7d5dee1bfe705c8",
+    "crispembed/src/mineru.rs": "74e7c91e355aaed13c57e7da54ecd35c37152b3d27db1a806d1c39b12e722ac5",
+    "docs/mineru25-pro.md": "aef9df5f88c9f018b50099b0c129a4c212cc8d3995a89f5653fcc0b9ed72d58c",
+    "examples/cli/main.cpp": "e015ed2e98cd165c182a841d1cc394c7885a38acd762d1f8a69e90b6997a2aef",
+    "examples/server/server.cpp": "474b00957acf46378992ece432d8d1489fb7d78152d2209f76e1d5d45536998a",
+    "flutter/crispembed/lib/crispembed.dart": "775ab7ad0d6839fd42a314bc69fded8c91dcb2b28723aabd7d11f65b25599999",
+    "flutter/crispembed/lib/src/crispembed_bindings.dart": "7b51fbfa9c4d39b31a1341374394f296020c8b5669ee29c9f714aa9003d72f4b",
+    "flutter/crispembed/lib/src/mineru.dart": "572b26cbaf5afbdc452e81f505d89f447caef117be3d288b16f9e57448e92d2c",
+    "licenses/mineru-vl-utils-LICENSE": "0b0c9cbb9e9f032856deef12e761c0661f14fdbaf88753bb1e1c68d1f7e5a3da",
+    "licenses/mineru-vl-utils-NOTICE": "85d7f84e4baa0af9fef5e569cf6f77a2f0d541bd16e90105e58754faaf9645a0",
+    "models/convert-mineru25-pro-to-gguf.py": "7b8fbafda6ade081e01c54566ecabdf52e6b4cacf3cf2669331bae34118dcd66",
+    "models/mineru25-pro-source.json": "3819923f34ae052d7dfd727a455bc54c97dfe27c778c970b623baa3fb42af12e",
+    "python/crispembed/__init__.py": "de3f1aa08090adb94d714f6953e214c06851bcfec57717bc688521ffebcc73b0",
+    "python/crispembed/_mineru.py": "890e96b955d2ece73b9558f44e9cf07b69193ca5a3c1ea5ebe3aa989c81d4c4c",
+    "src/crispembed.cpp": "76ebf9197f06193087846e51ce4e2fd2ba97a7a88a03578f7b14e7cfe24db983",
+    "src/crispembed.h": "483b9774bcfb8445f85b007e0f373789a519fb984a84e6c2dbf6edfca81efe49",
+    "src/mineru_layout.h": "3308470f60c5100b6f52e36323b1d724ee02d70daea56d035f0e1faaa83283c8",
+    "src/mineru_model_profile.h": "b640ee2073a46f7eafc5907432ac6936ca9e482c9f0f373a6d688dab281a3386",
+    "src/mineru_ocr.cpp": "8e90043a12c9604e912c387204ad3f8c12f3e10f6a6c4360dbd12e7241bc95b3",
+    "src/ocr_orchestrator.cpp": "2aa2efb2a0d1c50aaa3470a6c93f71a3cc68dd929cee650ea1b44f3d6b296170",
+    "src/ocr_orchestrator.h": "9b391c3f05cddd1d343ece3815b9183dbd34a1b039d1207a8f454d23fb581332",
+    "src/qwen2vl_ocr.cpp": "22151174318449b9d799e7268f26f3c8dc51d730a4280143b058534095be4295",
+    "src/qwen2vl_ocr.h": "64f2edd364eb29815793ee916017ed434290d6c3a0d0b41555e039527565977d",
+    "tests/fixtures/mineru25/SOURCE.md": "fed6f85d536709e71a0fbd7d8a38294b3753f0993ef1a71acd2f8c3494825bd3",
+    "tests/fixtures/mineru25/config.json": "22097df08750242647a513043636a8dff16820a09757e9271e220bdea378df28",
+    "tests/fixtures/mineru25/generation_config.json": "02b54ab57bff2fb18a9b0a731b4b9184c255ba36844786df367938d8d89e288f",
+    "tests/fixtures/mineru25/preprocessor_config.json": "5c7cbf12d0666ceed8eb25506f18c19ec67788215ada306e8ab2cd67cbdfcd07",
+    "tests/fixtures/mineru25/safetensors-header.json": "d5c3b0b53bd143d4f2d50eb2465b90ca4ca3458d0973fbe452e889666d34fcda",
+    "tests/fixtures/mineru25/tokenizer_config.json": "d762430b9c668b5c3ad95e26626e3982d5b2a59c18ff214d621d1de4318ff376",
+    "tests/mineru25_diff.cpp": "490a59d004bb7d3326201a34005378d484aa554534c76ded72a69eb491d26683",
+    "tests/mineru25_preprocess.cpp": "aa8dd1cd0f0fc6c26fb216a6e29172512297a90c4ae9b5ec4ed041bb68eaa44a",
+    "tests/mineru25_run.cpp": "a2703d9f1e872a3523992fdd4b9f4b51a0878406eedbf202486c4fc2156efa38",
+    "tests/test_mineru25_conversion.py": "f9f488fac55e225eb13d77c7a20aea0e01034ee1d0074ffe4f4e4b6d993f4f7d",
+    "tests/test_mineru25_decode_graph.cpp": "1bd9f91706cbaf6dcd3231aa1eafd8500c4cfa69513671648b9c96e1a789a74c",
+    "tests/test_mineru25_profile.cpp": "89e9e3ddcd655543b6fb6940ef1a97bcb8fb490a31905454619a514429b9dc1c",
+    "tests/test_mineru_binding.py": "28494ed34ebdcc122d62e64abb2fcd3b839d742081081284956a61176aaac835",
+    "tests/test_mineru_layout.cpp": "3a52dff4be28d0143ce687c93b42f6d8a1965bf718c6505368887423520cdb16",
+    "tests/test_ocr_max_tokens_surfaces.py": "e5b331629b345d80dc7a759fb0492212e1e67c97761911ab011c3d0c8e6db7c9",
+    "tools/mineru25-blueprint-requirements.txt": "4cd5de1342a9876fda9e0eec3f27428c0e60daf9f8900b86d7e61f34f1eca0dc",
+    "tools/mineru25-conversion-requirements.txt": "b19a4ab11cf7c2d1c388af91c7a5280a0b6849e8c7e3e1af10af707ec2f737c7",
+    "tools/mineru25-reference-requirements.txt": "1547550781e12ad5a6c05ce1a5fac5c24d99ca40584dbdb31302cb535c1d3768",
+    "tools/mineru25_validate.py": "d66c59ce8814168cf3300233acfbce1e1404dc1b3e9df78cf72fd4f45c023361"
+  }
+}

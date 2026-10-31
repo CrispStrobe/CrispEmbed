@@ -174,7 +174,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --ocr-pipeline F full OCR pipeline: source-type routing + cleanup + accept-gate\n");
     fprintf(stderr, "       --ocr-engine N  primary engine "
                     "(dbnet_trocr|ppocrv6|easyocr|surya|tesseract|got|glm|qwen2vl|internvl2|lightonocr|qwen35-ocr|"
-                    "ovisocr2|ovisocr3|minicpm-ocr|qwen3vl|"
+                    "ovisocr2|ovisocr3|minicpm-ocr|mineru25-pro|qwen3vl|"
                     "unlimited_ocr|olmocr|lfm2-vl)\n");
     fprintf(stderr, "       --denoise       NAFNet pre-processor; --punct-model M  post-OCR punctuation/spacing\n");
     fprintf(stderr, "       --lid-model M   text LID for language detection + Tesseract auto-select\n");
@@ -1330,6 +1330,7 @@ static int cli_main(int argc, char ** argv) {
             if (n == "ppocrv6") return 16;
             if (n == "easyocr") return 17;
             if (n == "olmocr") return 18;
+            if (n == "mineru25-pro" || n == "mineru25_pro") return 24;
             if (n == "lfm2-vl" || n == "lfm2_vl") return 19;
             return 0; // dbnet_trocr
         };
@@ -1359,7 +1360,7 @@ static int cli_main(int argc, char ** argv) {
             // no tokenizer, null patch embedding) and failed inside the vision
             // graph rather than at load.
             const bool is_vlm = (eid >= 2 && eid <= 5) || (eid >= 8 && eid <= 13) || eid == 14 || eid == 18 ||
-                                eid == 19 || eid == 20 || eid == 21 || eid == 22 || eid == 23;
+                                eid == 19 || eid == 20 || eid == 21 || eid == 22 || eid == 23 || eid == 24;
             // Engines whose orchestrator stage forwards vlm_prompt: qwen2vl,
             // internvl2, granite-vision, qwen3vl, unified (model-dependent),
             // olmocr, lfm2-vl. Everywhere else the prompt cannot take effect.
@@ -1372,6 +1373,12 @@ static int cli_main(int argc, char ** argv) {
                         pipeline_engine.c_str());
             }
             // Experimental MiniCPM-OCR-1.0: no registry default; the decoder reuses
+            if (eid == 24 &&
+                (ocr_rec_path.empty() || !ocr_prompt.empty() || !core_env::on("CRISPEMBED_MINERU25_PRO"))) {
+                fprintf(stderr,
+                        "error: mineru25-pro needs --ocr-rec FILE, no custom prompt, and CRISPEMBED_MINERU25_PRO=1\n");
+                return 1;
+            }
             // the qwen35 kernels, so both gates are required.
             if (eid == 23 && (ocr_rec_path.empty() || !core_env::on("CRISPEMBED_MINICPM_OCR") ||
                               !core_env::on("CRISPEMBED_QWEN35_OCR"))) {

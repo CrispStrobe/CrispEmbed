@@ -24,6 +24,7 @@
 #include "core/gguf_loader.h"
 #include "crispembed_diff.h"
 #include "image_preprocess.h"
+#include "mineru_model_profile.h"
 #include "tokenizer.h"
 
 #include "ggml-alloc.h"
@@ -66,6 +67,24 @@ long long qwen_ms_since(qwen_clock::time_point t0) {
 bool load_hparams(context & ctx, const char * path) {
     gguf_context * g = core_gguf::open_metadata(path);
     if (!g) return false;
+
+    const std::string family = core_gguf::kv_str(g, "qwen2vl.model_family", "");
+    ctx.is_mineru25_pro = family == mineru25_profile::family;
+    std::string model_name = core_gguf::kv_str(g, "general.name", "");
+    std::transform(model_name.begin(), model_name.end(), model_name.begin(),
+                   [](unsigned char c) { return char(std::tolower(c)); });
+    if ((family.find("mineru") != std::string::npos || model_name.find("mineru") != std::string::npos) &&
+        !ctx.is_mineru25_pro) {
+        fprintf(stderr, "qwen2vl_ocr: MinerU requires the explicit mineru2.5-pro-2604 conversion profile\n");
+        core_gguf::free_metadata(g);
+        return false;
+    }
+    if (ctx.is_mineru25_pro && (!core_env::on(mineru25_profile::gate) ||
+                                core_gguf::kv_str(g, "qwen2vl.mineru.processor", "") != "qwen2vl-fast")) {
+        fprintf(stderr, "qwen2vl_ocr: MinerU requires CRISPEMBED_MINERU25_PRO=1 and qwen2vl-fast metadata\n");
+        core_gguf::free_metadata(g);
+        return false;
+    }
 
     auto u32 = [&](const char * k, uint32_t d) { return core_gguf::kv_u32(g, k, d); };
     auto f32v = [&](const char * k, float d) { return core_gguf::kv_f32(g, k, d); };
@@ -226,6 +245,35 @@ bool load_hparams(context & ctx, const char * path) {
     int tie_idx = gguf_find_key(g, "qwen3vl.tie_word_embeddings");
     if (tie_idx < 0) tie_idx = gguf_find_key(g, "qwen2vl.tie_word_embeddings");
     lhp.tie_word_embeddings = boolv(tie_idx, lhp.tie_word_embeddings);
+
+    if (ctx.is_mineru25_pro) {
+        // Fail before allocating a backend or loading weights if a renamed
+        // generic Qwen file is supplied. This lane supports one pinned model.
+        const bool valid =
+            vhp.depth == 32 && vhp.hidden_size == 1280 && vhp.intermediate_size == 5120 && vhp.num_heads == 16 &&
+            vhp.in_channels == 3 && vhp.spatial_patch_size == 14 && vhp.spatial_merge_size == 2 &&
+            vhp.temporal_patch_size == 2 && vhp.out_hidden_size == 896 && !vhp.has_position_embed &&
+            vhp.deepstack_indexes.empty() && vhp.window_size == 0 && vhp.min_pixels == 50176 &&
+            vhp.max_pixels == 1605632 && lhp.hidden_size == 896 && lhp.intermediate_size == 4864 &&
+            lhp.num_hidden_layers == 24 && lhp.num_attention_heads == 14 && lhp.num_key_value_heads == 2 &&
+            (lhp.head_dim == 0 || lhp.head_dim == 64) && lhp.vocab_size == 151936 &&
+            lhp.max_position_embeddings == mineru25_profile::context_length && lhp.rope_sections[0] == 8 &&
+            lhp.rope_sections[1] == 12 && lhp.rope_sections[2] == 12 && lhp.rope_sections[3] == 0 &&
+            !lhp.mrope_interleaved && !lhp.has_qk_norm && lhp.tie_word_embeddings && lhp.image_token_id == 151655 &&
+            lhp.vision_start_token_id == 151652 && lhp.vision_end_token_id == 151653 && lhp.rope_theta == 1000000.0f &&
+            lhp.rms_norm_eps == 1e-6f;
+        bool pixels_valid = true;
+        for (int i = 0; i < 3; ++i)
+            pixels_valid = pixels_valid && vhp.image_mean[i] == image_preproc::kCLIPMean[i] &&
+                           vhp.image_std[i] == image_preproc::kCLIPStd[i];
+        if (!valid || !pixels_valid) {
+            fprintf(stderr, "qwen2vl_ocr: unsupported MinerU architecture/preprocessor metadata\n");
+            core_gguf::free_metadata(g);
+            return false;
+        }
+        ctx.no_repeat_ngram = mineru25_profile::no_repeat_ngram;
+        ctx.eos_token_id = 151645;
+    }
 
     core_gguf::free_metadata(g);
     return true;
@@ -523,6 +571,36 @@ bool load_tensors(context & ctx, const char * path) {
         m.lhp.head_dim = (uint32_t)(m.llm_layers[0].q_w->ne[1] / (int64_t)m.lhp.num_attention_heads);
     }
     if (m.lhp.head_dim == 0) m.lhp.head_dim = m.lhp.hidden_size / m.lhp.num_attention_heads;
+
+    if (ctx.is_mineru25_pro) {
+        auto shape = [](const ggml_tensor * t, int64_t x, int64_t y = 1) {
+            return t && (t->type == GGML_TYPE_F32 || t->type == GGML_TYPE_F16) && t->ne[0] == x && t->ne[1] == y &&
+                   t->ne[2] == 1 && t->ne[3] == 1;
+        };
+        bool valid = m.vhp.is_qwen2_vl && !m.patch_embed_b && !m.position_embed_w &&
+                     shape(m.patch_embed_w, 1176, 1280) && shape(m.embed_tokens, 896, 151936) &&
+                     shape(m.output_norm_w, 896) && m.lm_head_w == m.embed_tokens && m.lhp.head_dim == 64 &&
+                     shape(m.merger.norm_w, 1280) && shape(m.merger.norm_b, 1280) &&
+                     shape(m.merger.fc1_w, 5120, 5120) && shape(m.merger.fc1_b, 5120) &&
+                     shape(m.merger.fc2_w, 5120, 896) && shape(m.merger.fc2_b, 896);
+        for (const auto & b : m.vis_blocks) {
+            valid = valid && shape(b.norm1_w, 1280) && shape(b.norm1_b, 1280) && shape(b.norm2_w, 1280) &&
+                    shape(b.norm2_b, 1280) && shape(b.qkv_w, 1280, 3840) && shape(b.qkv_b, 3840) &&
+                    shape(b.proj_w, 1280, 1280) && shape(b.proj_b, 1280) && shape(b.ffn_fc1_w, 1280, 5120) &&
+                    shape(b.ffn_fc1_b, 5120) && shape(b.ffn_fc2_w, 5120, 1280) && shape(b.ffn_fc2_b, 1280) &&
+                    !b.ffn_gate_w;
+        }
+        for (const auto & l : m.llm_layers) {
+            valid = valid && shape(l.attn_norm_w, 896) && shape(l.ffn_norm_w, 896) && shape(l.q_w, 896, 896) &&
+                    shape(l.q_b, 896) && shape(l.k_w, 896, 128) && shape(l.k_b, 128) && shape(l.v_w, 896, 128) &&
+                    shape(l.v_b, 128) && shape(l.o_w, 896, 896) && !l.o_b && shape(l.ffn_gate_w, 896, 4864) &&
+                    shape(l.ffn_up_w, 896, 4864) && shape(l.ffn_down_w, 4864, 896) && !l.q_norm_w && !l.k_norm_w;
+        }
+        if (!valid) {
+            fprintf(stderr, "qwen2vl_ocr: missing or incompatible MinerU tensors\n");
+            return false;
+        }
+    }
 
     return true;
 }
@@ -925,6 +1003,10 @@ bool load(context & ctx, const char * gguf_path, int n_threads, int verbosity, c
         fprintf(stderr, "qwen2vl_ocr: failed to load hparams\n");
         return false;
     }
+    if (ctx.is_mineru25_pro && mmproj_path) {
+        fprintf(stderr, "qwen2vl_ocr: MinerU requires the converter's single-file GGUF\n");
+        return false;
+    }
 
     if (verbosity >= 1) {
         const auto & vhp = ctx.m.vhp;
@@ -1122,8 +1204,12 @@ static bool alloc_kv_cache(context & ctx, int max_seq) {
 
     // Match the existing prefill side-output layout:
     // k_out/v_out are (head_dim * kv_heads, tokens) per layer.
-    ctx.kvc.k = ggml_new_tensor_3d(ctx.kvc.ctx, GGML_TYPE_F16, kv_dim, max_seq, n_layers);
-    ctx.kvc.v = ggml_new_tensor_3d(ctx.kvc.ctx, GGML_TYPE_F16, kv_dim, max_seq, n_layers);
+    // Keep MinerU's recurrent state in F32 even with F16 stored weights:
+    // silently rounding every K/V to F16 would invalidate the F32 reference
+    // arm and make decoder drift accumulate beyond the checked prefill.
+    const ggml_type cache_type = ctx.is_mineru25_pro ? GGML_TYPE_F32 : GGML_TYPE_F16;
+    ctx.kvc.k = ggml_new_tensor_3d(ctx.kvc.ctx, cache_type, kv_dim, max_seq, n_layers);
+    ctx.kvc.v = ggml_new_tensor_3d(ctx.kvc.ctx, cache_type, kv_dim, max_seq, n_layers);
     ggml_set_name(ctx.kvc.k, "qwen_kv_k");
     ggml_set_name(ctx.kvc.v, "qwen_kv_v");
 
@@ -1172,6 +1258,14 @@ void free_(context & ctx) {
 }
 
 bool encode_vision(context & ctx, const float * patches, int n_patches, const int32_t * grid_thw, vision_result & out) {
+    if (ctx.is_mineru25_pro && (!core_env::on(mineru25_profile::gate) || !patches || !grid_thw || grid_thw[0] != 1 ||
+                                grid_thw[1] <= 0 || grid_thw[2] <= 0 || grid_thw[1] % 2 || grid_thw[2] % 2 ||
+                                n_patches <= 0 || n_patches > 16384 || int64_t(grid_thw[1]) * grid_thw[2] != n_patches))
+        return false;
+    if (ctx.stage_observer)
+        ctx.stage_observer(ctx.stage_observer_user, "input_patches", patches,
+                           size_t(n_patches) * ctx.m.vhp.in_channels * ctx.m.vhp.temporal_patch_size *
+                               ctx.m.vhp.spatial_patch_size * ctx.m.vhp.spatial_patch_size);
     const bool bench = ctx.bench;
     auto t_vis_start = std::chrono::steady_clock::now();
     const bool dbg_t = qwen2vl_ocr::qwen_dbg();
@@ -1431,6 +1525,8 @@ bool encode_vision(context & ctx, const float * patches, int n_patches, const in
                 if (pe) {
                     std::vector<float> pd((size_t)n_patches * Hd);
                     ggml_backend_tensor_get(pe, pd.data(), 0, pd.size() * sizeof(float));
+                    if (ctx.stage_observer)
+                        ctx.stage_observer(ctx.stage_observer_user, "vis_patch_embed", pd.data(), pd.size());
                     auto r = vref.compare("vis_patch_embed", pd.data(), pd.size());
                     fprintf(stderr,
                             "  diff vis_patch_embed: cos_min=%.6f max_abs=%.2e %s "
@@ -1450,6 +1546,7 @@ bool encode_vision(context & ctx, const float * patches, int n_patches, const in
                 }
                 std::vector<float> ld((size_t)n_patches * Hd);
                 ggml_backend_tensor_get(lt, ld.data(), 0, ld.size() * sizeof(float));
+                if (ctx.stage_observer) ctx.stage_observer(ctx.stage_observer_user, nm, ld.data(), ld.size());
                 auto r = vref.compare(nm, ld.data(), ld.size());
                 fprintf(stderr,
                         "  diff %s: cos_min=%.6f max_abs=%.2e %s "
@@ -1699,6 +1796,10 @@ bool encode_vision(context & ctx, const float * patches, int n_patches, const in
         fprintf(stderr, "[qwen2vl-bench] merger: %lldms\n", (long long)ms);
     }
 
+    if (ctx.stage_observer && out.image_embeds)
+        ctx.stage_observer(ctx.stage_observer_user, "vis_merger_output", out.image_embeds,
+                           size_t(out.n_merged) * out.embed_dim);
+
     // Note: per-vision-layer diff comparison is done earlier (right after the
     // vision graph compute), while gr.gf's buffers are still valid — the merger
     // graph above resets the scheduler and reuses those buffers.
@@ -1721,6 +1822,22 @@ void vision_result_free(vision_result & r) {
 
 bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm_result & out, const image_input * img,
                      bool logits_last_only, bool materialize_hidden, bool populate_kvc) {
+    if (ctx.is_mineru25_pro) {
+        if (!core_env::on(mineru25_profile::gate) || !token_ids || n_tokens < 1 ||
+            n_tokens > mineru25_profile::context_length)
+            return false;
+        for (int i = 0; i < n_tokens; ++i)
+            if (token_ids[i] < 0 || uint32_t(token_ids[i]) >= ctx.m.lhp.vocab_size) return false;
+        if (img && img->image_embeds) {
+            if (!img->grid_thw || img->n_images != 1 || img->grid_thw[0] != 1 || img->n_image_tokens < 1 ||
+                img->n_image_tokens > n_tokens || img->grid_thw[1] <= 0 || img->grid_thw[2] <= 0 ||
+                img->grid_thw[1] % 2 || img->grid_thw[2] % 2 ||
+                int64_t(img->grid_thw[1]) * img->grid_thw[2] != int64_t(img->n_image_tokens) * 4)
+                return false;
+            if (std::count(token_ids, token_ids + n_tokens, int32_t(ctx.m.lhp.image_token_id)) != img->n_image_tokens)
+                return false;
+        }
+    }
     const auto & lhp = ctx.m.lhp;
     const int D = (int)lhp.hidden_size;
     const int n_heads = (int)lhp.num_attention_heads;
@@ -2144,6 +2261,16 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
         }
     }
 
+    if (ctx.stage_observer) {
+        std::vector<float> observed_ids(token_ids, token_ids + n_tokens), observed_positions(size_t(n_tokens) * 3);
+        for (int i = 0; i < n_tokens; ++i)
+            for (int axis = 0; axis < 3; ++axis)
+                observed_positions[3 * size_t(i) + axis] = float(pos_data[size_t(axis) * n_tokens + i]);
+        ctx.stage_observer(ctx.stage_observer_user, "input_ids", observed_ids.data(), observed_ids.size());
+        ctx.stage_observer(ctx.stage_observer_user, "mrope_positions", observed_positions.data(),
+                           observed_positions.size());
+    }
+
     ggml_tensor * pos_t_tensor = ggml_graph_get_tensor(gf, "pos_ids");
     ggml_backend_tensor_set(pos_t_tensor, pos_data.data(), 0, pos_data.size() * sizeof(int32_t));
 
@@ -2216,6 +2343,8 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
         out.n_logits = n_logits;
         out.logits = (float *)malloc((size_t)n_logits * V * sizeof(float));
         ggml_backend_tensor_get(logits_t, out.logits, 0, (size_t)n_logits * V * sizeof(float));
+        if (ctx.stage_observer)
+            ctx.stage_observer(ctx.stage_observer_user, "llm_logits_last", out.logits + size_t(n_logits - 1) * V, V);
     }
 
     // Read hidden states
@@ -2236,6 +2365,8 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
             if (emb && ref.has("llm_embed")) {
                 std::vector<float> emb_data((size_t)n_tokens * D);
                 ggml_backend_tensor_get(emb, emb_data.data(), 0, emb_data.size() * sizeof(float));
+                if (ctx.stage_observer)
+                    ctx.stage_observer(ctx.stage_observer_user, "llm_embed", emb_data.data(), emb_data.size());
                 auto r = ref.compare("llm_embed", emb_data.data(), emb_data.size());
                 fprintf(stderr, "  diff llm_embed: cos_min=%.6f max_abs=%.2e %s\n", r.cos_min, r.max_abs,
                         r.is_pass() ? "PASS" : "FAIL");
@@ -2286,6 +2417,7 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
                 if (lt && ref.has(name)) {
                     std::vector<float> ld((size_t)n_tokens * D);
                     ggml_backend_tensor_get(lt, ld.data(), 0, ld.size() * sizeof(float));
+                    if (ctx.stage_observer) ctx.stage_observer(ctx.stage_observer_user, name, ld.data(), ld.size());
                     auto r = ref.compare(name, ld.data(), ld.size());
                     fprintf(stderr, "  diff %s: cos_min=%.6f max_abs=%.2e %s\n", name, r.cos_min, r.max_abs,
                             r.is_pass() ? "PASS" : "FAIL");
@@ -2299,6 +2431,8 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
 
             // Compare final norm
             if (ref.has("llm_final_norm") && out.hidden) {
+                if (ctx.stage_observer)
+                    ctx.stage_observer(ctx.stage_observer_user, "llm_final_norm", out.hidden, size_t(n_tokens) * D);
                 auto r = ref.compare("llm_final_norm", out.hidden, (size_t)n_tokens * D);
                 fprintf(stderr, "  diff llm_final_norm: cos_min=%.6f max_abs=%.2e %s\n", r.cos_min, r.max_abs,
                         r.is_pass() ? "PASS" : "FAIL");
@@ -2329,7 +2463,8 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
 //     writes still use ggml_cpy into a position-specific view.  Constant
 //     tensor shapes across all decode steps let ggml_backend_sched_alloc_graph
 //     take the fast path (no reallocation) from step 2 onwards.
-static ggml_cgraph * build_decode_step_graph(context & ctx, ggml_context * g, int n_kv, int pos, int max_seq) {
+static ggml_cgraph * build_decode_step_graph(context & ctx, ggml_context * g, int n_kv, int pos, int max_seq,
+                                             bool dynamic_kv_index = false) {
     const auto & lhp = ctx.m.lhp;
     const int D = (int)lhp.hidden_size;
     const int n_heads = (int)lhp.num_attention_heads;
@@ -2362,6 +2497,15 @@ static ggml_cgraph * build_decode_step_graph(context & ctx, ggml_context * g, in
     ggml_tensor * kv_mask = ggml_new_tensor_2d(g, GGML_TYPE_F16, max_seq, 1);
     ggml_set_name(kv_mask, "kv_mask");
     ggml_set_input(kv_mask);
+
+    // A graph input selects the cache row without changing any view offsets.
+    // The opt-in MinerU graph can therefore be allocated once per request.
+    ggml_tensor * kv_index = nullptr;
+    if (dynamic_kv_index) {
+        kv_index = ggml_new_tensor_1d(g, GGML_TYPE_I64, 1);
+        ggml_set_name(kv_index, "kv_index");
+        ggml_set_input(kv_index);
+    }
 
     int sections[4] = {
         lhp.rope_sections[0],
@@ -2419,19 +2563,29 @@ static ggml_cgraph * build_decode_step_graph(context & ctx, ggml_context * g, in
         // Write K_new/V_new into the backend KV cache at slot n_kv.
         // view_offs varies per step but shape (kv_dim,1) is constant →
         // sched_alloc compatibility check passes → fast-path from step 2 on.
-        ggml_tensor * k_write = ggml_view_2d(g, ctx.kvc.k, kv_dim, 1, ctx.kvc.k->nb[1],
-                                             (size_t)il * ctx.kvc.k->nb[2] + (size_t)n_kv * ctx.kvc.k->nb[1]);
-        ggml_tensor * v_write = ggml_view_2d(g, ctx.kvc.v, kv_dim, 1, ctx.kvc.v->nb[1],
-                                             (size_t)il * ctx.kvc.v->nb[2] + (size_t)n_kv * ctx.kvc.v->nb[1]);
-        ggml_build_forward_expand(gf, ggml_cpy(g, K_flat, k_write));
-        ggml_build_forward_expand(gf, ggml_cpy(g, V_flat, v_write));
+        const int write_extent = dynamic_kv_index ? ctx.kvc.max_seq : max_seq;
+        ggml_tensor * k_layer =
+            ggml_view_2d(g, ctx.kvc.k, kv_dim, write_extent, ctx.kvc.k->nb[1], (size_t)il * ctx.kvc.k->nb[2]);
+        ggml_tensor * v_layer =
+            ggml_view_2d(g, ctx.kvc.v, kv_dim, write_extent, ctx.kvc.v->nb[1], (size_t)il * ctx.kvc.v->nb[2]);
+        if (dynamic_kv_index) {
+            // Feed the write nodes directly into attention. This explicit
+            // dependency prevents a scheduler from reading the previous row.
+            k_layer = ggml_set_rows(g, k_layer, K_flat, kv_index);
+            v_layer = ggml_set_rows(g, v_layer, V_flat, kv_index);
+            k_layer = ggml_view_2d(g, k_layer, kv_dim, max_seq, ctx.kvc.k->nb[1], 0);
+            v_layer = ggml_view_2d(g, v_layer, kv_dim, max_seq, ctx.kvc.v->nb[1], 0);
+        } else {
+            ggml_tensor * k_write = ggml_view_2d(g, ctx.kvc.k, kv_dim, 1, ctx.kvc.k->nb[1],
+                                                 (size_t)il * ctx.kvc.k->nb[2] + (size_t)n_kv * ctx.kvc.k->nb[1]);
+            ggml_tensor * v_write = ggml_view_2d(g, ctx.kvc.v, kv_dim, 1, ctx.kvc.v->nb[1],
+                                                 (size_t)il * ctx.kvc.v->nb[2] + (size_t)n_kv * ctx.kvc.v->nb[1]);
+            ggml_build_forward_expand(gf, ggml_cpy(g, K_flat, k_write));
+            ggml_build_forward_expand(gf, ggml_cpy(g, V_flat, v_write));
+        }
 
         // Fixed-size KV read view — constant shape across all steps.
         // kv_mask (0.0 / -INF) ensures only the populated prefix is attended to.
-        ggml_tensor * k_layer =
-            ggml_view_2d(g, ctx.kvc.k, kv_dim, max_seq, ctx.kvc.k->nb[1], (size_t)il * ctx.kvc.k->nb[2]);
-        ggml_tensor * v_layer =
-            ggml_view_2d(g, ctx.kvc.v, kv_dim, max_seq, ctx.kvc.v->nb[1], (size_t)il * ctx.kvc.v->nb[2]);
         ggml_tensor * K_full = ggml_reshape_3d(g, k_layer, head_dim, n_kv_heads, max_seq);
         ggml_tensor * V_full = ggml_reshape_3d(g, v_layer, head_dim, n_kv_heads, max_seq);
 
@@ -2486,6 +2640,14 @@ using core_decode::argmax_no_repeat_ngram;
 bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int embed_dim,
               const int32_t * grid_thw, // actual image grid (t,h,w) for mRoPE
               const int32_t * prompt_token_ids, int n_prompt_tokens, int max_new_tokens, generate_result & out) {
+    out = {};
+    if (!prompt_token_ids || n_prompt_tokens <= 0 || max_new_tokens <= 0 ||
+        (ctx.is_mineru25_pro &&
+         (!core_env::on(mineru25_profile::gate) || n_prompt_tokens >= mineru25_profile::context_length ||
+          max_new_tokens > mineru25_profile::context_length - n_prompt_tokens)))
+        return false;
+    std::vector<int32_t> mineru_history;
+    if (ctx.is_mineru25_pro) mineru_history.assign(prompt_token_ids, prompt_token_ids + n_prompt_tokens);
     const bool bench = ctx.bench;
     auto t_gen_total = std::chrono::steady_clock::now();
     const bool dbg_t = qwen2vl_ocr::qwen_dbg();
@@ -2520,7 +2682,8 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
 
     // Pre-allocate backend KV cache before prefill so run_llm_forward can write
     // K/V directly into it (eliminates n_layers GPU→CPU→GPU round-trips).
-    const bool no_kv_cache = (getenv("CRISPEMBED_NO_KV_CACHE") != nullptr);
+    const bool no_kv_cache =
+        ctx.is_mineru25_pro ? core_env::on("CRISPEMBED_NO_KV_CACHE") : (getenv("CRISPEMBED_NO_KV_CACHE") != nullptr);
     bool pre_alloc_ok = !no_kv_cache && alloc_kv_cache(ctx, n_prompt_tokens + max_new_tokens);
 
     // ── Prefill: full forward pass, extract KV cache ──
@@ -2573,13 +2736,23 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
                         break;
                     }
                     ggml_backend_tensor_get(kt, kv_seed.data(), 0, kv_seed_sz * sizeof(float));
-                    for (size_t i = 0; i < kv_seed_sz; i++) kv_seed_f16[i] = ggml_fp32_to_fp16(kv_seed[i]);
-                    ggml_backend_tensor_set(ctx.kvc.k, kv_seed_f16.data(), (size_t)il * ctx.kvc.k->nb[2],
-                                            kv_seed_sz * sizeof(ggml_fp16_t));
+                    if (ctx.kvc.k->type == GGML_TYPE_F32) {
+                        ggml_backend_tensor_set(ctx.kvc.k, kv_seed.data(), size_t(il) * ctx.kvc.k->nb[2],
+                                                kv_seed_sz * sizeof(float));
+                    } else {
+                        for (size_t i = 0; i < kv_seed_sz; i++) kv_seed_f16[i] = ggml_fp32_to_fp16(kv_seed[i]);
+                        ggml_backend_tensor_set(ctx.kvc.k, kv_seed_f16.data(), (size_t)il * ctx.kvc.k->nb[2],
+                                                kv_seed_sz * sizeof(ggml_fp16_t));
+                    }
                     ggml_backend_tensor_get(vt, kv_seed.data(), 0, kv_seed_sz * sizeof(float));
-                    for (size_t i = 0; i < kv_seed_sz; i++) kv_seed_f16[i] = ggml_fp32_to_fp16(kv_seed[i]);
-                    ggml_backend_tensor_set(ctx.kvc.v, kv_seed_f16.data(), (size_t)il * ctx.kvc.v->nb[2],
-                                            kv_seed_sz * sizeof(ggml_fp16_t));
+                    if (ctx.kvc.v->type == GGML_TYPE_F32) {
+                        ggml_backend_tensor_set(ctx.kvc.v, kv_seed.data(), size_t(il) * ctx.kvc.v->nb[2],
+                                                kv_seed_sz * sizeof(float));
+                    } else {
+                        for (size_t i = 0; i < kv_seed_sz; i++) kv_seed_f16[i] = ggml_fp32_to_fp16(kv_seed[i]);
+                        ggml_backend_tensor_set(ctx.kvc.v, kv_seed_f16.data(), (size_t)il * ctx.kvc.v->nb[2],
+                                                kv_seed_sz * sizeof(ggml_fp16_t));
+                    }
                 }
                 if (!backend_kv_ok) free_kv_cache(ctx);
             }
@@ -2592,11 +2765,23 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
     const int prefill_logit_row = (prefill.n_logits == n_prompt_tokens) ? (n_prompt_tokens - 1) : 0;
     const float * last_logits = prefill.logits + (size_t)prefill_logit_row * V;
     const int no_repeat_ngram = ctx.no_repeat_ngram;
-    int best_id = argmax_no_repeat_ngram(last_logits, V, out.token_ids, no_repeat_ngram);
+    auto initial_choice = ctx.is_mineru25_pro ? mineru25_profile::greedy_choice(last_logits, V, mineru_history)
+                                              : mineru25_profile::token_choice{};
+    int best_id = ctx.is_mineru25_pro ? initial_choice.id
+                                      : argmax_no_repeat_ngram(last_logits, V, out.token_ids, no_repeat_ngram);
+    if (best_id < 0 || best_id >= V) {
+        if (prefill.hidden) free(prefill.hidden);
+        free(prefill.logits);
+        if (prefill.kv_graph_ctx) ggml_free(prefill.kv_graph_ctx);
+        fprintf(stderr, "qwen2vl_ocr: non-finite or fully masked logits\n");
+        return false;
+    }
     float best_score = last_logits[best_id];
 
     // Confidence: numerically-stable softmax for winning token
-    {
+    if (ctx.is_mineru25_pro) {
+        out.token_confidences.push_back(initial_choice.probability);
+    } else {
         float max_l = best_score;
         float sum_exp = 0.0f;
         for (int v = 0; v < V; v++) sum_exp += expf(last_logits[v] - max_l);
@@ -2609,12 +2794,14 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
     if (prefill.kv_graph_ctx) ggml_free(prefill.kv_graph_ctx);
 
     out.token_ids.push_back(best_id);
+    if (ctx.is_mineru25_pro) mineru_history.push_back(best_id);
     if (ctx.verbosity >= 1) {
         fprintf(stderr, "  gen[0]: token=%d score=%.2f (prefill)\n", best_id, best_score);
     }
 
     int eos_id = ctx.eos_token_id;
-    if (best_id == eos_id || max_new_tokens <= 1) return true;
+    auto is_eos = [&](int id) { return ctx.is_mineru25_pro ? mineru25_profile::is_eos(id) : id == eos_id; };
+    if (is_eos(best_id) || max_new_tokens <= 1) return true;
 
     // ── Decode: single-token steps with KV cache ──
     long long decode_total_ms = 0;
@@ -2635,6 +2822,22 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
     // Logits buffer reused every step.
     std::vector<float> logits_data(V);
 
+    const bool reuse_decode =
+        ctx.is_mineru25_pro && core_env::on("CRISPEMBED_MINERU25_PRO_REUSE_DECODE_GRAPH") && backend_kv_ok;
+    struct decode_graph_owner {
+        context & owner;
+        std::vector<uint8_t> meta;
+        ggml_context * g = nullptr;
+        ggml_cgraph * gf = nullptr;
+        int attention_extent = 0;
+        ~decode_graph_owner() {
+            if (g) {
+                ggml_backend_sched_reset(owner.sched);
+                ggml_free(g);
+            }
+        }
+    } cached{ ctx, {}, nullptr, nullptr, 0 };
+
     for (int gen = 1; gen < max_new_tokens; gen++) {
         auto t_step = std::chrono::steady_clock::now();
         if (!kv_ok || !backend_kv_ok) {
@@ -2651,22 +2854,36 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
                 return false;
             }
             last_logits = fwd.logits + (size_t)((int)all_tokens.size() - 1) * V;
-            best_id = 0;
-            best_score = -INFINITY;
-            for (int v = 0; v < V; v++) {
-                if (last_logits[v] > best_score) {
-                    best_score = last_logits[v];
-                    best_id = v;
+            if (ctx.is_mineru25_pro) {
+                const auto choice = mineru25_profile::greedy_choice(last_logits, V, mineru_history);
+                best_id = choice.id;
+                best_score = choice.logit;
+                if (best_id < 0) {
+                    if (fwd.hidden) free(fwd.hidden);
+                    free(fwd.logits);
+                    if (fwd.kv_graph_ctx) ggml_free(fwd.kv_graph_ctx);
+                    return false;
                 }
-            }
-            {
-                float max_l = best_score;
-                float sum_exp = 0.0f;
-                for (int v = 0; v < V; v++) sum_exp += expf(last_logits[v] - max_l);
-                out.token_confidences.push_back(expf(best_score - max_l) / sum_exp);
+                out.token_confidences.push_back(choice.probability);
+            } else {
+                best_id = 0;
+                best_score = -INFINITY;
+                for (int v = 0; v < V; v++) {
+                    if (last_logits[v] > best_score) {
+                        best_score = last_logits[v];
+                        best_id = v;
+                    }
+                }
+                {
+                    float max_l = best_score;
+                    float sum_exp = 0.0f;
+                    for (int v = 0; v < V; v++) sum_exp += expf(last_logits[v] - max_l);
+                    out.token_confidences.push_back(expf(best_score - max_l) / sum_exp);
+                }
             }
             if (fwd.hidden) free(fwd.hidden);
             free(fwd.logits);
+            if (ctx.is_mineru25_pro && fwd.kv_graph_ctx) ggml_free(fwd.kv_graph_ctx);
         } else {
             // ── KV-cached decode step ──
             auto t_decode = qwen_clock::now();
@@ -2677,15 +2894,37 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
             // ggml_cpy → flash_attn_ext ordering in the graph is correct.
             kv_mask_data[n_kv] = ggml_fp32_to_fp16(0.0f);
 
-            ggml_init_params ip{ ctx.compute_meta.size(), ctx.compute_meta.data(), true };
-            ggml_context * g = ggml_init(ip);
-            ggml_cgraph * gf = build_decode_step_graph(ctx, g, n_kv, pos, max_seq_kv);
-
-            ggml_backend_sched_reset(ctx.sched);
-            if (!ggml_backend_sched_alloc_graph(ctx.sched, gf)) {
-                fprintf(stderr, "qwen2vl_ocr: decode step alloc failed\n");
-                ggml_free(g);
-                return false;
+            // Read only a 256-token bucket around the populated prefix. The
+            // future cache remains allocated but attention need not scan all
+            // 8192 slots after a short prompt. Rebuild at bucket boundaries.
+            const int attention_extent = reuse_decode ? std::min(max_seq_kv, ((n_kv + 256) / 256) * 256) : max_seq_kv;
+            if (reuse_decode && cached.g && attention_extent != cached.attention_extent) {
+                ggml_backend_sched_reset(ctx.sched);
+                ggml_free(cached.g);
+                cached.g = nullptr;
+                cached.gf = nullptr;
+            }
+            const bool first_cached_step = reuse_decode && !cached.g;
+            ggml_context * g = cached.g;
+            ggml_cgraph * gf = cached.gf;
+            if (!reuse_decode || first_cached_step) {
+                if (reuse_decode) cached.meta.resize(ctx.compute_meta.size());
+                ggml_init_params ip{ ctx.compute_meta.size(),
+                                     reuse_decode ? cached.meta.data() : ctx.compute_meta.data(), true };
+                g = ggml_init(ip);
+                if (!g) return false;
+                gf = build_decode_step_graph(ctx, g, n_kv, pos, attention_extent, reuse_decode);
+                if (reuse_decode) {
+                    cached.g = g;
+                    cached.gf = gf;
+                    cached.attention_extent = attention_extent;
+                }
+                ggml_backend_sched_reset(ctx.sched);
+                if (!ggml_backend_sched_alloc_graph(ctx.sched, gf)) {
+                    fprintf(stderr, "qwen2vl_ocr: decode step alloc failed\n");
+                    if (!reuse_decode) ggml_free(g);
+                    return false;
+                }
             }
             long long build_ms = qwen_ms_since(t_decode);
             auto t_part = qwen_clock::now();
@@ -2699,13 +2938,23 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
             ggml_backend_tensor_set(pi, pos_data, 0, 4 * sizeof(int32_t));
 
             ggml_tensor * km = ggml_graph_get_tensor(gf, "kv_mask");
-            ggml_backend_tensor_set(km, kv_mask_data.data(), 0, (size_t)max_seq_kv * sizeof(ggml_fp16_t));
+            if (reuse_decode) {
+                const int64_t row = n_kv;
+                ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "kv_index"), &row, 0, sizeof(row));
+            }
+            if (!reuse_decode || first_cached_step) {
+                ggml_backend_tensor_set(km, kv_mask_data.data(), 0, size_t(attention_extent) * sizeof(ggml_fp16_t));
+            } else {
+                // Only one newly visible position changes in the persistent mask.
+                ggml_backend_tensor_set(km, kv_mask_data.data() + n_kv, size_t(n_kv) * sizeof(ggml_fp16_t),
+                                        sizeof(ggml_fp16_t));
+            }
             long long upload_ms = qwen_ms_since(t_part);
             t_part = qwen_clock::now();
 
             if (ggml_backend_sched_graph_compute(ctx.sched, gf) != GGML_STATUS_SUCCESS) {
                 fprintf(stderr, "qwen2vl_ocr: decode step compute failed\n");
-                ggml_free(g);
+                if (!reuse_decode) ggml_free(g);
                 return false;
             }
             long long compute_ms = qwen_ms_since(t_part);
@@ -2714,9 +2963,18 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
             // Read logits + greedy argmax.
             ggml_tensor * logits_t = ggml_graph_get_tensor(gf, "logits");
             ggml_backend_tensor_get(logits_t, logits_data.data(), 0, V * sizeof(float));
-            best_id = argmax_no_repeat_ngram(logits_data.data(), V, out.token_ids, no_repeat_ngram);
-            best_score = logits_data[best_id];
-            {
+            if (ctx.is_mineru25_pro) {
+                const auto choice = mineru25_profile::greedy_choice(logits_data.data(), V, mineru_history);
+                best_id = choice.id;
+                best_score = choice.logit;
+                if (best_id < 0) {
+                    if (!reuse_decode) ggml_free(g);
+                    return false;
+                }
+                out.token_confidences.push_back(choice.probability);
+            } else {
+                best_id = argmax_no_repeat_ngram(logits_data.data(), V, out.token_ids, no_repeat_ngram);
+                best_score = logits_data[best_id];
                 float max_l = best_score;
                 float sum_exp = 0.0f;
                 for (int v = 0; v < V; v++) sum_exp += expf(logits_data[v] - max_l);
@@ -2732,10 +2990,11 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
                         gen, build_ms, upload_ms, compute_ms, read_ms, qwen_ms_since(t_decode));
             }
 
-            ggml_free(g);
+            if (!reuse_decode) ggml_free(g);
         }
 
         out.token_ids.push_back(best_id);
+        if (ctx.is_mineru25_pro) mineru_history.push_back(best_id);
         if (ctx.verbosity >= 1) {
             fprintf(stderr, "  gen[%d]: token=%d score=%.2f%s\n", gen, best_id, best_score, kv_ok ? " (cached)" : "");
         }
@@ -2747,7 +3006,7 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
             decode_steps++;
             fprintf(stderr, "[qwen2vl-bench] decode_step[%d]: %lldms\n", gen, (long long)step_ms);
         }
-        if (best_id == eos_id) break;
+        if (is_eos(best_id)) break;
     }
 
     if (bench) {
@@ -2830,6 +3089,25 @@ struct qwen2vl_ocr_context {
     int max_tokens = 2048;
     std::string last_result;
     std::vector<float> char_confidences;
+    std::vector<int32_t> last_prompt_ids;
+    std::vector<int32_t> last_completion_ids;
+    std::string last_raw_text;
+    int32_t last_grid[3] = { 0, 0, 0 };
+    int last_max_tokens = 0;
+    bool last_ok = false;
+    bool last_eos = false;
+    bool last_capped = false;
+
+    void clear_last() {
+        last_result.clear();
+        char_confidences.clear();
+        last_prompt_ids.clear();
+        last_completion_ids.clear();
+        last_raw_text.clear();
+        last_grid[0] = last_grid[1] = last_grid[2] = 0;
+        last_max_tokens = 0;
+        last_ok = last_eos = last_capped = false;
+    }
 
     // Special token IDs (from GGUF metadata)
     int32_t im_start_id = 151644;
@@ -2858,6 +3136,31 @@ struct qwen2vl_ocr_context {
     // tokenizer.
     std::vector<int32_t> tokenize(const std::string & text) {
         if (has_tokenizer && tokenizer_can_encode) {
+            if (inner.is_mineru25_pro) {
+                // These seven added tokens are not <|...|>-shaped; the
+                // generic Qwen tokenizer otherwise splits them as ordinary
+                // punctuation. Required by text-only cross-page table input.
+                const auto & vocab = tokenizer.get_vocab();
+                std::vector<int32_t> ids;
+                size_t pos = 0;
+                while (pos < text.size()) {
+                    size_t at = std::string::npos;
+                    int32_t special = -1;
+                    for (int32_t id = 151661; id <= 151667 && id < int32_t(vocab.size()); ++id) {
+                        const size_t found = text.find(vocab[id], pos);
+                        if (found < at) {
+                            at = found;
+                            special = id;
+                        }
+                    }
+                    const auto ordinary = tokenizer.encode(text.substr(pos, at == std::string::npos ? at : at - pos));
+                    ids.insert(ids.end(), ordinary.ids.begin(), ordinary.ids.end());
+                    if (special < 0) break;
+                    ids.push_back(special);
+                    pos = at + vocab[special].size();
+                }
+                return ids;
+            }
             auto enc = tokenizer.encode(text);
             // BPETokenizer.encode() adds BOS/EOS — strip them for raw text
             // We just want the raw token IDs without special tokens
@@ -2870,6 +3173,22 @@ struct qwen2vl_ocr_context {
     // Build full chat-format token sequence with image placeholders
     std::vector<int32_t> build_token_ids(int n_image_tokens) {
         std::vector<int32_t> ids;
+
+        if (inner.is_mineru25_pro) {
+            // Tokenize the complete rendered template: adjacent newlines in a
+            // text-only custom prompt may form one BPE token with the role's
+            // newline. Concatenating separately tokenized fragments is wrong.
+            std::string rendered = "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n"
+                                   "<|im_start|>user\n";
+            if (n_image_tokens > 0) {
+                rendered += "<|vision_start|>";
+                for (int i = 0; i < n_image_tokens; ++i) rendered += "<|image_pad|>";
+                rendered += "<|vision_end|>";
+            }
+            rendered += prompt;
+            rendered += "<|im_end|>\n<|im_start|>assistant\n";
+            return tokenize(rendered);
+        }
 
         // PaddleOCR-VL (ERNIE-4.5) template:
         //   <|begin_of_sentence|>User: <|IMAGE_START|><|IMAGE_PLACEHOLDER|>...
@@ -2897,7 +3216,7 @@ struct qwen2vl_ocr_context {
         // the image + OCR instruction), so skip the system block in that mode.
         // Qwen2-VL's chat template prepends a default system message when none
         // is supplied. Include it (set CRISPEMBED_QARI_NO_SYSTEM=1 to drop it).
-        if (!getenv("CRISPEMBED_QARI_NO_SYSTEM") && !no_default_system) {
+        if (inner.is_mineru25_pro || (!getenv("CRISPEMBED_QARI_NO_SYSTEM") && !no_default_system)) {
             ids.push_back(im_start_id);
             ids.push_back(system_id);
             ids.push_back(newline_id);
@@ -2918,6 +3237,10 @@ struct qwen2vl_ocr_context {
         ids.push_back(newline_id);
 
         auto push_prompt_text = [&]() {
+            if (inner.is_mineru25_pro) {
+                ids.insert(ids.end(), prompt_ids.begin(), prompt_ids.end());
+                return;
+            }
             if (!prompt_ids.empty()) {
                 ids.insert(ids.end(), prompt_ids.begin(), prompt_ids.end());
             } else {
@@ -2931,6 +3254,7 @@ struct qwen2vl_ocr_context {
             }
         };
         auto push_vision_block = [&]() {
+            if (inner.is_mineru25_pro && n_image_tokens == 0) return;
             ids.push_back(vision_start_id);
             for (int i = 0; i < n_image_tokens; i++) ids.push_back(image_pad_id);
             ids.push_back(vision_end_id);
@@ -2960,13 +3284,13 @@ struct qwen2vl_ocr_context {
 };
 
 // Shared post-load init: load tokenizer from GGUF, set special IDs
-static void post_load_init(qwen2vl_ocr_context * ctx, const char * gguf_path) {
+static bool post_load_init(qwen2vl_ocr_context * ctx, const char * gguf_path) {
     // Stage-by-stage comparison against a reference GGUF (vis_patch_embed,
     // vis_layer_N, mrope_positions, llm_embed, llm_layer_N, llm_post_ds_N,
     // llm_final_norm) - e.g. tools/ci-heavy/qwen3vl_stage_diff.py. The compare
     // code in this file was unreachable before: nothing ever set diff_ref_path.
     // Verbosity 2 also enables the mRoPE position comparison.
-    if (const char * nr = getenv("CRISPEMBED_QWEN2VL_NO_REPEAT_NGRAM")) {
+    if (const char * nr = ctx->inner.is_mineru25_pro ? nullptr : getenv("CRISPEMBED_QWEN2VL_NO_REPEAT_NGRAM")) {
         if (*nr) ctx->inner.no_repeat_ngram = atoi(nr);
     }
     if (const char * ref = getenv("CRISPEMBED_QWEN2VL_REF")) {
@@ -3052,7 +3376,8 @@ static void post_load_init(qwen2vl_ocr_context * ctx, const char * gguf_path) {
                 }
             }
             // GPT-2 BPE for Qwen (Ġ); SentencePiece BPE + add_dummy_prefix for ERNIE.
-            ctx->tokenizer.load(vocab, merges, eos_id, pad_id, -1, -1, spm_vocab, 8192,
+            ctx->tokenizer.load(vocab, merges, eos_id, pad_id, -1, -1, spm_vocab,
+                                ctx->inner.is_mineru25_pro ? 8193 : 8192,
                                 /*spm_dummy_prefix=*/spm_vocab);
             ctx->has_tokenizer = true;
             ctx->tokenizer_can_encode = !merges.empty();
@@ -3144,18 +3469,76 @@ static void post_load_init(qwen2vl_ocr_context * ctx, const char * gguf_path) {
         core_gguf::free_metadata(g);
     }
 
+    if (ctx->inner.is_mineru25_pro) {
+        // Metadata, not a filename heuristic, owns the complete profile.
+        // Reject the generic tokenizer's historical whitespace experiment:
+        // that path removes prompt newlines even if its variable says "0".
+        const auto & vocab = ctx->tokenizer.get_vocab();
+        static const char * specials[] = { "<|endoftext|>",
+                                           "<|im_start|>",
+                                           "<|im_end|>",
+                                           "<|object_ref_start|>",
+                                           "<|object_ref_end|>",
+                                           "<|box_start|>",
+                                           "<|box_end|>",
+                                           "<|quad_start|>",
+                                           "<|quad_end|>",
+                                           "<|vision_start|>",
+                                           "<|vision_end|>",
+                                           "<|vision_pad|>",
+                                           "<|image_pad|>",
+                                           "<|video_pad|>",
+                                           "<|ref_start|>",
+                                           "<|ref_end|>",
+                                           "<|md_start|>",
+                                           "<|md_end|>",
+                                           "<ched>",
+                                           "<ecel>",
+                                           "<fcel>",
+                                           "<lcel>",
+                                           "<ucel>",
+                                           "<xcel>",
+                                           "<nl>",
+                                           "<|rotate_up|>",
+                                           "<|rotate_down|>",
+                                           "<|rotate_left|>",
+                                           "<|rotate_right|>",
+                                           "<|txt_contd|>",
+                                           "<|paratext|>" };
+        bool specials_valid = vocab.size() == 151674;
+        if (specials_valid)
+            for (size_t i = 0; i < sizeof(specials) / sizeof(specials[0]); ++i)
+                specials_valid = specials_valid && vocab[151643 + i] == specials[i];
+        if (!ctx->tokenizer_can_encode || !specials_valid ||
+            std::getenv("CRISPEMBED_BPE_LEGACY_WHITESPACE") != nullptr) {
+            fprintf(stderr, "qwen2vl_ocr: invalid MinerU tokenizer or incompatible legacy whitespace override\n");
+            return false;
+        }
+        ctx->is_paddleocr = ctx->is_olmocr = ctx->use_qari_default_prompt = false;
+        ctx->no_default_system = false;
+        ctx->inner.no_repeat_ngram = mineru25_profile::no_repeat_ngram;
+        ctx->inner.eos_token_id = 151645;
+        ctx->prompt = "\nText Recognition:";
+        ctx->max_tokens = 0; // HF max_length=8192, subtract prompt at call time.
+    }
+
     // Pre-tokenize prompt when BPE merges are available
     if (ctx->tokenizer_can_encode) ctx->prompt_ids = ctx->tokenize(ctx->prompt);
+    return true;
 }
 
 qwen2vl_ocr_context * qwen2vl_ocr_init(const char * model_path, int n_threads) {
     if (!model_path) return nullptr;
     auto * ctx = new qwen2vl_ocr_context();
     if (!qwen2vl_ocr::load(ctx->inner, model_path, n_threads, 1)) {
+        qwen2vl_ocr::free_(ctx->inner);
         delete ctx;
         return nullptr;
     }
-    post_load_init(ctx, model_path);
+    if (!post_load_init(ctx, model_path)) {
+        qwen2vl_ocr_free(ctx);
+        return nullptr;
+    }
     return ctx;
 }
 
@@ -3163,10 +3546,14 @@ qwen2vl_ocr_context * qwen2vl_ocr_init_split(const char * llm_path, const char *
     if (!llm_path) return nullptr;
     auto * ctx = new qwen2vl_ocr_context();
     if (!qwen2vl_ocr::load(ctx->inner, llm_path, n_threads, 1, mmproj_path)) {
+        qwen2vl_ocr::free_(ctx->inner);
         delete ctx;
         return nullptr;
     }
-    post_load_init(ctx, llm_path);
+    if (!post_load_init(ctx, llm_path)) {
+        qwen2vl_ocr_free(ctx);
+        return nullptr;
+    }
     return ctx;
 }
 
@@ -3179,6 +3566,7 @@ void qwen2vl_ocr_free(qwen2vl_ocr_context * ctx) {
 
 int qwen2vl_ocr_set_prompt(qwen2vl_ocr_context * ctx, const char * prompt) {
     if (ctx && prompt) {
+        if (ctx->inner.is_mineru25_pro && std::strlen(prompt) > 1048576) return 0;
         ctx->prompt = prompt;
         if (ctx->tokenizer_can_encode) {
             ctx->use_qari_default_prompt = false;
@@ -3203,15 +3591,16 @@ const char * qwen2vl_ocr_get_prompt(const qwen2vl_ocr_context * ctx) {
 }
 
 void qwen2vl_ocr_set_max_tokens(qwen2vl_ocr_context * ctx, int max_tokens) {
-    if (ctx) ctx->max_tokens = max_tokens;
+    if (ctx) ctx->max_tokens = ctx->inner.is_mineru25_pro ? std::max(0, max_tokens) : max_tokens;
 }
 
 extern "C" int qwen2vl_ocr_get_max_tokens(const qwen2vl_ocr_context * ctx) {
     return ctx ? ctx->max_tokens : 0;
 }
 
-// Internal: run full pipeline (preprocess → vision → tokenize → generate)
-static const char * run_pipeline(qwen2vl_ocr_context * ctx, const image_preproc::result & pp, int * out_len) {
+// Shared image/text generation and exact result capture. Takes ownership of vis buffers.
+static const char * run_generation(qwen2vl_ocr_context * ctx, qwen2vl_ocr::vision_result & vis,
+                                   const int32_t * grid_thw, int * out_len) {
     const bool dbg_t = qwen2vl_ocr::qwen_dbg();
     auto t_stage = qwen2vl_ocr::qwen_clock::now();
     auto stage_ms = [&](const char * name) {
@@ -3222,27 +3611,26 @@ static const char * run_pipeline(qwen2vl_ocr_context * ctx, const image_preproc:
         t_stage = now;
     };
 
-    // 1. Run vision encoder
-    qwen2vl_ocr::vision_result vis = {};
-    if (!qwen2vl_ocr::encode_vision(ctx->inner, pp.patches.data(), pp.n_patches, pp.grid_thw, vis)) {
-        fprintf(stderr, "qwen2vl_ocr: vision encoder failed\n");
-        return nullptr;
-    }
-    stage_ms("vision");
-
-    if (const char * dp = getenv("CRISPEMBED_DUMP_MERGER")) {
-        FILE * df = fopen(dp, "wb");
-        if (df) {
-            int hdr[2] = { vis.n_merged, vis.embed_dim };
-            fwrite(hdr, sizeof(int), 2, df);
-            fwrite(vis.image_embeds, sizeof(float), (size_t)vis.n_merged * vis.embed_dim, df);
-            fclose(df);
-            fprintf(stderr, "qwen2vl_ocr: dumped merger to %s (%d x %d)\n", dp, vis.n_merged, vis.embed_dim);
-        }
-    }
-
     // 2. Build token IDs with image_pad placeholders
     auto token_ids = ctx->build_token_ids(vis.n_merged);
+    int max_tokens = ctx->max_tokens;
+    if (ctx->inner.is_mineru25_pro) {
+        const int available = mineru25_profile::context_length - int(token_ids.size());
+        if (available <= 0 || !core_env::on(mineru25_profile::gate)) {
+            qwen2vl_ocr::vision_result_free(vis);
+            return nullptr;
+        }
+        if (max_tokens > available) {
+            fprintf(stderr, "qwen2vl_ocr: requested MinerU generation exceeds the supported 8192-token context; "
+                            "use max_tokens=0 for the remaining-context budget\n");
+            qwen2vl_ocr::vision_result_free(vis);
+            return nullptr;
+        }
+        max_tokens = max_tokens == 0 ? available : max_tokens;
+    }
+    ctx->last_prompt_ids = token_ids;
+    ctx->last_max_tokens = max_tokens;
+    if (grid_thw) std::copy_n(grid_thw, 3, ctx->last_grid);
 
     // 3. Generate text
     qwen2vl_ocr::generate_result gen = {};
@@ -3257,8 +3645,8 @@ static const char * run_pipeline(qwen2vl_ocr_context * ctx, const image_preproc:
     ctx->inner.n_deepstack_tmp = (int)ds_ptrs.size();
 
     bool ok = qwen2vl_ocr::generate(ctx->inner, vis.image_embeds, vis.n_merged, vis.embed_dim,
-                                    pp.grid_thw, // pass actual grid for mRoPE
-                                    token_ids.data(), (int)token_ids.size(), ctx->max_tokens, gen);
+                                    grid_thw, // actual grid, or null for text-only
+                                    token_ids.data(), (int)token_ids.size(), max_tokens, gen);
     stage_ms("generate");
 
     ctx->inner.deepstack_embeds_tmp = nullptr;
@@ -3272,13 +3660,25 @@ static const char * run_pipeline(qwen2vl_ocr_context * ctx, const image_preproc:
     }
 
     ctx->char_confidences = std::move(gen.token_confidences);
+    ctx->last_completion_ids = gen.token_ids;
+    ctx->last_eos =
+        !gen.token_ids.empty() && (ctx->inner.is_mineru25_pro ? mineru25_profile::is_eos(gen.token_ids.back())
+                                                              : gen.token_ids.back() == ctx->inner.eos_token_id);
+    ctx->last_capped = !ctx->last_eos && int(gen.token_ids.size()) >= max_tokens;
+    if (ctx->has_tokenizer) {
+        ctx->last_raw_text = ctx->is_paddleocr ? spm_decode(gen.token_ids, ctx->tokenizer.get_vocab())
+                                               : gpt2_bpe_decode(gen.token_ids, ctx->tokenizer.get_vocab());
+        if (ctx->inner.is_mineru25_pro) ctx->last_raw_text = mineru25_profile::replace_invalid_utf8(ctx->last_raw_text);
+    }
 
     // 4. Decode token IDs to text (strip EOS/special tokens first)
     std::vector<int32_t> decode_ids;
     decode_ids.reserve(gen.token_ids.size());
     for (int32_t id : gen.token_ids) {
-        if (id == ctx->im_end_id || id == ctx->im_start_id || id == ctx->inner.eos_token_id ||
-            id == ctx->begin_of_sentence_id)
+        if (ctx->inner.is_mineru25_pro) {
+            if (mineru25_profile::is_eos(id)) continue; // only BOS/EOS/PAD, as TransformersVlmClient
+        } else if (id == ctx->im_end_id || id == ctx->im_start_id || id == ctx->inner.eos_token_id ||
+                   id == ctx->begin_of_sentence_id)
             continue;
         decode_ids.push_back(id);
     }
@@ -3294,9 +3694,11 @@ static const char * run_pipeline(qwen2vl_ocr_context * ctx, const image_preproc:
         }
     }
 
+    if (ctx->inner.is_mineru25_pro) ctx->last_result = mineru25_profile::replace_invalid_utf8(ctx->last_result);
+
     // Strip Qwen3 <think>...</think> blocks (nothink fine-tunes emit empty
     // thinking tags; regular Qwen3 models may emit actual thinking content).
-    {
+    if (!ctx->inner.is_mineru25_pro) {
         size_t think_start = ctx->last_result.find("<think>");
         if (think_start != std::string::npos) {
             size_t think_end = ctx->last_result.find("</think>", think_start);
@@ -3342,13 +3744,53 @@ static const char * run_pipeline(qwen2vl_ocr_context * ctx, const image_preproc:
     }
     stage_ms("decode_text");
 
+    ctx->last_ok = true;
     if (out_len) *out_len = (int)ctx->last_result.size();
     return ctx->last_result.c_str();
 }
 
+static const char * run_pipeline(qwen2vl_ocr_context * ctx, const image_preproc::result & pp, int * out_len) {
+    // 1. Run vision encoder
+    qwen2vl_ocr::vision_result vis = {};
+    if (!qwen2vl_ocr::encode_vision(ctx->inner, pp.patches.data(), pp.n_patches, pp.grid_thw, vis)) {
+        fprintf(stderr, "qwen2vl_ocr: vision encoder failed\n");
+        qwen2vl_ocr::vision_result_free(vis);
+        return nullptr;
+    }
+
+    if (const char * dp = getenv("CRISPEMBED_DUMP_MERGER")) {
+        FILE * df = fopen(dp, "wb");
+        if (df) {
+            int hdr[2] = { vis.n_merged, vis.embed_dim };
+            fwrite(hdr, sizeof(int), 2, df);
+            fwrite(vis.image_embeds, sizeof(float), (size_t)vis.n_merged * vis.embed_dim, df);
+            fclose(df);
+            fprintf(stderr, "qwen2vl_ocr: dumped merger to %s (%d x %d)\n", dp, vis.n_merged, vis.embed_dim);
+        }
+    }
+
+    return run_generation(ctx, vis, pp.grid_thw, out_len);
+}
+
+const char * qwen2vl_ocr_generate_text(qwen2vl_ocr_context * ctx, const char * prompt, int * out_len) {
+    if (out_len) *out_len = 0;
+    if (!ctx) return nullptr;
+    ctx->clear_last();
+    if (!ctx->inner.is_mineru25_pro || !core_env::on(mineru25_profile::gate) || !prompt ||
+        !qwen2vl_ocr_set_prompt(ctx, prompt))
+        return nullptr;
+    qwen2vl_ocr::vision_result vis;
+    return run_generation(ctx, vis, nullptr, out_len);
+}
+
 const char * qwen2vl_ocr_recognize_raw(qwen2vl_ocr_context * ctx, const uint8_t * pixel_bytes, int width, int height,
                                        int channels, int * out_len) {
-    if (!ctx || !pixel_bytes) return nullptr;
+    if (out_len) *out_len = 0;
+    if (!ctx) return nullptr;
+    ctx->clear_last();
+    if (!pixel_bytes || width <= 0 || height <= 0 ||
+        (ctx->inner.is_mineru25_pro && !core_env::on(mineru25_profile::gate)))
+        return nullptr;
 
     const bool dbg_t = qwen2vl_ocr::qwen_dbg();
     auto t0 = qwen2vl_ocr::qwen_clock::now();
@@ -3362,8 +3804,8 @@ const char * qwen2vl_ocr_recognize_raw(qwen2vl_ocr_context * ctx, const uint8_t 
     cfg.min_pixels = (int)vhp.min_pixels;
     cfg.max_pixels = (int)vhp.max_pixels;
     // Allow runtime override of max_pixels for CPU-friendly inference
-    if (const char * mp = getenv("CRISPEMBED_MAX_PIXELS")) {
-        cfg.max_pixels = atoi(mp);
+    if (!ctx->inner.is_mineru25_pro) {
+        if (const char * mp = getenv("CRISPEMBED_MAX_PIXELS")) cfg.max_pixels = atoi(mp);
     }
     // olmOCR's reference renders every page with its longest side at 1288 px
     // before the standard resize; match that geometry (up- and downscale).
@@ -3379,7 +3821,10 @@ const char * qwen2vl_ocr_recognize_raw(qwen2vl_ocr_context * ctx, const uint8_t 
     }
 
     image_preproc::result pp;
-    if (!image_preproc::preprocess_rgb(pixel_bytes, height, width, channels, cfg, pp)) {
+    const bool preprocessed = ctx->inner.is_mineru25_pro
+                                  ? mineru25_profile::preprocess_rgb(pixel_bytes, height, width, channels, cfg, pp)
+                                  : image_preproc::preprocess_rgb(pixel_bytes, height, width, channels, cfg, pp);
+    if (!preprocessed) {
         fprintf(stderr, "qwen2vl_ocr: image preprocessing failed\n");
         return nullptr;
     }
@@ -3407,6 +3852,15 @@ const char * qwen2vl_ocr_recognize_raw(qwen2vl_ocr_context * ctx, const uint8_t 
 const char * qwen2vl_ocr_recognize(qwen2vl_ocr_context * ctx, const float * pixels, int width, int height,
                                    int * out_len) {
     if (!ctx || !pixels) return nullptr;
+    if (ctx->inner.is_mineru25_pro) {
+        ctx->clear_last();
+        if (out_len) *out_len = 0;
+        if (width < 1 || height < 1 || width > 65536 || height > 65536 || int64_t(width) * height > 67108864 ||
+            !core_env::on(mineru25_profile::gate))
+            return nullptr;
+        for (size_t i = 0; i < size_t(width) * height; ++i)
+            if (!std::isfinite(pixels[i]) || pixels[i] < 0 || pixels[i] > 1) return nullptr;
+    }
 
     // Convert grayscale float [0,1] to uint8 RGB for preprocess_rgb
     std::vector<uint8_t> rgb(width * height * 3);
@@ -3425,6 +3879,40 @@ const float * qwen2vl_ocr_confidences(const qwen2vl_ocr_context * ctx, int * n_t
     }
     if (n_tokens) *n_tokens = (int)ctx->char_confidences.size();
     return ctx->char_confidences.data();
+}
+
+int qwen2vl_ocr_is_mineru(const qwen2vl_ocr_context * ctx) {
+    return ctx && ctx->inner.is_mineru25_pro;
+}
+
+int qwen2vl_ocr_last_ok(const qwen2vl_ocr_context * ctx) {
+    return ctx && ctx->last_ok;
+}
+
+const int32_t * qwen2vl_ocr_completion_ids(const qwen2vl_ocr_context * ctx, int * count) {
+    if (count) *count = ctx ? int(ctx->last_completion_ids.size()) : 0;
+    return ctx && !ctx->last_completion_ids.empty() ? ctx->last_completion_ids.data() : nullptr;
+}
+
+const int32_t * qwen2vl_ocr_prompt_ids(const qwen2vl_ocr_context * ctx, int * count) {
+    if (count) *count = ctx ? int(ctx->last_prompt_ids.size()) : 0;
+    return ctx && !ctx->last_prompt_ids.empty() ? ctx->last_prompt_ids.data() : nullptr;
+}
+
+const char * qwen2vl_ocr_raw_text(const qwen2vl_ocr_context * ctx) {
+    return ctx ? ctx->last_raw_text.c_str() : nullptr;
+}
+int qwen2vl_ocr_stopped_eos(const qwen2vl_ocr_context * ctx) {
+    return ctx && ctx->last_eos;
+}
+int qwen2vl_ocr_capped(const qwen2vl_ocr_context * ctx) {
+    return ctx && ctx->last_capped;
+}
+const int32_t * qwen2vl_ocr_grid_thw(const qwen2vl_ocr_context * ctx) {
+    return ctx ? ctx->last_grid : nullptr;
+}
+int qwen2vl_ocr_effective_max_tokens(const qwen2vl_ocr_context * ctx) {
+    return ctx ? ctx->last_max_tokens : 0;
 }
 
 float qwen2vl_ocr_mean_confidence(const qwen2vl_ocr_context * ctx) {

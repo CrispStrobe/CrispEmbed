@@ -1,0 +1,35 @@
+{
+  "repository": "opendatalab/MinerU2.5-Pro-2604-1.2B",
+  "revision": "d3f5e08d073c21466bbabe21c71bb1e9c2e595da",
+  "source": "https://huggingface.co/api/models/opendatalab/MinerU2.5-Pro-2604-1.2B/revision/d3f5e08d073c21466bbabe21c71bb1e9c2e595da?blobs=true",
+  "files": {
+    "chat_template.jinja": {
+      "size": 1017,
+      "sha256": "a0bc6f6fc7a29a80017a433e8f03a1cc1236e838a944a2d034295a60c4f2fddb"
+    },
+    "config.json": {
+      "size": 2840,
+      "sha256": "22097df08750242647a513043636a8dff16820a09757e9271e220bdea378df28"
+    },
+    "generation_config.json": {
+      "size": 215,
+      "sha256": "02b54ab57bff2fb18a9b0a731b4b9184c255ba36844786df367938d8d89e288f"
+    },
+    "model.safetensors": {
+      "size": 2312126640,
+      "sha256": "f2650d91aaa619534980445034f62cde27fc3fa0430aaf5c3302b91179cad0c5"
+    },
+    "preprocessor_config.json": {
+      "size": 365,
+      "sha256": "5c7cbf12d0666ceed8eb25506f18c19ec67788215ada306e8ab2cd67cbdfcd07"
+    },
+    "tokenizer.json": {
+      "size": 11423550,
+      "sha256": "dceac5fc54a795ee7570d17902b47bd05412dc2afa62bdf325c3f97fcb5b87fe"
+    },
+    "tokenizer_config.json": {
+      "size": 6596,
+      "sha256": "d762430b9c668b5c3ad95e26626e3982d5b2a59c18ff214d621d1de4318ff376"
+    }
+  }
+}

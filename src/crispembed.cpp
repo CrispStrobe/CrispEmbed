@@ -5787,6 +5787,8 @@ static ocr_orchestrator::engine map_engine(int e) {
         return E::ovisocr3;
     case 23:
         return E::minicpm_ocr;
+    case 24:
+        return E::mineru25_pro;
     default:
         return E::dbnet_trocr;
     }
