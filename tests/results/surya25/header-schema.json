@@ -1,0 +1,56 @@
+{
+ "source": "hosted run 41190926697 (surya25-metadata.yml @ 6913213), job log SURYA25_SUMMARY/STEPS",
+ "revision": "00c843e9cae45611dca0a6dc2c9bbbf2dadaaed3",
+ "report_sha256": "502f25d84afaf37b3bd0e23c2a525a9054a052990171f53a5e2397e3d6c0e798",
+ "steps_all_ok": true,
+ "tensor_count": 473,
+ "dtypes": {
+  "BF16": 473
+ },
+ "mtp_tensors": [],
+ "official_schema": {
+  "transformers": "5.16.1",
+  "config_class": "Qwen3_5Config",
+  "expected": 474,
+  "actual": 473,
+  "missing": [
+   "lm_head.weight"
+  ],
+  "extra_count": 0,
+  "shape_mismatch": [],
+  "note": "tied head; converter aliases the embedding"
+ },
+ "nonlayer_shapes": {
+  "model.language_model.embed_tokens.weight": [
+   88526,
+   1024
+  ],
+  "model.language_model.norm.weight": [
+   1024
+  ],
+  "model.visual.merger.linear_fc1.weight": [
+   3072,
+   3072
+  ],
+  "model.visual.merger.linear_fc2.weight": [
+   1024,
+   3072
+  ],
+  "model.visual.patch_embed.proj.weight": [
+   768,
+   3,
+   2,
+   16,
+   16
+  ],
+  "model.visual.pos_embed.weight": [
+   2304,
+   768
+  ]
+ },
+ "layer_groups": {
+  "linear_attention_layers": 18,
+  "full_attention_layers": 6,
+  "vision_blocks": 12
+ }
+}

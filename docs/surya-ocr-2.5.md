@@ -20,6 +20,10 @@ entry and no quality claim.
   ids.** Special ids: `<|endoftext|>`=0 (pad), `<|im_start|>`=1,
   `<|im_end|>`=2 (EOS, the only generation stop), `<|vision_start|>`=9,
   `<|vision_end|>`=10, `<|image_pad|>`=11, `<unk>`=65424, U+0000=1947.
+- Header and schema ([receipt](../tests/results/surya25/header-schema.json), hosted
+  run 41190926697): 473 BF16 tensors, no MTP tensors, the official
+  `Qwen3_5ForConditionalGeneration` schema matches exactly except the tied
+  `lm_head`, and the tensor names are the ones the native mapper already uses.
 - Single `model.safetensors`, bf16, 1,378,772,208 bytes, LFS sha256
   `6940baca2d16a20b15b7302cac7253246c78c95469920fcdb064963f48b5cb17`.
   The card licence is `openrail`.
