@@ -83,6 +83,33 @@
       "note": "decoder matrices Q4_K; vision, merger and tied embedding F16",
       "precision_receipt": "tests/results/teleocr/hosted-precision.json",
       "precision_dtype": "q4_k"
+    },
+    "Q4_K_M": {
+      "filename": "teleocr-q4_k-m.gguf",
+      "from": "F16",
+      "type": "q4_k",
+      "tensor_type": [
+        "v.*=f16",
+        "l.embed_tokens.weight=f16",
+        "l.blk.*.ffn_down.weight=q6_k",
+        "l.blk.*.attn_v.weight=q6_k"
+      ],
+      "note": "decoder Q4_K with ffn_down/attn_v Q6_K; vision, merger and tied embedding F16",
+      "precision_receipt": "tests/results/teleocr/hosted-precision.json",
+      "precision_dtype": "q4_k-m"
+    },
+    "Q4_K_ATTN8": {
+      "filename": "teleocr-q4_k-attn8.gguf",
+      "from": "F16",
+      "type": "q4_k",
+      "tensor_type": [
+        "v.*=f16",
+        "l.embed_tokens.weight=f16",
+        "l.blk.*.attn_*=q8_0"
+      ],
+      "note": "decoder FFN Q4_K, attention Q8_0; vision, merger and tied embedding F16",
+      "precision_receipt": "tests/results/teleocr/hosted-precision.json",
+      "precision_dtype": "q4_k-attn8"
     }
   },
   "receipts": {

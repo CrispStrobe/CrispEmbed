@@ -66,7 +66,7 @@ echo "::endgroup::"
 IFS=, read -ra VARS <<< "$VARIANTS"
 mkdir -p "$S/gguf" "$OUT/manifests"
 need_f16=0
-for v in "${VARS[@]}"; do [ "$v" = q4_k ] && need_f16=1; [ "$v" = f16 ] && need_f16=1; done
+for v in "${VARS[@]}"; do case "$v" in q4_k*|f16) need_f16=1 ;; esac; done
 convert() { python models/convert-teleocr-to-gguf.py --model "$S/TeleOCR" --output "$S/gguf/teleocr-$1.gguf" \
     --dtype "$1" --manifest "$OUT/manifests/teleocr-$1.gguf.json"; }
 for v in "${VARS[@]}"; do
@@ -75,9 +75,17 @@ for v in "${VARS[@]}"; do
     esac
 done
 [ $need_f16 = 1 ] && step convert-f16 convert f16
+# Q4_K recipes quantize from F16 and protect vision/merger/tied embedding (the
+# delivered recipe); mixed variants keep precision-sensitive decoder matrices higher.
+PROTECT=(--tensor-type 'v.*=f16' --tensor-type 'l.embed_tokens.weight=f16')
 for v in "${VARS[@]}"; do
-    [ "$v" = q4_k ] && step quantize-q4_k "$QUANT" "$S/gguf/teleocr-f16.gguf" "$S/gguf/teleocr-q4_k.gguf" q4_k \
-        --tensor-type 'v.*=f16' --tensor-type 'l.embed_tokens.weight=f16'
+    case "$v" in
+        q4_k) extra=() ;;
+        q4_k-m) extra=(--tensor-type 'l.blk.*.ffn_down.weight=q6_k' --tensor-type 'l.blk.*.attn_v.weight=q6_k') ;;
+        q4_k-attn8) extra=(--tensor-type 'l.blk.*.attn_*=q8_0') ;;
+        *) continue ;;
+    esac
+    step "quantize-$v" "$QUANT" "$S/gguf/teleocr-f16.gguf" "$S/gguf/teleocr-$v.gguf" q4_k "${PROTECT[@]}" "${extra[@]}"
 done
 for f in "$S"/gguf/*.gguf; do printf '%s %s %s\n' "$(sha256sum "$f" | cut -d' ' -f1)" "$(stat -c %s "$f")" "$(basename "$f")"; done |
     tee "$OUT/gguf-sha256.txt"
