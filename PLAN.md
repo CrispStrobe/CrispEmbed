@@ -143,6 +143,14 @@ Indra is public-code-analysis-only under the selected scope. Chandra-OCR-2,
 MinerU2.5-Pro, Hunyuan-OCR, dots.ocr and other restricted candidates remain
 outside this lane. Do not infer weight permission from a public repository.
 
+## Surya OCR 2.5 (owner-requested; restricted OpenRAIL-M weights)
+
+Qwen3.5 VLM with a character-level WordLevel tokenizer; outside the permissive
+queue, registry only behind licence acceptance like `surya-det`. Contract, gaps
+and staged plan: [docs/surya-ocr-2.5.md](docs/surya-ocr-2.5.md). Next: review the
+hosted weight-free metadata run (`surya25-metadata.yml`), pin the revision, then
+freeze an original HF reference before any converter profile or native gate.
+
 ## Issue71, packaging and downstream delivery
 
 - Issue71 MI-GAN: fixed256 CPU/F32 prototype and494/eight-fixture audit are
