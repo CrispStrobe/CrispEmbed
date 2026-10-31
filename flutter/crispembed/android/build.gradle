@@ -6,7 +6,14 @@
 // build (skipped if already present — e.g. a local dev drop).
 
 group 'com.crispstrobe.crispembed'
-version '0.16.0'
+// The package version is also the native GitHub release tag. Keep it in sync
+// with the pubspec shipped in the package, rather than a stale Gradle literal.
+def pubspecFile = new File(project.projectDir.parentFile, 'pubspec.yaml')
+def pubspecVersion = (pubspecFile.getText('UTF-8') =~ /(?m)^version:[ \t]*([0-9][0-9A-Za-z.+-]*)[ \t]*(?:#.*)?$/)
+if (!pubspecVersion.find()) {
+    throw new GradleException('crispembed: missing or invalid version in pubspec.yaml')
+}
+version = pubspecVersion.group(1)
 
 buildscript {
     repositories {

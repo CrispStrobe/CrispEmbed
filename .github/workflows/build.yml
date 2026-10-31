@@ -54,6 +54,8 @@ jobs:
         run: bash tools/test_check_workflow_pins.sh
       - name: GPU recipe process deadline controls (model-free)
         run: python3 tests/test_lfm2_performance_process.py -v
+      - name: pub.dev release preflight contracts (model-free)
+        run: python3 tests/test_pubdev_release_gate.py -v
 
   build:
     name: ${{ matrix.name }}
