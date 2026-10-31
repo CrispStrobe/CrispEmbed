@@ -84,7 +84,6 @@ for f in "$S"/gguf/*.gguf; do printf '%s %s %s\n' "$(sha256sum "$f" | cut -d' ' 
 
 step reference python tools/dump_teleocr_reference.py --model-dir "$S/TeleOCR" --out "$S/reference" \
     --threads 2 --max-new-tokens 1024
-cp "$S/reference"/*.json "$OUT/" 2>/dev/null
 mkdir -p "$OUT/reference" && find "$S/reference" -maxdepth 1 -name '*.json' -exec cp {} "$OUT/reference/" \;
 
 for v in "${VARS[@]}"; do

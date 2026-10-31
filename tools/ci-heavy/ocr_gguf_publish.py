@@ -1,21 +1,24 @@
 #!/usr/bin/env python3
-"""Publish MinerU2.5-Pro-2604 GGUFs (opendatalab/MinerU2.5-Pro-2604-1.2B, Apache-2.0) to Hugging Face.
+"""Publish an experimental OCR model's GGUFs to Hugging Face from a reviewed protocol.
 
-Driven by .github/workflows/mineru25-pro-publish.yml. Every gate below the
-`publish` subcommand's Hub import is stdlib-only and runs before any credential,
-package or weight access:
+Driven by .github/workflows/ocr-gguf-publish.yml. Everything model-specific lives
+in the protocol JSON (destination, upstream pins, converter, recipes, receipts,
+card text): docs/mineru25-pro-publication-v1.json, docs/teleocr-publication-v1.json.
+Every gate below the `publish` subcommand's Hub import is stdlib-only and runs
+before any credential, package or weight access:
 
-  plan VARIANTS                 protocol/approval, variant recipes, parity receipt and
+  plan PROTOCOL VARIANTS        protocol/approval, variant recipes, parity receipt and
                                 per-variant precision receipts; prints the build plan
-  notices DIR                   fetch the upstream LICENSE (pinned code-repo commit) and
-                                README (pinned model revision); verify bytes + SHA256
-  publish VARIANTS GGUF_DIR NOTICES_DIR OUT
+  notices PROTOCOL DIR          fetch the upstream LICENSE text and model card at their
+                                pins; verify bytes + SHA256
+  publish PROTOCOL VARIANTS GGUF_DIR NOTICES_DIR OUT
                                 hash every file, render card + manifest, upload to the
                                 allowlisted destination, verify immutable LFS identity
                                 and an empty-cache readback of every file
 
-Docs: docs/mineru25-pro-publication-v1.json (protocol), models/mineru25-pro-source.json
-(upstream pin), tests/results/mineru25/native-parity.json (parity receipt).
+Receipts share one schema (tools/mineru25_receipts.py, tools/teleocr_receipts.py):
+`cases[].reference_ids` and `cases[].arms[arm] = {exit, ids_exact, ids}`; precision
+receipts list `arms[] = {dtype, cases[] = {id, ids_exact}}`.
 """
 import hashlib
 import json
@@ -26,10 +29,9 @@ import sys
 import urllib.request
 
 ROOT = Path(__file__).resolve().parents[2]
-PROTOCOL = "docs/mineru25-pro-publication-v1.json"
-SCHEMA = "crispembed-mineru25-pro-publication-v1"
-DESTINATION = "cstr/MinerU2.5-Pro-2604-1.2B-GGUF"
+SCHEMA = "crispembed-ocr-gguf-publication-v1"
 FIXED_FILES = ("README.md", "LICENSE", "UPSTREAM_README.md", "manifest.json", ".gitattributes")
+ALLOWED_DESTINATIONS = {"cstr/MinerU2.5-Pro-2604-1.2B-GGUF", "cstr/TeleOCR-GGUF"}
 
 
 def require(ok, why):
@@ -45,20 +47,25 @@ def digest(path):
     return h.hexdigest()
 
 
-def load(root=ROOT):
-    cfg = json.loads((root / PROTOCOL).read_text())
+def load(protocol, root=ROOT):
+    path = root / protocol
+    cfg = json.loads(path.read_text())
     require(cfg.get("schema") == SCHEMA, "unexpected protocol schema")
     require(cfg.get("approved_by_owner") is True, "publication not approved by the owner; nothing accessed")
-    require(cfg.get("destination") == DESTINATION, "unreviewed publication destination")
-    source = json.loads((root / cfg["source_contract"]).read_text())
+    require(cfg.get("destination") in ALLOWED_DESTINATIONS, "unreviewed publication destination")
     up = cfg["upstream"]
-    require(source["repository"] == up["repo"] and source["revision"] == up["revision"],
-            "protocol upstream pin differs from the source contract")
     require(re.fullmatch("[0-9a-f]{40}", up["revision"]) and up["license"] == "apache-2.0",
             "upstream pin or license malformed")
     lf = up["license_file"]
-    require(re.fullmatch("[0-9a-f]{40}", lf["commit"]) and lf["commit"] in lf["url"], "LICENSE pin malformed")
-    return cfg, source
+    require(re.fullmatch("[0-9a-f]{64}", lf["sha256"]) and lf["url"].startswith("https://"), "LICENSE pin malformed")
+    require(re.fullmatch("[0-9a-f]{64}", up["readme"]["sha256"]), "README pin malformed")
+    conv = cfg["converter"]
+    require((root / conv["script"]).is_file() and "{src}" in conv["args"] and "{out}" in conv["args"],
+            "converter invocation malformed")
+    for name, rec in cfg["recipes"].items():
+        require(rec["from"] in ("convert", *cfg["recipes"]) and rec["from"] != name, f"recipe {name} source invalid")
+    cfg["_protocol"] = protocol
+    return cfg
 
 
 def parse_variants(text, cfg):
@@ -98,7 +105,7 @@ def precision(cfg, variant, root=ROOT):
     if "precision_receipt" not in rec:
         return None
     path = root / rec["precision_receipt"]
-    require(path.is_file(), f"{variant} has no precision receipt yet ({rec['precision_receipt']}); publish F16 only")
+    require(path.is_file(), f"{variant} has no precision receipt yet ({rec['precision_receipt']})")
     r = json.loads(path.read_text())
     arms = [a for a in r.get("arms", []) if a.get("dtype") == rec["precision_dtype"]]
     require(arms, f"{variant} precision receipt has no {rec['precision_dtype']} arm")
@@ -106,28 +113,36 @@ def precision(cfg, variant, root=ROOT):
         ids = sorted(c["id"] for c in a.get("cases", []))
         require(ids == sorted(cfg["parity_cases"]), f"{variant} precision arm {a.get('name')} misses cases")
         require(all(c.get("ids_exact") is True for c in a["cases"]),
-                f"{variant} is not token-ID exact in {rec['precision_receipt']} ({a.get('name')}); publish F16 only")
+                f"{variant} is not token-ID exact in {rec['precision_receipt']} ({a.get('name')})")
     return {"receipt": rec["precision_receipt"], "receipt_sha256": digest(path), "commit": r.get("commit"),
             "arms": [a.get("name") for a in arms], "ids_exact": True}
 
 
 def plan(cfg, variants):
-    """Ordered build steps: F32 is converted whenever any variant quantizes from it."""
-    need_f32 = "F32" in variants or any(cfg["recipes"][v]["from"] == "F32" for v in variants)
-    steps = []
-    if need_f32:
-        steps.append(("convert", "F32", cfg["recipes"]["F32"]["filename"], cfg["recipes"]["F32"]["convert_args"]))
+    """Ordered build steps: conversions first (including every quantization source), then quantizations.
+
+    Returns (steps, drop) where drop lists intermediate sources built only to quantize from.
+    """
+    needed, order = set(variants), []
     for v in variants:
-        rec = cfg["recipes"][v]
-        if v == "F32":
+        src = cfg["recipes"][v]["from"]
+        while src != "convert":
+            needed.add(src)
+            src = cfg["recipes"][src]["from"]
+    steps = []
+    for v in cfg["recipes"]:
+        if v not in needed:
             continue
+        rec = cfg["recipes"][v]
         if rec["from"] == "convert":
             steps.append(("convert", v, rec["filename"], rec["convert_args"]))
         else:
             tt = [a for o in rec.get("tensor_type", []) for a in ("--tensor-type", o)]
-            steps.append(("quantize", v, rec["filename"], [rec["type"], *tt, *rec.get("extra_args", [])]))
+            steps.append(("quantize", v, rec["filename"],
+                          [cfg["recipes"][rec["from"]]["filename"], rec["type"], *tt, *rec.get("extra_args", [])]))
     steps.sort(key=lambda s: s[0] != "convert")
-    return steps, need_f32 and "F32" not in variants
+    drop = [cfg["recipes"][v]["filename"] for v in cfg["recipes"] if v in needed and v not in variants]
+    return steps, drop
 
 
 def fetch(url, expected, opener=urllib.request.urlopen):
@@ -148,16 +163,17 @@ def notices(cfg, out_dir, opener=urllib.request.urlopen):
 
 
 def card(cfg, files, parity, prec, source_commit):
-    up = cfg["upstream"]
+    up, c = cfg["upstream"], cfg["card"]
     rows = "\n".join(f"| `{f['filename']}` | {f['variant']} | {f['bytes']:,} | `{f['sha256']}` |" for f in files)
-    lf = up["license_file"]
     cases = ", ".join(f"`{k}` ({n})" for k, n in parity["cases"].items())
     names = [f["variant"] for f in files]
     exact = [v for v in names if prec.get(v)]
     reduced = ("" if not exact else "\n- " + "; ".join(
         f"**{v}** is token-ID exact on the same {len(parity['cases'])} cases (receipt `{prec[v]['receipt']}`)"
         for v in exact) + ".")
-    quantized = any(f["variant"] not in ("F32", "F16") for f in files)
+    quantized = any(cfg["recipes"][v].get("type") for v in names)
+    recipes = "\n".join(f"- **{v}**: {cfg['recipes'][v].get('note', 'see manifest.json')}" for v in names)
+    first = files[0]["filename"]
     return f"""---
 license: apache-2.0
 license_link: LICENSE
@@ -165,30 +181,28 @@ base_model: {up['repo']}
 base_model_relation: quantized
 pipeline_tag: image-text-to-text
 library_name: gguf
-tags: [gguf, ocr, document-parsing, crispembed, mineru, qwen2-vl]
+tags: [{', '.join(['gguf', 'ocr', 'crispembed', *c['tags']])}]
 ---
-# MinerU2.5-Pro-2604-1.2B GGUF (CrispEmbed)
+# {c['title']} GGUF (CrispEmbed)
 
 GGUF conversions of [{up['repo']}](https://huggingface.co/{up['repo']}/tree/{up['revision']})
-by the MinerU Team (OpenDataLab), for [CrispEmbed](https://github.com/CrispStrobe/CrispEmbed)'s native ggml runtime.
+by {c['authors']}, for [CrispEmbed](https://github.com/CrispStrobe/CrispEmbed)'s native ggml runtime.
 All credit for the model belongs to the original authors; these files only change the storage format.
-They target CrispEmbed's MinerU profile of its Qwen2-VL graph and are not llama.cpp mmproj pairs.
+{c['runtime_note']}
 
 ## License and attribution
 
-- The original model is released under the **Apache License 2.0**, {up['copyright']}.
+- The original model is released under the **Apache License 2.0** ({up['copyright']}).
   These derived files are distributed under the same license.
-- `LICENSE` is the verbatim Apache-2.0 text. The model repository declares `license: apache-2.0` but ships no
-  LICENSE file, so it is the publisher's own `LICENSE.md` from
-  [{lf['code_repo'].removeprefix('https://github.com/')}@{lf['commit'][:12]}]({lf['code_repo']}/blob/{lf['commit']}/LICENSE.md)
-  (SHA256 `{lf['sha256']}`). Upstream ships no NOTICE file, so none is included.
+- `LICENSE`: {c['license_note']} (SHA256 `{up['license_file']['sha256']}`). Upstream ships no NOTICE file,
+  so none is included.
 - `UPSTREAM_README.md` is the unmodified upstream model card at revision `{up['revision']}`
   (SHA256 `{up['readme']['sha256']}`).
 
 ## Statement of changes (Apache-2.0 section 4(b))
 
 These files were modified from the original by CrispEmbed: the safetensors weights of revision
-`{up['revision']}` were **format-converted** to GGUF (tensor renaming, casting to F32/F16, tokenizer and
+`{up['revision']}` were **format-converted** to GGUF (tensor renaming, casting, tokenizer and
 preprocessing metadata embedded){' and, where noted, **quantized**' if quantized else ''}.
 No weights were trained, fine-tuned, merged or otherwise altered.
 
@@ -198,50 +212,35 @@ No weights were trained, fine-tuned, merged or otherwise altered.
 |---|---|---:|---|
 {rows}
 
+{recipes}
+
 ## How the files were produced
 
-1. Downloaded `{up['repo']}` at the pinned revision `{up['revision']}`; the converter checks every file against the
-   size and SHA256 pins in CrispEmbed's `models/mineru25-pro-source.json` and all 681 tensor names and shapes.
-2. Converted with `models/convert-mineru25-pro-to-gguf.py` (`--dtype f32` or `--dtype f16`).
-3. Quantized variants, if any, were produced from the F32 GGUF with CrispEmbed's own `crispembed-quantize`
-   (rows not divisible by the block size fall back to a 32-wide type or stay unquantized).
-4. Built and uploaded by CrispEmbed commit `{source_commit}` (workflow `mineru25-pro-publish.yml`);
-   `manifest.json` lists every recipe, input pin, receipt and file hash.
+1. Downloaded `{up['repo']}` at the pinned revision `{up['revision']}`; the converter
+   (`{cfg['converter']['script']}`) checks the source files, tensor names and shapes.
+2. Quantized variants were produced with CrispEmbed's own `crispembed-quantize` from the listed source GGUF.
+3. Built and uploaded by CrispEmbed commit `{source_commit}` (workflow `ocr-gguf-publish.yml`,
+   protocol `{cfg['_protocol']}`); `manifest.json` lists every recipe, input pin, receipt and file hash.
 
 ## Parity status (CrispEmbed native vs. the original Python model, CPU, greedy)
 
-- The **F32** conversion, with both the ordinary and the reusable decode graph, reproduces the original model's
-  generated token IDs and text **exactly** on all {len(parity['cases'])} reference requests ({cases} tokens;
-  Transformers {parity['reference']['versions'].get('transformers')}, mineru-vl-utils
-  `{parity['reference']['versions'].get('mineru_vl_utils', '')[:12]}`), CrispEmbed commit `{parity['commit'][:8]}`.{reduced}
-- Not verified: GPU backends, multi-page documents, aggregate document benchmarks, contexts beyond the
-  profile's 8,192 tokens.
+- The reference arms ({', '.join(parity['arms'])}) reproduce the original model's generated token IDs
+  **exactly** on all {len(parity['cases'])} frozen requests ({cases} tokens), CrispEmbed commit
+  `{parity['commit'][:8]}`, reference revision `{parity['reference']['revision'][:12]}`.{reduced}
+- {c['not_verified']}
 
 ## Usage
 
-MinerU2.5-Pro support is experimental and default-off in CrispEmbed:
-
-```bash
-CRISPEMBED_MINERU25_PRO=1 crispembed --ocr-pipeline page.png \\
-  --ocr-engine mineru25-pro --ocr-rec {files[0]['filename']}
-```
-
-Python (native inference with the pinned upstream document helper for full postprocessing):
-
-```python
-from crispembed import CrispMinerU
-with CrispMinerU("{files[0]['filename']}", image_analysis=True) as m:
-    print(m.to_markdown(m.two_step_extract("page.png")))
-```
+{c['usage'].replace('{first}', first)}
 """
 
 
 def manifest(cfg, files, parity, prec, source_commit, card_sha):
-    return {"schema": "crispembed-mineru25-pro-publication-manifest-v1", "destination": cfg["destination"],
-            "source_commit": source_commit, "upstream": cfg["upstream"],
+    return {"schema": "crispembed-ocr-gguf-publication-manifest-v1", "destination": cfg["destination"],
+            "protocol": cfg["_protocol"], "source_commit": source_commit, "upstream": cfg["upstream"],
             "recipes": {f["variant"]: cfg["recipes"][f["variant"]] for f in files},
             "files": files, "readme_sha256": card_sha, "parity": parity,
-            "precision": {v: p for v, p in prec.items() if p}, "protocol_sha256": digest(ROOT / PROTOCOL)}
+            "precision": {v: p for v, p in prec.items() if p}, "protocol_sha256": digest(ROOT / cfg["_protocol"])}
 
 
 def publish(cfg, variants, gguf_dir, notice_dir, out, source_commit):
@@ -281,7 +280,7 @@ def publish(cfg, variants, gguf_dir, notice_dir, out, source_commit):
            for f in files]
     ops += [CommitOperationAdd(path_in_repo=n, path_or_fileobj=b) for n, b in small.items()]
     commit = api.create_commit(repo_id=cfg["destination"], operations=ops,
-                               commit_message="Publish MinerU2.5-Pro-2604 GGUF: " + ", ".join(variants))
+                               commit_message=f"Publish {cfg['card']['title']} GGUF: " + ", ".join(variants))
     info = api.model_info(cfg["destination"], revision=commit.oid, files_metadata=True)
     remote = {s.rfilename: s for s in info.siblings}
     require(set(remote) <= allowed, "remote file set outside the allowlist")
@@ -304,30 +303,33 @@ def publish(cfg, variants, gguf_dir, notice_dir, out, source_commit):
 
 def main(argv):
     cmd = argv[1] if len(argv) > 1 else ""
-    cfg, _ = load()
+    require(len(argv) > 2, "usage: plan PROTOCOL VARIANTS | notices PROTOCOL DIR | "
+                           "publish PROTOCOL VARIANTS GGUF_DIR NOTICES_DIR OUT")
+    cfg = load(argv[2])
     if cmd == "plan":
-        variants = parse_variants(argv[2] if len(argv) > 2 else "", cfg)
+        variants = parse_variants(argv[3] if len(argv) > 3 else "", cfg)
         receipts(cfg)
         for v in variants:
             precision(cfg, v)
-        steps, drop_f32 = plan(cfg, variants)
+        steps, drop = plan(cfg, variants)
         for kind, v, name, args in steps:
             print(kind, v, name, *args)
-        print("drop-f32" if drop_f32 else "keep-f32")
+        for name in drop:
+            print("drop", "-", name)
         return
     if cmd == "notices":
-        notices(cfg, argv[2])
+        notices(cfg, argv[3])
         return
-    require(cmd == "publish" and len(argv) == 6, "usage: plan VARIANTS | notices DIR | publish VARIANTS GGUF_DIR NOTICES_DIR OUT")
-    out = Path(argv[5])
+    require(cmd == "publish" and len(argv) == 7, "usage: publish PROTOCOL VARIANTS GGUF_DIR NOTICES_DIR OUT")
+    out = Path(argv[6])
     out.mkdir(parents=True, exist_ok=True)
-    report = {"schema": "crispembed-mineru25-pro-publication-report-v1", "status": "started"}
+    report = {"schema": "crispembed-ocr-gguf-publication-report-v1", "protocol": argv[2], "status": "started"}
     save = lambda: (out / "publication.json").write_text(json.dumps(report, indent=2) + "\n")
     try:
-        variants = parse_variants(argv[2], cfg)
+        variants = parse_variants(argv[3], cfg)
         report.update(variants=variants)
         save()
-        report["remote"] = publish(cfg, variants, argv[3], argv[4], out, os.environ.get("SOURCE_COMMIT"))
+        report["remote"] = publish(cfg, variants, argv[4], argv[5], out, os.environ.get("SOURCE_COMMIT"))
         report["status"] = "published and re-verified"
         save()
     except BaseException as e:

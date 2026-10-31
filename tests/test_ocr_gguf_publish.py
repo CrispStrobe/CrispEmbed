@@ -1,0 +1,156 @@
+"""Stdlib tests for tools/ci-heavy/ocr_gguf_publish.py (no network, no weights, no Hub)."""
+import hashlib
+import importlib.util
+import io
+import json
+import pathlib
+import shutil
+import tempfile
+import unittest
+
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+_spec = importlib.util.spec_from_file_location("ocr_publish", ROOT / "tools/ci-heavy/ocr_gguf_publish.py")
+p = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(p)
+PROTOCOLS = {"mineru": "docs/mineru25-pro-publication-v1.json", "teleocr": "docs/teleocr-publication-v1.json"}
+
+
+def cfg_of(name):
+    return p.load(PROTOCOLS[name])
+
+
+def parity(cfg, exact=True, cases=None):
+    cases = cfg["parity_cases"] if cases is None else cases
+    out = []
+    for i, c in enumerate(cases):
+        ids = [i, 151645]
+        arms = {a: {"exit": 0, "ids_exact": True, "ids": list(ids)} for a in cfg["parity_arms"]}
+        out.append({"id": c, "reference_ids": ids, "arms": arms})
+    if not exact:
+        out[-1]["arms"][cfg["parity_arms"][-1]].update(ids_exact=False, ids=[0], exit=1)
+    return {"completed": True, "commit": "a" * 40, "reference_revision": cfg["upstream"]["revision"],
+            "reference_versions": {"transformers": "4.57"}, "max_new_tokens": 1024, "cases": out}
+
+
+def precision(cfg, dtypes, broken=None):
+    return {"commit": "a" * 40, "arms": [
+        {"name": f"{dt}-cpu", "dtype": dt,
+         "cases": [{"id": c, "ids_exact": not (dt == broken and c == cfg["parity_cases"][0])}
+                   for c in cfg["parity_cases"]]} for dt in dtypes]}
+
+
+def fake_root(cfg, parity_receipt=None, precision_receipt=None):
+    d = pathlib.Path(tempfile.mkdtemp())
+    for rel in (cfg["_protocol"], cfg["converter"]["script"]):
+        (d / rel).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(ROOT / rel, d / rel)
+    if parity_receipt is not None:
+        path = d / cfg["receipts"]["parity"]
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(parity_receipt))
+    if precision_receipt is not None:
+        rel = next(r["precision_receipt"] for r in cfg["recipes"].values() if "precision_receipt" in r)
+        (d / rel).parent.mkdir(parents=True, exist_ok=True)
+        (d / rel).write_text(json.dumps(precision_receipt))
+    return d
+
+
+class Protocols(unittest.TestCase):
+    def test_pins_license_and_cases(self):
+        for name in PROTOCOLS:
+            with self.subTest(name=name):
+                cfg = cfg_of(name)
+                self.assertIn(cfg["destination"], p.ALLOWED_DESTINATIONS)
+                self.assertEqual(cfg["upstream"]["license"], "apache-2.0")
+                self.assertTrue(set(cfg["default_variants"]) <= set(cfg["recipes"]))
+                self.assertEqual(len(set(cfg["parity_cases"])), len(cfg["parity_cases"]))
+
+    def test_vendored_license_bytes_match_pins(self):
+        pairs = {"mineru": "licenses/mineru-vl-utils-LICENSE", "teleocr": "models/licenses/apache-2.0/LICENSE"}
+        for name, rel in pairs.items():
+            with self.subTest(name=name):
+                lf = cfg_of(name)["upstream"]["license_file"]
+                data = (ROOT / rel).read_bytes()
+                self.assertEqual((len(data), hashlib.sha256(data).hexdigest()), (lf["bytes"], lf["sha256"]))
+
+    def test_mineru_source_pins_match_contract(self):
+        cfg = cfg_of("mineru")
+        source = json.loads((ROOT / cfg["source_contract"]).read_text())
+        self.assertEqual((cfg["upstream"]["repo"], cfg["upstream"]["revision"]),
+                         (source["repository"], source["revision"]))
+        for image, task in cfg["case_inputs"].values():
+            self.assertTrue((ROOT / "tests/regression/images" / image).is_file(), image)
+            self.assertIn(task, ("layout", "text", "table", "formula", "image"))
+
+    def test_plans(self):
+        mineru = cfg_of("mineru")
+        steps, drop = p.plan(mineru, ["Q4_K_DQ8", "F16"])
+        self.assertEqual([s[:2] for s in steps], [("convert", "F32"), ("convert", "F16"), ("quantize", "Q4_K_DQ8")])
+        self.assertEqual(steps[-1][3], ["mineru25-pro-2604-f32.gguf", "q4_k", "--tensor-type", "l.*=q8_0"])
+        self.assertEqual(drop, ["mineru25-pro-2604-f32.gguf"])
+        df16 = p.plan(mineru, ["Q4_K_DF16"])[0][-1][3]
+        self.assertEqual(df16, ["mineru25-pro-2604-f32.gguf", "q4_k", "--decoder-f16"])
+        tele = cfg_of("teleocr")
+        steps, drop = p.plan(tele, ["Q4_K", "Q8_0"])
+        self.assertEqual([s[:2] for s in steps], [("convert", "F16"), ("convert", "Q8_0"), ("quantize", "Q4_K")])
+        self.assertEqual(steps[-1][3], ["teleocr-f16.gguf", "q4_k", "--tensor-type", "v.*=f16",
+                                        "--tensor-type", "l.embed_tokens.weight=f16"])
+        self.assertEqual(drop, ["teleocr-f16.gguf"])
+
+    def test_variants(self):
+        cfg = cfg_of("mineru")
+        self.assertEqual(p.parse_variants("", cfg), ["F16", "Q8_0", "Q4_K_DQ8"])
+        for bad in ("Q5_K", "F16,f16"):
+            with self.assertRaises(ValueError):
+                p.parse_variants(bad, cfg)
+
+
+class Receipts(unittest.TestCase):
+    def test_parity_gate(self):
+        for name in PROTOCOLS:
+            with self.subTest(name=name):
+                cfg = cfg_of(name)
+                with self.assertRaises(FileNotFoundError):
+                    p.receipts(cfg, fake_root(cfg))
+                self.assertEqual(list(p.receipts(cfg, fake_root(cfg, parity(cfg)))["cases"]), cfg["parity_cases"])
+                for bad in (parity(cfg, exact=False), parity(cfg, cases=cfg["parity_cases"][:-1])):
+                    with self.assertRaises(ValueError):
+                        p.receipts(cfg, fake_root(cfg, bad))
+
+    def test_precision_requires_every_case_exact(self):
+        cfg = cfg_of("teleocr")
+        root = fake_root(cfg, parity(cfg), precision(cfg, ["f16", "q8_0"], broken="q8_0"))
+        self.assertTrue(p.precision(cfg, "F16", root)["ids_exact"])
+        with self.assertRaises(ValueError):
+            p.precision(cfg, "Q8_0", root)
+        with self.assertRaises(ValueError):  # no q4_k arm at all
+            p.precision(cfg, "Q4_K", root)
+        self.assertIsNone(p.precision(cfg, "F32", root))
+
+
+class Notices(unittest.TestCase):
+    def test_hash_mismatch_refuses(self):
+        cfg = cfg_of("teleocr")
+        bad = lambda url, timeout: io.BytesIO(b"x" * cfg["upstream"]["license_file"]["bytes"])
+        with self.assertRaises(ValueError):
+            p.notices(cfg, tempfile.mkdtemp(), opener=bad)
+
+
+class Card(unittest.TestCase):
+    def test_cards(self):
+        for name, gate in (("mineru", "CRISPEMBED_MINERU25_PRO=1"), ("teleocr", "CRISPEMBED_TELEOCR=1")):
+            with self.subTest(name=name):
+                cfg = cfg_of(name)
+                par = p.receipts(cfg, fake_root(cfg, parity(cfg)))
+                fname = cfg["recipes"]["F16"]["filename"]
+                files = [{"variant": "F16", "filename": fname, "bytes": 10, "sha256": "0" * 64}]
+                text = p.card(cfg, files, par, {"F16": {"receipt": "r.json"}}, "b" * 40)
+                self.assertTrue(text.startswith("---\nlicense: apache-2.0\n"))
+                for needle in ("Statement of changes", cfg["upstream"]["revision"], gate, fname,
+                               "**F16** is token-ID exact", "Not verified", cfg["_protocol"]):
+                    self.assertIn(needle, text)
+                self.assertNotIn("{first}", text)
+
+
+if __name__ == "__main__":
+    unittest.main()

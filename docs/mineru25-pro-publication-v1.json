@@ -1,12 +1,21 @@
 {
-  "schema": "crispembed-mineru25-pro-publication-v1",
+  "schema": "crispembed-ocr-gguf-publication-v1",
   "approved_by_owner": true,
   "approval": "Owner instructed conversion, quantization and upload to a CrispEmbed HF repo with full wiring (2026-10-31). A variant is publishable only when its committed receipt shows every case token-ID exact against the pinned original Python model.",
   "destination": "cstr/MinerU2.5-Pro-2604-1.2B-GGUF",
   "token_secret": "HF_PUBLISH_TOKEN",
   "source_contract": "models/mineru25-pro-source.json",
   "spec": "docs/mineru25-pro.md",
-  "converter": "models/convert-mineru25-pro-to-gguf.py",
+  "converter": {
+    "script": "models/convert-mineru25-pro-to-gguf.py",
+    "args": [
+      "--model",
+      "{src}",
+      "--output",
+      "{out}"
+    ],
+    "requirements": "tools/mineru25-conversion-requirements.txt"
+  },
   "quantizer": "tools/quantize.cpp (crispembed-quantize)",
   "upstream": {
     "repo": "opendatalab/MinerU2.5-Pro-2604-1.2B",
@@ -42,7 +51,8 @@
       "convert_args": [
         "--dtype",
         "f32"
-      ]
+      ],
+      "note": "lossless conversion"
     },
     "F16": {
       "filename": "mineru25-pro-2604-f16.gguf",
@@ -52,7 +62,8 @@
         "f16"
       ],
       "precision_receipt": "tests/results/mineru25/precision.json",
-      "precision_dtype": "f16"
+      "precision_dtype": "f16",
+      "note": "F16 weights, F32 norms/biases"
     },
     "Q8_0": {
       "filename": "mineru25-pro-2604-q8_0.gguf",
@@ -60,7 +71,8 @@
       "type": "q8_0",
       "tensor_type": [],
       "precision_receipt": "tests/results/mineru25/precision.json",
-      "precision_dtype": "q8_0"
+      "precision_dtype": "q8_0",
+      "note": "all eligible matrices Q8_0"
     },
     "Q4_K": {
       "filename": "mineru25-pro-2604-q4_k.gguf",
@@ -68,7 +80,8 @@
       "type": "q4_k",
       "tensor_type": [],
       "precision_receipt": "tests/results/mineru25/precision.json",
-      "precision_dtype": "q4_k"
+      "precision_dtype": "q4_k",
+      "note": "all eligible matrices Q4_K (rows not divisible by 256 fall back to 32-wide types)"
     },
     "Q4_K_DQ8": {
       "filename": "mineru25-pro-2604-q4_k-dq8.gguf",
@@ -150,5 +163,18 @@
       "derived/german_official_document__rot90.png",
       "layout"
     ]
+  },
+  "card": {
+    "title": "MinerU2.5-Pro-2604-1.2B",
+    "authors": "the MinerU Team (OpenDataLab)",
+    "tags": [
+      "document-parsing",
+      "mineru",
+      "qwen2-vl"
+    ],
+    "runtime_note": "They target CrispEmbed's MinerU profile of its Qwen2-VL graph and are not llama.cpp mmproj pairs.",
+    "license_note": "the model repository declares `license: apache-2.0` but ships no LICENSE file, so this is the publisher's own `LICENSE.md` from [opendatalab/mineru-vl-utils@c9797cde8f54](https://github.com/opendatalab/mineru-vl-utils/blob/c9797cde8f54cc48306196fc6aebe73ea31dd4a3/LICENSE.md)",
+    "not_verified": "Not verified: GPU backends, multi-page documents, aggregate document benchmarks, contexts beyond the profile's 8,192 tokens.",
+    "usage": "MinerU2.5-Pro support is experimental and default-off in CrispEmbed:\n\n```bash\nCRISPEMBED_MINERU25_PRO=1 crispembed --ocr-pipeline page.png \\\\\n  --ocr-engine mineru25-pro --ocr-rec {first}\n```\n\nPython (native inference with the pinned upstream document helper for full postprocessing):\n\n```python\nfrom crispembed import CrispMinerU\nwith CrispMinerU(\"{first}\", image_analysis=True) as m:\n    print(m.to_markdown(m.two_step_extract(\"page.png\")))\n```"
   }
 }

@@ -1,0 +1,120 @@
+{
+  "schema": "crispembed-ocr-gguf-publication-v1",
+  "approved_by_owner": true,
+  "approval": "Owner instructed conversion, quantization and upload to a CrispEmbed HF repo with full wiring (2026-10-31). A variant is publishable only when its committed receipt shows every case token-ID exact against the pinned original Python model.",
+  "destination": "cstr/TeleOCR-GGUF",
+  "token_secret": "HF_PUBLISH_TOKEN",
+  "source_contract": "tests/results/teleocr/source-manifest.json",
+  "spec": "docs/teleocr.md",
+  "upstream": {
+    "repo": "XingChen-AGI/TeleOCR",
+    "revision": "b3f6a0c084db72f971e19a779d2fd8a6bc9e3b8d",
+    "license": "apache-2.0",
+    "copyright": "XingChen-AGI / China Telecom; modeling code Copyright 2025 The Qwen Team and The HuggingFace Inc. team",
+    "readme": {
+      "bytes": 16801,
+      "sha256": "176c705cd92eeb9006c048e72274741e839f2bafa2bae858e64c3277264eb0db"
+    },
+    "license_file": {
+      "note": "Neither the model repository nor the official code repository ships a LICENSE file (2026-10-31); the model card declares apache-2.0 and modeling_naviocr.py carries an Apache-2.0 header. The verbatim text is the canonical Apache-2.0 file, byte-identical to models/licenses/apache-2.0/LICENSE.",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    "notice_file": {
+      "present": false,
+      "note": "No upstream NOTICE file exists; the card carries attribution and the statement of changes."
+    }
+  },
+  "converter": {
+    "script": "models/convert-teleocr-to-gguf.py",
+    "args": [
+      "--model",
+      "{src}",
+      "--output",
+      "{out}"
+    ],
+    "requirements": "models/requirements-teleocr.txt"
+  },
+  "default_variants": [
+    "F16",
+    "Q8_0"
+  ],
+  "recipes": {
+    "F32": {
+      "filename": "teleocr-f32.gguf",
+      "from": "convert",
+      "convert_args": [
+        "--dtype",
+        "f32"
+      ],
+      "note": "lossless conversion"
+    },
+    "F16": {
+      "filename": "teleocr-f16.gguf",
+      "from": "convert",
+      "convert_args": [
+        "--dtype",
+        "f16"
+      ],
+      "note": "F16 matrices, F32 norms/biases",
+      "precision_receipt": "tests/results/teleocr/hosted-precision.json",
+      "precision_dtype": "f16"
+    },
+    "Q8_0": {
+      "filename": "teleocr-q8_0.gguf",
+      "from": "convert",
+      "convert_args": [
+        "--dtype",
+        "q8_0"
+      ],
+      "note": "decoder matrices Q8_0; vision, merger and tied embedding F16",
+      "precision_receipt": "tests/results/teleocr/hosted-precision.json",
+      "precision_dtype": "q8_0"
+    },
+    "Q4_K": {
+      "filename": "teleocr-q4_k.gguf",
+      "from": "F16",
+      "type": "q4_k",
+      "tensor_type": [
+        "v.*=f16",
+        "l.embed_tokens.weight=f16"
+      ],
+      "note": "decoder matrices Q4_K; vision, merger and tied embedding F16",
+      "precision_receipt": "tests/results/teleocr/hosted-precision.json",
+      "precision_dtype": "q4_k"
+    }
+  },
+  "receipts": {
+    "parity": "tests/results/teleocr/hosted-parity.json"
+  },
+  "parity_arms": [
+    "f32"
+  ],
+  "parity_cases": [
+    "text",
+    "formula",
+    "table",
+    "code",
+    "layout",
+    "synthetic"
+  ],
+  "qualification": {
+    "default_enabled": false,
+    "gate": "F32 token-ID exact on all six frozen cases against the pinned original module; reduced precisions publish only when token-ID exact on every case",
+    "registry_alias": "added only after upload, with the real published SHA256"
+  },
+  "card": {
+    "title": "TeleOCR",
+    "authors": "XingChen-AGI / China Telecom",
+    "tags": [
+      "document-parsing",
+      "teleocr",
+      "qwen2.5-vl"
+    ],
+    "runtime_note": "They target CrispEmbed's TeleOCR profile (`general.architecture = teleocr`, GGUF v1) and are not loadable by llama.cpp.",
+    "license_note": "the model card declares `license: apache-2.0` and the model's `modeling_naviocr.py` carries an Apache-2.0 header, but no LICENSE file is shipped upstream, so this is the canonical Apache-2.0 text from apache.org",
+    "not_verified": "Not verified: GPU numerical parity, other CPU/kernel combinations, mobile/WASM, aggregate OCR benchmarks beyond the six frozen cases.",
+    "usage": "TeleOCR support is experimental and default-off in CrispEmbed (CPU by default):\n\n```bash\nCRISPEMBED_TELEOCR=1 crispembed --ocr-pipeline page.png \\\\\n  --ocr-engine teleocr --ocr-rec {first}\n```"
+  }
+}
