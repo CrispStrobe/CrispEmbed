@@ -10,60 +10,33 @@ This is an open roadmap. No new portfolio release, default flip or quantized
 qualification is claimed. Development VERSION is0.17.14; the application stays
 on immutable0.17.12. Do not bump versions for this documentation handoff.
 
-## Next release: pub.dev publication
+## pub.dev publication handoff (31 October 2026)
 
-The next qualified CrispEmbed release must also publish the matching Flutter
-package to pub.dev. As of 31 October 2026, pub.dev's latest is 0.16.1; the
-repository's development version is 0.17.14 and the latest GitHub release is
-v0.17.12. A normal `v<version>` tag does not trigger the existing
-`crispembed-v<version>` pub workflow; both recorded publish runs were cancelled.
-The package administrator confirmed that the current pub.dev automated publisher
-uses `crispembed-v{{version}}`. After the replacement workflow is qualified and
-merged, the administrator must switch this to `v{{version}}` and verify the
-repository, push-event setting, and required `pub.dev` environment before the
-next tag. The rule-less GitHub environment exists.
+The published Flutter package is 0.16.1; the development package is 0.17.14.
+The existing native release workflow uses `v<version>` tags, while the current
+pub.dev trusted publisher uses `crispembed-v{{version}}` (administrator
+confirmed). A normal native release tag therefore does not run that publisher.
+Do not change the pub.dev setting until a replacement is qualified and merged.
 
-Before release, make publishing depend on the matching native asset builds,
-validate the tag and package version, fix Android's stale 0.16.0 asset version,
-update the package changelog, and perform hosted package and consumer checks.
-Linux and Windows do not currently fetch their excluded native libraries; their
-documented manual provisioning or a qualified packaging change remains required.
-Apple podspecs depend on CocoaPods `prepare_command` to fetch excluded libraries.
-CocoaPods documentation says that command is skipped for path-based pods, but
-observed implementations have sometimes executed it; do not depend on this as a
-portable contract. Fresh Apple consumers must exercise native symbols before
-publication.
-The draft pub.dev preflight only checks tags, changelog and matching built/published
-archive bytes; it does not yet enforce portfolio qualification, WASM or actual
-consumer validation, and does not prevent earlier GitHub asset publication. Its
-OIDC workflow and Android Gradle behavior also require hosted end-to-end checks.
-The draft `publish-pubdev` job is deliberately disabled until source-matched
-qualification and fresh consumers are enforced; do not merge it as a completed
-publishing solution. GitHub's native release assets can still be made public
-before that job. The existing `crispembed-v` publisher is retained; changing
-pub.dev's tag pattern now would break its current path. Bundling qualified Apple
-libraries in the package is a candidate repair,
-but its package size, install names, payload and actual consumer builds are not
-yet measured. The reusable publisher checks out separately, so any staged
-binaries must be passed into the exact package tree that is actually published.
-An exploratory hosted census of the public `v0.17.12` Apple archives found one
-iOS static library (8,774,064 bytes) and six real macOS dylibs (8,096,688 bytes
-combined), plus macOS symlinks. Their archive digests matched the GitHub release
-metadata. This historical size/layout is not evidence for a future payload;
-the macOS `libcrispembed.dylib` alias and its install-name dependency closure
-still need verification in the actual consumer bundle.
-A separate test-only branch dispatched a clean-cache Flutter 3.47.9 CocoaPods
-consumer of the already published 0.16.1 package to hosted macOS
-([run 41213168996](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41213168996),
-source `cbdd214bf8fbe7e284b5602f9ce10a755a37575e`). Both builds completed, but
-the macOS build warned that arm64 libraries were ignored for x86_64, and the
-app did not call native symbols. This tests the old published package, not a
-candidate, runtime FFI, or pub.dev release gate.
-The initial workflow revision failed validation because `runner.temp` was used
-in job-level `env`; the dispatched revision initializes it in a runner step.
-The portfolio, artifact and consumer gates below still apply. Do not publish or
-claim an automated publication until the final tag's workflow and pub.dev
-readback succeed.
+[Draft PR #91](https://github.com/CrispStrobe/CrispEmbed/pull/91) proposes a
+release preflight, but leaves the new publisher disabled and retains the old
+publisher. It is not a completed publishing solution: the preflight checks
+asset identity, not source qualification or consumer functionality, and GitHub
+release assets may become public before it runs. The package changelog also lacks
+the current development version. The draft Android version change needs an
+actual Gradle consumer test, and existing cached libraries are not verified
+against the requested version. Preserve the current publisher until replacement.
+
+The draft's model-free preflight has seven hosted contract tests passing. A
+[hosted Apple baseline](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41213168996)
+using the already-published 0.16.1 package built a clean Flutter app for macOS
+and iOS; the macOS build warned about arm64 libraries in its x86_64 link, and
+the app did not call native symbols. This does not qualify the development
+package, Apple FFI runtime, Android, Linux, Windows, OIDC, or publication.
+Before a release, verify source-matched assets and fresh consumers, coordinate
+the trusted tag pattern, update the changelog, and confirm the actual pub.dev
+publication by registry readback. No version bump or publication is made by
+this handoff.
 
 ## Immediate executable order
 
