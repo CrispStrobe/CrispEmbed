@@ -2945,13 +2945,10 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
                 const int64_t row = n_kv;
                 ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "kv_index"), &row, 0, sizeof(row));
             }
-            if (!reuse_decode || first_cached_step) {
-                ggml_backend_tensor_set(km, kv_mask_data.data(), 0, size_t(attention_extent) * sizeof(ggml_fp16_t));
-            } else {
-                // Only one newly visible position changes in the persistent mask.
-                ggml_backend_tensor_set(km, kv_mask_data.data() + n_kv, size_t(n_kv) * sizeof(ggml_fp16_t),
-                                        sizeof(ggml_fp16_t));
-            }
+            // Upload the whole mask every step, also for the persistent graph:
+            // ggml-alloc frees graph inputs after their last consumer, so the
+            // mask's memory holds intermediates from the previous compute.
+            ggml_backend_tensor_set(km, kv_mask_data.data(), 0, size_t(attention_extent) * sizeof(ggml_fp16_t));
             long long upload_ms = qwen_ms_since(t_part);
             t_part = qwen_clock::now();
 
@@ -2971,6 +2968,7 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
                 best_id = choice.id;
                 best_score = choice.logit;
                 if (best_id < 0) {
+                    fprintf(stderr, "qwen2vl_ocr: non-finite or fully masked decode logits (step %d)\n", gen);
                     if (!reuse_decode) ggml_free(g);
                     return false;
                 }
