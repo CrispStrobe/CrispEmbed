@@ -3,7 +3,8 @@
 
 The OXR native document port reproduces Python str.isspace/isalpha/isalnum/
 isdecimal (and therefore re's Unicode \\s, \\w, \\d) exactly. Run with the
-Python whose unicodedata version the reference helper uses:
+Python whose unicodedata version the reference helper uses (CPython 3.12,
+Unicode 15.0, as in the upstream vLLM image and the hosted parity lane):
     python tools/gen_py_str_tables.py > src/core/py_str_tables.h
 """
 import sys
