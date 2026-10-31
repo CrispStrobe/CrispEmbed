@@ -144,7 +144,27 @@ speed, reusable-graph A/B, GPU/backends and Rust/Dart runtime checks remain open
 The supplied [hosted workflow](.github/workflows/oxr.yml) has not been dispatched.
 Do not publish aliases, promote defaults or infer vLLM throughput from component
 checks. The original D-FINE layout service remains separate; supplied regions
-allow the adapter to avoid that service. A native D-FINE graph is not implemented.
+allow the adapter to avoid that service. The native D-FINE layout detector now
+lives on `feat/oxr-dfine` (see below).
+
+### OXR-1.0 D-FINE layout detector (feat/oxr-dfine, 1 November 2026)
+
+Native `dfine` architecture of `layout_detect` ([docs/oxr-dfine.md](docs/oxr-dfine.md)),
+gated by `CRISPEMBED_OXR=1` + `CRISPEMBED_ACCEPT_OXR_LICENSE=1`. Hosted run
+41250159815: F32 OXR-selected regions match the original service on all five
+pages (boxes <= 4.4e-4 px, scores <= 1.8e-4), preprocessing bit-exact, heron
+byte-identical; stage budget 5e-3 fails in decoder layers 2-3 on receipt/german
+(native closer to float64 than PyTorch FP32 on 55-56/56 stages); F16 rejected.
+Open, in order:
+
+1. Speed: native 1.44 s vs PyTorch 0.52 s per page (run 41251744740, 4 threads;
+   2.6-2.7x). Opt-in dw-direct is 18% faster, same regions, one extra stage-budget
+   failure; conv-direct is slower. Next: per-op profile of the encoder graph
+   (im2col 3x3 convs, concat chains) before any default change; keep paths gated.
+2. End-to-end `CrispOXR(layout_model=)` document output vs the service-backed
+   pipeline on the same pages (JSON/Markdown), once the document-assembly lane lands.
+3. Optional: `class_confidences`, GPU backend qualification, Rust/Dart runtime tests.
+No publication, alias, merge into feat/teleocr, tag or default flip follows.
 
 **Native OXR document route (`feat/oxr-native-doc`, `CRISPEMBED_OXR_NATIVE_DOC=1`, default off).**
 The pinned helper's `process_pages`, minus the layout detector, is translated to C++

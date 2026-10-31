@@ -1,0 +1,2 @@
+52cefd3fbd4c3791744d291bdb310d707cef34a1fc39f503a976696036f4398a  /mnt/heavy/scratch/oxr-dfine-f16.gguf
+f092601e1571c57b62e0ce8ae4e1ed8e91334405cbb8ca95e20dd5c012fbf7ef  /mnt/heavy/scratch/oxr-dfine-f32.gguf

@@ -20,6 +20,8 @@ typedef OxrPredictNative = Pointer<Utf8> Function(Pointer<Void>, Pointer<Uint8>,
 typedef OxrPredict = Pointer<Utf8> Function(Pointer<Void>, Pointer<Uint8>, int, int, int, Pointer<Utf8>, int, double);
 typedef OxrStringNative = Pointer<Utf8> Function(Pointer<Void>);
 typedef OxrString = Pointer<Utf8> Function(Pointer<Void>);
+typedef OxrLayoutDetectNative = Pointer<Utf8> Function(Pointer<Void>, Pointer<Uint8>, Int32, Int32, Int32, Float);
+typedef OxrLayoutDetect = Pointer<Utf8> Function(Pointer<Void>, Pointer<Uint8>, int, int, int, double);
 typedef OxrProcessPagesNative = Pointer<Utf8> Function(Pointer<Void>, Pointer<Pointer<Uint8>>, Pointer<Int32>,
     Pointer<Int32>, Pointer<Int32>, Int32, Pointer<Void>, Pointer<Int32>, Pointer<Utf8>, Pointer<Utf8>);
 typedef OxrProcessPages = Pointer<Utf8> Function(Pointer<Void>, Pointer<Pointer<Uint8>>, Pointer<Int32>,

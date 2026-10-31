@@ -17,4 +17,5 @@ export 'src/scan_cleanup.dart';
 export 'src/systemone.dart';
 export 'src/mineru.dart';
 export 'src/oxr.dart';
+export 'src/oxr_layout.dart';
 export 'src/marker.dart';

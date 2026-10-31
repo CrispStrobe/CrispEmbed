@@ -195,7 +195,8 @@ class CrispOXR:
         self, model_path: str | os.PathLike[str], n_threads: int = 4,
         lib_path: str | None = None, *,
         blueprint_path: str | os.PathLike[str] | None = None,
-        layout_url: str | None = None, max_new_tokens: int = 8192,
+        layout_url: str | None = None, layout_model: str | os.PathLike[str] | None = None,
+        max_new_tokens: int = 8192,
         layout_score_threshold: float = 0.5,
         layout_nms_iou_threshold: float | None = 0.6,
         layout_provides_reading_order: bool = False,
@@ -236,6 +237,10 @@ class CrispOXR:
             parsed = urlsplit(layout_url)
             if parsed.scheme not in {"http", "https"} or not parsed.netloc:
                 raise ValueError("layout_url must be an explicit HTTP(S) URL")
+        if layout_model is not None and layout_url is not None:
+            raise ValueError("Pass layout_model (native D-FINE) or layout_url (service), not both")
+        self._native_layout = None
+        self._layout_model = None if layout_model is None else os.fspath(layout_model)
         self._layout_options = dict(
             url=layout_url, score_threshold=layout_score_threshold,
             nms_iou_threshold=layout_nms_iou_threshold,
@@ -264,6 +269,9 @@ class CrispOXR:
         self._ctx = self._lib.crispembed_oxr_init(path.encode("utf-8"), n_threads)
         if not self._ctx:
             raise RuntimeError(self._error())
+        if self._layout_model is not None:
+            from ._oxr_layout import CrispOXRLayout
+            self._native_layout = CrispOXRLayout(self._layout_model, n_threads, lib_path)
 
     @staticmethod
     def _budget(value: int) -> int:
@@ -438,8 +446,8 @@ class CrispOXR:
         with self._lock:
             self._require_open()
             helper = self._official_helper()
-            if layout_response is None and not self._layout_options["url"]:
-                raise ValueError("Document processing requires supplied layouts or an explicit layout_url")
+            if layout_response is None and not self._layout_options["url"] and self._native_layout is None:
+                raise ValueError("Document processing requires supplied layouts, layout_model or layout_url")
             self.last_trace = []
             self._last_outcomes = {}
             original_layout = helper.analyze_layouts
@@ -452,6 +460,16 @@ class CrispOXR:
                 if supplied is not None:
                     return parser.parse_layout_batch(
                         supplied, [(int(p.shape[1]), int(p.shape[0])) for p in page_images],
+                        config.layout_analyze_model.score_threshold,
+                        config.layout_analyze_model.nms_iou_threshold,
+                    )
+                if self._native_layout is not None:
+                    # Same boundary as the HTTP client: helper pages are BGR,
+                    # the service decodes them to RGB before preprocessing.
+                    response = await asyncio.to_thread(
+                        self._native_layout.analyze, [np.ascontiguousarray(p[:, :, ::-1]) for p in page_images])
+                    return parser.parse_layout_batch(
+                        response, [(int(p.shape[1]), int(p.shape[0])) for p in page_images],
                         config.layout_analyze_model.score_threshold,
                         config.layout_analyze_model.nms_iou_threshold,
                     )
@@ -493,7 +511,9 @@ class CrispOXR:
                     "inspect last_trace, or explicitly allow_truncated_content"
                 )
             result["metadata"]["crispembed"] = {
-                "engine": "oxr-1.0", "layout_source": "provided" if supplied is not None else "http_service",
+                "engine": "oxr-1.0",
+                "layout_source": ("provided" if supplied is not None
+                                  else "native_dfine" if self._native_layout is not None else "http_service"),
                 "native_requests": len(self.last_trace),
                 "unresolved_capped_requests": len(unfinished),
                 "blueprint_revision": BLUEPRINT_REVISION,
@@ -631,6 +651,9 @@ class CrispOXR:
             if self._ctx:
                 self._lib.crispembed_oxr_free(self._ctx)
                 self._ctx = None
+            if getattr(self, "_native_layout", None) is not None:
+                self._native_layout.close()
+                self._native_layout = None
             if self._blueprint is not None:
                 self._blueprint.close()
                 self._blueprint = None

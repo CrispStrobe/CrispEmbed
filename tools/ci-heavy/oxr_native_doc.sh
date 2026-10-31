@@ -73,7 +73,7 @@ if has dfine || has native; then
     python -m pip install -q torch==2.11.0 torchvision==0.26.0 --index-url https://download.pytorch.org/whl/cpu || exit 3
     python -m pip freeze > "$TOP/packages-dfine.txt"
     mkdir -p "$TOP/layouts"
-    python tools/oxr_dfine_reference.py --oxr-source "$S/oxr-src" --out "$TOP/layouts" "${CASES[@]}" \
+    python tools/oxr_dfine_fixtures.py --oxr-source "$S/oxr-src" --out "$TOP/layouts" "${CASES[@]}" \
         > "$TOP/dfine.log" 2>&1
     note dfine "$([ $? = 0 ] && echo pass || echo fail)"
     cat "$TOP/dfine.log"

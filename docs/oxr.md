@@ -5,7 +5,9 @@ native GGML, adds a pinned GGUF converter, and connects the native model to
 OXR's original Python document helpers. The document route preserves the
 upstream layout parsing, crops, reading-order recovery, content repairs, JSON,
 and Markdown assembly. Layout detection remains a separate model: supply
-regions explicitly or configure the original D-FINE layout service.
+regions explicitly, use the native D-FINE layout detector
+([docs/oxr-dfine.md](oxr-dfine.md), `layout_model=`), or configure the original
+D-FINE layout service.
 
 **Quality parity and speed parity have not been established.** The code and
 component controls are implemented; full checkpoint conversion, model-backed
@@ -23,7 +25,7 @@ status when describing or redistributing this implementation.
 | Python `CrispOXR.process_pages` / `process_document` | Original document helpers with native recognition and reading order, supplied regions or explicit external layout service, complete upstream JSON and Markdown outputs. |
 | Generic OCR, CLI, orchestrator engine 26 | Recognition on the supplied image. Engine names are `oxr` and `oxr-1.0`; an explicit local GGUF is required. The existing HTTP orchestrator uses the same stage. |
 | Rust `Oxr` and Dart `CrispOXR` | Owning wrappers for image and text-only C API requests; compilation and runtime validation remain pending. |
-| D-FINE layout detector | External or supplied-region boundary only. No native D-FINE graph or GGUF conversion is included. |
+| D-FINE layout detector | Native GGML in `layout_detect` (`layout.arch=dfine`), converter `models/convert-oxr-dfine-to-gguf.py`, `crispembed_oxr_layout_*` API returning the service's `/inference` JSON; see [oxr-dfine.md](oxr-dfine.md). External service and supplied regions remain supported. |
 
 The generic OCR/orchestrator stage does not run the Python document helper.
 For page segmentation, block ordering, tables, and assembled document output,
@@ -345,15 +347,17 @@ with CrispOXR('oxr-f32.gguf', n_threads=4,
 response. `CrispOXR.layout_response_from_regions` constructs that response from
 the convenient region lists. Both routes still run the original validation,
 score filtering, clipping, and NMS. Supply either `layouts` or
-`layout_response`, not both. With neither supplied, an explicit `layout_url`
-is required.
+`layout_response`, not both. With neither supplied, either `layout_model=`
+(native D-FINE GGUF, see [oxr-dfine.md](oxr-dfine.md)) or an explicit
+`layout_url` is required.
 
 ### Original external layout service and PDFs
 
 The detector is an HGNetv2-B2/HybridEncoder/D-FINE model with 12 classes,
-960-pixel input, and four decoder layers. CrispEmbed's existing RT-DETR layout
-graph has a different backbone, decoder, and class contract, so those weights
-cannot be treated as an interchangeable native layout model.
+960-pixel input, and four decoder layers. It is now available natively as the
+`dfine` architecture of `layout_detect` ([oxr-dfine.md](oxr-dfine.md)); the
+heron RT-DETRv2 weights and class contract remain separate. The external
+service route below is unchanged.
 
 Deploy the original detector according to the
 [pinned upstream instructions](https://github.com/SoMarkAI/OXR/blob/c1a1dcb312ee9f691404f127785510453c0d9350/README.md).
@@ -469,7 +473,7 @@ example, a label of `3.0` is rejected because it is a float. In C++,
 `oxr_document::from_layout_detect` converts `layout_detect::region` values
 whose `label_name` is an OXR class name. That lets a native D-FINE provider
 plug in without any change to the document route.
-`tools/oxr_dfine_reference.py` runs the original detector in-process (CPU,
+`tools/oxr_dfine_fixtures.py` runs the original detector in-process (CPU,
 F32, authenticated `layout_analysis/last.pth` and `metadata.json`) and freezes
 its responses as fixtures.
 

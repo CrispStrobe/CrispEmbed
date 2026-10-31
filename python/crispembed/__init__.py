@@ -17,6 +17,7 @@ from ._binding import (
 from ._moedern_text import CrispMoEdern
 from ._mineru import CrispMinerU
 from ._oxr import CrispOXR
+from ._oxr_layout import CrispOXRLayout
 
 from ._systemone import CrispSystemOne
 from ._marker import CrispMarker
@@ -27,6 +28,7 @@ __all__ = [
     "CrispMoEdern",
     "CrispMinerU",
     "CrispOXR",
+    "CrispOXRLayout",
     "set_gpu_backend",
     "set_offline",
     "is_offline",
