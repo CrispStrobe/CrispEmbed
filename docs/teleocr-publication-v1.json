@@ -38,7 +38,8 @@
   },
   "default_variants": [
     "F16",
-    "Q8_0"
+    "Q8_0",
+    "Q4_K_M"
   ],
   "recipes": {
     "F32": {
@@ -129,7 +130,8 @@
   "qualification": {
     "default_enabled": false,
     "gate": "F32 token-ID exact on all six frozen cases against the pinned original module; reduced precisions publish only when token-ID exact on every case",
-    "registry_alias": "added only after upload, with the real published SHA256"
+    "registry_alias": "added only after upload, with the real published SHA256",
+    "recipe_note": "Hosted 41221930556: F32/F16/Q8_0 and Q4_K_M token-exact on all six cases; plain Q4_K diverges on code (also 41218184857), Q4_K_ATTN8 on table and code. Vision stays F16 in every recipe, so Q4_K_M is 1,834 MB vs 2,015 MB for Q8_0."
   },
   "card": {
     "title": "TeleOCR",
