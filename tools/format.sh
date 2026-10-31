@@ -67,13 +67,15 @@ for arg in "$@"; do
 done
 
 if [[ ${#files[@]} -eq 0 ]]; then
-    # Default scope: project-owned C++ only. NEVER the vendored ggml/ submodule
-    # or bundled single-header libraries.
+    # Default scope: project-owned C++ only. NEVER the vendored ggml/ submodule,
+    # bundled single-header libraries, or tests/results/ (retained evidence:
+    # source snapshots and probes whose bytes must stay as executed).
     while IFS= read -r f; do files+=("$f"); done < <(
         find src examples tests \
              \( -name '*.cpp' -o -name '*.h' -o -name '*.c' -o -name '*.hpp' \) \
              ! -path '*/ggml/*' \
              ! -path '*/third_party/*' \
+             ! -path 'tests/results/*' \
              ! -name 'httplib.h' \
              ! -name 'miniaudio.h' \
              ! -name 'json.hpp' \
