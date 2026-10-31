@@ -196,7 +196,9 @@ def fetch_hf_license(api, repo_id: str) -> Tuple[str, str]:
     # `other` + `lfm1.0`). Reading only `license` reports every such model as
     # OTHER and flags our correct, *more* specific declared tag as a mismatch.
     # Prefer the specific name — it is the one a redistributor has to honour.
-    if lic.lower() == "other":
+    # Qwen's research-licensed repos (e.g. Qwen/Qwen2.5-VL-3B-Instruct) omit `license`
+    # entirely and set only `license_name: qwen-research`; treat that like `other`.
+    if lic.lower() in ("other", ""):
         name = getattr(card, "license_name", None)
         if isinstance(name, str) and name.strip():
             return name.strip(), "OK"
