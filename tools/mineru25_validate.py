@@ -161,6 +161,7 @@ def load_vision_weights(model, path):
     import importlib.util
     import gguf
     import numpy as np
+    import torch
     spec = importlib.util.spec_from_file_location(
         "mineru_converter", Path(__file__).resolve().parents[1] / "models/convert-mineru25-pro-to-gguf.py")
     converter = importlib.util.module_from_spec(spec)
