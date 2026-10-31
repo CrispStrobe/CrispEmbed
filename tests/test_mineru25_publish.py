@@ -69,6 +69,9 @@ class Protocol(unittest.TestCase):
         steps, drop = p.plan(CFG, ["Q4_K", "F16"])
         self.assertEqual([s[:2] for s in steps], [("convert", "F32"), ("convert", "F16"), ("quantize", "Q4_K")])
         self.assertTrue(drop)
+        mixed = {s[1]: s[3] for s in p.plan(CFG, ["Q4_K_DQ8", "Q4_K_DF16"])[0]}
+        self.assertEqual(mixed["Q4_K_DQ8"], ["q4_k", "--tensor-type", "l.*=q8_0"])
+        self.assertEqual(mixed["Q4_K_DF16"], ["q4_k", "--decoder-f16"])
         self.assertEqual(p.plan(CFG, ["F16"]), ([("convert", "F16", "mineru25-pro-2604-f16.gguf", ["--dtype", "f16"])], False))
 
     def test_variants(self):

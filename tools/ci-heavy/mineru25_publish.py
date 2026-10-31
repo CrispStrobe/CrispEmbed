@@ -125,7 +125,7 @@ def plan(cfg, variants):
             steps.append(("convert", v, rec["filename"], rec["convert_args"]))
         else:
             tt = [a for o in rec.get("tensor_type", []) for a in ("--tensor-type", o)]
-            steps.append(("quantize", v, rec["filename"], [rec["type"], *tt]))
+            steps.append(("quantize", v, rec["filename"], [rec["type"], *tt, *rec.get("extra_args", [])]))
     steps.sort(key=lambda s: s[0] != "convert")
     return steps, need_f32 and "F32" not in variants
 

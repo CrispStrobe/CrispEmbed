@@ -67,6 +67,29 @@
       "tensor_type": [],
       "precision_receipt": "tests/results/mineru25/precision.json",
       "precision_dtype": "q4_k"
+    },
+    "Q4_K_DQ8": {
+      "filename": "mineru25-pro-2604-q4_k-dq8.gguf",
+      "from": "F32",
+      "type": "q4_k",
+      "tensor_type": [
+        "l.*=q8_0"
+      ],
+      "note": "vision Q4_K, decoder (l.*) Q8_0",
+      "precision_receipt": "tests/results/mineru25/precision.json",
+      "precision_dtype": "q4_k-dq8"
+    },
+    "Q4_K_DF16": {
+      "filename": "mineru25-pro-2604-q4_k-df16.gguf",
+      "from": "F32",
+      "type": "q4_k",
+      "tensor_type": [],
+      "extra_args": [
+        "--decoder-f16"
+      ],
+      "note": "vision Q4_K, decoder (l.*) F16",
+      "precision_receipt": "tests/results/mineru25/precision.json",
+      "precision_dtype": "q4_k-df16"
     }
   },
   "receipts": {

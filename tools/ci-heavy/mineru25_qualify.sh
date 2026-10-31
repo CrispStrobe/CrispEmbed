@@ -5,7 +5,7 @@
 #       -f args="CASE TASK [VARIANTS] [MAX_TOKENS] [REPEAT]" -f isolated_lane=mineru25-<case>
 #
 # CASE is a path under tests/regression/images (gold, if any, at <stem>.gt.txt).
-# VARIANTS defaults to f32,f16,q8_0,q4_k. The F32 arm is the gate: preprocessing,
+# VARIANTS defaults to f32,f16,q8_0,q4_k,q4_k-dq8 (decoder q8_0),q4_k-df16 (decoder f16). The F32 arm is the gate: preprocessing,
 # all 64 stages (max abs <= 0.002 and cosine >= 0.99999), and exact IDs/text/EOS
 # plus warm speed versus the pinned original Python, for both the ordinary and the
 # reuse decode graph. Other precisions are measured against the same frozen
@@ -15,7 +15,7 @@ set -uo pipefail
 
 CASE=${1:?case image path under tests/regression/images}
 TASK=${2:?task: layout|text|table|formula|image}
-VARIANTS=${3:-f32,f16,q8_0,q4_k}
+VARIANTS=${3:-f32,f16,q8_0,q4_k,q4_k-dq8,q4_k-df16}
 MAX_TOKENS=${4:-2048}
 REPEAT=${5:-3}
 THREADS=4
@@ -81,8 +81,15 @@ for v in "${VARS[@]}"; do
         f32) ;;
         f16) python models/convert-mineru25-pro-to-gguf.py --model "$S/checkpoint" --dtype f16 \
                  --output "$S/gguf/mineru25-f16.gguf" || note "convert-f16" fail ;;
-        *) "$QUANT" "$S/gguf/mineru25-f32.gguf" "$S/gguf/mineru25-$v.gguf" "$v" > "$OUT/quantize-$v.log" 2>&1 ||
-               note "quantize-$v" fail ;;
+        *)
+            # Mixed recipes: the 896-wide Qwen2 decoder (l.*) is the precision-sensitive part.
+            case "$v" in
+                q4_k-dq8) qargs=(q4_k --tensor-type 'l.*=q8_0') ;;
+                q4_k-df16) qargs=(q4_k --decoder-f16) ;;
+                *) qargs=("$v") ;;
+            esac
+            "$QUANT" "$S/gguf/mineru25-f32.gguf" "$S/gguf/mineru25-$v.gguf" "${qargs[@]}" > "$OUT/quantize-$v.log" 2>&1 ||
+                note "quantize-$v" fail ;;
     esac
 done
 for f in "$S"/gguf/*.gguf; do printf '%s %s %s\n' "$(sha256sum "$f" | cut -d' ' -f1)" "$(stat -c %s "$f")" "$(basename "$f")"; done |
