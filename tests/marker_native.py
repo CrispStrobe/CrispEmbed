@@ -58,7 +58,7 @@ def main():
     p.add_argument("--panel", choices=("synthetic", "full", "force-pdf"), default="synthetic")
     args = p.parse_args()
     out = Path(args.out); out.mkdir(parents=True, exist_ok=False)
-    os.environ["CRISPEMBED_MARKER"] = "1"; os.environ["CRISPEMBED_TELEOCR"] = "1"; os.environ["CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE"] = "1"
+    os.environ["CRISPEMBED_MARKER"] = "1"; os.environ["CRISPEMBED_TELEOCR"] = "1"
     os.environ["CRISPEMBED_OFFLINE"] = "1"
     synthetic_gold = json.loads((ROOT / "tests/fixtures/teleocr/synthetic-text.json").read_text())
     pdf_gold = json.loads((ROOT / "tests/fixtures/marker/expected.json").read_text())
