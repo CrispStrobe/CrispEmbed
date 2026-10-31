@@ -1,0 +1,45 @@
+name: Surya OCR 2.5 weight-free metadata
+on:
+  workflow_dispatch:
+  push:
+    branches: ['claude/**']
+    paths:
+      - 'tools/ci-heavy/surya25_metadata.py'
+      - '.github/workflows/surya25-metadata.yml'
+permissions:
+  contents: read
+jobs:
+  metadata:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Scratch locations
+        run: |
+          mkdir -p "$RUNNER_TEMP/surya25/out" "$RUNNER_TEMP/surya25/scratch"
+          {
+            echo "HEAVY_OUT=$RUNNER_TEMP/surya25/out"
+            echo "HF_HOME=$RUNNER_TEMP/surya25/scratch/hf"
+          } >> "$GITHUB_ENV"
+          python -m py_compile tools/ci-heavy/surya25_metadata.py
+      - name: Pinned CPU framework environment (same pins as the OvisOCR3 metadata audit)
+        run: |
+          python -m pip install torch==2.14.0 torchvision==0.29.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install transformers==5.16.1 tokenizers==0.23.3 numpy==2.2.6 pillow==12.1.0 huggingface-hub==1.33.0
+          python -m pip freeze > "$HEAVY_OUT/environment.txt"
+      - name: Source, tokenizer, prompt, processor and header observations (no weights)
+        run: python tools/ci-heavy/surya25_metadata.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: surya25-metadata-${{ github.run_id }}
+          path: ${{ env.HEAVY_OUT }}/
+          if-no-files-found: warn
+          retention-days: 90
