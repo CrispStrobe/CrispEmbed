@@ -30,6 +30,10 @@ typedef MineruPredictNative = Pointer<Utf8> Function(Pointer<Void>, Pointer<Uint
 typedef MineruPredict = Pointer<Utf8> Function(Pointer<Void>, Pointer<Uint8>, int, int, int, Pointer<Utf8>, int);
 typedef MineruExtractNative = Pointer<Utf8> Function(Pointer<Void>, Pointer<Uint8>, Int32, Int32, Int32, Int32, Int32);
 typedef MineruExtract = Pointer<Utf8> Function(Pointer<Void>, Pointer<Uint8>, int, int, int, int, int);
+typedef MineruDocumentNative = Pointer<Utf8> Function(Pointer<Void>, Pointer<Uint8>, Int32, Int32, Int32, Pointer<Utf8>, Int32);
+typedef MineruDocument = Pointer<Utf8> Function(Pointer<Void>, Pointer<Uint8>, int, int, int, Pointer<Utf8>, int);
+typedef MineruRenderNative = Pointer<Utf8> Function(Pointer<Void>, Pointer<Utf8>);
+typedef MineruRender = Pointer<Utf8> Function(Pointer<Void>, Pointer<Utf8>);
 typedef MineruStringNative = Pointer<Utf8> Function(Pointer<Void>);
 typedef MineruString = Pointer<Utf8> Function(Pointer<Void>);
 

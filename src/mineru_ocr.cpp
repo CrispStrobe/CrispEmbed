@@ -4,12 +4,14 @@
 #include "crispembed.h"
 #include "core/env_gate.h"
 #include "image_preprocess.h"
+#include "mineru_document.h"
 #include "mineru_layout.h"
 #include "qwen2vl_ocr.h"
 
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <cstdio>
 #include <cstring>
 #include <exception>
 #include <iomanip>
@@ -21,7 +23,9 @@
 
 struct crispembed_mineru_context {
     qwen2vl_ocr_context * model = nullptr;
-    std::string json, markdown, error;
+    std::string json, markdown, error, rendered;
+    crisp_marker::document document; // last full-route document (CRISPEMBED_MINERU25_PRO_FULL_DOC)
+    bool has_document = false;
     ~crispembed_mineru_context() {
         if (model) qwen2vl_ocr_free(model);
     }
@@ -252,6 +256,111 @@ const char * crispembed_mineru_extract(crispembed_mineru_context * ctx, const ui
     } catch (const std::exception & e) {
         ctx->error = e.what();
         ctx->markdown.clear();
+        return nullptr;
+    }
+}
+
+// Complete native document route (CRISPEMBED_MINERU25_PRO_FULL_DOC=1, default
+// off): mineru_doc layout provider + router + translated mineru-vl-utils
+// postprocessing, written into the crisp_marker document model.
+const char * crispembed_mineru_extract_document(crispembed_mineru_context * ctx, const uint8_t * px, int w, int h,
+                                                int ch, const char * options_json, int max_tokens) {
+    if (!ctx) return nullptr;
+    ctx->json.clear();
+    ctx->markdown.clear();
+    ctx->error.clear();
+    ctx->has_document = false;
+    ctx->document = crisp_marker::document{};
+    try {
+        if (!core_env::on("CRISPEMBED_MINERU25_PRO_FULL_DOC"))
+            throw std::runtime_error(
+                "CRISPEMBED_MINERU25_PRO_FULL_DOC=1 is required for the full native document route");
+        const auto started = clock_type::now();
+        const mineru_doc::options opts = mineru_doc::parse_options_json(options_json ? options_json : "");
+        mineru_img::rgb_image page;
+        page.width = w;
+        page.height = h;
+        page.px = rgb_pixels(px, w, h, ch);
+        std::vector<std::string> receipts;
+        double confidence_sum = 0;
+        size_t n = 0;
+        mineru_doc::predictor predictor = [&](const mineru_img::rgb_image & img, const std::string & prompt) {
+            const prediction p = predict(*ctx, img.px.data(), img.width, img.height, 3, prompt.c_str(), max_tokens);
+            mineru_doc::recognition r;
+            r.text = p.text;
+            r.eos = p.eos;
+            r.capped = p.capped;
+            r.ms = p.ms;
+            r.confidence = p.confidence;
+            r.json = p.json;
+            if (n++) confidence_sum += p.confidence; // region confidences (layout excluded)
+            return r;
+        };
+        mineru_img::python_random rng =
+            opts.has_seed ? mineru_img::python_random(opts.seed) : mineru_img::python_random();
+        const mineru_doc::page_result res = mineru_doc::extract_page(page, predictor, opts, rng);
+        mineru_doc::append_page(ctx->document, res, 0, w, h);
+        ctx->has_document = true;
+        ctx->markdown = res.markdown;
+        std::ostringstream out;
+        out.imbue(std::locale::classic());
+        out << std::setprecision(12) << "{\"profile\":" << mineru::json_quote(mineru_doc::profile_name())
+            << ",\"blueprint_revision\":" << mineru::json_quote(mineru::blueprint_revision())
+            << ",\"blocks\":" << res.json << ",\"markdown\":" << mineru::json_quote(res.markdown)
+            << ",\"capped\":" << (res.capped ? "true" : "false")
+            << ",\"confidence\":" << (res.crops.empty() ? 0.0 : confidence_sum / double(res.crops.size()))
+            << ",\"inference_ms\":" << elapsed_ms(started) << ",\"layout\":" << res.layout.json
+            << ",\"recognitions\":[";
+        for (size_t i = 0; i < res.crops.size(); ++i) {
+            const auto & c = res.crops[i];
+            char hash[17];
+            std::snprintf(hash, sizeof(hash), "%016llx", static_cast<unsigned long long>(c.fnv1a));
+            out << (i ? "," : "") << "{\"block_index\":" << c.block_index << ",\"type\":" << mineru::json_quote(c.type)
+                << ",\"width\":" << c.width << ",\"height\":" << c.height << ",\"fnv1a\":\"" << hash
+                << "\",\"masked_table\":" << (c.masked_table ? "true" : "false") << ",\"prediction\":" << c.result.json
+                << "}";
+        }
+        out << "],\"regions\":[";
+        for (size_t i = 0; i < res.regions.size(); ++i) {
+            const auto & r = res.regions[i];
+            out << (i ? "," : "") << "{\"raw_type\":" << mineru::json_quote(r.raw_type)
+                << ",\"label\":" << mineru::json_quote(r.base.label_name) << ",\"bbox\":[" << r.base.x1 << ","
+                << r.base.y1 << "," << r.base.x2 << "," << r.base.y2 << "],\"angle\":";
+            if (r.angle < 0)
+                out << "null";
+            else
+                out << r.angle;
+            out << "}";
+        }
+        out << "]}";
+        ctx->json = out.str();
+        return ctx->json.c_str();
+    } catch (const std::exception & e) {
+        ctx->error = e.what();
+        ctx->markdown.clear();
+        ctx->has_document = false;
+        return nullptr;
+    }
+}
+
+// Render the last full-route document: "mineru-json"/"mineru-markdown" are the
+// upstream-exact profile; "markdown"/"html"/"json"/"chunks" use the Marker
+// document renderers on the same document model.
+const char * crispembed_mineru_last_document(crispembed_mineru_context * ctx, const char * format) {
+    if (!ctx) return nullptr;
+    ctx->error.clear();
+    try {
+        if (!ctx->has_document) throw std::runtime_error("no full-route document is available");
+        const std::string f = format ? format : "";
+        if (f == "mineru-json")
+            ctx->rendered = mineru_doc::render_upstream_json(ctx->document.pages.at(0));
+        else if (f == "mineru-markdown")
+            ctx->rendered = mineru_doc::render_upstream_markdown(ctx->document.pages.at(0));
+        else
+            ctx->rendered = crisp_marker::render_document(ctx->document, f);
+        return ctx->rendered.c_str();
+    } catch (const std::exception & e) {
+        ctx->error = e.what();
         return nullptr;
     }
 }

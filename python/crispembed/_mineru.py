@@ -112,6 +112,8 @@ class CrispMinerU:
             ("predict", [C.c_void_p, C.POINTER(C.c_uint8), C.c_int, C.c_int, C.c_int, C.c_char_p, C.c_int], C.c_char_p),
             ("extract", [C.c_void_p, C.POINTER(C.c_uint8), C.c_int, C.c_int, C.c_int, C.c_int, C.c_int], C.c_char_p),
             ("last_markdown", [C.c_void_p], C.c_char_p),
+            ("extract_document", [C.c_void_p, C.POINTER(C.c_uint8), C.c_int, C.c_int, C.c_int, C.c_char_p, C.c_int], C.c_char_p),
+            ("last_document", [C.c_void_p, C.c_char_p], C.c_char_p),
             ("last_error", [C.c_void_p], C.c_char_p),
         )
         for suffix, args, result in signatures:
@@ -235,6 +237,52 @@ class CrispMinerU:
             if result.get("capped", False) and not self.allow_truncated_content:
                 raise RuntimeError("MinerU native page extraction was capped; partial content is not accepted")
             return result
+
+    def native_two_step_extract(self, image: Any, *, not_extract_list: list[str] | None = None,
+                                image_analysis: bool | None = None, max_new_tokens: int = 0,
+                                table_token_seed: int | None = None) -> list[dict[str, Any]]:
+        """Complete two-step extraction entirely in C++ (no mineru-vl-utils).
+
+        Requires ``CRISPEMBED_MINERU25_PRO_FULL_DOC=1``. Returns the upstream
+        ExtractResult as plain dicts, byte-identical (as JSON) to
+        ``two_step_extract`` for the same recognition outputs; the full native
+        result (receipts, regions, caps) is kept in ``last_native_document``.
+        ``table_token_seed`` seeds table-image tokens like ``random.seed``.
+        Cross-page table merging is not part of the native route.
+        """
+        budget = self._budget(max_new_tokens)
+        if image is None:
+            raise ValueError("native_two_step_extract requires a page image")
+        if image_analysis is not None and type(image_analysis) is not bool:
+            raise TypeError("image_analysis must be bool or None")
+        if table_token_seed is not None and (type(table_token_seed) is not int or table_token_seed < 0):
+            raise ValueError("table_token_seed must be a non-negative int or None")
+        if self._helper_options["enable_cross_page_table_merge"]:
+            raise RuntimeError("cross-page table merging is not available in the native document route")
+        opts = {k: v for k, v in self._helper_options.items() if k != "enable_cross_page_table_merge"}
+        if image_analysis is not None:
+            opts["image_analysis"] = image_analysis
+        opts["not_extract_list"] = list(not_extract_list) if not_extract_list else None
+        opts["allow_truncated_content"] = self.allow_truncated_content
+        opts["table_token_seed"] = table_token_seed
+        with self._lock:
+            self._require_open()
+            self.last_trace = []
+            pixels, pointer, width, height, channels = self._pixels(image)
+            result = self._decode_result(self._lib.crispembed_mineru_extract_document(
+                self._ctx, pointer, width, height, channels, json.dumps(opts).encode("utf-8"), budget))
+            self.last_native_document = result
+            return result["blocks"]
+
+    def native_render(self, fmt: str = "mineru-markdown") -> str:
+        """Render the last native document: mineru-json, mineru-markdown (upstream
+        json2md), or the Marker renderers markdown/html/json/chunks."""
+        with self._lock:
+            self._require_open()
+            value = self._lib.crispembed_mineru_last_document(self._ctx, fmt.encode("utf-8"))
+            if value is None:
+                raise RuntimeError(self._error())
+            return value.decode("utf-8")
 
     def _official_helper(self):
         if self._helper is None:

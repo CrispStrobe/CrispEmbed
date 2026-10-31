@@ -247,4 +247,5 @@ def main():
                        "lines_returned": len(got), "lines_sent": len(expect)}, fh, ensure_ascii=False, indent=1)
     sys.exit(1 if total_bad or len(got) != len(expect) else 0)
 
-main()
+if __name__ == "__main__":
+    main()

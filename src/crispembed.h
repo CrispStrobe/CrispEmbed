@@ -65,6 +65,21 @@ CRISPEMBED_API const char * crispembed_mineru_predict(crispembed_mineru_context 
 CRISPEMBED_API const char * crispembed_mineru_extract(crispembed_mineru_context * ctx, const uint8_t * pixels,
                                                       int width, int height, int channels, int image_analysis,
                                                       int max_new_tokens);
+// Complete native two-step document route (all mineru-vl-utils c9797cde
+// postprocessing translated to C++; no Python). Requires
+// CRISPEMBED_MINERU25_PRO_FULL_DOC=1 (default off) in addition to
+// CRISPEMBED_MINERU25_PRO=1. options_json (NULL/"" = defaults) accepts
+// image_analysis, simple_post_process, handle_equation_block, abandon_list,
+// abandon_paratext, enable_table_formula_eq_wrap, not_extract_list,
+// allow_truncated_content and table_token_seed (Python random.seed for
+// table-image tokens; null = OS entropy like upstream). Returns JSON with the
+// upstream-exact "blocks" array and "markdown", per-region receipts and caps.
+CRISPEMBED_API const char * crispembed_mineru_extract_document(crispembed_mineru_context * ctx, const uint8_t * pixels,
+                                                               int width, int height, int channels,
+                                                               const char * options_json, int max_new_tokens);
+// Render the last extract_document result: "mineru-json", "mineru-markdown"
+// (upstream profile) or the Marker renderers "markdown", "html", "json", "chunks".
+CRISPEMBED_API const char * crispembed_mineru_last_document(crispembed_mineru_context * ctx, const char * format);
 CRISPEMBED_API const char * crispembed_mineru_last_markdown(const crispembed_mineru_context * ctx);
 CRISPEMBED_API const char * crispembed_mineru_last_error(const crispembed_mineru_context * ctx);
 
