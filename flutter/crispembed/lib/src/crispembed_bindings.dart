@@ -11,6 +11,18 @@ import 'package:ffi/ffi.dart';
 // Opaque handle
 typedef CrispembedContext = Void;
 
+// Experimental MinerU2.5-Pro resident context; enable CRISPEMBED_MINERU25_PRO.
+typedef MineruInitNative = Pointer<Void> Function(Pointer<Utf8>, Int32);
+typedef MineruInit = Pointer<Void> Function(Pointer<Utf8>, int);
+typedef MineruFreeNative = Void Function(Pointer<Void>);
+typedef MineruFree = void Function(Pointer<Void>);
+typedef MineruPredictNative = Pointer<Utf8> Function(Pointer<Void>, Pointer<Uint8>, Int32, Int32, Int32, Pointer<Utf8>, Int32);
+typedef MineruPredict = Pointer<Utf8> Function(Pointer<Void>, Pointer<Uint8>, int, int, int, Pointer<Utf8>, int);
+typedef MineruExtractNative = Pointer<Utf8> Function(Pointer<Void>, Pointer<Uint8>, Int32, Int32, Int32, Int32, Int32);
+typedef MineruExtract = Pointer<Utf8> Function(Pointer<Void>, Pointer<Uint8>, int, int, int, int, int);
+typedef MineruStringNative = Pointer<Utf8> Function(Pointer<Void>);
+typedef MineruString = Pointer<Utf8> Function(Pointer<Void>);
+
 // --- Lifecycle ---
 typedef CrispembedInitNative = Pointer<CrispembedContext> Function(
     Pointer<Utf8> modelPath, Int32 nThreads);

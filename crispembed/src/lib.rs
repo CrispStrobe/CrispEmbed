@@ -27,6 +27,8 @@ use std::path::Path;
 pub use crispembed_sys::CrispembedHparams;
 mod systemone;
 pub use systemone::SystemOne;
+mod mineru;
+pub use mineru::MinerU;
 
 pub mod moedern_text;
 pub use moedern_text::MoEdern;

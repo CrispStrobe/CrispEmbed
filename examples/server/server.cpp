@@ -1539,19 +1539,27 @@ int main(int argc, char ** argv) {
             if (n == "ppocrv6") return 16;
             if (n == "easyocr") return 17;
             if (n == "olmocr") return 18;
+            if (n == "mineru25-pro" || n == "mineru25_pro") return 24;
             if (n == "minicpm-ocr" || n == "minicpm_ocr") return 23;
             return 0; // dbnet_trocr
         };
         const int eid = eng_id(ocr_engine_name);
         const bool is_vlm = (eid >= 2 && eid <= 5) || (eid >= 8 && eid <= 13) || eid == 14 || eid == 18 || eid == 20 ||
-                            eid == 21 || eid == 22 || eid == 23;
+                            eid == 21 || eid == 22 || eid == 23 || eid == 24;
         if ((eid == 14 || eid == 15 || eid == 20 || eid == 21 || eid == 22) && ocr_rec_model_path.empty()) {
             fprintf(stderr, "error: --ocr-engine %s needs the model via --ocr-rec FILE\n", ocr_engine_name.c_str());
             return 1;
         }
         // Experimental MiniCPM-OCR-1.0 reuses the qwen35 decoder kernels, so both gates are required.
+        if (eid == 24 &&
+            (ocr_rec_model_path.empty() || !ocr_prompt.empty() || !core_env::on("CRISPEMBED_MINERU25_PRO"))) {
+            fprintf(stderr,
+                    "error: mineru25-pro needs --ocr-rec FILE, no custom prompt, and CRISPEMBED_MINERU25_PRO=1\n");
+            return 1;
+        }
         if (eid == 23 && (!core_env::on("CRISPEMBED_MINICPM_OCR") || !core_env::on("CRISPEMBED_QWEN35_OCR"))) {
-            fprintf(stderr, "error: experimental minicpm-ocr needs CRISPEMBED_MINICPM_OCR=1 and CRISPEMBED_QWEN35_OCR=1\n");
+            fprintf(stderr,
+                    "error: experimental minicpm-ocr needs CRISPEMBED_MINICPM_OCR=1 and CRISPEMBED_QWEN35_OCR=1\n");
             return 1;
         }
         if (eid == 22 &&
