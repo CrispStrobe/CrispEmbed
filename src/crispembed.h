@@ -88,6 +88,34 @@ CRISPEMBED_API const char * crispembed_oxr_predict(crispembed_oxr_context * ctx,
                                                    float repetition_penalty);
 CRISPEMBED_API const char * crispembed_oxr_last_error(const crispembed_oxr_context * ctx);
 
+// Experimental native OXR document route (CRISPEMBED_OXR_NATIVE_DOC=1 as well
+// as CRISPEMBED_OXR=1): the translated original SoMarkAI/OXR @ c1a1dcb3
+// document helper (layout validation/threshold/NMS, crops, prompt routing,
+// native reading order with repair/XY-Cut++ fallback, recovery, content
+// postprocessing, cleanup, upstream JSON and Markdown). Layout detection is
+// supplied: one D-FINE candidate per region, before filtering.
+typedef struct crispembed_oxr_layout_region {
+    int label;             // 0 Caption, 1 Footnote, 2 Formula, 3 Text, 4 Page-footer, 5 Page-header,
+                           // 6 Picture, 7 Title, 8 Table, 9 Code Block, 10 Stamp, 11 Chemical Structure
+    double x1, y1, x2, y2; // page pixel coordinates
+    double score;          // detector confidence 0..1
+} crispembed_oxr_layout_region;
+// pixels/widths/heights/channels: n_pages uint8 gray/RGB/RGBA pages. Supply
+// regions (flat, region_counts[p] per page) or layout_json (the official
+// D-FINE /inference batch response), not both. options_json may be NULL; see
+// docs/oxr.md. Returns owned upstream-shaped JSON
+// {"file_name","outputs":{"json","markdown"},"metadata"}; NULL on failure.
+CRISPEMBED_API const char * crispembed_oxr_process_pages(crispembed_oxr_context * ctx, const uint8_t * const * pixels,
+                                                         const int * widths, const int * heights, const int * channels,
+                                                         int n_pages, const crispembed_oxr_layout_region * regions,
+                                                         const int * region_counts, const char * layout_json,
+                                                         const char * options_json);
+// JSON array of every native request of the last document call (kept on failure).
+CRISPEMBED_API const char * crispembed_oxr_last_trace(const crispembed_oxr_context * ctx);
+// Render the last native document through CrispEmbed's shared document model:
+// "markdown", "html", "json" or "chunks" (marker_document renderers).
+CRISPEMBED_API const char * crispembed_oxr_render_document(crispembed_oxr_context * ctx, const char * format);
+
 // Model hyperparameters (read-only after init)
 typedef struct crispembed_hparams {
     int32_t n_vocab;

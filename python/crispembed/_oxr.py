@@ -521,6 +521,81 @@ class CrispOXR:
                              model_options, element_formats, layout_response, asset_dir,
                              asset_url_prefix)
 
+    def process_pages_native(self, images: Sequence[Any], *, layouts=None, layout_response=None,
+                             file_name: str = "document.png", output_formats=("json", "markdown"),
+                             keep_header_footer: bool = False, model_options=None, element_formats=None,
+                             write_images: bool = True) -> dict[str, Any]:
+        """Native C++ document route (no Python helper import).
+
+        Experimental: requires ``CRISPEMBED_OXR_NATIVE_DOC=1``. Takes the same
+        pages and layout input as :meth:`process_pages` and is a translation of
+        the same pinned helper (SoMarkAI/OXR @ c1a1dcb3); exact parity is
+        established per case by tools/oxr_doc_parity.py. ``asset_dir``,
+        table-image placeholders and Markdown table output are not ported.
+        Every native request is available in ``last_trace``.
+        """
+        if layouts is not None and layout_response is not None:
+            raise ValueError("Pass layouts or layout_response, not both")
+        if layouts is None and layout_response is None:
+            raise ValueError("The native document route requires supplied layouts or layout_response")
+        if layouts is not None:
+            layout_response = self.layout_response_from_regions(layouts)
+        pages = [self._rgb(image) for image in images]
+        if not pages:
+            raise ValueError("OXR requires at least one page")
+        options = {
+            "file_name": file_name, "output_formats": list(output_formats),
+            "keep_header_footer": keep_header_footer, "model_options": dict(model_options) if model_options else None,
+            "element_formats": dict(element_formats) if element_formats else None,
+            "score_threshold": self._layout_options["score_threshold"],
+            "nms_iou_threshold": self._layout_options["nms_iou_threshold"],
+            "provides_reading_order": self._layout_options["provides_reading_order"],
+            "image_output_dir": self._pipeline_options["image_output_dir"],
+            "full_overlap_dedupe": self._pipeline_options["full_overlap_dedupe"],
+            "table_image_placeholders": self._pipeline_options["table_image_placeholders"],
+            "max_new_tokens": self.max_new_tokens, "allow_truncated_content": self.allow_truncated_content,
+            "write_images": write_images,
+        }
+        try:
+            fn = self._lib.crispembed_oxr_process_pages
+            trace_fn = self._lib.crispembed_oxr_last_trace
+        except AttributeError as error:
+            raise RuntimeError("Native library lacks the OXR document route; build this source revision") from error
+        n = len(pages)
+        Ptr = C.POINTER(C.c_uint8)
+        fn.argtypes = [C.c_void_p, C.POINTER(Ptr), C.POINTER(C.c_int), C.POINTER(C.c_int), C.POINTER(C.c_int),
+                       C.c_int, C.c_void_p, C.c_void_p, C.c_char_p, C.c_char_p]
+        fn.restype = C.c_char_p
+        trace_fn.argtypes, trace_fn.restype = [C.c_void_p], C.c_char_p
+        ptrs = (Ptr * n)(*[p.ctypes.data_as(Ptr) for p in pages])
+        widths = (C.c_int * n)(*[p.shape[1] for p in pages])
+        heights = (C.c_int * n)(*[p.shape[0] for p in pages])
+        channels = (C.c_int * n)(*[3] * n)
+        with self._lock:
+            self._require_open()
+            raw = fn(self._ctx, ptrs, widths, heights, channels, n, None, None,
+                     json.dumps(layout_response).encode("utf-8"), json.dumps(options).encode("utf-8"))
+            trace = json.loads(trace_fn(self._ctx).decode("utf-8"))
+            self.last_trace = [dict(prompt=t["prompt"], width=t["width"], height=t["height"],
+                                    rgb_sha256=t["rgb_sha256"], max_tokens=t["max_tokens"],
+                                    repetition_penalty=t["repetition_penalty"], result=t["result"])
+                               for t in trace]
+            if raw is None:
+                raise RuntimeError(self._error())
+            return json.loads(raw.decode("utf-8"))
+
+    def render_native_document(self, format: str = "markdown") -> str:
+        """Render the last native document through CrispEmbed's shared document
+        model (``markdown``, ``html``, ``json`` or ``chunks``)."""
+        fn = self._lib.crispembed_oxr_render_document
+        fn.argtypes, fn.restype = [C.c_void_p, C.c_char_p], C.c_char_p
+        with self._lock:
+            self._require_open()
+            raw = fn(self._ctx, format.encode("utf-8"))
+            if raw is None:
+                raise RuntimeError(self._error())
+            return raw.decode("utf-8")
+
     def process_document(self, document, *, file_name: str | None = None, layouts=None,
                          layout_response=None, output_formats=("json", "markdown"),
                          keep_header_footer: bool = False, model_options=None,
