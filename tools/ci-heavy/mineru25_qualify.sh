@@ -111,6 +111,19 @@ run_case() { # id, image, task
     OUT=$TOP/$ID
     mkdir -p "$OUT"
     cp "$TOP/provenance.txt" "$OUT/provenance.txt"
+    # Lossy formats: stb_image (native harness) and PIL/libjpeg-turbo (reference)
+    # decode JPEG to slightly different pixels. Decode once with PIL to a lossless
+    # PNG so both sides see identical pixels; the decoder difference is recorded.
+    case "${IMAGE,,}" in
+        *.jpg | *.jpeg)
+            mkdir -p "$S/inputs"
+            python -c "import sys; from PIL import Image; Image.open(sys.argv[1]).convert('RGB').save(sys.argv[2])" \
+                "$IMAGE" "$S/inputs/$ID.png" || return
+            echo "input_decoded_by=PIL source=$CASE png_sha256=$(sha256sum "$S/inputs/$ID.png" | cut -d' ' -f1)" \
+                >> "$OUT/provenance.txt"
+            IMAGE=$S/inputs/$ID.png
+            ;;
+    esac
     RESULT=()
     local before=$gate_fail
     gate_fail=0

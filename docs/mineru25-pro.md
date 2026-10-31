@@ -85,6 +85,15 @@ or decoding parity merely because the same checkpoint is used. Quantized
 weights, alternative processor versions and alternative generation backends
 need separate named profiles and evaluation.
 
+**Image decoding.** The native resize reproduces the pinned fast processor
+pixel-exactly on x86 (hosted probe: up- and down-scaled real and random inputs,
+`tools/ci-heavy/mineru25_resize_probe.py`). JPEG decoding is a separate input
+step: the CLI/C helpers decode with `stb_image`, while the Python blueprint uses
+PIL (libjpeg-turbo), and the two produce slightly different pixels (the table
+fixture differed in 1,186 of 338,688 patch values, max 0.029 normalized). Pass
+already-decoded RGB, or PNG, when exact agreement with a PIL-based pipeline
+matters. Qualification feeds both sides one PIL-decoded PNG and records it.
+
 ## Conversion and build
 
 Conversion uses NumPy, safetensors, Hugging Face Hub and gguf; it does not need
