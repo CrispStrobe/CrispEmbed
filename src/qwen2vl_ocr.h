@@ -209,6 +209,8 @@ struct context {
     // MinerU contract also stops on endoftext and applies HF's ngram ban to
     // the whole prompt+completion history.
     bool is_mineru25_pro = false;
+    // Set while encode_vision builds the vision tower and merger graphs.
+    bool building_vision = false;
 
     // Optional diff harness path (set before encode to enable comparison)
     std::string diff_ref_path;

@@ -359,6 +359,7 @@ def compare(args):
                    "native_executable_sha256": sha256(args.native), "command": command,
                    "native_environment": {key: env.get(key) for key in [
                        "CRISPEMBED_MINERU25_PRO", "CRISPEMBED_MINERU25_PRO_REUSE_DECODE_GRAPH", "CRISPEMBED_MINERU25_PRO_EXACT_GELU",
+                       "CRISPEMBED_MINERU25_PRO_VISION_F32_ACT",
                        "QWEN2VL_OCR_FORCE_CPU", "CRISPEMBED_NO_KV_CACHE",
                        "CRISPEMBED_QWEN2VL_REF", "CRISPEMBED_BPE_LEGACY_WHITESPACE"]},
                    "native": native, "reference": ref, "native_subprocess_ms": elapsed})

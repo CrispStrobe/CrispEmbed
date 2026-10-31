@@ -18,7 +18,7 @@
 set -uo pipefail
 
 CASE_IDS=${1:?comma list of protocol case ids, or all}
-VARIANTS=${2:-f32,f16,q8_0,q4_k}
+VARIANTS=${2:-f32,f16,q8_0,q4_k,q8_0-vf16}
 MAX_TOKENS=${3:-2048}
 REPEAT=${4:-3}
 THREADS=4
@@ -95,6 +95,7 @@ for v in "${VARS[@]}"; do
             case "$v" in
                 q4_k-dq8) qargs=(q4_k --tensor-type 'l.*=q8_0') ;;
                 q4_k-df16) qargs=(q4_k --decoder-f16) ;;
+                q8_0-vf16) qargs=(q8_0 --tensor-type 'v.*=f16') ;;
                 *) qargs=("$v") ;;
             esac
             "$QUANT" "$S/gguf/mineru25-f32.gguf" "$S/gguf/mineru25-$v.gguf" "${qargs[@]}" > "$TOP/quantize-$v.log" 2>&1 ||
@@ -161,14 +162,21 @@ run_case() { # id, image, task
     done
     # Control: the legacy ggml fp16-table quick_gelu (default before the A/B).
     stages stages-f32-tablegelu f32 report CRISPEMBED_MINERU25_PRO_EXACT_GELU=0
+    # A/B: quantized vision weights with float32 activations (no 8-bit activation blocks).
+    for v in "${VARS[@]}"; do
+        case "$v" in q8_0 | q4_k) [ -f "$S/gguf/mineru25-$v.gguf" ] &&
+            stages "stages-$v-f32act" "$v" report CRISPEMBED_MINERU25_PRO_VISION_F32_ACT=1 ;; esac
+    done
     echo "::endgroup::"
 
     GOLD_ARGS=()
     [ -f "$GOLD" ] && GOLD_ARGS=(--gold "$GOLD")
-    compare() { # variant reuse [exact_gelu, default 1]
+    compare() { # variant reuse [exact_gelu, default 1] [vision_f32_act, default 0]
         local tag=$1
         [ "${3:-1}" = 0 ] && tag=$1-tablegelu
+        [ "${4:-0}" = 1 ] && tag=$1-f32act
         CRISPEMBED_MINERU25_PRO_REUSE_DECODE_GRAPH=$2 CRISPEMBED_MINERU25_PRO_EXACT_GELU=${3:-1} \
+            CRISPEMBED_MINERU25_PRO_VISION_F32_ACT=${4:-0} \
             python tools/mineru25_validate.py compare \
             --reference "$OUT/python.json" --native "$B/test-mineru25-run" --gguf "$S/gguf/mineru25-$1.gguf" \
             --image "$IMAGE" "${GOLD_ARGS[@]}" --max-slowdown 1.0 --output "$OUT/native-$tag-reuse$2.json"
@@ -181,6 +189,9 @@ run_case() { # id, image, task
         run_report "decode-$v" compare "$v" 0
     done
     run_report decode-f32-tablegelu compare f32 0 0
+    for v in "${VARS[@]}"; do
+        case "$v" in q8_0 | q4_k) [ -f "$S/gguf/mineru25-$v.gguf" ] && run_report "decode-$v-f32act" compare "$v" 0 1 1 ;; esac
+    done
     echo "::endgroup::"
 
     python - "$OUT" "$CASE" "$TASK" "$gate_fail" <<'PY'
