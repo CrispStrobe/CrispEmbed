@@ -6,6 +6,8 @@
 //   test-surya25-frontend <metadata.gguf> --image <rgb.bin> <width> <height> <patches.out>
 // Runs the format-4 preprocessing (vLLM min/max pixels) and writes
 // "height width t h w" on stdout plus float32 patches to <patches.out>.
+//   test-surya25-frontend <metadata.gguf> --scale <rgb.bin> <width> <height> <scaled.out>
+// Runs the package scale_to_fit port and prints "height width changed".
 // Driven by tests/test_surya25_tokenizer_parity.py --frontend.
 #include "qwen35_frontend.h"
 #include <cstdio>
@@ -33,6 +35,20 @@ int main(int argc, char ** argv) {
     if (!t.load(meta.get()) || !t.is_surya25() || t.vocab_size() != 88526 || t.eos() != 2 || !t.is_stop(2) ||
         t.is_stop(0) || t.image_limits().min_pixels != 3136 || t.image_limits().max_pixels != 6291456)
         return fail("load");
+    if (argc == 7 && std::string(argv[2]) == "--scale") {
+        const int w = std::atoi(argv[4]), h = std::atoi(argv[5]);
+        std::ifstream in(argv[3], std::ios::binary);
+        std::vector<uint8_t> rgb(size_t(w) * h * 3), scaled;
+        if (w < 1 || h < 1 || !in.read(reinterpret_cast<char *>(rgb.data()), std::streamsize(rgb.size())))
+            return fail("image input");
+        int sh = 0, sw = 0;
+        if (!qwen35_ocr::surya_scale_to_fit(rgb.data(), h, w, scaled, sh, sw)) return fail("scale");
+        const auto & bytes = scaled.empty() ? rgb : scaled;
+        std::ofstream(argv[6], std::ios::binary)
+            .write(reinterpret_cast<const char *>(bytes.data()), std::streamsize(bytes.size()));
+        std::printf("%d %d %d\n", sh, sw, int(!scaled.empty()));
+        return 0;
+    }
     if (argc == 7) {
         const int w = std::atoi(argv[4]), h = std::atoi(argv[5]);
         std::ifstream in(argv[3], std::ios::binary);

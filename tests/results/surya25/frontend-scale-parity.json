@@ -1,0 +1,322 @@
+{
+ "cases": 2028,
+ "encode_mismatches": 0,
+ "decode_mismatches": 0,
+ "frontend_pass": true,
+ "frontend_mismatches": 0,
+ "images": [
+  {
+   "size": [
+    448,
+    112
+   ],
+   "hf_grid": [
+    1,
+    8,
+    28
+   ],
+   "native": [
+    "128",
+    "448",
+    "1",
+    "8",
+    "28"
+   ],
+   "grid_equal": true,
+   "max_abs": 0.0
+  },
+  {
+   "size": [
+    1792,
+    28
+   ],
+   "hf_grid": [
+    1,
+    2,
+    112
+   ],
+   "native": [
+    "32",
+    "1792",
+    "1",
+    "2",
+    "112"
+   ],
+   "grid_equal": true,
+   "max_abs": 0.0
+  },
+  {
+   "size": [
+    616,
+    84
+   ],
+   "hf_grid": [
+    1,
+    6,
+    38
+   ],
+   "native": [
+    "96",
+    "608",
+    "1",
+    "6",
+    "38"
+   ],
+   "grid_equal": true,
+   "max_abs": 0.0
+  },
+  {
+   "size": [
+    308,
+    196
+   ],
+   "hf_grid": [
+    1,
+    12,
+    20
+   ],
+   "native": [
+    "192",
+    "320",
+    "1",
+    "12",
+    "20"
+   ],
+   "grid_equal": true,
+   "max_abs": 0.0
+  },
+  {
+   "size": [
+    504,
+    504
+   ],
+   "hf_grid": [
+    1,
+    32,
+    32
+   ],
+   "native": [
+    "512",
+    "512",
+    "1",
+    "32",
+    "32"
+   ],
+   "grid_equal": true,
+   "max_abs": 0.0
+  },
+  {
+   "size": [
+    1624,
+    2100
+   ],
+   "hf_grid": [
+    1,
+    132,
+    102
+   ],
+   "native": [
+    "REJECT"
+   ]
+  }
+ ],
+ "scale_to_fit": [
+  {
+   "size": [
+    300,
+    40
+   ],
+   "expected": [
+    616,
+    84
+   ],
+   "native": [
+    616,
+    84
+   ],
+   "bytes_exact": true
+  },
+  {
+   "size": [
+    448,
+    112
+   ],
+   "expected": [
+    448,
+    112
+   ],
+   "native": [
+    448,
+    112
+   ],
+   "bytes_exact": true
+  },
+  {
+   "size": [
+    1792,
+    28
+   ],
+   "expected": [
+    1792,
+    28
+   ],
+   "native": [
+    1792,
+    28
+   ],
+   "bytes_exact": true
+  },
+  {
+   "size": [
+    97,
+    13
+   ],
+   "expected": [
+    616,
+    84
+   ],
+   "native": [
+    616,
+    84
+   ],
+   "bytes_exact": true
+  },
+  {
+   "size": [
+    1000,
+    30
+   ],
+   "expected": [
+    1288,
+    28
+   ],
+   "native": [
+    1288,
+    28
+   ],
+   "bytes_exact": true
+  },
+  {
+   "size": [
+    2550,
+    3300
+   ],
+   "expected": [
+    2184,
+    2856
+   ],
+   "native": [
+    2184,
+    2856
+   ],
+   "bytes_exact": true
+  },
+  {
+   "size": [
+    3300,
+    2550
+   ],
+   "expected": [
+    2856,
+    2184
+   ],
+   "native": [
+    2856,
+    2184
+   ],
+   "bytes_exact": true
+  },
+  {
+   "size": [
+    5000,
+    60
+   ],
+   "expected": [
+    5012,
+    56
+   ],
+   "native": [
+    5012,
+    56
+   ],
+   "bytes_exact": true
+  },
+  {
+   "size": [
+    60,
+    5000
+   ],
+   "expected": [
+    56,
+    5012
+   ],
+   "native": [
+    56,
+    5012
+   ],
+   "bytes_exact": true
+  },
+  {
+   "size": [
+    1,
+    1
+   ],
+   "expected": [
+    224,
+    224
+   ],
+   "native": [
+    224,
+    224
+   ],
+   "bytes_exact": true
+  },
+  {
+   "size": [
+    4000,
+    4000
+   ],
+   "expected": [
+    2492,
+    2520
+   ],
+   "native": [
+    2492,
+    2520
+   ],
+   "bytes_exact": true
+  },
+  {
+   "size": [
+    616,
+    84
+   ],
+   "expected": [
+    616,
+    84
+   ],
+   "native": [
+    616,
+    84
+   ],
+   "bytes_exact": true
+  },
+  {
+   "size": [
+    1201,
+    37
+   ],
+   "expected": [
+    1288,
+    28
+   ],
+   "native": [
+    1288,
+    28
+   ],
+   "bytes_exact": true
+  }
+ ],
+ "scale_to_fit_all_exact": true,
+ "tokenizer_json_sha256": "49753fd82a5800f975d18d301203450d42f1a46c2b0247343c93239f122684c1"
+}

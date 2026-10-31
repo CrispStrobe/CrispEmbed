@@ -18,6 +18,12 @@ struct image_inputs {
 // Pinned Qwen2VL torchvision CPU uint8 bicubic, fused .5 normalization, P16/T2/M2.
 // Still RGB only; maximum 1024 patches matches the current native vision bound.
 bool preprocess_rgb(const uint8_t * rgb, int height, int width, const image_config & config, image_inputs & output);
+// Surya OCR 2.5 package contract (surya/inference/util.py scale_to_fit, sha256
+// d853246d...): 28-px grid, area within [1792*28, 3072*2048], Pillow LANCZOS
+// (core_pil, bit-exact). Leaves `out` empty when the image is unchanged.
+// Python semantics: round() is half-to-even, ** 0.5 is pow().
+bool surya_scale_to_fit(const uint8_t * rgb, int height, int width, std::vector<uint8_t> & out, int & out_height,
+                        int & out_width);
 class frontend_tokenizer {
     std::vector<std::string> vocab_;
     std::unordered_map<std::string, int32_t> tokens_, merges_;

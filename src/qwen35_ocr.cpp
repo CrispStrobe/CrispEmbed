@@ -129,6 +129,18 @@ const char * recognize(qwen35_ocr_context & c, const uint8_t * pixels, int w, in
             for (int k = 0; k < 3; ++k) rgb[i * 3 + k] = pixels[i * channels + (channels == 1 ? 0 : k)];
         pixels = rgb.data();
     }
+    // Surya 2.5: the package scales every crop/page before sending it (default
+    // on for this profile; CRISPEMBED_SURYA25_SCALE_TO_FIT=0 passes pixels through).
+    std::vector<uint8_t> scaled;
+    if (c.tokenizer.is_surya25() && !core_env::explicitly_off("CRISPEMBED_SURYA25_SCALE_TO_FIT")) {
+        int sh = h, sw = w;
+        if (!qwen35_ocr::surya_scale_to_fit(pixels, h, w, scaled, sh, sw)) return c.fail("surya scale_to_fit failed");
+        if (!scaled.empty()) {
+            pixels = scaled.data();
+            h = sh;
+            w = sw;
+        }
+    }
     qwen35_ocr::image_inputs image;
     if (!qwen35_ocr::preprocess_rgb(pixels, h, w, c.tokenizer.image_limits(), image))
         return c.fail("image exceeds native patch bound");

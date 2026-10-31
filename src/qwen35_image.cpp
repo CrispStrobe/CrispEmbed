@@ -2,6 +2,8 @@
 #include "qwen35_image_bounds.h"
 #include "core/env_gate.h"
 #include "core/torch_bicubic_u8.h"
+#include "core/pil_resample_u8.h"
+#include <cfenv>
 #include <algorithm>
 #include <cmath>
 #include <utility>
@@ -53,5 +55,48 @@ bool preprocess_rgb(const uint8_t * rgb, int height, int width, const image_conf
                                 }
     output = std::move(result);
     return true;
+}
+bool surya_scale_to_fit(const uint8_t * rgb, int height, int width, std::vector<uint8_t> & out, int & out_height,
+                        int & out_width) {
+    out.clear();
+    out_height = height;
+    out_width = width;
+    if (!rgb || height < 1 || width < 1) return false;
+    constexpr int grid = 28;
+    constexpr double max_pixels = 3072.0 * 2048.0, min_pixels = 1792.0 * 28.0;
+    const double ar = double(width) / double(height), pixels = double(width) * double(height);
+    double scale = 1.0;
+    if (pixels > max_pixels)
+        scale = std::pow(max_pixels / pixels, 0.5);
+    else if (pixels < min_pixels)
+        scale = std::pow(min_pixels / pixels, 0.5);
+    const int mode = std::fegetround();
+    std::fesetround(FE_TONEAREST); // Python round(): ties to even
+    long w_blocks = std::max(1L, long(std::nearbyint(width * scale / grid)));
+    long h_blocks = std::max(1L, long(std::nearbyint(height * scale / grid)));
+    std::fesetround(mode);
+    while (double(w_blocks) * h_blocks * grid * grid > max_pixels) {
+        if (w_blocks == 1 && h_blocks == 1) break;
+        if (w_blocks == 1) {
+            --h_blocks;
+            continue;
+        }
+        if (h_blocks == 1) {
+            --w_blocks;
+            continue;
+        }
+        const double w_loss = std::fabs(double(w_blocks - 1) / double(h_blocks) - ar);
+        const double h_loss = std::fabs(double(w_blocks) / double(h_blocks - 1) - ar);
+        if (w_loss < h_loss)
+            --w_blocks;
+        else
+            --h_blocks;
+    }
+    const long new_w = w_blocks * grid, new_h = h_blocks * grid;
+    if (new_w == width && new_h == height) return true;
+    if (new_w > 32768 || new_h > 32768) return false;
+    out_width = int(new_w);
+    out_height = int(new_h);
+    return core_pil::resize_u8(rgb, width, height, 3, out_width, out_height, core_pil::filter::lanczos, out);
 }
 } // namespace qwen35_ocr

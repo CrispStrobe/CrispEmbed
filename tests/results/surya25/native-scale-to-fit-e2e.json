@@ -1,0 +1,53 @@
+{
+ "line_small": {
+  "scaled": [
+   616,
+   84
+  ],
+  "original": "<p>Scan 2026</p>",
+  "f32": {
+   "ids_exact": true,
+   "text": "<p>Scan 2026</p>",
+   "max_confidence_delta": 2.2647595214753125e-06
+  },
+  "f16": {
+   "ids_exact": true,
+   "text": "<p>Scan 2026</p>",
+   "max_confidence_delta": 2.2647595214753125e-06
+  }
+ },
+ "line_odd": {
+  "scaled": [
+   588,
+   84
+  ],
+  "original": "<p>Rechnung Nr. 4711</p>",
+  "f32": {
+   "ids_exact": true,
+   "text": "<p>Rechnung Nr. 4711</p>",
+   "max_confidence_delta": 3.4568316344962824e-06
+  },
+  "f16": {
+   "ids_exact": true,
+   "text": "<p>Rechnung Nr. 4711</p>",
+   "max_confidence_delta": 1.3108316345711302e-06
+  }
+ },
+ "line_wide": {
+  "scaled": [
+   896,
+   56
+  ],
+  "original": "<p>Kontostand: 1.234,56 EUR</p>",
+  "f32": {
+   "ids_exact": true,
+   "text": "<p>Kontostand: 1.234,56 EUR</p>",
+   "max_confidence_delta": 1.1324936523005036e-06
+  },
+  "f16": {
+   "ids_exact": true,
+   "text": "<p>Kontostand: 1.234,56 EUR</p>",
+   "max_confidence_delta": 1.1324936523005036e-06
+  }
+ }
+}

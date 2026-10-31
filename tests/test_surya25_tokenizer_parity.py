@@ -30,6 +30,34 @@ converter = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(converter)
 
 
+def scale_parity(binary, metadata, tmp):
+    """Native surya_scale_to_fit vs the pinned package scale_to_fit (Pillow LANCZOS), byte for byte."""
+    import numpy as np
+    from PIL import Image
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools" / "ci-heavy"))
+    import surya25_metadata
+    scale = surya25_metadata.surya_source()["scale_to_fit"]
+    rng = np.random.default_rng(11)
+    sizes = [(300, 40), (448, 112), (1792, 28), (97, 13), (1000, 30), (2550, 3300), (3300, 2550), (5000, 60),
+             (60, 5000), (1, 1), (4000, 4000), (616, 84), (1201, 37)]
+    results = []
+    for width, height in sizes:
+        rgb = rng.integers(0, 256, (height, width, 3), dtype=np.uint8)
+        expected = np.asarray(scale(Image.fromarray(rgb)).convert("RGB"))
+        raw, out = Path(tmp, "scale-in.bin"), Path(tmp, "scale-out.bin")
+        raw.write_bytes(rgb.tobytes())
+        line = subprocess.run([binary, str(metadata), "--scale", str(raw), str(width), str(height), str(out)],
+                              capture_output=True, text=True).stdout.split()
+        entry = {"size": [width, height], "expected": [expected.shape[1], expected.shape[0]]}
+        if len(line) == 3:
+            h, w = int(line[0]), int(line[1])
+            entry["native"] = [w, h]
+            actual = np.fromfile(out, dtype=np.uint8)
+            entry["bytes_exact"] = actual.size == expected.size and bool((actual == expected.reshape(-1)).all())
+        results.append(entry)
+    return results
+
+
 def image_parity(processor, binary, metadata, tmp):
     """Native preprocess_rgb vs HF processor with the vLLM serving kwargs, on owned synthetic images."""
     import numpy as np
@@ -87,7 +115,9 @@ def frontend_parity(root, binary, tmp):
     lines = result.stdout.splitlines()
     actual = [[int(x) for x in line.split()[1:]] for line in lines if line.startswith("IDS")]
     images = image_parity(processor, binary, path, tmp)
-    return {"images": images, "frontend_exit": result.returncode, "frontend_pass": lines[-1:] == ["PASS"],
+    scales = scale_parity(binary, path, tmp)
+    return {"images": images, "scale_to_fit": scales,
+            "scale_to_fit_all_exact": all(x.get("bytes_exact") and x["native"] == x["expected"] for x in scales), "frontend_exit": result.returncode, "frontend_pass": lines[-1:] == ["PASS"],
             "frontend_prompts": len(prompts), "frontend_mismatches": sum(a != e for a, e in zip(actual, expected))
             + abs(len(actual) - len(expected)),
             "block_prompt_ids": expected[0]}
@@ -187,7 +217,8 @@ def main():
                "decode_mismatches": decode_mismatch, "first_mismatches": mismatches[:5],
                "tokenizer_json_sha256": data["tokenizer_json_sha256"], **front}
     print(json.dumps(summary, ensure_ascii=False, indent=1))
-    front_ok = not front or (front["frontend_exit"] == 0 and front["frontend_pass"] and not front["frontend_mismatches"])
+    front_ok = not front or (front["frontend_exit"] == 0 and front["frontend_pass"] and not front["frontend_mismatches"]
+                             and front["scale_to_fit_all_exact"])
     return 0 if not mismatches and not decode_mismatch and len(native) == len(cases) and front_ok else 1
 
 

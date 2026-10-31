@@ -1,0 +1,337 @@
+{
+ "revision": "00c843e9cae45611dca0a6dc2c9bbbf2dadaaed3",
+ "reference": "transformers 5.16.1 Qwen3_5ForConditionalGeneration float32 CPU, greedy, block prompt, min/max pixels 3136/6291456",
+ "cap": 128,
+ "cases": {
+  "hello": {
+   "size": [
+    560,
+    112
+   ],
+   "lines": [
+    "Hello, world."
+   ],
+   "input_sha256": "1f9ef45325a2b4a95e4b21d5b9512b8f0c74f7a425a76f8f411764d465bc65ca",
+   "original": {
+    "token_ids": [
+     1039,
+     2008,
+     68467,
+     2047,
+     1990,
+     69840,
+     1992,
+     1098,
+     2
+    ],
+    "text": "<p>Hello, world.</p>",
+    "stop_eos": true,
+    "grid": [
+     1,
+     8,
+     36
+    ]
+   },
+   "f32": {
+    "ids_exact": true,
+    "text_exact": true,
+    "stop_kind": 1,
+    "max_confidence_delta": 8.940085449715696e-07,
+    "native_wall_seconds": 42.2132551,
+    "text": "<p>Hello, world.</p>"
+   },
+   "f16": {
+    "ids_exact": true,
+    "text_exact": true,
+    "stop_kind": 1,
+    "max_confidence_delta": 8.34926300097294e-07,
+    "native_wall_seconds": 31.9618196,
+    "text": "<p>Hello, world.</p>"
+   },
+   "original_wall_seconds": 2.580422878265381
+  },
+  "invoice": {
+   "size": [
+    896,
+    84
+   ],
+   "lines": [
+    "Invoice No. 2026-10-31: 1,234.56 EUR"
+   ],
+   "input_sha256": "a767b9d1d72a0228b870ee820b731ffc9339600af17bbcafbd2117b94ea8e69c",
+   "original": {
+    "token_ids": [
+     1039,
+     1059,
+     73701,
+     68666,
+     1992,
+     1979,
+     215,
+     19,
+     1991,
+     23,
+     1991,
+     44,
+     1994,
+     1979,
+     14,
+     1990,
+     247,
+     1992,
+     69,
+     83984,
+     2018,
+     1116,
+     1098,
+     2
+    ],
+    "text": "<p><b>Invoice No. 2026-10-31: 1,234.56 EUR</b></p>",
+    "stop_eos": true,
+    "grid": [
+     1,
+     6,
+     56
+    ]
+   },
+   "f32": {
+    "ids_exact": true,
+    "text_exact": true,
+    "stop_kind": 1,
+    "max_confidence_delta": 1.0136198119736761e-06,
+    "native_wall_seconds": 78.0513501,
+    "text": "<p><b>Invoice No. 2026-10-31: 1,234.56 EUR</b></p>"
+   },
+   "f16": {
+    "ids_exact": true,
+    "text_exact": true,
+    "stop_kind": 1,
+    "max_confidence_delta": 1.3116198119833555e-06,
+    "native_wall_seconds": 79.3920056,
+    "text": "<p><b>Invoice No. 2026-10-31: 1,234.56 EUR</b></p>"
+   },
+   "original_wall_seconds": 4.914103269577026
+  },
+  "german": {
+   "size": [
+    728,
+    112
+   ],
+   "lines": [
+    "Grüße aus München, Straße 5"
+   ],
+   "input_sha256": "07c335357d1966fc041d66d19169b682b9f55068569e6a605daff0e25ab79c5f",
+   "original": {
+    "token_ids": [
+     1039,
+     67138,
+     2188,
+     2159,
+     2037,
+     73317,
+     78786,
+     1990,
+     71782,
+     66326,
+     2159,
+     65689,
+     18,
+     1098,
+     2
+    ],
+    "text": "<p>Grüße aus München, Straße 5</p>",
+    "stop_eos": true,
+    "grid": [
+     1,
+     8,
+     46
+    ]
+   },
+   "f32": {
+    "ids_exact": true,
+    "text_exact": true,
+    "stop_kind": 1,
+    "max_confidence_delta": 6.556411956792907e-06,
+    "native_wall_seconds": 60.0565078,
+    "text": "<p>Grüße aus München, Straße 5</p>"
+   },
+   "f16": {
+    "ids_exact": true,
+    "text_exact": true,
+    "stop_kind": 1,
+    "max_confidence_delta": 2.7414119567747974e-06,
+    "native_wall_seconds": 46.0591815,
+    "text": "<p>Grüße aus München, Straße 5</p>"
+   },
+   "original_wall_seconds": 3.330566167831421
+  },
+  "paragraph": {
+   "size": [
+    672,
+    252
+   ],
+   "lines": [
+    "The quick brown fox jumps",
+    "over the lazy dog. 42%",
+    "of tests pass (n=17)."
+   ],
+   "input_sha256": "8f907f6f7ae8d4090699ed75fa52831ef484328e03351baff2637f08e9c615f6",
+   "original": {
+    "token_ids": [
+     1039,
+     68379,
+     72796,
+     65541,
+     73877,
+     68186,
+     66190,
+     68190,
+     66497,
+     66238,
+     68474,
+     68238,
+     68335,
+     66774,
+     68459,
+     2039,
+     1992,
+     1979,
+     55,
+     1983,
+     68241,
+     71565,
+     73441,
+     1979,
+     1986,
+     2046,
+     1997,
+     30,
+     68435,
+     1098,
+     2
+    ],
+    "text": "<p>The quick brown fox jumps over the lazy dog. 42% of tests pass (n=17).</p>",
+    "stop_eos": true,
+    "grid": [
+     1,
+     16,
+     42
+    ]
+   },
+   "f32": {
+    "ids_exact": true,
+    "text_exact": true,
+    "stop_kind": 1,
+    "max_confidence_delta": 4.351464019780593e-06,
+    "native_wall_seconds": 100.355425,
+    "text": "<p>The quick brown fox jumps over the lazy dog. 42% of tests pass (n=17).</p>"
+   },
+   "f16": {
+    "ids_exact": true,
+    "text_exact": true,
+    "stop_kind": 1,
+    "max_confidence_delta": 1.6094640197250598e-06,
+    "native_wall_seconds": 95.2340439,
+    "text": "<p>The quick brown fox jumps over the lazy dog. 42% of tests pass (n=17).</p>"
+   },
+   "original_wall_seconds": 6.154033899307251
+  },
+  "bold": {
+   "size": [
+    504,
+    140
+   ],
+   "lines": [
+    "Total: $99.95"
+   ],
+   "input_sha256": "8db0903f6dcf113b1d2dda1bf81d6747329f9f43cc32bc6d9e39bcb3e98ae364",
+   "original": {
+    "token_ids": [
+     1039,
+     1059,
+     68800,
+     1994,
+     1979,
+     1982,
+     112,
+     1992,
+     108,
+     1116,
+     1098,
+     2
+    ],
+    "text": "<p><b>Total: $99.95</b></p>",
+    "stop_eos": true,
+    "grid": [
+     1,
+     8,
+     32
+    ]
+   },
+   "f32": {
+    "ids_exact": true,
+    "text_exact": true,
+    "stop_kind": 1,
+    "max_confidence_delta": 2.9755041508483515e-07,
+    "native_wall_seconds": 41.2402964,
+    "text": "<p><b>Total: $99.95</b></p>"
+   },
+   "f16": {
+    "ids_exact": true,
+    "text_exact": true,
+    "stop_kind": 1,
+    "max_confidence_delta": 2.384323120052656e-07,
+    "native_wall_seconds": 36.6861023,
+    "text": "<p><b>Total: $99.95</b></p>"
+   },
+   "original_wall_seconds": 2.605583906173706
+  },
+  "short": {
+   "size": [
+    448,
+    112
+   ],
+   "lines": [
+    "OCR test 7"
+   ],
+   "input_sha256": "c1b349678aa6b6d8c4c2c5e2adb71151403e2ddd3403013735925704ab5c26fc",
+   "original": {
+    "token_ids": [
+     1066,
+     67573,
+     2018,
+     68965,
+     1979,
+     20,
+     1123,
+     2
+    ],
+    "text": "<h2>OCR test 7</h2>",
+    "stop_eos": true,
+    "grid": [
+     1,
+     8,
+     28
+    ]
+   },
+   "f32": {
+    "ids_exact": true,
+    "text_exact": true,
+    "stop_kind": 1,
+    "max_confidence_delta": 1.4310002441897396e-06,
+    "native_wall_seconds": 40.3731295,
+    "text": "<h2>OCR test 7</h2>"
+   },
+   "f16": {
+    "ids_exact": true,
+    "text_exact": true,
+    "stop_kind": 1,
+    "max_confidence_delta": 5.360002441889833e-07,
+    "native_wall_seconds": 20.3506489,
+    "text": "<h2>OCR test 7</h2>"
+   },
+   "original_wall_seconds": 1.9875197410583496
+  }
+ },
+ "timing_note": "shared 4-core session container, not a quiet host; timings diagnostic only"
+}

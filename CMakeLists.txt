@@ -795,6 +795,8 @@ target_link_libraries(crispembed-qwen35-delta PUBLIC ggml ggml-base ggml-cpu cri
 # tests/test_surya25_tokenizer_parity.py <checkpoint> <this binary>).
 add_executable(test-wordlevel-added tests/test_wordlevel_added.cpp)
 target_include_directories(test-wordlevel-added PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+add_executable(test-pil-resample-u8 tests/test_pil_resample_u8.cpp)
+target_include_directories(test-pil-resample-u8 PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 add_executable(test-surya25-frontend tests/test_surya25_frontend.cpp)
 target_link_libraries(test-surya25-frontend PRIVATE crispembed-qwen35-delta crispembed-core)
 add_executable(test-qwen35-public tests/test_qwen35_public.cpp)
