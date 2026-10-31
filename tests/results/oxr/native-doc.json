@@ -1,0 +1,124 @@
+{
+ "schema": "crispembed.oxr.native-doc/1",
+ "runs": [
+  {
+   "run": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41249898971",
+   "source": "f2cb5230b4cf76a5c569b6d1ae5d07839b01d9eb",
+   "host": "GitHub ubuntu-latest x86-64",
+   "python": "3.12.15",
+   "numpy": "1.26.4",
+   "opencv": "4.11.0",
+   "results": {
+    "self_checks": "pass",
+    "helpers": "pass",
+    "replay": "pass",
+    "rust_check": "pass",
+    "dfine": "fail",
+    "native": "pass"
+   },
+   "helpers": {
+    "seed": 20261031,
+    "cases": 400,
+    "checks": 5601,
+    "mismatches": 0,
+    "families": {
+     "clean_formula": {
+      "checks": 400,
+      "mismatches": 0
+     },
+     "float_repr": {
+      "checks": 1,
+      "mismatches": 0
+     },
+     "gray": {
+      "checks": 400,
+      "mismatches": 0
+     },
+     "move_numbering": {
+      "checks": 400,
+      "mismatches": 0
+     },
+     "page_cleanup:default": {
+      "checks": 400,
+      "mismatches": 0
+     },
+     "page_cleanup:full": {
+      "checks": 400,
+      "mismatches": 0
+     },
+     "parse_layout": {
+      "checks": 400,
+      "mismatches": 0
+     },
+     "postprocess:Chemical Structure": {
+      "checks": 56,
+      "mismatches": 0
+     },
+     "postprocess:Code Block": {
+      "checks": 65,
+      "mismatches": 0
+     },
+     "postprocess:Formula": {
+      "checks": 65,
+      "mismatches": 0
+     },
+     "postprocess:Table": {
+      "checks": 70,
+      "mismatches": 0
+     },
+     "postprocess:Text": {
+      "checks": 74,
+      "mismatches": 0
+     },
+     "postprocess:Title": {
+      "checks": 70,
+      "mismatches": 0
+     },
+     "resize_area": {
+      "checks": 400,
+      "mismatches": 0
+     },
+     "ro_parse": {
+      "checks": 400,
+      "mismatches": 0
+     },
+     "ro_prompt": {
+      "checks": 400,
+      "mismatches": 0
+     },
+     "ro_repair": {
+      "checks": 400,
+      "mismatches": 0
+     },
+     "ro_supplement": {
+      "checks": 400,
+      "mismatches": 0
+     },
+     "space_markdown_math": {
+      "checks": 400,
+      "mismatches": 0
+     },
+     "xycut": {
+      "checks": 400,
+      "mismatches": 0
+     }
+    }
+   },
+   "replay": {
+    "seed": 20261031,
+    "identical": 80,
+    "total": 80
+   },
+   "initial_failures_retained": [
+    {
+     "gate": "dfine",
+     "cause": "ModuleNotFoundError: huggingface_hub (lane did not install it before tools/oxr_dfine_fixtures.py)"
+    },
+    {
+     "gate": "native",
+     "cause": "reported pass with zero cases because no D-FINE fixtures existed; not evidence (the harness now fails on an empty case list)"
+    }
+   ]
+  }
+ ]
+}
