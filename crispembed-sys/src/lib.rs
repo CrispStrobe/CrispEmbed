@@ -8,6 +8,21 @@ use std::os::raw::c_void;
 #[repr(C)]
 pub struct CrispembedContext(c_void);
 
+/// Experimental resident MinerU2.5-Pro context (CRISPEMBED_MINERU25_PRO=1).
+#[repr(C)]
+pub struct MineruContext(c_void);
+
+extern "C" {
+    pub fn crispembed_mineru_init(model_path: *const c_char, n_threads: c_int) -> *mut MineruContext;
+    pub fn crispembed_mineru_free(ctx: *mut MineruContext);
+    pub fn crispembed_mineru_predict(ctx: *mut MineruContext, pixels: *const u8,
+        width: c_int, height: c_int, channels: c_int, prompt: *const c_char, max_new_tokens: c_int) -> *const c_char;
+    pub fn crispembed_mineru_extract(ctx: *mut MineruContext, pixels: *const u8,
+        width: c_int, height: c_int, channels: c_int, image_analysis: c_int, max_new_tokens: c_int) -> *const c_char;
+    pub fn crispembed_mineru_last_markdown(ctx: *const MineruContext) -> *const c_char;
+    pub fn crispembed_mineru_last_error(ctx: *const MineruContext) -> *const c_char;
+}
+
 /// Opaque joint-schema SystemOne context; separate from embedding/Gemma handles.
 #[repr(C)]
 pub struct CrispembedSystemoneContext(c_void);
@@ -112,7 +127,8 @@ pub struct CrispembedOcrStage {
     // 10=granite_vision 11=lightonocr 12=qwen3vl 13=unlimited_ocr
     // 14=unified 15=tesseract_fraktur 16=ppocrv6 17=easyocr 18=olmocr
     // 19=lfm2_vl 20=qwen35_ocr (experimental) 21=ovisocr2 (explicit gated format2) 22=ovisocr3 (gated format3)
-    // 23=minicpm_ocr (experimental), 24=teleocr (CRISPEMBED_TELEOCR)
+    // 23=minicpm_ocr (experimental), 24=teleocr (CRISPEMBED_TELEOCR),
+    // 25=mineru25_pro (gated native basic page pipeline)
     pub engine: c_int,
     pub model_a: *const c_char,
     pub model_b: *const c_char,

@@ -1,0 +1,151 @@
+{
+  "schema": "crispembed-mineru25-pro-publication-v1",
+  "approved_by_owner": true,
+  "approval": "Owner instructed conversion, quantization and upload to a CrispEmbed HF repo with full wiring (2026-10-31). A variant is publishable only when its committed receipt shows every case token-ID exact against the pinned original Python model.",
+  "destination": "cstr/MinerU2.5-Pro-2604-1.2B-GGUF",
+  "token_secret": "HF_PUBLISH_TOKEN",
+  "source_contract": "models/mineru25-pro-source.json",
+  "spec": "docs/mineru25-pro.md",
+  "converter": "models/convert-mineru25-pro-to-gguf.py",
+  "quantizer": "tools/quantize.cpp (crispembed-quantize)",
+  "upstream": {
+    "repo": "opendatalab/MinerU2.5-Pro-2604-1.2B",
+    "revision": "d3f5e08d073c21466bbabe21c71bb1e9c2e595da",
+    "license": "apache-2.0",
+    "copyright": "Copyright 2024-2026 MinerU Team (OpenDataLab)",
+    "readme": {
+      "bytes": 13091,
+      "sha256": "c7859313699e858a61074e7d2ab171bea25d37504f3d530b9e0d4232c91706a5"
+    },
+    "license_file": {
+      "note": "The model repository declares license: apache-2.0 but ships no LICENSE file (tree at the pinned revision checked 2026-10-31). The verbatim Apache-2.0 text is the publisher's LICENSE.md from opendatalab/mineru-vl-utils at the pinned blueprint commit (byte-identical to licenses/mineru-vl-utils-LICENSE).",
+      "code_repo": "https://github.com/opendatalab/mineru-vl-utils",
+      "commit": "c9797cde8f54cc48306196fc6aebe73ea31dd4a3",
+      "url": "https://raw.githubusercontent.com/opendatalab/mineru-vl-utils/c9797cde8f54cc48306196fc6aebe73ea31dd4a3/LICENSE.md",
+      "bytes": 11350,
+      "sha256": "0b0c9cbb9e9f032856deef12e761c0661f14fdbaf88753bb1e1c68d1f7e5a3da"
+    },
+    "notice_file": {
+      "present": false,
+      "note": "Neither the model repository nor mineru-vl-utils at the pinned commit has a NOTICE file (2026-10-31), so none is redistributed; the card carries attribution and the Apache-2.0 section 4(b) statement of changes."
+    }
+  },
+  "default_variants": [
+    "F16"
+  ],
+  "recipes": {
+    "F32": {
+      "filename": "mineru25-pro-2604-f32.gguf",
+      "from": "convert",
+      "convert_args": [
+        "--dtype",
+        "f32"
+      ]
+    },
+    "F16": {
+      "filename": "mineru25-pro-2604-f16.gguf",
+      "from": "convert",
+      "convert_args": [
+        "--dtype",
+        "f16"
+      ],
+      "precision_receipt": "tests/results/mineru25/precision.json",
+      "precision_dtype": "f16"
+    },
+    "Q8_0": {
+      "filename": "mineru25-pro-2604-q8_0.gguf",
+      "from": "F32",
+      "type": "q8_0",
+      "tensor_type": [],
+      "precision_receipt": "tests/results/mineru25/precision.json",
+      "precision_dtype": "q8_0"
+    },
+    "Q4_K": {
+      "filename": "mineru25-pro-2604-q4_k.gguf",
+      "from": "F32",
+      "type": "q4_k",
+      "tensor_type": [],
+      "precision_receipt": "tests/results/mineru25/precision.json",
+      "precision_dtype": "q4_k"
+    },
+    "Q4_K_DQ8": {
+      "filename": "mineru25-pro-2604-q4_k-dq8.gguf",
+      "from": "F32",
+      "type": "q4_k",
+      "tensor_type": [
+        "l.*=q8_0"
+      ],
+      "note": "vision Q4_K, decoder (l.*) Q8_0",
+      "precision_receipt": "tests/results/mineru25/precision.json",
+      "precision_dtype": "q4_k-dq8"
+    },
+    "Q4_K_DF16": {
+      "filename": "mineru25-pro-2604-q4_k-df16.gguf",
+      "from": "F32",
+      "type": "q4_k",
+      "tensor_type": [],
+      "extra_args": [
+        "--decoder-f16"
+      ],
+      "note": "vision Q4_K, decoder (l.*) F16",
+      "precision_receipt": "tests/results/mineru25/precision.json",
+      "precision_dtype": "q4_k-df16"
+    }
+  },
+  "receipts": {
+    "parity": "tests/results/mineru25/native-parity.json"
+  },
+  "parity_arms": [
+    "f32",
+    "f32-reuse"
+  ],
+  "parity_cases": [
+    "formula",
+    "table",
+    "receipt",
+    "german",
+    "japanese",
+    "arabic",
+    "layout-page",
+    "layout-rot90"
+  ],
+  "qualification": {
+    "default_enabled": false,
+    "gate": "F32 ordinary and reuse-graph arms token-ID exact on every case, plus the 64-stage numerical and preprocessing gates; reduced precisions publish only when token-ID exact on every case",
+    "registry_alias": "added only after upload, with the real published SHA256"
+  },
+  "case_inputs": {
+    "formula": [
+      "formula_quadratic.png",
+      "formula"
+    ],
+    "table": [
+      "cc0/simple_table.jpg",
+      "table"
+    ],
+    "receipt": [
+      "cc0/receipt_example.png",
+      "text"
+    ],
+    "german": [
+      "cc0/german_official_print.jpg",
+      "text"
+    ],
+    "japanese": [
+      "japanese_print.png",
+      "text"
+    ],
+    "arabic": [
+      "cc0/arabic_printed_line.png",
+      "text"
+    ],
+    "layout-page": [
+      "scan_page_pd.png",
+      "layout"
+    ],
+    "layout-rot90": [
+      "derived/german_official_document__rot90.png",
+      "layout"
+    ]
+  }
+}

@@ -1542,13 +1542,14 @@ int main(int argc, char ** argv) {
             if (n == "ppocrv6") return 16;
             if (n == "easyocr") return 17;
             if (n == "olmocr") return 18;
+            if (n == "mineru25-pro" || n == "mineru25_pro") return 25;
             if (n == "minicpm-ocr" || n == "minicpm_ocr") return 23;
             if (n == "teleocr") return 24;
             return 0; // dbnet_trocr
         };
         const int eid = eng_id(ocr_engine_name);
         const bool is_vlm = (eid >= 2 && eid <= 5) || (eid >= 8 && eid <= 13) || eid == 14 || eid == 18 || eid == 20 ||
-                            eid == 21 || eid == 22 || eid == 23 || eid == 24;
+                            eid == 21 || eid == 22 || eid == 23 || eid == 24 || eid == 25;
         if ((eid == 14 || eid == 15 || eid == 20 || eid == 21 || eid == 22 || eid == 24) &&
             ocr_rec_model_path.empty()) {
             fprintf(stderr, "error: --ocr-engine %s needs the model via --ocr-rec FILE\n", ocr_engine_name.c_str());
@@ -1567,6 +1568,13 @@ int main(int argc, char ** argv) {
                 fprintf(stderr, "error: teleocr requires a local TeleOCR version 1 GGUF\n");
                 return 1;
             }
+        }
+        // Experimental MinerU2.5-Pro: explicit model file, fixed task prompts, own gate.
+        if (eid == 25 &&
+            (ocr_rec_model_path.empty() || !ocr_prompt.empty() || !core_env::on("CRISPEMBED_MINERU25_PRO"))) {
+            fprintf(stderr,
+                    "error: mineru25-pro needs --ocr-rec FILE, no custom prompt, and CRISPEMBED_MINERU25_PRO=1\n");
+            return 1;
         }
         // Experimental MiniCPM-OCR-1.0 reuses the qwen35 decoder kernels, so both gates are required.
         if (eid == 23 && (!core_env::on("CRISPEMBED_MINICPM_OCR") || !core_env::on("CRISPEMBED_QWEN35_OCR"))) {

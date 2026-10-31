@@ -75,6 +75,19 @@ this handoff.
 
 ## Immediate executable order
 
+### MinerU2.5-Pro-2604 integration (31 October 2026)
+
+The isolated `feat/mineru25-pro-2604` source delivery adds the checkpoint
+`opendatalab/MinerU2.5-Pro-2604-1.2B` at revision
+`d3f5e08d073c21466bbabe21c71bb1e9c2e595da`. The implementation reuses the
+Qwen2-VL GGML graph behind `CRISPEMBED_MINERU25_PRO=1`. Its converter,
+preprocessing/token contracts, document adapter and qualification tools are
+tracked in [the integration guide](docs/mineru25-pro.md). Model-backed
+intermediate, decoded-quality and same-host speed gates must pass before this
+path is qualified or receives a published model alias. No existing model default,
+release version, application pin or remote model artifact is changed here.
+
+
 Choose one bounded lane. The source table and current remote states in the
 handoff take precedence over historical commands.
 

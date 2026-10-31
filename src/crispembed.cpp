@@ -5808,6 +5808,8 @@ static ocr_orchestrator::engine map_engine(int e) {
         return E::minicpm_ocr;
     case 24:
         return E::teleocr;
+    case 25:
+        return E::mineru25_pro;
     default:
         return E::dbnet_trocr;
     }

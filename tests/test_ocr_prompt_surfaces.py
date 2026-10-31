@@ -43,7 +43,8 @@ ORCH_PROMPT = {
 ABI_PROMPT = {"QWEN2VL", "INTERNVL2", "LFM2_VL", "GRANITE_VISION", "QWEN35_OCR"}
 
 # CLI engine ids (eng_id in examples/cli/main.cpp) that accept a prompt.
-CLI_PROMPT_NAMES = {"qwen2vl", "internvl2", "granite-vision", "qwen3vl", "unified", "olmocr", "lfm2-vl", "qwen35-ocr"}
+CLI_PROMPT_NAMES = {"qwen2vl", "internvl2", "granite-vision", "qwen3vl", "unified", "olmocr", "lfm2-vl", "qwen35-ocr",
+                    "minicpm-ocr", "teleocr"}
 
 
 def read(rel: str) -> str:
@@ -115,7 +116,8 @@ def negative_controls() -> list[str]:
     originals = {rel: read(rel) for rel in ("src/crispembed.cpp", "src/ocr_orchestrator.cpp",
                                             "examples/cli/main.cpp", "examples/server/server.cpp")}
     mutations = [
-        ("CLI", "examples/cli/main.cpp", " || eid == 20;", ";", "CLI takes_prompt ids"),
+        # Drop one id from inside the list; independent of which engine is appended last.
+        ("CLI", "examples/cli/main.cpp", " || eid == 20", "", "CLI takes_prompt ids"),
         ("orchestrator", "src/ocr_orchestrator.cpp", "st.params.vlm_prompt.empty() ? nullptr : st.params.vlm_prompt.c_str()", "nullptr", "run_engine(qwen35_ocr)"),
         ("ABI setter", "src/crispembed.cpp", "    case OCR_MODEL_QWEN35_OCR:\n        if (!reset", "    case OCR_MODEL_UNKNOWN_CONTROL:\n        if (!reset", "does not handle OCR_MODEL_QWEN35_OCR"),
         ("ABI recognition", "src/crispembed.cpp", "return qwen35_ocr_recognize_raw((qwen35_ocr_context *)u->ctx, px, w, h, ch,\n                                        u->prompt.empty() ? nullptr : u->prompt.c_str(), ol);", "return qwen35_ocr_recognize_raw((qwen35_ocr_context *)u->ctx, px, w, h, ch, nullptr, ol);", "does not forward stored prompt"),

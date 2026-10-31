@@ -64,6 +64,7 @@ enum class engine {
     ovisocr3,          // explicit gated format3 OvisOCR3 plain OCR; no registry default
     minicpm_ocr,       // experimental MiniCPM-OCR-1.0 (CRISPEMBED_MINICPM_OCR); no registry default
     teleocr,           // TeleOCR Qwen2.5-VL vision + Qwen3 decoder (CRISPEMBED_TELEOCR)
+    mineru25_pro,      // experimental MinerU2.5-Pro native basic two-step page extraction
 };
 
 // Image category used to pick a chain. `auto_detect` runs the classifier.

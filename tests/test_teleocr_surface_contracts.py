@@ -25,7 +25,8 @@ class TeleocrSurfaceContracts(unittest.TestCase):
         pairs = {int(i): name for i, name in re.findall(r"case (\d+):\s*return E::(\w+);", body)}
         self.assertEqual(pairs[23], "minicpm_ocr")
         self.assertEqual(pairs[24], "teleocr")
-        self.assertEqual(len(pairs), 25)
+        self.assertEqual(pairs[25], "mineru25_pro")
+        self.assertEqual(len(pairs), 26)
         self.assertRegex(read("src/crispembed.h"), r"#define CRISPEMBED_OCR_ENGINE_TELEOCR 24\b")
         self.assertRegex(src, r'arch == "teleocr"\) return OCR_MODEL_QWEN2VL;')
 

@@ -108,6 +108,8 @@ ENGINE_TO_OCR_MODEL = {
     "got": "GOT_OCR", "glm": "GLM_OCR", "qwen2vl": "QWEN2VL", "qwen3vl": "QWEN2VL",
     "teleocr": "QWEN2VL", "minicpm_ocr": "MINICPM_OCR",
     "olmocr": "QWEN2VL", "internvl2": "INTERNVL2", "deepseek_ocr2": "DEEPSEEK_OCR2",
+    "mineru25_pro": "QWEN2VL",  # crop --ocr shares Qwen; stage 25 owns the two-step basic page route
+    "minicpm_ocr": "MINICPM_OCR",  # existing engine was missing from the guard's inventory
     "granite_vision": "GRANITE_VISION", "lightonocr": "LIGHTONOCR",
     "unlimited_ocr": "UNLIMITED_OCR", "lfm2_vl": "LFM2_VL", "qwen35_ocr": "QWEN35_OCR",
     "ovisocr2": "QWEN35_OCR",  # format2 shares the gated native model API

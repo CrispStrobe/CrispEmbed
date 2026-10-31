@@ -1,0 +1,28 @@
+MinerU2.5-Pro document helper attribution
+
+Upstream project: opendatalab/mineru-vl-utils
+Source: https://github.com/opendatalab/mineru-vl-utils
+Pinned commit: c9797cde8f54cc48306196fc6aebe73ea31dd4a3
+Upstream copyright: Copyright [2024-2026] [MinerU Team]
+License: Apache License, Version 2.0 (see mineru-vl-utils-LICENSE).
+
+src/mineru_layout.h is a C++ translation/adaptation of the layout parser,
+crop geometry, OTSL conversion, basic postprocessing and Markdown composition
+in the following upstream Python files:
+  mineru_vl_utils/mineru_client.py
+  mineru_vl_utils/structs.py
+  mineru_vl_utils/post_process/otsl2html.py
+  mineru_vl_utils/post_process/json2markdown.py
+  mineru_vl_utils/post_process/__init__.py
+
+Changes: dependency-free header-only C++ data structures and implementation;
+bounded scanning and numeric input validation; JSON serialization; basic-only
+postprocessing explicitly separated from the full upstream document pipeline.
+The original source functions are not claimed to be byte-identical in this
+translation. Full formula/image/table-image postprocessing uses the original
+pinned Python package through python/crispembed/_mineru.py, without loading a
+Python model runtime. Its complete .py source tree is authenticated by SHA-256.
+
+The pinned upstream repository contains no standalone NOTICE file. This
+attribution is added by the integration authors; it is not an upstream notice.
+No upstream endorsement is implied. Model weights are not distributed here.

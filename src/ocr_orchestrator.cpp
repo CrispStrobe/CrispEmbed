@@ -63,6 +63,7 @@
 
 #include "core/temp_file.h"
 #include "core/env_gate.h"
+#include "core/json.h"
 
 #include <atomic>
 #include <algorithm>
@@ -344,6 +345,8 @@ struct context {
     std::string teleocr_model_path;
     std::string teleocr_default_prompt;
     int teleocr_default_max_tokens = 4096;
+    crispembed_mineru_context * mineru = nullptr;
+    std::string mineru_model_path;
     internvl2_ocr_context * intern = nullptr; // InternVL2 (single-shot VLM)
     deepseek_ocr2_context * dsocr2 = nullptr; // DeepSeek-OCR-2 (MoE VLM)
     pix2struct_context * p2s = nullptr;       // Pix2Struct (doc/chart understanding)
@@ -912,6 +915,44 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         auto out = wrap_fulltext(t, w, h, conf, nconf, glm_ocr_mean_confidence(ctx->glm));
         if (loaded) stbi_image_free(loaded);
         return out;
+    }
+    case engine::mineru25_pro: {
+        if (!st.params.vlm_prompt.empty() || st.params.vlm_max_tokens < 0) {
+            fprintf(stderr,
+                    "ocr_orchestrator: MinerU page extraction requires fixed task prompts and a nonnegative cap\n");
+            return {};
+        }
+        if (!ctx->mineru || ctx->mineru_model_path != st.model_a) {
+            crispembed_mineru_free(ctx->mineru);
+            ctx->mineru = nullptr;
+            ctx->mineru_model_path.clear();
+            if (st.model_a.empty()) return {};
+            ctx->mineru = crispembed_mineru_init(st.model_a.c_str(), ctx->n_threads);
+            if (!ctx->mineru) return {};
+            ctx->mineru_model_path = st.model_a;
+        }
+        int w = pw, h = ph;
+        unsigned char * loaded = nullptr;
+        const unsigned char * img = px;
+        if (!img) {
+            int channels = 0;
+            loaded = stbi_load(path, &w, &h, &channels, 3);
+            img = loaded;
+        }
+        if (!img) return {};
+        const char * data =
+            crispembed_mineru_extract(ctx->mineru, img, w, h, 3, 0, std::max(0, st.params.vlm_max_tokens));
+        if (loaded) stbi_image_free(loaded);
+        if (!data) {
+            fprintf(stderr, "ocr_orchestrator: MinerU: %s\n", crispembed_mineru_last_error(ctx->mineru));
+            return {};
+        }
+        if (core_json::json_extract_bool(data, "capped", true)) {
+            fprintf(stderr, "ocr_orchestrator: MinerU page did not complete within the token budget\n");
+            return {};
+        }
+        const float conf = float(core_json::json_extract_number(data, "confidence", 0.0));
+        return wrap_fulltext(crispembed_mineru_last_markdown(ctx->mineru), w, h, nullptr, 0, conf);
     }
     // olmocr is the same runtime as qwen2vl — the fine-tune is auto-detected
     // inside qwen2vl_ocr_init from the model file, which switches the prompt
@@ -2263,6 +2304,8 @@ static const char * engine_name(engine e) {
         return "glm";
     case engine::qwen2vl:
         return "qwen2vl";
+    case engine::mineru25_pro:
+        return "mineru25-pro";
     case engine::qwen3vl:
         return "qwen3vl";
     case engine::teleocr:
@@ -2321,6 +2364,7 @@ static const char * source_type_name(source_type t) {
 
 static bool is_vlm_engine(engine e) {
     switch (e) {
+    case engine::mineru25_pro:
     case engine::olmocr:
     case engine::qwen2vl:
     case engine::qwen3vl:
@@ -2610,6 +2654,7 @@ void free(context * ctx) {
     if (ctx->qwen) qwen2vl_ocr_free(ctx->qwen);
     if (ctx->qwen3) qwen2vl_ocr_free(ctx->qwen3);
     if (ctx->teleocr) qwen2vl_ocr_free(ctx->teleocr);
+    if (ctx->mineru) crispembed_mineru_free(ctx->mineru);
     if (ctx->intern) internvl2_ocr_free(ctx->intern);
     if (ctx->dsocr2) deepseek_ocr2_free(ctx->dsocr2);
     if (ctx->p2s) pix2struct_free(ctx->p2s);

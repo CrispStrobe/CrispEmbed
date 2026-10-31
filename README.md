@@ -1,5 +1,12 @@
 # CrispEmbed
 
+**Experimental MinerU2.5-Pro-2604 integration:** native Qwen2-VL GGML inference,
+authenticated F32/F16 conversion, a complete Python document-helper adapter,
+and native basic page extraction are available behind
+`CRISPEMBED_MINERU25_PRO=1`. See [the implementation and qualification guide](docs/mineru25-pro.md).
+Full-model quality and speed parity remain unverified; this source addition
+does not create a published model alias or change existing defaults.
+
 [![Build](https://github.com/CrispStrobe/CrispEmbed/actions/workflows/build.yml/badge.svg)](https://github.com/CrispStrobe/CrispEmbed/actions/workflows/build.yml)
 
 **A single C++/ggml binary for retrieval and document understanding — no Python

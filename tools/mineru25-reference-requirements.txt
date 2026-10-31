@@ -1,0 +1,10 @@
+# Modelcard fast-processor reference. CPU torch wheels may be installed first
+# from https://download.pytorch.org/whl/cpu; CUDA uses the matching PyTorch index.
+-r mineru25-blueprint-requirements.txt
+torch==2.9.0
+torchvision==0.24.0
+transformers==4.57.3
+numpy==2.2.6
+safetensors==0.6.2
+huggingface_hub==0.36.0
+gguf==0.17.1

@@ -7118,3 +7118,15 @@ max1929.546924/cosine-0.074559955 versus original magnitude11.844038 fails.
 All145 saved-stage flags remain20 pass/125 fail. This is a capture-attribution
 problem to investigate, not a model speed/precision improvement or a confirmed
 buffer-lifetime diagnosis.
+
+## MinerU2.5-Pro-2604 — measurement pending (31 October 2026)
+
+The new native profile and optional 256-slot-bucket decode graph have no
+full-model latency, throughput or decoded-quality measurement in this delivery.
+The paired driver separates cold and resident warm runs, records identical
+request/source/host/thread controls, and requires native/Python warm median
+≤1.0 together with exact IDs/text/EOS before its request-level speed gate passes.
+This is an acceptance protocol, not a result. See [the guide](docs/mineru25-pro.md)
+and [actual implementation checks](tests/results/mineru25/implementation-validation.json).
+The reuse graph stays default-off; vLLM batching and GPU performance remain
+separate unmeasured targets.

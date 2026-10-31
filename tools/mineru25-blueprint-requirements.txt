@@ -1,0 +1,14 @@
+# Full document preprocessing/postprocessing only; neural inference is C++ GGML.
+# Deliberately no [transformers], [vllm], torch or other model-runtime extra.
+mineru-vl-utils @ git+https://github.com/opendatalab/mineru-vl-utils.git@c9797cde8f54cc48306196fc6aebe73ea31dd4a3
+Pillow==12.3.0
+# Utilities used by the pinned upstream package, frozen for reproducibility.
+loguru==0.7.3
+aiofiles==25.1.0
+httpx==0.28.1
+httpx-retries==0.6.0
+pydantic==2.14.2
+tqdm==4.70.1
+# Optional cross-page table merging additionally requires the upstream MinerU
+# table_merge helper. The binding raises explicitly if that helper is absent;
+# it never silently declares cross-page merging complete.

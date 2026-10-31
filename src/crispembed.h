@@ -41,6 +41,32 @@ extern "C" {
 // at find_package() time — a C-only consumer of the installed header.)
 typedef struct crispembed_context crispembed_context;
 
+// Experimental MinerU2.5-Pro-2604. Requires CRISPEMBED_MINERU25_PRO=1 and a
+// profile-marked GGUF from models/convert-mineru25-pro-to-gguf.py. One context
+// owns a resident native GGML model; serialize calls on each context.
+typedef struct crispembed_mineru_context crispembed_mineru_context;
+CRISPEMBED_API crispembed_mineru_context * crispembed_mineru_init(const char * model_path, int n_threads);
+CRISPEMBED_API void crispembed_mineru_free(crispembed_mineru_context * ctx);
+// Single prompt: RGB/RGBA/gray uint8 pixels, or NULL with zero dimensions for a
+// text-only request. Pixels are not layout-resized or region-cropped here.
+// max_new_tokens=0 uses the Python blueprint's remaining 8192-token context.
+// Returns JSON containing text, raw_text, prompt_ids, token_ids (including EOS),
+// grid_thw, eos, capped, confidence and inference_ms. NULL means failure.
+// Returned pointers belong to ctx and remain valid until its next call/free.
+CRISPEMBED_API const char * crispembed_mineru_predict(crispembed_mineru_context * ctx, const uint8_t * pixels,
+                                                      int width, int height, int channels, const char * prompt,
+                                                      int max_new_tokens);
+// Native two-step *basic* page extraction: PIL layout resize, layout parsing,
+// crop/rotation, native recognition and basic OTSL/Markdown rendering. Full
+// MinerU document postprocessing is available through Python CrispMinerU's
+// two_step_extract, which reuses the pinned upstream helper with native model
+// inference. See docs/mineru25-pro.md for the exact contract and limitations.
+CRISPEMBED_API const char * crispembed_mineru_extract(crispembed_mineru_context * ctx, const uint8_t * pixels,
+                                                      int width, int height, int channels, int image_analysis,
+                                                      int max_new_tokens);
+CRISPEMBED_API const char * crispembed_mineru_last_markdown(const crispembed_mineru_context * ctx);
+CRISPEMBED_API const char * crispembed_mineru_last_error(const crispembed_mineru_context * ctx);
+
 // Model hyperparameters (read-only after init)
 typedef struct crispembed_hparams {
     int32_t n_vocab;
@@ -1297,6 +1323,7 @@ typedef struct crispembed_ocr_stage {
                           // 22=ovisocr3 (explicit gated format3 plain OCR)
                           // 23=minicpm_ocr (experimental, CRISPEMBED_MINICPM_OCR)
                           // 24=teleocr (experimental, CRISPEMBED_TELEOCR; explicit local GGUF)
+                          // 25=mineru25_pro (native basic page pipeline; CRISPEMBED_MINERU25_PRO)
     const char * model_a; // det / single-model GGUF
     const char * model_b; // rec GGUF (dbnet_trocr / surya)
     const char * model_c; // optional line-orientation GGUF (PP-LCNet 0/180)
