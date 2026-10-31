@@ -14,8 +14,7 @@ The new path is opt-in with `CRISPEMBED_TELEOCR=1`, following the repository's
 new-backend policy. An unset, empty, or literal `0` variable rejects TeleOCR
 loading. The shared repository gate treats any other nonempty value (including
 `false`) as enabled; use literal `0` to disable it.
-No automatic download alias is registered: use an explicitly converted local
-GGUF until a separately verified publication and hash pin exist.
+Published GGUFs: [cstr/TeleOCR-GGUF](https://huggingface.co/cstr/TeleOCR-GGUF) at immutable commit `36f626c1`, with registry aliases `teleocr-f16`, `teleocr-q8_0` and `teleocr-q4_k-m` pinned by SHA-256. Each was token-exact against the pinned original model on all six frozen cases (hosted receipts in `tests/results/teleocr/hosted-*.json`); strict numerical qualification remains false.
 
 TeleOCR uses the CPU backend by default. `CRISPEMBED_TELEOCR_GPU=1` opts into
 experimental GPU placement, while `QWEN2VL_OCR_FORCE_CPU=1` still forces CPU.
