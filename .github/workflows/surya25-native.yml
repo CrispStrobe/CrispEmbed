@@ -1,0 +1,55 @@
+name: Surya OCR 2.5 first native A/B (original HF F32 vs native F32/F16)
+on:
+  workflow_dispatch:
+  push:
+    branches: ['claude/**']
+    paths:
+      - 'tools/ci-heavy/surya25_native.py'
+      - '.github/workflows/surya25-native.yml'
+permissions:
+  contents: read
+jobs:
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    env:
+      OMP_NUM_THREADS: '4'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Scratch locations
+        run: |
+          mkdir -p "$RUNNER_TEMP/surya25/out" "$RUNNER_TEMP/surya25/scratch"
+          {
+            echo "HEAVY_OUT=$RUNNER_TEMP/surya25/out"
+            echo "HEAVY_SCRATCH=$RUNNER_TEMP/surya25/scratch"
+            echo "HF_HOME=$RUNNER_TEMP/surya25/scratch/hf"
+          } >> "$GITHUB_ENV"
+      - name: Build native Surya 2.5 test binaries
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j4 --target test-surya25-run test-wordlevel-added test-surya25-frontend
+          ./build/test-wordlevel-added
+      - name: Pinned CPU framework environment
+        run: |
+          python -m pip install torch==2.14.0 torchvision==0.29.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install transformers==5.16.1 tokenizers==0.23.3 numpy==2.2.6 pillow==12.1.0 huggingface-hub==1.33.0 gguf==0.19.0 safetensors==0.8.0
+          python -m pip freeze > "$HEAVY_OUT/environment.txt"
+      - name: Tokenizer/frontend parity guard (weight-free)
+        run: |
+          python -c "from huggingface_hub import snapshot_download as d; import sys; sys.path.insert(0,'models'); import qwen35_surya25_profile as p; print(d(p.MODEL, revision=p.REVISION, allow_patterns=list(p.METADATA_FILES)))" > "$HEAVY_SCRATCH/meta-path"
+          python tests/test_surya25_tokenizer_parity.py "$(cat "$HEAVY_SCRATCH/meta-path")" build/test-wordlevel-added --cases 5000 --frontend build/test-surya25-frontend > "$HEAVY_OUT/frontend-parity.json"
+          tail -c 400 "$HEAVY_OUT/frontend-parity.json"
+      - name: Convert, original HF reference and native comparison
+        run: python tools/ci-heavy/surya25_native.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: surya25-native-${{ github.run_id }}
+          path: ${{ env.HEAVY_OUT }}/
+          if-no-files-found: warn
+          retention-days: 90
