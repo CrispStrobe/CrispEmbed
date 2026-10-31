@@ -137,9 +137,9 @@ jobs:
     name: Published 0.16.1 fresh Apple consumer baseline
     runs-on: macos-15
     timeout-minutes: 45
-    env:
-      PUB_CACHE: ${{ runner.temp }}/crispembed-pub-cache
     steps:
+      - name: Isolate pub cache
+        run: echo "PUB_CACHE=$RUNNER_TEMP/crispembed-pub-cache" >> "$GITHUB_ENV"
       - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
         with:
           channel: stable
