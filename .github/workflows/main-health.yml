@@ -26,6 +26,7 @@ permissions:
 jobs:
   check:
     name: main is green
+    if: github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -84,6 +85,7 @@ jobs:
 
   licenses:
     name: model licences match upstream
+    if: github.event_name != 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -128,3 +130,68 @@ jobs:
       # same class of drift as the pin check: a re-upload at a different quant.
       - name: Verify registry sizes match the published files
         run: env -u HF_TOKEN -u HUGGING_FACE_HUB_TOKEN python tools/fetch_model_hashes.py --check-sizes
+
+  pubdev-apple-consumer-baseline:
+    # Temporary test-branch dispatch only. Do not merge this change into main.
+    if: github.event_name == 'workflow_dispatch'
+    name: Published 0.16.1 fresh Apple consumer baseline
+    runs-on: macos-15
+    timeout-minutes: 45
+    env:
+      PUB_CACHE: ${{ runner.temp }}/crispembed-pub-cache
+    steps:
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2
+        with:
+          channel: stable
+          flutter-version: '3.47.9'
+          cache: false
+      - name: Create fresh app and resolve published package
+        shell: bash
+        run: |
+          set -euo pipefail
+          uname -m
+          flutter --version
+          pod --version
+          flutter config --no-enable-swift-package-manager
+          cd "$RUNNER_TEMP"
+          flutter create --platforms=ios,macos pubdev_consumer
+          cd pubdev_consumer
+          flutter pub add crispembed:0.16.1
+          flutter pub deps --style=compact
+          echo '=== Installed Apple plugin payload ==='
+          find "$PUB_CACHE/hosted/pub.dev/crispembed-0.16.1" \( -name '*.podspec' -o -name '*.dylib' -o -name '*.a' \) -print
+      - name: Build macOS consumer
+        id: macos
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          cd "$RUNNER_TEMP/pubdev_consumer"
+          flutter build macos --release 2>&1 | tee "$RUNNER_TEMP/macos-consumer-build.log"
+      - name: Build iOS device consumer
+        id: ios
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          cd "$RUNNER_TEMP/pubdev_consumer"
+          flutter build ios --release --no-codesign 2>&1 | tee "$RUNNER_TEMP/ios-consumer-build.log"
+      - name: Capture CocoaPods path and build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pubdev-apple-consumer-baseline
+          path: |
+            ${{ runner.temp }}/macos-consumer-build.log
+            ${{ runner.temp }}/ios-consumer-build.log
+            ${{ runner.temp }}/pubdev_consumer/macos/Podfile.lock
+            ${{ runner.temp }}/pubdev_consumer/ios/Podfile.lock
+          if-no-files-found: warn
+      - name: Report both actual build outcomes
+        if: always()
+        env:
+          MACOS_OUTCOME: ${{ steps.macos.outcome }}
+          IOS_OUTCOME: ${{ steps.ios.outcome }}
+        run: |
+          echo "macOS=$MACOS_OUTCOME iOS=$IOS_OUTCOME"
+          test "$MACOS_OUTCOME" = success && test "$IOS_OUTCOME" = success
