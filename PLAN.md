@@ -10,6 +10,34 @@ This is an open roadmap. No new portfolio release, default flip or quantized
 qualification is claimed. Development VERSION is0.17.14; the application stays
 on immutable0.17.12. Do not bump versions for this documentation handoff.
 
+## pub.dev publication handoff (31 October 2026)
+
+The published Flutter package is 0.16.1; the development package is 0.17.14.
+The existing native release workflow uses `v<version>` tags, while the current
+pub.dev trusted publisher uses `crispembed-v{{version}}` (administrator
+confirmed). A normal native release tag therefore does not run that publisher.
+Do not change the pub.dev setting until a replacement is qualified and merged.
+
+[Draft PR #91](https://github.com/CrispStrobe/CrispEmbed/pull/91) proposes a
+release preflight, but leaves the new publisher disabled and retains the old
+publisher. It is not a completed publishing solution: the preflight checks
+asset identity, not source qualification or consumer functionality, and GitHub
+release assets may become public before it runs. The package changelog also lacks
+the current development version. The draft Android version change needs an
+actual Gradle consumer test, and existing cached libraries are not verified
+against the requested version. Preserve the current publisher until replacement.
+
+The draft's model-free preflight has seven hosted contract tests passing. A
+[hosted Apple baseline](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41213168996)
+using the already-published 0.16.1 package built a clean Flutter app for macOS
+and iOS; the macOS build warned about arm64 libraries in its x86_64 link, and
+the app did not call native symbols. This does not qualify the development
+package, Apple FFI runtime, Android, Linux, Windows, OIDC, or publication.
+Before a release, verify source-matched assets and fresh consumers, coordinate
+the trusted tag pattern, update the changelog, and confirm the actual pub.dev
+publication by registry readback. No version bump or publication is made by
+this handoff.
+
 ## Immediate executable order
 
 Choose one bounded lane. The source table and current remote states in the
