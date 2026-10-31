@@ -413,6 +413,108 @@ upstream incomplete-content behavior. Every native attempt remains in
 the complete native result. Document metadata records the layout source,
 native request count, unresolved requests, and blueprint revision.
 
+## Native C++ document route (experimental, `CRISPEMBED_OXR_NATIVE_DOC=1`)
+
+The native route translates everything the original helper does in
+`process_pages`, except the layout detector, to C++. That covers layout
+response validation, score threshold, clipping, class-wise NMS, crop
+rounding, per-label prompt routing, the reading-order prompt, strict
+permutation parsing, incomplete-order repair, supplementation, the XY-Cut++
+fallback, retries, length recovery (penalty 1.1 for text-like blocks, 0.75
+`INTER_AREA` resize for tables), formula/table/code/chemical/text
+postprocessing, Picture crop files, cross-category, visual-parent,
+complete-text and exact-text cleanup, the opt-in full-overlap cleanup,
+formula-number folding, JSON and Markdown. The route is default-off. The
+Python-helper path is unchanged and remains the reference.
+
+| Module | Role |
+| --- | --- |
+| [`src/oxr_document.{h,cpp}`](../src/oxr_document.h), [`src/oxr_document_text.cpp`](../src/oxr_document_text.cpp) | OXR-specific steps: D-FINE response parsing, routing, reading order, recovery, postprocessing, cleanup, the exact upstream JSON/Markdown profile, and conversion to `crisp_marker::document`. |
+| [`src/xycut_plus_plus.{h,cpp}`](../src/xycut_plus_plus.h) | Generic XY-Cut++ reading order (PaddleX closure vendored by OXR), including numpy's generic argsort. |
+| [`src/cv_compat.{h,cpp}`](../src/cv_compat.h) | OpenCV 4.11 uint8 `INTER_AREA` downscale and BGR-to-gray fixed point. |
+| [`src/core/py_str.h`](../src/core/py_str.h), [`src/core/py_str_tables.h`](../src/core/py_str_tables.h) | CPython str predicates (Unicode 15.0, CPython 3.12), banker's rounding, float floor division, `repr(float)`, posixpath, SHA-256. |
+| [`src/core/json_value.h`](../src/core/json_value.h) | Strict JSON DOM that keeps Python's int/float distinction for layout validation. |
+
+Python regular expressions are expanded into explicit scanners that give
+the same backtracking result. Text is processed as code points. Unsupported
+upstream options are rejected rather than approximated:
+`element_formats={"table": "markdown"}` (Python `HTMLParser` with entity
+decoding), `table_image_placeholders` (Hershey text rendering and PNG/base64
+bytes) and `asset_dir`. Requests run in a deterministic order: all
+reading-order requests, then blocks in page order. A failed request is
+retried once with no 1-second sleep. These deviations from asyncio
+scheduling change only the request order. They do not change any result.
+
+### Layout-provider boundary
+
+Regions are supplied as D-FINE candidates before filtering. They use the C
+struct below or the official `/inference` batch response:
+
+```c
+typedef struct crispembed_oxr_layout_region {
+    int label;              // 0 Caption, 1 Footnote, 2 Formula, 3 Text, 4 Page-footer, 5 Page-header,
+                            // 6 Picture, 7 Title, 8 Table, 9 Code Block, 10 Stamp, 11 Chemical Structure
+    double x1, y1, x2, y2;  // page pixel coordinates
+    double score;           // detector confidence 0..1
+} crispembed_oxr_layout_region;
+```
+
+```json
+{"status": "success", "params": {},
+ "data": {"labels": [[3, 2]], "boxes": [[[x1, y1, x2, y2], [x1, y1, x2, y2]]], "scores": [[0.93, 0.71]]}}
+```
+
+The JSON form is validated exactly as `parse_layout_batch` validates it. For
+example, a label of `3.0` is rejected because it is a float. In C++,
+`oxr_document::from_layout_detect` converts `layout_detect::region` values
+whose `label_name` is an OXR class name. That lets a native D-FINE provider
+plug in without any change to the document route.
+`tools/oxr_dfine_reference.py` runs the original detector in-process (CPU,
+F32, authenticated `layout_analysis/last.pth` and `metadata.json`) and freezes
+its responses as fixtures.
+
+### Interfaces
+
+| Surface | Call |
+| --- | --- |
+| C | `crispembed_oxr_process_pages(ctx, pixels, widths, heights, channels, n, regions, counts, layout_json, options_json)`, `crispembed_oxr_last_trace`, `crispembed_oxr_render_document(ctx, "markdown"\|"html"\|"json"\|"chunks")` |
+| Python | `CrispOXR.process_pages_native(pages, layouts=... \| layout_response=...)`, `render_native_document(fmt)`; `last_trace` holds every native request |
+| CLI | `crispembed -m oxr-f32.gguf --oxr-document page.png [--oxr-document p2.png] --oxr-layout dfine.json [--oxr-doc-options JSON] [--oxr-doc-format upstream\|markdown\|html\|json\|chunks]` |
+| Server | `crispembed-server --oxr-doc-model oxr-f32.gguf`, `POST /oxr/document {"images": [...], "layout_response": {...}, "options": {...}, "format": "upstream"}` |
+| Rust / Dart | `Oxr::process_pages_rgb`, `last_trace`, `render_document`; `CrispOXR.processPagesRgb`, `lastTrace`, `renderDocument` |
+
+The options JSON accepts `file_name`, `output_formats`, `keep_header_footer`,
+`model_options`, `element_formats`, `score_threshold`, `nms_iou_threshold`
+(or `null`), `provides_reading_order`, `image_output_dir`, `write_images`,
+`max_new_tokens`, `allow_truncated_content`, `full_overlap_dedupe` and
+`table_image_placeholders` (which must be false). Unknown keys are rejected.
+The result has the upstream shape, and `metadata.crispembed.document_route`
+is `"native"`. The CLI and server decode pages with stb_image. stb_image and
+Pillow decode JPEG differently, so for parity pass predecoded RGB, as the
+Python method does.
+
+`render_document` takes the same final blocks through CrispEmbed's shared
+document model (`marker_document`). Title maps to SectionHeader,
+Formula to Equation, Code Block to Code, Chemical Structure to
+ChemicalBlock, and Picture crops become assets. Those renderers are a
+CrispEmbed view of the document, not the upstream output profile.
+
+### Parity protocol
+
+[`tools/oxr_doc_parity.py`](../tools/oxr_doc_parity.py) has three modes:
+
+| Mode | What is compared |
+| --- | --- |
+| `helpers` | Randomized differential checks of each translated branch against the pinned functions, using the same inputs: text, formula, table, code and chemical postprocessing; Markdown math spacing; formula delimiters; numbering; reading-order prompt, parse, repair and supplement; XY-Cut++; layout parsing and error messages; `INTER_AREA` resize; gray conversion; `repr(float)`; page cleanup plus JSON and Markdown in both cleanup modes. |
+| `replay` | The full `process_pages`: the original helper with a scripted deterministic recognizer, then the C++ route replaying the recorded requests (prompt, RGB SHA-256, budget, penalty). The JSON and Markdown must be identical. |
+| `native` | The real model. The original helper with native recognition runs once and records its requests. The C++ route replays exactly those results, then runs live on the same model. |
+
+The hosted lane [`tools/ci-heavy/oxr_native_doc.sh`](../tools/ci-heavy/oxr_native_doc.sh)
+runs all three modes, the original D-FINE fixtures, a Rust compile check and
+the CLI/server build. Results are recorded in
+[`tests/results/oxr/native-doc.json`](../tests/results/oxr/native-doc.json).
+The route remains default-off until hosted x86 parity holds on every case.
+
 ## Graph optimization gates
 
 | Environment variable | Behavior |
