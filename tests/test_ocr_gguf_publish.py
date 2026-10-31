@@ -147,8 +147,9 @@ class Card(unittest.TestCase):
                 text = p.card(cfg, files, par, {"F16": {"receipt": "r.json"}}, "b" * 40)
                 self.assertTrue(text.startswith("---\nlicense: apache-2.0\n"))
                 for needle in ("Statement of changes", cfg["upstream"]["revision"], gate, fname,
-                               "**F16** is token-ID exact", "Not verified", cfg["_protocol"]):
+                               "**F16** is token-ID exact", cfg["_protocol"]):
                     self.assertIn(needle, text)
+                self.assertIn("not verified", text.lower())
                 self.assertNotIn("{first}", text)
 
 

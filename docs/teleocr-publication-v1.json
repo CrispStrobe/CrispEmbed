@@ -141,7 +141,7 @@
     ],
     "runtime_note": "They target CrispEmbed's TeleOCR profile (`general.architecture = teleocr`, GGUF v1) and are not loadable by llama.cpp.",
     "license_note": "the model card declares `license: apache-2.0` and the model's `modeling_naviocr.py` carries an Apache-2.0 header, but no LICENSE file is shipped upstream, so this is the canonical Apache-2.0 text from apache.org",
-    "not_verified": "Not verified: GPU numerical parity, other CPU/kernel combinations, mobile/WASM, aggregate OCR benchmarks beyond the six frozen cases.",
+    "not_verified": "Strict intermediate numerical budgets are not met, including F32: one-ulp differences on the model's massive activations are amplified where they emerge (vision block 17); decoded IDs and text are exact. Also not verified: GPU numerical parity, other CPU/kernel combinations, mobile/WASM, aggregate OCR benchmarks beyond the six frozen cases.",
     "usage": "TeleOCR support is experimental and default-off in CrispEmbed (CPU by default):\n\n```bash\nCRISPEMBED_TELEOCR=1 crispembed --ocr-pipeline page.png \\\\\n  --ocr-engine teleocr --ocr-rec {first}\n```"
   }
 }

@@ -22,6 +22,23 @@ PROTOCOL = ROOT / "docs/teleocr-publication-v1.json"
 OUT = ROOT / "tests/results/teleocr"
 
 
+def stages_v2_failed(report):
+    """The shared magnitude-aware v2 verdict (see tests/mineru25_diff.cpp), recomputed
+    from the delivered per-stage fields; the report's own strict v1 verdict is kept."""
+    failed = []
+    for s in report.get("stages", []):
+        exact = s["name"] in ("image_grid", "prompt_ids", "mrope_positions", "generated_ids")
+        tol = 0.0 if exact else 2e-6 if s["name"] == "input_patches" else 0.002
+        rel = s["rms_error"] / s["ref_rms"] if s["ref_rms"] else (0.0 if s["rms_error"] == 0 else float("inf"))
+        ok = (s["max_abs"] <= tol if exact or s["name"] == "input_patches" else
+              s["max_abs"] <= max(tol, 0.005 * s["ref_rms"]) and rel <= 1e-5 and s["min_cos"] >= 0.99999)
+        if s["name"] == "logits_step0":
+            ok = ok and s["argmax_native"] == s["argmax_ref"]
+        if not ok:
+            failed.append(s["name"])
+    return failed
+
+
 def main(argv):
     cfg = json.loads(PROTOCOL.read_text())
     cases = cfg["parity_cases"]
@@ -49,6 +66,7 @@ def main(argv):
                     "decoded_pass": r.get("decoded_pass"), "numerical_pass": r.get("numerical_pass"),
                     "coverage_complete": r.get("coverage_complete"), "confidence_pass": r.get("confidence_pass"),
                     "reached_eos": r.get("reached_eos"), "tokens": r.get("tokens"), "seconds": r.get("seconds"),
+                    "stages_v2_failed": stages_v2_failed(r),
                     "report_sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
     if len(commits) != 1:
         raise SystemExit(f"runs come from different source commits: {sorted(commits)}")
@@ -59,6 +77,7 @@ def main(argv):
               "completed": sorted(references) == sorted(cases) and all(c in arms.get("f32", {}) for c in cases)}
     parity = {"schema": "crispembed.teleocr.hosted-parity.v1", **common,
               "f32_numerical_pass": all(arms.get("f32", {}).get(c, {}).get("numerical_pass") for c in cases),
+              "f32_numerical_pass_v2": all(arms.get("f32", {}).get(c, {}).get("stages_v2_failed") == [] for c in cases),
               "cases": [{"id": c, "reference_ids": references[c]["generated_ids"],
                          "reference_text": references[c]["text"], "reference_eos": references[c]["reached_eos"],
                          "arms": {"f32": arms["f32"][c]} if c in arms.get("f32", {}) else {}} for c in cases]}
