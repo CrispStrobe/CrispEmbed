@@ -3750,6 +3750,7 @@ static const char * run_generation(qwen2vl_ocr_context * ctx, qwen2vl_ocr::visio
 }
 
 static const char * run_pipeline(qwen2vl_ocr_context * ctx, const image_preproc::result & pp, int * out_len) {
+    const auto t_vision = qwen2vl_ocr::qwen_clock::now();
     // 1. Run vision encoder
     qwen2vl_ocr::vision_result vis = {};
     if (!qwen2vl_ocr::encode_vision(ctx->inner, pp.patches.data(), pp.n_patches, pp.grid_thw, vis)) {
@@ -3757,6 +3758,11 @@ static const char * run_pipeline(qwen2vl_ocr_context * ctx, const image_preproc:
         qwen2vl_ocr::vision_result_free(vis);
         return nullptr;
     }
+    if (qwen2vl_ocr::qwen_dbg())
+        fprintf(
+            stderr, "  [time] vision %lldms\n",
+            (long long)std::chrono::duration_cast<std::chrono::milliseconds>(qwen2vl_ocr::qwen_clock::now() - t_vision)
+                .count());
 
     if (const char * dp = getenv("CRISPEMBED_DUMP_MERGER")) {
         FILE * df = fopen(dp, "wb");

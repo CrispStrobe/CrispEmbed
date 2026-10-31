@@ -11,6 +11,7 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <initializer_list>
 #include <iomanip>
 #include <limits>
 #include <regex>
@@ -62,6 +63,39 @@ inline double area(const std::array<double, 4> & b) {
 inline double intersection(const std::array<double, 4> & a, const std::array<double, 4> & b) {
     return std::max(0.0, std::min(a[2], b[2]) - std::max(a[0], b[0])) *
            std::max(0.0, std::min(a[3], b[3]) - std::max(a[1], b[1]));
+}
+
+// Correctly rounded sum, ported from CPython's math.fsum (Shewchuk partials
+// plus its half-even fix-up). The blueprint's IoU union uses fsum; long double
+// only matched it where long double is 80-bit (not arm64 or MSVC).
+inline double fsum(std::initializer_list<double> values) {
+    std::vector<double> partials;
+    for (double x : values) {
+        size_t i = 0;
+        for (double y : partials) {
+            if (std::fabs(x) < std::fabs(y)) std::swap(x, y);
+            const double hi = x + y;
+            const double lo = y - (hi - x);
+            if (lo != 0.0) partials[i++] = lo;
+            x = hi;
+        }
+        partials.resize(i);
+        partials.push_back(x);
+    }
+    if (partials.empty()) return 0.0;
+    size_t n = partials.size();
+    double hi = partials[--n], lo = 0.0;
+    while (n > 0) {
+        const double x = hi, y = partials[--n];
+        hi = x + y;
+        lo = y - (hi - x);
+        if (lo != 0.0) break;
+    }
+    if (n > 0 && ((lo < 0.0 && partials[n - 1] < 0.0) || (lo > 0.0 && partials[n - 1] > 0.0))) {
+        const double y = lo * 2.0, x = hi + y;
+        if (y == x - hi) hi = x;
+    }
+    return hi;
 }
 
 inline double cover_ratio(const block & inner, const block & outer) {
@@ -128,8 +162,8 @@ inline std::vector<block> parse_layout(const std::string & output) {
         for (const block & kept : blocks) {
             if (kept.type != b.type || kept.angle != b.angle) continue;
             const double overlap = intersection(kept.bbox, b.bbox);
-            const long double sum = static_cast<long double>(area(kept.bbox)) + area(b.bbox) - overlap;
-            if (sum > 0 && overlap / static_cast<double>(sum) > 0.9) {
+            const double sum = fsum({ area(b.bbox), area(kept.bbox), -overlap });
+            if (sum > 0 && overlap / sum > 0.9) {
                 duplicate = true;
                 break;
             }

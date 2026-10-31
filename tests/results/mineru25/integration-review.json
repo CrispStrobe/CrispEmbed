@@ -1,0 +1,38 @@
+{
+  "schema": "crispembed.mineru25.integration-review.v1",
+  "date": "2026-10-31",
+  "delivery_commit": "96309c7736db2202618b29834d2136d9745f1db6",
+  "base_commit": "15adb672f71f8470a23db1284dafa102515adae9",
+  "note": "implementation-validation.json is the unchanged delivery snapshot; its source_sha256 describes the delivery, not later integration fixes.",
+  "provenance": {
+    "patched_tree_equals_delivered_tree": true,
+    "delivered_ggml_equals_pin_a06fc0bb": true
+  },
+  "initial_failures": [
+    {
+      "check": "test-mineru-layout on arm64 macOS (Apple clang)",
+      "result": "28 checks, 1 failure: 'IoU equal 0.9 is not suppressed'",
+      "cause": "IoU union emulated math.fsum with long double, which is 80-bit only on x86 GCC/Clang; on arm64 and MSVC it is double, so 1+0.9-0.9 rounds to 0.9999999999999999 and an exact-0.9 IoU box is wrongly suppressed versus the blueprint"
+    }
+  ],
+  "fixes": [
+    "src/mineru_layout.h: portable port of CPython math.fsum for the IoU union",
+    "src/qwen2vl_ocr.cpp: restore the generic path's debug '[time] vision' stage line dropped by the run_pipeline split",
+    "examples/cli/main.cpp: MinerU gate no longer splits the MiniCPM comment"
+  ],
+  "checks_after_fixes": [
+    {"name": "test-mineru-layout (arm64, header-only)", "status": "passed", "checks": 28},
+    {"name": "test-mineru25-profile (arm64, header-only)", "status": "passed"},
+    {"name": "fsum port vs CPython math.fsum, 200000 random triples", "status": "passed", "mismatches": 0},
+    {"name": "Python test_mineru*.py with pinned helper requirements", "status": "passed", "tests": 28, "native_inference": "mocked"},
+    {"name": "test_ocr_max_tokens_surfaces.py and test_cli_engine_names.py", "status": "passed"},
+    {"name": "-fsyntax-only qwen2vl_ocr.cpp, mineru_ocr.cpp, examples/cli/main.cpp", "status": "passed"}
+  ],
+  "not_run": [
+    "Complete native library build and link",
+    "test-mineru25-decode-graph (needs linked library)",
+    "Full checkpoint conversion, loading and inference",
+    "Model-backed numerical, decoded-quality and speed comparisons",
+    "GPU, Rust compilation, Dart analysis"
+  ]
+}

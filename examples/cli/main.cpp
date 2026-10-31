@@ -1372,13 +1372,14 @@ static int cli_main(int argc, char ** argv) {
                         "(custom prompts: qwen2vl, qwen3vl, olmocr, internvl2, lfm2-vl, granite-vision)\n",
                         pipeline_engine.c_str());
             }
-            // Experimental MiniCPM-OCR-1.0: no registry default; the decoder reuses
+            // Experimental MinerU2.5-Pro: explicit model file, fixed task prompts, own gate.
             if (eid == 24 &&
                 (ocr_rec_path.empty() || !ocr_prompt.empty() || !core_env::on("CRISPEMBED_MINERU25_PRO"))) {
                 fprintf(stderr,
                         "error: mineru25-pro needs --ocr-rec FILE, no custom prompt, and CRISPEMBED_MINERU25_PRO=1\n");
                 return 1;
             }
+            // Experimental MiniCPM-OCR-1.0: no registry default; the decoder reuses
             // the qwen35 kernels, so both gates are required.
             if (eid == 23 && (ocr_rec_path.empty() || !core_env::on("CRISPEMBED_MINICPM_OCR") ||
                               !core_env::on("CRISPEMBED_QWEN35_OCR"))) {
