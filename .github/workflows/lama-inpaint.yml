@@ -1,0 +1,62 @@
+name: Experimental Big-LaMa build and original-first replay
+
+# Deliberately manual. Checkpoint download and model execution only occur when
+# the operator explicitly chooses original-native on the reviewed commit.
+on:
+  workflow_dispatch:
+    inputs:
+      phase:
+        type: choice
+        options: [build-only, original-native]
+        default: build-only
+        description: 'Build-only downloads no models; original-native runs the pinned CPU reference'
+      cases:
+        type: choice
+        options: [subtitle_bar, full-panel]
+        default: subtitle_bar
+        description: 'One diagnostic or all eight geometric/mask fixtures'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lama-inpaint-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  acceptance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      PHASE: ${{ inputs.phase }}
+      CASES: ${{ inputs.cases }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+      PYTHONHASHSEED: '0'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install original CPU dependencies only for explicit model phase
+        if: inputs.phase == 'original-native'
+        run: |
+          python -m pip install torch==2.8.0 torchvision==0.23.0 --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install numpy==2.1.3 Pillow==11.3.0 omegaconf==2.3.0 kornia==0.8.1 pytorch-lightning==2.5.3 torchmetrics==1.8.2 opencv-python-headless==4.12.0.88 PyYAML==6.0.2
+      - name: Build controls or capture original before native replay
+        run: |
+          python tools/ci-heavy/lama_inpaint.py --phase "$PHASE" --cases "$CASES" \
+            --output "$RUNNER_TEMP/lama-evidence" --scratch "$RUNNER_TEMP/lama-scratch" --deadline-minutes 165
+      - name: Preserve numerical evidence and partial failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lama-${{ inputs.phase }}-${{ inputs.cases }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/lama-evidence/
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 1

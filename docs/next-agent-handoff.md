@@ -460,7 +460,13 @@ MI-GAN has separately licensed MIT code and weights. Its integrated fixed256
 original/native prototype now passes the bounded unchanged panel above. Public
 API/registry, representative still-image/subtitle/perceptual/video quality and
 publication remain pending under [issue71](https://github.com/CrispStrobe/CrispEmbed/issues/71).
-LaMa still needs authoritative checkpoint terms and an FFT-capable implementation.
+The 1 November source addition implements the separate MI-GAN512, Big-LaMa,
+Moebius and PixelHacker CLI profiles. The [engine/reuse guide](inpainting-engines.md)
+records the exact source contracts, licence evidence, shared native components,
+converters and reference workflows. Next execute hosted builds and original/native
+comparisons; the source and bounded metadata controls do not establish full-model
+parity, representative quality, peak RAM or CPU latency. Keep all new gates off
+by default and preserve the existing fixed256 receipts.
 
 The fourth OvisOCR2 precision attempt,
 [attention-F16/FFN-Q4 40172527229](../tests/results/qwen35-ocr/ovisocr2-q4-attention-f16-quality.json),

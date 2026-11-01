@@ -1,0 +1,59 @@
+{
+  "diffusers": {
+    "repo": "huggingface/diffusers",
+    "ref": "v0.38.0",
+    "commit": "275869dcae4ebcfee6a80253fdabc56033335020",
+    "url": "https://raw.githubusercontent.com/huggingface/diffusers/275869dcae4ebcfee6a80253fdabc56033335020/LICENSE",
+    "bytes": 11357,
+    "sha256": "f9e2070c247517b1ddf65f7b11b393484a18da91a958fd18a97bd0f241c3125c"
+  },
+  "timm": {
+    "repo": "huggingface/pytorch-image-models",
+    "ref": "main",
+    "commit": "03b76b6ed7d98a844afc5529669b761b3ac5f562",
+    "url": "https://raw.githubusercontent.com/huggingface/pytorch-image-models/03b76b6ed7d98a844afc5529669b761b3ac5f562/LICENSE",
+    "bytes": 11343,
+    "sha256": "71b111620fa32c17a80ccd6db2da759d31a591e497d8b5f382174f59d1b59d49"
+  },
+  "flash-linear-attention": {
+    "repo": "fla-org/flash-linear-attention",
+    "ref": "v0.3.2",
+    "commit": "f7d95fa04fcb2df07390b1bf8b7d6b96ffb7a16a",
+    "url": "https://raw.githubusercontent.com/fla-org/flash-linear-attention/f7d95fa04fcb2df07390b1bf8b7d6b96ffb7a16a/LICENSE",
+    "bytes": 1074,
+    "sha256": "98d913740dd16462d79ca94c88269a166673058d95c941f8fc98cb3fb39a7b45"
+  },
+  "sana": {
+    "repo": "NVlabs/Sana",
+    "ref": "main",
+    "commit": "890e5000edb08ffbdaab3e5b0d6fbe25a8b2b3b7",
+    "url": "https://raw.githubusercontent.com/NVlabs/Sana/890e5000edb08ffbdaab3e5b0d6fbe25a8b2b3b7/LICENSE",
+    "bytes": 11336,
+    "sha256": "86ab03e3ea19f1891d7ea5a110de47f809e1e690aef2a64fad13aef6d5aded4f"
+  },
+  "sdxl-vae": {
+    "repo": "stabilityai/sdxl-vae",
+    "revision": "6f5909a7e596173e25d4e97b07fd19cdf9611c76",
+    "cardData": {
+      "license": "mit",
+      "tags": [
+        "stable-diffusion",
+        "stable-diffusion-diffusers"
+      ],
+      "inference": false
+    },
+    "README.md": {
+      "url": "https://huggingface.co/stabilityai/sdxl-vae/resolve/6f5909a7e596173e25d4e97b07fd19cdf9611c76/README.md",
+      "bytes": 3172,
+      "sha256": "53a552bcc5cb660bd17d53e463690cd8f4d0205671603536fffbce8719d21f77"
+    }
+  },
+  "lambda-networks": {
+    "repo": "lucidrains/lambda-networks",
+    "ref": "main",
+    "commit": "8116ff3685c679efaaca4137fc0f5d7cc88b5e4b",
+    "url": "https://raw.githubusercontent.com/lucidrains/lambda-networks/8116ff3685c679efaaca4137fc0f5d7cc88b5e4b/LICENSE",
+    "bytes": 1066,
+    "sha256": "02cf6ed7df17f94fafa61e67a089ee51faac006db35ffa173c70e6763c253cf6"
+  }
+}

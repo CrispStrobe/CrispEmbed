@@ -28,6 +28,7 @@
 namespace migan {
 
 struct context {
+    int resolution = image_size;
     ggml_backend_t backend = nullptr;
     core_gguf::WeightLoad weights;
     ~context() {
@@ -48,8 +49,14 @@ bool fail(std::string & error, const std::string & message) {
     return false;
 }
 
-bool gate(std::string & error) {
-    return core_env::on("CRISPEMBED_MIGAN") || fail(error, "MI-GAN requires CRISPEMBED_MIGAN=1");
+bool resolution_valid(int resolution, std::string & error) {
+    return resolution == 256 || resolution == 512 || fail(error, "MI-GAN supports only fixed256 or fixed512");
+}
+
+bool gate(int resolution, std::string & error) {
+    if (!core_env::on("CRISPEMBED_MIGAN")) return fail(error, "MI-GAN requires CRISPEMBED_MIGAN=1");
+    return resolution != 512 || core_env::on("CRISPEMBED_MIGAN512") ||
+           fail(error, "MI-GAN512 additionally requires CRISPEMBED_MIGAN512=1");
 }
 
 bool digest_valid(const char * value) {
@@ -59,7 +66,7 @@ bool digest_valid(const char * value) {
     return true;
 }
 
-schema expected_schema() {
+schema expected_schema(int resolution) {
     schema shapes;
     auto conv = [&](const std::string & name, int ic, int oc, int kernel, bool dw, bool bias) {
         shapes[name + ".weight"] = { kernel, kernel, dw ? 1 : ic, oc };
@@ -80,14 +87,14 @@ schema expected_schema() {
         }
     };
     auto channels = [](int res) { return std::min(32768 / res, 512); };
-    for (int res = 256; res >= 4; res /= 2) {
+    for (int res = resolution; res >= 4; res /= 2) {
         const std::string name = "encoder.b" + std::to_string(res);
         int ic = channels(res), oc = channels(std::max(res / 2, 4));
-        if (res == 256) conv(name + ".fromrgb", 4, ic, 1, false, true);
+        if (res == resolution) conv(name + ".fromrgb", 4, ic, 1, false, true);
         sep(name + ".conv1", ic, ic, res, false, false, false);
         sep(name + ".conv2", ic, oc, res, res > 4, false, false);
     }
-    for (int res = 4; res <= 256; res *= 2) {
+    for (int res = 4; res <= resolution; res *= 2) {
         const std::string name = "synthesis.b" + std::to_string(res);
         int ic = channels(std::max(res / 2, 4)), oc = channels(res);
         sep(name + ".conv1", ic, oc, res, false, res > 4, res > 4);
@@ -98,21 +105,24 @@ schema expected_schema() {
     return shapes;
 }
 
-bool metadata_valid(gguf_context * meta, const char * expected_digest, std::string & error) {
+bool metadata_valid(gguf_context * meta, const char * expected_digest, int resolution, std::string & error) {
     if (!digest_valid(expected_digest)) return fail(error, "a reviewed lowercase checkpoint SHA-256 is required");
     if (core_gguf::kv_str(meta, "general.architecture", "") != "migan" ||
         core_gguf::kv_str(meta, "general.license", "") != "MIT" ||
         core_gguf::kv_u32(meta, "general.file_type", UINT32_MAX) != 0 ||
-        core_gguf::kv_u32(meta, "migan.image_size", 0) != 256 ||
+        core_gguf::kv_u32(meta, "migan.image_size", 0) != uint32_t(resolution) ||
         core_gguf::kv_str(meta, "migan.source.commit", "") != source_commit ||
         core_gguf::kv_str(meta, "migan.checkpoint.sha256", "") != expected_digest ||
         core_gguf::kv_str(meta, "migan.tensor.layout", "") !=
             "original contiguous OIHW; GGUF dimensions reversed; scalar=[1]" ||
-        core_gguf::kv_str(meta, "migan.input.contract", "") != "RGB8;binary-mask8;255=fill;fixed256")
-        return fail(error, "MI-GAN GGUF source/checkpoint/F32/fixed-256 metadata differs");
-    const schema expected = expected_schema();
-    if (expected.size() != 154 || gguf_get_n_tensors(meta) != 154)
-        return fail(error, "MI-GAN requires exactly 154 original state tensors");
+        core_gguf::kv_str(meta, "migan.input.contract", "") !=
+            "RGB8;binary-mask8;255=fill;fixed" + std::to_string(resolution))
+        return fail(error,
+                    "MI-GAN GGUF source/checkpoint/F32/fixed-" + std::to_string(resolution) + " metadata differs");
+    const schema expected = expected_schema(resolution);
+    const size_t count = resolution == 256 ? 154 : 177;
+    if (expected.size() != count || gguf_get_n_tensors(meta) != int64_t(count))
+        return fail(error, "MI-GAN requires exactly " + std::to_string(count) + " original state tensors");
     for (const auto & entry : expected) {
         const int64_t id = gguf_find_tensor(meta, entry.first.c_str());
         if (id < 0 || gguf_get_tensor_type(meta, id) != GGML_TYPE_F32)
@@ -232,16 +242,17 @@ struct graph_builder {
     }
 
     void build() {
-        input = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, 256, 256, 4, 1);
+        const int resolution = model.resolution;
+        input = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, resolution, resolution, 4, 1);
         ggml_set_input(input);
         mark("generator.input", input);
         std::map<int, ggml_tensor *> features;
         ggml_tensor * x = nullptr;
-        for (int res = 256; res >= 4; res /= 2) {
+        for (int res = resolution; res >= 4; res /= 2) {
             const std::string name = "encoder.b" + std::to_string(res);
             mark(name + ".input.0", x); // First original encoder argument is None.
             mark(name + ".input.1", input);
-            if (res == 256) x = activate(convolution(name + ".fromrgb", input, 1, 0, false, true));
+            if (res == resolution) x = activate(convolution(name + ".fromrgb", input, 1, 0, false, true));
             ggml_tensor * feature = separable(name + ".conv1", x, false, false, false);
             x = separable(name + ".conv2", feature, res > 4, false, false);
             features[res] = feature;
@@ -249,7 +260,7 @@ struct graph_builder {
             mark(name + ".output.1", feature);
         }
         ggml_tensor * image = nullptr;
-        for (int res = 4; res <= 256; res *= 2) {
+        for (int res = 4; res <= resolution; res *= 2) {
             const std::string name = "synthesis.b" + std::to_string(res);
             mark(name + ".input.0", x);
             mark(name + ".input.1", features.at(res));
@@ -281,11 +292,12 @@ struct graph_builder {
     }
 
     bool compute(const float * data, float * raw, std::string & error) {
-        ggml_backend_tensor_set(input, data, 0, input_elements * sizeof(float));
+        const size_t pixels = size_t(model.resolution) * model.resolution;
+        ggml_backend_tensor_set(input, data, 0, 4 * pixels * sizeof(float));
         if (ggml_backend_graph_compute(model.backend, graph) != GGML_STATUS_SUCCESS)
             return fail(error, "MI-GAN CPU graph computation failed");
-        ggml_backend_tensor_get(output, raw, 0, rgb_elements * sizeof(float));
-        for (size_t i = 0; i < rgb_elements; ++i)
+        ggml_backend_tensor_get(output, raw, 0, 3 * pixels * sizeof(float));
+        for (size_t i = 0; i < 3 * pixels; ++i)
             if (!std::isfinite(raw[i])) return fail(error, "MI-GAN nonfinite generator output");
         return true;
     }
@@ -293,17 +305,19 @@ struct graph_builder {
 
 bool input_valid(context * ctx, const float * input, size_t input_count, float * raw, size_t output_count,
                  std::string & error) {
-    if (!gate(error)) return false;
-    if (!ctx || !input || !raw || input_count != input_elements || output_count != rgb_elements)
-        return fail(error, "MI-GAN requires fixed [1,4,256,256] input and [1,3,256,256] output");
+    if (!gate(ctx ? ctx->resolution : 256, error)) return false;
+    const size_t pixels = ctx ? size_t(ctx->resolution) * ctx->resolution : 0;
+    if (!ctx || !input || !raw || input_count != 4 * pixels || output_count != 3 * pixels)
+        return fail(error, "MI-GAN requires fixed [1,4,H,W] input and [1,3,H,W] output at the loaded resolution");
     for (size_t i = 0; i < input_count; ++i)
         if (!std::isfinite(input[i])) return fail(error, "MI-GAN nonfinite input");
     return true;
 }
 
-bool rgb_mask_valid(const uint8_t * rgb, size_t rgb_bytes, const uint8_t * mask, size_t mask_bytes,
+bool rgb_mask_valid(int resolution, const uint8_t * rgb, size_t rgb_bytes, const uint8_t * mask, size_t mask_bytes,
                     std::string & error) {
-    if (!rgb || !mask || rgb_bytes != rgb_elements || mask_bytes != mask_elements)
+    const size_t pixels = size_t(resolution) * resolution;
+    if (!rgb || !mask || rgb_bytes != 3 * pixels || mask_bytes != pixels)
         return fail(error, "MI-GAN requires RGB8 and same-size single-channel mask");
     for (size_t i = 0; i < mask_bytes; ++i)
         if (mask[i] != 0 && mask[i] != 255) return fail(error, "MI-GAN mask must be binary; 255=fill, 0=known");
@@ -313,8 +327,13 @@ bool rgb_mask_valid(const uint8_t * rgb, size_t rgb_bytes, const uint8_t * mask,
 } // namespace
 
 context * init(const char * path, const char * expected_checkpoint_sha256, int n_threads, std::string & error) {
+    return init_variant(path, expected_checkpoint_sha256, image_size, n_threads, error);
+}
+
+context * init_variant(const char * path, const char * expected_checkpoint_sha256, int resolution, int n_threads,
+                       std::string & error) {
     error.clear();
-    if (!gate(error)) return nullptr;
+    if (!resolution_valid(resolution, error) || !gate(resolution, error)) return nullptr;
     if (!path || n_threads < 1 || n_threads > 64) {
         fail(error, "MI-GAN requires a model path and 1..64 CPU threads");
         return nullptr;
@@ -324,11 +343,12 @@ context * init(const char * path, const char * expected_checkpoint_sha256, int n
         fail(error, "MI-GAN cannot open GGUF metadata");
         return nullptr;
     }
-    const bool valid = metadata_valid(meta, expected_checkpoint_sha256, error);
+    const bool valid = metadata_valid(meta, expected_checkpoint_sha256, resolution, error);
     core_gguf::free_metadata(meta);
     if (!valid) return nullptr;
     try {
         std::unique_ptr<context> ctx(new context);
+        ctx->resolution = resolution;
         ctx->backend = core_cpu_backend::init();
         if (!ctx->backend || !core_cpu_backend::is_cpu(ctx->backend)) {
             fail(error, "MI-GAN CPU backend unavailable");
@@ -356,6 +376,10 @@ context * init(const char * path, const char * expected_checkpoint_sha256, int n
     }
 }
 
+int image_resolution(const context * ctx) {
+    return ctx ? ctx->resolution : 0;
+}
+
 void free(context * ctx) {
     delete ctx;
 }
@@ -375,16 +399,24 @@ bool run(context * ctx, const float * input_nchw, size_t input_count, float * ra
 
 bool preprocess_rgb8(const uint8_t * rgb, size_t rgb_bytes, const uint8_t * fill_mask, size_t mask_bytes, int width,
                      int height, float * input_nchw, size_t input_count, std::string & error) {
+    return preprocess_rgb8_variant(image_size, rgb, rgb_bytes, fill_mask, mask_bytes, width, height, input_nchw,
+                                   input_count, error);
+}
+
+bool preprocess_rgb8_variant(int resolution, const uint8_t * rgb, size_t rgb_bytes, const uint8_t * fill_mask,
+                             size_t mask_bytes, int width, int height, float * input_nchw, size_t input_count,
+                             std::string & error) {
     error.clear();
-    if (width != image_size || height != image_size || !input_nchw || input_count != input_elements)
-        return fail(error, "MI-GAN preprocessing requires exactly 256x256 NCHW F32 output");
-    if (!rgb_mask_valid(rgb, rgb_bytes, fill_mask, mask_bytes, error)) return false;
-    for (size_t i = 0; i < mask_elements; ++i) {
+    if (!resolution_valid(resolution, error)) return false;
+    const size_t pixels = size_t(resolution) * resolution;
+    if (width != resolution || height != resolution || !input_nchw || input_count != 4 * pixels)
+        return fail(error, "MI-GAN preprocessing requires the selected square NCHW F32 output size");
+    if (!rgb_mask_valid(resolution, rgb, rgb_bytes, fill_mask, mask_bytes, error)) return false;
+    for (size_t i = 0; i < pixels; ++i) {
         const float known = fill_mask[i] == 0 ? 1.0f : 0.0f;
         input_nchw[i] = known - 0.5f;
         for (size_t channel = 0; channel < 3; ++channel)
-            input_nchw[(channel + 1) * mask_elements + i] =
-                (float(rgb[3 * i + channel]) * 2.0f / 255.0f - 1.0f) * known;
+            input_nchw[(channel + 1) * pixels + i] = (float(rgb[3 * i + channel]) * 2.0f / 255.0f - 1.0f) * known;
     }
     return true;
 }
@@ -392,16 +424,25 @@ bool preprocess_rgb8(const uint8_t * rgb, size_t rgb_bytes, const uint8_t * fill
 bool composite_rgb8(const float * raw_nchw, size_t raw_count, const uint8_t * rgb, size_t rgb_bytes,
                     const uint8_t * fill_mask, size_t mask_bytes, uint8_t * output_rgb, size_t output_bytes,
                     std::string & error) {
+    return composite_rgb8_variant(image_size, raw_nchw, raw_count, rgb, rgb_bytes, fill_mask, mask_bytes, output_rgb,
+                                  output_bytes, error);
+}
+
+bool composite_rgb8_variant(int resolution, const float * raw_nchw, size_t raw_count, const uint8_t * rgb,
+                            size_t rgb_bytes, const uint8_t * fill_mask, size_t mask_bytes, uint8_t * output_rgb,
+                            size_t output_bytes, std::string & error) {
     error.clear();
-    if (!raw_nchw || raw_count != rgb_elements || !output_rgb || output_bytes != rgb_elements)
+    if (!resolution_valid(resolution, error)) return false;
+    const size_t pixels = size_t(resolution) * resolution;
+    if (!raw_nchw || raw_count != 3 * pixels || !output_rgb || output_bytes != 3 * pixels)
         return fail(error, "MI-GAN composition requires fixed RGB sizes");
-    if (!rgb_mask_valid(rgb, rgb_bytes, fill_mask, mask_bytes, error)) return false;
+    if (!rgb_mask_valid(resolution, rgb, rgb_bytes, fill_mask, mask_bytes, error)) return false;
     for (size_t i = 0; i < raw_count; ++i)
         if (!std::isfinite(raw_nchw[i])) return fail(error, "MI-GAN composition rejects nonfinite raw output");
-    for (size_t i = 0; i < mask_elements; ++i)
+    for (size_t i = 0; i < pixels; ++i)
         for (size_t channel = 0; channel < 3; ++channel) {
             const size_t hwc = 3 * i + channel;
-            const float normalized = raw_nchw[channel * mask_elements + i] * 0.5f + 0.5f;
+            const float normalized = raw_nchw[channel * pixels + i] * 0.5f + 0.5f;
             const uint8_t generated = uint8_t(std::max(0.0f, std::min(1.0f, normalized)) * 255.0f);
             output_rgb[hwc] = fill_mask[i] ? generated : rgb[hwc];
         }

@@ -59,6 +59,19 @@ is not calibration. The [validation record](docs/teleocr-validation.md) retains
 all layer metrics, failure attribution, source/binary hashes and corpus limits.
 No throughput, GPU, maximum-context or representative OCR-quality claim follows.
 
+## 1 November 2026 — Inpainting source profiles, measurements pending
+
+The MI-GAN512, Big-LaMa, Moebius and PixelHacker source implementations have
+no measured native latency, throughput or peak process memory in this delivery.
+The latent original tensor census gives approximately 1.24 GB of F32 payload for
+Moebius plus its VAE, and 3.78 GB for PixelHacker plus VAE; these are stored-weight
+figures, not working-set measurements. The shared CPU implementation bounds
+convolution patch workspaces and reuses mmap when available. Those mechanisms
+do not establish a speed or RAM claim. See the
+[engine/reuse guide](docs/inpainting-engines.md) and the manual original/native
+workflows before collecting a same-host baseline. Existing MI-GAN256 synthetic
+reference results do not qualify these profiles or realistic subtitle removal.
+
 ## Unlimited-OCR-2 and MiniCPM-OCR CPU timings (28 October 2026, Kaggle 4 vCPU)
 
 | engine | page | variant | seconds | note |

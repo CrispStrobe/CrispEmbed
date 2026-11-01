@@ -202,6 +202,26 @@ Strict stage budgets fail first at vision layers 29–31 (rel_rms 1.2e-5 against
 1e-5 v2 cap, cos_min 1.000000; F32 final logits rel_rms ≤ 2.7e-6) — the documented large-grid
 numerical limit, not a new divergence. The initial failure verdict is retained; no budget changes.
 
+## 1 November 2026 — Additional image inpainting source profiles
+
+Issue71 source preparation now includes MI-GAN512, Big-LaMa, Moebius and
+PixelHacker behind explicit default-off gates. The CLI shares existing file,
+mask, DBNet, protected-output, provenance and persistent-batch behavior. MI-GAN512
+extends the existing graph; LaMa adds CPU orthonormal FFT/FFC blocks; the latent
+models share a native SDXL VAE, DDIM sampler and bounded tensor operations while
+keeping their original lambda/GLA denoisers. The
+[reuse audit](docs/latent-inpaint-reuse.md) and
+[engine guide](docs/inpainting-engines.md) identify sources and limitations.
+
+The delivery adds pinned checkpoint/source censuses, strict conversion and
+readback receipts, independent original-framework capture, native comparison
+programs and hosted workflows. Executed validation is limited to bounded
+standard-library tests, C++17 syntax, Python/YAML syntax and source guards.
+No native build, full checkpoint conversion, full-model inference, performance
+benchmark or hosted parity run was executed for these additions. All previously
+frozen MI-GAN256 reference receipts remain unchanged. This source addition does
+not publish models, alter the shared C ABI, bump a release, or close issue71.
+
 ## 28 October 2026 — Unlimited-OCR-2 tiled exact + published; MiniCPM-OCR-1.0 native exact + published
 
 **Unlimited-OCR-2.** Tile-token bug found by the vision diff: native fed 256 instead of

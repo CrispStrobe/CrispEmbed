@@ -1,0 +1,97 @@
+name: Experimental latent inpainting build and original-first replay
+
+# Heavy work is never triggered by a push, pull request or schedule. Dispatch
+# the exact reviewed commit and explicitly choose the original-native phase.
+on:
+  workflow_dispatch:
+    inputs:
+      phase:
+        type: choice
+        options: [build-only, original-native]
+        default: build-only
+        description: 'Build-only downloads no models; original-native requires a provisioned CUDA worker'
+      model:
+        type: choice
+        options: [moebius, pixelhacker]
+        default: moebius
+        description: 'Use a separate dispatch and original Python environment for each model'
+      cases:
+        type: choice
+        options: [subtitle_bar, full-panel]
+        default: subtitle_bar
+        description: 'One full-intermediate diagnostic or all four owned fixtures; neither establishes representative quality'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: latent-inpaint-${{ github.ref }}-${{ inputs.model }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build real CLI and native components; run model-free controls
+        run: |
+          python tools/ci-heavy/latent_inpaint.py --phase build-only \
+            --output "$RUNNER_TEMP/latent-build-evidence" \
+            --scratch "$RUNNER_TEMP/latent-build-scratch" --deadline-minutes 50
+      - name: Preserve build logs, control results and binaries
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: latent-inpaint-build-${{ github.run_id }}
+          path: ${{ runner.temp }}/latent-build-evidence/
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 1
+
+  original-native:
+    if: inputs.phase == 'original-native'
+    needs: build
+    # This label must be explicitly provisioned by the operator. Hosted CPU
+    # runners cannot execute the original CUDA/Triton FLA reference faithfully.
+    runs-on: [self-hosted, linux, x64, latent-inpaint-gpu]
+    timeout-minutes: 180
+    env:
+      PHASE_MODEL: ${{ inputs.model }}
+      PHASE_CASES: ${{ inputs.cases }}
+      REFERENCE_PYTHON: ${{ inputs.model == 'moebius' && vars.MOEBIUS_REFERENCE_PYTHON || vars.PIXELHACKER_REFERENCE_PYTHON }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+      CUBLAS_WORKSPACE_CONFIG: ':4096:8'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - name: Admit original dependencies, download pinned bytes, capture original, convert and replay
+        run: |
+          python3 tools/ci-heavy/latent_inpaint.py --phase original-native \
+            --model "$PHASE_MODEL" --cases "$PHASE_CASES" \
+            --reference-python "$REFERENCE_PYTHON" \
+            --output "$RUNNER_TEMP/latent-original-native-evidence" \
+            --scratch "$RUNNER_TEMP/latent-original-native-scratch" --deadline-minutes 165
+      - name: Preserve partial or complete original/native numerical evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: latent-inpaint-${{ inputs.model }}-raw-${{ github.run_id }}
+          path: ${{ runner.temp }}/latent-original-native-evidence/
+          if-no-files-found: warn
+          retention-days: 90
+          compression-level: 1

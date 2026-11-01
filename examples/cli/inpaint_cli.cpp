@@ -3,9 +3,9 @@
 #include "core/env_gate.h"
 #include "core/gguf_loader.h"
 #include "core/image_out.h"
-#include "core/sha256.h"
 #include "inpaint.h"
 #include "lama.h"
+#include "latent_inpaint.h"
 #include "ocr_detect.h"
 
 #define STB_IMAGE_STATIC
@@ -18,6 +18,7 @@
 #include <charconv>
 #include <cmath>
 #include <cstring>
+#include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -68,9 +69,12 @@ struct path_less {
 
 struct options {
     std::string model, image, mask, output, list, directory, mask_directory, output_directory, text_model;
-    std::string backend = "auto";
-    std::string model_sha256;
+    std::string engine = "migan256", vae, model_sha256, vae_sha256, checkpoint_sha256;
     int threads = 1;
+    int steps = 20;
+    float guidance = 2.0f, noise_offset = 0.0357f;
+    uint64_t seed = 0;
+    bool tiled = false;
     int dilation = -1; // 3 for text masks; 0 for supplied masks.
     bool from_text = false;
     bool overwrite = false;
@@ -85,6 +89,12 @@ struct frame {
 
 struct context_deleter {
     void operator()(inpaint::context * ctx) const { inpaint::free(ctx); }
+};
+struct latent_context_deleter {
+    void operator()(latent_inpaint::context * ctx) const { latent_inpaint::free(ctx); }
+};
+struct lama_context_deleter {
+    void operator()(lama::context * ctx) const { lama::free(ctx); }
 };
 struct detector_deleter {
     void operator()(ocr_detect::context * ctx) const { ocr_detect::free(ctx); }
@@ -116,6 +126,22 @@ bool integer(const std::string & value, int minimum, int maximum, int & result) 
            result <= maximum;
 }
 
+bool latent_engine(const options & opt) {
+    return opt.engine == "moebius" || opt.engine == "pixelhacker";
+}
+bool digest(const std::string & value) {
+    return value.size() == 64 && std::all_of(value.begin(), value.end(),
+                                             [](char c) { return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'); });
+}
+bool decimal(const std::string & value, float minimum, float maximum, float & result) {
+    if (value.empty()) return false;
+    char * end = nullptr;
+    errno = 0;
+    result = std::strtof(value.c_str(), &end);
+    return errno == 0 && end == value.c_str() + value.size() && std::isfinite(result) && result >= minimum &&
+           result <= maximum;
+}
+
 bool parse_region(const std::string & value, std::array<int, 4> & region) {
     size_t begin = 0;
     for (int i = 0; i < 4; ++i) {
@@ -143,6 +169,10 @@ bool parse(int argc, char ** argv, options & opt, std::string & error) {
             opt.overwrite = true;
             continue;
         }
+        if (name == "--inpaint-tiles") {
+            opt.tiled = true;
+            continue;
+        }
         const std::set<std::string> values{ "--inpaint-model",
                                             "--inpaint",
                                             "--mask",
@@ -155,25 +185,44 @@ bool parse(int argc, char ** argv, options & opt, std::string & error) {
                                             "--mask-region",
                                             "--mask-dilate",
                                             "--threads",
-                                            "--inpaint-backend",
-                                            "--inpaint-model-sha256" };
+                                            "--inpaint-engine",
+                                            "--inpaint-vae",
+                                            "--inpaint-model-sha256",
+                                            "--inpaint-vae-sha256",
+                                            "--inpaint-checkpoint-sha256",
+                                            "--inpaint-steps",
+                                            "--inpaint-guidance",
+                                            "--inpaint-noise-offset",
+                                            "--inpaint-seed" };
         if (values.count(name) == 0) return fail(error, "unsupported inpainting option: " + name);
         if (i + 1 == argc || !*argv[i + 1] || std::strncmp(argv[i + 1], "--", 2) == 0)
             return fail(error, "missing value for " + name);
         const std::string value = argv[++i];
-        if (name == "--inpaint-model")
-            opt.model = value;
-        else if (name == "--inpaint-backend") {
-            if (value != "auto" && value != "migan" && value != "lama")
-                return fail(error, "--inpaint-backend must be auto, migan or lama");
-            opt.backend = value;
-        } else if (name == "--inpaint-model-sha256") {
-            if (value.size() != 64 || value.find_first_not_of("0123456789abcdefABCDEF") != std::string::npos)
-                return fail(error, "--inpaint-model-sha256 must be exactly 64 hexadecimal digits");
+        if (name == "--inpaint-engine")
+            opt.engine = value;
+        else if (name == "--inpaint-vae")
+            opt.vae = value;
+        else if (name == "--inpaint-model-sha256")
             opt.model_sha256 = value;
-            for (char & c : opt.model_sha256)
-                if (c >= 'A' && c <= 'F') c += 'a' - 'A';
-        } else if (name == "--inpaint")
+        else if (name == "--inpaint-vae-sha256")
+            opt.vae_sha256 = value;
+        else if (name == "--inpaint-checkpoint-sha256")
+            opt.checkpoint_sha256 = value;
+        else if (name == "--inpaint-steps") {
+            if (!integer(value, 2, 100, opt.steps))
+                return fail(error, "--inpaint-steps must be an integer from 2 to 100");
+        } else if (name == "--inpaint-guidance") {
+            if (!decimal(value, 0, 30, opt.guidance)) return fail(error, "--inpaint-guidance must be finite in [0,30]");
+        } else if (name == "--inpaint-noise-offset") {
+            if (!decimal(value, 0, 1, opt.noise_offset))
+                return fail(error, "--inpaint-noise-offset must be finite in [0,1]");
+        } else if (name == "--inpaint-seed") {
+            const auto parsed = std::from_chars(value.data(), value.data() + value.size(), opt.seed);
+            if (parsed.ec != std::errc() || parsed.ptr != value.data() + value.size())
+                return fail(error, "--inpaint-seed must be an unsigned 64-bit integer");
+        } else if (name == "--inpaint-model")
+            opt.model = value;
+        else if (name == "--inpaint")
             opt.image = value;
         else if (name == "--mask")
             opt.mask = value;
@@ -201,7 +250,33 @@ bool parse(int argc, char ** argv, options & opt, std::string & error) {
     }
     const int modes = !opt.image.empty() + !opt.list.empty() + !opt.directory.empty();
     if (modes != 1) return fail(error, "choose exactly one of --inpaint, --inpaint-list, or --inpaint-dir");
-    if (opt.model.empty()) return fail(error, "--inpaint-model is required (MI-GAN256 or Big-LaMa F32 GGUF)");
+    if (opt.model.empty()) return fail(error, "--inpaint-model is required (reviewed F32 GGUF)");
+    if (opt.engine != "migan256" && opt.engine != "migan512" && opt.engine != "lama" && !latent_engine(opt))
+        return fail(error, "--inpaint-engine must be migan256, migan512, lama, moebius or pixelhacker");
+    if (opt.engine == "pixelhacker" && !seen.count("--inpaint-guidance")) opt.guidance = 4.5f;
+    if (latent_engine(opt)) {
+        if (opt.vae.empty() || !digest(opt.model_sha256) || !digest(opt.vae_sha256))
+            return fail(error, "latent models require --inpaint-vae, --inpaint-model-sha256 and --inpaint-vae-sha256 "
+                               "from conversion receipts");
+        if (!opt.checkpoint_sha256.empty())
+            return fail(error,
+                        "latent source checkpoints are pinned; --inpaint-checkpoint-sha256 applies only to migan512");
+    } else {
+        if (!opt.vae.empty() || !opt.vae_sha256.empty() || opt.tiled || seen.count("--inpaint-steps") ||
+            seen.count("--inpaint-guidance") || seen.count("--inpaint-seed") || seen.count("--inpaint-noise-offset"))
+            return fail(error, "VAE, sampler and --inpaint-tiles options require moebius or pixelhacker");
+        if (opt.engine == "migan512") {
+            if (!digest(opt.model_sha256) || !digest(opt.checkpoint_sha256))
+                return fail(error, "migan512 requires --inpaint-model-sha256 and --inpaint-checkpoint-sha256 from "
+                                   "reviewed capture/conversion receipts");
+        } else if (opt.engine == "lama") {
+            if (!digest(opt.model_sha256) || !opt.checkpoint_sha256.empty())
+                return fail(error, "lama requires --inpaint-model-sha256 from its conversion receipt; the source "
+                                   "checkpoint is pinned");
+        } else if (!opt.model_sha256.empty() || !opt.checkpoint_sha256.empty()) {
+            return fail(error, "migan256 uses its existing immutable model/checkpoint pins");
+        }
+    }
     if (opt.from_text != !opt.text_model.empty())
         return fail(error, "--mask-from-text and --mask-text-model must be used together");
     if (opt.from_text && (!opt.mask.empty() || !opt.mask_directory.empty()))
@@ -306,9 +381,16 @@ bool collect_frames(const options & opt, std::vector<frame> & frames, std::strin
 bool preflight(const options & opt, std::vector<frame> & frames, std::string & error) {
     std::set<fs::path, path_less> protected_paths{ canonical_path(opt.model) };
     if (!opt.text_model.empty()) protected_paths.insert(canonical_path(opt.text_model));
+    if (!opt.vae.empty()) protected_paths.insert(canonical_path(opt.vae));
     if (!opt.list.empty() && opt.list != "-") protected_paths.insert(canonical_path(opt.list));
     for (auto & item : frames) {
         if (!image_info(item.image, item.width, item.height, error)) return false;
+        if (latent_engine(opt) && !opt.tiled && (item.width != 512 || item.height != 512))
+            return fail(
+                error, "latent models require 512x512; use --inpaint-tiles to explicitly select independent 512 tiles");
+        if (opt.engine == "lama" && (item.width < lama::min_dimension || item.height < lama::min_dimension ||
+                                     item.width > lama::max_dimension || item.height > lama::max_dimension))
+            return fail(error, "lama requires each dimension from 9 to 1024 pixels");
         protected_paths.insert(canonical_path(item.image));
         if (!opt.from_text) {
             int width = 0, height = 0;
@@ -346,7 +428,8 @@ bool preflight(const options & opt, std::vector<frame> & frames, std::string & e
             return fail(error, "--output-dir is not a directory");
         }
     }
-    return regular_file(opt.model, error) && (opt.text_model.empty() || regular_file(opt.text_model, error));
+    return regular_file(opt.model, error) && (opt.text_model.empty() || regular_file(opt.text_model, error)) &&
+           (opt.vae.empty() || regular_file(opt.vae, error));
 }
 
 image_ptr load_image(const fs::path & path, int expected_width, int expected_height, int channels,
@@ -477,12 +560,20 @@ std::FILE * open_exclusive_output(const fs::path & path) {
     return out;
 }
 
-bool write_output(const options & opt, const frame & item, const std::vector<uint8_t> & rgb, const char * engine,
-                  std::string & error) {
+bool write_output(const options & opt, const frame & item, const std::vector<uint8_t> & rgb, std::string & error) {
     // Encode before opening a destination so an encoding failure cannot
     // truncate an existing output. The common writer attaches provenance.
     std::string png, mime;
-    if (!core_imgout::emit_to_string(png, mime, rgb.data(), item.width, item.height, 3, engine) || mime != "image/png")
+    std::string provenance = opt.engine == "migan256" ? "migan-inpaint" : opt.engine + "-inpaint";
+    if (opt.engine == "migan512" || opt.engine == "lama") provenance += ";model_sha256=" + opt.model_sha256;
+    if (opt.engine == "migan512") provenance += ";checkpoint_sha256=" + opt.checkpoint_sha256;
+    if (latent_engine(opt))
+        provenance += ";steps=" + std::to_string(opt.steps) + ";seed=" + std::to_string(opt.seed) +
+                      ";guidance=" + std::to_string(opt.guidance) +
+                      ";noise_offset=" + std::to_string(opt.noise_offset) + ";tiles=" + (opt.tiled ? "1" : "0") +
+                      ";model_sha256=" + opt.model_sha256 + ";vae_sha256=" + opt.vae_sha256;
+    if (!core_imgout::emit_to_string(png, mime, rgb.data(), item.width, item.height, 3, provenance.c_str()) ||
+        mime != "image/png")
         return fail(error, "cannot encode PNG output");
     std::FILE * out = stdout;
     temporary_output temporary;
@@ -534,8 +625,13 @@ bool write_output(const options & opt, const frame & item, const std::vector<uin
 }
 
 int execute(const options & opt, std::string & error) {
-    if (!core_env::on("CRISPEMBED_MIGAN") && !core_env::on("CRISPEMBED_LAMA")) {
-        fail(error, "experimental inpainting requires CRISPEMBED_MIGAN=1 or CRISPEMBED_LAMA=1 (CPU/F32)");
+    const char * gate = opt.engine == "moebius"       ? "CRISPEMBED_MOEBIUS"
+                        : opt.engine == "pixelhacker" ? "CRISPEMBED_PIXELHACKER"
+                        : opt.engine == "lama"        ? "CRISPEMBED_LAMA"
+                                                      : "CRISPEMBED_MIGAN";
+    if (!core_env::on(gate) || (opt.engine == "migan512" && !core_env::on("CRISPEMBED_MIGAN512"))) {
+        fail(error, std::string("experimental inpainting requires ") + gate + "=1" +
+                        (opt.engine == "migan512" ? " and CRISPEMBED_MIGAN512=1" : ""));
         return 2;
     }
     if (core_imgout::want_ppm()) {
@@ -545,44 +641,6 @@ int execute(const options & opt, std::string & error) {
     std::vector<frame> frames;
     if (!collect_frames(opt, frames, error) || !preflight(opt, frames, error)) return 2;
 
-    if (!opt.model_sha256.empty() && core_sha256::file(opt.model) != opt.model_sha256) {
-        fail(error, "inpainting model SHA-256 mismatch against --inpaint-model-sha256");
-        return 1;
-    }
-    gguf_context * model_metadata = core_gguf::open_metadata(opt.model.c_str());
-    if (!model_metadata) {
-        fail(error, "cannot read inpainting model GGUF metadata");
-        return 1;
-    }
-    const std::string architecture = core_gguf::kv_str(model_metadata, "general.architecture", "");
-    core_gguf::free_metadata(model_metadata);
-    if (architecture != "migan" && architecture != "lama") {
-        fail(error, "unsupported inpainting model architecture: " + architecture + " (expected migan or lama)");
-        return 2;
-    }
-    if (opt.backend != "auto" && opt.backend != architecture) {
-        fail(error, "--inpaint-backend " + opt.backend + " does not match model architecture " + architecture);
-        return 2;
-    }
-    const bool use_lama = architecture == "lama";
-    const char * gate = use_lama ? "CRISPEMBED_LAMA" : "CRISPEMBED_MIGAN";
-    if (!core_env::on(gate)) {
-        fail(error, architecture + " inpainting requires " + gate + "=1");
-        return 2;
-    }
-    if (use_lama) {
-        for (const auto & item : frames) {
-            const size_t padded_width = (size_t(item.width) + 7) / 8 * 8;
-            const size_t padded_height = (size_t(item.height) + 7) / 8 * 8;
-            if (item.width < lama::min_dimension || item.height < lama::min_dimension ||
-                item.width > lama::max_dimension || item.height > lama::max_dimension ||
-                padded_width > lama::max_padded_pixels / padded_height) {
-                fail(error, "Big-LaMa requires dimensions 9..2048 and at most 2097152 pixels after pad8: " +
-                                item.image.string());
-                return 2;
-            }
-        }
-    }
     std::unique_ptr<ocr_detect::context, detector_deleter> detector;
     if (opt.from_text) {
         gguf_context * metadata = core_gguf::open_metadata(opt.text_model.c_str());
@@ -604,9 +662,33 @@ int execute(const options & opt, std::string & error) {
             return 1;
         }
     }
-    std::unique_ptr<inpaint::context, context_deleter> ctx(inpaint::init(
-        opt.model.c_str(), opt.threads, error, use_lama ? inpaint::backend::lama : inpaint::backend::migan));
-    if (!ctx) return 1;
+    std::unique_ptr<inpaint::context, context_deleter> ctx;
+    std::unique_ptr<latent_inpaint::context, latent_context_deleter> latent;
+    std::unique_ptr<lama::context, lama_context_deleter> fourier;
+    if (latent_engine(opt)) {
+        latent_inpaint::Options settings;
+        settings.model = opt.engine;
+        settings.denoiser_path = opt.model;
+        settings.vae_path = opt.vae;
+        settings.denoiser_sha256 = opt.model_sha256;
+        settings.vae_sha256 = opt.vae_sha256;
+        settings.threads = opt.threads;
+        settings.steps = opt.steps;
+        settings.guidance = opt.guidance;
+        settings.noise_offset = opt.noise_offset;
+        settings.seed = opt.seed;
+        settings.tiled = opt.tiled;
+        latent.reset(latent_inpaint::init(settings, error));
+        if (!latent) return 1;
+    } else if (opt.engine == "lama") {
+        fourier.reset(lama::init(opt.model.c_str(), opt.model_sha256.c_str(), opt.threads, error));
+        if (!fourier) return 1;
+    } else {
+        ctx.reset(opt.engine == "migan512" ? inpaint::init_variant(opt.model.c_str(), opt.checkpoint_sha256.c_str(),
+                                                                   opt.model_sha256.c_str(), 512, opt.threads, error)
+                                           : inpaint::init(opt.model.c_str(), opt.threads, error));
+        if (!ctx) return 1;
+    }
     if (!opt.directory.empty()) fs::create_directories(opt.output_directory);
 
     for (size_t index = 0; index < frames.size(); ++index) {
@@ -615,10 +697,18 @@ int execute(const options & opt, std::string & error) {
         std::vector<uint8_t> mask;
         const size_t rgb_bytes = size_t(item.width) * item.height * 3;
         std::vector<uint8_t> output(rgb_bytes);
-        if (!rgb || !make_mask(opt, item, rgb.get(), detector.get(), mask, error) ||
-            !inpaint::process_rgb8(ctx.get(), rgb.get(), rgb_bytes, mask.data(), mask.size(), item.width, item.height,
-                                   output.data(), output.size(), error) ||
-            !write_output(opt, item, output, use_lama ? "lama-inpaint" : "migan-inpaint", error)) {
+        if (!rgb || !make_mask(opt, item, rgb.get(), detector.get(), mask, error)) {
+            error = "frame " + std::to_string(index + 1) + " (" + item.image.string() + "): " + error;
+            return 1;
+        }
+        const bool processed =
+            latent    ? latent_inpaint::process_rgb8(latent.get(), rgb.get(), rgb_bytes, mask.data(), mask.size(),
+                                                     item.width, item.height, output.data(), output.size(), error)
+            : fourier ? lama::process_rgb8(fourier.get(), rgb.get(), rgb_bytes, mask.data(), mask.size(), item.width,
+                                           item.height, output.data(), output.size(), error)
+                      : inpaint::process_rgb8(ctx.get(), rgb.get(), rgb_bytes, mask.data(), mask.size(), item.width,
+                                              item.height, output.data(), output.size(), error);
+        if (!processed || !write_output(opt, item, output, error)) {
             error = "frame " + std::to_string(index + 1) + " (" + item.image.string() + "): " + error;
             return 1;
         }
@@ -640,11 +730,18 @@ bool requested(int argc, char ** argv) {
 }
 
 void print_help(std::FILE * out) {
-    std::fprintf(out, "\nExperimental image inpainting (CPU/F32 MI-GAN256 or Big-LaMa):\n"
-                      "  Enable CRISPEMBED_MIGAN=1 or CRISPEMBED_LAMA=1 for the selected model.\n"
-                      "  --inpaint-model PATH     Supported F32 GGUF (see docs/inpainting-cli.md)\n"
-                      "  --inpaint-backend NAME   auto (default), migan or lama; must match GGUF metadata\n"
-                      "  --inpaint-model-sha256 H Verify the full model hash from its conversion receipt\n"
+    std::fprintf(out, "\nExperimental CPU/F32 image inpainting (each engine requires its opt-in gate):\n"
+                      "  --inpaint-engine NAME    migan256(default), migan512, lama, moebius or pixelhacker\n"
+                      "  --inpaint-model PATH     Converted F32 GGUF (see docs/inpainting-cli.md)\n"
+                      "  --inpaint-model-sha256 H Model GGUF digest from conversion receipt (new engines)\n"
+                      "  --inpaint-checkpoint-sha256 H  Reviewed original checkpoint digest (migan512)\n"
+                      "  --inpaint-vae PATH       Shared SDXL VAE F32 GGUF (latent models)\n"
+                      "  --inpaint-vae-sha256 H   VAE GGUF digest from conversion receipt\n"
+                      "  --inpaint-steps N        Requested diffusion steps, 2..100 (default 20; 19 executed)\n"
+                      "  --inpaint-guidance F     Guidance, 0..30 (default 2 Moebius; 4.5 PixelHacker)\n"
+                      "  --inpaint-noise-offset F Channel noise offset, 0..1 (default 0.0357)\n"
+                      "  --inpaint-seed N         Unsigned64-bit native noise seed (default 0)\n"
+                      "  --inpaint-tiles          Explicit independent 512 tiles for non-512 latent input\n"
                       "  --inpaint FILE           Inpaint one image; PNG goes to stdout by default\n"
                       "  --mask FILE              Same-size grayscale mask; values >=128 mean fill\n"
                       "  --inpaint-output FILE    Write PNG to a file ('-' means stdout)\n"
@@ -662,7 +759,6 @@ void print_help(std::FILE * out) {
                       "  --inpaint-overwrite      Allow existing output files; inputs are always protected\n"
                       "  -t, --threads N          CPU threads (1..64; default 1)\n"
                       "  --inpaint-help           Show these options\n"
-                      "  LaMa: whole image, dimensions 9..2048, <=2097152 padded pixels, 3 GiB graph cap.\n"
                       "  Images keep their dimensions and unmasked RGB bytes; batch frames are independent.\n");
 }
 

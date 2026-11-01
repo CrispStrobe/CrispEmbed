@@ -1050,30 +1050,19 @@ endif()
 add_executable(test-sam2-diff tests/test_sam2_diff.cpp)
 target_link_libraries(test-sam2-diff PRIVATE crispembed-sam2)
 
-# Fixed-256 MI-GAN CPU/F32 graph. The opt-in CLI links the ordinary archive;
+# Fixed-256/512 MI-GAN CPU/F32 graph. The opt-in CLI links the ordinary archive;
 # reference observers remain confined to the separate validation archive.
 add_library(crispembed-migan STATIC EXCLUDE_FROM_ALL src/migan.cpp)
 target_include_directories(crispembed-migan PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 crispembed_apply_arch_flags(crispembed-migan)
 target_link_libraries(crispembed-migan PUBLIC crispembed-core ggml ggml-base ggml-cpu)
 
-# Big-LaMa CPU/F32 graph and real FFT custom operations. This archive is only
-# linked into the opt-in image CLI; the installed shared C ABI is unchanged.
-add_library(crispembed-lama-fft STATIC EXCLUDE_FROM_ALL src/lama_fft.cpp)
-target_include_directories(crispembed-lama-fft PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-crispembed_apply_arch_flags(crispembed-lama-fft)
-target_link_libraries(crispembed-lama-fft PUBLIC ggml ggml-base ggml-cpu)
-add_library(crispembed-lama STATIC EXCLUDE_FROM_ALL src/lama.cpp)
-target_include_directories(crispembed-lama PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
-crispembed_apply_arch_flags(crispembed-lama)
-target_link_libraries(crispembed-lama PUBLIC crispembed-core crispembed-lama-fft)
-
-# Issue 71: engine dispatch, with native-resolution MI-GAN tiling and whole-image LaMa.
+# Issue 71: native-resolution tiling around the unchanged MI-GAN graph.
 # This internal CLI library adds no shared-library ABI or model registry alias.
 add_library(crispembed-inpaint STATIC EXCLUDE_FROM_ALL src/inpaint.cpp)
 target_include_directories(crispembed-inpaint PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 crispembed_apply_arch_flags(crispembed-inpaint)
-target_link_libraries(crispembed-inpaint PUBLIC crispembed-migan crispembed-lama)
+target_link_libraries(crispembed-inpaint PUBLIC crispembed-migan)
 target_link_libraries(crispembed-cli PRIVATE crispembed-inpaint)
 
 # Model-free contracts use the real tile/composition/hash implementation.
@@ -1095,20 +1084,50 @@ crispembed_apply_arch_flags(crispembed-migan-test)
 target_link_libraries(crispembed-migan-test PUBLIC crispembed-core ggml ggml-base ggml-cpu)
 add_executable(test-migan-diff EXCLUDE_FROM_ALL tests/test_migan_diff.cpp)
 target_link_libraries(test-migan-diff PRIVATE crispembed-migan-test)
+add_executable(test-migan512-diff EXCLUDE_FROM_ALL tests/test_migan512_diff.cpp)
+target_link_libraries(test-migan512-diff PRIVATE crispembed-migan-test)
 
-add_executable(test-lama-fft EXCLUDE_FROM_ALL tests/test_lama_fft.cpp)
-target_link_libraries(test-lama-fft PRIVATE crispembed-lama-fft crispembed-core)
-add_executable(test-lama EXCLUDE_FROM_ALL tests/test_lama.cpp)
-target_link_libraries(test-lama PRIVATE crispembed-lama)
+# Issue71 latent inpainters share the existing CPU/GGUF/image infrastructure.
+# Their observers are compiled only into the separate acceptance archive.
+set(CRISPEMBED_LATENT_INPAINT_SOURCES
+    src/latent_inpaint.cpp src/latent_inpaint_ops.cpp
+    src/latent_inpaint_vae.cpp src/latent_inpaint_unet.cpp)
+add_library(crispembed-latent-inpaint STATIC EXCLUDE_FROM_ALL ${CRISPEMBED_LATENT_INPAINT_SOURCES})
+target_include_directories(crispembed-latent-inpaint PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+crispembed_apply_arch_flags(crispembed-latent-inpaint)
+target_link_libraries(crispembed-latent-inpaint PUBLIC crispembed-inpaint crispembed-core ggml ggml-base ggml-cpu)
+target_link_libraries(crispembed-cli PRIVATE crispembed-latent-inpaint)
 
-# LaMa intermediate owners and callbacks exist solely in the validation build.
-add_library(crispembed-lama-test STATIC EXCLUDE_FROM_ALL src/lama.cpp)
+add_library(crispembed-latent-inpaint-test STATIC EXCLUDE_FROM_ALL ${CRISPEMBED_LATENT_INPAINT_SOURCES})
+target_include_directories(crispembed-latent-inpaint-test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_compile_definitions(crispembed-latent-inpaint-test PUBLIC CRISPEMBED_LATENT_INPAINT_TESTING)
+crispembed_apply_arch_flags(crispembed-latent-inpaint-test)
+target_link_libraries(crispembed-latent-inpaint-test PUBLIC crispembed-inpaint crispembed-core ggml ggml-base ggml-cpu)
+add_executable(test-latent-inpaint EXCLUDE_FROM_ALL tests/test_latent_inpaint.cpp)
+target_link_libraries(test-latent-inpaint PRIVATE crispembed-latent-inpaint-test)
+add_executable(test-latent-inpaint-attention EXCLUDE_FROM_ALL tests/test_latent_inpaint_attention.cpp)
+target_link_libraries(test-latent-inpaint-attention PRIVATE crispembed-latent-inpaint)
+add_executable(test-latent-inpaint-pipeline EXCLUDE_FROM_ALL tests/test_latent_inpaint_pipeline.cpp)
+target_link_libraries(test-latent-inpaint-pipeline PRIVATE crispembed-latent-inpaint)
+add_executable(test-latent-inpaint-ops EXCLUDE_FROM_ALL tests/test_latent_inpaint_ops.cpp)
+target_link_libraries(test-latent-inpaint-ops PRIVATE crispembed-latent-inpaint)
+
+# Big-LaMa reuses the same bounded convolution/BN engine and adds its exact
+# CPU Fourier path. Ordinary builds contain no reference observer callbacks.
+add_library(crispembed-lama STATIC EXCLUDE_FROM_ALL src/lama.cpp src/lama_fft.cpp)
+target_include_directories(crispembed-lama PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+crispembed_apply_arch_flags(crispembed-lama)
+target_link_libraries(crispembed-lama PUBLIC crispembed-latent-inpaint)
+target_link_libraries(crispembed-cli PRIVATE crispembed-lama)
+add_library(crispembed-lama-test STATIC EXCLUDE_FROM_ALL src/lama.cpp src/lama_fft.cpp)
 target_include_directories(crispembed-lama-test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_compile_definitions(crispembed-lama-test PUBLIC CRISPEMBED_LAMA_TESTING)
 crispembed_apply_arch_flags(crispembed-lama-test)
-target_link_libraries(crispembed-lama-test PUBLIC crispembed-core crispembed-lama-fft)
-add_executable(test-lama-native EXCLUDE_FROM_ALL tests/lama_native.cpp)
-target_link_libraries(test-lama-native PRIVATE crispembed-lama-test)
+target_link_libraries(crispembed-lama-test PUBLIC crispembed-latent-inpaint)
+add_executable(test-lama-ops EXCLUDE_FROM_ALL tests/test_lama_ops.cpp)
+target_link_libraries(test-lama-ops PRIVATE crispembed-lama-test)
+add_executable(test-lama-diff EXCLUDE_FROM_ALL tests/test_lama_diff.cpp)
+target_link_libraries(test-lama-diff PRIVATE crispembed-lama-test)
 
 add_executable(test-restormer-diff tests/test_restormer_diff.cpp)
 target_link_libraries(test-restormer-diff PRIVATE crispembed)

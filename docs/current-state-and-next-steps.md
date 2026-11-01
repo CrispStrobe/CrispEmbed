@@ -568,8 +568,12 @@ published0.17.12; development0.17.13 and model experiments do not upgrade it.
   MI-GAN has explicit MIT code/weight terms; one independently implemented fixed-
   resolution graph with original RGB/mask/block/output references is the first
   bounded prototype. Payload identity and any copied helper notices remain gates.
-  LaMa checkpoint terms and FFT/complex implementation remain unresolved.
-  No inpainting execution, video-quality claim or issue closure follows.
+  The 1 November source addition now includes MI-GAN512, Big-LaMa, Moebius and
+  PixelHacker under separate default-off gates; see the
+  [current engine/reuse guide](inpainting-engines.md). It records the licence
+  evidence, exact checkpoint contracts, CPU Fourier path, shared VAE/sampler,
+  converters and original-reference tools. Full-model hosted parity of these
+  additions remains pending. No video-quality claim or issue closure follows.
 - [Attention-F16/FFN-Q4 attempt40172527229](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40172527229)
   is complete and rejected. Its72 FFN matrices use Q4_K;401 tensors, including78
   attention matrices, remain byte exact. The first full layer has max error

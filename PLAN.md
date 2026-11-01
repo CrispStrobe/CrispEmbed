@@ -326,7 +326,19 @@ outside this lane. Do not infer weight permission from a public repository.
 
 ## Issue71, packaging and downstream delivery
 
-- Initial bounded source delivery, 1 November 2026: issue71 CLI implementation on
+- Extended source delivery, 1 November 2026: explicit MI-GAN512, Big-LaMa,
+  Moebius and PixelHacker profiles reuse the existing loader, CPU operators,
+  masks, PNG output and persistent batches. New model math includes exact
+  Fourier blocks, lambda/GLA denoisers, one shared SDXL VAE and DDIM sampler.
+  Checkpoint/source/tensor contracts, strict converters, original captures,
+  native parity programs and opt-in hosted workflows are included. See the
+  [engine guide](docs/inpainting-engines.md) and
+  [reuse audit](docs/latent-inpaint-reuse.md). Bounded Python checks and C++
+  syntax checks are source validation only. Hosted builds, actual conversion,
+  full-model original/native comparisons and representative quality remain
+  pending. No gates are enabled by default, no model is published, and no ABI,
+  release or downstream pin changes are made.
+- Bounded source delivery, 1 November 2026: issue71 CLI implementation on
   `feat/issue71-inpainting`, based on `b8cd2497765f2fd8db0b9c713d952898bdd9b996`.
   Adds a default-off, exact-model-pinned MI-GAN CLI, native256 tiling, explicit or
   DBNet-derived masks, PNG provenance and persistent directory/TSV batches.
@@ -338,35 +350,15 @@ outside this lane. Do not infer weight permission from a public repository.
   tests, actual CLI execution and checkpoint replication remain unexecuted;
   the new three-platform workflow and opt-in model smoke are prepared, not
   observed hosted results. This source delivery creates no model alias, runtime release, shared
-  C ABI or downstream pin change; temporal/video remain separate.
-- Big-LaMa source extension, 1 November 2026: the same feature worktree now
-  incorporates upstream `3f3f0d1` and implements the full CPU/F32 18-block,
-  75%-global profile, all 36 FourierUnits, native real/inverse FFT, whole-image
-  symmetric-pad8 preprocessing and exact known-pixel composition. Backend
-  selection reads GGUF metadata; `CRISPEMBED_LAMA` remains default-off and
-  MI-GAN's original graph and immutable export pin remain intact. The local
-  checkpoint converter verifies 837 F32 tensor byte records; no LaMa weights
-  are distributed or registered. See the [implementation/source contract](docs/lama-native-prototype.md)
-  and [manual hosted protocol](.github/workflows/lama-parity.yml). The protocol
-  compares 713 original/native stages per fixture, final RGB and observer,
-  repeat, fresh-context and production-CLI controls. These native/model checks
-  are prepared, not observed results. Complete hosted linking/operator checks,
-  actual checkpoint conversion, original-first numerical replay and independent
-  review before claiming runtime parity. Keep fixed diagnostic budgets, exact
-  source/fixture identities and every initial failure. Then freeze a licensed
-  representative subtitle/scene panel and measure whole-frame memory/latency.
-  Current small local checks pass: 83 standard-library Python tests (including
-  the original 36), ten C++ syntax-only checks across ordinary/observer builds,
-  nine Python syntax checks, two workflow YAML parses, 13 pinned upstream source
-  hashes and the 200-entry clean-exit guard. None is a native link or model run.
+  C ABI or downstream pin change; temporal/video and LaMa remain separate.
 - Issue71 MI-GAN: fixed256 CPU/F32 prototype and494/eight-fixture audit are
   complete. Qualify the new CLI separately, then freeze licensed real subtitle/
   scene images and masks with perceptual/seam criteria. C ABI/orchestrator/server/
   bindings, registry and downstream consumers remain separate. Video/motion/
   flicker and text-derived masks need their own gold. Other model resolutions,
-  F16/quantization and GPU backends remain separate. LaMa now has the above
-  experimental FFT/graph source; checkpoint distribution terms, actual parity,
-  representative quality and release qualification remain open. Keep issue71 open.
+  F16/quantization and GPU backends remain separate. LaMa now has its explicit
+  checkpoint-container/licence record and CPU Fourier implementation; validate
+  its original/native stages before adoption. Keep issue71 open.
 - Source/wheel success is not release qualification. Require fresh portable
   native/WASM producers, installed bundle/ABI/platform consumers and full
   aggregation for the final source, then update release metadata coherently.

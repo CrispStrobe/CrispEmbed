@@ -5,6 +5,7 @@ on:
     paths:
       - 'src/inpaint.*'
       - 'src/migan.*'
+      - 'src/latent_inpaint*'
       - 'src/lama*'
       - 'src/ocr_detect.*'
       - 'src/core/sha256.h'
@@ -12,11 +13,21 @@ on:
       - 'examples/cli/inpaint_cli.*'
       - 'examples/cli/main.cpp'
       - 'tests/*inpaint*'
+      - 'tests/*migan512*'
       - 'tests/*lama*'
-      - 'models/convert-lama-to-gguf.py'
-      - 'tools/*lama*'
       - 'tools/prepare_migan_inpaint.py'
       - 'tools/migan_reference_contract.py'
+      - 'tools/migan512_reference_contract.py'
+      - 'tools/latent_inpaint_contract.py'
+      - 'tools/lama*'
+      - 'tools/dump_lama_reference.py'
+      - 'tools/dump_latent_inpaint_reference.py'
+      - 'models/convert-lama-to-gguf.py'
+      - 'models/convert-latent-inpaint-to-gguf.py'
+      - 'models/convert-migan-to-gguf.py'
+      - 'docs/*inpaint*contract*'
+      - 'docs/lama*contract*'
+      - 'docs/migan512-reference-contract.json'
       - 'CMakeLists.txt'
       - 'ggml'
       - '.github/workflows/inpaint-cli.yml'
@@ -24,15 +35,23 @@ on:
     paths:
       - 'src/inpaint.*'
       - 'src/migan.*'
+      - 'src/latent_inpaint*'
       - 'src/lama*'
       - 'src/ocr_detect.*'
       - 'src/core/sha256.h'
       - 'examples/cli/inpaint_cli.*'
       - 'tests/*inpaint*'
+      - 'tests/*migan512*'
       - 'tests/*lama*'
-      - 'models/convert-lama-to-gguf.py'
-      - 'tools/*lama*'
       - 'tools/prepare_migan_inpaint.py'
+      - 'tools/*inpaint*'
+      - 'tools/lama*'
+      - 'tools/dump_lama_reference.py'
+      - 'tools/dump_latent_inpaint_reference.py'
+      - 'tools/migan512_reference_contract.py'
+      - 'models/convert-lama-to-gguf.py'
+      - 'models/convert-latent-inpaint-to-gguf.py'
+      - 'models/convert-migan-to-gguf.py'
       - 'CMakeLists.txt'
       - '.github/workflows/inpaint-cli.yml'
   workflow_dispatch:
@@ -76,8 +95,9 @@ jobs:
           python tests/test_inpaint_png.py -v
           python tests/test_migan_reference_contract.py -v
           python tests/test_migan_native_driver.py -v
-          python tests/test_lama_converter.py -v
-          python tests/test_lama_reference.py -v
+          python tests/test_migan512_contract.py -v
+          python tests/test_latent_inpaint_contract.py -v
+          python tests/test_lama_contract.py -v
       - name: Configure portable CPU build
         run: >-
           cmake -S . -B build-inpaint -DCMAKE_BUILD_TYPE=Release
@@ -87,8 +107,10 @@ jobs:
       - name: Build CLI, image contracts and isolated test driver
         run: >-
           cmake --build build-inpaint --config Release --parallel 2
-          --target crispembed-cli test-inpaint test-inpaint-cli-driver test-migan-diff
-          test-lama-fft test-lama test-lama-native
+          --target crispembed-cli test-inpaint test-inpaint-cli-driver test-migan-diff test-migan512-diff
+          test-latent-inpaint-attention test-latent-inpaint-pipeline test-latent-inpaint
+          test-latent-inpaint-ops
+          test-lama-ops test-lama-diff
       - name: Native and actual CLI model-free controls
         run: |
           bin=build-inpaint
@@ -98,11 +120,18 @@ jobs:
             suffix=.exe
           fi
           "$bin/test-inpaint$suffix"
-          "$bin/test-lama-fft$suffix"
-          "$bin/test-lama$suffix"
           "$bin/test-migan-diff$suffix" --contracts
           "$bin/test-migan-diff$suffix" --gate-controls
           "$bin/test-migan-diff$suffix" --observer-retention
+          "$bin/test-migan512-diff$suffix" --contracts
+          "$bin/test-migan512-diff$suffix" --gate-controls
+          "$bin/test-migan512-diff$suffix" --observer-retention
+          "$bin/test-latent-inpaint-attention$suffix"
+          "$bin/test-latent-inpaint-pipeline$suffix"
+          "$bin/test-latent-inpaint-ops$suffix"
+          "$bin/test-latent-inpaint$suffix" --contracts
+          "$bin/test-lama-ops$suffix"
+          "$bin/test-lama-diff$suffix" --contracts
           python tests/test_inpaint_cli.py --binary "$bin/test-inpaint-cli-driver$suffix" \
             --real-binary "$bin/crispembed$suffix" -v
       - name: Reproduce the reviewed model without framework dependencies

@@ -57,6 +57,7 @@ struct fixture {
 };
 
 struct processor_state {
+    int resolution = inpaint::tile_size;
     int calls = 0;
     int fail_at = 0;
     bool throw_error = false;
@@ -75,17 +76,17 @@ bool synthetic_tile(void * opaque, const uint8_t * rgb, const uint8_t * mask, ui
     }
     if (state.small) {
         const fixture & source = *state.small;
-        for (int y = 0; y < inpaint::tile_size; ++y)
-            for (int x = 0; x < inpaint::tile_size; ++x) {
+        for (int y = 0; y < state.resolution; ++y)
+            for (int x = 0; x < state.resolution; ++x) {
                 const size_t from =
                     size_t(std::min(y, source.height - 1)) * source.width + std::min(x, source.width - 1);
-                const size_t to = size_t(y) * inpaint::tile_size + x;
+                const size_t to = size_t(y) * state.resolution + x;
                 state.padding_matches &=
                     mask[to] == source.mask[from] && std::memcmp(rgb + 3 * to, source.rgb.data() + 3 * from, 3) == 0;
             }
     }
     const uint8_t first = state.origin_color ? (rgb[0] == 0 ? 10 : 210) : 17;
-    for (size_t i = 0; i < size_t(inpaint::tile_size) * inpaint::tile_size; ++i) {
+    for (size_t i = 0; i < size_t(state.resolution) * state.resolution; ++i) {
         output[3 * i] = first;
         output[3 * i + 1] = 91;
         output[3 * i + 2] = 203;
@@ -94,9 +95,9 @@ bool synthetic_tile(void * opaque, const uint8_t * rgb, const uint8_t * mask, ui
 }
 
 bool run(fixture & image, processor_state & state, std::string & error) {
-    return inpaint::detail::process_tiles_rgb8(synthetic_tile, &state, image.rgb.data(), image.rgb.size(),
-                                               image.mask.data(), image.mask.size(), image.width, image.height,
-                                               image.output.data(), image.output.size(), error);
+    return inpaint::detail::process_tiles_rgb8_variant(
+        state.resolution, synthetic_tile, &state, image.rgb.data(), image.rgb.size(), image.mask.data(),
+        image.mask.size(), image.width, image.height, image.output.data(), image.output.size(), error);
 }
 
 bool matches_constant(const fixture & image) {
@@ -197,6 +198,44 @@ void image_contracts() {
         state = processor_state{};
         check(run(image, state, error) && matches_constant(image), "a failed image does not poison a subsequent call");
     }
+}
+
+void image512_contracts() {
+    std::string error;
+    for (const auto & dimensions : { std::make_pair(1, 1), std::make_pair(511, 513), std::make_pair(512, 512),
+                                     std::make_pair(513, 513), std::make_pair(897, 897), std::make_pair(1281, 769) }) {
+        fixture image(dimensions.first, dimensions.second);
+        std::fill(image.mask.begin(), image.mask.end(), 255);
+        processor_state state;
+        state.resolution = 512;
+        check(run(image, state, error) && matches_constant(image),
+              "fixed512 full mask covers ring/edge/overlap geometry");
+    }
+    fixture small(17, 23);
+    small.mask.front() = small.mask.back() = 255;
+    processor_state padding;
+    padding.resolution = 512;
+    padding.small = &small;
+    check(run(small, padding, error) && padding.calls == 1 && padding.padding_matches && matches_constant(small),
+          "fixed512 small images replicate all RGB/mask padding and retain known pixels");
+    fixture image(896, 40);
+    const size_t overlap = size_t(20) * image.width + 447;
+    image.mask[overlap] = 255;
+    processor_state state;
+    state.resolution = 512;
+    state.origin_color = true;
+    check(run(image, state, error) && state.calls == 2 && image.output[3 * overlap] == 109,
+          "fixed512 overlap uses local447 weight65 and local63 weight64 with exact rounding");
+    std::fill(image.mask.begin(), image.mask.end(), 255);
+    const auto before = image.output;
+    state.calls = 0;
+    state.fail_at = 2;
+    check(!run(image, state, error) && image.output == before && error.find("(384,0)") != std::string::npos,
+          "fixed512 late tile failure leaves output unchanged and identifies384-stride tile");
+    state = processor_state{};
+    state.resolution = 1024;
+    check(!run(image, state, error) && state.calls == 0 && image.output == before,
+          "unsupported model resolution rejects before callback and preserves output");
 }
 
 void invalid_inputs() {
@@ -321,6 +360,7 @@ void gate_contracts() {
 
 static int crispembed_test_main() {
     image_contracts();
+    image512_contracts();
     invalid_inputs();
     hash_contracts();
     gate_contracts();

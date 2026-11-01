@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Convert the reviewed MI-GAN 256 Places2 state dictionary losslessly to F32.
+"""Convert MI-GAN 256 or512 Places2 state dictionaries losslessly to F32.
 
 Requires a completed original capture and exactly its checkpoint SHA. All state
 keys, learned filters, fixed masks, noise buffers and noise strengths survive.
@@ -75,6 +75,43 @@ def convert(source_dir, checkpoint, checkpoint_sha256, original_report, output):
     return receipt
 
 
+def convert512(source_dir, checkpoint, checkpoint_sha256, original_report, output):
+    """The independent512 protocol never edits or borrows256 quality receipts."""
+    from dump_migan512_reference import inventory as inventory512, load_original as load_original512
+    from migan512_reference_contract import SOURCE_COMMIT, validate_capture
+
+    report = validate_capture(original_report, checkpoint_sha256)
+    import torch
+
+    _, state = load_original512(source_dir, checkpoint, checkpoint_sha256)
+    if inventory512(state) != report["state"]:
+        raise ValueError("original512 captured tensor inventory differs")
+    tensors = [(name, tuple(tensor.shape), tensor.detach().cpu().numpy().astype("<f4", copy=False).tobytes())
+               for name, tensor in sorted(state.items())]
+    metadata = {"general.architecture": "migan", "general.name": "MI-GAN-512-Places2-experimental-F32",
+                "general.file_type": 0, "general.license": "MIT", "migan.image_size": 512,
+                "migan.source.commit": SOURCE_COMMIT, "migan.checkpoint.sha256": checkpoint_sha256,
+                "migan.input.contract": "RGB8;binary-mask8;255=fill;fixed512",
+                "migan.tensor.layout": "original contiguous OIHW; GGUF dimensions reversed; scalar=[1]"}
+    output = Path(output)
+    if output.exists():
+        raise ValueError("refuse to overwrite an existing converted artifact")
+    write_f32_gguf(output, tensors, metadata)
+    actual_metadata, actual = read_f32_gguf(output)
+    if actual_metadata != metadata or len(actual) != 177:
+        raise AssertionError("GGUF512 metadata/tensor inventory differs")
+    for name, shape, data in tensors:
+        if actual[name] != (shape or (1,), data):
+            raise AssertionError(f"GGUF512 byte/shape mapping differs: {name}")
+    receipt = {"schema": "crispembed-migan512-conversion-v1", "image_size": 512,
+               "checkpoint_sha256": checkpoint_sha256, "gguf_sha256": sha256(output),
+               "gguf_bytes": output.stat().st_size, "tensor_count": len(tensors),
+               "all_tensor_bytes_exact": True, "original_report_sha256": sha256(original_report),
+               "torch_version": torch.__version__, "native_qualified": False, "published": False}
+    output.with_suffix(".json").write_text(json.dumps(receipt, indent=2) + "\n")
+    return receipt
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source-dir", type=Path, required=True)
@@ -82,8 +119,10 @@ def main():
     parser.add_argument("--checkpoint-sha256", required=True)
     parser.add_argument("--original-report", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--image-size", type=int, choices=(256, 512), default=256)
     args = parser.parse_args()
-    convert(args.source_dir, args.checkpoint, args.checkpoint_sha256, args.original_report, args.output)
+    converter = convert if args.image_size == 256 else convert512
+    converter(args.source_dir, args.checkpoint, args.checkpoint_sha256, args.original_report, args.output)
 
 
 if __name__ == "__main__":
