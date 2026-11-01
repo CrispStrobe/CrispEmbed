@@ -56,6 +56,7 @@ def main():
     ap.add_argument("--threads", type=int, default=4)
     ap.add_argument("--frames", default="subtitle2,bar", help="comma list of synthetic 1920x1080 kinds")
     ap.add_argument("--skip-frames", action="store_true")
+    ap.add_argument("--cases", default=",".join(CASES), help="comma list of frozen fixture names")
     args = ap.parse_args()
     out = args.output_dir
     out.mkdir(parents=True, exist_ok=True)
@@ -74,10 +75,12 @@ def main():
         env = dict(base, **extra)
         entry = {"device": device, "label": label, "model_name": model.name, "model_sha256": sha256(model),
                  "model_bytes": model.stat().st_size, "env": extra, "cases": [], "frames": []}
-        for case in CASES:
+        for case in args.cases.split(","):
             f = args.fixtures
             cmd = [str(args.binary), "stages", str(args.f32), str(model), device, str(f / f"{case}-input.raw"),
-                   str(f / f"{case}-fill-mask.raw"), str(f / f"{case}-composited.raw"), str(args.iters),
+                   str(f / f"{case}-fill-mask.raw"),
+                   str(f / f"{case}-composited.raw") if (f / f"{case}-composited.raw").exists() else "-",
+                   str(args.iters),
                    str(args.threads)]
             code, stdout, stderr = run(cmd, env)
             log = out / f"{label}-{device}-{case}.log"
