@@ -143,3 +143,18 @@ padding, overlaps,384-stride origins, row-band recycling, malformed resolutions
 and transactional failure; their compiled execution belongs to hosted CI.
 No checkpoint download, original/native inference, link test or completed hosted
 qualification is claimed by this source implementation.
+
+## Hosted evidence (1 November 2026)
+
+The hosted panel has now run (`tools/ci-heavy/migan512_qualify.sh`; receipts
+`tests/results/migan512/`). Checkpoint first observed at
+`1d6087eee0aac8923ad2606be5d8caeb4824d3e4de331995e420c74e124a466a`
+(29,553,256 bytes); F32 GGUF `4bec681ef10f8ca914c5331f007a0605773cd09106d4fd6d9fcc0992f0a61739`
+(29,500,736 bytes). Eager and persistent-graph (`CRISPEMBED_INPAINT_GRAPH=1`)
+native runs pass all eight fixtures under the unchanged gates: 273/273
+full-stage comparisons with bit-exact observer neutrality, filled RGB max
+difference 1, PSNR 90–96 dB, every known byte exact. Generator time about 2.0 s
+per 512 tile on 4 hosted vCPUs; CLI peak RSS about 310 MB (eager) or 375 MB
+(graph). F16/Q8_0/Q4_K precision variants and the real-photo evaluation are in
+[the precision guide](inpainting-precision.md). Representative subtitle/video
+quality, temporal consistency and publication remain open.

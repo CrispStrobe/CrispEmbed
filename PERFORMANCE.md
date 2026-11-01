@@ -1,3 +1,21 @@
+## 1 November 2026 — Issue 71 MI-GAN512 / Moebius / PixelHacker CPU measurements (feat/issue71-latent-qual)
+
+Hosted ubuntu, 4 vCPU, 16 GB, `--threads 4`. Details:
+[inpainting precision guide](docs/inpainting-precision.md).
+
+| Engine / arm | Weights (denoiser + VAE) | One 512 inpaint (CLI) | Peak RSS (CLI) |
+| --- | ---: | ---: | ---: |
+| MI-GAN512 F32 eager / graph | 29.5 MB | 2.2 / 2.1 s | 307 / 375 MB |
+| MI-GAN512 Q8_0 / Q4_K (dequantized) | 12.6 / 11.1 MB | 2.1 / 2.1 s | 308 MB |
+| Moebius F32 eager (19 DDIM steps x CFG 2) | 905 + 335 MB | 510 s | 1.95 GB |
+| Moebius F32 graph (pre-fix run, numerically invalid) | 905 + 335 MB | 384 s | 3.6 GB |
+| Moebius F16 eager (dequantized at load) | 485 + 168 MB | 349 s | 2.00 GB |
+
+MI-GAN precision does not change latency or memory (activation-bound). The
+Moebius graph arm before the initializer/parameter pin produced wrong images
+and is a timing datum only. F32 vs F16 eager timings come from different hosted runners (dequantized F16 runs the same F32 arithmetic), so treat ±30% as runner variance. Latent native replay of the four-case panel takes
+23–35 min per arm (eager).
+
 ## 31 October 2026 — Native Marker-style CPU document conversion
 
 These are individual conversion durations from
