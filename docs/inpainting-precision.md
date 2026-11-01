@@ -19,7 +19,7 @@ and the real-photo panel (masked-region cosine vs F32 for photos):
 | Engine | F32 | F16 | Q8_0 | Q4_K |
 | --- | --- | --- | --- | --- |
 | MI-GAN512 | 1.000000 — qualifies | 0.999998 — qualifies | 0.9965 — qualifies | 0.9770 synthetic, 0.9019 street/DBNet photo (vs F32) — see below |
-| Moebius | 1.000000 (stage drift cos >= 0.9999995) — qualifies | 0.999935 (photos) — qualifies | 0.9795 (photos) — qualifies | **fails** on photos (0.859); mixed recipe pending |
+| Moebius | 1.000000 (stage drift cos >= 0.9999995) — qualifies | 0.999935 (photos) — qualifies | 0.9795 (photos) — qualifies | plain Q4_K **fails** on photos (0.859); **Q4_K-mix qualifies**: 0.9931 synthetic, 0.9449 photos |
 | PixelHacker | 1.000000 — qualifies | 0.999999 (synthetic; no F16 photo run) — qualifies | 0.9859 (photos) — qualifies | 0.9425 (photos) — qualifies, borderline |
 
 The owner's bar is against the original. On photos no original exists, so
@@ -307,3 +307,26 @@ for Moebius, or `CRISPEMBED_INPAINT_CPU_GLA=1` for PixelHacker;
   plain graph (1.77x on 4 vCPUs; delivery 5 measured 3.2x on 8 EPYC cores).
   F16/Q8_0/Q4_K `-o` arms, dequantized and stored-matmul, reproduce exactly the
   precision minima above (0.999998 / 0.9965 / 0.9770) at 1.42–1.95 s.
+
+### Moebius Q4_K-mix (run 41328479130): qualifies
+
+Denoiser Q4_K with all 630 `.attentions.` tensors at Q8_0 (selected by original
+name and mapped to stored names; `q4_k-mix` arm), and the whole VAE at Q8_0:
+246.9 + 89.3 MB, against 182.6 + 47.5 MB for plain Q4_K and 287.7 + 89.3 MB for
+Q8_0.
+
+| Panel | Q4_K-mix stored matmul, graph | Q4_K-mix dequantized, graph | Plain Q4_K (for reference) |
+| --- | --- | --- | --- |
+| Synthetic, min decoded cosine vs original | 0.993468 | 0.993085 | 0.976929 |
+| Synthetic, min RGB cosine vs F32 | 0.998452 (29.8–35.5 dB) | 0.998363 | 0.995211 |
+| Photos, min masked cosine vs F32 | **0.950377** (street/DBNet) | **0.944928** (street/DBNet) | 0.859217 |
+| Street photo, exact mask | 0.965636, 19.3 dB | 0.965409 | 0.917791 |
+| Ground truth, landscape exact (F32 16.81 dB) | 16.63 dB | 16.45 dB | 14.77 dB |
+| CLI per 512 image, peak RSS | 346 s, 2.9 GB | 417 s, 3.7 GB | 192 s, 2.9 GB |
+
+Both arms clear the 0.94 Q4_K bar on both panels, with the dequantized arm only
+just above it (0.9449). Ground-truth PSNR is at F32 level on five of six crops
+(face/DBNet: 16.24 dB against 18.54 dB at F32). The mix GGUF is preserved as
+`gguf/moebius-q4_k-mix.gguf` in the private Moebius repository. A
+`crispembed-quantize` built-in policy for this recipe is not added yet; the lane
+passes the 630 overrides explicitly.

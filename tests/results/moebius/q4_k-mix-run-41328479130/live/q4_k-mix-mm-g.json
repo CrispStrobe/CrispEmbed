@@ -1,0 +1,135 @@
+{
+  "engine": "moebius",
+  "backend": null,
+  "label": "q4_k-mix-mm-g",
+  "model": "moebius-q4_k-mix.gguf",
+  "vae": "sdxl-vae-q8_0.gguf",
+  "crop": 512,
+  "tiles": false,
+  "threads": 4,
+  "env": [
+    "CRISPEMBED_INPAINT_QUANT=1",
+    "CRISPEMBED_INPAINT_QUANT_MATMUL=1",
+    "CRISPEMBED_INPAINT_GRAPH=1"
+  ],
+  "reference_run": null,
+  "cases": [
+    {
+      "photo": "face.png",
+      "size": [
+        512,
+        512
+      ],
+      "resized_before_crop": null,
+      "naive_fill": {
+        "masked_pixels": 20918,
+        "psnr_db": 14.49,
+        "mae": 41.679
+      },
+      "runs": {
+        "exact-mask": {
+          "returncode": 0,
+          "seconds": 347.135,
+          "peak_rss_kib": 2985836,
+          "shape_ok": true,
+          "inpainted": {
+            "masked_pixels": 20918,
+            "psnr_db": 22.649,
+            "mae": 11.526
+          },
+          "outside_exact": true
+        },
+        "dbnet-mask": {
+          "returncode": 0,
+          "seconds": 347.602,
+          "peak_rss_kib": 3200152,
+          "shape_ok": true,
+          "inpainted": {
+            "masked_pixels": 20918,
+            "psnr_db": 16.244,
+            "mae": 22.926
+          },
+          "outside_exact": null
+        }
+      }
+    },
+    {
+      "photo": "landscape.jpg",
+      "size": [
+        512,
+        512
+      ],
+      "resized_before_crop": null,
+      "naive_fill": {
+        "masked_pixels": 20918,
+        "psnr_db": 14.642,
+        "mae": 35.254
+      },
+      "runs": {
+        "exact-mask": {
+          "returncode": 0,
+          "seconds": 347.62,
+          "peak_rss_kib": 2985460,
+          "shape_ok": true,
+          "inpainted": {
+            "masked_pixels": 20918,
+            "psnr_db": 16.626,
+            "mae": 21.279
+          },
+          "outside_exact": true
+        },
+        "dbnet-mask": {
+          "returncode": 0,
+          "seconds": 348.913,
+          "peak_rss_kib": 3200428,
+          "shape_ok": true,
+          "inpainted": {
+            "masked_pixels": 20918,
+            "psnr_db": 15.024,
+            "mae": 26.168
+          },
+          "outside_exact": null
+        }
+      }
+    },
+    {
+      "photo": "street.jpg",
+      "size": [
+        512,
+        512
+      ],
+      "resized_before_crop": null,
+      "naive_fill": {
+        "masked_pixels": 20918,
+        "psnr_db": 12.689,
+        "mae": 47.347
+      },
+      "runs": {
+        "exact-mask": {
+          "returncode": 0,
+          "seconds": 347.395,
+          "peak_rss_kib": 2985312,
+          "shape_ok": true,
+          "inpainted": {
+            "masked_pixels": 20918,
+            "psnr_db": 12.284,
+            "mae": 43.318
+          },
+          "outside_exact": true
+        },
+        "dbnet-mask": {
+          "returncode": 0,
+          "seconds": 348.152,
+          "peak_rss_kib": 3200364,
+          "shape_ok": true,
+          "inpainted": {
+            "masked_pixels": 20918,
+            "psnr_db": 10.082,
+            "mae": 60.29
+          },
+          "outside_exact": null
+        }
+      }
+    }
+  ]
+}

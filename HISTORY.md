@@ -52,8 +52,10 @@ receipts `tests/results/migan512/`, `tests/results/moebius/`,
   dequantized and stored-matmul (min decoded cosine vs original: Moebius
   1.0/0.9992/0.9768, PixelHacker 1.0/0.9993/0.9902). On real photos, however,
   Moebius Q4_K falls below the gate (masked cosine vs F32 0.918/0.859 on the street
-  crop, run 41305480287), so it is not qualified; PixelHacker Q4_K stays above it
-  (min 0.9425). Live photos recorded for all three engines.
+  crop, run 41305480287), so plain Q4_K is not qualified. The Q4_K-mix recipe (attention blocks and VAE at
+  Q8_0, run 41328479130) qualifies: 0.9931 synthetic, min masked 0.9449 on photos
+  (street 0.9656/0.9504). PixelHacker Q4_K stays above the bar (min 0.9425).
+  All GGUFs are preserved in the three private repos (anonymous access 401). Live photos recorded for all three engines.
 - HF private storage for the account is full: only MI-GAN512 Q8_0/Q4_K are
   preserved (`cstr/crispembed-migan512-private`, private).
 
