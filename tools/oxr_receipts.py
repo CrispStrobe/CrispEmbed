@@ -22,7 +22,11 @@ ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "tests/results/oxr"
 CASES = ["formula", "table", "japanese", "receipt", "german"]
 F32_LANES = ["hosted-41251971237", "hosted-41252889926"]
-PRECISION_LANES = {"f16": ["hosted-41255835479", "hosted-41255837490"]}
+PRECISION_LANES = {"f16": ["hosted-41255835479", "hosted-41255837490"],
+                   # Rejected recipes, retained: Q8_0 with F16 vision (German diverges at
+                   # token 35), Q8_0 with Q8_0 vision (token 68), plain Q4_K (3 of 5 diverge).
+                   "q8_0": ["hosted-41277219829"], "q8_0-v8": ["hosted-41273999602"],
+                   "q4_k": ["hosted-41274001351"]}
 ARMS = {"f32": "native-default.json", "f32-reuse": "native-reuse.json"}
 
 

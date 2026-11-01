@@ -2303,6 +2303,9 @@ bool license_requires_acceptance(const char * spdx) {
         "tongyi-qianwen-research",
         "tongyi-qianwen",
         "lfm1.0",
+        // OXR License: Apache-2.0 plus USD 2M commercial thresholds, SoMark attribution
+        // for online services, no competing hosted API (licenses/oxr-LICENSE).
+        "oxr",
         "other",
         nullptr,
     };

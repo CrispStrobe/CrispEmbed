@@ -138,6 +138,7 @@ GEMMA_LIKE = {
 
 VENDOR_RESTRICTED = {
     "lfm1.0",
+    "oxr",  # Apache-2.0 + additional commercial/attribution/hosted-API terms
 }
 
 

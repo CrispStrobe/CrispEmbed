@@ -71,7 +71,7 @@
       "filename": "oxr-1.0-q8_0.gguf",
       "from": "F32",
       "type": "q8_0",
-      "note": "LLM attention/MLP matrices Q8_0; SigLIP2 vision tower F16; all other tensors F32 (crispembed-quantize OXR policy)",
+      "note": "LLM attention/MLP matrices Q8_0; SigLIP2 vision tower F16; all other tensors F32 (crispembed-quantize OXR policy) — rejected: German page diverges (receipt q8_0-cpu)",
       "precision_receipt": "tests/results/oxr/precision.json",
       "precision_dtype": "q8_0"
     }
@@ -94,7 +94,7 @@
     "default_enabled": false,
     "gate": "F32 token-ID exact on all five frozen cases against the pinned original model; reduced precisions publish only when token-ID exact on every case",
     "registry_alias": "added only after upload, with the real published SHA256",
-    "recipe_note": "Hosted 41251971237/41252889926: F32 (default and reused decode graph) token-exact on five cases; F16 (41255835479/41255837490) token-exact on five; Q8_0 with Q8_0 vision diverged on the German page (41273999602), plain Q4_K on three of five (41274001351)."
+    "recipe_note": "Hosted 41251971237/41252889926: F32 (default and reused decode graph) token-exact on five cases; F16 (41255835479/41255837490) token-exact on five; Q8_0 with Q8_0 vision diverged on the German page (41273999602), plain Q4_K on three of five (41274001351). Q8_0 with F16 vision (41277219829) still diverges on German at token 35 and would save only 0.6 GB over F16 (3.84 vs 4.44 GB; ~0.7B parameters stay F32 by design), so Q8_0 is rejected and F16 is the published precision."
   },
   "card": {
     "title": "OXR-1.0",
