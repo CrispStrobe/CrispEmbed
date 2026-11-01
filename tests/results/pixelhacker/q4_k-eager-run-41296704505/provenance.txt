@@ -1,0 +1,7 @@
+source=f2f649a8326edb5904db0a0ea44600bc9bf31dbf model=pixelhacker arms=q4_k q4_k-mm q4_k-mm-g
+4
+               total        used        free      shared  buff/cache   available
+Mem:              15           0          13           0           1          14
+Swap:              2           0           2
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/root       145G   38G  107G  26% /

@@ -1,0 +1,20 @@
+/home/runner/work/_temp/out/native-f16-g.log:	Elapsed (wall clock) time (h:mm:ss or m:ss): 15:39.67
+/home/runner/work/_temp/out/native-f16-g.log:	Maximum resident set size (kbytes): 4524860
+/home/runner/work/_temp/out/cli-f16-g.log:	Elapsed (wall clock) time (h:mm:ss or m:ss): 3:54.34
+/home/runner/work/_temp/out/cli-f16-g.log:	Maximum resident set size (kbytes): 3781552
+/home/runner/work/_temp/out/native-q8_0-g.log:	Elapsed (wall clock) time (h:mm:ss or m:ss): 15:47.35
+/home/runner/work/_temp/out/native-q8_0-g.log:	Maximum resident set size (kbytes): 4526780
+/home/runner/work/_temp/out/cli-q8_0-g.log:	Elapsed (wall clock) time (h:mm:ss or m:ss): 3:52.87
+/home/runner/work/_temp/out/cli-q8_0-g.log:	Maximum resident set size (kbytes): 3779640
+/home/runner/work/_temp/out/native-q8_0-mm-g.log:	Elapsed (wall clock) time (h:mm:ss or m:ss): 12:11.91
+/home/runner/work/_temp/out/native-q8_0-mm-g.log:	Maximum resident set size (kbytes): 3739732
+/home/runner/work/_temp/out/cli-q8_0-mm-g.log:	Elapsed (wall clock) time (h:mm:ss or m:ss): 3:01.45
+/home/runner/work/_temp/out/cli-q8_0-mm-g.log:	Maximum resident set size (kbytes): 3024444
+/home/runner/work/_temp/out/native-q4_k-g.log:	Elapsed (wall clock) time (h:mm:ss or m:ss): 15:35.58
+/home/runner/work/_temp/out/native-q4_k-g.log:	Maximum resident set size (kbytes): 4525724
+/home/runner/work/_temp/out/cli-q4_k-g.log:	Elapsed (wall clock) time (h:mm:ss or m:ss): 3:51.14
+/home/runner/work/_temp/out/cli-q4_k-g.log:	Maximum resident set size (kbytes): 3783204
+/home/runner/work/_temp/out/native-q4_k-mm-g.log:	Elapsed (wall clock) time (h:mm:ss or m:ss): 12:58.40
+/home/runner/work/_temp/out/native-q4_k-mm-g.log:	Maximum resident set size (kbytes): 3602012
+/home/runner/work/_temp/out/cli-q4_k-mm-g.log:	Elapsed (wall clock) time (h:mm:ss or m:ss): 3:12.24
+/home/runner/work/_temp/out/cli-q4_k-mm-g.log:	Maximum resident set size (kbytes): 2886792

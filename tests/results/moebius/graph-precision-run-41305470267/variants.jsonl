@@ -1,0 +1,5 @@
+{"arm":"f16-g","denoiser_bytes":484657440,"denoiser_sha256":"9b73b7535b6e324736557dea358643dd210c81f29a9ac2cc1f03f143ba82624d","vae_bytes":167584160,"vae_sha256":"8b858f190923b1140a317f4890f6aa2ccf30d9edcfc63ae6d5271dce653aad87"}
+{"arm":"q8_0-g","denoiser_bytes":287685600,"denoiser_sha256":"7d3ada3995d2af628c83afbd79ce024c57ec73215d48273a866cd5056fa38c33","vae_bytes":89278912,"vae_sha256":"85702d7c9f817d3ebc5d92bfcdda823aeea263f11546e9ebdbfc9afe8e3a5f40"}
+{"arm":"q8_0-mm-g","denoiser_bytes":287685600,"denoiser_sha256":"7d3ada3995d2af628c83afbd79ce024c57ec73215d48273a866cd5056fa38c33","vae_bytes":89278912,"vae_sha256":"85702d7c9f817d3ebc5d92bfcdda823aeea263f11546e9ebdbfc9afe8e3a5f40"}
+{"arm":"q4_k-g","denoiser_bytes":182633952,"denoiser_sha256":"9e58e0f3048983a9acfbc3049d64dd5cbfd64cfdc7a74e93a4df7a8a7baeee12","vae_bytes":47516096,"vae_sha256":"41ed4490676c27125b3085f6e9752bb6285ec235b104268f1385a18232ff671e"}
+{"arm":"q4_k-mm-g","denoiser_bytes":182633952,"denoiser_sha256":"9e58e0f3048983a9acfbc3049d64dd5cbfd64cfdc7a74e93a4df7a8a7baeee12","vae_bytes":47516096,"vae_sha256":"41ed4490676c27125b3085f6e9752bb6285ec235b104268f1385a18232ff671e"}

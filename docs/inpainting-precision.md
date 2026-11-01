@@ -128,3 +128,58 @@ Q8_0 and Q4_K GGUFs. The account then hit HF's private storage limit, so F16/F32
 and all latent GGUFs could not be stored. Every file is reproducible from the
 recorded checkpoint digest with the converter and `crispembed-quantize`; the
 receipts record each digest.
+
+## Moebius and PixelHacker: original/native parity (hosted CPU, 4 vCPU)
+
+Original references: unchanged upstream pipelines on Kaggle T4 CUDA (F32,
+TF32 off, deterministic), four owned fixtures, 19 DDIM steps, all random
+inputs captured and replayed. Moebius used the exact contract environment;
+PixelHacker used the recorded torch 2.6.0 deviation (see the conversion guide).
+The native comparator's budgets are unchanged: component max abs 0.002,
+relative L2 0.003, cosine 0.99999; RGB max 2, MAE 0.1; known pixels exact.
+
+| Engine / path | Final RGB vs original | Known pixels | Strict components | Worst failing component |
+| --- | --- | --- | --- | --- |
+| Moebius F32 eager (41295724435) | max 1, generated MAE <= 0.0008: **pass** (4/4) | exact | 85/608 exceed | max abs 0.0346 (`unet.step18`), cosine 0.99999955, rel L2 9.5e-4 |
+| Moebius F32 graph, after pin fix (41302077937) | max 1: pass; 84–88 dB vs eager | exact | 89/608 exceed | max abs 0.0379, cosine 0.99999947 |
+| PixelHacker F32 eager (41295993654) | max 1, generated MAE <= 0.0007: **pass** (4/4) | exact | 163/702 exceed | max abs 0.0379 (`up_blocks.3.attentions.0`), cosine 0.99999999, rel L2 1.3e-4 |
+| PixelHacker F32 graph, after pin fix (41305472141) | max 1: pass; 84–88 dB vs eager | exact | 161/702 exceed | same pattern |
+
+So the frozen synthetic panel is **not** passed by either latent engine, and it
+is not relabelled. Every failing component exceeds only the absolute 0.002
+budget, on large-magnitude late-step UNet and attention tensors, while
+cosine >= 0.9999995 and relative L2 <= 1e-3 (inside its 0.003 budget). The
+first exceeding stage in every case is the VAE posterior moments (max abs
+0.004–0.005 on L2 ~2,900). This matches CPU-vs-CUDA F32 accumulation-order
+drift rather than an operator mismatch, and the decoded images agree to within
+one RGB level. An eps-relative budget would be a policy change for the owner.
+
+Initial failures kept on record: the first F32 replay could not open the
+denoiser GGUFs (63-byte name limit); before the gallocr pin fix, graph replays
+were wrong after their first execution (decoded cosine 0.12–0.16, generated
+MAE about 95 levels).
+
+## Moebius and PixelHacker precision variants
+
+Owner gate: decoded-image cosine vs the original capture, and generated-RGB
+cosine vs native F32 eager, both > 0.94 (minimum over the four fixtures).
+Denoiser and VAE are quantized to the same requested type.
+
+| Engine / variant (arm) | Denoiser + VAE bytes | min decoded cos vs original | min RGB cos vs F32 | RGB PSNR vs F32 | Gate |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Moebius F32 | 905.3 + 334.6 MB | 1.000000 | — | — | pass |
+| Moebius F16 (eager) | 484.7 + 167.6 MB | 1.000000 | 1.000000 | 65–68 dB | pass |
+| Moebius Q8_0 dequantized | 287.7 + 89.3 MB | 0.999354 | 0.999844 | 39.8–44.5 dB | pass |
+| Moebius Q8_0 stored matmul | 287.7 + 89.3 MB | 0.999248 | 0.999820 | 39.2–41.4 dB | pass |
+| Moebius Q4_K dequantized | 182.6 + 47.5 MB | 0.976839 | 0.995215 | 24.4–26.5 dB | pass |
+| Moebius Q4_K stored matmul | 182.6 + 47.5 MB | 0.977105 | 0.995256 | 24.5–26.5 dB | pass |
+| PixelHacker F32 | 3,449 + 334.6 MB | 1.000000 | — | — | pass |
+| PixelHacker F16 (eager and graph) | 1,725.6 + 167.6 MB | 0.999999 | 1.000000 | 66.7–77.2 dB | pass |
+| PixelHacker Q8_0 dequantized | 917.9 + 89.3 MB | 0.999631 | 0.999905 | 42.1–45.2 dB | pass |
+| PixelHacker Q8_0 stored matmul | 917.9 + 89.3 MB | 0.999417 | 0.999853 | 40.2–41.3 dB | pass |
+
+Q4_K images visibly differ from F32 (about 25 dB) even though the cosine gate
+passes; treat Q4_K as a size option with a quality cost. Stored matmul is where
+the memory saving is: Moebius CLI peak RSS 2.0 GB (F32 or dequantized) falls to
+1.17 GB (Q8_0) and 1.03 GB (Q4_K); PixelHacker falls from 4.5 GB to 1.8 GB
+(Q8_0).

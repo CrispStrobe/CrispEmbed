@@ -1,0 +1,1 @@
+graph arm q4_k-mm-g predates the pin fix; excluded
