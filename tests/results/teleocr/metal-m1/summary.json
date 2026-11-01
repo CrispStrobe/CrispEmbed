@@ -1,0 +1,196 @@
+{
+ "schema": "crispembed.qwen2vl.device-summary.v1",
+ "rows": [
+  {
+   "receipt": "f16-cpu.json",
+   "precision": "f16",
+   "device": "cpu",
+   "label": "",
+   "extra_env": {},
+   "cases": 6,
+   "exact": 6,
+   "divergences": {},
+   "consistent": true,
+   "warm_ms_sum": 604702.8521659999,
+   "cold_ms_sum": 654482.8462909999,
+   "max_rss_mib": 3304.03125,
+   "per_case_warm_ms": {
+    "text": 34045.061542,
+    "formula": 126627.964875,
+    "table": 39798.825208,
+    "code": 193365.302666,
+    "layout": 196959.373042,
+    "synthetic": 13906.324833
+   }
+  },
+  {
+   "receipt": "f16-metal-legacy.json",
+   "precision": "f16",
+   "device": "metal",
+   "label": "legacy",
+   "extra_env": {
+    "CRISPEMBED_QWEN2VL_METAL_FA": "0",
+    "CRISPEMBED_TELEOCR_METAL_F32_MATMUL": "0"
+   },
+   "cases": 3,
+   "exact": 3,
+   "divergences": {},
+   "consistent": true,
+   "warm_ms_sum": 39862.482167,
+   "cold_ms_sum": 42930.982792,
+   "max_rss_mib": 3206.140625,
+   "per_case_warm_ms": {
+    "text": 11389.842792,
+    "table": 22146.169292,
+    "synthetic": 6326.470083
+   }
+  },
+  {
+   "receipt": "f16-metal.json",
+   "precision": "f16",
+   "device": "metal",
+   "label": "",
+   "extra_env": {},
+   "cases": 6,
+   "exact": 6,
+   "divergences": {},
+   "consistent": true,
+   "warm_ms_sum": 112113.07924999998,
+   "cold_ms_sum": 120490.805501,
+   "max_rss_mib": 2354.828125,
+   "per_case_warm_ms": {
+    "text": 4516.352583,
+    "formula": 10141.013667,
+    "table": 9966.130667,
+    "code": 38561.055125,
+    "layout": 46569.90975,
+    "synthetic": 2358.617458
+   },
+   "min_final_cosine": 0.9982851342422,
+   "cosine_bar_pass": true,
+   "cosine_reference": "f16-cpu"
+  },
+  {
+   "receipt": "q4_k-m-cpu.json",
+   "precision": "q4_k-m",
+   "device": "cpu",
+   "label": "",
+   "extra_env": {},
+   "cases": 6,
+   "exact": 6,
+   "divergences": {},
+   "consistent": true,
+   "warm_ms_sum": 447144.316835,
+   "cold_ms_sum": 442097.449123,
+   "max_rss_mib": 2731.0625,
+   "per_case_warm_ms": {
+    "text": 20839.089584,
+    "formula": 47600.442792,
+    "table": 34581.94175,
+    "code": 148260.27525,
+    "layout": 186255.353375,
+    "synthetic": 9607.214084
+   },
+   "min_final_cosine": 0.9012044546717005,
+   "cosine_bar_pass": false,
+   "cosine_reference": "f16-cpu"
+  },
+  {
+   "receipt": "q4_k-m-metal.json",
+   "precision": "q4_k-m",
+   "device": "metal",
+   "label": "",
+   "extra_env": {},
+   "cases": 6,
+   "exact": 6,
+   "divergences": {},
+   "consistent": true,
+   "warm_ms_sum": 87716.797999,
+   "cold_ms_sum": 91376.20362500001,
+   "max_rss_mib": 3089.5,
+   "per_case_warm_ms": {
+    "text": 3820.136958,
+    "formula": 8323.038375,
+    "table": 6803.946833,
+    "code": 30467.228875,
+    "layout": 36035.680791,
+    "synthetic": 2266.766167
+   },
+   "min_final_cosine": 0.9012047445681409,
+   "cosine_bar_pass": false,
+   "cosine_reference": "f16-cpu"
+  },
+  {
+   "receipt": "q8_0-cpu.json",
+   "precision": "q8_0",
+   "device": "cpu",
+   "label": "",
+   "extra_env": {},
+   "cases": 6,
+   "exact": 6,
+   "divergences": {},
+   "consistent": true,
+   "warm_ms_sum": 493943.647501,
+   "cold_ms_sum": 453198.02924999996,
+   "max_rss_mib": 2812.609375,
+   "per_case_warm_ms": {
+    "text": 19609.58725,
+    "formula": 38651.218959,
+    "table": 28989.211625,
+    "code": 146375.551125,
+    "layout": 249772.83725,
+    "synthetic": 10545.241292
+   },
+   "min_final_cosine": 0.9909592896281607,
+   "cosine_bar_pass": true,
+   "cosine_reference": "f16-cpu"
+  },
+  {
+   "receipt": "q8_0-metal-legacy.json",
+   "precision": "q8_0",
+   "device": "metal",
+   "label": "legacy",
+   "extra_env": {
+    "CRISPEMBED_QWEN2VL_METAL_FA": "0",
+    "CRISPEMBED_TELEOCR_METAL_F32_MATMUL": "0"
+   },
+   "cases": 3,
+   "exact": 3,
+   "divergences": {},
+   "consistent": true,
+   "warm_ms_sum": 49344.716166,
+   "cold_ms_sum": 48318.608374,
+   "max_rss_mib": 2652.765625,
+   "per_case_warm_ms": {
+    "text": 13879.141708,
+    "table": 26723.782416,
+    "synthetic": 8741.792042
+   }
+  },
+  {
+   "receipt": "q8_0-metal.json",
+   "precision": "q8_0",
+   "device": "metal",
+   "label": "",
+   "extra_env": {},
+   "cases": 6,
+   "exact": 6,
+   "divergences": {},
+   "consistent": true,
+   "warm_ms_sum": 97087.663168,
+   "cold_ms_sum": 98160.46783499999,
+   "max_rss_mib": 2897.234375,
+   "per_case_warm_ms": {
+    "text": 4630.509042,
+    "formula": 9257.996792,
+    "table": 8969.334792,
+    "code": 31961.97575,
+    "layout": 40070.1965,
+    "synthetic": 2197.650292
+   },
+   "min_final_cosine": 0.9909592955214608,
+   "cosine_bar_pass": true,
+   "cosine_reference": "f16-cpu"
+  }
+ ]
+}
