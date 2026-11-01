@@ -18,11 +18,11 @@ struct dump_state {
     std::string dir;
     std::string index = "{";
     bool first = true;
-    std::set<std::string> skip;
+    std::set<std::string> skip, only;
 };
 void observe(void * user, const char * name, const float * values, size_t count, const int64_t * shape, int ndim) {
     auto & s = *static_cast<dump_state *>(user);
-    if (s.skip.count(name)) return;
+    if (s.skip.count(name) || (!s.only.empty() && !s.only.count(name))) return;
     FILE * f = std::fopen((s.dir + "/" + name + ".f32").c_str(), "wb");
     if (!f) throw std::runtime_error("cannot write dump");
     std::fwrite(values, sizeof(float), count, f);

@@ -8,6 +8,7 @@
 #include "core/gguf_loader.h"
 #include "core/gpu_backend_pref.h"
 #include "core/nfc.h"
+#include "core/split_f16_matmul.h"
 #include "core/token_utf8.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
@@ -34,7 +35,7 @@
 enum class gpu_attention_mode { none, dense, flash_half };
 
 struct oxr_ocr_context {
-    gpu_attention_mode gpu_attention = gpu_attention_mode::none;
+    gpu_attention_mode gpu_attention = gpu_attention_mode::none, gpu_vision_attention = gpu_attention_mode::none;
     core_gguf::WeightLoad weights;
     ggml_backend_t backend = nullptr, cpu = nullptr;
     ggml_backend_sched_t sched = nullptr;
@@ -72,7 +73,7 @@ struct oxr_ocr_context {
 };
 
 namespace {
-constexpr int graph_nodes = 8192;
+constexpr int graph_nodes = 16384;
 constexpr int vdim = 1152, vheads = 16, vhead_dim = 72, vlayers = 27;
 constexpr int dim = 1024, layers = 28, heads = 16, kv_heads = 8, head_dim = 128;
 // The converter stores the source prefix "visual_tokenizer.vit.vision_model." as
@@ -145,9 +146,21 @@ ggml_tensor * weight(oxr_ocr_context & c, const std::string & key) {
     if (it == c.weights.tensors.end()) throw std::runtime_error("OXR missing tensor: " + key);
     return it->second;
 }
+// GPU-only opt-in (CRISPEMBED_OXR_GPU_F16_HALF_ACT=1): leave F16-weight
+// products at the backend default precision. On Metal that is the half-tile
+// mul_mm (activations rounded to F16, F32 accumulation), the same activation
+// rounding as the CPU F16 vec_dot; PREC_F32 (_hp, F32 tiles) stays for every
+// F32/quantized weight. Set per loaded context in load().
+bool g_f16_half_act = false;
+// GPU-only opt-in (CRISPEMBED_OXR_GPU_SPLIT_F16=1): F32/F16 products as hi/lo
+// half-kernel terms (core/split_f16_matmul.h) instead of the slow PREC_F32
+// _hp kernel. Quantized weights keep PREC_F32 (the half kernel would round
+// their dequantized values to F16).
+bool g_split_f16 = false;
 ggml_tensor * mm(ggml_context * g, ggml_tensor * w, ggml_tensor * x) {
+    if (g_split_f16 && (w->type == GGML_TYPE_F32 || w->type == GGML_TYPE_F16)) return core_split_f16::mul_mat(g, w, x);
     auto * out = ggml_mul_mat(g, w, x);
-    ggml_mul_mat_set_prec(out, GGML_PREC_F32);
+    if (!(g_f16_half_act && w->type == GGML_TYPE_F16)) ggml_mul_mat_set_prec(out, GGML_PREC_F32);
     return out;
 }
 ggml_tensor * linear(graph & g, ggml_tensor * x, const std::string & base, bool bias) {
@@ -337,7 +350,15 @@ void load(oxr_ocr_context & c, const char * path) {
                                                                        : gpu_attention_mode::dense;
         // Non-flash lowering reads an F32 mask; flash_half keeps F16.
         if (c.gpu_attention == gpu_attention_mode::dense) c.flash = false;
+        // The unmasked vision tower may choose separately:
+        // CRISPEMBED_OXR_GPU_VISION_FLASH=1 native flash, =0 dense F32.
+        c.gpu_vision_attention = core_env::on("CRISPEMBED_OXR_GPU_VISION_FLASH") ? gpu_attention_mode::flash_half
+                                 : core_env::explicitly_off("CRISPEMBED_OXR_GPU_VISION_FLASH")
+                                     ? gpu_attention_mode::dense
+                                     : c.gpu_attention;
     }
+    g_f16_half_act = !ggml_backend_is_cpu(c.backend) && core_env::on("CRISPEMBED_OXR_GPU_F16_HALF_ACT");
+    g_split_f16 = !ggml_backend_is_cpu(c.backend) && core_env::on("CRISPEMBED_OXR_GPU_SPLIT_F16");
     c.cpu = ggml_backend_is_cpu(c.backend) ? c.backend : ggml_backend_cpu_init();
     if (!c.cpu) throw std::runtime_error("OXR CPU fallback initialization failed");
     ggml_backend_cpu_set_n_threads(c.cpu, c.threads);
@@ -440,11 +461,11 @@ ggml_tensor * attention_gpu_dense(graph & g, ggml_tensor * q, ggml_tensor * k, g
 }
 
 ggml_tensor * attention(graph & g, ggml_tensor * q, ggml_tensor * k, ggml_tensor * v, ggml_tensor * mask, int hd,
-                        int nh, int nkv, int tq, int tk) {
+                        int nh, int nkv, int tq, int tk, bool vision = false) {
     const float scale = 1.0f / std::sqrt(float(hd));
-    if (g.owner.gpu_attention == gpu_attention_mode::dense)
-        return attention_gpu_dense(g, q, k, v, mask, hd, nh, tq, scale);
-    if (g.owner.gpu_attention == gpu_attention_mode::flash_half) {
+    const auto mode = vision ? g.owner.gpu_vision_attention : g.owner.gpu_attention;
+    if (mode == gpu_attention_mode::dense) return attention_gpu_dense(g, q, k, v, mask, hd, nh, tq, scale);
+    if (mode == gpu_attention_mode::flash_half) {
         // Opt-in: the backend's native flash kernel at its own precision.
         auto * out = ggml_flash_attn_ext(g.ctx, q, k, v, mask, scale, 0.0f, 0.0f);
         return ggml_reshape_2d(g.ctx, out, int64_t(hd) * nh, tq);
@@ -541,7 +562,7 @@ std::vector<float> encode_vision(oxr_ocr_context & c, const oxr_profile::image_i
             k = ggml_cont(g.ctx, ggml_permute(g.ctx, k, 0, 2, 1, 3));
             v = ggml_cont(g.ctx, ggml_permute(g.ctx, v, 0, 2, 1, 3));
             // fullatt_block_indexes=null means FULL attention in every layer.
-            auto * attn = attention(g, q, k, v, nullptr, vhead_dim, vheads, vheads, n, n);
+            auto * attn = attention(g, q, k, v, nullptr, vhead_dim, vheads, vheads, n, n, true);
             x = ggml_add(g.ctx, residual, linear(g, attn, p + "self_attn.out_proj", true));
             residual = x;
             normalized = norm(g, x, p + "layer_norm2", 1e-6f, false);

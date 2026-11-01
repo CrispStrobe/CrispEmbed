@@ -10,6 +10,7 @@
 // bilinear grid sampling (no ggml op).
 
 #include "layout_detect.h"
+#include "core/split_f16_matmul.h"
 #include "core/gguf_loader.h"
 
 #include "ggml.h"
@@ -453,6 +454,19 @@ bool load(context ** out, const char * path, int n_threads) {
 // Graph helpers
 // ---------------------------------------------------------------------------
 
+// Heron (RT-DETRv2) graphs. Opt-in CRISPEMBED_LAYOUT_GPU_PREC_F32=1 requests
+// GGML_PREC_F32 on every MUL_MAT when the backend is a GPU (ggml-metal: F32
+// _hp tiles instead of the default half tiles). Default unchanged.
+static ggml_status heron_compute(ggml_backend_t backend, ggml_cgraph * gf) {
+    static const bool prec = core_env::on("CRISPEMBED_LAYOUT_GPU_PREC_F32");
+    if (prec && !ggml_backend_is_cpu(backend))
+        for (int i = 0; i < ggml_graph_n_nodes(gf); i++) {
+            ggml_tensor * node = ggml_graph_node(gf, i);
+            if (node->op == GGML_OP_MUL_MAT) ggml_mul_mat_set_prec(node, GGML_PREC_F32);
+        }
+    return ggml_backend_graph_compute(backend, gf);
+}
+
 static std::vector<float> tensor_to_f32(ggml_tensor * t) {
     if (!t) return {};
     int n = (int)ggml_nelements(t);
@@ -482,15 +496,24 @@ static std::vector<float> tensor_to_f32(ggml_tensor * t) {
 // falling back. Manual attention is a negligible cost here (Phase-2 is dominated
 // by the cpu_linear projections, not this attention). Numerically ~identical to
 // flash on backends that support it (verify: LAYOUT_DETECT_FLASH=1 A/B).
+// D-FINE GPU split-F16 products (CRISPEMBED_OXR_LAYOUT_GPU_SPLIT_F16=1, opt-in):
+// every product of a D-FINE GPU graph becomes hi/lo half-kernel terms
+// (core/split_f16_matmul.h) instead of the slow PREC_F32 _hp kernel. Set only
+// for the duration of a D-FINE forward on a GPU backend; heron never sees it.
+static thread_local bool g_layout_split_f16 = false;
+static ggml_tensor * lmm(ggml_context * g, ggml_tensor * a, ggml_tensor * b) {
+    return g_layout_split_f16 ? core_split_f16::mul_mat(g, a, b) : ggml_mul_mat(g, a, b);
+}
+
 static ggml_tensor * layout_attn(ggml_context * g, ggml_tensor * Q, ggml_tensor * K, ggml_tensor * V, float scale) {
     static const bool use_flash = (std::getenv("LAYOUT_DETECT_FLASH") != nullptr);
     if (use_flash) {
         return ggml_flash_attn_ext(g, Q, K, V, nullptr, scale, 0.0f, 0.0f);
     }
-    ggml_tensor * scores = ggml_mul_mat(g, K, Q);                    // [N_k, N_q, heads]
+    ggml_tensor * scores = lmm(g, K, Q);                             // [N_k, N_q, heads]
     scores = ggml_soft_max_ext(g, scores, nullptr, scale, 0.0f);     // softmax over keys
     ggml_tensor * Vt = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3)); // [N, head_dim, heads]
-    ggml_tensor * attn = ggml_mul_mat(g, Vt, scores);                // [head_dim, N_q, heads]
+    ggml_tensor * attn = lmm(g, Vt, scores);                         // [head_dim, N_q, heads]
     return ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));          // [head_dim, heads, N_q]
 }
 
@@ -540,6 +563,14 @@ static bool layout_conv_f16() {
 }
 static ggml_tensor * conv2d_dispatch(ggml_context * g, ggml_tensor * w, ggml_tensor * x, int stride, int pad) {
     if (layout_conv_direct()) return ggml_conv_2d_direct(g, w, x, stride, stride, pad, pad, 1, 1);
+    if (g_layout_split_f16) {
+        // ggml_conv_2d's own composition (F32 im2col + GEMM) with a split product.
+        ggml_tensor * im = ggml_im2col(g, w, x, stride, stride, pad, pad, 1, 1, true, GGML_TYPE_F32);
+        ggml_tensor * r = lmm(g, ggml_reshape_2d(g, im, im->ne[0], im->ne[3] * im->ne[2] * im->ne[1]),
+                              ggml_reshape_2d(g, w, w->ne[0] * w->ne[1] * w->ne[2], w->ne[3]));
+        r = ggml_reshape_4d(g, r, im->ne[1], im->ne[2], im->ne[3], w->ne[3]);
+        return ggml_cont(g, ggml_permute(g, r, 0, 1, 3, 2));
+    }
     if (layout_conv_f16()) {
         ggml_tensor * w16 = w->type == GGML_TYPE_F16 ? w : ggml_cast(g, w, GGML_TYPE_F16);
         // [N, OH, OW, IC*KH*KW] in F16, from the F32 activation directly.
@@ -592,7 +623,7 @@ static ggml_tensor * linear(ggml_context * g, ggml_tensor * x, ggml_tensor * w, 
     if (w->ne[0] != x->ne[0] && w->ne[1] == x->ne[0]) {
         w = ggml_cont(g, ggml_transpose(g, w));
     }
-    x = ggml_mul_mat(g, w, x);
+    x = lmm(g, w, x);
     if (b) {
         if (b->type != GGML_TYPE_F32) b = ggml_cast(g, b, GGML_TYPE_F32);
         x = ggml_add(g, x, b);
@@ -725,8 +756,8 @@ static ggml_tensor * decoder_self_attn(ggml_context * gc, ggml_tensor * inp, ggm
     // Q/K from (inp + pe), V from inp — using input weight tensors
     auto * inp_pos = ggml_add(gc, inp, pe_in);
     // ggml_mul_mat(W[in_d, out_d], x[in_d, N]) → result[out_d, N]
-    auto * qkv_pos = ggml_add(gc, ggml_mul_mat(gc, qkv_w_in, inp_pos), qkv_b_in);
-    auto * qkv_raw = ggml_add(gc, ggml_mul_mat(gc, qkv_w_in, inp), qkv_b_in);
+    auto * qkv_pos = ggml_add(gc, lmm(gc, qkv_w_in, inp_pos), qkv_b_in);
+    auto * qkv_raw = ggml_add(gc, lmm(gc, qkv_w_in, inp), qkv_b_in);
 
     // Extract Q[D,N], K[D,N] from qkv_pos; V[D,N] from qkv_raw
     auto * Q = ggml_cont(gc, ggml_view_2d(gc, qkv_pos, D, N_queries, qkv_pos->nb[1], 0));
@@ -747,7 +778,7 @@ static ggml_tensor * decoder_self_attn(ggml_context * gc, ggml_tensor * inp, ggm
     attn = ggml_reshape_2d(gc, attn, D, N_queries);
 
     // Output projection + residual + norm
-    attn = ggml_add(gc, ggml_mul_mat(gc, out_w_in, attn), out_b_in);
+    attn = ggml_add(gc, lmm(gc, out_w_in, attn), out_b_in);
     auto * out = ggml_add(gc, res_in, attn);
     return layer_norm(gc, out, norm_w, norm_b);
 }
@@ -1219,7 +1250,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
     // Compute
     LDBG("layout_detect: computing backbone + encoder...\n");
     auto t_phase1 = std::chrono::steady_clock::now();
-    ggml_backend_graph_compute(ctx->backend, gf);
+    heron_compute(ctx->backend, gf);
     const double _p1_compute_ms =
         std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_phase1).count();
 
@@ -1811,7 +1842,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
             }
             if (built) {
                 ggml_backend_tensor_set(mem_in, memory.data(), 0, (size_t)D * total_tokens * sizeof(float));
-                built = ggml_backend_graph_compute(ctx->backend, gf) == GGML_STATUS_SUCCESS;
+                built = heron_compute(ctx->backend, gf) == GGML_STATUS_SUCCESS;
             }
             if (built) {
                 for (int li = 0; li < 6; li++) {
@@ -1922,7 +1953,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
             ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "sa_out_w"), out_w_t.data(), 0, D * D * sizeof(float));
             ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "sa_out_b"), out_b_data.data(), 0, D * sizeof(float));
 
-            ggml_backend_graph_compute(ctx->backend, gf);
+            heron_compute(ctx->backend, gf);
 
             // Transpose ggml → CPU layout
             std::vector<float> to(D * N_queries);
@@ -2148,7 +2179,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
             ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "ffn_in"), tq.data(), 0, D * N_queries * sizeof(float));
             ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "ffn_res"), tr.data(), 0, D * N_queries * sizeof(float));
 
-            ggml_backend_graph_compute(ctx->backend, gf);
+            heron_compute(ctx->backend, gf);
 
             // Transpose back
             std::vector<float> to(D * N_queries);
@@ -2513,6 +2544,17 @@ ggml_tensor * f32(ggml_context * g, ggml_tensor * t) {
 
 enum class dact { none, relu, silu };
 
+// ggml_conv_2d_dw's composition (F32 im2col + broadcast GEMM) with a split product.
+ggml_tensor * conv2d_dw_split(ggml_context * g, ggml_tensor * a, ggml_tensor * b, int stride, int pad) {
+    ggml_tensor * new_a = ggml_reshape_4d(g, a, a->ne[0], a->ne[1], 1, a->ne[2] * a->ne[3]);
+    ggml_tensor * im = ggml_im2col(g, new_a, ggml_reshape_4d(g, b, b->ne[0], b->ne[1], 1, b->ne[2] * b->ne[3]), stride,
+                                   stride, pad, pad, 1, 1, true, GGML_TYPE_F32);
+    ggml_tensor * new_b = ggml_reshape_4d(g, im, im->ne[0], im->ne[2] * im->ne[1], b->ne[2], b->ne[3]);
+    new_a = ggml_reshape_4d(g, new_a, new_a->ne[0] * new_a->ne[1], new_a->ne[2], new_a->ne[3], 1);
+    ggml_tensor * r = lmm(g, new_a, new_b);
+    return ggml_reshape_4d(g, r, im->ne[1], im->ne[2], b->ne[2], b->ne[3]);
+}
+
 // ConvBNAct / ConvNormLayer_fuse / VGGBlock (deploy) / input_proj.
 ggml_tensor * dfine_conv_fwd(ggml_context * g, ggml_tensor * x, const dfine_conv & c, int stride, int pad,
                              bool depthwise, dact act) {
@@ -2520,9 +2562,10 @@ ggml_tensor * dfine_conv_fwd(ggml_context * g, ggml_tensor * x, const dfine_conv
     // CRISPEMBED_OXR_LAYOUT_DW_DIRECT=1 (opt-in, A/B): direct depthwise kernel
     // instead of im2col + mul_mat. Default stays the im2col path.
     static const bool dw_direct = core_env::on("CRISPEMBED_OXR_LAYOUT_DW_DIRECT");
-    ggml_tensor * y = !depthwise  ? conv2d_dispatch(g, w, x, stride, pad)
-                      : dw_direct ? ggml_conv_2d_dw_direct(g, w, x, stride, stride, pad, pad, 1, 1)
-                                  : ggml_conv_2d_dw(g, w, x, stride, stride, pad, pad, 1, 1);
+    ggml_tensor * y = !depthwise           ? conv2d_dispatch(g, w, x, stride, pad)
+                      : dw_direct          ? ggml_conv_2d_dw_direct(g, w, x, stride, stride, pad, pad, 1, 1)
+                      : g_layout_split_f16 ? conv2d_dw_split(g, w, x, stride, pad)
+                                           : ggml_conv_2d_dw(g, w, x, stride, stride, pad, pad, 1, 1);
     const int oc = (int)c.w->ne[3];
     if (c.scale) y = ggml_mul(g, y, ggml_reshape_3d(g, f32(g, c.scale), 1, 1, oc));
     if (c.shift) y = ggml_add(g, y, ggml_reshape_3d(g, f32(g, c.shift), 1, 1, oc));
@@ -2652,7 +2695,7 @@ bool dfine_gpu_prec_f32() {
 }
 
 bool run_graph(context * ctx, graph_scope & gs, const std::vector<std::pair<const char *, const float *>> & inputs) {
-    if (ctx->dfine && ctx->dfine->gpu && dfine_gpu_prec_f32())
+    if (ctx->dfine && ctx->dfine->gpu && dfine_gpu_prec_f32() && !g_layout_split_f16)
         for (int i = 0; i < ggml_graph_n_nodes(gs.gf); i++) {
             ggml_tensor * node = ggml_graph_node(gs.gf, i);
             if (node->op == GGML_OP_MUL_MAT) ggml_mul_mat_set_prec(node, GGML_PREC_F32);
@@ -2933,6 +2976,11 @@ static std::vector<float> dfine_preprocess(const dfine_model & m, const uint8_t 
 
 static bool dfine_forward(context * ctx, const float * chw, int orig_w, int orig_h, std::vector<candidate> & out) {
     const dfine_model & m = *ctx->dfine;
+    static const bool split_gate = core_env::on("CRISPEMBED_OXR_LAYOUT_GPU_SPLIT_F16");
+    struct split_scope {
+        explicit split_scope(bool on) { g_layout_split_f16 = on; }
+        ~split_scope() { g_layout_split_f16 = false; }
+    } split_guard(m.gpu && split_gate);
     const int S = m.image, D = m.hidden, NQ = m.num_queries, NC = m.num_classes, NT = m.total_tokens;
     const int R = m.reg_max + 1;
     using clock = std::chrono::steady_clock;
@@ -3038,7 +3086,7 @@ static bool dfine_forward(context * ctx, const float * chw, int orig_w, int orig
     capture_host(ctx, "dec.topk_anchor", topk_anchor.data(), { 4, NQ });
     std::vector<float> ref_unact;
     {
-        graph_scope gs(64);
+        graph_scope gs(256);
         auto * c = gs.input("content", D, NQ);
         auto * delta = mlp(gs.g, c, m.enc_bbox, 3);
         gs.output(delta, "dec.enc_bbox_delta");
@@ -3072,7 +3120,7 @@ static bool dfine_forward(context * ctx, const float * chw, int orig_w, int orig
         // Graph A: query position head, self-attention, sampling offsets and weights.
         std::vector<float> self_out, offsets, weights;
         {
-            graph_scope gs(256);
+            graph_scope gs(1024);
             auto * tgt = gs.input("tgt", D, NQ);
             auto * rp = gs.input("ref", 4, NQ);
             // ggml_clamp is an in-place view; materialize it so the output buffer is not reused.
@@ -3105,7 +3153,7 @@ static bool dfine_forward(context * ctx, const float * chw, int orig_w, int orig
         // Graph B: gate, FFN, box/score heads.
         std::vector<float> layer_out, corners, pre_delta;
         {
-            graph_scope gs(256);
+            graph_scope gs(1024);
             auto * self = gs.input("self", D, NQ);
             auto * cr = gs.input("cross", D, NQ);
             auto * po = gs.input("prev_out", D, NQ);
