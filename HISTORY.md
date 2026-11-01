@@ -16,7 +16,7 @@ Lineage: no bit-equal public tensors; nearest D-FINE-M Objects365 (cosine 0.95/0
 
 ## 1 November 2026 — OXR-1.0 on CUDA (Kaggle T4): German page diverges at every precision
 
-Kernel `chr1s4/crispembed-oxr-gpu-variants` v1 at `44533d44` ([report](tests/results/oxr/kaggle-cuda-t4/report.json)),
+Kernel `${KAGGLE_ACCOUNT}/crispembed-oxr-gpu-variants` v1 at `44533d44` ([report](tests/results/oxr/kaggle-cuda-t4/report.json)),
 CRISPEMBED_OXR_GPU=1 on a Tesla T4, compared with the original model's committed token IDs:
 the published F16 is exact on formula, table, Japanese and receipt but diverges on the German page
 at token 87 (exact on CPU); Q8_0 is exact on four and diverges on German at token 55; Q4_K diverges
@@ -46,7 +46,7 @@ Smoke only: no subtitle/video quality, seam or flicker claim; CPU/F32 only so fa
 
 ## 1 November 2026 — MinerU2.5-Pro on CUDA (Kaggle T4): every precision token-exact on three cases
 
-Kaggle kernel `chr1s4/crispembed-mineru25-pro-gpu-variants` at `692f2130` (an earlier
+Kaggle kernel `${KAGGLE_ACCOUNT}/crispembed-mineru25-pro-gpu-variants` at `692f2130` (an earlier
 qualification source; [report](tests/results/mineru25/kaggle-cuda-t4/report.json)) on a Tesla T4:
 F32, F16, Q8_0 (Q8_0 vision), Q4_K, Q4_K+Q8_0-decoder and Q4_K+F16-decoder all decode the pinned
 original Python model's token IDs, text and EOS exactly on formula (29 tokens), table (140) and
