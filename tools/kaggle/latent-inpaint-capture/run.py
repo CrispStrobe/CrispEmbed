@@ -38,10 +38,10 @@ TORCH = {"moebius": ("2.7.1", "0.22.1", "https://download.pytorch.org/whl/cu126"
 PACKAGES = {
     "moebius": ["diffusers==0.38.0", "accelerate==1.14.0", "transformers", "flash-linear-attention==0.3.2",
                 "safetensors", "pillow", "numpy", "opencv-python-headless", "pyyaml", "omegaconf", "timm",
-                "tqdm", "toml", "einops", "scipy"],
+                "tqdm", "toml", "einops", "scipy", "setuptools"],
     "pixelhacker": ["diffusers==0.30.2", "accelerate==0.34.0", "transformers==4.40.0", "tokenizers==0.19.0",
                     "einops==0.7.0", "timm==0.9.11", "omegaconf==2.3.0", "pyyaml", "numpy<2",
-                    "opencv-python-headless", "pillow", "safetensors", "tqdm", "scipy"],
+                    "opencv-python-headless", "pillow", "safetensors", "tqdm", "scipy", "setuptools"],
 }
 # Upstream pins triton 3.2.0 beside torch 2.3.0 (whose metadata asks for 2.3.0),
 # so these two are installed after resolution, exactly as the author's list.
