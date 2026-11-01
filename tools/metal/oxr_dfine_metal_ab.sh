@@ -7,7 +7,7 @@
 # (--resize generic: this host's OpenCV has no IPP, and native preprocessing equals
 # the generic resize bit for bit). Each arm writes OUT_DIR/<page>/diff-<arm>.json via
 # test-oxr-dfine-diff, whose budgets are fixed in tests/oxr_dfine_diff.cpp.
-# Arms: cpu metal metal-halfmm metal-conv-f16 metal-dw-direct metal-conv-direct metal-flash metal-split metal-split-dw metal-hpmm metal-hpmm-dw
+# Arms: cpu auto (no gate: Apple default) metal-legacy metal metal-halfmm metal-conv-f16 metal-dw-direct metal-conv-direct metal-flash metal-split metal-split-dw metal-hpmm metal-hpmm-dw
 set -uo pipefail
 B=$1 MODEL=$2 REF=$3 OUT=$4; shift 4
 ARMS=${*:-"cpu metal"}
@@ -19,6 +19,8 @@ for page in $PAGES; do
         env_args=()
         case $arm in
             cpu) env_args=(LAYOUT_DETECT_FORCE_CPU=1) ;;
+            auto) env_args=(OXR_ARM_AUTO=1) ;;
+            metal-legacy) env_args=(CRISPEMBED_OXR_LAYOUT_GPU=1 CRISPEMBED_OXR_LAYOUT_GPU_HP_MM=0 CRISPEMBED_OXR_LAYOUT_DW_DIRECT=0) ;;
             metal) env_args=(CRISPEMBED_OXR_LAYOUT_GPU=1) ;;
             metal-halfmm) env_args=(CRISPEMBED_OXR_LAYOUT_GPU=1 CRISPEMBED_OXR_LAYOUT_GPU_PREC_F32=0) ;;
             metal-conv-f16) env_args=(CRISPEMBED_OXR_LAYOUT_GPU=1 LAYOUT_CONV_F16=1) ;;

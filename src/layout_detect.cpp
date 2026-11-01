@@ -200,6 +200,13 @@ struct context {
 };
 
 static bool dfine_load(context * ctx, const char * path, gguf_context * meta);
+#ifndef LAYOUT_AUTO_METAL
+#if defined(__APPLE__)
+#define LAYOUT_AUTO_METAL 1
+#else
+#define LAYOUT_AUTO_METAL 0
+#endif
+#endif
 
 // ---------------------------------------------------------------------------
 // Loading
@@ -501,6 +508,7 @@ static std::vector<float> tensor_to_f32(ggml_tensor * t) {
 // (core/split_f16_matmul.h) instead of the slow PREC_F32 _hp kernel. Set only
 // for the duration of a D-FINE forward on a GPU backend; heron never sees it.
 static thread_local bool g_layout_split_f16 = false;
+static thread_local bool g_dfine_gpu_forward = false; // set during a D-FINE forward on a GPU backend
 static ggml_tensor * lmm(ggml_context * g, ggml_tensor * a, ggml_tensor * b) {
     return g_layout_split_f16 ? core_split_f16::mul_mat(g, a, b) : ggml_mul_mat(g, a, b);
 }
@@ -2563,7 +2571,11 @@ ggml_tensor * dfine_conv_fwd(ggml_context * g, ggml_tensor * x, const dfine_conv
     ggml_tensor * w = f32(g, c.w);
     // CRISPEMBED_OXR_LAYOUT_DW_DIRECT=1 (opt-in, A/B): direct depthwise kernel
     // instead of im2col + mul_mat. Default stays the im2col path.
-    static const bool dw_direct = core_env::on("CRISPEMBED_OXR_LAYOUT_DW_DIRECT");
+    // GPU forwards default to the direct kernel (region-exact on Metal, faster);
+    // CRISPEMBED_OXR_LAYOUT_DW_DIRECT=0 restores im2col there. CPU default unchanged.
+    static const bool dw_on = core_env::on("CRISPEMBED_OXR_LAYOUT_DW_DIRECT");
+    static const bool dw_off = core_env::explicitly_off("CRISPEMBED_OXR_LAYOUT_DW_DIRECT");
+    const bool dw_direct = dw_on || (g_dfine_gpu_forward && !dw_off);
     ggml_tensor * y = !depthwise           ? conv2d_dispatch(g, w, x, stride, pad)
                       : dw_direct          ? ggml_conv_2d_dw_direct(g, w, x, stride, stride, pad, pad, 1, 1)
                       : g_layout_split_f16 ? conv2d_dw_split(g, w, x, stride, pad)
@@ -2780,13 +2792,33 @@ static bool dfine_load(context * ctx, const char * path, gguf_context * meta) {
     ctx->num_classes = 12;
     ctx->input_h = ctx->input_w = 960;
 
-    // Backend: CPU unless explicitly opted into the GPU path (unqualified).
+    // Backend. CRISPEMBED_OXR_LAYOUT_GPU=1 forces the GPU, =0 (or
+    // LAYOUT_DETECT_FORCE_CPU=1) the CPU. Unset = auto: Metal on Apple builds,
+    // qualified region-exact on five pages and ~2.5x faster than CPU in the
+    // same window (tests/results/oxr-dfine/metal-m1/); CPU everywhere else.
     const bool force_cpu = (getenv("LAYOUT_DETECT_FORCE_CPU") && atoi(getenv("LAYOUT_DETECT_FORCE_CPU")));
-    m->gpu = core_env::on("CRISPEMBED_OXR_LAYOUT_GPU") && !force_cpu;
+    const bool auto_gpu = !core_env::on("CRISPEMBED_OXR_LAYOUT_GPU") &&
+                          !core_env::explicitly_off("CRISPEMBED_OXR_LAYOUT_GPU") && LAYOUT_AUTO_METAL;
+    m->gpu = (core_env::on("CRISPEMBED_OXR_LAYOUT_GPU") || auto_gpu) && !force_cpu;
     ctx->backend = m->gpu ? crispasr_init_gpu_backend() : nullptr;
+    if (ctx->backend && auto_gpu && std::string(ggml_backend_name(ctx->backend)).find("MTL") == std::string::npos &&
+        std::string(ggml_backend_name(ctx->backend)).find("Metal") == std::string::npos) {
+        ggml_backend_free(ctx->backend); // auto mode qualifies Metal only
+        ctx->backend = nullptr;
+    }
     if (!ctx->backend) {
         ctx->backend = ggml_backend_cpu_init();
         m->gpu = false;
+    }
+    // GPU: PREC_F32 products on ggml-metal's F32-tile _hp mul_mm (ggml patch,
+    // process-wide; an explicit GGML_METAL_PREC_F32_MM wins). Opt out with
+    // CRISPEMBED_OXR_LAYOUT_GPU_HP_MM=0 (mat-vec PREC_F32 route, ~2.5x slower).
+    if (m->gpu && !core_env::explicitly_off("CRISPEMBED_OXR_LAYOUT_GPU_HP_MM")) {
+#ifdef _WIN32
+        if (!std::getenv("GGML_METAL_PREC_F32_MM")) _putenv_s("GGML_METAL_PREC_F32_MM", "1");
+#else
+        setenv("GGML_METAL_PREC_F32_MM", "1", 0);
+#endif
     }
     if (ggml_backend_is_cpu(ctx->backend)) ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
     if (!core_gguf::load_weights(path, ctx->backend, "layout", ctx->wl)) {
@@ -3022,9 +3054,12 @@ static bool dfine_forward(context * ctx, const float * chw, int orig_w, int orig
     const dfine_model & m = *ctx->dfine;
     static const bool split_gate = core_env::on("CRISPEMBED_OXR_LAYOUT_GPU_SPLIT_F16");
     struct split_scope {
-        explicit split_scope(bool on) { g_layout_split_f16 = on; }
-        ~split_scope() { g_layout_split_f16 = false; }
-    } split_guard(m.gpu && split_gate);
+        split_scope(bool on, bool gpu) {
+            g_layout_split_f16 = on;
+            g_dfine_gpu_forward = gpu;
+        }
+        ~split_scope() { g_layout_split_f16 = g_dfine_gpu_forward = false; }
+    } split_guard(m.gpu && split_gate, m.gpu);
     const int S = m.image, D = m.hidden, NQ = m.num_queries, NC = m.num_classes, NT = m.total_tokens;
     const int R = m.reg_max + 1;
     using clock = std::chrono::steady_clock;
