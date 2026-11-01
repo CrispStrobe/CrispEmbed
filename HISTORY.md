@@ -16,7 +16,7 @@ construction: approximate token glyph pixels in image-bearing table crops;
 cross-page table merge not ported. Model-backed lane
 `tools/ci-heavy/mineru25_doc_parity.sh`: initial run 41250564149 passed all
 weight-free gates on CPython 3.12 but 404ed on a wrong GGUF filename; run
-41251475795 is 8/8 byte-identical (JSON, Markdown, 54 region requests) and
+41251475795 is 8/8 byte-identical (JSON, Markdown, 50 requests: 8 layout + 42 regions) and
 8/8 on recorded replay.
 
 ## 31 October 2026 — Native Marker-style document processing with TeleOCR

@@ -114,7 +114,7 @@ Model-backed (hosted run 41251475795, published F16 GGUF, CPython 3.12.15,
 x86 CPU, `max_new_tokens=2048`, image analysis on): all **8/8** protocol cases
 are byte-identical between `two_step_extract`+`to_markdown` and
 `native_two_step_extract` in blocks JSON and Markdown, with identical
-per-region prompts, crop sizes, token IDs, text and EOS (54 region requests,
+per-request prompts, crop sizes, token IDs, text and EOS (50 requests: 8 layout + 42 regions,
 none capped); the recorded recognition also replays identically (8/8). The
 weight-free gates passed on the same host with Unicode tables regenerated for
 CPython 3.12. Route wall times are equal within noise (inference dominates).
