@@ -1,0 +1,55 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "-m",
+  "glm-ocr-f16.gguf",
+  "--ocr",
+  "fox.png",
+  "--ocr-max-tokens",
+  "128"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    5.25
+   ],
+   "gpu_mem_peak_mib": 2729,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "glm_ocr: loading $SCRATCH/models/glm-ocr-f16.gguf\n  Vision: 24L, 1024d, 16H, patch=14, image=336\n  LLM: 16L, 1536d, 16H/8KV, hd=128, inter=4608, vocab=59392\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\n  Ready (GPU, 4 threads)\n  smart-resize 800x200 -> 812x196 (grid 58x14)\n  KV cache: 16 layers, max_seq=359, 22.4 MB\n  Spliced 203 image tokens into 215 prompt tokens\n  gen[0]: token=1026 score=28.64 (prefill 215)\n  gen[1]: token=6123 score=24.34\n  gen[2]: token=24257 score=25.87\n  gen[3]: token=292 score=26.62\n  gen[4]: token=1828 score=32.35\n  gen[5]: token=612 score=26.30\n  gen[6]: token=21798 score=29.53\n  gen[7]: token=1403 score=24.61\n  gen[8]: token=283 score=29.14\n  gen[9]: token=37821 score=24.94\n  gen[10]: token=8942 score=24.60\n  gen[11]: token=46 score=26.75\n  gen[12]: token=32 score=24.95\n  gen[13]: token=49 score=33.45\n  gen[14]: token=50 score=33.69\n  gen[15]: token=51 score=33.83\n  gen[16]: token=52 score=32.69\n  gen[17]: token=53 score=31.88\n  gen[18]: token=59253 score=24.42\n",
+   "stdout_sha256": "afae153d8d54b9fa514b1afc9643019a1aec552fce144714b96a5e574a4da49c",
+   "stdout": "The quick brown fox jumps over the lazy dog. 12345\n",
+   "vs_cpu": {
+    "byte_identical": true,
+    "text_exact": true,
+    "char_ratio": 1.0,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    17.077
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "glm_ocr: loading $SCRATCH/models/glm-ocr-f16.gguf\n  Vision: 24L, 1024d, 16H, patch=14, image=336\n  LLM: 16L, 1536d, 16H/8KV, hd=128, inter=4608, vocab=59392\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\n  Ready (CPU, 4 threads)\n  smart-resize 800x200 -> 812x196 (grid 58x14)\n  KV cache: 16 layers, max_seq=359, 22.4 MB\n  Spliced 203 image tokens into 215 prompt tokens\n  gen[0]: token=1026 score=28.64 (prefill 215)\n  gen[1]: token=6123 score=24.34\n  gen[2]: token=24257 score=25.86\n  gen[3]: token=292 score=26.62\n  gen[4]: token=1828 score=32.35\n  gen[5]: token=612 score=26.30\n  gen[6]: token=21798 score=29.52\n  gen[7]: token=1403 score=24.59\n  gen[8]: token=283 score=29.14\n  gen[9]: token=37821 score=24.92\n  gen[10]: token=8942 score=24.60\n  gen[11]: token=46 score=26.73\n  gen[12]: token=32 score=24.94\n  gen[13]: token=49 score=33.45\n  gen[14]: token=50 score=33.70\n  gen[15]: token=51 score=33.83\n  gen[16]: token=52 score=32.68\n  gen[17]: token=53 score=31.87\n  gen[18]: token=59253 score=24.41\n",
+   "stdout_sha256": "afae153d8d54b9fa514b1afc9643019a1aec552fce144714b96a5e574a4da49c",
+   "stdout": "The quick brown fox jumps over the lazy dog. 12345\n"
+  }
+ },
+ "precision": "f16",
+ "bar": 0.98,
+ "seconds": 59.5,
+ "id": "glm-ocr-f16.fox",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

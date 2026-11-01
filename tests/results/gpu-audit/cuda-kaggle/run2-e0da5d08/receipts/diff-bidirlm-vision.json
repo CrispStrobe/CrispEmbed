@@ -1,0 +1,49 @@
+{
+ "kind": "diff",
+ "binary": "test-bidirlm-vision-diff",
+ "arms": {
+  "cuda": {
+   "rc": 0,
+   "wall_s": 2.923,
+   "gpu_mem_peak_mib": 5241,
+   "cuda_used": true,
+   "n_stages": 3,
+   "stages": {
+    "image_embeds": 0.997995,
+    "deepstack.0": 0.999677,
+    "deepstack.1": 0.992434
+   },
+   "worst_stage": [
+    "deepstack.1",
+    0.992434
+   ],
+   "threshold_fails": [],
+   "threshold_missing": [],
+   "stdout_tail": "  \u001b[32m[PASS]\u001b[0m encode_image_raw returns vision features\n  n_merged=150 dim=2048 n_deepstack=2\n  image_embeds: cos=0.997995 max_abs=1.648e+00 PASS  (min-row=0.9546)\n  \u001b[32m[PASS]\u001b[0m image_embeds cos >= threshold\n  deepstack.0: cos=0.999677 max_abs=3.043e-01 PASS  (min-row=0.9984)\n  \u001b[32m[PASS]\u001b[0m deepstack.0 cos >= threshold\n  deepstack.1: cos=0.992434 max_abs=5.674e+00 PASS  (min-row=0.5144)\n  \u001b[32m[PASS]\u001b[0m deepstack.1 cos >= threshold\n\n=== Results: 4 passed, 0 failed ===\n\ncrispembed_diff: loaded 5 tensors from $SCRATCH/models/bidirlm-vision-ref.gguf\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispembed: using CUDA0 backend with CPU fallback\ndecoder_embed: stale GGUF — recovered spatial_merge_size=2 from bidirlm.vision.spatial_merge_size.\ndecoder_embed: stale GGUF — defaulting mrope_section to [24,20,20] (BidirLM-Omni reference). Re-export with the latest converter for explicit metadata.\ndecoder_embed: stale GGUF — recovered image_token_id=151655, vision_start=151652, vision_end=151653 by token-string lookup.\ndecoder_embed: n_vocab 0 → 151936 (from token_embd)\ndecoder_embed: loaded 28 layers, 2048 dims, 151936 vocab, 16 heads (8 kv), rope_theta=5000000, pool=mean, bidirectional\ncrispembed: GPT-2 BPE tokenizer (151936 tokens, 151387 merges)\nbidirlm_vision: loaded depth=24 hidden=1024 out=2048 patch=16 merge=2 num_pos=2304 deepstack_at=[8,16,24]\n"
+  },
+  "cpu": {
+   "rc": 0,
+   "wall_s": 10.099,
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "n_stages": 3,
+   "stages": {
+    "image_embeds": 0.997717,
+    "deepstack.0": 0.999684,
+    "deepstack.1": 0.992068
+   },
+   "worst_stage": [
+    "deepstack.1",
+    0.992068
+   ],
+   "threshold_fails": [],
+   "threshold_missing": [],
+   "stdout_tail": "  \u001b[32m[PASS]\u001b[0m encode_image_raw returns vision features\n  n_merged=150 dim=2048 n_deepstack=2\n  image_embeds: cos=0.997717 max_abs=6.418e-01 PASS  (min-row=0.9552)\n  \u001b[32m[PASS]\u001b[0m image_embeds cos >= threshold\n  deepstack.0: cos=0.999684 max_abs=2.833e-01 PASS  (min-row=0.9986)\n  \u001b[32m[PASS]\u001b[0m deepstack.0 cos >= threshold\n  deepstack.1: cos=0.992068 max_abs=5.499e+00 PASS  (min-row=0.5129)\n  \u001b[32m[PASS]\u001b[0m deepstack.1 cos >= threshold\n\n=== Results: 4 passed, 0 failed ===\n\ncrispembed_diff: loaded 5 tensors from $SCRATCH/models/bidirlm-vision-ref.gguf\nggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\ndecoder_embed: stale GGUF — recovered spatial_merge_size=2 from bidirlm.vision.spatial_merge_size.\ndecoder_embed: stale GGUF — defaulting mrope_section to [24,20,20] (BidirLM-Omni reference). Re-export with the latest converter for explicit metadata.\ndecoder_embed: stale GGUF — recovered image_token_id=151655, vision_start=151652, vision_end=151653 by token-string lookup.\ndecoder_embed: n_vocab 0 → 151936 (from token_embd)\ndecoder_embed: loaded 28 layers, 2048 dims, 151936 vocab, 16 heads (8 kv), rope_theta=5000000, pool=mean, bidirectional\ncrispembed: GPT-2 BPE tokenizer (151936 tokens, 151387 merges)\nbidirlm_vision: loaded depth=24 hidden=1024 out=2048 patch=16 merge=2 num_pos=2304 deepstack_at=[8,16,24]\n"
+  }
+ },
+ "seconds": 13.9,
+ "id": "diff-bidirlm-vision",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

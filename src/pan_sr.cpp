@@ -175,7 +175,13 @@ pan_sr_context * pan_sr_init(const char * model_path, int n_threads) {
     // reads the persistent gw weights, so placing gw_buf on the GPU and the GPU
     // first in the sched moves the full conv chain there; the scalar path and
     // the default CPU graph are untouched. --gpu-backend cpu keeps CPU.
-    if (core_env::on("CRISPEMBED_PAN_GPU") && !force_cpu) {
+    // Tri-state: =1 forces it on any GPU kind, =0 keeps CPU, unset = ON when a
+    // CUDA device is present (Kaggle T4: 2.1 s vs 33.9 s CPU, max |delta| 1/255,
+    // PSNR 102 dB vs the CPU graph; receipts under
+    // tests/results/gpu-audit/cuda-kaggle/), OFF on Metal (not measured there).
+    const bool pan_gpu = core_env::on("CRISPEMBED_PAN_GPU") ||
+                         (!core_env::explicitly_off("CRISPEMBED_PAN_GPU") && crispasr_gpu_device_kind_present("CUDA"));
+    if (pan_gpu && !force_cpu) {
         ggml_backend_t gpu = crispasr_init_gpu_backend();
         if (gpu && !ggml_backend_is_cpu(gpu)) {
             ctx->gpu_backend = gpu;

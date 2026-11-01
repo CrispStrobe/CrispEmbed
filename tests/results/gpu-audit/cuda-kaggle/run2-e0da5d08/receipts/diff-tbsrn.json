@@ -1,0 +1,45 @@
+{
+ "kind": "diff",
+ "binary": "test-tbsrn-diff",
+ "arms": {
+  "cuda": {
+   "rc": 0,
+   "wall_s": 2.823,
+   "gpu_mem_peak_mib": 109,
+   "cuda_used": true,
+   "n_stages": 1,
+   "stages": {
+    "output": 0.999985
+   },
+   "worst_stage": [
+    "output",
+    0.999985
+   ],
+   "threshold_fails": [],
+   "threshold_missing": [],
+   "stdout_tail": "Reference stages:\n  input: [64,16,3]\n  block1: [64,16,64]\n  srb0: [64,16,64]\n  srb1: [64,16,64]\n  srb2: [64,16,64]\n  srb3: [64,16,64]\n  srb4: [64,16,64]\n  block7: [64,16,64]\n  upsample: [128,32,64]\n  output: [128,32,3]\n\nLoading TBSRN model: $SCRATCH/models/tbsrn-telescope-f16.gguf\nOutput: 128x32\n  output                     cos_min=0.999985  max_abs=7.71e-03  PASS\n\n1 passed, 0 failed\n\ncrispembed_diff: loaded 15 tensors from $SCRATCH/models/tbsrn-ref.gguf\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ntbsrn_sr: fused 11 conv+BN pairs at load time\ntbsrn_sr: srb_nums=5, channels=64, upscale=2x, 163 tensors\ntbsrn_sr: conv path = ggml_conv_2d (CPU sched)\ntbsrn_sr: done 64x16 → 128x32\n"
+  },
+  "cpu": {
+   "rc": 0,
+   "wall_s": 2.269,
+   "gpu_mem_peak_mib": 1,
+   "cuda_used": false,
+   "n_stages": 1,
+   "stages": {
+    "output": 0.999985
+   },
+   "worst_stage": [
+    "output",
+    0.999985
+   ],
+   "threshold_fails": [],
+   "threshold_missing": [],
+   "stdout_tail": "Reference stages:\n  input: [64,16,3]\n  block1: [64,16,64]\n  srb0: [64,16,64]\n  srb1: [64,16,64]\n  srb2: [64,16,64]\n  srb3: [64,16,64]\n  srb4: [64,16,64]\n  block7: [64,16,64]\n  upsample: [128,32,64]\n  output: [128,32,3]\n\nLoading TBSRN model: $SCRATCH/models/tbsrn-telescope-f16.gguf\nOutput: 128x32\n  output                     cos_min=0.999985  max_abs=7.71e-03  PASS\n\n1 passed, 0 failed\n\ncrispembed_diff: loaded 15 tensors from $SCRATCH/models/tbsrn-ref.gguf\nggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\ntbsrn_sr: fused 11 conv+BN pairs at load time\ntbsrn_sr: srb_nums=5, channels=64, upscale=2x, 163 tensors\ntbsrn_sr: conv path = ggml_conv_2d (CPU sched)\ntbsrn_sr: done 64x16 → 128x32\n"
+  }
+ },
+ "seconds": 6.6,
+ "id": "diff-tbsrn",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

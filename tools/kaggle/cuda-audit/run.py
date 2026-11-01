@@ -98,7 +98,7 @@ EMBED_FAMILIES = [  # (family, repo, base file, [quant files], modes)
 for fam, repo, base, quants, _ in EMBED_FAMILIES:
     for f in [base] + quants:
         add(f, repo, f)
-EMBED_FAMILIES.append(("bge-m3-heads", None, "bge-m3-heads-f16.gguf", ["bge-m3-heads-q8_0.gguf"],
+EMBED_FAMILIES.append(("bge-m3-crisp", None, "bge-m3-crisp-f16.gguf", ["bge-m3-crisp-q8_0.gguf"],
                        ["embed", "sparse", "colbert"]))
 
 for key, repo, name in [
@@ -121,6 +121,8 @@ for key, repo, name in [
     # batch b
     ("got-q4", "cstr/got-ocr2-crispembed-GGUF", "got-ocr2-q4_k.gguf"),
     ("got-f16", "cstr/got-ocr2-crispembed-GGUF", "got-ocr2-f16.gguf"),
+    ("got-q8", "cstr/got-ocr2-crispembed-GGUF", "got-ocr2-q8_0.gguf"),
+    ("surya-det-q8", "cstr/surya-det-GGUF", "surya-det-q8_0.gguf"),
     ("got-ref", "cstr/got-ocr2-crispembed-GGUF", "got-ocr2-ref-full.gguf"),
     ("h2ovl-q8", "cstr/h2ovl-800m-crispembed-GGUF", "h2ovl-800m-q8_0.gguf"),
     ("granite-q4", "cstr/granite-vision-crispembed-GGUF", "granite-vision-3.3-2b-q4_k.gguf"),
@@ -186,10 +188,11 @@ for key, repo, name in [
 M["easyocr"] = {"url": None, "file": "easyocr-english-g2-f16.gguf", "convert": "easyocr"}
 # The published bge-m3 GGUFs carry no sparse/ColBERT heads ("model does not support sparse
 # retrieval", run 1): convert BAAI/bge-m3 with its sparse_linear/colbert_linear .pt heads.
-M["bge-m3-heads-f16.gguf"] = {"url": None, "file": "bge-m3-heads-f16.gguf", "convert": "bert",
-                              "hf_model": "BAAI/bge-m3", "dtype": "f16"}
-M["bge-m3-heads-q8_0.gguf"] = {"url": None, "file": "bge-m3-heads-q8_0.gguf", "convert": "quantize",
-                               "src": "bge-m3-heads-f16.gguf", "qtype": "q8_0"}
+M["bge-m3-crisp-f16.gguf"] = {"url": None, "file": "bge-m3-crisp-f16.gguf", "convert": "bert",
+                              "hf_model": "BAAI/bge-m3", "dtype": "f16",
+                              "extra": ["--crisp"]}  # run 2: the default Ollama format drops both heads
+M["bge-m3-crisp-q8_0.gguf"] = {"url": None, "file": "bge-m3-crisp-q8_0.gguf", "convert": "quantize",
+                               "src": "bge-m3-crisp-f16.gguf", "qtype": "q8_0"}
 
 
 # ───────────────────────────── job plan ─────────────────────────────
@@ -197,9 +200,9 @@ CUDA = ("cuda", "cuda", {})
 CPU = ("cpu", "cpu", {})
 
 
-def cmd(jid, argv, arms=(CUDA, CPU), repeat=2, timeout=1800, ref=None, note=""):
+def cmd(jid, argv, arms=(CUDA, CPU), repeat=2, timeout=1800, ref=None, note="", binary=None):
     return {"id": jid, "kind": "cmd", "argv": list(argv), "arms": [list(a) for a in arms], "repeat": repeat,
-            "timeout": timeout, "ref": ref, "note": note}
+            "timeout": timeout, "ref": ref, "note": note, "binary": binary}
 
 
 def diff(jid, binary, argv, env=None, thresholds=None, timeout=1800):
@@ -369,7 +372,53 @@ def batch_rest():
     return [j for j in batch_a() + batch_b() if j["id"] not in done1]
 
 
-BATCHES = {"a": batch_a, "b": batch_b, "all": lambda: batch_a() + batch_b(), "rest": batch_rest}
+def batch_c():
+    """Run 3: verify the CUDA defaults flipped after run 2 (true default arm + =0 escape), isolate the
+    EasyOCR and punctuation CUDA-vs-CPU differences, bge-m3 with its heads, Surya via its own binary."""
+    jobs = []
+    for jid, argv, gate in [
+        ("esrgan-default.fox", ["--esrgan-model", "@M:esrgan", "--esrgan-sr", f"{IMG}/fox.png"], "CRISPEMBED_ESRGAN_GPU"),
+        ("instructir-default.scan_strip", ["--instructir-model", "@M:instructir", "--instructir",
+                                           f"{IMG}/scan_strip.png"], "CRISPEMBED_INSTRUCTIR_GPU"),
+        ("pan-default.scan_strip", ["--pan-model", "@M:pan-f16", "--pan-sr", f"{IMG}/scan_strip.png"],
+         "CRISPEMBED_PAN_GPU"),
+        ("restormer-default.fox", ["--restormer", "@M:restormer-f16", "--restormer-input", f"{IMG}/fox.png"],
+         "CRISPEMBED_RESTORMER_GPU"),
+    ]:
+        jobs.append(cmd(jid, ["-t", "@NT", *argv], arms=(CUDA, ("cuda-gate0", "cuda", {gate: "0"}), CPU)))
+    for img in ("fox", "cc0/receipt_example", "scan_strip"):
+        jobs.append(cmd(f"lightonocr-default.{img.split('/')[-1]}",
+                        ["-t", "@NT", "-m", "@M:lighton-q4", "--ocr", f"{IMG}/{img}.png", "--ocr-max-tokens", "256"],
+                        arms=(CUDA, ("cuda-gate0", "cuda", {"CRISPEMBED_LIGHTONOCR_GPU": "0"}), CPU), repeat=1,
+                        timeout=3600))
+    for img in ("fox", "scan_page_pd", "scan_strip"):
+        jobs.append(cmd(f"dbnet-easyocr-iso.{img}",
+                        ["-t", "@NT", "--json", "-m", "@M:easyocr", "--ocr-pipeline", f"{IMG}/{img}.png",
+                         "--ocr-engine", "easyocr", "--ocr-det", "@M:dbnet", "--ocr-rec", "@M:easyocr"],
+                        arms=(CUDA, ("cuda-detcpu", "cuda", {"OCR_DETECT_USE_GPU": "0"}),
+                              ("cuda-reccpu", "cuda", {"EASYOCR_FORCE_CPU": "1"}), CPU)))
+    for punct, gate in (("firered-f32", {"FIREREDPUNC_BACKEND": "cpu"}), ("firered-q8", {"FIREREDPUNC_BACKEND": "cpu"}),
+                        ("pcs-q8", {"PCS_FORCE_CPU": "1"})):
+        base = ["-t", "@NT", "--json", "-m", "@M:trocr", "--ocr-pipeline", f"{IMG}/scan_strip.png",
+                "--ocr-engine", "dbnet_trocr", "--ocr-det", "@M:dbnet", "--ocr-rec", "@M:trocr"]
+        jobs.append(cmd(f"punct-{punct}.scan_strip", base + ["--punct-model", f"@M:{punct}"],
+                        arms=(CUDA, ("cuda-punctcpu", "cuda", gate), CPU)))
+    jobs.append(cmd("pipeline-nopunct.scan_strip", ["-t", "@NT", "--json", "-m", "@M:trocr", "--ocr-pipeline",
+                                                    f"{IMG}/scan_strip.png", "--ocr-engine", "dbnet_trocr",
+                                                    "--ocr-det", "@M:dbnet", "--ocr-rec", "@M:trocr"]))
+    for fam, repo, base, quants, modes in EMBED_FAMILIES:
+        if fam == "bge-m3-crisp":
+            for mode in modes:
+                jobs.append({"id": f"embed-{fam}-{mode}", "kind": "embed", "mode": mode, "base": base,
+                             "files": [base] + quants, "repeat": 2, "timeout": 2400})
+    for img in ("fox", "scan_page_pd"):
+        for k in ("surya-det", "surya-det-q8"):
+            jobs.append(cmd(f"{k}.{img}", ["@M:" + k, f"{IMG}/{img}.png"], binary="test-surya-det"))
+    jobs.append(vlm("got-ocr2-q8.fox", "got-q8"))
+    return jobs
+
+
+BATCHES = {"a": batch_a, "b": batch_b, "all": lambda: batch_a() + batch_b(), "rest": batch_rest, "c": batch_c}
 
 
 def jobs_for(batch):
@@ -397,7 +446,7 @@ def jobs_for(batch):
 def build_targets(batch):
     t = ["crispembed-cli", "crispembed-quantize"]
     for j in jobs_for(batch):
-        if j["kind"] == "diff" and j["binary"] not in t:
+        if j.get("binary") and j["binary"] not in t:
             t.append(j["binary"])
     return t
 
@@ -469,7 +518,8 @@ def fetch(key):
         err = fetch_easyocr(dest)
     elif spec.get("convert") == "bert":
         rc, out, e = sh_capture([sys.executable, "models/convert-bert-to-gguf.py", "--model", spec["hf_model"],
-                                 "--output", str(dest), "--dtype", spec.get("dtype", "f16")], 3600)
+                                 "--output", str(dest), "--dtype", spec.get("dtype", "f16"),
+                                 *spec.get("extra", [])], 3600)
         err = None if rc == 0 and dest.exists() else f"convert rc={rc}: {(out + e)[-800:]}"
         REPORT.setdefault("conversions", {})[key] = (out + e)[-1500:]
     elif spec.get("convert") == "quantize":
@@ -812,7 +862,11 @@ def run_embed(job, binary, paths, nthreads):
     return rec
 
 
-def run_cmd(job, binary, paths, nthreads, results):
+def run_cmd(job, binary, paths, nthreads, results, build=None):
+    cli = True
+    if job.get("binary"):  # a test binary: no --gpu-backend flag; the CPU arm hides the GPU
+        binary = next(p for p in Path(build).rglob(job["binary"]) if p.is_file() and os.access(p, os.X_OK))
+        cli = False
     argv = resolve(job["argv"], paths, nthreads)
     rec = {"kind": "cmd", "argv": [os.path.basename(x) if "/" in x else x for x in argv], "arms": {},
            "precision": None}
@@ -821,7 +875,7 @@ def run_cmd(job, binary, paths, nthreads, results):
     outs = {}
     for rep in range(job["repeat"]):
         for name, backend, env in job["arms"]:
-            arm = run_arm(binary, argv, backend, env, job["timeout"], tag=name)
+            arm = run_arm(binary, argv, backend, env, job["timeout"], cli=cli, tag=name)
             a = rec["arms"].setdefault(name, {"backend": backend, "env": env, "wall_s": [], "gpu_mem_peak_mib": 0,
                                               "cuda_used": False})
             a["wall_s"].append(arm["wall_s"])
@@ -934,7 +988,7 @@ def main(build, batch, commit=None, gpu=None):
             elif job["kind"] == "embed":
                 rec = run_embed(job, binary, paths, nthreads)
             elif job["kind"] == "cmd":
-                rec = run_cmd(job, binary, paths, nthreads, results)
+                rec = run_cmd(job, binary, paths, nthreads, results, build=build)
             else:
                 rec = run_diff(job, build, paths, nthreads)
         except Exception as e:  # noqa: BLE001  (a failed job is evidence too; keep going)

@@ -1,0 +1,71 @@
+{
+ "kind": "diff",
+ "binary": "test-ppocrv6-rec",
+ "arms": {
+  "cuda": {
+   "rc": 0,
+   "wall_s": 0.967,
+   "gpu_mem_peak_mib": 193,
+   "cuda_used": true,
+   "n_stages": 3,
+   "stages": {
+    "input": 1.0,
+    "ppocrv6.head_input": 0.187168,
+    "logits": 0.158552
+   },
+   "worst_stage": [
+    "logits",
+    0.158552
+   ],
+   "threshold_fails": [
+    [
+     "ppocrv6.head_input",
+     0.187168,
+     0.999
+    ],
+    [
+     "logits",
+     0.158552,
+     0.999
+    ]
+   ],
+   "threshold_missing": [],
+   "stdout_tail": "text=De t 4 dg 14\nscalar_ms=135.373 batch_ms=49.230 batch_completed=1\nbatch[0]=De t 4 dg 14 parity=PASS\n\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispembed_diff: loaded 16 tensors from $SCRATCH/models/PP-OCRv6_small_rec-fox-ref.gguf\n[ppocrv6-diff] input cos=1.000000 |mine|=163.777 PASS\nppocrv6: persistent GGML graph ready (CUDA0, svtr-decoder, 120x40x1)\n[ppocrv6-diff] ppocrv6.head_input cos=0.187168 |mine|=222.782 FAIL\n[ppocrv6-diff] logits cos=0.158552 |mine|=1581.38 FAIL\n[ppocrv6-diff] input cos=1.000000 |mine|=163.777 PASS\nggml_backend_cuda_graph_compute: CUDA graph warmup complete\n[ppocrv6-diff] ppocrv6.head_input cos=0.187168 |mine|=222.782 FAIL\n[ppocrv6-diff] logits cos=0.158552 |mine|=1581.38 FAIL\n"
+  },
+  "cpu": {
+   "rc": 0,
+   "wall_s": 0.716,
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "n_stages": 3,
+   "stages": {
+    "input": 1.0,
+    "ppocrv6.head_input": 0.187178,
+    "logits": 0.15954
+   },
+   "worst_stage": [
+    "logits",
+    0.15954
+   ],
+   "threshold_fails": [
+    [
+     "ppocrv6.head_input",
+     0.187178,
+     0.999
+    ],
+    [
+     "logits",
+     0.15954,
+     0.999
+    ]
+   ],
+   "threshold_missing": [],
+   "stdout_tail": "text=De t 4 dg 14\nscalar_ms=273.236 batch_ms=245.442 batch_completed=1\nbatch[0]=De t 4 dg 14 parity=PASS\n\nggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\ncrispembed_diff: loaded 16 tensors from $SCRATCH/models/PP-OCRv6_small_rec-fox-ref.gguf\n[ppocrv6-diff] input cos=1.000000 |mine|=163.777 PASS\nppocrv6: persistent GGML graph ready (CPU, svtr-decoder, 120x40x1)\n[ppocrv6-diff] ppocrv6.head_input cos=0.187178 |mine|=222.697 FAIL\n[ppocrv6-diff] logits cos=0.159540 |mine|=1581.39 FAIL\n[ppocrv6-diff] input cos=1.000000 |mine|=163.777 PASS\n[ppocrv6-diff] ppocrv6.head_input cos=0.187178 |mine|=222.697 FAIL\n[ppocrv6-diff] logits cos=0.159540 |mine|=1581.39 FAIL\n"
+  }
+ },
+ "seconds": 3.6,
+ "id": "diff-ppocrv6-small-rec",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

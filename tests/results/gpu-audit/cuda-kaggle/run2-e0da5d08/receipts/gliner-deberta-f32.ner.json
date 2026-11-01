@@ -1,0 +1,59 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "-m",
+  "gliner-deberta-f32.gguf",
+  "--ner",
+  "Angela Merkel met Tim Cook at the Apple office in Berlin on Monday.",
+  "--ner-labels",
+  "person,organization,location,date",
+  "--ner-threshold",
+  "0.3"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    1.368,
+    1.368
+   ],
+   "gpu_mem_peak_mib": 859,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\n",
+   "stdout_sha256": "3ac9674870b004cc4dbf163e55d43e721a22f22321ca130a91725c8c02b6cec3",
+   "stdout": "5 entities found:\n  [0] Angela Merkel (person) [0, 13) score=0.9993\n  [1] Tim Cook (person) [18, 26) score=0.9994\n  [2] Apple (organization) [34, 39) score=0.9740\n  [3] Berlin (location) [50, 56) score=0.9977\n  [4] Monday (date) [60, 66) score=0.9973\n",
+   "vs_cpu": {
+    "byte_identical": true,
+    "text_exact": true,
+    "char_ratio": 1.0,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    1.218,
+    1.169
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "crispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\n",
+   "stdout_sha256": "3ac9674870b004cc4dbf163e55d43e721a22f22321ca130a91725c8c02b6cec3",
+   "stdout": "5 entities found:\n  [0] Angela Merkel (person) [0, 13) score=0.9993\n  [1] Tim Cook (person) [18, 26) score=0.9994\n  [2] Apple (organization) [34, 39) score=0.9740\n  [3] Berlin (location) [50, 56) score=0.9977\n  [4] Monday (date) [60, 66) score=0.9973\n"
+  }
+ },
+ "precision": "f32",
+ "bar": 0.99,
+ "seconds": 15.9,
+ "id": "gliner-deberta-f32.ner",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

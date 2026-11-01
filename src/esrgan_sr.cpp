@@ -134,6 +134,9 @@ esrgan_context * esrgan_init(const char * model_path, int n_threads) {
     // GPU is Metal (M1 A/B: 4.2x faster, max |delta| 1/255, PSNR 69 dB vs the
     // CPU path, tests/results/gpu-audit/metal-m1/ocr/esrgan-*), OFF elsewhere
     // until CUDA/Vulkan are measured. --gpu-backend cpu also keeps CPU.
+    // CUDA audit 2026-11-01 (Kaggle T4): CUDA joins the default — 1.5-1.8 s vs
+    // 14.3-14.8 s CPU, max |delta| 1/255, PSNR 98-106 dB vs the CPU path
+    // (tests/results/gpu-audit/cuda-kaggle/run2-e0da5d08/receipts/esrgan.*).
     auto metal_device_present = [] {
         for (size_t i = 0; i < ggml_backend_dev_count(); ++i) {
             ggml_backend_dev_t dev = ggml_backend_dev_get(i);
@@ -145,8 +148,9 @@ esrgan_context * esrgan_init(const char * model_path, int n_threads) {
         }
         return false;
     };
-    const bool want_gpu = core_env::on("CRISPEMBED_ESRGAN_GPU") ||
-                          (!core_env::explicitly_off("CRISPEMBED_ESRGAN_GPU") && metal_device_present());
+    const bool want_gpu =
+        core_env::on("CRISPEMBED_ESRGAN_GPU") || (!core_env::explicitly_off("CRISPEMBED_ESRGAN_GPU") &&
+                                                  (metal_device_present() || crispasr_gpu_device_kind_present("CUDA")));
     ggml_backend_t backend = want_gpu ? crispasr_init_gpu_backend() : ggml_backend_cpu_init();
     if (!backend) backend = ggml_backend_cpu_init();
     const bool on_gpu = !ggml_backend_is_cpu(backend);

@@ -160,6 +160,23 @@ inline ggml_backend_t crispasr_init_gpu_backend() {
     return ggml_backend_init_best();
 }
 
+// Per-backend-kind defaults (CUDA audit 2026-11-01): is a GPU device of this
+// kind registered? `prefix` matches the ggml device name case-insensitively,
+// e.g. "CUDA" -> "CUDA0", "MTL" -> "MTL0". Enumerating devices does not create
+// a backend. Engines use it to pick a GPU default only where an A/B on that
+// kind cleared the precision bar and was faster; --gpu-backend cpu still wins
+// because crispasr_init_gpu_backend() honours it.
+inline bool crispasr_gpu_device_kind_present(const char * prefix) {
+    for (size_t i = 0; i < ggml_backend_dev_count(); ++i) {
+        ggml_backend_dev_t dev = ggml_backend_dev_get(i);
+        const enum ggml_backend_dev_type dt = ggml_backend_dev_type(dev);
+        if (dt != GGML_BACKEND_DEVICE_TYPE_GPU && dt != GGML_BACKEND_DEVICE_TYPE_IGPU) continue;
+        const char * n = ggml_backend_dev_name(dev);
+        if (n && ci_starts_with(n, prefix)) return true;
+    }
+    return false;
+}
+
 // ---------------------------------------------------------------------------
 // Optional process-shared GPU backend (opt-in: CRISPEMBED_SHARED_GPU_BACKEND=1)
 //

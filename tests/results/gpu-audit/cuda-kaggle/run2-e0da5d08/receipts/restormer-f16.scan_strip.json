@@ -1,0 +1,93 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "--restormer",
+  "restormer-denoise-f16.gguf",
+  "--restormer-input",
+  "scan_strip.png"
+ ],
+ "arms": {
+  "cuda-gate1": {
+   "backend": "cuda",
+   "env": {
+    "CRISPEMBED_RESTORMER_GPU": "1"
+   },
+   "wall_s": [
+    13.053,
+    12.949
+   ],
+   "gpu_mem_peak_mib": 543,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\nrestormer: GPU path - graphs on CUDA0 (CRISPEMBED_RESTORMER_GPU=0 restores CPU)\nrestormer: dim=48, blocks=[4,6,6,8], heads=[1,2,4,8], ffn=2.65, refine=4, 406 tensors\nrestormer: 520x260, tiles=5x3 (size=128, overlap=16)\nrestormer: done 520x260\n",
+   "stdout_sha256": "6587c6f279c4afc6dd03e98dd72a3720df3f6a86053f0e839d798ca8065219ac",
+   "vs_cpu": {
+    "byte_identical": false,
+    "image": {
+     "shape": [
+      260,
+      520,
+      3
+     ],
+     "max_abs": 1.0,
+     "mean_abs": 2.4654832347140038e-06,
+     "psnr_db": 104.21178307193189,
+     "n_diff": 1
+    },
+    "final_cosine": 0.9999999991575851,
+    "final_metric": "centered pixel cosine"
+   }
+  },
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    231.13,
+    229.599
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "restormer: dim=48, blocks=[4,6,6,8], heads=[1,2,4,8], ffn=2.65, refine=4, 406 tensors\nrestormer: 520x260, tiles=5x3 (size=128, overlap=16)\nrestormer: done 520x260\n",
+   "stdout_sha256": "912208fbfa0c17490c264e0bddf7481b1182992f7f6fdc586e8aaf2c9cefaa0d",
+   "vs_cpu": {
+    "byte_identical": true,
+    "image": {
+     "shape": [
+      260,
+      520,
+      3
+     ],
+     "max_abs": 0.0,
+     "mean_abs": 0.0,
+     "psnr_db": 99.0,
+     "n_diff": 0
+    },
+    "final_cosine": 1.0,
+    "final_metric": "centered pixel cosine"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    231.384,
+    229.34
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "restormer: dim=48, blocks=[4,6,6,8], heads=[1,2,4,8], ffn=2.65, refine=4, 406 tensors\nrestormer: 520x260, tiles=5x3 (size=128, overlap=16)\nrestormer: done 520x260\n",
+   "stdout_sha256": "912208fbfa0c17490c264e0bddf7481b1182992f7f6fdc586e8aaf2c9cefaa0d"
+  }
+ },
+ "precision": "f16",
+ "bar": 0.98,
+ "seconds": 951.4,
+ "id": "restormer-f16.scan_strip",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

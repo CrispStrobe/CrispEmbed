@@ -1,0 +1,81 @@
+{
+ "kind": "diff",
+ "binary": "test-got-ocr-diff",
+ "arms": {
+  "cuda": {
+   "rc": 0,
+   "wall_s": 3.877,
+   "gpu_mem_peak_mib": 2199,
+   "cuda_used": true,
+   "n_stages": 19,
+   "stages": {
+    "vis_layer_0": 0.999217,
+    "vis_layer_1": 0.999655,
+    "vis_layer_2": 0.999155,
+    "vis_layer_3": 0.998687,
+    "vis_layer_4": 0.997939,
+    "vis_layer_5": 0.997976,
+    "vis_layer_6": 0.997988,
+    "vis_layer_7": 0.997565,
+    "vis_layer_8": 0.998315,
+    "vis_layer_9": 0.99818,
+    "vis_layer_10": 0.997967,
+    "vis_layer_11": 0.998229,
+    "vis_proj_output": 0.999011,
+    "llm_layer_0": 0.995076,
+    "llm_layer_1": 0.997066,
+    "llm_layer_2": 0.996734,
+    "llm_layer_3": 0.995718,
+    "llm_layer_4": 0.998173,
+    "llm_layer_5": 0.998764
+   },
+   "worst_stage": [
+    "llm_layer_0",
+    0.995076
+   ],
+   "threshold_fails": [],
+   "threshold_missing": [],
+   "stdout_tail": "768,4096]\n  vis_layer_8 [768,4096]\n  vis_layer_3 [768,4096]\n  llm_layer_3 [1024,5]\n  llm_layer_1 [1024,5]\n  vis_layer_4 [768,4096]\n  vis_layer_11 [768,4096]\n  vis_layer_1 [768,4096]\n  vis_layer_7 [768,4096]\n  vis_layer_9 [768,4096]\n  vis_layer_6 [768,4096]\n  vis_layer_5 [768,4096]\n  vis_layer_10 [768,4096]\n\nLoading model: $SCRATCH/models/got-ocr2-q4_k.gguf\n\nRunning vision encoder...\nVision output: 256 tokens, 1024 dim\n\nRunning LLM decoder...\nLLM output: 5 tokens, 1024 dim\n\nDone.\n\n999155 max_abs=0.498358 PASS\ngot_ocr: vis_layer_2 done (global, T=4096)\ncrispembed_diff: loaded 23 tensors from $SCRATCH/models/got-ocr2-ref-full.gguf\n  vis_layer_3: cos_min=0.998687 max_abs=0.620556 FAIL\ngot_ocr: vis_layer_3 done (window, T=4900)\ncrispembed_diff: loaded 23 tensors from $SCRATCH/models/got-ocr2-ref-full.gguf\n  vis_layer_4: cos_min=0.997939 max_abs=1.715744 FAIL\ngot_ocr: vis_layer_4 done (window, T=4900)\ncrispembed_diff: loaded 23 tensors from $SCRATCH/models/got-ocr2-ref-full.gguf\n  vis_layer_5: cos_min=0.997976 max_abs=2.191280 FAIL\ngot_ocr: vis_layer_5 done (global, T=4096)\ncrispembed_diff: loaded 23 tensors from $SCRATCH/models/got-ocr2-ref-full.gguf\n  vis_layer_6: cos_min=0.997988 max_abs=1.974300 FAIL\ngot_ocr: vis_layer_6 done (window, T=4900)\ncrispembed_diff: loaded 23 tensors from $SCRATCH/models/got-ocr2-ref-full.gguf\n  vis_layer_7: cos_min=0.997565 max_abs=2.473938 FAIL\ngot_ocr: vis_layer_7 done (window, T=4900)\ncrispembed_diff: loaded 23 tensors from $SCRATCH/models/got-ocr2-ref-full.gguf\n  vis_layer_8: cos_min=0.998315 max_abs=1.367943 FAIL\ngot_ocr: vis_layer_8 done (global, T=4096)\ncrispembed_diff: loaded 23 tensors from $SCRATCH/models/got-ocr2-ref-full.gguf\n  vis_layer_9: cos_min=0.998180 max_abs=1.348259 FAIL\ngot_ocr: vis_layer_9 done (window, T=4900)\ncrispembed_diff: loaded 23 tensors from $SCRATCH/models/got-ocr2-ref-full.gguf\n  vis_layer_10: cos_min=0.997967 max_abs=1.599812 FAIL\ngot_ocr: vis_layer_10 done (window, T=4900)\ncrispembed_diff: loaded 23 tensors from $SCRATCH/models/got-ocr2-ref-full.gguf\n  vis_layer_11: cos_min=0.998229 max_abs=3.388859 FAIL\ngot_ocr: vis_layer_11 done (global, T=4096)\ngot_ocr: ViT done 2166 ms (12 layers)\ncrispembed_diff: loaded 23 tensors from $SCRATCH/models/got-ocr2-ref-full.gguf\n  vis_proj_output: cos_min=0.999011 max_abs=0.402093 PASS\ncrispembed_diff: loaded 23 tensors from $SCRATCH/models/got-ocr2-ref-full.gguf\ncrispembed_diff: loaded 23 tensors from $SCRATCH/models/got-ocr2-ref-full.gguf\n  llm_layer_0: cos_min=0.995076 max_abs=1.150835 FAIL\n  llm_layer_1: cos_min=0.997066 max_abs=1.416565 FAIL\n  llm_layer_2: cos_min=0.996734 max_abs=2.634212 FAIL\n  llm_layer_3: cos_min=0.995718 max_abs=3.683304 FAIL\n  llm_layer_4: cos_min=0.998173 max_abs=36.580566 FAIL\n  llm_layer_5: cos_min=0.998764 max_abs=101.961426 FAIL\n"
+  },
+  "cpu": {
+   "rc": 0,
+   "wall_s": 21.496,
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "n_stages": 19,
+   "stages": {
+    "vis_layer_0": 0.999213,
+    "vis_layer_1": 0.999659,
+    "vis_layer_2": 0.999188,
+    "vis_layer_3": 0.998474,
+    "vis_layer_4": 0.997757,
+    "vis_layer_5": 0.997575,
+    "vis_layer_6": 0.998114,
+    "vis_layer_7": 0.998058,
+    "vis_layer_8": 0.998523,
+    "vis_layer_9": 0.998356,
+    "vis_layer_10": 0.998332,
+    "vis_layer_11": 0.998116,
+    "vis_proj_output": 0.999074,
+    "llm_layer_0": 0.995236,
+    "llm_layer_1": 0.997244,
+    "llm_layer_2": 0.996799,
+    "llm_layer_3": 0.995157,
+    "llm_layer_4": 0.998004,
+    "llm_layer_5": 0.998764
+   },
+   "worst_stage": [
+    "llm_layer_3",
+    0.995157
+   ],
+   "threshold_fails": [],
+   "threshold_missing": [],
+   "stdout_tail": "768,4096]\n  vis_layer_8 [768,4096]\n  vis_layer_3 [768,4096]\n  llm_layer_3 [1024,5]\n  llm_layer_1 [1024,5]\n  vis_layer_4 [768,4096]\n  vis_layer_11 [768,4096]\n  vis_layer_1 [768,4096]\n  vis_layer_7 [768,4096]\n  vis_layer_9 [768,4096]\n  vis_layer_6 [768,4096]\n  vis_layer_5 [768,4096]\n  vis_layer_10 [768,4096]\n\nLoading model: $SCRATCH/models/got-ocr2-q4_k.gguf\n\nRunning vision encoder...\nVision output: 256 tokens, 1024 dim\n\nRunning LLM decoder...\nLLM output: 5 tokens, 1024 dim\n\nDone.\n\n99188 max_abs=0.471006 PASS\ngot_ocr: vis_layer_2 done (global, T=4096)\ncrispembed_diff: loaded 23 tensors from $SCRATCH/models/got-ocr2-ref-full.gguf\n  vis_layer_3: cos_min=0.998474 max_abs=0.695084 FAIL\ngot_ocr: vis_layer_3 done (window, T=4900)\ncrispembed_diff: loaded 23 tensors from $SCRATCH/models/got-ocr2-ref-full.gguf\n  vis_layer_4: cos_min=0.997757 max_abs=1.713371 FAIL\ngot_ocr: vis_layer_4 done (window, T=4900)\ncrispembed_diff: loaded 23 tensors from $SCRATCH/models/got-ocr2-ref-full.gguf\n  vis_layer_5: cos_min=0.997575 max_abs=2.199421 FAIL\ngot_ocr: vis_layer_5 done (global, T=4096)\ncrispembed_diff: loaded 23 tensors from $SCRATCH/models/got-ocr2-ref-full.gguf\n  vis_layer_6: cos_min=0.998114 max_abs=1.873951 FAIL\ngot_ocr: vis_layer_6 done (window, T=4900)\ncrispembed_diff: loaded 23 tensors from $SCRATCH/models/got-ocr2-ref-full.gguf\n  vis_layer_7: cos_min=0.998058 max_abs=2.379341 FAIL\ngot_ocr: vis_layer_7 done (window, T=4900)\ncrispembed_diff: loaded 23 tensors from $SCRATCH/models/got-ocr2-ref-full.gguf\n  vis_layer_8: cos_min=0.998523 max_abs=1.379181 FAIL\ngot_ocr: vis_layer_8 done (global, T=4096)\ncrispembed_diff: loaded 23 tensors from $SCRATCH/models/got-ocr2-ref-full.gguf\n  vis_layer_9: cos_min=0.998356 max_abs=1.345010 FAIL\ngot_ocr: vis_layer_9 done (window, T=4900)\ncrispembed_diff: loaded 23 tensors from $SCRATCH/models/got-ocr2-ref-full.gguf\n  vis_layer_10: cos_min=0.998332 max_abs=1.558022 FAIL\ngot_ocr: vis_layer_10 done (window, T=4900)\ncrispembed_diff: loaded 23 tensors from $SCRATCH/models/got-ocr2-ref-full.gguf\n  vis_layer_11: cos_min=0.998116 max_abs=3.964764 FAIL\ngot_ocr: vis_layer_11 done (global, T=4096)\ngot_ocr: ViT done 19638 ms (12 layers)\ncrispembed_diff: loaded 23 tensors from $SCRATCH/models/got-ocr2-ref-full.gguf\n  vis_proj_output: cos_min=0.999074 max_abs=0.387137 PASS\ncrispembed_diff: loaded 23 tensors from $SCRATCH/models/got-ocr2-ref-full.gguf\ncrispembed_diff: loaded 23 tensors from $SCRATCH/models/got-ocr2-ref-full.gguf\n  llm_layer_0: cos_min=0.995236 max_abs=0.900103 FAIL\n  llm_layer_1: cos_min=0.997244 max_abs=1.615440 FAIL\n  llm_layer_2: cos_min=0.996799 max_abs=2.790379 FAIL\n  llm_layer_3: cos_min=0.995157 max_abs=3.765438 FAIL\n  llm_layer_4: cos_min=0.998004 max_abs=38.642334 FAIL\n  llm_layer_5: cos_min=0.998764 max_abs=197.183350 FAIL\n"
+  }
+ },
+ "seconds": 27.6,
+ "id": "diff-got-ocr2-q4k",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

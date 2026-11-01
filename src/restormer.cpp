@@ -466,8 +466,14 @@ restormer_context * restormer_init(const char * model_path, int n_threads) {
     // enc_sched below, so the block/conv graphs run there and the CPU sched
     // never has to read a GPU buffer. The dequant cache reads weights back to
     // host floats through the backend API, so the scalar helpers are unaffected.
-    ggml_backend_t backend =
-        core_env::on("CRISPEMBED_RESTORMER_GPU") ? crispasr_init_gpu_backend() : ggml_backend_cpu_init();
+    // Tri-state: =1 forces GPU on any kind, =0 keeps CPU, unset = ON when a CUDA
+    // device is present (Kaggle T4: 13.0 s vs 229.3 s CPU, max |delta| 1/255,
+    // PSNR 104 dB vs the CPU path; stage diff vs the Python reference 0.999992 on
+    // both arms), OFF on Metal (not measured there).
+    const bool restormer_gpu =
+        core_env::on("CRISPEMBED_RESTORMER_GPU") ||
+        (!core_env::explicitly_off("CRISPEMBED_RESTORMER_GPU") && crispasr_gpu_device_kind_present("CUDA"));
+    ggml_backend_t backend = restormer_gpu ? crispasr_init_gpu_backend() : ggml_backend_cpu_init();
     if (!backend) backend = ggml_backend_cpu_init();
     if (!core_gguf::load_weights(model_path, backend, "restormer", ctx->wl)) {
         fprintf(stderr, "restormer: failed to load weights\n");

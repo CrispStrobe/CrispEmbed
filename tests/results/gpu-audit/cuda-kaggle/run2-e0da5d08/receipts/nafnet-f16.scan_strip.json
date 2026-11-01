@@ -1,0 +1,62 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "--nafnet-model",
+  "nafnet-sidd-w32-f16.gguf",
+  "--nafnet-denoise",
+  "scan_strip.png"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    3.325,
+    3.426
+   ],
+   "gpu_mem_peak_mib": 477,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "x16, 512 ch)\nnafnet: middle done (12 blocks)\nnafnet: dec stage 0 done (32x32, 256 ch)\nnafnet: dec stage 1 done (64x64, 128 ch)\nnafnet: dec stage 2 done (128x128, 64 ch)\nnafnet: dec stage 3 done (256x256, 32 ch)\nnafnet: done (256x256)\nnafnet: intro done (256x256, 32 ch)\nnafnet: enc stage 0 done (128x128, 64 ch)\nnafnet: enc stage 1 done (64x64, 128 ch)\nnafnet: enc stage 2 done (32x32, 256 ch)\nnafnet: enc stage 3 done (16x16, 512 ch)\nnafnet: middle done (12 blocks)\nnafnet: dec stage 0 done (32x32, 256 ch)\nnafnet: dec stage 1 done (64x64, 128 ch)\nnafnet: dec stage 2 done (128x128, 64 ch)\nnafnet: dec stage 3 done (256x256, 32 ch)\nnafnet: done (256x256)\nnafnet: intro done (256x256, 32 ch)\nnafnet: enc stage 0 done (128x128, 64 ch)\nnafnet: enc stage 1 done (64x64, 128 ch)\nnafnet: enc stage 2 done (32x32, 256 ch)\nnafnet: enc stage 3 done (16x16, 512 ch)\nnafnet: middle done (12 blocks)\nnafnet: dec stage 0 done (32x32, 256 ch)\nnafnet: dec stage 1 done (64x64, 128 ch)\nnafnet: dec stage 2 done (128x128, 64 ch)\nnafnet: dec stage 3 done (256x256, 32 ch)\nnafnet: done (256x256)\nnafnet: intro done (256x256, 32 ch)\nnafnet: enc stage 0 done (128x128, 64 ch)\nnafnet: enc stage 1 done (64x64, 128 ch)\nnafnet: enc stage 2 done (32x32, 256 ch)\nnafnet: enc stage 3 done (16x16, 512 ch)\nnafnet: middle done (12 blocks)\nnafnet: dec stage 0 done (32x32, 256 ch)\nnafnet: dec stage 1 done (64x64, 128 ch)\nnafnet: dec stage 2 done (128x128, 64 ch)\nnafnet: dec stage 3 done (256x256, 32 ch)\nnafnet: done (256x256)\n",
+   "stdout_sha256": "267cf18710396a40dbbeb9780ac603c7f675d44d0a85920d7d7e84e412726294",
+   "vs_cpu": {
+    "byte_identical": true,
+    "image": {
+     "shape": [
+      260,
+      520,
+      3
+     ],
+     "max_abs": 0.0,
+     "mean_abs": 0.0,
+     "psnr_db": 99.0,
+     "n_diff": 0
+    },
+    "final_cosine": 1.0,
+    "final_metric": "centered pixel cosine"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    24.607,
+    24.611
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "x16, 512 ch)\nnafnet: middle done (12 blocks)\nnafnet: dec stage 0 done (32x32, 256 ch)\nnafnet: dec stage 1 done (64x64, 128 ch)\nnafnet: dec stage 2 done (128x128, 64 ch)\nnafnet: dec stage 3 done (256x256, 32 ch)\nnafnet: done (256x256)\nnafnet: intro done (256x256, 32 ch)\nnafnet: enc stage 0 done (128x128, 64 ch)\nnafnet: enc stage 1 done (64x64, 128 ch)\nnafnet: enc stage 2 done (32x32, 256 ch)\nnafnet: enc stage 3 done (16x16, 512 ch)\nnafnet: middle done (12 blocks)\nnafnet: dec stage 0 done (32x32, 256 ch)\nnafnet: dec stage 1 done (64x64, 128 ch)\nnafnet: dec stage 2 done (128x128, 64 ch)\nnafnet: dec stage 3 done (256x256, 32 ch)\nnafnet: done (256x256)\nnafnet: intro done (256x256, 32 ch)\nnafnet: enc stage 0 done (128x128, 64 ch)\nnafnet: enc stage 1 done (64x64, 128 ch)\nnafnet: enc stage 2 done (32x32, 256 ch)\nnafnet: enc stage 3 done (16x16, 512 ch)\nnafnet: middle done (12 blocks)\nnafnet: dec stage 0 done (32x32, 256 ch)\nnafnet: dec stage 1 done (64x64, 128 ch)\nnafnet: dec stage 2 done (128x128, 64 ch)\nnafnet: dec stage 3 done (256x256, 32 ch)\nnafnet: done (256x256)\nnafnet: intro done (256x256, 32 ch)\nnafnet: enc stage 0 done (128x128, 64 ch)\nnafnet: enc stage 1 done (64x64, 128 ch)\nnafnet: enc stage 2 done (32x32, 256 ch)\nnafnet: enc stage 3 done (16x16, 512 ch)\nnafnet: middle done (12 blocks)\nnafnet: dec stage 0 done (32x32, 256 ch)\nnafnet: dec stage 1 done (64x64, 128 ch)\nnafnet: dec stage 2 done (128x128, 64 ch)\nnafnet: dec stage 3 done (256x256, 32 ch)\nnafnet: done (256x256)\n",
+   "stdout_sha256": "267cf18710396a40dbbeb9780ac603c7f675d44d0a85920d7d7e84e412726294"
+  }
+ },
+ "precision": "f16",
+ "bar": 0.98,
+ "seconds": 57.4,
+ "id": "nafnet-f16.scan_strip",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}
