@@ -1,3 +1,16 @@
+## 1 November 2026 — MI-GAN Metal path (feat/metal-migan)
+
+Gated `CRISPEMBED_MIGAN_GPU` whole-graph execution through
+`crispasr_init_gpu_backend()`, persistent per-batch graphs, band-row tile
+batching, a Metal left-padding rewrite, and the `migan-pointwise-v1`
+quantizer/loader policy (F16 13.7 MB, Q8_0 8.3 MB, Q4_K 5.5 MB). On the M1,
+Metal F32 passes all 237 strict stages on `subtitle_bar` (worst 7.63e-6) and
+reproduces the original composite exactly; the half-tile fast profile fails
+187 strict stages and stays gated. The local test-inpaint FIPS two-block input
+typo (also failing hosted run 41282563344's native-controls step, whose model
+smoke passed) is fixed. Quantized, 1080p, `PAD_K` and delivery-5 comparisons
+were queued behind the shared GPU lock and remain unmeasured. GPU default off.
+
 ## 1 November 2026 — OXR-1.0 D-FINE layout detector native in layout_detect
 
 `feat/oxr-dfine`: converter `models/convert-oxr-dfine-to-gguf.py` (pinned

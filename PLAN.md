@@ -339,6 +339,12 @@ outside this lane. Do not infer weight permission from a public repository.
   the new three-platform workflow and opt-in model smoke are prepared, not
   observed hosted results. This source delivery creates no model alias, runtime release, shared
   C ABI or downstream pin change; temporal/video and LaMa remain separate.
+- `feat/metal-migan` (1 November 2026): gated MI-GAN GPU/Metal path, batched
+  tiles and `migan-pointwise-v1` F16/Q8_0/Q4_K containers ([doc](docs/migan-metal.md)).
+  Metal F32 is exact on `subtitle_bar` (237/237 strict stages, original composite
+  exact) at 309 vs 511 ms/tile. TODO: run the queued eight-fixture/quant/1080p/
+  `PAD_K` A/B and delivery-5 `test-migan-graph` comparison on the M1, then decide
+  the default; reconcile with `feat/issue71-five-engines-graphs`. CUDA/Vulkan untested.
 - Issue71 MI-GAN: fixed256 CPU/F32 prototype and494/eight-fixture audit are
   complete. Qualify the new CLI separately, then freeze licensed real subtitle/
   scene images and masks with perceptual/seam criteria. C ABI/orchestrator/server/

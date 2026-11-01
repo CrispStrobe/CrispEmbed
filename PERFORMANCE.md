@@ -1,3 +1,17 @@
+## 1 November 2026 — MI-GAN256 Metal vs CPU on Apple M1 (contended)
+
+[Receipts](tests/results/migan/metal-m1/). Warm median per 256 tile,
+`subtitle_bar` fixture, CPU/F32 at 4 threads, machine shared (load 5–11):
+
+| Path | ms | Parity vs CPU/F32 |
+| --- | ---: | --- |
+| CPU/F32 reviewed graph | 511.0 | reference |
+| Metal F32 strict (default GPU profile) | 309.3 | 237/237 strict stages; output max 1.49e-6 |
+| Metal `FAST_MATMUL` | 179.3 | 187 strict failures; output max 1.93e-3 |
+
+Diagnostic, single fixture; 1080p throughput, quantized containers and the
+delivery-5 optimized CPU graph were not measured (GPU lock unavailable).
+
 ## 31 October 2026 — Native Marker-style CPU document conversion
 
 These are individual conversion durations from
