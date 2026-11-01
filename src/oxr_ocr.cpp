@@ -371,6 +371,7 @@ void load(oxr_ocr_context & c, const char * path) {
         ggml_backend_free(c.backend); // auto mode qualifies Metal only
         c.backend = ggml_backend_cpu_init();
     }
+    if (!c.backend && auto_gpu) c.backend = ggml_backend_cpu_init(); // no GPU compiled/available
     if (!c.backend) throw std::runtime_error("OXR backend initialization failed");
     // ggml-metal PREC_F32 products with >8 rows: the F32-tile _hp mul_mm instead of
     // mat-vec kernels (ggml patch, GGML_METAL_PREC_F32_MM). Default on for OXR GPU
