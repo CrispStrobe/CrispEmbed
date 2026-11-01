@@ -360,6 +360,10 @@ ggml_tensor * Builder::parameter(const std::string & name, const std::vector<int
     ggml_tensor * out = make(ctx, GGML_TYPE_F32, shape);
     ggml_set_name(out, name.c_str());
     ggml_set_input(out);
+    // Parameters persist across replays (callers may upload once and replay
+    // with only some inputs changed); OUTPUT keeps gallocr from recycling an
+    // input's memory after its last consumer within the graph.
+    ggml_set_output(out);
     return out;
 }
 ggml_tensor * Builder::constant(const std::string & name, const std::vector<int64_t> & shape,
