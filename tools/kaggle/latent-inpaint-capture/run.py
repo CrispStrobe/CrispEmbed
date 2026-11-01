@@ -10,8 +10,8 @@ usage: run.py moebius|pixelhacker   (from the CrispEmbed checkout root)
    versions from docs/latent-inpaint-source-contract.json (uv venv).
 3. Download the pinned original source files and checkpoints, verify them.
 4. Run tools/dump_latent_inpaint_reference.py (unchanged) on cuda:0 for the
-   full four-case panel, then tar the captures and preserve them in the
-   engine's PRIVATE HF repository for the hosted CPU native comparison.
+   full four-case panel, then write the captures as gzip parts in
+   /kaggle/working for the hosted CPU native comparison.
 Every step writes its own log file and has a timeout; no unread pipes.
 """
 import hashlib
@@ -32,7 +32,7 @@ from latent_inpaint_contract import load_contract, model_record, verify_checkpoi
 WORK = Path("/kaggle/working")
 TEMP = Path("/kaggle/temp")
 PROGRESS = WORK / "progress.txt"
-REPOS = {"moebius": "cstr/crispembed-moebius-private", "pixelhacker": "cstr/crispembed-pixelhacker-private"}
+MODELS = ("moebius", "pixelhacker")
 TORCH = {"moebius": ("2.7.1", "0.22.1", "https://download.pytorch.org/whl/cu126"),
          "pixelhacker": ("2.3.0", "0.18.0", "https://download.pytorch.org/whl/cu121")}
 PACKAGES = {
@@ -45,7 +45,8 @@ PACKAGES = {
 }
 # Upstream pins triton 3.2.0 beside torch 2.3.0 (whose metadata asks for 2.3.0),
 # so these two are installed after resolution, exactly as the author's list.
-NO_DEPS = {"moebius": [], "pixelhacker": ["flash-linear-attention==0.3.2", "triton==3.2.0"]}
+# FLA 0.3.2 ships its `fla` ops in the separate fla-core distribution.
+NO_DEPS = {"moebius": [], "pixelhacker": ["flash-linear-attention==0.3.2", "fla-core==0.3.2", "triton==3.2.0"]}
 
 
 def progress(message):
@@ -80,13 +81,6 @@ def download(url, path, size, digest):
             out.write(block)
     if count != size or h.hexdigest() != digest:
         raise SystemExit(f"pinned download differs: {url}")
-
-
-def hf_token():
-    # The token dataset mounts at /kaggle/input/<name>/ or under datasets/<owner>/.
-    for path in sorted(Path("/kaggle/input").rglob("hf_token.txt")):
-        return path.read_text().strip()
-    return os.environ.get("HF_TOKEN", "")
 
 
 def main(model):
@@ -150,39 +144,34 @@ def main(model):
     (WORK / "original-report.json").write_text(json.dumps(report, indent=2) + "\n")
     for case in report["cases"]:
         (WORK / (case["id"] + "-reference.json")).write_bytes((output / case["id"] / "reference.json").read_bytes())
-    # 4. Preserve raw captures privately for the hosted CPU native replay.
-    archive = TEMP / f"{model}-original-capture.tar"
-    with tarfile.open(archive, "w") as tar:
+    # 4. Hand the raw captures to the hosted CPU native replay. The private HF
+    #    account is at its storage limit, so the archive is written as gzip
+    #    parts below Kaggle's 1 GB output-file limit; the hosted job downloads
+    #    this kernel's output and checks every part and the whole digest.
+    archive = TEMP / f"{model}-original-capture.tar.gz"
+    with tarfile.open(archive, "w:gz", compresslevel=6) as tar:
         tar.add(output, arcname=f"{model}-original-capture")
-    hasher = hashlib.sha256()
+    hasher, parts = hashlib.sha256(), []
     with archive.open("rb") as stream:
-        for block in iter(lambda: stream.read(1 << 24), b""):
+        for index in range(1000):
+            block = stream.read(900 * 1024 * 1024)
+            if not block:
+                break
             hasher.update(block)
-    digest = hasher.hexdigest()
+            part = WORK / f"{archive.name}.part{index:02d}"
+            part.write_bytes(block)
+            parts.append({"file": part.name, "bytes": len(block), "sha256": hashlib.sha256(block).hexdigest()})
+    archive.unlink()
     manifest = {"model": model, "commit": os.environ.get("CAPTURE_COMMIT"), "gpu": gpu,
-                "archive": archive.name, "bytes": archive.stat().st_size, "sha256": digest,
-                "report_sha256": hashlib.sha256((output / "report.json").read_bytes()).hexdigest(),
+                "archive": archive.name, "bytes": sum(p["bytes"] for p in parts), "sha256": hasher.hexdigest(),
+                "parts": parts, "report_sha256": hashlib.sha256((output / "report.json").read_bytes()).hexdigest(),
                 "complete": report.get("complete"), "cases": [c["id"] for c in report["cases"]]}
     (WORK / "capture-manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
-    progress(f"archive {archive.stat().st_size} bytes sha256={digest}")
-    token = hf_token()
-    if not token:
-        raise SystemExit("no HF token; captures remain only in this session")
-    from huggingface_hub import HfApi
-    api = HfApi(token=token)
-    if not api.model_info(REPOS[model]).private:
-        raise SystemExit("refusing: preservation repo is not private")
-    prefix = f"captures/{os.environ.get('CAPTURE_COMMIT', 'unknown')[:12]}/"
-    api.upload_file(path_or_fileobj=str(archive), path_in_repo=prefix + archive.name, repo_id=REPOS[model])
-    api.upload_file(path_or_fileobj=str(WORK / "capture-manifest.json"), path_in_repo=prefix + "capture-manifest.json",
-                    repo_id=REPOS[model])
-    api.upload_file(path_or_fileobj=str(WORK / "pip-freeze.log"), path_in_repo=prefix + "pip-freeze.txt",
-                    repo_id=REPOS[model])
-    progress("preserved in private repo " + REPOS[model] + "/" + prefix)
+    progress(f"archive {manifest['bytes']} bytes in {len(parts)} parts sha256={manifest['sha256']}")
     return 0
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2 or sys.argv[1] not in REPOS:
+    if len(sys.argv) != 2 or sys.argv[1] not in MODELS:
         raise SystemExit(__doc__)
     sys.exit(main(sys.argv[1]))

@@ -2,9 +2,9 @@
 
 Script kernels upload only this file, so it clones CrispEmbed at the exact
 commit rendered by stage.py and runs tools/kaggle/latent-inpaint-capture/run.py
-from that checkout. All output goes to files under /kaggle/working; the raw
-captures are preserved in the engine's private HF repository for the hosted
-CPU native comparison. No native code is built or run in this GPU session.
+from that checkout. All output goes to files under /kaggle/working, including
+the raw captures as verified gzip parts that the hosted CPU native comparison
+(tools/ci-heavy/latent_native.sh) downloads. No native code runs here.
 """
 import os
 import subprocess
