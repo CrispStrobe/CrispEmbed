@@ -1,0 +1,9 @@
+{"id": "subtitle_bar", "prediction_cosine_vs_original": 1, "prediction_cosine_vs_f32_native": 1.0, "rgb_vs_original": {"masked_psnr_db": "inf", "masked_mae": 0.0, "masked_max_abs": 0, "known_rgb_errors": null}, "seconds": 14.055}
+{"id": "edge_touch", "prediction_cosine_vs_original": 0.999999999999, "prediction_cosine_vs_f32_native": 1.0, "rgb_vs_original": {"masked_psnr_db": 81.881, "masked_mae": 0.0004, "masked_max_abs": 1, "known_rgb_errors": null}, "seconds": 24.551}
+{"id": "center", "prediction_cosine_vs_original": 1, "prediction_cosine_vs_f32_native": 1.0000000000000002, "rgb_vs_original": {"masked_psnr_db": "inf", "masked_mae": 0.0, "masked_max_abs": 0, "known_rgb_errors": null}, "seconds": 7.195}
+{"id": "empty", "prediction_cosine_vs_original": 1, "prediction_cosine_vs_f32_native": 1.0, "rgb_vs_original": null, "seconds": 1.629}
+{"id": "full", "prediction_cosine_vs_original": 0.999999999754, "prediction_cosine_vs_f32_native": 1.0000000000000002, "rgb_vs_original": {"masked_psnr_db": 69.643, "masked_mae": 0.0071, "masked_max_abs": 1, "known_rgb_errors": null}, "seconds": 4.208}
+{"id": "one_pixel", "prediction_cosine_vs_original": 1, "prediction_cosine_vs_f32_native": 1.0, "rgb_vs_original": {"masked_psnr_db": "inf", "masked_mae": 0.0, "masked_max_abs": 0, "known_rgb_errors": null}, "seconds": 2.445}
+{"id": "wide", "prediction_cosine_vs_original": 1, "prediction_cosine_vs_f32_native": 1.0000000000000002, "rgb_vs_original": {"masked_psnr_db": 85.237, "masked_mae": 0.0002, "masked_max_abs": 1, "known_rgb_errors": null}, "seconds": 12.9}
+{"id": "thin_strip", "prediction_cosine_vs_original": 1, "prediction_cosine_vs_f32_native": 1.0000000000000002, "rgb_vs_original": {"masked_psnr_db": "inf", "masked_mae": 0.0, "masked_max_abs": 0, "known_rgb_errors": null}, "seconds": 13.926}
+{"label": "f32-stored", "owner_bar_passed": true}

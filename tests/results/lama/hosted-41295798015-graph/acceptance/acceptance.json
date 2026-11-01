@@ -1,0 +1,261 @@
+{
+  "schema": 1,
+  "phase": "original-native",
+  "status": "passed",
+  "native_qualified": false,
+  "thresholds": {
+    "stage_max_abs": 0.002,
+    "stage_relative_l2": 0.0003,
+    "stage_min_cosine": 0.99999,
+    "prediction_max_abs": 0.0002,
+    "masked_rgb_max_abs": 1,
+    "masked_rgb_mean_abs": 0.1,
+    "masked_rgb_min_psnr": 50.0,
+    "known_rgb_errors": 0
+  },
+  "commands": [
+    {
+      "label": "python-contracts",
+      "command": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "tests/test_lama_contract.py",
+        "-v"
+      ],
+      "status": "completed",
+      "returncode": 0,
+      "log": "python-contracts.log",
+      "pid": 2517,
+      "seconds": 1.0656311130000518,
+      "sha256": "7788fa602cd8073a516e4f0a5e876623dfeffe650be30a154b96fe90d691e7d2"
+    },
+    {
+      "label": "hosted-controls",
+      "command": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "tests/test_lama_hosted.py",
+        "-v"
+      ],
+      "status": "completed",
+      "returncode": 0,
+      "log": "hosted-controls.log",
+      "pid": 2518,
+      "seconds": 0.31558063899996114,
+      "sha256": "fba615c0044ae9999b2195cda76419eec63c162dece9647b4097a4f78461a4c6"
+    },
+    {
+      "label": "configure",
+      "command": [
+        "cmake",
+        "-S",
+        "/home/runner/work/CrispEmbed/CrispEmbed",
+        "-B",
+        "/mnt/heavy/scratch/acc/build",
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-DGGML_NATIVE=OFF",
+        "-DCRISPEMBED_NATIVE=OFF",
+        "-DGGML_BLAS=OFF",
+        "-DGGML_CUDA=OFF",
+        "-DGGML_METAL=OFF",
+        "-DGGML_VULKAN=OFF",
+        "-DGGML_OPENMP=OFF",
+        "-DGGML_LLAMAFILE=OFF",
+        "-DCRISPEMBED_BUILD_SHARED=OFF"
+      ],
+      "status": "completed",
+      "returncode": 0,
+      "log": "configure.log",
+      "pid": 2519,
+      "seconds": 5.034834735000004,
+      "sha256": "2487c78bcb8e6e0be3a9c1df03d27f371295080328877b60861b3e3a7fa0b6b6"
+    },
+    {
+      "label": "build",
+      "command": [
+        "cmake",
+        "--build",
+        "/mnt/heavy/scratch/acc/build",
+        "--target",
+        "crispembed-cli",
+        "test-lama-ops",
+        "test-lama-diff",
+        "-j2"
+      ],
+      "status": "completed",
+      "returncode": 0,
+      "log": "build.log",
+      "pid": 2599,
+      "seconds": 198.74401692600003,
+      "sha256": "54d1aa17d5ef63adcdf69a18163fafe2c9f4cab24da1f2a05de002593430bfda"
+    },
+    {
+      "label": "native-operators",
+      "command": [
+        "/mnt/heavy/scratch/acc/build/test-lama-ops"
+      ],
+      "status": "completed",
+      "returncode": 0,
+      "log": "native-operators.log",
+      "pid": 3886,
+      "seconds": 0.032549891000030584,
+      "sha256": "3cc123d4d71065f7d726171c9e9dfd0f0e230d143628367632e821ad663aa8d4"
+    },
+    {
+      "label": "native-reference-contracts",
+      "command": [
+        "/mnt/heavy/scratch/acc/build/test-lama-diff",
+        "--contracts"
+      ],
+      "status": "completed",
+      "returncode": 0,
+      "log": "native-reference-contracts.log",
+      "pid": 3887,
+      "seconds": 0.002255370999932893,
+      "sha256": "50da2d5b67a651f7f6821abbfc0c7d2844cce22882285b1239135574ed6b2a6b"
+    },
+    {
+      "label": "source-init",
+      "command": [
+        "git",
+        "init",
+        "/mnt/heavy/scratch/acc/original-source"
+      ],
+      "status": "completed",
+      "returncode": 0,
+      "log": "source-init.log",
+      "pid": 3890,
+      "seconds": 0.004980247999924359,
+      "sha256": "777be40885587bca43fecbaff226b7ed94c481a93b95d1be0e9b43b9f732df06"
+    },
+    {
+      "label": "source-remote",
+      "command": [
+        "git",
+        "-C",
+        "/mnt/heavy/scratch/acc/original-source",
+        "remote",
+        "add",
+        "origin",
+        "https://github.com/advimman/lama"
+      ],
+      "status": "completed",
+      "returncode": 0,
+      "log": "source-remote.log",
+      "pid": 3891,
+      "seconds": 0.0047734539999737535,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "source-fetch",
+      "command": [
+        "git",
+        "-C",
+        "/mnt/heavy/scratch/acc/original-source",
+        "fetch",
+        "--depth",
+        "1",
+        "origin",
+        "786f5936b27fb3dacd2b1ad799e4de968ea697e7"
+      ],
+      "status": "completed",
+      "returncode": 0,
+      "log": "source-fetch.log",
+      "pid": 3892,
+      "seconds": 0.816348109000046,
+      "sha256": "21cc4e8de408ed963ece6417056a5909432f43ff2f98b548a169aa50c831b0b5"
+    },
+    {
+      "label": "source-checkout",
+      "command": [
+        "git",
+        "-C",
+        "/mnt/heavy/scratch/acc/original-source",
+        "checkout",
+        "--detach",
+        "FETCH_HEAD"
+      ],
+      "status": "completed",
+      "returncode": 0,
+      "log": "source-checkout.log",
+      "pid": 3904,
+      "seconds": 0.06488299699992695,
+      "sha256": "e9dae967246786faae88b3042493afac6c85349db4e051aa5a0cde2b218b6279"
+    },
+    {
+      "label": "capture-original",
+      "command": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "tools/dump_lama_reference.py",
+        "--source-dir",
+        "/mnt/heavy/scratch/acc/original-source",
+        "--checkpoint-archive",
+        "/mnt/heavy/scratch/acc/big-lama.zip",
+        "--output",
+        "/home/runner/work/_temp/out/acceptance/original",
+        "--cases",
+        "subtitle_bar"
+      ],
+      "status": "completed",
+      "returncode": 0,
+      "log": "capture-original.log",
+      "pid": 3905,
+      "seconds": 11.486998852999932,
+      "sha256": "f3827a268719cd8059db5c0796abc312283e221d28e47e681d46cee149cb0e0d"
+    },
+    {
+      "label": "convert-after-original",
+      "command": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "models/convert-lama-to-gguf.py",
+        "--archive",
+        "/mnt/heavy/scratch/acc/big-lama.zip",
+        "--source-dir",
+        "/mnt/heavy/scratch/acc/original-source",
+        "--output",
+        "/mnt/heavy/scratch/acc/big-lama-f32.gguf"
+      ],
+      "status": "completed",
+      "returncode": 0,
+      "log": "convert-after-original.log",
+      "pid": 3911,
+      "seconds": 6.427333064999971,
+      "sha256": "2bb687ae9f4dea7250ea9ad7c3f3e0f38a1216e1215c3bb6a2faef886841bfc9"
+    },
+    {
+      "label": "replay-subtitle_bar",
+      "command": [
+        "/mnt/heavy/scratch/acc/build/test-lama-diff",
+        "--model",
+        "/mnt/heavy/scratch/acc/big-lama-f32.gguf",
+        "--model-sha256",
+        "24736f267c68e013f0000ccb69560c4353b6a6d7983fc3cc2537d9f2e03f304c",
+        "--reference",
+        "/home/runner/work/_temp/out/acceptance/original/subtitle_bar/reference.gguf",
+        "--reference-sha256",
+        "0915f81cac87cf9ea42cbcc6e744fdd75a90821793e4963ab1940e46d462d637",
+        "--output",
+        "/home/runner/work/_temp/out/acceptance/native-subtitle_bar"
+      ],
+      "status": "completed",
+      "returncode": 0,
+      "log": "replay-subtitle_bar.log",
+      "pid": 3912,
+      "seconds": 11.170065520000094,
+      "sha256": "33bf7a5ab76219ee6ba7f4e4c7ca1acebb38a27166ca67b3196137ebf7e67c99"
+    }
+  ],
+  "cases": [
+    {
+      "id": "subtitle_bar",
+      "passed": true,
+      "reference_sha256": "0915f81cac87cf9ea42cbcc6e744fdd75a90821793e4963ab1940e46d462d637",
+      "log": "replay-subtitle_bar.log"
+    }
+  ],
+  "commit": "56af8377f42400ae8cf0306498869f5ce01b6c83",
+  "source_contract_sha256": "ce6cd6c17dc73979d8bee461c51dcd5fe8d3fdc35e996e759fd917b7adb3a6fd",
+  "build": "passed",
+  "model_free_controls": "passed",
+  "checkpoint_archive_sha256": "f1b358ca24093b93a106183b98a3dea6e8ed09f3b43ea7251eb2c81e7b4575f6",
+  "gguf_sha256": "24736f267c68e013f0000ccb69560c4353b6a6d7983fc3cc2537d9f2e03f304c",
+  "numerical_acceptance": "passed_selected_cases"
+}

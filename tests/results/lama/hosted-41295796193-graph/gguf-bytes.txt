@@ -1,0 +1,6 @@
+102554560 big-lama-f16.gguf
+204299072 big-lama-f32.gguf
+34730464 big-lama-q4_k-s8.gguf
+35504608 big-lama-q4_k-s8e8.gguf
+29422048 big-lama-q4_k.gguf
+54858208 big-lama-q8_0.gguf

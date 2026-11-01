@@ -1,0 +1,310 @@
+{
+  "schema": "crispembed-lama-variant-v2",
+  "label": "f16-graph",
+  "model": "big-lama-f16.gguf",
+  "model_sha256": "31d5a0c4dae9a0d638a5b75bb8921ea7e588e35c8c00060e4ce16fc0bc0d3f3b",
+  "model_bytes": 102554560,
+  "env": {
+    "CRISPEMBED_INPAINT_GRAPH": "1"
+  },
+  "owner_min_output_cosine": 0.94,
+  "owner_bar_passed": true,
+  "cases": [
+    {
+      "id": "subtitle_bar",
+      "returncode": 1,
+      "seconds": 17.694,
+      "driver_final": {
+        "case": "subtitle_bar",
+        "stages": 227,
+        "failed_stages": 224,
+        "first_failure": "generator.model.2.local",
+        "known_errors": 0,
+        "masked_max_abs": 1,
+        "masked_mean_abs": 0.00824652778,
+        "masked_psnr": 68.9680923,
+        "native_hook_neutrality": true,
+        "passed": false
+      },
+      "stderr_tail": null,
+      "prediction_cosine_vs_original": 0.999999997962,
+      "prediction_max_abs_vs_original": 0.00103473663,
+      "prediction_cosine_vs_f32_native": 0.9999999979621378,
+      "prediction_max_abs_vs_f32_native": 0.001036524772644043,
+      "min_stage_cosine_vs_original": 0.99999957804,
+      "min_stage": "generator.model.17.conv2.ffc.convg2g.fu.irfft",
+      "rgb_vs_original": {
+        "masked_psnr_db": 68.968,
+        "masked_mae": 0.0082,
+        "masked_max_abs": 1,
+        "known_rgb_errors": null
+      },
+      "rgb_vs_f32_native": {
+        "masked_psnr_db": 68.968,
+        "masked_mae": 0.0082,
+        "masked_max_abs": 1,
+        "known_rgb_errors": null
+      },
+      "known_rgb_errors": 0,
+      "owner_bar_passed": true
+    },
+    {
+      "id": "edge_touch",
+      "returncode": 1,
+      "seconds": 46.968,
+      "driver_final": {
+        "case": "edge_touch",
+        "stages": 227,
+        "failed_stages": 223,
+        "first_failure": "generator.model.2.local",
+        "known_errors": 0,
+        "masked_max_abs": 1,
+        "masked_mean_abs": 0.0145126151,
+        "masked_psnr": 66.5133468,
+        "native_hook_neutrality": true,
+        "passed": false
+      },
+      "stderr_tail": null,
+      "prediction_cosine_vs_original": 0.999999996891,
+      "prediction_max_abs_vs_original": 0.000780880451,
+      "prediction_cosine_vs_f32_native": 0.9999999969084682,
+      "prediction_max_abs_vs_f32_native": 0.0007802248001098633,
+      "min_stage_cosine_vs_original": 0.999999487248,
+      "min_stage": "generator.model.17.conv2.global",
+      "rgb_vs_original": {
+        "masked_psnr_db": 66.513,
+        "masked_mae": 0.0145,
+        "masked_max_abs": 1,
+        "known_rgb_errors": null
+      },
+      "rgb_vs_f32_native": {
+        "masked_psnr_db": 66.598,
+        "masked_mae": 0.0142,
+        "masked_max_abs": 1,
+        "known_rgb_errors": null
+      },
+      "known_rgb_errors": 0,
+      "owner_bar_passed": true
+    },
+    {
+      "id": "center",
+      "returncode": 1,
+      "seconds": 9.963,
+      "driver_final": {
+        "case": "center",
+        "stages": 227,
+        "failed_stages": 222,
+        "first_failure": "generator.model.2.local",
+        "known_errors": 0,
+        "masked_max_abs": 1,
+        "masked_mean_abs": 0.0106771976,
+        "masked_psnr": 67.8462308,
+        "native_hook_neutrality": true,
+        "passed": false
+      },
+      "stderr_tail": null,
+      "prediction_cosine_vs_original": 0.999999997846,
+      "prediction_max_abs_vs_original": 0.000808149576,
+      "prediction_cosine_vs_f32_native": 0.9999999978463299,
+      "prediction_max_abs_vs_f32_native": 0.0008077919483184814,
+      "min_stage_cosine_vs_original": 0.999999517087,
+      "min_stage": "generator.model.18.conv2.global",
+      "rgb_vs_original": {
+        "masked_psnr_db": 67.846,
+        "masked_mae": 0.0107,
+        "masked_max_abs": 1,
+        "known_rgb_errors": null
+      },
+      "rgb_vs_f32_native": {
+        "masked_psnr_db": 67.846,
+        "masked_mae": 0.0107,
+        "masked_max_abs": 1,
+        "known_rgb_errors": null
+      },
+      "known_rgb_errors": 0,
+      "owner_bar_passed": true
+    },
+    {
+      "id": "empty",
+      "returncode": 1,
+      "seconds": 1.469,
+      "driver_final": {
+        "case": "empty",
+        "stages": 227,
+        "failed_stages": 221,
+        "first_failure": "generator.model.2.local",
+        "known_errors": 0,
+        "masked_max_abs": 0,
+        "masked_mean_abs": 0,
+        "masked_psnr": 999,
+        "native_hook_neutrality": true,
+        "passed": false
+      },
+      "stderr_tail": null,
+      "prediction_cosine_vs_original": 0.999999998698,
+      "prediction_max_abs_vs_original": 8.84532928e-05,
+      "prediction_cosine_vs_f32_native": 0.9999999986988598,
+      "prediction_max_abs_vs_f32_native": 8.83340835571289e-05,
+      "min_stage_cosine_vs_original": 0.99999764392,
+      "min_stage": "generator.model.17.conv2.global",
+      "rgb_vs_original": null,
+      "rgb_vs_f32_native": null,
+      "known_rgb_errors": 0,
+      "owner_bar_passed": true
+    },
+    {
+      "id": "full",
+      "returncode": 1,
+      "seconds": 5.012,
+      "driver_final": {
+        "case": "full",
+        "stages": 227,
+        "failed_stages": 218,
+        "first_failure": "generator.model.3.local",
+        "known_errors": 0,
+        "masked_max_abs": 1,
+        "masked_mean_abs": 0.177001953,
+        "masked_psnr": 55.651023,
+        "native_hook_neutrality": true,
+        "passed": false
+      },
+      "stderr_tail": null,
+      "prediction_cosine_vs_original": 0.999999513617,
+      "prediction_max_abs_vs_original": 0.00386235118,
+      "prediction_cosine_vs_f32_native": 0.9999995131006383,
+      "prediction_max_abs_vs_f32_native": 0.003882467746734619,
+      "min_stage_cosine_vs_original": 0.999955462634,
+      "min_stage": "generator.model.22.conv2.global",
+      "rgb_vs_original": {
+        "masked_psnr_db": 55.651,
+        "masked_mae": 0.177,
+        "masked_max_abs": 1,
+        "known_rgb_errors": null
+      },
+      "rgb_vs_f32_native": {
+        "masked_psnr_db": 55.491,
+        "masked_mae": 0.1837,
+        "masked_max_abs": 1,
+        "known_rgb_errors": null
+      },
+      "known_rgb_errors": 0,
+      "owner_bar_passed": true
+    },
+    {
+      "id": "one_pixel",
+      "returncode": 1,
+      "seconds": 3.102,
+      "driver_final": {
+        "case": "one_pixel",
+        "stages": 227,
+        "failed_stages": 218,
+        "first_failure": "generator.model.2.local",
+        "known_errors": 0,
+        "masked_max_abs": 0,
+        "masked_mean_abs": 0,
+        "masked_psnr": 999,
+        "native_hook_neutrality": true,
+        "passed": false
+      },
+      "stderr_tail": null,
+      "prediction_cosine_vs_original": 0.999999998776,
+      "prediction_max_abs_vs_original": 8.73208046e-05,
+      "prediction_cosine_vs_f32_native": 0.9999999987774165,
+      "prediction_max_abs_vs_f32_native": 8.738040924072266e-05,
+      "min_stage_cosine_vs_original": 0.999997866385,
+      "min_stage": "generator.model.17.conv2.global",
+      "rgb_vs_original": {
+        "masked_psnr_db": "inf",
+        "masked_mae": 0.0,
+        "masked_max_abs": 0,
+        "known_rgb_errors": null
+      },
+      "rgb_vs_f32_native": {
+        "masked_psnr_db": "inf",
+        "masked_mae": 0.0,
+        "masked_max_abs": 0,
+        "known_rgb_errors": null
+      },
+      "known_rgb_errors": 0,
+      "owner_bar_passed": true
+    },
+    {
+      "id": "wide",
+      "returncode": 1,
+      "seconds": 23.269,
+      "driver_final": {
+        "case": "wide",
+        "stages": 227,
+        "failed_stages": 223,
+        "first_failure": "generator.model.2.local",
+        "known_errors": 0,
+        "masked_max_abs": 1,
+        "masked_mean_abs": 0.0103193146,
+        "masked_psnr": 67.9942951,
+        "native_hook_neutrality": true,
+        "passed": false
+      },
+      "stderr_tail": null,
+      "prediction_cosine_vs_original": 0.999999997281,
+      "prediction_max_abs_vs_original": 0.000843182206,
+      "prediction_cosine_vs_f32_native": 0.9999999972978005,
+      "prediction_max_abs_vs_f32_native": 0.0008372664451599121,
+      "min_stage_cosine_vs_original": 0.999999647559,
+      "min_stage": "generator.model.19.conv2.ffc.convg2g.fu.irfft",
+      "rgb_vs_original": {
+        "masked_psnr_db": 67.994,
+        "masked_mae": 0.0103,
+        "masked_max_abs": 1,
+        "known_rgb_errors": null
+      },
+      "rgb_vs_f32_native": {
+        "masked_psnr_db": 68.022,
+        "masked_mae": 0.0103,
+        "masked_max_abs": 1,
+        "known_rgb_errors": null
+      },
+      "known_rgb_errors": 0,
+      "owner_bar_passed": true
+    },
+    {
+      "id": "thin_strip",
+      "returncode": 1,
+      "seconds": 17.698,
+      "driver_final": {
+        "case": "thin_strip",
+        "stages": 227,
+        "failed_stages": 223,
+        "first_failure": "generator.model.2.local",
+        "known_errors": 0,
+        "masked_max_abs": 1,
+        "masked_mean_abs": 0.0212673611,
+        "masked_psnr": 64.8536676,
+        "native_hook_neutrality": true,
+        "passed": false
+      },
+      "stderr_tail": null,
+      "prediction_cosine_vs_original": 0.999999997782,
+      "prediction_max_abs_vs_original": 0.00059479475,
+      "prediction_cosine_vs_f32_native": 0.9999999977839297,
+      "prediction_max_abs_vs_f32_native": 0.0005956292152404785,
+      "min_stage_cosine_vs_original": 0.999999345663,
+      "min_stage": "generator.model.17.conv2.global",
+      "rgb_vs_original": {
+        "masked_psnr_db": 64.854,
+        "masked_mae": 0.0213,
+        "masked_max_abs": 1,
+        "known_rgb_errors": null
+      },
+      "rgb_vs_f32_native": {
+        "masked_psnr_db": 64.854,
+        "masked_mae": 0.0213,
+        "masked_max_abs": 1,
+        "known_rgb_errors": null
+      },
+      "known_rgb_errors": 0,
+      "owner_bar_passed": true
+    }
+  ],
+  "internal_research_only": true,
+  "published": false
+}

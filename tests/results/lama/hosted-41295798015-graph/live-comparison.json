@@ -1,0 +1,1666 @@
+{
+  "schema": "crispembed-lama-live-comparison-v1",
+  "internal_research_only": true,
+  "photos": [
+    {
+      "photo": "face",
+      "size": [
+        640,
+        640
+      ],
+      "fill_pixels": 31841,
+      "original_vs_clean": {
+        "psnr_db": 25.759,
+        "mae": 5.6277,
+        "cosine": 0.9934073214308402,
+        "pearson": 0.9645355333598321
+      },
+      "variants": {
+        "f32": {
+          "vs_clean": {
+            "psnr_db": 25.759,
+            "mae": 5.6277,
+            "cosine": 0.9934073546741069,
+            "pearson": 0.9645357379756794
+          },
+          "vs_f32_native": {
+            "psnr_db": "inf",
+            "mae": 0.0,
+            "cosine": 0.9999999999999998,
+            "pearson": 1.0
+          },
+          "vs_original": {
+            "psnr_db": 90.942,
+            "mae": 0.0001,
+            "cosine": 0.999999998004542,
+            "pearson": 0.9999999893548345
+          },
+          "outside_mask_exact": true
+        },
+        "f32-stored": {
+          "vs_clean": {
+            "psnr_db": 25.759,
+            "mae": 5.6277,
+            "cosine": 0.9934073546741069,
+            "pearson": 0.9645357379756794
+          },
+          "vs_f32_native": {
+            "psnr_db": "inf",
+            "mae": 0.0,
+            "cosine": 0.9999999999999998,
+            "pearson": 1.0
+          },
+          "vs_original": {
+            "psnr_db": 90.942,
+            "mae": 0.0001,
+            "cosine": 0.999999998004542,
+            "pearson": 0.9999999893548345
+          },
+          "outside_mask_exact": true
+        },
+        "f32-graph": {
+          "vs_clean": {
+            "psnr_db": 25.759,
+            "mae": 5.6277,
+            "cosine": 0.9934073497305179,
+            "pearson": 0.9645356964888367
+          },
+          "vs_f32_native": {
+            "psnr_db": 97.932,
+            "mae": 0.0,
+            "cosine": 0.9999999996009055,
+            "pearson": 0.9999999978709772
+          },
+          "vs_original": {
+            "psnr_db": 91.911,
+            "mae": 0.0,
+            "cosine": 0.999999998403632,
+            "pearson": 0.9999999914837489
+          },
+          "outside_mask_exact": true
+        },
+        "f16-storage": {
+          "vs_clean": {
+            "psnr_db": 25.758,
+            "mae": 5.6286,
+            "cosine": 0.9934056654239104,
+            "pearson": 0.9645262917942807
+          },
+          "vs_f32_native": {
+            "psnr_db": 69.691,
+            "mae": 0.007,
+            "cosine": 0.9999997338059752,
+            "pearson": 0.9999985799342799
+          },
+          "vs_original": {
+            "psnr_db": 69.671,
+            "mae": 0.007,
+            "cosine": 0.9999997326084131,
+            "pearson": 0.9999985735402336
+          },
+          "outside_mask_exact": true
+        },
+        "f16-matmul": {
+          "vs_clean": {
+            "psnr_db": 25.758,
+            "mae": 5.6286,
+            "cosine": 0.9934056009364902,
+            "pearson": 0.9645259400441508
+          },
+          "vs_f32_native": {
+            "psnr_db": 69.684,
+            "mae": 0.007,
+            "cosine": 0.9999997334070596,
+            "pearson": 0.9999985778067934
+          },
+          "vs_original": {
+            "psnr_db": 69.665,
+            "mae": 0.007,
+            "cosine": 0.9999997322094828,
+            "pearson": 0.9999985714126113
+          },
+          "outside_mask_exact": true
+        },
+        "f16-graph": {
+          "vs_clean": {
+            "psnr_db": 25.758,
+            "mae": 5.6286,
+            "cosine": 0.9934056009364902,
+            "pearson": 0.9645259400441508
+          },
+          "vs_f32_native": {
+            "psnr_db": 69.684,
+            "mae": 0.007,
+            "cosine": 0.9999997334070596,
+            "pearson": 0.9999985778067934
+          },
+          "vs_original": {
+            "psnr_db": 69.665,
+            "mae": 0.007,
+            "cosine": 0.9999997322094828,
+            "pearson": 0.9999985714126113
+          },
+          "outside_mask_exact": true
+        },
+        "f16-graph-matmul": {
+          "vs_clean": {
+            "psnr_db": 25.758,
+            "mae": 5.6286,
+            "cosine": 0.9934056009364902,
+            "pearson": 0.9645259400441508
+          },
+          "vs_f32_native": {
+            "psnr_db": 69.684,
+            "mae": 0.007,
+            "cosine": 0.9999997334070596,
+            "pearson": 0.9999985778067934
+          },
+          "vs_original": {
+            "psnr_db": 69.665,
+            "mae": 0.007,
+            "cosine": 0.9999997322094828,
+            "pearson": 0.9999985714126113
+          },
+          "outside_mask_exact": true
+        },
+        "q8_0-storage": {
+          "vs_clean": {
+            "psnr_db": 25.812,
+            "mae": 5.6171,
+            "cosine": 0.9934859380450236,
+            "pearson": 0.9649589535540433
+          },
+          "vs_f32_native": {
+            "psnr_db": 52.372,
+            "mae": 0.2554,
+            "cosine": 0.9999856668467125,
+            "pearson": 0.9999235353561974
+          },
+          "vs_original": {
+            "psnr_db": 52.373,
+            "mae": 0.2554,
+            "cosine": 0.9999856672895592,
+            "pearson": 0.9999235376746893
+          },
+          "outside_mask_exact": true
+        },
+        "q8_0-matmul": {
+          "vs_clean": {
+            "psnr_db": 25.815,
+            "mae": 5.6088,
+            "cosine": 0.99349010192845,
+            "pearson": 0.9649791831045852
+          },
+          "vs_f32_native": {
+            "psnr_db": 51.289,
+            "mae": 0.3078,
+            "cosine": 0.9999815866813092,
+            "pearson": 0.9999017655153543
+          },
+          "vs_original": {
+            "psnr_db": 51.289,
+            "mae": 0.3078,
+            "cosine": 0.9999815863122249,
+            "pearson": 0.9999017634602153
+          },
+          "outside_mask_exact": true
+        },
+        "q8_0-graph": {
+          "vs_clean": {
+            "psnr_db": 25.812,
+            "mae": 5.6171,
+            "cosine": 0.9934859380450236,
+            "pearson": 0.9649589535540433
+          },
+          "vs_f32_native": {
+            "psnr_db": 52.372,
+            "mae": 0.2554,
+            "cosine": 0.9999856668467125,
+            "pearson": 0.9999235353561974
+          },
+          "vs_original": {
+            "psnr_db": 52.373,
+            "mae": 0.2554,
+            "cosine": 0.9999856672895592,
+            "pearson": 0.9999235376746893
+          },
+          "outside_mask_exact": true
+        },
+        "q8_0-graph-matmul": {
+          "vs_clean": {
+            "psnr_db": 25.805,
+            "mae": 5.6092,
+            "cosine": 0.9934755630962172,
+            "pearson": 0.9648950322233397
+          },
+          "vs_f32_native": {
+            "psnr_db": 51.493,
+            "mae": 0.3035,
+            "cosine": 0.9999824247265748,
+            "pearson": 0.9999062420961057
+          },
+          "vs_original": {
+            "psnr_db": 51.493,
+            "mae": 0.3035,
+            "cosine": 0.9999824243448073,
+            "pearson": 0.9999062398953995
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-storage": {
+          "vs_clean": {
+            "psnr_db": 25.884,
+            "mae": 7.2181,
+            "cosine": 0.9939567290711763,
+            "pearson": 0.9683244115876711
+          },
+          "vs_f32_native": {
+            "psnr_db": 31.792,
+            "mae": 4.6454,
+            "cosine": 0.9989693717277572,
+            "pearson": 0.994729564498325
+          },
+          "vs_original": {
+            "psnr_db": 31.792,
+            "mae": 4.6454,
+            "cosine": 0.9989693550941627,
+            "pearson": 0.9947294842496107
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-matmul": {
+          "vs_clean": {
+            "psnr_db": 25.879,
+            "mae": 7.2181,
+            "cosine": 0.99394593456099,
+            "pearson": 0.9682660817745615
+          },
+          "vs_f32_native": {
+            "psnr_db": 31.793,
+            "mae": 4.6422,
+            "cosine": 0.9989655910470894,
+            "pearson": 0.9947093015964513
+          },
+          "vs_original": {
+            "psnr_db": 31.793,
+            "mae": 4.6422,
+            "cosine": 0.9989655743947584,
+            "pearson": 0.9947092212264707
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-graph": {
+          "vs_clean": {
+            "psnr_db": 25.884,
+            "mae": 7.2181,
+            "cosine": 0.9939567290711763,
+            "pearson": 0.9683244115876711
+          },
+          "vs_f32_native": {
+            "psnr_db": 31.792,
+            "mae": 4.6454,
+            "cosine": 0.9989693717277572,
+            "pearson": 0.994729564498325
+          },
+          "vs_original": {
+            "psnr_db": 31.792,
+            "mae": 4.6454,
+            "cosine": 0.9989693550941627,
+            "pearson": 0.9947294842496107
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-graph-matmul": {
+          "vs_clean": {
+            "psnr_db": 25.879,
+            "mae": 7.2181,
+            "cosine": 0.993945897984457,
+            "pearson": 0.9682659351029426
+          },
+          "vs_f32_native": {
+            "psnr_db": 31.793,
+            "mae": 4.6421,
+            "cosine": 0.9989656270806935,
+            "pearson": 0.9947095091041017
+          },
+          "vs_original": {
+            "psnr_db": 31.793,
+            "mae": 4.6422,
+            "cosine": 0.9989656104283092,
+            "pearson": 0.9947094287344995
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-s8-storage": {
+          "vs_clean": {
+            "psnr_db": 25.742,
+            "mae": 7.0448,
+            "cosine": 0.9936098665650545,
+            "pearson": 0.9662015602365199
+          },
+          "vs_f32_native": {
+            "psnr_db": 33.108,
+            "mae": 4.0903,
+            "cosine": 0.999251338143348,
+            "pearson": 0.9961205225260575
+          },
+          "vs_original": {
+            "psnr_db": 33.108,
+            "mae": 4.0903,
+            "cosine": 0.9992513222926591,
+            "pearson": 0.996120443832381
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-s8-graph-matmul": {
+          "vs_clean": {
+            "psnr_db": 25.75,
+            "mae": 7.0468,
+            "cosine": 0.9936228195249258,
+            "pearson": 0.9662737529449883
+          },
+          "vs_f32_native": {
+            "psnr_db": 33.066,
+            "mae": 4.1013,
+            "cosine": 0.9992403270170855,
+            "pearson": 0.9960633219907803
+          },
+          "vs_original": {
+            "psnr_db": 33.065,
+            "mae": 4.1014,
+            "cosine": 0.9992403111760672,
+            "pearson": 0.996063243356208
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-s8e8-storage": {
+          "vs_clean": {
+            "psnr_db": 26.216,
+            "mae": 6.2571,
+            "cosine": 0.9941257384962565,
+            "pearson": 0.9688585178321377
+          },
+          "vs_f32_native": {
+            "psnr_db": 36.293,
+            "mae": 2.6545,
+            "cosine": 0.99963386849814,
+            "pearson": 0.9981157236294637
+          },
+          "vs_original": {
+            "psnr_db": 36.292,
+            "mae": 2.6545,
+            "cosine": 0.9996338631113321,
+            "pearson": 0.9981157000937744
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-s8e8-graph-matmul": {
+          "vs_clean": {
+            "psnr_db": 26.211,
+            "mae": 6.2524,
+            "cosine": 0.9941179037498822,
+            "pearson": 0.9688220712729304
+          },
+          "vs_f32_native": {
+            "psnr_db": 36.359,
+            "mae": 2.6533,
+            "cosine": 0.9996432162953637,
+            "pearson": 0.9981664300035031
+          },
+          "vs_original": {
+            "psnr_db": 36.359,
+            "mae": 2.6534,
+            "cosine": 0.999643210909068,
+            "pearson": 0.998166406563767
+          },
+          "outside_mask_exact": true
+        }
+      }
+    },
+    {
+      "photo": "fox",
+      "size": [
+        800,
+        200
+      ],
+      "fill_pixels": 7713,
+      "original_vs_clean": {
+        "psnr_db": 7.347,
+        "mae": 65.4712,
+        "cosine": 0.9075582680652626,
+        "pearson": null
+      },
+      "variants": {
+        "f32": {
+          "vs_clean": {
+            "psnr_db": 7.347,
+            "mae": 65.4712,
+            "cosine": 0.907558227050343,
+            "pearson": null
+          },
+          "vs_f32_native": {
+            "psnr_db": "inf",
+            "mae": 0.0,
+            "cosine": 1.0,
+            "pearson": 1.0000000000000002
+          },
+          "vs_original": {
+            "psnr_db": 91.774,
+            "mae": 0.0,
+            "cosine": 0.9999999995045393,
+            "pearson": 0.9999999971903044
+          },
+          "outside_mask_exact": true
+        },
+        "f32-stored": {
+          "vs_clean": {
+            "psnr_db": 7.347,
+            "mae": 65.4712,
+            "cosine": 0.907558227050343,
+            "pearson": null
+          },
+          "vs_f32_native": {
+            "psnr_db": "inf",
+            "mae": 0.0,
+            "cosine": 1.0,
+            "pearson": 1.0000000000000002
+          },
+          "vs_original": {
+            "psnr_db": 91.774,
+            "mae": 0.0,
+            "cosine": 0.9999999995045393,
+            "pearson": 0.9999999971903044
+          },
+          "outside_mask_exact": true
+        },
+        "f32-graph": {
+          "vs_clean": {
+            "psnr_db": 7.347,
+            "mae": 65.4712,
+            "cosine": 0.907558227050343,
+            "pearson": null
+          },
+          "vs_f32_native": {
+            "psnr_db": "inf",
+            "mae": 0.0,
+            "cosine": 1.0,
+            "pearson": 1.0000000000000002
+          },
+          "vs_original": {
+            "psnr_db": 91.774,
+            "mae": 0.0,
+            "cosine": 0.9999999995045393,
+            "pearson": 0.9999999971903044
+          },
+          "outside_mask_exact": true
+        },
+        "f16-storage": {
+          "vs_clean": {
+            "psnr_db": 7.347,
+            "mae": 65.4849,
+            "cosine": 0.9075403619572981,
+            "pearson": null
+          },
+          "vs_f32_native": {
+            "psnr_db": 63.456,
+            "mae": 0.0293,
+            "cosine": 0.9999996649364977,
+            "pearson": 0.9999981051856515
+          },
+          "vs_original": {
+            "psnr_db": 63.449,
+            "mae": 0.0294,
+            "cosine": 0.9999996644506896,
+            "pearson": 0.9999981024541105
+          },
+          "outside_mask_exact": true
+        },
+        "f16-matmul": {
+          "vs_clean": {
+            "psnr_db": 7.347,
+            "mae": 65.4849,
+            "cosine": 0.9075403619572981,
+            "pearson": null
+          },
+          "vs_f32_native": {
+            "psnr_db": 63.456,
+            "mae": 0.0293,
+            "cosine": 0.9999996649364977,
+            "pearson": 0.9999981051856515
+          },
+          "vs_original": {
+            "psnr_db": 63.449,
+            "mae": 0.0294,
+            "cosine": 0.9999996644506896,
+            "pearson": 0.9999981024541105
+          },
+          "outside_mask_exact": true
+        },
+        "f16-graph": {
+          "vs_clean": {
+            "psnr_db": 7.347,
+            "mae": 65.4849,
+            "cosine": 0.9075403619572981,
+            "pearson": null
+          },
+          "vs_f32_native": {
+            "psnr_db": 63.456,
+            "mae": 0.0293,
+            "cosine": 0.9999996649364977,
+            "pearson": 0.9999981051856515
+          },
+          "vs_original": {
+            "psnr_db": 63.449,
+            "mae": 0.0294,
+            "cosine": 0.9999996644506896,
+            "pearson": 0.9999981024541105
+          },
+          "outside_mask_exact": true
+        },
+        "f16-graph-matmul": {
+          "vs_clean": {
+            "psnr_db": 7.347,
+            "mae": 65.4849,
+            "cosine": 0.9075403619572981,
+            "pearson": null
+          },
+          "vs_f32_native": {
+            "psnr_db": 63.456,
+            "mae": 0.0293,
+            "cosine": 0.9999996649364977,
+            "pearson": 0.9999981051856515
+          },
+          "vs_original": {
+            "psnr_db": 63.449,
+            "mae": 0.0294,
+            "cosine": 0.9999996644506896,
+            "pearson": 0.9999981024541105
+          },
+          "outside_mask_exact": true
+        },
+        "q8_0-storage": {
+          "vs_clean": {
+            "psnr_db": 7.33,
+            "mae": 65.6392,
+            "cosine": 0.9071344942059771,
+            "pearson": null
+          },
+          "vs_f32_native": {
+            "psnr_db": 41.922,
+            "mae": 0.9371,
+            "cosine": 0.9999521766047542,
+            "pearson": 0.9997322610393391
+          },
+          "vs_original": {
+            "psnr_db": 41.92,
+            "mae": 0.9371,
+            "cosine": 0.9999521593412776,
+            "pearson": 0.9997321638527858
+          },
+          "outside_mask_exact": true
+        },
+        "q8_0-matmul": {
+          "vs_clean": {
+            "psnr_db": 7.347,
+            "mae": 65.4316,
+            "cosine": 0.9075374662090759,
+            "pearson": null
+          },
+          "vs_f32_native": {
+            "psnr_db": 40.584,
+            "mae": 1.1071,
+            "cosine": 0.999934876740961,
+            "pearson": 0.999630737242394
+          },
+          "vs_original": {
+            "psnr_db": 40.584,
+            "mae": 1.1072,
+            "cosine": 0.9999348643264568,
+            "pearson": 0.9996306667976318
+          },
+          "outside_mask_exact": true
+        },
+        "q8_0-graph": {
+          "vs_clean": {
+            "psnr_db": 7.33,
+            "mae": 65.6392,
+            "cosine": 0.9071344942059771,
+            "pearson": null
+          },
+          "vs_f32_native": {
+            "psnr_db": 41.922,
+            "mae": 0.9371,
+            "cosine": 0.9999521766047542,
+            "pearson": 0.9997322610393391
+          },
+          "vs_original": {
+            "psnr_db": 41.92,
+            "mae": 0.9371,
+            "cosine": 0.9999521593412776,
+            "pearson": 0.9997321638527858
+          },
+          "outside_mask_exact": true
+        },
+        "q8_0-graph-matmul": {
+          "vs_clean": {
+            "psnr_db": 7.345,
+            "mae": 65.49,
+            "cosine": 0.9074869935051786,
+            "pearson": null
+          },
+          "vs_f32_native": {
+            "psnr_db": 40.251,
+            "mae": 1.159,
+            "cosine": 0.9999296374791181,
+            "pearson": 0.9996012071305669
+          },
+          "vs_original": {
+            "psnr_db": 40.25,
+            "mae": 1.159,
+            "cosine": 0.9999296181717641,
+            "pearson": 0.9996010976898487
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-storage": {
+          "vs_clean": {
+            "psnr_db": 7.281,
+            "mae": 67.2588,
+            "cosine": 0.9065807955095978,
+            "pearson": null
+          },
+          "vs_f32_native": {
+            "psnr_db": 23.282,
+            "mae": 8.3514,
+            "cosine": 0.996504199596874,
+            "pearson": 0.9802897143435497
+          },
+          "vs_original": {
+            "psnr_db": 23.282,
+            "mae": 8.3515,
+            "cosine": 0.9965041962819067,
+            "pearson": 0.9802896927573844
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-matmul": {
+          "vs_clean": {
+            "psnr_db": 7.273,
+            "mae": 67.3472,
+            "cosine": 0.906400994170453,
+            "pearson": null
+          },
+          "vs_f32_native": {
+            "psnr_db": 23.323,
+            "mae": 8.3212,
+            "cosine": 0.9965387316778058,
+            "pearson": 0.9805084849529835
+          },
+          "vs_original": {
+            "psnr_db": 23.323,
+            "mae": 8.3212,
+            "cosine": 0.9965387294049045,
+            "pearson": 0.9805084695380145
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-graph": {
+          "vs_clean": {
+            "psnr_db": 7.281,
+            "mae": 67.2588,
+            "cosine": 0.9065808292456495,
+            "pearson": null
+          },
+          "vs_f32_native": {
+            "psnr_db": 23.282,
+            "mae": 8.3515,
+            "cosine": 0.996504157185921,
+            "pearson": 0.9802894706025521
+          },
+          "vs_original": {
+            "psnr_db": 23.282,
+            "mae": 8.3515,
+            "cosine": 0.996504153870927,
+            "pearson": 0.9802894490161372
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-graph-matmul": {
+          "vs_clean": {
+            "psnr_db": 7.273,
+            "mae": 67.347,
+            "cosine": 0.9064013711219693,
+            "pearson": null
+          },
+          "vs_f32_native": {
+            "psnr_db": 23.323,
+            "mae": 8.3212,
+            "cosine": 0.9965387886555719,
+            "pearson": 0.9805087550215081
+          },
+          "vs_original": {
+            "psnr_db": 23.323,
+            "mae": 8.3212,
+            "cosine": 0.9965387863824864,
+            "pearson": 0.9805087396050469
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-s8-storage": {
+          "vs_clean": {
+            "psnr_db": 7.369,
+            "mae": 65.9903,
+            "cosine": 0.9084471144726386,
+            "pearson": null
+          },
+          "vs_f32_native": {
+            "psnr_db": 25.007,
+            "mae": 6.6049,
+            "cosine": 0.9976442310219393,
+            "pearson": 0.9865918622459353
+          },
+          "vs_original": {
+            "psnr_db": 25.007,
+            "mae": 6.6049,
+            "cosine": 0.9976441948350111,
+            "pearson": 0.9865916520758673
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-s8-graph-matmul": {
+          "vs_clean": {
+            "psnr_db": 7.373,
+            "mae": 65.9562,
+            "cosine": 0.9085467605902853,
+            "pearson": null
+          },
+          "vs_f32_native": {
+            "psnr_db": 25.082,
+            "mae": 6.5565,
+            "cosine": 0.9976849922699276,
+            "pearson": 0.9868202952328716
+          },
+          "vs_original": {
+            "psnr_db": 25.082,
+            "mae": 6.5565,
+            "cosine": 0.9976849540760502,
+            "pearson": 0.986820073431117
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-s8e8-storage": {
+          "vs_clean": {
+            "psnr_db": 7.557,
+            "mae": 63.325,
+            "cosine": 0.9123011883004418,
+            "pearson": null
+          },
+          "vs_f32_native": {
+            "psnr_db": 26.328,
+            "mae": 5.8496,
+            "cosine": 0.998292292843512,
+            "pearson": 0.9904499002145507
+          },
+          "vs_original": {
+            "psnr_db": 26.328,
+            "mae": 5.8496,
+            "cosine": 0.9982922886059727,
+            "pearson": 0.9904498670619282
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-s8e8-graph-matmul": {
+          "vs_clean": {
+            "psnr_db": 7.58,
+            "mae": 63.0968,
+            "cosine": 0.9128074197331904,
+            "pearson": null
+          },
+          "vs_f32_native": {
+            "psnr_db": 26.211,
+            "mae": 5.9759,
+            "cosine": 0.9982503454403481,
+            "pearson": 0.990265898638161
+          },
+          "vs_original": {
+            "psnr_db": 26.211,
+            "mae": 5.9759,
+            "cosine": 0.9982503519251594,
+            "pearson": 0.990265927178884
+          },
+          "outside_mask_exact": true
+        }
+      }
+    },
+    {
+      "photo": "landscape",
+      "size": [
+        553,
+        1024
+      ],
+      "fill_pixels": 47276,
+      "original_vs_clean": {
+        "psnr_db": 24.0,
+        "mae": 10.9045,
+        "cosine": 0.9900717788922436,
+        "pearson": 0.8897151389797623
+      },
+      "variants": {
+        "f32": {
+          "vs_clean": {
+            "psnr_db": 24.0,
+            "mae": 10.9046,
+            "cosine": 0.9900717727962127,
+            "pearson": 0.8897150747030185
+          },
+          "vs_f32_native": {
+            "psnr_db": "inf",
+            "mae": 0.0,
+            "cosine": 1.0,
+            "pearson": 1.0
+          },
+          "vs_original": {
+            "psnr_db": 84.085,
+            "mae": 0.0003,
+            "cosine": 0.9999999902776406,
+            "pearson": 0.9999998902753862
+          },
+          "outside_mask_exact": true
+        },
+        "f32-stored": {
+          "vs_clean": {
+            "psnr_db": 24.0,
+            "mae": 10.9046,
+            "cosine": 0.9900717727962127,
+            "pearson": 0.8897150747030185
+          },
+          "vs_f32_native": {
+            "psnr_db": "inf",
+            "mae": 0.0,
+            "cosine": 1.0,
+            "pearson": 1.0
+          },
+          "vs_original": {
+            "psnr_db": 84.085,
+            "mae": 0.0003,
+            "cosine": 0.9999999902776406,
+            "pearson": 0.9999998902753862
+          },
+          "outside_mask_exact": true
+        },
+        "f32-graph": {
+          "vs_clean": {
+            "psnr_db": 24.0,
+            "mae": 10.9045,
+            "cosine": 0.9900717885691066,
+            "pearson": 0.8897152501956341
+          },
+          "vs_f32_native": {
+            "psnr_db": 92.659,
+            "mae": 0.0,
+            "cosine": 0.9999999986496695,
+            "pearson": 0.9999999847604376
+          },
+          "vs_original": {
+            "psnr_db": 84.735,
+            "mae": 0.0002,
+            "cosine": 0.9999999916279908,
+            "pearson": 0.9999999055151708
+          },
+          "outside_mask_exact": true
+        },
+        "f16-storage": {
+          "vs_clean": {
+            "psnr_db": 23.999,
+            "mae": 10.9048,
+            "cosine": 0.990071690307653,
+            "pearson": 0.8897168069798923
+          },
+          "vs_f32_native": {
+            "psnr_db": 65.324,
+            "mae": 0.0191,
+            "cosine": 0.9999992689304815,
+            "pearson": 0.9999917499611011
+          },
+          "vs_original": {
+            "psnr_db": 65.314,
+            "mae": 0.0191,
+            "cosine": 0.9999992673108044,
+            "pearson": 0.9999917316831041
+          },
+          "outside_mask_exact": true
+        },
+        "f16-matmul": {
+          "vs_clean": {
+            "psnr_db": 23.999,
+            "mae": 10.9048,
+            "cosine": 0.9900717043577886,
+            "pearson": 0.8897169699276889
+          },
+          "vs_f32_native": {
+            "psnr_db": 65.328,
+            "mae": 0.0191,
+            "cosine": 0.9999992697405956,
+            "pearson": 0.999991759106417
+          },
+          "vs_original": {
+            "psnr_db": 65.319,
+            "mae": 0.0191,
+            "cosine": 0.9999992681209001,
+            "pearson": 0.9999917408282171
+          },
+          "outside_mask_exact": true
+        },
+        "f16-graph": {
+          "vs_clean": {
+            "psnr_db": 24.0,
+            "mae": 10.9048,
+            "cosine": 0.9900717129212923,
+            "pearson": 0.8897170650602838
+          },
+          "vs_f32_native": {
+            "psnr_db": 65.33,
+            "mae": 0.0191,
+            "cosine": 0.9999992700105883,
+            "pearson": 0.9999917621533743
+          },
+          "vs_original": {
+            "psnr_db": 65.32,
+            "mae": 0.0191,
+            "cosine": 0.9999992683908764,
+            "pearson": 0.9999917438749906
+          },
+          "outside_mask_exact": true
+        },
+        "f16-graph-matmul": {
+          "vs_clean": {
+            "psnr_db": 24.0,
+            "mae": 10.9048,
+            "cosine": 0.9900717175848992,
+            "pearson": 0.8897171384714879
+          },
+          "vs_f32_native": {
+            "psnr_db": 65.325,
+            "mae": 0.0191,
+            "cosine": 0.9999992692004356,
+            "pearson": 0.999991753019405
+          },
+          "vs_original": {
+            "psnr_db": 65.316,
+            "mae": 0.0191,
+            "cosine": 0.9999992675807347,
+            "pearson": 0.9999917347411569
+          },
+          "outside_mask_exact": true
+        },
+        "q8_0-storage": {
+          "vs_clean": {
+            "psnr_db": 23.995,
+            "mae": 10.9089,
+            "cosine": 0.990065890294554,
+            "pearson": 0.8896788271929166
+          },
+          "vs_f32_native": {
+            "psnr_db": 48.526,
+            "mae": 0.6133,
+            "cosine": 0.9999651051606551,
+            "pearson": 0.9996063578289709
+          },
+          "vs_original": {
+            "psnr_db": 48.526,
+            "mae": 0.6134,
+            "cosine": 0.9999651002195556,
+            "pearson": 0.9996063020798935
+          },
+          "outside_mask_exact": true
+        },
+        "q8_0-matmul": {
+          "vs_clean": {
+            "psnr_db": 23.999,
+            "mae": 10.9059,
+            "cosine": 0.9900702659421152,
+            "pearson": 0.8895608693647421
+          },
+          "vs_f32_native": {
+            "psnr_db": 45.346,
+            "mae": 0.9177,
+            "cosine": 0.9999272761825712,
+            "pearson": 0.9991792317552016
+          },
+          "vs_original": {
+            "psnr_db": 45.346,
+            "mae": 0.9178,
+            "cosine": 0.9999272692048509,
+            "pearson": 0.9991791527993262
+          },
+          "outside_mask_exact": true
+        },
+        "q8_0-graph": {
+          "vs_clean": {
+            "psnr_db": 23.995,
+            "mae": 10.9089,
+            "cosine": 0.9900659190282178,
+            "pearson": 0.8896790842502215
+          },
+          "vs_f32_native": {
+            "psnr_db": 48.526,
+            "mae": 0.6133,
+            "cosine": 0.9999651046965593,
+            "pearson": 0.9996063521097897
+          },
+          "vs_original": {
+            "psnr_db": 48.525,
+            "mae": 0.6134,
+            "cosine": 0.9999650997554114,
+            "pearson": 0.9996062963601011
+          },
+          "outside_mask_exact": true
+        },
+        "q8_0-graph-matmul": {
+          "vs_clean": {
+            "psnr_db": 23.997,
+            "mae": 10.9137,
+            "cosine": 0.9900669278823065,
+            "pearson": 0.889500170322663
+          },
+          "vs_f32_native": {
+            "psnr_db": 45.211,
+            "mae": 0.9306,
+            "cosine": 0.9999250057024661,
+            "pearson": 0.9991537994932532
+          },
+          "vs_original": {
+            "psnr_db": 45.211,
+            "mae": 0.9306,
+            "cosine": 0.9999249992011624,
+            "pearson": 0.9991537258920218
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-storage": {
+          "vs_clean": {
+            "psnr_db": 23.913,
+            "mae": 11.1793,
+            "cosine": 0.9899046857101048,
+            "pearson": 0.8862861154276717
+          },
+          "vs_f32_native": {
+            "psnr_db": 31.206,
+            "mae": 5.276,
+            "cosine": 0.9983903495568393,
+            "pearson": 0.9816813189365112
+          },
+          "vs_original": {
+            "psnr_db": 31.206,
+            "mae": 5.276,
+            "cosine": 0.9983903554528275,
+            "pearson": 0.9816813852604606
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-matmul": {
+          "vs_clean": {
+            "psnr_db": 23.914,
+            "mae": 11.1792,
+            "cosine": 0.9899050345342874,
+            "pearson": 0.8862950697172594
+          },
+          "vs_f32_native": {
+            "psnr_db": 31.198,
+            "mae": 5.2791,
+            "cosine": 0.9983866555050477,
+            "pearson": 0.9816387978626495
+          },
+          "vs_original": {
+            "psnr_db": 31.198,
+            "mae": 5.2791,
+            "cosine": 0.9983866602892727,
+            "pearson": 0.9816388514089375
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-graph": {
+          "vs_clean": {
+            "psnr_db": 23.913,
+            "mae": 11.1793,
+            "cosine": 0.9899046569633501,
+            "pearson": 0.8862858066686753
+          },
+          "vs_f32_native": {
+            "psnr_db": 31.206,
+            "mae": 5.276,
+            "cosine": 0.9983903476236081,
+            "pearson": 0.9816812964617536
+          },
+          "vs_original": {
+            "psnr_db": 31.206,
+            "mae": 5.276,
+            "cosine": 0.9983903535195573,
+            "pearson": 0.9816813627852394
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-graph-matmul": {
+          "vs_clean": {
+            "psnr_db": 23.914,
+            "mae": 11.1792,
+            "cosine": 0.9899051516532634,
+            "pearson": 0.8862963734572584
+          },
+          "vs_f32_native": {
+            "psnr_db": 31.198,
+            "mae": 5.2792,
+            "cosine": 0.9983866011789216,
+            "pearson": 0.9816381739580637
+          },
+          "vs_original": {
+            "psnr_db": 31.198,
+            "mae": 5.2792,
+            "cosine": 0.9983866059629956,
+            "pearson": 0.9816382275026062
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-s8-storage": {
+          "vs_clean": {
+            "psnr_db": 23.922,
+            "mae": 11.1098,
+            "cosine": 0.9898710458328596,
+            "pearson": 0.886255000547822
+          },
+          "vs_f32_native": {
+            "psnr_db": 32.123,
+            "mae": 4.7385,
+            "cosine": 0.9986563319929472,
+            "pearson": 0.9847292876722638
+          },
+          "vs_original": {
+            "psnr_db": 32.123,
+            "mae": 4.7386,
+            "cosine": 0.998656333827922,
+            "pearson": 0.9847293075335593
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-s8-graph-matmul": {
+          "vs_clean": {
+            "psnr_db": 23.925,
+            "mae": 11.1069,
+            "cosine": 0.9898775971543142,
+            "pearson": 0.8863080374752721
+          },
+          "vs_f32_native": {
+            "psnr_db": 32.116,
+            "mae": 4.7446,
+            "cosine": 0.9986553214386347,
+            "pearson": 0.9847176606787542
+          },
+          "vs_original": {
+            "psnr_db": 32.116,
+            "mae": 4.7447,
+            "cosine": 0.9986553221907779,
+            "pearson": 0.984717668142292
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-s8e8-storage": {
+          "vs_clean": {
+            "psnr_db": 23.961,
+            "mae": 11.0033,
+            "cosine": 0.9899272190982566,
+            "pearson": 0.8872321085211847
+          },
+          "vs_f32_native": {
+            "psnr_db": 35.013,
+            "mae": 3.3445,
+            "cosine": 0.9992378183883491,
+            "pearson": 0.9913657334187779
+          },
+          "vs_original": {
+            "psnr_db": 35.013,
+            "mae": 3.3445,
+            "cosine": 0.9992378368617021,
+            "pearson": 0.9913659432021308
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-s8e8-graph-matmul": {
+          "vs_clean": {
+            "psnr_db": 23.958,
+            "mae": 11.0103,
+            "cosine": 0.9899167573992597,
+            "pearson": 0.8869999320526036
+          },
+          "vs_f32_native": {
+            "psnr_db": 34.843,
+            "mae": 3.4094,
+            "cosine": 0.9992088768221984,
+            "pearson": 0.9910389496344714
+          },
+          "vs_original": {
+            "psnr_db": 34.843,
+            "mae": 3.4093,
+            "cosine": 0.9992088926824844,
+            "pearson": 0.991039129816738
+          },
+          "outside_mask_exact": true
+        }
+      }
+    },
+    {
+      "photo": "street",
+      "size": [
+        1024,
+        682
+      ],
+      "fill_pixels": 36083,
+      "original_vs_clean": {
+        "psnr_db": 14.599,
+        "mae": 33.9624,
+        "cosine": 0.8703038701055814,
+        "pearson": 0.5352278477629807
+      },
+      "variants": {
+        "f32": {
+          "vs_clean": {
+            "psnr_db": 14.599,
+            "mae": 33.9624,
+            "cosine": 0.8703037555881606,
+            "pearson": 0.5352278443683617
+          },
+          "vs_f32_native": {
+            "psnr_db": "inf",
+            "mae": 0.0,
+            "cosine": 1.0,
+            "pearson": 1.0
+          },
+          "vs_original": {
+            "psnr_db": 84.496,
+            "mae": 0.0002,
+            "cosine": 0.9999999860944871,
+            "pearson": 0.9999999491897906
+          },
+          "outside_mask_exact": true
+        },
+        "f32-stored": {
+          "vs_clean": {
+            "psnr_db": 14.599,
+            "mae": 33.9624,
+            "cosine": 0.8703037555881606,
+            "pearson": 0.5352278443683617
+          },
+          "vs_f32_native": {
+            "psnr_db": "inf",
+            "mae": 0.0,
+            "cosine": 1.0,
+            "pearson": 1.0
+          },
+          "vs_original": {
+            "psnr_db": 84.496,
+            "mae": 0.0002,
+            "cosine": 0.9999999860944871,
+            "pearson": 0.9999999491897906
+          },
+          "outside_mask_exact": true
+        },
+        "f32-graph": {
+          "vs_clean": {
+            "psnr_db": 14.599,
+            "mae": 33.9624,
+            "cosine": 0.8703038788189157,
+            "pearson": 0.5352281253748296
+          },
+          "vs_f32_native": {
+            "psnr_db": 88.061,
+            "mae": 0.0001,
+            "cosine": 0.9999999938816814,
+            "pearson": 0.9999999776437432
+          },
+          "vs_original": {
+            "psnr_db": 85.922,
+            "mae": 0.0002,
+            "cosine": 0.9999999899881362,
+            "pearson": 0.9999999634168117
+          },
+          "outside_mask_exact": true
+        },
+        "f16-storage": {
+          "vs_clean": {
+            "psnr_db": 14.6,
+            "mae": 33.9615,
+            "cosine": 0.8703059657000154,
+            "pearson": 0.5352157630991219
+          },
+          "vs_f32_native": {
+            "psnr_db": 63.154,
+            "mae": 0.0315,
+            "cosine": 0.999998107336062,
+            "pearson": 0.9999930853198421
+          },
+          "vs_original": {
+            "psnr_db": 63.15,
+            "mae": 0.0315,
+            "cosine": 0.999998105667705,
+            "pearson": 0.9999930791593159
+          },
+          "outside_mask_exact": true
+        },
+        "f16-matmul": {
+          "vs_clean": {
+            "psnr_db": 14.6,
+            "mae": 33.9615,
+            "cosine": 0.8703059643292836,
+            "pearson": 0.5352156500877018
+          },
+          "vs_f32_native": {
+            "psnr_db": 63.155,
+            "mae": 0.0314,
+            "cosine": 0.999998107890995,
+            "pearson": 0.9999930873614572
+          },
+          "vs_original": {
+            "psnr_db": 63.151,
+            "mae": 0.0315,
+            "cosine": 0.9999981062226377,
+            "pearson": 0.999993081200616
+          },
+          "outside_mask_exact": true
+        },
+        "f16-graph": {
+          "vs_clean": {
+            "psnr_db": 14.6,
+            "mae": 33.9615,
+            "cosine": 0.8703058389955,
+            "pearson": 0.5352152525210839
+          },
+          "vs_f32_native": {
+            "psnr_db": 63.15,
+            "mae": 0.0315,
+            "cosine": 0.9999981056637572,
+            "pearson": 0.9999930792161288
+          },
+          "vs_original": {
+            "psnr_db": 63.146,
+            "mae": 0.0315,
+            "cosine": 0.9999981039953996,
+            "pearson": 0.9999930730554307
+          },
+          "outside_mask_exact": true
+        },
+        "f16-graph-matmul": {
+          "vs_clean": {
+            "psnr_db": 14.6,
+            "mae": 33.9615,
+            "cosine": 0.8703059825723852,
+            "pearson": 0.5352156314825541
+          },
+          "vs_f32_native": {
+            "psnr_db": 63.158,
+            "mae": 0.0314,
+            "cosine": 0.9999981089951615,
+            "pearson": 0.999993091407053
+          },
+          "vs_original": {
+            "psnr_db": 63.154,
+            "mae": 0.0315,
+            "cosine": 0.9999981073268033,
+            "pearson": 0.999993085245967
+          },
+          "outside_mask_exact": true
+        },
+        "q8_0-storage": {
+          "vs_clean": {
+            "psnr_db": 14.609,
+            "mae": 33.9285,
+            "cosine": 0.8705584664398324,
+            "pearson": 0.5362713441029164
+          },
+          "vs_f32_native": {
+            "psnr_db": 43.052,
+            "mae": 1.0456,
+            "cosine": 0.9998061339570202,
+            "pearson": 0.9992918847568749
+          },
+          "vs_original": {
+            "psnr_db": 43.052,
+            "mae": 1.0457,
+            "cosine": 0.9998061245017165,
+            "pearson": 0.9992918499407486
+          },
+          "outside_mask_exact": true
+        },
+        "q8_0-matmul": {
+          "vs_clean": {
+            "psnr_db": 14.614,
+            "mae": 33.8971,
+            "cosine": 0.8706706597936862,
+            "pearson": 0.5368702957219091
+          },
+          "vs_f32_native": {
+            "psnr_db": 40.334,
+            "mae": 1.4353,
+            "cosine": 0.9996375300212182,
+            "pearson": 0.9986769067769723
+          },
+          "vs_original": {
+            "psnr_db": 40.334,
+            "mae": 1.4353,
+            "cosine": 0.9996375016383853,
+            "pearson": 0.9986768028699003
+          },
+          "outside_mask_exact": true
+        },
+        "q8_0-graph": {
+          "vs_clean": {
+            "psnr_db": 14.609,
+            "mae": 33.9285,
+            "cosine": 0.8705584825625204,
+            "pearson": 0.5362713273580885
+          },
+          "vs_f32_native": {
+            "psnr_db": 43.052,
+            "mae": 1.0456,
+            "cosine": 0.9998061345567303,
+            "pearson": 0.9992918867574966
+          },
+          "vs_original": {
+            "psnr_db": 43.052,
+            "mae": 1.0457,
+            "cosine": 0.999806125101426,
+            "pearson": 0.9992918519411476
+          },
+          "outside_mask_exact": true
+        },
+        "q8_0-graph-matmul": {
+          "vs_clean": {
+            "psnr_db": 14.613,
+            "mae": 33.9036,
+            "cosine": 0.8706056101288966,
+            "pearson": 0.5367623802840187
+          },
+          "vs_f32_native": {
+            "psnr_db": 40.212,
+            "mae": 1.4489,
+            "cosine": 0.9996275276183617,
+            "pearson": 0.9986411228183754
+          },
+          "vs_original": {
+            "psnr_db": 40.212,
+            "mae": 1.449,
+            "cosine": 0.9996274903154082,
+            "pearson": 0.9986409867114484
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-storage": {
+          "vs_clean": {
+            "psnr_db": 14.635,
+            "mae": 33.8256,
+            "cosine": 0.8671372523497571,
+            "pearson": 0.532070677107239
+          },
+          "vs_f32_native": {
+            "psnr_db": 24.059,
+            "mae": 10.6705,
+            "cosine": 0.9860974165714219,
+            "pearson": 0.9503221309790174
+          },
+          "vs_original": {
+            "psnr_db": 24.059,
+            "mae": 10.6706,
+            "cosine": 0.9860973424610543,
+            "pearson": 0.9503218416070132
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-matmul": {
+          "vs_clean": {
+            "psnr_db": 14.632,
+            "mae": 33.832,
+            "cosine": 0.8670574524811422,
+            "pearson": 0.5319070450452802
+          },
+          "vs_f32_native": {
+            "psnr_db": 24.054,
+            "mae": 10.6772,
+            "cosine": 0.9860823497787214,
+            "pearson": 0.9502869166565198
+          },
+          "vs_original": {
+            "psnr_db": 24.054,
+            "mae": 10.6773,
+            "cosine": 0.9860822708776538,
+            "pearson": 0.9502866104458703
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-graph": {
+          "vs_clean": {
+            "psnr_db": 14.635,
+            "mae": 33.8256,
+            "cosine": 0.8671372119524174,
+            "pearson": 0.5320704268433996
+          },
+          "vs_f32_native": {
+            "psnr_db": 24.059,
+            "mae": 10.6705,
+            "cosine": 0.9860974132586973,
+            "pearson": 0.9503221017768444
+          },
+          "vs_original": {
+            "psnr_db": 24.059,
+            "mae": 10.6706,
+            "cosine": 0.9860973391483406,
+            "pearson": 0.9503218124044993
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-graph-matmul": {
+          "vs_clean": {
+            "psnr_db": 14.632,
+            "mae": 33.8319,
+            "cosine": 0.8670583226845332,
+            "pearson": 0.5319092289809809
+          },
+          "vs_f32_native": {
+            "psnr_db": 24.054,
+            "mae": 10.677,
+            "cosine": 0.9860828753464478,
+            "pearson": 0.9502886608938279
+          },
+          "vs_original": {
+            "psnr_db": 24.054,
+            "mae": 10.6771,
+            "cosine": 0.9860827964455908,
+            "pearson": 0.9502883546826384
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-s8-storage": {
+          "vs_clean": {
+            "psnr_db": 14.648,
+            "mae": 33.7965,
+            "cosine": 0.867788557770223,
+            "pearson": 0.5347956918906152
+          },
+          "vs_f32_native": {
+            "psnr_db": 25.227,
+            "mae": 9.415,
+            "cosine": 0.9895935515740201,
+            "pearson": 0.9629289122985172
+          },
+          "vs_original": {
+            "psnr_db": 25.227,
+            "mae": 9.415,
+            "cosine": 0.9895935016642369,
+            "pearson": 0.9629287228241875
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-s8-graph-matmul": {
+          "vs_clean": {
+            "psnr_db": 14.648,
+            "mae": 33.7973,
+            "cosine": 0.8677579672552914,
+            "pearson": 0.534654514271481
+          },
+          "vs_f32_native": {
+            "psnr_db": 25.202,
+            "mae": 9.4385,
+            "cosine": 0.9895401600186573,
+            "pearson": 0.96273286572287
+          },
+          "vs_original": {
+            "psnr_db": 25.202,
+            "mae": 9.4386,
+            "cosine": 0.9895401100945946,
+            "pearson": 0.9627326759114467
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-s8e8-storage": {
+          "vs_clean": {
+            "psnr_db": 14.69,
+            "mae": 33.5614,
+            "cosine": 0.8700386428474497,
+            "pearson": 0.5372453282546606
+          },
+          "vs_f32_native": {
+            "psnr_db": 27.303,
+            "mae": 7.2849,
+            "cosine": 0.9933060207792125,
+            "pearson": 0.9757345850596962
+          },
+          "vs_original": {
+            "psnr_db": 27.303,
+            "mae": 7.2849,
+            "cosine": 0.9933061111101978,
+            "pearson": 0.9757348989541899
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-s8e8-graph-matmul": {
+          "vs_clean": {
+            "psnr_db": 14.687,
+            "mae": 33.5703,
+            "cosine": 0.8699312899459158,
+            "pearson": 0.5373451818415743
+          },
+          "vs_f32_native": {
+            "psnr_db": 27.235,
+            "mae": 7.3324,
+            "cosine": 0.9931975838274473,
+            "pearson": 0.9753784425826232
+          },
+          "vs_original": {
+            "psnr_db": 27.235,
+            "mae": 7.3324,
+            "cosine": 0.9931976463215813,
+            "pearson": 0.9753786562380815
+          },
+          "outside_mask_exact": true
+        }
+      }
+    }
+  ]
+}

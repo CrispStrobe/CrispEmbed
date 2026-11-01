@@ -1,0 +1,6 @@
+[ 25%] Built target ggml-base
+[ 75%] Built target ggml-cpu
+[100%] Built target ggml
+[100%] Building CXX object CMakeFiles/crispembed-quantize.dir/tools/quantize.cpp.o
+[100%] Linking CXX executable crispembed-quantize
+[100%] Built target crispembed-quantize

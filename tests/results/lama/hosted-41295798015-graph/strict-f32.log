@@ -1,0 +1,18 @@
+python-contracts: /opt/hostedtoolcache/Python/3.12.15/x64/bin/python tests/test_lama_contract.py -v
+hosted-controls: /opt/hostedtoolcache/Python/3.12.15/x64/bin/python tests/test_lama_hosted.py -v
+configure: cmake -S /home/runner/work/CrispEmbed/CrispEmbed -B /mnt/heavy/scratch/acc/build -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF -DGGML_BLAS=OFF -DGGML_CUDA=OFF -DGGML_METAL=OFF -DGGML_VULKAN=OFF -DGGML_OPENMP=OFF -DGGML_LLAMAFILE=OFF -DCRISPEMBED_BUILD_SHARED=OFF
+build: cmake --build /mnt/heavy/scratch/acc/build --target crispembed-cli test-lama-ops test-lama-diff -j2
+native-operators: /mnt/heavy/scratch/acc/build/test-lama-ops
+native-reference-contracts: /mnt/heavy/scratch/acc/build/test-lama-diff --contracts
+source-init: git init /mnt/heavy/scratch/acc/original-source
+source-remote: git -C /mnt/heavy/scratch/acc/original-source remote add origin https://github.com/advimman/lama
+source-fetch: git -C /mnt/heavy/scratch/acc/original-source fetch --depth 1 origin 786f5936b27fb3dacd2b1ad799e4de968ea697e7
+source-checkout: git -C /mnt/heavy/scratch/acc/original-source checkout --detach FETCH_HEAD
+capture-original: /opt/hostedtoolcache/Python/3.12.15/x64/bin/python tools/dump_lama_reference.py --source-dir /mnt/heavy/scratch/acc/original-source --checkpoint-archive /mnt/heavy/scratch/acc/big-lama.zip --output /home/runner/work/_temp/out/acceptance/original --cases subtitle_bar
+convert-after-original: /opt/hostedtoolcache/Python/3.12.15/x64/bin/python models/convert-lama-to-gguf.py --archive /mnt/heavy/scratch/acc/big-lama.zip --source-dir /mnt/heavy/scratch/acc/original-source --output /mnt/heavy/scratch/acc/big-lama-f32.gguf
+replay-subtitle_bar: /mnt/heavy/scratch/acc/build/test-lama-diff --model /mnt/heavy/scratch/acc/big-lama-f32.gguf --model-sha256 24736f267c68e013f0000ccb69560c4353b6a6d7983fc3cc2537d9f2e03f304c --reference /home/runner/work/_temp/out/acceptance/original/subtitle_bar/reference.gguf --reference-sha256 0915f81cac87cf9ea42cbcc6e744fdd75a90821793e4963ab1940e46d462d637 --output /home/runner/work/_temp/out/acceptance/native-subtitle_bar
+{
+  "status": "passed",
+  "phase": "original-native",
+  "native_qualified": false
+}

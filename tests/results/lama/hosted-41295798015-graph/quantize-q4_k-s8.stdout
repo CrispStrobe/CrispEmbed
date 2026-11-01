@@ -1,0 +1,842 @@
+Loading model from '/mnt/heavy/scratch/models/big-lama-f32.gguf'
+Writing quantized model to '/mnt/heavy/scratch/models/big-lama-q4_k-s8.gguf'
+[  1/837] generator.model.1.bn_l.bias                   -    f32, copy 0.0 MB
+[  2/837] generator.model.1.bn_l.running_mean           -    f32, copy 0.0 MB
+[  3/837] generator.model.1.bn_l.running_var            -    f32, copy 0.0 MB
+[  4/837] generator.model.1.bn_l.weight                 -    f32, copy 0.0 MB
+[  5/837] generator.model.1.ffc.convl2l.weight          -    f32, copy 0.0 MB
+[  6/837] generator.model.10.conv1.bn_g.bias            -    f32, copy 0.0 MB
+[  7/837] generator.model.10.conv1.bn_g.running_mean    -    f32, copy 0.0 MB
+[  8/837] generator.model.10.conv1.bn_g.running_var     -    f32, copy 0.0 MB
+[  9/837] generator.model.10.conv1.bn_g.weight          -    f32, copy 0.0 MB
+[ 10/837] generator.model.10.conv1.bn_l.bias            -    f32, copy 0.0 MB
+[ 11/837] generator.model.10.conv1.bn_l.running_mean    -    f32, copy 0.0 MB
+[ 12/837] generator.model.10.conv1.bn_l.running_var     -    f32, copy 0.0 MB
+[ 13/837] generator.model.10.conv1.bn_l.weight          -    f32, copy 0.0 MB
+[ 14/837] generator.model.10.conv1.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[ 15/837] generator.model.10.conv1.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[ 16/837] generator.model.10.conv1.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[ 17/837] generator.model.10.conv1.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[ 18/837] generator.model.10.conv1.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[ 19/837] generator.model.10.conv1.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[ 20/837] generator.model.10.conv1.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[ 21/837] generator.model.10.conv1.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[ 22/837] generator.model.10.conv1.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[ 23/837] generator.model.10.conv1.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[ 24/837] generator.model.10.conv1.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[ 25/837] generator.model.10.conv1.ffc.convg2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[ 26/837] generator.model.10.conv1.ffc.convl2g.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[ 27/837] generator.model.10.conv1.ffc.convl2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[ 28/837] generator.model.10.conv2.bn_g.bias            -    f32, copy 0.0 MB
+[ 29/837] generator.model.10.conv2.bn_g.running_mean    -    f32, copy 0.0 MB
+[ 30/837] generator.model.10.conv2.bn_g.running_var     -    f32, copy 0.0 MB
+[ 31/837] generator.model.10.conv2.bn_g.weight          -    f32, copy 0.0 MB
+[ 32/837] generator.model.10.conv2.bn_l.bias            -    f32, copy 0.0 MB
+[ 33/837] generator.model.10.conv2.bn_l.running_mean    -    f32, copy 0.0 MB
+[ 34/837] generator.model.10.conv2.bn_l.running_var     -    f32, copy 0.0 MB
+[ 35/837] generator.model.10.conv2.bn_l.weight          -    f32, copy 0.0 MB
+[ 36/837] generator.model.10.conv2.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[ 37/837] generator.model.10.conv2.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[ 38/837] generator.model.10.conv2.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[ 39/837] generator.model.10.conv2.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[ 40/837] generator.model.10.conv2.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[ 41/837] generator.model.10.conv2.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[ 42/837] generator.model.10.conv2.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[ 43/837] generator.model.10.conv2.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[ 44/837] generator.model.10.conv2.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[ 45/837] generator.model.10.conv2.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[ 46/837] generator.model.10.conv2.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[ 47/837] generator.model.10.conv2.ffc.convg2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[ 48/837] generator.model.10.conv2.ffc.convl2g.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[ 49/837] generator.model.10.conv2.ffc.convl2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[ 50/837] generator.model.11.conv1.bn_g.bias            -    f32, copy 0.0 MB
+[ 51/837] generator.model.11.conv1.bn_g.running_mean    -    f32, copy 0.0 MB
+[ 52/837] generator.model.11.conv1.bn_g.running_var     -    f32, copy 0.0 MB
+[ 53/837] generator.model.11.conv1.bn_g.weight          -    f32, copy 0.0 MB
+[ 54/837] generator.model.11.conv1.bn_l.bias            -    f32, copy 0.0 MB
+[ 55/837] generator.model.11.conv1.bn_l.running_mean    -    f32, copy 0.0 MB
+[ 56/837] generator.model.11.conv1.bn_l.running_var     -    f32, copy 0.0 MB
+[ 57/837] generator.model.11.conv1.bn_l.weight          -    f32, copy 0.0 MB
+[ 58/837] generator.model.11.conv1.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[ 59/837] generator.model.11.conv1.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[ 60/837] generator.model.11.conv1.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[ 61/837] generator.model.11.conv1.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[ 62/837] generator.model.11.conv1.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[ 63/837] generator.model.11.conv1.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[ 64/837] generator.model.11.conv1.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[ 65/837] generator.model.11.conv1.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[ 66/837] generator.model.11.conv1.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[ 67/837] generator.model.11.conv1.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[ 68/837] generator.model.11.conv1.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[ 69/837] generator.model.11.conv1.ffc.convg2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[ 70/837] generator.model.11.conv1.ffc.convl2g.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[ 71/837] generator.model.11.conv1.ffc.convl2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[ 72/837] generator.model.11.conv2.bn_g.bias            -    f32, copy 0.0 MB
+[ 73/837] generator.model.11.conv2.bn_g.running_mean    -    f32, copy 0.0 MB
+[ 74/837] generator.model.11.conv2.bn_g.running_var     -    f32, copy 0.0 MB
+[ 75/837] generator.model.11.conv2.bn_g.weight          -    f32, copy 0.0 MB
+[ 76/837] generator.model.11.conv2.bn_l.bias            -    f32, copy 0.0 MB
+[ 77/837] generator.model.11.conv2.bn_l.running_mean    -    f32, copy 0.0 MB
+[ 78/837] generator.model.11.conv2.bn_l.running_var     -    f32, copy 0.0 MB
+[ 79/837] generator.model.11.conv2.bn_l.weight          -    f32, copy 0.0 MB
+[ 80/837] generator.model.11.conv2.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[ 81/837] generator.model.11.conv2.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[ 82/837] generator.model.11.conv2.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[ 83/837] generator.model.11.conv2.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[ 84/837] generator.model.11.conv2.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[ 85/837] generator.model.11.conv2.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[ 86/837] generator.model.11.conv2.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[ 87/837] generator.model.11.conv2.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[ 88/837] generator.model.11.conv2.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[ 89/837] generator.model.11.conv2.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[ 90/837] generator.model.11.conv2.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[ 91/837] generator.model.11.conv2.ffc.convg2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[ 92/837] generator.model.11.conv2.ffc.convl2g.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[ 93/837] generator.model.11.conv2.ffc.convl2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[ 94/837] generator.model.12.conv1.bn_g.bias            -    f32, copy 0.0 MB
+[ 95/837] generator.model.12.conv1.bn_g.running_mean    -    f32, copy 0.0 MB
+[ 96/837] generator.model.12.conv1.bn_g.running_var     -    f32, copy 0.0 MB
+[ 97/837] generator.model.12.conv1.bn_g.weight          -    f32, copy 0.0 MB
+[ 98/837] generator.model.12.conv1.bn_l.bias            -    f32, copy 0.0 MB
+[ 99/837] generator.model.12.conv1.bn_l.running_mean    -    f32, copy 0.0 MB
+[100/837] generator.model.12.conv1.bn_l.running_var     -    f32, copy 0.0 MB
+[101/837] generator.model.12.conv1.bn_l.weight          -    f32, copy 0.0 MB
+[102/837] generator.model.12.conv1.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[103/837] generator.model.12.conv1.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[104/837] generator.model.12.conv1.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[105/837] generator.model.12.conv1.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[106/837] generator.model.12.conv1.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[107/837] generator.model.12.conv1.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[108/837] generator.model.12.conv1.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[109/837] generator.model.12.conv1.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[110/837] generator.model.12.conv1.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[111/837] generator.model.12.conv1.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[112/837] generator.model.12.conv1.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[113/837] generator.model.12.conv1.ffc.convg2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[114/837] generator.model.12.conv1.ffc.convl2g.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[115/837] generator.model.12.conv1.ffc.convl2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[116/837] generator.model.12.conv2.bn_g.bias            -    f32, copy 0.0 MB
+[117/837] generator.model.12.conv2.bn_g.running_mean    -    f32, copy 0.0 MB
+[118/837] generator.model.12.conv2.bn_g.running_var     -    f32, copy 0.0 MB
+[119/837] generator.model.12.conv2.bn_g.weight          -    f32, copy 0.0 MB
+[120/837] generator.model.12.conv2.bn_l.bias            -    f32, copy 0.0 MB
+[121/837] generator.model.12.conv2.bn_l.running_mean    -    f32, copy 0.0 MB
+[122/837] generator.model.12.conv2.bn_l.running_var     -    f32, copy 0.0 MB
+[123/837] generator.model.12.conv2.bn_l.weight          -    f32, copy 0.0 MB
+[124/837] generator.model.12.conv2.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[125/837] generator.model.12.conv2.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[126/837] generator.model.12.conv2.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[127/837] generator.model.12.conv2.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[128/837] generator.model.12.conv2.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[129/837] generator.model.12.conv2.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[130/837] generator.model.12.conv2.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[131/837] generator.model.12.conv2.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[132/837] generator.model.12.conv2.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[133/837] generator.model.12.conv2.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[134/837] generator.model.12.conv2.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[135/837] generator.model.12.conv2.ffc.convg2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[136/837] generator.model.12.conv2.ffc.convl2g.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[137/837] generator.model.12.conv2.ffc.convl2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[138/837] generator.model.13.conv1.bn_g.bias            -    f32, copy 0.0 MB
+[139/837] generator.model.13.conv1.bn_g.running_mean    -    f32, copy 0.0 MB
+[140/837] generator.model.13.conv1.bn_g.running_var     -    f32, copy 0.0 MB
+[141/837] generator.model.13.conv1.bn_g.weight          -    f32, copy 0.0 MB
+[142/837] generator.model.13.conv1.bn_l.bias            -    f32, copy 0.0 MB
+[143/837] generator.model.13.conv1.bn_l.running_mean    -    f32, copy 0.0 MB
+[144/837] generator.model.13.conv1.bn_l.running_var     -    f32, copy 0.0 MB
+[145/837] generator.model.13.conv1.bn_l.weight          -    f32, copy 0.0 MB
+[146/837] generator.model.13.conv1.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[147/837] generator.model.13.conv1.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[148/837] generator.model.13.conv1.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[149/837] generator.model.13.conv1.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[150/837] generator.model.13.conv1.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[151/837] generator.model.13.conv1.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[152/837] generator.model.13.conv1.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[153/837] generator.model.13.conv1.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[154/837] generator.model.13.conv1.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[155/837] generator.model.13.conv1.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[156/837] generator.model.13.conv1.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[157/837] generator.model.13.conv1.ffc.convg2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[158/837] generator.model.13.conv1.ffc.convl2g.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[159/837] generator.model.13.conv1.ffc.convl2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[160/837] generator.model.13.conv2.bn_g.bias            -    f32, copy 0.0 MB
+[161/837] generator.model.13.conv2.bn_g.running_mean    -    f32, copy 0.0 MB
+[162/837] generator.model.13.conv2.bn_g.running_var     -    f32, copy 0.0 MB
+[163/837] generator.model.13.conv2.bn_g.weight          -    f32, copy 0.0 MB
+[164/837] generator.model.13.conv2.bn_l.bias            -    f32, copy 0.0 MB
+[165/837] generator.model.13.conv2.bn_l.running_mean    -    f32, copy 0.0 MB
+[166/837] generator.model.13.conv2.bn_l.running_var     -    f32, copy 0.0 MB
+[167/837] generator.model.13.conv2.bn_l.weight          -    f32, copy 0.0 MB
+[168/837] generator.model.13.conv2.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[169/837] generator.model.13.conv2.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[170/837] generator.model.13.conv2.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[171/837] generator.model.13.conv2.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[172/837] generator.model.13.conv2.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[173/837] generator.model.13.conv2.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[174/837] generator.model.13.conv2.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[175/837] generator.model.13.conv2.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[176/837] generator.model.13.conv2.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[177/837] generator.model.13.conv2.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[178/837] generator.model.13.conv2.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[179/837] generator.model.13.conv2.ffc.convg2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[180/837] generator.model.13.conv2.ffc.convl2g.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[181/837] generator.model.13.conv2.ffc.convl2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[182/837] generator.model.14.conv1.bn_g.bias            -    f32, copy 0.0 MB
+[183/837] generator.model.14.conv1.bn_g.running_mean    -    f32, copy 0.0 MB
+[184/837] generator.model.14.conv1.bn_g.running_var     -    f32, copy 0.0 MB
+[185/837] generator.model.14.conv1.bn_g.weight          -    f32, copy 0.0 MB
+[186/837] generator.model.14.conv1.bn_l.bias            -    f32, copy 0.0 MB
+[187/837] generator.model.14.conv1.bn_l.running_mean    -    f32, copy 0.0 MB
+[188/837] generator.model.14.conv1.bn_l.running_var     -    f32, copy 0.0 MB
+[189/837] generator.model.14.conv1.bn_l.weight          -    f32, copy 0.0 MB
+[190/837] generator.model.14.conv1.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[191/837] generator.model.14.conv1.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[192/837] generator.model.14.conv1.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[193/837] generator.model.14.conv1.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[194/837] generator.model.14.conv1.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[195/837] generator.model.14.conv1.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[196/837] generator.model.14.conv1.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[197/837] generator.model.14.conv1.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[198/837] generator.model.14.conv1.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[199/837] generator.model.14.conv1.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[200/837] generator.model.14.conv1.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[201/837] generator.model.14.conv1.ffc.convg2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[202/837] generator.model.14.conv1.ffc.convl2g.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[203/837] generator.model.14.conv1.ffc.convl2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[204/837] generator.model.14.conv2.bn_g.bias            -    f32, copy 0.0 MB
+[205/837] generator.model.14.conv2.bn_g.running_mean    -    f32, copy 0.0 MB
+[206/837] generator.model.14.conv2.bn_g.running_var     -    f32, copy 0.0 MB
+[207/837] generator.model.14.conv2.bn_g.weight          -    f32, copy 0.0 MB
+[208/837] generator.model.14.conv2.bn_l.bias            -    f32, copy 0.0 MB
+[209/837] generator.model.14.conv2.bn_l.running_mean    -    f32, copy 0.0 MB
+[210/837] generator.model.14.conv2.bn_l.running_var     -    f32, copy 0.0 MB
+[211/837] generator.model.14.conv2.bn_l.weight          -    f32, copy 0.0 MB
+[212/837] generator.model.14.conv2.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[213/837] generator.model.14.conv2.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[214/837] generator.model.14.conv2.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[215/837] generator.model.14.conv2.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[216/837] generator.model.14.conv2.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[217/837] generator.model.14.conv2.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[218/837] generator.model.14.conv2.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[219/837] generator.model.14.conv2.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[220/837] generator.model.14.conv2.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[221/837] generator.model.14.conv2.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[222/837] generator.model.14.conv2.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[223/837] generator.model.14.conv2.ffc.convg2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[224/837] generator.model.14.conv2.ffc.convl2g.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[225/837] generator.model.14.conv2.ffc.convl2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[226/837] generator.model.15.conv1.bn_g.bias            -    f32, copy 0.0 MB
+[227/837] generator.model.15.conv1.bn_g.running_mean    -    f32, copy 0.0 MB
+[228/837] generator.model.15.conv1.bn_g.running_var     -    f32, copy 0.0 MB
+[229/837] generator.model.15.conv1.bn_g.weight          -    f32, copy 0.0 MB
+[230/837] generator.model.15.conv1.bn_l.bias            -    f32, copy 0.0 MB
+[231/837] generator.model.15.conv1.bn_l.running_mean    -    f32, copy 0.0 MB
+[232/837] generator.model.15.conv1.bn_l.running_var     -    f32, copy 0.0 MB
+[233/837] generator.model.15.conv1.bn_l.weight          -    f32, copy 0.0 MB
+[234/837] generator.model.15.conv1.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[235/837] generator.model.15.conv1.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[236/837] generator.model.15.conv1.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[237/837] generator.model.15.conv1.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[238/837] generator.model.15.conv1.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[239/837] generator.model.15.conv1.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[240/837] generator.model.15.conv1.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[241/837] generator.model.15.conv1.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[242/837] generator.model.15.conv1.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[243/837] generator.model.15.conv1.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[244/837] generator.model.15.conv1.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[245/837] generator.model.15.conv1.ffc.convg2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[246/837] generator.model.15.conv1.ffc.convl2g.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[247/837] generator.model.15.conv1.ffc.convl2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[248/837] generator.model.15.conv2.bn_g.bias            -    f32, copy 0.0 MB
+[249/837] generator.model.15.conv2.bn_g.running_mean    -    f32, copy 0.0 MB
+[250/837] generator.model.15.conv2.bn_g.running_var     -    f32, copy 0.0 MB
+[251/837] generator.model.15.conv2.bn_g.weight          -    f32, copy 0.0 MB
+[252/837] generator.model.15.conv2.bn_l.bias            -    f32, copy 0.0 MB
+[253/837] generator.model.15.conv2.bn_l.running_mean    -    f32, copy 0.0 MB
+[254/837] generator.model.15.conv2.bn_l.running_var     -    f32, copy 0.0 MB
+[255/837] generator.model.15.conv2.bn_l.weight          -    f32, copy 0.0 MB
+[256/837] generator.model.15.conv2.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[257/837] generator.model.15.conv2.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[258/837] generator.model.15.conv2.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[259/837] generator.model.15.conv2.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[260/837] generator.model.15.conv2.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[261/837] generator.model.15.conv2.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[262/837] generator.model.15.conv2.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[263/837] generator.model.15.conv2.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[264/837] generator.model.15.conv2.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[265/837] generator.model.15.conv2.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[266/837] generator.model.15.conv2.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[267/837] generator.model.15.conv2.ffc.convg2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[268/837] generator.model.15.conv2.ffc.convl2g.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[269/837] generator.model.15.conv2.ffc.convl2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[270/837] generator.model.16.conv1.bn_g.bias            -    f32, copy 0.0 MB
+[271/837] generator.model.16.conv1.bn_g.running_mean    -    f32, copy 0.0 MB
+[272/837] generator.model.16.conv1.bn_g.running_var     -    f32, copy 0.0 MB
+[273/837] generator.model.16.conv1.bn_g.weight          -    f32, copy 0.0 MB
+[274/837] generator.model.16.conv1.bn_l.bias            -    f32, copy 0.0 MB
+[275/837] generator.model.16.conv1.bn_l.running_mean    -    f32, copy 0.0 MB
+[276/837] generator.model.16.conv1.bn_l.running_var     -    f32, copy 0.0 MB
+[277/837] generator.model.16.conv1.bn_l.weight          -    f32, copy 0.0 MB
+[278/837] generator.model.16.conv1.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[279/837] generator.model.16.conv1.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[280/837] generator.model.16.conv1.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[281/837] generator.model.16.conv1.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[282/837] generator.model.16.conv1.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[283/837] generator.model.16.conv1.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[284/837] generator.model.16.conv1.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[285/837] generator.model.16.conv1.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[286/837] generator.model.16.conv1.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[287/837] generator.model.16.conv1.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[288/837] generator.model.16.conv1.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[289/837] generator.model.16.conv1.ffc.convg2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[290/837] generator.model.16.conv1.ffc.convl2g.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[291/837] generator.model.16.conv1.ffc.convl2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[292/837] generator.model.16.conv2.bn_g.bias            -    f32, copy 0.0 MB
+[293/837] generator.model.16.conv2.bn_g.running_mean    -    f32, copy 0.0 MB
+[294/837] generator.model.16.conv2.bn_g.running_var     -    f32, copy 0.0 MB
+[295/837] generator.model.16.conv2.bn_g.weight          -    f32, copy 0.0 MB
+[296/837] generator.model.16.conv2.bn_l.bias            -    f32, copy 0.0 MB
+[297/837] generator.model.16.conv2.bn_l.running_mean    -    f32, copy 0.0 MB
+[298/837] generator.model.16.conv2.bn_l.running_var     -    f32, copy 0.0 MB
+[299/837] generator.model.16.conv2.bn_l.weight          -    f32, copy 0.0 MB
+[300/837] generator.model.16.conv2.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[301/837] generator.model.16.conv2.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[302/837] generator.model.16.conv2.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[303/837] generator.model.16.conv2.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[304/837] generator.model.16.conv2.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[305/837] generator.model.16.conv2.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[306/837] generator.model.16.conv2.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[307/837] generator.model.16.conv2.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[308/837] generator.model.16.conv2.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[309/837] generator.model.16.conv2.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[310/837] generator.model.16.conv2.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[311/837] generator.model.16.conv2.ffc.convg2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[312/837] generator.model.16.conv2.ffc.convl2g.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[313/837] generator.model.16.conv2.ffc.convl2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[314/837] generator.model.17.conv1.bn_g.bias            -    f32, copy 0.0 MB
+[315/837] generator.model.17.conv1.bn_g.running_mean    -    f32, copy 0.0 MB
+[316/837] generator.model.17.conv1.bn_g.running_var     -    f32, copy 0.0 MB
+[317/837] generator.model.17.conv1.bn_g.weight          -    f32, copy 0.0 MB
+[318/837] generator.model.17.conv1.bn_l.bias            -    f32, copy 0.0 MB
+[319/837] generator.model.17.conv1.bn_l.running_mean    -    f32, copy 0.0 MB
+[320/837] generator.model.17.conv1.bn_l.running_var     -    f32, copy 0.0 MB
+[321/837] generator.model.17.conv1.bn_l.weight          -    f32, copy 0.0 MB
+[322/837] generator.model.17.conv1.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[323/837] generator.model.17.conv1.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[324/837] generator.model.17.conv1.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[325/837] generator.model.17.conv1.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[326/837] generator.model.17.conv1.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[327/837] generator.model.17.conv1.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[328/837] generator.model.17.conv1.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[329/837] generator.model.17.conv1.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[330/837] generator.model.17.conv1.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[331/837] generator.model.17.conv1.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[332/837] generator.model.17.conv1.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[333/837] generator.model.17.conv1.ffc.convg2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[334/837] generator.model.17.conv1.ffc.convl2g.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[335/837] generator.model.17.conv1.ffc.convl2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[336/837] generator.model.17.conv2.bn_g.bias            -    f32, copy 0.0 MB
+[337/837] generator.model.17.conv2.bn_g.running_mean    -    f32, copy 0.0 MB
+[338/837] generator.model.17.conv2.bn_g.running_var     -    f32, copy 0.0 MB
+[339/837] generator.model.17.conv2.bn_g.weight          -    f32, copy 0.0 MB
+[340/837] generator.model.17.conv2.bn_l.bias            -    f32, copy 0.0 MB
+[341/837] generator.model.17.conv2.bn_l.running_mean    -    f32, copy 0.0 MB
+[342/837] generator.model.17.conv2.bn_l.running_var     -    f32, copy 0.0 MB
+[343/837] generator.model.17.conv2.bn_l.weight          -    f32, copy 0.0 MB
+[344/837] generator.model.17.conv2.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[345/837] generator.model.17.conv2.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[346/837] generator.model.17.conv2.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[347/837] generator.model.17.conv2.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[348/837] generator.model.17.conv2.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[349/837] generator.model.17.conv2.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[350/837] generator.model.17.conv2.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[351/837] generator.model.17.conv2.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[352/837] generator.model.17.conv2.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[353/837] generator.model.17.conv2.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[354/837] generator.model.17.conv2.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[355/837] generator.model.17.conv2.ffc.convg2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[356/837] generator.model.17.conv2.ffc.convl2g.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[357/837] generator.model.17.conv2.ffc.convl2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[358/837] generator.model.18.conv1.bn_g.bias            -    f32, copy 0.0 MB
+[359/837] generator.model.18.conv1.bn_g.running_mean    -    f32, copy 0.0 MB
+[360/837] generator.model.18.conv1.bn_g.running_var     -    f32, copy 0.0 MB
+[361/837] generator.model.18.conv1.bn_g.weight          -    f32, copy 0.0 MB
+[362/837] generator.model.18.conv1.bn_l.bias            -    f32, copy 0.0 MB
+[363/837] generator.model.18.conv1.bn_l.running_mean    -    f32, copy 0.0 MB
+[364/837] generator.model.18.conv1.bn_l.running_var     -    f32, copy 0.0 MB
+[365/837] generator.model.18.conv1.bn_l.weight          -    f32, copy 0.0 MB
+[366/837] generator.model.18.conv1.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[367/837] generator.model.18.conv1.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[368/837] generator.model.18.conv1.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[369/837] generator.model.18.conv1.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[370/837] generator.model.18.conv1.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[371/837] generator.model.18.conv1.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[372/837] generator.model.18.conv1.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[373/837] generator.model.18.conv1.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[374/837] generator.model.18.conv1.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[375/837] generator.model.18.conv1.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[376/837] generator.model.18.conv1.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[377/837] generator.model.18.conv1.ffc.convg2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[378/837] generator.model.18.conv1.ffc.convl2g.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[379/837] generator.model.18.conv1.ffc.convl2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[380/837] generator.model.18.conv2.bn_g.bias            -    f32, copy 0.0 MB
+[381/837] generator.model.18.conv2.bn_g.running_mean    -    f32, copy 0.0 MB
+[382/837] generator.model.18.conv2.bn_g.running_var     -    f32, copy 0.0 MB
+[383/837] generator.model.18.conv2.bn_g.weight          -    f32, copy 0.0 MB
+[384/837] generator.model.18.conv2.bn_l.bias            -    f32, copy 0.0 MB
+[385/837] generator.model.18.conv2.bn_l.running_mean    -    f32, copy 0.0 MB
+[386/837] generator.model.18.conv2.bn_l.running_var     -    f32, copy 0.0 MB
+[387/837] generator.model.18.conv2.bn_l.weight          -    f32, copy 0.0 MB
+[388/837] generator.model.18.conv2.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[389/837] generator.model.18.conv2.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[390/837] generator.model.18.conv2.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[391/837] generator.model.18.conv2.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[392/837] generator.model.18.conv2.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[393/837] generator.model.18.conv2.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[394/837] generator.model.18.conv2.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[395/837] generator.model.18.conv2.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[396/837] generator.model.18.conv2.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[397/837] generator.model.18.conv2.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[398/837] generator.model.18.conv2.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[399/837] generator.model.18.conv2.ffc.convg2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[400/837] generator.model.18.conv2.ffc.convl2g.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[401/837] generator.model.18.conv2.ffc.convl2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[402/837] generator.model.19.conv1.bn_g.bias            -    f32, copy 0.0 MB
+[403/837] generator.model.19.conv1.bn_g.running_mean    -    f32, copy 0.0 MB
+[404/837] generator.model.19.conv1.bn_g.running_var     -    f32, copy 0.0 MB
+[405/837] generator.model.19.conv1.bn_g.weight          -    f32, copy 0.0 MB
+[406/837] generator.model.19.conv1.bn_l.bias            -    f32, copy 0.0 MB
+[407/837] generator.model.19.conv1.bn_l.running_mean    -    f32, copy 0.0 MB
+[408/837] generator.model.19.conv1.bn_l.running_var     -    f32, copy 0.0 MB
+[409/837] generator.model.19.conv1.bn_l.weight          -    f32, copy 0.0 MB
+[410/837] generator.model.19.conv1.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[411/837] generator.model.19.conv1.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[412/837] generator.model.19.conv1.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[413/837] generator.model.19.conv1.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[414/837] generator.model.19.conv1.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[415/837] generator.model.19.conv1.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[416/837] generator.model.19.conv1.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[417/837] generator.model.19.conv1.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[418/837] generator.model.19.conv1.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[419/837] generator.model.19.conv1.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[420/837] generator.model.19.conv1.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[421/837] generator.model.19.conv1.ffc.convg2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[422/837] generator.model.19.conv1.ffc.convl2g.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[423/837] generator.model.19.conv1.ffc.convl2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[424/837] generator.model.19.conv2.bn_g.bias            -    f32, copy 0.0 MB
+[425/837] generator.model.19.conv2.bn_g.running_mean    -    f32, copy 0.0 MB
+[426/837] generator.model.19.conv2.bn_g.running_var     -    f32, copy 0.0 MB
+[427/837] generator.model.19.conv2.bn_g.weight          -    f32, copy 0.0 MB
+[428/837] generator.model.19.conv2.bn_l.bias            -    f32, copy 0.0 MB
+[429/837] generator.model.19.conv2.bn_l.running_mean    -    f32, copy 0.0 MB
+[430/837] generator.model.19.conv2.bn_l.running_var     -    f32, copy 0.0 MB
+[431/837] generator.model.19.conv2.bn_l.weight          -    f32, copy 0.0 MB
+[432/837] generator.model.19.conv2.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[433/837] generator.model.19.conv2.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[434/837] generator.model.19.conv2.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[435/837] generator.model.19.conv2.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[436/837] generator.model.19.conv2.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[437/837] generator.model.19.conv2.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[438/837] generator.model.19.conv2.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[439/837] generator.model.19.conv2.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[440/837] generator.model.19.conv2.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[441/837] generator.model.19.conv2.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[442/837] generator.model.19.conv2.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[443/837] generator.model.19.conv2.ffc.convg2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[444/837] generator.model.19.conv2.ffc.convl2g.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[445/837] generator.model.19.conv2.ffc.convl2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[446/837] generator.model.2.bn_l.bias                   -    f32, copy 0.0 MB
+[447/837] generator.model.2.bn_l.running_mean           -    f32, copy 0.0 MB
+[448/837] generator.model.2.bn_l.running_var            -    f32, copy 0.0 MB
+[449/837] generator.model.2.bn_l.weight                 -    f32, copy 0.0 MB
+[450/837] generator.model.2.ffc.convl2l.weight          -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.3 MB -> 0.0 MB
+[451/837] generator.model.20.conv1.bn_g.bias            -    f32, copy 0.0 MB
+[452/837] generator.model.20.conv1.bn_g.running_mean    -    f32, copy 0.0 MB
+[453/837] generator.model.20.conv1.bn_g.running_var     -    f32, copy 0.0 MB
+[454/837] generator.model.20.conv1.bn_g.weight          -    f32, copy 0.0 MB
+[455/837] generator.model.20.conv1.bn_l.bias            -    f32, copy 0.0 MB
+[456/837] generator.model.20.conv1.bn_l.running_mean    -    f32, copy 0.0 MB
+[457/837] generator.model.20.conv1.bn_l.running_var     -    f32, copy 0.0 MB
+[458/837] generator.model.20.conv1.bn_l.weight          -    f32, copy 0.0 MB
+[459/837] generator.model.20.conv1.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[460/837] generator.model.20.conv1.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[461/837] generator.model.20.conv1.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[462/837] generator.model.20.conv1.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[463/837] generator.model.20.conv1.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[464/837] generator.model.20.conv1.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[465/837] generator.model.20.conv1.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[466/837] generator.model.20.conv1.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[467/837] generator.model.20.conv1.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[468/837] generator.model.20.conv1.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[469/837] generator.model.20.conv1.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[470/837] generator.model.20.conv1.ffc.convg2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[471/837] generator.model.20.conv1.ffc.convl2g.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[472/837] generator.model.20.conv1.ffc.convl2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[473/837] generator.model.20.conv2.bn_g.bias            -    f32, copy 0.0 MB
+[474/837] generator.model.20.conv2.bn_g.running_mean    -    f32, copy 0.0 MB
+[475/837] generator.model.20.conv2.bn_g.running_var     -    f32, copy 0.0 MB
+[476/837] generator.model.20.conv2.bn_g.weight          -    f32, copy 0.0 MB
+[477/837] generator.model.20.conv2.bn_l.bias            -    f32, copy 0.0 MB
+[478/837] generator.model.20.conv2.bn_l.running_mean    -    f32, copy 0.0 MB
+[479/837] generator.model.20.conv2.bn_l.running_var     -    f32, copy 0.0 MB
+[480/837] generator.model.20.conv2.bn_l.weight          -    f32, copy 0.0 MB
+[481/837] generator.model.20.conv2.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[482/837] generator.model.20.conv2.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[483/837] generator.model.20.conv2.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[484/837] generator.model.20.conv2.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[485/837] generator.model.20.conv2.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[486/837] generator.model.20.conv2.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[487/837] generator.model.20.conv2.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[488/837] generator.model.20.conv2.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[489/837] generator.model.20.conv2.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[490/837] generator.model.20.conv2.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[491/837] generator.model.20.conv2.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[492/837] generator.model.20.conv2.ffc.convg2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[493/837] generator.model.20.conv2.ffc.convl2g.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[494/837] generator.model.20.conv2.ffc.convl2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[495/837] generator.model.21.conv1.bn_g.bias            -    f32, copy 0.0 MB
+[496/837] generator.model.21.conv1.bn_g.running_mean    -    f32, copy 0.0 MB
+[497/837] generator.model.21.conv1.bn_g.running_var     -    f32, copy 0.0 MB
+[498/837] generator.model.21.conv1.bn_g.weight          -    f32, copy 0.0 MB
+[499/837] generator.model.21.conv1.bn_l.bias            -    f32, copy 0.0 MB
+[500/837] generator.model.21.conv1.bn_l.running_mean    -    f32, copy 0.0 MB
+[501/837] generator.model.21.conv1.bn_l.running_var     -    f32, copy 0.0 MB
+[502/837] generator.model.21.conv1.bn_l.weight          -    f32, copy 0.0 MB
+[503/837] generator.model.21.conv1.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[504/837] generator.model.21.conv1.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[505/837] generator.model.21.conv1.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[506/837] generator.model.21.conv1.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[507/837] generator.model.21.conv1.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[508/837] generator.model.21.conv1.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[509/837] generator.model.21.conv1.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[510/837] generator.model.21.conv1.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[511/837] generator.model.21.conv1.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[512/837] generator.model.21.conv1.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[513/837] generator.model.21.conv1.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[514/837] generator.model.21.conv1.ffc.convg2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[515/837] generator.model.21.conv1.ffc.convl2g.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[516/837] generator.model.21.conv1.ffc.convl2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[517/837] generator.model.21.conv2.bn_g.bias            -    f32, copy 0.0 MB
+[518/837] generator.model.21.conv2.bn_g.running_mean    -    f32, copy 0.0 MB
+[519/837] generator.model.21.conv2.bn_g.running_var     -    f32, copy 0.0 MB
+[520/837] generator.model.21.conv2.bn_g.weight          -    f32, copy 0.0 MB
+[521/837] generator.model.21.conv2.bn_l.bias            -    f32, copy 0.0 MB
+[522/837] generator.model.21.conv2.bn_l.running_mean    -    f32, copy 0.0 MB
+[523/837] generator.model.21.conv2.bn_l.running_var     -    f32, copy 0.0 MB
+[524/837] generator.model.21.conv2.bn_l.weight          -    f32, copy 0.0 MB
+[525/837] generator.model.21.conv2.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[526/837] generator.model.21.conv2.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[527/837] generator.model.21.conv2.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[528/837] generator.model.21.conv2.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[529/837] generator.model.21.conv2.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[530/837] generator.model.21.conv2.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[531/837] generator.model.21.conv2.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[532/837] generator.model.21.conv2.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[533/837] generator.model.21.conv2.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[534/837] generator.model.21.conv2.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[535/837] generator.model.21.conv2.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[536/837] generator.model.21.conv2.ffc.convg2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[537/837] generator.model.21.conv2.ffc.convl2g.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[538/837] generator.model.21.conv2.ffc.convl2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[539/837] generator.model.22.conv1.bn_g.bias            -    f32, copy 0.0 MB
+[540/837] generator.model.22.conv1.bn_g.running_mean    -    f32, copy 0.0 MB
+[541/837] generator.model.22.conv1.bn_g.running_var     -    f32, copy 0.0 MB
+[542/837] generator.model.22.conv1.bn_g.weight          -    f32, copy 0.0 MB
+[543/837] generator.model.22.conv1.bn_l.bias            -    f32, copy 0.0 MB
+[544/837] generator.model.22.conv1.bn_l.running_mean    -    f32, copy 0.0 MB
+[545/837] generator.model.22.conv1.bn_l.running_var     -    f32, copy 0.0 MB
+[546/837] generator.model.22.conv1.bn_l.weight          -    f32, copy 0.0 MB
+[547/837] generator.model.22.conv1.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[548/837] generator.model.22.conv1.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[549/837] generator.model.22.conv1.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[550/837] generator.model.22.conv1.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[551/837] generator.model.22.conv1.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[552/837] generator.model.22.conv1.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[553/837] generator.model.22.conv1.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[554/837] generator.model.22.conv1.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[555/837] generator.model.22.conv1.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[556/837] generator.model.22.conv1.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[557/837] generator.model.22.conv1.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[558/837] generator.model.22.conv1.ffc.convg2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[559/837] generator.model.22.conv1.ffc.convl2g.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[560/837] generator.model.22.conv1.ffc.convl2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[561/837] generator.model.22.conv2.bn_g.bias            -    f32, copy 0.0 MB
+[562/837] generator.model.22.conv2.bn_g.running_mean    -    f32, copy 0.0 MB
+[563/837] generator.model.22.conv2.bn_g.running_var     -    f32, copy 0.0 MB
+[564/837] generator.model.22.conv2.bn_g.weight          -    f32, copy 0.0 MB
+[565/837] generator.model.22.conv2.bn_l.bias            -    f32, copy 0.0 MB
+[566/837] generator.model.22.conv2.bn_l.running_mean    -    f32, copy 0.0 MB
+[567/837] generator.model.22.conv2.bn_l.running_var     -    f32, copy 0.0 MB
+[568/837] generator.model.22.conv2.bn_l.weight          -    f32, copy 0.0 MB
+[569/837] generator.model.22.conv2.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[570/837] generator.model.22.conv2.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[571/837] generator.model.22.conv2.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[572/837] generator.model.22.conv2.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[573/837] generator.model.22.conv2.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[574/837] generator.model.22.conv2.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[575/837] generator.model.22.conv2.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[576/837] generator.model.22.conv2.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[577/837] generator.model.22.conv2.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[578/837] generator.model.22.conv2.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[579/837] generator.model.22.conv2.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[580/837] generator.model.22.conv2.ffc.convg2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[581/837] generator.model.22.conv2.ffc.convl2g.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[582/837] generator.model.22.conv2.ffc.convl2l.weight   -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[583/837] generator.model.24.bias                       -    f32, copy 0.0 MB
+[584/837] generator.model.24.weight                     -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 4.5 MB -> 0.6 MB
+[585/837] generator.model.25.bias                       -    f32, copy 0.0 MB
+[586/837] generator.model.25.running_mean               -    f32, copy 0.0 MB
+[587/837] generator.model.25.running_var                -    f32, copy 0.0 MB
+[588/837] generator.model.25.weight                     -    f32, copy 0.0 MB
+[589/837] generator.model.27.bias                       -    f32, copy 0.0 MB
+[590/837] generator.model.27.weight                     -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.1 MB -> 0.2 MB
+[591/837] generator.model.28.bias                       -    f32, copy 0.0 MB
+[592/837] generator.model.28.running_mean               -    f32, copy 0.0 MB
+[593/837] generator.model.28.running_var                -    f32, copy 0.0 MB
+[594/837] generator.model.28.weight                     -    f32, copy 0.0 MB
+[595/837] generator.model.3.bn_l.bias                   -    f32, copy 0.0 MB
+[596/837] generator.model.3.bn_l.running_mean           -    f32, copy 0.0 MB
+[597/837] generator.model.3.bn_l.running_var            -    f32, copy 0.0 MB
+[598/837] generator.model.3.bn_l.weight                 -    f32, copy 0.0 MB
+[599/837] generator.model.3.ffc.convl2l.weight          -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.1 MB -> 0.2 MB
+[600/837] generator.model.30.bias                       -    f32, copy 0.0 MB
+[601/837] generator.model.30.weight                     -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.3 MB -> 0.0 MB
+[602/837] generator.model.31.bias                       -    f32, copy 0.0 MB
+[603/837] generator.model.31.running_mean               -    f32, copy 0.0 MB
+[604/837] generator.model.31.running_var                -    f32, copy 0.0 MB
+[605/837] generator.model.31.weight                     -    f32, copy 0.0 MB
+[606/837] generator.model.34.bias                       -    f32, copy 0.0 MB
+[607/837] generator.model.34.weight                     -    f32, copy 0.0 MB
+[608/837] generator.model.4.bn_g.bias                   -    f32, copy 0.0 MB
+[609/837] generator.model.4.bn_g.running_mean           -    f32, copy 0.0 MB
+[610/837] generator.model.4.bn_g.running_var            -    f32, copy 0.0 MB
+[611/837] generator.model.4.bn_g.weight                 -    f32, copy 0.0 MB
+[612/837] generator.model.4.bn_l.bias                   -    f32, copy 0.0 MB
+[613/837] generator.model.4.bn_l.running_mean           -    f32, copy 0.0 MB
+[614/837] generator.model.4.bn_l.running_var            -    f32, copy 0.0 MB
+[615/837] generator.model.4.bn_l.weight                 -    f32, copy 0.0 MB
+[616/837] generator.model.4.ffc.convl2g.weight          -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 3.4 MB -> 0.5 MB
+[617/837] generator.model.4.ffc.convl2l.weight          -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.1 MB -> 0.2 MB
+[618/837] generator.model.5.conv1.bn_g.bias             -    f32, copy 0.0 MB
+[619/837] generator.model.5.conv1.bn_g.running_mean     -    f32, copy 0.0 MB
+[620/837] generator.model.5.conv1.bn_g.running_var      -    f32, copy 0.0 MB
+[621/837] generator.model.5.conv1.bn_g.weight           -    f32, copy 0.0 MB
+[622/837] generator.model.5.conv1.bn_l.bias             -    f32, copy 0.0 MB
+[623/837] generator.model.5.conv1.bn_l.running_mean     -    f32, copy 0.0 MB
+[624/837] generator.model.5.conv1.bn_l.running_var      -    f32, copy 0.0 MB
+[625/837] generator.model.5.conv1.bn_l.weight           -    f32, copy 0.0 MB
+[626/837] generator.model.5.conv1.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[627/837] generator.model.5.conv1.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[628/837] generator.model.5.conv1.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[629/837] generator.model.5.conv1.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[630/837] generator.model.5.conv1.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[631/837] generator.model.5.conv1.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[632/837] generator.model.5.conv1.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[633/837] generator.model.5.conv1.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[634/837] generator.model.5.conv1.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[635/837] generator.model.5.conv1.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[636/837] generator.model.5.conv1.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[637/837] generator.model.5.conv1.ffc.convg2l.weight    -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[638/837] generator.model.5.conv1.ffc.convl2g.weight    -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[639/837] generator.model.5.conv1.ffc.convl2l.weight    -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[640/837] generator.model.5.conv2.bn_g.bias             -    f32, copy 0.0 MB
+[641/837] generator.model.5.conv2.bn_g.running_mean     -    f32, copy 0.0 MB
+[642/837] generator.model.5.conv2.bn_g.running_var      -    f32, copy 0.0 MB
+[643/837] generator.model.5.conv2.bn_g.weight           -    f32, copy 0.0 MB
+[644/837] generator.model.5.conv2.bn_l.bias             -    f32, copy 0.0 MB
+[645/837] generator.model.5.conv2.bn_l.running_mean     -    f32, copy 0.0 MB
+[646/837] generator.model.5.conv2.bn_l.running_var      -    f32, copy 0.0 MB
+[647/837] generator.model.5.conv2.bn_l.weight           -    f32, copy 0.0 MB
+[648/837] generator.model.5.conv2.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[649/837] generator.model.5.conv2.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[650/837] generator.model.5.conv2.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[651/837] generator.model.5.conv2.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[652/837] generator.model.5.conv2.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[653/837] generator.model.5.conv2.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[654/837] generator.model.5.conv2.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[655/837] generator.model.5.conv2.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[656/837] generator.model.5.conv2.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[657/837] generator.model.5.conv2.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[658/837] generator.model.5.conv2.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[659/837] generator.model.5.conv2.ffc.convg2l.weight    -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[660/837] generator.model.5.conv2.ffc.convl2g.weight    -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[661/837] generator.model.5.conv2.ffc.convl2l.weight    -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[662/837] generator.model.6.conv1.bn_g.bias             -    f32, copy 0.0 MB
+[663/837] generator.model.6.conv1.bn_g.running_mean     -    f32, copy 0.0 MB
+[664/837] generator.model.6.conv1.bn_g.running_var      -    f32, copy 0.0 MB
+[665/837] generator.model.6.conv1.bn_g.weight           -    f32, copy 0.0 MB
+[666/837] generator.model.6.conv1.bn_l.bias             -    f32, copy 0.0 MB
+[667/837] generator.model.6.conv1.bn_l.running_mean     -    f32, copy 0.0 MB
+[668/837] generator.model.6.conv1.bn_l.running_var      -    f32, copy 0.0 MB
+[669/837] generator.model.6.conv1.bn_l.weight           -    f32, copy 0.0 MB
+[670/837] generator.model.6.conv1.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[671/837] generator.model.6.conv1.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[672/837] generator.model.6.conv1.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[673/837] generator.model.6.conv1.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[674/837] generator.model.6.conv1.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[675/837] generator.model.6.conv1.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[676/837] generator.model.6.conv1.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[677/837] generator.model.6.conv1.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[678/837] generator.model.6.conv1.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[679/837] generator.model.6.conv1.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[680/837] generator.model.6.conv1.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[681/837] generator.model.6.conv1.ffc.convg2l.weight    -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[682/837] generator.model.6.conv1.ffc.convl2g.weight    -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[683/837] generator.model.6.conv1.ffc.convl2l.weight    -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[684/837] generator.model.6.conv2.bn_g.bias             -    f32, copy 0.0 MB
+[685/837] generator.model.6.conv2.bn_g.running_mean     -    f32, copy 0.0 MB
+[686/837] generator.model.6.conv2.bn_g.running_var      -    f32, copy 0.0 MB
+[687/837] generator.model.6.conv2.bn_g.weight           -    f32, copy 0.0 MB
+[688/837] generator.model.6.conv2.bn_l.bias             -    f32, copy 0.0 MB
+[689/837] generator.model.6.conv2.bn_l.running_mean     -    f32, copy 0.0 MB
+[690/837] generator.model.6.conv2.bn_l.running_var      -    f32, copy 0.0 MB
+[691/837] generator.model.6.conv2.bn_l.weight           -    f32, copy 0.0 MB
+[692/837] generator.model.6.conv2.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[693/837] generator.model.6.conv2.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[694/837] generator.model.6.conv2.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[695/837] generator.model.6.conv2.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[696/837] generator.model.6.conv2.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[697/837] generator.model.6.conv2.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[698/837] generator.model.6.conv2.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[699/837] generator.model.6.conv2.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[700/837] generator.model.6.conv2.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[701/837] generator.model.6.conv2.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[702/837] generator.model.6.conv2.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[703/837] generator.model.6.conv2.ffc.convg2l.weight    -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[704/837] generator.model.6.conv2.ffc.convl2g.weight    -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[705/837] generator.model.6.conv2.ffc.convl2l.weight    -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[706/837] generator.model.7.conv1.bn_g.bias             -    f32, copy 0.0 MB
+[707/837] generator.model.7.conv1.bn_g.running_mean     -    f32, copy 0.0 MB
+[708/837] generator.model.7.conv1.bn_g.running_var      -    f32, copy 0.0 MB
+[709/837] generator.model.7.conv1.bn_g.weight           -    f32, copy 0.0 MB
+[710/837] generator.model.7.conv1.bn_l.bias             -    f32, copy 0.0 MB
+[711/837] generator.model.7.conv1.bn_l.running_mean     -    f32, copy 0.0 MB
+[712/837] generator.model.7.conv1.bn_l.running_var      -    f32, copy 0.0 MB
+[713/837] generator.model.7.conv1.bn_l.weight           -    f32, copy 0.0 MB
+[714/837] generator.model.7.conv1.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[715/837] generator.model.7.conv1.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[716/837] generator.model.7.conv1.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[717/837] generator.model.7.conv1.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[718/837] generator.model.7.conv1.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[719/837] generator.model.7.conv1.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[720/837] generator.model.7.conv1.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[721/837] generator.model.7.conv1.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[722/837] generator.model.7.conv1.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[723/837] generator.model.7.conv1.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[724/837] generator.model.7.conv1.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[725/837] generator.model.7.conv1.ffc.convg2l.weight    -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[726/837] generator.model.7.conv1.ffc.convl2g.weight    -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[727/837] generator.model.7.conv1.ffc.convl2l.weight    -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[728/837] generator.model.7.conv2.bn_g.bias             -    f32, copy 0.0 MB
+[729/837] generator.model.7.conv2.bn_g.running_mean     -    f32, copy 0.0 MB
+[730/837] generator.model.7.conv2.bn_g.running_var      -    f32, copy 0.0 MB
+[731/837] generator.model.7.conv2.bn_g.weight           -    f32, copy 0.0 MB
+[732/837] generator.model.7.conv2.bn_l.bias             -    f32, copy 0.0 MB
+[733/837] generator.model.7.conv2.bn_l.running_mean     -    f32, copy 0.0 MB
+[734/837] generator.model.7.conv2.bn_l.running_var      -    f32, copy 0.0 MB
+[735/837] generator.model.7.conv2.bn_l.weight           -    f32, copy 0.0 MB
+[736/837] generator.model.7.conv2.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[737/837] generator.model.7.conv2.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[738/837] generator.model.7.conv2.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[739/837] generator.model.7.conv2.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[740/837] generator.model.7.conv2.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[741/837] generator.model.7.conv2.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[742/837] generator.model.7.conv2.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[743/837] generator.model.7.conv2.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[744/837] generator.model.7.conv2.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[745/837] generator.model.7.conv2.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[746/837] generator.model.7.conv2.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[747/837] generator.model.7.conv2.ffc.convg2l.weight    -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[748/837] generator.model.7.conv2.ffc.convl2g.weight    -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[749/837] generator.model.7.conv2.ffc.convl2l.weight    -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[750/837] generator.model.8.conv1.bn_g.bias             -    f32, copy 0.0 MB
+[751/837] generator.model.8.conv1.bn_g.running_mean     -    f32, copy 0.0 MB
+[752/837] generator.model.8.conv1.bn_g.running_var      -    f32, copy 0.0 MB
+[753/837] generator.model.8.conv1.bn_g.weight           -    f32, copy 0.0 MB
+[754/837] generator.model.8.conv1.bn_l.bias             -    f32, copy 0.0 MB
+[755/837] generator.model.8.conv1.bn_l.running_mean     -    f32, copy 0.0 MB
+[756/837] generator.model.8.conv1.bn_l.running_var      -    f32, copy 0.0 MB
+[757/837] generator.model.8.conv1.bn_l.weight           -    f32, copy 0.0 MB
+[758/837] generator.model.8.conv1.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[759/837] generator.model.8.conv1.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[760/837] generator.model.8.conv1.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[761/837] generator.model.8.conv1.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[762/837] generator.model.8.conv1.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[763/837] generator.model.8.conv1.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[764/837] generator.model.8.conv1.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[765/837] generator.model.8.conv1.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[766/837] generator.model.8.conv1.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[767/837] generator.model.8.conv1.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[768/837] generator.model.8.conv1.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[769/837] generator.model.8.conv1.ffc.convg2l.weight    -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[770/837] generator.model.8.conv1.ffc.convl2g.weight    -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[771/837] generator.model.8.conv1.ffc.convl2l.weight    -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[772/837] generator.model.8.conv2.bn_g.bias             -    f32, copy 0.0 MB
+[773/837] generator.model.8.conv2.bn_g.running_mean     -    f32, copy 0.0 MB
+[774/837] generator.model.8.conv2.bn_g.running_var      -    f32, copy 0.0 MB
+[775/837] generator.model.8.conv2.bn_g.weight           -    f32, copy 0.0 MB
+[776/837] generator.model.8.conv2.bn_l.bias             -    f32, copy 0.0 MB
+[777/837] generator.model.8.conv2.bn_l.running_mean     -    f32, copy 0.0 MB
+[778/837] generator.model.8.conv2.bn_l.running_var      -    f32, copy 0.0 MB
+[779/837] generator.model.8.conv2.bn_l.weight           -    f32, copy 0.0 MB
+[780/837] generator.model.8.conv2.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[781/837] generator.model.8.conv2.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[782/837] generator.model.8.conv2.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[783/837] generator.model.8.conv2.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[784/837] generator.model.8.conv2.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[785/837] generator.model.8.conv2.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[786/837] generator.model.8.conv2.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[787/837] generator.model.8.conv2.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[788/837] generator.model.8.conv2.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[789/837] generator.model.8.conv2.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[790/837] generator.model.8.conv2.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[791/837] generator.model.8.conv2.ffc.convg2l.weight    -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[792/837] generator.model.8.conv2.ffc.convl2g.weight    -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[793/837] generator.model.8.conv2.ffc.convl2l.weight    -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[794/837] generator.model.9.conv1.bn_g.bias             -    f32, copy 0.0 MB
+[795/837] generator.model.9.conv1.bn_g.running_mean     -    f32, copy 0.0 MB
+[796/837] generator.model.9.conv1.bn_g.running_var      -    f32, copy 0.0 MB
+[797/837] generator.model.9.conv1.bn_g.weight           -    f32, copy 0.0 MB
+[798/837] generator.model.9.conv1.bn_l.bias             -    f32, copy 0.0 MB
+[799/837] generator.model.9.conv1.bn_l.running_mean     -    f32, copy 0.0 MB
+[800/837] generator.model.9.conv1.bn_l.running_var      -    f32, copy 0.0 MB
+[801/837] generator.model.9.conv1.bn_l.weight           -    f32, copy 0.0 MB
+[802/837] generator.model.9.conv1.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[803/837] generator.model.9.conv1.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[804/837] generator.model.9.conv1.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[805/837] generator.model.9.conv1.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[806/837] generator.model.9.conv1.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[807/837] generator.model.9.conv1.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[808/837] generator.model.9.conv1.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[809/837] generator.model.9.conv1.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[810/837] generator.model.9.conv1.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[811/837] generator.model.9.conv1.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[812/837] generator.model.9.conv1.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[813/837] generator.model.9.conv1.ffc.convg2l.weight    -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[814/837] generator.model.9.conv1.ffc.convl2g.weight    -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[815/837] generator.model.9.conv1.ffc.convl2l.weight    -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+[816/837] generator.model.9.conv2.bn_g.bias             -    f32, copy 0.0 MB
+[817/837] generator.model.9.conv2.bn_g.running_mean     -    f32, copy 0.0 MB
+[818/837] generator.model.9.conv2.bn_g.running_var      -    f32, copy 0.0 MB
+[819/837] generator.model.9.conv2.bn_g.weight           -    f32, copy 0.0 MB
+[820/837] generator.model.9.conv2.bn_l.bias             -    f32, copy 0.0 MB
+[821/837] generator.model.9.conv2.bn_l.running_mean     -    f32, copy 0.0 MB
+[822/837] generator.model.9.conv2.bn_l.running_var      -    f32, copy 0.0 MB
+[823/837] generator.model.9.conv2.bn_l.weight           -    f32, copy 0.0 MB
+[824/837] generator.model.9.conv2.ffc.convg2g.conv1.0.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[825/837] generator.model.9.conv2.ffc.convg2g.conv1.1.bias -    f32, copy 0.0 MB
+[826/837] generator.model.9.conv2.ffc.convg2g.conv1.1.running_mean -    f32, copy 0.0 MB
+[827/837] generator.model.9.conv2.ffc.convg2g.conv1.1.running_var -    f32, copy 0.0 MB
+[828/837] generator.model.9.conv2.ffc.convg2g.conv1.1.weight -    f32, copy 0.0 MB
+[829/837] generator.model.9.conv2.ffc.convg2g.conv2.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.3 MB -> 0.1 MB
+[830/837] generator.model.9.conv2.ffc.convg2g.fu.bn.bias -    f32, copy 0.0 MB
+[831/837] generator.model.9.conv2.ffc.convg2g.fu.bn.running_mean -    f32, copy 0.0 MB
+[832/837] generator.model.9.conv2.ffc.convg2g.fu.bn.running_var -    f32, copy 0.0 MB
+[833/837] generator.model.9.conv2.ffc.convg2g.fu.bn.weight -    f32, copy 0.0 MB
+[834/837] generator.model.9.conv2.ffc.convg2g.fu.conv_layer.weight -    f32, (lama-v2 q8_0 flat) quantizing to q8_0... 0.6 MB -> 0.1 MB
+[835/837] generator.model.9.conv2.ffc.convg2l.weight    -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[836/837] generator.model.9.conv2.ffc.convl2g.weight    -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 1.7 MB -> 0.2 MB
+[837/837] generator.model.9.conv2.ffc.convl2l.weight    -    f32, (lama-v2 q4_K flat) quantizing to q4_K... 0.6 MB -> 0.1 MB
+
+223 quantized, 614 kept
+195 MB -> 33 MB (5.9x compression)

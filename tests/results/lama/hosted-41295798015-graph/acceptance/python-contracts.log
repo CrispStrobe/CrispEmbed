@@ -1,0 +1,21 @@
+test_archive_inventory_and_configuration_identity_are_strict (__main__.LaMaContractTest.test_archive_inventory_and_configuration_identity_are_strict) ... ok
+test_extra_storage_is_rejected_even_when_the_outer_archive_is_authenticated (__main__.LaMaContractTest.test_extra_storage_is_rejected_even_when_the_outer_archive_is_authenticated) ... ok
+test_full_archive_hash_is_checked_before_any_zip_parse (__main__.LaMaContractTest.test_full_archive_hash_is_checked_before_any_zip_parse) ... ok
+test_generator_transform_is_only_f32_or_named_scalar_counter (__main__.LaMaContractTest.test_generator_transform_is_only_f32_or_named_scalar_counter) ... ok
+test_gguf_false_is_a_boolean_and_integer_substitution_is_rejected (__main__.LaMaContractTest.test_gguf_false_is_a_boolean_and_integer_substitution_is_rejected) ... ok
+test_helper_and_converter_import_no_frameworks (__main__.LaMaContractTest.test_helper_and_converter_import_no_frameworks) ... ok
+test_nonfinite_generator_and_negative_training_counter_are_rejected (__main__.LaMaContractTest.test_nonfinite_generator_and_negative_training_counter_are_rejected) ... ok
+test_omegaconf_newobj_build_becomes_only_an_inert_data_record (__main__.LaMaContractTest.test_omegaconf_newobj_build_becomes_only_an_inert_data_record) ... ok
+test_pickle_digest_is_checked_before_inert_unpickling (__main__.LaMaContractTest.test_pickle_digest_is_checked_before_inert_unpickling) ... ok
+test_real_frozen_census_and_generated_header_agree (__main__.LaMaContractTest.test_real_frozen_census_and_generated_header_agree) ... ok
+test_source_identity_and_overwrite_protection (__main__.LaMaContractTest.test_source_identity_and_overwrite_protection) ... ok
+test_state_shape_stride_and_alias_changes_are_rejected (__main__.LaMaContractTest.test_state_shape_stride_and_alias_changes_are_rejected) ... ok
+test_tiny_conversion_receipt_binds_both_archive_and_observed_inner_digest (__main__.LaMaContractTest.test_tiny_conversion_receipt_binds_both_archive_and_observed_inner_digest) ... ok
+test_trailing_pickle_and_changed_root_census_are_rejected (__main__.LaMaContractTest.test_trailing_pickle_and_changed_root_census_are_rejected) ... ok
+test_unknown_pickle_globals_are_never_executed (__main__.LaMaContractTest.test_unknown_pickle_globals_are_never_executed) ... ok
+test_verified_archive_streams_generator_and_accounts_for_evaluation_aliases (__main__.LaMaContractTest.test_verified_archive_streams_generator_and_accounts_for_evaluation_aliases) ... ok
+
+----------------------------------------------------------------------
+Ran 16 tests in 0.389s
+
+OK

@@ -1,0 +1,465 @@
+{
+  "schema": 1,
+  "phase": "original-native",
+  "status": "failed",
+  "native_qualified": false,
+  "thresholds": {
+    "stage_max_abs": 0.002,
+    "stage_relative_l2": 0.0003,
+    "stage_min_cosine": 0.99999,
+    "prediction_max_abs": 0.0002,
+    "masked_rgb_max_abs": 1,
+    "masked_rgb_mean_abs": 0.1,
+    "masked_rgb_min_psnr": 50.0,
+    "known_rgb_errors": 0
+  },
+  "commands": [
+    {
+      "label": "python-contracts",
+      "command": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "tests/test_lama_contract.py",
+        "-v"
+      ],
+      "status": "completed",
+      "returncode": 0,
+      "log": "python-contracts.log",
+      "pid": 2725,
+      "seconds": 0.9667245070000092,
+      "sha256": "d759cfb008219649c22edbd52c7309de354ccad24ef940a29962408d9613865a"
+    },
+    {
+      "label": "hosted-controls",
+      "command": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "tests/test_lama_hosted.py",
+        "-v"
+      ],
+      "status": "completed",
+      "returncode": 0,
+      "log": "hosted-controls.log",
+      "pid": 2726,
+      "seconds": 0.5164427079999996,
+      "sha256": "d93f5b773d424e2068c31fd246edc5f0a6178a3201fd0b62259ad7fd746796d5"
+    },
+    {
+      "label": "configure",
+      "command": [
+        "cmake",
+        "-S",
+        "/home/runner/work/CrispEmbed/CrispEmbed",
+        "-B",
+        "/mnt/heavy/scratch/acc/build",
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-DGGML_NATIVE=OFF",
+        "-DCRISPEMBED_NATIVE=OFF",
+        "-DGGML_BLAS=OFF",
+        "-DGGML_CUDA=OFF",
+        "-DGGML_METAL=OFF",
+        "-DGGML_VULKAN=OFF",
+        "-DGGML_OPENMP=OFF",
+        "-DGGML_LLAMAFILE=OFF",
+        "-DCRISPEMBED_BUILD_SHARED=OFF"
+      ],
+      "status": "completed",
+      "returncode": 0,
+      "log": "configure.log",
+      "pid": 2727,
+      "seconds": 2.2241217110000093,
+      "sha256": "fa6791648d82b3cb342c00d1f3b15574281f02eda89981bed053996daa604274"
+    },
+    {
+      "label": "build",
+      "command": [
+        "cmake",
+        "--build",
+        "/mnt/heavy/scratch/acc/build",
+        "--target",
+        "crispembed-cli",
+        "test-lama-ops",
+        "test-lama-diff",
+        "-j2"
+      ],
+      "status": "completed",
+      "returncode": 0,
+      "log": "build.log",
+      "pid": 2806,
+      "seconds": 294.86634711,
+      "sha256": "f880f63fe403f49c727bc061993d27593285a60cab10e5e8f8132004355270f0"
+    },
+    {
+      "label": "native-operators",
+      "command": [
+        "/mnt/heavy/scratch/acc/build/test-lama-ops"
+      ],
+      "status": "completed",
+      "returncode": 0,
+      "log": "native-operators.log",
+      "pid": 4118,
+      "seconds": 0.01651471899998569,
+      "sha256": "3cc123d4d71065f7d726171c9e9dfd0f0e230d143628367632e821ad663aa8d4"
+    },
+    {
+      "label": "native-reference-contracts",
+      "command": [
+        "/mnt/heavy/scratch/acc/build/test-lama-diff",
+        "--contracts"
+      ],
+      "status": "completed",
+      "returncode": 0,
+      "log": "native-reference-contracts.log",
+      "pid": 4119,
+      "seconds": 0.004281439999999748,
+      "sha256": "50da2d5b67a651f7f6821abbfc0c7d2844cce22882285b1239135574ed6b2a6b"
+    },
+    {
+      "label": "source-init",
+      "command": [
+        "git",
+        "init",
+        "/mnt/heavy/scratch/acc/original-source"
+      ],
+      "status": "completed",
+      "returncode": 0,
+      "log": "source-init.log",
+      "pid": 4122,
+      "seconds": 0.004466758999967624,
+      "sha256": "777be40885587bca43fecbaff226b7ed94c481a93b95d1be0e9b43b9f732df06"
+    },
+    {
+      "label": "source-remote",
+      "command": [
+        "git",
+        "-C",
+        "/mnt/heavy/scratch/acc/original-source",
+        "remote",
+        "add",
+        "origin",
+        "https://github.com/advimman/lama"
+      ],
+      "status": "completed",
+      "returncode": 0,
+      "log": "source-remote.log",
+      "pid": 4123,
+      "seconds": 0.0042685749999691325,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "source-fetch",
+      "command": [
+        "git",
+        "-C",
+        "/mnt/heavy/scratch/acc/original-source",
+        "fetch",
+        "--depth",
+        "1",
+        "origin",
+        "786f5936b27fb3dacd2b1ad799e4de968ea697e7"
+      ],
+      "status": "completed",
+      "returncode": 0,
+      "log": "source-fetch.log",
+      "pid": 4124,
+      "seconds": 0.4156520999999884,
+      "sha256": "21cc4e8de408ed963ece6417056a5909432f43ff2f98b548a169aa50c831b0b5"
+    },
+    {
+      "label": "source-checkout",
+      "command": [
+        "git",
+        "-C",
+        "/mnt/heavy/scratch/acc/original-source",
+        "checkout",
+        "--detach",
+        "FETCH_HEAD"
+      ],
+      "status": "completed",
+      "returncode": 0,
+      "log": "source-checkout.log",
+      "pid": 4136,
+      "seconds": 0.06472190100004127,
+      "sha256": "e9dae967246786faae88b3042493afac6c85349db4e051aa5a0cde2b218b6279"
+    },
+    {
+      "label": "capture-original",
+      "command": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "tools/dump_lama_reference.py",
+        "--source-dir",
+        "/mnt/heavy/scratch/acc/original-source",
+        "--checkpoint-archive",
+        "/mnt/heavy/scratch/acc/big-lama.zip",
+        "--output",
+        "/home/runner/work/_temp/out/acceptance/original",
+        "--cases",
+        "subtitle_bar",
+        "edge_touch",
+        "center",
+        "empty",
+        "full",
+        "one_pixel",
+        "wide",
+        "thin_strip"
+      ],
+      "status": "completed",
+      "returncode": 0,
+      "log": "capture-original.log",
+      "pid": 4137,
+      "seconds": 25.73012275399992,
+      "sha256": "f2acdf8374c4260063faf613cb0119486af3f4c94325e563b1256c184fcea7f7"
+    },
+    {
+      "label": "convert-after-original",
+      "command": [
+        "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+        "models/convert-lama-to-gguf.py",
+        "--archive",
+        "/mnt/heavy/scratch/acc/big-lama.zip",
+        "--source-dir",
+        "/mnt/heavy/scratch/acc/original-source",
+        "--output",
+        "/mnt/heavy/scratch/acc/big-lama-f32.gguf"
+      ],
+      "status": "completed",
+      "returncode": 0,
+      "log": "convert-after-original.log",
+      "pid": 4146,
+      "seconds": 8.890954992000047,
+      "sha256": "2bb687ae9f4dea7250ea9ad7c3f3e0f38a1216e1215c3bb6a2faef886841bfc9"
+    },
+    {
+      "label": "replay-subtitle_bar",
+      "command": [
+        "/mnt/heavy/scratch/acc/build/test-lama-diff",
+        "--model",
+        "/mnt/heavy/scratch/acc/big-lama-f32.gguf",
+        "--model-sha256",
+        "24736f267c68e013f0000ccb69560c4353b6a6d7983fc3cc2537d9f2e03f304c",
+        "--reference",
+        "/home/runner/work/_temp/out/acceptance/original/subtitle_bar/reference.gguf",
+        "--reference-sha256",
+        "288e9bf145152e6f804747c046a892d67085ec0e89fe5a3402e319b910b7466b",
+        "--output",
+        "/home/runner/work/_temp/out/acceptance/native-subtitle_bar"
+      ],
+      "status": "completed",
+      "returncode": 0,
+      "log": "replay-subtitle_bar.log",
+      "pid": 4148,
+      "seconds": 14.852079729000025,
+      "sha256": "e07ec7fe89e2442371a37c3914d3f38ff66cbf8656cd538857a6652bcece9eb7"
+    },
+    {
+      "label": "replay-edge_touch",
+      "command": [
+        "/mnt/heavy/scratch/acc/build/test-lama-diff",
+        "--model",
+        "/mnt/heavy/scratch/acc/big-lama-f32.gguf",
+        "--model-sha256",
+        "24736f267c68e013f0000ccb69560c4353b6a6d7983fc3cc2537d9f2e03f304c",
+        "--reference",
+        "/home/runner/work/_temp/out/acceptance/original/edge_touch/reference.gguf",
+        "--reference-sha256",
+        "bbf048b692f2e571556d5776325ca2e803f0c30def8063faede8e0451ecccf33",
+        "--output",
+        "/home/runner/work/_temp/out/acceptance/native-edge_touch"
+      ],
+      "status": "completed",
+      "returncode": 0,
+      "log": "replay-edge_touch.log",
+      "pid": 4952,
+      "seconds": 25.327360107000004,
+      "sha256": "d67662515e00ae1380b8682d5943bb5c864d1b7f8f26fe9a0fecbbf27a39af9b"
+    },
+    {
+      "label": "replay-center",
+      "command": [
+        "/mnt/heavy/scratch/acc/build/test-lama-diff",
+        "--model",
+        "/mnt/heavy/scratch/acc/big-lama-f32.gguf",
+        "--model-sha256",
+        "24736f267c68e013f0000ccb69560c4353b6a6d7983fc3cc2537d9f2e03f304c",
+        "--reference",
+        "/home/runner/work/_temp/out/acceptance/original/center/reference.gguf",
+        "--reference-sha256",
+        "233139535f840e04c6d9a41d3fbe91d61d003521e550ffce1f4e97d4aed34224",
+        "--output",
+        "/home/runner/work/_temp/out/acceptance/native-center"
+      ],
+      "status": "completed",
+      "returncode": 0,
+      "log": "replay-center.log",
+      "pid": 5768,
+      "seconds": 7.432793785000058,
+      "sha256": "2a3fb9d8c4de489dec59e7e35ec5c10f9cb955175cc7de2064e67ae2af094afa"
+    },
+    {
+      "label": "replay-empty",
+      "command": [
+        "/mnt/heavy/scratch/acc/build/test-lama-diff",
+        "--model",
+        "/mnt/heavy/scratch/acc/big-lama-f32.gguf",
+        "--model-sha256",
+        "24736f267c68e013f0000ccb69560c4353b6a6d7983fc3cc2537d9f2e03f304c",
+        "--reference",
+        "/home/runner/work/_temp/out/acceptance/original/empty/reference.gguf",
+        "--reference-sha256",
+        "81728fdd59eafc174683138f98927756da27d242d7a9b806c480f8676a7a4a59",
+        "--output",
+        "/home/runner/work/_temp/out/acceptance/native-empty"
+      ],
+      "status": "completed",
+      "returncode": 0,
+      "log": "replay-empty.log",
+      "pid": 6481,
+      "seconds": 1.5706214819999786,
+      "sha256": "840eac0b966e61272575918a6da182cc5e95b9d899184773d8671a41af8b38d5"
+    },
+    {
+      "label": "replay-full",
+      "command": [
+        "/mnt/heavy/scratch/acc/build/test-lama-diff",
+        "--model",
+        "/mnt/heavy/scratch/acc/big-lama-f32.gguf",
+        "--model-sha256",
+        "24736f267c68e013f0000ccb69560c4353b6a6d7983fc3cc2537d9f2e03f304c",
+        "--reference",
+        "/home/runner/work/_temp/out/acceptance/original/full/reference.gguf",
+        "--reference-sha256",
+        "975ec27aaab17f9de351b49013864c646a56033b41a4c36b14273e10b2ff74b2",
+        "--output",
+        "/home/runner/work/_temp/out/acceptance/native-full"
+      ],
+      "status": "completed",
+      "returncode": 1,
+      "log": "replay-full.log",
+      "pid": 6934,
+      "seconds": 4.426583373000085,
+      "sha256": "1f1d0fa315f3c0c7d12dc8fcdc614d0b9dade2e93e0a092debf12b0c59fdfe40"
+    },
+    {
+      "label": "replay-one_pixel",
+      "command": [
+        "/mnt/heavy/scratch/acc/build/test-lama-diff",
+        "--model",
+        "/mnt/heavy/scratch/acc/big-lama-f32.gguf",
+        "--model-sha256",
+        "24736f267c68e013f0000ccb69560c4353b6a6d7983fc3cc2537d9f2e03f304c",
+        "--reference",
+        "/home/runner/work/_temp/out/acceptance/original/one_pixel/reference.gguf",
+        "--reference-sha256",
+        "048be7a620e9674d4ff56cfcc6a8016d1cd1bd135d85301d22266b7c232273c6",
+        "--output",
+        "/home/runner/work/_temp/out/acceptance/native-one_pixel"
+      ],
+      "status": "completed",
+      "returncode": 0,
+      "log": "replay-one_pixel.log",
+      "pid": 7637,
+      "seconds": 2.471467467000025,
+      "sha256": "7a77c6de3005a91fcf6446443ae4dc1679ac21f0c3d9433d01b0de2066189afa"
+    },
+    {
+      "label": "replay-wide",
+      "command": [
+        "/mnt/heavy/scratch/acc/build/test-lama-diff",
+        "--model",
+        "/mnt/heavy/scratch/acc/big-lama-f32.gguf",
+        "--model-sha256",
+        "24736f267c68e013f0000ccb69560c4353b6a6d7983fc3cc2537d9f2e03f304c",
+        "--reference",
+        "/home/runner/work/_temp/out/acceptance/original/wide/reference.gguf",
+        "--reference-sha256",
+        "8bf11d51313252963e436ce244e4f08fe9cc0c103f1e6282dc1c0f0aa30739d7",
+        "--output",
+        "/home/runner/work/_temp/out/acceptance/native-wide"
+      ],
+      "status": "completed",
+      "returncode": 0,
+      "log": "replay-wide.log",
+      "pid": 8319,
+      "seconds": 13.400441201000035,
+      "sha256": "1f77a22f47b8e077aa0e63eed55f85efeb17594b0733eca7803a677176b4572c"
+    },
+    {
+      "label": "replay-thin_strip",
+      "command": [
+        "/mnt/heavy/scratch/acc/build/test-lama-diff",
+        "--model",
+        "/mnt/heavy/scratch/acc/big-lama-f32.gguf",
+        "--model-sha256",
+        "24736f267c68e013f0000ccb69560c4353b6a6d7983fc3cc2537d9f2e03f304c",
+        "--reference",
+        "/home/runner/work/_temp/out/acceptance/original/thin_strip/reference.gguf",
+        "--reference-sha256",
+        "e88dc2b80cff95d5fbff76ddcdd9b8d5e8056baa38229888703faf6c9e2eef01",
+        "--output",
+        "/home/runner/work/_temp/out/acceptance/native-thin_strip"
+      ],
+      "status": "completed",
+      "returncode": 0,
+      "log": "replay-thin_strip.log",
+      "pid": 9053,
+      "seconds": 15.155622391999941,
+      "sha256": "0969a646d662c2eee31529d24bf071878cd1aa67d7988f6663e9686434664462"
+    }
+  ],
+  "cases": [
+    {
+      "id": "subtitle_bar",
+      "passed": true,
+      "reference_sha256": "288e9bf145152e6f804747c046a892d67085ec0e89fe5a3402e319b910b7466b",
+      "log": "replay-subtitle_bar.log"
+    },
+    {
+      "id": "edge_touch",
+      "passed": true,
+      "reference_sha256": "bbf048b692f2e571556d5776325ca2e803f0c30def8063faede8e0451ecccf33",
+      "log": "replay-edge_touch.log"
+    },
+    {
+      "id": "center",
+      "passed": true,
+      "reference_sha256": "233139535f840e04c6d9a41d3fbe91d61d003521e550ffce1f4e97d4aed34224",
+      "log": "replay-center.log"
+    },
+    {
+      "id": "empty",
+      "passed": true,
+      "reference_sha256": "81728fdd59eafc174683138f98927756da27d242d7a9b806c480f8676a7a4a59",
+      "log": "replay-empty.log"
+    },
+    {
+      "id": "full",
+      "passed": false,
+      "reference_sha256": "975ec27aaab17f9de351b49013864c646a56033b41a4c36b14273e10b2ff74b2",
+      "log": "replay-full.log"
+    },
+    {
+      "id": "one_pixel",
+      "passed": true,
+      "reference_sha256": "048be7a620e9674d4ff56cfcc6a8016d1cd1bd135d85301d22266b7c232273c6",
+      "log": "replay-one_pixel.log"
+    },
+    {
+      "id": "wide",
+      "passed": true,
+      "reference_sha256": "8bf11d51313252963e436ce244e4f08fe9cc0c103f1e6282dc1c0f0aa30739d7",
+      "log": "replay-wide.log"
+    },
+    {
+      "id": "thin_strip",
+      "passed": true,
+      "reference_sha256": "e88dc2b80cff95d5fbff76ddcdd9b8d5e8056baa38229888703faf6c9e2eef01",
+      "log": "replay-thin_strip.log"
+    }
+  ],
+  "commit": "56af8377f42400ae8cf0306498869f5ce01b6c83",
+  "source_contract_sha256": "ce6cd6c17dc73979d8bee461c51dcd5fe8d3fdc35e996e759fd917b7adb3a6fd",
+  "build": "passed",
+  "model_free_controls": "passed",
+  "checkpoint_archive_sha256": "f1b358ca24093b93a106183b98a3dea6e8ed09f3b43ea7251eb2c81e7b4575f6",
+  "gguf_sha256": "24736f267c68e013f0000ccb69560c4353b6a6d7983fc3cc2537d9f2e03f304c",
+  "numerical_acceptance": "failed",
+  "error": "native/original comparison failed; thresholds were not changed"
+}
