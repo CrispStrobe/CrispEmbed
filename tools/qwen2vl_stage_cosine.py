@@ -25,7 +25,10 @@ import numpy as np
 
 
 def load(path: Path):
-    return np.fromfile(path, dtype=np.float32) if path.exists() else None
+    full, half = path.with_suffix(".f32"), path.with_suffix(".f16")  # .f16 = compacted dump, widened
+    if full.exists():
+        return np.fromfile(full, dtype=np.float32)
+    return np.fromfile(half, dtype=np.float16).astype(np.float32) if half.exists() else None
 
 
 def stats(ref, cand, width=None):
@@ -105,7 +108,7 @@ def main():
         if l is not None:
             entry["prefill_logits_last"] = logit_stats(l, load(cdir / "c0_prefill_logits_last.f32"))
         steps = []
-        for f in sorted(case_dir.glob("c0_decode*_logits.f32"), key=lambda p: int(re.findall(r"\d+", p.name)[1])):
+        for f in sorted(list(case_dir.glob("c0_decode*_logits.f32")) + list(case_dir.glob("c0_decode*_logits.f16")), key=lambda p: int(re.findall(r"\d+", p.name)[1])):
             k = int(re.findall(r"\d+", f.name)[1])
             same_inputs = rids is not None and cids is not None and rids[:k] == cids[:k]
             s = {"step": k, "same_inputs": same_inputs}
