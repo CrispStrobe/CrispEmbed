@@ -1,0 +1,73 @@
+{
+ "metal": {
+  "vision.merge": {
+   "cosine": 0.9996112030623355,
+   "max_abs": 36.96767807006836,
+   "row_min_cosine": 0.8832139667638979
+  },
+  "visual.embeddings": {
+   "cosine": 0.9996769431650938,
+   "max_abs": 0.016736691817641258
+  },
+  "llm.input": {
+   "cosine": 0.9999555517180353,
+   "max_abs": 0.016736691817641258
+  },
+  "llm.layer.0": {
+   "cosine": 0.9997555244053847,
+   "max_abs": 3.753781318664551
+  },
+  "llm.layer.13": {
+   "cosine": 0.9999950947174969,
+   "max_abs": 12.50390625
+  },
+  "llm.layer.27": {
+   "cosine": 0.999772978195463,
+   "max_abs": 20.973312377929688
+  },
+  "llm.norm": {
+   "cosine": 0.9984378079315335,
+   "max_abs": 8.814539790153503
+  },
+  "llm.logits": {
+   "cosine": 0.9996916074918712,
+   "max_abs": 0.20373084023594856
+  }
+ },
+ "metal+nohpmm": {
+  "vision.merge": {
+   "cosine": 0.9989445207691602,
+   "max_abs": 58.099863052368164,
+   "row_min_cosine": 0.79363673239707
+  },
+  "visual.embeddings": {
+   "cosine": 0.9991052166041723,
+   "max_abs": 0.023204104974865913
+  },
+  "llm.input": {
+   "cosine": 0.9998983405655535,
+   "max_abs": 0.023204104974865913
+  },
+  "llm.layer.0": {
+   "cosine": 0.9993650582604422,
+   "max_abs": 3.8270339965820312
+  },
+  "llm.layer.13": {
+   "cosine": 0.9999884986060746,
+   "max_abs": 31.5859375
+  },
+  "llm.layer.27": {
+   "cosine": 0.9993894992250036,
+   "max_abs": 55.30738830566406
+  },
+  "llm.norm": {
+   "cosine": 0.9959572506321883,
+   "max_abs": 13.462603092193604
+  },
+  "llm.logits": {
+   "cosine": 0.9995249680744861,
+   "max_abs": 0.2975125312805176
+  }
+ },
+ "note": "German, Q8_0 everything (Q8 vision + Q8 large tables, quantized from the published F16 GGUF); reference = native CPU F16 (token-exact vs original)"
+}
