@@ -1,6 +1,6 @@
 {
  "schema": "crispembed.oxr.precision-score.v1",
- "lane": "heavy-41327081935",
+ "lane": "hosted-41327081935-q4k-mix-q8vision",
  "bar": 0.94,
  "min_final_logits_cos": 0.914614081383,
  "pass": false,
