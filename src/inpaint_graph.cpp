@@ -730,6 +730,13 @@ void Builder::finish(const std::vector<ggml_tensor *> & outputs, const std::stri
         for (ggml_tensor * storage = output; storage; storage = storage->view_src) ggml_set_output(storage);
         ggml_build_forward_expand(graph_, output);
     }
+    // One-time initializers (prepared transpose kernels, geometry masks,
+    // constants, zeros) are graph leaves written once after allocation.
+    // gallocr recycles any tensor not flagged OUTPUT after its last consumer,
+    // so the first execution was correct and every replay read clobbered
+    // constants (hosted: graph transpose oracle runs=2, error 0.0205; Moebius
+    // graph replay correct only for the first stepper execution). Pin them.
+    for (const auto & init : initializers_) ggml_set_output(init.tensor);
     validate_graph_backend(device.backend, graph_);
     allocator_ = ggml_gallocr_new(ggml_backend_get_default_buffer_type(device.backend));
     require(allocator_ && ggml_gallocr_alloc_graph(allocator_, graph_), "persistent graph allocation failed: " + label);
