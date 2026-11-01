@@ -1,3 +1,32 @@
+## Metal GPU audit, Apple M1 (1 November 2026, `feat/metal-audit`)
+
+Same-binary interleaved Metal (`--gpu-backend metal`) vs CPU (`--gpu-backend cpu`)
+one-shot CLI runs, `-t 4`, second run, on a shared contended M1. Full matrix and
+receipts: [`docs/gpu-support-matrix.md`](docs/gpu-support-matrix.md),
+`tests/results/gpu-audit/metal-m1/`.
+
+| Lane | Metal s | CPU s | Output Metal vs CPU |
+|---|---:|---:|---|
+| ESRGAN x4 F32, fox 800x200 (**new default on Metal**) | 1.92 | 8.94 | max \|Δ\| 1/255, PSNR 75.7 dB |
+| ESRGAN x4 F32, scan_strip 520x260 | 2.00 | 8.39 | max \|Δ\| 1/255, PSNR 69.3 dB |
+| InstructIR F16 (gated, stays off) | 14.5 | 10.4 | max \|Δ\| 1/255, PSNR 76.7 dB — slower |
+| DBNet+TrOCR q8, fox (default: det CPU, TrOCR Metal) | 2.20 | 2.89 | byte-identical |
+| DBNet+TrOCR q8, scan_page_pd 606x1000 (default lane) | 63.7 | 100-119 | 295 boxes identical, 290/295 words identical |
+| DBNet det on Metal, stock conv_transpose_2d, fox | 10.3 | 4.3 | same text, ≤1 px box, conf ±0.002 |
+| DBNet det on Metal + `CRISPEMBED_DBNET_DECONV_MATMUL=1`, fox | 2.36 | 3.11 | identical to stock-Metal det |
+| DBNet det on Metal + deconv mul_mat, scan_page_pd | 65.9 | 110 | char ratio 0.9978 (TrOCR dominates) |
+| PP-OCRv6 small det+rec, scan_page_pd (default: det CPU, rec Metal) | 3.21 | 5.38 | byte-identical |
+| PP-OCRv6 small, det on Metal (`CRISPEMBED_PPOCRV6_DET_GPU=1`) | 7.37 | 5.17 | char ratio 0.9997 — slower |
+| EasyOCR english-g2 behind DBNet, fox | 0.44 | 0.48 | byte-identical |
+| PARSeq q8 / PARSeq-tiny q8, one line | 0.11 / 0.08 | 0.07 / 0.03 | byte-identical |
+| Embedders, rerankers (19 artifacts) | see matrix | | float weights cos ≥ 0.9999979; quantized cos 0.977-0.99991, Metal closer to F32 refs |
+
+The Metal DBNet slowness (issue #25) was the `conv_transpose_2d` kernel: the
+gated mul_mat rewrite of the two kernel==stride head deconvs takes the Metal
+detector lane from 10.3 s to 2.4 s with output identical to the stock Metal
+kernel (and byte-identical on CPU, hosted run 41327259125). It is still not
+faster than the CPU detector on these pages, so the Metal default stays CPU.
+
 ## 31 October 2026 — Native Marker-style CPU document conversion
 
 These are individual conversion durations from

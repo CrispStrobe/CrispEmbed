@@ -1,3 +1,17 @@
+## Metal GPU audit follow-ups — 1 November 2026
+
+Source: `docs/gpu-support-matrix.md` (branch `feat/metal-audit`).
+
+- CUDA A/B (Kaggle) of `CRISPEMBED_ESRGAN_GPU=1` and `CRISPEMBED_DBNET_DECONV_MATMUL=1`
+  (DBNet det is already GPU-default on CUDA; the deconv rewrite may speed it further).
+- Not reached on Metal (no A/B yet): VLM lanes beyond the queued GOT/SmolDocling/H2OVL/
+  LightOnOCR/Granite runs, GLM vision drift root cause, Surya, SAM2, GLiNER, LiLT,
+  FireRedPunc/PCS, CLIP/ViT/CNN, BiDirLM, NAFNet, SMT/TrOMR/Transcoda, PP-FormulaNet-L.
+- CPU-forced engines with ggml graphs that still need a gated GPU path: UltraBERT,
+  EmbeddingGemma2 decision (needs a GPU form of its CPU custom GELU), MoEdern, Josev2B,
+  Qwen3.5-OCR/Ovis, MiniCPM, PP-FormulaNet, MixTeX, HMER/BTTR/PosFormer, FLOVA,
+  Restormer, the `wload` SR family (SwinIR/HAT/DAT/PAN/SCUNet/TBSRN/Text-SR/AdaIR).
+
 # CrispEmbed active plan —29 October2026 wrap-up
 
 ## Native Marker-style document pipeline — 31 October 2026

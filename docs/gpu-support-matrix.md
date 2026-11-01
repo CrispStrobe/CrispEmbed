@@ -53,16 +53,16 @@ from `core_env::on()` there.
 
 | Engine | Source | Backend | Metal status | Gates | Evidence |
 |---|---|---|---|---|---|
-| DBNet detector (`ocr_detect`, default pipeline + tesseract/easyocr lanes) | `ocr_detect.cpp` | `kind` | `slower` (~139 s Metal vs ~10 s CPU, 1472x736 map, issue #25, 2026-08) | `OCR_DETECT_USE_GPU` (tri-state), `OCR_DETECT_FORCE_CPU` (atoi) | `ocr_backend_matrix.md` DBNet row |
-| TrOCR line recognizer (default pipeline; `math_ocr` loader) | `math_ocr.cpp` | `GPU` | `unknown` vs CPU; 8/10 words exact end-to-end on Metal (2026-07-31) | `MATH_OCR_FORCE_CPU`, `MATH_OCR_DEC_CPU` (atoi) | PERFORMANCE "DBNet degenerate-component fallback (2026-07-31, Apple M1 Metal)" |
-| PP-OCRv6 detector | `ppocrv6_det.cpp` | `kind` | `slower` (1693 ms Metal vs 187 ms CPU, 2026-08-04) | `CRISPEMBED_PPOCRV6_DET_GPU` (tri-state), `CRISPEMBED_PPOCRV6_DET_GPU_LOAD`, `CRISPEMBED_PPOCRV6_FORCE_CPU` (presence) | `ocr_backend_matrix.md` PP-OCRv6 row |
-| PP-OCRv6 recognizer | `ppocrv6_ocr.cpp` | `GPU` | `exact` (26/26 fixtures byte-identical to scalar, 2026-08-02/04) | `CRISPEMBED_PPOCRV6_NO_GRAPH`, `..._BATCH_GRAPH`, `..._FORCE_CPU` (presence) | PERFORMANCE "Issue #45 ... (M1, 2026-08-09)", "PP-OCR rec Metal batch profile" |
+| DBNet detector (`ocr_detect`, default pipeline + tesseract/easyocr lanes) | `ocr_detect.cpp` | `kind` | **`budget`, `slower`** (2026-11-01): Metal det gives the same text, ≤1 px boxes, conf ±0.002; stock Metal `conv_transpose_2d` 10.3 s vs CPU 4.3 s (fox lane). New gate `CRISPEMBED_DBNET_DECONV_MATMUL=1` → Metal lane 2.36 s, output identical to stock Metal, byte-identical on CPU (3 fixtures, hosted); still not faster than the CPU detector on scan_page_pd (65.9 s vs 63.7 s, TrOCR dominates), so the Metal default stays CPU | `OCR_DETECT_USE_GPU` (tri-state), `OCR_DETECT_FORCE_CPU` (atoi), `CRISPEMBED_DBNET_DECONV_MATMUL` (new, default off) | `tests/results/gpu-audit/metal-m1/ocr/dbnet-*.json`, `tests/results/gpu-audit/hosted-cpu-41327259125/` |
+| TrOCR line recognizer (default pipeline; `math_ocr` loader) | `math_ocr.cpp` | `GPU` | **`budget`** (2026-11-01): fox byte-identical; scan_page_pd 295/295 boxes, 290/295 words; scan_strip 92/95 (q8 activation rounding, differences go both ways); Metal 1.3-1.7x faster | `MATH_OCR_FORCE_CPU`, `MATH_OCR_DEC_CPU` (atoi) | `tests/results/gpu-audit/metal-m1/ocr/dbnet-trocr.*.json` |
+| PP-OCRv6 detector | `ppocrv6_det.cpp` | `kind` | **`slower`** re-confirmed 2026-11-01: det on Metal 7.37 s vs default 3.21 s (scan_page_pd), char ratio 0.9997 | `CRISPEMBED_PPOCRV6_DET_GPU` (tri-state), `CRISPEMBED_PPOCRV6_DET_GPU_LOAD`, `CRISPEMBED_PPOCRV6_FORCE_CPU` (presence) | `tests/results/gpu-audit/metal-m1/ocr/ppocrv6-small-detgpu.scan_page_pd.json` |
+| PP-OCRv6 recognizer | `ppocrv6_ocr.cpp` | `GPU` | **`exact`**: byte-identical on fox and scan_page_pd, 3.21 s vs 5.38 s (2026-11-01) | `CRISPEMBED_PPOCRV6_NO_GRAPH`, `..._BATCH_GRAPH`, `..._FORCE_CPU` (presence) | `tests/results/gpu-audit/metal-m1/ocr/ppocrv6-small.*.json` |
 | PP-LCNet orientation | `pplcnet_orientation.cpp` | `gated` | `wrong` on 1/10 fixtures (final-logit drift 1.07/3.22) and `slower` (1.15 s vs 0.36 s), 2026-08-01 | `PPLCNET_ORIENTATION_GRAPH`, `..._GRAPH_PIPELINE`, `..._GRAPH_ACCEPT`, `..._GRAPH_CPU` | `ocr_backend_matrix.md` PP-LCNet row |
 | Tesseract-LSTM | `tesseract_lstm.cpp` | `none` (hand-written LSTM; GPU backend only ever used to read the GGUF) | n/a | `CRISPEMBED_TESSERACT_GPU_LOAD`, `CRISPEMBED_TESSERACT_FORCE_CPU` (presence) | PERFORMANCE "Cost of a GPU backend an engine never computes on" |
-| EasyOCR CRNN recognizer | `easyocr_ocr.cpp` | `GPU` | `unknown` vs CPU (per-stage diff ≥0.99972 vs Python) | `EASYOCR_FORCE_CPU` (presence), `EASYOCR_WIDTH_SORT` | PERFORMANCE "EasyOCR GGML parity benchmarks — Apple M1, 2026-08-01" |
+| EasyOCR CRNN recognizer | `easyocr_ocr.cpp` | `GPU` | **`exact`**: `--ocr-engine easyocr` fox byte-identical (2026-11-01) | `EASYOCR_FORCE_CPU` (presence), `EASYOCR_WIDTH_SORT` | `tests/results/gpu-audit/metal-m1/ocr/dbnet-easyocr.fox.json` |
 | EasyOCR CRAFT detector (not on the pipeline path) | `easyocr_craft.cpp` | `GPU` | `exact` (CPU-forced and Metal byte-identical) but `slower` than CPU (850 ms vs 396 ms Python CPU) 2026-08-01 | `EASYOCR_CRAFT_FORCE_CPU` (presence) | PERFORMANCE "EasyOCR GGML parity benchmarks" |
 | Surya detector | `surya_det.cpp` | `GPU*` (stage-3 LiteMLA CPU-scalar) | `unknown` | `SURYA_DET_FORCE_CPU` (value-parsed), `SURYA_DET_SCALAR` | none Metal |
-| PARSeq | `parseq_ocr.cpp` | `GPU` | `unknown` | `PARSEQ_OCR_FORCE_CPU` (atoi) | PERFORMANCE M1 sweep 2026-07-31 (smoke only) |
+| PARSeq | `parseq_ocr.cpp` | `GPU` | **`exact`**: parseq and parseq-tiny byte-identical (2026-11-01); one-line crops are faster on CPU (0.07 vs 0.11 s) | `PARSEQ_OCR_FORCE_CPU` (atoi) | `tests/results/gpu-audit/metal-m1/ocr/parseq*.json` |
 | TPS localisation net | `tps_locnet.cpp` | `wload` | n/a | `TPS_LOCNET_GPU_LOAD`, `TPS_LOCNET_FORCE_CPU` | — |
 | Layout (D-FINE/heron) | `layout_detect.cpp` | excluded (other agent) | — | — | — |
 
@@ -92,7 +92,7 @@ from `core_env::on()` there.
 | PP-FormulaNet (base) | `ppformulanet_ocr.cpp` | `CPU` | n/a | — | — |
 | PP-FormulaNet-L | `ppformulanet_l_ocr.cpp` | `GPU` | `unknown` | `PPFNL_OCR_FORCE_CPU` (atoi) | — |
 | MixTeX | `mixtex_ocr.cpp` | `CPU` | n/a | — | — |
-| TexTeller / Pix2TeX / TrOCR-math | `math_ocr.cpp` | `GPU` | `unknown` | `MATH_OCR_FORCE_CPU`, `MATH_OCR_DEC_CPU` | M1 sweep (smoke) |
+| TexTeller / Pix2TeX / TrOCR-math | `math_ocr.cpp` | `GPU` | `unknown`: TexTeller-3 q8 decodes garbage on formula_quadratic in **both** arms (known unusable on this fixture), no verdict | `MATH_OCR_FORCE_CPU`, `MATH_OCR_DEC_CPU` | `tests/results/gpu-audit/metal-m1/ocr/texteller.formula.json` |
 | HMER / BTTR / PosFormer | `hmer_ocr.cpp`, `bttr_ocr.cpp`, `posformer_ocr.cpp` | `CPU` | n/a | — | `tests/results/posformer/` |
 | FLOVA | `flova_ocr.cpp` | `CPU` | n/a | — | — |
 | SMT / SMT++ | `smt_ocr.cpp` | `GPU` | `unknown` | `SMT_OCR_FORCE_CPU` (atoi) | — |
@@ -125,9 +125,9 @@ from `core_env::on()` there.
 | Text-SR (NAFNet-SR) | `text_sr.cpp` | `wload` | n/a | `TEXT_SR_GPU_LOAD`, `TEXT_SR_FORCE_CPU` | — |
 | AdaIR | `adair.cpp` | `wload` | n/a | `ADAIR_FORCE_CPU`, `ADAIR_SCALAR` | — |
 | SAFMN | `safmn_sr.cpp` | `gated` (one fused graph) | `slower` (tiny model) | `SAFMN_SR_METAL` (presence) | `safmn_sr.cpp` header note |
-| ESRGAN | `esrgan_sr.cpp` | `CPU` | n/a | — | `docs/esrgan_sr.md` |
+| ESRGAN | `esrgan_sr.cpp` | **`GPU` on Metal (changed 2026-11-01)**, CPU elsewhere | **`budget`**: max \|Δ\| 1/255, PSNR 69.3-75.7 dB vs the CPU path; 1.9-2.0 s vs 8.4-8.9 s | `CRISPEMBED_ESRGAN_GPU` (tri-state: =1 any GPU, =0 historical CPU, unset = Metal only) | `tests/results/gpu-audit/metal-m1/ocr/esrgan-*.json` |
 | Restormer | `restormer.cpp` | `CPU` | n/a | — | — |
-| InstructIR | `instructir.cpp` | `CPU` | n/a | — | `docs/instructir.md` |
+| InstructIR | `instructir.cpp` | `gated` (new 2026-11-01) | `budget` but **`slower`**: max \|Δ\| 1/255 (PSNR 76.7 dB), 14.5 s vs 10.4 s — stays off | `CRISPEMBED_INSTRUCTIR_GPU` (default off) | `tests/results/gpu-audit/metal-m1/ocr/instructir-gpu.scan_strip.json` |
 | MI-GAN / inpaint | `migan.cpp`, `inpaint.cpp` | excluded (other agent) | — | — | — |
 | Dewarp, scan cleanup, CC detect, morphology, face align, TPS warp, classical preproc | various | `none` | n/a | — | — |
 

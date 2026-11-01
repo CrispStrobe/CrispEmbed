@@ -126,12 +126,27 @@ esrgan_context * esrgan_init(const char * model_path, int n_threads) {
     // GGUFWriter already fixes the *layout*, but not this. ESRGAN_SR_FORCE_CPU is now
     // a no-op.)
     //
-    // GPU audit 2026-11-01: CRISPEMBED_ESRGAN_GPU=1 (value-parsed, default
-    // off) is the GPU-resident alternative — weights load on the GPU backend,
-    // which is KEPT alive and placed first in enc_sched, so the conv chain runs
-    // there and nothing CPU-side has to read a GPU buffer. The default CPU path
-    // below is unchanged. See docs/gpu-support-matrix.md for the A/B.
-    const bool want_gpu = core_env::on("CRISPEMBED_ESRGAN_GPU");
+    // GPU audit 2026-11-01: the GPU-resident path — weights load on the GPU
+    // backend, which is KEPT alive and placed first in enc_sched, so the conv
+    // chain runs there and nothing CPU-side has to read a GPU buffer.
+    // Tri-state CRISPEMBED_ESRGAN_GPU: =1 forces it on any GPU kind, =0 keeps
+    // the historical CPU path, unset = per-backend-kind default: ON when the
+    // GPU is Metal (M1 A/B: 4.2x faster, max |delta| 1/255, PSNR 69 dB vs the
+    // CPU path, tests/results/gpu-audit/metal-m1/ocr/esrgan-*), OFF elsewhere
+    // until CUDA/Vulkan are measured. --gpu-backend cpu also keeps CPU.
+    auto metal_device_present = [] {
+        for (size_t i = 0; i < ggml_backend_dev_count(); ++i) {
+            ggml_backend_dev_t dev = ggml_backend_dev_get(i);
+            if (ggml_backend_dev_type(dev) != GGML_BACKEND_DEVICE_TYPE_GPU &&
+                ggml_backend_dev_type(dev) != GGML_BACKEND_DEVICE_TYPE_IGPU)
+                continue;
+            const char * n = ggml_backend_dev_name(dev);
+            if (n && std::strncmp(n, "MTL", 3) == 0) return true;
+        }
+        return false;
+    };
+    const bool want_gpu = core_env::on("CRISPEMBED_ESRGAN_GPU") ||
+                          (!core_env::explicitly_off("CRISPEMBED_ESRGAN_GPU") && metal_device_present());
     ggml_backend_t backend = want_gpu ? crispasr_init_gpu_backend() : ggml_backend_cpu_init();
     if (!backend) backend = ggml_backend_cpu_init();
     const bool on_gpu = !ggml_backend_is_cpu(backend);
@@ -177,7 +192,8 @@ esrgan_context * esrgan_init(const char * model_path, int n_threads) {
     if (ctx->enc_backend && ctx->gpu_backend) {
         ggml_backend_t backends[] = { ctx->gpu_backend, ctx->enc_backend };
         ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 2, 4096, false, false);
-        fprintf(stderr, "esrgan: CRISPEMBED_ESRGAN_GPU=1 — conv chain on %s\n", ggml_backend_name(ctx->gpu_backend));
+        fprintf(stderr, "esrgan: GPU path — conv chain on %s (CRISPEMBED_ESRGAN_GPU=0 restores CPU)\n",
+                ggml_backend_name(ctx->gpu_backend));
     } else if (ctx->enc_backend) {
         ggml_backend_t backends[] = { ctx->enc_backend };
         ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
