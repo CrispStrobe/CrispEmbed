@@ -14,6 +14,7 @@
 
 #ifdef CRISPEMBED_MIGAN_TESTING
 #include "../tests/migan_test_observer.h"
+#include <chrono>
 #endif
 
 #include <algorithm>
@@ -45,6 +46,12 @@ struct context {
     core_gguf::WeightLoad weights;
     // Persistent graphs (allocated once, recomputed per call) keyed by batch.
     std::map<size_t, std::unique_ptr<graph_impl::graph_builder>> graphs;
+    // GPU only: F32 pointwise kernels as [IC+64,OC] with zero rows, so a
+    // contraction of K%128==0 is routed to ggml-metal's F32-tile mul_mm (_hp)
+    // instead of the small-batch mul_mv_ext kernel. Zero padding is exact.
+    std::map<const ggml_tensor *, ggml_tensor *> padded_k;
+    ggml_context * padded_ctx = nullptr;
+    ggml_backend_buffer_t padded_buf = nullptr;
     ~context();
 };
 
@@ -186,6 +193,11 @@ struct options {
     bool native_pad = true;       // ggml_pad_ext(2,1,2,1); GPU backends may lack left padding.
     bool im2col_pointwise = true; // Reviewed F32 im2col+mul_mat; non-F32 weights use the swapped form.
     bool f32_matmul = true;       // GGML_PREC_F32 hint on every pointwise mul_mat.
+    bool pad_k = false;           // GPU: padded-contraction F32 pointwise (context::padded_k).
+    // A/B re-implementation of feat/issue71-five-engines-graphs 06d75fb8's
+    // persistent graph forms (batch1): transpose-cont pointwise and pad+roll.
+    bool transpose_pointwise = false;
+    bool roll_pad = false;
 };
 
 struct graph_builder {
@@ -250,6 +262,19 @@ struct graph_builder {
         return ggml_cont(ctx, ggml_permute(ctx, product, 2, 0, 1, 3)); // [W,H,OC,N]
     }
 
+    // Padded-contraction F32 pointwise: [C+64,P] activations x [C+64,OC]
+    // weights; the 64 appended input channels are zero on both sides.
+    ggml_tensor * pointwise_padded(ggml_tensor * padded, ggml_tensor * x) {
+        const int64_t channels = x->ne[2], out = padded->ne[1];
+        ggml_tensor * xt = ggml_cont(ctx, ggml_permute(ctx, x, 1, 2, 0, 3)); // [C,W,H,N]
+        xt = ggml_reshape_2d(ctx, xt, channels, x->ne[0] * x->ne[1] * x->ne[3]);
+        xt = ggml_pad(ctx, xt, int(padded->ne[0] - channels), 0, 0, 0);
+        ggml_tensor * product = ggml_mul_mat(ctx, padded, xt); // [OC, W*H*N]
+        if (opt.f32_matmul) ggml_mul_mat_set_prec(product, GGML_PREC_F32);
+        product = ggml_reshape_4d(ctx, product, out, x->ne[0], x->ne[1], x->ne[3]);
+        return ggml_cont(ctx, ggml_permute(ctx, product, 2, 0, 1, 3)); // [W,H,OC,N]
+    }
+
     ggml_tensor * convolution(const std::string & name, ggml_tensor * x, int stride, int pad, bool depthwise, bool bias,
                               bool record = true) {
         ggml_tensor * kernel = weight(name + ".weight");
@@ -258,6 +283,16 @@ struct graph_builder {
             // Pinned CPU direct depthwise uses F32 source, F32 weight and F32
             // accumulation. WHCN stays contiguous; no F16 im2col temporary.
             y = ggml_conv_2d_dw_direct(ctx, kernel, x, stride, stride, pad, pad, 1, 1);
+        } else if (opt.transpose_pointwise && kernel->type == GGML_TYPE_F32 && x->ne[3] == 1 && stride == 1 &&
+                   pad == 0) {
+            ggml_tensor * pixels = ggml_reshape_2d(ctx, x, x->ne[0] * x->ne[1], x->ne[2]);
+            ggml_tensor * lhs = ggml_cont(ctx, ggml_transpose(ctx, pixels));
+            ggml_tensor * rhs = ggml_reshape_2d(ctx, kernel, kernel->ne[2], kernel->ne[3]);
+            ggml_tensor * product = ggml_mul_mat(ctx, lhs, rhs);
+            if (opt.f32_matmul) ggml_mul_mat_set_prec(product, GGML_PREC_F32);
+            y = ggml_reshape_4d(ctx, product, x->ne[0], x->ne[1], kernel->ne[3], 1);
+        } else if (opt.pad_k && kernel->type == GGML_TYPE_F32 && model.padded_k.count(kernel)) {
+            y = pointwise_padded(model.padded_k.at(kernel), x);
         } else if (kernel->type != GGML_TYPE_F32 || !opt.im2col_pointwise) {
             y = pointwise_swapped(kernel, x);
         } else {
@@ -301,7 +336,11 @@ struct graph_builder {
         mark(name + ".input.0", x);
         x = ggml_interpolate(ctx, x, x->ne[0] * 2, x->ne[1] * 2, x->ne[2], x->ne[3], GGML_SCALE_MODE_NEAREST);
         x = ggml_mul(ctx, x, weight(name + ".filter_const"));
-        if (opt.native_pad) {
+        if (opt.roll_pad) {
+            // pad right/bottom by 3, roll +2: left/top=2, right/bottom=1.
+            x = ggml_roll(ctx, ggml_pad(ctx, x, 3, 3, 0, 0), 2, 2, 0, 0);
+            x = convolution(name + ".filter", x, 1, 0, true, false);
+        } else if (opt.native_pad) {
             x = ggml_pad_ext(ctx, x, 2, 1, 2, 1, 0, 0, 0, 0);
             x = convolution(name + ".filter", x, 1, 0, true, false);
         } else {
@@ -400,6 +439,8 @@ struct graph_builder {
 
 context::~context() {
     graphs.clear();
+    if (padded_buf) ggml_backend_buffer_free(padded_buf);
+    if (padded_ctx) ggml_free(padded_ctx);
     core_gguf::free_weights(weights);
     if (backend) {
         if (gpu)
@@ -429,6 +470,9 @@ graph_impl::options context_options(const context & model, size_t batch) {
             return ok;
         }();
         opt.im2col_pointwise = !core_env::on("CRISPEMBED_MIGAN_GPU_SWAP_POINTWISE");
+        opt.pad_k = core_env::on("CRISPEMBED_MIGAN_GPU_PAD_K") && !model.padded_k.empty();
+        opt.transpose_pointwise = core_env::on("CRISPEMBED_MIGAN_GPU_TRANSPOSE_POINTWISE");
+        opt.roll_pad = core_env::on("CRISPEMBED_MIGAN_GPU_ROLL_PAD");
     }
     // Default keeps the F32 precision hint (Metal: F32 mul_mv_ext/_hp kernels).
     opt.f32_matmul = !core_env::on("CRISPEMBED_MIGAN_FAST_MATMUL");
@@ -475,6 +519,37 @@ bool weights_finite(context & model, std::string & error) {
         }
         for (float value : values)
             if (!std::isfinite(value)) return fail(error, "MI-GAN nonfinite checkpoint state: " + entry.first);
+    }
+    return true;
+}
+
+// GPU: padded-contraction copies of every F32 1x1 kernel with IC%128==0.
+bool make_padded_k(context & model, std::string & error) {
+    std::vector<std::pair<ggml_tensor *, int64_t>> chosen;
+    for (const auto & entry : model.weights.tensors) {
+        ggml_tensor * t = entry.second;
+        const std::string & name = entry.first;
+        const bool weight = name.size() > 7 && name.compare(name.size() - 7, 7, ".weight") == 0;
+        if (!weight || t->type != GGML_TYPE_F32 || t->ne[0] != 1 || t->ne[1] != 1 || t->ne[2] % 128 != 0) continue;
+        if (name.find(".filter.") != std::string::npos) continue; // depthwise up/down filters
+        chosen.push_back({ t, t->ne[2] });
+    }
+    if (chosen.empty()) return true;
+    model.padded_ctx = ggml_init({ chosen.size() * ggml_tensor_overhead(), nullptr, true });
+    if (!model.padded_ctx) return fail(error, "MI-GAN padded weight context failed");
+    for (auto & c : chosen)
+        model.padded_k[c.first] = ggml_new_tensor_2d(model.padded_ctx, GGML_TYPE_F32, c.second + 64, c.first->ne[3]);
+    model.padded_buf = ggml_backend_alloc_ctx_tensors(model.padded_ctx, model.backend);
+    if (!model.padded_buf) return fail(error, "MI-GAN padded weight allocation failed");
+    std::vector<float> src, dst;
+    for (auto & c : chosen) {
+        ggml_tensor * t = c.first;
+        const int64_t ic = t->ne[2], oc = t->ne[3];
+        src.resize(ic * oc);
+        dst.assign((ic + 64) * oc, 0.0f);
+        ggml_backend_tensor_get(t, src.data(), 0, src.size() * sizeof(float));
+        for (int64_t o = 0; o < oc; ++o) std::memcpy(&dst[o * (ic + 64)], &src[o * ic], ic * sizeof(float));
+        ggml_backend_tensor_set(model.padded_k.at(t), dst.data(), 0, dst.size() * sizeof(float));
     }
     return true;
 }
@@ -552,6 +627,7 @@ context * init_ex(const char * path, const char * expected_checkpoint_sha256, in
         }
         if (!weights_finite(*ctx, error)) return nullptr;
         ctx->batch_limit = batch_default(*ctx);
+        if (ctx->gpu && !make_padded_k(*ctx, error)) return nullptr;
         if (ctx->gpu) {
             // Build the batch1 graph now: an unsupported GPU op is reported at
             // init, and the context falls back to the reviewed CPU backend.
@@ -717,6 +793,34 @@ bool observer_retention_regression(std::string & error) {
         const auto actual_mark = execute(true);
         if (old_view_only.first || !old_view_only.second || !actual_mark.first || actual_mark.second)
             return fail(error, "MI-GAN retention regression did not reproduce/correct view-owner reuse");
+        return true;
+    } catch (const std::exception & exception) {
+        return fail(error, exception.what());
+    }
+}
+
+bool profile_ops(context * ctx, const float * input_nchw, size_t batch, const op_timer & timer, std::string & error) {
+    error.clear();
+    try {
+        graph_builder graph(*ctx,
+                            reviewed_cpu_graph(*ctx, batch) ? graph_impl::options{} : context_options(*ctx, batch));
+        graph.build();
+        std::vector<float> raw(batch * rgb_elements);
+        if (!graph.compute(input_nchw, raw.data(), error)) return false;
+        for (int i = 0; i < ggml_graph_n_nodes(graph.graph); ++i) {
+            ggml_tensor * node = ggml_graph_node(graph.graph, i);
+            ggml_context * holder = ggml_init({ ggml_graph_overhead_custom(4, false), nullptr, true });
+            ggml_cgraph * single = ggml_new_graph_custom(holder, 4, false);
+            ggml_graph_add_node(single, node);
+            ggml_backend_graph_compute(ctx->backend, single); // warm the pipeline
+            const auto start = std::chrono::steady_clock::now();
+            for (int r = 0; r < 3; ++r) ggml_backend_graph_compute(ctx->backend, single);
+            const double ms =
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count() / 3;
+            ggml_free(holder);
+            ggml_tensor * src0 = node->src[0];
+            timer(ggml_op_desc(node), node->ne, src0 ? src0->ne : node->ne, src0 ? ggml_type_name(src0->type) : "", ms);
+        }
         return true;
     } catch (const std::exception & exception) {
         return fail(error, exception.what());

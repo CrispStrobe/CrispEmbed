@@ -371,12 +371,50 @@ int frame(int argc, char ** argv) {
     return 0;
 }
 
+// profile MODEL cpu|gpu BATCH THREADS: per-op device time, aggregated.
+int profile(int argc, char ** argv) {
+    if (argc != 6) return 2;
+    std::string error;
+    const size_t batch = size_t(std::atoi(argv[4]));
+    set_env("CRISPEMBED_MIGAN_BATCH", argv[4]);
+    std::unique_ptr<migan::context, decltype(&migan::free)> ctx(
+        migan::init_ex(argv[2], checkpoint, std::atoi(argv[5]), parse_device(argv[3]), source_gguf, error),
+        migan::free);
+    if (!ctx) return std::fprintf(stderr, "%s\n", error.c_str()), 2;
+    std::vector<float> input(batch * migan::input_elements, 0.25f);
+    std::map<std::string, std::pair<double, int>> totals;
+    double all = 0;
+    const bool ok = migan::test::profile_ops(
+        ctx.get(), input.data(), batch,
+        [&](const char * op, const int64_t * ne, const int64_t * s0, const char * type, double ms) {
+            char key[256];
+            std::snprintf(key, sizeof key, "%s src0=%s[%lld,%lld,%lld,%lld] out=[%lld,%lld,%lld,%lld]", op, type,
+                          (long long)s0[0], (long long)s0[1], (long long)s0[2], (long long)s0[3], (long long)ne[0],
+                          (long long)ne[1], (long long)ne[2], (long long)ne[3]);
+            auto & t = totals[std::string(op) == "MUL_MAT" || std::string(op) == "CONV_2D_DW" ? key : op];
+            t.first += ms;
+            t.second += 1;
+            all += ms;
+        },
+        error);
+    if (!ok) return std::fprintf(stderr, "%s\n", error.c_str()), 2;
+    std::vector<std::pair<double, std::string>> sorted;
+    for (const auto & t : totals)
+        sorted.push_back({ t.second.first, t.first + " x" + std::to_string(t.second.second) });
+    std::sort(sorted.rbegin(), sorted.rend());
+    for (const auto & t : sorted) std::printf("MIGAN_AB_PROFILE %9.3f ms  %s\n", t.first, t.second.c_str());
+    std::printf("MIGAN_AB_PROFILE_TOTAL {\"backend\":\"%s\",\"batch\":%zu,\"sum_node_ms\":%.3f}\n",
+                migan::backend_name(ctx.get()), batch, all);
+    return 0;
+}
+
 } // namespace
 
 static int crispembed_test_main(int argc, char ** argv) {
     set_env("CRISPEMBED_MIGAN", "1");
     if (argc > 1 && std::strcmp(argv[1], "stages") == 0) return stages(argc, argv);
     if (argc > 1 && std::strcmp(argv[1], "frame") == 0) return frame(argc, argv);
+    if (argc > 1 && std::strcmp(argv[1], "profile") == 0) return profile(argc, argv);
     std::fprintf(stderr, "usage: see tests/test_migan_gpu_ab.cpp header\n");
     return 2;
 }
