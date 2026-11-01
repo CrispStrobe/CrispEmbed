@@ -21,8 +21,9 @@ if [[ "${1:-}" == dtype=* ]]; then DTYPE=${1#dtype=}; shift; fi
 # Optional quantizer policy (tools/quantize.cpp, opt-in): large=q8_0|mix quantizes
 # embed/lm_head/vte/visual head too; novisf16=1 keeps Q8_0 vision instead of F16.
 QENV=()
-while [[ "${1:-}" == large=* || "${1:-}" == novisf16=* ]]; do
-    case $1 in large=*) QENV+=(CRISPEMBED_QUANTIZE_OXR_LARGE=${1#large=}) ;; novisf16=*) QENV+=(CRISPEMBED_QUANTIZE_NO_VISION_F16=${1#novisf16=}) ;; esac
+while [[ "${1:-}" == large=* || "${1:-}" == novisf16=* || "${1:-}" == vision=* ]]; do
+    case $1 in large=*) QENV+=(CRISPEMBED_QUANTIZE_OXR_LARGE=${1#large=}) ;; novisf16=*) QENV+=(CRISPEMBED_QUANTIZE_NO_VISION_F16=${1#novisf16=}) ;;
+        vision=*) QENV+=(CRISPEMBED_QUANTIZE_OXR_VISION=${1#vision=}) ;; esac
     shift
 done
 case "$DTYPE" in f32 | f16 | q8_0 | q4_k) ;; *) echo "unsupported dtype $DTYPE"; exit 2 ;; esac

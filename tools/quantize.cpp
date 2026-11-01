@@ -766,6 +766,13 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         if (const char * off = getenv("CRISPEMBED_QUANTIZE_NO_VISION_F16")) {
             if (atoi(off)) is_oxr_vision = false;
         }
+        // Opt-in CRISPEMBED_QUANTIZE_OXR_VISION=f16: the SigLIP2 tower F16 for any
+        // target type (e.g. Q4_K language layers over an F16 vision tower).
+        if (is_oxr && sname.rfind("vit.", 0) == 0) {
+            if (const char * v = getenv("CRISPEMBED_QUANTIZE_OXR_VISION")) {
+                if (std::string(v) == "f16") is_oxr_vision = true;
+            }
+        }
         if (quantize && is_oxr_vision && qtype != GGML_TYPE_F16 && qtype != GGML_TYPE_F32) {
             qtype_used = GGML_TYPE_F16;
             printf("(oxr-vision→F16) ");
