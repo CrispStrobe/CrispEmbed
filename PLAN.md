@@ -136,9 +136,8 @@ Q4_K-head mixed recipes pass; plain Q4_K LLM layers fail (table 0.896).
 
 Open, in order:
 
-1. Heron (`rt_detr_v2`): `CRISPEMBED_LAYOUT_GPU_PREC_F32=1` A/B against CPU (its Metal
-   default still uses half-tile mul_mm, the setting that broke D-FINE 4/5). D-FINE is now
-   Metal by default on Apple (region-exact 5/5, 2.1-2.2x CPU).
+1. Heron: done; GPU default now PREC_F32 + `_hp` (regions equal CPU 5/5). D-FINE is Metal by
+   default on Apple (region-exact 5/5, 2.1-2.2x CPU).
 2. OXR quantized on Metal: Q8_0-everything decodes German exactly on Metal (`_hp`, F32
    activations) while CPU Q8_0 collapses vision.layer.26 to 0.55; hosted CPU check of
    `CRISPEMBED_OXR_DEQUANT_VISION=1` done (41340880860: 5/5 token-exact, min logits cos 0.9972;

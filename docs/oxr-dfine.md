@@ -236,6 +236,18 @@ the CPU; non-Apple platforms keep the CPU unless `CRISPEMBED_OXR_LAYOUT_GPU=1`. 
 Metal (`dfine-auto-f16/`) matches the CPU F16 result: all regions matched, cosine >= 0.99999,
 0.84-0.90 s (weights are widened to F32 per run).
 
+### Heron (`rt_detr_v2`) on Metal
+
+Receipts `tests/results/oxr-dfine/metal-m1/heron/` (cstr/layout-heron-gguf F32, threshold 0.3,
+regions matched to the native CPU run by label and IoU). Heron already defaulted to the GPU,
+with ggml's half-tile products: on German it added a 63rd region and moved boxes by 3 px
+(scores 0.013); on the other four pages it matched within 1 px / 0.008. With PREC_F32
+products on the `_hp` route all five pages equal the CPU regions (one 1 px rounding on German)
+at the same speed as before (1.3-1.75 s per process including load, CPU 2.6-3.0 s). **Default
+changed:** heron GPU graphs now request PREC_F32 and set `GGML_METAL_PREC_F32_MM=1`;
+`CRISPEMBED_LAYOUT_GPU_PREC_F32=0` (half tiles) or `CRISPEMBED_LAYOUT_GPU_HP_MM=0` (mat-vec
+route, ~1.7x slower) opt out. The base-branch byte-identity check of heron on CPU is unaffected.
+
 ### F16 and the 147 px box, re-scored (owner policy, docs/precision-acceptance.md)
 
 * The "147 px" F16 receipt result was a **positional** comparison: two near-tied selected regions
