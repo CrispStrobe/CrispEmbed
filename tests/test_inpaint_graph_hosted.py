@@ -36,9 +36,27 @@ class HostedGraphControls(unittest.TestCase):
         self.assertEqual(profiles[1][2]["CRISPEMBED_INPAINT_CPU_ATTENTION_TILES"], "0")
         self.assertEqual(profiles[1][2]["CRISPEMBED_MIGAN_CPU_KERNELS"], "1")
         self.assertEqual(profiles[1][2]["CRISPEMBED_INPAINT_CPU_FFT"], "1")
+        self.assertEqual(profiles[1][2]["CRISPEMBED_INPAINT_CPU_DEPTHWISE"], "1")
+        self.assertEqual(profiles[1][2]["CRISPEMBED_INPAINT_SHA256_ACCEL"], "0")
+        self.assertEqual({name for name, value in profiles[1][2].items() if value == "1"},
+                         set(hosted.CPU_GATES) - {"CRISPEMBED_INPAINT_CPU_ATTENTION_TILES"})
         self.assertEqual(profiles[2][1], ("test-inpaint-graph",))
         self.assertEqual({name for name, value in profiles[2][2].items() if value == "1"},
                          {"CRISPEMBED_INPAINT_CPU_ATTENTION_TILES"})
+
+    def test_inherited_hash_and_depthwise_gates_are_reset_without_changing_preset(self):
+        inherited = {name: "1" for name in hosted.RESET_GATES}
+        inherited["PATH"] = "preserved-test-path"
+        reset = hosted.reset_gate_environment(inherited)
+        self.assertEqual(reset["PATH"], "preserved-test-path")
+        self.assertTrue(all(reset[name] == "0" for name in hosted.RESET_GATES))
+        self.assertTrue(all(inherited[name] == "1" for name in hosted.RESET_GATES))
+        for backend in ("cpu", "cuda", "metal"):
+            for _, _, gates in hosted.component_profiles(backend):
+                effective = dict(reset, **gates)
+                self.assertEqual(effective["CRISPEMBED_INPAINT_SHA256_ACCEL"], "0")
+                if backend != "cpu":
+                    self.assertEqual(effective["CRISPEMBED_INPAINT_CPU_DEPTHWISE"], "0")
 
     def test_gpu_controls_never_select_cpu_candidates(self):
         for backend in ("cuda", "metal"):
@@ -50,7 +68,7 @@ class HostedGraphControls(unittest.TestCase):
 
     def test_per_command_environment_is_recorded_without_mutating_baseline(self):
         with tempfile.TemporaryDirectory() as directory:
-            baseline = {name: "0" for name in hosted.CPU_GATES}
+            baseline = hosted.reset_gate_environment({})
             candidate = dict(baseline, CRISPEMBED_INPAINT_CPU_FFT="1")
             runner = hosted.Runbook(directory, time.monotonic() + 20, {"commands": []}, baseline)
             process = Mock(pid=12345, returncode=0)
@@ -59,6 +77,7 @@ class HostedGraphControls(unittest.TestCase):
                 record = runner.run("candidate", ["synthetic-only"], environment=candidate)
             self.assertEqual(launch.call_args.kwargs["env"], candidate)
             self.assertEqual(record["cpu_candidate_gates"]["CRISPEMBED_INPAINT_CPU_FFT"], "1")
+            self.assertEqual(record["cpu_candidate_gates"]["CRISPEMBED_INPAINT_SHA256_ACCEL"], "0")
             self.assertEqual(runner.environment["CRISPEMBED_INPAINT_CPU_FFT"], "0")
 
     def test_output_and_scratch_cannot_nest_or_overlap(self):

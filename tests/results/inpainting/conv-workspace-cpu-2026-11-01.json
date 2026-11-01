@@ -1,0 +1,1191 @@
+{
+  "schema": "crispembed-conv-workspace-cpu-screen-v1",
+  "date": "2026-11-01",
+  "exported_utc": "2026-11-01T13:51:08.607793+00:00",
+  "scope": "Isolated private-copy comparison of 32 and 128 MiB CPU convolution patch budgets at four fixed shapes. Existing common scalar/replay controls execute first. This does not modify production Builder or run a full model.",
+  "decision": {
+    "production_integration": false,
+    "production_cpu_patch_budget_mib": 32,
+    "reason": "The short screen is mixed and noisy: the 32 by 32 case regresses, the mathematically identical 16 by 16 control differs by about 10%, and the 64 by 64 case nearly doubles its graph arena. It does not justify a blanket 128 MiB policy.",
+    "targeted_lead": "The VAE convolution at 512 by 512 has a 1.217x measured median ratio and a lower arena, but remains a private component lead requiring separate qualification before integration."
+  },
+  "qualification": {
+    "model_free": true,
+    "cpu_only": true,
+    "strict_f32": true,
+    "threads": 8,
+    "actual_strip_census_passed": true,
+    "all_cross_arm_numerical_max_errors_zero": true,
+    "all_warm_outputs_byte_exact_to_same_arm_cold": true,
+    "same_arm_exact_warm_checks": 24,
+    "resident_input_kernel_bias_bytes_preserved": true,
+    "checks_outside_compute_timing": true,
+    "large_shape_original_model_parity_tested": false,
+    "full_model_qualified": false,
+    "full_image_speedup_measured": false,
+    "timings_qualified": false,
+    "resource_caveat": "External npm package installation and synchronization/compression processes appear in before/after snapshots. Three alternating samples per arm are an indicative screen, not a statistically stable performance result.",
+    "memory_caveat": "Per-arm arena sizes describe graph storage. The direct-child RSS includes both graphs and untimed retained cold outputs/downloads; it is not model inference RSS."
+  },
+  "summary": [
+    {
+      "case": "unet-conv64-c320-batch2",
+      "baseline_strip_count": 3,
+      "candidate_strip_count": 1,
+      "baseline_median_ms": 77.0496,
+      "candidate_median_ms": 65.8187,
+      "reported_time_ratio": 1.17063,
+      "baseline_arena_bytes": 57999360,
+      "candidate_arena_bytes": 115343360,
+      "arena_ratio_candidate_over_baseline": 1.9887005649717515
+    },
+    {
+      "case": "unet-conv32-c640-batch2",
+      "baseline_strip_count": 2,
+      "candidate_strip_count": 1,
+      "baseline_median_ms": 75.6729,
+      "candidate_median_ms": 88.8826,
+      "reported_time_ratio": 0.85138,
+      "baseline_arena_bytes": 49315840,
+      "candidate_arena_bytes": 57671680,
+      "arena_ratio_candidate_over_baseline": 1.169435215946844
+    },
+    {
+      "case": "unet-conv16-c1280-control",
+      "baseline_strip_count": 1,
+      "candidate_strip_count": 1,
+      "baseline_median_ms": 55.9953,
+      "candidate_median_ms": 61.4532,
+      "reported_time_ratio": 0.911185,
+      "baseline_arena_bytes": 28835840,
+      "candidate_arena_bytes": 28835840,
+      "arena_ratio_candidate_over_baseline": 1.0
+    },
+    {
+      "case": "vae-conv512-c128",
+      "baseline_strip_count": 37,
+      "candidate_strip_count": 10,
+      "baseline_median_ms": 713.247,
+      "candidate_median_ms": 586.19,
+      "reported_time_ratio": 1.21675,
+      "baseline_arena_bytes": 479199232,
+      "candidate_arena_bytes": 457179136,
+      "arena_ratio_candidate_over_baseline": 0.9540481400437637
+    }
+  ],
+  "source_receipt": {
+    "path": "native-optimization/resume-2026-11-01/conv-workspace-live-v1/report.json",
+    "bytes": 35233,
+    "sha256": "b661c93de316d4de49084664b130c49b8103ceb97218f570553fb7ac6daa518f",
+    "contents": {
+      "schema": "crispembed-conv-workspace-private-process-v1",
+      "complete": true,
+      "passed": true,
+      "model_free": true,
+      "full_model_qualified": false,
+      "timings_qualified": false,
+      "timing_scope": "Bounded isolated persistent-graph screen; no model inference or original-model parity claim.",
+      "driver": {
+        "path": "native-optimization/resume-2026-11-01/conv-workspace-probe/run_workspace_probe.py",
+        "bytes": 16328,
+        "sha256": "6e89bf70215a52ba0b8cce6009564b3954168df87a0ba1de6ed4e78fd4b70f48"
+      },
+      "plan": {
+        "path": "native-optimization/resume-2026-11-01/conv-workspace-probe/plan.json",
+        "bytes": 7584,
+        "sha256": "e6e4f3c0edd57e0e9ef8d9e13cd78d5aa1dddcf7abe3b4569eb3b48d2a3de5e4"
+      },
+      "commands": [
+        {
+          "label": "compile",
+          "argv": [
+            "/usr/bin/x86_64-linux-gnu-g++-13",
+            "-O3",
+            "-DNDEBUG",
+            "-std=gnu++17",
+            "-march=native",
+            "-fPIC",
+            "-DGGML_USE_CPU",
+            "-ICrispEmbed-issue71/src",
+            "-ICrispEmbed-issue71/src/core",
+            "-ICrispEmbed-issue71/ggml/include",
+            "-ICrispEmbed-issue71/ggml/src",
+            "native-optimization/resume-2026-11-01/conv-workspace-probe/test_workspace.cpp",
+            "native-optimization/resume-2026-11-01/conv-workspace-probe/inpaint_graph.workspace-probe.cpp",
+            "native-optimization/build-current/libcrispembed-core.a",
+            "native-optimization/build-current/ggml/src/libggml.a",
+            "-ldl",
+            "native-optimization/build-current/ggml/src/libggml-cpu.a",
+            "native-optimization/build-current/ggml/src/libggml-base.a",
+            "-lm",
+            "-o",
+            "native-optimization/resume-2026-11-01/conv-workspace-live-v1/conv-workspace-probe"
+          ],
+          "timeout_seconds": 180,
+          "complete": true,
+          "passed": true,
+          "started_unix": 1793540760.8914685,
+          "resources_before": {
+            "/sys/fs/cgroup/cpu.max": "800000 100000",
+            "/sys/fs/cgroup/cpu.stat": "usage_usec 50969294831\nuser_usec 48028014120\nsystem_usec 2941280710\nnice_usec 0\nnr_periods 162631\nnr_throttled 45187\nthrottled_usec 1934247656\nnr_bursts 0\nburst_usec 0",
+            "/sys/fs/cgroup/memory.max": "8589934592",
+            "/sys/fs/cgroup/memory.current": "8589914112",
+            "/sys/fs/cgroup/memory.stat": "anon 610050048\nfile 7054479360\nkernel 920768512\nkernel_stack 1245184\npagetables 13406208\nsec_pagetables 0\npercpu 3344\nsock 3993600\nvmalloc 0\nshmem 0\nfile_mapped 237568\nfile_dirty 367857664\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 3594518528\nshmem_thp 0\ninactive_anon 609927168\nactive_anon 77824\ninactive_file 1131311104\nactive_file 5923082240\nunevictable 0\nslab_reclaimable 903990752\nslab_unreclaimable 1620360\nslab 905611112\nworkingset_refault_anon 0\nworkingset_refault_file 298572814\nworkingset_activate_anon 0\nworkingset_activate_file 17816789\nworkingset_restore_anon 0\nworkingset_restore_file 5567184\nworkingset_nodereclaim 106586\npgdemote_kswapd 0\npgdemote_direct 0\npgdemote_khugepaged 0\npgdemote_proactive 0\npgscan 322785284\npgsteal 320200728\npswpin 0\npswpout 0\npgscan_kswapd 12869484\npgscan_direct 309911168\npgscan_khugepaged 4632\npgscan_proactive 0\npgsteal_kswapd 12750883\npgsteal_direct 307445213\npgsteal_khugepaged 4632\npgsteal_proactive 0\npgfault 486586547\npgmajfault 39231\npgrefill 28347745\npgactivate 16000815\npgdeactivate 28031307\npglazyfree 42\npglazyfreed 0\nswpin_zero 0\nswpout_zero 0\nthp_fault_alloc 10540\nthp_collapse_alloc 68\nthp_swpout 0\nthp_swpout_fallback 0",
+            "/sys/fs/cgroup/memory.events": "low 0\nhigh 0\nmax 1922441\noom 0\noom_kill 0\noom_group_kill 0",
+            "/sys/fs/cgroup/cpu.pressure": {
+              "unavailable": "FileNotFoundError"
+            },
+            "/proc/pressure/cpu": {
+              "unavailable": "FileNotFoundError"
+            },
+            "/proc/loadavg": "1.47 0.88 2.66 2/234 535181",
+            "process_names_cpu_percent_rss_kib": [
+              "COMMAND         %CPU   RSS",
+              "npm install      106 397764",
+              "python3         71.4 13216",
+              "rsync            9.8 29100",
+              "zstd             5.9 53452",
+              "zstd             4.0 53452",
+              "MainThread       0.3 41648",
+              "caas-prefix-tra  0.2   724",
+              "codex            0.2 51336",
+              "codex            0.1 67040",
+              "sites-preview    0.0   300",
+              "supervisord      0.0 23216",
+              "sync_share.sh    0.0  2080",
+              "rsync            0.0  2372",
+              "sync_share.sh    0.0  2072",
+              "inotifywait      0.0   832",
+              "sh               0.0   764",
+              "sh               0.0   760",
+              "bash             0.0  2052",
+              "ps               0.0  2628"
+            ],
+            "process_scope": "Names and lifetime-average CPU percentages only; diagnostic snapshots do not continuously measure contention."
+          },
+          "returncode": 0,
+          "peak_rss_kib": 236088,
+          "user_seconds": 5.915817,
+          "system_seconds": 0.290557,
+          "rss_scope": "Direct-child wait4 accounting; compile and numerical probe are separate children.",
+          "resources_after": {
+            "/sys/fs/cgroup/cpu.max": "800000 100000",
+            "/sys/fs/cgroup/cpu.stat": "usage_usec 50983898075\nuser_usec 48039927028\nsystem_usec 2943971046\nnice_usec 0\nnr_periods 162693\nnr_throttled 45187\nthrottled_usec 1934247656\nnr_bursts 0\nburst_usec 0",
+            "/sys/fs/cgroup/memory.max": "8589934592",
+            "/sys/fs/cgroup/memory.current": "8420048896",
+            "/sys/fs/cgroup/memory.stat": "anon 611770368\nfile 6878683136\nkernel 924311552\nkernel_stack 1228800\npagetables 13393920\nsec_pagetables 0\npercpu 3520\nsock 3989504\nvmalloc 0\nshmem 0\nfile_mapped 237568\nfile_dirty 269377536\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 3445620736\nshmem_thp 0\ninactive_anon 611635200\nactive_anon 90112\ninactive_file 1045057536\nactive_file 5833551872\nunevictable 0\nslab_reclaimable 907569680\nslab_unreclaimable 1614800\nslab 909184480\nworkingset_refault_anon 0\nworkingset_refault_file 298676237\nworkingset_activate_anon 0\nworkingset_activate_file 17852110\nworkingset_restore_anon 0\nworkingset_restore_file 5567184\nworkingset_nodereclaim 106586\npgdemote_kswapd 0\npgdemote_direct 0\npgdemote_khugepaged 0\npgdemote_proactive 0\npgscan 323002678\npgsteal 320417034\npswpin 0\npswpout 0\npgscan_kswapd 12869484\npgscan_direct 310128562\npgscan_khugepaged 4632\npgscan_proactive 0\npgsteal_kswapd 12750883\npgsteal_direct 307661519\npgsteal_khugepaged 4632\npgsteal_proactive 0\npgfault 486717885\npgmajfault 39231\npgrefill 28405682\npgactivate 16002017\npgdeactivate 28089244\npglazyfree 42\npglazyfreed 0\nswpin_zero 0\nswpout_zero 0\nthp_fault_alloc 10540\nthp_collapse_alloc 68\nthp_swpout 0\nthp_swpout_fallback 0",
+            "/sys/fs/cgroup/memory.events": "low 0\nhigh 0\nmax 1924723\noom 0\noom_kill 0\noom_group_kill 0",
+            "/sys/fs/cgroup/cpu.pressure": {
+              "unavailable": "FileNotFoundError"
+            },
+            "/proc/pressure/cpu": {
+              "unavailable": "FileNotFoundError"
+            },
+            "/proc/loadavg": "1.60 0.91 2.66 2/234 535191",
+            "process_names_cpu_percent_rss_kib": [
+              "COMMAND         %CPU   RSS",
+              "npm install      108 399488",
+              "rsync            9.1 29100",
+              "zstd             5.9 53452",
+              "zstd             4.0 53452",
+              "python3          0.7 13284",
+              "MainThread       0.2 41648",
+              "caas-prefix-tra  0.2   724",
+              "codex            0.2 51260",
+              "codex            0.1 67040",
+              "sites-preview    0.0   300",
+              "supervisord      0.0 23216",
+              "sync_share.sh    0.0  2080",
+              "rsync            0.0  2372",
+              "sync_share.sh    0.0  2072",
+              "inotifywait      0.0   832",
+              "sh               0.0   764",
+              "sh               0.0   760",
+              "bash             0.0  2052",
+              "ps               0.0  2624"
+            ],
+            "process_scope": "Names and lifetime-average CPU percentages only; diagnostic snapshots do not continuously measure contention."
+          },
+          "log": {
+            "path": "native-optimization/resume-2026-11-01/conv-workspace-live-v1/compile.log",
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "wall_seconds": 6.2215999710024334
+        },
+        {
+          "label": "probe",
+          "argv": [
+            "native-optimization/resume-2026-11-01/conv-workspace-live-v1/conv-workspace-probe",
+            "--backend",
+            "cpu",
+            "--threads",
+            "8",
+            "--benchmark",
+            "3"
+          ],
+          "timeout_seconds": 600,
+          "complete": true,
+          "passed": true,
+          "started_unix": 1793540767.1207507,
+          "resources_before": {
+            "/sys/fs/cgroup/cpu.max": "800000 100000",
+            "/sys/fs/cgroup/cpu.stat": "usage_usec 50983911350\nuser_usec 48039931790\nsystem_usec 2943979560\nnice_usec 0\nnr_periods 162693\nnr_throttled 45187\nthrottled_usec 1934247656\nnr_bursts 0\nburst_usec 0",
+            "/sys/fs/cgroup/memory.max": "8589934592",
+            "/sys/fs/cgroup/memory.current": "8420524032",
+            "/sys/fs/cgroup/memory.stat": "anon 611786752\nfile 6878769152\nkernel 924463104\nkernel_stack 1228800\npagetables 13467648\nsec_pagetables 0\npercpu 3520\nsock 3989504\nvmalloc 0\nshmem 0\nfile_mapped 237568\nfile_dirty 269467648\nfile_writeback 16384\nswapcached 0\nanon_thp 0\nfile_thp 3445620736\nshmem_thp 0\ninactive_anon 611651584\nactive_anon 90112\ninactive_file 1043214336\nactive_file 5835399168\nunevictable 0\nslab_reclaimable 907627088\nslab_unreclaimable 1622280\nslab 909249368\nworkingset_refault_anon 0\nworkingset_refault_file 298676238\nworkingset_activate_anon 0\nworkingset_activate_file 17852110\nworkingset_restore_anon 0\nworkingset_restore_file 5567184\nworkingset_nodereclaim 106586\npgdemote_kswapd 0\npgdemote_direct 0\npgdemote_khugepaged 0\npgdemote_proactive 0\npgscan 323002678\npgsteal 320417034\npswpin 0\npswpout 0\npgscan_kswapd 12869484\npgscan_direct 310128562\npgscan_khugepaged 4632\npgscan_proactive 0\npgsteal_kswapd 12750883\npgsteal_direct 307661519\npgsteal_khugepaged 4632\npgsteal_proactive 0\npgfault 486718603\npgmajfault 39231\npgrefill 28405682\npgactivate 16002468\npgdeactivate 28089244\npglazyfree 42\npglazyfreed 0\nswpin_zero 0\nswpout_zero 0\nthp_fault_alloc 10540\nthp_collapse_alloc 68\nthp_swpout 0\nthp_swpout_fallback 0",
+            "/sys/fs/cgroup/memory.events": "low 0\nhigh 0\nmax 1924723\noom 0\noom_kill 0\noom_group_kill 0",
+            "/sys/fs/cgroup/cpu.pressure": {
+              "unavailable": "FileNotFoundError"
+            },
+            "/proc/pressure/cpu": {
+              "unavailable": "FileNotFoundError"
+            },
+            "/proc/loadavg": "1.60 0.91 2.66 4/234 535192",
+            "process_names_cpu_percent_rss_kib": [
+              "COMMAND         %CPU   RSS",
+              "npm install      108 399488",
+              "rsync            9.1 29100",
+              "zstd             5.9 53452",
+              "zstd             4.0 53452",
+              "python3          0.9 13304",
+              "MainThread       0.2 41648",
+              "caas-prefix-tra  0.2   724",
+              "codex            0.2 51260",
+              "codex            0.1 67040",
+              "sites-preview    0.0   300",
+              "supervisord      0.0 23216",
+              "sync_share.sh    0.0  2080",
+              "rsync            0.0  2372",
+              "sync_share.sh    0.0  2072",
+              "inotifywait      0.0   832",
+              "sh               0.0   764",
+              "sh               0.0   760",
+              "bash             0.0  2052",
+              "ps               0.0  2628"
+            ],
+            "process_scope": "Names and lifetime-average CPU percentages only; diagnostic snapshots do not continuously measure contention."
+          },
+          "returncode": 0,
+          "peak_rss_kib": 1732736,
+          "user_seconds": 74.354454,
+          "system_seconds": 4.175089,
+          "rss_scope": "Direct-child wait4 accounting; compile and numerical probe are separate children.",
+          "resources_after": {
+            "/sys/fs/cgroup/cpu.max": "800000 100000",
+            "/sys/fs/cgroup/cpu.stat": "usage_usec 51117316129\nuser_usec 48141510981\nsystem_usec 2975805147\nnice_usec 0\nnr_periods 162937\nnr_throttled 45273\nthrottled_usec 1941755802\nnr_bursts 0\nburst_usec 0",
+            "/sys/fs/cgroup/memory.max": "8589934592",
+            "/sys/fs/cgroup/memory.current": "6843482112",
+            "/sys/fs/cgroup/memory.stat": "anon 1821786112\nfile 4040949760\nkernel 975888384\nkernel_stack 1441792\npagetables 23060480\nsec_pagetables 0\npercpu 3520\nsock 3981312\nvmalloc 0\nshmem 0\nfile_mapped 315392\nfile_dirty 74379264\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 1805647872\nshmem_thp 0\ninactive_anon 1821552640\nactive_anon 98304\ninactive_file 1082224640\nactive_file 2958626816\nunevictable 0\nslab_reclaimable 948657040\nslab_unreclaimable 2117488\nslab 950774528\nworkingset_refault_anon 0\nworkingset_refault_file 299060063\nworkingset_activate_anon 0\nworkingset_activate_file 17872094\nworkingset_restore_anon 0\nworkingset_restore_file 5567821\nworkingset_nodereclaim 106586\npgdemote_kswapd 0\npgdemote_direct 0\npgdemote_khugepaged 0\npgdemote_proactive 0\npgscan 324361688\npgsteal 321775068\npswpin 0\npswpout 0\npgscan_kswapd 12869484\npgscan_direct 311487572\npgscan_khugepaged 4632\npgscan_proactive 0\npgsteal_kswapd 12750883\npgsteal_direct 309019553\npgsteal_khugepaged 4632\npgsteal_proactive 0\npgfault 488708607\npgmajfault 39237\npgrefill 29060618\npgactivate 16013997\npgdeactivate 28744180\npglazyfree 42\npglazyfreed 0\nswpin_zero 0\nswpout_zero 0\nthp_fault_alloc 10540\nthp_collapse_alloc 68\nthp_swpout 0\nthp_swpout_fallback 0",
+            "/sys/fs/cgroup/memory.events": "low 0\nhigh 0\nmax 1946450\noom 0\noom_kill 0\noom_group_kill 0",
+            "/sys/fs/cgroup/cpu.pressure": {
+              "unavailable": "FileNotFoundError"
+            },
+            "/proc/pressure/cpu": {
+              "unavailable": "FileNotFoundError"
+            },
+            "/proc/loadavg": "4.02 1.53 2.82 3/246 535311",
+            "process_names_cpu_percent_rss_kib": [
+              "COMMAND         %CPU   RSS",
+              "npm install      114 768768",
+              "npm install      103 844648",
+              "rsync            7.7 29100",
+              "zstd             5.8 53452",
+              "zstd             4.0 53452",
+              "caas-prefix-tra  0.2   724",
+              "python3          0.2 13324",
+              "codex            0.2 51508",
+              "MainThread       0.1 41648",
+              "codex            0.1 66628",
+              "sites-preview    0.0   300",
+              "supervisord      0.0 23216",
+              "sync_share.sh    0.0  2080",
+              "rsync            0.0  2372",
+              "sync_share.sh    0.0  2072",
+              "inotifywait      0.0   832",
+              "sh               0.0   764",
+              "sh               0.0   760",
+              "bash             0.0  2052"
+            ],
+            "process_scope": "Names and lifetime-average CPU percentages only; diagnostic snapshots do not continuously measure contention."
+          },
+          "log": {
+            "path": "native-optimization/resume-2026-11-01/conv-workspace-live-v1/probe.log",
+            "bytes": 5445,
+            "sha256": "2be6a650fce944a496f5d0fa8f80ca1f27a38ebd4d2dd4642ecc52ab22c6833a"
+          },
+          "wall_seconds": 24.40542564200223
+        }
+      ],
+      "gates": {
+        "CRISPEMBED_INPAINT_GRAPH": "0",
+        "CRISPEMBED_INPAINT_FAST": "0",
+        "CRISPEMBED_INPAINT_PROFILE": "0",
+        "CRISPEMBED_INPAINT_GEMM_LAYOUT": "1",
+        "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+        "CRISPEMBED_INPAINT_CPU_FFT": "0",
+        "CRISPEMBED_INPAINT_CPU_GLA": "0",
+        "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+        "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+        "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+        "CRISPEMBED_MIGAN_CPU_KERNELS": "0",
+        "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+        "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+        "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+        "CRISPEMBED_MIGAN": "0",
+        "CRISPEMBED_MIGAN512": "0",
+        "CRISPEMBED_MOEBIUS": "0",
+        "CRISPEMBED_PIXELHACKER": "0",
+        "CRISPEMBED_LAMA": "0",
+        "CRISPEMBED_INPAINT_BACKEND": "cpu",
+        "CRISPEMBED_TEST_CONV_WORKSPACE_MIB": "32"
+      },
+      "provenance_scope": "Exact private source/header and linked archive identities are retained. These observations do not constitute a clean-commit or hermetic system-toolchain build.",
+      "source_and_headers_before": [
+        {
+          "path": "CrispEmbed-issue71/ggml/include/ggml-alloc.h",
+          "bytes": 3753,
+          "sha256": "94e4cd069b9313b2ceb35dacec901981e0bb478d8bb31035b7126be091998c23"
+        },
+        {
+          "path": "CrispEmbed-issue71/ggml/include/ggml-backend.h",
+          "bytes": 25306,
+          "sha256": "a620e815b43a44cc72d5f216629a3a91980335b61bc37eb6b2d0813368c3704f"
+        },
+        {
+          "path": "CrispEmbed-issue71/ggml/include/ggml-cpu.h",
+          "bytes": 8375,
+          "sha256": "1b1ca04306c854187e6d7cb1f5edaf804c63a29a3b9909d563380343ecc25bae"
+        },
+        {
+          "path": "CrispEmbed-issue71/ggml/include/ggml-metal.h",
+          "bytes": 2141,
+          "sha256": "322f36cd30f3e9e7aad7b5b9bc63078012fd0b7706ac4e24f5721b604f3d8980"
+        },
+        {
+          "path": "CrispEmbed-issue71/ggml/include/ggml.h",
+          "bytes": 113898,
+          "sha256": "0e3d9d7c97b78e8287fb3651416f6e9793ca70e95b51602d259075713e6645bb"
+        },
+        {
+          "path": "CrispEmbed-issue71/ggml/include/gguf.h",
+          "bytes": 11355,
+          "sha256": "e56714aab702e5ce62ee587a409643c08f7e93e8fbb77f48ef7cc85075f96fa4"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/core/clean_exit.h",
+          "bytes": 1716,
+          "sha256": "2528210865cfc6aa8f2a389526aebae46e836f6bca88c00e4eabaedf6c83fdd6"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/core/env_gate.h",
+          "bytes": 1696,
+          "sha256": "ad79d73c333f34ed9f971ae80136e410f0c44bc048439fcee9d4ac3ead63b9ec"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/core/ggml_cpu_backend.h",
+          "bytes": 13236,
+          "sha256": "e236f29abe4bf05f17d1d7c98097d2cc8a1e4fb8cf662fa3f06a0c4e3a07eadb"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/core/gguf_loader.h",
+          "bytes": 11550,
+          "sha256": "d191f61843db3aaf4a9a653c29debb70fbd8f1e2f2d47d63e85966e737a08936"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/core/gpu_backend_pref.h",
+          "bytes": 10247,
+          "sha256": "93851f95549a8e4a4bc7ac912a5b081a8acbfa1031abb8df6caaf43dc1fb34fc"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/core/metal_pipeline_cache_policy.h",
+          "bytes": 6130,
+          "sha256": "5cffd2351b528582e77fef392b5cb9b9bc4a5b214cf930637c34145bf27421ae"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/core/sha256.h",
+          "bytes": 5024,
+          "sha256": "409ab494061b042d4a84698b7bf2caf6dd68f6639cbeb532cb47a2f2337d9a6f"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/inpaint_graph.h",
+          "bytes": 6620,
+          "sha256": "d6a41ab9111e6c65ac99a447de2899773581ead360d4afdbef98124f0108fde0"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/inpaint_weight_names.h",
+          "bytes": 2241,
+          "sha256": "d456ee1e1b192d7be8780f746f890d2b1424506759c0461a1ab17e11bfd31884"
+        },
+        {
+          "path": "native-optimization/resume-2026-11-01/conv-workspace-probe/inpaint_graph.workspace-probe.cpp",
+          "bytes": 47410,
+          "sha256": "9075bae1e106a4467114b08308b57a87b261b8183fc4368a3320bbc13da4049e"
+        },
+        {
+          "path": "native-optimization/resume-2026-11-01/conv-workspace-probe/test_workspace.cpp",
+          "bytes": 48304,
+          "sha256": "263ea4c139daa98bdfa96fb4c7a8d7882825e6affe0a8abdfc48a2b3e4b51070"
+        }
+      ],
+      "unresolved_conditional_quoted_includes": [],
+      "archives_before": [
+        {
+          "path": "native-optimization/build-current/libcrispembed-core.a",
+          "bytes": 250650,
+          "sha256": "4fb2b9529240aa0e4a9dd0931193f9542f5cfcaec41fcce42af506566919ada8"
+        },
+        {
+          "path": "native-optimization/build-current/ggml/src/libggml.a",
+          "bytes": 61604,
+          "sha256": "2efb9563d196a2987c9e73b7cb62aa0e287728ace37a371b1fbf5536eb0e514b"
+        },
+        {
+          "path": "native-optimization/build-current/ggml/src/libggml-cpu.a",
+          "bytes": 1729390,
+          "sha256": "32cfbf1539f83a1f0758045e3683111d1c1b768b9cfee4dec7ff6df8eb59033c"
+        },
+        {
+          "path": "native-optimization/build-current/ggml/src/libggml-base.a",
+          "bytes": 1282980,
+          "sha256": "a4a5349a0c45c297f26dde86fe0e77f39414b59d9aa45ca5d95cea65d1067545"
+        }
+      ],
+      "build_configuration_before": [
+        {
+          "path": "native-optimization/build-current/CMakeCache.txt",
+          "bytes": 29576,
+          "sha256": "a48f79bc1c83e00661932a577bfd6e503ab1e65a5c431543cf4069a883c823de"
+        },
+        {
+          "path": "native-optimization/build-current/build.ninja",
+          "bytes": 709738,
+          "sha256": "e265e6b7181ae866f9c3e48d30d440a4777d85be466115eda199454ce1153d90"
+        }
+      ],
+      "compiler": {
+        "path": "/usr/bin/x86_64-linux-gnu-g++-13",
+        "bytes": 1027128,
+        "sha256": "52f1ddb33fe78b9441e0f42e9cd22c571f1101938e046c8a26582494e041cc73"
+      },
+      "compiler_version": "x86_64-linux-gnu-g++-13 (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0\nCopyright (C) 2023 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+      "native_commit": "2e9c8f6183e0877353f25c8ddbec9cbbc4245b29",
+      "ggml_commit": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+      "binary_before": {
+        "path": "native-optimization/resume-2026-11-01/conv-workspace-live-v1/conv-workspace-probe",
+        "bytes": 2378624,
+        "sha256": "c10355fb37a16f1a71b40a2055142dca9e93e553fe3267c947a4e3b2d7d0514a"
+      },
+      "components": [
+        {
+          "suite": "inpaint-conv-workspace-probe",
+          "case": "unet-conv64-c320-batch2",
+          "backend": "CPU",
+          "threads": 8,
+          "iterations": 3,
+          "baseline_workspace_mib": 32,
+          "candidate_workspace_mib": 128,
+          "baseline_im2col_nodes": 3,
+          "candidate_im2col_nodes": 1,
+          "expected_baseline_im2col_nodes": 3,
+          "expected_candidate_im2col_nodes": 1,
+          "strip_census_exact": true,
+          "baseline_maximum_patch_bytes": 32440320,
+          "candidate_maximum_patch_bytes": 94371840,
+          "batch": 2,
+          "baseline_build_ms": 0.099226,
+          "candidate_build_ms": 0.045447,
+          "baseline_cold_ms": 84.53,
+          "candidate_cold_ms": 85.9854,
+          "baseline_nodes": 43,
+          "candidate_nodes": 12,
+          "baseline_allocation_bytes": 57999360,
+          "candidate_allocation_bytes": 115343360,
+          "baseline_warm_ms": [
+            79.0631,
+            73.3997,
+            77.0496
+          ],
+          "candidate_warm_ms": [
+            70.1738,
+            65.8187,
+            60.1263
+          ],
+          "baseline_median_ms": 77.0496,
+          "candidate_median_ms": 65.8187,
+          "speedup": 1.17063,
+          "max_abs": 0,
+          "relative_l2": 0,
+          "baseline_exact_warm_replay_checks": 3,
+          "candidate_exact_warm_replay_checks": 3,
+          "all_warm_outputs_equal_same_arm_cold": true,
+          "resident_input_kernel_and_bias_bytes_preserved": true,
+          "checks_and_downloads_inside_compute_timing": false,
+          "passed": true,
+          "full_model_qualified": false
+        },
+        {
+          "suite": "inpaint-conv-workspace-probe",
+          "case": "unet-conv32-c640-batch2",
+          "backend": "CPU",
+          "threads": 8,
+          "iterations": 3,
+          "baseline_workspace_mib": 32,
+          "candidate_workspace_mib": 128,
+          "baseline_im2col_nodes": 2,
+          "candidate_im2col_nodes": 1,
+          "expected_baseline_im2col_nodes": 2,
+          "expected_candidate_im2col_nodes": 1,
+          "strip_census_exact": true,
+          "baseline_maximum_patch_bytes": 32440320,
+          "candidate_maximum_patch_bytes": 47185920,
+          "batch": 2,
+          "baseline_build_ms": 0.062843,
+          "candidate_build_ms": 0.052217,
+          "baseline_cold_ms": 64.6213,
+          "candidate_cold_ms": 61.4426,
+          "baseline_nodes": 30,
+          "candidate_nodes": 12,
+          "baseline_allocation_bytes": 49315840,
+          "candidate_allocation_bytes": 57671680,
+          "baseline_warm_ms": [
+            67.5759,
+            92.2986,
+            75.6729
+          ],
+          "candidate_warm_ms": [
+            88.8826,
+            60.7886,
+            164.178
+          ],
+          "baseline_median_ms": 75.6729,
+          "candidate_median_ms": 88.8826,
+          "speedup": 0.85138,
+          "max_abs": 0,
+          "relative_l2": 0,
+          "baseline_exact_warm_replay_checks": 3,
+          "candidate_exact_warm_replay_checks": 3,
+          "all_warm_outputs_equal_same_arm_cold": true,
+          "resident_input_kernel_and_bias_bytes_preserved": true,
+          "checks_and_downloads_inside_compute_timing": false,
+          "passed": true,
+          "full_model_qualified": false
+        },
+        {
+          "suite": "inpaint-conv-workspace-probe",
+          "case": "unet-conv16-c1280-control",
+          "backend": "CPU",
+          "threads": 8,
+          "iterations": 3,
+          "baseline_workspace_mib": 32,
+          "candidate_workspace_mib": 128,
+          "baseline_im2col_nodes": 1,
+          "candidate_im2col_nodes": 1,
+          "expected_baseline_im2col_nodes": 1,
+          "expected_candidate_im2col_nodes": 1,
+          "strip_census_exact": true,
+          "baseline_maximum_patch_bytes": 23592960,
+          "candidate_maximum_patch_bytes": 23592960,
+          "batch": 2,
+          "baseline_build_ms": 0.046358,
+          "candidate_build_ms": 0.022283,
+          "baseline_cold_ms": 49.583,
+          "candidate_cold_ms": 54.4569,
+          "baseline_nodes": 12,
+          "candidate_nodes": 12,
+          "baseline_allocation_bytes": 28835840,
+          "candidate_allocation_bytes": 28835840,
+          "baseline_warm_ms": [
+            58.508,
+            55.9953,
+            49.61
+          ],
+          "candidate_warm_ms": [
+            63.817,
+            51.2974,
+            61.4532
+          ],
+          "baseline_median_ms": 55.9953,
+          "candidate_median_ms": 61.4532,
+          "speedup": 0.911185,
+          "max_abs": 0,
+          "relative_l2": 0,
+          "baseline_exact_warm_replay_checks": 3,
+          "candidate_exact_warm_replay_checks": 3,
+          "all_warm_outputs_equal_same_arm_cold": true,
+          "resident_input_kernel_and_bias_bytes_preserved": true,
+          "checks_and_downloads_inside_compute_timing": false,
+          "passed": true,
+          "full_model_qualified": false
+        },
+        {
+          "suite": "inpaint-conv-workspace-probe",
+          "case": "vae-conv512-c128",
+          "backend": "CPU",
+          "threads": 8,
+          "iterations": 3,
+          "baseline_workspace_mib": 32,
+          "candidate_workspace_mib": 128,
+          "baseline_im2col_nodes": 37,
+          "candidate_im2col_nodes": 10,
+          "expected_baseline_im2col_nodes": 37,
+          "expected_candidate_im2col_nodes": 10,
+          "strip_census_exact": true,
+          "baseline_maximum_patch_bytes": 33030144,
+          "candidate_maximum_patch_bytes": 132120576,
+          "batch": 1,
+          "baseline_build_ms": 0.197571,
+          "candidate_build_ms": 0.140898,
+          "baseline_cold_ms": 710.405,
+          "candidate_cold_ms": 621.506,
+          "baseline_nodes": 337,
+          "candidate_nodes": 94,
+          "baseline_allocation_bytes": 479199232,
+          "candidate_allocation_bytes": 457179136,
+          "baseline_warm_ms": [
+            713.247,
+            709.041,
+            716.204
+          ],
+          "candidate_warm_ms": [
+            600.744,
+            586.19,
+            568.183
+          ],
+          "baseline_median_ms": 713.247,
+          "candidate_median_ms": 586.19,
+          "speedup": 1.21675,
+          "max_abs": 0,
+          "relative_l2": 0,
+          "baseline_exact_warm_replay_checks": 3,
+          "candidate_exact_warm_replay_checks": 3,
+          "all_warm_outputs_equal_same_arm_cold": true,
+          "resident_input_kernel_and_bias_bytes_preserved": true,
+          "checks_and_downloads_inside_compute_timing": false,
+          "passed": true,
+          "full_model_qualified": false
+        }
+      ],
+      "pinned_files_after": [
+        {
+          "path": "native-optimization/resume-2026-11-01/conv-workspace-probe/run_workspace_probe.py",
+          "bytes": 16328,
+          "sha256": "6e89bf70215a52ba0b8cce6009564b3954168df87a0ba1de6ed4e78fd4b70f48"
+        },
+        {
+          "path": "native-optimization/resume-2026-11-01/conv-workspace-probe/plan.json",
+          "bytes": 7584,
+          "sha256": "e6e4f3c0edd57e0e9ef8d9e13cd78d5aa1dddcf7abe3b4569eb3b48d2a3de5e4"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/inpaint_graph.cpp",
+          "bytes": 46970,
+          "sha256": "6757e28ee1fe6a43b3a291b1797ade86f19537411c2e822c3e7ee1b34cb340eb"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/inpaint_graph.h",
+          "bytes": 6620,
+          "sha256": "d6a41ab9111e6c65ac99a447de2899773581ead360d4afdbef98124f0108fde0"
+        },
+        {
+          "path": "CrispEmbed-issue71/tests/test_inpaint_graph.cpp",
+          "bytes": 45618,
+          "sha256": "70cf3b83f737cdaccfa85d62e4b2f9f0a24f595c29bd22948f44ba79e45b25e0"
+        },
+        {
+          "path": "native-optimization/resume-2026-11-01/conv-workspace-probe/inpaint_graph.workspace-probe.cpp",
+          "bytes": 47410,
+          "sha256": "9075bae1e106a4467114b08308b57a87b261b8183fc4368a3320bbc13da4049e"
+        },
+        {
+          "path": "native-optimization/resume-2026-11-01/conv-workspace-probe/test_workspace.cpp",
+          "bytes": 48304,
+          "sha256": "263ea4c139daa98bdfa96fb4c7a8d7882825e6affe0a8abdfc48a2b3e4b51070"
+        },
+        {
+          "path": "CrispEmbed-issue71/ggml/include/ggml-alloc.h",
+          "bytes": 3753,
+          "sha256": "94e4cd069b9313b2ceb35dacec901981e0bb478d8bb31035b7126be091998c23"
+        },
+        {
+          "path": "CrispEmbed-issue71/ggml/include/ggml-backend.h",
+          "bytes": 25306,
+          "sha256": "a620e815b43a44cc72d5f216629a3a91980335b61bc37eb6b2d0813368c3704f"
+        },
+        {
+          "path": "CrispEmbed-issue71/ggml/include/ggml-cpu.h",
+          "bytes": 8375,
+          "sha256": "1b1ca04306c854187e6d7cb1f5edaf804c63a29a3b9909d563380343ecc25bae"
+        },
+        {
+          "path": "CrispEmbed-issue71/ggml/include/ggml-metal.h",
+          "bytes": 2141,
+          "sha256": "322f36cd30f3e9e7aad7b5b9bc63078012fd0b7706ac4e24f5721b604f3d8980"
+        },
+        {
+          "path": "CrispEmbed-issue71/ggml/include/ggml.h",
+          "bytes": 113898,
+          "sha256": "0e3d9d7c97b78e8287fb3651416f6e9793ca70e95b51602d259075713e6645bb"
+        },
+        {
+          "path": "CrispEmbed-issue71/ggml/include/gguf.h",
+          "bytes": 11355,
+          "sha256": "e56714aab702e5ce62ee587a409643c08f7e93e8fbb77f48ef7cc85075f96fa4"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/core/clean_exit.h",
+          "bytes": 1716,
+          "sha256": "2528210865cfc6aa8f2a389526aebae46e836f6bca88c00e4eabaedf6c83fdd6"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/core/env_gate.h",
+          "bytes": 1696,
+          "sha256": "ad79d73c333f34ed9f971ae80136e410f0c44bc048439fcee9d4ac3ead63b9ec"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/core/ggml_cpu_backend.h",
+          "bytes": 13236,
+          "sha256": "e236f29abe4bf05f17d1d7c98097d2cc8a1e4fb8cf662fa3f06a0c4e3a07eadb"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/core/gguf_loader.h",
+          "bytes": 11550,
+          "sha256": "d191f61843db3aaf4a9a653c29debb70fbd8f1e2f2d47d63e85966e737a08936"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/core/gpu_backend_pref.h",
+          "bytes": 10247,
+          "sha256": "93851f95549a8e4a4bc7ac912a5b081a8acbfa1031abb8df6caaf43dc1fb34fc"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/core/metal_pipeline_cache_policy.h",
+          "bytes": 6130,
+          "sha256": "5cffd2351b528582e77fef392b5cb9b9bc4a5b214cf930637c34145bf27421ae"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/core/sha256.h",
+          "bytes": 5024,
+          "sha256": "409ab494061b042d4a84698b7bf2caf6dd68f6639cbeb532cb47a2f2337d9a6f"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/inpaint_weight_names.h",
+          "bytes": 2241,
+          "sha256": "d456ee1e1b192d7be8780f746f890d2b1424506759c0461a1ab17e11bfd31884"
+        },
+        {
+          "path": "native-optimization/build-current/libcrispembed-core.a",
+          "bytes": 250650,
+          "sha256": "4fb2b9529240aa0e4a9dd0931193f9542f5cfcaec41fcce42af506566919ada8"
+        },
+        {
+          "path": "native-optimization/build-current/ggml/src/libggml.a",
+          "bytes": 61604,
+          "sha256": "2efb9563d196a2987c9e73b7cb62aa0e287728ace37a371b1fbf5536eb0e514b"
+        },
+        {
+          "path": "native-optimization/build-current/ggml/src/libggml-cpu.a",
+          "bytes": 1729390,
+          "sha256": "32cfbf1539f83a1f0758045e3683111d1c1b768b9cfee4dec7ff6df8eb59033c"
+        },
+        {
+          "path": "native-optimization/build-current/ggml/src/libggml-base.a",
+          "bytes": 1282980,
+          "sha256": "a4a5349a0c45c297f26dde86fe0e77f39414b59d9aa45ca5d95cea65d1067545"
+        },
+        {
+          "path": "native-optimization/build-current/CMakeCache.txt",
+          "bytes": 29576,
+          "sha256": "a48f79bc1c83e00661932a577bfd6e503ab1e65a5c431543cf4069a883c823de"
+        },
+        {
+          "path": "native-optimization/build-current/build.ninja",
+          "bytes": 709738,
+          "sha256": "e265e6b7181ae866f9c3e48d30d440a4777d85be466115eda199454ce1153d90"
+        },
+        {
+          "path": "/usr/bin/x86_64-linux-gnu-g++-13",
+          "bytes": 1027128,
+          "sha256": "52f1ddb33fe78b9441e0f42e9cd22c571f1101938e046c8a26582494e041cc73"
+        },
+        {
+          "path": "native-optimization/resume-2026-11-01/conv-workspace-live-v1/conv-workspace-probe",
+          "bytes": 2378624,
+          "sha256": "c10355fb37a16f1a71b40a2055142dca9e93e553fe3267c947a4e3b2d7d0514a"
+        }
+      ],
+      "identities_unchanged": true
+    }
+  },
+  "probe_log": {
+    "path": "native-optimization/resume-2026-11-01/conv-workspace-live-v1/probe.log",
+    "bytes": 5445,
+    "sha256": "2be6a650fce944a496f5d0fa8f80ca1f27a38ebd4d2dd4642ecc52ab22c6833a",
+    "contents": "cpu_depthwise_controls cases=9 selected_nodes=4 batch=2 changed_inputs=2 repeats_per_input=2 scalar_atol=0.000004 scalar_rtol=0.000002 input_and_weight_bytes_preserved=true unused_nodes_excluded=true\ntranspose_convolution batch=1 cases=7 matrix_nodes=7 prepared_weights=1 prepared_type=f32 runs=2\ntranspose_convolution batch=2 cases=7 matrix_nodes=14 prepared_weights=1 prepared_type=f32 runs=2\nattention queries=3 keys=5 dk=8 dv=16 heads=2 batch=2 nodes=15 allocation_bytes=5376 runs=2\nattention queries=129 keys=131 dk=8 dv=16 heads=2 batch=2 nodes=15 allocation_bytes=166656 runs=2\nattention queries=257 keys=131 dk=8 dv=16 heads=2 batch=2 nodes=15 allocation_bytes=232192 runs=2\ntiled_convolution width=64 height=65 input_channels=128 output_channels=2 batch=2 im2col_nodes=2 maximum_patch_bytes=33030144 allocation_bytes=48627712\n{\"suite\":\"inpaint-conv-workspace-probe\",\"case\":\"unet-conv64-c320-batch2\",\"backend\":\"CPU\",\"threads\":8,\"iterations\":3,\"baseline_workspace_mib\":32,\"candidate_workspace_mib\":128,\"baseline_im2col_nodes\":3,\"candidate_im2col_nodes\":1,\"expected_baseline_im2col_nodes\":3,\"expected_candidate_im2col_nodes\":1,\"strip_census_exact\":true,\"baseline_maximum_patch_bytes\":32440320,\"candidate_maximum_patch_bytes\":94371840,\"batch\":2,\"baseline_build_ms\":0.099226,\"candidate_build_ms\":0.045447,\"baseline_cold_ms\":84.53,\"candidate_cold_ms\":85.9854,\"baseline_nodes\":43,\"candidate_nodes\":12,\"baseline_allocation_bytes\":57999360,\"candidate_allocation_bytes\":115343360,\"baseline_warm_ms\":[79.0631,73.3997,77.0496],\"candidate_warm_ms\":[70.1738,65.8187,60.1263],\"baseline_median_ms\":77.0496,\"candidate_median_ms\":65.8187,\"speedup\":1.17063,\"max_abs\":0,\"relative_l2\":0,\"baseline_exact_warm_replay_checks\":3,\"candidate_exact_warm_replay_checks\":3,\"all_warm_outputs_equal_same_arm_cold\":true,\"resident_input_kernel_and_bias_bytes_preserved\":true,\"checks_and_downloads_inside_compute_timing\":false,\"passed\":true,\"full_model_qualified\":false}\n{\"suite\":\"inpaint-conv-workspace-probe\",\"case\":\"unet-conv32-c640-batch2\",\"backend\":\"CPU\",\"threads\":8,\"iterations\":3,\"baseline_workspace_mib\":32,\"candidate_workspace_mib\":128,\"baseline_im2col_nodes\":2,\"candidate_im2col_nodes\":1,\"expected_baseline_im2col_nodes\":2,\"expected_candidate_im2col_nodes\":1,\"strip_census_exact\":true,\"baseline_maximum_patch_bytes\":32440320,\"candidate_maximum_patch_bytes\":47185920,\"batch\":2,\"baseline_build_ms\":0.062843,\"candidate_build_ms\":0.052217,\"baseline_cold_ms\":64.6213,\"candidate_cold_ms\":61.4426,\"baseline_nodes\":30,\"candidate_nodes\":12,\"baseline_allocation_bytes\":49315840,\"candidate_allocation_bytes\":57671680,\"baseline_warm_ms\":[67.5759,92.2986,75.6729],\"candidate_warm_ms\":[88.8826,60.7886,164.178],\"baseline_median_ms\":75.6729,\"candidate_median_ms\":88.8826,\"speedup\":0.85138,\"max_abs\":0,\"relative_l2\":0,\"baseline_exact_warm_replay_checks\":3,\"candidate_exact_warm_replay_checks\":3,\"all_warm_outputs_equal_same_arm_cold\":true,\"resident_input_kernel_and_bias_bytes_preserved\":true,\"checks_and_downloads_inside_compute_timing\":false,\"passed\":true,\"full_model_qualified\":false}\n{\"suite\":\"inpaint-conv-workspace-probe\",\"case\":\"unet-conv16-c1280-control\",\"backend\":\"CPU\",\"threads\":8,\"iterations\":3,\"baseline_workspace_mib\":32,\"candidate_workspace_mib\":128,\"baseline_im2col_nodes\":1,\"candidate_im2col_nodes\":1,\"expected_baseline_im2col_nodes\":1,\"expected_candidate_im2col_nodes\":1,\"strip_census_exact\":true,\"baseline_maximum_patch_bytes\":23592960,\"candidate_maximum_patch_bytes\":23592960,\"batch\":2,\"baseline_build_ms\":0.046358,\"candidate_build_ms\":0.022283,\"baseline_cold_ms\":49.583,\"candidate_cold_ms\":54.4569,\"baseline_nodes\":12,\"candidate_nodes\":12,\"baseline_allocation_bytes\":28835840,\"candidate_allocation_bytes\":28835840,\"baseline_warm_ms\":[58.508,55.9953,49.61],\"candidate_warm_ms\":[63.817,51.2974,61.4532],\"baseline_median_ms\":55.9953,\"candidate_median_ms\":61.4532,\"speedup\":0.911185,\"max_abs\":0,\"relative_l2\":0,\"baseline_exact_warm_replay_checks\":3,\"candidate_exact_warm_replay_checks\":3,\"all_warm_outputs_equal_same_arm_cold\":true,\"resident_input_kernel_and_bias_bytes_preserved\":true,\"checks_and_downloads_inside_compute_timing\":false,\"passed\":true,\"full_model_qualified\":false}\n{\"suite\":\"inpaint-conv-workspace-probe\",\"case\":\"vae-conv512-c128\",\"backend\":\"CPU\",\"threads\":8,\"iterations\":3,\"baseline_workspace_mib\":32,\"candidate_workspace_mib\":128,\"baseline_im2col_nodes\":37,\"candidate_im2col_nodes\":10,\"expected_baseline_im2col_nodes\":37,\"expected_candidate_im2col_nodes\":10,\"strip_census_exact\":true,\"baseline_maximum_patch_bytes\":33030144,\"candidate_maximum_patch_bytes\":132120576,\"batch\":1,\"baseline_build_ms\":0.197571,\"candidate_build_ms\":0.140898,\"baseline_cold_ms\":710.405,\"candidate_cold_ms\":621.506,\"baseline_nodes\":337,\"candidate_nodes\":94,\"baseline_allocation_bytes\":479199232,\"candidate_allocation_bytes\":457179136,\"baseline_warm_ms\":[713.247,709.041,716.204],\"candidate_warm_ms\":[600.744,586.19,568.183],\"baseline_median_ms\":713.247,\"candidate_median_ms\":586.19,\"speedup\":1.21675,\"max_abs\":0,\"relative_l2\":0,\"baseline_exact_warm_replay_checks\":3,\"candidate_exact_warm_replay_checks\":3,\"all_warm_outputs_equal_same_arm_cold\":true,\"resident_input_kernel_and_bias_bytes_preserved\":true,\"checks_and_downloads_inside_compute_timing\":false,\"passed\":true,\"full_model_qualified\":false}\nPASS backend=CPU requested_backend=cpu precision=f32 profile_atol=0.00004 profile_rtol=0.00004 normalization_atol=0.00004 worst_abs=4.76837e-07 full_model_parity=not_run\n"
+  },
+  "compile_log": {
+    "path": "native-optimization/resume-2026-11-01/conv-workspace-live-v1/compile.log",
+    "bytes": 0,
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "frozen_plan": {
+    "path": "native-optimization/resume-2026-11-01/conv-workspace-probe/plan.json",
+    "bytes": 7584,
+    "sha256": "e6e4f3c0edd57e0e9ef8d9e13cd78d5aa1dddcf7abe3b4569eb3b48d2a3de5e4",
+    "contents": {
+      "schema": "crispembed-conv-workspace-probe-plan-v1",
+      "status": "prepared with exact replay/immutable-weight controls; no native compilation or execution",
+      "scope": "One bounded 32 versus128 MiB CPU convolution-strip comparison using copied actual Builder and existing scalar/replay controls. Not a production feature or model speed claim.",
+      "threads": 8,
+      "warm_iterations_per_arm": 3,
+      "alternating_order": true,
+      "cases": [
+        "unet-conv64-c320-batch2",
+        "unet-conv32-c640-batch2",
+        "unet-conv16-c1280-control",
+        "vae-conv512-c128"
+      ],
+      "candidate_policy": "Only consider production integration if output checks pass and meaningful representative gains outweigh added arena memory. Default32 remains unchanged.",
+      "sources": {
+        "CrispEmbed-issue71/src/inpaint_graph.cpp": {
+          "bytes": 46970,
+          "sha256": "6757e28ee1fe6a43b3a291b1797ade86f19537411c2e822c3e7ee1b34cb340eb"
+        },
+        "CrispEmbed-issue71/src/inpaint_graph.h": {
+          "bytes": 6620,
+          "sha256": "d6a41ab9111e6c65ac99a447de2899773581ead360d4afdbef98124f0108fde0"
+        },
+        "CrispEmbed-issue71/tests/test_inpaint_graph.cpp": {
+          "bytes": 45618,
+          "sha256": "70cf3b83f737cdaccfa85d62e4b2f9f0a24f595c29bd22948f44ba79e45b25e0"
+        },
+        "native-optimization/resume-2026-11-01/conv-workspace-probe/inpaint_graph.workspace-probe.cpp": {
+          "bytes": 47410,
+          "sha256": "9075bae1e106a4467114b08308b57a87b261b8183fc4368a3320bbc13da4049e"
+        },
+        "native-optimization/resume-2026-11-01/conv-workspace-probe/test_workspace.cpp": {
+          "bytes": 48304,
+          "sha256": "263ea4c139daa98bdfa96fb4c7a8d7882825e6affe0a8abdfc48a2b3e4b51070"
+        }
+      },
+      "actual_selection_evidence": "Per-arm im2col node census and maximum patch bytes; both constrained to the stated cap.",
+      "revision": 2,
+      "updated_utc": "2026-11-01T13:36:50.542221+00:00",
+      "expected_strip_census": [
+        {
+          "case": "unet-conv64-c320-batch2",
+          "input_whcn": [
+            64,
+            64,
+            320,
+            2
+          ],
+          "kernel": [
+            3,
+            3
+          ],
+          "patch_type": "F32",
+          "patch_bytes_per_output_row": 1474560,
+          "expected_baseline_im2col_nodes": 3,
+          "expected_candidate_im2col_nodes": 1,
+          "arms": [
+            {
+              "workspace_mib": 32,
+              "rows_per_strip": 22,
+              "im2col_nodes": 3,
+              "maximum_patch_bytes": 32440320
+            },
+            {
+              "workspace_mib": 128,
+              "rows_per_strip": 64,
+              "im2col_nodes": 1,
+              "maximum_patch_bytes": 94371840
+            }
+          ]
+        },
+        {
+          "case": "unet-conv32-c640-batch2",
+          "input_whcn": [
+            32,
+            32,
+            640,
+            2
+          ],
+          "kernel": [
+            3,
+            3
+          ],
+          "patch_type": "F32",
+          "patch_bytes_per_output_row": 1474560,
+          "expected_baseline_im2col_nodes": 2,
+          "expected_candidate_im2col_nodes": 1,
+          "arms": [
+            {
+              "workspace_mib": 32,
+              "rows_per_strip": 22,
+              "im2col_nodes": 2,
+              "maximum_patch_bytes": 32440320
+            },
+            {
+              "workspace_mib": 128,
+              "rows_per_strip": 32,
+              "im2col_nodes": 1,
+              "maximum_patch_bytes": 47185920
+            }
+          ]
+        },
+        {
+          "case": "unet-conv16-c1280-control",
+          "input_whcn": [
+            16,
+            16,
+            1280,
+            2
+          ],
+          "kernel": [
+            3,
+            3
+          ],
+          "patch_type": "F32",
+          "patch_bytes_per_output_row": 1474560,
+          "expected_baseline_im2col_nodes": 1,
+          "expected_candidate_im2col_nodes": 1,
+          "arms": [
+            {
+              "workspace_mib": 32,
+              "rows_per_strip": 16,
+              "im2col_nodes": 1,
+              "maximum_patch_bytes": 23592960
+            },
+            {
+              "workspace_mib": 128,
+              "rows_per_strip": 16,
+              "im2col_nodes": 1,
+              "maximum_patch_bytes": 23592960
+            }
+          ]
+        },
+        {
+          "case": "vae-conv512-c128",
+          "input_whcn": [
+            512,
+            512,
+            128,
+            1
+          ],
+          "kernel": [
+            3,
+            3
+          ],
+          "patch_type": "F32",
+          "patch_bytes_per_output_row": 2359296,
+          "expected_baseline_im2col_nodes": 37,
+          "expected_candidate_im2col_nodes": 10,
+          "arms": [
+            {
+              "workspace_mib": 32,
+              "rows_per_strip": 14,
+              "im2col_nodes": 37,
+              "maximum_patch_bytes": 33030144
+            },
+            {
+              "workspace_mib": 128,
+              "rows_per_strip": 56,
+              "im2col_nodes": 10,
+              "maximum_patch_bytes": 132120576
+            }
+          ]
+        }
+      ],
+      "controls": {
+        "every_warm_output": "Byte-exact comparison to the same arm cold output after recording the graph compute duration.",
+        "resident_weights": "Both arms download and byte-compare resident kernel and bias to immutable fixture values after all timed computes.",
+        "resident_input": "Byte-exact input check and exactly one upload per arm.",
+        "execution_accounting": "Exactly one cold compute plus the declared warm iteration count; each warm output is checked.",
+        "selection": "Assert each actual im2col census equals its predeclared arm count, not merely a nonzero count.",
+        "cross_arm_budget_unchanged": {
+          "atol": 0.0005,
+          "rtol": 5e-05
+        },
+        "checks_inside_compute_timing": false,
+        "native_compile_run": false,
+        "native_execution_run": false
+      },
+      "timing_scope": "Builder.compute_ms deltas only; every download, exact replay comparison, final kernel/bias/input check, and scalar oracle remains outside those deltas. Alternating order is retained.",
+      "memory_scope": "Per-arm graph allocation is reported separately. Untimed validation also retains two cold output vectors and temporarily downloads each warm output; this is model-free probe RSS, not full-model memory.",
+      "pre_unit_environment": "Run the initial existing scalar/replay controls with CRISPEMBED_TEST_CONV_WORKSPACE_MIB unset or explicitly32; only the bounded benchmark changes it to32/128 per arm.",
+      "review_request_addressed": "MI review: every warm output versus the same-arm cold, resident kernel/bias bytes after timing, and exact3-to1/2-to1/1-to1/37-to10 strip-count admission.",
+      "private_patches": {
+        "test.patch": {
+          "bytes": 9018,
+          "sha256": "02b0f05aa099d73c1377c95d25f12444fe1b2b2e7d3677654ce1c99b74252b14"
+        },
+        "builder.patch": {
+          "bytes": 1200,
+          "sha256": "1951014244f8283a9b1d6b945d711f365f7e5c2457dd39da6b101f04bda5351c"
+        }
+      },
+      "controller": {
+        "path": "native-optimization/resume-2026-11-01/conv-workspace-probe/run_workspace_probe.py",
+        "bytes": 16328,
+        "sha256": "6e89bf70215a52ba0b8cce6009564b3954168df87a0ba1de6ed4e78fd4b70f48"
+      },
+      "compile_flags": [
+        "-O3",
+        "-DNDEBUG",
+        "-std=gnu++17",
+        "-march=native",
+        "-fPIC",
+        "-DGGML_USE_CPU"
+      ],
+      "compile_scope": "Compile the copied Builder and private test against actual repository headers and current core/ggml archives; no ordinary Builder archive is linked.",
+      "command_after_parent_grants_slot": [
+        "python3",
+        "native-optimization/resume-2026-11-01/conv-workspace-probe/run_workspace_probe.py",
+        "--output",
+        "native-optimization/resume-2026-11-01/conv-workspace-live-v1",
+        "--threads",
+        "8"
+      ],
+      "timeouts_seconds": {
+        "compile": 180,
+        "probe": 600
+      },
+      "preflight_attempts": [
+        {
+          "result": "controller write blocked before native compilation or execution",
+          "reason": "Host filesystem ENOSPC; root subsequently recovered verified duplicate storage. No native attempt was started."
+        }
+      ]
+    }
+  },
+  "admission_controls": {
+    "path": "native-optimization/resume-2026-11-01/conv-workspace-probe/controller-controls.json",
+    "bytes": 584,
+    "sha256": "cd87c360642a81994d147eeda3b401b34dc94c9c3fb442f3e5309885e2d52316",
+    "contents": {
+      "schema": "crispembed-workspace-controller-admission-controls-v1",
+      "passed": true,
+      "controls": 9,
+      "model_work": false,
+      "native_compilation_or_execution": false,
+      "controller": {
+        "path": "native-optimization/resume-2026-11-01/conv-workspace-probe/run_workspace_probe.py",
+        "bytes": 16328,
+        "sha256": "6e89bf70215a52ba0b8cce6009564b3954168df87a0ba1de6ed4e78fd4b70f48"
+      },
+      "rejected": [
+        "missing-case",
+        "wrong-strip",
+        "wrong-patch",
+        "unchecked-warm",
+        "mutated-weight",
+        "timed-checks",
+        "nonfinite-time",
+        "false-model-claim"
+      ]
+    }
+  },
+  "measured_source_snapshots": [
+    {
+      "path": "native-optimization/resume-2026-11-01/conv-workspace-live-v1/sources/CrispEmbed-issue71--ggml--include--ggml-alloc.h",
+      "bytes": 3753,
+      "sha256": "94e4cd069b9313b2ceb35dacec901981e0bb478d8bb31035b7126be091998c23"
+    },
+    {
+      "path": "native-optimization/resume-2026-11-01/conv-workspace-live-v1/sources/CrispEmbed-issue71--ggml--include--ggml-backend.h",
+      "bytes": 25306,
+      "sha256": "a620e815b43a44cc72d5f216629a3a91980335b61bc37eb6b2d0813368c3704f"
+    },
+    {
+      "path": "native-optimization/resume-2026-11-01/conv-workspace-live-v1/sources/CrispEmbed-issue71--ggml--include--ggml-cpu.h",
+      "bytes": 8375,
+      "sha256": "1b1ca04306c854187e6d7cb1f5edaf804c63a29a3b9909d563380343ecc25bae"
+    },
+    {
+      "path": "native-optimization/resume-2026-11-01/conv-workspace-live-v1/sources/CrispEmbed-issue71--ggml--include--ggml-metal.h",
+      "bytes": 2141,
+      "sha256": "322f36cd30f3e9e7aad7b5b9bc63078012fd0b7706ac4e24f5721b604f3d8980"
+    },
+    {
+      "path": "native-optimization/resume-2026-11-01/conv-workspace-live-v1/sources/CrispEmbed-issue71--ggml--include--ggml.h",
+      "bytes": 113898,
+      "sha256": "0e3d9d7c97b78e8287fb3651416f6e9793ca70e95b51602d259075713e6645bb"
+    },
+    {
+      "path": "native-optimization/resume-2026-11-01/conv-workspace-live-v1/sources/CrispEmbed-issue71--ggml--include--gguf.h",
+      "bytes": 11355,
+      "sha256": "e56714aab702e5ce62ee587a409643c08f7e93e8fbb77f48ef7cc85075f96fa4"
+    },
+    {
+      "path": "native-optimization/resume-2026-11-01/conv-workspace-live-v1/sources/CrispEmbed-issue71--src--core--clean_exit.h",
+      "bytes": 1716,
+      "sha256": "2528210865cfc6aa8f2a389526aebae46e836f6bca88c00e4eabaedf6c83fdd6"
+    },
+    {
+      "path": "native-optimization/resume-2026-11-01/conv-workspace-live-v1/sources/CrispEmbed-issue71--src--core--env_gate.h",
+      "bytes": 1696,
+      "sha256": "ad79d73c333f34ed9f971ae80136e410f0c44bc048439fcee9d4ac3ead63b9ec"
+    },
+    {
+      "path": "native-optimization/resume-2026-11-01/conv-workspace-live-v1/sources/CrispEmbed-issue71--src--core--ggml_cpu_backend.h",
+      "bytes": 13236,
+      "sha256": "e236f29abe4bf05f17d1d7c98097d2cc8a1e4fb8cf662fa3f06a0c4e3a07eadb"
+    },
+    {
+      "path": "native-optimization/resume-2026-11-01/conv-workspace-live-v1/sources/CrispEmbed-issue71--src--core--gguf_loader.h",
+      "bytes": 11550,
+      "sha256": "d191f61843db3aaf4a9a653c29debb70fbd8f1e2f2d47d63e85966e737a08936"
+    },
+    {
+      "path": "native-optimization/resume-2026-11-01/conv-workspace-live-v1/sources/CrispEmbed-issue71--src--core--gpu_backend_pref.h",
+      "bytes": 10247,
+      "sha256": "93851f95549a8e4a4bc7ac912a5b081a8acbfa1031abb8df6caaf43dc1fb34fc"
+    },
+    {
+      "path": "native-optimization/resume-2026-11-01/conv-workspace-live-v1/sources/CrispEmbed-issue71--src--core--metal_pipeline_cache_policy.h",
+      "bytes": 6130,
+      "sha256": "5cffd2351b528582e77fef392b5cb9b9bc4a5b214cf930637c34145bf27421ae"
+    },
+    {
+      "path": "native-optimization/resume-2026-11-01/conv-workspace-live-v1/sources/CrispEmbed-issue71--src--core--sha256.h",
+      "bytes": 5024,
+      "sha256": "409ab494061b042d4a84698b7bf2caf6dd68f6639cbeb532cb47a2f2337d9a6f"
+    },
+    {
+      "path": "native-optimization/resume-2026-11-01/conv-workspace-live-v1/sources/CrispEmbed-issue71--src--inpaint_graph.h",
+      "bytes": 6620,
+      "sha256": "d6a41ab9111e6c65ac99a447de2899773581ead360d4afdbef98124f0108fde0"
+    },
+    {
+      "path": "native-optimization/resume-2026-11-01/conv-workspace-live-v1/sources/CrispEmbed-issue71--src--inpaint_weight_names.h",
+      "bytes": 2241,
+      "sha256": "d456ee1e1b192d7be8780f746f890d2b1424506759c0461a1ab17e11bfd31884"
+    },
+    {
+      "path": "native-optimization/resume-2026-11-01/conv-workspace-live-v1/sources/native-optimization--resume-2026-11-01--conv-workspace-probe--inpaint_graph.workspace-probe.cpp",
+      "bytes": 47410,
+      "sha256": "9075bae1e106a4467114b08308b57a87b261b8183fc4368a3320bbc13da4049e"
+    },
+    {
+      "path": "native-optimization/resume-2026-11-01/conv-workspace-live-v1/sources/native-optimization--resume-2026-11-01--conv-workspace-probe--plan.json",
+      "bytes": 7584,
+      "sha256": "e6e4f3c0edd57e0e9ef8d9e13cd78d5aa1dddcf7abe3b4569eb3b48d2a3de5e4"
+    },
+    {
+      "path": "native-optimization/resume-2026-11-01/conv-workspace-live-v1/sources/native-optimization--resume-2026-11-01--conv-workspace-probe--run_workspace_probe.py",
+      "bytes": 16328,
+      "sha256": "6e89bf70215a52ba0b8cce6009564b3954168df87a0ba1de6ed4e78fd4b70f48"
+    },
+    {
+      "path": "native-optimization/resume-2026-11-01/conv-workspace-live-v1/sources/native-optimization--resume-2026-11-01--conv-workspace-probe--test_workspace.cpp",
+      "bytes": 48304,
+      "sha256": "263ea4c139daa98bdfa96fb4c7a8d7882825e6affe0a8abdfc48a2b3e4b51070"
+    }
+  ],
+  "identity_note": "File hashes identify original raw files. Embedded contents remove only the workspace prefix; their serialization does not claim the raw hash. The frozen plan retains its historical prepared status; the completed receipt records actual execution.",
+  "exporter": {
+    "path": "native-optimization/resume-2026-11-01/conv-workspace-probe/export_workspace_evidence.py",
+    "bytes": 6595,
+    "sha256": "a682112be0d031c6e3badd2da6fc7274bdb9d4b978910ca2f11ac02f06cb8bf5"
+  }
+}

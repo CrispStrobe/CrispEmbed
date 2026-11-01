@@ -34,6 +34,8 @@ import time
 
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "tools"))
+from inpaint_hash_evidence import SHA256_GATE, hash_evidence  # noqa: E402
 HEX64 = re.compile(r"[0-9a-f]{64}\Z")
 COMMIT = re.compile(r"(?:[0-9a-f]{40}|[0-9a-f]{64})\Z")
 CASE_ID = re.compile(r"[a-z][a-z0-9_]{0,63}\Z")
@@ -44,18 +46,24 @@ CPU_GATES = ("CRISPEMBED_INPAINT_GEMM_LAYOUT", "CRISPEMBED_INPAINT_REFLECT_GATHE
              "CRISPEMBED_INPAINT_CPU_FFT", "CRISPEMBED_INPAINT_CPU_GLA",
              "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC", "CRISPEMBED_MIGAN_CPU_KERNELS",
              "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES", "CRISPEMBED_MOEBIUS_LOCAL_REASSOC",
-             "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM")
+             "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM", "CRISPEMBED_INPAINT_CPU_DEPTHWISE", SHA256_GATE)
 CPU_ENGINE_GATES = {
     "lama": CPU_GATES[:3],
     "moebius": (CPU_GATES[0], CPU_GATES[4]),
     "pixelhacker": (CPU_GATES[0], CPU_GATES[3]),
+}
+MOEBIUS_EXPERIMENT_GATES = {
+    "moebius_local_reassoc": "CRISPEMBED_MOEBIUS_LOCAL_REASSOC",
+    "moebius_local_pad_gemm": "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM",
+    "moebius_cpu_depthwise": "CRISPEMBED_INPAINT_CPU_DEPTHWISE",
 }
 PROFILE = re.compile(
     rb"^inpaint_graph label=(?P<label>.*?) backend=(?P<backend>\S+) "
     rb"precision=(?P<precision>\S+) nodes=(?P<nodes>\d+) "
     rb"allocation_bytes=(?P<allocation_bytes>\d+) runs=(?P<runs>\d+) "
     rb"upload_bytes=(?P<upload_bytes>\d+) download_bytes=(?P<download_bytes>\d+) "
-    rb"compute_ms=(?P<compute_ms>[0-9]+(?:\.[0-9]+)?)\s*$")
+    rb"compute_ms=(?P<compute_ms>[0-9]+(?:\.[0-9]+)?)"
+    rb"(?: cpu_depthwise_nodes=(?P<cpu_depthwise_nodes>[0-9]+))?\s*$")
 
 
 def sha256(path):
@@ -147,7 +155,8 @@ def profile_records(path):
                 raise ValueError("malformed native graph execution profile")
             row = {}
             for name, raw in match.groupdict().items():
-                row[name] = (raw.decode("utf-8", errors="strict") if name in ("label", "backend", "precision")
+                row[name] = (None if raw is None else raw.decode("utf-8", errors="strict")
+                             if name in ("label", "backend", "precision")
                              else float(raw) if name == "compute_ms" else int(raw))
             records.append(row)
     return records
@@ -181,6 +190,37 @@ def backend_matches(requested, actual):
     return False
 
 
+def validate_moebius_experiments(args):
+    selected = any(getattr(args, name) for name in MOEBIUS_EXPERIMENT_GATES)
+    if selected and (args.engine != "moebius" or args.backend != "cpu" or args.precision != "f32"):
+        raise ValueError("Moebius experimental flags require --engine moebius --backend cpu --precision f32")
+    if args.moebius_local_pad_gemm and not args.moebius_local_reassoc:
+        raise ValueError("--moebius-local-pad-gemm requires --moebius-local-reassoc")
+
+
+def depthwise_evidence(profiles, requested):
+    """Verify selected logical nodes for every executed context, not step counts."""
+    if not requested:
+        if any(row.get("cpu_depthwise_nodes") not in (None, 0) for row in profiles):
+            raise ValueError("runtime selected CPU depthwise nodes although the explicit gate is off")
+        return {"requested": False, "verified": False,
+                "scope": "No depthwise experiment requested; any emitted selection counter must be zero."}
+    wanted = {"unet-cfg-ddim-batch2": 47, "vae-encoder-batch2": 0, "vae-decoder": 0}
+    observed = {}
+    for label, count in wanted.items():
+        executed = [row for row in profiles if row["label"] == label and row["runs"] > 0]
+        if not executed or any(row.get("cpu_depthwise_nodes") != count for row in executed):
+            raise ValueError("every executed Moebius " + label + " profile must report cpu_depthwise_nodes=" + str(count))
+        observed[label] = [{"runs": row["runs"], "cpu_depthwise_nodes": row["cpu_depthwise_nodes"]}
+                           for row in executed]
+    for row in profiles:
+        if row["runs"] > 0 and row["label"] not in wanted and row.get("cpu_depthwise_nodes") not in (None, 0):
+            raise ValueError("unexpected graph selected CPU depthwise nodes outside the Moebius UNet")
+    return {"requested": True, "verified": True, "expected_nodes_per_graph": wanted,
+            "executed_graph_profiles": observed,
+            "scope": "Logical custom-node selection in every emitted executed UNet/VAE context; multiple ordinary/observed contexts are allowed. This is not a diffusion-step-count assertion."}
+
+
 class Run:
     def __init__(self, args):
         self.args = args
@@ -204,6 +244,9 @@ class Run:
             "schema": "crispembed-inpaint-graph-replay-v1", "engine": args.engine,
             "requested_backend": args.backend, "requested_precision": args.precision,
             "cpu_optimized": args.cpu_optimized,
+            "sha256_accel_requested": args.sha256_accel,
+            "sha256_hardware_required": args.require_sha256_accel,
+            "moebius_experiments_requested": {name: bool(getattr(args, name)) for name in MOEBIUS_EXPERIMENT_GATES},
             "compare_eager": args.compare_eager, "status": "running", "complete": False,
             "passed": False, "graph_parity_pass": False, "eager_parity_pass": None,
             "build_provenance_qualified": False, "native_qualified": False,
@@ -264,6 +307,7 @@ class Run:
         comparator = ROOT / "tests" / ("test_lama_diff.cpp" if self.args.engine == "lama" else "test_latent_inpaint.cpp")
         source["comparator_source"] = {"path": str(comparator.relative_to(ROOT)), "sha256": sha256(comparator)}
         source["driver_sha256"] = sha256(__file__)
+        source["hash_evidence_source_sha256"] = sha256(ROOT / "tools/inpaint_hash_evidence.py")
         self.report["source"] = source
         self.save()
 
@@ -329,6 +373,9 @@ class Run:
 
     def prepare(self):
         args = self.args
+        if args.require_sha256_accel and not args.sha256_accel:
+            raise ValueError("--require-sha256-accel requires --sha256-accel")
+        validate_moebius_experiments(args)
         if args.precision == "mixed" and args.backend == "cpu":
             raise ValueError("mixed precision requires CUDA or Metal; CPU executes F32")
         if args.cpu_optimized and (args.backend != "cpu" or args.precision != "f32"):
@@ -386,6 +433,11 @@ class Run:
         controlled["CRISPEMBED_" + self.args.engine.upper()] = "1"
         if arm == "graph" and self.args.cpu_optimized:
             controlled.update({name: "1" for name in CPU_ENGINE_GATES[self.args.engine]})
+        if arm == "graph":
+            controlled.update({gate: "1" for name, gate in MOEBIUS_EXPERIMENT_GATES.items()
+                               if getattr(self.args, name)})
+        if arm == "graph" and self.args.sha256_accel:
+            controlled[SHA256_GATE] = "1"
         controlled.update({"CRISPEMBED_INPAINT_GRAPH": "1" if arm == "graph" else "0",
                            "CRISPEMBED_INPAINT_BACKEND": self.args.backend if arm == "graph" else "cpu",
                            "CRISPEMBED_INPAINT_FAST": "1" if arm == "graph" and self.args.precision == "mixed" else "0",
@@ -464,6 +516,17 @@ class Run:
                 raise ValueError("actual native graph backend/precision differs from the explicit request")
         elif any(row["runs"] > 0 for row in profiles):
             raise ValueError("eager baseline unexpectedly executed an inpainting graph")
+        record["moebius_cpu_depthwise_evidence"] = depthwise_evidence(
+            profiles, record["arm"] == "graph" and self.args.moebius_cpu_depthwise)
+        expected_hashes = {self.args.engine: {"sha256": self.report["model"]["expected_gguf_sha256"],
+                                                   "bytes": self.report["model"]["gguf_bytes"]}}
+        if "vae" in self.report:
+            expected_hashes["sdxl_vae"] = {"sha256": self.report["vae"]["expected_gguf_sha256"],
+                                           "bytes": self.report["vae"]["gguf_bytes"]}
+        record["model_hash_evidence"] = hash_evidence(
+            stderr.read_bytes(), expected_hashes,
+            requested=record["arm"] == "graph" and self.args.sha256_accel,
+            require_accel=record["arm"] == "graph" and self.args.require_sha256_accel)
         record["backend_precision_verified"] = True
         record["native_comparator_passed"] = comparator_passed
         record["passed"] = record["returncode"] == 0 and comparator_passed
@@ -569,6 +632,16 @@ def arguments(argv=None):
     parser.add_argument("--precision", choices=("f32", "mixed"), default="f32")
     parser.add_argument("--cpu-optimized", action="store_true",
                         help="explicitly test the gated model-specific CPU optimizations against the same reference")
+    parser.add_argument("--sha256-accel", action="store_true",
+                        help="explicit accelerated model hashing on the graph arm; eager hashing remains scalar")
+    parser.add_argument("--require-sha256-accel", action="store_true",
+                        help="with --sha256-accel, demand actual SHA-NI model blocks")
+    parser.add_argument("--moebius-local-reassoc", action="store_true",
+                        help="explicit Moebius CPU/F32 local reassociation in the graph arm only")
+    parser.add_argument("--moebius-local-pad-gemm", action="store_true",
+                        help="explicit Moebius CPU/F32 local padding GEMM; requires --moebius-local-reassoc")
+    parser.add_argument("--moebius-cpu-depthwise", action="store_true",
+                        help="explicit Moebius CPU/F32 depthwise kernels; requires every executed UNet/VAE profile to confirm selection")
     parser.add_argument("--binary", type=Path, required=True)
     parser.add_argument("--build-receipt", type=Path)
     parser.add_argument("--model", type=Path, required=True)
@@ -586,10 +659,16 @@ def arguments(argv=None):
     parser.add_argument("--scratch", type=Path, required=True)
     parser.add_argument("--deadline-minutes", type=int, default=120)
     args = parser.parse_args(argv)
+    if args.require_sha256_accel and not args.sha256_accel:
+        parser.error("--require-sha256-accel requires --sha256-accel")
     if not 1 <= args.threads <= 8 or not 1 <= args.deadline_minutes <= 1440:
         parser.error("threads must be in[1,8] and deadline-minutes in[1,1440]")
     if args.cpu_optimized and (args.backend != "cpu" or args.precision != "f32"):
         parser.error("--cpu-optimized requires --backend cpu --precision f32")
+    try:
+        validate_moebius_experiments(args)
+    except ValueError as error:
+        parser.error(str(error))
     if args.model_receipt is None:
         args.model_receipt = args.model.with_suffix(args.model.suffix + ".json")
     if args.vae is not None and args.vae_receipt is None:

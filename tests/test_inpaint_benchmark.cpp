@@ -66,17 +66,24 @@ std::FILE * exclusive_output(const fs::path & path) {
 #endif
     return result;
 }
+void write_new_output(const fs::path & path, const std::vector<uint8_t> & bytes) {
+    std::FILE * file = exclusive_output(path);
+    require(file != nullptr, "cannot exclusively create output; existing paths are protected");
+    bool written = std::fwrite(bytes.data(), 1, bytes.size(), file) == bytes.size();
+    if (std::fclose(file) != 0) written = false;
+    require(written, "output write failed");
+}
 int run(int argc, char ** argv) {
     const std::set<std::string> allowed{ "--engine", "--model",      "--model-sha256", "--checkpoint-sha256",
                                          "--vae",    "--vae-sha256", "--rgb",          "--mask",
                                          "--width",  "--height",     "--output",       "--threads",
-                                         "--runs",   "--steps",      "--backend" };
+                                         "--runs",   "--steps",      "--backend",      "--checkpoint-output" };
     std::map<std::string, std::string> args;
     for (int i = 1; i < argc; i += 2) {
         require(i + 1 < argc && allowed.count(argv[i]) && args.emplace(argv[i], argv[i + 1]).second,
                 "usage: test-inpaint-benchmark --engine NAME --model FILE --model-sha256 SHA --rgb RAW --mask RAW "
                 "--width N --height N --output NEW_RAW [--threads N] [--runs N] [--backend cpu|cuda|metal] "
-                "[--checkpoint-sha256 SHA] [--vae FILE --vae-sha256 SHA --steps N]");
+                "[--checkpoint-sha256 SHA] [--vae FILE --vae-sha256 SHA --steps N] [--checkpoint-output NEW_RAW]");
     }
     auto required = [&](const std::string & name) -> std::string {
         require(args.count(name) && !args.at(name).empty(), "missing " + name);
@@ -101,6 +108,15 @@ int run(int argc, char ** argv) {
     require(!fs::is_symlink(fs::symlink_status(output)) && !fs::exists(output) &&
                 fs::is_directory(output.parent_path()),
             "output must be a new file in an existing directory, not a symlink");
+    fs::path checkpoint;
+    if (args.count("--checkpoint-output")) {
+        checkpoint = fs::absolute(required("--checkpoint-output"));
+        require(!fs::is_symlink(fs::symlink_status(checkpoint)) && !fs::exists(checkpoint) &&
+                    fs::is_directory(checkpoint.parent_path()),
+                "checkpoint output must be a new file in an existing directory, not a symlink");
+        require(fs::weakly_canonical(output) != fs::weakly_canonical(checkpoint),
+                "checkpoint and final output must be different paths");
+    }
     const auto rgb = read_bytes(required("--rgb"), size_t(width) * height * 3);
     const auto mask = read_bytes(required("--mask"), size_t(width) * height);
     require(std::all_of(mask.begin(), mask.end(), [](uint8_t value) { return value == 0 || value == 255; }),
@@ -159,6 +175,12 @@ int run(int argc, char ** argv) {
         if (iteration == 0) {
             cold_ms = run_ms;
             first = actual;
+            // Persist a completed image before the next long call. This I/O
+            // is outside run_ms and does not mark the benchmark complete.
+            if (!checkpoint.empty()) {
+                require(known_errors == 0, "cold checkpoint changed known RGB pixels");
+                write_new_output(checkpoint, first);
+            }
         } else {
             samples.push_back(run_ms);
             repeat_exact = repeat_exact && actual == first;
@@ -168,11 +190,7 @@ int run(int argc, char ** argv) {
                   << ",\"rgb_sha256\":" << std::quoted(core_sha256::bytes(actual.data(), actual.size())) << "}\n"
                   << std::flush;
     }
-    std::FILE * file = exclusive_output(output);
-    require(file != nullptr, "cannot exclusively create output; existing paths are protected");
-    bool written = std::fwrite(first.data(), 1, first.size(), file) == first.size();
-    if (std::fclose(file) != 0) written = false;
-    require(written, "output write failed");
+    write_new_output(output, first);
     auto sorted = samples;
     std::sort(sorted.begin(), sorted.end());
     const double median =
@@ -191,6 +209,8 @@ int run(int argc, char ** argv) {
     std::cout << "],\"input_rgb_sha256\":" << std::quoted(core_sha256::bytes(rgb.data(), rgb.size()))
               << ",\"mask_sha256\":" << std::quoted(core_sha256::bytes(mask.data(), mask.size()))
               << ",\"output_sha256\":" << std::quoted(core_sha256::bytes(first.data(), first.size()))
+              << ",\"cold_checkpoint_sha256\":"
+              << std::quoted(checkpoint.empty() ? std::string() : core_sha256::bytes(first.data(), first.size()))
               << ",\"model_sha256\":" << std::quoted(required("--model-sha256"))
               << ",\"vae_sha256\":" << std::quoted(latent ? required("--vae-sha256") : std::string())
               << ",\"known_pixel_errors\":" << known_errors
@@ -201,6 +221,8 @@ int run(int argc, char ** argv) {
                              "CRISPEMBED_INPAINT_REFLECT_GATHER",
                              "CRISPEMBED_INPAINT_CPU_FFT",
                              "CRISPEMBED_INPAINT_CPU_GLA",
+                             "CRISPEMBED_INPAINT_CPU_DEPTHWISE",
+                             "CRISPEMBED_INPAINT_SHA256_ACCEL",
                              "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES",
                              "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC",
                              "CRISPEMBED_MOEBIUS_LOCAL_REASSOC",

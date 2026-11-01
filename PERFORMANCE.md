@@ -63,6 +63,49 @@ No throughput, GPU, maximum-context or representative OCR-quality claim follows.
 
 ## 1 November 2026 — Measured CPU inpainting improvements
 
+## 1 November 2026 — Further hashing measurements and completed latent pairs
+
+The current ordinary API pairs use the same 512-square formula photograph,
+eight threads, F32 and stock 20 requested/19 executed timesteps, with one first
+image and three warm images per arm. These are raw observations on one shared
+CPU host in fixed run order; their performance qualification flags remain false.
+Loading includes digest verification and initialization after independent
+pre-run file hashing, so the files may already be cached. It is not cold-storage
+timing. Model loading is outside the image measurements.
+
+| Profile | Load/validation s, one observation | First image s | Three warm samples s | Warm median s |
+| --- | ---: | ---: | --- | ---: |
+| PixelHacker eager | 16.536 | 314.108 | 310.958, 311.827, 306.760 | 310.958 |
+| PixelHacker graph/GEMM/GLA plus SHA | 3.196 | 149.553 | 144.243, 141.174, 145.701 | 144.243 |
+| Moebius existing local/GEMM | 4.973 | 166.949 | 142.796, 139.512, 266.263 | 142.796 |
+| Moebius local/GEMM plus depthwise/SHA | 1.277 | 392.587 | 134.088, 181.397, 195.887 | 181.397 |
+
+PixelHacker's observed median ratio is 2.156. Every repeat within an arm is
+identical; candidate versus eager passes fixed native RGB budgets with maximum
+filled-channel difference 1, mean 0.0000949436, PSNR 88.356 dB and zero known
+channel errors. This does not qualify the unavailable original CUDA/FLA model.
+Process peak RSS is 4,478,836/6,275,732 KiB for eager/candidate. Moebius's eight
+outputs are identical, with process peaks 3,733,784/3,727,376 KiB. Its candidate
+median is 27.03% slower and both series are noisy under competing work; no
+complete-image benefit is qualified. Depthwise stays outside the main preset.
+
+The separate SHA component test alternates three samples per arm over a fixed
+32 MiB memory buffer: scalar median 119.284250 ms, SHA-NI 25.468902 ms,
+**4.6835 times** the throughput with identical digests. The eligible Moebius
+depthwise operator screen has a weighted median ratio of 7.0836, separate from
+image inference. The private 128 MiB workspace screen shows mixed results,
+including variation in its unchanged control, so CPU production remains 32 MiB.
+No resolution, weights, precision, schedule or quality threshold was reduced.
+
+See the [PixelHacker API record](tests/results/inpainting/pixelhacker-api-cpu-2026-11-01.json),
+[Moebius API record](tests/results/inpainting/moebius-api-cpu-2026-11-01.json),
+[SHA component record](tests/results/inpainting/sha256-cpu-2026-11-01.json) and
+[complete guide](docs/inpainting-optimization-results.md). CUDA/Metal and broader
+image-quality/performance qualification remain separate. Earlier samples and
+failures below are preserved as historical evidence.
+
+## 1 November 2026 — Earlier measured CPU inpainting improvements
+
 Actual Release/native CPU measurements on an AMD EPYC9V74 worker with an
 eight-CPU quota and8GiB memory limit now supersede the earlier source-only
 status below. Timings are ordinary image API calls with preprocessing and

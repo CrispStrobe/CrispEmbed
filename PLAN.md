@@ -343,22 +343,36 @@ outside this lane. Do not infer weight permission from a public repository.
   All twelve photo arms pass original RGB; optimized warm calls improve
   2.37–2.49 times over the portable graph. Strict full-model parity is negative.
 - Moebius completes the four-case original replay with local/relative lambda
-  reassociation. Final RGB and observer-neutrality checks pass in all four
-  cases; 35 of 608 stages fail the unchanged absolute-error limit. No paired
-  ordinary-API performance claim is made. PixelHacker's optimized CPU profile
-  completes one cold/three warm ordinary calls with exact repeats and known
-  pixels, a 139.268-second warm median and approximately 5.99 GiB peak RSS.
-  Its eager comparison was interrupted at the user's delivery request; the
-  portable arm, paired image-quality comparison and latent CLI tests remain
-  unexecuted. Preserve that incomplete status and every original failure.
+  reassociation. Its integrated optional CPU depthwise path preserves all eight
+  prior generated/composited RGB outputs and all 608 reference metric records;
+  the same 35 strict absolute-stage failures remain. A completed ordinary API
+  pair also has exact RGB and known pixels, but the warm median changes from
+  142.796 to 181.397 seconds under contention. No complete-image speedup is
+  qualified; keep depthwise outside the recommended throughput preset.
+- The resumed PixelHacker eager/candidate pair completes one cold and three
+  warm calls per arm on the same executable. Native RGB agreement passes:
+  filled-channel maximum difference 1, mean 0.0000949436 and known errors 0.
+  Warm medians are 310.958/144.243 seconds; the observed 2.156 ratio remains a
+  diagnostic result from one fixture and fixed run order. Preserve the earlier
+  cancelled eager arm and timing-only revalidation unchanged. Original CUDA/FLA
+  parity, portable-only graph timing and representative quality remain open.
+- Optional SHA-NI model verification hashes every byte against the same digest,
+  with observed hardware/block counts and scalar fallback. Its bounded memory
+  hashing benchmark measures 4.6835 times the scalar throughput, separate from
+  image inference. Production CPU convolution stays at 32 MiB; the private
+  128 MiB workspace screen was mixed and is not integrated. The resumed control
+  suites pass 244 Python/CLI tests, 20 native configurations and 21 additional
+  private API-controller controls; exact reports are linked from the results.
 - Actual production CLI checks cover both MI-GAN sizes and LaMa at 256/512,
   with empty masks, exact API outputs and batch-context reuse. GPU execution,
   original PixelHacker parity, representative perceptual/video quality,
   quantization, public bindings and downstream release qualification remain
-  separate. Keep issue71 open, all candidates default off, model/source pins
-  intact and the prepared-but-unintegrated depthwise experiment out of the
-  runtime. Follow-up work should resume the recorded gaps without replacing
-  prior receipts or weakening their fixed numerical budgets.
+  separate. The current SHA-enabled CLI panel passes for all five profiles:
+  12 invocations/16 PNGs on one binary, with exact ordinary-API outputs, empty
+  masks and both latent filled/empty/filled batches. The earlier CLI panels
+  remain separate. Keep issue71 open, all candidates default off and the
+  model/source pins intact. Follow-up work must preserve prior receipts and
+  fixed numerical budgets, including every original intermediate failure.
 - Source/wheel success is not release qualification. Require fresh portable
   native/WASM producers, installed bundle/ABI/platform consumers and full
   aggregation for the final source, then update release metadata coherently.

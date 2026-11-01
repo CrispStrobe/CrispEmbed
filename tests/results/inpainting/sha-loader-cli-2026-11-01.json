@@ -1,0 +1,1101 @@
+{
+  "schema": "crispembed-inpainting-sha-loader-cli-public-v1",
+  "recorded_date_utc": "2026-11-01",
+  "complete": true,
+  "passed": true,
+  "actual_native_cli_invocations": 6,
+  "actual_png_outputs": 6,
+  "scope": "Actual changed MI-GAN-256/512 and LaMa loader callsites on one final binary, with explicit SHA-NI evidence, exact previous optimized ordinary-API RGB, and exact empty-mask input passthrough. No new original replay or timing qualification.",
+  "original_model_quality_qualified": false,
+  "performance_qualified": false,
+  "same_context_reuse_requested": false,
+  "default_profiles_changed": false,
+  "raw_controller_receipts": [
+    {
+      "path": "evidence/resume-2026-11-01/sha-loader-live-v1/report.json",
+      "bytes": 12889,
+      "sha256": "39b9875c1b367c1efa5e4cd0d431bbd81bbe2f34b4575a9f63d6ce8de10150c2"
+    },
+    {
+      "path": "evidence/resume-2026-11-01/migan512-sha-loader-live-v1/report.json",
+      "bytes": 7530,
+      "sha256": "0caa55edad2a55b0bcad48d25d710ebd047232864383ec37942adc303a310d6a"
+    }
+  ],
+  "binary": {
+    "path": "evidence/build-current/crispembed",
+    "bytes": 13514008,
+    "sha256": "4908de1b07d4e91a1818063e852bf07de9cd0faf88c3a42b75a361b9d81ab65c"
+  },
+  "prior_public_version": {
+    "path": "evidence/resume-2026-11-01/sha-loader-public-before-mi512/public-v1.json",
+    "bytes": 32638,
+    "sha256": "b6ca1ec14e5fefcbc77616b3d670921731ecc834367dbf81cb63e7fcbe28f89d"
+  },
+  "producer_sources": [
+    {
+      "path": "repo/tests/test_inpaint_engine_live.py",
+      "bytes": 41690,
+      "sha256": "dc4a3460341ab80fd48db2c6c767e8eb4a36d31d3df486f5a140408c4edf7750"
+    },
+    {
+      "path": "repo/tests/test_inpaint_engine_live_controls.py",
+      "bytes": 31703,
+      "sha256": "cf322bf9ca6f3e4e55f5dddb7bd34451fb86bbca0d0272d218e01339ac3431d3"
+    },
+    {
+      "path": "repo/tools/inpaint_hash_evidence.py",
+      "bytes": 4964,
+      "sha256": "4fece7408ea18b781724410866af9bca64586368f643850473add3b76f3054fb"
+    },
+    {
+      "path": "evidence/run_inpaint_cli_live.py",
+      "bytes": 19207,
+      "sha256": "88d1baf95503d2d03b24d9e955b04c986d6434d8124b4eee3cded4f43be6ac20"
+    }
+  ],
+  "jobs": [
+    {
+      "engine": "migan256",
+      "passed": true,
+      "raw_cli_receipt": {
+        "path": "evidence/resume-2026-11-01/final-cli-live/migan256-sha-loader/report.json",
+        "bytes": 13547,
+        "sha256": "021b35cf14b4cd64e9e582e28d6d6b4fb8f3a4992b936c030a0c2df92b9104b5"
+      },
+      "detail": {
+        "schema": "crispembed-inpaint-engine-live-v1",
+        "engine": "migan256",
+        "complete": true,
+        "passed": true,
+        "commands": [
+          {
+            "label": "single",
+            "argv": [
+              "evidence/build-current/crispembed",
+              "--inpaint-engine",
+              "migan256",
+              "--inpaint-model",
+              "evidence/migan-assets/model256-reviewed/migan-256-places2-f32-experimental.gguf",
+              "--gpu-backend",
+              "cpu",
+              "--threads",
+              "8",
+              "--mask-dilate",
+              "0",
+              "--inpaint",
+              "evidence/resume-2026-11-01/final-cli-live/migan256-sha-loader/input.png",
+              "--mask",
+              "evidence/resume-2026-11-01/final-cli-live/migan256-sha-loader/mask.png"
+            ],
+            "started_unix": 1793541073.7424605,
+            "complete": true,
+            "stdout_file": "single.png",
+            "stderr_file": "single-stderr.txt",
+            "timeout_seconds": 1800,
+            "wall_seconds_diagnostic": 2.202053224998963,
+            "returncode": 0,
+            "timed_out": false,
+            "stdout_sha256": "16d7d1e34792ea703fb4bd86599043caa2acc362bfed7e1dccfe01f0c1e148c8",
+            "stdout_bytes": 40749,
+            "stderr_sha256": "871fc1be11f8bfbf9e06dc65dfd50ddf3f7d0e44186ffe815bb07c198446ba4d",
+            "stderr_bytes": 1183,
+            "backend_evidence": [
+              {
+                "backend": "CPU",
+                "runs": 1,
+                "precision": "f32",
+                "line": "migan graph production: backend=CPU resolution=256 persistent=1 precision=f32 cpu_kernels=1 cpu_plan=1 cpu_pool=1 nodes=476 graph_bytes=169354240 weight_bytes=25172704 builds=1 allocations=1 runs=1 reuses=0 weight_uploads=154 weight_upload_bytes=25172228 input_uploads=1 input_upload_bytes=1048576 output_downloads=1 output_download_bytes=786432 build_ms=1.111868 compute_ms=2007.102585 total_compute_ms=2007.102585 run_ms=2008.120115",
+                "label": "migan-production",
+                "cpu_kernels": 1,
+                "persistent": 1,
+                "builds": 1,
+                "allocations": 1
+              }
+            ],
+            "model_hash_evidence": {
+              "requested": true,
+              "require_hardware": true,
+              "profiles": [
+                {
+                  "label": "migan",
+                  "backend": "sha-ni",
+                  "requested": true,
+                  "hardware_available": true,
+                  "bytes": 25185504,
+                  "complete_blocks": 393523,
+                  "accelerated_blocks": 393523,
+                  "sha256": "b8fcefc3de7e04f96867b9d15bd84a2cf7e0c444d2925644a7e8b15081809c8b"
+                }
+              ],
+              "verified_model_labels": [
+                "migan"
+              ],
+              "all_model_identities_verified": true,
+              "hardware_acceleration_verified": true,
+              "scalar_fallback": false,
+              "empty_mask_bypass_without_hash_profiles": false,
+              "scope": "Actual verified model hashing and full input-block counts only; no inference or hardware-speed qualification."
+            },
+            "moebius_cpu_depthwise_runtime_verified": false
+          },
+          {
+            "label": "empty",
+            "argv": [
+              "evidence/build-current/crispembed",
+              "--inpaint-engine",
+              "migan256",
+              "--inpaint-model",
+              "evidence/migan-assets/model256-reviewed/migan-256-places2-f32-experimental.gguf",
+              "--gpu-backend",
+              "cpu",
+              "--threads",
+              "8",
+              "--mask-dilate",
+              "0",
+              "--inpaint",
+              "evidence/resume-2026-11-01/final-cli-live/migan256-sha-loader/input.png",
+              "--mask",
+              "evidence/resume-2026-11-01/final-cli-live/migan256-sha-loader/empty-mask.png"
+            ],
+            "started_unix": 1793541076.060932,
+            "complete": true,
+            "stdout_file": "empty.png",
+            "stderr_file": "empty-stderr.txt",
+            "timeout_seconds": 1800,
+            "wall_seconds_diagnostic": 0.1150559739980963,
+            "returncode": 0,
+            "timed_out": false,
+            "stdout_sha256": "abfdb1da3f70519acce935a475958c1c14d26ee86ca6bf250a546b11ac6d07e0",
+            "stdout_bytes": 39532,
+            "stderr_sha256": "632289386296a60002f9b5748158ba3443e622197c3218d37f3d6d52c0ce4932",
+            "stderr_bytes": 748,
+            "backend_evidence": [],
+            "model_hash_evidence": {
+              "requested": true,
+              "require_hardware": true,
+              "profiles": [
+                {
+                  "label": "migan",
+                  "backend": "sha-ni",
+                  "requested": true,
+                  "hardware_available": true,
+                  "bytes": 25185504,
+                  "complete_blocks": 393523,
+                  "accelerated_blocks": 393523,
+                  "sha256": "b8fcefc3de7e04f96867b9d15bd84a2cf7e0c444d2925644a7e8b15081809c8b"
+                }
+              ],
+              "verified_model_labels": [
+                "migan"
+              ],
+              "all_model_identities_verified": true,
+              "hardware_acceleration_verified": true,
+              "scalar_fallback": false,
+              "empty_mask_bypass_without_hash_profiles": false,
+              "scope": "Actual verified model hashing and full input-block counts only; no inference or hardware-speed qualification."
+            },
+            "moebius_cpu_depthwise_runtime_verified": false
+          }
+        ],
+        "outputs": [
+          {
+            "file": "single.png",
+            "width": 256,
+            "height": 256,
+            "png_sha256": "16d7d1e34792ea703fb4bd86599043caa2acc362bfed7e1dccfe01f0c1e148c8",
+            "rgb_sha256": "fe05deb84f5e02a33ecb3bb305f3bdbcf5068d06ba584821a26b9c84feb6e1db",
+            "metadata": {
+              "generated": "true",
+              "software": "CrispEmbed",
+              "engine": "migan-inpaint;execution=ggml-graph;backend_request=cpu;precision_request=f32",
+              "digitalSourceType": "http://cv.iptc.org/newscodes/digitalsourcetype/algorithmicallyEnhanced",
+              "note": "AI-processed image. Not an authentic record of the original; restored or upscaled detail is a plausible completion, not recovered information.",
+              "policy": "https://github.com/CrispStrobe/CrispEmbed/blob/main/POLICY.md"
+            },
+            "known_pixel_errors": 0,
+            "empty_mask_passthrough": null,
+            "expected_rgb_exact": true,
+            "expected_rgb_kind": "pinned_ordinary_image_api"
+          },
+          {
+            "file": "empty.png",
+            "width": 256,
+            "height": 256,
+            "png_sha256": "abfdb1da3f70519acce935a475958c1c14d26ee86ca6bf250a546b11ac6d07e0",
+            "rgb_sha256": "4a6c03d8f0a98b05244c12da4447b9880bcdabc18a250bd8ced3b5bd6cdc6711",
+            "metadata": {
+              "generated": "true",
+              "software": "CrispEmbed",
+              "engine": "migan-inpaint;execution=ggml-graph;backend_request=cpu;precision_request=f32",
+              "digitalSourceType": "http://cv.iptc.org/newscodes/digitalsourcetype/algorithmicallyEnhanced",
+              "note": "AI-processed image. Not an authentic record of the original; restored or upscaled detail is a plausible completion, not recovered information.",
+              "policy": "https://github.com/CrispStrobe/CrispEmbed/blob/main/POLICY.md"
+            },
+            "known_pixel_errors": 0,
+            "empty_mask_passthrough": true,
+            "expected_rgb_exact": true,
+            "expected_rgb_kind": "original_input_empty_mask"
+          }
+        ],
+        "original_model_quality_qualified": false,
+        "perceptual_quality_qualified": false,
+        "temporal_quality_qualified": false,
+        "same_context_repeat_exact": null,
+        "same_process_repeat_exact": null,
+        "fresh_context_and_batch_exact": null,
+        "timing_scope": "Whole CLI subprocess wall time, including model validation/loading and PNG I/O; diagnostic only, not an inference benchmark.",
+        "binary": {
+          "path": "evidence/build-current/crispembed",
+          "bytes": 13514008,
+          "sha256": "4908de1b07d4e91a1818063e852bf07de9cd0faf88c3a42b75a361b9d81ab65c"
+        },
+        "model": {
+          "path": "evidence/migan-assets/model256-reviewed/migan-256-places2-f32-experimental.gguf",
+          "bytes": 25185504,
+          "sha256": "b8fcefc3de7e04f96867b9d15bd84a2cf7e0c444d2925644a7e8b15081809c8b"
+        },
+        "vae": null,
+        "checkpoint_identities": {
+          "model_checkpoint_sha256": "8b82b2e82fc8e5a2e1f06827594aac1a5d66a9ca41e24199ddd969847788097f",
+          "model_checkpoint_pin_origin": "tests/results/migan/original-reference.json",
+          "source_contract_sha256": "ed43228a14627efef8e22fbd7b9e41c95cc7ab5e247a77f789cae6e34533460c"
+        },
+        "source": {
+          "native_commit": "2e9c8f6183e0877353f25c8ddbec9cbbc4245b29",
+          "ggml_commit": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+          "source_files": [
+            {
+              "path": "examples/cli/inpaint_cli.cpp",
+              "sha256": "2ff788f16793a25e846c9e3b18f94e3cfb629218bc801f609780ce76161db01e"
+            },
+            {
+              "path": "src/core/image_out.cpp",
+              "sha256": "18fdf144b17bb91e2071c1407a431c08d9ed4bc46b301fd4441cabfcd2c27030"
+            },
+            {
+              "path": "tests/test_inpaint_cli.py",
+              "sha256": "ac69bd57828145ed67ae29b5ddbfed9768db78a13ad4261bfe994866bc5f3ee0"
+            },
+            {
+              "path": "tools/dump_migan_photo_reference.py",
+              "sha256": "97d6978b0130aa4ee3b5e871fe3877c0340e80b914459dc7d197223d77382c4d"
+            },
+            {
+              "path": "tests/test_inpaint_engine_live.py",
+              "sha256": "dc4a3460341ab80fd48db2c6c767e8eb4a36d31d3df486f5a140408c4edf7750"
+            },
+            {
+              "path": "tools/inpaint_hash_evidence.py",
+              "sha256": "4fece7408ea18b781724410866af9bca64586368f643850473add3b76f3054fb"
+            }
+          ],
+          "binary_revision_attested": false,
+          "note": "Local source identity and binary digest are recorded independently; no build receipt attests their correspondence."
+        },
+        "requested_backend": "cpu",
+        "graph": true,
+        "precision": "f32",
+        "cpu_optimized_requested": true,
+        "sha256_accel_requested": true,
+        "sha256_hardware_required": true,
+        "moebius_cpu_depthwise_requested": false,
+        "moebius_local_reassoc_requested": false,
+        "moebius_local_pad_gemm_requested": false,
+        "optimizer_evidence_scope": "MI cpu_kernels and explicitly selected Moebius CPU depthwise node counts are checked in actual profiles; other optimizer flags remain requested settings, not profiler-confirmed selection.",
+        "threads": 8,
+        "controlled_environment": {
+          "CRISPEMBED_MIGAN": "1",
+          "CRISPEMBED_MIGAN512": "0",
+          "CRISPEMBED_LAMA": "0",
+          "CRISPEMBED_MOEBIUS": "0",
+          "CRISPEMBED_PIXELHACKER": "0",
+          "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+          "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+          "CRISPEMBED_INPAINT_CPU_FFT": "0",
+          "CRISPEMBED_INPAINT_CPU_GLA": "0",
+          "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+          "CRISPEMBED_MIGAN_CPU_KERNELS": "1",
+          "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+          "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+          "CRISPEMBED_INPAINT_SHA256_ACCEL": "1",
+          "CRISPEMBED_INPAINT_GRAPH": "1",
+          "CRISPEMBED_INPAINT_FAST": "0",
+          "CRISPEMBED_INPAINT_BACKEND": "cpu",
+          "CRISPEMBED_INPAINT_PROFILE": "1",
+          "CRISPEMBED_IMAGE_FORMAT": "png",
+          "OMP_NUM_THREADS": "8",
+          "MKL_NUM_THREADS": "8",
+          "OPENBLAS_NUM_THREADS": "1"
+        },
+        "fixtures": {
+          "path": "evidence/migan-assets/photos256/fixtures.json",
+          "bytes": 2061,
+          "sha256": "a18d676a35102d49afa207d06eb556f747eb747ee956dec7a72ce907bb5c74de"
+        },
+        "case": {
+          "name": "formula_photo_bar",
+          "source": {
+            "name": "formula_photo_bar",
+            "path": "tests/regression/images/cc0/public_domain_formula_photo.jpg",
+            "sha256": "1d2fe4b325bd2c73093901d4ccf52a670544649884fa8e7913817d099f7fe1eb",
+            "source_name": "public_domain_formula_photo",
+            "mask": "bar"
+          },
+          "source_page": "https://commons.wikimedia.org/wiki/File:Pure-mathematics-formul%C3%A6-blackboard.jpg",
+          "license": "Public-Domain",
+          "source_geometry": [
+            1600,
+            1200
+          ],
+          "crop_xyxy": [
+            672,
+            472,
+            928,
+            728
+          ],
+          "rgb_sha256": "4a6c03d8f0a98b05244c12da4447b9880bcdabc18a250bd8ced3b5bd6cdc6711",
+          "mask_sha256": "ee65ed7233529c276acc068d946465dd777625350e60ad188488c4fbd7863bf4",
+          "fill_pixels": 6144,
+          "known_pixels": 59392
+        },
+        "rgb": {
+          "path": "evidence/migan-assets/photos256/formula_photo_bar/input.rgb8",
+          "bytes": 196608,
+          "sha256": "4a6c03d8f0a98b05244c12da4447b9880bcdabc18a250bd8ced3b5bd6cdc6711"
+        },
+        "mask": {
+          "path": "evidence/migan-assets/photos256/formula_photo_bar/fill-mask.u8",
+          "bytes": 65536,
+          "sha256": "ee65ed7233529c276acc068d946465dd777625350e60ad188488c4fbd7863bf4"
+        },
+        "expected_ordinary_api_rgb": {
+          "path": "evidence/migan-live-initial/ordinary-kernel-benchmarks/cpu_kernels256-t4.rgb8",
+          "bytes": 196608,
+          "sha256": "fe05deb84f5e02a33ecb3bb305f3bdbcf5068d06ba584821a26b9c84feb6e1db"
+        },
+        "sampler": null,
+        "input_png_policy": "Regenerated from validated raw fixture bytes; no resize, filtering, dilation or mask substitution",
+        "cli_inputs": [
+          {
+            "file": "input.png",
+            "sha256": "28f7dcf45a8c98cb3ba23278e601f1337f81ebaba800a2d7791cacf10f73fd61"
+          },
+          {
+            "file": "mask.png",
+            "sha256": "03b6ceb753337cc3cce1a76d9fcb329e18db8b4a805d43e6f7a68374c7d73409"
+          },
+          {
+            "file": "empty-mask.png",
+            "sha256": "39962cd5bc9f4f0446341d3e6e0c6c37336ddeb2e026a17a3d06bb6cb3266daf"
+          }
+        ],
+        "all_pinned_inputs_unchanged": true
+      },
+      "original_model_quality_qualified": false,
+      "performance_qualified": false
+    },
+    {
+      "engine": "lama",
+      "passed": true,
+      "raw_cli_receipt": {
+        "path": "evidence/resume-2026-11-01/final-cli-live/lama-sha-loader/report.json",
+        "bytes": 13543,
+        "sha256": "fb0f3c935dbcb637251d1a54f082ee251a43e98bb7e8ee66e21c84e193944aae"
+      },
+      "detail": {
+        "schema": "crispembed-inpaint-engine-live-v1",
+        "engine": "lama",
+        "complete": true,
+        "passed": true,
+        "commands": [
+          {
+            "label": "single",
+            "argv": [
+              "evidence/build-current/crispembed",
+              "--inpaint-engine",
+              "lama",
+              "--inpaint-model",
+              "evidence/lama-assets/big-lama-f32.gguf",
+              "--gpu-backend",
+              "cpu",
+              "--threads",
+              "8",
+              "--mask-dilate",
+              "0",
+              "--inpaint-model-sha256",
+              "24736f267c68e013f0000ccb69560c4353b6a6d7983fc3cc2537d9f2e03f304c",
+              "--inpaint",
+              "evidence/resume-2026-11-01/final-cli-live/lama-sha-loader/input.png",
+              "--mask",
+              "evidence/resume-2026-11-01/final-cli-live/lama-sha-loader/mask.png"
+            ],
+            "started_unix": 1793541076.5564857,
+            "complete": true,
+            "stdout_file": "single.png",
+            "stderr_file": "single-stderr.txt",
+            "timeout_seconds": 1800,
+            "wall_seconds_diagnostic": 10.921358715000679,
+            "returncode": 0,
+            "timed_out": false,
+            "stdout_sha256": "8bbb5a6279558f2c25808a5ce766ef41ff5b4e3b05505e0ffc47a5eca1d08bb6",
+            "stdout_bytes": 39626,
+            "stderr_sha256": "8a5234b197f32ef0d966f7f1b1f729dda2de0e2f227699c90ff7dcb18370e4c1",
+            "stderr_bytes": 528,
+            "backend_evidence": [
+              {
+                "backend": "CPU",
+                "runs": 1,
+                "precision": "f32",
+                "line": "inpaint_graph label=lama-generator backend=CPU precision=f32 nodes=3001 allocation_bytes=117303392 runs=1 upload_bytes=1048576 download_bytes=786432 compute_ms=10602.875 cpu_depthwise_nodes=0",
+                "label": "lama-generator",
+                "cpu_depthwise_nodes": 0
+              }
+            ],
+            "model_hash_evidence": {
+              "requested": true,
+              "require_hardware": true,
+              "profiles": [
+                {
+                  "label": "lama",
+                  "backend": "sha-ni",
+                  "requested": true,
+                  "hardware_available": true,
+                  "bytes": 204299072,
+                  "complete_blocks": 3192173,
+                  "accelerated_blocks": 3192173,
+                  "sha256": "24736f267c68e013f0000ccb69560c4353b6a6d7983fc3cc2537d9f2e03f304c"
+                }
+              ],
+              "verified_model_labels": [
+                "lama"
+              ],
+              "all_model_identities_verified": true,
+              "hardware_acceleration_verified": true,
+              "scalar_fallback": false,
+              "empty_mask_bypass_without_hash_profiles": false,
+              "scope": "Actual verified model hashing and full input-block counts only; no inference or hardware-speed qualification."
+            },
+            "moebius_cpu_depthwise_runtime_verified": false
+          },
+          {
+            "label": "empty",
+            "argv": [
+              "evidence/build-current/crispembed",
+              "--inpaint-engine",
+              "lama",
+              "--inpaint-model",
+              "evidence/lama-assets/big-lama-f32.gguf",
+              "--gpu-backend",
+              "cpu",
+              "--threads",
+              "8",
+              "--mask-dilate",
+              "0",
+              "--inpaint-model-sha256",
+              "24736f267c68e013f0000ccb69560c4353b6a6d7983fc3cc2537d9f2e03f304c",
+              "--inpaint",
+              "evidence/resume-2026-11-01/final-cli-live/lama-sha-loader/input.png",
+              "--mask",
+              "evidence/resume-2026-11-01/final-cli-live/lama-sha-loader/empty-mask.png"
+            ],
+            "started_unix": 1793541087.5923588,
+            "complete": true,
+            "stdout_file": "empty.png",
+            "stderr_file": "empty-stderr.txt",
+            "timeout_seconds": 1800,
+            "wall_seconds_diagnostic": 0.21948624400101835,
+            "returncode": 0,
+            "timed_out": false,
+            "stdout_sha256": "f3fb0120eaa4ba58d67ab9066471618c4afa6cd206d367d5b5170fa74013cbf1",
+            "stdout_bytes": 39609,
+            "stderr_sha256": "00c0fd08b26e8dda38c51fa3c4c364cd938a4e7ff121d94422df9dd79b27381e",
+            "stderr_bytes": 336,
+            "backend_evidence": [],
+            "model_hash_evidence": {
+              "requested": true,
+              "require_hardware": true,
+              "profiles": [
+                {
+                  "label": "lama",
+                  "backend": "sha-ni",
+                  "requested": true,
+                  "hardware_available": true,
+                  "bytes": 204299072,
+                  "complete_blocks": 3192173,
+                  "accelerated_blocks": 3192173,
+                  "sha256": "24736f267c68e013f0000ccb69560c4353b6a6d7983fc3cc2537d9f2e03f304c"
+                }
+              ],
+              "verified_model_labels": [
+                "lama"
+              ],
+              "all_model_identities_verified": true,
+              "hardware_acceleration_verified": true,
+              "scalar_fallback": false,
+              "empty_mask_bypass_without_hash_profiles": false,
+              "scope": "Actual verified model hashing and full input-block counts only; no inference or hardware-speed qualification."
+            },
+            "moebius_cpu_depthwise_runtime_verified": false
+          }
+        ],
+        "outputs": [
+          {
+            "file": "single.png",
+            "width": 256,
+            "height": 256,
+            "png_sha256": "8bbb5a6279558f2c25808a5ce766ef41ff5b4e3b05505e0ffc47a5eca1d08bb6",
+            "rgb_sha256": "4047e7a852c324e4b5b7cdfd4c8010caa4fd4cd8848d6f53c97307b924048b70",
+            "metadata": {
+              "generated": "true",
+              "software": "CrispEmbed",
+              "engine": "lama-inpaint;execution=ggml-graph;backend_request=cpu;precision_request=f32;model_sha256=24736f267c68e013f0000ccb69560c4353b6a6d7983fc3cc2537d9f2e03f304c",
+              "digitalSourceType": "http://cv.iptc.org/newscodes/digitalsourcetype/algorithmicallyEnhanced",
+              "note": "AI-processed image. Not an authentic record of the original; restored or upscaled detail is a plausible completion, not recovered information.",
+              "policy": "https://github.com/CrispStrobe/CrispEmbed/blob/main/POLICY.md"
+            },
+            "known_pixel_errors": 0,
+            "empty_mask_passthrough": null,
+            "expected_rgb_exact": true,
+            "expected_rgb_kind": "pinned_ordinary_image_api"
+          },
+          {
+            "file": "empty.png",
+            "width": 256,
+            "height": 256,
+            "png_sha256": "f3fb0120eaa4ba58d67ab9066471618c4afa6cd206d367d5b5170fa74013cbf1",
+            "rgb_sha256": "4a6c03d8f0a98b05244c12da4447b9880bcdabc18a250bd8ced3b5bd6cdc6711",
+            "metadata": {
+              "generated": "true",
+              "software": "CrispEmbed",
+              "engine": "lama-inpaint;execution=ggml-graph;backend_request=cpu;precision_request=f32;model_sha256=24736f267c68e013f0000ccb69560c4353b6a6d7983fc3cc2537d9f2e03f304c",
+              "digitalSourceType": "http://cv.iptc.org/newscodes/digitalsourcetype/algorithmicallyEnhanced",
+              "note": "AI-processed image. Not an authentic record of the original; restored or upscaled detail is a plausible completion, not recovered information.",
+              "policy": "https://github.com/CrispStrobe/CrispEmbed/blob/main/POLICY.md"
+            },
+            "known_pixel_errors": 0,
+            "empty_mask_passthrough": true,
+            "expected_rgb_exact": true,
+            "expected_rgb_kind": "original_input_empty_mask"
+          }
+        ],
+        "original_model_quality_qualified": false,
+        "perceptual_quality_qualified": false,
+        "temporal_quality_qualified": false,
+        "same_context_repeat_exact": null,
+        "same_process_repeat_exact": null,
+        "fresh_context_and_batch_exact": null,
+        "timing_scope": "Whole CLI subprocess wall time, including model validation/loading and PNG I/O; diagnostic only, not an inference benchmark.",
+        "binary": {
+          "path": "evidence/build-current/crispembed",
+          "bytes": 13514008,
+          "sha256": "4908de1b07d4e91a1818063e852bf07de9cd0faf88c3a42b75a361b9d81ab65c"
+        },
+        "model": {
+          "path": "evidence/lama-assets/big-lama-f32.gguf",
+          "bytes": 204299072,
+          "sha256": "24736f267c68e013f0000ccb69560c4353b6a6d7983fc3cc2537d9f2e03f304c"
+        },
+        "vae": null,
+        "checkpoint_identities": {
+          "model_checkpoint_sha256": "f1b358ca24093b93a106183b98a3dea6e8ed09f3b43ea7251eb2c81e7b4575f6",
+          "model_checkpoint_pin_origin": "docs/lama-source-contract.json",
+          "source_contract_sha256": "ce6cd6c17dc73979d8bee461c51dcd5fe8d3fdc35e996e759fd917b7adb3a6fd",
+          "checkpoint_digest_scope": "complete official ZIP, not its inner checkpoint member"
+        },
+        "source": {
+          "native_commit": "2e9c8f6183e0877353f25c8ddbec9cbbc4245b29",
+          "ggml_commit": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+          "source_files": [
+            {
+              "path": "examples/cli/inpaint_cli.cpp",
+              "sha256": "2ff788f16793a25e846c9e3b18f94e3cfb629218bc801f609780ce76161db01e"
+            },
+            {
+              "path": "src/core/image_out.cpp",
+              "sha256": "18fdf144b17bb91e2071c1407a431c08d9ed4bc46b301fd4441cabfcd2c27030"
+            },
+            {
+              "path": "tests/test_inpaint_cli.py",
+              "sha256": "ac69bd57828145ed67ae29b5ddbfed9768db78a13ad4261bfe994866bc5f3ee0"
+            },
+            {
+              "path": "tools/dump_migan_photo_reference.py",
+              "sha256": "97d6978b0130aa4ee3b5e871fe3877c0340e80b914459dc7d197223d77382c4d"
+            },
+            {
+              "path": "tests/test_inpaint_engine_live.py",
+              "sha256": "dc4a3460341ab80fd48db2c6c767e8eb4a36d31d3df486f5a140408c4edf7750"
+            },
+            {
+              "path": "tools/inpaint_hash_evidence.py",
+              "sha256": "4fece7408ea18b781724410866af9bca64586368f643850473add3b76f3054fb"
+            }
+          ],
+          "binary_revision_attested": false,
+          "note": "Local source identity and binary digest are recorded independently; no build receipt attests their correspondence."
+        },
+        "requested_backend": "cpu",
+        "graph": true,
+        "precision": "f32",
+        "cpu_optimized_requested": true,
+        "sha256_accel_requested": true,
+        "sha256_hardware_required": true,
+        "moebius_cpu_depthwise_requested": false,
+        "moebius_local_reassoc_requested": false,
+        "moebius_local_pad_gemm_requested": false,
+        "optimizer_evidence_scope": "MI cpu_kernels and explicitly selected Moebius CPU depthwise node counts are checked in actual profiles; other optimizer flags remain requested settings, not profiler-confirmed selection.",
+        "threads": 8,
+        "controlled_environment": {
+          "CRISPEMBED_MIGAN": "0",
+          "CRISPEMBED_MIGAN512": "0",
+          "CRISPEMBED_LAMA": "1",
+          "CRISPEMBED_MOEBIUS": "0",
+          "CRISPEMBED_PIXELHACKER": "0",
+          "CRISPEMBED_INPAINT_GEMM_LAYOUT": "1",
+          "CRISPEMBED_INPAINT_REFLECT_GATHER": "1",
+          "CRISPEMBED_INPAINT_CPU_FFT": "1",
+          "CRISPEMBED_INPAINT_CPU_GLA": "0",
+          "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+          "CRISPEMBED_MIGAN_CPU_KERNELS": "0",
+          "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+          "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+          "CRISPEMBED_INPAINT_SHA256_ACCEL": "1",
+          "CRISPEMBED_INPAINT_GRAPH": "1",
+          "CRISPEMBED_INPAINT_FAST": "0",
+          "CRISPEMBED_INPAINT_BACKEND": "cpu",
+          "CRISPEMBED_INPAINT_PROFILE": "1",
+          "CRISPEMBED_IMAGE_FORMAT": "png",
+          "OMP_NUM_THREADS": "8",
+          "MKL_NUM_THREADS": "8",
+          "OPENBLAS_NUM_THREADS": "1"
+        },
+        "fixtures": {
+          "path": "evidence/migan-assets/photos256/fixtures.json",
+          "bytes": 2061,
+          "sha256": "a18d676a35102d49afa207d06eb556f747eb747ee956dec7a72ce907bb5c74de"
+        },
+        "case": {
+          "name": "formula_photo_bar",
+          "source": {
+            "name": "formula_photo_bar",
+            "path": "tests/regression/images/cc0/public_domain_formula_photo.jpg",
+            "sha256": "1d2fe4b325bd2c73093901d4ccf52a670544649884fa8e7913817d099f7fe1eb",
+            "source_name": "public_domain_formula_photo",
+            "mask": "bar"
+          },
+          "source_page": "https://commons.wikimedia.org/wiki/File:Pure-mathematics-formul%C3%A6-blackboard.jpg",
+          "license": "Public-Domain",
+          "source_geometry": [
+            1600,
+            1200
+          ],
+          "crop_xyxy": [
+            672,
+            472,
+            928,
+            728
+          ],
+          "rgb_sha256": "4a6c03d8f0a98b05244c12da4447b9880bcdabc18a250bd8ced3b5bd6cdc6711",
+          "mask_sha256": "ee65ed7233529c276acc068d946465dd777625350e60ad188488c4fbd7863bf4",
+          "fill_pixels": 6144,
+          "known_pixels": 59392
+        },
+        "rgb": {
+          "path": "evidence/migan-assets/photos256/formula_photo_bar/input.rgb8",
+          "bytes": 196608,
+          "sha256": "4a6c03d8f0a98b05244c12da4447b9880bcdabc18a250bd8ced3b5bd6cdc6711"
+        },
+        "mask": {
+          "path": "evidence/migan-assets/photos256/formula_photo_bar/fill-mask.u8",
+          "bytes": 65536,
+          "sha256": "ee65ed7233529c276acc068d946465dd777625350e60ad188488c4fbd7863bf4"
+        },
+        "expected_ordinary_api_rgb": {
+          "path": "evidence/lama-assets/native-photo-timings-8t/optimized-256-formula_photo_bar-t8.rgb8",
+          "bytes": 196608,
+          "sha256": "4047e7a852c324e4b5b7cdfd4c8010caa4fd4cd8848d6f53c97307b924048b70"
+        },
+        "sampler": null,
+        "input_png_policy": "Regenerated from validated raw fixture bytes; no resize, filtering, dilation or mask substitution",
+        "cli_inputs": [
+          {
+            "file": "input.png",
+            "sha256": "28f7dcf45a8c98cb3ba23278e601f1337f81ebaba800a2d7791cacf10f73fd61"
+          },
+          {
+            "file": "mask.png",
+            "sha256": "03b6ceb753337cc3cce1a76d9fcb329e18db8b4a805d43e6f7a68374c7d73409"
+          },
+          {
+            "file": "empty-mask.png",
+            "sha256": "39962cd5bc9f4f0446341d3e6e0c6c37336ddeb2e026a17a3d06bb6cb3266daf"
+          }
+        ],
+        "all_pinned_inputs_unchanged": true
+      },
+      "original_model_quality_qualified": false,
+      "performance_qualified": false
+    },
+    {
+      "engine": "migan512",
+      "passed": true,
+      "raw_cli_receipt": {
+        "path": "evidence/resume-2026-11-01/final-cli-live/migan512-sha-loader/report.json",
+        "bytes": 14194,
+        "sha256": "d6b97de5d6187d4f2d5a0bb51d820b311826fe65ae8b099542f0604b0840896e"
+      },
+      "detail": {
+        "schema": "crispembed-inpaint-engine-live-v1",
+        "engine": "migan512",
+        "complete": true,
+        "passed": true,
+        "commands": [
+          {
+            "label": "single",
+            "argv": [
+              "evidence/build-current/crispembed",
+              "--inpaint-engine",
+              "migan512",
+              "--inpaint-model",
+              "evidence/migan-assets/migan-512-places2-f32-experimental.gguf",
+              "--gpu-backend",
+              "cpu",
+              "--threads",
+              "8",
+              "--mask-dilate",
+              "0",
+              "--inpaint-model-sha256",
+              "4bec681ef10f8ca914c5331f007a0605773cd09106d4fd6d9fcc0992f0a61739",
+              "--inpaint-checkpoint-sha256",
+              "1d6087eee0aac8923ad2606be5d8caeb4824d3e4de331995e420c74e124a466a",
+              "--inpaint",
+              "evidence/resume-2026-11-01/final-cli-live/migan512-sha-loader/input.png",
+              "--mask",
+              "evidence/resume-2026-11-01/final-cli-live/migan512-sha-loader/mask.png"
+            ],
+            "started_unix": 1793543037.3914988,
+            "complete": true,
+            "stdout_file": "single.png",
+            "stderr_file": "single-stderr.txt",
+            "timeout_seconds": 1800,
+            "wall_seconds_diagnostic": 0.5674871120027092,
+            "returncode": 0,
+            "timed_out": false,
+            "stdout_sha256": "86c72a51489c901434a6097ec3c75d135f27869cfc80e05ce4d631134349770c",
+            "stdout_bytes": 181293,
+            "stderr_sha256": "da7a45d1d9b00f3fe0e86c0369b507f7b916863e88a5c9f9c1c30619727129a0",
+            "stderr_bytes": 1181,
+            "backend_evidence": [
+              {
+                "backend": "CPU",
+                "runs": 1,
+                "precision": "f32",
+                "line": "migan graph production: backend=CPU resolution=512 persistent=1 precision=f32 cpu_kernels=1 cpu_plan=1 cpu_pool=1 nodes=545 graph_bytes=337121792 weight_bytes=29486080 builds=1 allocations=1 runs=1 reuses=0 weight_uploads=177 weight_upload_bytes=29485528 input_uploads=1 input_upload_bytes=4194304 output_downloads=1 output_download_bytes=3145728 build_ms=1.302378 compute_ms=470.814993 total_compute_ms=470.814993 run_ms=473.916090",
+                "label": "migan-production",
+                "cpu_kernels": 1,
+                "persistent": 1,
+                "builds": 1,
+                "allocations": 1
+              }
+            ],
+            "model_hash_evidence": {
+              "requested": true,
+              "require_hardware": true,
+              "profiles": [
+                {
+                  "label": "migan",
+                  "backend": "sha-ni",
+                  "requested": true,
+                  "hardware_available": true,
+                  "bytes": 29500736,
+                  "complete_blocks": 460949,
+                  "accelerated_blocks": 460949,
+                  "sha256": "4bec681ef10f8ca914c5331f007a0605773cd09106d4fd6d9fcc0992f0a61739"
+                }
+              ],
+              "verified_model_labels": [
+                "migan"
+              ],
+              "all_model_identities_verified": true,
+              "hardware_acceleration_verified": true,
+              "scalar_fallback": false,
+              "empty_mask_bypass_without_hash_profiles": false,
+              "scope": "Actual verified model hashing and full input-block counts only; no inference or hardware-speed qualification."
+            },
+            "moebius_cpu_depthwise_runtime_verified": false
+          },
+          {
+            "label": "empty",
+            "argv": [
+              "evidence/build-current/crispembed",
+              "--inpaint-engine",
+              "migan512",
+              "--inpaint-model",
+              "evidence/migan-assets/migan-512-places2-f32-experimental.gguf",
+              "--gpu-backend",
+              "cpu",
+              "--threads",
+              "8",
+              "--mask-dilate",
+              "0",
+              "--inpaint-model-sha256",
+              "4bec681ef10f8ca914c5331f007a0605773cd09106d4fd6d9fcc0992f0a61739",
+              "--inpaint-checkpoint-sha256",
+              "1d6087eee0aac8923ad2606be5d8caeb4824d3e4de331995e420c74e124a466a",
+              "--inpaint",
+              "evidence/resume-2026-11-01/final-cli-live/migan512-sha-loader/input.png",
+              "--mask",
+              "evidence/resume-2026-11-01/final-cli-live/migan512-sha-loader/empty-mask.png"
+            ],
+            "started_unix": 1793543038.233343,
+            "complete": true,
+            "stdout_file": "empty.png",
+            "stderr_file": "empty-stderr.txt",
+            "timeout_seconds": 1800,
+            "wall_seconds_diagnostic": 0.11457859299844131,
+            "returncode": 0,
+            "timed_out": false,
+            "stdout_sha256": "ee4a2eea3ccd020ec366aa13ad407bce965c825267ea38c18c0332514a2b7fd6",
+            "stdout_bytes": 167378,
+            "stderr_sha256": "30efea00cf77be54b4797be6af18066aa8f0fe2251bbaabbdc51f050342b87de",
+            "stderr_bytes": 748,
+            "backend_evidence": [],
+            "model_hash_evidence": {
+              "requested": true,
+              "require_hardware": true,
+              "profiles": [
+                {
+                  "label": "migan",
+                  "backend": "sha-ni",
+                  "requested": true,
+                  "hardware_available": true,
+                  "bytes": 29500736,
+                  "complete_blocks": 460949,
+                  "accelerated_blocks": 460949,
+                  "sha256": "4bec681ef10f8ca914c5331f007a0605773cd09106d4fd6d9fcc0992f0a61739"
+                }
+              ],
+              "verified_model_labels": [
+                "migan"
+              ],
+              "all_model_identities_verified": true,
+              "hardware_acceleration_verified": true,
+              "scalar_fallback": false,
+              "empty_mask_bypass_without_hash_profiles": false,
+              "scope": "Actual verified model hashing and full input-block counts only; no inference or hardware-speed qualification."
+            },
+            "moebius_cpu_depthwise_runtime_verified": false
+          }
+        ],
+        "outputs": [
+          {
+            "file": "single.png",
+            "width": 512,
+            "height": 512,
+            "png_sha256": "86c72a51489c901434a6097ec3c75d135f27869cfc80e05ce4d631134349770c",
+            "rgb_sha256": "8772c190d0e21d452a5850498ed995ff21f979c88c852ab431ef65014b2f8060",
+            "metadata": {
+              "generated": "true",
+              "software": "CrispEmbed",
+              "engine": "migan512-inpaint;execution=ggml-graph;backend_request=cpu;precision_request=f32;model_sha256=4bec681ef10f8ca914c5331f007a0605773cd09106d4fd6d9fcc0992f0a61739;checkpoint_sha256=1d6087eee0aac8923ad2606be5d8caeb4824d3e4de331995e420c74e124a466a",
+              "digitalSourceType": "http://cv.iptc.org/newscodes/digitalsourcetype/algorithmicallyEnhanced",
+              "note": "AI-processed image. Not an authentic record of the original; restored or upscaled detail is a plausible completion, not recovered information.",
+              "policy": "https://github.com/CrispStrobe/CrispEmbed/blob/main/POLICY.md"
+            },
+            "known_pixel_errors": 0,
+            "empty_mask_passthrough": null,
+            "expected_rgb_exact": true,
+            "expected_rgb_kind": "pinned_ordinary_image_api"
+          },
+          {
+            "file": "empty.png",
+            "width": 512,
+            "height": 512,
+            "png_sha256": "ee4a2eea3ccd020ec366aa13ad407bce965c825267ea38c18c0332514a2b7fd6",
+            "rgb_sha256": "7de1d0ce1bc46b8f563ad715136510d572e26c55e7562eed711eb5e923b7fc86",
+            "metadata": {
+              "generated": "true",
+              "software": "CrispEmbed",
+              "engine": "migan512-inpaint;execution=ggml-graph;backend_request=cpu;precision_request=f32;model_sha256=4bec681ef10f8ca914c5331f007a0605773cd09106d4fd6d9fcc0992f0a61739;checkpoint_sha256=1d6087eee0aac8923ad2606be5d8caeb4824d3e4de331995e420c74e124a466a",
+              "digitalSourceType": "http://cv.iptc.org/newscodes/digitalsourcetype/algorithmicallyEnhanced",
+              "note": "AI-processed image. Not an authentic record of the original; restored or upscaled detail is a plausible completion, not recovered information.",
+              "policy": "https://github.com/CrispStrobe/CrispEmbed/blob/main/POLICY.md"
+            },
+            "known_pixel_errors": 0,
+            "empty_mask_passthrough": true,
+            "expected_rgb_exact": true,
+            "expected_rgb_kind": "original_input_empty_mask"
+          }
+        ],
+        "original_model_quality_qualified": false,
+        "perceptual_quality_qualified": false,
+        "temporal_quality_qualified": false,
+        "same_context_repeat_exact": null,
+        "same_process_repeat_exact": null,
+        "fresh_context_and_batch_exact": null,
+        "timing_scope": "Whole CLI subprocess wall time, including model validation/loading and PNG I/O; diagnostic only, not an inference benchmark.",
+        "binary": {
+          "path": "evidence/build-current/crispembed",
+          "bytes": 13514008,
+          "sha256": "4908de1b07d4e91a1818063e852bf07de9cd0faf88c3a42b75a361b9d81ab65c"
+        },
+        "model": {
+          "path": "evidence/migan-assets/migan-512-places2-f32-experimental.gguf",
+          "bytes": 29500736,
+          "sha256": "4bec681ef10f8ca914c5331f007a0605773cd09106d4fd6d9fcc0992f0a61739"
+        },
+        "vae": null,
+        "checkpoint_identities": {
+          "model_checkpoint_sha256": "1d6087eee0aac8923ad2606be5d8caeb4824d3e4de331995e420c74e124a466a",
+          "model_checkpoint_pin_origin": "caller-supplied independently reviewed official checkpoint"
+        },
+        "source": {
+          "native_commit": "2e9c8f6183e0877353f25c8ddbec9cbbc4245b29",
+          "ggml_commit": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+          "source_files": [
+            {
+              "path": "examples/cli/inpaint_cli.cpp",
+              "sha256": "2ff788f16793a25e846c9e3b18f94e3cfb629218bc801f609780ce76161db01e"
+            },
+            {
+              "path": "src/core/image_out.cpp",
+              "sha256": "18fdf144b17bb91e2071c1407a431c08d9ed4bc46b301fd4441cabfcd2c27030"
+            },
+            {
+              "path": "tests/test_inpaint_cli.py",
+              "sha256": "ac69bd57828145ed67ae29b5ddbfed9768db78a13ad4261bfe994866bc5f3ee0"
+            },
+            {
+              "path": "tools/dump_migan_photo_reference.py",
+              "sha256": "97d6978b0130aa4ee3b5e871fe3877c0340e80b914459dc7d197223d77382c4d"
+            },
+            {
+              "path": "tests/test_inpaint_engine_live.py",
+              "sha256": "dc4a3460341ab80fd48db2c6c767e8eb4a36d31d3df486f5a140408c4edf7750"
+            },
+            {
+              "path": "tools/inpaint_hash_evidence.py",
+              "sha256": "4fece7408ea18b781724410866af9bca64586368f643850473add3b76f3054fb"
+            }
+          ],
+          "binary_revision_attested": false,
+          "note": "Local source identity and binary digest are recorded independently; no build receipt attests their correspondence."
+        },
+        "requested_backend": "cpu",
+        "graph": true,
+        "precision": "f32",
+        "cpu_optimized_requested": true,
+        "sha256_accel_requested": true,
+        "sha256_hardware_required": true,
+        "moebius_cpu_depthwise_requested": false,
+        "moebius_local_reassoc_requested": false,
+        "moebius_local_pad_gemm_requested": false,
+        "optimizer_evidence_scope": "MI cpu_kernels and explicitly selected Moebius CPU depthwise node counts are checked in actual profiles; other optimizer flags remain requested settings, not profiler-confirmed selection.",
+        "threads": 8,
+        "controlled_environment": {
+          "CRISPEMBED_MIGAN": "1",
+          "CRISPEMBED_MIGAN512": "1",
+          "CRISPEMBED_LAMA": "0",
+          "CRISPEMBED_MOEBIUS": "0",
+          "CRISPEMBED_PIXELHACKER": "0",
+          "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+          "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+          "CRISPEMBED_INPAINT_CPU_FFT": "0",
+          "CRISPEMBED_INPAINT_CPU_GLA": "0",
+          "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+          "CRISPEMBED_MIGAN_CPU_KERNELS": "1",
+          "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+          "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+          "CRISPEMBED_INPAINT_SHA256_ACCEL": "1",
+          "CRISPEMBED_INPAINT_GRAPH": "1",
+          "CRISPEMBED_INPAINT_FAST": "0",
+          "CRISPEMBED_INPAINT_BACKEND": "cpu",
+          "CRISPEMBED_INPAINT_PROFILE": "1",
+          "CRISPEMBED_IMAGE_FORMAT": "png",
+          "OMP_NUM_THREADS": "8",
+          "MKL_NUM_THREADS": "8",
+          "OPENBLAS_NUM_THREADS": "1"
+        },
+        "fixtures": {
+          "path": "evidence/migan-assets/photos512/fixtures.json",
+          "bytes": 2066,
+          "sha256": "84213e7fec278c0f915ea69dcb97151d6e43ef46ddd96381dec2ee13514264a5"
+        },
+        "case": {
+          "name": "formula_photo_bar",
+          "source": {
+            "name": "formula_photo_bar",
+            "path": "tests/regression/images/cc0/public_domain_formula_photo.jpg",
+            "sha256": "1d2fe4b325bd2c73093901d4ccf52a670544649884fa8e7913817d099f7fe1eb",
+            "source_name": "public_domain_formula_photo",
+            "mask": "bar"
+          },
+          "source_page": "https://commons.wikimedia.org/wiki/File:Pure-mathematics-formul%C3%A6-blackboard.jpg",
+          "license": "Public-Domain",
+          "source_geometry": [
+            1600,
+            1200
+          ],
+          "crop_xyxy": [
+            544,
+            344,
+            1056,
+            856
+          ],
+          "rgb_sha256": "7de1d0ce1bc46b8f563ad715136510d572e26c55e7562eed711eb5e923b7fc86",
+          "mask_sha256": "642078416b455bf415d69e291d40b0e55894a10535f16b847552cb9c9a190e91",
+          "fill_pixels": 24576,
+          "known_pixels": 237568
+        },
+        "rgb": {
+          "path": "evidence/migan-assets/photos512/formula_photo_bar/input.rgb8",
+          "bytes": 786432,
+          "sha256": "7de1d0ce1bc46b8f563ad715136510d572e26c55e7562eed711eb5e923b7fc86"
+        },
+        "mask": {
+          "path": "evidence/migan-assets/photos512/formula_photo_bar/fill-mask.u8",
+          "bytes": 262144,
+          "sha256": "642078416b455bf415d69e291d40b0e55894a10535f16b847552cb9c9a190e91"
+        },
+        "expected_ordinary_api_rgb": {
+          "path": "evidence/migan-live-initial/ordinary-kernel-benchmarks/cpu_kernels512-t4.rgb8",
+          "bytes": 786432,
+          "sha256": "8772c190d0e21d452a5850498ed995ff21f979c88c852ab431ef65014b2f8060"
+        },
+        "sampler": null,
+        "input_png_policy": "Regenerated from validated raw fixture bytes; no resize, filtering, dilation or mask substitution",
+        "cli_inputs": [
+          {
+            "file": "input.png",
+            "sha256": "5612395dfe7b9d968accf772fb330ae374f93d9d5e27833480079427b50dd724"
+          },
+          {
+            "file": "mask.png",
+            "sha256": "96baaf962c653991b99cdf9dc611189bdc93df20734b8c2314f7553f3c2a486b"
+          },
+          {
+            "file": "empty-mask.png",
+            "sha256": "ef2a4c8949cdab1ef24e678bdb88cc276b1fd75e62066e47011c2ce53996efe6"
+          }
+        ],
+        "all_pinned_inputs_unchanged": true
+      },
+      "original_model_quality_qualified": false,
+      "performance_qualified": false
+    }
+  ],
+  "exporter_sha256": "83d5b8956e7c0a9a031c7dc1185ee688775195533cfa04c11398c2382f424a62",
+  "artifact_policy": {
+    "weights_redistributed": false,
+    "compiled_binaries_redistributed": false,
+    "public_paths_sanitized": true,
+    "raw_receipts_preserved_exactly": true
+  }
+}

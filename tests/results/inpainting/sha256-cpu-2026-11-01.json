@@ -1,0 +1,803 @@
+{
+  "schema": "crispembed-inpaint-sha256-cpu-public-v1",
+  "recorded_date_utc": "2026-11-01",
+  "status": "Exact hashing controls and bounded CPU hashing probes passed",
+  "scope": {
+    "operation": "Inpainting model-file SHA-256 verification",
+    "default_enabled": false,
+    "runtime_gate": "CRISPEMBED_INPAINT_SHA256_ACCEL",
+    "gate_on_value": "1",
+    "model_inference_executed": false,
+    "weights_or_tensor_format_changed": false,
+    "acceptance_budget_changed": false,
+    "digest_validation_bypassed": false,
+    "full_model_quality_qualified_by_this_record": false,
+    "inference_latency_qualified_by_this_record": false,
+    "actual_api_cli_loader_execution_included": false,
+    "memory_hashing_component_timing_qualified": true,
+    "whole_file_load_timing_qualified_as_repeated_benchmark": false
+  },
+  "hardware": {
+    "source_record_sha256": "565fc8e00e4e67f3596dacf903ab5ca7ead9b552cb5937bedb68f0ed891012e4",
+    "platform": "Linux-6.18.57-x86_64-with-glibc2.39",
+    "cpu_model": "AMD EPYC 9V74 80-Core Processor",
+    "cpu_features": {
+      "avx2": true,
+      "fma": true,
+      "avx512f": true,
+      "avx512bw": true,
+      "avx512vl": true,
+      "avx512_bf16": true,
+      "avx512_vnni": true
+    },
+    "affinity_cpu_count": 9,
+    "cpu_quota_us": 800000,
+    "cpu_period_us": 100000,
+    "cpu_quota_equivalent": 8.0,
+    "memory_limit_bytes": 8589934592,
+    "cuda_toolchain_detected": false,
+    "cuda_driver_tool_detected": false,
+    "nvidia_device_detected": false,
+    "dri_device_detected": false,
+    "metal_available_on_this_linux_host": false,
+    "sha_ni_executed": true,
+    "hash_worker_threads": 1,
+    "sha_runtime_requirements": [
+      "x86-64",
+      "SHA",
+      "SSSE3",
+      "SSE4.1"
+    ],
+    "sha_ni_compilers_implemented": [
+      "GNU-compatible GCC",
+      "Clang (not clang-cl/MSVC mode)"
+    ],
+    "other_builds_use_scalar_fallback": true
+  },
+  "provenance": {
+    "base_native_commit": "2e9c8f6183e0877353f25c8ddbec9cbbc4245b29",
+    "source_tree_clean_at_measurement": false,
+    "source_to_binary_attestation": "Observed source/target flags and caller-pinned executable; no clean-tree attestation inferred.",
+    "source_observations": [
+      {
+        "path": "src/core/sha256_accelerated.h",
+        "bytes": 12420,
+        "sha256": "46f0050cae097fd6d0d1a9bc0021a57ae55465088ffa1d330e7f2adab37baa2e"
+      },
+      {
+        "path": "tests/test_inpaint_sha256_accel.cpp",
+        "bytes": 16350,
+        "sha256": "8a575f7de14a37f276cbdf67cc745c6d9a212b40eb14bc5f51bb732cb8bc6150"
+      },
+      {
+        "path": "src/core/sha256.h",
+        "bytes": 5024,
+        "sha256": "409ab494061b042d4a84698b7bf2caf6dd68f6639cbeb532cb47a2f2337d9a6f"
+      },
+      {
+        "path": "src/core/temp_file.h",
+        "bytes": 2946,
+        "sha256": "4a59ed9ada03483b056d3f8f098496fab55f56ccf76b6d2433c2e081ffbb6b48"
+      },
+      {
+        "path": "src/core/clean_exit.h",
+        "bytes": 1716,
+        "sha256": "2528210865cfc6aa8f2a389526aebae46e836f6bca88c00e4eabaedf6c83fdd6"
+      },
+      {
+        "path": "evidence/sha256/run_validation.py",
+        "bytes": 15804,
+        "sha256": "561151ff30d414048486607626acc21a407d20ebc467727269e54ad33f70ae15"
+      }
+    ],
+    "actual_native_binary": {
+      "name": "test-inpaint-sha256-accel",
+      "bytes": 95920,
+      "sha256": "97256a263449a54b74e7ef828af32685c289caa5a471c4d3d992cbcae9a1ce14"
+    },
+    "fallback_binary_sha256": "bef3862c8b4765165eb75ced52c03e09b29e0ed6401eb7a42793dbff934d3542",
+    "compiler": {
+      "path": "/usr/bin/c++",
+      "version": "c++ (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0",
+      "flags": [
+        "-O3",
+        "-DNDEBUG",
+        "-std=gnu++17",
+        "-fPIC",
+        "-march=native",
+        "-Wall",
+        "-Wextra",
+        "-Wpedantic"
+      ],
+      "native_preprocessor_features": {
+        "__x86_64__": true,
+        "__SHA__": true,
+        "__SSSE3__": true,
+        "__SSE4_1__": true,
+        "__AVX2__": true,
+        "__AVX512F__": true
+      },
+      "host_build_match": "Same compiler, C++17, Release and native feature flags as crispembed-lama loader target in build-current/build.ninja; extra warning flags only."
+    },
+    "actual_target_compile_flags": "-O3 -DNDEBUG -std=gnu++17 -fPIE -march=native",
+    "matched_architecture_note": "Existing scalar and SHA-NI paths share GCC 13.3 Release/C++17/native CPU flags in one executable; the loader libraries use the same CPU options (PIC versus executable PIE).",
+    "live_report": {
+      "path": "evidence/sha256/live-v1/report.json",
+      "bytes": 8136,
+      "sha256": "fa0c0bee64c9ce6784aadc2c3cb11af73f8b31f328a40d4d3d2d1e6b08497c68"
+    },
+    "source_application": {
+      "path": "evidence/sha256/source-application.json",
+      "bytes": 1907,
+      "sha256": "58be96fe3f401f29fdfd2042cbe36ecbe79d2d84a741136f9128526a7536918b"
+    },
+    "counter_report_amendment": {
+      "path": "evidence/sha256/source-accounting-amendment.json",
+      "bytes": 741,
+      "sha256": "f8d4cbb92a0268f44defdc646e39fbb0b3effaab3af7f2c6d5ecb9742a8afdd2"
+    },
+    "coherent_build": {
+      "path": "evidence/sha256/shared/build/sha-integrated-build.json",
+      "bytes": 1105,
+      "sha256": "ce4b97d244402417e4eaf2646ac3fb1e7a71d3771b8341b69e56c07714f1f3ea"
+    },
+    "coherent_native_suite": {
+      "commands_passed": 20,
+      "commands_total": 20,
+      "receipt": {
+        "path": "evidence/sha256/shared/native-units/report.json",
+        "bytes": 33093,
+        "sha256": "7425722c8dfbe0365faab3cf2c3c4b0ac6de86b9ec5a4e3dcf76e6490f7d0386"
+      }
+    },
+    "exporter_sha256": "5db99de9e9725b02041ffc32c84a455f7287000344fed307d7f6f0947118d7ba"
+  },
+  "correctness": {
+    "integrated_controls": [
+      {
+        "label": "sha256-normal",
+        "result": {
+          "checks": 6985,
+          "failures": 0,
+          "sha_ni_compiled": true,
+          "hardware_available": true,
+          "model_inference": false
+        },
+        "command": {
+          "schema": "crispembed-final-native-command-v1",
+          "label": "sha256-normal",
+          "argv": [
+            "task-evidence/build-current/test-inpaint-sha256-accel",
+            "--require-accel"
+          ],
+          "cwd": "task-workspace/CrispEmbed-issue71",
+          "timeout_seconds": 180,
+          "started_unix": 1793540261.3098772,
+          "complete": true,
+          "passed": true,
+          "gates": {
+            "CRISPEMBED_INPAINT_GRAPH": "0",
+            "CRISPEMBED_INPAINT_FAST": "0",
+            "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+            "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+            "CRISPEMBED_INPAINT_CPU_FFT": "0",
+            "CRISPEMBED_INPAINT_CPU_GLA": "0",
+            "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+            "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+            "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+            "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+            "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+            "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+            "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+          },
+          "returncode": 0,
+          "elapsed_seconds": 0.016128359999129316,
+          "user_cpu_seconds": 0.014634000000000924,
+          "system_cpu_seconds": 0.0,
+          "children_peak_rss_kib": 105588,
+          "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+          "log_sha256": "2172e83803abfa9ca3611c7d7fc6207105a3e618bfd8e0f737661d71142794d6",
+          "log_bytes": 114
+        },
+        "log": {
+          "path": "evidence/sha256/shared/native-units/sha256-normal.log",
+          "bytes": 114,
+          "sha256": "2172e83803abfa9ca3611c7d7fc6207105a3e618bfd8e0f737661d71142794d6"
+        }
+      },
+      {
+        "label": "sha256-forced-fallback",
+        "result": {
+          "checks": 6988,
+          "failures": 0,
+          "sha_ni_compiled": false,
+          "hardware_available": false,
+          "model_inference": false
+        },
+        "command": {
+          "schema": "crispembed-final-native-command-v1",
+          "label": "sha256-forced-fallback",
+          "argv": [
+            "task-evidence/build-current/test-inpaint-sha256-fallback",
+            "--require-fallback"
+          ],
+          "cwd": "task-workspace/CrispEmbed-issue71",
+          "timeout_seconds": 180,
+          "started_unix": 1793540261.3268418,
+          "complete": true,
+          "passed": true,
+          "gates": {
+            "CRISPEMBED_INPAINT_GRAPH": "0",
+            "CRISPEMBED_INPAINT_FAST": "0",
+            "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+            "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+            "CRISPEMBED_INPAINT_CPU_FFT": "0",
+            "CRISPEMBED_INPAINT_CPU_GLA": "0",
+            "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+            "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+            "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+            "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+            "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+            "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+            "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+          },
+          "returncode": 0,
+          "elapsed_seconds": 0.031983265002054395,
+          "user_cpu_seconds": 0.01604499999999831,
+          "system_cpu_seconds": 0.0,
+          "children_peak_rss_kib": 105588,
+          "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+          "log_sha256": "121a9271efec1db4955f0b8c960994838b94a001fc66203db9354dba097b240a",
+          "log_bytes": 116
+        },
+        "log": {
+          "path": "evidence/sha256/shared/native-units/sha256-forced-fallback.log",
+          "bytes": 116,
+          "sha256": "121a9271efec1db4955f0b8c960994838b94a001fc66203db9354dba097b240a"
+        }
+      }
+    ],
+    "known_vectors": [
+      "empty",
+      "abc",
+      "56-byte NIST message",
+      "one million ASCII a bytes"
+    ],
+    "unaligned_offsets": [
+      0,
+      1,
+      3
+    ],
+    "binary_input_lengths": [
+      0,
+      1,
+      7,
+      31,
+      55,
+      56,
+      57,
+      63,
+      64,
+      65,
+      119,
+      120,
+      127,
+      128,
+      129,
+      255,
+      1024,
+      8191
+    ],
+    "stream_chunk_bytes": [
+      1,
+      3,
+      7,
+      55,
+      63,
+      64,
+      65,
+      127,
+      4093
+    ],
+    "additional_controls": [
+      "all required CPUID feature combinations",
+      "uncompiled SHA-NI fallback",
+      "requested-on fallback with zero accelerated blocks",
+      "null/empty input",
+      "repeated finish and rejected post-finish update",
+      "input preservation",
+      "empty/missing/directory file cases",
+      "file byte/block accounting"
+    ],
+    "earlier_standalone_controls": {
+      "schema": "crispembed-inpaint-sha256-correctness-v1",
+      "scope": "Only standalone exact hashing controls; no model inference, throughput benchmark or large-model hashing.",
+      "status": "passed",
+      "reports": {
+        "native-controls": {
+          "checks": 6985,
+          "failures": 0,
+          "sha_ni_compiled": true,
+          "hardware_available": true,
+          "model_inference": false
+        },
+        "fallback-controls": {
+          "checks": 6988,
+          "failures": 0,
+          "sha_ni_compiled": false,
+          "hardware_available": false,
+          "model_inference": false
+        }
+      },
+      "compiler": {
+        "path": "/usr/bin/c++",
+        "version": "c++ (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0",
+        "flags": [
+          "-O3",
+          "-DNDEBUG",
+          "-std=gnu++17",
+          "-fPIC",
+          "-march=native",
+          "-Wall",
+          "-Wextra",
+          "-Wpedantic"
+        ],
+        "native_preprocessor_features": {
+          "__x86_64__": true,
+          "__SHA__": true,
+          "__SSSE3__": true,
+          "__SSE4_1__": true,
+          "__AVX2__": true,
+          "__AVX512F__": true
+        },
+        "host_build_match": "Same compiler, C++17, Release and native feature flags as crispembed-lama loader target in build-current/build.ninja; extra warning flags only."
+      },
+      "overlap": {
+        "authorized_by_parent": true,
+        "other_workload": "Moebius observed-only correctness panel",
+        "timings_qualified": false,
+        "note": "Parent explicitly permitted these two bounded direct builds and unit checks during a correctness-only model replay; no throughput or model-file hashing was run."
+      },
+      "commands": [
+        {
+          "name": "compile-native",
+          "receipt": {
+            "path": "native-optimization/resume-2026-11-01/sha256-accel-v1/correctness/compile-native.json",
+            "bytes": 972,
+            "sha256": "2453d203e345117d79022060d503de3f5d0882de1f5d4c2f1cf70317b484e06a"
+          },
+          "log": {
+            "path": "native-optimization/resume-2026-11-01/sha256-accel-v1/correctness/compile-native.log",
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "started_utc": "2026-11-01T13:23:45.093450+00:00",
+          "elapsed_seconds": 3.1468141850018583,
+          "peak_rss_kib": 227756
+        },
+        {
+          "name": "native-controls",
+          "receipt": {
+            "path": "native-optimization/resume-2026-11-01/sha256-accel-v1/correctness/native-controls.json",
+            "bytes": 627,
+            "sha256": "1113a5c0166ca76878703e73e39d0ffbe89069109e51150a6e08b52245347f9f"
+          },
+          "log": {
+            "path": "native-optimization/resume-2026-11-01/sha256-accel-v1/correctness/native-controls.log",
+            "bytes": 114,
+            "sha256": "2172e83803abfa9ca3611c7d7fc6207105a3e618bfd8e0f737661d71142794d6"
+          },
+          "started_utc": "2026-11-01T13:23:57.053143+00:00",
+          "elapsed_seconds": 0.045853267998609226,
+          "peak_rss_kib": 11136
+        },
+        {
+          "name": "compile-fallback",
+          "receipt": {
+            "path": "native-optimization/resume-2026-11-01/sha256-accel-v1/correctness/compile-fallback.json",
+            "bytes": 1026,
+            "sha256": "634b5833f62e87969fda1eb77f121f349d1205c88f1f3266f9ac50108cc0f427"
+          },
+          "log": {
+            "path": "native-optimization/resume-2026-11-01/sha256-accel-v1/correctness/compile-fallback.log",
+            "bytes": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "started_utc": "2026-11-01T13:24:07.561138+00:00",
+          "elapsed_seconds": 2.185974488998909,
+          "peak_rss_kib": 148944
+        },
+        {
+          "name": "fallback-controls",
+          "receipt": {
+            "path": "native-optimization/resume-2026-11-01/sha256-accel-v1/correctness/fallback-controls.json",
+            "bytes": 632,
+            "sha256": "94b90c3ce83c6d98a6dea4f175b13d69d1840dc7deca3fe01f2cc40d74006563"
+          },
+          "log": {
+            "path": "native-optimization/resume-2026-11-01/sha256-accel-v1/correctness/fallback-controls.log",
+            "bytes": 116,
+            "sha256": "121a9271efec1db4955f0b8c960994838b94a001fc66203db9354dba097b240a"
+          },
+          "started_utc": "2026-11-01T13:24:17.192501+00:00",
+          "elapsed_seconds": 0.06901324900172767,
+          "peak_rss_kib": 11136
+        }
+      ],
+      "source_pins": [
+        {
+          "path": "native-optimization/resume-2026-11-01/sha256-accel-v1/src/core/sha256_accelerated.h",
+          "bytes": 12420,
+          "sha256": "46f0050cae097fd6d0d1a9bc0021a57ae55465088ffa1d330e7f2adab37baa2e"
+        },
+        {
+          "path": "native-optimization/resume-2026-11-01/sha256-accel-v1/tests/test_inpaint_sha256_accel.cpp",
+          "bytes": 14942,
+          "sha256": "107c9655134bd9929bb5ac2c2d082bbf1e1e6c2f812ba5d950d47c5608deffa2"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/core/sha256.h",
+          "bytes": 5024,
+          "sha256": "409ab494061b042d4a84698b7bf2caf6dd68f6639cbeb532cb47a2f2337d9a6f"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/core/temp_file.h",
+          "bytes": 2946,
+          "sha256": "4a59ed9ada03483b056d3f8f098496fab55f56ccf76b6d2433c2e081ffbb6b48"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/core/clean_exit.h",
+          "bytes": 1716,
+          "sha256": "2528210865cfc6aa8f2a389526aebae46e836f6bca88c00e4eabaedf6c83fdd6"
+        },
+        {
+          "path": "native-optimization/run_job.py",
+          "bytes": 2400,
+          "sha256": "12760b41fd1383f37adfddef29f86fc8953acc532ded8e7d0b27f9bbc2245b09"
+        }
+      ],
+      "binary_pins": [
+        {
+          "path": "native-optimization/resume-2026-11-01/sha256-accel-v1/correctness/test-inpaint-sha256-accel",
+          "bytes": 95840,
+          "sha256": "cfdd7475634c2420b3608b2947df5789b383c473b798cafb2260403411bed626"
+        },
+        {
+          "path": "native-optimization/resume-2026-11-01/sha256-accel-v1/correctness/test-inpaint-sha256-fallback",
+          "bytes": 82992,
+          "sha256": "0633b7a7e82560325a87854492c0f483340fce448eda560315f0b58dbee49c27"
+        }
+      ],
+      "runtime_loader_files_unchanged": true,
+      "pending": [
+        "Integration build with profiled loaders",
+        "Bounded alternating memory throughput",
+        "Pinned Pixel and VAE whole-file SHA identity",
+        "Actual loader/CLI SHA-NI execution evidence"
+      ]
+    },
+    "interpretation": "Assertion counts are checks across this fixed finite matrix, not independent model cases."
+  },
+  "memory_benchmark": {
+    "native": {
+      "bytes": 33554432,
+      "iterations_per_arm": 3,
+      "sha256": "e0b3f3bef181910894d33c89910ace056dfd2c69df0a5ad7066e3906f317c034",
+      "hardware_available": true,
+      "counter_scope": "requested-acceleration-arm/all-samples",
+      "input_bytes": 100663296,
+      "complete_blocks": 1572864,
+      "block_accounting_passed": true,
+      "accelerated_blocks": 1572864,
+      "scalar_ms": [
+        121.374591,
+        115.658736,
+        119.28425
+      ],
+      "requested_acceleration_ms": [
+        25.542431,
+        24.140143,
+        25.468902
+      ],
+      "passed": true,
+      "model_inference": false
+    },
+    "scalar_median_ms": 119.28425,
+    "sha_ni_median_ms": 25.468902,
+    "median_throughput_ratio": 4.683525422493675,
+    "scalar_median_mib_per_second": 268.2667661489258,
+    "sha_ni_median_mib_per_second": 1256.4342192686595,
+    "order": "scalar/accelerated, accelerated/scalar, scalar/accelerated",
+    "independent_pattern_digest_verified": true,
+    "input_pointer_offset_bytes": 3,
+    "scope": "Three alternating samples per arm over the same resident immutable 32 MiB buffer; no file reads or model initialization in the timed section.",
+    "command": {
+      "path": "evidence/sha256/live-v1/memory.json",
+      "bytes": 1830,
+      "sha256": "10e3db40cb41c485b5b70396d1af92b9515893ee5d18488e917a0cbe94b603f4"
+    },
+    "resources": {
+      "elapsed_seconds": 0.6692138879989216,
+      "peak_rss_kib_cumulative_children": 34776,
+      "rss_scope": "Cumulative child-process high-water mark; not an individual file's RSS or model inference memory.",
+      "cgroup_memory_scope": "Shared cgroup including charged file cache and unrelated processes; not this helper's RSS.",
+      "before": {
+        "recorded_utc": "2026-11-01T13:39:57.017937+00:00",
+        "affinity_cpu_count": 9,
+        "load_average_scope": "Shared host, not this controller alone",
+        "load_average_1_5_15_minutes": [
+          0.39,
+          1.18,
+          3.65
+        ],
+        "cpu_quota_us": 800000,
+        "cpu_period_us": 100000,
+        "memory_limit_bytes": 8589934592,
+        "cgroup_memory_current_bytes": 8588423168,
+        "cgroup_cpu_stat": {
+          "usage_usec": 50829518131,
+          "user_usec": 47935561459,
+          "system_usec": 2893956672,
+          "nice_usec": 0,
+          "nr_periods": 158995,
+          "nr_throttled": 45187,
+          "throttled_usec": 1934247656,
+          "nr_bursts": 0,
+          "burst_usec": 0
+        }
+      },
+      "after": {
+        "recorded_utc": "2026-11-01T13:39:57.688077+00:00",
+        "affinity_cpu_count": 9,
+        "load_average_scope": "Shared host, not this controller alone",
+        "load_average_1_5_15_minutes": [
+          0.39,
+          1.18,
+          3.65
+        ],
+        "cpu_quota_us": 800000,
+        "cpu_period_us": 100000,
+        "memory_limit_bytes": 8589934592,
+        "cgroup_memory_current_bytes": 8555876352,
+        "cgroup_cpu_stat": {
+          "usage_usec": 50830204925,
+          "user_usec": 47936193651,
+          "system_usec": 2894011273,
+          "nice_usec": 0,
+          "nr_periods": 159002,
+          "nr_throttled": 45187,
+          "throttled_usec": 1934247656,
+          "nr_bursts": 0,
+          "burst_usec": 0
+        }
+      },
+      "new_throttled_periods": 0
+    }
+  },
+  "whole_file_identity": [
+    {
+      "label": "pixelhacker",
+      "native": {
+        "bytes": 3449075872,
+        "expected_sha256": "5b486aa5d80647dbf298b0296d2cea7cb410dfb978b8bdfea806617f73ea588d",
+        "scalar_sha256": "5b486aa5d80647dbf298b0296d2cea7cb410dfb978b8bdfea806617f73ea588d",
+        "accelerated_sha256": "5b486aa5d80647dbf298b0296d2cea7cb410dfb978b8bdfea806617f73ea588d",
+        "scalar_ms": 13278.181642,
+        "requested_acceleration_ms": 2930.345938,
+        "hardware_available": true,
+        "sha_ni_selected": true,
+        "input_bytes": 3449075872,
+        "complete_blocks": 53891810,
+        "accelerated_blocks": 53891810,
+        "block_accounting_passed": true,
+        "file_metadata_unchanged": true,
+        "passed": true,
+        "model_inference": false
+      },
+      "untimed_file_metadata_unchanged": true,
+      "repeated_load_benchmark": false,
+      "command": {
+        "path": "evidence/sha256/live-v1/pixelhacker.json",
+        "bytes": 1989,
+        "sha256": "8bdf932e35f44663debf83789b790bfc1399d359c4db6964642202c7ab870cd0"
+      },
+      "resources": {
+        "elapsed_seconds": 16.274822171999404,
+        "peak_rss_kib_cumulative_children": 34776,
+        "rss_scope": "Cumulative child-process high-water mark; not an individual file's RSS or model inference memory.",
+        "cgroup_memory_scope": "Shared cgroup including charged file cache and unrelated processes; not this helper's RSS.",
+        "before": {
+          "recorded_utc": "2026-11-01T13:39:57.714412+00:00",
+          "affinity_cpu_count": 9,
+          "load_average_scope": "Shared host, not this controller alone",
+          "load_average_1_5_15_minutes": [
+            0.39,
+            1.18,
+            3.65
+          ],
+          "cpu_quota_us": 800000,
+          "cpu_period_us": 100000,
+          "memory_limit_bytes": 8589934592,
+          "cgroup_memory_current_bytes": 8556412928,
+          "cgroup_cpu_stat": {
+            "usage_usec": 50830232300,
+            "user_usec": 47936217157,
+            "system_usec": 2894015143,
+            "nice_usec": 0,
+            "nr_periods": 159002,
+            "nr_throttled": 45187,
+            "throttled_usec": 1934247656,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        },
+        "after": {
+          "recorded_utc": "2026-11-01T13:40:13.990014+00:00",
+          "affinity_cpu_count": 9,
+          "load_average_scope": "Shared host, not this controller alone",
+          "load_average_1_5_15_minutes": [
+            0.52,
+            1.17,
+            3.6
+          ],
+          "cpu_quota_us": 800000,
+          "cpu_period_us": 100000,
+          "memory_limit_bytes": 8589934592,
+          "cgroup_memory_current_bytes": 8300998656,
+          "cgroup_cpu_stat": {
+            "usage_usec": 50849653032,
+            "user_usec": 47952801417,
+            "system_usec": 2896851614,
+            "nice_usec": 0,
+            "nr_periods": 159165,
+            "nr_throttled": 45187,
+            "throttled_usec": 1934247656,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        },
+        "new_throttled_periods": 0
+      }
+    },
+    {
+      "label": "sdxl_vae",
+      "native": {
+        "bytes": 334636224,
+        "expected_sha256": "e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2",
+        "scalar_sha256": "e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2",
+        "accelerated_sha256": "e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2",
+        "scalar_ms": 1202.978839,
+        "requested_acceleration_ms": 279.883713,
+        "hardware_available": true,
+        "sha_ni_selected": true,
+        "input_bytes": 334636224,
+        "complete_blocks": 5228691,
+        "accelerated_blocks": 5228691,
+        "block_accounting_passed": true,
+        "file_metadata_unchanged": true,
+        "passed": true,
+        "model_inference": false
+      },
+      "untimed_file_metadata_unchanged": true,
+      "repeated_load_benchmark": false,
+      "command": {
+        "path": "evidence/sha256/live-v1/sdxl_vae.json",
+        "bytes": 1980,
+        "sha256": "087fed7611d4740f3a690a21e30bb240f1c414b258f8f7645e72f8797fd7ac02"
+      },
+      "resources": {
+        "elapsed_seconds": 1.5196137460006867,
+        "peak_rss_kib_cumulative_children": 34776,
+        "rss_scope": "Cumulative child-process high-water mark; not an individual file's RSS or model inference memory.",
+        "cgroup_memory_scope": "Shared cgroup including charged file cache and unrelated processes; not this helper's RSS.",
+        "before": {
+          "recorded_utc": "2026-11-01T13:40:13.993722+00:00",
+          "affinity_cpu_count": 9,
+          "load_average_scope": "Shared host, not this controller alone",
+          "load_average_1_5_15_minutes": [
+            0.52,
+            1.17,
+            3.6
+          ],
+          "cpu_quota_us": 800000,
+          "cpu_period_us": 100000,
+          "memory_limit_bytes": 8589934592,
+          "cgroup_memory_current_bytes": 8300986368,
+          "cgroup_cpu_stat": {
+            "usage_usec": 50849655601,
+            "user_usec": 47952803840,
+            "system_usec": 2896851760,
+            "nice_usec": 0,
+            "nr_periods": 159165,
+            "nr_throttled": 45187,
+            "throttled_usec": 1934247656,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        },
+        "after": {
+          "recorded_utc": "2026-11-01T13:40:15.514006+00:00",
+          "affinity_cpu_count": 9,
+          "load_average_scope": "Shared host, not this controller alone",
+          "load_average_1_5_15_minutes": [
+            0.64,
+            1.19,
+            3.6
+          ],
+          "cpu_quota_us": 800000,
+          "cpu_period_us": 100000,
+          "memory_limit_bytes": 8589934592,
+          "cgroup_memory_current_bytes": 8409227264,
+          "cgroup_cpu_stat": {
+            "usage_usec": 50851864880,
+            "user_usec": 47954427017,
+            "system_usec": 2897437863,
+            "nice_usec": 0,
+            "nr_periods": 159180,
+            "nr_throttled": 45187,
+            "throttled_usec": 1934247656,
+            "nr_bursts": 0,
+            "burst_usec": 0
+          }
+        },
+        "new_throttled_periods": 0
+      }
+    }
+  ],
+  "implementation": {
+    "reused": [
+      "core_sha256::sha256_state",
+      "core_sha256::sha256_compress scalar fallback",
+      "core_sha256::sha256_update for profiled gate-off file reads",
+      "core_sha256::sha256_finish padding/length/digest formatting"
+    ],
+    "unchanged_defaults": [
+      "core/sha256.h",
+      "model manager hashing",
+      "unprofiled gate-off file function"
+    ],
+    "dispatch": "Once per stream after cached runtime feature availability; no per-block CPUID checks.",
+    "input_buffer_bytes": 65536,
+    "counter_definition": "Full 64-byte input blocks; excludes final SHA padding blocks. All input bytes, including a final partial block, remain in the verified digest.",
+    "profile": {
+      "prefix": "inpaint_hash:",
+      "gate": "CRISPEMBED_INPAINT_PROFILE=1",
+      "labels": [
+        "migan",
+        "lama",
+        "moebius",
+        "pixelhacker",
+        "sdxl_vae"
+      ],
+      "fields": [
+        "label",
+        "backend",
+        "requested",
+        "hardware_available",
+        "bytes",
+        "complete_blocks",
+        "accelerated_blocks",
+        "sha256"
+      ],
+      "emission_condition": "After exact observed/expected full-file digest equality only."
+    },
+    "algorithm_sources": [
+      "https://doi.org/10.6028/NIST.FIPS.180-4",
+      "https://www.intel.com/content/dam/develop/external/us/en/documents/319433-024-697869.pdf"
+    ],
+    "third_party_implementation_copied": false
+  },
+  "limitations": [
+    "Measured only on this Linux x86-64 GCC/AMD CPU host; no GPU or other compiler was measured.",
+    "Whole-file timings have one scalar-then-accelerated sample per file and may include cache/order effects.",
+    "This record does not measure complete model initialization, image quality, or inference latency.",
+    "Compiled availability and required CPU features must both be present; other cases retain scalar hashing.",
+    "A requested flag alone is not hardware execution evidence; actual backend and block counts are required."
+  ],
+  "artifact_policy": {
+    "models_redistributed": false,
+    "public_paths_sanitized": true,
+    "raw_receipts_preserved_exactly": true,
+    "note": "Raw task-local producer receipts may retain historical workspace paths; committed public evidence contains no private absolute paths."
+  }
+}

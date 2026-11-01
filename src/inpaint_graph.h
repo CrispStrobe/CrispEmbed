@@ -116,6 +116,10 @@ public:
     uint64_t upload_bytes() const { return upload_bytes_; }
     uint64_t download_bytes() const { return download_bytes_; }
     double compute_ms() const { return compute_ms_; }
+    // Number of optimized CPU depthwise nodes included in the finalized graph.
+    // Each compute executes this many logical custom nodes; a node invokes
+    // its callback on multiple workers. A gate alone does not prove selection.
+    size_t cpu_depthwise_nodes() const { return cpu_depthwise_nodes_; }
 #ifdef CRISPEMBED_INPAINT_GRAPH_TESTING
     using Observer = void (*)(void *, const std::string &, ggml_tensor *, const std::vector<float> &);
     void set_observer(Observer callback, void * opaque);
@@ -139,6 +143,8 @@ private:
     std::map<std::string, ggml_tensor *> constants_;
     uint64_t runs_ = 0, upload_bytes_ = 0, download_bytes_ = 0;
     double compute_ms_ = 0;
+    std::vector<ggml_tensor *> cpu_depthwise_ops_;
+    size_t cpu_depthwise_nodes_ = 0;
     // ABI-identical object size in ordinary/test archives. Only the test
     // translation unit defines or allocates the pointed-to observer state.
     void * testing_state_ = nullptr;

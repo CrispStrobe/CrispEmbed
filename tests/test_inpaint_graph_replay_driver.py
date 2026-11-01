@@ -26,14 +26,14 @@ def write_json(path, value):
     path.write_text(json.dumps(value, indent=2) + "\n", encoding="utf-8")
 
 
-def fixture(root, engine="moebius", backend="cuda", precision="f32", compare_eager=False, cases=None, cpu_optimized=False):
+def fixture(root, engine="moebius", backend="cuda", precision="f32", compare_eager=False, cases=None, cpu_optimized=False, experiments=(), sha_accel=False, require_sha=False):
     inputs = root / "prepared"
     inputs.mkdir()
     binary = inputs / ("test-lama-diff" if engine == "lama" else "test-latent-inpaint")
     binary.write_bytes(b"mocked native executable; never run\n")
     binary.chmod(0o755)
     model = inputs / "model.gguf"
-    model.write_bytes(b"tiny mocked converted model\n")
+    model.write_bytes(b"tiny mocked converted model\n" + (bytes(256) if sha_accel else b""))
     model_sha = driver.sha256(model)
     write_json(model.with_suffix(".gguf.json"), {"gguf_sha256": model_sha, "gguf_bytes": model.stat().st_size})
     reference = inputs / "reference"
@@ -54,14 +54,18 @@ def fixture(root, engine="moebius", backend="cuda", precision="f32", compare_eag
             "--scratch", str(root / "scratch"), "--deadline-minutes", "1"]
     if engine != "lama":
         vae = inputs / "vae.gguf"
-        vae.write_bytes(b"tiny mocked VAE\n")
+        vae.write_bytes(b"tiny mocked VAE\n" + (bytes(256) if sha_accel else b""))
         write_json(vae.with_suffix(".gguf.json"), {"gguf_sha256": driver.sha256(vae), "gguf_bytes": vae.stat().st_size})
         argv += ["--vae", str(vae), "--vae-sha256", driver.sha256(vae)]
     if compare_eager:
         argv.append("--compare-eager")
     if cpu_optimized:
         argv.append("--cpu-optimized")
-    return driver.arguments(argv)
+    if sha_accel:
+        argv.append("--sha256-accel")
+    if require_sha:
+        argv.append("--require-sha256-accel")
+    return driver.arguments(argv + list(experiments))
 
 
 def source_provenance(run):
@@ -72,10 +76,12 @@ def source_provenance(run):
 class NativeStub:
     """Emit comparator-shaped evidence without interpreting any model bytes."""
     def __init__(self, *, failed_cases=(), failed_arms=(), profile=True, actual_backend=None,
-                 actual_precision=None, returncode_override=None, marker=True):
+                 actual_precision=None, returncode_override=None, marker=True, profile_rows=None, hash_mode=None):
         self.failed_cases, self.failed_arms = set(failed_cases), set(failed_arms)
         self.profile, self.actual_backend, self.actual_precision = profile, actual_backend, actual_precision
         self.returncode_override, self.marker = returncode_override, marker
+        self.profile_rows = profile_rows
+        self.hash_mode = hash_mode
         self.calls = []
 
     def __call__(self, argv, **kwargs):
@@ -106,9 +112,30 @@ class NativeStub:
         if arm == "graph" and self.profile:
             backend = self.actual_backend or {"cpu": "CPU", "cuda": "CUDA0", "metal": "MTL0"}[env["CRISPEMBED_INPAINT_BACKEND"]]
             precision = self.actual_precision or ("mixed-f16" if env["CRISPEMBED_INPAINT_FAST"] == "1" else "f32")
-            line = (f"inpaint_graph label=actual-model backend={backend} precision={precision} nodes=12 "
-                    "allocation_bytes=1024 runs=2 upload_bytes=100 download_bytes=50 compute_ms=1.250\n")
-            kwargs["stderr"].write(line.encode())
+            profiles = self.profile_rows if self.profile_rows is not None else [("actual-model", 2, None)]
+            for label, runs, depthwise_nodes in profiles:
+                suffix = "" if depthwise_nodes is None else " cpu_depthwise_nodes=" + str(depthwise_nodes)
+                line = (f"inpaint_graph label={label} backend={backend} precision={precision} nodes=12 "
+                        f"allocation_bytes=1024 runs={runs} upload_bytes=100 download_bytes=50 compute_ms=1.250{suffix}\n")
+                kwargs["stderr"].write(line.encode())
+        if self.hash_mode is not None:
+            engine = "lama" if lama else argv[argv.index("--model") + 1]
+            files = [(engine, Path(argv[argv.index("--model" if lama else "--denoiser") + 1]))]
+            if not lama:
+                files.append(("sdxl_vae", Path(argv[argv.index("--vae") + 1])))
+            requested = env[driver.SHA256_GATE] == "1"
+            available = self.hash_mode != "unavailable"
+            for label, file in files:
+                if self.hash_mode == "missing-vae" and label == "sdxl_vae":
+                    continue
+                blocks = file.stat().st_size // 64
+                accelerated = blocks if requested and available else 0
+                if self.hash_mode == "bad-count" and requested:
+                    accelerated = 0
+                line = (f"inpaint_hash: label={label} backend={'sha-ni' if requested and available else 'scalar'} "
+                        f"requested={int(requested)} hardware_available={int(available)} bytes={file.stat().st_size} "
+                        f"complete_blocks={blocks} accelerated_blocks={accelerated} sha256={driver.sha256(file)}\n")
+                kwargs["stderr"].write(line.encode())
         code = (0 if passed else 1) if self.returncode_override is None else self.returncode_override
         return mock.Mock(pid=12345, returncode=code, wait=mock.Mock(return_value=code))
 
@@ -120,6 +147,155 @@ def execute(run, stub):
 
 
 class ReplayDriverControls(unittest.TestCase):
+    def test_sha_hashing_is_graph_arm_only_and_hardware_proof_is_explicit(self):
+        with tempfile.TemporaryDirectory() as temp:
+            args = fixture(Path(temp), compare_eager=True, sha_accel=True, require_sha=True)
+            run, stub = driver.Run(args), NativeStub(hash_mode="available")
+            with mock.patch.dict(os.environ, {driver.SHA256_GATE: "1"}):
+                self.assertEqual(execute(run, stub), 0)
+            self.assertEqual(stub.calls[0][1]["env"][driver.SHA256_GATE], "0")
+            self.assertEqual(stub.calls[1][1]["env"][driver.SHA256_GATE], "1")
+            eager, graph = run.report["commands"]
+            self.assertFalse(eager["model_hash_evidence"]["hardware_acceleration_verified"])
+            self.assertTrue(graph["model_hash_evidence"]["hardware_acceleration_verified"])
+            self.assertEqual(graph["model_hash_evidence"]["verified_model_labels"], ["moebius", "sdxl_vae"])
+            self.assertFalse(run.report["performance_qualified"])
+
+    def test_sha_scalar_fallback_requires_an_honest_unavailable_profile(self):
+        for strict in (False, True):
+            with self.subTest(strict=strict), tempfile.TemporaryDirectory() as temp:
+                run = driver.Run(fixture(Path(temp), sha_accel=True, require_sha=strict))
+                self.assertEqual(execute(run, NativeStub(hash_mode="unavailable")), 1 if strict else 0)
+                if not strict:
+                    evidence = run.report["commands"][0]["model_hash_evidence"]
+                    self.assertTrue(evidence["scalar_fallback"])
+                    self.assertFalse(evidence["hardware_acceleration_verified"])
+
+    def test_sha_requested_missing_partial_and_zero_work_profiles_fail(self):
+        for mode in (None, "missing-vae", "bad-count"):
+            with self.subTest(mode=mode), tempfile.TemporaryDirectory() as temp:
+                run = driver.Run(fixture(Path(temp), sha_accel=True))
+                self.assertEqual(execute(run, NativeStub(hash_mode=mode)), 1)
+                self.assertFalse(run.report["passed"])
+                self.assertTrue(run.report["commands"][0]["errors"])
+
+    def test_require_sha_acceleration_needs_the_explicit_opt_in(self):
+        with tempfile.TemporaryDirectory() as temp, mock.patch("sys.stderr"), self.assertRaises(SystemExit):
+            fixture(Path(temp), require_sha=True)
+        with tempfile.TemporaryDirectory() as temp:
+            args = fixture(Path(temp))
+            args.require_sha256_accel = True
+            run, stub = driver.Run(args), NativeStub()
+            self.assertEqual(execute(run, stub), 1)
+            self.assertEqual(stub.calls, [])
+
+    def test_profile_parser_accepts_historical_and_appended_depthwise_formats(self):
+        prefix = (b"inpaint_graph label=unet-cfg-ddim-batch2 backend=CPU precision=f32 nodes=12 "
+                  b"allocation_bytes=1024 runs=19 upload_bytes=100 download_bytes=50 compute_ms=1.250")
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "profiles.log"
+            path.write_bytes(prefix + b"\n" + prefix + b" cpu_depthwise_nodes=0\n"
+                             + prefix + b" cpu_depthwise_nodes=47\n")
+            rows = driver.profile_records(path)
+            self.assertEqual([row["cpu_depthwise_nodes"] for row in rows], [None, 0, 47])
+            self.assertTrue(all(row["compute_ms"] == 1.25 for row in rows))
+            for suffix in (b" cpu_depthwise_nodes=", b" cpu_depthwise_nodes=-1", b" cpu_depthwise_nodes=1.5",
+                           b" cpu_depthwise_nodes=0 cpu_depthwise_nodes=0", b" cpu_depthwise_nodes=47junk"):
+                path.write_bytes(prefix + suffix + b"\n")
+                with self.subTest(suffix=suffix), self.assertRaisesRegex(ValueError, "malformed"):
+                    driver.profile_records(path)
+
+    def test_moebius_experiments_reject_other_engines_backends_and_missing_dependency(self):
+        flags = ("--moebius-local-reassoc", "--moebius-cpu-depthwise")
+        combinations = [(engine, backend, precision, (flag,)) for flag in flags
+                        for engine, backend, precision in (("lama", "cpu", "f32"), ("pixelhacker", "cpu", "f32"),
+                                                           ("moebius", "cuda", "f32"), ("moebius", "metal", "f32"),
+                                                           ("moebius", "cpu", "mixed"))]
+        combinations.append(("moebius", "cpu", "f32", ("--moebius-local-pad-gemm",)))
+        for engine, backend, precision, selected in combinations:
+            with self.subTest(engine=engine, backend=backend, precision=precision, selected=selected), tempfile.TemporaryDirectory() as temp:
+                with mock.patch("sys.stderr"), self.assertRaises(SystemExit) as raised:
+                    fixture(Path(temp), engine=engine, backend=backend, precision=precision, experiments=selected)
+                self.assertEqual(raised.exception.code, 2)
+
+    def test_explicit_moebius_flags_affect_only_graph_arm_and_preserve_default_optimized_set(self):
+        choices = (("--moebius-local-reassoc",),
+                   ("--moebius-local-reassoc", "--moebius-local-pad-gemm"),
+                   ("--moebius-cpu-depthwise",),
+                   ("--moebius-local-reassoc", "--moebius-cpu-depthwise"),
+                   ("--moebius-local-reassoc", "--moebius-local-pad-gemm", "--moebius-cpu-depthwise"))
+        for optimized in (False, True):
+            for flags in choices:
+                with self.subTest(optimized=optimized, flags=flags), tempfile.TemporaryDirectory() as temp:
+                    args = fixture(Path(temp), backend="cpu", compare_eager=True, cpu_optimized=optimized, experiments=flags)
+                    nodes = 47 if "--moebius-cpu-depthwise" in flags else 0
+                    stub = NativeStub(profile_rows=[("vae-encoder-batch2", 1, 0),
+                                                    ("unet-cfg-ddim-batch2", 19, nodes), ("vae-decoder", 1, 0)])
+                    run = driver.Run(args)
+                    with mock.patch.dict(os.environ, {name: "1" for name in driver.CPU_GATES}):
+                        self.assertEqual(execute(run, stub), 0)
+                    eager, graph = stub.calls
+                    self.assertTrue(all(eager[1]["env"][name] == "0" for name in driver.CPU_GATES))
+                    self.assertEqual(eager[1]["env"]["CRISPEMBED_INPAINT_GRAPH"], "0")
+                    expected = set(driver.CPU_ENGINE_GATES["moebius"]) if optimized else set()
+                    expected.update(gate for name, gate in driver.MOEBIUS_EXPERIMENT_GATES.items()
+                                    if "--" + name.replace("_", "-") in flags)
+                    self.assertEqual({name for name in driver.CPU_GATES if graph[1]["env"][name] == "1"}, expected)
+                    self.assertNotIn("CRISPEMBED_INPAINT_CPU_DEPTHWISE", driver.CPU_ENGINE_GATES["moebius"])
+                    self.assertEqual(run.report["moebius_experiments_requested"]["moebius_cpu_depthwise"], nodes == 47)
+                    self.assertFalse(run.report["commands"][0]["moebius_cpu_depthwise_evidence"]["requested"])
+                    self.assertEqual(run.report["commands"][1]["moebius_cpu_depthwise_evidence"]["verified"], nodes == 47)
+
+    def test_depthwise_replay_accepts_multiple_observed_and_ordinary_contexts(self):
+        profiles = [("vae-encoder-batch2", 1, 0), ("unet-cfg-ddim-batch2", 19, 47), ("vae-decoder", 1, 0)] * 4
+        with tempfile.TemporaryDirectory() as temp:
+            args = fixture(Path(temp), backend="cpu", experiments=("--moebius-cpu-depthwise",))
+            run = driver.Run(args)
+            self.assertEqual(execute(run, NativeStub(profile_rows=profiles)), 0)
+            command = run.report["commands"][0]
+            self.assertEqual(len(command["graph_profiles"]), 12)
+            proof = command["moebius_cpu_depthwise_evidence"]
+            self.assertTrue(proof["verified"])
+            self.assertEqual(len(proof["executed_graph_profiles"]["unet-cfg-ddim-batch2"]), 4)
+            self.assertFalse(run.report["native_qualified"])
+
+    def test_depthwise_replay_checks_every_executed_profile_and_both_vae_stages(self):
+        good = [("vae-encoder-batch2", 1, 0), ("unet-cfg-ddim-batch2", 19, 47), ("vae-decoder", 1, 0)]
+        cases = [good + [("unet-cfg-ddim-batch2", 19, 46)],
+                 good + [("vae-encoder-batch2", 1, 1)],
+                 good + [("vae-decoder", 1, None)],
+                 [good[0], ("unet-cfg-ddim-batch2", 19, None), good[2]],
+                 [good[0], ("unet-cfg-ddim-batch2", 0, 47), good[2]],
+                 good[:2],
+                 good + [("unexpected-graph", 1, 1)]]
+        for profiles in cases:
+            with self.subTest(profiles=profiles), tempfile.TemporaryDirectory() as temp:
+                args = fixture(Path(temp), backend="cpu", experiments=("--moebius-cpu-depthwise",))
+                run = driver.Run(args)
+                self.assertEqual(execute(run, NativeStub(profile_rows=profiles)), 1)
+                self.assertTrue(run.report["complete"])
+                self.assertFalse(run.report["graph_parity_pass"])
+                self.assertEqual(len(run.report["commands"][0]["graph_profiles"]), len(profiles))
+                self.assertTrue(any("depthwise" in error for error in run.report["commands"][0]["errors"]))
+
+    def test_unrequested_depthwise_selection_is_rejected_even_for_unexecuted_graph(self):
+        for runs in (0, 1):
+            with self.subTest(runs=runs), tempfile.TemporaryDirectory() as temp:
+                args = fixture(Path(temp), backend="cpu")
+                run = driver.Run(args)
+                profiles = [("ordinary-baseline", 1, 0), ("unet-cfg-ddim-batch2", runs, 47)]
+                self.assertEqual(execute(run, NativeStub(profile_rows=profiles)), 1)
+                self.assertIn("gate is off", run.report["commands"][0]["errors"][0])
+
+    def test_prepare_rechecks_programmatic_moebius_flag_mutation(self):
+        with tempfile.TemporaryDirectory() as temp:
+            args = fixture(Path(temp), engine="pixelhacker", backend="cpu")
+            args.moebius_cpu_depthwise = True
+            run, stub = driver.Run(args), NativeStub()
+            self.assertEqual(execute(run, stub), 1)
+            self.assertEqual(stub.calls, [])
+            self.assertIn("Moebius experimental flags", run.report["errors"][0])
+
     def test_cpu_optimization_selection_is_explicit_and_model_specific(self):
         selected = {
             "lama": {"CRISPEMBED_INPAINT_GEMM_LAYOUT", "CRISPEMBED_INPAINT_REFLECT_GATHER", "CRISPEMBED_INPAINT_CPU_FFT"},

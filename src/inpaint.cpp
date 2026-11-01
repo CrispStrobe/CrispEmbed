@@ -3,7 +3,7 @@
 #include "inpaint.h"
 #include "migan.h"
 #include "core/env_gate.h"
-#include "core/sha256.h"
+#include "core/sha256_accelerated.h"
 
 #include <algorithm>
 #include <array>
@@ -100,11 +100,18 @@ context * init_variant(const char * path, const char * expected_checkpoint_sha25
             fail(error, "cannot read inpainting model file");
             return nullptr;
         }
-        if ((resolution == 256 && size != model_bytes) || size == 0 || size > size_t(64) * 1024 * 1024 ||
-            core_sha256::file(path) != expected_gguf_sha256) {
+        const bool profile = core_env::on("CRISPEMBED_INPAINT_PROFILE");
+        core_sha256_accel::Stats hash_stats;
+        const bool size_ok = (resolution != 256 || size == model_bytes) && size > 0 && size <= size_t(64) * 1024 * 1024;
+        const std::string observed =
+            size_ok ? core_sha256_accel::file(path, core_env::on("CRISPEMBED_INPAINT_SHA256_ACCEL"),
+                                              profile ? &hash_stats : nullptr)
+                    : std::string();
+        if (!size_ok || observed != expected_gguf_sha256) {
             fail(error, "inpainting model differs from the selected MI-GAN F32 GGUF (size/SHA-256 mismatch)");
             return nullptr;
         }
+        if (profile) core_sha256_accel::profile_verified("migan", hash_stats, observed);
         std::unique_ptr<context> ctx(new context(resolution));
         ctx->model = migan::init_variant(path, expected_checkpoint_sha256, resolution, n_threads, error);
         if (!ctx->model) return nullptr;

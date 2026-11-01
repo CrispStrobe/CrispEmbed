@@ -1155,6 +1155,16 @@ target_link_libraries(test-lama-diff PRIVATE crispembed-lama-test)
 add_executable(test-inpaint-benchmark EXCLUDE_FROM_ALL tests/test_inpaint_benchmark.cpp)
 target_link_libraries(test-inpaint-benchmark PRIVATE crispembed-lama crispembed-latent-inpaint crispembed-inpaint)
 
+# Model hashing keeps the scalar implementation as an independently runnable
+# fallback. Match the loaders' architecture policy in both control binaries.
+add_executable(test-inpaint-sha256-accel EXCLUDE_FROM_ALL tests/test_inpaint_sha256_accel.cpp)
+target_include_directories(test-inpaint-sha256-accel PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+crispembed_apply_arch_flags(test-inpaint-sha256-accel)
+add_executable(test-inpaint-sha256-fallback EXCLUDE_FROM_ALL tests/test_inpaint_sha256_accel.cpp)
+target_include_directories(test-inpaint-sha256-fallback PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_compile_definitions(test-inpaint-sha256-fallback PRIVATE CRISPEMBED_SHA256_DISABLE_INTRINSICS=1)
+crispembed_apply_arch_flags(test-inpaint-sha256-fallback)
+
 add_executable(test-restormer-diff tests/test_restormer_diff.cpp)
 target_link_libraries(test-restormer-diff PRIVATE crispembed)
 

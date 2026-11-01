@@ -206,6 +206,58 @@ numerical limit, not a new divergence. The initial failure verdict is retained; 
 
 ## 1 November 2026 — Executed CPU inpainting optimization and live checks
 
+## 1 November 2026 — Further inpainting CPU optimization and latent API completion
+
+Added optional hardware SHA-256 verification to the MI-GAN, LaMa and latent
+loaders. It reuses the existing digest state, padding and scalar implementation,
+with runtime feature selection and observed complete/accelerated block counts.
+Every model byte and trusted digest is still checked. The native SHA controls
+pass 6,985 normal and 6,988 forced-fallback assertions. The bounded alternating
+memory-hashing benchmark improves median throughput by 4.6835 times; file-load
+observations and image timings remain separate.
+
+Integrated the default-off CPU depthwise specialization using the existing
+MI-GAN interior-loop design. All four Moebius original-reference cases retain
+the prior generated/composited RGB bytes, 608 metric records and 35 strict
+stage failures. The completed ordinary API pair also preserves all eight
+outputs exactly. Its noisy warm median is worse, 142.796 to 181.397 seconds;
+depthwise remains outside the recommended Moebius preset. A private 128 MiB
+convolution workspace experiment is mixed and not integrated; production CPU
+workspace remains 32 MiB.
+
+Completed the previously unfinished PixelHacker ordinary API comparison in
+fresh, separately recorded runs on one binary. Both arms complete a cold image
+and three warm images at F32, 512 square, eight threads and stock 20 requested/
+19 actual steps. Native agreement passes unchanged RGB budgets: maximum
+filled-channel difference 1, mean 0.0000949436, PSNR 88.356 dB and exact known
+pixels. Warm medians are 310.958/144.243 seconds; that observed ratio is scoped
+to this fixed-order single-fixture panel, with timing qualification flags false.
+Original CUDA/FLA parity remains unexecuted. Earlier interrupted and revalidated
+evidence is retained unchanged.
+
+The benchmark now preserves a completed first image before warm sampling,
+using new protected output paths and an out-of-timer checkpoint write. The
+actual cancellation control proves preservation without claiming completion.
+Final frozen-source checks pass 244 Python/CLI tests and 20 native
+configurations, plus 21 private API-controller controls. Production symbol
+audits exclude test-only observers. LaMa first-layer attribution locates a
+small original/native convolution difference before Fourier blocks; no
+arithmetic or numerical threshold was changed, and all 105 strict full-mask
+stage failures remain. See the [complete results](docs/inpainting-optimization-results.md)
+for raw evidence, the current CLI status and remaining GPU/quality limits.
+
+The final production CLI panel completes 12 invocations and 16 PNGs on one
+binary across MI-GAN256, MI-GAN512, LaMa256, Moebius and PixelHacker. Filled
+outputs match their pinned ordinary APIs, known pixels and empty outputs are
+exact, and both latent profiles pass filled/empty/filled batch reuse with
+actual 2/38/2 graph calls. Required SHA-NI checks bind every complete model
+digest and input-block count. These functional results remain separate from
+throughput and original-model qualification; historical CLI panels retain
+their own identities and are excluded from the new counts. See the
+[final CLI record](tests/results/inpainting/inpaint-cli-final-2026-11-01.json).
+
+## 1 November 2026 — Earlier executed CPU inpainting optimization and live checks
+
 The issue71 CPU paths have now been built and exercised with converted model
 weights. Added default-off MI-GAN fused/vectorized CPU kernels, convolution
 GEMM layout, cached reflection gathers, a cached CPU FFT callback, rectangular

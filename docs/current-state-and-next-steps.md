@@ -572,8 +572,14 @@ published0.17.12; development0.17.13 and model experiments do not upgrade it.
   PixelHacker under separate default-off gates; see the
   [current engine/reuse guide](inpainting-engines.md). It records the licence
   evidence, exact checkpoint contracts, CPU Fourier path, shared VAE/sampler,
-  converters and original-reference tools. Full-model hosted parity of these
-  additions remains pending. No video-quality claim or issue closure follows.
+  converters and original-reference tools. The subsequent authorized CPU work
+  is recorded in the [executed optimization results](inpainting-optimization-results.md):
+  MI-GAN original-stage checks, LaMa and Moebius final-image panels with retained
+  strict intermediate failures, completed native PixelHacker eager/candidate
+  comparison, hashing acceleration and actual CLI evidence. GPU execution,
+  original PixelHacker CUDA/FLA parity and representative video quality remain
+  open. The optional depthwise path preserves tested images but has no qualified
+  complete-image gain. No default flip or issue closure follows.
 - [Attention-F16/FFN-Q4 attempt40172527229](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40172527229)
   is complete and rejected. Its72 FFN matrices use Q4_K;401 tensors, including78
   attention matrices, remain byte exact. The first full layer has max error
