@@ -253,7 +253,7 @@ struct graph_builder {
     // F16/Q8_0/Q4_K kernels stored as [IC,OC]; optional (A/B) for F32.
     ggml_tensor * pointwise_swapped(ggml_tensor * kernel, ggml_tensor * x) {
         const int64_t channels = x->ne[2], out = kernel->ne[ggml_n_dims(kernel) == 2 ? 1 : 3];
-        ggml_tensor * w = ggml_reshape_2d(ctx, kernel, channels, out);
+        ggml_tensor * w = ggml_n_dims(kernel) == 2 ? kernel : ggml_reshape_2d(ctx, kernel, channels, out);
         ggml_tensor * xt = ggml_cont(ctx, ggml_permute(ctx, x, 1, 2, 0, 3)); // [C,W,H,N]
         xt = ggml_reshape_2d(ctx, xt, channels, x->ne[0] * x->ne[1] * x->ne[3]);
         ggml_tensor * product = ggml_mul_mat(ctx, w, xt); // [OC, W*H*N]
@@ -414,7 +414,12 @@ struct graph_builder {
         // preference with silent per-op CPU fallback and host round-trips.
         for (int i = 0; i < ggml_graph_n_nodes(graph); ++i) {
             ggml_tensor * node = ggml_graph_node(graph, i);
-            if (node->type != GGML_TYPE_F32) throw std::runtime_error("MI-GAN graph contains a non-F32 activation");
+            // Views/reshapes of F16/Q8_0/Q4_K weights carry the weight type;
+            // every computed activation must still be F32.
+            const bool view = node->op == GGML_OP_RESHAPE || node->op == GGML_OP_VIEW || node->op == GGML_OP_PERMUTE ||
+                              node->op == GGML_OP_TRANSPOSE;
+            if (node->type != GGML_TYPE_F32 && !(view && !model.f32_weights))
+                throw std::runtime_error("MI-GAN graph contains a non-F32 activation");
             if (!ggml_backend_supports_op(model.backend, node))
                 throw std::runtime_error(std::string("MI-GAN ") + (model.gpu ? "GPU" : "CPU") +
                                          " operation unsupported: " + ggml_op_desc(node));
