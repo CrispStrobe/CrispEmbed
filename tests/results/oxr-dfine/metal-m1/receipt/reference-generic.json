@@ -1,0 +1,351 @@
+{
+ "schema": "crispembed.oxr-dfine.reference.v1",
+ "blueprint_revision": "c1a1dcb312ee9f691404f127785510453c0d9350",
+ "service_source_sha256": "1f9b9751a2992853e038782bc67be25c9bc1bf0ba58756b5db299b1b68cc9256",
+ "checkpoint_sha256": "dff78ccf18439955362ca44a69eb28fb0b40222a7d278860589682de0176dc17",
+ "image": "receipt.png",
+ "image_sha256": "f2d2e3ac9a37ac0128aa30ed91a91d16c69d82477b91ba89d779dd1b54d2027d",
+ "image_width": 500,
+ "image_height": 650,
+ "resize": "opencv_generic_lanczos4",
+ "ipp_available": false,
+ "ipp_vs_generic_input_max_abs": 0.0,
+ "versions": {
+  "torch": "2.7.1",
+  "opencv": "4.12.0",
+  "numpy": "2.2.6"
+ },
+ "threads": 4,
+ "precision": "fp32",
+ "preprocess_ms": [
+  5.975167034193873,
+  6.516000023111701,
+  6.998415803536773
+ ],
+ "forward_ms": [
+  696.6494580265135,
+  687.5243750400841,
+  707.9940841067582
+ ],
+ "preprocess_ms_median": 6.516000023111701,
+ "forward_ms_median": 696.6494580265135,
+ "stages": {
+  "bb.stage0": [
+   1,
+   96,
+   240,
+   240
+  ],
+  "bb.stage1": [
+   1,
+   384,
+   120,
+   120
+  ],
+  "bb.stage2": [
+   1,
+   768,
+   60,
+   60
+  ],
+  "bb.stage3": [
+   1,
+   1536,
+   30,
+   30
+  ],
+  "bb.stem": [
+   1,
+   32,
+   240,
+   240
+  ],
+  "dec.0.bbox": [
+   1,
+   300,
+   4
+  ],
+  "dec.0.corners": [
+   1,
+   300,
+   132
+  ],
+  "dec.0.cross": [
+   1,
+   300,
+   256
+  ],
+  "dec.0.gate": [
+   1,
+   300,
+   256
+  ],
+  "dec.0.out": [
+   1,
+   300,
+   256
+  ],
+  "dec.0.qpos": [
+   1,
+   300,
+   256
+  ],
+  "dec.0.self": [
+   1,
+   300,
+   256
+  ],
+  "dec.1.bbox": [
+   1,
+   300,
+   4
+  ],
+  "dec.1.corners": [
+   1,
+   300,
+   132
+  ],
+  "dec.1.cross": [
+   1,
+   300,
+   256
+  ],
+  "dec.1.gate": [
+   1,
+   300,
+   256
+  ],
+  "dec.1.out": [
+   1,
+   300,
+   256
+  ],
+  "dec.1.qpos": [
+   1,
+   300,
+   256
+  ],
+  "dec.1.self": [
+   1,
+   300,
+   256
+  ],
+  "dec.2.bbox": [
+   1,
+   300,
+   4
+  ],
+  "dec.2.corners": [
+   1,
+   300,
+   132
+  ],
+  "dec.2.cross": [
+   1,
+   300,
+   256
+  ],
+  "dec.2.gate": [
+   1,
+   300,
+   256
+  ],
+  "dec.2.out": [
+   1,
+   300,
+   256
+  ],
+  "dec.2.qpos": [
+   1,
+   300,
+   256
+  ],
+  "dec.2.self": [
+   1,
+   300,
+   256
+  ],
+  "dec.3.bbox": [
+   1,
+   300,
+   4
+  ],
+  "dec.3.corners": [
+   1,
+   300,
+   132
+  ],
+  "dec.3.cross": [
+   1,
+   300,
+   256
+  ],
+  "dec.3.gate": [
+   1,
+   300,
+   256
+  ],
+  "dec.3.out": [
+   1,
+   300,
+   256
+  ],
+  "dec.3.qpos": [
+   1,
+   300,
+   256
+  ],
+  "dec.3.self": [
+   1,
+   300,
+   256
+  ],
+  "dec.content": [
+   1,
+   300,
+   256
+  ],
+  "dec.enc_bbox_delta": [
+   1,
+   300,
+   4
+  ],
+  "dec.enc_logits": [
+   1,
+   18900,
+   12
+  ],
+  "dec.logits": [
+   1,
+   300,
+   12
+  ],
+  "dec.memory": [
+   1,
+   18900,
+   256
+  ],
+  "dec.output_memory": [
+   1,
+   18900,
+   256
+  ],
+  "dec.pre_bbox_delta": [
+   1,
+   300,
+   4
+  ],
+  "dec.project": [
+   33
+  ],
+  "dec.ref_initial": [
+   1,
+   300,
+   4
+  ],
+  "dec.ref_unact": [
+   1,
+   300,
+   4
+  ],
+  "dec.topk_anchor": [
+   1,
+   300,
+   4
+  ],
+  "dec.topk_index": [
+   1,
+   300
+  ],
+  "enc.aifi": [
+   1,
+   900,
+   256
+  ],
+  "enc.down0": [
+   1,
+   256,
+   60,
+   60
+  ],
+  "enc.down1": [
+   1,
+   256,
+   30,
+   30
+  ],
+  "enc.fpn0": [
+   1,
+   256,
+   60,
+   60
+  ],
+  "enc.fpn1": [
+   1,
+   256,
+   120,
+   120
+  ],
+  "enc.lat0": [
+   1,
+   256,
+   30,
+   30
+  ],
+  "enc.lat1": [
+   1,
+   256,
+   60,
+   60
+  ],
+  "enc.pan0": [
+   1,
+   256,
+   60,
+   60
+  ],
+  "enc.pan1": [
+   1,
+   256,
+   30,
+   30
+  ],
+  "enc.proj0": [
+   1,
+   256,
+   120,
+   120
+  ],
+  "enc.proj1": [
+   1,
+   256,
+   60,
+   60
+  ],
+  "enc.proj2": [
+   1,
+   256,
+   30,
+   30
+  ],
+  "input": [
+   1,
+   3,
+   960,
+   960
+  ],
+  "post.boxes": [
+   1,
+   300,
+   4
+  ],
+  "post.labels": [
+   1,
+   300
+  ],
+  "post.scores": [
+   1,
+   300
+  ]
+ }
+}

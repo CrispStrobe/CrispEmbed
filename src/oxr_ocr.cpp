@@ -15,6 +15,7 @@
 #include "gguf.h"
 
 #include <algorithm>
+#include <chrono>
 #include <array>
 #include <cmath>
 #include <cstdio>
@@ -77,6 +78,15 @@ constexpr int dim = 1024, layers = 28, heads = 16, kv_heads = 8, head_dim = 128;
 // The converter stores the source prefix "visual_tokenizer.vit.vision_model." as
 // "vit." (GGML_MAX_NAME) and records it in oxr.vision_tensor_prefix.
 constexpr const char * vision = "vit.";
+
+// CRISPEMBED_OXR_TIMING=1 (diagnostic): per-stage wall times on stderr.
+bool timing_on() {
+    static const bool on = core_env::on("CRISPEMBED_OXR_TIMING");
+    return on;
+}
+double now_ms() {
+    return std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now().time_since_epoch()).count();
+}
 
 struct observation {
     std::string name;
@@ -786,7 +796,10 @@ void generate(oxr_ocr_context & c, const std::vector<float> & image_embeddings) 
             set(prefill.image_values, visual.data(), visual.size() * sizeof(float));
             set(prefill.image_indices, indices.data(), indices.size() * sizeof(int32_t));
         }
+        const double t0 = now_ms();
         prefill.owner->compute();
+        if (timing_on())
+            std::fprintf(stderr, "[oxr-timing] prefill %.1f ms (%d tokens)\n", now_ms() - t0, prompt_length);
         logits = read(prefill.logits);
     }
     std::vector<int32_t> history;
@@ -795,6 +808,8 @@ void generate(oxr_ocr_context & c, const std::vector<float> & image_embeddings) 
         for (int32_t id : c.prompt_ids) history.push_back(oxr_profile::vllm_penalty_id(id));
     }
     std::unique_ptr<decoder_graph> cached;
+    const double decode_started = now_ms();
+    double build_ms = 0.0, compute_ms = 0.0;
     for (int step = 0; step < c.effective_max_tokens; ++step) {
         oxr_profile::repetition_penalty(logits, history, c.repetition_penalty);
         if (std::any_of(logits.begin(), logits.end(), [](float x) { return !std::isfinite(x); }))
@@ -816,6 +831,7 @@ void generate(oxr_ocr_context & c, const std::vector<float> & image_embeddings) 
         const int past = prompt_length + step;
         const int extent = c.reuse_decode ? std::min(c.cache_capacity, ((past + 1 + 255) / 256) * 256) : past + 1;
         bool fresh = true;
+        const double tb = now_ms();
         if (c.reuse_decode && cached && cached->keys == extent)
             fresh = false;
         else {
@@ -824,9 +840,15 @@ void generate(oxr_ocr_context & c, const std::vector<float> & image_embeddings) 
             cached = std::make_unique<decoder_graph>(build_decoder(c, 1, past, extent, 0, false));
         }
         decoder_inputs(*cached, { id }, past, fresh, c.hf_generation ? &c.prompt_ids : nullptr);
+        const double tc = now_ms();
         cached->owner->compute();
+        build_ms += tc - tb;
+        compute_ms += now_ms() - tc;
         logits = read(cached->logits);
     }
+    if (timing_on() && c.completion_ids.size() > 1)
+        std::fprintf(stderr, "[oxr-timing] decode %.1f ms for %zu tokens (graph build+inputs %.1f, compute %.1f)\n",
+                     now_ms() - decode_started, c.completion_ids.size() - 1, build_ms, compute_ms);
     std::string raw, filtered;
     for (int32_t id : c.completion_ids) {
         // Tokenizers' decoder silently drops the checkpoint's unused output
@@ -956,7 +978,11 @@ const char * oxr_ocr_recognize_raw(oxr_ocr_context * c, const uint8_t * px, int 
             auto prepared = oxr_profile::preprocess(px, w, h, ch, c->min_pixels, c->max_pixels);
             std::copy(std::begin(prepared.grid), std::end(prepared.grid), std::begin(c->grid));
             prepare_request(*c, prepared.grid[1] * prepared.grid[2] / 4);
+            const double t0 = now_ms();
             visual = encode_vision(*c, prepared);
+            if (timing_on())
+                std::fprintf(stderr, "[oxr-timing] vision+vocabulary %.1f ms (%d merged tokens)\n", now_ms() - t0,
+                             prepared.grid[1] * prepared.grid[2] / 4);
         } else if (w != 0 || h != 0 || ch != 0)
             throw std::invalid_argument("OXR text-only request requires zero image dimensions");
         else

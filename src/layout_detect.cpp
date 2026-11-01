@@ -2657,6 +2657,16 @@ bool run_graph(context * ctx, graph_scope & gs, const std::vector<std::pair<cons
             ggml_tensor * node = ggml_graph_node(gs.gf, i);
             if (node->op == GGML_OP_MUL_MAT) ggml_mul_mat_set_prec(node, GGML_PREC_F32);
         }
+    if (core_env::on("CRISPEMBED_OXR_LAYOUT_MM_SHAPES")) // diagnostic: GEMM shapes and FLOPs
+        for (int i = 0; i < ggml_graph_n_nodes(gs.gf); i++) {
+            const ggml_tensor * n = ggml_graph_node(gs.gf, i);
+            if (n->op != GGML_OP_MUL_MAT) continue;
+            const ggml_tensor *a = n->src[0], *b = n->src[1];
+            fprintf(stderr, "[dfine-mm] a=%lldx%lldx%lld(%s) b=%lldx%lldx%lld gflop=%.3f\n", (long long)a->ne[0],
+                    (long long)a->ne[1], (long long)a->ne[2], ggml_type_name(a->type), (long long)b->ne[0],
+                    (long long)b->ne[1], (long long)b->ne[2],
+                    2e-9 * (double)a->ne[0] * (double)a->ne[1] * (double)b->ne[1] * (double)(b->ne[2] * b->ne[3]));
+        }
     if (!ggml_gallocr_alloc_graph(ctx->galloc, gs.gf)) {
         ctx->error = "D-FINE graph allocation failed";
         return false;

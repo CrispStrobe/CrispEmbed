@@ -1,0 +1,2647 @@
+{
+ "schema": "crispembed.oxr-dfine.f16-audit.v1",
+ "tensors": [
+  {
+   "name": "decoder.query_pos_head.layers.0.weight",
+   "shape": [
+    512,
+    4
+   ],
+   "elements": 2048,
+   "rel_fro": 0.00021748735030517464,
+   "max_elem_rel": 0.0025965695329489497,
+   "subnormal_frac": 0.001953125,
+   "flushed_frac": 0.0,
+   "abs_max": 14.12114143371582,
+   "abs_median": 0.05857047066092491
+  },
+  {
+   "name": "backbone.stages.0.blocks.0.layers.1.conv.weight",
+   "shape": [
+    32,
+    32,
+    3,
+    3
+   ],
+   "elements": 9216,
+   "rel_fro": 0.00021660030517635105,
+   "max_elem_rel": 0.011981403153434279,
+   "subnormal_frac": 0.0010850694444444445,
+   "flushed_frac": 0.0,
+   "abs_max": 0.9880215525627136,
+   "abs_median": 0.030644739046692848
+  },
+  {
+   "name": "backbone.stages.2.blocks.0.layers.1.conv1.conv.weight",
+   "shape": [
+    128,
+    128,
+    1,
+    1
+   ],
+   "elements": 16384,
+   "rel_fro": 0.00021621549442649645,
+   "max_elem_rel": 0.004717829809857864,
+   "subnormal_frac": 0.001953125,
+   "flushed_frac": 0.0,
+   "abs_max": 0.7490756511688232,
+   "abs_median": 0.02065548487007618
+  },
+  {
+   "name": "backbone.stem.stem2a.conv.weight",
+   "shape": [
+    12,
+    24,
+    2,
+    2
+   ],
+   "elements": 1152,
+   "rel_fro": 0.00021451036833752566,
+   "max_elem_rel": 0.0004805793012113986,
+   "subnormal_frac": 0.0,
+   "flushed_frac": 0.0,
+   "abs_max": 0.959689736366272,
+   "abs_median": 0.050264451652765274
+  },
+  {
+   "name": "encoder.pan_blocks.0.cv4.fused.weight",
+   "shape": [
+    256,
+    768,
+    1,
+    1
+   ],
+   "elements": 196608,
+   "rel_fro": 0.00021442687601711904,
+   "max_elem_rel": 1.0,
+   "subnormal_frac": 0.0061798095703125,
+   "flushed_frac": 5.086263020833333e-06,
+   "abs_max": 1.1870183944702148,
+   "abs_median": 0.007173724006861448
+  },
+  {
+   "name": "backbone.stages.3.blocks.0.layers.3.conv2.conv.weight",
+   "shape": [
+    256,
+    1,
+    5,
+    5
+   ],
+   "elements": 6400,
+   "rel_fro": 0.00021412009108623075,
+   "max_elem_rel": 0.0016456008756434858,
+   "subnormal_frac": 0.00171875,
+   "flushed_frac": 0.0,
+   "abs_max": 0.3483337163925171,
+   "abs_median": 0.024944165721535683
+  },
+  {
+   "name": "decoder.pre_bbox_head.layers.1.weight",
+   "shape": [
+    256,
+    256
+   ],
+   "elements": 65536,
+   "rel_fro": 0.0002134667345572167,
+   "max_elem_rel": 0.029378645255199683,
+   "subnormal_frac": 0.0010223388671875,
+   "flushed_frac": 0.0,
+   "abs_max": 20.42780303955078,
+   "abs_median": 0.06842078268527985
+  },
+  {
+   "name": "encoder.fpn_blocks.1.cv3.0.conv2.fused.weight",
+   "shape": [
+    128,
+    128,
+    1,
+    1
+   ],
+   "elements": 16384,
+   "rel_fro": 0.00021346559345204318,
+   "max_elem_rel": 0.004993132805064632,
+   "subnormal_frac": 0.00054931640625,
+   "flushed_frac": 0.0,
+   "abs_max": 1.1912976503372192,
+   "abs_median": 0.06489288061857224
+  },
+  {
+   "name": "decoder.dec_bbox_head.3.layers.2.weight",
+   "shape": [
+    132,
+    256
+   ],
+   "elements": 33792,
+   "rel_fro": 0.00021177053500017002,
+   "max_elem_rel": 0.023073384706074986,
+   "subnormal_frac": 0.00014796401515151516,
+   "flushed_frac": 0.0,
+   "abs_max": 1.6632895469665527,
+   "abs_median": 0.513704240322113
+  },
+  {
+   "name": "backbone.stages.3.blocks.0.layers.0.conv2.conv.weight",
+   "shape": [
+    256,
+    1,
+    5,
+    5
+   ],
+   "elements": 6400,
+   "rel_fro": 0.0002115050626536911,
+   "max_elem_rel": 0.0006017739840553027,
+   "subnormal_frac": 0.00125,
+   "flushed_frac": 0.0,
+   "abs_max": 0.5476330518722534,
+   "abs_median": 0.021419264376163483
+  },
+  {
+   "name": "backbone.stages.2.blocks.1.layers.3.conv2.conv.weight",
+   "shape": [
+    128,
+    1,
+    5,
+    5
+   ],
+   "elements": 3200,
+   "rel_fro": 0.00021144500900237357,
+   "max_elem_rel": 0.003012830540533262,
+   "subnormal_frac": 0.0015625,
+   "flushed_frac": 0.0,
+   "abs_max": 0.5060451030731201,
+   "abs_median": 0.021601978689432144
+  },
+  {
+   "name": "encoder.pan_blocks.1.cv2.0.bottlenecks.0.fused.weight",
+   "shape": [
+    128,
+    128,
+    3,
+    3
+   ],
+   "elements": 147456,
+   "rel_fro": 0.00021119105450673978,
+   "max_elem_rel": 0.0800452837588108,
+   "subnormal_frac": 0.0019327799479166667,
+   "flushed_frac": 0.0,
+   "abs_max": 1.314976692199707,
+   "abs_median": 0.01781223900616169
+  },
+  {
+   "name": "decoder.dec_bbox_head.2.layers.1.weight",
+   "shape": [
+    256,
+    256
+   ],
+   "elements": 65536,
+   "rel_fro": 0.0002109399969225779,
+   "max_elem_rel": 0.004061887365477059,
+   "subnormal_frac": 0.0005035400390625,
+   "flushed_frac": 0.0,
+   "abs_max": 4.322140216827393,
+   "abs_median": 0.08672173321247101
+  },
+  {
+   "name": "encoder.pan_blocks.1.cv3.1.fused.weight",
+   "shape": [
+    128,
+    128,
+    3,
+    3
+   ],
+   "elements": 147456,
+   "rel_fro": 0.00021084352583520182,
+   "max_elem_rel": 0.11827381710048522,
+   "subnormal_frac": 0.0024549696180555555,
+   "flushed_frac": 0.0,
+   "abs_max": 2.130596399307251,
+   "abs_median": 0.013570688664913177
+  },
+  {
+   "name": "backbone.stages.3.blocks.0.layers.1.conv2.conv.weight",
+   "shape": [
+    256,
+    1,
+    5,
+    5
+   ],
+   "elements": 6400,
+   "rel_fro": 0.00021057041309495553,
+   "max_elem_rel": 0.0009165340152249788,
+   "subnormal_frac": 0.00109375,
+   "flushed_frac": 0.0,
+   "abs_max": 0.5252520442008972,
+   "abs_median": 0.023344382643699646
+  },
+  {
+   "name": "decoder.dec_bbox_head.1.layers.2.weight",
+   "shape": [
+    132,
+    256
+   ],
+   "elements": 33792,
+   "rel_fro": 0.00021043567412436484,
+   "max_elem_rel": 0.8048152457537849,
+   "subnormal_frac": 0.0008877840909090909,
+   "flushed_frac": 0.0,
+   "abs_max": 13.666854858398438,
+   "abs_median": 0.0674150213599205
+  },
+  {
+   "name": "encoder.pan_blocks.0.cv3.0.conv2.fused.weight",
+   "shape": [
+    128,
+    128,
+    1,
+    1
+   ],
+   "elements": 16384,
+   "rel_fro": 0.0002103173496927985,
+   "max_elem_rel": 0.005119164707549848,
+   "subnormal_frac": 0.00067138671875,
+   "flushed_frac": 0.0,
+   "abs_max": 1.0495915412902832,
+   "abs_median": 0.05989707633852959
+  },
+  {
+   "name": "decoder.dec_bbox_head.1.layers.1.weight",
+   "shape": [
+    256,
+    256
+   ],
+   "elements": 65536,
+   "rel_fro": 0.00020988492831924434,
+   "max_elem_rel": 0.006163429184547127,
+   "subnormal_frac": 0.00042724609375,
+   "flushed_frac": 0.0,
+   "abs_max": 4.476070880889893,
+   "abs_median": 0.08263099193572998
+  },
+  {
+   "name": "decoder.dec_score_head.3.weight",
+   "shape": [
+    12,
+    256
+   ],
+   "elements": 3072,
+   "rel_fro": 0.00020964218857221338,
+   "max_elem_rel": 0.004791197458837313,
+   "subnormal_frac": 0.0006510416666666666,
+   "flushed_frac": 0.0,
+   "abs_max": 0.51507967710495,
+   "abs_median": 0.09146334230899811
+  },
+  {
+   "name": "encoder.pan_blocks.0.cv2.0.conv2.fused.weight",
+   "shape": [
+    128,
+    256,
+    1,
+    1
+   ],
+   "elements": 32768,
+   "rel_fro": 0.00020942222908550985,
+   "max_elem_rel": 0.01598443839753321,
+   "subnormal_frac": 0.00067138671875,
+   "flushed_frac": 0.0,
+   "abs_max": 0.6704317927360535,
+   "abs_median": 0.057270750403404236
+  },
+  {
+   "name": "decoder.decoder.layers.3.cross_attn.attention_weights.weight",
+   "shape": [
+    96,
+    256
+   ],
+   "elements": 24576,
+   "rel_fro": 0.00020931150428108583,
+   "max_elem_rel": 0.0005930181277598648,
+   "subnormal_frac": 0.00016276041666666666,
+   "flushed_frac": 0.0,
+   "abs_max": 1.603546380996704,
+   "abs_median": 0.16670182347297668
+  },
+  {
+   "name": "backbone.stages.0.blocks.0.layers.0.conv.weight",
+   "shape": [
+    32,
+    32,
+    3,
+    3
+   ],
+   "elements": 9216,
+   "rel_fro": 0.00020922869322745306,
+   "max_elem_rel": 0.008869745289676647,
+   "subnormal_frac": 0.002170138888888889,
+   "flushed_frac": 0.0,
+   "abs_max": 1.3071445226669312,
+   "abs_median": 0.03339875489473343
+  },
+  {
+   "name": "decoder.decoder.layers.0.cross_attn.attention_weights.weight",
+   "shape": [
+    96,
+    256
+   ],
+   "elements": 24576,
+   "rel_fro": 0.00020913995538416352,
+   "max_elem_rel": 0.00048673164762535125,
+   "subnormal_frac": 8.138020833333333e-05,
+   "flushed_frac": 0.0,
+   "abs_max": 2.3021390438079834,
+   "abs_median": 0.12171873450279236
+  },
+  {
+   "name": "backbone.stages.1.downsample.conv.weight",
+   "shape": [
+    96,
+    1,
+    3,
+    3
+   ],
+   "elements": 864,
+   "rel_fro": 0.00020907732406679383,
+   "max_elem_rel": 0.0004754987973087605,
+   "subnormal_frac": 0.0,
+   "flushed_frac": 0.0,
+   "abs_max": 0.2905532419681549,
+   "abs_median": 0.08364353328943253
+  },
+  {
+   "name": "encoder.fpn_blocks.0.cv2.0.bottlenecks.0.fused.weight",
+   "shape": [
+    128,
+    128,
+    3,
+    3
+   ],
+   "elements": 147456,
+   "rel_fro": 0.0002090623306466098,
+   "max_elem_rel": 0.10583153347732181,
+   "subnormal_frac": 0.0015801323784722222,
+   "flushed_frac": 0.0,
+   "abs_max": 0.5374193787574768,
+   "abs_median": 0.025168491527438164
+  },
+  {
+   "name": "backbone.stages.2.blocks.1.layers.3.conv1.conv.weight",
+   "shape": [
+    128,
+    128,
+    1,
+    1
+   ],
+   "elements": 16384,
+   "rel_fro": 0.00020887456367765274,
+   "max_elem_rel": 0.005518032931620536,
+   "subnormal_frac": 0.0010986328125,
+   "flushed_frac": 0.0,
+   "abs_max": 0.7195386290550232,
+   "abs_median": 0.02482891082763672
+  },
+  {
+   "name": "decoder.decoder.layers.0.self_attn.out_proj.weight",
+   "shape": [
+    256,
+    256
+   ],
+   "elements": 65536,
+   "rel_fro": 0.00020881621183584115,
+   "max_elem_rel": 0.00048614117121016805,
+   "subnormal_frac": 0.0001373291015625,
+   "flushed_frac": 0.0,
+   "abs_max": 4.872786998748779,
+   "abs_median": 0.20375388860702515
+  },
+  {
+   "name": "encoder.fpn_blocks.1.cv2.1.fused.weight",
+   "shape": [
+    128,
+    128,
+    3,
+    3
+   ],
+   "elements": 147456,
+   "rel_fro": 0.0002087903899848049,
+   "max_elem_rel": 1.0,
+   "subnormal_frac": 0.003058539496527778,
+   "flushed_frac": 6.781684027777777e-06,
+   "abs_max": 0.37613213062286377,
+   "abs_median": 0.011959641240537167
+  },
+  {
+   "name": "encoder.fpn_blocks.1.cv3.1.fused.weight",
+   "shape": [
+    128,
+    128,
+    3,
+    3
+   ],
+   "elements": 147456,
+   "rel_fro": 0.00020876903492278873,
+   "max_elem_rel": 0.09714395727151129,
+   "subnormal_frac": 0.0015936957465277778,
+   "flushed_frac": 0.0,
+   "abs_max": 0.542463481426239,
+   "abs_median": 0.019962338730692863
+  },
+  {
+   "name": "encoder.input_proj.0.conv.weight",
+   "shape": [
+    256,
+    384,
+    1,
+    1
+   ],
+   "elements": 98304,
+   "rel_fro": 0.00020875883687445656,
+   "max_elem_rel": 0.0014713673533111938,
+   "subnormal_frac": 0.000152587890625,
+   "flushed_frac": 0.0,
+   "abs_max": 4.499824523925781,
+   "abs_median": 0.20924030244350433
+  },
+  {
+   "name": "encoder.fpn_blocks.1.cv3.0.conv1.fused.weight",
+   "shape": [
+    128,
+    128,
+    1,
+    1
+   ],
+   "elements": 16384,
+   "rel_fro": 0.00020875750478805753,
+   "max_elem_rel": 0.008379226554029486,
+   "subnormal_frac": 0.0003662109375,
+   "flushed_frac": 0.0,
+   "abs_max": 1.2381281852722168,
+   "abs_median": 0.11344533413648605
+  },
+  {
+   "name": "backbone.stages.1.blocks.0.aggregation.1.conv.weight",
+   "shape": [
+    384,
+    192,
+    1,
+    1
+   ],
+   "elements": 73728,
+   "rel_fro": 0.00020873655826149693,
+   "max_elem_rel": 0.009735399336714036,
+   "subnormal_frac": 0.0011664496527777778,
+   "flushed_frac": 0.0,
+   "abs_max": 0.871573269367218,
+   "abs_median": 0.028488796204328537
+  },
+  {
+   "name": "encoder.encoder.0.layers.0.self_attn.in_proj_weight",
+   "shape": [
+    768,
+    256
+   ],
+   "elements": 196608,
+   "rel_fro": 0.00020855224185669844,
+   "max_elem_rel": 0.02231359687461393,
+   "subnormal_frac": 0.00023396809895833334,
+   "flushed_frac": 0.0,
+   "abs_max": 3.690324306488037,
+   "abs_median": 0.12292079627513885
+  },
+  {
+   "name": "encoder.fpn_blocks.0.cv2.0.conv2.fused.weight",
+   "shape": [
+    128,
+    256,
+    1,
+    1
+   ],
+   "elements": 32768,
+   "rel_fro": 0.00020854179168587392,
+   "max_elem_rel": 0.00820743057482281,
+   "subnormal_frac": 0.000335693359375,
+   "flushed_frac": 0.0,
+   "abs_max": 0.9226416349411011,
+   "abs_median": 0.10129042714834213
+  },
+  {
+   "name": "encoder.pan_blocks.0.cv3.0.bottlenecks.0.fused.weight",
+   "shape": [
+    128,
+    128,
+    3,
+    3
+   ],
+   "elements": 147456,
+   "rel_fro": 0.00020845502572382977,
+   "max_elem_rel": 0.05840031698674021,
+   "subnormal_frac": 0.0014512803819444445,
+   "flushed_frac": 0.0,
+   "abs_max": 0.7610253095626831,
+   "abs_median": 0.022309811785817146
+  },
+  {
+   "name": "backbone.stages.2.blocks.0.layers.2.conv2.conv.weight",
+   "shape": [
+    128,
+    1,
+    5,
+    5
+   ],
+   "elements": 3200,
+   "rel_fro": 0.00020842919983819866,
+   "max_elem_rel": 0.00047970935132609396,
+   "subnormal_frac": 0.000625,
+   "flushed_frac": 0.0,
+   "abs_max": 0.3733675181865692,
+   "abs_median": 0.02377178892493248
+  },
+  {
+   "name": "decoder.decoder.layers.1.self_attn.in_proj_weight",
+   "shape": [
+    768,
+    256
+   ],
+   "elements": 196608,
+   "rel_fro": 0.0002084212756259245,
+   "max_elem_rel": 0.06458077428804976,
+   "subnormal_frac": 0.0001983642578125,
+   "flushed_frac": 0.0,
+   "abs_max": 4.601970195770264,
+   "abs_median": 0.17074179649353027
+  },
+  {
+   "name": "decoder.enc_bbox_head.layers.0.weight",
+   "shape": [
+    256,
+    256
+   ],
+   "elements": 65536,
+   "rel_fro": 0.00020837600523354477,
+   "max_elem_rel": 0.002590571719114351,
+   "subnormal_frac": 0.00030517578125,
+   "flushed_frac": 0.0,
+   "abs_max": 1.3795949220657349,
+   "abs_median": 0.10872941464185715
+  },
+  {
+   "name": "decoder.decoder.layers.1.gateway.gate.weight",
+   "shape": [
+    512,
+    512
+   ],
+   "elements": 262144,
+   "rel_fro": 0.00020836360558988172,
+   "max_elem_rel": 0.004136246382346874,
+   "subnormal_frac": 0.000164031982421875,
+   "flushed_frac": 0.0,
+   "abs_max": 8.625088691711426,
+   "abs_median": 0.19172292947769165
+  },
+  {
+   "name": "encoder.pan_blocks.1.cv4.fused.weight",
+   "shape": [
+    256,
+    768,
+    1,
+    1
+   ],
+   "elements": 196608,
+   "rel_fro": 0.00020835626971824837,
+   "max_elem_rel": 1.0,
+   "subnormal_frac": 0.0054931640625,
+   "flushed_frac": 1.0172526041666666e-05,
+   "abs_max": 2.0168590545654297,
+   "abs_median": 0.00751776248216629
+  },
+  {
+   "name": "backbone.stem.stem3.conv.weight",
+   "shape": [
+    24,
+    48,
+    3,
+    3
+   ],
+   "elements": 10368,
+   "rel_fro": 0.0002082266940565869,
+   "max_elem_rel": 0.0016204755599704566,
+   "subnormal_frac": 0.0014467592592592592,
+   "flushed_frac": 0.0,
+   "abs_max": 1.4931505918502808,
+   "abs_median": 0.034855034202337265
+  },
+  {
+   "name": "backbone.stages.3.blocks.0.layers.1.conv1.conv.weight",
+   "shape": [
+    256,
+    256,
+    1,
+    1
+   ],
+   "elements": 65536,
+   "rel_fro": 0.00020821390057587286,
+   "max_elem_rel": 0.0434962602053205,
+   "subnormal_frac": 0.0013427734375,
+   "flushed_frac": 0.0,
+   "abs_max": 0.7973940372467041,
+   "abs_median": 0.026249369606375694
+  },
+  {
+   "name": "encoder.pan_blocks.1.cv1.fused.weight",
+   "shape": [
+    512,
+    512,
+    1,
+    1
+   ],
+   "elements": 262144,
+   "rel_fro": 0.00020819449272294147,
+   "max_elem_rel": 0.9469047375077735,
+   "subnormal_frac": 0.00389862060546875,
+   "flushed_frac": 0.0,
+   "abs_max": 0.186207577586174,
+   "abs_median": 0.009801403619349003
+  },
+  {
+   "name": "decoder.decoder.layers.2.self_attn.out_proj.weight",
+   "shape": [
+    256,
+    256
+   ],
+   "elements": 65536,
+   "rel_fro": 0.00020819432732647743,
+   "max_elem_rel": 0.012602107660362766,
+   "subnormal_frac": 0.0002288818359375,
+   "flushed_frac": 0.0,
+   "abs_max": 4.471141338348389,
+   "abs_median": 0.13982434570789337
+  },
+  {
+   "name": "decoder.decoder.layers.0.cross_attn.sampling_offsets.weight",
+   "shape": [
+    192,
+    256
+   ],
+   "elements": 49152,
+   "rel_fro": 0.000208187510890637,
+   "max_elem_rel": 0.0018565866768016136,
+   "subnormal_frac": 0.00042724609375,
+   "flushed_frac": 0.0,
+   "abs_max": 2.729093074798584,
+   "abs_median": 0.13048462569713593
+  },
+  {
+   "name": "decoder.dec_bbox_head.3.layers.0.weight",
+   "shape": [
+    256,
+    256
+   ],
+   "elements": 65536,
+   "rel_fro": 0.0002081284466538617,
+   "max_elem_rel": 0.0271975299937285,
+   "subnormal_frac": 0.0002288818359375,
+   "flushed_frac": 0.0,
+   "abs_max": 2.3303184509277344,
+   "abs_median": 0.17171235382556915
+  },
+  {
+   "name": "decoder.enc_score_head.weight",
+   "shape": [
+    12,
+    256
+   ],
+   "elements": 3072,
+   "rel_fro": 0.0002081084205144239,
+   "max_elem_rel": 0.000468388291761602,
+   "subnormal_frac": 0.0,
+   "flushed_frac": 0.0,
+   "abs_max": 1.9987730979919434,
+   "abs_median": 0.36483925580978394
+  },
+  {
+   "name": "backbone.stages.2.blocks.0.aggregation.1.conv.weight",
+   "shape": [
+    768,
+    384,
+    1,
+    1
+   ],
+   "elements": 294912,
+   "rel_fro": 0.00020808421158571903,
+   "max_elem_rel": 0.07212899878936432,
+   "subnormal_frac": 0.001129150390625,
+   "flushed_frac": 0.0,
+   "abs_max": 1.4483548402786255,
+   "abs_median": 0.027552872896194458
+  },
+  {
+   "name": "encoder.pan_blocks.1.cv3.0.conv1.fused.weight",
+   "shape": [
+    128,
+    128,
+    1,
+    1
+   ],
+   "elements": 16384,
+   "rel_fro": 0.0002080087832208605,
+   "max_elem_rel": 0.004725553318653596,
+   "subnormal_frac": 0.00030517578125,
+   "flushed_frac": 0.0,
+   "abs_max": 1.1340665817260742,
+   "abs_median": 0.07215116918087006
+  },
+  {
+   "name": "backbone.stages.2.blocks.1.layers.0.conv1.conv.weight",
+   "shape": [
+    128,
+    768,
+    1,
+    1
+   ],
+   "elements": 98304,
+   "rel_fro": 0.00020799399992121501,
+   "max_elem_rel": 0.10331311836499267,
+   "subnormal_frac": 0.0014750162760416667,
+   "flushed_frac": 0.0,
+   "abs_max": 0.7662873864173889,
+   "abs_median": 0.02561643160879612
+  },
+  {
+   "name": "backbone.stages.2.blocks.2.layers.0.conv1.conv.weight",
+   "shape": [
+    128,
+    768,
+    1,
+    1
+   ],
+   "elements": 98304,
+   "rel_fro": 0.00020796653220739458,
+   "max_elem_rel": 0.020312978829954483,
+   "subnormal_frac": 0.0009867350260416667,
+   "flushed_frac": 0.0,
+   "abs_max": 0.4060932993888855,
+   "abs_median": 0.028167352080345154
+  },
+  {
+   "name": "backbone.stages.2.blocks.0.layers.2.conv1.conv.weight",
+   "shape": [
+    128,
+    128,
+    1,
+    1
+   ],
+   "elements": 16384,
+   "rel_fro": 0.00020795497699041578,
+   "max_elem_rel": 0.019266057284325743,
+   "subnormal_frac": 0.00140380859375,
+   "flushed_frac": 0.0,
+   "abs_max": 0.7747506499290466,
+   "abs_median": 0.01971282623708248
+  },
+  {
+   "name": "encoder.pan_blocks.1.cv3.0.bottlenecks.0.fused.weight",
+   "shape": [
+    128,
+    128,
+    3,
+    3
+   ],
+   "elements": 147456,
+   "rel_fro": 0.00020794385792775904,
+   "max_elem_rel": 1.0,
+   "subnormal_frac": 0.00177001953125,
+   "flushed_frac": 1.3563368055555555e-05,
+   "abs_max": 1.0784283876419067,
+   "abs_median": 0.01943099871277809
+  },
+  {
+   "name": "encoder.encoder.0.layers.0.linear1.weight",
+   "shape": [
+    1024,
+    256
+   ],
+   "elements": 262144,
+   "rel_fro": 0.0002079423640436434,
+   "max_elem_rel": 0.007728447198829173,
+   "subnormal_frac": 0.00019073486328125,
+   "flushed_frac": 0.0,
+   "abs_max": 1.7204245328903198,
+   "abs_median": 0.17620718479156494
+  },
+  {
+   "name": "backbone.stages.1.blocks.0.aggregation.0.conv.weight",
+   "shape": [
+    192,
+    352,
+    1,
+    1
+   ],
+   "elements": 67584,
+   "rel_fro": 0.00020791434542735858,
+   "max_elem_rel": 0.31271924535029444,
+   "subnormal_frac": 0.001346472537878788,
+   "flushed_frac": 0.0,
+   "abs_max": 1.2979379892349243,
+   "abs_median": 0.028165427967905998
+  },
+  {
+   "name": "encoder.pan_blocks.0.cv2.0.bottlenecks.1.fused.weight",
+   "shape": [
+    128,
+    128,
+    3,
+    3
+   ],
+   "elements": 147456,
+   "rel_fro": 0.00020789030127695783,
+   "max_elem_rel": 0.03731477571105929,
+   "subnormal_frac": 0.0014173719618055555,
+   "flushed_frac": 0.0,
+   "abs_max": 0.8049618005752563,
+   "abs_median": 0.02495075948536396
+  },
+  {
+   "name": "backbone.stages.1.blocks.0.layers.2.conv.weight",
+   "shape": [
+    64,
+    64,
+    3,
+    3
+   ],
+   "elements": 36864,
+   "rel_fro": 0.0002078769299228312,
+   "max_elem_rel": 0.05303382562297064,
+   "subnormal_frac": 0.0011393229166666667,
+   "flushed_frac": 0.0,
+   "abs_max": 0.3758029043674469,
+   "abs_median": 0.027865303680300713
+  },
+  {
+   "name": "decoder.decoder.layers.1.linear1.weight",
+   "shape": [
+    1024,
+    256
+   ],
+   "elements": 262144,
+   "rel_fro": 0.00020786013556574248,
+   "max_elem_rel": 0.015576885524161447,
+   "subnormal_frac": 0.0002593994140625,
+   "flushed_frac": 0.0,
+   "abs_max": 5.227955341339111,
+   "abs_median": 0.15867500007152557
+  },
+  {
+   "name": "backbone.stages.3.blocks.0.layers.2.conv2.conv.weight",
+   "shape": [
+    256,
+    1,
+    5,
+    5
+   ],
+   "elements": 6400,
+   "rel_fro": 0.00020779765247027861,
+   "max_elem_rel": 0.02301320186509546,
+   "subnormal_frac": 0.00171875,
+   "flushed_frac": 0.0,
+   "abs_max": 0.46156245470046997,
+   "abs_median": 0.024293163791298866
+  },
+  {
+   "name": "backbone.stages.2.blocks.1.layers.1.conv2.conv.weight",
+   "shape": [
+    128,
+    1,
+    5,
+    5
+   ],
+   "elements": 3200,
+   "rel_fro": 0.00020777748500736302,
+   "max_elem_rel": 0.0016616385248028169,
+   "subnormal_frac": 0.0028125,
+   "flushed_frac": 0.0,
+   "abs_max": 0.5389371514320374,
+   "abs_median": 0.019619710743427277
+  },
+  {
+   "name": "decoder.decoder.layers.3.cross_attn.sampling_offsets.weight",
+   "shape": [
+    192,
+    256
+   ],
+   "elements": 49152,
+   "rel_fro": 0.00020775467324770486,
+   "max_elem_rel": 0.014923970982524506,
+   "subnormal_frac": 0.0003458658854166667,
+   "flushed_frac": 0.0,
+   "abs_max": 1.9398424625396729,
+   "abs_median": 0.1459340751171112
+  },
+  {
+   "name": "decoder.decoder.layers.2.gateway.gate.weight",
+   "shape": [
+    512,
+    512
+   ],
+   "elements": 262144,
+   "rel_fro": 0.0002076883013304098,
+   "max_elem_rel": 0.005506843816875503,
+   "subnormal_frac": 0.00014495849609375,
+   "flushed_frac": 0.0,
+   "abs_max": 5.0287957191467285,
+   "abs_median": 0.20725218951702118
+  },
+  {
+   "name": "encoder.input_proj.1.conv.weight",
+   "shape": [
+    256,
+    768,
+    1,
+    1
+   ],
+   "elements": 196608,
+   "rel_fro": 0.00020766281453590328,
+   "max_elem_rel": 0.005067310008877859,
+   "subnormal_frac": 0.0001220703125,
+   "flushed_frac": 0.0,
+   "abs_max": 3.749410629272461,
+   "abs_median": 0.2384311854839325
+  },
+  {
+   "name": "encoder.encoder.0.layers.0.self_attn.out_proj.weight",
+   "shape": [
+    256,
+    256
+   ],
+   "elements": 65536,
+   "rel_fro": 0.00020764875275120417,
+   "max_elem_rel": 0.002737246999975471,
+   "subnormal_frac": 0.0001678466796875,
+   "flushed_frac": 0.0,
+   "abs_max": 2.1940393447875977,
+   "abs_median": 0.1606249064207077
+  },
+  {
+   "name": "decoder.decoder.layers.3.gateway.gate.weight",
+   "shape": [
+    512,
+    512
+   ],
+   "elements": 262144,
+   "rel_fro": 0.00020764423922021568,
+   "max_elem_rel": 0.008136722417837347,
+   "subnormal_frac": 0.00014495849609375,
+   "flushed_frac": 0.0,
+   "abs_max": 5.311896800994873,
+   "abs_median": 0.21011599898338318
+  },
+  {
+   "name": "decoder.enc_output.proj.weight",
+   "shape": [
+    256,
+    256
+   ],
+   "elements": 65536,
+   "rel_fro": 0.000207610279463345,
+   "max_elem_rel": 0.00211757397964935,
+   "subnormal_frac": 9.1552734375e-05,
+   "flushed_frac": 0.0,
+   "abs_max": 7.785852909088135,
+   "abs_median": 0.21436266601085663
+  },
+  {
+   "name": "decoder.decoder.layers.3.linear1.weight",
+   "shape": [
+    1024,
+    256
+   ],
+   "elements": 262144,
+   "rel_fro": 0.0002075876455057914,
+   "max_elem_rel": 0.007028985403539779,
+   "subnormal_frac": 0.0001678466796875,
+   "flushed_frac": 0.0,
+   "abs_max": 3.6569552421569824,
+   "abs_median": 0.2165152132511139
+  },
+  {
+   "name": "backbone.stages.0.blocks.0.aggregation.0.conv.weight",
+   "shape": [
+    48,
+    160,
+    1,
+    1
+   ],
+   "elements": 7680,
+   "rel_fro": 0.00020758400953951932,
+   "max_elem_rel": 0.0005755461705382751,
+   "subnormal_frac": 0.00078125,
+   "flushed_frac": 0.0,
+   "abs_max": 0.9611928462982178,
+   "abs_median": 0.04754316806793213
+  },
+  {
+   "name": "backbone.stages.0.blocks.0.layers.3.conv.weight",
+   "shape": [
+    32,
+    32,
+    3,
+    3
+   ],
+   "elements": 9216,
+   "rel_fro": 0.0002075809650987109,
+   "max_elem_rel": 0.003066364121518458,
+   "subnormal_frac": 0.0022786458333333335,
+   "flushed_frac": 0.0,
+   "abs_max": 0.6182718276977539,
+   "abs_median": 0.03117506019771099
+  },
+  {
+   "name": "decoder.decoder.layers.0.self_attn.in_proj_weight",
+   "shape": [
+    768,
+    256
+   ],
+   "elements": 196608,
+   "rel_fro": 0.00020757804390403618,
+   "max_elem_rel": 0.006398080106744154,
+   "subnormal_frac": 0.0001983642578125,
+   "flushed_frac": 0.0,
+   "abs_max": 3.319675922393799,
+   "abs_median": 0.1867215931415558
+  },
+  {
+   "name": "encoder.fpn_blocks.0.cv2.1.fused.weight",
+   "shape": [
+    128,
+    128,
+    3,
+    3
+   ],
+   "elements": 147456,
+   "rel_fro": 0.00020756113151867032,
+   "max_elem_rel": 1.0,
+   "subnormal_frac": 0.002773708767361111,
+   "flushed_frac": 6.781684027777777e-06,
+   "abs_max": 0.18073615431785583,
+   "abs_median": 0.012001663446426392
+  },
+  {
+   "name": "backbone.stages.2.blocks.1.aggregation.0.conv.weight",
+   "shape": [
+    384,
+    1280,
+    1,
+    1
+   ],
+   "elements": 491520,
+   "rel_fro": 0.00020755277546879644,
+   "max_elem_rel": 0.3926880708592427,
+   "subnormal_frac": 0.001263427734375,
+   "flushed_frac": 0.0,
+   "abs_max": 0.5708754658699036,
+   "abs_median": 0.026331156492233276
+  },
+  {
+   "name": "decoder.decoder.layers.2.linear2.weight",
+   "shape": [
+    256,
+    1024
+   ],
+   "elements": 262144,
+   "rel_fro": 0.0002075384798636017,
+   "max_elem_rel": 0.08419094991059649,
+   "subnormal_frac": 0.0001220703125,
+   "flushed_frac": 0.0,
+   "abs_max": 3.853045701980591,
+   "abs_median": 0.21745483577251434
+  },
+  {
+   "name": "backbone.stages.2.blocks.0.aggregation.0.conv.weight",
+   "shape": [
+    384,
+    896,
+    1,
+    1
+   ],
+   "elements": 344064,
+   "rel_fro": 0.00020752054896631267,
+   "max_elem_rel": 0.3149068483138067,
+   "subnormal_frac": 0.0014677501860119048,
+   "flushed_frac": 0.0,
+   "abs_max": 0.8977259397506714,
+   "abs_median": 0.023876091465353966
+  },
+  {
+   "name": "encoder.fpn_blocks.1.cv2.0.bottlenecks.1.fused.weight",
+   "shape": [
+    128,
+    128,
+    3,
+    3
+   ],
+   "elements": 147456,
+   "rel_fro": 0.0002074961738076787,
+   "max_elem_rel": 0.20560363024570902,
+   "subnormal_frac": 0.001010470920138889,
+   "flushed_frac": 0.0,
+   "abs_max": 0.7354874610900879,
+   "abs_median": 0.03181843459606171
+  },
+  {
+   "name": "backbone.stages.2.blocks.2.aggregation.1.conv.weight",
+   "shape": [
+    768,
+    384,
+    1,
+    1
+   ],
+   "elements": 294912,
+   "rel_fro": 0.00020748518533990714,
+   "max_elem_rel": 1.0,
+   "subnormal_frac": 0.005096435546875,
+   "flushed_frac": 0.00390625,
+   "abs_max": 0.49855396151542664,
+   "abs_median": 0.02866445668041706
+  },
+  {
+   "name": "decoder.decoder.layers.0.linear2.weight",
+   "shape": [
+    256,
+    1024
+   ],
+   "elements": 262144,
+   "rel_fro": 0.0002074832650342212,
+   "max_elem_rel": 0.029569846471326044,
+   "subnormal_frac": 0.0001373291015625,
+   "flushed_frac": 0.0,
+   "abs_max": 4.512722492218018,
+   "abs_median": 0.1944323182106018
+  },
+  {
+   "name": "decoder.decoder.layers.1.self_attn.out_proj.weight",
+   "shape": [
+    256,
+    256
+   ],
+   "elements": 65536,
+   "rel_fro": 0.0002074525217676953,
+   "max_elem_rel": 0.006070862080764644,
+   "subnormal_frac": 0.0003204345703125,
+   "flushed_frac": 0.0,
+   "abs_max": 4.72199010848999,
+   "abs_median": 0.15035372972488403
+  },
+  {
+   "name": "backbone.stages.3.blocks.0.aggregation.0.conv.weight",
+   "shape": [
+    768,
+    1792,
+    1,
+    1
+   ],
+   "elements": 1376256,
+   "rel_fro": 0.00020745053339716392,
+   "max_elem_rel": 0.7913645105971241,
+   "subnormal_frac": 0.0011996314639136905,
+   "flushed_frac": 0.0,
+   "abs_max": 0.8924314379692078,
+   "abs_median": 0.027382779866456985
+  },
+  {
+   "name": "decoder.decoder.layers.3.linear2.weight",
+   "shape": [
+    256,
+    1024
+   ],
+   "elements": 262144,
+   "rel_fro": 0.0002074224817486818,
+   "max_elem_rel": 0.005090486847230595,
+   "subnormal_frac": 0.0001068115234375,
+   "flushed_frac": 0.0,
+   "abs_max": 3.1180098056793213,
+   "abs_median": 0.2176048904657364
+  },
+  {
+   "name": "backbone.stages.2.blocks.2.aggregation.0.conv.weight",
+   "shape": [
+    384,
+    1280,
+    1,
+    1
+   ],
+   "elements": 491520,
+   "rel_fro": 0.00020739012150168545,
+   "max_elem_rel": 0.19115401845246233,
+   "subnormal_frac": 0.0012410481770833333,
+   "flushed_frac": 0.0,
+   "abs_max": 0.5664481520652771,
+   "abs_median": 0.027329782024025917
+  },
+  {
+   "name": "decoder.decoder.layers.1.linear2.weight",
+   "shape": [
+    256,
+    1024
+   ],
+   "elements": 262144,
+   "rel_fro": 0.00020737954878895947,
+   "max_elem_rel": 0.012143294817082234,
+   "subnormal_frac": 0.00018310546875,
+   "flushed_frac": 0.0,
+   "abs_max": 5.138465881347656,
+   "abs_median": 0.20577576756477356
+  },
+  {
+   "name": "decoder.dec_bbox_head.3.layers.1.weight",
+   "shape": [
+    256,
+    256
+   ],
+   "elements": 65536,
+   "rel_fro": 0.00020733690093067828,
+   "max_elem_rel": 0.004385369679182591,
+   "subnormal_frac": 0.000244140625,
+   "flushed_frac": 0.0,
+   "abs_max": 1.6942262649536133,
+   "abs_median": 0.13689397275447845
+  },
+  {
+   "name": "encoder.fpn_blocks.1.cv1.fused.weight",
+   "shape": [
+    512,
+    512,
+    1,
+    1
+   ],
+   "elements": 262144,
+   "rel_fro": 0.00020733222341701792,
+   "max_elem_rel": 0.29151059607023105,
+   "subnormal_frac": 0.003086090087890625,
+   "flushed_frac": 0.0,
+   "abs_max": 0.2817116975784302,
+   "abs_median": 0.01214832253754139
+  },
+  {
+   "name": "encoder.pan_blocks.1.cv2.1.fused.weight",
+   "shape": [
+    128,
+    128,
+    3,
+    3
+   ],
+   "elements": 147456,
+   "rel_fro": 0.00020731795490566343,
+   "max_elem_rel": 0.15594573015942573,
+   "subnormal_frac": 0.004462348090277778,
+   "flushed_frac": 0.0,
+   "abs_max": 0.2852645516395569,
+   "abs_median": 0.008228875696659088
+  },
+  {
+   "name": "backbone.stages.3.blocks.0.layers.3.conv1.conv.weight",
+   "shape": [
+    256,
+    256,
+    1,
+    1
+   ],
+   "elements": 65536,
+   "rel_fro": 0.00020722887573115358,
+   "max_elem_rel": 0.06612214445666072,
+   "subnormal_frac": 0.0011749267578125,
+   "flushed_frac": 0.0,
+   "abs_max": 0.545820415019989,
+   "abs_median": 0.027329782024025917
+  },
+  {
+   "name": "decoder.decoder.layers.0.gateway.gate.weight",
+   "shape": [
+    512,
+    512
+   ],
+   "elements": 262144,
+   "rel_fro": 0.00020720473447293704,
+   "max_elem_rel": 0.06574367465721756,
+   "subnormal_frac": 0.000152587890625,
+   "flushed_frac": 0.0,
+   "abs_max": 5.769538402557373,
+   "abs_median": 0.19155281782150269
+  },
+  {
+   "name": "backbone.stages.3.blocks.0.aggregation.1.conv.weight",
+   "shape": [
+    1536,
+    768,
+    1,
+    1
+   ],
+   "elements": 1179648,
+   "rel_fro": 0.00020716777058244943,
+   "max_elem_rel": 0.4496760974326711,
+   "subnormal_frac": 0.0011011759440104167,
+   "flushed_frac": 0.0,
+   "abs_max": 0.7505959272384644,
+   "abs_median": 0.029415598139166832
+  },
+  {
+   "name": "encoder.fpn_blocks.1.cv3.0.bottlenecks.1.fused.weight",
+   "shape": [
+    128,
+    128,
+    3,
+    3
+   ],
+   "elements": 147456,
+   "rel_fro": 0.0002071588827885145,
+   "max_elem_rel": 0.06545761005500077,
+   "subnormal_frac": 0.0009697808159722222,
+   "flushed_frac": 0.0,
+   "abs_max": 1.477362871170044,
+   "abs_median": 0.036266423761844635
+  },
+  {
+   "name": "encoder.input_proj.2.conv.weight",
+   "shape": [
+    256,
+    1536,
+    1,
+    1
+   ],
+   "elements": 393216,
+   "rel_fro": 0.00020713161438512174,
+   "max_elem_rel": 0.012722258385782212,
+   "subnormal_frac": 0.00017293294270833334,
+   "flushed_frac": 0.0,
+   "abs_max": 7.462691307067871,
+   "abs_median": 0.2452334314584732
+  },
+  {
+   "name": "encoder.pan_blocks.1.cv2.0.conv1.fused.weight",
+   "shape": [
+    128,
+    256,
+    1,
+    1
+   ],
+   "elements": 32768,
+   "rel_fro": 0.00020712538216431572,
+   "max_elem_rel": 0.002096026047417874,
+   "subnormal_frac": 0.00030517578125,
+   "flushed_frac": 0.0,
+   "abs_max": 1.0460407733917236,
+   "abs_median": 0.07863236218690872
+  },
+  {
+   "name": "encoder.encoder.0.layers.0.linear2.weight",
+   "shape": [
+    256,
+    1024
+   ],
+   "elements": 262144,
+   "rel_fro": 0.00020711419548955314,
+   "max_elem_rel": 0.03669923676464644,
+   "subnormal_frac": 0.0002593994140625,
+   "flushed_frac": 0.0,
+   "abs_max": 6.349099159240723,
+   "abs_median": 0.1592106968164444
+  },
+  {
+   "name": "encoder.fpn_blocks.0.cv3.0.bottlenecks.1.fused.weight",
+   "shape": [
+    128,
+    128,
+    3,
+    3
+   ],
+   "elements": 147456,
+   "rel_fro": 0.00020709521037294988,
+   "max_elem_rel": 0.013746080791117263,
+   "subnormal_frac": 0.0009562174479166666,
+   "flushed_frac": 0.0,
+   "abs_max": 0.6301282644271851,
+   "abs_median": 0.04021967947483063
+  },
+  {
+   "name": "encoder.pan_blocks.0.cv2.0.conv1.fused.weight",
+   "shape": [
+    128,
+    256,
+    1,
+    1
+   ],
+   "elements": 32768,
+   "rel_fro": 0.00020705465340874456,
+   "max_elem_rel": 0.004650218947369309,
+   "subnormal_frac": 0.000396728515625,
+   "flushed_frac": 0.0,
+   "abs_max": 1.505649447441101,
+   "abs_median": 0.09354247152805328
+  },
+  {
+   "name": "encoder.downsample_convs.1.0.cv2.fused.weight",
+   "shape": [
+    256,
+    1,
+    3,
+    3
+   ],
+   "elements": 2304,
+   "rel_fro": 0.00020703147654369504,
+   "max_elem_rel": 0.0004779984173913393,
+   "subnormal_frac": 0.0,
+   "flushed_frac": 0.0,
+   "abs_max": 6.599018096923828,
+   "abs_median": 0.2814149558544159
+  },
+  {
+   "name": "decoder.dec_bbox_head.1.layers.0.weight",
+   "shape": [
+    256,
+    256
+   ],
+   "elements": 65536,
+   "rel_fro": 0.00020702813401336065,
+   "max_elem_rel": 0.1312536748245524,
+   "subnormal_frac": 0.0002288818359375,
+   "flushed_frac": 0.0,
+   "abs_max": 3.1829464435577393,
+   "abs_median": 0.14146284759044647
+  },
+  {
+   "name": "encoder.pan_blocks.0.cv1.fused.weight",
+   "shape": [
+    512,
+    512,
+    1,
+    1
+   ],
+   "elements": 262144,
+   "rel_fro": 0.00020700699555334658,
+   "max_elem_rel": 1.0,
+   "subnormal_frac": 0.002994537353515625,
+   "flushed_frac": 3.814697265625e-06,
+   "abs_max": 0.3053390681743622,
+   "abs_median": 0.011561127379536629
+  },
+  {
+   "name": "backbone.stages.3.downsample.conv.weight",
+   "shape": [
+    768,
+    1,
+    3,
+    3
+   ],
+   "elements": 6912,
+   "rel_fro": 0.00020700277379686767,
+   "max_elem_rel": 0.00048017885341181224,
+   "subnormal_frac": 0.0,
+   "flushed_frac": 0.0,
+   "abs_max": 0.1545407772064209,
+   "abs_median": 0.05413810908794403
+  },
+  {
+   "name": "encoder.pan_blocks.1.cv2.0.bottlenecks.1.fused.weight",
+   "shape": [
+    128,
+    128,
+    3,
+    3
+   ],
+   "elements": 147456,
+   "rel_fro": 0.00020694799889870547,
+   "max_elem_rel": 0.1099994131508592,
+   "subnormal_frac": 0.002590603298611111,
+   "flushed_frac": 0.0,
+   "abs_max": 0.5573267936706543,
+   "abs_median": 0.015121678821742535
+  },
+  {
+   "name": "backbone.stages.2.blocks.1.aggregation.1.conv.weight",
+   "shape": [
+    768,
+    384,
+    1,
+    1
+   ],
+   "elements": 294912,
+   "rel_fro": 0.00020694214061346166,
+   "max_elem_rel": 1.0,
+   "subnormal_frac": 0.0025126139322916665,
+   "flushed_frac": 0.0013020833333333333,
+   "abs_max": 0.5278922915458679,
+   "abs_median": 0.0282047800719738
+  },
+  {
+   "name": "backbone.stages.3.blocks.0.layers.0.conv1.conv.weight",
+   "shape": [
+    256,
+    768,
+    1,
+    1
+   ],
+   "elements": 196608,
+   "rel_fro": 0.0002069143441859882,
+   "max_elem_rel": 0.02060722807661855,
+   "subnormal_frac": 0.0012613932291666667,
+   "flushed_frac": 0.0,
+   "abs_max": 0.5379793643951416,
+   "abs_median": 0.027044720947742462
+  },
+  {
+   "name": "backbone.stages.2.blocks.2.layers.3.conv2.conv.weight",
+   "shape": [
+    128,
+    1,
+    5,
+    5
+   ],
+   "elements": 3200,
+   "rel_fro": 0.0002069064530296928,
+   "max_elem_rel": 0.0005286843631432594,
+   "subnormal_frac": 0.0015625,
+   "flushed_frac": 0.0,
+   "abs_max": 0.3945847451686859,
+   "abs_median": 0.02240188792347908
+  },
+  {
+   "name": "encoder.fpn_blocks.0.cv3.0.bottlenecks.0.fused.weight",
+   "shape": [
+    128,
+    128,
+    3,
+    3
+   ],
+   "elements": 147456,
+   "rel_fro": 0.0002069019815725942,
+   "max_elem_rel": 0.08622878397282152,
+   "subnormal_frac": 0.0011732313368055555,
+   "flushed_frac": 0.0,
+   "abs_max": 0.5247833728790283,
+   "abs_median": 0.028124796226620674
+  },
+  {
+   "name": "backbone.stem.stem2b.conv.weight",
+   "shape": [
+    24,
+    12,
+    2,
+    2
+   ],
+   "elements": 1152,
+   "rel_fro": 0.00020682255003798568,
+   "max_elem_rel": 0.00047808764940239046,
+   "subnormal_frac": 0.0,
+   "flushed_frac": 0.0,
+   "abs_max": 0.7490949630737305,
+   "abs_median": 0.06350235641002655
+  },
+  {
+   "name": "decoder.decoder.layers.2.cross_attn.attention_weights.weight",
+   "shape": [
+    96,
+    256
+   ],
+   "elements": 24576,
+   "rel_fro": 0.00020677158423221826,
+   "max_elem_rel": 0.006084560332209318,
+   "subnormal_frac": 0.0001220703125,
+   "flushed_frac": 0.0,
+   "abs_max": 1.9685015678405762,
+   "abs_median": 0.18391335010528564
+  },
+  {
+   "name": "encoder.fpn_blocks.0.cv3.0.conv1.fused.weight",
+   "shape": [
+    128,
+    128,
+    1,
+    1
+   ],
+   "elements": 16384,
+   "rel_fro": 0.0002067415405751168,
+   "max_elem_rel": 0.02364498077227483,
+   "subnormal_frac": 0.00042724609375,
+   "flushed_frac": 0.0,
+   "abs_max": 1.0050410032272339,
+   "abs_median": 0.10875707119703293
+  },
+  {
+   "name": "encoder.fpn_blocks.1.cv2.0.bottlenecks.0.fused.weight",
+   "shape": [
+    128,
+    128,
+    3,
+    3
+   ],
+   "elements": 147456,
+   "rel_fro": 0.00020673548219341767,
+   "max_elem_rel": 0.06050202704542895,
+   "subnormal_frac": 0.0014851888020833333,
+   "flushed_frac": 0.0,
+   "abs_max": 0.7694719433784485,
+   "abs_median": 0.024610241875052452
+  },
+  {
+   "name": "decoder.decoder.layers.2.self_attn.in_proj_weight",
+   "shape": [
+    768,
+    256
+   ],
+   "elements": 196608,
+   "rel_fro": 0.0002066967297725569,
+   "max_elem_rel": 0.021085319931484638,
+   "subnormal_frac": 0.0001678466796875,
+   "flushed_frac": 0.0,
+   "abs_max": 9.056299209594727,
+   "abs_median": 0.15685725212097168
+  },
+  {
+   "name": "encoder.pan_blocks.1.cv3.0.conv2.fused.weight",
+   "shape": [
+    128,
+    128,
+    1,
+    1
+   ],
+   "elements": 16384,
+   "rel_fro": 0.000206695064963565,
+   "max_elem_rel": 0.010763817317105247,
+   "subnormal_frac": 0.00054931640625,
+   "flushed_frac": 0.0,
+   "abs_max": 1.2117592096328735,
+   "abs_median": 0.05239767208695412
+  },
+  {
+   "name": "encoder.pan_blocks.0.cv2.1.fused.weight",
+   "shape": [
+    128,
+    128,
+    3,
+    3
+   ],
+   "elements": 147456,
+   "rel_fro": 0.00020668218823514532,
+   "max_elem_rel": 0.18458044490000802,
+   "subnormal_frac": 0.002983940972222222,
+   "flushed_frac": 0.0,
+   "abs_max": 0.33050593733787537,
+   "abs_median": 0.011394606903195381
+  },
+  {
+   "name": "decoder.decoder.layers.0.linear1.weight",
+   "shape": [
+    1024,
+    256
+   ],
+   "elements": 262144,
+   "rel_fro": 0.00020664668108271063,
+   "max_elem_rel": 0.06476900705935873,
+   "subnormal_frac": 0.0002593994140625,
+   "flushed_frac": 0.0,
+   "abs_max": 4.62146520614624,
+   "abs_median": 0.1639108657836914
+  },
+  {
+   "name": "encoder.fpn_blocks.0.cv4.fused.weight",
+   "shape": [
+    256,
+    768,
+    1,
+    1
+   ],
+   "elements": 196608,
+   "rel_fro": 0.00020663341881485434,
+   "max_elem_rel": 0.025359256429065946,
+   "subnormal_frac": 0.0010172526041666667,
+   "flushed_frac": 0.0,
+   "abs_max": 1.309646487236023,
+   "abs_median": 0.03408731520175934
+  },
+  {
+   "name": "decoder.query_pos_head.layers.1.weight",
+   "shape": [
+    256,
+    512
+   ],
+   "elements": 131072,
+   "rel_fro": 0.00020663016555349216,
+   "max_elem_rel": 0.05059811411321141,
+   "subnormal_frac": 0.00049591064453125,
+   "flushed_frac": 0.0,
+   "abs_max": 8.628561973571777,
+   "abs_median": 0.05793727561831474
+  },
+  {
+   "name": "encoder.fpn_blocks.0.cv2.0.bottlenecks.1.fused.weight",
+   "shape": [
+    128,
+    128,
+    3,
+    3
+   ],
+   "elements": 147456,
+   "rel_fro": 0.0002065722996305957,
+   "max_elem_rel": 0.0697197195920593,
+   "subnormal_frac": 0.00128173828125,
+   "flushed_frac": 0.0,
+   "abs_max": 0.7955354452133179,
+   "abs_median": 0.025787632912397385
+  },
+  {
+   "name": "decoder.decoder.layers.2.linear1.weight",
+   "shape": [
+    1024,
+    256
+   ],
+   "elements": 262144,
+   "rel_fro": 0.00020654546786096236,
+   "max_elem_rel": 0.019198456613338376,
+   "subnormal_frac": 0.00016021728515625,
+   "flushed_frac": 0.0,
+   "abs_max": 5.333923816680908,
+   "abs_median": 0.19124358892440796
+  },
+  {
+   "name": "encoder.pan_blocks.0.cv2.0.bottlenecks.0.fused.weight",
+   "shape": [
+    128,
+    128,
+    3,
+    3
+   ],
+   "elements": 147456,
+   "rel_fro": 0.00020648049774784114,
+   "max_elem_rel": 0.12134242610274375,
+   "subnormal_frac": 0.0014241536458333333,
+   "flushed_frac": 0.0,
+   "abs_max": 0.7869639992713928,
+   "abs_median": 0.021888935938477516
+  },
+  {
+   "name": "encoder.fpn_blocks.0.cv1.fused.weight",
+   "shape": [
+    512,
+    512,
+    1,
+    1
+   ],
+   "elements": 262144,
+   "rel_fro": 0.00020642839788469823,
+   "max_elem_rel": 1.0,
+   "subnormal_frac": 0.0017547607421875,
+   "flushed_frac": 3.814697265625e-06,
+   "abs_max": 0.9353899359703064,
+   "abs_median": 0.020233487710356712
+  },
+  {
+   "name": "decoder.dec_bbox_head.0.layers.0.weight",
+   "shape": [
+    256,
+    256
+   ],
+   "elements": 65536,
+   "rel_fro": 0.00020641595980492396,
+   "max_elem_rel": 0.008325275673563072,
+   "subnormal_frac": 0.00018310546875,
+   "flushed_frac": 0.0,
+   "abs_max": 2.2149715423583984,
+   "abs_median": 0.17315015196800232
+  },
+  {
+   "name": "backbone.stages.2.blocks.1.layers.2.conv1.conv.weight",
+   "shape": [
+    128,
+    128,
+    1,
+    1
+   ],
+   "elements": 16384,
+   "rel_fro": 0.00020640428503261913,
+   "max_elem_rel": 0.0029291416433214253,
+   "subnormal_frac": 0.00115966796875,
+   "flushed_frac": 0.0,
+   "abs_max": 0.6459689736366272,
+   "abs_median": 0.02675245702266693
+  },
+  {
+   "name": "backbone.stages.2.blocks.0.layers.0.conv2.conv.weight",
+   "shape": [
+    128,
+    1,
+    5,
+    5
+   ],
+   "elements": 3200,
+   "rel_fro": 0.00020639367159335322,
+   "max_elem_rel": 0.000982725453214966,
+   "subnormal_frac": 0.00125,
+   "flushed_frac": 0.0,
+   "abs_max": 0.6296185851097107,
+   "abs_median": 0.021404698491096497
+  },
+  {
+   "name": "backbone.stages.2.blocks.0.layers.0.conv1.conv.weight",
+   "shape": [
+    128,
+    384,
+    1,
+    1
+   ],
+   "elements": 49152,
+   "rel_fro": 0.00020632474586372245,
+   "max_elem_rel": 0.010032162641440008,
+   "subnormal_frac": 0.00146484375,
+   "flushed_frac": 0.0,
+   "abs_max": 0.7284528613090515,
+   "abs_median": 0.021526262164115906
+  },
+  {
+   "name": "encoder.fpn_blocks.1.cv3.0.bottlenecks.0.fused.weight",
+   "shape": [
+    128,
+    128,
+    3,
+    3
+   ],
+   "elements": 147456,
+   "rel_fro": 0.0002062843698353503,
+   "max_elem_rel": 0.3072647358949377,
+   "subnormal_frac": 0.00115966796875,
+   "flushed_frac": 0.0,
+   "abs_max": 0.9451375603675842,
+   "abs_median": 0.027406686916947365
+  },
+  {
+   "name": "encoder.fpn_blocks.1.cv2.0.conv2.fused.weight",
+   "shape": [
+    128,
+    256,
+    1,
+    1
+   ],
+   "elements": 32768,
+   "rel_fro": 0.00020626229624031486,
+   "max_elem_rel": 0.02393562705333328,
+   "subnormal_frac": 0.00048828125,
+   "flushed_frac": 0.0,
+   "abs_max": 1.3355592489242554,
+   "abs_median": 0.09484978020191193
+  },
+  {
+   "name": "encoder.fpn_blocks.0.cv3.0.conv2.fused.weight",
+   "shape": [
+    128,
+    128,
+    1,
+    1
+   ],
+   "elements": 16384,
+   "rel_fro": 0.00020623026593906752,
+   "max_elem_rel": 0.06392539135304212,
+   "subnormal_frac": 0.00042724609375,
+   "flushed_frac": 0.0,
+   "abs_max": 0.8697038292884827,
+   "abs_median": 0.0980859249830246
+  },
+  {
+   "name": "encoder.downsample_convs.0.0.cv2.fused.weight",
+   "shape": [
+    256,
+    1,
+    3,
+    3
+   ],
+   "elements": 2304,
+   "rel_fro": 0.00020622185213837308,
+   "max_elem_rel": 0.00047694573348609,
+   "subnormal_frac": 0.0,
+   "flushed_frac": 0.0,
+   "abs_max": 7.314239978790283,
+   "abs_median": 0.2635855972766876
+  },
+  {
+   "name": "encoder.lateral_convs.1.fused.weight",
+   "shape": [
+    256,
+    256,
+    1,
+    1
+   ],
+   "elements": 65536,
+   "rel_fro": 0.00020620931786689232,
+   "max_elem_rel": 0.015320714130545247,
+   "subnormal_frac": 0.0004730224609375,
+   "flushed_frac": 0.0,
+   "abs_max": 0.6549394726753235,
+   "abs_median": 0.07079144567251205
+  },
+  {
+   "name": "encoder.fpn_blocks.0.cv2.0.conv1.fused.weight",
+   "shape": [
+    128,
+    256,
+    1,
+    1
+   ],
+   "elements": 32768,
+   "rel_fro": 0.00020618133426628427,
+   "max_elem_rel": 0.007450473215654347,
+   "subnormal_frac": 0.000274658203125,
+   "flushed_frac": 0.0,
+   "abs_max": 1.0215765237808228,
+   "abs_median": 0.11356672644615173
+  },
+  {
+   "name": "decoder.pre_bbox_head.layers.0.weight",
+   "shape": [
+    256,
+    256
+   ],
+   "elements": 65536,
+   "rel_fro": 0.00020613563697383352,
+   "max_elem_rel": 0.005832501252660254,
+   "subnormal_frac": 0.000335693359375,
+   "flushed_frac": 0.0,
+   "abs_max": 2.844266891479492,
+   "abs_median": 0.12025805562734604
+  },
+  {
+   "name": "encoder.fpn_blocks.0.cv3.1.fused.weight",
+   "shape": [
+    128,
+    128,
+    3,
+    3
+   ],
+   "elements": 147456,
+   "rel_fro": 0.0002061252571421272,
+   "max_elem_rel": 0.7498480623266224,
+   "subnormal_frac": 0.0015936957465277778,
+   "flushed_frac": 0.0,
+   "abs_max": 0.27202847599983215,
+   "abs_median": 0.019425321370363235
+  },
+  {
+   "name": "decoder.decoder.layers.3.self_attn.in_proj_weight",
+   "shape": [
+    768,
+    256
+   ],
+   "elements": 196608,
+   "rel_fro": 0.00020611561921961142,
+   "max_elem_rel": 0.00200410748032177,
+   "subnormal_frac": 0.00011698404947916667,
+   "flushed_frac": 0.0,
+   "abs_max": 9.335521697998047,
+   "abs_median": 0.1890195906162262
+  },
+  {
+   "name": "encoder.fpn_blocks.1.cv4.fused.weight",
+   "shape": [
+    256,
+    768,
+    1,
+    1
+   ],
+   "elements": 196608,
+   "rel_fro": 0.0002061127665983966,
+   "max_elem_rel": 0.06792349365428514,
+   "subnormal_frac": 0.004302978515625,
+   "flushed_frac": 0.0,
+   "abs_max": 0.7750107645988464,
+   "abs_median": 0.009375419467687607
+  },
+  {
+   "name": "decoder.decoder.layers.1.cross_attn.attention_weights.weight",
+   "shape": [
+    96,
+    256
+   ],
+   "elements": 24576,
+   "rel_fro": 0.00020610976374275396,
+   "max_elem_rel": 0.001551384452528325,
+   "subnormal_frac": 0.0002848307291666667,
+   "flushed_frac": 0.0,
+   "abs_max": 2.485142707824707,
+   "abs_median": 0.1661405712366104
+  },
+  {
+   "name": "encoder.pan_blocks.0.cv3.1.fused.weight",
+   "shape": [
+    128,
+    128,
+    3,
+    3
+   ],
+   "elements": 147456,
+   "rel_fro": 0.0002060702040505412,
+   "max_elem_rel": 0.09513782938565304,
+   "subnormal_frac": 0.0018242730034722222,
+   "flushed_frac": 0.0,
+   "abs_max": 2.259397268295288,
+   "abs_median": 0.018448472023010254
+  },
+  {
+   "name": "backbone.stages.2.blocks.2.layers.1.conv1.conv.weight",
+   "shape": [
+    128,
+    128,
+    1,
+    1
+   ],
+   "elements": 16384,
+   "rel_fro": 0.00020602684930685967,
+   "max_elem_rel": 0.003937745084436057,
+   "subnormal_frac": 0.0013427734375,
+   "flushed_frac": 0.0,
+   "abs_max": 0.556018590927124,
+   "abs_median": 0.030086038634181023
+  },
+  {
+   "name": "encoder.pan_blocks.0.cv3.0.conv1.fused.weight",
+   "shape": [
+    128,
+    128,
+    1,
+    1
+   ],
+   "elements": 16384,
+   "rel_fro": 0.00020600068108139012,
+   "max_elem_rel": 0.0005925329610254572,
+   "subnormal_frac": 0.000244140625,
+   "flushed_frac": 0.0,
+   "abs_max": 1.6314444541931152,
+   "abs_median": 0.09024707227945328
+  },
+  {
+   "name": "backbone.stages.1.blocks.0.layers.3.conv.weight",
+   "shape": [
+    64,
+    64,
+    3,
+    3
+   ],
+   "elements": 36864,
+   "rel_fro": 0.0002059908129730394,
+   "max_elem_rel": 0.006123173028391471,
+   "subnormal_frac": 0.0009494357638888889,
+   "flushed_frac": 0.0,
+   "abs_max": 0.4369605779647827,
+   "abs_median": 0.028801027685403824
+  },
+  {
+   "name": "backbone.stages.2.blocks.2.layers.3.conv1.conv.weight",
+   "shape": [
+    128,
+    128,
+    1,
+    1
+   ],
+   "elements": 16384,
+   "rel_fro": 0.00020596293536031504,
+   "max_elem_rel": 0.0043512464202016595,
+   "subnormal_frac": 0.00115966796875,
+   "flushed_frac": 0.0,
+   "abs_max": 0.40938714146614075,
+   "abs_median": 0.028492959216237068
+  },
+  {
+   "name": "backbone.stages.0.blocks.0.aggregation.1.conv.weight",
+   "shape": [
+    96,
+    48,
+    1,
+    1
+   ],
+   "elements": 4608,
+   "rel_fro": 0.0002059459412428342,
+   "max_elem_rel": 0.0019190354724028399,
+   "subnormal_frac": 0.0010850694444444445,
+   "flushed_frac": 0.0,
+   "abs_max": 1.0470798015594482,
+   "abs_median": 0.052015047520399094
+  },
+  {
+   "name": "backbone.stages.3.blocks.0.layers.2.conv1.conv.weight",
+   "shape": [
+    256,
+    256,
+    1,
+    1
+   ],
+   "elements": 65536,
+   "rel_fro": 0.00020590961217001558,
+   "max_elem_rel": 0.008789284873425795,
+   "subnormal_frac": 0.0015106201171875,
+   "flushed_frac": 0.0,
+   "abs_max": 0.7241935133934021,
+   "abs_median": 0.02672254852950573
+  },
+  {
+   "name": "decoder.dec_bbox_head.0.layers.1.weight",
+   "shape": [
+    256,
+    256
+   ],
+   "elements": 65536,
+   "rel_fro": 0.00020588176952576366,
+   "max_elem_rel": 0.008742186788724716,
+   "subnormal_frac": 0.0001983642578125,
+   "flushed_frac": 0.0,
+   "abs_max": 7.715124130249023,
+   "abs_median": 0.1287636011838913
+  },
+  {
+   "name": "decoder.dec_bbox_head.2.layers.0.weight",
+   "shape": [
+    256,
+    256
+   ],
+   "elements": 65536,
+   "rel_fro": 0.0002058773569156778,
+   "max_elem_rel": 0.004669898097020099,
+   "subnormal_frac": 0.000244140625,
+   "flushed_frac": 0.0,
+   "abs_max": 1.7527275085449219,
+   "abs_median": 0.1399683952331543
+  },
+  {
+   "name": "backbone.stages.2.blocks.2.layers.2.conv2.conv.weight",
+   "shape": [
+    128,
+    1,
+    5,
+    5
+   ],
+   "elements": 3200,
+   "rel_fro": 0.00020586830138095584,
+   "max_elem_rel": 0.0026601797294687098,
+   "subnormal_frac": 0.000625,
+   "flushed_frac": 0.0,
+   "abs_max": 0.4771852493286133,
+   "abs_median": 0.022599447518587112
+  },
+  {
+   "name": "encoder.lateral_convs.0.fused.weight",
+   "shape": [
+    256,
+    256,
+    1,
+    1
+   ],
+   "elements": 65536,
+   "rel_fro": 0.000205798182759108,
+   "max_elem_rel": 0.013282753718338055,
+   "subnormal_frac": 0.0005035400390625,
+   "flushed_frac": 0.0,
+   "abs_max": 1.0032212734222412,
+   "abs_median": 0.08901942521333694
+  },
+  {
+   "name": "encoder.fpn_blocks.1.cv2.0.conv1.fused.weight",
+   "shape": [
+    128,
+    256,
+    1,
+    1
+   ],
+   "elements": 32768,
+   "rel_fro": 0.0002057876458775222,
+   "max_elem_rel": 0.0018514958075291027,
+   "subnormal_frac": 0.000152587890625,
+   "flushed_frac": 0.0,
+   "abs_max": 1.5770384073257446,
+   "abs_median": 0.14144118130207062
+  },
+  {
+   "name": "backbone.stages.2.downsample.conv.weight",
+   "shape": [
+    384,
+    1,
+    3,
+    3
+   ],
+   "elements": 3456,
+   "rel_fro": 0.00020564379246158378,
+   "max_elem_rel": 0.00047808764940239046,
+   "subnormal_frac": 0.0,
+   "flushed_frac": 0.0,
+   "abs_max": 0.21416865289211273,
+   "abs_median": 0.06461147964000702
+  },
+  {
+   "name": "encoder.downsample_convs.0.0.cv1.fused.weight",
+   "shape": [
+    256,
+    256,
+    1,
+    1
+   ],
+   "elements": 65536,
+   "rel_fro": 0.00020563115311247423,
+   "max_elem_rel": 0.0037664848244964924,
+   "subnormal_frac": 0.0003662109375,
+   "flushed_frac": 0.0,
+   "abs_max": 3.567573308944702,
+   "abs_median": 0.1339724063873291
+  },
+  {
+   "name": "decoder.decoder.layers.2.cross_attn.sampling_offsets.weight",
+   "shape": [
+    192,
+    256
+   ],
+   "elements": 49152,
+   "rel_fro": 0.00020559090038664517,
+   "max_elem_rel": 0.0045479761494799445,
+   "subnormal_frac": 0.00042724609375,
+   "flushed_frac": 0.0,
+   "abs_max": 4.24176549911499,
+   "abs_median": 0.14153780043125153
+  },
+  {
+   "name": "backbone.stages.2.blocks.1.layers.1.conv1.conv.weight",
+   "shape": [
+    128,
+    128,
+    1,
+    1
+   ],
+   "elements": 16384,
+   "rel_fro": 0.00020549116055228585,
+   "max_elem_rel": 0.020579875566149732,
+   "subnormal_frac": 0.00079345703125,
+   "flushed_frac": 0.0,
+   "abs_max": 0.521477997303009,
+   "abs_median": 0.025988899171352386
+  },
+  {
+   "name": "encoder.pan_blocks.1.cv2.0.conv2.fused.weight",
+   "shape": [
+    128,
+    256,
+    1,
+    1
+   ],
+   "elements": 32768,
+   "rel_fro": 0.00020547202928491976,
+   "max_elem_rel": 0.006206562589171303,
+   "subnormal_frac": 0.00079345703125,
+   "flushed_frac": 0.0,
+   "abs_max": 1.9222694635391235,
+   "abs_median": 0.04937174171209335
+  },
+  {
+   "name": "encoder.downsample_convs.1.0.cv1.fused.weight",
+   "shape": [
+    256,
+    256,
+    1,
+    1
+   ],
+   "elements": 65536,
+   "rel_fro": 0.00020534680917030405,
+   "max_elem_rel": 0.008621283377317641,
+   "subnormal_frac": 0.0003509521484375,
+   "flushed_frac": 0.0,
+   "abs_max": 4.360814571380615,
+   "abs_median": 0.12144061923027039
+  },
+  {
+   "name": "backbone.stages.1.blocks.0.layers.1.conv.weight",
+   "shape": [
+    64,
+    64,
+    3,
+    3
+   ],
+   "elements": 36864,
+   "rel_fro": 0.00020527610794228538,
+   "max_elem_rel": 0.0038932722494383868,
+   "subnormal_frac": 0.001247829861111111,
+   "flushed_frac": 0.0,
+   "abs_max": 0.6772035360336304,
+   "abs_median": 0.026705555617809296
+  },
+  {
+   "name": "backbone.stages.1.blocks.0.layers.0.conv.weight",
+   "shape": [
+    64,
+    96,
+    3,
+    3
+   ],
+   "elements": 55296,
+   "rel_fro": 0.00020499490792306047,
+   "max_elem_rel": 0.021779038059234937,
+   "subnormal_frac": 0.0015733506944444445,
+   "flushed_frac": 0.0,
+   "abs_max": 0.9812276363372803,
+   "abs_median": 0.022729812189936638
+  },
+  {
+   "name": "backbone.stages.2.blocks.1.layers.2.conv2.conv.weight",
+   "shape": [
+    128,
+    1,
+    5,
+    5
+   ],
+   "elements": 3200,
+   "rel_fro": 0.00020461905493643787,
+   "max_elem_rel": 0.013515628160448968,
+   "subnormal_frac": 0.00125,
+   "flushed_frac": 0.0,
+   "abs_max": 0.4637371897697449,
+   "abs_median": 0.01944902539253235
+  },
+  {
+   "name": "backbone.stages.2.blocks.2.layers.2.conv1.conv.weight",
+   "shape": [
+    128,
+    128,
+    1,
+    1
+   ],
+   "elements": 16384,
+   "rel_fro": 0.0002045731600010535,
+   "max_elem_rel": 0.01084338261976686,
+   "subnormal_frac": 0.0008544921875,
+   "flushed_frac": 0.0,
+   "abs_max": 0.37697818875312805,
+   "abs_median": 0.02883007749915123
+  },
+  {
+   "name": "decoder.decoder.layers.1.cross_attn.sampling_offsets.weight",
+   "shape": [
+    192,
+    256
+   ],
+   "elements": 49152,
+   "rel_fro": 0.00020444127287135664,
+   "max_elem_rel": 0.03597773377400774,
+   "subnormal_frac": 0.0004679361979166667,
+   "flushed_frac": 0.0,
+   "abs_max": 3.626936912536621,
+   "abs_median": 0.1300954818725586
+  },
+  {
+   "name": "decoder.decoder.layers.3.self_attn.out_proj.weight",
+   "shape": [
+    256,
+    256
+   ],
+   "elements": 65536,
+   "rel_fro": 0.00020427538464725542,
+   "max_elem_rel": 0.0019333180125159044,
+   "subnormal_frac": 0.000244140625,
+   "flushed_frac": 0.0,
+   "abs_max": 3.6166696548461914,
+   "abs_median": 0.14730952680110931
+  },
+  {
+   "name": "backbone.stages.2.blocks.0.layers.3.conv2.conv.weight",
+   "shape": [
+    128,
+    1,
+    5,
+    5
+   ],
+   "elements": 3200,
+   "rel_fro": 0.0002042474855597496,
+   "max_elem_rel": 0.0035608121792438992,
+   "subnormal_frac": 0.0025,
+   "flushed_frac": 0.0,
+   "abs_max": 0.30953922867774963,
+   "abs_median": 0.028162335976958275
+  },
+  {
+   "name": "backbone.stages.2.blocks.0.layers.3.conv1.conv.weight",
+   "shape": [
+    128,
+    128,
+    1,
+    1
+   ],
+   "elements": 16384,
+   "rel_fro": 0.00020411896298765128,
+   "max_elem_rel": 0.035515645217662664,
+   "subnormal_frac": 0.00115966796875,
+   "flushed_frac": 0.0,
+   "abs_max": 0.582963764667511,
+   "abs_median": 0.020966719835996628
+  },
+  {
+   "name": "encoder.pan_blocks.0.cv3.0.bottlenecks.1.fused.weight",
+   "shape": [
+    128,
+    128,
+    3,
+    3
+   ],
+   "elements": 147456,
+   "rel_fro": 0.00020318302689812761,
+   "max_elem_rel": 0.034561746993552495,
+   "subnormal_frac": 0.0013902452256944445,
+   "flushed_frac": 0.0,
+   "abs_max": 4.4572367668151855,
+   "abs_median": 0.022868087515234947
+  },
+  {
+   "name": "decoder.dec_bbox_head.2.layers.2.weight",
+   "shape": [
+    132,
+    256
+   ],
+   "elements": 33792,
+   "rel_fro": 0.0002029577879688998,
+   "max_elem_rel": 0.0053479999382816746,
+   "subnormal_frac": 0.0005622632575757576,
+   "flushed_frac": 0.0,
+   "abs_max": 2.1436727046966553,
+   "abs_median": 0.08603517711162567
+  },
+  {
+   "name": "backbone.stem.stem1.conv.weight",
+   "shape": [
+    24,
+    3,
+    3,
+    3
+   ],
+   "elements": 648,
+   "rel_fro": 0.00020220749399335448,
+   "max_elem_rel": 0.00046376662823330577,
+   "subnormal_frac": 0.0,
+   "flushed_frac": 0.0,
+   "abs_max": 1.2044099569320679,
+   "abs_median": 0.11751340329647064
+  },
+  {
+   "name": "backbone.stages.0.blocks.0.layers.2.conv.weight",
+   "shape": [
+    32,
+    32,
+    3,
+    3
+   ],
+   "elements": 9216,
+   "rel_fro": 0.00020141332118571854,
+   "max_elem_rel": 0.024404404143631504,
+   "subnormal_frac": 0.0009765625,
+   "flushed_frac": 0.0,
+   "abs_max": 0.5487785935401917,
+   "abs_median": 0.02750115655362606
+  },
+  {
+   "name": "decoder.enc_bbox_head.layers.2.weight",
+   "shape": [
+    4,
+    256
+   ],
+   "elements": 1024,
+   "rel_fro": 0.00020062130261638768,
+   "max_elem_rel": 0.003402123944478587,
+   "subnormal_frac": 0.0185546875,
+   "flushed_frac": 0.0,
+   "abs_max": 5.537544250488281,
+   "abs_median": 0.011085554957389832
+  },
+  {
+   "name": "decoder.dec_bbox_head.0.layers.2.weight",
+   "shape": [
+    132,
+    256
+   ],
+   "elements": 33792,
+   "rel_fro": 0.00020060994524199636,
+   "max_elem_rel": 0.03404423173008652,
+   "subnormal_frac": 0.0005326704545454545,
+   "flushed_frac": 0.0,
+   "abs_max": 25.583951950073242,
+   "abs_median": 0.15049512684345245
+  },
+  {
+   "name": "backbone.stages.2.blocks.2.layers.0.conv2.conv.weight",
+   "shape": [
+    128,
+    1,
+    5,
+    5
+   ],
+   "elements": 3200,
+   "rel_fro": 0.00020021175523771362,
+   "max_elem_rel": 0.02884189183817829,
+   "subnormal_frac": 0.0015625,
+   "flushed_frac": 0.0,
+   "abs_max": 0.6033968925476074,
+   "abs_median": 0.019377605989575386
+  },
+  {
+   "name": "decoder.enc_bbox_head.layers.1.weight",
+   "shape": [
+    256,
+    256
+   ],
+   "elements": 65536,
+   "rel_fro": 0.00019983587111508386,
+   "max_elem_rel": 0.07089806898587626,
+   "subnormal_frac": 0.0008544921875,
+   "flushed_frac": 0.0,
+   "abs_max": 11.369468688964844,
+   "abs_median": 0.04232398793101311
+  },
+  {
+   "name": "backbone.stages.2.blocks.2.layers.1.conv2.conv.weight",
+   "shape": [
+    128,
+    1,
+    5,
+    5
+   ],
+   "elements": 3200,
+   "rel_fro": 0.00019960091479522495,
+   "max_elem_rel": 0.0011836447081470555,
+   "subnormal_frac": 0.0021875,
+   "flushed_frac": 0.0,
+   "abs_max": 0.5467005968093872,
+   "abs_median": 0.01926509663462639
+  },
+  {
+   "name": "backbone.stages.2.blocks.1.layers.0.conv2.conv.weight",
+   "shape": [
+    128,
+    1,
+    5,
+    5
+   ],
+   "elements": 3200,
+   "rel_fro": 0.00019839565471740797,
+   "max_elem_rel": 0.0022543493795486994,
+   "subnormal_frac": 0.001875,
+   "flushed_frac": 0.0,
+   "abs_max": 0.7875446677207947,
+   "abs_median": 0.018465060740709305
+  },
+  {
+   "name": "encoder.pan_blocks.1.cv3.0.bottlenecks.1.fused.weight",
+   "shape": [
+    128,
+    128,
+    3,
+    3
+   ],
+   "elements": 147456,
+   "rel_fro": 0.00019736222316994024,
+   "max_elem_rel": 0.10655184041454353,
+   "subnormal_frac": 0.002692328559027778,
+   "flushed_frac": 0.0,
+   "abs_max": 3.2458300590515137,
+   "abs_median": 0.013961214572191238
+  },
+  {
+   "name": "backbone.stem.stem4.conv.weight",
+   "shape": [
+    32,
+    24,
+    1,
+    1
+   ],
+   "elements": 768,
+   "rel_fro": 0.000192225363841963,
+   "max_elem_rel": 0.0004578513902389889,
+   "subnormal_frac": 0.0,
+   "flushed_frac": 0.0,
+   "abs_max": 1.135764718055725,
+   "abs_median": 0.05324418842792511
+  },
+  {
+   "name": "backbone.stages.2.blocks.0.layers.1.conv2.conv.weight",
+   "shape": [
+    128,
+    1,
+    5,
+    5
+   ],
+   "elements": 3200,
+   "rel_fro": 0.0001918766296169864,
+   "max_elem_rel": 0.0026063448418702723,
+   "subnormal_frac": 0.0025,
+   "flushed_frac": 0.0,
+   "abs_max": 0.7696662545204163,
+   "abs_median": 0.02698909491300583
+  },
+  {
+   "name": "decoder.pre_bbox_head.layers.2.weight",
+   "shape": [
+    4,
+    256
+   ],
+   "elements": 1024,
+   "rel_fro": 0.0001449435586967275,
+   "max_elem_rel": 0.007219661423900776,
+   "subnormal_frac": 0.06640625,
+   "flushed_frac": 0.0,
+   "abs_max": 7.821215629577637,
+   "abs_median": 0.006779396906495094
+  }
+ ]
+}
