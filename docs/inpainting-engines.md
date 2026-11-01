@@ -193,3 +193,15 @@ this image CLI addition. Native GPU graphs and runtime mixed precision are
 included as separately gated source paths; their qualification remains pending.
 Frame batches share
 loaded weights and process each frame independently.
+
+## Hosted qualification status (1 November 2026, feat/issue71-latent-qual)
+
+MI-GAN512 passes its frozen original/native panel on the eager and graph paths.
+For Moebius and PixelHacker, the final RGB against the CUDA originals is within
+one level, but the strict absolute component budget is exceeded (see the
+precision guide). F16/Q8_0/Q4_K `inpaint-v1` variants of all three pass the
+owner's cosine gate. Load them with `CRISPEMBED_INPAINT_QUANT=1`, plus
+`CRISPEMBED_INPAINT_QUANT_MATMUL=1` for stored-type matmul. Numbers, live-photo
+evaluation, timing and memory are in
+[inpainting-precision.md](inpainting-precision.md). Nothing is published or
+registered, and all gates stay default-off.

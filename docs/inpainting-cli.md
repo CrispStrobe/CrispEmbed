@@ -250,3 +250,13 @@ other precisions, GPU inference, C ABI/server/language bindings,
 model publication and downstream release qualification remain separate work.
 The issue's requested video propagation and motion compensation are not exposed
 as nonfunctional flags.
+
+## Precision variants
+
+`inpaint-v1` GGUFs from `crispembed-quantize MODEL-F32.gguf OUT.gguf f16|q8_0|q4_k`
+(MI-GAN512, Moebius, PixelHacker, SDXL VAE) load with the same CLI arguments,
+passing the variant file's own SHA-256 to `--inpaint-model-sha256` /
+`--inpaint-vae-sha256`, plus `CRISPEMBED_INPAINT_QUANT=1`. Add
+`CRISPEMBED_INPAINT_QUANT_MATMUL=1` to keep stored matrices for mul_mat
+(lower memory) and `CRISPEMBED_INPAINT_GRAPH=1` for the faster persistent
+graph. See [inpainting-precision.md](inpainting-precision.md).
