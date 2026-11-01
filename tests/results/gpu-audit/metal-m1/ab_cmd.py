@@ -40,7 +40,9 @@ def run(cmd, env_extra, backend):
     err = p.stderr.decode("utf-8", "replace")
     if p.returncode != 0:
         raise RuntimeError(f"{backend} rc={p.returncode}: {err[-3000:]}")
-    mtl = "MTL0" in err or "ggml_metal" in err
+    # A Metal *backend* was created (ggml_metal_init), not merely the device
+    # enumerated: per-kind detector probes list devices on every arm.
+    mtl = "ggml_metal_init:" in err
     return p.stdout, wall, err, mtl
 
 
@@ -80,14 +82,14 @@ def main():
         import io
         import numpy as np
         from PIL import Image
-        a = np.asarray(Image.open(io.BytesIO(mo))).astype(np.int32)
-        b = np.asarray(Image.open(io.BytesIO(co))).astype(np.int32)
-        if a.shape != b.shape:
-            rec["image"] = {"shape_differs": [list(a.shape), list(b.shape)]}
+        ia = np.asarray(Image.open(io.BytesIO(mo))).astype(np.int32)
+        ib = np.asarray(Image.open(io.BytesIO(co))).astype(np.int32)
+        if ia.shape != ib.shape:
+            rec["image"] = {"shape_differs": [list(ia.shape), list(ib.shape)]}
         else:
-            d = np.abs(a - b)
+            d = np.abs(ia - ib)
             mse = float((d.astype(np.float64) ** 2).mean())
-            rec["image"] = {"shape": list(a.shape), "max_abs": int(d.max()), "mean_abs": float(d.mean()),
+            rec["image"] = {"shape": list(ia.shape), "max_abs": int(d.max()), "mean_abs": float(d.mean()),
                             "psnr_db": (99.0 if mse == 0 else 10 * math.log10(255 * 255 / mse)),
                             "n_diff": int((d > 0).sum()), "pixels_identical": bool(mse == 0)}
     elif pm and pc:
@@ -101,7 +103,7 @@ def main():
                             "n_diff": sum(1 for x in d if x)}
     else:
         ms, cs = mo.decode("utf-8", "replace"), co.decode("utf-8", "replace")
-        rec["stdout"] = {"metal": ms[:6000], "cpu": cs[:6000]}
+        rec["stdout"] = {"metal": ms[:200000], "cpu": cs[:200000]}
         if len(ms) + len(cs) < 200000:
             rec["char_ratio"] = difflib.SequenceMatcher(None, ms, cs, autojunk=False).ratio()
     rec["stderr_tail"] = {k2: v[-2500:] for k2, v in errs.items()}

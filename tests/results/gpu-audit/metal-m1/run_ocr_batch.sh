@@ -23,11 +23,11 @@ for img in fox scan_page_pd; do
 done
 ab ppocrv6-small-detgpu.scan_page_pd.json --metal-env CRISPEMBED_PPOCRV6_DET_GPU=1 -- $B -t 4 --json -m $M/PP-OCRv6_small_rec-q8-head.gguf --ocr-det $M/PP-OCRv6_small_det-f16.gguf --ocr-rec $M/PP-OCRv6_small_rec-q8-head.gguf --ocr $I/scan_page_pd.png
 # 3. EasyOCR CRNN (GPU default) behind DBNet
-ab dbnet-easyocr.fox.json -- $B -t 4 --json -m $M/easyocr-english-g2-f16.gguf --ocr-det $M/dbnet-ic15-q8_0.gguf --ocr-rec $M/easyocr-english-g2-f16.gguf --ocr $I/fox.png
+ab dbnet-easyocr.fox.json -- $B -t 4 --json -m $M/easyocr-english-g2-f16.gguf --ocr-pipeline $I/fox.png --ocr-engine easyocr --ocr-det $M/dbnet-ic15-q8_0.gguf --ocr-rec $M/easyocr-english-g2-f16.gguf
 # 4. Tesseract has no GPU code: no M1 run needed
 # 5. PARSeq line recognizer
-ab parseq.word.json -- $B -t 4 -m $M/parseq-q8_0.gguf --ocr /Volumes/backups/ai/crispembed-gguf/word.png
-ab parseq-tiny.hello.json -- $B -t 4 -m $M/parseq-tiny-q8_0.gguf --ocr /Volumes/backups/ai/crispembed-gguf/ppocrv6-hello-320x48.png
+# (done) ab parseq.word.json -- $B -t 4 -m $M/parseq-q8_0.gguf --ocr /Volumes/backups/ai/crispembed-gguf/word.png
+# (done) ab parseq-tiny.hello.json -- $B -t 4 -m $M/parseq-tiny-q8_0.gguf --ocr /Volumes/backups/ai/crispembed-gguf/ppocrv6-hello-320x48.png
 # 6. TexTeller (math_ocr, GPU default)
 # (done) ab texteller.formula.json -- $B -t 4 -m $M/texteller-3-q8_0.gguf --ocr $I/formula_quadratic.png
 # 7. ESRGAN gated GPU path vs default CPU
