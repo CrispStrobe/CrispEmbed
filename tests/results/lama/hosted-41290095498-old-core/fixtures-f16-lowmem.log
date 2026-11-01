@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "/home/runner/work/CrispEmbed/CrispEmbed/tools/compare_lama_variant.py", line 149, in <module>
+    main()
+  File "/home/runner/work/CrispEmbed/CrispEmbed/tools/compare_lama_variant.py", line 121, in main
+    timings = capture(args.binary.resolve(), args.model.resolve(), args.original_dir.resolve(),
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/CrispEmbed/CrispEmbed/tools/compare_lama_variant.py", line 49, in capture
+    raise RuntimeError(f"native LaMa variant failed for {name}; see {name}.log")
+RuntimeError: native LaMa variant failed for subtitle; see subtitle.log

@@ -1,0 +1,934 @@
+{
+  "schema": "crispembed-lama-live-comparison-v1",
+  "internal_research_only": true,
+  "photos": [
+    {
+      "photo": "face",
+      "size": [
+        640,
+        640
+      ],
+      "fill_pixels": 31841,
+      "original_vs_clean": {
+        "psnr_db": 25.759,
+        "mae": 5.6277,
+        "cosine": 0.9934073247274345,
+        "pearson": 0.9645355504455506
+      },
+      "variants": {
+        "f32": {
+          "vs_clean": {
+            "psnr_db": 25.759,
+            "mae": 5.6277,
+            "cosine": 0.9934073497305179,
+            "pearson": 0.9645356964888369
+          },
+          "vs_f32_native": {
+            "psnr_db": "inf",
+            "mae": 0.0,
+            "cosine": 0.9999999999999998,
+            "pearson": 1.0
+          },
+          "vs_original": {
+            "psnr_db": 90.15,
+            "mae": 0.0001,
+            "cosine": 0.999999997605493,
+            "pearson": 0.999999987225854
+          },
+          "outside_mask_exact": true
+        },
+        "f32-matmul": {
+          "vs_clean": {
+            "psnr_db": 25.759,
+            "mae": 5.6277,
+            "cosine": 0.9934073497305179,
+            "pearson": 0.9645356964888369
+          },
+          "vs_f32_native": {
+            "psnr_db": "inf",
+            "mae": 0.0,
+            "cosine": 0.9999999999999998,
+            "pearson": 1.0
+          },
+          "vs_original": {
+            "psnr_db": 90.15,
+            "mae": 0.0001,
+            "cosine": 0.999999997605493,
+            "pearson": 0.999999987225854
+          },
+          "outside_mask_exact": true
+        },
+        "f32-lowmem": {
+          "vs_clean": {
+            "psnr_db": 25.759,
+            "mae": 5.6282,
+            "cosine": 0.9934076595858448,
+            "pearson": 0.9645367379329853
+          },
+          "vs_f32_native": {
+            "psnr_db": 70.313,
+            "mae": 0.0061,
+            "cosine": 0.9999997693250742,
+            "pearson": 0.9999987694884883
+          },
+          "vs_original": {
+            "psnr_db": 70.298,
+            "mae": 0.0061,
+            "cosine": 0.9999997685278033,
+            "pearson": 0.9999987652311064
+          },
+          "outside_mask_exact": true
+        },
+        "f16-storage": {
+          "vs_clean": {
+            "psnr_db": 25.758,
+            "mae": 5.6286,
+            "cosine": 0.9934056009364902,
+            "pearson": 0.9645259400441507
+          },
+          "vs_f32_native": {
+            "psnr_db": 69.678,
+            "mae": 0.007,
+            "cosine": 0.9999997330079147,
+            "pearson": 0.999998575674282
+          },
+          "vs_original": {
+            "psnr_db": 69.665,
+            "mae": 0.007,
+            "cosine": 0.9999997322091977,
+            "pearson": 0.9999985714109539
+          },
+          "outside_mask_exact": true
+        },
+        "f16-matmul": {
+          "missing": true
+        },
+        "f16-lowmem": {
+          "missing": true
+        },
+        "q8_0-storage": {
+          "vs_clean": {
+            "psnr_db": 25.812,
+            "mae": 5.6171,
+            "cosine": 0.9934859740627751,
+            "pearson": 0.9649591373714898
+          },
+          "vs_f32_native": {
+            "psnr_db": 52.373,
+            "mae": 0.2553,
+            "cosine": 0.9999856676413766,
+            "pearson": 0.9999235395547296
+          },
+          "vs_original": {
+            "psnr_db": 52.372,
+            "mae": 0.2554,
+            "cosine": 0.9999856669274733,
+            "pearson": 0.9999235357266382
+          },
+          "outside_mask_exact": true
+        },
+        "q8_0-matmul": {
+          "vs_clean": {
+            "psnr_db": 25.822,
+            "mae": 5.6121,
+            "cosine": 0.9934988424394269,
+            "pearson": 0.9650432227951011
+          },
+          "vs_f32_native": {
+            "psnr_db": 51.603,
+            "mae": 0.2735,
+            "cosine": 0.999982946184836,
+            "pearson": 0.9999091062276952
+          },
+          "vs_original": {
+            "psnr_db": 51.603,
+            "mae": 0.2736,
+            "cosine": 0.9999829455422453,
+            "pearson": 0.9999091028676007
+          },
+          "outside_mask_exact": true
+        },
+        "q8_0-lowmem": {
+          "vs_clean": {
+            "psnr_db": 25.833,
+            "mae": 5.6067,
+            "cosine": 0.9935161343208361,
+            "pearson": 0.9651359422643447
+          },
+          "vs_f32_native": {
+            "psnr_db": 51.178,
+            "mae": 0.2848,
+            "cosine": 0.9999811528371371,
+            "pearson": 0.9998995377295706
+          },
+          "vs_original": {
+            "psnr_db": 51.178,
+            "mae": 0.2849,
+            "cosine": 0.99998115216501,
+            "pearson": 0.9998995342070199
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-storage": {
+          "vs_clean": {
+            "psnr_db": 25.473,
+            "mae": 6.9924,
+            "cosine": 0.9930505852449082,
+            "pearson": 0.9626095268474559
+          },
+          "vs_f32_native": {
+            "psnr_db": 33.464,
+            "mae": 3.8674,
+            "cosine": 0.9991760749873463,
+            "pearson": 0.9956042201480021
+          },
+          "vs_original": {
+            "psnr_db": 33.464,
+            "mae": 3.8675,
+            "cosine": 0.9991760613704798,
+            "pearson": 0.9956041464413794
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-matmul": {
+          "vs_clean": {
+            "psnr_db": 25.461,
+            "mae": 6.9917,
+            "cosine": 0.9930305403195403,
+            "pearson": 0.9625080725390375
+          },
+          "vs_f32_native": {
+            "psnr_db": 33.449,
+            "mae": 3.8656,
+            "cosine": 0.9991718756010247,
+            "pearson": 0.9955823959662843
+          },
+          "vs_original": {
+            "psnr_db": 33.449,
+            "mae": 3.8656,
+            "cosine": 0.9991718619807607,
+            "pearson": 0.9955823222841621
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-lowmem": {
+          "vs_clean": {
+            "psnr_db": 25.465,
+            "mae": 6.9988,
+            "cosine": 0.993037542724151,
+            "pearson": 0.9625458795033615
+          },
+          "vs_f32_native": {
+            "psnr_db": 33.458,
+            "mae": 3.866,
+            "cosine": 0.9991744137648174,
+            "pearson": 0.9955959423940809
+          },
+          "vs_original": {
+            "psnr_db": 33.458,
+            "mae": 3.8661,
+            "cosine": 0.9991744001463878,
+            "pearson": 0.9955958687254813
+          },
+          "outside_mask_exact": true
+        }
+      }
+    },
+    {
+      "photo": "fox",
+      "size": [
+        800,
+        200
+      ],
+      "fill_pixels": 7713,
+      "original_vs_clean": {
+        "psnr_db": 7.347,
+        "mae": 65.4712,
+        "cosine": 0.9075582680652626,
+        "pearson": null
+      },
+      "variants": {
+        "f32": {
+          "vs_clean": {
+            "psnr_db": 7.347,
+            "mae": 65.4712,
+            "cosine": 0.907558227050343,
+            "pearson": null
+          },
+          "vs_f32_native": {
+            "psnr_db": "inf",
+            "mae": 0.0,
+            "cosine": 1.0,
+            "pearson": 1.0
+          },
+          "vs_original": {
+            "psnr_db": 91.774,
+            "mae": 0.0,
+            "cosine": 0.9999999995045393,
+            "pearson": 0.9999999971903054
+          },
+          "outside_mask_exact": true
+        },
+        "f32-matmul": {
+          "vs_clean": {
+            "psnr_db": 7.347,
+            "mae": 65.4712,
+            "cosine": 0.907558227050343,
+            "pearson": null
+          },
+          "vs_f32_native": {
+            "psnr_db": "inf",
+            "mae": 0.0,
+            "cosine": 1.0,
+            "pearson": 1.0
+          },
+          "vs_original": {
+            "psnr_db": 91.774,
+            "mae": 0.0,
+            "cosine": 0.9999999995045393,
+            "pearson": 0.9999999971903054
+          },
+          "outside_mask_exact": true
+        },
+        "f32-lowmem": {
+          "vs_clean": {
+            "psnr_db": 7.346,
+            "mae": 65.487,
+            "cosine": 0.9075349876188814,
+            "pearson": null
+          },
+          "vs_f32_native": {
+            "psnr_db": 64.614,
+            "mae": 0.0225,
+            "cosine": 0.9999997440102782,
+            "pearson": 0.999998557157101
+          },
+          "vs_original": {
+            "psnr_db": 64.606,
+            "mae": 0.0225,
+            "cosine": 0.9999997435254134,
+            "pearson": 0.9999985544381654
+          },
+          "outside_mask_exact": true
+        },
+        "f16-storage": {
+          "vs_clean": {
+            "psnr_db": 7.347,
+            "mae": 65.4849,
+            "cosine": 0.9075403619572981,
+            "pearson": null
+          },
+          "vs_f32_native": {
+            "psnr_db": 63.456,
+            "mae": 0.0293,
+            "cosine": 0.9999996649364977,
+            "pearson": 0.9999981051856521
+          },
+          "vs_original": {
+            "psnr_db": 63.449,
+            "mae": 0.0294,
+            "cosine": 0.9999996644506896,
+            "pearson": 0.9999981024541101
+          },
+          "outside_mask_exact": true
+        },
+        "f16-matmul": {
+          "missing": true
+        },
+        "f16-lowmem": {
+          "missing": true
+        },
+        "q8_0-storage": {
+          "vs_clean": {
+            "psnr_db": 7.33,
+            "mae": 65.6392,
+            "cosine": 0.9071344942059771,
+            "pearson": null
+          },
+          "vs_f32_native": {
+            "psnr_db": 41.922,
+            "mae": 0.9371,
+            "cosine": 0.9999521766047542,
+            "pearson": 0.9997322610393384
+          },
+          "vs_original": {
+            "psnr_db": 41.92,
+            "mae": 0.9371,
+            "cosine": 0.9999521593412776,
+            "pearson": 0.9997321638527858
+          },
+          "outside_mask_exact": true
+        },
+        "q8_0-matmul": {
+          "vs_clean": {
+            "psnr_db": 7.37,
+            "mae": 65.1623,
+            "cosine": 0.9080445980091277,
+            "pearson": null
+          },
+          "vs_f32_native": {
+            "psnr_db": 41.509,
+            "mae": 0.9994,
+            "cosine": 0.9999479893509806,
+            "pearson": 0.9997081330899941
+          },
+          "vs_original": {
+            "psnr_db": 41.508,
+            "mae": 0.9995,
+            "cosine": 0.9999479787671525,
+            "pearson": 0.9997080722134984
+          },
+          "outside_mask_exact": true
+        },
+        "q8_0-lowmem": {
+          "vs_clean": {
+            "psnr_db": 7.373,
+            "mae": 65.113,
+            "cosine": 0.9081077502418085,
+            "pearson": null
+          },
+          "vs_f32_native": {
+            "psnr_db": 41.011,
+            "mae": 1.0354,
+            "cosine": 0.9999418276362267,
+            "pearson": 0.9996740548955776
+          },
+          "vs_original": {
+            "psnr_db": 41.01,
+            "mae": 1.0354,
+            "cosine": 0.9999418110827052,
+            "pearson": 0.9996739599583644
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-storage": {
+          "vs_clean": {
+            "psnr_db": 7.545,
+            "mae": 63.9503,
+            "cosine": 0.9122977087843502,
+            "pearson": null
+          },
+          "vs_f32_native": {
+            "psnr_db": 23.255,
+            "mae": 8.4352,
+            "cosine": 0.996490569735195,
+            "pearson": 0.9799726404577326
+          },
+          "vs_original": {
+            "psnr_db": 23.255,
+            "mae": 8.4352,
+            "cosine": 0.996490561468901,
+            "pearson": 0.9799725816719724
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-matmul": {
+          "vs_clean": {
+            "psnr_db": 7.539,
+            "mae": 64.0364,
+            "cosine": 0.9121883971327146,
+            "pearson": null
+          },
+          "vs_f32_native": {
+            "psnr_db": 23.283,
+            "mae": 8.4003,
+            "cosine": 0.9965106273815006,
+            "pearson": 0.9800835876870916
+          },
+          "vs_original": {
+            "psnr_db": 23.283,
+            "mae": 8.4004,
+            "cosine": 0.996510610272352,
+            "pearson": 0.9800834777186626
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-lowmem": {
+          "vs_clean": {
+            "psnr_db": 7.548,
+            "mae": 63.899,
+            "cosine": 0.912361026165439,
+            "pearson": null
+          },
+          "vs_f32_native": {
+            "psnr_db": 23.307,
+            "mae": 8.3837,
+            "cosine": 0.9965334167521128,
+            "pearson": 0.9802253254063699
+          },
+          "vs_original": {
+            "psnr_db": 23.307,
+            "mae": 8.3837,
+            "cosine": 0.9965334035033478,
+            "pearson": 0.9802252375846363
+          },
+          "outside_mask_exact": true
+        }
+      }
+    },
+    {
+      "photo": "landscape",
+      "size": [
+        960,
+        1777
+      ],
+      "fill_pixels": 136207,
+      "original_vs_clean": {
+        "psnr_db": 21.182,
+        "mae": 15.865,
+        "cosine": 0.9811338888074177,
+        "pearson": 0.8137314241329028
+      },
+      "variants": {
+        "f32": {
+          "vs_clean": {
+            "psnr_db": 21.182,
+            "mae": 15.865,
+            "cosine": 0.981133817919013,
+            "pearson": 0.8137307033316542
+          },
+          "vs_f32_native": {
+            "psnr_db": "inf",
+            "mae": 0.0,
+            "cosine": 1.0000000000000002,
+            "pearson": 1.0
+          },
+          "vs_original": {
+            "psnr_db": 79.995,
+            "mae": 0.0007,
+            "cosine": 0.9999999751605042,
+            "pearson": 0.9999997460354362
+          },
+          "outside_mask_exact": true
+        },
+        "f32-matmul": {
+          "vs_clean": {
+            "psnr_db": 21.182,
+            "mae": 15.865,
+            "cosine": 0.981133817919013,
+            "pearson": 0.8137307033316542
+          },
+          "vs_f32_native": {
+            "psnr_db": "inf",
+            "mae": 0.0,
+            "cosine": 1.0000000000000002,
+            "pearson": 1.0
+          },
+          "vs_original": {
+            "psnr_db": 79.995,
+            "mae": 0.0007,
+            "cosine": 0.9999999751605042,
+            "pearson": 0.9999997460354362
+          },
+          "outside_mask_exact": true
+        },
+        "f32-lowmem": {
+          "vs_clean": {
+            "psnr_db": 21.182,
+            "mae": 15.8644,
+            "cosine": 0.9811347966799686,
+            "pearson": 0.8137314463189621
+          },
+          "vs_f32_native": {
+            "psnr_db": 62.818,
+            "mae": 0.034,
+            "cosine": 0.9999987032095352,
+            "pearson": 0.9999867424755358
+          },
+          "vs_original": {
+            "psnr_db": 62.784,
+            "mae": 0.0342,
+            "cosine": 0.9999986931243462,
+            "pearson": 0.999986639365989
+          },
+          "outside_mask_exact": true
+        },
+        "f16-storage": {
+          "vs_clean": {
+            "psnr_db": 21.182,
+            "mae": 15.865,
+            "cosine": 0.9811338203563006,
+            "pearson": 0.8137332858522024
+          },
+          "vs_f32_native": {
+            "psnr_db": 62.467,
+            "mae": 0.0368,
+            "cosine": 0.9999985941857017,
+            "pearson": 0.9999856270388614
+          },
+          "vs_original": {
+            "psnr_db": 62.436,
+            "mae": 0.0371,
+            "cosine": 0.9999985841004841,
+            "pearson": 0.9999855239265486
+          },
+          "outside_mask_exact": true
+        },
+        "f16-matmul": {
+          "missing": true
+        },
+        "f16-lowmem": {
+          "missing": true
+        },
+        "q8_0-storage": {
+          "vs_clean": {
+            "psnr_db": 21.179,
+            "mae": 15.8717,
+            "cosine": 0.9811254984650861,
+            "pearson": 0.8138784762064039
+          },
+          "vs_f32_native": {
+            "psnr_db": 44.614,
+            "mae": 1.0045,
+            "cosine": 0.9999142986336512,
+            "pearson": 0.9991263620395882
+          },
+          "vs_original": {
+            "psnr_db": 44.612,
+            "mae": 1.0047,
+            "cosine": 0.9999142588615247,
+            "pearson": 0.9991259559155762
+          },
+          "outside_mask_exact": true
+        },
+        "q8_0-matmul": {
+          "vs_clean": {
+            "psnr_db": 21.178,
+            "mae": 15.8719,
+            "cosine": 0.9811245354407037,
+            "pearson": 0.8138751977904926
+          },
+          "vs_f32_native": {
+            "psnr_db": 42.812,
+            "mae": 1.2357,
+            "cosine": 0.9998703009532702,
+            "pearson": 0.9986773231444989
+          },
+          "vs_original": {
+            "psnr_db": 42.81,
+            "mae": 1.2359,
+            "cosine": 0.9998702690271726,
+            "pearson": 0.9986769971822101
+          },
+          "outside_mask_exact": true
+        },
+        "q8_0-lowmem": {
+          "vs_clean": {
+            "psnr_db": 21.178,
+            "mae": 15.8703,
+            "cosine": 0.9811266258451294,
+            "pearson": 0.8138772990188583
+          },
+          "vs_f32_native": {
+            "psnr_db": 42.563,
+            "mae": 1.2701,
+            "cosine": 0.9998626971058246,
+            "pearson": 0.9985993290502422
+          },
+          "vs_original": {
+            "psnr_db": 42.562,
+            "mae": 1.2703,
+            "cosine": 0.9998626549147075,
+            "pearson": 0.9985988982730124
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-storage": {
+          "vs_clean": {
+            "psnr_db": 21.134,
+            "mae": 16.048,
+            "cosine": 0.9808005746619074,
+            "pearson": 0.8081657841227676
+          },
+          "vs_f32_native": {
+            "psnr_db": 26.941,
+            "mae": 8.4623,
+            "cosine": 0.9951657623978994,
+            "pearson": 0.9499400714036466
+          },
+          "vs_original": {
+            "psnr_db": 26.941,
+            "mae": 8.4623,
+            "cosine": 0.9951657007638887,
+            "pearson": 0.9499394398391345
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-matmul": {
+          "vs_clean": {
+            "psnr_db": 21.138,
+            "mae": 16.037,
+            "cosine": 0.9808129960875209,
+            "pearson": 0.8083143237970294
+          },
+          "vs_f32_native": {
+            "psnr_db": 26.947,
+            "mae": 8.4587,
+            "cosine": 0.9951680143811358,
+            "pearson": 0.949969044766492
+          },
+          "vs_original": {
+            "psnr_db": 26.947,
+            "mae": 8.4588,
+            "cosine": 0.9951679606074298,
+            "pearson": 0.949968494875953
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-lowmem": {
+          "vs_clean": {
+            "psnr_db": 21.136,
+            "mae": 16.0404,
+            "cosine": 0.9808073850380759,
+            "pearson": 0.8083524090470358
+          },
+          "vs_f32_native": {
+            "psnr_db": 26.944,
+            "mae": 8.4577,
+            "cosine": 0.9951684529075894,
+            "pearson": 0.949996189484955
+          },
+          "vs_original": {
+            "psnr_db": 26.944,
+            "mae": 8.4577,
+            "cosine": 0.9951683933815549,
+            "pearson": 0.9499955801996333
+          },
+          "outside_mask_exact": true
+        }
+      }
+    },
+    {
+      "photo": "street",
+      "size": [
+        1280,
+        853
+      ],
+      "fill_pixels": 58203,
+      "original_vs_clean": {
+        "psnr_db": 14.305,
+        "mae": 34.5026,
+        "cosine": 0.8581114211293754,
+        "pearson": 0.5111821389798662
+      },
+      "variants": {
+        "f32": {
+          "vs_clean": {
+            "psnr_db": 14.305,
+            "mae": 34.5026,
+            "cosine": 0.8581116981467286,
+            "pearson": 0.5111828913920323
+          },
+          "vs_f32_native": {
+            "psnr_db": "inf",
+            "mae": 0.0,
+            "cosine": 1.0,
+            "pearson": 1.0000000000000002
+          },
+          "vs_original": {
+            "psnr_db": 84.217,
+            "mae": 0.0002,
+            "cosine": 0.9999999831031193,
+            "pearson": 0.9999999415621191
+          },
+          "outside_mask_exact": true
+        },
+        "f32-matmul": {
+          "vs_clean": {
+            "psnr_db": 14.305,
+            "mae": 34.5026,
+            "cosine": 0.8581116981467286,
+            "pearson": 0.5111828913920323
+          },
+          "vs_f32_native": {
+            "psnr_db": "inf",
+            "mae": 0.0,
+            "cosine": 1.0,
+            "pearson": 1.0000000000000002
+          },
+          "vs_original": {
+            "psnr_db": 84.217,
+            "mae": 0.0002,
+            "cosine": 0.9999999831031193,
+            "pearson": 0.9999999415621191
+          },
+          "outside_mask_exact": true
+        },
+        "f32-lowmem": {
+          "vs_clean": {
+            "psnr_db": 14.305,
+            "mae": 34.5013,
+            "cosine": 0.858110743215563,
+            "pearson": 0.5111782255928079
+          },
+          "vs_f32_native": {
+            "psnr_db": 63.59,
+            "mae": 0.0285,
+            "cosine": 0.9999980540330582,
+            "pearson": 0.9999932698407407
+          },
+          "vs_original": {
+            "psnr_db": 63.594,
+            "mae": 0.0284,
+            "cosine": 0.9999980559167511,
+            "pearson": 0.999993276360132
+          },
+          "outside_mask_exact": true
+        },
+        "f16-storage": {
+          "vs_clean": {
+            "psnr_db": 14.305,
+            "mae": 34.5024,
+            "cosine": 0.8581038697621687,
+            "pearson": 0.5111608695342388
+          },
+          "vs_f32_native": {
+            "psnr_db": 62.984,
+            "mae": 0.0327,
+            "cosine": 0.9999977586727775,
+            "pearson": 0.9999922485008017
+          },
+          "vs_original": {
+            "psnr_db": 62.991,
+            "mae": 0.0327,
+            "cosine": 0.9999977621535064,
+            "pearson": 0.9999922605361524
+          },
+          "outside_mask_exact": true
+        },
+        "f16-matmul": {
+          "missing": true
+        },
+        "f16-lowmem": {
+          "missing": true
+        },
+        "q8_0-storage": {
+          "vs_clean": {
+            "psnr_db": 14.304,
+            "mae": 34.5088,
+            "cosine": 0.8580976930485886,
+            "pearson": 0.5113886926173917
+          },
+          "vs_f32_native": {
+            "psnr_db": 42.962,
+            "mae": 1.0506,
+            "cosine": 0.9997749157843058,
+            "pearson": 0.9992221469063025
+          },
+          "vs_original": {
+            "psnr_db": 42.962,
+            "mae": 1.0506,
+            "cosine": 0.9997749016552807,
+            "pearson": 0.9992220980830528
+          },
+          "outside_mask_exact": true
+        },
+        "q8_0-matmul": {
+          "vs_clean": {
+            "psnr_db": 14.309,
+            "mae": 34.495,
+            "cosine": 0.8583109439229397,
+            "pearson": 0.5117780806077422
+          },
+          "vs_f32_native": {
+            "psnr_db": 41.417,
+            "mae": 1.2534,
+            "cosine": 0.9996803878832009,
+            "pearson": 0.9988944344838808
+          },
+          "vs_original": {
+            "psnr_db": 41.417,
+            "mae": 1.2534,
+            "cosine": 0.999680374466498,
+            "pearson": 0.998894388646479
+          },
+          "outside_mask_exact": true
+        },
+        "q8_0-lowmem": {
+          "vs_clean": {
+            "psnr_db": 14.306,
+            "mae": 34.503,
+            "cosine": 0.8581991623428774,
+            "pearson": 0.5113935327269544
+          },
+          "vs_f32_native": {
+            "psnr_db": 41.711,
+            "mae": 1.2298,
+            "cosine": 0.999701355485435,
+            "pearson": 0.9989669658562234
+          },
+          "vs_original": {
+            "psnr_db": 41.711,
+            "mae": 1.2298,
+            "cosine": 0.9997013561821916,
+            "pearson": 0.9989669688084952
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-storage": {
+          "vs_clean": {
+            "psnr_db": 14.165,
+            "mae": 35.2563,
+            "cosine": 0.8522699571192239,
+            "pearson": 0.5040983885710703
+          },
+          "vs_f32_native": {
+            "psnr_db": 23.562,
+            "mae": 11.3956,
+            "cosine": 0.9807967697578335,
+            "pearson": 0.9357015428937042
+          },
+          "vs_original": {
+            "psnr_db": 23.562,
+            "mae": 11.3956,
+            "cosine": 0.9807967790626869,
+            "pearson": 0.93570158636272
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-matmul": {
+          "vs_clean": {
+            "psnr_db": 14.158,
+            "mae": 35.2883,
+            "cosine": 0.8520253543951394,
+            "pearson": 0.5035108239938292
+          },
+          "vs_f32_native": {
+            "psnr_db": 23.569,
+            "mae": 11.3923,
+            "cosine": 0.9808203734347609,
+            "pearson": 0.9358259917506239
+          },
+          "vs_original": {
+            "psnr_db": 23.569,
+            "mae": 11.3923,
+            "cosine": 0.9808203978796315,
+            "pearson": 0.9358260859271578
+          },
+          "outside_mask_exact": true
+        },
+        "q4_k-lowmem": {
+          "vs_clean": {
+            "psnr_db": 14.161,
+            "mae": 35.2729,
+            "cosine": 0.8521307623249539,
+            "pearson": 0.503841591863651
+          },
+          "vs_f32_native": {
+            "psnr_db": 23.57,
+            "mae": 11.3873,
+            "cosine": 0.980832113466428,
+            "pearson": 0.9358611150880889
+          },
+          "vs_original": {
+            "psnr_db": 23.57,
+            "mae": 11.3873,
+            "cosine": 0.9808321328282386,
+            "pearson": 0.9358611921454989
+          },
+          "outside_mask_exact": true
+        }
+      }
+    }
+  ]
+}

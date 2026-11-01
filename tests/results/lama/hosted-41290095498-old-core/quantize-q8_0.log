@@ -1,0 +1,20 @@
+Big-LaMa lama-v1 policy: vectors and first/last conv F32; 1x1 kernels [IC,OC] rows; other kernels row-flattened storage, original 4D shape restored at load
+{
+  "variant": "big-lama-q8_0.gguf",
+  "requested": "q8_0",
+  "bytes": 54849472,
+  "sha256": "60c830bb725e95cbbe103ae4864d269b586b3d750a547bce92e1578ca2193c07",
+  "source_sha256": "6369ae4ff76794fe90272f74b8dbffc610987416d49b32990e0295e5b8bf4a01",
+  "tensor_count": 837,
+  "type_counts": {
+    "f32": 614,
+    "q8_0": 223
+  },
+  "type_payload_bytes": {
+    "f32": 738828,
+    "q8_0": 54051840
+  },
+  "flattened_storage_tensors": 223,
+  "policy_conformant": true,
+  "errors": []
+}

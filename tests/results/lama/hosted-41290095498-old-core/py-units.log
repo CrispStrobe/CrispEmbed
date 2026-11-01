@@ -1,0 +1,57 @@
+test_build_mutation_is_revalidated (__main__.LamaConverterTest.test_build_mutation_is_revalidated) ... ok
+test_canonical_config (__main__.LamaConverterTest.test_canonical_config) ... ok
+test_checkpoint_hash_is_checked_before_pickle (__main__.LamaConverterTest.test_checkpoint_hash_is_checked_before_pickle) ... ok
+test_concat_mask_is_required (__main__.LamaConverterTest.test_concat_mask_is_required) ... ok
+test_counter_omitted_but_preserved_in_receipt (__main__.LamaConverterTest.test_counter_omitted_but_preserved_in_receipt) ... ok
+test_cyclic_and_environment_interpolations_are_rejected (__main__.LamaConverterTest.test_cyclic_and_environment_interpolations_are_rejected) ... ok
+test_deep_metadata_and_unknown_classes_rejected (__main__.LamaConverterTest.test_deep_metadata_and_unknown_classes_rejected) ... ok
+test_deterministic_gguf_preserves_convtranspose_iohw_bytes (__main__.LamaConverterTest.test_deterministic_gguf_preserves_convtranspose_iohw_bytes) ... ok
+test_discarded_training_tensor_views_are_bounded_before_torch (__main__.LamaConverterTest.test_discarded_training_tensor_views_are_bounded_before_torch) ... ok
+test_existing_output_preserved_and_failed_conversion_not_published (__main__.LamaConverterTest.test_existing_output_preserved_and_failed_conversion_not_published) ... ok
+test_full_schema_count_layout_and_byte_count (__main__.LamaConverterTest.test_full_schema_count_layout_and_byte_count) ... ok
+test_json_configuration_needs_no_yaml (__main__.LamaConverterTest.test_json_configuration_needs_no_yaml) ... ok
+test_legacy_no_byteorder_and_big_endian_rejection (__main__.LamaConverterTest.test_legacy_no_byteorder_and_big_endian_rejection) ... ok
+test_lightning_generator_prefix (__main__.LamaConverterTest.test_lightning_generator_prefix) ... ok
+test_lightning_omegaconf_metadata_remains_inert (__main__.LamaConverterTest.test_lightning_omegaconf_metadata_remains_inert) ... ok
+test_memo_allocation_and_extension_cache_bypasses_rejected (__main__.LamaConverterTest.test_memo_allocation_and_extension_cache_bypasses_rejected) ... ok
+test_metadata_bytes_constructor_cannot_allocate (__main__.LamaConverterTest.test_metadata_bytes_constructor_cannot_allocate) ... ok
+test_metadata_does_not_claim_checkpoint_license (__main__.LamaConverterTest.test_metadata_does_not_claim_checkpoint_license) ... ok
+test_native_contiguous_tensor_bytes (__main__.LamaConverterTest.test_native_contiguous_tensor_bytes) ... ok
+test_no_framework_imported (__main__.LamaConverterTest.test_no_framework_imported) ... ok
+test_nonfinite_and_negative_running_var_rejected (__main__.LamaConverterTest.test_nonfinite_and_negative_running_var_rejected) ... ok
+test_out_of_storage_view_rejected (__main__.LamaConverterTest.test_out_of_storage_view_rejected) ... ok
+test_owned_fixtures_and_trace_inventory (__main__.LamaConverterTest.test_owned_fixtures_and_trace_inventory) ... ok
+test_protocol2_builtin_type_aliases_remain_inert (__main__.LamaConverterTest.test_protocol2_builtin_type_aliases_remain_inert) ... ok
+test_rebuild_rejects_invalid_even_before_object_becomes_reachable (__main__.LamaConverterTest.test_rebuild_rejects_invalid_even_before_object_becomes_reachable) ... ok
+test_strict_hash_format (__main__.LamaConverterTest.test_strict_hash_format) ... ok
+test_strided_tensor_and_view_offset (__main__.LamaConverterTest.test_strided_tensor_and_view_offset) ... ok
+test_torch_default_constructors_cannot_override_inert_adapters (__main__.LamaConverterTest.test_torch_default_constructors_cannot_override_inert_adapters) ... ok
+test_trailing_pickle_rejected (__main__.LamaConverterTest.test_trailing_pickle_rejected) ... ok
+test_unknown_pickle_global_rejected (__main__.LamaConverterTest.test_unknown_pickle_global_rejected) ... ok
+test_upstream_hydra_interpolations (__main__.LamaConverterTest.test_upstream_hydra_interpolations) ... ok
+test_wrong_profiles_are_rejected (__main__.LamaConverterTest.test_wrong_profiles_are_rejected) ... ok
+test_wrong_tensor_names_shape_and_dtype_rejected (__main__.LamaConverterTest.test_wrong_tensor_names_shape_and_dtype_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 33 tests in 0.040s
+
+OK
+test_cosine_alone_cannot_pass_amplitude_error (__main__.LamaReferenceTest.test_cosine_alone_cannot_pass_amplitude_error) ... ok
+test_earliest_divergence_in_original_execution_order (__main__.LamaReferenceTest.test_earliest_divergence_in_original_execution_order) ... ok
+test_exact_and_zero_vectors (__main__.LamaReferenceTest.test_exact_and_zero_vectors) ... ok
+test_join_by_stage_name_with_different_native_order (__main__.LamaReferenceTest.test_join_by_stage_name_with_different_native_order) ... ok
+test_known_pixel_change_fails_even_inside_rgb_error_budget (__main__.LamaReferenceTest.test_known_pixel_change_fails_even_inside_rgb_error_budget) ... ok
+test_model_identity_and_missing_native_controls_rejected (__main__.LamaReferenceTest.test_model_identity_and_missing_native_controls_rejected) ... ok
+test_native_output_hash_is_verified (__main__.LamaReferenceTest.test_native_output_hash_is_verified) ... ok
+test_no_framework_imports (__main__.LamaReferenceTest.test_no_framework_imports) ... ok
+test_nonfinite_empty_and_mismatched_vectors_rejected (__main__.LamaReferenceTest.test_nonfinite_empty_and_mismatched_vectors_rejected) ... ok
+test_original_first_barrier_prevents_native_execution (__main__.LamaReferenceTest.test_original_first_barrier_prevents_native_execution) ... ok
+test_payload_size_hash_and_path_controls (__main__.LamaReferenceTest.test_payload_size_hash_and_path_controls) ... ok
+test_reference_framework_version_is_pinned (__main__.LamaReferenceTest.test_reference_framework_version_is_pinned) ... ok
+test_relative_error_and_zero_reference_are_not_silently_skipped (__main__.LamaReferenceTest.test_relative_error_and_zero_reference_are_not_silently_skipped) ... ok
+test_stage_coverage_and_duplicate_names_fail_closed (__main__.LamaReferenceTest.test_stage_coverage_and_duplicate_names_fail_closed) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 0.874s
+
+OK

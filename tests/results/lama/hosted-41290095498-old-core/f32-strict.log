@@ -1,0 +1,9 @@
+captured native LaMa case subtitle
+captured native LaMa case edge
+captured native LaMa case padded
+captured native LaMa case empty
+captured native LaMa case full
+{
+  "passed": false,
+  "cases": 5
+}

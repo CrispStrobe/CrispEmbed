@@ -1,0 +1,36 @@
+{
+  "label": "q4_k-storage",
+  "owner_bar_passed": true,
+  "cases": [
+    {
+      "id": "subtitle",
+      "output_cosine_vs_original": 0.9986545342521932,
+      "output_cosine_vs_f32_native": 0.9986545305052585,
+      "min_stage_cosine_vs_original": 0.8788800661403621
+    },
+    {
+      "id": "edge",
+      "output_cosine_vs_original": 0.9992150018935279,
+      "output_cosine_vs_f32_native": 0.9992149998790428,
+      "min_stage_cosine_vs_original": 0.8659809482423735
+    },
+    {
+      "id": "padded",
+      "output_cosine_vs_original": 0.9959141749477316,
+      "output_cosine_vs_f32_native": 0.9959141724926671,
+      "min_stage_cosine_vs_original": 0.8451200157392926
+    },
+    {
+      "id": "empty",
+      "output_cosine_vs_original": 0.9991298078816238,
+      "output_cosine_vs_f32_native": 0.9991298064844036,
+      "min_stage_cosine_vs_original": 0.8626768815409358
+    },
+    {
+      "id": "full",
+      "output_cosine_vs_original": 0.9749579651257964,
+      "output_cosine_vs_f32_native": 0.9749603969760773,
+      "min_stage_cosine_vs_original": 0.23555482376650408
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "label": "q4_k-matmul",
+  "owner_bar_passed": true,
+  "cases": [
+    {
+      "id": "subtitle",
+      "output_cosine_vs_original": 0.9986566792092131,
+      "output_cosine_vs_f32_native": 0.9986566755991391,
+      "min_stage_cosine_vs_original": 0.8744554299150302
+    },
+    {
+      "id": "edge",
+      "output_cosine_vs_original": 0.9992205856334273,
+      "output_cosine_vs_f32_native": 0.9992205836836143,
+      "min_stage_cosine_vs_original": 0.8730999521269364
+    },
+    {
+      "id": "padded",
+      "output_cosine_vs_original": 0.9960246595360553,
+      "output_cosine_vs_f32_native": 0.9960246569378991,
+      "min_stage_cosine_vs_original": 0.852300380730599
+    },
+    {
+      "id": "empty",
+      "output_cosine_vs_original": 0.9991336967405434,
+      "output_cosine_vs_f32_native": 0.9991336953435025,
+      "min_stage_cosine_vs_original": 0.8591503152040025
+    },
+    {
+      "id": "full",
+      "output_cosine_vs_original": 0.9745682588350121,
+      "output_cosine_vs_f32_native": 0.974570655852234,
+      "min_stage_cosine_vs_original": 0.24635445217418267
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+Big-LaMa native capture failed: Big-LaMa non-F32 graph activation
+Usage: lama-native --model MODEL.gguf --input-dir CASE_DIR --output-dir NEW_DIR --width W --height H [--threads N]

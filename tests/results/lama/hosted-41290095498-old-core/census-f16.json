@@ -1,0 +1,19 @@
+{
+  "variant": "big-lama-f16.gguf",
+  "requested": "f16",
+  "bytes": 102545824,
+  "sha256": "8f8594926d95fb4bfa4692c75101f0ae3b7c143314696d6b1be586c8a8bb5095",
+  "source_sha256": "6369ae4ff76794fe90272f74b8dbffc610987416d49b32990e0295e5b8bf4a01",
+  "tensor_count": 837,
+  "type_counts": {
+    "f32": 614,
+    "f16": 223
+  },
+  "type_payload_bytes": {
+    "f32": 738828,
+    "f16": 101744640
+  },
+  "flattened_storage_tensors": 0,
+  "policy_conformant": true,
+  "errors": []
+}
