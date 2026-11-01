@@ -20,6 +20,7 @@
 #include <array>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <memory>
 #include <numeric>
@@ -71,6 +72,14 @@ struct oxr_ocr_context {
         if (backend) ggml_backend_free(backend);
     }
 };
+
+#ifndef OXR_AUTO_METAL
+#if defined(__APPLE__)
+#define OXR_AUTO_METAL 1
+#else
+#define OXR_AUTO_METAL 0
+#endif
+#endif
 
 namespace {
 constexpr int graph_nodes = 16384;
@@ -336,10 +345,36 @@ void load(oxr_ocr_context & c, const char * path) {
         if (!c.merge_rank.emplace(merges[i], int32_t(i)).second) throw std::runtime_error("OXR duplicate merge entry");
     c.flash = !core_env::explicitly_off("CRISPEMBED_OXR_FLASH_ATTN");
     c.reuse_decode = core_env::on("CRISPEMBED_OXR_REUSE_DECODE_GRAPH");
-    c.backend = core_env::on("CRISPEMBED_OXR_GPU") && !core_env::on("CRISPEMBED_OXR_FORCE_CPU")
-                    ? crispasr_init_gpu_backend()
-                    : ggml_backend_cpu_init();
+    // Backend. CRISPEMBED_OXR_GPU=1 forces the GPU, =0 (or CRISPEMBED_OXR_FORCE_CPU=1)
+    // the CPU. Unset = auto: Metal for the qualified F16 recipe (token-exact on the
+    // five reference cases, tests/results/oxr/metal-m1/), CPU otherwise.
+    bool want_gpu = core_env::on("CRISPEMBED_OXR_GPU");
+    bool auto_gpu = false;
+    if (!want_gpu && !core_env::explicitly_off("CRISPEMBED_OXR_GPU") && recipe == "f16-f32-sensitive") {
+        bool quantized = false;
+        for (int64_t i = 0; i < gguf_get_n_tensors(meta.get()); ++i)
+            quantized = quantized || ggml_is_quantized(gguf_get_tensor_type(meta.get(), i));
+        auto_gpu = !quantized && OXR_AUTO_METAL;
+    }
+    if (core_env::on("CRISPEMBED_OXR_FORCE_CPU")) want_gpu = auto_gpu = false;
+    c.backend = want_gpu || auto_gpu ? crispasr_init_gpu_backend() : ggml_backend_cpu_init();
+    if (auto_gpu && c.backend && std::string(ggml_backend_name(c.backend)).find("MTL") == std::string::npos &&
+        std::string(ggml_backend_name(c.backend)).find("Metal") == std::string::npos) {
+        ggml_backend_free(c.backend); // auto mode qualifies Metal only
+        c.backend = ggml_backend_cpu_init();
+    }
     if (!c.backend) throw std::runtime_error("OXR backend initialization failed");
+    // ggml-metal PREC_F32 products with >8 rows: the F32-tile _hp mul_mm instead of
+    // mat-vec kernels (ggml patch, GGML_METAL_PREC_F32_MM). Default on for OXR GPU
+    // contexts; CRISPEMBED_OXR_GPU_HP_MM=0 keeps the mat-vec route. Process-wide:
+    // the ggml knob is read once; an explicit GGML_METAL_PREC_F32_MM wins.
+    if (!ggml_backend_is_cpu(c.backend) && !core_env::explicitly_off("CRISPEMBED_OXR_GPU_HP_MM")) {
+#ifdef _WIN32
+        if (!std::getenv("GGML_METAL_PREC_F32_MM")) _putenv_s("GGML_METAL_PREC_F32_MM", "1");
+#else
+        setenv("GGML_METAL_PREC_F32_MM", "1", 0);
+#endif
+    }
     // GPU attention: F32 dense on the GPU by default. CRISPEMBED_OXR_GPU_FLASH=1
     // uses the backend's native flash kernel (Metal stages Q as half);
     // CRISPEMBED_OXR_GPU_FLASH_CPU=1 restores the original PREC_F32 flash node,

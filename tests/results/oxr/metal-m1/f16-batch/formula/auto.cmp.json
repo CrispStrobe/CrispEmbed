@@ -1,0 +1,1 @@
+{"label": "formula/auto", "ids_exact": true, "first_divergence": null, "reference_tokens": 22, "native_tokens": 22, "text_exact": true, "cer": 0.0, "eos": true, "capped": false, "runs_ms": [2871.727542, 2808.632], "warm_ms_median": 2808.632, "load_ms": 219687.02375, "runs_identical": true}

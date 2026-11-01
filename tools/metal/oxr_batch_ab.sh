@@ -32,6 +32,8 @@ for arm in ${ARMS//,/ }; do
             vteq8) e+=(CRISPEMBED_OXR_VTE_Q8=1) ;;
             split) e+=(CRISPEMBED_OXR_GPU_SPLIT_F16=1) ;;
             hpmm) e+=(GGML_METAL_PREC_F32_MM=1) ;;
+            nohpmm) e+=(CRISPEMBED_OXR_GPU_HP_MM=0) ;;
+            auto) e+=(OXR_ARM_AUTO=1) ;;
             *) echo "unknown arm part $part"; exit 2 ;;
         esac
     done
