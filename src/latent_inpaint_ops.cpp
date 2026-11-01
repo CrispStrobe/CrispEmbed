@@ -1,10 +1,10 @@
 #include "latent_inpaint_ops.h"
+#include "inpaint_weight_names.h"
 
 #include "core/cpu_ops.h"
 #include "core/ggml_cpu_backend.h"
 #include "core/gguf_loader.h"
 #include "inpaint_weights.h"
-#include "inpaint_tensor_names.h"
 #include "ggml-alloc.h"
 
 #include <algorithm>
@@ -91,9 +91,10 @@ Engine::Engine(const char * path, int threads, const ShapeMap & schema) : impl_(
         load_precision_variant(path, threads, schema, meta.get());
         return;
     }
+    const auto names = inpaint_weight_names::map(meta.get(), schema);
     size_t total_elements = 0;
     for (const auto & item : schema) {
-        const int64_t id = gguf_find_tensor(meta.get(), inpaint_names::gguf_name(item.first).c_str());
+        const int64_t id = gguf_find_tensor(meta.get(), names.at(item.first).c_str());
         require(id >= 0 && gguf_get_tensor_type(meta.get(), id) == GGML_TYPE_F32,
                 "missing or non-F32 tensor: " + item.first);
         const auto & shape = item.second;
@@ -121,7 +122,7 @@ Engine::Engine(const char * path, int threads, const ShapeMap & schema) : impl_(
     // ordinary CPU allocation when zero-copy mmap is unavailable.
     require(core_gguf::load_weights(path, impl_->backend, "latent-inpaint", impl_->loaded, true),
             "cannot load CPU weights");
-    for (const auto & item : schema) inpaint_names::restore_original_name(impl_->loaded.tensors, item.first);
+    inpaint_weight_names::restore(impl_->loaded, names);
     for (const auto & item : schema) {
         ggml_tensor * tensor = impl_->loaded.tensors.at(item.first);
         require(tensor->data != nullptr, "CPU weight storage unavailable");

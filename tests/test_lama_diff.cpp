@@ -198,14 +198,24 @@ bool contracts() {
 
 int run(int argc, char ** argv) {
     if (argc == 2 && std::string(argv[1]) == "--contracts") return contracts() ? 0 : 1;
-    const std::set<std::string> keys{ "--model", "--model-sha256", "--reference", "--reference-sha256", "--output" };
+    const std::set<std::string> keys{ "--model",  "--model-sha256", "--reference", "--reference-sha256",
+                                      "--output", "--threads" };
     std::map<std::string, std::string> arguments;
     for (int i = 1; i < argc; i += 2) {
         require(i + 1 < argc && keys.count(argv[i]) && arguments.emplace(argv[i], argv[i + 1]).second,
                 "usage: test-lama-diff --model FILE --model-sha256 SHA --reference CASE/reference.gguf "
-                "--reference-sha256 SHA --output NEW_DIRECTORY");
+                "--reference-sha256 SHA --output NEW_DIRECTORY [--threads 1..64]");
     }
-    require(arguments.size() == keys.size(), "all model/reference/output arguments are required");
+    int threads = 2;
+    if (arguments.count("--threads")) {
+        const std::string value = arguments.at("--threads");
+        require(!value.empty() && value.find_first_not_of("0123456789") == std::string::npos,
+                "thread count must be an integer");
+        threads = std::stoi(value);
+        require(threads >= 1 && threads <= 64, "thread count must be in[1,64]");
+        arguments.erase("--threads");
+    }
+    require(arguments.size() == keys.size() - 1, "all model/reference/output arguments are required");
     const fs::path reference_path = arguments.at("--reference"), input_dir = reference_path.parent_path();
     verified_file(reference_path, arguments.at("--reference-sha256"), UINT64_C(512) * 1024 * 1024);
     std::unique_ptr<gguf_context, decltype(&core_gguf::free_metadata)> metadata(
@@ -255,7 +265,7 @@ int run(int argc, char ** argv) {
     gate("1");
     std::string error;
     std::unique_ptr<lama::context, decltype(&lama::free)> model(
-        lama::init(arguments.at("--model"), arguments.at("--model-sha256"), 2, error), lama::free);
+        lama::init(arguments.at("--model"), arguments.at("--model-sha256"), threads, error), lama::free);
     require(bool(model), error);
     const Tensor input = lama::detail::preprocess_rgb8(rgb.data(), rgb.size(), mask.data(), mask.size(), width, height);
     Tensor baseline, prediction;

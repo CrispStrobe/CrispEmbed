@@ -248,6 +248,41 @@ numerical limit, not a new divergence. The initial failure verdict is retained; 
 
 ## 1 November 2026 — Persistent inpainting graph source implementation
 
+## 1 November 2026 — Executed CPU inpainting optimization and live checks
+
+The issue71 CPU paths have now been built and exercised with converted model
+weights. Added default-off MI-GAN fused/vectorized CPU kernels, convolution
+GEMM layout, cached reflection gathers, a cached CPU FFT callback, rectangular
+CPU recurrent GLA, and bounded Moebius lambda contractions. The original
+implementations remain available. Corrected persistent-graph input lifetimes
+and latent GGUF names beyond ggml's fixed name limit; all2,080 latent payload
+hashes are unchanged by the naming adapter.
+
+MI-GAN256/512 each pass the declared original-model panel on the baseline and
+optimized paths:20 cases/1,070 stage comparisons per implementation, with
+identical corresponding native stage hashes. Ordinary API medians improve
+2.61–3.27× over the existing eager path in the admitted measurements, including
+a separately retained quiet512/eight-thread confirmation. The initial
+contended timing arms remain excluded and preserved.
+
+LaMa completes all24 synthetic arms/5,448 stage comparisons. Seven fixtures
+pass every stage in all three implementations; full-mask intermediate failures
+remain37/34/34 despite passing final prediction/RGB checks. All twelve photo
+arms pass original RGB and exact known-pixel/repeat checks, with2.37–2.49×
+portable-to-optimized warm improvement. An original-input FFT diagnosis passes
+all three production helpers; earlier drift remains unresolved.
+
+Actual production CLI checks now include both MI-GAN sizes and LaMa at256
+and512 pixels, exact ordinary-API output comparisons, empty masks and proven
+same-context batch reuse. The unchanged MI256 tile/boundary smoke also passes.
+The [complete optimization report](docs/inpainting-optimization-results.md)
+records the latent results, validation inventory, implementation flags and
+remaining limits, with links to raw execution evidence. CPU measurements do
+not qualify CUDA/Metal, representative perceptual/video quality, quantization
+or a release. All candidate gates and application pins remain unchanged.
+
+## 1 November 2026 — Earlier persistent inpainting graph source implementation
+
 Added default-off native CPU/CUDA/Metal graphs for all five inpainting CLI
 profiles. MI-GAN retains a complete graph across calls. LaMa's Fourier blocks
 use portable radix-2/Bluestein graphs. Moebius and PixelHacker use complete

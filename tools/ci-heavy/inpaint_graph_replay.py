@@ -40,6 +40,16 @@ CASE_ID = re.compile(r"[a-z][a-z0-9_]{0,63}\Z")
 MAX_JSON_BYTES = 16 * 1024 * 1024
 GATES = ("CRISPEMBED_LAMA", "CRISPEMBED_MOEBIUS", "CRISPEMBED_PIXELHACKER",
          "CRISPEMBED_MIGAN", "CRISPEMBED_MIGAN512")
+CPU_GATES = ("CRISPEMBED_INPAINT_GEMM_LAYOUT", "CRISPEMBED_INPAINT_REFLECT_GATHER",
+             "CRISPEMBED_INPAINT_CPU_FFT", "CRISPEMBED_INPAINT_CPU_GLA",
+             "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC", "CRISPEMBED_MIGAN_CPU_KERNELS",
+             "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES", "CRISPEMBED_MOEBIUS_LOCAL_REASSOC",
+             "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM")
+CPU_ENGINE_GATES = {
+    "lama": CPU_GATES[:3],
+    "moebius": (CPU_GATES[0], CPU_GATES[4]),
+    "pixelhacker": (CPU_GATES[0], CPU_GATES[3]),
+}
 PROFILE = re.compile(
     rb"^inpaint_graph label=(?P<label>.*?) backend=(?P<backend>\S+) "
     rb"precision=(?P<precision>\S+) nodes=(?P<nodes>\d+) "
@@ -193,6 +203,7 @@ class Run:
         self.report = {
             "schema": "crispembed-inpaint-graph-replay-v1", "engine": args.engine,
             "requested_backend": args.backend, "requested_precision": args.precision,
+            "cpu_optimized": args.cpu_optimized,
             "compare_eager": args.compare_eager, "status": "running", "complete": False,
             "passed": False, "graph_parity_pass": False, "eager_parity_pass": None,
             "build_provenance_qualified": False, "native_qualified": False,
@@ -320,8 +331,10 @@ class Run:
         args = self.args
         if args.precision == "mixed" and args.backend == "cpu":
             raise ValueError("mixed precision requires CUDA or Metal; CPU executes F32")
-        if args.engine == "lama" and (args.vae is not None or args.vae_sha256 is not None or args.vae_receipt is not None or args.threads != 2):
-            raise ValueError("LaMa has no VAE and its existing comparator uses exactly two CPU threads")
+        if args.cpu_optimized and (args.backend != "cpu" or args.precision != "f32"):
+            raise ValueError("CPU optimizations require the explicit CPU/F32 profile")
+        if args.engine == "lama" and (args.vae is not None or args.vae_sha256 is not None or args.vae_receipt is not None):
+            raise ValueError("LaMa has no VAE")
         if args.engine != "lama" and any(value is None for value in (args.vae, args.vae_sha256, args.vae_receipt)):
             raise ValueError("latent replay requires --vae, --vae-sha256 and its adjacent receipt")
         self.binary = regular_file(args.binary, "native comparator")
@@ -369,8 +382,10 @@ class Run:
         for key in tuple(env):
             if key.startswith("CRISPEMBED_INPAINT_"):
                 del env[key]
-        controlled = {name: "0" for name in GATES}
+        controlled = {name: "0" for name in GATES + CPU_GATES}
         controlled["CRISPEMBED_" + self.args.engine.upper()] = "1"
+        if arm == "graph" and self.args.cpu_optimized:
+            controlled.update({name: "1" for name in CPU_ENGINE_GATES[self.args.engine]})
         controlled.update({"CRISPEMBED_INPAINT_GRAPH": "1" if arm == "graph" else "0",
                            "CRISPEMBED_INPAINT_BACKEND": self.args.backend if arm == "graph" else "cpu",
                            "CRISPEMBED_INPAINT_FAST": "1" if arm == "graph" and self.args.precision == "mixed" else "0",
@@ -386,7 +401,8 @@ class Run:
         if args.engine == "lama":
             return [str(self.binary), "--model", str(args.model.resolve()), "--model-sha256", args.model_sha256,
                     "--reference", str(self.reference / case["id"] / "reference.gguf"),
-                    "--reference-sha256", case["reference_sha256"], "--output", str(output)]
+                    "--reference-sha256", case["reference_sha256"], "--output", str(output),
+                    "--threads", str(args.threads)]
         return [str(self.binary), "--model", args.engine, "--denoiser", str(args.model.resolve()),
                 "--vae", str(args.vae.resolve()), "--model-sha256", args.model_sha256,
                 "--vae-sha256", args.vae_sha256, "--reference-dir", str(self.reference),
@@ -551,6 +567,8 @@ def arguments(argv=None):
     parser.add_argument("--engine", choices=("lama", "moebius", "pixelhacker"), required=True)
     parser.add_argument("--backend", choices=("cpu", "cuda", "metal"), required=True)
     parser.add_argument("--precision", choices=("f32", "mixed"), default="f32")
+    parser.add_argument("--cpu-optimized", action="store_true",
+                        help="explicitly test the gated model-specific CPU optimizations against the same reference")
     parser.add_argument("--binary", type=Path, required=True)
     parser.add_argument("--build-receipt", type=Path)
     parser.add_argument("--model", type=Path, required=True)
@@ -563,13 +581,15 @@ def arguments(argv=None):
     parser.add_argument("--reference-manifest-sha256", required=True,
                         help="SHA-256 of original reference.json (LaMa) or report.json (latent)")
     parser.add_argument("--compare-eager", action="store_true", help="also run eager CPU/F32 against the same capture")
-    parser.add_argument("--threads", type=int, default=2, help="1..8 latent CPU threads; LaMa comparator uses 2")
+    parser.add_argument("--threads", type=int, default=2, help="1..8 CPU threads, including the LaMa comparator")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--scratch", type=Path, required=True)
     parser.add_argument("--deadline-minutes", type=int, default=120)
     args = parser.parse_args(argv)
     if not 1 <= args.threads <= 8 or not 1 <= args.deadline_minutes <= 1440:
         parser.error("threads must be in[1,8] and deadline-minutes in[1,1440]")
+    if args.cpu_optimized and (args.backend != "cpu" or args.precision != "f32"):
+        parser.error("--cpu-optimized requires --backend cpu --precision f32")
     if args.model_receipt is None:
         args.model_receipt = args.model.with_suffix(args.model.suffix + ".json")
     if args.vae is not None and args.vae_receipt is None:

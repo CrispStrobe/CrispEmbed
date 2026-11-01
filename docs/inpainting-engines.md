@@ -11,9 +11,12 @@ unmasked RGB8 bytes are preserved exactly.
 
 The new engines are experimental and off by default. The source package
 includes converters, original-reference capture tools, native comparison
-programs and hosted workflows. Full model conversion, native execution and
-original/native parity have not been run for these additions. Existing
-MI-GAN256 receipts do not qualify the new engines or the new CLI.
+programs and hosted workflows. Actual conversions, CPU execution and live
+CLI checks are now recorded in the
+[optimization results](inpainting-optimization-results.md). That report
+separates complete-image timing, original-model comparison, native agreement
+and retained numerical failures. A passing CLI check does not by itself
+qualify the underlying model or a different backend.
 
 ## Choose a profile
 
@@ -28,8 +31,9 @@ MI-GAN256 receipts do not qualify the new engines or the new CLI.
 These are stored-weight profiles below 4 GB, not a promise of peak memory
 below 4 GB. From the original tensor census, Moebius plus the widened F32 VAE
 contains about 1.24 GB of tensor data; PixelHacker plus VAE contains about 3.78 GB.
-GGUF metadata adds a small amount. CPU latency and process peak memory have
-not been measured. The explicit mixed GPU graph profile converts selected
+GGUF metadata adds a small amount. Measured CPU latency and process memory
+for the executed geometries are in the optimization report; latent runtime
+memory can exceed 4 GB. The explicit mixed GPU graph profile converts selected
 weights at load; the source GGUF contract remains F32. The converter and native loader reject unrecognized
 checkpoints, shapes, precision or metadata instead of inferring compatibility
 from a filename. No model weights are included in the source package.
@@ -179,8 +183,10 @@ RGB stages. PixelHacker's original Flash Linear Attention requires a compatible
 CUDA reference worker. Captured original outputs can then be replayed by the
 native CPU, CUDA or Metal graph implementation without that framework runtime.
 
-Run these jobs before relying on native outputs. Source and bounded metadata
-checks alone establish neither model parity nor realistic removal quality.
+Use the [recorded CPU results](inpainting-optimization-results.md) for the
+tested model identities and configurations, and run the same qualification
+on the intended GPU before relying on that backend. Source and bounded
+metadata checks alone establish neither model parity nor realistic removal quality.
 Video propagation, optical flow, temporal consistency, STTN/ProPainter,
 quantized GGUF profiles and shared C ABI/server/language bindings are outside
 this image CLI addition. Native GPU graphs and runtime mixed precision are

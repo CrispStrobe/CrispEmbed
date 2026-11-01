@@ -93,6 +93,8 @@ def convert(model, checkpoint, output, source_dir):
             + "Licence evidence:\n" + "\n".join(record["license_evidence"]) + "\n"
             "Conversion: floating weights stored as F32; named singleton-depth axes squeezed;\n"
             "inference-inert BatchNorm training counters omitted with individual hashes in receipt.\n"
+            "GGUF tensor names at least 64 UTF-8 bytes use t. + SHA256(original)[:56];\n"
+            "the collision-checked receipt preserves every original_name and physical name.\n"
             "No inference quality, commercial clearance or native parity result is asserted by conversion.\n",
             encoding="utf-8")
         # Exclusive final creates avoid an overwrite race. The model and receipt

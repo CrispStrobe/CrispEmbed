@@ -9,6 +9,7 @@
 #include "core/sha256.h"
 #include "inpaint.h"
 #include "inpaint_weights.h"
+#include "inpaint_weight_names.h"
 
 #include <algorithm>
 #include <array>
@@ -69,7 +70,8 @@ void validate_model(const std::string & path, const std::string & sha256, const 
                 core_gguf::kv_str(meta.get(), "latent_inpaint.checkpoint.sha256", "") == checkpoint_sha256(model) &&
                 core_gguf::kv_str(meta.get(), "latent_inpaint.checkpoint.revision", "") == checkpoint_revision(model) &&
                 core_gguf::kv_str(meta.get(), "latent_inpaint.input.contract", "") == input_contract() &&
-                core_gguf::kv_str(meta.get(), "latent_inpaint.tensor.layout", "") == tensor_layout(),
+                core_gguf::kv_str(meta.get(), "latent_inpaint.tensor.layout", "") == tensor_layout() &&
+                core_gguf::kv_str(meta.get(), inpaint_weight_names::key, "") == inpaint_weight_names::encoding,
             model + " source, checkpoint, licence or layout contract differs");
 }
 

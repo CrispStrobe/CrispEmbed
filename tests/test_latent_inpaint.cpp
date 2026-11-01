@@ -1,8 +1,8 @@
 // Hosted original-vs-native replay. No model/framework download is performed
 // by this binary. Reference data and model receipts are verified before init.
 #include "latent_inpaint.h"
-#include "inpaint_tensor_names.h"
 #include "latent_inpaint_schema.h"
+#include "inpaint_weight_names.h"
 #include "core/clean_exit.h"
 #include "core/gguf_loader.h"
 #include "core/sha256.h"
@@ -821,6 +821,7 @@ Json expected_metadata(const std::string & model) {
     result["latent_inpaint.contract.sha256"] = latent_inpaint::source_contract_sha256();
     result["latent_inpaint.tensor.layout"] = latent_inpaint::tensor_layout();
     result["latent_inpaint.input.contract"] = latent_inpaint::input_contract();
+    result[inpaint_weight_names::key] = inpaint_weight_names::encoding;
     return result;
 }
 
@@ -933,9 +934,12 @@ Json verify_receipt(const fs::path & file, const std::string & digest, const std
     std::set<std::string> omitted_names;
     for (const auto & entry : schema) {
         const Json & row = receipt.at("tensors").a[ordinal];
-        keys(row, { "name", "shape", "source_shape", "source_dtype", "dtype", "bytes", "sha256", "transformation" });
-        const std::string & name = row.at("name").str();
-        require(name == entry.first && shape(row.at("shape"), entry.second.size()) == entry.second,
+        keys(row, { "name", "original_name", "shape", "source_shape", "source_dtype", "dtype", "bytes", "sha256",
+                    "transformation" });
+        const std::string & name = row.at("original_name").str();
+        const std::string & physical_name = row.at("name").str();
+        require(name == entry.first && physical_name == inpaint_weight_names::physical(name) &&
+                    shape(row.at("shape"), entry.second.size()) == entry.second,
                 "conversion tensor order/name/shape differs");
         Shape source_shape = entry.second;
         const bool positional = name.size() >= 22 && name.compare(name.size() - 22, 22, ".attn1.pos_conv.weight") == 0;
@@ -950,7 +954,7 @@ Json verify_receipt(const fs::path & file, const std::string & digest, const std
                     gguf_get_tensor_type(gguf.get(), int64_t(ordinal)) == GGML_TYPE_F32 &&
                     gguf_get_tensor_size(gguf.get(), int64_t(ordinal)) == bytes &&
                     gguf_get_tensor_offset(gguf.get(), int64_t(ordinal)) == offset &&
-                    inpaint_names::gguf_name(name) == gguf_get_tensor_name(gguf.get(), int64_t(ordinal)),
+                    physical_name == gguf_get_tensor_name(gguf.get(), int64_t(ordinal)),
                 "GGUF tensor index differs from receipt");
         const int64_t * ne = gguf_get_tensor_ne(gguf.get(), int64_t(ordinal));
         for (size_t axis = 0; axis < 4; ++axis)
@@ -1036,12 +1040,35 @@ Json verify_model(const fs::path & file, const std::string & digest, const std::
     return result;
 }
 
+void validate_import_profile(const Json & doc, const std::string & model) {
+    const bool profile_present = doc.o.count("import_profile") != 0;
+    require(profile_present == (doc.o.count("import_adapter_sha256") != 0), "unpaired original import profile");
+    if (!profile_present) return;
+    require(digest_valid(doc.at("import_adapter_sha256").str()), "invalid original import adapter digest");
+    const Json & profile = doc.at("import_profile");
+    keys(profile, { "name", "package_initializers_skipped", "numerical_sources_modified" });
+    require(!profile.at("numerical_sources_modified").flag(), "original numerical sources were modified");
+    const auto & skipped = profile.at("package_initializers_skipped").rows();
+    if (profile.at("name").str() == "upstream-package-imports-v1") {
+        require(skipped.empty(), "standard original import profile skipped modules");
+    } else {
+        require(profile.at("name").str() == "moebius-student-only-cpu-v1" && model == "moebius" &&
+                    doc.at("device").str() == "cpu" && skipped.size() == 2 &&
+                    skipped[0].str() == "model_lib/__init__.py" && skipped[1].str() == "removal/v1_2/__init__.py",
+                "unsupported original import profile or numerical module omission");
+    }
+}
+
 Json read_original_report(const fs::path & directory, const std::string & model) {
     require(!fs::is_symlink(directory) && fs::is_directory(directory), "reference root must be a real directory");
     const Json doc = read_json(regular_child(directory, "report.json", max_json_bytes));
-    keys(doc, { "schema", "model", "source_commit", "source_contract_sha256", "versions", "python", "torch_config",
-                "device", "threads", "cases", "dumper_sha256", "helper_sha256", "producer", "complete",
-                "native_qualified", "representative_quality_qualified" });
+    validate_import_profile(doc, model);
+    Json legacy_keys = doc;
+    legacy_keys.o.erase("import_profile");
+    legacy_keys.o.erase("import_adapter_sha256");
+    keys(legacy_keys, { "schema", "model", "source_commit", "source_contract_sha256", "versions", "python",
+                        "torch_config", "device", "threads", "cases", "dumper_sha256", "helper_sha256", "producer",
+                        "complete", "native_qualified", "representative_quality_qualified" });
     require(doc.at("schema").str() == "crispembed-latent-inpaint-original-v1" && doc.at("model").str() == model &&
                 doc.at("source_commit").str() == latent_inpaint::source_commit(model) &&
                 doc.at("source_contract_sha256").str() == latent_inpaint::source_contract_sha256() &&
@@ -1202,7 +1229,7 @@ void save_bytes(const fs::path & path, const std::vector<uint8_t> & bytes) {
 }
 
 Json replay_case(latent_inpaint::context * context, const Case & reference, const fs::path & output,
-                 const std::string & model) {
+                 const std::string & model, bool verify_replay) {
     require(fs::create_directory(output), "native case output already exists");
     Json report = Json::dict();
     report["id"] = reference.id;
@@ -1212,6 +1239,22 @@ Json replay_case(latent_inpaint::context * context, const Case & reference, cons
     report["errors"] = Json::list();
     report["stages"] = Json::list();
     save_json(output / "report.json", report);
+    Tensor ordinary;
+    if (verify_replay) {
+        latent_inpaint::set_observer(context, nullptr, nullptr);
+        std::string error;
+        const auto start = std::chrono::steady_clock::now();
+        const bool ran =
+            latent_inpaint::run_reference(context, reference.image, reference.mask, reference.noise, ordinary, error);
+        report["unobserved_seconds_diagnostic"] =
+            std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
+        report["unobserved_completed"] = ran;
+        if (!ran) {
+            report["errors"].a.emplace_back("native unobserved execution failed: " + error);
+            save_json(output / "report.json", report);
+            return report;
+        }
+    }
     Observer observer(reference, output, model);
     latent_inpaint::set_observer(context, &Observer::callback, &observer);
     Tensor decoded;
@@ -1226,6 +1269,17 @@ Json replay_case(latent_inpaint::context * context, const Case & reference, cons
     latent_inpaint::set_observer(context, nullptr, nullptr);
     report["native_seconds"] = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
     if (!ran) report["errors"].a.emplace_back("native execution failed: " + error);
+    if (ran && verify_replay) {
+        const bool same = ordinary.c == decoded.c && ordinary.h == decoded.h && ordinary.w == decoded.w &&
+                          ordinary.v.size() == decoded.v.size() &&
+                          std::memcmp(ordinary.v.data(), decoded.v.data(), ordinary.v.size() * sizeof(float)) == 0;
+        report["native_observer_neutrality_bit_exact"] = same;
+        if (!same) {
+            report["errors"].a.emplace_back("native observer changed decoded float bytes");
+            save_tensor(output / "observer-neutrality.ordinary.f32", ordinary);
+            save_tensor(output / "observer-neutrality.observed.f32", decoded);
+        }
+    }
     bool stages_pass = true;
     for (const Record & stage : reference.stages) {
         const auto found = observer.comparisons.find(stage.name);
@@ -1301,6 +1355,48 @@ template <typename Function> void rejects(Function fn) {
 }
 
 void contract_controls() {
+    require(inpaint_weight_names::physical(std::string(63, 'a')) == std::string(63, 'a') &&
+                inpaint_weight_names::physical(std::string(64, 'a')) ==
+                    "t.ffe054fe7ae0cb6dc65c3af9b61d5209f439851db43d0ba5997337df",
+            "tensor alias byte boundary or SHA-256 encoding differs");
+    std::string utf8;
+    for (int i = 0; i < 32; ++i) utf8 += "\xce\xbb";
+    require(inpaint_weight_names::physical(utf8) == "t.fd43275bfb0d864c6a4ea53b9c7875cd9dd0b4c6772de6a87111bcf4",
+            "tensor alias hashes codepoints instead of original UTF-8 bytes");
+    {
+        std::unique_ptr<gguf_context, decltype(&gguf_free)> metadata(gguf_init_empty(), gguf_free);
+        gguf_set_val_str(metadata.get(), inpaint_weight_names::key, "unknown");
+        rejects([&] { (void)inpaint_weight_names::encoded(metadata.get()); });
+        gguf_set_val_str(metadata.get(), inpaint_weight_names::key, inpaint_weight_names::encoding);
+        const std::string original(64, 'a');
+        const latent_inpaint::ShapeMap collision{ { original, { 1 } },
+                                                  { inpaint_weight_names::physical(original), { 1 } } };
+        rejects([&] { (void)inpaint_weight_names::map(metadata.get(), collision); });
+    }
+    Json imports = Parser("{\"device\":\"cpu\",\"import_adapter_sha256\":\"" + std::string(64, 'a') +
+                          "\",\"import_profile\":{\"name\":\"moebius-student-only-cpu-v1\","
+                          "\"package_initializers_skipped\":[\"model_lib/__init__.py\",\"removal/v1_2/__init__.py\"],"
+                          "\"numerical_sources_modified\":false}}")
+                       .parse();
+    validate_import_profile(imports, "moebius");
+    rejects([&] { validate_import_profile(imports, "pixelhacker"); });
+    Json changed_imports = imports;
+    changed_imports["device"] = "cuda";
+    rejects([&] { validate_import_profile(changed_imports, "moebius"); });
+    changed_imports = imports;
+    changed_imports["import_profile"]["numerical_sources_modified"] = true;
+    rejects([&] { validate_import_profile(changed_imports, "moebius"); });
+    changed_imports = imports;
+    changed_imports["import_profile"]["name"] = "unknown";
+    rejects([&] { validate_import_profile(changed_imports, "moebius"); });
+    changed_imports = imports;
+    changed_imports.o.erase("import_adapter_sha256");
+    rejects([&] { validate_import_profile(changed_imports, "moebius"); });
+    changed_imports = imports;
+    changed_imports["import_profile"]["name"] = "upstream-package-imports-v1";
+    changed_imports["import_profile"]["package_initializers_skipped"] = Json::list();
+    validate_import_profile(changed_imports, "moebius");
+    validate_import_profile(Json::dict(), "moebius");
     require(Parser("{\"name\":\"x\\u03bb\",\"shape\":[4,64,64],\"ok\":true,\"none\":null}")
                     .parse()
                     .at("shape")
@@ -1344,15 +1440,17 @@ void contract_controls() {
 }
 
 struct Arguments {
-    std::string model, model_sha, vae_sha;
+    std::string model, model_sha, vae_sha, selected_case;
     fs::path denoiser, vae, reference, output;
     int threads = 2;
+    bool verify_replay = false;
 };
 
 Arguments arguments(int argc, char ** argv) {
     std::map<std::string, std::string> values;
     const std::set<std::string> allowed = { "--model",      "--denoiser",      "--vae", "--model-sha256",
-                                            "--vae-sha256", "--reference-dir", "--out", "--threads" };
+                                            "--vae-sha256", "--reference-dir", "--out", "--threads",
+                                            "--case",       "--verify-replay" };
     for (int i = 1; i < argc; i += 2) {
         require(i + 1 < argc && allowed.count(argv[i]) == 1 && values.emplace(argv[i], argv[i + 1]).second,
                 "unknown, missing or duplicate command argument");
@@ -1368,6 +1466,16 @@ Arguments arguments(int argc, char ** argv) {
     a.vae_sha = values.at("--vae-sha256");
     a.reference = values.at("--reference-dir");
     a.output = values.at("--out");
+    if (values.count("--case")) {
+        a.selected_case = values.at("--case");
+        require(std::find(cases.begin(), cases.end(), a.selected_case) != cases.end(),
+                "--case must name a frozen original case");
+    }
+    if (values.count("--verify-replay")) {
+        require(values.at("--verify-replay") == "0" || values.at("--verify-replay") == "1",
+                "--verify-replay must be 0 or 1");
+        a.verify_replay = values.at("--verify-replay") == "1";
+    }
     require((a.model == "moebius" || a.model == "pixelhacker") && digest_valid(a.model_sha) && digest_valid(a.vae_sha),
             "model name or GGUF SHA-256 argument differs");
     if (values.count("--threads")) {
@@ -1400,6 +1508,8 @@ int run(const Arguments & a) {
     report["errors"] = Json::list();
     report["cases"] = Json::list();
     report["threads"] = a.threads;
+    report["selected_case"] = a.selected_case;
+    report["verify_replay"] = a.verify_replay;
     report["budgets"] = Json::dict();
     report["budgets"]["component_max_abs"] = component_atol;
     report["budgets"]["component_relative_l2"] = component_relative_l2;
@@ -1424,6 +1534,10 @@ int run(const Arguments & a) {
             }
         }
         require(report["errors"].a.empty(), "one or more original case manifests failed validation");
+        require(a.selected_case.empty() || std::any_of(prepared.begin(), prepared.end(),
+                                                       [&](const Case & value) { return value.id == a.selected_case; }),
+                "selected case is absent from the intact original report");
+        report["original_case_count"] = prepared.size();
         report["denoiser_conversion"] = verify_model(a.denoiser, a.model_sha, a.model);
         report["vae_conversion"] = verify_model(a.vae, a.vae_sha, "sdxl_vae");
         save_json(a.output / "report.json", report);
@@ -1441,10 +1555,11 @@ int run(const Arguments & a) {
         require(bool(context), "native initialization failed: " + error);
         bool passed = true;
         for (const Case & reference : prepared) {
+            if (!a.selected_case.empty() && reference.id != a.selected_case) continue;
             std::cout << "Replaying " << a.model << '/' << reference.id << " with " << reference.stages.size()
                       << " original stages\n"
                       << std::flush;
-            Json result = replay_case(context.get(), reference, a.output / reference.id, a.model);
+            Json result = replay_case(context.get(), reference, a.output / reference.id, a.model, a.verify_replay);
             if (!result.at("pass").flag()) {
                 passed = false;
                 report["errors"].a.emplace_back("native parity failed: " + reference.id);
@@ -1454,7 +1569,7 @@ int run(const Arguments & a) {
         }
         report["complete"] = true;
         report["synthetic_parity_pass"] = passed;
-        report["full_synthetic_panel_pass"] = passed && prepared.size() == cases.size();
+        report["full_synthetic_panel_pass"] = passed && a.selected_case.empty() && prepared.size() == cases.size();
     } catch (const std::exception & e) {
         report["errors"].a.emplace_back(e.what());
     }
@@ -1479,6 +1594,9 @@ static int crispembed_test_main(int argc, char ** argv) {
                 << "test-latent-inpaint --contracts\n"
                    "test-latent-inpaint --model moebius|pixelhacker --denoiser MODEL.gguf --vae VAE.gguf\n"
                    "  --model-sha256 SHA --vae-sha256 SHA --reference-dir ORIGINAL_DIR --out NEW_DIR [--threads 1..8]\n"
+                   "  [--case subtitle_bar|edge_touch|center|empty]  Bounded diagnostic, never a full-panel pass.\n"
+                   "  [--verify-replay 1]  Require bit-exact ordinary/observed decoded floats on identical original "
+                   "noise.\n"
                    "Requires matching .gguf.json receipts and the model's explicit default-off environment gate.\n";
             return 0;
         }

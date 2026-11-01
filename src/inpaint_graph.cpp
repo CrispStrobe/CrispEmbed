@@ -1,9 +1,9 @@
 #include "inpaint_graph.h"
+#include "inpaint_weight_names.h"
 #include "core/env_gate.h"
 #include "core/ggml_cpu_backend.h"
 #include "core/gpu_backend_pref.h"
 #include "inpaint_weights.h"
-#include "inpaint_tensor_names.h"
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -65,6 +65,23 @@ ggml_tensor * concat_balanced(ggml_context * ctx, std::vector<ggml_tensor *> par
         parts = std::move(next);
     }
     return parts.front();
+}
+ggml_tensor * image_matmul(ggml_context * ctx, ggml_tensor * weights, ggml_tensor * columns, int64_t width,
+                           int64_t height, bool fast, bool spatial_output) {
+    if (!spatial_output || columns->ne[3] > 2)
+        return image_layout(ctx, matmul(ctx, weights, columns, fast), width, height);
+    // With activations on the left, GEMM writes spatial-first CHW directly.
+    // Process each sample separately so immutable weights stay contiguous and
+    // ggml's CPU SGEMM remains eligible; a zero-stride weight broadcast would
+    // silently bypass that optimized kernel in the pinned backend.
+    std::vector<ggml_tensor *> samples;
+    for (int64_t sample = 0; sample < columns->ne[3]; ++sample) {
+        ggml_tensor * input =
+            ggml_view_2d(ctx, columns, columns->ne[0], columns->ne[1], columns->nb[1], size_t(sample) * columns->nb[3]);
+        ggml_tensor * product = matmul(ctx, input, weights);
+        samples.push_back(ggml_reshape_4d(ctx, product, width, height, weights->ne[1], 1));
+    }
+    return concat_balanced(ctx, std::move(samples), 3);
 }
 std::vector<float> read_small(ggml_tensor * tensor) {
     require(tensor->type == GGML_TYPE_F32 && ggml_nelements(tensor) <= 65536, "invalid small F32 affine tensor");
@@ -206,9 +223,10 @@ Weights::Weights(Device & selected, const char * path, const ShapeMap & schema) 
                 if (entry.second->type != GGML_TYPE_F32) stored_shapes.emplace(entry.second, expected.at(entry.first));
             return;
         }
+        const auto names = inpaint_weight_names::map(meta.get(), schema);
         uint64_t total = 0;
         for (const auto & entry : schema) {
-            const int64_t id = gguf_find_tensor(meta.get(), inpaint_names::gguf_name(entry.first).c_str());
+            const int64_t id = gguf_find_tensor(meta.get(), names.at(entry.first).c_str());
             require(id >= 0 && gguf_get_tensor_type(meta.get(), id) == GGML_TYPE_F32,
                     "missing original F32 weight " + entry.first);
             std::array<int64_t, 4> expected{ 1, 1, 1, 1 };
@@ -230,7 +248,7 @@ Weights::Weights(Device & selected, const char * path, const ShapeMap & schema) 
         if (!device.fast) {
             require(core_gguf::load_weights(path, device.backend, "inpainting-graph", loaded, true),
                     "cannot load resident weights");
-            for (const auto & entry : schema) inpaint_names::restore_original_name(loaded.tensors, entry.first);
+            inpaint_weight_names::restore(loaded, names);
             return;
         }
         // Source bytes and their digest stay unchanged. This explicitly gated
@@ -242,7 +260,7 @@ Weights::Weights(Device & selected, const char * path, const ShapeMap & schema) 
         try {
             require(core_gguf::load_weights(path, cpu, "inpainting-fast-source", source, true),
                     "cannot map F32 source");
-            for (const auto & entry : schema) inpaint_names::restore_original_name(source.tensors, entry.first);
+            inpaint_weight_names::restore(source, names);
             loaded.ctx = ggml_init({ (schema.size() + 16) * ggml_tensor_overhead(), nullptr, true });
             require(loaded.ctx != nullptr, "weight metadata allocation failed");
             for (const auto & entry : schema) {
@@ -260,7 +278,7 @@ Weights::Weights(Device & selected, const char * path, const ShapeMap & schema) 
                 const bool dense = shape.size() == 4 && (shape[1] > 1 || positional);
                 ggml_tensor * target =
                     ggml_new_tensor(loaded.ctx, matrix || dense ? GGML_TYPE_F16 : GGML_TYPE_F32, 4, original->ne);
-                ggml_set_name(target, entry.first.c_str());
+                ggml_set_name(target, names.at(entry.first).c_str());
                 loaded.tensors.emplace(entry.first, target);
             }
             loaded.buf = ggml_backend_alloc_ctx_tensors(loaded.ctx, device.backend);
@@ -360,9 +378,9 @@ ggml_tensor * Builder::parameter(const std::string & name, const std::vector<int
     ggml_tensor * out = make(ctx, GGML_TYPE_F32, shape);
     ggml_set_name(out, name.c_str());
     ggml_set_input(out);
-    // Parameters persist across replays (callers may upload once and replay
-    // with only some inputs changed); OUTPUT keeps gallocr from recycling an
-    // input's memory after its last consumer within the graph.
+    // INPUT alone does not retain storage in the pinned gallocr. A persistent
+    // graph must keep both uploaded-once inputs and immutable initializers
+    // alive across every replay, including after their last use in one run.
     ggml_set_output(out);
     return out;
 }
@@ -385,6 +403,7 @@ ggml_tensor * Builder::constant_i32(const std::string & name, const std::vector<
     require(size_t(ggml_nelements(out)) == data.size(), "index constant shape differs");
     ggml_set_name(out, name.c_str());
     ggml_set_input(out);
+    ggml_set_output(out);
     Initializer init{ out, std::vector<uint8_t>(data.size() * sizeof(int32_t)), false };
     std::memcpy(init.bytes.data(), data.data(), init.bytes.size());
     initializers_.push_back(std::move(init));
@@ -402,9 +421,11 @@ ggml_tensor * Builder::zeros(const std::string & name, const std::vector<int64_t
 ggml_tensor * Builder::linear(const std::string & name, ggml_tensor * x, bool bias) {
     ggml_tensor * w = weight(name + ".weight");
     require(w->ne[0] == x->ne[2] && w->ne[2] == 1 && w->ne[3] == 1, "linear shape differs: " + name);
-    ggml_tensor * out = matmul(ctx, w, channels_first(ctx, x), fast());
-    if (bias && has(name + ".bias")) out = ggml_add(ctx, out, weight(name + ".bias"));
-    return image_layout(ctx, out, x->ne[0], x->ne[1]);
+    const bool spatial_output = !device.gpu && core_env::on("CRISPEMBED_INPAINT_GEMM_LAYOUT");
+    ggml_tensor * out = image_matmul(ctx, w, channels_first(ctx, x), x->ne[0], x->ne[1], fast(), spatial_output);
+    if (bias && has(name + ".bias"))
+        out = ggml_add(ctx, out, ggml_reshape_4d(ctx, weight(name + ".bias"), 1, 1, out->ne[2], 1));
+    return out;
 }
 ggml_tensor * Builder::conv(const std::string & name, ggml_tensor * x, int stride, int padding, int groups,
                             int dilation) {
@@ -467,8 +488,8 @@ ggml_tensor * Builder::conv_kernel(const std::string & name, ggml_tensor * w, gg
         require(groups == 1, "only dense and depthwise groups are supported");
         if (w->ne[0] == 1 && w->ne[1] == 1 && stride == 1 && padding == 0) {
             // Dense 1x1 is a GEMM: no im2col allocation or copy.
-            out = matmul(ctx, ggml_reshape_2d(ctx, w, w->ne[2], w->ne[3]), channels_first(ctx, x), fast());
-            out = image_layout(ctx, out, x->ne[0], x->ne[1]);
+            out = image_matmul(ctx, ggml_reshape_2d(ctx, w, w->ne[2], w->ne[3]), channels_first(ctx, x), x->ne[0],
+                               x->ne[1], fast(), !device.gpu && core_env::on("CRISPEMBED_INPAINT_GEMM_LAYOUT"));
         } else {
             const ggml_type patch_type = fast() && w->type == GGML_TYPE_F16 ? GGML_TYPE_F16 : GGML_TYPE_F32;
             const int64_t ow = (x->ne[0] + 2 * padding - dilation * (w->ne[0] - 1) - 1) / stride + 1;
@@ -500,8 +521,9 @@ ggml_tensor * Builder::conv_kernel(const std::string & name, ggml_tensor * w, gg
                     ggml_im2col(ctx, w, strip, stride, stride, padding, pad_y, dilation, dilation, true, patch_type);
                 ggml_tensor * columns =
                     ggml_reshape_4d(ctx, patches, kernel_size, patches->ne[1] * patches->ne[2], 1, x->ne[3]);
-                ggml_tensor * part = matmul(ctx, ggml_reshape_2d(ctx, w, kernel_size, w->ne[3]), columns, fast());
-                part = image_layout(ctx, part, patches->ne[1], patches->ne[2]);
+                ggml_tensor * part =
+                    image_matmul(ctx, ggml_reshape_2d(ctx, w, kernel_size, w->ne[3]), columns, patches->ne[1],
+                                 patches->ne[2], fast(), !device.gpu && core_env::on("CRISPEMBED_INPAINT_GEMM_LAYOUT"));
                 parts.push_back(part);
             }
             out = concat_balanced(ctx, std::move(parts), 1);
@@ -560,6 +582,7 @@ ggml_tensor * Builder::conv_transpose(const std::string & name, ggml_tensor * x,
         prepared = make(ctx, prepared_type, { kernel, kernel, input_channels, output_channels });
         ggml_set_name(prepared, prepared_name.c_str());
         ggml_set_input(prepared);
+        ggml_set_output(prepared);
         Initializer init{ prepared, std::vector<uint8_t>(ggml_nbytes(prepared)), false };
         if (fast()) {
             std::vector<ggml_fp16_t> packed(count);
@@ -658,7 +681,7 @@ ggml_tensor * Builder::attention(ggml_tensor * q, ggml_tensor * k, ggml_tensor *
     k = layout(k, dk, nk);
     v = layout(v, dv, nk);
     ggml_tensor * out = nullptr;
-    if (!device.gpu || fast()) {
+    if ((!device.gpu && !core_env::on("CRISPEMBED_INPAINT_CPU_ATTENTION_TILES")) || fast()) {
         if (fast()) {
             k = ggml_cast(ctx, k, GGML_TYPE_F16);
             v = ggml_cast(ctx, v, GGML_TYPE_F16);
@@ -668,8 +691,10 @@ ggml_tensor * Builder::attention(ggml_tensor * q, ggml_tensor * k, ggml_tensor *
         // Flash returns D,H,T,B; normalize to D,T,H,B.
         out = ggml_cont(ctx, ggml_permute(ctx, out, 0, 2, 1, 3));
     } else {
-        // Metal's pinned flash kernel uses half tiles. The strict profile uses
-        // bounded F32 attention tiles instead of silently moving it to CPU.
+        // Metal's pinned flash kernel uses half tiles. The strict GPU profile
+        // uses bounded F32 tiles. The explicit CPU gate permits the same
+        // evaluation order for original-model numerical attribution without
+        // replacing the default CPU online attention implementation.
         ggml_tensor * vt = ggml_cont(ctx, ggml_transpose(ctx, v));
         constexpr int64_t tile = 128;
         std::vector<ggml_tensor *> chunks;
@@ -702,6 +727,29 @@ ggml_tensor * Builder::pad(ggml_tensor * x, int left, int right, int top, int bo
 ggml_tensor * Builder::reflect_pad(ggml_tensor * x, int padding) {
     require(padding >= 0 && padding < x->ne[0] && padding < x->ne[1], "reflection padding exceeds input");
     if (!padding) return x;
+    if (core_env::on("CRISPEMBED_INPAINT_REFLECT_GATHER")) {
+        // Reflect whole contiguous rows, then pad the width. This avoids the
+        // two full activation transposes in the portable baseline. Geometry
+        // indices are immutable and shared by equal-shaped layers.
+        const int64_t height = x->ne[1], padded = height + 2 * padding;
+        const int64_t planes = x->ne[2] * x->ne[3];
+        require(padded <= std::numeric_limits<int32_t>::max() / planes, "reflection row indices exceed I32");
+        const std::string key =
+            "reflect.rows." + std::to_string(height) + "." + std::to_string(planes) + "." + std::to_string(padding);
+        std::vector<int32_t> indices(size_t(padded * planes));
+        for (int64_t plane = 0; plane < planes; ++plane)
+            for (int64_t y = 0; y < padded; ++y) {
+                int64_t source = y - padding;
+                if (source < 0) source = -source;
+                if (source >= height) source = 2 * height - 2 - source;
+                indices[size_t(plane * padded + y)] = int32_t(plane * height + source);
+            }
+        ggml_tensor * rows =
+            ggml_reshape_2d(ctx, ggml_is_contiguous(x) ? x : ggml_cont(ctx, x), x->ne[0], height * planes);
+        rows = ggml_get_rows(ctx, rows, constant_i32(key, { padded * planes }, indices));
+        rows = ggml_reshape_4d(ctx, rows, x->ne[0], padded, x->ne[2], x->ne[3]);
+        return ggml_pad_reflect_1d(ctx, rows, padding, padding);
+    }
     x = ggml_pad_reflect_1d(ctx, x, padding, padding);
     x = ggml_cont(ctx, ggml_transpose(ctx, x));
     x = ggml_pad_reflect_1d(ctx, x, padding, padding);

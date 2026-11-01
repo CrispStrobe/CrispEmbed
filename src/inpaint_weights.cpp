@@ -1,5 +1,5 @@
 #include "inpaint_weights.h"
-#include "inpaint_tensor_names.h"
+#include "inpaint_weight_names.h"
 
 #include "core/env_gate.h"
 #include "ggml-alloc.h"
@@ -85,8 +85,9 @@ bool validate(gguf_context * meta, const ShapeMap & expected, const char * tag, 
         return fail(error, name + " precision variant must declare the inpaint-v1 quantization policy");
     if (gguf_get_n_tensors(meta) != int64_t(expected.size()))
         return fail(error, name + " precision variant tensor count differs");
+    const auto stored_names = inpaint_weight_names::map(meta, expected);
     for (const auto & entry : expected) {
-        const int64_t id = gguf_find_tensor(meta, inpaint_names::gguf_name(entry.first).c_str());
+        const int64_t id = gguf_find_tensor(meta, stored_names.at(entry.first).c_str());
         if (id < 0) return fail(error, name + " precision variant is missing tensor: " + entry.first);
         const ggml_type type = gguf_get_tensor_type(meta, id);
         const int64_t * ne = gguf_get_tensor_ne(meta, id);
@@ -110,12 +111,13 @@ bool load(const char * path, gguf_context * meta, ggml_backend_t backend, const 
     const std::string label(tag);
     std::set<std::string> resident;
     std::vector<std::pair<std::string, ggml_tensor *>> pending;
+    const auto stored_names = inpaint_weight_names::map(meta, expected);
     for (const auto & entry : expected) {
-        const int64_t id = gguf_find_tensor(meta, inpaint_names::gguf_name(entry.first).c_str());
+        const int64_t id = gguf_find_tensor(meta, stored_names.at(entry.first).c_str());
         const ggml_type type = gguf_get_tensor_type(meta, id);
         ++stats.stored_types[ggml_type_name(type)];
         if (type == GGML_TYPE_F32 || keep_stored) {
-            resident.insert(inpaint_names::gguf_name(entry.first)); // stored (possibly abbreviated) name
+            resident.insert(stored_names.at(entry.first)); // stored (possibly encoded) name
             if (type != GGML_TYPE_F32) ++stats.stored;
         } else {
             pending.emplace_back(entry.first, nullptr);
@@ -124,7 +126,15 @@ bool load(const char * path, gguf_context * meta, ggml_backend_t backend, const 
     if (!core_gguf::load_weights_filtered(path, backend, include_resident, &resident, tag, weights))
         return fail(error, label + " precision-variant weight load failed");
     if (weights.tensors.size() != resident.size()) return fail(error, label + " resident weight load incomplete");
-    for (const auto & entry : expected) inpaint_names::restore_original_name(weights.tensors, entry.first);
+    // Re-key the resident subset to original names (inpaint_weight_names::restore
+    // requires the full census, which a filtered load does not have).
+    for (const auto & entry : expected) {
+        const auto found = weights.tensors.find(stored_names.at(entry.first));
+        if (found == weights.tensors.end() || found->first == entry.first) continue;
+        ggml_tensor * tensor = found->second;
+        weights.tensors.erase(found);
+        weights.tensors.emplace(entry.first, tensor);
+    }
     stats.resident = int(resident.size());
     stats.weight_bytes = weights.buf ? ggml_backend_buffer_get_size(weights.buf) : 0;
     if (pending.empty()) return true;
@@ -144,7 +154,7 @@ bool load(const char * path, gguf_context * meta, ggml_backend_t backend, const 
     std::vector<uint8_t> raw;
     std::vector<float> values;
     for (const auto & item : pending) {
-        const int64_t id = gguf_find_tensor(meta, inpaint_names::gguf_name(item.first).c_str());
+        const int64_t id = gguf_find_tensor(meta, stored_names.at(item.first).c_str());
         const ggml_type type = gguf_get_tensor_type(meta, id);
         const ggml_type_traits * traits = ggml_get_type_traits(type);
         const int64_t count = ggml_nelements(item.second);

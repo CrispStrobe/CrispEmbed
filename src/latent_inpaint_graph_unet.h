@@ -29,10 +29,26 @@ ggml_tensor * lambda_content(inpaint_graph::Builder & builder, ggml_tensor * q, 
 ggml_tensor * lambda_position(inpaint_graph::Builder & builder, ggml_tensor * q, ggml_tensor * positional, int heads,
                               int value_channels);
 
+// Bounded row-strip evaluation of local Q*(Conv(V)+bias), reassociated as
+// (Q*kernel)*neighborhood(V) + Q*bias. Kernel is [K,K,1,dk], with odd K<=15;
+// Q/V share image geometry and batch. No full-image neighborhood tensor is
+// materialized. Optional CPU-only zero padding aligns both GEMM reductions
+// to 16 elements; its extra tensors are included in the strip workspace cap.
+// Both production selections remain separately default-off.
+ggml_tensor * lambda_local_reassociated(inpaint_graph::Builder & builder, ggml_tensor * q, ggml_tensor * v,
+                                        ggml_tensor * kernel, ggml_tensor * bias, int heads, bool pad_cpu_gemm = false);
+
 // relative retains the checkpoint's PyTorch [N,M,dk,1] ordering, represented
 // in ggml as [1,dk,M,N]. It is shared by every sample and every query head.
 ggml_tensor * lambda_relative(inpaint_graph::Builder & builder, ggml_tensor * q, ggml_tensor * v,
                               ggml_tensor * relative, int heads);
+
+// Same learned relative contraction, evaluated as (Q * R) * V instead of
+// Q * (R * V). This removes the [dk,dv,N,B] intermediate without changing
+// the learned function. F32 reduction order differs, so production selection
+// remains explicitly gated until complete original-model parity is measured.
+ggml_tensor * lambda_relative_reassociated(inpaint_graph::Builder & builder, ggml_tensor * q, ggml_tensor * v,
+                                           ggml_tensor * relative, int heads);
 
 // FLA's fused output operation: headwise RMSNorm(eps=1e-6), shared learned
 // head-channel scale, and SiLU(gate), with no normalization across heads.

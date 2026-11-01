@@ -34,6 +34,41 @@ MAX_ARCHIVE_BYTES = 4_500_000_000
 MAX_MEMBERS = 5000
 BLOCK_BYTES = 256 * 1024
 DTYPE_BYTES = {"float32": 4, "float16": 2, "int64": 8}
+TENSOR_NAME_ENCODING = "sha256-56-v1"
+
+
+def gguf_tensor_name(original):
+    """Fit the pinned ggml 64-byte name field without losing source identity.
+
+    Source/schema/reference names remain unchanged. The physical GGUF name is
+    deterministic, and the receipt retains both spellings. The complete census
+    is collision-checked before any output is opened; a short source name that
+    happens to equal another tensor's derived alias is also rejected.
+    """
+    if not isinstance(original, str) or not original or "\0" in original:
+        raise ValueError("invalid original tensor name")
+    raw = original.encode("utf-8")
+    return original if len(raw) < 64 else "t." + hashlib.sha256(raw).hexdigest()[:56]
+
+
+def _tensor_name_map(rows, metadata):
+    encoding = metadata.get("crispembed.tensor_name_encoding")
+    if encoding not in (None, TENSOR_NAME_ENCODING):
+        raise ValueError("unsupported GGUF tensor name encoding")
+    names, physical = {}, set()
+    for row in rows:
+        original = row["name"]
+        derived = gguf_tensor_name(original)
+        name = derived if encoding else original
+        if original in names or name in physical:
+            raise ValueError("tensor name alias collision or duplicate source name")
+        # An omitted inert buffer is not a GGUF tensor. Legacy callers such as
+        # LaMa keep their existing receipt fields and short generator names.
+        if row["export_shape"] is not None and len(name.encode("utf-8")) >= 64:
+            raise ValueError("long tensor name requires explicit GGUF name encoding")
+        names[original] = name
+        physical.add(name)
+    return names
 
 
 def load_contract():
@@ -56,6 +91,7 @@ def load_contract():
             raise ValueError("original tensor count differs")
         if record["export_tensor_count"] != sum(row["export_shape"] is not None for row in record["state"]):
             raise ValueError("export tensor count differs")
+        _tensor_name_map(record["state"], {"crispembed.tensor_name_encoding": TENSOR_NAME_ENCODING})
     return contract
 
 
@@ -294,6 +330,7 @@ def gguf_metadata(model, contract=None):
         "general.name": model + "-places2-experimental-f32" if model != "sdxl_vae" else "sdxl-vae-experimental-f32",
         "general.file_type": 0,
         "general.license": record["license"],
+        "crispembed.tensor_name_encoding": TENSOR_NAME_ENCODING,
         "latent_inpaint.schema": 1,
         "latent_inpaint.component": record["component"],
         "latent_inpaint.model": model,
@@ -302,25 +339,9 @@ def gguf_metadata(model, contract=None):
         "latent_inpaint.checkpoint.sha256": record["checkpoint"]["sha256"],
         "latent_inpaint.checkpoint.revision": record["checkpoint"]["revision"],
         "latent_inpaint.contract.sha256": sha256(CONTRACT),
-        "latent_inpaint.tensor.layout": "original contiguous; GGUF dimensions reversed; pos_conv singleton depth squeezed; BN counters omitted; names of 64+ bytes abbreviated (src/inpaint_tensor_names.h)",
+        "latent_inpaint.tensor.layout": "original contiguous; GGUF dimensions reversed; pos_conv singleton depth squeezed; BN counters omitted",
         "latent_inpaint.input.contract": "RGB8;binary-mask8;255=fill;fixed512",
     }
-
-
-# GGUF tensor names hold at most 63 bytes (GGML_MAX_NAME). Twin of
-# src/inpaint_tensor_names.h: names of 64+ bytes are abbreviated, in order.
-NAME_RULES = (("diff_model.", "dm."), (".transformer_blocks.", ".tb."), (".attentions.", ".at."),
-              ("down_blocks.", "db."), ("up_blocks.", "ub."), ("mid_block.", "mb."))
-
-
-def gguf_tensor_name(name):
-    if len(name.encode("utf-8")) < 64:
-        return name
-    for old, new in NAME_RULES:
-        name = name.replace(old, new)
-    if len(name.encode("utf-8")) >= 64:
-        raise ValueError("tensor name cannot be stored within the GGUF name limit: " + name)
-    return name
 
 
 def _string(stream, value):
@@ -331,6 +352,8 @@ def _string(stream, value):
 
 def write_streamed_gguf(path, checkpoint, rows, metadata):
     """Write one F32 tensor at a time; no multi-GB in-memory state dictionary."""
+    names = _tensor_name_map(rows, metadata)
+    encoded = metadata.get("crispembed.tensor_name_encoding") == TENSOR_NAME_ENCODING
     exported = [row for row in rows if row["export_shape"] is not None]
     records = []
     with Path(path).open("xb") as stream:
@@ -350,7 +373,7 @@ def write_streamed_gguf(path, checkpoint, rows, metadata):
         for row in exported:
             shape = row["export_shape"]
             size = math.prod(shape) * 4
-            _string(stream, gguf_tensor_name(row["name"]))
+            _string(stream, names[row["name"]])
             stream.write(struct.pack("<I", len(shape)))
             stream.write(struct.pack("<" + "Q" * len(shape), *reversed(shape)))
             stream.write(struct.pack("<IQ", 0, offset))
@@ -365,9 +388,12 @@ def write_streamed_gguf(path, checkpoint, rows, metadata):
             if count != math.prod(row["export_shape"]) * 4:
                 raise ValueError("exported tensor byte count differs")
             stream.write(b"\0" * (-count % 32))
-            records.append({"name": row["name"], "shape": row["export_shape"], "source_shape": row["shape"],
-                            "source_dtype": row["dtype"], "dtype": "float32", "bytes": count,
-                            "sha256": digest.hexdigest(), "transformation": row["export"]})
+            record = {"name": names[row["name"]], "shape": row["export_shape"], "source_shape": row["shape"],
+                      "source_dtype": row["dtype"], "dtype": "float32", "bytes": count,
+                      "sha256": digest.hexdigest(), "transformation": row["export"]}
+            if encoded:
+                record["original_name"] = row["name"]
+            records.append(record)
     return records
 
 
@@ -425,14 +451,26 @@ def read_gguf_index(path):
 
 
 def verify_gguf(path, metadata, records):
+    encoding = metadata.get("crispembed.tensor_name_encoding")
+    if encoding not in (None, TENSOR_NAME_ENCODING):
+        raise ValueError("unsupported GGUF tensor name encoding")
+    original_names, physical_names = set(), set()
+    for record in records:
+        original = record.get("original_name") if encoding else record["name"]
+        derived = gguf_tensor_name(original)
+        expected_name = derived if encoding else original
+        if (record["name"] != expected_name or len(expected_name.encode("utf-8")) >= 64
+                or original in original_names or expected_name in physical_names):
+            raise ValueError("GGUF tensor alias/source identity differs or collides")
+        original_names.add(original)
+        physical_names.add(expected_name)
     actual_meta, actual, start = read_gguf_index(path)
     if (actual_meta != metadata or len(actual) != len(records)
             or any(type(actual_meta[key]) is not type(value) for key, value in metadata.items())):
         raise ValueError("GGUF metadata or tensor count differs")
     with Path(path).open("rb") as stream:
         for observed, expected in zip(actual, records):
-            if (observed["name"] != gguf_tensor_name(expected["name"])
-                    or any(observed[key] != expected[key] for key in ("shape", "bytes"))):
+            if any(observed[key] != expected[key] for key in ("name", "shape", "bytes")):
                 raise ValueError("GGUF tensor index differs")
             stream.seek(start + observed["offset"])
             digest, remaining = hashlib.sha256(), observed["bytes"]
@@ -498,6 +536,7 @@ def native_schema_text():
             lines.append('    if (model == "' + model + '") return ' + literal + ';')
         lines.extend(['    throw std::invalid_argument("unsupported latent inpainting model");', "}", ""])
     lines.extend(['inline const char * tensor_layout() { return "' + gguf_metadata("moebius", contract)["latent_inpaint.tensor.layout"] + '"; }', ""])
+    lines.extend(['inline const char * tensor_name_encoding() { return "' + TENSOR_NAME_ENCODING + '"; }', ""])
     lines.extend(['inline const char * input_contract() { return "' + gguf_metadata("moebius", contract)["latent_inpaint.input.contract"] + '"; }', ""])
     for model in MODELS:
         lines.extend(["inline ShapeMap " + model + "_schema() {", "    return {"])

@@ -18,6 +18,49 @@ SPEC.loader.exec_module(hosted)
 
 
 class HostedGraphControls(unittest.TestCase):
+    def test_migan_candidate_requires_observed_kernel_selection(self):
+        for selected in (False, True):
+            evidence = {"native_records": [{"kind": "synthetic-controls", "cpu_kernels": selected}]}
+            hosted.migan_kernel_evidence(evidence, selected)
+            with self.assertRaises(RuntimeError):
+                hosted.migan_kernel_evidence(evidence, not selected)
+        for evidence in ({"native_records": []}, {"native_records": [{"kind": "synthetic-controls"}]},
+                         {"native_records": [{"requested_cpu_kernels": True}]}):
+            with self.assertRaises(RuntimeError):
+                hosted.migan_kernel_evidence(evidence, True)
+
+    def test_cpu_candidates_and_attention_diagnostic_are_separate(self):
+        profiles = hosted.component_profiles("cpu")
+        self.assertEqual([row[0] for row in profiles], ["portable", "cpu-optimized", "cpu-attention-attribution"])
+        self.assertTrue(all(value == "0" for value in profiles[0][2].values()))
+        self.assertEqual(profiles[1][2]["CRISPEMBED_INPAINT_CPU_ATTENTION_TILES"], "0")
+        self.assertEqual(profiles[1][2]["CRISPEMBED_MIGAN_CPU_KERNELS"], "1")
+        self.assertEqual(profiles[1][2]["CRISPEMBED_INPAINT_CPU_FFT"], "1")
+        self.assertEqual(profiles[2][1], ("test-inpaint-graph",))
+        self.assertEqual({name for name, value in profiles[2][2].items() if value == "1"},
+                         {"CRISPEMBED_INPAINT_CPU_ATTENTION_TILES"})
+
+    def test_gpu_controls_never_select_cpu_candidates(self):
+        for backend in ("cuda", "metal"):
+            profiles = hosted.component_profiles(backend)
+            self.assertEqual(len(profiles), 1)
+            self.assertTrue(all(value == "0" for value in profiles[0][2].values()))
+        with self.assertRaises(ValueError):
+            hosted.component_profiles("auto")
+
+    def test_per_command_environment_is_recorded_without_mutating_baseline(self):
+        with tempfile.TemporaryDirectory() as directory:
+            baseline = {name: "0" for name in hosted.CPU_GATES}
+            candidate = dict(baseline, CRISPEMBED_INPAINT_CPU_FFT="1")
+            runner = hosted.Runbook(directory, time.monotonic() + 20, {"commands": []}, baseline)
+            process = Mock(pid=12345, returncode=0)
+            process.wait.return_value = 0
+            with patch.object(hosted.subprocess, "Popen", return_value=process) as launch:
+                record = runner.run("candidate", ["synthetic-only"], environment=candidate)
+            self.assertEqual(launch.call_args.kwargs["env"], candidate)
+            self.assertEqual(record["cpu_candidate_gates"]["CRISPEMBED_INPAINT_CPU_FFT"], "1")
+            self.assertEqual(runner.environment["CRISPEMBED_INPAINT_CPU_FFT"], "0")
+
     def test_output_and_scratch_cannot_nest_or_overlap(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

@@ -27,6 +27,9 @@ import time
 
 from latent_inpaint_contract import (CASES, CONTRACT, RESOLUTION, fixture, fixture_identity,
                                     load_contract, model_record, sha256, verify_checkpoint, verify_source)
+from latent_inpaint_original_import import (CPU_STUDENT_PROFILE, PROFILES, STANDARD_PROFILE,
+                                          prepare_moebius_cpu_imports, profile_metadata,
+                                          verify_imported_moebius_modules)
 
 
 def check_dependencies(model, contract, allowed=None):
@@ -59,7 +62,9 @@ def check_dependencies(model, contract, allowed=None):
     return versions
 
 
-def load_original(model_name, source_dir, checkpoint, vae_checkpoint, device, allowed=None):
+def load_original(model_name, source_dir, checkpoint, vae_checkpoint, device, import_profile=STANDARD_PROFILE,
+                  allowed=None):
+    profile_metadata(import_profile, model_name, device)
     contract = load_contract()
     verify_source(source_dir, model_name, contract)
     verify_checkpoint(checkpoint, model_record(model_name, contract))
@@ -71,6 +76,8 @@ def load_original(model_name, source_dir, checkpoint, vae_checkpoint, device, al
 
     source_dir = Path(source_dir).resolve()
     sys.path.insert(0, str(source_dir))
+    if import_profile == CPU_STUDENT_PROFILE:
+        prepare_moebius_cpu_imports(source_dir, contract)
     config_path = source_dir / ("config/model_cfg/moebius.yaml" if model_name == "moebius"
                                 else "config/PixelHacker_sdvae_f8d4.yaml")
     config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
@@ -78,6 +85,8 @@ def load_original(model_name, source_dir, checkpoint, vae_checkpoint, device, al
         from removal.v1_2.removal_model import build_removal_model
         from removal.v1_2.pipeline import RemovalSDXLPipeline_BatchMode
 
+        if import_profile == CPU_STUDENT_PROFILE:
+            verify_imported_moebius_modules(source_dir, contract)
         model = build_removal_model(config, 20)
         pipeline_class = RemovalSDXLPipeline_BatchMode
         model_keyword = "removal_model"
@@ -377,6 +386,7 @@ def capture_case(pipe, model, vae, model_name, case_name, directory, contract):
 
 def run(args):
     contract = load_contract()
+    import_profile = profile_metadata(args.import_profile, args.model, args.device)
     output = args.output
     if output.exists():
         raise ValueError("reference output directory already exists")
@@ -393,7 +403,7 @@ def run(args):
     torch.backends.cudnn.benchmark = False
     allowed = dict(item.split("==", 1) for item in args.allow_dependency)
     pipe, model, vae, versions = load_original(args.model, args.source_dir, args.checkpoint, args.vae_checkpoint,
-                                               args.device, allowed)
+                                               args.device, args.import_profile, allowed)
     output.mkdir(parents=True, exist_ok=False)
     report = {"schema": "crispembed-latent-inpaint-original-v1", "model": args.model,
               "source_commit": contract["source"][args.model]["commit"],
@@ -401,6 +411,8 @@ def run(args):
               "python": platform.python_version(), "torch_config": torch.__config__.show(),
               "device": args.device, "threads": args.threads, "cases": [],
               "dumper_sha256": sha256(__file__), "helper_sha256": sha256(Path(__file__).with_name("latent_inpaint_contract.py")),
+              "import_profile": import_profile,
+              "import_adapter_sha256": sha256(Path(__file__).with_name("latent_inpaint_original_import.py")),
               "producer": {"github_sha": os.environ.get("GITHUB_SHA"), "github_run_id": os.environ.get("GITHUB_RUN_ID")},
               "complete": False, "native_qualified": False, "representative_quality_qualified": False}
     (output / "report.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
@@ -427,6 +439,8 @@ def main():
     parser.add_argument("--vae-checkpoint", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--device", default="cuda:0")
+    parser.add_argument("--import-profile", choices=PROFILES, default=STANDARD_PROFILE,
+                        help="Explicit CPU student imports skip only unused teacher/dataset package initializers")
     parser.add_argument("--threads", type=int, default=2)
     parser.add_argument("--cases", nargs="+", choices=CASES, default=list(CASES))
     # PixelHacker's upstream pins (torch 2.3.0 with triton 3.2.0) cannot import

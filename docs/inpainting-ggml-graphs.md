@@ -5,13 +5,22 @@ ggml graphs for MI-GAN256, MI-GAN512, Big-LaMa, Moebius and PixelHacker. Select
 it with `CRISPEMBED_INPAINT_GRAPH=1`, together with the model's existing gate.
 The earlier CPU implementations remain available for controlled comparison.
 
-**Evidence status:** this delivery implements the execution paths and their
-qualification programs. Source checks and independent code reviews have been
-performed. The new native binaries, full-model graph parity, CUDA/Metal
-execution and performance measurements have not been run in this workspace.
-No measured speedup, frame rate, peak-memory figure or production qualification
-is asserted. The repository requires builds and model workloads to run on
-hosted CI or explicitly provisioned hardware.
+**Evidence status, 2026-11-01:** native CPU builds, component tests and operator
+benchmarks have now run on an explicitly admitted AMD EPYC machine with an
+8-CPU quota and 8 GiB memory limit. The initial spectral replay failure was
+diagnosed and corrected before its performance baseline was measured. The
+[CPU optimization report](inpainting-cpu-optimization.md) and its
+[raw component evidence](../tests/results/inpainting/cpu-components-2026-11-01.json)
+record both the failure and subsequent results. MI-GAN also passed original
+stage/final-image checks on 20 cases across its 256- and 512-pixel models;
+see [its separate CPU evidence](../tests/results/inpainting/migan-cpu-2026-11-01.json).
+LaMa has also completed its synthetic original-model matrix: seven of eight
+fixtures pass all 227 stages in every CPU variant, while the full-mask fixture
+retains strict intermediate failures despite passing final RGB checks. See
+[the LaMa validation report](lama-cpu-validation.md); complete numerical
+qualification is explicitly false. Latent-model qualification remains separate.
+CUDA and Metal execution has not been measured on this CPU-only machine, and
+component speedups are not end-to-end performance claims.
 
 The Apple path is ggml's native **Metal** backend. `mps` is accepted as a CLI
 alias for `metal`; it does not introduce PyTorch or an MPS runtime dependency.
@@ -32,7 +41,8 @@ The runtime reuses `core_gguf` ownership/mmap support, the ggml backend registry
 the existing GPU preference and Metal cache policy, CPU backend facilities,
 `core_env` gates and the existing input, mask, tiling, PNG and file-protection
 code. The pinned ggml revision is unchanged. There is no new vendor FFT
-dependency or CPU callback disguised as a GPU graph operation.
+dependency. An optional CPU FFT callback operates directly on CPU backend
+buffers; GPU graphs continue to use portable device operations.
 
 ### Diffusion graphs and transfers
 
@@ -57,27 +67,52 @@ fourth dimension. This preserves independent normalization of each sample.
 
 ### Fourier transforms and gated attention
 
-LaMa's orthonormal real transforms use a separable radix-2 butterfly graph.
+By default, LaMa's orthonormal real transforms use a separable radix-2 butterfly graph.
 Non-power-of-two axes use Bluestein convolution, with a fixed kernel computed
 from geometry only. Supported Fourier axes are 1 through 128, covering the
 existing generator's maximum 1024-pixel image dimension after its three
 downsampling stages. Inverse transforms preserve the real projection required
 when learned spectral layers produce non-Hermitian boundary frequencies.
 
+`CRISPEMBED_INPAINT_CPU_FFT=1` selects a CPU-only alternative: one ggml CPU
+custom node per transform, with cached radix-2/Bluestein geometry adapted from
+the existing LaMa FFT implementation. Inputs and outputs remain F32; internal
+FFT arithmetic uses F64 complex values. The callback accesses resident CPU
+buffers without intermediate backend transfers. CUDA/Metal do not select it.
+Its finite geometry cache and worker scratch are separate from graph allocator
+bytes. This flag is default off; the [CPU report](inpainting-cpu-optimization.md)
+documents measured component gains, unchanged error gates and memory costs.
+
 PixelHacker needs unequal key/value widths and a distinct decay for each key
 channel. The pinned `ggml_gated_linear_attn` operator requires square heads and
 does not supply the required Metal path. The implementation therefore uses
-64-token chunks, stable log-gate prefix differences, causal within-chunk
+64-token chunks by default, stable log-gate prefix differences, causal within-chunk
 contractions and a device-resident rectangular carry state. Every invocation
 starts with independent zero state. This is a portable graph decomposition;
 it does not claim the throughput of the original specialized Triton kernels.
+
+`CRISPEMBED_INPAINT_CPU_GLA=1` enables an additional CPU-only path through the
+pinned F32 recurrent kernel. It splits rectangular value heads into square
+groups, repeats Q/K/per-key decay, pads the last group when needed and retains
+the original query scale. Independent batch/head state starts at zero on
+every invocation. The flag is default off, and GPU graphs retain the portable
+chunk path. The benchmark can sweep chunk sizes 8/16/32/64 without changing
+the production default. Component tests cover unequal widths, tails, extreme
+gates, causality and replay; complete PixelHacker acceptance is a separate gate.
 
 ### CPU execution and bounded workspaces
 
 CPU graphs reuse both their execution plan and a worker pool. The pool is
 resolved from the pinned CPU registry, including dynamic-backend builds;
 older modules without all required pool functions keep ordinary ggml threading.
-MI-GAN reports whether pool and plan reuse actually occurred.
+MI-GAN reports whether pool and plan reuse actually occurred. Persistent
+parameters and immutable initializers are retained across replay: the pinned
+allocator requires `OUTPUT` as well as `INPUT` for these allocated tensors.
+Actual input/constant bytes are checked by the replay controls. Latent GGUF
+conversion also uses an explicit, collision-checked compact encoding for
+source tensor names that exceed ggml's 64-byte field, preserving the original
+names in the schema and conversion receipt. See the
+[correction evidence](inpainting-cpu-optimization.md#the-corrected-baseline).
 
 Dense 1x1 operations avoid im2col. Other dense convolutions use row strips with
 halos, targeting a 32 MiB patch workspace on CPU and 128 MiB on GPU. These caps
@@ -105,6 +140,8 @@ the retained direct implementation still requires timing on the target device.
 | `--gpu-backend auto` | Prefer CUDA, then Metal, then CPU. Operation validation still applies to the selected backend. |
 | `CRISPEMBED_INPAINT_BACKEND=cpu\|cuda\|metal\|auto` | Backend selection for native callers and reference programs. An explicit process/CLI preference takes precedence. |
 | `CRISPEMBED_INPAINT_FAST=1` | Explicit GPU mixed-precision diagnostic profile. Default off. |
+| `CRISPEMBED_INPAINT_CPU_FFT=1` | CPU-only cached FFT callback; F32 storage and F64 FFT arithmetic. Default off; GPU uses the portable graph. |
+| `CRISPEMBED_INPAINT_CPU_GLA=1` | CPU-only F32 recurrent adapter for rectangular GLA. Default off; GPU uses portable chunks. |
 | `CRISPEMBED_INPAINT_PROFILE=1` | Emit actual backend, graph/allocation/reuse/transfer counts and compute timing. |
 
 An explicitly requested CUDA or Metal backend does not silently fall back to
@@ -114,8 +151,11 @@ CPU scheduler fallback for intermediate layers. Allocation or execution errors
 are returned through the existing error path; output composition remains
 transactional.
 
-**Strict profile:** original F32 weights and activations, explicit F32 matrix
-precision, and F32 spectral/GLA arithmetic. The pinned Metal flash-attention
+**Strict portable profile:** original F32 weights and activations, explicit
+F32 matrix precision, and F32 spectral/GLA arithmetic. The opt-in CPU FFT
+candidate keeps F32 storage and uses F64 internally; it is reported separately
+as `f32-storage-f64-fft`. The CPU recurrent GLA candidate remains F32.
+The pinned Metal flash-attention
 kernel uses half matrix tiles and refuses the F32 precision request, so strict
 GPU attention uses bounded F32 matrix/softmax tiles. CPU uses the existing
 tiled F32 flash-attention implementation. Strict Metal can therefore be slower
@@ -224,5 +264,27 @@ profiles separately. Observer runs retain activations and copy them to the
 host; they are correctness runs, not timing runs. Graph allocator bytes are
 not peak process RSS, driver allocation or peak VRAM. Representative image and
 subtitle quality, seam behavior and temporal video consistency remain separate
-acceptance tasks. No default or release changes follow from this source-only
-delivery.
+acceptance tasks. The measured CPU candidates remain default off; promotion
+requires the corresponding full-model and target-hardware evidence.
+
+### Full-model CPU measurements
+
+These are completed CPU measurements and explicit qualification limits. The
+MI-GAN and LaMa timing rows use five warm ordinary API calls after one cold
+call. Moebius's stage-capture run is not an ordinary performance benchmark.
+PixelHacker has a completed candidate only, with three warm calls; its paired
+comparison was stopped at the user's delivery request.
+
+| Engine / configuration | Original-reference result | Ordinary-API warm median | Runtime peak memory | Evidence |
+| --- | --- | --- | --- | --- |
+| MI-GAN256 / 8 threads / optimized CPU | Original panel passes; captured native stages unchanged | 273.62 ms | About 196 MiB RSS | [MI-GAN record](../tests/results/inpainting/migan-cpu-2026-11-01.json) |
+| MI-GAN512 / 8 threads / quiet confirmation | Original panel passes; captured native stages unchanged | 495.24 ms | About 373 MiB RSS | [MI-GAN record](../tests/results/inpainting/migan-cpu-2026-11-01.json) |
+| LaMa / formula512 / 8 threads / optimized CPU | Photo RGB passes; synthetic full-mask strict stages fail | 4,116.47 ms | Photo arms about 322–528 MiB RSS | [LaMa record](../tests/results/inpainting/lama-cpu-2026-11-01.json) |
+| Moebius / local and relative reassociation | All four final RGB gates pass; 35/608 strict stage failures | Not benchmarked as a repeated ordinary API panel | About 4.32 GiB for the observer run; not ordinary RSS | [Latent record](../tests/results/inpainting/latent-cpu-2026-11-01.json) |
+| PixelHacker / 8 threads / optimized CPU | Original CUDA reference unavailable; native comparison incomplete | 139.268 s, candidate only | About 5.99 GiB RSS | [PixelHacker record](../tests/results/inpainting/pixelhacker-cpu-2026-11-01.json) |
+
+The [complete results](inpainting-optimization-results.md) distinguish image
+checks, intermediate limits, timing exclusions and incomplete comparisons.
+No row establishes CUDA/Metal performance, broad perceptual quality or a
+release/default promotion. A stored model smaller than 4 GB does not imply a
+process below 4 GB.

@@ -258,9 +258,13 @@ static bool inpaint_family(const std::string & arch) {
 static bool inpaint_pinned_f32(const std::string & arch, const std::string & name, const ggml_tensor * t) {
     const bool vector = t->ne[1] == 1 && t->ne[2] == 1 && t->ne[3] == 1;
     const bool one_input_channel = ggml_n_dims(t) == 4 && t->ne[2] == 1;
+    // Names of 64+ bytes are stored as "t.<sha256>" (inpaint_weight_names), so
+    // Moebius' rel_pos_emb tables [N,M,dk,1] (ne[0]==1, ne[1]==dk) are pinned by
+    // shape too: no convolution in these models has KW==1 with KH>1.
+    const bool relative_table = ggml_n_dims(t) == 4 && t->ne[0] == 1 && t->ne[1] > 1;
     auto has = [&](const char * part) { return name.find(part) != std::string::npos; };
-    if (vector || one_input_channel || has("rel_pos_emb") || has("embedding_layer") || has("noise_const") ||
-        has("filter_const") || has("noise_strength"))
+    if (vector || one_input_channel || relative_table || has("rel_pos_emb") || has("embedding_layer") ||
+        has("noise_const") || has("filter_const") || has("noise_strength"))
         return true;
     if (arch == "migan") return has(".fromrgb.") || has(".torgb.");
     if (arch == "sdxl_vae")
