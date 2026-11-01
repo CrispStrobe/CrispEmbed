@@ -54,10 +54,15 @@ class TeleocrSurfaceContracts(unittest.TestCase):
         self.assertIn("st.params.vlm_max_tokens", block)
         self.assertIn("st.params.vlm_prompt", block)
 
-    def test_gpu_requires_separate_opt_in(self):
+    def test_gpu_policy(self):
+        # Metal is the default after the M1 A/B (tests/results/teleocr/metal-m1);
+        # every other GPU backend still needs CRISPEMBED_TELEOCR_GPU=1, and =0
+        # forces the CPU path.
         src = read("src/qwen2vl_ocr.cpp")
-        self.assertTrue('if (!core_env::on("CRISPEMBED_TELEOCR_GPU")) force_cpu = true;' in src,
-                        "TeleOCR must require a separate GPU opt-in")
+        self.assertIn('if (ctx.is_teleocr && core_env::explicitly_off("CRISPEMBED_TELEOCR_GPU")) force_cpu = true;', src,
+                      "CRISPEMBED_TELEOCR_GPU=0 must force the CPU path")
+        self.assertIn('!backend_is_metal(ctx.backend) &&\n        !core_env::on("CRISPEMBED_TELEOCR_GPU")', src,
+                      "non-Metal GPU backends must keep the separate TeleOCR opt-in")
         self.assertTrue('bool force_cpu = (getenv("QWEN2VL_OCR_FORCE_CPU")' in src,
                         "preserve the existing force-CPU override before applying TeleOCR policy")
 

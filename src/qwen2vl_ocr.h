@@ -230,6 +230,9 @@ struct context {
     bool metal_native_fa = false;
     // Metal: F32-activation matmul kernels (see model_matmul). Set at load.
     bool metal_f32_matmul = false;
+    // Metal: split non-32-aligned batch matmul reductions (opt-in,
+    // CRISPEMBED_QWEN2VL_METAL_SPLIT_K=1). See model_matmul.
+    bool metal_split_k = false;
     int stage_dump_call = 0;
     // Greedy decode bans repeated n-grams of this size (0/1 = off). 3 keeps VLM
     // OCR out of loops (#25); formula models set 0 - LaTeX legitimately repeats

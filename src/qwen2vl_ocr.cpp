@@ -72,7 +72,31 @@ bool teleocr_tensor_type_supported(ggml_type type, const int64_t * dimensions) {
            (ggml_is_quantized(type) && ggml_get_type_traits(type)->to_float != nullptr);
 }
 
+ggml_tensor * model_matmul_impl(context & ctx, ggml_context * g, ggml_tensor * weights, ggml_tensor * input);
+
 ggml_tensor * model_matmul(context & ctx, ggml_context * g, ggml_tensor * weights, ggml_tensor * input) {
+    // Metal batch matmuls whose reduction length is not a multiple of 32 run
+    // ggml-metal's bounds-checked mul_mm variant (~4x slower for TeleOCR's
+    // 3420-wide vision FFN). Opt-in split: the aligned prefix through the fast
+    // kernel plus the short tail, summed in F32 (changes summation order).
+    const int64_t k = weights->ne[0];
+    if (ctx.metal_split_k && ggml_blck_size(weights->type) == 1 && k % 32 != 0 && k > 64 && weights->ne[2] == 1 &&
+        weights->ne[3] == 1 && input->ne[1] > 8 && input->ne[2] == 1 && input->ne[3] == 1 &&
+        input->type == GGML_TYPE_F32) {
+        if (!ggml_is_contiguous(input)) input = ggml_cont(g, input);
+        const int64_t k0 = k / 32 * 32;
+        ggml_tensor * w0 = ggml_view_2d(g, weights, k0, weights->ne[1], weights->nb[1], 0);
+        ggml_tensor * w1 =
+            ggml_view_2d(g, weights, k - k0, weights->ne[1], weights->nb[1], size_t(k0) * ggml_element_size(weights));
+        ggml_tensor * x0 = ggml_view_2d(g, input, k0, input->ne[1], input->nb[1], 0);
+        ggml_tensor * x1 =
+            ggml_view_2d(g, input, k - k0, input->ne[1], input->nb[1], size_t(k0) * ggml_element_size(input));
+        return ggml_add(g, model_matmul_impl(ctx, g, w0, x0), model_matmul_impl(ctx, g, w1, x1));
+    }
+    return model_matmul_impl(ctx, g, weights, input);
+}
+
+ggml_tensor * model_matmul_impl(context & ctx, ggml_context * g, ggml_tensor * weights, ggml_tensor * input) {
     if (ctx.is_teleocr && ggml_backend_is_cpu(ctx.backend) && weights->type != GGML_TYPE_F32) {
         if (ggml_is_quantized(weights->type)) {
             return core_cpu::quant_f32_matmul(g, weights, ggml_cont(g, input));
@@ -1444,28 +1468,38 @@ bool load(context & ctx, const char * gguf_path, int n_threads, int verbosity, c
 
     if (const char * dump = getenv("CRISPEMBED_QWEN2VL_STAGE_DUMP")) ctx.stage_dump_dir = dump;
 
-    // Existing Qwen profiles prefer GPU when available. TeleOCR defaults to
-    // the CPU arithmetic tested by its reference panel; GPU execution has a
-    // separate opt-in because quantized GPU kernels can round activations.
+    // Existing Qwen profiles prefer GPU when available. TeleOCR uses the GPU by
+    // default only on ggml-Metal, where all six frozen cases were token-exact
+    // for F16/Q8_0/Q4_K_M with final-state cosine equal to the CPU arithmetic
+    // (tests/results/teleocr/metal-m1). Other GPU backends remain opt-in with
+    // CRISPEMBED_TELEOCR_GPU=1; CRISPEMBED_TELEOCR_GPU=0 or
+    // QWEN2VL_OCR_FORCE_CPU=1 force the CPU path everywhere.
     bool force_cpu = (getenv("QWEN2VL_OCR_FORCE_CPU") && atoi(getenv("QWEN2VL_OCR_FORCE_CPU")));
-    if (ctx.is_teleocr) {
-        if (!core_env::on("CRISPEMBED_TELEOCR_GPU")) force_cpu = true;
-        if (!force_cpu)
-            fprintf(stderr, "TeleOCR: experimental GPU path requested; GPU numerical and decoded-output "
-                            "parity have not been qualified.\n");
-    }
+    if (ctx.is_teleocr && core_env::explicitly_off("CRISPEMBED_TELEOCR_GPU")) force_cpu = true;
     ctx.backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
+    if (ctx.is_teleocr && ctx.backend && !ggml_backend_is_cpu(ctx.backend) && !backend_is_metal(ctx.backend) &&
+        !core_env::on("CRISPEMBED_TELEOCR_GPU")) {
+        ggml_backend_free(ctx.backend);
+        ctx.backend = ggml_backend_cpu_init();
+    }
+    if (ctx.is_teleocr && ctx.backend && !ggml_backend_is_cpu(ctx.backend) && !backend_is_metal(ctx.backend))
+        fprintf(stderr, "TeleOCR: experimental non-Metal GPU path requested; its numerical and decoded-output "
+                        "parity have not been qualified.\n");
     if (!ctx.backend) ctx.backend = ggml_backend_cpu_init();
     if (ggml_backend_is_cpu(ctx.backend)) ggml_backend_cpu_set_n_threads(ctx.backend, n_threads);
     ctx.backend_cpu = ggml_backend_is_cpu(ctx.backend) ? nullptr : ggml_backend_cpu_init();
     ctx.metal_native_fa = backend_is_metal(ctx.backend) && !core_env::explicitly_off("CRISPEMBED_QWEN2VL_METAL_FA");
-    // TeleOCR's reference arithmetic is F32 activations with compressed
-    // weights (see model_matmul's CPU branch), so on Metal it uses the F32
-    // activation kernels unless =0. MinerU keeps ggml-metal's default kernels
-    // unless CRISPEMBED_MINERU25_PRO_METAL_F32_MATMUL=1.
-    ctx.metal_f32_matmul = backend_is_metal(ctx.backend) &&
-                           ((ctx.is_teleocr && !core_env::explicitly_off("CRISPEMBED_TELEOCR_METAL_F32_MATMUL")) ||
-                            (ctx.is_mineru25_pro && core_env::on("CRISPEMBED_MINERU25_PRO_METAL_F32_MATMUL")));
+    // F32-activation Metal kernels (see model_matmul). TeleOCR's reference
+    // arithmetic is F32 activations with compressed weights. MinerU on Metal
+    // was 8/8 token-exact both ways; ggml-metal's default half tiles dropped a
+    // German prompt row to cosine 0.880 against the CPU F32 reference, the F32
+    // tiles keep it at 0.9996 (tests/results/mineru25/metal-m1). =0 restores
+    // ggml-metal's default kernels for either profile.
+    ctx.metal_split_k = backend_is_metal(ctx.backend) && core_env::on("CRISPEMBED_QWEN2VL_METAL_SPLIT_K");
+    ctx.metal_f32_matmul =
+        backend_is_metal(ctx.backend) &&
+        ((ctx.is_teleocr && !core_env::explicitly_off("CRISPEMBED_TELEOCR_METAL_F32_MATMUL")) ||
+         (ctx.is_mineru25_pro && !core_env::explicitly_off("CRISPEMBED_MINERU25_PRO_METAL_F32_MATMUL")));
     if (ctx.backend_cpu) ggml_backend_cpu_set_n_threads(ctx.backend_cpu, n_threads);
 
     // Compute-meta scratch: 32 layers × ~30 ops + merger.
