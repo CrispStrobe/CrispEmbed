@@ -1,0 +1,962 @@
+{
+ "schema": "crispembed.oxr-dfine.f16-sensitivity.v1",
+ "pages": [
+  "receipt",
+  "german",
+  "scan",
+  "table",
+  "japanese"
+ ],
+ "groups": {
+  "all": {
+   "tensors": 176,
+   "pages": {
+    "receipt": {
+     "ref_count": 21,
+     "count": 21,
+     "unmatched": 0,
+     "max_box_px": 0.0256805419921875,
+     "count_equal": true,
+     "boxes_cos": 0.8582917316932829,
+     "scores_cos": 0.9999686719202423
+    },
+    "german": {
+     "ref_count": 16,
+     "count": 16,
+     "unmatched": 0,
+     "max_box_px": 0.49784088134765625,
+     "count_equal": true,
+     "boxes_cos": 0.8265634841050092,
+     "scores_cos": 0.9999800706598004
+    },
+    "scan": {
+     "ref_count": 9,
+     "count": 9,
+     "unmatched": 0,
+     "max_box_px": 0.00341796875,
+     "count_equal": true,
+     "boxes_cos": 0.7901677921787659,
+     "scores_cos": 0.9999958666538935
+    },
+    "table": {
+     "ref_count": 2,
+     "count": 2,
+     "unmatched": 0,
+     "max_box_px": 0.001251220703125,
+     "count_equal": true,
+     "boxes_cos": 0.8271971638236018,
+     "scores_cos": 0.9999939461421001
+    },
+    "japanese": {
+     "ref_count": 1,
+     "count": 1,
+     "unmatched": 0,
+     "max_box_px": 0.020444869995117188,
+     "count_equal": true,
+     "boxes_cos": 0.7467936816216432,
+     "scores_cos": 0.9998564339384072
+    }
+   }
+  },
+  "backbone": {
+   "tensors": 60,
+   "pages": {
+    "receipt": {
+     "ref_count": 21,
+     "count": 21,
+     "unmatched": 0,
+     "max_box_px": 0.0296783447265625,
+     "count_equal": true,
+     "boxes_cos": 0.8656839624443735,
+     "scores_cos": 0.9999451181377433
+    },
+    "german": {
+     "ref_count": 16,
+     "count": 16,
+     "unmatched": 0,
+     "max_box_px": 0.555908203125,
+     "count_equal": true,
+     "boxes_cos": 0.8306588504754187,
+     "scores_cos": 0.999976617933499
+    },
+    "scan": {
+     "ref_count": 9,
+     "count": 9,
+     "unmatched": 0,
+     "max_box_px": 0.0023193359375,
+     "count_equal": true,
+     "boxes_cos": 0.8036945263206332,
+     "scores_cos": 0.9999967484177209
+    },
+    "table": {
+     "ref_count": 2,
+     "count": 2,
+     "unmatched": 0,
+     "max_box_px": 0.00070953369140625,
+     "count_equal": true,
+     "boxes_cos": 0.8250999937359326,
+     "scores_cos": 0.9999932584324721
+    },
+    "japanese": {
+     "ref_count": 1,
+     "count": 1,
+     "unmatched": 0,
+     "max_box_px": 0.027538299560546875,
+     "count_equal": true,
+     "boxes_cos": 0.7244436562164723,
+     "scores_cos": 0.9998541310883172
+    }
+   }
+  },
+  "backbone.stem": {
+   "tensors": 5,
+   "pages": {
+    "receipt": {
+     "ref_count": 21,
+     "count": 21,
+     "unmatched": 0,
+     "max_box_px": 0.02130126953125,
+     "count_equal": true,
+     "boxes_cos": 0.8714548350591532,
+     "scores_cos": 0.9998885298185672
+    },
+    "german": {
+     "ref_count": 16,
+     "count": 16,
+     "unmatched": 0,
+     "max_box_px": 0.01506805419921875,
+     "count_equal": true,
+     "boxes_cos": 0.857288113063822,
+     "scores_cos": 0.9999989329268524
+    },
+    "scan": {
+     "ref_count": 9,
+     "count": 9,
+     "unmatched": 0,
+     "max_box_px": 0.0012969970703125,
+     "count_equal": true,
+     "boxes_cos": 0.8347429341623868,
+     "scores_cos": 0.9999991885527262
+    },
+    "table": {
+     "ref_count": 2,
+     "count": 2,
+     "unmatched": 0,
+     "max_box_px": 0.0033111572265625,
+     "count_equal": true,
+     "boxes_cos": 0.8140446791072249,
+     "scores_cos": 0.999991533334088
+    },
+    "japanese": {
+     "ref_count": 1,
+     "count": 1,
+     "unmatched": 0,
+     "max_box_px": 0.019651412963867188,
+     "count_equal": true,
+     "boxes_cos": 0.7427470615087494,
+     "scores_cos": 0.9999372410727229
+    }
+   }
+  },
+  "backbone.stages.0": {
+   "tensors": 6,
+   "pages": {
+    "receipt": {
+     "ref_count": 21,
+     "count": 21,
+     "unmatched": 0,
+     "max_box_px": 0.01031494140625,
+     "count_equal": true,
+     "boxes_cos": 0.8852496226484506,
+     "scores_cos": 0.999981382587968
+    },
+    "german": {
+     "ref_count": 16,
+     "count": 16,
+     "unmatched": 0,
+     "max_box_px": 0.03993988037109375,
+     "count_equal": true,
+     "boxes_cos": 0.8802963893818884,
+     "scores_cos": 0.9999990502112288
+    },
+    "scan": {
+     "ref_count": 9,
+     "count": 9,
+     "unmatched": 0,
+     "max_box_px": 0.0019683837890625,
+     "count_equal": true,
+     "boxes_cos": 0.8299544612327765,
+     "scores_cos": 0.9999983531351314
+    },
+    "table": {
+     "ref_count": 2,
+     "count": 2,
+     "unmatched": 0,
+     "max_box_px": 0.0009918212890625,
+     "count_equal": true,
+     "boxes_cos": 0.8447617460762453,
+     "scores_cos": 0.9999950607329912
+    },
+    "japanese": {
+     "ref_count": 1,
+     "count": 1,
+     "unmatched": 0,
+     "max_box_px": 0.0118408203125,
+     "count_equal": true,
+     "boxes_cos": 0.7566524436376365,
+     "scores_cos": 0.9999889561440083
+    }
+   }
+  },
+  "backbone.stages.1": {
+   "tensors": 7,
+   "pages": {
+    "receipt": {
+     "ref_count": 21,
+     "count": 21,
+     "unmatched": 0,
+     "max_box_px": 0.00189208984375,
+     "count_equal": true,
+     "boxes_cos": 0.9299937449135254,
+     "scores_cos": 0.9999964412559059
+    },
+    "german": {
+     "ref_count": 16,
+     "count": 16,
+     "unmatched": 0,
+     "max_box_px": 0.0732421875,
+     "count_equal": true,
+     "boxes_cos": 0.8697948998325687,
+     "scores_cos": 0.999999494931598
+    },
+    "scan": {
+     "ref_count": 9,
+     "count": 9,
+     "unmatched": 0,
+     "max_box_px": 0.00079345703125,
+     "count_equal": true,
+     "boxes_cos": 0.8734312952377329,
+     "scores_cos": 0.9999992614518652
+    },
+    "table": {
+     "ref_count": 2,
+     "count": 2,
+     "unmatched": 0,
+     "max_box_px": 0.0004119873046875,
+     "count_equal": true,
+     "boxes_cos": 0.8858034597705118,
+     "scores_cos": 0.99999954120301
+    },
+    "japanese": {
+     "ref_count": 1,
+     "count": 1,
+     "unmatched": 0,
+     "max_box_px": 0.012058258056640625,
+     "count_equal": true,
+     "boxes_cos": 0.8335019068742312,
+     "scores_cos": 0.9999954040705735
+    }
+   }
+  },
+  "backbone.stages.2": {
+   "tensors": 31,
+   "pages": {
+    "receipt": {
+     "ref_count": 21,
+     "count": 21,
+     "unmatched": 0,
+     "max_box_px": 0.007049560546875,
+     "count_equal": true,
+     "boxes_cos": 0.8875167056470862,
+     "scores_cos": 0.9999528448518132
+    },
+    "german": {
+     "ref_count": 16,
+     "count": 16,
+     "unmatched": 0,
+     "max_box_px": 0.08452606201171875,
+     "count_equal": true,
+     "boxes_cos": 0.8414069842377944,
+     "scores_cos": 0.9999986128412414
+    },
+    "scan": {
+     "ref_count": 9,
+     "count": 9,
+     "unmatched": 0,
+     "max_box_px": 0.0004119873046875,
+     "count_equal": true,
+     "boxes_cos": 0.8591350937686688,
+     "scores_cos": 0.9999997407940907
+    },
+    "table": {
+     "ref_count": 2,
+     "count": 2,
+     "unmatched": 0,
+     "max_box_px": 0.00067138671875,
+     "count_equal": true,
+     "boxes_cos": 0.8305477491231618,
+     "scores_cos": 0.9999966667738412
+    },
+    "japanese": {
+     "ref_count": 1,
+     "count": 1,
+     "unmatched": 0,
+     "max_box_px": 0.025346755981445312,
+     "count_equal": true,
+     "boxes_cos": 0.7603257391509588,
+     "scores_cos": 0.9999434603279236
+    }
+   }
+  },
+  "backbone.stages.3": {
+   "tensors": 11,
+   "pages": {
+    "receipt": {
+     "ref_count": 21,
+     "count": 21,
+     "unmatched": 0,
+     "max_box_px": 0.0268707275390625,
+     "count_equal": true,
+     "boxes_cos": 0.8773366606503001,
+     "scores_cos": 0.9998744130605147
+    },
+    "german": {
+     "ref_count": 16,
+     "count": 16,
+     "unmatched": 0,
+     "max_box_px": 0.440643310546875,
+     "count_equal": true,
+     "boxes_cos": 0.8247979265942725,
+     "scores_cos": 0.9999850523360044
+    },
+    "scan": {
+     "ref_count": 9,
+     "count": 9,
+     "unmatched": 0,
+     "max_box_px": 0.002288818359375,
+     "count_equal": true,
+     "boxes_cos": 0.7975492921535103,
+     "scores_cos": 0.9999968478414049
+    },
+    "table": {
+     "ref_count": 2,
+     "count": 2,
+     "unmatched": 0,
+     "max_box_px": 0.00208282470703125,
+     "count_equal": true,
+     "boxes_cos": 0.8200637828407651,
+     "scores_cos": 0.9999923621448874
+    },
+    "japanese": {
+     "ref_count": 1,
+     "count": 1,
+     "unmatched": 0,
+     "max_box_px": 0.00934600830078125,
+     "count_equal": true,
+     "boxes_cos": 0.7689041710662528,
+     "scores_cos": 0.9998796422335658
+    }
+   }
+  },
+  "encoder": {
+   "tensors": 62,
+   "pages": {
+    "receipt": {
+     "ref_count": 21,
+     "count": 21,
+     "unmatched": 0,
+     "max_box_px": 0.00506591796875,
+     "count_equal": true,
+     "boxes_cos": 0.8864662287409922,
+     "scores_cos": 0.999984823075241
+    },
+    "german": {
+     "ref_count": 16,
+     "count": 16,
+     "unmatched": 0,
+     "max_box_px": 0.4808349609375,
+     "count_equal": true,
+     "boxes_cos": 0.8462939203449776,
+     "scores_cos": 0.9999917199157587
+    },
+    "scan": {
+     "ref_count": 9,
+     "count": 9,
+     "unmatched": 0,
+     "max_box_px": 0.0012054443359375,
+     "count_equal": true,
+     "boxes_cos": 0.8543062978578879,
+     "scores_cos": 0.9999986264747528
+    },
+    "table": {
+     "ref_count": 2,
+     "count": 2,
+     "unmatched": 0,
+     "max_box_px": 0.0006103515625,
+     "count_equal": true,
+     "boxes_cos": 0.851912228382185,
+     "scores_cos": 0.9999986127139097
+    },
+    "japanese": {
+     "ref_count": 1,
+     "count": 1,
+     "unmatched": 0,
+     "max_box_px": 0.005523681640625,
+     "count_equal": true,
+     "boxes_cos": 0.781055509502138,
+     "scores_cos": 0.9999894114952291
+    }
+   }
+  },
+  "encoder.input_proj": {
+   "tensors": 3,
+   "pages": {
+    "receipt": {
+     "ref_count": 21,
+     "count": 21,
+     "unmatched": 0,
+     "max_box_px": 0.000701904296875,
+     "count_equal": true,
+     "boxes_cos": 0.9479378020691133,
+     "scores_cos": 0.999999637240595
+    },
+    "german": {
+     "ref_count": 16,
+     "count": 16,
+     "unmatched": 0,
+     "max_box_px": 0.02429962158203125,
+     "count_equal": true,
+     "boxes_cos": 0.9041590295216241,
+     "scores_cos": 0.9999997522756572
+    },
+    "scan": {
+     "ref_count": 9,
+     "count": 9,
+     "unmatched": 0,
+     "max_box_px": 0.00018310546875,
+     "count_equal": true,
+     "boxes_cos": 0.9411509413265282,
+     "scores_cos": 0.9999999394845102
+    },
+    "table": {
+     "ref_count": 2,
+     "count": 2,
+     "unmatched": 0,
+     "max_box_px": 3.62396240234375e-05,
+     "count_equal": true,
+     "boxes_cos": 0.9179404088863111,
+     "scores_cos": 0.9999999212924316
+    },
+    "japanese": {
+     "ref_count": 1,
+     "count": 1,
+     "unmatched": 0,
+     "max_box_px": 0.0026493072509765625,
+     "count_equal": true,
+     "boxes_cos": 0.8835646144879292,
+     "scores_cos": 0.9999980321126444
+    }
+   }
+  },
+  "encoder.aifi": {
+   "tensors": 4,
+   "pages": {
+    "receipt": {
+     "ref_count": 21,
+     "count": 21,
+     "unmatched": 0,
+     "max_box_px": 0.0048828125,
+     "count_equal": true,
+     "boxes_cos": 0.9268688485613275,
+     "scores_cos": 0.9999981525758381
+    },
+    "german": {
+     "ref_count": 16,
+     "count": 16,
+     "unmatched": 0,
+     "max_box_px": 0.00344085693359375,
+     "count_equal": true,
+     "boxes_cos": 0.9287698273576018,
+     "scores_cos": 0.999999775609115
+    },
+    "scan": {
+     "ref_count": 9,
+     "count": 9,
+     "unmatched": 0,
+     "max_box_px": 0.00048828125,
+     "count_equal": true,
+     "boxes_cos": 0.9304879604702778,
+     "scores_cos": 0.9999998870244331
+    },
+    "table": {
+     "ref_count": 2,
+     "count": 2,
+     "unmatched": 0,
+     "max_box_px": 0.000244140625,
+     "count_equal": true,
+     "boxes_cos": 0.8841707581347277,
+     "scores_cos": 0.9999996868740874
+    },
+    "japanese": {
+     "ref_count": 1,
+     "count": 1,
+     "unmatched": 0,
+     "max_box_px": 0.004444122314453125,
+     "count_equal": true,
+     "boxes_cos": 0.8091730710950064,
+     "scores_cos": 0.9999942618640741
+    }
+   }
+  },
+  "encoder.lateral+down": {
+   "tensors": 6,
+   "pages": {
+    "receipt": {
+     "ref_count": 21,
+     "count": 21,
+     "unmatched": 0,
+     "max_box_px": 0.004425048828125,
+     "count_equal": true,
+     "boxes_cos": 0.9221401796734104,
+     "scores_cos": 0.9999955175187499
+    },
+    "german": {
+     "ref_count": 16,
+     "count": 16,
+     "unmatched": 0,
+     "max_box_px": 0.02817535400390625,
+     "count_equal": true,
+     "boxes_cos": 0.8771530355249538,
+     "scores_cos": 0.9999995172638976
+    },
+    "scan": {
+     "ref_count": 9,
+     "count": 9,
+     "unmatched": 0,
+     "max_box_px": 0.0006103515625,
+     "count_equal": true,
+     "boxes_cos": 0.8930180301836765,
+     "scores_cos": 0.9999996786913364
+    },
+    "table": {
+     "ref_count": 2,
+     "count": 2,
+     "unmatched": 0,
+     "max_box_px": 0.000518798828125,
+     "count_equal": true,
+     "boxes_cos": 0.8589572819243888,
+     "scores_cos": 0.999998683260995
+    },
+    "japanese": {
+     "ref_count": 1,
+     "count": 1,
+     "unmatched": 0,
+     "max_box_px": 0.006320953369140625,
+     "count_equal": true,
+     "boxes_cos": 0.7743831134903412,
+     "scores_cos": 0.9999918696110462
+    }
+   }
+  },
+  "encoder.fpn": {
+   "tensors": 24,
+   "pages": {
+    "receipt": {
+     "ref_count": 21,
+     "count": 21,
+     "unmatched": 0,
+     "max_box_px": 0.0019683837890625,
+     "count_equal": true,
+     "boxes_cos": 0.9311804779180034,
+     "scores_cos": 0.9999971638306454
+    },
+    "german": {
+     "ref_count": 16,
+     "count": 16,
+     "unmatched": 0,
+     "max_box_px": 0.3712921142578125,
+     "count_equal": true,
+     "boxes_cos": 0.8367562257791741,
+     "scores_cos": 0.9999932262712503
+    },
+    "scan": {
+     "ref_count": 9,
+     "count": 9,
+     "unmatched": 0,
+     "max_box_px": 0.00054931640625,
+     "count_equal": true,
+     "boxes_cos": 0.8982026612588382,
+     "scores_cos": 0.9999992792433029
+    },
+    "table": {
+     "ref_count": 2,
+     "count": 2,
+     "unmatched": 0,
+     "max_box_px": 0.0001373291015625,
+     "count_equal": true,
+     "boxes_cos": 0.8642829016375959,
+     "scores_cos": 0.999999352644736
+    },
+    "japanese": {
+     "ref_count": 1,
+     "count": 1,
+     "unmatched": 0,
+     "max_box_px": 0.010828018188476562,
+     "count_equal": true,
+     "boxes_cos": 0.8117459650623129,
+     "scores_cos": 0.9999958077869437
+    }
+   }
+  },
+  "encoder.pan": {
+   "tensors": 24,
+   "pages": {
+    "receipt": {
+     "ref_count": 21,
+     "count": 21,
+     "unmatched": 0,
+     "max_box_px": 0.003814697265625,
+     "count_equal": true,
+     "boxes_cos": 0.9348132312757245,
+     "scores_cos": 0.9999989910623396
+    },
+    "german": {
+     "ref_count": 16,
+     "count": 16,
+     "unmatched": 0,
+     "max_box_px": 0.0023193359375,
+     "count_equal": true,
+     "boxes_cos": 0.8701893512854504,
+     "scores_cos": 0.9999993061311162
+    },
+    "scan": {
+     "ref_count": 9,
+     "count": 9,
+     "unmatched": 0,
+     "max_box_px": 0.00048828125,
+     "count_equal": true,
+     "boxes_cos": 0.86040312198738,
+     "scores_cos": 0.999998840882093
+    },
+    "table": {
+     "ref_count": 2,
+     "count": 2,
+     "unmatched": 0,
+     "max_box_px": 0.0004730224609375,
+     "count_equal": true,
+     "boxes_cos": 0.8484542474494184,
+     "scores_cos": 0.999999190836765
+    },
+    "japanese": {
+     "ref_count": 1,
+     "count": 1,
+     "unmatched": 0,
+     "max_box_px": 0.00321197509765625,
+     "count_equal": true,
+     "boxes_cos": 0.8153744873418368,
+     "scores_cos": 0.999990735628026
+    }
+   }
+  },
+  "encoder.pan.cv4": {
+   "tensors": 2,
+   "pages": {
+    "receipt": {
+     "ref_count": 21,
+     "count": 21,
+     "unmatched": 0,
+     "max_box_px": 0.00177001953125,
+     "count_equal": true,
+     "boxes_cos": 0.9529201637960936,
+     "scores_cos": 0.9999998409495416
+    },
+    "german": {
+     "ref_count": 16,
+     "count": 16,
+     "unmatched": 0,
+     "max_box_px": 0.002960205078125,
+     "count_equal": true,
+     "boxes_cos": 0.8999900205663073,
+     "scores_cos": 0.9999998017482116
+    },
+    "scan": {
+     "ref_count": 9,
+     "count": 9,
+     "unmatched": 0,
+     "max_box_px": 0.00035858154296875,
+     "count_equal": true,
+     "boxes_cos": 0.893420684359596,
+     "scores_cos": 0.9999998335781544
+    },
+    "table": {
+     "ref_count": 2,
+     "count": 2,
+     "unmatched": 0,
+     "max_box_px": 0.000125885009765625,
+     "count_equal": true,
+     "boxes_cos": 0.8801275601991384,
+     "scores_cos": 0.9999995784975785
+    },
+    "japanese": {
+     "ref_count": 1,
+     "count": 1,
+     "unmatched": 0,
+     "max_box_px": 0.0042724609375,
+     "count_equal": true,
+     "boxes_cos": 0.8416556469913152,
+     "scores_cos": 0.9999966449780898
+    }
+   }
+  },
+  "decoder": {
+   "tensors": 54,
+   "pages": {
+    "receipt": {
+     "ref_count": 21,
+     "count": 21,
+     "unmatched": 0,
+     "max_box_px": 0.00823974609375,
+     "count_equal": true,
+     "boxes_cos": 0.9229278964966758,
+     "scores_cos": 0.9999988098471123
+    },
+    "german": {
+     "ref_count": 16,
+     "count": 16,
+     "unmatched": 0,
+     "max_box_px": 0.01519775390625,
+     "count_equal": true,
+     "boxes_cos": 0.8746900657499722,
+     "scores_cos": 0.9999993438706094
+    },
+    "scan": {
+     "ref_count": 9,
+     "count": 9,
+     "unmatched": 0,
+     "max_box_px": 0.00262451171875,
+     "count_equal": true,
+     "boxes_cos": 0.8505942021221234,
+     "scores_cos": 0.9999982904723148
+    },
+    "table": {
+     "ref_count": 2,
+     "count": 2,
+     "unmatched": 0,
+     "max_box_px": 0.00057220458984375,
+     "count_equal": true,
+     "boxes_cos": 0.8477889001944074,
+     "scores_cos": 0.999998668004243
+    },
+    "japanese": {
+     "ref_count": 1,
+     "count": 1,
+     "unmatched": 0,
+     "max_box_px": 0.0106353759765625,
+     "count_equal": true,
+     "boxes_cos": 0.7655987208008042,
+     "scores_cos": 0.9999912475767236
+    }
+   }
+  },
+  "decoder.enc_heads": {
+   "tensors": 5,
+   "pages": {
+    "receipt": {
+     "ref_count": 21,
+     "count": 21,
+     "unmatched": 0,
+     "max_box_px": 0.00531005859375,
+     "count_equal": true,
+     "boxes_cos": 0.9393967286461076,
+     "scores_cos": 0.9999988761921292
+    },
+    "german": {
+     "ref_count": 16,
+     "count": 16,
+     "unmatched": 0,
+     "max_box_px": 0.003662109375,
+     "count_equal": true,
+     "boxes_cos": 0.8831635784124792,
+     "scores_cos": 0.9999993845877422
+    },
+    "scan": {
+     "ref_count": 9,
+     "count": 9,
+     "unmatched": 0,
+     "max_box_px": 0.00069427490234375,
+     "count_equal": true,
+     "boxes_cos": 0.8779820009705565,
+     "scores_cos": 0.9999991311592392
+    },
+    "table": {
+     "ref_count": 2,
+     "count": 2,
+     "unmatched": 0,
+     "max_box_px": 0.0003566741943359375,
+     "count_equal": true,
+     "boxes_cos": 0.8538276214405176,
+     "scores_cos": 0.999998405537679
+    },
+    "japanese": {
+     "ref_count": 1,
+     "count": 1,
+     "unmatched": 0,
+     "max_box_px": 0.010097503662109375,
+     "count_equal": true,
+     "boxes_cos": 0.7984891432327983,
+     "scores_cos": 0.9999892367162064
+    }
+   }
+  },
+  "decoder.layers": {
+   "tensors": 30,
+   "pages": {
+    "receipt": {
+     "ref_count": 21,
+     "count": 21,
+     "unmatched": 0,
+     "max_box_px": 0.0029296875,
+     "count_equal": true,
+     "boxes_cos": 0.9631823505298227,
+     "scores_cos": 0.9999998434982111
+    },
+    "german": {
+     "ref_count": 16,
+     "count": 16,
+     "unmatched": 0,
+     "max_box_px": 0.00799560546875,
+     "count_equal": true,
+     "boxes_cos": 0.8800833404927649,
+     "scores_cos": 0.999999728587794
+    },
+    "scan": {
+     "ref_count": 9,
+     "count": 9,
+     "unmatched": 0,
+     "max_box_px": 0.00232696533203125,
+     "count_equal": true,
+     "boxes_cos": 0.8868166093886409,
+     "scores_cos": 0.9999993899805804
+    },
+    "table": {
+     "ref_count": 2,
+     "count": 2,
+     "unmatched": 0,
+     "max_box_px": 0.0003509521484375,
+     "count_equal": true,
+     "boxes_cos": 0.8907068305507965,
+     "scores_cos": 0.9999995707027746
+    },
+    "japanese": {
+     "ref_count": 1,
+     "count": 1,
+     "unmatched": 0,
+     "max_box_px": 0.0035037994384765625,
+     "count_equal": true,
+     "boxes_cos": 0.9171513649601187,
+     "scores_cos": 0.9999994219297085
+    }
+   }
+  },
+  "decoder.box_heads": {
+   "tensors": 17,
+   "pages": {
+    "receipt": {
+     "ref_count": 21,
+     "count": 21,
+     "unmatched": 0,
+     "max_box_px": 0.00238037109375,
+     "count_equal": true,
+     "boxes_cos": 0.9683476192435868,
+     "scores_cos": 0.9999998139263222
+    },
+    "german": {
+     "ref_count": 16,
+     "count": 16,
+     "unmatched": 0,
+     "max_box_px": 0.003662109375,
+     "count_equal": true,
+     "boxes_cos": 0.8933195835002651,
+     "scores_cos": 0.999999762276429
+    },
+    "scan": {
+     "ref_count": 9,
+     "count": 9,
+     "unmatched": 0,
+     "max_box_px": 0.000762939453125,
+     "count_equal": true,
+     "boxes_cos": 0.911252739247503,
+     "scores_cos": 0.9999998692564008
+    },
+    "table": {
+     "ref_count": 2,
+     "count": 2,
+     "unmatched": 0,
+     "max_box_px": 0.00030517578125,
+     "count_equal": true,
+     "boxes_cos": 0.8733806367938929,
+     "scores_cos": 0.9999996433158004
+    },
+    "japanese": {
+     "ref_count": 1,
+     "count": 1,
+     "unmatched": 0,
+     "max_box_px": 0.009450912475585938,
+     "count_equal": true,
+     "boxes_cos": 0.8577159751758578,
+     "scores_cos": 0.9999971965331866
+    }
+   }
+  },
+  "none": {
+   "tensors": 0,
+   "pages": {
+    "receipt": {
+     "ref_count": 21,
+     "count": 21,
+     "unmatched": 0,
+     "max_box_px": 0.0,
+     "count_equal": true,
+     "boxes_cos": 0.9999999999999999,
+     "scores_cos": 1.0
+    },
+    "german": {
+     "ref_count": 16,
+     "count": 16,
+     "unmatched": 0,
+     "max_box_px": 0.0,
+     "count_equal": true,
+     "boxes_cos": 1.0,
+     "scores_cos": 1.0
+    },
+    "scan": {
+     "ref_count": 9,
+     "count": 9,
+     "unmatched": 0,
+     "max_box_px": 0.0,
+     "count_equal": true,
+     "boxes_cos": 1.0000000000000002,
+     "scores_cos": 1.0
+    },
+    "table": {
+     "ref_count": 2,
+     "count": 2,
+     "unmatched": 0,
+     "max_box_px": 0.0,
+     "count_equal": true,
+     "boxes_cos": 1.0000000000000002,
+     "scores_cos": 1.0
+    },
+    "japanese": {
+     "ref_count": 1,
+     "count": 1,
+     "unmatched": 0,
+     "max_box_px": 0.0,
+     "count_equal": true,
+     "boxes_cos": 1.0,
+     "scores_cos": 1.0
+    }
+   }
+  }
+ }
+}
