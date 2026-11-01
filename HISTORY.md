@@ -50,8 +50,10 @@ receipts `tests/results/migan512/`, `tests/results/moebius/`,
   cosine >= 0.9999995 and rel L2 <= 1e-3, first at the VAE moments; budgets are
   unchanged. F16/Q8_0/Q4_K pass the owner gate on eager and graph, both
   dequantized and stored-matmul (min decoded cosine vs original: Moebius
-  1.0/0.9992/0.9768, PixelHacker 1.0/0.9993/0.9902). Live photos recorded for
-  all three engines.
+  1.0/0.9992/0.9768, PixelHacker 1.0/0.9993/0.9902). On real photos, however,
+  Moebius Q4_K falls below the gate (masked cosine vs F32 0.918/0.859 on the street
+  crop, run 41305480287), so it is not qualified; PixelHacker Q4_K stays above it
+  (min 0.9425). Live photos recorded for all three engines.
 - HF private storage for the account is full: only MI-GAN512 Q8_0/Q4_K are
   preserved (`cstr/crispembed-migan512-private`, private).
 
