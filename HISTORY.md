@@ -1,3 +1,47 @@
+## 1 November 2026 — Issue 71 latent/MI-GAN512 qualification lane (feat/issue71-latent-qual)
+
+Branch `feat/issue71-latent-qual` (from `feat/issue71-five-engines` c4bb1f93,
+merged with delivery 4 `feat/issue71-five-engines-graphs` 06d75fb8).
+Details: [precision and live results](docs/inpainting-precision.md),
+receipts `tests/results/migan512/`, `tests/results/moebius/`,
+`tests/results/pixelhacker/`.
+
+- **MI-GAN512 qualified at F32 on both paths.** README-linked checkpoint first
+  observed at `1d6087ee…466a` (29,553,256 bytes, hosted run 41292563046).
+  Unchanged original `Generator(resolution=512)` capture, lossless F32 GGUF
+  `4bec681e…1739`. Native eager and native graph each pass all 8 fixtures under
+  the frozen gates (273/273 full-stage comparisons, observer bit-exact, RGB max
+  diff 1, PSNR 90–96 dB; run 41296465856).
+- **Precision variants (inpaint-v1).** F16/Q8_0/Q4_K on eager, eager
+  stored-matmul, graph and graph stored-matmul all exceed the owner gate (min
+  cosine vs original/F32 0.999998 / 0.9965 / 0.9770). Retained initial failure:
+  all-Q4_K reached only 0.790 on the full-mask fixture (run 41294631042), which
+  is why sub-Q8 MI-GAN keeps synthesis at Q8_0. The frozen F32 gates are
+  unchanged; quantized arms fail them as expected (F16 3/8, Q8_0/Q4_K 0/8).
+- **Defects found and fixed.** (1) 924 Moebius/PixelHacker state names exceed
+  the 63-byte GGUF limit, so the F32 denoiser GGUFs were unreadable (first
+  hosted replay 41294839864: "cannot open model metadata" / "GGUF
+  metadata/tensor count differs"). Fixed with a deterministic abbreviation
+  rule mirrored in C++/Python and applied at every loader. (2) Windows
+  checkouts rewrote SHA-pinned contracts (autocrlf): `.gitattributes -text`.
+  (3) The Windows ZIP-guard test fixture lost its backslash. (4) A Kaggle account
+  name committed in HISTORY failed the secret scan. (5) `inpaint_weights`
+  natural row for linears (MI-GAN has none; caught by the Moebius Q8_0 lane
+  41295726228).
+- **Original-environment findings (retained).** PixelHacker's upstream pins are
+  not co-installable: FLA 0.3.2 lives in `fla-core`; torch 2.3.0 with triton
+  3.2.0 fails at FLA import (inductor `AttrsDescriptor`); transformers 4.40.0
+  lacks `utils.deprecation`. The CUDA capture (Kaggle T4, 288 s) uses torch
+  2.6.0 (triton 3.2.0's release) as an explicit recorded deviation
+  (`--allow-dependency`; the contract is unchanged) and transformers 4.48.3.
+  Moebius used the exact contract pins (T4, 88 s).
+- **Delivery-4 defect (not fixed here).** `test-inpaint-graph` fails its
+  transposed-convolution scalar oracle (stride 2, padding 1: error 0.02047 vs
+  budget 4e-5) on unmodified 06d75fb8 (run 41299505593) and on the merged
+  branch (41298071945). Only LaMa uses graph transposed convolution.
+- HF private storage for the account is full: only MI-GAN512 Q8_0/Q4_K are
+  preserved (`cstr/crispembed-migan512-private`, private).
+
 ## 1 November 2026 — OXR-1.0 D-FINE layout detector native in layout_detect
 
 `feat/oxr-dfine`: converter `models/convert-oxr-dfine-to-gguf.py` (pinned
