@@ -1,0 +1,23 @@
+{
+  "model": "moebius",
+  "commit": "9a0fb89ae55b6276d5238552950d96efd061c442",
+  "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+  "archive": "moebius-original-capture.tar.gz",
+  "bytes": 814932724,
+  "sha256": "7e421280beae05b5f3a0af7db9f9c352891f4e62c08901e3895c00d4362645c1",
+  "parts": [
+    {
+      "file": "moebius-original-capture.tar.gz.part00",
+      "bytes": 814932724,
+      "sha256": "7e421280beae05b5f3a0af7db9f9c352891f4e62c08901e3895c00d4362645c1"
+    }
+  ],
+  "report_sha256": "c4f8027cc1fa296c02814f695db37d88a68d389bd701779485a46c32e97cf5a0",
+  "complete": true,
+  "cases": [
+    "subtitle_bar",
+    "edge_touch",
+    "center",
+    "empty"
+  ]
+}

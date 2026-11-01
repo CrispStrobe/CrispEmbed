@@ -1,0 +1,67 @@
+{
+  "schema": "crispembed-inpaint-graph-build-v1",
+  "native_commit": "b8879737a0bad85bc2056a7ecd1c78eed4fa7ef3",
+  "ggml_commit": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+  "source_tree_clean": true,
+  "binaries": [
+    {
+      "name": "test-inpaint-graph",
+      "path": "executables/test-inpaint-graph",
+      "sha256": "b203cf8e063e667ca79e96dd4fe3bdf5784eb8e946801335112c90840c5f488c",
+      "bytes": 2136088
+    },
+    {
+      "name": "test-inpaint-graph-spectral",
+      "path": "executables/test-inpaint-graph-spectral",
+      "sha256": "e1feb8b2bea45764db2f53b93cbf57575f34cd348d57567350649100ee8e44ae",
+      "bytes": 2279272
+    },
+    {
+      "name": "test-latent-inpaint-graph-unet",
+      "path": "executables/test-latent-inpaint-graph-unet",
+      "sha256": "15a608fa5cdd93c5956456aec2df63b061f912de347d6c912e0d2c4a90a9ec82",
+      "bytes": 2161096
+    },
+    {
+      "name": "test-migan-graph",
+      "path": "executables/test-migan-graph",
+      "sha256": "5436391bc4e333bda04f997f0249eba8868c4a51728051b13ff05b6ef04b8eb8",
+      "bytes": 2181696
+    },
+    {
+      "name": "test-lama-diff",
+      "path": "executables/test-lama-diff",
+      "sha256": "fafc32c231998438281ca38c2b4ad9781a845701c369e247544cb22e8f33b97c",
+      "bytes": 2666248
+    },
+    {
+      "name": "test-latent-inpaint",
+      "path": "executables/test-latent-inpaint",
+      "sha256": "b679154a0117b61522e92277e623ceee631e0dbaadd814b2541aabe56de87d25",
+      "bytes": 3606592
+    },
+    {
+      "name": "test-migan-diff",
+      "path": "executables/test-migan-diff",
+      "sha256": "4bc23acb64febb724f355a40ecfb3585fc88c4e16cb06bb11ece2ef299b7641b",
+      "bytes": 2202248
+    },
+    {
+      "name": "test-migan512-diff",
+      "path": "executables/test-migan512-diff",
+      "sha256": "024188b0493f1d4920e3f917e75ea8187a2a21665bc7012a6692015454b30306",
+      "bytes": 2202304
+    },
+    {
+      "name": "crispembed",
+      "path": "executables/crispembed",
+      "sha256": "cb9c4b86d077a8a6f69274485ce01228d953564f247de831caeab8044234310d",
+      "bytes": 14368112
+    }
+  ],
+  "requested_backend": "cpu",
+  "producer": {
+    "github_sha": "b8879737a0bad85bc2056a7ecd1c78eed4fa7ef3",
+    "github_run_id": "41302790327"
+  }
+}

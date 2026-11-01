@@ -1,0 +1,2 @@
+inpaint_graph label=transpose-convolution-oracles backend=CPU precision=f32 nodes=83 allocation_bytes=29088 runs=2 upload_bytes=192 download_bytes=6840 compute_ms=0.144
+transpose stride2 padding1 output_padding0 scalar oracle differs at 0 error=0.020470 budget=0.000040

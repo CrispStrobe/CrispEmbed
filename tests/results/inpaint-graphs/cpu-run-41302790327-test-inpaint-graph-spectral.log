@@ -1,0 +1,3 @@
+spectral_case=gla-72-k20-v40-h8-b2 backend=CPU max_abs=1.1920929e-07 relative_l2=1.35215054e-07 cosine=1 nodes=88 bytes=16800000
+spectral_case=gla-65-k4-v7-h2-b2-extreme backend=CPU max_abs=2.39908695e-06 relative_l2=9.14453341e-06 cosine=0.999999999958 nodes=88 bytes=850400
+{"suite":"inpaint-graph-spectral","backend":"CPU","checks":92,"failures":0,"native_model_qualified":false}

@@ -1,0 +1,11 @@
+FAIL: gla-1-k3-v5-h2-b2 future values cannot change a prior raster token
+FAIL: gla-1-k3-v5-h2-b2 reused graph has no stale carried state
+FAIL: gla-91-k5-v3-h2-b2 future values cannot change a prior raster token
+FAIL: gla-91-k5-v3-h2-b2 reused graph has no stale carried state
+FAIL: gla-165-k7-v11-h3-b1 future values cannot change a prior raster token
+FAIL: gla-165-k7-v11-h3-b1 reused graph has no stale carried state
+FAIL: gla-72-k20-v40-h8-b2 future values cannot change a prior raster token
+FAIL: gla-72-k20-v40-h8-b2 reused graph has no stale carried state
+FAIL: gla-65-k4-v7-h2-b2-extreme future values cannot change a prior raster token
+FAIL: gla-65-k4-v7-h2-b2-extreme reused graph has no stale carried state
+{"suite":"inpaint-graph-spectral","backend":"CPU","checks":92,"failures":10,"native_model_qualified":false}
