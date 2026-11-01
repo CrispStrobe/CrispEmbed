@@ -280,3 +280,8 @@ for Moebius, or `CRISPEMBED_INPAINT_CPU_GLA=1` for PixelHacker;
   quantized weights became ggml `src1` ("CPU does not support node MUL_MAT").
   Fixed by keeping non-F32 weights on the weight-left layout; the quantized
   `-o` arms are re-measured in separate lanes.
+- **MI-GAN512 `-o`** (`CRISPEMBED_MIGAN_CPU_KERNELS=1`, run 41322452391): F32
+  passes all 8 frozen fixtures. Generator 1.43 s against 2.53 s eager and 2.42 s
+  plain graph (1.77x on 4 vCPUs; delivery 5 measured 3.2x on 8 EPYC cores).
+  F16/Q8_0/Q4_K `-o` arms, dequantized and stored-matmul, reproduce exactly the
+  precision minima above (0.999998 / 0.9965 / 0.9770) at 1.42–1.95 s.
