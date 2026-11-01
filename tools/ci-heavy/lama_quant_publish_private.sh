@@ -25,7 +25,9 @@ FILES=(
   "big-lama-q4_k-s8e8.gguf|big-lama-q4_k-s8e8.gguf|q4_k|generator.*.convg2g.*=q8_0 generator.model.2.*=q8_0 generator.model.3.*=q8_0 generator.model.4.*=q8_0|ce64f5895fb8da51761e3a79aefc7aac1e2860f310fe01185928c0b299b44803"
   "failed-owner-bar/big-lama-q4_k.gguf|big-lama-q4_k.gguf|q4_k||881b99ff035411d18d0d2b0790394fbbd64a79ea2249f18c3b15808a49a4c039"
 )
-[ -n "${HF_TOKEN:-}" ] || { echo "HF_TOKEN secret unavailable" >&2; exit 1; }
+# Uploads need a write token: HF_TOKEN_2 (write secret) when present, else HF_TOKEN.
+[ -n "${HF_TOKEN_2:-}" ] && export HF_TOKEN="$HF_TOKEN_2"
+[ -n "${HF_TOKEN:-}" ] || { echo "HF_TOKEN/HF_TOKEN_2 secret unavailable" >&2; exit 1; }
 echo "source=$(git rev-parse HEAD)" > "$OUT/provenance.txt"
 python -m pip install -q huggingface_hub==0.35.3 PyYAML==6.0.2 numpy==2.1.3
 python - "$REPO" <<'PY'
