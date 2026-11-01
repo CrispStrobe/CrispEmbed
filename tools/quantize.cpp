@@ -741,6 +741,18 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             printf("(mineru25-vision→F16) ");
         }
 
+        // OXR-1.0 SigLIP2 tower (vit.*): same policy. At Q8_0 (vision Q8_0) the
+        // hosted five-case lane decoded 4/5 exactly but the German page diverged
+        // at token 68 (41273999602), the MinerU-style CPU activation-quant spike.
+        bool is_oxr_vision = is_oxr && ftype == GGML_FTYPE_MOSTLY_Q8_0 && sname.rfind("vit.", 0) == 0;
+        if (const char * off = getenv("CRISPEMBED_QUANTIZE_NO_VISION_F16")) {
+            if (atoi(off)) is_oxr_vision = false;
+        }
+        if (quantize && is_oxr_vision && qtype != GGML_TYPE_F16 && qtype != GGML_TYPE_F32) {
+            qtype_used = GGML_TYPE_F16;
+            printf("(oxr-vision→F16) ");
+        }
+
         // MoE router / gating weights (DeepSeek-V2: "*.mlp_gate.weight", also
         // the generic "ffn_gate_inp"): these pick which experts run, so even
         // small quant error flips the top-k selection and corrupts the output.
