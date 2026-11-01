@@ -43,20 +43,24 @@ def main():
             cp = Path(a.cosine_dir) / f"{p.stem}.cosine.json"
             if cp.exists():
                 cd = json.loads(cp.read_text())
-                row["min_final_cosine"] = cd["min_cosine_final"]
+                row["min_final_cosine"] = cd.get("final_output_min_cosine", cd["min_cosine_final"])
+                row["final_output_complete"] = cd.get("final_output_complete")
+                row["worst_stage"] = cd.get("worst_stage")
+                row["min_state_cosine_incl_rows"] = cd["min_cosine_final"]
                 row["cosine_bar_pass"] = cd["all_pass_bar"]
                 row["cosine_reference"] = cd["reference"]
         rows.append(row)
     Path(a.out).write_text(json.dumps({"schema": "crispembed.qwen2vl.device-summary.v1", "rows": rows},
                                       indent=1) + "\n")
-    print("| precision | device | variant | exact | first divergence | warm ms (sum) | cold ms (sum) | peak RSS MiB | min final cosine vs F32 |")
-    print("|---|---|---|---|---|---|---|---|---|")
+    print("| precision | device | variant | exact | first divergence | warm ms (sum) | cold ms (sum) | peak RSS MiB | final-output cosine (logits) | worst stage |")
+    print("|---|---|---|---|---|---|---|---|---|---|")
     for r in rows:
         div = ", ".join(f"{k}@{v}" for k, v in r["divergences"].items()) or "-"
         cos = r.get("min_final_cosine")
         print(f"| {r['precision']} | {r['device']} | {r['label'] or 'default'} | {r['exact']}/{r['cases']} | {div} | "
               f"{r['warm_ms_sum']:.0f} | {r['cold_ms_sum']:.0f} | {r['max_rss_mib']:.0f} | "
-              f"{'' if cos is None else f'{cos:.6f}'} |")
+              f"{'' if cos is None else f'{cos:.6f}'} | "
+              f"{'' if not r.get('worst_stage') else '%s %s %.6f' % (r['worst_stage']['case'], r['worst_stage']['stage'], r['worst_stage']['cosine'])} |")
 
 
 if __name__ == "__main__":

@@ -48,6 +48,62 @@ aligned kernel's throughput), and `CRISPEMBED_QWEN2VL_STAGE_DUMP=<dir>` (raw
 F32 vision-merger, prefill final-norm, prefill last logits and first 32
 decode-step logits/final-norm of the first recognition, for cosine A/B).
 
+## Results (Apple M1, warm = best of repeats 2..3, one model run per lock)
+
+Reference IDs are the committed original-Python IDs
+(`tests/results/teleocr/hosted-parity.json`, 6 cases, cap 1024;
+`tests/results/mineru25/native-parity.json`, 8 cases, cap 2048). Every run of
+every arm is compared, not only the first. Cosine is against a native CPU F32
+computation: for TeleOCR the CPU F16 path (it dequantizes the bf16-exact F16
+weights and computes in F32); for MinerU the CPU F32 GGUF converted from the
+pinned checkpoint (SHA-256 `ef6ea875…`, equal to the qualified F32 GGUF).
+"Worst row" is the lowest per-token cosine over all prefill final-norm rows;
+decode cosines cover the first 32 steps while IDs agree.
+
+### TeleOCR
+
+| Precision | Device | Exact | Warm s (6 cases) | Global hidden cos | Worst row | Prefill logits | Worst decode logits |
+|---|---|---|---|---|---|---|---|
+| F16 | Metal | 6/6 | 112.1 | 0.999996 | 0.998285 | 1.000000 | 0.999998 |
+| Q8_0 | Metal | 6/6 | 97.1 | 0.999818 | 0.990959 | 0.999934 | 0.999649 |
+| Q8_0 | CPU | 6/6 | 493.9* | 0.999822 | 0.990959 | 0.999934 | 0.999644 |
+| Q4_K_M | Metal | 6/6 | 87.7 | 0.985714 | **0.901205** | 0.989039 | **0.936968** |
+| Q4_K_M | CPU | 6/6 | 447.1* | 0.985715 | **0.901204** | 0.989022 | **0.936951** |
+| F16 | CPU (reference) | 6/6 | 604.7* | 1 | 1 | 1 | 1 |
+
+\* CPU timings were measured while the shared host ran other agents' CPU work
+(load average up to 39); an earlier quieter CPU F16 run of `text` took 15.6 s
+warm versus 4.5 s on Metal. On the three cases kept for the legacy Metal path
+(flash attention on CPU, plain PREC_F32 matmuls) F16 took 39.9 s versus 16.9 s
+with the fixes, Q8_0 49.3 s versus 15.8 s.
+
+Q4_K_M misses the 0.94 bar on two figures — the system-prompt rows 0-8
+(tiny-norm attention-sink tokens, worst 0.9012) and one formula decode step
+(0.9370) — identically on CPU and Metal to five digits, so this is the
+precision of the Q4_K/Q6_K decoder, not the runtime. Decoded IDs stay exact.
+
+### MinerU2.5-Pro-2604
+
+| Precision | Matmul kernels | Exact | Warm s (8 cases) | Global hidden cos | Worst row | Worst decode logits |
+|---|---|---|---|---|---|---|
+| F16 | half tiles (old default) | 8/8 | 99.2 | 0.999913 | **0.880011** | 0.999999 |
+| F16 | F32 tiles (new default) | 8/8 | 95.2 | 0.999999 | 0.999578 | 1.000000 |
+| Q8_0 (F16 vision) | half tiles | 8/8 | 77.0 | 0.999890 | **0.881305** | 0.999831 |
+| Q8_0 (F16 vision) | F32 tiles | 8/8 | 85.1 | 0.999960 | 0.999342 | 0.999840 |
+| "q4_k-dq8" (all Q8_0) | half tiles | 8/8 | 79.4 | 0.999099 | **0.725269** | 0.999594 |
+| "q4_k-dq8" (all Q8_0) | F32 tiles | 8/8 | 78.3 | 0.999217 | **0.802009** | 0.999585 |
+| F32 | CPU (reference) | 8/8 | 386.8* | 1 | 1 | 1 |
+
+The half-tile drop (German prompt row 1961, 0.880) is runtime: the same
+weights with F32 tiles give 0.9996, and the vision-merger worst row moves from
+0.99096 to 0.99995. The Kaggle "Q4_K with Q8_0 decoder" recipe
+(`q4_k --tensor-type 'l.*=q8_0'`) contains **no Q4_K tensor**: the
+quantizer floors vision at Q8_0 and the override covers the whole decoder
+(297 matrices, all Q8_0, embeddings included). Its weak rows come from the
+Q8_0 vision tower (German merger worst row 0.978) and remain on both kernel
+choices, so they are precision. Unlike CUDA, it was exact on layout-page on
+Metal. Real Q4_K decoder candidates are listed below.
+
 ## Metal precision traps checked
 
 | Trap | Where | Status |

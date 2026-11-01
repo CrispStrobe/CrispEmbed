@@ -92,6 +92,11 @@ def main() -> int:
     ap.add_argument("--label", default="", help="receipt name suffix")
     ap.add_argument("--dump", default="", help="stage dump root (one subdir per case)")
     ap.add_argument("--hash", action="store_true", help="record the GGUF sha256")
+    ap.add_argument("--force-reference", action="store_true",
+                    help="teacher-force the committed reference IDs and dump the logits at every generated "
+                         "position (final-output cosine per docs/precision-acceptance.md)")
+    ap.add_argument("--merge", action="store_true",
+                    help="merge cases into an existing receipt (one lock per case on a shared host)")
     args = ap.parse_args()
 
     env = dict(os.environ)
@@ -127,6 +132,11 @@ def main() -> int:
             d = Path(args.dump) / case["id"]
             d.mkdir(parents=True, exist_ok=True)
             run_env["CRISPEMBED_QWEN2VL_STAGE_DUMP"] = str(d)
+            if args.force_reference:
+                forced = d / "forced_ids.txt"
+                forced.write_text(" ".join(str(i) for i in case["reference_ids"]) + "\n")
+                run_env["CRISPEMBED_QWEN2VL_FORCE_IDS"] = str(forced)
+                run_env["CRISPEMBED_QWEN2VL_STAGE_DUMP_STEPS"] = "100000"
         if args.model == "teleocr":
             cmd = [str(build / "test-teleocr-run"), args.gguf, str(case["image"]), case["prompt"],
                    str(case["max_tokens"]), str(args.threads), str(args.repeat)]
@@ -134,7 +144,7 @@ def main() -> int:
             cmd = [str(build / "test-mineru25-run"), "--model", args.gguf, "--image", str(case["image"]),
                    "--task", case["task"], "--max-tokens", str(case["max_tokens"]), "--threads",
                    str(args.threads), "--repeat", str(args.repeat)]
-        cmd = ["/usr/bin/time", "-l"] + cmd
+        cmd = ["/usr/bin/time", "-l" if sys.platform == "darwin" else "-v"] + cmd
         started = time.time()
         proc = subprocess.run(cmd, env=run_env, capture_output=True, text=True)
         wall = time.time() - started
@@ -142,8 +152,10 @@ def main() -> int:
         log.write_text(proc.stderr)
         rec = {"id": case["id"], "exit": proc.returncode, "wall_s": wall}
         for line in proc.stderr.splitlines():
-            if "maximum resident set size" in line:
+            if "maximum resident set size" in line:  # macOS: bytes
                 rec["max_rss_mib"] = int(line.split()[0]) / (1024 * 1024)
+            elif "Maximum resident set size (kbytes)" in line:  # GNU time: KiB
+                rec["max_rss_mib"] = int(line.split()[-1]) / 1024
         try:
             data = json.loads(proc.stdout.strip().splitlines()[-1])
         except Exception:
@@ -180,6 +192,11 @@ def main() -> int:
               f"div={rec['first_divergence']} cold={rec['cold_ms']:.0f} warm={rec['warm_ms_min']:.0f}ms",
               file=sys.stderr)
 
+    target = out_dir / f"{name}.json"
+    if args.merge and target.exists():
+        previous = json.loads(target.read_text())
+        mine = {r["id"] for r in results}
+        results = [c for c in previous["cases"] if c["id"] not in mine] + results
     receipt = {
         "schema": "crispembed.qwen2vl.device-ab.v1",
         "model": args.model,
@@ -190,6 +207,7 @@ def main() -> int:
         "threads": args.threads,
         "repeat": args.repeat,
         "extra_env": extra,
+        "teacher_forced": bool(args.force_reference),
         "commit": subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"], capture_output=True,
                                  text=True).stdout.strip(),
         "dirty": bool(subprocess.run(["git", "-C", str(ROOT), "status", "--porcelain", "--", "src", "ggml"],
@@ -198,7 +216,7 @@ def main() -> int:
         "all_exact": all(r.get("ids_exact_all_runs") for r in results),
         "cases": results,
     }
-    (out_dir / f"{name}.json").write_text(json.dumps(receipt, indent=1, ensure_ascii=False) + "\n")
+    target.write_text(json.dumps(receipt, indent=1, ensure_ascii=False) + "\n")
     return 0 if receipt["all_exact"] else 1
 
 

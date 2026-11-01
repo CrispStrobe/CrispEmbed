@@ -116,6 +116,25 @@ def main():
                     s["final_norm"] = stats(load(fn), load(cdir / fn.name))
             steps.append(s)
         entry["decode"] = steps
+        # Precision policy (docs/precision-acceptance.md): final output = the
+        # logits at each generated position; intermediate stages are reported.
+        logit_cos = [entry["prefill_logits_last"]["cosine"]] if "cosine" in entry.get("prefill_logits_last", {}) else []
+        logit_cos += [s["logits"]["cosine"] for s in steps if "logits" in s and "cosine" in s["logits"]]
+        entry["final_output_positions"] = len(logit_cos)
+        # Every generated position of the reference run (prefill choice + each decode step
+        # except the last, whose logits are never computed after EOS).
+        entry["final_output_positions_total"] = len(rids) if rids else 1 + len(steps)
+        entry["final_output_min_cosine"] = min(logit_cos) if logit_cos else None
+        stages = []
+        if "min_row_cosine" in entry.get("vis_merger_output", {}):
+            stages.append(("vis_merger_output(row)", entry["vis_merger_output"]["min_row_cosine"]))
+        if "min_row_cosine" in entry.get("prefill_final_norm", {}):
+            stages.append(("prefill_final_norm(row)", entry["prefill_final_norm"]["min_row_cosine"]))
+        for s in steps:
+            if "final_norm" in s and "cosine" in s["final_norm"]:
+                stages.append((f"decode{s['step']}_final_norm", s["final_norm"]["cosine"]))
+        if stages:
+            entry["worst_stage"], entry["worst_stage_cosine"] = min(stages, key=lambda x: x[1])
         cos = []
         for key in ("prefill_final_norm", "prefill_logits_last"):
             if key in entry and "cosine" in entry[key]:
@@ -131,6 +150,14 @@ def main():
             worst = min(worst, min(cos))
         report["cases"][case] = entry
     report["min_cosine_final"] = worst
+    fo = [e["final_output_min_cosine"] for e in report["cases"].values() if e.get("final_output_min_cosine") is not None]
+    report["final_output_min_cosine"] = min(fo) if fo else None
+    report["final_output_complete"] = all(e["final_output_positions"] == e["final_output_positions_total"]
+                                          for e in report["cases"].values())
+    ws = [(e["worst_stage_cosine"], k, e["worst_stage"]) for k, e in report["cases"].items() if "worst_stage" in e]
+    if ws:
+        c, k, st = min(ws)
+        report["worst_stage"] = {"case": k, "stage": st, "cosine": c}
     report["all_pass_bar"] = all(e["passes_bar"] for e in report["cases"].values())
     Path(a.out).write_text(json.dumps(report, indent=1) + "\n")
     for case, e in report["cases"].items():
@@ -140,6 +167,8 @@ def main():
               f"logits cos={pl.get('cosine', float('nan')):.6f} min_final={e['min_cosine_final']} "
               f"decode_cmp={sum(1 for s in e['decode'] if s['same_inputs'])}")
     print("ALL PASS" if report["all_pass_bar"] else "SOME FAIL", worst)
+    print("final_output_min_cosine", report["final_output_min_cosine"], "complete", report["final_output_complete"],
+          "worst_stage", report.get("worst_stage"))
 
 
 if __name__ == "__main__":

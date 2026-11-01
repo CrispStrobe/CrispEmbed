@@ -3214,6 +3214,37 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
               const int32_t * grid_thw, // actual image grid (t,h,w) for mRoPE
               const int32_t * prompt_token_ids, int n_prompt_tokens, int max_new_tokens, generate_result & out) {
     out = {};
+    // Stage dumps cover the first recognition of a context only.
+    struct dump_call_guard {
+        context & c;
+        ~dump_call_guard() {
+            if (!c.stage_dump_dir.empty()) ++c.stage_dump_call;
+        }
+    } dump_guard{ ctx };
+    // Diagnostic teacher forcing (default off): CRISPEMBED_QWEN2VL_FORCE_IDS
+    // names a file of whitespace-separated token IDs that replace the greedy
+    // choice step by step, so every generated position of a candidate is
+    // conditioned on the same prefix as the reference run whose logits it is
+    // compared with. Generation stops where the forced list ends.
+    std::vector<int32_t> forced_ids;
+    if (const char * forced_path = getenv("CRISPEMBED_QWEN2VL_FORCE_IDS")) {
+        if (*forced_path) {
+            if (FILE * f = std::fopen(forced_path, "r")) {
+                int v = 0;
+                while (std::fscanf(f, "%d", &v) == 1) forced_ids.push_back(v);
+                std::fclose(f);
+            }
+            if (forced_ids.empty()) return false;
+            max_new_tokens = std::min<int>(max_new_tokens, (int)forced_ids.size());
+        }
+    }
+    auto force_choice = [&](int step, int chosen) {
+        return step < (int)forced_ids.size() ? forced_ids[(size_t)step] : chosen;
+    };
+    const int dump_decode_steps = [] {
+        const char * e = getenv("CRISPEMBED_QWEN2VL_STAGE_DUMP_STEPS");
+        return e && *e ? std::max(0, atoi(e)) : kStageDumpDecodeSteps;
+    }();
     if (!prompt_token_ids || n_prompt_tokens <= 0 || max_new_tokens <= 0 ||
         (ctx.is_mineru25_pro &&
          (!core_env::on(mineru25_profile::gate) || n_prompt_tokens >= mineru25_profile::context_length ||
@@ -3405,6 +3436,7 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
     // Free prefill graph context if not already freed in the pre_alloc_ok branch
     if (prefill.kv_graph_ctx) ggml_free(prefill.kv_graph_ctx);
 
+    best_id = force_choice(0, best_id);
     out.token_ids.push_back(best_id);
     if (ctx.is_teleocr) ++output_counts[best_id];
     if (ctx.is_mineru25_pro) mineru_history.push_back(best_id);
@@ -3578,10 +3610,10 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
             // Read logits + greedy argmax.
             ggml_tensor * logits_t = ggml_graph_get_tensor(gf, "logits");
             ggml_backend_tensor_get(logits_t, logits_data.data(), 0, V * sizeof(float));
-            if (!ctx.stage_dump_dir.empty() && gen <= kStageDumpDecodeSteps) {
+            if (!ctx.stage_dump_dir.empty() && gen <= dump_decode_steps)
                 stage_dump(ctx, "decode" + std::to_string(gen) + "_logits", logits_data.data(), V);
+            if (!ctx.stage_dump_dir.empty() && gen <= kStageDumpDecodeSteps)
                 stage_dump_tensor(ctx, gf, "decode_final_norm", "decode" + std::to_string(gen) + "_final_norm");
-            }
             if (ctx.is_mineru25_pro) {
                 const auto choice = mineru25_profile::greedy_choice(logits_data.data(), V, mineru_history);
                 best_id = choice.id;
@@ -3614,6 +3646,7 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
             if (!reuse_decode) ggml_free(g);
         }
 
+        best_id = force_choice(gen, best_id);
         out.token_ids.push_back(best_id);
         if (ctx.is_teleocr) ++output_counts[best_id];
         if (ctx.is_mineru25_pro) mineru_history.push_back(best_id);
