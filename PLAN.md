@@ -1,5 +1,18 @@
 # CrispEmbed active plan —29 October2026 wrap-up
 
+## TeleOCR / MinerU on Metal — follow-ups (1 November 2026)
+
+- A/B `CRISPEMBED_QWEN2VL_METAL_SPLIT_K` (TeleOCR vision FFN-down 3420) and
+  `CRISPEMBED_TELEOCR_REUSE_DECODE_GRAPH` on Metal before any default change.
+- No Q4_K-decoder recipe meets the 0.94 final-output bar for either model on
+  any device; search recipes (per-layer sensitivity, Q6_K/Q8_0 for the
+  weakest matrices) rather than runtime changes. MinerU's passing
+  "q4_k-dq8"/"q4_k-df16" contain no Q4_K tensor and should be renamed if published.
+- CUDA F16/Q8_0 show prompt-row cosine 0.86-0.90 (CUDA half-precision
+  activations; Metal fixed the analogous trap): check cuBLAS/MMQ precision.
+- Merge the ggml branch `crispembed/metal-mul-mat-prec-hp` into the fork's
+  main line before this branch merges.
+
 ## Native Marker-style document pipeline — 31 October 2026
 
 The requested implementation and bounded validation are complete on

@@ -1,3 +1,24 @@
+## 1 November 2026 — TeleOCR and MinerU2.5-Pro on ggml-Metal (Apple M1)
+
+`feat/metal-qwen2vl` ([guide](docs/qwen2vl-metal.md)). Defects fixed: every
+`flash_attn_ext` was tagged PREC_F32, which the bundled ggml-metal refuses, so
+attention ran on the CPU in every layer and decode step; the Metal detector
+compared the registry name with "Metal" instead of "MTL"; PREC_F32 matmuls on
+Metal pre-quantized activations to Q8 or went through `mul_mv_ext`. ggml
+branch `crispembed/metal-mul-mat-prec-hp` adds an op_params marker routing
+PREC_F32 matmuls to F32-activation kernels. Defaults now: TeleOCR runs on
+Metal (other GPUs opt-in), MinerU uses the F32-activation kernels on Metal;
+all old paths remain behind `=0` gates. TeleOCR 6/6 and MinerU 8/8
+token-exact on Metal at F16/Q8_0 (TeleOCR Q4_K_M 6/6); Marker on Metal gives
+Markdown identical to its CPU receipts. Precision-policy re-score (teacher-
+forced logits at every generated position) on CPU, Metal and CUDA: F16/Q8_0
+pass everywhere; every recipe with Q4_K decoder tensors fails 0.94 on all
+three devices with near-identical scores, so the limit is precision, not
+runtime; MinerU's "q4_k-dq8"/"q4_k-df16" recipes pass but contain no Q4_K
+tensor. MinerU layout-page token 180 is a 0.024-logit near-tie. Initial
+failures kept: Kaggle v1 (no `/usr/bin/time`), Kaggle v2 TeleOCR dump
+collision, a shared-scratch cleanup that removed one TeleOCR Q4_K dump set.
+
 ## 1 November 2026 — OXR-1.0 D-FINE layout detector native in layout_detect
 
 `feat/oxr-dfine`: converter `models/convert-oxr-dfine-to-gguf.py` (pinned
