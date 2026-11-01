@@ -1,0 +1,40 @@
+{
+  "variant": "big-lama-q4_k-s8e8.gguf",
+  "requested": "q4_k",
+  "tensor_type_overrides": [
+    [
+      "generator.*.convg2g.*",
+      "q8_0"
+    ],
+    [
+      "generator.model.2.*",
+      "q8_0"
+    ],
+    [
+      "generator.model.3.*",
+      "q8_0"
+    ],
+    [
+      "generator.model.4.*",
+      "q8_0"
+    ]
+  ],
+  "bytes": 35504608,
+  "sha256": "ce64f5895fb8da51761e3a79aefc7aac1e2860f310fe01185928c0b299b44803",
+  "source_sha256": "24736f267c68e013f0000ccb69560c4353b6a6d7983fc3cc2537d9f2e03f304c",
+  "tensor_count": 837,
+  "type_counts": {
+    "f32": 614,
+    "q8_0": 112,
+    "q4_k": 111
+  },
+  "type_payload_bytes": {
+    "f32": 738828,
+    "q8_0": 12925440,
+    "q4_k": 21772800
+  },
+  "flattened_storage_tensors": 223,
+  "patch_row_kernels": 113,
+  "policy_conformant": true,
+  "errors": []
+}

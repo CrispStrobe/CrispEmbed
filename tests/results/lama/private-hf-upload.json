@@ -1,0 +1,20 @@
+{
+  "repo": "cstr/big-lama-research-GGUF",
+  "created": "2026-11-01, private=True at creation (huggingface_hub create_repo)",
+  "privacy_verified": {"api_model_info_private": true, "anonymous_api_http_status": 401},
+  "uploaded": ["README.md (internal research / rights unresolved / not for redistribution; source archive URL+sha; file table)",
+               "LICENSE-lama-code.txt (upstream LaMa Apache-2.0 code licence, docs/third-party/lama-LICENSE.txt)"],
+  "gguf_upload": "BLOCKED",
+  "blockers": [
+    "Local upload (owner token from the local .env): every GGUF commit is rejected with HTTP 400 'Private storage limit reached for user cstr, please upgrade your plan'. The F32 data transfer completed but the commit was refused; a 55 MB Q8_0 probe was refused the same way. Repo contents unchanged.",
+    "Hosted lane 41312535037 (repository HF_TOKEN secret): reproduced all five tested SHA-256s bit-exactly on x86-64 (upload-plan.txt), then the upload was refused with 403 (token lacks write access to this repo)."
+  ],
+  "pending_files": {
+    "big-lama-f32.gguf": "24736f267c68e013f0000ccb69560c4353b6a6d7983fc3cc2537d9f2e03f304c",
+    "big-lama-f16.gguf": "31d5a0c4dae9a0d638a5b75bb8921ea7e588e35c8c00060e4ce16fc0bc0d3f3b",
+    "big-lama-q8_0.gguf": "c01175e15445494220480fe2a5ceb4f6d34cffa293675892b5217bfff34c1f42",
+    "big-lama-q4_k-s8e8.gguf": "ce64f5895fb8da51761e3a79aefc7aac1e2860f310fe01185928c0b299b44803",
+    "failed-owner-bar/big-lama-q4_k.gguf": "881b99ff035411d18d0d2b0790394fbbd64a79ea2249f18c3b15808a49a4c039"
+  },
+  "to_finish": "Free private storage (or upgrade) for cstr, then either upload the byte-identical local F32/F16/Q8_0 files, or give the repository HF_TOKEN write access to this private repo and rerun tools/ci-heavy/lama_quant_publish_private.sh, which rebuilds the exact x86-64 bytes (the Q4_K files differ when quantized on Apple M1) and refuses unless the repo is private."
+}

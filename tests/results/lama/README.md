@@ -1,9 +1,11 @@
 # Big-LaMa F16 / Q8_0 / Q4_K — internal research receipts
 
 **Internal research only.** Big-LaMa checkpoint rights are unresolved: no public upload,
-no registry entry or alias, and this line never merges into `main`/`feat/teleocr`. The GGUFs are
-preserved only in the owner's private Hugging Face repo `cstr/big-lama-research-GGUF`
-(see `private-hf-upload.json`).
+no registry entry or alias, and this line never merges into `main`/`feat/teleocr`. The GGUFs are to be
+preserved only in the owner's private Hugging Face repo `cstr/big-lama-research-GGUF` (created
+private, privacy verified). **GGUF upload is currently blocked** by the account's private-storage
+limit (and the CI secret lacks write access); README and code licence are uploaded. See
+`private-hf-upload.json` for status and how to finish.
 
 ## Source
 
@@ -74,3 +76,4 @@ disk (204 → 103 / 55 / 36 MB) far more than memory; the matmul gate saves ~90�
 - `hosted-41292697462-storedops/`, `hosted-41292699579-storedops/` delivery-3 eager StoredOps.
 - `hosted-41295796193-graph/`, `hosted-41295798015-graph/` portable graph + StoredOps, Q4_K recipes.
 - `hosted-41309379208-optimized/`, `hosted-41309381796-optimized/` delivery-5 optimized graph (above).
+- `hosted-41312535037-publish/` private-preservation lane: all five tested hashes reproduced; upload refused (403).
