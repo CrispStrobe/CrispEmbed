@@ -82,8 +82,9 @@ step native-controls bash -c "'$BIN/test-migan512-diff' --contracts && '$BIN/tes
 
 export CRISPEMBED_MIGAN=1 CRISPEMBED_MIGAN512=1
 declare -A FILES=([f32]=$GGUF)
-ARMS=(f32 f32-g)
+ARMS=(f32 f32-g f32-o)
 FILES[f32-g]=$GGUF
+FILES[f32-o]=$GGUF
 # A spec is TYPE, or LABEL@TYPE@GLOB=TYPE[@GLOB=TYPE...] for a recipe with
 # --tensor-type overrides (e.g. q4k-hi8@q4_k@*.b512.*=q8_0@*.b256.*=q8_0).
 LABELS=()
@@ -97,7 +98,8 @@ for spec in "${QUANTS[@]}"; do
         # Two arms per file: dequantize-at-load (default) and the gated
         # stored-type 1x1 matmul.
         FILES[$q-mm]=${FILES[$q]}; FILES[$q-g]=${FILES[$q]}; FILES[$q-mm-g]=${FILES[$q]}
-        ARMS+=("$q" "$q-mm" "$q-g" "$q-mm-g")
+        FILES[$q-o]=${FILES[$q]}; FILES[$q-mm-o]=${FILES[$q]}
+        ARMS+=("$q" "$q-mm" "$q-g" "$q-mm-g" "$q-o" "$q-mm-o")
     fi
 done
 CASES="subtitle_bar edge_touch empty full center one_pixel checkerboard thin_strip"
@@ -113,7 +115,8 @@ for v in "${ARMS[@]}"; do
     f=${FILES[$v]}; fsha=$(sha256sum "$f" | cut -d' ' -f1)
     echo "{\"variant\":\"$v\",\"bytes\":$(stat -c %s "$f"),\"sha256\":\"$fsha\"}" >> "$OUT/variants.jsonl"
     env_extra=(CRISPEMBED_ARM="$v")
-    b=${v%-g}; [ "$b" = "$v" ] || env_extra+=(CRISPEMBED_INPAINT_GRAPH=1)
+    o=${v%-o}; [ "$o" = "$v" ] || env_extra+=(CRISPEMBED_INPAINT_GRAPH=1 CRISPEMBED_MIGAN_CPU_KERNELS=1)
+    b=${o%-g}; [ "$b" = "$o" ] || env_extra+=(CRISPEMBED_INPAINT_GRAPH=1)
     case $b in f32) ;; *-mm) env_extra+=(CRISPEMBED_INPAINT_QUANT=1 CRISPEMBED_INPAINT_QUANT_MATMUL=1) ;; *) env_extra+=(CRISPEMBED_INPAINT_QUANT=1) ;; esac
     for c in $CASES; do
         R=$S/original512/$c
@@ -138,7 +141,8 @@ for geometry in crop512 full; do
     GEO=(); [ $geometry = crop512 ] && GEO=(--crop 512)
     for v in "${ARMS[@]}"; do
         f=${FILES[$v]}; fsha=$(sha256sum "$f" | cut -d' ' -f1)
-        b=${v%-g}; LE=(); [ "$b" = "$v" ] || LE=(--env CRISPEMBED_INPAINT_GRAPH=1)
+        o=${v%-o}; LE=(); [ "$o" = "$v" ] || LE=(--env CRISPEMBED_INPAINT_GRAPH=1 --env CRISPEMBED_MIGAN_CPU_KERNELS=1)
+        b=${o%-g}; [ "$b" = "$o" ] || LE+=(--env CRISPEMBED_INPAINT_GRAPH=1)
         case $b in f32) ;; *-mm) LE+=(--env CRISPEMBED_INPAINT_QUANT=1 --env CRISPEMBED_INPAINT_QUANT_MATMUL=1) ;; *) LE+=(--env CRISPEMBED_INPAINT_QUANT=1) ;; esac
         REF=(); [ "$v" = f32 ] || REF=(--reference-run "$OUT/live-$geometry/f32")
         step "live-$geometry-$v" python tools/inpaint_live_eval.py --binary "$BIN/crispembed" --engine migan512 \

@@ -24,6 +24,13 @@ ARMS=(); LIVE=0; NATIVE=1
 for a in "$@"; do case $a in live) LIVE=1 ;; nonative) NATIVE=0 ;; *) ARMS+=("$a") ;; esac; done
 [ ${#ARMS[@]} -gt 0 ] || ARMS=(f32)
 GATE=CRISPEMBED_$(echo "$MODEL" | tr a-z A-Z)
+# "-o" arm suffix: persistent graph plus this engine's measured delivery-5 CPU
+# candidates (docs/inpainting-optimization-results.md), e.g. f32-o, q8_0-mm-o.
+if [ "$MODEL" = moebius ]; then
+    OPT_GATES=(CRISPEMBED_INPAINT_GEMM_LAYOUT=1 CRISPEMBED_MOEBIUS_RELATIVE_REASSOC=1 CRISPEMBED_MOEBIUS_LOCAL_REASSOC=1)
+else
+    OPT_GATES=(CRISPEMBED_INPAINT_GEMM_LAYOUT=1 CRISPEMBED_INPAINT_CPU_GLA=1)
+fi
 log() { echo "$*" | tee -a "$OUT/summary.md"; }
 step() {
     local name=$1; shift
@@ -88,9 +95,11 @@ requested = {"f16": "f16", "q8_0": "q8_0", "q4_k": "q4_K", "q5_k": "q5_K", "q6_k
 EOF
 }
 for arm in "${ARMS[@]}"; do
-    base=${arm%-g}; q=${base%-mm}
+    a=${arm%-o}; opt=0; [ "$a" = "$arm" ] || opt=1
+    base=${a%-g}; q=${base%-mm}
     env_extra=("$GATE=1")
-    [ "$base" = "$arm" ] || env_extra+=(CRISPEMBED_INPAINT_GRAPH=1)
+    [ "$base" = "$a" ] && [ $opt = 0 ] || env_extra+=(CRISPEMBED_INPAINT_GRAPH=1)
+    [ $opt = 0 ] || env_extra+=("${OPT_GATES[@]}")
     if [ "$q" = f32 ]; then
         DQ=$D; VQ=$V
     else
@@ -123,12 +132,14 @@ if [ $LIVE = 1 ]; then
     bash tools/ci-heavy/inpaint_live_inputs.sh "$S/photos" "$S/dbnet.gguf" "$OUT/photos.json"
     TM=(); [ -f "$S/dbnet.gguf" ] && TM=(--text-model "$S/dbnet.gguf")
     for arm in "${ARMS[@]}"; do
-        base=${arm%-g}; q=${base%-mm}
+        a=${arm%-o}; opt=0; [ "$a" = "$arm" ] || opt=1
+        base=${a%-g}; q=${base%-mm}
         if [ "$q" = f32 ]; then DQ=$D; VQ=$V; else DQ=$S/gguf/$MODEL-$q.gguf; VQ=$S/gguf/sdxl-vae-$q.gguf; fi
         [ -f "$DQ" ] && [ -f "$VQ" ] || continue
         LE=(); [ "$q" = f32 ] || LE=(--env CRISPEMBED_INPAINT_QUANT=1)
         [ "$base" = "$q" ] || LE+=(--env CRISPEMBED_INPAINT_QUANT_MATMUL=1)
-        [ "$base" = "$arm" ] || LE+=(--env CRISPEMBED_INPAINT_GRAPH=1)
+        [ "$base" = "$a" ] && [ $opt = 0 ] || LE+=(--env CRISPEMBED_INPAINT_GRAPH=1)
+        if [ $opt = 1 ]; then for g in "${OPT_GATES[@]}"; do LE+=(--env "$g"); done; fi
         REF=(); [ "$arm" = f32 ] || [ ! -d "$OUT/live/f32" ] || REF=(--reference-run "$OUT/live/f32")
         step "live-$arm" python tools/inpaint_live_eval.py --binary "$BIN/crispembed" --engine "$MODEL" \
             --model "$DQ" --model-sha256 "$(sha256sum "$DQ" | cut -d' ' -f1)" --vae "$VQ" \

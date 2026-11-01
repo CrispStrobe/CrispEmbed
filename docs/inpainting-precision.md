@@ -177,9 +177,64 @@ Denoiser and VAE are quantized to the same requested type.
 | PixelHacker F16 (eager and graph) | 1,725.6 + 167.6 MB | 0.999999 | 1.000000 | 66.7–77.2 dB | pass |
 | PixelHacker Q8_0 dequantized | 917.9 + 89.3 MB | 0.999631 | 0.999905 | 42.1–45.2 dB | pass |
 | PixelHacker Q8_0 stored matmul | 917.9 + 89.3 MB | 0.999417 | 0.999853 | 40.2–41.3 dB | pass |
+| PixelHacker Q4_K dequantized | 487.1 + 47.5 MB | 0.990843 | 0.997756 | 28.4–31.3 dB | pass |
+| PixelHacker Q4_K stored matmul | 487.1 + 47.5 MB | 0.990318 | 0.997626 | 28.1–31.1 dB | pass |
 
 Q4_K images visibly differ from F32 (about 25 dB) even though the cosine gate
 passes; treat Q4_K as a size option with a quality cost. Stored matmul is where
 the memory saving is: Moebius CLI peak RSS 2.0 GB (F32 or dequantized) falls to
 1.17 GB (Q8_0) and 1.03 GB (Q4_K); PixelHacker falls from 4.5 GB to 1.8 GB
 (Q8_0).
+
+## Graph path versus eager (A/B, same captures)
+
+Persistent graphs (`CRISPEMBED_INPAINT_GRAPH=1`, CPU backend, strict F32
+accumulation), after the initializer/parameter pin fix:
+
+| Arm | Moebius min decoded cos vs original | PixelHacker min decoded cos vs original | Notes |
+| --- | ---: | ---: | --- |
+| F32 graph | 1.000000 | 1.000000 | 84–88 dB vs eager F32; same strict-budget pattern |
+| F16 graph | 1.000000 | 0.999999 | equals eager F16 |
+| Q8_0 dequantized graph | 0.999354 | — | equals eager Q8_0 to 6 digits |
+| Q8_0 stored-matmul graph | 0.999171 | 0.999278 | RGB cos vs F32 >= 0.9998 |
+| Q4_K dequantized graph | 0.976839 | — | equals eager Q4_K |
+| Q4_K stored-matmul graph | 0.976929 | 0.990206 | RGB cos vs F32 >= 0.9952 |
+
+One 512 inpaint through the production CLI (19 steps x 2 CFG arms, 4 vCPU;
+runner-to-runner variance about +-30%):
+
+| Engine | F32 eager | F32 graph | Q8_0 matmul eager | Q8_0 matmul graph | Q4_K matmul graph |
+| --- | --- | --- | --- | --- | --- |
+| Moebius | 510 s / 2.0 GB | 384–422 s / 3.8 GB | 558 s / 1.17 GB | 181 s / 3.0 GB | 192 s / 2.9 GB |
+| PixelHacker | 857 s / 4.5 GB | 714–722 s / 6.3 GB | 695 s / 1.8 GB | 482 s / 3.7 GB | 497 s / 3.2 GB |
+
+The graph path is the faster one, and stored-type mul_mat on it is fastest
+(Moebius Q8_0 is 2.8x faster than eager F32). Its resident graph and activation
+buffers raise peak RSS above eager, though. The lowest memory is eager with
+stored matmul. These are delivery-4 graphs plus this branch's fixes; delivery 5
+(67406abe) further optimizes the CPU path, and its merged replays are recorded
+separately.
+
+## Live ground truth: Moebius and PixelHacker (512 crops, seed 0)
+
+Masked-region PSNR against the clean photo (naive band-mean fill in brackets);
+outside-mask pixels are exact on every exact-mask run.
+
+| Engine / arm | face exact / DBNet | landscape exact / DBNet | street exact / DBNet | s per photo, RSS |
+| --- | --- | --- | --- | --- |
+| naive fill | 14.49 | 14.64 | 12.69 | — |
+| MI-GAN512 F32 | 24.02 / 14.70 | 16.01 / 13.20 | 13.21 / 10.52 | 2.2 s, 0.31 GB |
+| Moebius F32 graph | 22.27 / 18.54 | 16.81 / 14.67 | 12.20 / 9.97 | 250 s, 3.7 GB |
+| Moebius Q8_0 matmul graph | 23.41 / 18.50 | 16.89 / 14.66 | 12.25 / 9.99 | 193 s, 3.0 GB |
+| PixelHacker F32 graph | 23.84 / 19.20 | 16.93 / 14.86 | 12.64 / 11.11 | 721 s, 6.2 GB |
+| PixelHacker Q8_0 matmul graph | 23.81 / 19.26 | 16.92 / 14.89 | 12.69 / 11.17 | 411 s, 3.6 GB |
+| PixelHacker Q4_K matmul graph | 22.99 / 19.26 | 16.54 / 14.89 | 12.45 / 10.58 | 503 s, 3.2 GB |
+
+Diffusion engines use a native seed stream, so a variant's image differs from
+F32 by sampling as well as by weights. Masked-region agreement with the same
+engine's F32 graph run: Moebius Q8_0 23–30 dB (RGB cosine 0.980–0.998);
+PixelHacker Q8_0 23.5–34.2 dB (0.986–0.999) and Q4_K 17.2–27.5 dB (0.943–0.996).
+All three engines beat the naive fill on the face and landscape photos. The
+busy street scene stays near the naive score for every engine. With DBNet
+masks, the latent models handle glyph outlines that the detector misses better
+than MI-GAN does: face 18.5–19.3 dB against MI-GAN's 14.7.
