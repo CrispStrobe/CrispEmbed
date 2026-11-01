@@ -18,6 +18,13 @@ S=${HEAVY_SCRATCH:?}
 # Python reference stays F32 either way.
 DTYPE=f32
 if [[ "${1:-}" == dtype=* ]]; then DTYPE=${1#dtype=}; shift; fi
+# Optional quantizer policy (tools/quantize.cpp, opt-in): large=q8_0|mix quantizes
+# embed/lm_head/vte/visual head too; novisf16=1 keeps Q8_0 vision instead of F16.
+QENV=()
+while [[ "${1:-}" == large=* || "${1:-}" == novisf16=* ]]; do
+    case $1 in large=*) QENV+=(CRISPEMBED_QUANTIZE_OXR_LARGE=${1#large=}) ;; novisf16=*) QENV+=(CRISPEMBED_QUANTIZE_NO_VISION_F16=${1#novisf16=}) ;; esac
+    shift
+done
 case "$DTYPE" in f32 | f16 | q8_0 | q4_k) ;; *) echo "unsupported dtype $DTYPE"; exit 2 ;; esac
 CASES=${*:-"formula table receipt german japanese"}
 export CRISPEMBED_OXR=1 CRISPEMBED_ACCEPT_OXR_LICENSE=1 CRISPEMBED_OXR_FORCE_CPU=1 \
@@ -31,7 +38,7 @@ declare -A PROMPT=([formula]="Recognize the formula of the image into KaTex form
 { echo "source=$(git rev-parse HEAD)"; git submodule status; } > "$TOP/provenance.txt"
 echo "::group::build"
 cmake -S . -B "$S/build" -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF >/dev/null &&
-    cmake --build "$S/build" --target test-oxr-run test-oxr-diff test-oxr-profile test-oxr-graph crispembed-quantize -j4 > "$S/build.log" 2>&1 ||
+    cmake --build "$S/build" --target test-oxr-run test-oxr-diff test-oxr-profile test-oxr-graph test-oxr-stage-dump crispembed-quantize -j4 > "$S/build.log" 2>&1 ||
     { tail -60 "$S/build.log"; exit 4; }
 "$S/build/test-oxr-profile" > "$TOP/profile.txt" 2>&1; echo "profile=$([ $? = 0 ] && echo pass || echo fail)" >> "$TOP/results.txt"
 "$S/build/test-oxr-graph" > "$TOP/graph.txt" 2>&1; echo "graph=$([ $? = 0 ] && echo pass || echo fail)" >> "$TOP/results.txt"
@@ -53,7 +60,8 @@ python models/convert-oxr-to-gguf.py --model "$S/checkpoint" --dtype "$SRC_DTYPE
 cp "$S/oxr-$SRC_DTYPE.gguf.json" "$TOP/conversion.json" 2>/dev/null
 if [[ "$DTYPE" != "$SRC_DTYPE" ]]; then
     QUANT=$(find "$S/build" -type f -name crispembed-quantize -perm -u+x | head -1)
-    "$QUANT" "$S/oxr-f32.gguf" "$S/oxr-$DTYPE.gguf" "$DTYPE" > "$TOP/quantize.log" 2>&1 || { tail -30 "$TOP/quantize.log"; exit 5; }
+    env ${QENV[@]+"${QENV[@]}"} "$QUANT" "$S/oxr-f32.gguf" "$S/oxr-$DTYPE.gguf" "$DTYPE" > "$TOP/quantize.log" 2>&1 || { tail -30 "$TOP/quantize.log"; exit 5; }
+    ls -l "$S/oxr-$DTYPE.gguf" >> "$TOP/quantize.log"
 fi
 sha256sum "$S/oxr-$DTYPE.gguf" > "$TOP/gguf-sha256.txt"
 echo "::endgroup::"
@@ -88,6 +96,18 @@ for id in $CASES; do
         note "decode-$arm" "$([ $? = 0 ] && echo pass || echo "fail($?)")"
     done
     unset CRISPEMBED_OXR_REUSE_DECODE_GRAPH
+    if [[ "$DTYPE" != "$SRC_DTYPE" ]]; then
+        # Owner acceptance for quantized recipes: prefill final hidden state and
+        # logits cosine vs the native F32 conversion (diagnostic stage A/B).
+        ST="vision.merge,visual.embeddings,llm.input,llm.layer.27,llm.norm,llm.logits"
+        for m in f32 "$DTYPE"; do
+            "$S/build/test-oxr-stage-dump" --dump-dir "$S/$id-dump-$m" --only "$ST" --model "$S/oxr-$m.gguf" \
+                --image "$S/$id.png" --prompt "$P" --threads 4 --repeat 1 > /dev/null 2>> "$O/stage-ab.log"
+        done
+        python tools/oxr_stage_compare.py "$S/$id-dump-f32" "$S/$id-dump-$DTYPE" --output "$O/stage-ab.json" >> "$O/stage-ab.log" 2>&1
+        note stage-ab "$([ $? = 0 ] && echo recorded || echo fail)"
+        rm -rf "$S/$id-dump-f32" "$S/$id-dump-$DTYPE"
+    fi
     rm -f "$S/$id-python.gguf"
     cat "$O/results.txt"
 done

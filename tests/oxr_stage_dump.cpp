@@ -12,6 +12,7 @@
 #include <iostream>
 #include <map>
 #include <set>
+#include <sys/stat.h>
 
 namespace {
 struct dump_state {
@@ -46,6 +47,7 @@ int execute(int argc, char ** argv) {
             rest.push_back(argv[i]);
     }
     if (state.dir.empty()) throw std::invalid_argument("--dump-dir is required");
+    mkdir(state.dir.c_str(), 0755);
     auto opt = oxr_test::parse(int(rest.size()), rest.data());
     opt.max_tokens = 1;
     const auto img = oxr_test::load_image(opt.image);

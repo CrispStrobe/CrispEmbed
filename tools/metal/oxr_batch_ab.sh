@@ -31,6 +31,7 @@ for arm in ${ARMS//,/ }; do
             f16half) e+=(CRISPEMBED_OXR_GPU_F16_HALF_ACT=1) ;;
             vteq8) e+=(CRISPEMBED_OXR_VTE_Q8=1) ;;
             split) e+=(CRISPEMBED_OXR_GPU_SPLIT_F16=1) ;;
+            hpmm) e+=(GGML_METAL_PREC_F32_MM=1) ;;
             *) echo "unknown arm part $part"; exit 2 ;;
         esac
     done
