@@ -3,6 +3,7 @@
 #include "core/ggml_cpu_backend.h"
 #include "core/gpu_backend_pref.h"
 #include "inpaint_weights.h"
+#include "inpaint_tensor_names.h"
 #include <algorithm>
 #include <array>
 #include <chrono>
@@ -207,7 +208,7 @@ Weights::Weights(Device & selected, const char * path, const ShapeMap & schema) 
         }
         uint64_t total = 0;
         for (const auto & entry : schema) {
-            const int64_t id = gguf_find_tensor(meta.get(), entry.first.c_str());
+            const int64_t id = gguf_find_tensor(meta.get(), inpaint_names::gguf_name(entry.first).c_str());
             require(id >= 0 && gguf_get_tensor_type(meta.get(), id) == GGML_TYPE_F32,
                     "missing original F32 weight " + entry.first);
             std::array<int64_t, 4> expected{ 1, 1, 1, 1 };
@@ -229,6 +230,7 @@ Weights::Weights(Device & selected, const char * path, const ShapeMap & schema) 
         if (!device.fast) {
             require(core_gguf::load_weights(path, device.backend, "inpainting-graph", loaded, true),
                     "cannot load resident weights");
+            for (const auto & entry : schema) inpaint_names::restore_original_name(loaded.tensors, entry.first);
             return;
         }
         // Source bytes and their digest stay unchanged. This explicitly gated
@@ -240,6 +242,7 @@ Weights::Weights(Device & selected, const char * path, const ShapeMap & schema) 
         try {
             require(core_gguf::load_weights(path, cpu, "inpainting-fast-source", source, true),
                     "cannot map F32 source");
+            for (const auto & entry : schema) inpaint_names::restore_original_name(source.tensors, entry.first);
             loaded.ctx = ggml_init({ (schema.size() + 16) * ggml_tensor_overhead(), nullptr, true });
             require(loaded.ctx != nullptr, "weight metadata allocation failed");
             for (const auto & entry : schema) {

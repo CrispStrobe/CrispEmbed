@@ -1,6 +1,7 @@
 // Hosted original-vs-native replay. No model/framework download is performed
 // by this binary. Reference data and model receipts are verified before init.
 #include "latent_inpaint.h"
+#include "inpaint_tensor_names.h"
 #include "latent_inpaint_schema.h"
 #include "core/clean_exit.h"
 #include "core/gguf_loader.h"
@@ -949,7 +950,7 @@ Json verify_receipt(const fs::path & file, const std::string & digest, const std
                     gguf_get_tensor_type(gguf.get(), int64_t(ordinal)) == GGML_TYPE_F32 &&
                     gguf_get_tensor_size(gguf.get(), int64_t(ordinal)) == bytes &&
                     gguf_get_tensor_offset(gguf.get(), int64_t(ordinal)) == offset &&
-                    name == gguf_get_tensor_name(gguf.get(), int64_t(ordinal)),
+                    inpaint_names::gguf_name(name) == gguf_get_tensor_name(gguf.get(), int64_t(ordinal)),
                 "GGUF tensor index differs from receipt");
         const int64_t * ne = gguf_get_tensor_ne(gguf.get(), int64_t(ordinal));
         for (size_t axis = 0; axis < 4; ++axis)

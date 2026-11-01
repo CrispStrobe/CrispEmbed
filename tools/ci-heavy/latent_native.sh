@@ -10,7 +10,9 @@
 # part. Pinned checkpoints are converted here (F32, lossless), precision
 # variants are quantized from them (denoiser and VAE at the same type), and
 # every arm runs the unchanged frozen-gate comparator test-latent-inpaint.
-# An "-mm" arm is the same file with CRISPEMBED_INPAINT_QUANT_MATMUL=1.
+# An "-mm" arm is the same file with CRISPEMBED_INPAINT_QUANT_MATMUL=1; a
+# trailing "-g" runs the persistent ggml graph path (CRISPEMBED_INPAINT_GRAPH=1)
+# instead of the eager CPU path, e.g. f32 f32-g q8_0-mm q8_0-mm-g.
 set -uo pipefail
 OUT=${HEAVY_OUT:?}
 S=${HEAVY_SCRATCH:?}
@@ -71,8 +73,9 @@ Image.frombytes("L", (512, 512), (src / "fill-mask.u8").read_bytes()).save(out /
 EOF
 failed=0
 for arm in "${ARMS[@]}"; do
-    q=${arm%-mm}
+    base=${arm%-g}; q=${base%-mm}
     env_extra=("$GATE=1")
+    [ "$base" = "$arm" ] || env_extra+=(CRISPEMBED_INPAINT_GRAPH=1)
     if [ "$q" = f32 ]; then
         DQ=$D; VQ=$V
     else
@@ -80,7 +83,7 @@ for arm in "${ARMS[@]}"; do
         [ -f "$DQ" ] || step "quantize-denoiser-$q" "$BIN/crispembed-quantize" "$D" "$DQ" "$q" || { failed=1; continue; }
         [ -f "$VQ" ] || step "quantize-vae-$q" "$BIN/crispembed-quantize" "$V" "$VQ" "$q" || { failed=1; continue; }
         env_extra+=(CRISPEMBED_INPAINT_QUANT=1)
-        [ "$arm" = "$q" ] || env_extra+=(CRISPEMBED_INPAINT_QUANT_MATMUL=1)
+        [ "$base" = "$q" ] || env_extra+=(CRISPEMBED_INPAINT_QUANT_MATMUL=1)
     fi
     dsha=$(sha256sum "$DQ" | cut -d' ' -f1); vsha=$(sha256sum "$VQ" | cut -d' ' -f1)
     echo "{\"arm\":\"$arm\",\"denoiser_bytes\":$(stat -c %s "$DQ"),\"denoiser_sha256\":\"$dsha\",\"vae_bytes\":$(stat -c %s "$VQ"),\"vae_sha256\":\"$vsha\"}" >> "$OUT/variants.jsonl"
@@ -103,11 +106,12 @@ if [ $LIVE = 1 ]; then
     bash tools/ci-heavy/inpaint_live_inputs.sh "$S/photos" "$S/dbnet.gguf" "$OUT/photos.json"
     TM=(); [ -f "$S/dbnet.gguf" ] && TM=(--text-model "$S/dbnet.gguf")
     for arm in "${ARMS[@]}"; do
-        q=${arm%-mm}
+        base=${arm%-g}; q=${base%-mm}
         if [ "$q" = f32 ]; then DQ=$D; VQ=$V; else DQ=$S/gguf/$MODEL-$q.gguf; VQ=$S/gguf/sdxl-vae-$q.gguf; fi
         [ -f "$DQ" ] && [ -f "$VQ" ] || continue
         LE=(); [ "$q" = f32 ] || LE=(--env CRISPEMBED_INPAINT_QUANT=1)
-        [ "$arm" = "$q" ] || LE+=(--env CRISPEMBED_INPAINT_QUANT_MATMUL=1)
+        [ "$base" = "$q" ] || LE+=(--env CRISPEMBED_INPAINT_QUANT_MATMUL=1)
+        [ "$base" = "$arm" ] || LE+=(--env CRISPEMBED_INPAINT_GRAPH=1)
         REF=(); [ "$arm" = f32 ] || [ ! -d "$OUT/live/f32" ] || REF=(--reference-run "$OUT/live/f32")
         step "live-$arm" python tools/inpaint_live_eval.py --binary "$BIN/crispembed" --engine "$MODEL" \
             --model "$DQ" --model-sha256 "$(sha256sum "$DQ" | cut -d' ' -f1)" --vae "$VQ" \

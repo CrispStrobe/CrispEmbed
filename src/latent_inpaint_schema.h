@@ -46,7 +46,7 @@ inline uint64_t checkpoint_bytes(const std::string & model) {
     throw std::invalid_argument("unsupported latent inpainting model");
 }
 
-inline const char * tensor_layout() { return "original contiguous; GGUF dimensions reversed; pos_conv singleton depth squeezed; BN counters omitted"; }
+inline const char * tensor_layout() { return "original contiguous; GGUF dimensions reversed; pos_conv singleton depth squeezed; BN counters omitted; names of 64+ bytes abbreviated (src/inpaint_tensor_names.h)"; }
 
 inline const char * input_contract() { return "RGB8;binary-mask8;255=fill;fixed512"; }
 

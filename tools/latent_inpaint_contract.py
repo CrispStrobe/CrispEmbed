@@ -302,9 +302,25 @@ def gguf_metadata(model, contract=None):
         "latent_inpaint.checkpoint.sha256": record["checkpoint"]["sha256"],
         "latent_inpaint.checkpoint.revision": record["checkpoint"]["revision"],
         "latent_inpaint.contract.sha256": sha256(CONTRACT),
-        "latent_inpaint.tensor.layout": "original contiguous; GGUF dimensions reversed; pos_conv singleton depth squeezed; BN counters omitted",
+        "latent_inpaint.tensor.layout": "original contiguous; GGUF dimensions reversed; pos_conv singleton depth squeezed; BN counters omitted; names of 64+ bytes abbreviated (src/inpaint_tensor_names.h)",
         "latent_inpaint.input.contract": "RGB8;binary-mask8;255=fill;fixed512",
     }
+
+
+# GGUF tensor names hold at most 63 bytes (GGML_MAX_NAME). Twin of
+# src/inpaint_tensor_names.h: names of 64+ bytes are abbreviated, in order.
+NAME_RULES = (("diff_model.", "dm."), (".transformer_blocks.", ".tb."), (".attentions.", ".at."),
+              ("down_blocks.", "db."), ("up_blocks.", "ub."), ("mid_block.", "mb."))
+
+
+def gguf_tensor_name(name):
+    if len(name.encode("utf-8")) < 64:
+        return name
+    for old, new in NAME_RULES:
+        name = name.replace(old, new)
+    if len(name.encode("utf-8")) >= 64:
+        raise ValueError("tensor name cannot be stored within the GGUF name limit: " + name)
+    return name
 
 
 def _string(stream, value):
@@ -334,7 +350,7 @@ def write_streamed_gguf(path, checkpoint, rows, metadata):
         for row in exported:
             shape = row["export_shape"]
             size = math.prod(shape) * 4
-            _string(stream, row["name"])
+            _string(stream, gguf_tensor_name(row["name"]))
             stream.write(struct.pack("<I", len(shape)))
             stream.write(struct.pack("<" + "Q" * len(shape), *reversed(shape)))
             stream.write(struct.pack("<IQ", 0, offset))
@@ -415,7 +431,8 @@ def verify_gguf(path, metadata, records):
         raise ValueError("GGUF metadata or tensor count differs")
     with Path(path).open("rb") as stream:
         for observed, expected in zip(actual, records):
-            if any(observed[key] != expected[key] for key in ("name", "shape", "bytes")):
+            if (observed["name"] != gguf_tensor_name(expected["name"])
+                    or any(observed[key] != expected[key] for key in ("shape", "bytes"))):
                 raise ValueError("GGUF tensor index differs")
             stream.seek(start + observed["offset"])
             digest, remaining = hashlib.sha256(), observed["bytes"]
