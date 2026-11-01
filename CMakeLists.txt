@@ -1090,6 +1090,10 @@ crispembed_apply_arch_flags(crispembed-migan-test)
 target_link_libraries(crispembed-migan-test PUBLIC crispembed-core ggml ggml-base ggml-cpu)
 add_executable(test-migan-diff EXCLUDE_FROM_ALL tests/test_migan_diff.cpp)
 target_link_libraries(test-migan-diff PRIVATE crispembed-migan-test)
+# Device/precision A/B against the reviewed CPU/F32 graph (docs/migan-metal.md):
+# per-stage GPU/quantized vs CPU/F32 comparison and 1080p tile throughput.
+add_executable(test-migan-gpu-ab EXCLUDE_FROM_ALL tests/test_migan_gpu_ab.cpp src/inpaint.cpp)
+target_link_libraries(test-migan-gpu-ab PRIVATE crispembed-migan-test)
 
 add_executable(test-restormer-diff tests/test_restormer_diff.cpp)
 target_link_libraries(test-restormer-diff PRIVATE crispembed)

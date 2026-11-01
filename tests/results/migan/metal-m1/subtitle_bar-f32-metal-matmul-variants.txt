@@ -1,0 +1,9 @@
+== 
+{'strict_failed_stages': 0, 'worst_max_abs': 7.62939453e-06, 'output_max_abs': 1.49011612e-06, 'output_cos_global': 1.0, 'warm_ms_candidate_median': 309.288, 'warm_ms_cpu_f32_median': 510.992}
+== CRISPEMBED_MIGAN_FAST_MATMUL=1
+{'strict_failed_stages': 187, 'worst_max_abs': 0.0153538287, 'output_max_abs': 0.00193062425, 'output_cos_global': 0.999999915159, 'warm_ms_candidate_median': 179.281, 'warm_ms_cpu_f32_median': 460.592}
+== CRISPEMBED_MIGAN_GPU_SWAP_POINTWISE=1
+{'strict_failed_stages': 0, 'worst_max_abs': 7.62939453e-06, 'output_max_abs': 1.49011612e-06, 'output_cos_global': 1.0, 'warm_ms_candidate_median': 315.584, 'warm_ms_cpu_f32_median': 462.531}
+== CRISPEMBED_MIGAN_GPU_SWAP_POINTWISE=1 CRISPEMBED_MIGAN_FAST_MATMUL=1
+{'strict_failed_stages': 198, 'worst_max_abs': 0.0153538287, 'output_max_abs': 0.00254815817, 'output_cos_global': 0.999999593067, 'warm_ms_candidate_median': 270.524, 'warm_ms_cpu_f32_median': 441.991}
+

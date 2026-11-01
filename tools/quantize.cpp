@@ -14,6 +14,7 @@
 
 #include "../src/core/imatrix_alias.h"
 #include "../src/core/json.h"
+#include "../src/core/sha256.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -176,6 +177,104 @@ static bool load_imatrix(const std::string & path) {
     return loaded > 0;
 }
 
+// MI-GAN (fixed256 inpainting) family policy "migan-pointwise-v1".
+// Only the separable blocks' 1x1 pointwise kernels (*.conv2.weight, [1,1,IC,OC],
+// ~97% of the parameters) change type; they are stored flattened as [IC,OC] so
+// the block row runs along the contracted input channels. fromRGB/toRGB
+// (first/last convs), every depthwise/up/down filter, biases, noise and
+// insertion masks stay F32. Q4_K needs IC%256: IC=128 layers fall back to Q8_0.
+// The container records the policy and the exact source F32 GGUF SHA, which
+// src/migan.cpp requires (CRISPEMBED_MIGAN_QUANT=1) before loading.
+static bool quantize_migan(const std::string & fname_inp, const std::string & fname_out, ggml_type qtype,
+                           ggml_ftype ftype) {
+    if (qtype != GGML_TYPE_F16 && qtype != GGML_TYPE_Q8_0 && qtype != GGML_TYPE_Q4_K) {
+        fprintf(stderr, "MI-GAN policy supports only f16, q8_0 and q4_k\n");
+        return false;
+    }
+    ggml_context * meta_ctx = nullptr;
+    gguf_init_params params = { /*no_alloc*/ false, /*ctx*/ &meta_ctx };
+    gguf_context * in = gguf_init_from_file(fname_inp.c_str(), params);
+    if (!in || !meta_ctx) {
+        fprintf(stderr, "Failed to load MI-GAN model from '%s'\n", fname_inp.c_str());
+        return false;
+    }
+    if (gguf_get_val_u32(in, gguf_find_key(in, "general.file_type")) != 0) {
+        fprintf(stderr, "MI-GAN quantization requires the F32 source container\n");
+        gguf_free(in);
+        ggml_free(meta_ctx);
+        return false;
+    }
+    const std::string source_sha = core_sha256::file(fname_inp);
+    const int n = gguf_get_n_tensors(in);
+    size_t bytes = 0;
+    for (int i = 0; i < n; ++i) bytes += ggml_nbytes(ggml_get_tensor(meta_ctx, gguf_get_tensor_name(in, i))) + 1024;
+    ggml_context * out_ctx = ggml_init({ bytes + size_t(n + 8) * ggml_tensor_overhead(), nullptr, false });
+    gguf_context * out = gguf_init_empty();
+    gguf_set_kv(out, in);
+    gguf_set_val_u32(out, "general.quantization_version", GGML_QNT_VERSION);
+    gguf_set_val_u32(out, "general.file_type", qtype == GGML_TYPE_Q4_K ? 15u : (uint32_t)ftype);
+    gguf_set_val_str(out, "migan.quantization.policy", "migan-pointwise-v1");
+    gguf_set_val_str(out, "migan.quantization.source_gguf_sha256", source_sha.c_str());
+    if (const char * keep = getenv("CRISPEMBED_QUANTIZE_MIGAN_Q8"))
+        gguf_set_val_str(out, "migan.quantization.q8_0_prefixes", keep);
+    std::map<std::string, int> counts;
+    std::vector<float> dequant;
+    for (int i = 0; i < n; ++i) {
+        const char * name = gguf_get_tensor_name(in, i);
+        ggml_tensor * src = ggml_get_tensor(meta_ctx, name);
+        const std::string sname(name);
+        const bool pointwise = sname.size() > 13 && sname.compare(sname.size() - 13, 13, ".conv2.weight") == 0 &&
+                               src->type == GGML_TYPE_F32 && src->ne[0] == 1 && src->ne[1] == 1;
+        ggml_type type = GGML_TYPE_F32;
+        if (pointwise) {
+            type = qtype;
+            // Optional sensitive-layer exceptions for sub-Q8 targets:
+            // CRISPEMBED_QUANTIZE_MIGAN_Q8=prefix[,prefix...] keeps matching
+            // pointwise kernels at Q8_0 (recorded in the container metadata).
+            if (const char * keep = getenv("CRISPEMBED_QUANTIZE_MIGAN_Q8")) {
+                std::string list(keep);
+                for (size_t at = 0; at <= list.size();) {
+                    const size_t end = std::min(list.find(',', at), list.size());
+                    const std::string prefix = list.substr(at, end - at);
+                    if (!prefix.empty() && sname.rfind(prefix, 0) == 0 && ggml_blck_size(qtype) > 32)
+                        type = GGML_TYPE_Q8_0;
+                    at = end + 1;
+                }
+            }
+            if (src->ne[2] % ggml_blck_size(type) != 0) type = GGML_TYPE_Q8_0;
+            if (src->ne[2] % ggml_blck_size(type) != 0) type = GGML_TYPE_F16;
+        }
+        ggml_tensor * dst = nullptr;
+        if (type == GGML_TYPE_F32) {
+            dst = ggml_dup_tensor(out_ctx, src);
+            memcpy(dst->data, src->data, ggml_nbytes(src));
+        } else {
+            const int64_t ic = src->ne[2], oc = src->ne[3];
+            dst = ggml_new_tensor_2d(out_ctx, type, ic, oc);
+            const float * values = (const float *)src->data; // OIHW 1x1: contiguous [OC][IC]
+            if (type == GGML_TYPE_F16) {
+                ggml_fp32_to_fp16_row(values, (ggml_fp16_t *)dst->data, ic * oc);
+            } else {
+                ggml_quantize_chunk(type, values, dst->data, 0, oc, ic, nullptr);
+            }
+        }
+        ggml_set_name(dst, name);
+        gguf_add_tensor(out, dst);
+        counts[ggml_type_name(type)]++;
+        printf("[%3d/%3d] %-48s %s -> %s\n", i + 1, n, name, ggml_type_name(src->type), ggml_type_name(type));
+    }
+    const bool ok = gguf_write_to_file(out, fname_out.c_str(), false);
+    printf("MI-GAN policy migan-pointwise-v1 (source %s):", source_sha.c_str());
+    for (const auto & c : counts) printf(" %s=%d", c.first.c_str(), c.second);
+    printf("\n");
+    gguf_free(out);
+    ggml_free(out_ctx);
+    gguf_free(in);
+    ggml_free(meta_ctx);
+    if (!ok) fprintf(stderr, "failed to write '%s'\n", fname_out.c_str());
+    return ok;
+}
+
 static bool quantize_model(const std::string & fname_inp, const std::string & fname_out, ggml_ftype ftype) {
     ggml_type qtype = GGML_TYPE_F32;
 
@@ -222,6 +321,16 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
     default:
         fprintf(stderr, "unsupported quantization type %d\n", ftype);
         return false;
+    }
+
+    {
+        // Family policies that need a whole-file layout of their own.
+        gguf_init_params probe_params = { /*no_alloc*/ true, /*ctx*/ nullptr };
+        gguf_context * probe = gguf_init_from_file(fname_inp.c_str(), probe_params);
+        const int64_t arch = probe ? gguf_find_key(probe, "general.architecture") : -1;
+        const bool is_migan = arch >= 0 && std::string(gguf_get_val_str(probe, arch)) == "migan";
+        if (probe) gguf_free(probe);
+        if (is_migan) return quantize_migan(fname_inp, fname_out, qtype, ftype);
     }
 
     printf("Loading model from '%s'\n", fname_inp.c_str());

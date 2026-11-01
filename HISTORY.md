@@ -38,6 +38,21 @@ tri-state; 4.2x, max 1/255); new default-off gates `CRISPEMBED_INSTRUCTIR_GPU`
 CPU-only controls ran on hosted CPU (run 41327259125). Initial harness failures
 (truncated TrOCR download, flat-OCR CLI needing `-m`, PNG compare bug) are kept in
 `ocr_batch.run1.log`.
+## 1 November 2026 — MI-GAN Metal path (feat/metal-migan)
+
+Gated `CRISPEMBED_MIGAN_GPU` whole-graph execution through
+`crispasr_init_gpu_backend()`, persistent graphs, opt-in tile batching, a Metal
+left-padding rewrite, `PAD_K` (zero-padded contraction routes precise F32 1x1
+convs to `mul_mm_hp`) and the `migan-pointwise-v1` quantizer/loader policy.
+M1 results on the eight frozen fixtures: Metal F32 0/1896 strict failures,
+original composites reproduced (5/8 exact, min 89.9 dB); owner bars pass for
+F32/F16/Q8_0 on CPU and Metal and fail for Q4_K (initial failure retained).
+The first quantized Metal/CPU attempt was rejected by the F32-activation check
+(views of quantized weights); fixed in `e7514050`, initial rc=2 logs retained in
+the session. Hosted CPU lane 41327638027 passes all steps; the local
+test-inpaint FIPS two-block input typo (also red in run 41282563344) is fixed.
+A monolithic queued job waited 7.5 h on the shared GPU lock and was replaced by
+per-variant/per-fixture lock calls plus a hosted CPU lane. GPU default stays off.
 
 ## 1 November 2026 — OXR-1.0 D-FINE layout detector native in layout_detect
 
