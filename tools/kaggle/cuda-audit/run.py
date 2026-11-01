@@ -98,6 +98,8 @@ EMBED_FAMILIES = [  # (family, repo, base file, [quant files], modes)
 for fam, repo, base, quants, _ in EMBED_FAMILIES:
     for f in [base] + quants:
         add(f, repo, f)
+EMBED_FAMILIES.append(("bge-m3-heads", None, "bge-m3-heads-f16.gguf", ["bge-m3-heads-q8_0.gguf"],
+                       ["embed", "sparse", "colbert"]))
 
 for key, repo, name in [
     ("dbnet", "cstr/dbnet-ic15-GGUF", "dbnet-ic15-q8_0.gguf"),
@@ -182,6 +184,12 @@ for key, repo, name in [
 # EasyOCR's english_g2 recognizer is not on HF as GGUF: converted on the worker
 # from the upstream release checkpoint (see fetch_easyocr()).
 M["easyocr"] = {"url": None, "file": "easyocr-english-g2-f16.gguf", "convert": "easyocr"}
+# The published bge-m3 GGUFs carry no sparse/ColBERT heads ("model does not support sparse
+# retrieval", run 1): convert BAAI/bge-m3 with its sparse_linear/colbert_linear .pt heads.
+M["bge-m3-heads-f16.gguf"] = {"url": None, "file": "bge-m3-heads-f16.gguf", "convert": "bert",
+                              "hf_model": "BAAI/bge-m3", "dtype": "f16"}
+M["bge-m3-heads-q8_0.gguf"] = {"url": None, "file": "bge-m3-heads-q8_0.gguf", "convert": "quantize",
+                               "src": "bge-m3-heads-f16.gguf", "qtype": "q8_0"}
 
 
 # ───────────────────────────── job plan ─────────────────────────────
@@ -348,7 +356,20 @@ def batch_b():
     return jobs
 
 
-BATCHES = {"a": batch_a, "b": batch_b, "all": lambda: batch_a() + batch_b()}
+def batch_rest():
+    """Run 2: everything run 1 (8f781770, crashed at the EasyOCR fetch) had not measured,
+    plus the clip-text JSON-lines re-parse and the bge-m3 artifact that carries its heads."""
+    done1 = {"embed-minilm-l6-embed", "embed-bge-small-embed", "embed-e5-small-embed", "embed-arctic-m-v2-embed",
+             "embed-bge-m3-embed", "embed-bge-m3-sparse", "embed-bge-m3-colbert", "embed-qwen3-embed-0.6b-embed",
+             "embed-f2llm-v2-0.6b-embed", "embed-jina-v5-nano-embed", "embed-harrier-270m-embed",
+             "embed-embeddinggemma-300m-embed", "embed-lfm2-embed-embed", "embed-ms-marco-l6-rerank",
+             "embed-mxbai-rerank-xsmall-rerank", "embed-ettin-reranker-17m-rerank", "dbnet-trocr.fox",
+             "dbnet-trocr.scan_page_pd", "dbnet-trocr.scan_strip", "dbnet-trocr-f32.fox", "ppocrv6-small.fox",
+             "ppocrv6-small.scan_page_pd"}
+    return [j for j in batch_a() + batch_b() if j["id"] not in done1]
+
+
+BATCHES = {"a": batch_a, "b": batch_b, "all": lambda: batch_a() + batch_b(), "rest": batch_rest}
 
 
 def jobs_for(batch):
@@ -374,7 +395,7 @@ def jobs_for(batch):
 
 
 def build_targets(batch):
-    t = ["crispembed-cli"]
+    t = ["crispembed-cli", "crispembed-quantize"]
     for j in jobs_for(batch):
         if j["kind"] == "diff" and j["binary"] not in t:
             t.append(j["binary"])
@@ -424,7 +445,7 @@ def fetch_easyocr(dest):
     whl = next((work / "wheel").glob("easyocr-*.whl"))
     shutil.unpack_archive(str(whl), str(work / "wheel" / "x"), format="zip")
     cfg_src = (work / "wheel" / "x" / "easyocr" / "config.py").read_text()
-    ns = {"os": os}
+    ns = {"os": os, "__file__": str(work / "wheel" / "x" / "easyocr" / "config.py")}
     exec(compile(cfg_src, "easyocr_config", "exec"), ns)  # plain dict definitions
     chars = ns["recognition_models"]["gen2"]["english_g2"]["characters"]
     (work / "english_g2_chars.txt").write_text(chars, encoding="utf-8")
@@ -432,6 +453,9 @@ def fetch_easyocr(dest):
                                str(next(work.glob("english_g2.pth"))), "--charset",
                                str(work / "english_g2_chars.txt"), "--output", str(dest), "--fp16"], 1200)
     return None if rc == 0 and dest.exists() else f"convert failed rc={rc}: {(out + err)[-600:]}"
+
+
+QUANTIZE = [None]
 
 
 def fetch(key):
@@ -443,6 +467,16 @@ def fetch(key):
     t0 = time.time()
     if spec.get("convert") == "easyocr":
         err = fetch_easyocr(dest)
+    elif spec.get("convert") == "bert":
+        rc, out, e = sh_capture([sys.executable, "models/convert-bert-to-gguf.py", "--model", spec["hf_model"],
+                                 "--output", str(dest), "--dtype", spec.get("dtype", "f16")], 3600)
+        err = None if rc == 0 and dest.exists() else f"convert rc={rc}: {(out + e)[-800:]}"
+        REPORT.setdefault("conversions", {})[key] = (out + e)[-1500:]
+    elif spec.get("convert") == "quantize":
+        src, err = fetch(spec["src"])
+        if not err:
+            rc, out, e = sh_capture([str(QUANTIZE[0]), str(src), str(dest), spec["qtype"]], 3600)
+            err = None if rc == 0 and dest.exists() else f"quantize rc={rc}: {(out + e)[-800:]}"
     else:
         rc, _, e = sh_capture(["curl", "-sfL", "--retry", "3", "-o", str(dest), spec["url"]], 3600)
         err = None if rc == 0 and dest.exists() and dest.stat().st_size > 0 else f"curl rc={rc} {e[-300:]}"
@@ -677,7 +711,11 @@ def ocr_compare(a, b):
 
 
 def embed_vectors(mode, raw):
-    j = json.loads(raw.decode("utf-8", "replace"))
+    text = raw.decode("utf-8", "replace")
+    try:
+        j = json.loads(text)
+    except ValueError:  # JSON lines (clip-text prints one object per text)
+        j = [json.loads(ln) for ln in text.splitlines() if ln.strip().startswith("{")]
     if mode == "rerank":
         res = j["results"] if isinstance(j, dict) else j
         key = "index" if res and "index" in res[0] else None
@@ -869,6 +907,7 @@ def main(build, batch, commit=None, gpu=None):
     if not os.environ.get("CUDA_AUDIT_NO_PIP"):
         subprocess.run([sys.executable, "-m", "pip", "install", "-q", "gguf", "numpy", "pillow"], timeout=900)
     binary = next(p for p in build.rglob("crispembed") if p.is_file() and os.access(p, os.X_OK))
+    QUANTIZE[0] = next((p for p in build.rglob("crispembed-quantize") if p.is_file()), None)
     nthreads = os.cpu_count() or 4
     REPORT.update({"commit": commit, "gpu": gpu, "batch": batch, "threads": nthreads,
                    "cpu_model": cpu_model(),
@@ -883,13 +922,13 @@ def main(build, batch, commit=None, gpu=None):
     for i, job in enumerate(jobs):
         t0 = time.time()
         paths, missing = {}, {}
-        for k in models_in(job):
-            p, err = fetch(k)
-            if p:
-                paths[k] = p
-            else:
-                missing[k] = err
         try:
+            for k in models_in(job):
+                p, err = fetch(k)
+                if p:
+                    paths[k] = p
+                else:
+                    missing[k] = err
             if missing:
                 rec = {"kind": job["kind"], "error": "model fetch failed", "missing": missing}
             elif job["kind"] == "embed":
