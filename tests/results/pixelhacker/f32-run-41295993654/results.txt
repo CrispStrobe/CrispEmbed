@@ -1,0 +1,12 @@
+fetch-capture rc=0 seconds=32
+verify-capture rc=0 seconds=8
+sources rc=0 seconds=2
+checkpoints rc=0 seconds=36
+convert-denoiser rc=0 seconds=107
+convert-vae rc=0 seconds=12
+configure rc=0 seconds=4
+build rc=0 seconds=311
+native-f32 rc=1 seconds=3436
+cli-f32 rc=0 seconds=857
+native-f32-g rc=1 seconds=2902
+cli-f32-g rc=0 seconds=713

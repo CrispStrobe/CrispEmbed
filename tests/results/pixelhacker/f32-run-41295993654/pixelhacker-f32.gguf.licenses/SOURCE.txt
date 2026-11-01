@@ -1,0 +1,12 @@
+Model: pixelhacker
+Source: https://github.com/hustvl/PixelHacker/tree/f5567db2871598aa178fe7a34c520dd478a0b41b
+Checkpoint: https://huggingface.co/hustvl/PixelHacker/resolve/012fd343158936a265b8a0ee38a791a7a2841f45/ft_places2/diffusion_pytorch_model.bin
+Checkpoint SHA-256: ef5e28199cd03344ac22a6e6ff456ba8b868e83fb90d8174cc2ad83d7ef4296c
+Author weight model card: https://huggingface.co/hustvl/PixelHacker/raw/012fd343158936a265b8a0ee38a791a7a2841f45/README.md
+Declared weight licence: MIT
+Author-owned weight repository declares MIT; source implementation is separately Apache-2.0.
+Licence evidence:
+https://huggingface.co/hustvl/PixelHacker
+Conversion: floating weights stored as F32; named singleton-depth axes squeezed;
+inference-inert BatchNorm training counters omitted with individual hashes in receipt.
+No inference quality, commercial clearance or native parity result is asserted by conversion.
