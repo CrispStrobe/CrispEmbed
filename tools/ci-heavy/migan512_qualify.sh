@@ -83,9 +83,16 @@ step native-controls bash -c "'$BIN/test-migan512-diff' --contracts && '$BIN/tes
 export CRISPEMBED_MIGAN=1 CRISPEMBED_MIGAN512=1
 declare -A FILES=([f32]=$GGUF)
 ARMS=(f32)
-for q in "${QUANTS[@]}"; do
+# A spec is TYPE, or LABEL@TYPE@GLOB=TYPE[@GLOB=TYPE...] for a recipe with
+# --tensor-type overrides (e.g. q4k-hi8@q4_k@*.b512.*=q8_0@*.b256.*=q8_0).
+LABELS=()
+for spec in "${QUANTS[@]}"; do
+    IFS=@ read -r -a parts <<< "$spec"
+    q=${parts[0]}; qtype=${parts[1]:-${parts[0]}}; OVR=()
+    for o in "${parts[@]:2}"; do OVR+=(--tensor-type "$o"); done
+    LABELS+=("$q")
     FILES[$q]=$S/migan-512-places2-$q.gguf
-    if step "quantize-$q" "$BIN/crispembed-quantize" "$GGUF" "${FILES[$q]}" "$q"; then
+    if step "quantize-$q" "$BIN/crispembed-quantize" "$GGUF" "${FILES[$q]}" "$qtype" "${OVR[@]}"; then
         # Two arms per file: dequantize-at-load (default) and the gated
         # stored-type 1x1 matmul.
         FILES[$q-mm]=${FILES[$q]}
@@ -157,6 +164,6 @@ cp "$S/original512/subtitle_bar/composited.png" "$OUT/images/original-subtitle_b
 # GGUF files are retained as a run artifact for operator-side private
 # preservation (the repository HF_TOKEN secret cannot write that repo).
 mkdir -p "$OUT/gguf"
-for q in f32 "${QUANTS[@]}"; do [ -f "${FILES[$q]:-}" ] && cp "${FILES[$q]}" "$OUT/gguf/"; done
+for q in f32 "${LABELS[@]}"; do [ -f "${FILES[$q]:-}" ] && cp "${FILES[$q]}" "$OUT/gguf/"; done
 cat "$OUT/native-summary.txt" >> "$OUT/summary.md" 2>/dev/null
 exit $failed
