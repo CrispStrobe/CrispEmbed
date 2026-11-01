@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Live inpainting evaluation with ground truth: burned-in subtitles on real photos.
 
-    python tools/inpaint_live_eval.py --binary build/crispembed --backend migan|lama \
+    python tools/inpaint_live_eval.py --binary build/crispembed --backend migan256|migan512|lama [--model-sha256 SHA] \
         --model MODEL.gguf --photos a.png b.jpg ... --output-dir OUT [--text-model dbnet.gguf]
 
 For each photo (RGB, any size) this renders a two-line subtitle (white text, black
@@ -72,7 +72,10 @@ def run(cmd, env):
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--binary", required=True, type=Path)
-    ap.add_argument("--backend", required=True, choices=("migan", "lama"))
+    ap.add_argument("--backend", required=True, choices=("migan", "migan256", "migan512", "lama"),
+                    help="CLI --inpaint-engine (migan means migan256)")
+    ap.add_argument("--model-sha256", help="CLI --inpaint-model-sha256 (required by lama/migan512)")
+    ap.add_argument("--checkpoint-sha256", help="CLI --inpaint-checkpoint-sha256 (migan512)")
     ap.add_argument("--model", required=True, type=Path)
     ap.add_argument("--photos", required=True, nargs="+", type=Path)
     ap.add_argument("--output-dir", required=True, type=Path)
@@ -82,6 +85,9 @@ def main():
     import os
     env = dict(os.environ, CRISPEMBED_MIGAN="1", CRISPEMBED_LAMA="1")
     out = args.output_dir
+    engine = "migan256" if args.backend == "migan" else args.backend
+    pins = [*(["--inpaint-model-sha256", args.model_sha256] if args.model_sha256 else []),
+            *(["--inpaint-checkpoint-sha256", args.checkpoint_sha256] if args.checkpoint_sha256 else [])]
     out.mkdir(parents=True, exist_ok=False)
     report = {"backend": args.backend, "model": args.model.name, "threads": args.threads, "cases": []}
     for photo in args.photos:
@@ -101,7 +107,7 @@ def main():
             jobs["dbnet-mask"] = ["--mask-from-text", "--mask-text-model", args.text_model, "--mask-dilate", "6"]
         for name, mask_args in jobs.items():
             dest = out / f"{stem}.{args.backend}.{name}.png"
-            rc, err, secs = run([args.binary, "--inpaint-model", args.model, "--inpaint-backend", args.backend,
+            rc, err, secs = run([args.binary, "--inpaint-model", args.model, "--inpaint-engine", engine, *pins,
                                  "--inpaint", out / f"{stem}.input.png", *mask_args, "--inpaint-output", dest,
                                  *(["--threads", args.threads] if args.threads else [])], env)
             entry = {"returncode": rc, "seconds": secs}

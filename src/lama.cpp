@@ -3,17 +3,24 @@
 #include "lama_schema.h"
 
 #include "core/env_gate.h"
+#include "core/ggml_cpu_backend.h"
 #include "core/gguf_loader.h"
 #include "core/sha256.h"
+#include "ggml-alloc.h"
 
 #include <algorithm>
+#include <array>
 #include <atomic>
 #include <cmath>
+#include <cstdio>
 #include <cstring>
 #include <filesystem>
+#include <map>
 #include <memory>
+#include <set>
 #include <stdexcept>
 #include <utility>
+#include <vector>
 
 namespace lama {
 using latent_inpaint::Engine;
@@ -61,7 +68,8 @@ Tensor relu(Tensor value) {
 }
 
 void validate_model(const std::string & path, const std::string & expected_sha256) {
-    require(digest_valid(expected_sha256), "a lowercase GGUF SHA-256 from the converter receipt is required");
+    require(digest_valid(expected_sha256),
+            "a lowercase GGUF SHA-256 from the converter (or quantizer census) receipt is required");
     require(std::filesystem::is_regular_file(path), "model must be a regular GGUF file");
     const uintmax_t bytes = std::filesystem::file_size(path);
     require(bytes >= 32 && bytes <= UINT64_C(512) * 1024 * 1024, "model exceeds the bounded512MiB weight profile");
@@ -79,9 +87,15 @@ void validate_model(const std::string & path, const std::string & expected_sha25
         return core_gguf::kv_str(meta.get(), key, "") == expected;
     };
     const int64_t lfu = gguf_find_key(meta.get(), "lama.lfu");
-    require(string("general.architecture", "big_lama") && integer("general.file_type", 0) &&
-                string("general.license", "Apache-2.0") && integer("lama.schema", 1) &&
-                string("lama.source.commit", detail::source_commit()) &&
+    // general.file_type 0 is the converter's exact F32 file. Any other value is
+    // accepted only from crispembed-quantize's "lama-v2" policy (tools/quantize.cpp);
+    // its per-tensor storage is checked again by the stored-weight loader.
+    const int64_t file_type = gguf_find_key(meta.get(), "general.file_type");
+    const bool file_type_valid =
+        file_type >= 0 && gguf_get_kv_type(meta.get(), file_type) == GGUF_TYPE_UINT32 &&
+        (gguf_get_val_u32(meta.get(), file_type) == 0 || string("lama.quantization.policy", "lama-v2"));
+    require(string("general.architecture", "big_lama") && file_type_valid && string("general.license", "Apache-2.0") &&
+                integer("lama.schema", 1) && string("lama.source.commit", detail::source_commit()) &&
                 string("lama.contract.sha256", detail::source_contract_sha256()) &&
                 string("lama.checkpoint.sha256", detail::checkpoint_sha256()) &&
                 string("lama.checkpoint.revision", detail::checkpoint_revision()) &&
@@ -96,10 +110,339 @@ void validate_model(const std::string & path, const std::string & expected_sha25
                 !gguf_get_val_bool(meta.get(), lfu),
             "source, checkpoint, licence or generator contract differs");
 }
+
+// Weight-dependent operators of the generator. The converter's F32 file runs
+// through the shared latent_inpaint::Engine (unchanged default). A lama-v2
+// F16/quantized file, or an F32 file under CRISPEMBED_LAMA_STORED_OPS=1 (an
+// A/B control), runs through StoredOps below, which repeats Engine's exact
+// im2col + ggml_mul_mat algorithm for F32 kernels.
+struct Ops {
+    virtual ~Ops() = default;
+    virtual bool has(const std::string & name) const = 0;
+    virtual Tensor conv(const std::string & name, const Tensor & x, int stride) = 0;
+    virtual Tensor conv_transpose(const std::string & name, const Tensor & x) = 0;
+    virtual Tensor batch_norm(const std::string & name, const Tensor & x) const = 0;
+};
+
+struct EngineOps final : Ops {
+    Engine engine;
+    EngineOps(const std::string & path, int threads) : engine(path.c_str(), threads, detail::schema()) {}
+    bool has(const std::string & name) const override { return engine.has(name); }
+    Tensor conv(const std::string & name, const Tensor & x, int stride) override {
+        return engine.conv(name, x, stride, 0);
+    }
+    Tensor conv_transpose(const std::string & name, const Tensor & x) override {
+        return engine.conv_transpose(name, x, 2, 1, 1);
+    }
+    Tensor batch_norm(const std::string & name, const Tensor & x) const override { return engine.batch_norm(name, x); }
+};
+
+constexpr size_t patch_budget_elements = size_t(8) * 1024 * 1024; // as latent_inpaint_ops.cpp
+
+struct OpGraph {
+    ggml_context * ctx = nullptr;
+    ggml_gallocr_t alloc = nullptr;
+    ggml_cgraph * graph = nullptr;
+    OpGraph() {
+        constexpr size_t nodes = 64;
+        ctx = ggml_init({ nodes * ggml_tensor_overhead() + ggml_graph_overhead_custom(nodes, false), nullptr, true });
+        require(ctx != nullptr, "operator graph metadata allocation failed");
+        graph = ggml_new_graph_custom(ctx, nodes, false);
+    }
+    ~OpGraph() {
+        if (alloc) ggml_gallocr_free(alloc);
+        if (ctx) ggml_free(ctx);
+    }
+    OpGraph(const OpGraph &) = delete;
+    OpGraph & operator=(const OpGraph &) = delete;
+    void allocate(ggml_tensor * output) {
+        ggml_set_output(output);
+        ggml_build_forward_expand(graph, output);
+        alloc = ggml_gallocr_new(core_cpu_backend::buffer_type());
+        require(alloc && ggml_gallocr_alloc_graph(alloc, graph), "bounded operator allocation failed");
+    }
+};
+
+bool stored_type_allowed(ggml_type type) {
+    switch (type) {
+    case GGML_TYPE_F32:
+    case GGML_TYPE_F16:
+    case GGML_TYPE_Q8_0:
+    case GGML_TYPE_Q4_0:
+    case GGML_TYPE_Q4_1:
+    case GGML_TYPE_Q5_0:
+    case GGML_TYPE_Q5_1:
+    case GGML_TYPE_Q4_K:
+    case GGML_TYPE_Q5_K:
+    case GGML_TYPE_Q6_K:
+        return true;
+    default:
+        return false;
+    }
+}
+
+bool include_listed(const char * name, void * user) {
+    return static_cast<const std::set<std::string> *>(user)->count(name) != 0;
+}
+
+bool seek(FILE * file, size_t offset) {
+#ifdef _WIN32
+    return _fseeki64(file, int64_t(offset), SEEK_SET) == 0;
+#else
+    return fseeko(file, off_t(offset), SEEK_SET) == 0;
+#endif
+}
+
+struct StoredOps final : Ops {
+    ggml_backend_t backend = nullptr;
+    core_gguf::WeightLoad resident; // tensors used in their stored type and layout
+    ggml_context * converted_ctx = nullptr;
+    ggml_backend_buffer_t converted_buf = nullptr;
+    std::map<std::string, ggml_tensor *> tensors;
+    std::map<std::string, std::vector<int64_t>> shapes; // original PyTorch order
+    size_t quantized_kernels = 0, dequantized_kernels = 0, weight_bytes = 0;
+
+    ~StoredOps() override {
+        if (converted_buf) ggml_backend_buffer_free(converted_buf);
+        if (converted_ctx) ggml_free(converted_ctx);
+        core_gguf::free_weights(resident);
+        if (backend) ggml_backend_free(backend);
+    }
+
+    StoredOps(const std::string & path, int threads) {
+        const bool matmul = core_env::on("CRISPEMBED_LAMA_QUANT_MATMUL");
+        std::unique_ptr<gguf_context, decltype(&core_gguf::free_metadata)> meta(core_gguf::open_metadata(path.c_str()),
+                                                                                &core_gguf::free_metadata);
+        require(bool(meta), "cannot read GGUF metadata");
+        const auto schema = detail::schema();
+        require(size_t(gguf_get_n_tensors(meta.get())) == schema.size(), "checkpoint tensor count differs");
+        const bool quantized = core_gguf::kv_str(meta.get(), "lama.quantization.policy", "") == "lama-v2";
+        struct Pending {
+            std::string name;
+            int64_t id;
+        };
+        std::set<std::string> keep;
+        std::vector<Pending> convert;
+        for (const auto & item : schema) {
+            const int64_t id = gguf_find_tensor(meta.get(), item.first.c_str());
+            require(id >= 0, "missing tensor: " + item.first);
+            const ggml_type type = gguf_get_tensor_type(meta.get(), id);
+            const auto & shape = item.second;
+            std::array<int64_t, 4> expected{ 1, 1, 1, 1 };
+            int64_t count = 1;
+            for (size_t i = 0; i < shape.size(); ++i) {
+                expected[shape.size() - i - 1] = shape[i];
+                count *= shape[i];
+            }
+            const int64_t * ne = gguf_get_tensor_ne(meta.get(), id);
+            bool exact = true;
+            for (int axis = 0; axis < 4; ++axis) exact &= ne[axis] == expected[axis];
+            const bool kernel = shape.size() == 4;
+            const bool pinned = !kernel || item.first == "generator.model.1.ffc.convl2l.weight" ||
+                                item.first == "generator.model.34.weight";
+            if (pinned || !quantized) {
+                require(type == GGML_TYPE_F32 && exact, "tensor must be F32 in its original shape: " + item.first);
+            } else {
+                require(stored_type_allowed(type), "unsupported stored tensor type: " + item.first);
+                const bool flattened = ne[2] == 1 && ne[3] == 1 && ne[0] * ne[1] == count;
+                require((type == GGML_TYPE_F32 || type == GGML_TYPE_F16) ? (exact || flattened) : flattened,
+                        "tensor storage shape differs: " + item.first);
+            }
+            shapes[item.first] = shape;
+            const bool transpose = item.first == "generator.model.24.weight" ||
+                                   item.first == "generator.model.27.weight" ||
+                                   item.first == "generator.model.30.weight";
+            const bool patch_rows = exact || ne[0] == expected[0] * expected[1] * expected[2];
+            const bool direct = type == GGML_TYPE_F32 ? exact : (matmul && kernel && !transpose && patch_rows);
+            if (direct)
+                keep.insert(item.first);
+            else
+                convert.push_back({ item.first, id });
+            if (kernel && type != GGML_TYPE_F32) ++(direct ? quantized_kernels : dequantized_kernels);
+        }
+        backend = core_cpu_backend::init();
+        require(backend != nullptr, "CPU backend unavailable");
+        core_cpu_backend::set_n_threads(backend, threads);
+        require(core_gguf::load_weights_filtered(path.c_str(), backend, include_listed, &keep, "lama", resident) &&
+                    resident.tensors.size() == keep.size(),
+                "cannot load resident weights");
+        weight_bytes = resident.buf ? ggml_backend_buffer_get_size(resident.buf) : 0;
+        for (const auto & entry : resident.tensors) {
+            require(entry.second->data != nullptr, "CPU weight storage unavailable");
+            tensors[entry.first] = entry.second;
+        }
+        if (!convert.empty()) {
+            converted_ctx = ggml_init({ convert.size() * ggml_tensor_overhead() + 1024, nullptr, true });
+            require(converted_ctx != nullptr, "dequantized weight metadata allocation failed");
+            std::vector<ggml_tensor *> made;
+            for (const auto & item : convert) {
+                const auto & shape = shapes.at(item.name);
+                std::array<int64_t, 4> ne{ 1, 1, 1, 1 };
+                for (size_t i = 0; i < shape.size(); ++i) ne[shape.size() - i - 1] = shape[i];
+                ggml_tensor * t = ggml_new_tensor_4d(converted_ctx, GGML_TYPE_F32, ne[0], ne[1], ne[2], ne[3]);
+                ggml_set_name(t, item.name.c_str());
+                made.push_back(t);
+            }
+            converted_buf = ggml_backend_alloc_ctx_tensors(converted_ctx, backend);
+            require(converted_buf != nullptr, "dequantized weight allocation failed");
+            weight_bytes += ggml_backend_buffer_get_size(converted_buf);
+            std::unique_ptr<FILE, int (*)(FILE *)> file(std::fopen(path.c_str(), "rb"), &std::fclose);
+            require(bool(file), "cannot reopen GGUF for dequantization");
+            const size_t data_offset = gguf_get_data_offset(meta.get());
+            std::vector<uint8_t> raw;
+            std::vector<float> values;
+            for (size_t i = 0; i < convert.size(); ++i) {
+                const ggml_type type = gguf_get_tensor_type(meta.get(), convert[i].id);
+                const int64_t count = ggml_nelements(made[i]);
+                raw.resize(gguf_get_tensor_size(meta.get(), convert[i].id));
+                values.resize(size_t(count));
+                require(raw.size() == ggml_row_size(type, count) &&
+                            seek(file.get(), data_offset + gguf_get_tensor_offset(meta.get(), convert[i].id)) &&
+                            std::fread(raw.data(), 1, raw.size(), file.get()) == raw.size(),
+                        "cannot read stored tensor: " + convert[i].name);
+                if (type == GGML_TYPE_F32) {
+                    std::memcpy(values.data(), raw.data(), raw.size());
+                } else {
+                    const ggml_type_traits * traits = ggml_get_type_traits(type);
+                    require(traits && traits->to_float, "no dequantizer for tensor: " + convert[i].name);
+                    traits->to_float(raw.data(), values.data(), count);
+                }
+                require(std::all_of(values.begin(), values.end(), [](float v) { return std::isfinite(v); }),
+                        "nonfinite stored tensor: " + convert[i].name);
+                ggml_backend_tensor_set(made[i], values.data(), 0, values.size() * sizeof(float));
+                tensors[convert[i].name] = made[i];
+            }
+        }
+        std::fprintf(stderr,
+                     "Big-LaMa stored-weight ops: %s, %zu kernels in stored type (mul_mat), %zu dequantized to F32, "
+                     "%zu weight bytes\n",
+                     quantized ? "lama-v2" : "F32", quantized_kernels, dequantized_kernels, weight_bytes);
+    }
+
+    ggml_tensor * tensor(const std::string & name) const {
+        const auto found = tensors.find(name);
+        require(found != tensors.end(), "missing weight: " + name);
+        return found->second;
+    }
+    const float * vector(const std::string & name, size_t count) const {
+        ggml_tensor * t = tensor(name);
+        require(t->type == GGML_TYPE_F32 && size_t(ggml_nelements(t)) == count, "vector weight shape differs: " + name);
+        return static_cast<const float *>(t->data);
+    }
+    bool has(const std::string & name) const override { return tensors.count(name) != 0; }
+
+    Tensor conv(const std::string & name, const Tensor & x, int stride) override {
+        require(latent_inpaint::finite(x) && stride >= 1 && stride <= 4, "invalid convolution input: " + name);
+        const auto & shape = shapes.at(name + ".weight");
+        const int oc = int(shape[0]), ic = int(shape[1]), kh = int(shape[2]), kw = int(shape[3]);
+        require(ic == x.c && x.h >= kh && x.w >= kw, "convolution channels differ: " + name);
+        const int oh = (x.h - kh) / stride + 1, ow = (x.w - kw) / stride + 1;
+        Tensor out(oc, oh, ow);
+        const float * bias = has(name + ".bias") ? vector(name + ".bias", size_t(oc)) : nullptr;
+        ggml_tensor * kernel = tensor(name + ".weight");
+        const size_t inner = size_t(ic) * kh * kw;
+        require(inner <= patch_budget_elements, "convolution patch exceeds workspace budget");
+        const size_t tile = std::min({ out.spatial(), size_t(4096), patch_budget_elements / inner });
+        std::vector<float> patches(inner * tile), product(tile * size_t(oc));
+        OpGraph graph;
+        ggml_tensor * input = ggml_new_tensor_2d(graph.ctx, GGML_TYPE_F32, int64_t(inner), int64_t(tile));
+        ggml_set_input(input);
+        ggml_tensor * flat = ggml_n_dims(kernel) == 2 && kernel->ne[0] == int64_t(inner)
+                                 ? kernel
+                                 : ggml_reshape_2d(graph.ctx, kernel, int64_t(inner), oc);
+        // F32: exactly Engine's [K,pixels] x [K,output] -> [pixels,output] (CHW).
+        // Stored F16/quantized kernels must be src0: [K,output] x [K,pixels] ->
+        // [output,pixels] (HWC), transposed while copying out.
+        const bool f32 = kernel->type == GGML_TYPE_F32;
+        ggml_tensor * y = f32 ? ggml_mul_mat(graph.ctx, input, flat) : ggml_mul_mat(graph.ctx, flat, input);
+        ggml_mul_mat_set_prec(y, GGML_PREC_F32);
+        graph.allocate(y);
+        for (size_t start = 0; start < out.spatial(); start += tile) {
+            const size_t used = std::min(tile, out.spatial() - start);
+            std::fill(patches.begin(), patches.end(), 0.0f);
+            for (size_t p = 0; p < used; ++p) {
+                const int oy = int((start + p) / ow), ox = int((start + p) % ow);
+                float * patch = patches.data() + p * inner;
+                for (int ch = 0; ch < ic; ++ch)
+                    for (int ky = 0; ky < kh; ++ky)
+                        for (int kx = 0; kx < kw; ++kx)
+                            patch[(size_t(ch) * kh + ky) * kw + kx] = x.at(ch, oy * stride + ky, ox * stride + kx);
+            }
+            ggml_backend_tensor_set(input, patches.data(), 0, patches.size() * sizeof(float));
+            require(ggml_backend_graph_compute(backend, graph.graph) == GGML_STATUS_SUCCESS, "CPU operator failed");
+            ggml_backend_tensor_get(y, product.data(), 0, product.size() * sizeof(float));
+            for (int ch = 0; ch < oc; ++ch) {
+                float * dst = out.v.data() + size_t(ch) * out.spatial() + start;
+                if (f32)
+                    std::copy_n(product.data() + size_t(ch) * tile, used, dst);
+                else
+                    for (size_t p = 0; p < used; ++p) dst[p] = product[p * size_t(oc) + ch];
+            }
+        }
+        if (bias)
+            for (int ch = 0; ch < oc; ++ch)
+                for (size_t p = 0; p < out.spatial(); ++p) out.v[size_t(ch) * out.spatial() + p] += bias[ch];
+        return out;
+    }
+
+    Tensor conv_transpose(const std::string & name, const Tensor & x) override {
+        // Engine::conv_transpose(stride 2, padding 1, output_padding 1) on the F32 kernel.
+        constexpr int stride = 2, padding = 1, output_padding = 1;
+        require(latent_inpaint::finite(x), "invalid transposed convolution input: " + name);
+        const auto & shape = shapes.at(name + ".weight");
+        require(shape[0] == x.c, "transposed convolution channels differ: " + name);
+        const int oc = int(shape[1]), kh = int(shape[2]), kw = int(shape[3]);
+        const int raw_h = (x.h - 1) * stride + kh, raw_w = (x.w - 1) * stride + kw;
+        Tensor out(oc, raw_h - 2 * padding + output_padding, raw_w - 2 * padding + output_padding);
+        const float * bias = has(name + ".bias") ? vector(name + ".bias", size_t(oc)) : nullptr;
+        ggml_tensor * kernel = tensor(name + ".weight");
+        require(kernel->type == GGML_TYPE_F32 && ggml_n_dims(kernel) == 4, "transposed kernel must be F32 4D");
+        OpGraph graph;
+        ggml_tensor * input = ggml_new_tensor_4d(graph.ctx, GGML_TYPE_F32, x.w, x.h, x.c, 1);
+        ggml_set_input(input);
+        ggml_tensor * y = ggml_conv_transpose_2d_p0(graph.ctx, kernel, input, stride);
+        require(y->ne[0] == raw_w && y->ne[1] == raw_h && y->ne[2] == oc, "transposed convolution output differs");
+        graph.allocate(y);
+        ggml_backend_tensor_set(input, x.v.data(), 0, x.v.size() * sizeof(float));
+        require(ggml_backend_graph_compute(backend, graph.graph) == GGML_STATUS_SUCCESS, "CPU operator failed");
+        std::vector<float> row(size_t(out.w), 0.0f);
+        for (int ch = 0; ch < oc; ++ch)
+            for (int oy = 0; oy < out.h; ++oy) {
+                const size_t offset = (size_t(ch) * raw_h + oy + padding) * raw_w + padding;
+                ggml_backend_tensor_get(y, row.data(), offset * sizeof(float), row.size() * sizeof(float));
+                for (int ox = 0; ox < out.w; ++ox) out.at(ch, oy, ox) = row[size_t(ox)] + (bias ? bias[ch] : 0.0f);
+            }
+        return out;
+    }
+
+    Tensor batch_norm(const std::string & name, const Tensor & x) const override {
+        // Engine::batch_norm, eps 1e-5, identical expression order.
+        constexpr float eps = 1e-5f;
+        const size_t c = size_t(x.c);
+        const float *scale = vector(name + ".weight", c), *bias = vector(name + ".bias", c),
+                    *mean = vector(name + ".running_mean", c), *variance = vector(name + ".running_var", c);
+        Tensor out(x.c, x.h, x.w);
+        for (int ch = 0; ch < x.c; ++ch) {
+            require(variance[ch] >= 0, "negative BatchNorm variance");
+            const float factor = scale[ch] / std::sqrt(variance[ch] + eps);
+            for (size_t p = 0; p < x.spatial(); ++p)
+                out.v[size_t(ch) * x.spatial() + p] =
+                    (x.v[size_t(ch) * x.spatial() + p] - mean[ch]) * factor + bias[ch];
+        }
+        return out;
+    }
+};
+
+bool quantized_file(const std::string & path) {
+    std::unique_ptr<gguf_context, decltype(&core_gguf::free_metadata)> meta(core_gguf::open_metadata(path.c_str()),
+                                                                            &core_gguf::free_metadata);
+    require(bool(meta), "cannot read GGUF metadata");
+    return core_gguf::kv_str(meta.get(), "lama.quantization.policy", "") == "lama-v2";
+}
 } // namespace
 
 struct context {
-    std::unique_ptr<Engine> engine;
+    std::unique_ptr<Ops> engine;
     std::atomic_flag busy = ATOMIC_FLAG_INIT;
 #ifdef CRISPEMBED_LAMA_TESTING
     Observer observer = nullptr;
@@ -166,25 +509,25 @@ struct Features {
     Tensor local, global;
 };
 
-Tensor reflected_conv(Engine & engine, const std::string & name, const Tensor & input, int stride, int padding) {
-    return engine.conv(name, padding ? detail::reflect_pad(input, padding) : input, stride, 0);
+Tensor reflected_conv(Ops & engine, const std::string & name, const Tensor & input, int stride, int padding) {
+    return engine.conv(name, padding ? detail::reflect_pad(input, padding) : input, stride);
 }
 
 Tensor spectral(context & model, const std::string & name, const Tensor & input) {
-    Engine & engine = *model.engine;
-    Tensor x = relu(engine.batch_norm(name + ".conv1.1", engine.conv(name + ".conv1.0", input)));
+    Ops & engine = *model.engine;
+    Tensor x = relu(engine.batch_norm(name + ".conv1.1", engine.conv(name + ".conv1.0", input, 1)));
     Tensor packed = detail::rfft2_ortho(x);
     model.mark(name + ".fu.rfft", packed);
-    packed = relu(engine.batch_norm(name + ".fu.bn", engine.conv(name + ".fu.conv_layer", packed)));
+    packed = relu(engine.batch_norm(name + ".fu.bn", engine.conv(name + ".fu.conv_layer", packed, 1)));
     model.mark(name + ".fu.spectral", packed);
     Tensor frequency = detail::irfft2_ortho(packed, x.w);
     model.mark(name + ".fu.irfft", frequency);
     // The pinned Big-LaMa config disables LFU and all spatial rescaling.
-    return engine.conv(name + ".conv2", latent_inpaint::add(x, frequency));
+    return engine.conv(name + ".conv2", latent_inpaint::add(x, frequency), 1);
 }
 
 Features ffc(context & model, const std::string & name, const Features & input, int stride, int padding) {
-    Engine & engine = *model.engine;
+    Ops & engine = *model.engine;
     const std::string prefix = name + ".ffc";
     Features result;
     result.local = reflected_conv(engine, prefix + ".convl2l", input.local, stride, padding);
@@ -237,11 +580,11 @@ Tensor forward(context & model, const Tensor & input) {
     Tensor x = latent_inpaint::concat(features.local, features.global);
     model.mark("generator.model.23", x);
     for (int block : { 24, 27, 30 }) {
-        x = model.engine->conv_transpose("generator.model." + std::to_string(block), x, 2, 1, 1);
+        x = model.engine->conv_transpose("generator.model." + std::to_string(block), x);
         x = relu(model.engine->batch_norm("generator.model." + std::to_string(block + 1), x));
         model.mark("generator.model." + std::to_string(block + 2), x);
     }
-    x = model.engine->conv("generator.model.34", detail::reflect_pad(x, 3));
+    x = model.engine->conv("generator.model.34", detail::reflect_pad(x, 3), 1);
     for (float & value : x.v) value = 1.0f / (1.0f + std::exp(-value));
     require(latent_inpaint::finite(x), "nonfinite generated RGB");
     model.mark("prediction", x);
@@ -264,7 +607,10 @@ context * init(const std::string & path, const std::string & expected_gguf_sha25
         require(threads >= 1 && threads <= 64, "thread count must be in[1,64]");
         validate_model(path, expected_gguf_sha256);
         auto model = std::make_unique<context>();
-        model->engine = std::make_unique<Engine>(path.c_str(), threads, detail::schema());
+        if (quantized_file(path) || core_env::on("CRISPEMBED_LAMA_STORED_OPS"))
+            model->engine = std::make_unique<StoredOps>(path, threads);
+        else
+            model->engine = std::make_unique<EngineOps>(path, threads);
         return model.release();
     } catch (const std::exception & exception) {
         error = exception.what();
