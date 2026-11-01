@@ -40,7 +40,15 @@ int execute(int argc, char ** argv) {
         const std::string a = argv[i];
         if (a == "--dump-dir" && i + 1 < argc)
             state.dir = argv[++i];
-        else if (a == "--skip-large") {
+        else if (a == "--only" && i + 1 < argc) {
+            // Comma-separated stage names to keep (default: all observed stages).
+            const std::string list = argv[++i];
+            for (size_t p = 0; p <= list.size();) {
+                const size_t q = std::min(list.find(',', p), list.size());
+                if (q > p) state.only.insert(list.substr(p, q - p));
+                p = q + 1;
+            }
+        } else if (a == "--skip-large") {
             // The visual logits/probs are 65532 x tokens each (hundreds of MB).
             state.skip = { "visual.logits", "visual.probs" };
         } else
