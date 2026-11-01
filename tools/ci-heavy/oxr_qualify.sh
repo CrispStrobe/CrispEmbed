@@ -26,7 +26,7 @@ while [[ "${1:-}" == large=* || "${1:-}" == novisf16=* || "${1:-}" == vision=* ]
         vision=*) QENV+=(CRISPEMBED_QUANTIZE_OXR_VISION=${1#vision=}) ;; esac
     shift
 done
-case "$DTYPE" in f32 | f16 | q8_0 | q4_k) ;; *) echo "unsupported dtype $DTYPE"; exit 2 ;; esac
+case "$DTYPE" in f32 | f16 | q8_0 | q6_k | q5_k | q4_k) ;; *) echo "unsupported dtype $DTYPE"; exit 2 ;; esac
 CASES=${*:-"formula table receipt german japanese"}
 export CRISPEMBED_OXR=1 CRISPEMBED_ACCEPT_OXR_LICENSE=1 CRISPEMBED_OXR_FORCE_CPU=1 \
     OMP_NUM_THREADS=4 MKL_NUM_THREADS=4 OPENBLAS_NUM_THREADS=4
