@@ -777,6 +777,15 @@ MODELS = {
         "desc": "Transcoda OMR; encoder fine-tuned from ConvNeXt V2 ImageNet weights (CC-BY-NC). Non-commercial.",
         "publish_files": [],
     },
+    "MinerU2.5-Pro-2604-1.2B": {  # license lineage only; published by tools/ci-heavy/ocr_gguf_publish.py
+        "base_model": "opendatalab/MinerU2.5-Pro-2604-1.2B",
+        "arch": "Qwen2-VL-style vision tower + Qwen2 decoder (MinerU2.5-Pro two-step document parser)",
+        "dim": 896, "layers": 24, "params": "1.2B", "pooling": "n/a (OCR)", "tokenizer": "Qwen2 BPE",
+        "license": "apache-2.0",
+        "langs": [],
+        "desc": "MinerU2.5-Pro-2604 document parsing; registry mineru25-pro-f16 / -q8_0.",
+        "publish_files": [],
+    },
     "TeleOCR": {
         "base_model": "Qwen/Qwen2.5-VL-3B-Instruct",
         "arch": "Qwen2.5-VL vision tower (from Qwen2.5-VL-3B) + Qwen3-0.6B-style decoder",
