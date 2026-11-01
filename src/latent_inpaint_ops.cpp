@@ -3,6 +3,7 @@
 #include "core/cpu_ops.h"
 #include "core/ggml_cpu_backend.h"
 #include "core/gguf_loader.h"
+#include "inpaint_weights.h"
 #include "ggml-alloc.h"
 
 #include <algorithm>
@@ -61,12 +62,16 @@ Tensor::Tensor(int channels, int height, int width) : c(channels), h(height), w(
 struct Engine::Impl {
     ggml_backend_t backend = nullptr;
     core_gguf::WeightLoad loaded;
+    // inpaint-v1 precision variants only: dequantized copies (default) or
+    // stored F16/block matrices consumed by mul_mat (QUANT_MATMUL gate).
+    std::unique_ptr<inpaint_weights::Converted> converted;
     std::unordered_map<std::string, Weight> views;
 #ifdef CRISPEMBED_LATENT_INPAINT_TESTING
     Observer observer = nullptr;
     void * opaque = nullptr;
 #endif
     ~Impl() {
+        converted.reset();
         core_gguf::free_weights(loaded);
         if (backend) ggml_backend_free(backend);
     }
@@ -81,6 +86,10 @@ Engine::Engine(const char * path, int threads, const ShapeMap & schema) : impl_(
                                                                             &core_gguf::free_metadata);
     require(bool(meta), "cannot read GGUF metadata");
     require(size_t(gguf_get_n_tensors(meta.get())) == schema.size(), "checkpoint tensor count differs");
+    if (inpaint_weights::is_policy_file(meta.get())) {
+        load_precision_variant(path, threads, schema, meta.get());
+        return;
+    }
     size_t total_elements = 0;
     for (const auto & item : schema) {
         const int64_t id = gguf_find_tensor(meta.get(), item.first.c_str());
@@ -119,6 +128,42 @@ Engine::Engine(const char * path, int threads, const ShapeMap & schema) : impl_(
     }
 }
 
+void Engine::load_precision_variant(const char * path, int threads, const ShapeMap & schema, gguf_context * meta) {
+    inpaint_weights::ShapeMap expected;
+    for (const auto & item : schema) {
+        const auto & shape = item.second;
+        require(!shape.empty() && shape.size() <= 4, "invalid source schema rank");
+        inpaint_weights::Shape ne{ 1, 1, 1, 1 };
+        for (size_t i = 0; i < shape.size(); ++i) ne[shape.size() - i - 1] = shape[i];
+        expected.emplace(item.first, ne);
+    }
+    std::string error;
+    require(inpaint_weights::validate(meta, expected, "latent inpaint", error), error);
+    impl_->backend = core_cpu_backend::init();
+    require(impl_->backend != nullptr, "CPU backend unavailable");
+    core_cpu_backend::set_n_threads(impl_->backend, threads);
+    impl_->converted.reset(new inpaint_weights::Converted);
+    inpaint_weights::Stats stats;
+    require(inpaint_weights::load(path, meta, impl_->backend, expected, inpaint_weights::matmul_gate(),
+                                  "latent inpaint", impl_->loaded, *impl_->converted, stats, error),
+            error);
+    for (const auto & item : schema) {
+        ggml_tensor * tensor = impl_->loaded.tensors.at(item.first);
+        require(tensor->data != nullptr, "CPU weight storage unavailable");
+        const bool stored = tensor->type != GGML_TYPE_F32;
+        // Direct float readers (embeddings, relative positions, depthwise and
+        // normalization vectors) must be F32; only conv(groups=1)/linear
+        // matrices may stay stored for the gated mul_mat path.
+        require(!stored || ((item.second.size() == 2 || (item.second.size() == 4 && item.second[1] > 1)) &&
+                            item.first.find("rel_pos_emb") == std::string::npos &&
+                            item.first.find("embedding_layer") == std::string::npos),
+                "stored precision tensor has a direct float consumer: " + item.first);
+        impl_->views.emplace(item.first,
+                             Weight{ item.second, stored ? nullptr : static_cast<const float *>(tensor->data),
+                                     size_t(ggml_nelements(tensor)) });
+    }
+}
+
 Engine::~Engine() = default;
 const Weight & Engine::weight(const std::string & name) const {
     const auto found = impl_->views.find(name);
@@ -145,8 +190,11 @@ Tensor Engine::conv(const std::string & name, const Tensor & x, int stride, int 
     const Weight * bias = has(name + ".bias") ? &weight(name + ".bias") : nullptr;
     require(!bias || bias->size == size_t(oc), "convolution bias shape differs");
     ggml_tensor * kernel = impl_->loaded.tensors.at(name + ".weight");
+    const bool stored = kernel->type != GGML_TYPE_F32;
+    require(!stored || groups == 1, "stored precision kernel requires groups=1: " + name);
 
     if (groups == x.c && oc == x.c) {
+        require(!stored, "depthwise kernel must be F32: " + name);
         // Reuse the same direct F32 depthwise ggml operator as MI-GAN. Unlike
         // legacy depthwise im2col this does not round activations to F16.
         Graph graph;
@@ -171,10 +219,12 @@ Tensor Engine::conv(const std::string & name, const Tensor & x, int stride, int 
             ggml_tensor * input = ggml_new_tensor_2d(graph.ctx, GGML_TYPE_F32, int64_t(inner), int64_t(tile));
             ggml_set_input(input);
             ggml_tensor * flat = ggml_reshape_2d(graph.ctx, kernel, int64_t(inner), oc);
-            ggml_tensor * slice = ggml_view_2d(graph.ctx, flat, int64_t(inner), ocg, inner * sizeof(float),
-                                               size_t(group) * ocg * inner * sizeof(float));
-            // [K,pixels] x [K,output] -> [pixels,output], already CHW.
-            ggml_tensor * y = ggml_mul_mat(graph.ctx, input, slice);
+            ggml_tensor * slice = stored ? flat
+                                         : ggml_view_2d(graph.ctx, flat, int64_t(inner), ocg, inner * sizeof(float),
+                                                        size_t(group) * ocg * inner * sizeof(float));
+            // F32: [K,pixels] x [K,output] -> [pixels,output], already CHW.
+            // Stored (gated): [K,output] x [K,pixels] -> [output,pixels].
+            ggml_tensor * y = stored ? ggml_mul_mat(graph.ctx, slice, input) : ggml_mul_mat(graph.ctx, input, slice);
             ggml_mul_mat_set_prec(y, GGML_PREC_F32);
             graph.allocate(y);
             for (size_t start = 0; start < out.spatial(); start += tile) {
@@ -196,9 +246,15 @@ Tensor Engine::conv(const std::string & name, const Tensor & x, int stride, int 
                 ggml_backend_tensor_set(input, patches.data(), 0, patches.size() * sizeof(float));
                 impl_->compute(graph);
                 ggml_backend_tensor_get(y, product.data(), 0, product.size() * sizeof(float));
-                for (int ch = 0; ch < ocg; ++ch)
-                    std::copy_n(product.data() + size_t(ch) * tile, used,
-                                out.v.data() + size_t(group * ocg + ch) * out.spatial() + start);
+                if (stored) {
+                    for (size_t p = 0; p < used; ++p)
+                        for (int ch = 0; ch < ocg; ++ch)
+                            out.v[size_t(ch) * out.spatial() + start + p] = product[p * size_t(ocg) + ch];
+                } else {
+                    for (int ch = 0; ch < ocg; ++ch)
+                        std::copy_n(product.data() + size_t(ch) * tile, used,
+                                    out.v.data() + size_t(group * ocg + ch) * out.spatial() + start);
+                }
             }
         }
     }
@@ -247,7 +303,9 @@ Tensor Engine::linear(const std::string & name, const Tensor & x, bool use_bias)
     Tensor out(oc, x.h, x.w);
     const Weight * bias = use_bias && has(name + ".bias") ? &weight(name + ".bias") : nullptr;
     require(!bias || bias->size == size_t(oc), "linear bias shape differs");
-    if (x.spatial() == 1) {
+    ggml_tensor * matrix = impl_->loaded.tensors.at(name + ".weight");
+    const bool stored = matrix->type != GGML_TYPE_F32;
+    if (x.spatial() == 1 && !stored) {
         core_cpu::linear_cpu(x.v.data(), out.v.data(), x.c, oc, wt.data, bias ? bias->data : nullptr);
     } else {
         const size_t tile = std::min({ x.spatial(), size_t(4096), patch_budget_elements / size_t(x.c) });
@@ -255,7 +313,7 @@ Tensor Engine::linear(const std::string & name, const Tensor & x, bool use_bias)
         Graph graph;
         ggml_tensor * input = ggml_new_tensor_2d(graph.ctx, GGML_TYPE_F32, x.c, int64_t(tile));
         ggml_set_input(input);
-        ggml_tensor * y = ggml_mul_mat(graph.ctx, input, impl_->loaded.tensors.at(name + ".weight"));
+        ggml_tensor * y = stored ? ggml_mul_mat(graph.ctx, matrix, input) : ggml_mul_mat(graph.ctx, input, matrix);
         ggml_mul_mat_set_prec(y, GGML_PREC_F32);
         graph.allocate(y);
         for (size_t start = 0; start < x.spatial(); start += tile) {
@@ -269,7 +327,8 @@ Tensor Engine::linear(const std::string & name, const Tensor & x, bool use_bias)
             for (int ch = 0; ch < oc; ++ch)
                 for (size_t p = 0; p < used; ++p)
                     out.v[size_t(ch) * out.spatial() + start + p] =
-                        result[size_t(ch) * tile + p] + (bias ? bias->data[ch] : 0.0f);
+                        (stored ? result[p * size_t(oc) + ch] : result[size_t(ch) * tile + p]) +
+                        (bias ? bias->data[ch] : 0.0f);
         }
     }
     return out;

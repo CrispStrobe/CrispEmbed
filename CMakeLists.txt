@@ -1052,10 +1052,15 @@ target_link_libraries(test-sam2-diff PRIVATE crispembed-sam2)
 
 # Fixed-256/512 MI-GAN CPU/F32 graph. The opt-in CLI links the ordinary archive;
 # reference observers remain confined to the separate validation archive.
+# Shared inpaint-v1 precision-variant loader (gated; F32 files bypass it).
+add_library(crispembed-inpaint-weights STATIC EXCLUDE_FROM_ALL src/inpaint_weights.cpp)
+target_include_directories(crispembed-inpaint-weights PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+crispembed_apply_arch_flags(crispembed-inpaint-weights)
+target_link_libraries(crispembed-inpaint-weights PUBLIC crispembed-core ggml ggml-base ggml-cpu)
 add_library(crispembed-migan STATIC EXCLUDE_FROM_ALL src/migan.cpp)
 target_include_directories(crispembed-migan PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 crispembed_apply_arch_flags(crispembed-migan)
-target_link_libraries(crispembed-migan PUBLIC crispembed-core ggml ggml-base ggml-cpu)
+target_link_libraries(crispembed-migan PUBLIC crispembed-inpaint-weights crispembed-core ggml ggml-base ggml-cpu)
 
 # Issue 71: native-resolution tiling around the unchanged MI-GAN graph.
 # This internal CLI library adds no shared-library ABI or model registry alias.
@@ -1081,7 +1086,7 @@ add_library(crispembed-migan-test STATIC EXCLUDE_FROM_ALL src/migan.cpp)
 target_include_directories(crispembed-migan-test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_compile_definitions(crispembed-migan-test PRIVATE CRISPEMBED_MIGAN_TESTING)
 crispembed_apply_arch_flags(crispembed-migan-test)
-target_link_libraries(crispembed-migan-test PUBLIC crispembed-core ggml ggml-base ggml-cpu)
+target_link_libraries(crispembed-migan-test PUBLIC crispembed-inpaint-weights crispembed-core ggml ggml-base ggml-cpu)
 add_executable(test-migan-diff EXCLUDE_FROM_ALL tests/test_migan_diff.cpp)
 target_link_libraries(test-migan-diff PRIVATE crispembed-migan-test)
 add_executable(test-migan512-diff EXCLUDE_FROM_ALL tests/test_migan512_diff.cpp)

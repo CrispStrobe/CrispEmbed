@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 
+struct gguf_context;
+
 namespace latent_inpaint {
 
 struct Tensor {
@@ -56,6 +58,7 @@ public:
     void set_observer(Observer callback, void * opaque);
 #endif
 private:
+    void load_precision_variant(const char * path, int threads, const ShapeMap & schema, gguf_context * meta);
     struct Impl;
     std::unique_ptr<Impl> impl_;
 };

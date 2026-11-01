@@ -9,6 +9,7 @@
 #include "core/env_gate.h"
 #include "core/ggml_cpu_backend.h"
 #include "core/gguf_loader.h"
+#include "inpaint_weights.h"
 #include "ggml-alloc.h"
 
 #ifdef CRISPEMBED_MIGAN_TESTING
@@ -31,7 +32,13 @@ struct context {
     int resolution = image_size;
     ggml_backend_t backend = nullptr;
     core_gguf::WeightLoad weights;
+    // inpaint-v1 precision variants only (CRISPEMBED_INPAINT_QUANT=1): the
+    // dequantized F32 copies, and whether 1x1 kernels stay stored for matmul.
+    std::unique_ptr<inpaint_weights::Converted> converted;
+    inpaint_weights::Stats precision;
+    bool quant_matmul = false;
     ~context() {
+        converted.reset();
         core_gguf::free_weights(weights);
         if (backend) ggml_backend_free(backend);
     }
@@ -109,7 +116,7 @@ bool metadata_valid(gguf_context * meta, const char * expected_digest, int resol
     if (!digest_valid(expected_digest)) return fail(error, "a reviewed lowercase checkpoint SHA-256 is required");
     if (core_gguf::kv_str(meta, "general.architecture", "") != "migan" ||
         core_gguf::kv_str(meta, "general.license", "") != "MIT" ||
-        core_gguf::kv_u32(meta, "general.file_type", UINT32_MAX) != 0 ||
+        (core_gguf::kv_u32(meta, "general.file_type", UINT32_MAX) != 0 && !inpaint_weights::is_policy_file(meta)) ||
         core_gguf::kv_u32(meta, "migan.image_size", 0) != uint32_t(resolution) ||
         core_gguf::kv_str(meta, "migan.source.commit", "") != source_commit ||
         core_gguf::kv_str(meta, "migan.checkpoint.sha256", "") != expected_digest ||
@@ -123,6 +130,9 @@ bool metadata_valid(gguf_context * meta, const char * expected_digest, int resol
     const size_t count = resolution == 256 ? 154 : 177;
     if (expected.size() != count || gguf_get_n_tensors(meta) != int64_t(count))
         return fail(error, "MI-GAN requires exactly " + std::to_string(count) + " original state tensors");
+    // Precision variants: every tensor is F32 original-shape or a natural-row
+    // stored matrix (gated); the F32 profile keeps its exact original check.
+    if (inpaint_weights::is_policy_file(meta)) return inpaint_weights::validate(meta, expected, "MI-GAN", error);
     for (const auto & entry : expected) {
         const int64_t id = gguf_find_tensor(meta, entry.first.c_str());
         if (id < 0 || gguf_get_tensor_type(meta, id) != GGML_TYPE_F32)
@@ -185,7 +195,18 @@ struct graph_builder {
                               bool bias) {
         ggml_tensor * kernel = weight(name + ".weight");
         ggml_tensor * y;
-        if (depthwise) {
+        if (kernel->type != GGML_TYPE_F32) {
+            // CRISPEMBED_INPAINT_QUANT_MATMUL: a stored [IC,OC] 1x1 kernel is
+            // consumed directly. [W,H,C] -> [C,W*H] rows, product, and back.
+            if (depthwise || stride != 1 || pad != 0 || ggml_n_dims(kernel) != 2 || kernel->ne[0] != x->ne[2])
+                throw std::runtime_error("MI-GAN stored kernel is not a pointwise matmul: " + name);
+            const int64_t width = x->ne[0], height = x->ne[1], channels = x->ne[2];
+            ggml_tensor * rows =
+                ggml_cont(ctx, ggml_transpose(ctx, ggml_reshape_2d(ctx, ggml_cont(ctx, x), width * height, channels)));
+            ggml_tensor * product = ggml_mul_mat(ctx, kernel, rows);
+            ggml_mul_mat_set_prec(product, GGML_PREC_F32);
+            y = ggml_reshape_4d(ctx, ggml_cont(ctx, ggml_transpose(ctx, product)), width, height, kernel->ne[1], 1);
+        } else if (depthwise) {
             // Pinned CPU direct depthwise uses F32 source, F32 weight and F32
             // accumulation. WHCN stays contiguous; no F16 im2col temporary.
             y = ggml_conv_2d_dw_direct(ctx, kernel, x, stride, stride, pad, pad, 1, 1);
@@ -343,9 +364,9 @@ context * init_variant(const char * path, const char * expected_checkpoint_sha25
         fail(error, "MI-GAN cannot open GGUF metadata");
         return nullptr;
     }
-    const bool valid = metadata_valid(meta, expected_checkpoint_sha256, resolution, error);
-    core_gguf::free_metadata(meta);
-    if (!valid) return nullptr;
+    std::unique_ptr<gguf_context, decltype(&core_gguf::free_metadata)> meta_owner(meta, &core_gguf::free_metadata);
+    if (!metadata_valid(meta, expected_checkpoint_sha256, resolution, error)) return nullptr;
+    const bool precision_variant = inpaint_weights::is_policy_file(meta);
     try {
         std::unique_ptr<context> ctx(new context);
         ctx->resolution = resolution;
@@ -355,14 +376,29 @@ context * init_variant(const char * path, const char * expected_checkpoint_sha25
             return nullptr;
         }
         core_cpu_backend::set_n_threads(ctx->backend, n_threads);
-        if (!core_gguf::load_weights(path, ctx->backend, "migan", ctx->weights)) {
+        if (precision_variant) {
+            ctx->converted.reset(new inpaint_weights::Converted);
+            ctx->quant_matmul = inpaint_weights::matmul_gate();
+            if (!inpaint_weights::load(path, meta, ctx->backend, expected_schema(resolution), ctx->quant_matmul,
+                                       "MI-GAN", ctx->weights, *ctx->converted, ctx->precision, error))
+                return nullptr;
+        } else if (!core_gguf::load_weights(path, ctx->backend, "migan", ctx->weights)) {
             fail(error, "MI-GAN weight load failed");
             return nullptr;
         }
+        meta_owner.reset();
         std::vector<float> values;
+        std::vector<uint8_t> stored;
         for (const auto & entry : ctx->weights.tensors) {
             values.resize(ggml_nelements(entry.second));
-            ggml_backend_tensor_get(entry.second, values.data(), 0, values.size() * sizeof(float));
+            if (entry.second->type == GGML_TYPE_F32) {
+                ggml_backend_tensor_get(entry.second, values.data(), 0, values.size() * sizeof(float));
+            } else {
+                stored.resize(ggml_nbytes(entry.second));
+                ggml_backend_tensor_get(entry.second, stored.data(), 0, stored.size());
+                ggml_get_type_traits(entry.second->type)
+                    ->to_float(stored.data(), values.data(), int64_t(values.size()));
+            }
             for (float value : values)
                 if (!std::isfinite(value)) {
                     fail(error, "MI-GAN nonfinite checkpoint state: " + entry.first);

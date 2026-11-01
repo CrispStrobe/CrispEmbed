@@ -82,17 +82,30 @@ step native-controls bash -c "'$BIN/test-migan512-diff' --contracts && '$BIN/tes
 
 export CRISPEMBED_MIGAN=1 CRISPEMBED_MIGAN512=1
 declare -A FILES=([f32]=$GGUF)
+ARMS=(f32)
 for q in "${QUANTS[@]}"; do
     FILES[$q]=$S/migan-512-places2-$q.gguf
-    step "quantize-$q" "$BIN/crispembed-quantize" "$GGUF" "${FILES[$q]}" "$q" || unset "FILES[$q]"
+    if step "quantize-$q" "$BIN/crispembed-quantize" "$GGUF" "${FILES[$q]}" "$q"; then
+        # Two arms per file: dequantize-at-load (default) and the gated
+        # stored-type 1x1 matmul.
+        FILES[$q-mm]=${FILES[$q]}
+        ARMS+=("$q" "$q-mm")
+    fi
 done
 CASES="subtitle_bar edge_touch empty full center one_pixel checkerboard thin_strip"
-for v in f32 "${QUANTS[@]}"; do
-    [ -n "${FILES[$v]:-}" ] || continue
+python - "$S/original512/subtitle_bar" "$S/cli" <<'EOF'
+import sys
+from pathlib import Path
+from PIL import Image
+src, out = Path(sys.argv[1]), Path(sys.argv[2]); out.mkdir(exist_ok=True)
+Image.frombytes("RGB", (512, 512), (src / "input.rgb8").read_bytes()).save(out / "input.png")
+Image.frombytes("L", (512, 512), (src / "fill-mask.u8").read_bytes()).save(out / "mask.png")
+EOF
+for v in "${ARMS[@]}"; do
     f=${FILES[$v]}; fsha=$(sha256sum "$f" | cut -d' ' -f1)
     echo "{\"variant\":\"$v\",\"bytes\":$(stat -c %s "$f"),\"sha256\":\"$fsha\"}" >> "$OUT/variants.jsonl"
-    env_extra=()
-    [ "$v" = f32 ] || env_extra=(CRISPEMBED_INPAINT_QUANT=1)
+    env_extra=(CRISPEMBED_ARM="$v")
+    case $v in f32) ;; *-mm) env_extra+=(CRISPEMBED_INPAINT_QUANT=1 CRISPEMBED_INPAINT_QUANT_MATMUL=1) ;; *) env_extra+=(CRISPEMBED_INPAINT_QUANT=1) ;; esac
     for c in $CASES; do
         R=$S/original512/$c
         # The frozen comparator: F32 gates are unchanged for every variant.
@@ -103,22 +116,12 @@ for v in f32 "${QUANTS[@]}"; do
         grep -E "MIGAN512_(SUMMARY|IMAGE)" "$OUT/native-$v-$c.log" | sed "s/^/$v $c rc=$rc /" >> "$OUT/native-summary.txt"
         grep -E "Maximum resident|Elapsed" "$OUT/native-$v-$c.log" | sed "s/^/$v $c /" >> "$OUT/native-resources.txt"
     done
-    if [ "$v" = f32 ]; then
-        # Real CLI on the subtitle fixture, 512 engine.
-        python - "$S/original512/subtitle_bar" "$S/cli" <<'EOF'
-import sys
-from pathlib import Path
-from PIL import Image
-src, out = Path(sys.argv[1]), Path(sys.argv[2]); out.mkdir(exist_ok=True)
-Image.frombytes("RGB", (512, 512), (src / "input.rgb8").read_bytes()).save(out / "input.png")
-Image.frombytes("L", (512, 512), (src / "fill-mask.u8").read_bytes()).save(out / "mask.png")
-EOF
-        step cli-f32 "$BIN/crispembed" --inpaint-engine migan512 --inpaint-model "$f" --inpaint-model-sha256 "$fsha" \
-            --inpaint-checkpoint-sha256 "$SHA" --inpaint "$S/cli/input.png" --mask "$S/cli/mask.png" \
-            --inpaint-output "$OUT/cli-f32-subtitle_bar.png" --threads 4
-    fi
+    # Real CLI on the subtitle fixture, 512 engine, every arm.
+    step "cli-$v" env "${env_extra[@]}" /usr/bin/time -v "$BIN/crispembed" --inpaint-engine migan512 --inpaint-model "$f" \
+        --inpaint-model-sha256 "$fsha" --inpaint-checkpoint-sha256 "$SHA" --inpaint "$S/cli/input.png" \
+        --mask "$S/cli/mask.png" --inpaint-output "$OUT/cli-$v-subtitle_bar.png" --threads 4
 done
-python - "$S" "$OUT" "${!FILES[@]}" <<'EOF'
+python - "$S" "$OUT" "${ARMS[@]}" <<'EOF'
 import json, sys
 from pathlib import Path
 S, OUT, variants = Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3:]
@@ -134,25 +137,11 @@ for c in "subtitle_bar edge_touch empty full center one_pixel checkerboard thin_
 EOF
 step score python tools/inpaint_precision_score.py table "$OUT/score-spec.json" "$OUT/precision-score.json"
 mkdir -p "$OUT/images"
-for v in "${!FILES[@]}"; do cp "$S/native-$v/subtitle_bar/composited.rgb8" "$OUT/images/$v-subtitle_bar.rgb8" 2>/dev/null; done
+for v in "${ARMS[@]}"; do cp "$S/native-$v/subtitle_bar/composited.rgb8" "$OUT/images/$v-subtitle_bar.rgb8" 2>/dev/null; done
 cp "$S/original512/subtitle_bar/composited.png" "$OUT/images/original-subtitle_bar.png" 2>/dev/null
-if [ -n "${HF_TOKEN:-}" ]; then
-    step hf-preserve python - "$CKPT" "$OUT" "${FILES[@]}" <<'EOF'
-import sys
-from pathlib import Path
-from huggingface_hub import HfApi
-api = HfApi()
-repo = "cstr/crispembed-migan512-private"
-info = api.model_info(repo)
-if not info.private:
-    raise SystemExit("refusing: repo is not private")
-ckpt, out, files = Path(sys.argv[1]), Path(sys.argv[2]), [Path(p) for p in sys.argv[3:]]
-for p in [ckpt, *files, out / "conversion-receipt.json", out / "checkpoint-identity.json", out / "original-report.json"]:
-    api.upload_file(path_or_fileobj=str(p), path_in_repo=p.name, repo_id=repo)
-    print("uploaded", p.name)
-for p in (out / "licenses").iterdir():
-    api.upload_file(path_or_fileobj=str(p), path_in_repo="licenses/" + p.name, repo_id=repo)
-EOF
-fi
+# GGUF files are retained as a run artifact for operator-side private
+# preservation (the repository HF_TOKEN secret cannot write that repo).
+mkdir -p "$OUT/gguf"
+for q in f32 "${QUANTS[@]}"; do [ -f "${FILES[$q]:-}" ] && cp "${FILES[$q]}" "$OUT/gguf/"; done
 cat "$OUT/native-summary.txt" >> "$OUT/summary.md" 2>/dev/null
 exit $failed

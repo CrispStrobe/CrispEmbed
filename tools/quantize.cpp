@@ -241,6 +241,59 @@ static LamaPlan lama_tensor_plan(const std::string & name, const ggml_tensor * t
     return plan;
 }
 
+
+// Issue-71 inpainting families (general.architecture "migan", "moebius",
+// "pixelhacker", "sdxl_vae"), policy "inpaint-v1". Loader: src/inpaint_weights.cpp
+// (CRISPEMBED_INPAINT_QUANT=1). Every tensor is either F32 in its original
+// shape or a 2D natural-row matrix: [IC*KH*KW, OC] for a conv (a pure reshape
+// of the contiguous OIHW bytes, one output channel per row, exactly the
+// im2col/mul_mat layout) or [IN, OUT] for a linear. Natural rows let the
+// gated CRISPEMBED_INPAINT_QUANT_MATMUL path consume the stored matrix
+// directly; by default the loader dequantizes to F32 at load.
+//   * F32-pinned: vectors (bias/norm/BN/scalars), depthwise and other
+//     one-input-channel-per-group kernels (direct F32 consumers), fixed
+//     buffers (MI-GAN noise/filter constants), embeddings and relative
+//     position tables read as floats, and the first/last pixel/latent convs.
+//   * Everything else: the requested type, falling back along the K-quant
+//     chain (Q4_K->Q4_0, Q5_K->Q5_0, Q6_K->Q8_0) when the natural row is not
+//     256-aligned, then to F16 when it is not 32-aligned.
+// The family path runs before the generic name guards: those would, e.g.,
+// copy PixelHacker's "downsamplers" 3x3 kernels after a header flatten.
+static bool inpaint_family(const std::string & arch) {
+    return arch == "migan" || arch == "moebius" || arch == "pixelhacker" || arch == "sdxl_vae";
+}
+
+static bool inpaint_pinned_f32(const std::string & arch, const std::string & name, const ggml_tensor * t) {
+    const bool vector = t->ne[1] == 1 && t->ne[2] == 1 && t->ne[3] == 1;
+    const bool one_input_channel = ggml_n_dims(t) == 4 && t->ne[2] == 1;
+    auto has = [&](const char * part) { return name.find(part) != std::string::npos; };
+    if (vector || one_input_channel || has("rel_pos_emb") || has("embedding_layer") || has("noise_const") ||
+        has("filter_const") || has("noise_strength"))
+        return true;
+    if (arch == "migan") return has(".fromrgb.") || has(".torgb.");
+    if (arch == "sdxl_vae")
+        return has("encoder.conv_in.") || has("encoder.conv_out.") || has("decoder.conv_in.") ||
+               has("decoder.conv_out.") || has("quant_conv.");
+    return name.rfind("diff_model.conv_in.", 0) == 0 || name.rfind("diff_model.conv_out.", 0) == 0;
+}
+
+static LamaPlan inpaint_tensor_plan(const std::string & arch, const std::string & name, const ggml_tensor * t,
+                                    ggml_type requested) {
+    LamaPlan plan; // same {type, stored row width} record as lama-v1
+    if (inpaint_pinned_f32(arch, name, t)) return plan;
+    ggml_type type = requested;
+    for (const auto & rule : g_tensor_types)
+        if (tensor_name_matches(rule.pattern, name)) type = rule.type;
+    if (type == GGML_TYPE_F32) return plan;
+    const int64_t row = ggml_n_dims(t) == 4 ? t->ne[0] * t->ne[1] * t->ne[2] : t->ne[0];
+    if (ggml_n_dims(t) > 4 || ggml_n_dims(t) == 3) return plan;
+    if (row % ggml_blck_size(type) != 0) type = lama_fallback(type);
+    if (row % ggml_blck_size(type) != 0) type = GGML_TYPE_F16;
+    plan.type = type;
+    plan.rows = row;
+    return plan;
+}
+
 static bool quantize_model(const std::string & fname_inp, const std::string & fname_out, ggml_ftype ftype) {
     ggml_type qtype = GGML_TYPE_F32;
 
@@ -355,6 +408,37 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         gguf_set_val_str(ctx_out, "lama.quantization.requested_type", ggml_type_name(qtype));
         fprintf(stderr, "Big-LaMa lama-v1 policy: vectors and first/last conv F32; 1x1 kernels [IC,OC] rows; "
                         "other kernels row-flattened storage, original 4D shape restored at load\n");
+    }
+    const std::string inpaint_arch = arch_key >= 0 ? std::string(gguf_get_val_str(ctx_in, arch_key)) : std::string();
+    const bool is_inpaint = inpaint_family(inpaint_arch);
+    std::map<std::string, LamaPlan> inpaint_plans;
+    if (is_inpaint) {
+        if (qtype == GGML_TYPE_F32) {
+            fprintf(stderr, "inpaint-v1: requested type must be F16 or a quantized type\n");
+            gguf_free(ctx_out);
+            gguf_free(ctx_in);
+            ggml_free(ctx_in_ggml);
+            return false;
+        }
+        for (int i = 0; i < n_tensors; i++) {
+            const char * name = gguf_get_tensor_name(ctx_in, i);
+            const ggml_tensor * t = ggml_get_tensor(ctx_in_ggml, name);
+            if (t->type != GGML_TYPE_F32) {
+                fprintf(stderr, "inpaint-v1: quantize from the F32 conversion (tensor %s is %s)\n", name,
+                        ggml_type_name(t->type));
+                gguf_free(ctx_out);
+                gguf_free(ctx_in);
+                ggml_free(ctx_in_ggml);
+                return false;
+            }
+            inpaint_plans[name] = inpaint_tensor_plan(inpaint_arch, name, t, qtype);
+        }
+        gguf_set_val_str(ctx_out, "inpaint.quantization.policy", "inpaint-v1");
+        gguf_set_val_str(ctx_out, "inpaint.quantization.requested_type", ggml_type_name(qtype));
+        fprintf(stderr,
+                "%s inpaint-v1 policy: vectors, depthwise/one-channel kernels, buffers, embeddings and "
+                "first/last convs F32; other kernels natural-row [IC*KH*KW,OC] / [IN,OUT] storage\n",
+                inpaint_arch.c_str());
     }
     const int family_key = gguf_find_key(ctx_in, "qwen2vl.model_family");
     const bool is_mineru25 =
@@ -471,6 +555,19 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
                 t->nb[2] = t->nb[1] * t->ne[1];
                 t->nb[3] = t->nb[2];
             }
+        } else if (is_inpaint) {
+            const LamaPlan & plan = inpaint_plans.at(name);
+            if (plan.rows > 0) {
+                const int64_t count = ggml_nelements(t);
+                t->ne[0] = plan.rows;
+                t->ne[1] = count / plan.rows;
+                t->ne[2] = 1;
+                t->ne[3] = 1;
+                t->nb[0] = sizeof(float);
+                t->nb[1] = plan.rows * sizeof(float);
+                t->nb[2] = t->nb[1] * t->ne[1];
+                t->nb[3] = t->nb[2];
+            }
         } else if (ggml_n_dims(t) == 4 && t->type == GGML_TYPE_F32 && !is_oxr) {
             // Flatten [KW, KH, IC, OC] → [IC*KH*KW, OC]
             int64_t flat_cols = t->ne[0] * t->ne[1] * t->ne[2];
@@ -522,6 +619,44 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         size_t offset = data_offset_in + gguf_get_tensor_offset(ctx_in, i);
 
         printf("[%3d/%3d] %-45s - %6s, ", i + 1, n_tensors, name, ggml_type_name(type));
+
+        if (is_inpaint) {
+            // Self-contained inpaint-v1 write: F32 source verified above.
+            const LamaPlan & plan = inpaint_plans.at(name);
+            const int64_t nelements = ggml_nelements(t);
+            f32_data.resize(nelements);
+#ifdef _WIN32
+            _fseeki64(fin, (int64_t)offset, SEEK_SET);
+#else
+            fseeko(fin, (off_t)offset, SEEK_SET);
+#endif
+            if (fread(f32_data.data(), sizeof(float), nelements, fin) != (size_t)nelements) {
+                fprintf(stderr, "failed to read f32 data\n");
+                fclose(fin);
+                fclose(fout);
+                return false;
+            }
+            size_t written = size;
+            if (plan.type == GGML_TYPE_F32) {
+                fwrite(f32_data.data(), sizeof(float), nelements, fout);
+                n_kept++;
+                printf("(inpaint-v1 F32) copy %.1f MB\n", size / 1048576.0);
+            } else {
+                q_data.resize(ggml_row_size(plan.type, plan.rows) * (nelements / plan.rows));
+                written = ggml_quantize_chunk(plan.type, f32_data.data(), q_data.data(), 0, nelements / plan.rows,
+                                              plan.rows, nullptr);
+                fwrite(q_data.data(), 1, written, fout);
+                gguf_set_tensor_type(ctx_out, name, plan.type);
+                n_quantized++;
+                printf("(inpaint-v1 %s rows=%lld) %.1f MB -> %.1f MB\n", ggml_type_name(plan.type),
+                       (long long)plan.rows, size / 1048576.0, written / 1048576.0);
+            }
+            const size_t pad = GGML_PAD(written, GGUF_DEFAULT_ALIGNMENT) - written;
+            for (size_t j = 0; j < pad; j++) fputc(0, fout);
+            total_orig += size;
+            total_new += written;
+            continue;
+        }
 
         // Decide whether to quantize this tensor:
         // - Must be F32 or F16 source

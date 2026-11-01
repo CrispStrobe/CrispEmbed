@@ -7,6 +7,7 @@
 #include "core/gguf_loader.h"
 #include "core/sha256.h"
 #include "inpaint.h"
+#include "inpaint_weights.h"
 
 #include <algorithm>
 #include <array>
@@ -53,7 +54,10 @@ void validate_model(const std::string & path, const std::string & sha256, const 
         return index >= 0 && gguf_get_kv_type(meta.get(), index) == GGUF_TYPE_UINT32 &&
                gguf_get_val_u32(meta.get(), index) == expected;
     };
-    require(core_gguf::kv_str(meta.get(), "general.architecture", "") == model && u32_is("general.file_type", 0) &&
+    // general.file_type is 0 for the F32 conversion; an inpaint-v1 precision
+    // variant (crispembed-quantize) is validated tensor-by-tensor in Engine.
+    require(core_gguf::kv_str(meta.get(), "general.architecture", "") == model &&
+                (u32_is("general.file_type", 0) || inpaint_weights::is_policy_file(meta.get())) &&
                 core_gguf::kv_str(meta.get(), "general.license", "") == license(model) &&
                 u32_is("latent_inpaint.schema", 1) &&
                 core_gguf::kv_str(meta.get(), "latent_inpaint.component", "") == component &&
