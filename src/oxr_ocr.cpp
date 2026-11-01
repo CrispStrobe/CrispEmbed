@@ -167,14 +167,14 @@ bool g_f16_half_act = false;
 // their dequantized values to F16).
 bool g_split_f16 = false;
 // Opt-in CRISPEMBED_OXR_DEQUANT_VISION=1: quantized SigLIP2 (vit.*) weights are
-// cast to F16 inside the graph before their product, so the CPU backend does not
+// cast to F32 inside the graph before their product, so the CPU backend does not
 // quantize the vision activations to Q8_0/Q8_K blocks (its vec_dot path). Hosted
 // Q8_0-vision runs collapsed vision.layer.26 to cosine 0.55 on the German page
 // while Metal's F32-activation _hp route kept 0.88 row-min and decoded exactly.
 bool g_dequant_vision = false;
 ggml_tensor * mm(ggml_context * g, ggml_tensor * w, ggml_tensor * x) {
     if (g_dequant_vision && ggml_is_quantized(w->type) && std::strncmp(w->name, "vit.", 4) == 0)
-        w = ggml_cast(g, w, GGML_TYPE_F16);
+        w = ggml_cast(g, w, GGML_TYPE_F32); // CPU dup supports quantized -> F32 only
     if (g_split_f16 && (w->type == GGML_TYPE_F32 || w->type == GGML_TYPE_F16)) return core_split_f16::mul_mat(g, w, x);
     auto * out = ggml_mul_mat(g, w, x);
     if (!(g_f16_half_act && w->type == GGML_TYPE_F16)) ggml_mul_mat_set_prec(out, GGML_PREC_F32);
