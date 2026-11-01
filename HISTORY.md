@@ -14,6 +14,18 @@ yardstick favours native on 55-56/56 stages; API contract and heron identity
 pass; F16 rejected (147 px box on receipt); native 2.6x slower than PyTorch CPU.
 Lineage: no bit-equal public tensors; nearest D-FINE-M Objects365 (cosine 0.95/0.93/0.94).
 
+## 1 November 2026 — OXR-1.0 native F32 decodes the original exactly on five cases
+
+[Receipt](tests/results/oxr/f32-qualification.json): hosted 41251971237 and 41252889926 at
+`0e9060fc` — formula (22 tokens), table (261), Japanese (38), receipt (202) and German page
+(401) decode the pinned original Python model's token IDs, text and EOS exactly with the default
+and reused decode graph; warm native/python 0.50-0.83x. Strict stage budgets stay failed (F32
+rounding at ~2^15 decoder outliers and the last German vision layer; worst cos_min 0.99999988;
+budgets unchanged). Retained initial failures: the reference's config-class identity and
+uninitialised non-persistent buffers under Transformers 5.13.1, native GGUF names over
+GGML_MAX_NAME (vision prefix now `vit.`), and an observer reading a reused buffer. Same-source
+timing differs by runner (1.005-1.67x on 41249502630).
+
 ## 31 October 2026 — Native Marker-style document processing with TeleOCR
 
 The native PDF/image implementation adds optional dynamically loaded PDFium,
