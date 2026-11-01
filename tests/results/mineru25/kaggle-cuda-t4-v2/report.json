@@ -1,0 +1,838 @@
+{
+  "script_version": "mineru25-kaggle-gpu-v2",
+  "commit": "9f3cfa2c39cd5fc069a26ea3c2521165e68703dd",
+  "gpu": "Tesla T4, 7.5\nTesla T4, 7.5",
+  "model": "opendatalab/MinerU2.5-Pro-2604-1.2B",
+  "revision": "d3f5e08d073c21466bbabe21c71bb1e9c2e595da",
+  "max_tokens": 2048,
+  "variants": {
+    "f32": {
+      "returncode": 0,
+      "recipe": [
+        "convert",
+        "f32"
+      ],
+      "bytes": 4630070208,
+      "log_tail": "{\n  \"model\": \"opendatalab/MinerU2.5-Pro-2604-1.2B\",\n  \"expected_revision\": \"d3f5e08d073c21466bbabe21c71bb1e9c2e595da\",\n  \"source_revision\": \"d3f5e08d073c21466bbabe21c71bb1e9c2e595da\",\n  \"source_sha256\": {\n    \"chat_template.jinja\": \"a0bc6f6fc7a29a80017a433e8f03a1cc1236e838a944a2d034295a60c4f2fddb\",\n    \"config.json\": \"22097df08750242647a513043636a8dff16820a09757e9271e220bdea378df28\",\n    \"generation_config.json\": \"02b54ab57bff2fb18a9b0a731b4b9184c255ba36844786df367938d8d89e288f\",\n    \"model.safetensors\": \"f2650d91aaa619534980445034f62cde27fc3fa0430aaf5c3302b91179cad0c5\",\n    \"preprocessor_config.json\": \"5c7cbf12d0666ceed8eb25506f18c19ec67788215ada306e8ab2cd67cbdfcd07\",\n    \"tokenizer.json\": \"dceac5fc54a795ee7570d17902b47bd05412dc2afa62bdf325c3f97fcb5b87fe\",\n    \"tokenizer_config.json\": \"d762430b9c668b5c3ad95e26626e3982d5b2a59c18ff214d621d1de4318ff376\"\n  },\n  \"recipe\": \"f32\",\n  \"tensor_count\": 681,\n  \"tokenizer_size\": 151674,\n  \"embedding_rows\": 151936,\n  \"gguf_sha256\": \"ef6ea875747011d46bcf6e560755556b17b77fa9a36fb74ef6642d5c6d215572\",\n  \"gguf_size_bytes\": 4630070208,\n  \"quality_parity_verified\": false,\n  \"speed_parity_verified\": false\n}\nValidated 681 tensors and 151674 tokenizer entries\nConverted 1/681\nConverted 65/681\nConverted 129/681\nConverted 193/681\nConverted 257/681\nConverted 321/681\nConverted 385/681\nConverted 449/681\nConverted 513/681\nConverted 577/681\nConverted 641/681\n"
+    },
+    "f16": {
+      "returncode": 0,
+      "recipe": [
+        "convert",
+        "f16"
+      ],
+      "bytes": 2591511520,
+      "log_tail": "{\n  \"model\": \"opendatalab/MinerU2.5-Pro-2604-1.2B\",\n  \"expected_revision\": \"d3f5e08d073c21466bbabe21c71bb1e9c2e595da\",\n  \"source_revision\": \"d3f5e08d073c21466bbabe21c71bb1e9c2e595da\",\n  \"source_sha256\": {\n    \"chat_template.jinja\": \"a0bc6f6fc7a29a80017a433e8f03a1cc1236e838a944a2d034295a60c4f2fddb\",\n    \"config.json\": \"22097df08750242647a513043636a8dff16820a09757e9271e220bdea378df28\",\n    \"generation_config.json\": \"02b54ab57bff2fb18a9b0a731b4b9184c255ba36844786df367938d8d89e288f\",\n    \"model.safetensors\": \"f2650d91aaa619534980445034f62cde27fc3fa0430aaf5c3302b91179cad0c5\",\n    \"preprocessor_config.json\": \"5c7cbf12d0666ceed8eb25506f18c19ec67788215ada306e8ab2cd67cbdfcd07\",\n    \"tokenizer.json\": \"dceac5fc54a795ee7570d17902b47bd05412dc2afa62bdf325c3f97fcb5b87fe\",\n    \"tokenizer_config.json\": \"d762430b9c668b5c3ad95e26626e3982d5b2a59c18ff214d621d1de4318ff376\"\n  },\n  \"recipe\": \"f16\",\n  \"tensor_count\": 681,\n  \"tokenizer_size\": 151674,\n  \"embedding_rows\": 151936,\n  \"gguf_sha256\": \"7d464d375f7c20dd3e2bae7e20fed1f80485ae9ca69aaad201897652c74d746b\",\n  \"gguf_size_bytes\": 2591511520,\n  \"quality_parity_verified\": false,\n  \"speed_parity_verified\": false\n}\nValidated 681 tensors and 151674 tokenizer entries\nConverted 1/681\nConverted 65/681\nConverted 129/681\nConverted 193/681\nConverted 257/681\nConverted 321/681\nConverted 385/681\nConverted 449/681\nConverted 513/681\nConverted 577/681\nConverted 641/681\n"
+    },
+    "q8_0": {
+      "returncode": 0,
+      "recipe": [
+        "q8_0"
+      ],
+      "bytes": 1920768000,
+      "log_tail": " 16.6 MB -> 4.4 MB\n[667/681] l.blk.22.ffn_up.weight                        -    f32, quantizing to q8_0... 16.6 MB -> 4.4 MB\n[668/681] l.blk.22.ffn_down.weight                      -    f32, quantizing to q8_0... 16.6 MB -> 4.4 MB\n[669/681] l.blk.23.attn_norm.weight                     -    f32, copy 0.0 MB\n[670/681] l.blk.23.ffn_norm.weight                      -    f32, copy 0.0 MB\n[671/681] l.blk.23.attn_q.weight                        -    f32, quantizing to q8_0... 3.1 MB -> 0.8 MB\n[672/681] l.blk.23.attn_q.bias                          -    f32, copy 0.0 MB\n[673/681] l.blk.23.attn_k.weight                        -    f32, quantizing to q8_0... 0.4 MB -> 0.1 MB\n[674/681] l.blk.23.attn_k.bias                          -    f32, copy 0.0 MB\n[675/681] l.blk.23.attn_v.weight                        -    f32, quantizing to q8_0... 0.4 MB -> 0.1 MB\n[676/681] l.blk.23.attn_v.bias                          -    f32, copy 0.0 MB\n[677/681] l.blk.23.attn_o.weight                        -    f32, quantizing to q8_0... 3.1 MB -> 0.8 MB\n[678/681] l.blk.23.ffn_gate.weight                      -    f32, quantizing to q8_0... 16.6 MB -> 4.4 MB\n[679/681] l.blk.23.ffn_up.weight                        -    f32, quantizing to q8_0... 16.6 MB -> 4.4 MB\n[680/681] l.blk.23.ffn_down.weight                      -    f32, quantizing to q8_0... 16.6 MB -> 4.4 MB\n[681/681] l.output_norm.weight                          -    f32, copy 0.0 MB\n\n297 quantized, 384 kept\n4410 MB -> 1826 MB (2.4x compression)\n"
+    },
+    "q4_k": {
+      "returncode": 0,
+      "recipe": [
+        "q4_k"
+      ],
+      "bytes": 1152030720,
+      "log_tail": "to q4_0... 16.6 MB -> 2.3 MB\n[668/681] l.blk.22.ffn_down.weight                      -    f32, quantizing to q4_K... 16.6 MB -> 2.3 MB\n[669/681] l.blk.23.attn_norm.weight                     -    f32, copy 0.0 MB\n[670/681] l.blk.23.ffn_norm.weight                      -    f32, copy 0.0 MB\n[671/681] l.blk.23.attn_q.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB\n[672/681] l.blk.23.attn_q.bias                          -    f32, copy 0.0 MB\n[673/681] l.blk.23.attn_k.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB\n[674/681] l.blk.23.attn_k.bias                          -    f32, copy 0.0 MB\n[675/681] l.blk.23.attn_v.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB\n[676/681] l.blk.23.attn_v.bias                          -    f32, copy 0.0 MB\n[677/681] l.blk.23.attn_o.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB\n[678/681] l.blk.23.ffn_gate.weight                      -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB\n[679/681] l.blk.23.ffn_up.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB\n[680/681] l.blk.23.ffn_down.weight                      -    f32, quantizing to q4_K... 16.6 MB -> 2.3 MB\n[681/681] l.output_norm.weight                          -    f32, copy 0.0 MB\n\n297 quantized, 384 kept\n4410 MB -> 1093 MB (4.0x compression)\n"
+    },
+    "q4_k-dq8": {
+      "returncode": 0,
+      "recipe": [
+        "q4_k",
+        "--tensor-type",
+        "l.*=q8_0"
+      ],
+      "bytes": 1330944000,
+      "log_tail": " 16.6 MB -> 4.4 MB\n[667/681] l.blk.22.ffn_up.weight                        -    f32, quantizing to q8_0... 16.6 MB -> 4.4 MB\n[668/681] l.blk.22.ffn_down.weight                      -    f32, quantizing to q8_0... 16.6 MB -> 4.4 MB\n[669/681] l.blk.23.attn_norm.weight                     -    f32, copy 0.0 MB\n[670/681] l.blk.23.ffn_norm.weight                      -    f32, copy 0.0 MB\n[671/681] l.blk.23.attn_q.weight                        -    f32, quantizing to q8_0... 3.1 MB -> 0.8 MB\n[672/681] l.blk.23.attn_q.bias                          -    f32, copy 0.0 MB\n[673/681] l.blk.23.attn_k.weight                        -    f32, quantizing to q8_0... 0.4 MB -> 0.1 MB\n[674/681] l.blk.23.attn_k.bias                          -    f32, copy 0.0 MB\n[675/681] l.blk.23.attn_v.weight                        -    f32, quantizing to q8_0... 0.4 MB -> 0.1 MB\n[676/681] l.blk.23.attn_v.bias                          -    f32, copy 0.0 MB\n[677/681] l.blk.23.attn_o.weight                        -    f32, quantizing to q8_0... 3.1 MB -> 0.8 MB\n[678/681] l.blk.23.ffn_gate.weight                      -    f32, quantizing to q8_0... 16.6 MB -> 4.4 MB\n[679/681] l.blk.23.ffn_up.weight                        -    f32, quantizing to q8_0... 16.6 MB -> 4.4 MB\n[680/681] l.blk.23.ffn_down.weight                      -    f32, quantizing to q8_0... 16.6 MB -> 4.4 MB\n[681/681] l.output_norm.weight                          -    f32, copy 0.0 MB\n\n297 quantized, 384 kept\n4410 MB -> 1264 MB (3.5x compression)\n"
+    },
+    "q4_k-df16": {
+      "returncode": 0,
+      "recipe": [
+        "q4_k",
+        "--decoder-f16"
+      ],
+      "bytes": 1794032640,
+      "log_tail": ".. 16.6 MB -> 8.3 MB\n[668/681] l.blk.22.ffn_down.weight                      -    f32, (decoder→F16) quantizing to f16... 16.6 MB -> 8.3 MB\n[669/681] l.blk.23.attn_norm.weight                     -    f32, copy 0.0 MB\n[670/681] l.blk.23.ffn_norm.weight                      -    f32, copy 0.0 MB\n[671/681] l.blk.23.attn_q.weight                        -    f32, (decoder→F16) quantizing to f16... 3.1 MB -> 1.5 MB\n[672/681] l.blk.23.attn_q.bias                          -    f32, copy 0.0 MB\n[673/681] l.blk.23.attn_k.weight                        -    f32, (decoder→F16) quantizing to f16... 0.4 MB -> 0.2 MB\n[674/681] l.blk.23.attn_k.bias                          -    f32, copy 0.0 MB\n[675/681] l.blk.23.attn_v.weight                        -    f32, (decoder→F16) quantizing to f16... 0.4 MB -> 0.2 MB\n[676/681] l.blk.23.attn_v.bias                          -    f32, copy 0.0 MB\n[677/681] l.blk.23.attn_o.weight                        -    f32, (decoder→F16) quantizing to f16... 3.1 MB -> 1.5 MB\n[678/681] l.blk.23.ffn_gate.weight                      -    f32, (decoder→F16) quantizing to f16... 16.6 MB -> 8.3 MB\n[679/681] l.blk.23.ffn_up.weight                        -    f32, (decoder→F16) quantizing to f16... 16.6 MB -> 8.3 MB\n[680/681] l.blk.23.ffn_down.weight                      -    f32, (decoder→F16) quantizing to f16... 16.6 MB -> 8.3 MB\n[681/681] l.output_norm.weight                          -    f32, copy 0.0 MB\n\n297 quantized, 384 kept\n4410 MB -> 1705 MB (2.6x compression)\n"
+    }
+  },
+  "cases": {
+    "formula": {
+      "image": "formula_quadratic.png",
+      "task": "formula",
+      "reference_returncode": 0,
+      "reference_s": 34.7,
+      "arms": {
+        "f32": {
+          "returncode": 0,
+          "gpu_peak_mib": 4644,
+          "device": "auto",
+          "tokens": 29,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            995.428876,
+            557.197809
+          ],
+          "first_divergence": null
+        },
+        "f16": {
+          "returncode": 0,
+          "gpu_peak_mib": 2862,
+          "device": "auto",
+          "tokens": 29,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            648.666154,
+            538.289327
+          ],
+          "first_divergence": null
+        },
+        "q8_0": {
+          "returncode": 0,
+          "gpu_peak_mib": 2110,
+          "device": "auto",
+          "tokens": 29,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            462.050656,
+            390.151504
+          ],
+          "first_divergence": null
+        },
+        "q4_k": {
+          "returncode": 0,
+          "gpu_peak_mib": 1294,
+          "device": "auto",
+          "tokens": 29,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            355.439881,
+            286.360797
+          ],
+          "first_divergence": null
+        },
+        "q4_k-dq8": {
+          "returncode": 0,
+          "gpu_peak_mib": 1464,
+          "device": "auto",
+          "tokens": 29,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            347.006648,
+            304.312428
+          ],
+          "first_divergence": null
+        },
+        "q4_k-df16": {
+          "returncode": 0,
+          "gpu_peak_mib": 1972,
+          "device": "auto",
+          "tokens": 29,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            473.144623,
+            423.132466
+          ],
+          "first_divergence": null
+        }
+      },
+      "reference_tokens": 29,
+      "reference_eos": true,
+      "reference_capped": false,
+      "reference_text": "\\[x = \\frac {- b \\pm \\sqrt {b ^ {2} - 4 a c}}{2 a}\\]"
+    },
+    "table": {
+      "image": "cc0/simple_table.jpg",
+      "task": "table",
+      "reference_returncode": 0,
+      "reference_s": 66.0,
+      "arms": {
+        "f32": {
+          "returncode": 0,
+          "gpu_peak_mib": 4642,
+          "device": "auto",
+          "tokens": 140,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            2017.401081,
+            1913.86385
+          ],
+          "first_divergence": null
+        },
+        "f16": {
+          "returncode": 0,
+          "gpu_peak_mib": 2860,
+          "device": "auto",
+          "tokens": 140,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            1759.9001,
+            1731.55576
+          ],
+          "first_divergence": null
+        },
+        "q8_0": {
+          "returncode": 0,
+          "gpu_peak_mib": 2108,
+          "device": "auto",
+          "tokens": 140,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            1228.639377,
+            1197.744163
+          ],
+          "first_divergence": null
+        },
+        "q4_k": {
+          "returncode": 0,
+          "gpu_peak_mib": 1336,
+          "device": "auto",
+          "tokens": 140,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            1046.258727,
+            987.10349
+          ],
+          "first_divergence": null
+        },
+        "q4_k-dq8": {
+          "returncode": 0,
+          "gpu_peak_mib": 1506,
+          "device": "auto",
+          "tokens": 140,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            1124.679634,
+            1085.122799
+          ],
+          "first_divergence": null
+        },
+        "q4_k-df16": {
+          "returncode": 0,
+          "gpu_peak_mib": 1966,
+          "device": "auto",
+          "tokens": 140,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            1616.191062,
+            1586.219181
+          ],
+          "first_divergence": null
+        }
+      },
+      "reference_tokens": 140,
+      "reference_eos": true,
+      "reference_capped": false,
+      "reference_text": "<fcel>Temperature of Substances Over Heat<lcel><lcel><lcel><lcel><nl>\n<fcel>Time (min)<fcel>Sample 1<fcel>Sample 2<fcel>Sample 3<fcel>Sample 3<nl>\n<fcel>0<fcel>20°<fcel>50°<fcel>51°<fcel>1°<nl>\n<fcel>5<fcel>33°<fcel>74°<fcel>80°<fcel>40°<nl>\n<fcel>10<fcel>50°<fcel>78°<fcel>90°<fcel>74°<nl>\n<fcel>15<fcel>74°<fcel>85°<fcel>104°<fcel>78°<nl>\n<fcel>20<fcel>90°<fcel>92°<fcel>110°<fcel>78°<nl>"
+    },
+    "receipt": {
+      "image": "cc0/receipt_example.png",
+      "task": "text",
+      "reference_returncode": 0,
+      "reference_s": 130.2,
+      "arms": {
+        "f32": {
+          "returncode": 0,
+          "gpu_peak_mib": 4724,
+          "device": "auto",
+          "tokens": 202,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            3473.954912,
+            3393.352998
+          ],
+          "first_divergence": null
+        },
+        "f16": {
+          "returncode": 0,
+          "gpu_peak_mib": 2942,
+          "device": "auto",
+          "tokens": 202,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            3156.523885,
+            3107.563367
+          ],
+          "first_divergence": null
+        },
+        "q8_0": {
+          "returncode": 0,
+          "gpu_peak_mib": 2190,
+          "device": "auto",
+          "tokens": 202,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            2326.871662,
+            2302.56157
+          ],
+          "first_divergence": null
+        },
+        "q4_k": {
+          "returncode": 0,
+          "gpu_peak_mib": 1426,
+          "device": "auto",
+          "tokens": 202,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            1806.256897,
+            1761.324118
+          ],
+          "first_divergence": null
+        },
+        "q4_k-dq8": {
+          "returncode": 0,
+          "gpu_peak_mib": 1596,
+          "device": "auto",
+          "tokens": 202,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            1946.404378,
+            1914.130226
+          ],
+          "first_divergence": null
+        },
+        "q4_k-df16": {
+          "returncode": 0,
+          "gpu_peak_mib": 2056,
+          "device": "auto",
+          "tokens": 202,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            2772.868621,
+            2741.493187
+          ],
+          "first_divergence": null
+        }
+      },
+      "reference_tokens": 202,
+      "reference_eos": true,
+      "reference_capped": false,
+      "reference_text": "Jackson-Washington\n6640 Ortiz Cove, Markmouth, PW\n69940\nTransaction ID: 8F88C299\nDate: 2025-02-16 11:25:12\nItem Qty Price\nStrategy Accessory 1 $ 43.31 $\nConference Product 1 $ 48.40 $\nScientist Item 3 $ 48.07 $\nSituation Item 3 $ 23.87 $\nLife Accessory 4 $ 48.04 $\nMusic Accessory 1 $ 24.45 $\nSubtotal: $524.14\nGST (5%): $26.21\nPST (7%): $36.69\nTotal: $587.04\nPayment: Gift Card (****3486)\nHave a great day!"
+    },
+    "german": {
+      "image": "cc0/german_official_print.jpg",
+      "task": "text",
+      "reference_returncode": 0,
+      "reference_s": 572.4,
+      "arms": {
+        "f32": {
+          "returncode": 0,
+          "gpu_peak_mib": 5100,
+          "device": "auto",
+          "tokens": 389,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            10134.833821,
+            10128.866973
+          ],
+          "first_divergence": null
+        },
+        "f16": {
+          "returncode": 0,
+          "gpu_peak_mib": 3318,
+          "device": "auto",
+          "tokens": 389,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            9789.483698,
+            9884.65378
+          ],
+          "first_divergence": null
+        },
+        "q8_0": {
+          "returncode": 0,
+          "gpu_peak_mib": 2566,
+          "device": "auto",
+          "tokens": 389,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            8256.149693,
+            8347.31595
+          ],
+          "first_divergence": null
+        },
+        "q4_k": {
+          "returncode": 0,
+          "gpu_peak_mib": 1812,
+          "device": "auto",
+          "tokens": 391,
+          "ids_exact": false,
+          "text_exact": false,
+          "eos": true,
+          "runs_ms": [
+            5773.422259,
+            5744.59834
+          ],
+          "first_divergence": 3,
+          "text": "Reichs = Gesetzblatt.\n№ 1.\nInhalt. Verordnung, betreffend das Infrafttreten der Militärstrafgerichtsordnung vom 1. Dezember 1898.\nS. 1. — Verordnung, betreffend die Uebertragung der Befugnisse des preußischen General-\nAuditoriats auf das Reichsmilitärgericht. S. 2.\n(Nr. 2642.) Verordnung, betreffend das Infrafttreten der Militärstrafgerichtsordnung vom\n1. Dezember 1898. Vom 28. Dezember 1899.\nWir Wilhelm, von Gottes Gnaden Deutscher Kaiser, König\nvon Preußen x.\nverordnen unter Zustimmung des Bundesraths auf Grund des §. 1 des Einführungs-\ngeseßes zur Militärstrafgerichtsordnung vom 1. Dezember 1898, was folgt:\nEinziger Paragraph.\nDie Militärstrafgerichtsordnung vom 1. Dezember 1898 (Reichs-Geseßbl.\nS. 1189 ff.) tritt am 1. Oktober 1900 in Kraft.\nUrkundlich unter Unserer Höchsteigenhändigen Unterschrift und beigedrucktem\nKaiserlichen Infigel.\nGegeben Neues Palais, den 28. Dezember 1899.\n(L. S.) Wilhelm.\nFürst zu Hohenlohe.\nReichs-Geseßbl. 1900.\nAusgegeben zu Berlin den 6. Januar 1900.\n1"
+        },
+        "q4_k-dq8": {
+          "returncode": 0,
+          "gpu_peak_mib": 1982,
+          "device": "auto",
+          "tokens": 389,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            6138.380964,
+            6114.143843
+          ],
+          "first_divergence": null
+        },
+        "q4_k-df16": {
+          "returncode": 0,
+          "gpu_peak_mib": 2424,
+          "device": "auto",
+          "tokens": 389,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            8294.510904,
+            8371.273887
+          ],
+          "first_divergence": null
+        }
+      },
+      "reference_tokens": 389,
+      "reference_eos": true,
+      "reference_capped": false,
+      "reference_text": "Reichs-Gefehblatt.\n№ 1.\nInhalt. Verordnung, betreffend das Inkrafttreten der Militärstrafgerichtsordnung vom 1. Dezember 1898.\nS. 1. — Verordnung, betreffend die Uebertragung der Befugnisse des preußischen General-\nAuditoriats auf das Reichsmilitärgericht. S. 2.\n(Nr. 2642.) Verordnung, betreffend das Inkrafttreten der Militärstrafgerichtsordnung vom\n1. Dezember 1898. Vom 28. Dezember 1899.\nWir Wilhelm, von Gottes Gnaden Deutscher Kaiser, König\nvon Preußen x.\nverordnen unter Zustimmung des Bundesraths auf Grund des §. 1 des Einführungs-\ngeseßes zur Militärstrafgerichtsordnung vom 1. Dezember 1898, was folgt:\nEinziger Paragraph.\nDie Militärstrafgerichtsordnung vom 1. Dezember 1898 (Reichs-Gefehbl.\nS. 1189 ff.) tritt am 1. Oktober 1900 in Kraft.\nUrkundlich unter Unserer Höchsteigenhändigen Unterschrift und beigedrucktem\nKaiserlichen Infigel.\nGegeben Neues Palais, den 28. Dezember 1899.\n(L. S.) Wilhelm.\nFürst zu Hohenlohe.\nReichs-Gefehbl. 1900.\nAusgegeben zu Berlin den 6. Januar 1900.\n1"
+    },
+    "japanese": {
+      "image": "japanese_print.png",
+      "task": "text",
+      "reference_returncode": 0,
+      "reference_s": 46.4,
+      "arms": {
+        "f32": {
+          "returncode": 0,
+          "gpu_peak_mib": 4672,
+          "device": "auto",
+          "tokens": 37,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            1016.3576,
+            978.636064
+          ],
+          "first_divergence": null
+        },
+        "f16": {
+          "returncode": 0,
+          "gpu_peak_mib": 2890,
+          "device": "auto",
+          "tokens": 37,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            993.646439,
+            971.761955
+          ],
+          "first_divergence": null
+        },
+        "q8_0": {
+          "returncode": 0,
+          "gpu_peak_mib": 2138,
+          "device": "auto",
+          "tokens": 37,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            804.263189,
+            776.440624
+          ],
+          "first_divergence": null
+        },
+        "q4_k": {
+          "returncode": 0,
+          "gpu_peak_mib": 1368,
+          "device": "auto",
+          "tokens": 37,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            511.723333,
+            469.164743
+          ],
+          "first_divergence": null
+        },
+        "q4_k-dq8": {
+          "returncode": 0,
+          "gpu_peak_mib": 1538,
+          "device": "auto",
+          "tokens": 37,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            528.315623,
+            496.528921
+          ],
+          "first_divergence": null
+        },
+        "q4_k-df16": {
+          "returncode": 0,
+          "gpu_peak_mib": 1998,
+          "device": "auto",
+          "tokens": 37,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            732.152978,
+            693.652941
+          ],
+          "first_divergence": null
+        }
+      },
+      "reference_tokens": 37,
+      "reference_eos": true,
+      "reference_capped": false,
+      "reference_text": "日本語のテキスト認識テスト\nこんにちは、世界。カタカナもテスト\n東京都渋谷区 2026年8月8日"
+    },
+    "arabic": {
+      "image": "cc0/arabic_printed_line.png",
+      "task": "text",
+      "reference_returncode": 0,
+      "reference_s": 23.1,
+      "arms": {
+        "f32": {
+          "returncode": 0,
+          "gpu_peak_mib": 4600,
+          "device": "auto",
+          "tokens": 7,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            391.105317,
+            309.649564
+          ],
+          "first_divergence": null
+        },
+        "f16": {
+          "returncode": 0,
+          "gpu_peak_mib": 2818,
+          "device": "auto",
+          "tokens": 7,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            366.212302,
+            335.128542
+          ],
+          "first_divergence": null
+        },
+        "q8_0": {
+          "returncode": 0,
+          "gpu_peak_mib": 2108,
+          "device": "auto",
+          "tokens": 7,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            311.099329,
+            279.408362
+          ],
+          "first_divergence": null
+        },
+        "q4_k": {
+          "returncode": 0,
+          "gpu_peak_mib": 1288,
+          "device": "auto",
+          "tokens": 6,
+          "ids_exact": false,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            189.776714,
+            139.01714
+          ],
+          "first_divergence": 4
+        },
+        "q4_k-dq8": {
+          "returncode": 0,
+          "gpu_peak_mib": 1458,
+          "device": "auto",
+          "tokens": 7,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            189.951886,
+            149.565478
+          ],
+          "first_divergence": null
+        },
+        "q4_k-df16": {
+          "returncode": 0,
+          "gpu_peak_mib": 1836,
+          "device": "auto",
+          "tokens": 7,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            249.504617,
+            204.409326
+          ],
+          "first_divergence": null
+        }
+      },
+      "reference_tokens": 7,
+      "reference_eos": true,
+      "reference_capped": false,
+      "reference_text": "أبحدية عربية"
+    },
+    "layout-page": {
+      "image": "scan_page_pd.png",
+      "task": "layout",
+      "reference_returncode": 0,
+      "reference_s": 328.9,
+      "arms": {
+        "f32": {
+          "returncode": 0,
+          "gpu_peak_mib": 4952,
+          "device": "auto",
+          "tokens": 199,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            5639.548533,
+            5569.430149
+          ],
+          "first_divergence": null
+        },
+        "f16": {
+          "returncode": 0,
+          "gpu_peak_mib": 3170,
+          "device": "auto",
+          "tokens": 199,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            5463.897979,
+            5446.543467
+          ],
+          "first_divergence": null
+        },
+        "q8_0": {
+          "returncode": 0,
+          "gpu_peak_mib": 2418,
+          "device": "auto",
+          "tokens": 199,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            4511.2238,
+            4525.65453
+          ],
+          "first_divergence": null
+        },
+        "q4_k": {
+          "returncode": 0,
+          "gpu_peak_mib": 1646,
+          "device": "auto",
+          "tokens": 199,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            3091.401878,
+            3043.778395
+          ],
+          "first_divergence": null
+        },
+        "q4_k-dq8": {
+          "returncode": 0,
+          "gpu_peak_mib": 1816,
+          "device": "auto",
+          "tokens": 199,
+          "ids_exact": false,
+          "text_exact": false,
+          "eos": true,
+          "runs_ms": [
+            3253.721843,
+            3227.194323
+          ],
+          "first_divergence": 180,
+          "text": "<|box_start|>141 039 179 059<|box_end|><|ref_start|>page_number<|ref_end|><|rotate_up|>\n<|box_start|>339 037 685 057<|box_end|><|ref_start|>header<|ref_end|><|rotate_up|>\n<|box_start|>134 079 893 166<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>135 167 895 254<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>135 253 897 404<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>135 404 897 554<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>139 554 895 596<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>135 596 897 724<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>138 725 903 858<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>"
+        },
+        "q4_k-df16": {
+          "returncode": 0,
+          "gpu_peak_mib": 2258,
+          "device": "auto",
+          "tokens": 199,
+          "ids_exact": false,
+          "text_exact": false,
+          "eos": true,
+          "runs_ms": [
+            4342.043907,
+            4279.856981
+          ],
+          "first_divergence": 180,
+          "text": "<|box_start|>141 039 179 059<|box_end|><|ref_start|>page_number<|ref_end|><|rotate_up|>\n<|box_start|>339 037 685 057<|box_end|><|ref_start|>header<|ref_end|><|rotate_up|>\n<|box_start|>134 079 893 166<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>135 167 895 254<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>135 253 897 404<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>135 404 897 554<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>139 554 895 596<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>135 596 897 724<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>138 725 903 858<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>"
+        }
+      },
+      "reference_tokens": 199,
+      "reference_eos": true,
+      "reference_capped": false,
+      "reference_text": "<|box_start|>141 039 179 059<|box_end|><|ref_start|>page_number<|ref_end|><|rotate_up|>\n<|box_start|>339 037 685 057<|box_end|><|ref_start|>header<|ref_end|><|rotate_up|>\n<|box_start|>134 079 893 166<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>135 167 895 254<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>135 253 897 404<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>135 404 897 554<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>139 554 895 596<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>135 596 897 724<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>137 725 903 858<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>"
+    },
+    "layout-rot90": {
+      "image": "derived/german_official_document__rot90.png",
+      "task": "layout",
+      "reference_returncode": 0,
+      "reference_s": 261.0,
+      "arms": {
+        "f32": {
+          "returncode": 0,
+          "gpu_peak_mib": 4952,
+          "device": "auto",
+          "tokens": 44,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            3557.795395,
+            3478.449936
+          ],
+          "first_divergence": null
+        },
+        "f16": {
+          "returncode": 0,
+          "gpu_peak_mib": 3170,
+          "device": "auto",
+          "tokens": 44,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            3506.405303,
+            3494.065366
+          ],
+          "first_divergence": null
+        },
+        "q8_0": {
+          "returncode": 0,
+          "gpu_peak_mib": 2418,
+          "device": "auto",
+          "tokens": 44,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            3202.08596,
+            3158.736636
+          ],
+          "first_divergence": null
+        },
+        "q4_k": {
+          "returncode": 0,
+          "gpu_peak_mib": 1646,
+          "device": "auto",
+          "tokens": 44,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            1949.191192,
+            1866.93865
+          ],
+          "first_divergence": null
+        },
+        "q4_k-dq8": {
+          "returncode": 0,
+          "gpu_peak_mib": 1816,
+          "device": "auto",
+          "tokens": 44,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            1967.817982,
+            1917.957435
+          ],
+          "first_divergence": null
+        },
+        "q4_k-df16": {
+          "returncode": 0,
+          "gpu_peak_mib": 2258,
+          "device": "auto",
+          "tokens": 44,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            2340.978372,
+            2286.283685
+          ],
+          "first_divergence": null
+        }
+      },
+      "reference_tokens": 44,
+      "reference_eos": true,
+      "reference_capped": false,
+      "reference_text": "<|box_start|>000 068 999 881<|box_end|><|ref_start|>image<|ref_end|><|rotate_right|>\n<|box_start|>041 723 126 830<|box_end|><|ref_start|>image<|ref_end|><|rotate_right|>"
+    }
+  },
+  "phase": "complete",
+  "all_arms_on_cuda": true
+}

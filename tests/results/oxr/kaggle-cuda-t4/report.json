@@ -1,0 +1,236 @@
+{
+  "script_version": "oxr-kaggle-gpu-v1",
+  "commit": "44533d44f88a579587549adfbb4863a1842e2de5",
+  "gpu": "Tesla T4, 7.5\nTesla T4, 7.5",
+  "variants": {
+    "f16": {
+      "source": "https://huggingface.co/cstr/OXR-1.0-GGUF/resolve/f1e262e276349aa2647a85da6fc6326dd6aaf271/oxr-1.0-f16.gguf",
+      "sha256_ok": true,
+      "seconds": 71.8,
+      "error": ""
+    },
+    "f32-source": {
+      "returncode": 0,
+      "seconds": 51.3,
+      "log_tail": "Authenticated 752 tensors, 151669 tokens and 151387 merges\nConverted 1/752\nConverted 65/752\nConverted 129/752\nConverted 193/752\nConverted 257/752\nConverted 321/752\nConverted 385/752\nConverted 449/752\nConverted 513/752\nConverted 577/752\nConverted 641/752\nConverted 705/752\n"
+    },
+    "q8_0": {
+      "returncode": 0,
+      "bytes": 4027677248,
+      "log_tail": "  f32, copy 0.0 MB\n[747/752] vit.encoder.layers.26.self_attn.out_proj.weight -    f32, (oxr-vision→F16) quantizing to f16... 5.1 MB -> 2.5 MB\n[748/752] vit.encoder.layers.26.self_attn.out_proj.bias -    f32, copy 0.0 MB\n[749/752] visual_tokenizer.head.0.weight                -    f32, copy 1151.9 MB\n[750/752] visual_tokenizer.head.1.weight                -    f32, copy 0.2 MB\n[751/752] visual_tokenizer.head.1.bias                  -    f32, copy 0.2 MB\n[752/752] vte.weight                                    -    f32, copy 256.0 MB\n\n358 quantized, 394 kept\n5853 MB -> 3835 MB (1.5x compression)\n"
+    },
+    "q4_k": {
+      "returncode": 0,
+      "bytes": 3815345600,
+      "log_tail": "    f32, copy 0.0 MB\n[747/752] vit.encoder.layers.26.self_attn.out_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB\n[748/752] vit.encoder.layers.26.self_attn.out_proj.bias -    f32, copy 0.0 MB\n[749/752] visual_tokenizer.head.0.weight                -    f32, copy 1151.9 MB\n[750/752] visual_tokenizer.head.1.weight                -    f32, copy 0.2 MB\n[751/752] visual_tokenizer.head.1.bias                  -    f32, copy 0.2 MB\n[752/752] vte.weight                                    -    f32, copy 256.0 MB\n\n331 quantized, 421 kept\n5853 MB -> 3633 MB (1.6x compression)\n"
+    }
+  },
+  "cases": {
+    "formula": {
+      "reference_tokens": 22,
+      "arms": {
+        "f16": {
+          "returncode": 0,
+          "seconds": 32.94,
+          "ids_exact": true,
+          "text_exact": true,
+          "tokens": 22,
+          "first_divergence": null,
+          "eos": true,
+          "inference_ms": 1029.973511,
+          "device": "auto",
+          "text": "$x=\\frac{-b\\pm\\sqrt{b^{2}-4ac}}{2a}$"
+        },
+        "q8_0": {
+          "returncode": 0,
+          "seconds": 3.32,
+          "ids_exact": true,
+          "text_exact": true,
+          "tokens": 22,
+          "first_divergence": null,
+          "eos": true,
+          "inference_ms": 757.195059,
+          "device": "auto",
+          "text": "$x=\\frac{-b\\pm\\sqrt{b^{2}-4ac}}{2a}$"
+        },
+        "q4_k": {
+          "returncode": 0,
+          "seconds": 3.12,
+          "ids_exact": false,
+          "text_exact": false,
+          "tokens": 23,
+          "first_divergence": 0,
+          "eos": true,
+          "inference_ms": 678.986051,
+          "device": "auto",
+          "text": "$X=\\frac{-b\\pm\\sqrt{b^{2}-4ac}}{2a}$"
+        }
+      }
+    },
+    "table": {
+      "reference_tokens": 261,
+      "arms": {
+        "f16": {
+          "returncode": 0,
+          "seconds": 9.64,
+          "ids_exact": true,
+          "text_exact": true,
+          "tokens": 261,
+          "first_divergence": null,
+          "eos": true,
+          "inference_ms": 3757.021927,
+          "device": "auto",
+          "text": "<table><tr><td colspan=\"5\">Temperature of Substances Over Heat</td></tr><tr><td>Time (min)</td><td>Sample 1</td><td>Sample 2</td><td>Sample 3</td><td>Sample 3</td></tr><tr><td>0</td><td>20*</td><td>50*</td><td>51*</td><td>1*</td></tr><tr><td>5</td><td>30*</td><td>74*</td><td>80*</td><td>40*</td></tr><tr><td>10</td><td>55*</td><td>79*</td><td>90*</td><td>74*</td></tr><tr><td>15</td><td>74*</td><td>"
+        },
+        "q8_0": {
+          "returncode": 0,
+          "seconds": 8.14,
+          "ids_exact": true,
+          "text_exact": true,
+          "tokens": 261,
+          "first_divergence": null,
+          "eos": true,
+          "inference_ms": 3152.242992,
+          "device": "auto",
+          "text": "<table><tr><td colspan=\"5\">Temperature of Substances Over Heat</td></tr><tr><td>Time (min)</td><td>Sample 1</td><td>Sample 2</td><td>Sample 3</td><td>Sample 3</td></tr><tr><td>0</td><td>20*</td><td>50*</td><td>51*</td><td>1*</td></tr><tr><td>5</td><td>30*</td><td>74*</td><td>80*</td><td>40*</td></tr><tr><td>10</td><td>55*</td><td>79*</td><td>90*</td><td>74*</td></tr><tr><td>15</td><td>74*</td><td>"
+        },
+        "q4_k": {
+          "returncode": 0,
+          "seconds": 7.59,
+          "ids_exact": false,
+          "text_exact": false,
+          "tokens": 261,
+          "first_divergence": 197,
+          "eos": true,
+          "inference_ms": 2920.559791,
+          "device": "auto",
+          "text": "<table><tr><td colspan=\"5\">Temperature of Substances Over Heat</td></tr><tr><td>Time (min)</td><td>Sample 1</td><td>Sample 2</td><td>Sample 3</td><td>Sample 3</td></tr><tr><td>0</td><td>20*</td><td>50*</td><td>51*</td><td>1*</td></tr><tr><td>5</td><td>30*</td><td>74*</td><td>80*</td><td>40*</td></tr><tr><td>10</td><td>55*</td><td>79*</td><td>90*</td><td>74*</td></tr><tr><td>15</td><td>74*</td><td>"
+        }
+      }
+    },
+    "japanese": {
+      "reference_tokens": 38,
+      "arms": {
+        "f16": {
+          "returncode": 0,
+          "seconds": 4.13,
+          "ids_exact": true,
+          "text_exact": true,
+          "tokens": 38,
+          "first_divergence": null,
+          "eos": true,
+          "inference_ms": 990.803909,
+          "device": "auto",
+          "text": "日本語のテキスト認識テスト\nこんなには、世界。カタカナもテスト\n東京都渋谷区 2026年8月8日"
+        },
+        "q8_0": {
+          "returncode": 0,
+          "seconds": 3.57,
+          "ids_exact": true,
+          "text_exact": true,
+          "tokens": 38,
+          "first_divergence": null,
+          "eos": true,
+          "inference_ms": 880.71719,
+          "device": "auto",
+          "text": "日本語のテキスト認識テスト\nこんなには、世界。カタカナもテスト\n東京都渋谷区 2026年8月8日"
+        },
+        "q4_k": {
+          "returncode": 0,
+          "seconds": 3.33,
+          "ids_exact": true,
+          "text_exact": true,
+          "tokens": 38,
+          "first_divergence": null,
+          "eos": true,
+          "inference_ms": 784.599544,
+          "device": "auto",
+          "text": "日本語のテキスト認識テスト\nこんなには、世界。カタカナもテスト\n東京都渋谷区 2026年8月8日"
+        }
+      }
+    },
+    "receipt": {
+      "reference_tokens": 202,
+      "arms": {
+        "f16": {
+          "returncode": 0,
+          "seconds": 8.94,
+          "ids_exact": true,
+          "text_exact": true,
+          "tokens": 202,
+          "first_divergence": null,
+          "eos": true,
+          "inference_ms": 3421.403672,
+          "device": "auto",
+          "text": "Jackson-Washington\n6640 Ortiz Cove, Markmouth, PW\n69940\nTransaction ID: 8F88C299\nDate: 2025-02-16 11:25:12\nItem Qty Price\nStrategy Accessory 1 $ 43.31 $\nConference Product 1 $ 48.40 $\nScientist Item 3 $ 48.07 $\nSituation Item 3 $ 23.87 $\nLife Accessory 4 $ 48.04 $\nMusic Accessory 1 $ 24.45 $\nSubtotal: $524.14\nGST (5%): $26.21\nPST (7%): $36.69\nTotal: $587.04\nPayment: Gift Card (****3486)\nHave a gre"
+        },
+        "q8_0": {
+          "returncode": 0,
+          "seconds": 7.64,
+          "ids_exact": true,
+          "text_exact": true,
+          "tokens": 202,
+          "first_divergence": null,
+          "eos": true,
+          "inference_ms": 2924.208301,
+          "device": "auto",
+          "text": "Jackson-Washington\n6640 Ortiz Cove, Markmouth, PW\n69940\nTransaction ID: 8F88C299\nDate: 2025-02-16 11:25:12\nItem Qty Price\nStrategy Accessory 1 $ 43.31 $\nConference Product 1 $ 48.40 $\nScientist Item 3 $ 48.07 $\nSituation Item 3 $ 23.87 $\nLife Accessory 4 $ 48.04 $\nMusic Accessory 1 $ 24.45 $\nSubtotal: $524.14\nGST (5%): $26.21\nPST (7%): $36.69\nTotal: $587.04\nPayment: Gift Card (****3486)\nHave a gre"
+        },
+        "q4_k": {
+          "returncode": 0,
+          "seconds": 7.04,
+          "ids_exact": true,
+          "text_exact": true,
+          "tokens": 202,
+          "first_divergence": null,
+          "eos": true,
+          "inference_ms": 2628.49977,
+          "device": "auto",
+          "text": "Jackson-Washington\n6640 Ortiz Cove, Markmouth, PW\n69940\nTransaction ID: 8F88C299\nDate: 2025-02-16 11:25:12\nItem Qty Price\nStrategy Accessory 1 $ 43.31 $\nConference Product 1 $ 48.40 $\nScientist Item 3 $ 48.07 $\nSituation Item 3 $ 23.87 $\nLife Accessory 4 $ 48.04 $\nMusic Accessory 1 $ 24.45 $\nSubtotal: $524.14\nGST (5%): $26.21\nPST (7%): $36.69\nTotal: $587.04\nPayment: Gift Card (****3486)\nHave a gre"
+        }
+      }
+    },
+    "german": {
+      "reference_tokens": 401,
+      "arms": {
+        "f16": {
+          "returncode": 0,
+          "seconds": 19.16,
+          "ids_exact": false,
+          "text_exact": false,
+          "tokens": 379,
+          "first_divergence": 87,
+          "eos": true,
+          "inference_ms": 8397.780434,
+          "device": "auto",
+          "text": "1\nReichs = Gefezblatt.\nM 1.\nZuhalt. Verordnung, betreffend das Infraittretten der Militärfrazerichtsordnung vom 1. December 1898. C. 1. — Verordnung, betreffend die Rebertragung der Defeugnche des preuflähen General-Militivats auf das Reichsmitärtzäricht. C. 2.\n(Nr. 2642.) Verordnung, betreffend das Infraittretten der Militärfrazerichtsordnung vom 1. December 1898. Dom 28. December 1899.\nWir Wilhe"
+        },
+        "q8_0": {
+          "returncode": 0,
+          "seconds": 17.07,
+          "ids_exact": false,
+          "text_exact": false,
+          "tokens": 393,
+          "first_divergence": 55,
+          "eos": true,
+          "inference_ms": 7508.705052,
+          "device": "auto",
+          "text": "1\nReichs = Gefezblatt.\nM 1.\nZuhalt. Verordnung, betreffend das Infraittretten der Militärfrazerichtsordnung vom 1. December 1898. C 1. — Verordnung, betreffend die Rebertragung der Defeugnche des preuflähen General-Militivats auf das Reichsmitärtzäricht. C 2.\n(Nr. 2642.) Verordnung, betreffend das Infraittretten der Militärfrazerichtsordnung vom 1. December 1898. Dom 28. December 1899.\nWir Wilhelm"
+        },
+        "q4_k": {
+          "returncode": 0,
+          "seconds": 16.01,
+          "ids_exact": false,
+          "text_exact": false,
+          "tokens": 399,
+          "first_divergence": 55,
+          "eos": true,
+          "inference_ms": 6994.291314,
+          "device": "auto",
+          "text": "1\nReichs = Gefezblatt.\nM 1.\nZuhalt. Verordnung, betreffend das Infraittretten der Militärfrazerichtsordnung vom 1. December 1898. C 1. — Verordnung, betreffend die Bebertragung der Defugnife des preupflähen General-Militivats auf das Reichsmitárzsericht. C 2.\n(Nr. 2642.) Verordnung, betreffend das Infraittretten der Militärfrazerichtsordnung vom 1. December 1898. Dom 28. December 1899.\nWir Wilhelm"
+        }
+      }
+    }
+  },
+  "phase": "done"
+}

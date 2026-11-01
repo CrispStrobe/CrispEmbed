@@ -14,6 +14,36 @@ yardstick favours native on 55-56/56 stages; API contract and heron identity
 pass; F16 rejected (147 px box on receipt); native 2.6x slower than PyTorch CPU.
 Lineage: no bit-equal public tensors; nearest D-FINE-M Objects365 (cosine 0.95/0.93/0.94).
 
+## 1 November 2026 — OXR-1.0 on CUDA (Kaggle T4): German page diverges at every precision
+
+Kernel `chr1s4/crispembed-oxr-gpu-variants` v1 at `44533d44` ([report](tests/results/oxr/kaggle-cuda-t4/report.json)),
+CRISPEMBED_OXR_GPU=1 on a Tesla T4, compared with the original model's committed token IDs:
+the published F16 is exact on formula, table, Japanese and receipt but diverges on the German page
+at token 87 (exact on CPU); Q8_0 is exact on four and diverges on German at token 55; Q4_K diverges
+on formula (token 0), table (197) and German (55). F16 being CPU-exact but CUDA-divergent points at
+GPU-kernel precision (accumulation, flash attention or softmax), not weights. CUDA OXR stays
+default-off and unqualified.
+
+## 1 November 2026 — MinerU2.5-Pro on CUDA (Kaggle T4), all eight cases
+
+Kernel v2 at `9f3cfa2c` ([report](tests/results/mineru25/kaggle-cuda-t4-v2/report.json)), Tesla T4:
+F32, F16 and Q8_0 (F16 vision, the published recipe) decode the pinned original's token IDs exactly
+on all eight protocol cases. Plain Q4_K diverges on German (token 3) and Arabic (token 4); Q4_K with
+a Q8_0 decoder (1.33 GB) and Q4_K with an F16 decoder (1.79 GB) are exact on seven of eight and
+diverge only on the layout page at token 180. The earlier v1 kernel's 9 h stall was the runner's
+unread stdout/stderr pipes (fixed in `9f3cfa2c`), not Kaggle or the model.
+
+## 1 November 2026 — MI-GAN inpainting CLI (issue 71) runs the real model on hosted Linux
+
+Hosted [41283805545](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41283805545) at `bba9de64`
+(`tools/ci-heavy/inpaint_smoke.sh`; [receipt](tests/results/migan/inpaint-cli-41283805545/results.txt)):
+Python contracts, build, native image/contract controls, CLI controls, exact reproduction of the
+reviewed 25 MB MI-GAN256 model from its pinned sources and the production CLI's synthetic
+real-model smoke all pass. Initial [41282563344](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41282563344)
+failed one control because the delivered "FIPS two-block" SHA-256 vector was 53 bytes instead of
+56; the implementation matched hashlib at every padding boundary, so only the test changed.
+Smoke only: no subtitle/video quality, seam or flicker claim; CPU/F32 only so far.
+
 ## 1 November 2026 — MinerU2.5-Pro on CUDA (Kaggle T4): every precision token-exact on three cases
 
 Kaggle kernel `chr1s4/crispembed-mineru25-pro-gpu-variants` at `692f2130` (an earlier

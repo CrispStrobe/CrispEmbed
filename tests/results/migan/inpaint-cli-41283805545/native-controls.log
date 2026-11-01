@@ -1,0 +1,4 @@
+INPAINT_CONTRACT {"checks":62,"failures":0,"passed":true}
+MIGAN_CONTRACT {"passed":true}
+MIGAN_GATES {"unset_rejected":true,"empty_rejected":true,"literal_zero_rejected":true}
+MIGAN_RETENTION {"passed":true}
