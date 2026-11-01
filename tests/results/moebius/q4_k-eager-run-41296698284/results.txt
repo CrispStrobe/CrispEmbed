@@ -1,0 +1,16 @@
+fetch-capture rc=0 seconds=9
+verify-capture rc=0 seconds=7
+sources rc=0 seconds=3
+checkpoints rc=0 seconds=9
+convert-denoiser rc=0 seconds=29
+convert-vae rc=0 seconds=12
+configure rc=0 seconds=2
+build rc=0 seconds=308
+quantize-denoiser-q4_k rc=0 seconds=10
+quantize-vae-q4_k rc=0 seconds=6
+native-q4_k rc=1 seconds=2753
+cli-q4_k rc=0 seconds=623
+native-q4_k-mm rc=1 seconds=2268
+cli-q4_k-mm rc=0 seconds=557
+native-q4_k-mm-g rc=1 seconds=1455
+cli-q4_k-mm-g rc=0 seconds=358
