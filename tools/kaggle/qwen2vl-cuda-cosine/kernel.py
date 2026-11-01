@@ -13,8 +13,9 @@ import sys
 
 COMMIT = "@COMMIT@"
 REPO_DIR = "/kaggle/temp/ce"
-RUNS = [("mineru", "f16,q8_0,q4_k,q4_k-dq8,q4_k-df16,q4_k-vf16"),
-        ("teleocr", "f16,q8_0,q4_k-m,q4_k,q4_k-attn8")]
+# Version 2 completed the MinerU lane; version 3 reruns TeleOCR only, after the
+# fix that keeps the GPU F16 candidate dumps apart from the CPU F16 reference.
+RUNS = [("teleocr", "f16,q8_0,q4_k-m,q4_k,q4_k-attn8")]
 
 
 def sh(*command, **kwargs):

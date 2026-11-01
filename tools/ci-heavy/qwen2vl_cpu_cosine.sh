@@ -77,11 +77,12 @@ ab "$REF" cpu --force-reference --label forced --dump "$S/dump/$REF-forced"
 IFS=, read -ra vs <<< "$VARIANTS"
 for v in "${vs[@]}"; do
     ab "$v" "$DEVICE"
-    ab "$v" "$DEVICE" --force-reference --label forced --dump "$S/dump/$v-forced"
-    python tools/qwen2vl_stage_cosine.py --ref "$S/dump/$REF-forced" --cand "$S/dump/$v-forced" \
+    # candidate dumps carry the device: a GPU F16 arm must not overwrite the CPU F16 reference dumps
+    ab "$v" "$DEVICE" --force-reference --label forced --dump "$S/dump/$v-$DEVICE-cand"
+    python tools/qwen2vl_stage_cosine.py --ref "$S/dump/$REF-forced" --cand "$S/dump/$v-$DEVICE-cand" \
         --ref-receipt "$OUT/$REF-cpu-forced.json" --cand-receipt "$OUT/$v-$DEVICE-forced.json" --width $WIDTH \
         --out "$OUT/$v-$DEVICE.cosine.json" | tail -2
-    rm -rf "$S/dump/$v-forced"
+    rm -rf "$S/dump/$v-$DEVICE-cand"
     [ "$S/$v.gguf" = "$SRC" ] || rm -f "$S/$v.gguf"
 done
 ls -la "$S"/*.gguf > "$OUT/gguf-files.txt" 2>&1
