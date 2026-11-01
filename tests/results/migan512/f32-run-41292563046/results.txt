@@ -1,0 +1,8 @@
+original rc=0 seconds=69
+convert rc=0 seconds=10
+configure rc=0 seconds=3
+build rc=0 seconds=115
+native-controls rc=0 seconds=0
+cli-f32 rc=0 seconds=1
+score rc=0 seconds=1
+hf-preserve rc=1 seconds=0

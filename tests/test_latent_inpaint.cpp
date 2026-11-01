@@ -1006,13 +1006,32 @@ Json read_original_report(const fs::path & directory, const std::string & model)
     require(model != "pixelhacker" || doc.at("device").str().rfind("cuda", 0) == 0,
             "PixelHacker original requires actual CUDA FLA");
     const Json & versions = doc.at("versions");
-    keys(versions, { "torch", "diffusers", "flash-linear-attention", "numpy", "Pillow", "timm", "einops",
-                     "transformers", "accelerate" });
+    // An explicit dependency deviation (dump_latent_inpaint_reference.py
+    // --allow-dependency) is accepted only for torch, only when recorded
+    // against the frozen pin, and only matching the installed version.
+    const bool deviated = versions.kind == Json::object && versions.o.count("deviations") != 0;
+    if (deviated)
+        keys(versions, { "torch", "diffusers", "flash-linear-attention", "numpy", "Pillow", "timm", "einops",
+                         "transformers", "accelerate", "deviations" });
+    else
+        keys(versions, { "torch", "diffusers", "flash-linear-attention", "numpy", "Pillow", "timm", "einops",
+                         "transformers", "accelerate" });
     auto base_version = [&](const char * package) {
         const std::string & value = versions.at(package).str();
         return value.substr(0, value.find('+'));
     };
-    require(base_version("torch") == (model == "moebius" ? "2.7.1" : "2.3.0") &&
+    const std::string pinned_torch = model == "moebius" ? "2.7.1" : "2.3.0";
+    std::string accepted_torch = pinned_torch;
+    if (deviated) {
+        const Json & deviation = versions.at("deviations");
+        keys(deviation, { "torch" });
+        keys(deviation.at("torch"), { "contract", "actual" });
+        require(deviation.at("torch").at("contract").str() == pinned_torch &&
+                    deviation.at("torch").at("actual").str() == versions.at("torch").str(),
+                "recorded original dependency deviation is inconsistent");
+        accepted_torch = base_version("torch");
+    }
+    require(base_version("torch") == accepted_torch &&
                 base_version("diffusers") == (model == "moebius" ? "0.38.0" : "0.30.2") &&
                 base_version("flash-linear-attention") == "0.3.2",
             "original dependency version differs");

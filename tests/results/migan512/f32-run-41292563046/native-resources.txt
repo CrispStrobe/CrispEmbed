@@ -1,0 +1,16 @@
+f32 subtitle_bar 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:25.10
+f32 subtitle_bar 	Maximum resident set size (kbytes): 4771940
+f32 edge_touch 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:14.37
+f32 edge_touch 	Maximum resident set size (kbytes): 4772164
+f32 empty 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:01.47
+f32 empty 	Maximum resident set size (kbytes): 319760
+f32 full 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:01.40
+f32 full 	Maximum resident set size (kbytes): 320040
+f32 center 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:01.38
+f32 center 	Maximum resident set size (kbytes): 319916
+f32 one_pixel 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:01.39
+f32 one_pixel 	Maximum resident set size (kbytes): 320048
+f32 checkerboard 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:01.39
+f32 checkerboard 	Maximum resident set size (kbytes): 319832
+f32 thin_strip 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:01.40
+f32 thin_strip 	Maximum resident set size (kbytes): 319668

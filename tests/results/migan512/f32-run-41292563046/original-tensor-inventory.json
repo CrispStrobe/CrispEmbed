@@ -1,0 +1,2613 @@
+[
+  {
+    "name": "encoder.b128.conv1.conv1.bias",
+    "shape": [
+      256
+    ],
+    "dtype": "float32",
+    "sha256": "c3bb45e47374cf6af9b5f7f2b7d9a25df2ce8d583d5d8dd0724ba65a13a86536",
+    "min": -1.3466343879699707,
+    "max": 0.7242417335510254,
+    "l2": 2.4614850631100214,
+    "nonzero": 256,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b128.conv1.conv1.weight",
+    "shape": [
+      256,
+      1,
+      3,
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "a97560c795fcdc8827c2bd628f072ab8c528f9a12fe29e75c71004061db4bbb4",
+    "min": -0.8570424914360046,
+    "max": 0.9681226015090942,
+    "l2": 15.999999960654955,
+    "nonzero": 2304,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b128.conv1.conv2.weight",
+    "shape": [
+      256,
+      256,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "692ed91189a9feaac9d3a1ef6848cf5039331778c149cbc22c2bcd90c7765dcf",
+    "min": -0.5195135474205017,
+    "max": 0.5727262496948242,
+    "l2": 15.999999956839012,
+    "nonzero": 65536,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b128.conv2.conv1.bias",
+    "shape": [
+      256
+    ],
+    "dtype": "float32",
+    "sha256": "a5d65ef96aef728cf8b53dbf21d65aaf775113a591a0d2aaab9b791bfe8f1681",
+    "min": -0.5342721939086914,
+    "max": 0.397713303565979,
+    "l2": 1.9106088788841393,
+    "nonzero": 256,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b128.conv2.conv1.weight",
+    "shape": [
+      256,
+      1,
+      3,
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "9292eec473d82e64c301a6e59c936666f988ca9c47d4674354d2dbf6e19f7fe9",
+    "min": -0.6792764663696289,
+    "max": 0.8468328714370728,
+    "l2": 15.999999911438458,
+    "nonzero": 2304,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b128.conv2.conv2.weight",
+    "shape": [
+      512,
+      256,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "9078c7bdfcf680c8c07a9d5a7c2792ee18f38a017a9e77a415533793042883b8",
+    "min": -0.44011959433555603,
+    "max": 0.5663867592811584,
+    "l2": 22.627416948142084,
+    "nonzero": 131072,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b128.conv2.downsample.filter.weight",
+    "shape": [
+      256,
+      1,
+      4,
+      4
+    ],
+    "dtype": "float32",
+    "sha256": "787b81b66ae44055c39f6ba82dc95919dcd116ee87fed91fb60640d7940de7fc",
+    "min": 0.015625,
+    "max": 0.140625,
+    "l2": 5.0,
+    "nonzero": 4096,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b16.conv1.conv1.bias",
+    "shape": [
+      512
+    ],
+    "dtype": "float32",
+    "sha256": "a42551bb840c35f1e547c451bba3167077a42c6afc842edc03f6ec027341899c",
+    "min": -1.0389868021011353,
+    "max": 0.8182237148284912,
+    "l2": 4.475062031188091,
+    "nonzero": 512,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b16.conv1.conv1.weight",
+    "shape": [
+      512,
+      1,
+      3,
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "332657035f49c2334bc7a6c963add9226913bda3c9bb3bb210358f4d0f65189b",
+    "min": -0.9456331133842468,
+    "max": 0.9811526536941528,
+    "l2": 22.627417053164184,
+    "nonzero": 4608,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b16.conv1.conv2.weight",
+    "shape": [
+      512,
+      512,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "fe6a314f59fb6f84eb9f1834b3eac9d49cf953a5b64451de94ddc2956be8ae01",
+    "min": -0.3501794636249542,
+    "max": 0.5292138457298279,
+    "l2": 22.62741708225137,
+    "nonzero": 262144,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b16.conv2.conv1.bias",
+    "shape": [
+      512
+    ],
+    "dtype": "float32",
+    "sha256": "12dd41b62e5f343ce5367a33e076edad594cb04396cf4ae2ccc996765814af9e",
+    "min": -0.5415251851081848,
+    "max": 1.0686936378479004,
+    "l2": 4.325144394950519,
+    "nonzero": 512,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b16.conv2.conv1.weight",
+    "shape": [
+      512,
+      1,
+      3,
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "c5705cf2ab3befd32bc47c7a330214ea27f5c59880de1c08bcb7303dfa38e4ef",
+    "min": -0.9430224299430847,
+    "max": 0.9493831992149353,
+    "l2": 22.627417016613627,
+    "nonzero": 4608,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b16.conv2.conv2.weight",
+    "shape": [
+      512,
+      512,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "b121ce791e0bd97020206ce5d7df64acdae4f03d21bd75aa29e9aa607a78fead",
+    "min": -0.2974257171154022,
+    "max": 0.36731719970703125,
+    "l2": 22.627417003959774,
+    "nonzero": 262144,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b16.conv2.downsample.filter.weight",
+    "shape": [
+      512,
+      1,
+      4,
+      4
+    ],
+    "dtype": "float32",
+    "sha256": "62a9616b2c274dde816f66c6b8075a0ad05738aa43b265dc7c931c7ba3dcded3",
+    "min": 0.015625,
+    "max": 0.140625,
+    "l2": 7.0710678118654755,
+    "nonzero": 8192,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b256.conv1.conv1.bias",
+    "shape": [
+      128
+    ],
+    "dtype": "float32",
+    "sha256": "7d4c917cf8ba4bf07ca3671aa3acf324543758c7a099be57b00195245cf2d74b",
+    "min": -1.2290115356445312,
+    "max": 0.2446439117193222,
+    "l2": 1.7432659611320949,
+    "nonzero": 128,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b256.conv1.conv1.weight",
+    "shape": [
+      128,
+      1,
+      3,
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "f118b32e53f274a281a10f4962f4974d9db60116625ceb58a2e4cc05607ac751",
+    "min": -0.8336427211761475,
+    "max": 0.9493204355239868,
+    "l2": 11.31370855851929,
+    "nonzero": 1152,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b256.conv1.conv2.weight",
+    "shape": [
+      128,
+      128,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "ba700036615ef12476a9f04c07c4f92a8a93e10da03a4edc98ee42c4e33147f7",
+    "min": -0.561676561832428,
+    "max": 0.7027096152305603,
+    "l2": 11.313708527796363,
+    "nonzero": 16384,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b256.conv2.conv1.bias",
+    "shape": [
+      128
+    ],
+    "dtype": "float32",
+    "sha256": "ea99dcce5c381dfe13f3278766bafcb8ab70d6cba4acf945bbfc0ab6b6204e84",
+    "min": -1.1545904874801636,
+    "max": 0.1917068064212799,
+    "l2": 1.7100801919174142,
+    "nonzero": 128,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b256.conv2.conv1.weight",
+    "shape": [
+      128,
+      1,
+      3,
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "65fab17a6d886c56376a578aee679414039e90eb921c51bf3f47128b22cfb8b3",
+    "min": -0.6928879022598267,
+    "max": 0.842465341091156,
+    "l2": 11.313708485487473,
+    "nonzero": 1152,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b256.conv2.conv2.weight",
+    "shape": [
+      256,
+      128,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "167f7766b734f9ea453623babbe9f95cf311c7c93f3007cb46ca0d92f7b3164a",
+    "min": -0.49477729201316833,
+    "max": 0.7911443710327148,
+    "l2": 16.00000007398314,
+    "nonzero": 32768,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b256.conv2.downsample.filter.weight",
+    "shape": [
+      128,
+      1,
+      4,
+      4
+    ],
+    "dtype": "float32",
+    "sha256": "b7f9ae3841793ddf38aa933c404d9a2c2e0d56a9aec4a4a042140878208a08df",
+    "min": 0.015625,
+    "max": 0.140625,
+    "l2": 3.5355339059327378,
+    "nonzero": 2048,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b32.conv1.conv1.bias",
+    "shape": [
+      512
+    ],
+    "dtype": "float32",
+    "sha256": "00c36794b412660929db058ca9fa07c75f8e26244a3ae58f3f873b46e018d3e4",
+    "min": -0.9097297191619873,
+    "max": 1.0453435182571411,
+    "l2": 3.994559100228398,
+    "nonzero": 512,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b32.conv1.conv1.weight",
+    "shape": [
+      512,
+      1,
+      3,
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "b347c4e844105db7599ee279df96728ccae635d33b45bb93b3625fe1e7ad0c9f",
+    "min": -0.9334931373596191,
+    "max": 0.99704509973526,
+    "l2": 22.62741704811958,
+    "nonzero": 4608,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b32.conv1.conv2.weight",
+    "shape": [
+      512,
+      512,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "bd46986915e16bec8ee04cbb4b4d87834e88283f5ab51b09819a77a520b52523",
+    "min": -0.5600228905677795,
+    "max": 0.6069164276123047,
+    "l2": 22.62741705041525,
+    "nonzero": 262144,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b32.conv2.conv1.bias",
+    "shape": [
+      512
+    ],
+    "dtype": "float32",
+    "sha256": "ba99b12abaa55206059da54d410a571daa5c2ad1fd6d0433e9c36b3dc8505fa9",
+    "min": -0.7987282872200012,
+    "max": 2.280625820159912,
+    "l2": 4.5197971168193805,
+    "nonzero": 512,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b32.conv2.conv1.weight",
+    "shape": [
+      512,
+      1,
+      3,
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "24bfbc29247e0da30990b71cfce4f2e751427eab7c5901224e9a4b3d47fb1bdb",
+    "min": -0.8888144493103027,
+    "max": 0.9062673449516296,
+    "l2": 22.62741697992117,
+    "nonzero": 4608,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b32.conv2.conv2.weight",
+    "shape": [
+      512,
+      512,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "d264f9596b61d275a32e12b54091984abcfd036613ad61939043989177e348a4",
+    "min": -0.3692784905433655,
+    "max": 0.5062276721000671,
+    "l2": 22.627417057044408,
+    "nonzero": 262144,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b32.conv2.downsample.filter.weight",
+    "shape": [
+      512,
+      1,
+      4,
+      4
+    ],
+    "dtype": "float32",
+    "sha256": "62a9616b2c274dde816f66c6b8075a0ad05738aa43b265dc7c931c7ba3dcded3",
+    "min": 0.015625,
+    "max": 0.140625,
+    "l2": 7.0710678118654755,
+    "nonzero": 8192,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b4.conv1.conv1.bias",
+    "shape": [
+      512
+    ],
+    "dtype": "float32",
+    "sha256": "b6bad98fd8717fa2a07e5f695f3a33c68a54ac3882b29a295fc31d6bcc06e380",
+    "min": -1.6376208066940308,
+    "max": 0.6366932988166809,
+    "l2": 6.442374778011927,
+    "nonzero": 512,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b4.conv1.conv1.weight",
+    "shape": [
+      512,
+      1,
+      3,
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "14bbf256a91d63717c62980f0764137e50aa77e94e91f0d1273a27f29453e185",
+    "min": -0.9561587572097778,
+    "max": 0.9729922413825989,
+    "l2": 22.627416940563002,
+    "nonzero": 4608,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b4.conv1.conv2.weight",
+    "shape": [
+      512,
+      512,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "f9e5981a7bc3fbe4cedd302bec726b53467afe94fc3da76ff67e15a083678cfb",
+    "min": -0.3141947388648987,
+    "max": 0.27340227365493774,
+    "l2": 22.62741695959965,
+    "nonzero": 262144,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b4.conv2.conv1.bias",
+    "shape": [
+      512
+    ],
+    "dtype": "float32",
+    "sha256": "499704157900c634149eb3371bed2b8370c4dbd7351ff2f94c9152023f35245f",
+    "min": -1.2940983772277832,
+    "max": 0.6326311230659485,
+    "l2": 6.267025584260349,
+    "nonzero": 512,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b4.conv2.conv1.weight",
+    "shape": [
+      512,
+      1,
+      3,
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "8a2daa21e53f62d6b01032716888299b7fabff86d18f9c0b99185ccbde77e8b7",
+    "min": -0.9454086422920227,
+    "max": 0.9832950234413147,
+    "l2": 22.627416968724557,
+    "nonzero": 4608,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b4.conv2.conv2.weight",
+    "shape": [
+      512,
+      512,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "bbef5411bf868059ef144bfdd1997da4577b138dc8c0b784aad2c69953811661",
+    "min": -0.29127559065818787,
+    "max": 0.25061124563217163,
+    "l2": 22.627417070235435,
+    "nonzero": 262144,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b512.conv1.conv1.bias",
+    "shape": [
+      64
+    ],
+    "dtype": "float32",
+    "sha256": "e6a333003c7b8bee2bd36383a93bd2167057a89458237875bf359887ae7fd2f5",
+    "min": -0.8492035865783691,
+    "max": 0.7586343884468079,
+    "l2": 2.1044232587702587,
+    "nonzero": 64,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b512.conv1.conv1.weight",
+    "shape": [
+      64,
+      1,
+      3,
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "cd093e4a727a35f0fe197b5e67c009d8156af7277f4cf1d61b6cccc7e10e0ec1",
+    "min": -0.9716954231262207,
+    "max": 0.9780386090278625,
+    "l2": 8.000000016008014,
+    "nonzero": 576,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b512.conv1.conv2.weight",
+    "shape": [
+      64,
+      64,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "f594eb0cd6aecae3b694d356a0f6b259c6b661513959801e69e2253fd35ca762",
+    "min": -0.6543278694152832,
+    "max": 0.6512495279312134,
+    "l2": 7.999999994592471,
+    "nonzero": 4096,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b512.conv2.conv1.bias",
+    "shape": [
+      64
+    ],
+    "dtype": "float32",
+    "sha256": "feb238a6a4e0590f19e36a62e1e1c6975a09d4fbb96010722339ce7d3c037db0",
+    "min": -0.6797090172767639,
+    "max": 0.22455352544784546,
+    "l2": 1.0837331311784077,
+    "nonzero": 64,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b512.conv2.conv1.weight",
+    "shape": [
+      64,
+      1,
+      3,
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "04f7241741d7f2189dbff81eb84b18c58d30084a554e18ea8b018902441fdcda",
+    "min": -0.7061130404472351,
+    "max": 0.8545907735824585,
+    "l2": 8.000000038824593,
+    "nonzero": 576,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b512.conv2.conv2.weight",
+    "shape": [
+      128,
+      64,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "ffbba5620064822792b3a5402f2db977df119324dbf9274989ce490decc5c11f",
+    "min": -0.6611635088920593,
+    "max": 0.7985206246376038,
+    "l2": 11.313708468249034,
+    "nonzero": 8192,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b512.conv2.downsample.filter.weight",
+    "shape": [
+      64,
+      1,
+      4,
+      4
+    ],
+    "dtype": "float32",
+    "sha256": "0b1a934058cbeb6b1fcac39449276bd37416d06c8d6c67fa32ad08fcd89236eb",
+    "min": 0.015625,
+    "max": 0.140625,
+    "l2": 2.5,
+    "nonzero": 1024,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b512.fromrgb.bias",
+    "shape": [
+      64
+    ],
+    "dtype": "float32",
+    "sha256": "f18828bd07cd30131378b0d7bf289bb08ed63d38d04dfd412ece007301d19359",
+    "min": -0.985897421836853,
+    "max": 2.020214557647705,
+    "l2": 3.328665208816829,
+    "nonzero": 64,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b512.fromrgb.weight",
+    "shape": [
+      64,
+      4,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "e473b5fe2994d5f8a8aff56323f4557cc031e865726452ea6a7f8e03f971670e",
+    "min": -0.9885150790214539,
+    "max": 0.9599676728248596,
+    "l2": 7.999999961321553,
+    "nonzero": 256,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b64.conv1.conv1.bias",
+    "shape": [
+      512
+    ],
+    "dtype": "float32",
+    "sha256": "cd9d661553deef4b6775e6aba9a32f510443f7f10f3eb47af563c4e951ae5506",
+    "min": -1.593664288520813,
+    "max": 0.6791239380836487,
+    "l2": 3.6974548030162158,
+    "nonzero": 512,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b64.conv1.conv1.weight",
+    "shape": [
+      512,
+      1,
+      3,
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "99a9d8ee494bef0c28b003eaa84c9d86a46e005e45a68bbd8e7681a1ed24b2c0",
+    "min": -0.8676112294197083,
+    "max": 0.9911077618598938,
+    "l2": 22.62741692588576,
+    "nonzero": 4608,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b64.conv1.conv2.weight",
+    "shape": [
+      512,
+      512,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "1b64fe173c9ce0e74f7755e358a7fd31a7623cc78629aae21038c954d3307823",
+    "min": -0.3808319568634033,
+    "max": 0.4511788487434387,
+    "l2": 22.627416960499065,
+    "nonzero": 262144,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b64.conv2.conv1.bias",
+    "shape": [
+      512
+    ],
+    "dtype": "float32",
+    "sha256": "62f0621ea2b62384fe41e6bfbcca7f9cd91cc55c0cf4043e035cdba20d87f480",
+    "min": -1.1523890495300293,
+    "max": 0.9024577736854553,
+    "l2": 3.7840410880316515,
+    "nonzero": 512,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b64.conv2.conv1.weight",
+    "shape": [
+      512,
+      1,
+      3,
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "7302506aba7c8362654c9f5985a2088c2ea9a25997069c16ea414ef9ff2b5b2b",
+    "min": -0.9368842840194702,
+    "max": 0.9570868611335754,
+    "l2": 22.62741704348167,
+    "nonzero": 4608,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b64.conv2.conv2.weight",
+    "shape": [
+      512,
+      512,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "d7956105c260751c7ed3b52b58ddf512c5c76bf2d049811655c2831b3af7231b",
+    "min": -0.36344802379608154,
+    "max": 0.48233476281166077,
+    "l2": 22.627416978458715,
+    "nonzero": 262144,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b64.conv2.downsample.filter.weight",
+    "shape": [
+      512,
+      1,
+      4,
+      4
+    ],
+    "dtype": "float32",
+    "sha256": "62a9616b2c274dde816f66c6b8075a0ad05738aa43b265dc7c931c7ba3dcded3",
+    "min": 0.015625,
+    "max": 0.140625,
+    "l2": 7.0710678118654755,
+    "nonzero": 8192,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b8.conv1.conv1.bias",
+    "shape": [
+      512
+    ],
+    "dtype": "float32",
+    "sha256": "588327f0b359884340fd3bc6ee423953a7933df14cd6caf94c4e59f0e4f7bcc6",
+    "min": -0.7994279861450195,
+    "max": 1.2147557735443115,
+    "l2": 4.742499862836292,
+    "nonzero": 512,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b8.conv1.conv1.weight",
+    "shape": [
+      512,
+      1,
+      3,
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "86fff02bd401ada20b90312c34ca443536576c3ee51f377fdf91732feeef2b93",
+    "min": -0.9643739461898804,
+    "max": 0.9708324670791626,
+    "l2": 22.62741691134606,
+    "nonzero": 4608,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b8.conv1.conv2.weight",
+    "shape": [
+      512,
+      512,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "4daf4501bc5bc685c0083dd9d2658b2e985522acf1ccb1b7759973213fe8fd2f",
+    "min": -0.2687776982784271,
+    "max": 0.41181379556655884,
+    "l2": 22.62741694058092,
+    "nonzero": 262144,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b8.conv2.conv1.bias",
+    "shape": [
+      512
+    ],
+    "dtype": "float32",
+    "sha256": "79cad2132742e94e7af2f66d79947c1b7da084334d4a1eaf22cd33c4d7054041",
+    "min": -0.9360103011131287,
+    "max": 0.9473727941513062,
+    "l2": 5.015366584716658,
+    "nonzero": 512,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b8.conv2.conv1.weight",
+    "shape": [
+      512,
+      1,
+      3,
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "98093ef0c00cb5fd442bc632e58e320b90a246160e980505a14da9522e48acd9",
+    "min": -0.9749192595481873,
+    "max": 0.9798969626426697,
+    "l2": 22.62741704054819,
+    "nonzero": 4608,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b8.conv2.conv2.weight",
+    "shape": [
+      512,
+      512,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "11d758a6afe5b51a246503de23fd7d4714814311c4e6b9e6745cda092301ce68",
+    "min": -0.23368953168392181,
+    "max": 0.3200913965702057,
+    "l2": 22.62741699785183,
+    "nonzero": 262144,
+    "role": "parameter"
+  },
+  {
+    "name": "encoder.b8.conv2.downsample.filter.weight",
+    "shape": [
+      512,
+      1,
+      4,
+      4
+    ],
+    "dtype": "float32",
+    "sha256": "62a9616b2c274dde816f66c6b8075a0ad05738aa43b265dc7c931c7ba3dcded3",
+    "min": 0.015625,
+    "max": 0.140625,
+    "l2": 7.0710678118654755,
+    "nonzero": 8192,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b128.conv1.conv1.bias",
+    "shape": [
+      512
+    ],
+    "dtype": "float32",
+    "sha256": "6098d836e395fe7a266084f3a355f463b0c1b8468ad00217b6f40bbc1485bb22",
+    "min": -1.290562629699707,
+    "max": 0.8781322836875916,
+    "l2": 6.9204252740715955,
+    "nonzero": 512,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b128.conv1.conv1.weight",
+    "shape": [
+      512,
+      1,
+      3,
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "02b81268b27a24700c278a4b085febac80eee14e6c80adc0811c18f767b97c06",
+    "min": -0.8543635010719299,
+    "max": 0.9696129560470581,
+    "l2": 22.627417020310563,
+    "nonzero": 4608,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b128.conv1.conv2.weight",
+    "shape": [
+      256,
+      512,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "190d19ba3ac773e0515fc2a407124ad9bbef00a6579d91a421a5ac1095a2c3cb",
+    "min": -0.9308322072029114,
+    "max": 0.9795688390731812,
+    "l2": 16.000000043473072,
+    "nonzero": 131072,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b128.conv1.noise_const",
+    "shape": [
+      128,
+      128
+    ],
+    "dtype": "float32",
+    "sha256": "60aa1327e30bb772eecedcbabdc927214bf8d2024181cba0a4d94a5f37717cd7",
+    "min": -3.671886682510376,
+    "max": 4.442920207977295,
+    "l2": 127.8443219616602,
+    "nonzero": 16384,
+    "role": "buffer"
+  },
+  {
+    "name": "synthesis.b128.conv1.noise_strength",
+    "shape": [],
+    "dtype": "float32",
+    "sha256": "a09fcd01acdc4eeb887a7e8aeab6c12b78ccec894c916f79d919c5e921ba5f53",
+    "min": 0.013213523663580418,
+    "max": 0.013213523663580418,
+    "l2": 0.013213523663580418,
+    "nonzero": 1,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b128.conv1.upsample.filter.weight",
+    "shape": [
+      256,
+      1,
+      4,
+      4
+    ],
+    "dtype": "float32",
+    "sha256": "56ddd30b8d2faea5dda91b391ab2b53f7723b8c3256f0c8c2edcdeafbf17d12b",
+    "min": 0.0625,
+    "max": 0.5625,
+    "l2": 20.0,
+    "nonzero": 4096,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b128.conv1.upsample.filter_const",
+    "shape": [
+      1,
+      1,
+      128,
+      128
+    ],
+    "dtype": "float32",
+    "sha256": "c86eed5d5d35912f6dc6e46314fa4d3098023b392e168220516d5290f1502c8a",
+    "min": 0.0,
+    "max": 1.0,
+    "l2": 64.0,
+    "nonzero": 4096,
+    "role": "buffer"
+  },
+  {
+    "name": "synthesis.b128.conv2.conv1.bias",
+    "shape": [
+      256
+    ],
+    "dtype": "float32",
+    "sha256": "4c2d20a783bff53c3eddcc0834fe8d15c3a7ed50c8784da4d39b731344e96483",
+    "min": -1.1360379457473755,
+    "max": 2.429004192352295,
+    "l2": 7.4684633322630685,
+    "nonzero": 256,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b128.conv2.conv1.weight",
+    "shape": [
+      256,
+      1,
+      3,
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "5b550af3e947fc921f0ae8b4966e581f9c9f0661fc665cf2c3e445966c57adad",
+    "min": -0.9288901686668396,
+    "max": 0.9761377573013306,
+    "l2": 15.999999961037766,
+    "nonzero": 2304,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b128.conv2.conv2.weight",
+    "shape": [
+      256,
+      256,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "44e57f95d66bf1729ce2c89f2fc4f3f3da3b57f35f0ee2c54495f541978e3fa7",
+    "min": -0.6609548330307007,
+    "max": 0.7746037244796753,
+    "l2": 15.99999999537338,
+    "nonzero": 65536,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b128.conv2.noise_const",
+    "shape": [
+      128,
+      128
+    ],
+    "dtype": "float32",
+    "sha256": "1610af707622b65c69ce800bede6cf47090f9fda2cc0f288d744b6b80f14effb",
+    "min": -4.322260856628418,
+    "max": 4.185545921325684,
+    "l2": 129.21085337453405,
+    "nonzero": 16384,
+    "role": "buffer"
+  },
+  {
+    "name": "synthesis.b128.conv2.noise_strength",
+    "shape": [],
+    "dtype": "float32",
+    "sha256": "57b71f838f42c303ca488473053071bcc49825cc3c42a25644987861b26acffc",
+    "min": 0.00011569133494049311,
+    "max": 0.00011569133494049311,
+    "l2": 0.00011569133494049311,
+    "nonzero": 1,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b128.torgb.bias",
+    "shape": [
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "02bcdd1e6ae7ec87b7093df9cbe221d67566b2dc2e18449c54e7a9b4ba65784e",
+    "min": 0.06639550626277924,
+    "max": 0.08744185417890549,
+    "l2": 0.13632150007769842,
+    "nonzero": 3,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b128.torgb.weight",
+    "shape": [
+      3,
+      256,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "3a69892ebfb6bfa61fcd7afffd30fa662bd4db161fdd34ca6dbf2d15c4e8d7fc",
+    "min": -0.2308812439441681,
+    "max": 0.5517155528068542,
+    "l2": 1.7320507748920333,
+    "nonzero": 768,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b128.upsample.filter.weight",
+    "shape": [
+      3,
+      1,
+      4,
+      4
+    ],
+    "dtype": "float32",
+    "sha256": "65d996efbd71db61ca3020b37c6f7d036dbd2e0199b0618638f5eca18fec0227",
+    "min": 0.0625,
+    "max": 0.5625,
+    "l2": 2.165063509461097,
+    "nonzero": 48,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b128.upsample.filter_const",
+    "shape": [
+      1,
+      1,
+      128,
+      128
+    ],
+    "dtype": "float32",
+    "sha256": "c86eed5d5d35912f6dc6e46314fa4d3098023b392e168220516d5290f1502c8a",
+    "min": 0.0,
+    "max": 1.0,
+    "l2": 64.0,
+    "nonzero": 4096,
+    "role": "buffer"
+  },
+  {
+    "name": "synthesis.b16.conv1.conv1.bias",
+    "shape": [
+      512
+    ],
+    "dtype": "float32",
+    "sha256": "c7f3cecd47260074eaa3908a2756e6e7108ea227160ecbbd7c87e1619a19488c",
+    "min": -0.6133548021316528,
+    "max": 2.3167760372161865,
+    "l2": 5.911442341022671,
+    "nonzero": 512,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b16.conv1.conv1.weight",
+    "shape": [
+      512,
+      1,
+      3,
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "125b3e7c1f550c254dd022a5937e04c1113b4cc8a94da655d8b3a1818c28cf0d",
+    "min": -0.8649261593818665,
+    "max": 0.9891996383666992,
+    "l2": 22.627417046651313,
+    "nonzero": 4608,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b16.conv1.conv2.weight",
+    "shape": [
+      512,
+      512,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "18bdadf52735ab410f4ea38d6188587b9e239b109307cc6f8e1f173ed198d7ab",
+    "min": -0.31788092851638794,
+    "max": 0.4447609484195709,
+    "l2": 22.62741703339463,
+    "nonzero": 262144,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b16.conv1.noise_const",
+    "shape": [
+      16,
+      16
+    ],
+    "dtype": "float32",
+    "sha256": "91d986cc1730999bfaa8c4df21d0253f58cc860acf792b829541ad7738d0b37a",
+    "min": -3.653632640838623,
+    "max": 2.5883538722991943,
+    "l2": 15.391119293352787,
+    "nonzero": 256,
+    "role": "buffer"
+  },
+  {
+    "name": "synthesis.b16.conv1.noise_strength",
+    "shape": [],
+    "dtype": "float32",
+    "sha256": "7337318a2912b7356a4532c2f2d146d3eef575c44489f4243fd6ba9b6ec3fd54",
+    "min": -0.00372800650075078,
+    "max": -0.00372800650075078,
+    "l2": 0.00372800650075078,
+    "nonzero": 1,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b16.conv1.upsample.filter.weight",
+    "shape": [
+      512,
+      1,
+      4,
+      4
+    ],
+    "dtype": "float32",
+    "sha256": "db74bb914f52e6e854d0d6eacf1921c3fdb3595596606ee65b1f08c4cde69d72",
+    "min": 0.0625,
+    "max": 0.5625,
+    "l2": 28.284271247461902,
+    "nonzero": 8192,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b16.conv1.upsample.filter_const",
+    "shape": [
+      1,
+      1,
+      16,
+      16
+    ],
+    "dtype": "float32",
+    "sha256": "17de7559757e35c6e59bbf8d77bd7d5adcf050b5c999f37849fd0718ba0c7a89",
+    "min": 0.0,
+    "max": 1.0,
+    "l2": 8.0,
+    "nonzero": 64,
+    "role": "buffer"
+  },
+  {
+    "name": "synthesis.b16.conv2.conv1.bias",
+    "shape": [
+      512
+    ],
+    "dtype": "float32",
+    "sha256": "776af14b7315dfed3d346dc3138b01e2574bbdd7a68d682d1cb94a37a72d46c3",
+    "min": -1.4950376749038696,
+    "max": 0.9770089983940125,
+    "l2": 5.535699776326982,
+    "nonzero": 512,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b16.conv2.conv1.weight",
+    "shape": [
+      512,
+      1,
+      3,
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "38ad2f5d00113672fcc58df6417c9128dabe0518c7989023a1345881d5cee8c9",
+    "min": -0.9804556965827942,
+    "max": 0.9886434674263,
+    "l2": 22.627416943733383,
+    "nonzero": 4608,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b16.conv2.conv2.weight",
+    "shape": [
+      512,
+      512,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "c5179edff91dbe95e6930c1c3b2af04423c4d4fa5b1899232ab0c772bded6426",
+    "min": -0.4976406395435333,
+    "max": 0.5829495787620544,
+    "l2": 22.62741694574371,
+    "nonzero": 262144,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b16.conv2.noise_const",
+    "shape": [
+      16,
+      16
+    ],
+    "dtype": "float32",
+    "sha256": "04c5c362ff1cedd02a36146f6f1e662d1cee70ceb616afd5e04c96b4a376545a",
+    "min": -3.057281017303467,
+    "max": 2.3077125549316406,
+    "l2": 15.755075137321201,
+    "nonzero": 256,
+    "role": "buffer"
+  },
+  {
+    "name": "synthesis.b16.conv2.noise_strength",
+    "shape": [],
+    "dtype": "float32",
+    "sha256": "74d2a935946a5c7fe45bdcbb20162ee433e01601a0702e732fb0c09c0ad5a47e",
+    "min": -0.0013767242198809981,
+    "max": -0.0013767242198809981,
+    "l2": 0.0013767242198809981,
+    "nonzero": 1,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b16.torgb.bias",
+    "shape": [
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "243ad762a0a7c8b732c3e8ee531773ad487a1273b799534eeb888f5529a1722b",
+    "min": -0.006424723658710718,
+    "max": 0.007079456001520157,
+    "l2": 0.009715647734902109,
+    "nonzero": 3,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b16.torgb.weight",
+    "shape": [
+      3,
+      512,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "e519ca6721000ed66d5ed55f6b06f25e7d6680177a36b647ed83e9506f9def10",
+    "min": -0.27089348435401917,
+    "max": 0.3542954921722412,
+    "l2": 1.7320508483236259,
+    "nonzero": 1536,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b16.upsample.filter.weight",
+    "shape": [
+      3,
+      1,
+      4,
+      4
+    ],
+    "dtype": "float32",
+    "sha256": "65d996efbd71db61ca3020b37c6f7d036dbd2e0199b0618638f5eca18fec0227",
+    "min": 0.0625,
+    "max": 0.5625,
+    "l2": 2.165063509461097,
+    "nonzero": 48,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b16.upsample.filter_const",
+    "shape": [
+      1,
+      1,
+      16,
+      16
+    ],
+    "dtype": "float32",
+    "sha256": "17de7559757e35c6e59bbf8d77bd7d5adcf050b5c999f37849fd0718ba0c7a89",
+    "min": 0.0,
+    "max": 1.0,
+    "l2": 8.0,
+    "nonzero": 64,
+    "role": "buffer"
+  },
+  {
+    "name": "synthesis.b256.conv1.conv1.bias",
+    "shape": [
+      256
+    ],
+    "dtype": "float32",
+    "sha256": "777f8256b8e1421b78da8665c288c48fafc44baa916cd056f0619f31780c9ed3",
+    "min": -1.3199491500854492,
+    "max": 1.2215912342071533,
+    "l2": 4.76115143095981,
+    "nonzero": 256,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b256.conv1.conv1.weight",
+    "shape": [
+      256,
+      1,
+      3,
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "259f6d7705c3431ce7fd60db2fe9c93afea2abef81a9b8dbb5dd3095c4449c56",
+    "min": -0.7859302759170532,
+    "max": 0.9878025650978088,
+    "l2": 15.999999939238517,
+    "nonzero": 2304,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b256.conv1.conv2.weight",
+    "shape": [
+      128,
+      256,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "42b7a8b7510ab2990449f3c40c7d6ebbd18fca1be3795761dbc0de9edc40e899",
+    "min": -0.8593770861625671,
+    "max": 0.8778868317604065,
+    "l2": 11.313708492200224,
+    "nonzero": 32768,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b256.conv1.noise_const",
+    "shape": [
+      256,
+      256
+    ],
+    "dtype": "float32",
+    "sha256": "70694de2eebdfa2fb11925f78c3281ce979de77e33f8b5b4a413b70fa372a65b",
+    "min": -4.462174892425537,
+    "max": 4.2865891456604,
+    "l2": 256.1750284287023,
+    "nonzero": 65536,
+    "role": "buffer"
+  },
+  {
+    "name": "synthesis.b256.conv1.noise_strength",
+    "shape": [],
+    "dtype": "float32",
+    "sha256": "860bd27f92ae26dc81616c2af75a643f525b02ef1af946715f38697462cd6295",
+    "min": 9.955167479347438e-05,
+    "max": 9.955167479347438e-05,
+    "l2": 9.955167479347438e-05,
+    "nonzero": 1,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b256.conv1.upsample.filter.weight",
+    "shape": [
+      128,
+      1,
+      4,
+      4
+    ],
+    "dtype": "float32",
+    "sha256": "97cf37a6d696c7176f6bbdbec896b6109a99ffeebed3f4d321257640006ebb41",
+    "min": 0.0625,
+    "max": 0.5625,
+    "l2": 14.142135623730951,
+    "nonzero": 2048,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b256.conv1.upsample.filter_const",
+    "shape": [
+      1,
+      1,
+      256,
+      256
+    ],
+    "dtype": "float32",
+    "sha256": "d1cac9cfb3fd149ff2f2bf111dcb741372435f161fe6cff1df8db327307a85e2",
+    "min": 0.0,
+    "max": 1.0,
+    "l2": 128.0,
+    "nonzero": 16384,
+    "role": "buffer"
+  },
+  {
+    "name": "synthesis.b256.conv2.conv1.bias",
+    "shape": [
+      128
+    ],
+    "dtype": "float32",
+    "sha256": "651323f275a1dde7817ffa5c3e33cdaa95af9774e1940222e30bf0af276f3256",
+    "min": -1.6155744791030884,
+    "max": 1.8682725429534912,
+    "l2": 5.400447478357649,
+    "nonzero": 128,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b256.conv2.conv1.weight",
+    "shape": [
+      128,
+      1,
+      3,
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "3effffc3dcd3c4604fd3a182a8b234811bcff97a50f103da71f85b83ab0e06d6",
+    "min": -0.7910376787185669,
+    "max": 0.9567739963531494,
+    "l2": 11.31370853623784,
+    "nonzero": 1152,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b256.conv2.conv2.weight",
+    "shape": [
+      128,
+      128,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "00c22fa6d982dc7fd27423bd8ab3610902d8cbd0ecc49c206cc24576902e3d1a",
+    "min": -0.7873286604881287,
+    "max": 0.7242498993873596,
+    "l2": 11.313708474556169,
+    "nonzero": 16384,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b256.conv2.noise_const",
+    "shape": [
+      256,
+      256
+    ],
+    "dtype": "float32",
+    "sha256": "f283c62c2b20d4c167f37a98a03931f31a1cdf9132757513412d0423355a0395",
+    "min": -4.101398944854736,
+    "max": 4.098562717437744,
+    "l2": 257.2118181590245,
+    "nonzero": 65536,
+    "role": "buffer"
+  },
+  {
+    "name": "synthesis.b256.conv2.noise_strength",
+    "shape": [],
+    "dtype": "float32",
+    "sha256": "597df344e8c93c88fb9d6bf68756df1c592565ba609e9e719411cab1409ba760",
+    "min": -3.410153658478521e-05,
+    "max": -3.410153658478521e-05,
+    "l2": 3.410153658478521e-05,
+    "nonzero": 1,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b256.torgb.bias",
+    "shape": [
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "c27b704d58650de7e6b2fef7abdc6035ea4054ba3c72b24572f52798db31948b",
+    "min": 0.035540658980607986,
+    "max": 0.03860611841082573,
+    "l2": 0.06447025730550891,
+    "nonzero": 3,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b256.torgb.weight",
+    "shape": [
+      3,
+      128,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "0842336680cb194f522cd7fc492a2bc91a29b89b1867ca0a5292f1f1008f0c63",
+    "min": -0.48163801431655884,
+    "max": 0.4921368360519409,
+    "l2": 1.7320509213874298,
+    "nonzero": 384,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b256.upsample.filter.weight",
+    "shape": [
+      3,
+      1,
+      4,
+      4
+    ],
+    "dtype": "float32",
+    "sha256": "65d996efbd71db61ca3020b37c6f7d036dbd2e0199b0618638f5eca18fec0227",
+    "min": 0.0625,
+    "max": 0.5625,
+    "l2": 2.165063509461097,
+    "nonzero": 48,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b256.upsample.filter_const",
+    "shape": [
+      1,
+      1,
+      256,
+      256
+    ],
+    "dtype": "float32",
+    "sha256": "d1cac9cfb3fd149ff2f2bf111dcb741372435f161fe6cff1df8db327307a85e2",
+    "min": 0.0,
+    "max": 1.0,
+    "l2": 128.0,
+    "nonzero": 16384,
+    "role": "buffer"
+  },
+  {
+    "name": "synthesis.b32.conv1.conv1.bias",
+    "shape": [
+      512
+    ],
+    "dtype": "float32",
+    "sha256": "95b282066c0c5a45c3cb3951a8424ef2ecfa42f8bec22c89121e3ebdcb459b43",
+    "min": -1.1875101327896118,
+    "max": 3.366671085357666,
+    "l2": 7.570094634694265,
+    "nonzero": 512,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b32.conv1.conv1.weight",
+    "shape": [
+      512,
+      1,
+      3,
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "119c0b1b3db744e905b610e737308639cbe903899a5bf3505fbe5bcc58500644",
+    "min": -0.938409686088562,
+    "max": 0.9959772229194641,
+    "l2": 22.627416975215322,
+    "nonzero": 4608,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b32.conv1.conv2.weight",
+    "shape": [
+      512,
+      512,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "404ad95d820713cad942532ee0beb643bd804334737762f8b2c1b80894cc96fb",
+    "min": -0.5277220010757446,
+    "max": 0.5757030248641968,
+    "l2": 22.62741701863258,
+    "nonzero": 262144,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b32.conv1.noise_const",
+    "shape": [
+      32,
+      32
+    ],
+    "dtype": "float32",
+    "sha256": "8c60c88053baeb4bb13261d86aabbef8ce4162abe0aa5e6d7cc6644369aa8bd7",
+    "min": -3.8537535667419434,
+    "max": 3.2023422718048096,
+    "l2": 31.060952604054613,
+    "nonzero": 1024,
+    "role": "buffer"
+  },
+  {
+    "name": "synthesis.b32.conv1.noise_strength",
+    "shape": [],
+    "dtype": "float32",
+    "sha256": "91a9c58e8feac41181d15e1dec4185cef7e7c0b169be1ae9e6325c6d01a5db66",
+    "min": 0.06740768253803253,
+    "max": 0.06740768253803253,
+    "l2": 0.06740768253803253,
+    "nonzero": 1,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b32.conv1.upsample.filter.weight",
+    "shape": [
+      512,
+      1,
+      4,
+      4
+    ],
+    "dtype": "float32",
+    "sha256": "db74bb914f52e6e854d0d6eacf1921c3fdb3595596606ee65b1f08c4cde69d72",
+    "min": 0.0625,
+    "max": 0.5625,
+    "l2": 28.284271247461902,
+    "nonzero": 8192,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b32.conv1.upsample.filter_const",
+    "shape": [
+      1,
+      1,
+      32,
+      32
+    ],
+    "dtype": "float32",
+    "sha256": "46b769f185b2b281377c7110e06edc204b50673aa198358e3f2c1cb56c2038c0",
+    "min": 0.0,
+    "max": 1.0,
+    "l2": 16.0,
+    "nonzero": 256,
+    "role": "buffer"
+  },
+  {
+    "name": "synthesis.b32.conv2.conv1.bias",
+    "shape": [
+      512
+    ],
+    "dtype": "float32",
+    "sha256": "01f9df9ee71212d139fa65c89edd4649ccca7db94cb2d8bd44e0b7c264c4d37e",
+    "min": -1.3008273839950562,
+    "max": 1.477969765663147,
+    "l2": 7.7071771704809136,
+    "nonzero": 512,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b32.conv2.conv1.weight",
+    "shape": [
+      512,
+      1,
+      3,
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "4a04a8f80af4a59095eb2b483be1e2aabf963344806683946474450e71d94b86",
+    "min": -0.9801136255264282,
+    "max": 0.973605751991272,
+    "l2": 22.627417071384347,
+    "nonzero": 4608,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b32.conv2.conv2.weight",
+    "shape": [
+      512,
+      512,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "8bac75a4d0a525d43768076ec4623e74c0d6caddfc4088cab35804909fd843cb",
+    "min": -0.6697431206703186,
+    "max": 0.7758264541625977,
+    "l2": 22.62741698645433,
+    "nonzero": 262144,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b32.conv2.noise_const",
+    "shape": [
+      32,
+      32
+    ],
+    "dtype": "float32",
+    "sha256": "d774e16bf008b96f0a436dc1f1c9835d853bc42955f552dfbe8e9e5593f7e752",
+    "min": -2.502842426300049,
+    "max": 2.9035251140594482,
+    "l2": 31.225499059244605,
+    "nonzero": 1024,
+    "role": "buffer"
+  },
+  {
+    "name": "synthesis.b32.conv2.noise_strength",
+    "shape": [],
+    "dtype": "float32",
+    "sha256": "fd92f34de3bf404b0e3d6b829af3edcfb36bf6f982f6cb24d85c4d53b24f9152",
+    "min": 0.0007298882119357586,
+    "max": 0.0007298882119357586,
+    "l2": 0.0007298882119357586,
+    "nonzero": 1,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b32.torgb.bias",
+    "shape": [
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "58f8280a908faec45597622db771ded8c20d2d3568e69b1bd554436016f42379",
+    "min": -0.005209772381931543,
+    "max": 0.007573568262159824,
+    "l2": 0.0102239931068344,
+    "nonzero": 3,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b32.torgb.weight",
+    "shape": [
+      3,
+      512,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "a0e89a7ac300ab17dd3fa6ebdbb2cddede614f1a726c7a2db2ecd4871326c5f0",
+    "min": -0.3249932527542114,
+    "max": 0.31375476717948914,
+    "l2": 1.7320508578940297,
+    "nonzero": 1536,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b32.upsample.filter.weight",
+    "shape": [
+      3,
+      1,
+      4,
+      4
+    ],
+    "dtype": "float32",
+    "sha256": "65d996efbd71db61ca3020b37c6f7d036dbd2e0199b0618638f5eca18fec0227",
+    "min": 0.0625,
+    "max": 0.5625,
+    "l2": 2.165063509461097,
+    "nonzero": 48,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b32.upsample.filter_const",
+    "shape": [
+      1,
+      1,
+      32,
+      32
+    ],
+    "dtype": "float32",
+    "sha256": "46b769f185b2b281377c7110e06edc204b50673aa198358e3f2c1cb56c2038c0",
+    "min": 0.0,
+    "max": 1.0,
+    "l2": 16.0,
+    "nonzero": 256,
+    "role": "buffer"
+  },
+  {
+    "name": "synthesis.b4.conv1.conv1.bias",
+    "shape": [
+      512
+    ],
+    "dtype": "float32",
+    "sha256": "7b9bd6f088f5ec895263c847c7c7baa9fec2317dd383331533e10431e54c3b80",
+    "min": -0.6763560175895691,
+    "max": 1.6896127462387085,
+    "l2": 3.35880146943045,
+    "nonzero": 512,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b4.conv1.conv1.weight",
+    "shape": [
+      512,
+      1,
+      3,
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "9c684d218653620a1ce3b3109657a736eaea8d68636b82115302587602b29195",
+    "min": -0.9483203887939453,
+    "max": 0.9796679615974426,
+    "l2": 22.62741699376896,
+    "nonzero": 4608,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b4.conv1.conv2.weight",
+    "shape": [
+      512,
+      512,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "959d2e05c523848c100702654fd6977a9c2f2af0b9273558b899e80e598c8f08",
+    "min": -0.22427980601787567,
+    "max": 0.21090355515480042,
+    "l2": 22.627417122790778,
+    "nonzero": 262144,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b4.conv2.conv1.bias",
+    "shape": [
+      512
+    ],
+    "dtype": "float32",
+    "sha256": "0b8fc748a0d781ef05cb9cc732b09a4e489b89d9d0f75fcde922c360fbbb1bf0",
+    "min": -0.8750981092453003,
+    "max": 0.13638459146022797,
+    "l2": 2.1511015922421515,
+    "nonzero": 512,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b4.conv2.conv1.weight",
+    "shape": [
+      512,
+      1,
+      3,
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "c38de96dfe727c81231c665893fa969da4cc6ad5cf1da271a42e3fe061ced948",
+    "min": -0.8921351432800293,
+    "max": 0.9265908598899841,
+    "l2": 22.627417026283123,
+    "nonzero": 4608,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b4.conv2.conv2.weight",
+    "shape": [
+      512,
+      512,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "478c45b1a1ca99667f7e36489f6d9db1e791f93692ecf7482d37a5ca3fd9d5a0",
+    "min": -0.2065000981092453,
+    "max": 0.3373831510543823,
+    "l2": 22.62741697231972,
+    "nonzero": 262144,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b4.torgb.bias",
+    "shape": [
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "e4071ad1927a84f8edaa7b2068de8682630d26c8ba9e5f493c42e6c3db735a84",
+    "min": -0.0004203053249511868,
+    "max": 0.0024278881028294563,
+    "l2": 0.0026243812484271537,
+    "nonzero": 3,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b4.torgb.weight",
+    "shape": [
+      3,
+      512,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "212431c74fd057935449948714c2a451a0d0117275b5bc9537f179f010ce0337",
+    "min": -0.3123520612716675,
+    "max": 0.2561984360218048,
+    "l2": 1.7320507600233,
+    "nonzero": 1536,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b512.conv1.conv1.bias",
+    "shape": [
+      128
+    ],
+    "dtype": "float32",
+    "sha256": "44877a391e8b11bc0fd1c789f770abb1c6e07f9ffa98a71c560aa57f28bbd800",
+    "min": -1.547204852104187,
+    "max": 1.1050111055374146,
+    "l2": 3.0256879733535498,
+    "nonzero": 128,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b512.conv1.conv1.weight",
+    "shape": [
+      128,
+      1,
+      3,
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "90a0e7cb1cbccd60dd05252c0efe4e526b39bafc1d48c6d97eacf9df43eec978",
+    "min": -0.9237267971038818,
+    "max": 0.935067892074585,
+    "l2": 11.313708463016686,
+    "nonzero": 1152,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b512.conv1.conv2.weight",
+    "shape": [
+      64,
+      128,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "26a19f9e7c09c118fe4839c6d91a7d3c48431eb37e301b47d534977945df0127",
+    "min": -0.5688967108726501,
+    "max": 0.6883668899536133,
+    "l2": 8.000000012057274,
+    "nonzero": 8192,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b512.conv1.noise_const",
+    "shape": [
+      512,
+      512
+    ],
+    "dtype": "float32",
+    "sha256": "5af9306900e2bd6ea1c174ad2bb9f49caa6f0d124b63a772fd4d65ec4580cfdc",
+    "min": -4.460946559906006,
+    "max": 4.662383079528809,
+    "l2": 513.0849583392561,
+    "nonzero": 262144,
+    "role": "buffer"
+  },
+  {
+    "name": "synthesis.b512.conv1.noise_strength",
+    "shape": [],
+    "dtype": "float32",
+    "sha256": "ff09effbaa3cec439bfbc9b41d1924f5a3a61044ef3bf3b1b4c610e783211ac9",
+    "min": -2.025306685027317e-06,
+    "max": -2.025306685027317e-06,
+    "l2": 2.025306685027317e-06,
+    "nonzero": 1,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b512.conv1.upsample.filter.weight",
+    "shape": [
+      64,
+      1,
+      4,
+      4
+    ],
+    "dtype": "float32",
+    "sha256": "31167ccaf0613220239107af007c994af6640bb3ac9dfd31753503aa9c157c0c",
+    "min": 0.0625,
+    "max": 0.5625,
+    "l2": 10.0,
+    "nonzero": 1024,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b512.conv1.upsample.filter_const",
+    "shape": [
+      1,
+      1,
+      512,
+      512
+    ],
+    "dtype": "float32",
+    "sha256": "67ceed9ef9e31cbdc4a74c919d99959cf0bf822c61dbe705cbd0efd3637792d9",
+    "min": 0.0,
+    "max": 1.0,
+    "l2": 256.0,
+    "nonzero": 65536,
+    "role": "buffer"
+  },
+  {
+    "name": "synthesis.b512.conv2.conv1.bias",
+    "shape": [
+      64
+    ],
+    "dtype": "float32",
+    "sha256": "864f8b4ba4b7800f6105745d88df0a0df44fc7f9c7a1ab1eaa2755e704a838b8",
+    "min": -0.5978607535362244,
+    "max": 0.9085995554924011,
+    "l2": 2.234136599323324,
+    "nonzero": 64,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b512.conv2.conv1.weight",
+    "shape": [
+      64,
+      1,
+      3,
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "541536f35cc322a145e16858faf43e5daa61fd127785b0bb353daf5614cbe135",
+    "min": -0.9867699146270752,
+    "max": 0.9509342312812805,
+    "l2": 8.000000001097911,
+    "nonzero": 576,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b512.conv2.conv2.weight",
+    "shape": [
+      64,
+      64,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "2450fc6f46ad849957f9b6d3f0a1d0cf7c34e7ca5264b5abc0c16e2c9b0d9b3f",
+    "min": -0.6486220359802246,
+    "max": 0.6323021650314331,
+    "l2": 7.999999999674154,
+    "nonzero": 4096,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b512.conv2.noise_const",
+    "shape": [
+      512,
+      512
+    ],
+    "dtype": "float32",
+    "sha256": "00c6e6d935f4b8fe4a8bbb9131289ea2e2a4217e2f6c7d72e5c04f9f4c5f7ef2",
+    "min": -4.464856147766113,
+    "max": 5.462669849395752,
+    "l2": 512.3823106899622,
+    "nonzero": 262144,
+    "role": "buffer"
+  },
+  {
+    "name": "synthesis.b512.conv2.noise_strength",
+    "shape": [],
+    "dtype": "float32",
+    "sha256": "e79b095c5ca78debc682426f64d0a89ab797d51470e11e470636a9c1f4293c30",
+    "min": -8.229896593547892e-06,
+    "max": -8.229896593547892e-06,
+    "l2": 8.229896593547892e-06,
+    "nonzero": 1,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b512.torgb.bias",
+    "shape": [
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "1afcd110abdb5d8150c212522be0b69b338ff000809d9cedaf211800015d9830",
+    "min": -0.041481152176856995,
+    "max": -0.028978463262319565,
+    "l2": 0.059956935931464256,
+    "nonzero": 3,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b512.torgb.weight",
+    "shape": [
+      3,
+      64,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "63d63518c02ad5e6bd8e4e1ea4e458daad1d9658c59ce836cf305d4f22176402",
+    "min": -0.1963571012020111,
+    "max": 0.251952588558197,
+    "l2": 1.7320508467314173,
+    "nonzero": 192,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b512.upsample.filter.weight",
+    "shape": [
+      3,
+      1,
+      4,
+      4
+    ],
+    "dtype": "float32",
+    "sha256": "65d996efbd71db61ca3020b37c6f7d036dbd2e0199b0618638f5eca18fec0227",
+    "min": 0.0625,
+    "max": 0.5625,
+    "l2": 2.165063509461097,
+    "nonzero": 48,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b512.upsample.filter_const",
+    "shape": [
+      1,
+      1,
+      512,
+      512
+    ],
+    "dtype": "float32",
+    "sha256": "67ceed9ef9e31cbdc4a74c919d99959cf0bf822c61dbe705cbd0efd3637792d9",
+    "min": 0.0,
+    "max": 1.0,
+    "l2": 256.0,
+    "nonzero": 65536,
+    "role": "buffer"
+  },
+  {
+    "name": "synthesis.b64.conv1.conv1.bias",
+    "shape": [
+      512
+    ],
+    "dtype": "float32",
+    "sha256": "f642a984eacf28bbbaba1056f73fb6204f66ffeed048572442e513eb02cf82eb",
+    "min": -1.6975270509719849,
+    "max": 1.0130490064620972,
+    "l2": 7.358432704268106,
+    "nonzero": 512,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b64.conv1.conv1.weight",
+    "shape": [
+      512,
+      1,
+      3,
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "027b8c6465414e7aa2f7ba10c4d297e45f108ec3cc8e7122ffc561abbf757c80",
+    "min": -0.9644564390182495,
+    "max": 0.9922059178352356,
+    "l2": 22.627416948266443,
+    "nonzero": 4608,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b64.conv1.conv2.weight",
+    "shape": [
+      512,
+      512,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "fcbcb0f017397d676ef494afca7bf637c28fe57b09abc89c63829e86ded13713",
+    "min": -0.7690325379371643,
+    "max": 0.9445521235466003,
+    "l2": 22.627417057183436,
+    "nonzero": 262144,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b64.conv1.noise_const",
+    "shape": [
+      64,
+      64
+    ],
+    "dtype": "float32",
+    "sha256": "aac47f5637d7372123c0913d56eb74f0052896dff33c4070685b37e9a7a0698f",
+    "min": -3.5002362728118896,
+    "max": 3.6432931423187256,
+    "l2": 64.48690106205733,
+    "nonzero": 4096,
+    "role": "buffer"
+  },
+  {
+    "name": "synthesis.b64.conv1.noise_strength",
+    "shape": [],
+    "dtype": "float32",
+    "sha256": "a9caf7febcd061bd889b92bd2804096127f91f194dce9032b72a8286e1e51e07",
+    "min": 0.05259920656681061,
+    "max": 0.05259920656681061,
+    "l2": 0.05259920656681061,
+    "nonzero": 1,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b64.conv1.upsample.filter.weight",
+    "shape": [
+      512,
+      1,
+      4,
+      4
+    ],
+    "dtype": "float32",
+    "sha256": "db74bb914f52e6e854d0d6eacf1921c3fdb3595596606ee65b1f08c4cde69d72",
+    "min": 0.0625,
+    "max": 0.5625,
+    "l2": 28.284271247461902,
+    "nonzero": 8192,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b64.conv1.upsample.filter_const",
+    "shape": [
+      1,
+      1,
+      64,
+      64
+    ],
+    "dtype": "float32",
+    "sha256": "e4b450e8e1bbc086af5a3793729ab0544038e73f6d43df31ff482ccd583c52b6",
+    "min": 0.0,
+    "max": 1.0,
+    "l2": 32.0,
+    "nonzero": 1024,
+    "role": "buffer"
+  },
+  {
+    "name": "synthesis.b64.conv2.conv1.bias",
+    "shape": [
+      512
+    ],
+    "dtype": "float32",
+    "sha256": "68bc1dd223384fa335a2e2245fdd487f6763fc72c3817ac58bbb5064a0cfdab1",
+    "min": -1.1898176670074463,
+    "max": 2.6291275024414062,
+    "l2": 9.305663172116578,
+    "nonzero": 512,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b64.conv2.conv1.weight",
+    "shape": [
+      512,
+      1,
+      3,
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "2872d7e12553ec45ad3be8d3156130f2fd9a89c851034ea19d2eea5ac96597e7",
+    "min": -0.9608924984931946,
+    "max": 0.9726471304893494,
+    "l2": 22.627417022113164,
+    "nonzero": 4608,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b64.conv2.conv2.weight",
+    "shape": [
+      512,
+      512,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "849f23c964a69a8172df19369db9a320a35ed3f1d1bb306d1c5f25cfa622403c",
+    "min": -0.7148679494857788,
+    "max": 0.585087239742279,
+    "l2": 22.62741704658169,
+    "nonzero": 262144,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b64.conv2.noise_const",
+    "shape": [
+      64,
+      64
+    ],
+    "dtype": "float32",
+    "sha256": "be08c01884769c19c8ebb5823989bb7c14bd6f0dfd7a397ac06ced23146c95e4",
+    "min": -3.1636695861816406,
+    "max": 3.881619453430176,
+    "l2": 63.46866703489018,
+    "nonzero": 4096,
+    "role": "buffer"
+  },
+  {
+    "name": "synthesis.b64.conv2.noise_strength",
+    "shape": [],
+    "dtype": "float32",
+    "sha256": "b8464dbaebc1d2da8998f72c228867cae538cd0af0b75ba02e18329daf74b0ad",
+    "min": 7.005396037129685e-05,
+    "max": 7.005396037129685e-05,
+    "l2": 7.005396037129685e-05,
+    "nonzero": 1,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b64.torgb.bias",
+    "shape": [
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "af2f1c39917bd25acfdf2a72ff76a30fb49ccc9965be39511e90ee7eef612ee7",
+    "min": 0.022613123059272766,
+    "max": 0.03422274440526962,
+    "l2": 0.04807268018950374,
+    "nonzero": 3,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b64.torgb.weight",
+    "shape": [
+      3,
+      512,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "66fce658c4878c3fb1d3a6abdadb15ca49b4e9601c79cbcf3d9d25abc0e41280",
+    "min": -0.31395280361175537,
+    "max": 0.30411943793296814,
+    "l2": 1.732050798670689,
+    "nonzero": 1536,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b64.upsample.filter.weight",
+    "shape": [
+      3,
+      1,
+      4,
+      4
+    ],
+    "dtype": "float32",
+    "sha256": "65d996efbd71db61ca3020b37c6f7d036dbd2e0199b0618638f5eca18fec0227",
+    "min": 0.0625,
+    "max": 0.5625,
+    "l2": 2.165063509461097,
+    "nonzero": 48,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b64.upsample.filter_const",
+    "shape": [
+      1,
+      1,
+      64,
+      64
+    ],
+    "dtype": "float32",
+    "sha256": "e4b450e8e1bbc086af5a3793729ab0544038e73f6d43df31ff482ccd583c52b6",
+    "min": 0.0,
+    "max": 1.0,
+    "l2": 32.0,
+    "nonzero": 1024,
+    "role": "buffer"
+  },
+  {
+    "name": "synthesis.b8.conv1.conv1.bias",
+    "shape": [
+      512
+    ],
+    "dtype": "float32",
+    "sha256": "b0e03620fadb18f7eca011b2d747f3cad391a841ed0606d92cc8d9c5a005ed14",
+    "min": -0.4778796136379242,
+    "max": 0.9557889103889465,
+    "l2": 2.889220701943308,
+    "nonzero": 512,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b8.conv1.conv1.weight",
+    "shape": [
+      512,
+      1,
+      3,
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "c0d29ba088d39d8b38691ca409c73f5042bdcaeeb1955b0ad9a95ee00f80d085",
+    "min": -0.714422345161438,
+    "max": 0.9878352284431458,
+    "l2": 22.627417049579442,
+    "nonzero": 4608,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b8.conv1.conv2.weight",
+    "shape": [
+      512,
+      512,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "780ee64dc71b628f471d06a2df6c81ce1dcee510e9ba3298f2c7d4f8f4895414",
+    "min": -0.3085312843322754,
+    "max": 0.3767542243003845,
+    "l2": 22.62741702542717,
+    "nonzero": 262144,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b8.conv1.noise_const",
+    "shape": [
+      8,
+      8
+    ],
+    "dtype": "float32",
+    "sha256": "44c6ca80ac31cb09eaef295d50f01df61457178cb220250bfbcbb672c2618b78",
+    "min": -2.5600521564483643,
+    "max": 1.8218140602111816,
+    "l2": 8.133764837976093,
+    "nonzero": 64,
+    "role": "buffer"
+  },
+  {
+    "name": "synthesis.b8.conv1.noise_strength",
+    "shape": [],
+    "dtype": "float32",
+    "sha256": "c5efe18c28ce759c2b3d31e603d2153f10c99ed1a302f1c0da542a64bddeba85",
+    "min": 0.004396122880280018,
+    "max": 0.004396122880280018,
+    "l2": 0.004396122880280018,
+    "nonzero": 1,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b8.conv1.upsample.filter.weight",
+    "shape": [
+      512,
+      1,
+      4,
+      4
+    ],
+    "dtype": "float32",
+    "sha256": "db74bb914f52e6e854d0d6eacf1921c3fdb3595596606ee65b1f08c4cde69d72",
+    "min": 0.0625,
+    "max": 0.5625,
+    "l2": 28.284271247461902,
+    "nonzero": 8192,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b8.conv1.upsample.filter_const",
+    "shape": [
+      1,
+      1,
+      8,
+      8
+    ],
+    "dtype": "float32",
+    "sha256": "0e6f07f49e96f6410a55d5a68c7233ef036f87966fc0553edf71bd9fd1cd0903",
+    "min": 0.0,
+    "max": 1.0,
+    "l2": 4.0,
+    "nonzero": 16,
+    "role": "buffer"
+  },
+  {
+    "name": "synthesis.b8.conv2.conv1.bias",
+    "shape": [
+      512
+    ],
+    "dtype": "float32",
+    "sha256": "823532035c623ca43ea3a69571ad03e08bbf5ba12515cf5c0ea1bb7de6eaafdf",
+    "min": -0.48204290866851807,
+    "max": 0.6470423936843872,
+    "l2": 3.8410214343796505,
+    "nonzero": 512,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b8.conv2.conv1.weight",
+    "shape": [
+      512,
+      1,
+      3,
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "89fddd59b694082cd3926c1ddda294cf0ccf1268ccf12fdc0694df0bacb3735d",
+    "min": -0.953850507736206,
+    "max": 0.9743968844413757,
+    "l2": 22.627416998801053,
+    "nonzero": 4608,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b8.conv2.conv2.weight",
+    "shape": [
+      512,
+      512,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "782a129405b9ebfe1ffbe05fb4e2284cd4323ab4ee739d7ab5311ca56ca37edc",
+    "min": -0.4124816656112671,
+    "max": 0.4658898115158081,
+    "l2": 22.627416935774747,
+    "nonzero": 262144,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b8.conv2.noise_const",
+    "shape": [
+      8,
+      8
+    ],
+    "dtype": "float32",
+    "sha256": "6672b82211e1eaad89f2d2523d4ee00c0047c9429e6497a496669747b55e6ec4",
+    "min": -2.1628708839416504,
+    "max": 1.8364933729171753,
+    "l2": 6.8643427107041495,
+    "nonzero": 64,
+    "role": "buffer"
+  },
+  {
+    "name": "synthesis.b8.conv2.noise_strength",
+    "shape": [],
+    "dtype": "float32",
+    "sha256": "5a6df051fa29b316eb5c4ad4a2c86b20ab5db5382fdcfbd891514889b8265343",
+    "min": -0.00018500545411370695,
+    "max": -0.00018500545411370695,
+    "l2": 0.00018500545411370695,
+    "nonzero": 1,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b8.torgb.bias",
+    "shape": [
+      3
+    ],
+    "dtype": "float32",
+    "sha256": "5443d5ce62dd6e192b178db21eb58025f923f3cb9365c06a562082e256f3e726",
+    "min": -0.0035095212515443563,
+    "max": 0.005605835467576981,
+    "l2": 0.006709691996989058,
+    "nonzero": 3,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b8.torgb.weight",
+    "shape": [
+      3,
+      512,
+      1,
+      1
+    ],
+    "dtype": "float32",
+    "sha256": "5517973909c20343880cef104e0ad07cf43fe0ebbf1c24b943fd32a3ee043d25",
+    "min": -0.2773999869823456,
+    "max": 0.29723629355430603,
+    "l2": 1.732050875293458,
+    "nonzero": 1536,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b8.upsample.filter.weight",
+    "shape": [
+      3,
+      1,
+      4,
+      4
+    ],
+    "dtype": "float32",
+    "sha256": "65d996efbd71db61ca3020b37c6f7d036dbd2e0199b0618638f5eca18fec0227",
+    "min": 0.0625,
+    "max": 0.5625,
+    "l2": 2.165063509461097,
+    "nonzero": 48,
+    "role": "parameter"
+  },
+  {
+    "name": "synthesis.b8.upsample.filter_const",
+    "shape": [
+      1,
+      1,
+      8,
+      8
+    ],
+    "dtype": "float32",
+    "sha256": "0e6f07f49e96f6410a55d5a68c7233ef036f87966fc0553edf71bd9fd1cd0903",
+    "min": 0.0,
+    "max": 1.0,
+    "l2": 4.0,
+    "nonzero": 16,
+    "role": "buffer"
+  }
+]

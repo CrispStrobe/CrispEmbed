@@ -34,7 +34,11 @@ TEMP = Path("/kaggle/temp")
 PROGRESS = WORK / "progress.txt"
 MODELS = ("moebius", "pixelhacker")
 TORCH = {"moebius": ("2.7.1", "0.22.1", "https://download.pytorch.org/whl/cu126"),
-         "pixelhacker": ("2.3.0", "0.18.0", "https://download.pytorch.org/whl/cu121")}
+         # Contract pins torch 2.3.0 beside upstream's triton 3.2.0; that pair
+         # cannot import FLA 0.3.2 (recorded failure). torch 2.6.0 is triton
+         # 3.2.0's release; the capture records it as an explicit deviation.
+         "pixelhacker": ("2.6.0", "0.21.0", "https://download.pytorch.org/whl/cu124")}
+DEVIATIONS = {"moebius": [], "pixelhacker": ["--allow-dependency", "torch==2.6.0"]}
 PACKAGES = {
     "moebius": ["diffusers==0.38.0", "accelerate==1.14.0", "transformers", "flash-linear-attention==0.3.2",
                 "safetensors", "pillow", "numpy", "opencv-python-headless", "pyyaml", "omegaconf", "timm",
@@ -46,7 +50,7 @@ PACKAGES = {
 # Upstream pins triton 3.2.0 beside torch 2.3.0 (whose metadata asks for 2.3.0),
 # so these two are installed after resolution, exactly as the author's list.
 # FLA 0.3.2 ships its `fla` ops in the separate fla-core distribution.
-NO_DEPS = {"moebius": [], "pixelhacker": ["flash-linear-attention==0.3.2", "fla-core==0.3.2", "triton==3.2.0"]}
+NO_DEPS = {"moebius": [], "pixelhacker": ["flash-linear-attention==0.3.2", "fla-core==0.3.2"]}
 
 
 def progress(message):
@@ -139,7 +143,7 @@ def main(model):
     step("capture-original", [python, "tools/dump_latent_inpaint_reference.py", "--model", model,
                               "--source-dir", source, "--checkpoint", checkpoints[model],
                               "--vae-checkpoint", checkpoints["sdxl_vae"], "--output", output,
-                              "--device", "cuda:0", "--threads", "2"], 5400, env)
+                              "--device", "cuda:0", "--threads", "2", *DEVIATIONS[model]], 5400, env)
     report = json.loads((output / "report.json").read_text())
     (WORK / "original-report.json").write_text(json.dumps(report, indent=2) + "\n")
     for case in report["cases"]:

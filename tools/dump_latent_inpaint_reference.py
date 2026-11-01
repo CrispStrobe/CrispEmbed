@@ -29,14 +29,21 @@ from latent_inpaint_contract import (CASES, CONTRACT, RESOLUTION, fixture, fixtu
                                     load_contract, model_record, sha256, verify_checkpoint, verify_source)
 
 
-def check_dependencies(model, contract):
+def check_dependencies(model, contract, allowed=None):
+    """allowed: explicit {package: version} deviations from the frozen pins
+    (default none). Each one used is recorded under versions["deviations"]."""
     expected = contract["source"][model]
-    versions = {}
+    versions, deviations = {}, {}
+    allowed = allowed or {}
     for package, version in expected["dependencies"].items():
         actual = importlib.metadata.version(package)
         versions[package] = actual
         if actual.split("+")[0] != version:
-            raise ValueError(f"original dependency version differs: {package}: {actual} != {version}")
+            if allowed.get(package) != actual.split("+")[0]:
+                raise ValueError(f"original dependency version differs: {package}: {actual} != {version}")
+            deviations[package] = {"contract": version, "actual": actual}
+    if deviations:
+        versions["deviations"] = deviations
     import diffusers
 
     package_root = Path(diffusers.__file__).resolve().parent
@@ -52,12 +59,12 @@ def check_dependencies(model, contract):
     return versions
 
 
-def load_original(model_name, source_dir, checkpoint, vae_checkpoint, device):
+def load_original(model_name, source_dir, checkpoint, vae_checkpoint, device, allowed=None):
     contract = load_contract()
     verify_source(source_dir, model_name, contract)
     verify_checkpoint(checkpoint, model_record(model_name, contract))
     verify_checkpoint(vae_checkpoint, model_record("sdxl_vae", contract))
-    versions = check_dependencies(model_name, contract)
+    versions = check_dependencies(model_name, contract, allowed)
     import torch
     import yaml
     from diffusers import AutoencoderKL, DDIMScheduler
@@ -384,7 +391,9 @@ def run(args):
     torch.backends.cuda.matmul.allow_tf32 = False
     torch.backends.cudnn.allow_tf32 = False
     torch.backends.cudnn.benchmark = False
-    pipe, model, vae, versions = load_original(args.model, args.source_dir, args.checkpoint, args.vae_checkpoint, args.device)
+    allowed = dict(item.split("==", 1) for item in args.allow_dependency)
+    pipe, model, vae, versions = load_original(args.model, args.source_dir, args.checkpoint, args.vae_checkpoint,
+                                               args.device, allowed)
     output.mkdir(parents=True, exist_ok=False)
     report = {"schema": "crispembed-latent-inpaint-original-v1", "model": args.model,
               "source_commit": contract["source"][args.model]["commit"],
@@ -420,7 +429,14 @@ def main():
     parser.add_argument("--device", default="cuda:0")
     parser.add_argument("--threads", type=int, default=2)
     parser.add_argument("--cases", nargs="+", choices=CASES, default=list(CASES))
+    # PixelHacker's upstream pins (torch 2.3.0 with triton 3.2.0) cannot import
+    # FLA 0.3.2 (torch 2.3 inductor vs triton 3 AttrsDescriptor). An explicit,
+    # recorded deviation such as torch==2.6.0 (triton 3.2.0's release) is the
+    # only way to run the unchanged original; the contract stays frozen.
+    parser.add_argument("--allow-dependency", action="append", default=[], metavar="PKG==VERSION")
     args = parser.parse_args()
+    if any("==" not in item for item in args.allow_dependency):
+        parser.error("--allow-dependency takes PKG==VERSION")
     if not 1 <= args.threads <= 8 or len(args.cases) != len(set(args.cases)):
         parser.error("threads must be 1..8 and cases must be unique")
     run(args)
