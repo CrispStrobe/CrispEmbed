@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""OXR-1.0 CUDA variants on a Kaggle GPU: F16 (published), Q8_0 and Q4_K (quantized here).
+"""OXR-1.0 CUDA variants on a Kaggle GPU: F16 (published) and the quantized recipes that
+clear docs/precision-acceptance.md on hosted CPU (quantized here from the F32 conversion).
 
     python tools/kaggle/oxr-gpu/run.py BUILD_DIR
 
@@ -16,11 +17,18 @@ import sys
 import time
 from pathlib import Path
 
-SCRIPT_VERSION = "oxr-kaggle-gpu-v1"
+SCRIPT_VERSION = "oxr-kaggle-gpu-v2"
 F16_URL = ("https://huggingface.co/cstr/OXR-1.0-GGUF/resolve/f1e262e276349aa2647a85da6fc6326dd6aaf271/"
            "oxr-1.0-f16.gguf")
 F16_SHA = "eac8754f4886ba4197416083d49089a3d86c8644f0e5650f44fcf69059d81a57"
-QUANTS = ("q8_0", "q4_k")
+# name: (crispembed-quantize type, quantizer env). Qualifying hosted recipes:
+#   q8_0-large: Q8_0 layers + Q8_0 embed/lm_head/vte/visual head, F16 vision (41328470565)
+#   q4khead-mix: Q4_K visual head, Q8_0 rest, F16 vision (41332645597)
+QUANTS = {
+    "q8_0-large": ("q8_0", {"CRISPEMBED_QUANTIZE_OXR_LARGE": "q8_0"}),
+    "q4khead-mix": ("q8_0", {"CRISPEMBED_QUANTIZE_OXR_LARGE": "mix"}),
+}
+STAGES = "vision.merge,visual.embeddings,llm.norm,llm.logits"
 SCRATCH = Path("/kaggle/temp/oxr")
 OUT = Path("/kaggle/working/oxr-gpu")
 ENV = dict(os.environ, CRISPEMBED_OXR="1", CRISPEMBED_ACCEPT_OXR_LICENSE="1", CRISPEMBED_OXR_GPU="1")
@@ -58,6 +66,7 @@ def main(argv):
     OUT.mkdir(parents=True, exist_ok=True)
     SCRATCH.mkdir(parents=True, exist_ok=True)
     runner = next(build.rglob("test-oxr-run"))
+    dumper = next(build.rglob("test-oxr-stage-dump"))
     quant = next(build.rglob("crispembed-quantize"))
     parity = json.loads(Path("tests/results/oxr/hosted-parity.json").read_text())
     save("setup")
@@ -83,9 +92,9 @@ def main(argv):
     REPORT["variants"]["f32-source"] = {"returncode": rc, "seconds": round(secs, 1), "log_tail": (out + err)[-800:]}
     save("f32 conversion")
     if rc == 0:
-        for q in QUANTS:
+        for q, (qtype, qenv) in QUANTS.items():
             path = SCRATCH / f"oxr-1.0-{q}.gguf"
-            rc, out, err, secs = run([quant, f32, path, q], timeout=3600)
+            rc, out, err, secs = run([quant, f32, path, qtype], timeout=3600, env=dict(ENV, **qenv))
             REPORT["variants"][q] = {"returncode": rc, "bytes": path.stat().st_size if path.exists() else 0,
                                      "log_tail": (out + err)[-600:]}
             if rc == 0:
@@ -122,6 +131,27 @@ def main(argv):
                            text=native.get("text", "")[:400])
             except Exception as exc:  # retained verbatim: a failed arm is evidence too
                 arm.update(error=f"{type(exc).__name__}: {exc}", stderr_tail=err[-1500:])
+            # Prefill stage dump (final hidden state and logits) for cosine vs the F16 arm.
+            dump = SCRATCH / f"dump-{cid}-{name}"
+            rc2, _, err2, _ = run([dumper, "--dump-dir", dump, "--only", STAGES, "--model", model, "--image", image,
+                                   "--prompt", ref["prompt"], "--threads", "4", "--repeat", "1", "--hf-generation", "1",
+                                   "--min-pixels", ref["min_pixels"], "--max-pixels", ref["max_pixels"]], timeout=1800)
+            arm["stage_dump_rc"] = rc2
+            if rc2 != 0:
+                arm["stage_dump_stderr"] = err2[-800:]
+            base = SCRATCH / f"dump-{cid}-f16"
+            if rc2 == 0 and name != "f16" and base.exists():
+                import numpy as np
+                cos = {}
+                for st in STAGES.split(","):
+                    a_, b_ = dump / f"{st}.f32", base / f"{st}.f32"
+                    if a_.exists() and b_.exists():
+                        x = np.fromfile(a_, np.float32).astype(np.float64)
+                        y = np.fromfile(b_, np.float32).astype(np.float64)
+                        if x.shape == y.shape:
+                            cos[st] = {"cosine": float(x @ y / max(np.linalg.norm(x) * np.linalg.norm(y), 1e-300)),
+                                       "max_abs": float(np.abs(x - y).max())}
+                arm["stages_vs_cuda_f16"] = cos
             entry["arms"][name] = arm
             save(f"{cid} {name}")
     save("done")
