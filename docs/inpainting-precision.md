@@ -238,3 +238,22 @@ All three engines beat the naive fill on the face and landscape photos. The
 busy street scene stays near the naive score for every engine. With DBNet
 masks, the latent models handle glyph outlines that the detector misses better
 than MI-GAN does: face 18.5–19.3 dB against MI-GAN's 14.7.
+
+### Q4_K on real photos: Moebius falls below the owner gate
+
+The live run (41305480287) contradicts the synthetic Q4_K pass. Measured as
+masked-region agreement with Moebius F32 graph on the same photos and seed:
+
+| Moebius arm | face exact / DBNet | landscape exact / DBNet | street exact / DBNet |
+| --- | --- | --- | --- |
+| F16 graph | 58.9 dB, cos 0.999997 / 57.9 dB, 0.999996 | 56.8 / 53.9 dB, >= 0.999992 | 52.6 / 46.5 dB, >= 0.999935 |
+| Q8_0 matmul graph | 28.3 dB, 0.9966 / 30.3 dB, 0.9979 | 26.0 / 24.9 dB, >= 0.9936 | 23.1 / 21.5 dB, 0.9856 / 0.9795 |
+| Q4_K matmul graph | 22.5 dB, 0.9885 / 17.7 dB, 0.9646 | 16.8 / 17.7 dB, 0.958 / 0.967 | 15.7 dB, **0.918** / 13.3 dB, **0.859** |
+
+Moebius Q4_K also lowers ground-truth quality: landscape crop 14.77 dB against
+16.81 dB at F32. **Moebius Q4_K therefore does not meet the owner gate on real
+photos** and must not be offered as qualified. PixelHacker Q4_K stays above the
+gate on the same photos (minimum 0.9425, street/DBNet, borderline). Moebius F16
+and Q8_0, and PixelHacker F16/Q8_0, pass on both panels. TODO: a Moebius Q4_K
+recipe that keeps attention and VAE matrices at Q8_0, measured on this live
+panel before any further claim.
