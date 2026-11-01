@@ -14,6 +14,16 @@ yardstick favours native on 55-56/56 stages; API contract and heron identity
 pass; F16 rejected (147 px box on receipt); native 2.6x slower than PyTorch CPU.
 Lineage: no bit-equal public tensors; nearest D-FINE-M Objects365 (cosine 0.95/0.93/0.94).
 
+## 1 November 2026 — OXR-1.0 on CUDA (Kaggle T4): German page diverges at every precision
+
+Kernel `chr1s4/crispembed-oxr-gpu-variants` v1 at `44533d44` ([report](tests/results/oxr/kaggle-cuda-t4/report.json)),
+CRISPEMBED_OXR_GPU=1 on a Tesla T4, compared with the original model's committed token IDs:
+the published F16 is exact on formula, table, Japanese and receipt but diverges on the German page
+at token 87 (exact on CPU); Q8_0 is exact on four and diverges on German at token 55; Q4_K diverges
+on formula (token 0), table (197) and German (55). F16 being CPU-exact but CUDA-divergent points at
+GPU-kernel precision (accumulation, flash attention or softmax), not weights. CUDA OXR stays
+default-off and unqualified.
+
 ## 1 November 2026 — MinerU2.5-Pro on CUDA (Kaggle T4), all eight cases
 
 Kernel v2 at `9f3cfa2c` ([report](tests/results/mineru25/kaggle-cuda-t4-v2/report.json)), Tesla T4:
