@@ -420,9 +420,13 @@ static ggml_tensor * sigmoid_op(ggml_context * g, ggml_tensor * x) {
 // Run the full detection graph and return the probability map.
 // pixels: [3, H, W] CHW float32, already preprocessed.
 // Returns prob_map as [H, W] in [0, 1].
-static std::vector<float> forward(context * ctx, const float * pixels, int H, int W) {
+static std::vector<float> forward(context * ctx, const float * pixels, int H, int W, bool checked = false) {
     if (!ctx->graph_ctx || ctx->graph_h != H || ctx->graph_w != W) {
         if (ctx->graph_ctx) ggml_free(ctx->graph_ctx);
+        ctx->graph_ctx = nullptr;
+        ctx->graph = nullptr;
+        ctx->graph_input = nullptr;
+        ctx->graph_prob = nullptr;
         // Estimate graph size: ~200 nodes for ResNet-18 + FPNC + head, plus
         // extra nodes for quantized-weight dequantization.
         const int max_nodes = 1024;
@@ -566,6 +570,10 @@ static std::vector<float> forward(context * ctx, const float * pixels, int H, in
         if (!ggml_gallocr_alloc_graph(ctx->galloc, gf)) {
             fprintf(stderr, "ocr_detect: graph allocation failed\n");
             ggml_free(g);
+            ctx->graph_ctx = nullptr;
+            ctx->graph_input = nullptr;
+            ctx->graph_prob = nullptr;
+            ctx->graph_taps.clear();
             return {};
         }
         ctx->graph = gf;
@@ -578,7 +586,11 @@ static std::vector<float> forward(context * ctx, const float * pixels, int H, in
     ggml_backend_tensor_set(ctx->graph_input, pixels, 0, 3 * H * W * sizeof(float));
 
     // Compute
-    ggml_backend_graph_compute(ctx->backend, gf);
+    const auto status = ggml_backend_graph_compute(ctx->backend, gf);
+    if (checked && status != GGML_STATUS_SUCCESS) {
+        fprintf(stderr, "ocr_detect: graph compute failed\n");
+        return {};
+    }
 
     // Read probability map
     ggml_tensor * prob = ctx->graph_prob;
@@ -588,6 +600,10 @@ static std::vector<float> forward(context * ctx, const float * pixels, int H, in
     int prob_total = prob_w * prob_h;
     std::vector<float> prob_map(prob_total);
     ggml_backend_tensor_get(prob, prob_map.data(), 0, prob_total * sizeof(float));
+    if (checked && !std::all_of(prob_map.begin(), prob_map.end(), [](float value) { return std::isfinite(value); })) {
+        fprintf(stderr, "ocr_detect: nonfinite probability map\n");
+        return {};
+    }
 
     // Store for debugging
     ctx->last_prob_map = prob_map;
@@ -1068,14 +1084,15 @@ std::vector<text_box> postprocess_probability_map(const float * prob_map, int ma
 
 static std::vector<text_box> detect_with_options(context * ctx, const float * pixels, int H, int W,
                                                  float prob_threshold, float box_threshold, float unclip_ratio,
-                                                 int dilation, int max_candidates, score_mode scoring) {
+                                                 int dilation, int max_candidates, score_mode scoring,
+                                                 bool checked = false) {
     if (!ctx || !pixels) return {};
 
     const bool bench = ctx->bench;
     auto t_total = std::chrono::steady_clock::now();
 
     auto t0 = std::chrono::steady_clock::now();
-    std::vector<float> prob_map = forward(ctx, pixels, H, W);
+    std::vector<float> prob_map = forward(ctx, pixels, H, W, checked);
     if (bench)
         fprintf(stderr, "[ocr-detect-bench] graph compute: %.1f ms\n",
                 std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
@@ -1117,8 +1134,8 @@ detect_options rapid_defaults() {
     return {};
 }
 
-std::vector<text_box> detect_rgb_ex(context * ctx, const uint8_t * raw, int img_w, int img_h, int img_c,
-                                    const detect_options & options) {
+static std::vector<text_box> detect_rgb_impl(context * ctx, const uint8_t * raw, int img_w, int img_h, int img_c,
+                                             const detect_options & options, bool checked) {
     if (!ctx || !raw || img_w <= 0 || img_h <= 0 || img_c <= 0 || options.target_short_side <= 0) return {};
 
     // Resize (keep aspect ratio, short side = target)
@@ -1136,6 +1153,10 @@ std::vector<text_box> detect_rgb_ex(context * ctx, const uint8_t * raw, int img_
     scale = std::max(scale, 1.0f / std::max(img_w, img_h));
     int new_w = (int)(img_w * scale);
     int new_h = (int)(img_h * scale);
+    if (checked && (new_w < 1 || new_h < 1 || ctx->pad_divisor <= 0)) {
+        fprintf(stderr, "ocr_detect: invalid resized dimensions; crop or pad extreme-aspect-ratio images\n");
+        return {};
+    }
 
     // Keep very short lines visible to the detector and avoid the extreme
     // aspect-ratio failure mode common on receipt/document strips.
@@ -1151,6 +1172,11 @@ std::vector<text_box> detect_rgb_ex(context * ctx, const uint8_t * raw, int img_
     int pad_h = (ctx->pad_divisor - content_h % ctx->pad_divisor) % ctx->pad_divisor;
     int padded_w = new_w + pad_w;
     int padded_h = content_h + pad_h;
+    if (checked &&
+        (padded_w <= 0 || padded_h <= 0 || size_t(padded_w) > (size_t(16) * 1024 * 1024) / size_t(padded_h))) {
+        fprintf(stderr, "ocr_detect: checked detection exceeds its padded image size limit\n");
+        return {};
+    }
 
     // Allocate CHW buffer
     std::vector<float> pixels(3 * padded_h * padded_w, 0.0f);
@@ -1192,7 +1218,7 @@ std::vector<text_box> detect_rgb_ex(context * ctx, const uint8_t * raw, int img_
     // Run detection
     auto boxes =
         detect_with_options(ctx, pixels.data(), padded_h, padded_w, options.prob_threshold, options.box_threshold,
-                            options.unclip_ratio, options.dilation, options.max_candidates, options.scoring);
+                            options.unclip_ratio, options.dilation, options.max_candidates, options.scoring, checked);
 
     // Scale coordinates back to original image space
     float inv_scale = 1.0f / scale;
@@ -1216,6 +1242,35 @@ std::vector<text_box> detect_rgb_ex(context * ctx, const uint8_t * raw, int img_
     }
 
     return boxes;
+}
+
+std::vector<text_box> detect_rgb_ex(context * ctx, const uint8_t * raw, int img_w, int img_h, int img_c,
+                                    const detect_options & options) {
+    return detect_rgb_impl(ctx, raw, img_w, img_h, img_c, options, false);
+}
+
+bool detect_rgb_checked(context * ctx, const uint8_t * raw, int img_w, int img_h, int img_c,
+                        const detect_options & options, std::vector<text_box> & boxes, std::string & error) {
+    boxes.clear();
+    error.clear();
+    if (!ctx) {
+        error = "text detector context is null";
+        return false;
+    }
+    ctx->last_prob_map.clear();
+    ctx->last_prob_h = ctx->last_prob_w = 0;
+    ctx->last_intermediates.clear();
+    if (!raw || img_w <= 0 || img_h <= 0 || (img_c != 1 && img_c != 3) || options.target_short_side <= 0) {
+        error = "invalid text detector image or options";
+        return false;
+    }
+    boxes = detect_rgb_impl(ctx, raw, img_w, img_h, img_c, options, true);
+    if (ctx->last_prob_map.empty() || ctx->last_prob_h <= 0 || ctx->last_prob_w <= 0) {
+        boxes.clear();
+        error = "text detection failed; no completed finite probability map";
+        return false;
+    }
+    return true;
 }
 
 std::vector<text_box> detect_rgb(context * ctx, const uint8_t * raw, int img_w, int img_h, int img_c,

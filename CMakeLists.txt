@@ -484,6 +484,7 @@ endif()
 
 add_executable(crispembed-cli
     examples/cli/main.cpp
+    examples/cli/inpaint_cli.cpp
 )
 target_include_directories(crispembed-cli PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/examples/cli
@@ -1049,12 +1050,31 @@ endif()
 add_executable(test-sam2-diff tests/test_sam2_diff.cpp)
 target_link_libraries(test-sam2-diff PRIVATE crispembed-sam2)
 
-# Fixed-256 MI-GAN CPU/F32 prototype. Explicit targets only: no production
-# shared-library, registry, install or public C ABI integration.
+# Fixed-256 MI-GAN CPU/F32 graph. The opt-in CLI links the ordinary archive;
+# reference observers remain confined to the separate validation archive.
 add_library(crispembed-migan STATIC EXCLUDE_FROM_ALL src/migan.cpp)
 target_include_directories(crispembed-migan PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 crispembed_apply_arch_flags(crispembed-migan)
 target_link_libraries(crispembed-migan PUBLIC crispembed-core ggml ggml-base ggml-cpu)
+
+# Issue 71: native-resolution tiling around the unchanged MI-GAN graph.
+# This internal CLI library adds no shared-library ABI or model registry alias.
+add_library(crispembed-inpaint STATIC EXCLUDE_FROM_ALL src/inpaint.cpp)
+target_include_directories(crispembed-inpaint PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+crispembed_apply_arch_flags(crispembed-inpaint)
+target_link_libraries(crispembed-inpaint PUBLIC crispembed-migan)
+target_link_libraries(crispembed-cli PRIVATE crispembed-inpaint)
+
+# Model-free contracts use the real tile/composition/hash implementation.
+add_executable(test-inpaint EXCLUDE_FROM_ALL tests/test_inpaint.cpp)
+target_link_libraries(test-inpaint PRIVATE crispembed-inpaint)
+
+# Exercise the actual CLI parser/image/batch/output code with test-only model
+# and detector implementations. This driver is never installed or distributed.
+add_executable(test-inpaint-cli-driver EXCLUDE_FROM_ALL
+    tests/inpaint_cli_driver.cpp examples/cli/inpaint_cli.cpp)
+target_include_directories(test-inpaint-cli-driver PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/examples/cli)
+target_link_libraries(test-inpaint-cli-driver PRIVATE crispembed-core)
 
 # Observer code is compiled solely into this separate validation archive.
 add_library(crispembed-migan-test STATIC EXCLUDE_FROM_ALL src/migan.cpp)

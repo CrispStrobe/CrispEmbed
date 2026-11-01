@@ -326,12 +326,26 @@ outside this lane. Do not infer weight permission from a public repository.
 
 ## Issue71, packaging and downstream delivery
 
+- Bounded source delivery, 1 November 2026: issue71 CLI implementation on
+  `feat/issue71-inpainting`, based on `b8cd2497765f2fd8db0b9c713d952898bdd9b996`.
+  Adds a default-off, exact-model-pinned MI-GAN CLI, native256 tiling, explicit or
+  DBNet-derived masks, PNG provenance and persistent directory/TSV batches.
+  The existing MI-GAN graph/reference receipts remain unchanged. The
+  [implementation and validation contract](docs/inpainting-cli.md) distinguishes
+  model-free wrapper checks from pending native hosted execution and real-scene
+  quality. Thirty-six dependency-free Python checks, six C++ syntax-only checks,
+  Python/YAML syntax, formatting and the clean-exit guard pass. Compiled native
+  tests, actual CLI execution and checkpoint replication remain unexecuted;
+  the new three-platform workflow and opt-in model smoke are prepared, not
+  observed hosted results. This source delivery creates no model alias, runtime release, shared
+  C ABI or downstream pin change; temporal/video and LaMa remain separate.
 - Issue71 MI-GAN: fixed256 CPU/F32 prototype and494/eight-fixture audit are
-  complete. Next freeze licensed real subtitle/scene images and masks, perceptual/
-  seam criteria; then separately implement C ABI/orchestrator/CLI/server/bindings,
-  registry, error/recovery and consumers. Video/motion/flicker and text-derived
-  masks need their own gold. Other sizes/F16/quantization/backends/batching remain
-  separate. LaMa is held on checkpoint terms/FFT semantics. Keep issue71 open.
+  complete. Qualify the new CLI separately, then freeze licensed real subtitle/
+  scene images and masks with perceptual/seam criteria. C ABI/orchestrator/server/
+  bindings, registry and downstream consumers remain separate. Video/motion/
+  flicker and text-derived masks need their own gold. Other model resolutions,
+  F16/quantization and GPU backends remain separate. LaMa is held on checkpoint
+  terms/FFT semantics. Keep issue71 open.
 - Source/wheel success is not release qualification. Require fresh portable
   native/WASM producers, installed bundle/ABI/platform consumers and full
   aggregation for the final source, then update release metadata coherently.

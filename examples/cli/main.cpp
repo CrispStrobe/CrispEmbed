@@ -16,6 +16,7 @@
 #include "core/image_out.h"
 #include "core/provenance.h"
 #include "model_mgr.h"
+#include "inpaint_cli.h"
 #include "vit_embed.h"
 #include "clip_text_embed.h"
 #include "cnn_embed.h"
@@ -244,6 +245,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  yunet (face detection, 0.2 MB)\n");
     fprintf(stderr, "  uni-mumer-qwen3-vl-2b, uni-mumer-qwen2.5-vl-3b (handwritten math OCR)\n");
     fprintf(stderr, "  texteller-3 (printed+handwritten math OCR, 310M)\n");
+    inpaint_cli::print_help(stderr);
     fprintf(stderr, "\n");
 }
 
@@ -252,6 +254,7 @@ static void print_usage(const char * prog) {
 // (Metal residency assert / CUDA use-after-free) after results are printed. Any
 // crispembed_free()/engine free() inside this body still runs first.
 static int cli_main(int argc, char ** argv) {
+    if (inpaint_cli::requested(argc, argv)) return inpaint_cli::run(argc, argv);
     std::string model_arg;
     std::string file_path;
     std::string prefix;

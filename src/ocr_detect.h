@@ -96,6 +96,12 @@ std::vector<text_box> detect_rgb(context * ctx, const uint8_t * pixels, int widt
 std::vector<text_box> detect_rgb_ex(context * ctx, const uint8_t * pixels, int width, int height, int channels,
                                     const detect_options & options);
 
+// Checked variant for callers that must distinguish "no text" from a failed
+// detection. Discards stale probability maps, checks backend completion and
+// finite output, and clears boxes on failure. The context remains serial.
+bool detect_rgb_checked(context * ctx, const uint8_t * pixels, int width, int height, int channels,
+                        const detect_options & options, std::vector<text_box> & boxes, std::string & error);
+
 std::vector<text_box> detect_file_ex(context * ctx, const char * path, const detect_options & options);
 
 // Apply the shared DB postprocessor to an already-computed probability map.
