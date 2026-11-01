@@ -536,6 +536,22 @@ vision.layer.26 rises from 0.55 to 0.65; no slowdown visible across hosted machi
 run 41337273815 aborted (the CPU backend has no Q8_0-to-F16 copy) and is retained. The gate stays
 opt-in. No recipe is published or made default here.
 
+### Quantized recipes on Metal (M1)
+
+Receipts `tests/results/oxr/metal-m1/quant-recipes/` (`tools/metal/oxr_quant_metal_seq.sh`; recipes
+quantized here from the published F16 GGUF, one case and recipe per GPU lock, single runs, timings
+not comparable). Prefill cosines are against the Metal F16 run of the same case, which is
+token-exact and within 1.1e-4 logits of CPU F16.
+
+| recipe | decoded vs original | logits cos (min) | llm.norm cos (min) | vision.merge |
+| --- | --- | ---: | ---: | --- |
+| Q8_0 + large Q8_0 + F16 vision | 4/5 exact (German diverges at 35) | 0.99963 | 0.99974 | identical |
+| Q4_K visual head + Q8_0 rest + F16 vision | 4/5 exact (German diverges at 209) | 0.99949 | 0.99957 | identical |
+
+Both clear their bars on Metal as on CPU and CUDA. Decode steps (one row) still use the
+CPU-bit-identical integer mat-vec with Q8_0-quantized activations on every backend; the German
+divergence follows that path, not the vision tower.
+
 ## Validation evidence and remaining gates
 
 The implementation session completed the following component controls:

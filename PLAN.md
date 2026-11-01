@@ -138,11 +138,11 @@ Open, in order:
 
 1. Heron: done; GPU default now PREC_F32 + `_hp` (regions equal CPU 5/5). D-FINE is Metal by
    default on Apple (region-exact 5/5, 2.1-2.2x CPU).
-2. OXR quantized on Metal: Q8_0-everything decodes German exactly on Metal (`_hp`, F32
-   activations) while CPU Q8_0 collapses vision.layer.26 to 0.55; hosted CPU check of
-   `CRISPEMBED_OXR_DEQUANT_VISION=1` done (41340880860: 5/5 token-exact, min logits cos 0.9972;
-   initial 41337273815 aborted and retained); then the five-case Metal A/B of the
-   Q8_0/Q4_K-mix recipes and a publication decision (none made here).
+2. OXR quantized: CPU `CRISPEMBED_OXR_DEQUANT_VISION=1` makes Q8_0-everything 5/5 token-exact
+   (41340880860); Metal five-case A/B done (Q8_0-large and Q4_K-head: 4/5, logits cos >= 0.9995 vs
+   Metal F16). Remaining German divergence comes from decode-step activation quantization
+   (integer mat-vec on every backend); an opt-in F32-activation decode path is the next A/B.
+   Publication decision for the qualifying recipes is the owner's (none made here).
 3. OXR F32 on Metal (needs a local F32 conversion; volume was below its free-space floor).
 4. CUDA: done on T4 (kernel v2): F16 5/5 token-exact with the new dense attention; Q8_0-large
    and Q4_K-head 4/5 (German 55/209), logits cos >= 0.998 vs CUDA F16. CUDA quantized products

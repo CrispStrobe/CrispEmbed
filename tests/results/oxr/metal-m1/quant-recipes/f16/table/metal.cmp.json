@@ -1,0 +1,1 @@
+{"label": "table/metal", "ids_exact": true, "first_divergence": null, "reference_tokens": 261, "native_tokens": 261, "text_exact": true, "cer": 0.0, "eos": true, "capped": false, "runs_ms": [29558.971875], "warm_ms_median": 29558.971875, "load_ms": 373930.628375, "runs_identical": true}
