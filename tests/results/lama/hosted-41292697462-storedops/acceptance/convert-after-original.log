@@ -1,0 +1,8 @@
+{
+  "model": "big_lama",
+  "gguf_sha256": "24736f267c68e013f0000ccb69560c4353b6a6d7983fc3cc2537d9f2e03f304c",
+  "gguf_bytes": 204299072,
+  "export_tensor_count": 837,
+  "inner_checkpoint_sha256": "fccb7adffd53ec0974ee5503c3731c2c2f1e7e07856fd9228cdcc0b46fd5d423",
+  "native_qualified": false
+}

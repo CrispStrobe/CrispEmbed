@@ -1,0 +1,21 @@
+Big-LaMa lama-v2 policy: vectors and first/last conv F32; kernels [IC*KH*KW,OC] rows where the block fits, else 256-row K-quant storage; original 4D shape restored at load
+{
+  "variant": "big-lama-f16.gguf",
+  "requested": "f16",
+  "bytes": 102554560,
+  "sha256": "31d5a0c4dae9a0d638a5b75bb8921ea7e588e35c8c00060e4ce16fc0bc0d3f3b",
+  "source_sha256": "24736f267c68e013f0000ccb69560c4353b6a6d7983fc3cc2537d9f2e03f304c",
+  "tensor_count": 837,
+  "type_counts": {
+    "f32": 614,
+    "f16": 223
+  },
+  "type_payload_bytes": {
+    "f32": 738828,
+    "f16": 101744640
+  },
+  "flattened_storage_tensors": 0,
+  "patch_row_kernels": 223,
+  "policy_conformant": true,
+  "errors": []
+}

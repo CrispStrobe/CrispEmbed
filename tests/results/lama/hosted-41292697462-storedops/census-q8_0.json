@@ -1,0 +1,20 @@
+{
+  "variant": "big-lama-q8_0.gguf",
+  "requested": "q8_0",
+  "bytes": 54858208,
+  "sha256": "c01175e15445494220480fe2a5ceb4f6d34cffa293675892b5217bfff34c1f42",
+  "source_sha256": "24736f267c68e013f0000ccb69560c4353b6a6d7983fc3cc2537d9f2e03f304c",
+  "tensor_count": 837,
+  "type_counts": {
+    "f32": 614,
+    "q8_0": 223
+  },
+  "type_payload_bytes": {
+    "f32": 738828,
+    "q8_0": 54051840
+  },
+  "flattened_storage_tensors": 223,
+  "patch_row_kernels": 223,
+  "policy_conformant": true,
+  "errors": []
+}

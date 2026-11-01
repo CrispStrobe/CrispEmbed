@@ -1,0 +1,21 @@
+### Big-LaMa lama-v2 quantization research (fixtures, 152a26e) — internal only
+```
+deps=pass (34s)
+strict-f32=fail(1) [informational] (373s)
+build-quantize=pass (2s)
+quantize-f16=pass (0s)
+quantize-q8_0=pass (1s)
+quantize-q4_k=pass (5s)
+fixtures-f32-stored=pass (85s)
+fixtures-f16-storage=pass (83s)
+fixtures-f16-matmul=pass (101s)
+fixtures-q8_0-storage=pass (81s)
+fixtures-q8_0-matmul=pass (77s)
+fixtures-q4_k-storage=fail(1) (80s)
+fixtures-q4_k-matmul=fail(1) (81s)
+
+102554560 big-lama-f16.gguf
+204299072 big-lama-f32.gguf
+29422048 big-lama-q4_k.gguf
+54858208 big-lama-q8_0.gguf
+```
