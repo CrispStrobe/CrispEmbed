@@ -7167,6 +7167,36 @@ The reuse graph stays default-off; vLLM batching and GPU performance remain
 separate unmeasured targets.
 
 
+## OXR-1.0 and D-FINE on Apple M1 Metal (1 November 2026)
+
+Shared host (8 GPU cores, 16 GiB; load average 8-50, swap in use, 3-4 min model loads from a
+contended external disk): timings are indicative and comparable only within one window.
+
+**ggml-metal matmul, F32 operands (`tools/metal/mm_bench.cpp`):** half-tile `mul_mm`
+1500-1780 GFLOP/s; `GGML_PREC_F32` via `mul_mv_ext` 82-93 GFLOP/s; via `_hp mul_mm`
+(`GGML_METAL_PREC_F32_MM=1`) 1130-1590 GFLOP/s.
+
+**OXR F16, warm request (s), 1024-token cap** — receipts `tests/results/oxr/metal-m1/f16-batch/`:
+
+| case (tokens) | CPU 4 threads | Metal default (dense F32 attention + `_hp`) | Metal + native flash |
+| --- | ---: | ---: | ---: |
+| formula (22) | 28.2 | 2.8 | 2.3 |
+| japanese (38) | 27.9 | 3.4 | 3.1 |
+| table (261) | 34.0 | 13.9 | 11.3 |
+| receipt (202) | 55.4 | 12.6 | 11.4 |
+| german (401, 3536 patches) | 149.7 | 44.8 | 24.2 |
+
+All arms token-exact against the original. Formula stage split on the default arm: vision +
+visual vocabulary 1.7-1.8 s, prefill 0.23 s, decode ~42 ms/token. Before the fixes the Metal
+F16 German request took 62 s (CPU-routed flash) / 77 s (dense on mat-vec kernels).
+
+**D-FINE F32 (960x960), encoder graph ms** — receipts `tests/results/oxr-dfine/metal-m1/`:
+receipt page in one interleaved window: `_hp` + direct depthwise 1134, `_hp` 1564, PREC_F32 via
+mul_mv_ext 3090, half-tile mul_mm 690 (wrong regions). CPU (earlier, quieter window) 1194.
+Profile of the mul_mv_ext route: MUL_MAT 71% (~120 GFLOP of conv GEMM), IM2COL 11%, CONT 10%.
+Same-window verification with no gates set (Apple default after this change): Metal
+0.65-0.68 s total vs CPU 1.36-1.47 s on all five pages (2.1-2.2x), regions equal.
+
 ## OXR-1.0 — model measurements pending (31 October 2026)
 
 No native/Python latency, throughput, full-model error or representative document

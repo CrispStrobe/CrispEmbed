@@ -1,3 +1,28 @@
+## 1 November 2026 — OXR-1.0 and D-FINE on Metal (feat/metal-oxr)
+
+* Defects: (1) OXR's PREC_F32 flash-attention nodes were refused by ggml-metal and run on the
+  CPU in every layer; GPU contexts now lower attention to F32 dense GPU products
+  (`CRISPEMBED_OXR_GPU_FLASH`, `_FLASH_CPU` keep the alternatives). (2) ggml-metal's default
+  mul_mm stages both operands as half: D-FINE on Metal failed 4/5 pages (german box 836 px);
+  D-FINE GPU graphs now request PREC_F32 (`CRISPEMBED_OXR_LAYOUT_GPU_PREC_F32=0` restores).
+  (3) PREC_F32 products ran on mat-vec kernels (~90 GFLOP/s on M1); ggml patch
+  `GGML_METAL_PREC_F32_MM` routes them to the F32-tile `_hp` mul_mm (1100-1600 GFLOP/s).
+* OXR F16 Metal: token-exact 5/5, logits within 1.1e-4 of CPU, ~3-10x faster warm; default
+  on Apple for the F16 recipe (CPU stays default elsewhere; `CRISPEMBED_OXR_GPU=0` opts out).
+* D-FINE F32 Metal: region-exact 5/5 with the `_hp` route, closer to PyTorch than CPU, 2.1-2.2x
+  faster than CPU in the same window; now the Apple default (`CRISPEMBED_OXR_LAYOUT_GPU=0` opts out).
+* D-FINE F16: the 147 px "failure" was a positional pairing of two near-tied regions; paired by
+  IoU all regions match, cosine 1.0; PyTorch's own F16 rounding moves boxes <= 0.5 px (probe
+  41327140374). Passes the owner F16 bar; strict budgets still fail (retained).
+* Quantized (owner bars): OXR Q8_0 + Q8_0 large tables + F16 vision 1.93 GB, min logits cos
+  0.9977 (pass); Q4_K head mixes pass (0.9979 / 0.9751); Q4_K LLM layers fail (0.896, 0.915).
+  D-FINE Q8_0 with F16/F32 convs passes; conv-quantized Q8_0 and all Q4_K fail.
+* Follow-up: CPU `CRISPEMBED_OXR_DEQUANT_VISION=1` makes Q8_0-everything token-exact 5/5 (41340880860);
+  CUDA T4 F16 now token-exact 5/5 with the dense GPU attention (German fixed), quantized 4/5;
+  Metal quantized recipes 4/5 with logits cos >= 0.9995; heron GPU default now PREC_F32 + `_hp`
+  (regions equal CPU 5/5; half tiles had added a German region).
+* Kaggle account name scrubbed from HISTORY (secret scan).
+
 ## 1 November 2026 — OXR-1.0 D-FINE layout detector native in layout_detect
 
 `feat/oxr-dfine`: converter `models/convert-oxr-dfine-to-gguf.py` (pinned

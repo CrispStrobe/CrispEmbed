@@ -203,6 +203,68 @@ Direct depthwise is ~18% faster with identical selected regions but adds a stage
 budget failure (japanese), so it stays opt-in; even with it the native path is
 ~2.2× slower than PyTorch. The default is unchanged.
 
+### Metal (Apple M1, 8 GPU cores) — 1 November 2026
+
+Receipts: [`tests/results/oxr-dfine/metal-m1/`](../tests/results/oxr-dfine/metal-m1/) (diff JSON per
+page and arm, `summary.json`, GEMM shapes, matmul micro-benchmark). References are the original
+PyTorch service dumps produced on this host (`--resize generic`; this OpenCV has no IPP and the
+native input equals it bit for bit). Same fixed budgets as above. Timings come from a heavily
+shared workstation (load average 8-50, swap in use) and are only comparable within one window.
+
+| Metal arm | OXR regions vs ref | stage budget | notes |
+| --- | --- | --- | --- |
+| ggml default half-tile `mul_mm` (`CRISPEMBED_OXR_LAYOUT_GPU_PREC_F32=0`) | **4/5 fail** (receipt 20/21, german box 836 px) | fails from `bb.stage3`/`enc.aifi` | ggml-metal stages both operands as half; rejected |
+| `GGML_PREC_F32` on every product (new default of the GPU path) | equal 5/5 | same failures as CPU (dec.2/3) | precise but routed to `mul_mv_ext`: ~90 GFLOP/s, slower than CPU |
+| + `GGML_METAL_PREC_F32_MM=1` (ggml patch, F32-tile `_hp` `mul_mm`) | equal 5/5 | **passes on scan/table/japanese**; worst rel 0.045 (german `dec.3.qpos`) | closer to PyTorch than CPU; post.boxes cosine 0.985-0.998 |
+| + `CRISPEMBED_OXR_LAYOUT_DW_DIRECT=1` | equal 5/5 | as above | fastest Metal arm |
+| `CRISPEMBED_OXR_LAYOUT_GPU_SPLIT_F16=1` (hi/lo half products) | equal 5/5 | as CPU | casts dominate (2.1 s of CPY); slower; kept opt-in |
+| `LAYOUT_CONV_DIRECT=1`, `LAYOUT_DETECT_FLASH=1` | equal 5/5 | | conv-direct ~5 s; flash no gain |
+
+`tools/metal/mm_bench.cpp` on this M1: half `mul_mm` 1500-1780 GFLOP/s; PREC_F32 through
+`mul_mv_ext` 82-93 GFLOP/s; PREC_F32 through `_hp mul_mm` 1130-1590 GFLOP/s. D-FINE's encoder
+is ~120 GFLOP of GEMM at 960x960, which explains the default PREC_F32 Metal path being slower
+than CPU. In one same-window interleaved run (receipt) the encoder took 1.13 s with
+`GGML_METAL_PREC_F32_MM=1` + direct depthwise, 1.56 s with the `_hp` route alone and 3.09 s with
+the `mul_mv_ext` route; see PERFORMANCE.md for the same-window CPU comparison. **Default changed (Apple builds):** with `CRISPEMBED_OXR_LAYOUT_GPU` unset, D-FINE runs on Metal
+with PREC_F32 products on the `_hp` route (`GGML_METAL_PREC_F32_MM=1`, opt out with
+`CRISPEMBED_OXR_LAYOUT_GPU_HP_MM=0`) and the direct depthwise kernel on the GPU (opt out with
+`CRISPEMBED_OXR_LAYOUT_DW_DIRECT=0`). Verification run with no gates set
+(`metal-m1/dfine-auto-f32/`): selected regions equal on 5/5 pages, selected boxes/scores cosine
+1.000000, total 0.65-0.68 s vs CPU 1.36-1.47 s in the same window (2.1-2.2x); a second window
+gave 0.68-0.71 s vs 1.71-1.86 s. `CRISPEMBED_OXR_LAYOUT_GPU=0` or `LAYOUT_DETECT_FORCE_CPU=1` keep
+the CPU; non-Apple platforms keep the CPU unless `CRISPEMBED_OXR_LAYOUT_GPU=1`. The F16 GGUF on
+Metal (`dfine-auto-f16/`) matches the CPU F16 result: all regions matched, cosine >= 0.99999,
+0.84-0.90 s (weights are widened to F32 per run).
+
+### Heron (`rt_detr_v2`) on Metal
+
+Receipts `tests/results/oxr-dfine/metal-m1/heron/` (cstr/layout-heron-gguf F32, threshold 0.3,
+regions matched to the native CPU run by label and IoU). Heron already defaulted to the GPU,
+with ggml's half-tile products: on German it added a 63rd region and moved boxes by 3 px
+(scores 0.013); on the other four pages it matched within 1 px / 0.008. With PREC_F32
+products on the `_hp` route all five pages equal the CPU regions (one 1 px rounding on German)
+at the same speed as before (1.3-1.75 s per process including load, CPU 2.6-3.0 s). **Default
+changed:** heron GPU graphs now request PREC_F32 and set `GGML_METAL_PREC_F32_MM=1`;
+`CRISPEMBED_LAYOUT_GPU_PREC_F32=0` (half tiles) or `CRISPEMBED_LAYOUT_GPU_HP_MM=0` (mat-vec
+route, ~1.7x slower) opt out. The base-branch byte-identity check of heron on CPU is unaffected.
+
+### F16 and the 147 px box, re-scored (owner policy, docs/precision-acceptance.md)
+
+* The "147 px" F16 receipt result was a **positional** comparison: two near-tied selected regions
+  swap order. Paired order-insensitively (same label, highest IoU), F16 selected boxes/scores
+  cosine is 1.00000/0.99999 on receipt and >= 0.99999 on every page, with 21/21, 17/17, 9/9,
+  2/2, 1/1 regions matched (`tools/metal/summarize_dfine_ab.py`). F16 clears the F16 bar (> 0.98).
+* The original PyTorch model with all its matrices rounded to F16 (hosted
+  [41327140374](../tests/results/oxr-dfine/hosted-41327140374-f16-probe/)) moves selected boxes
+  by at most 0.50 px (german), 0.026 px (receipt): the native F16 numbers (0.50 px german) are the
+  model's own F16 sensitivity, not a code defect. Per group, the backbone stage 3 and the encoder
+  FPN carry it (german 0.44 / 0.37 px); no single tensor is pathological: every matrix has F16
+  relative rounding error 1.4-2.2e-4 and at most 6.6% of values (pre_bbox_head.layers.2) in the
+  F16 subnormal range (`f16-audit.json`). No tensor needs to stay F32 for the bar.
+* The per-query decoder stage cosines are only meaningful when both sides selected the same 300
+  queries; F16 changes that set on 4/5 pages, so its low `dec.pre_bbox_delta` cosines compare
+  different queries. The strict stage/region budgets remain recorded failures.
+
 ### Weight lineage
 
 No checkpoint tensor is bit-identical to the public HGNetv2-B2 stage-1 weights or
@@ -217,8 +279,9 @@ does not prove it; the checkpoint's own terms are the OXR License either way. Th
 ## Not done / open
 
 * Speed parity (native 2.6× slower than PyTorch CPU).
-* F16 or quantized recipes (F16 rejected).
-* GPU backends (`CRISPEMBED_OXR_LAYOUT_GPU=1` is unqualified).
+* Quantized recipes: hosted lane `tools/ci-heavy/oxr_dfine_quant.sh` (conv kernels quantized,
+  kept F32 or F16). F16 clears the owner bar (above); strict budgets still fail.
+* GPU: Metal is the Apple default (above); CUDA/Vulkan untested.
 * Per-class `class_confidences` overrides of the service.
 * End-to-end OXR document output with `CrispOXR(layout_model=)` against the
   service-backed pipeline (the layout boundary itself is verified above).

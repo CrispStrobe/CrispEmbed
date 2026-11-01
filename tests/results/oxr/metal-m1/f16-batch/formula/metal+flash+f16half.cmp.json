@@ -1,0 +1,1 @@
+{"label": "formula/metal+flash+f16half", "ids_exact": true, "first_divergence": null, "reference_tokens": 22, "native_tokens": 22, "text_exact": true, "cer": 0.0, "eos": true, "capped": false, "runs_ms": [4469.126667, 5119.587875], "warm_ms_median": 5119.587875, "load_ms": 214650.050041, "runs_identical": true}

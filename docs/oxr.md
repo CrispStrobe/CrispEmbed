@@ -424,7 +424,15 @@ native request count, unresolved requests, and blueprint revision.
 | `CRISPEMBED_OXR=1` | Required activation gate for this experimental model. |
 | `CRISPEMBED_ACCEPT_OXR_LICENSE=1` | Required acknowledgement of the OXR License's additional terms (USD 2M commercial thresholds, SoMark attribution for online services, no competing hosted API). Without it model load fails on every surface; `crispembed-server` also warns about sections 2 and 3 when an OXR stage is configured. |
 | `CRISPEMBED_OXR_FORCE_CPU=1` | Force CPU for the primary reference/qualification profile. |
-| `CRISPEMBED_OXR_GPU=1` | Opt into a compiled GPU backend unless force-CPU is set; unqualified. |
+| `CRISPEMBED_OXR_GPU` | `1` forces the compiled GPU backend, `0` the CPU. Unset = auto: Metal for the qualified F16 recipe on Apple builds (see GPU section), CPU for every other recipe and platform. `CRISPEMBED_OXR_FORCE_CPU=1` always wins. |
+| `CRISPEMBED_OXR_GPU_HP_MM=0` | GPU contexts set ggml's `GGML_METAL_PREC_F32_MM=1` (F32-tile `_hp` `mul_mm` for PREC_F32 products, process-wide, an explicit value wins); `0` keeps ggml's mat-vec PREC_F32 route. |
+| `CRISPEMBED_OXR_GPU_FLASH=1` | GPU: backend-native flash attention (Metal stages Q as half) instead of the default F32 dense GPU attention. |
+| `CRISPEMBED_OXR_GPU_VISION_FLASH` | GPU: `1`/`0` choose flash/dense for the vision tower only. |
+| `CRISPEMBED_OXR_GPU_FLASH_CPU=1` | GPU: the original PREC_F32 flash node, which ggml-metal refuses and the scheduler runs on the CPU in every layer. |
+| `CRISPEMBED_OXR_GPU_F16_HALF_ACT=1` | GPU: F16-weight products without PREC_F32 (half-staged activations). |
+| `CRISPEMBED_OXR_GPU_SPLIT_F16=1` | GPU: F32/F16 products as hi/lo half-kernel terms (`core/split_f16_matmul.h`). |
+| `CRISPEMBED_OXR_VTE_Q8=1` | Store the transposed visual table as Q8_0 (68 MiB instead of 256 MiB). |
+| `CRISPEMBED_OXR_TIMING=1` | Per-stage wall times on stderr (vision+vocabulary, prefill, decode). |
 | `CRISPEMBED_OXR_FLASH_ATTN=0` | Select dense attention instead of the default flash-attention path. |
 | `CRISPEMBED_OXR_REUSE_DECODE_GRAPH=1` | Opt into decode graph reuse; default is off. |
 
@@ -441,6 +449,108 @@ the contiguous visual projection, explicit F32 GELU, head-dimension-72
 attention, dynamic cache writes, the 256 boundary, and a shorter subsequent
 request. That test is prepared but has not yet been executed. Memory reuse or
 fewer graph constructions alone do not establish throughput improvement.
+
+## GPU: Metal (Apple M1), 1 November 2026
+
+Receipts: [`tests/results/oxr/metal-m1/`](../tests/results/oxr/metal-m1/). Reference token IDs and
+text are the original Transformers F32 outputs of the hosted lane (`hosted-41277219829/<case>/python.json`;
+200704..921600 pixels, completion-only history, 1024-token cap). Model: the published
+`cstr/OXR-1.0-GGUF` F16 recipe. Stage comparisons are against the native CPU run of the same file.
+
+Two Metal defects were found and fixed (both behind gates, old paths kept):
+
+1. **Attention ran on the CPU.** OXR tags every flash-attention node `GGML_PREC_F32`; ggml-metal
+   refuses such a node (its tiles stage Q as half), so the scheduler copied every layer's
+   attention to the CPU and back. GPU contexts now lower attention to F32 dense products on the
+   GPU (query-blocked for 3600-patch pages, grouped KV by broadcast, no repeat copies).
+   `CRISPEMBED_OXR_GPU_FLASH=1` selects Metal's native flash kernel instead (token-exact on 5/5 too,
+   but up to 1.1 absolute difference in `vision.merge` vs CPU); `CRISPEMBED_OXR_GPU_FLASH_CPU=1`
+   restores the original CPU-routed node.
+2. **F32-precise products ran on mat-vec kernels.** `GGML_PREC_F32` products in this ggml fork go
+   to `mul_mv_ext` or bespoke integer mat-vec kernels at any batch size: ~90 GFLOP/s on the M1 vs
+   1100-1600 GFLOP/s for the existing F32-tile `_hp` `mul_mm` (`tools/metal/mm_bench.cpp`). The
+   ggml patch `GGML_METAL_PREC_F32_MM` (submodule branch `crispembed/metal-prec-f32-mm`,
+   `patches/ggml-metal-prec-f32-mm.patch`) routes PREC_F32 products with more than 8 rows to
+   `_hp`. OXR GPU contexts enable it (`CRISPEMBED_OXR_GPU_HP_MM=0` opts out).
+
+| F16, Metal arm | token IDs vs original (5 cases) | max abs vs CPU F16: `vision.merge` / `llm.norm` / logits | warm s: formula / japanese / table / receipt / german |
+| --- | --- | --- | --- |
+| CPU (4 threads) | exact 5/5 | — | 28.2 / 27.9 / 34.0 / 55.4 / 149.7 |
+| dense F32 attention + `_hp` products (**default**) | exact 5/5 | <= 1.1e-2 / 6.5e-3 / 1.1e-4 (cosine 1.0000000) | 2.8 / 3.4 / 13.9 / 12.6 / 44.8 |
+| + native flash (`CRISPEMBED_OXR_GPU_FLASH=1`) | exact 5/5 | <= 1.1 / 0.70 / 5.1e-3 | 2.3 / 3.1 / 11.3 / 11.4 / 24.2 |
+| dense F32, mat-vec PREC_F32 route (`CRISPEMBED_OXR_GPU_HP_MM=0`) | exact 5/5 | <= 8e-3 / 4.5e-3 / 8.4e-5 | 12.7 / 12.4 / 31.0 / 34.1 / 115.8 |
+| native flash + half-activation F16 products | exact 5/5 | <= 1.0 / 1.2 / 1.5e-2 | 5.1 / 5.7 / 17.2 / 14.8 / 41.3 |
+
+The host was shared (load average 8-50, swap in use, model loads of 3-4 minutes from a contended
+external disk), so timings are only indicative; CPU and the default Metal arm ran in the same
+batch session. Per-stage traces (`CRISPEMBED_OXR_TIMING=1`) for formula on the default arm:
+vision + visual vocabulary 1.7-1.8 s, prefill 0.23 s, decode ~42 ms/token.
+
+**Default changed:** with `CRISPEMBED_OXR_GPU` unset, an Apple build loads the F16 recipe
+(`f16-f32-sensitive`, no quantized tensors) on Metal with the default arm above. Every other recipe
+and platform stays on the CPU unless `CRISPEMBED_OXR_GPU=1`. `CRISPEMBED_OXR_GPU=0` or
+`CRISPEMBED_OXR_FORCE_CPU=1` keep the CPU. The F32 recipe was not run on Metal here (no local F32
+conversion: the shared volume was below its free-space floor). **CUDA (Kaggle T4, kernel v2 at
+`1a15c950`, [`kaggle-cuda-t4-v2/report.json`](../tests/results/oxr/kaggle-cuda-t4-v2/report.json)):**
+with the new dense GPU attention (`CRISPEMBED_OXR_GPU=1`) the published F16 is token-exact on
+all five cases, German included (the previous attention lowering diverged there at token 87).
+The qualifying quantized recipes decode 4/5 exactly (German diverges at token 55 for Q8_0 + large
+tables and 209 for the Q4_K-head mix) with prefill logits cosine >= 0.9981 against CUDA F16.
+Warm request on T4: F16 1.0-9.2 s, quantized 0.8-7.5 s.
+
+## Quantized recipes under the owner policy (1 November 2026)
+
+Policy: [docs/precision-acceptance.md](precision-acceptance.md) (final-logit cosine vs the original,
+minimum over the five cases: Q8_0 > 0.97, Q4_K mixed > 0.94). Hosted CPU lanes
+(`tools/ci-heavy/oxr_qualify.sh dtype=... large=... vision=...`, scored with
+`tools/oxr_precision_score.py`; receipts `tests/results/oxr/hosted-413*`). Quantizer options are
+opt-in: `CRISPEMBED_QUANTIZE_OXR_LARGE=q8_0|mix` also quantizes embed_tokens, lm_head, vte and
+the 65532x4608 visual head (Q8_0; `mix` puts the visual head at Q4_K, after fusor-rs/oxr-wasm,
+MIT), `CRISPEMBED_QUANTIZE_OXR_VISION=f16` keeps the SigLIP2 tower F16 for any target type.
+The loader accepts the quantized large tables only when the GGUF records `oxr.quantize.large`.
+
+| recipe (run) | size* | min logits cos | worst stage cos | decoded vs original |
+| --- | ---: | ---: | --- | --- |
+| Q8_0 layers, F16 vision, large F32 (41277219829, earlier) | 3835 MB | 0.9988 | 0.9956 | German flips at token 68 |
+| Q8_0 + large Q8_0 + **F16 vision** (41328470565) | 1930 MB | **0.9977** | 0.9967 llm.layer.27 | 4/5 exact (German CER 1.1%) |
+| Q8_0 + large Q8_0 + Q8 vision (41327079131) | 1937 MB | 0.9985 | **0.55** vision.layer.26 (German) | 3/5 exact |
+| same + `CRISPEMBED_OXR_DEQUANT_VISION=1` (41340880860) | 1937 MB | 0.9972 | 0.65 vision.layer.26 (German) | **5/5 exact** |
+| **Q4_K visual head** + Q8_0 rest + F16 vision (41332645597) | 1786 MB | **0.9980** | 0.990 llm.norm | 4/5 exact (German CER 2.3%) |
+| Q4_K visual head + Q8_0 rest + Q8 vision (41332648013) | 1793 MB | 0.9979 | 0.55 vision.layer.26 | 4/5 exact |
+| Q4_K visual head + Q5_K LLM + F16 vision (41332670307) | 1628 MB | 0.9751 | 0.940 llm.layer.27 | 3/5 exact |
+| Q4_K LLM + Q4_K head + F16 vision (41328472834) | 1576 MB | 0.896 (table) | 0.764 | fail |
+| Q4_K LLM + Q4_K head + Q8 vision (41327081935) | 1583 MB | 0.915 (table) | 0.55 | fail |
+
+*Quantizer summary of the F32-sourced output; the F16 GGUF is 4.4 GB.
+
+Q4_K language layers lose the table case, as oxr-wasm found for 4-bit language layers; the
+qualifying "Q4_K mixed" recipes keep Q4_K for the visual head. **The Q8 vision collapse is a
+runtime effect:** the CPU Q8_0 product quantizes activations to Q8_0 blocks. On Metal the
+same Q8_0-everything GGUF decodes German token-exact with the `_hp` route (F32 activations;
+logits cosine 0.9997 vs CPU F16, vision.merge row-min 0.88) and diverges at token 55 with the
+CPU-bit-identical integer route (`tests/results/oxr/metal-m1/q8_0-all/`). On the CPU,
+`CRISPEMBED_OXR_DEQUANT_VISION=1` (quantized vision weights widened to F32 in-graph, so the
+vision activations are not quantized) makes the same Q8_0-everything recipe **token-exact on all
+five cases** (hosted 41340880860: min logits cosine 0.9972; German worst row cosine at
+vision.layer.26 rises from 0.55 to 0.65; no slowdown visible across hosted machines). The initial
+run 41337273815 aborted (the CPU backend has no Q8_0-to-F16 copy) and is retained. The gate stays
+opt-in. No recipe is published or made default here.
+
+### Quantized recipes on Metal (M1)
+
+Receipts `tests/results/oxr/metal-m1/quant-recipes/` (`tools/metal/oxr_quant_metal_seq.sh`; recipes
+quantized here from the published F16 GGUF, one case and recipe per GPU lock, single runs, timings
+not comparable). Prefill cosines are against the Metal F16 run of the same case, which is
+token-exact and within 1.1e-4 logits of CPU F16.
+
+| recipe | decoded vs original | logits cos (min) | llm.norm cos (min) | vision.merge |
+| --- | --- | ---: | ---: | --- |
+| Q8_0 + large Q8_0 + F16 vision | 4/5 exact (German diverges at 35) | 0.99963 | 0.99974 | identical |
+| Q4_K visual head + Q8_0 rest + F16 vision | 4/5 exact (German diverges at 209) | 0.99949 | 0.99957 | identical |
+
+Both clear their bars on Metal as on CPU and CUDA. Decode steps (one row) still use the
+CPU-bit-identical integer mat-vec with Q8_0-quantized activations on every backend; the German
+divergence follows that path, not the vision tower.
 
 ## Validation evidence and remaining gates
 

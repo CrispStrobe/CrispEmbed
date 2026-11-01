@@ -10,6 +10,7 @@
 // bilinear grid sampling (no ggml op).
 
 #include "layout_detect.h"
+#include "core/split_f16_matmul.h"
 #include "core/gguf_loader.h"
 
 #include "ggml.h"
@@ -199,6 +200,13 @@ struct context {
 };
 
 static bool dfine_load(context * ctx, const char * path, gguf_context * meta);
+#ifndef LAYOUT_AUTO_METAL
+#if defined(__APPLE__)
+#define LAYOUT_AUTO_METAL 1
+#else
+#define LAYOUT_AUTO_METAL 0
+#endif
+#endif
 
 // ---------------------------------------------------------------------------
 // Loading
@@ -260,6 +268,18 @@ bool load(context ** out, const char * path, int n_threads) {
     ctx->backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
     if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
     if (ggml_backend_is_cpu(ctx->backend)) ggml_backend_cpu_set_n_threads(ctx->backend, n_threads);
+    // Heron on a GPU: PREC_F32 products (heron_compute) on ggml-metal's F32-tile
+    // _hp mul_mm. Default on since 1 Nov 2026 (tests/results/oxr-dfine/metal-m1/
+    // heron/: regions equal CPU on 5/5 pages, the half-tile default added a German
+    // region); CRISPEMBED_LAYOUT_GPU_PREC_F32=0 / CRISPEMBED_LAYOUT_GPU_HP_MM=0 opt out.
+    if (!ggml_backend_is_cpu(ctx->backend) && !core_env::explicitly_off("CRISPEMBED_LAYOUT_GPU_PREC_F32") &&
+        !core_env::explicitly_off("CRISPEMBED_LAYOUT_GPU_HP_MM")) {
+#ifdef _WIN32
+        if (!std::getenv("GGML_METAL_PREC_F32_MM")) _putenv_s("GGML_METAL_PREC_F32_MM", "1");
+#else
+        setenv("GGML_METAL_PREC_F32_MM", "1", 0);
+#endif
+    }
 
     if (!core_gguf::load_weights(path, ctx->backend, "layout", ctx->wl)) {
         fprintf(stderr, "layout_detect: failed to load weights\n");
@@ -453,6 +473,19 @@ bool load(context ** out, const char * path, int n_threads) {
 // Graph helpers
 // ---------------------------------------------------------------------------
 
+// Heron (RT-DETRv2) graphs request GGML_PREC_F32 on every MUL_MAT when the
+// backend is a GPU (ggml-metal: F32 tiles instead of the default half tiles).
+// Default on; CRISPEMBED_LAYOUT_GPU_PREC_F32=0 restores the half-tile products.
+static ggml_status heron_compute(ggml_backend_t backend, ggml_cgraph * gf) {
+    static const bool prec = !core_env::explicitly_off("CRISPEMBED_LAYOUT_GPU_PREC_F32");
+    if (prec && !ggml_backend_is_cpu(backend))
+        for (int i = 0; i < ggml_graph_n_nodes(gf); i++) {
+            ggml_tensor * node = ggml_graph_node(gf, i);
+            if (node->op == GGML_OP_MUL_MAT) ggml_mul_mat_set_prec(node, GGML_PREC_F32);
+        }
+    return ggml_backend_graph_compute(backend, gf);
+}
+
 static std::vector<float> tensor_to_f32(ggml_tensor * t) {
     if (!t) return {};
     int n = (int)ggml_nelements(t);
@@ -482,15 +515,25 @@ static std::vector<float> tensor_to_f32(ggml_tensor * t) {
 // falling back. Manual attention is a negligible cost here (Phase-2 is dominated
 // by the cpu_linear projections, not this attention). Numerically ~identical to
 // flash on backends that support it (verify: LAYOUT_DETECT_FLASH=1 A/B).
+// D-FINE GPU split-F16 products (CRISPEMBED_OXR_LAYOUT_GPU_SPLIT_F16=1, opt-in):
+// every product of a D-FINE GPU graph becomes hi/lo half-kernel terms
+// (core/split_f16_matmul.h) instead of the slow PREC_F32 _hp kernel. Set only
+// for the duration of a D-FINE forward on a GPU backend; heron never sees it.
+static thread_local bool g_layout_split_f16 = false;
+static thread_local bool g_dfine_gpu_forward = false; // set during a D-FINE forward on a GPU backend
+static ggml_tensor * lmm(ggml_context * g, ggml_tensor * a, ggml_tensor * b) {
+    return g_layout_split_f16 ? core_split_f16::mul_mat(g, a, b) : ggml_mul_mat(g, a, b);
+}
+
 static ggml_tensor * layout_attn(ggml_context * g, ggml_tensor * Q, ggml_tensor * K, ggml_tensor * V, float scale) {
     static const bool use_flash = (std::getenv("LAYOUT_DETECT_FLASH") != nullptr);
     if (use_flash) {
         return ggml_flash_attn_ext(g, Q, K, V, nullptr, scale, 0.0f, 0.0f);
     }
-    ggml_tensor * scores = ggml_mul_mat(g, K, Q);                    // [N_k, N_q, heads]
+    ggml_tensor * scores = lmm(g, K, Q);                             // [N_k, N_q, heads]
     scores = ggml_soft_max_ext(g, scores, nullptr, scale, 0.0f);     // softmax over keys
     ggml_tensor * Vt = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3)); // [N, head_dim, heads]
-    ggml_tensor * attn = ggml_mul_mat(g, Vt, scores);                // [head_dim, N_q, heads]
+    ggml_tensor * attn = lmm(g, Vt, scores);                         // [head_dim, N_q, heads]
     return ggml_cont(g, ggml_permute(g, attn, 0, 2, 1, 3));          // [head_dim, heads, N_q]
 }
 
@@ -540,6 +583,14 @@ static bool layout_conv_f16() {
 }
 static ggml_tensor * conv2d_dispatch(ggml_context * g, ggml_tensor * w, ggml_tensor * x, int stride, int pad) {
     if (layout_conv_direct()) return ggml_conv_2d_direct(g, w, x, stride, stride, pad, pad, 1, 1);
+    if (g_layout_split_f16) {
+        // ggml_conv_2d's own composition (F32 im2col + GEMM) with a split product.
+        ggml_tensor * im = ggml_im2col(g, w, x, stride, stride, pad, pad, 1, 1, true, GGML_TYPE_F32);
+        ggml_tensor * r = lmm(g, ggml_reshape_2d(g, im, im->ne[0], im->ne[3] * im->ne[2] * im->ne[1]),
+                              ggml_reshape_2d(g, w, w->ne[0] * w->ne[1] * w->ne[2], w->ne[3]));
+        r = ggml_reshape_4d(g, r, im->ne[1], im->ne[2], im->ne[3], w->ne[3]);
+        return ggml_cont(g, ggml_permute(g, r, 0, 1, 3, 2));
+    }
     if (layout_conv_f16()) {
         ggml_tensor * w16 = w->type == GGML_TYPE_F16 ? w : ggml_cast(g, w, GGML_TYPE_F16);
         // [N, OH, OW, IC*KH*KW] in F16, from the F32 activation directly.
@@ -592,7 +643,7 @@ static ggml_tensor * linear(ggml_context * g, ggml_tensor * x, ggml_tensor * w, 
     if (w->ne[0] != x->ne[0] && w->ne[1] == x->ne[0]) {
         w = ggml_cont(g, ggml_transpose(g, w));
     }
-    x = ggml_mul_mat(g, w, x);
+    x = lmm(g, w, x);
     if (b) {
         if (b->type != GGML_TYPE_F32) b = ggml_cast(g, b, GGML_TYPE_F32);
         x = ggml_add(g, x, b);
@@ -725,8 +776,8 @@ static ggml_tensor * decoder_self_attn(ggml_context * gc, ggml_tensor * inp, ggm
     // Q/K from (inp + pe), V from inp — using input weight tensors
     auto * inp_pos = ggml_add(gc, inp, pe_in);
     // ggml_mul_mat(W[in_d, out_d], x[in_d, N]) → result[out_d, N]
-    auto * qkv_pos = ggml_add(gc, ggml_mul_mat(gc, qkv_w_in, inp_pos), qkv_b_in);
-    auto * qkv_raw = ggml_add(gc, ggml_mul_mat(gc, qkv_w_in, inp), qkv_b_in);
+    auto * qkv_pos = ggml_add(gc, lmm(gc, qkv_w_in, inp_pos), qkv_b_in);
+    auto * qkv_raw = ggml_add(gc, lmm(gc, qkv_w_in, inp), qkv_b_in);
 
     // Extract Q[D,N], K[D,N] from qkv_pos; V[D,N] from qkv_raw
     auto * Q = ggml_cont(gc, ggml_view_2d(gc, qkv_pos, D, N_queries, qkv_pos->nb[1], 0));
@@ -747,7 +798,7 @@ static ggml_tensor * decoder_self_attn(ggml_context * gc, ggml_tensor * inp, ggm
     attn = ggml_reshape_2d(gc, attn, D, N_queries);
 
     // Output projection + residual + norm
-    attn = ggml_add(gc, ggml_mul_mat(gc, out_w_in, attn), out_b_in);
+    attn = ggml_add(gc, lmm(gc, out_w_in, attn), out_b_in);
     auto * out = ggml_add(gc, res_in, attn);
     return layer_norm(gc, out, norm_w, norm_b);
 }
@@ -1219,7 +1270,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
     // Compute
     LDBG("layout_detect: computing backbone + encoder...\n");
     auto t_phase1 = std::chrono::steady_clock::now();
-    ggml_backend_graph_compute(ctx->backend, gf);
+    heron_compute(ctx->backend, gf);
     const double _p1_compute_ms =
         std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_phase1).count();
 
@@ -1811,7 +1862,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
             }
             if (built) {
                 ggml_backend_tensor_set(mem_in, memory.data(), 0, (size_t)D * total_tokens * sizeof(float));
-                built = ggml_backend_graph_compute(ctx->backend, gf) == GGML_STATUS_SUCCESS;
+                built = heron_compute(ctx->backend, gf) == GGML_STATUS_SUCCESS;
             }
             if (built) {
                 for (int li = 0; li < 6; li++) {
@@ -1922,7 +1973,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
             ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "sa_out_w"), out_w_t.data(), 0, D * D * sizeof(float));
             ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "sa_out_b"), out_b_data.data(), 0, D * sizeof(float));
 
-            ggml_backend_graph_compute(ctx->backend, gf);
+            heron_compute(ctx->backend, gf);
 
             // Transpose ggml → CPU layout
             std::vector<float> to(D * N_queries);
@@ -2148,7 +2199,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
             ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "ffn_in"), tq.data(), 0, D * N_queries * sizeof(float));
             ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "ffn_res"), tr.data(), 0, D * N_queries * sizeof(float));
 
-            ggml_backend_graph_compute(ctx->backend, gf);
+            heron_compute(ctx->backend, gf);
 
             // Transpose back
             std::vector<float> to(D * N_queries);
@@ -2477,6 +2528,8 @@ struct dfine_model {
     std::vector<float> anchors, project, nps, lqe_w0, lqe_b0, lqe_w1, lqe_b1;
     float reg_scale = 4.0f;
     int image = 960, pad_value = 114, num_queries = 300, num_classes = 12, num_layers = 4, reg_max = 32;
+    ggml_context * deq_ctx = nullptr; // dequantized weights (quantized GGUFs)
+    ggml_backend_buffer_t deq_buf = nullptr;
     int hidden = 256, heads = 8, total_tokens = 18900;
     int num_points[3] = { 3, 6, 3 };
     bool gpu = false;
@@ -2513,16 +2566,32 @@ ggml_tensor * f32(ggml_context * g, ggml_tensor * t) {
 
 enum class dact { none, relu, silu };
 
+// ggml_conv_2d_dw's composition (F32 im2col + broadcast GEMM) with a split product.
+ggml_tensor * conv2d_dw_split(ggml_context * g, ggml_tensor * a, ggml_tensor * b, int stride, int pad) {
+    ggml_tensor * new_a = ggml_reshape_4d(g, a, a->ne[0], a->ne[1], 1, a->ne[2] * a->ne[3]);
+    ggml_tensor * im = ggml_im2col(g, new_a, ggml_reshape_4d(g, b, b->ne[0], b->ne[1], 1, b->ne[2] * b->ne[3]), stride,
+                                   stride, pad, pad, 1, 1, true, GGML_TYPE_F32);
+    ggml_tensor * new_b = ggml_reshape_4d(g, im, im->ne[0], im->ne[2] * im->ne[1], b->ne[2], b->ne[3]);
+    new_a = ggml_reshape_4d(g, new_a, new_a->ne[0] * new_a->ne[1], new_a->ne[2], new_a->ne[3], 1);
+    ggml_tensor * r = lmm(g, new_a, new_b);
+    return ggml_reshape_4d(g, r, im->ne[1], im->ne[2], b->ne[2], b->ne[3]);
+}
+
 // ConvBNAct / ConvNormLayer_fuse / VGGBlock (deploy) / input_proj.
 ggml_tensor * dfine_conv_fwd(ggml_context * g, ggml_tensor * x, const dfine_conv & c, int stride, int pad,
                              bool depthwise, dact act) {
     ggml_tensor * w = f32(g, c.w);
     // CRISPEMBED_OXR_LAYOUT_DW_DIRECT=1 (opt-in, A/B): direct depthwise kernel
     // instead of im2col + mul_mat. Default stays the im2col path.
-    static const bool dw_direct = core_env::on("CRISPEMBED_OXR_LAYOUT_DW_DIRECT");
-    ggml_tensor * y = !depthwise  ? conv2d_dispatch(g, w, x, stride, pad)
-                      : dw_direct ? ggml_conv_2d_dw_direct(g, w, x, stride, stride, pad, pad, 1, 1)
-                                  : ggml_conv_2d_dw(g, w, x, stride, stride, pad, pad, 1, 1);
+    // GPU forwards default to the direct kernel (region-exact on Metal, faster);
+    // CRISPEMBED_OXR_LAYOUT_DW_DIRECT=0 restores im2col there. CPU default unchanged.
+    static const bool dw_on = core_env::on("CRISPEMBED_OXR_LAYOUT_DW_DIRECT");
+    static const bool dw_off = core_env::explicitly_off("CRISPEMBED_OXR_LAYOUT_DW_DIRECT");
+    const bool dw_direct = dw_on || (g_dfine_gpu_forward && !dw_off);
+    ggml_tensor * y = !depthwise           ? conv2d_dispatch(g, w, x, stride, pad)
+                      : dw_direct          ? ggml_conv_2d_dw_direct(g, w, x, stride, stride, pad, pad, 1, 1)
+                      : g_layout_split_f16 ? conv2d_dw_split(g, w, x, stride, pad)
+                                           : ggml_conv_2d_dw(g, w, x, stride, stride, pad, pad, 1, 1);
     const int oc = (int)c.w->ne[3];
     if (c.scale) y = ggml_mul(g, y, ggml_reshape_3d(g, f32(g, c.scale), 1, 1, oc));
     if (c.shift) y = ggml_add(g, y, ggml_reshape_3d(g, f32(g, c.shift), 1, 1, oc));
@@ -2639,7 +2708,34 @@ struct graph_scope {
     }
 };
 
+// On a GPU backend, request F32 matrix-product precision for every MUL_MAT in
+// a D-FINE graph (convolutions included, whose im2col GEMM is built inside
+// ggml_conv_2d). ggml-metal's default mul_mm stages BOTH operands as half in
+// threadgroup memory even for F32 x F32; GGML_PREC_F32 selects the fork's _hp
+// kernel (F32 tiles). The CPU backend ignores the flag. Default on for the GPU
+// path; CRISPEMBED_OXR_LAYOUT_GPU_PREC_F32=0 restores the half-tile kernels
+// (A/B receipts in tests/results/oxr-dfine/metal-m1/).
+bool dfine_gpu_prec_f32() {
+    static const bool on = !core_env::explicitly_off("CRISPEMBED_OXR_LAYOUT_GPU_PREC_F32");
+    return on;
+}
+
 bool run_graph(context * ctx, graph_scope & gs, const std::vector<std::pair<const char *, const float *>> & inputs) {
+    if (ctx->dfine && ctx->dfine->gpu && dfine_gpu_prec_f32() && !g_layout_split_f16)
+        for (int i = 0; i < ggml_graph_n_nodes(gs.gf); i++) {
+            ggml_tensor * node = ggml_graph_node(gs.gf, i);
+            if (node->op == GGML_OP_MUL_MAT) ggml_mul_mat_set_prec(node, GGML_PREC_F32);
+        }
+    if (core_env::on("CRISPEMBED_OXR_LAYOUT_MM_SHAPES")) // diagnostic: GEMM shapes and FLOPs
+        for (int i = 0; i < ggml_graph_n_nodes(gs.gf); i++) {
+            const ggml_tensor * n = ggml_graph_node(gs.gf, i);
+            if (n->op != GGML_OP_MUL_MAT) continue;
+            const ggml_tensor *a = n->src[0], *b = n->src[1];
+            fprintf(stderr, "[dfine-mm] a=%lldx%lldx%lld(%s) b=%lldx%lldx%lld gflop=%.3f\n", (long long)a->ne[0],
+                    (long long)a->ne[1], (long long)a->ne[2], ggml_type_name(a->type), (long long)b->ne[0],
+                    (long long)b->ne[1], (long long)b->ne[2],
+                    2e-9 * (double)a->ne[0] * (double)a->ne[1] * (double)b->ne[1] * (double)(b->ne[2] * b->ne[3]));
+        }
     if (!ggml_gallocr_alloc_graph(ctx->galloc, gs.gf)) {
         ctx->error = "D-FINE graph allocation failed";
         return false;
@@ -2708,18 +2804,80 @@ static bool dfine_load(context * ctx, const char * path, gguf_context * meta) {
     ctx->num_classes = 12;
     ctx->input_h = ctx->input_w = 960;
 
-    // Backend: CPU unless explicitly opted into the GPU path (unqualified).
+    // Backend. CRISPEMBED_OXR_LAYOUT_GPU=1 forces the GPU, =0 (or
+    // LAYOUT_DETECT_FORCE_CPU=1) the CPU. Unset = auto: Metal on Apple builds,
+    // qualified region-exact on five pages and ~2.5x faster than CPU in the
+    // same window (tests/results/oxr-dfine/metal-m1/); CPU everywhere else.
     const bool force_cpu = (getenv("LAYOUT_DETECT_FORCE_CPU") && atoi(getenv("LAYOUT_DETECT_FORCE_CPU")));
-    m->gpu = core_env::on("CRISPEMBED_OXR_LAYOUT_GPU") && !force_cpu;
+    const bool auto_gpu = !core_env::on("CRISPEMBED_OXR_LAYOUT_GPU") &&
+                          !core_env::explicitly_off("CRISPEMBED_OXR_LAYOUT_GPU") && LAYOUT_AUTO_METAL;
+    m->gpu = (core_env::on("CRISPEMBED_OXR_LAYOUT_GPU") || auto_gpu) && !force_cpu;
     ctx->backend = m->gpu ? crispasr_init_gpu_backend() : nullptr;
+    if (ctx->backend && auto_gpu && std::string(ggml_backend_name(ctx->backend)).find("MTL") == std::string::npos &&
+        std::string(ggml_backend_name(ctx->backend)).find("Metal") == std::string::npos) {
+        ggml_backend_free(ctx->backend); // auto mode qualifies Metal only
+        ctx->backend = nullptr;
+    }
     if (!ctx->backend) {
         ctx->backend = ggml_backend_cpu_init();
         m->gpu = false;
+    }
+    // GPU: PREC_F32 products on ggml-metal's F32-tile _hp mul_mm (ggml patch,
+    // process-wide; an explicit GGML_METAL_PREC_F32_MM wins). Opt out with
+    // CRISPEMBED_OXR_LAYOUT_GPU_HP_MM=0 (mat-vec PREC_F32 route, ~2.5x slower).
+    if (m->gpu && !core_env::explicitly_off("CRISPEMBED_OXR_LAYOUT_GPU_HP_MM")) {
+#ifdef _WIN32
+        if (!std::getenv("GGML_METAL_PREC_F32_MM")) _putenv_s("GGML_METAL_PREC_F32_MM", "1");
+#else
+        setenv("GGML_METAL_PREC_F32_MM", "1", 0);
+#endif
     }
     if (ggml_backend_is_cpu(ctx->backend)) ggml_backend_cpu_set_n_threads(ctx->backend, ctx->n_threads);
     if (!core_gguf::load_weights(path, ctx->backend, "layout", ctx->wl)) {
         fprintf(stderr, "layout_detect: failed to load D-FINE weights\n");
         return false;
+    }
+    // Quantized D-FINE GGUFs (crispembed-quantize): conv kernels are stored
+    // flattened to 2D with their original shape in layout.qshape.<name>. Every
+    // quantized/F16-free tensor is dequantized once here into F32 tensors on
+    // the backend (original 4D shape restored), so the graph code is the F32
+    // path with quantization-rounded weights. Storage saving is on disk only.
+    {
+        std::vector<std::pair<std::string, ggml_tensor *>> todo;
+        for (auto & kv : ctx->wl.tensors)
+            if (ggml_is_quantized(kv.second->type) || gguf_find_key(meta, ("layout.qshape." + kv.first).c_str()) >= 0)
+                todo.push_back(kv);
+        if (!todo.empty()) {
+            m->deq_ctx = ggml_init({ ggml_tensor_overhead() * (todo.size() + 8), nullptr, true });
+            std::vector<std::pair<ggml_tensor *, std::vector<float>>> data;
+            for (auto & kv : todo) {
+                ggml_tensor * q = kv.second;
+                std::vector<float> f(ggml_nelements(q));
+                std::vector<uint8_t> raw(ggml_nbytes(q));
+                ggml_backend_tensor_get(q, raw.data(), 0, raw.size());
+                if (q->type == GGML_TYPE_F32)
+                    std::memcpy(f.data(), raw.data(), raw.size());
+                else
+                    ggml_get_type_traits(q->type)->to_float(raw.data(), f.data(), (int64_t)f.size());
+                int64_t ne[4] = { q->ne[0], q->ne[1], q->ne[2], q->ne[3] };
+                const auto shape = core_gguf::kv_i32_array(meta, ("layout.qshape." + kv.first).c_str());
+                if (shape.size() == 4)
+                    for (int d = 0; d < 4; d++) ne[d] = shape[d];
+                ggml_tensor * t =
+                    ggml_new_tensor(m->deq_ctx, GGML_TYPE_F32, shape.size() == 4 ? 4 : ggml_n_dims(q), ne);
+                if (ggml_nelements(t) != (int64_t)f.size()) {
+                    fprintf(stderr, "layout_detect: D-FINE dequantized shape mismatch: %s\n", kv.first.c_str());
+                    return false;
+                }
+                ggml_set_name(t, kv.first.c_str());
+                data.push_back({ t, std::move(f) });
+                ctx->wl.tensors[kv.first] = t;
+            }
+            m->deq_buf = ggml_backend_alloc_ctx_tensors(m->deq_ctx, ctx->backend);
+            if (!m->deq_buf) return false;
+            for (auto & d : data) ggml_backend_tensor_set(d.first, d.second.data(), 0, d.second.size() * sizeof(float));
+            LDBG("layout_detect: D-FINE dequantized %zu tensors to F32\n", todo.size());
+        }
     }
     std::vector<std::string> missing;
     auto get = [&](const std::string & n) -> ggml_tensor * {
@@ -2906,6 +3064,14 @@ static std::vector<float> dfine_preprocess(const dfine_model & m, const uint8_t 
 
 static bool dfine_forward(context * ctx, const float * chw, int orig_w, int orig_h, std::vector<candidate> & out) {
     const dfine_model & m = *ctx->dfine;
+    static const bool split_gate = core_env::on("CRISPEMBED_OXR_LAYOUT_GPU_SPLIT_F16");
+    struct split_scope {
+        split_scope(bool on, bool gpu) {
+            g_layout_split_f16 = on;
+            g_dfine_gpu_forward = gpu;
+        }
+        ~split_scope() { g_layout_split_f16 = g_dfine_gpu_forward = false; }
+    } split_guard(m.gpu && split_gate, m.gpu);
     const int S = m.image, D = m.hidden, NQ = m.num_queries, NC = m.num_classes, NT = m.total_tokens;
     const int R = m.reg_max + 1;
     using clock = std::chrono::steady_clock;
@@ -3011,7 +3177,7 @@ static bool dfine_forward(context * ctx, const float * chw, int orig_w, int orig
     capture_host(ctx, "dec.topk_anchor", topk_anchor.data(), { 4, NQ });
     std::vector<float> ref_unact;
     {
-        graph_scope gs(64);
+        graph_scope gs(256);
         auto * c = gs.input("content", D, NQ);
         auto * delta = mlp(gs.g, c, m.enc_bbox, 3);
         gs.output(delta, "dec.enc_bbox_delta");
@@ -3045,7 +3211,7 @@ static bool dfine_forward(context * ctx, const float * chw, int orig_w, int orig
         // Graph A: query position head, self-attention, sampling offsets and weights.
         std::vector<float> self_out, offsets, weights;
         {
-            graph_scope gs(256);
+            graph_scope gs(1024);
             auto * tgt = gs.input("tgt", D, NQ);
             auto * rp = gs.input("ref", 4, NQ);
             // ggml_clamp is an in-place view; materialize it so the output buffer is not reused.
@@ -3078,7 +3244,7 @@ static bool dfine_forward(context * ctx, const float * chw, int orig_w, int orig
         // Graph B: gate, FFN, box/score heads.
         std::vector<float> layer_out, corners, pre_delta;
         {
-            graph_scope gs(256);
+            graph_scope gs(1024);
             auto * self = gs.input("self", D, NQ);
             auto * cr = gs.input("cross", D, NQ);
             auto * po = gs.input("prev_out", D, NQ);
@@ -3390,6 +3556,10 @@ std::vector<region> detect_rgb(context * ctx, const uint8_t * pixels, int width,
 
 void free(context * ctx) {
     if (!ctx) return;
+    if (ctx->dfine) {
+        if (ctx->dfine->deq_buf) ggml_backend_buffer_free(ctx->dfine->deq_buf);
+        if (ctx->dfine->deq_ctx) ggml_free(ctx->dfine->deq_ctx);
+    }
     delete ctx->dfine;
     if (ctx->galloc) ggml_gallocr_free(ctx->galloc);
     if (ctx->sched) ggml_backend_sched_free(ctx->sched);

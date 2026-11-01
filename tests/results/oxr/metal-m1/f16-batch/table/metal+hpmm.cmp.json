@@ -1,0 +1,1 @@
+{"label": "table/metal+hpmm", "ids_exact": true, "first_divergence": null, "reference_tokens": 261, "native_tokens": 261, "text_exact": true, "cer": 0.0, "eos": true, "capped": false, "runs_ms": [14290.446417, 13940.073416], "warm_ms_median": 13940.073416, "load_ms": 219271.315333, "runs_identical": true}

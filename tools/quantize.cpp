@@ -18,6 +18,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <set>
 #include <string>
 #include <vector>
 #include <map>
@@ -262,6 +263,26 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
     const bool is_internvl2 = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "internvl2";
     const bool is_teleocr = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "teleocr";
     const bool is_oxr = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "oxr";
+    // OXR large-tensor policy (opt-in, default unchanged): CRISPEMBED_QUANTIZE_OXR_LARGE
+    //   q8_0  embed_tokens, lm_head, vte and the 65532x4608 visual head -> Q8_0
+    //   mix   visual head -> Q4_K, the other three -> Q8_0
+    // (after fusor-rs/oxr-wasm, MIT: its default bundle keeps the visual head
+    // 4-bit and every other large matrix 7-bit). The loader accepts these
+    // tensors quantized only when this key is present.
+    std::string oxr_large;
+    if (is_oxr) {
+        if (const char * v = getenv("CRISPEMBED_QUANTIZE_OXR_LARGE")) oxr_large = v;
+        if (!oxr_large.empty() && oxr_large != "q8_0" && oxr_large != "mix") {
+            fprintf(stderr, "CRISPEMBED_QUANTIZE_OXR_LARGE must be q8_0 or mix\n");
+            gguf_free(ctx_out);
+            return false;
+        }
+        if (!oxr_large.empty()) gguf_set_val_str(ctx_out, "oxr.quantize.large", oxr_large.c_str());
+    }
+    std::set<std::string> dfine_convs; // flattened D-FINE conv kernels (pre-scan)
+    const int layout_arch_key = gguf_find_key(ctx_in, "layout.arch");
+    const bool is_dfine_layout =
+        layout_arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, layout_arch_key)) == "dfine";
     const int family_key = gguf_find_key(ctx_in, "qwen2vl.model_family");
     const bool is_mineru25 =
         family_key >= 0 && std::string(gguf_get_val_str(ctx_in, family_key)) == "mineru2.5-pro-2604";
@@ -365,6 +386,14 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         // OXR's loader validates its 4D patch-embedding shape and reshapes it
         // itself, so its conv kernel keeps the source metadata.
         if (ggml_n_dims(t) == 4 && t->type == GGML_TYPE_F32 && !is_oxr) {
+            // OXR D-FINE layout: record the original conv shape so the loader
+            // can restore it after dequantizing (src/layout_detect.cpp).
+            if (is_dfine_layout) {
+                dfine_convs.insert(name);
+                const int32_t shape4[4] = { (int32_t)t->ne[0], (int32_t)t->ne[1], (int32_t)t->ne[2],
+                                            (int32_t)t->ne[3] };
+                gguf_set_arr_data(ctx_out, (std::string("layout.qshape.") + name).c_str(), GGUF_TYPE_INT32, shape4, 4);
+            }
             // Flatten [KW, KH, IC, OC] → [IC*KH*KW, OC]
             int64_t flat_cols = t->ne[0] * t->ne[1] * t->ne[2];
             int64_t OC = t->ne[3];
@@ -634,7 +663,9 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
                 (sname.find(".self_attn.") != std::string::npos || sname.find(".mlp.fc") != std::string::npos);
             const bool llm_matrix =
                 sname.rfind("llm.model.layers.", 0) == 0 && (sname.find("_proj.weight") != std::string::npos);
-            if (!vision_matrix && !llm_matrix) quantize = false;
+            const bool large = sname == "llm.model.embed_tokens.weight" || sname == "llm.lm_head.weight" ||
+                               sname == "vte.weight" || sname == "visual_tokenizer.head.0.weight";
+            if (!vision_matrix && !llm_matrix && !(large && !oxr_large.empty())) quantize = false;
         }
         const int64_t ncols = t->ne[0];
         ggml_type qtype_used = qtype;
@@ -747,6 +778,13 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         bool is_oxr_vision = is_oxr && ftype == GGML_FTYPE_MOSTLY_Q8_0 && sname.rfind("vit.", 0) == 0;
         if (const char * off = getenv("CRISPEMBED_QUANTIZE_NO_VISION_F16")) {
             if (atoi(off)) is_oxr_vision = false;
+        }
+        // Opt-in CRISPEMBED_QUANTIZE_OXR_VISION=f16: the SigLIP2 tower F16 for any
+        // target type (e.g. Q4_K language layers over an F16 vision tower).
+        if (is_oxr && sname.rfind("vit.", 0) == 0) {
+            if (const char * v = getenv("CRISPEMBED_QUANTIZE_OXR_VISION")) {
+                if (std::string(v) == "f16") is_oxr_vision = true;
+            }
         }
         if (quantize && is_oxr_vision && qtype != GGML_TYPE_F16 && qtype != GGML_TYPE_F32) {
             qtype_used = GGML_TYPE_F16;
@@ -880,6 +918,27 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
                 printf("skip (ncols %lld not div by %lld)\n", (long long)ncols, (long long)qk);
                 quantize = false;
             }
+        }
+
+        // OXR D-FINE conv policy (opt-in CRISPEMBED_QUANTIZE_DFINE_CONV):
+        //   keep = conv kernels stay F32 (only linear layers quantized), f16 = F16.
+        if (quantize && dfine_convs.count(sname)) {
+            if (const char * v = getenv("CRISPEMBED_QUANTIZE_DFINE_CONV")) {
+                if (std::string(v) == "keep")
+                    quantize = false;
+                else if (std::string(v) == "f16")
+                    qtype_used = GGML_TYPE_F16;
+            }
+        }
+
+        // OXR large-tensor policy (see oxr_large above): applied last, so no
+        // generic embedding/vision rule changes these four tensors' types.
+        if (quantize && is_oxr && !oxr_large.empty() &&
+            (sname == "llm.model.embed_tokens.weight" || sname == "llm.lm_head.weight" || sname == "vte.weight" ||
+             sname == "visual_tokenizer.head.0.weight")) {
+            qtype_used =
+                oxr_large == "mix" && sname == "visual_tokenizer.head.0.weight" ? GGML_TYPE_Q4_K : GGML_TYPE_Q8_0;
+            printf("(oxr-large→%s) ", ggml_type_name(qtype_used));
         }
 
         // Source already at the target type (e.g. a q8_0 embedding kept at q8_0):

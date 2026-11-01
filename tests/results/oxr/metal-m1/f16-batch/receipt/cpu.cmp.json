@@ -1,0 +1,1 @@
+{"label": "receipt/cpu", "ids_exact": true, "first_divergence": null, "reference_tokens": 202, "native_tokens": 202, "text_exact": true, "cer": 0.0, "eos": true, "capped": false, "runs_ms": [47088.1485, 55358.831875], "warm_ms_median": 55358.831875, "load_ms": 224574.10625, "runs_identical": true}

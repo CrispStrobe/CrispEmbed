@@ -1,4 +1,4 @@
-"""Kaggle GPU kernel: OXR-1.0 native CUDA run of F16, Q8_0 and Q4_K.
+"""Kaggle GPU kernel: OXR-1.0 native CUDA run of F16 and the qualifying quantized recipes.
 
 Kaggle script kernels upload only this file, so it clones CrispEmbed at the
 exact commit rendered by stage.py (@COMMIT@), builds the CUDA targets for the
@@ -39,7 +39,8 @@ def main():
 
     sh("cmake", "-S", ".", "-B", BUILD, "-DCMAKE_BUILD_TYPE=Release", "-DCRISPEMBED_NATIVE=OFF",
        "-DGGML_NATIVE=OFF", "-DGGML_CUDA=ON", f"-DCMAKE_CUDA_ARCHITECTURES={arch}")
-    sh("cmake", "--build", BUILD, "--parallel", "4", "--target", "test-oxr-run", "crispembed-quantize")
+    sh("cmake", "--build", BUILD, "--parallel", "4", "--target", "test-oxr-run", "test-oxr-stage-dump",
+       "crispembed-quantize")
     sh(sys.executable, "-m", "pip", "install", "-q", "-r", "tools/oxr-conversion-requirements.txt")
 
     finished = subprocess.run([sys.executable, "tools/kaggle/oxr-gpu/run.py", BUILD],
