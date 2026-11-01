@@ -23,11 +23,17 @@ loading. The shared repository gate treats any other nonempty value (including
 `false`) as enabled; use literal `0` to disable it.
 Published GGUFs: [cstr/TeleOCR-GGUF](https://huggingface.co/cstr/TeleOCR-GGUF) at immutable commit `1de0119f`, with registry aliases `teleocr-f16`, `teleocr-q8_0` and `teleocr-q4_k-m` pinned by SHA-256. Each was token-exact against the pinned original model on all six frozen cases (hosted receipts in `tests/results/teleocr/hosted-*.json`); strict numerical qualification remains false.
 
-TeleOCR uses the CPU backend by default. `CRISPEMBED_TELEOCR_GPU=1` opts into
-experimental GPU placement, while `QWEN2VL_OCR_FORCE_CPU=1` still forces CPU.
-The retained execution evidence covers CPU; GPU numerical/decoded parity and
-platform qualification remain separate and must not be inferred from a GPU
-allocation or a successful build.
+TeleOCR runs on ggml-Metal by default when the library was built with Metal
+(macOS); every other GPU backend stays opt-in with `CRISPEMBED_TELEOCR_GPU=1`,
+and `CRISPEMBED_TELEOCR_GPU=0` or `QWEN2VL_OCR_FORCE_CPU=1` force the CPU path.
+On an Apple M1 all six frozen cases were token-exact for F16, Q8_0 and Q4_K_M
+on Metal with final-state cosine equal to the CPU arithmetic, 3.5-7x faster than
+the CPU path ([Metal guide](qwen2vl-metal.md), receipts in
+`tests/results/teleocr/metal-m1/`). On Metal TeleOCR uses native flash
+attention (`CRISPEMBED_QWEN2VL_METAL_FA=0` restores the CPU-attention path)
+and F32-activation matmul kernels (`CRISPEMBED_TELEOCR_METAL_F32_MATMUL=0`
+restores plain PREC_F32 routing). CUDA/Vulkan parity is measured separately
+(Kaggle receipts) and does not change the opt-in.
 
 ## Source and license boundaries
 

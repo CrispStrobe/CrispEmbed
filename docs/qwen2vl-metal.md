@@ -104,6 +104,21 @@ Q8_0 vision tower (German merger worst row 0.978) and remain on both kernel
 choices, so they are precision. Unlike CUDA, it was exact on layout-page on
 Metal. Real Q4_K decoder candidates are listed below.
 
+## Precision-policy re-score (docs/precision-acceptance.md)
+
+Final output = the logits at every generated position. Each candidate is
+teacher-forced on the committed original-Python IDs (diagnostic
+`CRISPEMBED_QWEN2VL_FORCE_IDS`), so every position is conditioned on the same
+prefix as the reference, and the minimum cosine over all positions of all
+cases is compared with the bar (F32 > 0.99, F16 > 0.98, Q8_0 > 0.97,
+Q4_K > 0.94). References: MinerU native CPU F32 (converted from the pinned
+checkpoint); TeleOCR native CPU F16 (F32 compute on the bf16-exact weights).
+Decoded agreement is a separate free-running run in the same process.
+"Worst stage" is the lowest of the vision-merger rows, the prefill
+final-norm rows and the first 32 decode final-norm states.
+
+RESCORE_TABLE
+
 ## Metal precision traps checked
 
 | Trap | Where | Status |

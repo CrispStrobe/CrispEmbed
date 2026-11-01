@@ -19,6 +19,13 @@ release, or update an application runtime pin. Q8/Q4 recipes and quantized quali
 are not qualified. CUDA, Metal, Vulkan, Windows and macOS model execution require
 their own validation.
 
+On ggml-Metal (Apple M1) all eight protocol cases are token-exact for F16 and
+Q8_0, and MinerU uses native flash attention plus F32-activation matmul
+kernels by default there (`CRISPEMBED_QWEN2VL_METAL_FA=0`,
+`CRISPEMBED_MINERU25_PRO_METAL_F32_MATMUL=0` restore the earlier routes);
+see [the Metal guide](qwen2vl-metal.md) for receipts and the precision-policy
+scores on CPU, Metal and CUDA.
+
 | Interface | Execution and document contract |
 |---|---|
 | `crispembed_mineru_predict`, Python `CrispMinerU.predict`, Rust `MinerU`, Dart `CrispMinerU` | Native GGML vision and language model; one image/region or a text-only prompt. Returns text, structural tokens, IDs, stop flags and timing. |
