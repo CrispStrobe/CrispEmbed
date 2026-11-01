@@ -274,6 +274,12 @@ static LamaPlan inpaint_tensor_plan(const std::string & arch, const std::string 
     LamaPlan plan; // same {type, stored row width} record as lama-v1
     if (inpaint_pinned_f32(arch, name, t)) return plan;
     ggml_type type = requested;
+    // MI-GAN512 hosted sweep (run 41294631042): all-Q4_K fell to cosine 0.79
+    // on the full-mask fixture; Q4_K encoder with Q8_0 synthesis kept every
+    // fixture >= 0.977 vs the original (hi-res-Q8 0.845, low-res-Q8 0.923,
+    // encoder-Q8 0.789). So sub-Q8 requests keep MI-GAN synthesis at Q8_0.
+    const bool sub_q8 = requested != GGML_TYPE_F16 && requested != GGML_TYPE_Q8_0 && requested != GGML_TYPE_Q6_K;
+    if (arch == "migan" && sub_q8 && name.rfind("synthesis.", 0) == 0) type = GGML_TYPE_Q8_0;
     for (const auto & rule : g_tensor_types)
         if (tensor_name_matches(rule.pattern, name)) type = rule.type;
     if (type == GGML_TYPE_F32) return plan;

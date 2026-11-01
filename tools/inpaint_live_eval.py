@@ -80,7 +80,7 @@ def scores(result, clean, mask):
 
 def agreement(result, other, mask):
     sel = mask > 0
-    a, b = result[sel].astype(np.float64), other[sel].astype(np.float64)
+    a, b = result[sel].astype(np.float64).ravel(), other[sel].astype(np.float64).ravel()
     diff = a - b
     mse = float(np.mean(diff ** 2))
     na, nb = float(np.linalg.norm(a)), float(np.linalg.norm(b))
