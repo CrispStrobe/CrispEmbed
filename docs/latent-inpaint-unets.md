@@ -265,6 +265,172 @@ Those probes performed no model computation and are not inference memory or
 quality results. The original PixelHacker FLA kernel requires CUDA; no CPU
 substitute was presented as original PixelHacker evidence.
 
+### Guarded CPU depthwise candidate
+
+The default-off `CRISPEMBED_INPAINT_CPU_DEPTHWISE=1` gate selects a stateless
+CPU callback for contiguous F32, multiplier-one depthwise convolution with a
+3-by-3 kernel, stride one, padding one and dilation one. Images must be at
+least 3-by-3. Other geometries and GPU execution retain the existing operator.
+It reuses the measured MI-GAN row/interior accumulation pattern; bias remains
+a separate addition. The callback partitions rows across workers, keeps border
+checks outside the vectorizable interior loop, and allocates no heap storage
+or activation transfers during execution.
+
+The [isolated depthwise evidence record](../tests/results/inpainting/moebius-depthwise-component-cpu-2026-11-01.json)
+contains actual measurements for all 16 distinct Moebius geometries and their
+47-operation multiplicity per denoiser step, including guidance batch two and
+the original bias configurations. All 32 oracle rounds passed: the dyadic
+controls were bit-identical, while the largest non-dyadic difference from the
+generic native kernel was 0.00000011920929. The candidate's largest error
+against the independent F64 oracle was 0.00000010948861. Inputs, weights and
+biases retained their exact bytes, and repeated graphs reused their storage.
+
+With eight CPU threads, the multiplicity-weighted sum of isolated median
+component times fell from 683.9734 to 96.5575 milliseconds, a 7.08-fold ratio.
+The individual component ratios ranged from 4.09 to 13.56. Each arm used two
+warmups and five samples of eight replays, with alternating arm order. These
+sums estimate component cost; they are not measured denoiser or image times.
+The report pins the prototype source, executable and linked archives used
+for those measurements.
+
+The shared runtime integration subsequently passed its actual independent
+CPU graph controls. Nine geometries cover batch two, borders, a 128-element
+interior-block seam and tail, the real input geometry, and the stride, padding,
+dilation, kernel-size and small-image fallbacks. The controls check changed
+inputs, exact dyadic oracles, a fixed non-dyadic F64 error budget, repeated
+outputs, retained input/weight bytes, stable storage and unused-node exclusion.
+The complete 18-command native control suite passed after a coherent rebuild.
+
+The [integrated four-case depthwise evidence](../tests/results/inpainting/moebius-depthwise-cpu-2026-11-01.json)
+records an actual subsequent original/native replay with the new gate enabled,
+alongside the selected relative-lambda, GEMM-layout and unpadded local-lambda
+gates. It uses the same four frozen original cases, strict F32, eight threads,
+and all 19 denoiser steps. This pass runs the observed path once per case; the
+earlier ordinary/observed neutrality results remain separate evidence.
+
+**All eight generated and composited RGB files are byte-identical to the
+preserved `candidate-local` outputs.** Their original RGB limits and known-pixel
+checks pass. All 608 retained original metric records are also identical to
+the earlier records, including the same 35 absolute-error failures distributed
+18/13/4/0 across the four cases. Equality of those aggregate metrics does not
+establish equality of every uncaptured intermediate tensor byte. Full original
+intermediate parity still fails; its acceptance budgets have not changed.
+
+The executable graph counter proves actual selection, rather than relying on
+the gate setting alone. `cpu_depthwise_nodes` excludes constructed but unused
+nodes, and the completed profiles report:
+
+| Executed graph | Executions | CPU depthwise nodes per execution |
+| --- | ---: | ---: |
+| VAE encoder, batch two | 4 | 0 |
+| Guided denoiser and DDIM update, batch two | 76 | 47 |
+| VAE decoder | 4 | 0 |
+
+That is 3,572 logical custom-node executions. Worker callback invocations are
+not counted as additional graph nodes. The run completed in 896.786 seconds
+with a process peak of 4,493,224 KiB RSS. Its timing remains diagnostic because
+external compilation and sequential storage reads overlapped part of the run;
+it does not establish an incremental full-image speedup. The executable,
+controller, observed native source files, original report and conversion
+receipts were unchanged throughout execution. The evidence preserves their
+identities and the exact measured controller/source snapshots.
+
+### Ordinary image API: depthwise and accelerated hashing
+
+The [completed ordinary-API evidence](../tests/results/inpainting/moebius-api-cpu-2026-11-01.json)
+compares the delivered local-lambda profile with the same profile plus CPU
+depthwise convolution and verified SHA-NI model hashing. Both arms use the
+same executable, 512-by-512 `formula_photo_bar` fixture, eight CPU threads,
+strict F32, and the complete 20-requested/19-executed-step schedule. Each arm
+runs one first image and three warm images through the public image API,
+without intermediate observers. The baseline enables GEMM layout, relative
+lambda and unpadded local lambda; the candidate changes only the depthwise
+and model-hashing gates. The arms ran sequentially, with unrelated compilation
+and shared host activity visible in their resource snapshots.
+
+**The candidate did not demonstrate a full-image speedup.** Its warm median
+was 27.03% slower in this pair. Both arms' measurements remain unqualified
+because of contention and variation. All samples, including the baseline's
+slow third warm image and the candidate's slow first image, are retained:
+
+| Measurement | Baseline: depthwise off, scalar hash | Candidate: depthwise on, SHA-NI |
+| --- | ---: | ---: |
+| Model load and validation | 4.973 s | 1.277 s |
+| First image | 166.949 s | 392.587 s |
+| Warm image 1 | 142.796 s | 134.088 s |
+| Warm image 2 | 139.512 s | 181.397 s |
+| Warm image 3 | 266.263 s | 195.887 s |
+| Warm median | 142.796 s | 181.397 s |
+| Warm mean | 182.857 s | 170.457 s |
+| Process peak RSS | 3,733,784 KiB | 3,727,376 KiB |
+
+The lower candidate mean and its fastest sample do not override the slower
+median or establish a repeatable gain. The loading result is one observation
+per arm, and the controller hashes the model files before invoking the API;
+it is not a physical cold-disk benchmark or an isolated hash-speed measurement.
+The first-image measurement includes lazy graph preparation, allocation and
+computation. Full recorded samples, graph totals, before/after resources
+and sidecars are in the record. The baseline sidecar named `midrun` was
+actually taken after its process ended; it is labeled as post-run evidence.
+
+All eight recorded image hashes are identical. The retained first and final
+RGB buffers from both arms were also independently compared byte for byte,
+and all known input channels were exact. The native filled-region comparison
+has maximum and mean absolute error zero under the unchanged image budgets.
+This establishes agreement between these native configurations on this
+photograph; it does not replace the original-framework synthetic replay or
+erase its existing 35 failed intermediate absolute-error gates.
+
+The actual execution profiles report four encoder runs, 76 guided-denoiser
+runs and four decoder runs per arm. The candidate selects 47 custom depthwise
+nodes in each denoiser execution and zero in each VAE graph, for 3,572 logical
+custom-node executions. The baseline reports zero. Both arms hash the same
+904,877,728-byte denoiser and 334,636,224-byte VAE. The candidate's profiles
+confirm SHA-NI handled all 14,138,714 and 5,228,691 complete input blocks,
+respectively; the baseline records scalar hashing and zero accelerated
+blocks. Full file identities and tail processing are verified by the loader.
+
+A bounded source review during the slow first image found no candidate-only
+subnormal branch or automatic in-place custom-op allocation: the pinned
+allocator excludes `GGML_OP_CUSTOM` from parent-buffer reuse, and this path
+uses the fresh-tensor constructor. No runtime change or extra model test was
+introduced from those hypotheses. They do not explain the observed timing.
+
+**Keep CPU depthwise disabled in the main recommended Moebius profile.** The
+default-off gate remains available as an experimental option because its
+component controls and image comparisons pass, but it needs a stable
+end-to-end benefit before inclusion in that profile. Model hashing remains
+a separate loader optimization. No CPU result qualifies CUDA or Metal.
+
+### CPU convolution workspace screen
+
+Production CPU convolution still caps each patch strip at 32 MiB. A
+[private four-shape screen](../tests/results/inpainting/conv-workspace-cpu-2026-11-01.json)
+compared that policy with a 128 MiB cap using a copied Builder, strict F32 and
+eight threads. The existing common scalar/replay controls ran first, then
+each arm ran once cold and three times warm with alternating order. Every
+warm result matched its own arm's cold output byte-for-byte, cross-arm maximum
+numerical error was zero, and resident input, kernel and bias bytes were
+preserved. Downloads and checks were outside graph-compute timing.
+
+| Feature geometry | Actual strip counts, 32 / 128 MiB | Warm median, 32 / 128 MiB | Graph arena, 32 / 128 MiB |
+| --- | ---: | ---: | ---: |
+| 64 × 64, 320 channels, batch 2 | 3 / 1 | 77.050 / 65.819 ms | 55.31 / 110 MiB |
+| 32 × 32, 640 channels, batch 2 | 2 / 1 | 75.673 / 88.883 ms | 47.03 / 55 MiB |
+| 16 × 16, 1280 channels, batch 2 | 1 / 1 | 55.995 / 61.453 ms | 27.5 / 27.5 MiB |
+| 512 × 512, 128 channels, batch 1 | 37 / 10 | 713.247 / 586.190 ms | 457 / 436 MiB |
+
+These mixed, short measurements do not justify a blanket policy change. The
+32 × 32 case regressed, the identical single-strip control varied by about
+10%, and the 64 × 64 graph arena nearly doubled. External package installation
+and synchronization processes also appear in the resource snapshots. The
+512 × 512 VAE convolution is a measured lead, with a 1.217-fold median ratio
+and a smaller arena; it remains unintegrated and requires separate qualification.
+The private probe performed no full-model inference or large-shape comparison
+against an original framework. Its direct-child peak RSS includes both graphs
+and retained validation buffers. Exact sources, headers, compiler, archives,
+raw samples and resource observations are preserved with the result.
+
 ## Native reference replay
 
 `test-latent-inpaint` is a separate executable linked to the observer-enabled

@@ -34,6 +34,88 @@ def marked_png(size, pixels, fields, duplicate=False):
 
 
 class InpaintEngineLiveControls(unittest.TestCase):
+    def test_sha_acceleration_is_explicit_and_independent_of_inference_profile(self):
+        with mock.patch.dict(os.environ, {live.SHA256_GATE: "1"}):
+            for engine in live.ENGINES:
+                for extra in ((), ("--graph", "--cpu-optimized"), ("--sha256-accel",)):
+                    args = arguments(engine, extra)
+                    live.validate_options(args)
+                    environment, gates = live.controlled_environment(args)
+                    self.assertEqual(gates[live.SHA256_GATE], "1" if args.sha256_accel else "0")
+                    self.assertEqual(environment[live.SHA256_GATE], gates[live.SHA256_GATE])
+                    self.assertNotIn(live.SHA256_GATE, live.CPU_ENGINE_GATES[engine])
+        with self.assertRaisesRegex(ValueError, "requires"):
+            live.validate_options(arguments(extra=("--require-sha256-accel",)))
+        live.validate_options(arguments(extra=("--sha256-accel", "--require-sha256-accel")))
+
+    def test_hash_profiles_bind_each_model_and_actual_hardware_block_count(self):
+        pins = {"moebius": {"bytes": 1025, "sha256": "a" * 64},
+                "sdxl_vae": {"bytes": 640, "sha256": "b" * 64}}
+        lines = "".join("inpaint_hash: label=" + label + " backend=sha-ni requested=1 hardware_available=1 bytes="
+                        + str(pin["bytes"]) + " complete_blocks=" + str(pin["bytes"] // 64)
+                        + " accelerated_blocks=" + str(pin["bytes"] // 64) + " sha256=" + pin["sha256"] + "\n"
+                        for label, pin in pins.items())
+        record = live.hash_evidence((lines + lines).encode(), pins, requested=True, require_accel=True)
+        self.assertTrue(record["hardware_acceleration_verified"])
+        self.assertEqual(record["verified_model_labels"], ["moebius", "sdxl_vae"])
+        self.assertEqual(len(record["profiles"]), 4)
+        self.assertFalse(record["scalar_fallback"])
+
+    def test_hash_scalar_fallback_is_functional_but_never_hardware_proof(self):
+        pin = {"lama": {"bytes": 128, "sha256": "a" * 64}}
+        line = "inpaint_hash: label=lama backend=scalar requested=1 hardware_available=0 bytes=128 complete_blocks=2 accelerated_blocks=0 sha256=" + "a" * 64
+        result = live.hash_evidence(line, pin, requested=True)
+        self.assertTrue(result["all_model_identities_verified"])
+        self.assertTrue(result["scalar_fallback"])
+        self.assertFalse(result["hardware_acceleration_verified"])
+        with self.assertRaisesRegex(ValueError, "required"):
+            live.hash_evidence(line, pin, requested=True, require_accel=True)
+        with self.assertRaisesRegex(ValueError, "selection"):
+            live.hash_evidence(line.replace("hardware_available=0", "hardware_available=1"), pin, requested=True)
+
+    def test_hash_profile_missing_and_empty_mask_have_distinct_meanings(self):
+        pins = {"migan": {"bytes": 128, "sha256": "a" * 64}}
+        with self.assertRaisesRegex(ValueError, "no complete"):
+            live.hash_evidence(b"", pins, requested=True)
+        result = live.hash_evidence(b"", pins, requested=True, require_accel=True, require_models=False)
+        self.assertTrue(result["empty_mask_bypass_without_hash_profiles"])
+        self.assertFalse(result["hardware_acceleration_verified"])
+        historical = live.hash_evidence(b"", pins)
+        self.assertFalse(historical["hardware_acceleration_verified"])
+        self.assertFalse(historical["all_model_identities_verified"])
+        with self.assertRaisesRegex(ValueError, "explicit"):
+            live.hash_evidence(b"", pins, require_accel=True)
+
+    def test_hash_profiles_reject_wrong_identity_selection_and_malformed_fields(self):
+        pins = {"migan": {"bytes": 128, "sha256": "a" * 64}}
+        good = "inpaint_hash: label=migan backend=sha-ni requested=1 hardware_available=1 bytes=128 complete_blocks=2 accelerated_blocks=2 sha256=" + "a" * 64
+        broken = (good.replace("label=migan", "label=lama"), good.replace("bytes=128", "bytes=129"),
+                  good.replace("sha256=" + "a" * 64, "sha256=" + "b" * 64),
+                  good.replace("requested=1", "requested=0"), good.replace("complete_blocks=2", "complete_blocks=3"),
+                  good.replace("accelerated_blocks=2", "accelerated_blocks=0"),
+                  good.replace("hardware_available=1", "hardware_available=0"),
+                  good.replace("requested=1", "requested=true"), good + " bytes=128",
+                  good.replace("complete_blocks=2", "complete_blocks=-2"),
+                  good.replace("accelerated_blocks=2", "accelerated_blocks=2.0"),
+                  good.replace("hardware_available=1", "hardware_available=1 hardware_available=1"))
+        for value in broken:
+            with self.subTest(profile=value), self.assertRaises(ValueError):
+                live.hash_evidence(value, pins, requested=True)
+        with self.assertRaisesRegex(ValueError, "explicit gate"):
+            live.hash_evidence(good, pins)
+
+    def test_hash_profiles_require_vae_and_positive_work_for_hardware_claim(self):
+        pins = {"pixelhacker": {"bytes": 128, "sha256": "a" * 64},
+                "sdxl_vae": {"bytes": 128, "sha256": "b" * 64}}
+        line = "inpaint_hash: label=pixelhacker backend=sha-ni requested=1 hardware_available=1 bytes=128 complete_blocks=2 accelerated_blocks=2 sha256=" + "a" * 64
+        with self.assertRaisesRegex(ValueError, "complete"):
+            live.hash_evidence(line, pins, requested=True)
+        tiny = {"migan": {"bytes": 4, "sha256": "a" * 64}}
+        no_blocks = line.replace("label=pixelhacker", "label=migan").replace("bytes=128", "bytes=4").replace("blocks=2", "blocks=0")
+        self.assertFalse(live.hash_evidence(no_blocks, tiny, requested=True)["hardware_acceleration_verified"])
+        with self.assertRaisesRegex(ValueError, "not demonstrated"):
+            live.hash_evidence(no_blocks, tiny, requested=True, require_accel=True)
+
     def test_all_engine_dispatch_and_pinned_arguments(self):
         for engine in live.ENGINES:
             with self.subTest(engine=engine):
@@ -54,6 +136,47 @@ class InpaintEngineLiveControls(unittest.TestCase):
                                    ("--inpaint-guidance", guidance), ("--inpaint-noise-offset", "0.0357")):
                 self.assertEqual(command[command.index(name) + 1], expected)
             self.assertNotIn("--inpaint-tiles", command)
+
+    def test_latent_stock_schedule_requires_actual_single_and_batch_graph_counts(self):
+        for engine in ("moebius", "pixelhacker"):
+            for filled in (1, 2):
+                records = [{"label": label, "runs": count} for label, count in
+                           (("vae-encoder-batch2", filled), ("unet-cfg-ddim-batch2", 19 * filled),
+                            ("vae-decoder", filled))]
+                evidence = live.latent_schedule_evidence(records, engine, 20, filled, True)
+                self.assertTrue(evidence["execution_count_verified"])
+                self.assertEqual(evidence["retained_steps_per_filled_image"], 19)
+                self.assertEqual(evidence["observed_graph_runs"]["unet-cfg-ddim-batch2"], 19 * filled)
+                self.assertFalse(evidence["timestep_values_profiled"])
+            for requested, retained in ((2, 1), (3, 2), (100, 99)):
+                self.assertEqual(live.retained_ddim_steps(engine, requested), retained)
+
+    def test_latent_schedule_rejects_short_extra_missing_and_reconstructed_graphs(self):
+        good = [{"label": "vae-encoder-batch2", "runs": 2},
+                {"label": "unet-cfg-ddim-batch2", "runs": 38},
+                {"label": "vae-decoder", "runs": 2}]
+        wrong = [good[:2], good + [good[1]], good + [{"label": "unknown", "runs": 1}]]
+        for index, count in ((0, 1), (1, 0), (1, 37), (1, 39), (2, 3)):
+            changed = [dict(row) for row in good]
+            changed[index]["runs"] = count
+            wrong.append(changed)
+        for records in wrong:
+            with self.subTest(records=records), self.assertRaisesRegex(ValueError, "latent schedule"):
+                live.latent_schedule_evidence(records, "moebius", 20, 2, True)
+
+    def test_latent_empty_and_eager_cannot_supply_graph_execution_evidence(self):
+        for engine in ("moebius", "pixelhacker"):
+            empty = live.latent_schedule_evidence([], engine, 20, 0, True)
+            self.assertTrue(empty["execution_count_verified"])
+            self.assertTrue(empty["empty_mask_no_graph_execution"])
+            eager = live.latent_schedule_evidence([], engine, 20, 1, False)
+            self.assertFalse(eager["execution_count_verified"])
+            with self.assertRaisesRegex(ValueError, "latent schedule"):
+                live.latent_schedule_evidence([], engine, 20, 1, True)
+            for filled, graph in ((0, True), (1, False)):
+                with self.assertRaisesRegex(ValueError, "unexpectedly executed"):
+                    live.latent_schedule_evidence([{"label": "unet-cfg-ddim-batch2", "runs": 1}],
+                                                  engine, 20, filled, graph)
 
     def test_invalid_engine_profile_and_sampler_combinations_rejected(self):
         cases = [arguments(extra=("--backend", "cuda")),
@@ -132,6 +255,73 @@ class InpaintEngineLiveControls(unittest.TestCase):
             for name in ("CRISPEMBED_MOEBIUS_LOCAL_REASSOC", "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM"):
                 self.assertEqual(gates[name], "0")
                 self.assertEqual(environment[name], "0")
+
+    def test_moebius_depthwise_is_explicit_and_default_optimizer_set_is_unchanged(self):
+        gate = "CRISPEMBED_INPAINT_CPU_DEPTHWISE"
+        with mock.patch.dict(os.environ, {gate: "1"}):
+            for optimized in (False, True):
+                for enabled in (False, True):
+                    extra = ("--graph",) + (("--cpu-optimized",) if optimized else ())
+                    extra += ("--moebius-cpu-depthwise",) if enabled else ()
+                    args = arguments("moebius", extra)
+                    live.validate_options(args)
+                    environment, gates = live.controlled_environment(args)
+                    self.assertEqual(environment[gate], "1" if enabled else "0")
+                    self.assertEqual(gates[gate], environment[gate])
+                    self.assertNotIn(gate, live.CPU_ENGINE_GATES["moebius"])
+                    for local in ("CRISPEMBED_MOEBIUS_LOCAL_REASSOC", "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM"):
+                        self.assertEqual(gates[local], "0")
+
+    def test_moebius_depthwise_rejects_other_engines_and_non_cpu_f32_graphs(self):
+        invalid = [arguments(engine, ("--graph", "--moebius-cpu-depthwise"))
+                   for engine in live.ENGINES if engine != "moebius"]
+        invalid += [arguments("moebius", extra + ("--moebius-cpu-depthwise",)) for extra in
+                    ((), ("--graph", "--backend", "cuda"), ("--graph", "--backend", "metal"),
+                     ("--graph", "--precision", "mixed"))]
+        for args in invalid:
+            with self.subTest(engine=args.engine, backend=args.backend, graph=args.graph), self.assertRaises(ValueError):
+                live.validate_options(args)
+
+    def test_requested_moebius_depthwise_has_exact_unet_and_zero_vae_census(self):
+        for images in (1, 2):
+            profiles = b"".join(("inpaint_graph label=" + label + " backend=CPU precision=f32 runs=" + str(runs)
+                                  + " cpu_depthwise_nodes=" + str(nodes) + "\n").encode()
+                                 for label, runs, nodes in (("vae-encoder-batch2", images, 0),
+                                                            ("unet-cfg-ddim-batch2", 19 * images, 47),
+                                                            ("vae-decoder", images, 0)))
+            records = live.backend_evidence(profiles, "cpu", True, moebius_cpu_depthwise=True)
+            self.assertEqual([row["cpu_depthwise_nodes"] for row in records], [0, 47, 0])
+            if images == 2:
+                self.assertTrue(live.batch_reuse_evidence(records, "moebius", True)["verified"])
+
+    def test_moebius_depthwise_missing_wrong_or_duplicate_profiles_fail(self):
+        profile = (b"inpaint_graph label=vae-encoder-batch2 backend=CPU precision=f32 runs=1 cpu_depthwise_nodes=0\n"
+                   b"inpaint_graph label=unet-cfg-ddim-batch2 backend=CPU precision=f32 runs=19 cpu_depthwise_nodes=47\n"
+                   b"inpaint_graph label=vae-decoder backend=CPU precision=f32 runs=1 cpu_depthwise_nodes=0\n")
+        broken = (profile.replace(b"cpu_depthwise_nodes=47", b"cpu_depthwise_nodes=46"),
+                  profile.replace(b"cpu_depthwise_nodes=0", b"cpu_depthwise_nodes=1", 1),
+                  profile.replace(b" cpu_depthwise_nodes=47", b""),
+                  profile.replace(b"runs=19", b"runs=0"),
+                  profile.replace(b"unet-cfg-ddim-batch2", b"unrelated-graph"),
+                  profile + profile.splitlines(keepends=True)[1],
+                  b"\n".join(profile.splitlines()[:2]))
+        for data in broken:
+            with self.subTest(profile=data), self.assertRaisesRegex(ValueError, "depthwise"):
+                live.backend_evidence(data, "cpu", True, moebius_cpu_depthwise=True)
+
+    def test_depthwise_counter_is_strict_and_unrequested_selection_is_rejected(self):
+        prefix = b"inpaint_graph label=unet-cfg-ddim-batch2 backend=CPU precision=f32 runs=1 "
+        for counter in (b"cpu_depthwise_nodes=", b"cpu_depthwise_nodes=-1", b"cpu_depthwise_nodes=1.5",
+                        b"cpu_depthwise_nodes=0 cpu_depthwise_nodes=0", b"cpu_depthwise_nodes=47"):
+            with self.subTest(counter=counter), self.assertRaisesRegex(ValueError, "depthwise"):
+                live.backend_evidence(prefix + counter + b"\n", "cpu", True)
+        self.assertEqual(live.backend_evidence(prefix + b"cpu_depthwise_nodes=0\n", "cpu", True)[0]["cpu_depthwise_nodes"], 0)
+        self.assertIsNone(live.backend_evidence(prefix + b"\n", "cpu", True)[0]["cpu_depthwise_nodes"])
+
+    def test_depthwise_empty_mask_does_not_fabricate_graph_execution(self):
+        self.assertEqual(live.backend_evidence(b"", "cpu", False, moebius_cpu_depthwise=True), [])
+        with self.assertRaisesRegex(ValueError, "no actual execution"):
+            live.backend_evidence(b"", "cpu", True, moebius_cpu_depthwise=True)
 
     def test_frozen_checkpoint_identity_and_unknown512_provenance(self):
         args = arguments("migan256")

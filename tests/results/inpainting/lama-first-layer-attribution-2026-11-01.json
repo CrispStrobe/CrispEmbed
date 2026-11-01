@@ -1,0 +1,837 @@
+{
+  "schema": "crispembed-lama-first-layer-attribution-public-v1",
+  "recorded_date_utc": "2026-11-01",
+  "status": "bounded-attribution-completed; full-model qualification remains false",
+  "scope": {
+    "fixture": "frozen full-mask128x128",
+    "original_objects_executed": "original ReflectionPad2d and first FFC_BN_ACT only; baseline and capture-hook calls",
+    "full_generator_executed": false,
+    "native_boundary_records": 14,
+    "native_production_boundary_records": 12,
+    "diagnostic_formula_records": 2,
+    "runtime_numerics_changed": false,
+    "full_model_failure_waived": false,
+    "full_model_numerical_qualification": false,
+    "performance_qualified": false
+  },
+  "interpretation": [
+    "The first convolution already differs from the original PyTorch convolution by at most 3.814697265625e-6. Its output bytes are identical across the eager, portable and optimized native helpers.",
+    "Batch normalization fed the exact original convolution still differs slightly: maximum 2.384185791015625e-7 for eager and 2.98023223876953125e-7 for both graph variants. This isolates additional BN evaluation-order differences, without attributing the entire later failure to them.",
+    "The first-layer native ReLU payload matches the corresponding retained full-model boundary byte for byte in all three variants. The bounded probe reproduces that boundary exactly.",
+    "Two diagnostic reciprocal/FMA evaluation orders did not eliminate the BN differences. Neither was installed in production.",
+    "All fourteen isolated comparisons fit the unchanged stage budget. The later full-mask intermediate failures remain retained and unqualified; this experiment does not prove their complete causal chain or supply a numerical fix."
+  ],
+  "unchanged_stage_budget": {
+    "maximum_absolute_error": 0.002,
+    "relative_l2": 0.0003,
+    "minimum_cosine": 0.99999
+  },
+  "all_isolated_stage_budgets_pass": true,
+  "comparisons": [
+    {
+      "variant": "eager",
+      "stage": "conv",
+      "elements": 1048576,
+      "max_abs": 3.814697265625e-06,
+      "relative_l2": 1.1084452296153442e-07,
+      "cosine": 0.9999999999984406,
+      "mean_signed_error": 1.9837170839309692e-07,
+      "changed_values": 770048,
+      "worst_index": 311296,
+      "native_at_worst": 30.06496238708496,
+      "original_at_worst": 30.064958572387695,
+      "unchanged_stage_budget_pass": true,
+      "full_model_failure_waived": false
+    },
+    {
+      "variant": "eager",
+      "stage": "bn",
+      "elements": 1048576,
+      "max_abs": 1.1920928955078125e-06,
+      "relative_l2": 3.1725825916951793e-07,
+      "cosine": 1.0000000000030695,
+      "mean_signed_error": 4.848698154091835e-08,
+      "changed_values": 901120,
+      "worst_index": 638976,
+      "native_at_worst": -3.122891664505005,
+      "original_at_worst": -3.1228928565979004,
+      "unchanged_stage_budget_pass": true,
+      "full_model_failure_waived": false
+    },
+    {
+      "variant": "eager",
+      "stage": "relu",
+      "elements": 1048576,
+      "max_abs": 5.662441253662109e-07,
+      "relative_l2": 6.27903011536479e-07,
+      "cosine": 0.9999999999987833,
+      "mean_signed_error": 1.4202669262886047e-08,
+      "changed_values": 425984,
+      "worst_index": 1015808,
+      "native_at_worst": 0.38697507977485657,
+      "original_at_worst": 0.3869745135307312,
+      "unchanged_stage_budget_pass": true,
+      "full_model_failure_waived": false
+    },
+    {
+      "variant": "eager",
+      "stage": "bn-original-conv",
+      "elements": 1048576,
+      "max_abs": 2.384185791015625e-07,
+      "relative_l2": 9.584232035196718e-08,
+      "cosine": 0.9999999999926675,
+      "mean_signed_error": -2.0372681319713593e-09,
+      "changed_values": 737280,
+      "worst_index": 589824,
+      "native_at_worst": -1.3677881956100464,
+      "original_at_worst": -1.3677884340286255,
+      "unchanged_stage_budget_pass": true,
+      "full_model_failure_waived": false
+    },
+    {
+      "variant": "diagnostic-reciprocal",
+      "stage": "bn-original-conv",
+      "elements": 1048576,
+      "max_abs": 5.364418029785156e-07,
+      "relative_l2": 1.213541910507961e-07,
+      "cosine": 1.000000000007887,
+      "mean_signed_error": -9.19681042432785e-09,
+      "changed_values": 671744,
+      "worst_index": 32768,
+      "native_at_worst": -0.45952320098876953,
+      "original_at_worst": -0.45952266454696655,
+      "unchanged_stage_budget_pass": true,
+      "full_model_failure_waived": false
+    },
+    {
+      "variant": "diagnostic-reciprocal-fma",
+      "stage": "bn-original-conv",
+      "elements": 1048576,
+      "max_abs": 4.76837158203125e-07,
+      "relative_l2": 1.0079103589771878e-07,
+      "cosine": 1.0000000000034923,
+      "mean_signed_error": -8.09086486697197e-09,
+      "changed_values": 278528,
+      "worst_index": 32768,
+      "native_at_worst": -0.45952314138412476,
+      "original_at_worst": -0.45952266454696655,
+      "unchanged_stage_budget_pass": true,
+      "full_model_failure_waived": false
+    },
+    {
+      "variant": "portable",
+      "stage": "conv",
+      "elements": 1048576,
+      "max_abs": 3.814697265625e-06,
+      "relative_l2": 1.1084452296153442e-07,
+      "cosine": 0.9999999999984406,
+      "mean_signed_error": 1.9837170839309692e-07,
+      "changed_values": 770048,
+      "worst_index": 311296,
+      "native_at_worst": 30.06496238708496,
+      "original_at_worst": 30.064958572387695,
+      "unchanged_stage_budget_pass": true,
+      "full_model_failure_waived": false
+    },
+    {
+      "variant": "portable",
+      "stage": "bn",
+      "elements": 1048576,
+      "max_abs": 1.430511474609375e-06,
+      "relative_l2": 3.344611034793521e-07,
+      "cosine": 1.0000000000005034,
+      "mean_signed_error": 5.943002179265022e-08,
+      "changed_values": 868352,
+      "worst_index": 638976,
+      "native_at_worst": -3.122891426086426,
+      "original_at_worst": -3.1228928565979004,
+      "unchanged_stage_budget_pass": true,
+      "full_model_failure_waived": false
+    },
+    {
+      "variant": "portable",
+      "stage": "relu",
+      "elements": 1048576,
+      "max_abs": 5.364418029785156e-07,
+      "relative_l2": 6.17561616726337e-07,
+      "cosine": 0.9999999999960274,
+      "mean_signed_error": 1.6298145055770874e-08,
+      "changed_values": 409600,
+      "worst_index": 1015808,
+      "native_at_worst": 0.3869750499725342,
+      "original_at_worst": 0.3869745135307312,
+      "unchanged_stage_budget_pass": true,
+      "full_model_failure_waived": false
+    },
+    {
+      "variant": "portable",
+      "stage": "bn-original-conv",
+      "elements": 1048576,
+      "max_abs": 2.980232238769531e-07,
+      "relative_l2": 9.615247907800127e-08,
+      "cosine": 1.0000000000067697,
+      "mean_signed_error": 1.1932570487260818e-08,
+      "changed_values": 638976,
+      "worst_index": 983040,
+      "native_at_worst": 0.22650742530822754,
+      "original_at_worst": 0.22650712728500366,
+      "unchanged_stage_budget_pass": true,
+      "full_model_failure_waived": false
+    },
+    {
+      "variant": "optimized",
+      "stage": "conv",
+      "elements": 1048576,
+      "max_abs": 3.814697265625e-06,
+      "relative_l2": 1.1084452296153442e-07,
+      "cosine": 0.9999999999984406,
+      "mean_signed_error": 1.9837170839309692e-07,
+      "changed_values": 770048,
+      "worst_index": 311296,
+      "native_at_worst": 30.06496238708496,
+      "original_at_worst": 30.064958572387695,
+      "unchanged_stage_budget_pass": true,
+      "full_model_failure_waived": false
+    },
+    {
+      "variant": "optimized",
+      "stage": "bn",
+      "elements": 1048576,
+      "max_abs": 1.430511474609375e-06,
+      "relative_l2": 3.344611034793521e-07,
+      "cosine": 1.0000000000005034,
+      "mean_signed_error": 5.943002179265022e-08,
+      "changed_values": 868352,
+      "worst_index": 638976,
+      "native_at_worst": -3.122891426086426,
+      "original_at_worst": -3.1228928565979004,
+      "unchanged_stage_budget_pass": true,
+      "full_model_failure_waived": false
+    },
+    {
+      "variant": "optimized",
+      "stage": "relu",
+      "elements": 1048576,
+      "max_abs": 5.364418029785156e-07,
+      "relative_l2": 6.17561616726337e-07,
+      "cosine": 0.9999999999960274,
+      "mean_signed_error": 1.6298145055770874e-08,
+      "changed_values": 409600,
+      "worst_index": 1015808,
+      "native_at_worst": 0.3869750499725342,
+      "original_at_worst": 0.3869745135307312,
+      "unchanged_stage_budget_pass": true,
+      "full_model_failure_waived": false
+    },
+    {
+      "variant": "optimized",
+      "stage": "bn-original-conv",
+      "elements": 1048576,
+      "max_abs": 2.980232238769531e-07,
+      "relative_l2": 9.615247907800127e-08,
+      "cosine": 1.0000000000067697,
+      "mean_signed_error": 1.1932570487260818e-08,
+      "changed_values": 638976,
+      "worst_index": 983040,
+      "native_at_worst": 0.22650742530822754,
+      "original_at_worst": 0.22650712728500366,
+      "unchanged_stage_budget_pass": true,
+      "full_model_failure_waived": false
+    }
+  ],
+  "retained_stage_identity": {
+    "schema": "crispembed-lama-first-layer-retained-stage-identity-v1",
+    "old_public_receipt_sha256": "01ffed5892f74c2a8ef3534e20e27f274ef72185ae0226526190f525b8d28364",
+    "new_raw_receipt_sha256": "05b1bf839bc449c914cb8081052beabfb86c2ba462cc29573f217dc7dda675cb",
+    "stages": [
+      {
+        "variant": "eager",
+        "sha256": "f01304796b062e99a13c8a43f148757fb2d847fb071f17698e9ba564b61818d0",
+        "bytes": 4194304,
+        "retained_full_model_stage_payload_identical": true
+      },
+      {
+        "variant": "portable",
+        "sha256": "d2e71f7b7b6a1f6def26d830cbcffa5df950c82b1295cd785da2bd2f0f6abd21",
+        "bytes": 4194304,
+        "retained_full_model_stage_payload_identical": true
+      },
+      {
+        "variant": "optimized",
+        "sha256": "d2e71f7b7b6a1f6def26d830cbcffa5df950c82b1295cd785da2bd2f0f6abd21",
+        "bytes": 4194304,
+        "retained_full_model_stage_payload_identical": true
+      }
+    ],
+    "all_three_raw_convolutions_identical": true,
+    "full_model_failure_waived": false
+  },
+  "original": {
+    "schema": "crispembed-lama-first-layer-original-v1",
+    "case": "full",
+    "boundaries": {
+      "input": {
+        "path": "input.f32",
+        "shape_chw": [
+          4,
+          134,
+          134
+        ],
+        "bytes": 287296,
+        "sha256": "05ed96eee56f49aedac6826673e4628c62c7dd990685ae78c9bfa70dab53b59e"
+      },
+      "conv": {
+        "path": "conv.f32",
+        "shape_chw": [
+          64,
+          128,
+          128
+        ],
+        "bytes": 4194304,
+        "sha256": "43df32706593ce829787dd9aceca1b7ffb0ff7a3e47685a318d7ba0076bd20bf"
+      },
+      "bn": {
+        "path": "bn.f32",
+        "shape_chw": [
+          64,
+          128,
+          128
+        ],
+        "bytes": 4194304,
+        "sha256": "674ca4e78818a060bcc2b37d15b75dcc87addcba020b23565596118e74fcbb53"
+      },
+      "relu": {
+        "path": "relu.f32",
+        "shape_chw": [
+          64,
+          128,
+          128
+        ],
+        "bytes": 4194304,
+        "sha256": "cd42087b23f9031082de91d736dbe61fd5472304ea344ba4821671ac1b2673f4"
+      }
+    },
+    "hook_neutrality_bit_exact": true,
+    "frozen_original_first_layer_bit_exact": true,
+    "frozen_reference_manifest_sha256": "c3dacdb77893ce813562372fe74a53c1c18e8713c9a53fe8023fb62785dc343b",
+    "frozen_first_layer_npy_sha256": "3c8aedd94142021d76dda68fb9ba67dd11a1c260af2567cc995ef53388b787a6",
+    "checkpoint_archive_sha256": "f1b358ca24093b93a106183b98a3dea6e8ed09f3b43ea7251eb2c81e7b4575f6",
+    "source_contract_sha256": "ce6cd6c17dc73979d8bee461c51dcd5fe8d3fdc35e996e759fd917b7adb3a6fd",
+    "original_loader_sha256": "d803545c0c7c4fc2238ab9e9a3c592b6e8491e3727506d1a43c317682b1c8c44",
+    "producer_sha256": "a2b31dc387753fa45c82dcdc7fe4a730f012d595b228588dd515df8f4173d9f0",
+    "dependencies": {
+      "torch": "2.8.0+cpu",
+      "numpy": "2.1.3",
+      "Pillow": "11.3.0",
+      "omegaconf": "2.3.0",
+      "kornia": "0.8.1",
+      "pytorch-lightning": "2.5.3"
+    },
+    "full_generator_executed": false,
+    "full_model_failure_waived": false
+  },
+  "native_payloads": [
+    {
+      "path": "evidence/resume-2026-11-01/lama-first-layer-live-v1/native/diagnostic-reciprocal-bn-original-conv.f32",
+      "bytes": 4194304,
+      "sha256": "0b79bc60644708fa5a7cfa25dbf1416c4740b8f0e74fc6c8c99bc9fa3ee98c39"
+    },
+    {
+      "path": "evidence/resume-2026-11-01/lama-first-layer-live-v1/native/diagnostic-reciprocal-fma-bn-original-conv.f32",
+      "bytes": 4194304,
+      "sha256": "befeb7896f527f5b31b3de75a4e77f263d2c39a0de0b10173f5304079e55d10c"
+    },
+    {
+      "path": "evidence/resume-2026-11-01/lama-first-layer-live-v1/native/eager-bn-original-conv.f32",
+      "bytes": 4194304,
+      "sha256": "8ebae3c6710274c8b3776410a196f0a88a914801af4ab12284678c664c8efce8"
+    },
+    {
+      "path": "evidence/resume-2026-11-01/lama-first-layer-live-v1/native/eager-bn.f32",
+      "bytes": 4194304,
+      "sha256": "04c7ca513659c5663de75cdcbc28c075b7d04de7a5992162149b026cadf246f4"
+    },
+    {
+      "path": "evidence/resume-2026-11-01/lama-first-layer-live-v1/native/eager-conv.f32",
+      "bytes": 4194304,
+      "sha256": "3a0a0659b4cdd212db1abd3a8e5ecfd815307d5ab5b4d7e3ff4d90747f4188c8"
+    },
+    {
+      "path": "evidence/resume-2026-11-01/lama-first-layer-live-v1/native/eager-relu.f32",
+      "bytes": 4194304,
+      "sha256": "f01304796b062e99a13c8a43f148757fb2d847fb071f17698e9ba564b61818d0"
+    },
+    {
+      "path": "evidence/resume-2026-11-01/lama-first-layer-live-v1/native/optimized-bn-original-conv.f32",
+      "bytes": 4194304,
+      "sha256": "72f82a9caee9e51414aa63ba624d09be343f5a754621d7859ed60721417885a0"
+    },
+    {
+      "path": "evidence/resume-2026-11-01/lama-first-layer-live-v1/native/optimized-bn.f32",
+      "bytes": 4194304,
+      "sha256": "71e30cc93bcaefcc6b63110c98daffd340d9796fcf893091b784a52a397e0640"
+    },
+    {
+      "path": "evidence/resume-2026-11-01/lama-first-layer-live-v1/native/optimized-conv.f32",
+      "bytes": 4194304,
+      "sha256": "3a0a0659b4cdd212db1abd3a8e5ecfd815307d5ab5b4d7e3ff4d90747f4188c8"
+    },
+    {
+      "path": "evidence/resume-2026-11-01/lama-first-layer-live-v1/native/optimized-relu.f32",
+      "bytes": 4194304,
+      "sha256": "d2e71f7b7b6a1f6def26d830cbcffa5df950c82b1295cd785da2bd2f0f6abd21"
+    },
+    {
+      "path": "evidence/resume-2026-11-01/lama-first-layer-live-v1/native/portable-bn-original-conv.f32",
+      "bytes": 4194304,
+      "sha256": "72f82a9caee9e51414aa63ba624d09be343f5a754621d7859ed60721417885a0"
+    },
+    {
+      "path": "evidence/resume-2026-11-01/lama-first-layer-live-v1/native/portable-bn.f32",
+      "bytes": 4194304,
+      "sha256": "71e30cc93bcaefcc6b63110c98daffd340d9796fcf893091b784a52a397e0640"
+    },
+    {
+      "path": "evidence/resume-2026-11-01/lama-first-layer-live-v1/native/portable-conv.f32",
+      "bytes": 4194304,
+      "sha256": "3a0a0659b4cdd212db1abd3a8e5ecfd815307d5ab5b4d7e3ff4d90747f4188c8"
+    },
+    {
+      "path": "evidence/resume-2026-11-01/lama-first-layer-live-v1/native/portable-relu.f32",
+      "bytes": 4194304,
+      "sha256": "d2e71f7b7b6a1f6def26d830cbcffa5df950c82b1295cd785da2bd2f0f6abd21"
+    }
+  ],
+  "inputs_and_sources": [
+    {
+      "path": "evidence/lama-assets/big-lama-f32.gguf",
+      "bytes": 204299072,
+      "sha256": "24736f267c68e013f0000ccb69560c4353b6a6d7983fc3cc2537d9f2e03f304c"
+    },
+    {
+      "path": "evidence/lama-assets/big-lama.zip",
+      "bytes": 381428720,
+      "sha256": "f1b358ca24093b93a106183b98a3dea6e8ed09f3b43ea7251eb2c81e7b4575f6"
+    },
+    {
+      "path": "evidence/lama-assets/original-synthetic/reference.json",
+      "bytes": 683022,
+      "sha256": "c3dacdb77893ce813562372fe74a53c1c18e8713c9a53fe8023fb62785dc343b"
+    },
+    {
+      "path": "evidence/resume-2026-11-01/lama-first-layer-v1/capture_original.py",
+      "bytes": 5538,
+      "sha256": "a2b31dc387753fa45c82dcdc7fe4a730f012d595b228588dd515df8f4173d9f0"
+    },
+    {
+      "path": "evidence/resume-2026-11-01/lama-first-layer-v1/native_probe.cpp",
+      "bytes": 7723,
+      "sha256": "044f4b8aa1644599e6e3969d2fe78bacabc2b8a917791a4ac2420a30091ee242"
+    },
+    {
+      "path": "evidence/resume-2026-11-01/lama-first-layer-v1/run_attribution.py",
+      "bytes": 12489,
+      "sha256": "6773d9e0872e253aadb02dba51c5da5c3345ce653c2c532fdd0d8c0169aab4c1"
+    },
+    {
+      "path": "repo/src/inpaint_graph.cpp",
+      "bytes": 46970,
+      "sha256": "6757e28ee1fe6a43b3a291b1797ade86f19537411c2e822c3e7ee1b34cb340eb"
+    },
+    {
+      "path": "repo/src/inpaint_graph.h",
+      "bytes": 6620,
+      "sha256": "d6a41ab9111e6c65ac99a447de2899773581ead360d4afdbef98124f0108fde0"
+    },
+    {
+      "path": "repo/src/latent_inpaint_ops.cpp",
+      "bytes": 22262,
+      "sha256": "d012cd1c46cdb45e8e82e39f1e8d5e4eb890541fb7a0acb36c0188f3ac8b35dd"
+    },
+    {
+      "path": "repo/src/latent_inpaint_ops.h",
+      "bytes": 2886,
+      "sha256": "f4b53a683773f2427e917bcb61de07e163e21dc550525a4a26146f1e4d111d26"
+    },
+    {
+      "path": "repo/src/lama_schema.h",
+      "bytes": 59004,
+      "sha256": "1c630692484f124c17e6d929445cc0df495aa22ef7bb1d76cdb9db9e4b88dcac"
+    },
+    {
+      "path": "repo/tools/dump_lama_reference.py",
+      "bytes": 11844,
+      "sha256": "d803545c0c7c4fc2238ab9e9a3c592b6e8491e3727506d1a43c317682b1c8c44"
+    },
+    {
+      "path": "repo/tools/lama_contract.py",
+      "bytes": 20187,
+      "sha256": "6499068010bbccba943ac33e2e0e3554c61571c9283ace564d2f1d1631f655c9"
+    },
+    {
+      "path": "repo/docs/lama-source-contract.json",
+      "bytes": 788934,
+      "sha256": "ce6cd6c17dc73979d8bee461c51dcd5fe8d3fdc35e996e759fd917b7adb3a6fd"
+    },
+    {
+      "path": "evidence/build-current/libcrispembed-inpaint-graph.a",
+      "bytes": 295942,
+      "sha256": "d1d714f490d05820559a5d4598b4e95a2d59894770fbaaed579992aef9568ad3"
+    },
+    {
+      "path": "evidence/build-current/libcrispembed-lama.a",
+      "bytes": 1125894,
+      "sha256": "e66548523690d7bf8cc923693ce8b8d929118c45f45acaacedc1c3685ca92083"
+    },
+    {
+      "path": "evidence/build-current/libcrispembed-latent-inpaint.a",
+      "bytes": 2980914,
+      "sha256": "99e1ede1d7f3ecedb0d37cd32f58cc69de0a6262038d5c954ec55e21548a013a"
+    },
+    {
+      "path": "evidence/build-current/libcrispembed-inpaint.a",
+      "bytes": 40414,
+      "sha256": "817c144e8bf9271347b0aedae0ad0f70a6f18185448216a41242228ba06fd77b"
+    },
+    {
+      "path": "evidence/build-current/libcrispembed-migan.a",
+      "bytes": 144710,
+      "sha256": "ade6200d03649b1e12c00d09c6e1334e981f83d8ac5b288b39cdfe9f913844f1"
+    },
+    {
+      "path": "evidence/build-current/libcrispembed-core.a",
+      "bytes": 250650,
+      "sha256": "4fb2b9529240aa0e4a9dd0931193f9542f5cfcaec41fcce42af506566919ada8"
+    },
+    {
+      "path": "evidence/build-current/ggml/src/libggml.a",
+      "bytes": 61604,
+      "sha256": "2efb9563d196a2987c9e73b7cb62aa0e287728ace37a371b1fbf5536eb0e514b"
+    },
+    {
+      "path": "evidence/build-current/ggml/src/libggml-cpu.a",
+      "bytes": 1729390,
+      "sha256": "32cfbf1539f83a1f0758045e3683111d1c1b768b9cfee4dec7ff6df8eb59033c"
+    },
+    {
+      "path": "evidence/build-current/ggml/src/libggml-base.a",
+      "bytes": 1282980,
+      "sha256": "a4a5349a0c45c297f26dde86fe0e77f39414b59d9aa45ca5d95cea65d1067545"
+    }
+  ],
+  "all_inputs_and_sources_unchanged_after_execution": true,
+  "original_boundaries_unchanged_after_native_replay": true,
+  "native_binary": {
+    "path": "evidence/resume-2026-11-01/lama-first-layer-live-v1/first-layer-probe",
+    "bytes": 2629936,
+    "sha256": "8becd79da04e0e84ef610f8e1772366daf13a9bc41848f5910b99cfc7b674de5"
+  },
+  "native_commit": "2e9c8f6183e0877353f25c8ddbec9cbbc4245b29",
+  "source_patch_sha256": "86371e3f8c13b8aa68f56172132caa9485d8682eeca839887dd3760b16410550",
+  "commands": [
+    {
+      "argv": [
+        "evidence/lama-env/bin/python",
+        "evidence/resume-2026-11-01/lama-first-layer-v1/capture_original.py",
+        "--output",
+        "evidence/resume-2026-11-01/lama-first-layer-live-v1/original"
+      ],
+      "started_unix": 1793538482.1113987,
+      "timeout_seconds": 120,
+      "complete": true,
+      "gates": {
+        "CRISPEMBED_INPAINT_GRAPH": "0",
+        "CRISPEMBED_INPAINT_FAST": "0",
+        "CRISPEMBED_INPAINT_CPU_FFT": "0",
+        "CRISPEMBED_INPAINT_CPU_GLA": "0",
+        "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+        "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+        "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+        "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+        "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+        "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+        "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+        "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+      },
+      "timing_qualified": false,
+      "timing_scope": "attribution command diagnostic only",
+      "returncode": 0,
+      "elapsed_seconds": 23.28550655300205,
+      "peak_rss_kib": 636376,
+      "user_cpu_seconds": 57.690985,
+      "system_cpu_seconds": 2.994598,
+      "resource_scope": "this child including descendants",
+      "log": {
+        "path": "evidence/resume-2026-11-01/lama-first-layer-live-v1/original-first-layer.log",
+        "bytes": 1580,
+        "sha256": "8079dad09b00f699390ac4b0d19f4142d23a01479d8cf0fb8f1a05da4296d538"
+      },
+      "passed": true
+    },
+    {
+      "argv": [
+        "g++",
+        "-std=c++17",
+        "-O3",
+        "-DNDEBUG",
+        "-ffp-contract=off",
+        "-Wall",
+        "-Wextra",
+        "-Irepo/src",
+        "-Irepo/ggml/include",
+        "evidence/resume-2026-11-01/lama-first-layer-v1/native_probe.cpp",
+        "-o",
+        "evidence/resume-2026-11-01/lama-first-layer-live-v1/first-layer-probe",
+        "evidence/build-current/libcrispembed-inpaint-graph.a",
+        "evidence/build-current/libcrispembed-lama.a",
+        "evidence/build-current/libcrispembed-latent-inpaint.a",
+        "evidence/build-current/libcrispembed-inpaint.a",
+        "evidence/build-current/libcrispembed-migan.a",
+        "evidence/build-current/libcrispembed-inpaint-graph.a",
+        "evidence/build-current/libcrispembed-core.a",
+        "evidence/build-current/ggml/src/libggml.a",
+        "evidence/build-current/ggml/src/libggml-cpu.a",
+        "evidence/build-current/ggml/src/libggml-base.a",
+        "-ldl",
+        "-lm",
+        "-pthread"
+      ],
+      "started_unix": 1793538505.4095006,
+      "timeout_seconds": 120,
+      "complete": true,
+      "gates": {
+        "CRISPEMBED_INPAINT_GRAPH": "0",
+        "CRISPEMBED_INPAINT_FAST": "0",
+        "CRISPEMBED_INPAINT_CPU_FFT": "0",
+        "CRISPEMBED_INPAINT_CPU_GLA": "0",
+        "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+        "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+        "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+        "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+        "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+        "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+        "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+        "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+      },
+      "timing_qualified": false,
+      "timing_scope": "attribution command diagnostic only",
+      "returncode": 0,
+      "elapsed_seconds": 14.264446084001975,
+      "peak_rss_kib": 421808,
+      "user_cpu_seconds": 13.822988,
+      "system_cpu_seconds": 0.41999899999999996,
+      "resource_scope": "this child including descendants",
+      "log": {
+        "path": "evidence/resume-2026-11-01/lama-first-layer-live-v1/build-first-layer-probe.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "passed": true
+    },
+    {
+      "argv": [
+        "evidence/resume-2026-11-01/lama-first-layer-live-v1/first-layer-probe",
+        "evidence/lama-assets/big-lama-f32.gguf",
+        "evidence/resume-2026-11-01/lama-first-layer-live-v1/original",
+        "evidence/resume-2026-11-01/lama-first-layer-live-v1/native"
+      ],
+      "started_unix": 1793538519.6787503,
+      "timeout_seconds": 120,
+      "complete": true,
+      "gates": {
+        "CRISPEMBED_INPAINT_GRAPH": "0",
+        "CRISPEMBED_INPAINT_FAST": "0",
+        "CRISPEMBED_INPAINT_CPU_FFT": "0",
+        "CRISPEMBED_INPAINT_CPU_GLA": "0",
+        "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+        "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+        "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+        "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+        "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+        "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+        "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+        "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+      },
+      "timing_qualified": false,
+      "timing_scope": "attribution command diagnostic only",
+      "returncode": 0,
+      "elapsed_seconds": 0.36022160400170833,
+      "peak_rss_kib": 46984,
+      "user_cpu_seconds": 1.56595,
+      "system_cpu_seconds": 0.107597,
+      "resource_scope": "this child including descendants",
+      "log": {
+        "path": "evidence/resume-2026-11-01/lama-first-layer-live-v1/native-first-layer.log",
+        "bytes": 6093,
+        "sha256": "b2e5a40d41122ca41b0234fe6ac43f106e62d133fc0af5a0d42fbe5d53e0823e"
+      },
+      "passed": true
+    }
+  ],
+  "resources": {
+    "host_before": {
+      "load_average": [
+        4.1,
+        4.18,
+        4.4
+      ],
+      "cpu_quota": "800000 100000",
+      "cpu_cgroup_counters": "usage_usec 42678181962\nuser_usec 40272556263\nsystem_usec 2405625699\nnice_usec 0\nnr_periods 139836\nnr_throttled 36180\nthrottled_usec 1198840375\nnr_bursts 0\nburst_usec 0",
+      "memory_current_bytes": "8589078528",
+      "memory_limit_bytes": "8589934592",
+      "runnable_total_tasks": "11/272",
+      "top_processes_without_identifiers_or_arguments": [
+        {
+          "name": "rustc",
+          "lifetime_cpu_percent": 325.0,
+          "rss_kib": 2222016
+        },
+        {
+          "name": "webpack",
+          "lifetime_cpu_percent": 116.0,
+          "rss_kib": 1580708
+        },
+        {
+          "name": "python3",
+          "lifetime_cpu_percent": 33.3,
+          "rss_kib": 11828
+        },
+        {
+          "name": "zstd",
+          "lifetime_cpu_percent": 10.8,
+          "rss_kib": 53452
+        },
+        {
+          "name": "zstd",
+          "lifetime_cpu_percent": 7.8,
+          "rss_kib": 53452
+        },
+        {
+          "name": "rsync",
+          "lifetime_cpu_percent": 6.5,
+          "rss_kib": 28544
+        },
+        {
+          "name": "tar",
+          "lifetime_cpu_percent": 1.5,
+          "rss_kib": 2548
+        },
+        {
+          "name": "cargo",
+          "lifetime_cpu_percent": 0.3,
+          "rss_kib": 76916
+        },
+        {
+          "name": "caas-prefix-tra",
+          "lifetime_cpu_percent": 0.3,
+          "rss_kib": 728
+        },
+        {
+          "name": "codex",
+          "lifetime_cpu_percent": 0.2,
+          "rss_kib": 54016
+        },
+        {
+          "name": "codex",
+          "lifetime_cpu_percent": 0.1,
+          "rss_kib": 69984
+        }
+      ],
+      "process_cpu_percent_is_lifetime_average_not_interval_measurement": true
+    },
+    "host_after": {
+      "load_average": [
+        5.37,
+        4.57,
+        4.53
+      ],
+      "cpu_quota": "800000 100000",
+      "cpu_cgroup_counters": "usage_usec 42878967248\nuser_usec 40449718267\nsystem_usec 2429248980\nnice_usec 0\nnr_periods 140243\nnr_throttled 36289\nthrottled_usec 1205653777\nnr_bursts 0\nburst_usec 0",
+      "memory_current_bytes": "8586956800",
+      "memory_limit_bytes": "8589934592",
+      "runnable_total_tasks": "3/220",
+      "top_processes_without_identifiers_or_arguments": [
+        {
+          "name": "rustc",
+          "lifetime_cpu_percent": 95.9,
+          "rss_kib": 813060
+        },
+        {
+          "name": "rsync",
+          "lifetime_cpu_percent": 12.3,
+          "rss_kib": 30052
+        },
+        {
+          "name": "zstd",
+          "lifetime_cpu_percent": 11.6,
+          "rss_kib": 53452
+        },
+        {
+          "name": "zstd",
+          "lifetime_cpu_percent": 7.7,
+          "rss_kib": 53452
+        },
+        {
+          "name": "cargo",
+          "lifetime_cpu_percent": 3.2,
+          "rss_kib": 78840
+        },
+        {
+          "name": "python3",
+          "lifetime_cpu_percent": 2.6,
+          "rss_kib": 12260
+        },
+        {
+          "name": "tar",
+          "lifetime_cpu_percent": 1.8,
+          "rss_kib": 2312
+        },
+        {
+          "name": "caas-prefix-tra",
+          "lifetime_cpu_percent": 0.3,
+          "rss_kib": 728
+        },
+        {
+          "name": "codex",
+          "lifetime_cpu_percent": 0.2,
+          "rss_kib": 53792
+        },
+        {
+          "name": "codex",
+          "lifetime_cpu_percent": 0.1,
+          "rss_kib": 68760
+        },
+        {
+          "name": "sites-preview",
+          "lifetime_cpu_percent": 0.0,
+          "rss_kib": 300
+        },
+        {
+          "name": "supervisord",
+          "lifetime_cpu_percent": 0.0,
+          "rss_kib": 23172
+        },
+        {
+          "name": "sync_share.sh",
+          "lifetime_cpu_percent": 0.0,
+          "rss_kib": 2080
+        }
+      ],
+      "process_cpu_percent_is_lifetime_average_not_interval_measurement": true
+    }
+  },
+  "timing_limit": "Command wall times and child RSS are diagnostic, not a performance comparison. An unrelated rustc process was observed after completion; no quiet-window speed claim is made.",
+  "raw_receipts": [
+    {
+      "path": "resume-2026-11-01/lama-first-layer-live-v1/report.json",
+      "bytes": 32753,
+      "sha256": "05b1bf839bc449c914cb8081052beabfb86c2ba462cc29573f217dc7dda675cb"
+    },
+    {
+      "path": "resume-2026-11-01/lama-first-layer-live-v1/retained-stage-identity.json",
+      "bytes": 994,
+      "sha256": "6f10ce7c1fc5abea7e5b982009b0604a79191337ed28b9398a1d5a0199a99841"
+    }
+  ],
+  "artifact_policy": "Keep exact producer sources, command receipts and selected first-layer arrays; do not redistribute model weights, framework environments, or compiled binaries."
+}

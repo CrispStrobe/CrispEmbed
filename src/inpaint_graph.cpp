@@ -92,6 +92,64 @@ std::vector<float> read_small(ggml_tensor * tensor) {
     ggml_backend_tensor_get(tensor, values.data(), 0, ggml_nbytes(tensor));
     return values;
 }
+
+// Restricted CPU specialization of the same zero-padded depthwise operation.
+// Reuse the MI-GAN tap-major interior loop: independent output lanes retain
+// the original ky/kx accumulation order, while the compiler can vectorize
+// adjacent pixels. Border handling remains scalar. The callback owns no
+// state, allocates no heap storage and never transfers activations.
+void cpu_depthwise_3x3(ggml_tensor * dst, int ith, int nth, void *) {
+    const ggml_tensor * input = dst->src[0];
+    const ggml_tensor * kernel = dst->src[1];
+    GGML_ASSERT(input->type == GGML_TYPE_F32 && kernel->type == GGML_TYPE_F32 && dst->type == GGML_TYPE_F32);
+    GGML_ASSERT(ggml_is_contiguous(input) && ggml_is_contiguous(kernel) && ggml_is_contiguous(dst));
+    GGML_ASSERT(kernel->ne[0] == 3 && kernel->ne[1] == 3 && kernel->ne[2] == 1 && kernel->ne[3] == input->ne[2]);
+    GGML_ASSERT(nth > 0 && ith >= 0 && ith < nth);
+    for (int axis = 0; axis < 4; ++axis) GGML_ASSERT(dst->ne[axis] == input->ne[axis]);
+    const int64_t width = input->ne[0], height = input->ne[1], channels = input->ne[2];
+    GGML_ASSERT(width >= 3 && height >= 3 && channels > 0 && input->ne[3] > 0);
+    const int64_t rows = height * channels * input->ne[3];
+    const int64_t chunk = (rows + nth - 1) / nth;
+    const int64_t begin = chunk * ith, end = std::min(rows, begin + chunk);
+    const float * source = static_cast<const float *>(input->data);
+    const float * weights = static_cast<const float *>(kernel->data);
+    float * output = static_cast<float *>(dst->data);
+    constexpr int64_t block_size = 128;
+    for (int64_t row = begin; row < end; ++row) {
+        const int64_t plane = row / height, y = row % height;
+        const float * plane_source = source + plane * width * height;
+        const float * filter = weights + (plane % channels) * 9;
+        float * out = output + row * width;
+        auto edge = [&](int64_t x) {
+            float sum = 0.0f;
+            for (int64_t ky = 0; ky < 3; ++ky) {
+                const int64_t sy = y + ky - 1;
+                if (sy < 0 || sy >= height) continue;
+                for (int64_t kx = 0; kx < 3; ++kx) {
+                    const int64_t sx = x + kx - 1;
+                    if (sx >= 0 && sx < width) sum += filter[ky * 3 + kx] * plane_source[sy * width + sx];
+                }
+            }
+            out[x] = sum;
+        };
+        edge(0);
+        for (int64_t x = 1; x < width - 1; x += block_size) {
+            const int64_t count = std::min(block_size, width - 1 - x);
+            alignas(64) float accum[block_size] = {};
+            for (int64_t ky = 0; ky < 3; ++ky) {
+                const int64_t sy = y + ky - 1;
+                if (sy < 0 || sy >= height) continue;
+                for (int64_t kx = 0; kx < 3; ++kx) {
+                    const float coefficient = filter[ky * 3 + kx];
+                    const float * pixels = plane_source + sy * width + x + kx - 1;
+                    for (int64_t i = 0; i < count; ++i) accum[i] += coefficient * pixels[i];
+                }
+            }
+            std::copy_n(accum, count, out + x);
+        }
+        edge(width - 1);
+    }
+}
 } // namespace
 
 ggml_backend_t select_backend(int threads, std::string & name, std::string & error) {
@@ -361,10 +419,10 @@ Builder::~Builder() {
     if (core_env::on("CRISPEMBED_INPAINT_PROFILE") && graph_)
         std::fprintf(stderr,
                      "inpaint_graph label=%s backend=%s precision=%s nodes=%zu allocation_bytes=%zu runs=%llu "
-                     "upload_bytes=%llu download_bytes=%llu compute_ms=%.3f\n",
+                     "upload_bytes=%llu download_bytes=%llu compute_ms=%.3f cpu_depthwise_nodes=%zu\n",
                      label_.c_str(), device.name.c_str(), fast() ? "mixed-f16" : "f32", nodes(), allocation_bytes(),
                      (unsigned long long)runs_, (unsigned long long)upload_bytes_, (unsigned long long)download_bytes_,
-                     compute_ms_);
+                     compute_ms_, cpu_depthwise_nodes_);
     if (cpu_plan_) ggml_backend_graph_plan_free(device.backend, cpu_plan_);
     if (allocator_) ggml_gallocr_free(allocator_);
     if (ctx) ggml_free(ctx);
@@ -484,9 +542,20 @@ ggml_tensor * Builder::conv_kernel(const std::string & name, ggml_tensor * w, gg
             out = concat_balanced(ctx, std::move(parts), 1);
         }
     } else if (groups == x->ne[2] && w->ne[3] == x->ne[2]) {
-        // The pinned CUDA depthwise kernel requires F32 weights.
-        if (w->type != GGML_TYPE_F32) w = ggml_cast(ctx, w, GGML_TYPE_F32);
-        out = ggml_conv_2d_dw_direct(ctx, w, x, stride, stride, padding, padding, dilation, dilation);
+        const bool specialized = !device.gpu && core_env::on("CRISPEMBED_INPAINT_CPU_DEPTHWISE") &&
+                                 x->type == GGML_TYPE_F32 && w->type == GGML_TYPE_F32 && ggml_is_contiguous(x) &&
+                                 ggml_is_contiguous(w) && w->ne[0] == 3 && w->ne[1] == 3 && w->ne[2] == 1 &&
+                                 stride == 1 && padding == 1 && dilation == 1 && x->ne[0] >= 3 && x->ne[1] >= 3;
+        if (specialized) {
+            ggml_tensor * sources[] = { x, w };
+            out = ggml_custom_4d(ctx, GGML_TYPE_F32, x->ne[0], x->ne[1], x->ne[2], x->ne[3], sources, 2,
+                                 cpu_depthwise_3x3, GGML_N_TASKS_MAX, nullptr);
+            cpu_depthwise_ops_.push_back(out);
+        } else {
+            // The pinned CUDA depthwise kernel requires F32 weights.
+            if (w->type != GGML_TYPE_F32) w = ggml_cast(ctx, w, GGML_TYPE_F32);
+            out = ggml_conv_2d_dw_direct(ctx, w, x, stride, stride, padding, padding, dilation, dilation);
+        }
     } else {
         require(groups == 1, "only dense and depthwise groups are supported");
         if (w->ne[0] == 1 && w->ne[1] == 1 && stride == 1 && padding == 0) {
@@ -792,6 +861,14 @@ void Builder::finish(const std::vector<ggml_tensor *> & outputs, const std::stri
     // constants (hosted: graph transpose oracle runs=2, error 0.0205; Moebius
     // graph replay correct only for the first stepper execution). Pin them.
     for (const auto & init : initializers_) ggml_set_output(init.tensor);
+    // Count the custom depthwise nodes in the executable graph. Constructed but
+    // unused branches must not make a profile claim that a helper ran.
+    for (int i = 0; i < ggml_graph_n_nodes(graph_); ++i)
+        if (std::find(cpu_depthwise_ops_.begin(), cpu_depthwise_ops_.end(), ggml_graph_node(graph_, i)) !=
+            cpu_depthwise_ops_.end())
+            ++cpu_depthwise_nodes_;
+    cpu_depthwise_ops_.clear();
+    cpu_depthwise_ops_.shrink_to_fit();
     validate_graph_backend(device.backend, graph_);
     allocator_ = ggml_gallocr_new(ggml_backend_get_default_buffer_type(device.backend));
     require(allocator_ && ggml_gallocr_alloc_graph(allocator_, graph_), "persistent graph allocation failed: " + label);

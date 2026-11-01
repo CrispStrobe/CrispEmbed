@@ -1,0 +1,1274 @@
+{
+  "schema": "crispembed-inpainting-resumed-controls-v1",
+  "date": "2026-11-01",
+  "bounded_controls_complete": true,
+  "passed": true,
+  "source_base_commit": "2e9c8f6183e0877353f25c8ddbec9cbbc4245b29",
+  "source_tree_clean_at_build": false,
+  "clean_build_attestation_claimed": false,
+  "native_configurations": 20,
+  "python_cli_tests": 244,
+  "private_api_controller_tests": 21,
+  "normal_sha_assertions": 6985,
+  "forced_fallback_sha_assertions": 6988,
+  "native_image_assertions": 68,
+  "model_backed_evidence_is_separate": true,
+  "original_model_intermediate_qualification": {
+    "lama": false,
+    "moebius": false,
+    "pixelhacker": "not executed against original CUDA framework"
+  },
+  "gpu_execution_performed": false,
+  "timings_qualified_by_this_record": false,
+  "native": {
+    "schema": "crispembed-final-native-controls-v1",
+    "complete": true,
+    "passed": true,
+    "model_free": true,
+    "timings_qualified": false,
+    "driver_sha256": "3d962af1a364cc42346b2ba2b8ba0b9fd34428f70bdaef8ae8fed140fcf9bf13",
+    "commands": [
+      {
+        "schema": "crispembed-final-native-command-v1",
+        "label": "common-portable",
+        "argv": [
+          "native-optimization/build-current/test-inpaint-graph",
+          "--backend",
+          "cpu",
+          "--threads",
+          "8"
+        ],
+        "cwd": "CrispEmbed-issue71",
+        "timeout_seconds": 180,
+        "started_unix": 1793540257.7777698,
+        "complete": true,
+        "passed": true,
+        "gates": {
+          "CRISPEMBED_INPAINT_GRAPH": "0",
+          "CRISPEMBED_INPAINT_FAST": "0",
+          "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+          "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+          "CRISPEMBED_INPAINT_CPU_FFT": "0",
+          "CRISPEMBED_INPAINT_CPU_GLA": "0",
+          "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+          "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+          "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+          "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+          "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+        },
+        "returncode": 0,
+        "elapsed_seconds": 0.4700985519993992,
+        "user_cpu_seconds": 3.228538,
+        "system_cpu_seconds": 0.097659,
+        "children_peak_rss_kib": 58148,
+        "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+        "log_sha256": "9ca91a5c4d00736dd882dacd30efb9880a0d34fa408005d3b9c204eff5247983",
+        "log_bytes": 1004
+      },
+      {
+        "schema": "crispembed-final-native-command-v1",
+        "label": "common-layout-reflection",
+        "argv": [
+          "native-optimization/build-current/test-inpaint-graph",
+          "--backend",
+          "cpu",
+          "--threads",
+          "8"
+        ],
+        "cwd": "CrispEmbed-issue71",
+        "timeout_seconds": 180,
+        "started_unix": 1793540258.2489648,
+        "complete": true,
+        "passed": true,
+        "gates": {
+          "CRISPEMBED_INPAINT_GRAPH": "0",
+          "CRISPEMBED_INPAINT_FAST": "0",
+          "CRISPEMBED_INPAINT_GEMM_LAYOUT": "1",
+          "CRISPEMBED_INPAINT_REFLECT_GATHER": "1",
+          "CRISPEMBED_INPAINT_CPU_FFT": "0",
+          "CRISPEMBED_INPAINT_CPU_GLA": "0",
+          "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "1",
+          "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+          "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+          "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+          "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+        },
+        "returncode": 0,
+        "elapsed_seconds": 0.4763004970009206,
+        "user_cpu_seconds": 2.9845090000000005,
+        "system_cpu_seconds": 0.095302,
+        "children_peak_rss_kib": 58148,
+        "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+        "log_sha256": "e633a5f88abe3aa42ff15af083ea0d0d5a611b19a1f85cdf254118e5fafea6bf",
+        "log_bytes": 1005
+      },
+      {
+        "schema": "crispembed-final-native-command-v1",
+        "label": "common-attention-attribution",
+        "argv": [
+          "native-optimization/build-current/test-inpaint-graph",
+          "--backend",
+          "cpu",
+          "--threads",
+          "8"
+        ],
+        "cwd": "CrispEmbed-issue71",
+        "timeout_seconds": 180,
+        "started_unix": 1793540258.7262833,
+        "complete": true,
+        "passed": true,
+        "gates": {
+          "CRISPEMBED_INPAINT_GRAPH": "0",
+          "CRISPEMBED_INPAINT_FAST": "0",
+          "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+          "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+          "CRISPEMBED_INPAINT_CPU_FFT": "0",
+          "CRISPEMBED_INPAINT_CPU_GLA": "0",
+          "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+          "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+          "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "1",
+          "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+          "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+        },
+        "returncode": 0,
+        "elapsed_seconds": 0.5693806169983873,
+        "user_cpu_seconds": 3.694366999999999,
+        "system_cpu_seconds": 0.11785700000000002,
+        "children_peak_rss_kib": 58148,
+        "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+        "log_sha256": "d4ad69e3223e002171890891f8af77a602f693172057c7ca891d9dee8b9b6e7f",
+        "log_bytes": 1004
+      },
+      {
+        "schema": "crispembed-final-native-command-v1",
+        "label": "spectral-portable",
+        "argv": [
+          "native-optimization/build-current/test-inpaint-graph-spectral",
+          "--backend",
+          "cpu",
+          "--threads",
+          "8"
+        ],
+        "cwd": "CrispEmbed-issue71",
+        "timeout_seconds": 180,
+        "started_unix": 1793540259.2965982,
+        "complete": true,
+        "passed": true,
+        "gates": {
+          "CRISPEMBED_INPAINT_GRAPH": "0",
+          "CRISPEMBED_INPAINT_FAST": "0",
+          "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+          "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+          "CRISPEMBED_INPAINT_CPU_FFT": "0",
+          "CRISPEMBED_INPAINT_CPU_GLA": "0",
+          "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+          "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+          "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+          "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+          "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+        },
+        "returncode": 0,
+        "elapsed_seconds": 0.5289002129975415,
+        "user_cpu_seconds": 2.9693260000000006,
+        "system_cpu_seconds": 0.028493999999999964,
+        "children_peak_rss_kib": 58148,
+        "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+        "log_sha256": "5513930cc86cfca28ef2d7ce701ecf5a48cb22ca6e93ad1b2162d75db31de9ce",
+        "log_bytes": 4617
+      },
+      {
+        "schema": "crispembed-final-native-command-v1",
+        "label": "spectral-cpu-fft",
+        "argv": [
+          "native-optimization/build-current/test-inpaint-graph-spectral",
+          "--backend",
+          "cpu",
+          "--threads",
+          "8"
+        ],
+        "cwd": "CrispEmbed-issue71",
+        "timeout_seconds": 180,
+        "started_unix": 1793540259.8263505,
+        "complete": true,
+        "passed": true,
+        "gates": {
+          "CRISPEMBED_INPAINT_GRAPH": "0",
+          "CRISPEMBED_INPAINT_FAST": "0",
+          "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+          "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+          "CRISPEMBED_INPAINT_CPU_FFT": "1",
+          "CRISPEMBED_INPAINT_CPU_GLA": "0",
+          "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+          "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+          "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+          "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+          "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+        },
+        "returncode": 0,
+        "elapsed_seconds": 0.2645671989994298,
+        "user_cpu_seconds": 1.621156000000001,
+        "system_cpu_seconds": 0.029712000000000016,
+        "children_peak_rss_kib": 58148,
+        "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+        "log_sha256": "6898a39fe20a51f81d5ddafb16a6216c537397b5a404d8a01a2d349c3215c802",
+        "log_bytes": 4602
+      },
+      {
+        "schema": "crispembed-final-native-command-v1",
+        "label": "spectral-cpu-fft-gla",
+        "argv": [
+          "native-optimization/build-current/test-inpaint-graph-spectral",
+          "--backend",
+          "cpu",
+          "--threads",
+          "8"
+        ],
+        "cwd": "CrispEmbed-issue71",
+        "timeout_seconds": 180,
+        "started_unix": 1793540260.0919194,
+        "complete": true,
+        "passed": true,
+        "gates": {
+          "CRISPEMBED_INPAINT_GRAPH": "0",
+          "CRISPEMBED_INPAINT_FAST": "0",
+          "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+          "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+          "CRISPEMBED_INPAINT_CPU_FFT": "1",
+          "CRISPEMBED_INPAINT_CPU_GLA": "1",
+          "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+          "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+          "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+          "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+          "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+        },
+        "returncode": 0,
+        "elapsed_seconds": 0.03433060499810381,
+        "user_cpu_seconds": 0.12819199999999853,
+        "system_cpu_seconds": 0.004022999999999999,
+        "children_peak_rss_kib": 58148,
+        "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+        "log_sha256": "1782b6314e2766340cdf358a4955e55ddf3747e207d624038a463cdcc3a3c852",
+        "log_bytes": 1733
+      },
+      {
+        "schema": "crispembed-final-native-command-v1",
+        "label": "unet-portable",
+        "argv": [
+          "native-optimization/build-current/test-latent-inpaint-graph-unet",
+          "--backend",
+          "cpu",
+          "--threads",
+          "8"
+        ],
+        "cwd": "CrispEmbed-issue71",
+        "timeout_seconds": 180,
+        "started_unix": 1793540260.1272802,
+        "complete": true,
+        "passed": true,
+        "gates": {
+          "CRISPEMBED_INPAINT_GRAPH": "0",
+          "CRISPEMBED_INPAINT_FAST": "0",
+          "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+          "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+          "CRISPEMBED_INPAINT_CPU_FFT": "0",
+          "CRISPEMBED_INPAINT_CPU_GLA": "0",
+          "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+          "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+          "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+          "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+          "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+        },
+        "returncode": 0,
+        "elapsed_seconds": 0.3174468319994048,
+        "user_cpu_seconds": 2.2108230000000013,
+        "system_cpu_seconds": 0.08770899999999998,
+        "children_peak_rss_kib": 105312,
+        "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+        "log_sha256": "f7f3d800a2751b680a44e33a5411ed160f00e6bca29fd136459dd034c38a7735",
+        "log_bytes": 249
+      },
+      {
+        "schema": "crispembed-final-native-command-v1",
+        "label": "unet-selected-cpu",
+        "argv": [
+          "native-optimization/build-current/test-latent-inpaint-graph-unet",
+          "--backend",
+          "cpu",
+          "--threads",
+          "8"
+        ],
+        "cwd": "CrispEmbed-issue71",
+        "timeout_seconds": 180,
+        "started_unix": 1793540260.4458756,
+        "complete": true,
+        "passed": true,
+        "gates": {
+          "CRISPEMBED_INPAINT_GRAPH": "0",
+          "CRISPEMBED_INPAINT_FAST": "0",
+          "CRISPEMBED_INPAINT_GEMM_LAYOUT": "1",
+          "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+          "CRISPEMBED_INPAINT_CPU_FFT": "0",
+          "CRISPEMBED_INPAINT_CPU_GLA": "0",
+          "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "1",
+          "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+          "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+          "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "1",
+          "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "1",
+          "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+          "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+        },
+        "returncode": 0,
+        "elapsed_seconds": 0.26655967599799624,
+        "user_cpu_seconds": 1.805806999999998,
+        "system_cpu_seconds": 0.072432,
+        "children_peak_rss_kib": 105380,
+        "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+        "log_sha256": "f7f3d800a2751b680a44e33a5411ed160f00e6bca29fd136459dd034c38a7735",
+        "log_bytes": 249
+      },
+      {
+        "schema": "crispembed-final-native-command-v1",
+        "label": "unet-padded-alternative",
+        "argv": [
+          "native-optimization/build-current/test-latent-inpaint-graph-unet",
+          "--backend",
+          "cpu",
+          "--threads",
+          "8"
+        ],
+        "cwd": "CrispEmbed-issue71",
+        "timeout_seconds": 180,
+        "started_unix": 1793540260.7134657,
+        "complete": true,
+        "passed": true,
+        "gates": {
+          "CRISPEMBED_INPAINT_GRAPH": "0",
+          "CRISPEMBED_INPAINT_FAST": "0",
+          "CRISPEMBED_INPAINT_GEMM_LAYOUT": "1",
+          "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+          "CRISPEMBED_INPAINT_CPU_FFT": "0",
+          "CRISPEMBED_INPAINT_CPU_GLA": "0",
+          "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+          "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+          "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+          "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "1",
+          "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "1",
+          "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "1",
+          "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+        },
+        "returncode": 0,
+        "elapsed_seconds": 0.2669768710002245,
+        "user_cpu_seconds": 1.757869000000003,
+        "system_cpu_seconds": 0.02010500000000004,
+        "children_peak_rss_kib": 105588,
+        "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+        "log_sha256": "f7f3d800a2751b680a44e33a5411ed160f00e6bca29fd136459dd034c38a7735",
+        "log_bytes": 249
+      },
+      {
+        "schema": "crispembed-final-native-command-v1",
+        "label": "migan-baseline",
+        "argv": [
+          "native-optimization/build-current/test-migan-graph",
+          "--contracts",
+          "--backend",
+          "cpu",
+          "--threads",
+          "8"
+        ],
+        "cwd": "CrispEmbed-issue71",
+        "timeout_seconds": 180,
+        "started_unix": 1793540260.9814901,
+        "complete": true,
+        "passed": true,
+        "gates": {
+          "CRISPEMBED_INPAINT_GRAPH": "0",
+          "CRISPEMBED_INPAINT_FAST": "0",
+          "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+          "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+          "CRISPEMBED_INPAINT_CPU_FFT": "0",
+          "CRISPEMBED_INPAINT_CPU_GLA": "0",
+          "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+          "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+          "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+          "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+          "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+        },
+        "returncode": 0,
+        "elapsed_seconds": 0.007682207997277146,
+        "user_cpu_seconds": 0.01332000000000022,
+        "system_cpu_seconds": 0.0,
+        "children_peak_rss_kib": 105588,
+        "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+        "log_sha256": "81add47206c7abe73b83f3c3a6969151253e18c28e57ed53a50c0f00790b5746",
+        "log_bytes": 831
+      },
+      {
+        "schema": "crispembed-final-native-command-v1",
+        "label": "migan-cpu-kernels",
+        "argv": [
+          "native-optimization/build-current/test-migan-graph",
+          "--contracts",
+          "--backend",
+          "cpu",
+          "--threads",
+          "8",
+          "--cpu-kernels"
+        ],
+        "cwd": "CrispEmbed-issue71",
+        "timeout_seconds": 180,
+        "started_unix": 1793540260.989794,
+        "complete": true,
+        "passed": true,
+        "gates": {
+          "CRISPEMBED_INPAINT_GRAPH": "0",
+          "CRISPEMBED_INPAINT_FAST": "0",
+          "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+          "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+          "CRISPEMBED_INPAINT_CPU_FFT": "0",
+          "CRISPEMBED_INPAINT_CPU_GLA": "0",
+          "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+          "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+          "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+          "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+          "CRISPEMBED_MIGAN_CPU_KERNELS": "1"
+        },
+        "returncode": 0,
+        "elapsed_seconds": 0.31919704699976137,
+        "user_cpu_seconds": 2.3100379999999987,
+        "system_cpu_seconds": 0.021961999999999926,
+        "children_peak_rss_kib": 105588,
+        "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+        "log_sha256": "c7ea03444390fb00e498c3599de14a401b2608be22f57d4430f084ce9d281e10",
+        "log_bytes": 1007
+      },
+      {
+        "schema": "crispembed-final-native-command-v1",
+        "label": "sha256-normal",
+        "argv": [
+          "native-optimization/build-current/test-inpaint-sha256-accel",
+          "--require-accel"
+        ],
+        "cwd": "CrispEmbed-issue71",
+        "timeout_seconds": 180,
+        "started_unix": 1793540261.3098772,
+        "complete": true,
+        "passed": true,
+        "gates": {
+          "CRISPEMBED_INPAINT_GRAPH": "0",
+          "CRISPEMBED_INPAINT_FAST": "0",
+          "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+          "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+          "CRISPEMBED_INPAINT_CPU_FFT": "0",
+          "CRISPEMBED_INPAINT_CPU_GLA": "0",
+          "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+          "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+          "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+          "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+          "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+        },
+        "returncode": 0,
+        "elapsed_seconds": 0.016128359999129316,
+        "user_cpu_seconds": 0.014634000000000924,
+        "system_cpu_seconds": 0.0,
+        "children_peak_rss_kib": 105588,
+        "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+        "log_sha256": "2172e83803abfa9ca3611c7d7fc6207105a3e618bfd8e0f737661d71142794d6",
+        "log_bytes": 114
+      },
+      {
+        "schema": "crispembed-final-native-command-v1",
+        "label": "sha256-forced-fallback",
+        "argv": [
+          "native-optimization/build-current/test-inpaint-sha256-fallback",
+          "--require-fallback"
+        ],
+        "cwd": "CrispEmbed-issue71",
+        "timeout_seconds": 180,
+        "started_unix": 1793540261.3268418,
+        "complete": true,
+        "passed": true,
+        "gates": {
+          "CRISPEMBED_INPAINT_GRAPH": "0",
+          "CRISPEMBED_INPAINT_FAST": "0",
+          "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+          "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+          "CRISPEMBED_INPAINT_CPU_FFT": "0",
+          "CRISPEMBED_INPAINT_CPU_GLA": "0",
+          "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+          "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+          "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+          "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+          "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+        },
+        "returncode": 0,
+        "elapsed_seconds": 0.031983265002054395,
+        "user_cpu_seconds": 0.01604499999999831,
+        "system_cpu_seconds": 0.0,
+        "children_peak_rss_kib": 105588,
+        "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+        "log_sha256": "121a9271efec1db4955f0b8c960994838b94a001fc66203db9354dba097b240a",
+        "log_bytes": 116
+      },
+      {
+        "schema": "crispembed-final-native-command-v1",
+        "label": "latent-contracts",
+        "argv": [
+          "native-optimization/build-current/test-latent-inpaint",
+          "--contracts"
+        ],
+        "cwd": "CrispEmbed-issue71",
+        "timeout_seconds": 180,
+        "started_unix": 1793540261.3602355,
+        "complete": true,
+        "passed": true,
+        "gates": {
+          "CRISPEMBED_INPAINT_GRAPH": "0",
+          "CRISPEMBED_INPAINT_FAST": "0",
+          "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+          "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+          "CRISPEMBED_INPAINT_CPU_FFT": "0",
+          "CRISPEMBED_INPAINT_CPU_GLA": "0",
+          "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+          "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+          "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+          "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+          "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+        },
+        "returncode": 0,
+        "elapsed_seconds": 0.003583137000532588,
+        "user_cpu_seconds": 0.0032980000000009113,
+        "system_cpu_seconds": 0.0,
+        "children_peak_rss_kib": 105588,
+        "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+        "log_sha256": "f9d16c518dc912a00dbee22ec3389a5b04f742b7530f739c2ed2f3eae4c9f454",
+        "log_bytes": 74
+      },
+      {
+        "schema": "crispembed-final-native-command-v1",
+        "label": "latent-pipeline",
+        "argv": [
+          "native-optimization/build-current/test-latent-inpaint-pipeline"
+        ],
+        "cwd": "CrispEmbed-issue71",
+        "timeout_seconds": 180,
+        "started_unix": 1793540261.3647504,
+        "complete": true,
+        "passed": true,
+        "gates": {
+          "CRISPEMBED_INPAINT_GRAPH": "0",
+          "CRISPEMBED_INPAINT_FAST": "0",
+          "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+          "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+          "CRISPEMBED_INPAINT_CPU_FFT": "0",
+          "CRISPEMBED_INPAINT_CPU_GLA": "0",
+          "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+          "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+          "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+          "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+          "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+        },
+        "returncode": 0,
+        "elapsed_seconds": 0.03185671900064335,
+        "user_cpu_seconds": 0.0,
+        "system_cpu_seconds": 0.025716000000000072,
+        "children_peak_rss_kib": 105588,
+        "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+        "log_sha256": "f7fb643541d18e30064b6ba95990fa16c5e02855c7537875b636654ba196b968",
+        "log_bytes": 88
+      },
+      {
+        "schema": "crispembed-final-native-command-v1",
+        "label": "latent-attention",
+        "argv": [
+          "native-optimization/build-current/test-latent-inpaint-attention"
+        ],
+        "cwd": "CrispEmbed-issue71",
+        "timeout_seconds": 180,
+        "started_unix": 1793540261.3975267,
+        "complete": true,
+        "passed": true,
+        "gates": {
+          "CRISPEMBED_INPAINT_GRAPH": "0",
+          "CRISPEMBED_INPAINT_FAST": "0",
+          "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+          "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+          "CRISPEMBED_INPAINT_CPU_FFT": "0",
+          "CRISPEMBED_INPAINT_CPU_GLA": "0",
+          "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+          "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+          "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+          "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+          "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+        },
+        "returncode": 0,
+        "elapsed_seconds": 0.0036462950010900386,
+        "user_cpu_seconds": 0.0,
+        "system_cpu_seconds": 0.0019199999999999218,
+        "children_peak_rss_kib": 105588,
+        "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+        "log_sha256": "8dccb57c94918f77cf93e01ff4838d1a48da0adb3ee1c7287bb5f83c0aad2847",
+        "log_bytes": 83
+      },
+      {
+        "schema": "crispembed-final-native-command-v1",
+        "label": "latent-operators",
+        "argv": [
+          "native-optimization/build-current/test-latent-inpaint-ops"
+        ],
+        "cwd": "CrispEmbed-issue71",
+        "timeout_seconds": 180,
+        "started_unix": 1793540261.4019127,
+        "complete": true,
+        "passed": true,
+        "gates": {
+          "CRISPEMBED_INPAINT_GRAPH": "0",
+          "CRISPEMBED_INPAINT_FAST": "0",
+          "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+          "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+          "CRISPEMBED_INPAINT_CPU_FFT": "0",
+          "CRISPEMBED_INPAINT_CPU_GLA": "0",
+          "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+          "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+          "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+          "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+          "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+        },
+        "returncode": 0,
+        "elapsed_seconds": 0.007630729000084102,
+        "user_cpu_seconds": 0.003667000000000087,
+        "system_cpu_seconds": 0.0,
+        "children_peak_rss_kib": 105588,
+        "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+        "log_sha256": "54f9ad96f883af582e3f05e1799ad3179038995c16f12d227c7faa0968bd3beb",
+        "log_bytes": 85
+      },
+      {
+        "schema": "crispembed-final-native-command-v1",
+        "label": "lama-operators",
+        "argv": [
+          "native-optimization/build-current/test-lama-ops"
+        ],
+        "cwd": "CrispEmbed-issue71",
+        "timeout_seconds": 180,
+        "started_unix": 1793540261.4103525,
+        "complete": true,
+        "passed": true,
+        "gates": {
+          "CRISPEMBED_INPAINT_GRAPH": "0",
+          "CRISPEMBED_INPAINT_FAST": "0",
+          "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+          "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+          "CRISPEMBED_INPAINT_CPU_FFT": "0",
+          "CRISPEMBED_INPAINT_CPU_GLA": "0",
+          "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+          "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+          "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+          "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+          "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+        },
+        "returncode": 0,
+        "elapsed_seconds": 0.01571595100176637,
+        "user_cpu_seconds": 0.006937999999998112,
+        "system_cpu_seconds": 0.0,
+        "children_peak_rss_kib": 105588,
+        "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+        "log_sha256": "3cc123d4d71065f7d726171c9e9dfd0f0e230d143628367632e821ad663aa8d4",
+        "log_bytes": 89
+      },
+      {
+        "schema": "crispembed-final-native-command-v1",
+        "label": "lama-contracts",
+        "argv": [
+          "native-optimization/build-current/test-lama-diff",
+          "--contracts"
+        ],
+        "cwd": "CrispEmbed-issue71",
+        "timeout_seconds": 180,
+        "started_unix": 1793540261.4270067,
+        "complete": true,
+        "passed": true,
+        "gates": {
+          "CRISPEMBED_INPAINT_GRAPH": "0",
+          "CRISPEMBED_INPAINT_FAST": "0",
+          "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+          "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+          "CRISPEMBED_INPAINT_CPU_FFT": "0",
+          "CRISPEMBED_INPAINT_CPU_GLA": "0",
+          "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+          "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+          "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+          "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+          "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+        },
+        "returncode": 0,
+        "elapsed_seconds": 0.004031323001981946,
+        "user_cpu_seconds": 0.0,
+        "system_cpu_seconds": 0.003662000000000054,
+        "children_peak_rss_kib": 105588,
+        "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+        "log_sha256": "50da2d5b67a651f7f6821abbfc0c7d2844cce22882285b1239135574ed6b2a6b",
+        "log_bytes": 71
+      },
+      {
+        "schema": "crispembed-final-native-command-v1",
+        "label": "image-contracts",
+        "argv": [
+          "native-optimization/build-current/test-inpaint"
+        ],
+        "cwd": "CrispEmbed-issue71",
+        "timeout_seconds": 180,
+        "started_unix": 1793540261.4321234,
+        "complete": true,
+        "passed": true,
+        "gates": {
+          "CRISPEMBED_INPAINT_GRAPH": "0",
+          "CRISPEMBED_INPAINT_FAST": "0",
+          "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+          "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+          "CRISPEMBED_INPAINT_CPU_FFT": "0",
+          "CRISPEMBED_INPAINT_CPU_GLA": "0",
+          "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+          "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+          "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+          "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+          "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+        },
+        "returncode": 0,
+        "elapsed_seconds": 0.16424080200158642,
+        "user_cpu_seconds": 0.10894400000000104,
+        "system_cpu_seconds": 0.007217000000000029,
+        "children_peak_rss_kib": 105588,
+        "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+        "log_sha256": "64f82d4e392a2ff2861f1e45128fd9f9a34fde5fb05071d949871d17376f4d10",
+        "log_bytes": 58
+      }
+    ],
+    "binaries_sha256_before": {
+      "test-inpaint-graph": "8d4ab6f170d8ba38b782cd93de65cd5c34016eb9bd2ac43474c63f89507f1c8a",
+      "test-inpaint-graph-spectral": "e1ebb366f48edb40f8df14bffa49ce0b245fe4cf217c84b67aeeff58cdfda8b2",
+      "test-latent-inpaint-graph-unet": "519a8e5642618b937ae94d879ac98143493c05ec1d98dfb90bd4fcdfcdaa6752",
+      "test-migan-graph": "477b0bddf4ac5ea06ba32f47af637f6a5064bc471110727a8dee8bc1d83a840e",
+      "test-inpaint-sha256-accel": "97256a263449a54b74e7ef828af32685c289caa5a471c4d3d992cbcae9a1ce14",
+      "test-inpaint-sha256-fallback": "bef3862c8b4765165eb75ced52c03e09b29e0ed6401eb7a42793dbff934d3542",
+      "test-latent-inpaint": "333e53f9232619135f03a2216e299e694162ba6baa77b54afb25d2bda1742358",
+      "test-latent-inpaint-pipeline": "2d9765bac96b5fcb8b51b5b94df3a97c9d8016be6415bffd5f2ca7746d53b3db",
+      "test-latent-inpaint-attention": "02f0656e3746f27ac6656fa5984a597a7f8ecf16e4841e72501efe5054d71ade",
+      "test-latent-inpaint-ops": "43d12886539cf84403f58c94dd5167137de527c499b05797f729093d69211ea5",
+      "test-lama-ops": "e00c6756f90f502cd6b3edd3d7233854bdf2b39f8ccb5bb2f4ba27039c1e41c5",
+      "test-lama-diff": "5ac158f7118b0b7ce80130b6024ff0e954d4e3d0ca73e6661dfbf684dfc92e4f",
+      "test-inpaint": "db902006223104ee55130b977e9251e66e90347b35619ca375efc07902d03c23"
+    },
+    "binaries_sha256_after": {
+      "test-inpaint-graph": "8d4ab6f170d8ba38b782cd93de65cd5c34016eb9bd2ac43474c63f89507f1c8a",
+      "test-inpaint-graph-spectral": "e1ebb366f48edb40f8df14bffa49ce0b245fe4cf217c84b67aeeff58cdfda8b2",
+      "test-latent-inpaint-graph-unet": "519a8e5642618b937ae94d879ac98143493c05ec1d98dfb90bd4fcdfcdaa6752",
+      "test-migan-graph": "477b0bddf4ac5ea06ba32f47af637f6a5064bc471110727a8dee8bc1d83a840e",
+      "test-inpaint-sha256-accel": "97256a263449a54b74e7ef828af32685c289caa5a471c4d3d992cbcae9a1ce14",
+      "test-inpaint-sha256-fallback": "bef3862c8b4765165eb75ced52c03e09b29e0ed6401eb7a42793dbff934d3542",
+      "test-latent-inpaint": "333e53f9232619135f03a2216e299e694162ba6baa77b54afb25d2bda1742358",
+      "test-latent-inpaint-pipeline": "2d9765bac96b5fcb8b51b5b94df3a97c9d8016be6415bffd5f2ca7746d53b3db",
+      "test-latent-inpaint-attention": "02f0656e3746f27ac6656fa5984a597a7f8ecf16e4841e72501efe5054d71ade",
+      "test-latent-inpaint-ops": "43d12886539cf84403f58c94dd5167137de527c499b05797f729093d69211ea5",
+      "test-lama-ops": "e00c6756f90f502cd6b3edd3d7233854bdf2b39f8ccb5bb2f4ba27039c1e41c5",
+      "test-lama-diff": "5ac158f7118b0b7ce80130b6024ff0e954d4e3d0ca73e6661dfbf684dfc92e4f",
+      "test-inpaint": "db902006223104ee55130b977e9251e66e90347b35619ca375efc07902d03c23"
+    },
+    "binaries_unchanged": true
+  },
+  "python_cli_commands": [
+    {
+      "label": "test_latent_inpaint_contract",
+      "python_tests": 21,
+      "passed": true,
+      "receipt": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/test_latent_inpaint_contract.json",
+        "bytes": 690,
+        "sha256": "ad01db625309eee909bb475c70175701a3f516729fd057d3bd9b098b1f29a4a1"
+      },
+      "log": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/test_latent_inpaint_contract.log",
+        "bytes": 3687,
+        "sha256": "d33b718a9b1abc2d5bee886e13dc310403ec01250c344192ac8849fc7a35cfb4"
+      }
+    },
+    {
+      "label": "test_migan_photo_reference",
+      "python_tests": 6,
+      "passed": true,
+      "receipt": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/test_migan_photo_reference.json",
+        "bytes": 677,
+        "sha256": "2e81fd62a1dce3fe9c0e5884b4c3dfe717e5a86c9a2a0da517b7773aa930e717"
+      },
+      "log": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/test_migan_photo_reference.log",
+        "bytes": 1004,
+        "sha256": "dd03ec75a8aa95ad2b77bccacbd6170fbda46b60f2a0ef6fba790ee1cf14a6fa"
+      }
+    },
+    {
+      "label": "test_inpaint_graph_hosted",
+      "python_tests": 20,
+      "passed": true,
+      "receipt": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/test_inpaint_graph_hosted.json",
+        "bytes": 676,
+        "sha256": "f565536482a1c33928935173a77000b3d3c24d79ef64bf56d3091e8e63960cf1"
+      },
+      "log": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/test_inpaint_graph_hosted.log",
+        "bytes": 3474,
+        "sha256": "c8d9805667ed3225b759ccc8b0174b824ce5c5789a0483d8bf13ce6ac549316f"
+      }
+    },
+    {
+      "label": "test_inpaint_graph_replay_driver",
+      "python_tests": 31,
+      "passed": true,
+      "receipt": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/test_inpaint_graph_replay_driver.json",
+        "bytes": 700,
+        "sha256": "9f660c6795fee9858cd8718b1779a23a02ae4b21e5dad688e8d67ea8666aa1b8"
+      },
+      "log": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/test_inpaint_graph_replay_driver.log",
+        "bytes": 5916,
+        "sha256": "4412983401a3ca9dea771e3a021d14b2116bb13f34d35e83a44d09ad4ffd58f3"
+      }
+    },
+    {
+      "label": "test_latent_inpaint_original_import",
+      "python_tests": 11,
+      "passed": true,
+      "receipt": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/test_latent_inpaint_original_import.json",
+        "bytes": 708,
+        "sha256": "3b837a80476dc485a3439f96bcaba4b729868f39a0881d5ef5e2281254c060c2"
+      },
+      "log": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/test_latent_inpaint_original_import.log",
+        "bytes": 1963,
+        "sha256": "deef62c7f0af69e4043ebb10ac372766befeee6c721e8efc30631deccccbe685"
+      }
+    },
+    {
+      "label": "test_migan_native_driver",
+      "python_tests": 9,
+      "passed": true,
+      "receipt": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/test_migan_native_driver.json",
+        "bytes": 685,
+        "sha256": "9a3a26fbd3935dc7b7d9a7ac65f3e930f5460221bf44a16fda3ca2a60c30dc94"
+      },
+      "log": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/test_migan_native_driver.log",
+        "bytes": 1403,
+        "sha256": "5087c48d00434d754331c714e855eab0788e33675449c20fbc40f306e500b650"
+      }
+    },
+    {
+      "label": "test_prepare_migan_inpaint",
+      "python_tests": 15,
+      "passed": true,
+      "receipt": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/test_prepare_migan_inpaint.json",
+        "bytes": 677,
+        "sha256": "23ef15be79c9a225c1c2030d7940377b9bf12638f3e206ddc415217e59eea5a8"
+      },
+      "log": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/test_prepare_migan_inpaint.log",
+        "bytes": 2486,
+        "sha256": "b9cc3def3e550bef4d76dcff26b52a42cf4fcbd6ed1dc0d06e7e836cfa2b34f1"
+      }
+    },
+    {
+      "label": "test_latent_inpaint_hosted",
+      "python_tests": 10,
+      "passed": true,
+      "receipt": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/test_latent_inpaint_hosted.json",
+        "bytes": 689,
+        "sha256": "2e3ac6b1599031c4352a69a7502b58d375c50e7c7c11d38b5959e32f379bd122"
+      },
+      "log": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/test_latent_inpaint_hosted.log",
+        "bytes": 1643,
+        "sha256": "1f9ae026538307e8b701fe8df4df7dc39e846d06d4a40ffbc3b296ce5971f567"
+      }
+    },
+    {
+      "label": "test_migan_reference_contract",
+      "python_tests": 6,
+      "passed": true,
+      "receipt": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/test_migan_reference_contract.json",
+        "bytes": 683,
+        "sha256": "fd79fcc9fb319af5df8fed4ef3505c57ef220abec63163aa7bed4298b941fad4"
+      },
+      "log": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/test_migan_reference_contract.log",
+        "bytes": 1060,
+        "sha256": "4bcb2e8e6fffbe80451653e2b4dbd1813029d84108900d40bdb3b932e29012e1"
+      }
+    },
+    {
+      "label": "test_inpaint_png",
+      "python_tests": 6,
+      "passed": true,
+      "receipt": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/test_inpaint_png.json",
+        "bytes": 652,
+        "sha256": "cb0de7daf12773668fe23ad7e8f990931c92641ade0e10f9c2e24a11ba31ea63"
+      },
+      "log": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/test_inpaint_png.log",
+        "bytes": 990,
+        "sha256": "86dab7d4c673565aeefc58b2d046ffcde3646ee49a1416e526284ad927bced56"
+      }
+    },
+    {
+      "label": "test_inpaint_engine_live_controls",
+      "python_tests": 35,
+      "passed": true,
+      "receipt": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/test_inpaint_engine_live_controls.json",
+        "bytes": 704,
+        "sha256": "0d1446dd90ac5d82980fbe89f5d3b7a7bdecdae3a46f46511e55a2a22ef7703b"
+      },
+      "log": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/test_inpaint_engine_live_controls.log",
+        "bytes": 6872,
+        "sha256": "a2846940fca38100a4233b97e99756883e671e785f4d7d294e3b715437502429"
+      }
+    },
+    {
+      "label": "test_lama_hosted",
+      "python_tests": 5,
+      "passed": true,
+      "receipt": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/test_lama_hosted.json",
+        "bytes": 666,
+        "sha256": "1e822930cab31697c13d6dfcfc68d0ca5783b408c89278f1b4e15a4ded49880e"
+      },
+      "log": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/test_lama_hosted.log",
+        "bytes": 798,
+        "sha256": "8428fe61c5ae558c6dc94c5ec14a1992f4270b83fa718ecc2a604cc85d09f264"
+      }
+    },
+    {
+      "label": "test_migan512_contract",
+      "python_tests": 7,
+      "passed": true,
+      "receipt": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/test_migan512_contract.json",
+        "bytes": 669,
+        "sha256": "73c1e13a5f3f83ae024753f3f1d48d156a999b5d4b0a9ddd0df806ba5bca176c"
+      },
+      "log": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/test_migan512_contract.log",
+        "bytes": 1244,
+        "sha256": "3ebf7fd3966867db4c6038d18a42e8f26e21b96af4ea9bdf0787e773daa26cee"
+      }
+    },
+    {
+      "label": "test_lama_contract",
+      "python_tests": 16,
+      "passed": true,
+      "receipt": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/test_lama_contract.json",
+        "bytes": 660,
+        "sha256": "c5fb0403a285b74e2cd897fc5af7cd398e42b7b8c49954ca6709ed21b6417a85"
+      },
+      "log": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/test_lama_contract.log",
+        "bytes": 2733,
+        "sha256": "368d721d7128f69ae6d7a766a8bd19280b04997611f0934af286e6eb26066907"
+      }
+    },
+    {
+      "label": "native-image-contracts",
+      "python_tests": null,
+      "passed": true,
+      "receipt": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/native-image-contracts.json",
+        "bytes": 621,
+        "sha256": "8b41b36767cfac6154045558e7d7a73a11152bc4e0136ea5ddacf64d4a3e5e96"
+      },
+      "log": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/native-image-contracts.log",
+        "bytes": 58,
+        "sha256": "64f82d4e392a2ff2861f1e45128fd9f9a34fde5fb05071d949871d17376f4d10"
+      }
+    },
+    {
+      "label": "native-cli-controls",
+      "python_tests": 39,
+      "passed": true,
+      "receipt": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/native-cli-controls.json",
+        "bytes": 820,
+        "sha256": "4cebac499edcf9e088970d96bc059dfbd553e3f49d55a624eb99b8b446c7100b"
+      },
+      "log": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/native-cli-controls.log",
+        "bytes": 4589,
+        "sha256": "f84edc75d87bd41da481dc097ede072e90765750475678e53b51565b3eb8bd36"
+      }
+    },
+    {
+      "label": "native-benchmark-output-controls",
+      "python_tests": 7,
+      "passed": true,
+      "receipt": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/native-benchmark-output-controls.json",
+        "bytes": 731,
+        "sha256": "c6bd45d6a89c8f0283980676ff1d7489ed6fd00a9c22ed415179da9956dae1ea"
+      },
+      "log": {
+        "path": "native-optimization/resume-2026-11-01/final-small-tests/native-benchmark-output-controls.log",
+        "bytes": 1022,
+        "sha256": "566a71f2093d05a14fa6255d4f461e3c381beb6f48bcc9bbe3e48a8c29a85d4f"
+      }
+    }
+  ],
+  "coherent_build": {
+    "schema": "crispembed-native-command-v1",
+    "label": "sha-integrated-build",
+    "argv": [
+      "native-optimization/python-deps/cmake/data/bin/cmake",
+      "--build",
+      "native-optimization/build-current",
+      "--target",
+      "crispembed-cli",
+      "test-inpaint-benchmark",
+      "test-inpaint-sha256-accel",
+      "test-inpaint-sha256-fallback",
+      "test-inpaint-graph",
+      "test-inpaint-graph-spectral",
+      "test-latent-inpaint",
+      "test-latent-inpaint-graph-unet",
+      "test-migan-graph",
+      "test-lama-diff",
+      "test-lama-ops",
+      "test-inpaint",
+      "test-latent-inpaint-pipeline",
+      "test-latent-inpaint-attention",
+      "test-latent-inpaint-ops",
+      "-j",
+      "2"
+    ],
+    "cwd": ".",
+    "timeout_seconds": 900,
+    "started_unix": 1793540167.276672,
+    "complete": true,
+    "gates": {},
+    "returncode": 0,
+    "elapsed_seconds": 47.987602085002436,
+    "user_cpu_seconds": 92.683491,
+    "system_cpu_seconds": 2.700723,
+    "peak_rss_kib": 627500,
+    "log_sha256": "e9c747305b85d7200984d93fdf1743992bc8deb3c8cc349ed42ddd5ed565962a",
+    "log_bytes": 2920,
+    "passed": true
+  },
+  "production_observer_audit": {
+    "schema": "crispembed-production-observer-symbol-audit-v1",
+    "complete": true,
+    "passed": true,
+    "symbol_pattern": "(?:inpaint_graph::Builder::set_observer|latent_inpaint::set_observer|lama::set_observer|migan.*(?:set_observer|set_diff_observer))",
+    "positive_control_included": true,
+    "rows": [
+      {
+        "binary": "crispembed",
+        "command": [
+          "nm",
+          "-C",
+          "--defined-only",
+          "native-optimization/build-current/crispembed"
+        ],
+        "binary_sha256": "4908de1b07d4e91a1818063e852bf07de9cd0faf88c3a42b75a361b9d81ab65c",
+        "binary_unchanged": true,
+        "production": true,
+        "observer_symbols": [],
+        "stdout_sha256": "64ad9e056aa7fd84406bf779988223744b553c1ae8acb6008f01a2dc66c80d1b",
+        "stdout_bytes": 1378743,
+        "passed": true
+      },
+      {
+        "binary": "test-inpaint-benchmark",
+        "command": [
+          "nm",
+          "-C",
+          "--defined-only",
+          "native-optimization/build-current/test-inpaint-benchmark"
+        ],
+        "binary_sha256": "8e860a3401f8010ba7b1f023cba3ce9862fee5d0b6d6d4b87826290fe190a8bd",
+        "binary_unchanged": true,
+        "production": true,
+        "observer_symbols": [],
+        "stdout_sha256": "12182c6ef6bed47f2f99b46d5515f8a5e7a776d923b6b44ae4cb6cd9bb6c6324",
+        "stdout_bytes": 289879,
+        "passed": true
+      },
+      {
+        "binary": "test-latent-inpaint",
+        "command": [
+          "nm",
+          "-C",
+          "--defined-only",
+          "native-optimization/build-current/test-latent-inpaint"
+        ],
+        "binary_sha256": "333e53f9232619135f03a2216e299e694162ba6baa77b54afb25d2bda1742358",
+        "binary_unchanged": true,
+        "production": false,
+        "observer_symbols": [
+          "0000000000119db0 T inpaint_graph::Builder::set_observer(void (*)(void*, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, ggml_tensor*, std::vector<float, std::allocator<float> > const&), void*)",
+          "00000000000da900 T latent_inpaint::set_observer(latent_inpaint::context*, void (*)(void*, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, latent_inpaint::Tensor const&), void*)",
+          "0000000000018c60 t latent_inpaint::set_observer(latent_inpaint::context*, void (*)(void*, std::__cxx11::basic_string<char, std::char_traits<char>, std::allocator<char> > const&, latent_inpaint::Tensor const&), void*) [clone .cold]"
+        ],
+        "stdout_sha256": "a8a1237fff810e672e833ad63b0646a0d87bf5156123745c7d7ac719520e315a",
+        "stdout_bytes": 333512,
+        "passed": true
+      }
+    ]
+  },
+  "api_controller_controls": {
+    "schema": "crispembed-native-command-v1",
+    "label": "latent-api-sha-controls",
+    "argv": [
+      "python3",
+      "-m",
+      "unittest",
+      "-v",
+      "test_run_latent_api_controls"
+    ],
+    "cwd": "native-optimization",
+    "timeout_seconds": 90,
+    "started_unix": 1793540078.0749407,
+    "complete": true,
+    "gates": {},
+    "returncode": 0,
+    "elapsed_seconds": 4.42664414599858,
+    "user_cpu_seconds": 4.307225,
+    "system_cpu_seconds": 0.059383,
+    "peak_rss_kib": 32600,
+    "log_sha256": "d2bf3d9d9fae1083a4e2cd5e53d7368f9f63b0c169e74977fed9afee136b1854",
+    "log_bytes": 3722,
+    "passed": true
+  },
+  "source_files_observed_after_tests": {
+    "CMakeLists.txt": {
+      "path": "CrispEmbed-issue71/CMakeLists.txt",
+      "bytes": 72676,
+      "sha256": "7e1a2ccad64e9d5f0e0bab3cfebdc678d2f163aed0aae6f21ad666434ae734bb"
+    },
+    "src/inpaint_graph.cpp": {
+      "path": "CrispEmbed-issue71/src/inpaint_graph.cpp",
+      "bytes": 46970,
+      "sha256": "6757e28ee1fe6a43b3a291b1797ade86f19537411c2e822c3e7ee1b34cb340eb"
+    },
+    "src/inpaint_graph.h": {
+      "path": "CrispEmbed-issue71/src/inpaint_graph.h",
+      "bytes": 6620,
+      "sha256": "d6a41ab9111e6c65ac99a447de2899773581ead360d4afdbef98124f0108fde0"
+    },
+    "src/inpaint.cpp": {
+      "path": "CrispEmbed-issue71/src/inpaint.cpp",
+      "bytes": 12598,
+      "sha256": "4bd7397e21b27960c159546a0047b09ac67054ca52d0dc94a372b78a0a9d922f"
+    },
+    "src/lama.cpp": {
+      "path": "CrispEmbed-issue71/src/lama.cpp",
+      "bytes": 15713,
+      "sha256": "898a222b770aa4e412326aa4e449486885e7f7c8d8fe923ea60830a787eb25f5"
+    },
+    "src/latent_inpaint.cpp": {
+      "path": "CrispEmbed-issue71/src/latent_inpaint.cpp",
+      "bytes": 20461,
+      "sha256": "9b08cff8ce0f0de0457100c99ca9226ccb47c4225e8248e1c117b9934f6688c4"
+    },
+    "src/core/sha256.h": {
+      "path": "CrispEmbed-issue71/src/core/sha256.h",
+      "bytes": 5024,
+      "sha256": "409ab494061b042d4a84698b7bf2caf6dd68f6639cbeb532cb47a2f2337d9a6f"
+    },
+    "src/core/sha256_accelerated.h": {
+      "path": "CrispEmbed-issue71/src/core/sha256_accelerated.h",
+      "bytes": 12420,
+      "sha256": "46f0050cae097fd6d0d1a9bc0021a57ae55465088ffa1d330e7f2adab37baa2e"
+    },
+    "tests/test_inpaint_benchmark.cpp": {
+      "path": "CrispEmbed-issue71/tests/test_inpaint_benchmark.cpp",
+      "bytes": 13637,
+      "sha256": "a3d4eed9aa6e3eab419ca8864ff55f1d15892ce2c6b0466673ccb1a83661aa23"
+    },
+    "tests/test_inpaint_sha256_accel.cpp": {
+      "path": "CrispEmbed-issue71/tests/test_inpaint_sha256_accel.cpp",
+      "bytes": 16350,
+      "sha256": "8a575f7de14a37f276cbdf67cc745c6d9a212b40eb14bc5f51bb732cb8bc6150"
+    },
+    "tests/test_inpaint_graph.cpp": {
+      "path": "CrispEmbed-issue71/tests/test_inpaint_graph.cpp",
+      "bytes": 45618,
+      "sha256": "70cf3b83f737cdaccfa85d62e4b2f9f0a24f595c29bd22948f44ba79e45b25e0"
+    },
+    "tests/test_inpaint_engine_live.py": {
+      "path": "CrispEmbed-issue71/tests/test_inpaint_engine_live.py",
+      "bytes": 41690,
+      "sha256": "dc4a3460341ab80fd48db2c6c767e8eb4a36d31d3df486f5a140408c4edf7750"
+    },
+    "tools/inpaint_hash_evidence.py": {
+      "path": "CrispEmbed-issue71/tools/inpaint_hash_evidence.py",
+      "bytes": 4964,
+      "sha256": "4fece7408ea18b781724410866af9bca64586368f643850473add3b76f3054fb"
+    },
+    "tools/ci-heavy/inpaint_graphs.py": {
+      "path": "CrispEmbed-issue71/tools/ci-heavy/inpaint_graphs.py",
+      "bytes": 27483,
+      "sha256": "670638f529b7876e26cbdc115f972ef1d0d4a71a7883b80acc3fa2ea80746083"
+    },
+    "tools/ci-heavy/inpaint_graph_replay.py": {
+      "path": "CrispEmbed-issue71/tools/ci-heavy/inpaint_graph_replay.py",
+      "bytes": 38451,
+      "sha256": "eb25a3446fc0fc43353d418d847d9d925a5191018753e8f4a7c6876d66af8928"
+    }
+  }
+}

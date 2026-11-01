@@ -31,8 +31,9 @@ Hardware, build and exact operator evidence are in the
 | LaMa Fourier transforms | One CPU ggml custom node per FFT, using cached radix-2/Bluestein plans | F32 graph storage, F64 complex arithmetic internally; portable GPU graph retained |
 | Moebius relative attention | Change contraction order to avoid the large positional intermediate | Algebraically equivalent; floating-point reduction order changes |
 | Moebius local attention | Compute query/kernel coefficients and combine bounded strips of value neighborhoods | Limits patch/coefficient workspace; padding alternative stays separately gated |
+| Moebius CPU depthwise convolution | Reuse the MI-GAN tap-major loop in a restricted 3x3 CPU graph node | No activation transfers; four actual model cases retain exactly the prior final RGB |
 | PixelHacker gated linear attention | Adapt ggml's existing CPU recurrent kernel to rectangular heads | Reduces the portable operation count; some measured graph arenas are larger |
-| Model loading | Bounded physical tensor names restored from the frozen schema | Every exported tensor payload remains unchanged |
+| Model loading | Bounded physical tensor names plus separately gated hardware SHA-256 | Every tensor payload and full-file digest remains unchanged; unsupported CPUs use the scalar hash |
 
 The persistent-input correction is a correctness fix discovered by replay:
 the pinned ggml allocator could reuse an immutable input's allocation after
@@ -51,8 +52,8 @@ calls. Output composition preserves every unmasked RGB byte.
 ## Complete-image measurements
 
 Each MI-GAN and LaMa warm median below is from five ordinary image API calls in
-one loaded context after a separate cold call. PixelHacker's completed candidate
-uses three warm calls, as separately stated below. Timings include preprocessing,
+one loaded context after a separate cold call. PixelHacker's completed pair
+uses three warm calls per arm, as separately stated below. Timings include preprocessing,
 inference and RGB composition, with stage observers disabled. All raw samples,
 exact model/input hashes, executable identities and memory observations remain
 in the linked records. These are measurements of this machine and these
@@ -119,6 +120,11 @@ explanation, but the exact earlier cause remains unresolved. The full-model
 strict verdict therefore remains negative.
 See [the LaMa report](lama-cpu-validation.md) and its
 [complete evidence](../tests/results/inpainting/lama-cpu-2026-11-01.json).
+The subsequent [first-layer attribution](lama-first-layer-attribution.md)
+locates a small original/native difference in the first convolution, before
+the Fourier blocks. The first-block native outputs reproduce the earlier
+retained payloads exactly. Alternate batch-normalization formulas did not
+remove that drift, so no numerical formula or acceptance limit was changed.
 
 ### Moebius
 
@@ -159,37 +165,88 @@ medians by 1.15–4.18× across the three spatial sizes; padding regresses the
 two larger sizes and stays off. These component ratios are not complete-image
 speedups.
 
+The subsequent CPU depthwise integration was replayed on all four cases with
+the same original inputs and fixed thresholds. All eight generated/composited
+RGB outputs are byte-identical to the previous local-attention candidate;
+all 608 recorded reference metric dictionaries and the same 35 failure names
+also match. Actual finalized graphs report 47 specialized depthwise nodes per
+denoising step, for 3,572 logical node executions across the four cases, and
+zero in either VAE graph. See the
+[depthwise model evidence](../tests/results/inpainting/moebius-depthwise-cpu-2026-11-01.json).
+This observed replay establishes the stated output preservation. Its timings
+overlapped other work and are not a complete-image speedup measurement.
+
+The subsequent ordinary API pair also completed: one cold image and three
+warm images per arm on the fixed 512-pixel formula photograph. All eight
+images have the same RGB digest, including the saved cold checkpoints, and
+every known pixel is exact. Both arms use the existing relative/local lambda
+and GEMM choices; the candidate adds depthwise and SHA acceleration.
+
+| Cost | Existing local/GEMM profile | Depthwise plus SHA profile |
+| --- | ---: | ---: |
+| Load and validation, one observation | 4.973 s | 1.277 s |
+| Cold image | 166.949 s | 392.587 s |
+| Three warm images | 142.796, 139.512, 266.263 s | 134.088, 181.397, 195.887 s |
+| Warm median | 142.796 s | 181.397 s |
+| Peak process RSS | 3,733,784 KiB | 3,727,376 KiB |
+
+**This pair does not qualify a complete-image speedup.** The candidate's
+warm median is slower, both series vary substantially, and resource snapshots
+record competing work. All samples are retained. The loading observations
+include verification and initialization after independent pre-run file hashing;
+they do not measure cold storage. Depthwise remains a separate experimental
+option rather than a recommended addition to the throughput preset. See the
+[ordinary API evidence](../tests/results/inpainting/moebius-api-cpu-2026-11-01.json).
+
 ### PixelHacker
 
-The optimized CPU candidate completed one cold and three warm ordinary image
-calls on the 512 × 512 formula photograph, with eight threads and the stock
-20-requested/19-executed-step sampler. Its warm samples are 140.080, 137.871
-and 139.268 seconds; the median is **139.268 seconds**. Loading and validation
-took 14.270 seconds, the cold call took 140.994 seconds, and process peak RSS
-was 6,284,516 KiB (approximately 5.99 GiB). All four output hashes match and
-every known pixel is exact. Actual CPU/F32 profiler records account for four
-encoder, 76 denoiser-step and four decoder executions.
+The current eager and optimized CPU implementations each completed one cold
+and three warm ordinary image calls on the same 512 × 512 formula photograph.
+Both used the same executable and F32 models, eight threads and the stock
+20-requested-step sampler. The candidate selected persistent graphs, CPU GEMM
+layout and gated linear attention, plus SHA-NI for complete model-file
+verification. The depthwise candidate remains off for this profile.
 
-The eager comparison was stopped at the user's request to deliver the ZIP.
-It retains a 311.464-second cold call and one 312.904-second warm call, with
-matching eager output hashes. Its next warm call was interrupted before the
-benchmark wrote the final RGB file. The portable-graph arm was not run.
-**There is no completed paired speedup, native output-difference verdict or
-live PixelHacker CLI qualification.** Eager and optimized hashes differ; the
-unfinished comparison does not establish whether that difference is small.
+| Measurement | Eager | Optimized CPU + SHA-NI |
+| --- | ---: | ---: |
+| Initialization and model verification | 16.535945 s | 3.195765 s |
+| Cold image call | 314.108361 s | 149.552855 s |
+| Warm call 1 | 310.958028 s | 144.243473 s |
+| Warm call 2 | 311.826501 s | 141.174032 s |
+| Warm call 3 | 306.760212 s | 145.701230 s |
+| Warm median | 310.958028 s | 144.243473 s |
+| Peak process RSS | 4,478,836 KiB | 6,275,732 KiB |
 
-The candidate's original controller receipt also retains a post-inference
-failure caused by rounding of printed timing samples. Independent revalidation
-uses a bound derived from the benchmark's ten-significant-digit output, accepts
-that approximately 0.000023 ms standard-deviation discrepancy, and rejects
-altered statistics. It does not change a model, rerun an image or relax an
-image-quality limit. Both receipts are preserved in
-[the PixelHacker evidence](../tests/results/inpainting/pixelhacker-cpu-2026-11-01.json).
+The observed warm-median ratio is **2.1558** and the loading/verification ratio
+is **5.1743**. **All timing qualification flags remain false.** These are
+diagnostic observations of one fixture, three warm calls and a fixed eager-then-
+candidate run order on a shared host. The loading measurement includes native
+initialization after independent pre-run hashing and does not measure cold
+storage or isolate each optimization's contribution.
 
-The original FLA implementation requires CUDA and was unavailable on this CPU
-worker. Original PixelHacker parity remains unqualified. The additional shared
-CPU depthwise candidate was prepared but never integrated into this delivered
-runtime; its isolated probe is not a claimed complete-image improvement.
+The independently recomputed final RGB comparison passes the unchanged native
+limits: maximum filled-channel error **1**, MAE **0.0000949435764**, PSNR
+**88.3561 dB**, and exact known pixels. Each implementation repeats its own
+bytes across all four calls. Actual candidate CPU/F32 profiles account for
+four encoder, 76 denoiser-step and four decoder runs, proving the retained
+19-step schedule and context reuse. The eager arm has no equivalent graph
+counter. The candidate's verified SHA profiles account for every complete
+input block of both model files.
+
+The [current API evidence](../tests/results/inpainting/pixelhacker-api-cpu-2026-11-01.json)
+retains the full samples, output comparison and provenance; the
+[PixelHacker guide](pixelhacker-cpu-validation.md) explains the configuration,
+memory and acceptance scope. This finite native-to-native agreement does not
+establish original PixelHacker parity. The original CUDA/FLA implementation
+was not run, and perceptual, temporal and GPU qualification remain false.
+
+The [earlier v2 record](../tests/results/inpainting/pixelhacker-cpu-2026-11-01.json)
+remains unchanged, including its completed older candidate, user-cancelled
+eager arm, unexecuted portable-graph arm, initial timing-print failure and
+independent revalidation. Its samples are not pooled into this current pair.
+The current plan did not require a separate portable-graph attribution arm
+after native final-image agreement passed. Production CLI evidence is recorded
+separately from this ordinary API comparison.
 
 ## Select the measured CPU paths
 
@@ -213,6 +270,20 @@ also remains off; it did not remove the observed VAE discrepancy. Literal
 `0` disables every new candidate. These settings are experimental choices,
 not changes to production defaults.
 
+`CRISPEMBED_INPAINT_CPU_DEPTHWISE=1` is available for an explicit Moebius
+experiment. Its operator benchmark is faster and its tested final images
+match exactly, but the noisy ordinary API pair above does not establish a
+full-image gain. Keep it separate from the preset until it is measured on
+the intended machine.
+
+`CRISPEMBED_INPAINT_SHA256_ACCEL=1` separately enables hardware-assisted
+model-file verification on supported x86-64 CPUs. It hashes every byte and
+compares the same trusted complete-file digest. The scalar implementation is
+retained on unsupported targets and when the flag is off. Profiling records
+the verified model identity and actual complete/accelerated block counts;
+requesting the flag alone is not evidence of hardware execution. See
+[model hashing](inpaint-model-hashing.md) for the dispatch and controls.
+
 The production CLI can reuse one loaded model context across a directory or
 TSV batch. Prefer this when processing several frames: launching a new process
 per image repeats model reading, digest verification and graph construction.
@@ -227,6 +298,11 @@ ordinary image API, verifies known pixels and repeated output, records loading
 and one cold call separately, and prints every warm sample before its summary.
 Its output file must be new. The photo preparer below uses Pillow to decode
 two pinned repository images and does not import a model framework.
+An optional `--checkpoint-output NEW_RAW` preserves the first completed cold
+image before warm sampling starts. This write is outside the image timer.
+An interrupted benchmark can therefore retain a completed output without
+claiming that its timing series or quality validation finished. Both output
+destinations must be new, distinct regular-file paths.
 
 For the measured LaMa configuration, after obtaining the reviewed model and
 its conversion receipt:
@@ -268,27 +344,46 @@ results.
 
 ## Final local checks and live coverage
 
-The final closeout executes **210 Python/CLI tests** and **18 native test
+The resumed closeout executes **244 Python/CLI tests** and **20 native test
 configurations**, all passing. The latter cover portable and selected CPU
 operators, FFT/GLA, local and relative lambda attention, the separately gated
 padding alternative, MI-GAN kernels, loader contracts, sampler/pipeline
 contracts and image composition. The image wrapper contains 68 assertions.
 Production executable and ordinary benchmark symbol audits exclude the
 test-only observer APIs; an observer-enabled comparator provides the positive
-control. See [the final validation record](../tests/results/inpainting/validation-closeout-2026-11-01.json).
+control. The new SHA targets additionally pass 6,985 normal and 6,988
+forced-fallback assertions, and the private ordinary API controller passes
+21 mocked lifecycle/evidence tests. See the
+[resumed control record](../tests/results/inpainting/validation-rest-2026-11-01.json).
+The [earlier closeout](../tests/results/inpainting/validation-closeout-2026-11-01.json)
+remains preserved separately.
 
-Actual model-backed CLI tests completed for MI-GAN256, MI-GAN512 and LaMa,
-including exact comparisons with ordinary API output, empty masks and
-filled/empty/filled batch reuse. LaMa was exercised at 256 and 512 pixels;
-MI-GAN256 also retains the original boundary/tiling smoke. The latent production
-CLI cases were not run before delivery. Model-free unit success is separate
-from the full-model intermediate failures and incomplete comparisons above.
+The current production CLI binary completed **12 actual invocations and 16 PNG
+outputs** across MI-GAN256, MI-GAN512, LaMa at 256 pixels, Moebius and PixelHacker.
+Filled outputs match the pinned ordinary API bytes for each profile, every
+known input channel is preserved, and empty-mask outputs equal their inputs.
+Both latent profiles also complete filled/empty/filled batches with exact
+fresh-context versus reused-context results. Actual profiles show 1/19/1
+encoder/denoiser/decoder calls for a single filled image, zero graph calls for
+the empty image, and 2/38/2 for the batch. Complete-model SHA-NI verification
+is checked against the exact digests and executed input-block counts.
+See the [final CLI evidence](../tests/results/inpainting/inpaint-cli-final-2026-11-01.json).
+
+The earlier production CLI panel remains separate. It covers both MI-GAN
+sizes and LaMa at 256/512, with its own executable, exact API comparisons and
+batch reuse; MI-GAN256 also retains the boundary/tiling smoke. These historical
+outputs are not added to the current binary's 16-PNG count. Functional CLI
+checks do not qualify throughput, original intermediate parity or broader
+image quality.
 
 The final archive preserves initial failures, excluded timing arms, the
 PixelHacker cancellation and the later timing-only revalidation. It contains
 the exact committed source, pinned ggml source, complete and incremental
-patches, small raw execution evidence and an actual four-engine comparison
-sheet. Prepared depthwise patches and unexecuted experiments are excluded.
+patches, selected raw execution evidence and actual output comparisons for
+all five profiles, alongside the earlier comparison sheet. The integrated
+depthwise path has separate executed evidence. The
+larger convolution-workspace screen is retained as an experiment that did
+not justify changing the production workspace policy.
 
 ## Limits that remain
 

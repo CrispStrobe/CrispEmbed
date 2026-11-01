@@ -6,7 +6,7 @@
 #include "core/env_gate.h"
 #include "core/ggml_cpu_backend.h"
 #include "core/gguf_loader.h"
-#include "core/sha256.h"
+#include "core/sha256_accelerated.h"
 #include "ggml-alloc.h"
 
 #include <algorithm>
@@ -74,8 +74,12 @@ void validate_model(const std::string & path, const std::string & expected_sha25
     require(std::filesystem::is_regular_file(path), "model must be a regular GGUF file");
     const uintmax_t bytes = std::filesystem::file_size(path);
     require(bytes >= 32 && bytes <= UINT64_C(512) * 1024 * 1024, "model exceeds the bounded512MiB weight profile");
-    const auto observed = core_sha256::file(path);
+    const bool profile = core_env::on("CRISPEMBED_INPAINT_PROFILE");
+    core_sha256_accel::Stats hash_stats;
+    const auto observed =
+        core_sha256_accel::file(path, core_env::on("CRISPEMBED_INPAINT_SHA256_ACCEL"), profile ? &hash_stats : nullptr);
     require(!observed.empty() && observed == expected_sha256, "GGUF digest differs from supplied converter receipt");
+    if (profile) core_sha256_accel::profile_verified("lama", hash_stats, observed);
     std::unique_ptr<gguf_context, decltype(&core_gguf::free_metadata)> meta(core_gguf::open_metadata(path.c_str()),
                                                                             &core_gguf::free_metadata);
     require(bool(meta), "cannot read GGUF metadata");

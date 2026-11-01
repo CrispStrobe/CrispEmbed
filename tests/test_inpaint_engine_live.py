@@ -36,6 +36,7 @@ from test_inpaint_cli import PNG_SIGNATURE, decode_png, png_bytes
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 from dump_migan_photo_reference import load_fixtures  # noqa: E402
+from inpaint_hash_evidence import SHA256_GATE, hash_evidence  # noqa: E402
 
 HEX64 = re.compile(r"[0-9a-f]{64}\Z")
 ENGINES = ("migan256", "migan512", "lama", "moebius", "pixelhacker")
@@ -45,7 +46,7 @@ CPU_GATES = ("CRISPEMBED_INPAINT_GEMM_LAYOUT", "CRISPEMBED_INPAINT_REFLECT_GATHE
              "CRISPEMBED_INPAINT_CPU_FFT", "CRISPEMBED_INPAINT_CPU_GLA",
              "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC", "CRISPEMBED_MIGAN_CPU_KERNELS",
              "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES", "CRISPEMBED_MOEBIUS_LOCAL_REASSOC",
-             "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM")
+             "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM", "CRISPEMBED_INPAINT_CPU_DEPTHWISE", SHA256_GATE)
 CPU_ENGINE_GATES = {
     "migan256": (CPU_GATES[5],), "migan512": (CPU_GATES[5],),
     "lama": CPU_GATES[:3], "moebius": (CPU_GATES[0], CPU_GATES[4]),
@@ -92,6 +93,8 @@ def read_json(path):
 
 
 def validate_options(args):
+    if args.require_sha256_accel and not args.sha256_accel:
+        raise ValueError("--require-sha256-accel requires --sha256-accel")
     if args.engine not in ENGINES or args.backend not in ("cpu", "cuda", "metal"):
         raise ValueError("unsupported engine or explicit backend")
     if not 1 <= args.threads <= 64 or not 1 <= args.timeout <= 7200:
@@ -100,6 +103,9 @@ def validate_options(args):
         raise ValueError("CUDA and Metal require --graph")
     if args.cpu_optimized and (not args.graph or args.backend != "cpu" or args.precision != "f32"):
         raise ValueError("--cpu-optimized requires --graph --backend cpu --precision f32")
+    if args.moebius_cpu_depthwise and (args.engine != "moebius" or not args.graph
+                                         or args.backend != "cpu" or args.precision != "f32"):
+        raise ValueError("--moebius-cpu-depthwise requires --engine moebius --graph --backend cpu --precision f32")
     if args.moebius_local_reassoc or args.moebius_local_pad_gemm:
         if args.engine != "moebius" or not args.graph or args.backend != "cpu" or args.precision != "f32":
             raise ValueError("Moebius local experiments require --engine moebius --graph --backend cpu --precision f32")
@@ -173,6 +179,10 @@ def controlled_environment(args):
         gates["CRISPEMBED_MIGAN512"] = "1"
     if args.cpu_optimized:
         gates.update({name: "1" for name in CPU_ENGINE_GATES[args.engine]})
+    if args.sha256_accel:
+        gates[SHA256_GATE] = "1"
+    if args.moebius_cpu_depthwise:
+        gates["CRISPEMBED_INPAINT_CPU_DEPTHWISE"] = "1"
     if args.moebius_local_reassoc:
         gates["CRISPEMBED_MOEBIUS_LOCAL_REASSOC"] = "1"
     if args.moebius_local_pad_gemm:
@@ -281,7 +291,8 @@ def checked_png(data, size, rgb, mask, expected_fields, expected_rgb=None):
                     "expected_rgb_exact": pixels == expected_rgb if expected_rgb is not None else None}
 
 
-def backend_evidence(stderr, requested, graph_required, precision="f32", migan_cpu_kernels=False):
+def backend_evidence(stderr, requested, graph_required, precision="f32", migan_cpu_kernels=False,
+                     moebius_cpu_depthwise=False):
     if b"INPAINT_TEST_" in stderr:
         raise ValueError("test-only CLI driver cannot supply live model evidence")
     records = []
@@ -315,9 +326,21 @@ def backend_evidence(stderr, requested, graph_required, precision="f32", migan_c
         else:
             label = re.search(r"^inpaint_graph label=(.*?) backend=", line)
             record["label"] = label.group(1) if label else None
+            count = re.findall(r"(?:^| )cpu_depthwise_nodes=(\S*)", line)
+            if count and (len(count) != 1 or re.fullmatch(r"[0-9]+", count[0]) is None):
+                raise ValueError("malformed cpu_depthwise_nodes execution profile")
+            record["cpu_depthwise_nodes"] = int(count[0]) if count else None
         records.append(record)
     if graph_required and not any(row["runs"] > 0 for row in records):
         raise ValueError("filled graph invocation supplied no actual execution profile")
+    if not moebius_cpu_depthwise and any(row.get("cpu_depthwise_nodes") not in (None, 0) for row in records):
+        raise ValueError("runtime selected CPU depthwise nodes although the explicit gate is off")
+    if moebius_cpu_depthwise and graph_required:
+        expected = {"unet-cfg-ddim-batch2": 47, "vae-encoder-batch2": 0, "vae-decoder": 0}
+        for label, count in expected.items():
+            selected = [row for row in records if row["label"] == label]
+            if len(selected) != 1 or selected[0]["runs"] <= 0 or selected[0].get("cpu_depthwise_nodes") != count:
+                raise ValueError("requested Moebius CPU depthwise graph must report " + label + " cpu_depthwise_nodes=" + str(count))
     return records
 
 
@@ -342,6 +365,45 @@ def batch_reuse_evidence(records, engine, graph):
     return {"verified": True, "graphs": [{key: row[key] for key in ("label", "runs", "builds", "allocations") if key in row} for row in used]}
 
 
+def retained_ddim_steps(engine, requested_steps):
+    if engine not in ("moebius", "pixelhacker") or not 2 <= requested_steps <= 100:
+        raise ValueError("unsupported latent schedule")
+    # The frozen source strengths are 0.99 and 0.999. Integer arithmetic
+    # expresses their truncation over the admitted 2..100 requested steps.
+    numerator, denominator = (99, 100) if engine == "moebius" else (999, 1000)
+    return requested_steps * numerator // denominator
+
+
+def latent_schedule_evidence(records, engine, requested_steps, filled_images, graph):
+    """Verify executed graph counts; profiles do not expose timestep values."""
+    retained = retained_ddim_steps(engine, requested_steps)
+    if filled_images not in (0, 1, 2):
+        raise ValueError("unsupported latent CLI image count")
+    expected = {"vae-encoder-batch2": filled_images,
+                "unet-cfg-ddim-batch2": filled_images * retained,
+                "vae-decoder": filled_images}
+    result = {"requested_steps": requested_steps, "retained_steps_per_filled_image": retained,
+              "completed_filled_images": filled_images, "expected_graph_runs": expected,
+              "stock_twenty_step_profile": requested_steps == 20,
+              "timestep_values_profiled": False, "execution_count_verified": False,
+              "scope": "Actual encoder/denoiser/decoder graph execution counts; timestep values remain covered by the frozen scheduler component controls."}
+    if not graph or filled_images == 0:
+        if any(row["runs"] != 0 for row in records):
+            raise ValueError("eager or empty-mask latent CLI unexpectedly executed a graph")
+        result["execution_count_verified"] = bool(graph)
+        result["empty_mask_no_graph_execution"] = filled_images == 0
+        return result
+    if any(row["label"] not in expected for row in records):
+        raise ValueError("latent schedule supplied an unexpected graph label")
+    for label, runs in expected.items():
+        selected = [row for row in records if row["label"] == label]
+        if len(selected) != 1 or selected[0]["runs"] != runs:
+            raise ValueError("latent schedule requires one retained " + label + " graph with runs=" + str(runs))
+    result["execution_count_verified"] = True
+    result["observed_graph_runs"] = {row["label"]: row["runs"] for row in records}
+    return result
+
+
 def source_provenance():
     def git(directory, *args):
         try:
@@ -354,7 +416,8 @@ def source_provenance():
     ggml_root = git(ROOT / "ggml", "rev-parse", "--show-toplevel")
     ggml = git(ROOT / "ggml", "rev-parse", "HEAD") if ggml_root and Path(ggml_root).resolve() == ROOT / "ggml" else None
     names = ("examples/cli/inpaint_cli.cpp", "src/core/image_out.cpp", "tests/test_inpaint_cli.py",
-             "tools/dump_migan_photo_reference.py", "tests/test_inpaint_engine_live.py")
+             "tools/dump_migan_photo_reference.py", "tests/test_inpaint_engine_live.py",
+             "tools/inpaint_hash_evidence.py")
     return {"native_commit": native, "ggml_commit": ggml,
             "source_files": [{"path": name, "sha256": sha256(ROOT / name)} for name in names],
             "binary_revision_attested": False,
@@ -404,6 +467,10 @@ class LiveRun:
             with self.vae.open("rb") as source:
                 if source.read(4) != b"GGUF":
                     raise ValueError("VAE file is not GGUF")
+        self.hash_expected = {"migan" if args.engine.startswith("migan") else args.engine:
+                              {"sha256": model["sha256"], "bytes": model["bytes"]}}
+        if vae is not None:
+            self.hash_expected["sdxl_vae"] = {"sha256": vae["sha256"], "bytes": vae["bytes"]}
         identities = checkpoint_identities(args)
         fixtures_path, fixture_identity = self.track(args.fixtures, "photo fixture manifest", MAX_METADATA_BYTES, args.fixtures_sha256)
         fixtures = load_fixtures(fixtures_path)
@@ -436,13 +503,17 @@ class LiveRun:
         self.report.update({"binary": binary, "model": model, "vae": vae, "checkpoint_identities": identities,
                             "source": source_provenance(), "requested_backend": args.backend,
                             "graph": args.graph, "precision": args.precision, "cpu_optimized_requested": args.cpu_optimized,
+                            "sha256_accel_requested": args.sha256_accel,
+                            "sha256_hardware_required": args.require_sha256_accel,
+                            "moebius_cpu_depthwise_requested": args.moebius_cpu_depthwise,
                             "moebius_local_reassoc_requested": args.moebius_local_reassoc,
                             "moebius_local_pad_gemm_requested": args.moebius_local_pad_gemm,
-                            "optimizer_evidence_scope": "MI cpu_kernels is checked in actual profiles; optimizer flags for other engines are requested settings, not profiler-confirmed kernel selection.",
+                            "optimizer_evidence_scope": "MI cpu_kernels and explicitly selected Moebius CPU depthwise node counts are checked in actual profiles; other optimizer flags remain requested settings, not profiler-confirmed selection.",
                             "threads": args.threads, "controlled_environment": gates,
                             "fixtures": fixture_identity, "case": case, "rgb": raw_identity, "mask": mask_identity,
                             "expected_ordinary_api_rgb": expected_identity,
                             "sampler": {"requested_steps": args.steps, "seed": args.seed,
+                                        "expected_retained_ddim_steps": retained_ddim_steps(args.engine, args.steps),
                                         "guidance": 2 if args.engine == "moebius" else 4.5,
                                         "noise_offset": 0.0357, "tiles": False} if args.engine in ("moebius", "pixelhacker") else None,
                             "input_png_policy": "Regenerated from validated raw fixture bytes; no resize, filtering, dilation or mask substitution"})
@@ -513,7 +584,16 @@ class LiveRun:
             raise ValueError("production executable changed during invocation")
         row["backend_evidence"] = backend_evidence(stderr_path.read_bytes(), self.args.backend,
                                                    graph_required, self.args.precision,
-                                                   self.args.cpu_optimized and self.args.engine.startswith("migan"))
+                                                   self.args.cpu_optimized and self.args.engine.startswith("migan"),
+                                                   self.args.moebius_cpu_depthwise)
+        if self.args.engine in ("moebius", "pixelhacker"):
+            row["latent_schedule_evidence"] = latent_schedule_evidence(
+                row["backend_evidence"], self.args.engine, self.args.steps,
+                {"single": 1, "empty": 0, "batch": 2}[label], self.args.graph)
+        row["model_hash_evidence"] = hash_evidence(
+            stderr_path.read_bytes(), self.hash_expected, requested=self.args.sha256_accel,
+            require_accel=self.args.require_sha256_accel, require_models=label != "empty")
+        row["moebius_cpu_depthwise_runtime_verified"] = bool(self.args.moebius_cpu_depthwise and graph_required)
         self.save()
 
     def check_output(self, name, mask, expected=None):
@@ -581,6 +661,12 @@ def parser():
     result.add_argument("--backend", choices=("cpu", "cuda", "metal"), default="cpu")
     result.add_argument("--graph", action="store_true")
     result.add_argument("--cpu-optimized", action="store_true")
+    result.add_argument("--sha256-accel", action="store_true",
+                        help="explicit optional accelerated model hashing; honest scalar fallback is allowed")
+    result.add_argument("--require-sha256-accel", action="store_true",
+                        help="with --sha256-accel, require actual SHA-NI blocks for every loaded model")
+    result.add_argument("--moebius-cpu-depthwise", action="store_true",
+                        help="Explicit experimental Moebius CPU depthwise kernels; requires CPU/F32 graph and 47 actual UNet nodes")
     result.add_argument("--moebius-local-reassoc", action="store_true",
                         help="Explicit experimental Moebius local reassociation; requires CPU/F32 graph")
     result.add_argument("--moebius-local-pad-gemm", action="store_true",

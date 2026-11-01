@@ -6,7 +6,7 @@
 
 #include "core/env_gate.h"
 #include "core/gguf_loader.h"
-#include "core/sha256.h"
+#include "core/sha256_accelerated.h"
 #include "inpaint.h"
 #include "inpaint_weights.h"
 #include "inpaint_weight_names.h"
@@ -44,9 +44,13 @@ void validate_model(const std::string & path, const std::string & sha256, const 
     require(std::filesystem::is_regular_file(path), model + " must be a regular GGUF file");
     const uintmax_t bytes = std::filesystem::file_size(path);
     require(bytes >= 32 && bytes <= UINT64_C(4) * 1024 * 1024 * 1024, model + " file exceeds the bounded4GiB profile");
-    const std::string observed = core_sha256::file(path);
+    const bool profile = core_env::on("CRISPEMBED_INPAINT_PROFILE");
+    core_sha256_accel::Stats hash_stats;
+    const std::string observed =
+        core_sha256_accel::file(path, core_env::on("CRISPEMBED_INPAINT_SHA256_ACCEL"), profile ? &hash_stats : nullptr);
     require(!observed.empty(), "cannot hash " + model + " GGUF");
     require(observed == sha256, model + " GGUF digest differs from supplied converter receipt");
+    if (profile) core_sha256_accel::profile_verified(model.c_str(), hash_stats, observed);
     std::unique_ptr<gguf_context, decltype(&core_gguf::free_metadata)> meta(core_gguf::open_metadata(path.c_str()),
                                                                             &core_gguf::free_metadata);
     require(bool(meta), "cannot open model metadata");

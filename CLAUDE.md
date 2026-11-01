@@ -155,8 +155,13 @@ passes494 unchanged comparisons and all8 image gates against original40330674649
 The initial256 stale observer fields remain preserved; the test-only owner
 retention repair leaves all8 ordinary final hashes unchanged. Public API/registry,
 representative subtitle/perceptual/video quality and publication remain separate;
-issue71's product scope stays open. LaMa checkpoint rights and FFT implementation
-remain unresolved. The fourth OvisOCR2
+issue71's product scope stays open. For the subsequent five-profile source,
+separate licence records and executed CPU work, use the
+[engine guide](docs/inpainting-engines.md) and
+[optimization results](docs/inpainting-optimization-results.md). GPU execution,
+original PixelHacker CUDA/FLA parity and the recorded LaMa/Moebius strict
+intermediate failures remain open; all candidate gates stay default off.
+The fourth OvisOCR2
 [attention-F16/FFN-Q4 run40172527229](tests/results/qwen35-ocr/ovisocr2-q4-attention-f16-quality.json)
 is rejected despite72 FFN-Q4/401 byte-exact tensors and passing first-linear
 probes: `prefill.decoder.layer.0` fails numerical gates and two realistic OCR

@@ -1,0 +1,2015 @@
+{
+  "schema": "crispembed-moebius-ordinary-api-cpu-evidence-v1",
+  "date": "2026-11-01",
+  "complete": true,
+  "scope": "Completed same-input ordinary CPU/F32 Moebius image API pair, one first image and three warm images per arm; no observer capture or new original-framework run.",
+  "qualification": {
+    "ordinary_image_calls_completed": 8,
+    "native_rgb_agreement_pass": true,
+    "all_eight_recorded_image_hashes_identical": true,
+    "four_retained_rgb_payloads_independently_byte_identical": true,
+    "known_rgb_channels_exact": true,
+    "requested_steps": 20,
+    "executed_steps_per_image": 19,
+    "full_original_intermediate_parity_qualified": false,
+    "representative_perceptual_quality_qualified": false,
+    "performance_qualified": false,
+    "incremental_full_image_speedup_demonstrated": false,
+    "depthwise_recommended_for_main_preset": false,
+    "gpu_execution_measured": false
+  },
+  "decision": "Keep CPU depthwise default off and outside the main recommended Moebius preset. Preserve it as an optional experimental path until a stable end-to-end benefit is measured. Do not integrate the separately screened 128 MiB workspace policy.",
+  "comparison_design": {
+    "order": [
+      "baseline",
+      "candidate"
+    ],
+    "interleaved_arms": false,
+    "threads": 8,
+    "backend": "CPU",
+    "precision": "F32",
+    "fixture": "formula_photo_bar",
+    "width": 512,
+    "height": 512,
+    "baseline": "Persistent graph, GEMM layout, relative-lambda and unpadded local-lambda reassociation; depthwise and hash acceleration disabled.",
+    "candidate": "The same executable, sources, fixture and graph settings, enabling only CPU depthwise and required verified SHA-NI model hashing.",
+    "warm_samples_per_arm": 3,
+    "removed_samples": [],
+    "changed_gates": [
+      "CRISPEMBED_INPAINT_CPU_DEPTHWISE",
+      "CRISPEMBED_INPAINT_SHA256_ACCEL"
+    ],
+    "baseline_gates": {
+      "CRISPEMBED_INPAINT_GRAPH": true,
+      "CRISPEMBED_INPAINT_FAST": false,
+      "CRISPEMBED_INPAINT_GEMM_LAYOUT": true,
+      "CRISPEMBED_INPAINT_REFLECT_GATHER": false,
+      "CRISPEMBED_INPAINT_CPU_FFT": false,
+      "CRISPEMBED_INPAINT_CPU_GLA": false,
+      "CRISPEMBED_INPAINT_CPU_DEPTHWISE": false,
+      "CRISPEMBED_INPAINT_SHA256_ACCEL": false,
+      "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": false,
+      "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": true,
+      "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": true,
+      "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": false,
+      "CRISPEMBED_MIGAN_CPU_KERNELS": false
+    },
+    "candidate_gates": {
+      "CRISPEMBED_INPAINT_GRAPH": true,
+      "CRISPEMBED_INPAINT_FAST": false,
+      "CRISPEMBED_INPAINT_GEMM_LAYOUT": true,
+      "CRISPEMBED_INPAINT_REFLECT_GATHER": false,
+      "CRISPEMBED_INPAINT_CPU_FFT": false,
+      "CRISPEMBED_INPAINT_CPU_GLA": false,
+      "CRISPEMBED_INPAINT_CPU_DEPTHWISE": true,
+      "CRISPEMBED_INPAINT_SHA256_ACCEL": true,
+      "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": false,
+      "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": true,
+      "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": true,
+      "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": false,
+      "CRISPEMBED_MIGAN_CPU_KERNELS": false
+    }
+  },
+  "timings_ms": {
+    "baseline": {
+      "load_and_validation_ms": 4972.515752,
+      "cold_image_ms": 166948.6301,
+      "warm_samples_ms": [
+        142796.4945,
+        139512.1342,
+        266263.2941
+      ],
+      "warm_median_ms": 142796.4945,
+      "warm_mean_ms": 182857.3076,
+      "warm_stddev_ms": 58992.17853
+    },
+    "candidate": {
+      "load_and_validation_ms": 1277.329965,
+      "cold_image_ms": 392586.9972,
+      "warm_samples_ms": [
+        134087.7707,
+        181396.762,
+        195887.1712
+      ],
+      "warm_median_ms": 181396.762,
+      "warm_mean_ms": 170457.2346,
+      "warm_stddev_ms": 26388.715
+    },
+    "candidate_over_baseline_warm_median": 1.2703166323176092,
+    "warm_median_percent_change": 27.031663231760916,
+    "median_interpretation": "The candidate median is slower in this pair. Neither the lower candidate mean nor its best sample supports a speedup claim.",
+    "load_observation": "One load/validation observation per arm: 4972.515752 to 1277.329965 ms. The controller prehashes the files, so this is not a physical cold-disk benchmark or an isolated SHA timing measurement.",
+    "cold_interpretation": "First-image time includes lazy graph preparation/allocation and computation. Candidate 392586.9972 ms is retained without exclusion; its numerical output is exact."
+  },
+  "memory": {
+    "baseline_peak_rss_kib": 3733784,
+    "candidate_peak_rss_kib": 3727376,
+    "scope": "RUSAGE_CHILDREN high-water mark includes the small pre-run ps child; successful model runs dominate it.",
+    "cgroup_memory_limit_bytes": 8589934592
+  },
+  "native_image_comparison": {
+    "output_sha256": "29ab9a90e62a10f11d750bb323cf60f246a1fbfbebcc14a21a87b1e6067e5c78",
+    "all_retained_bytes_equal": true,
+    "retained_payload_count": 4,
+    "independently_rechecked_known_channels_exact": true,
+    "actual_native_comparison": {
+      "filled_components": 73728,
+      "filled_max_abs": 0,
+      "filled_mean_abs": 0.0,
+      "filled_rmse": 0.0,
+      "filled_psnr_db": null,
+      "known_pixel_errors": 0,
+      "known_error_count_unit": "RGB channels",
+      "bit_exact": true,
+      "budgets": {
+        "max_abs": 2,
+        "mean_abs": 0.1,
+        "psnr_db": 50,
+        "known_exact": true
+      },
+      "qualification": "native implementation agreement only, not original-model or perceptual quality",
+      "passed": true
+    },
+    "retained_files": [
+      {
+        "path": "native-optimization/latent-api/moebius-local-rest-t8-v1/cold.rgb8",
+        "bytes": 786432,
+        "sha256": "29ab9a90e62a10f11d750bb323cf60f246a1fbfbebcc14a21a87b1e6067e5c78"
+      },
+      {
+        "path": "native-optimization/latent-api/moebius-local-rest-t8-v1/output.rgb8",
+        "bytes": 786432,
+        "sha256": "29ab9a90e62a10f11d750bb323cf60f246a1fbfbebcc14a21a87b1e6067e5c78"
+      },
+      {
+        "path": "native-optimization/latent-api/moebius-depthwise-sha-rest-t8-v1/cold.rgb8",
+        "bytes": 786432,
+        "sha256": "29ab9a90e62a10f11d750bb323cf60f246a1fbfbebcc14a21a87b1e6067e5c78"
+      },
+      {
+        "path": "native-optimization/latent-api/moebius-depthwise-sha-rest-t8-v1/output.rgb8",
+        "bytes": 786432,
+        "sha256": "29ab9a90e62a10f11d750bb323cf60f246a1fbfbebcc14a21a87b1e6067e5c78"
+      }
+    ],
+    "scope": "Native implementation agreement on one photograph; warm payload equality is additionally checked within the native benchmark, whose four output hashes are retained in each process receipt."
+  },
+  "executed_work": {
+    "per_arm_graph_executions": {
+      "vae-encoder-batch2": 4,
+      "unet-cfg-ddim-batch2": 76,
+      "vae-decoder": 4
+    },
+    "denoiser_steps_per_image": 19,
+    "baseline_depthwise_nodes_per_graph": {
+      "vae-encoder-batch2": 0,
+      "unet-cfg-ddim-batch2": 0,
+      "vae-decoder": 0
+    },
+    "candidate_depthwise_nodes_per_graph": {
+      "vae-encoder-batch2": 0,
+      "unet-cfg-ddim-batch2": 47,
+      "vae-decoder": 0
+    },
+    "candidate_logical_custom_node_executions": 3572,
+    "note": "Logical graph nodes, not individual per-worker callback invocations. All finalized profiles report CPU/F32."
+  },
+  "model_hash_execution": {
+    "baseline": {
+      "requested": false,
+      "require_hardware": false,
+      "profiles": [
+        {
+          "label": "moebius",
+          "backend": "scalar",
+          "requested": false,
+          "hardware_available": true,
+          "bytes": 904877728,
+          "complete_blocks": 14138714,
+          "accelerated_blocks": 0,
+          "sha256": "f7365937fb82665e5725ab78b701e9650316023d7291d48da22cd9ea0ec7e352"
+        },
+        {
+          "label": "sdxl_vae",
+          "backend": "scalar",
+          "requested": false,
+          "hardware_available": true,
+          "bytes": 334636224,
+          "complete_blocks": 5228691,
+          "accelerated_blocks": 0,
+          "sha256": "e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2"
+        }
+      ],
+      "verified_model_labels": [
+        "moebius",
+        "sdxl_vae"
+      ],
+      "all_model_identities_verified": true,
+      "hardware_acceleration_verified": false,
+      "scalar_fallback": false,
+      "empty_mask_bypass_without_hash_profiles": false,
+      "scope": "Actual verified model hashing and full input-block counts only; no inference or hardware-speed qualification."
+    },
+    "candidate": {
+      "requested": true,
+      "require_hardware": true,
+      "profiles": [
+        {
+          "label": "moebius",
+          "backend": "sha-ni",
+          "requested": true,
+          "hardware_available": true,
+          "bytes": 904877728,
+          "complete_blocks": 14138714,
+          "accelerated_blocks": 14138714,
+          "sha256": "f7365937fb82665e5725ab78b701e9650316023d7291d48da22cd9ea0ec7e352"
+        },
+        {
+          "label": "sdxl_vae",
+          "backend": "sha-ni",
+          "requested": true,
+          "hardware_available": true,
+          "bytes": 334636224,
+          "complete_blocks": 5228691,
+          "accelerated_blocks": 5228691,
+          "sha256": "e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2"
+        }
+      ],
+      "verified_model_labels": [
+        "moebius",
+        "sdxl_vae"
+      ],
+      "all_model_identities_verified": true,
+      "hardware_acceleration_verified": true,
+      "scalar_fallback": false,
+      "empty_mask_bypass_without_hash_profiles": false,
+      "scope": "Actual verified model hashing and full input-block counts only; no inference or hardware-speed qualification."
+    }
+  },
+  "resource_caveats": [
+    "Both arms overlap unrelated compilation and shared host activity; all samples and before/after resource snapshots are preserved. No sample is removed and no causal timing attribution is claimed.",
+    "Baseline before snapshot records rustc at 131% CPU and 1173504 KiB RSS; after snapshot records 98.2% and 1585812 KiB. Its 266263.2941 ms third warm sample is retained.",
+    "The baseline file named midrun-resources-1.json was captured at 14:05:54.752449 UTC, after the process after-snapshot at 14:05:48.659936 UTC. It is post-run evidence, not a midpoint sample.",
+    "Candidate before snapshot records rustc at 98.8% CPU and 2009568 KiB RSS; after snapshot records 101% and 1259216 KiB. Its sidecar at 14:14:41.641187 UTC was captured during execution and shows the native process at 594% CPU.",
+    "No CUDA or Metal hardware was present. The result does not establish portable backend performance."
+  ],
+  "source_review_during_slow_first_image": {
+    "scope": "Bounded source-only inspection; no production changes or extra native tests resulted.",
+    "accumulation": "Custom and pinned direct WHCN depthwise paths accumulate F32 from positive zero in ky/kx order and skip identical padded taps. Custom interiors expose independent x lanes; the pinned explicit CWHN SIMD path applies to a different layout. Both translation units use -O3 -march=native without fast-math; emitted vector/FMA behavior was not inspected.",
+    "subnormals": "Neither path explicitly changes FTZ/DAZ or tests/clamps subnormals. No explicit candidate-only subnormal branch was found; runtime floating-point mode or a timing cause was not measured.",
+    "partition": "Both request all configured ggml workers. Custom partitions H*C*B rows, evenly divisible by eight for the real batch-two Moebius shapes. Widths 16/32/64 use one interior block and two border pixels.",
+    "allocation": "Pinned ggml_op_can_inplace excludes GGML_OP_CUSTOM; ggml_custom_4d creates a fresh tensor, while the unused ggml_custom_inplace constructor explicitly creates a view. Automatic same-shape input reuse therefore does not apply to this custom node.",
+    "conclusion": "No concrete dispatch, accumulator or automatic in-place alias defect was found. This excludes those particular source-level hypotheses without explaining the slow first image.",
+    "reviewed_source_versions": [
+      {
+        "original_path": "ggml/src/ggml-alloc.c",
+        "source_scope": "snapshot after completion of the source reviewed during the paired run",
+        "path": "native-optimization/moebius-api-delivery-sources/ggml--src--ggml-alloc.c",
+        "bytes": 51606,
+        "sha256": "1274169634584af70c7492a63ed0c53dca63b759b6885f0d8839d7d4831b82c4"
+      },
+      {
+        "original_path": "ggml/src/ggml.c",
+        "source_scope": "snapshot after completion of the source reviewed during the paired run",
+        "path": "native-optimization/moebius-api-delivery-sources/ggml--src--ggml.c",
+        "bytes": 265958,
+        "sha256": "e6f2c92680bf5d2765ba5cfa1886a6cb2dd3ee32998bd786df00017813be934e"
+      },
+      {
+        "original_path": "ggml/src/ggml-cpu/ggml-cpu.c",
+        "source_scope": "snapshot after completion of the source reviewed during the paired run",
+        "path": "native-optimization/moebius-api-delivery-sources/ggml--src--ggml-cpu--ggml-cpu.c",
+        "bytes": 131952,
+        "sha256": "b8c04a65c4ee295428501c0951c52b334920fef9101cb100061731b1b9fbee94"
+      },
+      {
+        "original_path": "ggml/src/ggml-cpu/ops.cpp",
+        "source_scope": "snapshot after completion of the source reviewed during the paired run",
+        "path": "native-optimization/moebius-api-delivery-sources/ggml--src--ggml-cpu--ops.cpp",
+        "bytes": 426870,
+        "sha256": "60687e87a0fbf5a43ff5376e96c4bde5f4efcc281fcdba55382e36a552cb418e"
+      }
+    ]
+  },
+  "provenance": {
+    "binary_sha256_observed_before_and_after_both_runs": "8e860a3401f8010ba7b1f023cba3ce9862fee5d0b6d6d4b87826290fe190a8bd",
+    "binary_bytes": 3930552,
+    "binary_not_copied_into_delivery": true,
+    "executed_controller": {
+      "path": "native-optimization/moebius-api-delivery-sources/run_latent_api-executed.py",
+      "bytes": 29434,
+      "sha256": "c056e9790db54d2394ba0afde78a07f02af0e319e6f1b33135b2a6963380fb93"
+    },
+    "observed_source_snapshots": [
+      {
+        "original_path": "src/latent_inpaint.cpp",
+        "source_scope": "exact at-run observed source version",
+        "path": "native-optimization/moebius-api-delivery-sources/src--latent_inpaint.cpp",
+        "bytes": 20461,
+        "sha256": "9b08cff8ce0f0de0457100c99ca9226ccb47c4225e8248e1c117b9934f6688c4"
+      },
+      {
+        "original_path": "src/latent_inpaint_ops.cpp",
+        "source_scope": "exact at-run observed source version",
+        "path": "native-optimization/moebius-api-delivery-sources/src--latent_inpaint_ops.cpp",
+        "bytes": 22262,
+        "sha256": "d012cd1c46cdb45e8e82e39f1e8d5e4eb890541fb7a0acb36c0188f3ac8b35dd"
+      },
+      {
+        "original_path": "src/latent_inpaint_unet.cpp",
+        "source_scope": "exact at-run observed source version",
+        "path": "native-optimization/moebius-api-delivery-sources/src--latent_inpaint_unet.cpp",
+        "bytes": 20408,
+        "sha256": "a7807d6070904052655761ca5439af8b4e98db59f99e09edf0ae5ed9b4c9826f"
+      },
+      {
+        "original_path": "src/latent_inpaint_graph.cpp",
+        "source_scope": "exact at-run observed source version",
+        "path": "native-optimization/moebius-api-delivery-sources/src--latent_inpaint_graph.cpp",
+        "bytes": 13603,
+        "sha256": "60be70173f85994b67da9e2b38bb64ad797a40f9898b4d3441bce4fc16fdbfa8"
+      },
+      {
+        "original_path": "src/latent_inpaint_graph_unet.cpp",
+        "source_scope": "exact at-run observed source version",
+        "path": "native-optimization/moebius-api-delivery-sources/src--latent_inpaint_graph_unet.cpp",
+        "bytes": 27760,
+        "sha256": "2a2771012731749cbfdb8f8fdf6b2e5e37b0673a416039cb488efd1d277a2580"
+      },
+      {
+        "original_path": "src/latent_inpaint_vae.cpp",
+        "source_scope": "exact at-run observed source version",
+        "path": "native-optimization/moebius-api-delivery-sources/src--latent_inpaint_vae.cpp",
+        "bytes": 3931,
+        "sha256": "18fe9b2134862b8b2f76f6475348c7959ea0a926f299d030e3b61c32e0e342ef"
+      },
+      {
+        "original_path": "src/inpaint_graph.cpp",
+        "source_scope": "exact at-run observed source version",
+        "path": "native-optimization/moebius-api-delivery-sources/src--inpaint_graph.cpp",
+        "bytes": 46970,
+        "sha256": "6757e28ee1fe6a43b3a291b1797ade86f19537411c2e822c3e7ee1b34cb340eb"
+      },
+      {
+        "original_path": "src/inpaint_graph.h",
+        "source_scope": "exact at-run observed source version",
+        "path": "native-optimization/moebius-api-delivery-sources/src--inpaint_graph.h",
+        "bytes": 6620,
+        "sha256": "d6a41ab9111e6c65ac99a447de2899773581ead360d4afdbef98124f0108fde0"
+      },
+      {
+        "original_path": "src/inpaint_graph_spectral.cpp",
+        "source_scope": "exact at-run observed source version",
+        "path": "native-optimization/moebius-api-delivery-sources/src--inpaint_graph_spectral.cpp",
+        "bytes": 30872,
+        "sha256": "eb20e813075727e7281c38e0db949db69e5c74cb38f345416a73045d0a582752"
+      },
+      {
+        "original_path": "src/core/sha256.h",
+        "source_scope": "exact at-run observed source version",
+        "path": "native-optimization/moebius-api-delivery-sources/src--core--sha256.h",
+        "bytes": 5024,
+        "sha256": "409ab494061b042d4a84698b7bf2caf6dd68f6639cbeb532cb47a2f2337d9a6f"
+      },
+      {
+        "original_path": "src/core/sha256_accelerated.h",
+        "source_scope": "exact at-run observed source version",
+        "path": "native-optimization/moebius-api-delivery-sources/src--core--sha256_accelerated.h",
+        "bytes": 12420,
+        "sha256": "46f0050cae097fd6d0d1a9bc0021a57ae55465088ffa1d330e7f2adab37baa2e"
+      },
+      {
+        "original_path": "tests/test_inpaint_benchmark.cpp",
+        "source_scope": "exact at-run observed source version",
+        "path": "native-optimization/moebius-api-delivery-sources/tests--test_inpaint_benchmark.cpp",
+        "bytes": 13637,
+        "sha256": "a3d4eed9aa6e3eab419ca8864ff55f1d15892ce2c6b0466673ccb1a83661aa23"
+      },
+      {
+        "original_path": "tools/dump_migan_photo_reference.py",
+        "source_scope": "exact at-run observed source version",
+        "path": "native-optimization/moebius-api-delivery-sources/tools--dump_migan_photo_reference.py",
+        "bytes": 15144,
+        "sha256": "97d6978b0130aa4ee3b5e871fe3877c0340e80b914459dc7d197223d77382c4d"
+      },
+      {
+        "original_path": "tools/inpaint_hash_evidence.py",
+        "source_scope": "exact at-run observed source version",
+        "path": "native-optimization/moebius-api-delivery-sources/tools--inpaint_hash_evidence.py",
+        "bytes": 4964,
+        "sha256": "4fece7408ea18b781724410866af9bca64586368f643850473add3b76f3054fb"
+      },
+      {
+        "original_path": "tests/test_inpaint_engine_live.py",
+        "source_scope": "exact at-run observed source version",
+        "path": "native-optimization/moebius-api-delivery-sources/tests--test_inpaint_engine_live.py",
+        "bytes": 41690,
+        "sha256": "dc4a3460341ab80fd48db2c6c767e8eb4a36d31d3df486f5a140408c4edf7750"
+      },
+      {
+        "original_path": "CMakeLists.txt",
+        "source_scope": "exact at-run observed source version",
+        "path": "native-optimization/moebius-api-delivery-sources/CMakeLists.txt",
+        "bytes": 72676,
+        "sha256": "7e1a2ccad64e9d5f0e0bab3cfebdc678d2f163aed0aae6f21ad666434ae734bb"
+      }
+    ],
+    "source_observation_limitation": "Source hashes observed in a dirty worktree are not a clean-build proof.",
+    "coherent_build_receipt": {
+      "path": "native-optimization/resume-2026-11-01/build/sha-integrated-build.json",
+      "bytes": 1105,
+      "sha256": "ce4b97d244402417e4eaf2646ac3fb1e7a71d3771b8341b69e56c07714f1f3ea",
+      "contents": {
+        "schema": "crispembed-native-command-v1",
+        "label": "sha-integrated-build",
+        "argv": [
+          "native-optimization/python-deps/cmake/data/bin/cmake",
+          "--build",
+          "native-optimization/build-current",
+          "--target",
+          "crispembed-cli",
+          "test-inpaint-benchmark",
+          "test-inpaint-sha256-accel",
+          "test-inpaint-sha256-fallback",
+          "test-inpaint-graph",
+          "test-inpaint-graph-spectral",
+          "test-latent-inpaint",
+          "test-latent-inpaint-graph-unet",
+          "test-migan-graph",
+          "test-lama-diff",
+          "test-lama-ops",
+          "test-inpaint",
+          "test-latent-inpaint-pipeline",
+          "test-latent-inpaint-attention",
+          "test-latent-inpaint-ops",
+          "-j",
+          "2"
+        ],
+        "cwd": "WORKSPACE",
+        "timeout_seconds": 900,
+        "started_unix": 1793540167.276672,
+        "complete": true,
+        "gates": {},
+        "returncode": 0,
+        "elapsed_seconds": 47.987602085002436,
+        "user_cpu_seconds": 92.683491,
+        "system_cpu_seconds": 2.700723,
+        "peak_rss_kib": 627500,
+        "log_sha256": "e9c747305b85d7200984d93fdf1743992bc8deb3c8cc349ed42ddd5ed565962a",
+        "log_bytes": 2920,
+        "passed": true
+      }
+    },
+    "native_control_suite": {
+      "path": "native-optimization/resume-2026-11-01/sha-integrated-native-units/report.json",
+      "bytes": 33093,
+      "sha256": "7425722c8dfbe0365faab3cf2c3c4b0ac6de86b9ec5a4e3dcf76e6490f7d0386",
+      "contents": {
+        "schema": "crispembed-final-native-controls-v1",
+        "complete": true,
+        "passed": true,
+        "model_free": true,
+        "timings_qualified": false,
+        "driver_sha256": "3d962af1a364cc42346b2ba2b8ba0b9fd34428f70bdaef8ae8fed140fcf9bf13",
+        "commands": [
+          {
+            "schema": "crispembed-final-native-command-v1",
+            "label": "common-portable",
+            "argv": [
+              "native-optimization/build-current/test-inpaint-graph",
+              "--backend",
+              "cpu",
+              "--threads",
+              "8"
+            ],
+            "cwd": "CrispEmbed-issue71",
+            "timeout_seconds": 180,
+            "started_unix": 1793540257.7777698,
+            "complete": true,
+            "passed": true,
+            "gates": {
+              "CRISPEMBED_INPAINT_GRAPH": "0",
+              "CRISPEMBED_INPAINT_FAST": "0",
+              "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+              "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+              "CRISPEMBED_INPAINT_CPU_FFT": "0",
+              "CRISPEMBED_INPAINT_CPU_GLA": "0",
+              "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+              "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+              "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+              "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+              "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+            },
+            "returncode": 0,
+            "elapsed_seconds": 0.4700985519993992,
+            "user_cpu_seconds": 3.228538,
+            "system_cpu_seconds": 0.097659,
+            "children_peak_rss_kib": 58148,
+            "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+            "log_sha256": "9ca91a5c4d00736dd882dacd30efb9880a0d34fa408005d3b9c204eff5247983",
+            "log_bytes": 1004
+          },
+          {
+            "schema": "crispembed-final-native-command-v1",
+            "label": "common-layout-reflection",
+            "argv": [
+              "native-optimization/build-current/test-inpaint-graph",
+              "--backend",
+              "cpu",
+              "--threads",
+              "8"
+            ],
+            "cwd": "CrispEmbed-issue71",
+            "timeout_seconds": 180,
+            "started_unix": 1793540258.2489648,
+            "complete": true,
+            "passed": true,
+            "gates": {
+              "CRISPEMBED_INPAINT_GRAPH": "0",
+              "CRISPEMBED_INPAINT_FAST": "0",
+              "CRISPEMBED_INPAINT_GEMM_LAYOUT": "1",
+              "CRISPEMBED_INPAINT_REFLECT_GATHER": "1",
+              "CRISPEMBED_INPAINT_CPU_FFT": "0",
+              "CRISPEMBED_INPAINT_CPU_GLA": "0",
+              "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "1",
+              "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+              "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+              "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+              "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+            },
+            "returncode": 0,
+            "elapsed_seconds": 0.4763004970009206,
+            "user_cpu_seconds": 2.9845090000000005,
+            "system_cpu_seconds": 0.095302,
+            "children_peak_rss_kib": 58148,
+            "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+            "log_sha256": "e633a5f88abe3aa42ff15af083ea0d0d5a611b19a1f85cdf254118e5fafea6bf",
+            "log_bytes": 1005
+          },
+          {
+            "schema": "crispembed-final-native-command-v1",
+            "label": "common-attention-attribution",
+            "argv": [
+              "native-optimization/build-current/test-inpaint-graph",
+              "--backend",
+              "cpu",
+              "--threads",
+              "8"
+            ],
+            "cwd": "CrispEmbed-issue71",
+            "timeout_seconds": 180,
+            "started_unix": 1793540258.7262833,
+            "complete": true,
+            "passed": true,
+            "gates": {
+              "CRISPEMBED_INPAINT_GRAPH": "0",
+              "CRISPEMBED_INPAINT_FAST": "0",
+              "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+              "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+              "CRISPEMBED_INPAINT_CPU_FFT": "0",
+              "CRISPEMBED_INPAINT_CPU_GLA": "0",
+              "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+              "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+              "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "1",
+              "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+              "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+            },
+            "returncode": 0,
+            "elapsed_seconds": 0.5693806169983873,
+            "user_cpu_seconds": 3.694366999999999,
+            "system_cpu_seconds": 0.11785700000000002,
+            "children_peak_rss_kib": 58148,
+            "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+            "log_sha256": "d4ad69e3223e002171890891f8af77a602f693172057c7ca891d9dee8b9b6e7f",
+            "log_bytes": 1004
+          },
+          {
+            "schema": "crispembed-final-native-command-v1",
+            "label": "spectral-portable",
+            "argv": [
+              "native-optimization/build-current/test-inpaint-graph-spectral",
+              "--backend",
+              "cpu",
+              "--threads",
+              "8"
+            ],
+            "cwd": "CrispEmbed-issue71",
+            "timeout_seconds": 180,
+            "started_unix": 1793540259.2965982,
+            "complete": true,
+            "passed": true,
+            "gates": {
+              "CRISPEMBED_INPAINT_GRAPH": "0",
+              "CRISPEMBED_INPAINT_FAST": "0",
+              "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+              "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+              "CRISPEMBED_INPAINT_CPU_FFT": "0",
+              "CRISPEMBED_INPAINT_CPU_GLA": "0",
+              "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+              "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+              "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+              "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+              "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+            },
+            "returncode": 0,
+            "elapsed_seconds": 0.5289002129975415,
+            "user_cpu_seconds": 2.9693260000000006,
+            "system_cpu_seconds": 0.028493999999999964,
+            "children_peak_rss_kib": 58148,
+            "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+            "log_sha256": "5513930cc86cfca28ef2d7ce701ecf5a48cb22ca6e93ad1b2162d75db31de9ce",
+            "log_bytes": 4617
+          },
+          {
+            "schema": "crispembed-final-native-command-v1",
+            "label": "spectral-cpu-fft",
+            "argv": [
+              "native-optimization/build-current/test-inpaint-graph-spectral",
+              "--backend",
+              "cpu",
+              "--threads",
+              "8"
+            ],
+            "cwd": "CrispEmbed-issue71",
+            "timeout_seconds": 180,
+            "started_unix": 1793540259.8263505,
+            "complete": true,
+            "passed": true,
+            "gates": {
+              "CRISPEMBED_INPAINT_GRAPH": "0",
+              "CRISPEMBED_INPAINT_FAST": "0",
+              "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+              "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+              "CRISPEMBED_INPAINT_CPU_FFT": "1",
+              "CRISPEMBED_INPAINT_CPU_GLA": "0",
+              "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+              "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+              "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+              "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+              "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+            },
+            "returncode": 0,
+            "elapsed_seconds": 0.2645671989994298,
+            "user_cpu_seconds": 1.621156000000001,
+            "system_cpu_seconds": 0.029712000000000016,
+            "children_peak_rss_kib": 58148,
+            "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+            "log_sha256": "6898a39fe20a51f81d5ddafb16a6216c537397b5a404d8a01a2d349c3215c802",
+            "log_bytes": 4602
+          },
+          {
+            "schema": "crispembed-final-native-command-v1",
+            "label": "spectral-cpu-fft-gla",
+            "argv": [
+              "native-optimization/build-current/test-inpaint-graph-spectral",
+              "--backend",
+              "cpu",
+              "--threads",
+              "8"
+            ],
+            "cwd": "CrispEmbed-issue71",
+            "timeout_seconds": 180,
+            "started_unix": 1793540260.0919194,
+            "complete": true,
+            "passed": true,
+            "gates": {
+              "CRISPEMBED_INPAINT_GRAPH": "0",
+              "CRISPEMBED_INPAINT_FAST": "0",
+              "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+              "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+              "CRISPEMBED_INPAINT_CPU_FFT": "1",
+              "CRISPEMBED_INPAINT_CPU_GLA": "1",
+              "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+              "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+              "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+              "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+              "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+            },
+            "returncode": 0,
+            "elapsed_seconds": 0.03433060499810381,
+            "user_cpu_seconds": 0.12819199999999853,
+            "system_cpu_seconds": 0.004022999999999999,
+            "children_peak_rss_kib": 58148,
+            "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+            "log_sha256": "1782b6314e2766340cdf358a4955e55ddf3747e207d624038a463cdcc3a3c852",
+            "log_bytes": 1733
+          },
+          {
+            "schema": "crispembed-final-native-command-v1",
+            "label": "unet-portable",
+            "argv": [
+              "native-optimization/build-current/test-latent-inpaint-graph-unet",
+              "--backend",
+              "cpu",
+              "--threads",
+              "8"
+            ],
+            "cwd": "CrispEmbed-issue71",
+            "timeout_seconds": 180,
+            "started_unix": 1793540260.1272802,
+            "complete": true,
+            "passed": true,
+            "gates": {
+              "CRISPEMBED_INPAINT_GRAPH": "0",
+              "CRISPEMBED_INPAINT_FAST": "0",
+              "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+              "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+              "CRISPEMBED_INPAINT_CPU_FFT": "0",
+              "CRISPEMBED_INPAINT_CPU_GLA": "0",
+              "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+              "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+              "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+              "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+              "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+            },
+            "returncode": 0,
+            "elapsed_seconds": 0.3174468319994048,
+            "user_cpu_seconds": 2.2108230000000013,
+            "system_cpu_seconds": 0.08770899999999998,
+            "children_peak_rss_kib": 105312,
+            "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+            "log_sha256": "f7f3d800a2751b680a44e33a5411ed160f00e6bca29fd136459dd034c38a7735",
+            "log_bytes": 249
+          },
+          {
+            "schema": "crispembed-final-native-command-v1",
+            "label": "unet-selected-cpu",
+            "argv": [
+              "native-optimization/build-current/test-latent-inpaint-graph-unet",
+              "--backend",
+              "cpu",
+              "--threads",
+              "8"
+            ],
+            "cwd": "CrispEmbed-issue71",
+            "timeout_seconds": 180,
+            "started_unix": 1793540260.4458756,
+            "complete": true,
+            "passed": true,
+            "gates": {
+              "CRISPEMBED_INPAINT_GRAPH": "0",
+              "CRISPEMBED_INPAINT_FAST": "0",
+              "CRISPEMBED_INPAINT_GEMM_LAYOUT": "1",
+              "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+              "CRISPEMBED_INPAINT_CPU_FFT": "0",
+              "CRISPEMBED_INPAINT_CPU_GLA": "0",
+              "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "1",
+              "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+              "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+              "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "1",
+              "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "1",
+              "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+              "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+            },
+            "returncode": 0,
+            "elapsed_seconds": 0.26655967599799624,
+            "user_cpu_seconds": 1.805806999999998,
+            "system_cpu_seconds": 0.072432,
+            "children_peak_rss_kib": 105380,
+            "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+            "log_sha256": "f7f3d800a2751b680a44e33a5411ed160f00e6bca29fd136459dd034c38a7735",
+            "log_bytes": 249
+          },
+          {
+            "schema": "crispembed-final-native-command-v1",
+            "label": "unet-padded-alternative",
+            "argv": [
+              "native-optimization/build-current/test-latent-inpaint-graph-unet",
+              "--backend",
+              "cpu",
+              "--threads",
+              "8"
+            ],
+            "cwd": "CrispEmbed-issue71",
+            "timeout_seconds": 180,
+            "started_unix": 1793540260.7134657,
+            "complete": true,
+            "passed": true,
+            "gates": {
+              "CRISPEMBED_INPAINT_GRAPH": "0",
+              "CRISPEMBED_INPAINT_FAST": "0",
+              "CRISPEMBED_INPAINT_GEMM_LAYOUT": "1",
+              "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+              "CRISPEMBED_INPAINT_CPU_FFT": "0",
+              "CRISPEMBED_INPAINT_CPU_GLA": "0",
+              "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+              "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+              "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+              "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "1",
+              "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "1",
+              "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "1",
+              "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+            },
+            "returncode": 0,
+            "elapsed_seconds": 0.2669768710002245,
+            "user_cpu_seconds": 1.757869000000003,
+            "system_cpu_seconds": 0.02010500000000004,
+            "children_peak_rss_kib": 105588,
+            "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+            "log_sha256": "f7f3d800a2751b680a44e33a5411ed160f00e6bca29fd136459dd034c38a7735",
+            "log_bytes": 249
+          },
+          {
+            "schema": "crispembed-final-native-command-v1",
+            "label": "migan-baseline",
+            "argv": [
+              "native-optimization/build-current/test-migan-graph",
+              "--contracts",
+              "--backend",
+              "cpu",
+              "--threads",
+              "8"
+            ],
+            "cwd": "CrispEmbed-issue71",
+            "timeout_seconds": 180,
+            "started_unix": 1793540260.9814901,
+            "complete": true,
+            "passed": true,
+            "gates": {
+              "CRISPEMBED_INPAINT_GRAPH": "0",
+              "CRISPEMBED_INPAINT_FAST": "0",
+              "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+              "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+              "CRISPEMBED_INPAINT_CPU_FFT": "0",
+              "CRISPEMBED_INPAINT_CPU_GLA": "0",
+              "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+              "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+              "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+              "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+              "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+            },
+            "returncode": 0,
+            "elapsed_seconds": 0.007682207997277146,
+            "user_cpu_seconds": 0.01332000000000022,
+            "system_cpu_seconds": 0.0,
+            "children_peak_rss_kib": 105588,
+            "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+            "log_sha256": "81add47206c7abe73b83f3c3a6969151253e18c28e57ed53a50c0f00790b5746",
+            "log_bytes": 831
+          },
+          {
+            "schema": "crispembed-final-native-command-v1",
+            "label": "migan-cpu-kernels",
+            "argv": [
+              "native-optimization/build-current/test-migan-graph",
+              "--contracts",
+              "--backend",
+              "cpu",
+              "--threads",
+              "8",
+              "--cpu-kernels"
+            ],
+            "cwd": "CrispEmbed-issue71",
+            "timeout_seconds": 180,
+            "started_unix": 1793540260.989794,
+            "complete": true,
+            "passed": true,
+            "gates": {
+              "CRISPEMBED_INPAINT_GRAPH": "0",
+              "CRISPEMBED_INPAINT_FAST": "0",
+              "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+              "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+              "CRISPEMBED_INPAINT_CPU_FFT": "0",
+              "CRISPEMBED_INPAINT_CPU_GLA": "0",
+              "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+              "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+              "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+              "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+              "CRISPEMBED_MIGAN_CPU_KERNELS": "1"
+            },
+            "returncode": 0,
+            "elapsed_seconds": 0.31919704699976137,
+            "user_cpu_seconds": 2.3100379999999987,
+            "system_cpu_seconds": 0.021961999999999926,
+            "children_peak_rss_kib": 105588,
+            "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+            "log_sha256": "c7ea03444390fb00e498c3599de14a401b2608be22f57d4430f084ce9d281e10",
+            "log_bytes": 1007
+          },
+          {
+            "schema": "crispembed-final-native-command-v1",
+            "label": "sha256-normal",
+            "argv": [
+              "native-optimization/build-current/test-inpaint-sha256-accel",
+              "--require-accel"
+            ],
+            "cwd": "CrispEmbed-issue71",
+            "timeout_seconds": 180,
+            "started_unix": 1793540261.3098772,
+            "complete": true,
+            "passed": true,
+            "gates": {
+              "CRISPEMBED_INPAINT_GRAPH": "0",
+              "CRISPEMBED_INPAINT_FAST": "0",
+              "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+              "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+              "CRISPEMBED_INPAINT_CPU_FFT": "0",
+              "CRISPEMBED_INPAINT_CPU_GLA": "0",
+              "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+              "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+              "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+              "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+              "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+            },
+            "returncode": 0,
+            "elapsed_seconds": 0.016128359999129316,
+            "user_cpu_seconds": 0.014634000000000924,
+            "system_cpu_seconds": 0.0,
+            "children_peak_rss_kib": 105588,
+            "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+            "log_sha256": "2172e83803abfa9ca3611c7d7fc6207105a3e618bfd8e0f737661d71142794d6",
+            "log_bytes": 114
+          },
+          {
+            "schema": "crispembed-final-native-command-v1",
+            "label": "sha256-forced-fallback",
+            "argv": [
+              "native-optimization/build-current/test-inpaint-sha256-fallback",
+              "--require-fallback"
+            ],
+            "cwd": "CrispEmbed-issue71",
+            "timeout_seconds": 180,
+            "started_unix": 1793540261.3268418,
+            "complete": true,
+            "passed": true,
+            "gates": {
+              "CRISPEMBED_INPAINT_GRAPH": "0",
+              "CRISPEMBED_INPAINT_FAST": "0",
+              "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+              "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+              "CRISPEMBED_INPAINT_CPU_FFT": "0",
+              "CRISPEMBED_INPAINT_CPU_GLA": "0",
+              "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+              "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+              "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+              "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+              "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+            },
+            "returncode": 0,
+            "elapsed_seconds": 0.031983265002054395,
+            "user_cpu_seconds": 0.01604499999999831,
+            "system_cpu_seconds": 0.0,
+            "children_peak_rss_kib": 105588,
+            "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+            "log_sha256": "121a9271efec1db4955f0b8c960994838b94a001fc66203db9354dba097b240a",
+            "log_bytes": 116
+          },
+          {
+            "schema": "crispembed-final-native-command-v1",
+            "label": "latent-contracts",
+            "argv": [
+              "native-optimization/build-current/test-latent-inpaint",
+              "--contracts"
+            ],
+            "cwd": "CrispEmbed-issue71",
+            "timeout_seconds": 180,
+            "started_unix": 1793540261.3602355,
+            "complete": true,
+            "passed": true,
+            "gates": {
+              "CRISPEMBED_INPAINT_GRAPH": "0",
+              "CRISPEMBED_INPAINT_FAST": "0",
+              "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+              "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+              "CRISPEMBED_INPAINT_CPU_FFT": "0",
+              "CRISPEMBED_INPAINT_CPU_GLA": "0",
+              "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+              "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+              "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+              "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+              "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+            },
+            "returncode": 0,
+            "elapsed_seconds": 0.003583137000532588,
+            "user_cpu_seconds": 0.0032980000000009113,
+            "system_cpu_seconds": 0.0,
+            "children_peak_rss_kib": 105588,
+            "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+            "log_sha256": "f9d16c518dc912a00dbee22ec3389a5b04f742b7530f739c2ed2f3eae4c9f454",
+            "log_bytes": 74
+          },
+          {
+            "schema": "crispembed-final-native-command-v1",
+            "label": "latent-pipeline",
+            "argv": [
+              "native-optimization/build-current/test-latent-inpaint-pipeline"
+            ],
+            "cwd": "CrispEmbed-issue71",
+            "timeout_seconds": 180,
+            "started_unix": 1793540261.3647504,
+            "complete": true,
+            "passed": true,
+            "gates": {
+              "CRISPEMBED_INPAINT_GRAPH": "0",
+              "CRISPEMBED_INPAINT_FAST": "0",
+              "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+              "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+              "CRISPEMBED_INPAINT_CPU_FFT": "0",
+              "CRISPEMBED_INPAINT_CPU_GLA": "0",
+              "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+              "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+              "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+              "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+              "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+            },
+            "returncode": 0,
+            "elapsed_seconds": 0.03185671900064335,
+            "user_cpu_seconds": 0.0,
+            "system_cpu_seconds": 0.025716000000000072,
+            "children_peak_rss_kib": 105588,
+            "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+            "log_sha256": "f7fb643541d18e30064b6ba95990fa16c5e02855c7537875b636654ba196b968",
+            "log_bytes": 88
+          },
+          {
+            "schema": "crispembed-final-native-command-v1",
+            "label": "latent-attention",
+            "argv": [
+              "native-optimization/build-current/test-latent-inpaint-attention"
+            ],
+            "cwd": "CrispEmbed-issue71",
+            "timeout_seconds": 180,
+            "started_unix": 1793540261.3975267,
+            "complete": true,
+            "passed": true,
+            "gates": {
+              "CRISPEMBED_INPAINT_GRAPH": "0",
+              "CRISPEMBED_INPAINT_FAST": "0",
+              "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+              "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+              "CRISPEMBED_INPAINT_CPU_FFT": "0",
+              "CRISPEMBED_INPAINT_CPU_GLA": "0",
+              "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+              "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+              "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+              "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+              "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+            },
+            "returncode": 0,
+            "elapsed_seconds": 0.0036462950010900386,
+            "user_cpu_seconds": 0.0,
+            "system_cpu_seconds": 0.0019199999999999218,
+            "children_peak_rss_kib": 105588,
+            "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+            "log_sha256": "8dccb57c94918f77cf93e01ff4838d1a48da0adb3ee1c7287bb5f83c0aad2847",
+            "log_bytes": 83
+          },
+          {
+            "schema": "crispembed-final-native-command-v1",
+            "label": "latent-operators",
+            "argv": [
+              "native-optimization/build-current/test-latent-inpaint-ops"
+            ],
+            "cwd": "CrispEmbed-issue71",
+            "timeout_seconds": 180,
+            "started_unix": 1793540261.4019127,
+            "complete": true,
+            "passed": true,
+            "gates": {
+              "CRISPEMBED_INPAINT_GRAPH": "0",
+              "CRISPEMBED_INPAINT_FAST": "0",
+              "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+              "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+              "CRISPEMBED_INPAINT_CPU_FFT": "0",
+              "CRISPEMBED_INPAINT_CPU_GLA": "0",
+              "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+              "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+              "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+              "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+              "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+            },
+            "returncode": 0,
+            "elapsed_seconds": 0.007630729000084102,
+            "user_cpu_seconds": 0.003667000000000087,
+            "system_cpu_seconds": 0.0,
+            "children_peak_rss_kib": 105588,
+            "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+            "log_sha256": "54f9ad96f883af582e3f05e1799ad3179038995c16f12d227c7faa0968bd3beb",
+            "log_bytes": 85
+          },
+          {
+            "schema": "crispembed-final-native-command-v1",
+            "label": "lama-operators",
+            "argv": [
+              "native-optimization/build-current/test-lama-ops"
+            ],
+            "cwd": "CrispEmbed-issue71",
+            "timeout_seconds": 180,
+            "started_unix": 1793540261.4103525,
+            "complete": true,
+            "passed": true,
+            "gates": {
+              "CRISPEMBED_INPAINT_GRAPH": "0",
+              "CRISPEMBED_INPAINT_FAST": "0",
+              "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+              "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+              "CRISPEMBED_INPAINT_CPU_FFT": "0",
+              "CRISPEMBED_INPAINT_CPU_GLA": "0",
+              "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+              "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+              "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+              "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+              "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+            },
+            "returncode": 0,
+            "elapsed_seconds": 0.01571595100176637,
+            "user_cpu_seconds": 0.006937999999998112,
+            "system_cpu_seconds": 0.0,
+            "children_peak_rss_kib": 105588,
+            "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+            "log_sha256": "3cc123d4d71065f7d726171c9e9dfd0f0e230d143628367632e821ad663aa8d4",
+            "log_bytes": 89
+          },
+          {
+            "schema": "crispembed-final-native-command-v1",
+            "label": "lama-contracts",
+            "argv": [
+              "native-optimization/build-current/test-lama-diff",
+              "--contracts"
+            ],
+            "cwd": "CrispEmbed-issue71",
+            "timeout_seconds": 180,
+            "started_unix": 1793540261.4270067,
+            "complete": true,
+            "passed": true,
+            "gates": {
+              "CRISPEMBED_INPAINT_GRAPH": "0",
+              "CRISPEMBED_INPAINT_FAST": "0",
+              "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+              "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+              "CRISPEMBED_INPAINT_CPU_FFT": "0",
+              "CRISPEMBED_INPAINT_CPU_GLA": "0",
+              "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+              "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+              "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+              "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+              "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+            },
+            "returncode": 0,
+            "elapsed_seconds": 0.004031323001981946,
+            "user_cpu_seconds": 0.0,
+            "system_cpu_seconds": 0.003662000000000054,
+            "children_peak_rss_kib": 105588,
+            "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+            "log_sha256": "50da2d5b67a651f7f6821abbfc0c7d2844cce22882285b1239135574ed6b2a6b",
+            "log_bytes": 71
+          },
+          {
+            "schema": "crispembed-final-native-command-v1",
+            "label": "image-contracts",
+            "argv": [
+              "native-optimization/build-current/test-inpaint"
+            ],
+            "cwd": "CrispEmbed-issue71",
+            "timeout_seconds": 180,
+            "started_unix": 1793540261.4321234,
+            "complete": true,
+            "passed": true,
+            "gates": {
+              "CRISPEMBED_INPAINT_GRAPH": "0",
+              "CRISPEMBED_INPAINT_FAST": "0",
+              "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+              "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+              "CRISPEMBED_INPAINT_CPU_FFT": "0",
+              "CRISPEMBED_INPAINT_CPU_GLA": "0",
+              "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+              "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+              "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+              "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+              "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+              "CRISPEMBED_MIGAN_CPU_KERNELS": "0"
+            },
+            "returncode": 0,
+            "elapsed_seconds": 0.16424080200158642,
+            "user_cpu_seconds": 0.10894400000000104,
+            "system_cpu_seconds": 0.007217000000000029,
+            "children_peak_rss_kib": 105588,
+            "rss_scope": "Cumulative child-process high-water mark; not a per-command model-memory measurement.",
+            "log_sha256": "64f82d4e392a2ff2861f1e45128fd9f9a34fde5fb05071d949871d17376f4d10",
+            "log_bytes": 58
+          }
+        ],
+        "binaries_sha256_before": {
+          "test-inpaint-graph": "8d4ab6f170d8ba38b782cd93de65cd5c34016eb9bd2ac43474c63f89507f1c8a",
+          "test-inpaint-graph-spectral": "e1ebb366f48edb40f8df14bffa49ce0b245fe4cf217c84b67aeeff58cdfda8b2",
+          "test-latent-inpaint-graph-unet": "519a8e5642618b937ae94d879ac98143493c05ec1d98dfb90bd4fcdfcdaa6752",
+          "test-migan-graph": "477b0bddf4ac5ea06ba32f47af637f6a5064bc471110727a8dee8bc1d83a840e",
+          "test-inpaint-sha256-accel": "97256a263449a54b74e7ef828af32685c289caa5a471c4d3d992cbcae9a1ce14",
+          "test-inpaint-sha256-fallback": "bef3862c8b4765165eb75ced52c03e09b29e0ed6401eb7a42793dbff934d3542",
+          "test-latent-inpaint": "333e53f9232619135f03a2216e299e694162ba6baa77b54afb25d2bda1742358",
+          "test-latent-inpaint-pipeline": "2d9765bac96b5fcb8b51b5b94df3a97c9d8016be6415bffd5f2ca7746d53b3db",
+          "test-latent-inpaint-attention": "02f0656e3746f27ac6656fa5984a597a7f8ecf16e4841e72501efe5054d71ade",
+          "test-latent-inpaint-ops": "43d12886539cf84403f58c94dd5167137de527c499b05797f729093d69211ea5",
+          "test-lama-ops": "e00c6756f90f502cd6b3edd3d7233854bdf2b39f8ccb5bb2f4ba27039c1e41c5",
+          "test-lama-diff": "5ac158f7118b0b7ce80130b6024ff0e954d4e3d0ca73e6661dfbf684dfc92e4f",
+          "test-inpaint": "db902006223104ee55130b977e9251e66e90347b35619ca375efc07902d03c23"
+        },
+        "binaries_sha256_after": {
+          "test-inpaint-graph": "8d4ab6f170d8ba38b782cd93de65cd5c34016eb9bd2ac43474c63f89507f1c8a",
+          "test-inpaint-graph-spectral": "e1ebb366f48edb40f8df14bffa49ce0b245fe4cf217c84b67aeeff58cdfda8b2",
+          "test-latent-inpaint-graph-unet": "519a8e5642618b937ae94d879ac98143493c05ec1d98dfb90bd4fcdfcdaa6752",
+          "test-migan-graph": "477b0bddf4ac5ea06ba32f47af637f6a5064bc471110727a8dee8bc1d83a840e",
+          "test-inpaint-sha256-accel": "97256a263449a54b74e7ef828af32685c289caa5a471c4d3d992cbcae9a1ce14",
+          "test-inpaint-sha256-fallback": "bef3862c8b4765165eb75ced52c03e09b29e0ed6401eb7a42793dbff934d3542",
+          "test-latent-inpaint": "333e53f9232619135f03a2216e299e694162ba6baa77b54afb25d2bda1742358",
+          "test-latent-inpaint-pipeline": "2d9765bac96b5fcb8b51b5b94df3a97c9d8016be6415bffd5f2ca7746d53b3db",
+          "test-latent-inpaint-attention": "02f0656e3746f27ac6656fa5984a597a7f8ecf16e4841e72501efe5054d71ade",
+          "test-latent-inpaint-ops": "43d12886539cf84403f58c94dd5167137de527c499b05797f729093d69211ea5",
+          "test-lama-ops": "e00c6756f90f502cd6b3edd3d7233854bdf2b39f8ccb5bb2f4ba27039c1e41c5",
+          "test-lama-diff": "5ac158f7118b0b7ce80130b6024ff0e954d4e3d0ca73e6661dfbf684dfc92e4f",
+          "test-inpaint": "db902006223104ee55130b977e9251e66e90347b35619ca375efc07902d03c23"
+        },
+        "binaries_unchanged": true
+      }
+    },
+    "prior_original_replay": {
+      "path": "CrispEmbed-issue71/tests/results/inpainting/moebius-depthwise-cpu-2026-11-01.json",
+      "bytes": 583611,
+      "sha256": "1477e3f97935c5de3fef0e960f9fd2a18da2ded329f0954ad4f2dcce3269ceb6"
+    },
+    "prior_original_replay_limitation": "The previous four-case observed replay retains 35 of 608 strict absolute-error failures. Its RGB and aggregate metrics are unchanged from the preceding candidate-local run. This ordinary photo pair does not erase or requalify those failures."
+  },
+  "arms": {
+    "baseline": {
+      "path": "native-optimization/latent-api/moebius-local-rest-t8-v1/process.json",
+      "bytes": 14980,
+      "sha256": "c8254d512083076ccad50306244b44515dd8b1147de6e6c881265cfa614838f1",
+      "contents": {
+        "schema": "crispembed-local-latent-image-api-v1",
+        "complete": true,
+        "passed": true,
+        "status": "passed",
+        "engine": "moebius",
+        "profile": "candidate",
+        "case": "formula_photo_bar",
+        "timeout_seconds": 2400,
+        "address_space_limit_bytes": 8053063680,
+        "original_model_quality_qualified": false,
+        "performance_qualified": false,
+        "performance_note": "Raw samples retained; inspect competing workloads and matched comparisons before qualifying timing.",
+        "timing_statistics_validation": "Ten-significant-digit sample/output rounding bounds: median max error, mean average error, stddev RMS error; plus 64 ULP arithmetic slack. This changes no image/numerical acceptance budget.",
+        "source_observation_limitation": "Source hashes observed in a dirty worktree are not a clean-build proof.",
+        "optimizer_evidence_scope": "Controlled gates are confirmed by the executable's summary; actual backend/precision and full graph execution counts are checked in profiles. The cpu_depthwise_nodes counter proves actual finalized depthwise-node selection. Independently pinned model hashes, file sizes and complete/accelerated block counts prove the selected hashing path; other specialized paths remain requested-gate evidence only.",
+        "driver_sha256": "c056e9790db54d2394ba0afde78a07f02af0e319e6f1b33135b2a6963380fb93",
+        "runs": [
+          {
+            "engine": "moebius",
+            "iteration": 0,
+            "milliseconds": 166949,
+            "rgb_sha256": "29ab9a90e62a10f11d750bb323cf60f246a1fbfbebcc14a21a87b1e6067e5c78"
+          },
+          {
+            "engine": "moebius",
+            "iteration": 1,
+            "milliseconds": 142796,
+            "rgb_sha256": "29ab9a90e62a10f11d750bb323cf60f246a1fbfbebcc14a21a87b1e6067e5c78"
+          },
+          {
+            "engine": "moebius",
+            "iteration": 2,
+            "milliseconds": 139512,
+            "rgb_sha256": "29ab9a90e62a10f11d750bb323cf60f246a1fbfbebcc14a21a87b1e6067e5c78"
+          },
+          {
+            "engine": "moebius",
+            "iteration": 3,
+            "milliseconds": 266263,
+            "rgb_sha256": "29ab9a90e62a10f11d750bb323cf60f246a1fbfbebcc14a21a87b1e6067e5c78"
+          }
+        ],
+        "argv": [
+          "native-optimization/build-current/test-inpaint-benchmark",
+          "--engine",
+          "moebius",
+          "--model",
+          "native-optimization/latent-assets/moebius.names-v1.gguf",
+          "--model-sha256",
+          "f7365937fb82665e5725ab78b701e9650316023d7291d48da22cd9ea0ec7e352",
+          "--vae",
+          "native-optimization/latent-assets/sdxl_vae.names-v1.gguf",
+          "--vae-sha256",
+          "e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2",
+          "--rgb",
+          "native-optimization/migan-assets/photos512/formula_photo_bar/input.rgb8",
+          "--mask",
+          "native-optimization/migan-assets/photos512/formula_photo_bar/fill-mask.u8",
+          "--width",
+          "512",
+          "--height",
+          "512",
+          "--output",
+          "native-optimization/latent-api/moebius-local-rest-t8-v1/output.rgb8",
+          "--threads",
+          "8",
+          "--runs",
+          "3",
+          "--steps",
+          "20",
+          "--backend",
+          "cpu",
+          "--checkpoint-output",
+          "native-optimization/latent-api/moebius-local-rest-t8-v1/cold.rgb8"
+        ],
+        "environment": {
+          "CRISPEMBED_INPAINT_GRAPH": "1",
+          "CRISPEMBED_INPAINT_FAST": "0",
+          "CRISPEMBED_INPAINT_GEMM_LAYOUT": "1",
+          "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+          "CRISPEMBED_INPAINT_CPU_FFT": "0",
+          "CRISPEMBED_INPAINT_CPU_GLA": "0",
+          "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+          "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+          "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+          "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "1",
+          "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "1",
+          "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+          "CRISPEMBED_MIGAN_CPU_KERNELS": "0",
+          "CRISPEMBED_INPAINT_BACKEND": "cpu",
+          "CRISPEMBED_INPAINT_PROFILE": "1",
+          "CRISPEMBED_MOEBIUS": "1",
+          "CRISPEMBED_PIXELHACKER": "0"
+        },
+        "binary_sha256": "8e860a3401f8010ba7b1f023cba3ce9862fee5d0b6d6d4b87826290fe190a8bd",
+        "binary_bytes": 3930552,
+        "model_sha256": "f7365937fb82665e5725ab78b701e9650316023d7291d48da22cd9ea0ec7e352",
+        "vae_sha256": "e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2",
+        "fixture_manifest_sha256": "84213e7fec278c0f915ea69dcb97151d6e43ef46ddd96381dec2ee13514264a5",
+        "source_file_sha256_observed_before_run": {
+          "src/latent_inpaint.cpp": "9b08cff8ce0f0de0457100c99ca9226ccb47c4225e8248e1c117b9934f6688c4",
+          "src/latent_inpaint_ops.cpp": "d012cd1c46cdb45e8e82e39f1e8d5e4eb890541fb7a0acb36c0188f3ac8b35dd",
+          "src/latent_inpaint_unet.cpp": "a7807d6070904052655761ca5439af8b4e98db59f99e09edf0ae5ed9b4c9826f",
+          "src/latent_inpaint_graph.cpp": "60be70173f85994b67da9e2b38bb64ad797a40f9898b4d3441bce4fc16fdbfa8",
+          "src/latent_inpaint_graph_unet.cpp": "2a2771012731749cbfdb8f8fdf6b2e5e37b0673a416039cb488efd1d277a2580",
+          "src/latent_inpaint_vae.cpp": "18fe9b2134862b8b2f76f6475348c7959ea0a926f299d030e3b61c32e0e342ef",
+          "src/inpaint_graph.cpp": "6757e28ee1fe6a43b3a291b1797ade86f19537411c2e822c3e7ee1b34cb340eb",
+          "src/inpaint_graph.h": "d6a41ab9111e6c65ac99a447de2899773581ead360d4afdbef98124f0108fde0",
+          "src/inpaint_graph_spectral.cpp": "eb20e813075727e7281c38e0db949db69e5c74cb38f345416a73045d0a582752",
+          "src/core/sha256.h": "409ab494061b042d4a84698b7bf2caf6dd68f6639cbeb532cb47a2f2337d9a6f",
+          "src/core/sha256_accelerated.h": "46f0050cae097fd6d0d1a9bc0021a57ae55465088ffa1d330e7f2adab37baa2e",
+          "tests/test_inpaint_benchmark.cpp": "a3d4eed9aa6e3eab419ca8864ff55f1d15892ce2c6b0466673ccb1a83661aa23",
+          "tools/dump_migan_photo_reference.py": "97d6978b0130aa4ee3b5e871fe3877c0340e80b914459dc7d197223d77382c4d",
+          "tools/inpaint_hash_evidence.py": "4fece7408ea18b781724410866af9bca64586368f643850473add3b76f3054fb",
+          "tests/test_inpaint_engine_live.py": "dc4a3460341ab80fd48db2c6c767e8eb4a36d31d3df486f5a140408c4edf7750",
+          "CMakeLists.txt": "7e1a2ccad64e9d5f0e0bab3cfebdc678d2f163aed0aae6f21ad666434ae734bb"
+        },
+        "before_resources": {
+          "time_utc": "2026-11-01T13:53:46.755276+00:00",
+          "affinity_cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "loadavg": [
+            3.82080078125,
+            3.52197265625,
+            3.248046875
+          ],
+          "cpu.max": "800000 100000",
+          "cpu.stat": "usage_usec 52505245025\nuser_usec 49322321225\nsystem_usec 3182923800\nnice_usec 0\nnr_periods 167289\nnr_throttled 45400\nthrottled_usec 1953468332\nnr_bursts 0\nburst_usec 0",
+          "memory.current": "8588472320",
+          "memory.max": "8589934592",
+          "memory.events": "low 0\nhigh 0\nmax 2083601\noom 0\noom_kill 0\noom_group_kill 0",
+          "process_resource_snapshot": "COMMAND         %CPU   RSS\nrustc            131 1173504\npython3         96.2 32080\nrsync           18.7 29836\nzstd             5.3 53452\nzstd             3.7 53452\ncargo            0.3 82012\ncaas-prefix-tra  0.2   724\ncodex            0.2 51424\ncodex            0.1 68652\nsites-preview    0.0   300\nsupervisord      0.0 23216\nsync_share.sh    0.0  2080\nrsync            0.0  2372\nsync_share.sh    0.0  2072\ninotifywait      0.0   832\nsh               0.0   764\nsh               0.0   760\nbash             0.0  2048\nps               0.0  2496\n",
+          "process_snapshot_returncode": 0
+        },
+        "returncode": 0,
+        "timed_out": false,
+        "wall_seconds": 720.6800914920022,
+        "peak_rss_kib": 3733784,
+        "user_cpu_seconds": 5019.25725,
+        "system_cpu_seconds": 39.008612,
+        "peak_rss_scope": "RUSAGE_CHILDREN high-water mark includes the small pre-run ps child; successful model runs dominate it.",
+        "input_hashes_unchanged": true,
+        "model_hashes_unchanged": true,
+        "binary_hash_unchanged": true,
+        "benchmark": {
+          "schema": "crispembed-image-api-benchmark-v1",
+          "engine": "moebius",
+          "requested_backend": "cpu",
+          "width": 512,
+          "height": 512,
+          "threads": 8,
+          "requested_steps": 20,
+          "load_and_validation_ms": 4972.515752,
+          "cold_image_ms": 166948.6301,
+          "warm_median_ms": 142796.4945,
+          "warm_mean_ms": 182857.3076,
+          "warm_stddev_ms": 58992.17853,
+          "warm_samples_ms": [
+            142796.4945,
+            139512.1342,
+            266263.2941
+          ],
+          "input_rgb_sha256": "7de1d0ce1bc46b8f563ad715136510d572e26c55e7562eed711eb5e923b7fc86",
+          "mask_sha256": "642078416b455bf415d69e291d40b0e55894a10535f16b847552cb9c9a190e91",
+          "output_sha256": "29ab9a90e62a10f11d750bb323cf60f246a1fbfbebcc14a21a87b1e6067e5c78",
+          "cold_checkpoint_sha256": "29ab9a90e62a10f11d750bb323cf60f246a1fbfbebcc14a21a87b1e6067e5c78",
+          "model_sha256": "f7365937fb82665e5725ab78b701e9650316023d7291d48da22cd9ea0ec7e352",
+          "vae_sha256": "e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2",
+          "known_pixel_errors": 0,
+          "repeat_bit_exact": true,
+          "gates": {
+            "CRISPEMBED_INPAINT_GRAPH": true,
+            "CRISPEMBED_INPAINT_FAST": false,
+            "CRISPEMBED_INPAINT_GEMM_LAYOUT": true,
+            "CRISPEMBED_INPAINT_REFLECT_GATHER": false,
+            "CRISPEMBED_INPAINT_CPU_FFT": false,
+            "CRISPEMBED_INPAINT_CPU_GLA": false,
+            "CRISPEMBED_INPAINT_CPU_DEPTHWISE": false,
+            "CRISPEMBED_INPAINT_SHA256_ACCEL": false,
+            "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": false,
+            "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": true,
+            "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": true,
+            "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": false,
+            "CRISPEMBED_MIGAN_CPU_KERNELS": false
+          },
+          "ordinary_image_api": true,
+          "observers": false,
+          "original_quality_qualification": false,
+          "passed": true
+        },
+        "output_sha256": "29ab9a90e62a10f11d750bb323cf60f246a1fbfbebcc14a21a87b1e6067e5c78",
+        "independent_known_channel_errors": 0,
+        "cold_checkpoint": {
+          "path": "native-optimization/latent-api/moebius-local-rest-t8-v1/cold.rgb8",
+          "bytes": 786432,
+          "sha256": "29ab9a90e62a10f11d750bb323cf60f246a1fbfbebcc14a21a87b1e6067e5c78",
+          "completed_cold_image": true,
+          "independent_known_channel_errors": 0,
+          "completed_progress_rows": [
+            {
+              "engine": "moebius",
+              "iteration": 0,
+              "milliseconds": 166949,
+              "rgb_sha256": "29ab9a90e62a10f11d750bb323cf60f246a1fbfbebcc14a21a87b1e6067e5c78"
+            },
+            {
+              "engine": "moebius",
+              "iteration": 1,
+              "milliseconds": 142796,
+              "rgb_sha256": "29ab9a90e62a10f11d750bb323cf60f246a1fbfbebcc14a21a87b1e6067e5c78"
+            },
+            {
+              "engine": "moebius",
+              "iteration": 2,
+              "milliseconds": 139512,
+              "rgb_sha256": "29ab9a90e62a10f11d750bb323cf60f246a1fbfbebcc14a21a87b1e6067e5c78"
+            },
+            {
+              "engine": "moebius",
+              "iteration": 3,
+              "milliseconds": 266263,
+              "rgb_sha256": "29ab9a90e62a10f11d750bb323cf60f246a1fbfbebcc14a21a87b1e6067e5c78"
+            }
+          ],
+          "scope": "Completed cold-image evidence only; this does not make an incomplete benchmark pass or establish backend, model parity or speedup."
+        },
+        "actual_backend_profiles": [
+          {
+            "backend": "CPU",
+            "runs": 4,
+            "precision": "f32",
+            "line": "inpaint_graph label=vae-decoder backend=CPU precision=f32 nodes=6219 allocation_bytes=999292928 runs=4 upload_bytes=0 download_bytes=12582912 compute_ms=61348.310 cpu_depthwise_nodes=0",
+            "label": "vae-decoder",
+            "cpu_depthwise_nodes": 0
+          },
+          {
+            "backend": "CPU",
+            "runs": 76,
+            "precision": "f32",
+            "line": "inpaint_graph label=unet-cfg-ddim-batch2 backend=CPU precision=f32 nodes=6695 allocation_bytes=168690016 runs=76 upload_bytes=98496 download_bytes=0 compute_ms=593542.968 cpu_depthwise_nodes=0",
+            "label": "unet-cfg-ddim-batch2",
+            "cpu_depthwise_nodes": 0
+          },
+          {
+            "backend": "CPU",
+            "runs": 4,
+            "precision": "f32",
+            "line": "inpaint_graph label=vae-encoder-batch2 backend=CPU precision=f32 nodes=7871 allocation_bytes=1364873280 runs=4 upload_bytes=17563712 download_bytes=0 compute_ms=60533.521 cpu_depthwise_nodes=0",
+            "label": "vae-encoder-batch2",
+            "cpu_depthwise_nodes": 0
+          }
+        ],
+        "graph_execution_counts": {
+          "verified": true,
+          "image_calls": 4,
+          "executed_timesteps_per_call": 19,
+          "graphs": {
+            "vae-encoder-batch2": 4,
+            "unet-cfg-ddim-batch2": 76,
+            "vae-decoder": 4
+          }
+        },
+        "cpu_depthwise_selection_verified": false,
+        "hash_execution_evidence": {
+          "requested": false,
+          "require_hardware": false,
+          "profiles": [
+            {
+              "label": "moebius",
+              "backend": "scalar",
+              "requested": false,
+              "hardware_available": true,
+              "bytes": 904877728,
+              "complete_blocks": 14138714,
+              "accelerated_blocks": 0,
+              "sha256": "f7365937fb82665e5725ab78b701e9650316023d7291d48da22cd9ea0ec7e352"
+            },
+            {
+              "label": "sdxl_vae",
+              "backend": "scalar",
+              "requested": false,
+              "hardware_available": true,
+              "bytes": 334636224,
+              "complete_blocks": 5228691,
+              "accelerated_blocks": 0,
+              "sha256": "e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2"
+            }
+          ],
+          "verified_model_labels": [
+            "moebius",
+            "sdxl_vae"
+          ],
+          "all_model_identities_verified": true,
+          "hardware_acceleration_verified": false,
+          "scalar_fallback": false,
+          "empty_mask_bypass_without_hash_profiles": false,
+          "scope": "Actual verified model hashing and full input-block counts only; no inference or hardware-speed qualification."
+        },
+        "output_logs_sha256": {
+          "stdout.log": "6c612c5a903b83d5a1a40f19d1d4e18f4b20604268a98a2c67efc9406641bbc6",
+          "stderr.log": "2f4866ec9dea5fb765dc1ddaab2272efc390ed84ddc577c1c7392a03c6b34d44"
+        },
+        "after_resources": {
+          "time_utc": "2026-11-01T14:05:48.659936+00:00",
+          "affinity_cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "loadavg": [
+            10.8447265625,
+            9.3544921875,
+            6.6845703125
+          ],
+          "cpu.max": "800000 100000",
+          "cpu.stat": "usage_usec 58249563675\nuser_usec 54937180760\nsystem_usec 3312382914\nnice_usec 0\nnr_periods 174508\nnr_throttled 52486\nthrottled_usec 2329103610\nnr_bursts 0\nburst_usec 0",
+          "memory.current": "6284161024",
+          "memory.max": "8589934592",
+          "memory.events": "low 0\nhigh 0\nmax 2243926\noom 0\noom_kill 0\noom_group_kill 0",
+          "process_resource_snapshot": "COMMAND         %CPU   RSS\nrustc           98.2 1585812\nrsync           12.4 30844\nzstd             4.6 53452\nzstd             3.2 53452\npython3          0.4 32176\ncaas-prefix-tra  0.2   724\ncodex            0.2 53464\ncargo            0.1 73400\ncodex            0.1 66716\nsites-preview    0.0   300\nsupervisord      0.0 23220\nsync_share.sh    0.0  2080\nrsync            0.0  2372\nsync_share.sh    0.0  2072\ninotifywait      0.0   832\nsh               0.0   764\nsh               0.0   760\nbash             0.0  2048\nps               0.0  2492\n",
+          "process_snapshot_returncode": 0
+        }
+      }
+    },
+    "candidate": {
+      "path": "native-optimization/latent-api/moebius-depthwise-sha-rest-t8-v1/process.json",
+      "bytes": 15726,
+      "sha256": "d6fe0866e98fae31f23a0836d94c72ae0f2641db4f507cdf0a680bcf8fb01f01",
+      "contents": {
+        "schema": "crispembed-local-latent-image-api-v1",
+        "complete": true,
+        "passed": true,
+        "status": "passed",
+        "engine": "moebius",
+        "profile": "candidate",
+        "case": "formula_photo_bar",
+        "timeout_seconds": 2400,
+        "address_space_limit_bytes": 8053063680,
+        "original_model_quality_qualified": false,
+        "performance_qualified": false,
+        "performance_note": "Raw samples retained; inspect competing workloads and matched comparisons before qualifying timing.",
+        "timing_statistics_validation": "Ten-significant-digit sample/output rounding bounds: median max error, mean average error, stddev RMS error; plus 64 ULP arithmetic slack. This changes no image/numerical acceptance budget.",
+        "source_observation_limitation": "Source hashes observed in a dirty worktree are not a clean-build proof.",
+        "optimizer_evidence_scope": "Controlled gates are confirmed by the executable's summary; actual backend/precision and full graph execution counts are checked in profiles. The cpu_depthwise_nodes counter proves actual finalized depthwise-node selection. Independently pinned model hashes, file sizes and complete/accelerated block counts prove the selected hashing path; other specialized paths remain requested-gate evidence only.",
+        "driver_sha256": "c056e9790db54d2394ba0afde78a07f02af0e319e6f1b33135b2a6963380fb93",
+        "runs": [
+          {
+            "engine": "moebius",
+            "iteration": 0,
+            "milliseconds": 392587,
+            "rgb_sha256": "29ab9a90e62a10f11d750bb323cf60f246a1fbfbebcc14a21a87b1e6067e5c78"
+          },
+          {
+            "engine": "moebius",
+            "iteration": 1,
+            "milliseconds": 134088,
+            "rgb_sha256": "29ab9a90e62a10f11d750bb323cf60f246a1fbfbebcc14a21a87b1e6067e5c78"
+          },
+          {
+            "engine": "moebius",
+            "iteration": 2,
+            "milliseconds": 181397,
+            "rgb_sha256": "29ab9a90e62a10f11d750bb323cf60f246a1fbfbebcc14a21a87b1e6067e5c78"
+          },
+          {
+            "engine": "moebius",
+            "iteration": 3,
+            "milliseconds": 195887,
+            "rgb_sha256": "29ab9a90e62a10f11d750bb323cf60f246a1fbfbebcc14a21a87b1e6067e5c78"
+          }
+        ],
+        "comparison_raw": "native-optimization/latent-api/moebius-local-rest-t8-v1/output.rgb8",
+        "comparison_sha256": "29ab9a90e62a10f11d750bb323cf60f246a1fbfbebcc14a21a87b1e6067e5c78",
+        "argv": [
+          "native-optimization/build-current/test-inpaint-benchmark",
+          "--engine",
+          "moebius",
+          "--model",
+          "native-optimization/latent-assets/moebius.names-v1.gguf",
+          "--model-sha256",
+          "f7365937fb82665e5725ab78b701e9650316023d7291d48da22cd9ea0ec7e352",
+          "--vae",
+          "native-optimization/latent-assets/sdxl_vae.names-v1.gguf",
+          "--vae-sha256",
+          "e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2",
+          "--rgb",
+          "native-optimization/migan-assets/photos512/formula_photo_bar/input.rgb8",
+          "--mask",
+          "native-optimization/migan-assets/photos512/formula_photo_bar/fill-mask.u8",
+          "--width",
+          "512",
+          "--height",
+          "512",
+          "--output",
+          "native-optimization/latent-api/moebius-depthwise-sha-rest-t8-v1/output.rgb8",
+          "--threads",
+          "8",
+          "--runs",
+          "3",
+          "--steps",
+          "20",
+          "--backend",
+          "cpu",
+          "--checkpoint-output",
+          "native-optimization/latent-api/moebius-depthwise-sha-rest-t8-v1/cold.rgb8"
+        ],
+        "environment": {
+          "CRISPEMBED_INPAINT_GRAPH": "1",
+          "CRISPEMBED_INPAINT_FAST": "0",
+          "CRISPEMBED_INPAINT_GEMM_LAYOUT": "1",
+          "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+          "CRISPEMBED_INPAINT_CPU_FFT": "0",
+          "CRISPEMBED_INPAINT_CPU_GLA": "0",
+          "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "1",
+          "CRISPEMBED_INPAINT_SHA256_ACCEL": "1",
+          "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+          "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "1",
+          "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "1",
+          "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+          "CRISPEMBED_MIGAN_CPU_KERNELS": "0",
+          "CRISPEMBED_INPAINT_BACKEND": "cpu",
+          "CRISPEMBED_INPAINT_PROFILE": "1",
+          "CRISPEMBED_MOEBIUS": "1",
+          "CRISPEMBED_PIXELHACKER": "0"
+        },
+        "binary_sha256": "8e860a3401f8010ba7b1f023cba3ce9862fee5d0b6d6d4b87826290fe190a8bd",
+        "binary_bytes": 3930552,
+        "model_sha256": "f7365937fb82665e5725ab78b701e9650316023d7291d48da22cd9ea0ec7e352",
+        "vae_sha256": "e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2",
+        "fixture_manifest_sha256": "84213e7fec278c0f915ea69dcb97151d6e43ef46ddd96381dec2ee13514264a5",
+        "source_file_sha256_observed_before_run": {
+          "src/latent_inpaint.cpp": "9b08cff8ce0f0de0457100c99ca9226ccb47c4225e8248e1c117b9934f6688c4",
+          "src/latent_inpaint_ops.cpp": "d012cd1c46cdb45e8e82e39f1e8d5e4eb890541fb7a0acb36c0188f3ac8b35dd",
+          "src/latent_inpaint_unet.cpp": "a7807d6070904052655761ca5439af8b4e98db59f99e09edf0ae5ed9b4c9826f",
+          "src/latent_inpaint_graph.cpp": "60be70173f85994b67da9e2b38bb64ad797a40f9898b4d3441bce4fc16fdbfa8",
+          "src/latent_inpaint_graph_unet.cpp": "2a2771012731749cbfdb8f8fdf6b2e5e37b0673a416039cb488efd1d277a2580",
+          "src/latent_inpaint_vae.cpp": "18fe9b2134862b8b2f76f6475348c7959ea0a926f299d030e3b61c32e0e342ef",
+          "src/inpaint_graph.cpp": "6757e28ee1fe6a43b3a291b1797ade86f19537411c2e822c3e7ee1b34cb340eb",
+          "src/inpaint_graph.h": "d6a41ab9111e6c65ac99a447de2899773581ead360d4afdbef98124f0108fde0",
+          "src/inpaint_graph_spectral.cpp": "eb20e813075727e7281c38e0db949db69e5c74cb38f345416a73045d0a582752",
+          "src/core/sha256.h": "409ab494061b042d4a84698b7bf2caf6dd68f6639cbeb532cb47a2f2337d9a6f",
+          "src/core/sha256_accelerated.h": "46f0050cae097fd6d0d1a9bc0021a57ae55465088ffa1d330e7f2adab37baa2e",
+          "tests/test_inpaint_benchmark.cpp": "a3d4eed9aa6e3eab419ca8864ff55f1d15892ce2c6b0466673ccb1a83661aa23",
+          "tools/dump_migan_photo_reference.py": "97d6978b0130aa4ee3b5e871fe3877c0340e80b914459dc7d197223d77382c4d",
+          "tools/inpaint_hash_evidence.py": "4fece7408ea18b781724410866af9bca64586368f643850473add3b76f3054fb",
+          "tests/test_inpaint_engine_live.py": "dc4a3460341ab80fd48db2c6c767e8eb4a36d31d3df486f5a140408c4edf7750",
+          "CMakeLists.txt": "7e1a2ccad64e9d5f0e0bab3cfebdc678d2f163aed0aae6f21ad666434ae734bb"
+        },
+        "before_resources": {
+          "time_utc": "2026-11-01T14:07:07.838966+00:00",
+          "affinity_cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "loadavg": [
+            3.796875,
+            7.46923828125,
+            6.24169921875
+          ],
+          "cpu.max": "800000 100000",
+          "cpu.stat": "usage_usec 58349846172\nuser_usec 55026079450\nsystem_usec 3323766721\nnice_usec 0\nnr_periods 175300\nnr_throttled 52486\nthrottled_usec 2329103610\nnr_bursts 0\nburst_usec 0",
+          "memory.current": "8589807616",
+          "memory.max": "8589934592",
+          "memory.events": "low 0\nhigh 0\nmax 2273739\noom 0\noom_kill 0\noom_group_kill 0",
+          "process_resource_snapshot": "COMMAND         %CPU   RSS\nrustc           98.8 2009568\npython3         97.6 32100\nrsync           15.1 29748\nzstd             4.5 53452\nzstd             3.2 53452\ncargo            0.8 75792\ncaas-prefix-tra  0.2   724\ncodex            0.2 60480\ncodex            0.1 69876\nsites-preview    0.0   300\nsupervisord      0.0 23220\nsync_share.sh    0.0  2080\nrsync            0.0  2372\nsync_share.sh    0.0  2072\ninotifywait      0.0   832\nsh               0.0   764\nsh               0.0   760\nbash             0.0  2048\nps               0.0  2500\n",
+          "process_snapshot_returncode": 0
+        },
+        "returncode": 0,
+        "timed_out": false,
+        "wall_seconds": 905.4962847530005,
+        "peak_rss_kib": 3727376,
+        "user_cpu_seconds": 5762.982683,
+        "system_cpu_seconds": 57.473749,
+        "peak_rss_scope": "RUSAGE_CHILDREN high-water mark includes the small pre-run ps child; successful model runs dominate it.",
+        "input_hashes_unchanged": true,
+        "model_hashes_unchanged": true,
+        "binary_hash_unchanged": true,
+        "benchmark": {
+          "schema": "crispembed-image-api-benchmark-v1",
+          "engine": "moebius",
+          "requested_backend": "cpu",
+          "width": 512,
+          "height": 512,
+          "threads": 8,
+          "requested_steps": 20,
+          "load_and_validation_ms": 1277.329965,
+          "cold_image_ms": 392586.9972,
+          "warm_median_ms": 181396.762,
+          "warm_mean_ms": 170457.2346,
+          "warm_stddev_ms": 26388.715,
+          "warm_samples_ms": [
+            134087.7707,
+            181396.762,
+            195887.1712
+          ],
+          "input_rgb_sha256": "7de1d0ce1bc46b8f563ad715136510d572e26c55e7562eed711eb5e923b7fc86",
+          "mask_sha256": "642078416b455bf415d69e291d40b0e55894a10535f16b847552cb9c9a190e91",
+          "output_sha256": "29ab9a90e62a10f11d750bb323cf60f246a1fbfbebcc14a21a87b1e6067e5c78",
+          "cold_checkpoint_sha256": "29ab9a90e62a10f11d750bb323cf60f246a1fbfbebcc14a21a87b1e6067e5c78",
+          "model_sha256": "f7365937fb82665e5725ab78b701e9650316023d7291d48da22cd9ea0ec7e352",
+          "vae_sha256": "e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2",
+          "known_pixel_errors": 0,
+          "repeat_bit_exact": true,
+          "gates": {
+            "CRISPEMBED_INPAINT_GRAPH": true,
+            "CRISPEMBED_INPAINT_FAST": false,
+            "CRISPEMBED_INPAINT_GEMM_LAYOUT": true,
+            "CRISPEMBED_INPAINT_REFLECT_GATHER": false,
+            "CRISPEMBED_INPAINT_CPU_FFT": false,
+            "CRISPEMBED_INPAINT_CPU_GLA": false,
+            "CRISPEMBED_INPAINT_CPU_DEPTHWISE": true,
+            "CRISPEMBED_INPAINT_SHA256_ACCEL": true,
+            "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": false,
+            "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": true,
+            "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": true,
+            "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": false,
+            "CRISPEMBED_MIGAN_CPU_KERNELS": false
+          },
+          "ordinary_image_api": true,
+          "observers": false,
+          "original_quality_qualification": false,
+          "passed": true
+        },
+        "output_sha256": "29ab9a90e62a10f11d750bb323cf60f246a1fbfbebcc14a21a87b1e6067e5c78",
+        "independent_known_channel_errors": 0,
+        "cold_checkpoint": {
+          "path": "native-optimization/latent-api/moebius-depthwise-sha-rest-t8-v1/cold.rgb8",
+          "bytes": 786432,
+          "sha256": "29ab9a90e62a10f11d750bb323cf60f246a1fbfbebcc14a21a87b1e6067e5c78",
+          "completed_cold_image": true,
+          "independent_known_channel_errors": 0,
+          "completed_progress_rows": [
+            {
+              "engine": "moebius",
+              "iteration": 0,
+              "milliseconds": 392587,
+              "rgb_sha256": "29ab9a90e62a10f11d750bb323cf60f246a1fbfbebcc14a21a87b1e6067e5c78"
+            },
+            {
+              "engine": "moebius",
+              "iteration": 1,
+              "milliseconds": 134088,
+              "rgb_sha256": "29ab9a90e62a10f11d750bb323cf60f246a1fbfbebcc14a21a87b1e6067e5c78"
+            },
+            {
+              "engine": "moebius",
+              "iteration": 2,
+              "milliseconds": 181397,
+              "rgb_sha256": "29ab9a90e62a10f11d750bb323cf60f246a1fbfbebcc14a21a87b1e6067e5c78"
+            },
+            {
+              "engine": "moebius",
+              "iteration": 3,
+              "milliseconds": 195887,
+              "rgb_sha256": "29ab9a90e62a10f11d750bb323cf60f246a1fbfbebcc14a21a87b1e6067e5c78"
+            }
+          ],
+          "scope": "Completed cold-image evidence only; this does not make an incomplete benchmark pass or establish backend, model parity or speedup."
+        },
+        "actual_backend_profiles": [
+          {
+            "backend": "CPU",
+            "runs": 4,
+            "precision": "f32",
+            "line": "inpaint_graph label=vae-decoder backend=CPU precision=f32 nodes=6219 allocation_bytes=999292928 runs=4 upload_bytes=0 download_bytes=12582912 compute_ms=67658.580 cpu_depthwise_nodes=0",
+            "label": "vae-decoder",
+            "cpu_depthwise_nodes": 0
+          },
+          {
+            "backend": "CPU",
+            "runs": 76,
+            "precision": "f32",
+            "line": "inpaint_graph label=unet-cfg-ddim-batch2 backend=CPU precision=f32 nodes=6695 allocation_bytes=168690016 runs=76 upload_bytes=98496 download_bytes=0 compute_ms=764290.445 cpu_depthwise_nodes=47",
+            "label": "unet-cfg-ddim-batch2",
+            "cpu_depthwise_nodes": 47
+          },
+          {
+            "backend": "CPU",
+            "runs": 4,
+            "precision": "f32",
+            "line": "inpaint_graph label=vae-encoder-batch2 backend=CPU precision=f32 nodes=7871 allocation_bytes=1364873280 runs=4 upload_bytes=17563712 download_bytes=0 compute_ms=71936.299 cpu_depthwise_nodes=0",
+            "label": "vae-encoder-batch2",
+            "cpu_depthwise_nodes": 0
+          }
+        ],
+        "graph_execution_counts": {
+          "verified": true,
+          "image_calls": 4,
+          "executed_timesteps_per_call": 19,
+          "graphs": {
+            "vae-encoder-batch2": 4,
+            "unet-cfg-ddim-batch2": 76,
+            "vae-decoder": 4
+          }
+        },
+        "cpu_depthwise_selection_verified": true,
+        "hash_execution_evidence": {
+          "requested": true,
+          "require_hardware": true,
+          "profiles": [
+            {
+              "label": "moebius",
+              "backend": "sha-ni",
+              "requested": true,
+              "hardware_available": true,
+              "bytes": 904877728,
+              "complete_blocks": 14138714,
+              "accelerated_blocks": 14138714,
+              "sha256": "f7365937fb82665e5725ab78b701e9650316023d7291d48da22cd9ea0ec7e352"
+            },
+            {
+              "label": "sdxl_vae",
+              "backend": "sha-ni",
+              "requested": true,
+              "hardware_available": true,
+              "bytes": 334636224,
+              "complete_blocks": 5228691,
+              "accelerated_blocks": 5228691,
+              "sha256": "e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2"
+            }
+          ],
+          "verified_model_labels": [
+            "moebius",
+            "sdxl_vae"
+          ],
+          "all_model_identities_verified": true,
+          "hardware_acceleration_verified": true,
+          "scalar_fallback": false,
+          "empty_mask_bypass_without_hash_profiles": false,
+          "scope": "Actual verified model hashing and full input-block counts only; no inference or hardware-speed qualification."
+        },
+        "native_rgb_comparison": {
+          "filled_components": 73728,
+          "filled_max_abs": 0,
+          "filled_mean_abs": 0.0,
+          "filled_rmse": 0.0,
+          "filled_psnr_db": null,
+          "known_pixel_errors": 0,
+          "known_error_count_unit": "RGB channels",
+          "bit_exact": true,
+          "budgets": {
+            "max_abs": 2,
+            "mean_abs": 0.1,
+            "psnr_db": 50,
+            "known_exact": true
+          },
+          "qualification": "native implementation agreement only, not original-model or perceptual quality",
+          "passed": true
+        },
+        "output_logs_sha256": {
+          "stdout.log": "c04d275e1558fed15225f6e70ed6dba18be44cacc2554172c9c8551ced9f9ea8",
+          "stderr.log": "b00837bfa54946d4accfc3551f36d01d71c4d60b883ff54fd86d0bcf1a0fafdd"
+        },
+        "after_resources": {
+          "time_utc": "2026-11-01T14:22:14.742659+00:00",
+          "affinity_cpus": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "loadavg": [
+            9.40185546875,
+            9.25439453125,
+            8.32666015625
+          ],
+          "cpu.max": "800000 100000",
+          "cpu.stat": "usage_usec 65588698161\nuser_usec 62092225921\nsystem_usec 3496472239\nnice_usec 0\nnr_periods 184369\nnr_throttled 61435\nthrottled_usec 3055716089\nnr_bursts 0\nburst_usec 0",
+          "memory.current": "6274691072",
+          "memory.max": "8589934592",
+          "memory.events": "low 0\nhigh 0\nmax 2481561\noom 0\noom_kill 0\noom_group_kill 0",
+          "process_resource_snapshot": "COMMAND         %CPU   RSS\nrustc            101 1259216\nrsync            9.0 30444\nzstd             3.9 53452\nzstd             2.8 53452\npython3          0.4 32196\ncaas-prefix-tra  0.2   724\ncodex            0.2 51344\ncargo            0.2 79512\ncodex            0.1 66728\nsites-preview    0.0   300\nsupervisord      0.0 23220\nsync_share.sh    0.0  2080\nrsync            0.0  2372\nsync_share.sh    0.0  2072\ninotifywait      0.0   832\nsh               0.0   764\nsh               0.0   760\nbash             0.0  2048\nps               0.0  2492\n",
+          "process_snapshot_returncode": 0
+        }
+      }
+    }
+  },
+  "resource_sidecars": {
+    "baseline": {
+      "path": "native-optimization/latent-api/moebius-local-rest-t8-v1/midrun-resources-1.json",
+      "bytes": 2896,
+      "sha256": "e815a0db97168525dbe4a040e48546c83d3de6165fa02ad248334142e2eb1fda",
+      "contents": {
+        "time_utc": "2026-11-01T14:05:54.752449+00:00",
+        "process_resources": "    PID COMMAND         %CPU   RSS     ELAPSED     TIME\n 550383 rustc            102 1606616     02:25 00:02:29\n 551317 python3         66.6  9508       00:00 00:00:00\n 544955 rsync           12.3 30844       06:14 00:00:46\n 426544 zstd             4.6 53452    01:31:18 00:04:14\n 267796 zstd             3.2 53452    01:39:20 00:03:15\n      6 caas-prefix-tra  0.2   724    06:12:59 00:01:00\n    299 codex            0.2 53348    05:59:38 00:00:54\n 545804 cargo            0.1 73400       03:40 00:00:00\n    130 codex            0.1 66716    06:00:28 00:00:22\n      7 sites-preview    0.0   300    06:12:59 00:00:15\n      1 supervisord      0.0 23220    06:13:01 00:00:04\n      5 sync_share.sh    0.0  2080    06:12:59 00:00:00\n      3 rsync            0.0  2372    06:12:59 00:00:00\n      4 sync_share.sh    0.0  2072    06:12:59 00:00:00\n     84 inotifywait      0.0   832    06:00:33 00:00:00\n 267795 sh               0.0   764    01:39:20 00:00:00\n 426543 sh               0.0   760    01:31:18 00:00:00\n 545801 bash             0.0  2048       03:40 00:00:00\n 551314 bash             0.0  2052       00:00 00:00:00\n 551318 ps               0.0  2644       00:00 00:00:00\n",
+        "cgroup": {
+          "cpu.stat": "usage_usec 58262235524\nuser_usec 54949226514\nsystem_usec 3313009010\nnice_usec 0\nnr_periods 174569\nnr_throttled 52486\nthrottled_usec 2329103610\nnr_bursts 0\nburst_usec 0\n",
+          "memory.current": "6741602304\n",
+          "memory.events": "low 0\nhigh 0\nmax 2243926\noom 0\noom_kill 0\noom_group_kill 0\n",
+          "memory.stat": "anon 1834565632\nfile 3988291584\nkernel 914317312\nkernel_stack 1064960\npagetables 10166272\nsec_pagetables 0\npercpu 3696\nsock 3014656\nvmalloc 0\nshmem 0\nfile_mapped 101273600\nfile_dirty 50794496\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 440401920\nshmem_thp 0\ninactive_anon 1834377216\nactive_anon 90112\ninactive_file 2219073536\nactive_file 1769205760\nunevictable 0\nslab_reclaimable 901697344\nslab_unreclaimable 1114136\nslab 902811480\nworkingset_refault_anon 0\nworkingset_refault_file 326414199\nworkingset_activate_anon 0\nworkingset_activate_file 19281886\nworkingset_restore_anon 0\nworkingset_restore_file 5914390\nworkingset_nodereclaim 106586\npgdemote_kswapd 0\npgdemote_direct 0\npgdemote_khugepaged 0\npgdemote_proactive 0\npgscan 354247965\npgsteal 351425371\npswpin 0\npswpout 0\npgscan_kswapd 14410917\npgscan_direct 339827950\npgscan_khugepaged 9098\npgscan_proactive 0\npgsteal_kswapd 14291943\npgsteal_direct 337124330\npgsteal_khugepaged 9098\npgsteal_proactive 0\npgfault 526051766\npgmajfault 49761\npgrefill 31066998\npgactivate 17134645\npgdeactivate 30697162\npglazyfree 42\npglazyfreed 0\nswpin_zero 0\nswpout_zero 0\nthp_fault_alloc 10885\nthp_collapse_alloc 100\nthp_swpout 0\nthp_swpout_fallback 0\n"
+        }
+      }
+    },
+    "candidate": {
+      "path": "native-optimization/latent-api/moebius-depthwise-sha-rest-t8-v1/midrun-resources-1.json",
+      "bytes": 2841,
+      "sha256": "80a5eb06be04451f1a9a7f9eca5a0ce651575bf9ce403b955458518f3020f2dd",
+      "contents": {
+        "time_utc": "2026-11-01T14:14:41.641187+00:00",
+        "process_resources": "    PID COMMAND         %CPU   RSS     ELAPSED     TIME\n 551970 test-inpaint-be  594 3407472     07:33 00:44:56\n 558434 python3         66.6  9508       00:00 00:00:00\n 557811 rsync           10.5 30456       01:48 00:00:11\n 426544 zstd             4.2 53452    01:40:05 00:04:14\n 267796 zstd             3.0 53452    01:48:07 00:03:15\n 551958 python3          0.3 32152       07:35 00:00:01\n      6 caas-prefix-tra  0.2   724    06:21:46 00:01:00\n    299 codex            0.2 53000    06:08:25 00:00:55\n    130 codex            0.1 68848    06:09:15 00:00:23\n      7 sites-preview    0.0   300    06:21:46 00:00:15\n      1 supervisord      0.0 23220    06:21:47 00:00:04\n      5 sync_share.sh    0.0  2080    06:21:46 00:00:00\n      3 rsync            0.0  2372    06:21:46 00:00:00\n      4 sync_share.sh    0.0  2072    06:21:46 00:00:00\n     84 inotifywait      0.0   832    06:09:20 00:00:00\n 267795 sh               0.0   764    01:48:07 00:00:00\n 426543 sh               0.0   760    01:40:05 00:00:00\n 558431 bash             0.0  2056       00:00 00:00:00\n 558435 ps               0.0  2636       00:00 00:00:00\n",
+        "cgroup": {
+          "cpu.stat": "usage_usec 61972356473\nuser_usec 58548573005\nsystem_usec 3423783468\nnice_usec 0\nnr_periods 179838\nnr_throttled 56986\nthrottled_usec 2717066711\nnr_bursts 0\nburst_usec 0\n",
+          "memory.current": "8588615680\n",
+          "memory.events": "low 0\nhigh 0\nmax 2383344\noom 0\noom_kill 0\noom_group_kill 0\n",
+          "memory.stat": "anon 2820993024\nfile 4784009216\nkernel 978403328\nkernel_stack 1032192\npagetables 10833920\nsec_pagetables 0\npercpu 3168\nsock 3903488\nvmalloc 0\nshmem 0\nfile_mapped 912203776\nfile_dirty 149561344\nfile_writeback 0\nswapcached 0\nanon_thp 0\nfile_thp 2113929216\nshmem_thp 0\ninactive_anon 2820890624\nactive_anon 86016\ninactive_file 3046866944\nactive_file 1736744960\nunevictable 0\nslab_reclaimable 965076296\nslab_unreclaimable 1201104\nslab 966277400\nworkingset_refault_anon 0\nworkingset_refault_file 341613975\nworkingset_activate_anon 0\nworkingset_activate_file 19844187\nworkingset_restore_anon 0\nworkingset_restore_file 6182452\nworkingset_nodereclaim 106586\npgdemote_kswapd 0\npgdemote_direct 0\npgdemote_khugepaged 0\npgdemote_proactive 0\npgscan 369576468\npgsteal 366641244\npswpin 0\npswpout 0\npgscan_kswapd 16043226\npgscan_direct 353524144\npgscan_khugepaged 9098\npgscan_proactive 0\npgsteal_kswapd 15896602\npgsteal_direct 350735544\npgsteal_khugepaged 9098\npgsteal_proactive 0\npgfault 544215079\npgmajfault 61097\npgrefill 32020158\npgactivate 17667145\npgdeactivate 31623771\npglazyfree 42\npglazyfreed 0\nswpin_zero 0\nswpout_zero 0\nthp_fault_alloc 10885\nthp_collapse_alloc 100\nthp_swpout 0\nthp_swpout_fallback 0\n"
+        }
+      }
+    }
+  },
+  "exporter": {
+    "path": "native-optimization/latent-assets/collect_moebius_api_evidence.py",
+    "bytes": 19028,
+    "sha256": "c4a0326eddee5491c43afae75b5d2566187eaac46947fbe6881c5910d628bdfe"
+  },
+  "export_note": "Raw file identities refer to exact input bytes. Embedded documents only remove the workspace prefix from paths; the raw file hash does not claim to hash the sanitized embedded JSON."
+}

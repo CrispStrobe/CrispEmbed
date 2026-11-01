@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <cstdlib>
 #include <cstring>
 #include <filesystem>
 #include <iostream>
@@ -86,21 +87,22 @@ void close_values(const std::vector<float> & actual, const std::vector<float> & 
     }
 }
 std::vector<float> conv_ref(const Fixture & f, const std::string & name, const std::vector<float> & input, int w, int h,
-                            int c, int batch, int stride, int pad, bool dw) {
+                            int c, int batch, int stride, int pad, bool dw, int dilation = 1) {
     const auto & kernel = f.values.at(name + ".weight");
     const int oc = int(kernel.shape[0]), ic = int(kernel.shape[1]), kh = int(kernel.shape[2]),
               kw = int(kernel.shape[3]);
-    const int ow = (w + 2 * pad - kw) / stride + 1, oh = (h + 2 * pad - kh) / stride + 1;
+    const int ow = (w + 2 * pad - dilation * (kw - 1) - 1) / stride + 1;
+    const int oh = (h + 2 * pad - dilation * (kh - 1) - 1) / stride + 1;
     std::vector<float> out(size_t(batch) * oc * oh * ow);
     for (int b = 0; b < batch; ++b)
         for (int o = 0; o < oc; ++o)
             for (int y = 0; y < oh; ++y)
                 for (int x = 0; x < ow; ++x) {
-                    double sum = f.values.at(name + ".bias").data[size_t(o)];
+                    double sum = f.values.count(name + ".bias") ? f.values.at(name + ".bias").data[size_t(o)] : 0;
                     for (int i = 0; i < ic; ++i)
                         for (int ky = 0; ky < kh; ++ky)
                             for (int kx = 0; kx < kw; ++kx) {
-                                const int sy = y * stride + ky - pad, sx = x * stride + kx - pad;
+                                const int sy = y * stride + ky * dilation - pad, sx = x * stride + kx * dilation - pad;
                                 if (sy >= 0 && sy < h && sx >= 0 && sx < w)
                                     sum += double(input[ix(b, dw ? o : i, sy, sx, c, h, w)]) *
                                            kernel.data[((size_t(o) * ic + i) * kh + ky) * kw + kx];
@@ -554,6 +556,114 @@ struct Environment {
     }
     ~Environment() { set(present ? previous.c_str() : nullptr); }
 };
+
+void exact_values(const std::vector<float> & actual, const std::vector<float> & expected, const std::string & label) {
+    check(actual.size() == expected.size() &&
+              std::memcmp(actual.data(), expected.data(), expected.size() * sizeof(float)) == 0,
+          label + " changed float bytes");
+}
+
+void cpu_depthwise(inpaint_graph::Device & device) {
+    struct Case {
+        int width, height, channels, kernel, stride, padding, dilation;
+        bool bias, eligible;
+        const char * label;
+    };
+    const std::vector<Case> cases =
+        device.gpu ? std::vector<Case>{ { 7, 5, 4, 3, 1, 1, 1, true, true, "gpu-keeps-generic" } }
+                   : std::vector<Case>{ { 7, 5, 9, 3, 1, 1, 1, false, true, "odd-channels-batch2" },
+                                        { 133, 7, 6, 3, 1, 1, 1, true, true, "interior-block-tail" },
+                                        { 3, 3, 3, 3, 1, 1, 1, false, true, "minimum-interior" },
+                                        { 64, 64, 9, 3, 1, 1, 1, false, true, "moebius-input" },
+                                        { 9, 7, 3, 3, 2, 1, 1, true, false, "stride-fallback" },
+                                        { 9, 7, 3, 3, 1, 0, 1, true, false, "padding-fallback" },
+                                        { 9, 7, 3, 3, 1, 1, 2, true, false, "dilation-fallback" },
+                                        { 9, 7, 3, 5, 1, 1, 1, true, false, "kernel-fallback" },
+                                        { 2, 2, 3, 3, 1, 1, 1, true, false, "small-image-fallback" } };
+    Environment gate("CRISPEMBED_INPAINT_CPU_DEPTHWISE");
+    size_t tested = 0, selected = 0;
+    for (const auto & c : cases) {
+        Fixture f;
+        f.add("dw.weight", { c.channels, 1, c.kernel, c.kernel }, 0);
+        auto & kernel = f.values.at("dw.weight").data;
+        for (size_t i = 0; i < kernel.size(); ++i) kernel[i] = float(int((i * 7) % 31) - 15) / 64.0f;
+        if (c.bias) {
+            f.add("dw.bias", { c.channels }, 0);
+            auto & bias = f.values.at("dw.bias").data;
+            for (size_t i = 0; i < bias.size(); ++i) bias[i] = float(int((i * 3) % 17) - 8) / 512.0f;
+        }
+        f.save();
+        inpaint_graph::Weights weights(device, f.path.string().c_str(), f.schema);
+        std::unique_ptr<Builder> graphs[2];
+        ggml_tensor *inputs[2]{}, *outputs[2]{};
+        void * input_storage[2]{};
+        size_t nodes[2]{}, allocation[2]{};
+        for (int arm = 0; arm < 2; ++arm) {
+            // The first eligible case also proves an absent gate stays off.
+            gate.set(arm ? "1" : (tested == 0 ? nullptr : "0"));
+            graphs[arm] = std::make_unique<Builder>(device, &weights, 256);
+            auto & graph = *graphs[arm];
+            inputs[arm] = graph.parameter("depthwise.input", { c.width, c.height, c.channels, 2 });
+            outputs[arm] = graph.conv("dw", inputs[arm], c.stride, c.padding, c.channels, c.dilation);
+            // A constructed, unused branch must not inflate execution evidence.
+            graph.conv("dw", inputs[arm], c.stride, c.padding, c.channels, c.dilation);
+            graph.finish({ outputs[arm] }, std::string("depthwise-") + c.label + (arm ? ".on" : ".off"));
+            const size_t expected_nodes = arm && c.eligible && !device.gpu ? 1 : 0;
+            check(graph.cpu_depthwise_nodes() == expected_nodes, "depthwise selected-node census differs");
+            nodes[arm] = graph.nodes();
+            allocation[arm] = graph.allocation_bytes();
+            input_storage[arm] = inputs[arm]->data;
+        }
+        std::vector<float> input(size_t(c.width) * c.height * c.channels * 2);
+        void * const kernel_storage = graphs[0]->weight("dw.weight")->data;
+        void * const bias_storage = c.bias ? graphs[0]->weight("dw.bias")->data : nullptr;
+        for (int round = 0; round < 2; ++round) {
+            for (size_t i = 0; i < input.size(); ++i) {
+                const int value = int((i * 17 + size_t(round) * 11) % 127) - 63;
+                input[i] = round == 0 ? float(value) / 64.0f : float(value) * .0137f + float(int(i % 5) - 2) * .00031f;
+            }
+            const auto expected =
+                conv_ref(f, "dw", input, c.width, c.height, c.channels, 2, c.stride, c.padding, true, c.dilation);
+            std::vector<float> actual[2];
+            for (int arm = 0; arm < 2; ++arm) {
+                auto & graph = *graphs[arm];
+                graph.upload(inputs[arm], input);
+                graph.compute();
+                actual[arm] = graph.download(outputs[arm]);
+                close_values(actual[arm], expected, 4e-6, 2e-6, std::string("depthwise ") + c.label);
+                if (round == 0) exact_values(actual[arm], expected, "dyadic depthwise scalar oracle");
+                exact_values(graph.download(inputs[arm]), input, "depthwise retained input");
+                exact_values(graph.download(graph.weight("dw.weight")), kernel, "depthwise resident kernel");
+                if (c.bias)
+                    exact_values(graph.download(graph.weight("dw.bias")), f.values.at("dw.bias").data,
+                                 "depthwise resident bias");
+                graph.compute();
+                exact_values(graph.download(outputs[arm]), actual[arm], "depthwise repeated output");
+                exact_values(graph.download(inputs[arm]), input, "depthwise replay input");
+                exact_values(graph.download(graph.weight("dw.weight")), kernel, "depthwise replay kernel");
+                if (c.bias)
+                    exact_values(graph.download(graph.weight("dw.bias")), f.values.at("dw.bias").data,
+                                 "depthwise replay bias");
+                check(graph.nodes() == nodes[arm] && graph.allocation_bytes() == allocation[arm] &&
+                          inputs[arm]->data == input_storage[arm] &&
+                          graph.weight("dw.weight")->data == kernel_storage &&
+                          (!c.bias || graph.weight("dw.bias")->data == bias_storage),
+                      "depthwise graph or weight storage changed during replay");
+            }
+            close_values(actual[1], actual[0], 4e-6, 2e-6, "gated versus generic depthwise");
+            if (round == 0) exact_values(actual[1], actual[0], "dyadic depthwise native comparison");
+        }
+        for (const auto & graph : graphs)
+            check(graph->runs() == 4 && graph->upload_bytes() == 2 * input.size() * sizeof(float),
+                  "depthwise replay execution/transfer accounting differs");
+        ++tested;
+        selected += graphs[1]->cpu_depthwise_nodes();
+    }
+    std::cout << "cpu_depthwise_controls cases=" << tested << " selected_nodes=" << selected
+              << " batch=2 changed_inputs=2 repeats_per_input=2 scalar_atol=0.000004 scalar_rtol=0.000002"
+              << " input_and_weight_bytes_preserved=true unused_nodes_excluded=true\n";
+}
+
 double median(std::vector<double> values) {
     std::sort(values.begin(), values.end());
     return values.size() % 2 ? values[values.size() / 2]
@@ -689,6 +799,7 @@ int run(int argc, char ** argv) {
     inpaint_graph::Device device(threads);
     check((backend == "cpu") != device.gpu, "requested and selected backend classes differ");
     operators(device);
+    cpu_depthwise(device);
     encoded_weight_names(device);
     transpose_convolution(device, 1);
     transpose_convolution(device, 2);

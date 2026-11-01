@@ -28,7 +28,11 @@ CPU_GATES = ("CRISPEMBED_INPAINT_GEMM_LAYOUT", "CRISPEMBED_INPAINT_REFLECT_GATHE
              "CRISPEMBED_INPAINT_CPU_FFT", "CRISPEMBED_INPAINT_CPU_GLA",
              "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC", "CRISPEMBED_MOEBIUS_LOCAL_REASSOC",
              "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM",
-             "CRISPEMBED_MIGAN_CPU_KERNELS", "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES")
+             "CRISPEMBED_MIGAN_CPU_KERNELS", "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES",
+             "CRISPEMBED_INPAINT_CPU_DEPTHWISE")
+# Hashing is an independent opt-in; resetting it must not expand the existing
+# CPU component preset.
+RESET_GATES = CPU_GATES + ("CRISPEMBED_INPAINT_SHA256_ACCEL",)
 OBSERVER_SYMBOLS = {
     "crispembed-inpaint-graph": ("inpaint_graph::Builder::set_observer(",),
     "crispembed-latent-inpaint": ("latent_inpaint::run_reference(", "latent_inpaint::set_observer(",
@@ -101,11 +105,17 @@ def configure_command(build, backend):
     return result
 
 
+def reset_gate_environment(environment):
+    result = dict(environment)
+    result.update({name: "0" for name in RESET_GATES})
+    return result
+
+
 def component_profiles(backend):
     """Reset inherited candidates and exercise each CPU alternative explicitly."""
     if backend not in ("cpu", "cuda", "metal"):
         raise ValueError("component profiles require an explicit backend")
-    baseline = {name: "0" for name in CPU_GATES}
+    baseline = reset_gate_environment({})
     profiles = [("portable", TARGETS, baseline)]
     if backend == "cpu":
         optimized = dict(baseline)
@@ -204,7 +214,7 @@ class Runbook:
         record = {"label": label, "command": command, "status": "starting", "returncode": None, "log": log.name}
         effective_environment = self.environment if environment is None else environment
         if effective_environment is not None:
-            record["cpu_candidate_gates"] = {name: effective_environment.get(name, "0") for name in CPU_GATES}
+            record["cpu_candidate_gates"] = {name: effective_environment.get(name, "0") for name in RESET_GATES}
         if stdin_path is not None:
             record["stdin"] = str(Path(stdin_path).name)
         self.report["commands"].append(record)
@@ -344,8 +354,7 @@ def main(argv=None):
               "original_reference_replayed": False, "model_free_controls": "pending", "commands": [],
               "components": [], "artifacts": [], "platform": {"system": platform.system(), "machine": platform.machine()},
               "full_model_benchmark": {"status": "pending" if args.migan_model else "not_requested"}}
-    env = os.environ.copy()
-    env.update({name: "0" for name in CPU_GATES})
+    env = reset_gate_environment(os.environ)
     env.update({"OMP_NUM_THREADS": str(args.threads), "OPENBLAS_NUM_THREADS": str(args.threads),
                 "MKL_NUM_THREADS": str(args.threads), "CRISPEMBED_INPAINT_GRAPH": "1",
                 "CRISPEMBED_INPAINT_FAST": "1" if args.fast else "0", "CRISPEMBED_INPAINT_PROFILE": "1",

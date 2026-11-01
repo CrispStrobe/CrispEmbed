@@ -121,6 +121,24 @@ multiple cached component graphs, FFT/GLA intermediates and backend workspace
 also consume memory. The earlier “under 4 GB” model-size criterion is not a
 guarantee that the entire application fits in 4 GB of RAM or VRAM.
 
+`CRISPEMBED_INPAINT_CPU_DEPTHWISE=1` selects a restricted CPU specialization
+for contiguous F32 depthwise convolutions with a 3x3 kernel, multiplier one,
+stride one, padding one and dilation one. It adapts the existing MI-GAN
+tap-major interior loop, with scalar borders and no intermediate activation
+transfers. Other geometries retain the ordinary dispatch. Finalized graph
+profiles include `cpu_depthwise_nodes`, so tests can distinguish actual custom
+node selection from a requested flag. The four-case Moebius replay selects
+47 such nodes per denoising step and preserves the prior final RGB exactly;
+its original intermediate failures remain documented in the
+[depthwise evidence](../tests/results/inpainting/moebius-depthwise-cpu-2026-11-01.json).
+
+Model-file verification has a separate default-off
+`CRISPEMBED_INPAINT_SHA256_ACCEL` gate. Supported x86-64 CPUs use SHA-NI for
+complete input blocks; the original digest, padding and file-admission checks
+are retained. This affects loading rather than graph arithmetic. See the
+[model hashing guide](inpaint-model-hashing.md) for exact verification tests
+and actual execution profiles.
+
 LaMa's transposed convolutions use exact zero insertion followed by bounded
 convolution/GEMM. Flipped/channel-transposed immutable kernels and insertion
 masks are prepared once and retained; mixed GPU kernels remain F16. This
@@ -272,19 +290,27 @@ requires the corresponding full-model and target-hardware evidence.
 These are completed CPU measurements and explicit qualification limits. The
 MI-GAN and LaMa timing rows use five warm ordinary API calls after one cold
 call. Moebius's stage-capture run is not an ordinary performance benchmark.
-PixelHacker has a completed candidate only, with three warm calls; its paired
-comparison was stopped at the user's delivery request.
+PixelHacker now has a completed eager/candidate ordinary API pair, with three
+warm calls per arm and passing native final-image agreement. Its timing
+qualification flags remain false; the measurements are diagnostic observations
+from one fixture and a fixed run order on this shared CPU host.
 
 | Engine / configuration | Original-reference result | Ordinary-API warm median | Runtime peak memory | Evidence |
 | --- | --- | --- | --- | --- |
 | MI-GAN256 / 8 threads / optimized CPU | Original panel passes; captured native stages unchanged | 273.62 ms | About 196 MiB RSS | [MI-GAN record](../tests/results/inpainting/migan-cpu-2026-11-01.json) |
 | MI-GAN512 / 8 threads / quiet confirmation | Original panel passes; captured native stages unchanged | 495.24 ms | About 373 MiB RSS | [MI-GAN record](../tests/results/inpainting/migan-cpu-2026-11-01.json) |
 | LaMa / formula512 / 8 threads / optimized CPU | Photo RGB passes; synthetic full-mask strict stages fail | 4,116.47 ms | Photo arms about 322–528 MiB RSS | [LaMa record](../tests/results/inpainting/lama-cpu-2026-11-01.json) |
-| Moebius / local and relative reassociation | All four final RGB gates pass; 35/608 strict stage failures | Not benchmarked as a repeated ordinary API panel | About 4.32 GiB for the observer run; not ordinary RSS | [Latent record](../tests/results/inpainting/latent-cpu-2026-11-01.json) |
-| PixelHacker / 8 threads / optimized CPU | Original CUDA reference unavailable; native comparison incomplete | 139.268 s, candidate only | About 5.99 GiB RSS | [PixelHacker record](../tests/results/inpainting/pixelhacker-cpu-2026-11-01.json) |
+| Moebius / local and relative reassociation, GEMM layout | All four final RGB gates pass; 35/608 strict stage failures; ordinary paired outputs exact | 142.796 s baseline; 181.397 s with depthwise + SHA (+27.03%); timings unqualified | 3,733,784 / 3,727,376 KiB ordinary process RSS | [Ordinary API pair](../tests/results/inpainting/moebius-api-cpu-2026-11-01.json), [original replay](../tests/results/inpainting/latent-cpu-2026-11-01.json) |
+| PixelHacker / 8 threads / eager versus optimized CPU + SHA | Original CUDA reference unavailable; native formula512 RGB passes max error 1 and exact known pixels | 310.958 s eager; 144.243 s candidate; diagnostic ratio 2.1558, timings unqualified | 4,478,836 / 6,275,732 KiB process RSS | [Current PixelHacker API pair](../tests/results/inpainting/pixelhacker-api-cpu-2026-11-01.json) |
 
 The [complete results](inpainting-optimization-results.md) distinguish image
 checks, intermediate limits, timing exclusions and incomplete comparisons.
 No row establishes CUDA/Metal performance, broad perceptual quality or a
 release/default promotion. A stored model smaller than 4 GB does not imply a
 process below 4 GB.
+
+The [current production CLI panel](../tests/results/inpainting/inpaint-cli-final-2026-11-01.json)
+separately passes 12 invocations and 16 PNG outputs across all five profiles
+on one executable, with exact API comparisons, empty masks, actual SHA-NI
+verification and both latent filled/empty/filled batches. Functional CLI
+success does not qualify device throughput or erase the original-stage limits.
