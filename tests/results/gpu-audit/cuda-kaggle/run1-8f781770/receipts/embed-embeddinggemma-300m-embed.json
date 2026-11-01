@@ -1,0 +1,146 @@
+{
+ "kind": "embed",
+ "mode": "embed",
+ "base": "embeddinggemma-300m.gguf",
+ "files": {
+  "embeddinggemma-300m.gguf": {
+   "precision": "f32",
+   "type_hist": {
+    "f32": 307494912
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      2.272,
+      2.22
+     ],
+     "gpu_mem_peak_mib": 1309,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispembed: using CUDA0 backend with CPU fallback\ndecoder_embed: n_vocab 0 → 262144 (from token_embd)\ndecoder_embed: dense.0.weight [768→3072]\ndecoder_embed: dense.1.weight [3072→768]\ndecoder_embed: loaded 24 layers, 768 dims, 262144 vocab, 3 heads (1 kv), rope_theta=1000000 (local=10000 every 6), pool=mean, bidirectional\ncrispembed: SentencePiece BPE tokenizer (262144 tokens, 514906 merges)\n"
+    },
+    "cpu": {
+     "wall_s": [
+      4.229,
+      4.127
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "crispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ndecoder_embed: n_vocab 0 → 262144 (from token_embd)\ndecoder_embed: dense.0.weight [768→3072]\ndecoder_embed: dense.1.weight [3072→768]\ndecoder_embed: loaded 24 layers, 768 dims, 262144 vocab, 3 heads (1 kv), rope_theta=1000000 (local=10000 every 6), pool=mean, bidirectional\ncrispembed: SentencePiece BPE tokenizer (262144 tokens, 514906 merges)\n"
+    }
+   },
+   "cuda_vs_cpu_same_artifact": {
+    "cos_min": 0.9999997889782845,
+    "cos_mean": 0.9999998892608707,
+    "max_abs": 9.900000000000013e-05
+   },
+   "cuda_vs_cpu_reference": {
+    "cos_min": 0.9999997889782845,
+    "cos_mean": 0.9999998892608707,
+    "max_abs": 9.900000000000013e-05
+   },
+   "bar": 0.99,
+   "qualifies": true
+  },
+  "embeddinggemma-300m-q8_0.gguf": {
+   "precision": "q8_0",
+   "type_hist": {
+    "q8_0": 302776320,
+    "f32": 4718592
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      1.87,
+      1.921
+     ],
+     "gpu_mem_peak_mib": 461,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispembed: using CUDA0 backend with CPU fallback\ndecoder_embed: n_vocab 0 → 262144 (from token_embd)\ndecoder_embed: dense.0.weight [768→3072]\ndecoder_embed: dense.1.weight [3072→768]\ndecoder_embed: loaded 24 layers, 768 dims, 262144 vocab, 3 heads (1 kv), rope_theta=1000000 (local=10000 every 6), pool=mean, bidirectional\ncrispembed: SentencePiece BPE tokenizer (262144 tokens, 514906 merges)\n"
+    },
+    "cpu": {
+     "wall_s": [
+      3.929,
+      3.931
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "crispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ndecoder_embed: n_vocab 0 → 262144 (from token_embd)\ndecoder_embed: dense.0.weight [768→3072]\ndecoder_embed: dense.1.weight [3072→768]\ndecoder_embed: loaded 24 layers, 768 dims, 262144 vocab, 3 heads (1 kv), rope_theta=1000000 (local=10000 every 6), pool=mean, bidirectional\ncrispembed: SentencePiece BPE tokenizer (262144 tokens, 514906 merges)\n"
+    }
+   },
+   "cuda_vs_cpu_same_artifact": {
+    "cos_min": 0.9996794450039892,
+    "cos_mean": 0.999841847165526,
+    "max_abs": 0.0030500000000000006
+   },
+   "cuda_vs_cpu_reference": {
+    "cos_min": 0.9994914113080138,
+    "cos_mean": 0.9997444097831942,
+    "max_abs": 0.005037
+   },
+   "cpu_vs_cpu_reference": {
+    "cos_min": 0.9993838851775446,
+    "cos_mean": 0.9997344904531752,
+    "max_abs": 0.0036200000000000017
+   },
+   "bar": 0.97,
+   "qualifies": true
+  },
+  "embeddinggemma-300m-q4_k.gguf": {
+   "precision": "q8_0",
+   "type_hist": {
+    "q8_0": 201326592,
+    "q4_k": 80216064,
+    "q4_0": 21233664,
+    "f32": 4718592
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      1.92,
+      1.87
+     ],
+     "gpu_mem_peak_mib": 415,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispembed: using CUDA0 backend with CPU fallback\ndecoder_embed: n_vocab 0 → 262144 (from token_embd)\ndecoder_embed: dense.0.weight [768→3072]\ndecoder_embed: dense.1.weight [3072→768]\ndecoder_embed: loaded 24 layers, 768 dims, 262144 vocab, 3 heads (1 kv), rope_theta=1000000 (local=10000 every 6), pool=mean, bidirectional\ncrispembed: SentencePiece BPE tokenizer (262144 tokens, 514906 merges)\n"
+    },
+    "cpu": {
+     "wall_s": [
+      4.731,
+      4.63
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "crispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ndecoder_embed: n_vocab 0 → 262144 (from token_embd)\ndecoder_embed: dense.0.weight [768→3072]\ndecoder_embed: dense.1.weight [3072→768]\ndecoder_embed: loaded 24 layers, 768 dims, 262144 vocab, 3 heads (1 kv), rope_theta=1000000 (local=10000 every 6), pool=mean, bidirectional\ncrispembed: SentencePiece BPE tokenizer (262144 tokens, 514906 merges)\n"
+    }
+   },
+   "cuda_vs_cpu_same_artifact": {
+    "cos_min": 0.9981128046182117,
+    "cos_mean": 0.9991556093060999,
+    "max_abs": 0.006756999999999999
+   },
+   "cuda_vs_cpu_reference": {
+    "cos_min": 0.9500951459182889,
+    "cos_mean": 0.9759582142194653,
+    "max_abs": 0.039015999999999995
+   },
+   "cpu_vs_cpu_reference": {
+    "cos_min": 0.949430809675825,
+    "cos_mean": 0.9757206252738343,
+    "max_abs": 0.039538
+   },
+   "bar": 0.97,
+   "qualifies": false
+  }
+ },
+ "seconds": 147.7,
+ "id": "embed-embeddinggemma-300m-embed",
+ "commit": "8f781770810956818ba76831a6bc607fbc0a1154",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

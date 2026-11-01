@@ -1,0 +1,143 @@
+{
+ "kind": "embed",
+ "mode": "embed",
+ "base": "arctic-embed-m-v2.gguf",
+ "files": {
+  "arctic-embed-m-v2.gguf": {
+   "precision": "f32",
+   "type_hist": {
+    "f32": 305283072
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      2.622,
+      1.669
+     ],
+     "gpu_mem_peak_mib": 1399,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "crispembed: using SentencePiece tokenizer (250048 tokens, 250048 scores)\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispembed: using CUDA0 backend with CPU fallback\ncrispembed: no position embeddings, using RoPE (theta=160000)\ncrispembed: loaded 12 layers, 768 dims, 250048 vocab\ncrispembed: auto-prefix \"query: \" (use --prefix \"\" to disable)\n"
+    },
+    "cpu": {
+     "wall_s": [
+      4.333,
+      4.128
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "crispembed: using SentencePiece tokenizer (250048 tokens, 250048 scores)\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ncrispembed: using CPU backend (4 threads)\ncrispembed: no position embeddings, using RoPE (theta=160000)\ncrispembed: loaded 12 layers, 768 dims, 250048 vocab\ncrispembed: auto-prefix \"query: \" (use --prefix \"\" to disable)\n"
+    }
+   },
+   "cuda_vs_cpu_same_artifact": {
+    "cos_min": 0.9999997002713142,
+    "cos_mean": 0.9999999070079544,
+    "max_abs": 9.99999999999994e-05
+   },
+   "cuda_vs_cpu_reference": {
+    "cos_min": 0.9999997002713142,
+    "cos_mean": 0.9999999070079544,
+    "max_abs": 9.99999999999994e-05
+   },
+   "bar": 0.99,
+   "qualifies": true
+  },
+  "arctic-embed-m-v2-q8_0.gguf": {
+   "precision": "q8_0",
+   "type_hist": {
+    "q8_0": 305283072
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      1.269,
+      1.268
+     ],
+     "gpu_mem_peak_mib": 457,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "crispembed: using SentencePiece tokenizer (250048 tokens, 250048 scores)\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispembed: using CUDA0 backend with CPU fallback\ncrispembed: no position embeddings, using RoPE (theta=160000)\ncrispembed: loaded 12 layers, 768 dims, 250048 vocab\ncrispembed: auto-prefix \"query: \" (use --prefix \"\" to disable)\n"
+    },
+    "cpu": {
+     "wall_s": [
+      3.879,
+      4.027
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "crispembed: using SentencePiece tokenizer (250048 tokens, 250048 scores)\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ncrispembed: using CPU backend (4 threads)\ncrispembed: no position embeddings, using RoPE (theta=160000)\ncrispembed: loaded 12 layers, 768 dims, 250048 vocab\ncrispembed: auto-prefix \"query: \" (use --prefix \"\" to disable)\n"
+    }
+   },
+   "cuda_vs_cpu_same_artifact": {
+    "cos_min": 0.9998493251967201,
+    "cos_mean": 0.9998978255496566,
+    "max_abs": 0.0031649999999999977
+   },
+   "cuda_vs_cpu_reference": {
+    "cos_min": 0.9993889565183857,
+    "cos_mean": 0.9995339150247987,
+    "max_abs": 0.004298000000000003
+   },
+   "cpu_vs_cpu_reference": {
+    "cos_min": 0.999386910445386,
+    "cos_mean": 0.9995343703164837,
+    "max_abs": 0.004292000000000001
+   },
+   "bar": 0.97,
+   "qualifies": true
+  },
+  "arctic-embed-m-v2-q4_k-imatrix.gguf": {
+   "precision": "q8_0",
+   "type_hist": {
+    "q8_0": 192036864,
+    "q4_k": 113246208
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      1.269,
+      1.269
+     ],
+     "gpu_mem_peak_mib": 409,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "crispembed: using SentencePiece tokenizer (250048 tokens, 250048 scores)\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispembed: using CUDA0 backend with CPU fallback\ncrispembed: no position embeddings, using RoPE (theta=160000)\ncrispembed: loaded 12 layers, 768 dims, 250048 vocab\ncrispembed: auto-prefix \"query: \" (use --prefix \"\" to disable)\n"
+    },
+    "cpu": {
+     "wall_s": [
+      5.484,
+      5.133
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "crispembed: using SentencePiece tokenizer (250048 tokens, 250048 scores)\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ncrispembed: using CPU backend (4 threads)\ncrispembed: no position embeddings, using RoPE (theta=160000)\ncrispembed: loaded 12 layers, 768 dims, 250048 vocab\ncrispembed: auto-prefix \"query: \" (use --prefix \"\" to disable)\n"
+    }
+   },
+   "cuda_vs_cpu_same_artifact": {
+    "cos_min": 0.9911142988136787,
+    "cos_mean": 0.9957042404980371,
+    "max_abs": 0.015633
+   },
+   "cuda_vs_cpu_reference": {
+    "cos_min": 0.9481881353596903,
+    "cos_mean": 0.9583737212087661,
+    "max_abs": 0.037937
+   },
+   "cpu_vs_cpu_reference": {
+    "cos_min": 0.9513126708019475,
+    "cos_mean": 0.9586569162279662,
+    "max_abs": 0.036902
+   },
+   "bar": 0.97,
+   "qualifies": false
+  }
+ },
+ "seconds": 97.6,
+ "id": "embed-arctic-m-v2-embed",
+ "commit": "8f781770810956818ba76831a6bc607fbc0a1154",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

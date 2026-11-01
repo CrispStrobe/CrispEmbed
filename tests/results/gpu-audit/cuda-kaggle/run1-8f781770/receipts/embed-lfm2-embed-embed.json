@@ -1,0 +1,143 @@
+{
+ "kind": "embed",
+ "mode": "embed",
+ "base": "lfm2-embed-f16.gguf",
+ "files": {
+  "lfm2-embed-f16.gguf": {
+   "precision": "f16",
+   "type_hist": {
+    "f16": 354418688
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      1.519,
+      4.068
+     ],
+     "gpu_mem_peak_mib": 863,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\n[lfm2_embed] loaded: hidden=1024, layers=16, heads=16/8, ff=4608, vocab=65536\ncrispembed: auto-prefix \"query: \" (use --prefix \"\" to disable)\n"
+    },
+    "cpu": {
+     "wall_s": [
+      15.912,
+      16.182
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "crispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\n[lfm2_embed] loaded: hidden=1024, layers=16, heads=16/8, ff=4608, vocab=65536\ncrispembed: auto-prefix \"query: \" (use --prefix \"\" to disable)\n"
+    }
+   },
+   "cuda_vs_cpu_same_artifact": {
+    "cos_min": 0.9999993970747191,
+    "cos_mean": 0.999999802712794,
+    "max_abs": 0.00011099999999999999
+   },
+   "cuda_vs_cpu_reference": {
+    "cos_min": 0.9999993970747191,
+    "cos_mean": 0.999999802712794,
+    "max_abs": 0.00011099999999999999
+   },
+   "bar": 0.98,
+   "qualifies": true
+  },
+  "lfm2-embed-q8_0.gguf": {
+   "precision": "q8_0",
+   "type_hist": {
+    "q8_0": 354418688
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      1.218,
+      1.268
+     ],
+     "gpu_mem_peak_mib": 525,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\n[lfm2_embed] loaded: hidden=1024, layers=16, heads=16/8, ff=4608, vocab=65536\ncrispembed: auto-prefix \"query: \" (use --prefix \"\" to disable)\n"
+    },
+    "cpu": {
+     "wall_s": [
+      7.245,
+      7.24
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "crispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\n[lfm2_embed] loaded: hidden=1024, layers=16, heads=16/8, ff=4608, vocab=65536\ncrispembed: auto-prefix \"query: \" (use --prefix \"\" to disable)\n"
+    }
+   },
+   "cuda_vs_cpu_same_artifact": {
+    "cos_min": 0.99980065750148,
+    "cos_mean": 0.9998734966968209,
+    "max_abs": 0.002383000000000003
+   },
+   "cuda_vs_cpu_reference": {
+    "cos_min": 0.9997483940260888,
+    "cos_mean": 0.9998043537462159,
+    "max_abs": 0.003473
+   },
+   "cpu_vs_cpu_reference": {
+    "cos_min": 0.9997427802106024,
+    "cos_mean": 0.9997969110881679,
+    "max_abs": 0.003492
+   },
+   "bar": 0.97,
+   "qualifies": true
+  },
+  "lfm2-embed-q4_k.gguf": {
+   "precision": "q4_k",
+   "type_hist": {
+    "q8_0": 67108864,
+    "q4_k": 287309824
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      1.167,
+      1.168
+     ],
+     "gpu_mem_peak_mib": 389,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\n[lfm2_embed] loaded: hidden=1024, layers=16, heads=16/8, ff=4608, vocab=65536\ncrispembed: auto-prefix \"query: \" (use --prefix \"\" to disable)\n"
+    },
+    "cpu": {
+     "wall_s": [
+      9.345,
+      9.247
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "crispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\n[lfm2_embed] loaded: hidden=1024, layers=16, heads=16/8, ff=4608, vocab=65536\ncrispembed: auto-prefix \"query: \" (use --prefix \"\" to disable)\n"
+    }
+   },
+   "cuda_vs_cpu_same_artifact": {
+    "cos_min": 0.9976448504930062,
+    "cos_mean": 0.9987565158118946,
+    "max_abs": 0.006988000000000001
+   },
+   "cuda_vs_cpu_reference": {
+    "cos_min": 0.9777208107906121,
+    "cos_mean": 0.9851486745220114,
+    "max_abs": 0.023637
+   },
+   "cpu_vs_cpu_reference": {
+    "cos_min": 0.9783767603965784,
+    "cos_mean": 0.9853910381875085,
+    "max_abs": 0.022
+   },
+   "bar": 0.94,
+   "qualifies": true
+  }
+ },
+ "seconds": 111.6,
+ "id": "embed-lfm2-embed-embed",
+ "commit": "8f781770810956818ba76831a6bc607fbc0a1154",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

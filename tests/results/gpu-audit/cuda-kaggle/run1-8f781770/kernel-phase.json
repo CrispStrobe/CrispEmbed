@@ -1,0 +1,8 @@
+{
+ "script_version": "cuda-audit-kernel-v1",
+ "commit": "8f781770810956818ba76831a6bc607fbc0a1154",
+ "batch": "all",
+ "phase": "built",
+ "t": "2026-11-01T20:52:50Z",
+ "build_s": 1447.3
+}
