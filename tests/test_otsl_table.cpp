@@ -6,6 +6,7 @@
 // Passing proves the extraction left both callers byte-identical and that the
 // upstream profile reproduces the Python helper. The summary also counts how
 // often the profiles disagree (their documented semantic differences).
+#include "core/clean_exit.h"
 #include "marker_document.h"
 #include "mineru_layout.h"
 #include "otsl_table.h"
@@ -22,7 +23,7 @@ static std::string unhex(const std::string & h) {
     return o;
 }
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     const char * path = argc > 1 ? argv[1] : "tests/data/otsl_profiles_golden.tsv";
     std::ifstream in(path);
     if (!in) {
@@ -56,4 +57,8 @@ int main(int argc, char ** argv) {
     std::printf("test-otsl-table: %ld rows, %ld failures; profile differences vs upstream: basic %ld, marker %ld\n", n,
                 bad, basic_vs_up, marker_vs_up);
     return bad || n == 0 ? 1 : 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }

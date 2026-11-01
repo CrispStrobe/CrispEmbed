@@ -79,7 +79,7 @@ class CrispMinerU {
       _result(_extract(_ctx, pixels, width, height, 3, imageAnalysis ? 1 : 0, maxTokens)));
   }
 
-  /// Complete native document route (CRISPEMBED_MINERU25_PRO_FULL_DOC=1).
+  /// Complete native document route (default on; CRISPEMBED_MINERU25_PRO_FULL_DOC=0 disables it).
   /// "blocks" and "markdown" are byte-identical to mineru-vl-utils output.
   Map<String, dynamic> extractDocument(Uint8List rgb, int width, int height,
       {Map<String, dynamic> options = const {}, int maxTokens = 0}) {

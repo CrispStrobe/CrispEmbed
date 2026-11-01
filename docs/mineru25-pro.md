@@ -24,7 +24,7 @@ their own validation.
 | `crispembed_mineru_predict`, Python `CrispMinerU.predict`, Rust `MinerU`, Dart `CrispMinerU` | Native GGML vision and language model; one image/region or a text-only prompt. Returns text, structural tokens, IDs, stop flags and timing. |
 | Python `CrispMinerU.two_step_extract` / `batch_two_step_extract` | Native GGML inference plus the **unchanged pinned Python document helper** for layout preparation, crop geometry, table-image masking/restoration, formula repairs, image/chart processing and document postprocessing. No Python neural model is loaded. Pages/regions execute serially in one resident native context. |
 | `crispembed_mineru_extract`, Python `native_extract`, orchestrator engine 25 / `mineru25-pro` | Pure C++ **basic** two-step page extraction. Includes layout resize/parsing, crops/rotation, recognition, basic OTSL-to-HTML and Markdown. It does not reproduce every Python document repair. It rejects tables containing images and directs callers to the full helper path. |
-| `crispembed_mineru_extract_document` / `_last_document`, Python `native_two_step_extract` / `native_render`, Rust `MinerU::extract_document`, Dart `extractDocument`, engine 25 with `CRISPEMBED_MINERU25_PRO_FULL_DOC=1` | **Complete native document route** (no Python): every mineru-vl-utils branch translated to C++, built from the shared layout/router/document-model components. Default off; see [Full native document route](#full-native-document-route). |
+| `crispembed_mineru_extract_document` / `_last_document`, Python `native_two_step_extract` / `native_render`, Rust `MinerU::extract_document`, Dart `extractDocument`, engine 25 (default) | **Complete native document route** (no Python): every mineru-vl-utils branch translated to C++, built from the shared layout/router/document-model components. Default on (`CRISPEMBED_MINERU25_PRO_FULL_DOC=0` restores basic); see [Full native document route](#full-native-document-route). |
 | Generic `CrispOcrModel` / CLI `-m FILE --ocr IMAGE` | Existing Qwen2-VL dispatch recognizes the new GGUF profile; default task is **Text Recognition on that image**, not automatic page layout extraction. |
 
 The native basic route must not be described as the complete Python document
@@ -35,8 +35,9 @@ package; absent helpers or native inference errors are reported, not ignored.
 
 ## Full native document route
 
-`CRISPEMBED_MINERU25_PRO_FULL_DOC=1` (default off; unset, empty and `0` keep it
-off) enables a pure C++ route whose output is designed to be byte-identical to
+The pure C++ route is the **default** since 1 November 2026, after the 8-case
+byte-identical A/B below (owner decision); `CRISPEMBED_MINERU25_PRO_FULL_DOC=0`
+restores the basic route. It is a pure C++ route whose output is designed to be byte-identical to
 `CrispMinerU.two_step_extract` + `to_markdown` (pinned helper
 `c9797cde8f54cc48306196fc6aebe73ea31dd4a3`) given the same recognition outputs.
 The basic route (`crispembed_mineru_extract`) is unchanged and remains the
@@ -125,7 +126,7 @@ The gate stays default-off pending review; proposing default-on is now
 supported by this evidence, keeping the basic and Python routes.
 
 ```bash
-CRISPEMBED_MINERU25_PRO=1 CRISPEMBED_MINERU25_PRO_FULL_DOC=1 ./build/crispembed \
+CRISPEMBED_MINERU25_PRO=1 ./build/crispembed \
   --ocr-pipeline page.png --ocr-engine mineru25-pro --ocr-rec mineru25-pro-f16.gguf
 ```
 

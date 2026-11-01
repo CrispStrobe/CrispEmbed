@@ -17,7 +17,7 @@
 //      json2md Markdown from that model, and the generic Marker renderers
 //      (markdown/html/json/chunks) work on the same document.
 //
-// Gate: callers must enforce CRISPEMBED_MINERU25_PRO_FULL_DOC (default off).
+// Gate: callers honour CRISPEMBED_MINERU25_PRO_FULL_DOC=0 (default on).
 #pragma once
 
 #include "layout_detect.h"

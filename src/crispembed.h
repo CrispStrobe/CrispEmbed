@@ -66,8 +66,8 @@ CRISPEMBED_API const char * crispembed_mineru_extract(crispembed_mineru_context 
                                                       int width, int height, int channels, int image_analysis,
                                                       int max_new_tokens);
 // Complete native two-step document route (all mineru-vl-utils c9797cde
-// postprocessing translated to C++; no Python). Requires
-// CRISPEMBED_MINERU25_PRO_FULL_DOC=1 (default off) in addition to
+// postprocessing translated to C++; no Python). Default on;
+// CRISPEMBED_MINERU25_PRO_FULL_DOC=0 disables it. Requires
 // CRISPEMBED_MINERU25_PRO=1. options_json (NULL/"" = defaults) accepts
 // image_analysis, simple_post_process, handle_equation_block, abandon_list,
 // abandon_paratext, enable_table_formula_eq_wrap, not_extract_list,

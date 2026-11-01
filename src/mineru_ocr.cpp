@@ -24,7 +24,7 @@
 struct crispembed_mineru_context {
     qwen2vl_ocr_context * model = nullptr;
     std::string json, markdown, error, rendered;
-    crisp_marker::document document; // last full-route document (CRISPEMBED_MINERU25_PRO_FULL_DOC)
+    crisp_marker::document document; // last full-route document
     bool has_document = false;
     ~crispembed_mineru_context() {
         if (model) qwen2vl_ocr_free(model);
@@ -260,8 +260,8 @@ const char * crispembed_mineru_extract(crispembed_mineru_context * ctx, const ui
     }
 }
 
-// Complete native document route (CRISPEMBED_MINERU25_PRO_FULL_DOC=1, default
-// off): mineru_doc layout provider + router + translated mineru-vl-utils
+// Complete native document route (default on since the 8-case byte-identical A/B;
+// CRISPEMBED_MINERU25_PRO_FULL_DOC=0 disables it): mineru_doc layout provider + router + translated mineru-vl-utils
 // postprocessing, written into the crisp_marker document model.
 const char * crispembed_mineru_extract_document(crispembed_mineru_context * ctx, const uint8_t * px, int w, int h,
                                                 int ch, const char * options_json, int max_tokens) {
@@ -272,9 +272,8 @@ const char * crispembed_mineru_extract_document(crispembed_mineru_context * ctx,
     ctx->has_document = false;
     ctx->document = crisp_marker::document{};
     try {
-        if (!core_env::on("CRISPEMBED_MINERU25_PRO_FULL_DOC"))
-            throw std::runtime_error(
-                "CRISPEMBED_MINERU25_PRO_FULL_DOC=1 is required for the full native document route");
+        if (core_env::explicitly_off("CRISPEMBED_MINERU25_PRO_FULL_DOC"))
+            throw std::runtime_error("the full native document route is disabled (CRISPEMBED_MINERU25_PRO_FULL_DOC=0)");
         const auto started = clock_type::now();
         const mineru_doc::options opts = mineru_doc::parse_options_json(options_json ? options_json : "");
         mineru_img::rgb_image page;

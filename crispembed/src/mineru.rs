@@ -67,7 +67,7 @@ impl MinerU {
 }
 
 impl MinerU {
-    /// Complete native document route (requires CRISPEMBED_MINERU25_PRO_FULL_DOC=1).
+    /// Complete native document route (default on; CRISPEMBED_MINERU25_PRO_FULL_DOC=0 disables it).
     /// `options_json` is a JSON object (see crispembed.h) or "" for defaults.
     /// The result's "blocks"/"markdown" are byte-identical to mineru-vl-utils.
     pub fn extract_document(&mut self, pixels: &[u8], width: i32, height: i32,

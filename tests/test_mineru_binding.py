@@ -38,6 +38,8 @@ class _Native:
         self.crispembed_mineru_predict = _Fn(self._predict)
         self.crispembed_mineru_extract = _Fn(lambda *args: b'{"profile":"native-basic","capped":false}')
         self.crispembed_mineru_last_markdown = _Fn(lambda *args: b"")
+        self.crispembed_mineru_extract_document = _Fn(lambda *args: b'{"profile":"native-full","blocks":[]}')
+        self.crispembed_mineru_last_document = _Fn(lambda *args: b"")
         self.crispembed_mineru_last_error = _Fn(lambda *args: self.error)
 
     def _free(self, ctx):

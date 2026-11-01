@@ -7,6 +7,7 @@
 //
 // Line protocol (re/fn): tab-separated hex-encoded UTF-8 fields; output one
 // hex-encoded result per line, or "ERR <message>".
+#include "core/clean_exit.h"
 #include "mineru_document.h"
 #include "mineru_postprocess.h"
 #include "otsl_table.h"
@@ -169,7 +170,7 @@ int mode_self() {
 }
 } // namespace
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     const std::string mode = argc > 1 ? argv[1] : "self";
     if (mode == "re") return mode_re();
     if (mode == "fn") return mode_fn();
@@ -177,4 +178,8 @@ int main(int argc, char ** argv) {
     if (mode == "self") return mode_self();
     std::fprintf(stderr, "usage: %s re|fn|page FILE|self\n", argv[0]);
     return 2;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }
