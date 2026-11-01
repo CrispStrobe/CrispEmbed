@@ -70,7 +70,8 @@ def logit_stats(ref, cand):
 def ids_of(receipt, case):
     for c in receipt["cases"]:
         if c["id"] == case and c.get("runs"):
-            return c["runs"][0]["ids"]
+            # free-then-forced receipts: the dump belongs to the teacher-forced run
+            return (c.get("forced_run") or c["runs"][0])["ids"]
     return None
 
 

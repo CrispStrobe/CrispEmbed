@@ -133,11 +133,19 @@ bool observing(const context & ctx) {
 
 // Raw F32 stage dump for CPU/GPU device A/B (see context::stage_dump_dir).
 constexpr int kStageDumpDecodeSteps = 32;
+
+int stage_dump_target_call() {
+    static const int call = [] {
+        const char * e = getenv("CRISPEMBED_QWEN2VL_STAGE_DUMP_CALL");
+        return e && *e ? std::max(0, atoi(e)) : 0;
+    }();
+    return call;
+}
 void stage_dump(const context & ctx, const std::string & name, const float * data, size_t count) {
     // Only the first recognition of a context is dumped; warm repeats would
     // only duplicate it (and repeat-to-repeat drift is checked through IDs).
-    if (ctx.stage_dump_dir.empty() || !data || ctx.stage_dump_call != 0) return;
-    const std::string path = ctx.stage_dump_dir + "/c" + std::to_string(ctx.stage_dump_call) + "_" + name + ".f32";
+    if (ctx.stage_dump_dir.empty() || !data || ctx.stage_dump_call != stage_dump_target_call()) return;
+    const std::string path = ctx.stage_dump_dir + "/c0_" + name + ".f32";
     if (FILE * f = std::fopen(path.c_str(), "wb")) {
         std::fwrite(data, sizeof(float), count, f);
         std::fclose(f);
@@ -145,7 +153,7 @@ void stage_dump(const context & ctx, const std::string & name, const float * dat
 }
 
 void stage_dump_tensor(const context & ctx, ggml_cgraph * graph, const char * tensor_name, const std::string & name) {
-    if (ctx.stage_dump_dir.empty() || ctx.stage_dump_call != 0) return;
+    if (ctx.stage_dump_dir.empty() || ctx.stage_dump_call != stage_dump_target_call()) return;
     ggml_tensor * tensor = ggml_graph_get_tensor(graph, tensor_name);
     if (!tensor || tensor->type != GGML_TYPE_F32) return;
     std::vector<float> values((size_t)ggml_nelements(tensor));
@@ -3226,8 +3234,13 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
     // choice step by step, so every generated position of a candidate is
     // conditioned on the same prefix as the reference run whose logits it is
     // compared with. Generation stops where the forced list ends.
+    // CRISPEMBED_QWEN2VL_FORCE_FROM_CALL=N leaves the first N recognitions of
+    // a context free-running (decoded agreement) and forces the later ones;
+    // CRISPEMBED_QWEN2VL_STAGE_DUMP_CALL selects which recognition is dumped.
     std::vector<int32_t> forced_ids;
-    if (const char * forced_path = getenv("CRISPEMBED_QWEN2VL_FORCE_IDS")) {
+    const char * force_from = getenv("CRISPEMBED_QWEN2VL_FORCE_FROM_CALL");
+    const bool force_this_call = !force_from || !*force_from || ctx.stage_dump_call >= atoi(force_from);
+    if (const char * forced_path = getenv("CRISPEMBED_QWEN2VL_FORCE_IDS"); forced_path && force_this_call) {
         if (*forced_path) {
             if (FILE * f = std::fopen(forced_path, "r")) {
                 int v = 0;

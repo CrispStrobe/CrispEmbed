@@ -95,9 +95,16 @@ def main() -> int:
     ap.add_argument("--force-reference", action="store_true",
                     help="teacher-force the committed reference IDs and dump the logits at every generated "
                          "position (final-output cosine per docs/precision-acceptance.md)")
+    ap.add_argument("--free-then-forced", action="store_true",
+                    help="one model load: run 0 free-running (decoded agreement), run 1 teacher-forced with "
+                         "all-position logit dumps (needs --dump; implies --repeat 2)")
     ap.add_argument("--merge", action="store_true",
                     help="merge cases into an existing receipt (one lock per case on a shared host)")
     args = ap.parse_args()
+    if args.free_then_forced:
+        if not args.dump:
+            ap.error("--free-then-forced needs --dump")
+        args.repeat = 2
 
     env = dict(os.environ)
     env.update({
@@ -132,11 +139,14 @@ def main() -> int:
             d = Path(args.dump) / case["id"]
             d.mkdir(parents=True, exist_ok=True)
             run_env["CRISPEMBED_QWEN2VL_STAGE_DUMP"] = str(d)
-            if args.force_reference:
+            if args.force_reference or args.free_then_forced:
                 forced = d / "forced_ids.txt"
                 forced.write_text(" ".join(str(i) for i in case["reference_ids"]) + "\n")
                 run_env["CRISPEMBED_QWEN2VL_FORCE_IDS"] = str(forced)
                 run_env["CRISPEMBED_QWEN2VL_STAGE_DUMP_STEPS"] = "100000"
+                if args.free_then_forced:
+                    run_env["CRISPEMBED_QWEN2VL_FORCE_FROM_CALL"] = "1"
+                    run_env["CRISPEMBED_QWEN2VL_STAGE_DUMP_CALL"] = "1"
         if args.model == "teleocr":
             cmd = [str(build / "test-teleocr-run"), args.gguf, str(case["image"]), case["prompt"],
                    str(case["max_tokens"]), str(args.threads), str(args.repeat)]
@@ -174,6 +184,9 @@ def main() -> int:
                     for ms, r in zip(data["timing"]["runs_ms"], data["runs"])]
             rec["load_ms"] = data["timing"]["load_ms"]
         ref = case["reference_ids"]
+        if args.free_then_forced and len(runs) == 2:
+            runs[1]["teacher_forced"] = True
+            rec["forced_run"] = runs.pop(1)
         for r in runs:
             r["ids_exact"] = r["ids"] == ref
             r["first_divergence"] = first_divergence(r["ids"], ref)
@@ -183,7 +196,7 @@ def main() -> int:
         rec["ids_exact_all_runs"] = all(r["ids_exact"] for r in runs)
         rec["runs_consistent"] = all(r["ids"] == runs[0]["ids"] for r in runs)
         rec["first_divergence"] = runs[0]["first_divergence"]
-        warm = [r["ms"] for r in runs[1:]] or [runs[0]["ms"]]
+        warm = [r["ms"] for r in runs[1:]] or ([rec["forced_run"]["ms"]] if "forced_run" in rec else [runs[0]["ms"]])
         rec["cold_ms"] = runs[0]["ms"]
         rec["warm_ms_min"] = min(warm)
         rec["warm_ms_mean"] = sum(warm) / len(warm)
@@ -208,6 +221,7 @@ def main() -> int:
         "repeat": args.repeat,
         "extra_env": extra,
         "teacher_forced": bool(args.force_reference),
+        "free_then_forced": bool(args.free_then_forced),
         "commit": subprocess.run(["git", "-C", str(ROOT), "rev-parse", "HEAD"], capture_output=True,
                                  text=True).stdout.strip(),
         "dirty": bool(subprocess.run(["git", "-C", str(ROOT), "status", "--porcelain", "--", "src", "ggml"],
