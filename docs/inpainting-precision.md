@@ -257,3 +257,26 @@ gate on the same photos (minimum 0.9425, street/DBNet, borderline). Moebius F16
 and Q8_0, and PixelHacker F16/Q8_0, pass on both panels. TODO: a Moebius Q4_K
 recipe that keeps attention and VAE matrices at Q8_0, measured on this live
 panel before any further claim.
+
+## Delivery-5 optimized CPU path (merged 67406abe)
+
+Arms suffixed `-o` run the persistent graph with each engine's measured
+candidate gates (`CRISPEMBED_INPAINT_GEMM_LAYOUT=1` plus
+`CRISPEMBED_MOEBIUS_RELATIVE_REASSOC=1`/`CRISPEMBED_MOEBIUS_LOCAL_REASSOC=1`
+for Moebius, or `CRISPEMBED_INPAINT_CPU_GLA=1` for PixelHacker;
+`CRISPEMBED_MIGAN_CPU_KERNELS=1` for MI-GAN).
+
+- With the candidates **off**, the merged code is numerically identical to the
+  pre-merge results: MI-GAN512 on all 14 arms (41309726181) and PixelHacker
+  graph F32/Q8_0 (41309728413).
+- **Moebius F32 `-o`** (41314009419): decoded cosine 1.000000 vs the CUDA
+  original, 84–89 dB vs eager F32, the same strict-component pattern (5/83 on
+  edge_touch), CLI 358 s / 3.7 GB. On the live photos it matches the F32 graph
+  within one RGB level (82–90 dB), at 385 s per photo.
+- **PixelHacker F32 `-o`** (41314011582): decoded cosine 1.000000 vs the CUDA/FLA
+  original, 84–89 dB vs eager. CLI 386 s against 714–805 s for the plain graph
+  and 857 s eager, i.e. 2.1–2.2x faster, at 6.3 GB.
+- Initial failure, kept on record: with the GEMM-layout candidate, stored
+  quantized weights became ggml `src1` ("CPU does not support node MUL_MAT").
+  Fixed by keeping non-F32 weights on the weight-left layout; the quantized
+  `-o` arms are re-measured in separate lanes.
