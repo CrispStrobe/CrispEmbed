@@ -8,8 +8,13 @@ Hosted ubuntu, 4 vCPU, 16 GB, `--threads 4`. Details:
 | MI-GAN512 F32 eager / graph | 29.5 MB | 2.2 / 2.1 s | 307 / 375 MB |
 | MI-GAN512 Q8_0 / Q4_K (dequantized) | 12.6 / 11.1 MB | 2.1 / 2.1 s | 308 MB |
 | Moebius F32 eager (19 DDIM steps x CFG 2) | 905 + 335 MB | 510 s | 1.95 GB |
-| Moebius F32 graph (pre-fix run, numerically invalid) | 905 + 335 MB | 384 s | 3.6 GB |
+| Moebius F32 graph (after pin fix) | 905 + 335 MB | 384–422 s | 3.78 GB |
 | Moebius F16 eager (dequantized at load) | 485 + 168 MB | 349 s | 2.00 GB |
+| Moebius Q8_0 stored matmul, eager / graph | 288 + 89 MB | 558 / 181 s | 1.17 / 3.02 GB |
+| Moebius Q4_K stored matmul, eager / graph | 183 + 48 MB | 557 / 192 s | 1.03 / 2.89 GB |
+| PixelHacker F32 eager / graph | 3,449 + 335 MB | 857 / 714 s | 4.49 / 6.30 GB |
+| PixelHacker Q8_0 stored matmul, eager / graph | 918 + 89 MB | 695 / 482 s | 1.80 / 3.69 GB |
+| PixelHacker Q4_K stored matmul, eager / graph | 487 + 48 MB | 660 / 497 s | 1.29 / 3.23 GB |
 
 MI-GAN precision does not change latency or memory (activation-bound). The
 Moebius graph arm before the initializer/parameter pin produced wrong images
