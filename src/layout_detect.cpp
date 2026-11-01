@@ -268,6 +268,18 @@ bool load(context ** out, const char * path, int n_threads) {
     ctx->backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
     if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
     if (ggml_backend_is_cpu(ctx->backend)) ggml_backend_cpu_set_n_threads(ctx->backend, n_threads);
+    // Heron on a GPU: PREC_F32 products (heron_compute) on ggml-metal's F32-tile
+    // _hp mul_mm. Default on since 1 Nov 2026 (tests/results/oxr-dfine/metal-m1/
+    // heron/: regions equal CPU on 5/5 pages, the half-tile default added a German
+    // region); CRISPEMBED_LAYOUT_GPU_PREC_F32=0 / CRISPEMBED_LAYOUT_GPU_HP_MM=0 opt out.
+    if (!ggml_backend_is_cpu(ctx->backend) && !core_env::explicitly_off("CRISPEMBED_LAYOUT_GPU_PREC_F32") &&
+        !core_env::explicitly_off("CRISPEMBED_LAYOUT_GPU_HP_MM")) {
+#ifdef _WIN32
+        if (!std::getenv("GGML_METAL_PREC_F32_MM")) _putenv_s("GGML_METAL_PREC_F32_MM", "1");
+#else
+        setenv("GGML_METAL_PREC_F32_MM", "1", 0);
+#endif
+    }
 
     if (!core_gguf::load_weights(path, ctx->backend, "layout", ctx->wl)) {
         fprintf(stderr, "layout_detect: failed to load weights\n");
@@ -461,11 +473,11 @@ bool load(context ** out, const char * path, int n_threads) {
 // Graph helpers
 // ---------------------------------------------------------------------------
 
-// Heron (RT-DETRv2) graphs. Opt-in CRISPEMBED_LAYOUT_GPU_PREC_F32=1 requests
-// GGML_PREC_F32 on every MUL_MAT when the backend is a GPU (ggml-metal: F32
-// _hp tiles instead of the default half tiles). Default unchanged.
+// Heron (RT-DETRv2) graphs request GGML_PREC_F32 on every MUL_MAT when the
+// backend is a GPU (ggml-metal: F32 tiles instead of the default half tiles).
+// Default on; CRISPEMBED_LAYOUT_GPU_PREC_F32=0 restores the half-tile products.
 static ggml_status heron_compute(ggml_backend_t backend, ggml_cgraph * gf) {
-    static const bool prec = core_env::on("CRISPEMBED_LAYOUT_GPU_PREC_F32");
+    static const bool prec = !core_env::explicitly_off("CRISPEMBED_LAYOUT_GPU_PREC_F32");
     if (prec && !ggml_backend_is_cpu(backend))
         for (int i = 0; i < ggml_graph_n_nodes(gf); i++) {
             ggml_tensor * node = ggml_graph_node(gf, i);

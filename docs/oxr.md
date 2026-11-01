@@ -490,9 +490,13 @@ vision + visual vocabulary 1.7-1.8 s, prefill 0.23 s, decode ~42 ms/token.
 (`f16-f32-sensitive`, no quantized tensors) on Metal with the default arm above. Every other recipe
 and platform stays on the CPU unless `CRISPEMBED_OXR_GPU=1`. `CRISPEMBED_OXR_GPU=0` or
 `CRISPEMBED_OXR_FORCE_CPU=1` keep the CPU. The F32 recipe was not run on Metal here (no local F32
-conversion: the shared volume was below its free-space floor). CUDA (Kaggle T4, CPU-routed or CUDA
-flash attention of the previous code) diverged on German at token 87; the new dense GPU attention
-is the default for every GPU backend under `CRISPEMBED_OXR_GPU=1` but has not been re-run on CUDA.
+conversion: the shared volume was below its free-space floor). **CUDA (Kaggle T4, kernel v2 at
+`1a15c950`, [`kaggle-cuda-t4-v2/report.json`](../tests/results/oxr/kaggle-cuda-t4-v2/report.json)):**
+with the new dense GPU attention (`CRISPEMBED_OXR_GPU=1`) the published F16 is token-exact on
+all five cases, German included (the previous attention lowering diverged there at token 87).
+The qualifying quantized recipes decode 4/5 exactly (German diverges at token 55 for Q8_0 + large
+tables and 209 for the Q4_K-head mix) with prefill logits cosine >= 0.9981 against CUDA F16.
+Warm request on T4: F16 1.0-9.2 s, quantized 0.8-7.5 s.
 
 ## Quantized recipes under the owner policy (1 November 2026)
 

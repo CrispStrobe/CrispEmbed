@@ -145,8 +145,9 @@ Open, in order:
    initial 41337273815 aborted and retained); then the five-case Metal A/B of the
    Q8_0/Q4_K-mix recipes and a publication decision (none made here).
 3. OXR F32 on Metal (needs a local F32 conversion; volume was below its free-space floor).
-4. CUDA: re-run the Kaggle T4 lane with the new dense GPU attention (German diverged at
-   token 87 with the previous attention lowering).
+4. CUDA: done on T4 (kernel v2): F16 5/5 token-exact with the new dense attention; Q8_0-large
+   and Q4_K-head 4/5 (German 55/209), logits cos >= 0.998 vs CUDA F16. CUDA quantized products
+   still quantize activations like the CPU; a CUDA analogue of the vision dequant gate is open.
 5. Dense GPU decode copies the whole V cache per layer per token (permute+cont); a
    transposed-V cache would cut it. Flash is 1.85x faster on German but less close to CPU.
 
