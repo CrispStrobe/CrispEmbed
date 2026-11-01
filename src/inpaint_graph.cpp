@@ -68,7 +68,10 @@ ggml_tensor * concat_balanced(ggml_context * ctx, std::vector<ggml_tensor *> par
 }
 ggml_tensor * image_matmul(ggml_context * ctx, ggml_tensor * weights, ggml_tensor * columns, int64_t width,
                            int64_t height, bool fast, bool spatial_output) {
-    if (!spatial_output || columns->ne[3] > 2)
+    // Stored F16/quantized (inpaint-v1) weights must stay ggml's src0: the CPU
+    // backend has no quantized src1 path (hosted 41314009419: "CPU does not
+    // support node MUL_MAT"), so they keep the weight-left layout.
+    if (!spatial_output || columns->ne[3] > 2 || weights->type != GGML_TYPE_F32)
         return image_layout(ctx, matmul(ctx, weights, columns, fast), width, height);
     // With activations on the left, GEMM writes spatial-first CHW directly.
     // Process each sample separately so immutable weights stay contiguous and
