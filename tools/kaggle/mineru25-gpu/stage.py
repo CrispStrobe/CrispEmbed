@@ -41,7 +41,7 @@ def main(argv):
     target.mkdir(parents=True)
     (target / "kernel.py").write_text(rendered)
     (target / "kernel-metadata.json").write_bytes((HERE / "kernel-metadata.json").read_bytes())
-    manifest = {"script_version": "mineru25-kaggle-gpu-v1", "commit": commit,
+    manifest = {"script_version": "mineru25-kaggle-gpu-v2", "commit": commit,
                 "run_py_sha256": hashlib.sha256((HERE / "run.py").read_bytes()).hexdigest(),
                 "files_sha256": {n: hashlib.sha256((target / n).read_bytes()).hexdigest()
                                  for n in ("kernel.py", "kernel-metadata.json")}}

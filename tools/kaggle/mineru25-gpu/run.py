@@ -22,7 +22,7 @@ import sys
 import time
 from pathlib import Path
 
-SCRIPT_VERSION = "mineru25-kaggle-gpu-v1"
+SCRIPT_VERSION = "mineru25-kaggle-gpu-v2"
 MODEL = "opendatalab/MinerU2.5-Pro-2604-1.2B"
 REVISION = "d3f5e08d073c21466bbabe21c71bb1e9c2e595da"
 BLUEPRINT_REV = "c9797cde8f54cc48306196fc6aebe73ea31dd4a3"
@@ -48,21 +48,34 @@ def sh(*command, **kwargs):
     return subprocess.run([str(c) for c in command], **kwargs)
 
 
-def run_on_gpu(command, env):
-    """Run command; return (CompletedProcess-like, peak GPU MiB seen for its PID)."""
+def run_on_gpu(command, env, timeout=3600):
+    """Run command; return (CompletedProcess-like, peak GPU MiB seen for its PID).
+
+    stdout/stderr go to files, not pipes: the native runner logs every generated
+    token to stderr, and an unread pipe filled at ~64 KiB and blocked the child
+    forever (the 2026-10-31 kernel stalled 9 h on the German page). A per-step
+    timeout bounds any other hang and is recorded as returncode -9.
+    """
     print("+", *command, flush=True)
-    proc = subprocess.Popen([str(c) for c in command], env=env, stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE, text=True)
-    peak = 0
-    while proc.poll() is None:
-        apps = subprocess.run(["nvidia-smi", "--query-compute-apps=pid,used_memory",
-                               "--format=csv,noheader,nounits"], capture_output=True, text=True).stdout
-        for line in apps.splitlines():
-            pid, _, mib = line.partition(",")
-            if pid.strip() == str(proc.pid) and mib.strip().isdigit():
-                peak = max(peak, int(mib))
-        time.sleep(0.5)
-    out, err = proc.communicate()
+    log = SCRATCH / "step"
+    with open(log.with_suffix(".out"), "w+") as out_f, open(log.with_suffix(".err"), "w+") as err_f:
+        proc = subprocess.Popen([str(c) for c in command], env=env, stdout=out_f, stderr=err_f, text=True)
+        peak, started = 0, time.monotonic()
+        while proc.poll() is None:
+            if time.monotonic() - started > timeout:
+                proc.kill()
+                proc.wait()
+                break
+            apps = subprocess.run(["nvidia-smi", "--query-compute-apps=pid,used_memory",
+                                   "--format=csv,noheader,nounits"], capture_output=True, text=True).stdout
+            for line in apps.splitlines():
+                pid, _, mib = line.partition(",")
+                if pid.strip() == str(proc.pid) and mib.strip().isdigit():
+                    peak = max(peak, int(mib))
+            time.sleep(0.5)
+        out_f.seek(0)
+        err_f.seek(0)
+        out, err = out_f.read(), err_f.read()
     return subprocess.CompletedProcess(command, proc.returncode, out, err), peak
 
 
