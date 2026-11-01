@@ -1,4 +1,5 @@
 #include "lama.h"
+#include "lama_graph.h"
 #include "lama_fft.h"
 #include "lama_schema.h"
 
@@ -443,6 +444,7 @@ bool quantized_file(const std::string & path) {
 
 struct context {
     std::unique_ptr<Ops> engine;
+    std::unique_ptr<GraphModel> graph;
     std::atomic_flag busy = ATOMIC_FLAG_INIT;
 #ifdef CRISPEMBED_LAMA_TESTING
     Observer observer = nullptr;
@@ -564,6 +566,12 @@ Tensor forward(context & model, const Tensor & input) {
             require(value >= 0 && value <= 1 && (!mask || value == 0), "generator requires masked RGB in[0,1]");
         }
     }
+    if (model.graph) {
+#ifdef CRISPEMBED_LAMA_TESTING
+        model.graph->set_observer(model.observer, model.observer_opaque);
+#endif
+        return model.graph->run(input);
+    }
     model.mark("input", input);
     Features features = ffc(model, "generator.model.1", { detail::reflect_pad(input, 3), {} }, 1, 0);
     for (int block = 2; block <= 4; ++block)
@@ -607,7 +615,11 @@ context * init(const std::string & path, const std::string & expected_gguf_sha25
         require(threads >= 1 && threads <= 64, "thread count must be in[1,64]");
         validate_model(path, expected_gguf_sha256);
         auto model = std::make_unique<context>();
-        if (quantized_file(path) || core_env::on("CRISPEMBED_LAMA_STORED_OPS"))
+        // Persistent ggml graph (delivery 4, CRISPEMBED_INPAINT_GRAPH=1), else the
+        // stored-weight ops for quantized/F16 files (research lama-v2), else the F32 engine.
+        if (core_env::on("CRISPEMBED_INPAINT_GRAPH"))
+            model->graph = std::make_unique<GraphModel>(path.c_str(), threads);
+        else if (quantized_file(path) || core_env::on("CRISPEMBED_LAMA_STORED_OPS"))
             model->engine = std::make_unique<StoredOps>(path, threads);
         else
             model->engine = std::make_unique<EngineOps>(path, threads);

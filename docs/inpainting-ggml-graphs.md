@@ -1,0 +1,228 @@
+# Persistent inpainting graphs on CPU, CUDA and Metal
+
+Issue71 now has an additional execution path that builds complete, reusable
+ggml graphs for MI-GAN256, MI-GAN512, Big-LaMa, Moebius and PixelHacker. Select
+it with `CRISPEMBED_INPAINT_GRAPH=1`, together with the model's existing gate.
+The earlier CPU implementations remain available for controlled comparison.
+
+**Evidence status:** this delivery implements the execution paths and their
+qualification programs. Source checks and independent code reviews have been
+performed. The new native binaries, full-model graph parity, CUDA/Metal
+execution and performance measurements have not been run in this workspace.
+No measured speedup, frame rate, peak-memory figure or production qualification
+is asserted. The repository requires builds and model workloads to run on
+hosted CI or explicitly provisioned hardware.
+
+The Apple path is ggml's native **Metal** backend. `mps` is accepted as a CLI
+alias for `metal`; it does not introduce PyTorch or an MPS runtime dependency.
+The existing source/checkpoint identities and weight-license records remain
+in [the engine guide](inpainting-engines.md). The downloadable source contains
+no model weights.
+
+## What the execution path changes
+
+| Model | Reusable graph and device-residency changes |
+| --- | --- |
+| MI-GAN256 / MI-GAN512 | One complete production graph and allocation per context; weights uploaded once; 1x1 convolutions bypass im2col; Metal-compatible padding; distinct retained-reference graph only in validation builds. |
+| Big-LaMa | Complete FFC generator graph; real/imaginary Fourier activations stay on the selected backend; geometry constants cached; one bounded graph cache for the current image geometry. |
+| Moebius | Complete denoiser graph; lambda contractions use batched matrix operations; local positional convolutions batch the value planes; shared VAE, CFG and DDIM execute on the selected backend. |
+| PixelHacker | Complete denoiser graph; rectangular per-key gated attention is decomposed into bounded device operations; shared VAE, CFG and DDIM execute on the selected backend. |
+
+The runtime reuses `core_gguf` ownership/mmap support, the ggml backend registry,
+the existing GPU preference and Metal cache policy, CPU backend facilities,
+`core_env` gates and the existing input, mask, tiling, PNG and file-protection
+code. The pinned ggml revision is unchanged. There is no new vendor FFT
+dependency or CPU callback disguised as a GPU graph operation.
+
+### Diffusion graphs and transfers
+
+Moebius and PixelHacker use three cached graphs: VAE encoding, a reusable
+denoising/CFG/DDIM step, and VAE decoding. Encoding batches the image and masked
+image. Denoising batches the unconditional and conditional branches. The latent,
+masked latent and downsampled mask live in explicitly allocated backend state.
+The denoiser's final copy updates that state on the same device.
+
+Each sampling iteration uploads a 320-float sinusoidal timestep embedding and
+four DDIM coefficients: **1,296 input bytes**. Activations and predicted noise
+are not downloaded between sampling iterations in the production path. Initial
+images, masks and deterministic noise are uploaded once per tile, and decoded
+RGB is downloaded after the decoder. Validation builds deliberately download
+retained stages; their timing must not be used as production performance.
+
+The sampler retains the original DDIM arithmetic order, independent posterior
+noise streams, mask semantics and model-specific timestep schedule. Batch-two
+group normalization merges the sample axis into channels while multiplying
+the number of groups, because this pinned Metal kernel does not process the
+fourth dimension. This preserves independent normalization of each sample.
+
+### Fourier transforms and gated attention
+
+LaMa's orthonormal real transforms use a separable radix-2 butterfly graph.
+Non-power-of-two axes use Bluestein convolution, with a fixed kernel computed
+from geometry only. Supported Fourier axes are 1 through 128, covering the
+existing generator's maximum 1024-pixel image dimension after its three
+downsampling stages. Inverse transforms preserve the real projection required
+when learned spectral layers produce non-Hermitian boundary frequencies.
+
+PixelHacker needs unequal key/value widths and a distinct decay for each key
+channel. The pinned `ggml_gated_linear_attn` operator requires square heads and
+does not supply the required Metal path. The implementation therefore uses
+64-token chunks, stable log-gate prefix differences, causal within-chunk
+contractions and a device-resident rectangular carry state. Every invocation
+starts with independent zero state. This is a portable graph decomposition;
+it does not claim the throughput of the original specialized Triton kernels.
+
+### CPU execution and bounded workspaces
+
+CPU graphs reuse both their execution plan and a worker pool. The pool is
+resolved from the pinned CPU registry, including dynamic-backend builds;
+older modules without all required pool functions keep ordinary ggml threading.
+MI-GAN reports whether pool and plan reuse actually occurred.
+
+Dense 1x1 operations avoid im2col. Other dense convolutions use row strips with
+halos, targeting a 32 MiB patch workspace on CPU and 128 MiB on GPU. These caps
+apply to the patch temporary, not total memory. Weights, skip activations,
+multiple cached component graphs, FFT/GLA intermediates and backend workspace
+also consume memory. The earlier “under 4 GB” model-size criterion is not a
+guarantee that the entire application fits in 4 GB of RAM or VRAM.
+
+LaMa's transposed convolutions use exact zero insertion followed by bounded
+convolution/GEMM. Flipped/channel-transposed immutable kernels and insertion
+masks are prepared once and retained; mixed GPU kernels remain F16. This
+avoids the pinned direct transposed-convolution loop for dense layers. Row
+strips and strict attention tiles use balanced concatenation to avoid copying
+every earlier tile again at each append. The small-layer/CPU crossover versus
+the retained direct implementation still requires timing on the target device.
+
+## Backend and precision selection
+
+| Setting | Meaning |
+| --- | --- |
+| `CRISPEMBED_INPAINT_GRAPH=1` | Enable the new persistent graph path. Default off. |
+| `--gpu-backend cpu` | Execute the graph on the CPU backend, honoring `--threads`. |
+| `--gpu-backend cuda` | Require a CUDA backend and its supported graph operations. |
+| `--gpu-backend metal` | Require native Metal. `mps` is an alias. |
+| `--gpu-backend auto` | Prefer CUDA, then Metal, then CPU. Operation validation still applies to the selected backend. |
+| `CRISPEMBED_INPAINT_BACKEND=cpu\|cuda\|metal\|auto` | Backend selection for native callers and reference programs. An explicit process/CLI preference takes precedence. |
+| `CRISPEMBED_INPAINT_FAST=1` | Explicit GPU mixed-precision diagnostic profile. Default off. |
+| `CRISPEMBED_INPAINT_PROFILE=1` | Emit actual backend, graph/allocation/reuse/transfer counts and compute timing. |
+
+An explicitly requested CUDA or Metal backend does not silently fall back to
+CPU. Before allocating/running a graph, the implementation checks every node
+against the selected backend and reports an unsupported operation. There is no
+CPU scheduler fallback for intermediate layers. Allocation or execution errors
+are returned through the existing error path; output composition remains
+transactional.
+
+**Strict profile:** original F32 weights and activations, explicit F32 matrix
+precision, and F32 spectral/GLA arithmetic. The pinned Metal flash-attention
+kernel uses half matrix tiles and refuses the F32 precision request, so strict
+GPU attention uses bounded F32 matrix/softmax tiles. CPU uses the existing
+tiled F32 flash-attention implementation. Strict Metal can therefore be slower
+than its mixed profile; it is the comparison baseline.
+
+**Fast profile:** LaMa and latent dense/matrix weights are converted to F16 once
+while loading the original, digest-verified F32 GGUF. Depthwise and normalization
+parameters remain F32. Dense matrix operations permit backend-default precision;
+attention uses the native flash kernel with F16 keys and values. MI-GAN retains
+F32 weight storage and explicitly permits backend-default matrix precision.
+FFT and GLA contractions retain their stricter numerical treatment. The file
+format, source digests and model contract are unchanged. This profile must pass
+the same full-model acceptance criteria before adoption; component diagnostic
+tolerances do not qualify final images.
+
+## Build and run
+
+Build on an appropriate development/CI host. The source archive includes the
+pinned `ggml/` contents; a Git checkout needs its submodule initialized. A
+common configuration is:
+
+```sh
+cmake -S . -B build-inpaint -DCMAKE_BUILD_TYPE=Release \
+  -DGGML_NATIVE=ON -DCRISPEMBED_NATIVE=ON \
+  -DGGML_LLAMAFILE=ON -DGGML_BLAS=OFF -DGGML_VULKAN=OFF \
+  -DBUILD_SHARED_LIBS=OFF -DCRISPEMBED_BUILD_SHARED=OFF \
+  -DGGML_CUDA=OFF -DGGML_METAL=OFF
+cmake --build build-inpaint --config Release --target crispembed-cli --parallel 2
+```
+
+For CUDA, configure with `-DGGML_CUDA=ON -DGGML_METAL=OFF` and
+`-DGGML_CUDA_GRAPHS=ON`; use a CUDA architecture supported by the intended
+deployment GPU. The hosted driver uses `-DCMAKE_CUDA_ARCHITECTURES=native` for
+its admitted machine. Stable graph identities and allocations allow ggml's
+CUDA graph reuse when the backend admits that graph; no unconditional CUDA
+capture success is claimed.
+
+For Apple Silicon, configure with `-DGGML_METAL=ON -DGGML_CUDA=OFF`,
+`-DCMAKE_OSX_ARCHITECTURES=arm64` and `-DGGML_METAL_EMBED_LIBRARY=ON`.
+For portable distribution, use the repository's portable CPU configuration
+instead of `NATIVE=ON`. A machine-specific build is not a portable release.
+
+Example using a converted, reviewed LaMa model:
+
+```sh
+CRISPEMBED_LAMA=1 \
+CRISPEMBED_INPAINT_GRAPH=1 \
+CRISPEMBED_INPAINT_PROFILE=1 \
+./build-inpaint/crispembed \
+  --inpaint-engine lama \
+  --inpaint-model big-lama-f32.gguf \
+  --inpaint-model-sha256 "$LAMA_GGUF_SHA256" \
+  --gpu-backend cuda \
+  --inpaint frame.png --mask mask.png \
+  --inpaint-output repaired.png --threads 8
+```
+
+Use `--gpu-backend metal` on Apple hardware or `--gpu-backend cpu` for the CPU
+path. Add `CRISPEMBED_INPAINT_FAST=1` only for an explicitly selected mixed GPU
+trial. Use the existing engine guide for MI-GAN512's reviewed checkpoint hash
+and the latent models' VAE/model receipt hashes. The same settings apply to
+directory and TSV batches; those modes reuse contexts and graph allocations.
+
+## Qualification and benchmarking
+
+The manual workflow is
+[inpaint-graphs.yml](../.github/workflows/inpaint-graphs.yml), driven by
+[inpaint_graphs.py](../tools/ci-heavy/inpaint_graphs.py). CPU runs use hosted
+Linux. Metal and CUDA require explicit admission of provisioned native runners.
+A standard macOS VM is not assumed to expose an Apple GPU. The workflow
+downloads no models and records source, ggml, executable and configuration
+identities in its build receipt.
+
+Four model-free native controls exercise the actual implementation:
+
+- `test-inpaint-graph`: convolution, patch-strip seams, normalization including
+  batch two, padding, attention tails and resident recurrent state.
+- `test-inpaint-graph-spectral`: radix-2/Bluestein versus independent FFT/DFT
+  references, arbitrary learned spectra, rectangular GLA, chunk tails,
+  extreme gates, causality and replay.
+- `test-latent-inpaint-graph-unet`: scalar lambda-content/local/relative and
+  headwise gated-normalization comparisons, two batches and malformed geometry.
+- `test-migan-graph --contracts`: the actual MI-GAN graph helpers versus scalar
+  expectations, explicit backend selection and replay.
+
+Each test accepts `--backend cpu|cuda|metal`. A passed component check is not
+a passed full model. Existing original-stage and final-image comparators keep
+their original thresholds. Once original captures and converted models exist,
+[inpaint_graph_replay.py](../tools/ci-heavy/inpaint_graph_replay.py) runs LaMa or
+either latent comparator on an explicit graph backend, optionally alongside
+the eager CPU baseline. It verifies supplied hashes, records binary/build
+identity and requires actual graph profiler evidence. It never recaptures or
+rewrites the original tensors to make a comparison pass.
+
+`test-migan-graph --model ...` provides same-process cold/warm measurement,
+changed-input replay, graph/weight reuse, baseline comparison and observer
+neutrality for a reviewed local MI-GAN model. The workflow's optional model
+phase requires the model and checkpoint hashes. For all engines, record load
+and first-graph costs separately from steady inference, include geometry,
+mask, precision, thread count, hardware and backend versions, and retain
+unaltered numerical failures alongside timings.
+
+Measure CPU thread counts on the intended machine and retain the fastest
+configuration that passes the same comparisons. Measure strict and mixed GPU
+profiles separately. Observer runs retain activations and copy them to the
+host; they are correctness runs, not timing runs. Graph allocator bytes are
+not peak process RSS, driver allocation or peak VRAM. Representative image and
+subtitle quality, seam behavior and temporal video consistency remain separate
+acceptance tasks. No default or release changes follow from this source-only
+delivery.

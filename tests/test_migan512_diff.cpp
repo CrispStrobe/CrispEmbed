@@ -5,6 +5,7 @@
 #include "migan_test_observer.h"
 #include "crispembed_diff.h"
 #include "core/clean_exit.h"
+#include "core/gpu_backend_pref.h"
 
 #include <algorithm>
 #include <array>
@@ -178,6 +179,15 @@ bool image_metrics(const std::vector<uint8_t> & actual, const std::vector<uint8_
 } // namespace
 
 static int crispembed_test_main(int argc, char ** argv) {
+    if (argc == 10 && std::strcmp(argv[8], "--graph-backend") == 0) {
+        crispasr_set_gpu_backend_pref(argv[9]);
+#ifdef _WIN32
+        _putenv_s("CRISPEMBED_INPAINT_GRAPH", "1");
+#else
+        setenv("CRISPEMBED_INPAINT_GRAPH", "1", 1);
+#endif
+        argc = 8;
+    }
     if (argc == 2 && std::strcmp(argv[1], "--observer-retention") == 0) {
         std::string error;
         const bool passed = migan::test::observer_retention_regression(error);
@@ -199,7 +209,7 @@ static int crispembed_test_main(int argc, char ** argv) {
     if (argc != 8) {
         std::fprintf(stderr,
                      "Usage: test-migan512-diff MODEL.gguf REFERENCE.gguf CHECKPOINT_SHA256 RGB.raw FILL_MASK.raw "
-                     "ORIGINAL_COMPOSITED.raw DUMP_DIR\n");
+                     "ORIGINAL_COMPOSITED.raw DUMP_DIR [--graph-backend cpu|cuda|metal|auto]\n");
         return 2;
     }
     if (!contract_controls() || !gate_controls(argv[1], argv[3])) return 2;

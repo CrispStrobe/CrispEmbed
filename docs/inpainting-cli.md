@@ -9,6 +9,11 @@ MI-GAN512, Big-LaMa, Moebius and PixelHacker. See the
 source contracts, model conversion and command examples. Every engine requires
 its own opt-in gate; unset, empty and `0` keep it disabled.
 
+The additional `CRISPEMBED_INPAINT_GRAPH=1` execution path caches complete
+native CPU/CUDA/Metal graphs, with device-resident FFT/attention and sampling.
+See [persistent graph execution](inpainting-ggml-graphs.md) for backend
+selection, explicit mixed precision, builds and pending hardware qualification.
+
 The graph's earlier [original reference](../tests/results/migan/original-reference.json)
 and [native comparison](../tests/results/migan/native-parity.json) are unchanged.
 Those receipts cover the original fixed256 experiment. The new tiling, text-mask
@@ -32,9 +37,10 @@ cmake --build build-inpaint --config Release --target crispembed-cli --parallel 
 
 The executable is `build-inpaint/crispembed` with single-configuration
 generators, or `build-inpaint/Release/crispembed.exe` with Visual Studio.
-These inpainting paths use the CPU even when other CrispEmbed engines are
-built with GPU backends. No Python runtime, PyTorch or CUDA is required to run
-inpainting.
+Without the new graph gate, these paths use the earlier CPU implementations.
+The graph path selects CPU, CUDA or Metal explicitly; GPU builds and examples
+are in the linked graph guide. Native inference requires no Python or PyTorch
+runtime, and CPU/Metal execution does not require CUDA.
 
 ## Prepare the default MI-GAN256 model
 

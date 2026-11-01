@@ -16,6 +16,11 @@ using observer = std::function<bool(const std::string &, const float *, size_t, 
 bool observer_retention_regression(std::string & error);
 bool run_observed(context * ctx, const float * input_nchw, size_t input_count, float * raw_nchw, size_t output_count,
                   const observer & observe, size_t & graph_buffer_bytes, std::string & error);
+bool get_observed_execution_stats(context * ctx, execution_stats & stats, std::string & error);
+// Tiny synthetic graph through the production pointwise/activation/upsample
+// builders, checked against a scalar oracle on the selected backend. Checks
+// persistent tensor/allocation identity and immutable one-time weight uploads.
+bool graph_backend_controls(int n_threads, int runs, execution_stats & stats, std::string & error);
 
 } // namespace test
 } // namespace migan

@@ -7,6 +7,12 @@ channel, and four encoded masked-image channels. It produces four predicted
 noise channels. This is an experimental CPU/F32 path; implementation and
 component checks do not establish full model parity or usable CPU latency.
 
+This document describes the retained eager correctness implementation. The
+additional `src/latent_inpaint_graph_unet.cpp` builds both complete denoisers
+as backend-resident ggml graphs, including batch-two guidance. See
+[persistent CPU/CUDA/Metal execution](inpainting-ggml-graphs.md) for its
+operator decompositions, mixed profile and outstanding hardware acceptance.
+
 ## Source contracts
 
 | Component | Pinned original source |
