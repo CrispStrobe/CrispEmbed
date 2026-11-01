@@ -146,3 +146,62 @@ from `core_env::on()` there.
   classical image processing.
 
 The audit sections below are appended as each engine is measured.
+
+## Acceptance bars (owner policy, 1 November 2026)
+
+[`docs/precision-acceptance.md`](precision-acceptance.md) (feat/teleocr `b3c6440c`):
+a path qualifies when its final-output cosine, minimum over cases, exceeds
+**F32 > 0.99, F16 > 0.98, Q8_0 > 0.97, Q4_K > 0.94**. The Metal receipts here
+compare the Metal arm against the CPU arm of the **same artifact** (and, where
+a higher-precision GGUF of the same model was available, both arms against it);
+the strict budgets stay diagnostics. "Qualifies" below means the Metal arm
+clears the bar against the CPU arm of the same artifact.
+
+## Audit 2026-11-01 (Apple M1, `GGML_METAL=ON` build of `feat/metal-audit`)
+
+Method: [`ab_embed.py`](../tests/results/gpu-audit/metal-m1/ab_embed.py) and
+[`ab_cmd.py`](../tests/results/gpu-audit/metal-m1/ab_cmd.py) run each arm as a
+separate process of one binary, interleaved; the Metal arm must print `MTL0`
+and the CPU arm (`--gpu-backend cpu`) must not. Timings are one-shot CLI wall
+clock (load included), second run, on a shared, contended M1: indicative only.
+
+### Embedding / rerank (`crispembed.cpp`, GPU default) — all qualify
+
+| Model | Precision | cos min Metal vs CPU | Metal s | CPU s | Note |
+|---|---|---:|---:|---:|---|
+| all-MiniLM-L6-v2 | F32 | 0.9999996 | 0.16 | 0.20 | max abs 1.5e-4 |
+| all-MiniLM-L6-v2 | Q8_0 | 0.99936 | 0.15 | 0.14 | vs F32 GGUF: Metal closer on 11/12 texts |
+| bge-small-en-v1.5 | Q8_0 | 0.99980 | 0.17 | 0.28 | vs F16 GGUF: Metal 0.99990, CPU 0.99964 |
+| multilingual-e5-small | Q8_0 | 0.99989 | 0.33 | 0.34 | |
+| arctic-embed-m-v2 | Q4_K | 0.99656 | 0.55 | 1.36 | |
+| bge-m3 (dense) | IQ4_XS | 0.99670 | 1.20 | 3.72 | iq4_xs artifact carries no sparse/ColBERT heads: those modes not reached |
+| Qwen3-Embedding-0.6B | Q8_0 | 0.99943 | 4.60 | 3.71 | Metal slower (Q8_0 mul_mv, docs/metal-q8_0-mul_mv-slow-m1.md) |
+| F2LLM-v2-0.6B | F16 | 0.9999997 | — | — | timing contended (41-77 s both arms) |
+| F2LLM-v2-0.6B | Q4_K | 0.97738 | 1.28 | 4.23 | clears Q4_K bar; lowest of the set |
+| jina-v5-nano | F16 | 0.9999979 | 0.63 | 1.31 | |
+| jina-v5-nano | Q4_K | 0.99310 | 0.54 | 1.15 | |
+| harrier-270m | Q4_K | 0.99929 | 0.72 | 1.22 | |
+| EmbeddingGemma-300m | Q8_0 | 0.99991 | 0.51 | 0.92 | |
+| LFM2.5-Embedding-350M | Q8_0 | 0.99983 | 1.99 | 1.72 | Metal slower (Q8_0) |
+| ms-marco-MiniLM-L-6 (rerank) | F32 | score \|Δ\| 4.7e-4 | 0.15 | 0.40 | same order |
+| ms-marco-MiniLM-L-6 (rerank) | Q8_0 | \|Δ\| 0.011 | 0.15 | 0.12 | vs F32: Metal 0.024, CPU 0.035 |
+| mxbai-rerank-xsmall | Q8_0 | \|Δ\| 0.027 | 13.4 | 16.2 | |
+| ettin-reranker-17m | F32 | \|Δ\| 0.0022 | 0.27 | 0.27 | |
+| ettin-reranker-17m | Q8_0 | \|Δ\| 0.10 (logit ~10) | 0.13 | 0.09 | vs F32: Metal 0.072, CPU 0.165; same order |
+
+Finding: on float weights Metal equals CPU to ~1e-6 cosine. On quantized
+weights the gap is **not a Metal defect**: ggml-cpu quantizes the activation
+side of every Q8_0/K-quant dot product to Q8, Metal keeps it F32, and every
+comparison against a higher-precision reference put the Metal arm closer.
+No default changes: GPU stays the embedding default. Reference artifacts that
+did not match their quantized sibling (both arms equally far: MiniLM text 6
+0.973, jina-v5-nano F16 vs Q4_K ~0.87-0.96, the local F2LLM "F16" file
+~0.0) are recorded in the receipts as artifact mismatches, not backend results.
+
+### CPU-only controls on hosted CI (run 41327259125, source `81eb3a68`)
+
+`tools/ci-heavy/gpu_audit_cpu_controls.sh`: DBNet with
+`CRISPEMBED_DBNET_DECONV_MATMUL=1` produces byte-identical OCR JSON (boxes,
+text, confidences) to the default `conv_transpose_2d` on fox, scan_page_pd and
+scan_strip; ESRGAN and InstructIR default output is byte-identical with the
+new gates unset vs `=0`. Receipt: `tests/results/gpu-audit/hosted-cpu-41327259125/`.
