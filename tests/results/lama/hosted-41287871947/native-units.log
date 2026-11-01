@@ -1,0 +1,6 @@
+INPAINT_CONTRACT {"checks":62,"failures":0,"passed":true}
+MIGAN_CONTRACT {"passed":true}
+MIGAN_GATES {"unset_rejected":true,"empty_rejected":true,"literal_zero_rejected":true}
+MIGAN_RETENTION {"passed":true}
+LAMA_FFT_CONTRACT {"checks":99,"failures":0,"passed":true,"max_forward_abs":4.10094855e-15,"max_inverse_abs":2.98023224e-08,"max_roundtrip_abs":5.96046448e-08}
+Big-LaMa boundary contracts: 38 checks, 0 failures

@@ -1,0 +1,1 @@
+inpaint: 1/1 /home/runner/work/_temp/out/lama-cli/subtitle.png

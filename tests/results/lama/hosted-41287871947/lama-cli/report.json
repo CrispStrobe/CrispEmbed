@@ -1,0 +1,58 @@
+{
+  "schema": "crispembed-inpaint-cli-smoke-v1",
+  "passed": true,
+  "cases": [
+    {
+      "case": "subtitle",
+      "width": 40,
+      "height": 32,
+      "fill_pixels": 224,
+      "known_rgb_exact": true,
+      "original_rgb_max_abs": 0,
+      "png_sha256": "4f6f8de8930ef80a4bda82d96c40a8133a1b31ae0a8f3e09b0509727185383bb"
+    },
+    {
+      "case": "edge",
+      "width": 40,
+      "height": 32,
+      "fill_pixels": 140,
+      "known_rgb_exact": true,
+      "original_rgb_max_abs": 0,
+      "png_sha256": "8991510c5d7b62f98a399aaa06e7975dd7a873eb4df7cdb164015dd1d4af005b"
+    },
+    {
+      "case": "padded",
+      "width": 37,
+      "height": 29,
+      "fill_pixels": 63,
+      "known_rgb_exact": true,
+      "original_rgb_max_abs": 0,
+      "png_sha256": "45daac76274718ab847f8a1c956178e7af97ac78a71c8436a10476c42b5179da"
+    },
+    {
+      "case": "empty",
+      "width": 40,
+      "height": 32,
+      "fill_pixels": 0,
+      "known_rgb_exact": true,
+      "original_rgb_max_abs": 0,
+      "png_sha256": "02fc6a158c7d7102dec8853a41cc6f499423ded60d89ecf2428953135bd68cf6"
+    },
+    {
+      "case": "full",
+      "width": 40,
+      "height": 32,
+      "fill_pixels": 1280,
+      "known_rgb_exact": true,
+      "original_rgb_max_abs": 1,
+      "png_sha256": "38c461362d8855ae4656be60c53572921b2a7b3d1482bb7fbf4caea0aa635327"
+    }
+  ],
+  "backend": "lama",
+  "model_sha256": "6369ae4ff76794fe90272f74b8dbffc610987416d49b32990e0295e5b8bf4a01",
+  "same_context_repeat_exact": true,
+  "single_and_batch_exact": true,
+  "batch_wall_seconds_diagnostic": 1.4582372900000564,
+  "real_scene_quality_qualified": false,
+  "temporal_quality_qualified": false
+}

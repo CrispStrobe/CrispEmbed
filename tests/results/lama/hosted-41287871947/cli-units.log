@@ -1,0 +1,38 @@
+test_backend_selection_rejects_mismatch_and_unknown_metadata (__main__.InpaintCliTests.test_backend_selection_rejects_mismatch_and_unknown_metadata) ... ok
+test_bad_manifest_rows (__main__.InpaintCliTests.test_bad_manifest_rows) ... ok
+test_batch_fails_at_exact_frame_and_retains_completed_output (__main__.InpaintCliTests.test_batch_fails_at_exact_frame_and_retains_completed_output) ... ok
+test_batch_preflights_later_masks_before_first_write (__main__.InpaintCliTests.test_batch_preflights_later_masks_before_first_write) ... ok
+test_decode_failure_never_creates_output (__main__.InpaintCliTests.test_decode_failure_never_creates_output) ... ok
+test_detector_failure_and_nonfinite_output_are_errors (__main__.InpaintCliTests.test_detector_failure_and_nonfinite_output_are_errors) ... ok
+test_dilation_then_region (__main__.InpaintCliTests.test_dilation_then_region) ... ok
+test_directory_order_and_one_loaded_context (__main__.InpaintCliTests.test_directory_order_and_one_loaded_context) ... ok
+test_duplicate_and_cross_frame_input_outputs_reject (__main__.InpaintCliTests.test_duplicate_and_cross_frame_input_outputs_reject) ... ok
+test_empty_mask (__main__.InpaintCliTests.test_empty_mask) ... ok
+test_existing_output_requires_explicit_overwrite (__main__.InpaintCliTests.test_existing_output_requires_explicit_overwrite) ... ok
+test_help_without_gate_or_files (__main__.InpaintCliTests.test_help_without_gate_or_files) ... ok
+test_inference_failure_preserves_previous_output (__main__.InpaintCliTests.test_inference_failure_preserves_previous_output) ... ok
+test_invalid_options_before_model_load (__main__.InpaintCliTests.test_invalid_options_before_model_load) ... ok
+test_lama_auto_and_explicit_dispatch (__main__.InpaintCliTests.test_lama_auto_and_explicit_dispatch) ... ok
+test_lama_batch_reuses_one_selected_context (__main__.InpaintCliTests.test_lama_batch_reuses_one_selected_context) ... ok
+test_lama_geometry_rejected_before_loading (__main__.InpaintCliTests.test_lama_geometry_rejected_before_loading) ... ok
+test_lama_requires_its_own_value_parsed_gate (__main__.InpaintCliTests.test_lama_requires_its_own_value_parsed_gate) ... ok
+test_manifest_paths_relative_to_manifest (__main__.InpaintCliTests.test_manifest_paths_relative_to_manifest) ... ok
+test_mask_dimensions_preflight (__main__.InpaintCliTests.test_mask_dimensions_preflight) ... ok
+test_no_text_is_successful_passthrough (__main__.InpaintCliTests.test_no_text_is_successful_passthrough) ... ok
+test_non_png_format_is_not_mislabeled (__main__.InpaintCliTests.test_non_png_format_is_not_mislabeled) ... ok
+test_protect_input_mask_and_model (__main__.InpaintCliTests.test_protect_input_mask_and_model) ... ok
+test_real_binary_routing_and_model_rejection (__main__.InpaintCliTests.test_real_binary_routing_and_model_rejection) ... ok
+test_real_lama_loader_rejects_metadata_only_file (__main__.InpaintCliTests.test_real_lama_loader_rejects_metadata_only_file) ... ok
+test_requested_model_digest_is_checked_before_loading (__main__.InpaintCliTests.test_requested_model_digest_is_checked_before_loading) ... ok
+test_stdin_list (__main__.InpaintCliTests.test_stdin_list) ... ok
+test_text_default_dilation (__main__.InpaintCliTests.test_text_default_dilation) ... ok
+test_text_mask_list_sentinel (__main__.InpaintCliTests.test_text_mask_list_sentinel) ... ok
+test_text_quadrilateral_and_region (__main__.InpaintCliTests.test_text_quadrilateral_and_region) ... ok
+test_threshold_polarity_png_and_known_bytes (__main__.InpaintCliTests.test_threshold_polarity_png_and_known_bytes) ... ok
+test_unset_empty_and_zero_gate (__main__.InpaintCliTests.test_unset_empty_and_zero_gate) ... ok
+test_wrong_detector_architecture_rejects (__main__.InpaintCliTests.test_wrong_detector_architecture_rejects) ... ok
+
+----------------------------------------------------------------------
+Ran 33 tests in 0.148s
+
+OK

@@ -1,0 +1,6 @@
+inpaint: 1/6 /home/runner/work/_temp/out/lama-cli/subtitle.png
+inpaint: 2/6 /home/runner/work/_temp/out/lama-cli/edge.png
+inpaint: 3/6 /home/runner/work/_temp/out/lama-cli/padded.png
+inpaint: 4/6 /home/runner/work/_temp/out/lama-cli/empty.png
+inpaint: 5/6 /home/runner/work/_temp/out/lama-cli/full.png
+inpaint: 6/6 /home/runner/work/_temp/out/lama-cli/subtitle.png

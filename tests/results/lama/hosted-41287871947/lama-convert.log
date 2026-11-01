@@ -1,0 +1,6 @@
+{
+  "model": "/mnt/heavy/scratch/lama-input/big-lama-f32.gguf",
+  "receipt": "/mnt/heavy/scratch/lama-input/big-lama-f32.json",
+  "gguf_sha256": "6369ae4ff76794fe90272f74b8dbffc610987416d49b32990e0295e5b8bf4a01",
+  "tensor_count": 837
+}

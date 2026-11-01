@@ -1,0 +1,5 @@
+inpaint: 1/5 /home/runner/work/_temp/out/migan-smoke/empty.png
+inpaint: 2/5 /home/runner/work/_temp/out/migan-smoke/subtitle.png
+inpaint: 3/5 /home/runner/work/_temp/out/migan-smoke/edge.png
+inpaint: 4/5 /home/runner/work/_temp/out/migan-smoke/tiles.png
+inpaint: 5/5 /home/runner/work/_temp/out/migan-smoke/subtitle.png
