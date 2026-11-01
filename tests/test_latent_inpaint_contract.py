@@ -190,6 +190,7 @@ class LatentInpaintContractTest(unittest.TestCase):
             record = archive(checkpoint, rows, payloads)
             with contract.Checkpoint(checkpoint, record) as source:
                 records = contract.write_streamed_gguf(output, source, rows, metadata)
+            self.assertTrue(all("original_name" not in entry for entry in records))
             contract.verify_gguf(output, metadata, records)
             _, actual, data_offset = contract.read_gguf_index(output)
             self.assertEqual([r["shape"] for r in actual], [[1], [2, 3]])
@@ -199,6 +200,80 @@ class LatentInpaintContractTest(unittest.TestCase):
                 stream.write(b"\0\0\0")
             with self.assertRaisesRegex(ValueError, "readback hash"):
                 contract.verify_gguf(output, metadata, records)
+
+    def test_tensor_alias_byte_boundaries_and_fixed_encoding(self):
+        for original in ("x" * 63, "λ" * 31 + "x"):
+            self.assertEqual(contract.gguf_tensor_name(original), original)
+        for original in ("x" * 64, "λ" * 32, "module." * 20 + "weight"):
+            expected = "t." + hashlib.sha256(original.encode("utf-8")).hexdigest()[:56]
+            self.assertEqual(contract.gguf_tensor_name(original), expected)
+            self.assertEqual(len(expected.encode("utf-8")), 58)
+        for original in (None, "", "bad\0name"):
+            with self.assertRaisesRegex(ValueError, "original tensor name"):
+                contract.gguf_tensor_name(original)
+
+    def test_frozen_census_names_fit_ggml_and_are_collision_free(self):
+        source = contract.load_contract()
+        for model, alias_count in (("moebius", 540), ("pixelhacker", 384), ("sdxl_vae", 0)):
+            rows = source["models"][model]["state"]
+            names = contract._tensor_name_map(rows, contract.gguf_metadata(model, source))
+            self.assertEqual(len(names), len(set(names.values())))
+            exported = [entry["name"] for entry in rows if entry["export_shape"] is not None]
+            self.assertEqual(sum(names[name] != name for name in exported), alias_count)
+            self.assertTrue(all(len(names[name].encode("utf-8")) < 64 for name in exported))
+
+    def test_streamed_alias_preserves_original_name_and_exact_f32_payload(self):
+        original = "diff_model.down_blocks.0.attentions.0.transformer_blocks.0.attn1.g_norm_swish_gate.weight"
+        rows = [row(original)]
+        payload = struct.pack("<4I", 0x3f800000, 0x80000000, 0x3eaaaaab, 0xc0200000)
+        metadata = {"general.architecture": "authored-fixture", "general.file_type": 0,
+                    "crispembed.tensor_name_encoding": contract.TENSOR_NAME_ENCODING}
+        with tempfile.TemporaryDirectory() as tmp:
+            checkpoint, output = Path(tmp) / "tiny.pt", Path(tmp) / "tiny.gguf"
+            record = archive(checkpoint, rows, [payload])
+            with contract.Checkpoint(checkpoint, record) as source:
+                records = contract.write_streamed_gguf(output, source, rows, metadata)
+            contract.verify_gguf(output, metadata, records)
+            self.assertEqual(records[0]["original_name"], original)
+            self.assertEqual(records[0]["name"], contract.gguf_tensor_name(original))
+            self.assertEqual(records[0]["sha256"], hashlib.sha256(payload).hexdigest())
+            actual_meta, actual, start = contract.read_gguf_index(output)
+            self.assertEqual(actual_meta, metadata)
+            self.assertEqual(actual[0]["name"], records[0]["name"])
+            with output.open("rb") as stream:
+                stream.seek(start + actual[0]["offset"])
+                self.assertEqual(stream.read(actual[0]["bytes"]), payload)
+            for key, value in (("original_name", original + "_changed"), ("name", "t." + "0" * 56)):
+                changed = copy.deepcopy(records)
+                changed[0][key] = value
+                with self.subTest(field=key), self.assertRaisesRegex(ValueError, "alias/source identity"):
+                    contract.verify_gguf(output, metadata, changed)
+            changed = copy.deepcopy(records)
+            del changed[0]["original_name"]
+            with self.assertRaisesRegex(ValueError, "original tensor name"):
+                contract.verify_gguf(output, metadata, changed)
+
+    def test_alias_collision_including_omitted_source_buffer_fails_before_output(self):
+        original = "module." * 12 + "num_batches_tracked"
+        # A literal short source name may equal another source's hash alias.
+        # Even though the long original is omitted, the full census must reject
+        # that collision rather than silently losing the source correspondence.
+        rows = [row(original, (), "int64"), row(contract.gguf_tensor_name(original), (1,), storage="1")]
+        metadata = {"crispembed.tensor_name_encoding": contract.TENSOR_NAME_ENCODING}
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "collision.gguf"
+            with self.assertRaisesRegex(ValueError, "alias collision"):
+                contract.write_streamed_gguf(output, None, rows, metadata)
+            self.assertFalse(output.exists())
+
+    def test_unsupported_alias_encoding_and_unencoded_long_names_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "bad.gguf"
+            with self.assertRaisesRegex(ValueError, "unsupported GGUF tensor name encoding"):
+                contract.write_streamed_gguf(output, None, [row()], {"crispembed.tensor_name_encoding": "unknown"})
+            with self.assertRaisesRegex(ValueError, "long tensor name requires"):
+                contract.write_streamed_gguf(output, None, [row("x" * 64)], {})
+            self.assertFalse(output.exists())
 
     def test_fixtures_are_binary_and_independent_of_rng(self):
         for name in contract.CASES:

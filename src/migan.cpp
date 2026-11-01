@@ -41,6 +41,7 @@ struct context {
     int resolution = image_size;
     bool persistent = false;
     bool fast = false;
+    bool cpu_kernels = false;
     ggml_backend_t backend = nullptr;
     std::unique_ptr<inpaint_graph::CpuPool> threadpool;
     core_gguf::WeightLoad weights;
@@ -68,20 +69,20 @@ double elapsed_ms(clock_type::time_point start) {
 
 void profile(const execution_stats & stats, const char * kind) {
     if (!core_env::on("CRISPEMBED_INPAINT_PROFILE")) return;
-    std::fprintf(
-        stderr,
-        "migan graph %s: backend=%s resolution=%d persistent=%d precision=%s cpu_plan=%d cpu_pool=%d nodes=%zu "
-        "graph_bytes=%zu weight_bytes=%zu builds=%" PRIu64 " allocations=%" PRIu64 " runs=%" PRIu64 " reuses=%" PRIu64
-        " weight_uploads=%" PRIu64 " weight_upload_bytes=%" PRIu64 " input_uploads=%" PRIu64
-        " input_upload_bytes=%" PRIu64 " output_downloads=%" PRIu64 " output_download_bytes=%" PRIu64
-        " build_ms=%.6f compute_ms=%.6f total_compute_ms=%.6f run_ms=%.6f\n",
-        kind, stats.backend.c_str(), stats.resolution, int(stats.persistent),
-        stats.fast ? "backend-default-may-reduce-f32" : "f32", int(stats.cpu_plan_cached),
-        int(stats.cpu_threadpool_reused), stats.graph_nodes, stats.graph_buffer_bytes, stats.weight_buffer_bytes,
-        stats.graph_builds, stats.graph_allocations, stats.runs, stats.reuses, stats.weight_uploads,
-        stats.weight_upload_bytes, stats.input_uploads, stats.input_upload_bytes, stats.output_downloads,
-        stats.output_download_bytes, stats.last_build_ms, stats.last_compute_ms, stats.total_compute_ms,
-        stats.last_run_ms);
+    std::fprintf(stderr,
+                 "migan graph %s: backend=%s resolution=%d persistent=%d precision=%s cpu_kernels=%d cpu_plan=%d "
+                 "cpu_pool=%d nodes=%zu "
+                 "graph_bytes=%zu weight_bytes=%zu builds=%" PRIu64 " allocations=%" PRIu64 " runs=%" PRIu64
+                 " reuses=%" PRIu64 " weight_uploads=%" PRIu64 " weight_upload_bytes=%" PRIu64 " input_uploads=%" PRIu64
+                 " input_upload_bytes=%" PRIu64 " output_downloads=%" PRIu64 " output_download_bytes=%" PRIu64
+                 " build_ms=%.6f compute_ms=%.6f total_compute_ms=%.6f run_ms=%.6f\n",
+                 kind, stats.backend.c_str(), stats.resolution, int(stats.persistent),
+                 stats.fast ? "backend-default-may-reduce-f32" : "f32", int(stats.cpu_kernels),
+                 int(stats.cpu_plan_cached), int(stats.cpu_threadpool_reused), stats.graph_nodes,
+                 stats.graph_buffer_bytes, stats.weight_buffer_bytes, stats.graph_builds, stats.graph_allocations,
+                 stats.runs, stats.reuses, stats.weight_uploads, stats.weight_upload_bytes, stats.input_uploads,
+                 stats.input_upload_bytes, stats.output_downloads, stats.output_download_bytes, stats.last_build_ms,
+                 stats.last_compute_ms, stats.total_compute_ms, stats.last_run_ms);
 }
 
 bool fail(std::string & error, const std::string & message) {
@@ -104,6 +105,92 @@ bool digest_valid(const char * value) {
     for (size_t i = 0; i < 64; ++i)
         if (!((value[i] >= '0' && value[i] <= '9') || (value[i] >= 'a' && value[i] <= 'f'))) return false;
     return true;
+}
+
+// These CPU callbacks are explicit ggml graph nodes, selected only by the
+// default-off CPU kernel gate. They preserve F32 weights/accumulation and the
+// original kernel traversal order. No callback is added to a GPU graph.
+struct depthwise_spec {
+    int stride;
+    int padding;
+};
+
+void cpu_activation(ggml_tensor * dst, const ggml_tensor * input, int ith, int nth, void *) {
+    GGML_ASSERT(input->type == GGML_TYPE_F32 && dst->type == GGML_TYPE_F32);
+    GGML_ASSERT(ggml_is_contiguous(input) && ggml_is_contiguous(dst));
+    const int64_t count = ggml_nelements(input);
+    const int64_t chunk = (count + nth - 1) / nth;
+    const int64_t begin = chunk * ith, end = std::min(count, begin + chunk);
+    const float * source = static_cast<const float *>(input->data);
+    float * output = static_cast<float *>(dst->data);
+    for (int64_t i = begin; i < end; ++i) {
+        const float value = source[i];
+        // Match ggml's two signed branches, including signed-zero behavior.
+        const float activated = (value > 0.0f ? value : 0.0f) + 0.2f * (value < 0.0f ? value : 0.0f);
+        const float scaled = activated * 1.4142135623730950488f;
+        output[i] = std::min(std::max(scaled, -256.0f), 256.0f);
+    }
+}
+
+void cpu_depthwise(ggml_tensor * dst, int ith, int nth, void * userdata) {
+    const auto & spec = *static_cast<const depthwise_spec *>(userdata);
+    const ggml_tensor * input = dst->src[0];
+    const ggml_tensor * kernel = dst->src[1];
+    GGML_ASSERT(input->type == GGML_TYPE_F32 && kernel->type == GGML_TYPE_F32 && dst->type == GGML_TYPE_F32);
+    GGML_ASSERT(ggml_is_contiguous(input) && ggml_is_contiguous(kernel) && ggml_is_contiguous(dst));
+    const int64_t width = input->ne[0], height = input->ne[1], channels = input->ne[2];
+    const int64_t out_width = dst->ne[0], out_height = dst->ne[1];
+    const int64_t kw = kernel->ne[0], kh = kernel->ne[1];
+    const int64_t rows = out_height * channels * input->ne[3];
+    const int64_t chunk = (rows + nth - 1) / nth;
+    const int64_t begin = chunk * ith, end = std::min(rows, begin + chunk);
+    const float * source = static_cast<const float *>(input->data);
+    const float * weights = static_cast<const float *>(kernel->data);
+    float * output = static_cast<float *>(dst->data);
+    constexpr int64_t block_size = 128;
+    for (int64_t row = begin; row < end; ++row) {
+        const int64_t plane = row / out_height, y = row % out_height;
+        const float * plane_source = source + plane * width * height;
+        const float * filter = weights + (plane % channels) * kw * kh;
+        float * out = output + row * out_width;
+        const int64_t first = std::min(out_width, int64_t((spec.padding + spec.stride - 1) / spec.stride));
+        const int64_t valid_end = width + spec.padding >= kw ? (width + spec.padding - kw) / spec.stride + 1 : 0;
+        const int64_t last = std::max(first, std::min(out_width, valid_end));
+        auto edge = [&](int64_t x) {
+            float sum = 0.0f;
+            for (int64_t ky = 0; ky < kh; ++ky) {
+                const int64_t sy = y * spec.stride + ky - spec.padding;
+                if (sy < 0 || sy >= height) continue;
+                for (int64_t kx = 0; kx < kw; ++kx) {
+                    const int64_t sx = x * spec.stride + kx - spec.padding;
+                    if (sx >= 0 && sx < width) sum += filter[ky * kw + kx] * plane_source[sy * width + sx];
+                }
+            }
+            out[x] = sum;
+        };
+        for (int64_t x = 0; x < first; ++x) edge(x);
+        // Move boundary branches outside the pixel loop. Each SIMD lane still
+        // accumulates ky/kx in the same order as the generic F32 depthwise op.
+        for (int64_t x = first; x < last; x += block_size) {
+            const int64_t count = std::min(block_size, last - x);
+            alignas(64) float accum[block_size] = {};
+            for (int64_t ky = 0; ky < kh; ++ky) {
+                const int64_t sy = y * spec.stride + ky - spec.padding;
+                if (sy < 0 || sy >= height) continue;
+                for (int64_t kx = 0; kx < kw; ++kx) {
+                    const float coefficient = filter[ky * kw + kx];
+                    const float * pixels = plane_source + sy * width + x * spec.stride + kx - spec.padding;
+                    if (spec.stride == 1) {
+                        for (int64_t i = 0; i < count; ++i) accum[i] += coefficient * pixels[i];
+                    } else {
+                        for (int64_t i = 0; i < count; ++i) accum[i] += coefficient * pixels[2 * i];
+                    }
+                }
+            }
+            std::copy_n(accum, count, out + x);
+        }
+        for (int64_t x = last; x < out_width; ++x) edge(x);
+    }
 }
 
 schema expected_schema(int resolution) {
@@ -183,6 +270,7 @@ struct graph_builder {
     ggml_tensor * input = nullptr;
     ggml_tensor * output = nullptr;
     std::vector<float> result;
+    std::vector<std::unique_ptr<depthwise_spec>> depthwise_specs;
     const clock_type::time_point build_started = clock_type::now();
 #ifdef CRISPEMBED_MIGAN_TESTING
     bool retain = false;
@@ -227,6 +315,11 @@ struct graph_builder {
 
     ggml_tensor * activate(ggml_tensor * x) {
         // Do not mutate a prior Conv2d output retained by the test observer.
+        if (model.cpu_kernels) {
+            if (x->type != GGML_TYPE_F32 || !ggml_is_contiguous(x))
+                throw std::runtime_error("MI-GAN CPU activation requires contiguous F32 input");
+            return ggml_map_custom1(ctx, x, cpu_activation, GGML_N_TASKS_MAX, nullptr);
+        }
         x = ggml_leaky_relu(ctx, x, 0.2f, false);
         x = ggml_scale(ctx, x, 1.4142135623730950488f);
         return ggml_clamp(ctx, x, -256.0f, 256.0f);
@@ -239,7 +332,23 @@ struct graph_builder {
         if (depthwise) {
             // Pinned CPU direct depthwise uses F32 source, F32 weight and F32
             // accumulation. WHCN stays contiguous; no F16 im2col temporary.
-            y = ggml_conv_2d_dw_direct(ctx, kernel, x, stride, stride, pad, pad, 1, 1);
+            if (model.cpu_kernels) {
+                if (x->type != GGML_TYPE_F32 || kernel->type != GGML_TYPE_F32 || !ggml_is_contiguous(x) ||
+                    !ggml_is_contiguous(kernel) || kernel->ne[0] != kernel->ne[1] ||
+                    (kernel->ne[0] != 3 && kernel->ne[0] != 4) || (stride != 1 && stride != 2) || pad < 0 || pad > 1 ||
+                    kernel->ne[2] != 1 || kernel->ne[3] != x->ne[2])
+                    throw std::runtime_error("MI-GAN CPU depthwise shape/type contract differs");
+                const int64_t span_width = x->ne[0] + 2 * pad - kernel->ne[0];
+                const int64_t span_height = x->ne[1] + 2 * pad - kernel->ne[1];
+                if (span_width < 0 || span_height < 0) throw std::runtime_error("MI-GAN CPU depthwise output is empty");
+                const int64_t width = span_width / stride + 1, height = span_height / stride + 1;
+                depthwise_specs.emplace_back(new depthwise_spec{ stride, pad });
+                ggml_tensor * arguments[] = { x, kernel };
+                y = ggml_custom_4d(ctx, GGML_TYPE_F32, width, height, x->ne[2], x->ne[3], arguments, 2, cpu_depthwise,
+                                   GGML_N_TASKS_MAX, depthwise_specs.back().get());
+            } else {
+                y = ggml_conv_2d_dw_direct(ctx, kernel, x, stride, stride, pad, pad, 1, 1);
+            }
         } else if (model.persistent) {
             // OIHW 1x1 weights are [IC,OC]. WHCN activations are [W*H,IC].
             // Transpose channels once; activation-first matmul then directly
@@ -484,10 +593,14 @@ context * init_variant(const char * path, const char * expected_checkpoint_sha25
             if (!ctx->backend) return nullptr;
             if (core_cpu_backend::is_cpu(ctx->backend)) {
                 ctx->threadpool = std::make_unique<inpaint_graph::CpuPool>(ctx->backend, n_threads);
+                ctx->cpu_kernels = core_env::on("CRISPEMBED_MIGAN_CPU_KERNELS");
             } else {
+                if (core_env::on("CRISPEMBED_MIGAN_CPU_KERNELS"))
+                    throw std::runtime_error("MI-GAN CPU kernels require a selected CPU backend");
                 ctx->fast = core_env::on("CRISPEMBED_INPAINT_FAST");
             }
             ctx->stats.fast = ctx->fast;
+            ctx->stats.cpu_kernels = ctx->cpu_kernels;
         } else {
             ctx->backend = core_cpu_backend::init();
             if (!ctx->backend || !core_cpu_backend::is_cpu(ctx->backend)) {
@@ -625,6 +738,8 @@ bool composite_rgb8_variant(int resolution, const float * raw_nchw, size_t raw_c
 
 #ifdef CRISPEMBED_MIGAN_TESTING
 namespace test {
+#include "../tests/migan_cpu_kernel_controls.h"
+
 bool graph_backend_controls(int n_threads, int runs, execution_stats & stats, std::string & error) {
     error.clear();
     if (n_threads < 1 || n_threads > 64 || runs < 2 || runs > 1000)
@@ -637,10 +752,14 @@ bool graph_backend_controls(int n_threads, int runs, execution_stats & stats, st
         if (!model.backend) return false;
         if (core_cpu_backend::is_cpu(model.backend)) {
             model.threadpool = std::make_unique<inpaint_graph::CpuPool>(model.backend, n_threads);
+            model.cpu_kernels = core_env::on("CRISPEMBED_MIGAN_CPU_KERNELS");
         } else {
+            if (core_env::on("CRISPEMBED_MIGAN_CPU_KERNELS"))
+                throw std::runtime_error("MI-GAN CPU kernels require a selected CPU backend");
             model.fast = core_env::on("CRISPEMBED_INPAINT_FAST");
         }
         model.stats.fast = model.fast;
+        model.stats.cpu_kernels = model.cpu_kernels;
         constexpr int width = 5, height = 3, ic = 4, oc = 3;
         constexpr size_t pixels = width * height;
         model.weights.ctx = ggml_init({ 8 * ggml_tensor_overhead(), nullptr, true });
@@ -772,6 +891,7 @@ bool graph_backend_controls(int n_threads, int runs, execution_stats & stats, st
         }
         if (!rejected || !std::all_of(blocked_output.begin(), blocked_output.end(), [](float v) { return v == 13; }))
             throw std::runtime_error("MI-GAN same-context concurrency did not reject without output mutation");
+        if (model.cpu_kernels) cpu_kernel_regression(n_threads);
         stats = model.stats;
         std::printf("MIGAN_GRAPH_OPS {\"max_abs\":%.9g,\"scalar_oracle_passed\":true,\"weight_bytes_unchanged\":true,"
                     "\"allocation_identity_unchanged\":true,\"overlap_rejected\":true}\n",

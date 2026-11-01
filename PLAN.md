@@ -326,52 +326,39 @@ outside this lane. Do not infer weight permission from a public repository.
 
 ## Issue71, packaging and downstream delivery
 
-- Persistent inpainting graph source, 1 November 2026: MI-GAN256/512, LaMa,
-  Moebius and PixelHacker now have an additional default-off native
-  CPU/CUDA/Metal path. Cache graph allocations and CPU plans/pools; retain
-  diffusion state on-device; batch CFG and VAE encoding; use portable Fourier
-  and rectangular gated-attention graphs. Strict F32 and explicit mixed GPU
-  profiles have separate acceptance evidence. See the
-  [graph guide](docs/inpainting-ggml-graphs.md). Next gate: run the manual native
-  component workflow on actual CPU, Apple GPU and CUDA hardware, then replay
-  unchanged original stage/image comparisons and collect cold/warm timing and
-  actual peak-memory evidence. Current source checks and peer review do not
-  establish native execution, model parity or a speedup. Preserve the eager
-  comparison paths, model pins and every existing default. No runtime release,
-  shared ABI, model publication or downstream adoption is included.
-- Extended source delivery, 1 November 2026: explicit MI-GAN512, Big-LaMa,
-  Moebius and PixelHacker profiles reuse the existing loader, CPU operators,
-  masks, PNG output and persistent batches. New model math includes exact
-  Fourier blocks, lambda/GLA denoisers, one shared SDXL VAE and DDIM sampler.
-  Checkpoint/source/tensor contracts, strict converters, original captures,
-  native parity programs and opt-in hosted workflows are included. See the
-  [engine guide](docs/inpainting-engines.md) and
-  [reuse audit](docs/latent-inpaint-reuse.md). Bounded Python checks and C++
-  syntax checks are source validation only. Hosted builds, actual conversion,
-  full-model original/native comparisons and representative quality remain
-  pending. No gates are enabled by default, no model is published, and no ABI,
-  release or downstream pin changes are made.
-- Bounded source delivery, 1 November 2026: issue71 CLI implementation on
-  `feat/issue71-inpainting`, based on `b8cd2497765f2fd8db0b9c713d952898bdd9b996`.
-  Adds a default-off, exact-model-pinned MI-GAN CLI, native256 tiling, explicit or
-  DBNet-derived masks, PNG provenance and persistent directory/TSV batches.
-  The existing MI-GAN graph/reference receipts remain unchanged. The
-  [implementation and validation contract](docs/inpainting-cli.md) distinguishes
-  model-free wrapper checks from pending native hosted execution and real-scene
-  quality. Thirty-six dependency-free Python checks, six C++ syntax-only checks,
-  Python/YAML syntax, formatting and the clean-exit guard pass. Compiled native
-  tests, actual CLI execution and checkpoint replication remain unexecuted;
-  the new three-platform workflow and opt-in model smoke are prepared, not
-  observed hosted results. This source delivery creates no model alias, runtime release, shared
-  C ABI or downstream pin change; temporal/video and LaMa remain separate.
-- Issue71 MI-GAN: fixed256 CPU/F32 prototype and494/eight-fixture audit are
-  complete. Qualify the new CLI separately, then freeze licensed real subtitle/
-  scene images and masks with perceptual/seam criteria. C ABI/orchestrator/server/
-  bindings, registry and downstream consumers remain separate. Video/motion/
-  flicker and text-derived masks need their own gold. Other model resolutions,
-  F16/quantization and GPU backends remain separate. LaMa now has its explicit
-  checkpoint-container/licence record and CPU Fourier implementation; validate
-  its original/native stages before adoption. Keep issue71 open.
+- CPU inpainting execution, 1 November 2026: native builds, unit checks and
+  live model tests were executed for this authorized run. Persistent-input
+  allocation and long GGUF tensor-name loading defects are corrected; all
+  2,080 latent tensor payloads remain unchanged. The source package records
+  executed checks separately from the remaining qualification gaps. See the
+  [completed-results report](docs/inpainting-optimization-results.md).
+- MI-GAN256/512 baseline and optimized paths each pass 20 original-model cases
+  and 1,070 stage comparisons; corresponding native stage hashes are identical.
+  Ordinary image API medians improve 2.61–3.27 times over eager on the admitted
+  256/512, four/eight-thread arms. The 512/eight-thread quiet confirmation
+  improves 3.24 times. Initial contended samples remain excluded and retained.
+- LaMa completes 24 synthetic arms and 5,448 original-stage comparisons.
+  Seven of eight fixtures pass all stages in every implementation. Full-mask
+  intermediate failures remain 37/34/34, despite passing final-image gates.
+  All twelve photo arms pass original RGB; optimized warm calls improve
+  2.37–2.49 times over the portable graph. Strict full-model parity is negative.
+- Moebius completes the four-case original replay with local/relative lambda
+  reassociation. Final RGB and observer-neutrality checks pass in all four
+  cases; 35 of 608 stages fail the unchanged absolute-error limit. No paired
+  ordinary-API performance claim is made. PixelHacker's optimized CPU profile
+  completes one cold/three warm ordinary calls with exact repeats and known
+  pixels, a 139.268-second warm median and approximately 5.99 GiB peak RSS.
+  Its eager comparison was interrupted at the user's delivery request; the
+  portable arm, paired image-quality comparison and latent CLI tests remain
+  unexecuted. Preserve that incomplete status and every original failure.
+- Actual production CLI checks cover both MI-GAN sizes and LaMa at 256/512,
+  with empty masks, exact API outputs and batch-context reuse. GPU execution,
+  original PixelHacker parity, representative perceptual/video quality,
+  quantization, public bindings and downstream release qualification remain
+  separate. Keep issue71 open, all candidates default off, model/source pins
+  intact and the prepared-but-unintegrated depthwise experiment out of the
+  runtime. Follow-up work should resume the recorded gaps without replacing
+  prior receipts or weakening their fixed numerical budgets.
 - Source/wheel success is not release qualification. Require fresh portable
   native/WASM producers, installed bundle/ABI/platform consumers and full
   aggregation for the final source, then update release metadata coherently.

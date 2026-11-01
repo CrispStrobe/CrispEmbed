@@ -26,7 +26,7 @@ def write_json(path, value):
     path.write_text(json.dumps(value, indent=2) + "\n", encoding="utf-8")
 
 
-def fixture(root, engine="moebius", backend="cuda", precision="f32", compare_eager=False, cases=None):
+def fixture(root, engine="moebius", backend="cuda", precision="f32", compare_eager=False, cases=None, cpu_optimized=False):
     inputs = root / "prepared"
     inputs.mkdir()
     binary = inputs / ("test-lama-diff" if engine == "lama" else "test-latent-inpaint")
@@ -59,6 +59,8 @@ def fixture(root, engine="moebius", backend="cuda", precision="f32", compare_eag
         argv += ["--vae", str(vae), "--vae-sha256", driver.sha256(vae)]
     if compare_eager:
         argv.append("--compare-eager")
+    if cpu_optimized:
+        argv.append("--cpu-optimized")
     return driver.arguments(argv)
 
 
@@ -118,6 +120,40 @@ def execute(run, stub):
 
 
 class ReplayDriverControls(unittest.TestCase):
+    def test_cpu_optimization_selection_is_explicit_and_model_specific(self):
+        selected = {
+            "lama": {"CRISPEMBED_INPAINT_GEMM_LAYOUT", "CRISPEMBED_INPAINT_REFLECT_GATHER", "CRISPEMBED_INPAINT_CPU_FFT"},
+            "moebius": {"CRISPEMBED_INPAINT_GEMM_LAYOUT", "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC"},
+            "pixelhacker": {"CRISPEMBED_INPAINT_GEMM_LAYOUT", "CRISPEMBED_INPAINT_CPU_GLA"},
+        }
+        for engine, expected in selected.items():
+            with self.subTest(engine=engine), tempfile.TemporaryDirectory() as temp:
+                args = fixture(Path(temp), engine=engine, backend="cpu", compare_eager=True, cpu_optimized=True)
+                args.threads = 8
+                run, stub = driver.Run(args), NativeStub()
+                self.assertEqual(execute(run, stub), 0)
+                eager, graph = stub.calls
+                self.assertTrue(all(eager[1]["env"][name] == "0" for name in driver.CPU_GATES))
+                self.assertEqual({name for name in driver.CPU_GATES if graph[1]["env"][name] == "1"}, expected)
+                self.assertEqual(graph[0][graph[0].index("--threads") + 1], "8")
+                self.assertTrue(run.report["cpu_optimized"])
+                self.assertFalse(run.report["native_qualified"])
+
+    def test_default_graph_clears_inherited_cpu_optimizations(self):
+        with tempfile.TemporaryDirectory() as temp:
+            run, stub = driver.Run(fixture(Path(temp), backend="cpu")), NativeStub()
+            with mock.patch.dict(os.environ, {name: "1" for name in driver.CPU_GATES}):
+                self.assertEqual(execute(run, stub), 0)
+            self.assertTrue(all(stub.calls[0][1]["env"][name] == "0" for name in driver.CPU_GATES))
+            self.assertFalse(run.report["cpu_optimized"])
+
+    def test_cpu_optimized_rejects_gpu_or_mixed_profiles(self):
+        for backend, precision in (("cuda", "f32"), ("metal", "f32"), ("cpu", "mixed")):
+            with self.subTest(backend=backend, precision=precision), tempfile.TemporaryDirectory() as temp:
+                with mock.patch("sys.stderr"), self.assertRaises(SystemExit) as raised:
+                    fixture(Path(temp), backend=backend, precision=precision, cpu_optimized=True)
+                self.assertEqual(raised.exception.code, 2)
+
     def test_same_native_budgets_and_inputs_for_eager_and_mixed_graph(self):
         with tempfile.TemporaryDirectory() as temp:
             args = fixture(Path(temp), engine="pixelhacker", backend="metal", precision="mixed", compare_eager=True)
@@ -199,7 +235,7 @@ class ReplayDriverControls(unittest.TestCase):
             for (argv, _), case in zip(stub.calls, run.cases):
                 self.assertEqual(argv[argv.index("--reference-sha256") + 1], case["reference_sha256"])
                 self.assertTrue(argv[argv.index("--reference") + 1].endswith(case["id"] + "/reference.gguf"))
-                self.assertNotIn("--threads", argv)
+                self.assertEqual(argv[argv.index("--threads") + 1], "2")
             self.assertTrue(run.report["complete"])
             self.assertFalse(run.report["passed"])
 

@@ -1,10 +1,13 @@
 #include "inpaint_graph_spectral.h"
+#include "core/env_gate.h"
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <complex>
 #include <cstdint>
 #include <limits>
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <utility>
@@ -15,7 +18,6 @@ namespace {
 
 constexpr double pi = 3.141592653589793238462643383279502884;
 constexpr int64_t max_fft_axis = 128;
-constexpr int64_t gla_chunk = 64;
 
 void require(bool condition, const char * message) {
     if (!condition) throw std::runtime_error(std::string("inpainting spectral graph: ") + message);
@@ -226,6 +228,218 @@ ggml_tensor * concatenate_chunks(ggml_context * ctx, std::vector<ggml_tensor *> 
     return parts.front();
 }
 
+// The pinned CPU kernel implements S_t = g_t*S_(t-1) + k_t*v_t^T,
+// y_t = q_t^T*S_t, with a separate multiplicative decay for each key feature.
+// It requires square heads. Split each value head into dk-wide independent
+// heads, repeat Q/K/g, and zero-pad only the final value slice. PixelHacker's
+// dv=2*dk needs exactly the original rectangular state count. Folding samples
+// into independent heads also exposes them to the native CPU thread partition.
+// All reshaping, repeats, decay and recurrence remain graph operations; the
+// zero initial state is immutable and the returned final state is discarded.
+ggml_tensor * cpu_gla(Builder & builder, ggml_tensor * q, ggml_tensor * k, ggml_tensor * v, ggml_tensor * decay,
+                      int heads) {
+    require(!builder.device.gpu, "native recurrent lowering is CPU-only");
+    ggml_context * ctx = builder.ctx;
+    const int64_t width = q->ne[0], height = q->ne[1], tokens = width * height, batch = q->ne[3];
+    const int64_t dk = q->ne[2] / heads, dv = v->ne[2] / heads, head_batches = heads * batch;
+    const int64_t value_chunks = (dv + dk - 1) / dk, padded_dv = value_chunks * dk;
+    const int64_t expanded_heads = value_chunks * head_batches;
+    auto repeat_key = [&](ggml_tensor * x) {
+        x = ggml_reshape_4d(ctx, contiguous(ctx, x), tokens, dk, 1, head_batches);
+        if (value_chunks > 1) x = ggml_repeat_4d(ctx, x, tokens, dk, value_chunks, head_batches);
+        x = ggml_reshape_3d(ctx, x, tokens, dk, expanded_heads);
+        return ggml_cont(ctx, ggml_permute(ctx, x, 2, 0, 1, 3)); // [dk,expanded_heads,tokens]
+    };
+    q = repeat_key(q); // Already scaled by 1/sqrt(original dk), never padded dv.
+    k = repeat_key(k);
+    decay = repeat_key(decay);
+    v = ggml_reshape_3d(ctx, contiguous(ctx, v), tokens, dv, head_batches);
+    if (padded_dv != dv) v = ggml_pad(ctx, v, 0, int(padded_dv - dv), 0, 0);
+    v = ggml_reshape_3d(ctx, v, tokens, dk, expanded_heads);
+    v = ggml_cont(ctx, ggml_permute(ctx, v, 2, 0, 1, 3));
+    const std::string state_name = "spectral.gla.cpu.zero." + std::to_string(dk) + "." + std::to_string(expanded_heads);
+    auto * zero = builder.zeros(state_name, { dk * dk * expanded_heads, 1 });
+    auto * result = ggml_gated_linear_attn(ctx, k, v, q, decay, zero, 1.0f);
+    // The native output appends final recurrent state after the token matrix.
+    result = ggml_view_2d(ctx, result, dk * expanded_heads, tokens, result->nb[1], 0);
+    result = ggml_reshape_3d(ctx, result, dk, expanded_heads, tokens);
+    result = ggml_cont(ctx, ggml_permute(ctx, result, 1, 2, 0, 3)); // [tokens,dk,expanded_heads]
+    result = ggml_reshape_3d(ctx, result, tokens, padded_dv, head_batches);
+    if (padded_dv != dv)
+        result = ggml_cont(ctx, ggml_view_3d(ctx, result, tokens, dv, head_batches, result->nb[1], result->nb[2], 0));
+    return ggml_reshape_4d(ctx, result, width, height, dv * heads, batch);
+}
+
+// CPU-only native FFT candidate, adapted from the existing lama_fft.cpp
+// radix-2/Bluestein mathematics. Geometry plans contain no activations. Cache
+// them per worker so warm graph replay performs neither trig nor heap setup.
+// Independent double-precision/DFT controls and original-model captures remain
+// the acceptance references; the portable device decomposition stays default.
+using CpuComplex = std::complex<double>;
+
+class CpuRadixPlan {
+    size_t n_;
+    std::vector<size_t> reverse_;
+    std::vector<CpuComplex> twiddles_;
+
+public:
+    explicit CpuRadixPlan(size_t n) : n_(n), reverse_(n), twiddles_(n / 2) {
+        for (size_t i = 0; i < n_; ++i) {
+            size_t value = i, reversed = 0;
+            for (size_t bit = n_ >> 1; bit; bit >>= 1) {
+                reversed = (reversed << 1) | (value & 1);
+                value >>= 1;
+            }
+            reverse_[i] = reversed;
+        }
+        for (size_t k = 0; k < twiddles_.size(); ++k)
+            twiddles_[k] = std::polar(1.0, -2.0 * pi * double(k) / double(n_));
+    }
+
+    void forward(CpuComplex * values) const {
+        for (size_t i = 0; i < n_; ++i)
+            if (i < reverse_[i]) std::swap(values[i], values[reverse_[i]]);
+        for (size_t length = 2; length <= n_; length <<= 1) {
+            const size_t half = length / 2, stride = n_ / length;
+            for (size_t begin = 0; begin < n_; begin += length)
+                for (size_t k = 0; k < half; ++k) {
+                    const CpuComplex even = values[begin + k];
+                    const CpuComplex odd = values[begin + k + half] * twiddles_[k * stride];
+                    values[begin + k] = even + odd;
+                    values[begin + k + half] = even - odd;
+                }
+        }
+    }
+
+    void inverse(CpuComplex * values) const {
+        for (size_t i = 0; i < n_; ++i) values[i] = std::conj(values[i]);
+        forward(values);
+        const double scale = 1.0 / double(n_);
+        for (size_t i = 0; i < n_; ++i) values[i] = std::conj(values[i]) * scale;
+    }
+};
+
+class CpuFftPlan {
+    size_t n_, padded_;
+    CpuRadixPlan radix_;
+    std::vector<CpuComplex> chirp_, kernel_;
+
+    static size_t padded_size(size_t n) {
+        if (power_of_two(int64_t(n))) return n;
+        size_t result = 1;
+        while (result < 2 * n - 1) result <<= 1;
+        return result;
+    }
+
+    void forward(CpuComplex * values, CpuComplex * work) const {
+        if (chirp_.empty()) {
+            radix_.forward(values);
+            return;
+        }
+        std::fill_n(work, padded_, CpuComplex{});
+        for (size_t k = 0; k < n_; ++k) work[k] = values[k] * chirp_[k];
+        radix_.forward(work);
+        for (size_t k = 0; k < padded_; ++k) work[k] *= kernel_[k];
+        radix_.inverse(work);
+        for (size_t k = 0; k < n_; ++k) values[k] = work[k] * chirp_[k];
+    }
+
+public:
+    explicit CpuFftPlan(size_t n) : n_(n), padded_(padded_size(n)), radix_(padded_) {
+        if (padded_ == n_) return;
+        chirp_.resize(n_);
+        kernel_.resize(padded_);
+        for (size_t k = 0; k < n_; ++k) {
+            const double phase = pi * double((k * k) % (2 * n_)) / double(n_);
+            chirp_[k] = std::polar(1.0, -phase);
+            kernel_[k] = std::conj(chirp_[k]);
+            if (k) kernel_[padded_ - k] = kernel_[k];
+        }
+        radix_.forward(kernel_.data());
+    }
+
+    void transform(CpuComplex * values, bool inverse, CpuComplex * work) const {
+        if (inverse)
+            for (size_t k = 0; k < n_; ++k) values[k] = std::conj(values[k]);
+        forward(values, work);
+        if (inverse) {
+            const double scale = 1.0 / double(n_);
+            for (size_t k = 0; k < n_; ++k) values[k] = std::conj(values[k]) * scale;
+        }
+    }
+};
+
+const CpuFftPlan & cpu_fft_plan(size_t n) {
+    // Graph construction validates n <=128 before any callback is created.
+    // A cache holds immutable geometry only; per-invocation scratch is below.
+    thread_local std::array<std::unique_ptr<CpuFftPlan>, size_t(max_fft_axis + 1)> cache;
+    if (!cache[n]) cache[n] = std::make_unique<CpuFftPlan>(n);
+    return *cache[n];
+}
+
+void cpu_rfft2(ggml_tensor * dst, int ith, int nth, void *) {
+    const ggml_tensor * src = dst->src[0];
+    const size_t width = size_t(src->ne[0]), height = size_t(src->ne[1]);
+    const size_t channels = size_t(src->ne[2] * src->ne[3]), half = width / 2 + 1;
+    const auto & rows = cpu_fft_plan(width);
+    const auto & columns = cpu_fft_plan(height);
+    std::array<CpuComplex, size_t(max_fft_axis * max_fft_axis)> plane;
+    std::array<CpuComplex, size_t(max_fft_axis)> column;
+    std::array<CpuComplex, 256> work;
+    const auto * input = static_cast<const float *>(src->data);
+    auto * output = static_cast<float *>(dst->data);
+    const double scale = 1.0 / std::sqrt(double(width * height));
+    for (size_t channel = size_t(ith); channel < channels; channel += size_t(nth)) {
+        for (size_t y = 0; y < height; ++y) {
+            CpuComplex * row = plane.data() + y * width;
+            for (size_t x = 0; x < width; ++x) row[x] = input[channel * width * height + y * width + x];
+            rows.transform(row, false, work.data());
+        }
+        // Only the retained half-spectrum needs a vertical transform.
+        for (size_t x = 0; x < half; ++x) {
+            for (size_t y = 0; y < height; ++y) column[y] = plane[y * width + x];
+            columns.transform(column.data(), false, work.data());
+            for (size_t y = 0; y < height; ++y) {
+                const size_t index = 2 * channel * half * height + y * half + x;
+                output[index] = float(column[y].real() * scale);
+                output[index + half * height] = float(column[y].imag() * scale);
+            }
+        }
+    }
+}
+
+void cpu_irfft2(ggml_tensor * dst, int ith, int nth, void *) {
+    const ggml_tensor * src = dst->src[0];
+    const size_t width = size_t(dst->ne[0]), height = size_t(dst->ne[1]);
+    const size_t channels = size_t(dst->ne[2] * dst->ne[3]), half = width / 2 + 1;
+    const auto & rows = cpu_fft_plan(width);
+    const auto & columns = cpu_fft_plan(height);
+    std::array<CpuComplex, size_t(max_fft_axis * max_fft_axis)> plane;
+    std::array<CpuComplex, size_t(max_fft_axis)> column;
+    std::array<CpuComplex, 256> work;
+    const auto * input = static_cast<const float *>(src->data);
+    auto * output = static_cast<float *>(dst->data);
+    const double scale = std::sqrt(double(width * height));
+    for (size_t channel = size_t(ith); channel < channels; channel += size_t(nth)) {
+        for (size_t x = 0; x < half; ++x) {
+            for (size_t y = 0; y < height; ++y) {
+                const size_t index = 2 * channel * half * height + y * half + x;
+                column[y] = CpuComplex(input[index], input[index + half * height]);
+            }
+            columns.transform(column.data(), true, work.data());
+            for (size_t y = 0; y < height; ++y) plane[y * width + x] = column[y];
+        }
+        for (size_t y = 0; y < height; ++y) {
+            CpuComplex * row = plane.data() + y * width;
+            for (size_t x = half; x < width; ++x) row[x] = std::conj(row[width - x]);
+            rows.transform(row, true, work.data());
+            // Keep the same real projection for arbitrary learned DC/Nyquist.
+            for (size_t x = 0; x < width; ++x)
+                output[channel * width * height + y * width + x] = float(row[x].real() * scale);
+        }
+    }
+}
+
 } // namespace
 
 ggml_tensor * rfft2_ortho(Builder & builder, ggml_tensor * real) {
@@ -234,6 +448,13 @@ ggml_tensor * rfft2_ortho(Builder & builder, ggml_tensor * real) {
     real = contiguous(ctx, real);
     const int64_t width = real->ne[0], height = real->ne[1], channels = real->ne[2], batch = real->ne[3];
     const int64_t half_width = width / 2 + 1;
+    if (!builder.device.gpu && core_env::on("CRISPEMBED_INPAINT_CPU_FFT")) {
+        ggml_tensor * args[]{ real };
+        auto * result = ggml_custom_4d(ctx, GGML_TYPE_F32, half_width, height, 2 * channels, batch, args, 1, cpu_rfft2,
+                                       GGML_N_TASKS_MAX, nullptr);
+        ggml_set_name(result, "spectral.cpu.rfft2");
+        return result;
+    }
     ComplexTensor x = fft_axis(builder, { real, ggml_scale(ctx, real, 0.0f) }, 0, false);
     auto half = [&](ggml_tensor * component) {
         return ggml_cont(ctx, ggml_view_4d(ctx, component, half_width, height, channels, batch, component->nb[1],
@@ -254,6 +475,13 @@ ggml_tensor * irfft2_ortho(Builder & builder, ggml_tensor * packed, int original
     packed = contiguous(ctx, packed);
     const int64_t half_width = packed->ne[0], height = packed->ne[1], channels = packed->ne[2] / 2;
     const int64_t batch = packed->ne[3], width = original_width;
+    if (!builder.device.gpu && core_env::on("CRISPEMBED_INPAINT_CPU_FFT")) {
+        ggml_tensor * args[]{ packed };
+        auto * result = ggml_custom_4d(ctx, GGML_TYPE_F32, width, height, channels, batch, args, 1, cpu_irfft2,
+                                       GGML_N_TASKS_MAX, nullptr);
+        ggml_set_name(result, "spectral.cpu.irfft2");
+        return result;
+    }
     auto component = [&](size_t offset) {
         return ggml_cont(ctx, ggml_view_4d(ctx, packed, half_width, height, channels, batch, packed->nb[1],
                                            2 * packed->nb[2], packed->nb[3], offset));
@@ -276,7 +504,9 @@ ggml_tensor * irfft2_ortho(Builder & builder, ggml_tensor * packed, int original
 }
 
 ggml_tensor * gla(Builder & builder, ggml_tensor * q, ggml_tensor * k, ggml_tensor * v, ggml_tensor * gate_logits,
-                  int heads, float normalizer) {
+                  int heads, float normalizer, int chunk_size) {
+    require(chunk_size == 8 || chunk_size == 16 || chunk_size == 32 || chunk_size == 64,
+            "GLA chunk size must be 8, 16, 32 or 64");
     require(q && k && v && gate_logits && q->type == GGML_TYPE_F32 && k->type == GGML_TYPE_F32 &&
                 v->type == GGML_TYPE_F32 && gate_logits->type == GGML_TYPE_F32 && ggml_are_same_shape(q, k) &&
                 ggml_are_same_shape(k, gate_logits) && q->ne[0] == v->ne[0] && q->ne[1] == v->ne[1] &&
@@ -295,14 +525,18 @@ ggml_tensor * gla(Builder & builder, ggml_tensor * q, ggml_tensor * k, ggml_tens
     // the recurrence's zero-decay behavior for extreme finite negative logits
     // and prevents (-inf)-(-inf) in the causal pairwise differences.
     log_gate = ggml_clamp(ctx, log_gate, -120.0f, 0.0f);
+    // Default-off measured CPU candidate. CUDA/Metal keep the portable graph:
+    // their native GLA support/geometry differs and is not qualified here.
+    if (!builder.device.gpu && core_env::on("CRISPEMBED_INPAINT_CPU_GLA"))
+        return cpu_gla(builder, q, k, v, ggml_exp(ctx, log_gate), heads);
     q = ggml_reshape_3d(ctx, q, tokens, dk, head_batches);
     k = ggml_reshape_3d(ctx, contiguous(ctx, k), tokens, dk, head_batches);
     v = ggml_reshape_3d(ctx, contiguous(ctx, v), tokens, dv, head_batches);
     log_gate = ggml_reshape_3d(ctx, log_gate, tokens, dk, head_batches);
     ggml_tensor * state = nullptr; // Independent zero state for every invocation/head/batch.
     std::vector<ggml_tensor *> outputs;
-    for (int64_t begin = 0; begin < tokens; begin += gla_chunk) {
-        const int64_t length = std::min(gla_chunk, tokens - begin);
+    for (int64_t begin = 0; begin < tokens; begin += chunk_size) {
+        const int64_t length = std::min<int64_t>(chunk_size, tokens - begin);
         ggml_tensor * qc = ggml_cont(ctx, ggml_transpose(ctx, token_chunk(ctx, q, begin, length)));
         ggml_tensor * kc = ggml_cont(ctx, ggml_transpose(ctx, token_chunk(ctx, k, begin, length)));
         ggml_tensor * vc = token_chunk(ctx, v, begin, length); // [length,dv,head_batches]

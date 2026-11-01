@@ -50,10 +50,23 @@ The full input checkpoint must match its frozen byte count and SHA-256 before
 its pickle metadata is interpreted. Tensor reconstruction yields inert storage
 and shape records; foreign pickle globals are rejected. The converter then
 checks every original name, dtype, shape, storage size, offset and stride.
-Only two explicit transformations are allowed: omit Moebius's 124 scalar
-BatchNorm training counters, and squeeze the singleton depth axis of its
-15 named positional convolutions. The shared VAE's FP16 values are widened
-exactly to F32. Original F32 tensor bytes remain unchanged.
+The permitted state/layout changes omit Moebius's 124 scalar BatchNorm training
+counters and squeeze the singleton depth axis of its 15 named positional
+convolutions. The shared VAE's FP16 values are widened exactly to F32. Original
+F32 tensor bytes remain unchanged.
+
+The actual load investigation also found original names exceeding ggml's
+64-byte field. The converter now records
+`crispembed.tensor_name_encoding = sha256-56-v1`: names of at least 64 UTF-8
+bytes use `t.` plus the first 56 hexadecimal SHA-256 digits, while shorter
+names remain unchanged. Every exported receipt row retains `original_name`
+alongside its physical `name`. Both native loaders derive the mapping from the
+frozen original schema, reject collisions and restore original lookup names.
+This adds a name adapter around the existing GGUF loader without changing ggml's
+ABI or the numerical tensors. All 2,080 migrated payload hashes matched the
+original conversions; see [the conversion and compatibility details](latent-inpaint-conversion.md#bounded-gguf-tensor-names)
+and the `name_migration` section of the
+[recorded component evidence](../tests/results/inpainting/cpu-components-2026-11-01.json).
 
 The original-reference capture extends `tools/dump_migan_reference.py`'s
 module hooks, owned input fixtures, output hashes and hook-neutrality check.

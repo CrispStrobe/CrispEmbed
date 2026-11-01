@@ -3,6 +3,7 @@
 #include "latent_inpaint.h"
 #include "latent_inpaint_schema.h"
 #include "latent_inpaint_vae.h"
+#include "inpaint_weight_names.h"
 #include "core/clean_exit.h"
 #include "core/sha256.h"
 #include "core/temp_file.h"
@@ -289,6 +290,7 @@ struct MetadataFile {
         gguf_set_val_str(meta.get(), "latent_inpaint.checkpoint.revision", latent_inpaint::checkpoint_revision(model));
         gguf_set_val_str(meta.get(), "latent_inpaint.input.contract", latent_inpaint::input_contract());
         gguf_set_val_str(meta.get(), "latent_inpaint.tensor.layout", latent_inpaint::tensor_layout());
+        gguf_set_val_str(meta.get(), inpaint_weight_names::key, inpaint_weight_names::encoding);
     }
     ~MetadataFile() {
         if (!path.empty()) std::remove(path.c_str());
@@ -353,7 +355,7 @@ void model_boundaries() {
         wrong_digest.denoiser_sha256[0] = wrong_digest.denoiser_sha256[0] == '0' ? '1' : '0';
         init_rejects(wrong_digest, "GGUF digest differs", std::string(model) + " receipt digest mismatch rejected");
 
-        const std::array<const char *, 10> strings{ "general.architecture",
+        const std::array<const char *, 11> strings{ "general.architecture",
                                                     "general.license",
                                                     "latent_inpaint.component",
                                                     "latent_inpaint.model",
@@ -362,7 +364,8 @@ void model_boundaries() {
                                                     "latent_inpaint.checkpoint.sha256",
                                                     "latent_inpaint.checkpoint.revision",
                                                     "latent_inpaint.input.contract",
-                                                    "latent_inpaint.tensor.layout" };
+                                                    "latent_inpaint.tensor.layout",
+                                                    inpaint_weight_names::key };
         const std::array<std::pair<const char *, uint32_t>, 3> integers{ std::pair<const char *, uint32_t>{
                                                                              "general.file_type", 0 },
                                                                          { "latent_inpaint.schema", 1 },

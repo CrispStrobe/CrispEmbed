@@ -21,12 +21,16 @@ struct context;
 // F32 accumulation is explicit on every matmul, including on Metal, unless
 // CRISPEMBED_INPAINT_FAST=1 also opts into backend-default matrix precision
 // (Metal may reduce operands internally to F16; this needs separate parity).
+// CRISPEMBED_MIGAN_CPU_KERNELS=1 independently enables F32 CPU depthwise and
+// fused activation kernels on the persistent CPU graph. It never changes
+// weights or selects a CPU fallback for a requested GPU backend.
 // Independent contexts may run concurrently; overlapping calls on one context
 // fail without writing output. The caller must not free a context in use.
 struct execution_stats {
     std::string backend;
     bool persistent = false;
     bool fast = false;
+    bool cpu_kernels = false;
     bool cpu_plan_cached = false;
     bool cpu_threadpool_reused = false;
     int resolution = 0;

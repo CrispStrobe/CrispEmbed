@@ -23,7 +23,12 @@ ROOT = Path(__file__).resolve().parents[2]
 TARGETS = ("test-inpaint-graph", "test-inpaint-graph-spectral",
            "test-latent-inpaint-graph-unet", "test-migan-graph")
 BUILD_TARGETS = TARGETS + ("test-lama-diff", "test-latent-inpaint", "test-migan-diff",
-                          "test-migan512-diff", "crispembed-cli")
+                          "test-migan512-diff", "test-inpaint-benchmark", "crispembed-cli")
+CPU_GATES = ("CRISPEMBED_INPAINT_GEMM_LAYOUT", "CRISPEMBED_INPAINT_REFLECT_GATHER",
+             "CRISPEMBED_INPAINT_CPU_FFT", "CRISPEMBED_INPAINT_CPU_GLA",
+             "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC", "CRISPEMBED_MOEBIUS_LOCAL_REASSOC",
+             "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM",
+             "CRISPEMBED_MIGAN_CPU_KERNELS", "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES")
 OBSERVER_SYMBOLS = {
     "crispembed-inpaint-graph": ("inpaint_graph::Builder::set_observer(",),
     "crispembed-latent-inpaint": ("latent_inpaint::run_reference(", "latent_inpaint::set_observer(",
@@ -96,6 +101,21 @@ def configure_command(build, backend):
     return result
 
 
+def component_profiles(backend):
+    """Reset inherited candidates and exercise each CPU alternative explicitly."""
+    if backend not in ("cpu", "cuda", "metal"):
+        raise ValueError("component profiles require an explicit backend")
+    baseline = {name: "0" for name in CPU_GATES}
+    profiles = [("portable", TARGETS, baseline)]
+    if backend == "cpu":
+        optimized = dict(baseline)
+        optimized.update({name: "1" for name in CPU_GATES if name != "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES"})
+        profiles.append(("cpu-optimized", TARGETS, optimized))
+        profiles.append(("cpu-attention-attribution", ("test-inpaint-graph",),
+                         dict(baseline, CRISPEMBED_INPAINT_CPU_ATTENTION_TILES="1")))
+    return profiles
+
+
 def backend_matches(requested, selected):
     selected = selected.lower()
     if requested == "cpu":
@@ -136,6 +156,14 @@ def device_evidence(text, requested, full_model=False):
     return {"selected_devices": sorted(names), "native_records": records}
 
 
+def migan_kernel_evidence(evidence, enabled):
+    """The MI test parses its own CLI flag, so environment alone is not proof."""
+    rows = evidence.get("native_records", [])
+    actual = [row for row in rows if row.get("kind") == "synthetic-controls"]
+    if len(actual) != 1 or actual[0].get("cpu_kernels") is not enabled:
+        raise RuntimeError("MI-GAN component receipt did not execute the requested CPU kernel profile")
+
+
 def terminate_tree(process):
     if os.name == "posix":
         try:
@@ -170,10 +198,13 @@ class Runbook:
         temporary.write_text(json.dumps(self.report, indent=2, allow_nan=False) + "\n", encoding="utf-8")
         temporary.replace(target)
 
-    def run(self, label, command, *, required=True, timeout=900, cwd=ROOT, stdin_path=None):
+    def run(self, label, command, *, required=True, timeout=900, cwd=ROOT, stdin_path=None, environment=None):
         command = [str(value) for value in command]
         log = self.output / (label + ".log")
         record = {"label": label, "command": command, "status": "starting", "returncode": None, "log": log.name}
+        effective_environment = self.environment if environment is None else environment
+        if effective_environment is not None:
+            record["cpu_candidate_gates"] = {name: effective_environment.get(name, "0") for name in CPU_GATES}
         if stdin_path is not None:
             record["stdin"] = str(Path(stdin_path).name)
         self.report["commands"].append(record)
@@ -189,7 +220,7 @@ class Runbook:
                 stream = stack.enter_context(log.open("w", encoding="utf-8"))
                 source = stack.enter_context(Path(stdin_path).open("rb")) if stdin_path is not None else None
                 process = subprocess.Popen(command, cwd=cwd, stdout=stream, stderr=subprocess.STDOUT,
-                                           stdin=source, env=self.environment, start_new_session=os.name == "posix")
+                                           stdin=source, env=effective_environment, start_new_session=os.name == "posix")
                 record.update({"pid": process.pid, "status": "running"})
                 self.save()
                 try:
@@ -244,9 +275,11 @@ def audit_observers(runner, build):
             report["artifacts"].append(artifact)
             report["observer_audit"]["archives"].append({"name": name, "testing": testing, "log": log, **artifact})
             runner.save()
-    text, log = symbols("production-cli", binary_path(build, "crispembed-cli"))
-    assert_observer_symbols(text, "crispembed-inpaint-graph", False)
-    report["observer_audit"].update({"status": "passed", "production_cli_clean": True, "production_cli_symbols": log})
+    for target, label in (("crispembed-cli", "production_cli"), ("test-inpaint-benchmark", "production_benchmark")):
+        text, log = symbols(label, binary_path(build, target))
+        assert_observer_symbols(text, "crispembed-inpaint-graph", False)
+        report["observer_audit"].update({label + "_clean": True, label + "_symbols": log})
+    report["observer_audit"]["status"] = "passed"
     runner.save()
 
 
@@ -296,7 +329,7 @@ def main(argv=None):
         parser.error(str(error))
     if args.output.exists() or args.scratch.exists():
         parser.error("output and scratch must be distinct new directories")
-    if not (5 <= args.deadline_minutes <= 170 and 1 <= args.threads <= 64 and 1 <= args.parallel <= 4 and 1 <= args.warm_runs <= 100):
+    if not (5 <= args.deadline_minutes <= 170 and 1 <= args.threads <= 8 and 1 <= args.parallel <= 4 and 1 <= args.warm_runs <= 100):
         parser.error("deadline/threads/parallel/warm-runs exceed their bounded ranges")
     pins = (bool(args.migan_model), bool(args.migan_model_sha256), bool(args.migan_checkpoint_sha256))
     if any(pins) and not all(pins):
@@ -312,6 +345,7 @@ def main(argv=None):
               "components": [], "artifacts": [], "platform": {"system": platform.system(), "machine": platform.machine()},
               "full_model_benchmark": {"status": "pending" if args.migan_model else "not_requested"}}
     env = os.environ.copy()
+    env.update({name: "0" for name in CPU_GATES})
     env.update({"OMP_NUM_THREADS": str(args.threads), "OPENBLAS_NUM_THREADS": str(args.threads),
                 "MKL_NUM_THREADS": str(args.threads), "CRISPEMBED_INPAINT_GRAPH": "1",
                 "CRISPEMBED_INPAINT_FAST": "1" if args.fast else "0", "CRISPEMBED_INPAINT_PROFILE": "1",
@@ -386,17 +420,24 @@ def main(argv=None):
             shutil.copy2(cache, args.output / "CMakeCache.txt")
         runner.save()
         audit_observers(runner, build)
-        for target in TARGETS:
-            command = [binary_path(build, target)]
-            if target == "test-migan-graph":
-                command += ["--contracts", "--threads", args.threads, "--warm-runs", args.warm_runs]
-                if args.fast:
-                    command += ["--fast"]
-            command += ["--backend", args.backend]
-            record = runner.run(target, command, timeout=180)
-            evidence = device_evidence(runner.text(record), args.backend)
-            report["components"].append({"name": target, "status": "passed", "log": record["log"], **evidence})
-            runner.save()
+        for profile, targets, gates in component_profiles(args.backend):
+            component_env = dict(env, **gates)
+            for target in targets:
+                command = [binary_path(build, target)]
+                if target == "test-migan-graph":
+                    command += ["--contracts", "--warm-runs", args.warm_runs]
+                    if gates["CRISPEMBED_MIGAN_CPU_KERNELS"] == "1":
+                        command += ["--cpu-kernels"]
+                    if args.fast:
+                        command += ["--fast"]
+                command += ["--backend", args.backend, "--threads", args.threads]
+                record = runner.run(profile + "-" + target, command, timeout=180, environment=component_env)
+                evidence = device_evidence(runner.text(record), args.backend)
+                if target == "test-migan-graph":
+                    migan_kernel_evidence(evidence, gates["CRISPEMBED_MIGAN_CPU_KERNELS"] == "1")
+                report["components"].append({"name": target, "profile": profile, "cpu_candidate_gates": gates,
+                                             "status": "passed", "log": record["log"], **evidence})
+                runner.save()
         report["model_free_controls"] = "passed"
         if args.migan_model:
             report["full_model_benchmark"].update(model_identity(args.migan_model, args.migan_model_sha256, args.migan_checkpoint_sha256))

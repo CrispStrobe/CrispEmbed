@@ -18,6 +18,7 @@ on:
       - 'tools/prepare_migan_inpaint.py'
       - 'tools/migan_reference_contract.py'
       - 'tools/migan512_reference_contract.py'
+      - 'tools/dump_migan_photo_reference.py'
       - 'tools/latent_inpaint_contract.py'
       - 'tools/lama*'
       - 'tools/dump_lama_reference.py'
@@ -49,6 +50,7 @@ on:
       - 'tools/dump_lama_reference.py'
       - 'tools/dump_latent_inpaint_reference.py'
       - 'tools/migan512_reference_contract.py'
+      - 'tools/dump_migan_photo_reference.py'
       - 'models/convert-lama-to-gguf.py'
       - 'models/convert-latent-inpaint-to-gguf.py'
       - 'models/convert-migan-to-gguf.py'
@@ -93,10 +95,12 @@ jobs:
         run: |
           python tests/test_prepare_migan_inpaint.py -v
           python tests/test_inpaint_png.py -v
+          python tests/test_inpaint_engine_live_controls.py -v
           python tests/test_migan_reference_contract.py -v
           python tests/test_migan_native_driver.py -v
           python tests/test_migan512_contract.py -v
           python tests/test_latent_inpaint_contract.py -v
+          python tests/test_latent_inpaint_original_import.py -v
           python tests/test_lama_contract.py -v
       - name: Configure portable CPU build
         run: >-

@@ -1,6 +1,7 @@
 // Hosted model-free checks of real persistent graph operators. All numerical
 // expectations below are scalar definitions, not another ggml decomposition.
 #include "inpaint_graph.h"
+#include "inpaint_weight_names.h"
 #include "core/clean_exit.h"
 #include "core/gpu_backend_pref.h"
 #include "gguf.h"
@@ -12,6 +13,7 @@
 #include <iostream>
 #include <map>
 #include <memory>
+#include <numeric>
 #include <stdexcept>
 #include <string>
 #include <unordered_set>
@@ -48,16 +50,19 @@ struct Fixture {
         values.emplace(name, std::move(out));
         schema.emplace(name, std::move(shape));
     }
-    void save() {
-        std::unique_ptr<ggml_context, decltype(&ggml_free)> ctx(ggml_init({ 1 << 20, nullptr, false }), ggml_free);
+    void save(bool encode_names = false) {
+        size_t bytes = 1 << 20;
+        for (const auto & entry : values) bytes += entry.second.data.size() * sizeof(float) + 64;
+        std::unique_ptr<ggml_context, decltype(&ggml_free)> ctx(ggml_init({ bytes, nullptr, false }), ggml_free);
         std::unique_ptr<gguf_context, decltype(&gguf_free)> file(gguf_init_empty(), gguf_free);
         check(bool(ctx) && bool(file), "cannot allocate tiny fixture metadata");
+        if (encode_names) gguf_set_val_str(file.get(), inpaint_weight_names::key, inpaint_weight_names::encoding);
         for (const auto & entry : values) {
             int64_t ne[4] = { 1, 1, 1, 1 };
             for (size_t i = 0; i < entry.second.shape.size(); ++i)
                 ne[entry.second.shape.size() - 1 - i] = entry.second.shape[i];
             ggml_tensor * t = ggml_new_tensor(ctx.get(), GGML_TYPE_F32, 4, ne);
-            ggml_set_name(t, entry.first.c_str());
+            ggml_set_name(t, inpaint_weight_names::physical(entry.first, encode_names).c_str());
             std::memcpy(t->data, entry.second.data.data(), entry.second.data.size() * sizeof(float));
             gguf_add_tensor(file.get(), t);
         }
@@ -116,6 +121,8 @@ void operators(inpaint_graph::Device & device) {
     f.add("dense.bias", { 3 }, .04f);
     f.add("point.weight", { 6, 4, 1, 1 }, .08f);
     f.add("point.bias", { 6 }, .01f);
+    f.add("linear.weight", { 6, 4 }, .08f);
+    f.add("linear.bias", { 6 }, .01f);
     f.add("dw.weight", { 4, 1, 3, 3 }, .03f);
     f.add("dw.bias", { 4 }, .02f);
     f.save();
@@ -124,13 +131,14 @@ void operators(inpaint_graph::Device & device) {
     auto * input = b.parameter("input", { 7, 5, 4, 2 });
     auto * dense = b.conv("dense", input, 2, 1);
     auto * point = b.conv("point", input);
+    auto * linear = b.linear("linear", input);
     auto * dw = b.conv("dw", input, 1, 1, 4);
     auto * gn = b.group_norm("group", input, 2);
     auto * ln = b.layer_norm("layer", input);
     auto * bn = b.batch_norm("bn", input);
     auto * padded = b.pad(input, 1, 2, 2, 1);
     auto * reflected = b.reflect_pad(input, 1);
-    b.finish({ dense, point, dw, gn, ln, bn, padded, reflected }, "operator-oracles");
+    b.finish({ dense, point, linear, dw, gn, ln, bn, padded, reflected }, "operator-oracles");
     const size_t nodes = b.nodes(), bytes = b.allocation_bytes();
     for (int run = 0; run < 2; ++run) {
         std::vector<float> x(7 * 5 * 4 * 2);
@@ -138,6 +146,7 @@ void operators(inpaint_graph::Device & device) {
         b.upload(input, x);
         b.compute();
         close_values(b.download(dense), conv_ref(f, "dense", x, 7, 5, 4, 2, 2, 1, false), device.fast ? 2e-3 : 4e-5);
+        close_values(b.download(linear), conv_ref(f, "point", x, 7, 5, 4, 2, 1, 0, false), device.fast ? 2e-3 : 4e-5);
         close_values(b.download(point), conv_ref(f, "point", x, 7, 5, 4, 2, 1, 0, false), device.fast ? 2e-3 : 4e-5);
         close_values(b.download(dw), conv_ref(f, "dw", x, 7, 5, 4, 2, 1, 1, true));
         std::vector<float> expected(x.size());
@@ -211,6 +220,36 @@ void operators(inpaint_graph::Device & device) {
     }
     check(b.runs() == 2 && b.upload_bytes() == 2 * 7 * 5 * 4 * 2 * sizeof(float),
           "execution/transfer accounting differs");
+}
+
+void encoded_weight_names(inpaint_graph::Device & device) {
+    const std::string prefix(64, 'p');
+    Fixture fixture;
+    fixture.add(prefix + ".weight", { 3, 2 }, 0.02f);
+    fixture.add(prefix + ".bias", { 3 }, 0.03f);
+    fixture.save(true);
+    inpaint_graph::Weights weights(device, fixture.path.string().c_str(), fixture.schema);
+    Builder graph(device, &weights, 128);
+    auto * input = graph.parameter("name-control", { 2, 1, 2, 2 });
+    auto * output = graph.linear(prefix, input);
+    graph.finish({ output }, "encoded-weight-names");
+    const std::vector<float> values{ 1, 2, 3, 4, -1, -2, -3, -4 };
+    graph.upload(input, values);
+    graph.compute();
+    std::vector<float> expected(12);
+    for (int sample = 0; sample < 2; ++sample)
+        for (int channel = 0; channel < 3; ++channel)
+            for (int token = 0; token < 2; ++token) {
+                double value = fixture.values.at(prefix + ".bias").data[size_t(channel)];
+                for (int ic = 0; ic < 2; ++ic)
+                    value += double(values[size_t(sample * 4 + ic * 2 + token)]) *
+                             fixture.values.at(prefix + ".weight").data[size_t(channel * 2 + ic)];
+                expected[size_t(sample * 6 + channel * 2 + token)] = float(value);
+            }
+    close_values(graph.download(output), expected, device.fast ? 2e-3 : 4e-5);
+    check(weights.loaded.tensors.count(prefix + ".weight") == 1 &&
+              weights.loaded.tensors.count(inpaint_weight_names::physical(prefix + ".weight")) == 0,
+          "physical alias leaked into the canonical runtime schema");
 }
 
 std::vector<float> transpose_ref(const Fixture & f, const std::vector<float> & input, int width, int height,
@@ -497,17 +536,160 @@ void recurrent_state(inpaint_graph::Device & device) {
     check(b.runs() == 4 && b.upload_bytes() == 4 * sizeof(float) && b.download_bytes() == 16 * sizeof(float),
           "resident loop transferred activations");
 }
+struct Environment {
+    std::string key, previous;
+    bool present;
+    explicit Environment(const char * name) : key(name), present(std::getenv(name) != nullptr) {
+        if (present) previous = std::getenv(name);
+    }
+    void set(const char * value) {
+#ifdef _WIN32
+        _putenv_s(key.c_str(), value ? value : "");
+#else
+        if (value)
+            setenv(key.c_str(), value, 1);
+        else
+            unsetenv(key.c_str());
+#endif
+    }
+    ~Environment() { set(present ? previous.c_str() : nullptr); }
+};
+double median(std::vector<double> values) {
+    std::sort(values.begin(), values.end());
+    return values.size() % 2 ? values[values.size() / 2]
+                             : (values[values.size() / 2 - 1] + values[values.size() / 2]) / 2;
+}
+void json_samples(const std::vector<double> & values) {
+    std::cout << '[';
+    for (size_t i = 0; i < values.size(); ++i) std::cout << (i ? "," : "") << values[i];
+    std::cout << ']';
+}
+void benchmark(inpaint_graph::Device & device, int threads, int iterations, bool large) {
+    check(!device.gpu && !device.fast, "CPU layout benchmark requires the strict CPU backend");
+    struct Case {
+        const char * label;
+        int width, height, channels, output, kernel, batch;
+        bool linear, reflect;
+    };
+    std::vector<Case> cases{ { "conv3-64-c128", 64, 64, 128, 128, 3, 1, false, false },
+                             { "conv3-128-c64", 128, 128, 64, 64, 3, 1, false, false },
+                             { "conv3-strip-batch2", 64, 65, 128, 64, 3, 2, false, false },
+                             { "pointwise-unet-batch2", 64, 64, 320, 320, 1, 2, false, false },
+                             { "linear-unet-batch2", 64, 64, 320, 1280, 1, 2, true, false },
+                             { "reflect-lama", 64, 64, 384, 384, 1, 2, false, true } };
+    if (large) {
+        cases.push_back({ "conv3-vae512", 512, 512, 128, 64, 3, 1, false, false });
+        cases.push_back({ "reflect-512", 512, 512, 64, 64, 1, 1, false, true });
+    }
+    for (const auto & c : cases) {
+        Fixture fixture;
+        fixture.add("layer.weight",
+                    c.linear ? std::vector<int64_t>{ c.output, c.channels }
+                             : std::vector<int64_t>{ c.output, c.channels, c.kernel, c.kernel },
+                    0);
+        fixture.add("layer.bias", { c.output }, 0);
+        fixture.save();
+        inpaint_graph::Weights weights(device, fixture.path.string().c_str(), fixture.schema);
+        Environment layout("CRISPEMBED_INPAINT_GEMM_LAYOUT"), reflection("CRISPEMBED_INPAINT_REFLECT_GATHER");
+        std::unique_ptr<Builder> graphs[2];
+        ggml_tensor * inputs[2]{};
+        ggml_tensor * outputs[2]{};
+        double build_ms[2]{};
+        std::vector<float> input(size_t(c.width) * c.height * c.channels * c.batch);
+        for (size_t i = 0; i < input.size(); ++i) input[i] = float(int((i * 17 + i / 101) % 97) - 48) / 97;
+        for (int arm = 0; arm < 2; ++arm) {
+            layout.set(arm && !c.reflect ? "1" : "0");
+            reflection.set(arm && c.reflect ? "1" : "0");
+            const auto started = std::chrono::steady_clock::now();
+            graphs[arm] = std::make_unique<Builder>(device, &weights, 16384);
+            auto & b = *graphs[arm];
+            inputs[arm] = b.parameter("benchmark.input", { c.width, c.height, c.channels, c.batch });
+            outputs[arm] =
+                c.reflect ? b.reflect_pad(inputs[arm], 1)
+                          : (c.linear ? b.linear("layer", inputs[arm]) : b.conv("layer", inputs[arm], 1, c.kernel / 2));
+            b.finish({ outputs[arm] }, std::string(c.label) + (arm ? ".candidate" : ".baseline"));
+            build_ms[arm] =
+                std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - started).count();
+            b.upload(inputs[arm], input);
+        }
+        std::vector<double> samples[2];
+        double cold_ms[2]{};
+        for (int arm = 0; arm < 2; ++arm) {
+            const auto before = graphs[arm]->compute_ms();
+            graphs[arm]->compute();
+            cold_ms[arm] = graphs[arm]->compute_ms() - before;
+        }
+        for (int iteration = 0; iteration < iterations; ++iteration) {
+            for (int order = 0; order < 2; ++order) {
+                const int arm = (iteration + order) % 2;
+                const double before = graphs[arm]->compute_ms();
+                graphs[arm]->compute();
+                samples[arm].push_back(graphs[arm]->compute_ms() - before);
+            }
+        }
+        const auto baseline = graphs[0]->download(outputs[0]);
+        const auto candidate = graphs[1]->download(outputs[1]);
+        close_values(candidate, baseline, c.reflect ? 0 : 5e-4, c.reflect ? 0 : 5e-5, c.label);
+        double maximum = 0, squared = 0, norm = 0;
+        for (size_t i = 0; i < baseline.size(); ++i) {
+            const double error = double(candidate[i]) - baseline[i];
+            maximum = std::max(maximum, std::abs(error));
+            squared += error * error;
+            norm += double(baseline[i]) * baseline[i];
+        }
+        // The timing loop deliberately never reuploads its input. Retention
+        // and replay must be correct independently of any speed measurement.
+        for (int arm = 0; arm < 2; ++arm) {
+            close_values(graphs[arm]->download(inputs[arm]), input, 0, 0, "benchmark input retention");
+            check(graphs[arm]->upload_bytes() == input.size() * sizeof(float), "benchmark input was reuploaded");
+        }
+        std::cout << "{\"suite\":\"inpaint-graph-layout-benchmark\",\"case\":\"" << c.label << "\",\"backend\":\""
+                  << device.name << "\",\"threads\":" << threads << ",\"iterations\":" << iterations
+                  << ",\"batch\":" << c.batch << ",\"baseline_build_ms\":" << build_ms[0]
+                  << ",\"candidate_build_ms\":" << build_ms[1] << ",\"baseline_cold_ms\":" << cold_ms[0]
+                  << ",\"candidate_cold_ms\":" << cold_ms[1] << ",\"baseline_nodes\":" << graphs[0]->nodes()
+                  << ",\"candidate_nodes\":" << graphs[1]->nodes()
+                  << ",\"baseline_allocation_bytes\":" << graphs[0]->allocation_bytes()
+                  << ",\"candidate_allocation_bytes\":" << graphs[1]->allocation_bytes() << ",\"baseline_warm_ms\":";
+        json_samples(samples[0]);
+        std::cout << ",\"candidate_warm_ms\":";
+        json_samples(samples[1]);
+        std::cout << ",\"baseline_median_ms\":" << median(samples[0])
+                  << ",\"candidate_median_ms\":" << median(samples[1])
+                  << ",\"speedup\":" << median(samples[0]) / median(samples[1]) << ",\"max_abs\":" << maximum
+                  << ",\"relative_l2\":" << std::sqrt(squared / std::max(norm, 1e-30))
+                  << ",\"passed\":true,\"full_model_qualified\":false}\n";
+        std::cout.flush();
+    }
+}
 int run(int argc, char ** argv) {
     std::string backend = "cpu";
-    if (argc == 3 && std::string(argv[1]) == "--backend")
-        backend = argv[2];
-    else
-        check(argc == 1, "usage: test-inpaint-graph [--backend cpu|cuda|metal]");
+    int threads = 2, iterations = 0;
+    bool large = false;
+    for (int i = 1; i < argc; ++i) {
+        const std::string option = argv[i];
+        if (option == "--benchmark-large")
+            large = true;
+        else {
+            check(i + 1 < argc, "missing option value");
+            if (option == "--backend")
+                backend = argv[++i];
+            else if (option == "--threads")
+                threads = std::stoi(argv[++i]);
+            else if (option == "--benchmark")
+                iterations = std::stoi(argv[++i]);
+            else
+                throw std::runtime_error("usage: test-inpaint-graph [--backend cpu|cuda|metal] [--threads N] "
+                                         "[--benchmark ITERATIONS] [--benchmark-large]");
+        }
+    }
+    check(threads >= 1 && threads <= 64 && iterations >= 0 && iterations <= 20, "invalid benchmark bounds");
     check(backend == "cpu" || backend == "cuda" || backend == "metal" || backend == "mps", "invalid backend");
     crispasr_set_gpu_backend_pref(backend.c_str());
-    inpaint_graph::Device device(2);
+    inpaint_graph::Device device(threads);
     check((backend == "cpu") != device.gpu, "requested and selected backend classes differ");
     operators(device);
+    encoded_weight_names(device);
     transpose_convolution(device, 1);
     transpose_convolution(device, 2);
     attention(device, 3, 5);
@@ -515,6 +697,7 @@ int run(int argc, char ** argv) {
     attention(device, 257, 131); // odd three-tile balanced concatenation on strict GPUs
     tiled_convolution(device);
     recurrent_state(device);
+    if (iterations) benchmark(device, threads, iterations, large);
     std::cout << "PASS backend=" << device.name << " requested_backend=" << backend
               << " precision=" << (device.fast ? "mixed-f16-diagnostic" : "f32")
               << " profile_atol=" << (device.fast ? "0.002" : "0.00004")
