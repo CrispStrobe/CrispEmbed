@@ -2508,6 +2508,8 @@ struct dfine_model {
     std::vector<float> anchors, project, nps, lqe_w0, lqe_b0, lqe_w1, lqe_b1;
     float reg_scale = 4.0f;
     int image = 960, pad_value = 114, num_queries = 300, num_classes = 12, num_layers = 4, reg_max = 32;
+    ggml_context * deq_ctx = nullptr; // dequantized weights (quantized GGUFs)
+    ggml_backend_buffer_t deq_buf = nullptr;
     int hidden = 256, heads = 8, total_tokens = 18900;
     int num_points[3] = { 3, 6, 3 };
     bool gpu = false;
@@ -2790,6 +2792,48 @@ static bool dfine_load(context * ctx, const char * path, gguf_context * meta) {
     if (!core_gguf::load_weights(path, ctx->backend, "layout", ctx->wl)) {
         fprintf(stderr, "layout_detect: failed to load D-FINE weights\n");
         return false;
+    }
+    // Quantized D-FINE GGUFs (crispembed-quantize): conv kernels are stored
+    // flattened to 2D with their original shape in layout.qshape.<name>. Every
+    // quantized/F16-free tensor is dequantized once here into F32 tensors on
+    // the backend (original 4D shape restored), so the graph code is the F32
+    // path with quantization-rounded weights. Storage saving is on disk only.
+    {
+        std::vector<std::pair<std::string, ggml_tensor *>> todo;
+        for (auto & kv : ctx->wl.tensors)
+            if (ggml_is_quantized(kv.second->type) || gguf_find_key(meta, ("layout.qshape." + kv.first).c_str()) >= 0)
+                todo.push_back(kv);
+        if (!todo.empty()) {
+            m->deq_ctx = ggml_init({ ggml_tensor_overhead() * (todo.size() + 8), nullptr, true });
+            std::vector<std::pair<ggml_tensor *, std::vector<float>>> data;
+            for (auto & kv : todo) {
+                ggml_tensor * q = kv.second;
+                std::vector<float> f(ggml_nelements(q));
+                std::vector<uint8_t> raw(ggml_nbytes(q));
+                ggml_backend_tensor_get(q, raw.data(), 0, raw.size());
+                if (q->type == GGML_TYPE_F32)
+                    std::memcpy(f.data(), raw.data(), raw.size());
+                else
+                    ggml_get_type_traits(q->type)->to_float(raw.data(), f.data(), (int64_t)f.size());
+                int64_t ne[4] = { q->ne[0], q->ne[1], q->ne[2], q->ne[3] };
+                const auto shape = core_gguf::kv_i32_array(meta, ("layout.qshape." + kv.first).c_str());
+                if (shape.size() == 4)
+                    for (int d = 0; d < 4; d++) ne[d] = shape[d];
+                ggml_tensor * t =
+                    ggml_new_tensor(m->deq_ctx, GGML_TYPE_F32, shape.size() == 4 ? 4 : ggml_n_dims(q), ne);
+                if (ggml_nelements(t) != (int64_t)f.size()) {
+                    fprintf(stderr, "layout_detect: D-FINE dequantized shape mismatch: %s\n", kv.first.c_str());
+                    return false;
+                }
+                ggml_set_name(t, kv.first.c_str());
+                data.push_back({ t, std::move(f) });
+                ctx->wl.tensors[kv.first] = t;
+            }
+            m->deq_buf = ggml_backend_alloc_ctx_tensors(m->deq_ctx, ctx->backend);
+            if (!m->deq_buf) return false;
+            for (auto & d : data) ggml_backend_tensor_set(d.first, d.second.data(), 0, d.second.size() * sizeof(float));
+            LDBG("layout_detect: D-FINE dequantized %zu tensors to F32\n", todo.size());
+        }
     }
     std::vector<std::string> missing;
     auto get = [&](const std::string & n) -> ggml_tensor * {
@@ -3465,6 +3509,10 @@ std::vector<region> detect_rgb(context * ctx, const uint8_t * pixels, int width,
 
 void free(context * ctx) {
     if (!ctx) return;
+    if (ctx->dfine) {
+        if (ctx->dfine->deq_buf) ggml_backend_buffer_free(ctx->dfine->deq_buf);
+        if (ctx->dfine->deq_ctx) ggml_free(ctx->dfine->deq_ctx);
+    }
     delete ctx->dfine;
     if (ctx->galloc) ggml_gallocr_free(ctx->galloc);
     if (ctx->sched) ggml_backend_sched_free(ctx->sched);

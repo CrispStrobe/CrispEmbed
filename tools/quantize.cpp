@@ -18,6 +18,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <set>
 #include <string>
 #include <vector>
 #include <map>
@@ -278,6 +279,10 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         }
         if (!oxr_large.empty()) gguf_set_val_str(ctx_out, "oxr.quantize.large", oxr_large.c_str());
     }
+    std::set<std::string> dfine_convs; // flattened D-FINE conv kernels (pre-scan)
+    const int layout_arch_key = gguf_find_key(ctx_in, "layout.arch");
+    const bool is_dfine_layout =
+        layout_arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, layout_arch_key)) == "dfine";
     const int family_key = gguf_find_key(ctx_in, "qwen2vl.model_family");
     const bool is_mineru25 =
         family_key >= 0 && std::string(gguf_get_val_str(ctx_in, family_key)) == "mineru2.5-pro-2604";
@@ -381,6 +386,14 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         // OXR's loader validates its 4D patch-embedding shape and reshapes it
         // itself, so its conv kernel keeps the source metadata.
         if (ggml_n_dims(t) == 4 && t->type == GGML_TYPE_F32 && !is_oxr) {
+            // OXR D-FINE layout: record the original conv shape so the loader
+            // can restore it after dequantizing (src/layout_detect.cpp).
+            if (is_dfine_layout) {
+                dfine_convs.insert(name);
+                const int32_t shape4[4] = { (int32_t)t->ne[0], (int32_t)t->ne[1], (int32_t)t->ne[2],
+                                            (int32_t)t->ne[3] };
+                gguf_set_arr_data(ctx_out, (std::string("layout.qshape.") + name).c_str(), GGUF_TYPE_INT32, shape4, 4);
+            }
             // Flatten [KW, KH, IC, OC] → [IC*KH*KW, OC]
             int64_t flat_cols = t->ne[0] * t->ne[1] * t->ne[2];
             int64_t OC = t->ne[3];
@@ -904,6 +917,17 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             } else {
                 printf("skip (ncols %lld not div by %lld)\n", (long long)ncols, (long long)qk);
                 quantize = false;
+            }
+        }
+
+        // OXR D-FINE conv policy (opt-in CRISPEMBED_QUANTIZE_DFINE_CONV):
+        //   keep = conv kernels stay F32 (only linear layers quantized), f16 = F16.
+        if (quantize && dfine_convs.count(sname)) {
+            if (const char * v = getenv("CRISPEMBED_QUANTIZE_DFINE_CONV")) {
+                if (std::string(v) == "keep")
+                    quantize = false;
+                else if (std::string(v) == "f16")
+                    qtype_used = GGML_TYPE_F16;
             }
         }
 
