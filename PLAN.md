@@ -125,6 +125,31 @@ not offer these models without the acknowledgement; Apache-2.0 replacements for
 GOT's tasks are MinerU2.5-Pro, FireRed-OCR, Uni-MuMER-Qwen3-VL-2B and PaddleOCR-VL.
 
 
+### OXR / D-FINE on Metal and precision recipes (feat/metal-oxr, 1 November 2026)
+
+Done (receipts `tests/results/oxr/metal-m1/`, `tests/results/oxr-dfine/metal-m1/`, hosted
+`tests/results/oxr*/hosted-413*`; details in docs/oxr.md "GPU: Metal" and docs/oxr-dfine.md):
+OXR F16 on Metal token-exact 5/5 and now the Apple default for that recipe; D-FINE F32 on
+Metal region-exact 5/5 (opt-in); ggml patch `GGML_METAL_PREC_F32_MM`; D-FINE F16 re-scored
+(passes the owner bar); OXR Q8_0 with quantized large tables (1.93 GB, F16 vision) passes;
+Q4_K-head mixed recipes pass; plain Q4_K LLM layers fail (table 0.896).
+
+Open, in order:
+
+1. D-FINE GPU default: same-window CPU vs Metal (`GGML_METAL_PREC_F32_MM=1` +
+   `CRISPEMBED_OXR_LAYOUT_DW_DIRECT=1`) on a quiet host; flip only if faster. Heron:
+   `CRISPEMBED_LAYOUT_GPU_PREC_F32=1` A/B against CPU (current heron Metal default uses
+   half-tile mul_mm, the setting that broke D-FINE 4/5).
+2. OXR quantized on Metal: Q8_0-everything decodes German exactly on Metal (`_hp`, F32
+   activations) while CPU Q8_0 collapses vision.layer.26 to 0.55; hosted CPU check of
+   `CRISPEMBED_OXR_DEQUANT_VISION=1` (run 41337273815), then the five-case Metal A/B of the
+   Q8_0/Q4_K-mix recipes and a publication decision (none made here).
+3. OXR F32 on Metal (needs a local F32 conversion; volume was below its free-space floor).
+4. CUDA: re-run the Kaggle T4 lane with the new dense GPU attention (German diverged at
+   token 87 with the previous attention lowering).
+5. Dense GPU decode copies the whole V cache per layer per token (permute+cont); a
+   transposed-V cache would cut it. Flash is 1.85x faster on German but less close to CPU.
+
 ### OXR-1.0 native integration (31 October 2026)
 
 The isolated `feat/oxr-1.0` worktree retains the earlier MinerU integration and
