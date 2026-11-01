@@ -68,9 +68,102 @@ weight sizes, not peak runtime RAM measurements.
   `[K,1,1,15,15]`. Their singleton depth axis is removed to store `[K,1,15,15]`
   in GGUF's four-dimensional tensor format. The bytes and effective 2D
   convolution are unchanged.
-- Other original names and contiguous tensor order are preserved. Extra,
+- Original source/schema names and contiguous tensor order are preserved.
+  Physical GGUF names use the bounded encoding below when necessary. Extra,
   missing, differently shaped, nonfinite, differently typed or aliased state
-  tensors are rejected.
+  storage is rejected.
+
+### Bounded GGUF tensor names
+
+The pinned ggml reader has a 64-byte tensor-name field, including its terminating
+NUL. Actual loading rejected the initial Moebius GGUF before any graph compute:
+one original name was 76 bytes long. Increasing that global backend limit would
+change the dependency's name-storage contract. The converter instead writes
+the explicit GGUF string metadata:
+
+```text
+crispembed.tensor_name_encoding = "sha256-56-v1"
+```
+
+For an original name `s`, measured in **UTF-8 bytes**, the physical name is:
+
+```python
+physical = s if len(s.encode("utf-8")) < 64 else (
+    "t." + hashlib.sha256(s.encode("utf-8")).hexdigest()[:56]
+)
+```
+
+Thus short names remain unchanged and every encoded name is 58 ASCII bytes.
+The converter checks the complete original census for collisions before
+opening an output, including a literal short name that could equal another
+tensor's derived alias and inference-inert source buffers. The mapping changes
+neither tensor order, shapes nor F32 payload bytes. The source contract, native
+shape census and original-reference stage labels retain their full names.
+
+| Field | Meaning in the encoded profile |
+| --- | --- |
+| GGUF `crispembed.tensor_name_encoding` | Required string value `sha256-56-v1` |
+| Receipt `tensors[].name` | Exact physical GGUF index name |
+| Receipt `tensors[].original_name` | Full original checkpoint name, present for every exported tensor, including unchanged short names |
+| Receipt `tensors[].shape` / `source_shape` | Existing exported/original shapes; the permitted singleton-depth transformation is unchanged |
+| Receipt `tensors[].sha256` / `bytes` | Hash and size of the unchanged exported F32 payload |
+| Receipt `gguf_sha256` / `gguf_bytes` | Identity of the whole newly written file, including changed metadata and name index |
+
+Both the eager loader and persistent graph loader independently derive the
+physical names from their frozen original schema, validate the full physical
+census and shapes, and restore original names in their weight maps. The native
+parity runner also checks both receipt spellings and streams each actual tensor
+against its payload hash. The hash alone is not invertible: recovery of source
+identity uses the collision-checked schema and receipt. The implementations are
+[the converter helper](../tools/latent_inpaint_contract.py),
+[the native name adapter](../src/inpaint_weight_names.h), and
+[the independent receipt validator](../tests/test_latent_inpaint.cpp).
+
+### Executed name migration and compatibility
+
+All three complete pinned checkpoints were converted with this encoding and
+read back in the authorized local CPU investigation. Across **2,080 exported
+tensors**, every payload SHA and original provenance field matched the initial
+unencoded conversion. The file digest changes because its name index and
+metadata change. Even the VAE, which needs no renamed tensor, has a new file
+digest because the explicit encoding metadata is present.
+
+| Component | Renamed / exported tensors | Recorded new GGUF bytes |
+| --- | ---: | ---: |
+| Moebius | 540 / 1,079 | 904,877,728 |
+| PixelHacker | 384 / 753 | 3,449,075,872 |
+| SDXL VAE | 0 / 248 | 334,636,224 |
+
+The corresponding observed GGUF digests are:
+
+```text
+Moebius:     f7365937fb82665e5725ab78b701e9650316023d7291d48da22cd9ea0ec7e352
+PixelHacker: 5b486aa5d80647dbf298b0296d2cea7cb410dfb978b8bdfea806617f73ea588d
+SDXL VAE:    e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2
+```
+
+The `name_migration` section of the
+[public component evidence](../tests/results/inpainting/cpu-components-2026-11-01.json)
+preserves old/new file identities, per-model full-readback results, renamed
+counts and the original load failure. This is payload-identity and loader
+compatibility evidence; it does not establish native model parity or image
+quality.
+
+Use the updated converter and native loader together. Reconvert the unchanged
+pinned original checkpoint to a **new output path**, and retain its matching
+`.json` and `.licenses/` companions. For example, a `.names-v1.gguf` suffix can
+distinguish it from an earlier output, although the suffix itself has no format
+meaning. Update both `--inpaint-model-sha256` and `--inpaint-vae-sha256` from
+the newly produced receipts. The current latent runtime requires the encoding
+metadata for both denoiser and VAE; an older VAE without it is not a compatible
+substitute even though its tensor names are short. Older native binaries that
+look up only original physical names cannot load the encoded denoisers.
+
+Renaming a file or editing only its metadata does not perform this migration.
+The full converter/readback checks must run, with the same numeric export and
+checkpoint pins. Original capture arrays and canonical stage names are
+unaffected by this name encoding; their separate strict reference validation
+still applies.
 
 ## Hosted conversion
 
@@ -184,10 +277,16 @@ GGUF streaming readback, and overwrite protection:
 python -m unittest discover -s tests -p test_latent_inpaint_contract.py -v
 ```
 
-The initial source preparation passed these 16 tests. Complete checkpoint
-conversion, original-model capture, native build/link/model execution and
-representative quality remain separate hosted acceptance gates. No runtime
-speed or peak-memory result follows from the source preparation.
+The initial source preparation passed 16 tests. The expanded suite also covers
+UTF-8 byte boundaries, derived-name collisions, mandatory original-name receipt
+fields and exact payload preservation during name encoding. Complete checkpoint
+conversion and the recorded name migration have since run as described above.
+Original-model capture, native execution and representative quality have
+separate acceptance criteria; conversion does not make any of those gates
+pass. See [the CPU investigation](inpainting-cpu-optimization.md) and
+[the UNet validation guide](latent-inpaint-unets.md) for executed evidence and
+retained limitations. No runtime speed or peak-memory result follows from a
+successful conversion alone.
 
 ## Weight licence records
 

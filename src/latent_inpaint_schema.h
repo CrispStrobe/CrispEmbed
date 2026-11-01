@@ -48,6 +48,8 @@ inline uint64_t checkpoint_bytes(const std::string & model) {
 
 inline const char * tensor_layout() { return "original contiguous; GGUF dimensions reversed; pos_conv singleton depth squeezed; BN counters omitted"; }
 
+inline const char * tensor_name_encoding() { return "sha256-56-v1"; }
+
 inline const char * input_contract() { return "RGB8;binary-mask8;255=fill;fixed512"; }
 
 inline ShapeMap moebius_schema() {

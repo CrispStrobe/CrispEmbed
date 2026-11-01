@@ -282,6 +282,7 @@ void hash_contracts() {
     const char * abc = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad";
     // FIPS 180-2 two-block vector: 56 bytes, so the padding needs a second block.
     const std::string boundary = "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq";
+    check(boundary.size() == 56, "SHA-256 two-block padding vector is 56 bytes");
     check(core_sha256::bytes(nullptr, 0) == empty, "SHA-256 empty FIPS vector");
     check(core_sha256::bytes("abc", 3) == abc, "SHA-256 abc FIPS vector");
     check(core_sha256::bytes(boundary.data(), boundary.size()) ==

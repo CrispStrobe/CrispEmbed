@@ -61,6 +61,47 @@ No throughput, GPU, maximum-context or representative OCR-quality claim follows.
 
 ## 1 November 2026 — Inpainting device graph measurements pending
 
+## 1 November 2026 — Measured CPU inpainting improvements
+
+Actual Release/native CPU measurements on an AMD EPYC9V74 worker with an
+eight-CPU quota and8GiB memory limit now supersede the earlier source-only
+status below. Timings are ordinary image API calls with preprocessing and
+composition, without stage observers. Model loading/validation and cold calls
+are recorded separately. These measurements do not establish CUDA/Metal
+performance or cross-machine throughput.
+
+| Engine / geometry / threads | Eager warm ms | Portable graph warm ms | Optimized CPU warm ms |
+| --- | ---: | ---: | ---: |
+| MI-GAN256 /256² /4 | 1,072.62 | 1,015.62 | 411.60 |
+| MI-GAN256 /256² /8 | 895.01 | 602.97 | 273.62 |
+| MI-GAN512 /512² /4 | 2,169.13 | 1,927.51 | 697.67 |
+| MI-GAN512 /512² /8, quiet confirmation | 1,604.95 | 1,259.96 | 495.24 |
+| LaMa /formula256² /8 | 2,439.95 | 2,622.01 | 1,108.54 |
+| LaMa /document256² /8 | 2,501.57 | 2,715.44 | 1,138.63 |
+| LaMa /formula512² /8 | 12,079.97 | 10,011.42 | 4,116.47 |
+| LaMa /document512² /8 | 11,793.32 | 10,334.10 | 4,156.08 |
+
+Each table median uses five warm calls in one context after a cold call.
+MI-GAN's new kernels preserve every captured native stage byte and pass the
+20-case original-model panel at both resolutions. LaMa's photo outputs pass
+the unchanged original-RGB budgets, but its full-mask synthetic case retains
+105 intermediate failures across the three paths. Its strict full-model
+verdict remains negative; final-image success does not erase those failures.
+The initial contended MI512/eight-thread group and overlapping LaMa eager
+formula512 arm are retained as diagnostic evidence and excluded from the
+admitted table; explicit quiet confirmations supply the stated replacements.
+
+See [the complete results](docs/inpainting-optimization-results.md),
+[MI-GAN evidence](tests/results/inpainting/migan-cpu-2026-11-01.json),
+[LaMa evidence](tests/results/inpainting/lama-cpu-2026-11-01.json), and
+[operator evidence](tests/results/inpainting/cpu-components-2026-11-01.json)
+for exact hashes, samples, cold/load timings, memory, gates and limits.
+The complete results also distinguish latent component gains from actual
+image-level speed and numerical qualification. Peak process memory is not
+the same as stored model size or graph arena bytes.
+
+## 1 November 2026 — Earlier inpainting device graph source-only status
+
 The new `CRISPEMBED_INPAINT_GRAPH=1` path removes per-layer host activation
 roundtrips from LaMa/latent inference and per-call graph allocation from
 MI-GAN. Latent sampling uploads a 320-float timestep embedding and four DDIM
@@ -68,9 +109,9 @@ coefficients per iteration (1,296 bytes), while the sampled/masked latent and
 mask remain on the selected backend. Strict F32 and explicit mixed GPU paths
 are independently gated. CPU graph plans and worker pools are cached.
 
-These are implementation properties, not measured speedups. The new CPU,
-CUDA and Metal paths have no observed native/model timings or peak-memory
-measurements in this delivery. Use the
+These are implementation properties, not measured speedups. At this earlier source-only stage, the CPU,
+CUDA and Metal paths had no observed native/model timings or peak-memory
+measurements. The executed CPU results above supersede that status. Use the
 [manual graph qualification](.github/workflows/inpaint-graphs.yml),
 [original replay driver](tools/ci-heavy/inpaint_graph_replay.py) and
 [benchmark contract](docs/inpainting-ggml-graphs.md) to collect evidence.
@@ -81,8 +122,8 @@ is promoted without full-model numerical/image acceptance on the same device.
 
 ## 1 November 2026 — Inpainting source profiles, measurements pending
 
-The MI-GAN512, Big-LaMa, Moebius and PixelHacker source implementations have
-no measured native latency, throughput or peak process memory in this delivery.
+At this earlier stage, the MI-GAN512, Big-LaMa, Moebius and PixelHacker source
+implementations had no measured native latency or peak process memory.
 The latent original tensor census gives approximately 1.24 GB of F32 payload for
 Moebius plus its VAE, and 3.78 GB for PixelHacker plus VAE; these are stored-weight
 figures, not working-set measurements. The shared CPU implementation bounds

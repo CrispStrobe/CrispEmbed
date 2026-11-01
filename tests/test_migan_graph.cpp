@@ -1,4 +1,4 @@
-// Hosted-only MI-GAN backend parity and persistent-graph benchmark. --contracts
+// MI-GAN backend parity and persistent-graph benchmark. --contracts
 // executes only a tiny scalar-oracle graph; full mode requires a reviewed GGUF.
 // Original-source stage replay remains test-migan[-512]-diff --graph-backend.
 #include "migan.h"
@@ -51,14 +51,14 @@ std::string json_string(const std::string & value) {
 
 void print_stats(const char * name, const migan::execution_stats & s) {
     std::printf("MIGAN_GRAPH_STATS {\"kind\":%s,\"backend\":%s,\"persistent\":%s,\"fast\":%s,"
-                "\"cpu_plan_cached\":%s,\"cpu_threadpool_reused\":%s,\"resolution\":%d,"
+                "\"cpu_kernels\":%s,\"cpu_plan_cached\":%s,\"cpu_threadpool_reused\":%s,\"resolution\":%d,"
                 "\"graph_nodes\":%zu,\"graph_buffer_bytes\":%zu,\"weight_buffer_bytes\":%zu,\"graph_builds\":%llu,"
                 "\"graph_allocations\":%llu,\"runs\":%llu,\"reuses\":%llu,\"weight_uploads\":%llu,"
                 "\"weight_upload_bytes\":%llu,\"input_uploads\":%llu,\"input_upload_bytes\":%llu,"
                 "\"output_downloads\":%llu,\"output_download_bytes\":%llu,\"last_build_ms\":%.9g,"
                 "\"last_compute_ms\":%.9g,\"total_compute_ms\":%.9g,\"last_run_ms\":%.9g}\n",
                 json_string(name).c_str(), json_string(s.backend).c_str(), s.persistent ? "true" : "false",
-                s.fast ? "true" : "false", s.cpu_plan_cached ? "true" : "false",
+                s.fast ? "true" : "false", s.cpu_kernels ? "true" : "false", s.cpu_plan_cached ? "true" : "false",
                 s.cpu_threadpool_reused ? "true" : "false", s.resolution, s.graph_nodes, s.graph_buffer_bytes,
                 s.weight_buffer_bytes, (unsigned long long)s.graph_builds, (unsigned long long)s.graph_allocations,
                 (unsigned long long)s.runs, (unsigned long long)s.reuses, (unsigned long long)s.weight_uploads,
@@ -145,6 +145,22 @@ double median(std::vector<double> values) {
     return values.size() % 2 ? values[mid] : (values[mid - 1] + values[mid]) / 2;
 }
 
+double sample_deviation(const std::vector<double> & values) {
+    if (values.size() < 2) return 0;
+    double mean = 0, variance = 0;
+    for (double value : values) mean += value;
+    mean /= values.size();
+    for (double value : values) variance += (value - mean) * (value - mean);
+    return std::sqrt(variance / (values.size() - 1));
+}
+
+void print_timing(const char * phase, int iteration, bool changed, double cpu_ms, double graph_ms) {
+    std::printf("MIGAN_GRAPH_TIMING {\"phase\":%s,\"iteration\":%d,\"input_variant\":%s,"
+                "\"cpu_ms\":%.9g,\"graph_ms\":%.9g}\n",
+                json_string(phase).c_str(), iteration,
+                json_string(changed ? "sign-inverted-known-rgb" : "original").c_str(), cpu_ms, graph_ms);
+}
+
 int integer(const std::string & value, int lo, int hi) {
     if (value.empty() || value.size() > 9 || value.find_first_not_of("0123456789") != std::string::npos) return -1;
     const long result = std::strtol(value.c_str(), nullptr, 10);
@@ -155,13 +171,15 @@ int integer(const std::string & value, int lo, int hi) {
 static int crispembed_test_main(int argc, char ** argv) {
     std::string backend = "cpu", model_path, digest, rgb_path, mask_path;
     int resolution = 256, threads = 2, warm_runs = 3;
-    bool contracts = false, fast = false;
+    bool contracts = false, fast = false, cpu_kernels = false;
     for (int i = 1; i < argc; ++i) {
         const std::string key = argv[i];
         if (key == "--contracts")
             contracts = true;
         else if (key == "--fast")
             fast = true;
+        else if (key == "--cpu-kernels")
+            cpu_kernels = true;
         else if (i + 1 < argc) {
             const std::string value = argv[++i];
             if (key == "--backend")
@@ -190,10 +208,11 @@ static int crispembed_test_main(int argc, char ** argv) {
         (contracts && (!model_path.empty() || !digest.empty() || !rgb_path.empty() || !mask_path.empty())) ||
         (!contracts && (model_path.empty() || digest.empty() || rgb_path.empty() != mask_path.empty()))) {
         std::fprintf(stderr,
-                     "Usage: test-migan-graph --contracts [--backend cpu|cuda|metal] [--threads N] [--warm-runs N]\n"
+                     "Usage: test-migan-graph --contracts [--backend cpu|cuda|metal] [--threads N] [--warm-runs N] "
+                     "[--cpu-kernels]\n"
                      "or: test-migan-graph --model MODEL.gguf --checkpoint-sha256 SHA --size 256|512 "
                      "[--backend cpu|cuda|metal|auto] [--threads N] [--warm-runs N] [--rgb RGB.raw --mask MASK.raw] "
-                     "[--fast]\n");
+                     "[--fast] [--cpu-kernels]\n");
         return 2;
     }
     crispasr_set_gpu_backend_pref(backend.c_str());
@@ -201,15 +220,17 @@ static int crispembed_test_main(int argc, char ** argv) {
     environment("CRISPEMBED_MIGAN512", "1");
     environment("CRISPEMBED_INPAINT_GRAPH", "1");
     environment("CRISPEMBED_INPAINT_FAST", fast ? "1" : "0");
+    environment("CRISPEMBED_MIGAN_CPU_KERNELS", cpu_kernels ? "1" : "0");
     std::string error;
     if (contracts) {
         migan::execution_stats stats;
         const bool passed = migan::test::graph_backend_controls(threads, warm_runs + 1, stats, error);
         if (!passed) std::fprintf(stderr, "%s\n", error.c_str());
         if (passed) print_stats("synthetic-controls", stats);
-        std::printf("MIGAN_GRAPH_CONTRACT {\"requested_backend\":%s,\"requested_fast\":%s,\"fast\":%s,\"passed\":%s}\n",
+        std::printf("MIGAN_GRAPH_CONTRACT "
+                    "{\"requested_backend\":%s,\"requested_fast\":%s,\"fast\":%s,\"cpu_kernels\":%s,\"passed\":%s}\n",
                     json_string(backend).c_str(), fast ? "true" : "false", stats.fast ? "true" : "false",
-                    passed ? "true" : "false");
+                    stats.cpu_kernels ? "true" : "false", passed ? "true" : "false");
         return passed ? 0 : 1;
     }
     const size_t pixels = size_t(resolution) * resolution;
@@ -259,8 +280,8 @@ static int crispembed_test_main(int argc, char ** argv) {
     migan::execution_stats initial;
     if (!migan::get_execution_stats(graph.get(), initial, error)) return 2;
     bool passed = initial.persistent && initial.fast == (fast && initial.backend != "CPU") &&
-                  initial.graph_builds == 1 && initial.graph_allocations == 1 && initial.runs == 0 &&
-                  initial.weight_uploads == (resolution == 256 ? 154 : 177);
+                  initial.cpu_kernels == cpu_kernels && initial.graph_builds == 1 && initial.graph_allocations == 1 &&
+                  initial.runs == 0 && initial.weight_uploads == (resolution == 256 ? 154 : 177);
     auto execute = [&](migan::context * ctx, const std::vector<float> & tile, std::vector<float> & output) {
         const auto begin = clock_type::now();
         if (!migan::run(ctx, tile.data(), tile.size(), output.data(), output.size(), error))
@@ -271,6 +292,7 @@ static int crispembed_test_main(int argc, char ** argv) {
         const double cpu_cold_ms = execute(cpu.get(), input, cpu_raw);
         base_cpu = cpu_raw;
         const double graph_cold_ms = execute(graph.get(), input, raw);
+        print_timing("cold", 0, false, cpu_cold_ms, graph_cold_ms);
         passed &= compare_raw(raw, cpu_raw, "cold", 0);
         std::array<std::vector<float>, 2> previous = { raw, {} };
         std::vector<double> cpu_times, graph_times;
@@ -280,6 +302,7 @@ static int crispembed_test_main(int argc, char ** argv) {
             const auto & active = which ? changed : input;
             cpu_times.push_back(execute(cpu.get(), active, cpu_raw));
             graph_times.push_back(execute(graph.get(), active, raw));
+            print_timing("warm", i, which != 0, cpu_times.back(), graph_times.back());
             passed &= compare_raw(raw, cpu_raw, "warm", i);
             if (previous[which].empty())
                 previous[which] = raw;
@@ -332,17 +355,24 @@ static int crispembed_test_main(int argc, char ** argv) {
         print_stats("legacy-cpu", baseline);
         print_stats("production", after_observer);
         print_stats("observed", retained);
-        std::printf("MIGAN_GRAPH_BENCHMARK {\"requested_backend\":%s,\"selected_backend\":%s,\"fast\":%s,"
-                    "\"size\":%d,\"threads\":%d,\"warm_runs\":%d,\"cpu_load_ms\":%.9g,\"graph_load_ms\":%.9g,"
-                    "\"cpu_cold_ms\":%.9g,\"graph_cold_ms\":%.9g,\"cpu_warm_median_ms\":%.9g,"
-                    "\"graph_warm_median_ms\":%.9g,\"warm_speedup\":%.9g,\"warm_reuse_verified\":%s,"
-                    "\"repeat_bit_exact\":%s,\"observer_isolated\":%s,\"observer_bit_exact\":%s,\"passed\":%s}\n",
-                    json_string(backend).c_str(), json_string(after_observer.backend).c_str(),
-                    after_observer.fast ? "true" : "false", resolution, threads, warm_runs, cpu_load_ms, graph_load_ms,
-                    cpu_cold_ms, graph_cold_ms, median(cpu_times), median(graph_times),
-                    median(cpu_times) / std::max(median(graph_times), 1e-9), reuse ? "true" : "false",
-                    repeat_bit_exact ? "true" : "false", isolation ? "true" : "false", neutral ? "true" : "false",
-                    passed ? "true" : "false");
+        std::printf(
+            "MIGAN_GRAPH_BENCHMARK {\"requested_backend\":%s,\"selected_backend\":%s,\"fast\":%s,\"cpu_kernels\":%s,"
+            "\"size\":%d,\"threads\":%d,\"warm_runs\":%d,\"cpu_load_ms\":%.9g,\"graph_load_ms\":%.9g,"
+            "\"cpu_cold_ms\":%.9g,\"graph_cold_ms\":%.9g,\"cpu_warm_median_ms\":%.9g,"
+            "\"graph_warm_median_ms\":%.9g,\"cpu_warm_min_ms\":%.9g,\"cpu_warm_max_ms\":%.9g,"
+            "\"cpu_warm_stddev_ms\":%.9g,\"graph_warm_min_ms\":%.9g,\"graph_warm_max_ms\":%.9g,"
+            "\"graph_warm_stddev_ms\":%.9g,\"warm_speedup\":%.9g,\"warm_reuse_verified\":%s,"
+            "\"repeat_bit_exact\":%s,\"observer_isolated\":%s,\"observer_bit_exact\":%s,\"passed\":%s}\n",
+            json_string(backend).c_str(), json_string(after_observer.backend).c_str(),
+            after_observer.fast ? "true" : "false", after_observer.cpu_kernels ? "true" : "false", resolution, threads,
+            warm_runs, cpu_load_ms, graph_load_ms, cpu_cold_ms, graph_cold_ms, median(cpu_times), median(graph_times),
+            *std::min_element(cpu_times.begin(), cpu_times.end()),
+            *std::max_element(cpu_times.begin(), cpu_times.end()), sample_deviation(cpu_times),
+            *std::min_element(graph_times.begin(), graph_times.end()),
+            *std::max_element(graph_times.begin(), graph_times.end()), sample_deviation(graph_times),
+            median(cpu_times) / std::max(median(graph_times), 1e-9), reuse ? "true" : "false",
+            repeat_bit_exact ? "true" : "false", isolation ? "true" : "false", neutral ? "true" : "false",
+            passed ? "true" : "false");
     } catch (const std::exception & exception) {
         std::fprintf(stderr, "%s\n", exception.what());
         return 2;

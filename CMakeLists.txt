@@ -1151,6 +1151,10 @@ target_link_libraries(test-lama-ops PRIVATE crispembed-lama-test)
 add_executable(test-lama-diff EXCLUDE_FROM_ALL tests/test_lama_diff.cpp)
 target_link_libraries(test-lama-diff PRIVATE crispembed-lama-test)
 
+# Timed full image API calls without reference observers or test archives.
+add_executable(test-inpaint-benchmark EXCLUDE_FROM_ALL tests/test_inpaint_benchmark.cpp)
+target_link_libraries(test-inpaint-benchmark PRIVATE crispembed-lama crispembed-latent-inpaint crispembed-inpaint)
+
 add_executable(test-restormer-diff tests/test_restormer_diff.cpp)
 target_link_libraries(test-restormer-diff PRIVATE crispembed)
 

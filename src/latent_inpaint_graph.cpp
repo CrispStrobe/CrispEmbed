@@ -243,6 +243,23 @@ Tensor GraphPipeline::run(const Tensor & image, const Tensor & mask, const Tenso
     return result;
 }
 #ifdef CRISPEMBED_LATENT_INPAINT_TESTING
+std::vector<GraphPipeline::Allocation> GraphPipeline::prepare_for_testing() {
+    auto & p = *impl_;
+    try {
+        if (!p.encoder) p.build_encoder();
+        if (!p.stepper) p.build_stepper();
+        if (!p.decoder) p.build_decoder();
+    } catch (...) {
+        p.encoder.reset();
+        p.stepper.reset();
+        p.decoder.reset();
+        throw;
+    }
+    return { { "vae-encoder-batch2", p.encoder->nodes(), p.encoder->allocation_bytes() },
+             { "unet-cfg-ddim-batch2", p.stepper->nodes(), p.stepper->allocation_bytes() },
+             { "vae-decoder", p.decoder->nodes(), p.decoder->allocation_bytes() } };
+}
+
 void GraphPipeline::set_observer(Observer callback, void * opaque) {
     if (impl_->observer != callback || impl_->opaque != opaque) {
         impl_->encoder.reset();

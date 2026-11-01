@@ -236,6 +236,7 @@ class Run:
         self.report["build"] = "running"
         self.save()
         self.command("python-contracts", [sys.executable, "tests/test_latent_inpaint_contract.py", "-v"], maximum=180)
+        self.command("original-import-contracts", [sys.executable, "tests/test_latent_inpaint_original_import.py", "-v"], maximum=180)
         self.command("driver-contracts", [sys.executable, "tests/test_latent_inpaint_hosted.py", "-v"], maximum=180)
         self.command("configure", ["cmake", "-S", ROOT, "-B", self.scratch / "build", "-DCMAKE_BUILD_TYPE=Release",
                                    "-DGGML_NATIVE=OFF", "-DCRISPEMBED_NATIVE=OFF", "-DGGML_BLAS=OFF",

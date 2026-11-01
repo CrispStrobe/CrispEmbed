@@ -3,8 +3,10 @@
 // host while constructing or executing these denoiser graphs.
 #include "latent_inpaint_graph_unet.h"
 
+#include "core/env_gate.h"
 #include "inpaint_graph_spectral.h"
 
+#include <algorithm>
 #include <stdexcept>
 #include <string>
 #include <vector>
@@ -113,12 +115,19 @@ ggml_tensor * lambda_self(Builder & b, const std::string & name, ggml_tensor * x
     auto * kernel = b.weight(name + ".pos_conv.weight");
     require(kernel->ne[0] == 15 && kernel->ne[1] == 15 && kernel->ne[2] == 1 && kernel->ne[3] == dk,
             "unsupported local lambda positional kernel");
-    // Original Conv3d has singleton depth. Folding V channels into the batch
-    // applies the same 15x15 K filters (and bias) to every value plane in one
-    // backend convolution, with neither a host loop nor an activation copy.
-    auto * planes = ggml_reshape_4d(b.ctx, contiguous(b, v), v->ne[0], v->ne[1], 1, v->ne[2] * v->ne[3]);
-    auto * positional = b.conv(name + ".pos_conv", planes, 1, 7);
-    auto * out = ggml_add(b.ctx, content, graph_detail::lambda_position(b, q, positional, heads, int(v->ne[2])));
+    ggml_tensor * positional = nullptr;
+    if (core_env::on("CRISPEMBED_MOEBIUS_LOCAL_REASSOC")) {
+        positional = graph_detail::lambda_local_reassociated(
+            b, q, v, kernel, b.has(name + ".pos_conv.bias") ? b.weight(name + ".pos_conv.bias") : nullptr, heads,
+            !b.device.gpu && core_env::on("CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM"));
+    } else {
+        // Original Conv3d has singleton depth. Folding V channels into the
+        // batch applies the same 15x15 K filters to every value plane.
+        auto * planes = ggml_reshape_4d(b.ctx, contiguous(b, v), v->ne[0], v->ne[1], 1, v->ne[2] * v->ne[3]);
+        positional =
+            graph_detail::lambda_position(b, q, b.conv(name + ".pos_conv", planes, 1, 7), heads, int(v->ne[2]));
+    }
+    auto * out = ggml_add(b.ctx, content, positional);
     b.mark(name, out);
     return out;
 }
@@ -128,7 +137,10 @@ ggml_tensor * lambda_cross(Builder & b, const std::string & name, ggml_tensor * 
     auto * k = b.linear(name + ".to_k", cond, false);
     auto * v = b.batch_norm(name + ".norm_v", b.linear(name + ".to_v", cond, false), 1e-5f);
     auto * content = graph_detail::lambda_content(b, q, k, v, 8);
-    auto * positional = graph_detail::lambda_relative(b, q, v, b.weight(name + ".rel_pos_emb"), 8);
+    auto * relative = b.weight(name + ".rel_pos_emb");
+    auto * positional = core_env::on("CRISPEMBED_MOEBIUS_RELATIVE_REASSOC")
+                            ? graph_detail::lambda_relative_reassociated(b, q, v, relative, 8)
+                            : graph_detail::lambda_relative(b, q, v, relative, 8);
     auto * out = ggml_add(b.ctx, content, positional);
     b.mark(name, out);
     return out;
@@ -228,6 +240,89 @@ ggml_tensor * lambda_position(Builder & b, ggml_tensor * q, ggml_tensor * positi
     return position_product(b, q, lambda, heads);
 }
 
+ggml_tensor * lambda_local_reassociated(Builder & b, ggml_tensor * q, ggml_tensor * v, ggml_tensor * kernel,
+                                        ggml_tensor * bias, int heads, bool pad_cpu_gemm) {
+    check_tensor(q, "local lambda query");
+    check_tensor(v, "local lambda value");
+    require(heads > 0 && heads <= 32 && q->ne[2] % heads == 0 && q->ne[0] == v->ne[0] && q->ne[1] == v->ne[1] &&
+                q->ne[3] == v->ne[3],
+            "invalid local lambda head, image, or batch dimensions");
+    const int64_t width = q->ne[0], height = q->ne[1], dk = q->ne[2] / heads, dv = v->ne[2], batch = q->ne[3];
+    require(width <= 64 && height <= 64 && dk <= 256 && dv <= 256 && batch <= 2,
+            "local lambda exceeds the bounded model geometry");
+    require(!pad_cpu_gemm || !b.device.gpu, "local lambda GEMM zero padding is a CPU-only candidate");
+    require(kernel && (kernel->type == GGML_TYPE_F32 || (b.fast() && kernel->type == GGML_TYPE_F16)) &&
+                kernel->ne[0] == kernel->ne[1] && kernel->ne[0] >= 1 && kernel->ne[0] <= 15 && kernel->ne[0] % 2 == 1 &&
+                kernel->ne[2] == 1 && kernel->ne[3] == dk,
+            "invalid local lambda positional kernel");
+    if (bias)
+        require((bias->type == GGML_TYPE_F32 || (b.fast() && bias->type == GGML_TYPE_F16)) && bias->ne[0] == dk &&
+                    bias->ne[1] == 1 && bias->ne[2] == 1 && bias->ne[3] == 1,
+                "invalid local lambda positional bias");
+    const int64_t side = kernel->ne[0], area = side * side, padding = side / 2;
+    const int64_t matrix_dk = pad_cpu_gemm ? (dk + 15) / 16 * 16 : dk;
+    const int64_t matrix_area = pad_cpu_gemm ? (area + 15) / 16 * 16 : area;
+    auto * filters = ggml_cont(b.ctx, ggml_transpose(b.ctx, ggml_reshape_2d(b.ctx, contiguous(b, kernel), area, dk)));
+    if (matrix_dk != dk || matrix_area != area)
+        filters = ggml_pad(b.ctx, filters, int(matrix_dk - dk), int(matrix_area - area), 0, 0);
+    ggml_tensor * projected_bias_weights = bias ? ggml_reshape_2d(b.ctx, bias, dk, 1) : nullptr;
+    if (bias && matrix_dk != dk)
+        projected_bias_weights = ggml_pad(b.ctx, projected_bias_weights, int(matrix_dk - dk), 0, 0, 0);
+    auto * planes = ggml_reshape_4d(b.ctx, contiguous(b, v), width, height, 1, dv * batch);
+    // Bound both large temporaries together. A whole-image neighborhood
+    // tensor at 64x64/dv40/batch2 would otherwise occupy about 295 MB.
+    const size_t budget = (b.device.gpu ? size_t(128) : size_t(32)) << 20;
+    // During neighborhood padding, im2col and its padded copy are both live.
+    // Count both conservatively alongside coefficients; query transforms,
+    // halos and retained partial outputs are outside this particular cap.
+    const int64_t patch_elements = matrix_area * dv + (matrix_area != area ? area * dv : 0);
+    const size_t row_bytes = size_t((patch_elements + matrix_area * heads) * width * batch) * sizeof(float);
+    require(row_bytes <= budget, "one local lambda row exceeds the patch/coefficient workspace budget");
+    const int64_t rows = std::max<int64_t>(1, std::min<int64_t>(height, int64_t(budget / row_bytes)));
+    std::vector<ggml_tensor *> parts;
+    for (int64_t start = 0; start < height; start += rows) {
+        const int64_t count = std::min(rows, height - start), n = width * count;
+        auto * query_strip = ggml_cont(b.ctx, ggml_view_4d(b.ctx, q, width, count, q->ne[2], batch, q->nb[1], q->nb[2],
+                                                           q->nb[3], size_t(start) * q->nb[1]));
+        auto * queries = position_queries(b, query_strip, heads); // [dk,heads,N,B]
+        // The learned kernel is shared across positions. Flattening those
+        // positions avoids thousands of tiny coefficient-projection GEMMs.
+        auto * flat_queries = ggml_reshape_2d(b.ctx, queries, dk, heads * n * batch);
+        if (matrix_dk != dk) flat_queries = ggml_pad(b.ctx, flat_queries, int(matrix_dk - dk), 0, 0, 0);
+        auto * coefficients = ggml_reshape_4d(b.ctx, matrix(b, filters, flat_queries), matrix_area, heads, n, batch);
+
+        const int64_t y0 = start - padding, y1 = start + count + padding;
+        const int64_t first = std::max<int64_t>(0, y0), last = std::min<int64_t>(height, y1);
+        auto * value_strip =
+            ggml_cont(b.ctx, ggml_view_4d(b.ctx, planes, width, last - first, 1, dv * batch, planes->nb[1],
+                                          planes->nb[2], planes->nb[3], size_t(first) * planes->nb[1]));
+        if (y0 < 0 || y1 > height) value_strip = b.pad(value_strip, 0, 0, int(first - y0), int(y1 - last));
+        auto * patches = ggml_im2col(b.ctx, kernel, value_strip, 1, 1, int(padding), 0, 1, 1, true, GGML_TYPE_F32);
+        require(patches->ne[0] == area && patches->ne[1] == width && patches->ne[2] == count,
+                "local lambda row-strip patch geometry differs");
+        if (matrix_area != area) patches = ggml_pad(b.ctx, patches, int(matrix_area - area), 0, 0, 0);
+        patches = ggml_reshape_4d(b.ctx, patches, matrix_area, n, dv, batch);
+        // The reduction axis remains contiguous. A strided view avoids a
+        // second copy of the large neighborhood tensor.
+        patches = ggml_permute(b.ctx, patches, 0, 2, 1, 3); // [area,dv,N,B]
+        auto * output = matrix(b, patches, coefficients);   // [dv,heads,N,B]
+        if (bias) {
+            auto * projected_bias =
+                ggml_reshape_4d(b.ctx, matrix(b, projected_bias_weights, flat_queries), 1, heads, n, batch);
+            output = ggml_add(b.ctx, output, projected_bias);
+        }
+        parts.push_back(image_from_heads(b, ggml_permute(b.ctx, output, 1, 2, 0, 3), width, count));
+    }
+    // Balanced concatenation bounds row-strip copying depth on CPU and GPU.
+    while (parts.size() > 1) {
+        std::vector<ggml_tensor *> next;
+        for (size_t i = 0; i < parts.size(); i += 2)
+            next.push_back(i + 1 < parts.size() ? ggml_concat(b.ctx, parts[i], parts[i + 1], 1) : parts[i]);
+        parts = std::move(next);
+    }
+    return parts.front();
+}
+
 ggml_tensor * lambda_relative(Builder & b, ggml_tensor * q, ggml_tensor * v, ggml_tensor * relative, int heads) {
     check_tensor(q, "relative lambda query");
     check_tensor(v, "relative lambda value");
@@ -249,6 +344,28 @@ ggml_tensor * lambda_relative(Builder & b, ggml_tensor * q, ggml_tensor * v, ggm
     lambda = ggml_reshape_4d(b.ctx, lambda, dk, n, v->ne[2], v->ne[3]);
     lambda = ggml_cont(b.ctx, ggml_permute(b.ctx, lambda, 0, 2, 1, 3)); // [dk,dv,N,B]
     return position_product(b, q, lambda, heads);
+}
+
+ggml_tensor * lambda_relative_reassociated(Builder & b, ggml_tensor * q, ggml_tensor * v, ggml_tensor * relative,
+                                           int heads) {
+    check_tensor(q, "relative lambda query");
+    check_tensor(v, "relative lambda value");
+    require(relative && (relative->type == GGML_TYPE_F32 || (b.fast() && relative->type == GGML_TYPE_F16)),
+            "relative lambda table must be F32 or explicitly selected fast-profile F16");
+    require(heads > 0 && heads <= 32 && q->ne[2] % heads == 0 && q->ne[3] == v->ne[3],
+            "invalid relative lambda head or batch dimensions");
+    const int64_t n = q->ne[0] * q->ne[1], m = v->ne[0] * v->ne[1], dk = q->ne[2] / heads;
+    require(relative->ne[0] == 1 && relative->ne[1] == dk && relative->ne[2] == m && relative->ne[3] == n,
+            "learned relative lambda table does not match the query/key geometry");
+    // R is already contiguous in [dk,M,N,1] order. Reducing its key feature
+    // against Q first needs only [M,heads,N,B] storage, rather than forming
+    // the original [dk,dv,N,B] positional lambda. V is broadcast over query
+    // positions by the backend; it is not repeated or copied N times.
+    auto * table = ggml_reshape_4d(b.ctx, contiguous(b, relative), dk, m, n, 1);
+    auto * coefficients = matrix(b, table, position_queries(b, q, heads)); // [M,heads,N,B]
+    auto * values = ggml_reshape_4d(b.ctx, contiguous(b, v), m, v->ne[2], 1, v->ne[3]);
+    auto * out = matrix(b, values, coefficients); // [dv,heads,N,B]
+    return image_from_heads(b, ggml_permute(b.ctx, out, 1, 2, 0, 3), q->ne[0], q->ne[1]);
 }
 
 ggml_tensor * gated_rms_norm(Builder & b, ggml_tensor * x, ggml_tensor * gate, ggml_tensor * weight, int heads) {
