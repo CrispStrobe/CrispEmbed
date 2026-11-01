@@ -1,5 +1,30 @@
 # CrispEmbed active plan —29 October2026 wrap-up
 
+## Issue 71 latent / MI-GAN512 qualification — 1 November 2026
+
+Branch `feat/issue71-latent-qual` (five-engines c4bb1f93 + graphs delivery 4
+06d75fb8). Not merged into feat/teleocr or main; nothing published or
+registered. Status and numbers: [precision guide](docs/inpainting-precision.md),
+HISTORY 1 November.
+
+- MI-GAN512: F32 eager and graph pass the frozen 8-fixture panel; F16/Q8_0/Q4_K
+  pass the owner cosine gate on all four execution arms. Live real-photo
+  evaluation recorded. Open: representative subtitle/video quality, a reviewed
+  author digest (only first-observed), publication decision.
+- Moebius / PixelHacker: original CUDA captures exist (Kaggle T4; PixelHacker
+  with the recorded torch 2.6.0 deviation). Eager F32 Moebius reproduces the
+  original image (RGB max diff 1) but exceeds the strict 0.002 component budget
+  on VAE moments and late UNet steps; keep that failure recorded and unchanged.
+  Pending in hosted lanes: PixelHacker native, all graph arms after the pin
+  fix, precision arms and live photos.
+- Graph core (delivery 4): initializers and parameters are now pinned against
+  gallocr reuse; graph controls pass on CPU (41302790327). CUDA/Metal graph
+  qualification needs provisioned runners.
+- Speed: the eager latent path takes 6–9 min per 512 image on 4 vCPU; graph is
+  about 25% faster. Profile before any default change.
+- HF private storage for the account is full; further private preservation
+  needs the owner to free space or upgrade.
+
 ## Native Marker-style document pipeline — 31 October 2026
 
 The requested implementation and bounded validation are complete on

@@ -203,3 +203,25 @@ Apache-2.0. The shared VAE is the pretrained
 [standalone SDXL VAE](https://huggingface.co/stabilityai/sdxl-vae), also published
 under MIT. The reference paper's own publication licence is not used as a
 model-weight licence.
+
+## Hosted evidence and corrections (1 November 2026)
+
+- **GGUF tensor names.** 540 Moebius and 384 PixelHacker state names exceed the
+  63-byte GGUF name limit, so the first converted denoisers could not be opened
+  by ggml. The converter now stores names of 64+ bytes under the abbreviation
+  rule in `src/inpaint_tensor_names.h` (twin `gguf_tensor_name`); the receipt
+  keeps original names, and every loader maps through the rule. The layout
+  metadata string records it.
+- **Original CUDA capture** runs on a Kaggle GPU worker
+  (`tools/kaggle/latent-inpaint-capture`, stage.py then kpush.py): pinned
+  sources/checkpoints are verified, a separate uv interpreter is provisioned,
+  and the unchanged dumper captures the four-case panel. The output is written
+  as verified gzip parts that `tools/ci-heavy/latent_native.sh` downloads for
+  the hosted CPU replay. Moebius ran with the exact contract pins (T4, 88 s).
+  PixelHacker's pins cannot be installed together: FLA ops live in `fla-core`,
+  torch 2.3.0 with triton 3.2.0 fails at FLA import, and transformers 4.40.0
+  lacks `utils.deprecation`. Its capture uses torch 2.6.0 as an explicit
+  `--allow-dependency` deviation recorded in the report (the native comparator
+  accepts only that recorded form) and transformers 4.48.3 (T4, 288 s).
+- **Precision variants** are quantized from these F32 files; see
+  [the precision guide](inpainting-precision.md).
