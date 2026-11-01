@@ -154,13 +154,22 @@ def main() -> int:
             cmd = [str(build / "test-mineru25-run"), "--model", args.gguf, "--image", str(case["image"]),
                    "--task", case["task"], "--max-tokens", str(case["max_tokens"]), "--threads",
                    str(args.threads), "--repeat", str(args.repeat)]
-        cmd = ["/usr/bin/time", "-l" if sys.platform == "darwin" else "-v"] + cmd
+        # Peak RSS: /usr/bin/time when present (absent on Kaggle images), else
+        # getrusage(RUSAGE_CHILDREN), the high-water mark over children so far.
+        use_time = os.path.exists("/usr/bin/time")
+        if use_time:
+            cmd = ["/usr/bin/time", "-l" if sys.platform == "darwin" else "-v"] + cmd
         started = time.time()
         proc = subprocess.run(cmd, env=run_env, capture_output=True, text=True)
         wall = time.time() - started
         log = out_dir / f"{name}-{case['id']}.log"
         log.write_text(proc.stderr)
         rec = {"id": case["id"], "exit": proc.returncode, "wall_s": wall}
+        if not use_time:
+            import resource
+            peak = resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
+            rec["max_rss_mib"] = peak / (1024 * 1024) if sys.platform == "darwin" else peak / 1024
+            rec["max_rss_source"] = "getrusage(RUSAGE_CHILDREN) high-water mark"
         for line in proc.stderr.splitlines():
             if "maximum resident set size" in line:  # macOS: bytes
                 rec["max_rss_mib"] = int(line.split()[0]) / (1024 * 1024)

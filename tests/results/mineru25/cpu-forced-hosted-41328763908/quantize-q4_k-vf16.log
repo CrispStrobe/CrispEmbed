@@ -1,0 +1,686 @@
+Loading model from '/mnt/heavy/scratch/f32.gguf'
+Writing quantized model to '/mnt/heavy/scratch/q4_k-vf16.gguf'
+[  1/681] v.patch_embed.weight                          -    f32, note: v.patch_embed.weight — copying as-is (host-side computation)
+[  2/681] v.blk.0.norm1.weight                          -    f32, copy 0.0 MB
+[  3/681] v.blk.0.norm1.bias                            -    f32, copy 0.0 MB
+[  4/681] v.blk.0.norm2.weight                          -    f32, copy 0.0 MB
+[  5/681] v.blk.0.norm2.bias                            -    f32, copy 0.0 MB
+[  6/681] v.blk.0.attn_qkv.weight                       -    f32, (vision→Q8_0) quantizing to f16... 18.8 MB -> 9.4 MB
+[  7/681] v.blk.0.attn_qkv.bias                         -    f32, copy 0.0 MB
+[  8/681] v.blk.0.attn_proj.weight                      -    f32, (vision→Q8_0) quantizing to f16... 6.2 MB -> 3.1 MB
+[  9/681] v.blk.0.attn_proj.bias                        -    f32, copy 0.0 MB
+[ 10/681] v.blk.0.ffn_fc1.weight                        -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[ 11/681] v.blk.0.ffn_fc1.bias                          -    f32, copy 0.0 MB
+[ 12/681] v.blk.0.ffn_fc2.weight                        -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[ 13/681] v.blk.0.ffn_fc2.bias                          -    f32, copy 0.0 MB
+[ 14/681] v.blk.1.norm1.weight                          -    f32, copy 0.0 MB
+[ 15/681] v.blk.1.norm1.bias                            -    f32, copy 0.0 MB
+[ 16/681] v.blk.1.norm2.weight                          -    f32, copy 0.0 MB
+[ 17/681] v.blk.1.norm2.bias                            -    f32, copy 0.0 MB
+[ 18/681] v.blk.1.attn_qkv.weight                       -    f32, (vision→Q8_0) quantizing to f16... 18.8 MB -> 9.4 MB
+[ 19/681] v.blk.1.attn_qkv.bias                         -    f32, copy 0.0 MB
+[ 20/681] v.blk.1.attn_proj.weight                      -    f32, (vision→Q8_0) quantizing to f16... 6.2 MB -> 3.1 MB
+[ 21/681] v.blk.1.attn_proj.bias                        -    f32, copy 0.0 MB
+[ 22/681] v.blk.1.ffn_fc1.weight                        -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[ 23/681] v.blk.1.ffn_fc1.bias                          -    f32, copy 0.0 MB
+[ 24/681] v.blk.1.ffn_fc2.weight                        -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[ 25/681] v.blk.1.ffn_fc2.bias                          -    f32, copy 0.0 MB
+[ 26/681] v.blk.2.norm1.weight                          -    f32, copy 0.0 MB
+[ 27/681] v.blk.2.norm1.bias                            -    f32, copy 0.0 MB
+[ 28/681] v.blk.2.norm2.weight                          -    f32, copy 0.0 MB
+[ 29/681] v.blk.2.norm2.bias                            -    f32, copy 0.0 MB
+[ 30/681] v.blk.2.attn_qkv.weight                       -    f32, (vision→Q8_0) quantizing to f16... 18.8 MB -> 9.4 MB
+[ 31/681] v.blk.2.attn_qkv.bias                         -    f32, copy 0.0 MB
+[ 32/681] v.blk.2.attn_proj.weight                      -    f32, (vision→Q8_0) quantizing to f16... 6.2 MB -> 3.1 MB
+[ 33/681] v.blk.2.attn_proj.bias                        -    f32, copy 0.0 MB
+[ 34/681] v.blk.2.ffn_fc1.weight                        -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[ 35/681] v.blk.2.ffn_fc1.bias                          -    f32, copy 0.0 MB
+[ 36/681] v.blk.2.ffn_fc2.weight                        -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[ 37/681] v.blk.2.ffn_fc2.bias                          -    f32, copy 0.0 MB
+[ 38/681] v.blk.3.norm1.weight                          -    f32, copy 0.0 MB
+[ 39/681] v.blk.3.norm1.bias                            -    f32, copy 0.0 MB
+[ 40/681] v.blk.3.norm2.weight                          -    f32, copy 0.0 MB
+[ 41/681] v.blk.3.norm2.bias                            -    f32, copy 0.0 MB
+[ 42/681] v.blk.3.attn_qkv.weight                       -    f32, (vision→Q8_0) quantizing to f16... 18.8 MB -> 9.4 MB
+[ 43/681] v.blk.3.attn_qkv.bias                         -    f32, copy 0.0 MB
+[ 44/681] v.blk.3.attn_proj.weight                      -    f32, (vision→Q8_0) quantizing to f16... 6.2 MB -> 3.1 MB
+[ 45/681] v.blk.3.attn_proj.bias                        -    f32, copy 0.0 MB
+[ 46/681] v.blk.3.ffn_fc1.weight                        -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[ 47/681] v.blk.3.ffn_fc1.bias                          -    f32, copy 0.0 MB
+[ 48/681] v.blk.3.ffn_fc2.weight                        -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[ 49/681] v.blk.3.ffn_fc2.bias                          -    f32, copy 0.0 MB
+[ 50/681] v.blk.4.norm1.weight                          -    f32, copy 0.0 MB
+[ 51/681] v.blk.4.norm1.bias                            -    f32, copy 0.0 MB
+[ 52/681] v.blk.4.norm2.weight                          -    f32, copy 0.0 MB
+[ 53/681] v.blk.4.norm2.bias                            -    f32, copy 0.0 MB
+[ 54/681] v.blk.4.attn_qkv.weight                       -    f32, (vision→Q8_0) quantizing to f16... 18.8 MB -> 9.4 MB
+[ 55/681] v.blk.4.attn_qkv.bias                         -    f32, copy 0.0 MB
+[ 56/681] v.blk.4.attn_proj.weight                      -    f32, (vision→Q8_0) quantizing to f16... 6.2 MB -> 3.1 MB
+[ 57/681] v.blk.4.attn_proj.bias                        -    f32, copy 0.0 MB
+[ 58/681] v.blk.4.ffn_fc1.weight                        -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[ 59/681] v.blk.4.ffn_fc1.bias                          -    f32, copy 0.0 MB
+[ 60/681] v.blk.4.ffn_fc2.weight                        -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[ 61/681] v.blk.4.ffn_fc2.bias                          -    f32, copy 0.0 MB
+[ 62/681] v.blk.5.norm1.weight                          -    f32, copy 0.0 MB
+[ 63/681] v.blk.5.norm1.bias                            -    f32, copy 0.0 MB
+[ 64/681] v.blk.5.norm2.weight                          -    f32, copy 0.0 MB
+[ 65/681] v.blk.5.norm2.bias                            -    f32, copy 0.0 MB
+[ 66/681] v.blk.5.attn_qkv.weight                       -    f32, (vision→Q8_0) quantizing to f16... 18.8 MB -> 9.4 MB
+[ 67/681] v.blk.5.attn_qkv.bias                         -    f32, copy 0.0 MB
+[ 68/681] v.blk.5.attn_proj.weight                      -    f32, (vision→Q8_0) quantizing to f16... 6.2 MB -> 3.1 MB
+[ 69/681] v.blk.5.attn_proj.bias                        -    f32, copy 0.0 MB
+[ 70/681] v.blk.5.ffn_fc1.weight                        -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[ 71/681] v.blk.5.ffn_fc1.bias                          -    f32, copy 0.0 MB
+[ 72/681] v.blk.5.ffn_fc2.weight                        -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[ 73/681] v.blk.5.ffn_fc2.bias                          -    f32, copy 0.0 MB
+[ 74/681] v.blk.6.norm1.weight                          -    f32, copy 0.0 MB
+[ 75/681] v.blk.6.norm1.bias                            -    f32, copy 0.0 MB
+[ 76/681] v.blk.6.norm2.weight                          -    f32, copy 0.0 MB
+[ 77/681] v.blk.6.norm2.bias                            -    f32, copy 0.0 MB
+[ 78/681] v.blk.6.attn_qkv.weight                       -    f32, (vision→Q8_0) quantizing to f16... 18.8 MB -> 9.4 MB
+[ 79/681] v.blk.6.attn_qkv.bias                         -    f32, copy 0.0 MB
+[ 80/681] v.blk.6.attn_proj.weight                      -    f32, (vision→Q8_0) quantizing to f16... 6.2 MB -> 3.1 MB
+[ 81/681] v.blk.6.attn_proj.bias                        -    f32, copy 0.0 MB
+[ 82/681] v.blk.6.ffn_fc1.weight                        -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[ 83/681] v.blk.6.ffn_fc1.bias                          -    f32, copy 0.0 MB
+[ 84/681] v.blk.6.ffn_fc2.weight                        -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[ 85/681] v.blk.6.ffn_fc2.bias                          -    f32, copy 0.0 MB
+[ 86/681] v.blk.7.norm1.weight                          -    f32, copy 0.0 MB
+[ 87/681] v.blk.7.norm1.bias                            -    f32, copy 0.0 MB
+[ 88/681] v.blk.7.norm2.weight                          -    f32, copy 0.0 MB
+[ 89/681] v.blk.7.norm2.bias                            -    f32, copy 0.0 MB
+[ 90/681] v.blk.7.attn_qkv.weight                       -    f32, (vision→Q8_0) quantizing to f16... 18.8 MB -> 9.4 MB
+[ 91/681] v.blk.7.attn_qkv.bias                         -    f32, copy 0.0 MB
+[ 92/681] v.blk.7.attn_proj.weight                      -    f32, (vision→Q8_0) quantizing to f16... 6.2 MB -> 3.1 MB
+[ 93/681] v.blk.7.attn_proj.bias                        -    f32, copy 0.0 MB
+[ 94/681] v.blk.7.ffn_fc1.weight                        -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[ 95/681] v.blk.7.ffn_fc1.bias                          -    f32, copy 0.0 MB
+[ 96/681] v.blk.7.ffn_fc2.weight                        -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[ 97/681] v.blk.7.ffn_fc2.bias                          -    f32, copy 0.0 MB
+[ 98/681] v.blk.8.norm1.weight                          -    f32, copy 0.0 MB
+[ 99/681] v.blk.8.norm1.bias                            -    f32, copy 0.0 MB
+[100/681] v.blk.8.norm2.weight                          -    f32, copy 0.0 MB
+[101/681] v.blk.8.norm2.bias                            -    f32, copy 0.0 MB
+[102/681] v.blk.8.attn_qkv.weight                       -    f32, (vision→Q8_0) quantizing to f16... 18.8 MB -> 9.4 MB
+[103/681] v.blk.8.attn_qkv.bias                         -    f32, copy 0.0 MB
+[104/681] v.blk.8.attn_proj.weight                      -    f32, (vision→Q8_0) quantizing to f16... 6.2 MB -> 3.1 MB
+[105/681] v.blk.8.attn_proj.bias                        -    f32, copy 0.0 MB
+[106/681] v.blk.8.ffn_fc1.weight                        -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[107/681] v.blk.8.ffn_fc1.bias                          -    f32, copy 0.0 MB
+[108/681] v.blk.8.ffn_fc2.weight                        -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[109/681] v.blk.8.ffn_fc2.bias                          -    f32, copy 0.0 MB
+[110/681] v.blk.9.norm1.weight                          -    f32, copy 0.0 MB
+[111/681] v.blk.9.norm1.bias                            -    f32, copy 0.0 MB
+[112/681] v.blk.9.norm2.weight                          -    f32, copy 0.0 MB
+[113/681] v.blk.9.norm2.bias                            -    f32, copy 0.0 MB
+[114/681] v.blk.9.attn_qkv.weight                       -    f32, (vision→Q8_0) quantizing to f16... 18.8 MB -> 9.4 MB
+[115/681] v.blk.9.attn_qkv.bias                         -    f32, copy 0.0 MB
+[116/681] v.blk.9.attn_proj.weight                      -    f32, (vision→Q8_0) quantizing to f16... 6.2 MB -> 3.1 MB
+[117/681] v.blk.9.attn_proj.bias                        -    f32, copy 0.0 MB
+[118/681] v.blk.9.ffn_fc1.weight                        -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[119/681] v.blk.9.ffn_fc1.bias                          -    f32, copy 0.0 MB
+[120/681] v.blk.9.ffn_fc2.weight                        -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[121/681] v.blk.9.ffn_fc2.bias                          -    f32, copy 0.0 MB
+[122/681] v.blk.10.norm1.weight                         -    f32, copy 0.0 MB
+[123/681] v.blk.10.norm1.bias                           -    f32, copy 0.0 MB
+[124/681] v.blk.10.norm2.weight                         -    f32, copy 0.0 MB
+[125/681] v.blk.10.norm2.bias                           -    f32, copy 0.0 MB
+[126/681] v.blk.10.attn_qkv.weight                      -    f32, (vision→Q8_0) quantizing to f16... 18.8 MB -> 9.4 MB
+[127/681] v.blk.10.attn_qkv.bias                        -    f32, copy 0.0 MB
+[128/681] v.blk.10.attn_proj.weight                     -    f32, (vision→Q8_0) quantizing to f16... 6.2 MB -> 3.1 MB
+[129/681] v.blk.10.attn_proj.bias                       -    f32, copy 0.0 MB
+[130/681] v.blk.10.ffn_fc1.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[131/681] v.blk.10.ffn_fc1.bias                         -    f32, copy 0.0 MB
+[132/681] v.blk.10.ffn_fc2.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[133/681] v.blk.10.ffn_fc2.bias                         -    f32, copy 0.0 MB
+[134/681] v.blk.11.norm1.weight                         -    f32, copy 0.0 MB
+[135/681] v.blk.11.norm1.bias                           -    f32, copy 0.0 MB
+[136/681] v.blk.11.norm2.weight                         -    f32, copy 0.0 MB
+[137/681] v.blk.11.norm2.bias                           -    f32, copy 0.0 MB
+[138/681] v.blk.11.attn_qkv.weight                      -    f32, (vision→Q8_0) quantizing to f16... 18.8 MB -> 9.4 MB
+[139/681] v.blk.11.attn_qkv.bias                        -    f32, copy 0.0 MB
+[140/681] v.blk.11.attn_proj.weight                     -    f32, (vision→Q8_0) quantizing to f16... 6.2 MB -> 3.1 MB
+[141/681] v.blk.11.attn_proj.bias                       -    f32, copy 0.0 MB
+[142/681] v.blk.11.ffn_fc1.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[143/681] v.blk.11.ffn_fc1.bias                         -    f32, copy 0.0 MB
+[144/681] v.blk.11.ffn_fc2.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[145/681] v.blk.11.ffn_fc2.bias                         -    f32, copy 0.0 MB
+[146/681] v.blk.12.norm1.weight                         -    f32, copy 0.0 MB
+[147/681] v.blk.12.norm1.bias                           -    f32, copy 0.0 MB
+[148/681] v.blk.12.norm2.weight                         -    f32, copy 0.0 MB
+[149/681] v.blk.12.norm2.bias                           -    f32, copy 0.0 MB
+[150/681] v.blk.12.attn_qkv.weight                      -    f32, (vision→Q8_0) quantizing to f16... 18.8 MB -> 9.4 MB
+[151/681] v.blk.12.attn_qkv.bias                        -    f32, copy 0.0 MB
+[152/681] v.blk.12.attn_proj.weight                     -    f32, (vision→Q8_0) quantizing to f16... 6.2 MB -> 3.1 MB
+[153/681] v.blk.12.attn_proj.bias                       -    f32, copy 0.0 MB
+[154/681] v.blk.12.ffn_fc1.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[155/681] v.blk.12.ffn_fc1.bias                         -    f32, copy 0.0 MB
+[156/681] v.blk.12.ffn_fc2.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[157/681] v.blk.12.ffn_fc2.bias                         -    f32, copy 0.0 MB
+[158/681] v.blk.13.norm1.weight                         -    f32, copy 0.0 MB
+[159/681] v.blk.13.norm1.bias                           -    f32, copy 0.0 MB
+[160/681] v.blk.13.norm2.weight                         -    f32, copy 0.0 MB
+[161/681] v.blk.13.norm2.bias                           -    f32, copy 0.0 MB
+[162/681] v.blk.13.attn_qkv.weight                      -    f32, (vision→Q8_0) quantizing to f16... 18.8 MB -> 9.4 MB
+[163/681] v.blk.13.attn_qkv.bias                        -    f32, copy 0.0 MB
+[164/681] v.blk.13.attn_proj.weight                     -    f32, (vision→Q8_0) quantizing to f16... 6.2 MB -> 3.1 MB
+[165/681] v.blk.13.attn_proj.bias                       -    f32, copy 0.0 MB
+[166/681] v.blk.13.ffn_fc1.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[167/681] v.blk.13.ffn_fc1.bias                         -    f32, copy 0.0 MB
+[168/681] v.blk.13.ffn_fc2.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[169/681] v.blk.13.ffn_fc2.bias                         -    f32, copy 0.0 MB
+[170/681] v.blk.14.norm1.weight                         -    f32, copy 0.0 MB
+[171/681] v.blk.14.norm1.bias                           -    f32, copy 0.0 MB
+[172/681] v.blk.14.norm2.weight                         -    f32, copy 0.0 MB
+[173/681] v.blk.14.norm2.bias                           -    f32, copy 0.0 MB
+[174/681] v.blk.14.attn_qkv.weight                      -    f32, (vision→Q8_0) quantizing to f16... 18.8 MB -> 9.4 MB
+[175/681] v.blk.14.attn_qkv.bias                        -    f32, copy 0.0 MB
+[176/681] v.blk.14.attn_proj.weight                     -    f32, (vision→Q8_0) quantizing to f16... 6.2 MB -> 3.1 MB
+[177/681] v.blk.14.attn_proj.bias                       -    f32, copy 0.0 MB
+[178/681] v.blk.14.ffn_fc1.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[179/681] v.blk.14.ffn_fc1.bias                         -    f32, copy 0.0 MB
+[180/681] v.blk.14.ffn_fc2.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[181/681] v.blk.14.ffn_fc2.bias                         -    f32, copy 0.0 MB
+[182/681] v.blk.15.norm1.weight                         -    f32, copy 0.0 MB
+[183/681] v.blk.15.norm1.bias                           -    f32, copy 0.0 MB
+[184/681] v.blk.15.norm2.weight                         -    f32, copy 0.0 MB
+[185/681] v.blk.15.norm2.bias                           -    f32, copy 0.0 MB
+[186/681] v.blk.15.attn_qkv.weight                      -    f32, (vision→Q8_0) quantizing to f16... 18.8 MB -> 9.4 MB
+[187/681] v.blk.15.attn_qkv.bias                        -    f32, copy 0.0 MB
+[188/681] v.blk.15.attn_proj.weight                     -    f32, (vision→Q8_0) quantizing to f16... 6.2 MB -> 3.1 MB
+[189/681] v.blk.15.attn_proj.bias                       -    f32, copy 0.0 MB
+[190/681] v.blk.15.ffn_fc1.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[191/681] v.blk.15.ffn_fc1.bias                         -    f32, copy 0.0 MB
+[192/681] v.blk.15.ffn_fc2.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[193/681] v.blk.15.ffn_fc2.bias                         -    f32, copy 0.0 MB
+[194/681] v.blk.16.norm1.weight                         -    f32, copy 0.0 MB
+[195/681] v.blk.16.norm1.bias                           -    f32, copy 0.0 MB
+[196/681] v.blk.16.norm2.weight                         -    f32, copy 0.0 MB
+[197/681] v.blk.16.norm2.bias                           -    f32, copy 0.0 MB
+[198/681] v.blk.16.attn_qkv.weight                      -    f32, (vision→Q8_0) quantizing to f16... 18.8 MB -> 9.4 MB
+[199/681] v.blk.16.attn_qkv.bias                        -    f32, copy 0.0 MB
+[200/681] v.blk.16.attn_proj.weight                     -    f32, (vision→Q8_0) quantizing to f16... 6.2 MB -> 3.1 MB
+[201/681] v.blk.16.attn_proj.bias                       -    f32, copy 0.0 MB
+[202/681] v.blk.16.ffn_fc1.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[203/681] v.blk.16.ffn_fc1.bias                         -    f32, copy 0.0 MB
+[204/681] v.blk.16.ffn_fc2.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[205/681] v.blk.16.ffn_fc2.bias                         -    f32, copy 0.0 MB
+[206/681] v.blk.17.norm1.weight                         -    f32, copy 0.0 MB
+[207/681] v.blk.17.norm1.bias                           -    f32, copy 0.0 MB
+[208/681] v.blk.17.norm2.weight                         -    f32, copy 0.0 MB
+[209/681] v.blk.17.norm2.bias                           -    f32, copy 0.0 MB
+[210/681] v.blk.17.attn_qkv.weight                      -    f32, (vision→Q8_0) quantizing to f16... 18.8 MB -> 9.4 MB
+[211/681] v.blk.17.attn_qkv.bias                        -    f32, copy 0.0 MB
+[212/681] v.blk.17.attn_proj.weight                     -    f32, (vision→Q8_0) quantizing to f16... 6.2 MB -> 3.1 MB
+[213/681] v.blk.17.attn_proj.bias                       -    f32, copy 0.0 MB
+[214/681] v.blk.17.ffn_fc1.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[215/681] v.blk.17.ffn_fc1.bias                         -    f32, copy 0.0 MB
+[216/681] v.blk.17.ffn_fc2.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[217/681] v.blk.17.ffn_fc2.bias                         -    f32, copy 0.0 MB
+[218/681] v.blk.18.norm1.weight                         -    f32, copy 0.0 MB
+[219/681] v.blk.18.norm1.bias                           -    f32, copy 0.0 MB
+[220/681] v.blk.18.norm2.weight                         -    f32, copy 0.0 MB
+[221/681] v.blk.18.norm2.bias                           -    f32, copy 0.0 MB
+[222/681] v.blk.18.attn_qkv.weight                      -    f32, (vision→Q8_0) quantizing to f16... 18.8 MB -> 9.4 MB
+[223/681] v.blk.18.attn_qkv.bias                        -    f32, copy 0.0 MB
+[224/681] v.blk.18.attn_proj.weight                     -    f32, (vision→Q8_0) quantizing to f16... 6.2 MB -> 3.1 MB
+[225/681] v.blk.18.attn_proj.bias                       -    f32, copy 0.0 MB
+[226/681] v.blk.18.ffn_fc1.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[227/681] v.blk.18.ffn_fc1.bias                         -    f32, copy 0.0 MB
+[228/681] v.blk.18.ffn_fc2.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[229/681] v.blk.18.ffn_fc2.bias                         -    f32, copy 0.0 MB
+[230/681] v.blk.19.norm1.weight                         -    f32, copy 0.0 MB
+[231/681] v.blk.19.norm1.bias                           -    f32, copy 0.0 MB
+[232/681] v.blk.19.norm2.weight                         -    f32, copy 0.0 MB
+[233/681] v.blk.19.norm2.bias                           -    f32, copy 0.0 MB
+[234/681] v.blk.19.attn_qkv.weight                      -    f32, (vision→Q8_0) quantizing to f16... 18.8 MB -> 9.4 MB
+[235/681] v.blk.19.attn_qkv.bias                        -    f32, copy 0.0 MB
+[236/681] v.blk.19.attn_proj.weight                     -    f32, (vision→Q8_0) quantizing to f16... 6.2 MB -> 3.1 MB
+[237/681] v.blk.19.attn_proj.bias                       -    f32, copy 0.0 MB
+[238/681] v.blk.19.ffn_fc1.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[239/681] v.blk.19.ffn_fc1.bias                         -    f32, copy 0.0 MB
+[240/681] v.blk.19.ffn_fc2.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[241/681] v.blk.19.ffn_fc2.bias                         -    f32, copy 0.0 MB
+[242/681] v.blk.20.norm1.weight                         -    f32, copy 0.0 MB
+[243/681] v.blk.20.norm1.bias                           -    f32, copy 0.0 MB
+[244/681] v.blk.20.norm2.weight                         -    f32, copy 0.0 MB
+[245/681] v.blk.20.norm2.bias                           -    f32, copy 0.0 MB
+[246/681] v.blk.20.attn_qkv.weight                      -    f32, (vision→Q8_0) quantizing to f16... 18.8 MB -> 9.4 MB
+[247/681] v.blk.20.attn_qkv.bias                        -    f32, copy 0.0 MB
+[248/681] v.blk.20.attn_proj.weight                     -    f32, (vision→Q8_0) quantizing to f16... 6.2 MB -> 3.1 MB
+[249/681] v.blk.20.attn_proj.bias                       -    f32, copy 0.0 MB
+[250/681] v.blk.20.ffn_fc1.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[251/681] v.blk.20.ffn_fc1.bias                         -    f32, copy 0.0 MB
+[252/681] v.blk.20.ffn_fc2.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[253/681] v.blk.20.ffn_fc2.bias                         -    f32, copy 0.0 MB
+[254/681] v.blk.21.norm1.weight                         -    f32, copy 0.0 MB
+[255/681] v.blk.21.norm1.bias                           -    f32, copy 0.0 MB
+[256/681] v.blk.21.norm2.weight                         -    f32, copy 0.0 MB
+[257/681] v.blk.21.norm2.bias                           -    f32, copy 0.0 MB
+[258/681] v.blk.21.attn_qkv.weight                      -    f32, (vision→Q8_0) quantizing to f16... 18.8 MB -> 9.4 MB
+[259/681] v.blk.21.attn_qkv.bias                        -    f32, copy 0.0 MB
+[260/681] v.blk.21.attn_proj.weight                     -    f32, (vision→Q8_0) quantizing to f16... 6.2 MB -> 3.1 MB
+[261/681] v.blk.21.attn_proj.bias                       -    f32, copy 0.0 MB
+[262/681] v.blk.21.ffn_fc1.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[263/681] v.blk.21.ffn_fc1.bias                         -    f32, copy 0.0 MB
+[264/681] v.blk.21.ffn_fc2.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[265/681] v.blk.21.ffn_fc2.bias                         -    f32, copy 0.0 MB
+[266/681] v.blk.22.norm1.weight                         -    f32, copy 0.0 MB
+[267/681] v.blk.22.norm1.bias                           -    f32, copy 0.0 MB
+[268/681] v.blk.22.norm2.weight                         -    f32, copy 0.0 MB
+[269/681] v.blk.22.norm2.bias                           -    f32, copy 0.0 MB
+[270/681] v.blk.22.attn_qkv.weight                      -    f32, (vision→Q8_0) quantizing to f16... 18.8 MB -> 9.4 MB
+[271/681] v.blk.22.attn_qkv.bias                        -    f32, copy 0.0 MB
+[272/681] v.blk.22.attn_proj.weight                     -    f32, (vision→Q8_0) quantizing to f16... 6.2 MB -> 3.1 MB
+[273/681] v.blk.22.attn_proj.bias                       -    f32, copy 0.0 MB
+[274/681] v.blk.22.ffn_fc1.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[275/681] v.blk.22.ffn_fc1.bias                         -    f32, copy 0.0 MB
+[276/681] v.blk.22.ffn_fc2.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[277/681] v.blk.22.ffn_fc2.bias                         -    f32, copy 0.0 MB
+[278/681] v.blk.23.norm1.weight                         -    f32, copy 0.0 MB
+[279/681] v.blk.23.norm1.bias                           -    f32, copy 0.0 MB
+[280/681] v.blk.23.norm2.weight                         -    f32, copy 0.0 MB
+[281/681] v.blk.23.norm2.bias                           -    f32, copy 0.0 MB
+[282/681] v.blk.23.attn_qkv.weight                      -    f32, (vision→Q8_0) quantizing to f16... 18.8 MB -> 9.4 MB
+[283/681] v.blk.23.attn_qkv.bias                        -    f32, copy 0.0 MB
+[284/681] v.blk.23.attn_proj.weight                     -    f32, (vision→Q8_0) quantizing to f16... 6.2 MB -> 3.1 MB
+[285/681] v.blk.23.attn_proj.bias                       -    f32, copy 0.0 MB
+[286/681] v.blk.23.ffn_fc1.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[287/681] v.blk.23.ffn_fc1.bias                         -    f32, copy 0.0 MB
+[288/681] v.blk.23.ffn_fc2.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[289/681] v.blk.23.ffn_fc2.bias                         -    f32, copy 0.0 MB
+[290/681] v.blk.24.norm1.weight                         -    f32, copy 0.0 MB
+[291/681] v.blk.24.norm1.bias                           -    f32, copy 0.0 MB
+[292/681] v.blk.24.norm2.weight                         -    f32, copy 0.0 MB
+[293/681] v.blk.24.norm2.bias                           -    f32, copy 0.0 MB
+[294/681] v.blk.24.attn_qkv.weight                      -    f32, (vision→Q8_0) quantizing to f16... 18.8 MB -> 9.4 MB
+[295/681] v.blk.24.attn_qkv.bias                        -    f32, copy 0.0 MB
+[296/681] v.blk.24.attn_proj.weight                     -    f32, (vision→Q8_0) quantizing to f16... 6.2 MB -> 3.1 MB
+[297/681] v.blk.24.attn_proj.bias                       -    f32, copy 0.0 MB
+[298/681] v.blk.24.ffn_fc1.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[299/681] v.blk.24.ffn_fc1.bias                         -    f32, copy 0.0 MB
+[300/681] v.blk.24.ffn_fc2.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[301/681] v.blk.24.ffn_fc2.bias                         -    f32, copy 0.0 MB
+[302/681] v.blk.25.norm1.weight                         -    f32, copy 0.0 MB
+[303/681] v.blk.25.norm1.bias                           -    f32, copy 0.0 MB
+[304/681] v.blk.25.norm2.weight                         -    f32, copy 0.0 MB
+[305/681] v.blk.25.norm2.bias                           -    f32, copy 0.0 MB
+[306/681] v.blk.25.attn_qkv.weight                      -    f32, (vision→Q8_0) quantizing to f16... 18.8 MB -> 9.4 MB
+[307/681] v.blk.25.attn_qkv.bias                        -    f32, copy 0.0 MB
+[308/681] v.blk.25.attn_proj.weight                     -    f32, (vision→Q8_0) quantizing to f16... 6.2 MB -> 3.1 MB
+[309/681] v.blk.25.attn_proj.bias                       -    f32, copy 0.0 MB
+[310/681] v.blk.25.ffn_fc1.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[311/681] v.blk.25.ffn_fc1.bias                         -    f32, copy 0.0 MB
+[312/681] v.blk.25.ffn_fc2.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[313/681] v.blk.25.ffn_fc2.bias                         -    f32, copy 0.0 MB
+[314/681] v.blk.26.norm1.weight                         -    f32, copy 0.0 MB
+[315/681] v.blk.26.norm1.bias                           -    f32, copy 0.0 MB
+[316/681] v.blk.26.norm2.weight                         -    f32, copy 0.0 MB
+[317/681] v.blk.26.norm2.bias                           -    f32, copy 0.0 MB
+[318/681] v.blk.26.attn_qkv.weight                      -    f32, (vision→Q8_0) quantizing to f16... 18.8 MB -> 9.4 MB
+[319/681] v.blk.26.attn_qkv.bias                        -    f32, copy 0.0 MB
+[320/681] v.blk.26.attn_proj.weight                     -    f32, (vision→Q8_0) quantizing to f16... 6.2 MB -> 3.1 MB
+[321/681] v.blk.26.attn_proj.bias                       -    f32, copy 0.0 MB
+[322/681] v.blk.26.ffn_fc1.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[323/681] v.blk.26.ffn_fc1.bias                         -    f32, copy 0.0 MB
+[324/681] v.blk.26.ffn_fc2.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[325/681] v.blk.26.ffn_fc2.bias                         -    f32, copy 0.0 MB
+[326/681] v.blk.27.norm1.weight                         -    f32, copy 0.0 MB
+[327/681] v.blk.27.norm1.bias                           -    f32, copy 0.0 MB
+[328/681] v.blk.27.norm2.weight                         -    f32, copy 0.0 MB
+[329/681] v.blk.27.norm2.bias                           -    f32, copy 0.0 MB
+[330/681] v.blk.27.attn_qkv.weight                      -    f32, (vision→Q8_0) quantizing to f16... 18.8 MB -> 9.4 MB
+[331/681] v.blk.27.attn_qkv.bias                        -    f32, copy 0.0 MB
+[332/681] v.blk.27.attn_proj.weight                     -    f32, (vision→Q8_0) quantizing to f16... 6.2 MB -> 3.1 MB
+[333/681] v.blk.27.attn_proj.bias                       -    f32, copy 0.0 MB
+[334/681] v.blk.27.ffn_fc1.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[335/681] v.blk.27.ffn_fc1.bias                         -    f32, copy 0.0 MB
+[336/681] v.blk.27.ffn_fc2.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[337/681] v.blk.27.ffn_fc2.bias                         -    f32, copy 0.0 MB
+[338/681] v.blk.28.norm1.weight                         -    f32, copy 0.0 MB
+[339/681] v.blk.28.norm1.bias                           -    f32, copy 0.0 MB
+[340/681] v.blk.28.norm2.weight                         -    f32, copy 0.0 MB
+[341/681] v.blk.28.norm2.bias                           -    f32, copy 0.0 MB
+[342/681] v.blk.28.attn_qkv.weight                      -    f32, (vision→Q8_0) quantizing to f16... 18.8 MB -> 9.4 MB
+[343/681] v.blk.28.attn_qkv.bias                        -    f32, copy 0.0 MB
+[344/681] v.blk.28.attn_proj.weight                     -    f32, (vision→Q8_0) quantizing to f16... 6.2 MB -> 3.1 MB
+[345/681] v.blk.28.attn_proj.bias                       -    f32, copy 0.0 MB
+[346/681] v.blk.28.ffn_fc1.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[347/681] v.blk.28.ffn_fc1.bias                         -    f32, copy 0.0 MB
+[348/681] v.blk.28.ffn_fc2.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[349/681] v.blk.28.ffn_fc2.bias                         -    f32, copy 0.0 MB
+[350/681] v.blk.29.norm1.weight                         -    f32, copy 0.0 MB
+[351/681] v.blk.29.norm1.bias                           -    f32, copy 0.0 MB
+[352/681] v.blk.29.norm2.weight                         -    f32, copy 0.0 MB
+[353/681] v.blk.29.norm2.bias                           -    f32, copy 0.0 MB
+[354/681] v.blk.29.attn_qkv.weight                      -    f32, (vision→Q8_0) quantizing to f16... 18.8 MB -> 9.4 MB
+[355/681] v.blk.29.attn_qkv.bias                        -    f32, copy 0.0 MB
+[356/681] v.blk.29.attn_proj.weight                     -    f32, (vision→Q8_0) quantizing to f16... 6.2 MB -> 3.1 MB
+[357/681] v.blk.29.attn_proj.bias                       -    f32, copy 0.0 MB
+[358/681] v.blk.29.ffn_fc1.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[359/681] v.blk.29.ffn_fc1.bias                         -    f32, copy 0.0 MB
+[360/681] v.blk.29.ffn_fc2.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[361/681] v.blk.29.ffn_fc2.bias                         -    f32, copy 0.0 MB
+[362/681] v.blk.30.norm1.weight                         -    f32, copy 0.0 MB
+[363/681] v.blk.30.norm1.bias                           -    f32, copy 0.0 MB
+[364/681] v.blk.30.norm2.weight                         -    f32, copy 0.0 MB
+[365/681] v.blk.30.norm2.bias                           -    f32, copy 0.0 MB
+[366/681] v.blk.30.attn_qkv.weight                      -    f32, (vision→Q8_0) quantizing to f16... 18.8 MB -> 9.4 MB
+[367/681] v.blk.30.attn_qkv.bias                        -    f32, copy 0.0 MB
+[368/681] v.blk.30.attn_proj.weight                     -    f32, (vision→Q8_0) quantizing to f16... 6.2 MB -> 3.1 MB
+[369/681] v.blk.30.attn_proj.bias                       -    f32, copy 0.0 MB
+[370/681] v.blk.30.ffn_fc1.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[371/681] v.blk.30.ffn_fc1.bias                         -    f32, copy 0.0 MB
+[372/681] v.blk.30.ffn_fc2.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[373/681] v.blk.30.ffn_fc2.bias                         -    f32, copy 0.0 MB
+[374/681] v.blk.31.norm1.weight                         -    f32, copy 0.0 MB
+[375/681] v.blk.31.norm1.bias                           -    f32, copy 0.0 MB
+[376/681] v.blk.31.norm2.weight                         -    f32, copy 0.0 MB
+[377/681] v.blk.31.norm2.bias                           -    f32, copy 0.0 MB
+[378/681] v.blk.31.attn_qkv.weight                      -    f32, (vision→Q8_0) quantizing to f16... 18.8 MB -> 9.4 MB
+[379/681] v.blk.31.attn_qkv.bias                        -    f32, copy 0.0 MB
+[380/681] v.blk.31.attn_proj.weight                     -    f32, (vision→Q8_0) quantizing to f16... 6.2 MB -> 3.1 MB
+[381/681] v.blk.31.attn_proj.bias                       -    f32, copy 0.0 MB
+[382/681] v.blk.31.ffn_fc1.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[383/681] v.blk.31.ffn_fc1.bias                         -    f32, copy 0.0 MB
+[384/681] v.blk.31.ffn_fc2.weight                       -    f32, (vision→Q8_0) quantizing to f16... 25.0 MB -> 12.5 MB
+[385/681] v.blk.31.ffn_fc2.bias                         -    f32, copy 0.0 MB
+[386/681] v.merger.norm.weight                          -    f32, note: v.merger.norm.weight — copying as-is (host-side computation)
+[387/681] v.merger.norm.bias                            -    f32, note: v.merger.norm.bias — copying as-is (host-side computation)
+[388/681] v.merger.fc1.weight                           -    f32, note: v.merger.fc1.weight — copying as-is (host-side computation)
+[389/681] v.merger.fc1.bias                             -    f32, note: v.merger.fc1.bias — copying as-is (host-side computation)
+[390/681] v.merger.fc2.weight                           -    f32, note: v.merger.fc2.weight — copying as-is (host-side computation)
+[391/681] v.merger.fc2.bias                             -    f32, note: v.merger.fc2.bias — copying as-is (host-side computation)
+[392/681] l.embed_tokens.weight                         -    f32, quantizing to q8_0... 519.3 MB -> 137.9 MB
+[393/681] l.blk.0.attn_norm.weight                      -    f32, copy 0.0 MB
+[394/681] l.blk.0.ffn_norm.weight                       -    f32, copy 0.0 MB
+[395/681] l.blk.0.attn_q.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[396/681] l.blk.0.attn_q.bias                           -    f32, copy 0.0 MB
+[397/681] l.blk.0.attn_k.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[398/681] l.blk.0.attn_k.bias                           -    f32, copy 0.0 MB
+[399/681] l.blk.0.attn_v.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[400/681] l.blk.0.attn_v.bias                           -    f32, copy 0.0 MB
+[401/681] l.blk.0.attn_o.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[402/681] l.blk.0.ffn_gate.weight                       -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[403/681] l.blk.0.ffn_up.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[404/681] l.blk.0.ffn_down.weight                       -    f32, quantizing to q4_K... 16.6 MB -> 2.3 MB
+[405/681] l.blk.1.attn_norm.weight                      -    f32, copy 0.0 MB
+[406/681] l.blk.1.ffn_norm.weight                       -    f32, copy 0.0 MB
+[407/681] l.blk.1.attn_q.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[408/681] l.blk.1.attn_q.bias                           -    f32, copy 0.0 MB
+[409/681] l.blk.1.attn_k.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[410/681] l.blk.1.attn_k.bias                           -    f32, copy 0.0 MB
+[411/681] l.blk.1.attn_v.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[412/681] l.blk.1.attn_v.bias                           -    f32, copy 0.0 MB
+[413/681] l.blk.1.attn_o.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[414/681] l.blk.1.ffn_gate.weight                       -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[415/681] l.blk.1.ffn_up.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[416/681] l.blk.1.ffn_down.weight                       -    f32, quantizing to q4_K... 16.6 MB -> 2.3 MB
+[417/681] l.blk.2.attn_norm.weight                      -    f32, copy 0.0 MB
+[418/681] l.blk.2.ffn_norm.weight                       -    f32, copy 0.0 MB
+[419/681] l.blk.2.attn_q.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[420/681] l.blk.2.attn_q.bias                           -    f32, copy 0.0 MB
+[421/681] l.blk.2.attn_k.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[422/681] l.blk.2.attn_k.bias                           -    f32, copy 0.0 MB
+[423/681] l.blk.2.attn_v.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[424/681] l.blk.2.attn_v.bias                           -    f32, copy 0.0 MB
+[425/681] l.blk.2.attn_o.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[426/681] l.blk.2.ffn_gate.weight                       -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[427/681] l.blk.2.ffn_up.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[428/681] l.blk.2.ffn_down.weight                       -    f32, quantizing to q4_K... 16.6 MB -> 2.3 MB
+[429/681] l.blk.3.attn_norm.weight                      -    f32, copy 0.0 MB
+[430/681] l.blk.3.ffn_norm.weight                       -    f32, copy 0.0 MB
+[431/681] l.blk.3.attn_q.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[432/681] l.blk.3.attn_q.bias                           -    f32, copy 0.0 MB
+[433/681] l.blk.3.attn_k.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[434/681] l.blk.3.attn_k.bias                           -    f32, copy 0.0 MB
+[435/681] l.blk.3.attn_v.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[436/681] l.blk.3.attn_v.bias                           -    f32, copy 0.0 MB
+[437/681] l.blk.3.attn_o.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[438/681] l.blk.3.ffn_gate.weight                       -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[439/681] l.blk.3.ffn_up.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[440/681] l.blk.3.ffn_down.weight                       -    f32, quantizing to q4_K... 16.6 MB -> 2.3 MB
+[441/681] l.blk.4.attn_norm.weight                      -    f32, copy 0.0 MB
+[442/681] l.blk.4.ffn_norm.weight                       -    f32, copy 0.0 MB
+[443/681] l.blk.4.attn_q.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[444/681] l.blk.4.attn_q.bias                           -    f32, copy 0.0 MB
+[445/681] l.blk.4.attn_k.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[446/681] l.blk.4.attn_k.bias                           -    f32, copy 0.0 MB
+[447/681] l.blk.4.attn_v.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[448/681] l.blk.4.attn_v.bias                           -    f32, copy 0.0 MB
+[449/681] l.blk.4.attn_o.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[450/681] l.blk.4.ffn_gate.weight                       -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[451/681] l.blk.4.ffn_up.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[452/681] l.blk.4.ffn_down.weight                       -    f32, quantizing to q4_K... 16.6 MB -> 2.3 MB
+[453/681] l.blk.5.attn_norm.weight                      -    f32, copy 0.0 MB
+[454/681] l.blk.5.ffn_norm.weight                       -    f32, copy 0.0 MB
+[455/681] l.blk.5.attn_q.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[456/681] l.blk.5.attn_q.bias                           -    f32, copy 0.0 MB
+[457/681] l.blk.5.attn_k.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[458/681] l.blk.5.attn_k.bias                           -    f32, copy 0.0 MB
+[459/681] l.blk.5.attn_v.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[460/681] l.blk.5.attn_v.bias                           -    f32, copy 0.0 MB
+[461/681] l.blk.5.attn_o.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[462/681] l.blk.5.ffn_gate.weight                       -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[463/681] l.blk.5.ffn_up.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[464/681] l.blk.5.ffn_down.weight                       -    f32, quantizing to q4_K... 16.6 MB -> 2.3 MB
+[465/681] l.blk.6.attn_norm.weight                      -    f32, copy 0.0 MB
+[466/681] l.blk.6.ffn_norm.weight                       -    f32, copy 0.0 MB
+[467/681] l.blk.6.attn_q.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[468/681] l.blk.6.attn_q.bias                           -    f32, copy 0.0 MB
+[469/681] l.blk.6.attn_k.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[470/681] l.blk.6.attn_k.bias                           -    f32, copy 0.0 MB
+[471/681] l.blk.6.attn_v.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[472/681] l.blk.6.attn_v.bias                           -    f32, copy 0.0 MB
+[473/681] l.blk.6.attn_o.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[474/681] l.blk.6.ffn_gate.weight                       -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[475/681] l.blk.6.ffn_up.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[476/681] l.blk.6.ffn_down.weight                       -    f32, quantizing to q4_K... 16.6 MB -> 2.3 MB
+[477/681] l.blk.7.attn_norm.weight                      -    f32, copy 0.0 MB
+[478/681] l.blk.7.ffn_norm.weight                       -    f32, copy 0.0 MB
+[479/681] l.blk.7.attn_q.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[480/681] l.blk.7.attn_q.bias                           -    f32, copy 0.0 MB
+[481/681] l.blk.7.attn_k.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[482/681] l.blk.7.attn_k.bias                           -    f32, copy 0.0 MB
+[483/681] l.blk.7.attn_v.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[484/681] l.blk.7.attn_v.bias                           -    f32, copy 0.0 MB
+[485/681] l.blk.7.attn_o.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[486/681] l.blk.7.ffn_gate.weight                       -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[487/681] l.blk.7.ffn_up.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[488/681] l.blk.7.ffn_down.weight                       -    f32, quantizing to q4_K... 16.6 MB -> 2.3 MB
+[489/681] l.blk.8.attn_norm.weight                      -    f32, copy 0.0 MB
+[490/681] l.blk.8.ffn_norm.weight                       -    f32, copy 0.0 MB
+[491/681] l.blk.8.attn_q.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[492/681] l.blk.8.attn_q.bias                           -    f32, copy 0.0 MB
+[493/681] l.blk.8.attn_k.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[494/681] l.blk.8.attn_k.bias                           -    f32, copy 0.0 MB
+[495/681] l.blk.8.attn_v.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[496/681] l.blk.8.attn_v.bias                           -    f32, copy 0.0 MB
+[497/681] l.blk.8.attn_o.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[498/681] l.blk.8.ffn_gate.weight                       -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[499/681] l.blk.8.ffn_up.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[500/681] l.blk.8.ffn_down.weight                       -    f32, quantizing to q4_K... 16.6 MB -> 2.3 MB
+[501/681] l.blk.9.attn_norm.weight                      -    f32, copy 0.0 MB
+[502/681] l.blk.9.ffn_norm.weight                       -    f32, copy 0.0 MB
+[503/681] l.blk.9.attn_q.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[504/681] l.blk.9.attn_q.bias                           -    f32, copy 0.0 MB
+[505/681] l.blk.9.attn_k.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[506/681] l.blk.9.attn_k.bias                           -    f32, copy 0.0 MB
+[507/681] l.blk.9.attn_v.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[508/681] l.blk.9.attn_v.bias                           -    f32, copy 0.0 MB
+[509/681] l.blk.9.attn_o.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[510/681] l.blk.9.ffn_gate.weight                       -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[511/681] l.blk.9.ffn_up.weight                         -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[512/681] l.blk.9.ffn_down.weight                       -    f32, quantizing to q4_K... 16.6 MB -> 2.3 MB
+[513/681] l.blk.10.attn_norm.weight                     -    f32, copy 0.0 MB
+[514/681] l.blk.10.ffn_norm.weight                      -    f32, copy 0.0 MB
+[515/681] l.blk.10.attn_q.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[516/681] l.blk.10.attn_q.bias                          -    f32, copy 0.0 MB
+[517/681] l.blk.10.attn_k.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[518/681] l.blk.10.attn_k.bias                          -    f32, copy 0.0 MB
+[519/681] l.blk.10.attn_v.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[520/681] l.blk.10.attn_v.bias                          -    f32, copy 0.0 MB
+[521/681] l.blk.10.attn_o.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[522/681] l.blk.10.ffn_gate.weight                      -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[523/681] l.blk.10.ffn_up.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[524/681] l.blk.10.ffn_down.weight                      -    f32, quantizing to q4_K... 16.6 MB -> 2.3 MB
+[525/681] l.blk.11.attn_norm.weight                     -    f32, copy 0.0 MB
+[526/681] l.blk.11.ffn_norm.weight                      -    f32, copy 0.0 MB
+[527/681] l.blk.11.attn_q.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[528/681] l.blk.11.attn_q.bias                          -    f32, copy 0.0 MB
+[529/681] l.blk.11.attn_k.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[530/681] l.blk.11.attn_k.bias                          -    f32, copy 0.0 MB
+[531/681] l.blk.11.attn_v.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[532/681] l.blk.11.attn_v.bias                          -    f32, copy 0.0 MB
+[533/681] l.blk.11.attn_o.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[534/681] l.blk.11.ffn_gate.weight                      -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[535/681] l.blk.11.ffn_up.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[536/681] l.blk.11.ffn_down.weight                      -    f32, quantizing to q4_K... 16.6 MB -> 2.3 MB
+[537/681] l.blk.12.attn_norm.weight                     -    f32, copy 0.0 MB
+[538/681] l.blk.12.ffn_norm.weight                      -    f32, copy 0.0 MB
+[539/681] l.blk.12.attn_q.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[540/681] l.blk.12.attn_q.bias                          -    f32, copy 0.0 MB
+[541/681] l.blk.12.attn_k.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[542/681] l.blk.12.attn_k.bias                          -    f32, copy 0.0 MB
+[543/681] l.blk.12.attn_v.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[544/681] l.blk.12.attn_v.bias                          -    f32, copy 0.0 MB
+[545/681] l.blk.12.attn_o.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[546/681] l.blk.12.ffn_gate.weight                      -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[547/681] l.blk.12.ffn_up.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[548/681] l.blk.12.ffn_down.weight                      -    f32, quantizing to q4_K... 16.6 MB -> 2.3 MB
+[549/681] l.blk.13.attn_norm.weight                     -    f32, copy 0.0 MB
+[550/681] l.blk.13.ffn_norm.weight                      -    f32, copy 0.0 MB
+[551/681] l.blk.13.attn_q.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[552/681] l.blk.13.attn_q.bias                          -    f32, copy 0.0 MB
+[553/681] l.blk.13.attn_k.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[554/681] l.blk.13.attn_k.bias                          -    f32, copy 0.0 MB
+[555/681] l.blk.13.attn_v.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[556/681] l.blk.13.attn_v.bias                          -    f32, copy 0.0 MB
+[557/681] l.blk.13.attn_o.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[558/681] l.blk.13.ffn_gate.weight                      -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[559/681] l.blk.13.ffn_up.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[560/681] l.blk.13.ffn_down.weight                      -    f32, quantizing to q4_K... 16.6 MB -> 2.3 MB
+[561/681] l.blk.14.attn_norm.weight                     -    f32, copy 0.0 MB
+[562/681] l.blk.14.ffn_norm.weight                      -    f32, copy 0.0 MB
+[563/681] l.blk.14.attn_q.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[564/681] l.blk.14.attn_q.bias                          -    f32, copy 0.0 MB
+[565/681] l.blk.14.attn_k.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[566/681] l.blk.14.attn_k.bias                          -    f32, copy 0.0 MB
+[567/681] l.blk.14.attn_v.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[568/681] l.blk.14.attn_v.bias                          -    f32, copy 0.0 MB
+[569/681] l.blk.14.attn_o.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[570/681] l.blk.14.ffn_gate.weight                      -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[571/681] l.blk.14.ffn_up.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[572/681] l.blk.14.ffn_down.weight                      -    f32, quantizing to q4_K... 16.6 MB -> 2.3 MB
+[573/681] l.blk.15.attn_norm.weight                     -    f32, copy 0.0 MB
+[574/681] l.blk.15.ffn_norm.weight                      -    f32, copy 0.0 MB
+[575/681] l.blk.15.attn_q.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[576/681] l.blk.15.attn_q.bias                          -    f32, copy 0.0 MB
+[577/681] l.blk.15.attn_k.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[578/681] l.blk.15.attn_k.bias                          -    f32, copy 0.0 MB
+[579/681] l.blk.15.attn_v.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[580/681] l.blk.15.attn_v.bias                          -    f32, copy 0.0 MB
+[581/681] l.blk.15.attn_o.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[582/681] l.blk.15.ffn_gate.weight                      -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[583/681] l.blk.15.ffn_up.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[584/681] l.blk.15.ffn_down.weight                      -    f32, quantizing to q4_K... 16.6 MB -> 2.3 MB
+[585/681] l.blk.16.attn_norm.weight                     -    f32, copy 0.0 MB
+[586/681] l.blk.16.ffn_norm.weight                      -    f32, copy 0.0 MB
+[587/681] l.blk.16.attn_q.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[588/681] l.blk.16.attn_q.bias                          -    f32, copy 0.0 MB
+[589/681] l.blk.16.attn_k.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[590/681] l.blk.16.attn_k.bias                          -    f32, copy 0.0 MB
+[591/681] l.blk.16.attn_v.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[592/681] l.blk.16.attn_v.bias                          -    f32, copy 0.0 MB
+[593/681] l.blk.16.attn_o.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[594/681] l.blk.16.ffn_gate.weight                      -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[595/681] l.blk.16.ffn_up.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[596/681] l.blk.16.ffn_down.weight                      -    f32, quantizing to q4_K... 16.6 MB -> 2.3 MB
+[597/681] l.blk.17.attn_norm.weight                     -    f32, copy 0.0 MB
+[598/681] l.blk.17.ffn_norm.weight                      -    f32, copy 0.0 MB
+[599/681] l.blk.17.attn_q.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[600/681] l.blk.17.attn_q.bias                          -    f32, copy 0.0 MB
+[601/681] l.blk.17.attn_k.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[602/681] l.blk.17.attn_k.bias                          -    f32, copy 0.0 MB
+[603/681] l.blk.17.attn_v.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[604/681] l.blk.17.attn_v.bias                          -    f32, copy 0.0 MB
+[605/681] l.blk.17.attn_o.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[606/681] l.blk.17.ffn_gate.weight                      -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[607/681] l.blk.17.ffn_up.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[608/681] l.blk.17.ffn_down.weight                      -    f32, quantizing to q4_K... 16.6 MB -> 2.3 MB
+[609/681] l.blk.18.attn_norm.weight                     -    f32, copy 0.0 MB
+[610/681] l.blk.18.ffn_norm.weight                      -    f32, copy 0.0 MB
+[611/681] l.blk.18.attn_q.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[612/681] l.blk.18.attn_q.bias                          -    f32, copy 0.0 MB
+[613/681] l.blk.18.attn_k.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[614/681] l.blk.18.attn_k.bias                          -    f32, copy 0.0 MB
+[615/681] l.blk.18.attn_v.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[616/681] l.blk.18.attn_v.bias                          -    f32, copy 0.0 MB
+[617/681] l.blk.18.attn_o.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[618/681] l.blk.18.ffn_gate.weight                      -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[619/681] l.blk.18.ffn_up.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[620/681] l.blk.18.ffn_down.weight                      -    f32, quantizing to q4_K... 16.6 MB -> 2.3 MB
+[621/681] l.blk.19.attn_norm.weight                     -    f32, copy 0.0 MB
+[622/681] l.blk.19.ffn_norm.weight                      -    f32, copy 0.0 MB
+[623/681] l.blk.19.attn_q.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[624/681] l.blk.19.attn_q.bias                          -    f32, copy 0.0 MB
+[625/681] l.blk.19.attn_k.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[626/681] l.blk.19.attn_k.bias                          -    f32, copy 0.0 MB
+[627/681] l.blk.19.attn_v.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[628/681] l.blk.19.attn_v.bias                          -    f32, copy 0.0 MB
+[629/681] l.blk.19.attn_o.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[630/681] l.blk.19.ffn_gate.weight                      -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[631/681] l.blk.19.ffn_up.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[632/681] l.blk.19.ffn_down.weight                      -    f32, quantizing to q4_K... 16.6 MB -> 2.3 MB
+[633/681] l.blk.20.attn_norm.weight                     -    f32, copy 0.0 MB
+[634/681] l.blk.20.ffn_norm.weight                      -    f32, copy 0.0 MB
+[635/681] l.blk.20.attn_q.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[636/681] l.blk.20.attn_q.bias                          -    f32, copy 0.0 MB
+[637/681] l.blk.20.attn_k.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[638/681] l.blk.20.attn_k.bias                          -    f32, copy 0.0 MB
+[639/681] l.blk.20.attn_v.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[640/681] l.blk.20.attn_v.bias                          -    f32, copy 0.0 MB
+[641/681] l.blk.20.attn_o.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[642/681] l.blk.20.ffn_gate.weight                      -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[643/681] l.blk.20.ffn_up.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[644/681] l.blk.20.ffn_down.weight                      -    f32, quantizing to q4_K... 16.6 MB -> 2.3 MB
+[645/681] l.blk.21.attn_norm.weight                     -    f32, copy 0.0 MB
+[646/681] l.blk.21.ffn_norm.weight                      -    f32, copy 0.0 MB
+[647/681] l.blk.21.attn_q.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[648/681] l.blk.21.attn_q.bias                          -    f32, copy 0.0 MB
+[649/681] l.blk.21.attn_k.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[650/681] l.blk.21.attn_k.bias                          -    f32, copy 0.0 MB
+[651/681] l.blk.21.attn_v.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[652/681] l.blk.21.attn_v.bias                          -    f32, copy 0.0 MB
+[653/681] l.blk.21.attn_o.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[654/681] l.blk.21.ffn_gate.weight                      -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[655/681] l.blk.21.ffn_up.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[656/681] l.blk.21.ffn_down.weight                      -    f32, quantizing to q4_K... 16.6 MB -> 2.3 MB
+[657/681] l.blk.22.attn_norm.weight                     -    f32, copy 0.0 MB
+[658/681] l.blk.22.ffn_norm.weight                      -    f32, copy 0.0 MB
+[659/681] l.blk.22.attn_q.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[660/681] l.blk.22.attn_q.bias                          -    f32, copy 0.0 MB
+[661/681] l.blk.22.attn_k.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[662/681] l.blk.22.attn_k.bias                          -    f32, copy 0.0 MB
+[663/681] l.blk.22.attn_v.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[664/681] l.blk.22.attn_v.bias                          -    f32, copy 0.0 MB
+[665/681] l.blk.22.attn_o.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[666/681] l.blk.22.ffn_gate.weight                      -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[667/681] l.blk.22.ffn_up.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[668/681] l.blk.22.ffn_down.weight                      -    f32, quantizing to q4_K... 16.6 MB -> 2.3 MB
+[669/681] l.blk.23.attn_norm.weight                     -    f32, copy 0.0 MB
+[670/681] l.blk.23.ffn_norm.weight                      -    f32, copy 0.0 MB
+[671/681] l.blk.23.attn_q.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[672/681] l.blk.23.attn_q.bias                          -    f32, copy 0.0 MB
+[673/681] l.blk.23.attn_k.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[674/681] l.blk.23.attn_k.bias                          -    f32, copy 0.0 MB
+[675/681] l.blk.23.attn_v.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB
+[676/681] l.blk.23.attn_v.bias                          -    f32, copy 0.0 MB
+[677/681] l.blk.23.attn_o.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB
+[678/681] l.blk.23.ffn_gate.weight                      -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[679/681] l.blk.23.ffn_up.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB
+[680/681] l.blk.23.ffn_down.weight                      -    f32, quantizing to q4_K... 16.6 MB -> 2.3 MB
+[681/681] l.output_norm.weight                          -    f32, copy 0.0 MB
+
+297 quantized, 384 kept
+4410 MB -> 1655 MB (2.7x compression)
