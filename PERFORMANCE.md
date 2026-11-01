@@ -1,16 +1,21 @@
 ## 1 November 2026 — MI-GAN256 Metal vs CPU on Apple M1 (contended)
 
-[Receipts](tests/results/migan/metal-m1/). Warm median per 256 tile,
-`subtitle_bar` fixture, CPU/F32 at 4 threads, machine shared (load 5–11):
+[Receipts](tests/results/migan/metal-m1/). Warm median per 256 tile over the
+eight frozen fixtures, CPU at 4 threads, machine shared (load 6–27):
 
-| Path | ms | Parity vs CPU/F32 |
+| Path | ms/tile | Parity |
 | --- | ---: | --- |
-| CPU/F32 reviewed graph | 511.0 | reference |
-| Metal F32 strict (default GPU profile) | 309.3 | 237/237 strict stages; output max 1.49e-6 |
-| Metal `FAST_MATMUL` | 179.3 | 187 strict failures; output max 1.93e-3 |
+| CPU/F32 reviewed graph (same runs) | 470–730 | reference |
+| Metal F32 default | 348 | 0/1896 strict failures |
+| Metal F32 `PAD_K` | 284 | 0/1896 strict failures |
+| Metal F32, five-engines graph forms | 370 | 0/1896 |
+| Delivery-5 `test-migan-graph` Metal strict (ordinary call) | ~815 | exact |
+| Metal F16 / Q8_0 / Q4_K | 277 / 409 / 580 | owner bars: pass / pass / fail |
+| Metal Q8_0 / Q4_K `FAST_MATMUL` | 255 / 251 | pass / fail |
 
-Diagnostic, single fixture; 1080p throughput, quantized containers and the
-delivery-5 optimized CPU graph were not measured (GPU lock unavailable).
+1080p synthetic subtitle frames, Metal F32 batch 1: 14 tiles 10.7 s, 20 tiles
+11.9 s; CPU/F32 in the same processes 17–60 s. Hosted x86 4 vCPU: CPU/F32
+1080p 0.83 tiles/s; delivery-5 CPU kernels 630 ms/tile. Diagnostic only.
 
 ## 31 October 2026 — Native Marker-style CPU document conversion
 

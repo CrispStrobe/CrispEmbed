@@ -14,10 +14,11 @@ PSNR 50 dB). Receipts: [tests/results/migan/metal-m1/](../tests/results/migan/me
 | --- | --- | --- |
 | `CRISPEMBED_MIGAN` | off | Required for any MI-GAN load/run (unchanged). |
 | `CRISPEMBED_MIGAN_GPU` | see [decision](#default-decision) | GPU through `crispasr_init_gpu_backend()` (`--gpu-backend` honoured). No GPU device, or an op the device rejects, reloads on the reviewed CPU backend with a stderr note. `=0` forces CPU. |
-| `CRISPEMBED_MIGAN_BATCH` | GPU 4, CPU 1 | Tiles of one band row per graph execution (1..16). |
+| `CRISPEMBED_MIGAN_BATCH` | 1 | Tiles of one band row per graph execution (1..16); 4 measured slower on the M1. |
 | `CRISPEMBED_MIGAN_QUANT` | off | Admits `migan-pointwise-v1` F16/Q8_0/Q4_K containers. |
 | `CRISPEMBED_MIGAN_GPU_PAD_K` | see decision | F32 pointwise via zero-padded contraction (below). |
-| `CRISPEMBED_MIGAN_FAST_MATMUL` | off | Drops the `GGML_PREC_F32` hint (Metal half-tile `mul_mm`). Diagnostic. |
+| `CRISPEMBED_MIGAN_FAST_MATMUL` | off | Drops the `GGML_PREC_F32` hint (Metal half-tile `mul_mm`). Fails strict F32 budgets; improves Q8_0 on Metal. |
+| `CRISPEMBED_MIGAN_DEQUANT_WEIGHTS` | off | F32 copies of quantized pointwise kernels at load (weight-only error). |
 | `CRISPEMBED_MIGAN_GPU_SWAP_POINTWISE` | off | Weight-first F32 pointwise (A/B only). |
 | `CRISPEMBED_MIGAN_GPU_TRANSPOSE_POINTWISE`, `CRISPEMBED_MIGAN_GPU_ROLL_PAD` | off | Re-implementation of the `feat/issue71-five-engines-graphs` (06d75fb8) persistent-graph forms, for the A/B in this document. |
 | `CRISPEMBED_MIGAN_GPU_PAD_REWRITE` | off | Force the pad rewrite even where `PAD` supports left padding. |
@@ -97,22 +98,96 @@ the strict profile mainly to the F32 `mul_mv_ext` pointwise matmuls (65,536 and
 16,384 pixel rows) and the separate leaky-ReLU/scale/clamp/add passes. `PAD_K`
 targets the former; its A/B is queued (below).
 
-### Pending measurements (queued behind the shared GPU lock)
+### Owner acceptance (docs/precision-acceptance.md on feat/teleocr)
 
-The following were prepared but had not acquired `m1-gpu-lock.sh` after more
-than seven hours of queueing behind other agents' jobs, so no result is claimed:
-`PAD_K`, the five-engines graph forms (`TRANSPOSE_POINTWISE`+`ROLL_PAD`), F16/
-Q8_0/Q4_K on CPU and Metal (strict gates, image gates, output cosine vs F32),
-1920x1080 synthetic subtitle frames (warm frame time, tiles/s, batch 1 vs 4),
-the remaining seven frozen fixtures, and delivery-5's `test-migan-graph`
-(CPU with/without `CRISPEMBED_MIGAN_CPU_KERNELS`, Metal strict/fast) on this M1.
+Cosine of the decoded output vs the **original PyTorch** generated image and
+masked region, minimum over the eight frozen fixtures (centered RGB8). Strict
+stage budgets are diagnostics only. [Aggregate](../tests/results/migan/metal-m1/m1-acceptance-report.json),
+per-fixture [summaries](../tests/results/migan/metal-m1/stage-logs/).
+
+| Variant | Device | Gen. cos (min) | Masked cos (min) | Bar | Verdict | Min masked PSNR vs original | Known-pixel errors | Worst stage row cos | Strict stage fails | Warm ms/tile |
+| --- | --- | ---: | ---: | ---: | --- | ---: | ---: | ---: | ---: | ---: |
+| F32 | Metal | 0.999999991 | 0.999999991 | 0.99 | pass | 89.9 dB (5/8 exact) | 0 | 1.0000 | 0/1896 | 328 |
+| F16 | Metal | 0.999995347 | 0.999995347 | 0.98 | pass | 61.8 dB | 0 | 0.9932 | 1270/1896 | 277 |
+| F16 | CPU | 0.999995348 | 0.999995348 | 0.98 | pass | 61.8 dB | 0 | 0.9932 | 1270/1896 | 804 |
+| Q8_0 | Metal | 0.997253133 | 0.997253133 | 0.97 | pass | 34.9 dB | 0 | -0.887 | 1808/1896 | 409 |
+| Q8_0 `FAST_MATMUL` | Metal | 0.999213359 | 0.999213359 | 0.97 | pass | 40.3 dB | 0 | -0.890 | 1808/1896 | 255 |
+| Q8_0 | CPU | 0.997272527 | 0.997272527 | 0.97 | pass | 35.0 dB | 0 | -0.887 | 1808/1896 | 584 |
+| Q4_K | Metal | 0.939663278 | 0.809899884 | 0.94 | **fail** | 15.1 dB | 0 | -0.993 | 1808/1896 | 580 |
+| Q4_K `FAST_MATMUL` | Metal | 0.944052855 | 0.810345668 | 0.94 | **fail** (masked) | 15.1 dB | 0 | -0.974 | 1808/1896 | 251 |
+| Q4_K | CPU | 0.939494270 | 0.804902089 | 0.94 | **fail** | 15.0 dB | 0 | -0.996 | 1808/1896 | 652 |
+
+The CPU column's F32 reference time in the same runs was 470–630 ms (contended).
+Negative worst row cosines are near-zero rows of intermediate stages; the
+global stage cosines stay >= 0.93. Q4_K's worst fixtures are `full` (generated
+0.9395) and `center` (masked 0.805, the 80x80 hole the model actually invents).
+
+Runtime as the limiting factor (owner hypothesis): with `GGML_PREC_F32`,
+ggml-metal quantizes Q8_0/Q4_K **activations** to Q8 to mirror the CPU dot
+products; the default half-tile `mul_mm` keeps F16 activations and is both more
+accurate (Q8_0 generated cosine 0.99725 → 0.99921) and faster (409 → 255 ms).
+CPU quantized matmul always quantizes activations (`vec_dot_type`).
+`CRISPEMBED_MIGAN_DEQUANT_WEIGHTS=1` (F32 copies at load) isolates the
+weight-only error, and `CRISPEMBED_QUANTIZE_MIGAN_Q8=prefixes` keeps sensitive
+pointwise layers at Q8_0 in a Q4_K container; Q4_K variants keeping
+`synthesis.`, `encoder.`, the 128/256-resolution blocks, or the <=64 blocks at
+Q8_0 (5.7–8.1 MB) were queued at the end of this session (see PLAN). Q4_K
+remains rejected until one passes both cosines; its strict and acceptance
+failures stay on record.
+
+Q4_K bytes differ across platforms: the hosted x86 lane produced
+`d468f0fe…6551072` vs this M1's `7f9402c3…68ca5c` (SIMD quantization); F16 and
+Q8_0 are byte-identical across both.
+
+### Hosted CPU lane ([run 41327638027](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41327638027), x86_64, 4 vCPU)
+
+[Receipts](../tests/results/migan/metal-m1/hosted-cpu-41327638027/). Against
+CPU/F32 on the eight fixtures: F16 min output cosine 0.99999939, Q8_0
+0.99728, Q4_K 0.93925 (same ordering as the M1). Known pixels exact in all.
+1080p CPU frames (warm, 4 threads): `subtitle2` (14 tiles) 17.0 s, `bar`
+(20 tiles) 24.2 s, i.e. ~0.83 tiles/s for F32 and Q8_0/Q4_K alike; F16 is
+slower (0.71 tiles/s, F16 activation conversion). Delivery 5 `test-migan-graph`
+on the same runner: eager 1,368 ms, persistent graph 1,085 ms, persistent graph
++ `CRISPEMBED_MIGAN_CPU_KERNELS` **630 ms**, all exact vs eager (max abs 0).
+
+### Metal variants and the five-engines graph (M1, eight fixtures, 237 stages each)
+
+| Metal F32 variant | Strict fails | Min masked PSNR vs original | Warm ms/tile (median) |
+| --- | ---: | ---: | ---: |
+| default (im2col, `PREC_F32`) | 0/1896 | 89.9 dB | 348 |
+| `PAD_K` | 0/1896 | 85.6 dB | **284** |
+| five-engines forms (transpose + pad/roll) | 0/1896 | 89.9 dB | 370 |
+| `FAST_MATMUL` | 1539/1896 | 60.7 dB (2 fixtures fail image gate) | 458 (contended) |
+
+Delivery 5's own `test-migan-graph --backend metal` (strict) on the same M1:
+exact (max abs 1.85e-6, RGB exact) at **~815 ms** per ordinary image call,
+`--fast` ~430 ms; its CPU eager arm in the same process ~1,000 ms. Its Metal
+graph is therefore exact but slower than this branch's Metal path (284–348 ms
+generator, a few ms of pre/post-processing excluded), and its pointwise form is
+slower than the im2col form here when measured in this harness (370 vs 348 ms).
+
+### 1080p synthetic subtitle frames on Metal (F32, warm median, contended)
+
+| Batch / variant | `subtitle2` (14 tiles) | `bar` (20 tiles) | Pixel parity vs CPU/F32 |
+| --- | ---: | ---: | --- |
+| 1, default | 10.7 s (1.31 tiles/s) | 11.9 s (1.68 tiles/s) | max 1 level, PSNR 95.7 dB, known exact |
+| 4, default | 12.5 s | 20.0 s | same |
+| 1, `PAD_K` | 11.0 s | 12.9 s | max 1, PSNR 89.7/87.9 dB |
+| 4, `PAD_K` | — | 14.0 s | same |
+
+The same-process CPU/F32 frames took 17–60 s (machine load 6–27), so the frame
+speedup is 1.6–4.7x depending on load. Batching four tiles did not help on the
+M1 and is now opt-in (`CRISPEMBED_MIGAN_BATCH`, default 1). Frame tiles cost
+~0.6–0.8 s each versus ~0.3 s for an isolated generator call under the same
+conditions; that gap (load or per-tile overhead) is unattributed.
 
 ## Default decision
 
-**GPU stays default-off** (`core_env::on("CRISPEMBED_MIGAN_GPU")`). One frozen
-fixture is exact and ~1.65x faster than the 4-thread CPU graph, but the full
-eight-fixture panel, 1080p frame throughput and the comparison with
-delivery-5's optimized CPU graph (reported 273.6 ms/256 tile on 8 EPYC threads)
-are not yet measured on this machine. Flip only via `core_env::explicitly_off`
-after those pass. CUDA and Vulkan are untested; the code path is backend-generic
-(`crispasr_init_gpu_backend()`, per-node support check, CPU reload fallback).
+**GPU stays default-off** (`core_env::on("CRISPEMBED_MIGAN_GPU")`). Metal F32
+passes the image gates and the owner F32 bar on all eight fixtures and is
+1.8–2.3x faster per tile than this M1's CPU/F32 graph, but delivery 5's
+optimized CPU graph (630 ms on 4 x86 vCPU, 274 ms on 8 EPYC threads) has not
+been run on the M1's CPU, and the branches must be reconciled first. `PAD_K`
+is the fastest exact Metal form (284 ms) and the recommended GPU profile when
+the default flips. F16 and Q8_0 pass the owner bars on CPU and Metal; Q4_K
+fails. CUDA and Vulkan are untested.
