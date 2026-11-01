@@ -169,7 +169,11 @@ void validate_tensors(oxr_ocr_context & c, const std::string & recipe) {
             if (t->ne[i] != n) throw std::runtime_error("OXR incompatible tensor shape: " + name);
         }
         const ggml_type expected_type = sensitive || recipe == "f32" ? GGML_TYPE_F32 : GGML_TYPE_F16;
-        if (t->type != expected_type) throw std::runtime_error("OXR incompatible tensor precision: " + name);
+        // crispembed-quantize changes only these attention/MLP matrices (all used
+        // through ggml_mul_mat); sensitive tensors must keep their recipe type.
+        const bool quantized_matrix = !sensitive && (ggml_is_quantized(t->type) || t->type == GGML_TYPE_F16);
+        if (t->type != expected_type && !quantized_matrix)
+            throw std::runtime_error("OXR incompatible tensor precision: " + name);
         ++count;
     };
     check("llm.model.embed_tokens.weight", { 151936, 1024 }, true);

@@ -13,11 +13,12 @@
 set -uo pipefail
 TOP=${HEAVY_OUT:?}
 S=${HEAVY_SCRATCH:?}
-# Optional first argument dtype=f16 qualifies the native F16 GGUF; the original
+# Optional first argument dtype=f16|q8_0|q4_k qualifies that native GGUF (quantized
+# variants via crispembed-quantize from the F32 conversion); the original
 # Python reference stays F32 either way.
 DTYPE=f32
 if [[ "${1:-}" == dtype=* ]]; then DTYPE=${1#dtype=}; shift; fi
-[[ "$DTYPE" == f32 || "$DTYPE" == f16 ]] || { echo "unsupported dtype $DTYPE"; exit 2; }
+case "$DTYPE" in f32 | f16 | q8_0 | q4_k) ;; *) echo "unsupported dtype $DTYPE"; exit 2 ;; esac
 CASES=${*:-"formula table receipt german japanese"}
 export CRISPEMBED_OXR=1 CRISPEMBED_ACCEPT_OXR_LICENSE=1 CRISPEMBED_OXR_FORCE_CPU=1 \
     OMP_NUM_THREADS=4 MKL_NUM_THREADS=4 OPENBLAS_NUM_THREADS=4
@@ -30,7 +31,7 @@ declare -A PROMPT=([formula]="Recognize the formula of the image into KaTex form
 { echo "source=$(git rev-parse HEAD)"; git submodule status; } > "$TOP/provenance.txt"
 echo "::group::build"
 cmake -S . -B "$S/build" -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF >/dev/null &&
-    cmake --build "$S/build" --target test-oxr-run test-oxr-diff test-oxr-profile test-oxr-graph -j4 > "$S/build.log" 2>&1 ||
+    cmake --build "$S/build" --target test-oxr-run test-oxr-diff test-oxr-profile test-oxr-graph crispembed-quantize -j4 > "$S/build.log" 2>&1 ||
     { tail -60 "$S/build.log"; exit 4; }
 "$S/build/test-oxr-profile" > "$TOP/profile.txt" 2>&1; echo "profile=$([ $? = 0 ] && echo pass || echo fail)" >> "$TOP/results.txt"
 "$S/build/test-oxr-graph" > "$TOP/graph.txt" 2>&1; echo "graph=$([ $? = 0 ] && echo pass || echo fail)" >> "$TOP/results.txt"
@@ -46,9 +47,14 @@ from huggingface_hub import snapshot_download
 m = json.load(open("models/oxr-source.json"))
 snapshot_download(m["model_id"], revision=m["revision"], allow_patterns=list(m["files"]), local_dir=sys.argv[1])
 PY
-python models/convert-oxr-to-gguf.py --model "$S/checkpoint" --dtype "$DTYPE" --output "$S/oxr-$DTYPE.gguf" > "$S/convert.log" 2>&1 ||
+SRC_DTYPE=$DTYPE; [[ "$DTYPE" == q* ]] && SRC_DTYPE=f32
+python models/convert-oxr-to-gguf.py --model "$S/checkpoint" --dtype "$SRC_DTYPE" --output "$S/oxr-$SRC_DTYPE.gguf" > "$S/convert.log" 2>&1 ||
     { tail -30 "$S/convert.log"; exit 5; }
-cp "$S/oxr-$DTYPE.gguf.json" "$TOP/conversion.json" 2>/dev/null
+cp "$S/oxr-$SRC_DTYPE.gguf.json" "$TOP/conversion.json" 2>/dev/null
+if [[ "$DTYPE" != "$SRC_DTYPE" ]]; then
+    QUANT=$(find "$S/build" -type f -name crispembed-quantize -perm -u+x | head -1)
+    "$QUANT" "$S/oxr-f32.gguf" "$S/oxr-$DTYPE.gguf" "$DTYPE" > "$TOP/quantize.log" 2>&1 || { tail -30 "$TOP/quantize.log"; exit 5; }
+fi
 sha256sum "$S/oxr-$DTYPE.gguf" > "$TOP/gguf-sha256.txt"
 echo "::endgroup::"
 

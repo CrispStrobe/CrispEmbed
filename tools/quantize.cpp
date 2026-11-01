@@ -261,6 +261,7 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
     const bool is_tesseract_lstm = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "tesseract_lstm";
     const bool is_internvl2 = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "internvl2";
     const bool is_teleocr = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "teleocr";
+    const bool is_oxr = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "oxr";
     const int family_key = gguf_find_key(ctx_in, "qwen2vl.model_family");
     const bool is_mineru25 =
         family_key >= 0 && std::string(gguf_get_val_str(ctx_in, family_key)) == "mineru2.5-pro-2604";
@@ -621,6 +622,18 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         bool src_ok = (type == GGML_TYPE_F32 || type == GGML_TYPE_F16 || ggml_is_quantized(type));
         bool quantize =
             (ggml_is_quantized(qtype) || qtype == GGML_TYPE_F16) && src_ok && (ggml_n_dims(t) >= 2) && !is_tiny_embd;
+        // OXR: only the attention/MLP matrices may change type; the loader
+        // (src/oxr_ocr.cpp validate_tensors) requires every other tensor
+        // (embeddings, lm_head, visual vocabulary/head, patch/position tables)
+        // to stay F32.
+        if (is_oxr && quantize) {
+            const bool vision_matrix =
+                sname.rfind("vit.encoder.layers.", 0) == 0 &&
+                (sname.find(".self_attn.") != std::string::npos || sname.find(".mlp.fc") != std::string::npos);
+            const bool llm_matrix =
+                sname.rfind("llm.model.layers.", 0) == 0 && (sname.find("_proj.weight") != std::string::npos);
+            if (!vision_matrix && !llm_matrix) quantize = false;
+        }
         const int64_t ncols = t->ne[0];
         ggml_type qtype_used = qtype;
 
@@ -644,7 +657,8 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         // quantizing it to Q4_K measurably hurt parity (HF-blueprint projector
         // cos 0.929 at Q4_K vs ~0.95 at Q8_0) for negligible size.
         bool is_vision_weight = sname.rfind("v.", 0) == 0 || sname.rfind("c.", 0) == 0 || sname.rfind("qe.", 0) == 0 ||
-                                sname.rfind("vis.", 0) == 0 || sname.rfind("proj.", 0) == 0;
+                                sname.rfind("vis.", 0) == 0 || sname.rfind("proj.", 0) == 0 ||
+                                (is_oxr && sname.rfind("vit.", 0) == 0);
         if (quantize && is_vision_weight && qtype != GGML_TYPE_Q8_0 && qtype != GGML_TYPE_F16 &&
             qtype != GGML_TYPE_Q6_K && qtype != GGML_TYPE_Q5_K) {
             qtype_used = GGML_TYPE_Q8_0;
