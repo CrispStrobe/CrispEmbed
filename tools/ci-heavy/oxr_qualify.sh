@@ -13,6 +13,11 @@
 set -uo pipefail
 TOP=${HEAVY_OUT:?}
 S=${HEAVY_SCRATCH:?}
+# Optional first argument dtype=f16 qualifies the native F16 GGUF; the original
+# Python reference stays F32 either way.
+DTYPE=f32
+if [[ "${1:-}" == dtype=* ]]; then DTYPE=${1#dtype=}; shift; fi
+[[ "$DTYPE" == f32 || "$DTYPE" == f16 ]] || { echo "unsupported dtype $DTYPE"; exit 2; }
 CASES=${*:-"formula table receipt german japanese"}
 export CRISPEMBED_OXR=1 CRISPEMBED_ACCEPT_OXR_LICENSE=1 CRISPEMBED_OXR_FORCE_CPU=1 \
     OMP_NUM_THREADS=4 MKL_NUM_THREADS=4 OPENBLAS_NUM_THREADS=4
@@ -41,10 +46,10 @@ from huggingface_hub import snapshot_download
 m = json.load(open("models/oxr-source.json"))
 snapshot_download(m["model_id"], revision=m["revision"], allow_patterns=list(m["files"]), local_dir=sys.argv[1])
 PY
-python models/convert-oxr-to-gguf.py --model "$S/checkpoint" --dtype f32 --output "$S/oxr-f32.gguf" > "$S/convert.log" 2>&1 ||
+python models/convert-oxr-to-gguf.py --model "$S/checkpoint" --dtype "$DTYPE" --output "$S/oxr-$DTYPE.gguf" > "$S/convert.log" 2>&1 ||
     { tail -30 "$S/convert.log"; exit 5; }
-cp "$S/oxr-f32.gguf.json" "$TOP/conversion.json" 2>/dev/null
-sha256sum "$S/oxr-f32.gguf" > "$TOP/gguf-sha256.txt"
+cp "$S/oxr-$DTYPE.gguf.json" "$TOP/conversion.json" 2>/dev/null
+sha256sum "$S/oxr-$DTYPE.gguf" > "$TOP/gguf-sha256.txt"
 echo "::endgroup::"
 
 for id in $CASES; do
@@ -63,7 +68,7 @@ for id in $CASES; do
     echo "::endgroup::"
     for arm in default dense; do
         [ $arm = dense ] && export CRISPEMBED_OXR_FLASH_ATTN=0 || unset CRISPEMBED_OXR_FLASH_ATTN
-        "$S/build/test-oxr-diff" --model "$S/oxr-f32.gguf" --reference "$S/$id-python.gguf" --image "$S/$id.png" \
+        "$S/build/test-oxr-diff" --model "$S/oxr-$DTYPE.gguf" --reference "$S/$id-python.gguf" --image "$S/$id.png" \
             --prompt "$P" --threads 4 --max-abs 0.002 --min-cos 0.99999 \
             > "$O/stages-$arm.json" 2> "$O/stages-$arm.stderr.log"
         note "stages-$arm" "$([ $? = 0 ] && echo pass || echo "fail($?)")"
@@ -72,7 +77,7 @@ for id in $CASES; do
     for arm in default reuse; do
         [ $arm = reuse ] && export CRISPEMBED_OXR_REUSE_DECODE_GRAPH=1 || unset CRISPEMBED_OXR_REUSE_DECODE_GRAPH
         python tools/oxr_validate.py compare --reference "$O/python.json" --native "$S/build/test-oxr-run" \
-            --gguf "$S/oxr-f32.gguf" --image "$S/$id.png" --max-slowdown 1.0 --output "$O/native-$arm.json" \
+            --gguf "$S/oxr-$DTYPE.gguf" --image "$S/$id.png" --max-slowdown 1.0 --output "$O/native-$arm.json" \
             > "$O/compare-$arm.log" 2>&1
         note "decode-$arm" "$([ $? = 0 ] && echo pass || echo "fail($?)")"
     done
@@ -81,7 +86,7 @@ for id in $CASES; do
     cat "$O/results.txt"
 done
 
-{ echo "### OXR-1.0 F32 CPU qualification ($(git rev-parse --short HEAD))"; echo '```'
+{ echo "### OXR-1.0 native $DTYPE CPU qualification ($(git rev-parse --short HEAD))"; echo '```'
   cat "$TOP/results.txt"; for id in $CASES; do echo "-- $id"; cat "$TOP/$id/results.txt" 2>/dev/null; done; echo '```'; } \
     > "$TOP/summary.md"
 ! grep -rqs '=fail' "$TOP"/results.txt "$TOP"/*/results.txt
