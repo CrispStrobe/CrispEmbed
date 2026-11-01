@@ -110,8 +110,19 @@ function cases (22 functions) in `tools/mineru_doc/fuzz_postprocess.py`;
 branches identical in blocks JSON, Markdown, document-model renders, every
 region request and every non-glyph crop hash
 ([receipt](../tests/results/mineru25/native-doc-synthetic-parity.json)).
-Model-backed protocol cases run in `tools/ci-heavy/mineru25_doc_parity.sh`
-(results in `tests/results/mineru25/native-doc-model-parity.json`).
+Model-backed (hosted run 41251475795, published F16 GGUF, CPython 3.12.15,
+x86 CPU, `max_new_tokens=2048`, image analysis on): all **8/8** protocol cases
+are byte-identical between `two_step_extract`+`to_markdown` and
+`native_two_step_extract` in blocks JSON and Markdown, with identical
+per-region prompts, crop sizes, token IDs, text and EOS (54 region requests,
+none capped); the recorded recognition also replays identically (8/8). The
+weight-free gates passed on the same host with Unicode tables regenerated for
+CPython 3.12. Route wall times are equal within noise (inference dominates).
+No protocol case contains a table with embedded images, so the token-glyph
+exception was not exercised by the model run
+([receipt](../tests/results/mineru25/native-doc-model-parity.json)).
+The gate stays default-off pending review; proposing default-on is now
+supported by this evidence, keeping the basic and Python routes.
 
 ```bash
 CRISPEMBED_MINERU25_PRO=1 CRISPEMBED_MINERU25_PRO_FULL_DOC=1 ./build/crispembed \

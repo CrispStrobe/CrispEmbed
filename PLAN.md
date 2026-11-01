@@ -166,9 +166,9 @@ Full native document route (`feat/mineru-native-doc`): C++ port of every
 mineru-vl-utils branch behind `CRISPEMBED_MINERU25_PRO_FULL_DOC` (default off),
 composed from the layout/router/Marker-document components with an exact
 upstream output profile. Weight-free parity is identical (see the guide).
-Open: model-backed protocol-case parity on the hosted lane
-`tools/ci-heavy/mineru25_doc_parity.sh`; propose default-on only after it is
-identical on all cases; token-glyph pixels in image-bearing tables and
+Model-backed parity on hosted run 41251475795: 8/8 protocol cases identical.
+Next: review and decide default-on (keep basic/Python routes); add an
+image-bearing-table fixture to exercise masking with the real model; token-glyph pixels in image-bearing tables and
 cross-page table merge remain documented exceptions.
 
 

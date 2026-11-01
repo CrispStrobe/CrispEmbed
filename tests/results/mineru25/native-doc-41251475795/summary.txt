@@ -1,0 +1,9 @@
+formula        identical  regions=2 capped=0 py=131.9s native=133.2s
+table          identical  regions=3 capped=0 py=145.8s native=146.1s
+receipt        identical  regions=8 capped=0 py=187.2s native=189.4s
+german         identical  regions=19 capped=0 py=360.5s native=358.7s
+japanese       identical  regions=4 capped=0 py=155.7s native=147.8s
+arabic         identical  regions=2 capped=0 py=133.2s native=134.2s
+layout-page    identical  regions=10 capped=0 py=199.5s native=198.5s
+layout-rot90   identical  regions=2 capped=0 py=273.4s native=277.4s
+8/8 identical
