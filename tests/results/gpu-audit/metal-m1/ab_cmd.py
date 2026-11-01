@@ -76,7 +76,21 @@ def main():
            "sha256": {"metal": hashlib.sha256(mo).hexdigest(), "cpu": hashlib.sha256(co).hexdigest()},
            "date": time.strftime("%Y-%m-%d")}
     pm, pc = parse_pnm(mo), parse_pnm(co)
-    if pm and pc:
+    if mo[:8] == b"\x89PNG\r\n\x1a\n" and co[:8] == b"\x89PNG\r\n\x1a\n":
+        import io
+        import numpy as np
+        from PIL import Image
+        a = np.asarray(Image.open(io.BytesIO(mo))).astype(np.int32)
+        b = np.asarray(Image.open(io.BytesIO(co))).astype(np.int32)
+        if a.shape != b.shape:
+            rec["image"] = {"shape_differs": [list(a.shape), list(b.shape)]}
+        else:
+            d = np.abs(a - b)
+            mse = float((d.astype(np.float64) ** 2).mean())
+            rec["image"] = {"shape": list(a.shape), "max_abs": int(d.max()), "mean_abs": float(d.mean()),
+                            "psnr_db": (99.0 if mse == 0 else 10 * math.log10(255 * 255 / mse)),
+                            "n_diff": int((d > 0).sum()), "pixels_identical": bool(mse == 0)}
+    elif pm and pc:
         if pm[:3] != pc[:3]:
             rec["image"] = {"shape_differs": [pm[:3], pc[:3]]}
         else:
@@ -88,7 +102,8 @@ def main():
     else:
         ms, cs = mo.decode("utf-8", "replace"), co.decode("utf-8", "replace")
         rec["stdout"] = {"metal": ms[:6000], "cpu": cs[:6000]}
-        rec["char_ratio"] = difflib.SequenceMatcher(None, ms, cs, autojunk=False).ratio()
+        if len(ms) + len(cs) < 200000:
+            rec["char_ratio"] = difflib.SequenceMatcher(None, ms, cs, autojunk=False).ratio()
     rec["stderr_tail"] = {k2: v[-2500:] for k2, v in errs.items()}
     json.dump(rec, open(a.out, "w"), indent=1, ensure_ascii=False)
     s = {"out": os.path.basename(a.out), "identical": rec["byte_identical"], "wall_s": walls}
