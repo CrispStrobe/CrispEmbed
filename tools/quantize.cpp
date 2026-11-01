@@ -214,6 +214,8 @@ static bool quantize_migan(const std::string & fname_inp, const std::string & fn
     gguf_set_val_u32(out, "general.file_type", qtype == GGML_TYPE_Q4_K ? 15u : (uint32_t)ftype);
     gguf_set_val_str(out, "migan.quantization.policy", "migan-pointwise-v1");
     gguf_set_val_str(out, "migan.quantization.source_gguf_sha256", source_sha.c_str());
+    if (const char * keep = getenv("CRISPEMBED_QUANTIZE_MIGAN_Q8"))
+        gguf_set_val_str(out, "migan.quantization.q8_0_prefixes", keep);
     std::map<std::string, int> counts;
     std::vector<float> dequant;
     for (int i = 0; i < n; ++i) {
@@ -225,6 +227,19 @@ static bool quantize_migan(const std::string & fname_inp, const std::string & fn
         ggml_type type = GGML_TYPE_F32;
         if (pointwise) {
             type = qtype;
+            // Optional sensitive-layer exceptions for sub-Q8 targets:
+            // CRISPEMBED_QUANTIZE_MIGAN_Q8=prefix[,prefix...] keeps matching
+            // pointwise kernels at Q8_0 (recorded in the container metadata).
+            if (const char * keep = getenv("CRISPEMBED_QUANTIZE_MIGAN_Q8")) {
+                std::string list(keep);
+                for (size_t at = 0; at <= list.size();) {
+                    const size_t end = std::min(list.find(',', at), list.size());
+                    const std::string prefix = list.substr(at, end - at);
+                    if (!prefix.empty() && sname.rfind(prefix, 0) == 0 && ggml_blck_size(qtype) > 32)
+                        type = GGML_TYPE_Q8_0;
+                    at = end + 1;
+                }
+            }
             if (src->ne[2] % ggml_blck_size(type) != 0) type = GGML_TYPE_Q8_0;
             if (src->ne[2] % ggml_blck_size(type) != 0) type = GGML_TYPE_F16;
         }

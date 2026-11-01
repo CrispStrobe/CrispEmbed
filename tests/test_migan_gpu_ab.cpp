@@ -236,6 +236,26 @@ int stages(int argc, char ** argv) {
     const image_stats generated =
         image_metrics(cand_gen.data(), ref_gen.data(), rgb.data(), full.data(), migan::mask_elements);
     print_image("cpu_f32_generated_full_frame", generated);
+    // Owner acceptance (docs/precision-acceptance.md): cosine vs the ORIGINAL
+    // generated image and masked region. Sibling "<case>-generated.raw" of the
+    // original composite, when present (original-review artifact PNG decoded).
+    double orig_generated_cos = -2, orig_masked_cos = have_original ? vs_original.cos_centered : -2;
+    if (have_original) {
+        std::string gen_path(argv[7]);
+        const std::string suffix = "-composited.raw";
+        std::vector<uint8_t> original_generated;
+        if (gen_path.size() > suffix.size() &&
+            gen_path.compare(gen_path.size() - suffix.size(), suffix.size(), suffix) == 0 &&
+            bytes((gen_path.substr(0, gen_path.size() - suffix.size()) + "-generated.raw").c_str(), original_generated,
+                  migan::rgb_elements)) {
+            const image_stats g = image_metrics(cand_gen.data(), original_generated.data(), rgb.data(), full.data(),
+                                                migan::mask_elements);
+            print_image("original_generated_full_frame", g);
+            orig_generated_cos = g.cos_centered;
+        }
+    }
+    std::printf("MIGAN_AB_ACCEPT {\"original_generated_cos\":%.9f,\"original_masked_cos\":%.9f}\n", orig_generated_cos,
+                orig_masked_cos);
     const stats out = compare(cand_raw.data(), ref_raw.data(), cand_raw.size(), 256);
 
     std::vector<double> ref_ms, cand_ms;

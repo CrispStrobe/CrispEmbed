@@ -52,6 +52,11 @@ struct context {
     std::map<const ggml_tensor *, ggml_tensor *> padded_k;
     ggml_context * padded_ctx = nullptr;
     ggml_backend_buffer_t padded_buf = nullptr;
+    // CRISPEMBED_MIGAN_DEQUANT_WEIGHTS: F32 copies of non-F32 pointwise kernels
+    // (weight-only quantization error; activations stay F32 in the matmul).
+    std::map<const ggml_tensor *, ggml_tensor *> dequant;
+    ggml_context * dequant_ctx = nullptr;
+    ggml_backend_buffer_t dequant_buf = nullptr;
     ~context();
 };
 
@@ -291,6 +296,8 @@ struct graph_builder {
             ggml_tensor * product = ggml_mul_mat(ctx, lhs, rhs);
             if (opt.f32_matmul) ggml_mul_mat_set_prec(product, GGML_PREC_F32);
             y = ggml_reshape_4d(ctx, product, x->ne[0], x->ne[1], kernel->ne[3], 1);
+        } else if (model.dequant.count(kernel)) {
+            y = pointwise_swapped(model.dequant.at(kernel), x);
         } else if (opt.pad_k && kernel->type == GGML_TYPE_F32 && model.padded_k.count(kernel)) {
             y = pointwise_padded(model.padded_k.at(kernel), x);
         } else if (kernel->type != GGML_TYPE_F32 || !opt.im2col_pointwise) {
@@ -445,6 +452,8 @@ struct graph_builder {
 context::~context() {
     graphs.clear();
     if (padded_buf) ggml_backend_buffer_free(padded_buf);
+    if (dequant_buf) ggml_backend_buffer_free(dequant_buf);
+    if (dequant_ctx) ggml_free(dequant_ctx);
     if (padded_ctx) ggml_free(padded_ctx);
     core_gguf::free_weights(weights);
     if (backend) {
@@ -559,10 +568,34 @@ bool make_padded_k(context & model, std::string & error) {
     return true;
 }
 
+bool make_dequant(context & model, std::string & error) {
+    std::vector<ggml_tensor *> chosen;
+    for (const auto & entry : model.weights.tensors)
+        if (entry.second->type != GGML_TYPE_F32 && pointwise_name(entry.first)) chosen.push_back(entry.second);
+    if (chosen.empty()) return true;
+    model.dequant_ctx = ggml_init({ chosen.size() * ggml_tensor_overhead(), nullptr, true });
+    if (!model.dequant_ctx) return fail(error, "MI-GAN dequant context failed");
+    for (ggml_tensor * t : chosen)
+        model.dequant[t] = ggml_new_tensor_2d(model.dequant_ctx, GGML_TYPE_F32, t->ne[0], t->ne[1]);
+    model.dequant_buf = ggml_backend_alloc_ctx_tensors(model.dequant_ctx, model.backend);
+    if (!model.dequant_buf) return fail(error, "MI-GAN dequant allocation failed");
+    std::vector<uint8_t> raw;
+    std::vector<float> values;
+    for (ggml_tensor * t : chosen) {
+        raw.resize(ggml_nbytes(t));
+        values.resize(ggml_nelements(t));
+        ggml_backend_tensor_get(t, raw.data(), 0, raw.size());
+        ggml_get_type_traits(t->type)->to_float(raw.data(), values.data(), int64_t(values.size()));
+        ggml_backend_tensor_set(model.dequant.at(t), values.data(), 0, values.size() * sizeof(float));
+    }
+    return true;
+}
+
 int batch_default(const context & model) {
-    // Measured on M1 (docs/migan-metal.md): GPU batches amortize dispatch;
-    // the CPU gains nothing from batching, so it keeps one tile per graph.
-    int limit = model.gpu ? 4 : 1;
+    // Measured on M1 (docs/migan-metal.md): a 4-tile Metal batch was not
+    // faster than one tile per graph on 1080p frames, so batching is opt-in.
+    (void)model;
+    int limit = 1;
     if (const char * value = std::getenv("CRISPEMBED_MIGAN_BATCH")) {
         const int parsed = std::atoi(value);
         if (parsed >= 1 && parsed <= 16) limit = parsed;
@@ -633,6 +666,8 @@ context * init_ex(const char * path, const char * expected_checkpoint_sha256, in
         if (!weights_finite(*ctx, error)) return nullptr;
         ctx->batch_limit = batch_default(*ctx);
         if (ctx->gpu && !make_padded_k(*ctx, error)) return nullptr;
+        if (!ctx->f32_weights && core_env::on("CRISPEMBED_MIGAN_DEQUANT_WEIGHTS") && !make_dequant(*ctx, error))
+            return nullptr;
         if (ctx->gpu) {
             // Build the batch1 graph now: an unsupported GPU op is reported at
             // init, and the context falls back to the reviewed CPU backend.
