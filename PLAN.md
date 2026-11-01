@@ -141,7 +141,7 @@ Open, in order:
    Metal by default on Apple (region-exact 5/5, 2.1-2.2x CPU).
 2. OXR quantized on Metal: Q8_0-everything decodes German exactly on Metal (`_hp`, F32
    activations) while CPU Q8_0 collapses vision.layer.26 to 0.55; hosted CPU check of
-   `CRISPEMBED_OXR_DEQUANT_VISION=1` (run 41337273815), then the five-case Metal A/B of the
+   `CRISPEMBED_OXR_DEQUANT_VISION=1` (run 41340880860; initial 41337273815 aborted: CPU has no Q8_0->F16 copy, gate now widens to F32), then the five-case Metal A/B of the
    Q8_0/Q4_K-mix recipes and a publication decision (none made here).
 3. OXR F32 on Metal (needs a local F32 conversion; volume was below its free-space floor).
 4. CUDA: re-run the Kaggle T4 lane with the new dense GPU attention (German diverged at

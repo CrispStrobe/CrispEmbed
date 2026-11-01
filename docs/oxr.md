@@ -525,7 +525,7 @@ same Q8_0-everything GGUF decodes German token-exact with the `_hp` route (F32 a
 logits cosine 0.9997 vs CPU F16, vision.merge row-min 0.88) and diverges at token 55 with the
 CPU-bit-identical integer route (`tests/results/oxr/metal-m1/q8_0-all/`). The CPU-side test of
 `CRISPEMBED_OXR_DEQUANT_VISION=1` (quantized vision weights widened to F16 in-graph) is hosted
-run 41337273815. No recipe is published or made default here.
+run 41340880860 (initial 41337273815 aborted: the CPU backend has no Q8_0-to-F16 copy). No recipe is published or made default here.
 
 ## Validation evidence and remaining gates
 
