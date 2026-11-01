@@ -1,0 +1,2 @@
+{"model": "ettin-reranker-17m-v1-q8_0.gguf", "mode": "rerank", "wall_s": {"metal": [0.991, 0.262], "cpu": [0.391, 0.222]}, "max_abs": 0.10237399999999974, "reference": {"ref": "ettin-reranker-17m-v1-f32.gguf", "max_abs_metal_vs_ref": 0.07184500000000016, "max_abs_cpu_vs_ref": 0.164949, "order_ref": [11, 4, 9, 3, 0, 5, 6, 10, 7, 8, 1, 2]}}
+{"model": "ettin-reranker-17m-v1-f32.gguf", "mode": "rerank", "wall_s": {"metal": [0.319, 0.267], "cpu": [0.26, 0.266]}, "max_abs": 0.002231000000000094}

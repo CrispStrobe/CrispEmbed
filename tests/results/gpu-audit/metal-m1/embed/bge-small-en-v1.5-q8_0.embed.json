@@ -6,12 +6,12 @@
  "env": {},
  "wall_s": {
   "metal": [
-   1.661,
-   0.189
+   1.117,
+   0.167
   ],
   "cpu": [
-   0.233,
-   0.236
+   0.198,
+   0.277
   ]
  },
  "rows": [
@@ -19,80 +19,109 @@
    "i": 0,
    "cos": 0.9997977040691874,
    "max_abs": 0.0031189999999999968,
-   "dim": 384
+   "dim": 384,
+   "cos_metal_vs_ref": 0.9999130894602484,
+   "cos_cpu_vs_ref": 0.9996388770524122
   },
   {
    "i": 1,
    "cos": 0.9999074625414991,
    "max_abs": 0.0024340000000000056,
-   "dim": 384
+   "dim": 384,
+   "cos_metal_vs_ref": 0.9999302636179541,
+   "cos_cpu_vs_ref": 0.9998626629609624
   },
   {
    "i": 2,
    "cos": 0.9998941327001541,
    "max_abs": 0.002138999999999988,
-   "dim": 384
+   "dim": 384,
+   "cos_metal_vs_ref": 0.9999236255035232,
+   "cos_cpu_vs_ref": 0.9998192184071252
   },
   {
    "i": 3,
    "cos": 0.9998718746837375,
    "max_abs": 0.0026419999999999985,
-   "dim": 384
+   "dim": 384,
+   "cos_metal_vs_ref": 0.9999279994456225,
+   "cos_cpu_vs_ref": 0.9997998800787588
   },
   {
    "i": 4,
    "cos": 0.9999052853937993,
    "max_abs": 0.001918000000000003,
-   "dim": 384
+   "dim": 384,
+   "cos_metal_vs_ref": 0.9999069372160154,
+   "cos_cpu_vs_ref": 0.9998047473113042
   },
   {
    "i": 5,
    "cos": 0.9998668689665233,
    "max_abs": 0.0026710000000000032,
-   "dim": 384
+   "dim": 384,
+   "cos_metal_vs_ref": 0.9998974102314893,
+   "cos_cpu_vs_ref": 0.9997634607979162
   },
   {
    "i": 6,
    "cos": 0.9999210315661856,
    "max_abs": 0.0020230000000000005,
-   "dim": 384
+   "dim": 384,
+   "cos_metal_vs_ref": 0.9999157074847611,
+   "cos_cpu_vs_ref": 0.9998434730377862
   },
   {
    "i": 7,
    "cos": 0.9999057244218703,
    "max_abs": 0.002683999999999999,
-   "dim": 384
+   "dim": 384,
+   "cos_metal_vs_ref": 0.9999202539373406,
+   "cos_cpu_vs_ref": 0.9998092722697398
   },
   {
    "i": 8,
    "cos": 0.9998840054359844,
    "max_abs": 0.002549,
-   "dim": 384
+   "dim": 384,
+   "cos_metal_vs_ref": 0.9999199111481445,
+   "cos_cpu_vs_ref": 0.9998143738950183
   },
   {
    "i": 9,
    "cos": 0.9998877923592497,
    "max_abs": 0.0021720000000000003,
-   "dim": 384
+   "dim": 384,
+   "cos_metal_vs_ref": 0.9999220582731071,
+   "cos_cpu_vs_ref": 0.9998011494731023
   },
   {
    "i": 10,
    "cos": 0.9999568302363884,
    "max_abs": 0.001464,
-   "dim": 384
+   "dim": 384,
+   "cos_metal_vs_ref": 0.9999277013443532,
+   "cos_cpu_vs_ref": 0.9998910303901871
   },
   {
    "i": 11,
    "cos": 0.9999466824649811,
    "max_abs": 0.001597,
-   "dim": 384
+   "dim": 384,
+   "cos_metal_vs_ref": 0.9999301318419421,
+   "cos_cpu_vs_ref": 0.9998965671777454
   }
  ],
  "stderr_tail": {
-  "metal": "e_pipeline: loaded kernel_flash_attn_ext_f32_dk32_dv32_mask=0_sinks=0_bias=0_scap=0_kvpad=1_bcm=0_ns10=384_ns20=384_nsg=4      0x797d51200 | th_max =  704 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32_4', name = 'kernel_unary_f32_f32_4_op=104_cnt=0'\nggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_4_op=104_cnt=0           0x797d51500 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_q8_0_f32', name = 'kernel_mul_mm_q8_0_f32_bci=0_bco=0_ne12=1_ne13=1_r2=1_r3=1'\nggml_metal_library_compile_pipeline: loaded kernel_mul_mm_q8_0_f32_bci=0_bco=0_ne12=1_ne13=1_r2=1_r3=1      0x797d51800 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32_4', name = 'kernel_bin_fuse_f32_f32_f32_4_op=2_nf=1_rb=0_cb=0'\nggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_4_op=2_nf=1_rb=0_cb=0      0x797d51b00 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_f32_dk32_dv32', name = 'kernel_flash_attn_ext_f32_dk32_dv32_mask=0_sinks=0_bias=0_scap=0_kvpad=0_bcm=0_ns10=384_ns20=384_nsg=4'\nggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_f32_dk32_dv32_mask=0_sinks=0_bias=0_scap=0_kvpad=0_bcm=0_ns10=384_ns20=384_nsg=4      0x797d51e00 | th_max =  832 | th_width =   32\nggml_metal_free: deallocating\n",
+  "metal": "e_pipeline: loaded kernel_flash_attn_ext_f32_dk32_dv32_mask=0_sinks=0_bias=0_scap=0_kvpad=1_bcm=0_ns10=384_ns20=384_nsg=4      0xa29de5200 | th_max =  704 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32_4', name = 'kernel_unary_f32_f32_4_op=104_cnt=0'\nggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_4_op=104_cnt=0           0xa29de5500 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_q8_0_f32', name = 'kernel_mul_mm_q8_0_f32_bci=0_bco=0_ne12=1_ne13=1_r2=1_r3=1'\nggml_metal_library_compile_pipeline: loaded kernel_mul_mm_q8_0_f32_bci=0_bco=0_ne12=1_ne13=1_r2=1_r3=1      0xa29de5800 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32_4', name = 'kernel_bin_fuse_f32_f32_f32_4_op=2_nf=1_rb=0_cb=0'\nggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_4_op=2_nf=1_rb=0_cb=0      0xa29de5b00 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_f32_dk32_dv32', name = 'kernel_flash_attn_ext_f32_dk32_dv32_mask=0_sinks=0_bias=0_scap=0_kvpad=0_bcm=0_ns10=384_ns20=384_nsg=4'\nggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_f32_dk32_dv32_mask=0_sinks=0_bias=0_scap=0_kvpad=0_bcm=0_ns10=384_ns20=384_nsg=4      0xa29de5e00 | th_max =  832 | th_width =   32\nggml_metal_free: deallocating\n",
   "cpu": "crispembed: using WordPiece tokenizer (30522 tokens, uncased)\ncrispasr_init_gpu_backend: --gpu-backend cpu \u2014 using the CPU backend, no GPU device initialised\ncrispembed: using CPU backend (4 threads)\ncrispembed: loaded 12 layers, 384 dims, 30522 vocab\ncrispembed: auto-prefix \"Represent this sentence for searching relevant passages: \" (use --prefix \"\" to disable)\n"
  },
  "date": "2026-11-01",
  "cos_min": 0.9997977040691874,
- "max_abs": 0.0031189999999999968
+ "max_abs": 0.0031189999999999968,
+ "reference": {
+  "ref": "bge-small-en-v1.5.gguf",
+  "cos_min_metal_vs_ref": 0.9998974102314893,
+  "cos_min_cpu_vs_ref": 0.9996388770524122
+ }
 }
