@@ -25,6 +25,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "core/env_gate.h"
+#include "core/gpu_backend_pref.h" // crispasr_init_gpu_backend (gated GPU path)
 
 #include <algorithm>
 #include <chrono>
@@ -398,6 +399,10 @@ struct restormer_context {
     // ggml conv infrastructure
     ggml_backend_t enc_backend = nullptr;
     ggml_backend_sched_t enc_sched = nullptr;
+    // CRISPEMBED_RESTORMER_GPU=1 (value-parsed, default off): weights resident
+    // on this GPU backend, scheduled first in enc_sched with enc_backend (CPU)
+    // as the fallback. nullptr = the historical all-CPU path.
+    ggml_backend_t gpu_backend = nullptr;
     std::vector<uint8_t> enc_meta_block; // graph metadata for per-block graphs
 
     // Pre-permuted conv weights: 4D PyTorch→2D ggml [IC*KH*KW, OC] F32
@@ -455,14 +460,28 @@ restormer_context * restormer_init(const char * model_path, int n_threads) {
     // a buffer (MTL0) that cannot run" on Metal, and segfaulting on CUDA. The convs
     // run on CPU regardless of where weights live, so load them on CPU. (Same class
     // as the nafnet conv→ggml residency bug; RESTORMER_FORCE_CPU is now a no-op.)
-    ggml_backend_t backend = ggml_backend_cpu_init();
+    //
+    // CUDA audit 2026-11-01: CRISPEMBED_RESTORMER_GPU=1 (value-parsed, default
+    // off) loads the weights on the GPU backend and KEEPS it, placed first in
+    // enc_sched below, so the block/conv graphs run there and the CPU sched
+    // never has to read a GPU buffer. The dequant cache reads weights back to
+    // host floats through the backend API, so the scalar helpers are unaffected.
+    ggml_backend_t backend =
+        core_env::on("CRISPEMBED_RESTORMER_GPU") ? crispasr_init_gpu_backend() : ggml_backend_cpu_init();
+    if (!backend) backend = ggml_backend_cpu_init();
     if (!core_gguf::load_weights(model_path, backend, "restormer", ctx->wl)) {
         fprintf(stderr, "restormer: failed to load weights\n");
         ggml_backend_free(backend);
         delete ctx;
         return nullptr;
     }
-    ggml_backend_free(backend);
+    if (ggml_backend_is_cpu(backend)) {
+        ggml_backend_free(backend);
+    } else {
+        ctx->gpu_backend = backend;
+        fprintf(stderr, "restormer: GPU path - graphs on %s (CRISPEMBED_RESTORMER_GPU=0 restores CPU)\n",
+                ggml_backend_name(backend));
+    }
 
     fprintf(stderr,
             "restormer: dim=%d, blocks=[%d,%d,%d,%d], heads=[%d,%d,%d,%d], "
@@ -474,8 +493,13 @@ restormer_context * restormer_init(const char * model_path, int n_threads) {
     ctx->enc_backend = ggml_backend_cpu_init();
     if (ctx->enc_backend) {
         ggml_backend_cpu_set_n_threads(ctx->enc_backend, ctx->n_threads);
-        ggml_backend_t backends[] = { ctx->enc_backend };
-        ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
+        if (ctx->gpu_backend) {
+            ggml_backend_t backends[] = { ctx->gpu_backend, ctx->enc_backend };
+            ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 2, 4096, false, false);
+        } else {
+            ggml_backend_t backends[] = { ctx->enc_backend };
+            ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
+        }
     }
 
     // NOTE: no conv-weight pre-permute. Conv weights are consumed directly from
@@ -495,6 +519,7 @@ void restormer_free(restormer_context * ctx) {
         if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
         if (ctx->enc_backend) ggml_backend_free(ctx->enc_backend);
         core_gguf::free_weights(ctx->wl);
+        if (ctx->gpu_backend) ggml_backend_free(ctx->gpu_backend);
         delete ctx;
     }
 }

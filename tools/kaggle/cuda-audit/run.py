@@ -159,6 +159,22 @@ for key, repo, name in [
     ("transcoda", "cstr/transcoda-omr-GGUF", "transcoda-q8_0.gguf"),
     ("ppfnl-q8", "cstr/ppformulanet-l-gguf", "ppformulanet-l-q8_0.gguf"),
     ("ppfnl-f16", "cstr/ppformulanet-l-gguf", "ppformulanet-l-f16.gguf"),
+    ("pan-f16", "cstr/text-super-resolution-gguf", "pan-x4-f16.gguf"),
+    ("pan-ref", "cstr/text-super-resolution-gguf", "pan-ref.gguf"),
+    ("restormer-f16", "cstr/text-super-resolution-gguf", "restormer-denoise-f16.gguf"),
+    ("restormer-ref", "cstr/text-super-resolution-gguf", "restormer-ref.gguf"),
+    ("swinir-f16", "cstr/text-super-resolution-gguf", "swinir-light-x4-f16.gguf"),
+    ("swinir-ref", "cstr/text-super-resolution-gguf", "swinir-ref.gguf"),
+    ("hat-f16", "cstr/text-super-resolution-gguf", "hat-sr-x4-f16.gguf"),
+    ("hat-ref", "cstr/text-super-resolution-gguf", "hat-ref.gguf"),
+    ("tbsrn-f16", "cstr/text-super-resolution-gguf", "tbsrn-telescope-f16.gguf"),
+    ("tbsrn-ref", "cstr/text-super-resolution-gguf", "tbsrn-ref.gguf"),
+    ("dat-f32", "cstr/text-super-resolution-gguf", "dat-light-x2-f32.gguf"),
+    ("dat-ref", "cstr/text-super-resolution-gguf", "dat-ref.gguf"),
+    ("scunet-f32", "cstr/scunet-GGUF", "scunet-color-f32.gguf"),
+    ("scunet-ref", "cstr/scunet-GGUF", "scunet-ref.gguf"),
+    ("adair-f32", "cstr/AdaIR-GGUF", "adair-5d-f32.gguf"),
+    ("adair-ref", "cstr/text-super-resolution-gguf", "adair-ref.gguf"),
     ("modernbert-q8", "cstr/gte-modernbert-base-GGUF", "gte-modernbert-base-q8_0.gguf"),
     ("modernbert-ref", "cstr/gte-modernbert-base-GGUF", "modernbert-ref.gguf"),
 ]:
@@ -309,10 +325,30 @@ def batch_b():
         cmd("ppformulanet-l-f16.formula", ["-t", "@NT", "-m", "@M:ppfnl-f16", "--ocr",
                                            f"{IMG}/formula_quadratic.png"]),
     ]
+    # Scope 3: new default-off CUDA paths for CPU-computed restoration graphs.
+    jobs += [
+        cmd("pan-f16.scan_strip", ["-t", "@NT", "--pan-model", "@M:pan-f16", "--pan-sr", f"{IMG}/scan_strip.png"],
+            arms=(("cuda-gate1", "cuda", {"CRISPEMBED_PAN_GPU": "1"}), CUDA, CPU)),
+        cmd("restormer-f16.scan_strip", ["-t", "@NT", "--restormer", "@M:restormer-f16", "--restormer-input",
+                                         f"{IMG}/scan_strip.png"],
+            arms=(("cuda-gate1", "cuda", {"CRISPEMBED_RESTORMER_GPU": "1"}), CUDA, CPU)),
+        diff("diff-pan-gpu", "test-pan-diff", ["@M:pan-f16", "@M:pan-ref"], env={"CRISPEMBED_PAN_GPU": "1"},
+             thresholds={"output": 0.99}),
+        diff("diff-restormer-gpu", "test-restormer-diff", ["@M:restormer-f16", "@M:restormer-ref"],
+             env={"CRISPEMBED_RESTORMER_GPU": "1"}, thresholds={"output": 0.99}),
+    ]
+    # Default (weights-on-GPU, compute-on-CPU) restoration engines against their references.
+    for name, binary, w, r in [("swinir", "test-swinir-diff", "swinir-f16", "swinir-ref"),
+                               ("hat", "test-hat-diff", "hat-f16", "hat-ref"),
+                               ("tbsrn", "test-tbsrn-diff", "tbsrn-f16", "tbsrn-ref"),
+                               ("dat", "test-dat-diff", "dat-f32", "dat-ref"),
+                               ("scunet", "test-scunet-diff", "scunet-f32", "scunet-ref"),
+                               ("adair", "test-adair-diff", "adair-f32", "adair-ref")]:
+        jobs.append(diff(f"diff-{name}", binary, [f"@M:{w}", f"@M:{r}"], thresholds={"output": 0.99}))
     return jobs
 
 
-BATCHES = {"a": batch_a, "b": batch_b}
+BATCHES = {"a": batch_a, "b": batch_b, "all": lambda: batch_a() + batch_b()}
 
 
 def jobs_for(batch):
