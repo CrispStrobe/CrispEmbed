@@ -17,6 +17,10 @@
 * Quantized (owner bars): OXR Q8_0 + Q8_0 large tables + F16 vision 1.93 GB, min logits cos
   0.9977 (pass); Q4_K head mixes pass (0.9979 / 0.9751); Q4_K LLM layers fail (0.896, 0.915).
   D-FINE Q8_0 with F16/F32 convs passes; conv-quantized Q8_0 and all Q4_K fail.
+* Follow-up: CPU `CRISPEMBED_OXR_DEQUANT_VISION=1` makes Q8_0-everything token-exact 5/5 (41340880860);
+  CUDA T4 F16 now token-exact 5/5 with the dense GPU attention (German fixed), quantized 4/5;
+  Metal quantized recipes 4/5 with logits cos >= 0.9995; heron GPU default now PREC_F32 + `_hp`
+  (regions equal CPU 5/5; half tiles had added a German region).
 * Kaggle account name scrubbed from HISTORY (secret scan).
 
 ## 1 November 2026 — OXR-1.0 D-FINE layout detector native in layout_detect
