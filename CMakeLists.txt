@@ -915,6 +915,10 @@ target_compile_definitions(test-teleocr-diff PRIVATE CRISPEMBED_TELEOCR_TESTING=
 crispembed_apply_arch_flags(test-teleocr-diff)
 target_link_libraries(test-teleocr-diff PRIVATE crispembed)
 
+# Kernel timing for the qwen2vl_ocr GPU shapes (matmul precision routes, FA).
+add_executable(test-bench-qwen2vl-metal-ops tests/bench_qwen2vl_metal_ops.cpp)
+target_link_libraries(test-bench-qwen2vl-metal-ops PRIVATE crispembed)
+
 # Resident-context device A/B runner (completion IDs, text, per-run timing, RSS).
 add_executable(test-teleocr-run tests/teleocr_run.cpp)
 target_link_libraries(test-teleocr-run PRIVATE crispembed)

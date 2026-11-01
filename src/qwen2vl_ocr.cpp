@@ -110,7 +110,9 @@ bool observing(const context & ctx) {
 // Raw F32 stage dump for CPU/GPU device A/B (see context::stage_dump_dir).
 constexpr int kStageDumpDecodeSteps = 32;
 void stage_dump(const context & ctx, const std::string & name, const float * data, size_t count) {
-    if (ctx.stage_dump_dir.empty() || !data) return;
+    // Only the first recognition of a context is dumped; warm repeats would
+    // only duplicate it (and repeat-to-repeat drift is checked through IDs).
+    if (ctx.stage_dump_dir.empty() || !data || ctx.stage_dump_call != 0) return;
     const std::string path = ctx.stage_dump_dir + "/c" + std::to_string(ctx.stage_dump_call) + "_" + name + ".f32";
     if (FILE * f = std::fopen(path.c_str(), "wb")) {
         std::fwrite(data, sizeof(float), count, f);
@@ -119,7 +121,7 @@ void stage_dump(const context & ctx, const std::string & name, const float * dat
 }
 
 void stage_dump_tensor(const context & ctx, ggml_cgraph * graph, const char * tensor_name, const std::string & name) {
-    if (ctx.stage_dump_dir.empty()) return;
+    if (ctx.stage_dump_dir.empty() || ctx.stage_dump_call != 0) return;
     ggml_tensor * tensor = ggml_graph_get_tensor(graph, tensor_name);
     if (!tensor || tensor->type != GGML_TYPE_F32) return;
     std::vector<float> values((size_t)ggml_nelements(tensor));
@@ -135,7 +137,9 @@ bool backend_is_metal(ggml_backend_t backend) {
     ggml_backend_dev_t dev = backend ? ggml_backend_get_device(backend) : nullptr;
     ggml_backend_reg_t reg = dev ? ggml_backend_dev_backend_reg(dev) : nullptr;
     const char * name = reg ? ggml_backend_reg_name(reg) : nullptr;
-    return name && std::strcmp(name, "Metal") == 0;
+    // ggml-metal registers as "MTL" (GGML_METAL_NAME); accept the older
+    // "Metal" spelling too.
+    return name && (std::strcmp(name, "MTL") == 0 || std::strcmp(name, "Metal") == 0);
 }
 
 #ifdef CRISPEMBED_TELEOCR_TESTING
@@ -3395,8 +3399,12 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
     // Logits buffer reused every step.
     std::vector<float> logits_data(V);
 
+    // One persistent decode graph per 256-token attention bucket (set_rows KV
+    // write at a graph-input row). Opt-in per profile; both keep the
+    // rebuild-every-step path as the default.
     const bool reuse_decode =
-        ctx.is_mineru25_pro && core_env::on("CRISPEMBED_MINERU25_PRO_REUSE_DECODE_GRAPH") && backend_kv_ok;
+        backend_kv_ok && ((ctx.is_mineru25_pro && core_env::on("CRISPEMBED_MINERU25_PRO_REUSE_DECODE_GRAPH")) ||
+                          (ctx.is_teleocr && core_env::on("CRISPEMBED_TELEOCR_REUSE_DECODE_GRAPH")));
     struct decode_graph_owner {
         context & owner;
         std::vector<uint8_t> meta;
