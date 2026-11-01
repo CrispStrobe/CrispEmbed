@@ -3,9 +3,7 @@
 **Internal research only.** Big-LaMa checkpoint rights are unresolved: no public upload,
 no registry entry or alias, and this line never merges into `main`/`feat/teleocr`. The GGUFs are to be
 preserved only in the owner's private Hugging Face repo `cstr/big-lama-research-GGUF` (created
-private, privacy verified). **GGUF upload is currently blocked** by the account's private-storage
-limit (and the CI secret lacks write access); README and code licence are uploaded. See
-`private-hf-upload.json` for status and how to finish.
+private, privacy verified). All five tested GGUFs are preserved there (Hub `3f79a9f0`; see "Private preservation" below).
 
 ## Source
 
