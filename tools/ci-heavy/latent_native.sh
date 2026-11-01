@@ -20,8 +20,12 @@ MODEL=${1:?model}
 shift
 # A literal "live" argument adds the real-photo ground-truth stage; "nonative"
 # skips the synthetic replay (e.g. a live-only rerun).
-ARMS=(); LIVE=0; NATIVE=1
-for a in "$@"; do case $a in live) LIVE=1 ;; nonative) NATIVE=0 ;; *) ARMS+=("$a") ;; esac; done
+# "nocli" skips the per-arm CLI timing run; "preserve" uploads every GGUF and
+# receipt to the PRIVATE cstr/crispembed-<model>-private repo (HF_TOKEN_2).
+# Arm "q4_k-mix": denoiser Q4_K with every ".attentions." tensor at Q8_0 and
+# the whole VAE at Q8_0 (owner request after Moebius Q4_K failed on photos).
+ARMS=(); LIVE=0; NATIVE=1; CLI=1; PRESERVE=0
+for a in "$@"; do case $a in live) LIVE=1 ;; nonative) NATIVE=0 ;; nocli) CLI=0 ;; preserve) PRESERVE=1 ;; *) ARMS+=("$a") ;; esac; done
 [ ${#ARMS[@]} -gt 0 ] || ARMS=(f32)
 GATE=CRISPEMBED_$(echo "$MODEL" | tr a-z A-Z)
 # "-o" arm suffix: persistent graph plus this engine's measured delivery-5 CPU
@@ -94,20 +98,43 @@ requested = {"f16": "f16", "q8_0": "q8_0", "q4_k": "q4_K", "q5_k": "q5_K", "q6_k
     "quantizer_command": ["crispembed-quantize", source.name, variant.name, qtype]}, indent=2) + "\n")
 EOF
 }
+mix_overrides() { # stored names of the denoiser's attention-block tensors -> --tensor-type NAME=q8_0
+    python - "$MODEL" <<'EOF'
+import sys
+sys.path.insert(0, "tools")
+from latent_inpaint_contract import gguf_tensor_name, model_record
+for row in model_record(sys.argv[1])["state"]:
+    name = row["name"]
+    if ".attentions." in name and not name.endswith("num_batches_tracked"):
+        print("--tensor-type")
+        print(gguf_tensor_name(name) + "=q8_0")
+EOF
+}
+variant_files() { # Q -> sets DQ VQ, quantizing (and writing receipts) on first use
+    local q=$1 dtype=$1 vtype=$1
+    if [ "$q" = f32 ]; then DQ=$D; VQ=$V; return 0; fi
+    [ "$q" = q4_k-mix ] && { dtype=q4_k; vtype=q8_0; }
+    DQ=$S/gguf/$MODEL-$q.gguf; VQ=$S/gguf/sdxl-vae-$vtype.gguf
+    if [ ! -f "$DQ" ]; then
+        local OVR=()
+        [ "$q" = q4_k-mix ] && mapfile -t OVR < <(mix_overrides)
+        [ "$q" = q4_k-mix ] && echo "mix overrides: $(( ${#OVR[@]} / 2 )) attention tensors at q8_0" | tee -a "$OUT/summary.md"
+        step "quantize-denoiser-$q" "$BIN/crispembed-quantize" "$D" "$DQ" "$dtype" "${OVR[@]}" || return 1
+        variant_receipt "$DQ" "$D" "$dtype" "$MODEL"
+    fi
+    if [ ! -f "$VQ" ]; then
+        step "quantize-vae-$vtype" "$BIN/crispembed-quantize" "$V" "$VQ" "$vtype" || return 1
+        variant_receipt "$VQ" "$V" "$vtype" sdxl_vae
+    fi
+}
 for arm in "${ARMS[@]}"; do
     a=${arm%-o}; opt=0; [ "$a" = "$arm" ] || opt=1
     base=${a%-g}; q=${base%-mm}
     env_extra=("$GATE=1")
     [ "$base" = "$a" ] && [ $opt = 0 ] || env_extra+=(CRISPEMBED_INPAINT_GRAPH=1)
     [ $opt = 0 ] || env_extra+=("${OPT_GATES[@]}")
-    if [ "$q" = f32 ]; then
-        DQ=$D; VQ=$V
-    else
-        DQ=$S/gguf/$MODEL-$q.gguf; VQ=$S/gguf/sdxl-vae-$q.gguf
-        [ -f "$DQ" ] || step "quantize-denoiser-$q" "$BIN/crispembed-quantize" "$D" "$DQ" "$q" || { failed=1; continue; }
-        [ -f "$VQ" ] || step "quantize-vae-$q" "$BIN/crispembed-quantize" "$V" "$VQ" "$q" || { failed=1; continue; }
-        [ -f "$DQ.json" ] || variant_receipt "$DQ" "$D" "$q" "$MODEL"
-        [ -f "$VQ.json" ] || variant_receipt "$VQ" "$V" "$q" sdxl_vae
+    variant_files "$q" || { failed=1; continue; }
+    if [ "$q" != f32 ]; then
         env_extra+=(CRISPEMBED_INPAINT_QUANT=1)
         [ "$base" = "$q" ] || env_extra+=(CRISPEMBED_INPAINT_QUANT_MATMUL=1)
     fi
@@ -120,11 +147,11 @@ for arm in "${ARMS[@]}"; do
     mkdir -p "$OUT/native-$arm"
     [ -d "$S/native-$arm" ] && (cd "$S/native-$arm" && find . -name "*.json" -o -name "*.rgb" | cpio -pdm "$OUT/native-$arm" 2>/dev/null)
     # Real CLI, native seed stream, subtitle fixture: latency and peak RSS.
-    step "cli-$arm" env "${env_extra[@]}" /usr/bin/time -v "$BIN/crispembed" --inpaint-engine "$MODEL" \
+    [ $CLI = 1 ] && step "cli-$arm" env "${env_extra[@]}" /usr/bin/time -v "$BIN/crispembed" --inpaint-engine "$MODEL" \
         --inpaint-model "$DQ" --inpaint-model-sha256 "$dsha" --inpaint-vae "$VQ" --inpaint-vae-sha256 "$vsha" \
         --inpaint "$S/cli/input.png" --mask "$S/cli/mask.png" --inpaint-output "$OUT/cli-$arm-subtitle_bar.png" \
         --inpaint-seed 0 --threads 4
-    grep -E "Maximum resident|Elapsed" "$OUT/native-$arm.log" "$OUT/cli-$arm.log" >> "$OUT/resources.txt"
+    grep -E "Maximum resident|Elapsed" "$OUT/native-$arm.log" "$OUT/cli-$arm.log" >> "$OUT/resources.txt" 2>/dev/null
 done
 if [ $LIVE = 1 ]; then
     # Live ground truth: subtitles burned into real photos, 512 centre crops
@@ -134,8 +161,7 @@ if [ $LIVE = 1 ]; then
     for arm in "${ARMS[@]}"; do
         a=${arm%-o}; opt=0; [ "$a" = "$arm" ] || opt=1
         base=${a%-g}; q=${base%-mm}
-        if [ "$q" = f32 ]; then DQ=$D; VQ=$V; else DQ=$S/gguf/$MODEL-$q.gguf; VQ=$S/gguf/sdxl-vae-$q.gguf; fi
-        [ -f "$DQ" ] && [ -f "$VQ" ] || continue
+        variant_files "$q" || continue
         LE=(); [ "$q" = f32 ] || LE=(--env CRISPEMBED_INPAINT_QUANT=1)
         [ "$base" = "$q" ] || LE+=(--env CRISPEMBED_INPAINT_QUANT_MATMUL=1)
         [ "$base" = "$a" ] && [ $opt = 0 ] || LE+=(--env CRISPEMBED_INPAINT_GRAPH=1)
@@ -146,6 +172,26 @@ if [ $LIVE = 1 ]; then
             --vae-sha256 "$(sha256sum "$VQ" | cut -d' ' -f1)" --seed 0 --crop 512 --label "$arm" "${LE[@]}" \
             "${REF[@]}" --photos "$S"/photos/* --output-dir "$OUT/live/$arm" "${TM[@]}" --threads 4
     done
+fi
+if [ $PRESERVE = 1 ]; then
+    # Private preservation with the HF_TOKEN_2 write secret; refuses a public repo.
+    cp -r "$D.licenses" "$S/gguf/" 2>/dev/null; cp -r "$V.licenses" "$S/gguf/" 2>/dev/null
+    step hf-preserve env HF_TOKEN="${HF_TOKEN_2:-}" python - "$MODEL" "$S/gguf" <<'EOF'
+import sys
+from pathlib import Path
+from huggingface_hub import HfApi
+model, folder = sys.argv[1], Path(sys.argv[2])
+api = HfApi()
+repo = f"cstr/crispembed-{model}-private"
+if not api.model_info(repo).private:
+    raise SystemExit("refusing: preservation repo is not private")
+api.upload_folder(folder_path=str(folder), repo_id=repo, path_in_repo="gguf",
+                  allow_patterns=["*.gguf", "*.gguf.json", "*.licenses/*"],
+                  commit_message="Preserve converted and inpaint-v1 GGUFs (feat/issue71-latent-qual)")
+files = [s.rfilename for s in api.model_info(repo).siblings]
+print("private:", api.model_info(repo).private, "files:", len(files))
+print("\n".join(sorted(files)))
+EOF
 fi
 python - "$OUT" "${ARMS[@]}" <<'EOF' | tee -a "$OUT/summary.md"
 import json, sys
