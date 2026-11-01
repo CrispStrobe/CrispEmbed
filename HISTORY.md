@@ -29,7 +29,7 @@ Lineage: no bit-equal public tensors; nearest D-FINE-M Objects365 (cosine 0.95/0
 
 ## 1 November 2026 — MinerU2.5-Pro on CUDA (Kaggle T4): every precision token-exact on three cases
 
-Kaggle kernel `chr1s4/crispembed-mineru25-pro-gpu-variants` at `692f2130` (an earlier
+Kaggle kernel `${KAGGLE_ACCOUNT}/crispembed-mineru25-pro-gpu-variants` at `692f2130` (an earlier
 qualification source; [report](tests/results/mineru25/kaggle-cuda-t4/report.json)) on a Tesla T4:
 F32, F16, Q8_0 (Q8_0 vision), Q4_K, Q4_K+Q8_0-decoder and Q4_K+F16-decoder all decode the pinned
 original Python model's token IDs, text and EOS exactly on formula (29 tokens), table (140) and
