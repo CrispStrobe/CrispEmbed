@@ -191,8 +191,14 @@ void metadata() {
     };
     reject("837", "valid metadata with missing inference tensors fails before weight allocation");
     gguf_set_val_u32(meta, "general.file_type", 1);
-    reject("metadata", "F16 model profile rejected");
+    reject("metadata", "F16 model profile without the lama-v1 quantization policy rejected");
+    gguf_set_val_str(meta, "lama.quantization.policy", "lama-v2");
+    reject("metadata", "unknown quantization policy rejected");
+    gguf_set_val_str(meta, "lama.quantization.policy", "lama-v1");
+    reject("837", "lama-v1 quantized header accepted; tensor inventory still enforced");
     gguf_set_val_u32(meta, "general.file_type", 0);
+    reject("837", "F32 profile with an inert policy key keeps the strict F32 inventory check");
+    gguf_remove_key(meta, "lama.quantization.policy");
     gguf_set_val_u64(meta, "lama.schema.version", uint64_t(1) + (uint64_t(1) << 32));
     reject("metadata", "wide integer cannot wrap into an accepted schema version");
     gguf_set_val_u32(meta, "lama.schema.version", 1);

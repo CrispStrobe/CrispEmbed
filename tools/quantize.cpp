@@ -175,6 +175,72 @@ static bool load_imatrix(const std::string & path) {
     return loaded > 0;
 }
 
+// Big-LaMa (general.architecture "lama"), policy "lama-v1". The runtime
+// (src/lama.cpp) dequantizes every stored kernel at load unless the gated
+// CRISPEMBED_LAMA_QUANT_MATMUL path consumes a 1x1 kernel directly through
+// ggml_mul_mat, so the plan fixes both the type and the storage row width:
+//   * vectors (bias / BatchNorm) and the first (7x7, 4->64) and last (7x7,
+//     64->3) convs stay F32: the loader requires it;
+//   * F16 keeps every other kernel's original 4D shape;
+//   * 1x1 kernels (the FourierUnit spectral convs and the global branch's
+//     384->192->384 projections) are flattened to [IC, OC] so a row is one
+//     output channel's input-channel dot product, exactly mul_mat's layout;
+//     a K-quant falls back along the generic chain when IC is not 256-wide;
+//   * k>1 conv and transposed-conv kernels are flattened in memory order
+//     (a pure reshape, no transpose): legacy 32-blocks use one output
+//     channel's IC*KH*KW row; K-quants use 256-element rows, valid because
+//     the loader dequantizes them whole and restores the 4D shape.
+// --tensor-type overrides apply to every kernel except the F32-pinned ones.
+struct LamaPlan {
+    ggml_type type = GGML_TYPE_F32;
+    int64_t rows = 0; // stored ne[0] for a flattened 2D layout; 0 keeps the shape
+};
+
+static ggml_type lama_fallback(ggml_type type) {
+    switch (type) {
+    case GGML_TYPE_Q2_K:
+    case GGML_TYPE_Q3_K:
+    case GGML_TYPE_Q4_K:
+        return GGML_TYPE_Q4_0;
+    case GGML_TYPE_Q5_K:
+        return GGML_TYPE_Q5_0;
+    case GGML_TYPE_Q6_K:
+        return GGML_TYPE_Q8_0;
+    default:
+        return GGML_TYPE_Q8_0;
+    }
+}
+
+static LamaPlan lama_tensor_plan(const std::string & name, const ggml_tensor * t, ggml_type requested) {
+    LamaPlan plan;
+    const bool vector = t->ne[1] == 1 && t->ne[2] == 1 && t->ne[3] == 1;
+    if (vector || name == "model.1.ffc.convl2l.weight" || name == "model.34.weight") return plan;
+    ggml_type type = requested;
+    for (const auto & rule : g_tensor_types)
+        if (tensor_name_matches(rule.pattern, name)) type = rule.type;
+    plan.type = type;
+    if (type == GGML_TYPE_F32 || type == GGML_TYPE_F16) return plan;
+    const bool pointwise = t->ne[0] == 1 && t->ne[1] == 1;
+    const int64_t count = ggml_nelements(t), natural = t->ne[0] * t->ne[1] * t->ne[2];
+    const int64_t block = ggml_blck_size(type);
+    if (pointwise) {
+        if (t->ne[2] % block != 0) type = lama_fallback(type);
+        if (t->ne[2] % ggml_blck_size(type) != 0) type = GGML_TYPE_F16;
+        plan.type = type;
+        plan.rows = type == GGML_TYPE_F16 ? 0 : t->ne[2];
+        return plan;
+    }
+    if (block == 256 && count % 256 == 0) {
+        plan.rows = 256;
+    } else {
+        if (natural % block != 0) type = lama_fallback(type);
+        if (natural % ggml_blck_size(type) != 0) type = GGML_TYPE_F16;
+        plan.type = type;
+        plan.rows = type == GGML_TYPE_F16 ? 0 : natural;
+    }
+    return plan;
+}
+
 static bool quantize_model(const std::string & fname_inp, const std::string & fname_out, ggml_ftype ftype) {
     ggml_type qtype = GGML_TYPE_F32;
 
@@ -262,6 +328,34 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
     const bool is_internvl2 = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "internvl2";
     const bool is_teleocr = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "teleocr";
     const bool is_oxr = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "oxr";
+    const bool is_lama = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "lama";
+    std::map<std::string, LamaPlan> lama_plans;
+    if (is_lama) {
+        if (qtype == GGML_TYPE_F32) {
+            fprintf(stderr, "Big-LaMa: requested type must be F16 or a quantized type\n");
+            gguf_free(ctx_out);
+            gguf_free(ctx_in);
+            ggml_free(ctx_in_ggml);
+            return false;
+        }
+        for (int i = 0; i < n_tensors; i++) {
+            const char * name = gguf_get_tensor_name(ctx_in, i);
+            const ggml_tensor * t = ggml_get_tensor(ctx_in_ggml, name);
+            if (t->type != GGML_TYPE_F32) {
+                fprintf(stderr, "Big-LaMa: quantize from the F32 conversion (tensor %s is %s)\n", name,
+                        ggml_type_name(t->type));
+                gguf_free(ctx_out);
+                gguf_free(ctx_in);
+                ggml_free(ctx_in_ggml);
+                return false;
+            }
+            lama_plans[name] = lama_tensor_plan(name, t, qtype);
+        }
+        gguf_set_val_str(ctx_out, "lama.quantization.policy", "lama-v1");
+        gguf_set_val_str(ctx_out, "lama.quantization.requested_type", ggml_type_name(qtype));
+        fprintf(stderr, "Big-LaMa lama-v1 policy: vectors and first/last conv F32; 1x1 kernels [IC,OC] rows; "
+                        "other kernels row-flattened storage, original 4D shape restored at load\n");
+    }
     const int family_key = gguf_find_key(ctx_in, "qwen2vl.model_family");
     const bool is_mineru25 =
         family_key >= 0 && std::string(gguf_get_val_str(ctx_in, family_key)) == "mineru2.5-pro-2604";
@@ -364,7 +458,20 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         struct ggml_tensor * t = ggml_get_tensor(ctx_in_ggml, name);
         // OXR's loader validates its 4D patch-embedding shape and reshapes it
         // itself, so its conv kernel keeps the source metadata.
-        if (ggml_n_dims(t) == 4 && t->type == GGML_TYPE_F32 && !is_oxr) {
+        if (is_lama) {
+            const LamaPlan & plan = lama_plans.at(name);
+            if (plan.rows > 0) {
+                const int64_t count = ggml_nelements(t);
+                t->ne[0] = plan.rows;
+                t->ne[1] = count / plan.rows;
+                t->ne[2] = 1;
+                t->ne[3] = 1;
+                t->nb[0] = sizeof(float);
+                t->nb[1] = plan.rows * sizeof(float);
+                t->nb[2] = t->nb[1] * t->ne[1];
+                t->nb[3] = t->nb[2];
+            }
+        } else if (ggml_n_dims(t) == 4 && t->type == GGML_TYPE_F32 && !is_oxr) {
             // Flatten [KW, KH, IC, OC] → [IC*KH*KW, OC]
             int64_t flat_cols = t->ne[0] * t->ne[1] * t->ne[2];
             int64_t OC = t->ne[3];
@@ -842,6 +949,12 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             for (const auto & rule : g_tensor_types) {
                 if (tensor_name_matches(rule.pattern, sname)) qtype_used = rule.type;
             }
+        }
+        if (is_lama) {
+            const LamaPlan & plan = lama_plans.at(sname);
+            qtype_used = plan.type;
+            quantize = plan.type != GGML_TYPE_F32;
+            if (quantize) printf("(lama-v1 %s%s) ", ggml_type_name(plan.type), plan.rows ? " flat" : "");
         }
         int64_t qk = ggml_blck_size(qtype_used);
 

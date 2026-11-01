@@ -137,6 +137,11 @@ int execute(int argc, char ** argv) {
     require(lama::run(model.get(), input.data(), input.size(), pw, ph, repeat.data(), repeat.size(), error), error);
     require(std::memcmp(raw.data(), repeat.data(), raw.size() * sizeof(float)) == 0,
             "same-shape cached graph changed repeated raw output");
+    lama::load_info info;
+    require(lama::describe(model.get(), info), "cannot describe weight residency");
+    std::fprintf(stderr, "Big-LaMa weights: %d resident, %d converted, %d matmul, %d f16-conv, %zu bytes\n",
+                 info.resident_tensors, info.converted_tensors, info.matmul_tensors, info.f16_conv_tensors,
+                 info.weight_bytes);
     model.reset();
     model.reset(lama::init(args["--model"].c_str(), threads, error));
     require(bool(model), error);
@@ -163,6 +168,9 @@ int execute(int argc, char ** argv) {
              << ",\n  \"width\":" << width << ",\n  \"height\":" << height << ",\n  \"padded_width\":" << pw
              << ",\n  \"padded_height\":" << ph << ",\n  \"model_sha256\":" << quote(model_sha)
              << ",\n  \"graph_buffer_bytes\":" << graph_bytes
+             << ",\n  \"weights\":{\"resident\":" << info.resident_tensors
+             << ",\"converted\":" << info.converted_tensors << ",\"matmul\":" << info.matmul_tensors
+             << ",\"f16_conv\":" << info.f16_conv_tensors << ",\"bytes\":" << info.weight_bytes << "}"
              << ",\n  \"output_sha256\":" << quote(core_sha256::bytes(output.data(), output.size()))
              << ",\n  \"controls\":{\"input_exact\":true,\"observer_matches_unobserved\":true,"
                 "\"repeated_graph_exact\":true,\"fresh_context_exact\":true,\"process_matches_raw\":true,"

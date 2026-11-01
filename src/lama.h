@@ -19,11 +19,25 @@ constexpr size_t max_graph_bytes = size_t(3) * 1024 * 1024 * 1024;
 
 struct context;
 
+// Weight residency after init (see load_tensors in lama.cpp). Storage-only
+// quantization dequantizes to F32 at load; the default-off gates
+// CRISPEMBED_LAMA_QUANT_MATMUL and CRISPEMBED_LAMA_F16_CONV keep 1x1 kernels in
+// their stored type (ggml_mul_mat) and k>1 conv kernels in F16 respectively.
+struct load_info {
+    int resident_tensors = 0;  // loaded in their stored type and shape
+    int converted_tensors = 0; // dequantized/reshaped at load
+    int matmul_tensors = 0;    // 1x1 kernels consumed by ggml_mul_mat
+    int f16_conv_tensors = 0;  // k>1 kernels held as F16 for the direct conv
+    size_t weight_bytes = 0;   // backend weight buffers
+};
+
 // Both initialization and inference require core_env::on("CRISPEMBED_LAMA").
-// The caller supplies a locally converted big-lama-18-075-v1 F32 model. The
+// The caller supplies a locally converted big-lama-18-075-v1 F32 model, or a
+// crispembed-quantize "lama-v1" F16/Q8_0/Q4_K derivative of it. The
 // converter preserves checkpoint provenance; that is not a weights license grant.
 context * init(const char * path, int n_threads, std::string & error);
 void free(context * ctx);
+bool describe(const context * ctx, load_info & info);
 
 // Binary mask convention: 255 fills, 0 preserves the original RGB bytes.
 // The whole frame is padded symmetrically on the right and bottom to multiples

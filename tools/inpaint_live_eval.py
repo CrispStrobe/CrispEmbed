@@ -77,12 +77,13 @@ def main():
     ap.add_argument("--photos", required=True, nargs="+", type=Path)
     ap.add_argument("--output-dir", required=True, type=Path)
     ap.add_argument("--text-model", type=Path)
+    ap.add_argument("--threads", type=int, help="CLI --threads (default: the CLI's own default)")
     args = ap.parse_args()
     import os
     env = dict(os.environ, CRISPEMBED_MIGAN="1", CRISPEMBED_LAMA="1")
     out = args.output_dir
     out.mkdir(parents=True, exist_ok=False)
-    report = {"backend": args.backend, "model": args.model.name, "cases": []}
+    report = {"backend": args.backend, "model": args.model.name, "threads": args.threads, "cases": []}
     for photo in args.photos:
         clean = Image.open(photo).convert("RGB")
         stem = photo.stem
@@ -101,7 +102,8 @@ def main():
         for name, mask_args in jobs.items():
             dest = out / f"{stem}.{args.backend}.{name}.png"
             rc, err, secs = run([args.binary, "--inpaint-model", args.model, "--inpaint-backend", args.backend,
-                                 "--inpaint", out / f"{stem}.input.png", *mask_args, "--inpaint-output", dest], env)
+                                 "--inpaint", out / f"{stem}.input.png", *mask_args, "--inpaint-output", dest,
+                                 *(["--threads", args.threads] if args.threads else [])], env)
             entry = {"returncode": rc, "seconds": secs}
             if rc == 0 and dest.exists():
                 r = np.asarray(Image.open(dest).convert("RGB"))
