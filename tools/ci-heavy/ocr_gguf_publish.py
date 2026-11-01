@@ -183,8 +183,13 @@ def plan(cfg, variants):
             steps.append(("convert", v, rec["filename"], rec["convert_args"]))
         else:
             tt = [a for o in rec.get("tensor_type", []) for a in ("--tensor-type", o)]
+            # Quantizer policy switches (e.g. CRISPEMBED_QUANTIZE_OXR_LARGE) travel as trailing NAME=value
+            # tokens; the workflow passes them as environment, never as quantizer arguments.
+            env = [f"{k}={val}" for k, val in sorted(rec.get("quantize_env", {}).items())]
+            require(all(re.fullmatch(r"CRISPEMBED_QUANTIZE_[A-Z0-9_]+=[a-z0-9_]+", e) for e in env),
+                    f"{v} quantize_env must be CRISPEMBED_QUANTIZE_* switches with plain values")
             steps.append(("quantize", v, rec["filename"],
-                          [cfg["recipes"][rec["from"]]["filename"], rec["type"], *tt, *rec.get("extra_args", [])]))
+                          [cfg["recipes"][rec["from"]]["filename"], rec["type"], *tt, *rec.get("extra_args", []), *env]))
     steps.sort(key=lambda s: s[0] != "convert")
     drop = [cfg["recipes"][v]["filename"] for v in cfg["recipes"] if v in needed and v not in variants]
     return steps, drop
