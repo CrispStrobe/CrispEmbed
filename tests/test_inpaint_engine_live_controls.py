@@ -258,6 +258,11 @@ class InpaintEngineLiveControls(unittest.TestCase):
                 runner.track(file, "input", 4, "a" * 64)
             runner.track(file, "input", 4, hashlib.sha256(b"1234").hexdigest())
             file.write_bytes(b"4321")
+            # Same-size rewrites inside one filesystem timestamp tick (Windows
+            # NTFS) keep the cheap fingerprint; the final rehash still rejects.
+            with self.assertRaisesRegex(ValueError, "changed"):
+                runner.check_inputs(rehash=True)
+            file.write_bytes(b"43210")
             with self.assertRaisesRegex(ValueError, "changed"):
                 runner.check_inputs()
 

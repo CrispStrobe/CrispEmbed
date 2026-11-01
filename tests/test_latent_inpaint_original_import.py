@@ -60,7 +60,9 @@ class OriginalStudentImportTests(unittest.TestCase):
         self.assertIs(pipeline.RemovalModel, constructor)
         self.assertEqual(constructor().numerical_identity(), 71)
         self.assertIs(sys.modules["model_lib"].custom_get_down_block, blocks.custom_get_down_block)
-        self.assertEqual(Path(original.__file__), self.source / "model_lib/nets/unet_lambda_prune_lite.py")
+        # Resolve both sides: macOS temp dirs are /var -> /private/var symlinks.
+        self.assertEqual(Path(original.__file__).resolve(),
+                         (self.source / "model_lib/nets/unet_lambda_prune_lite.py").resolve())
         self.assertNotIn("model_lib.nets.unet_gla", sys.modules)
         self.assertNotIn("removal.v1_2.dataset", sys.modules)
         verified = adapter.verify_imported_moebius_modules(self.source, self.contract())
