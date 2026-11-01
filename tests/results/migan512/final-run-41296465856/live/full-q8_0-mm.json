@@ -1,0 +1,170 @@
+{
+  "engine": "migan512",
+  "backend": null,
+  "label": "q8_0-mm",
+  "model": "migan-512-places2-q8_0.gguf",
+  "vae": null,
+  "crop": null,
+  "tiles": false,
+  "threads": 4,
+  "env": [
+    "CRISPEMBED_INPAINT_QUANT=1",
+    "CRISPEMBED_INPAINT_QUANT_MATMUL=1"
+  ],
+  "reference_run": "/home/runner/work/_temp/out/live-full/f32",
+  "cases": [
+    {
+      "photo": "face.png",
+      "size": [
+        640,
+        640
+      ],
+      "resized_before_crop": null,
+      "naive_fill": {
+        "masked_pixels": 32946,
+        "psnr_db": 14.359,
+        "mae": 40.344
+      },
+      "runs": {
+        "exact-mask": {
+          "returncode": 0,
+          "seconds": 4.117,
+          "peak_rss_kib": 319032,
+          "shape_ok": true,
+          "inpainted": {
+            "masked_pixels": 32946,
+            "psnr_db": 24.494,
+            "mae": 6.839
+          },
+          "outside_exact": true,
+          "vs_reference_run": {
+            "psnr_db": 48.342,
+            "mae": 0.53,
+            "max_abs": 11,
+            "rgb_cosine": 0.999964
+          }
+        },
+        "dbnet-mask": {
+          "returncode": 0,
+          "seconds": 5.524,
+          "peak_rss_kib": 647388,
+          "shape_ok": true,
+          "inpainted": {
+            "masked_pixels": 32946,
+            "psnr_db": 17.901,
+            "mae": 18.452
+          },
+          "outside_exact": null,
+          "vs_reference_run": {
+            "psnr_db": 45.478,
+            "mae": 0.792,
+            "max_abs": 21,
+            "rgb_cosine": 0.99994
+          }
+        }
+      }
+    },
+    {
+      "photo": "landscape.jpg",
+      "size": [
+        960,
+        1777
+      ],
+      "resized_before_crop": null,
+      "naive_fill": {
+        "masked_pixels": 138248,
+        "psnr_db": 19.891,
+        "mae": 18.441
+      },
+      "runs": {
+        "exact-mask": {
+          "returncode": 0,
+          "seconds": 12.189,
+          "peak_rss_kib": 334468,
+          "shape_ok": true,
+          "inpainted": {
+            "masked_pixels": 138248,
+            "psnr_db": 20.67,
+            "mae": 16.266
+          },
+          "outside_exact": true,
+          "vs_reference_run": {
+            "psnr_db": 40.861,
+            "mae": 1.536,
+            "max_abs": 42,
+            "rgb_cosine": 0.999811
+          }
+        },
+        "dbnet-mask": {
+          "returncode": 0,
+          "seconds": 15.321,
+          "peak_rss_kib": 1126148,
+          "shape_ok": true,
+          "inpainted": {
+            "masked_pixels": 138248,
+            "psnr_db": 18.012,
+            "mae": 20.953
+          },
+          "outside_exact": null,
+          "vs_reference_run": {
+            "psnr_db": 38.033,
+            "mae": 1.833,
+            "max_abs": 88,
+            "rgb_cosine": 0.999611
+          }
+        }
+      }
+    },
+    {
+      "photo": "street.jpg",
+      "size": [
+        1280,
+        853
+      ],
+      "resized_before_crop": null,
+      "naive_fill": {
+        "masked_pixels": 59920,
+        "psnr_db": 13.913,
+        "mae": 40.337
+      },
+      "runs": {
+        "exact-mask": {
+          "returncode": 0,
+          "seconds": 6.263,
+          "peak_rss_kib": 331036,
+          "shape_ok": true,
+          "inpainted": {
+            "masked_pixels": 59920,
+            "psnr_db": 13.044,
+            "mae": 40.804
+          },
+          "outside_exact": true,
+          "vs_reference_run": {
+            "psnr_db": 32.96,
+            "mae": 3.271,
+            "max_abs": 113,
+            "rgb_cosine": 0.998335
+          }
+        },
+        "dbnet-mask": {
+          "returncode": 0,
+          "seconds": 12.764,
+          "peak_rss_kib": 976796,
+          "shape_ok": true,
+          "inpainted": {
+            "masked_pixels": 59920,
+            "psnr_db": 11.031,
+            "mae": 52.953
+          },
+          "outside_exact": null,
+          "vs_reference_run": {
+            "psnr_db": 29.987,
+            "mae": 4.579,
+            "max_abs": 123,
+            "rgb_cosine": 0.997206
+          }
+        }
+      }
+    }
+  ]
+}

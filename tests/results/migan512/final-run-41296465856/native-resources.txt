@@ -1,0 +1,224 @@
+f32 subtitle_bar 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:34.64
+f32 subtitle_bar 	Maximum resident set size (kbytes): 4771984
+f32 edge_touch 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:16.21
+f32 edge_touch 	Maximum resident set size (kbytes): 4772212
+f32 empty 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.17
+f32 empty 	Maximum resident set size (kbytes): 320200
+f32 full 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.16
+f32 full 	Maximum resident set size (kbytes): 320008
+f32 center 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.16
+f32 center 	Maximum resident set size (kbytes): 320036
+f32 one_pixel 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.19
+f32 one_pixel 	Maximum resident set size (kbytes): 319884
+f32 checkerboard 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.16
+f32 checkerboard 	Maximum resident set size (kbytes): 320064
+f32 thin_strip 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.17
+f32 thin_strip 	Maximum resident set size (kbytes): 319976
+f32-g subtitle_bar 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:21.75
+f32-g subtitle_bar 	Maximum resident set size (kbytes): 5098136
+f32-g edge_touch 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:24.48
+f32-g edge_touch 	Maximum resident set size (kbytes): 5098080
+f32-g empty 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.30
+f32-g empty 	Maximum resident set size (kbytes): 391576
+f32-g full 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.12
+f32-g full 	Maximum resident set size (kbytes): 391304
+f32-g center 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.07
+f32-g center 	Maximum resident set size (kbytes): 391408
+f32-g one_pixel 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.18
+f32-g one_pixel 	Maximum resident set size (kbytes): 391272
+f32-g checkerboard 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.07
+f32-g checkerboard 	Maximum resident set size (kbytes): 391332
+f32-g thin_strip 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.06
+f32-g thin_strip 	Maximum resident set size (kbytes): 391268
+f16 subtitle_bar 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:24.23
+f16 subtitle_bar 	Maximum resident set size (kbytes): 4772216
+f16 edge_touch 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:24.44
+f16 edge_touch 	Maximum resident set size (kbytes): 4772452
+f16 empty 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:03.13
+f16 empty 	Maximum resident set size (kbytes): 320420
+f16 full 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.17
+f16 full 	Maximum resident set size (kbytes): 320036
+f16 center 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.18
+f16 center 	Maximum resident set size (kbytes): 320324
+f16 one_pixel 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.27
+f16 one_pixel 	Maximum resident set size (kbytes): 320504
+f16 checkerboard 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.15
+f16 checkerboard 	Maximum resident set size (kbytes): 320040
+f16 thin_strip 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.16
+f16 thin_strip 	Maximum resident set size (kbytes): 320436
+f16-mm subtitle_bar 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:22.76
+f16-mm subtitle_bar 	Maximum resident set size (kbytes): 4752028
+f16-mm edge_touch 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:24.10
+f16-mm edge_touch 	Maximum resident set size (kbytes): 4752016
+f16-mm empty 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:03.16
+f16-mm empty 	Maximum resident set size (kbytes): 308992
+f16-mm full 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.52
+f16-mm full 	Maximum resident set size (kbytes): 308896
+f16-mm center 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.48
+f16-mm center 	Maximum resident set size (kbytes): 309084
+f16-mm one_pixel 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.56
+f16-mm one_pixel 	Maximum resident set size (kbytes): 309044
+f16-mm checkerboard 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.46
+f16-mm checkerboard 	Maximum resident set size (kbytes): 308916
+f16-mm thin_strip 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.45
+f16-mm thin_strip 	Maximum resident set size (kbytes): 309064
+f16-g subtitle_bar 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:22.35
+f16-g subtitle_bar 	Maximum resident set size (kbytes): 5099216
+f16-g edge_touch 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:26.78
+f16-g edge_touch 	Maximum resident set size (kbytes): 5099356
+f16-g empty 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:03.00
+f16-g empty 	Maximum resident set size (kbytes): 392280
+f16-g full 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.09
+f16-g full 	Maximum resident set size (kbytes): 392584
+f16-g center 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.10
+f16-g center 	Maximum resident set size (kbytes): 392712
+f16-g one_pixel 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.19
+f16-g one_pixel 	Maximum resident set size (kbytes): 392544
+f16-g checkerboard 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.07
+f16-g checkerboard 	Maximum resident set size (kbytes): 392736
+f16-g thin_strip 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.06
+f16-g thin_strip 	Maximum resident set size (kbytes): 392496
+f16-mm-g subtitle_bar 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:23.01
+f16-mm-g subtitle_bar 	Maximum resident set size (kbytes): 5095552
+f16-mm-g edge_touch 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:24.24
+f16-mm-g edge_touch 	Maximum resident set size (kbytes): 5095200
+f16-mm-g empty 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:03.32
+f16-mm-g empty 	Maximum resident set size (kbytes): 380340
+f16-mm-g full 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.43
+f16-mm-g full 	Maximum resident set size (kbytes): 380404
+f16-mm-g center 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.43
+f16-mm-g center 	Maximum resident set size (kbytes): 380176
+f16-mm-g one_pixel 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.51
+f16-mm-g one_pixel 	Maximum resident set size (kbytes): 380476
+f16-mm-g checkerboard 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.44
+f16-mm-g checkerboard 	Maximum resident set size (kbytes): 380336
+f16-mm-g thin_strip 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.49
+f16-mm-g thin_strip 	Maximum resident set size (kbytes): 380452
+q8_0 subtitle_bar 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:22.22
+q8_0 subtitle_bar 	Maximum resident set size (kbytes): 4772324
+q8_0 edge_touch 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:22.71
+q8_0 edge_touch 	Maximum resident set size (kbytes): 4772244
+q8_0 empty 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:03.48
+q8_0 empty 	Maximum resident set size (kbytes): 320332
+q8_0 full 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.23
+q8_0 full 	Maximum resident set size (kbytes): 320212
+q8_0 center 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.25
+q8_0 center 	Maximum resident set size (kbytes): 320148
+q8_0 one_pixel 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.28
+q8_0 one_pixel 	Maximum resident set size (kbytes): 320420
+q8_0 checkerboard 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.27
+q8_0 checkerboard 	Maximum resident set size (kbytes): 320064
+q8_0 thin_strip 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.19
+q8_0 thin_strip 	Maximum resident set size (kbytes): 320244
+q8_0-mm subtitle_bar 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:22.40
+q8_0-mm subtitle_bar 	Maximum resident set size (kbytes): 4764112
+q8_0-mm edge_touch 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:28.30
+q8_0-mm edge_touch 	Maximum resident set size (kbytes): 4764176
+q8_0-mm empty 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:03.09
+q8_0-mm empty 	Maximum resident set size (kbytes): 320972
+q8_0-mm full 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.30
+q8_0-mm full 	Maximum resident set size (kbytes): 321048
+q8_0-mm center 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.31
+q8_0-mm center 	Maximum resident set size (kbytes): 321204
+q8_0-mm one_pixel 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.55
+q8_0-mm one_pixel 	Maximum resident set size (kbytes): 321272
+q8_0-mm checkerboard 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.33
+q8_0-mm checkerboard 	Maximum resident set size (kbytes): 321300
+q8_0-mm thin_strip 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.38
+q8_0-mm thin_strip 	Maximum resident set size (kbytes): 321432
+q8_0-g subtitle_bar 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:21.97
+q8_0-g subtitle_bar 	Maximum resident set size (kbytes): 5098820
+q8_0-g edge_touch 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:25.28
+q8_0-g edge_touch 	Maximum resident set size (kbytes): 5098984
+q8_0-g empty 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:03.04
+q8_0-g empty 	Maximum resident set size (kbytes): 392132
+q8_0-g full 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.07
+q8_0-g full 	Maximum resident set size (kbytes): 392084
+q8_0-g center 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.07
+q8_0-g center 	Maximum resident set size (kbytes): 392060
+q8_0-g one_pixel 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.21
+q8_0-g one_pixel 	Maximum resident set size (kbytes): 391988
+q8_0-g checkerboard 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.09
+q8_0-g checkerboard 	Maximum resident set size (kbytes): 392328
+q8_0-g thin_strip 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.06
+q8_0-g thin_strip 	Maximum resident set size (kbytes): 392288
+q8_0-mm-g subtitle_bar 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:28.32
+q8_0-mm-g subtitle_bar 	Maximum resident set size (kbytes): 5124476
+q8_0-mm-g edge_touch 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:30.97
+q8_0-mm-g edge_touch 	Maximum resident set size (kbytes): 5124752
+q8_0-mm-g empty 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.92
+q8_0-mm-g empty 	Maximum resident set size (kbytes): 392200
+q8_0-mm-g full 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.33
+q8_0-mm-g full 	Maximum resident set size (kbytes): 392324
+q8_0-mm-g center 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.28
+q8_0-mm-g center 	Maximum resident set size (kbytes): 392296
+q8_0-mm-g one_pixel 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.63
+q8_0-mm-g one_pixel 	Maximum resident set size (kbytes): 392292
+q8_0-mm-g checkerboard 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.42
+q8_0-mm-g checkerboard 	Maximum resident set size (kbytes): 392256
+q8_0-mm-g thin_strip 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.40
+q8_0-mm-g thin_strip 	Maximum resident set size (kbytes): 392284
+q4_k subtitle_bar 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:18.65
+q4_k subtitle_bar 	Maximum resident set size (kbytes): 4772200
+q4_k edge_touch 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:28.87
+q4_k edge_touch 	Maximum resident set size (kbytes): 4772256
+q4_k empty 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:03.26
+q4_k empty 	Maximum resident set size (kbytes): 320252
+q4_k full 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.18
+q4_k full 	Maximum resident set size (kbytes): 319948
+q4_k center 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.17
+q4_k center 	Maximum resident set size (kbytes): 320300
+q4_k one_pixel 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.40
+q4_k one_pixel 	Maximum resident set size (kbytes): 320532
+q4_k checkerboard 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.33
+q4_k checkerboard 	Maximum resident set size (kbytes): 320300
+q4_k thin_strip 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.36
+q4_k thin_strip 	Maximum resident set size (kbytes): 320332
+q4_k-mm subtitle_bar 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:21.57
+q4_k-mm subtitle_bar 	Maximum resident set size (kbytes): 4762760
+q4_k-mm edge_touch 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:25.53
+q4_k-mm edge_touch 	Maximum resident set size (kbytes): 4762612
+q4_k-mm empty 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:03.06
+q4_k-mm empty 	Maximum resident set size (kbytes): 319788
+q4_k-mm full 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.36
+q4_k-mm full 	Maximum resident set size (kbytes): 320052
+q4_k-mm center 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.36
+q4_k-mm center 	Maximum resident set size (kbytes): 319728
+q4_k-mm one_pixel 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.73
+q4_k-mm one_pixel 	Maximum resident set size (kbytes): 319768
+q4_k-mm checkerboard 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.34
+q4_k-mm checkerboard 	Maximum resident set size (kbytes): 319728
+q4_k-mm thin_strip 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.32
+q4_k-mm thin_strip 	Maximum resident set size (kbytes): 319712
+q4_k-g subtitle_bar 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:21.93
+q4_k-g subtitle_bar 	Maximum resident set size (kbytes): 5098664
+q4_k-g edge_touch 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:31.82
+q4_k-g edge_touch 	Maximum resident set size (kbytes): 5098484
+q4_k-g empty 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.46
+q4_k-g empty 	Maximum resident set size (kbytes): 391800
+q4_k-g full 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.06
+q4_k-g full 	Maximum resident set size (kbytes): 391864
+q4_k-g center 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.06
+q4_k-g center 	Maximum resident set size (kbytes): 391860
+q4_k-g one_pixel 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.29
+q4_k-g one_pixel 	Maximum resident set size (kbytes): 391612
+q4_k-g checkerboard 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.23
+q4_k-g checkerboard 	Maximum resident set size (kbytes): 391812
+q4_k-g thin_strip 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.16
+q4_k-g thin_strip 	Maximum resident set size (kbytes): 391832
+q4_k-mm-g subtitle_bar 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:22.65
+q4_k-mm-g subtitle_bar 	Maximum resident set size (kbytes): 5123288
+q4_k-mm-g edge_touch 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:28.92
+q4_k-mm-g edge_touch 	Maximum resident set size (kbytes): 5123196
+q4_k-mm-g empty 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:03.18
+q4_k-mm-g empty 	Maximum resident set size (kbytes): 391084
+q4_k-mm-g full 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.30
+q4_k-mm-g full 	Maximum resident set size (kbytes): 390924
+q4_k-mm-g center 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.41
+q4_k-mm-g center 	Maximum resident set size (kbytes): 390980
+q4_k-mm-g one_pixel 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.51
+q4_k-mm-g one_pixel 	Maximum resident set size (kbytes): 390832
+q4_k-mm-g checkerboard 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.31
+q4_k-mm-g checkerboard 	Maximum resident set size (kbytes): 390980
+q4_k-mm-g thin_strip 	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.39
+q4_k-mm-g thin_strip 	Maximum resident set size (kbytes): 390924
