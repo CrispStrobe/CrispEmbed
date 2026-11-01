@@ -7194,7 +7194,8 @@ F16 German request took 62 s (CPU-routed flash) / 77 s (dense on mat-vec kernels
 receipt page in one interleaved window: `_hp` + direct depthwise 1134, `_hp` 1564, PREC_F32 via
 mul_mv_ext 3090, half-tile mul_mm 690 (wrong regions). CPU (earlier, quieter window) 1194.
 Profile of the mul_mv_ext route: MUL_MAT 71% (~120 GFLOP of conv GEMM), IM2COL 11%, CONT 10%.
-Not yet shown faster than CPU in one window; GPU stays opt-in.
+Same-window verification with no gates set (Apple default after this change): Metal
+0.65-0.68 s total vs CPU 1.36-1.47 s on all five pages (2.1-2.2x), regions equal.
 
 ## OXR-1.0 — model measurements pending (31 October 2026)
 

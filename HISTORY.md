@@ -9,7 +9,8 @@
   `GGML_METAL_PREC_F32_MM` routes them to the F32-tile `_hp` mul_mm (1100-1600 GFLOP/s).
 * OXR F16 Metal: token-exact 5/5, logits within 1.1e-4 of CPU, ~3-10x faster warm; default
   on Apple for the F16 recipe (CPU stays default elsewhere; `CRISPEMBED_OXR_GPU=0` opts out).
-* D-FINE F32 Metal: region-exact 5/5 with the `_hp` route, closer to PyTorch than CPU; opt-in.
+* D-FINE F32 Metal: region-exact 5/5 with the `_hp` route, closer to PyTorch than CPU, 2.1-2.2x
+  faster than CPU in the same window; now the Apple default (`CRISPEMBED_OXR_LAYOUT_GPU=0` opts out).
 * D-FINE F16: the 147 px "failure" was a positional pairing of two near-tied regions; paired by
   IoU all regions match, cosine 1.0; PyTorch's own F16 rounding moves boxes <= 0.5 px (probe
   41327140374). Passes the owner F16 bar; strict budgets still fail (retained).

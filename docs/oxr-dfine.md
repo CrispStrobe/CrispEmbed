@@ -225,8 +225,16 @@ shared workstation (load average 8-50, swap in use) and are only comparable with
 is ~120 GFLOP of GEMM at 960x960, which explains the default PREC_F32 Metal path being slower
 than CPU. In one same-window interleaved run (receipt) the encoder took 1.13 s with
 `GGML_METAL_PREC_F32_MM=1` + direct depthwise, 1.56 s with the `_hp` route alone and 3.09 s with
-the `mul_mv_ext` route; see PERFORMANCE.md for the same-window CPU comparison. The GPU path stays
-opt-in (`CRISPEMBED_OXR_LAYOUT_GPU=1`); the CPU default is unchanged.
+the `mul_mv_ext` route; see PERFORMANCE.md for the same-window CPU comparison. **Default changed (Apple builds):** with `CRISPEMBED_OXR_LAYOUT_GPU` unset, D-FINE runs on Metal
+with PREC_F32 products on the `_hp` route (`GGML_METAL_PREC_F32_MM=1`, opt out with
+`CRISPEMBED_OXR_LAYOUT_GPU_HP_MM=0`) and the direct depthwise kernel on the GPU (opt out with
+`CRISPEMBED_OXR_LAYOUT_DW_DIRECT=0`). Verification run with no gates set
+(`metal-m1/dfine-auto-f32/`): selected regions equal on 5/5 pages, selected boxes/scores cosine
+1.000000, total 0.65-0.68 s vs CPU 1.36-1.47 s in the same window (2.1-2.2x); a second window
+gave 0.68-0.71 s vs 1.71-1.86 s. `CRISPEMBED_OXR_LAYOUT_GPU=0` or `LAYOUT_DETECT_FORCE_CPU=1` keep
+the CPU; non-Apple platforms keep the CPU unless `CRISPEMBED_OXR_LAYOUT_GPU=1`. The F16 GGUF on
+Metal (`dfine-auto-f16/`) matches the CPU F16 result: all regions matched, cosine >= 0.99999,
+0.84-0.90 s (weights are widened to F32 per run).
 
 ### F16 and the 147 px box, re-scored (owner policy, docs/precision-acceptance.md)
 
@@ -261,8 +269,7 @@ does not prove it; the checkpoint's own terms are the OXR License either way. Th
 * Speed parity (native 2.6× slower than PyTorch CPU).
 * Quantized recipes: hosted lane `tools/ci-heavy/oxr_dfine_quant.sh` (conv kernels quantized,
   kept F32 or F16). F16 clears the owner bar (above); strict budgets still fail.
-* GPU default: Metal F32 is region-exact but not yet shown faster than CPU in a quiet window;
-  `CRISPEMBED_OXR_LAYOUT_GPU=1` stays opt-in (see the Metal section).
+* GPU: Metal is the Apple default (above); CUDA/Vulkan untested.
 * Per-class `class_confidences` overrides of the service.
 * End-to-end OXR document output with `CrispOXR(layout_model=)` against the
   service-backed pipeline (the layout boundary itself is verified above).
