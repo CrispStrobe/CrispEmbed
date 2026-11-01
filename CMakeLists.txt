@@ -915,6 +915,10 @@ target_compile_definitions(test-teleocr-diff PRIVATE CRISPEMBED_TELEOCR_TESTING=
 crispembed_apply_arch_flags(test-teleocr-diff)
 target_link_libraries(test-teleocr-diff PRIVATE crispembed)
 
+# Resident-context device A/B runner (completion IDs, text, per-run timing, RSS).
+add_executable(test-teleocr-run tests/teleocr_run.cpp)
+target_link_libraries(test-teleocr-run PRIVATE crispembed)
+
 add_executable(test-teleocr-preprocess tests/test_teleocr_preprocess.cpp)
 target_link_libraries(test-teleocr-preprocess PRIVATE crispembed)
 

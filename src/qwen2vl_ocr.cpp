@@ -84,7 +84,18 @@ ggml_tensor * model_matmul(context & ctx, ggml_context * g, ggml_tensor * weight
         weights = ggml_cast(g, weights, GGML_TYPE_F32);
     }
     ggml_tensor * result = ggml_mul_mat(g, weights, input);
-    if (ctx.is_teleocr) ggml_mul_mat_set_prec(result, GGML_PREC_F32);
+    if (ctx.metal_f32_matmul) {
+        // Bundled ggml-metal: PREC_F32 plus this op_params[1] marker selects
+        // F32 activations against F32-dequantized weights (simdgroup_float8x8
+        // kernel_mul_mm_*_hp for batches, F32 mul_mv for decode) instead of
+        // the PREC_F32 int8 activation pre-quantization / mul_mv_ext route.
+        // Must equal GGML_METAL_MUL_MAT_PREC_F32_HP in ggml-metal-ops.h.
+        constexpr int32_t kMetalMulMatPrecF32Hp = 0x48500001;
+        ggml_mul_mat_set_prec(result, GGML_PREC_F32);
+        result->op_params[1] = kMetalMulMatPrecF32Hp;
+    } else if (ctx.is_teleocr) {
+        ggml_mul_mat_set_prec(result, GGML_PREC_F32);
+    }
     return result;
 }
 
@@ -94,6 +105,37 @@ bool observing(const context & ctx) {
 #else
     return !ctx.diff_ref_path.empty();
 #endif
+}
+
+// Raw F32 stage dump for CPU/GPU device A/B (see context::stage_dump_dir).
+constexpr int kStageDumpDecodeSteps = 32;
+void stage_dump(const context & ctx, const std::string & name, const float * data, size_t count) {
+    if (ctx.stage_dump_dir.empty() || !data) return;
+    const std::string path = ctx.stage_dump_dir + "/c" + std::to_string(ctx.stage_dump_call) + "_" + name + ".f32";
+    if (FILE * f = std::fopen(path.c_str(), "wb")) {
+        std::fwrite(data, sizeof(float), count, f);
+        std::fclose(f);
+    }
+}
+
+void stage_dump_tensor(const context & ctx, ggml_cgraph * graph, const char * tensor_name, const std::string & name) {
+    if (ctx.stage_dump_dir.empty()) return;
+    ggml_tensor * tensor = ggml_graph_get_tensor(graph, tensor_name);
+    if (!tensor || tensor->type != GGML_TYPE_F32) return;
+    std::vector<float> values((size_t)ggml_nelements(tensor));
+    ggml_backend_tensor_get(tensor, values.data(), 0, values.size() * sizeof(float));
+    stage_dump(ctx, name, values.data(), values.size());
+}
+
+void set_attention_prec(const context & ctx, ggml_tensor * attention) {
+    if (!ctx.metal_native_fa) ggml_flash_attn_ext_set_prec(attention, GGML_PREC_F32);
+}
+
+bool backend_is_metal(ggml_backend_t backend) {
+    ggml_backend_dev_t dev = backend ? ggml_backend_get_device(backend) : nullptr;
+    ggml_backend_reg_t reg = dev ? ggml_backend_dev_backend_reg(dev) : nullptr;
+    const char * name = reg ? ggml_backend_reg_name(reg) : nullptr;
+    return name && std::strcmp(name, "Metal") == 0;
 }
 
 #ifdef CRISPEMBED_TELEOCR_TESTING
@@ -1139,7 +1181,7 @@ vision_graph_result build_vision_graph(context & ctx, int n_patches, const int32
                 ggml_tensor * kw = gather_windows(K, group.second, group.first);
                 ggml_tensor * vw = gather_windows(V, group.second, group.first);
                 ggml_tensor * a = ggml_flash_attn_ext(g, qw, kw, vw, nullptr, attn_scale, 0.0f, 0.0f);
-                ggml_flash_attn_ext_set_prec(a, GGML_PREC_F32);
+                set_attention_prec(ctx, a);
                 // Flash attention returns hd, heads, len, windows.
                 a = ggml_reshape_2d(g, a, H, group.second->ne[0]);
                 joined = joined ? ggml_concat(g, joined, a, 1) : a;
@@ -1159,7 +1201,7 @@ vision_graph_result build_vision_graph(context & ctx, int n_patches, const int32
         } else {
             // Full-attention block: fused flash attention (no mask).
             attn_out = ggml_flash_attn_ext(g, Q, K, V, nullptr, attn_scale, 0.0f, 0.0f);
-            ggml_flash_attn_ext_set_prec(attn_out, GGML_PREC_F32);
+            set_attention_prec(ctx, attn_out);
             attn_out = ggml_reshape_2d(g, attn_out, H, n_patches);
         }
 
@@ -1396,6 +1438,8 @@ bool load(context & ctx, const char * gguf_path, int n_threads, int verbosity, c
                 lhp.num_attention_heads, lhp.num_key_value_heads, lhp.intermediate_size);
     }
 
+    if (const char * dump = getenv("CRISPEMBED_QWEN2VL_STAGE_DUMP")) ctx.stage_dump_dir = dump;
+
     // Existing Qwen profiles prefer GPU when available. TeleOCR defaults to
     // the CPU arithmetic tested by its reference panel; GPU execution has a
     // separate opt-in because quantized GPU kernels can round activations.
@@ -1410,6 +1454,14 @@ bool load(context & ctx, const char * gguf_path, int n_threads, int verbosity, c
     if (!ctx.backend) ctx.backend = ggml_backend_cpu_init();
     if (ggml_backend_is_cpu(ctx.backend)) ggml_backend_cpu_set_n_threads(ctx.backend, n_threads);
     ctx.backend_cpu = ggml_backend_is_cpu(ctx.backend) ? nullptr : ggml_backend_cpu_init();
+    ctx.metal_native_fa = backend_is_metal(ctx.backend) && !core_env::explicitly_off("CRISPEMBED_QWEN2VL_METAL_FA");
+    // TeleOCR's reference arithmetic is F32 activations with compressed
+    // weights (see model_matmul's CPU branch), so on Metal it uses the F32
+    // activation kernels unless =0. MinerU keeps ggml-metal's default kernels
+    // unless CRISPEMBED_MINERU25_PRO_METAL_F32_MATMUL=1.
+    ctx.metal_f32_matmul = backend_is_metal(ctx.backend) &&
+                           ((ctx.is_teleocr && !core_env::explicitly_off("CRISPEMBED_TELEOCR_METAL_F32_MATMUL")) ||
+                            (ctx.is_mineru25_pro && core_env::on("CRISPEMBED_MINERU25_PRO_METAL_F32_MATMUL")));
     if (ctx.backend_cpu) ggml_backend_cpu_set_n_threads(ctx.backend_cpu, n_threads);
 
     // Compute-meta scratch: 32 layers × ~30 ops + merger.
@@ -2241,6 +2293,7 @@ bool encode_vision(context & ctx, const float * patches, int n_patches, const in
     if (ctx.stage_observer && out.image_embeds)
         ctx.stage_observer(ctx.stage_observer_user, "vis_merger_output", out.image_embeds,
                            size_t(out.n_merged) * out.embed_dim);
+    stage_dump(ctx, "vis_merger_output", out.image_embeds, size_t(out.n_merged) * out.embed_dim);
 
     // Note: per-vision-layer diff comparison is done earlier (right after the
     // vision graph compute), while gr.gf's buffers are still valid — the merger
@@ -2489,7 +2542,7 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
         V = ggml_cont(g, ggml_permute(g, V, 0, 2, 1, 3));
 
         ggml_tensor * attn_out = ggml_flash_attn_ext(g, Q, K, V, causal_mask, attn_scale, 0.0f, 0.0f);
-        ggml_flash_attn_ext_set_prec(attn_out, GGML_PREC_F32);
+        set_attention_prec(ctx, attn_out);
         attn_out = ggml_reshape_2d(g, attn_out, q_dim, n_tokens);
 
         // Output projection
@@ -2548,7 +2601,7 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
     if (ctx.m.output_norm_w) {
         x = rmsnorm(x, ctx.m.output_norm_w);
         ggml_set_name(x, "llm_final_norm");
-        if (observing(ctx)) ggml_set_output(x);
+        if (observing(ctx) || !ctx.stage_dump_dir.empty()) ggml_set_output(x);
     }
 
     // LM head (logits) — compute in graph to handle quantized weights
@@ -2821,7 +2874,9 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
         ggml_backend_tensor_get(logits_t, out.logits, 0, (size_t)n_logits * V * sizeof(float));
         if (ctx.stage_observer)
             ctx.stage_observer(ctx.stage_observer_user, "llm_logits_last", out.logits + size_t(n_logits - 1) * V, V);
+        stage_dump(ctx, "prefill_logits_last", out.logits + size_t(n_logits - 1) * V, V);
     }
+    stage_dump_tensor(ctx, gf, "llm_final_norm", "prefill_final_norm");
 
     // Read hidden states
     if (materialize_hidden) {
@@ -3071,7 +3126,7 @@ static ggml_cgraph * build_decode_step_graph(context & ctx, ggml_context * g, in
         V_full = ggml_permute(g, V_full, 0, 2, 1, 3);
 
         ggml_tensor * attn_out = ggml_flash_attn_ext(g, Q, K_full, V_full, kv_mask, attn_scale, 0.0f, 0.0f);
-        ggml_flash_attn_ext_set_prec(attn_out, GGML_PREC_F32);
+        set_attention_prec(ctx, attn_out);
         attn_out = ggml_reshape_2d(g, attn_out, q_dim, 1);
 
         attn_out = model_matmul(ctx, g, ly.o_w, attn_out);
@@ -3090,6 +3145,10 @@ static ggml_cgraph * build_decode_step_graph(context & ctx, ggml_context * g, in
     // Final norm + logits
     if (ctx.m.output_norm_w) {
         x = rmsnorm(x, ctx.m.output_norm_w);
+        if (!ctx.stage_dump_dir.empty()) {
+            ggml_set_name(x, "decode_final_norm");
+            ggml_set_output(x);
+        }
     }
     ggml_tensor * lm_head = ctx.m.lm_head_w;
     if (!lm_head && lhp.tie_word_embeddings && ctx.m.embed_tokens) {
@@ -3477,6 +3536,10 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
             // Read logits + greedy argmax.
             ggml_tensor * logits_t = ggml_graph_get_tensor(gf, "logits");
             ggml_backend_tensor_get(logits_t, logits_data.data(), 0, V * sizeof(float));
+            if (!ctx.stage_dump_dir.empty() && gen <= kStageDumpDecodeSteps) {
+                stage_dump(ctx, "decode" + std::to_string(gen) + "_logits", logits_data.data(), V);
+                stage_dump_tensor(ctx, gf, "decode_final_norm", "decode" + std::to_string(gen) + "_final_norm");
+            }
             if (ctx.is_mineru25_pro) {
                 const auto choice = mineru25_profile::greedy_choice(logits_data.data(), V, mineru_history);
                 best_id = choice.id;

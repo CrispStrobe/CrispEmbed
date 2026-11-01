@@ -216,6 +216,21 @@ struct context {
     // null in production; setting diff_ref_path preserves graph intermediates.
     void (*stage_observer)(void *, const char *, const float *, size_t) = nullptr;
     void * stage_observer_user = nullptr;
+    // Device A/B evidence: when CRISPEMBED_QWEN2VL_STAGE_DUMP names a
+    // directory, the vision merger output, prefill final-norm hidden states,
+    // prefill last-row logits and the first decode steps' logits/hidden are
+    // written there as raw little-endian F32 files. Empty = off (default).
+    std::string stage_dump_dir;
+    // Metal: run flash attention natively instead of tagging it PREC_F32.
+    // The bundled ggml-metal refuses PREC_F32 flash attention, so the tagged
+    // op falls back to the CPU backend in every layer and decode step. The
+    // native kernel keeps F32 K/V and F32 accumulators but rounds Q to F16.
+    // Gate: CRISPEMBED_QWEN2VL_METAL_FA (default on for Metal; =0 restores
+    // the PREC_F32/CPU-attention path). Set at load from the chosen backend.
+    bool metal_native_fa = false;
+    // Metal: F32-activation matmul kernels (see model_matmul). Set at load.
+    bool metal_f32_matmul = false;
+    int stage_dump_call = 0;
     // Greedy decode bans repeated n-grams of this size (0/1 = off). 3 keeps VLM
     // OCR out of loops (#25); formula models set 0 - LaTeX legitimately repeats
     // trigrams ("^ { 2" in x^2 + y^2) and upstream decodes plain greedy.
