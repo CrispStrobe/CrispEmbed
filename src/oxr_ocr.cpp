@@ -166,7 +166,15 @@ bool g_f16_half_act = false;
 // _hp kernel. Quantized weights keep PREC_F32 (the half kernel would round
 // their dequantized values to F16).
 bool g_split_f16 = false;
+// Opt-in CRISPEMBED_OXR_DEQUANT_VISION=1: quantized SigLIP2 (vit.*) weights are
+// cast to F16 inside the graph before their product, so the CPU backend does not
+// quantize the vision activations to Q8_0/Q8_K blocks (its vec_dot path). Hosted
+// Q8_0-vision runs collapsed vision.layer.26 to cosine 0.55 on the German page
+// while Metal's F32-activation _hp route kept 0.88 row-min and decoded exactly.
+bool g_dequant_vision = false;
 ggml_tensor * mm(ggml_context * g, ggml_tensor * w, ggml_tensor * x) {
+    if (g_dequant_vision && ggml_is_quantized(w->type) && std::strncmp(w->name, "vit.", 4) == 0)
+        w = ggml_cast(g, w, GGML_TYPE_F16);
     if (g_split_f16 && (w->type == GGML_TYPE_F32 || w->type == GGML_TYPE_F16)) return core_split_f16::mul_mat(g, w, x);
     auto * out = ggml_mul_mat(g, w, x);
     if (!(g_f16_half_act && w->type == GGML_TYPE_F16)) ggml_mul_mat_set_prec(out, GGML_PREC_F32);
@@ -394,6 +402,7 @@ void load(oxr_ocr_context & c, const char * path) {
     }
     g_f16_half_act = !ggml_backend_is_cpu(c.backend) && core_env::on("CRISPEMBED_OXR_GPU_F16_HALF_ACT");
     g_split_f16 = !ggml_backend_is_cpu(c.backend) && core_env::on("CRISPEMBED_OXR_GPU_SPLIT_F16");
+    g_dequant_vision = core_env::on("CRISPEMBED_OXR_DEQUANT_VISION");
     c.cpu = ggml_backend_is_cpu(c.backend) ? c.backend : ggml_backend_cpu_init();
     if (!c.cpu) throw std::runtime_error("OXR CPU fallback initialization failed");
     ggml_backend_cpu_set_n_threads(c.cpu, c.threads);

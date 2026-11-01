@@ -21,7 +21,9 @@ if [[ "${1:-}" == dtype=* ]]; then DTYPE=${1#dtype=}; shift; fi
 # Optional quantizer policy (tools/quantize.cpp, opt-in): large=q8_0|mix quantizes
 # embed/lm_head/vte/visual head too; novisf16=1 keeps Q8_0 vision instead of F16.
 QENV=()
-while [[ "${1:-}" == large=* || "${1:-}" == novisf16=* || "${1:-}" == vision=* ]]; do
+while [[ "${1:-}" == large=* || "${1:-}" == novisf16=* || "${1:-}" == vision=* || "${1:-}" == env=* ]]; do
+    # env=KEY=VALUE exports a runtime gate for every native run of this lane.
+    if [[ "$1" == env=* ]]; then export "${1#env=}"; shift; continue; fi
     case $1 in large=*) QENV+=(CRISPEMBED_QUANTIZE_OXR_LARGE=${1#large=}) ;; novisf16=*) QENV+=(CRISPEMBED_QUANTIZE_NO_VISION_F16=${1#novisf16=}) ;;
         vision=*) QENV+=(CRISPEMBED_QUANTIZE_OXR_VISION=${1#vision=}) ;; esac
     shift
