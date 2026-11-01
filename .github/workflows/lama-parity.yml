@@ -1,0 +1,189 @@
+name: Big-LaMa original and native CPU F32 diagnostics
+
+on:
+  workflow_dispatch:
+    inputs:
+      checkpoint_url:
+        description: 'HTTPS URL of an explicitly selected, authorized PyTorch Big-LaMa checkpoint (not an outer ZIP)'
+        type: string
+        required: true
+      checkpoint_sha256:
+        description: 'Recorded lowercase SHA-256 of that exact checkpoint'
+        type: string
+        required: true
+      config_url:
+        description: 'HTTPS URL of the matching original Big-LaMa config.yaml'
+        type: string
+        required: true
+      config_sha256:
+        description: 'Recorded lowercase SHA-256 of that exact configuration'
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lama-parity-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  diagnostic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    defaults:
+      run:
+        shell: bash
+    env:
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      CRISPEMBED_LAMA: '1'
+      CHECKPOINT_URL: ${{ inputs.checkpoint_url }}
+      CHECKPOINT_SHA256: ${{ inputs.checkpoint_sha256 }}
+      CONFIG_URL: ${{ inputs.config_url }}
+      CONFIG_SHA256: ${{ inputs.config_sha256 }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: advimman/lama
+          ref: 786f5936b27fb3dacd2b1ad799e4de968ea697e7
+          path: upstream-lama
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Model-free converter and comparison controls
+        run: |
+          python tests/test_lama_converter.py -v
+          python tests/test_lama_reference.py -v
+      - name: Configure and build the CPU path before model access
+        run: |
+          cmake -S . -B build-lama -DCMAKE_BUILD_TYPE=Release \
+            -DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF -DBUILD_SHARED_LIBS=OFF \
+            -DGGML_BLAS=OFF -DGGML_METAL=OFF -DGGML_CUDA=OFF -DGGML_VULKAN=OFF \
+            -DGGML_OPENMP=OFF -DGGML_LLAMAFILE=OFF -DCRISPEMBED_BUILD_SHARED=OFF
+          cmake --build build-lama --config Release --parallel 2 \
+            --target crispembed-cli test-lama-fft test-lama test-lama-native
+          build-lama/test-lama-fft
+          build-lama/test-lama
+      - name: Install pinned original-module dependencies on hosted CPU
+        run: |
+          python -m pip install --disable-pip-version-check numpy==2.2.6 pillow==11.3.0 PyYAML==6.0.2
+          python -m pip install --disable-pip-version-check torch==2.8.0 --index-url https://download.pytorch.org/whl/cpu
+      - name: Retrieve only the explicitly selected checkpoint and configuration
+        run: |
+          python - <<'PY'
+          import hashlib
+          import json
+          import os
+          from pathlib import Path
+          import re
+          import urllib.parse
+          import urllib.request
+
+          destination = Path(os.environ['RUNNER_TEMP']) / 'lama-input'
+          destination.mkdir(exist_ok=False)
+          records = []
+          for prefix, filename, maximum in [('CHECKPOINT', 'best.ckpt', 2 * 1024**3),
+                                            ('CONFIG', 'config.yaml', 1024**2)]:
+              url = os.environ[prefix + '_URL']
+              parsed = urllib.parse.urlsplit(url)
+              expected = os.environ[prefix + '_SHA256']
+              if parsed.scheme != 'https' or not parsed.hostname or parsed.username or parsed.password:
+                  raise ValueError(prefix + ' requires an HTTPS URL without embedded credentials')
+              if re.fullmatch('[0-9a-f]{64}', expected) is None:
+                  raise ValueError(prefix + ' requires 64 lowercase hexadecimal SHA-256 digits')
+              digest, size = hashlib.sha256(), 0
+              request = urllib.request.Request(url, headers={'User-Agent': 'CrispEmbed-LaMa-validation'})
+              path = destination / filename
+              try:
+                  with urllib.request.urlopen(request, timeout=120) as response, path.open('xb') as output:
+                      if urllib.parse.urlsplit(response.geturl()).scheme != 'https':
+                          raise ValueError('download redirected outside HTTPS')
+                      while chunk := response.read(1024 * 1024):
+                          size += len(chunk)
+                          if size > maximum:
+                              raise ValueError(prefix + ' exceeds the fixed byte limit')
+                          digest.update(chunk)
+                          output.write(chunk)
+                  if not size or digest.hexdigest() != expected:
+                      raise ValueError(prefix + ' SHA-256 differs; no conversion or inference permitted')
+              except BaseException:
+                  path.unlink(missing_ok=True)
+                  raise
+              records.append({'file': filename, 'bytes': size, 'sha256': expected})
+          (destination / 'inputs.json').write_text(json.dumps(records, indent=2) + '\n')
+          print(json.dumps(records, indent=2))
+          PY
+      - name: Convert exact checkpoint bytes without framework execution
+        run: >-
+          python models/convert-lama-to-gguf.py
+          --checkpoint "$RUNNER_TEMP/lama-input/best.ckpt"
+          --checkpoint-sha256 "$CHECKPOINT_SHA256"
+          --config "$RUNNER_TEMP/lama-input/config.yaml"
+          --output "$RUNNER_TEMP/lama-input/big-lama-f32.gguf"
+      - name: Independent original-module capture before all native inference
+        run: >-
+          python tools/dump_lama_reference.py --source-dir upstream-lama
+          --checkpoint "$RUNNER_TEMP/lama-input/best.ckpt"
+          --checkpoint-sha256 "$CHECKPOINT_SHA256"
+          --config "$RUNNER_TEMP/lama-input/config.yaml"
+          --converted-model "$RUNNER_TEMP/lama-input/big-lama-f32.gguf"
+          --output "$RUNNER_TEMP/lama-original" --threads 2
+      - name: Freeze the complete original report identity
+        run: |
+          python - <<'PY'
+          import hashlib
+          import os
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP'])
+          report = root / 'lama-original' / 'report.json'
+          (root / 'lama-original-report.sha256').write_text(hashlib.sha256(report.read_bytes()).hexdigest() + '\n')
+          PY
+      - name: Native capture with strict stage and image comparison
+        run: >-
+          python tools/run_lama_native.py --binary build-lama/test-lama-native
+          --model "$RUNNER_TEMP/lama-input/big-lama-f32.gguf"
+          --original-dir "$RUNNER_TEMP/lama-original"
+          --output-dir "$RUNNER_TEMP/lama-native" --threads 2
+      - name: Production CLI PNG, batch, repeat and original-image controls
+        run: >-
+          python tests/test_inpaint_model.py --binary build-lama/crispembed
+          --model "$RUNNER_TEMP/lama-input/big-lama-f32.gguf" --backend lama
+          --reference "$RUNNER_TEMP/lama-original"
+          --output-dir "$RUNNER_TEMP/lama-cli"
+      - name: Recheck the frozen original report after native execution
+        if: always()
+        run: |
+          python - <<'PY'
+          import hashlib
+          import os
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP'])
+          frozen = root / 'lama-original-report.sha256'
+          if frozen.exists():
+              actual = hashlib.sha256((root / 'lama-original' / 'report.json').read_bytes()).hexdigest()
+              if actual != frozen.read_text().strip():
+                  raise RuntimeError('the frozen original report changed during native validation')
+          PY
+      - name: Preserve diagnostic evidence and notices without checkpoint or GGUF weights
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lama-cpu-f32-diagnostic-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/lama-original/
+            ${{ runner.temp }}/lama-native/
+            ${{ runner.temp }}/lama-cli/
+            ${{ runner.temp }}/lama-original-report.sha256
+            ${{ runner.temp }}/lama-input/inputs.json
+            ${{ runner.temp }}/lama-input/big-lama-f32.json
+            docs/third-party/lama-LICENSE.txt
+            docs/lama-native-source-contract.json
+          if-no-files-found: warn
+          compression-level: 1
+          retention-days: 30

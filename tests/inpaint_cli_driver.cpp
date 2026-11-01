@@ -1,5 +1,5 @@
 // Test-only implementations exercise the real CLI's file/mask/batch handling.
-// This target does not execute MI-GAN and is never installed or shipped.
+// This target does not execute a neural model and is never installed or shipped.
 #include "inpaint_cli.h"
 #include "inpaint.h"
 #include "ocr_detect.h"
@@ -15,12 +15,13 @@ struct context {
     int frames = 0;
 };
 
-context * init(const char *, int, std::string & error) {
+context * init(const char *, int, std::string & error, backend engine) {
     if (std::getenv("INPAINT_TEST_FAIL_INIT")) {
         error = "test model initialization failure";
         return nullptr;
     }
     std::fprintf(stderr, "INPAINT_TEST_LOAD\n");
+    std::fprintf(stderr, "INPAINT_TEST_BACKEND=%s\n", engine == backend::lama ? "lama" : "migan");
     return new context;
 }
 

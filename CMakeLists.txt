@@ -1057,12 +1057,23 @@ target_include_directories(crispembed-migan PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/s
 crispembed_apply_arch_flags(crispembed-migan)
 target_link_libraries(crispembed-migan PUBLIC crispembed-core ggml ggml-base ggml-cpu)
 
-# Issue 71: native-resolution tiling around the unchanged MI-GAN graph.
+# Big-LaMa CPU/F32 graph and real FFT custom operations. This archive is only
+# linked into the opt-in image CLI; the installed shared C ABI is unchanged.
+add_library(crispembed-lama-fft STATIC EXCLUDE_FROM_ALL src/lama_fft.cpp)
+target_include_directories(crispembed-lama-fft PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+crispembed_apply_arch_flags(crispembed-lama-fft)
+target_link_libraries(crispembed-lama-fft PUBLIC ggml ggml-base ggml-cpu)
+add_library(crispembed-lama STATIC EXCLUDE_FROM_ALL src/lama.cpp)
+target_include_directories(crispembed-lama PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+crispembed_apply_arch_flags(crispembed-lama)
+target_link_libraries(crispembed-lama PUBLIC crispembed-core crispembed-lama-fft)
+
+# Issue 71: engine dispatch, with native-resolution MI-GAN tiling and whole-image LaMa.
 # This internal CLI library adds no shared-library ABI or model registry alias.
 add_library(crispembed-inpaint STATIC EXCLUDE_FROM_ALL src/inpaint.cpp)
 target_include_directories(crispembed-inpaint PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 crispembed_apply_arch_flags(crispembed-inpaint)
-target_link_libraries(crispembed-inpaint PUBLIC crispembed-migan)
+target_link_libraries(crispembed-inpaint PUBLIC crispembed-migan crispembed-lama)
 target_link_libraries(crispembed-cli PRIVATE crispembed-inpaint)
 
 # Model-free contracts use the real tile/composition/hash implementation.
@@ -1084,6 +1095,20 @@ crispembed_apply_arch_flags(crispembed-migan-test)
 target_link_libraries(crispembed-migan-test PUBLIC crispembed-core ggml ggml-base ggml-cpu)
 add_executable(test-migan-diff EXCLUDE_FROM_ALL tests/test_migan_diff.cpp)
 target_link_libraries(test-migan-diff PRIVATE crispembed-migan-test)
+
+add_executable(test-lama-fft EXCLUDE_FROM_ALL tests/test_lama_fft.cpp)
+target_link_libraries(test-lama-fft PRIVATE crispembed-lama-fft crispembed-core)
+add_executable(test-lama EXCLUDE_FROM_ALL tests/test_lama.cpp)
+target_link_libraries(test-lama PRIVATE crispembed-lama)
+
+# LaMa intermediate owners and callbacks exist solely in the validation build.
+add_library(crispembed-lama-test STATIC EXCLUDE_FROM_ALL src/lama.cpp)
+target_include_directories(crispembed-lama-test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_compile_definitions(crispembed-lama-test PUBLIC CRISPEMBED_LAMA_TESTING)
+crispembed_apply_arch_flags(crispembed-lama-test)
+target_link_libraries(crispembed-lama-test PUBLIC crispembed-core crispembed-lama-fft)
+add_executable(test-lama-native EXCLUDE_FROM_ALL tests/lama_native.cpp)
+target_link_libraries(test-lama-native PRIVATE crispembed-lama-test)
 
 add_executable(test-restormer-diff tests/test_restormer_diff.cpp)
 target_link_libraries(test-restormer-diff PRIVATE crispembed)

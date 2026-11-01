@@ -465,12 +465,14 @@ Three permissively-licensed engines, all auto-detected via `--ocr`:
 - **Text super-resolution** — PAN (4× whole-page, 0.5 MB), TBSRN (2× per-line,
   2 MB), NAFNet-SR scaffold; parity cos ≥ 0.9996. Eight SR backbones total (HAT,
   DAT, ESRGAN, SwinIR, TBSRN, SAFMN, Restormer, SCUNet).
-- **Experimental inpainting** — MI-GAN CPU/F32 removes masked image regions,
-  including burned-in subtitles, with same-size PNG output. Includes overlapping
-  native-resolution tiles, optional DBNet text masks and a persistent-model
-  directory/TSV batch mode. Opt in with `CRISPEMBED_MIGAN=1`; see the
+- **Experimental inpainting** — CPU/F32 MI-GAN and Big-LaMa paths process masked
+  image regions with same-size PNG output and exact unmasked RGB bytes. MI-GAN
+  uses overlapping native-resolution tiles; LaMa uses whole-image Fourier
+  convolutions. Both support optional DBNet text masks and persistent-model
+  directory/TSV batches. Opt in with `CRISPEMBED_MIGAN=1` or `CRISPEMBED_LAMA=1`; see the
   [inpainting guide](docs/inpainting-cli.md) for model preparation, commands and
-  validation limits. Temporal processing and LaMa are not implemented.
+  validation limits. New LaMa model parity and representative subtitle quality
+  remain unverified; temporal processing is outside this implementation.
 - **PDF DPI profiling** — zero-dependency PDF parser computes effective page DPI
   to auto-select OCR resolution (downsample high-DPI, super-resolve low-DPI).
 - **Output formats** — plain text, hOCR, ALTO 3.1 XML, searchable PDF, with

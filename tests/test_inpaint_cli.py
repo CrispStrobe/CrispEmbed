@@ -129,7 +129,7 @@ class InpaintCliTests(unittest.TestCase):
         self.detector_path = self.root / "dbnet.gguf"
         self.image_path.write_bytes(png_bytes(self.width, self.height, self.rgb))
         self.mask_path.write_bytes(png_bytes(self.width, self.height, self.mask, 1))
-        self.model_path.write_bytes(b"explicit test model, never a real MI-GAN")
+        self.model_path.write_bytes(minimal_gguf("migan"))
         self.detector_path.write_bytes(minimal_gguf("dbnet"))
 
     def run_cli(self, args, env=None, stdin=None, binary=None, cwd=None):
@@ -139,6 +139,7 @@ class InpaintCliTests(unittest.TestCase):
                     "CRISPEMBED_IMAGE_FORMAT", "CRISPEMBED_C2PA_CERT", "CRISPEMBED_C2PA_KEY"):
                 environment.pop(key, None)
         environment["CRISPEMBED_MIGAN"] = "1"
+        environment.pop("CRISPEMBED_LAMA", None)
         for key, value in (env or {}).items():
             if value is None:
                 environment.pop(key, None)
@@ -158,12 +159,12 @@ class InpaintCliTests(unittest.TestCase):
             output[3 * i:3 * i + 3] = FILL
         return bytes(output)
 
-    def assert_success_png(self, result, expected):
+    def assert_success_png(self, result, expected, engine="migan"):
         self.assertEqual(result.returncode, 0, result.stderr.decode(errors="replace"))
         w, h, rgb, metadata = decode_png(result.stdout)
         self.assertEqual((w, h), (self.width, self.height))
         self.assertEqual(rgb, expected)
-        self.assertIn(b"engine=migan-inpaint", metadata)
+        self.assertIn(("engine=" + engine + "-inpaint").encode(), metadata)
         self.assertEqual(result.stderr.count(b"INPAINT_TEST_LOAD"), 1)
 
     def test_help_without_gate_or_files(self):
@@ -203,6 +204,8 @@ class InpaintCliTests(unittest.TestCase):
             ["--mask-region", "8,0,2,2"], ["--inpaint-dir", self.root],
             ["--mask", self.mask_path], ["--inpaint-temporal"], ["--mask-from-text"],
             ["--inpaint-output"], ["--inpaint-overwrite"],
+            ["--inpaint-backend", "propainter"], ["--inpaint-model-sha256", "bad"],
+            ["--inpaint-model-sha256", "z" * 64],
         ]
         for extra in cases:
             with self.subTest(extra=extra):
@@ -375,6 +378,87 @@ class InpaintCliTests(unittest.TestCase):
         result = self.single(binary=REAL_BINARY)
         self.assertEqual(result.returncode, 1, result.stderr)
         self.assertIn(b"SHA-256 mismatch", result.stderr)
+        self.assertEqual(result.stdout, b"")
+
+    def lama_fixture(self):
+        self.model_path.write_bytes(minimal_gguf("lama"))
+        self.width, self.height = 17, 19
+        self.rgb = bytes((i * 17 + 11) % 233 for i in range(self.width * self.height * 3))
+        self.mask = bytearray(self.width * self.height)
+        for index in (0, 7, 83, len(self.mask) - 1):
+            self.mask[index] = 255
+        self.image_path.write_bytes(png_bytes(self.width, self.height, self.rgb))
+        self.mask_path.write_bytes(png_bytes(self.width, self.height, self.mask, 1))
+
+    def test_lama_auto_and_explicit_dispatch(self):
+        self.lama_fixture()
+        expected = self.expected(i for i, value in enumerate(self.mask) if value)
+        for extra in ([], ["--inpaint-backend", "lama"], ["--inpaint-backend", "auto"]):
+            with self.subTest(extra=extra):
+                result = self.single(extra, env={"CRISPEMBED_MIGAN": None, "CRISPEMBED_LAMA": "1"})
+                self.assert_success_png(result, expected, engine="lama")
+                self.assertIn(b"INPAINT_TEST_BACKEND=lama", result.stderr)
+
+    def test_lama_requires_its_own_value_parsed_gate(self):
+        self.lama_fixture()
+        for value in (None, "", "0"):
+            with self.subTest(value=value):
+                result = self.single(env={"CRISPEMBED_LAMA": value})
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertIn(b"CRISPEMBED_LAMA=1", result.stderr)
+                self.assertNotIn(b"INPAINT_TEST_LOAD", result.stderr)
+                self.assertEqual(result.stdout, b"")
+
+    def test_backend_selection_rejects_mismatch_and_unknown_metadata(self):
+        result = self.single(["--inpaint-backend", "lama"], env={"CRISPEMBED_LAMA": "1"})
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn(b"does not match model architecture", result.stderr)
+        self.assertNotIn(b"INPAINT_TEST_LOAD", result.stderr)
+        self.model_path.write_bytes(minimal_gguf("propainter"))
+        result = self.single()
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn(b"unsupported inpainting model architecture", result.stderr)
+        self.assertNotIn(b"INPAINT_TEST_LOAD", result.stderr)
+
+    def test_lama_geometry_rejected_before_loading(self):
+        self.model_path.write_bytes(minimal_gguf("lama"))
+        result = self.single(env={"CRISPEMBED_LAMA": "1"})
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn(b"dimensions 9..2048", result.stderr)
+        self.assertNotIn(b"INPAINT_TEST_LOAD", result.stderr)
+
+    def test_requested_model_digest_is_checked_before_loading(self):
+        import hashlib
+        digest = hashlib.sha256(self.model_path.read_bytes()).hexdigest()
+        result = self.single(["--inpaint-model-sha256", digest.upper()])
+        self.assert_success_png(result, self.expected(i for i, value in enumerate(self.mask) if value >= 128))
+        result = self.single(["--inpaint-model-sha256", "0" * 64])
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn(b"SHA-256 mismatch", result.stderr)
+        self.assertNotIn(b"INPAINT_TEST_LOAD", result.stderr)
+
+    def test_lama_batch_reuses_one_selected_context(self):
+        self.lama_fixture()
+        rows = b"frame.png\tmask.png\tlama-one.png\nframe.png\tmask.png\tlama-two.png\n"
+        result = self.run_cli(["--inpaint-model", self.model_path, "--inpaint-list", "-"], stdin=rows,
+                              env={"CRISPEMBED_MIGAN": None, "CRISPEMBED_LAMA": "1"})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, b"")
+        self.assertEqual(result.stderr.count(b"INPAINT_TEST_LOAD"), 1)
+        self.assertIn(b"INPAINT_TEST_BACKEND=lama", result.stderr)
+        self.assertIn(b"INPAINT_TEST_FREE frames=2", result.stderr)
+        one = decode_png((self.root / "lama-one.png").read_bytes())
+        two = decode_png((self.root / "lama-two.png").read_bytes())
+        self.assertEqual(one[:3], two[:3])
+        self.assertEqual(one[2], self.expected(i for i, value in enumerate(self.mask) if value))
+        self.assertIn(b"engine=lama-inpaint", one[3])
+
+    def test_real_lama_loader_rejects_metadata_only_file(self):
+        if REAL_BINARY is None:
+            self.skipTest("--real-binary not supplied")
+        self.lama_fixture()
+        result = self.single(binary=REAL_BINARY, env={"CRISPEMBED_LAMA": "1"})
+        self.assertEqual(result.returncode, 1, result.stderr)
         self.assertEqual(result.stdout, b"")
 
 

@@ -3,7 +3,9 @@
 #include "core/env_gate.h"
 #include "core/gguf_loader.h"
 #include "core/image_out.h"
+#include "core/sha256.h"
 #include "inpaint.h"
+#include "lama.h"
 #include "ocr_detect.h"
 
 #define STB_IMAGE_STATIC
@@ -66,6 +68,8 @@ struct path_less {
 
 struct options {
     std::string model, image, mask, output, list, directory, mask_directory, output_directory, text_model;
+    std::string backend = "auto";
+    std::string model_sha256;
     int threads = 1;
     int dilation = -1; // 3 for text masks; 0 for supplied masks.
     bool from_text = false;
@@ -139,16 +143,37 @@ bool parse(int argc, char ** argv, options & opt, std::string & error) {
             opt.overwrite = true;
             continue;
         }
-        const std::set<std::string> values{ "--inpaint-model",   "--inpaint",     "--mask",        "--inpaint-output",
-                                            "--inpaint-list",    "--inpaint-dir", "--mask-dir",    "--output-dir",
-                                            "--mask-text-model", "--mask-region", "--mask-dilate", "--threads" };
+        const std::set<std::string> values{ "--inpaint-model",
+                                            "--inpaint",
+                                            "--mask",
+                                            "--inpaint-output",
+                                            "--inpaint-list",
+                                            "--inpaint-dir",
+                                            "--mask-dir",
+                                            "--output-dir",
+                                            "--mask-text-model",
+                                            "--mask-region",
+                                            "--mask-dilate",
+                                            "--threads",
+                                            "--inpaint-backend",
+                                            "--inpaint-model-sha256" };
         if (values.count(name) == 0) return fail(error, "unsupported inpainting option: " + name);
         if (i + 1 == argc || !*argv[i + 1] || std::strncmp(argv[i + 1], "--", 2) == 0)
             return fail(error, "missing value for " + name);
         const std::string value = argv[++i];
         if (name == "--inpaint-model")
             opt.model = value;
-        else if (name == "--inpaint")
+        else if (name == "--inpaint-backend") {
+            if (value != "auto" && value != "migan" && value != "lama")
+                return fail(error, "--inpaint-backend must be auto, migan or lama");
+            opt.backend = value;
+        } else if (name == "--inpaint-model-sha256") {
+            if (value.size() != 64 || value.find_first_not_of("0123456789abcdefABCDEF") != std::string::npos)
+                return fail(error, "--inpaint-model-sha256 must be exactly 64 hexadecimal digits");
+            opt.model_sha256 = value;
+            for (char & c : opt.model_sha256)
+                if (c >= 'A' && c <= 'F') c += 'a' - 'A';
+        } else if (name == "--inpaint")
             opt.image = value;
         else if (name == "--mask")
             opt.mask = value;
@@ -176,7 +201,7 @@ bool parse(int argc, char ** argv, options & opt, std::string & error) {
     }
     const int modes = !opt.image.empty() + !opt.list.empty() + !opt.directory.empty();
     if (modes != 1) return fail(error, "choose exactly one of --inpaint, --inpaint-list, or --inpaint-dir");
-    if (opt.model.empty()) return fail(error, "--inpaint-model is required (reviewed MI-GAN256 F32 GGUF)");
+    if (opt.model.empty()) return fail(error, "--inpaint-model is required (MI-GAN256 or Big-LaMa F32 GGUF)");
     if (opt.from_text != !opt.text_model.empty())
         return fail(error, "--mask-from-text and --mask-text-model must be used together");
     if (opt.from_text && (!opt.mask.empty() || !opt.mask_directory.empty()))
@@ -452,12 +477,12 @@ std::FILE * open_exclusive_output(const fs::path & path) {
     return out;
 }
 
-bool write_output(const options & opt, const frame & item, const std::vector<uint8_t> & rgb, std::string & error) {
+bool write_output(const options & opt, const frame & item, const std::vector<uint8_t> & rgb, const char * engine,
+                  std::string & error) {
     // Encode before opening a destination so an encoding failure cannot
     // truncate an existing output. The common writer attaches provenance.
     std::string png, mime;
-    if (!core_imgout::emit_to_string(png, mime, rgb.data(), item.width, item.height, 3, "migan-inpaint") ||
-        mime != "image/png")
+    if (!core_imgout::emit_to_string(png, mime, rgb.data(), item.width, item.height, 3, engine) || mime != "image/png")
         return fail(error, "cannot encode PNG output");
     std::FILE * out = stdout;
     temporary_output temporary;
@@ -509,8 +534,8 @@ bool write_output(const options & opt, const frame & item, const std::vector<uin
 }
 
 int execute(const options & opt, std::string & error) {
-    if (!core_env::on("CRISPEMBED_MIGAN")) {
-        fail(error, "experimental inpainting requires CRISPEMBED_MIGAN=1 (CPU/F32 MI-GAN256)");
+    if (!core_env::on("CRISPEMBED_MIGAN") && !core_env::on("CRISPEMBED_LAMA")) {
+        fail(error, "experimental inpainting requires CRISPEMBED_MIGAN=1 or CRISPEMBED_LAMA=1 (CPU/F32)");
         return 2;
     }
     if (core_imgout::want_ppm()) {
@@ -520,6 +545,44 @@ int execute(const options & opt, std::string & error) {
     std::vector<frame> frames;
     if (!collect_frames(opt, frames, error) || !preflight(opt, frames, error)) return 2;
 
+    if (!opt.model_sha256.empty() && core_sha256::file(opt.model) != opt.model_sha256) {
+        fail(error, "inpainting model SHA-256 mismatch against --inpaint-model-sha256");
+        return 1;
+    }
+    gguf_context * model_metadata = core_gguf::open_metadata(opt.model.c_str());
+    if (!model_metadata) {
+        fail(error, "cannot read inpainting model GGUF metadata");
+        return 1;
+    }
+    const std::string architecture = core_gguf::kv_str(model_metadata, "general.architecture", "");
+    core_gguf::free_metadata(model_metadata);
+    if (architecture != "migan" && architecture != "lama") {
+        fail(error, "unsupported inpainting model architecture: " + architecture + " (expected migan or lama)");
+        return 2;
+    }
+    if (opt.backend != "auto" && opt.backend != architecture) {
+        fail(error, "--inpaint-backend " + opt.backend + " does not match model architecture " + architecture);
+        return 2;
+    }
+    const bool use_lama = architecture == "lama";
+    const char * gate = use_lama ? "CRISPEMBED_LAMA" : "CRISPEMBED_MIGAN";
+    if (!core_env::on(gate)) {
+        fail(error, architecture + " inpainting requires " + gate + "=1");
+        return 2;
+    }
+    if (use_lama) {
+        for (const auto & item : frames) {
+            const size_t padded_width = (size_t(item.width) + 7) / 8 * 8;
+            const size_t padded_height = (size_t(item.height) + 7) / 8 * 8;
+            if (item.width < lama::min_dimension || item.height < lama::min_dimension ||
+                item.width > lama::max_dimension || item.height > lama::max_dimension ||
+                padded_width > lama::max_padded_pixels / padded_height) {
+                fail(error, "Big-LaMa requires dimensions 9..2048 and at most 2097152 pixels after pad8: " +
+                                item.image.string());
+                return 2;
+            }
+        }
+    }
     std::unique_ptr<ocr_detect::context, detector_deleter> detector;
     if (opt.from_text) {
         gguf_context * metadata = core_gguf::open_metadata(opt.text_model.c_str());
@@ -541,7 +604,8 @@ int execute(const options & opt, std::string & error) {
             return 1;
         }
     }
-    std::unique_ptr<inpaint::context, context_deleter> ctx(inpaint::init(opt.model.c_str(), opt.threads, error));
+    std::unique_ptr<inpaint::context, context_deleter> ctx(inpaint::init(
+        opt.model.c_str(), opt.threads, error, use_lama ? inpaint::backend::lama : inpaint::backend::migan));
     if (!ctx) return 1;
     if (!opt.directory.empty()) fs::create_directories(opt.output_directory);
 
@@ -554,7 +618,7 @@ int execute(const options & opt, std::string & error) {
         if (!rgb || !make_mask(opt, item, rgb.get(), detector.get(), mask, error) ||
             !inpaint::process_rgb8(ctx.get(), rgb.get(), rgb_bytes, mask.data(), mask.size(), item.width, item.height,
                                    output.data(), output.size(), error) ||
-            !write_output(opt, item, output, error)) {
+            !write_output(opt, item, output, use_lama ? "lama-inpaint" : "migan-inpaint", error)) {
             error = "frame " + std::to_string(index + 1) + " (" + item.image.string() + "): " + error;
             return 1;
         }
@@ -576,8 +640,11 @@ bool requested(int argc, char ** argv) {
 }
 
 void print_help(std::FILE * out) {
-    std::fprintf(out, "\nExperimental image inpainting (CRISPEMBED_MIGAN=1; CPU/F32 MI-GAN256):\n"
-                      "  --inpaint-model PATH     Reviewed MI-GAN256 F32 GGUF (see docs/inpainting-cli.md)\n"
+    std::fprintf(out, "\nExperimental image inpainting (CPU/F32 MI-GAN256 or Big-LaMa):\n"
+                      "  Enable CRISPEMBED_MIGAN=1 or CRISPEMBED_LAMA=1 for the selected model.\n"
+                      "  --inpaint-model PATH     Supported F32 GGUF (see docs/inpainting-cli.md)\n"
+                      "  --inpaint-backend NAME   auto (default), migan or lama; must match GGUF metadata\n"
+                      "  --inpaint-model-sha256 H Verify the full model hash from its conversion receipt\n"
                       "  --inpaint FILE           Inpaint one image; PNG goes to stdout by default\n"
                       "  --mask FILE              Same-size grayscale mask; values >=128 mean fill\n"
                       "  --inpaint-output FILE    Write PNG to a file ('-' means stdout)\n"
@@ -595,6 +662,7 @@ void print_help(std::FILE * out) {
                       "  --inpaint-overwrite      Allow existing output files; inputs are always protected\n"
                       "  -t, --threads N          CPU threads (1..64; default 1)\n"
                       "  --inpaint-help           Show these options\n"
+                      "  LaMa: whole image, dimensions 9..2048, <=2097152 padded pixels, 3 GiB graph cap.\n"
                       "  Images keep their dimensions and unmasked RGB bytes; batch frames are independent.\n");
 }
 

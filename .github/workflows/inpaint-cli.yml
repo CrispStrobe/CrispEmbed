@@ -5,12 +5,16 @@ on:
     paths:
       - 'src/inpaint.*'
       - 'src/migan.*'
+      - 'src/lama*'
       - 'src/ocr_detect.*'
       - 'src/core/sha256.h'
       - 'src/core/image_out.*'
       - 'examples/cli/inpaint_cli.*'
       - 'examples/cli/main.cpp'
       - 'tests/*inpaint*'
+      - 'tests/*lama*'
+      - 'models/convert-lama-to-gguf.py'
+      - 'tools/*lama*'
       - 'tools/prepare_migan_inpaint.py'
       - 'tools/migan_reference_contract.py'
       - 'CMakeLists.txt'
@@ -20,10 +24,14 @@ on:
     paths:
       - 'src/inpaint.*'
       - 'src/migan.*'
+      - 'src/lama*'
       - 'src/ocr_detect.*'
       - 'src/core/sha256.h'
       - 'examples/cli/inpaint_cli.*'
       - 'tests/*inpaint*'
+      - 'tests/*lama*'
+      - 'models/convert-lama-to-gguf.py'
+      - 'tools/*lama*'
       - 'tools/prepare_migan_inpaint.py'
       - 'CMakeLists.txt'
       - '.github/workflows/inpaint-cli.yml'
@@ -68,6 +76,8 @@ jobs:
           python tests/test_inpaint_png.py -v
           python tests/test_migan_reference_contract.py -v
           python tests/test_migan_native_driver.py -v
+          python tests/test_lama_converter.py -v
+          python tests/test_lama_reference.py -v
       - name: Configure portable CPU build
         run: >-
           cmake -S . -B build-inpaint -DCMAKE_BUILD_TYPE=Release
@@ -78,6 +88,7 @@ jobs:
         run: >-
           cmake --build build-inpaint --config Release --parallel 2
           --target crispembed-cli test-inpaint test-inpaint-cli-driver test-migan-diff
+          test-lama-fft test-lama test-lama-native
       - name: Native and actual CLI model-free controls
         run: |
           bin=build-inpaint
@@ -87,6 +98,8 @@ jobs:
             suffix=.exe
           fi
           "$bin/test-inpaint$suffix"
+          "$bin/test-lama-fft$suffix"
+          "$bin/test-lama$suffix"
           "$bin/test-migan-diff$suffix" --contracts
           "$bin/test-migan-diff$suffix" --gate-controls
           "$bin/test-migan-diff$suffix" --observer-retention

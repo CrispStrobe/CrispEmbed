@@ -1,0 +1,43 @@
+{
+  "schema": "crispembed-lama-source-contract-v1",
+  "source_repository": "https://github.com/advimman/lama",
+  "source_commit": "786f5936b27fb3dacd2b1ad799e4de968ea697e7",
+  "source_license": "Apache-2.0",
+  "source_files_sha256": {
+    "LICENSE": "4ceeeac5a802e86c413c22b16cce8e9a22027b0250c97e6f8ac97c14cf0542c0",
+    "configs/training/big-lama.yaml": "2ef2fb8e7cea812070f6c66d9ac162f1a8a6caffdafae213ecd5436ecdcb9947",
+    "configs/prediction/default.yaml": "e7733ceadd0be2210008f97b786772d10e866a6b5f7cd272d3ec5a2160e01e2c",
+    "saicinpainting/training/modules/ffc.py": "1647ce037032e533c777fd1d486c61d3ecc0eee7603b8cb96b23d0deffcaf308",
+    "saicinpainting/training/modules/base.py": "526016ea45cd40b17b1bfa812c3be1ae227b735de684cd77382a5788eb5ac4aa",
+    "saicinpainting/training/modules/spatial_transform.py": "4f479a0c9ba94bd46b197507e8e8cdcc570e84ec29f5a577ade63e542adb43b5",
+    "saicinpainting/training/modules/squeeze_excitation.py": "933c53adb2477b99c58ab325b26b124507a06b8c097ed2dd213c28f5841839fe",
+    "saicinpainting/training/modules/depthwise_sep_conv.py": "9aa49550f3d34f1682cabbcc92f89d5f131ff0e89ebeefbfde396a85153c5b22",
+    "saicinpainting/training/modules/multidilated_conv.py": "26929410919ebe0e024bd65d318978d14bdefcfeef94d079ae9c4d20189f2780",
+    "saicinpainting/utils.py": "0a399137ac692a8c0eac6b8f1befacdd9d8f3443397d8a0b000845010c2b0cfc",
+    "saicinpainting/evaluation/data.py": "ae2d1959b40eeb494bead932a891c6aba718297738bd01664e556611b9ac636a",
+    "saicinpainting/training/trainers/default.py": "85e4a9ffaf21d725a48cf6dc066de3224c2168cea51c19696197e2a2f33f24ef",
+    "bin/predict.py": "4e40c5eece914d30ea16c3aafc0699f46e07c924c98f3aeecc6dcb8642b53cf8"
+  },
+  "ggml_commit": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+  "profile": "big-lama-18-075-v1",
+  "inference_tensor_count": 837,
+  "inference_f32_payload_bytes": 204228108,
+  "batchnorm_counters_omitted": 152,
+  "scope": {
+    "cpu_f32": true,
+    "whole_image_fft": true,
+    "lfu": false,
+    "refinement": false,
+    "gpu": false,
+    "f16": false,
+    "temporal": false
+  },
+  "checkpoint_supplied_by_operator": true,
+  "checkpoint_included_in_source_archive": false,
+  "actual_checkpoint_conversion_executed": false,
+  "native_numerical_parity_executed": false,
+  "representative_image_quality_qualified": false,
+  "note": "This is a source/profile receipt. Authored parser tests and source checks are not actual model execution.",
+  "reference_required_stages_per_fixture": 713,
+  "reference_fixture_count": 5
+}

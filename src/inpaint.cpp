@@ -1,7 +1,8 @@
-// Still-image geometry around the unchanged, reviewed MI-GAN CPU/F32 graph.
+// Still-image dispatch around the independent MI-GAN and Big-LaMa CPU/F32 graphs.
 // Overlap composition is a new wrapper, not original ONNX-wrapper parity.
 #include "inpaint.h"
 #include "migan.h"
+#include "lama.h"
 #include "core/env_gate.h"
 #include "core/sha256.h"
 
@@ -16,10 +17,15 @@
 namespace inpaint {
 
 struct context {
+    backend engine = backend::migan;
     migan::context * model = nullptr;
-    std::vector<float> input = std::vector<float>(migan::input_elements);
-    std::vector<float> raw = std::vector<float>(migan::rgb_elements);
-    ~context() { migan::free(model); }
+    lama::context * lama_model = nullptr;
+    std::vector<float> input;
+    std::vector<float> raw;
+    ~context() {
+        migan::free(model);
+        lama::free(lama_model);
+    }
 };
 
 namespace {
@@ -29,7 +35,9 @@ bool fail(std::string & error, const std::string & message) {
     return false;
 }
 
-bool enabled(std::string & error) {
+bool enabled(backend engine, std::string & error) {
+    if (engine == backend::lama)
+        return core_env::on("CRISPEMBED_LAMA") || fail(error, "Big-LaMa requires CRISPEMBED_LAMA=1");
     return core_env::on("CRISPEMBED_MIGAN") || fail(error, "MI-GAN requires CRISPEMBED_MIGAN=1");
 }
 
@@ -58,14 +66,20 @@ struct weighted_pixel {
 
 } // namespace
 
-context * init(const char * path, int n_threads, std::string & error) {
+context * init(const char * path, int n_threads, std::string & error, backend engine) {
     error.clear();
-    if (!enabled(error)) return nullptr;
+    if (!enabled(engine, error)) return nullptr;
     if (!path || !*path || n_threads < 1 || n_threads > 64) {
         fail(error, "inpainting requires a model path and 1..64 CPU threads");
         return nullptr;
     }
     try {
+        std::unique_ptr<context> ctx(new context);
+        ctx->engine = engine;
+        if (engine == backend::lama) {
+            ctx->lama_model = lama::init(path, n_threads, error);
+            return ctx->lama_model ? ctx.release() : nullptr;
+        }
         std::error_code ec;
         const uintmax_t size = std::filesystem::file_size(path, ec);
         if (ec) {
@@ -76,9 +90,10 @@ context * init(const char * path, int n_threads, std::string & error) {
             fail(error, "inpainting model differs from the reviewed MI-GAN fixed256 F32 GGUF (SHA-256 mismatch)");
             return nullptr;
         }
-        std::unique_ptr<context> ctx(new context);
         ctx->model = migan::init(path, checkpoint_sha256, n_threads, error);
         if (!ctx->model) return nullptr;
+        ctx->input.resize(migan::input_elements);
+        ctx->raw.resize(migan::rgb_elements);
         return ctx.release();
     } catch (const std::exception & exception) {
         fail(error, std::string("inpainting model initialization failed: ") + exception.what());
@@ -93,7 +108,10 @@ void free(context * ctx) {
 bool process_rgb8(context * ctx, const uint8_t * rgb, size_t rgb_bytes, const uint8_t * fill_mask, size_t mask_bytes,
                   int width, int height, uint8_t * output_rgb, size_t output_bytes, std::string & error) {
     error.clear();
-    if (!enabled(error)) return false;
+    if (!enabled(ctx ? ctx->engine : backend::migan, error)) return false;
+    if (ctx && ctx->engine == backend::lama)
+        return lama::process_rgb8(ctx->lama_model, rgb, rgb_bytes, fill_mask, mask_bytes, width, height, output_rgb,
+                                  output_bytes, error);
     if (!ctx || !ctx->model) return fail(error, "inpainting requires an initialized model context");
     return detail::process_tiles_rgb8(run_tile, ctx, rgb, rgb_bytes, fill_mask, mask_bytes, width, height, output_rgb,
                                       output_bytes, error);

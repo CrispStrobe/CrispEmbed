@@ -2,9 +2,16 @@
 
 This implements the image-and-mask CLI requested in
 [issue 71](https://github.com/CrispStrobe/CrispEmbed/issues/71), with persistent
-batch processing and optional DBNet text masks. The engine is the existing
-MI-GAN fixed256 CPU/F32 graph. Enable it explicitly with
-`CRISPEMBED_MIGAN=1`; unset, empty and `0` keep it disabled.
+batch processing and optional DBNet text masks. Two experimental CPU/F32
+engines are available. The CLI selects the engine from `general.architecture`
+in the GGUF, or checks an explicit `--inpaint-backend migan|lama` selection.
+It never selects a model by filename. Each engine has its own default-off gate;
+unset, empty and `0` keep that engine disabled.
+
+| Engine | Enable | Image processing | Accepted model |
+| --- | --- | --- | --- |
+| MI-GAN | `CRISPEMBED_MIGAN=1` | Native256 overlapping tiles | Exact reviewed F32 export, full digest pinned |
+| Big-LaMa | `CRISPEMBED_LAMA=1` | Entire image, symmetric pad8, global Fourier convolutions | Strict 18-block, 75% global, LFU-disabled F32 profile from a user-supplied checkpoint |
 
 The graph's earlier [original reference](../tests/results/migan/original-reference.json)
 and [native comparison](../tests/results/migan/native-parity.json) are unchanged.
@@ -12,6 +19,10 @@ Those receipts cover the original fixed256 experiment. The new tiling, text-mask
 and CLI paths require the new hosted checks described below; they do not inherit
 a realistic subtitle-quality or temporal-consistency qualification from that
 experiment. This is a source feature, not a new runtime release or model alias.
+The new [Big-LaMa implementation](lama-native-prototype.md) has no completed
+original-model/native parity receipt yet. Its source, model-free contracts,
+converter and hosted reference workflow are provided; they do not establish
+real-scene quality or performance.
 
 ## Build
 
@@ -29,14 +40,14 @@ cmake --build build-inpaint --config Release --target crispembed-cli --parallel 
 
 The executable is `build-inpaint/crispembed` with single-configuration
 generators, or `build-inpaint/Release/crispembed.exe` with Visual Studio.
-The MI-GAN inference path uses the CPU even when other CrispEmbed engines are
+Both inpainting paths use the CPU even when other CrispEmbed engines are
 built with GPU backends. No Python runtime, PyTorch or CUDA is required to run
 inpainting.
 
-## Prepare the exact model
+## Prepare the exact MI-GAN model
 
-The CLI accepts one reviewed model, rather than guessing an architecture from a
-filename. The preparation helper uses Python 3.10 or later and only its standard
+The MI-GAN loader accepts one reviewed model. The preparation helper uses
+Python 3.10 or later and only its standard
 library:
 
 ```sh
@@ -64,7 +75,8 @@ SHA-256 b8fcefc3de7e04f96867b9d15bd84a2cf7e0c444d2925644a7e8b15081809c8b
 Keep `replication.json` and the `licenses/` directory beside it. The native
 loader independently checks the model's byte count and full hash before loading
 it, then uses the existing strict tensor/metadata/checkpoint checks.
-F16, quantized, 512-resolution and renamed LaMa files are rejected.
+MI-GAN F16, quantized and 512-resolution files are rejected. LaMa files use their
+own loader and gate.
 
 For offline preparation, supply the official checkpoint and an upstream MI-GAN
 source directory at commit `2b793c5ece43f4253e32d4afc257120a5deed6f5` containing
@@ -80,6 +92,57 @@ python3 tools/prepare_migan_inpaint.py \
 If the official download service returns a confirmation or error page, the
 helper rejects it. It never accepts a different checkpoint or skips a checksum
 to make a download succeed.
+
+## Prepare a Big-LaMa model
+
+Use the original Big-LaMa checkpoint and its matching `config.yaml`. Set
+`CHECKPOINT_SHA256` to the recorded digest of the exact checkpoint you intend
+to convert. The converter requires the 18-block profile; a smaller LaMa
+variant, LFU, spatial transforms, another activation or reduced-precision
+weights are rejected.
+
+```sh
+python3 -m pip install PyYAML==6.0.2
+python3 models/convert-lama-to-gguf.py \
+  --checkpoint /path/to/big-lama/models/best.ckpt \
+  --checkpoint-sha256 "$CHECKPOINT_SHA256" \
+  --config /path/to/big-lama/config.yaml \
+  --output models/big-lama-f32.gguf
+```
+
+The destination parent must already exist, and both output files must be new.
+The converter creates the GGUF and `big-lama-f32.json`, with checkpoint,
+configuration, converter and tensor identities. It reads bounded PyTorch ZIP
+metadata without importing PyTorch or executing pickle globals, verifies all
+837 inference tensor shapes and F32 bytes, and checks the GGUF by reading it
+back. It omits only 152 verified BatchNorm training counters. YAML needs
+PyYAML; an equivalent JSON configuration uses only the Python standard library.
+Known Lightning/OmegaConf checkpoint metadata is represented by inert data
+objects; original metadata classes are never imported or invoked. Unknown
+metadata classes and unsupported storage/layout formats fail with an error.
+Full conversion against an actual checkpoint remains a hosted validation gate.
+
+The code follows the pinned Apache-2.0 LaMa source, and its source license is
+included. The converter accepts a checkpoint supplied by the operator; this
+package does not contain weights or assert a separate checkpoint license.
+There is no automatic LaMa download or registry alias.
+
+Use the receipt's `gguf_sha256` to pin the CLI to that exact export:
+
+```sh
+export CRISPEMBED_LAMA=1
+LAMA_SHA256=$(python3 -c 'import json; print(json.load(open("models/big-lama-f32.json"))["gguf_sha256"])')
+./build-inpaint/crispembed --inpaint-model models/big-lama-f32.gguf \
+  --inpaint-backend lama --inpaint-model-sha256 "$LAMA_SHA256" \
+  --inpaint frame.png --mask mask.png --inpaint-output cleaned.png
+```
+
+`--inpaint-model-sha256` is optional and accepts exactly 64 hexadecimal digits.
+It verifies the complete file before metadata/model loading. The LaMa loader
+always validates architecture, profile, source commit, input/FFT conventions,
+all tensor types/shapes, finite values and nonnegative running variances.
+MI-GAN's built-in immutable model check remains mandatory even without this
+option.
 
 ## One frame
 
@@ -174,7 +237,11 @@ directories for listed outputs must already exist. In text-mask mode the mask
 column must be `-`; other columns must be file paths. Batches emit no images to
 stdout, so PNG streams are never concatenated accidentally.
 
-Frames run serially with one loaded inpainting model. The command validates
+The same batch and text-mask commands work with LaMa: select its GGUF and
+enable `CRISPEMBED_LAMA=1`. Frames run serially with one loaded inpainting model.
+LaMa also reuses its graph allocation while the padded frame size stays the
+same; changing size releases that graph before allocating the next one.
+The command validates
 paths, image headers, mask dimensions, region bounds and output conflicts for
 the entire batch before model loading or output creation. It then decodes one
 frame at a time. A later decoding or inference failure stops at that frame and
@@ -184,16 +251,28 @@ motion estimation or blending across frames.
 
 ## Image geometry and file behavior
 
-Images larger than 256 pixels use overlapping native 256×256 tiles with a
+For MI-GAN, images larger than 256 pixels use overlapping native 256×256 tiles with a
 192-pixel stride. The last tile on each axis aligns to the image boundary;
 small dimensions use edge replication. The model is never resized or converted
 to a different resolution. Tiles always read the original frame, empty tiles
 are skipped, and integer weighted overlap averages affect masked pixels only.
 The fixed256 single-tile case preserves the existing composed RGB result.
 
-Dimensions are limited to 32,768 per side and 64×1024×1024 pixels overall.
-The overlap accumulator uses a 256-row band instead of full-frame float planes.
+MI-GAN dimensions are limited to 32,768 per side and 64×1024×1024 pixels overall.
+The MI-GAN overlap accumulator uses a 256-row band instead of full-frame float planes.
 Large masks and high-resolution frames can still require many CPU model calls.
+
+LaMa processes the complete frame without resizing or tiling. RGB and mask
+are symmetrically padded on the right and bottom to multiples of eight, then
+cropped back to the original dimensions. Internal convolutions use reflection
+padding, which excludes the edge; input symmetric padding includes the edge.
+Supported dimensions are 9–2048 on each axis, with at most 2,097,152 padded
+pixels. This geometric bound includes 1920×1080, but allocation can still fail:
+the activation graph is measured before allocation and capped at 3 GiB.
+Weights, input/output buffers, convolution workspace and up to 128 MiB of
+Fourier scratch are additional. Small images that would produce a one-pixel
+bottleneck are rejected because the original reflection operation is undefined.
+
 Threads are explicitly limited to 1–64, default 1. There is no latency or
 real-time video claim.
 
@@ -219,6 +298,10 @@ macOS and Windows CPU builds. It runs:
   test-only deterministic model/detector driver. That driver is not installed.
 - Production CLI help/routing and rejection of a model with the wrong hash.
 - Standard-library model-replication, PNG and existing reference-driver tests.
+- LaMa FFT comparisons against an independent direct DFT, including arbitrary
+  spectral coefficients, odd/even shapes, normalization, packing and callbacks.
+- LaMa geometry, padding, composition, model metadata, gates and converter
+  negative controls, plus shared CLI backend/hash/shape/batch controls.
 
 Manual workflow dispatch can also enable `model_smoke`. On Linux this reproduces
 the exact checkpoint and runs the production CLI on authored empty/subtitle/
@@ -226,13 +309,23 @@ edge/multiple-tile fixtures, checking known-pixel identity and single/batch/repe
 agreement. It retains small PNG/log/JSON evidence, never the model. The smoke
 has no perceptual ground truth and is not a realistic subtitle-quality benchmark.
 
+The separate [LaMa reference workflow](../.github/workflows/lama-parity.yml)
+requires explicit checkpoint/configuration URLs and SHA-256 identities on
+manual dispatch. It independently verifies conversion through PyTorch's tensor
+loader, freezes original-module outputs before native execution, retains
+intermediate arrays and compares magnitudes,
+absolute/relative errors, cosine and final composed RGB. It also exercises the
+production CLI and model reuse on the same owned fixtures. No weights are
+uploaded as workflow artifacts. See the [LaMa protocol](lama-native-prototype.md)
+for commands and the distinction between numerical parity and real-scene quality.
+
 The source delivery's validation report distinguishes checks actually executed
 from prepared hosted checks. No hosted result is asserted merely because this
 workflow exists. Native compilation, actual model replication and runtime tests
 must pass before treating the new interface as validated on a platform.
 
-Real subtitle/scene perceptual and seam quality, temporal consistency, LaMa,
-other MI-GAN resolutions/precisions, GPU inference, C ABI/server/language bindings,
+Real subtitle/scene perceptual and seam quality, temporal consistency, LaMa
+numerical qualification, other model resolutions/precisions, GPU inference, C ABI/server/language bindings,
 model publication and downstream release qualification remain separate work.
 The issue's requested video propagation and motion compensation are not exposed
 as nonfunctional flags.

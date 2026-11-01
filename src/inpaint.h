@@ -1,4 +1,4 @@
-// Internal, opt-in MI-GAN image wrapper. This is not a stable public C ABI.
+// Internal, opt-in inpainting dispatch. This is not a stable public C ABI.
 #pragma once
 
 #include <cstddef>
@@ -16,15 +16,18 @@ constexpr const char * model_sha256 = "b8fcefc3de7e04f96867b9d15bd84a2cf7e0c444d
 constexpr size_t model_bytes = 25185504;
 
 struct context;
+enum class backend { migan, lama };
 
-// Serial reuse keeps the weights loaded across frames. Both init/process need
-// CRISPEMBED_MIGAN=1. Only the reviewed fixed256 CPU/F32 GGUF is accepted.
-context * init(const char * path, int n_threads, std::string & error);
+// Serial reuse keeps weights loaded across frames. Each engine has its own
+// default-off gate: CRISPEMBED_MIGAN or CRISPEMBED_LAMA. The three-argument
+// internal call retains MI-GAN's exact-model-pinned behavior.
+context * init(const char * path, int n_threads, std::string & error, backend engine = backend::migan);
 void free(context * ctx);
 
 // Contiguous RGB8 HWC and a same-size binary mask: 0=keep, 255=fill. Output
-// dimensions never change. Known pixels are byte-exact. Native256 tiles use
-// 64-pixel overlap; small dimensions edge-replicate RGB/mask, without resizing.
+// dimensions never change. Known pixels are byte-exact. MI-GAN native256 tiles
+// use 64-pixel overlap and edge replication; LaMa uses the entire image with
+// symmetric padding to a multiple of eight, within its bounded image contract.
 // Output is unchanged on failure and may alias the input. Empty masks perform
 // no model calls. One context must not be used concurrently.
 bool process_rgb8(context * ctx, const uint8_t * rgb, size_t rgb_bytes, const uint8_t * fill_mask, size_t mask_bytes,
