@@ -1,0 +1,365 @@
+{
+  "script_version": "mineru25-kaggle-gpu-v1",
+  "commit": "692f2130a1dc578ca7d4238f3075b99adf77c0d9",
+  "gpu": "Tesla T4, 7.5\nTesla T4, 7.5",
+  "model": "opendatalab/MinerU2.5-Pro-2604-1.2B",
+  "revision": "d3f5e08d073c21466bbabe21c71bb1e9c2e595da",
+  "max_tokens": 2048,
+  "variants": {
+    "f32": {
+      "returncode": 0,
+      "recipe": [
+        "convert",
+        "f32"
+      ],
+      "bytes": 4630070208,
+      "log_tail": "{\n  \"model\": \"opendatalab/MinerU2.5-Pro-2604-1.2B\",\n  \"expected_revision\": \"d3f5e08d073c21466bbabe21c71bb1e9c2e595da\",\n  \"source_revision\": \"d3f5e08d073c21466bbabe21c71bb1e9c2e595da\",\n  \"source_sha256\": {\n    \"chat_template.jinja\": \"a0bc6f6fc7a29a80017a433e8f03a1cc1236e838a944a2d034295a60c4f2fddb\",\n    \"config.json\": \"22097df08750242647a513043636a8dff16820a09757e9271e220bdea378df28\",\n    \"generation_config.json\": \"02b54ab57bff2fb18a9b0a731b4b9184c255ba36844786df367938d8d89e288f\",\n    \"model.safetensors\": \"f2650d91aaa619534980445034f62cde27fc3fa0430aaf5c3302b91179cad0c5\",\n    \"preprocessor_config.json\": \"5c7cbf12d0666ceed8eb25506f18c19ec67788215ada306e8ab2cd67cbdfcd07\",\n    \"tokenizer.json\": \"dceac5fc54a795ee7570d17902b47bd05412dc2afa62bdf325c3f97fcb5b87fe\",\n    \"tokenizer_config.json\": \"d762430b9c668b5c3ad95e26626e3982d5b2a59c18ff214d621d1de4318ff376\"\n  },\n  \"recipe\": \"f32\",\n  \"tensor_count\": 681,\n  \"tokenizer_size\": 151674,\n  \"embedding_rows\": 151936,\n  \"gguf_sha256\": \"ef6ea875747011d46bcf6e560755556b17b77fa9a36fb74ef6642d5c6d215572\",\n  \"gguf_size_bytes\": 4630070208,\n  \"quality_parity_verified\": false,\n  \"speed_parity_verified\": false\n}\nValidated 681 tensors and 151674 tokenizer entries\nConverted 1/681\nConverted 65/681\nConverted 129/681\nConverted 193/681\nConverted 257/681\nConverted 321/681\nConverted 385/681\nConverted 449/681\nConverted 513/681\nConverted 577/681\nConverted 641/681\n"
+    },
+    "f16": {
+      "returncode": 0,
+      "recipe": [
+        "convert",
+        "f16"
+      ],
+      "bytes": 2591511520,
+      "log_tail": "{\n  \"model\": \"opendatalab/MinerU2.5-Pro-2604-1.2B\",\n  \"expected_revision\": \"d3f5e08d073c21466bbabe21c71bb1e9c2e595da\",\n  \"source_revision\": \"d3f5e08d073c21466bbabe21c71bb1e9c2e595da\",\n  \"source_sha256\": {\n    \"chat_template.jinja\": \"a0bc6f6fc7a29a80017a433e8f03a1cc1236e838a944a2d034295a60c4f2fddb\",\n    \"config.json\": \"22097df08750242647a513043636a8dff16820a09757e9271e220bdea378df28\",\n    \"generation_config.json\": \"02b54ab57bff2fb18a9b0a731b4b9184c255ba36844786df367938d8d89e288f\",\n    \"model.safetensors\": \"f2650d91aaa619534980445034f62cde27fc3fa0430aaf5c3302b91179cad0c5\",\n    \"preprocessor_config.json\": \"5c7cbf12d0666ceed8eb25506f18c19ec67788215ada306e8ab2cd67cbdfcd07\",\n    \"tokenizer.json\": \"dceac5fc54a795ee7570d17902b47bd05412dc2afa62bdf325c3f97fcb5b87fe\",\n    \"tokenizer_config.json\": \"d762430b9c668b5c3ad95e26626e3982d5b2a59c18ff214d621d1de4318ff376\"\n  },\n  \"recipe\": \"f16\",\n  \"tensor_count\": 681,\n  \"tokenizer_size\": 151674,\n  \"embedding_rows\": 151936,\n  \"gguf_sha256\": \"7d464d375f7c20dd3e2bae7e20fed1f80485ae9ca69aaad201897652c74d746b\",\n  \"gguf_size_bytes\": 2591511520,\n  \"quality_parity_verified\": false,\n  \"speed_parity_verified\": false\n}\nValidated 681 tensors and 151674 tokenizer entries\nConverted 1/681\nConverted 65/681\nConverted 129/681\nConverted 193/681\nConverted 257/681\nConverted 321/681\nConverted 385/681\nConverted 449/681\nConverted 513/681\nConverted 577/681\nConverted 641/681\n"
+    },
+    "q8_0": {
+      "returncode": 0,
+      "recipe": [
+        "q8_0"
+      ],
+      "bytes": 1330944000,
+      "log_tail": " 16.6 MB -> 4.4 MB\n[667/681] l.blk.22.ffn_up.weight                        -    f32, quantizing to q8_0... 16.6 MB -> 4.4 MB\n[668/681] l.blk.22.ffn_down.weight                      -    f32, quantizing to q8_0... 16.6 MB -> 4.4 MB\n[669/681] l.blk.23.attn_norm.weight                     -    f32, copy 0.0 MB\n[670/681] l.blk.23.ffn_norm.weight                      -    f32, copy 0.0 MB\n[671/681] l.blk.23.attn_q.weight                        -    f32, quantizing to q8_0... 3.1 MB -> 0.8 MB\n[672/681] l.blk.23.attn_q.bias                          -    f32, copy 0.0 MB\n[673/681] l.blk.23.attn_k.weight                        -    f32, quantizing to q8_0... 0.4 MB -> 0.1 MB\n[674/681] l.blk.23.attn_k.bias                          -    f32, copy 0.0 MB\n[675/681] l.blk.23.attn_v.weight                        -    f32, quantizing to q8_0... 0.4 MB -> 0.1 MB\n[676/681] l.blk.23.attn_v.bias                          -    f32, copy 0.0 MB\n[677/681] l.blk.23.attn_o.weight                        -    f32, quantizing to q8_0... 3.1 MB -> 0.8 MB\n[678/681] l.blk.23.ffn_gate.weight                      -    f32, quantizing to q8_0... 16.6 MB -> 4.4 MB\n[679/681] l.blk.23.ffn_up.weight                        -    f32, quantizing to q8_0... 16.6 MB -> 4.4 MB\n[680/681] l.blk.23.ffn_down.weight                      -    f32, quantizing to q8_0... 16.6 MB -> 4.4 MB\n[681/681] l.output_norm.weight                          -    f32, copy 0.0 MB\n\n297 quantized, 384 kept\n4410 MB -> 1264 MB (3.5x compression)\n"
+    },
+    "q4_k": {
+      "returncode": 0,
+      "recipe": [
+        "q4_k"
+      ],
+      "bytes": 1152030720,
+      "log_tail": "to q4_0... 16.6 MB -> 2.3 MB\n[668/681] l.blk.22.ffn_down.weight                      -    f32, quantizing to q4_K... 16.6 MB -> 2.3 MB\n[669/681] l.blk.23.attn_norm.weight                     -    f32, copy 0.0 MB\n[670/681] l.blk.23.ffn_norm.weight                      -    f32, copy 0.0 MB\n[671/681] l.blk.23.attn_q.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB\n[672/681] l.blk.23.attn_q.bias                          -    f32, copy 0.0 MB\n[673/681] l.blk.23.attn_k.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB\n[674/681] l.blk.23.attn_k.bias                          -    f32, copy 0.0 MB\n[675/681] l.blk.23.attn_v.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB\n[676/681] l.blk.23.attn_v.bias                          -    f32, copy 0.0 MB\n[677/681] l.blk.23.attn_o.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB\n[678/681] l.blk.23.ffn_gate.weight                      -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB\n[679/681] l.blk.23.ffn_up.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB\n[680/681] l.blk.23.ffn_down.weight                      -    f32, quantizing to q4_K... 16.6 MB -> 2.3 MB\n[681/681] l.output_norm.weight                          -    f32, copy 0.0 MB\n\n297 quantized, 384 kept\n4410 MB -> 1093 MB (4.0x compression)\n"
+    },
+    "q4_k-dq8": {
+      "returncode": 0,
+      "recipe": [
+        "q4_k",
+        "--tensor-type",
+        "l.*=q8_0"
+      ],
+      "bytes": 1330944000,
+      "log_tail": " 16.6 MB -> 4.4 MB\n[667/681] l.blk.22.ffn_up.weight                        -    f32, quantizing to q8_0... 16.6 MB -> 4.4 MB\n[668/681] l.blk.22.ffn_down.weight                      -    f32, quantizing to q8_0... 16.6 MB -> 4.4 MB\n[669/681] l.blk.23.attn_norm.weight                     -    f32, copy 0.0 MB\n[670/681] l.blk.23.ffn_norm.weight                      -    f32, copy 0.0 MB\n[671/681] l.blk.23.attn_q.weight                        -    f32, quantizing to q8_0... 3.1 MB -> 0.8 MB\n[672/681] l.blk.23.attn_q.bias                          -    f32, copy 0.0 MB\n[673/681] l.blk.23.attn_k.weight                        -    f32, quantizing to q8_0... 0.4 MB -> 0.1 MB\n[674/681] l.blk.23.attn_k.bias                          -    f32, copy 0.0 MB\n[675/681] l.blk.23.attn_v.weight                        -    f32, quantizing to q8_0... 0.4 MB -> 0.1 MB\n[676/681] l.blk.23.attn_v.bias                          -    f32, copy 0.0 MB\n[677/681] l.blk.23.attn_o.weight                        -    f32, quantizing to q8_0... 3.1 MB -> 0.8 MB\n[678/681] l.blk.23.ffn_gate.weight                      -    f32, quantizing to q8_0... 16.6 MB -> 4.4 MB\n[679/681] l.blk.23.ffn_up.weight                        -    f32, quantizing to q8_0... 16.6 MB -> 4.4 MB\n[680/681] l.blk.23.ffn_down.weight                      -    f32, quantizing to q8_0... 16.6 MB -> 4.4 MB\n[681/681] l.output_norm.weight                          -    f32, copy 0.0 MB\n\n297 quantized, 384 kept\n4410 MB -> 1264 MB (3.5x compression)\n"
+    },
+    "q4_k-df16": {
+      "returncode": 0,
+      "recipe": [
+        "q4_k",
+        "--decoder-f16"
+      ],
+      "bytes": 1794032640,
+      "log_tail": ".. 16.6 MB -> 8.3 MB\n[668/681] l.blk.22.ffn_down.weight                      -    f32, (decoder→F16) quantizing to f16... 16.6 MB -> 8.3 MB\n[669/681] l.blk.23.attn_norm.weight                     -    f32, copy 0.0 MB\n[670/681] l.blk.23.ffn_norm.weight                      -    f32, copy 0.0 MB\n[671/681] l.blk.23.attn_q.weight                        -    f32, (decoder→F16) quantizing to f16... 3.1 MB -> 1.5 MB\n[672/681] l.blk.23.attn_q.bias                          -    f32, copy 0.0 MB\n[673/681] l.blk.23.attn_k.weight                        -    f32, (decoder→F16) quantizing to f16... 0.4 MB -> 0.2 MB\n[674/681] l.blk.23.attn_k.bias                          -    f32, copy 0.0 MB\n[675/681] l.blk.23.attn_v.weight                        -    f32, (decoder→F16) quantizing to f16... 0.4 MB -> 0.2 MB\n[676/681] l.blk.23.attn_v.bias                          -    f32, copy 0.0 MB\n[677/681] l.blk.23.attn_o.weight                        -    f32, (decoder→F16) quantizing to f16... 3.1 MB -> 1.5 MB\n[678/681] l.blk.23.ffn_gate.weight                      -    f32, (decoder→F16) quantizing to f16... 16.6 MB -> 8.3 MB\n[679/681] l.blk.23.ffn_up.weight                        -    f32, (decoder→F16) quantizing to f16... 16.6 MB -> 8.3 MB\n[680/681] l.blk.23.ffn_down.weight                      -    f32, (decoder→F16) quantizing to f16... 16.6 MB -> 8.3 MB\n[681/681] l.output_norm.weight                          -    f32, copy 0.0 MB\n\n297 quantized, 384 kept\n4410 MB -> 1705 MB (2.6x compression)\n"
+    }
+  },
+  "cases": {
+    "formula": {
+      "image": "formula_quadratic.png",
+      "task": "formula",
+      "reference_returncode": 0,
+      "reference_s": 41.7,
+      "arms": {
+        "f32": {
+          "returncode": 0,
+          "gpu_peak_mib": 4640,
+          "device": "auto",
+          "tokens": 29,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            845.396981,
+            551.431901
+          ],
+          "first_divergence": null
+        },
+        "f16": {
+          "returncode": 0,
+          "gpu_peak_mib": 2858,
+          "device": "auto",
+          "tokens": 29,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            662.113764,
+            530.649036
+          ],
+          "first_divergence": null
+        },
+        "q8_0": {
+          "returncode": 0,
+          "gpu_peak_mib": 1504,
+          "device": "auto",
+          "tokens": 29,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            374.432206,
+            314.763443
+          ],
+          "first_divergence": null
+        },
+        "q4_k": {
+          "returncode": 0,
+          "gpu_peak_mib": 1334,
+          "device": "auto",
+          "tokens": 29,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            384.801549,
+            295.454749
+          ],
+          "first_divergence": null
+        },
+        "q4_k-dq8": {
+          "returncode": 0,
+          "gpu_peak_mib": 1504,
+          "device": "auto",
+          "tokens": 29,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            364.588115,
+            311.957181
+          ],
+          "first_divergence": null
+        },
+        "q4_k-df16": {
+          "returncode": 0,
+          "gpu_peak_mib": 1924,
+          "device": "auto",
+          "tokens": 29,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            492.966938,
+            421.301495
+          ],
+          "first_divergence": null
+        }
+      },
+      "reference_tokens": 29,
+      "reference_eos": true,
+      "reference_capped": false,
+      "reference_text": "\\[x = \\frac {- b \\pm \\sqrt {b ^ {2} - 4 a c}}{2 a}\\]"
+    },
+    "table": {
+      "image": "cc0/simple_table.jpg",
+      "task": "table",
+      "reference_returncode": 0,
+      "reference_s": 72.5,
+      "arms": {
+        "f32": {
+          "returncode": 0,
+          "gpu_peak_mib": 4640,
+          "device": "auto",
+          "tokens": 140,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            2050.656962,
+            1951.232028
+          ],
+          "first_divergence": null
+        },
+        "f16": {
+          "returncode": 0,
+          "gpu_peak_mib": 2858,
+          "device": "auto",
+          "tokens": 140,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            1838.910684,
+            1754.108102
+          ],
+          "first_divergence": null
+        },
+        "q8_0": {
+          "returncode": 0,
+          "gpu_peak_mib": 1504,
+          "device": "auto",
+          "tokens": 140,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            1163.680962,
+            1138.81334
+          ],
+          "first_divergence": null
+        },
+        "q4_k": {
+          "returncode": 0,
+          "gpu_peak_mib": 1334,
+          "device": "auto",
+          "tokens": 140,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            1087.429665,
+            1033.681761
+          ],
+          "first_divergence": null
+        },
+        "q4_k-dq8": {
+          "returncode": 0,
+          "gpu_peak_mib": 1504,
+          "device": "auto",
+          "tokens": 140,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            1187.704747,
+            1133.412426
+          ],
+          "first_divergence": null
+        },
+        "q4_k-df16": {
+          "returncode": 0,
+          "gpu_peak_mib": 1964,
+          "device": "auto",
+          "tokens": 140,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            1611.026921,
+            1575.321557
+          ],
+          "first_divergence": null
+        }
+      },
+      "reference_tokens": 140,
+      "reference_eos": true,
+      "reference_capped": false,
+      "reference_text": "<fcel>Temperature of Substances Over Heat<lcel><lcel><lcel><lcel><nl>\n<fcel>Time (min)<fcel>Sample 1<fcel>Sample 2<fcel>Sample 3<fcel>Sample 3<nl>\n<fcel>0<fcel>20°<fcel>50°<fcel>51°<fcel>1°<nl>\n<fcel>5<fcel>33°<fcel>74°<fcel>80°<fcel>40°<nl>\n<fcel>10<fcel>50°<fcel>78°<fcel>90°<fcel>74°<nl>\n<fcel>15<fcel>74°<fcel>85°<fcel>104°<fcel>78°<nl>\n<fcel>20<fcel>90°<fcel>92°<fcel>110°<fcel>78°<nl>"
+    },
+    "receipt": {
+      "image": "cc0/receipt_example.png",
+      "task": "text",
+      "reference_returncode": 0,
+      "reference_s": 145.5,
+      "arms": {
+        "f32": {
+          "returncode": 0,
+          "gpu_peak_mib": 4704,
+          "device": "auto",
+          "tokens": 202,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            3492.608719,
+            3363.902005
+          ],
+          "first_divergence": null
+        },
+        "f16": {
+          "returncode": 0,
+          "gpu_peak_mib": 2922,
+          "device": "auto",
+          "tokens": 202,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            3106.966242,
+            3066.395948
+          ],
+          "first_divergence": null
+        },
+        "q8_0": {
+          "returncode": 0,
+          "gpu_peak_mib": 1576,
+          "device": "auto",
+          "tokens": 202,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            1978.853891,
+            1908.474154
+          ],
+          "first_divergence": null
+        },
+        "q4_k": {
+          "returncode": 0,
+          "gpu_peak_mib": 1406,
+          "device": "auto",
+          "tokens": 202,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            1820.742736,
+            1795.355368
+          ],
+          "first_divergence": null
+        },
+        "q4_k-dq8": {
+          "returncode": 0,
+          "gpu_peak_mib": 1576,
+          "device": "auto",
+          "tokens": 202,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            1961.353791,
+            1900.713029
+          ],
+          "first_divergence": null
+        },
+        "q4_k-df16": {
+          "returncode": 0,
+          "gpu_peak_mib": 2036,
+          "device": "auto",
+          "tokens": 202,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "runs_ms": [
+            2704.321705,
+            2646.125402
+          ],
+          "first_divergence": null
+        }
+      },
+      "reference_tokens": 202,
+      "reference_eos": true,
+      "reference_capped": false,
+      "reference_text": "Jackson-Washington\n6640 Ortiz Cove, Markmouth, PW\n69940\nTransaction ID: 8F88C299\nDate: 2025-02-16 11:25:12\nItem Qty Price\nStrategy Accessory 1 $ 43.31 $\nConference Product 1 $ 48.40 $\nScientist Item 3 $ 48.07 $\nSituation Item 3 $ 23.87 $\nLife Accessory 4 $ 48.04 $\nMusic Accessory 1 $ 24.45 $\nSubtotal: $524.14\nGST (5%): $26.21\nPST (7%): $36.69\nTotal: $587.04\nPayment: Gift Card (****3486)\nHave a great day!"
+    },
+    "german": {
+      "image": "cc0/german_official_print.jpg",
+      "task": "text",
+      "reference_returncode": 0,
+      "reference_s": 641.3,
+      "arms": {},
+      "reference_tokens": 389,
+      "reference_eos": true,
+      "reference_capped": false,
+      "reference_text": "Reichs-Gefehblatt.\n№ 1.\nInhalt. Verordnung, betreffend das Inkrafttreten der Militärstrafgerichtsordnung vom 1. Dezember 1898.\nS. 1. — Verordnung, betreffend die Uebertragung der Befugnisse des preußischen General-\nAuditoriats auf das Reichsmilitärgericht. S. 2.\n(Nr. 2642.) Verordnung, betreffend das Inkrafttreten der Militärstrafgerichtsordnung vom\n1. Dezember 1898. Vom 28. Dezember 1899.\nWir Wilhelm, von Gottes Gnaden Deutscher Kaiser, König\nvon Preußen x.\nverordnen unter Zustimmung des Bundesraths auf Grund des §. 1 des Einführungs-\ngeseßes zur Militärstrafgerichtsordnung vom 1. Dezember 1898, was folgt:\nEinziger Paragraph.\nDie Militärstrafgerichtsordnung vom 1. Dezember 1898 (Reichs-Gefehbl.\nS. 1189 ff.) tritt am 1. Oktober 1900 in Kraft.\nUrkundlich unter Unserer Höchsteigenhändigen Unterschrift und beigedrucktem\nKaiserlichen Infigel.\nGegeben Neues Palais, den 28. Dezember 1899.\n(L. S.) Wilhelm.\nFürst zu Hohenlohe.\nReichs-Gefehbl. 1900.\nAusgegeben zu Berlin den 6. Januar 1900.\n1"
+    }
+  },
+  "phase": "german reference"
+}

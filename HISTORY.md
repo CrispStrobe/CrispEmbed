@@ -14,6 +14,19 @@ yardstick favours native on 55-56/56 stages; API contract and heron identity
 pass; F16 rejected (147 px box on receipt); native 2.6x slower than PyTorch CPU.
 Lineage: no bit-equal public tensors; nearest D-FINE-M Objects365 (cosine 0.95/0.93/0.94).
 
+## 1 November 2026 — MinerU2.5-Pro on CUDA (Kaggle T4): every precision token-exact on three cases
+
+Kaggle kernel `chr1s4/crispembed-mineru25-pro-gpu-variants` at `692f2130` (an earlier
+qualification source; [report](tests/results/mineru25/kaggle-cuda-t4/report.json)) on a Tesla T4:
+F32, F16, Q8_0 (Q8_0 vision), Q4_K, Q4_K+Q8_0-decoder and Q4_K+F16-decoder all decode the pinned
+original Python model's token IDs, text and EOS exactly on formula (29 tokens), table (140) and
+receipt (202). Warm Q4_K 0.30/1.03/1.80 s at 1.3-1.4 GiB peak GPU memory, F32 0.55/1.95/3.36 s at
+4.6 GiB. The CPU-only Q8_0/Q4_K worst-row spikes therefore do not reproduce on CUDA, consistent with
+the diagnosis that they come from CPU activation quantization meeting vision outlier channels. The
+kernel then stalled in the German F32 native run (no output after 2,796 s) until Kaggle cancelled
+it; German, Japanese, Arabic and the layout cases (where CPU Q4_K diverged) are not covered on CUDA,
+and no CUDA variant is qualified or published from this partial run.
+
 ## 1 November 2026 — OXR-1.0 native F32 decodes the original exactly on five cases
 
 [Receipt](tests/results/oxr/f32-qualification.json): hosted 41251971237 and 41252889926 at
