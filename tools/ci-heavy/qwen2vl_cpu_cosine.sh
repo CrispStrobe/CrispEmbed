@@ -15,13 +15,18 @@
 # published F16 GGUF on CPU (its CPU path dequantizes to F32 and computes in
 # F32; the F16 weights are the bf16 originals). The reference's teacher-forced
 # logit dumps are uploaded (reference-dump.tar) for the local Metal scoring.
+#
+# DEVICE=gpu (with CMAKE_EXTRA, e.g. "-DGGML_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=75") runs the candidates on
+# the GPU backend; the reference stays on the CPU (tools/kaggle/qwen2vl-cuda-cosine).
 set -uo pipefail
+DEVICE=${DEVICE:-cpu}
 MODEL=${1:?mineru|teleocr}
 VARIANTS=${2:?comma list}
 CASES=${3:-}
 OUT=${HEAVY_OUT:?}
 S=${HEAVY_SCRATCH:?}
-cmake -S . -B "$S/build" -DCMAKE_BUILD_TYPE=Release > "$OUT/cmake.log" 2>&1 &&
+# shellcheck disable=SC2086  # CMAKE_EXTRA is a flag list
+cmake -S . -B "$S/build" -DCMAKE_BUILD_TYPE=Release ${CMAKE_EXTRA:-} > "$OUT/cmake.log" 2>&1 &&
     cmake --build "$S/build" --target test-mineru25-run test-teleocr-run crispembed-quantize -j"$(nproc)" \
         > "$OUT/build.log" 2>&1 || { tail -40 "$OUT/build.log"; exit 2; }
 B=$(dirname "$(find "$S/build" -name test-mineru25-run -type f | head -1)")
@@ -61,22 +66,23 @@ gguf_for() {
 }
 extra=()
 [ -n "$CASES" ] && extra=(--cases "$CASES")
-ab() { # variant, extra args...
-    local v=$1
-    shift
-    python tools/qwen2vl_device_ab.py --model "$MODEL" --gguf "$(gguf_for "$v")" --precision "$v" --device cpu \
+ab() { # variant, device, extra args...
+    local v=$1 dev=$2
+    shift 2
+    python tools/qwen2vl_device_ab.py --model "$MODEL" --gguf "$(gguf_for "$v")" --precision "$v" --device "$dev" \
         --build "$B" --out "$OUT" --repeat 1 --hash "${extra[@]}" "$@"
 }
-ab "$REF" --force-reference --label forced --dump "$S/dump/$REF-forced"
-tar -C "$S/dump" -cf "$OUT/reference-dump.tar" "$REF-forced"
+ab "$REF" cpu --force-reference --label forced --dump "$S/dump/$REF-forced"
+[ "$DEVICE" = cpu ] && tar -C "$S/dump" -cf "$OUT/reference-dump.tar" "$REF-forced"
 IFS=, read -ra vs <<< "$VARIANTS"
 for v in "${vs[@]}"; do
-    ab "$v"
-    ab "$v" --force-reference --label forced --dump "$S/dump/$v-forced"
+    ab "$v" "$DEVICE"
+    ab "$v" "$DEVICE" --force-reference --label forced --dump "$S/dump/$v-forced"
     python tools/qwen2vl_stage_cosine.py --ref "$S/dump/$REF-forced" --cand "$S/dump/$v-forced" \
-        --ref-receipt "$OUT/$REF-cpu-forced.json" --cand-receipt "$OUT/$v-cpu-forced.json" --width $WIDTH \
-        --out "$OUT/$v-cpu.cosine.json" | tail -2
-    rm -rf "$S/dump/$v-forced" "$S/$v.gguf"
+        --ref-receipt "$OUT/$REF-cpu-forced.json" --cand-receipt "$OUT/$v-$DEVICE-forced.json" --width $WIDTH \
+        --out "$OUT/$v-$DEVICE.cosine.json" | tail -2
+    rm -rf "$S/dump/$v-forced"
+    [ "$S/$v.gguf" = "$SRC" ] || rm -f "$S/$v.gguf"
 done
 ls -la "$S"/*.gguf > "$OUT/gguf-files.txt" 2>&1
 python tools/qwen2vl_device_summary.py "$OUT" --cosine-dir "$OUT" --out "$OUT/summary.json" > "$OUT/summary.md"

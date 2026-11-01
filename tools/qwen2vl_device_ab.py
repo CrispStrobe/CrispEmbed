@@ -82,7 +82,7 @@ def main() -> int:
     ap.add_argument("--model", choices=["teleocr", "mineru"], required=True)
     ap.add_argument("--gguf", required=True)
     ap.add_argument("--precision", required=True)
-    ap.add_argument("--device", choices=["cpu", "metal"], required=True)
+    ap.add_argument("--device", choices=["cpu", "metal", "gpu"], required=True)
     ap.add_argument("--build", default="build")
     ap.add_argument("--out", required=True)
     ap.add_argument("--threads", type=int, default=4)
