@@ -1,0 +1,2 @@
+{"arm":"f32-o","denoiser_bytes":3449075872,"denoiser_sha256":"5b486aa5d80647dbf298b0296d2cea7cb410dfb978b8bdfea806617f73ea588d","vae_bytes":334636224,"vae_sha256":"e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2"}
+{"arm":"q8_0-mm-o","denoiser_bytes":917886464,"denoiser_sha256":"375c2b6ea621d17501b9693a12af6ac5b94ad1b17feb31821c5d4124fde3380f","vae_bytes":89278912,"vae_sha256":"07ef5ba18d7ff727b403b61c7f8821dcb13762a5e607ff7092a1f06f04b2a15b"}
