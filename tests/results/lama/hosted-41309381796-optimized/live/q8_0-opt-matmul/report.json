@@ -1,0 +1,107 @@
+{
+  "backend": "lama",
+  "model": "big-lama-q8_0.gguf",
+  "threads": 4,
+  "cases": [
+    {
+      "photo": "face.png",
+      "size": [
+        640,
+        640
+      ],
+      "naive_fill": {
+        "masked_pixels": 32946,
+        "psnr_db": 14.359,
+        "mae": 40.344
+      },
+      "runs": {
+        "exact-mask": {
+          "returncode": 0,
+          "seconds": 18.854,
+          "shape_ok": true,
+          "inpainted": {
+            "masked_pixels": 32946,
+            "psnr_db": 25.639,
+            "mae": 5.496
+          },
+          "outside_exact": true
+        }
+      }
+    },
+    {
+      "photo": "fox.png",
+      "size": [
+        800,
+        200
+      ],
+      "naive_fill": {
+        "masked_pixels": 8078,
+        "psnr_db": Infinity,
+        "mae": 0.0
+      },
+      "runs": {
+        "exact-mask": {
+          "returncode": 0,
+          "seconds": 7.23,
+          "shape_ok": true,
+          "inpainted": {
+            "masked_pixels": 8078,
+            "psnr_db": 7.324,
+            "mae": 65.086
+          },
+          "outside_exact": true
+        }
+      }
+    },
+    {
+      "photo": "landscape.png",
+      "size": [
+        553,
+        1024
+      ],
+      "naive_fill": {
+        "masked_pixels": 48285,
+        "psnr_db": 21.288,
+        "mae": 15.368
+      },
+      "runs": {
+        "exact-mask": {
+          "returncode": 0,
+          "seconds": 25.39,
+          "shape_ok": true,
+          "inpainted": {
+            "masked_pixels": 48285,
+            "psnr_db": 24.086,
+            "mae": 10.682
+          },
+          "outside_exact": true
+        }
+      }
+    },
+    {
+      "photo": "street.png",
+      "size": [
+        1024,
+        682
+      ],
+      "naive_fill": {
+        "masked_pixels": 37187,
+        "psnr_db": 14.071,
+        "mae": 39.702
+      },
+      "runs": {
+        "exact-mask": {
+          "returncode": 0,
+          "seconds": 29.093,
+          "shape_ok": true,
+          "inpainted": {
+            "masked_pixels": 37187,
+            "psnr_db": 14.727,
+            "mae": 32.946
+          },
+          "outside_exact": true
+        }
+      }
+    }
+  ]
+}

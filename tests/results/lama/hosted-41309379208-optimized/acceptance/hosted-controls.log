@@ -1,0 +1,10 @@
+test_cli_target_routes_to_real_output_name (__main__.HostedContracts.test_cli_target_routes_to_real_output_name) ... ok
+test_each_production_observer_leak_fails (__main__.HostedContracts.test_each_production_observer_leak_fails) ... ok
+test_missing_executable_is_not_reported_as_built (__main__.HostedContracts.test_missing_executable_is_not_reported_as_built) ... ok
+test_native_fixture_hashes_match_frozen_owned_inputs (__main__.HostedContracts.test_native_fixture_hashes_match_frozen_owned_inputs) ... ok
+test_timeout_kills_descendants_after_parent_already_exited (__main__.HostedContracts.test_timeout_kills_descendants_after_parent_already_exited) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.295s
+
+OK

@@ -1,0 +1,314 @@
+{
+  "schema": "crispembed-lama-variant-v2",
+  "label": "f16-opt-matmul",
+  "model": "big-lama-f16.gguf",
+  "model_sha256": "31d5a0c4dae9a0d638a5b75bb8921ea7e588e35c8c00060e4ce16fc0bc0d3f3b",
+  "model_bytes": 102554560,
+  "env": {
+    "CRISPEMBED_INPAINT_GRAPH": "1",
+    "CRISPEMBED_INPAINT_CPU_FFT": "1",
+    "CRISPEMBED_INPAINT_REFLECT_GATHER": "1",
+    "CRISPEMBED_INPAINT_GEMM_LAYOUT": "1",
+    "CRISPEMBED_LAMA_QUANT_MATMUL": "1"
+  },
+  "owner_min_output_cosine": 0.94,
+  "owner_bar_passed": true,
+  "cases": [
+    {
+      "id": "subtitle_bar",
+      "returncode": 1,
+      "seconds": 19.04,
+      "driver_final": {
+        "case": "subtitle_bar",
+        "stages": 227,
+        "failed_stages": 224,
+        "first_failure": "generator.model.2.local",
+        "known_errors": 0,
+        "masked_max_abs": 1,
+        "masked_mean_abs": 0.00830078125,
+        "masked_psnr": 68.9396139,
+        "native_hook_neutrality": true,
+        "passed": false
+      },
+      "stderr_tail": null,
+      "prediction_cosine_vs_original": 0.999999997962,
+      "prediction_max_abs_vs_original": 0.00103569031,
+      "prediction_cosine_vs_f32_native": 0.9999999979620986,
+      "prediction_max_abs_vs_f32_native": 0.0010363459587097168,
+      "min_stage_cosine_vs_original": 0.999999578128,
+      "min_stage": "generator.model.17.conv2.ffc.convg2g.fu.irfft",
+      "rgb_vs_original": {
+        "masked_psnr_db": 68.94,
+        "masked_mae": 0.0083,
+        "masked_max_abs": 1,
+        "known_rgb_errors": null
+      },
+      "rgb_vs_f32_native": {
+        "masked_psnr_db": 68.94,
+        "masked_mae": 0.0083,
+        "masked_max_abs": 1,
+        "known_rgb_errors": null
+      },
+      "known_rgb_errors": 0,
+      "owner_bar_passed": true
+    },
+    {
+      "id": "edge_touch",
+      "returncode": 1,
+      "seconds": 20.775,
+      "driver_final": {
+        "case": "edge_touch",
+        "stages": 227,
+        "failed_stages": 223,
+        "first_failure": "generator.model.2.local",
+        "known_errors": 0,
+        "masked_max_abs": 1,
+        "masked_mean_abs": 0.0145828941,
+        "masked_psnr": 66.4923664,
+        "native_hook_neutrality": true,
+        "passed": false
+      },
+      "stderr_tail": null,
+      "prediction_cosine_vs_original": 0.999999996888,
+      "prediction_max_abs_vs_original": 0.000781357288,
+      "prediction_cosine_vs_f32_native": 0.9999999969087676,
+      "prediction_max_abs_vs_f32_native": 0.0007801055908203125,
+      "min_stage_cosine_vs_original": 0.999999487082,
+      "min_stage": "generator.model.17.conv2.global",
+      "rgb_vs_original": {
+        "masked_psnr_db": 66.492,
+        "masked_mae": 0.0146,
+        "masked_max_abs": 1,
+        "known_rgb_errors": null
+      },
+      "rgb_vs_f32_native": {
+        "masked_psnr_db": 66.588,
+        "masked_mae": 0.0143,
+        "masked_max_abs": 1,
+        "known_rgb_errors": null
+      },
+      "known_rgb_errors": 0,
+      "owner_bar_passed": true
+    },
+    {
+      "id": "center",
+      "returncode": 1,
+      "seconds": 6.539,
+      "driver_final": {
+        "case": "center",
+        "stages": 227,
+        "failed_stages": 222,
+        "first_failure": "generator.model.2.local",
+        "known_errors": 0,
+        "masked_max_abs": 1,
+        "masked_mean_abs": 0.0105309346,
+        "masked_psnr": 67.9061344,
+        "native_hook_neutrality": true,
+        "passed": false
+      },
+      "stderr_tail": null,
+      "prediction_cosine_vs_original": 0.999999997846,
+      "prediction_max_abs_vs_original": 0.000808030367,
+      "prediction_cosine_vs_f32_native": 0.9999999978465326,
+      "prediction_max_abs_vs_f32_native": 0.0008075237274169922,
+      "min_stage_cosine_vs_original": 0.999999517286,
+      "min_stage": "generator.model.18.conv2.global",
+      "rgb_vs_original": {
+        "masked_psnr_db": 67.906,
+        "masked_mae": 0.0105,
+        "masked_max_abs": 1,
+        "known_rgb_errors": null
+      },
+      "rgb_vs_f32_native": {
+        "masked_psnr_db": 67.906,
+        "masked_mae": 0.0105,
+        "masked_max_abs": 1,
+        "known_rgb_errors": null
+      },
+      "known_rgb_errors": 0,
+      "owner_bar_passed": true
+    },
+    {
+      "id": "empty",
+      "returncode": 1,
+      "seconds": 1.429,
+      "driver_final": {
+        "case": "empty",
+        "stages": 227,
+        "failed_stages": 221,
+        "first_failure": "generator.model.2.local",
+        "known_errors": 0,
+        "masked_max_abs": 0,
+        "masked_mean_abs": 0,
+        "masked_psnr": 999,
+        "native_hook_neutrality": true,
+        "passed": false
+      },
+      "stderr_tail": null,
+      "prediction_cosine_vs_original": 0.999999998698,
+      "prediction_max_abs_vs_original": 8.84532928e-05,
+      "prediction_cosine_vs_f32_native": 0.9999999986987809,
+      "prediction_max_abs_vs_f32_native": 8.83340835571289e-05,
+      "min_stage_cosine_vs_original": 0.99999764463,
+      "min_stage": "generator.model.17.conv2.global",
+      "rgb_vs_original": null,
+      "rgb_vs_f32_native": null,
+      "known_rgb_errors": 0,
+      "owner_bar_passed": true
+    },
+    {
+      "id": "full",
+      "returncode": 1,
+      "seconds": 5.218,
+      "driver_final": {
+        "case": "full",
+        "stages": 227,
+        "failed_stages": 218,
+        "first_failure": "generator.model.3.local",
+        "known_errors": 0,
+        "masked_max_abs": 1,
+        "masked_mean_abs": 0.176737467,
+        "masked_psnr": 55.6575173,
+        "native_hook_neutrality": true,
+        "passed": false
+      },
+      "stderr_tail": null,
+      "prediction_cosine_vs_original": 0.999999516684,
+      "prediction_max_abs_vs_original": 0.00385442376,
+      "prediction_cosine_vs_f32_native": 0.9999995131257472,
+      "prediction_max_abs_vs_f32_native": 0.003880828619003296,
+      "min_stage_cosine_vs_original": 0.999955754732,
+      "min_stage": "generator.model.22.conv2.global",
+      "rgb_vs_original": {
+        "masked_psnr_db": 55.658,
+        "masked_mae": 0.1767,
+        "masked_max_abs": 1,
+        "known_rgb_errors": null
+      },
+      "rgb_vs_f32_native": {
+        "masked_psnr_db": 55.493,
+        "masked_mae": 0.1836,
+        "masked_max_abs": 1,
+        "known_rgb_errors": null
+      },
+      "known_rgb_errors": 0,
+      "owner_bar_passed": true
+    },
+    {
+      "id": "one_pixel",
+      "returncode": 1,
+      "seconds": 1.969,
+      "driver_final": {
+        "case": "one_pixel",
+        "stages": 227,
+        "failed_stages": 218,
+        "first_failure": "generator.model.2.local",
+        "known_errors": 0,
+        "masked_max_abs": 0,
+        "masked_mean_abs": 0,
+        "masked_psnr": 999,
+        "native_hook_neutrality": true,
+        "passed": false
+      },
+      "stderr_tail": null,
+      "prediction_cosine_vs_original": 0.999999998776,
+      "prediction_max_abs_vs_original": 8.73208046e-05,
+      "prediction_cosine_vs_f32_native": 0.9999999987774592,
+      "prediction_max_abs_vs_f32_native": 8.738040924072266e-05,
+      "min_stage_cosine_vs_original": 0.999997865339,
+      "min_stage": "generator.model.17.conv2.global",
+      "rgb_vs_original": {
+        "masked_psnr_db": "inf",
+        "masked_mae": 0.0,
+        "masked_max_abs": 0,
+        "known_rgb_errors": null
+      },
+      "rgb_vs_f32_native": {
+        "masked_psnr_db": "inf",
+        "masked_mae": 0.0,
+        "masked_max_abs": 0,
+        "known_rgb_errors": null
+      },
+      "known_rgb_errors": 0,
+      "owner_bar_passed": true
+    },
+    {
+      "id": "wide",
+      "returncode": 1,
+      "seconds": 9.778,
+      "driver_final": {
+        "case": "wide",
+        "stages": 227,
+        "failed_stages": 223,
+        "first_failure": "generator.model.2.local",
+        "known_errors": 0,
+        "masked_max_abs": 1,
+        "masked_mean_abs": 0.0102544133,
+        "masked_psnr": 68.0216954,
+        "native_hook_neutrality": true,
+        "passed": false
+      },
+      "stderr_tail": null,
+      "prediction_cosine_vs_original": 0.999999997277,
+      "prediction_max_abs_vs_original": 0.000846862793,
+      "prediction_cosine_vs_f32_native": 0.9999999972963715,
+      "prediction_max_abs_vs_f32_native": 0.0008384734392166138,
+      "min_stage_cosine_vs_original": 0.999999647418,
+      "min_stage": "generator.model.19.conv2.ffc.convg2g.fu.irfft",
+      "rgb_vs_original": {
+        "masked_psnr_db": 68.022,
+        "masked_mae": 0.0103,
+        "masked_max_abs": 1,
+        "known_rgb_errors": null
+      },
+      "rgb_vs_f32_native": {
+        "masked_psnr_db": 68.022,
+        "masked_mae": 0.0103,
+        "masked_max_abs": 1,
+        "known_rgb_errors": null
+      },
+      "known_rgb_errors": 0,
+      "owner_bar_passed": true
+    },
+    {
+      "id": "thin_strip",
+      "returncode": 1,
+      "seconds": 19.073,
+      "driver_final": {
+        "case": "thin_strip",
+        "stages": 227,
+        "failed_stages": 223,
+        "first_failure": "generator.model.2.local",
+        "known_errors": 0,
+        "masked_max_abs": 1,
+        "masked_mean_abs": 0.0212673611,
+        "masked_psnr": 64.8536676,
+        "native_hook_neutrality": true,
+        "passed": false
+      },
+      "stderr_tail": null,
+      "prediction_cosine_vs_original": 0.999999997784,
+      "prediction_max_abs_vs_original": 0.000595331192,
+      "prediction_cosine_vs_f32_native": 0.9999999977844621,
+      "prediction_max_abs_vs_f32_native": 0.0005955696105957031,
+      "min_stage_cosine_vs_original": 0.999999345706,
+      "min_stage": "generator.model.17.conv2.global",
+      "rgb_vs_original": {
+        "masked_psnr_db": 64.854,
+        "masked_mae": 0.0213,
+        "masked_max_abs": 1,
+        "known_rgb_errors": null
+      },
+      "rgb_vs_f32_native": {
+        "masked_psnr_db": 64.854,
+        "masked_mae": 0.0213,
+        "masked_max_abs": 1,
+        "known_rgb_errors": null
+      },
+      "known_rgb_errors": 0,
+      "owner_bar_passed": true
+    }
+  ],
+  "internal_research_only": true,
+  "published": false
+}
