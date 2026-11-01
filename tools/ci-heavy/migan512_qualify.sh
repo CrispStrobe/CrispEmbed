@@ -127,6 +127,9 @@ for v in "${ARMS[@]}"; do
         rc=$?
         grep -E "MIGAN512_(SUMMARY|IMAGE)" "$OUT/native-$v-$c.log" | sed "s/^/$v $c rc=$rc /" >> "$OUT/native-summary.txt"
         grep -E "Maximum resident|Elapsed" "$OUT/native-$v-$c.log" | sed "s/^/$v $c /" >> "$OUT/native-resources.txt"
+        # Per-stage dumps are GBs per full-stage case; scoring needs only the
+        # ordinary output and RGB results (run 41314006982 filled the runner).
+        find "$S/native-$v/$c" -name "*.f32" ! -path "*/controls/*" -delete 2>/dev/null
     done
     # Real CLI on the subtitle fixture, 512 engine, every arm.
     step "cli-$v" env "${env_extra[@]}" /usr/bin/time -v "$BIN/crispembed" --inpaint-engine migan512 --inpaint-model "$f" \
