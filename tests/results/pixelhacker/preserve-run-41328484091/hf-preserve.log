@@ -1,0 +1,24 @@
+private: True files: 23
+.gitattributes
+gguf/pixelhacker-f16.gguf
+gguf/pixelhacker-f16.gguf.json
+gguf/pixelhacker-f32.gguf
+gguf/pixelhacker-f32.gguf.json
+gguf/pixelhacker-f32.gguf.licenses/AUTHOR-WEIGHTS-README.md
+gguf/pixelhacker-f32.gguf.licenses/SOURCE.txt
+gguf/pixelhacker-f32.gguf.licenses/UPSTREAM-CODE-LICENSE
+gguf/pixelhacker-q4_k.gguf
+gguf/pixelhacker-q4_k.gguf.json
+gguf/pixelhacker-q8_0.gguf
+gguf/pixelhacker-q8_0.gguf.json
+gguf/sdxl-vae-f16.gguf
+gguf/sdxl-vae-f16.gguf.json
+gguf/sdxl-vae-f32.gguf
+gguf/sdxl-vae-f32.gguf.json
+gguf/sdxl-vae-f32.gguf.licenses/AUTHOR-WEIGHTS-README.md
+gguf/sdxl-vae-f32.gguf.licenses/SOURCE.txt
+gguf/sdxl-vae-f32.gguf.licenses/UPSTREAM-CODE-LICENSE
+gguf/sdxl-vae-q4_k.gguf
+gguf/sdxl-vae-q4_k.gguf.json
+gguf/sdxl-vae-q8_0.gguf
+gguf/sdxl-vae-q8_0.gguf.json
