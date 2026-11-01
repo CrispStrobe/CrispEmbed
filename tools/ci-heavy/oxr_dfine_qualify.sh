@@ -43,7 +43,7 @@ echo "::endgroup::"
 
 echo "::group::authenticated download and conversion"
 CKPT=$(python -c "from huggingface_hub import hf_hub_download as d; d('SoMarkAI/OXR-1.0','layout_analysis/metadata.json',revision='$REV'); print(d('SoMarkAI/OXR-1.0','layout_analysis/last.pth',revision='$REV'))") || exit 5
-for dt in f32 f16; do
+for dt in f32 f16 f16-as-f32; do
     python models/convert-oxr-dfine-to-gguf.py --model SoMarkAI/OXR-1.0 --dtype $dt --output "$S/oxr-dfine-$dt.gguf" \
         > "$TOP/convert-$dt.log" 2>&1
     note "convert_$dt" "$([ $? = 0 ] && echo pass || echo fail)"
@@ -110,6 +110,9 @@ PY
     run_arm service "$S/oxr-dfine-f32.gguf" "$S/$id-service.gguf"
     run_arm inject-service "$S/oxr-dfine-f32.gguf" "$S/$id-service.gguf" --inject-input
     run_arm f16-generic "$S/oxr-dfine-f16.gguf" "$S/$id-generic.gguf"
+    # Same-weight probe: F16-rounded matrices in an F32 file through the F32 code path.
+    # Equal to f16-generic => the F16 compute path adds nothing; close to generic => it does.
+    run_arm f16w-f32path-generic "$S/oxr-dfine-f16-as-f32.gguf" "$S/$id-generic.gguf"
     # Speed A/B of opt-in convolution paths (same budgets; defaults unchanged).
     CRISPEMBED_OXR_LAYOUT_DW_DIRECT=1 run_arm dw-direct "$S/oxr-dfine-f32.gguf" "$S/$id-generic.gguf"
     LAYOUT_CONV_DIRECT=1 run_arm conv-direct "$S/oxr-dfine-f32.gguf" "$S/$id-generic.gguf"

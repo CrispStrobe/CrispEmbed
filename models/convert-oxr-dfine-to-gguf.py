@@ -139,6 +139,10 @@ class Builder:
         tensor = tensor.detach().to(torch.float32).contiguous()
         if not torch.isfinite(tensor).all() and name != "decoder.anchors":
             raise ValueError(f"non-finite values in {name}")
+        if matrix and self.dtype == "f16-as-f32":
+            # Diagnostic probe: the F16 recipe's exact weight rounding, stored as F32, so
+            # native F32 code isolates F16 weight precision from the F16 compute path.
+            tensor = tensor.to(torch.float16).to(torch.float32)
         self.out[name] = (tensor, matrix and self.dtype == "f16")
 
     # Backbone ConvBNAct: conv weight, FrozenBatchNorm2d scale/shift, optional LAB.
@@ -347,7 +351,7 @@ def write(builder: Builder, output: Path, hashes: dict, dtype: str) -> dict:
         "layout.source.file_sha256": json.dumps(hashes, sort_keys=True),
         "layout.preprocess": "opencv_lanczos4_letterbox_fill114_rgb_div255",
         "layout.postprocess": "dfine_focal_topk_letterbox_clip",
-        "layout.storage": dtype,
+        "layout.storage": "f32" if dtype == "f16-as-f32" else dtype,
     }
     for key, value in meta.items():
         writer.add_string(key, value)
@@ -372,7 +376,8 @@ def write(builder: Builder, output: Path, hashes: dict, dtype: str) -> dict:
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--model", default=MODEL_ID, help=f"{MODEL_ID} or a local checkout directory")
-    parser.add_argument("--dtype", choices=("f32", "f16"), default="f32")
+    parser.add_argument("--dtype", choices=("f32", "f16", "f16-as-f32"), default="f32",
+                        help="f16-as-f32: diagnostic F16-rounded matrices stored as F32")
     parser.add_argument("--output", type=Path)
     parser.add_argument("--check-only", action="store_true")
     args = parser.parse_args(argv)

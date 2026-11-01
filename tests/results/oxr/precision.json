@@ -1,0 +1,72 @@
+{
+  "schema": "crispembed.oxr.precision.v1",
+  "reference_revision": "c708407f9d2b4df658f2543d9132b62bb7221df4",
+  "arms": [
+    {
+      "name": "f16-cpu",
+      "dtype": "f16",
+      "cases": [
+        {
+          "id": "formula",
+          "lane": "hosted-41255835479",
+          "commit": "a05f939a2eec91749963db9b7e95ca63a2ba2a06",
+          "exit": 0,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "native_over_python": 1.5394598927483205,
+          "speed_pass": false,
+          "report_sha256": "6804115a4d8541b76c0358c5c89d4cb9f510fdecbec331d5d2c3e904660127d3"
+        },
+        {
+          "id": "table",
+          "lane": "hosted-41255835479",
+          "commit": "a05f939a2eec91749963db9b7e95ca63a2ba2a06",
+          "exit": 0,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "native_over_python": 0.534344982980838,
+          "speed_pass": false,
+          "report_sha256": "9450797bdace58c47e53c7dc7fa5560333fdc0c869fcfdef90627f8b06369f3f"
+        },
+        {
+          "id": "japanese",
+          "lane": "hosted-41255835479",
+          "commit": "a05f939a2eec91749963db9b7e95ca63a2ba2a06",
+          "exit": 0,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "native_over_python": 1.2822773444823654,
+          "speed_pass": false,
+          "report_sha256": "cce65235b6d6239d1eeac6efa9393ca631f9e0e734c5dcdaa15888bbe9945383"
+        },
+        {
+          "id": "receipt",
+          "lane": "hosted-41255837490",
+          "commit": "a05f939a2eec91749963db9b7e95ca63a2ba2a06",
+          "exit": 0,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "native_over_python": 0.6811767116884384,
+          "speed_pass": false,
+          "report_sha256": "9d027f5de8fab0b2143fe62f197ad884c8bb8f32b81cd0f9eae5d623f23dca05"
+        },
+        {
+          "id": "german",
+          "lane": "hosted-41255837490",
+          "commit": "a05f939a2eec91749963db9b7e95ca63a2ba2a06",
+          "exit": 0,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "native_over_python": 0.79933085759459,
+          "speed_pass": false,
+          "report_sha256": "3e262f058ab0880f8ffd59b08d8455850c076e050c97d5ada1e8600ccc29cb3c"
+        }
+      ]
+    }
+  ]
+}

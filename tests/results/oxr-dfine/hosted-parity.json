@@ -1,0 +1,89 @@
+{
+  "schema": "crispembed.oxr-dfine.native-parity.v1",
+  "kind": "layout",
+  "commit": "7f6dd6b12fb3189e125281d5902a25dd1e3abd93",
+  "reference_revision": "c708407f9d2b4df658f2543d9132b62bb7221df4",
+  "reference_versions": {
+    "lane": "hosted-41251744740"
+  },
+  "max_new_tokens": 0,
+  "completed": true,
+  "summary_sha256": "e7476941dd63fc50558373b806ccf63c7abfc382b24dd7fc7b3d95fd254b0333",
+  "cases": [
+    {
+      "id": "receipt",
+      "reference_regions": 21,
+      "arms": {
+        "f32": {
+          "exit": 0,
+          "regions_exact": true,
+          "native_count": 21,
+          "reference_count": 21,
+          "box_max_abs_px": 0.00030517578125,
+          "score_max_abs": 0.00018274784088134766,
+          "source_arm": "diff-service"
+        }
+      }
+    },
+    {
+      "id": "german",
+      "reference_regions": 17,
+      "arms": {
+        "f32": {
+          "exit": 0,
+          "regions_exact": true,
+          "native_count": 17,
+          "reference_count": 17,
+          "box_max_abs_px": 0.0004425048828125,
+          "score_max_abs": 1.4543533325195312e-05,
+          "source_arm": "diff-service"
+        }
+      }
+    },
+    {
+      "id": "scan",
+      "reference_regions": 9,
+      "arms": {
+        "f32": {
+          "exit": 0,
+          "regions_exact": true,
+          "native_count": 9,
+          "reference_count": 9,
+          "box_max_abs_px": 6.103515625e-05,
+          "score_max_abs": 3.5762786865234375e-07,
+          "source_arm": "diff-service"
+        }
+      }
+    },
+    {
+      "id": "table",
+      "reference_regions": 2,
+      "arms": {
+        "f32": {
+          "exit": 0,
+          "regions_exact": true,
+          "native_count": 2,
+          "reference_count": 2,
+          "box_max_abs_px": 1.9073486328125e-05,
+          "score_max_abs": 4.172325134277344e-06,
+          "source_arm": "diff-service"
+        }
+      }
+    },
+    {
+      "id": "japanese",
+      "reference_regions": 1,
+      "arms": {
+        "f32": {
+          "exit": 0,
+          "regions_exact": true,
+          "native_count": 1,
+          "reference_count": 1,
+          "box_max_abs_px": 0.0001678466796875,
+          "score_max_abs": 7.092952728271484e-06,
+          "source_arm": "diff-service"
+        }
+      }
+    }
+  ]
+}

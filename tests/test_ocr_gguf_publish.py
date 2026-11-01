@@ -12,7 +12,8 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 _spec = importlib.util.spec_from_file_location("ocr_publish", ROOT / "tools/ci-heavy/ocr_gguf_publish.py")
 p = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(p)
-PROTOCOLS = {"mineru": "docs/mineru25-pro-publication-v1.json", "teleocr": "docs/teleocr-publication-v1.json"}
+PROTOCOLS = {"mineru": "docs/mineru25-pro-publication-v1.json", "teleocr": "docs/teleocr-publication-v1.json",
+             "oxr": "docs/oxr-publication-v1.json", "oxr-dfine": "docs/oxr-dfine-publication-v1.json"}
 
 
 def cfg_of(name):
@@ -61,7 +62,8 @@ class Protocols(unittest.TestCase):
             with self.subTest(name=name):
                 cfg = cfg_of(name)
                 self.assertIn(cfg["destination"], p.ALLOWED_DESTINATIONS)
-                self.assertEqual(cfg["upstream"]["license"], {"mineru": "apache-2.0", "teleocr": "qwen-research"}[name])
+                self.assertEqual(cfg["upstream"]["license"], {"mineru": "apache-2.0", "teleocr": "qwen-research",
+                                                              "oxr": "oxr", "oxr-dfine": "oxr"}[name])
                 self.assertTrue(set(cfg["default_variants"]) <= set(cfg["recipes"]))
                 self.assertEqual(len(set(cfg["parity_cases"])), len(cfg["parity_cases"]))
 
@@ -118,6 +120,8 @@ class Protocols(unittest.TestCase):
 class Receipts(unittest.TestCase):
     def test_parity_gate(self):
         for name in PROTOCOLS:
+            if cfg_of(name)["receipts"].get("kind") == "layout":
+                continue  # token-ID receipts; layout receipts are covered by OxrPublication
             with self.subTest(name=name):
                 cfg = cfg_of(name)
                 with self.assertRaises(FileNotFoundError):
@@ -167,6 +171,36 @@ class Card(unittest.TestCase):
                     self.assertIn(needle, text)
                 self.assertIn("not verified", text.lower())
                 self.assertNotIn("{first}", text)
+
+
+
+
+class OxrPublication(unittest.TestCase):
+    def test_oxr_license_obligations(self):
+        for name in ("oxr", "oxr-dfine"):
+            with self.subTest(name=name):
+                cfg = cfg_of(name)
+                self.assertIn("license_name: oxr", cfg["card"]["license_frontmatter"])
+                lic = next(f for f in cfg["license_files"] if f["name"] == "LICENSE")
+                self.assertEqual(p.digest(ROOT / "licenses/oxr-LICENSE"), lic["sha256"])
+                self.assertIn("CRISPEMBED_ACCEPT_OXR_LICENSE=1", cfg["card"]["usage"])
+                self.assertIn("SoMark OXR", cfg["notice_text"])
+
+    def test_committed_receipts_gate(self):
+        oxr = p.receipts(cfg_of("oxr"))
+        self.assertEqual(oxr["status"], "token-id-exact")
+        self.assertEqual(p.precision(cfg_of("oxr"), "F16")["ids_exact"], True)
+        layout = p.receipts(cfg_of("oxr-dfine"))
+        self.assertEqual(layout["status"], "regions-exact")
+        self.assertEqual(layout["cases"]["receipt"], 21)
+
+    def test_layout_receipt_refuses_inexact_page(self):
+        cfg = cfg_of("oxr-dfine")
+        r = json.loads((ROOT / cfg["receipts"]["parity"]).read_text())
+        r["cases"][1]["arms"]["f32"]["regions_exact"] = False
+        root = fake_root(cfg, parity_receipt=r)
+        with self.assertRaises(ValueError):
+            p.receipts(cfg, root=root)
 
 
 if __name__ == "__main__":

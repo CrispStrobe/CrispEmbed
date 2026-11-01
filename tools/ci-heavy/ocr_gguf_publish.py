@@ -32,8 +32,9 @@ ROOT = Path(__file__).resolve().parents[2]
 SCHEMA = "crispembed-ocr-gguf-publication-v1"
 FIXED_FILES = ("README.md", "LICENSE", "LICENSE-APACHE-2.0", "NOTICE", "UPSTREAM_README.md", "manifest.json",
                ".gitattributes")
-LICENSES = ("apache-2.0", "qwen-research")
-ALLOWED_DESTINATIONS = {"cstr/MinerU2.5-Pro-2604-1.2B-GGUF", "cstr/TeleOCR-GGUF"}
+LICENSES = ("apache-2.0", "qwen-research", "oxr")
+ALLOWED_DESTINATIONS = {"cstr/MinerU2.5-Pro-2604-1.2B-GGUF", "cstr/TeleOCR-GGUF", "cstr/OXR-1.0-GGUF",
+                        "cstr/OXR-1.0-DFINE-layout-GGUF"}
 
 
 def require(ok, why):
@@ -96,6 +97,19 @@ def receipts(cfg, root=ROOT):
     require(r["reference_revision"] == cfg["upstream"]["revision"], "parity receipt revision differs")
     require(re.fullmatch("[0-9a-f]{40}", r.get("commit", "")), "parity receipt commit malformed")
     require([c["id"] for c in r["cases"]] == cfg["parity_cases"], "parity receipt case set differs")
+    if cfg["receipts"].get("kind") == "layout":
+        # Layout detectors: the arm's final selected regions must equal the original's.
+        regions = {}
+        for c in r["cases"]:
+            for arm in cfg["parity_arms"]:
+                a = c["arms"].get(arm)
+                require(a and a["exit"] == 0 and a.get("regions_exact") is True,
+                        f"parity receipt not region-exact: {c['id']}/{arm}")
+            regions[c["id"]] = c["reference_regions"]
+        return {"status": "regions-exact", "arms": list(cfg["parity_arms"]), "cases": regions, "commit": r["commit"],
+                "reference": {"revision": r["reference_revision"], "versions": r["reference_versions"],
+                              "max_new_tokens": r["max_new_tokens"]},
+                "receipt_sha256": digest(path)}
     tokens = {}
     for c in r["cases"]:
         for arm in cfg["parity_arms"]:
@@ -187,6 +201,18 @@ def card(cfg, files, parity, prec, source_commit):
     quantized = any(cfg["recipes"][v].get("type") for v in names)
     recipes = "\n".join(f"- **{v}**: {cfg['recipes'][v].get('note', 'see manifest.json')}" for v in names)
     first = files[0]["filename"]
+    if parity["status"] == "regions-exact":
+        parity_md = f"""## Parity status (CrispEmbed native vs. the original PyTorch detector, CPU)
+
+- The reference arms ({', '.join(parity['arms'])}) return the original service's final selected regions
+  (same labels in the same order) on all {len(parity['cases'])} frozen pages ({cases} regions), CrispEmbed commit
+  `{parity['commit'][:8]}`, reference revision `{parity['reference']['revision'][:12]}`."""
+    else:
+        parity_md = f"""## Parity status (CrispEmbed native vs. the original Python model, CPU, greedy)
+
+- The reference arms ({', '.join(parity['arms'])}) reproduce the original model's generated token IDs
+  **exactly** on all {len(parity['cases'])} frozen requests ({cases} tokens), CrispEmbed commit
+  `{parity['commit'][:8]}`, reference revision `{parity['reference']['revision'][:12]}`.{reduced}"""
     front = c.get("license_frontmatter", "license: apache-2.0\nlicense_link: LICENSE")
     license_md = c.get("license_md") or f"""- The original model is released under the **Apache License 2.0** ({up['copyright']}).
   These derived files are distributed under the same license.
@@ -196,7 +222,7 @@ def card(cfg, files, parity, prec, source_commit):
 {front}
 base_model: {up['repo']}
 base_model_relation: quantized
-pipeline_tag: image-text-to-text
+pipeline_tag: {c.get('pipeline_tag', 'image-text-to-text')}
 library_name: gguf
 tags: [{', '.join(['gguf', 'ocr', 'crispembed', *c['tags']])}]
 ---
@@ -215,7 +241,7 @@ All credit for the model belongs to the original authors; these files only chang
 
 ## Statement of changes (Apache-2.0 section 4(b))
 
-These files were modified from the original by CrispEmbed: the safetensors weights of revision
+These files were modified from the original by CrispEmbed: the checkpoint weights of revision
 `{up['revision']}` were **format-converted** to GGUF (tensor renaming, casting, tokenizer and
 preprocessing metadata embedded){' and, where noted, **quantized**' if quantized else ''}.
 No weights were trained, fine-tuned, merged or otherwise altered.
@@ -236,11 +262,7 @@ No weights were trained, fine-tuned, merged or otherwise altered.
 3. Built and uploaded by CrispEmbed commit `{source_commit}` (workflow `ocr-gguf-publish.yml`,
    protocol `{cfg['_protocol']}`); `manifest.json` lists every recipe, input pin, receipt and file hash.
 
-## Parity status (CrispEmbed native vs. the original Python model, CPU, greedy)
-
-- The reference arms ({', '.join(parity['arms'])}) reproduce the original model's generated token IDs
-  **exactly** on all {len(parity['cases'])} frozen requests ({cases} tokens), CrispEmbed commit
-  `{parity['commit'][:8]}`, reference revision `{parity['reference']['revision'][:12]}`.{reduced}
+{parity_md}
 - {c['not_verified']}
 
 ## Usage
@@ -265,7 +287,8 @@ def publish(cfg, variants, gguf_dir, notice_dir, out, source_commit):
     for v in variants:
         name = cfg["recipes"][v]["filename"]
         path = Path(gguf_dir) / name
-        require(path.is_file() and path.stat().st_size > 3 * 10**8, "missing or truncated GGUF: " + name)
+        require(path.is_file() and path.stat().st_size > cfg.get("min_gguf_bytes", 3 * 10**8),
+                "missing or truncated GGUF: " + name)
         files.append({"variant": v, "filename": name, "bytes": path.stat().st_size, "sha256": digest(path)})
     readme = Path(notice_dir) / "UPSTREAM_README.md"
     up = cfg["upstream"]

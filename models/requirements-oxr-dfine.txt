@@ -1,0 +1,7 @@
+# OXR D-FINE layout GGUF conversion (models/convert-oxr-dfine-to-gguf.py): the pinned
+# checkpoint is a torch .pth, loaded with weights_only=True. CPU wheels only.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.11.0+cpu
+numpy==1.26.4
+gguf==0.17.1
+huggingface_hub==1.5.0
