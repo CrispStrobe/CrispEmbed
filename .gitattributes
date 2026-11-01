@@ -12,3 +12,7 @@ tests/fixtures/marker/FONT-NOTICE.txt -whitespace
 licenses/latent-inpaint/moebius-weights-model-card.md -text whitespace=-blank-at-eol
 licenses/latent-inpaint/pixelhacker-weights-model-card.md -text whitespace=-blank-at-eol
 licenses/latent-inpaint/sdxl-vae-model-card.md -text whitespace=-blank-at-eol
+# Frozen contracts/receipts whose exact bytes are SHA-256 pinned by tools and
+# tests: Windows autocrlf checkouts must not rewrite them (inpaint-cli Windows).
+docs/*contract*.json -text
+tests/results/migan/** -text
