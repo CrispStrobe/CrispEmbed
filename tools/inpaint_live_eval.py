@@ -132,7 +132,8 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--binary", required=True, type=Path)
     ap.add_argument("--engine", choices=("migan256", "migan512", "lama", "moebius", "pixelhacker"))
-    ap.add_argument("--backend", choices=("migan", "lama"), help="older spelling of --engine migan256|lama")
+    ap.add_argument("--backend", choices=("migan", "migan256", "migan512", "lama"),
+                    help="older spelling of --engine (migan means migan256)")
     ap.add_argument("--model", required=True, type=Path)
     ap.add_argument("--model-sha256", default="")
     ap.add_argument("--checkpoint-sha256", default="")
@@ -153,7 +154,7 @@ def main():
     if bool(args.engine) == bool(args.backend):
         ap.error("give exactly one of --engine or --backend")
     if args.backend:
-        args.engine = {"migan": "migan256", "lama": "lama"}[args.backend]
+        args.engine = "migan256" if args.backend == "migan" else args.backend
     if bool(args.vae) != bool(args.vae_sha256):
         ap.error("--vae and --vae-sha256 go together")
     label = args.label or args.backend or args.engine

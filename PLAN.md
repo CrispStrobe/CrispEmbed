@@ -326,6 +326,19 @@ outside this lane. Do not infer weight permission from a public repository.
 
 ## Issue71, packaging and downstream delivery
 
+- Persistent inpainting graph source, 1 November 2026: MI-GAN256/512, LaMa,
+  Moebius and PixelHacker now have an additional default-off native
+  CPU/CUDA/Metal path. Cache graph allocations and CPU plans/pools; retain
+  diffusion state on-device; batch CFG and VAE encoding; use portable Fourier
+  and rectangular gated-attention graphs. Strict F32 and explicit mixed GPU
+  profiles have separate acceptance evidence. See the
+  [graph guide](docs/inpainting-ggml-graphs.md). Next gate: run the manual native
+  component workflow on actual CPU, Apple GPU and CUDA hardware, then replay
+  unchanged original stage/image comparisons and collect cold/warm timing and
+  actual peak-memory evidence. Current source checks and peer review do not
+  establish native execution, model parity or a speedup. Preserve the eager
+  comparison paths, model pins and every existing default. No runtime release,
+  shared ABI, model publication or downstream adoption is included.
 - Extended source delivery, 1 November 2026: explicit MI-GAN512, Big-LaMa,
   Moebius and PixelHacker profiles reuse the existing loader, CPU operators,
   masks, PNG output and persistent batches. New model math includes exact

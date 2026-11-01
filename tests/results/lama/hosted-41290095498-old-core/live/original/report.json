@@ -1,0 +1,42 @@
+{
+  "schema": "crispembed-lama-original-photos-v1",
+  "torch": "2.8.0+cpu",
+  "cases": [
+    {
+      "stem": "face",
+      "size": [
+        640,
+        640
+      ],
+      "fill_pixels": 31841,
+      "seconds": 4.937
+    },
+    {
+      "stem": "fox",
+      "size": [
+        800,
+        200
+      ],
+      "fill_pixels": 7713,
+      "seconds": 1.889
+    },
+    {
+      "stem": "landscape",
+      "size": [
+        960,
+        1777
+      ],
+      "fill_pixels": 136207,
+      "seconds": 25.751
+    },
+    {
+      "stem": "street",
+      "size": [
+        1280,
+        853
+      ],
+      "fill_pixels": 58203,
+      "seconds": 14.379
+    }
+  ]
+}

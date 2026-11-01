@@ -1,0 +1,36 @@
+{
+  "label": "q4_k-lowmem",
+  "owner_bar_passed": true,
+  "cases": [
+    {
+      "id": "subtitle",
+      "output_cosine_vs_original": 0.9986466231513956,
+      "output_cosine_vs_f32_native": 0.9986466195432743,
+      "min_stage_cosine_vs_original": 0.8701187094502922
+    },
+    {
+      "id": "edge",
+      "output_cosine_vs_original": 0.9992152843271773,
+      "output_cosine_vs_f32_native": 0.9992152823119211,
+      "min_stage_cosine_vs_original": 0.86815253352674
+    },
+    {
+      "id": "padded",
+      "output_cosine_vs_original": 0.9959560020403831,
+      "output_cosine_vs_f32_native": 0.9959559996476469,
+      "min_stage_cosine_vs_original": 0.8509327402361445
+    },
+    {
+      "id": "empty",
+      "output_cosine_vs_original": 0.999133301337261,
+      "output_cosine_vs_f32_native": 0.9991332999478217,
+      "min_stage_cosine_vs_original": 0.8649122429825551
+    },
+    {
+      "id": "full",
+      "output_cosine_vs_original": 0.9745041027642442,
+      "output_cosine_vs_f32_native": 0.9745066098705808,
+      "min_stage_cosine_vs_original": 0.2473799505841387
+    }
+  ]
+}

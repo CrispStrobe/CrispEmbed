@@ -1,7 +1,9 @@
 # Inpainting engines and code reuse
 
-Issue 71 now has explicit CPU/F32 source implementations for MI-GAN256,
-MI-GAN512, Big-LaMa, Moebius and PixelHacker. The surrounding
+Issue 71 has explicit source implementations for MI-GAN256,
+MI-GAN512, Big-LaMa, Moebius and PixelHacker, with the earlier CPU/F32 path
+and additional default-off [persistent CPU/CUDA/Metal graphs](inpainting-ggml-graphs.md).
+The surrounding
 [image/mask CLI](inpainting-cli.md) is shared: file and directory input, TSV
 manifests, optional DBNet masks, mask dilation/region clipping, PNG output and
 one persistent model context across a batch. White mask pixels are filled;
@@ -27,7 +29,8 @@ These are stored-weight profiles below 4 GB, not a promise of peak memory
 below 4 GB. From the original tensor census, Moebius plus the widened F32 VAE
 contains about 1.24 GB of tensor data; PixelHacker plus VAE contains about 3.78 GB.
 GGUF metadata adds a small amount. CPU latency and process peak memory have
-not been measured. The converter and native loader reject unrecognized
+not been measured. The explicit mixed GPU graph profile converts selected
+weights at load; the source GGUF contract remains F32. The converter and native loader reject unrecognized
 checkpoints, shapes, precision or metadata instead of inferring compatibility
 from a filename. No model weights are included in the source package.
 
@@ -173,11 +176,14 @@ original captures and native comparisons with fixed numerical budgets.
 The latent reference uses the pinned original pipelines, checks that capture
 hooks do not change output, and compares scheduler, VAE, denoiser and final
 RGB stages. PixelHacker's original Flash Linear Attention requires a compatible
-CUDA reference worker even though the new native implementation is CPU-only.
+CUDA reference worker. Captured original outputs can then be replayed by the
+native CPU, CUDA or Metal graph implementation without that framework runtime.
 
 Run these jobs before relying on native outputs. Source and bounded metadata
 checks alone establish neither model parity nor realistic removal quality.
 Video propagation, optical flow, temporal consistency, STTN/ProPainter,
-quantized/F16 native inference, GPU native inference and shared C ABI/server/
-language bindings are outside this image CLI addition. Frame batches share
+quantized GGUF profiles and shared C ABI/server/language bindings are outside
+this image CLI addition. Native GPU graphs and runtime mixed precision are
+included as separately gated source paths; their qualification remains pending.
+Frame batches share
 loaded weights and process each frame independently.

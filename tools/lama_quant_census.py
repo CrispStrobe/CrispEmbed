@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Validate and census a Big-LaMa lama-v1 GGUF variant against its F32 source.
+"""Validate and census a Big-LaMa lama-v2 GGUF variant against its F32 source.
 
 INTERNAL RESEARCH ONLY. Parses GGUF v3 headers with the standard library,
-checks every tensor against the lama-v1 policy written by crispembed-quantize
+checks every tensor against the lama-v2 policy written by crispembed-quantize
 (tools/quantize.cpp lama_tensor_plan) and prints a JSON census: per-type counts
 and bytes, flattened-storage counts, file size and SHA-256.
 
@@ -21,7 +21,7 @@ TYPES = {0: "f32", 1: "f16", 2: "q4_0", 3: "q4_1", 6: "q5_0", 7: "q5_1", 8: "q8_
          14: "q6_k"}
 BLOCK = {"f32": (1, 4), "f16": (1, 2), "q4_0": (32, 18), "q4_1": (32, 20), "q5_0": (32, 22), "q5_1": (32, 24),
          "q8_0": (32, 34), "q4_k": (256, 144), "q5_k": (256, 176), "q6_k": (256, 210)}
-CRITICAL = {"model.1.ffc.convl2l.weight", "model.34.weight"}
+CRITICAL = {"generator.model.1.ffc.convl2l.weight", "generator.model.34.weight"}
 FALLBACK = {"q4_k": "q4_0", "q5_k": "q5_0", "q6_k": "q8_0"}
 
 
@@ -62,21 +62,18 @@ def read_gguf(path):
 
 
 def expected_plan(name, ne, requested):
-    """Mirror of tools/quantize.cpp lama_tensor_plan (no --tensor-type overrides)."""
+    """Mirror of tools/quantize.cpp lama_tensor_plan, policy lama-v2 (no --tensor-type overrides)."""
     if (ne[1] == 1 and ne[2] == 1 and ne[3] == 1) or name in CRITICAL:
         return "f32", list(ne)
     if requested == "f16":
         return "f16", list(ne)
     count, natural = math.prod(ne), ne[0] * ne[1] * ne[2]
     kind = requested
-    if ne[0] == 1 and ne[1] == 1:
-        if ne[2] % BLOCK[kind][0]:
-            kind = FALLBACK.get(kind, "q8_0")
-        return kind, [ne[2], ne[3], 1, 1]
+    if natural % BLOCK[kind][0] == 0:
+        return kind, [natural, count // natural, 1, 1]
     if BLOCK[kind][0] == 256 and count % 256 == 0:
         return kind, [256, count // 256, 1, 1]
-    if natural % BLOCK[kind][0]:
-        kind = FALLBACK.get(kind, "q8_0")
+    kind = FALLBACK.get(kind, "q8_0")
     return kind, [natural, count // natural, 1, 1]
 
 
@@ -92,14 +89,14 @@ def census(source, variant, requested):
     source_meta, source_tensors = read_gguf(source)
     meta, tensors = read_gguf(variant)
     errors = []
-    if meta.get("lama.quantization.policy") != "lama-v1":
-        errors.append("missing lama.quantization.policy=lama-v1")
+    if meta.get("lama.quantization.policy") != "lama-v2":
+        errors.append("missing lama.quantization.policy=lama-v2")
     for key, value in source_meta.items():
         if key.startswith("lama.") and meta.get(key) != value:
             errors.append(f"metadata changed: {key}")
     if set(tensors) != set(source_tensors):
         errors.append("tensor inventory differs")
-    counts, nbytes, flattened = {}, {}, 0
+    counts, nbytes, flattened, matmul_rows = {}, {}, 0, 0
     for name, row in tensors.items():
         if name not in source_tensors:
             continue
@@ -110,9 +107,11 @@ def census(source, variant, requested):
         counts[row["type"]] = counts.get(row["type"], 0) + 1
         nbytes[row["type"]] = nbytes.get(row["type"], 0) + math.prod(row["ne"]) // block * size
         flattened += row["ne"] != source_tensors[name]["ne"]
+        matmul_rows += row["type"] != "f32" and (row["ne"] == source_tensors[name]["ne"] or
+                                                row["ne"][0] == math.prod(source_tensors[name]["ne"][:3]))
     return {"variant": Path(variant).name, "requested": requested, "bytes": Path(variant).stat().st_size,
             "sha256": sha256(variant), "source_sha256": sha256(source), "tensor_count": len(tensors),
-            "type_counts": counts, "type_payload_bytes": nbytes, "flattened_storage_tensors": flattened,
+            "type_counts": counts, "type_payload_bytes": nbytes, "flattened_storage_tensors": flattened, "patch_row_kernels": matmul_rows,
             "policy_conformant": not errors, "errors": errors[:20]}
 
 

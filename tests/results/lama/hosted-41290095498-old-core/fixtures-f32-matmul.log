@@ -1,0 +1,36 @@
+{
+  "label": "f32-matmul",
+  "owner_bar_passed": true,
+  "cases": [
+    {
+      "id": "subtitle",
+      "output_cosine_vs_original": 0.9999999999999328,
+      "output_cosine_vs_f32_native": 1.0,
+      "min_stage_cosine_vs_original": 0.9999999999962467
+    },
+    {
+      "id": "edge",
+      "output_cosine_vs_original": 0.9999999999999417,
+      "output_cosine_vs_f32_native": 1.0,
+      "min_stage_cosine_vs_original": 0.9999999999979268
+    },
+    {
+      "id": "padded",
+      "output_cosine_vs_original": 0.9999999999999055,
+      "output_cosine_vs_f32_native": 1.0,
+      "min_stage_cosine_vs_original": 0.999999999995735
+    },
+    {
+      "id": "empty",
+      "output_cosine_vs_original": 0.9999999999999436,
+      "output_cosine_vs_f32_native": 1.0,
+      "min_stage_cosine_vs_original": 0.9999999999965363
+    },
+    {
+      "id": "full",
+      "output_cosine_vs_original": 0.9999999992807836,
+      "output_cosine_vs_f32_native": 1.0,
+      "min_stage_cosine_vs_original": 0.9999999829259354
+    }
+  ]
+}

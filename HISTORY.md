@@ -202,6 +202,26 @@ Strict stage budgets fail first at vision layers 29–31 (rel_rms 1.2e-5 against
 1e-5 v2 cap, cos_min 1.000000; F32 final logits rel_rms ≤ 2.7e-6) — the documented large-grid
 numerical limit, not a new divergence. The initial failure verdict is retained; no budget changes.
 
+## 1 November 2026 — Persistent inpainting graph source implementation
+
+Added default-off native CPU/CUDA/Metal graphs for all five inpainting CLI
+profiles. MI-GAN retains a complete graph across calls. LaMa's Fourier blocks
+use portable radix-2/Bluestein graphs. Moebius and PixelHacker use complete
+denoiser graphs, batched CFG/VAE encoding and device-resident DDIM state.
+Dense convolution patch memory is bounded; CPU plans and worker pools are
+reused. An explicit mixed GPU profile converts dense/matrix weights at load
+and permits accelerated attention/matrix precision.
+
+Independent source review caught and corrected the pinned Metal group-norm
+batch limitation, disconnected retained moment tensors and test/production
+Builder layout differences. Model-free scalar controls, unchanged original
+comparators, manual hardware qualification and structured build/replay receipts
+are supplied. The pinned ggml revision and original model contracts are intact.
+Syntax/source checks are not native execution evidence: new hardware runs,
+full-model parity, steady-state speed and peak-memory measurements remain
+pending. See [the graph guide](docs/inpainting-ggml-graphs.md). No default or
+runtime release changed.
+
 ## 1 November 2026 — Additional image inpainting source profiles
 
 Issue71 source preparation now includes MI-GAN512, Big-LaMa, Moebius and

@@ -1,0 +1,36 @@
+{
+  "label": "f16-storage",
+  "owner_bar_passed": true,
+  "cases": [
+    {
+      "id": "subtitle",
+      "output_cosine_vs_original": 0.9999999833858907,
+      "output_cosine_vs_f32_native": 0.9999999833798848,
+      "min_stage_cosine_vs_original": 0.9999986674681562
+    },
+    {
+      "id": "edge",
+      "output_cosine_vs_original": 0.999999995306516,
+      "output_cosine_vs_f32_native": 0.9999999953046789,
+      "min_stage_cosine_vs_original": 0.9999991393321661
+    },
+    {
+      "id": "padded",
+      "output_cosine_vs_original": 0.9999999875799997,
+      "output_cosine_vs_f32_native": 0.9999999875797632,
+      "min_stage_cosine_vs_original": 0.9999978588933676
+    },
+    {
+      "id": "empty",
+      "output_cosine_vs_original": 0.9999999953692253,
+      "output_cosine_vs_f32_native": 0.9999999953713373,
+      "min_stage_cosine_vs_original": 0.999997210191866
+    },
+    {
+      "id": "full",
+      "output_cosine_vs_original": 0.9999993998270229,
+      "output_cosine_vs_f32_native": 0.9999994217477427,
+      "min_stage_cosine_vs_original": 0.9999443294145496
+    }
+  ]
+}

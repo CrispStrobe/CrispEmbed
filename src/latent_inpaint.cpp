@@ -1,4 +1,5 @@
 #include "latent_inpaint.h"
+#include "latent_inpaint_graph.h"
 #include "latent_inpaint_schema.h"
 #include "latent_inpaint_unet.h"
 #include "latent_inpaint_vae.h"
@@ -35,7 +36,7 @@ bool digest_valid(const std::string & value) {
 void enabled(const std::string & model) {
     require(model == "moebius" || model == "pixelhacker", "unknown model profile");
     const char * gate = model == "moebius" ? "CRISPEMBED_MOEBIUS" : "CRISPEMBED_PIXELHACKER";
-    require(core_env::on(gate), std::string("experimental CPU/F32 inference requires ") + gate + "=1");
+    require(core_env::on(gate), std::string("experimental native inference requires ") + gate + "=1");
 }
 void validate_model(const std::string & path, const std::string & sha256, const std::string & model) {
     require(digest_valid(sha256), "a lowercase SHA-256 from the converter receipt is required for " + model);
@@ -119,6 +120,7 @@ struct context {
     Options options;
     Variant variant = Variant::moebius;
     std::unique_ptr<Engine> denoiser, vae;
+    std::unique_ptr<GraphPipeline> graph;
     std::vector<float> alphas;
     std::vector<int> timesteps;
     std::atomic_flag busy = ATOMIC_FLAG_INIT;
@@ -235,6 +237,13 @@ Tensor forward(context & ctx, const Tensor & image, const Tensor & mask, const N
     require(valid_noise(noise.posterior_image, 64, 64) && valid_noise(noise.posterior_masked, 64, 64) &&
                 valid_noise(noise.latent_noise, 64, 64) && valid_noise(noise.offset_noise, 1, 1),
             "noise shape or value differs");
+    if (ctx.graph) {
+#ifdef CRISPEMBED_LATENT_INPAINT_TESTING
+        ctx.graph->set_observer(ctx.observer, ctx.observer_opaque);
+#endif
+        return ctx.graph->run(image, mask, noise.posterior_image, noise.posterior_masked, noise.latent_noise,
+                              noise.offset_noise);
+    }
     Tensor masked(image.c, image.h, image.w);
     for (int ch = 0; ch < 3; ++ch)
         for (size_t p = 0; p < image.spatial(); ++p)
@@ -325,9 +334,13 @@ context * init(const Options & options, std::string & error) {
         ctx->variant = options.model == "moebius" ? Variant::moebius : Variant::pixelhacker;
         validate_model(options.denoiser_path, options.denoiser_sha256, options.model);
         validate_model(options.vae_path, options.vae_sha256, "sdxl_vae");
-        ctx->denoiser =
-            std::make_unique<Engine>(options.denoiser_path.c_str(), options.threads, denoiser_schema(options.model));
-        ctx->vae = std::make_unique<Engine>(options.vae_path.c_str(), options.threads, vae_schema());
+        if (core_env::on("CRISPEMBED_INPAINT_GRAPH")) {
+            ctx->graph = std::make_unique<GraphPipeline>(options, ctx->timesteps, ctx->alphas);
+        } else {
+            ctx->denoiser = std::make_unique<Engine>(options.denoiser_path.c_str(), options.threads,
+                                                     denoiser_schema(options.model));
+            ctx->vae = std::make_unique<Engine>(options.vae_path.c_str(), options.threads, vae_schema());
+        }
         return ctx.release();
     } catch (const std::exception & exc) {
         error = exc.what();

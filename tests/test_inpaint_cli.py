@@ -137,6 +137,8 @@ class InpaintCliTests(unittest.TestCase):
         for key in list(environment):
             if key.startswith("INPAINT_TEST_") or key in (
                     "CRISPEMBED_IMAGE_FORMAT", "CRISPEMBED_C2PA_CERT", "CRISPEMBED_C2PA_KEY",
+                    "CRISPEMBED_INPAINT_GRAPH", "CRISPEMBED_INPAINT_FAST", "CRISPEMBED_INPAINT_BACKEND",
+                    "CRISPEMBED_INPAINT_PROFILE",
                     "CRISPEMBED_MIGAN512", "CRISPEMBED_LAMA", "CRISPEMBED_MOEBIUS", "CRISPEMBED_PIXELHACKER"):
                 environment.pop(key, None)
         environment["CRISPEMBED_MIGAN"] = "1"
@@ -172,6 +174,28 @@ class InpaintCliTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertIn(b"--mask-from-text", result.stdout)
         self.assertNotIn(b"INPAINT_TEST_LOAD", result.stderr)
+
+    def test_graph_backend_parser_and_required_gate(self):
+        for backend in ("auto", "cuda", "metal", "mps"):
+            with self.subTest(backend=backend):
+                result = self.single(["--gpu-backend", backend])
+                self.assertEqual(result.returncode, 2)
+                self.assertIn(b"CRISPEMBED_INPAINT_GRAPH=1", result.stderr)
+                self.assertNotIn(b"INPAINT_TEST_LOAD", result.stderr)
+        result = self.single(["--gpu-backend", "unknown"])
+        self.assertEqual(result.returncode, 2)
+        self.assertIn(b"--gpu-backend must be", result.stderr)
+        result = self.single(env={"CRISPEMBED_INPAINT_FAST": "1"})
+        self.assertEqual(result.returncode, 2)
+        self.assertIn(b"CRISPEMBED_INPAINT_FAST requires", result.stderr)
+
+    def test_graph_parser_records_request_without_claiming_device_execution(self):
+        # This parser driver stubs model inference. Actual backend execution is
+        # tested by the native graph controls, not by this PNG metadata check.
+        result = self.single(["--gpu-backend", "mps"], env={"CRISPEMBED_INPAINT_GRAPH": "1"})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        _, _, _, metadata = decode_png(result.stdout)
+        self.assertIn(b"execution=ggml-graph;backend_request=metal;precision_request=f32", metadata)
 
     def latent_args(self, engine="moebius", tiled=True):
         vae = self.root / "vae.gguf"

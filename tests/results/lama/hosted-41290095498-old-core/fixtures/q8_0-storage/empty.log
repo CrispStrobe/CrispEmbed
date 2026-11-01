@@ -1,0 +1,2 @@
+Big-LaMa weights: 614 resident, 223 converted, 0 matmul, 0 f16-conv, 204228128 bytes
+Big-LaMa native capture: 713 stages; repeat/fresh/observer/image controls passed

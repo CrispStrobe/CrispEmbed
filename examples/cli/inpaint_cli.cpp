@@ -2,6 +2,7 @@
 
 #include "core/env_gate.h"
 #include "core/gguf_loader.h"
+#include "core/gpu_backend_pref.h"
 #include "core/image_out.h"
 #include "inpaint.h"
 #include "lama.h"
@@ -70,6 +71,7 @@ struct path_less {
 struct options {
     std::string model, image, mask, output, list, directory, mask_directory, output_directory, text_model;
     std::string engine = "migan256", vae, model_sha256, vae_sha256, checkpoint_sha256;
+    std::string backend;
     int threads = 1;
     int steps = 20;
     float guidance = 2.0f, noise_offset = 0.0357f;
@@ -185,6 +187,7 @@ bool parse(int argc, char ** argv, options & opt, std::string & error) {
                                             "--mask-region",
                                             "--mask-dilate",
                                             "--threads",
+                                            "--gpu-backend",
                                             "--inpaint-engine",
                                             "--inpaint-vae",
                                             "--inpaint-model-sha256",
@@ -198,7 +201,11 @@ bool parse(int argc, char ** argv, options & opt, std::string & error) {
         if (i + 1 == argc || !*argv[i + 1] || std::strncmp(argv[i + 1], "--", 2) == 0)
             return fail(error, "missing value for " + name);
         const std::string value = argv[++i];
-        if (name == "--inpaint-engine")
+        if (name == "--gpu-backend") {
+            if (value != "auto" && value != "cpu" && value != "cuda" && value != "metal" && value != "mps")
+                return fail(error, "--gpu-backend must be auto, cpu, cuda or metal (mps aliases metal)");
+            opt.backend = value == "mps" ? "metal" : value;
+        } else if (name == "--inpaint-engine")
             opt.engine = value;
         else if (name == "--inpaint-vae")
             opt.vae = value;
@@ -565,6 +572,11 @@ bool write_output(const options & opt, const frame & item, const std::vector<uin
     // truncate an existing output. The common writer attaches provenance.
     std::string png, mime;
     std::string provenance = opt.engine == "migan256" ? "migan-inpaint" : opt.engine + "-inpaint";
+    if (core_env::on("CRISPEMBED_INPAINT_GRAPH")) {
+        provenance += ";execution=ggml-graph;backend_request=" + (opt.backend.empty() ? "auto" : opt.backend);
+        provenance +=
+            core_env::on("CRISPEMBED_INPAINT_FAST") ? ";precision_request=mixed-f16" : ";precision_request=f32";
+    }
     if (opt.engine == "migan512" || opt.engine == "lama") provenance += ";model_sha256=" + opt.model_sha256;
     if (opt.engine == "migan512") provenance += ";checkpoint_sha256=" + opt.checkpoint_sha256;
     if (latent_engine(opt))
@@ -625,6 +637,15 @@ bool write_output(const options & opt, const frame & item, const std::vector<uin
 }
 
 int execute(const options & opt, std::string & error) {
+    if (!opt.backend.empty() && opt.backend != "cpu" && !core_env::on("CRISPEMBED_INPAINT_GRAPH")) {
+        fail(error, "GPU/auto inpainting requires CRISPEMBED_INPAINT_GRAPH=1");
+        return 2;
+    }
+    if (core_env::on("CRISPEMBED_INPAINT_FAST") && !core_env::on("CRISPEMBED_INPAINT_GRAPH")) {
+        fail(error, "CRISPEMBED_INPAINT_FAST requires CRISPEMBED_INPAINT_GRAPH=1");
+        return 2;
+    }
+    if (!opt.backend.empty()) crispasr_set_gpu_backend_pref(opt.backend.c_str());
     const char * gate = opt.engine == "moebius"       ? "CRISPEMBED_MOEBIUS"
                         : opt.engine == "pixelhacker" ? "CRISPEMBED_PIXELHACKER"
                         : opt.engine == "lama"        ? "CRISPEMBED_LAMA"
@@ -730,7 +751,11 @@ bool requested(int argc, char ** argv) {
 }
 
 void print_help(std::FILE * out) {
-    std::fprintf(out, "\nExperimental CPU/F32 image inpainting (each engine requires its opt-in gate):\n"
+    std::fprintf(out, "\nExperimental image inpainting (each engine requires its opt-in gate):\n"
+                      "  CRISPEMBED_INPAINT_GRAPH=1  Persistent native ggml graph execution\n"
+                      "  CRISPEMBED_INPAINT_FAST=1   Explicit mixed precision graph profile (GPU only)\n"
+                      "  CRISPEMBED_INPAINT_PROFILE=1  Print graph allocation, reuse and transfer counters\n"
+                      "  --gpu-backend NAME      auto, cpu, cuda, metal (mps aliases native Metal)\n"
                       "  --inpaint-engine NAME    migan256(default), migan512, lama, moebius or pixelhacker\n"
                       "  --inpaint-model PATH     Converted F32 GGUF (see docs/inpainting-cli.md)\n"
                       "  --inpaint-model-sha256 H Model GGUF digest from conversion receipt (new engines)\n"

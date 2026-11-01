@@ -1,0 +1,203 @@
+{
+  "schema": "crispembed-lama-variant-comparison-v1",
+  "label": "q8_0-lowmem",
+  "model": "big-lama-q8_0.gguf",
+  "model_sha256": "60c830bb725e95cbbe103ae4864d269b586b3d750a547bce92e1578ca2193c07",
+  "model_bytes": 54849472,
+  "env": {
+    "CRISPEMBED_LAMA_QUANT_MATMUL": "1",
+    "CRISPEMBED_LAMA_F16_CONV": "1"
+  },
+  "original_model_sha256": "6369ae4ff76794fe90272f74b8dbffc610987416d49b32990e0295e5b8bf4a01",
+  "owner_min_output_cosine": 0.94,
+  "strict_f32_budgets_for_information": {
+    "max_abs": 0.002,
+    "max_relative_l2": 0.0002,
+    "min_cosine": 0.99999
+  },
+  "owner_bar_passed": true,
+  "cases": [
+    {
+      "id": "subtitle",
+      "fill_pixels": 224,
+      "output_cosine_vs_original": 0.9999865825670051,
+      "output_cosine_vs_f32_native": 0.9999865824871111,
+      "output_max_abs_vs_original": 0.024788379669189453,
+      "output_max_abs_vs_f32_native": 0.02478957176208496,
+      "min_stage_cosine_vs_original": 0.9980415488217892,
+      "min_stage": "model.16.conv2.ffc.convg2g.fu.output",
+      "max_stage_relative_l2_vs_original": 0.06277960247589623,
+      "first_strict_budget_exceedance": "model.2.ffc.convl2l.output",
+      "image_vs_original": {
+        "max_abs": 6,
+        "mean_abs": 0.15286458333333333,
+        "different_channels": 400,
+        "masked_psnr_db": 45.93954469587027
+      },
+      "image_vs_f32_native": {
+        "max_abs": 6,
+        "mean_abs": 0.15286458333333333,
+        "different_channels": 400,
+        "masked_psnr_db": 45.93954469587027
+      },
+      "known_pixels_exact": true,
+      "native_controls": {
+        "input_exact": true,
+        "observer_matches_unobserved": true,
+        "repeated_graph_exact": true,
+        "fresh_context_exact": true,
+        "process_matches_raw": true,
+        "known_pixels_exact": true
+      },
+      "graph_buffer_bytes": 16548224,
+      "owner_bar_passed": true,
+      "seconds": 1.36
+    },
+    {
+      "id": "edge",
+      "fill_pixels": 140,
+      "output_cosine_vs_original": 0.9999927302149113,
+      "output_cosine_vs_f32_native": 0.9999927303383256,
+      "output_max_abs_vs_original": 0.024342358112335205,
+      "output_max_abs_vs_f32_native": 0.024342060089111328,
+      "min_stage_cosine_vs_original": 0.9986821625521366,
+      "min_stage": "model.11.conv2.ffc.convg2g.fu.relu.output",
+      "max_stage_relative_l2_vs_original": 0.055574490848532984,
+      "first_strict_budget_exceedance": "model.2.ffc.convl2l.output",
+      "image_vs_original": {
+        "max_abs": 3,
+        "mean_abs": 0.047135416666666666,
+        "different_channels": 163,
+        "masked_psnr_db": 50.95885536425692
+      },
+      "image_vs_f32_native": {
+        "max_abs": 3,
+        "mean_abs": 0.047135416666666666,
+        "different_channels": 163,
+        "masked_psnr_db": 50.95885536425692
+      },
+      "known_pixels_exact": true,
+      "native_controls": {
+        "input_exact": true,
+        "observer_matches_unobserved": true,
+        "repeated_graph_exact": true,
+        "fresh_context_exact": true,
+        "process_matches_raw": true,
+        "known_pixels_exact": true
+      },
+      "graph_buffer_bytes": 16548224,
+      "owner_bar_passed": true,
+      "seconds": 1.372
+    },
+    {
+      "id": "padded",
+      "fill_pixels": 63,
+      "output_cosine_vs_original": 0.9999833199757211,
+      "output_cosine_vs_f32_native": 0.9999833197672994,
+      "output_max_abs_vs_original": 0.03554028272628784,
+      "output_max_abs_vs_f32_native": 0.035541832447052,
+      "min_stage_cosine_vs_original": 0.9964505288682943,
+      "min_stage": "model.15.conv2.output.global",
+      "max_stage_relative_l2_vs_original": 0.08781849685946674,
+      "first_strict_budget_exceedance": "model.2.ffc.convl2l.output",
+      "image_vs_original": {
+        "max_abs": 9,
+        "mean_abs": 0.09940975458216837,
+        "different_channels": 139,
+        "masked_psnr_db": 40.364637215577346
+      },
+      "image_vs_f32_native": {
+        "max_abs": 9,
+        "mean_abs": 0.09940975458216837,
+        "different_channels": 139,
+        "masked_psnr_db": 40.364637215577346
+      },
+      "known_pixels_exact": true,
+      "native_controls": {
+        "input_exact": true,
+        "observer_matches_unobserved": true,
+        "repeated_graph_exact": true,
+        "fresh_context_exact": true,
+        "process_matches_raw": true,
+        "known_pixels_exact": true
+      },
+      "graph_buffer_bytes": 16548224,
+      "owner_bar_passed": true,
+      "seconds": 1.361
+    },
+    {
+      "id": "empty",
+      "fill_pixels": 0,
+      "output_cosine_vs_original": 0.9999936062319976,
+      "output_cosine_vs_f32_native": 0.9999936063265128,
+      "output_max_abs_vs_original": 0.02393519878387451,
+      "output_max_abs_vs_f32_native": 0.02393573522567749,
+      "min_stage_cosine_vs_original": 0.9970159863439063,
+      "min_stage": "model.16.conv2.ffc.convg2g.fu.output",
+      "max_stage_relative_l2_vs_original": 0.07969549143602805,
+      "first_strict_budget_exceedance": "model.2.ffc.convl2l.output",
+      "image_vs_original": {
+        "max_abs": 0,
+        "mean_abs": 0.0,
+        "different_channels": 0,
+        "masked_psnr_db": null
+      },
+      "image_vs_f32_native": {
+        "max_abs": 0,
+        "mean_abs": 0.0,
+        "different_channels": 0,
+        "masked_psnr_db": null
+      },
+      "known_pixels_exact": true,
+      "native_controls": {
+        "input_exact": true,
+        "observer_matches_unobserved": true,
+        "repeated_graph_exact": true,
+        "fresh_context_exact": true,
+        "process_matches_raw": true,
+        "known_pixels_exact": true
+      },
+      "graph_buffer_bytes": 16548224,
+      "owner_bar_passed": true,
+      "seconds": 1.28
+    },
+    {
+      "id": "full",
+      "fill_pixels": 1280,
+      "output_cosine_vs_original": 0.9995326698739649,
+      "output_cosine_vs_f32_native": 0.9995334075242862,
+      "output_max_abs_vs_original": 0.06327950954437256,
+      "output_max_abs_vs_f32_native": 0.06324219703674316,
+      "min_stage_cosine_vs_original": 0.983586153332023,
+      "min_stage": "model.22.conv2.ffc.convg2g.conv2.output",
+      "max_stage_relative_l2_vs_original": 0.18095814152173342,
+      "first_strict_budget_exceedance": "model.2.ffc.convl2l.output",
+      "image_vs_original": {
+        "max_abs": 16,
+        "mean_abs": 7.528645833333333,
+        "different_channels": 3839,
+        "masked_psnr_db": 30.201490572891046
+      },
+      "image_vs_f32_native": {
+        "max_abs": 16,
+        "mean_abs": 7.525260416666667,
+        "different_channels": 3839,
+        "masked_psnr_db": 30.2054094005978
+      },
+      "known_pixels_exact": true,
+      "native_controls": {
+        "input_exact": true,
+        "observer_matches_unobserved": true,
+        "repeated_graph_exact": true,
+        "fresh_context_exact": true,
+        "process_matches_raw": true,
+        "known_pixels_exact": true
+      },
+      "graph_buffer_bytes": 16548224,
+      "owner_bar_passed": true,
+      "seconds": 1.357
+    }
+  ],
+  "internal_research_only": true,
+  "published": false
+}

@@ -1,11 +1,18 @@
 # What Moebius and PixelHacker reuse in CrispEmbed
 
 The experimental implementation loads one Places2 denoiser and the shared
-SDXL VAE as F32 GGUF files. It runs on the existing CPU backend and requires
+SDXL VAE as F32 GGUF files. The retained eager path runs on the existing CPU backend and requires
 the model-specific `CRISPEMBED_MOEBIUS=1` or `CRISPEMBED_PIXELHACKER=1` gate.
 Both gates are off by default. No text encoder is required: the original
 models use a learned, checkpoint-resident `embedding_layer.weight` with
 20 vectors, split into ten conditional and ten unconditional vectors.
+
+The additional [persistent graph path](inpainting-ggml-graphs.md) reuses the
+same contracts and surrounding CLI while executing complete components on
+native CPU, CUDA or Metal. It replaces per-operator allocations and host
+activation loops with cached graphs, batched guidance and resident sampler
+state. The table below documents the original eager baseline; the graph guide
+describes the additional backend/runtime reuse and its pending qualification.
 
 The exact supported source revisions, state dictionaries and inference
 profiles are in the [source contract](latent-inpaint-source-contract.json).
@@ -104,8 +111,10 @@ These values describe stored weights. They do not establish peak resident
 memory, temporary activation memory, throughput, latency, or representative
 image quality. The CPU implementation uses bounded operator workspaces and
 reuses the GGUF loader's mmap support where possible, but those design choices
-do not substitute for measuring a complete run. F16 and quantized native
-profiles are not included in the accepted conversion contract.
+do not substitute for measuring a complete run. F16 and quantized GGUF files
+are not included in the accepted conversion contract. The graph's explicit
+mixed GPU profile derives selected F16 weights at load from that unchanged,
+digest-verified F32 file and needs its own numerical/image qualification.
 
 The bounded parser/converter controls can run without a framework or model.
 Full builds, full checkpoint conversion, original inference and native parity

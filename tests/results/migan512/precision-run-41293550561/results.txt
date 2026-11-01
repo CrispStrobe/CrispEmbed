@@ -1,0 +1,16 @@
+original rc=0 seconds=64
+convert rc=0 seconds=15
+configure rc=0 seconds=1
+build rc=0 seconds=208
+native-controls rc=0 seconds=0
+quantize-f16 rc=0 seconds=0
+quantize-q8_0 rc=0 seconds=0
+quantize-q4_k rc=0 seconds=0
+cli-f32 rc=0 seconds=3
+cli-f16 rc=0 seconds=3
+cli-f16-mm rc=0 seconds=2
+cli-q8_0 rc=0 seconds=3
+cli-q8_0-mm rc=0 seconds=2
+cli-q4_k rc=0 seconds=3
+cli-q4_k-mm rc=0 seconds=3
+score rc=0 seconds=1

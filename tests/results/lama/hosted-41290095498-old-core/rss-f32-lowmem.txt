@@ -1,0 +1,24 @@
+inpaint: 1/1 /home/runner/work/_temp/out/live/f32-storage/street.input.png
+	Command being timed: "env CRISPEMBED_LAMA_QUANT_MATMUL=1 CRISPEMBED_LAMA_F16_CONV=1 /mnt/heavy/scratch/build/crispembed --inpaint-model /mnt/heavy/scratch/models/big-lama-f32.gguf --inpaint-backend lama --inpaint /home/runner/work/_temp/out/live/f32-storage/street.input.png --mask /home/runner/work/_temp/out/live/f32-storage/street.mask.png --inpaint-output /mnt/heavy/scratch/rss-f32-lowmem.png --threads 4"
+	User time (seconds): 266.96
+	System time (seconds): 0.89
+	Percent of CPU this job got: 395%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 1:07.66
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 1150136
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 0
+	Minor (reclaiming a frame) page faults: 366771
+	Voluntary context switches: 19
+	Involuntary context switches: 34497
+	Swaps: 0
+	File system inputs: 0
+	File system outputs: 5440
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

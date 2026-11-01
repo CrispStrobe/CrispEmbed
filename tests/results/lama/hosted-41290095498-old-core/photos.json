@@ -1,0 +1,16 @@
+{
+  "landscape.jpg": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a8/Tour_Eiffel_Wikimedia_Commons.jpg/960px-Tour_Eiffel_Wikimedia_Commons.jpg",
+    "sha256": "848139c75c8eb5d021837af2f856a51e8e0055e3f0c388d6fae26b49cfac339f"
+  },
+  "street.jpg": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/New_york_times_square-terabass.jpg/1280px-New_york_times_square-terabass.jpg",
+    "sha256": "39c67d5161a6daa3641a0ae768372e3bdb133fdf4591874b8ccc7d88d3c3cc5f"
+  },
+  "face.png": {
+    "sha256": "7bb9a38088ea4259dbdc84b27611c09d47661e9e2777a9751c8d42cd90473604"
+  },
+  "fox.png": {
+    "sha256": "d139a96e514217e63970cea943e93b82a02521108ce2a2367069a14d57c87f39"
+  }
+}

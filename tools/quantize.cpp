@@ -175,21 +175,19 @@ static bool load_imatrix(const std::string & path) {
     return loaded > 0;
 }
 
-// Big-LaMa (general.architecture "lama"), policy "lama-v1". The runtime
-// (src/lama.cpp) dequantizes every stored kernel at load unless the gated
-// CRISPEMBED_LAMA_QUANT_MATMUL path consumes a 1x1 kernel directly through
-// ggml_mul_mat, so the plan fixes both the type and the storage row width:
+// Big-LaMa (general.architecture "big_lama", delivery-3 converter), policy
+// "lama-v2". The runtime (src/lama.cpp) runs every conv as im2col + ggml_mul_mat,
+// so a kernel whose stored row is one output channel's IC*KH*KW patch can be
+// consumed in its stored type (CRISPEMBED_LAMA_QUANT_MATMUL=1); anything else is
+// dequantized to F32 at load (storage-only, the default for every tensor).
 //   * vectors (bias / BatchNorm) and the first (7x7, 4->64) and last (7x7,
 //     64->3) convs stay F32: the loader requires it;
-//   * F16 keeps every other kernel's original 4D shape;
-//   * 1x1 kernels (the FourierUnit spectral convs and the global branch's
-//     384->192->384 projections) are flattened to [IC, OC] so a row is one
-//     output channel's input-channel dot product, exactly mul_mat's layout;
-//     a K-quant falls back along the generic chain when IC is not 256-wide;
-//   * k>1 conv and transposed-conv kernels are flattened in memory order
-//     (a pure reshape, no transpose): legacy 32-blocks use one output
-//     channel's IC*KH*KW row; K-quants use 256-element rows, valid because
-//     the loader dequantizes them whole and restores the 4D shape.
+//   * F16 keeps every other kernel's original 4D shape (rows are patches);
+//   * a quantized kernel is flattened in memory order (a pure reshape) to
+//     [IC*KH*KW, OC] when that row width fits the block; otherwise a K-quant is
+//     stored with 256-element rows (storage-only: dequantized whole at load),
+//     and other types fall back along the generic chain;
+//   * transposed-conv kernels follow the same storage rule but always run F32.
 // --tensor-type overrides apply to every kernel except the F32-pinned ones.
 struct LamaPlan {
     ggml_type type = GGML_TYPE_F32;
@@ -214,26 +212,20 @@ static ggml_type lama_fallback(ggml_type type) {
 static LamaPlan lama_tensor_plan(const std::string & name, const ggml_tensor * t, ggml_type requested) {
     LamaPlan plan;
     const bool vector = t->ne[1] == 1 && t->ne[2] == 1 && t->ne[3] == 1;
-    if (vector || name == "model.1.ffc.convl2l.weight" || name == "model.34.weight") return plan;
+    if (vector || name == "generator.model.1.ffc.convl2l.weight" || name == "generator.model.34.weight") return plan;
     ggml_type type = requested;
     for (const auto & rule : g_tensor_types)
         if (tensor_name_matches(rule.pattern, name)) type = rule.type;
     plan.type = type;
     if (type == GGML_TYPE_F32 || type == GGML_TYPE_F16) return plan;
-    const bool pointwise = t->ne[0] == 1 && t->ne[1] == 1;
     const int64_t count = ggml_nelements(t), natural = t->ne[0] * t->ne[1] * t->ne[2];
     const int64_t block = ggml_blck_size(type);
-    if (pointwise) {
-        if (t->ne[2] % block != 0) type = lama_fallback(type);
-        if (t->ne[2] % ggml_blck_size(type) != 0) type = GGML_TYPE_F16;
-        plan.type = type;
-        plan.rows = type == GGML_TYPE_F16 ? 0 : t->ne[2];
-        return plan;
-    }
-    if (block == 256 && count % 256 == 0) {
+    if (natural % block == 0) {
+        plan.rows = natural;
+    } else if (block == 256 && count % 256 == 0) {
         plan.rows = 256;
     } else {
-        if (natural % block != 0) type = lama_fallback(type);
+        type = lama_fallback(type);
         if (natural % ggml_blck_size(type) != 0) type = GGML_TYPE_F16;
         plan.type = type;
         plan.rows = type == GGML_TYPE_F16 ? 0 : natural;
@@ -381,7 +373,7 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
     const bool is_internvl2 = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "internvl2";
     const bool is_teleocr = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "teleocr";
     const bool is_oxr = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "oxr";
-    const bool is_lama = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "lama";
+    const bool is_lama = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "big_lama";
     std::map<std::string, LamaPlan> lama_plans;
     if (is_lama) {
         if (qtype == GGML_TYPE_F32) {
@@ -404,10 +396,10 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             }
             lama_plans[name] = lama_tensor_plan(name, t, qtype);
         }
-        gguf_set_val_str(ctx_out, "lama.quantization.policy", "lama-v1");
+        gguf_set_val_str(ctx_out, "lama.quantization.policy", "lama-v2");
         gguf_set_val_str(ctx_out, "lama.quantization.requested_type", ggml_type_name(qtype));
-        fprintf(stderr, "Big-LaMa lama-v1 policy: vectors and first/last conv F32; 1x1 kernels [IC,OC] rows; "
-                        "other kernels row-flattened storage, original 4D shape restored at load\n");
+        fprintf(stderr, "Big-LaMa lama-v2 policy: vectors and first/last conv F32; kernels [IC*KH*KW,OC] rows "
+                        "where the block fits, else 256-row K-quant storage; original 4D shape restored at load\n");
     }
     const std::string inpaint_arch = arch_key >= 0 ? std::string(gguf_get_val_str(ctx_in, arch_key)) : std::string();
     const bool is_inpaint = inpaint_family(inpaint_arch);
@@ -1089,7 +1081,7 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             const LamaPlan & plan = lama_plans.at(sname);
             qtype_used = plan.type;
             quantize = plan.type != GGML_TYPE_F32;
-            if (quantize) printf("(lama-v1 %s%s) ", ggml_type_name(plan.type), plan.rows ? " flat" : "");
+            if (quantize) printf("(lama-v2 %s%s) ", ggml_type_name(plan.type), plan.rows ? " flat" : "");
         }
         int64_t qk = ggml_blck_size(qtype_used);
 

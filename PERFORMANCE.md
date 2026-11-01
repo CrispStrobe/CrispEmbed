@@ -59,6 +59,26 @@ is not calibration. The [validation record](docs/teleocr-validation.md) retains
 all layer metrics, failure attribution, source/binary hashes and corpus limits.
 No throughput, GPU, maximum-context or representative OCR-quality claim follows.
 
+## 1 November 2026 — Inpainting device graph measurements pending
+
+The new `CRISPEMBED_INPAINT_GRAPH=1` path removes per-layer host activation
+roundtrips from LaMa/latent inference and per-call graph allocation from
+MI-GAN. Latent sampling uploads a 320-float timestep embedding and four DDIM
+coefficients per iteration (1,296 bytes), while the sampled/masked latent and
+mask remain on the selected backend. Strict F32 and explicit mixed GPU paths
+are independently gated. CPU graph plans and worker pools are cached.
+
+These are implementation properties, not measured speedups. The new CPU,
+CUDA and Metal paths have no observed native/model timings or peak-memory
+measurements in this delivery. Use the
+[manual graph qualification](.github/workflows/inpaint-graphs.yml),
+[original replay driver](tools/ci-heavy/inpaint_graph_replay.py) and
+[benchmark contract](docs/inpainting-ggml-graphs.md) to collect evidence.
+Keep compile/load, first-call and steady-state latency separate; retained
+observer graphs are excluded from performance timing. Report actual peak
+RAM/VRAM separately from ggml graph-allocation bytes. No performance default
+is promoted without full-model numerical/image acceptance on the same device.
+
 ## 1 November 2026 — Inpainting source profiles, measurements pending
 
 The MI-GAN512, Big-LaMa, Moebius and PixelHacker source implementations have
