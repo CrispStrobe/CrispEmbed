@@ -510,6 +510,7 @@ The loader accepts the quantized large tables only when the GGUF records `oxr.qu
 | Q8_0 layers, F16 vision, large F32 (41277219829, earlier) | 3835 MB | 0.9988 | 0.9956 | German flips at token 68 |
 | Q8_0 + large Q8_0 + **F16 vision** (41328470565) | 1930 MB | **0.9977** | 0.9967 llm.layer.27 | 4/5 exact (German CER 1.1%) |
 | Q8_0 + large Q8_0 + Q8 vision (41327079131) | 1937 MB | 0.9985 | **0.55** vision.layer.26 (German) | 3/5 exact |
+| same + `CRISPEMBED_OXR_DEQUANT_VISION=1` (41340880860) | 1937 MB | 0.9972 | 0.65 vision.layer.26 (German) | **5/5 exact** |
 | **Q4_K visual head** + Q8_0 rest + F16 vision (41332645597) | 1786 MB | **0.9980** | 0.990 llm.norm | 4/5 exact (German CER 2.3%) |
 | Q4_K visual head + Q8_0 rest + Q8 vision (41332648013) | 1793 MB | 0.9979 | 0.55 vision.layer.26 | 4/5 exact |
 | Q4_K visual head + Q5_K LLM + F16 vision (41332670307) | 1628 MB | 0.9751 | 0.940 llm.layer.27 | 3/5 exact |
@@ -523,9 +524,13 @@ qualifying "Q4_K mixed" recipes keep Q4_K for the visual head. **The Q8 vision c
 runtime effect:** the CPU Q8_0 product quantizes activations to Q8_0 blocks. On Metal the
 same Q8_0-everything GGUF decodes German token-exact with the `_hp` route (F32 activations;
 logits cosine 0.9997 vs CPU F16, vision.merge row-min 0.88) and diverges at token 55 with the
-CPU-bit-identical integer route (`tests/results/oxr/metal-m1/q8_0-all/`). The CPU-side test of
-`CRISPEMBED_OXR_DEQUANT_VISION=1` (quantized vision weights widened to F16 in-graph) is hosted
-run 41340880860 (initial 41337273815 aborted: the CPU backend has no Q8_0-to-F16 copy). No recipe is published or made default here.
+CPU-bit-identical integer route (`tests/results/oxr/metal-m1/q8_0-all/`). On the CPU,
+`CRISPEMBED_OXR_DEQUANT_VISION=1` (quantized vision weights widened to F32 in-graph, so the
+vision activations are not quantized) makes the same Q8_0-everything recipe **token-exact on all
+five cases** (hosted 41340880860: min logits cosine 0.9972; German worst row cosine at
+vision.layer.26 rises from 0.55 to 0.65; no slowdown visible across hosted machines). The initial
+run 41337273815 aborted (the CPU backend has no Q8_0-to-F16 copy) and is retained. The gate stays
+opt-in. No recipe is published or made default here.
 
 ## Validation evidence and remaining gates
 
