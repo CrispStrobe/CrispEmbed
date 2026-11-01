@@ -35,10 +35,23 @@ receipts `tests/results/migan512/`, `tests/results/moebius/`,
   2.6.0 (triton 3.2.0's release) as an explicit recorded deviation
   (`--allow-dependency`; the contract is unchanged) and transformers 4.48.3.
   Moebius used the exact contract pins (T4, 88 s).
-- **Delivery-4 defect (not fixed here).** `test-inpaint-graph` fails its
-  transposed-convolution scalar oracle (stride 2, padding 1: error 0.02047 vs
-  budget 4e-5) on unmodified 06d75fb8 (run 41299505593) and on the merged
-  branch (41298071945). Only LaMa uses graph transposed convolution.
+- **Delivery-4 graph replay defect, fixed.** gallocr recycled one-time
+  initializers and uploaded-once parameters after their last use, so only a
+  graph's first execution was correct. Evidence: the transpose oracle error was
+  0.02047 against a 4e-5 budget on unmodified 06d75fb8 (41299505593); GLA replay
+  failed 10/92; the Moebius graph image was correct only on the first stepper
+  run (decoded cosine 0.12–0.16 afterwards). Pinning both as OUTPUT fixes all
+  three (controls 41302790327; Moebius graph 41302077937). Delivery 5
+  (67406abe) made the same pin and the 64-byte name fix independently; after the
+  merge, this branch uses its `sha256-56-v1` name encoding.
+- **Latent results.** Eager and graph F32 reproduce the CUDA originals of both
+  latent engines (final RGB within 1 level, known pixels exact). The strict
+  component budget fails on 85–163 stages per engine, with max abs <= 0.038,
+  cosine >= 0.9999995 and rel L2 <= 1e-3, first at the VAE moments; budgets are
+  unchanged. F16/Q8_0/Q4_K pass the owner gate on eager and graph, both
+  dequantized and stored-matmul (min decoded cosine vs original: Moebius
+  1.0/0.9992/0.9768, PixelHacker 1.0/0.9993/0.9902). Live photos recorded for
+  all three engines.
 - HF private storage for the account is full: only MI-GAN512 Q8_0/Q4_K are
   preserved (`cstr/crispembed-migan512-private`, private).
 
