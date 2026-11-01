@@ -205,6 +205,18 @@ Open, in order:
 3. Optional: `class_confidences`, GPU backend qualification, Rust/Dart runtime tests.
 No publication, alias, merge into feat/teleocr, tag or default flip follows.
 
+**Native OXR document route (`feat/oxr-native-doc`, `CRISPEMBED_OXR_NATIVE_DOC=1`, default off).**
+The pinned helper's `process_pages`, minus the layout detector, is translated to C++
+([guide](docs/oxr.md#native-c-document-route-experimental-crispembed_oxr_native_doc1)).
+Local model-free parity on arm64 matches 2,801 helper checks and 60/60 scripted documents.
+The only differences are arm64-wheel `INTER_AREA` pixels
+([receipt](tests/results/oxr/native-doc-local-macos-arm64.json)). Open items:
+hosted x86-64 helpers/replay/native parity on the five original-D-FINE cases
+(`tools/ci-heavy/oxr_native_doc.sh`); Markdown-table output, table-image placeholders
+and `asset_dir` (rejected, not ported); and plugging the native D-FINE provider
+into `from_layout_detect` after `layout_detect::region` carries raw labels. Keep the route
+default-off until hosted parity holds on every case.
+
 The shared-operator audit additionally replaces MinerU-only QuickGELU's F16 LUT
 with explicit F32 math. Its linked operator check and full-model replay remain
 pending; the earlier MinerU component receipt retains its original source hashes.

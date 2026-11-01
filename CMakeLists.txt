@@ -340,6 +340,13 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
                                 PROPERTIES COMPILE_OPTIONS -ffp-contract=off)
 endif()
 list(APPEND CRISPEMBED_SOURCES src/oxr_ocr.cpp src/oxr_api.cpp src/oxr_layout_api.cpp)
+# Native OXR document route (CRISPEMBED_OXR_NATIVE_DOC=1) and its generic parts.
+list(APPEND CRISPEMBED_SOURCES src/oxr_document.cpp src/oxr_document_text.cpp src/oxr_document_api.cpp
+     src/xycut_plus_plus.cpp src/cv_compat.cpp)
+# OpenCV-exact float accumulation: no FMA contraction (x86-64 SSE baseline wheels).
+if(NOT MSVC)
+    set_source_files_properties(src/cv_compat.cpp PROPERTIES COMPILE_OPTIONS "-ffp-contract=off")
+endif()
 list(APPEND CRISPEMBED_SOURCES src/internvl2_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/gliner_ner.cpp)
 list(APPEND CRISPEMBED_SOURCES src/lfm2_embed.cpp src/gemma_decision.cpp src/ultrabert_embed.cpp)
@@ -907,6 +914,9 @@ target_include_directories(test-oxr-stage-dump PRIVATE ${CMAKE_CURRENT_SOURCE_DI
 add_executable(test-oxr-batch tests/oxr_batch.cpp)
 target_link_libraries(test-oxr-batch PRIVATE crispembed)
 target_include_directories(test-oxr-batch PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+add_executable(test-oxr-document tests/test_oxr_document.cpp)
+target_link_libraries(test-oxr-document PRIVATE crispembed)
+target_include_directories(test-oxr-document PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 add_executable(test-oxr-diff tests/oxr_diff.cpp)
 target_link_libraries(test-oxr-diff PRIVATE crispembed)
 target_include_directories(test-oxr-diff PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)

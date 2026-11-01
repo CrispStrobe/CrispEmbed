@@ -65,6 +65,28 @@ extern "C" {
         width: c_int, height: c_int, channels: c_int, prompt: *const c_char,
         max_new_tokens: c_int, repetition_penalty: c_float) -> *const c_char;
     pub fn crispembed_oxr_last_error(ctx: *const OxrContext) -> *const c_char;
+    /// Native document route (CRISPEMBED_OXR_NATIVE_DOC=1). `regions` points to
+    /// `OxrLayoutRegion` records; pass NULL with `layout_json` instead.
+    pub fn crispembed_oxr_process_pages(ctx: *mut OxrContext, pixels: *const *const u8,
+        widths: *const c_int, heights: *const c_int, channels: *const c_int, n_pages: c_int,
+        regions: *const OxrLayoutRegion, region_counts: *const c_int,
+        layout_json: *const c_char, options_json: *const c_char) -> *const c_char;
+    pub fn crispembed_oxr_document_layout_model(ctx: *mut OxrContext, model_path: *const c_char,
+        n_threads: c_int) -> c_int;
+    pub fn crispembed_oxr_last_trace(ctx: *const OxrContext) -> *const c_char;
+    pub fn crispembed_oxr_render_document(ctx: *mut OxrContext, format: *const c_char) -> *const c_char;
+}
+
+/// One supplied D-FINE layout candidate (`crispembed_oxr_layout_region`).
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct OxrLayoutRegion {
+    pub label: c_int,
+    pub x1: f64,
+    pub y1: f64,
+    pub x2: f64,
+    pub y2: f64,
+    pub score: f64,
 }
 
 /// Experimental OXR-1.0 D-FINE layout context (CRISPEMBED_OXR=1 and
