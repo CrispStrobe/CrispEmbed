@@ -1,0 +1,3 @@
+MI-GAN: https://github.com/Picsart-AI-Research/MI-GAN/tree/2b793c5ece43f4253e32d4afc257120a5deed6f5
+See the preserved source and weight MIT notices for copyright and licensing.
+This file reproduces the fixed256 F32 checkpoint already reviewed by CrispEmbed.

@@ -1,0 +1,56 @@
+test_changed_tensor_payload_shape_inventory_and_view_are_rejected (__main__.PrepareMiganTest.test_changed_tensor_payload_shape_inventory_and_view_are_rejected) ... ok
+test_contiguous_storage_and_scalar_have_original_bytes (__main__.PrepareMiganTest.test_contiguous_storage_and_scalar_have_original_bytes) ... ok
+test_existing_output_and_conflicting_sources_are_rejected (__main__.PrepareMiganTest.test_existing_output_and_conflicting_sources_are_rejected) ... ok
+test_foreign_pickle_globals_are_not_executed (__main__.PrepareMiganTest.test_foreign_pickle_globals_are_not_executed) ... ok
+test_local_checkpoint_is_checked_before_metadata_and_does_not_publish_failure (__main__.PrepareMiganTest.test_local_checkpoint_is_checked_before_metadata_and_does_not_publish_failure) ... ok
+test_metadata_preserves_original_converter_types_and_order (__main__.PrepareMiganTest.test_metadata_preserves_original_converter_types_and_order) ... ok
+test_modified_review_is_rejected (__main__.PrepareMiganTest.test_modified_review_is_rejected) ... ok
+test_no_framework_import (__main__.PrepareMiganTest.test_no_framework_import) ... ok
+test_old_torch_archive_without_byteorder_is_supported (__main__.PrepareMiganTest.test_old_torch_archive_without_byteorder_is_supported) ... ok
+test_ordered_state_dict_with_module_metadata (__main__.PrepareMiganTest.test_ordered_state_dict_with_module_metadata) ... ok
+test_review_is_exact_and_contains_all_tensor_bytes (__main__.PrepareMiganTest.test_review_is_exact_and_contains_all_tensor_bytes) ... ok
+test_transposed_view_reproduces_contiguous_logical_tensor_order (__main__.PrepareMiganTest.test_transposed_view_reproduces_contiguous_logical_tensor_order) ... ok
+test_verified_download_and_failed_download_cleanup (__main__.PrepareMiganTest.test_verified_download_and_failed_download_cleanup) ... ok
+test_view_offset_and_singleton_stride_are_preserved (__main__.PrepareMiganTest.test_view_offset_and_singleton_stride_are_preserved) ... ok
+test_wrong_dtype_byteorder_and_trailing_pickle_are_rejected (__main__.PrepareMiganTest.test_wrong_dtype_byteorder_and_trailing_pickle_are_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 15 tests in 0.014s
+
+OK
+test_five_png_filter_vectors_decode_to_known_pixels (__main__.InpaintPngOracleTests.test_five_png_filter_vectors_decode_to_known_pixels) ... ok
+test_fixture_rgb_and_grayscale_encoding_have_expected_wire_data (__main__.InpaintPngOracleTests.test_fixture_rgb_and_grayscale_encoding_have_expected_wire_data) ... ok
+test_invalid_filter_and_wrong_pixel_count_fail (__main__.InpaintPngOracleTests.test_invalid_filter_and_wrong_pixel_count_fail) ... ok
+test_metadata_and_multiple_idat_chunks (__main__.InpaintPngOracleTests.test_metadata_and_multiple_idat_chunks) ... ok
+test_missing_end_truncation_contamination_and_crc_fail (__main__.InpaintPngOracleTests.test_missing_end_truncation_contamination_and_crc_fail) ... ok
+test_paeth_corner_prediction_and_modulo_wrap (__main__.InpaintPngOracleTests.test_paeth_corner_prediction_and_modulo_wrap) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.000s
+
+OK
+test_converter_requires_original_before_framework_import (__main__.MiganReferenceContractTest.test_converter_requires_original_before_framework_import) ... ok
+test_fixture_hashes_and_polarity_are_frozen (__main__.MiganReferenceContractTest.test_fixture_hashes_and_polarity_are_frozen) ... ok
+test_gguf_axis_order_scalar_bytes_and_metadata (__main__.MiganReferenceContractTest.test_gguf_axis_order_scalar_bytes_and_metadata) ... ok
+test_input_rejects_ambiguous_or_wrong_shape (__main__.MiganReferenceContractTest.test_input_rejects_ambiguous_or_wrong_shape) ... ok
+test_no_local_model_execution_dependency (__main__.MiganReferenceContractTest.test_no_local_model_execution_dependency) ... ok
+test_state_schema_preserves_constants_and_scalars (__main__.MiganReferenceContractTest.test_state_schema_preserves_constants_and_scalars) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 0.443s
+
+OK
+test_f16_negative_has_valid_scalar_payload_and_following_offset (__main__.NativeDriverTest.test_f16_negative_has_valid_scalar_payload_and_following_offset) ... ok
+test_initial_arithmetic_anchor_has_complete_case_hashes (__main__.NativeDriverTest.test_initial_arithmetic_anchor_has_complete_case_hashes) ... ok
+test_no_framework_or_model_dependency (__main__.NativeDriverTest.test_no_framework_or_model_dependency) ... ok
+test_numerical_failure_is_preserved (__main__.NativeDriverTest.test_numerical_failure_is_preserved) ... ok
+test_rejects_missing_duplicate_order_or_contradictory_metrics (__main__.NativeDriverTest.test_rejects_missing_duplicate_order_or_contradictory_metrics) ... ok
+test_replay_requires_every_reviewed_identity (__main__.NativeDriverTest.test_replay_requires_every_reviewed_identity) ... ok
+test_strict_json_rejects_duplicate_and_nonfinite (__main__.NativeDriverTest.test_strict_json_rejects_duplicate_and_nonfinite) ... ok
+test_valid_empty_and_exact_image_records (__main__.NativeDriverTest.test_valid_empty_and_exact_image_records) ... ok
+test_zip_path_and_budget_guards (__main__.NativeDriverTest.test_zip_path_and_budget_guards) ... ok
+
+----------------------------------------------------------------------
+Ran 9 tests in 0.003s
+
+OK
