@@ -1,3 +1,4 @@
 {"out": "esrgan-default.fox.json", "identical": false, "wall_s": {"metal": [2.194, 1.918], "cpu": [8.795, 8.942]}, "image": {"shape": [800, 3200, 3], "max_abs": 1, "mean_abs": 0.00174453125, "psnr_db": 75.7140160744434, "n_diff": 13398, "pixels_identical": false}}
 {"out": "esrgan-default.scan_strip.json", "identical": false, "wall_s": {"metal": [2.034, 2.002], "cpu": [8.748, 8.385]}, "image": {"shape": [1040, 2080, 3], "max_abs": 1, "mean_abs": 0.007650240384615385, "psnr_db": 69.2940527916896, "n_diff": 49647, "pixels_identical": false}}
 {"out": "dbnet-trocr.scan_page_pd.json", "identical": false, "wall_s": {"metal": [64.733, 63.678], "cpu": [100.427, 119.003]}, "char_ratio": 0.9996}
+{"out": "dbnet-gpu-deconvmm-trocr.scan_page_pd.json", "identical": false, "wall_s": {"metal": [65.101, 63.957], "cpu": [98.397, 135.299]}, "char_ratio": 0.99779}

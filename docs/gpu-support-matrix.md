@@ -53,7 +53,7 @@ from `core_env::on()` there.
 
 | Engine | Source | Backend | Metal status | Gates | Evidence |
 |---|---|---|---|---|---|
-| DBNet detector (`ocr_detect`, default pipeline + tesseract/easyocr lanes) | `ocr_detect.cpp` | `kind` | **`budget`, `slower`** (2026-11-01): Metal det gives the same text, ≤1 px boxes, conf ±0.002; stock Metal `conv_transpose_2d` 10.3 s vs CPU 4.3 s (fox lane). New gate `CRISPEMBED_DBNET_DECONV_MATMUL=1` → Metal lane 2.36 s, output identical to stock Metal, byte-identical on CPU (3 fixtures, hosted); still not faster than the CPU detector on scan_page_pd (65.9 s vs 63.7 s, TrOCR dominates), so the Metal default stays CPU | `OCR_DETECT_USE_GPU` (tri-state), `OCR_DETECT_FORCE_CPU` (atoi), `CRISPEMBED_DBNET_DECONV_MATMUL` (new, default off) | `tests/results/gpu-audit/metal-m1/ocr/dbnet-*.json`, `tests/results/gpu-audit/hosted-cpu-41327259125/` |
+| DBNet detector (`ocr_detect`, default pipeline + tesseract/easyocr lanes) | `ocr_detect.cpp` | `kind` | **`budget`, `slower`** (2026-11-01): Metal det gives the same text, ≤1 px boxes, conf ±0.002; stock Metal `conv_transpose_2d` 10.3 s vs CPU 4.3 s (fox lane). New gate `CRISPEMBED_DBNET_DECONV_MATMUL=1` → Metal lane 2.36 s, output identical to stock Metal, byte-identical on CPU (3 fixtures, hosted); still not faster than the CPU detector on scan_page_pd (64.0 s vs 63.7 s, TrOCR dominates; 295/295 boxes within 1 px of CPU), so the Metal default stays CPU | `OCR_DETECT_USE_GPU` (tri-state), `OCR_DETECT_FORCE_CPU` (atoi), `CRISPEMBED_DBNET_DECONV_MATMUL` (new, default off) | `tests/results/gpu-audit/metal-m1/ocr/dbnet-*.json`, `tests/results/gpu-audit/hosted-cpu-41327259125/` |
 | TrOCR line recognizer (default pipeline; `math_ocr` loader) | `math_ocr.cpp` | `GPU` | **`budget`** (2026-11-01): fox byte-identical; scan_page_pd 295/295 boxes, 290/295 words; scan_strip 92/95 (q8 activation rounding, differences go both ways); Metal 1.3-1.7x faster | `MATH_OCR_FORCE_CPU`, `MATH_OCR_DEC_CPU` (atoi) | `tests/results/gpu-audit/metal-m1/ocr/dbnet-trocr.*.json` |
 | PP-OCRv6 detector | `ppocrv6_det.cpp` | `kind` | **`slower`** re-confirmed 2026-11-01: det on Metal 7.37 s vs default 3.21 s (scan_page_pd), char ratio 0.9997 | `CRISPEMBED_PPOCRV6_DET_GPU` (tri-state), `CRISPEMBED_PPOCRV6_DET_GPU_LOAD`, `CRISPEMBED_PPOCRV6_FORCE_CPU` (presence) | `tests/results/gpu-audit/metal-m1/ocr/ppocrv6-small-detgpu.scan_page_pd.json` |
 | PP-OCRv6 recognizer | `ppocrv6_ocr.cpp` | `GPU` | **`exact`**: byte-identical on fox and scan_page_pd, 3.21 s vs 5.38 s (2026-11-01) | `CRISPEMBED_PPOCRV6_NO_GRAPH`, `..._BATCH_GRAPH`, `..._FORCE_CPU` (presence) | `tests/results/gpu-audit/metal-m1/ocr/ppocrv6-small.*.json` |
@@ -70,15 +70,15 @@ from `core_env::on()` there.
 
 | Engine | Source | Backend | Metal status | Gates | Evidence |
 |---|---|---|---|---|---|
-| GOT-OCR2 | `got_ocr.cpp` | `GPU*` (window partition CPU) | `unknown` vs CPU; identical OCR across quants on Metal | `GOT_OCR_FORCE_CPU` (atoi) | `docs/got-ocr2.md`, PERFORMANCE "macOS Metal" GOT table |
+| GOT-OCR2 | `got_ocr.cpp` | `GPU*` (window partition CPU) | **decoded `exact`** on fox, Q4_K, 128-token cap (15.4 s vs 14.7 s, tie), 2026-11-01; logits cosine not captured | `GOT_OCR_FORCE_CPU` (atoi); runs need `CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE=1` | `tests/results/gpu-audit/metal-m1/vlm/got-ocr2-q4k.fox.json` |
 | GLM-OCR | `glm_ocr.cpp` | `GPU` | `wrong` in vision (amplifying drift; decoded text moves on the hardest fixture), 2026-08-07 | `GLM_OCR_FORCE_CPU` (faithful arm), `GLM_OCR_VISION_FLASH`, `..._F16MM`, `..._BAKE_F32` | PERFORMANCE "GLM-OCR vision on Metal ... (Apple M1, 2026-08-07)" |
-| InternVL2 / H2OVL | `internvl2_ocr.cpp` | `GPU*` (host pixel-unshuffle) | `budget` (same text Metal vs CPU, diff-harness gap only) | `INTERNVL2_OCR_FORCE_CPU` (atoi) | PERFORMANCE InternVL2 Metal/CPU stage table |
+| InternVL2 / H2OVL | `internvl2_ocr.cpp` | `GPU*` (host pixel-unshuffle) | **decoded `exact`**: H2OVL-800M F16 fox identical, 98.6 s vs 165.3 s (2026-11-01) | `INTERNVL2_OCR_FORCE_CPU` (atoi) | `tests/results/gpu-audit/metal-m1/vlm/h2ovl-800m-f16.fox.json`, PERFORMANCE InternVL2 table |
 | DeepSeek-OCR2 | `deepseek_ocr2.cpp` | `GPU*` (window partition CPU; opt-in CPU MoE/SAM conv/LM head) | `budget` (CPU-vs-Metal table-cell whitespace only; same CER both Metal arms), 2026-08-05 | `DS2_FORCE_CPU`, `DS_MOE_CPU`, `DS_SAM_CONV_CPU`, `DS_LMHEAD_CPU` | `tests/results/ds-gates/SUMMARY.md`, `tests/results/g6/SUMMARY.md` |
 | Unlimited-OCR | `unlimited_ocr.cpp` | `GPU*` | `unknown` vs CPU (Metal run CER 0.010, 2026-07-31) | `UOCR_MOE_CPU`, `UOCR_SAM_CONV_CPU`, `UOCR_LMHEAD_CPU` | `tests/results/uocr-gates/`, PERFORMANCE "Full local matrix" |
-| Granite-Vision | `granite_vision_ocr.cpp` | `GPU` (direct `ggml_backend_dev_by_type`, bypasses `--gpu-backend`) | `unknown` | `CRISPEMBED_GRANITE_CPU` (presence) | PERFORMANCE O5 VLM decode graph |
-| SmolDocling | `smoldocling_ocr.cpp` | `GPU*` (SigLIP vision on GPU; connector/LLM/KV CPU) — **the old matrix's "No" is stale since 2026-08-05** | `budget` (CPU arm byte-identical; Metal F16 rounding moves one trajectory), 2026-08-05 | `SMOLDOCLING_FORCE_CPU` (atoi) | `tests/results/g1/SUMMARY.md` |
+| Granite-Vision | `granite_vision_ocr.cpp` | `GPU` (direct `ggml_backend_dev_by_type`, **ignores `--gpu-backend cpu`**: use `CRISPEMBED_GRANITE_CPU=1`) | **decoded `exact`**: q4_k fox identical, 112.8 s vs 132.4 s (2026-11-01) | `CRISPEMBED_GRANITE_CPU` (presence) | `tests/results/gpu-audit/metal-m1/vlm/granite-vision-q4k.fox.json` |
+| SmolDocling | `smoldocling_ocr.cpp` | `GPU*` (SigLIP vision on GPU; connector/LLM/KV CPU) — the old matrix's "No" is stale since 2026-08-05 | `budget` (2026-08-05). 2026-11-01 re-run not reached: the only local artifact is a pre-2026-08-04 GGUF without the `<row_r_col_c>` tokens and its Metal arm crashed (rc -11) before any CPU arm; replacing it was skipped (disk under 15 GB) | `SMOLDOCLING_FORCE_CPU` (atoi) | `tests/results/g1/SUMMARY.md`, `tests/results/gpu-audit/metal-m1/vlm_batch.log` |
 | LFM2.5-VL | `lfm2_vl_ocr.cpp` | `GPU` | `unknown` vs CPU (Metal transcript byte-identical to llama.cpp on one receipt) | `LFM2_VL_FORCE_CPU`, many feature gates | `docs/lfm2_vl/PLAN.md` |
-| LightOnOCR | `lightonocr.cpp` | `gated` | `unknown` | `CRISPEMBED_LIGHTONOCR_GPU`, `CRISPEMBED_LIGHTONOCR_FORCE_CPU` | — |
+| LightOnOCR | `lightonocr.cpp` | `gated` | **decoded `exact`** but **`slower`**: 1B q4_k fox identical, 18.6 s Metal vs 6.4 s CPU (2026-11-01) — stays opt-in | `CRISPEMBED_LIGHTONOCR_GPU`, `CRISPEMBED_LIGHTONOCR_FORCE_CPU` | `tests/results/gpu-audit/metal-m1/vlm/lightonocr-1b-q4k-gpu.fox.json` |
 | Pix2Struct | `pix2struct.cpp` | `kind` | `exact` decode graph on Metal (byte-identical) but `slower` at nt1, 2026-08-07 | `CRISPEMBED_PIX2STRUCT_ENC_GPU`, `CRISPEMBED_PIX2STRUCT_GGML_DECODE` | PERFORMANCE "O7 ppformulanet-l ... pix2struct" |
 | LightOnOCR-3 / OvisOCR2 / OvisOCR3 (Qwen3.5) | `qwen35_ocr.cpp` and `qwen35_*.cpp` | `CPU` | n/a | `CRISPEMBED_OVISOCR2_*`, `CRISPEMBED_OVISOCR3_*` | `tests/results/qwen35-ocr/` (CPU F16 qualified) |
 | MiniCPM-OCR | `minicpm_ocr.cpp` | `CPU` | n/a | `CRISPEMBED_MINICPM_OCR` | `tests/results/minicpm-ocr/` |
@@ -145,7 +145,7 @@ from `core_env::on()` there.
 - **No GPU code at all:** Tesseract-LSTM, BERT-NER host compute, text LID,
   classical image processing.
 
-The audit sections below are appended as each engine is measured.
+The audit sections below record what was measured on 2026-11-01; every row still marked `unknown` above was NOT reached.
 
 ## Acceptance bars (owner policy, 1 November 2026)
 
