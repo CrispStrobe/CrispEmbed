@@ -38,6 +38,8 @@ bool supported_stored(ggml_type type) {
 
 // Natural matmul row: one output channel's (IC, KH, KW) or IN weights.
 int64_t natural_row(const Shape & shape) {
+    // Linear [IN,OUT,1,1]: one row is IN. Conv [KW,KH,IC,OC]: KW*KH*IC.
+    if (shape[2] == 1 && shape[3] == 1) return shape[0];
     return shape[0] * shape[1] * shape[2];
 }
 int64_t elements(const Shape & shape) {

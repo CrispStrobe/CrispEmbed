@@ -72,6 +72,21 @@ Image.frombytes("RGB", (512, 512), (src / "input.rgb").read_bytes()).save(out / 
 Image.frombytes("L", (512, 512), (src / "fill-mask.u8").read_bytes()).save(out / "mask.png")
 EOF
 failed=0
+variant_receipt() { # VARIANT SOURCE TYPE MODEL -> VARIANT.json (crispembed-inpaint-precision-variant-v1)
+    python - "$@" <<'EOF'
+import hashlib, json, sys
+from pathlib import Path
+variant, source, qtype, model = Path(sys.argv[1]), Path(sys.argv[2]), sys.argv[3], sys.argv[4]
+digest = lambda p: hashlib.sha256(p.read_bytes()).hexdigest()
+requested = {"f16": "f16", "q8_0": "q8_0", "q4_k": "q4_K", "q5_k": "q5_K", "q6_k": "q6_K", "q4_0": "q4_0"}[qtype]
+(variant.parent / (variant.name + ".json")).write_text(json.dumps({
+    "schema": "crispembed-inpaint-precision-variant-v1", "model": model,
+    "variant_gguf_sha256": digest(variant), "variant_gguf_bytes": variant.stat().st_size,
+    "requested_type": requested, "policy": "inpaint-v1", "source_gguf": source.name,
+    "source_gguf_sha256": digest(source),
+    "quantizer_command": ["crispembed-quantize", source.name, variant.name, qtype]}, indent=2) + "\n")
+EOF
+}
 for arm in "${ARMS[@]}"; do
     base=${arm%-g}; q=${base%-mm}
     env_extra=("$GATE=1")
@@ -82,6 +97,8 @@ for arm in "${ARMS[@]}"; do
         DQ=$S/gguf/$MODEL-$q.gguf; VQ=$S/gguf/sdxl-vae-$q.gguf
         [ -f "$DQ" ] || step "quantize-denoiser-$q" "$BIN/crispembed-quantize" "$D" "$DQ" "$q" || { failed=1; continue; }
         [ -f "$VQ" ] || step "quantize-vae-$q" "$BIN/crispembed-quantize" "$V" "$VQ" "$q" || { failed=1; continue; }
+        [ -f "$DQ.json" ] || variant_receipt "$DQ" "$D" "$q" "$MODEL"
+        [ -f "$VQ.json" ] || variant_receipt "$VQ" "$V" "$q" sdxl_vae
         env_extra+=(CRISPEMBED_INPAINT_QUANT=1)
         [ "$base" = "$q" ] || env_extra+=(CRISPEMBED_INPAINT_QUANT_MATMUL=1)
     fi

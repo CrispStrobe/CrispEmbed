@@ -988,6 +988,54 @@ Json verify_receipt(const fs::path & file, const std::string & digest, const std
     return evidence;
 }
 
+// inpaint-v1 precision variant (crispembed-quantize): its adjacent receipt
+// names the source F32 conversion in the same directory. That source passes
+// the unchanged F32 receipt/readback verification above; the variant must
+// carry the identical pinned profile metadata apart from general.file_type
+// and the two inpaint-v1 policy keys. Tensor layouts are validated by the
+// gated loader (src/inpaint_weights.cpp) during model initialization.
+Json verify_model(const fs::path & file, const std::string & digest, const std::string & model) {
+    std::unique_ptr<gguf_context, decltype(&core_gguf::free_metadata)> probe(
+        core_gguf::open_metadata(file.string().c_str()), &core_gguf::free_metadata);
+    require(bool(probe), "cannot open GGUF metadata: " + file.string());
+    const bool variant = gguf_find_key(probe.get(), "inpaint.quantization.policy") >= 0;
+    if (!variant) return verify_receipt(file, digest, model);
+    expect_hash(file, digest);
+    const Json receipt = read_json(file.string() + ".json");
+    keys(receipt, { "schema", "model", "variant_gguf_sha256", "variant_gguf_bytes", "requested_type", "policy",
+                    "source_gguf", "source_gguf_sha256", "quantizer_command" });
+    require(receipt.at("schema").str() == "crispembed-inpaint-precision-variant-v1" &&
+                receipt.at("model").str() == model && receipt.at("variant_gguf_sha256").str() == digest &&
+                receipt.at("variant_gguf_bytes").uint() == fs::file_size(file) &&
+                receipt.at("policy").str() == "inpaint-v1",
+            "precision variant receipt does not bind the supplied GGUF");
+    const std::string source_name = receipt.at("source_gguf").str();
+    relative_name(source_name);
+    require(source_name.find('/') == std::string::npos, "variant source must be adjacent");
+    Json result = Json::dict();
+    result["variant_receipt"] = receipt;
+    result["source_conversion"] =
+        verify_receipt(file.parent_path() / source_name, receipt.at("source_gguf_sha256").str(), model);
+    const Json metadata = expected_metadata(model);
+    for (const auto & item : metadata.o) {
+        if (item.first == "general.file_type") continue;
+        const int64_t index = gguf_find_key(probe.get(), item.first.c_str());
+        require(index >= 0, "variant is missing pinned metadata: " + item.first);
+        if (item.second.kind == Json::string)
+            require(gguf_get_kv_type(probe.get(), index) == GGUF_TYPE_STRING &&
+                        item.second.s == gguf_get_val_str(probe.get(), index),
+                    "variant metadata string differs: " + item.first);
+        else
+            require(gguf_get_kv_type(probe.get(), index) == GGUF_TYPE_UINT32 &&
+                        uint64_t(gguf_get_val_u32(probe.get(), index)) == item.second.uint(),
+                    "variant metadata integer differs: " + item.first);
+    }
+    const int64_t requested = gguf_find_key(probe.get(), "inpaint.quantization.requested_type");
+    require(requested >= 0 && receipt.at("requested_type").str() == gguf_get_val_str(probe.get(), requested),
+            "variant requested type differs from receipt");
+    return result;
+}
+
 Json read_original_report(const fs::path & directory, const std::string & model) {
     require(!fs::is_symlink(directory) && fs::is_directory(directory), "reference root must be a real directory");
     const Json doc = read_json(regular_child(directory, "report.json", max_json_bytes));
@@ -1376,8 +1424,8 @@ int run(const Arguments & a) {
             }
         }
         require(report["errors"].a.empty(), "one or more original case manifests failed validation");
-        report["denoiser_conversion"] = verify_receipt(a.denoiser, a.model_sha, a.model);
-        report["vae_conversion"] = verify_receipt(a.vae, a.vae_sha, "sdxl_vae");
+        report["denoiser_conversion"] = verify_model(a.denoiser, a.model_sha, a.model);
+        report["vae_conversion"] = verify_model(a.vae, a.vae_sha, "sdxl_vae");
         save_json(a.output / "report.json", report);
         latent_inpaint::Options options;
         options.model = a.model;
