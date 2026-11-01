@@ -77,3 +77,13 @@ disk (204 → 103 / 55 / 36 MB) far more than memory; the matmul gate saves ~90�
 - `hosted-41295796193-graph/`, `hosted-41295798015-graph/` portable graph + StoredOps, Q4_K recipes.
 - `hosted-41309379208-optimized/`, `hosted-41309381796-optimized/` delivery-5 optimized graph (above).
 - `hosted-41312535037-publish/` private-preservation lane: all five tested hashes reproduced; upload refused (403).
+
+## Private preservation — completed 1 November 2026
+
+All five tested files are in the private repo `cstr/big-lama-research-GGUF` (Hub `3f79a9f0`;
+private, anonymous API access 401), each matching its tested SHA-256 above. F32/F16/Q8_0 were
+uploaded locally (Hub `ce23d4b8`) after the owner freed private storage by deleting
+`cstr/index-echo-9b-staging-GGUF`; the two Q4_K files came from the tested CI build
+(lane 41316610197, `HF_TOKEN_2` write secret). The earlier "private storage limit" and CI 403
+failures (lanes 41312535037, 41316290347) are retained above. Internal research only: no
+registry entry, no public upload.
