@@ -7,3 +7,7 @@ tests/results/marker/** -text -whitespace
 tests/fixtures/marker/** -text
 # Preserve the attributed font notice, including its upstream trailing spaces.
 tests/fixtures/marker/FONT-NOTICE.txt -whitespace
+# Frozen contracts/receipts whose exact bytes are SHA-256 pinned by tools and
+# tests: Windows autocrlf checkouts must not rewrite them (inpaint-cli Windows).
+docs/*contract*.json -text
+tests/results/migan/** -text

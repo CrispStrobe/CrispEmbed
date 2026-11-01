@@ -13,6 +13,7 @@
 
 #include <chrono>
 #include <cstdio>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <set>
@@ -92,7 +93,7 @@ int execute(int argc, char ** argv) {
         if (!stages.empty()) {
             dump_state state;
             state.dir = prefix + ".stages";
-            mkdir(state.dir.c_str(), 0755);
+            std::filesystem::create_directories(state.dir);
             for (size_t p = 0; p <= stages.size();) {
                 const size_t q = std::min(stages.find(',', p), stages.size());
                 if (q > p) state.only.insert(stages.substr(p, q - p));

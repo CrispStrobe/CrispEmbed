@@ -6,6 +6,7 @@
 //   test-oxr-document --replay case.json
 //        run the full native document route with recognition replayed from a
 //        recorded trace (prompt, RGB SHA-256, budget, penalty -> native result)
+#include "core/clean_exit.h"
 #include "core/json.h"
 #include "core/json_value.h"
 #include "core/py_str.h"
@@ -16,6 +17,7 @@
 
 #include <cstdio>
 #include <fstream>
+#include <limits>
 #include <iostream>
 #include <map>
 #include <sstream>
@@ -327,7 +329,7 @@ static void self_checks() {
     check(float_repr(0.00001) == "1e-05", "repr 1e-5");
     check(py_str::round_half_even(2.5) == 2 && py_str::round_half_even(3.5) == 4 && py_str::round_half_even(-0.5) == 0,
           "banker's rounding");
-    check(py_str::floordiv(5.0, 1.0 / 0.0) == 0.0, "5 // inf");
+    check(py_str::floordiv(5.0, std::numeric_limits<double>::infinity()) == 0.0, "5 // inf");
     check(py_str::sha256_hex((const uint8_t *)"abc", 3) ==
               "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
           "sha256 abc");
@@ -352,7 +354,7 @@ static void self_checks() {
     check(!helpers::parse_reading_order("1, 0", 2, order), "RO parse rejects comma");
 }
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     try {
         if (argc > 1 && std::string(argv[1]) == "--helpers") return run_helpers();
         if (argc > 2 && std::string(argv[1]) == "--replay") return run_replay(argv[2]);
@@ -363,4 +365,8 @@ int main(int argc, char ** argv) {
     }
     std::printf("test-oxr-document: %d checks, %d failures\n", checks, failures);
     return failures ? 1 : 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }
