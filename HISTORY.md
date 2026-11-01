@@ -22,6 +22,22 @@
   Metal quantized recipes 4/5 with logits cos >= 0.9995; heron GPU default now PREC_F32 + `_hp`
   (regions equal CPU 5/5; half tiles had added a German region).
 * Kaggle account name scrubbed from HISTORY (secret scan).
+## 1 November 2026 — Metal GPU audit of every engine (feat/metal-audit)
+
+`docs/gpu-support-matrix.md` inventories backend selection, Metal status, gates and
+evidence for every engine outside the TeleOCR/MinerU/Marker/OXR/D-FINE/MI-GAN lanes.
+Measured on the M1 (receipts `tests/results/gpu-audit/metal-m1/`): embedders and
+rerankers on Metal match CPU to ~1e-6 cosine on float weights; quantized gaps
+(cos 0.977-0.9999) come from ggml-cpu's Q8 activation quantization and Metal is
+the closer arm wherever a higher-precision reference exists. Default DBNet+TrOCR,
+PP-OCRv6, EasyOCR and PARSeq lanes are byte-identical or word-level equal on Metal.
+Changes: ESRGAN conv chain now runs on Metal by default (`CRISPEMBED_ESRGAN_GPU`,
+tri-state; 4.2x, max 1/255); new default-off gates `CRISPEMBED_INSTRUCTIR_GPU`
+(Metal slower, kept off) and `CRISPEMBED_DBNET_DECONV_MATMUL` (Metal detector
+10.3 → 2.4 s, identical output; not yet faster than the CPU detector, CUDA unmeasured).
+CPU-only controls ran on hosted CPU (run 41327259125). Initial harness failures
+(truncated TrOCR download, flat-OCR CLI needing `-m`, PNG compare bug) are kept in
+`ocr_batch.run1.log`.
 
 ## 1 November 2026 — OXR-1.0 D-FINE layout detector native in layout_detect
 

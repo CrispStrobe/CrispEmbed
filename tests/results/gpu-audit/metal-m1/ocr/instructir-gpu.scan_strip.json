@@ -1,0 +1,48 @@
+{
+ "cmd": [
+  "crispembed",
+  "-t",
+  "4",
+  "--instructir-model",
+  "/Volumes/backups/code/model-cache-20261101/metal-audit/instructir-f16.gguf",
+  "--instructir",
+  "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/regression/images/scan_strip.png"
+ ],
+ "metal_env": {
+  "CRISPEMBED_INSTRUCTIR_GPU": "1"
+ },
+ "cpu_env": {},
+ "wall_s": {
+  "metal": [
+   14.538,
+   14.488
+  ],
+  "cpu": [
+   12.082,
+   10.389
+  ]
+ },
+ "metal_device_seen": true,
+ "byte_identical": false,
+ "sha256": {
+  "metal": "b80323e872f73689306b339e4fa12542c2c147cb91a579d5510afd1148c23ad9",
+  "cpu": "ad957c95a992efcb2a771f04b4c99b238a419cebdd9e953c94c8bf70b059acb1"
+ },
+ "date": "2026-11-01",
+ "image": {
+  "shape": [
+   260,
+   520,
+   3
+  ],
+  "max_abs": 1,
+  "mean_abs": 0.0014053254437869822,
+  "psnr_db": 76.65303451520698,
+  "n_diff": 570,
+  "pixels_identical": false
+ },
+ "stderr_tail": {
+  "metal": "2_f32_op=2_nf=1_rb=0_cb=1      0x8af294c00 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_norm_mul_add_f32_4', name = 'kernel_norm_mul_add_f32_4'\nggml_metal_library_compile_pipeline: loaded kernel_norm_mul_add_f32_4                     0x8af294f00 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_f32_f32', name = 'kernel_mul_mm_f32_f32_bci=0_bco=0_ne12=1_ne13=1_r2=1_r3=1'\nggml_metal_library_compile_pipeline: loaded kernel_mul_mm_f32_f32_bci=0_bco=0_ne12=1_ne13=1_r2=1_r3=1      0x8af295200 | th_max =  896 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mv_f32_f32_short', name = 'kernel_mul_mv_f32_f32_short_nsg=1_ne12=128_r2=1_r3=1'\nggml_metal_library_compile_pipeline: loaded kernel_mul_mv_f32_f32_short_nsg=1_ne12=128_r2=1_r3=1      0x8af295500 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_f32_f32', name = 'kernel_mul_mm_f32_f32_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1'\nggml_metal_library_compile_pipeline: loaded kernel_mul_mm_f32_f32_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1      0x8af295800 | th_max =  832 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mv_f32_f32_short', name = 'kernel_mul_mv_f32_f32_short_nsg=1_ne12=256_r2=1_r3=1'\nggml_metal_library_compile_pipeline: loaded kernel_mul_mv_f32_f32_short_nsg=1_ne12=256_r2=1_r3=1      0x8af295b00 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mv_f32_f32_short', name = 'kernel_mul_mv_f32_f32_short_nsg=1_ne12=512_r2=1_r3=1'\nggml_metal_library_compile_pipeline: loaded kernel_mul_mv_f32_f32_short_nsg=1_ne12=512_r2=1_r3=1      0x8af295e00 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mv_f32_f32_short', name = 'kernel_mul_mv_f32_f32_short_nsg=1_ne12=1024_r2=1_r3=1'\nggml_metal_library_compile_pipeline: loaded kernel_mul_mv_f32_f32_short_nsg=1_ne12=1024_r2=1_r3=1      0x8af296100 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mv_f32_f32_4', name = 'kernel_mul_mv_f32_f32_4_nsg=3_ne12=1_r2=1_r3=1'\nggml_metal_library_compile_pipeline: loaded kernel_mul_mv_f32_f32_4_nsg=3_ne12=1_r2=1_r3=1      0x8af296400 | th_max =  768 | th_width =   32\nggml_metal_free: deallocating\n",
+  "cpu": "instructir: 520x260, tiles=3x2 (size=256)\n"
+ }
+}

@@ -1,0 +1,310 @@
+Traceback (most recent call last):
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/ab_cmd.py", line 118, in <module>
+    main()
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/ab_cmd.py", line 65, in main
+    o, w, e, m = run(cmd, env, be)
+                 ^^^^^^^^^^^^^^^^^
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/ab_cmd.py", line 42, in run
+    raise RuntimeError(f"{backend} rc={p.returncode}: {err[-3000:]}")
+RuntimeError: metal rc=1: crispasr_metal_pipeline_cache_open: pipeline cache loaded — /Users/christianstrobele/Library/Caches/ggml-metal/Apple_M1.archive
+ggml_metal_device_init: tensor API disabled for pre-M5 and pre-A19 devices
+ggml_metal_library_init: using embedded metal library
+ggml_metal_library_init: loaded in 0.064 sec
+ggml_metal_device_init: GPU name:   MTL0 (Apple M1)
+ggml_metal_device_init: GPU family: MTLGPUFamilyApple7  (1007)
+ggml_metal_device_init: GPU family: MTLGPUFamilyCommon3 (3003)
+ggml_metal_device_init: GPU family: MTLGPUFamilyMetal4  (5002)
+ggml_metal_device_init: simdgroup reduction   = true
+ggml_metal_device_init: simdgroup matrix mul. = true
+ggml_metal_device_init: has unified memory    = true
+ggml_metal_device_init: has bfloat            = true
+ggml_metal_device_init: has tensor            = false
+ggml_metal_device_init: use residency sets    = false
+ggml_metal_device_init: use shared buffers    = true
+ggml_metal_device_init: recommendedMaxWorkingSetSize  = 12713.12 MB
+math_ocr: enc=12L/6H/384 dec=6L/8H/256 vocab=64044(64044)
+math_ocr: init backend...
+ggml_metal_init: allocating
+ggml_metal_init: found device: Apple M1
+ggml_metal_init: picking default device: Apple M1
+ggml_metal_init: use fusion         = true
+ggml_metal_init: use concurrency    = true
+ggml_metal_init: use graph optimize = true
+crispasr_init_gpu_backend: using preferred GPU backend: MTL0
+math_ocr: loading weights...
+math_ocr: truncated/corrupt GGUF '/Volumes/backups/code/model-cache-20261101/metal-audit/trocr-small-printed-q8_0.gguf' — tensor 'enc.encoder.layer.7.attention.output.dense.weight' extends past EOF (need 62437984, file 62365696)
+ggml_metal_free: deallocating
+ocr_pipeline: failed to load recognition model: /Volumes/backups/code/model-cache-20261101/metal-audit/trocr-small-printed-q8_0.gguf
+error: cannot load OCR models
+
+FAIL dbnet-trocr.fox.json
+Traceback (most recent call last):
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/ab_cmd.py", line 118, in <module>
+    main()
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/ab_cmd.py", line 65, in main
+    o, w, e, m = run(cmd, env, be)
+                 ^^^^^^^^^^^^^^^^^
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/ab_cmd.py", line 42, in run
+    raise RuntimeError(f"{backend} rc={p.returncode}: {err[-3000:]}")
+RuntimeError: metal rc=1: crispasr_metal_pipeline_cache_open: pipeline cache loaded — /Users/christianstrobele/Library/Caches/ggml-metal/Apple_M1.archive
+ggml_metal_device_init: tensor API disabled for pre-M5 and pre-A19 devices
+ggml_metal_library_init: using embedded metal library
+ggml_metal_library_init: loaded in 0.012 sec
+ggml_metal_device_init: GPU name:   MTL0 (Apple M1)
+ggml_metal_device_init: GPU family: MTLGPUFamilyApple7  (1007)
+ggml_metal_device_init: GPU family: MTLGPUFamilyCommon3 (3003)
+ggml_metal_device_init: GPU family: MTLGPUFamilyMetal4  (5002)
+ggml_metal_device_init: simdgroup reduction   = true
+ggml_metal_device_init: simdgroup matrix mul. = true
+ggml_metal_device_init: has unified memory    = true
+ggml_metal_device_init: has bfloat            = true
+ggml_metal_device_init: has tensor            = false
+ggml_metal_device_init: use residency sets    = false
+ggml_metal_device_init: use shared buffers    = true
+ggml_metal_device_init: recommendedMaxWorkingSetSize  = 12713.12 MB
+math_ocr: enc=12L/6H/384 dec=6L/8H/256 vocab=64044(64044)
+math_ocr: init backend...
+ggml_metal_init: allocating
+ggml_metal_init: found device: Apple M1
+ggml_metal_init: picking default device: Apple M1
+ggml_metal_init: use fusion         = true
+ggml_metal_init: use concurrency    = true
+ggml_metal_init: use graph optimize = true
+crispasr_init_gpu_backend: using preferred GPU backend: MTL0
+math_ocr: loading weights...
+math_ocr: truncated/corrupt GGUF '/Volumes/backups/code/model-cache-20261101/metal-audit/trocr-small-printed-q8_0.gguf' — tensor 'enc.encoder.layer.7.attention.output.dense.weight' extends past EOF (need 62437984, file 62365696)
+ggml_metal_free: deallocating
+ocr_pipeline: failed to load recognition model: /Volumes/backups/code/model-cache-20261101/metal-audit/trocr-small-printed-q8_0.gguf
+error: cannot load OCR models
+
+FAIL dbnet-trocr.scan_strip.json
+Traceback (most recent call last):
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/ab_cmd.py", line 118, in <module>
+    main()
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/ab_cmd.py", line 65, in main
+    o, w, e, m = run(cmd, env, be)
+                 ^^^^^^^^^^^^^^^^^
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/ab_cmd.py", line 42, in run
+    raise RuntimeError(f"{backend} rc={p.returncode}: {err[-3000:]}")
+RuntimeError: metal rc=1: crispasr_metal_pipeline_cache_open: pipeline cache loaded — /Users/christianstrobele/Library/Caches/ggml-metal/Apple_M1.archive
+ggml_metal_device_init: tensor API disabled for pre-M5 and pre-A19 devices
+ggml_metal_library_init: using embedded metal library
+ggml_metal_library_init: loaded in 0.012 sec
+ggml_metal_device_init: GPU name:   MTL0 (Apple M1)
+ggml_metal_device_init: GPU family: MTLGPUFamilyApple7  (1007)
+ggml_metal_device_init: GPU family: MTLGPUFamilyCommon3 (3003)
+ggml_metal_device_init: GPU family: MTLGPUFamilyMetal4  (5002)
+ggml_metal_device_init: simdgroup reduction   = true
+ggml_metal_device_init: simdgroup matrix mul. = true
+ggml_metal_device_init: has unified memory    = true
+ggml_metal_device_init: has bfloat            = true
+ggml_metal_device_init: has tensor            = false
+ggml_metal_device_init: use residency sets    = false
+ggml_metal_device_init: use shared buffers    = true
+ggml_metal_device_init: recommendedMaxWorkingSetSize  = 12713.12 MB
+ggml_metal_init: allocating
+ggml_metal_init: found device: Apple M1
+ggml_metal_init: picking default device: Apple M1
+ggml_metal_init: use fusion         = true
+ggml_metal_init: use concurrency    = true
+ggml_metal_init: use graph optimize = true
+crispasr_init_gpu_backend: using preferred GPU backend: MTL0
+math_ocr: enc=12L/6H/384 dec=6L/8H/256 vocab=64044(64044)
+math_ocr: init backend...
+ggml_metal_init: allocating
+ggml_metal_init: found device: Apple M1
+ggml_metal_init: picking default device: Apple M1
+ggml_metal_init: use fusion         = true
+ggml_metal_init: use concurrency    = true
+ggml_metal_init: use graph optimize = true
+crispasr_init_gpu_backend: using preferred GPU backend: MTL0
+math_ocr: loading weights...
+math_ocr: truncated/corrupt GGUF '/Volumes/backups/code/model-cache-20261101/metal-audit/trocr-small-printed-q8_0.gguf' — tensor 'enc.encoder.layer.7.attention.output.dense.weight' extends past EOF (need 62437984, file 62365696)
+ggml_metal_free: deallocating
+ocr_pipeline: failed to load recognition model: /Volumes/backups/code/model-cache-20261101/metal-audit/trocr-small-printed-q8_0.gguf
+ggml_metal_free: deallocating
+error: cannot load OCR models
+
+FAIL dbnet-gpu-trocr.fox.json
+Traceback (most recent call last):
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/ab_cmd.py", line 118, in <module>
+    main()
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/ab_cmd.py", line 65, in main
+    o, w, e, m = run(cmd, env, be)
+                 ^^^^^^^^^^^^^^^^^
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/ab_cmd.py", line 42, in run
+    raise RuntimeError(f"{backend} rc={p.returncode}: {err[-3000:]}")
+RuntimeError: metal rc=1: crispasr_metal_pipeline_cache_open: pipeline cache loaded — /Users/christianstrobele/Library/Caches/ggml-metal/Apple_M1.archive
+ggml_metal_device_init: tensor API disabled for pre-M5 and pre-A19 devices
+ggml_metal_library_init: using embedded metal library
+ggml_metal_library_init: loaded in 0.012 sec
+ggml_metal_device_init: GPU name:   MTL0 (Apple M1)
+ggml_metal_device_init: GPU family: MTLGPUFamilyApple7  (1007)
+ggml_metal_device_init: GPU family: MTLGPUFamilyCommon3 (3003)
+ggml_metal_device_init: GPU family: MTLGPUFamilyMetal4  (5002)
+ggml_metal_device_init: simdgroup reduction   = true
+ggml_metal_device_init: simdgroup matrix mul. = true
+ggml_metal_device_init: has unified memory    = true
+ggml_metal_device_init: has bfloat            = true
+ggml_metal_device_init: has tensor            = false
+ggml_metal_device_init: use residency sets    = false
+ggml_metal_device_init: use shared buffers    = true
+ggml_metal_device_init: recommendedMaxWorkingSetSize  = 12713.12 MB
+ggml_metal_init: allocating
+ggml_metal_init: found device: Apple M1
+ggml_metal_init: picking default device: Apple M1
+ggml_metal_init: use fusion         = true
+ggml_metal_init: use concurrency    = true
+ggml_metal_init: use graph optimize = true
+crispasr_init_gpu_backend: using preferred GPU backend: MTL0
+math_ocr: enc=12L/6H/384 dec=6L/8H/256 vocab=64044(64044)
+math_ocr: init backend...
+ggml_metal_init: allocating
+ggml_metal_init: found device: Apple M1
+ggml_metal_init: picking default device: Apple M1
+ggml_metal_init: use fusion         = true
+ggml_metal_init: use concurrency    = true
+ggml_metal_init: use graph optimize = true
+crispasr_init_gpu_backend: using preferred GPU backend: MTL0
+math_ocr: loading weights...
+math_ocr: truncated/corrupt GGUF '/Volumes/backups/code/model-cache-20261101/metal-audit/trocr-small-printed-q8_0.gguf' — tensor 'enc.encoder.layer.7.attention.output.dense.weight' extends past EOF (need 62437984, file 62365696)
+ggml_metal_free: deallocating
+ocr_pipeline: failed to load recognition model: /Volumes/backups/code/model-cache-20261101/metal-audit/trocr-small-printed-q8_0.gguf
+ggml_metal_free: deallocating
+error: cannot load OCR models
+
+FAIL dbnet-gpu-deconvmm-trocr.fox.json
+Traceback (most recent call last):
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/ab_cmd.py", line 118, in <module>
+    main()
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/ab_cmd.py", line 65, in main
+    o, w, e, m = run(cmd, env, be)
+                 ^^^^^^^^^^^^^^^^^
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/ab_cmd.py", line 42, in run
+    raise RuntimeError(f"{backend} rc={p.returncode}: {err[-3000:]}")
+RuntimeError: metal rc=1: crispasr_metal_pipeline_cache_open: pipeline cache loaded — /Users/christianstrobele/Library/Caches/ggml-metal/Apple_M1.archive
+ggml_metal_device_init: tensor API disabled for pre-M5 and pre-A19 devices
+ggml_metal_library_init: using embedded metal library
+ggml_metal_library_init: loaded in 0.012 sec
+ggml_metal_device_init: GPU name:   MTL0 (Apple M1)
+ggml_metal_device_init: GPU family: MTLGPUFamilyApple7  (1007)
+ggml_metal_device_init: GPU family: MTLGPUFamilyCommon3 (3003)
+ggml_metal_device_init: GPU family: MTLGPUFamilyMetal4  (5002)
+ggml_metal_device_init: simdgroup reduction   = true
+ggml_metal_device_init: simdgroup matrix mul. = true
+ggml_metal_device_init: has unified memory    = true
+ggml_metal_device_init: has bfloat            = true
+ggml_metal_device_init: has tensor            = false
+ggml_metal_device_init: use residency sets    = false
+ggml_metal_device_init: use shared buffers    = true
+ggml_metal_device_init: recommendedMaxWorkingSetSize  = 12713.12 MB
+ggml_metal_init: allocating
+ggml_metal_init: found device: Apple M1
+ggml_metal_init: picking default device: Apple M1
+ggml_metal_init: use fusion         = true
+ggml_metal_init: use concurrency    = true
+ggml_metal_init: use graph optimize = true
+crispasr_init_gpu_backend: using preferred GPU backend: MTL0
+math_ocr: enc=12L/6H/384 dec=6L/8H/256 vocab=64044(64044)
+math_ocr: init backend...
+ggml_metal_init: allocating
+ggml_metal_init: found device: Apple M1
+ggml_metal_init: picking default device: Apple M1
+ggml_metal_init: use fusion         = true
+ggml_metal_init: use concurrency    = true
+ggml_metal_init: use graph optimize = true
+crispasr_init_gpu_backend: using preferred GPU backend: MTL0
+math_ocr: loading weights...
+math_ocr: truncated/corrupt GGUF '/Volumes/backups/code/model-cache-20261101/metal-audit/trocr-small-printed-q8_0.gguf' — tensor 'enc.encoder.layer.7.attention.output.dense.weight' extends past EOF (need 62437984, file 62365696)
+ggml_metal_free: deallocating
+ocr_pipeline: failed to load recognition model: /Volumes/backups/code/model-cache-20261101/metal-audit/trocr-small-printed-q8_0.gguf
+ggml_metal_free: deallocating
+error: cannot load OCR models
+
+FAIL dbnet-gpu-deconvmm-trocr.scan_page_pd.json
+Traceback (most recent call last):
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/ab_cmd.py", line 118, in <module>
+    main()
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/ab_cmd.py", line 72, in main
+    raise RuntimeError("cpu arm initialised Metal")
+RuntimeError: cpu arm initialised Metal
+FAIL ppocrv6-small.fox.json
+Traceback (most recent call last):
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/ab_cmd.py", line 118, in <module>
+    main()
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/ab_cmd.py", line 72, in main
+    raise RuntimeError("cpu arm initialised Metal")
+RuntimeError: cpu arm initialised Metal
+FAIL ppocrv6-small.scan_page_pd.json
+Traceback (most recent call last):
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/ab_cmd.py", line 118, in <module>
+    
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/ab_cmd.py", line 72, in main
+    raise RuntimeError("metal arm shows no Metal device")
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: cpu arm initialised Metal
+FAIL ppocrv6-small-detgpu.scan_page_pd.json
+Traceback (most recent call last):
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/ab_cmd.py", line 120, in <module>
+    main()
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/ab_cmd.py", line 67, in main
+    o, w, e, m = run(cmd, env, be)
+                 ^^^^^^^^^^^^^^^^^
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/ab_cmd.py", line 42, in run
+    raise RuntimeError(f"{backend} rc={p.returncode}: {err[-3000:]}")
+RuntimeError: metal rc=1: crispasr_metal_pipeline_cache_open: pipeline cache loaded — /Users/christianstrobele/Library/Caches/ggml-metal/Apple_M1.archive
+ggml_metal_device_init: tensor API disabled for pre-M5 and pre-A19 devices
+ggml_metal_library_init: using embedded metal library
+ggml_metal_library_init: loaded in 0.012 sec
+ggml_metal_device_init: GPU name:   MTL0 (Apple M1)
+ggml_metal_device_init: GPU family: MTLGPUFamilyApple7  (1007)
+ggml_metal_device_init: GPU family: MTLGPUFamilyCommon3 (3003)
+ggml_metal_device_init: GPU family: MTLGPUFamilyMetal4  (5002)
+ggml_metal_device_init: simdgroup reduction   = true
+ggml_metal_device_init: simdgroup matrix mul. = true
+ggml_metal_device_init: has unified memory    = true
+ggml_metal_device_init: has bfloat            = true
+ggml_metal_device_init: has tensor            = false
+ggml_metal_device_init: use residency sets    = false
+ggml_metal_device_init: use shared buffers    = true
+ggml_metal_device_init: recommendedMaxWorkingSetSize  = 12713.12 MB
+math_ocr: enc=12L/6H/384 dec=6L/8H/256 vocab=1200(97)
+math_ocr: init backend...
+ggml_metal_init: allocating
+ggml_metal_init: found device: Apple M1
+ggml_metal_init: picking default device: Apple M1
+ggml_metal_init: use fusion         = true
+ggml_metal_init: use concurrency    = true
+ggml_metal_init: use graph optimize = true
+crispasr_init_gpu_backend: using preferred GPU backend: MTL0
+math_ocr: loading weights...
+math_ocr: weights loaded (36 tensors)
+math_ocr: creating scheduler...
+math_ocr: scheduler created
+math_ocr: tensors mapped
+math_ocr: mapped 0/12 enc, 0/6 dec
+math_ocr: /Volumes/backups/code/model-cache-20261101/metal-audit/easyocr-english-g2-f16.gguf is not a TrOCR-style encoder/decoder GGUF (general.architecture=easyocr, 0/12 enc + 0/6 dec layers mapped) — refusing to run with missing tensors. Pass this model to the engine that matches its architecture instead.
+ggml_metal_free: deallocating
+ocr_pipeline: failed to load recognition model: /Volumes/backups/code/model-cache-20261101/metal-audit/easyocr-english-g2-f16.gguf
+error: cannot load OCR models
+
+FAIL dbnet-easyocr.fox.json
+{"out": "parseq.word.json", "identical": true, "wall_s": {"metal": [0.772, 0.113], "cpu": [0.076, 0.072]}, "char_ratio": 1.0}
+{"out": "parseq-tiny.hello.json", "identical": true, "wall_s": {"metal": [0.325, 0.078], "cpu": [0.033, 0.032]}, "char_ratio": 1.0}
+Traceback (most recent call last):
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/ab_cmd.py", line 120, in <module>
+    main()
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/ab_cmd.py", line 110, in main
+    json.dump(rec, open(a.out, "w"), indent=1, ensure_ascii=False)
+                        ^^^^^
+AttributeError: 'numpy.ndarray' object has no attribute 'out'. Did you mean: 'put'?
+FAIL esrgan-gpu.fox.json
+Traceback (most recent call last):
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/ab_cmd.py", line 120, in <module>
+    main()
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/ab_cmd.py", line 110, in main
+    json.dump(rec, open(a.out, "w"), indent=1, ensure_ascii=False)
+                        ^^^^^
+AttributeError: 'numpy.ndarray' object has no attribute 'out'. Did you mean: 'put'?
+FAIL instructir-gpu.scan_strip.json
+DONE

@@ -1,0 +1,39 @@
+{
+ "cmd": [
+  "crispembed",
+  "-t",
+  "4",
+  "-m",
+  "/Volumes/backups/code/model-cache-20261101/metal-audit/parseq-q8_0.gguf",
+  "--ocr",
+  "/Volumes/backups/ai/crispembed-gguf/word.png"
+ ],
+ "metal_env": {},
+ "cpu_env": {},
+ "wall_s": {
+  "metal": [
+   0.772,
+   0.113
+  ],
+  "cpu": [
+   0.076,
+   0.072
+  ]
+ },
+ "metal_device_seen": true,
+ "byte_identical": true,
+ "sha256": {
+  "metal": "cf88801e6cd8ed53c09e8a46891ba9746c147784702d1c79c640229c5299d597",
+  "cpu": "cf88801e6cd8ed53c09e8a46891ba9746c147784702d1c79c640229c5299d597"
+ },
+ "date": "2026-11-01",
+ "stdout": {
+  "metal": "Heaven\n",
+  "cpu": "Heaven\n"
+ },
+ "char_ratio": 1.0,
+ "stderr_tail": {
+  "metal": "bed=384 enc_layers=12 heads=6 ffn=1536 patch=[4,8] img=[32,128] patches=128\nparseq: charset=97 tokens\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_norm_mul_add_f32_4', name = 'kernel_norm_mul_add_f32_4'\nggml_metal_library_compile_pipeline: loaded kernel_norm_mul_add_f32_4                     0x101dc5ea0 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_q8_0_f32', name = 'kernel_mul_mm_q8_0_f32_bci=0_bco=0_ne12=1_ne13=1_r2=1_r3=1'\nggml_metal_library_compile_pipeline: loaded kernel_mul_mm_q8_0_f32_bci=0_bco=0_ne12=1_ne13=1_r2=1_r3=1      0x101dc61a0 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32_4', name = 'kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=0_cb=0'\nggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=0_cb=0      0x101dc6f60 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_cpy_f32_f32', name = 'kernel_cpy_f32_f32'\nggml_metal_library_compile_pipeline: loaded kernel_cpy_f32_f32                            0x101dc7260 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_f32_dk64_dv64', name = 'kernel_flash_attn_ext_f32_dk64_dv64_mask=0_sinks=0_bias=0_scap=0_kvpad=0_bcm=0_ns10=384_ns20=384_nsg=4'\nggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_f32_dk64_dv64_mask=0_sinks=0_bias=0_scap=0_kvpad=0_bcm=0_ns10=384_ns20=384_nsg=4      0x101dc7860 | th_max =  832 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32_4', name = 'kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=1_cb=0'\nggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=1_cb=0      0x101dc7b60 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32_4', name = 'kernel_unary_f32_f32_4_op=103_cnt=0'\nggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_4_op=103_cnt=0           0x101dc7e60 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_norm_mul_f32_4', name = 'kernel_norm_mul_f32_4'\nggml_metal_library_compile_pipeline: loaded kernel_norm_mul_f32_4                         0x101dc8160 | th_max = 1024 | th_width =   32\nggml_metal_free: deallocating\n",
+  "cpu": "crispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\nparseq: embed=384 enc_layers=12 heads=6 ffn=1536 patch=[4,8] img=[32,128] patches=128\nparseq: charset=97 tokens\n"
+ }
+}

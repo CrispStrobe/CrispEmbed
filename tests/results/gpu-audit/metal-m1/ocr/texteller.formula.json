@@ -1,0 +1,39 @@
+{
+ "cmd": [
+  "crispembed",
+  "-t",
+  "4",
+  "-m",
+  "/Volumes/backups/code/model-cache-20261101/metal-audit/texteller-3-q8_0.gguf",
+  "--ocr",
+  "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/regression/images/formula_quadratic.png"
+ ],
+ "metal_env": {},
+ "cpu_env": {},
+ "wall_s": {
+  "metal": [
+   11.835,
+   7.67
+  ],
+  "cpu": [
+   7.316,
+   5.851
+  ]
+ },
+ "metal_device_seen": true,
+ "byte_identical": false,
+ "sha256": {
+  "metal": "f9ea8ea48530f8e766c78d5adf9187270497037eb5399bbcc2313428bb3c47ba",
+  "cpu": "476219f60f156f0bd4fc0f8b09ab7103a8564f943da1bf5500a8b9e1b3fe5817"
+ },
+ "date": "2026-11-01",
+ "stdout": {
+  "metal": "\\[ \\ \\ \\\\ \\ \\} \\ \\}\\ \\ \\text \\ \\_{ \\ \\- \\ \\{ \\ \\. \\ \\  \\ \\_{\\ \\ \\{\\\\ \\\\} \\\\\\ \\}  \\\\}\\ \\\\_{ \\\\- \\\\. \\\\ \\ \\}\\\\ \\_{\\ \\.\\ \\{} \\}x\\ \\-\\ \\ \\\\\\}x \\\\{ \\\\text\\ \\_{\\text\\} \\}} \\}\\} \\_{} \\{\\ \\text\\\\}\\\\\\_{\\}}\\ \\}}x} \\ } \\-} \\.} \\text} \\{\\ \\ \\, \\ \\_ \\ \\1\\ \\{\\} \\_{\\\\ \\_\\ \\,\\ \\1 \\ \\c \\ \\s\\ \\s \\ \\}_{ \\ \\ }\\ \\ \\\\, \\ \\}_{\\text\\}\\}}} }}s\\}s\n",
+  "cpu": "\\[ \\ \\ \\\\ \\ \\} \\ \\}\\ \\ \\_{ \\ \\text \\ \\- \\ \\{ \\ \\. \\ \\  \\ \\_{\\ \\ \\_\\ \\\\} \\\\\\ \\}x\\ \\}\\} \\}  \\\\}\\ \\\\_{ \\\\ \\ \\_{\\ \\.\\ \\{} \\}\\\\ \\ \\} \\\\}x \\ \\{\\ \\ \\, \\\\. \\\\{ \\\\- \\\\_ \\ \\}_{ \\ \\1} \\_{} \\ }\\ \\}} \\{\\ \\-\\ \\text\\ \\_{\\text \\\\, \\ \\c \\ \\\\, \\ \\s\\ \\_ \\\\_{\\ \\\\text \\}s\\}s \\ \\ }\\ \\ \\) \\ \\}} \\ \\x \\\\{\\ \\\\s\\\\\\}\\}}}}\\ \\}\\}\\ \\_{}\\ \\ } \\-} \\.} \\{\\}\n"
+ },
+ "char_ratio": 0.5261538461538462,
+ "stderr_tail": {
+  "metal": "2_4', name = 'kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=1_cb=0'\nggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=1_cb=0      0xa21364900 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_pad', name = 'kernel_flash_attn_ext_pad_mask=0_ncpsg=32'\nggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_pad_mask=0_ncpsg=32      0xa21364c00 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_vec_f32_dk64_dv64', name = 'kernel_flash_attn_ext_vec_f32_dk64_dv64_mask=0_sink=0_bias=0_scap=0_kvpad=1_ns10=1024_ns20=1024_nsg=1_nwg=32'\nggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_vec_f32_dk64_dv64_mask=0_sink=0_bias=0_scap=0_kvpad=1_ns10=1024_ns20=1024_nsg=1_nwg=32      0xa21364f00 | th_max =  512 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_vec_reduce', name = 'kernel_flash_attn_ext_vec_reduce_dv=64_nwg=32'\nggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_vec_reduce_dv=64_nwg=32      0xa21365200 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32_4', name = 'kernel_unary_f32_f32_4_op=101_cnt=1'\nggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_4_op=101_cnt=1           0xa21365500 | th_max = 1024 | th_width =   32\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-21.828 -31.056 -19.139 -31.081 -31.139] best=265\nmath_ocr: [graph] dec step 1: tok=265 logits[0..4]=[-9.946 -21.564 -9.988 -21.490 -21.616] best=283\nmath_ocr: [graph] dec step 2: tok=283 logits[0..4]=[-10.582 -21.893 -12.343 -21.817 -21.948] best=283\nmath_ocr: [graph] dec step 3: tok=283 logits[0..4]=[-10.767 -21.990 -12.237 -21.915 -22.037] best=283\nmath_ocr: [graph] dec step 4: tok=283 logits[0..4]=[-10.793 -22.017 -12.186 -21.944 -22.062] best=64\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_vec_f32_dk64_dv64', name = 'kernel_flash_attn_ext_vec_f32_dk64_dv64_mask=0_sink=0_bias=0_scap=0_kvpad=0_ns10=1024_ns20=1024_nsg=1_nwg=32'\nggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_vec_f32_dk64_dv64_mask=0_sink=0_bias=0_scap=0_kvpad=0_ns10=1024_ns20=1024_nsg=1_nwg=32      0xa21365800 | th_max =  512 | th_width =   32\nmath_ocr: decoder done in 2302.2 ms (201 tokens)\nggml_metal_free: deallocating\n",
+  "cpu": "math_ocr: enc=12L/12H/768 dec=12L/16H/1024 vocab=15000(15000)\nmath_ocr: init backend...\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\nmath_ocr: loading weights...\nmath_ocr: weights loaded (478 tensors)\nmath_ocr: creating scheduler...\nmath_ocr: scheduler created\nmath_ocr: tensors mapped\nmath_ocr: mapped 12/12 enc, 12/12 dec\nmath_ocr: init complete, returning context\nmath_ocr: image_size S=448, channels=1, mean=0.5000 std=0.5000 pad=0\nmath_ocr: about to run encoder S=448\nmath_ocr: graph input ne=[768, 785]\nmath_ocr: layer 0 q_w ne=[768, 768], cur ne=[768, 785]\nmath_ocr: encoder done, n_enc=785\nmath_ocr: cross K/V cached (785 enc tokens × 12 layers)\nmath_ocr: starting decoder (vocab=15000, start_tok=2) [graph mode]\nmath_ocr: decoder KV cache: 12 layers, max_seq=200, n_enc=785, 92.3 MB\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[-0.6090 -0.6241 0.4336 0.3025 0.1207]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-21.936 -31.005 -19.093 -31.034 -31.092] best=265\nmath_ocr: [graph] dec step 1: tok=265 logits[0..4]=[-10.072 -21.703 -10.284 -21.631 -21.757] best=283\nmath_ocr: [graph] dec step 2: tok=283 logits[0..4]=[-10.661 -21.952 -12.349 -21.880 -22.008] best=283\nmath_ocr: [graph] dec step 3: tok=283 logits[0..4]=[-10.851 -22.026 -12.244 -21.954 -22.072] best=283\nmath_ocr: [graph] dec step 4: tok=283 logits[0..4]=[-10.930 -22.086 -12.403 -22.015 -22.129] best=64\nmath_ocr: decoder done in 4311.6 ms (201 tokens)\n"
+ }
+}

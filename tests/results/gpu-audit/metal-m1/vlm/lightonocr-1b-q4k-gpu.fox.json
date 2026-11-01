@@ -1,0 +1,41 @@
+{
+ "cmd": [
+  "crispembed",
+  "-t",
+  "4",
+  "-m",
+  "/Volumes/backups/code/model-cache-20261101/metal-audit/lightonocr-1b-q4_k.gguf",
+  "--ocr",
+  "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/regression/images/fox.png",
+  "--ocr-max-tokens",
+  "128"
+ ],
+ "metal_env": {
+  "CRISPEMBED_LIGHTONOCR_GPU": "1"
+ },
+ "cpu_env": {},
+ "wall_s": {
+  "metal": [
+   18.634
+  ],
+  "cpu": [
+   6.408
+  ]
+ },
+ "metal_device_seen": true,
+ "byte_identical": true,
+ "sha256": {
+  "metal": "7681084ee70d441fb6b49f750a00eba5590b0574efbd7a85a7f157f7b42818d6",
+  "cpu": "7681084ee70d441fb6b49f750a00eba5590b0574efbd7a85a7f157f7b42818d6"
+ },
+ "date": "2026-11-01",
+ "stdout": {
+  "metal": "The quick brown fox jumps  \nover the lazy dog. 12345\n",
+  "cpu": "The quick brown fox jumps  \nover the lazy dog. 12345\n"
+ },
+ "char_ratio": 1.0,
+ "stderr_tail": {
+  "metal": "k128_dv128_mask=0_sink=0_bias=0_scap=0_kvpad=1_ns10=128_ns20=128_nsg=1_nwg=32'\nggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_vec_f16_dk128_dv128_mask=0_sink=0_bias=0_scap=0_kvpad=1_ns10=128_ns20=128_nsg=1_nwg=32      0xb97ef6d00 | th_max =  448 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_vec_reduce', name = 'kernel_flash_attn_ext_vec_reduce_dv=128_nwg=32'\nggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_vec_reduce_dv=128_nwg=32      0xb97ef7000 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32_4', name = 'kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=1_cb=0'\nggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=1_cb=0      0xb97ef7300 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32_4', name = 'kernel_unary_f32_f32_4_op=106_cnt=1'\nggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_4_op=106_cnt=1           0xb97ef7600 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32_4', name = 'kernel_bin_fuse_f32_f32_f32_4_op=2_nf=1_rb=1_cb=0'\nggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_4_op=2_nf=1_rb=1_cb=0      0xb97ef7900 | th_max = 1024 | th_width =   32\n  gen[1] tok=3974 (41ms) cached\n  gen[2] tok=13876 (34ms) cached\n  gen[3] tok=38835 (31ms) cached\n  gen[4] tok=34208 (30ms) cached\n  gen[5] tok=2303 (29ms) cached\n  gen[6] tok=1975 (30ms) cached\n  gen[7] tok=279 (31ms) cached\n  gen[8] tok=15678 (29ms) cached\n  gen[9] tok=5562 (33ms) cached\n  gen[10] tok=13 (33ms) cached\n  gen[11] tok=220 (31ms) cached\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_vec_f16_dk128_dv128', name = 'kernel_flash_attn_ext_vec_f16_dk128_dv128_mask=0_sink=0_bias=0_scap=0_kvpad=0_ns10=128_ns20=128_nsg=1_nwg=32'\nggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_vec_f16_dk128_dv128_mask=0_sink=0_bias=0_scap=0_kvpad=0_ns10=128_ns20=128_nsg=1_nwg=32      0xb97ef7c00 | th_max =  512 | th_width =   32\n  gen[12] tok=16 (31ms) cached\n  gen[13] tok=17 (31ms) cached\n  gen[14] tok=18 (29ms) cached\n  gen[15] tok=19 (30ms) cached\n  gen[16] tok=20 (31ms) cached\nlightonocr: generated: The quick brown fox jumps  \nover the lazy dog. 12345\nggml_metal_free: deallocating\n",
+  "cpu": "lightonocr: vis=24L/1024d, lm=28L/1024d, vocab=151936\nlightonocr: image 800x200 → 58x16 patches (928 total)\nlightonocr: patch_conv done (928 patches × 1024 dim)\nlightonocr: patch[0,:5] = [-0.11928051, 0.04906898, -0.04441350, -0.11049273, 0.03421924]\nlightonocr: vision encoder done\nlightonocr: projection done → 232 image tokens\nlightonocr: prompt = 3 prefix + 232 image + 9 suffix = 244 total\nlightonocr: KV cache: 28 layers, max_seq=2308, 252.4 MB (F16)\nlightonocr: KV cache: OK (F16, 244 tokens cached)\nlightonocr: prefill done, first token=785 (score=24.01)\nlightonocr: logits[0..4] = [7.631, 8.347, 10.967, 10.597, 6.462]\nlightonocr: logits[eos=151645] = -0.462\n  gen[1] tok=3974 (24ms) cached\n  gen[2] tok=13876 (17ms) cached\n  gen[3] tok=38835 (14ms) cached\n  gen[4] tok=34208 (12ms) cached\n  gen[5] tok=2303 (13ms) cached\n  gen[6] tok=1975 (14ms) cached\n  gen[7] tok=279 (12ms) cached\n  gen[8] tok=15678 (13ms) cached\n  gen[9] tok=5562 (12ms) cached\n  gen[10] tok=13 (12ms) cached\n  gen[11] tok=220 (14ms) cached\n  gen[12] tok=16 (12ms) cached\n  gen[13] tok=17 (16ms) cached\n  gen[14] tok=18 (19ms) cached\n  gen[15] tok=19 (25ms) cached\n  gen[16] tok=20 (41ms) cached\nlightonocr: generated: The quick brown fox jumps  \nover the lazy dog. 12345\n"
+ }
+}

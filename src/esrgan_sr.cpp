@@ -12,6 +12,7 @@
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
 #include "core/env_gate.h"
+#include "core/gpu_backend_pref.h" // crispasr_init_gpu_backend (gated GPU path)
 
 #include <algorithm>
 #include <chrono>
@@ -99,6 +100,9 @@ struct esrgan_context {
     // ggml graph encoder
     ggml_backend_t enc_backend = nullptr;
     ggml_backend_sched_t enc_sched = nullptr;
+    // CRISPEMBED_ESRGAN_GPU=1 (default off): weights stay resident on this GPU
+    // backend and the conv chain is scheduled on it, CPU as fallback.
+    ggml_backend_t gpu_backend = nullptr;
     std::vector<uint8_t> enc_meta;
 };
 
@@ -121,13 +125,40 @@ esrgan_context * esrgan_init(const char * model_path, int n_threads) {
     // (Same residency class as the nafnet/restormer conv→ggml fixes; the official
     // GGUFWriter already fixes the *layout*, but not this. ESRGAN_SR_FORCE_CPU is now
     // a no-op.)
-    ggml_backend_t backend = ggml_backend_cpu_init();
+    //
+    // GPU audit 2026-11-01: the GPU-resident path — weights load on the GPU
+    // backend, which is KEPT alive and placed first in enc_sched, so the conv
+    // chain runs there and nothing CPU-side has to read a GPU buffer.
+    // Tri-state CRISPEMBED_ESRGAN_GPU: =1 forces it on any GPU kind, =0 keeps
+    // the historical CPU path, unset = per-backend-kind default: ON when the
+    // GPU is Metal (M1 A/B: 4.2x faster, max |delta| 1/255, PSNR 69 dB vs the
+    // CPU path, tests/results/gpu-audit/metal-m1/ocr/esrgan-*), OFF elsewhere
+    // until CUDA/Vulkan are measured. --gpu-backend cpu also keeps CPU.
+    auto metal_device_present = [] {
+        for (size_t i = 0; i < ggml_backend_dev_count(); ++i) {
+            ggml_backend_dev_t dev = ggml_backend_dev_get(i);
+            if (ggml_backend_dev_type(dev) != GGML_BACKEND_DEVICE_TYPE_GPU &&
+                ggml_backend_dev_type(dev) != GGML_BACKEND_DEVICE_TYPE_IGPU)
+                continue;
+            const char * n = ggml_backend_dev_name(dev);
+            if (n && std::strncmp(n, "MTL", 3) == 0) return true;
+        }
+        return false;
+    };
+    const bool want_gpu = core_env::on("CRISPEMBED_ESRGAN_GPU") ||
+                          (!core_env::explicitly_off("CRISPEMBED_ESRGAN_GPU") && metal_device_present());
+    ggml_backend_t backend = want_gpu ? crispasr_init_gpu_backend() : ggml_backend_cpu_init();
+    if (!backend) backend = ggml_backend_cpu_init();
+    const bool on_gpu = !ggml_backend_is_cpu(backend);
     core_gguf::WeightLoad wl;
     if (!core_gguf::load_weights(model_path, backend, "esrgan", wl)) {
         ggml_backend_free(backend);
         return nullptr;
     }
-    ggml_backend_free(backend);
+    if (!on_gpu) {
+        ggml_backend_free(backend);
+        backend = nullptr;
+    }
 
     auto * ctx = new esrgan_context;
     ctx->gguf_ctx = wl.ctx;
@@ -135,6 +166,7 @@ esrgan_context * esrgan_init(const char * model_path, int n_threads) {
     ctx->scale = scale;
     ctx->num_feat = num_feat;
     ctx->num_conv = num_conv;
+    ctx->gpu_backend = backend; // nullptr on the default CPU path
 
     // 18 convs (entry + 16 body + output), 17 PReLUs (entry + 16 body)
     int n_total = 2 * num_conv + 2 + 1; // body indices 0..34
@@ -157,7 +189,12 @@ esrgan_context * esrgan_init(const char * model_path, int n_threads) {
 
     // ggml encoder backend
     ctx->enc_backend = ggml_backend_cpu_init();
-    if (ctx->enc_backend) {
+    if (ctx->enc_backend && ctx->gpu_backend) {
+        ggml_backend_t backends[] = { ctx->gpu_backend, ctx->enc_backend };
+        ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 2, 4096, false, false);
+        fprintf(stderr, "esrgan: GPU path — conv chain on %s (CRISPEMBED_ESRGAN_GPU=0 restores CPU)\n",
+                ggml_backend_name(ctx->gpu_backend));
+    } else if (ctx->enc_backend) {
         ggml_backend_t backends[] = { ctx->enc_backend };
         ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
     }
@@ -173,6 +210,7 @@ void esrgan_free(esrgan_context * ctx) {
     wl.ctx = ctx->gguf_ctx;
     wl.buf = ctx->gguf_buf;
     core_gguf::free_weights(wl);
+    if (ctx->gpu_backend) ggml_backend_free(ctx->gpu_backend);
     delete ctx;
 }
 

@@ -391,9 +391,37 @@ static ggml_tensor * prep_deconv_weight(ggml_context * g, ggml_tensor * w, int O
 static ggml_tensor * conv_transpose_bias_relu(ggml_context * g, ggml_tensor * x, const conv_layer & cl, int OC, int KH,
                                               int KW, int stride, bool relu) {
     ggml_tensor * w = prep_deconv_weight(g, cl.w, OC, KH, KW);
-    // ggml_conv_transpose_2d_p0(kernel, input, stride)
-    // kernel: [KW, KH, OC, IC], input: [W, H, IC, 1]
-    x = ggml_conv_transpose_2d_p0(g, w, x, stride);
+    // GPU audit 2026-11-01: CRISPEMBED_DBNET_DECONV_MATMUL=1 (value-parsed,
+    // default off) rewrites the non-overlapping case (kernel == stride, as in
+    // both DBNet head deconvs) as one mul_mat per kernel row plus a concat:
+    //   out[x*KW+kw, y*KH+kh, oc] = sum_ic in[x, y, ic] * w[kw, kh, oc, ic]
+    // ggml-metal's conv_transpose_2d kernel loops over the whole input for
+    // every output pixel, which is what made Metal DBNet ~14x slower than CPU
+    // (issue #25); mul_mat is the GEMM it is good at. Same math, so the
+    // default path is untouched and both stay selectable for A/B.
+    static const bool deconv_matmul = core_env::on("CRISPEMBED_DBNET_DECONV_MATMUL");
+    if (deconv_matmul && KH == stride && KW == stride && x->ne[3] == 1) {
+        const int64_t W = x->ne[0], H = x->ne[1], IC = x->ne[2];
+        GGML_ASSERT(w->ne[0] == KW && w->ne[1] == KH && w->ne[2] == OC && w->ne[3] == IC);
+        // [W, H, IC] -> [IC, W*H]
+        ggml_tensor * xs = ggml_reshape_2d(g, ggml_cont(g, ggml_permute(g, x, 1, 2, 0, 3)), IC, W * H);
+        ggml_tensor * rows = nullptr;
+        for (int kh = 0; kh < KH; ++kh) {
+            // kernel row kh: [KW, OC, IC] -> [IC, KW*OC]
+            ggml_tensor * wk = ggml_view_3d(g, w, KW, OC, IC, w->nb[2], w->nb[3], (size_t)kh * w->nb[1]);
+            wk = ggml_cont(g, ggml_transpose(g, ggml_reshape_2d(g, ggml_cont(g, wk), KW * OC, IC)));
+            ggml_tensor * y = ggml_mul_mat(g, wk, xs);        // [KW*OC, W*H]
+            y = ggml_reshape_4d(g, y, KW, OC, W, H);          // kw, oc, x, y
+            y = ggml_cont(g, ggml_permute(g, y, 0, 3, 1, 2)); // kw, x, y, oc
+            y = ggml_reshape_4d(g, y, KW * W, 1, H, OC);      // ox, 1, y, oc
+            rows = rows ? ggml_concat(g, rows, y, 1) : y;     // ox, kh, y, oc
+        }
+        x = ggml_reshape_4d(g, rows, KW * W, KH * H, OC, 1);
+    } else {
+        // ggml_conv_transpose_2d_p0(kernel, input, stride)
+        // kernel: [KW, KH, OC, IC], input: [W, H, IC, 1]
+        x = ggml_conv_transpose_2d_p0(g, w, x, stride);
+    }
 
     if (cl.b) {
         int OC = (int)cl.b->ne[0];
