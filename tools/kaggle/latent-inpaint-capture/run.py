@@ -43,7 +43,10 @@ PACKAGES = {
     "moebius": ["diffusers==0.38.0", "accelerate==1.14.0", "transformers", "flash-linear-attention==0.3.2",
                 "safetensors", "pillow", "numpy", "opencv-python-headless", "pyyaml", "omegaconf", "timm",
                 "tqdm", "toml", "einops", "scipy", "setuptools"],
-    "pixelhacker": ["diffusers==0.30.2", "accelerate==0.34.0", "transformers==4.40.0", "tokenizers==0.19.0",
+    # Upstream's transformers 4.40.0 predates transformers.utils.deprecation,
+    # which FLA 0.3.2 models import (recorded failure); 4.48.3 has both it and
+    # the cache_utils PixelHacker's gla.py uses. Not a contract-pinned package.
+    "pixelhacker": ["diffusers==0.30.2", "accelerate==0.34.0", "transformers==4.48.3",
                     "einops==0.7.0", "timm==0.9.11", "omegaconf==2.3.0", "pyyaml", "numpy<2",
                     "opencv-python-headless", "pillow", "safetensors", "tqdm", "scipy", "setuptools"],
 }
