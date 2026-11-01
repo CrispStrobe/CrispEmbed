@@ -362,7 +362,9 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
     for (int i = 0; i < n_tensors; i++) {
         const char * name = gguf_get_tensor_name(ctx_in, i);
         struct ggml_tensor * t = ggml_get_tensor(ctx_in_ggml, name);
-        if (ggml_n_dims(t) == 4 && t->type == GGML_TYPE_F32) {
+        // OXR's loader validates its 4D patch-embedding shape and reshapes it
+        // itself, so its conv kernel keeps the source metadata.
+        if (ggml_n_dims(t) == 4 && t->type == GGML_TYPE_F32 && !is_oxr) {
             // Flatten [KW, KH, IC, OC] → [IC*KH*KW, OC]
             int64_t flat_cols = t->ne[0] * t->ne[1] * t->ne[2];
             int64_t OC = t->ne[3];
