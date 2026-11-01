@@ -3,6 +3,7 @@
 
 #include "core/gguf_loader.h"
 #include "ggml-alloc.h"
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <map>
@@ -46,10 +47,29 @@ private:
 };
 
 using ShapeMap = std::map<std::string, std::vector<int64_t>>;
+
+// Optional, engine-owned storage policy for GGUFs that hold F16/quantized
+// kernels (LaMa's crispembed-quantize lama-v2 files). Without a policy, or for a
+// file whose tensors are all F32 in their original shape, Weights keeps the
+// F32-only contract unchanged. The policy is consulted only for a tensor that
+// is not F32 in its original shape; it either rejects (throws), keeps the
+// tensor resident as stored (a 4D F16 kernel, or a 2D [IC*KH*KW, OC] patch-row
+// matrix that Builder::conv uses as the ggml_mul_mat src0), or asks for it to
+// be dequantized to F32 in its original shape at load.
+struct StoragePolicy {
+    virtual ~StoragePolicy() = default;
+    virtual bool keep_stored(const std::string & name, ggml_type type, const int64_t * stored_ne,
+                             const std::vector<int64_t> & original_shape) const = 0;
+};
+
 struct Weights {
     Device & device;
     core_gguf::WeightLoad loaded;
-    Weights(Device & device, const char * path, const ShapeMap & schema);
+    // Original ggml dimensions of kernels kept resident in a flattened stored layout.
+    std::map<std::string, std::array<int64_t, 4>> stored_kernel_shape;
+    ggml_context * converted_ctx = nullptr;
+    ggml_backend_buffer_t converted_buf = nullptr;
+    Weights(Device & device, const char * path, const ShapeMap & schema, const StoragePolicy * policy = nullptr);
     ~Weights();
     Weights(const Weights &) = delete;
     Weights & operator=(const Weights &) = delete;

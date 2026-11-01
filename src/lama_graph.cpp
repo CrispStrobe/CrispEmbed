@@ -2,6 +2,7 @@
 #include "lama_schema.h"
 #include "inpaint_graph.h"
 #include "inpaint_graph_spectral.h"
+#include "core/env_gate.h"
 #include <stdexcept>
 
 namespace lama {
@@ -12,6 +13,41 @@ struct Features {
     ggml_tensor * local = nullptr;
     ggml_tensor * global = nullptr;
 };
+// lama-v2 files (tools/quantize.cpp): vectors and the first/last conv are F32
+// (checked again here). By default every other stored kernel is dequantized to
+// F32 at load, so the graph is the F32 graph. CRISPEMBED_LAMA_QUANT_MATMUL=1
+// keeps F16 4D kernels and [IC*KH*KW, OC] patch-row quantized kernels resident
+// as the ggml_mul_mat src0; transposed and 256-row K-quant kernels stay F32.
+struct LamaStorage final : inpaint_graph::StoragePolicy {
+    bool matmul = core_env::on("CRISPEMBED_LAMA_QUANT_MATMUL");
+    bool keep_stored(const std::string & name, ggml_type type, const int64_t * ne,
+                     const std::vector<int64_t> & shape) const override {
+        const bool kernel = shape.size() == 4;
+        if (!kernel || name == "generator.model.1.ffc.convl2l.weight" || name == "generator.model.34.weight")
+            throw std::runtime_error("Big-LaMa graph: tensor must be F32 in its original shape: " + name);
+        switch (type) {
+        case GGML_TYPE_F32:
+        case GGML_TYPE_F16:
+        case GGML_TYPE_Q8_0:
+        case GGML_TYPE_Q4_0:
+        case GGML_TYPE_Q4_1:
+        case GGML_TYPE_Q5_0:
+        case GGML_TYPE_Q5_1:
+        case GGML_TYPE_Q4_K:
+        case GGML_TYPE_Q5_K:
+        case GGML_TYPE_Q6_K:
+            break;
+        default:
+            throw std::runtime_error("Big-LaMa graph: unsupported stored type: " + name);
+        }
+        const bool transpose = name == "generator.model.24.weight" || name == "generator.model.27.weight" ||
+                               name == "generator.model.30.weight";
+        const bool exact = ne[0] == shape[3] && ne[1] == shape[2] && ne[2] == shape[1] && ne[3] == shape[0];
+        const bool patch_rows = ne[0] == shape[1] * shape[2] * shape[3] && ne[1] == shape[0];
+        return matmul && !transpose && ((type == GGML_TYPE_F16 && exact) || (type != GGML_TYPE_F32 && patch_rows));
+    }
+};
+
 ggml_tensor * reflected_conv(Builder & b, const std::string & name, ggml_tensor * x, int stride, int padding) {
     return b.conv(name, padding ? b.reflect_pad(x, padding) : x, stride, 0);
 }
@@ -68,6 +104,7 @@ ggml_tensor * forward(Builder & b, ggml_tensor * input) {
 } // namespace
 
 struct GraphModel::Impl {
+    LamaStorage storage;
     inpaint_graph::Device device;
     inpaint_graph::Weights weights;
     std::unique_ptr<Builder> graph;
@@ -84,7 +121,7 @@ struct GraphModel::Impl {
         if (p.observer) p.observer(p.opaque, name, value);
     }
 #endif
-    Impl(const char * path, int threads) : device(threads), weights(device, path, detail::schema()) {}
+    Impl(const char * path, int threads) : device(threads), weights(device, path, detail::schema(), &storage) {}
     void build(int w, int h) {
         // One geometry cache bounds resident memory for arbitrary-size batches.
         graph.reset();

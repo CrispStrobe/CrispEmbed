@@ -176,8 +176,118 @@ Device::~Device() {
     if (backend) ggml_backend_free(backend);
 }
 
-Weights::Weights(Device & selected, const char * path, const ShapeMap & schema) : device(selected) {
+namespace {
+bool stored_seek(FILE * file, size_t offset) {
+#ifdef _WIN32
+    return _fseeki64(file, int64_t(offset), SEEK_SET) == 0;
+#else
+    return fseeko(file, off_t(offset), SEEK_SET) == 0;
+#endif
+}
+bool include_listed(const char * name, void * user) {
+    return static_cast<const std::map<std::string, bool> *>(user)->count(name) != 0;
+}
+} // namespace
+
+// Policy path (see StoragePolicy). Resident tensors load as stored; the rest are
+// read from the file, dequantized and placed F32 in their original shape.
+static void load_with_policy(Weights & w, const char * path, const ShapeMap & schema, const StoragePolicy & policy) {
+    std::unique_ptr<gguf_context, decltype(&core_gguf::free_metadata)> meta(core_gguf::open_metadata(path),
+                                                                            core_gguf::free_metadata);
+    require(bool(meta), "cannot read GGUF metadata");
+    std::map<std::string, bool> resident;
+    std::vector<std::pair<std::string, int64_t>> converted;
+    for (const auto & entry : schema) {
+        const int64_t id = gguf_find_tensor(meta.get(), entry.first.c_str());
+        require(id >= 0, "missing weight " + entry.first);
+        std::array<int64_t, 4> expected{ 1, 1, 1, 1 };
+        int64_t count = 1;
+        for (size_t j = 0; j < entry.second.size(); ++j) {
+            expected[entry.second.size() - j - 1] = entry.second[j];
+            count *= entry.second[j];
+        }
+        const ggml_type type = gguf_get_tensor_type(meta.get(), id);
+        const int64_t * ne = gguf_get_tensor_ne(meta.get(), id);
+        bool exact = true;
+        for (int axis = 0; axis < 4; ++axis) exact &= ne[axis] == expected[axis];
+        require(ne[0] * ne[1] * ne[2] * ne[3] == count, "stored element count differs: " + entry.first);
+        if (type == GGML_TYPE_F32 && exact) {
+            resident[entry.first] = true;
+        } else if (policy.keep_stored(entry.first, type, ne, entry.second)) {
+            resident[entry.first] = true;
+            if (!exact) {
+                require(entry.second.size() == 4 && ne[0] == expected[0] * expected[1] * expected[2] &&
+                            ne[1] == expected[3] && ne[2] == 1 && ne[3] == 1,
+                        "kept kernel must be a [IC*KH*KW, OC] patch-row matrix: " + entry.first);
+                w.stored_kernel_shape[entry.first] = expected;
+            }
+        } else {
+            converted.emplace_back(entry.first, id);
+        }
+    }
+    require(core_gguf::load_weights_filtered(path, w.device.backend, include_listed, &resident, "inpainting-graph",
+                                             w.loaded) &&
+                w.loaded.tensors.size() == resident.size(),
+            "cannot load resident weights");
+    if (converted.empty()) return;
+    w.converted_ctx = ggml_init({ (converted.size() + 16) * ggml_tensor_overhead(), nullptr, true });
+    require(w.converted_ctx != nullptr, "weight metadata allocation failed");
+    std::vector<ggml_tensor *> made;
+    for (const auto & item : converted) {
+        const auto & shape = schema.at(item.first);
+        std::array<int64_t, 4> ne{ 1, 1, 1, 1 };
+        for (size_t j = 0; j < shape.size(); ++j) ne[shape.size() - j - 1] = shape[j];
+        ggml_tensor * t = ggml_new_tensor_4d(w.converted_ctx, GGML_TYPE_F32, ne[0], ne[1], ne[2], ne[3]);
+        ggml_set_name(t, item.first.c_str());
+        made.push_back(t);
+    }
+    w.converted_buf = ggml_backend_alloc_ctx_tensors(w.converted_ctx, w.device.backend);
+    require(w.converted_buf != nullptr, "dequantized weight allocation failed");
+    ggml_backend_buffer_set_usage(w.converted_buf, GGML_BACKEND_BUFFER_USAGE_WEIGHTS);
+    std::unique_ptr<FILE, int (*)(FILE *)> file(std::fopen(path, "rb"), &std::fclose);
+    require(bool(file), "cannot reopen GGUF for dequantization");
+    const size_t data_offset = gguf_get_data_offset(meta.get());
+    std::vector<uint8_t> raw;
+    std::vector<float> values;
+    for (size_t i = 0; i < converted.size(); ++i) {
+        const int64_t id = converted[i].second;
+        const ggml_type type = gguf_get_tensor_type(meta.get(), id);
+        const int64_t count = ggml_nelements(made[i]);
+        raw.resize(gguf_get_tensor_size(meta.get(), id));
+        values.resize(size_t(count));
+        require(raw.size() == ggml_row_size(type, count) &&
+                    stored_seek(file.get(), data_offset + gguf_get_tensor_offset(meta.get(), id)) &&
+                    std::fread(raw.data(), 1, raw.size(), file.get()) == raw.size(),
+                "cannot read stored weight " + converted[i].first);
+        if (type == GGML_TYPE_F32) {
+            std::memcpy(values.data(), raw.data(), raw.size());
+        } else {
+            const ggml_type_traits * traits = ggml_get_type_traits(type);
+            require(traits && traits->to_float, "no dequantizer for weight " + converted[i].first);
+            traits->to_float(raw.data(), values.data(), count);
+        }
+        ggml_backend_tensor_set(made[i], values.data(), 0, values.size() * sizeof(float));
+        w.loaded.tensors[converted[i].first] = made[i];
+    }
+}
+
+Weights::Weights(Device & selected, const char * path, const ShapeMap & schema, const StoragePolicy * policy)
+    : device(selected) {
     try {
+        if (policy) {
+            std::unique_ptr<gguf_context, decltype(&core_gguf::free_metadata)> meta(core_gguf::open_metadata(path),
+                                                                                    core_gguf::free_metadata);
+            require(bool(meta) && size_t(gguf_get_n_tensors(meta.get())) == schema.size(),
+                    "weight tensor census differs");
+            bool all_f32 = true;
+            for (int64_t i = 0; i < gguf_get_n_tensors(meta.get()); ++i)
+                all_f32 &= gguf_get_tensor_type(meta.get(), i) == GGML_TYPE_F32;
+            meta.reset();
+            if (!all_f32) {
+                load_with_policy(*this, path, schema, *policy);
+                return;
+            }
+        }
         require(path && *path && !schema.empty(), "model path and weight schema are required");
         std::unique_ptr<gguf_context, decltype(&core_gguf::free_metadata)> meta(core_gguf::open_metadata(path),
                                                                                 core_gguf::free_metadata);
@@ -270,6 +380,8 @@ Weights::Weights(Device & selected, const char * path, const ShapeMap & schema) 
     }
 }
 Weights::~Weights() {
+    if (converted_buf) ggml_backend_buffer_free(converted_buf);
+    if (converted_ctx) ggml_free(converted_ctx);
     core_gguf::free_weights(loaded);
 }
 
@@ -377,8 +489,52 @@ ggml_tensor * Builder::linear(const std::string & name, ggml_tensor * x, bool bi
 }
 ggml_tensor * Builder::conv(const std::string & name, ggml_tensor * x, int stride, int padding, int groups,
                             int dilation) {
-    return conv_kernel(name, weight(name + ".weight"), has(name + ".bias") ? weight(name + ".bias") : nullptr, x,
-                       stride, padding, groups, dilation);
+    ggml_tensor * w = weight(name + ".weight");
+    ggml_tensor * bias = has(name + ".bias") ? weight(name + ".bias") : nullptr;
+    if (!weights_ || !weights_->stored_kernel_shape.count(name + ".weight"))
+        return conv_kernel(name, w, bias, x, stride, padding, groups, dilation);
+    const auto flattened = weights_->stored_kernel_shape.find(name + ".weight");
+    // StoragePolicy kernel kept as a stored [IC*KH*KW, OC] matrix (dense,
+    // groups=1): the same GEMM as conv_kernel with the stored type as src0.
+    const auto & k = flattened->second;
+    require(groups == 1 && k[2] == x->ne[2], "flattened kernel requires a dense convolution: " + name);
+    ggml_tensor * out = nullptr;
+    if (k[0] == 1 && k[1] == 1 && stride == 1 && padding == 0) {
+        out = image_layout(ctx, matmul(ctx, w, channels_first(ctx, x), fast()), x->ne[0], x->ne[1]);
+    } else {
+        // im2col reads only the kernel geometry from its first operand.
+        ggml_tensor * geometry = zeros("graph.kernel_geometry." + name, { k[0], k[1], k[2], 1 });
+        const int64_t ow = (x->ne[0] + 2 * padding - dilation * (k[0] - 1) - 1) / stride + 1;
+        const int64_t oh = (x->ne[1] + 2 * padding - dilation * (k[1] - 1) - 1) / stride + 1;
+        require(ow > 0 && oh > 0, "convolution kernel exceeds image");
+        const int64_t kernel_size = k[0] * k[1] * k[2];
+        const size_t budget = (device.gpu ? size_t(128) : size_t(32)) << 20;
+        const size_t bytes_per_row = size_t(kernel_size * ow * x->ne[3]) * sizeof(float);
+        const int64_t rows = std::max<int64_t>(1, std::min<int64_t>(oh, int64_t(budget / bytes_per_row)));
+        std::vector<ggml_tensor *> parts;
+        for (int64_t start = 0; start < oh; start += rows) {
+            const int64_t count = std::min(rows, oh - start);
+            ggml_tensor * strip = x;
+            int pad_y = padding;
+            if (rows < oh) {
+                const int64_t y0 = start * stride - padding;
+                const int64_t y1 = (start + count - 1) * stride - padding + dilation * (k[1] - 1) + 1;
+                const int64_t first = std::max<int64_t>(0, y0), last = std::min<int64_t>(x->ne[1], y1);
+                strip = ggml_cont(ctx, ggml_view_4d(ctx, x, x->ne[0], last - first, x->ne[2], x->ne[3], x->nb[1],
+                                                    x->nb[2], x->nb[3], size_t(first) * x->nb[1]));
+                if (y0 < 0 || y1 > x->ne[1]) strip = pad(strip, 0, 0, int(first - y0), int(y1 - last));
+                pad_y = 0;
+            }
+            ggml_tensor * patches = ggml_im2col(ctx, geometry, strip, stride, stride, padding, pad_y, dilation,
+                                                dilation, true, GGML_TYPE_F32);
+            ggml_tensor * columns =
+                ggml_reshape_4d(ctx, patches, kernel_size, patches->ne[1] * patches->ne[2], 1, x->ne[3]);
+            parts.push_back(image_layout(ctx, matmul(ctx, w, columns, fast()), patches->ne[1], patches->ne[2]));
+        }
+        out = concat_balanced(ctx, std::move(parts), 1);
+    }
+    if (bias) out = ggml_add(ctx, out, ggml_reshape_4d(ctx, bias, 1, 1, out->ne[2], 1));
+    return out;
 }
 ggml_tensor * Builder::conv_kernel(const std::string & name, ggml_tensor * w, ggml_tensor * bias, ggml_tensor * x,
                                    int stride, int padding, int groups, int dilation) {

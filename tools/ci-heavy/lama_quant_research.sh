@@ -14,9 +14,10 @@
 #             original capture (tools/lama_variant_report.py), all eight fixtures.
 #   live:     burned-in subtitles on real photos (tools/inpaint_live_eval.py), each
 #             variant x mode, plus the original PyTorch generator on the same inputs.
-# Runtime modes: storage (default: kernels dequantized to F32 at load) and matmul
+# Runtime modes: storage (default: kernels dequantized to F32 at load), matmul
 # (CRISPEMBED_LAMA_QUANT_MATMUL=1: patch-row kernels run as ggml_mul_mat on their
-# stored type); f32-stored is the F32 file through the stored-weight ops
+# stored type), graph / graph-matmul (the same on the persistent ggml graph,
+# CRISPEMBED_INPAINT_GRAPH=1, CPU here); f32-stored is the F32 file through the stored-weight ops
 # (CRISPEMBED_LAMA_STORED_OPS=1), an A/B control against the shared Engine.
 # Checkpoint rights are unresolved: no checkpoint or GGUF leaves scratch.
 set -uo pipefail
@@ -59,16 +60,32 @@ Q=$(find "$B" -name crispembed-quantize -type f | head -1)
 DIFF=$(find "$B" -name test-lama-diff -type f | head -1)
 CLI=$(find "$B" -name crispembed -type f | head -1)
 M=$S/models; mkdir -p "$M"; cp "$F32" "$M/big-lama-f32.gguf"
-for q in f16 q8_0 q4_k; do
-    step "quantize-$q" bash -c "'$Q' '$M/big-lama-f32.gguf' '$M/big-lama-$q.gguf' $q > '$OUT/quantize-$q.stdout' &&
+# Recipes: name|requested type|--tensor-type overrides (q4_k-s8 holds every global
+# spectral-branch kernel at Q8_0; q4_k-s8e8 also the encoder downsampling convs).
+RECIPES=("f16|f16|" "q8_0|q8_0|" "q4_k|q4_k|"
+         "q4_k-s8|q4_k|generator.*.convg2g.*=q8_0"
+         "q4_k-s8e8|q4_k|generator.*.convg2g.*=q8_0 generator.model.2.*=q8_0 generator.model.3.*=q8_0 generator.model.4.*=q8_0")
+for recipe in "${RECIPES[@]}"; do
+    IFS='|' read -r q type overrides <<< "$recipe"
+    set -f; qa=""; for o in $overrides; do qa+=" --tensor-type '$o'"; done; set +f
+    step "quantize-$q" bash -c "'$Q' '$M/big-lama-f32.gguf' '$M/big-lama-$q.gguf' $type $qa > '$OUT/quantize-$q.stdout' &&
         python tools/lama_quant_census.py --source '$M/big-lama-f32.gguf' --variant '$M/big-lama-$q.gguf' \
-            --requested $q --output '$OUT/census-$q.json'"
+            --requested $type $qa --output '$OUT/census-$q.json'"
 done
 sha256sum "$M"/*.gguf | sed "s#$M/##" > "$OUT/gguf-sha256.txt"
 ls -l "$M"/*.gguf | awk '{print $5, $NF}' | sed "s#$M/##" > "$OUT/gguf-bytes.txt"
 sha() { awk -v f="big-lama-$1.gguf" '$2==f{print $1}' "$OUT/gguf-sha256.txt"; }
-mode_env() { case $1 in matmul) echo CRISPEMBED_LAMA_QUANT_MATMUL=1 ;; stored) echo CRISPEMBED_LAMA_STORED_OPS=1 ;; esac; }
-CONFIGS=(f32/stored f16/storage f16/matmul q8_0/storage q8_0/matmul q4_k/storage q4_k/matmul)
+mode_env() {
+    case $1 in
+        matmul) echo CRISPEMBED_LAMA_QUANT_MATMUL=1 ;;
+        stored) echo CRISPEMBED_LAMA_STORED_OPS=1 ;;
+        graph) echo CRISPEMBED_INPAINT_GRAPH=1 ;;
+        graph-matmul) echo CRISPEMBED_INPAINT_GRAPH=1 CRISPEMBED_LAMA_QUANT_MATMUL=1 ;;
+    esac
+}
+CONFIGS=(f32/stored f32/graph)
+for q in f16 q8_0 q4_k; do for mode in storage matmul graph graph-matmul; do CONFIGS+=("$q/$mode"); done; done
+CONFIGS+=(q4_k-s8/storage q4_k-s8/graph-matmul q4_k-s8e8/storage q4_k-s8e8/graph-matmul)
 
 if [ "$PHASE" = fixtures ]; then
     for config in "${CONFIGS[@]}"; do

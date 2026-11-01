@@ -11,6 +11,7 @@ and bytes, flattened-storage counts, file size and SHA-256.
 """
 
 import argparse
+import fnmatch
 import hashlib
 import json
 import math
@@ -61,9 +62,14 @@ def read_gguf(path):
     return metadata, tensors
 
 
-def expected_plan(name, ne, requested):
-    """Mirror of tools/quantize.cpp lama_tensor_plan, policy lama-v2 (no --tensor-type overrides)."""
+def expected_plan(name, ne, requested, overrides=()):
+    """Mirror of tools/quantize.cpp lama_tensor_plan, policy lama-v2 (last matching override wins)."""
     if (ne[1] == 1 and ne[2] == 1 and ne[3] == 1) or name in CRITICAL:
+        return "f32", list(ne)
+    for pattern, kind in overrides:
+        if fnmatch.fnmatchcase(name, pattern):
+            requested = kind
+    if requested == "f32":
         return "f32", list(ne)
     if requested == "f16":
         return "f16", list(ne)
@@ -85,7 +91,7 @@ def sha256(path):
     return digest.hexdigest()
 
 
-def census(source, variant, requested):
+def census(source, variant, requested, overrides=()):
     source_meta, source_tensors = read_gguf(source)
     meta, tensors = read_gguf(variant)
     errors = []
@@ -100,7 +106,7 @@ def census(source, variant, requested):
     for name, row in tensors.items():
         if name not in source_tensors:
             continue
-        kind, shape = expected_plan(name, source_tensors[name]["ne"], requested)
+        kind, shape = expected_plan(name, source_tensors[name]["ne"], requested, overrides)
         if row["type"] != kind or row["ne"] != shape:
             errors.append(f"{name}: {row['type']}{row['ne']} != planned {kind}{shape}")
         block, size = BLOCK.get(row["type"], (1, 0))
@@ -109,7 +115,7 @@ def census(source, variant, requested):
         flattened += row["ne"] != source_tensors[name]["ne"]
         matmul_rows += row["type"] != "f32" and (row["ne"] == source_tensors[name]["ne"] or
                                                 row["ne"][0] == math.prod(source_tensors[name]["ne"][:3]))
-    return {"variant": Path(variant).name, "requested": requested, "bytes": Path(variant).stat().st_size,
+    return {"variant": Path(variant).name, "requested": requested, "tensor_type_overrides": [list(o) for o in overrides], "bytes": Path(variant).stat().st_size,
             "sha256": sha256(variant), "source_sha256": sha256(source), "tensor_count": len(tensors),
             "type_counts": counts, "type_payload_bytes": nbytes, "flattened_storage_tensors": flattened, "patch_row_kernels": matmul_rows,
             "policy_conformant": not errors, "errors": errors[:20]}
@@ -120,9 +126,11 @@ def main():
     parser.add_argument("--source", type=Path, required=True)
     parser.add_argument("--variant", type=Path, required=True)
     parser.add_argument("--requested", required=True, choices=sorted(set(BLOCK) - {"f32"}))
+    parser.add_argument("--tensor-type", action="append", default=[], help="GLOB=TYPE as passed to the quantizer")
     parser.add_argument("--output", type=Path)
     args = parser.parse_args()
-    report = census(args.source, args.variant, args.requested)
+    overrides = [tuple(item.rsplit("=", 1)) for item in args.tensor_type]
+    report = census(args.source, args.variant, args.requested, overrides)
     text = json.dumps(report, indent=2) + "\n"
     if args.output:
         args.output.write_text(text, encoding="utf-8")
