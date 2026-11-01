@@ -8,6 +8,28 @@ qualified, against those F32 budgets. The owner's precision acceptance is
 Results and receipts: `tests/results/migan512/`, `tests/results/moebius/`,
 `tests/results/pixelhacker/`.
 
+## Qualification summary against the owner's bars
+
+Owner acceptance (`docs/precision-acceptance.md` on feat/teleocr, b3c6440c):
+final-output cosine against the original, minimum over cases, must exceed
+**F32 > 0.99, F16 > 0.98, Q8_0 > 0.97, Q4_K > 0.94**. The strict per-stage
+budgets stay recorded as diagnostics only. Minimum over the synthetic panel
+and the real-photo panel (masked-region cosine vs F32 for photos):
+
+| Engine | F32 | F16 | Q8_0 | Q4_K |
+| --- | --- | --- | --- | --- |
+| MI-GAN512 | 1.000000 — qualifies | 0.999998 — qualifies | 0.9965 — qualifies | 0.9770 synthetic, 0.9019 street/DBNet photo (vs F32) — see below |
+| Moebius | 1.000000 (stage drift cos >= 0.9999995) — qualifies | 0.999935 (photos) — qualifies | 0.9795 (photos) — qualifies | **fails** on photos (0.859); mixed recipe pending |
+| PixelHacker | 1.000000 — qualifies | 0.999999 (synthetic; no F16 photo run) — qualifies | 0.9859 (photos) — qualifies | 0.9425 (photos) — qualifies, borderline |
+
+The owner's bar is against the original. On photos no original exists, so
+the photo column compares with native F32, which is itself at cosine 1.0 against
+the original on the synthetic panel. One caveat: MI-GAN512 Q4_K's street/DBNet
+crop reaches only 0.9019 against F32 in the masked region, while every exact-mask
+photo (>= 0.962), the full-photo street runs (0.947 / 0.965) and the synthetic
+panel (>= 0.977) clear 0.94. The engine-level row above therefore records Q4_K
+as qualified on the synthetic panel but below the bar for that DBNet crop.
+
 ## Gates
 
 | Gate | Effect |
