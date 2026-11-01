@@ -9,6 +9,7 @@
 #include "core/env_gate.h"
 #include "core/ggml_cpu_backend.h"
 #include "core/gguf_loader.h"
+#include "core/gpu_backend_pref.h"
 #include "ggml-alloc.h"
 
 #ifdef CRISPEMBED_MIGAN_TESTING
@@ -27,13 +28,24 @@
 
 namespace migan {
 
+namespace graph_impl {
+struct graph_builder;
+}
+
 struct context {
     ggml_backend_t backend = nullptr;
+    // GPU execution, the non-F32 pointwise formulation, the GPU pad rewrite and
+    // batching are additions. The reviewed CPU/F32 batch1 path keeps its
+    // original per-call graph (graph_builder with default options).
+    bool gpu = false;
+    bool f32_weights = true;
+    std::string precision = "f32";
+    std::string device_name = "CPU";
+    int batch_limit = 1;
     core_gguf::WeightLoad weights;
-    ~context() {
-        core_gguf::free_weights(weights);
-        if (backend) ggml_backend_free(backend);
-    }
+    // Persistent graphs (allocated once, recomputed per call) keyed by batch.
+    std::map<size_t, std::unique_ptr<graph_impl::graph_builder>> graphs;
+    ~context();
 };
 
 namespace {
@@ -98,11 +110,21 @@ schema expected_schema() {
     return shapes;
 }
 
-bool metadata_valid(gguf_context * meta, const char * expected_digest, std::string & error) {
+bool pointwise_name(const std::string & name) {
+    const std::string suffix = ".conv2.weight";
+    return name.size() > suffix.size() && name.compare(name.size() - suffix.size(), suffix.size(), suffix) == 0;
+}
+
+// The reviewed F32 container is unchanged. A derived container (gated) may
+// store only *.conv2.weight pointwise kernels as F16/Q8_0/Q4_K, flattened to
+// [IC,OC] so the quantized row runs along the contracted input channels.
+bool metadata_valid(gguf_context * meta, const char * expected_digest, const char * expected_source_gguf,
+                    bool & f32_weights, std::string & precision, std::string & error) {
     if (!digest_valid(expected_digest)) return fail(error, "a reviewed lowercase checkpoint SHA-256 is required");
+    const uint32_t file_type = core_gguf::kv_u32(meta, "general.file_type", UINT32_MAX);
+    f32_weights = file_type == 0;
     if (core_gguf::kv_str(meta, "general.architecture", "") != "migan" ||
-        core_gguf::kv_str(meta, "general.license", "") != "MIT" ||
-        core_gguf::kv_u32(meta, "general.file_type", UINT32_MAX) != 0 ||
+        core_gguf::kv_str(meta, "general.license", "") != "MIT" || file_type == UINT32_MAX ||
         core_gguf::kv_u32(meta, "migan.image_size", 0) != 256 ||
         core_gguf::kv_str(meta, "migan.source.commit", "") != source_commit ||
         core_gguf::kv_str(meta, "migan.checkpoint.sha256", "") != expected_digest ||
@@ -110,22 +132,65 @@ bool metadata_valid(gguf_context * meta, const char * expected_digest, std::stri
             "original contiguous OIHW; GGUF dimensions reversed; scalar=[1]" ||
         core_gguf::kv_str(meta, "migan.input.contract", "") != "RGB8;binary-mask8;255=fill;fixed256")
         return fail(error, "MI-GAN GGUF source/checkpoint/F32/fixed-256 metadata differs");
+    if (!f32_weights) {
+        if (!core_env::on("CRISPEMBED_MIGAN_QUANT"))
+            return fail(error, "non-F32 MI-GAN GGUF requires CRISPEMBED_MIGAN_QUANT=1");
+        if (!digest_valid(expected_source_gguf) ||
+            core_gguf::kv_str(meta, "migan.quantization.policy", "") != quant_policy ||
+            core_gguf::kv_str(meta, "migan.quantization.source_gguf_sha256", "") != expected_source_gguf)
+            return fail(error, "MI-GAN derived GGUF policy/source F32 identity differs");
+    }
     const schema expected = expected_schema();
     if (expected.size() != 154 || gguf_get_n_tensors(meta) != 154)
         return fail(error, "MI-GAN requires exactly 154 original state tensors");
+    std::map<ggml_type, size_t> pointwise_types;
     for (const auto & entry : expected) {
         const int64_t id = gguf_find_tensor(meta, entry.first.c_str());
-        if (id < 0 || gguf_get_tensor_type(meta, id) != GGML_TYPE_F32)
-            return fail(error, "MI-GAN missing or non-F32 state: " + entry.first);
+        if (id < 0) return fail(error, "MI-GAN missing state: " + entry.first);
+        const ggml_type type = gguf_get_tensor_type(meta, id);
         const int64_t * ne = gguf_get_tensor_ne(meta, id);
-        for (int axis = 0; axis < 4; ++axis)
-            if (ne[axis] != entry.second[axis]) return fail(error, "MI-GAN state shape differs: " + entry.first);
+        if (type == GGML_TYPE_F32) {
+            for (int axis = 0; axis < 4; ++axis)
+                if (ne[axis] != entry.second[axis]) return fail(error, "MI-GAN state shape differs: " + entry.first);
+            if (pointwise_name(entry.first)) ++pointwise_types[type];
+            continue;
+        }
+        const bool allowed = type == GGML_TYPE_F16 || type == GGML_TYPE_Q8_0 || type == GGML_TYPE_Q4_K;
+        if (f32_weights || !allowed || !pointwise_name(entry.first) || entry.second[0] != 1 || entry.second[1] != 1)
+            return fail(error, "MI-GAN missing or non-F32 state: " + entry.first);
+        if (ne[0] != entry.second[2] || ne[1] != entry.second[3] || ne[2] != 1 || ne[3] != 1 ||
+            ne[0] % ggml_blck_size(type) != 0)
+            return fail(error, "MI-GAN derived pointwise shape differs: " + entry.first);
+        ++pointwise_types[type];
+    }
+    precision = "f32";
+    if (!f32_weights) {
+        size_t best = 0;
+        for (const auto & entry : pointwise_types)
+            if (entry.first != GGML_TYPE_F32 && entry.second > best) {
+                best = entry.second;
+                precision = ggml_type_name(entry.first);
+            }
+        if (best == 0) return fail(error, "MI-GAN derived GGUF changes no pointwise tensor");
     }
     return true;
 }
 
+} // namespace
+
+namespace graph_impl {
+
+
+struct options {
+    size_t batch = 1;
+    bool native_pad = true;       // ggml_pad_ext(2,1,2,1); GPU backends may lack left padding.
+    bool im2col_pointwise = true; // Reviewed F32 im2col+mul_mat; non-F32 weights use the swapped form.
+    bool f32_matmul = true;       // GGML_PREC_F32 hint on every pointwise mul_mat.
+};
+
 struct graph_builder {
     context & model;
+    options opt;
     ggml_context * ctx = nullptr;
     ggml_gallocr_t allocator = nullptr;
     ggml_cgraph * graph = nullptr;
@@ -136,7 +201,7 @@ struct graph_builder {
     std::vector<std::pair<std::string, ggml_tensor *>> stages;
 #endif
 
-    explicit graph_builder(context & model) : model(model) {
+    explicit graph_builder(context & model, options opt = {}) : model(model), opt(opt) {
         const size_t overhead =
             graph_capacity * ggml_tensor_overhead() + ggml_graph_overhead_custom(graph_capacity, false);
         ctx = ggml_init({ overhead, nullptr, true });
@@ -171,30 +236,57 @@ struct graph_builder {
         return ggml_clamp(ctx, x, -256.0f, 256.0f);
     }
 
-    ggml_tensor * convolution(const std::string & name, ggml_tensor * x, int stride, int pad, bool depthwise,
-                              bool bias) {
+    // 1x1 convolution with weights as the quantizable src0: [C,W*H*N] channel-
+    // innermost activations, one mul_mat, then back to WHCN. Required for
+    // F16/Q8_0/Q4_K kernels stored as [IC,OC]; optional (A/B) for F32.
+    ggml_tensor * pointwise_swapped(ggml_tensor * kernel, ggml_tensor * x) {
+        const int64_t channels = x->ne[2], out = kernel->ne[ggml_n_dims(kernel) == 2 ? 1 : 3];
+        ggml_tensor * w = ggml_reshape_2d(ctx, kernel, channels, out);
+        ggml_tensor * xt = ggml_cont(ctx, ggml_permute(ctx, x, 1, 2, 0, 3)); // [C,W,H,N]
+        xt = ggml_reshape_2d(ctx, xt, channels, x->ne[0] * x->ne[1] * x->ne[3]);
+        ggml_tensor * product = ggml_mul_mat(ctx, w, xt); // [OC, W*H*N]
+        if (opt.f32_matmul) ggml_mul_mat_set_prec(product, GGML_PREC_F32);
+        product = ggml_reshape_4d(ctx, product, out, x->ne[0], x->ne[1], x->ne[3]);
+        return ggml_cont(ctx, ggml_permute(ctx, product, 2, 0, 1, 3)); // [W,H,OC,N]
+    }
+
+    ggml_tensor * convolution(const std::string & name, ggml_tensor * x, int stride, int pad, bool depthwise, bool bias,
+                              bool record = true) {
         ggml_tensor * kernel = weight(name + ".weight");
         ggml_tensor * y;
         if (depthwise) {
             // Pinned CPU direct depthwise uses F32 source, F32 weight and F32
             // accumulation. WHCN stays contiguous; no F16 im2col temporary.
             y = ggml_conv_2d_dw_direct(ctx, kernel, x, stride, stride, pad, pad, 1, 1);
+        } else if (kernel->type != GGML_TYPE_F32 || !opt.im2col_pointwise) {
+            y = pointwise_swapped(kernel, x);
         } else {
             // All non-depthwise MI-GAN kernels are 1x1. Declare activation
             // type explicitly even though this pinned fork also chooses F32.
             ggml_tensor * patches = ggml_im2col(ctx, kernel, x, stride, stride, pad, pad, 1, 1, true, GGML_TYPE_F32);
-            ggml_tensor * lhs = ggml_reshape_2d(ctx, patches, patches->ne[0], patches->ne[1] * patches->ne[2]);
-            ggml_tensor * rhs =
-                ggml_reshape_2d(ctx, kernel, kernel->ne[0] * kernel->ne[1] * kernel->ne[2], kernel->ne[3]);
-            ggml_tensor * product = ggml_mul_mat(ctx, lhs, rhs);
-            ggml_mul_mat_set_prec(product, GGML_PREC_F32);
-            y = ggml_reshape_4d(ctx, product, patches->ne[1], patches->ne[2], kernel->ne[3], 1);
+            if (opt.batch == 1) {
+                ggml_tensor * lhs = ggml_reshape_2d(ctx, patches, patches->ne[0], patches->ne[1] * patches->ne[2]);
+                ggml_tensor * rhs =
+                    ggml_reshape_2d(ctx, kernel, kernel->ne[0] * kernel->ne[1] * kernel->ne[2], kernel->ne[3]);
+                ggml_tensor * product = ggml_mul_mat(ctx, lhs, rhs);
+                if (opt.f32_matmul) ggml_mul_mat_set_prec(product, GGML_PREC_F32);
+                y = ggml_reshape_4d(ctx, product, patches->ne[1], patches->ne[2], kernel->ne[3], 1);
+            } else {
+                ggml_tensor * lhs =
+                    ggml_reshape_2d(ctx, patches, patches->ne[0], patches->ne[1] * patches->ne[2] * patches->ne[3]);
+                ggml_tensor * rhs =
+                    ggml_reshape_2d(ctx, kernel, kernel->ne[0] * kernel->ne[1] * kernel->ne[2], kernel->ne[3]);
+                ggml_tensor * product = ggml_mul_mat(ctx, lhs, rhs);
+                if (opt.f32_matmul) ggml_mul_mat_set_prec(product, GGML_PREC_F32);
+                y = ggml_reshape_4d(ctx, product, patches->ne[1], patches->ne[2], patches->ne[3], kernel->ne[3]);
+                y = ggml_cont(ctx, ggml_permute(ctx, y, 0, 1, 3, 2));
+            }
         }
         if (bias) {
             ggml_tensor * b = weight(name + ".bias");
             y = ggml_add(ctx, y, ggml_reshape_4d(ctx, b, 1, 1, b->ne[0], 1));
         }
-        mark(name + ".output", y);
+        if (record) mark(name + ".output", y);
         return y;
     }
 
@@ -207,10 +299,21 @@ struct graph_builder {
 
     ggml_tensor * upsample(const std::string & name, ggml_tensor * x) {
         mark(name + ".input.0", x);
-        x = ggml_interpolate(ctx, x, x->ne[0] * 2, x->ne[1] * 2, x->ne[2], 1, GGML_SCALE_MODE_NEAREST);
+        x = ggml_interpolate(ctx, x, x->ne[0] * 2, x->ne[1] * 2, x->ne[2], x->ne[3], GGML_SCALE_MODE_NEAREST);
         x = ggml_mul(ctx, x, weight(name + ".filter_const"));
-        x = ggml_pad_ext(ctx, x, 2, 1, 2, 1, 0, 0, 0, 0);
-        x = convolution(name + ".filter", x, 1, 0, true, false);
+        if (opt.native_pad) {
+            x = ggml_pad_ext(ctx, x, 2, 1, 2, 1, 0, 0, 0, 0);
+            x = convolution(name + ".filter", x, 1, 0, true, false);
+        } else {
+            // Same zero-padded window: symmetric pad2 yields one extra trailing
+            // row/column (2N+1); output index o still starts at input o-2, as
+            // with pad_ext(2,1,2,1). Crop it. Used where PAD lacks left padding.
+            const int64_t w = x->ne[0], h = x->ne[1];
+            ggml_tensor * y = convolution(name + ".filter", x, 1, 2, true, false, false);
+            y = ggml_view_4d(ctx, y, w, h, y->ne[2], y->ne[3], y->nb[1], y->nb[2], y->nb[3], 0);
+            x = ggml_cont(ctx, y);
+            mark(name + ".filter.output", x);
+        }
         mark(name + ".output", x);
         return x;
     }
@@ -232,7 +335,7 @@ struct graph_builder {
     }
 
     void build() {
-        input = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, 256, 256, 4, 1);
+        input = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, 256, 256, 4, int64_t(opt.batch));
         ggml_set_input(input);
         mark("generator.input", input);
         std::map<int, ggml_tensor *> features;
@@ -268,12 +371,14 @@ struct graph_builder {
         mark("generator.output", output);
         graph = ggml_new_graph_custom(ctx, graph_capacity, false);
         ggml_build_forward_expand(graph, output);
-        // A CPU graph is a hard bound, not a scheduler preference/fallback.
+        // One backend executes the whole graph: a hard bound, not a scheduler
+        // preference with silent per-op CPU fallback and host round-trips.
         for (int i = 0; i < ggml_graph_n_nodes(graph); ++i) {
             ggml_tensor * node = ggml_graph_node(graph, i);
             if (node->type != GGML_TYPE_F32) throw std::runtime_error("MI-GAN graph contains a non-F32 activation");
             if (!ggml_backend_supports_op(model.backend, node))
-                throw std::runtime_error("MI-GAN CPU operation unsupported");
+                throw std::runtime_error(std::string("MI-GAN ") + (model.gpu ? "GPU" : "CPU") +
+                                         " operation unsupported: " + ggml_op_desc(node));
         }
         allocator = ggml_gallocr_new(ggml_backend_get_default_buffer_type(model.backend));
         if (!allocator || !ggml_gallocr_alloc_graph(allocator, graph))
@@ -281,15 +386,58 @@ struct graph_builder {
     }
 
     bool compute(const float * data, float * raw, std::string & error) {
-        ggml_backend_tensor_set(input, data, 0, input_elements * sizeof(float));
+        ggml_backend_tensor_set(input, data, 0, opt.batch * input_elements * sizeof(float));
         if (ggml_backend_graph_compute(model.backend, graph) != GGML_STATUS_SUCCESS)
-            return fail(error, "MI-GAN CPU graph computation failed");
-        ggml_backend_tensor_get(output, raw, 0, rgb_elements * sizeof(float));
-        for (size_t i = 0; i < rgb_elements; ++i)
+            return fail(error, std::string("MI-GAN ") + (model.gpu ? "GPU" : "CPU") + " graph computation failed");
+        ggml_backend_tensor_get(output, raw, 0, opt.batch * rgb_elements * sizeof(float));
+        for (size_t i = 0; i < opt.batch * rgb_elements; ++i)
             if (!std::isfinite(raw[i])) return fail(error, "MI-GAN nonfinite generator output");
         return true;
     }
 };
+
+} // namespace graph_impl
+
+context::~context() {
+    graphs.clear();
+    core_gguf::free_weights(weights);
+    if (backend) {
+        if (gpu)
+            crispasr_free_gpu_backend(backend);
+        else
+            ggml_backend_free(backend);
+    }
+}
+
+namespace {
+
+using graph_impl::graph_builder;
+
+// Options for every graph of this context except the reviewed CPU/F32 batch1
+// graph, which is always constructed with default options.
+graph_impl::options context_options(const context & model, size_t batch) {
+    graph_impl::options opt;
+    opt.batch = batch;
+    if (model.gpu) {
+        opt.native_pad = !core_env::on("CRISPEMBED_MIGAN_GPU_PAD_REWRITE") && [&] {
+            // Probe the actual op: ggml-metal rejects nonzero left padding.
+            ggml_init_params params{ 4 * ggml_tensor_overhead(), nullptr, true };
+            ggml_context * probe = ggml_init(params);
+            ggml_tensor * t = ggml_new_tensor_4d(probe, GGML_TYPE_F32, 8, 8, 2, 1);
+            const bool ok = ggml_backend_supports_op(model.backend, ggml_pad_ext(probe, t, 2, 1, 2, 1, 0, 0, 0, 0));
+            ggml_free(probe);
+            return ok;
+        }();
+        opt.im2col_pointwise = !core_env::on("CRISPEMBED_MIGAN_GPU_SWAP_POINTWISE");
+    }
+    // Default keeps the F32 precision hint (Metal: F32 mul_mv_ext/_hp kernels).
+    opt.f32_matmul = !core_env::on("CRISPEMBED_MIGAN_FAST_MATMUL");
+    return opt;
+}
+
+bool reviewed_cpu_graph(const context & model, size_t batch) {
+    return !model.gpu && model.f32_weights && batch == 1 && !core_env::on("CRISPEMBED_MIGAN_FAST_MATMUL");
+}
 
 bool input_valid(context * ctx, const float * input, size_t input_count, float * raw, size_t output_count,
                  std::string & error) {
@@ -310,9 +458,50 @@ bool rgb_mask_valid(const uint8_t * rgb, size_t rgb_bytes, const uint8_t * mask,
     return true;
 }
 
+bool weights_finite(context & model, std::string & error) {
+    std::vector<float> values;
+    for (const auto & entry : model.weights.tensors) {
+        ggml_tensor * t = entry.second;
+        const int64_t n = ggml_nelements(t);
+        values.resize(n);
+        if (t->type == GGML_TYPE_F32) {
+            ggml_backend_tensor_get(t, values.data(), 0, n * sizeof(float));
+        } else {
+            std::vector<uint8_t> raw(ggml_nbytes(t));
+            ggml_backend_tensor_get(t, raw.data(), 0, raw.size());
+            const ggml_type_traits * traits = ggml_get_type_traits(t->type);
+            if (!traits || !traits->to_float) return fail(error, "MI-GAN cannot dequantize " + entry.first);
+            traits->to_float(raw.data(), values.data(), n);
+        }
+        for (float value : values)
+            if (!std::isfinite(value)) return fail(error, "MI-GAN nonfinite checkpoint state: " + entry.first);
+    }
+    return true;
+}
+
+int batch_default(const context & model) {
+    // Measured on M1 (docs/migan-metal.md): GPU batches amortize dispatch;
+    // the CPU gains nothing from batching, so it keeps one tile per graph.
+    int limit = model.gpu ? 4 : 1;
+    if (const char * value = std::getenv("CRISPEMBED_MIGAN_BATCH")) {
+        const int parsed = std::atoi(value);
+        if (parsed >= 1 && parsed <= 16) limit = parsed;
+    }
+    return limit;
+}
+
 } // namespace
 
+bool gpu_default() {
+    return core_env::on("CRISPEMBED_MIGAN_GPU");
+}
+
 context * init(const char * path, const char * expected_checkpoint_sha256, int n_threads, std::string & error) {
+    return init_ex(path, expected_checkpoint_sha256, n_threads, device_choice::automatic, nullptr, error);
+}
+
+context * init_ex(const char * path, const char * expected_checkpoint_sha256, int n_threads, device_choice device,
+                  const char * expected_source_gguf_sha256, std::string & error) {
     error.clear();
     if (!gate(error)) return nullptr;
     if (!path || n_threads < 1 || n_threads > 64) {
@@ -324,30 +513,57 @@ context * init(const char * path, const char * expected_checkpoint_sha256, int n
         fail(error, "MI-GAN cannot open GGUF metadata");
         return nullptr;
     }
-    const bool valid = metadata_valid(meta, expected_checkpoint_sha256, error);
+    bool f32_weights = true;
+    std::string precision;
+    const bool valid =
+        metadata_valid(meta, expected_checkpoint_sha256, expected_source_gguf_sha256, f32_weights, precision, error);
     core_gguf::free_metadata(meta);
     if (!valid) return nullptr;
     try {
         std::unique_ptr<context> ctx(new context);
-        ctx->backend = core_cpu_backend::init();
-        if (!ctx->backend || !core_cpu_backend::is_cpu(ctx->backend)) {
-            fail(error, "MI-GAN CPU backend unavailable");
-            return nullptr;
+        ctx->f32_weights = f32_weights;
+        ctx->precision = precision;
+        const bool want_gpu = device == device_choice::gpu || (device == device_choice::automatic && gpu_default());
+        if (want_gpu) {
+            ggml_backend_t gpu = crispasr_init_gpu_backend();
+            if (gpu && !core_cpu_backend::is_cpu(gpu)) {
+                ctx->backend = gpu;
+                ctx->gpu = true;
+            } else if (gpu) {
+                ggml_backend_free(gpu);
+                std::fprintf(stderr, "MI-GAN: no GPU backend available; using the CPU backend\n");
+            }
         }
-        core_cpu_backend::set_n_threads(ctx->backend, n_threads);
+        if (!ctx->backend) {
+            ctx->backend = core_cpu_backend::init();
+            if (!ctx->backend || !core_cpu_backend::is_cpu(ctx->backend)) {
+                fail(error, "MI-GAN CPU backend unavailable");
+                return nullptr;
+            }
+            core_cpu_backend::set_n_threads(ctx->backend, n_threads);
+        }
+        if (ctx->gpu) {
+            ggml_backend_dev_t dev = ggml_backend_get_device(ctx->backend);
+            ctx->device_name = dev ? ggml_backend_dev_name(dev) : ggml_backend_name(ctx->backend);
+        }
         if (!core_gguf::load_weights(path, ctx->backend, "migan", ctx->weights)) {
             fail(error, "MI-GAN weight load failed");
             return nullptr;
         }
-        std::vector<float> values;
-        for (const auto & entry : ctx->weights.tensors) {
-            values.resize(ggml_nelements(entry.second));
-            ggml_backend_tensor_get(entry.second, values.data(), 0, values.size() * sizeof(float));
-            for (float value : values)
-                if (!std::isfinite(value)) {
-                    fail(error, "MI-GAN nonfinite checkpoint state: " + entry.first);
-                    return nullptr;
-                }
+        if (!weights_finite(*ctx, error)) return nullptr;
+        ctx->batch_limit = batch_default(*ctx);
+        if (ctx->gpu) {
+            // Build the batch1 graph now: an unsupported GPU op is reported at
+            // init, and the context falls back to the reviewed CPU backend.
+            try {
+                std::unique_ptr<graph_builder> probe(new graph_builder(*ctx, context_options(*ctx, 1)));
+                probe->build();
+                ctx->graphs[1] = std::move(probe);
+            } catch (const std::exception & exception) {
+                std::fprintf(stderr, "MI-GAN: %s; reloading on the CPU backend\n", exception.what());
+                return init_ex(path, expected_checkpoint_sha256, n_threads, device_choice::cpu,
+                               expected_source_gguf_sha256, error);
+            }
         }
         return ctx.release();
     } catch (const std::exception & exception) {
@@ -360,17 +576,60 @@ void free(context * ctx) {
     delete ctx;
 }
 
+const char * backend_name(const context * ctx) {
+    return ctx ? ctx->device_name.c_str() : "";
+}
+
+bool uses_gpu(const context * ctx) {
+    return ctx && ctx->gpu;
+}
+
+const char * weight_precision(const context * ctx) {
+    return ctx ? ctx->precision.c_str() : "";
+}
+
+int max_batch(const context * ctx) {
+    return ctx ? ctx->batch_limit : 0;
+}
+
+namespace {
+bool execute(context * ctx, const float * input_nchw, size_t batch, float * raw_nchw, std::string & error) {
+    try {
+        if (reviewed_cpu_graph(*ctx, batch)) {
+            // Reviewed CPU/F32 path: unchanged per-call graph construction.
+            graph_builder graph(*ctx);
+            graph.build();
+            return graph.compute(input_nchw, raw_nchw, error);
+        }
+        std::unique_ptr<graph_builder> & graph = ctx->graphs[batch];
+        if (!graph) {
+            std::unique_ptr<graph_builder> built(new graph_builder(*ctx, context_options(*ctx, batch)));
+            built->build();
+            graph = std::move(built);
+        }
+        return graph->compute(input_nchw, raw_nchw, error);
+    } catch (const std::exception & exception) {
+        ctx->graphs.erase(batch);
+        return fail(error, exception.what());
+    }
+}
+} // namespace
+
 bool run(context * ctx, const float * input_nchw, size_t input_count, float * raw_nchw, size_t output_count,
          std::string & error) {
     error.clear();
     if (!input_valid(ctx, input_nchw, input_count, raw_nchw, output_count, error)) return false;
-    try {
-        graph_builder graph(*ctx);
-        graph.build();
-        return graph.compute(input_nchw, raw_nchw, error);
-    } catch (const std::exception & exception) {
-        return fail(error, exception.what());
-    }
+    return execute(ctx, input_nchw, 1, raw_nchw, error);
+}
+
+bool run_batch(context * ctx, const float * input_nchw, size_t batch, float * raw_nchw, std::string & error) {
+    error.clear();
+    if (!gate(error)) return false;
+    if (!ctx || !input_nchw || !raw_nchw || batch < 1 || batch > size_t(ctx->batch_limit))
+        return fail(error, "MI-GAN batch requires 1..max_batch contiguous fixed256 inputs");
+    for (size_t i = 0; i < batch * input_elements; ++i)
+        if (!std::isfinite(input_nchw[i])) return fail(error, "MI-GAN nonfinite input");
+    return execute(ctx, input_nchw, batch, raw_nchw, error);
 }
 
 bool preprocess_rgb8(const uint8_t * rgb, size_t rgb_bytes, const uint8_t * fill_mask, size_t mask_bytes, int width,
@@ -469,7 +728,7 @@ bool run_observed(context * ctx, const float * input_nchw, size_t input_count, f
     error.clear();
     if (!input_valid(ctx, input_nchw, input_count, raw_nchw, output_count, error)) return false;
     try {
-        graph_builder graph(*ctx);
+        graph_builder graph(*ctx, reviewed_cpu_graph(*ctx, 1) ? graph_impl::options{} : context_options(*ctx, 1));
         graph.retain = true;
         graph.build();
         graph_buffer_bytes = ggml_gallocr_get_buffer_size(graph.allocator, 0);

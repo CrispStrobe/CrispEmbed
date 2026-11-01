@@ -4,6 +4,7 @@
 #include "migan.h"
 #include "core/env_gate.h"
 #include "core/sha256.h"
+#include "core/gpu_backend_pref.h"
 
 #include <algorithm>
 #include <array>
@@ -21,6 +22,24 @@ struct context {
     std::vector<float> raw = std::vector<float>(migan::rgb_elements);
     ~context() { migan::free(model); }
 };
+
+namespace detail {
+namespace {
+struct batch_adapter {
+    tile_processor single;
+    void * opaque;
+};
+bool adapt_single(void * opaque, size_t count, const uint8_t * rgb, const uint8_t * mask, uint8_t * output,
+                  std::string & error) {
+    auto * adapter = static_cast<batch_adapter *>(opaque);
+    for (size_t i = 0; i < count; ++i)
+        if (!adapter->single(adapter->opaque, rgb + i * migan::rgb_elements, mask + i * migan::mask_elements,
+                             output + i * migan::rgb_elements, error))
+            return false;
+    return true;
+}
+} // namespace
+} // namespace detail
 
 namespace {
 
@@ -51,6 +70,28 @@ bool run_tile(void * opaque, const uint8_t * rgb, const uint8_t * mask, uint8_t 
                                  output, migan::rgb_elements, error);
 }
 
+// Several tiles per graph execution (GPU). Preprocess/composite are the same
+// pure helpers as run_tile; only the generator call is batched.
+bool run_tiles(void * opaque, size_t count, const uint8_t * rgb, const uint8_t * mask, uint8_t * output,
+               std::string & error) {
+    auto * ctx = static_cast<context *>(opaque);
+    if (count == 1) return run_tile(opaque, rgb, mask, output, error);
+    ctx->input.resize(count * migan::input_elements);
+    ctx->raw.resize(count * migan::rgb_elements);
+    for (size_t i = 0; i < count; ++i)
+        if (!migan::preprocess_rgb8(rgb + i * migan::rgb_elements, migan::rgb_elements, mask + i * migan::mask_elements,
+                                    migan::mask_elements, tile_size, tile_size,
+                                    ctx->input.data() + i * migan::input_elements, migan::input_elements, error))
+            return false;
+    if (!migan::run_batch(ctx->model, ctx->input.data(), count, ctx->raw.data(), error)) return false;
+    for (size_t i = 0; i < count; ++i)
+        if (!migan::composite_rgb8(ctx->raw.data() + i * migan::rgb_elements, migan::rgb_elements,
+                                   rgb + i * migan::rgb_elements, migan::rgb_elements, mask + i * migan::mask_elements,
+                                   migan::mask_elements, output + i * migan::rgb_elements, migan::rgb_elements, error))
+            return false;
+    return true;
+}
+
 struct weighted_pixel {
     uint32_t rgb[3] = {};
     uint32_t weight = 0;
@@ -72,12 +113,17 @@ context * init(const char * path, int n_threads, std::string & error) {
             fail(error, "cannot read inpainting model file");
             return nullptr;
         }
-        if (size != model_bytes || core_sha256::file(path) != model_sha256) {
+        const bool reviewed = size == model_bytes && core_sha256::file(path) == model_sha256;
+        // A derived F16/Q8_0/Q4_K container (CRISPEMBED_MIGAN_QUANT=1) is not
+        // byte-pinned here: migan validates its policy, every tensor type/
+        // shape and its recorded source = the reviewed F32 GGUF SHA.
+        if (!reviewed && !core_env::on("CRISPEMBED_MIGAN_QUANT")) {
             fail(error, "inpainting model differs from the reviewed MI-GAN fixed256 F32 GGUF (SHA-256 mismatch)");
             return nullptr;
         }
         std::unique_ptr<context> ctx(new context);
-        ctx->model = migan::init(path, checkpoint_sha256, n_threads, error);
+        ctx->model =
+            migan::init_ex(path, checkpoint_sha256, n_threads, migan::device_choice::automatic, model_sha256, error);
         if (!ctx->model) return nullptr;
         return ctx.release();
     } catch (const std::exception & exception) {
@@ -95,8 +141,28 @@ bool process_rgb8(context * ctx, const uint8_t * rgb, size_t rgb_bytes, const ui
     error.clear();
     if (!enabled(error)) return false;
     if (!ctx || !ctx->model) return fail(error, "inpainting requires an initialized model context");
-    return detail::process_tiles_rgb8(run_tile, ctx, rgb, rgb_bytes, fill_mask, mask_bytes, width, height, output_rgb,
-                                      output_bytes, error);
+    const int batch = migan::max_batch(ctx->model);
+    if (batch <= 1)
+        return detail::process_tiles_rgb8(run_tile, ctx, rgb, rgb_bytes, fill_mask, mask_bytes, width, height,
+                                          output_rgb, output_bytes, error);
+    return detail::process_tiles_rgb8_batched(run_tiles, ctx, size_t(batch), rgb, rgb_bytes, fill_mask, mask_bytes,
+                                              width, height, output_rgb, output_bytes, error);
+}
+
+void set_gpu_backend(const char * name) {
+    crispasr_set_gpu_backend_pref(name);
+}
+
+const char * backend_name(const context * ctx) {
+    return ctx ? migan::backend_name(ctx->model) : "";
+}
+
+const char * weight_precision(const context * ctx) {
+    return ctx ? migan::weight_precision(ctx->model) : "";
+}
+
+int max_batch(const context * ctx) {
+    return ctx ? migan::max_batch(ctx->model) : 0;
 }
 
 namespace detail {
@@ -104,7 +170,17 @@ namespace detail {
 bool process_tiles_rgb8(tile_processor process_tile, void * opaque, const uint8_t * rgb, size_t rgb_bytes,
                         const uint8_t * fill_mask, size_t mask_bytes, int width, int height, uint8_t * output_rgb,
                         size_t output_bytes, std::string & error) {
+    batch_adapter adapter{ process_tile, opaque };
+    return process_tiles_rgb8_batched(process_tile ? adapt_single : nullptr, &adapter, 1, rgb, rgb_bytes, fill_mask,
+                                      mask_bytes, width, height, output_rgb, output_bytes, error);
+}
+
+bool process_tiles_rgb8_batched(tile_batch_processor process_tiles, void * opaque, size_t max_batch,
+                                const uint8_t * rgb, size_t rgb_bytes, const uint8_t * fill_mask, size_t mask_bytes,
+                                int width, int height, uint8_t * output_rgb, size_t output_bytes, std::string & error) {
     error.clear();
+    if (max_batch < 1 || max_batch > 64) return fail(error, "inpainting batch must be 1..64 tiles");
+    tile_batch_processor process_tile = process_tiles;
     if (width < 1 || height < 1 || width > max_dimension || height > max_dimension ||
         size_t(width) > max_pixels / size_t(height))
         return fail(error, "inpainting dimensions must be positive, at most 32768 per side and 64M pixels");
@@ -128,8 +204,8 @@ bool process_tiles_rgb8(tile_processor process_tile, void * opaque, const uint8_
         // Transactional result also makes in-place calls safe: all tiles always
         // see the original frame, including when another tile has filled it.
         std::vector<uint8_t> result(rgb, rgb + rgb_bytes);
-        std::vector<uint8_t> tile_rgb(migan::rgb_elements), tile_mask(migan::mask_elements);
-        std::vector<uint8_t> tile_output(migan::rgb_elements);
+        std::vector<uint8_t> tile_rgb(max_batch * migan::rgb_elements), tile_mask(max_batch * migan::mask_elements);
+        std::vector<uint8_t> tile_output(max_batch * migan::rgb_elements);
         const std::vector<int> xs = starts(width), ys = starts(height);
         const int band_height = std::min(height, tile_size);
         std::vector<weighted_pixel> band(size_t(width) * band_height);
@@ -137,6 +213,7 @@ bool process_tiles_rgb8(tile_processor process_tile, void * opaque, const uint8_
 
         for (size_t yi = 0; yi < ys.size(); ++yi) {
             const int top = ys[yi], actual_height = std::min(tile_size, height - top);
+            std::vector<int> lefts;
             for (int left : xs) {
                 const int actual_width = std::min(tile_size, width - left);
                 bool tile_has_fill = false;
@@ -146,36 +223,51 @@ bool process_tiles_rgb8(tile_processor process_tile, void * opaque, const uint8_
                             tile_has_fill = true;
                             break;
                         }
-                if (!tile_has_fill) continue;
+                if (tile_has_fill) lefts.push_back(left);
+            }
 
-                // Clamp padding only when an image dimension is below256.
-                // Every generated tile reads original pixels, never previous fills.
-                for (int y = 0; y < tile_size; ++y)
-                    for (int x = 0; x < tile_size; ++x) {
-                        const size_t source =
-                            size_t(std::min(top + y, height - 1)) * width + std::min(left + x, width - 1);
-                        const size_t target = size_t(y) * tile_size + x;
-                        std::memcpy(tile_rgb.data() + 3 * target, rgb + 3 * source, 3);
-                        tile_mask[target] = fill_mask[source];
-                    }
-                if (!process_tile(opaque, tile_rgb.data(), tile_mask.data(), tile_output.data(), error)) {
+            // Tiles of one band row are independent (all read the original
+            // frame); integer weighted sums make accumulation order-neutral.
+            for (size_t first = 0; first < lefts.size(); first += max_batch) {
+                const size_t count = std::min(max_batch, lefts.size() - first);
+                for (size_t k = 0; k < count; ++k) {
+                    const int left = lefts[first + k];
+                    uint8_t * trgb = tile_rgb.data() + k * migan::rgb_elements;
+                    uint8_t * tmask = tile_mask.data() + k * migan::mask_elements;
+                    // Clamp padding only when an image dimension is below256.
+                    // Every generated tile reads original pixels, never previous fills.
+                    for (int y = 0; y < tile_size; ++y)
+                        for (int x = 0; x < tile_size; ++x) {
+                            const size_t source =
+                                size_t(std::min(top + y, height - 1)) * width + std::min(left + x, width - 1);
+                            const size_t target = size_t(y) * tile_size + x;
+                            std::memcpy(trgb + 3 * target, rgb + 3 * source, 3);
+                            tmask[target] = fill_mask[source];
+                        }
+                }
+                if (!process_tile(opaque, count, tile_rgb.data(), tile_mask.data(), tile_output.data(), error)) {
                     const std::string detail = error.empty() ? "tile processor failed" : error;
-                    return fail(error, "inpainting tile (" + std::to_string(left) + "," + std::to_string(top) +
+                    return fail(error, "inpainting tile (" + std::to_string(lefts[first]) + "," + std::to_string(top) +
                                            "): " + detail);
                 }
 
-                for (int y = 0; y < actual_height; ++y) {
-                    const uint32_t wy = uint32_t(std::min(y + 1, tile_size - y));
-                    for (int x = 0; x < actual_width; ++x) {
-                        const size_t source = size_t(top + y) * width + left + x;
-                        if (!fill_mask[source]) continue;
-                        const uint32_t weight = wy * uint32_t(std::min(x + 1, tile_size - x));
-                        weighted_pixel & sum = band[size_t((top + y) % band_height) * width + left + x];
-                        const size_t local = size_t(y) * tile_size + x;
-                        // At most3x3 overlapping tiles, each weight <=128^2:
-                        // every RGB sum <=9*128^2*255, safely within uint32.
-                        for (int c = 0; c < 3; ++c) sum.rgb[c] += weight * tile_output[3 * local + c];
-                        sum.weight += weight;
+                for (size_t k = 0; k < count; ++k) {
+                    const int left = lefts[first + k];
+                    const int actual_width = std::min(tile_size, width - left);
+                    const uint8_t * tout = tile_output.data() + k * migan::rgb_elements;
+                    for (int y = 0; y < actual_height; ++y) {
+                        const uint32_t wy = uint32_t(std::min(y + 1, tile_size - y));
+                        for (int x = 0; x < actual_width; ++x) {
+                            const size_t source = size_t(top + y) * width + left + x;
+                            if (!fill_mask[source]) continue;
+                            const uint32_t weight = wy * uint32_t(std::min(x + 1, tile_size - x));
+                            weighted_pixel & sum = band[size_t((top + y) % band_height) * width + left + x];
+                            const size_t local = size_t(y) * tile_size + x;
+                            // At most3x3 overlapping tiles, each weight <=128^2:
+                            // every RGB sum <=9*128^2*255, safely within uint32.
+                            for (int c = 0; c < 3; ++c) sum.rgb[c] += weight * tout[3 * local + c];
+                            sum.weight += weight;
+                        }
                     }
                 }
             }

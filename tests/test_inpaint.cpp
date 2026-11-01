@@ -240,7 +240,7 @@ void invalid_inputs() {
 void hash_contracts() {
     const char * empty = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
     const char * abc = "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad";
-    const std::string boundary = "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopq";
+    const std::string boundary = "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq";
     check(core_sha256::bytes(nullptr, 0) == empty, "SHA-256 empty FIPS vector");
     check(core_sha256::bytes("abc", 3) == abc, "SHA-256 abc FIPS vector");
     check(core_sha256::bytes(boundary.data(), boundary.size()) ==

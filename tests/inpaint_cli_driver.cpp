@@ -24,6 +24,19 @@ context * init(const char *, int, std::string & error) {
     return new context;
 }
 
+void set_gpu_backend(const char * name) {
+    std::fprintf(stderr, "INPAINT_TEST_GPU_BACKEND %s\n", name ? name : "");
+}
+const char * backend_name(const context *) {
+    return "TEST";
+}
+const char * weight_precision(const context *) {
+    return "f32";
+}
+int max_batch(const context *) {
+    return 1;
+}
+
 void free(context * ctx) {
     if (ctx) std::fprintf(stderr, "INPAINT_TEST_FREE frames=%d\n", ctx->frames);
     delete ctx;
