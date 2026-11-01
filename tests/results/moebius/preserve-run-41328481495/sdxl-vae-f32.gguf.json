@@ -1,0 +1,4177 @@
+{
+  "schema": "crispembed-latent-inpaint-conversion-v1",
+  "model": "sdxl_vae",
+  "component": "vae",
+  "source_commit": "f5567db2871598aa178fe7a34c520dd478a0b41b",
+  "source_contract_sha256": "b4f632d6939a8f57897c88e253bd96b7155fe3426a60ed77eac64b059d69983d",
+  "checkpoint_sha256": "a59d7ea697f2942d22002dc3469e8c53db807a6b78f7f5ec03bd4c1f70f98efe",
+  "checkpoint_bytes": 167394306,
+  "checkpoint_revision": "012fd343158936a265b8a0ee38a791a7a2841f45",
+  "checkpoint_pickle_sha256": "afcd9646b70f3e70472ddfd24806834f447b50acc75cc196d6049ec9fbdd666d",
+  "gguf_sha256": "e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2",
+  "gguf_bytes": 334636224,
+  "original_tensor_count": 248,
+  "export_tensor_count": 248,
+  "metadata": {
+    "general.architecture": "sdxl_vae",
+    "general.name": "sdxl-vae-experimental-f32",
+    "general.file_type": 0,
+    "general.license": "MIT",
+    "crispembed.tensor_name_encoding": "sha256-56-v1",
+    "latent_inpaint.schema": 1,
+    "latent_inpaint.component": "vae",
+    "latent_inpaint.model": "sdxl_vae",
+    "latent_inpaint.image_size": 512,
+    "latent_inpaint.source.commit": "f5567db2871598aa178fe7a34c520dd478a0b41b",
+    "latent_inpaint.checkpoint.sha256": "a59d7ea697f2942d22002dc3469e8c53db807a6b78f7f5ec03bd4c1f70f98efe",
+    "latent_inpaint.checkpoint.revision": "012fd343158936a265b8a0ee38a791a7a2841f45",
+    "latent_inpaint.contract.sha256": "b4f632d6939a8f57897c88e253bd96b7155fe3426a60ed77eac64b059d69983d",
+    "latent_inpaint.tensor.layout": "original contiguous; GGUF dimensions reversed; pos_conv singleton depth squeezed; BN counters omitted",
+    "latent_inpaint.input.contract": "RGB8;binary-mask8;255=fill;fixed512"
+  },
+  "tensors": [
+    {
+      "name": "decoder.conv_in.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "0c61b3afd21adeaf4988f3b9f491d5f07f07b424046fae67daf741081b97f335",
+      "transformation": "f32",
+      "original_name": "decoder.conv_in.bias"
+    },
+    {
+      "name": "decoder.conv_in.weight",
+      "shape": [
+        512,
+        4,
+        3,
+        3
+      ],
+      "source_shape": [
+        512,
+        4,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 73728,
+      "sha256": "f9d4bf25151641721a83a2a006fe2c5d112af8cb907c152a21ee1ae19539e923",
+      "transformation": "f32",
+      "original_name": "decoder.conv_in.weight"
+    },
+    {
+      "name": "decoder.conv_norm_out.bias",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "cebd6927f175bdabeed622c19b75669ff5a20e443e8b304bc701d2a875d56781",
+      "transformation": "f32",
+      "original_name": "decoder.conv_norm_out.bias"
+    },
+    {
+      "name": "decoder.conv_norm_out.weight",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "083db3c8de904bd9874768c44e9543e4e4f117f5228d1b5957c30987c399ea63",
+      "transformation": "f32",
+      "original_name": "decoder.conv_norm_out.weight"
+    },
+    {
+      "name": "decoder.conv_out.bias",
+      "shape": [
+        3
+      ],
+      "source_shape": [
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 12,
+      "sha256": "5ed9b227a7a1fb840b7655b1d5307b23d368e255592025f48b89fb0a47dad685",
+      "transformation": "f32",
+      "original_name": "decoder.conv_out.bias"
+    },
+    {
+      "name": "decoder.conv_out.weight",
+      "shape": [
+        3,
+        128,
+        3,
+        3
+      ],
+      "source_shape": [
+        3,
+        128,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 13824,
+      "sha256": "d868db1307e3423191464345a98bc0aaf0640a30a556df30efa78b6db101113c",
+      "transformation": "f32",
+      "original_name": "decoder.conv_out.weight"
+    },
+    {
+      "name": "decoder.mid_block.attentions.0.group_norm.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "f7af916f218f6587e6555bf7c8a163bb67c5787b7df57f12c715d5a51b86435b",
+      "transformation": "f32",
+      "original_name": "decoder.mid_block.attentions.0.group_norm.bias"
+    },
+    {
+      "name": "decoder.mid_block.attentions.0.group_norm.weight",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "6469f156dd2e4019ef63a3140b8fc71235aa24c2f2a667b797099b6bec2445bf",
+      "transformation": "f32",
+      "original_name": "decoder.mid_block.attentions.0.group_norm.weight"
+    },
+    {
+      "name": "decoder.mid_block.attentions.0.to_k.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "96e636459ac29fb5c6bb286d23eab0c64fc79344391321c13109076d7468ac89",
+      "transformation": "f32",
+      "original_name": "decoder.mid_block.attentions.0.to_k.bias"
+    },
+    {
+      "name": "decoder.mid_block.attentions.0.to_k.weight",
+      "shape": [
+        512,
+        512
+      ],
+      "source_shape": [
+        512,
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1048576,
+      "sha256": "b9404283c04ef16b9135111ca02acc742bb23dc1add92bbb125ad3d9bd3d9c40",
+      "transformation": "f32",
+      "original_name": "decoder.mid_block.attentions.0.to_k.weight"
+    },
+    {
+      "name": "decoder.mid_block.attentions.0.to_out.0.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "883434a79d68ec021eb1b664b1225b72744f867b8cdb73e96e68cff0b501e730",
+      "transformation": "f32",
+      "original_name": "decoder.mid_block.attentions.0.to_out.0.bias"
+    },
+    {
+      "name": "decoder.mid_block.attentions.0.to_out.0.weight",
+      "shape": [
+        512,
+        512
+      ],
+      "source_shape": [
+        512,
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1048576,
+      "sha256": "4e57f08c0c79d02563d4de461fb1dd368dd1b46fab94f52c519d69f7741d7aa3",
+      "transformation": "f32",
+      "original_name": "decoder.mid_block.attentions.0.to_out.0.weight"
+    },
+    {
+      "name": "decoder.mid_block.attentions.0.to_q.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "d03f18fe8faa273814c03af979e308eda006fa80b45c4a675a1bdede34346cee",
+      "transformation": "f32",
+      "original_name": "decoder.mid_block.attentions.0.to_q.bias"
+    },
+    {
+      "name": "decoder.mid_block.attentions.0.to_q.weight",
+      "shape": [
+        512,
+        512
+      ],
+      "source_shape": [
+        512,
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1048576,
+      "sha256": "98ed82dfe1bb7204da0c78552d0e9263412369471570f473f85a1c370adcc9a2",
+      "transformation": "f32",
+      "original_name": "decoder.mid_block.attentions.0.to_q.weight"
+    },
+    {
+      "name": "decoder.mid_block.attentions.0.to_v.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "ee83ce7fd6b766980fc0f012e50d92442a490b367161863501973005ea77047e",
+      "transformation": "f32",
+      "original_name": "decoder.mid_block.attentions.0.to_v.bias"
+    },
+    {
+      "name": "decoder.mid_block.attentions.0.to_v.weight",
+      "shape": [
+        512,
+        512
+      ],
+      "source_shape": [
+        512,
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1048576,
+      "sha256": "d297e934f71efee12a6da0e9a5fc2ffda4f842f6eec67ac04824f382793a19d4",
+      "transformation": "f32",
+      "original_name": "decoder.mid_block.attentions.0.to_v.weight"
+    },
+    {
+      "name": "decoder.mid_block.resnets.0.conv1.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "872f21ebbaaeb5cf21c5b25210e06afa7fd4548b0febe0784b5a87eefa298022",
+      "transformation": "f32",
+      "original_name": "decoder.mid_block.resnets.0.conv1.bias"
+    },
+    {
+      "name": "decoder.mid_block.resnets.0.conv1.weight",
+      "shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 9437184,
+      "sha256": "e293b8f54f1a1d952621a249ed7fbb4c642a551085dab8558e3b29b70822df51",
+      "transformation": "f32",
+      "original_name": "decoder.mid_block.resnets.0.conv1.weight"
+    },
+    {
+      "name": "decoder.mid_block.resnets.0.conv2.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "93150043bd452dc546287f67f657d3927855c539be814d62e4a6e1d3ae8276d7",
+      "transformation": "f32",
+      "original_name": "decoder.mid_block.resnets.0.conv2.bias"
+    },
+    {
+      "name": "decoder.mid_block.resnets.0.conv2.weight",
+      "shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 9437184,
+      "sha256": "0cdff626bbf81a4c4541f1ec0a2b07b6d2f3ad7ada349085dcc16846de5602a4",
+      "transformation": "f32",
+      "original_name": "decoder.mid_block.resnets.0.conv2.weight"
+    },
+    {
+      "name": "decoder.mid_block.resnets.0.norm1.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "dded20e4454b44d3e8b368a787101150c61d0d11db26d61cf0481294c77caa64",
+      "transformation": "f32",
+      "original_name": "decoder.mid_block.resnets.0.norm1.bias"
+    },
+    {
+      "name": "decoder.mid_block.resnets.0.norm1.weight",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "d21e3c32cf00534a4593c27df7c918c271b3ddcb1708cfdc41d9a7a471e43621",
+      "transformation": "f32",
+      "original_name": "decoder.mid_block.resnets.0.norm1.weight"
+    },
+    {
+      "name": "decoder.mid_block.resnets.0.norm2.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "76677821d7c2530167fead08db65c5079b06d1ae6b2289fdbe9caeb123fdce27",
+      "transformation": "f32",
+      "original_name": "decoder.mid_block.resnets.0.norm2.bias"
+    },
+    {
+      "name": "decoder.mid_block.resnets.0.norm2.weight",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "40826f401757720200def3ec2becdb512fe87225ae519be51439aaeb84d54507",
+      "transformation": "f32",
+      "original_name": "decoder.mid_block.resnets.0.norm2.weight"
+    },
+    {
+      "name": "decoder.mid_block.resnets.1.conv1.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "d28a40941ea061606d3d391af00823d7b68fd0311a5b495abd341fc66309ac3b",
+      "transformation": "f32",
+      "original_name": "decoder.mid_block.resnets.1.conv1.bias"
+    },
+    {
+      "name": "decoder.mid_block.resnets.1.conv1.weight",
+      "shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 9437184,
+      "sha256": "ed1c8a8bb1ece909149867dcde8640ab36bfd418df8d0e18fc636ccfc2bc943e",
+      "transformation": "f32",
+      "original_name": "decoder.mid_block.resnets.1.conv1.weight"
+    },
+    {
+      "name": "decoder.mid_block.resnets.1.conv2.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "862320d0ee961fb9cc1aeb00f5caf775520f856d9f637a5bd30782f673de89d5",
+      "transformation": "f32",
+      "original_name": "decoder.mid_block.resnets.1.conv2.bias"
+    },
+    {
+      "name": "decoder.mid_block.resnets.1.conv2.weight",
+      "shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 9437184,
+      "sha256": "62394d39567ad03961eb942f7156d581133b3e0a202234954f71ee5283251d96",
+      "transformation": "f32",
+      "original_name": "decoder.mid_block.resnets.1.conv2.weight"
+    },
+    {
+      "name": "decoder.mid_block.resnets.1.norm1.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "1215f1af82f1e838eb93f3a84013ec547bdfeee5c732e05763d421c32f27d1c2",
+      "transformation": "f32",
+      "original_name": "decoder.mid_block.resnets.1.norm1.bias"
+    },
+    {
+      "name": "decoder.mid_block.resnets.1.norm1.weight",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "89e69c420f1b4adca944e293c252c561dd4377ae25896bcc624065c8af65d177",
+      "transformation": "f32",
+      "original_name": "decoder.mid_block.resnets.1.norm1.weight"
+    },
+    {
+      "name": "decoder.mid_block.resnets.1.norm2.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "fe369947a142f0eac11e5f3a60a12b9e4724697bc9974c27073903e66675568b",
+      "transformation": "f32",
+      "original_name": "decoder.mid_block.resnets.1.norm2.bias"
+    },
+    {
+      "name": "decoder.mid_block.resnets.1.norm2.weight",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "b0757172afa2b40d5394c80b3390ba4aac18fbbcf15c3e8659c1c667ce20d8df",
+      "transformation": "f32",
+      "original_name": "decoder.mid_block.resnets.1.norm2.weight"
+    },
+    {
+      "name": "decoder.up_blocks.0.resnets.0.conv1.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "3bc33b0e9889da91cff7364c84cf83d6b58db66a9c17a6ff3fcf27638f027bee",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.0.resnets.0.conv1.bias"
+    },
+    {
+      "name": "decoder.up_blocks.0.resnets.0.conv1.weight",
+      "shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 9437184,
+      "sha256": "7ee9e4357c8614ea56ec48c4f1d71d6dc888b99fa1317a5bd98130b0d68790c1",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.0.resnets.0.conv1.weight"
+    },
+    {
+      "name": "decoder.up_blocks.0.resnets.0.conv2.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "2e81f0c59b3c4c940d3e28fd3caa7a95e21c5d8616f54499a9211a9d766677a9",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.0.resnets.0.conv2.bias"
+    },
+    {
+      "name": "decoder.up_blocks.0.resnets.0.conv2.weight",
+      "shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 9437184,
+      "sha256": "1b5b45df819c0ae73f2f2ab2f284299deca3ebfff77f48ee4d0a2b4a8e1f2128",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.0.resnets.0.conv2.weight"
+    },
+    {
+      "name": "decoder.up_blocks.0.resnets.0.norm1.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "9220d36a7dbd2f746ce69246918bcd102393b382a4ea9e11c7e4152b7cd6c38c",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.0.resnets.0.norm1.bias"
+    },
+    {
+      "name": "decoder.up_blocks.0.resnets.0.norm1.weight",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "f16ba26945a769ce476a4c0081eae4f99d0940a964a9a9c99f3c0810c4705fde",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.0.resnets.0.norm1.weight"
+    },
+    {
+      "name": "decoder.up_blocks.0.resnets.0.norm2.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "42657f534ba43bf9b6d3101b9c46ae0e34ab80625f7521884553383c4f155fab",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.0.resnets.0.norm2.bias"
+    },
+    {
+      "name": "decoder.up_blocks.0.resnets.0.norm2.weight",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "182c35c9ad1a7ffc3069add7b47ecb66a43de8d2c5fd99b99b79c596efc4f4e4",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.0.resnets.0.norm2.weight"
+    },
+    {
+      "name": "decoder.up_blocks.0.resnets.1.conv1.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "f79bdcf4389164b4a136f1ba5c9d6d8e982a2205cff01ebfa661697c5505eb09",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.0.resnets.1.conv1.bias"
+    },
+    {
+      "name": "decoder.up_blocks.0.resnets.1.conv1.weight",
+      "shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 9437184,
+      "sha256": "ad4cc394956e9c84fbc0e05565bc96659a1e684f7cce5c5f123f2576bc2c10a3",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.0.resnets.1.conv1.weight"
+    },
+    {
+      "name": "decoder.up_blocks.0.resnets.1.conv2.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "ca644e6f8d4b434feca415defefd232686d7fd30472863e2021d2f7b200c22c3",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.0.resnets.1.conv2.bias"
+    },
+    {
+      "name": "decoder.up_blocks.0.resnets.1.conv2.weight",
+      "shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 9437184,
+      "sha256": "ad6f0c184edb4489962af40b08866a8bbf284529346d47ca7bfc35292461dc80",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.0.resnets.1.conv2.weight"
+    },
+    {
+      "name": "decoder.up_blocks.0.resnets.1.norm1.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "fbf54719e9a7afcd20d8d70bd5727be95b4fa82ed86592070e3a0638e725a020",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.0.resnets.1.norm1.bias"
+    },
+    {
+      "name": "decoder.up_blocks.0.resnets.1.norm1.weight",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "817cc56ee93d92b4e5bc1ac2883ef5e9704e4d2747fd0b508e6bf9ffcacafa74",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.0.resnets.1.norm1.weight"
+    },
+    {
+      "name": "decoder.up_blocks.0.resnets.1.norm2.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "cc8958716efcdd951fa62c7e44a7c8efc0d768eba12db5c3a58f1a7408792bca",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.0.resnets.1.norm2.bias"
+    },
+    {
+      "name": "decoder.up_blocks.0.resnets.1.norm2.weight",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "11be35902cb866907bb332533625ec4b3a4c5d24fdd459152e52b31aa4298cce",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.0.resnets.1.norm2.weight"
+    },
+    {
+      "name": "decoder.up_blocks.0.resnets.2.conv1.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "5f35f0bf4b3ee3f952019294ab7519ae7b6aca9b1596e76a07f4109bb6d59775",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.0.resnets.2.conv1.bias"
+    },
+    {
+      "name": "decoder.up_blocks.0.resnets.2.conv1.weight",
+      "shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 9437184,
+      "sha256": "e8dbcf49dc1f3a51ffaa972c5c0862b293473f53feede83c6add7ca89236e46f",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.0.resnets.2.conv1.weight"
+    },
+    {
+      "name": "decoder.up_blocks.0.resnets.2.conv2.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "3d3cd8ed9d50f38e7ae411a7879c6af9c092252cc30f909b3a401abf927dca9e",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.0.resnets.2.conv2.bias"
+    },
+    {
+      "name": "decoder.up_blocks.0.resnets.2.conv2.weight",
+      "shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 9437184,
+      "sha256": "621448966db9b8b3aadbacc92af73f2c5f33c955f9a8f85e078ce52d597bf24d",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.0.resnets.2.conv2.weight"
+    },
+    {
+      "name": "decoder.up_blocks.0.resnets.2.norm1.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "cbb9b84cecf7736dd0ebb38074f0b0a935be0640d2afcad3174699360fe63598",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.0.resnets.2.norm1.bias"
+    },
+    {
+      "name": "decoder.up_blocks.0.resnets.2.norm1.weight",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "f2de3f49bbe09bdbe514325dbe8a68fa0db41fef1b8f8c1dd2ce8513f2a0cadb",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.0.resnets.2.norm1.weight"
+    },
+    {
+      "name": "decoder.up_blocks.0.resnets.2.norm2.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "e8dc6a47528b841897c7d1c7bad0fd1eb14c333e6d1c16a64a61196309d6ce3c",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.0.resnets.2.norm2.bias"
+    },
+    {
+      "name": "decoder.up_blocks.0.resnets.2.norm2.weight",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "dfb29d69869add388c060af9942fbe1b92c0b230236e08bff9ced9a9bcc1fae1",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.0.resnets.2.norm2.weight"
+    },
+    {
+      "name": "decoder.up_blocks.0.upsamplers.0.conv.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "70995ddb41b976589918f94ab9217c658d3159b3f6d694ee95a277959d634f7a",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.0.upsamplers.0.conv.bias"
+    },
+    {
+      "name": "decoder.up_blocks.0.upsamplers.0.conv.weight",
+      "shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 9437184,
+      "sha256": "99f767cb99e582140cfb97a26ede4b8316ec13495c4963c505d729790bfcfcf0",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.0.upsamplers.0.conv.weight"
+    },
+    {
+      "name": "decoder.up_blocks.1.resnets.0.conv1.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "861043751ead4307efbb4ae53221971cae50eabb8e61024582714acc4d0556d8",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.1.resnets.0.conv1.bias"
+    },
+    {
+      "name": "decoder.up_blocks.1.resnets.0.conv1.weight",
+      "shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 9437184,
+      "sha256": "50d49e2ece3274be3ad6591c1df384a9ad29c3c523032b3f7d536682879f262a",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.1.resnets.0.conv1.weight"
+    },
+    {
+      "name": "decoder.up_blocks.1.resnets.0.conv2.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "45815e5f51986830e8323c970ed902ed6e646d1c461fa4f7717c7777dd9dac4b",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.1.resnets.0.conv2.bias"
+    },
+    {
+      "name": "decoder.up_blocks.1.resnets.0.conv2.weight",
+      "shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 9437184,
+      "sha256": "6c070d990c33703e3b53832b5c199cb6671a554786e210e7fdbc7baa85ed444e",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.1.resnets.0.conv2.weight"
+    },
+    {
+      "name": "decoder.up_blocks.1.resnets.0.norm1.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "4adb3107b1f78d06cbf36383ebb859af93bdd1a6186fce815834224c0e1631bb",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.1.resnets.0.norm1.bias"
+    },
+    {
+      "name": "decoder.up_blocks.1.resnets.0.norm1.weight",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "dbd398cca6bf5d7fc0bb789f244898c3c3271489d3672d4a9e99af6e0a7beaa3",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.1.resnets.0.norm1.weight"
+    },
+    {
+      "name": "decoder.up_blocks.1.resnets.0.norm2.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "097d4599d2f29a8963b60e28f6152cfb6647d8839f353c96c8b5e01d04f7f4e7",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.1.resnets.0.norm2.bias"
+    },
+    {
+      "name": "decoder.up_blocks.1.resnets.0.norm2.weight",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "29782622fe6718df55692ee6e25ab9c1619b521c2223bf7317a0a70785b1c854",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.1.resnets.0.norm2.weight"
+    },
+    {
+      "name": "decoder.up_blocks.1.resnets.1.conv1.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "2704c11ee9aec66f3652a9cca47d3534bee46f3d5936089d1b3c4098553fe2e7",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.1.resnets.1.conv1.bias"
+    },
+    {
+      "name": "decoder.up_blocks.1.resnets.1.conv1.weight",
+      "shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 9437184,
+      "sha256": "f0b200ad71a4b3bec52c1e626dc1965c91d021c0183c2986877ee20b20f4b690",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.1.resnets.1.conv1.weight"
+    },
+    {
+      "name": "decoder.up_blocks.1.resnets.1.conv2.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "cb06ba3fd2aa4df3be5c62e802d56a455b80a4447fcaf543e98f9b862ef74c35",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.1.resnets.1.conv2.bias"
+    },
+    {
+      "name": "decoder.up_blocks.1.resnets.1.conv2.weight",
+      "shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 9437184,
+      "sha256": "ae78c23632348426b4d7d8533c930c7857b001ed42439d49eaa9b1292e6fd34c",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.1.resnets.1.conv2.weight"
+    },
+    {
+      "name": "decoder.up_blocks.1.resnets.1.norm1.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "d6a5247f5c7d31ca8fcd135fbf59ad6d02839f9e78183fb4d72760e539bb84f0",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.1.resnets.1.norm1.bias"
+    },
+    {
+      "name": "decoder.up_blocks.1.resnets.1.norm1.weight",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "ae1191adace71434039ad91f759a421bfb48db1f35127dc0cff71851d82496de",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.1.resnets.1.norm1.weight"
+    },
+    {
+      "name": "decoder.up_blocks.1.resnets.1.norm2.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "8385f819fb9ef0b85b7eaef19647d85c94830f4f925aad2089e9ed800c33de45",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.1.resnets.1.norm2.bias"
+    },
+    {
+      "name": "decoder.up_blocks.1.resnets.1.norm2.weight",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "c28d8f9b9b292ca99af75a9e083909ceceee7e7454c4a9dc21146d8c9bb8d13c",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.1.resnets.1.norm2.weight"
+    },
+    {
+      "name": "decoder.up_blocks.1.resnets.2.conv1.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "31c6f3333684a46711a516bd8bcbc591a5268ce8ad099d10c52097e4d3bab53b",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.1.resnets.2.conv1.bias"
+    },
+    {
+      "name": "decoder.up_blocks.1.resnets.2.conv1.weight",
+      "shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 9437184,
+      "sha256": "33a22deaf40e675da1c68745203fe999649db137227e1d5dc94b6089d63e9ae5",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.1.resnets.2.conv1.weight"
+    },
+    {
+      "name": "decoder.up_blocks.1.resnets.2.conv2.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "dc1397150426cabebd51064fd029969c8251d88d75eb3e74adb3c90db6e002ec",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.1.resnets.2.conv2.bias"
+    },
+    {
+      "name": "decoder.up_blocks.1.resnets.2.conv2.weight",
+      "shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 9437184,
+      "sha256": "c9d6be81c298e113f498c4ebf83d0e575356576b7473340918d57ae174bf6c8a",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.1.resnets.2.conv2.weight"
+    },
+    {
+      "name": "decoder.up_blocks.1.resnets.2.norm1.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "1fc6dbf3a24a9c0524b6835d663b47bd9cc29d23b2b0b2f6e756b794fbd5d555",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.1.resnets.2.norm1.bias"
+    },
+    {
+      "name": "decoder.up_blocks.1.resnets.2.norm1.weight",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "e74b97825e46bedbe19a3b1bb6630ef469cbcc096abc913ce53a7d4bf9fd4323",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.1.resnets.2.norm1.weight"
+    },
+    {
+      "name": "decoder.up_blocks.1.resnets.2.norm2.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "a8250270d74dd39156c7a85fa3f1d37b09d4b1ab3f2b2626c0022400f5652136",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.1.resnets.2.norm2.bias"
+    },
+    {
+      "name": "decoder.up_blocks.1.resnets.2.norm2.weight",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "5d04e7ae925f4fb1d37a37173d274177caa6dcf9792aedd45dd45e2c687c3478",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.1.resnets.2.norm2.weight"
+    },
+    {
+      "name": "decoder.up_blocks.1.upsamplers.0.conv.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "d8324be8f613c78f459318391bfe5a0b1f9738bc64448d4b765639c2ff9f14c9",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.1.upsamplers.0.conv.bias"
+    },
+    {
+      "name": "decoder.up_blocks.1.upsamplers.0.conv.weight",
+      "shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 9437184,
+      "sha256": "e10afb067e4dadcf3a5b9a76e04cf7dda79ef95f981f76e395e13270742b2001",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.1.upsamplers.0.conv.weight"
+    },
+    {
+      "name": "decoder.up_blocks.2.resnets.0.conv1.bias",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "57dfa75b72b05053619302d6331c6593ba604d4643a7d7cace8549034d941545",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.2.resnets.0.conv1.bias"
+    },
+    {
+      "name": "decoder.up_blocks.2.resnets.0.conv1.weight",
+      "shape": [
+        256,
+        512,
+        3,
+        3
+      ],
+      "source_shape": [
+        256,
+        512,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 4718592,
+      "sha256": "4cd7c6111db2b1e10133f215628c13d400dd5fa7d0d60ba330d27dc3253e0716",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.2.resnets.0.conv1.weight"
+    },
+    {
+      "name": "decoder.up_blocks.2.resnets.0.conv2.bias",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "2b18aa68b8518993e428b2134b89692f08a74a70a42d0a859aa6458bbab83eef",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.2.resnets.0.conv2.bias"
+    },
+    {
+      "name": "decoder.up_blocks.2.resnets.0.conv2.weight",
+      "shape": [
+        256,
+        256,
+        3,
+        3
+      ],
+      "source_shape": [
+        256,
+        256,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2359296,
+      "sha256": "102cd1cf20f774186f96ce3fd122cbcfd0b6d1383aaecf213d2dc957bbccfe5f",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.2.resnets.0.conv2.weight"
+    },
+    {
+      "name": "decoder.up_blocks.2.resnets.0.conv_shortcut.bias",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "16ba5dfc45ce1302f3102675d5251e7512d7b0064f39ad333dffac12df6ddd6d",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.2.resnets.0.conv_shortcut.bias"
+    },
+    {
+      "name": "decoder.up_blocks.2.resnets.0.conv_shortcut.weight",
+      "shape": [
+        256,
+        512,
+        1,
+        1
+      ],
+      "source_shape": [
+        256,
+        512,
+        1,
+        1
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 524288,
+      "sha256": "301e599fbe2a21e24bae94f4c007c6014d94044fafa128e84741213696901804",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.2.resnets.0.conv_shortcut.weight"
+    },
+    {
+      "name": "decoder.up_blocks.2.resnets.0.norm1.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "68423e55f9215a0cf5297e6bcfbb06ec4b9c0d8b9f294bcbaf16c6f1fe13ab4e",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.2.resnets.0.norm1.bias"
+    },
+    {
+      "name": "decoder.up_blocks.2.resnets.0.norm1.weight",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "be002712b017be8f1475945caa5f4255294483f82b09d7ee0a17e7f314a77a6e",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.2.resnets.0.norm1.weight"
+    },
+    {
+      "name": "decoder.up_blocks.2.resnets.0.norm2.bias",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "375d30cff5cb15b3b726a61469bd65f2ffd6f419166e4915b8cb3384abcd8c39",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.2.resnets.0.norm2.bias"
+    },
+    {
+      "name": "decoder.up_blocks.2.resnets.0.norm2.weight",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "dee2d5c872b46cbab9aeb97530e97c1404b4aae321f50bc675ab9827d6de4819",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.2.resnets.0.norm2.weight"
+    },
+    {
+      "name": "decoder.up_blocks.2.resnets.1.conv1.bias",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "9c32376a1c80bfc5c4d89ccec88d1dc230ad1c72f9f85ed299b5ff36bece0890",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.2.resnets.1.conv1.bias"
+    },
+    {
+      "name": "decoder.up_blocks.2.resnets.1.conv1.weight",
+      "shape": [
+        256,
+        256,
+        3,
+        3
+      ],
+      "source_shape": [
+        256,
+        256,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2359296,
+      "sha256": "34aedbd1179ac0ad68bca9e0954aed711e519791e30a9791c112ebfbbf243765",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.2.resnets.1.conv1.weight"
+    },
+    {
+      "name": "decoder.up_blocks.2.resnets.1.conv2.bias",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "db95438ce7ee16b6cb03ef26a8970f9f31aa5b243516fe08c09a89c33dfe320a",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.2.resnets.1.conv2.bias"
+    },
+    {
+      "name": "decoder.up_blocks.2.resnets.1.conv2.weight",
+      "shape": [
+        256,
+        256,
+        3,
+        3
+      ],
+      "source_shape": [
+        256,
+        256,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2359296,
+      "sha256": "7200be8e36e7266168f49822c0c9e3e13db7f1f54eb02d5086f2daa10bcc4959",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.2.resnets.1.conv2.weight"
+    },
+    {
+      "name": "decoder.up_blocks.2.resnets.1.norm1.bias",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "508275eb4966a5acb77c6dec01f473bc252550618551ddc23dce1c129124a3cd",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.2.resnets.1.norm1.bias"
+    },
+    {
+      "name": "decoder.up_blocks.2.resnets.1.norm1.weight",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "abda618ceb29499f84435058519462694a46a9f7e9cd5a22b5aa1382b5996b24",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.2.resnets.1.norm1.weight"
+    },
+    {
+      "name": "decoder.up_blocks.2.resnets.1.norm2.bias",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "0983cb2061ad5dd0a8028853df61006fc0c04ac23f1b9725c7747dcc01a66a7e",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.2.resnets.1.norm2.bias"
+    },
+    {
+      "name": "decoder.up_blocks.2.resnets.1.norm2.weight",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "13102cbd8798394776edec27a91ecc6356dc3dd604e450ba15258b0bbe6d2122",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.2.resnets.1.norm2.weight"
+    },
+    {
+      "name": "decoder.up_blocks.2.resnets.2.conv1.bias",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "a3331cf08be15f7d2b8a523c58f47706ee5c5124fe2820548b1ca0f9628533a0",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.2.resnets.2.conv1.bias"
+    },
+    {
+      "name": "decoder.up_blocks.2.resnets.2.conv1.weight",
+      "shape": [
+        256,
+        256,
+        3,
+        3
+      ],
+      "source_shape": [
+        256,
+        256,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2359296,
+      "sha256": "ecf46259ea6552bbbf431576a37154e6b74fd933949496c957edb84f4896efe2",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.2.resnets.2.conv1.weight"
+    },
+    {
+      "name": "decoder.up_blocks.2.resnets.2.conv2.bias",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "7fdaa079e7068e0fb50685ce2d3cf9da6c02142ec2efdc816cf12e8a221549cd",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.2.resnets.2.conv2.bias"
+    },
+    {
+      "name": "decoder.up_blocks.2.resnets.2.conv2.weight",
+      "shape": [
+        256,
+        256,
+        3,
+        3
+      ],
+      "source_shape": [
+        256,
+        256,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2359296,
+      "sha256": "7ce1426f4df0f5f315cc150db56c8921b9e9218fc1d7bbc67b2472562be8f7ac",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.2.resnets.2.conv2.weight"
+    },
+    {
+      "name": "decoder.up_blocks.2.resnets.2.norm1.bias",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "cceaeec114113845f38af30e72894b3c861921d20b4faeaca7ce015c6e080e05",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.2.resnets.2.norm1.bias"
+    },
+    {
+      "name": "decoder.up_blocks.2.resnets.2.norm1.weight",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "de83aede9dd010d79abea572e882dfc908e8c703154358c31cd5557e18324a2d",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.2.resnets.2.norm1.weight"
+    },
+    {
+      "name": "decoder.up_blocks.2.resnets.2.norm2.bias",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "9e6dbd3f754f4766be0c71eec76d7320068c30b720d81ee3173343ffde8e4eac",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.2.resnets.2.norm2.bias"
+    },
+    {
+      "name": "decoder.up_blocks.2.resnets.2.norm2.weight",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "8cbaf629df823978e9472c5d9ba55c4a98bf2027475d843a5ae58357b7b85bf5",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.2.resnets.2.norm2.weight"
+    },
+    {
+      "name": "decoder.up_blocks.2.upsamplers.0.conv.bias",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "f8a39b27b489e1aa7d266cc3a00be2ab90136629f4a52e877cd8fb3546636067",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.2.upsamplers.0.conv.bias"
+    },
+    {
+      "name": "decoder.up_blocks.2.upsamplers.0.conv.weight",
+      "shape": [
+        256,
+        256,
+        3,
+        3
+      ],
+      "source_shape": [
+        256,
+        256,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2359296,
+      "sha256": "114a574616d008379a29caf41e1855e459246b7a0f316fd186ecc9aa48b10e50",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.2.upsamplers.0.conv.weight"
+    },
+    {
+      "name": "decoder.up_blocks.3.resnets.0.conv1.bias",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "cda6b040f640ac8f96ce0aecfab9e1d65835fdbc7686f21fcb348620c341c9ab",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.3.resnets.0.conv1.bias"
+    },
+    {
+      "name": "decoder.up_blocks.3.resnets.0.conv1.weight",
+      "shape": [
+        128,
+        256,
+        3,
+        3
+      ],
+      "source_shape": [
+        128,
+        256,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1179648,
+      "sha256": "f7c3968dacfdabdfaa1da48b02ac1ee9bbeb5c93f4174b5b4735c272fc1e97fd",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.3.resnets.0.conv1.weight"
+    },
+    {
+      "name": "decoder.up_blocks.3.resnets.0.conv2.bias",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "c8ff7653e72ee697d38c780ef522a7b085315ec463c2f515259ab5f1adc01a82",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.3.resnets.0.conv2.bias"
+    },
+    {
+      "name": "decoder.up_blocks.3.resnets.0.conv2.weight",
+      "shape": [
+        128,
+        128,
+        3,
+        3
+      ],
+      "source_shape": [
+        128,
+        128,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 589824,
+      "sha256": "bc52cfa4b958fd6782c7b38c841c968160f2d54a186a82879baefe7f16b368c4",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.3.resnets.0.conv2.weight"
+    },
+    {
+      "name": "decoder.up_blocks.3.resnets.0.conv_shortcut.bias",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "2561cdab37516983d6fdb97e73ab1f8b8411518728642ba623caf3fbd814650e",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.3.resnets.0.conv_shortcut.bias"
+    },
+    {
+      "name": "decoder.up_blocks.3.resnets.0.conv_shortcut.weight",
+      "shape": [
+        128,
+        256,
+        1,
+        1
+      ],
+      "source_shape": [
+        128,
+        256,
+        1,
+        1
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 131072,
+      "sha256": "6d5f9358fc1b9906222d29e0ce048ff469c0561e73b226941587fc50e9662a43",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.3.resnets.0.conv_shortcut.weight"
+    },
+    {
+      "name": "decoder.up_blocks.3.resnets.0.norm1.bias",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "72cb583a1145ca9c3dfdfff74606bc17a8b94d97e2c173ec47e8687f0082b808",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.3.resnets.0.norm1.bias"
+    },
+    {
+      "name": "decoder.up_blocks.3.resnets.0.norm1.weight",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "aba1f1e06153dde26b9915b8cec34b384fa20f9224491faff27bf1dbd25a679b",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.3.resnets.0.norm1.weight"
+    },
+    {
+      "name": "decoder.up_blocks.3.resnets.0.norm2.bias",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "5b347ad4bca99a189152f36f8369048ee07ab562561c0f02076647985f3a160f",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.3.resnets.0.norm2.bias"
+    },
+    {
+      "name": "decoder.up_blocks.3.resnets.0.norm2.weight",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "f013bbb56c78bfc9dcfd247748e560a9c43ede5783ba80da94e001b508defc8e",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.3.resnets.0.norm2.weight"
+    },
+    {
+      "name": "decoder.up_blocks.3.resnets.1.conv1.bias",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "4283c5e4a77b8d69219f570d03b036714e7b74d34e6fbd38326ce18dcfc1cb21",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.3.resnets.1.conv1.bias"
+    },
+    {
+      "name": "decoder.up_blocks.3.resnets.1.conv1.weight",
+      "shape": [
+        128,
+        128,
+        3,
+        3
+      ],
+      "source_shape": [
+        128,
+        128,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 589824,
+      "sha256": "bfb29f83ce86727c06bf5c1e6b4e53e3cde2e7115334a40137b1563a88a83b40",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.3.resnets.1.conv1.weight"
+    },
+    {
+      "name": "decoder.up_blocks.3.resnets.1.conv2.bias",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "2c61a3e0c65e74503903f73d63600a53e58b7972fcd90c6ba969ea5b4d7a9a12",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.3.resnets.1.conv2.bias"
+    },
+    {
+      "name": "decoder.up_blocks.3.resnets.1.conv2.weight",
+      "shape": [
+        128,
+        128,
+        3,
+        3
+      ],
+      "source_shape": [
+        128,
+        128,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 589824,
+      "sha256": "9a5ebfcc90b08ea1016fa3cce4e56bc37268b0e724b3a37750514745db0ccc3f",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.3.resnets.1.conv2.weight"
+    },
+    {
+      "name": "decoder.up_blocks.3.resnets.1.norm1.bias",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "cef8d341a6902a76ef01899439c6817cda81ba4c7221da73b0dd805109f64bd7",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.3.resnets.1.norm1.bias"
+    },
+    {
+      "name": "decoder.up_blocks.3.resnets.1.norm1.weight",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "b8dcd4737a8b1ab64535486f7927f8f8853a4263cd5ea39c99a69683f3e6f63a",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.3.resnets.1.norm1.weight"
+    },
+    {
+      "name": "decoder.up_blocks.3.resnets.1.norm2.bias",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "b065ecc680f36ff559768a86e33bde205834a36763d75e7095a23ffd090b905a",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.3.resnets.1.norm2.bias"
+    },
+    {
+      "name": "decoder.up_blocks.3.resnets.1.norm2.weight",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "a1c2a729a18fcd3ef8114fd988965fbb53c83f35a1a858e23f44b5007949d785",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.3.resnets.1.norm2.weight"
+    },
+    {
+      "name": "decoder.up_blocks.3.resnets.2.conv1.bias",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "77ac0bb0cdb3284ea753d63de7ec9d41e5c25db673469dc39cfc95e1fe3d6455",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.3.resnets.2.conv1.bias"
+    },
+    {
+      "name": "decoder.up_blocks.3.resnets.2.conv1.weight",
+      "shape": [
+        128,
+        128,
+        3,
+        3
+      ],
+      "source_shape": [
+        128,
+        128,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 589824,
+      "sha256": "dea8cb092f6ab451559e3c3aae1891e18ef344357ea0a12d074fd3a879a239ee",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.3.resnets.2.conv1.weight"
+    },
+    {
+      "name": "decoder.up_blocks.3.resnets.2.conv2.bias",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "f5b0f70175e52e3dd9c7d0abfc9cffe00f31537634832d0717a84f7f69b81381",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.3.resnets.2.conv2.bias"
+    },
+    {
+      "name": "decoder.up_blocks.3.resnets.2.conv2.weight",
+      "shape": [
+        128,
+        128,
+        3,
+        3
+      ],
+      "source_shape": [
+        128,
+        128,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 589824,
+      "sha256": "7143bca92326cbaa1e62b9388c5b64c96ed511dd7e53e9a5ede3f10dbcd36b7b",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.3.resnets.2.conv2.weight"
+    },
+    {
+      "name": "decoder.up_blocks.3.resnets.2.norm1.bias",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "c732d7fda01e2a5beddabad2fb81e7867e6cf35072fcfe29bed69ef221f6f8d0",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.3.resnets.2.norm1.bias"
+    },
+    {
+      "name": "decoder.up_blocks.3.resnets.2.norm1.weight",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "1aba874105a183e647d8c3e8cd216501e139e6ca0da9b3a2dece5ce70e96e0d6",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.3.resnets.2.norm1.weight"
+    },
+    {
+      "name": "decoder.up_blocks.3.resnets.2.norm2.bias",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "1e19e064070ddfb4826ae2d80df046590144c435464291ec29d8aeb7928d8a55",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.3.resnets.2.norm2.bias"
+    },
+    {
+      "name": "decoder.up_blocks.3.resnets.2.norm2.weight",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "1b2657cd29ccda5db8768e19c5e4c44f276e5cac4f8661ec711fb23a416d138a",
+      "transformation": "f32",
+      "original_name": "decoder.up_blocks.3.resnets.2.norm2.weight"
+    },
+    {
+      "name": "encoder.conv_in.bias",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "0130c03f10e254fd204025abc09184abce74b960b372ded9d00ed6db30bc5322",
+      "transformation": "f32",
+      "original_name": "encoder.conv_in.bias"
+    },
+    {
+      "name": "encoder.conv_in.weight",
+      "shape": [
+        128,
+        3,
+        3,
+        3
+      ],
+      "source_shape": [
+        128,
+        3,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 13824,
+      "sha256": "75e2f51ad162b24cc1a2e3f578024279de9add13f46afbe0a87898150b2adc32",
+      "transformation": "f32",
+      "original_name": "encoder.conv_in.weight"
+    },
+    {
+      "name": "encoder.conv_norm_out.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "84a93fcb35efb2ad74848535c7d6f5b0b193c0681740aea59e5132b88f2cc2bb",
+      "transformation": "f32",
+      "original_name": "encoder.conv_norm_out.bias"
+    },
+    {
+      "name": "encoder.conv_norm_out.weight",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "fc300e92683be2c838cdf211ff0c811e002d1dfa0b7ded9a15a605c1ad28f291",
+      "transformation": "f32",
+      "original_name": "encoder.conv_norm_out.weight"
+    },
+    {
+      "name": "encoder.conv_out.bias",
+      "shape": [
+        8
+      ],
+      "source_shape": [
+        8
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 32,
+      "sha256": "c015eea2d9500f9d54bd319c358bb4406ecd634eb617eb0094c56ea535719311",
+      "transformation": "f32",
+      "original_name": "encoder.conv_out.bias"
+    },
+    {
+      "name": "encoder.conv_out.weight",
+      "shape": [
+        8,
+        512,
+        3,
+        3
+      ],
+      "source_shape": [
+        8,
+        512,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 147456,
+      "sha256": "acaeaad8b4f12ae4d392d8742c86608c5f30ef7e8985b26571251d9f3d118c79",
+      "transformation": "f32",
+      "original_name": "encoder.conv_out.weight"
+    },
+    {
+      "name": "encoder.down_blocks.0.downsamplers.0.conv.bias",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "0cac93b324b2e10f790377300943090acaa29333d44db0e099c74991b3e46f10",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.0.downsamplers.0.conv.bias"
+    },
+    {
+      "name": "encoder.down_blocks.0.downsamplers.0.conv.weight",
+      "shape": [
+        128,
+        128,
+        3,
+        3
+      ],
+      "source_shape": [
+        128,
+        128,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 589824,
+      "sha256": "54d7d6fd49536f1f862d7e52f801a945e0a6807800825723a076f6dfd01e3657",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.0.downsamplers.0.conv.weight"
+    },
+    {
+      "name": "encoder.down_blocks.0.resnets.0.conv1.bias",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "47d47d5006f6a8f73335bc6868fdb32a4895ab51ab5e0e1c674d3dfd783c2c23",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.0.resnets.0.conv1.bias"
+    },
+    {
+      "name": "encoder.down_blocks.0.resnets.0.conv1.weight",
+      "shape": [
+        128,
+        128,
+        3,
+        3
+      ],
+      "source_shape": [
+        128,
+        128,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 589824,
+      "sha256": "ef4087b4170bf717d4bf3fdbed302bae874ef8b5eff4517e01bb080fc7d2da8c",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.0.resnets.0.conv1.weight"
+    },
+    {
+      "name": "encoder.down_blocks.0.resnets.0.conv2.bias",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "0c97f5289664bf2b5a10f25ba4ef31f31e8cb4fa24039907b42b1ae9c61e1885",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.0.resnets.0.conv2.bias"
+    },
+    {
+      "name": "encoder.down_blocks.0.resnets.0.conv2.weight",
+      "shape": [
+        128,
+        128,
+        3,
+        3
+      ],
+      "source_shape": [
+        128,
+        128,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 589824,
+      "sha256": "6e75a414b65804c18a6789297f58aaecf6738d9d0af7d06d0c47eb0550ec83c0",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.0.resnets.0.conv2.weight"
+    },
+    {
+      "name": "encoder.down_blocks.0.resnets.0.norm1.bias",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "1f25a98ea6611e9249a29c79e9872e200e6fa2a44593fb0e9efde38e0026a75b",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.0.resnets.0.norm1.bias"
+    },
+    {
+      "name": "encoder.down_blocks.0.resnets.0.norm1.weight",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "5dd8265488a55017d6a7bf723c71e8ca804ed4951898b049fd82f3800272c366",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.0.resnets.0.norm1.weight"
+    },
+    {
+      "name": "encoder.down_blocks.0.resnets.0.norm2.bias",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "6695d4e1100ff2066183131515867aabcd7f14580407978f0a41c6d3af4ed1ef",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.0.resnets.0.norm2.bias"
+    },
+    {
+      "name": "encoder.down_blocks.0.resnets.0.norm2.weight",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "02042359e4aaca16355df4e9feb79aa9f355adb1ba324b1ad65c8a0a3d24066b",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.0.resnets.0.norm2.weight"
+    },
+    {
+      "name": "encoder.down_blocks.0.resnets.1.conv1.bias",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "23ac3f6f37b077558cf3236cae4c208fd00e63f53ba67e7ca08e820b60d63e31",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.0.resnets.1.conv1.bias"
+    },
+    {
+      "name": "encoder.down_blocks.0.resnets.1.conv1.weight",
+      "shape": [
+        128,
+        128,
+        3,
+        3
+      ],
+      "source_shape": [
+        128,
+        128,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 589824,
+      "sha256": "9d65b3c715e395ceb2d321e58b35e7e5bddf0c58b6fed36c82515b1f2284487e",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.0.resnets.1.conv1.weight"
+    },
+    {
+      "name": "encoder.down_blocks.0.resnets.1.conv2.bias",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "a5bddb4e73400fa8160903d6b6dc3b664496dfa25b0b098b9bf2d36df609831f",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.0.resnets.1.conv2.bias"
+    },
+    {
+      "name": "encoder.down_blocks.0.resnets.1.conv2.weight",
+      "shape": [
+        128,
+        128,
+        3,
+        3
+      ],
+      "source_shape": [
+        128,
+        128,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 589824,
+      "sha256": "90a4191be9e156484da4387473c0c9f23151fa8ccfc97d7fa9112e85e446f7fe",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.0.resnets.1.conv2.weight"
+    },
+    {
+      "name": "encoder.down_blocks.0.resnets.1.norm1.bias",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "b62186d5d9cfc23f33b09d2fb5fb507ce3c970c1a832282b1bc39b93c7f55db8",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.0.resnets.1.norm1.bias"
+    },
+    {
+      "name": "encoder.down_blocks.0.resnets.1.norm1.weight",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "ec282f1cb576316eda940fdb625918ce7e6a7da8cfb689d63ebdbc78630f8a2c",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.0.resnets.1.norm1.weight"
+    },
+    {
+      "name": "encoder.down_blocks.0.resnets.1.norm2.bias",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "3d8e486d0169e9e779c1d319ebd0c831ef84d8d5d639efc575490e83acd685ae",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.0.resnets.1.norm2.bias"
+    },
+    {
+      "name": "encoder.down_blocks.0.resnets.1.norm2.weight",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "3d84078673b30c9774eac27bbd2107b9a0baf640e1b737acf95865dcd17c7a6b",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.0.resnets.1.norm2.weight"
+    },
+    {
+      "name": "encoder.down_blocks.1.downsamplers.0.conv.bias",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "da90f86034d43ab31a3105c92f7d16d9ff1124e62d9c7e348877b60f9c9d8fd7",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.1.downsamplers.0.conv.bias"
+    },
+    {
+      "name": "encoder.down_blocks.1.downsamplers.0.conv.weight",
+      "shape": [
+        256,
+        256,
+        3,
+        3
+      ],
+      "source_shape": [
+        256,
+        256,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2359296,
+      "sha256": "c8cd987fe32180d2f9d0273dc89259f9e83a6f75fa77dc37379f8b7832247b4e",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.1.downsamplers.0.conv.weight"
+    },
+    {
+      "name": "encoder.down_blocks.1.resnets.0.conv1.bias",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "bf391f7e4cd30a0fb0cd86ca7a6b02c4a307b33596d2392832a44b608ea978a5",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.1.resnets.0.conv1.bias"
+    },
+    {
+      "name": "encoder.down_blocks.1.resnets.0.conv1.weight",
+      "shape": [
+        256,
+        128,
+        3,
+        3
+      ],
+      "source_shape": [
+        256,
+        128,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1179648,
+      "sha256": "ab2284d9afe5273e6a96145fa7eb0a21d925a6cf13aaa7ecf2446e87b01b6033",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.1.resnets.0.conv1.weight"
+    },
+    {
+      "name": "encoder.down_blocks.1.resnets.0.conv2.bias",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "7a233e950e328b782bd84f3250b8bbe14831ffb3052364103899fed74b736192",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.1.resnets.0.conv2.bias"
+    },
+    {
+      "name": "encoder.down_blocks.1.resnets.0.conv2.weight",
+      "shape": [
+        256,
+        256,
+        3,
+        3
+      ],
+      "source_shape": [
+        256,
+        256,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2359296,
+      "sha256": "a62ec145a5d5d893cfd589c1248905948470c7b6c3c394de43b6ee0d88f023b4",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.1.resnets.0.conv2.weight"
+    },
+    {
+      "name": "encoder.down_blocks.1.resnets.0.conv_shortcut.bias",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "b0bdaf8b76c35b39f75a6461f55f995d4897cc5eb2b7d0dd5fe016172d5db3a7",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.1.resnets.0.conv_shortcut.bias"
+    },
+    {
+      "name": "encoder.down_blocks.1.resnets.0.conv_shortcut.weight",
+      "shape": [
+        256,
+        128,
+        1,
+        1
+      ],
+      "source_shape": [
+        256,
+        128,
+        1,
+        1
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 131072,
+      "sha256": "a29114c5c19e426cb7a49dd4416ddb1c8b54f113daba2dc9b38eb2ae6267bdfe",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.1.resnets.0.conv_shortcut.weight"
+    },
+    {
+      "name": "encoder.down_blocks.1.resnets.0.norm1.bias",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "09e29e9988f41fd557655071d039e2d460d9e1db574bac06863bd07c660b0adc",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.1.resnets.0.norm1.bias"
+    },
+    {
+      "name": "encoder.down_blocks.1.resnets.0.norm1.weight",
+      "shape": [
+        128
+      ],
+      "source_shape": [
+        128
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 512,
+      "sha256": "bbe5bbd79de69176e22a651415bd6a195dcd24d2a174a109868d4fd0fad181d2",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.1.resnets.0.norm1.weight"
+    },
+    {
+      "name": "encoder.down_blocks.1.resnets.0.norm2.bias",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "0f535e1450a4f25241c31e8cf8f605f04a55692c7f41a651512348e95977a24c",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.1.resnets.0.norm2.bias"
+    },
+    {
+      "name": "encoder.down_blocks.1.resnets.0.norm2.weight",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "c96f8bf3a32536590c9e087d37c6883be96ecf6f31c38be86dc9b51bb9a60162",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.1.resnets.0.norm2.weight"
+    },
+    {
+      "name": "encoder.down_blocks.1.resnets.1.conv1.bias",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "b65c0b052cc0fbb1f3e4e5df10c9561505d1743a31745badf8da8ab5ccadbe5d",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.1.resnets.1.conv1.bias"
+    },
+    {
+      "name": "encoder.down_blocks.1.resnets.1.conv1.weight",
+      "shape": [
+        256,
+        256,
+        3,
+        3
+      ],
+      "source_shape": [
+        256,
+        256,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2359296,
+      "sha256": "2afe9c566281cb942e4263e9b51011c332e261a8b962ace9e48215e97acec464",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.1.resnets.1.conv1.weight"
+    },
+    {
+      "name": "encoder.down_blocks.1.resnets.1.conv2.bias",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "1c94ff5b673af04276230b879283ff0df5aa9b434f2f6d7aff42e53b71c2bc97",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.1.resnets.1.conv2.bias"
+    },
+    {
+      "name": "encoder.down_blocks.1.resnets.1.conv2.weight",
+      "shape": [
+        256,
+        256,
+        3,
+        3
+      ],
+      "source_shape": [
+        256,
+        256,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2359296,
+      "sha256": "d9fe4f7cfe315d0ff3c70122c01ea6de35c7d32b6684d68db7e5b0dbe8a0dfb1",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.1.resnets.1.conv2.weight"
+    },
+    {
+      "name": "encoder.down_blocks.1.resnets.1.norm1.bias",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "eaab695f0af9c08c4ee265c588c9000518edf671d56e098030d60f09e9eb0929",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.1.resnets.1.norm1.bias"
+    },
+    {
+      "name": "encoder.down_blocks.1.resnets.1.norm1.weight",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "b38318971c4283bafb92b232b808d79f73410bde541997bdace5e5e5324e5653",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.1.resnets.1.norm1.weight"
+    },
+    {
+      "name": "encoder.down_blocks.1.resnets.1.norm2.bias",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "2009f6a0578a60044c0710b0a8ec1e6188db7fdd326eba306bc3baa64fc6e804",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.1.resnets.1.norm2.bias"
+    },
+    {
+      "name": "encoder.down_blocks.1.resnets.1.norm2.weight",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "68d913261270924dfc09c57f6bc6da18f6a2228483476579ee0a5cdd9a08fce8",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.1.resnets.1.norm2.weight"
+    },
+    {
+      "name": "encoder.down_blocks.2.downsamplers.0.conv.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "d0ac07261532dcb9f4312117cc469961ca28b87d4500e6fed36e8c09166d0255",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.2.downsamplers.0.conv.bias"
+    },
+    {
+      "name": "encoder.down_blocks.2.downsamplers.0.conv.weight",
+      "shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 9437184,
+      "sha256": "44736864df8888864a0f09242993b3df71e93fb76fa5f66b1d372660a11e859c",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.2.downsamplers.0.conv.weight"
+    },
+    {
+      "name": "encoder.down_blocks.2.resnets.0.conv1.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "4c1ffe61a794d0129e2816c0c5b421d1c3517c3bd2ba911a74f64fd3176c1ee3",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.2.resnets.0.conv1.bias"
+    },
+    {
+      "name": "encoder.down_blocks.2.resnets.0.conv1.weight",
+      "shape": [
+        512,
+        256,
+        3,
+        3
+      ],
+      "source_shape": [
+        512,
+        256,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 4718592,
+      "sha256": "517035938360356771b59a269c3871b655faeee80ec1bf637fa8c481ec03ee4d",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.2.resnets.0.conv1.weight"
+    },
+    {
+      "name": "encoder.down_blocks.2.resnets.0.conv2.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "8258f9a8c01ec3be06d4799b3c165585863940f6ed23751251957b88e5d67d5e",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.2.resnets.0.conv2.bias"
+    },
+    {
+      "name": "encoder.down_blocks.2.resnets.0.conv2.weight",
+      "shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 9437184,
+      "sha256": "dc1a8b1a1d0cc22139b62b2cd0fa52b2bbb1a38586104c961edf3992cb6e365d",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.2.resnets.0.conv2.weight"
+    },
+    {
+      "name": "encoder.down_blocks.2.resnets.0.conv_shortcut.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "47a8090331df33f8121c6ec07fe195135ab7a9eb77e400b7f2a8549648293c66",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.2.resnets.0.conv_shortcut.bias"
+    },
+    {
+      "name": "encoder.down_blocks.2.resnets.0.conv_shortcut.weight",
+      "shape": [
+        512,
+        256,
+        1,
+        1
+      ],
+      "source_shape": [
+        512,
+        256,
+        1,
+        1
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 524288,
+      "sha256": "208fd1a175acda27f9e91bf83a6f06afcb2f5a31cbd7a3973e136cbbae3d8ad5",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.2.resnets.0.conv_shortcut.weight"
+    },
+    {
+      "name": "encoder.down_blocks.2.resnets.0.norm1.bias",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "b564f26838c3267aeb52ae00b9182ad7250d0488ea57054b025368358dd4b60a",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.2.resnets.0.norm1.bias"
+    },
+    {
+      "name": "encoder.down_blocks.2.resnets.0.norm1.weight",
+      "shape": [
+        256
+      ],
+      "source_shape": [
+        256
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1024,
+      "sha256": "3aac73ebc186b9dc1b9636cf91cbcf6c347af2e3cf2459db29f5ecb05410545d",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.2.resnets.0.norm1.weight"
+    },
+    {
+      "name": "encoder.down_blocks.2.resnets.0.norm2.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "e58524b5cbc26c43c2f4c9d864d221f0759b415c81582b31523b4e3126bdb114",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.2.resnets.0.norm2.bias"
+    },
+    {
+      "name": "encoder.down_blocks.2.resnets.0.norm2.weight",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "4bfc8fadc9715872efdbb260fafa0c53453c964984cb5e918fee23f8aedbacae",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.2.resnets.0.norm2.weight"
+    },
+    {
+      "name": "encoder.down_blocks.2.resnets.1.conv1.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "5ee47cb0f84c05079f547064228dc898d771576b3d480a73b726960714f34608",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.2.resnets.1.conv1.bias"
+    },
+    {
+      "name": "encoder.down_blocks.2.resnets.1.conv1.weight",
+      "shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 9437184,
+      "sha256": "718c8e8b62e3dbbabd9517e70334abd0e4dd48dcde79b528bf6a8ddca690bdf2",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.2.resnets.1.conv1.weight"
+    },
+    {
+      "name": "encoder.down_blocks.2.resnets.1.conv2.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "b961d1b15335688c494bce3020f464c0dc2a7d70176ae5ad3d74507ca7eb382f",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.2.resnets.1.conv2.bias"
+    },
+    {
+      "name": "encoder.down_blocks.2.resnets.1.conv2.weight",
+      "shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 9437184,
+      "sha256": "7055efb89c69e978a40a880abcba936abb8221e795eb48a239544dfba9f6ff86",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.2.resnets.1.conv2.weight"
+    },
+    {
+      "name": "encoder.down_blocks.2.resnets.1.norm1.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "2017306372a5cdfbc35c5b4d9750f96271058fc94f167ba3e6baadc60e4a16e1",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.2.resnets.1.norm1.bias"
+    },
+    {
+      "name": "encoder.down_blocks.2.resnets.1.norm1.weight",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "f6c4c7dce60f7aa242d304c4202b7bf6d65863dcc2c32c57d512343727633cd1",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.2.resnets.1.norm1.weight"
+    },
+    {
+      "name": "encoder.down_blocks.2.resnets.1.norm2.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "1cd85e5d9c51e8ee05b1f696654fac08b839c17415eaa361493c47a8282f37b5",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.2.resnets.1.norm2.bias"
+    },
+    {
+      "name": "encoder.down_blocks.2.resnets.1.norm2.weight",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "5816a42ff2fab92183e9df76e3a74efb38d52e8c985bfe13e151c8292e4c630d",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.2.resnets.1.norm2.weight"
+    },
+    {
+      "name": "encoder.down_blocks.3.resnets.0.conv1.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "5dd0df91a7377933626015b3c09c5b3dfd064242b44553ed6196a2f929e808ed",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.3.resnets.0.conv1.bias"
+    },
+    {
+      "name": "encoder.down_blocks.3.resnets.0.conv1.weight",
+      "shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 9437184,
+      "sha256": "6512b5e58ba333b08734b70e507ec614b9c6f768b8783b8d04b3a75ce3de1432",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.3.resnets.0.conv1.weight"
+    },
+    {
+      "name": "encoder.down_blocks.3.resnets.0.conv2.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "8e8541abdb643bc00db9c7b16d639e2881a72d6ac41019db3d7e0e34567e2038",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.3.resnets.0.conv2.bias"
+    },
+    {
+      "name": "encoder.down_blocks.3.resnets.0.conv2.weight",
+      "shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 9437184,
+      "sha256": "2a26ca66c93231f0659b92e133ecadb0311f8159f59b0f1c7639d2fb6454425b",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.3.resnets.0.conv2.weight"
+    },
+    {
+      "name": "encoder.down_blocks.3.resnets.0.norm1.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "c49449dae079de2380010abb9bcd232b35f16a96d7a0ac487dc070e8c146d570",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.3.resnets.0.norm1.bias"
+    },
+    {
+      "name": "encoder.down_blocks.3.resnets.0.norm1.weight",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "a6ddbf5e4fc638b85798dc0a8268f803a91b4e712adcc3b16f4f239d7cfc122a",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.3.resnets.0.norm1.weight"
+    },
+    {
+      "name": "encoder.down_blocks.3.resnets.0.norm2.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "ac3bd69789f3d71fb5d66c58aebfc6e96e61c8a155388a7c234e1bc983ea26a8",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.3.resnets.0.norm2.bias"
+    },
+    {
+      "name": "encoder.down_blocks.3.resnets.0.norm2.weight",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "bc47741397aa5f7ce80febc6a9f6362d9a3258119b1824d59a51bd33bb65f1f8",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.3.resnets.0.norm2.weight"
+    },
+    {
+      "name": "encoder.down_blocks.3.resnets.1.conv1.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "a8dd0732596578277a6343552c27d6d9915e222c1bd64e57fa8ffec3f514fe2f",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.3.resnets.1.conv1.bias"
+    },
+    {
+      "name": "encoder.down_blocks.3.resnets.1.conv1.weight",
+      "shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 9437184,
+      "sha256": "113734f8a9c32c9d128dc1781934045ea6e4a68270c9cae9ac865dbab617df66",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.3.resnets.1.conv1.weight"
+    },
+    {
+      "name": "encoder.down_blocks.3.resnets.1.conv2.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "f44bedfe2cf12110544c8955d3bb8daf01ba32939e60ddd637d9a5f72e758931",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.3.resnets.1.conv2.bias"
+    },
+    {
+      "name": "encoder.down_blocks.3.resnets.1.conv2.weight",
+      "shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 9437184,
+      "sha256": "6f13c3d439b3ed17e3e0d836ca07ed0b3cafa66cfd01af34dece57695070115f",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.3.resnets.1.conv2.weight"
+    },
+    {
+      "name": "encoder.down_blocks.3.resnets.1.norm1.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "bcbb1ec51d1d46026a1937b337a7394b68aa38c121726822d66271cec26826fc",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.3.resnets.1.norm1.bias"
+    },
+    {
+      "name": "encoder.down_blocks.3.resnets.1.norm1.weight",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "127ca4109d0d49e886ed14d8a32c12ee2dee6fc6571e6a0a800ca754491f8d60",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.3.resnets.1.norm1.weight"
+    },
+    {
+      "name": "encoder.down_blocks.3.resnets.1.norm2.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "7a95e7448b6f369afd555cac203d6b197dfd65086e36b86e96db0adf988da35e",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.3.resnets.1.norm2.bias"
+    },
+    {
+      "name": "encoder.down_blocks.3.resnets.1.norm2.weight",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "3f9663eb4df11ffc6a4ab8f85058fb81a78ee46601b3fa5d88c5f7fc194e15a4",
+      "transformation": "f32",
+      "original_name": "encoder.down_blocks.3.resnets.1.norm2.weight"
+    },
+    {
+      "name": "encoder.mid_block.attentions.0.group_norm.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "a9cbe7eabd619dd3e3b76bb7cb7c876c680f28c1ed9a661be8a60da2f2c8793a",
+      "transformation": "f32",
+      "original_name": "encoder.mid_block.attentions.0.group_norm.bias"
+    },
+    {
+      "name": "encoder.mid_block.attentions.0.group_norm.weight",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "87360508aef7663dfe0fdcc0303b513b765f65a78c31100d32f83554e3e5d76c",
+      "transformation": "f32",
+      "original_name": "encoder.mid_block.attentions.0.group_norm.weight"
+    },
+    {
+      "name": "encoder.mid_block.attentions.0.to_k.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "e6dbea222a1b2356097be50b6801dc745fdcfa1ee06baf877d60ec903b143cd0",
+      "transformation": "f32",
+      "original_name": "encoder.mid_block.attentions.0.to_k.bias"
+    },
+    {
+      "name": "encoder.mid_block.attentions.0.to_k.weight",
+      "shape": [
+        512,
+        512
+      ],
+      "source_shape": [
+        512,
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1048576,
+      "sha256": "fcf5b01e0bf14a4c147a770016e0a337debc3e83efa70e13f1aeb7dd3cb1941e",
+      "transformation": "f32",
+      "original_name": "encoder.mid_block.attentions.0.to_k.weight"
+    },
+    {
+      "name": "encoder.mid_block.attentions.0.to_out.0.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "2a9564d6abd5cc9bdff62994ab486f09542cb3692c2bad857776e7ab6bd3a904",
+      "transformation": "f32",
+      "original_name": "encoder.mid_block.attentions.0.to_out.0.bias"
+    },
+    {
+      "name": "encoder.mid_block.attentions.0.to_out.0.weight",
+      "shape": [
+        512,
+        512
+      ],
+      "source_shape": [
+        512,
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1048576,
+      "sha256": "b7b0a003bb51ed79dfeeece229d53aadd8a8f7552efca7d930402d1fc66833db",
+      "transformation": "f32",
+      "original_name": "encoder.mid_block.attentions.0.to_out.0.weight"
+    },
+    {
+      "name": "encoder.mid_block.attentions.0.to_q.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "479fe4c5dc37a469d8e5c45c03c6e47ddcd5b60f21fd96d9e21aeb9a7b9a071f",
+      "transformation": "f32",
+      "original_name": "encoder.mid_block.attentions.0.to_q.bias"
+    },
+    {
+      "name": "encoder.mid_block.attentions.0.to_q.weight",
+      "shape": [
+        512,
+        512
+      ],
+      "source_shape": [
+        512,
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1048576,
+      "sha256": "8368310292f22dcc7abe9f1509f57d91605c7ddec4951118ae98ece7fb261773",
+      "transformation": "f32",
+      "original_name": "encoder.mid_block.attentions.0.to_q.weight"
+    },
+    {
+      "name": "encoder.mid_block.attentions.0.to_v.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "8c35be67ea3c6d6cd1d64bdff86a19cd56ea10d1c954dcb28476d4cdc995c7cb",
+      "transformation": "f32",
+      "original_name": "encoder.mid_block.attentions.0.to_v.bias"
+    },
+    {
+      "name": "encoder.mid_block.attentions.0.to_v.weight",
+      "shape": [
+        512,
+        512
+      ],
+      "source_shape": [
+        512,
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 1048576,
+      "sha256": "051f3cdaf9ca4df7c117089210d7db6952270a74962ee81791847c617971d442",
+      "transformation": "f32",
+      "original_name": "encoder.mid_block.attentions.0.to_v.weight"
+    },
+    {
+      "name": "encoder.mid_block.resnets.0.conv1.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "22c3a101601b8510ef33fcfe9d63f686b1cbc17ce4345e5c5eb607afaed2e396",
+      "transformation": "f32",
+      "original_name": "encoder.mid_block.resnets.0.conv1.bias"
+    },
+    {
+      "name": "encoder.mid_block.resnets.0.conv1.weight",
+      "shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 9437184,
+      "sha256": "035b7d8c80db64111c9eedddc2d658e765c6754e2f4743e4aecf96876b312065",
+      "transformation": "f32",
+      "original_name": "encoder.mid_block.resnets.0.conv1.weight"
+    },
+    {
+      "name": "encoder.mid_block.resnets.0.conv2.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "68c64894c8391de3a8ba025f06f36ffee3c2584ff0761d5717715730d99be25a",
+      "transformation": "f32",
+      "original_name": "encoder.mid_block.resnets.0.conv2.bias"
+    },
+    {
+      "name": "encoder.mid_block.resnets.0.conv2.weight",
+      "shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 9437184,
+      "sha256": "20b455752d7d23b14ba88c12b510e7e2522c6cea7babd9ba4941d3556c62519c",
+      "transformation": "f32",
+      "original_name": "encoder.mid_block.resnets.0.conv2.weight"
+    },
+    {
+      "name": "encoder.mid_block.resnets.0.norm1.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "a93e810434594e7e533e5bab2b71916ec6352c570c80b9e987f1d2150f45d10d",
+      "transformation": "f32",
+      "original_name": "encoder.mid_block.resnets.0.norm1.bias"
+    },
+    {
+      "name": "encoder.mid_block.resnets.0.norm1.weight",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "918f2bc79f074bfe0dcc3d5aa92ab036b3e70737fd03c4778848a6543278d18c",
+      "transformation": "f32",
+      "original_name": "encoder.mid_block.resnets.0.norm1.weight"
+    },
+    {
+      "name": "encoder.mid_block.resnets.0.norm2.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "c6e1cfb6c44b3f1cfb03a0f4cdfdc09996139ffeda3f0e31328379c0e1d7a1ac",
+      "transformation": "f32",
+      "original_name": "encoder.mid_block.resnets.0.norm2.bias"
+    },
+    {
+      "name": "encoder.mid_block.resnets.0.norm2.weight",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "1a802096c6b026b11740ee660cf37e9aa3c3d90743466fc9c4ed11e6893f5bad",
+      "transformation": "f32",
+      "original_name": "encoder.mid_block.resnets.0.norm2.weight"
+    },
+    {
+      "name": "encoder.mid_block.resnets.1.conv1.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "80c17ced70419211f04c992e9f6ef16e2d6dee520bb3a91736403e602de2a721",
+      "transformation": "f32",
+      "original_name": "encoder.mid_block.resnets.1.conv1.bias"
+    },
+    {
+      "name": "encoder.mid_block.resnets.1.conv1.weight",
+      "shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 9437184,
+      "sha256": "9ac23d8e64244ed676bd0a185e40225e4acdb12d13133fe7a80ddc1e554b84d4",
+      "transformation": "f32",
+      "original_name": "encoder.mid_block.resnets.1.conv1.weight"
+    },
+    {
+      "name": "encoder.mid_block.resnets.1.conv2.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "276750d2faa155f2fe8778a8339b76ad321dd3acc726d37b8488aabad48a0ea7",
+      "transformation": "f32",
+      "original_name": "encoder.mid_block.resnets.1.conv2.bias"
+    },
+    {
+      "name": "encoder.mid_block.resnets.1.conv2.weight",
+      "shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_shape": [
+        512,
+        512,
+        3,
+        3
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 9437184,
+      "sha256": "63f6b7f8445f1098cea2077c5477b3d227f2564c3b68fe85e27a0d458761eedd",
+      "transformation": "f32",
+      "original_name": "encoder.mid_block.resnets.1.conv2.weight"
+    },
+    {
+      "name": "encoder.mid_block.resnets.1.norm1.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "7cb20bb0aec9e6fe2a24bf097e21a07048fe628dd753928ca38e112b6a81d3fd",
+      "transformation": "f32",
+      "original_name": "encoder.mid_block.resnets.1.norm1.bias"
+    },
+    {
+      "name": "encoder.mid_block.resnets.1.norm1.weight",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "338b7fa6e67e6cf928274a1ddd49fe2820c86b138aa0f094491a80af74f9339d",
+      "transformation": "f32",
+      "original_name": "encoder.mid_block.resnets.1.norm1.weight"
+    },
+    {
+      "name": "encoder.mid_block.resnets.1.norm2.bias",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "d965d0ee3763c3605f4e0dc724186202bb4e3017c73177e910cfd210ff560348",
+      "transformation": "f32",
+      "original_name": "encoder.mid_block.resnets.1.norm2.bias"
+    },
+    {
+      "name": "encoder.mid_block.resnets.1.norm2.weight",
+      "shape": [
+        512
+      ],
+      "source_shape": [
+        512
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 2048,
+      "sha256": "ff67f7f98292d0764f09a49e4f9dfe3e34575164779aabf8c8ad86857ffb074f",
+      "transformation": "f32",
+      "original_name": "encoder.mid_block.resnets.1.norm2.weight"
+    },
+    {
+      "name": "post_quant_conv.bias",
+      "shape": [
+        4
+      ],
+      "source_shape": [
+        4
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 16,
+      "sha256": "574e3294d9a2865419e32771ab262304f539e448104813418a65cc1172c4160c",
+      "transformation": "f32",
+      "original_name": "post_quant_conv.bias"
+    },
+    {
+      "name": "post_quant_conv.weight",
+      "shape": [
+        4,
+        4,
+        1,
+        1
+      ],
+      "source_shape": [
+        4,
+        4,
+        1,
+        1
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 64,
+      "sha256": "e99950e08c286d1a5287d1c13744dd1666aa0dc588c81941dcfcb7626785b894",
+      "transformation": "f32",
+      "original_name": "post_quant_conv.weight"
+    },
+    {
+      "name": "quant_conv.bias",
+      "shape": [
+        8
+      ],
+      "source_shape": [
+        8
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 32,
+      "sha256": "ca014b7b7dc3b667e39ca16791fecf324718db198581cab32f16fcdaf83bd278",
+      "transformation": "f32",
+      "original_name": "quant_conv.bias"
+    },
+    {
+      "name": "quant_conv.weight",
+      "shape": [
+        8,
+        8,
+        1,
+        1
+      ],
+      "source_shape": [
+        8,
+        8,
+        1,
+        1
+      ],
+      "source_dtype": "float16",
+      "dtype": "float32",
+      "bytes": 256,
+      "sha256": "28929f4e7bce8962cf088053254adc9d352a2445cb5cccfcccc75b2c9f3599ec",
+      "transformation": "f32",
+      "original_name": "quant_conv.weight"
+    }
+  ],
+  "omitted_inference_inert_buffers": [],
+  "all_f32_tensor_readbacks_exact": true,
+  "f16_sources_widened_exactly_to_f32": true,
+  "framework_imported": false,
+  "inference_performed": false,
+  "native_qualified": false,
+  "representative_quality_qualified": false,
+  "published": false,
+  "python": "3.12.15",
+  "converter_sha256": "ede7cf1aff088b5fd33cd56ba0dbec38a74a6f51590b7f1a4a3331dfecf130b2",
+  "helper_sha256": "297094059170a86b83f65327de14828a344eade69b789708a4592d0daaf57194",
+  "command": [
+    "/opt/hostedtoolcache/Python/3.12.15/x64/bin/python",
+    "/home/runner/work/CrispEmbed/CrispEmbed/models/convert-latent-inpaint-to-gguf.py",
+    "--model",
+    "sdxl_vae",
+    "--checkpoint",
+    "/mnt/heavy/scratch/ckpt/sdxl_vae.bin",
+    "--source-dir",
+    "/mnt/heavy/scratch/src/pixelhacker",
+    "--output",
+    "/mnt/heavy/scratch/gguf/sdxl-vae-f32.gguf"
+  ]
+}
