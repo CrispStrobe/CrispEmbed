@@ -67,7 +67,9 @@ ggml_tensor * concat_balanced(ggml_context * ctx, std::vector<ggml_tensor *> par
 }
 ggml_tensor * image_matmul(ggml_context * ctx, ggml_tensor * weights, ggml_tensor * columns, int64_t width,
                            int64_t height, bool fast, bool spatial_output) {
-    if (!spatial_output || columns->ne[3] > 2)
+    // Activation-on-the-left GEMM needs F32 weights as src1; stored F16/quantized
+    // kernels (StoragePolicy) must stay src0.
+    if (!spatial_output || columns->ne[3] > 2 || weights->type != GGML_TYPE_F32)
         return image_layout(ctx, matmul(ctx, weights, columns, fast), width, height);
     // With activations on the left, GEMM writes spatial-first CHW directly.
     // Process each sample separately so immutable weights stay contiguous and
@@ -213,10 +215,11 @@ static void load_with_policy(Weights & w, const char * path, const ShapeMap & sc
     std::unique_ptr<gguf_context, decltype(&core_gguf::free_metadata)> meta(core_gguf::open_metadata(path),
                                                                             core_gguf::free_metadata);
     require(bool(meta), "cannot read GGUF metadata");
+    const auto names = inpaint_weight_names::map(meta.get(), schema);
     std::map<std::string, bool> resident;
     std::vector<std::pair<std::string, int64_t>> converted;
     for (const auto & entry : schema) {
-        const int64_t id = gguf_find_tensor(meta.get(), entry.first.c_str());
+        const int64_t id = gguf_find_tensor(meta.get(), names.at(entry.first).c_str());
         require(id >= 0, "missing weight " + entry.first);
         std::array<int64_t, 4> expected{ 1, 1, 1, 1 };
         int64_t count = 1;
@@ -230,9 +233,9 @@ static void load_with_policy(Weights & w, const char * path, const ShapeMap & sc
         for (int axis = 0; axis < 4; ++axis) exact &= ne[axis] == expected[axis];
         require(ne[0] * ne[1] * ne[2] * ne[3] == count, "stored element count differs: " + entry.first);
         if (type == GGML_TYPE_F32 && exact) {
-            resident[entry.first] = true;
+            resident[names.at(entry.first)] = true;
         } else if (policy.keep_stored(entry.first, type, ne, entry.second)) {
-            resident[entry.first] = true;
+            resident[names.at(entry.first)] = true;
             if (!exact) {
                 require(entry.second.size() == 4 && ne[0] == expected[0] * expected[1] * expected[2] &&
                             ne[1] == expected[3] && ne[2] == 1 && ne[3] == 1,
@@ -247,6 +250,13 @@ static void load_with_policy(Weights & w, const char * path, const ShapeMap & sc
                                              w.loaded) &&
                 w.loaded.tensors.size() == resident.size(),
             "cannot load resident weights");
+    {
+        // Canonical (schema) names for the resident subset; encoded file names otherwise.
+        inpaint_weight_names::Names kept;
+        for (const auto & item : names)
+            if (resident.count(item.second)) kept.emplace(item.first, item.second);
+        inpaint_weight_names::restore(w.loaded, kept);
+    }
     if (converted.empty()) return;
     w.converted_ctx = ggml_init({ (converted.size() + 16) * ggml_tensor_overhead(), nullptr, true });
     require(w.converted_ctx != nullptr, "weight metadata allocation failed");

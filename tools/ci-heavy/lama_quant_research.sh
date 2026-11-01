@@ -60,10 +60,10 @@ Q=$(find "$B" -name crispembed-quantize -type f | head -1)
 DIFF=$(find "$B" -name test-lama-diff -type f | head -1)
 CLI=$(find "$B" -name crispembed -type f | head -1)
 M=$S/models; mkdir -p "$M"; cp "$F32" "$M/big-lama-f32.gguf"
-# Recipes: name|requested type|--tensor-type overrides (q4_k-s8 holds every global
-# spectral-branch kernel at Q8_0; q4_k-s8e8 also the encoder downsampling convs).
+# Recipes: name|requested type|--tensor-type overrides. q4_k-s8e8 holds every global
+# spectral-branch kernel and the encoder downsampling convs (model.2-4) at Q8_0; plain
+# q4_k fails the full-mask fixture (lanes 41292697462, 41295796193).
 RECIPES=("f16|f16|" "q8_0|q8_0|" "q4_k|q4_k|"
-         "q4_k-s8|q4_k|generator.*.convg2g.*=q8_0"
          "q4_k-s8e8|q4_k|generator.*.convg2g.*=q8_0 generator.model.2.*=q8_0 generator.model.3.*=q8_0 generator.model.4.*=q8_0")
 for recipe in "${RECIPES[@]}"; do
     IFS='|' read -r q type overrides <<< "$recipe"
@@ -75,17 +75,23 @@ done
 sha256sum "$M"/*.gguf | sed "s#$M/##" > "$OUT/gguf-sha256.txt"
 ls -l "$M"/*.gguf | awk '{print $5, $NF}' | sed "s#$M/##" > "$OUT/gguf-bytes.txt"
 sha() { awk -v f="big-lama-$1.gguf" '$2==f{print $1}' "$OUT/gguf-sha256.txt"; }
+# "opt" is delivery 5's optimized CPU graph (tests/results/inpainting/lama-cpu-2026-11-01.json):
+# persistent graph + CPU FFT + reflect gather + GEMM layout, F32 weights by default.
+OPT="CRISPEMBED_INPAINT_GRAPH=1 CRISPEMBED_INPAINT_CPU_FFT=1 CRISPEMBED_INPAINT_REFLECT_GATHER=1 CRISPEMBED_INPAINT_GEMM_LAYOUT=1"
 mode_env() {
     case $1 in
         matmul) echo CRISPEMBED_LAMA_QUANT_MATMUL=1 ;;
         stored) echo CRISPEMBED_LAMA_STORED_OPS=1 ;;
         graph) echo CRISPEMBED_INPAINT_GRAPH=1 ;;
         graph-matmul) echo CRISPEMBED_INPAINT_GRAPH=1 CRISPEMBED_LAMA_QUANT_MATMUL=1 ;;
+        opt) echo $OPT ;;
+        opt-matmul) echo $OPT CRISPEMBED_LAMA_QUANT_MATMUL=1 ;;
     esac
 }
-CONFIGS=(f32/stored f32/graph)
-for q in f16 q8_0 q4_k; do for mode in storage matmul graph graph-matmul; do CONFIGS+=("$q/$mode"); done; done
-CONFIGS+=(q4_k-s8/storage q4_k-s8/graph-matmul q4_k-s8e8/storage q4_k-s8e8/graph-matmul)
+# Delivery 5 established F32 eager/portable/optimized; earlier lanes established the
+# StoredOps and portable-graph matrices. Here: the optimized graph only.
+CONFIGS=(f32/opt)
+for q in f16 q8_0 q4_k q4_k-s8e8; do for mode in opt opt-matmul; do CONFIGS+=("$q/$mode"); done; done
 
 if [ "$PHASE" = fixtures ]; then
     for config in "${CONFIGS[@]}"; do
@@ -136,26 +142,26 @@ for p in sorted(src.iterdir()):
 print(json.dumps(rec, indent=2))
 PY
     LIVE=()
-    for config in f32/storage "${CONFIGS[@]}"; do
+    for config in "${CONFIGS[@]}"; do
         q=${config%/*}; mode=${config#*/}; label=$q-$mode
         step "live-$label" env $(mode_env "$mode") python tools/inpaint_live_eval.py --binary "$CLI" --backend lama \
             --model "$M/big-lama-$q.gguf" --model-sha256 "$(sha "$q")" --photos "$S"/photos/*.png \
             --output-dir "$OUT/live/$label" --threads $THREADS
-        [ "$label" != f32-storage ] && LIVE+=(--variant "$label=$OUT/live/$label")
+        [ "$label" != f32-opt ] && LIVE+=(--variant "$label=$OUT/live/$label")
         # Peak RSS / wall for one photo (street) through the production CLI.
         /usr/bin/time -v env CRISPEMBED_LAMA=1 $(mode_env "$mode") "$CLI" --inpaint-engine lama \
             --inpaint-model "$M/big-lama-$q.gguf" --inpaint-model-sha256 "$(sha "$q")" \
-            --inpaint "$OUT/live/f32-storage/street.input.png" --mask "$OUT/live/f32-storage/street.mask.png" \
+            --inpaint "$OUT/live/f32-opt/street.input.png" --mask "$OUT/live/f32-opt/street.mask.png" \
             --inpaint-output "$S/rss-$label.png" --threads $THREADS > /dev/null 2> "$OUT/rss-$label.txt" ||
             echo "rss-$label=fail" >> "$OUT/results.txt"
     done
     SRC=$(find "$S/acc" -maxdepth 1 -name original-source -type d)
     ZIP=$S/acc/big-lama.zip
     step live-original python tools/lama_original_photos.py --source-dir "$SRC" --checkpoint-archive "$ZIP" \
-        --eval-dir "$OUT/live/f32-storage" --output-dir "$OUT/live/original" --threads $THREADS
+        --eval-dir "$OUT/live/f32-opt" --output-dir "$OUT/live/original" --threads $THREADS
     step live-compare python tools/lama_live_compare.py --original-dir "$OUT/live/original" \
-        --f32-dir "$OUT/live/f32-storage" "${LIVE[@]}" --output "$OUT/live-comparison.json"
-    find "$OUT/live" -mindepth 2 -path '*/f32-storage/*' -prune -o \
+        --f32-dir "$OUT/live/f32-opt" "${LIVE[@]}" --output "$OUT/live-comparison.json"
+    find "$OUT/live" -mindepth 2 -path '*/f32-opt/*' -prune -o \
         \( -name '*.clean.png' -o -name '*.input.png' -o -name '*.mask.png' \) -print | xargs rm -f
     find "$A" -name '*.f32' -delete
 fi
