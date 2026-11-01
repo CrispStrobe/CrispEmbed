@@ -2639,7 +2639,24 @@ struct graph_scope {
     }
 };
 
+// On a GPU backend, request F32 matrix-product precision for every MUL_MAT in
+// a D-FINE graph (convolutions included, whose im2col GEMM is built inside
+// ggml_conv_2d). ggml-metal's default mul_mm stages BOTH operands as half in
+// threadgroup memory even for F32 x F32; GGML_PREC_F32 selects the fork's _hp
+// kernel (F32 tiles). The CPU backend ignores the flag. Default on for the GPU
+// path; CRISPEMBED_OXR_LAYOUT_GPU_PREC_F32=0 restores the half-tile kernels
+// (A/B receipts in tests/results/oxr-dfine/metal-m1/).
+bool dfine_gpu_prec_f32() {
+    static const bool on = !core_env::explicitly_off("CRISPEMBED_OXR_LAYOUT_GPU_PREC_F32");
+    return on;
+}
+
 bool run_graph(context * ctx, graph_scope & gs, const std::vector<std::pair<const char *, const float *>> & inputs) {
+    if (ctx->dfine && ctx->dfine->gpu && dfine_gpu_prec_f32())
+        for (int i = 0; i < ggml_graph_n_nodes(gs.gf); i++) {
+            ggml_tensor * node = ggml_graph_node(gs.gf, i);
+            if (node->op == GGML_OP_MUL_MAT) ggml_mul_mat_set_prec(node, GGML_PREC_F32);
+        }
     if (!ggml_gallocr_alloc_graph(ctx->galloc, gs.gf)) {
         ctx->error = "D-FINE graph allocation failed";
         return false;

@@ -262,6 +262,22 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
     const bool is_internvl2 = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "internvl2";
     const bool is_teleocr = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "teleocr";
     const bool is_oxr = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "oxr";
+    // OXR large-tensor policy (opt-in, default unchanged): CRISPEMBED_QUANTIZE_OXR_LARGE
+    //   q8_0  embed_tokens, lm_head, vte and the 65532x4608 visual head -> Q8_0
+    //   mix   visual head -> Q4_K, the other three -> Q8_0
+    // (after fusor-rs/oxr-wasm, MIT: its default bundle keeps the visual head
+    // 4-bit and every other large matrix 7-bit). The loader accepts these
+    // tensors quantized only when this key is present.
+    std::string oxr_large;
+    if (is_oxr) {
+        if (const char * v = getenv("CRISPEMBED_QUANTIZE_OXR_LARGE")) oxr_large = v;
+        if (!oxr_large.empty() && oxr_large != "q8_0" && oxr_large != "mix") {
+            fprintf(stderr, "CRISPEMBED_QUANTIZE_OXR_LARGE must be q8_0 or mix\n");
+            gguf_free(ctx_out);
+            return false;
+        }
+        if (!oxr_large.empty()) gguf_set_val_str(ctx_out, "oxr.quantize.large", oxr_large.c_str());
+    }
     const int family_key = gguf_find_key(ctx_in, "qwen2vl.model_family");
     const bool is_mineru25 =
         family_key >= 0 && std::string(gguf_get_val_str(ctx_in, family_key)) == "mineru2.5-pro-2604";
@@ -634,7 +650,9 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
                 (sname.find(".self_attn.") != std::string::npos || sname.find(".mlp.fc") != std::string::npos);
             const bool llm_matrix =
                 sname.rfind("llm.model.layers.", 0) == 0 && (sname.find("_proj.weight") != std::string::npos);
-            if (!vision_matrix && !llm_matrix) quantize = false;
+            const bool large = sname == "llm.model.embed_tokens.weight" || sname == "llm.lm_head.weight" ||
+                               sname == "vte.weight" || sname == "visual_tokenizer.head.0.weight";
+            if (!vision_matrix && !llm_matrix && !(large && !oxr_large.empty())) quantize = false;
         }
         const int64_t ncols = t->ne[0];
         ggml_type qtype_used = qtype;
@@ -880,6 +898,16 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
                 printf("skip (ncols %lld not div by %lld)\n", (long long)ncols, (long long)qk);
                 quantize = false;
             }
+        }
+
+        // OXR large-tensor policy (see oxr_large above): applied last, so no
+        // generic embedding/vision rule changes these four tensors' types.
+        if (quantize && is_oxr && !oxr_large.empty() &&
+            (sname == "llm.model.embed_tokens.weight" || sname == "llm.lm_head.weight" || sname == "vte.weight" ||
+             sname == "visual_tokenizer.head.0.weight")) {
+            qtype_used =
+                oxr_large == "mix" && sname == "visual_tokenizer.head.0.weight" ? GGML_TYPE_Q4_K : GGML_TYPE_Q8_0;
+            printf("(oxr-large→%s) ", ggml_type_name(qtype_used));
         }
 
         // Source already at the target type (e.g. a q8_0 embedding kept at q8_0):
