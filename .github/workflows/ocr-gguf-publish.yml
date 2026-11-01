@@ -11,7 +11,8 @@ on:
         description: 'Publication protocol'
         required: true
         type: choice
-        options: [docs/mineru25-pro-publication-v1.json, docs/teleocr-publication-v1.json]
+        options: [docs/mineru25-pro-publication-v1.json, docs/teleocr-publication-v1.json,
+                  docs/oxr-publication-v1.json, docs/oxr-dfine-publication-v1.json]
       source_ref:
         description: 'Exact commit containing the converter, quantizer, protocol and receipts'
         required: true
