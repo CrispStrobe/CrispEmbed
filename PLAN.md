@@ -182,6 +182,15 @@ intermediate, decoded-quality and same-host speed gates must pass before this
 path is qualified or receives a published model alias. No existing model default,
 release version, application pin or remote model artifact is changed here.
 
+Full native document route (`feat/mineru-native-doc`): C++ port of every
+mineru-vl-utils branch behind `CRISPEMBED_MINERU25_PRO_FULL_DOC` (default off),
+composed from the layout/router/Marker-document components with an exact
+upstream output profile. Weight-free parity is identical (see the guide).
+Model-backed parity on hosted run 41251475795: 8/8 protocol cases identical.
+Next: review and decide default-on (keep basic/Python routes); add an
+image-bearing-table fixture to exercise masking with the real model; token-glyph pixels in image-bearing tables and
+cross-page table merge remain documented exceptions.
+
 
 Choose one bounded lane. The source table and current remote states in the
 handoff take precedence over historical commands.

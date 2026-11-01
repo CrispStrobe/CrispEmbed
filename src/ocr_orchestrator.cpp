@@ -986,8 +986,13 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             img = loaded;
         }
         if (!img) return {};
+        // CRISPEMBED_MINERU25_PRO_FULL_DOC=1 selects the complete native
+        // document route (upstream-exact postprocessing); unset keeps basic.
+        const bool full_doc = core_env::on("CRISPEMBED_MINERU25_PRO_FULL_DOC");
         const char * data =
-            crispembed_mineru_extract(ctx->mineru, img, w, h, 3, 0, std::max(0, st.params.vlm_max_tokens));
+            full_doc ? crispembed_mineru_extract_document(ctx->mineru, img, w, h, 3, nullptr,
+                                                          std::max(0, st.params.vlm_max_tokens))
+                     : crispembed_mineru_extract(ctx->mineru, img, w, h, 3, 0, std::max(0, st.params.vlm_max_tokens));
         if (loaded) stbi_image_free(loaded);
         if (!data) {
             fprintf(stderr, "ocr_orchestrator: MinerU: %s\n", crispembed_mineru_last_error(ctx->mineru));

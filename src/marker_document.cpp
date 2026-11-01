@@ -3,6 +3,7 @@
 // and teleocr-rs (Ramahatratra Zafiamy and contributors). See NOTICE.marker.
 // This is a deterministic alternative pipeline, not Surya model parity.
 #include "marker_document.h"
+#include "otsl_table.h"
 #include "core/json.h"
 
 #include <algorithm>
@@ -797,122 +798,10 @@ std::string otsl_to_html(const std::string & input, std::vector<std::string> & w
         if (safe.empty()) warn(warnings, "Unsafe or malformed HTML table rejected; raw output retained.");
         return safe;
     }
-    const std::set<std::string> tokens = { "fcel", "ecel", "lcel", "ucel", "xcel", "nl" };
-    std::vector<std::vector<table_token>> rows;
-    std::vector<table_token> row;
-    size_t cursor = 0, cells_count = 0;
-    while (cursor < text.size()) {
-        const size_t at = text.find('<', cursor);
-        if (at == std::string::npos) {
-            if (!trim(text.substr(cursor)).empty() && (row.empty() || row.back().kind != "fcel"))
-                warn(warnings, "Text outside an OTSL content cell ignored; raw output retained.");
-            break;
-        }
-        if (!trim(text.substr(cursor, at - cursor)).empty()) {
-            warn(warnings, "Text before an OTSL cell rejected; raw output retained.");
-            return {};
-        }
-        const size_t end = text.find('>', at);
-        if (end == std::string::npos) {
-            warn(warnings, "Truncated OTSL token.");
-            return {};
-        }
-        const std::string kind = text.substr(at + 1, end - at - 1);
-        if (!tokens.count(kind)) {
-            warn(warnings, "Unknown OTSL token; raw output retained.");
-            return {};
-        }
-        cursor = end + 1;
-        if (kind == "nl") {
-            if (!row.empty()) {
-                rows.push_back(std::move(row));
-                row.clear();
-            }
-            continue;
-        }
-        table_token token{ kind, "" };
-        if (kind == "fcel") {
-            size_t next = cursor;
-            while ((next = text.find('<', next)) != std::string::npos) {
-                bool delimiter = false;
-                for (const auto & candidate : tokens) {
-                    if (text.compare(next + 1, candidate.size(), candidate) == 0 &&
-                        next + candidate.size() + 1 < text.size() && text[next + candidate.size() + 1] == '>') {
-                        delimiter = true;
-                        break;
-                    }
-                }
-                if (delimiter) break;
-                ++next;
-            }
-            if (next == std::string::npos) next = text.size();
-            token.text = trim(text.substr(cursor, next - cursor));
-            cursor = next;
-        }
-        row.push_back(std::move(token));
-        if (++cells_count > table_cell_limit) {
-            warn(warnings, "Table exceeds the 16384-cell limit.");
-            return {};
-        }
-    }
-    if (!row.empty()) rows.push_back(std::move(row));
-    if (rows.empty()) {
-        warn(warnings, "Table output contains no OTSL cells.");
-        return {};
-    }
-    size_t width = 0;
-    for (const auto & r : rows) width = std::max(width, r.size());
-    if (width > table_cell_limit / rows.size()) {
-        warn(warnings, "Padded table exceeds the 16384-cell limit.");
-        return {};
-    }
-    bool padded = false;
-    for (auto & r : rows)
-        while (r.size() < width) {
-            r.push_back({ "ecel", "" });
-            padded = true;
-        }
-    if (padded) warn(warnings, "Ragged OTSL rows padded with empty cells.");
-    std::vector<int> owners(width * rows.size(), -1);
-    std::vector<table_cell> cells;
-    for (size_t r = 0; r < rows.size(); ++r) {
-        for (size_t c = 0; c < width; ++c) {
-            const auto & token = rows[r][c];
-            if (token.kind != "fcel" && token.kind != "ecel") continue;
-            size_t columns = 1, height = 1;
-            while (c + columns < width && rows[r][c + columns].kind == "lcel") ++columns;
-            while (r + height < rows.size() && rows[r + height][c].kind == "ucel") ++height;
-            const int owner = static_cast<int>(cells.size());
-            for (size_t y = 0; y < height; ++y)
-                for (size_t x = 0; x < columns; ++x) {
-                    const std::string expected = !y && !x ? token.kind : !y ? "lcel" : !x ? "ucel" : "xcel";
-                    if (rows[r + y][c + x].kind != expected || owners[(r + y) * width + c + x] != -1) {
-                        warn(warnings, "Invalid or overlapping OTSL spanning cell; raw output retained.");
-                        return {};
-                    }
-                    owners[(r + y) * width + c + x] = owner;
-                }
-            cells.push_back({ r, c, height, columns, token.text });
-        }
-    }
-    if (std::find(owners.begin(), owners.end(), -1) != owners.end()) {
-        warn(warnings, "Orphan OTSL continuation cell; raw output retained.");
-        return {};
-    }
-    std::string html = "<table>";
-    for (size_t r = 0; r < rows.size(); ++r) {
-        html += "<tr>";
-        for (size_t c = 0; c < width; ++c) {
-            const auto & cell = cells[static_cast<size_t>(owners[r * width + c])];
-            if (cell.row != r || cell.column != c) continue;
-            html += "<td";
-            if (cell.rows > 1) html += " rowspan=\"" + std::to_string(cell.rows) + "\"";
-            if (cell.columns > 1) html += " colspan=\"" + std::to_string(cell.columns) + "\"";
-            html += ">" + escape_html(cell.text) + "</td>";
-        }
-        html += "</tr>";
-    }
-    return html + "</table>";
+    // OTSL grid parsing is shared (otsl_table.h, profile marker_strict); the
+    // algorithm moved verbatim and keeps this caller's output byte-identical.
+    const otsl_table::marker_hooks hooks{ &trim, &escape_html, &warn, table_cell_limit };
+    return otsl_table::marker_grid_to_html(text, warnings, hooks);
 }
 
 std::string pdf_table_html(const std::vector<line> & lines, std::vector<std::string> & warnings) {

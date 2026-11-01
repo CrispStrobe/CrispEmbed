@@ -66,6 +66,28 @@ impl MinerU {
     }
 }
 
+impl MinerU {
+    /// Complete native document route (requires CRISPEMBED_MINERU25_PRO_FULL_DOC=1).
+    /// `options_json` is a JSON object (see crispembed.h) or "" for defaults.
+    /// The result's "blocks"/"markdown" are byte-identical to mineru-vl-utils.
+    pub fn extract_document(&mut self, pixels: &[u8], width: i32, height: i32,
+                            options_json: &str, max_tokens: i32) -> Result<String, String> {
+        Self::validate_rgb(pixels, width, height, max_tokens)?;
+        let options = CString::new(options_json).map_err(|e| e.to_string())?;
+        let result = unsafe { ffi::crispembed_mineru_extract_document(self.ctx.as_ptr(), pixels.as_ptr(),
+            width, height, 3, options.as_ptr(), max_tokens) };
+        self.copy_result(result)
+    }
+
+    /// Render the last extract_document page: "mineru-json", "mineru-markdown",
+    /// or the Marker renderers "markdown", "html", "json", "chunks".
+    pub fn last_document(&mut self, format: &str) -> Result<String, String> {
+        let format = CString::new(format).map_err(|e| e.to_string())?;
+        let result = unsafe { ffi::crispembed_mineru_last_document(self.ctx.as_ptr(), format.as_ptr()) };
+        self.copy_result(result)
+    }
+}
+
 impl Drop for MinerU {
     fn drop(&mut self) { unsafe { ffi::crispembed_mineru_free(self.ctx.as_ptr()) } }
 }

@@ -88,6 +88,10 @@ extern "C" {
         width: c_int, height: c_int, channels: c_int, prompt: *const c_char, max_new_tokens: c_int) -> *const c_char;
     pub fn crispembed_mineru_extract(ctx: *mut MineruContext, pixels: *const u8,
         width: c_int, height: c_int, channels: c_int, image_analysis: c_int, max_new_tokens: c_int) -> *const c_char;
+    pub fn crispembed_mineru_extract_document(ctx: *mut MineruContext, pixels: *const u8,
+        width: c_int, height: c_int, channels: c_int, options_json: *const c_char,
+        max_new_tokens: c_int) -> *const c_char;
+    pub fn crispembed_mineru_last_document(ctx: *mut MineruContext, format: *const c_char) -> *const c_char;
     pub fn crispembed_mineru_last_markdown(ctx: *const MineruContext) -> *const c_char;
     pub fn crispembed_mineru_last_error(ctx: *const MineruContext) -> *const c_char;
 }

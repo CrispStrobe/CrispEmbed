@@ -24,6 +24,7 @@ their own validation.
 | `crispembed_mineru_predict`, Python `CrispMinerU.predict`, Rust `MinerU`, Dart `CrispMinerU` | Native GGML vision and language model; one image/region or a text-only prompt. Returns text, structural tokens, IDs, stop flags and timing. |
 | Python `CrispMinerU.two_step_extract` / `batch_two_step_extract` | Native GGML inference plus the **unchanged pinned Python document helper** for layout preparation, crop geometry, table-image masking/restoration, formula repairs, image/chart processing and document postprocessing. No Python neural model is loaded. Pages/regions execute serially in one resident native context. |
 | `crispembed_mineru_extract`, Python `native_extract`, orchestrator engine 25 / `mineru25-pro` | Pure C++ **basic** two-step page extraction. Includes layout resize/parsing, crops/rotation, recognition, basic OTSL-to-HTML and Markdown. It does not reproduce every Python document repair. It rejects tables containing images and directs callers to the full helper path. |
+| `crispembed_mineru_extract_document` / `_last_document`, Python `native_two_step_extract` / `native_render`, Rust `MinerU::extract_document`, Dart `extractDocument`, engine 25 with `CRISPEMBED_MINERU25_PRO_FULL_DOC=1` | **Complete native document route** (no Python): every mineru-vl-utils branch translated to C++, built from the shared layout/router/document-model components. Default off; see [Full native document route](#full-native-document-route). |
 | Generic `CrispOcrModel` / CLI `-m FILE --ocr IMAGE` | Existing Qwen2-VL dispatch recognizes the new GGUF profile; default task is **Text Recognition on that image**, not automatic page layout extraction. |
 
 The native basic route must not be described as the complete Python document
@@ -31,6 +32,121 @@ pipeline. The full Python adapter intentionally reuses the original helper rathe
 than replacing its detailed table/formula rules with approximations. Optional
 cross-page table merging additionally needs the original MinerU table-merge
 package; absent helpers or native inference errors are reported, not ignored.
+
+## Full native document route
+
+`CRISPEMBED_MINERU25_PRO_FULL_DOC=1` (default off; unset, empty and `0` keep it
+off) enables a pure C++ route whose output is designed to be byte-identical to
+`CrispMinerU.two_step_extract` + `to_markdown` (pinned helper
+`c9797cde8f54cc48306196fc6aebe73ea31dd4a3`) given the same recognition outputs.
+The basic route (`crispembed_mineru_extract`) is unchanged and remains the
+default for engine 25.
+
+**Composition from shared components.** Step 1's VLM layout output (upstream
+regex, exact `int()`/dedup/fsum/table-internal filtering) is a layout provider
+emitting `layout_detect::region`s (pixel bbox, mapped heron label, score 1)
+plus MinerU extras (raw type, angle, continuation, exact normalized bbox).
+`ocr_region_router` plans destinations (table, formula, image-analysis
+fallback, text); recognition runs per region with MinerU's prompts through an
+injected predictor (native GGML in production, recorded outputs in tests).
+The MinerU-specific steps are translated faithfully (`src/mineru_document.cpp`,
+`src/mineru_postprocess.cpp`, `src/mineru_table_image.cpp`) and the result is
+written into the `crisp_marker` document model. The **upstream profile**
+(`mineru-json`, `mineru-markdown`) renders exact mineru-vl-utils JSON
+(`json.dumps(..., ensure_ascii=False, separators=(",", ":"))`, including key
+order, Python float repr and `null` content) and `json2md` Markdown from that
+model; the same document also renders through the Marker `markdown`/`html`/
+`json`/`chunks` renderers. Additive model change: `crisp_marker::block`
+gained `std::map<std::string,std::string> attributes` (`mineru.*` keys).
+
+**Helper branches ported.** Layout: parse/dedup/table-internal text filter,
+internal image captions, image_block-covered visuals, image-analysis size
+eligibility, skip lists and `not_extract_list`. Crops: Pillow ties-to-even
+crop, 90/180/270 transpose, `resize_by_need` (aspect>50 white padding, min edge
+28 bicubic). Tables: `build_table_image_map`, absorbed images,
+`mask_and_encode_table_image` (average colour, inclusive rectangle, rotated
+boxes, CPython `random` MT19937 tokens, Pillow-exact baseline JPEG + base64
+data URIs), OTSL→HTML (docling), token restoration, `<eq>` wrapping. Image/
+chart: tagged fields, chemical, flowchart (repetition detection, node-id
+legalisation, invalid edge/subgraph repair, strict Mermaid), chart repetition
+repair and malformed-table rejection, pure_table (Markdown/OTSL/HTML),
+pure_formula, natural_image captions, `sub_type`. Text: display→inline,
+macro spacing, underscores. Equations: delimiters, `\left/\right` repair
+(array tagging, upstream quirks such as `\right.` matching any character),
+double subscripts, eqqcolon, 313 `\big` substitutions (generated from the
+pinned source), `<` spacing, unbalanced braces, brackets; equation_block
+merging with `\tag` handling. `[Non-Text]` cleanup, list_item→text,
+abandon_list/paratext, simple_post_process, and the helper's exception
+fallback (e.g. an equation_block over unextracted equations returns the
+mutated original list). Truncation follows `allow_truncated_content`.
+
+**Exactness infrastructure.** `src/pyre.h` implements CPython `str`/`re`
+semantics over code points (backtracking VM, explicit stack; Unicode
+`\s\w\d\b`, `str.lower` incl. Final_Sigma, `splitlines`, `strip`), with
+predicate tables generated from CPython (`tools/gen/gen_pyunicode_tables.py`;
+the hosted lane regenerates them for its reference interpreter and records
+whether they changed). Sources are compiled with `-ffp-contract=off`.
+
+**Not identical by construction.** (1) Token *glyphs* drawn into table crops
+that contain images: upstream uses Pillow/FreeType with the first host font
+(Arial on macOS, DejaVu on Linux). The native route draws an embedded DejaVu
+Sans atlas with the same size search and placement; masks, colours, tokens and
+restored data URIs are exact, but those crops' pixels (and therefore possibly
+the model's reading of the token) can differ. (2) Unseeded token RNG is OS
+entropy on both sides (non-deterministic upstream too); pass
+`table_token_seed` for reproducibility. (3) A JPEG `comment` carried in a
+source image's PIL `info` is not propagated (raw pixels carry none).
+(4) **Cross-page table merge is not ported**: upstream delegates to the
+optional MinerU `table_merge` helpers (MinerU 4.1.3 → DocVortex, separate
+additional-terms licence) that are not part of mineru-vl-utils; the native
+route rejects `enable_cross_page_table_merge`. Use the Python
+`batch_two_step_extract` for it.
+
+**Evidence.** Weight-free, local (CPython 3.11.8, Pillow 12.3.0 /
+libjpeg-turbo 3.1.4.1): 56,700 regex checks on every helper pattern; 66,000
+function cases (22 functions) in `tools/mineru_doc/fuzz_postprocess.py`;
+120 JPEG encodings byte-identical to Pillow; 617 OTSL rows
+(`tests/data/otsl_profiles_golden.tsv`); 300 synthetic pages covering all
+branches identical in blocks JSON, Markdown, document-model renders, every
+region request and every non-glyph crop hash
+([receipt](../tests/results/mineru25/native-doc-synthetic-parity.json)).
+Model-backed (hosted run 41251475795, published F16 GGUF, CPython 3.12.15,
+x86 CPU, `max_new_tokens=2048`, image analysis on): all **8/8** protocol cases
+are byte-identical between `two_step_extract`+`to_markdown` and
+`native_two_step_extract` in blocks JSON and Markdown, with identical
+per-request prompts, crop sizes, token IDs, text and EOS (50 requests: 8 layout + 42 regions,
+none capped); the recorded recognition also replays identically (8/8). The
+weight-free gates passed on the same host with Unicode tables regenerated for
+CPython 3.12. Route wall times are equal within noise (inference dominates).
+No protocol case contains a table with embedded images, so the token-glyph
+exception was not exercised by the model run
+([receipt](../tests/results/mineru25/native-doc-model-parity.json)).
+The gate stays default-off pending review; proposing default-on is now
+supported by this evidence, keeping the basic and Python routes.
+
+```bash
+CRISPEMBED_MINERU25_PRO=1 CRISPEMBED_MINERU25_PRO_FULL_DOC=1 ./build/crispembed \
+  --ocr-pipeline page.png --ocr-engine mineru25-pro --ocr-rec mineru25-pro-f16.gguf
+```
+
+```python
+with CrispMinerU('mineru25-pro-f16.gguf', lib_path='build/libcrispembed.so') as m:
+    blocks = m.native_two_step_extract('page.png', table_token_seed=0)
+    print(m.native_render('mineru-markdown'))   # == to_markdown(two_step_extract(...))
+    print(m.native_render('html'))              # Marker renderer, same document
+```
+
+### Shared OTSL→HTML
+
+`src/otsl_table.h` is the single OTSL converter for MinerU, Marker and TeleOCR,
+with explicit profiles: `upstream_docling` (exact mineru-vl-utils/docling,
+used by the full route), `mineru_basic_v1` (moved verbatim from
+`mineru_layout.h`; basic route output unchanged) and `marker_strict` (moved
+verbatim from `marker_document.cpp`; validating, with warnings; TeleOCR and
+Marker callers unchanged). `test-otsl-table` checks all three against outputs
+captured from the pre-extraction implementations on 617 inputs; the profiles
+disagree with upstream on 56 (basic) and 527 (marker) of them, which is why
+no caller was switched.
 
 ## QuickGELU operator helper (from the OXR delivery)
 

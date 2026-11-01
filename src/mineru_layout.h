@@ -20,6 +20,8 @@
 #include <string>
 #include <vector>
 
+#include "otsl_table.h"
+
 namespace mineru {
 
 struct block {
@@ -275,168 +277,23 @@ inline crop_transform normalize_crop_geometry(int width, int height, int angle =
     return p;
 }
 
+// Shared OTSL/whitespace helpers now live in otsl_table.h (moved verbatim;
+// outputs unchanged). These names remain for existing callers.
 inline bool python_space(uint32_t cp) {
-    return (cp >= 9 && cp <= 13) || (cp >= 0x1c && cp <= 0x20) || cp == 0x85 || cp == 0xa0 || cp == 0x1680 ||
-           (cp >= 0x2000 && cp <= 0x200a) || cp == 0x2028 || cp == 0x2029 || cp == 0x202f || cp == 0x205f ||
-           cp == 0x3000;
+    return otsl_table::python_space(cp);
 }
-
 inline std::string trim(const std::string & s) {
-    size_t first = s.size(), last = 0;
-    for (size_t i = 0; i < s.size();) {
-        const size_t begin = i;
-        const uint32_t b = static_cast<unsigned char>(s[i++]);
-        uint32_t cp = b;
-        int more = 0;
-        if (b >= 0xc2 && b < 0xe0) {
-            cp = b & 31;
-            more = 1;
-        } else if (b >= 0xe0 && b < 0xf0) {
-            cp = b & 15;
-            more = 2;
-        } else if (b >= 0xf0 && b <= 0xf4) {
-            cp = b & 7;
-            more = 3;
-        }
-        bool valid = i + static_cast<size_t>(more) <= s.size();
-        for (int k = 0; valid && k < more; ++k) {
-            const unsigned c = static_cast<unsigned char>(s[i + k]);
-            if ((c & 0xc0) != 0x80)
-                valid = false;
-            else
-                cp = (cp << 6) | (c & 63);
-        }
-        if (valid) i += more;
-        if (!valid || !python_space(cp)) {
-            first = std::min(first, begin);
-            last = i;
-        }
-    }
-    return first == s.size() ? "" : s.substr(first, last - first);
+    return otsl_table::python_trim(s);
 }
-
 inline std::string html_escape(const std::string & s) {
-    std::string out;
-    for (char c : s) {
-        switch (c) {
-        case '&':
-            out += "&amp;";
-            break;
-        case '<':
-            out += "&lt;";
-            break;
-        case '>':
-            out += "&gt;";
-            break;
-        case '"':
-            out += "&quot;";
-            break;
-        case '\'':
-            out += "&#x27;";
-            break;
-        default:
-            out += c;
-        }
-    }
-    return out;
+    return otsl_table::html_escape_python(s);
 }
-
 inline bool otsl_token(const std::string & s) {
-    return s == "<nl>" || s == "<fcel>" || s == "<ecel>" || s == "<lcel>" || s == "<ucel>" || s == "<xcel>";
+    return otsl_table::otsl_token(s);
 }
-
+// Legacy basic-route OTSL semantics (profile mineru_basic_v1).
 inline std::string otsl_to_html(const std::string & input) {
-    if (input.compare(0, 6, "<table") == 0 && input.size() >= 8 && input.compare(input.size() - 8, 8, "</table>") == 0)
-        return input;
-    static const std::regex token_re(R"(<nl>|<fcel>|<ecel>|<lcel>|<ucel>|<xcel>)");
-    std::vector<std::string> tokens, mixed;
-    size_t last = 0;
-    for (std::sregex_iterator it(input.begin(), input.end(), token_re), end; it != end; ++it) {
-        const size_t pos = static_cast<size_t>(it->position());
-        const std::string text = input.substr(last, pos - last);
-        if (!trim(text).empty()) mixed.push_back(text);
-        tokens.push_back(it->str());
-        mixed.push_back(it->str());
-        last = pos + static_cast<size_t>(it->length());
-    }
-    if (!trim(input.substr(last)).empty()) mixed.push_back(input.substr(last));
-    std::vector<std::vector<std::string>> rows;
-    std::vector<std::string> row;
-    for (const auto & t : tokens) {
-        if (t == "<nl>") {
-            if (!row.empty()) {
-                rows.push_back(row);
-                row.clear();
-            }
-        } else
-            row.push_back(t);
-    }
-    if (!row.empty()) rows.push_back(row);
-    if (rows.empty()) return "";
-    size_t cols = 0;
-    for (const auto & r : rows) cols = std::max(cols, r.size());
-    for (auto & r : rows) r.resize(cols, "<ecel>");
-    // Faithful to the blueprint's ragged-row reconstruction, including its
-    // handling of non-token text. Only <fcel> gives a cell textual content.
-    std::vector<std::string> rebuilt;
-    size_t at = 0;
-    for (const auto & r : rows) {
-        for (const auto & t : r) {
-            rebuilt.push_back(t);
-            if (at < mixed.size() && mixed[at] == t) {
-                ++at;
-                if (at < mixed.size() && !otsl_token(mixed[at])) rebuilt.push_back(mixed[at++]);
-            }
-        }
-        rebuilt.push_back("<nl>");
-        if (at < mixed.size() && mixed[at] == "<nl>") ++at;
-    }
-    struct cell {
-        size_t r, c, rs, cs;
-        std::string text;
-    };
-    std::vector<cell> cells;
-    size_t r = 0, c = 0;
-    for (size_t i = 0; i < rebuilt.size(); ++i) {
-        const auto & t = rebuilt[i];
-        if (t == "<fcel>" || t == "<ecel>") {
-            cell v{ r, c, 1, 1, "" };
-            if (t == "<fcel>" && i + 1 < rebuilt.size() && !otsl_token(rebuilt[i + 1])) v.text = trim(rebuilt[i + 1]);
-            while (c + v.cs < cols && (rows[r][c + v.cs] == "<lcel>" || rows[r][c + v.cs] == "<xcel>")) ++v.cs;
-            while (r + v.rs < rows.size() && (rows[r + v.rs][c] == "<ucel>" || rows[r + v.rs][c] == "<xcel>")) ++v.rs;
-            cells.push_back(v);
-        }
-        if (t == "<nl>") {
-            ++r;
-            c = 0;
-        } else if (otsl_token(t))
-            ++c;
-    }
-    if (cells.empty()) return "";
-    // The Python TableData starts with an empty independent cell at every
-    // coordinate then overwrites spans in source order (also for malformed OTSL).
-    std::vector<cell> grid;
-    for (size_t i = 0; i < rows.size(); ++i)
-        for (size_t j = 0; j < cols; ++j) grid.push_back({ i, j, 1, 1, "" });
-    for (const auto & v : cells)
-        for (size_t i = v.r; i < std::min(v.r + v.rs, rows.size()); ++i)
-            for (size_t j = v.c; j < std::min(v.c + v.cs, cols); ++j) grid[i * cols + j] = v;
-    std::ostringstream html;
-    html << "<table>";
-    for (size_t i = 0; i < rows.size(); ++i) {
-        html << "<tr>";
-        for (size_t j = 0; j < cols; ++j) {
-            const auto & v = grid[i * cols + j];
-            if (v.r != i || v.c != j) continue;
-            html << "<td";
-            if (v.rs > 1) html << " rowspan=\"" << v.rs << "\"";
-            if (v.cs > 1) html << " colspan=\"" << v.cs << "\"";
-            html << ">" << html_escape(v.text) << "</td>";
-        }
-        html << "</tr>";
-    }
-    html << "</table>";
-    return html.str();
+    return otsl_table::to_html(input, otsl_table::profile::mineru_basic_v1);
 }
 
 inline std::string json_quote(const std::string & input) {

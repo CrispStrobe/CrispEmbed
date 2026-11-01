@@ -25,6 +25,26 @@ budgets unchanged). Retained initial failures: the reference's config-class iden
 uninitialised non-persistent buffers under Transformers 5.13.1, native GGUF names over
 GGML_MAX_NAME (vision prefix now `vit.`), and an observer reading a reused buffer. Same-source
 timing differs by runner (1.005-1.67x on 41249502630).
+## 1 November 2026 — MinerU2.5-Pro complete native document route (feat/mineru-native-doc)
+
+Translated every mineru-vl-utils `c9797cde` document branch to C++ and composed
+it from the shared layout-provider / `ocr_region_router` / `crisp_marker`
+document-model components, behind `CRISPEMBED_MINERU25_PRO_FULL_DOC` (default
+off; basic route unchanged). Exposed through `crispembed_mineru_extract_document`
+/ `crispembed_mineru_last_document`, engine 25 (gated), Python
+`native_two_step_extract`/`native_render`, Rust `extract_document`, Dart
+`extractDocument`. Extracted the shared `otsl_table.h` (profiles
+upstream_docling / mineru_basic_v1 / marker_strict; existing callers
+byte-identical on 617 golden rows). Weight-free evidence (local CPython
+3.11.8): 56,700 regex and 66,000 function differential cases, 120 Pillow JPEGs
+and 300 branch-covering synthetic pages all identical
+(`tests/results/mineru25/native-doc-synthetic-parity.json`). Exceptions by
+construction: approximate token glyph pixels in image-bearing table crops;
+cross-page table merge not ported. Model-backed lane
+`tools/ci-heavy/mineru25_doc_parity.sh`: initial run 41250564149 passed all
+weight-free gates on CPython 3.12 but 404ed on a wrong GGUF filename; run
+41251475795 is 8/8 byte-identical (JSON, Markdown, 50 requests: 8 layout + 42 regions) and
+8/8 on recorded replay.
 
 ## 31 October 2026 — Native Marker-style document processing with TeleOCR
 

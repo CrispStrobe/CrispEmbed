@@ -1,0 +1,95 @@
+{
+ "python": "3.12.15",
+ "cases": 8,
+ "identical": 8,
+ "rows": [
+  {
+   "case": "formula",
+   "regions": 1,
+   "status": "identical",
+   "first_differences": {},
+   "crop_differences": [],
+   "masked_table_crops_with_approximate_glyphs": 0,
+   "request_mismatch": "",
+   "bytes_json": 137,
+   "bytes_markdown": 54
+  },
+  {
+   "case": "table",
+   "regions": 2,
+   "status": "identical",
+   "first_differences": {},
+   "crop_differences": [],
+   "masked_table_crops_with_approximate_glyphs": 0,
+   "request_mismatch": "",
+   "bytes_json": 639,
+   "bytes_markdown": 487
+  },
+  {
+   "case": "receipt",
+   "regions": 7,
+   "status": "identical",
+   "first_differences": {},
+   "crop_differences": [],
+   "masked_table_crops_with_approximate_glyphs": 0,
+   "request_mismatch": "",
+   "bytes_json": 1335,
+   "bytes_markdown": 764
+  },
+  {
+   "case": "german",
+   "regions": 18,
+   "status": "identical",
+   "first_differences": {},
+   "crop_differences": [],
+   "masked_table_crops_with_approximate_glyphs": 0,
+   "request_mismatch": "",
+   "bytes_json": 2614,
+   "bytes_markdown": 1103
+  },
+  {
+   "case": "japanese",
+   "regions": 3,
+   "status": "identical",
+   "first_differences": {},
+   "crop_differences": [],
+   "masked_table_crops_with_approximate_glyphs": 0,
+   "request_mismatch": "",
+   "bytes_json": 266,
+   "bytes_markdown": 50
+  },
+  {
+   "case": "arabic",
+   "regions": 1,
+   "status": "identical",
+   "first_differences": {},
+   "crop_differences": [],
+   "masked_table_crops_with_approximate_glyphs": 0,
+   "request_mismatch": "",
+   "bytes_json": 104,
+   "bytes_markdown": 10
+  },
+  {
+   "case": "layout-page",
+   "regions": 9,
+   "status": "identical",
+   "first_differences": {},
+   "crop_differences": [],
+   "masked_table_crops_with_approximate_glyphs": 0,
+   "request_mismatch": "",
+   "bytes_json": 2556,
+   "bytes_markdown": 1765
+  },
+  {
+   "case": "layout-rot90",
+   "regions": 1,
+   "status": "identical",
+   "first_differences": {},
+   "crop_differences": [],
+   "masked_table_crops_with_approximate_glyphs": 0,
+   "request_mismatch": "",
+   "bytes_json": 1963,
+   "bytes_markdown": 1436
+  }
+ ]
+}
