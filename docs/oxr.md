@@ -494,6 +494,39 @@ conversion: the shared volume was below its free-space floor). CUDA (Kaggle T4, 
 flash attention of the previous code) diverged on German at token 87; the new dense GPU attention
 is the default for every GPU backend under `CRISPEMBED_OXR_GPU=1` but has not been re-run on CUDA.
 
+## Quantized recipes under the owner policy (1 November 2026)
+
+Policy: [docs/precision-acceptance.md](precision-acceptance.md) (final-logit cosine vs the original,
+minimum over the five cases: Q8_0 > 0.97, Q4_K mixed > 0.94). Hosted CPU lanes
+(`tools/ci-heavy/oxr_qualify.sh dtype=... large=... vision=...`, scored with
+`tools/oxr_precision_score.py`; receipts `tests/results/oxr/hosted-413*`). Quantizer options are
+opt-in: `CRISPEMBED_QUANTIZE_OXR_LARGE=q8_0|mix` also quantizes embed_tokens, lm_head, vte and
+the 65532x4608 visual head (Q8_0; `mix` puts the visual head at Q4_K, after fusor-rs/oxr-wasm,
+MIT), `CRISPEMBED_QUANTIZE_OXR_VISION=f16` keeps the SigLIP2 tower F16 for any target type.
+The loader accepts the quantized large tables only when the GGUF records `oxr.quantize.large`.
+
+| recipe (run) | size* | min logits cos | worst stage cos | decoded vs original |
+| --- | ---: | ---: | --- | --- |
+| Q8_0 layers, F16 vision, large F32 (41277219829, earlier) | 3835 MB | 0.9988 | 0.9956 | German flips at token 68 |
+| Q8_0 + large Q8_0 + **F16 vision** (41328470565) | 1930 MB | **0.9977** | 0.9967 llm.layer.27 | 4/5 exact (German CER 1.1%) |
+| Q8_0 + large Q8_0 + Q8 vision (41327079131) | 1937 MB | 0.9985 | **0.55** vision.layer.26 (German) | 3/5 exact |
+| **Q4_K visual head** + Q8_0 rest + F16 vision (41332645597) | 1786 MB | **0.9980** | 0.990 llm.norm | 4/5 exact (German CER 2.3%) |
+| Q4_K visual head + Q8_0 rest + Q8 vision (41332648013) | 1793 MB | 0.9979 | 0.55 vision.layer.26 | 4/5 exact |
+| Q4_K visual head + Q5_K LLM + F16 vision (41332670307) | 1628 MB | 0.9751 | 0.940 llm.layer.27 | 3/5 exact |
+| Q4_K LLM + Q4_K head + F16 vision (41328472834) | 1576 MB | 0.896 (table) | 0.764 | fail |
+| Q4_K LLM + Q4_K head + Q8 vision (41327081935) | 1583 MB | 0.915 (table) | 0.55 | fail |
+
+*Quantizer summary of the F32-sourced output; the F16 GGUF is 4.4 GB.
+
+Q4_K language layers lose the table case, as oxr-wasm found for 4-bit language layers; the
+qualifying "Q4_K mixed" recipes keep Q4_K for the visual head. **The Q8 vision collapse is a
+runtime effect:** the CPU Q8_0 product quantizes activations to Q8_0 blocks. On Metal the
+same Q8_0-everything GGUF decodes German token-exact with the `_hp` route (F32 activations;
+logits cosine 0.9997 vs CPU F16, vision.merge row-min 0.88) and diverges at token 55 with the
+CPU-bit-identical integer route (`tests/results/oxr/metal-m1/q8_0-all/`). The CPU-side test of
+`CRISPEMBED_OXR_DEQUANT_VISION=1` (quantized vision weights widened to F16 in-graph) is hosted
+run 41337273815. No recipe is published or made default here.
+
 ## Validation evidence and remaining gates
 
 The implementation session completed the following component controls:
