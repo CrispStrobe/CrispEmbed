@@ -121,6 +121,21 @@ for v in "${ARMS[@]}"; do
         --inpaint-model-sha256 "$fsha" --inpaint-checkpoint-sha256 "$SHA" --inpaint "$S/cli/input.png" \
         --mask "$S/cli/mask.png" --inpaint-output "$OUT/cli-$v-subtitle_bar.png" --threads 4
 done
+# Live ground truth: burned-in subtitles on real photos, exact and DBNet masks,
+# both as 512 centre crops (fixed512 profile) and full photos (512 tiles).
+bash tools/ci-heavy/inpaint_live_inputs.sh "$S/photos" "$S/dbnet.gguf" "$OUT/photos.json"
+TM=(); [ -f "$S/dbnet.gguf" ] && TM=(--text-model "$S/dbnet.gguf")
+for geometry in crop512 full; do
+    GEO=(); [ $geometry = crop512 ] && GEO=(--crop 512)
+    for v in "${ARMS[@]}"; do
+        f=${FILES[$v]}; fsha=$(sha256sum "$f" | cut -d' ' -f1)
+        LE=(); case $v in f32) ;; *-mm) LE=(--env CRISPEMBED_INPAINT_QUANT=1 --env CRISPEMBED_INPAINT_QUANT_MATMUL=1) ;; *) LE=(--env CRISPEMBED_INPAINT_QUANT=1) ;; esac
+        REF=(); [ "$v" = f32 ] || REF=(--reference-run "$OUT/live-$geometry/f32")
+        step "live-$geometry-$v" python tools/inpaint_live_eval.py --binary "$BIN/crispembed" --engine migan512 \
+            --model "$f" --model-sha256 "$fsha" --checkpoint-sha256 "$SHA" --label "$v" "${GEO[@]}" "${LE[@]}" \
+            "${REF[@]}" --photos "$S"/photos/* --output-dir "$OUT/live-$geometry/$v" "${TM[@]}" --threads 4
+    done
+done
 python - "$S" "$OUT" "${ARMS[@]}" <<'EOF'
 import json, sys
 from pathlib import Path

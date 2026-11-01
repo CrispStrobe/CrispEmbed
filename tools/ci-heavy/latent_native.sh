@@ -16,7 +16,10 @@ OUT=${HEAVY_OUT:?}
 S=${HEAVY_SCRATCH:?}
 MODEL=${1:?model}
 shift
-ARMS=("$@")
+# A literal "live" argument adds the real-photo ground-truth stage; "nonative"
+# skips the synthetic replay (e.g. a live-only rerun).
+ARMS=(); LIVE=0; NATIVE=1
+for a in "$@"; do case $a in live) LIVE=1 ;; nonative) NATIVE=0 ;; *) ARMS+=("$a") ;; esac; done
 [ ${#ARMS[@]} -gt 0 ] || ARMS=(f32)
 GATE=CRISPEMBED_$(echo "$MODEL" | tr a-z A-Z)
 log() { echo "$*" | tee -a "$OUT/summary.md"; }
@@ -82,11 +85,11 @@ for arm in "${ARMS[@]}"; do
     dsha=$(sha256sum "$DQ" | cut -d' ' -f1); vsha=$(sha256sum "$VQ" | cut -d' ' -f1)
     echo "{\"arm\":\"$arm\",\"denoiser_bytes\":$(stat -c %s "$DQ"),\"denoiser_sha256\":\"$dsha\",\"vae_bytes\":$(stat -c %s "$VQ"),\"vae_sha256\":\"$vsha\"}" >> "$OUT/variants.jsonl"
     # Frozen comparator, unchanged budgets, every captured case.
-    step "native-$arm" env "${env_extra[@]}" /usr/bin/time -v "$BIN/test-latent-inpaint" --model "$MODEL" \
+    [ $NATIVE = 1 ] && step "native-$arm" env "${env_extra[@]}" /usr/bin/time -v "$BIN/test-latent-inpaint" --model "$MODEL" \
         --denoiser "$DQ" --vae "$VQ" --model-sha256 "$dsha" --vae-sha256 "$vsha" \
         --reference-dir "$S/original" --out "$S/native-$arm" --threads 4
     mkdir -p "$OUT/native-$arm"
-    (cd "$S/native-$arm" && find . -name "*.json" -o -name "*.rgb" | cpio -pdm "$OUT/native-$arm" 2>/dev/null)
+    [ -d "$S/native-$arm" ] && (cd "$S/native-$arm" && find . -name "*.json" -o -name "*.rgb" | cpio -pdm "$OUT/native-$arm" 2>/dev/null)
     # Real CLI, native seed stream, subtitle fixture: latency and peak RSS.
     step "cli-$arm" env "${env_extra[@]}" /usr/bin/time -v "$BIN/crispembed" --inpaint-engine "$MODEL" \
         --inpaint-model "$DQ" --inpaint-model-sha256 "$dsha" --inpaint-vae "$VQ" --inpaint-vae-sha256 "$vsha" \
@@ -94,6 +97,24 @@ for arm in "${ARMS[@]}"; do
         --inpaint-seed 0 --threads 4
     grep -E "Maximum resident|Elapsed" "$OUT/native-$arm.log" "$OUT/cli-$arm.log" >> "$OUT/resources.txt"
 done
+if [ $LIVE = 1 ]; then
+    # Live ground truth: subtitles burned into real photos, 512 centre crops
+    # (the strict latent profile), exact and DBNet masks, every arm.
+    bash tools/ci-heavy/inpaint_live_inputs.sh "$S/photos" "$S/dbnet.gguf" "$OUT/photos.json"
+    TM=(); [ -f "$S/dbnet.gguf" ] && TM=(--text-model "$S/dbnet.gguf")
+    for arm in "${ARMS[@]}"; do
+        q=${arm%-mm}
+        if [ "$q" = f32 ]; then DQ=$D; VQ=$V; else DQ=$S/gguf/$MODEL-$q.gguf; VQ=$S/gguf/sdxl-vae-$q.gguf; fi
+        [ -f "$DQ" ] && [ -f "$VQ" ] || continue
+        LE=(); [ "$q" = f32 ] || LE=(--env CRISPEMBED_INPAINT_QUANT=1)
+        [ "$arm" = "$q" ] || LE+=(--env CRISPEMBED_INPAINT_QUANT_MATMUL=1)
+        REF=(); [ "$arm" = f32 ] || [ ! -d "$OUT/live/f32" ] || REF=(--reference-run "$OUT/live/f32")
+        step "live-$arm" python tools/inpaint_live_eval.py --binary "$BIN/crispembed" --engine "$MODEL" \
+            --model "$DQ" --model-sha256 "$(sha256sum "$DQ" | cut -d' ' -f1)" --vae "$VQ" \
+            --vae-sha256 "$(sha256sum "$VQ" | cut -d' ' -f1)" --seed 0 --crop 512 --label "$arm" "${LE[@]}" \
+            "${REF[@]}" --photos "$S"/photos/* --output-dir "$OUT/live/$arm" "${TM[@]}" --threads 4
+    done
+fi
 python - "$OUT" "${ARMS[@]}" <<'EOF' | tee -a "$OUT/summary.md"
 import json, sys
 from pathlib import Path
