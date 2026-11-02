@@ -272,3 +272,8 @@ No `TODO(verify)` items remain; see the decision table.
 3. Finish the converter on a hosted runner and compare tensor names and shapes against meta-init.
 4. Write the tiler and vision encoder, then wire up the qwen35 decoder and run
    the token-ID parity.
+
+## Runtime environment variables
+
+The gates, speed-up toggles and debug dumps for this engine are documented in
+[environment-variables.md](environment-variables.md).

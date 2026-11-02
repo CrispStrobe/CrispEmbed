@@ -25,7 +25,9 @@ Two runtime requirements apply to every new path:
 - **Env-gate every new path**, and use the shared helpers — `core_env::on()` for
   default-off gates, `core_env::explicitly_off()` for default-on ones. A bare
   `getenv(X) != nullptr` makes `X=0` mean ON; that defect class has already required a
-  repo-wide audit once.
+  repo-wide audit once. Document every new variable in
+  [docs/environment-variables.md](docs/environment-variables.md)
+  (`python tools/list_env_vars.py --write`; CI fails on an undocumented one).
 - **A/B against ground truth before flipping any default**, judge by decoded output and
   measured numbers rather than pass/fail, keep both paths behind a gate, and never delete
   a working path.

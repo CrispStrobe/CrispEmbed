@@ -534,3 +534,8 @@ re-qualified against the original IDs before any default flip.
 (and to the exact native arm). Small float drift is allowed only while the IDs stay identical; any ID
 difference rejects the arm. The Kaggle kernel `tools/kaggle/unlimited-ocr2-native/kernel.py` runs each
 case with the gate off and on and records IDs and wall time for both. Not yet measured or qualified.
+
+## Runtime environment variables
+
+The gates, speed-up toggles and debug dumps for this engine are documented in
+[environment-variables.md](environment-variables.md).

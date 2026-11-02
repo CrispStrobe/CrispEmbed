@@ -181,7 +181,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "       --ocr-engine N  primary engine "
                     "(dbnet_trocr|ppocrv6|easyocr|surya|tesseract|got|glm|qwen2vl|internvl2|lightonocr|qwen35-ocr|"
                     "ovisocr2|ovisocr3|minicpm-ocr|teleocr|mineru25-pro|oxr|qwen3vl|"
-                    "unlimited_ocr|olmocr|lfm2-vl)\n");
+                    "unlimited_ocr|unlimited-ocr2|olmocr|lfm2-vl)\n");
     fprintf(stderr, "       --denoise       NAFNet pre-processor; --punct-model M  post-OCR punctuation/spacing\n");
     fprintf(stderr, "       --lid-model M   text LID for language detection + Tesseract auto-select\n");
     fprintf(stderr, "       --truecase-model M  post-OCR truecasing (BiLSTM)\n");
@@ -1428,7 +1428,8 @@ static int cli_main(int argc, char ** argv) {
             if (n == "minicpm-ocr" || n == "minicpm_ocr") return 23;
             if (n == "teleocr") return 24;
             if (n == "qwen3vl") return 12;
-            if (n == "unlimited_ocr") return 13;
+            if (n == "unlimited_ocr" || n == "unlimited-ocr") return 13;
+            if (n == "unlimited-ocr2" || n == "unlimited_ocr2") return 13;
             if (n == "unified") return 14;
             if (n == "tesseract-fraktur" || n == "tesseract_fraktur") return 15;
             if (n == "ppocrv6") return 16;
@@ -1582,6 +1583,9 @@ static int cli_main(int argc, char ** argv) {
                                     : (eid == 18) ? "olmocr-2-7b"
                                     : (eid == 19) ? "lfm2-vl"
                                                   : "qwen2vl-ocr";
+                // Unlimited-OCR-2 shares engine 13; the alias picks the v2 registry default.
+                if (eid == 13 && (pipeline_engine == "unlimited-ocr2" || pipeline_engine == "unlimited_ocr2"))
+                    dflt = "unlimited-ocr2";
                 ma = resolve(!ocr_rec_path.empty() ? ocr_rec_path : dflt);
             } else {
                 // PP-OCRv6 pairs its own detector with its own CTC recognizer;
