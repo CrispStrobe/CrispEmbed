@@ -1,13 +1,15 @@
 {
  "schema": "crispembed.qwen2vl.device-ab.v1",
  "model": "mineru",
- "precision": "q4_k-dq8",
+ "precision": "q8_0-all",
  "device": "metal",
- "gguf": "mineru25-pro-2604-q4_k-dq8.gguf",
+ "gguf": "mineru25-pro-2604-q8_0-all.gguf",
  "gguf_sha256": "853e920b0a5c31cdce0c3ed20578df51ccdee79ac80b401ae4fbc1d01374c66d",
  "threads": 4,
  "repeat": 3,
- "extra_env": {},
+ "extra_env": {
+  "CRISPEMBED_MINERU25_PRO_METAL_F32_MATMUL": "1"
+ },
  "commit": "5d9bcd50532e735d972dbfa135b5f8bfcb7cf4be",
  "dirty": true,
  "host": "Apple M1 (8 GPU cores, 16 GiB)",
@@ -16,12 +18,12 @@
   {
    "id": "formula",
    "exit": 0,
-   "wall_s": 39.573047161102295,
-   "max_rss_mib": 2076.296875,
-   "load_ms": 36239.485,
+   "wall_s": 37.495911836624146,
+   "max_rss_mib": 1769.984375,
+   "load_ms": 34238.191875,
    "runs": [
     {
-     "ms": 1160.6115,
+     "ms": 1225.891333,
      "ids": [
       78045,
       87,
@@ -59,7 +61,7 @@
      "first_divergence": null
     },
     {
-     "ms": 1038.767583,
+     "ms": 946.748583,
      "ids": [
       78045,
       87,
@@ -97,7 +99,7 @@
      "first_divergence": null
     },
     {
-     "ms": 1017.989125,
+     "ms": 951.659291,
      "ids": [
       78045,
       87,
@@ -140,19 +142,19 @@
    "ids_exact_all_runs": true,
    "runs_consistent": true,
    "first_divergence": null,
-   "cold_ms": 1160.6115,
-   "warm_ms_min": 1017.989125,
-   "warm_ms_mean": 1028.378354
+   "cold_ms": 1225.891333,
+   "warm_ms_min": 946.748583,
+   "warm_ms_mean": 949.203937
   },
   {
    "id": "table",
    "exit": 0,
-   "wall_s": 13.924025058746338,
-   "max_rss_mib": 2570.46875,
-   "load_ms": 4805.248042,
+   "wall_s": 41.339662075042725,
+   "max_rss_mib": 1633.640625,
+   "load_ms": 32480.403583,
    "runs": [
     {
-     "ms": 3139.967791,
+     "ms": 3418.728833,
      "ids": [
       151663,
       40690,
@@ -301,7 +303,7 @@
      "first_divergence": null
     },
     {
-     "ms": 2948.381125,
+     "ms": 2645.39325,
      "ids": [
       151663,
       40690,
@@ -450,7 +452,7 @@
      "first_divergence": null
     },
     {
-     "ms": 2953.737834,
+     "ms": 2672.976709,
      "ids": [
       151663,
       40690,
@@ -604,19 +606,19 @@
    "ids_exact_all_runs": true,
    "runs_consistent": true,
    "first_divergence": null,
-   "cold_ms": 3139.967791,
-   "warm_ms_min": 2948.381125,
-   "warm_ms_mean": 2951.0594794999997
+   "cold_ms": 3418.728833,
+   "warm_ms_min": 2645.39325,
+   "warm_ms_mean": 2659.1849795
   },
   {
    "id": "receipt",
    "exit": 0,
-   "wall_s": 20.479042053222656,
-   "max_rss_mib": 2615.828125,
-   "load_ms": 434.280042,
+   "wall_s": 75.45001602172852,
+   "max_rss_mib": 1200.578125,
+   "load_ms": 55339.74275,
    "runs": [
     {
-     "ms": 6622.632958,
+     "ms": 6978.232334,
      "ids": [
       61282,
       13002,
@@ -827,7 +829,7 @@
      "first_divergence": null
     },
     {
-     "ms": 6635.39975,
+     "ms": 6617.575084,
      "ids": [
       61282,
       13002,
@@ -1038,7 +1040,7 @@
      "first_divergence": null
     },
     {
-     "ms": 6716.647334,
+     "ms": 6395.629792,
      "ids": [
       61282,
       13002,
@@ -1254,19 +1256,19 @@
    "ids_exact_all_runs": true,
    "runs_consistent": true,
    "first_divergence": null,
-   "cold_ms": 6622.632958,
-   "warm_ms_min": 6635.39975,
-   "warm_ms_mean": 6676.023542
+   "cold_ms": 6978.232334,
+   "warm_ms_min": 6395.629792,
+   "warm_ms_mean": 6506.602438
   },
   {
    "id": "german",
    "exit": 0,
-   "wall_s": 136.79883790016174,
-   "max_rss_mib": 2133.734375,
-   "load_ms": 38778.147875,
+   "wall_s": 133.59797596931458,
+   "max_rss_mib": 1828.328125,
+   "load_ms": 35448.272083,
    "runs": [
     {
-     "ms": 32527.084958,
+     "ms": 32044.321334,
      "ids": [
       693,
       713,
@@ -1664,7 +1666,7 @@
      "first_divergence": null
     },
     {
-     "ms": 32604.569542,
+     "ms": 33100.979875,
      "ids": [
       693,
       713,
@@ -2062,7 +2064,7 @@
      "first_divergence": null
     },
     {
-     "ms": 32770.498542,
+     "ms": 32836.623292,
      "ids": [
       693,
       713,
@@ -2465,19 +2467,19 @@
    "ids_exact_all_runs": true,
    "runs_consistent": true,
    "first_divergence": null,
-   "cold_ms": 32527.084958,
-   "warm_ms_min": 32604.569542,
-   "warm_ms_mean": 32687.534042
+   "cold_ms": 32044.321334,
+   "warm_ms_min": 32836.623292,
+   "warm_ms_mean": 32968.8015835
   },
   {
    "id": "japanese",
    "exit": 0,
-   "wall_s": 72.05420875549316,
-   "max_rss_mib": 1208.625,
-   "load_ms": 65544.494333,
+   "wall_s": 40.20145511627197,
+   "max_rss_mib": 2202.984375,
+   "load_ms": 34152.534917,
    "runs": [
     {
-     "ms": 2425.154541,
+     "ms": 2101.630875,
      "ids": [
       101059,
       102819,
@@ -2523,7 +2525,7 @@
      "first_divergence": null
     },
     {
-     "ms": 1963.876917,
+     "ms": 1937.681875,
      "ids": [
       101059,
       102819,
@@ -2569,7 +2571,7 @@
      "first_divergence": null
     },
     {
-     "ms": 1981.669042,
+     "ms": 1900.439042,
      "ids": [
       101059,
       102819,
@@ -2620,19 +2622,19 @@
    "ids_exact_all_runs": true,
    "runs_consistent": true,
    "first_divergence": null,
-   "cold_ms": 2425.154541,
-   "warm_ms_min": 1963.876917,
-   "warm_ms_mean": 1972.7729795
+   "cold_ms": 2101.630875,
+   "warm_ms_min": 1900.439042,
+   "warm_ms_mean": 1919.0604585
   },
   {
    "id": "arabic",
    "exit": 0,
-   "wall_s": 39.323466062545776,
-   "max_rss_mib": 1695.109375,
-   "load_ms": 37268.581208,
+   "wall_s": 13.005872011184692,
+   "max_rss_mib": 2263.890625,
+   "load_ms": 10945.147209,
    "runs": [
     {
-     "ms": 867.87975,
+     "ms": 835.826709,
      "ids": [
       69682,
       124449,
@@ -2648,7 +2650,7 @@
      "first_divergence": null
     },
     {
-     "ms": 556.090792,
+     "ms": 564.205458,
      "ids": [
       69682,
       124449,
@@ -2664,7 +2666,7 @@
      "first_divergence": null
     },
     {
-     "ms": 527.932583,
+     "ms": 564.786958,
      "ids": [
       69682,
       124449,
@@ -2685,19 +2687,19 @@
    "ids_exact_all_runs": true,
    "runs_consistent": true,
    "first_divergence": null,
-   "cold_ms": 867.87975,
-   "warm_ms_min": 527.932583,
-   "warm_ms_mean": 542.0116875
+   "cold_ms": 835.826709,
+   "warm_ms_min": 564.205458,
+   "warm_ms_mean": 564.496208
   },
   {
    "id": "layout-page",
    "exit": 0,
-   "wall_s": 101.91400408744812,
-   "max_rss_mib": 1000.75,
-   "load_ms": 46620.367167,
+   "wall_s": 58.10086393356323,
+   "max_rss_mib": 2563.609375,
+   "load_ms": 4583.062125,
    "runs": [
     {
-     "ms": 18523.187041,
+     "ms": 17780.11025,
      "ids": [
       151648,
       16,
@@ -2905,7 +2907,7 @@
      "first_divergence": null
     },
     {
-     "ms": 18611.264625,
+     "ms": 17377.792208,
      "ids": [
       151648,
       16,
@@ -3113,7 +3115,7 @@
      "first_divergence": null
     },
     {
-     "ms": 17968.760583,
+     "ms": 18252.4885,
      "ids": [
       151648,
       16,
@@ -3326,19 +3328,19 @@
    "ids_exact_all_runs": true,
    "runs_consistent": true,
    "first_divergence": null,
-   "cold_ms": 18523.187041,
-   "warm_ms_min": 17968.760583,
-   "warm_ms_mean": 18290.012604
+   "cold_ms": 17780.11025,
+   "warm_ms_min": 17377.792208,
+   "warm_ms_mean": 17815.140354
   },
   {
    "id": "layout-rot90",
    "exit": 0,
-   "wall_s": 113.57275915145874,
-   "max_rss_mib": 1103.09375,
-   "load_ms": 65238.998375,
+   "wall_s": 82.41285514831543,
+   "max_rss_mib": 2048.71875,
+   "load_ms": 35161.626208,
    "runs": [
     {
-     "ms": 16575.191708,
+     "ms": 15674.986667,
      "ids": [
       151648,
       15,
@@ -3391,7 +3393,7 @@
      "first_divergence": null
     },
     {
-     "ms": 15762.605,
+     "ms": 15811.47375,
      "ids": [
       151648,
       15,
@@ -3444,7 +3446,7 @@
      "first_divergence": null
     },
     {
-     "ms": 15816.288083,
+     "ms": 15641.135459,
      "ids": [
       151648,
       15,
@@ -3502,9 +3504,14 @@
    "ids_exact_all_runs": true,
    "runs_consistent": true,
    "first_divergence": null,
-   "cold_ms": 16575.191708,
-   "warm_ms_min": 15762.605,
-   "warm_ms_mean": 15789.4465415
+   "cold_ms": 15674.986667,
+   "warm_ms_min": 15641.135459,
+   "warm_ms_mean": 15726.3046045
   }
- ]
+ ],
+ "renamed_from": {
+  "q4_k-dq8": "q8_0-all",
+  "q4_k-df16": "q8_0-vision-f16-decoder"
+ },
+ "rename_note": "2026-11-02: these Kaggle/hosted MinerU recipes ('q4_k --tensor-type l.*=q8_0' and 'q4_k --decoder-f16') contain no Q4_K tensor (vision floored at Q8_0, decoder+embeddings Q8_0 or F16), so their labels were renamed; measured values are unchanged. GGUF/scratch file names recorded inside predate the rename."
 }

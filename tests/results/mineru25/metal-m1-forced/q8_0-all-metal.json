@@ -1,9 +1,9 @@
 {
  "schema": "crispembed.qwen2vl.device-ab.v1",
  "model": "mineru",
- "precision": "q4_k-dq8",
+ "precision": "q8_0-all",
  "device": "metal",
- "gguf": "mineru25-pro-2604-q4_k-dq8.gguf",
+ "gguf": "mineru25-pro-2604-q8_0-all.gguf",
  "gguf_sha256": "853e920b0a5c31cdce0c3ed20578df51ccdee79ac80b401ae4fbc1d01374c66d",
  "threads": 4,
  "repeat": 2,
@@ -2381,5 +2381,10 @@
    "warm_ms_min": 29951.713084,
    "warm_ms_mean": 29951.713084
   }
- ]
+ ],
+ "renamed_from": {
+  "q4_k-dq8": "q8_0-all",
+  "q4_k-df16": "q8_0-vision-f16-decoder"
+ },
+ "rename_note": "2026-11-02: these Kaggle/hosted MinerU recipes ('q4_k --tensor-type l.*=q8_0' and 'q4_k --decoder-f16') contain no Q4_K tensor (vision floored at Q8_0, decoder+embeddings Q8_0 or F16), so their labels were renamed; measured values are unchanged. GGUF/scratch file names recorded inside predate the rename."
 }

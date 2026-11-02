@@ -1,14 +1,14 @@
 {
  "schema": "crispembed.qwen2vl.device-ab.v1",
  "model": "mineru",
- "precision": "q4_k-df16",
+ "precision": "q8_0-all",
  "device": "cpu",
- "gguf": "q4_k-df16.gguf",
- "gguf_sha256": "1c8af421b85c2b4e0bec5f3065140730242f7ebbe200f271224603811fb99690",
+ "gguf": "q8_0-all.gguf",
+ "gguf_sha256": "853e920b0a5c31cdce0c3ed20578df51ccdee79ac80b401ae4fbc1d01374c66d",
  "threads": 4,
  "repeat": 1,
  "extra_env": {},
- "teacher_forced": true,
+ "teacher_forced": false,
  "commit": "6ac40291861072dc214fbb0602cce6db36664b2e",
  "dirty": false,
  "host": "Apple M1 (8 GPU cores, 16 GiB)",
@@ -17,12 +17,12 @@
   {
    "id": "formula",
    "exit": 0,
-   "wall_s": 6.977174758911133,
-   "max_rss_mib": 3457.42578125,
-   "load_ms": 1183.529981,
+   "wall_s": 5.468585252761841,
+   "max_rss_mib": 2574.0703125,
+   "load_ms": 928.913257,
    "runs": [
     {
-     "ms": 5628.90247,
+     "ms": 4407.563317,
      "ids": [
       78045,
       87,
@@ -65,19 +65,19 @@
    "ids_exact_all_runs": true,
    "runs_consistent": true,
    "first_divergence": null,
-   "cold_ms": 5628.90247,
-   "warm_ms_min": 5628.90247,
-   "warm_ms_mean": 5628.90247
+   "cold_ms": 4407.563317,
+   "warm_ms_min": 4407.563317,
+   "warm_ms_mean": 4407.563317
   },
   {
    "id": "table",
    "exit": 0,
-   "wall_s": 10.442085027694702,
-   "max_rss_mib": 3457.375,
-   "load_ms": 1185.673828,
+   "wall_s": 7.500744581222534,
+   "max_rss_mib": 2573.95703125,
+   "load_ms": 939.5818,
    "runs": [
     {
-     "ms": 9091.963628,
+     "ms": 6422.339373,
      "ids": [
       151663,
       40690,
@@ -231,19 +231,19 @@
    "ids_exact_all_runs": true,
    "runs_consistent": true,
    "first_divergence": null,
-   "cold_ms": 9091.963628,
-   "warm_ms_min": 9091.963628,
-   "warm_ms_mean": 9091.963628
+   "cold_ms": 6422.339373,
+   "warm_ms_min": 6422.339373,
+   "warm_ms_mean": 6422.339373
   },
   {
    "id": "receipt",
    "exit": 0,
-   "wall_s": 35.79887676239014,
-   "max_rss_mib": 3458.16796875,
-   "load_ms": 1182.039795,
+   "wall_s": 29.605631113052368,
+   "max_rss_mib": 2574.83984375,
+   "load_ms": 928.587539,
    "runs": [
     {
-     "ms": 34437.554599,
+     "ms": 28531.746773,
      "ids": [
       61282,
       13002,
@@ -459,19 +459,19 @@
    "ids_exact_all_runs": true,
    "runs_consistent": true,
    "first_divergence": null,
-   "cold_ms": 34437.554599,
-   "warm_ms_min": 34437.554599,
-   "warm_ms_mean": 34437.554599
+   "cold_ms": 28531.746773,
+   "warm_ms_min": 28531.746773,
+   "warm_ms_mean": 28531.746773
   },
   {
    "id": "german",
    "exit": 0,
-   "wall_s": 217.696941614151,
-   "max_rss_mib": 3465.6953125,
-   "load_ms": 1189.173049,
+   "wall_s": 194.96309638023376,
+   "max_rss_mib": 2582.5546875,
+   "load_ms": 882.298841,
    "runs": [
     {
-     "ms": 216255.632106,
+     "ms": 193865.848666,
      "ids": [
       693,
       713,
@@ -874,19 +874,19 @@
    "ids_exact_all_runs": true,
    "runs_consistent": true,
    "first_divergence": null,
-   "cold_ms": 216255.632106,
-   "warm_ms_min": 216255.632106,
-   "warm_ms_mean": 216255.632106
+   "cold_ms": 193865.848666,
+   "warm_ms_min": 193865.848666,
+   "warm_ms_mean": 193865.848666
   },
   {
    "id": "japanese",
    "exit": 0,
-   "wall_s": 15.1413414478302,
-   "max_rss_mib": 3457.74609375,
-   "load_ms": 1176.182066,
+   "wall_s": 12.348461151123047,
+   "max_rss_mib": 2574.29296875,
+   "load_ms": 896.257709,
    "runs": [
     {
-     "ms": 13794.702442,
+     "ms": 11312.597964,
      "ids": [
       101059,
       102819,
@@ -937,19 +937,19 @@
    "ids_exact_all_runs": true,
    "runs_consistent": true,
    "first_divergence": null,
-   "cold_ms": 13794.702442,
-   "warm_ms_min": 13794.702442,
-   "warm_ms_mean": 13794.702442
+   "cold_ms": 11312.597964,
+   "warm_ms_min": 11312.597964,
+   "warm_ms_mean": 11312.597964
   },
   {
    "id": "arabic",
    "exit": 0,
-   "wall_s": 5.942342519760132,
-   "max_rss_mib": 3457.2421875,
-   "load_ms": 1222.960907,
+   "wall_s": 4.6875646114349365,
+   "max_rss_mib": 2573.8984375,
+   "load_ms": 921.540734,
    "runs": [
     {
-     "ms": 4556.582615,
+     "ms": 3637.329992,
      "ids": [
       69682,
       124449,
@@ -970,19 +970,19 @@
    "ids_exact_all_runs": true,
    "runs_consistent": true,
    "first_divergence": null,
-   "cold_ms": 4556.582615,
-   "warm_ms_min": 4556.582615,
-   "warm_ms_mean": 4556.582615
+   "cold_ms": 3637.329992,
+   "warm_ms_min": 3637.329992,
+   "warm_ms_mean": 3637.329992
   },
   {
    "id": "layout-page",
    "exit": 0,
-   "wall_s": 128.39281582832336,
-   "max_rss_mib": 3459.01171875,
-   "load_ms": 1217.045925,
+   "wall_s": 112.98710536956787,
+   "max_rss_mib": 2575.5703125,
+   "load_ms": 894.159065,
    "runs": [
     {
-     "ms": 126963.510428,
+     "ms": 111914.022178,
      "ids": [
       151648,
       16,
@@ -1195,19 +1195,19 @@
    "ids_exact_all_runs": true,
    "runs_consistent": true,
    "first_divergence": null,
-   "cold_ms": 126963.510428,
-   "warm_ms_min": 126963.510428,
-   "warm_ms_mean": 126963.510428
+   "cold_ms": 111914.022178,
+   "warm_ms_min": 111914.022178,
+   "warm_ms_mean": 111914.022178
   },
   {
    "id": "layout-rot90",
    "exit": 0,
-   "wall_s": 123.19582653045654,
-   "max_rss_mib": 3454.96484375,
-   "load_ms": 1170.258049,
+   "wall_s": 109.32702255249023,
+   "max_rss_mib": 2571.71484375,
+   "load_ms": 920.149194,
    "runs": [
     {
-     "ms": 121790.168959,
+     "ms": 108211.502323,
      "ids": [
       151648,
       15,
@@ -1265,9 +1265,14 @@
    "ids_exact_all_runs": true,
    "runs_consistent": true,
    "first_divergence": null,
-   "cold_ms": 121790.168959,
-   "warm_ms_min": 121790.168959,
-   "warm_ms_mean": 121790.168959
+   "cold_ms": 108211.502323,
+   "warm_ms_min": 108211.502323,
+   "warm_ms_mean": 108211.502323
   }
- ]
+ ],
+ "renamed_from": {
+  "q4_k-dq8": "q8_0-all",
+  "q4_k-df16": "q8_0-vision-f16-decoder"
+ },
+ "rename_note": "2026-11-02: these Kaggle/hosted MinerU recipes ('q4_k --tensor-type l.*=q8_0' and 'q4_k --decoder-f16') contain no Q4_K tensor (vision floored at Q8_0, decoder+embeddings Q8_0 or F16), so their labels were renamed; measured values are unchanged. GGUF/scratch file names recorded inside predate the rename."
 }

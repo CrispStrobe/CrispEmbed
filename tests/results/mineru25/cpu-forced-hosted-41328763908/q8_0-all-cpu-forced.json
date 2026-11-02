@@ -1,28 +1,28 @@
 {
  "schema": "crispembed.qwen2vl.device-ab.v1",
  "model": "mineru",
- "precision": "q4_k-df16",
+ "precision": "q8_0-all",
  "device": "cpu",
- "gguf": "q4_k-df16.gguf",
- "gguf_sha256": "1c8af421b85c2b4e0bec5f3065140730242f7ebbe200f271224603811fb99690",
+ "gguf": "q8_0-all.gguf",
+ "gguf_sha256": "853e920b0a5c31cdce0c3ed20578df51ccdee79ac80b401ae4fbc1d01374c66d",
  "threads": 4,
  "repeat": 1,
  "extra_env": {},
- "teacher_forced": false,
+ "teacher_forced": true,
  "commit": "6ac40291861072dc214fbb0602cce6db36664b2e",
  "dirty": false,
  "host": "Apple M1 (8 GPU cores, 16 GiB)",
- "all_exact": false,
+ "all_exact": true,
  "cases": [
   {
    "id": "formula",
    "exit": 0,
-   "wall_s": 7.040020942687988,
-   "max_rss_mib": 3457.44921875,
-   "load_ms": 1197.914819,
+   "wall_s": 5.329996347427368,
+   "max_rss_mib": 2574.0703125,
+   "load_ms": 915.654034,
    "runs": [
     {
-     "ms": 5679.637849,
+     "ms": 4288.480072,
      "ids": [
       78045,
       87,
@@ -65,19 +65,19 @@
    "ids_exact_all_runs": true,
    "runs_consistent": true,
    "first_divergence": null,
-   "cold_ms": 5679.637849,
-   "warm_ms_min": 5679.637849,
-   "warm_ms_mean": 5679.637849
+   "cold_ms": 4288.480072,
+   "warm_ms_min": 4288.480072,
+   "warm_ms_mean": 4288.480072
   },
   {
    "id": "table",
    "exit": 0,
-   "wall_s": 10.318936586380005,
-   "max_rss_mib": 3457.32421875,
-   "load_ms": 1225.888769,
+   "wall_s": 7.196143388748169,
+   "max_rss_mib": 2573.94140625,
+   "load_ms": 895.816986,
    "runs": [
     {
-     "ms": 8925.663002,
+     "ms": 6175.280202,
      "ids": [
       151663,
       40690,
@@ -231,19 +231,19 @@
    "ids_exact_all_runs": true,
    "runs_consistent": true,
    "first_divergence": null,
-   "cold_ms": 8925.663002,
-   "warm_ms_min": 8925.663002,
-   "warm_ms_mean": 8925.663002
+   "cold_ms": 6175.280202,
+   "warm_ms_min": 6175.280202,
+   "warm_ms_mean": 6175.280202
   },
   {
    "id": "receipt",
    "exit": 0,
-   "wall_s": 36.40662121772766,
-   "max_rss_mib": 3458.21484375,
-   "load_ms": 1174.538759,
+   "wall_s": 28.638545989990234,
+   "max_rss_mib": 2574.75,
+   "load_ms": 920.47056,
    "runs": [
     {
-     "ms": 35052.705415,
+     "ms": 27580.298663,
      "ids": [
       61282,
       13002,
@@ -459,19 +459,19 @@
    "ids_exact_all_runs": true,
    "runs_consistent": true,
    "first_divergence": null,
-   "cold_ms": 35052.705415,
-   "warm_ms_min": 35052.705415,
-   "warm_ms_mean": 35052.705415
+   "cold_ms": 27580.298663,
+   "warm_ms_min": 27580.298663,
+   "warm_ms_mean": 27580.298663
   },
   {
    "id": "german",
    "exit": 0,
-   "wall_s": 218.67131161689758,
-   "max_rss_mib": 3465.73046875,
-   "load_ms": 1204.718205,
+   "wall_s": 193.36688494682312,
+   "max_rss_mib": 2582.55078125,
+   "load_ms": 879.049837,
    "runs": [
     {
-     "ms": 217213.320949,
+     "ms": 192274.653718,
      "ids": [
       693,
       713,
@@ -874,19 +874,19 @@
    "ids_exact_all_runs": true,
    "runs_consistent": true,
    "first_divergence": null,
-   "cold_ms": 217213.320949,
-   "warm_ms_min": 217213.320949,
-   "warm_ms_mean": 217213.320949
+   "cold_ms": 192274.653718,
+   "warm_ms_min": 192274.653718,
+   "warm_ms_mean": 192274.653718
   },
   {
    "id": "japanese",
    "exit": 0,
-   "wall_s": 15.215018272399902,
-   "max_rss_mib": 3457.72265625,
-   "load_ms": 1184.477384,
+   "wall_s": 12.30094051361084,
+   "max_rss_mib": 2574.3515625,
+   "load_ms": 933.672313,
    "runs": [
     {
-     "ms": 13859.035499,
+     "ms": 11235.294983,
      "ids": [
       101059,
       102819,
@@ -937,19 +937,19 @@
    "ids_exact_all_runs": true,
    "runs_consistent": true,
    "first_divergence": null,
-   "cold_ms": 13859.035499,
-   "warm_ms_min": 13859.035499,
-   "warm_ms_mean": 13859.035499
+   "cold_ms": 11235.294983,
+   "warm_ms_min": 11235.294983,
+   "warm_ms_mean": 11235.294983
   },
   {
    "id": "arabic",
    "exit": 0,
-   "wall_s": 5.9155659675598145,
-   "max_rss_mib": 3457.25390625,
-   "load_ms": 1178.76111,
+   "wall_s": 4.6730570793151855,
+   "max_rss_mib": 2573.921875,
+   "load_ms": 927.78594,
    "runs": [
     {
-     "ms": 4573.496952,
+     "ms": 3620.015449,
      "ids": [
       69682,
       124449,
@@ -970,19 +970,19 @@
    "ids_exact_all_runs": true,
    "runs_consistent": true,
    "first_divergence": null,
-   "cold_ms": 4573.496952,
-   "warm_ms_min": 4573.496952,
-   "warm_ms_mean": 4573.496952
+   "cold_ms": 3620.015449,
+   "warm_ms_min": 3620.015449,
+   "warm_ms_mean": 3620.015449
   },
   {
    "id": "layout-page",
    "exit": 0,
-   "wall_s": 129.06795072555542,
-   "max_rss_mib": 3459.03125,
-   "load_ms": 1209.49575,
+   "wall_s": 112.52384161949158,
+   "max_rss_mib": 2575.5625,
+   "load_ms": 890.021701,
    "runs": [
     {
-     "ms": 127639.647181,
+     "ms": 111457.58545,
      "ids": [
       151648,
       16,
@@ -1164,7 +1164,7 @@
       151648,
       16,
       18,
-      23,
+      22,
       220,
       22,
       17,
@@ -1184,30 +1184,30 @@
       151668,
       151645
      ],
-     "text": "<|box_start|>141 039 179 059<|box_end|><|ref_start|>page_number<|ref_end|><|rotate_up|>\n<|box_start|>339 037 685 057<|box_end|><|ref_start|>header<|ref_end|><|rotate_up|>\n<|box_start|>134 079 893 166<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>135 167 895 254<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>135 253 897 404<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>135 404 897 554<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>139 554 895 596<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>135 596 897 724<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>138 725 903 858<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|><|im_end|>",
+     "text": "<|box_start|>141 039 179 059<|box_end|><|ref_start|>page_number<|ref_end|><|rotate_up|>\n<|box_start|>339 037 685 057<|box_end|><|ref_start|>header<|ref_end|><|rotate_up|>\n<|box_start|>134 079 893 166<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>135 167 895 254<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>135 253 897 404<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>135 404 897 554<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>139 554 895 596<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>135 596 897 724<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>137 725 903 858<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|><|im_end|>",
      "eos": true,
-     "ids_exact": false,
-     "first_divergence": 180
+     "ids_exact": true,
+     "first_divergence": null
     }
    ],
    "n_ids": 199,
    "n_reference_ids": 199,
-   "ids_exact_all_runs": false,
+   "ids_exact_all_runs": true,
    "runs_consistent": true,
-   "first_divergence": 180,
-   "cold_ms": 127639.647181,
-   "warm_ms_min": 127639.647181,
-   "warm_ms_mean": 127639.647181
+   "first_divergence": null,
+   "cold_ms": 111457.58545,
+   "warm_ms_min": 111457.58545,
+   "warm_ms_mean": 111457.58545
   },
   {
    "id": "layout-rot90",
    "exit": 0,
-   "wall_s": 123.08360576629639,
-   "max_rss_mib": 3454.97265625,
-   "load_ms": 1166.268699,
+   "wall_s": 108.95982956886292,
+   "max_rss_mib": 2571.75,
+   "load_ms": 884.580117,
    "runs": [
     {
-     "ms": 121679.011143,
+     "ms": 107879.560876,
      "ids": [
       151648,
       15,
@@ -1265,9 +1265,14 @@
    "ids_exact_all_runs": true,
    "runs_consistent": true,
    "first_divergence": null,
-   "cold_ms": 121679.011143,
-   "warm_ms_min": 121679.011143,
-   "warm_ms_mean": 121679.011143
+   "cold_ms": 107879.560876,
+   "warm_ms_min": 107879.560876,
+   "warm_ms_mean": 107879.560876
   }
- ]
+ ],
+ "renamed_from": {
+  "q4_k-dq8": "q8_0-all",
+  "q4_k-df16": "q8_0-vision-f16-decoder"
+ },
+ "rename_note": "2026-11-02: these Kaggle/hosted MinerU recipes ('q4_k --tensor-type l.*=q8_0' and 'q4_k --decoder-f16') contain no Q4_K tensor (vision floored at Q8_0, decoder+embeddings Q8_0 or F16), so their labels were renamed; measured values are unchanged. GGUF/scratch file names recorded inside predate the rename."
 }

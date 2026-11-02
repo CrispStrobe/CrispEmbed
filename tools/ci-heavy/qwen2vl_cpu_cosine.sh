@@ -6,7 +6,7 @@
 # against a native CPU reference, plus the worst intermediate-stage cosine.
 #
 #   gh workflow run heavy-cpu.yml --ref feat/metal-qwen2vl \
-#       -f script=tools/ci-heavy/qwen2vl_cpu_cosine.sh -f args="mineru f16,q8_0,q4_k,q4_k-dq8,q4_k-df16,q4_k-vf16" \
+#       -f script=tools/ci-heavy/qwen2vl_cpu_cosine.sh -f args="mineru f16,q8_0,q4_k,q8_0-all,q8_0-vision-f16-decoder,q4_k-vf16" \
 #       -f pip="numpy==2.2.6 safetensors==0.6.2 huggingface_hub==0.36.0 gguf==0.17.1" \
 #       -f isolated_lane=qwen2vl-cpu-cosine-mineru
 #   ... -f args="teleocr q8_0,q4_k-m,q4_k,q4_k-attn8" -f isolated_lane=qwen2vl-cpu-cosine-teleocr
@@ -56,8 +56,8 @@ gguf_for() {
     case $1 in
     f16 | q8_0 | q4_k-m) curl -sSL --retry 5 -o "$f" "${PUB}/${PRE}$1.gguf" ;;
     q4_k) "$Q" "$SRC" "$f" q4_k "${PROTECT[@]}" > "$OUT/quantize-$1.log" 2>&1 ;;
-    q4_k-dq8) "$Q" "$SRC" "$f" q4_k --tensor-type 'l.*=q8_0' > "$OUT/quantize-$1.log" 2>&1 ;;
-    q4_k-df16) "$Q" "$SRC" "$f" q4_k --decoder-f16 > "$OUT/quantize-$1.log" 2>&1 ;;
+    q4_k-dq8 | q8_0-all) "$Q" "$SRC" "$f" q4_k --tensor-type 'l.*=q8_0' > "$OUT/quantize-$1.log" 2>&1 ;;
+    q4_k-df16 | q8_0-vision-f16-decoder) "$Q" "$SRC" "$f" q4_k --decoder-f16 > "$OUT/quantize-$1.log" 2>&1 ;;
     q4_k-vf16) "$Q" "$SRC" "$f" q4_k --tensor-type 'v.*=f16' --tensor-type 'l.embed_tokens.weight=q8_0' \
         > "$OUT/quantize-$1.log" 2>&1 ;;
     q4_k-attn8) "$Q" "$SRC" "$f" q4_k "${PROTECT[@]}" --tensor-type 'l.blk.*.attn_*=q8_0' > "$OUT/quantize-$1.log" 2>&1 ;;

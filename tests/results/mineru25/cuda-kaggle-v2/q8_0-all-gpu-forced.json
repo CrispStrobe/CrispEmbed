@@ -1,10 +1,10 @@
 {
  "schema": "crispembed.qwen2vl.device-ab.v1",
  "model": "mineru",
- "precision": "q4_k-df16",
+ "precision": "q8_0-all",
  "device": "gpu",
- "gguf": "q4_k-df16.gguf",
- "gguf_sha256": "1c8af421b85c2b4e0bec5f3065140730242f7ebbe200f271224603811fb99690",
+ "gguf": "q8_0-all.gguf",
+ "gguf_sha256": "853e920b0a5c31cdce0c3ed20578df51ccdee79ac80b401ae4fbc1d01374c66d",
  "threads": 4,
  "repeat": 1,
  "extra_env": {},
@@ -18,13 +18,13 @@
   {
    "id": "formula",
    "exit": 0,
-   "wall_s": 1.8825528621673584,
-   "max_rss_mib": 1994.6875,
+   "wall_s": 1.6538233757019043,
+   "max_rss_mib": 1553.08984375,
    "max_rss_source": "getrusage(RUSAGE_CHILDREN) high-water mark",
-   "load_ms": 1056.364443,
+   "load_ms": 953.38282,
    "runs": [
     {
-     "ms": 552.846715,
+     "ms": 421.965543,
      "ids": [
       78045,
       87,
@@ -67,20 +67,20 @@
    "ids_exact_all_runs": true,
    "runs_consistent": true,
    "first_divergence": null,
-   "cold_ms": 552.846715,
-   "warm_ms_min": 552.846715,
-   "warm_ms_mean": 552.846715
+   "cold_ms": 421.965543,
+   "warm_ms_min": 421.965543,
+   "warm_ms_mean": 421.965543
   },
   {
    "id": "table",
    "exit": 0,
-   "wall_s": 2.859180450439453,
-   "max_rss_mib": 1994.6875,
+   "wall_s": 2.21215558052063,
+   "max_rss_mib": 1553.08984375,
    "max_rss_source": "getrusage(RUSAGE_CHILDREN) high-water mark",
-   "load_ms": 977.522179,
+   "load_ms": 862.556227,
    "runs": [
     {
-     "ms": 1610.487824,
+     "ms": 1084.46431,
      "ids": [
       151663,
       40690,
@@ -234,20 +234,20 @@
    "ids_exact_all_runs": true,
    "runs_consistent": true,
    "first_divergence": null,
-   "cold_ms": 1610.487824,
-   "warm_ms_min": 1610.487824,
-   "warm_ms_mean": 1610.487824
+   "cold_ms": 1084.46431,
+   "warm_ms_min": 1084.46431,
+   "warm_ms_mean": 1084.46431
   },
   {
    "id": "receipt",
    "exit": 0,
-   "wall_s": 3.997117519378662,
-   "max_rss_mib": 1995.35546875,
+   "wall_s": 3.0314178466796875,
+   "max_rss_mib": 1554.1015625,
    "max_rss_source": "getrusage(RUSAGE_CHILDREN) high-water mark",
-   "load_ms": 981.620651,
+   "load_ms": 860.261247,
    "runs": [
     {
-     "ms": 2721.396265,
+     "ms": 1898.402466,
      "ids": [
       61282,
       13002,
@@ -463,20 +463,20 @@
    "ids_exact_all_runs": true,
    "runs_consistent": true,
    "first_divergence": null,
-   "cold_ms": 2721.396265,
-   "warm_ms_min": 2721.396265,
-   "warm_ms_mean": 2721.396265
+   "cold_ms": 1898.402466,
+   "warm_ms_min": 1898.402466,
+   "warm_ms_mean": 1898.402466
   },
   {
    "id": "german",
    "exit": 0,
-   "wall_s": 9.154883623123169,
-   "max_rss_mib": 2008.734375,
+   "wall_s": 7.2151618003845215,
+   "max_rss_mib": 1567.390625,
    "max_rss_source": "getrusage(RUSAGE_CHILDREN) high-water mark",
-   "load_ms": 970.324612,
+   "load_ms": 905.642321,
    "runs": [
     {
-     "ms": 7843.105845,
+     "ms": 5979.580908,
      "ids": [
       693,
       713,
@@ -879,20 +879,20 @@
    "ids_exact_all_runs": true,
    "runs_consistent": true,
    "first_divergence": null,
-   "cold_ms": 7843.105845,
-   "warm_ms_min": 7843.105845,
-   "warm_ms_mean": 7843.105845
+   "cold_ms": 5979.580908,
+   "warm_ms_min": 5979.580908,
+   "warm_ms_mean": 5979.580908
   },
   {
    "id": "japanese",
    "exit": 0,
-   "wall_s": 1.9604358673095703,
-   "max_rss_mib": 2008.734375,
+   "wall_s": 1.6588091850280762,
+   "max_rss_mib": 1567.390625,
    "max_rss_source": "getrusage(RUSAGE_CHILDREN) high-water mark",
-   "load_ms": 966.686938,
+   "load_ms": 859.652452,
    "runs": [
     {
-     "ms": 712.834883,
+     "ms": 531.793394,
      "ids": [
       101059,
       102819,
@@ -943,20 +943,20 @@
    "ids_exact_all_runs": true,
    "runs_consistent": true,
    "first_divergence": null,
-   "cold_ms": 712.834883,
-   "warm_ms_min": 712.834883,
-   "warm_ms_mean": 712.834883
+   "cold_ms": 531.793394,
+   "warm_ms_min": 531.793394,
+   "warm_ms_mean": 531.793394
   },
   {
    "id": "arabic",
    "exit": 0,
-   "wall_s": 1.4893689155578613,
-   "max_rss_mib": 2008.734375,
+   "wall_s": 1.3100636005401611,
+   "max_rss_mib": 1567.390625,
    "max_rss_source": "getrusage(RUSAGE_CHILDREN) high-water mark",
-   "load_ms": 968.118849,
+   "load_ms": 863.546949,
    "runs": [
     {
-     "ms": 244.994273,
+     "ms": 183.336569,
      "ids": [
       69682,
       124449,
@@ -977,20 +977,20 @@
    "ids_exact_all_runs": true,
    "runs_consistent": true,
    "first_divergence": null,
-   "cold_ms": 244.994273,
-   "warm_ms_min": 244.994273,
-   "warm_ms_mean": 244.994273
+   "cold_ms": 183.336569,
+   "warm_ms_min": 183.336569,
+   "warm_ms_mean": 183.336569
   },
   {
    "id": "layout-page",
    "exit": 0,
-   "wall_s": 5.513774156570435,
-   "max_rss_mib": 2008.734375,
+   "wall_s": 4.297391653060913,
+   "max_rss_mib": 1567.390625,
    "max_rss_source": "getrusage(RUSAGE_CHILDREN) high-water mark",
-   "load_ms": 969.462808,
+   "load_ms": 867.565129,
    "runs": [
     {
-     "ms": 4226.056369,
+     "ms": 3121.748208,
      "ids": [
       151648,
       16,
@@ -1203,20 +1203,20 @@
    "ids_exact_all_runs": true,
    "runs_consistent": true,
    "first_divergence": null,
-   "cold_ms": 4226.056369,
-   "warm_ms_min": 4226.056369,
-   "warm_ms_mean": 4226.056369
+   "cold_ms": 3121.748208,
+   "warm_ms_min": 3121.748208,
+   "warm_ms_mean": 3121.748208
   },
   {
    "id": "layout-rot90",
    "exit": 0,
-   "wall_s": 4.611741065979004,
-   "max_rss_mib": 2008.734375,
+   "wall_s": 3.204120635986328,
+   "max_rss_mib": 1567.390625,
    "max_rss_source": "getrusage(RUSAGE_CHILDREN) high-water mark",
-   "load_ms": 1039.929591,
+   "load_ms": 857.575468,
    "runs": [
     {
-     "ms": 3213.366848,
+     "ms": 2027.162064,
      "ids": [
       151648,
       15,
@@ -1274,9 +1274,14 @@
    "ids_exact_all_runs": true,
    "runs_consistent": true,
    "first_divergence": null,
-   "cold_ms": 3213.366848,
-   "warm_ms_min": 3213.366848,
-   "warm_ms_mean": 3213.366848
+   "cold_ms": 2027.162064,
+   "warm_ms_min": 2027.162064,
+   "warm_ms_mean": 2027.162064
   }
- ]
+ ],
+ "renamed_from": {
+  "q4_k-dq8": "q8_0-all",
+  "q4_k-df16": "q8_0-vision-f16-decoder"
+ },
+ "rename_note": "2026-11-02: these Kaggle/hosted MinerU recipes ('q4_k --tensor-type l.*=q8_0' and 'q4_k --decoder-f16') contain no Q4_K tensor (vision floored at Q8_0, decoder+embeddings Q8_0 or F16), so their labels were renamed; measured values are unchanged. GGUF/scratch file names recorded inside predate the rename."
 }
