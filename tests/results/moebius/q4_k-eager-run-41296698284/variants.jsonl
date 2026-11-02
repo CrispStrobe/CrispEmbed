@@ -1,0 +1,3 @@
+{"arm":"q4_k","denoiser_bytes":182633952,"denoiser_sha256":"9e58e0f3048983a9acfbc3049d64dd5cbfd64cfdc7a74e93a4df7a8a7baeee12","vae_bytes":47516096,"vae_sha256":"41ed4490676c27125b3085f6e9752bb6285ec235b104268f1385a18232ff671e"}
+{"arm":"q4_k-mm","denoiser_bytes":182633952,"denoiser_sha256":"9e58e0f3048983a9acfbc3049d64dd5cbfd64cfdc7a74e93a4df7a8a7baeee12","vae_bytes":47516096,"vae_sha256":"41ed4490676c27125b3085f6e9752bb6285ec235b104268f1385a18232ff671e"}
+{"arm":"q4_k-mm-g","denoiser_bytes":182633952,"denoiser_sha256":"9e58e0f3048983a9acfbc3049d64dd5cbfd64cfdc7a74e93a4df7a8a7baeee12","vae_bytes":47516096,"vae_sha256":"41ed4490676c27125b3085f6e9752bb6285ec235b104268f1385a18232ff671e"}

@@ -1,0 +1,8 @@
+/home/runner/work/_temp/out/native-f16.log:	Elapsed (wall clock) time (h:mm:ss or m:ss): 56:34.35
+/home/runner/work/_temp/out/native-f16.log:	Maximum resident set size (kbytes): 4511588
+/home/runner/work/_temp/out/cli-f16.log:	Elapsed (wall clock) time (h:mm:ss or m:ss): 14:05.41
+/home/runner/work/_temp/out/cli-f16.log:	Maximum resident set size (kbytes): 4496284
+/home/runner/work/_temp/out/native-f16-g.log:	Elapsed (wall clock) time (h:mm:ss or m:ss): 48:01.02
+/home/runner/work/_temp/out/native-f16-g.log:	Maximum resident set size (kbytes): 7319528
+/home/runner/work/_temp/out/cli-f16-g.log:	Elapsed (wall clock) time (h:mm:ss or m:ss): 11:53.21
+/home/runner/work/_temp/out/cli-f16-g.log:	Maximum resident set size (kbytes): 6309140

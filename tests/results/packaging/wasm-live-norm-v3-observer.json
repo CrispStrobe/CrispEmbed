@@ -1,0 +1,24 @@
+{
+ "schema": "crispembed-wasm-live-norm-v3-observer-review-v1",
+ "branch": "fix/wasm-live-norm-component-inventory-20261102",
+ "runs": [
+  {"run": 41421952964, "source": "6288db9c9f0a06700aba704688db323b4e2b679f", "completed": false, "phase": "native",
+   "purpose": "diagnostic observer (v1 acceptance rules, metadata-only stderr on rejection)",
+   "actual_reject": "live_norm_reject: geometry name=norm00_input op=ADD type=f32 contiguous=1 ne=[384,16,1,1] nb=[4,1536,24576,24576] src0_is_input=0 src0_op=ADD view_src=0",
+   "diagnosis": "First native encode builds an unevaluated scheduler-reservation graph at bucket_seq_len(12)=16 (encode_tokens measure_gf) before the evaluated 12-token graph; the overlay hooks run inside every build_encoder_graph, so the observer's unchanged ne[1]==12 rule rejected the reservation graph. add_norm op/src[0] checks were never reached."},
+  {"run": 41427588368, "source": "701d8cfa131602cd2dea2f9f13ce6b6335134b4e", "completed": false, "phase": "replay",
+   "repair": "Overlay brackets exactly three measure_gf builds with ctx->live_norm.measuring; observer neither resets nor registers inside them; v1 acceptance rules unchanged for evaluated graphs",
+   "passed_before_model_access": ["v1/v2/v3 unit tests", "v2 component admission native 30/wasm 29 entries", "twelve browser byte recoveries", "component-check", "Ref positive/numeric/shape controls", "11/11 weight-free observer controls (reproduce the bucket-16 rejection)"],
+   "passed_after_model_access": ["exact frozen model", "observer overlay and plain production exclusion", "native1/native2 ordinary/observed/repeat byte anchors (12)", "WASM OFF/ON live capture", "capture admission: 65/65 controls incl. all 32 old WASM stage hashes, 13 connected norms per arm", "same-input WASM replays"],
+   "same_input_comparisons": {"count": 208, "passed": 208, "max_absolute": 0.0, "note": "every native-op replay of the captured WASM norm inputs is bit-exact"},
+   "natural_comparisons": {"count": 196, "completed": 0},
+   "error": "Bounded exact NumPy shape required",
+   "cause": "Natural pairs include the actual layer3 fc1_raw/fc1/gelu tensors of shape [12,1536]; the frozen protected Ref adapter tools/moedern-native-v2/diff_adapter.py shape() caps every dimension at 512. Same-input pairs are all [12,384], so they completed.",
+   "attribution_reached": false}
+ ],
+ "new_original_forwards": 0,
+ "full_ten_case_retry": false,
+ "gates_defaults_changed": false,
+ "qualification": false,
+ "next": "Choose a reviewed Ref path for the 1536-wide layer3 pairs that keeps full-row (1536) cosine semantics. A reshape to <=512 changes the metric and is not acceptable as is. Then rerun v4 under the same component/observer-first order."
+}

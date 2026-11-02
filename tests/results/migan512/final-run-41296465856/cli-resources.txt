@@ -1,0 +1,14 @@
+cli-f16-g.log  Elapsed (wall clock) time (h:mm:ss or m:ss): 0:01.98  Maximum resident set size (kbytes): 385068 
+cli-f16-mm-g.log  Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.19  Maximum resident set size (kbytes): 373652 
+cli-f16-mm.log  Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.18  Maximum resident set size (kbytes): 304424 
+cli-f16.log  Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.39  Maximum resident set size (kbytes): 315252 
+cli-f32-g.log  Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.14  Maximum resident set size (kbytes): 384464 
+cli-f32.log  Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.16  Maximum resident set size (kbytes): 314736 
+cli-q4_k-g.log  Elapsed (wall clock) time (h:mm:ss or m:ss): 0:01.93  Maximum resident set size (kbytes): 385256 
+cli-q4_k-mm-g.log  Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.13  Maximum resident set size (kbytes): 384416 
+cli-q4_k-mm.log  Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.11  Maximum resident set size (kbytes): 315080 
+cli-q4_k.log  Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.12  Maximum resident set size (kbytes): 315480 
+cli-q8_0-g.log  Elapsed (wall clock) time (h:mm:ss or m:ss): 0:01.95  Maximum resident set size (kbytes): 385004 
+cli-q8_0-mm-g.log  Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.12  Maximum resident set size (kbytes): 385852 
+cli-q8_0-mm.log  Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.12  Maximum resident set size (kbytes): 316492 
+cli-q8_0.log  Elapsed (wall clock) time (h:mm:ss or m:ss): 0:02.07  Maximum resident set size (kbytes): 315540 

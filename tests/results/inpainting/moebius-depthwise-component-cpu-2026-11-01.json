@@ -1,0 +1,2649 @@
+{
+  "schema": "crispembed-moebius-depthwise-component-cpu-v1",
+  "date": "2026-11-01",
+  "scope": "Isolated synthetic component comparison at every actual Moebius 3x3/stride1/pad1 depthwise geometry and bias configuration, guidance batch2. The candidate is private prototype source, not a production model run.",
+  "qualification": {
+    "component_numeric_passed": true,
+    "model_free": true,
+    "full_model_executed": false,
+    "full_model_quality_qualified": false,
+    "full_image_performance_measured": false,
+    "gpu_executed": false,
+    "production_optimization_gate_added_by_this_probe": false
+  },
+  "source_and_binary_identity": {
+    "driver": {
+      "path": "native-optimization/latent-assets/run_depthwise_probe.py",
+      "bytes": 10228,
+      "sha256": "36eb7dbae77ccfba61a38b3c17451e52b6a401623cbd1ce8d8536e3efe17613a"
+    },
+    "plan": {
+      "path": "native-optimization/latent-assets/depthwise-probe-plan.json",
+      "bytes": 11936,
+      "sha256": "b43754628353ee449ea5a7deac22299115caad9234752b85cce51ab573b450c8"
+    },
+    "native_commit": "5dc87e1641d91f4c92517620af977e738d8c8aa5",
+    "ggml_commit": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+    "source_files_before": [
+      {
+        "path": "native-optimization/latent-assets/depthwise_probe.cpp",
+        "bytes": 26514,
+        "sha256": "fff27f4d23c037b044278b1b851a3abd917b37c6b22d2d717dda77748449a63f"
+      },
+      {
+        "path": "CrispEmbed-issue71/src/inpaint_graph.cpp",
+        "bytes": 42535,
+        "sha256": "12166e1fde240caa74ce3ff4d1c3addbeb552efbae1d9ecf4a447ddb150d3b3d"
+      },
+      {
+        "path": "CrispEmbed-issue71/src/inpaint_graph.h",
+        "bytes": 6224,
+        "sha256": "5d85feba52c8060259b7cffa7ae8c845f05e25341aacc2fe9669d08e4e258ddf"
+      },
+      {
+        "path": "CrispEmbed-issue71/src/migan.cpp",
+        "bytes": 53355,
+        "sha256": "fac74fcadcc182049a96fee5b3292eefde60b50e4ea9dda84576565d168d0687"
+      },
+      {
+        "path": "CrispEmbed-issue71/src/latent_inpaint_graph_unet.cpp",
+        "bytes": 27760,
+        "sha256": "2a2771012731749cbfdb8f8fdf6b2e5e37b0673a416039cb488efd1d277a2580"
+      },
+      {
+        "path": "CrispEmbed-issue71/ggml/src/ggml-cpu/ops.cpp",
+        "bytes": 426870,
+        "sha256": "60687e87a0fbf5a43ff5376e96c4bde5f4efcc281fcdba55382e36a552cb418e"
+      },
+      {
+        "path": "CrispEmbed-issue71/docs/latent-inpaint-source-contract.json",
+        "bytes": 972741,
+        "sha256": "b4f632d6939a8f57897c88e253bd96b7155fe3426a60ed77eac64b059d69983d"
+      }
+    ],
+    "source_files_after": [
+      {
+        "path": "native-optimization/latent-assets/depthwise_probe.cpp",
+        "bytes": 26514,
+        "sha256": "fff27f4d23c037b044278b1b851a3abd917b37c6b22d2d717dda77748449a63f"
+      },
+      {
+        "path": "CrispEmbed-issue71/src/inpaint_graph.cpp",
+        "bytes": 42535,
+        "sha256": "12166e1fde240caa74ce3ff4d1c3addbeb552efbae1d9ecf4a447ddb150d3b3d"
+      },
+      {
+        "path": "CrispEmbed-issue71/src/inpaint_graph.h",
+        "bytes": 6224,
+        "sha256": "5d85feba52c8060259b7cffa7ae8c845f05e25341aacc2fe9669d08e4e258ddf"
+      },
+      {
+        "path": "CrispEmbed-issue71/src/migan.cpp",
+        "bytes": 53355,
+        "sha256": "fac74fcadcc182049a96fee5b3292eefde60b50e4ea9dda84576565d168d0687"
+      },
+      {
+        "path": "CrispEmbed-issue71/src/latent_inpaint_graph_unet.cpp",
+        "bytes": 27760,
+        "sha256": "2a2771012731749cbfdb8f8fdf6b2e5e37b0673a416039cb488efd1d277a2580"
+      },
+      {
+        "path": "CrispEmbed-issue71/ggml/src/ggml-cpu/ops.cpp",
+        "bytes": 426870,
+        "sha256": "60687e87a0fbf5a43ff5376e96c4bde5f4efcc281fcdba55382e36a552cb418e"
+      },
+      {
+        "path": "CrispEmbed-issue71/docs/latent-inpaint-source-contract.json",
+        "bytes": 972741,
+        "sha256": "b4f632d6939a8f57897c88e253bd96b7155fe3426a60ed77eac64b059d69983d"
+      }
+    ],
+    "archives_before": [
+      {
+        "path": "native-optimization/build-current/libcrispembed-inpaint-graph.a",
+        "bytes": 290704,
+        "sha256": "fb2c4379ad225ff9cc7d885877fbab7bc115067599acaa5e0d77085f82a9e881"
+      },
+      {
+        "path": "native-optimization/build-current/libcrispembed-core.a",
+        "bytes": 250650,
+        "sha256": "4fb2b9529240aa0e4a9dd0931193f9542f5cfcaec41fcce42af506566919ada8"
+      },
+      {
+        "path": "native-optimization/build-current/ggml/src/libggml.a",
+        "bytes": 61604,
+        "sha256": "2efb9563d196a2987c9e73b7cb62aa0e287728ace37a371b1fbf5536eb0e514b"
+      },
+      {
+        "path": "native-optimization/build-current/ggml/src/libggml-cpu.a",
+        "bytes": 1729390,
+        "sha256": "32cfbf1539f83a1f0758045e3683111d1c1b768b9cfee4dec7ff6df8eb59033c"
+      },
+      {
+        "path": "native-optimization/build-current/ggml/src/libggml-base.a",
+        "bytes": 1282980,
+        "sha256": "a4a5349a0c45c297f26dde86fe0e77f39414b59d9aa45ca5d95cea65d1067545"
+      }
+    ],
+    "archives_after": [
+      {
+        "path": "native-optimization/build-current/libcrispembed-inpaint-graph.a",
+        "bytes": 290704,
+        "sha256": "fb2c4379ad225ff9cc7d885877fbab7bc115067599acaa5e0d77085f82a9e881"
+      },
+      {
+        "path": "native-optimization/build-current/libcrispembed-core.a",
+        "bytes": 250650,
+        "sha256": "4fb2b9529240aa0e4a9dd0931193f9542f5cfcaec41fcce42af506566919ada8"
+      },
+      {
+        "path": "native-optimization/build-current/ggml/src/libggml.a",
+        "bytes": 61604,
+        "sha256": "2efb9563d196a2987c9e73b7cb62aa0e287728ace37a371b1fbf5536eb0e514b"
+      },
+      {
+        "path": "native-optimization/build-current/ggml/src/libggml-cpu.a",
+        "bytes": 1729390,
+        "sha256": "32cfbf1539f83a1f0758045e3683111d1c1b768b9cfee4dec7ff6df8eb59033c"
+      },
+      {
+        "path": "native-optimization/build-current/ggml/src/libggml-base.a",
+        "bytes": 1282980,
+        "sha256": "a4a5349a0c45c297f26dde86fe0e77f39414b59d9aa45ca5d95cea65d1067545"
+      }
+    ],
+    "build_configuration": [
+      {
+        "path": "native-optimization/build-current/CMakeCache.txt",
+        "bytes": 29576,
+        "sha256": "a48f79bc1c83e00661932a577bfd6e503ab1e65a5c431543cf4069a883c823de"
+      },
+      {
+        "path": "native-optimization/build-current/build.ninja",
+        "bytes": 706148,
+        "sha256": "5e79cfe0615d2bdd05467d20eaec979bfd05a8fcc3e6f5acee4a04174af4197c"
+      }
+    ],
+    "compiler_version": "c++ (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0\nCopyright (C) 2023 Free Software Foundation, Inc.\nThis is free software; see the source for copying conditions.  There is NO\nwarranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\n",
+    "binary_before": {
+      "path": "native-optimization/latent-assets/depthwise-live-v1-t8/depthwise-probe",
+      "bytes": 2328600,
+      "sha256": "cd4f0ceb4f84e4a189d1299ba698f3b0a8a493e2de1b710b408ce6e0b18e2497"
+    },
+    "binary_after": {
+      "path": "native-optimization/latent-assets/depthwise-live-v1-t8/depthwise-probe",
+      "bytes": 2328600,
+      "sha256": "cd4f0ceb4f84e4a189d1299ba698f3b0a8a493e2de1b710b408ce6e0b18e2497"
+    },
+    "identities_unchanged": true,
+    "provenance_scope": "Probe compiled from the recorded exact source. Existing linked archives are pinned; their current source hashes are observations in a dirty workspace, not a clean-commit build receipt."
+  },
+  "original_raw_receipt": {
+    "file": "evidence/depthwise/latent-assets/depthwise-live-v1-t8/report.json",
+    "bytes": 94882,
+    "sha256": "0e39c908aea66b367e2e38081f8d6038ba068fb19ff9cbb149b8ba7d24d508a4"
+  },
+  "runtime_gate_settings": {
+    "CRISPEMBED_INPAINT_GRAPH": "0",
+    "CRISPEMBED_INPAINT_FAST": "0",
+    "CRISPEMBED_INPAINT_PROFILE": "0",
+    "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+    "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+    "CRISPEMBED_INPAINT_CPU_FFT": "0",
+    "CRISPEMBED_INPAINT_CPU_GLA": "0",
+    "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+    "CRISPEMBED_MIGAN_CPU_KERNELS": "0",
+    "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+    "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+    "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0"
+  },
+  "shape_count": 16,
+  "operations_per_denoiser_step": 47,
+  "numerical_summary": {
+    "oracle_rounds": 32,
+    "all_finite_and_within_frozen_budget": true,
+    "exact_dyadic_rounds": 16,
+    "all_dyadic_results_bit_exact": true,
+    "all_non_dyadic_results_bit_exact": false,
+    "native_max_abs": 1.1920928955078125e-07,
+    "candidate_f64_max_abs": 1.0948861017823219e-07,
+    "baseline_f64_max_abs": 1.021107891574502e-07,
+    "native_differing_f32_values": 21530376,
+    "scalar_and_native_atol": 4e-06,
+    "scalar_and_native_rtol": 2e-06,
+    "exact_required_round": "dyadic only; non-dyadic F32 retains the frozen absolute-plus-relative budget",
+    "resident_bytes_preserved_after_all_oracles_and_timing": true,
+    "all_graph_allocation_and_addresses_reused": true,
+    "all_timed_outputs_repeat_exact": true
+  },
+  "performance_summary": {
+    "threads": 8,
+    "samples_per_arm": 5,
+    "replays_per_sample": 8,
+    "warmups_per_arm": 2,
+    "quality_computes_per_arm": 2,
+    "baseline_weighted_component_median_sum_ms": 683.973399875,
+    "candidate_weighted_component_median_sum_ms": 96.55753162500001,
+    "ratio_of_weighted_component_sums": 7.0835841426782125,
+    "individual_component_speedup_range": [
+      4.092294102235957,
+      13.561180922185805
+    ],
+    "timing_scope": "Persistent CPU graph compute including dispatch/synchronization; setup, uploads, downloads, SHA calculations and scalar oracle work are outside timing. Arms alternate order between samples.",
+    "aggregate_limit": "Multiplicity-weighted isolated medians are an estimate of component cost, not a measured denoiser/image latency or a full-model speedup."
+  },
+  "commands_and_resources": [
+    {
+      "label": "compile",
+      "argv": [
+        "c++",
+        "-O3",
+        "-DNDEBUG",
+        "-std=gnu++17",
+        "-fPIE",
+        "-DGGML_USE_CPU",
+        "-ICrispEmbed-issue71/src",
+        "-ICrispEmbed-issue71/src/core",
+        "-ICrispEmbed-issue71/ggml/include",
+        "native-optimization/latent-assets/depthwise_probe.cpp",
+        "native-optimization/build-current/libcrispembed-inpaint-graph.a",
+        "native-optimization/build-current/libcrispembed-core.a",
+        "native-optimization/build-current/ggml/src/libggml.a",
+        "-ldl",
+        "native-optimization/build-current/ggml/src/libggml-cpu.a",
+        "native-optimization/build-current/ggml/src/libggml-base.a",
+        "-lm",
+        "-o",
+        "native-optimization/latent-assets/depthwise-live-v1-t8/depthwise-probe"
+      ],
+      "timeout_seconds": 120,
+      "complete": true,
+      "passed": true,
+      "started_unix": 1793534709.2238064,
+      "returncode": 0,
+      "peak_rss_kib": 185864,
+      "user_seconds": 1.844388,
+      "system_seconds": 0.111245,
+      "rss_scope": "Actual wait4 high-water mark for this one direct child; compilation and benchmark are separate children.",
+      "wall_seconds": 2.003967577998992,
+      "log": {
+        "path": "native-optimization/latent-assets/depthwise-live-v1-t8/compile.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "resource_observations": {
+        "before": {
+          "cpu_quota": "800000 100000",
+          "memory_limit_bytes": 8589934592,
+          "memory_current_bytes": 8588648448,
+          "load_average_1_5_15_minutes": [
+            1.37,
+            5.46,
+            5.55
+          ],
+          "cpu_pressure": {
+            "unavailable": "FileNotFoundError"
+          },
+          "global_cpu_pressure": {
+            "unavailable": "FileNotFoundError"
+          },
+          "memory_components_bytes": {
+            "anon": 102146048,
+            "file": 7920508928,
+            "kernel": 561651712,
+            "slab": 558277136
+          },
+          "process_names_cpu_percent_rss_kib": [
+            {
+              "name": "python3",
+              "cpu_percent": 57.1,
+              "rss_kib": 12100
+            },
+            {
+              "name": "rsync",
+              "cpu_percent": 6.6,
+              "rss_kib": 19720
+            },
+            {
+              "name": "codex",
+              "cpu_percent": 0.2,
+              "rss_kib": 54288
+            },
+            {
+              "name": "codex",
+              "cpu_percent": 0.1,
+              "rss_kib": 67864
+            },
+            {
+              "name": "sites-preview",
+              "cpu_percent": 0.0,
+              "rss_kib": 300
+            },
+            {
+              "name": "supervisord",
+              "cpu_percent": 0.0,
+              "rss_kib": 23136
+            },
+            {
+              "name": "sync_share.sh",
+              "cpu_percent": 0.0,
+              "rss_kib": 2080
+            },
+            {
+              "name": "caas-prefix-tra",
+              "cpu_percent": 0.0,
+              "rss_kib": 456
+            },
+            {
+              "name": "rsync",
+              "cpu_percent": 0.0,
+              "rss_kib": 2372
+            },
+            {
+              "name": "sync_share.sh",
+              "cpu_percent": 0.0,
+              "rss_kib": 2072
+            },
+            {
+              "name": "inotifywait",
+              "cpu_percent": 0.0,
+              "rss_kib": 832
+            },
+            {
+              "name": "ps",
+              "cpu_percent": 0.0,
+              "rss_kib": 2600
+            }
+          ],
+          "process_observation_scope": "Process names and ps lifetime-average CPU percentages, without PIDs or argv; diagnostic observations, not continuous interference detection."
+        },
+        "after": {
+          "cpu_quota": "800000 100000",
+          "memory_limit_bytes": 8589934592,
+          "memory_current_bytes": 8423698432,
+          "load_average_1_5_15_minutes": [
+            1.34,
+            5.39,
+            5.53
+          ],
+          "cpu_pressure": {
+            "unavailable": "FileNotFoundError"
+          },
+          "global_cpu_pressure": {
+            "unavailable": "FileNotFoundError"
+          },
+          "memory_components_bytes": {
+            "anon": 102170624,
+            "file": 7755878400,
+            "kernel": 561377280,
+            "slab": 558270016
+          },
+          "process_names_cpu_percent_rss_kib": [
+            {
+              "name": "rsync",
+              "cpu_percent": 6.5,
+              "rss_kib": 19720
+            },
+            {
+              "name": "python3",
+              "cpu_percent": 2.4,
+              "rss_kib": 12164
+            },
+            {
+              "name": "codex",
+              "cpu_percent": 0.2,
+              "rss_kib": 54288
+            },
+            {
+              "name": "codex",
+              "cpu_percent": 0.1,
+              "rss_kib": 67864
+            },
+            {
+              "name": "sites-preview",
+              "cpu_percent": 0.0,
+              "rss_kib": 300
+            },
+            {
+              "name": "supervisord",
+              "cpu_percent": 0.0,
+              "rss_kib": 23136
+            },
+            {
+              "name": "sync_share.sh",
+              "cpu_percent": 0.0,
+              "rss_kib": 2080
+            },
+            {
+              "name": "caas-prefix-tra",
+              "cpu_percent": 0.0,
+              "rss_kib": 456
+            },
+            {
+              "name": "rsync",
+              "cpu_percent": 0.0,
+              "rss_kib": 2372
+            },
+            {
+              "name": "sync_share.sh",
+              "cpu_percent": 0.0,
+              "rss_kib": 2072
+            },
+            {
+              "name": "inotifywait",
+              "cpu_percent": 0.0,
+              "rss_kib": 832
+            },
+            {
+              "name": "ps",
+              "cpu_percent": 0.0,
+              "rss_kib": 2604
+            }
+          ],
+          "process_observation_scope": "Process names and ps lifetime-average CPU percentages, without PIDs or argv; diagnostic observations, not continuous interference detection."
+        }
+      }
+    },
+    {
+      "label": "probe",
+      "argv": [
+        "native-optimization/latent-assets/depthwise-live-v1-t8/depthwise-probe",
+        "--output",
+        "native-optimization/latent-assets/depthwise-live-v1-t8/components",
+        "--threads",
+        "8",
+        "--samples",
+        "5",
+        "--replays",
+        "8"
+      ],
+      "timeout_seconds": 300,
+      "complete": true,
+      "passed": true,
+      "started_unix": 1793534711.2374394,
+      "returncode": 0,
+      "peak_rss_kib": 466300,
+      "user_seconds": 127.439171,
+      "system_seconds": 1.504334,
+      "rss_scope": "Actual wait4 high-water mark for this one direct child; compilation and benchmark are separate children.",
+      "wall_seconds": 19.574082200000703,
+      "log": {
+        "path": "native-optimization/latent-assets/depthwise-live-v1-t8/probe.log",
+        "bytes": 58051,
+        "sha256": "49616e8338f7f148bf6a01ecd267c1df98762ca8855be9a860c1e76fe815b80d"
+      },
+      "resource_observations": {
+        "before": {
+          "cpu_quota": "800000 100000",
+          "memory_limit_bytes": 8589934592,
+          "memory_current_bytes": 8423825408,
+          "load_average_1_5_15_minutes": [
+            1.34,
+            5.39,
+            5.53
+          ],
+          "cpu_pressure": {
+            "unavailable": "FileNotFoundError"
+          },
+          "global_cpu_pressure": {
+            "unavailable": "FileNotFoundError"
+          },
+          "memory_components_bytes": {
+            "anon": 102191104,
+            "file": 7755882496,
+            "kernel": 561463296,
+            "slab": 558282864
+          },
+          "process_names_cpu_percent_rss_kib": [
+            {
+              "name": "rsync",
+              "cpu_percent": 6.6,
+              "rss_kib": 19720
+            },
+            {
+              "name": "python3",
+              "cpu_percent": 2.4,
+              "rss_kib": 12188
+            },
+            {
+              "name": "codex",
+              "cpu_percent": 0.2,
+              "rss_kib": 54288
+            },
+            {
+              "name": "codex",
+              "cpu_percent": 0.1,
+              "rss_kib": 67864
+            },
+            {
+              "name": "sites-preview",
+              "cpu_percent": 0.0,
+              "rss_kib": 300
+            },
+            {
+              "name": "supervisord",
+              "cpu_percent": 0.0,
+              "rss_kib": 23136
+            },
+            {
+              "name": "sync_share.sh",
+              "cpu_percent": 0.0,
+              "rss_kib": 2080
+            },
+            {
+              "name": "caas-prefix-tra",
+              "cpu_percent": 0.0,
+              "rss_kib": 456
+            },
+            {
+              "name": "rsync",
+              "cpu_percent": 0.0,
+              "rss_kib": 2372
+            },
+            {
+              "name": "sync_share.sh",
+              "cpu_percent": 0.0,
+              "rss_kib": 2072
+            },
+            {
+              "name": "inotifywait",
+              "cpu_percent": 0.0,
+              "rss_kib": 832
+            },
+            {
+              "name": "ps",
+              "cpu_percent": 0.0,
+              "rss_kib": 2600
+            }
+          ],
+          "process_observation_scope": "Process names and ps lifetime-average CPU percentages, without PIDs or argv; diagnostic observations, not continuous interference detection."
+        },
+        "after": {
+          "cpu_quota": "800000 100000",
+          "memory_limit_bytes": 8589934592,
+          "memory_current_bytes": 8464551936,
+          "load_average_1_5_15_minutes": [
+            3.3,
+            5.57,
+            5.59
+          ],
+          "cpu_pressure": {
+            "unavailable": "FileNotFoundError"
+          },
+          "global_cpu_pressure": {
+            "unavailable": "FileNotFoundError"
+          },
+          "memory_components_bytes": {
+            "anon": 101601280,
+            "file": 7797297152,
+            "kernel": 561393664,
+            "slab": 558268416
+          },
+          "process_names_cpu_percent_rss_kib": [
+            {
+              "name": "rsync",
+              "cpu_percent": 6.2,
+              "rss_kib": 19720
+            },
+            {
+              "name": "python3",
+              "cpu_percent": 0.3,
+              "rss_kib": 12196
+            },
+            {
+              "name": "codex",
+              "cpu_percent": 0.2,
+              "rss_kib": 54228
+            },
+            {
+              "name": "codex",
+              "cpu_percent": 0.1,
+              "rss_kib": 67340
+            },
+            {
+              "name": "sites-preview",
+              "cpu_percent": 0.0,
+              "rss_kib": 300
+            },
+            {
+              "name": "supervisord",
+              "cpu_percent": 0.0,
+              "rss_kib": 23136
+            },
+            {
+              "name": "sync_share.sh",
+              "cpu_percent": 0.0,
+              "rss_kib": 2080
+            },
+            {
+              "name": "caas-prefix-tra",
+              "cpu_percent": 0.0,
+              "rss_kib": 456
+            },
+            {
+              "name": "rsync",
+              "cpu_percent": 0.0,
+              "rss_kib": 2372
+            },
+            {
+              "name": "sync_share.sh",
+              "cpu_percent": 0.0,
+              "rss_kib": 2072
+            },
+            {
+              "name": "inotifywait",
+              "cpu_percent": 0.0,
+              "rss_kib": 832
+            },
+            {
+              "name": "ps",
+              "cpu_percent": 0.0,
+              "rss_kib": 2600
+            }
+          ],
+          "process_observation_scope": "Process names and ps lifetime-average CPU percentages, without PIDs or argv; diagnostic observations, not continuous interference detection."
+        }
+      }
+    }
+  ],
+  "preflight_attempts": [
+    {
+      "result": "failed before build/inference",
+      "reason": "Initial resource-only inspection treated optional /sys/fs/cgroup/cpu.pressure as required; FileNotFoundError retained here. Subsequent admission records absence explicitly."
+    }
+  ],
+  "oracles": [
+    {
+      "schema": "crispembed-depthwise-private-oracle-v1",
+      "side": 64,
+      "channels": 9,
+      "batch": 2,
+      "round": 0,
+      "input_kind": "exact-dyadic",
+      "scalar_atol": 4e-06,
+      "scalar_rtol": 2e-06,
+      "bit_exact_required": true,
+      "passed": true,
+      "input_sha256": "cc517daa115af615956a14b5c01ade8529bfb419a035e7f1ab02f6919a07e980",
+      "baseline_output_sha256": "383366b8c89391df55466652089f8dd1ad6d0c653ee5449ea46fa529b48fe614",
+      "candidate_output_sha256": "383366b8c89391df55466652089f8dd1ad6d0c653ee5449ea46fa529b48fe614",
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "metrics": {
+        "finite": true,
+        "within_frozen_budget": true,
+        "baseline_f64_max_abs": 0,
+        "candidate_f64_max_abs": 0,
+        "native_max_abs": 0,
+        "native_differing_f32_values": 0,
+        "baseline_scalar_f32_differing_values": 0,
+        "candidate_scalar_f32_differing_values": 0
+      }
+    },
+    {
+      "schema": "crispembed-depthwise-private-oracle-v1",
+      "side": 64,
+      "channels": 9,
+      "batch": 2,
+      "round": 1,
+      "input_kind": "non-dyadic-f32",
+      "scalar_atol": 4e-06,
+      "scalar_rtol": 2e-06,
+      "bit_exact_required": false,
+      "passed": true,
+      "input_sha256": "3b74c449f6b38037895e07e6c89daaee6950b410e9b4577ef320ece8b2a18868",
+      "baseline_output_sha256": "eab2458dfd98f0dc8dfbab267cba72840a2e27768607f455a40fa37d228d59e6",
+      "candidate_output_sha256": "f29b0e924afaaa345996aec528574fe0e596f59e9b00bc3831b4a3cf5f12ba69",
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "metrics": {
+        "finite": true,
+        "within_frozen_budget": true,
+        "baseline_f64_max_abs": 8.032657206058502e-08,
+        "candidate_f64_max_abs": 9.231735020875931e-08,
+        "native_max_abs": 8.940696716308594e-08,
+        "native_differing_f32_values": 29067,
+        "baseline_scalar_f32_differing_values": 29067,
+        "candidate_scalar_f32_differing_values": 0
+      }
+    },
+    {
+      "schema": "crispembed-depthwise-private-oracle-v1",
+      "side": 64,
+      "channels": 320,
+      "batch": 2,
+      "round": 0,
+      "input_kind": "exact-dyadic",
+      "scalar_atol": 4e-06,
+      "scalar_rtol": 2e-06,
+      "bit_exact_required": true,
+      "passed": true,
+      "input_sha256": "68e0152dfd7ade906e5149f1d859a0e6144826572b35bfd048f05b31b648f016",
+      "baseline_output_sha256": "f9a6c5b74da01bacd7ff0a67c8facaddada76d9bf8249626b0eea29eed50237b",
+      "candidate_output_sha256": "f9a6c5b74da01bacd7ff0a67c8facaddada76d9bf8249626b0eea29eed50237b",
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "metrics": {
+        "finite": true,
+        "within_frozen_budget": true,
+        "baseline_f64_max_abs": 0,
+        "candidate_f64_max_abs": 0,
+        "native_max_abs": 0,
+        "native_differing_f32_values": 0,
+        "baseline_scalar_f32_differing_values": 0,
+        "candidate_scalar_f32_differing_values": 0
+      }
+    },
+    {
+      "schema": "crispembed-depthwise-private-oracle-v1",
+      "side": 64,
+      "channels": 320,
+      "batch": 2,
+      "round": 1,
+      "input_kind": "non-dyadic-f32",
+      "scalar_atol": 4e-06,
+      "scalar_rtol": 2e-06,
+      "bit_exact_required": false,
+      "passed": true,
+      "input_sha256": "862b798115e60a8729d0a16d1b8d4937053959b339f1e15876f16a6470aee3e7",
+      "baseline_output_sha256": "5585aedce79bb82c6b152e918b6f3b501e8cf947a0e4b1cfd7123999b85f8f43",
+      "candidate_output_sha256": "685bea4f1b302c19e6f6d0249648389251e1a36ecd9ebd5a8beee488f4a826f5",
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "metrics": {
+        "finite": true,
+        "within_frozen_budget": true,
+        "baseline_f64_max_abs": 1.021107891574502e-07,
+        "candidate_f64_max_abs": 1.0948861017823219e-07,
+        "native_max_abs": 1.1920928955078125e-07,
+        "native_differing_f32_values": 992267,
+        "baseline_scalar_f32_differing_values": 992267,
+        "candidate_scalar_f32_differing_values": 0
+      }
+    },
+    {
+      "schema": "crispembed-depthwise-private-oracle-v1",
+      "side": 64,
+      "channels": 640,
+      "batch": 2,
+      "round": 0,
+      "input_kind": "exact-dyadic",
+      "scalar_atol": 4e-06,
+      "scalar_rtol": 2e-06,
+      "bit_exact_required": true,
+      "passed": true,
+      "input_sha256": "24ee1d992bb29cd355ef9dc6f2c227323757bf4abe365fe9c5df9bebb226c8ea",
+      "baseline_output_sha256": "0383f35c0add20589ec8756e25cb676612c32b9f5c6811c6c98b2c414745d42d",
+      "candidate_output_sha256": "0383f35c0add20589ec8756e25cb676612c32b9f5c6811c6c98b2c414745d42d",
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "metrics": {
+        "finite": true,
+        "within_frozen_budget": true,
+        "baseline_f64_max_abs": 0,
+        "candidate_f64_max_abs": 0,
+        "native_max_abs": 0,
+        "native_differing_f32_values": 0,
+        "baseline_scalar_f32_differing_values": 0,
+        "candidate_scalar_f32_differing_values": 0
+      }
+    },
+    {
+      "schema": "crispembed-depthwise-private-oracle-v1",
+      "side": 64,
+      "channels": 640,
+      "batch": 2,
+      "round": 1,
+      "input_kind": "non-dyadic-f32",
+      "scalar_atol": 4e-06,
+      "scalar_rtol": 2e-06,
+      "bit_exact_required": false,
+      "passed": true,
+      "input_sha256": "c75d06dfbf77e7a35ce0c8acdfbcf38f7ee7556b209835fcf16f98071b6328f1",
+      "baseline_output_sha256": "a335864213f05b5ddfa130bf73b593ca4b2323d2aef72fc25aa5d3419f9d4dd3",
+      "candidate_output_sha256": "2ab1c3685026172babf95ed9ba2ffa81271a4b78fd146c30ecda5b7853ca8877",
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "metrics": {
+        "finite": true,
+        "within_frozen_budget": true,
+        "baseline_f64_max_abs": 1.021107891574502e-07,
+        "candidate_f64_max_abs": 1.0948861017823219e-07,
+        "native_max_abs": 1.1920928955078125e-07,
+        "native_differing_f32_values": 1984436,
+        "baseline_scalar_f32_differing_values": 1984436,
+        "candidate_scalar_f32_differing_values": 0
+      }
+    },
+    {
+      "schema": "crispembed-depthwise-private-oracle-v1",
+      "side": 64,
+      "channels": 960,
+      "batch": 2,
+      "round": 0,
+      "input_kind": "exact-dyadic",
+      "scalar_atol": 4e-06,
+      "scalar_rtol": 2e-06,
+      "bit_exact_required": true,
+      "passed": true,
+      "input_sha256": "3caa77f44e9d96a092d58bcdc7cf7a402eb2c90e1749941ce1f3b8f1c318316d",
+      "baseline_output_sha256": "af3c6339bbb0c53a80225754f66bb6b77b96f13fa59cbc10d775158fa4412510",
+      "candidate_output_sha256": "af3c6339bbb0c53a80225754f66bb6b77b96f13fa59cbc10d775158fa4412510",
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "metrics": {
+        "finite": true,
+        "within_frozen_budget": true,
+        "baseline_f64_max_abs": 0,
+        "candidate_f64_max_abs": 0,
+        "native_max_abs": 0,
+        "native_differing_f32_values": 0,
+        "baseline_scalar_f32_differing_values": 0,
+        "candidate_scalar_f32_differing_values": 0
+      }
+    },
+    {
+      "schema": "crispembed-depthwise-private-oracle-v1",
+      "side": 64,
+      "channels": 960,
+      "batch": 2,
+      "round": 1,
+      "input_kind": "non-dyadic-f32",
+      "scalar_atol": 4e-06,
+      "scalar_rtol": 2e-06,
+      "bit_exact_required": false,
+      "passed": true,
+      "input_sha256": "7aff27299ec659f1f31091aefd851754bc2e45df49837a466b91cd3e52bae13a",
+      "baseline_output_sha256": "c5c53a893287bcb133fe3a778cd96f3cd0148cf19dfaed6433ab2e76343b02c4",
+      "candidate_output_sha256": "089bd019a2f02b69e322b4ac0172b701e662ac2fa186d845924fea986906a17e",
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "metrics": {
+        "finite": true,
+        "within_frozen_budget": true,
+        "baseline_f64_max_abs": 1.021107891574502e-07,
+        "candidate_f64_max_abs": 1.0948861017823219e-07,
+        "native_max_abs": 1.1920928955078125e-07,
+        "native_differing_f32_values": 2972286,
+        "baseline_scalar_f32_differing_values": 2972286,
+        "candidate_scalar_f32_differing_values": 0
+      }
+    },
+    {
+      "schema": "crispembed-depthwise-private-oracle-v1",
+      "side": 64,
+      "channels": 1600,
+      "batch": 2,
+      "round": 0,
+      "input_kind": "exact-dyadic",
+      "scalar_atol": 4e-06,
+      "scalar_rtol": 2e-06,
+      "bit_exact_required": true,
+      "passed": true,
+      "input_sha256": "7c2e72bc11c562bcd3de57e2090f37550c7eb1e8bef124cf9e662effaf85a048",
+      "baseline_output_sha256": "8804427bc405b56b30d3362a44d75463325f8a16b25ad03f87ef988a1f9ad3de",
+      "candidate_output_sha256": "8804427bc405b56b30d3362a44d75463325f8a16b25ad03f87ef988a1f9ad3de",
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "metrics": {
+        "finite": true,
+        "within_frozen_budget": true,
+        "baseline_f64_max_abs": 0,
+        "candidate_f64_max_abs": 0,
+        "native_max_abs": 0,
+        "native_differing_f32_values": 0,
+        "baseline_scalar_f32_differing_values": 0,
+        "candidate_scalar_f32_differing_values": 0
+      }
+    },
+    {
+      "schema": "crispembed-depthwise-private-oracle-v1",
+      "side": 64,
+      "channels": 1600,
+      "batch": 2,
+      "round": 1,
+      "input_kind": "non-dyadic-f32",
+      "scalar_atol": 4e-06,
+      "scalar_rtol": 2e-06,
+      "bit_exact_required": false,
+      "passed": true,
+      "input_sha256": "7424eae0c672464abc2c0685909966d60da38a47f219caee055c08b9e0fc39e7",
+      "baseline_output_sha256": "3dcc38586122fb8da3ba75743eeea6754760cab89de43ea1457faf04c29c3024",
+      "candidate_output_sha256": "4f71aef4ae030c9778d2ec9edad160bfd57e6ba3cb76b2a43ae9a10d9ba5b7c6",
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "metrics": {
+        "finite": true,
+        "within_frozen_budget": true,
+        "baseline_f64_max_abs": 1.021107891574502e-07,
+        "candidate_f64_max_abs": 1.0948861017823219e-07,
+        "native_max_abs": 1.1920928955078125e-07,
+        "native_differing_f32_values": 4862475,
+        "baseline_scalar_f32_differing_values": 4862475,
+        "candidate_scalar_f32_differing_values": 0
+      }
+    },
+    {
+      "schema": "crispembed-depthwise-private-oracle-v1",
+      "side": 32,
+      "channels": 320,
+      "batch": 2,
+      "round": 0,
+      "input_kind": "exact-dyadic",
+      "scalar_atol": 4e-06,
+      "scalar_rtol": 2e-06,
+      "bit_exact_required": true,
+      "passed": true,
+      "input_sha256": "a31c585ff125d303cc61b6045f64aaacffe284edcafb51c6a593bbabf7ce7b96",
+      "baseline_output_sha256": "fb84a6478d77a6301b0b9dbbac292bba7c487fdefdf2959d175d11749007d1e6",
+      "candidate_output_sha256": "fb84a6478d77a6301b0b9dbbac292bba7c487fdefdf2959d175d11749007d1e6",
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "metrics": {
+        "finite": true,
+        "within_frozen_budget": true,
+        "baseline_f64_max_abs": 0,
+        "candidate_f64_max_abs": 0,
+        "native_max_abs": 0,
+        "native_differing_f32_values": 0,
+        "baseline_scalar_f32_differing_values": 0,
+        "candidate_scalar_f32_differing_values": 0
+      }
+    },
+    {
+      "schema": "crispembed-depthwise-private-oracle-v1",
+      "side": 32,
+      "channels": 320,
+      "batch": 2,
+      "round": 1,
+      "input_kind": "non-dyadic-f32",
+      "scalar_atol": 4e-06,
+      "scalar_rtol": 2e-06,
+      "bit_exact_required": false,
+      "passed": true,
+      "input_sha256": "89d2b97a5396f97aeea1413d8727db2abc38687e68d9cf54cf72ce3336b2f744",
+      "baseline_output_sha256": "9961077832c86586acbc4c002c6e388117ab1863a50c7a70edb396b8c269f678",
+      "candidate_output_sha256": "4a31ec8851f5db43f8338574affc9c0c85ddce2171862af896fde7e7dfbc6393",
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "metrics": {
+        "finite": true,
+        "within_frozen_budget": true,
+        "baseline_f64_max_abs": 7.345806807279587e-08,
+        "candidate_f64_max_abs": 8.479401003569365e-08,
+        "native_max_abs": 8.940696716308594e-08,
+        "native_differing_f32_values": 302694,
+        "baseline_scalar_f32_differing_values": 302694,
+        "candidate_scalar_f32_differing_values": 0
+      }
+    },
+    {
+      "schema": "crispembed-depthwise-private-oracle-v1",
+      "side": 32,
+      "channels": 640,
+      "batch": 2,
+      "round": 0,
+      "input_kind": "exact-dyadic",
+      "scalar_atol": 4e-06,
+      "scalar_rtol": 2e-06,
+      "bit_exact_required": true,
+      "passed": true,
+      "input_sha256": "7c1d735537bdefb3c22f45b1fa329ccb16299dcd649c38506b6dc2672516d211",
+      "baseline_output_sha256": "6ace8951ba12d0954f950308bfba640794067821b3d04d845acd88d557490d5a",
+      "candidate_output_sha256": "6ace8951ba12d0954f950308bfba640794067821b3d04d845acd88d557490d5a",
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "metrics": {
+        "finite": true,
+        "within_frozen_budget": true,
+        "baseline_f64_max_abs": 0,
+        "candidate_f64_max_abs": 0,
+        "native_max_abs": 0,
+        "native_differing_f32_values": 0,
+        "baseline_scalar_f32_differing_values": 0,
+        "candidate_scalar_f32_differing_values": 0
+      }
+    },
+    {
+      "schema": "crispembed-depthwise-private-oracle-v1",
+      "side": 32,
+      "channels": 640,
+      "batch": 2,
+      "round": 1,
+      "input_kind": "non-dyadic-f32",
+      "scalar_atol": 4e-06,
+      "scalar_rtol": 2e-06,
+      "bit_exact_required": false,
+      "passed": true,
+      "input_sha256": "14049af1c66c9e28fa6a07bb3922ad6a58588c0968ef06431c96357742bfad41",
+      "baseline_output_sha256": "a1c3ddf32adfc495055fdd009a21d979613af279c6c5eeb5db66df2fa3c6454a",
+      "candidate_output_sha256": "a58c2bdf4c3b7e6a1730b8f405905f9c4935c0a3ce8f90116227e36080da2ee4",
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "metrics": {
+        "finite": true,
+        "within_frozen_budget": true,
+        "baseline_f64_max_abs": 7.345806807279587e-08,
+        "candidate_f64_max_abs": 8.479401003569365e-08,
+        "native_max_abs": 8.940696716308594e-08,
+        "native_differing_f32_values": 605815,
+        "baseline_scalar_f32_differing_values": 605815,
+        "candidate_scalar_f32_differing_values": 0
+      }
+    },
+    {
+      "schema": "crispembed-depthwise-private-oracle-v1",
+      "side": 32,
+      "channels": 960,
+      "batch": 2,
+      "round": 0,
+      "input_kind": "exact-dyadic",
+      "scalar_atol": 4e-06,
+      "scalar_rtol": 2e-06,
+      "bit_exact_required": true,
+      "passed": true,
+      "input_sha256": "c4520c8c71bd1dc1190381e11bb6475a41a5a234b01b8aecffa8a128dc239d0e",
+      "baseline_output_sha256": "3c8357d89f6662d78524ac8219aace8d794dd0f8681109177aaf6db17b32637e",
+      "candidate_output_sha256": "3c8357d89f6662d78524ac8219aace8d794dd0f8681109177aaf6db17b32637e",
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "metrics": {
+        "finite": true,
+        "within_frozen_budget": true,
+        "baseline_f64_max_abs": 0,
+        "candidate_f64_max_abs": 0,
+        "native_max_abs": 0,
+        "native_differing_f32_values": 0,
+        "baseline_scalar_f32_differing_values": 0,
+        "candidate_scalar_f32_differing_values": 0
+      }
+    },
+    {
+      "schema": "crispembed-depthwise-private-oracle-v1",
+      "side": 32,
+      "channels": 960,
+      "batch": 2,
+      "round": 1,
+      "input_kind": "non-dyadic-f32",
+      "scalar_atol": 4e-06,
+      "scalar_rtol": 2e-06,
+      "bit_exact_required": false,
+      "passed": true,
+      "input_sha256": "d4707c8ae962d747d2198b440ecc58154e2cd0dc2408ffae961ee9b775781c51",
+      "baseline_output_sha256": "0f66359475778014bad3a57f1dd44dcefc77a2df3f57985045303b9a000c017f",
+      "candidate_output_sha256": "ed59915719d3726964e10bb50bc8ebb2df802ff141f3d63b1087f42fff9c0414",
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "metrics": {
+        "finite": true,
+        "within_frozen_budget": true,
+        "baseline_f64_max_abs": 7.345806807279587e-08,
+        "candidate_f64_max_abs": 8.479401003569365e-08,
+        "native_max_abs": 8.940696716308594e-08,
+        "native_differing_f32_values": 908178,
+        "baseline_scalar_f32_differing_values": 908178,
+        "candidate_scalar_f32_differing_values": 0
+      }
+    },
+    {
+      "schema": "crispembed-depthwise-private-oracle-v1",
+      "side": 32,
+      "channels": 1280,
+      "batch": 2,
+      "round": 0,
+      "input_kind": "exact-dyadic",
+      "scalar_atol": 4e-06,
+      "scalar_rtol": 2e-06,
+      "bit_exact_required": true,
+      "passed": true,
+      "input_sha256": "68e0152dfd7ade906e5149f1d859a0e6144826572b35bfd048f05b31b648f016",
+      "baseline_output_sha256": "22a72d89a522f1f4e6fb7a0c6bf211dc47720376c98da0bfc7d88652a7a43d86",
+      "candidate_output_sha256": "22a72d89a522f1f4e6fb7a0c6bf211dc47720376c98da0bfc7d88652a7a43d86",
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "metrics": {
+        "finite": true,
+        "within_frozen_budget": true,
+        "baseline_f64_max_abs": 0,
+        "candidate_f64_max_abs": 0,
+        "native_max_abs": 0,
+        "native_differing_f32_values": 0,
+        "baseline_scalar_f32_differing_values": 0,
+        "candidate_scalar_f32_differing_values": 0
+      }
+    },
+    {
+      "schema": "crispembed-depthwise-private-oracle-v1",
+      "side": 32,
+      "channels": 1280,
+      "batch": 2,
+      "round": 1,
+      "input_kind": "non-dyadic-f32",
+      "scalar_atol": 4e-06,
+      "scalar_rtol": 2e-06,
+      "bit_exact_required": false,
+      "passed": true,
+      "input_sha256": "862b798115e60a8729d0a16d1b8d4937053959b339f1e15876f16a6470aee3e7",
+      "baseline_output_sha256": "2f14f34f83520eba54e459b5efa1261afb9c1690885611e114dbfc3fb463380d",
+      "candidate_output_sha256": "08f570560a4d6fb6b1607924ff5fb82d962ccf24f49f8bd4ef89fc36fddaaa58",
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "metrics": {
+        "finite": true,
+        "within_frozen_budget": true,
+        "baseline_f64_max_abs": 7.345806807279587e-08,
+        "candidate_f64_max_abs": 8.479401003569365e-08,
+        "native_max_abs": 8.940696716308594e-08,
+        "native_differing_f32_values": 1209803,
+        "baseline_scalar_f32_differing_values": 1209803,
+        "candidate_scalar_f32_differing_values": 0
+      }
+    },
+    {
+      "schema": "crispembed-depthwise-private-oracle-v1",
+      "side": 32,
+      "channels": 1920,
+      "batch": 2,
+      "round": 0,
+      "input_kind": "exact-dyadic",
+      "scalar_atol": 4e-06,
+      "scalar_rtol": 2e-06,
+      "bit_exact_required": true,
+      "passed": true,
+      "input_sha256": "795bd359427a02c55508bac1687aef4a0dfc51268afa4ad6953e692b71065bef",
+      "baseline_output_sha256": "3b6cb2dc3caf078a42b68325e25ced9a277cb04581ace92f3e850d70ee34ff3b",
+      "candidate_output_sha256": "3b6cb2dc3caf078a42b68325e25ced9a277cb04581ace92f3e850d70ee34ff3b",
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "metrics": {
+        "finite": true,
+        "within_frozen_budget": true,
+        "baseline_f64_max_abs": 0,
+        "candidate_f64_max_abs": 0,
+        "native_max_abs": 0,
+        "native_differing_f32_values": 0,
+        "baseline_scalar_f32_differing_values": 0,
+        "candidate_scalar_f32_differing_values": 0
+      }
+    },
+    {
+      "schema": "crispembed-depthwise-private-oracle-v1",
+      "side": 32,
+      "channels": 1920,
+      "batch": 2,
+      "round": 1,
+      "input_kind": "non-dyadic-f32",
+      "scalar_atol": 4e-06,
+      "scalar_rtol": 2e-06,
+      "bit_exact_required": false,
+      "passed": true,
+      "input_sha256": "23aba5260a8ce24165b28c6da38ece7f931d885f651bf424a0d230d2ee648f86",
+      "baseline_output_sha256": "66c705d0520b35a4c02fe647ca4e6f147eab0b7788587b847392812eefbfd78a",
+      "candidate_output_sha256": "a44b3003b46d171e2a589f9507d715fe467b2b3290c7e670fe412d5d89721d24",
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "metrics": {
+        "finite": true,
+        "within_frozen_budget": true,
+        "baseline_f64_max_abs": 7.345806807279587e-08,
+        "candidate_f64_max_abs": 8.479401003569365e-08,
+        "native_max_abs": 8.940696716308594e-08,
+        "native_differing_f32_values": 1812665,
+        "baseline_scalar_f32_differing_values": 1812665,
+        "candidate_scalar_f32_differing_values": 0
+      }
+    },
+    {
+      "schema": "crispembed-depthwise-private-oracle-v1",
+      "side": 32,
+      "channels": 3200,
+      "batch": 2,
+      "round": 0,
+      "input_kind": "exact-dyadic",
+      "scalar_atol": 4e-06,
+      "scalar_rtol": 2e-06,
+      "bit_exact_required": true,
+      "passed": true,
+      "input_sha256": "e2863e7951723ad94461aa6076cbb0678e390925b2a606f354c152f4937257d2",
+      "baseline_output_sha256": "a0ed863d36bebee6bbeb5019b780bf367f2405ef0d22c363ec95cedb10afc32e",
+      "candidate_output_sha256": "a0ed863d36bebee6bbeb5019b780bf367f2405ef0d22c363ec95cedb10afc32e",
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "metrics": {
+        "finite": true,
+        "within_frozen_budget": true,
+        "baseline_f64_max_abs": 0,
+        "candidate_f64_max_abs": 0,
+        "native_max_abs": 0,
+        "native_differing_f32_values": 0,
+        "baseline_scalar_f32_differing_values": 0,
+        "candidate_scalar_f32_differing_values": 0
+      }
+    },
+    {
+      "schema": "crispembed-depthwise-private-oracle-v1",
+      "side": 32,
+      "channels": 3200,
+      "batch": 2,
+      "round": 1,
+      "input_kind": "non-dyadic-f32",
+      "scalar_atol": 4e-06,
+      "scalar_rtol": 2e-06,
+      "bit_exact_required": false,
+      "passed": true,
+      "input_sha256": "c703628aa8c09e04a755ce4b352c724c65f62912167e8804ad7abd5a62db7108",
+      "baseline_output_sha256": "ba56fc8eec26393d803de47ccc9deacf10f491b3a1b78ccc219bf6f4faee3c07",
+      "candidate_output_sha256": "9cea1e81eb33a1594453095843af50cb1fbb8f7d343ee807b0ac914cfb767cb4",
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "metrics": {
+        "finite": true,
+        "within_frozen_budget": true,
+        "baseline_f64_max_abs": 7.345806807279587e-08,
+        "candidate_f64_max_abs": 8.479401003569365e-08,
+        "native_max_abs": 8.940696716308594e-08,
+        "native_differing_f32_values": 2953823,
+        "baseline_scalar_f32_differing_values": 2953823,
+        "candidate_scalar_f32_differing_values": 0
+      }
+    },
+    {
+      "schema": "crispembed-depthwise-private-oracle-v1",
+      "side": 16,
+      "channels": 640,
+      "batch": 2,
+      "round": 0,
+      "input_kind": "exact-dyadic",
+      "scalar_atol": 4e-06,
+      "scalar_rtol": 2e-06,
+      "bit_exact_required": true,
+      "passed": true,
+      "input_sha256": "38818e3fdc61100cfe02ae9abd4f7398bc8ea7ef58efceb95d87512c010369a0",
+      "baseline_output_sha256": "d01e5fc1282845f58b2c67455b71496e37b16d91faa3d567c5b58c2e9a51f738",
+      "candidate_output_sha256": "d01e5fc1282845f58b2c67455b71496e37b16d91faa3d567c5b58c2e9a51f738",
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "metrics": {
+        "finite": true,
+        "within_frozen_budget": true,
+        "baseline_f64_max_abs": 0,
+        "candidate_f64_max_abs": 0,
+        "native_max_abs": 0,
+        "native_differing_f32_values": 0,
+        "baseline_scalar_f32_differing_values": 0,
+        "candidate_scalar_f32_differing_values": 0
+      }
+    },
+    {
+      "schema": "crispembed-depthwise-private-oracle-v1",
+      "side": 16,
+      "channels": 640,
+      "batch": 2,
+      "round": 1,
+      "input_kind": "non-dyadic-f32",
+      "scalar_atol": 4e-06,
+      "scalar_rtol": 2e-06,
+      "bit_exact_required": false,
+      "passed": true,
+      "input_sha256": "27da7811cfaa67eb46b18ef18e73e510a2c8785015ae857fb7b6fa6710d31688",
+      "baseline_output_sha256": "c486bba78f003d125ee5922238734ba4eb6a57652bb659a9da9d932e82d5ce74",
+      "candidate_output_sha256": "df615ba373d6c0a9ad66c1478dd1e6ffafa516baa635de24a352bb66add524ee",
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "metrics": {
+        "finite": true,
+        "within_frozen_budget": true,
+        "baseline_f64_max_abs": 7.194466888904572e-08,
+        "candidate_f64_max_abs": 7.986091077327728e-08,
+        "native_max_abs": 8.940696716308594e-08,
+        "native_differing_f32_values": 146266,
+        "baseline_scalar_f32_differing_values": 146266,
+        "candidate_scalar_f32_differing_values": 0
+      }
+    },
+    {
+      "schema": "crispembed-depthwise-private-oracle-v1",
+      "side": 16,
+      "channels": 1280,
+      "batch": 2,
+      "round": 0,
+      "input_kind": "exact-dyadic",
+      "scalar_atol": 4e-06,
+      "scalar_rtol": 2e-06,
+      "bit_exact_required": true,
+      "passed": true,
+      "input_sha256": "a31c585ff125d303cc61b6045f64aaacffe284edcafb51c6a593bbabf7ce7b96",
+      "baseline_output_sha256": "61b5d8e077706f7d0b4995a0b24c3b83ab1b7c63d958f2dcdf2006d23e1396dc",
+      "candidate_output_sha256": "61b5d8e077706f7d0b4995a0b24c3b83ab1b7c63d958f2dcdf2006d23e1396dc",
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "metrics": {
+        "finite": true,
+        "within_frozen_budget": true,
+        "baseline_f64_max_abs": 0,
+        "candidate_f64_max_abs": 0,
+        "native_max_abs": 0,
+        "native_differing_f32_values": 0,
+        "baseline_scalar_f32_differing_values": 0,
+        "candidate_scalar_f32_differing_values": 0
+      }
+    },
+    {
+      "schema": "crispembed-depthwise-private-oracle-v1",
+      "side": 16,
+      "channels": 1280,
+      "batch": 2,
+      "round": 1,
+      "input_kind": "non-dyadic-f32",
+      "scalar_atol": 4e-06,
+      "scalar_rtol": 2e-06,
+      "bit_exact_required": false,
+      "passed": true,
+      "input_sha256": "89d2b97a5396f97aeea1413d8727db2abc38687e68d9cf54cf72ce3336b2f744",
+      "baseline_output_sha256": "d0b1c0f355724ddf47a3f3c52f4981f4bce3c63fb0c042f454469e3e358e47db",
+      "candidate_output_sha256": "c266aa26f326b74da9669038a9238a7ade43a49c8a984750dcce387c3f8f0434",
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "metrics": {
+        "finite": true,
+        "within_frozen_budget": true,
+        "baseline_f64_max_abs": 7.194466888904572e-08,
+        "candidate_f64_max_abs": 7.986091077327728e-08,
+        "native_max_abs": 8.940696716308594e-08,
+        "native_differing_f32_values": 293030,
+        "baseline_scalar_f32_differing_values": 293030,
+        "candidate_scalar_f32_differing_values": 0
+      }
+    },
+    {
+      "schema": "crispembed-depthwise-private-oracle-v1",
+      "side": 16,
+      "channels": 1920,
+      "batch": 2,
+      "round": 0,
+      "input_kind": "exact-dyadic",
+      "scalar_atol": 4e-06,
+      "scalar_rtol": 2e-06,
+      "bit_exact_required": true,
+      "passed": true,
+      "input_sha256": "594009c590e77c666117772f485140f73147df8766a97ece6e845284b539eb3e",
+      "baseline_output_sha256": "83eb158323ef30a82b4938498858a6321e1c5aec1638cb90bdb5c9e032f02934",
+      "candidate_output_sha256": "83eb158323ef30a82b4938498858a6321e1c5aec1638cb90bdb5c9e032f02934",
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "metrics": {
+        "finite": true,
+        "within_frozen_budget": true,
+        "baseline_f64_max_abs": 0,
+        "candidate_f64_max_abs": 0,
+        "native_max_abs": 0,
+        "native_differing_f32_values": 0,
+        "baseline_scalar_f32_differing_values": 0,
+        "candidate_scalar_f32_differing_values": 0
+      }
+    },
+    {
+      "schema": "crispembed-depthwise-private-oracle-v1",
+      "side": 16,
+      "channels": 1920,
+      "batch": 2,
+      "round": 1,
+      "input_kind": "non-dyadic-f32",
+      "scalar_atol": 4e-06,
+      "scalar_rtol": 2e-06,
+      "bit_exact_required": false,
+      "passed": true,
+      "input_sha256": "a7cca5b66d950084399fa9a6ad66a3fe0c1c20e63e4f54901460920aee3eced9",
+      "baseline_output_sha256": "a923c6d313d1f2513d41e52933b860209816a6d8e5b92c8e547ac63f9d0c5fc2",
+      "candidate_output_sha256": "b7ea4357e5938a10c9a9bfd86abb6a99682d34053f3a2e2bacf09d30b397f0eb",
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "metrics": {
+        "finite": true,
+        "within_frozen_budget": true,
+        "baseline_f64_max_abs": 7.8580342233181e-08,
+        "candidate_f64_max_abs": 7.986091077327728e-08,
+        "native_max_abs": 8.940696716308594e-08,
+        "native_differing_f32_values": 440478,
+        "baseline_scalar_f32_differing_values": 440478,
+        "candidate_scalar_f32_differing_values": 0
+      }
+    },
+    {
+      "schema": "crispembed-depthwise-private-oracle-v1",
+      "side": 16,
+      "channels": 2560,
+      "batch": 2,
+      "round": 0,
+      "input_kind": "exact-dyadic",
+      "scalar_atol": 4e-06,
+      "scalar_rtol": 2e-06,
+      "bit_exact_required": true,
+      "passed": true,
+      "input_sha256": "7c1d735537bdefb3c22f45b1fa329ccb16299dcd649c38506b6dc2672516d211",
+      "baseline_output_sha256": "c457c16b4b736431fbcce56f7e36ac9088554dd9ed4ce0853448e00e4006ee4e",
+      "candidate_output_sha256": "c457c16b4b736431fbcce56f7e36ac9088554dd9ed4ce0853448e00e4006ee4e",
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "metrics": {
+        "finite": true,
+        "within_frozen_budget": true,
+        "baseline_f64_max_abs": 0,
+        "candidate_f64_max_abs": 0,
+        "native_max_abs": 0,
+        "native_differing_f32_values": 0,
+        "baseline_scalar_f32_differing_values": 0,
+        "candidate_scalar_f32_differing_values": 0
+      }
+    },
+    {
+      "schema": "crispembed-depthwise-private-oracle-v1",
+      "side": 16,
+      "channels": 2560,
+      "batch": 2,
+      "round": 1,
+      "input_kind": "non-dyadic-f32",
+      "scalar_atol": 4e-06,
+      "scalar_rtol": 2e-06,
+      "bit_exact_required": false,
+      "passed": true,
+      "input_sha256": "14049af1c66c9e28fa6a07bb3922ad6a58588c0968ef06431c96357742bfad41",
+      "baseline_output_sha256": "106ac661664ce7af7a27db8abf593770767b436ba00fbf03bfb4345e03dfeaff",
+      "candidate_output_sha256": "82f514401c1253e1069bc2ddc301222a2a27a6dc1fb974fed156a9adaec0144b",
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "metrics": {
+        "finite": true,
+        "within_frozen_budget": true,
+        "baseline_f64_max_abs": 7.8580342233181e-08,
+        "candidate_f64_max_abs": 7.986091077327728e-08,
+        "native_max_abs": 8.940696716308594e-08,
+        "native_differing_f32_values": 587409,
+        "baseline_scalar_f32_differing_values": 587409,
+        "candidate_scalar_f32_differing_values": 0
+      }
+    },
+    {
+      "schema": "crispembed-depthwise-private-oracle-v1",
+      "side": 16,
+      "channels": 6400,
+      "batch": 2,
+      "round": 0,
+      "input_kind": "exact-dyadic",
+      "scalar_atol": 4e-06,
+      "scalar_rtol": 2e-06,
+      "bit_exact_required": true,
+      "passed": true,
+      "input_sha256": "0721d15162c10fcc167fdfbbb36d7506b317927ee825aff79e1ec4cabeb9937e",
+      "baseline_output_sha256": "65dd733e7197f09b5019d95178f8e5cb7af361edfd8cb14516daf92ea7799544",
+      "candidate_output_sha256": "65dd733e7197f09b5019d95178f8e5cb7af361edfd8cb14516daf92ea7799544",
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "metrics": {
+        "finite": true,
+        "within_frozen_budget": true,
+        "baseline_f64_max_abs": 0,
+        "candidate_f64_max_abs": 0,
+        "native_max_abs": 0,
+        "native_differing_f32_values": 0,
+        "baseline_scalar_f32_differing_values": 0,
+        "candidate_scalar_f32_differing_values": 0
+      }
+    },
+    {
+      "schema": "crispembed-depthwise-private-oracle-v1",
+      "side": 16,
+      "channels": 6400,
+      "batch": 2,
+      "round": 1,
+      "input_kind": "non-dyadic-f32",
+      "scalar_atol": 4e-06,
+      "scalar_rtol": 2e-06,
+      "bit_exact_required": false,
+      "passed": true,
+      "input_sha256": "490779ecd0e4aeb410d8a2d4edf3818079635ecb2ca6aa8c1b1e54ebcf09508d",
+      "baseline_output_sha256": "25da938bd1578894e09197017935a3d0023d0fe2f43feb92a382de896dbe18b5",
+      "candidate_output_sha256": "265f7629accc57d9a9cdf6842f8f0f35d0c2672c0625b48b2796a793b47a5adf",
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "metrics": {
+        "finite": true,
+        "within_frozen_budget": true,
+        "baseline_f64_max_abs": 7.8580342233181e-08,
+        "candidate_f64_max_abs": 7.986091077327728e-08,
+        "native_max_abs": 8.940696716308594e-08,
+        "native_differing_f32_values": 1429684,
+        "baseline_scalar_f32_differing_values": 1429684,
+        "candidate_scalar_f32_differing_values": 0
+      }
+    }
+  ],
+  "components": [
+    {
+      "schema": "crispembed-depthwise-private-benchmark-v1",
+      "side": 64,
+      "channels": 9,
+      "batch": 2,
+      "kernel": 3,
+      "stride": 1,
+      "padding": 1,
+      "dilation": 1,
+      "bias": false,
+      "multiplicity_per_moebius_step": 1,
+      "representative_source_tensor": "diff_model.conv_in.conv_dw.weight",
+      "backend": "CPU",
+      "precision": "f32",
+      "threads": 8,
+      "samples_per_arm": 5,
+      "replays_per_sample": 8,
+      "warmups_per_arm": 2,
+      "quality_computes_per_arm": 2,
+      "scope": "Persistent CPU graph compute including dispatch/synchronization; upload/download/oracle/hash/setup excluded.",
+      "baseline_ms_per_compute": [
+        0.36050625,
+        0.476562125,
+        0.3649065,
+        0.3617405,
+        0.358042625
+      ],
+      "candidate_ms_per_compute": [
+        0.022419375,
+        0.041018,
+        0.0334205,
+        0.023514625,
+        0.027270125
+      ],
+      "baseline_median_ms": 0.3617405,
+      "candidate_median_ms": 0.027270125,
+      "component_speedup": 13.265084043435813,
+      "baseline_nodes": 1,
+      "candidate_nodes": 1,
+      "baseline_allocation_bytes": 589824,
+      "candidate_allocation_bytes": 589824,
+      "baseline_runs": 44,
+      "candidate_runs": 44,
+      "allocation_and_addresses_reused": true,
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "graph_and_weight_storage_reused": true,
+      "repeat_outputs_bit_exact": true,
+      "baseline_candidate_all_oracles_bit_exact": false,
+      "synthetic_weight_file_sha256": "23db0e216994b8bbf8bf5ecd13b219d51f0bbcd820805b6205088a7217694f4f",
+      "baseline_final_output_sha256": "eab2458dfd98f0dc8dfbab267cba72840a2e27768607f455a40fa37d228d59e6",
+      "candidate_final_output_sha256": "f29b0e924afaaa345996aec528574fe0e596f59e9b00bc3831b4a3cf5f12ba69",
+      "full_model_qualified": false,
+      "passed": true
+    },
+    {
+      "schema": "crispembed-depthwise-private-benchmark-v1",
+      "side": 64,
+      "channels": 320,
+      "batch": 2,
+      "kernel": 3,
+      "stride": 1,
+      "padding": 1,
+      "dilation": 1,
+      "bias": false,
+      "multiplicity_per_moebius_step": 8,
+      "representative_source_tensor": "diff_model.conv_out.conv_dw.weight",
+      "backend": "CPU",
+      "precision": "f32",
+      "threads": 8,
+      "samples_per_arm": 5,
+      "replays_per_sample": 8,
+      "warmups_per_arm": 2,
+      "quality_computes_per_arm": 2,
+      "scope": "Persistent CPU graph compute including dispatch/synchronization; upload/download/oracle/hash/setup excluded.",
+      "baseline_ms_per_compute": [
+        9.828554625,
+        9.91053475,
+        9.844448625,
+        10.197213375,
+        9.965197875
+      ],
+      "candidate_ms_per_compute": [
+        0.69820625,
+        0.74010425,
+        0.760034875,
+        0.73080175,
+        0.719415
+      ],
+      "baseline_median_ms": 9.91053475,
+      "candidate_median_ms": 0.73080175,
+      "component_speedup": 13.561180922185805,
+      "baseline_nodes": 1,
+      "candidate_nodes": 1,
+      "baseline_allocation_bytes": 20971520,
+      "candidate_allocation_bytes": 20971520,
+      "baseline_runs": 44,
+      "candidate_runs": 44,
+      "allocation_and_addresses_reused": true,
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "graph_and_weight_storage_reused": true,
+      "repeat_outputs_bit_exact": true,
+      "baseline_candidate_all_oracles_bit_exact": false,
+      "synthetic_weight_file_sha256": "780421805986121c728a6577e12df98e4b2502ad1669d5ea69eaf4616a5a995b",
+      "baseline_final_output_sha256": "5585aedce79bb82c6b152e918b6f3b501e8cf947a0e4b1cfd7123999b85f8f43",
+      "candidate_final_output_sha256": "685bea4f1b302c19e6f6d0249648389251e1a36ecd9ebd5a8beee488f4a826f5",
+      "full_model_qualified": false,
+      "passed": true
+    },
+    {
+      "schema": "crispembed-depthwise-private-benchmark-v1",
+      "side": 64,
+      "channels": 640,
+      "batch": 2,
+      "kernel": 3,
+      "stride": 1,
+      "padding": 1,
+      "dilation": 1,
+      "bias": false,
+      "multiplicity_per_moebius_step": 2,
+      "representative_source_tensor": "diff_model.up_blocks.2.resnets.1.conv1.conv_dw.weight",
+      "backend": "CPU",
+      "precision": "f32",
+      "threads": 8,
+      "samples_per_arm": 5,
+      "replays_per_sample": 8,
+      "warmups_per_arm": 2,
+      "quality_computes_per_arm": 2,
+      "scope": "Persistent CPU graph compute including dispatch/synchronization; upload/download/oracle/hash/setup excluded.",
+      "baseline_ms_per_compute": [
+        19.593684625,
+        19.403757125,
+        18.992104375,
+        19.8205095,
+        19.728520875
+      ],
+      "candidate_ms_per_compute": [
+        1.451627625,
+        1.43697975,
+        1.690234125,
+        1.5185675,
+        1.463210875
+      ],
+      "baseline_median_ms": 19.593684625,
+      "candidate_median_ms": 1.463210875,
+      "component_speedup": 13.390882312161603,
+      "baseline_nodes": 1,
+      "candidate_nodes": 1,
+      "baseline_allocation_bytes": 41943040,
+      "candidate_allocation_bytes": 41943040,
+      "baseline_runs": 44,
+      "candidate_runs": 44,
+      "allocation_and_addresses_reused": true,
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "graph_and_weight_storage_reused": true,
+      "repeat_outputs_bit_exact": true,
+      "baseline_candidate_all_oracles_bit_exact": false,
+      "synthetic_weight_file_sha256": "fffa526b181a1e6f951a8d73102ef6fad519459b4428479c69ad7510be7e22b2",
+      "baseline_final_output_sha256": "a335864213f05b5ddfa130bf73b593ca4b2323d2aef72fc25aa5d3419f9d4dd3",
+      "candidate_final_output_sha256": "2ab1c3685026172babf95ed9ba2ffa81271a4b78fd146c30ecda5b7853ca8877",
+      "full_model_qualified": false,
+      "passed": true
+    },
+    {
+      "schema": "crispembed-depthwise-private-benchmark-v1",
+      "side": 64,
+      "channels": 960,
+      "batch": 2,
+      "kernel": 3,
+      "stride": 1,
+      "padding": 1,
+      "dilation": 1,
+      "bias": false,
+      "multiplicity_per_moebius_step": 1,
+      "representative_source_tensor": "diff_model.up_blocks.2.resnets.0.conv1.conv_dw.weight",
+      "backend": "CPU",
+      "precision": "f32",
+      "threads": 8,
+      "samples_per_arm": 5,
+      "replays_per_sample": 8,
+      "warmups_per_arm": 2,
+      "quality_computes_per_arm": 2,
+      "scope": "Persistent CPU graph compute including dispatch/synchronization; upload/download/oracle/hash/setup excluded.",
+      "baseline_ms_per_compute": [
+        29.98580175,
+        29.624617875,
+        29.7628875,
+        30.50898525,
+        42.667424875
+      ],
+      "candidate_ms_per_compute": [
+        2.730087375,
+        2.73779625,
+        2.21405625,
+        2.1854955,
+        3.208633
+      ],
+      "baseline_median_ms": 29.98580175,
+      "candidate_median_ms": 2.730087375,
+      "component_speedup": 10.983458633810208,
+      "baseline_nodes": 1,
+      "candidate_nodes": 1,
+      "baseline_allocation_bytes": 62914560,
+      "candidate_allocation_bytes": 62914560,
+      "baseline_runs": 44,
+      "candidate_runs": 44,
+      "allocation_and_addresses_reused": true,
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "graph_and_weight_storage_reused": true,
+      "repeat_outputs_bit_exact": true,
+      "baseline_candidate_all_oracles_bit_exact": false,
+      "synthetic_weight_file_sha256": "6eb609ea92e3727510b3bbb4d7776e3bc835d6e9c6afdc49d8fa939841debb0e",
+      "baseline_final_output_sha256": "c5c53a893287bcb133fe3a778cd96f3cd0148cf19dfaed6433ab2e76343b02c4",
+      "candidate_final_output_sha256": "089bd019a2f02b69e322b4ac0172b701e662ac2fa186d845924fea986906a17e",
+      "full_model_qualified": false,
+      "passed": true
+    },
+    {
+      "schema": "crispembed-depthwise-private-benchmark-v1",
+      "side": 64,
+      "channels": 1600,
+      "batch": 2,
+      "kernel": 3,
+      "stride": 1,
+      "padding": 1,
+      "dilation": 1,
+      "bias": true,
+      "multiplicity_per_moebius_step": 5,
+      "representative_source_tensor": "diff_model.down_blocks.0.attentions.0.transformer_blocks.0.ff.depth_conv.conv.weight",
+      "backend": "CPU",
+      "precision": "f32",
+      "threads": 8,
+      "samples_per_arm": 5,
+      "replays_per_sample": 8,
+      "warmups_per_arm": 2,
+      "quality_computes_per_arm": 2,
+      "scope": "Persistent CPU graph compute including dispatch/synchronization; upload/download/oracle/hash/setup excluded.",
+      "baseline_ms_per_compute": [
+        52.32012775,
+        52.519611625,
+        53.23769825,
+        52.351883875,
+        53.451532625
+      ],
+      "candidate_ms_per_compute": [
+        6.740927,
+        6.944818625,
+        6.992358625,
+        6.93513925,
+        6.880225875
+      ],
+      "baseline_median_ms": 52.519611625,
+      "candidate_median_ms": 6.93513925,
+      "component_speedup": 7.572971461964517,
+      "baseline_nodes": 3,
+      "candidate_nodes": 3,
+      "baseline_allocation_bytes": 104857600,
+      "candidate_allocation_bytes": 104857600,
+      "baseline_runs": 44,
+      "candidate_runs": 44,
+      "allocation_and_addresses_reused": true,
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "graph_and_weight_storage_reused": true,
+      "repeat_outputs_bit_exact": true,
+      "baseline_candidate_all_oracles_bit_exact": false,
+      "synthetic_weight_file_sha256": "6b2d52b28fa978786fedbb81e0ea3003ca9d8c6ab4d2eab710e2efb3e8ceac10",
+      "baseline_final_output_sha256": "3dcc38586122fb8da3ba75743eeea6754760cab89de43ea1457faf04c29c3024",
+      "candidate_final_output_sha256": "4f71aef4ae030c9778d2ec9edad160bfd57e6ba3cb76b2a43ae9a10d9ba5b7c6",
+      "full_model_qualified": false,
+      "passed": true
+    },
+    {
+      "schema": "crispembed-depthwise-private-benchmark-v1",
+      "side": 32,
+      "channels": 320,
+      "batch": 2,
+      "kernel": 3,
+      "stride": 1,
+      "padding": 1,
+      "dilation": 1,
+      "bias": false,
+      "multiplicity_per_moebius_step": 1,
+      "representative_source_tensor": "diff_model.down_blocks.1.resnets.0.conv1.conv_dw.weight",
+      "backend": "CPU",
+      "precision": "f32",
+      "threads": 8,
+      "samples_per_arm": 5,
+      "replays_per_sample": 8,
+      "warmups_per_arm": 2,
+      "quality_computes_per_arm": 2,
+      "scope": "Persistent CPU graph compute including dispatch/synchronization; upload/download/oracle/hash/setup excluded.",
+      "baseline_ms_per_compute": [
+        2.469887375,
+        2.510621125,
+        2.539458,
+        2.567280875,
+        2.4584105
+      ],
+      "candidate_ms_per_compute": [
+        0.317786875,
+        0.370897625,
+        0.255004375,
+        0.252286625,
+        0.25217025
+      ],
+      "baseline_median_ms": 2.510621125,
+      "candidate_median_ms": 0.255004375,
+      "component_speedup": 9.845404122968478,
+      "baseline_nodes": 1,
+      "candidate_nodes": 1,
+      "baseline_allocation_bytes": 5242880,
+      "candidate_allocation_bytes": 5242880,
+      "baseline_runs": 44,
+      "candidate_runs": 44,
+      "allocation_and_addresses_reused": true,
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "graph_and_weight_storage_reused": true,
+      "repeat_outputs_bit_exact": true,
+      "baseline_candidate_all_oracles_bit_exact": false,
+      "synthetic_weight_file_sha256": "780421805986121c728a6577e12df98e4b2502ad1669d5ea69eaf4616a5a995b",
+      "baseline_final_output_sha256": "9961077832c86586acbc4c002c6e388117ab1863a50c7a70edb396b8c269f678",
+      "candidate_final_output_sha256": "4a31ec8851f5db43f8338574affc9c0c85ddce2171862af896fde7e7dfbc6393",
+      "full_model_qualified": false,
+      "passed": true
+    },
+    {
+      "schema": "crispembed-depthwise-private-benchmark-v1",
+      "side": 32,
+      "channels": 640,
+      "batch": 2,
+      "kernel": 3,
+      "stride": 1,
+      "padding": 1,
+      "dilation": 1,
+      "bias": false,
+      "multiplicity_per_moebius_step": 6,
+      "representative_source_tensor": "diff_model.down_blocks.1.resnets.0.conv2.conv_dw.weight",
+      "backend": "CPU",
+      "precision": "f32",
+      "threads": 8,
+      "samples_per_arm": 5,
+      "replays_per_sample": 8,
+      "warmups_per_arm": 2,
+      "quality_computes_per_arm": 2,
+      "scope": "Persistent CPU graph compute including dispatch/synchronization; upload/download/oracle/hash/setup excluded.",
+      "baseline_ms_per_compute": [
+        4.875784125,
+        5.559753125,
+        4.732804875,
+        5.012416125,
+        4.940041375
+      ],
+      "candidate_ms_per_compute": [
+        0.536946,
+        0.501635375,
+        0.844660625,
+        0.729432,
+        0.509683375
+      ],
+      "baseline_median_ms": 4.940041375,
+      "candidate_median_ms": 0.536946,
+      "component_speedup": 9.200257335002028,
+      "baseline_nodes": 1,
+      "candidate_nodes": 1,
+      "baseline_allocation_bytes": 10485760,
+      "candidate_allocation_bytes": 10485760,
+      "baseline_runs": 44,
+      "candidate_runs": 44,
+      "allocation_and_addresses_reused": true,
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "graph_and_weight_storage_reused": true,
+      "repeat_outputs_bit_exact": true,
+      "baseline_candidate_all_oracles_bit_exact": false,
+      "synthetic_weight_file_sha256": "fffa526b181a1e6f951a8d73102ef6fad519459b4428479c69ad7510be7e22b2",
+      "baseline_final_output_sha256": "a1c3ddf32adfc495055fdd009a21d979613af279c6c5eeb5db66df2fa3c6454a",
+      "candidate_final_output_sha256": "a58c2bdf4c3b7e6a1730b8f405905f9c4935c0a3ce8f90116227e36080da2ee4",
+      "full_model_qualified": false,
+      "passed": true
+    },
+    {
+      "schema": "crispembed-depthwise-private-benchmark-v1",
+      "side": 32,
+      "channels": 960,
+      "batch": 2,
+      "kernel": 3,
+      "stride": 1,
+      "padding": 1,
+      "dilation": 1,
+      "bias": false,
+      "multiplicity_per_moebius_step": 1,
+      "representative_source_tensor": "diff_model.up_blocks.1.resnets.2.conv1.conv_dw.weight",
+      "backend": "CPU",
+      "precision": "f32",
+      "threads": 8,
+      "samples_per_arm": 5,
+      "replays_per_sample": 8,
+      "warmups_per_arm": 2,
+      "quality_computes_per_arm": 2,
+      "scope": "Persistent CPU graph compute including dispatch/synchronization; upload/download/oracle/hash/setup excluded.",
+      "baseline_ms_per_compute": [
+        7.392637625,
+        7.934560625,
+        7.880409125,
+        7.598049125,
+        7.375001625
+      ],
+      "candidate_ms_per_compute": [
+        0.8613695,
+        0.752630625,
+        0.77527275,
+        0.76101925,
+        0.756235875
+      ],
+      "baseline_median_ms": 7.598049125,
+      "candidate_median_ms": 0.76101925,
+      "component_speedup": 9.984043274858028,
+      "baseline_nodes": 1,
+      "candidate_nodes": 1,
+      "baseline_allocation_bytes": 15728640,
+      "candidate_allocation_bytes": 15728640,
+      "baseline_runs": 44,
+      "candidate_runs": 44,
+      "allocation_and_addresses_reused": true,
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "graph_and_weight_storage_reused": true,
+      "repeat_outputs_bit_exact": true,
+      "baseline_candidate_all_oracles_bit_exact": false,
+      "synthetic_weight_file_sha256": "6eb609ea92e3727510b3bbb4d7776e3bc835d6e9c6afdc49d8fa939841debb0e",
+      "baseline_final_output_sha256": "0f66359475778014bad3a57f1dd44dcefc77a2df3f57985045303b9a000c017f",
+      "candidate_final_output_sha256": "ed59915719d3726964e10bb50bc8ebb2df802ff141f3d63b1087f42fff9c0414",
+      "full_model_qualified": false,
+      "passed": true
+    },
+    {
+      "schema": "crispembed-depthwise-private-benchmark-v1",
+      "side": 32,
+      "channels": 1280,
+      "batch": 2,
+      "kernel": 3,
+      "stride": 1,
+      "padding": 1,
+      "dilation": 1,
+      "bias": false,
+      "multiplicity_per_moebius_step": 1,
+      "representative_source_tensor": "diff_model.up_blocks.1.resnets.1.conv1.conv_dw.weight",
+      "backend": "CPU",
+      "precision": "f32",
+      "threads": 8,
+      "samples_per_arm": 5,
+      "replays_per_sample": 8,
+      "warmups_per_arm": 2,
+      "quality_computes_per_arm": 2,
+      "scope": "Persistent CPU graph compute including dispatch/synchronization; upload/download/oracle/hash/setup excluded.",
+      "baseline_ms_per_compute": [
+        9.86063525,
+        10.982307375,
+        12.95600775,
+        6.373682,
+        7.6141035
+      ],
+      "candidate_ms_per_compute": [
+        1.00514275,
+        0.99509175,
+        0.784158375,
+        0.702464125,
+        1.021531875
+      ],
+      "baseline_median_ms": 9.86063525,
+      "candidate_median_ms": 0.99509175,
+      "component_speedup": 9.909272436436137,
+      "baseline_nodes": 1,
+      "candidate_nodes": 1,
+      "baseline_allocation_bytes": 20971520,
+      "candidate_allocation_bytes": 20971520,
+      "baseline_runs": 44,
+      "candidate_runs": 44,
+      "allocation_and_addresses_reused": true,
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "graph_and_weight_storage_reused": true,
+      "repeat_outputs_bit_exact": true,
+      "baseline_candidate_all_oracles_bit_exact": false,
+      "synthetic_weight_file_sha256": "9c41afdfb9d869af7ec525925ddb20f4163b35d05614a423518b9ea7f12118f9",
+      "baseline_final_output_sha256": "2f14f34f83520eba54e459b5efa1261afb9c1690885611e114dbfc3fb463380d",
+      "candidate_final_output_sha256": "08f570560a4d6fb6b1607924ff5fb82d962ccf24f49f8bd4ef89fc36fddaaa58",
+      "full_model_qualified": false,
+      "passed": true
+    },
+    {
+      "schema": "crispembed-depthwise-private-benchmark-v1",
+      "side": 32,
+      "channels": 1920,
+      "batch": 2,
+      "kernel": 3,
+      "stride": 1,
+      "padding": 1,
+      "dilation": 1,
+      "bias": false,
+      "multiplicity_per_moebius_step": 1,
+      "representative_source_tensor": "diff_model.up_blocks.1.resnets.0.conv1.conv_dw.weight",
+      "backend": "CPU",
+      "precision": "f32",
+      "threads": 8,
+      "samples_per_arm": 5,
+      "replays_per_sample": 8,
+      "warmups_per_arm": 2,
+      "quality_computes_per_arm": 2,
+      "scope": "Persistent CPU graph compute including dispatch/synchronization; upload/download/oracle/hash/setup excluded.",
+      "baseline_ms_per_compute": [
+        18.206759625,
+        14.829792,
+        14.927872875,
+        14.835749625,
+        14.788144375
+      ],
+      "candidate_ms_per_compute": [
+        1.52330775,
+        1.539291375,
+        1.5877615,
+        1.507559625,
+        1.518250375
+      ],
+      "baseline_median_ms": 14.835749625,
+      "candidate_median_ms": 1.52330775,
+      "component_speedup": 9.739167692805344,
+      "baseline_nodes": 1,
+      "candidate_nodes": 1,
+      "baseline_allocation_bytes": 31457280,
+      "candidate_allocation_bytes": 31457280,
+      "baseline_runs": 44,
+      "candidate_runs": 44,
+      "allocation_and_addresses_reused": true,
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "graph_and_weight_storage_reused": true,
+      "repeat_outputs_bit_exact": true,
+      "baseline_candidate_all_oracles_bit_exact": false,
+      "synthetic_weight_file_sha256": "71cac8044659c31b150fd25d662891d1c084025a4848d95f1810a1d2d70a0502",
+      "baseline_final_output_sha256": "66c705d0520b35a4c02fe647ca4e6f147eab0b7788587b847392812eefbfd78a",
+      "candidate_final_output_sha256": "a44b3003b46d171e2a589f9507d715fe467b2b3290c7e670fe412d5d89721d24",
+      "full_model_qualified": false,
+      "passed": true
+    },
+    {
+      "schema": "crispembed-depthwise-private-benchmark-v1",
+      "side": 32,
+      "channels": 3200,
+      "batch": 2,
+      "kernel": 3,
+      "stride": 1,
+      "padding": 1,
+      "dilation": 1,
+      "bias": true,
+      "multiplicity_per_moebius_step": 5,
+      "representative_source_tensor": "diff_model.down_blocks.1.attentions.0.transformer_blocks.0.ff.depth_conv.conv.weight",
+      "backend": "CPU",
+      "precision": "f32",
+      "threads": 8,
+      "samples_per_arm": 5,
+      "replays_per_sample": 8,
+      "warmups_per_arm": 2,
+      "quality_computes_per_arm": 2,
+      "scope": "Persistent CPU graph compute including dispatch/synchronization; upload/download/oracle/hash/setup excluded.",
+      "baseline_ms_per_compute": [
+        29.85470925,
+        22.2591055,
+        26.363127125,
+        23.044681625,
+        17.1645935
+      ],
+      "candidate_ms_per_compute": [
+        4.285670625,
+        4.63004325,
+        4.453543125,
+        5.065659,
+        4.838442875
+      ],
+      "baseline_median_ms": 23.044681625,
+      "candidate_median_ms": 4.63004325,
+      "component_speedup": 4.977206557411748,
+      "baseline_nodes": 3,
+      "candidate_nodes": 3,
+      "baseline_allocation_bytes": 52428800,
+      "candidate_allocation_bytes": 52428800,
+      "baseline_runs": 44,
+      "candidate_runs": 44,
+      "allocation_and_addresses_reused": true,
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "graph_and_weight_storage_reused": true,
+      "repeat_outputs_bit_exact": true,
+      "baseline_candidate_all_oracles_bit_exact": false,
+      "synthetic_weight_file_sha256": "93ed0d319a82b7bab4029f27cacb038568af4651fc7fbe13dd777626c12bda0c",
+      "baseline_final_output_sha256": "ba56fc8eec26393d803de47ccc9deacf10f491b3a1b78ccc219bf6f4faee3c07",
+      "candidate_final_output_sha256": "9cea1e81eb33a1594453095843af50cb1fbb8f7d343ee807b0ac914cfb767cb4",
+      "full_model_qualified": false,
+      "passed": true
+    },
+    {
+      "schema": "crispembed-depthwise-private-benchmark-v1",
+      "side": 16,
+      "channels": 640,
+      "batch": 2,
+      "kernel": 3,
+      "stride": 1,
+      "padding": 1,
+      "dilation": 1,
+      "bias": false,
+      "multiplicity_per_moebius_step": 1,
+      "representative_source_tensor": "diff_model.down_blocks.2.resnets.0.conv1.conv_dw.weight",
+      "backend": "CPU",
+      "precision": "f32",
+      "threads": 8,
+      "samples_per_arm": 5,
+      "replays_per_sample": 8,
+      "warmups_per_arm": 2,
+      "quality_computes_per_arm": 2,
+      "scope": "Persistent CPU graph compute including dispatch/synchronization; upload/download/oracle/hash/setup excluded.",
+      "baseline_ms_per_compute": [
+        1.189073875,
+        1.1878295,
+        1.320261,
+        1.157549875,
+        1.196431
+      ],
+      "candidate_ms_per_compute": [
+        0.19879675,
+        0.198413625,
+        0.195525625,
+        0.199396375,
+        0.192394875
+      ],
+      "baseline_median_ms": 1.189073875,
+      "candidate_median_ms": 0.198413625,
+      "component_speedup": 5.9929043431367175,
+      "baseline_nodes": 1,
+      "candidate_nodes": 1,
+      "baseline_allocation_bytes": 2621440,
+      "candidate_allocation_bytes": 2621440,
+      "baseline_runs": 44,
+      "candidate_runs": 44,
+      "allocation_and_addresses_reused": true,
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "graph_and_weight_storage_reused": true,
+      "repeat_outputs_bit_exact": true,
+      "baseline_candidate_all_oracles_bit_exact": false,
+      "synthetic_weight_file_sha256": "fffa526b181a1e6f951a8d73102ef6fad519459b4428479c69ad7510be7e22b2",
+      "baseline_final_output_sha256": "c486bba78f003d125ee5922238734ba4eb6a57652bb659a9da9d932e82d5ce74",
+      "candidate_final_output_sha256": "df615ba373d6c0a9ad66c1478dd1e6ffafa516baa635de24a352bb66add524ee",
+      "full_model_qualified": false,
+      "passed": true
+    },
+    {
+      "schema": "crispembed-depthwise-private-benchmark-v1",
+      "side": 16,
+      "channels": 1280,
+      "batch": 2,
+      "kernel": 3,
+      "stride": 1,
+      "padding": 1,
+      "dilation": 1,
+      "bias": false,
+      "multiplicity_per_moebius_step": 6,
+      "representative_source_tensor": "diff_model.down_blocks.2.resnets.0.conv2.conv_dw.weight",
+      "backend": "CPU",
+      "precision": "f32",
+      "threads": 8,
+      "samples_per_arm": 5,
+      "replays_per_sample": 8,
+      "warmups_per_arm": 2,
+      "quality_computes_per_arm": 2,
+      "scope": "Persistent CPU graph compute including dispatch/synchronization; upload/download/oracle/hash/setup excluded.",
+      "baseline_ms_per_compute": [
+        2.36287525,
+        3.413634,
+        2.46333825,
+        2.375120875,
+        2.40361775
+      ],
+      "candidate_ms_per_compute": [
+        0.3743605,
+        0.43829725,
+        0.3863295,
+        0.394754375,
+        0.3851815
+      ],
+      "baseline_median_ms": 2.40361775,
+      "candidate_median_ms": 0.3863295,
+      "component_speedup": 6.221677997667794,
+      "baseline_nodes": 1,
+      "candidate_nodes": 1,
+      "baseline_allocation_bytes": 5242880,
+      "candidate_allocation_bytes": 5242880,
+      "baseline_runs": 44,
+      "candidate_runs": 44,
+      "allocation_and_addresses_reused": true,
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "graph_and_weight_storage_reused": true,
+      "repeat_outputs_bit_exact": true,
+      "baseline_candidate_all_oracles_bit_exact": false,
+      "synthetic_weight_file_sha256": "9c41afdfb9d869af7ec525925ddb20f4163b35d05614a423518b9ea7f12118f9",
+      "baseline_final_output_sha256": "d0b1c0f355724ddf47a3f3c52f4981f4bce3c63fb0c042f454469e3e358e47db",
+      "candidate_final_output_sha256": "c266aa26f326b74da9669038a9238a7ade43a49c8a984750dcce387c3f8f0434",
+      "full_model_qualified": false,
+      "passed": true
+    },
+    {
+      "schema": "crispembed-depthwise-private-benchmark-v1",
+      "side": 16,
+      "channels": 1920,
+      "batch": 2,
+      "kernel": 3,
+      "stride": 1,
+      "padding": 1,
+      "dilation": 1,
+      "bias": false,
+      "multiplicity_per_moebius_step": 1,
+      "representative_source_tensor": "diff_model.up_blocks.0.resnets.2.conv1.conv_dw.weight",
+      "backend": "CPU",
+      "precision": "f32",
+      "threads": 8,
+      "samples_per_arm": 5,
+      "replays_per_sample": 8,
+      "warmups_per_arm": 2,
+      "quality_computes_per_arm": 2,
+      "scope": "Persistent CPU graph compute including dispatch/synchronization; upload/download/oracle/hash/setup excluded.",
+      "baseline_ms_per_compute": [
+        2.438628125,
+        2.213276,
+        2.3777095,
+        2.908809875,
+        3.647774125
+      ],
+      "candidate_ms_per_compute": [
+        0.42405375,
+        0.55395275,
+        0.398990625,
+        0.422268625,
+        0.6885035
+      ],
+      "baseline_median_ms": 2.438628125,
+      "candidate_median_ms": 0.42405375,
+      "component_speedup": 5.750752410513997,
+      "baseline_nodes": 1,
+      "candidate_nodes": 1,
+      "baseline_allocation_bytes": 7864320,
+      "candidate_allocation_bytes": 7864320,
+      "baseline_runs": 44,
+      "candidate_runs": 44,
+      "allocation_and_addresses_reused": true,
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "graph_and_weight_storage_reused": true,
+      "repeat_outputs_bit_exact": true,
+      "baseline_candidate_all_oracles_bit_exact": false,
+      "synthetic_weight_file_sha256": "71cac8044659c31b150fd25d662891d1c084025a4848d95f1810a1d2d70a0502",
+      "baseline_final_output_sha256": "a923c6d313d1f2513d41e52933b860209816a6d8e5b92c8e547ac63f9d0c5fc2",
+      "candidate_final_output_sha256": "b7ea4357e5938a10c9a9bfd86abb6a99682d34053f3a2e2bacf09d30b397f0eb",
+      "full_model_qualified": false,
+      "passed": true
+    },
+    {
+      "schema": "crispembed-depthwise-private-benchmark-v1",
+      "side": 16,
+      "channels": 2560,
+      "batch": 2,
+      "kernel": 3,
+      "stride": 1,
+      "padding": 1,
+      "dilation": 1,
+      "bias": false,
+      "multiplicity_per_moebius_step": 2,
+      "representative_source_tensor": "diff_model.up_blocks.0.resnets.0.conv1.conv_dw.weight",
+      "backend": "CPU",
+      "precision": "f32",
+      "threads": 8,
+      "samples_per_arm": 5,
+      "replays_per_sample": 8,
+      "warmups_per_arm": 2,
+      "quality_computes_per_arm": 2,
+      "scope": "Persistent CPU graph compute including dispatch/synchronization; upload/download/oracle/hash/setup excluded.",
+      "baseline_ms_per_compute": [
+        4.78761925,
+        4.66064825,
+        4.87304075,
+        4.863413125,
+        4.76396775
+      ],
+      "candidate_ms_per_compute": [
+        0.782462125,
+        0.75099075,
+        7.966109875,
+        0.7746915,
+        0.778577125
+      ],
+      "baseline_median_ms": 4.78761925,
+      "candidate_median_ms": 0.778577125,
+      "component_speedup": 6.149190743306258,
+      "baseline_nodes": 1,
+      "candidate_nodes": 1,
+      "baseline_allocation_bytes": 10485760,
+      "candidate_allocation_bytes": 10485760,
+      "baseline_runs": 44,
+      "candidate_runs": 44,
+      "allocation_and_addresses_reused": true,
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "graph_and_weight_storage_reused": true,
+      "repeat_outputs_bit_exact": true,
+      "baseline_candidate_all_oracles_bit_exact": false,
+      "synthetic_weight_file_sha256": "3c6a71265f38d28b7659b699caa270392a3018c5c1c9f0320fceb53f73e61cfa",
+      "baseline_final_output_sha256": "106ac661664ce7af7a27db8abf593770767b436ba00fbf03bfb4345e03dfeaff",
+      "candidate_final_output_sha256": "82f514401c1253e1069bc2ddc301222a2a27a6dc1fb974fed156a9adaec0144b",
+      "full_model_qualified": false,
+      "passed": true
+    },
+    {
+      "schema": "crispembed-depthwise-private-benchmark-v1",
+      "side": 16,
+      "channels": 6400,
+      "batch": 2,
+      "kernel": 3,
+      "stride": 1,
+      "padding": 1,
+      "dilation": 1,
+      "bias": true,
+      "multiplicity_per_moebius_step": 5,
+      "representative_source_tensor": "diff_model.down_blocks.2.attentions.0.transformer_blocks.0.ff.depth_conv.conv.weight",
+      "backend": "CPU",
+      "precision": "f32",
+      "threads": 8,
+      "samples_per_arm": 5,
+      "replays_per_sample": 8,
+      "warmups_per_arm": 2,
+      "quality_computes_per_arm": 2,
+      "scope": "Persistent CPU graph compute including dispatch/synchronization; upload/download/oracle/hash/setup excluded.",
+      "baseline_ms_per_compute": [
+        13.06637175,
+        12.95774975,
+        12.1062145,
+        13.05255875,
+        13.08947825
+      ],
+      "candidate_ms_per_compute": [
+        3.189545625,
+        2.999381125,
+        3.530593125,
+        3.499243125,
+        3.1253735
+      ],
+      "baseline_median_ms": 13.05255875,
+      "candidate_median_ms": 3.189545625,
+      "component_speedup": 4.092294102235957,
+      "baseline_nodes": 3,
+      "candidate_nodes": 3,
+      "baseline_allocation_bytes": 26214400,
+      "candidate_allocation_bytes": 26214400,
+      "baseline_runs": 44,
+      "candidate_runs": 44,
+      "allocation_and_addresses_reused": true,
+      "resident_bytes": {
+        "baseline_input_bytes_exact": true,
+        "candidate_input_bytes_exact": true,
+        "shared_kernel_bytes_exact": true,
+        "shared_bias_bytes_exact_or_absent": true,
+        "all_preserved": true
+      },
+      "graph_and_weight_storage_reused": true,
+      "repeat_outputs_bit_exact": true,
+      "baseline_candidate_all_oracles_bit_exact": false,
+      "synthetic_weight_file_sha256": "7d3b7219a70443999778b115a2a0db304959fbdfae41ab1727a3d60f7e653043",
+      "baseline_final_output_sha256": "25da938bd1578894e09197017935a3d0023d0fe2f43feb92a382de896dbe18b5",
+      "candidate_final_output_sha256": "265f7629accc57d9a9cdf6842f8f0f35d0c2672c0625b48b2796a793b47a5adf",
+      "full_model_qualified": false,
+      "passed": true
+    }
+  ],
+  "retained_limits": [
+    "One CPU environment and one synthetic shape matrix; no learned activations or trained weights were used.",
+    "Non-dyadic native outputs differ by up to 1.1920928955078125e-7; general bit-exactness is not claimed.",
+    "The linked ordinary graph and ggml archive hashes are exact; source-to-archive provenance is an observed dirty workspace, not an attested clean build.",
+    "Any production gate still needs real shared-runtime controls and complete Moebius numerical replay with unchanged acceptance thresholds."
+  ]
+}

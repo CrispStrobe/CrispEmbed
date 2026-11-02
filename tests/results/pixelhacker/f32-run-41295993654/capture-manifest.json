@@ -1,0 +1,23 @@
+{
+  "model": "pixelhacker",
+  "commit": "f51d5372f73ddd3562692fc43eef3984065853fc",
+  "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+  "archive": "pixelhacker-original-capture.tar.gz",
+  "bytes": 922872987,
+  "sha256": "53b0918cd23ea09beafe4f81b21ea085b9517d76647ba32975a0fdf2c58664ab",
+  "parts": [
+    {
+      "file": "pixelhacker-original-capture.tar.gz.part00",
+      "bytes": 922872987,
+      "sha256": "53b0918cd23ea09beafe4f81b21ea085b9517d76647ba32975a0fdf2c58664ab"
+    }
+  ],
+  "report_sha256": "24a5cd59a355618fb9f0f42f9e2b456ae851a568032c8915d691dfab59a23f69",
+  "complete": true,
+  "cases": [
+    "subtitle_bar",
+    "edge_touch",
+    "center",
+    "empty"
+  ]
+}

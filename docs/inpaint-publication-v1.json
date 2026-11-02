@@ -1,0 +1,374 @@
+{
+  "schema": "crispembed-inpaint-gguf-publication-v1",
+  "status": "approved",
+  "approved_by_owner": true,
+  "approval": "Owner, 2026-11-02 (relayed by the coordinating session): \"The owner approves public publication of the permissive inpainting models per your docs/inpaint-publication-v1.json.\" Publish exactly the approved variants below, sourced from the private repositories with SHA-256 verified before upload; the private repositories stay unchanged.",
+  "acceptance": "Final-output cosine against the original model, minimum over cases: F32 > 0.99, F16 > 0.98, Q8_0 > 0.97, Q4_K > 0.94 (docs/inpainting-precision.md, qualification summary). Only variants listed here clear the bar; caveats are copied into each model card.",
+  "copy_rule": "Upload the exact preserved bytes (SHA-256 below) from the private repository revision; never requantize at publication time. Read back every uploaded file from the new immutable revision and compare SHA-256 before any registry entry is added.",
+  "token_secret": "HF_PUBLISH_TOKEN",
+  "registry_after_readback": [
+    "examples/cli/model_mgr.cpp",
+    "examples/cli/model_hashes.h",
+    "models/upload_to_hf.py (lineage)"
+  ],
+  "repos": {
+    "cstr/MI-GAN-512-GGUF": {
+      "model": "migan512",
+      "upstream": {
+        "code": "https://github.com/Picsart-AI-Research/MI-GAN/tree/2b793c5ece43f4253e32d4afc257120a5deed6f5",
+        "code_license": "MIT",
+        "weights_license": "MIT",
+        "checkpoint": "migan_512_places2.pt",
+        "checkpoint_sha256": "1d6087eee0aac8923ad2606be5d8caeb4824d3e4de331995e420c74e124a466a",
+        "checkpoint_sha256_status": "first-observed (upstream does not declare a digest)"
+      },
+      "license_files": [
+        {
+          "path": "licenses/LICENSE",
+          "from": {
+            "source_repo": "cstr/crispembed-migan512-private",
+            "source_revision": "e55a0e9d200633c8b6b750e5519a6fc29f5f2063",
+            "source_path": "licenses/LICENSE",
+            "bytes": 1083,
+            "sha256": "674e33456b8d03693b84ab305aa7372d93c91e68b234651b0adad106d518e6eb"
+          }
+        },
+        {
+          "path": "licenses/LICENSE-WEIGHTS",
+          "from": {
+            "source_repo": "cstr/crispembed-migan512-private",
+            "source_revision": "e55a0e9d200633c8b6b750e5519a6fc29f5f2063",
+            "source_path": "licenses/LICENSE-WEIGHTS",
+            "bytes": 1083,
+            "sha256": "674e33456b8d03693b84ab305aa7372d93c91e68b234651b0adad106d518e6eb"
+          }
+        }
+      ],
+      "variants": {
+        "F32": {
+          "source_repo": "cstr/crispembed-migan512-private",
+          "source_revision": "e55a0e9d200633c8b6b750e5519a6fc29f5f2063",
+          "source_path": "migan-512-places2-f32-experimental.gguf",
+          "bytes": 29500736,
+          "sha256": "4bec681ef10f8ca914c5331f007a0605773cd09106d4fd6d9fcc0992f0a61739",
+          "filename": "migan-512-places2-f32.gguf",
+          "min_cosine_vs_original": 1.0
+        },
+        "F16": {
+          "source_repo": "cstr/crispembed-migan512-private",
+          "source_revision": "e55a0e9d200633c8b6b750e5519a6fc29f5f2063",
+          "source_path": "migan-512-places2-f16.gguf",
+          "bytes": 17982208,
+          "sha256": "932cfbd35db478dba4372f7ad9889ee68c84eac1c0b46025cf7336c8d55c0033",
+          "filename": "migan-512-places2-f16.gguf",
+          "min_cosine_vs_original": 0.999998
+        },
+        "Q8_0": {
+          "source_repo": "cstr/crispembed-migan512-private",
+          "source_revision": "e55a0e9d200633c8b6b750e5519a6fc29f5f2063",
+          "source_path": "migan-512-places2-q8_0.gguf",
+          "bytes": 12583168,
+          "sha256": "efdf1b08207f2c47c4710ca66831e6aff86ea31fca68593337f2ce605db70280",
+          "filename": "migan-512-places2-q8_0.gguf",
+          "min_cosine_vs_original": 0.9965
+        },
+        "Q4_K": {
+          "source_repo": "cstr/crispembed-migan512-private",
+          "source_revision": "e55a0e9d200633c8b6b750e5519a6fc29f5f2063",
+          "source_path": "migan-512-places2-q4_k.gguf",
+          "bytes": 11143424,
+          "sha256": "bd90218cd6f86a9b215fa3528ad5400536b7cf883a76e2450f22c835e376af46",
+          "filename": "migan-512-places2-q4_k.gguf",
+          "min_cosine_vs_original": 0.977,
+          "caveat": "0.9770 minimum on the synthetic panel; on the real-photo panel the street crop with a DBNet text mask reaches only 0.9019 masked-region cosine against native F32 (below 0.94). Exact-mask photos >= 0.962."
+        }
+      },
+      "runtime_gates": [
+        "CRISPEMBED_MIGAN=1",
+        "CRISPEMBED_MIGAN512=1",
+        "CRISPEMBED_INPAINT_QUANT=1 for F16/Q8_0/Q4_K"
+      ]
+    },
+    "cstr/Moebius-inpaint-GGUF": {
+      "model": "moebius",
+      "upstream": {
+        "code": "https://github.com/hustvl/Moebius/tree/b88d462bacb9af6e7128a3b4cc4a07418bedfd61",
+        "code_license": "Apache-2.0",
+        "weights": "https://huggingface.co/hustvl/Moebius/resolve/cd01f47fb648219d3fa605806c5ce00b713faa5e/ft_places2/diffusion_pytorch_model.bin",
+        "checkpoint_sha256": "6525afb888e55f9b5c74fa0a5d19ca0762d720d6c716fb0f8422fbeb6868a09a",
+        "weights_license": "Apache-2.0 (official README); the author HF card says MIT. Both records are preserved; no dual licence is claimed."
+      },
+      "license_files": [
+        {
+          "path": "licenses/moebius-Apache-2.0.txt",
+          "from_repo_path": "licenses/latent-inpaint/moebius-Apache-2.0.txt",
+          "bytes": 11217,
+          "sha256": "4ecabceee3bc23f3c2fa833c678eb58aad40b0845d5bb0759568c33117fa9ab4"
+        },
+        {
+          "path": "licenses/moebius-upstream-README.md",
+          "from_repo_path": "licenses/latent-inpaint/moebius-upstream-README.md",
+          "bytes": 12143,
+          "sha256": "a8a150dc5714937ac4443e966ed97dc975050184bf6f5da5f192b4986119bdc5",
+          "note": "Pinned upstream README (b88d462b); its License section states Apache-2.0 for code and weights."
+        },
+        {
+          "path": "licenses/moebius-weights-model-card.md",
+          "from_repo_path": "licenses/latent-inpaint/moebius-weights-model-card.md",
+          "bytes": 297,
+          "sha256": "468ac44c98f2c653675bdff4e7c1acf71d1c587f3de58fac5962863d218b11de",
+          "note": "Author Hugging Face model card (license: mit)."
+        },
+        {
+          "path": "licenses/NOTICE.md",
+          "from_repo_path": "licenses/latent-inpaint/NOTICE.md",
+          "bytes": 5500,
+          "sha256": "f3c20309294642ac276ec74d1e6cf6afa300c8f22b240cf68e7328e3cbf21643"
+        },
+        {
+          "path": "licenses/AUTHOR-WEIGHTS-README.md",
+          "from": {
+            "source_repo": "cstr/crispembed-moebius-private",
+            "source_revision": "25f3ce9a467931c7765fcb19195d214172869f8f",
+            "source_path": "gguf/moebius-f32.gguf.licenses/AUTHOR-WEIGHTS-README.md",
+            "bytes": 297,
+            "sha256": "468ac44c98f2c653675bdff4e7c1acf71d1c587f3de58fac5962863d218b11de"
+          }
+        },
+        {
+          "path": "licenses/SOURCE.txt",
+          "from": {
+            "source_repo": "cstr/crispembed-moebius-private",
+            "source_revision": "25f3ce9a467931c7765fcb19195d214172869f8f",
+            "source_path": "gguf/moebius-f32.gguf.licenses/SOURCE.txt",
+            "bytes": 1149,
+            "sha256": "ad462f02f06d4fd75f1320313af58d64a5d22d9f575a68719f5991564272cdbe"
+          }
+        }
+      ],
+      "variants": {
+        "F32": {
+          "source_repo": "cstr/crispembed-moebius-private",
+          "source_revision": "25f3ce9a467931c7765fcb19195d214172869f8f",
+          "source_path": "gguf/moebius-f32.gguf",
+          "bytes": 904877728,
+          "sha256": "f7365937fb82665e5725ab78b701e9650316023d7291d48da22cd9ea0ec7e352",
+          "filename": "moebius-f32.gguf",
+          "min_cosine_vs_original": 1.0,
+          "vae": "SDXL-VAE F32"
+        },
+        "F16": {
+          "source_repo": "cstr/crispembed-moebius-private",
+          "source_revision": "25f3ce9a467931c7765fcb19195d214172869f8f",
+          "source_path": "gguf/moebius-f16.gguf",
+          "bytes": 484668672,
+          "sha256": "5ac92700dc65b6f6abe6c4d63c56172b9212eea34cf76b4b4a4898b9c1291750",
+          "filename": "moebius-f16.gguf",
+          "min_cosine": 0.999935,
+          "vae": "SDXL-VAE F16"
+        },
+        "Q8_0": {
+          "source_repo": "cstr/crispembed-moebius-private",
+          "source_revision": "25f3ce9a467931c7765fcb19195d214172869f8f",
+          "source_path": "gguf/moebius-q8_0.gguf",
+          "bytes": 287696832,
+          "sha256": "2b5fc98e455d0df8240a823b5e025eee67b7a8dbb6c4067a08c3ed7b0b9f4de4",
+          "filename": "moebius-q8_0.gguf",
+          "min_cosine": 0.9795,
+          "vae": "SDXL-VAE Q8_0"
+        },
+        "Q4_K-mix": {
+          "source_repo": "cstr/crispembed-moebius-private",
+          "source_revision": "25f3ce9a467931c7765fcb19195d214172869f8f",
+          "source_path": "gguf/moebius-q4_k-mix.gguf",
+          "bytes": 246888384,
+          "sha256": "4fcb546bf3bc4161bb91d33329b6ca0757872c66747d11414a2bc26e068bb0fe",
+          "filename": "moebius-q4_k-mix.gguf",
+          "min_cosine": 0.9449,
+          "vae": "SDXL-VAE Q8_0",
+          "recipe": "Q4_K with every attention-block tensor at Q8_0; crispembed-quantize with CRISPEMBED_QUANTIZE_INPAINT_MIX=1 (tools/ci-heavy/inpaint_quant_policy_check.sh checks the bytes)",
+          "caveat": "0.9931 synthetic, 0.9449 photos (dequantized arm; 0.9504 stored matmul)"
+        }
+      },
+      "excluded": {
+        "Q4_K": "plain Q4_K fails the bar on photos (0.859)"
+      },
+      "runtime_gates": [
+        "CRISPEMBED_MOEBIUS=1",
+        "CRISPEMBED_INPAINT_QUANT=1 for F16/Q8_0/Q4_K-mix"
+      ],
+      "vae_repo": "cstr/SDXL-VAE-inpaint-GGUF"
+    },
+    "cstr/PixelHacker-GGUF": {
+      "model": "pixelhacker",
+      "upstream": {
+        "code": "https://github.com/hustvl/PixelHacker/tree/f5567db2871598aa178fe7a34c520dd478a0b41b",
+        "code_license": "Apache-2.0",
+        "weights": "https://huggingface.co/hustvl/PixelHacker/resolve/012fd343158936a265b8a0ee38a791a7a2841f45/ft_places2/diffusion_pytorch_model.bin",
+        "checkpoint_sha256": "ef5e28199cd03344ac22a6e6ff456ba8b868e83fb90d8174cc2ad83d7ef4296c",
+        "weights_license": "MIT (author weight repository)"
+      },
+      "license_files": [
+        {
+          "path": "licenses/pixelhacker-Apache-2.0.txt",
+          "from_repo_path": "licenses/latent-inpaint/pixelhacker-Apache-2.0.txt",
+          "bytes": 11357,
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+        },
+        {
+          "path": "licenses/pixelhacker-weights-model-card.md",
+          "from_repo_path": "licenses/latent-inpaint/pixelhacker-weights-model-card.md",
+          "bytes": 300,
+          "sha256": "40b63b144af101b632ac003595b5fb287db26b79b9e3d6581ee475c37ca10c75"
+        },
+        {
+          "path": "licenses/flash-linear-attention-MIT.txt",
+          "from_repo_path": "licenses/latent-inpaint/flash-linear-attention-MIT.txt",
+          "bytes": 1074,
+          "sha256": "98d913740dd16462d79ca94c88269a166673058d95c941f8fc98cb3fb39a7b45"
+        },
+        {
+          "path": "licenses/NOTICE.md",
+          "from_repo_path": "licenses/latent-inpaint/NOTICE.md",
+          "bytes": 5500,
+          "sha256": "f3c20309294642ac276ec74d1e6cf6afa300c8f22b240cf68e7328e3cbf21643"
+        },
+        {
+          "path": "licenses/SOURCE.txt",
+          "from": {
+            "source_repo": "cstr/crispembed-pixelhacker-private",
+            "source_revision": "fadc6a8c132e256bed314a6c3a05d02cf25bcd3d",
+            "source_path": "gguf/pixelhacker-f32.gguf.licenses/SOURCE.txt",
+            "bytes": 1058,
+            "sha256": "c9efb812735cea0b0e9ed4cb9d4ed46b0d6188e4b3dcadf21d7b05ee8c70c643"
+          }
+        }
+      ],
+      "variants": {
+        "F32": {
+          "source_repo": "cstr/crispembed-pixelhacker-private",
+          "source_revision": "fadc6a8c132e256bed314a6c3a05d02cf25bcd3d",
+          "source_path": "gguf/pixelhacker-f32.gguf",
+          "bytes": 3449075872,
+          "sha256": "5b486aa5d80647dbf298b0296d2cea7cb410dfb978b8bdfea806617f73ea588d",
+          "filename": "pixelhacker-f32.gguf",
+          "min_cosine_vs_original": 1.0,
+          "vae": "SDXL-VAE F32"
+        },
+        "F16": {
+          "source_repo": "cstr/crispembed-pixelhacker-private",
+          "source_revision": "fadc6a8c132e256bed314a6c3a05d02cf25bcd3d",
+          "source_path": "gguf/pixelhacker-f16.gguf",
+          "bytes": 1725648672,
+          "sha256": "aaa3450a7c3640156b03f9cc0d5fda948ff6f94e144d06a9afe943b3023d8493",
+          "filename": "pixelhacker-f16.gguf",
+          "min_cosine": 0.999999,
+          "vae": "SDXL-VAE F16",
+          "caveat": "synthetic panel only; no F16 photo run"
+        },
+        "Q8_0": {
+          "source_repo": "cstr/crispembed-pixelhacker-private",
+          "source_revision": "fadc6a8c132e256bed314a6c3a05d02cf25bcd3d",
+          "source_path": "gguf/pixelhacker-q8_0.gguf",
+          "bytes": 917886464,
+          "sha256": "375c2b6ea621d17501b9693a12af6ac5b94ad1b17feb31821c5d4124fde3380f",
+          "filename": "pixelhacker-q8_0.gguf",
+          "min_cosine": 0.9859,
+          "vae": "SDXL-VAE Q8_0"
+        },
+        "Q4_K": {
+          "source_repo": "cstr/crispembed-pixelhacker-private",
+          "source_revision": "fadc6a8c132e256bed314a6c3a05d02cf25bcd3d",
+          "source_path": "gguf/pixelhacker-q4_k.gguf",
+          "bytes": 487079936,
+          "sha256": "e34669015740fea59e9263e4ec89ee2569ed538d934a50661ae53b156cca5ae6",
+          "filename": "pixelhacker-q4_k.gguf",
+          "min_cosine": 0.9425,
+          "vae": "SDXL-VAE Q4_K",
+          "caveat": "borderline: 0.9425 on photos"
+        }
+      },
+      "runtime_gates": [
+        "CRISPEMBED_PIXELHACKER=1",
+        "CRISPEMBED_INPAINT_QUANT=1 for F16/Q8_0/Q4_K"
+      ],
+      "vae_repo": "cstr/SDXL-VAE-inpaint-GGUF"
+    },
+    "cstr/SDXL-VAE-inpaint-GGUF": {
+      "model": "sdxl_vae",
+      "upstream": {
+        "weights": "https://huggingface.co/hustvl/PixelHacker/resolve/012fd343158936a265b8a0ee38a791a7a2841f45/vae/diffusion_pytorch_model.bin",
+        "checkpoint_sha256": "a59d7ea697f2942d22002dc3469e8c53db807a6b78f7f5ec03bd4c1f70f98efe",
+        "weights_license": "MIT (SDXL VAE, stabilityai/sdxl-vae; redistributed in the PixelHacker weight repository)"
+      },
+      "license_files": [
+        {
+          "path": "licenses/sdxl-vae-model-card.md",
+          "from_repo_path": "licenses/latent-inpaint/sdxl-vae-model-card.md",
+          "bytes": 3172,
+          "sha256": "53a552bcc5cb660bd17d53e463690cd8f4d0205671603536fffbce8719d21f77"
+        },
+        {
+          "path": "licenses/SOURCE.txt",
+          "from": {
+            "source_repo": "cstr/crispembed-moebius-private",
+            "source_revision": "25f3ce9a467931c7765fcb19195d214172869f8f",
+            "source_path": "gguf/sdxl-vae-f32.gguf.licenses/SOURCE.txt",
+            "bytes": 1092,
+            "sha256": "cda091029add1de228c20334edca70e8b7ec4a471906f04a114a830161dcdec6"
+          }
+        }
+      ],
+      "variants": {
+        "F32": {
+          "source_repo": "cstr/crispembed-moebius-private",
+          "source_revision": "25f3ce9a467931c7765fcb19195d214172869f8f",
+          "source_path": "gguf/sdxl-vae-f32.gguf",
+          "bytes": 334636224,
+          "sha256": "e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2",
+          "filename": "sdxl-vae-f32.gguf"
+        },
+        "F16": {
+          "source_repo": "cstr/crispembed-moebius-private",
+          "source_revision": "25f3ce9a467931c7765fcb19195d214172869f8f",
+          "source_path": "gguf/sdxl-vae-f16.gguf",
+          "bytes": 167584192,
+          "sha256": "4c7b1af87cf82f4339ce7c28c97803c48849003bbae70095cc04be03135bf82e",
+          "filename": "sdxl-vae-f16.gguf"
+        },
+        "Q8_0": {
+          "source_repo": "cstr/crispembed-moebius-private",
+          "source_revision": "25f3ce9a467931c7765fcb19195d214172869f8f",
+          "source_path": "gguf/sdxl-vae-q8_0.gguf",
+          "bytes": 89278912,
+          "sha256": "07ef5ba18d7ff727b403b61c7f8821dcb13762a5e607ff7092a1f06f04b2a15b",
+          "filename": "sdxl-vae-q8_0.gguf"
+        },
+        "Q4_K": {
+          "source_repo": "cstr/crispembed-moebius-private",
+          "source_revision": "25f3ce9a467931c7765fcb19195d214172869f8f",
+          "source_path": "gguf/sdxl-vae-q4_k.gguf",
+          "bytes": 47516096,
+          "sha256": "d0754aabbc4f087a00f68f4ee2db2b090cf6f8a83d485a7ac8ff97341e006a83",
+          "filename": "sdxl-vae-q4_k.gguf",
+          "caveat": "qualified only paired with PixelHacker Q4_K"
+        }
+      },
+      "note": "Shared by Moebius and PixelHacker (byte-identical in both private repositories). Pairings: Moebius F32/F16/Q8_0 and Q4_K-mix use the VAE F32/F16/Q8_0/Q8_0; PixelHacker F32/F16/Q8_0/Q4_K use F32/F16/Q8_0/Q4_K."
+    }
+  },
+  "model_card_required_sections": [
+    "experimental, default-off gates",
+    "licence of code and weights with verbatim files",
+    "lineage: upstream commit, checkpoint SHA-256, converter, quantizer command and policy",
+    "measured precision table with every caveat above"
+  ],
+  "workflow": ".github/workflows/inpaint-gguf-publish.yml (tools/ci-heavy/inpaint_gguf_publish.py)",
+  "source_token_secret": "HF_TOKEN_2",
+  "converters": {
+    "migan512": "models/convert-migan-to-gguf.py (via tools/ci-heavy/migan512_qualify.sh)",
+    "moebius": "models/convert-latent-inpaint-to-gguf.py",
+    "pixelhacker": "models/convert-latent-inpaint-to-gguf.py",
+    "sdxl_vae": "models/convert-latent-inpaint-to-gguf.py"
+  }
+}

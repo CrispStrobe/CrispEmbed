@@ -461,6 +461,22 @@ original/native prototype now passes the bounded unchanged panel above. Public
 API/registry, representative still-image/subtitle/perceptual/video quality and
 publication remain pending under [issue71](https://github.com/CrispStrobe/CrispEmbed/issues/71).
 LaMa still needs authoritative checkpoint terms and an FFT-capable implementation.
+The 1 November source addition implements the separate MI-GAN512,
+Moebius and PixelHacker CLI profiles. The [engine/reuse guide](inpainting-engines.md)
+records the exact source contracts, licence evidence, shared native components,
+converters and reference workflows. Subsequent authorized CPU execution is in
+the [optimization report](inpainting-optimization-results.md), with exact source,
+model, binary, raw timing and output identities. The resumed PixelHacker ordinary
+API pair is complete and passes native RGB agreement; it is separate from the
+preserved earlier cancelled run and does not qualify original CUDA/FLA parity.
+Moebius depthwise preserves all tested final RGB, but its noisy ordinary pair
+has a worse median; keep it outside the recommended preset. SHA acceleration
+verifies every model byte, with explicit scalar fallback. The private larger
+workspace screen is not integrated. Follow the current report's actual CLI
+status and the remaining CUDA/Metal, strict intermediate, representative
+perceptual/video and release gates; do not repeat completed CPU runs as if they
+were still source-only preparations. Keep all new gates off by default and
+preserve all earlier receipts and numerical failures.
 
 The fourth OvisOCR2 precision attempt,
 [attention-F16/FFN-Q4 40172527229](../tests/results/qwen35-ocr/ovisocr2-q4-attention-f16-quality.json),

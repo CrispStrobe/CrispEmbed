@@ -1,0 +1,170 @@
+{
+  "schema": "crispembed-migan512-reference-contract-v1",
+  "original_source": {
+    "repository": "https://github.com/Picsart-AI-Research/MI-GAN",
+    "commit": "2b793c5ece43f4253e32d4afc257120a5deed6f5",
+    "files": {
+      "LICENSE": {
+        "bytes": 1083,
+        "sha256": "674e33456b8d03693b84ab305aa7372d93c91e68b234651b0adad106d518e6eb"
+      },
+      "LICENSE-WEIGHTS": {
+        "bytes": 1083,
+        "sha256": "674e33456b8d03693b84ab305aa7372d93c91e68b234651b0adad106d518e6eb"
+      },
+      "README.md": {
+        "bytes": 12659,
+        "sha256": "64419d21ad45b70337dc501f2aa1a1c18eb1115be6378bc05fca048937d4498b"
+      },
+      "configs/experiment/migan_places256.yaml": {
+        "bytes": 1435,
+        "sha256": "7a9a77f7ad460eba8b642daed6844f1fd3140a69d4feea641b84d19c4bccc8bc"
+      },
+      "configs/model/migan.yaml": {
+        "bytes": 6027,
+        "sha256": "422f34ca35b348b2cbeb221075af496f94a2abdf282f6e977b13f4738b4885d7"
+      },
+      "lib/model_zoo/migan_inference.py": {
+        "bytes": 10431,
+        "sha256": "1e35a181e516742ae32af935848e6a9a4382f528ea7096db6658f14cd8b9ace0"
+      },
+      "scripts/demo.py": {
+        "bytes": 5478,
+        "sha256": "08815d6e437c04304e5d77c820eff4e4e01ac82ba8fcb17ac0cdcc90d2766100"
+      }
+    },
+    "reference_entry_point": "lib/model_zoo/migan_inference.py::Generator(resolution=512)",
+    "source_license": "MIT LICENSE",
+    "weights_license": "MIT LICENSE-WEIGHTS",
+    "copy_boundary": "Execute only standalone original module; no SH-GAN or ONNX smoothing helper is copied."
+  },
+  "checkpoint": {
+    "filename": "migan_512_places2.pt",
+    "declared_bytes": 29553256,
+    "file_id": "1D_YCuCgo20S2256sqpedsmENNm2WMtVY",
+    "download_url": "https://drive.usercontent.google.com/download?id=1D_YCuCgo20S2256sqpedsmENNm2WMtVY&export=download&confirm=t",
+    "upstream_sha256": null,
+    "first_observed_sha256": null,
+    "identity_policy": "Author publishes no SHA-256 in available metadata. Hosted original capture must observe and record it before conversion; caller supplies that independently reviewed digest."
+  },
+  "input": {
+    "width": 512,
+    "height": 512,
+    "rgb": "uint8 HWC RGB, exactly 3 channels",
+    "fill_mask": "uint8 HW, binary only, 255=fill and 0=known",
+    "preprocess": "known=1-fill/255; concat([known-0.5,(RGB.float()*2/255-1)*known]), NCHW F32",
+    "nonbinary": "reject; no implicit threshold",
+    "other_dimensions": "reject; no implicit resize/crop",
+    "empty_mask": "run original generator; composite preserves all original bytes",
+    "full_mask": "run original generator and fill entire output"
+  },
+  "output": {
+    "generator_shape": [
+      1,
+      3,
+      512,
+      512
+    ],
+    "generator_dtype": "float32",
+    "postprocess": "((raw*0.5+0.5).clamp(0,1)*255).to(uint8), HWC; truncate exactly as original demo",
+    "composition": "original*(1-fill/255)+generated*(fill/255)",
+    "known_pixels": "bit exact RGB8"
+  },
+  "acceptance": {
+    "frozen_before_candidate": true,
+    "every_float_stage": {
+      "cosine_min": 0.99999,
+      "max_abs_max": 0.002,
+      "finite_required": true,
+      "all_zero_rule": "both all-zero passes; one all-zero fails cosine"
+    },
+    "final_raw_float": {
+      "cosine_min": 0.99999,
+      "max_abs_max": 0.002
+    },
+    "final_fill_rgb8": {
+      "max_abs_max": 1,
+      "mae_max": 0.1,
+      "psnr_min_db": 50.0,
+      "empty_fill_rule": "metrics null; all known pixels must match exactly"
+    },
+    "known_rgb8": "every pixel/channel bit exact",
+    "required_reports": [
+      "first differing stage in execution order",
+      "max absolute error",
+      "MAE",
+      "L2/RMS magnitudes",
+      "cosine",
+      "generated/composited PNGs",
+      "hole-only RGB8 max/MAE/PSNR",
+      "finite output and exact dimensions",
+      "mask/input negative controls",
+      "hook neutrality bit exact"
+    ],
+    "promotion": "Every numerical/output/contract gate must pass; this authored panel does not establish representative inpainting/subtitle/video quality."
+  },
+  "fixtures": [
+    {
+      "id": "subtitle_bar",
+      "rgb_sha256": "be9d9698ea60757782d128a2310ba3295bc87725a692ed7a496704503d724c2b",
+      "fill_mask_sha256": "e60406d47135cac5b58c8ca29f5bc69bca8044af46d3eb36ed60b206f0c7785d",
+      "fill_pixels": 26624,
+      "full_stage_capture": true
+    },
+    {
+      "id": "edge_touch",
+      "rgb_sha256": "76f4c84f19ee059f7e39fe49c4e228cad1fb47f977ea9121816472906d9c67da",
+      "fill_mask_sha256": "d570764759b243c9540491fcf818059f1401b6fc89e59bbbfec1fc7eb37a5e62",
+      "fill_pixels": 22400,
+      "full_stage_capture": true
+    },
+    {
+      "id": "empty",
+      "rgb_sha256": "76f4c84f19ee059f7e39fe49c4e228cad1fb47f977ea9121816472906d9c67da",
+      "fill_mask_sha256": "8a39d2abd3999ab73c34db2476849cddf303ce389b35826850f9a700589b4a90",
+      "fill_pixels": 0,
+      "full_stage_capture": false
+    },
+    {
+      "id": "full",
+      "rgb_sha256": "76f4c84f19ee059f7e39fe49c4e228cad1fb47f977ea9121816472906d9c67da",
+      "fill_mask_sha256": "3b874d3ba46c638fc3094f8e92fb744ca974893873f8885f54e23760f9b6311b",
+      "fill_pixels": 262144,
+      "full_stage_capture": false
+    },
+    {
+      "id": "center",
+      "rgb_sha256": "76f4c84f19ee059f7e39fe49c4e228cad1fb47f977ea9121816472906d9c67da",
+      "fill_mask_sha256": "91c7cff5369c293e461698f4986a82b124ba3daeff4e8be19beeebfc1e761c4e",
+      "fill_pixels": 25600,
+      "full_stage_capture": false
+    },
+    {
+      "id": "one_pixel",
+      "rgb_sha256": "76f4c84f19ee059f7e39fe49c4e228cad1fb47f977ea9121816472906d9c67da",
+      "fill_mask_sha256": "9fd026e4b281c365525a18570ea64b861b76c5f1190da6976bc0daef9d8f35fa",
+      "fill_pixels": 1,
+      "full_stage_capture": false
+    },
+    {
+      "id": "checkerboard",
+      "rgb_sha256": "76f4c84f19ee059f7e39fe49c4e228cad1fb47f977ea9121816472906d9c67da",
+      "fill_mask_sha256": "835c1f06daf0dee414f8c3a937e54aff4733d230a001505a7d0ac7db0d21f934",
+      "fill_pixels": 131072,
+      "full_stage_capture": false
+    },
+    {
+      "id": "thin_strip",
+      "rgb_sha256": "76f4c84f19ee059f7e39fe49c4e228cad1fb47f977ea9121816472906d9c67da",
+      "fill_mask_sha256": "3194cbd19bc91e153c6f7f048c3df3e0d3dfc0b77f5b645bb723982833365857",
+      "fill_pixels": 1536,
+      "full_stage_capture": false
+    }
+  ],
+  "tensor_count": 177,
+  "native_qualified": false,
+  "gates": [
+    "CRISPEMBED_MIGAN",
+    "CRISPEMBED_MIGAN512"
+  ]
+}

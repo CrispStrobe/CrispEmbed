@@ -1,0 +1,13 @@
+{
+  "schema": "crispembed-migan512-conversion-v1",
+  "image_size": 512,
+  "checkpoint_sha256": "1d6087eee0aac8923ad2606be5d8caeb4824d3e4de331995e420c74e124a466a",
+  "gguf_sha256": "4bec681ef10f8ca914c5331f007a0605773cd09106d4fd6d9fcc0992f0a61739",
+  "gguf_bytes": 29500736,
+  "tensor_count": 177,
+  "all_tensor_bytes_exact": true,
+  "original_report_sha256": "a2b136acee89e25a95a8e5b3eb997e25c8a49f2efc66db9b84b26ed160c47325",
+  "torch_version": "2.15.0+cpu",
+  "native_qualified": false,
+  "published": false
+}

@@ -206,7 +206,7 @@ conversions also token-ID exact on the untiled page; Q4_K and mixed Q4 variants 
   generated token 7, receipt at tokens 131 and 258). Each divergence is one bounding-box coordinate
   token off by 1-3 (for example `102` vs `99`); sequence length and recognized text are unchanged.
   **Use F16 when exact agreement with the original matters**; Q8_0 is smaller and faster.
-{text_status}- Not verified: GPU backends, long multi-page documents, task-level quality benchmarks.
+{text_status}{real_scan_status(parity.get("real_scans"))}- Not verified: GPU backends, long multi-page documents, task-level quality benchmarks.
 
 ## Usage
 
@@ -220,6 +220,46 @@ CRISPEMBED_UNLIMITED_OCR2=1 crispembed -m unlimited-ocr-2-f16.gguf --ocr page.pn
 # CRISPEMBED_UNLIMITED_OCR2_OUTPUT=clean strips <PAGE>/<BLOCK>label[box]<FORK> and keeps tables.
 ```
 """
+
+
+def real_scan_status(r):
+    if not r:
+        return ""
+    return f"""- **Real scans** (receipt `{r['receipt']}` vs `{r['reference_receipt']}` in CrispEmbed; published F16,
+  runtime `{r['commit'][:8]}`, default tiling, Kaggle CPU): {r['ids_exact']}/{r['pairs']} pages token-ID identical to the
+  original. Mean CER on {r['scans']} public-domain book/report/table scans {r['scan_cer_native']:.4f} native vs
+  {r['scan_cer_original']:.4f} original; word recall on {r['receipts']} CORD receipts {r['receipt_recall_native']:.2f} vs
+  {r['receipt_recall_original']:.2f}. {r['receipts_original_below_0_8']} of the {r['receipts']} receipts also score word recall below
+  0.8 in the original model (repetition loops, hallucinated LaTeX): source-model behaviour, reproduced by the port.
+"""
+
+
+def real_scan_receipt(root=ROOT):
+    """Summarise the committed native-vs-original real-scan receipts (no network). None when absent."""
+    base = root / "tests/results/ocr-real-scans"
+    native_path, ref_path = base / "native-uocr2-v2.json", base / "ref-uocr2.json"
+    if not native_path.exists():
+        return None
+    native, ref = json.loads(native_path.read_text()), json.loads(ref_path.read_text())
+    require(native.get("mode") == "native-uocr2" and ref.get("mode") == "ref-uocr2", "real-scan receipt modes differ")
+    require(re.fullmatch("[0-9a-f]{40}", native.get("commit") or ""), "real-scan native commit malformed")
+    n = {r["page"]: r for r in native["runs"] if r.get("arm") == "uocr2-f16-fast-tiled" and r.get("cer") is not None}
+    o = {r["page"]: r for r in ref["runs"] if r.get("arm") == "uocr2-original-f32" and r.get("cer") is not None}
+    pages = sorted(set(n) & set(o))
+    require(len(pages) >= 15, "real-scan receipt incomplete")
+    scans = [p for p in pages if not p.startswith("receipt-")]
+    receipts = [p for p in pages if p.startswith("receipt-")]
+    mean = lambda rows: sum(rows) / max(1, len(rows))
+    return {"receipt": str(native_path.relative_to(root)), "receipt_sha256": digest(native_path),
+            "reference_receipt": str(ref_path.relative_to(root)), "commit": native["commit"],
+            "pairs": len(pages), "ids_exact": sum(n[p].get("ids") == o[p].get("ids") for p in pages),
+            "scans": len(scans), "receipts": len(receipts),
+            "scan_cer_native": round(mean([n[p]["cer"] for p in scans]), 4),
+            "scan_cer_original": round(mean([o[p]["cer"] for p in scans]), 4),
+            "receipt_recall_native": round(mean([n[p]["word_recall"] for p in receipts]), 4),
+            "receipt_recall_original": round(mean([o[p]["word_recall"] for p in receipts]), 4),
+            "receipts_original_below_0_8": sum(o[p]["word_recall"] < 0.8 for p in receipts),
+            "failed_pages": native.get("failed_pages", [])}
 
 
 def manifest(cfg, files, parity, source_commit, card_sha):
@@ -262,7 +302,7 @@ def trial_text_receipt(root=ROOT):
             "published_tokenizer_uses_runtime_added_token_fallback": True}
 
 
-def refresh_payload(cfg, previous, parity, verification):
+def refresh_payload(cfg, previous, parity, verification, real_scans=None):
     """Pure card-only render. Weight identities and producing source stay frozen."""
     require(previous.get("schema") == "crispembed-unlimited-ocr2-publication-manifest-v1" and
             previous.get("destination") == cfg["destination"], "previous manifest schema/destination differs")
@@ -272,6 +312,8 @@ def refresh_payload(cfg, previous, parity, verification):
                          type(f["bytes"]) is int and f["bytes"] > 10**9 and re.fullmatch("[0-9a-f]{64}", f["sha256"])
                          for f in files), "previous weight identities malformed")
     updated = dict(parity, trial_text=verification)
+    if real_scans:
+        updated["real_scans"] = real_scans
     readme = card(cfg, files, updated, original_source).encode("utf-8")
     data = manifest(cfg, files, updated, original_source, hashlib.sha256(readme).hexdigest())
     require(data["files"] == previous["files"] and data["source_commit"] == previous["source_commit"],
@@ -281,6 +323,7 @@ def refresh_payload(cfg, previous, parity, verification):
 
 def refresh_card(cfg, out, root=ROOT):
     verification = trial_text_receipt(root)  # BEFORE credentials, client import or any network.
+    real_scans = real_scan_receipt(root)
     publication = json.loads((root / "tests/results/unlimited-ocr2/publication.json").read_text())
     old = publication["card_update"]
     parent = old["hub_commit"]
@@ -299,7 +342,7 @@ def refresh_card(cfg, out, root=ROOT):
     notices = {"LICENSE": cfg["upstream"]["license_file"]["sha256"],
                "UPSTREAM_README.md": cfg["upstream"]["readme"]["sha256"]}
     for name, expected in notices.items(): small(name, parent, expected)
-    payload = refresh_payload(cfg, previous, receipts(cfg, root), verification)
+    payload = refresh_payload(cfg, previous, receipts(cfg, root), verification, real_scans)
     out = Path(out); out.mkdir(parents=True, exist_ok=True)
     for name, data in payload.items(): (out / name).write_bytes(data)
     state = {"status": "prepared", "previous_hub_commit": parent, "verification": verification,
@@ -322,13 +365,13 @@ def refresh_card(cfg, out, root=ROOT):
     operations = [CommitOperationAdd(path_in_repo=name, path_or_fileobj=data) for name, data in payload.items()]
     require(len(operations) == 2 and set(payload) == {"README.md", "manifest.json"}, "only card/manifest may change")
     commit = api.create_commit(repo_id=cfg["destination"], operations=operations,
-                               parent_commit=parent, commit_message="Clarify original raw decode, tiling and F16/Q8 trial limits")
+                               parent_commit=parent, commit_message="Card: original-exact raw decode, original tiling, F16/Q8 trial limits, real-scan result")
     state.update(status="uploaded; immutable readback pending", hub_commit=commit.oid)
     save_state()
     weights(api.model_info(cfg["destination"], revision=commit.oid, files_metadata=True))
     result = {"hub_commit": commit.oid, "previous_hub_commit": parent, "changed_files": sorted(payload),
               "weights_unchanged": True, "notices_unchanged": True, "source_commit": previous["source_commit"],
-              "verification": verification}
+              "verification": verification, "real_scans": real_scans}
     for name, data in payload.items():
         expected = hashlib.sha256(data).hexdigest(); small(name, commit.oid, expected); result[name] = expected
     for name, expected in notices.items(): small(name, commit.oid, expected)
@@ -410,7 +453,7 @@ def main(argv):
         return
     if cmd == "refresh-plan":
         require(len(argv) == 2, "usage: refresh-plan")
-        print(json.dumps(trial_text_receipt(), indent=2))
+        print(json.dumps(dict(trial_text=trial_text_receipt(), real_scans=real_scan_receipt()), indent=2))
         return
     if cmd == "refresh-card":
         require(len(argv) == 3, "usage: refresh-card OUT")
