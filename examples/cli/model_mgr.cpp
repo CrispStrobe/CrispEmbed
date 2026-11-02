@@ -1711,6 +1711,15 @@ static const ModelEntry k_registry[] = {
       "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF/resolve/main/got-ocr2-q4_k.gguf",
       "GOT-OCR2 document OCR (SAM-ViT-B + Qwen1.5-0.5B, 0.7B, text/LaTeX/tables; non-commercial)", "445 MB",
       "tongyi-qianwen-research", "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF" },
+    // F16: the first upload (got-ocr2-f16.gguf, Hub 5a0b0a1adc) has an 8 MiB block of zero bytes
+    // inside l.embed_tokens.weight and decodes "colorcolor..." on every backend; it is kept on the
+    // Hub for provenance and superseded by this verified reconversion (stage cos 1.000000 x19 vs
+    // the original, fox token-exact; tests/results/got-ocr2-f16/). Same license and engine gate.
+    { "got-ocr2-f16", "got-ocr2-f16-r2.gguf",
+      "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF/resolve/c0f1aa7b5b52c15002e911d5d630e6d0dcb3ba8f/"
+      "got-ocr2-f16-r2.gguf",
+      "GOT-OCR2 document OCR, F16 (SAM-ViT-B + Qwen1.5-0.5B, 0.7B, text/LaTeX/tables; non-commercial)", "1.44 GB",
+      "tongyi-qianwen-research", "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF" },
 
     // LFM2.5-VL-3B — LiquidAI's own GGUF export, used directly rather than
     // re-hosted: our loader reads it unchanged, so a cstr/* mirror would add a
@@ -1765,6 +1774,12 @@ static const ModelEntry k_registry[] = {
       "6705b0652744a880e79c8ec856fac73ce56e1105/minicpm-ocr-1.0-f16.gguf",
       "MiniCPM-OCR-1.0 (OpenBMB; SigLIP + Qwen3.5 decoder, F16; gated CRISPEMBED_MINICPM_OCR + CRISPEMBED_QWEN35_OCR)",
       "2.6 GB", "apache-2.0", "https://huggingface.co/cstr/MiniCPM-OCR-1.0-GGUF" },
+    { "minicpm-ocr-q8", "minicpm-ocr-1.0-q8_0.gguf",
+      "https://huggingface.co/cstr/MiniCPM-OCR-1.0-GGUF/resolve/"
+      "e7d49f3188e00d89b4058d0c0b12ef928a772aba/minicpm-ocr-1.0-q8_0.gguf",
+      "MiniCPM-OCR-1.0 (OpenBMB; Q8_0, token-exact on the 5-case panel; gated CRISPEMBED_MINICPM_OCR + "
+      "CRISPEMBED_QWEN35_OCR)",
+      "1.5 GB", "apache-2.0", "https://huggingface.co/cstr/MiniCPM-OCR-1.0-GGUF" },
     { "unlimited-ocr2", "unlimited-ocr-2-f16.gguf",
       "https://huggingface.co/cstr/Unlimited-OCR-2-GGUF/resolve/"
       "e3af0c0c4bfa241c161db64ca36f3c63d3ca8378/unlimited-ocr-2-f16.gguf",

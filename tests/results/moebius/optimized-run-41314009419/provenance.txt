@@ -1,0 +1,7 @@
+source=e35cc183fe1cb1e86cb6275cf61891f9ef142afe model=moebius arms=f32-o q8_0-mm-o q4_k-mm-o
+4
+               total        used        free      shared  buff/cache   available
+Mem:              15           0          13           0           1          14
+Swap:              2           0           2
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/root       145G   38G  107G  26% /

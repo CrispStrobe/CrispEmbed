@@ -267,6 +267,8 @@ def main() -> int:
             upstream_lic, upstream_status = fetch_hf_license(api, upstream)
 
         cls = classify(upstream_lic) if upstream_lic else classify(declared)
+        if name in STRICTER_THAN_UPSTREAM and classify(declared) in ("NC", "GEMMA", "OTHER"):
+            cls = classify(declared)  # our lineage-derived restriction governs gating
 
         rows.append({
             "name": name,
@@ -360,6 +362,16 @@ def main() -> int:
             ups = r["upstream_lic"] or "?"
             print(f"    - {r['name']:<40s}  {r['class']:<8}  {ups}")
 
+    stricter = [r for r in rows if r["name"] in STRICTER_THAN_UPSTREAM
+                and r["upstream_lic"] and not _declared_mismatch(r) and not _rehost_mismatch(r)
+                and (r["declared"] or r["rehost_lic"] or "").lower() != r["upstream_lic"].lower()]
+    if stricter:
+        print("")
+        print(f"  {len(stricter)} deliberate stricter-than-upstream label(s) (lineage):")
+        for r in stricter:
+            print(f"    - {r['name']:<40s}  ours={r['declared'] or r['rehost_lic']}  "
+                  f"upstream={r['upstream_lic']}  ({STRICTER_THAN_UPSTREAM[r['name']]})")
+
     declared_misses = [r for r in rows if _declared_mismatch(r)]
     if declared_misses:
         print("")
@@ -402,16 +414,33 @@ def _badge_and_note(r: Dict[str, str]) -> Tuple[str, str]:
     return "✓", ""
 
 
+# Deliberate relabels that are STRICTER than the upstream card, because the
+# weights inherit a restriction the upstream card omits (lineage audit).
+# Only the safe direction is excused: our label must classify as restricted
+# while upstream classifies as permissive. The dangerous direction (we claim
+# more rights than upstream grants) is never excused.
+STRICTER_THAN_UPSTREAM = {
+    "transcoda": "encoder fine-tuned from ConvNeXt V2 ImageNet weights (CC-BY-NC-4.0); "
+                 "upstream card says apache-2.0 (e83faac6, docs/licensing lineage)",
+}
+
+
+def _deliberately_stricter(r: Dict[str, str], ours: str) -> bool:
+    return (r["name"] in STRICTER_THAN_UPSTREAM
+            and classify(ours) in ("NC", "GEMMA", "OTHER")
+            and classify(r["upstream_lic"]) == "PERMISSIVE")
+
+
 def _declared_mismatch(r: Dict[str, str]) -> bool:
     decl = (r["declared"] or "").strip().lower()
     ups = (r["upstream_lic"] or "").strip().lower()
-    return bool(decl and ups and decl != ups)
+    return bool(decl and ups and decl != ups) and not _deliberately_stricter(r, decl)
 
 
 def _rehost_mismatch(r: Dict[str, str]) -> bool:
     reh = (r["rehost_lic"] or "").strip().lower()
     ups = (r["upstream_lic"] or "").strip().lower()
-    return bool(reh and ups and reh != ups)
+    return bool(reh and ups and reh != ups) and not _deliberately_stricter(r, reh)
 
 
 def _rehost_more_permissive_than_upstream(r: Dict[str, str]) -> bool:

@@ -1,0 +1,50 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "easyocr-english-g2-f16.gguf",
+  "fox-line1.png",
+  "fox-line2.png"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    1.568
+   ],
+   "gpu_mem_peak_mib": 147,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n",
+   "stdout_sha256": "42a6c6ce418d81f2db0c5f5b2064008cf967cff2e6cada0c8ce980389fdde5aa",
+   "stdout": "poison=1 lstm_state_reset=(default)\nstep=0 image=$SCRATCH/models/fox-line2.png canvas=896 reused=\"over the lazy dog: 12345\" conf=0.568926 fresh=\"over the lazy dog: 12345\" conf=0.568926 PASS\nstep=1 image=$SCRATCH/models/fox-line1.png canvas=640 reused=\"The quick brown fox jumps\" conf=0.836540 fresh=\"The quick brown fox jumps\" conf=0.836540 PASS\nstep=2 image=$SCRATCH/models/fox-line2.png canvas=576 reused=\"over the lazy dog: 12345\" conf=0.562874 fresh=\"over the lazy dog: 12345\" conf=0.562874 PASS\nstep=3 image=$SCRATCH/models/fox-line2.png canvas=896 reused=\"over the lazy dog: 12345\" conf=0.568926 fresh=\"over the lazy dog: 12345\" conf=0.568926 PASS\nstep=4 image=$SCRATCH/models/fox-line2.png canvas=576 reused=\"over the lazy dog: 12345\" conf=0.562874 fresh=\"over the lazy dog: 12345\" conf=0.562874 PASS\neasyocr-width-shrink steps=5 failures=0 PASS\n",
+   "vs_cpu": {
+    "byte_identical": false,
+    "text_exact": false,
+    "char_ratio": 0.978448275862069,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    3.174
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\n",
+   "stdout_sha256": "ba609cd4259a5db8342832a1c7a5a07d850245981c64b7f6a358a41f48c72cac",
+   "stdout": "poison=1 lstm_state_reset=(default)\nstep=0 image=$SCRATCH/models/fox-line2.png canvas=896 reused=\"over the lazy dog: 12345\" conf=0.568829 fresh=\"over the lazy dog: 12345\" conf=0.568829 PASS\nstep=1 image=$SCRATCH/models/fox-line1.png canvas=640 reused=\"The quick brown fox jumps\" conf=0.836290 fresh=\"The quick brown fox jumps\" conf=0.836290 PASS\nstep=2 image=$SCRATCH/models/fox-line2.png canvas=576 reused=\"over the lazy dog: 12345\" conf=0.562585 fresh=\"over the lazy dog: 12345\" conf=0.562585 PASS\nstep=3 image=$SCRATCH/models/fox-line2.png canvas=896 reused=\"over the lazy dog: 12345\" conf=0.568829 fresh=\"over the lazy dog: 12345\" conf=0.568829 PASS\nstep=4 image=$SCRATCH/models/fox-line2.png canvas=576 reused=\"over the lazy dog: 12345\" conf=0.562585 fresh=\"over the lazy dog: 12345\" conf=0.562585 PASS\neasyocr-width-shrink steps=5 failures=0 PASS\n"
+  }
+ },
+ "precision": "f16",
+ "bar": 0.98,
+ "seconds": 5.1,
+ "id": "easyocr-width-shrink-default",
+ "commit": "43d055729b107320d95094932e83a71e457ab6f2",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-02"
+}

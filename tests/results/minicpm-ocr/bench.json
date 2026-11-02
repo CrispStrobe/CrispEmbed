@@ -1,0 +1,1271 @@
+{
+ "schema": "crispembed-minicpm-ocr-bench-v1",
+ "commit": "b42e094d1eaa0a10296e80e1f0b187d89aa82958",
+ "reference_revision": "6796197bb3a8e224b2f64ae462bfbb3f8a15ac4b",
+ "reference_versions": {
+  "torch": "2.13.0+cpu",
+  "transformers": "5.21.0",
+  "numpy": "2.2.6"
+ },
+ "max_new_tokens": 1024,
+ "cpu_count": 4,
+ "cpu_model": "AMD EPYC 7B12",
+ "build": {
+  "cmake": [
+   "-DCMAKE_BUILD_TYPE=Release",
+   "-DGGML_NATIVE=OFF",
+   "-DGGML_CUDA=OFF"
+  ]
+ },
+ "gguf_bytes": {
+  "f32": 5211736576,
+  "f16": 2612763136,
+  "q8_0": 1525926080
+ },
+ "quantize": {
+  "exit": 0,
+  "stderr_tail": ""
+ },
+ "setup_seconds": 346.8,
+ "budget_seconds": 40320.0,
+ "arms": [
+  {
+   "name": "q8_0-t4",
+   "dtype": "q8_0",
+   "threads": 4,
+   "env": {
+    "CRISPEMBED_QWEN35_QUANT": "1"
+   },
+   "timing": true,
+   "cases": [
+    {
+     "id": "line",
+     "exit": 0,
+     "wall_seconds": 47.624,
+     "n_ref_tokens": 19,
+     "ids_exact": true,
+     "first_id_difference": null,
+     "n_tokens": 19,
+     "text_exact": true,
+     "cer": 0.0,
+     "timing": {
+      "vision": [
+       {
+        "part": 0,
+        "size": [
+         1316,
+         140
+        ],
+        "patches": 940,
+        "tokens": 235,
+        "total_ms": 16608.766,
+        "setup_ms": 2.863,
+        "encoder_ms": 16503.397,
+        "projector_ms": 96.961,
+        "readback_ms": 0.156
+       }
+      ],
+      "init_ms": 1006.081,
+      "preprocess_ms": 4.819,
+      "preprocess_info": {
+       "parts": "1",
+       "grid": "0x0"
+      },
+      "prompt_ms": 0.406,
+      "prompt_info": {
+       "tokens": "256"
+      },
+      "embed_ms": 0.332,
+      "embed_info": {
+       "image_tokens": "235"
+      },
+      "prefill_ms": 5956.456,
+      "prefill_info": {
+       "tokens": "256"
+      },
+      "decode": {
+       "steps": 18,
+       "total_ms": 23685.133,
+       "mean_ms": 1315.841,
+       "p50_ms": 1283.736,
+       "max_ms": 1557.374,
+       "first_step_ms": 1557.4,
+       "steady_mean_ms": 1301.635,
+       "step_ms_sample": [
+        1557.4,
+        1274.3,
+        1481.0,
+        1270.6,
+        1264.3,
+        1271.5,
+        1278.0,
+        1281.6,
+        "...",
+        1257.6,
+        1292.8,
+        1272.2,
+        1304.7
+       ]
+      },
+      "detokenize_ms": 0.098,
+      "detokenize_info": {
+       "generated": "19"
+      },
+      "vision_encoder_ms": 16503.397,
+      "vision_projector_ms": 96.961,
+      "vision_total_ms": 16608.766
+     }
+    },
+    {
+     "id": "para-en",
+     "exit": 0,
+     "wall_seconds": 199.21,
+     "n_ref_tokens": 63,
+     "ids_exact": true,
+     "first_id_difference": null,
+     "n_tokens": 63,
+     "text_exact": true,
+     "cer": 0.0,
+     "timing": {
+      "vision": [
+       {
+        "part": 0,
+        "size": [
+         504,
+         392
+        ],
+        "patches": 1008,
+        "tokens": 252,
+        "total_ms": 13676.956,
+        "setup_ms": 4.29,
+        "encoder_ms": 13567.523,
+        "projector_ms": 98.514,
+        "readback_ms": 0.129
+       },
+       {
+        "part": 1,
+        "size": [
+         504,
+         392
+        ],
+        "patches": 1008,
+        "tokens": 252,
+        "total_ms": 13827.312,
+        "setup_ms": 4.589,
+        "encoder_ms": 13714.526,
+        "projector_ms": 100.101,
+        "readback_ms": 0.252
+       },
+       {
+        "part": 2,
+        "size": [
+         504,
+         392
+        ],
+        "patches": 1008,
+        "tokens": 252,
+        "total_ms": 13849.348,
+        "setup_ms": 3.288,
+        "encoder_ms": 13739.738,
+        "projector_ms": 98.121,
+        "readback_ms": 0.377
+       },
+       {
+        "part": 3,
+        "size": [
+         504,
+         392
+        ],
+        "patches": 1008,
+        "tokens": 252,
+        "total_ms": 13907.51,
+        "setup_ms": 3.286,
+        "encoder_ms": 13799.515,
+        "projector_ms": 96.14,
+        "readback_ms": 0.149
+       },
+       {
+        "part": 4,
+        "size": [
+         504,
+         392
+        ],
+        "patches": 1008,
+        "tokens": 252,
+        "total_ms": 13905.506,
+        "setup_ms": 3.02,
+        "encoder_ms": 13795.372,
+        "projector_ms": 96.806,
+        "readback_ms": 2.098
+       }
+      ],
+      "init_ms": 918.964,
+      "preprocess_ms": 40.901,
+      "preprocess_info": {
+       "parts": "5",
+       "grid": "2x2"
+      },
+      "prompt_ms": 0.145,
+      "prompt_info": {
+       "tokens": "1290"
+      },
+      "embed_ms": 1.377,
+      "embed_info": {
+       "image_tokens": "1260"
+      },
+      "prefill_ms": 45955.668,
+      "prefill_info": {
+       "tokens": "1290"
+      },
+      "decode": {
+       "steps": 62,
+       "total_ms": 82822.462,
+       "mean_ms": 1335.846,
+       "p50_ms": 1322.014,
+       "max_ms": 1563.271,
+       "first_step_ms": 1345.6,
+       "steady_mean_ms": 1335.684,
+       "step_ms_sample": [
+        1345.6,
+        1417.7,
+        1320.5,
+        1280.3,
+        1307.8,
+        1283.8,
+        1307.7,
+        1366.1,
+        "...",
+        1289.5,
+        1291.3,
+        1341.3,
+        1302.5
+       ]
+      },
+      "detokenize_ms": 0.2,
+      "detokenize_info": {
+       "generated": "63"
+      },
+      "vision_encoder_ms": 68616.674,
+      "vision_projector_ms": 489.682,
+      "vision_total_ms": 69166.632
+     }
+    },
+    {
+     "id": "table",
+     "exit": 0,
+     "wall_seconds": 191.351,
+     "n_ref_tokens": 56,
+     "ids_exact": true,
+     "first_id_difference": null,
+     "n_tokens": 56,
+     "text_exact": true,
+     "cer": 0.0,
+     "timing": {
+      "vision": [
+       {
+        "part": 0,
+        "size": [
+         504,
+         392
+        ],
+        "patches": 1008,
+        "tokens": 252,
+        "total_ms": 13790.341,
+        "setup_ms": 4.564,
+        "encoder_ms": 13678.282,
+        "projector_ms": 98.265,
+        "readback_ms": 0.141
+       },
+       {
+        "part": 1,
+        "size": [
+         504,
+         392
+        ],
+        "patches": 1008,
+        "tokens": 252,
+        "total_ms": 13858.61,
+        "setup_ms": 4.527,
+        "encoder_ms": 13746.286,
+        "projector_ms": 99.64,
+        "readback_ms": 0.238
+       },
+       {
+        "part": 2,
+        "size": [
+         504,
+         392
+        ],
+        "patches": 1008,
+        "tokens": 252,
+        "total_ms": 13841.233,
+        "setup_ms": 3.039,
+        "encoder_ms": 13734.755,
+        "projector_ms": 96.119,
+        "readback_ms": 0.348
+       },
+       {
+        "part": 3,
+        "size": [
+         504,
+         392
+        ],
+        "patches": 1008,
+        "tokens": 252,
+        "total_ms": 13845.68,
+        "setup_ms": 3.022,
+        "encoder_ms": 13737.949,
+        "projector_ms": 96.027,
+        "readback_ms": 0.143
+       },
+       {
+        "part": 4,
+        "size": [
+         504,
+         392
+        ],
+        "patches": 1008,
+        "tokens": 252,
+        "total_ms": 13954.574,
+        "setup_ms": 3.823,
+        "encoder_ms": 13843.525,
+        "projector_ms": 96.704,
+        "readback_ms": 2.608
+       }
+      ],
+      "init_ms": 966.554,
+      "preprocess_ms": 40.835,
+      "preprocess_info": {
+       "parts": "5",
+       "grid": "2x2"
+      },
+      "prompt_ms": 0.172,
+      "prompt_info": {
+       "tokens": "1290"
+      },
+      "embed_ms": 1.432,
+      "embed_info": {
+       "image_tokens": "1260"
+      },
+      "prefill_ms": 46131.463,
+      "prefill_info": {
+       "tokens": "1290"
+      },
+      "decode": {
+       "steps": 55,
+       "total_ms": 74578.394,
+       "mean_ms": 1355.971,
+       "p50_ms": 1338.426,
+       "max_ms": 1574.614,
+       "first_step_ms": 1298.7,
+       "steady_mean_ms": 1357.03,
+       "step_ms_sample": [
+        1298.7,
+        1342.8,
+        1347.3,
+        1309.4,
+        1293.1,
+        1335.6,
+        1299.8,
+        1309.2,
+        "...",
+        1308.7,
+        1485.5,
+        1340.2,
+        1368.5
+       ]
+      },
+      "detokenize_ms": 0.17,
+      "detokenize_info": {
+       "generated": "56"
+      },
+      "vision_encoder_ms": 68740.797,
+      "vision_projector_ms": 486.755,
+      "vision_total_ms": 69290.438
+     }
+    },
+    {
+     "id": "tall",
+     "exit": 0,
+     "wall_seconds": 682.631,
+     "n_ref_tokens": 279,
+     "ids_exact": true,
+     "first_id_difference": null,
+     "n_tokens": 279,
+     "text_exact": true,
+     "cer": 0.0,
+     "timing": {
+      "vision": [
+       {
+        "part": 0,
+        "size": [
+         252,
+         784
+        ],
+        "patches": 1008,
+        "tokens": 252,
+        "total_ms": 13944.98,
+        "setup_ms": 6.478,
+        "encoder_ms": 13831.226,
+        "projector_ms": 99.139,
+        "readback_ms": 0.24
+       },
+       {
+        "part": 1,
+        "size": [
+         364,
+         560
+        ],
+        "patches": 1040,
+        "tokens": 260,
+        "total_ms": 14402.028,
+        "setup_ms": 6.636,
+        "encoder_ms": 14283.552,
+        "projector_ms": 103.079,
+        "readback_ms": 0.465
+       },
+       {
+        "part": 2,
+        "size": [
+         364,
+         560
+        ],
+        "patches": 1040,
+        "tokens": 260,
+        "total_ms": 14381.182,
+        "setup_ms": 5.37,
+        "encoder_ms": 14266.781,
+        "projector_ms": 101.214,
+        "readback_ms": 0.445
+       },
+       {
+        "part": 3,
+        "size": [
+         364,
+         560
+        ],
+        "patches": 1040,
+        "tokens": 260,
+        "total_ms": 14397.976,
+        "setup_ms": 3.779,
+        "encoder_ms": 14282.298,
+        "projector_ms": 102.019,
+        "readback_ms": 1.948
+       },
+       {
+        "part": 4,
+        "size": [
+         364,
+         560
+        ],
+        "patches": 1040,
+        "tokens": 260,
+        "total_ms": 14406.708,
+        "setup_ms": 3.443,
+        "encoder_ms": 14292.867,
+        "projector_ms": 101.639,
+        "readback_ms": 0.598
+       },
+       {
+        "part": 5,
+        "size": [
+         364,
+         560
+        ],
+        "patches": 1040,
+        "tokens": 260,
+        "total_ms": 14415.426,
+        "setup_ms": 3.76,
+        "encoder_ms": 14296.827,
+        "projector_ms": 101.401,
+        "readback_ms": 3.205
+       },
+       {
+        "part": 6,
+        "size": [
+         364,
+         560
+        ],
+        "patches": 1040,
+        "tokens": 260,
+        "total_ms": 14479.972,
+        "setup_ms": 7.033,
+        "encoder_ms": 14362.271,
+        "projector_ms": 101.619,
+        "readback_ms": 0.532
+       },
+       {
+        "part": 7,
+        "size": [
+         364,
+         560
+        ],
+        "patches": 1040,
+        "tokens": 260,
+        "total_ms": 18872.751,
+        "setup_ms": 4.752,
+        "encoder_ms": 18751.677,
+        "projector_ms": 104.86,
+        "readback_ms": 1.201
+       },
+       {
+        "part": 8,
+        "size": [
+         364,
+         560
+        ],
+        "patches": 1040,
+        "tokens": 260,
+        "total_ms": 14550.339,
+        "setup_ms": 5.369,
+        "encoder_ms": 14432.664,
+        "projector_ms": 102.036,
+        "readback_ms": 0.537
+       }
+      ],
+      "init_ms": 972.464,
+      "preprocess_ms": 76.77,
+      "preprocess_info": {
+       "parts": "9",
+       "grid": "2x4"
+      },
+      "prompt_ms": 0.181,
+      "prompt_info": {
+       "tokens": "2372"
+      },
+      "embed_ms": 4.578,
+      "embed_info": {
+       "image_tokens": "2332"
+      },
+      "prefill_ms": 144947.61,
+      "prefill_info": {
+       "tokens": "2372"
+      },
+      "decode": {
+       "steps": 278,
+       "total_ms": 402386.95,
+       "mean_ms": 1447.435,
+       "p50_ms": 1400.389,
+       "max_ms": 2449.02,
+       "first_step_ms": 2365.0,
+       "steady_mean_ms": 1444.123,
+       "step_ms_sample": [
+        2365.0,
+        1452.1,
+        1402.0,
+        1389.1,
+        1402.2,
+        1397.3,
+        1411.1,
+        1362.5,
+        "...",
+        1378.0,
+        1403.7,
+        1682.8,
+        1613.8
+       ]
+      },
+      "detokenize_ms": 0.979,
+      "detokenize_info": {
+       "generated": "279"
+      },
+      "vision_encoder_ms": 132800.163,
+      "vision_projector_ms": 917.006,
+      "vision_total_ms": 133851.362
+     }
+    },
+    {
+     "id": "tiny",
+     "exit": 0,
+     "wall_seconds": 24.857,
+     "n_ref_tokens": 3,
+     "ids_exact": true,
+     "first_id_difference": null,
+     "n_tokens": 3,
+     "text_exact": true,
+     "cer": 0.0,
+     "timing": {
+      "vision": [
+       {
+        "part": 0,
+        "size": [
+         644,
+         308
+        ],
+        "patches": 1012,
+        "tokens": 253,
+        "total_ms": 14472.033,
+        "setup_ms": 2.982,
+        "encoder_ms": 14363.891,
+        "projector_ms": 98.075,
+        "readback_ms": 0.133
+       }
+      ],
+      "init_ms": 1028.06,
+      "preprocess_ms": 4.327,
+      "preprocess_info": {
+       "parts": "1",
+       "grid": "0x0"
+      },
+      "prompt_ms": 0.299,
+      "prompt_info": {
+       "tokens": "274"
+      },
+      "embed_ms": 0.416,
+      "embed_info": {
+       "image_tokens": "253"
+      },
+      "prefill_ms": 6377.452,
+      "prefill_info": {
+       "tokens": "274"
+      },
+      "decode": {
+       "steps": 2,
+       "total_ms": 2626.527,
+       "mean_ms": 1313.263,
+       "p50_ms": 1322.473,
+       "max_ms": 1322.473,
+       "first_step_ms": 1304.1,
+       "steady_mean_ms": 1322.5,
+       "step_ms_sample": [
+        1304.1,
+        1322.5
+       ]
+      },
+      "detokenize_ms": 0.085,
+      "detokenize_info": {
+       "generated": "3"
+      },
+      "vision_encoder_ms": 14363.891,
+      "vision_projector_ms": 98.075,
+      "vision_total_ms": 14472.033
+     }
+    }
+   ],
+   "all_ids_exact": true,
+   "all_text_exact": true,
+   "total_wall_seconds": 1145.673
+  },
+  {
+   "name": "q8_0-t2",
+   "dtype": "q8_0",
+   "threads": 2,
+   "env": {
+    "CRISPEMBED_QWEN35_QUANT": "1"
+   },
+   "timing": true,
+   "cases": [
+    {
+     "id": "line",
+     "exit": 0,
+     "wall_seconds": 61.275,
+     "n_ref_tokens": 19,
+     "ids_exact": true,
+     "first_id_difference": null,
+     "n_tokens": 19,
+     "text_exact": true,
+     "cer": 0.0,
+     "timing": {
+      "vision": [
+       {
+        "part": 0,
+        "size": [
+         1316,
+         140
+        ],
+        "patches": 940,
+        "tokens": 235,
+        "total_ms": 23898.635,
+        "setup_ms": 3.278,
+        "encoder_ms": 23776.431,
+        "projector_ms": 111.927,
+        "readback_ms": 0.274
+       }
+      ],
+      "init_ms": 1024.558,
+      "preprocess_ms": 5.481,
+      "preprocess_info": {
+       "parts": "1",
+       "grid": "0x0"
+      },
+      "prompt_ms": 0.156,
+      "prompt_info": {
+       "tokens": "256"
+      },
+      "embed_ms": 0.431,
+      "embed_info": {
+       "image_tokens": "235"
+      },
+      "prefill_ms": 7898.625,
+      "prefill_info": {
+       "tokens": "256"
+      },
+      "decode": {
+       "steps": 18,
+       "total_ms": 28119.282,
+       "mean_ms": 1562.182,
+       "p50_ms": 1364.881,
+       "max_ms": 2434.75,
+       "first_step_ms": 1984.6,
+       "steady_mean_ms": 1537.341,
+       "step_ms_sample": [
+        1984.6,
+        1364.9,
+        1593.5,
+        1523.4,
+        1335.8,
+        1839.0,
+        1371.8,
+        1363.3,
+        "...",
+        1644.7,
+        1331.9,
+        1334.2,
+        1339.0
+       ]
+      },
+      "detokenize_ms": 0.162,
+      "detokenize_info": {
+       "generated": "19"
+      },
+      "vision_encoder_ms": 23776.431,
+      "vision_projector_ms": 111.927,
+      "vision_total_ms": 23898.635
+     }
+    },
+    {
+     "id": "para-en",
+     "exit": 0,
+     "wall_seconds": 233.102,
+     "n_ref_tokens": 63,
+     "ids_exact": true,
+     "first_id_difference": null,
+     "n_tokens": 63,
+     "text_exact": true,
+     "cer": 0.0,
+     "timing": {
+      "vision": [
+       {
+        "part": 0,
+        "size": [
+         504,
+         392
+        ],
+        "patches": 1008,
+        "tokens": 252,
+        "total_ms": 19719.002,
+        "setup_ms": 4.685,
+        "encoder_ms": 19604.744,
+        "projector_ms": 102.526,
+        "readback_ms": 0.14
+       },
+       {
+        "part": 1,
+        "size": [
+         504,
+         392
+        ],
+        "patches": 1008,
+        "tokens": 252,
+        "total_ms": 19584.758,
+        "setup_ms": 4.774,
+        "encoder_ms": 19471.354,
+        "projector_ms": 101.581,
+        "readback_ms": 0.236
+       },
+       {
+        "part": 2,
+        "size": [
+         504,
+         392
+        ],
+        "patches": 1008,
+        "tokens": 252,
+        "total_ms": 19679.507,
+        "setup_ms": 3.811,
+        "encoder_ms": 19564.896,
+        "projector_ms": 102.96,
+        "readback_ms": 0.376
+       },
+       {
+        "part": 3,
+        "size": [
+         504,
+         392
+        ],
+        "patches": 1008,
+        "tokens": 252,
+        "total_ms": 19752.363,
+        "setup_ms": 3.476,
+        "encoder_ms": 19641.275,
+        "projector_ms": 98.605,
+        "readback_ms": 0.173
+       },
+       {
+        "part": 4,
+        "size": [
+         504,
+         392
+        ],
+        "patches": 1008,
+        "tokens": 252,
+        "total_ms": 19797.033,
+        "setup_ms": 3.641,
+        "encoder_ms": 19683.116,
+        "projector_ms": 98.937,
+        "readback_ms": 2.61
+       }
+      ],
+      "init_ms": 977.16,
+      "preprocess_ms": 41.812,
+      "preprocess_info": {
+       "parts": "5",
+       "grid": "2x2"
+      },
+      "prompt_ms": 0.251,
+      "prompt_info": {
+       "tokens": "1290"
+      },
+      "embed_ms": 1.734,
+      "embed_info": {
+       "image_tokens": "1260"
+      },
+      "prefill_ms": 46973.468,
+      "prefill_info": {
+       "tokens": "1290"
+      },
+      "decode": {
+       "steps": 62,
+       "total_ms": 86228.811,
+       "mean_ms": 1390.787,
+       "p50_ms": 1368.446,
+       "max_ms": 1931.69,
+       "first_step_ms": 1372.7,
+       "steady_mean_ms": 1391.082,
+       "step_ms_sample": [
+        1372.7,
+        1379.2,
+        1382.4,
+        1393.0,
+        1931.7,
+        1373.1,
+        1374.9,
+        1381.2,
+        "...",
+        1376.6,
+        1344.3,
+        1364.7,
+        1369.2
+       ]
+      },
+      "detokenize_ms": 0.22,
+      "detokenize_info": {
+       "generated": "63"
+      },
+      "vision_encoder_ms": 97965.385,
+      "vision_projector_ms": 504.609,
+      "vision_total_ms": 98532.663
+     }
+    },
+    {
+     "id": "table",
+     "exit": 0,
+     "wall_seconds": 224.851,
+     "n_ref_tokens": 56,
+     "ids_exact": true,
+     "first_id_difference": null,
+     "n_tokens": 56,
+     "text_exact": true,
+     "cer": 0.0,
+     "timing": {
+      "vision": [
+       {
+        "part": 0,
+        "size": [
+         504,
+         392
+        ],
+        "patches": 1008,
+        "tokens": 252,
+        "total_ms": 19597.285,
+        "setup_ms": 4.843,
+        "encoder_ms": 19482.375,
+        "projector_ms": 103.286,
+        "readback_ms": 0.143
+       },
+       {
+        "part": 1,
+        "size": [
+         504,
+         392
+        ],
+        "patches": 1008,
+        "tokens": 252,
+        "total_ms": 19635.947,
+        "setup_ms": 4.978,
+        "encoder_ms": 19521.984,
+        "projector_ms": 101.582,
+        "readback_ms": 0.31
+       },
+       {
+        "part": 2,
+        "size": [
+         504,
+         392
+        ],
+        "patches": 1008,
+        "tokens": 252,
+        "total_ms": 19787.363,
+        "setup_ms": 3.453,
+        "encoder_ms": 19676.675,
+        "projector_ms": 100.072,
+        "readback_ms": 0.376
+       },
+       {
+        "part": 3,
+        "size": [
+         504,
+         392
+        ],
+        "patches": 1008,
+        "tokens": 252,
+        "total_ms": 19943.735,
+        "setup_ms": 3.441,
+        "encoder_ms": 19833.862,
+        "projector_ms": 98.643,
+        "readback_ms": 0.161
+       },
+       {
+        "part": 4,
+        "size": [
+         504,
+         392
+        ],
+        "patches": 1008,
+        "tokens": 252,
+        "total_ms": 19879.785,
+        "setup_ms": 3.561,
+        "encoder_ms": 19764.675,
+        "projector_ms": 99.989,
+        "readback_ms": 2.463
+       }
+      ],
+      "init_ms": 1007.24,
+      "preprocess_ms": 41.035,
+      "preprocess_info": {
+       "parts": "5",
+       "grid": "2x2"
+      },
+      "prompt_ms": 0.19,
+      "prompt_info": {
+       "tokens": "1290"
+      },
+      "embed_ms": 1.779,
+      "embed_info": {
+       "image_tokens": "1260"
+      },
+      "prefill_ms": 47007.37,
+      "prefill_info": {
+       "tokens": "1290"
+      },
+      "decode": {
+       "steps": 55,
+       "total_ms": 77590.017,
+       "mean_ms": 1410.728,
+       "p50_ms": 1387.462,
+       "max_ms": 1804.636,
+       "first_step_ms": 1311.4,
+       "steady_mean_ms": 1412.565,
+       "step_ms_sample": [
+        1311.4,
+        1347.8,
+        1424.0,
+        1378.1,
+        1386.7,
+        1399.7,
+        1377.6,
+        1372.9,
+        "...",
+        1385.3,
+        1394.0,
+        1388.5,
+        1387.5
+       ]
+      },
+      "detokenize_ms": 0.327,
+      "detokenize_info": {
+       "generated": "56"
+      },
+      "vision_encoder_ms": 98279.571,
+      "vision_projector_ms": 503.572,
+      "vision_total_ms": 98844.115
+     }
+    },
+    {
+     "id": "tall",
+     "exit": 0,
+     "wall_seconds": 755.528,
+     "n_ref_tokens": 279,
+     "ids_exact": true,
+     "first_id_difference": null,
+     "n_tokens": 279,
+     "text_exact": true,
+     "cer": 0.0,
+     "timing": {
+      "vision": [
+       {
+        "part": 0,
+        "size": [
+         252,
+         784
+        ],
+        "patches": 1008,
+        "tokens": 252,
+        "total_ms": 19729.348,
+        "setup_ms": 6.49,
+        "encoder_ms": 19613.603,
+        "projector_ms": 101.536,
+        "readback_ms": 0.135
+       },
+       {
+        "part": 1,
+        "size": [
+         364,
+         560
+        ],
+        "patches": 1040,
+        "tokens": 260,
+        "total_ms": 20468.633,
+        "setup_ms": 6.177,
+        "encoder_ms": 20348.091,
+        "projector_ms": 105.909,
+        "readback_ms": 0.284
+       },
+       {
+        "part": 2,
+        "size": [
+         364,
+         560
+        ],
+        "patches": 1040,
+        "tokens": 260,
+        "total_ms": 20691.086,
+        "setup_ms": 6.203,
+        "encoder_ms": 20569.555,
+        "projector_ms": 105.372,
+        "readback_ms": 0.44
+       },
+       {
+        "part": 3,
+        "size": [
+         364,
+         560
+        ],
+        "patches": 1040,
+        "tokens": 260,
+        "total_ms": 20544.126,
+        "setup_ms": 3.759,
+        "encoder_ms": 20424.122,
+        "projector_ms": 104.981,
+        "readback_ms": 2.343
+       },
+       {
+        "part": 4,
+        "size": [
+         364,
+         560
+        ],
+        "patches": 1040,
+        "tokens": 260,
+        "total_ms": 20549.7,
+        "setup_ms": 3.623,
+        "encoder_ms": 20431.59,
+        "projector_ms": 104.503,
+        "readback_ms": 0.614
+       },
+       {
+        "part": 5,
+        "size": [
+         364,
+         560
+        ],
+        "patches": 1040,
+        "tokens": 260,
+        "total_ms": 28515.578,
+        "setup_ms": 3.497,
+        "encoder_ms": 28391.011,
+        "projector_ms": 104.799,
+        "readback_ms": 4.841
+       },
+       {
+        "part": 6,
+        "size": [
+         364,
+         560
+        ],
+        "patches": 1040,
+        "tokens": 260,
+        "total_ms": 20611.932,
+        "setup_ms": 11.972,
+        "encoder_ms": 20478.624,
+        "projector_ms": 109.599,
+        "readback_ms": 2.437
+       },
+       {
+        "part": 7,
+        "size": [
+         364,
+         560
+        ],
+        "patches": 1040,
+        "tokens": 260,
+        "total_ms": 20583.092,
+        "setup_ms": 3.733,
+        "encoder_ms": 20465.602,
+        "projector_ms": 102.313,
+        "readback_ms": 2.202
+       },
+       {
+        "part": 8,
+        "size": [
+         364,
+         560
+        ],
+        "patches": 1040,
+        "tokens": 260,
+        "total_ms": 20712.379,
+        "setup_ms": 3.883,
+        "encoder_ms": 20593.701,
+        "projector_ms": 104.559,
+        "readback_ms": 0.555
+       }
+      ],
+      "init_ms": 1042.164,
+      "preprocess_ms": 77.606,
+      "preprocess_info": {
+       "parts": "9",
+       "grid": "2x4"
+      },
+      "prompt_ms": 0.16,
+      "prompt_info": {
+       "tokens": "2372"
+      },
+      "embed_ms": 3.079,
+      "embed_info": {
+       "image_tokens": "2332"
+      },
+      "prefill_ms": 145885.95,
+      "prefill_info": {
+       "tokens": "2372"
+      },
+      "decode": {
+       "steps": 278,
+       "total_ms": 415740.156,
+       "mean_ms": 1495.468,
+       "p50_ms": 1414.249,
+       "max_ms": 4024.838,
+       "first_step_ms": 1429.9,
+       "steady_mean_ms": 1495.706,
+       "step_ms_sample": [
+        1429.9,
+        1447.6,
+        1419.8,
+        1423.8,
+        2210.0,
+        1499.4,
+        2211.6,
+        2460.1,
+        "...",
+        2579.5,
+        3343.9,
+        2894.0,
+        1711.2
+       ]
+      },
+      "detokenize_ms": 0.73,
+      "detokenize_info": {
+       "generated": "279"
+      },
+      "vision_encoder_ms": 191315.899,
+      "vision_projector_ms": 943.571,
+      "vision_total_ms": 192405.874
+     }
+    },
+    {
+     "id": "tiny",
+     "exit": 0,
+     "wall_seconds": 32.014,
+     "n_ref_tokens": 3,
+     "ids_exact": true,
+     "first_id_difference": null,
+     "n_tokens": 3,
+     "text_exact": true,
+     "cer": 0.0,
+     "timing": {
+      "vision": [
+       {
+        "part": 0,
+        "size": [
+         644,
+         308
+        ],
+        "patches": 1012,
+        "tokens": 253,
+        "total_ms": 20736.928,
+        "setup_ms": 6.767,
+        "encoder_ms": 20623.475,
+        "projector_ms": 100.34,
+        "readback_ms": 0.206
+       }
+      ],
+      "init_ms": 1223.238,
+      "preprocess_ms": 3.907,
+      "preprocess_info": {
+       "parts": "1",
+       "grid": "0x0"
+      },
+      "prompt_ms": 0.16,
+      "prompt_info": {
+       "tokens": "274"
+      },
+      "embed_ms": 0.367,
+      "embed_info": {
+       "image_tokens": "253"
+      },
+      "prefill_ms": 6904.886,
+      "prefill_info": {
+       "tokens": "274"
+      },
+      "decode": {
+       "steps": 2,
+       "total_ms": 2774.078,
+       "mean_ms": 1387.039,
+       "p50_ms": 1436.942,
+       "max_ms": 1436.942,
+       "first_step_ms": 1436.9,
+       "steady_mean_ms": 1337.1,
+       "step_ms_sample": [
+        1436.9,
+        1337.1
+       ]
+      },
+      "detokenize_ms": 0.087,
+      "detokenize_info": {
+       "generated": "3"
+      },
+      "vision_encoder_ms": 20623.475,
+      "vision_projector_ms": 100.34,
+      "vision_total_ms": 20736.928
+     }
+    }
+   ],
+   "all_ids_exact": true,
+   "all_text_exact": true,
+   "total_wall_seconds": 1306.77
+  }
+ ],
+ "skipped": [],
+ "baselines": {},
+ "elapsed_seconds": 2799.6,
+ "completed": true
+}

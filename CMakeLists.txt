@@ -556,6 +556,8 @@ target_include_directories(test-hparam-keys PRIVATE ${CMAKE_SOURCE_DIR}/src)
 
 add_executable(test-unlimited-ocr2-tiles tests/test_unlimited_ocr2_tiles.cpp)
 target_include_directories(test-unlimited-ocr2-tiles PRIVATE ${CMAKE_SOURCE_DIR}/src)
+add_executable(test-unlimited-ocr2-text tests/test_unlimited_ocr2_text.cpp)
+target_include_directories(test-unlimited-ocr2-text PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/tests)
 add_executable(test-minicpm-ocr-tiles tests/test_minicpm_ocr_tiles.cpp)
 target_include_directories(test-minicpm-ocr-tiles PRIVATE ${CMAKE_SOURCE_DIR}/src)
 
@@ -607,6 +609,10 @@ target_link_libraries(test-easyocr-postprocess PRIVATE crispembed)
 
 add_executable(test-easyocr-pipeline tests/test_easyocr_pipeline.cpp)
 target_link_libraries(test-easyocr-pipeline PRIVATE crispembed)
+
+add_executable(test-easyocr-width-shrink tests/test_easyocr_width_shrink.cpp)
+target_include_directories(test-easyocr-width-shrink PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+target_link_libraries(test-easyocr-width-shrink PRIVATE crispembed)
 
 add_executable(test-easyocr-craft-diff tests/test_easyocr_craft_diff.cpp)
 target_include_directories(test-easyocr-craft-diff PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
@@ -1074,12 +1080,30 @@ endif()
 add_executable(test-sam2-diff tests/test_sam2_diff.cpp)
 target_link_libraries(test-sam2-diff PRIVATE crispembed-sam2)
 
-# Fixed-256 MI-GAN CPU/F32 graph. The opt-in CLI links the ordinary archive;
+# Persistent native CPU/CUDA/Metal graph utilities. The test variant alone
+# retains intermediate activations and callback symbols.
+set(CRISPEMBED_INPAINT_GRAPH_SOURCES src/inpaint_graph.cpp src/inpaint_graph_spectral.cpp)
+add_library(crispembed-inpaint-graph STATIC EXCLUDE_FROM_ALL ${CRISPEMBED_INPAINT_GRAPH_SOURCES})
+target_include_directories(crispembed-inpaint-graph PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+crispembed_apply_arch_flags(crispembed-inpaint-graph)
+target_link_libraries(crispembed-inpaint-graph PUBLIC crispembed-inpaint-weights crispembed-core ggml ggml-base ggml-cpu)
+add_library(crispembed-inpaint-graph-test STATIC EXCLUDE_FROM_ALL ${CRISPEMBED_INPAINT_GRAPH_SOURCES})
+target_include_directories(crispembed-inpaint-graph-test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_compile_definitions(crispembed-inpaint-graph-test PUBLIC CRISPEMBED_INPAINT_GRAPH_TESTING)
+crispembed_apply_arch_flags(crispembed-inpaint-graph-test)
+target_link_libraries(crispembed-inpaint-graph-test PUBLIC crispembed-inpaint-weights crispembed-core ggml ggml-base ggml-cpu)
+
+# Fixed-256/512 MI-GAN graphs. The opt-in CLI links the ordinary archive;
 # reference observers remain confined to the separate validation archive.
+# Shared inpaint-v1 precision-variant loader (gated; F32 files bypass it).
+add_library(crispembed-inpaint-weights STATIC EXCLUDE_FROM_ALL src/inpaint_weights.cpp)
+target_include_directories(crispembed-inpaint-weights PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+crispembed_apply_arch_flags(crispembed-inpaint-weights)
+target_link_libraries(crispembed-inpaint-weights PUBLIC crispembed-core ggml ggml-base ggml-cpu)
 add_library(crispembed-migan STATIC EXCLUDE_FROM_ALL src/migan.cpp)
 target_include_directories(crispembed-migan PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 crispembed_apply_arch_flags(crispembed-migan)
-target_link_libraries(crispembed-migan PUBLIC crispembed-core ggml ggml-base ggml-cpu)
+target_link_libraries(crispembed-migan PUBLIC crispembed-inpaint-weights crispembed-inpaint-graph)
 
 # Issue 71: native-resolution tiling around the unchanged MI-GAN graph.
 # This internal CLI library adds no shared-library ABI or model registry alias.
@@ -1105,13 +1129,63 @@ add_library(crispembed-migan-test STATIC EXCLUDE_FROM_ALL src/migan.cpp)
 target_include_directories(crispembed-migan-test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 target_compile_definitions(crispembed-migan-test PRIVATE CRISPEMBED_MIGAN_TESTING)
 crispembed_apply_arch_flags(crispembed-migan-test)
-target_link_libraries(crispembed-migan-test PUBLIC crispembed-core ggml ggml-base ggml-cpu)
+target_link_libraries(crispembed-migan-test PUBLIC crispembed-inpaint-weights crispembed-inpaint-graph-test)
+add_executable(test-migan-graph EXCLUDE_FROM_ALL tests/test_migan_graph.cpp)
+target_link_libraries(test-migan-graph PRIVATE crispembed-migan-test)
 add_executable(test-migan-diff EXCLUDE_FROM_ALL tests/test_migan_diff.cpp)
 target_link_libraries(test-migan-diff PRIVATE crispembed-migan-test)
 # Device/precision A/B against the reviewed CPU/F32 graph (docs/migan-metal.md):
 # per-stage GPU/quantized vs CPU/F32 comparison and 1080p tile throughput.
 add_executable(test-migan-gpu-ab EXCLUDE_FROM_ALL tests/test_migan_gpu_ab.cpp src/inpaint.cpp)
 target_link_libraries(test-migan-gpu-ab PRIVATE crispembed-migan-test)
+add_executable(test-migan512-diff EXCLUDE_FROM_ALL tests/test_migan512_diff.cpp)
+target_link_libraries(test-migan512-diff PRIVATE crispembed-migan-test)
+
+# Issue71 latent inpainters share the existing CPU/GGUF/image infrastructure.
+# Their observers are compiled only into the separate acceptance archive.
+set(CRISPEMBED_LATENT_INPAINT_SOURCES
+    src/latent_inpaint.cpp src/latent_inpaint_ops.cpp
+    src/latent_inpaint_vae.cpp src/latent_inpaint_unet.cpp
+    src/latent_inpaint_graph.cpp src/latent_inpaint_graph_unet.cpp)
+add_library(crispembed-latent-inpaint STATIC EXCLUDE_FROM_ALL ${CRISPEMBED_LATENT_INPAINT_SOURCES})
+target_include_directories(crispembed-latent-inpaint PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+crispembed_apply_arch_flags(crispembed-latent-inpaint)
+target_link_libraries(crispembed-latent-inpaint PUBLIC crispembed-inpaint-graph crispembed-inpaint crispembed-core ggml ggml-base ggml-cpu)
+target_link_libraries(crispembed-cli PRIVATE crispembed-latent-inpaint)
+
+add_library(crispembed-latent-inpaint-test STATIC EXCLUDE_FROM_ALL ${CRISPEMBED_LATENT_INPAINT_SOURCES})
+target_include_directories(crispembed-latent-inpaint-test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_compile_definitions(crispembed-latent-inpaint-test PUBLIC CRISPEMBED_LATENT_INPAINT_TESTING)
+crispembed_apply_arch_flags(crispembed-latent-inpaint-test)
+target_link_libraries(crispembed-latent-inpaint-test PUBLIC crispembed-inpaint-graph-test crispembed-inpaint crispembed-core ggml ggml-base ggml-cpu)
+add_executable(test-latent-inpaint EXCLUDE_FROM_ALL tests/test_latent_inpaint.cpp)
+target_link_libraries(test-latent-inpaint PRIVATE crispembed-latent-inpaint-test)
+add_executable(test-latent-inpaint-attention EXCLUDE_FROM_ALL tests/test_latent_inpaint_attention.cpp)
+target_link_libraries(test-latent-inpaint-attention PRIVATE crispembed-latent-inpaint)
+add_executable(test-latent-inpaint-pipeline EXCLUDE_FROM_ALL tests/test_latent_inpaint_pipeline.cpp)
+target_link_libraries(test-latent-inpaint-pipeline PRIVATE crispembed-latent-inpaint)
+add_executable(test-latent-inpaint-ops EXCLUDE_FROM_ALL tests/test_latent_inpaint_ops.cpp)
+target_link_libraries(test-latent-inpaint-ops PRIVATE crispembed-latent-inpaint)
+add_executable(test-latent-inpaint-graph-unet EXCLUDE_FROM_ALL tests/test_latent_inpaint_graph_unet.cpp)
+target_link_libraries(test-latent-inpaint-graph-unet PRIVATE crispembed-latent-inpaint)
+add_executable(test-inpaint-graph EXCLUDE_FROM_ALL tests/test_inpaint_graph.cpp)
+target_link_libraries(test-inpaint-graph PRIVATE crispembed-inpaint-graph)
+add_executable(test-inpaint-graph-spectral EXCLUDE_FROM_ALL tests/test_inpaint_graph_spectral.cpp)
+target_link_libraries(test-inpaint-graph-spectral PRIVATE crispembed-inpaint-graph crispembed-latent-inpaint)
+
+# Timed full image API calls without reference observers or test archives.
+add_executable(test-inpaint-benchmark EXCLUDE_FROM_ALL tests/test_inpaint_benchmark.cpp)
+target_link_libraries(test-inpaint-benchmark PRIVATE crispembed-latent-inpaint crispembed-inpaint)
+
+# Model hashing keeps the scalar implementation as an independently runnable
+# fallback. Match the loaders' architecture policy in both control binaries.
+add_executable(test-inpaint-sha256-accel EXCLUDE_FROM_ALL tests/test_inpaint_sha256_accel.cpp)
+target_include_directories(test-inpaint-sha256-accel PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+crispembed_apply_arch_flags(test-inpaint-sha256-accel)
+add_executable(test-inpaint-sha256-fallback EXCLUDE_FROM_ALL tests/test_inpaint_sha256_accel.cpp)
+target_include_directories(test-inpaint-sha256-fallback PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_compile_definitions(test-inpaint-sha256-fallback PRIVATE CRISPEMBED_SHA256_DISABLE_INTRINSICS=1)
+crispembed_apply_arch_flags(test-inpaint-sha256-fallback)
 
 add_executable(test-restormer-diff tests/test_restormer_diff.cpp)
 target_link_libraries(test-restormer-diff PRIVATE crispembed)
