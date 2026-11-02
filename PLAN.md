@@ -1,25 +1,18 @@
-## Server batch-client surfaces (saturate review) — 2 November 2026
+## Server usage, load control and OpenAI-shaped OCR — 2 November 2026
 
-Branch `ccr-f3759017-mjj5re`. Prompted by a review of
-[davanstrien/saturate](https://github.com/davanstrien/saturate), a client that
-sends whole datasets through OpenAI-compatible endpoints and tunes its own
-concurrency from `/metrics` queue gauges or bare 429s. Without either signal it
-runs blind and grows in-flight requests to its cap, while every model here
-sits behind one mutex.
-
-Implemented. Everything is opt-in except the accounting fix, and each part has
-its own gate:
+Branch `ccr-f3759017-mjj5re`. These are general server improvements. Every new
+surface is default-off, except the accounting fix, which has an explicit
+opt-out:
 
 - `crispembed_last_prompt_tokens()` C API, plus observed `usage.prompt_tokens`
   on `/v1/embeddings` and `/api/embed` `prompt_eval_count`. These used to be
-  hard-coded `0` and text count. `CRISPEMBED_SERVER_USAGE_TOKENS=0` restores the
-  old values. LFM2/decision/UltraBERT report "not observed" (-1 → 0).
-- `CRISPEMBED_SERVER_METRICS=1` → `GET /metrics`, with crispembed_* series and
-  llama.cpp-dialect aliases. "Running" means holding a model lock, counted by
-  `counted_mutex`.
-- `CRISPEMBED_SERVER_MAX_INFLIGHT=N` → 429 admission on POST. Optional
-  `CRISPEMBED_SERVER_RETRY_AFTER`. There is no header by default, because
-  saturate treats a 429 with Retry-After as a quota and doesn't shrink.
+  hard-coded `0` and text count. `CRISPEMBED_SERVER_USAGE_TOKENS=0` restores
+  the old values. LFM2/decision/UltraBERT report "not observed" (-1 → 0).
+- `CRISPEMBED_SERVER_METRICS=1` → `GET /metrics` (Prometheus, crispembed_*
+  series). "Running" means holding a model lock, counted by `counted_mutex`.
+- `CRISPEMBED_SERVER_MAX_INFLIGHT=N` → 429 admission on POST instead of
+  invisible queueing behind the model lock. `CRISPEMBED_SERVER_RETRY_AFTER`
+  is optional.
 - `CRISPEMBED_SERVER_OPENAI_CHAT=1` → `POST /v1/chat/completions` and
   `GET /v1/models` for the `--ocr` model. Each request takes one base64
   data-URL image, and anything the OCR model can't honour is rejected.
@@ -31,37 +24,29 @@ tests plumbing only and says nothing about quality:
 - `prompt_tokens` 9 equals the `/tokens` id counts 4 + 5.
 - `CRISPEMBED_SERVER_USAGE_TOKENS=0` gives 0, and the vectors are identical
   with the gate on and off.
-- `MAX_INFLIGHT=2` with 24 concurrent clients: 2× 200, 22× bare 429, and the
+- `MAX_INFLIGHT=2` with 24 concurrent clients: 2× 200, 22× 429, and the
   in-flight count scraped from `/metrics` peaks at 2.
-- `MAX_INFLIGHT=1` + `RETRY_AFTER=2` sends `Retry-After: 2`.
+- `RETRY_AFTER=2` sends the header.
 - With the gates off: `/metrics` and `/v1/chat/completions` return 404, and
   12/12 requests return 200.
 - The chat route was checked only for its 503 without `--ocr` and by host
-  parser tests. No OCR model was available here, since Hugging Face is blocked
-  in this environment.
-- Note: httplib caps `application/x-www-form-urlencoded` bodies at 8 KiB, and
-  that is curl `-d`'s default content type. JSON clients must send
-  `Content-Type: application/json`. This behaviour predates the branch.
+  parser tests. No OCR model was available here.
+- httplib caps `application/x-www-form-urlencoded` bodies at 8 KiB, and that is
+  curl `-d`'s default content type. This predates the branch and is documented
+  in the README.
 
 Open, with no quality or throughput claim made yet:
 
 - [ ] Live A/B with a real embedding GGUF: identical vectors with the gates on
-      and off, `prompt_tokens` equal to the `/tokens` id count, and 429 + gauge
-      behaviour under a concurrent client.
-- [ ] Measured saturate run against the server (blind vs `/metrics` vs
-      `MAX_INFLIGHT`): throughput, p50/p95 latency and settled window. Use
-      hosted CI, not a shared host.
+      and off, and `prompt_tokens` equal to the `/tokens` id count.
+- [ ] Measured latency/throughput under concurrent load, with and without
+      `MAX_INFLIGHT` (p50/p95, 429 rate). Use hosted CI, not a shared host.
 - [ ] `/v1/chat/completions` decoded-text parity with `/ocr/model` on the same
       image, prompt and cap, for one prompt-following VLM. OvisOCR2 is served
       through the orchestrator selector and is not reachable from this route.
 - [ ] Prompt-token count for OCR. This needs an ABI accessor, and until it
       exists the route reports 0 instead of an estimate.
-- [ ] Optional: upstream a `crispembed` gauge dialect to saturate so its
-      advisor names the right flag (`CRISPEMBED_SERVER_MAX_INFLIGHT`).
-- [ ] Separate, not started: evaluate saturate's storage contract (id-hash
-      sharding, append-only parts, one durable error row per input) for CI
-      evaluation receipts. It must sit alongside the frozen receipts and must
-      not replace them.
+- [ ] Rust/Dart wrappers for `crispembed_last_prompt_tokens()`.
 
 ## GOT-OCR2 F16 artifact — 2 November 2026 (`fix/got-ocr2-f16`)
 

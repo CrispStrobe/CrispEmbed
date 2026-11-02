@@ -157,10 +157,7 @@ DeepSeek-OCR2, …) run the task prompt they were trained on and warn that the
 option is ignored. Unknown command-line options now warn instead of being
 silently swallowed as input text.
 
-**Batch clients: usage, load signals and OpenAI-shaped OCR.** Clients that push
-whole datasets through an endpoint and tune their own concurrency (for example
-[saturate](https://github.com/davanstrien/saturate)) need token accounting and a
-load signal:
+**Token usage, load control and OpenAI-shaped OCR.**
 
 - `/v1/embeddings` `usage.prompt_tokens` (and `/api/embed`'s
   `prompt_eval_count`) report the tokenizer ids the model actually saw,
@@ -171,14 +168,10 @@ load signal:
 - `CRISPEMBED_SERVER_METRICS=1` adds `GET /metrics` (Prometheus text):
   `crispembed_requests_running` (holding a model lock), `_waiting`, `_inflight`,
   admitted/rejected/completed counters, request seconds and reported tokens.
-  `llamacpp:requests_processing` / `llamacpp:requests_deferred` repeat
-  running/waiting under llama.cpp server's names, so clients that already parse
-  that dialect get queue feedback with no change.
 - `CRISPEMBED_SERVER_MAX_INFLIGHT=N` answers POSTs beyond N in flight with
-  `429` before any model is touched. GET probes are never capped. The 429 has no
-  `Retry-After` by default: adaptive clients read a bare 429 as saturation and
-  shrink their window, but read one that names a wait as a paced quota and keep
-  it. Set `CRISPEMBED_SERVER_RETRY_AFTER=S` if you want the header anyway.
+  `429` before any model is touched, instead of queueing them invisibly behind
+  the model lock. GET probes are never capped. `CRISPEMBED_SERVER_RETRY_AFTER=S`
+  adds a `Retry-After` header to those 429s.
 - `CRISPEMBED_SERVER_OPENAI_CHAT=1` adds `POST /v1/chat/completions` and
   `GET /v1/models` for the `--ocr` model. Each request needs the last user
   message to carry exactly one `image_url` as a base64 data URL; its text

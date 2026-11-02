@@ -1,22 +1,20 @@
 // load_control.h — admission, load gauges and Prometheus text for
 // crispembed-server.
 //
-// Why this exists: batch clients that adapt their concurrency to the server
-// (davanstrien/saturate, and anything else that reads queue gauges or 429s)
-// need one of two signals. Without either, they run "blind" and keep raising
-// the number of requests in flight; on this server every model sits behind one
-// mutex, so the extra requests just queue inside httplib's thread pool and
-// latency grows without bound.
+// Why this exists: every model on this server sits behind one mutex, so a
+// burst of concurrent requests queues invisibly inside httplib's thread pool
+// and latency grows without bound. Operators had no way to see that queue and
+// no way to bound it. Both knobs below are generic (Prometheus scrape, HTTP
+// 429) and default off.
 //
 //   * CRISPEMBED_SERVER_METRICS=1   — GET /metrics, Prometheus text. Default off.
 //   * CRISPEMBED_SERVER_MAX_INFLIGHT=N (N >= 1) — POST requests beyond N in
 //     flight are rejected with 429 before they read a model. Unset, empty, 0
 //     or unparsable = no cap (historical behaviour).
 //   * CRISPEMBED_SERVER_RETRY_AFTER=S — add `Retry-After: S` to those 429s.
-//     Default: no header. Deliberate: saturate (and TEI's convention) reads a
-//     bare 429 as saturation and shrinks its window, but reads a 429 that names
-//     its own wait as a paced quota and does NOT shrink. For a compute-bound
-//     server the bare 429 is the right signal.
+//     Default: no header. A bare 429 says "overloaded, back off"; a
+//     Retry-After additionally names a wait, which callers commonly treat as
+//     a fixed pacing quota rather than load. Opt in when that is what you want.
 //
 // Gauge semantics (exactly what is observed, nothing estimated):
 //   running  = requests currently holding at least one model mutex
@@ -153,12 +151,6 @@ inline std::string rejection_body(int64_t max_inflight) {
 }
 
 // Prometheus text exposition (version 0.0.4).
-//
-// The `llamacpp:` lines repeat running/waiting under llama.cpp server's gauge
-// names (requests_processing / requests_deferred have the same meaning). Batch
-// clients that already understand that dialect — saturate among them — then
-// get queue feedback from CrispEmbed with no client change. The crispembed_*
-// series are the canonical ones.
 inline std::string prometheus_text(const counters & c, const config & cfg) {
     const int64_t inflight = c.inflight.load(std::memory_order_relaxed);
     const int64_t running = c.running.load(std::memory_order_relaxed);
@@ -190,9 +182,6 @@ inline std::string prometheus_text(const counters & c, const config & cfg) {
            c.prompt_tokens_total.load(std::memory_order_relaxed));
     metric("crispembed_completion_tokens_total", "counter", "Completion tokens reported in API usage.",
            c.completion_tokens_total.load(std::memory_order_relaxed));
-    // llama.cpp-dialect aliases (see above).
-    metric("llamacpp:requests_processing", "gauge", "Alias of crispembed_requests_running.", running);
-    metric("llamacpp:requests_deferred", "gauge", "Alias of crispembed_requests_waiting.", waiting);
     return o.str();
 }
 

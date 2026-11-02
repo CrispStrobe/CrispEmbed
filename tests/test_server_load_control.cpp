@@ -3,8 +3,7 @@
 //
 // No model, no ggml, no httplib. Covers: admission cap and counters, the
 // thread-local "running" depth (a request holding two model locks counts once),
-// env knob parsing (0 / junk = off), the Prometheus exposition (canonical and
-// llama.cpp-dialect names), strict base64 / data-URL decoding with a size cap,
+// env knob parsing (0 / junk = off), the Prometheus exposition, strict base64 / data-URL decoding with a size cap,
 // and the chat request contract (one image, last user message, explicit
 // rejections instead of silent drops).
 
@@ -168,8 +167,7 @@ static void test_prometheus() {
     check("duration seconds", contains(t, "\ncrispembed_request_duration_seconds_sum 1.234567\n"));
     check("tokens", contains(t, "\ncrispembed_prompt_tokens_total 40\n") &&
                         contains(t, "\ncrispembed_completion_tokens_total 7\n"));
-    check("llama.cpp dialect aliases",
-          contains(t, "\nllamacpp:requests_processing 1\n") && contains(t, "\nllamacpp:requests_deferred 2\n"));
+    check("no foreign-dialect series", !contains(t, "llamacpp"));
     check("TYPE lines", contains(t, "# TYPE crispembed_requests_admitted_total counter\n"));
     c.duration_us_total = 5;
     check("sub-second padding",

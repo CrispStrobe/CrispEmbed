@@ -2500,9 +2500,9 @@ int main(int argc, char ** argv) {
     svr.Post("/math/ocr", ocr_model_handler); // deprecated alias
 
     // POST /v1/chat/completions — OpenAI-shaped OCR for the --ocr model.
-    // Opt-in: CRISPEMBED_SERVER_OPENAI_CHAT=1. Lets OpenAI-compatible batch
-    // clients (saturate, the OpenAI SDKs, vLLM OCR recipes) run a dataset of page
-    // images through a CrispEmbed OCR model unchanged. Exactly one base64 data-URL
+    // Opt-in: CRISPEMBED_SERVER_OPENAI_CHAT=1. Lets any OpenAI-compatible client
+    // (the official SDKs, LiteLLM, vLLM-style OCR tooling) send page images to a
+    // CrispEmbed OCR model without an adapter. Exactly one base64 data-URL
     // image per request; the user text parts become the per-request prompt; see
     // examples/server/openai_compat.h for what is rejected and why. The decode is
     // the same crispembed_ocr_model_recognize call /ocr/model makes, with the same

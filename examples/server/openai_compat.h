@@ -1,8 +1,8 @@
 // openai_compat.h — request parsing for crispembed-server's opt-in
 // OpenAI-shaped OCR route, POST /v1/chat/completions.
 //
-// Batch clients (saturate, the OpenAI SDKs, vLLM-style OCR recipes) send page
-// images as chat messages:
+// OpenAI-compatible clients (the official SDKs, LiteLLM, vLLM-style OCR
+// tooling) send page images as chat messages:
 //
 //   {"model": "...", "max_tokens": 1024,
 //    "messages": [{"role": "user", "content": [
