@@ -1,0 +1,164 @@
+{
+  "schema": "crispembed-ovis-final-initial-resource-review-v1",
+  "run": 40710484861,
+  "source": "8856191b12766b0c28a88ba6d33c93ab754c717a",
+  "review_completed": true,
+  "whole_run_qualified": false,
+  "scope": "Old integrated source, not current portfolio runtime",
+  "first_f16_artifact": {
+    "id": 12547361841,
+    "bytes": 1679537,
+    "sha256": "e99344ae5b0c54bc8d3d6db680a8431e6829c9b75e755049d20ab1632534c90f"
+  },
+  "report_identities": {
+    "first-f16-frozen-quality.json": {
+      "bytes": 309256,
+      "sha256": "648b2c252b08e1e56008fe81b2ce5aa9c1390eaf9cf93b7b8e5699303cf0925e"
+    },
+    "gate0__ovisocr2-quality.json": {
+      "bytes": 309746,
+      "sha256": "cc683c994eb144cf51ee15f98086d4a7f6c9c55365542a43c7a52c0486cf973a"
+    },
+    "gate1__ovisocr2-quality.json": {
+      "bytes": 179556,
+      "sha256": "ebd4ecb4d8cff5090b9645a6269bbef99fdffb28288a21b63f968380f8d88e1e"
+    }
+  },
+  "gate0": {
+    "scope_passed": true,
+    "release_qualified": false,
+    "gate": 0,
+    "cases": {
+      "dev-hello": {
+        "token_count": 9,
+        "selected_confidences_and_mean_exact": true,
+        "max_selected_confidence_abs_drift": 0.0,
+        "mean_confidence_abs_drift": 0.0
+      },
+      "dev-invoice": {
+        "token_count": 14,
+        "selected_confidences_and_mean_exact": true,
+        "max_selected_confidence_abs_drift": 0.0,
+        "mean_confidence_abs_drift": 0.0
+      },
+      "dev-menu": {
+        "token_count": 10,
+        "selected_confidences_and_mean_exact": true,
+        "max_selected_confidence_abs_drift": 0.0,
+        "mean_confidence_abs_drift": 0.0
+      },
+      "dev-section": {
+        "token_count": 6,
+        "selected_confidences_and_mean_exact": true,
+        "max_selected_confidence_abs_drift": 0.0,
+        "mean_confidence_abs_drift": 0.0
+      },
+      "hold-batch": {
+        "token_count": 9,
+        "selected_confidences_and_mean_exact": true,
+        "max_selected_confidence_abs_drift": 0.0,
+        "mean_confidence_abs_drift": 0.0
+      },
+      "hold-paid": {
+        "token_count": 10,
+        "selected_confidences_and_mean_exact": true,
+        "max_selected_confidence_abs_drift": 0.0,
+        "mean_confidence_abs_drift": 0.0
+      },
+      "hold-date": {
+        "token_count": 17,
+        "selected_confidences_and_mean_exact": true,
+        "max_selected_confidence_abs_drift": 0.0,
+        "mean_confidence_abs_drift": 0.0
+      },
+      "hold-code": {
+        "token_count": 13,
+        "selected_confidences_and_mean_exact": true,
+        "max_selected_confidence_abs_drift": 0.0,
+        "mean_confidence_abs_drift": 0.0
+      },
+      "historical-receipt": {
+        "token_count": 882,
+        "selected_confidences_and_mean_exact": true,
+        "max_selected_confidence_abs_drift": 0.0,
+        "mean_confidence_abs_drift": 0.0
+      },
+      "two-column-page": {
+        "token_count": 697,
+        "selected_confidences_and_mean_exact": true,
+        "max_selected_confidence_abs_drift": 0.0,
+        "mean_confidence_abs_drift": 0.0
+      },
+      "inventory-table": {
+        "token_count": 174,
+        "selected_confidences_and_mean_exact": true,
+        "max_selected_confidence_abs_drift": 0.0,
+        "mean_confidence_abs_drift": 0.0
+      }
+    },
+    "token_count": 1841,
+    "confidence_policy": "Gate0 exact; gate1 finite with mean validation and measured drift, no new confidence tolerance."
+  },
+  "gate1": {
+    "completed_cases": 8,
+    "partial_cases": {
+      "dev-hello": {
+        "frozen_inputs_ids_text_stops_caps_exact": true,
+        "tokens": 9,
+        "max_confidence_absolute": 2.980000000096794e-07
+      },
+      "dev-invoice": {
+        "frozen_inputs_ids_text_stops_caps_exact": true,
+        "tokens": 14,
+        "max_confidence_absolute": 0.0
+      },
+      "dev-menu": {
+        "frozen_inputs_ids_text_stops_caps_exact": true,
+        "tokens": 10,
+        "max_confidence_absolute": 0.0
+      },
+      "dev-section": {
+        "frozen_inputs_ids_text_stops_caps_exact": true,
+        "tokens": 6,
+        "max_confidence_absolute": 5.999999996841865e-08
+      },
+      "hold-batch": {
+        "frozen_inputs_ids_text_stops_caps_exact": true,
+        "tokens": 9,
+        "max_confidence_absolute": 5.999999996841865e-08
+      },
+      "hold-paid": {
+        "frozen_inputs_ids_text_stops_caps_exact": true,
+        "tokens": 10,
+        "max_confidence_absolute": 0.0
+      },
+      "hold-date": {
+        "frozen_inputs_ids_text_stops_caps_exact": true,
+        "tokens": 17,
+        "max_confidence_absolute": 0.0
+      },
+      "hold-code": {
+        "frozen_inputs_ids_text_stops_caps_exact": true,
+        "tokens": 13,
+        "max_confidence_absolute": 0.0
+      }
+    },
+    "timeout_commands": {
+      "f16-historical-receipt": {
+        "exit_code": null,
+        "timed_out": true,
+        "log": "f16-historical-receipt.log",
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "wall_seconds": 1800.139724975
+      }
+    },
+    "completed": false,
+    "numerical_failure_established": false,
+    "remaining_cases": [
+      "historical-receipt",
+      "two-column-page",
+      "inventory-table"
+    ]
+  },
+  "disposition": "Preserve terminal timeout and all initial reports. New final source must be explicitly redeclared before full14/11 replay, using bounded3600s document-only F16 audit resource budget; original token caps, scoring, outputs and numerical gates unchanged."
+}

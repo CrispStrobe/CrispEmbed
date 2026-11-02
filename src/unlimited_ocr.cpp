@@ -218,7 +218,7 @@ struct uocr_ctx {
     // functions on the same inputs, so bit-identical to recomputing; the projector also runs
     // its per-token linear on n_threads (each token's dot order unchanged). On by default;
     // CRISPEMBED_UNLIMITED_OCR2_VISION_CACHE=0 restores the per-call recomputation (A/B).
-    bool vision_cache = true;
+    bool vision_cache = false;
     std::map<const ggml_tensor *, std::vector<float>> f32_cache;
     std::map<std::string, std::vector<float>> derived_cache;
 };
@@ -3799,7 +3799,6 @@ unlimited_ocr_context * unlimited_ocr_init(const char * model_path, int n_thread
     auto * c = new unlimited_ocr_context;
     auto & ctx = c->inner;
     ctx.n_threads = n_threads;
-    ctx.vision_cache = !core_env::explicitly_off("CRISPEMBED_UNLIMITED_OCR2_VISION_CACHE");
 
     if (const char * ref = getenv("UOCR_REF")) ctx.diff_ref_path = ref;
 
@@ -3808,6 +3807,10 @@ unlimited_ocr_context * unlimited_ocr_init(const char * model_path, int n_thread
         delete c;
         return nullptr;
     }
+
+    // Only the separately measured second-generation path opts into this
+    // cache and row-parallel projector. Keep the first-generation route intact.
+    ctx.vision_cache = ctx.m.lhp.variant == 2 && !core_env::explicitly_off("CRISPEMBED_UNLIMITED_OCR2_VISION_CACHE");
 
     ctx.backend = crispasr_init_gpu_backend();
     if (!ctx.backend) {

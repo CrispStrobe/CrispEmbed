@@ -1,0 +1,101 @@
+{
+  "schema": "crispembed-ultrabert-q4k-v1",
+  "source": "87eed2035eecc1f5382d779e6fb48590f8bfb87a",
+  "completed": false,
+  "original_rerun": false,
+  "arms": {},
+  "qualified": [],
+  "release_qualified": false,
+  "reference_controls": {
+    "same": {
+      "exit": 0,
+      "report": {
+        "schema": "crispembed-moedern-native-ref-v2",
+        "status": "passed",
+        "max_absolute_budget": 0.002,
+        "minimum_row_cosine": 0.99999,
+        "stages": [
+          {
+            "name": "control",
+            "ggml_shape": [
+              2,
+              2
+            ],
+            "row_axis": 0,
+            "found": true,
+            "elements": 4,
+            "passed": true,
+            "max_absolute": 0,
+            "mean_absolute": 0,
+            "rms": 0,
+            "mean_error": 0,
+            "min_row_cosine": 1,
+            "original_l2": 1.4142135381698608,
+            "native_l2": 1.4142135381698608,
+            "original_min": 0,
+            "original_max": 1,
+            "original_abs_min": 0,
+            "original_abs_max": 1,
+            "native_min": 0,
+            "native_max": 1,
+            "native_abs_min": 0,
+            "native_abs_max": 1
+          }
+        ]
+      }
+    },
+    "bad-row": {
+      "exit": 1,
+      "report": {
+        "schema": "crispembed-moedern-native-ref-v2",
+        "status": "numeric_rejection",
+        "max_absolute_budget": 0.002,
+        "minimum_row_cosine": 0.99999,
+        "stages": [
+          {
+            "name": "control",
+            "ggml_shape": [
+              2,
+              2
+            ],
+            "row_axis": 0,
+            "found": true,
+            "elements": 4,
+            "passed": false,
+            "max_absolute": 1,
+            "mean_absolute": 0.5,
+            "rms": 0.7071067690849304,
+            "mean_error": 0,
+            "min_row_cosine": 0,
+            "original_l2": 1.4142135381698608,
+            "native_l2": 1.4142135381698608,
+            "original_min": 0,
+            "original_max": 1,
+            "original_abs_min": 0,
+            "original_abs_max": 1,
+            "native_min": 0,
+            "native_max": 1,
+            "native_abs_min": 0,
+            "native_abs_max": 1
+          }
+        ]
+      }
+    },
+    "wrong-shape": {
+      "exit": 2,
+      "report": {
+        "status": "structural_rejection",
+        "error": "Exact F32 shape/element count required"
+      }
+    }
+  },
+  "preparation": {
+    "id": 12673961367,
+    "name": "ultrabert-scifact-prepared-40372423343",
+    "size_in_bytes": 17382270,
+    "digest": "sha256:09cdc1503b8f0fa6cba194d6941c7b65c69151a4183eabe88747596a21d19ce7",
+    "expires_at": "2027-01-24T17:50:48Z"
+  },
+  "originals": [],
+  "error": "original producer differs"
+}

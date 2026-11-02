@@ -1,0 +1,65 @@
+{
+  "schema": "crispembed-ocr-rgb-form-v1",
+  "base": "b3ed607d02bbd10ec042777870491bf9f7a334e8",
+  "page_id": "en-form-economic-journal-67",
+  "carried_pages": 19,
+  "model_execution": false,
+  "cause_established": false,
+  "initial_artifact": {
+    "id": 12856911644,
+    "bytes": 89401,
+    "sha256": "4e1e44dee1f5f9a691c539cd25013837e0cb1c7572e9d6ce333c64de71ce66f5"
+  },
+  "retained_original": {
+    "kernel_slug": "crispembed-ocr-form-ref-minicpm",
+    "version_label": "v1",
+    "source": "d6f435c78abb650a2b57e9012923940fbb54a0ef",
+    "submitted_script_bytes": 10794,
+    "submitted_script_sha256": "9689edf6a03b99886e73f5e1c2c06ca059ece22bfc32f346e414645198bcc765",
+    "report_bytes": 14277,
+    "report_sha256": "09d381d00064fb52f00ffeb4276957076d0233aa8da7157518a207874e08d8e9",
+    "image_member": "ocr-real-scans/input-images/en-form-economic-journal-67.jpg",
+    "image": {
+      "bytes": 709225,
+      "sha256": "4d6e0d71fe7efdbce4947ccadc4dac2b15743026ea3bac9d84a45ef959a7051a"
+    }
+  },
+  "protected_sha256": {
+    ".github/workflows/ocr-rgb-input-audit-v1.yml": "534dcd6c652ac55db47b077e8861ab897813465539eeeed064e2d913be2ca7de",
+    ".gitmodules": "7342d895b5441ebc28e387cb3686aa93207dfc23852bb7b2a3ce15add7fa7f45",
+    "CMakeLists.txt": "15c9e7b3c9e7b0871c0f731a3b1957f92dd5c11350d915aab8ab35eba02dd296",
+    "docs/ocr-real-scans-v1.json": "0857bffc6f4a3616292db255d7f3f34c0b58a52a7286a2791cb00b77499c7700",
+    "docs/ocr-rgb-input-v1.json": "6f0621caa4c3332937a35dc6fd63ec89ab6c4438a79056bbdac89684d028f320",
+    "docs/ocr-rgb-input-v1.md": "73f8ea4be417539eeb6af748982ed78aea98e740c56db086f38dba10f59cb600",
+    "docs/unlimited-ocr2-source.json": "73b311d5e834a789190e0c5426a2f4431f028cdf8650b9debde0cf8705a0ae59",
+    "examples/cli/main.cpp": "6d4e9ab857f038651e1355cb8c6aa507f4e33f8664ffe1e6cf95c20b251484d4",
+    "src/core/clean_exit.h": "2528210865cfc6aa8f2a389526aebae46e836f6bca88c00e4eabaedf6c83fdd6",
+    "src/core/json.h": "7e72a6359897e9397e5bee3edf7563476fc4bd41516bf5245a16df50dc54c589",
+    "src/image_preprocess.cpp": "ee570badb7c3fff550dcc113a3efb4aeb8555acf297ffad80c072aaa8fa1ee38",
+    "src/image_preprocess.h": "2739104748629e824b0dcbdf1fc60eb7d185e7d2b7153f61ae8a7832e3382e61",
+    "src/minicpm_ocr.cpp": "ae0f08f314e245edbf1186a2443b657d59a385ee26a254fe3b4c6622e13067b6",
+    "src/scan_cleanup.h": "f783fa4ad588c1f84495d64ec6336922827b47ab2cc6814ab3c3bac2e9422a1d",
+    "src/unlimited_ocr.cpp": "57df29c381a9438667c9dae87b61ece42e5c4be29001966db6608de7434cdac5",
+    "tests/ocr-rgb-input/CMakeLists.txt": "0adb5b7eaf1bb15be3e20f21c1cd711db29359fabc068161aa5fd01df1a438be",
+    "tests/ocr-rgb-input/probe.cpp": "2f45e5a050e3d5ef19bd9d49c2dcd317f6fa7bc90433339a40cdf156b8070e32",
+    "tests/test_ocr_rgb_input.py": "954d44674999b2abbccf016b1cd25cda70fb8e60d2041183ef1ecec86ed5990a",
+    "tools/ci_process.py": "f482067438e5d5cec00436f4c54c3636e0b8cf886620feaed4ea8e0ab4e6eed9",
+    "tools/kaggle/ocr-real-scans/receipt.py": "deee808b5b9330231bdd45f552007e03eddb936213b5df9d66283b8945773c0a",
+    "tools/kaggle/ocr-real-scans/ref_worker.py": "dc6bdf811ab03935dcacbea7a5bb817574760cdfc4ddc5953a6ab6331225f390",
+    "tools/ocr-rgb-input/audit.py": "8ce37ab914e6672c5ca4cf378329d3463d1c75f3494f77d1db80aa5b4b59acd7",
+    "tools/ocr-rgb-input/contract.py": "c10f63467b0dbdf69c6357234fc64e80e3d0b3a631896b6379f1e9edc2bd456c",
+    "tools/ocr-rgb-input/metrics.py": "32ef47d4b351406f9be1b81e0f120bb75b7d44eee67dfef8745b09289c767510",
+    "tools/ocr-rgb-input/requirements.lock": "03af756700d200aca6023e38dc86393b15fb19726bd50d76be46b6924e9d79a4"
+  },
+  "owned_sha256": {
+    ".github/workflows/ocr-rgb-form-v1.yml": "4ffd4aa048aadab96c4dd097fc4e41fefcaec37e111097d47e0573a67fa7fdcf",
+    "docs/ocr-rgb-form-v1.md": "69820548fe384a11003e0c4a85175247c71d6a50a825e7ea7eae798789f206fe",
+    "tests/results/ocr-real-scans/rgb-input-initial.json": "60e9ee8588ded0a4ff885c1836c17337573fbfdc271a191108e12cf75d1267f5",
+    "tests/test_ocr_rgb_form.py": "4e726bea924777a58547042069a9450ffbfb931aa38a454d3b7fad0e5d449abc",
+    "tools/kaggle/ocr-real-scans/kernel.py": "387cd4c75d94f41ff172dbaad51bb777fddacd744ed4acc1f9624d06a7b5eaaf",
+    "tools/ocr-real-scans/retained_inputs.py": "6f370dc0d6bf77d53f0bb51aa61700235048217e350f4882f0cf9a077dcdad8c",
+    "tools/ocr-rgb-input/form_audit.py": "3e7812673d660c4e10528d6c00c9d2d37c1cc4bb227debfecbd8883035356609",
+    "tools/ocr-rgb-input/form_contract.py": "a73716e8457bb97014fb838cdfc91dbdb515d8dc30a3c1d2a96532ab9b637aa9",
+    "tools/ocr-rgb-input/form_provider.py": "814c46733da28b2d99869c4f3ea9f8185c73897b473e960eee1e370b2d4c4ee3"
+  }
+}

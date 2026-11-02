@@ -1,0 +1,157 @@
+{
+  "schema": "qwen35-ocr-source-pin-amendments/v1",
+  "scope": "Re-pins of source bytes frozen in the q8/q8-q6/q4 inventory-table quantization receipts. The receipts, their runtime_sources/diagnostic_sources digests and every quality/numerical result are unchanged; this file only lets the contract accept later reviewed, default-preserving edits. No inference was repeated and no model, gold, budget or default changed.",
+  "tool": "tools/qwen35_source_pins.py",
+  "initial_failure": {
+    "runs": [
+      "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41416111941",
+      "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41416124827"
+    ],
+    "error": "ValueError: Source bytes changed: src/qwen35_math.h (tests/test_qwen35_quality_audit.py, 2 errors)",
+    "last_success": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38967869242",
+    "cause": "The workflow only triggered on its own paths, so source edits after 2026-10-16 (#80, #81, 59603adf, quantizer family work) were never checked against the frozen pins. The auditor stops at the first mismatch; five pinned files had drifted."
+  },
+  "amendments": [
+    {
+      "path": "src/qwen35_math.h",
+      "frozen_sha256": "ae542fa73d48dc622fe0e5813ca49fc9616a343fc9d3ba2a927e2a82d7908357",
+      "receipt_commits": [
+        "8bf5542423f0809a4a2eec4cc170deb0547e7dce",
+        "cbd3852f5dd697f275d3094d101b50e9917350a4",
+        "f43c4b7714da91ad7479120bb3005817c7ae6aed"
+      ],
+      "repins": [
+        {
+          "from_sha256": "ae542fa73d48dc622fe0e5813ca49fc9616a343fc9d3ba2a927e2a82d7908357",
+          "to_sha256": "0696f1781ce2cb49fc639dcc405262ffc1beb63bd1549aa571391f6b30e06d96",
+          "to_blob": "6e4cb02f0b10efce404ff41b455a55039a1c5037",
+          "recorded_at_commit": "ac5c30c491f26acc5bb66082e817f6cc0ce6cdf8",
+          "recorded": "2026-11-02",
+          "changed_by": [
+            "5197e86d2ee8dea30f566e1c01cad3d409be8d5d Add bounded decoder weight reuse behind an explicit opt-in (#81)"
+          ],
+          "reason": "PR #81 (5197e86d) forward-declares converted_weight_cache and adds a defaulted 'converted_weight_cache * = nullptr' parameter to project_cpu. Declaration-only; default callers pass nullptr, so the frozen arithmetic is unchanged."
+        }
+      ]
+    },
+    {
+      "path": "src/qwen35_linear.cpp",
+      "frozen_sha256": "9f4c99784d6bcc59b4800f1ebcc5b649dda16e3c77dbae1da7f947bf06141fb0",
+      "receipt_commits": [
+        "8bf5542423f0809a4a2eec4cc170deb0547e7dce",
+        "cbd3852f5dd697f275d3094d101b50e9917350a4",
+        "f43c4b7714da91ad7479120bb3005817c7ae6aed"
+      ],
+      "repins": [
+        {
+          "from_sha256": "9f4c99784d6bcc59b4800f1ebcc5b649dda16e3c77dbae1da7f947bf06141fb0",
+          "to_sha256": "de90487fc6d9ce016428935129e4b839c8c53e09fd4c0a39d33702cffaed4a55",
+          "to_blob": "b00bd6f03339fb520345bbf976bc9ac719fa0b52",
+          "recorded_at_commit": "ac5c30c491f26acc5bb66082e817f6cc0ce6cdf8",
+          "recorded": "2026-11-02",
+          "changed_by": [
+            "5197e86d2ee8dea30f566e1c01cad3d409be8d5d Add bounded decoder weight reuse behind an explicit opt-in (#81)"
+          ],
+          "reason": "PR #81 (5197e86d) adds the bounded converted-weight cache. converted_weight_cache::get returns nullptr unless core_env::on(CRISPEMBED_QWEN35_WEIGHT_CACHE) (default off); with a null cache project_cpu keeps scratch_elements == elements and the original tensor_floats materialization, so default numerics are unchanged. Cache on/off was byte exact on all 1,662 OvisOCR2 vector pairs (tests/results/qwen35-ocr/ovisocr2-weight-cache.json)."
+        }
+      ]
+    },
+    {
+      "path": "src/qwen35_ocr.cpp",
+      "frozen_sha256": "2fcce1e57bae0d360a1d6d3857677d94055741ff095d9a916dedb6aef3258e95",
+      "receipt_commits": [
+        "8bf5542423f0809a4a2eec4cc170deb0547e7dce",
+        "cbd3852f5dd697f275d3094d101b50e9917350a4",
+        "f43c4b7714da91ad7479120bb3005817c7ae6aed"
+      ],
+      "repins": [
+        {
+          "from_sha256": "2fcce1e57bae0d360a1d6d3857677d94055741ff095d9a916dedb6aef3258e95",
+          "to_sha256": "01e67496cefb5b1063c1c601f9a77fb3945e8400f396bf800f0fd84faaa8484f",
+          "to_blob": "1d214e026d4bd71a7f370c48bd21dc6194a41092",
+          "recorded_at_commit": "ac5c30c491f26acc5bb66082e817f6cc0ce6cdf8",
+          "recorded": "2026-11-02",
+          "changed_by": [
+            "5197e86d2ee8dea30f566e1c01cad3d409be8d5d Add bounded decoder weight reuse behind an explicit opt-in (#81)",
+            "a8912d73f01eaaf28cbf4b057a9a0e0837f24700 Add gated OvisOCR3 diagnostics and complete bounded Ovis follow-up audits (#80)",
+            "3c70883ea4812a7cfd7564a9825c0963c9067075 fix: reject Ovis custom prompts and wrong pipeline profiles at entry",
+            "14fd9d5d5a4ca55556ec1413174a1d5ab3b372e1 feat: prepare gated Ovis native inference and full-layer parity controls"
+          ],
+          "reason": "Ovis follow-ups (14fd9d5d, 3c70883e, #80 a8912d73) and PR #81 (5197e86d). GGUF format 2/3 load only behind CRISPEMBED_OVISOCR2_/OVISOCR3_ FRONTEND+INFERENCE gates; for the format-1 LightOn model inference_enabled() reduces to the existing CRISPEMBED_QWEN35_OCR gate, image_limits() returns the previous default {}, and is_stop() uses stops {248046} == eos(). The weight cache pointer is nullptr unless CRISPEMBED_QWEN35_WEIGHT_CACHE is on. Default LightOn path unchanged."
+        }
+      ]
+    },
+    {
+      "path": "src/qwen35_vision.cpp",
+      "frozen_sha256": "e41acf49f15d05e55dc2faf158e82b95e3d73c72a968a646a875b569991357db",
+      "receipt_commits": [
+        "8bf5542423f0809a4a2eec4cc170deb0547e7dce",
+        "cbd3852f5dd697f275d3094d101b50e9917350a4",
+        "f43c4b7714da91ad7479120bb3005817c7ae6aed"
+      ],
+      "repins": [
+        {
+          "from_sha256": "e41acf49f15d05e55dc2faf158e82b95e3d73c72a968a646a875b569991357db",
+          "to_sha256": "bc479ff5438138f55815769c59776bd761e2d6189182c137ed2d8fa82b01caa3",
+          "to_blob": "b2004429fd9579074372fa4eef2923904b2784ed",
+          "recorded_at_commit": "ac5c30c491f26acc5bb66082e817f6cc0ce6cdf8",
+          "recorded": "2026-11-02",
+          "changed_by": [
+            "59603adfe4497dc2078fd0942a20966edf63f6b1 Probe source-matching interpolation behind an explicit default-off gate",
+            "a8912d73f01eaaf28cbf4b057a9a0e0837f24700 Add gated OvisOCR3 diagnostics and complete bounded Ovis follow-up audits (#80)"
+          ],
+          "reason": "#80 (a8912d73) and 59603adf. Patch bound is ovisocr2_patch_limit(), which stays 1024 unless all four Ovis2 large-image gates are on; the position interpolation was factored into interpolation_taps/interpolate_position, whose default branch (CRISPEMBED_QWEN35_VISION_SOURCE_INTERPOLATION off) keeps the same linspace coordinates, the same (1-dr)(1-dc) weights and the same ((a+b)+e)+f order. Default numerics unchanged."
+        }
+      ]
+    },
+    {
+      "path": "tools/quantize.cpp",
+      "frozen_sha256": "1e84e8f53439bc430e4c7838087e9fe53dfe9fdf963e90fe3b0789373fe46a8e",
+      "receipt_commits": [
+        "8bf5542423f0809a4a2eec4cc170deb0547e7dce",
+        "cbd3852f5dd697f275d3094d101b50e9917350a4",
+        "f43c4b7714da91ad7479120bb3005817c7ae6aed"
+      ],
+      "repins": [
+        {
+          "from_sha256": "1e84e8f53439bc430e4c7838087e9fe53dfe9fdf963e90fe3b0789373fe46a8e",
+          "to_sha256": "032c36bc3aab0875cca693c975169abe75670cbbc5a7f26b9bfeb8b8913ea980",
+          "to_blob": "cc1cadc2cf7054de4cd19281b5bded26364d9cd4",
+          "recorded_at_commit": "ac5c30c491f26acc5bb66082e817f6cc0ce6cdf8",
+          "recorded": "2026-11-02",
+          "changed_by": [
+            "0ba57b65290bfbd5186c2e00ccb5040aa04fb6b9 Permissive inpainting engines to main: MI-GAN512, Moebius, PixelHacker, SDXL VAE (no LaMa)",
+            "afd42d2f94b8c15ee6cd0a594adee7be1ca4384c Merge remote-tracking branch 'origin/feat/metal-migan' into feat/teleocr",
+            "efc5b3e98e6de150f3bdc21ad3f2637d7ef09a0a MI-GAN: weight dequant gate, Q4_K sensitive-layer Q8_0 exceptions, opt-in tile batching, owner acceptance metrics",
+            "09d55e5613b437faab01ed9ab2ca071f1968c6b5 D-FINE quantized recipes: quantizer records conv shapes (layout.qshape.*), loader dequantizes to F32; CRISPEMBED_QUANTIZE_DFINE_CONV=keep|f16; hosted F16/quant lane; order-insensitive selected-region cosine",
+            "1aa443d580662c2023d724a07732ba8c30d78d87 quantize: opt-in CRISPEMBED_QUANTIZE_OXR_VISION=f16 (F16 SigLIP2 tower for any target type); hosted lane vision= arg",
+            "4c90361e98da0aea44b190d9b98d408ee683a1f7 MI-GAN: gated GPU (Metal) execution, batched tiles, F16/Q8_0/Q4_K pointwise containers",
+            "23b1d946445c09280bf2622a3899c79bed3dbc79 OXR/D-FINE GPU: on-GPU F32 attention, D-FINE PREC_F32 matmuls, gated large-tensor quant policy, A/B tools",
+            "67366954cc85791e7e8de766cf45d89232817708 Quantizer: OXR vision tower F16 at the Q8_0 tier (as MinerU/InternVL2)",
+            "35523e1359a9419ac7a86aa6d467fc4456f3a82d Quantizer: keep OXR's 4D patch-embedding shape (hosted Q8_0/Q4_K failed to load)",
+            "f4579dbaa10c20c80a2b15a18f7abf892e9cb860 OXR quantized variants: loader accepts quantized attention/MLP matrices, quantizer keeps the rest F32",
+            "1013aca00b3b0eefe9e080cbd7777351c355d31b Keep MinerU's vision tower F16 at the Q8_0 target, like InternVL2; drop the runtime gate",
+            "282a648a5ff8e3a75149b1a3d38015f4c1967c9f Apply clang-format to TeleOCR integration edits",
+            "58fe52aacc66cb80e18da87d370be0081e86bb37 Add experimental TeleOCR profile on the Qwen2-VL GGML path"
+          ],
+          "reason": "Quantizer changes for other families only (TeleOCR, MinerU2.5, OXR, D-FINE, MI-GAN/Moebius/PixelHacker/SDXL VAE inpaint, 2026-10-31..11-02). Every new branch is keyed on another general.architecture / layout.arch / qwen2vl.model_family value or an opt-in env var; the qwen35_ocr tensor policy, 4D-flatten condition for non-OXR models and log format are unchanged. Quantized receipt files are verified by GGUF/tensor hashes, not re-quantized."
+        },
+        {
+          "from_sha256": "032c36bc3aab0875cca693c975169abe75670cbbc5a7f26b9bfeb8b8913ea980",
+          "to_sha256": "6519688caf42914483604fba7903c1739dd5e7d7e3dfa97ae79f838a40300f7c",
+          "to_blob": "b1b276a4f7511dc8e1bedafcb0c52a0ace0e21c6",
+          "recorded_at_commit": "757dccdfc95a88709daadc9b85af93b5a9bef3f2",
+          "recorded": "2026-11-02",
+          "changed_by": [
+            "2f50aa61800b890b165e7573775f789b5a0fe9cb Merge origin/main into work/portfolio-closure-q4k-20261028",
+            "e5a02d1e079c523ecbae85e1c077b3a8ba16c229 Merge origin/main into work/portfolio-closure-q4k-20261028",
+            "7d886594d2f487cdaa9420712a8df39eda89e744 Prepare gated Q8 profile admission and quantizer string profile stamps",
+            "0023fe16632805c5da5de2e40e5df29114ebe20e Correct standard GGUF headers and prepare authenticated metadata bridge",
+            "715c5860169d3949677b183ccf5feff9a7ab1990 quantize: honor literal F16 4D patch casts and preserve actual MiniCPM rejection"
+          ],
+          "reason": "PR89: new opt-in paths only, default output byte-identical. Adds --standard-file-type / CRISPEMBED_QUANTIZE_STANDARD_FTYPE=1 (standard GGUF general.file_type label; default keeps the legacy internal-enum label), an exact-name --tensor-type <patch_embed>=f16 cast that keeps 4D axes, and --metadata-string. Verified 2026-11-02: main vs PR quantizer on one F32 GGUF give byte-identical q4_k/q5_k/q6_k/q8_0/f16 output by default and with a glob override; the opt-in changes only the one header byte for K quants."
+        }
+      ]
+    }
+  ]
+}

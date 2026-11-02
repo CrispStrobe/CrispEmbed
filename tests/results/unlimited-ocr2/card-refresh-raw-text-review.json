@@ -1,0 +1,18 @@
+{
+  "schema": "crispembed-unlimited-ocr2-card-refresh-review-v1",
+  "hub_commit": "e39412255db0fc67952c8614cd03438822cf0957",
+  "provider": "local metadata-only API",
+  "client": "huggingface-hub==1.22.0",
+  "publisher_source_sha256": "bd13d9e5978b7638a05c336c427dad5389a892bf9ff4be205a0fd02e8020a715",
+  "producer_json_sha256": "56413161544642e2ed243261ebf4a96a86f8b78938e02d25a331560087daed45",
+  "queued_hosted_run_cancelled_before_execution": 40732344399,
+  "changed_files": [
+    "README.md",
+    "manifest.json"
+  ],
+  "immutable_readback_verified": true,
+  "weight_sizes_and_lfs_sha256_verified_before_and_after": true,
+  "notices_verified_before_and_after": true,
+  "model_inference": false,
+  "quantized_qualification_changed": false
+}

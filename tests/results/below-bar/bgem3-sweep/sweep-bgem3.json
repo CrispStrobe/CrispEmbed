@@ -1,0 +1,214 @@
+{
+ "calibration": {
+  "bytes": 706496,
+  "sha256": "b5f5ba0e68af381d4f667cee688abe0b1c793cb1ec85f3a62c1b6407e523bee9",
+  "n_docs": 134,
+  "n_queries": 0
+ },
+ "base": "q4_k",
+ "groups": {
+  "classes": [
+   "attn.k.weight",
+   "attn.o.weight",
+   "attn.q.weight",
+   "attn.v.weight",
+   "ffn.fc1.weight",
+   "ffn.fc2.weight"
+  ],
+  "layers": [
+   "enc.0.*",
+   "enc.1.*",
+   "enc.2.*",
+   "enc.3.*",
+   "enc.4.*",
+   "enc.5.*",
+   "enc.6.*",
+   "enc.7.*",
+   "enc.8.*",
+   "enc.9.*",
+   "enc.10.*",
+   "enc.11.*",
+   "enc.12.*",
+   "enc.13.*",
+   "enc.14.*",
+   "enc.15.*",
+   "enc.16.*",
+   "enc.17.*",
+   "enc.18.*",
+   "enc.19.*",
+   "enc.20.*",
+   "enc.21.*",
+   "enc.22.*",
+   "enc.23.*"
+  ],
+  "other": [
+   "token_embd.weight",
+   "position_embd.weight",
+   "pooler.weight",
+   "colbert_linear.weight"
+  ]
+ },
+ "gains": [
+  {
+   "group": "layer:enc.23.*",
+   "gain": 0.018340642474469315,
+   "bytes": 465163488
+  },
+  {
+   "group": "class:ffn.fc1.weight",
+   "gain": 0.011290111020592714,
+   "bytes": 509203680
+  },
+  {
+   "group": "layer:enc.10.*",
+   "gain": 0.008528311893543111,
+   "bytes": 465163488
+  },
+  {
+   "group": "class:attn.q.weight",
+   "gain": 0.0052071905606695945,
+   "bytes": 471454944
+  },
+  {
+   "group": "layer:enc.14.*",
+   "gain": 0.005010172496055426,
+   "bytes": 465163488
+  },
+  {
+   "group": "layer:enc.1.*",
+   "gain": 0.004134439667940998,
+   "bytes": 465163488
+  },
+  {
+   "group": "layer:enc.21.*",
+   "gain": 0.0035819605681510214,
+   "bytes": 465163488
+  },
+  {
+   "group": "layer:enc.20.*",
+   "gain": 0.0029176043712469124,
+   "bytes": 465163488
+  },
+  {
+   "group": "layer:enc.4.*",
+   "gain": 0.002867106375607942,
+   "bytes": 465163488
+  },
+  {
+   "group": "layer:enc.8.*",
+   "gain": 0.0017192124781747753,
+   "bytes": 465163488
+  },
+  {
+   "group": "class:attn.k.weight",
+   "gain": 0.0015927697612029834,
+   "bytes": 471454944
+  },
+  {
+   "group": "layer:enc.13.*",
+   "gain": 0.0012089635902248486,
+   "bytes": 465163488
+  },
+  {
+   "group": "class:attn.o.weight",
+   "gain": 0.000505690054572322,
+   "bytes": 471454944
+  },
+  {
+   "group": "layer:enc.0.*",
+   "gain": 9.671786881187971e-06,
+   "bytes": 465163488
+  },
+  {
+   "group": "tensor:pooler.weight",
+   "gain": 0.0,
+   "bytes": 459396320
+  },
+  {
+   "group": "layer:enc.7.*",
+   "gain": -0.00022335185843802563,
+   "bytes": 465163488
+  },
+  {
+   "group": "tensor:colbert_linear.weight",
+   "gain": -0.00022603802401438555,
+   "bytes": 459396320
+  },
+  {
+   "group": "layer:enc.17.*",
+   "gain": -0.000701220602194047,
+   "bytes": 465163488
+  },
+  {
+   "group": "layer:enc.5.*",
+   "gain": -0.001126319894727723,
+   "bytes": 465163488
+  },
+  {
+   "group": "class:ffn.fc2.weight",
+   "gain": -0.0011700693476962287,
+   "bytes": 509203680
+  },
+  {
+   "group": "layer:enc.16.*",
+   "gain": -0.0013869334443054326,
+   "bytes": 465163488
+  },
+  {
+   "group": "layer:enc.22.*",
+   "gain": -0.0014221695894018338,
+   "bytes": 465163488
+  },
+  {
+   "group": "class:attn.v.weight",
+   "gain": -0.0015667960893809285,
+   "bytes": 471454944
+  },
+  {
+   "group": "layer:enc.19.*",
+   "gain": -0.0015705094027750333,
+   "bytes": 465163488
+  },
+  {
+   "group": "layer:enc.11.*",
+   "gain": -0.0018407648103273,
+   "bytes": 465163488
+  },
+  {
+   "group": "layer:enc.18.*",
+   "gain": -0.0023461120057074736,
+   "bytes": 465163488
+  },
+  {
+   "group": "layer:enc.6.*",
+   "gain": -0.0025418240861775077,
+   "bytes": 465163488
+  },
+  {
+   "group": "layer:enc.15.*",
+   "gain": -0.0026767914183140618,
+   "bytes": 465163488
+  },
+  {
+   "group": "layer:enc.9.*",
+   "gain": -0.004342144405572762,
+   "bytes": 465163488
+  },
+  {
+   "group": "layer:enc.2.*",
+   "gain": -0.006728520022892204,
+   "bytes": 465163488
+  },
+  {
+   "group": "layer:enc.12.*",
+   "gain": -0.008233432625544185,
+   "bytes": 465163488
+  },
+  {
+   "group": "layer:enc.3.*",
+   "gain": -0.00843577928684705,
+   "bytes": 465163488
+  }
+ ],
+ "recipe_candidate": null
+}

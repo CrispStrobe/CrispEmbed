@@ -1,0 +1,46 @@
+{
+  "source": "83eac856cc684808e417ebfed7db7c2f677dc09f",
+  "base": "3586a8915f58ac6eca5cd28204abd00a2518f679",
+  "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+  "compiled": true,
+  "inference": false,
+  "publication_qualified": false,
+  "configure": {
+    "exit": 0,
+    "seconds": 2.4278691349999946,
+    "maximum_rss_kib": 21356
+  },
+  "build": {
+    "exit": 0,
+    "seconds": 36.940079532,
+    "maximum_rss_kib": 434464
+  },
+  "authored_controls": {
+    "exit": 0,
+    "seconds": 0.00652141300000153,
+    "maximum_rss_kib": 6896
+  },
+  "ref_controls": {
+    "positive": {
+      "exit": 0,
+      "seconds": 0.002491078999995011,
+      "maximum_rss_kib": 3672
+    },
+    "badrow": {
+      "exit": 1,
+      "seconds": 0.002237617999995223,
+      "maximum_rss_kib": 3724
+    }
+  },
+  "schema": "crispembed-moedern-q4k-model-free-review-v1",
+  "run": 40737456222,
+  "artifact": {
+    "id": 12842396968,
+    "bytes": 47257,
+    "sha256": "50c87eceff1232b8430b69fb2de255fa924e21893d611e882adcfe156c10d4fc"
+  },
+  "model_executed": false,
+  "limits": [
+    "Actual compiled Q4_K authored controls and Ref negative/positive checks only; no model, original-vector, retrieval or public-client qualification."
+  ]
+}

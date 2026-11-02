@@ -1,0 +1,23 @@
+{
+  "minicpm-original.json": {
+    "version": "v1",
+    "bytes": 162181,
+    "sha256": "0797d4952a336b691e6a2eb23c98b3652904453f7338242b6124d203c7962a4d",
+    "submitted_script_sha256": "4d7fd8cfef8448f9836b34456ea5e9de69517f62a60ec50822a3603e40b304e9",
+    "source": "2acee0b1c920fa3d143f05c8d4022994d8b8c763"
+  },
+  "unlimited-original.json": {
+    "version": "v1",
+    "bytes": 226243,
+    "sha256": "e6553ddc3820f5aa14edb89c84a5b0f86774e968fd3e5f578de7cbcfe785a116",
+    "submitted_script_sha256": "b451ddad53d2f75e012136fd1b395c135e276b5d31b4a7e0ef2aa90cc246e3ba",
+    "source": "4daea2037135cb1a19df1eda70ace711f7c69f95"
+  },
+  "unlimited-native-initial.json": {
+    "version": "v2",
+    "bytes": 224434,
+    "sha256": "ba8b5caa004e499cc7f7843d1872385013160551d2dbd9392ebf7617fdb5f582",
+    "submitted_script_sha256": "02bf6c123c5e8063f6640e1fd73d04207729bbf8aabd5fc9fda8e08ba01e0261",
+    "source": "2acee0b1c920fa3d143f05c8d4022994d8b8c763"
+  }
+}

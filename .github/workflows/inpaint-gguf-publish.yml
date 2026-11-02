@@ -1,0 +1,70 @@
+name: Inpainting GGUF publication (owner-approved protocol only)
+# Copies owner-approved inpainting GGUFs byte for byte from the private
+# preservation repositories (pinned revision, SHA-256 checked) to one public
+# destination listed in docs/inpaint-publication-v1.json, with licence files,
+# lineage and the measured precision in the model card, then reads every file
+# back from an empty cache. tools/ci-heavy/inpaint_gguf_publish.py holds every
+# gate. The private repositories are only read.
+on:
+  workflow_dispatch:
+    inputs:
+      protocol:
+        description: 'Publication protocol'
+        required: true
+        type: choice
+        options: [docs/inpaint-publication-v1.json]
+      destination:
+        description: 'Public destination repository from the protocol'
+        required: true
+        type: choice
+        options: [cstr/MI-GAN-512-GGUF, cstr/Moebius-inpaint-GGUF, cstr/PixelHacker-GGUF, cstr/SDXL-VAE-inpaint-GGUF]
+      source_ref:
+        description: 'Exact commit containing the protocol and publisher'
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: inpaint-gguf-publish-${{ inputs.destination }}
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      PROTOCOL: ${{ inputs.protocol }}
+      DESTINATION: ${{ inputs.destination }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Publisher controls (no network)
+        run: python tests/test_inpaint_gguf_publish.py -v
+      - name: Plan before any credential
+        run: |
+          set -euo pipefail
+          python tools/ci-heavy/inpaint_gguf_publish.py plan "$PROTOCOL" "$DESTINATION"
+          echo "SOURCE_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+      - name: Publication client
+        run: python -m pip install -q "huggingface_hub>=0.36,<2"
+      - name: Work area on the large runner disk
+        run: |
+          sudo mkdir -p /mnt/inpub && sudo chown "$USER" /mnt/inpub
+          mkdir -p "$RUNNER_TEMP/out"
+          df -h / /mnt
+      - name: Copy, upload, immutable LFS identity, empty-cache readback
+        env:
+          HF_SOURCE_TOKEN: ${{ secrets.HF_TOKEN_2 }}
+          HF_TOKEN: ${{ secrets.HF_PUBLISH_TOKEN }}
+          HF_HUB_DISABLE_XET: '1'
+        run: python tools/ci-heavy/inpaint_gguf_publish.py publish "$PROTOCOL" "$DESTINATION" /mnt/inpub "$RUNNER_TEMP/out"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: inpaint-gguf-publication-${{ github.run_id }}
+          path: ${{ runner.temp }}/out/
+          if-no-files-found: warn
+          retention-days: 90

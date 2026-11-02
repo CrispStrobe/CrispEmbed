@@ -1,0 +1,16 @@
+Error in sitecustomize; set PYTHONVERBOSE for traceback:
+ModuleNotFoundError: No module named 'wrapt'
+Traceback (most recent call last):
+  File "/kaggle/temp/crispembed-josev-q4k/source/tools/kaggle/josev-q4k/worker.py", line 232, in <module>
+    main(p.parse_args())
+    ~~~~^^^^^^^^^^^^^^^^
+  File "/kaggle/temp/crispembed-josev-q4k/source/tools/kaggle/josev-q4k/worker.py", line 164, in main
+    freeze,gold,result['original']=original(args.mount,args.out/'original');save()
+                                   ~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/kaggle/temp/crispembed-josev-q4k/source/tools/kaggle/josev-q4k/worker.py", line 78, in original
+    require(total==279087860,'original array payload bytes differ')
+    ~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/kaggle/temp/crispembed-josev-q4k/source/tools/josev2b_q4k_contract.py", line 22, in require
+    if not ok:raise ValueError(why)
+              ^^^^^^^^^^^^^^^^^^^^^
+ValueError: original array payload bytes differ

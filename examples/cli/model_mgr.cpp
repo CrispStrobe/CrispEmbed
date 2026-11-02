@@ -551,9 +551,21 @@ static const ModelEntry k_registry[] = {
     { "f2llm-v2-0.6b", "f2llm-v2-0.6b-q8_0.gguf",
       "https://huggingface.co/cstr/f2llm-v2-0.6b-GGUF/resolve/main/f2llm-v2-0.6b-q8_0.gguf",
       "Qwen3 1024d multilingual (Q8_0)", "639 MB", "apache-2.0", "https://huggingface.co/codefuse-ai/F2LLM-v2-0.6B" },
-    { "f2llm-v2-0.6b-q4k", "f2llm-v2-0.6b-q4_k-imatrix.gguf",
+    // Q4_K+imatrix alone is far below the Q4_K bar on this checkpoint (0.77 vs the
+    // original; the same weights run as F16 matmuls score 0.78, so it is weight error,
+    // not activation quantization). The mixed recipe keeps ffn_down at Q6_K and
+    // attn_v plus blocks 25-27 at Q8_0: min cosine 0.9644 / mean 0.9762 against
+    // sentence-transformers over the 78-text below-bar panel (tests/results/below-bar/).
+    { "f2llm-v2-0.6b-q4k", "f2llm-v2-0.6b-q4_k-mixed.gguf",
+      "https://huggingface.co/cstr/f2llm-v2-0.6b-GGUF/resolve/c29299b73fe0e2135707e89c43badf3077cd38df/"
+      "f2llm-v2-0.6b-q4_k-mixed.gguf",
+      "Qwen3 1024d multilingual (Q4_K mixed: ffn_down Q6_K, attn_v + last 3 blocks Q8_0)", "454 MB", "apache-2.0",
+      "https://huggingface.co/codefuse-ai/F2LLM-v2-0.6B" },
+    // SUPERSEDED 2026-11-02 by f2llm-v2-0.6b-q4k (min cosine 0.769 vs the original, below
+    // the 0.94 Q4_K bar). Kept downloadable and pinned for reproducibility only.
+    { "f2llm-v2-0.6b-q4k-superseded", "f2llm-v2-0.6b-q4_k-imatrix.gguf",
       "https://huggingface.co/cstr/f2llm-v2-0.6b-GGUF/resolve/main/f2llm-v2-0.6b-q4_k-imatrix.gguf",
-      "Qwen3 1024d multilingual (Q4_K+imatrix)", "419 MB", "apache-2.0",
+      "SUPERSEDED: Qwen3 1024d multilingual (Q4_K+imatrix, below the Q4_K bar)", "419 MB", "apache-2.0",
       "https://huggingface.co/codefuse-ai/F2LLM-v2-0.6B" },
     { "f2llm-v2-0.6b-iq4xs", "f2llm-v2-0.6b-iq4_xs.gguf",
       "https://huggingface.co/cstr/f2llm-v2-0.6b-GGUF/resolve/main/f2llm-v2-0.6b-iq4_xs.gguf",
@@ -892,20 +904,36 @@ static const ModelEntry k_registry[] = {
       "XLM-R 1024d CLS English (Q8_0)", "357 MB", "apache-2.0",
       "https://huggingface.co/Snowflake/snowflake-arctic-embed-l" },
 
+    // These files were converted in the Ollama layout, which drops the sparse and
+    // ColBERT heads: dense only. bge-m3-heads* below carry both heads.
     // Default = best flavor (IQ4_XS+imatrix, A/B winner: smaller AND higher cos
     // than Q4_K here). -q4k serves the Q4_K+imatrix build; -iq4xs/-q8 explicit.
     { "bge-m3", "bge-m3-iq4_xs.gguf", "https://huggingface.co/cstr/bge-m3-GGUF/resolve/main/bge-m3-iq4_xs.gguf",
-      "XLM-R 1024d dense+sparse+ColBERT multilingual (568M, IQ4_XS+imatrix)", "449 MB", "mit",
+      "XLM-R 1024d dense-only multilingual (568M, IQ4_XS+imatrix)", "449 MB", "mit",
       "https://huggingface.co/BAAI/bge-m3" },
     { "bge-m3-iq4xs", "bge-m3-iq4_xs.gguf", "https://huggingface.co/cstr/bge-m3-GGUF/resolve/main/bge-m3-iq4_xs.gguf",
-      "XLM-R 1024d dense+sparse+ColBERT multilingual (568M, IQ4_XS+imatrix)", "449 MB", "mit",
+      "XLM-R 1024d dense-only multilingual (568M, IQ4_XS+imatrix)", "449 MB", "mit",
       "https://huggingface.co/BAAI/bge-m3" },
     { "bge-m3-q4k", "bge-m3-q4_k-imatrix.gguf",
       "https://huggingface.co/cstr/bge-m3-GGUF/resolve/main/bge-m3-q4_k-imatrix.gguf",
-      "XLM-R 1024d dense+sparse+ColBERT multilingual (568M, Q4_K+imatrix)", "459 MB", "mit",
+      "XLM-R 1024d dense-only multilingual (568M, Q4_K+imatrix)", "459 MB", "mit",
       "https://huggingface.co/BAAI/bge-m3" },
     { "bge-m3-q8", "bge-m3-q8_0.gguf", "https://huggingface.co/cstr/bge-m3-GGUF/resolve/main/bge-m3-q8_0.gguf",
-      "XLM-R 1024d dense+sparse+ColBERT multilingual (568M, Q8_0)", "610 MB", "mit",
+      "XLM-R 1024d dense-only multilingual (568M, Q8_0)", "610 MB", "mit", "https://huggingface.co/BAAI/bge-m3" },
+
+    // --crisp conversions with the sparse_linear/colbert_linear heads. Against FlagEmbedding
+    // BGEM3FlagModel (fp32) on the 77-text below-bar panel: F16 dense/sparse/ColBERT
+    // min cosine 1.0000/1.0000/1.0000; the Q8_0 mix (blocks 0-11 F16) 0.9995/0.9991/0.9726.
+    // Uniform Q8_0 flips a few ColBERT token vectors (0.61) and is not published.
+    { "bge-m3-heads", "bge-m3-heads-q8_0-mixed.gguf",
+      "https://huggingface.co/cstr/bge-m3-GGUF/resolve/6016c35502f2d8419a593d545f91bc303bc5b261/"
+      "bge-m3-heads-q8_0-mixed.gguf",
+      "XLM-R 1024d dense+sparse+ColBERT multilingual (568M, Q8_0, blocks 0-11 F16)", "718 MB", "mit",
+      "https://huggingface.co/BAAI/bge-m3" },
+    { "bge-m3-heads-f16", "bge-m3-heads-f16.gguf",
+      "https://huggingface.co/cstr/bge-m3-GGUF/resolve/6016c35502f2d8419a593d545f91bc303bc5b261/"
+      "bge-m3-heads-f16.gguf",
+      "XLM-R 1024d dense+sparse+ColBERT multilingual (568M, F16, heads F32)", "1599 MB", "mit",
       "https://huggingface.co/BAAI/bge-m3" },
 
     // --- Reranker models (Phase 4) ---
@@ -1223,9 +1251,23 @@ static const ModelEntry k_registry[] = {
       "Nomic Embed Vision v1.5 (ViT-B/16, 92M; same space as nomic-embed-text-v1.5)", "188 MB", "apache-2.0",
       "https://huggingface.co/nomic-ai/nomic-embed-vision-v1.5" },
 
-    { "clip-text-base", "clip-text-base-q4_k-imatrix.gguf",
+    // Q4_K+imatrix with attn.v and block 0 at Q8_0: min cosine 0.9878 / mean 0.9953
+    // against CLIPModel.get_text_features over the 78-text below-bar panel
+    // (tests/results/below-bar/). Supersedes clip-text-base-q4_k.gguf (audit 0.933).
+    { "clip-text-base", "clip-text-base-q4_k-mixed.gguf",
+      "https://huggingface.co/cstr/clip-text-base-GGUF/resolve/3d52b12727aaf324445fe22a543f954ee4f0b419/"
+      "clip-text-base-q4_k-mixed.gguf",
+      "CLIP text encoder base (63M, 512d, Q4_K mixed: attn.v + block 0 Q8_0)", "51 MB", "mit",
+      "https://huggingface.co/openai/clip-vit-base-patch16" },
+    { "clip-text-base-q4k", "clip-text-base-q4_k-mixed.gguf",
+      "https://huggingface.co/cstr/clip-text-base-GGUF/resolve/3d52b12727aaf324445fe22a543f954ee4f0b419/"
+      "clip-text-base-q4_k-mixed.gguf",
+      "CLIP text encoder base (Q4_K mixed: attn.v + block 0 Q8_0)", "51 MB", "mit",
+      "https://huggingface.co/openai/clip-vit-base-patch16" },
+    // Previous default, kept pinned: 0.963 vs the original after the EOS truncation fix.
+    { "clip-text-base-q4k-imatrix", "clip-text-base-q4_k-imatrix.gguf",
       "https://huggingface.co/cstr/clip-text-base-GGUF/resolve/main/clip-text-base-q4_k-imatrix.gguf",
-      "CLIP text encoder base (63M, 512d, Q4_K+imatrix)", "50 MB", "mit",
+      "CLIP text encoder base (Q4_K+imatrix, previous default)", "50 MB", "mit",
       "https://huggingface.co/openai/clip-vit-base-patch16" },
     { "clip-text-base-iq4xs", "clip-text-base-iq4_xs.gguf",
       "https://huggingface.co/cstr/clip-text-base-GGUF/resolve/main/clip-text-base-iq4_xs.gguf",

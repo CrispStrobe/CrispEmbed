@@ -55,9 +55,17 @@ struct vision_debug {
     std::vector<float> embeddings, layer0, layer6, layer26, post_ln, merged;
 };
 
+// Optional wall-clock split of one encode() call (CRISPEMBED_MINICPM_OCR_TIMING):
+// host im2col + graph build/alloc/upload, the SigLIP encoder (through post_layernorm)
+// and the 2x2 merger/projector. With timing the encoder and merger run as two
+// graphs (same operators on the same F32 values); without it, one graph as before.
+struct vision_timing {
+    double setup_ms = 0, encoder_ms = 0, projector_ms = 0, readback_ms = 0;
+};
+
 // Runs one image as an independent sequence (no cross-image attention) and
 // appends its projector output ([tokens, out_width] row-major) to `merged`.
 bool encode(const vision_weights & w, ggml_backend_t backend, const image_part & image, int threads,
-            std::vector<float> & merged, vision_debug * debug);
+            std::vector<float> & merged, vision_debug * debug, vision_timing * timing = nullptr);
 
 } // namespace minicpm_ocr

@@ -40,10 +40,13 @@ Source: `docs/gpu-support-matrix.md` §CUDA audit (branch `feat/cuda-audit`, Kag
   `input_image` with test-easyocr-diff. Also: scan_page_pd's page output differs between
   the M1 (b3318ffa) and x86/CUDA (ad8d340b) on both the fixed and legacy paths, so it is
   not caused by this fix; attribute it (DBNet boxes vs recognizer).
-- Artifacts below their bar against F32 on both arms: republish/requantize
-  `f2llm-v2-0.6b-q4_k-imatrix`, `clip-text-base-q4_k`; GOT-OCR2 F16: root cause found
-  (see GOT-OCR2 F16 below); publish a bge-m3 GGUF converted with `--crisp` (sparse/ColBERT heads)
-  and find why its q8_0 ColBERT output is 0.59 vs F16.
+- Below-bar artifacts: f2llm/CLIP/BGE-M3 heads repaired and republished (fix/below-bar-artifacts,
+  [summary](tests/results/below-bar/SUMMARY.md)). GOT-OCR2 F16: root cause found (see below). Still open:
+  - A CUDA re-run of the new files.
+  - The bge-m3 Q8_0 mix has a thin ColBERT margin (0.9726 vs 0.97).
+  - A ColBERT-qualifying Q4_K recipe for BGE-M3 (all tried mixes 0.37-0.60).
+  - Re-measure the other XLM-R embedders (e5, arctic-l-v2, …) against HF after the
+    `CRISPEMBED_SPM_COLLAPSE_SPACES` tokenizer fix (A/B'd on bge-m3 only).
 - Stage-diff references that fail on both arms: PP-OCRv6 small rec fox ref, PAN, HAT.
 - Not reached on CUDA: PP-LCNet, CRAFT, TexTeller/Pix2TeX, BERT-NER, LFM2.5-VL, LFM2
   encoder, Unlimited/DeepSeek-OCR2, Text-SR, SAFMN, face recognition, BiDirLM audio.
@@ -93,10 +96,10 @@ engine gates stay experimental and default off; main's MI-GAN Metal path and
 the persistent graph both remain gated.
 
 - Open: publication of the qualifying public GGUFs and registry entries (only
-  variants that clear the bars; Moebius Q4_K only as Q4_K-mix). Prepared in
-  `docs/inpaint-publication-v1.json`; needs the owner's go-ahead for a new
-  inpainting publication protocol/workflow, then upload, readback, and only then
-  `model_mgr.cpp`/`model_hashes.h`/`upload_to_hf.py` entries.
+  variants that clear the bars; Moebius Q4_K only as Q4_K-mix). Owner approved
+  2026-11-02; `.github/workflows/inpaint-gguf-publish.yml` (ci/inpaint-gguf-publish)
+  publishes per destination, then a registry PR adds `model_mgr.cpp`/
+  `model_hashes.h`/`upload_to_hf.py` entries from the read-back revisions.
 - Open: all CI green (Windows, macOS, Linux, Static guards, sibling-crispasr,
   secret scan). MI-GAN512 Q4_K stays caveated (0.9019 on the DBNet street crop).
 
@@ -599,3 +602,24 @@ outside this lane. Do not infer weight permission from a public repository.
 This anchor is retained for older links. Its dated commands/status snapshots
 are archived in HISTORY. Use [the29 October handoff](docs/handoff-2026-10-29.md)
 for current sources, jobs and exact next actions; do not repeat completed runs.
+
+### Portfolio Q4_K/Q8 branch (PR89) open items
+
+Q8 admission source is being prepared on `feat/portfolio-q8-profiles-20261029`:
+Josev gets an explicitly named `crispembed-josev-packed-mixed-v2` profile;
+header7 requires actual Q8_0 and no Q4_K, while legacy Q4 requires real Q4_K.
+UltraBERT uses the same storage/header consistency. The existing quantization
+gates remain mandatory. A bounded `--metadata-string KEY=VALUE` C-quantizer
+option replaces existing STRING keys before header layout, enabling genuine
+profile stamps without ad hoc byte-length patches. Numeric or unknown metadata
+keys reject before output creation. Actual compiler/metadata fixtures and the
+original-bound Q8 tensor/intermediate/decoded panels still gate qualification.
+
+The default-off MoEdern Q8 runtime and source-bound component caller are
+integrated in the portfolio feature branch. All eight MoEdern runtime/profile
+stdlib controls pass there. The caller's separate frozen whole-SRC assertion
+correctly rejects this combined tree: its immutable1f source differs only in
+UltraBERT's later UINT32 file-type admission check. The reviewed actual fixture
+runs on exactdd592, not the integrated tree; no assertion or source gate was
+weakened to claim combined-source qualification. Final source declarations and
+actual composite/runtime/platform gates remain required.
