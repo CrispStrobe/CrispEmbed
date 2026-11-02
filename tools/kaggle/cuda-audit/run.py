@@ -193,6 +193,9 @@ for _ln, _box, _w in (("line1", (20, 30, 515, 82), 610), ("line2", (20, 100, 480
     for _ww in (_w, 200):
         M[f"easyocr-ref-{_ln}-w{_ww}"] = {"url": None, "file": f"easyocr-ref-{_ln}-w{_ww}.gguf",
                                           "convert": "easyocr-ref", "crop": f"fox-{_ln}", "width": _ww}
+for _ww in (576, 704):
+    M[f"easyocr-ref-line2-w{_ww}"] = {"url": None, "file": f"easyocr-ref-line2-w{_ww}.gguf",
+                                      "convert": "easyocr-ref", "crop": "fox-line2", "width": _ww}
 # The published bge-m3 GGUFs carry no sparse/ColBERT heads ("model does not support sparse
 # retrieval", run 1): convert BAAI/bge-m3 with its sparse_linear/colbert_linear .pt heads.
 M["bge-m3-crisp-f16.gguf"] = {"url": None, "file": "bge-m3-crisp-f16.gguf", "convert": "bert",
@@ -443,7 +446,30 @@ def batch_d():
     return jobs
 
 
-BATCHES = {"a": batch_a, "b": batch_b, "all": lambda: batch_a() + batch_b(), "rest": batch_rest, "c": batch_c, "d": batch_d}
+def batch_e():
+    """Run 5: why the x86 CPU arm drops fox line 2 in the EasyOCR page lane (M1 CPU, Metal and CUDA keep it):
+    per-region debug lines, width-sorted visiting (rebuild grows instead of shrinks), and the recognizer
+    diff at exactly the page canvases (576 after 704)."""
+    dbg = {"CRISPEMBED_EASYOCR_DEBUG_REGIONS": "1"}
+    arms = (("cuda", "cuda", dbg), ("cpu-widthsort", "cpu", {**dbg, "EASYOCR_WIDTH_SORT": "1"}),
+            ("cpu-gpupref-none", "cpu", {**dbg, "EASYOCR_FORCE_CPU": "1"}), ("cpu", "cpu", dbg))
+    jobs = []
+    for img in ("fox", "scan_strip"):
+        jobs.append(cmd(f"easyocr-debug.{img}", ["-t", "@NT", "--json", "-m", "@M:easyocr", "--ocr-pipeline",
+                                                 f"{IMG}/{img}.png", "--ocr-engine", "easyocr", "--ocr-det",
+                                                 "@M:dbnet", "--ocr-rec", "@M:easyocr"], arms=arms, repeat=1))
+        jobs.append(cmd(f"easyocr-debug-t1.{img}", ["-t", "1", "--json", "-m", "@M:easyocr", "--ocr-pipeline",
+                                                    f"{IMG}/{img}.png", "--ocr-engine", "easyocr", "--ocr-det",
+                                                    "@M:dbnet", "--ocr-rec", "@M:easyocr"],
+                        arms=(("cuda", "cuda", dbg), ("cpu", "cpu", dbg)), repeat=1))
+    for ww in (576, 704):
+        jobs.append(diff(f"diff-easyocr-line2-w{ww}", "test-easyocr-diff",
+                         ["@M:easyocr", f"@M:easyocr-ref-line2-w{ww}", "@M:fox-line2", str(ww)],
+                         thresholds={"*": 0.999}))
+    return jobs
+
+
+BATCHES = {"a": batch_a, "b": batch_b, "all": lambda: batch_a() + batch_b(), "rest": batch_rest, "c": batch_c, "d": batch_d, "e": batch_e}
 
 
 def jobs_for(batch):

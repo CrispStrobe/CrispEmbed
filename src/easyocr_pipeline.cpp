@@ -164,6 +164,13 @@ static std::vector<result> recognize_regions_locked(context * ctx, const std::ve
             easyocr_ocr_recognize(ctx->recognizer, crop.data(), crop_width, crop_height, channels, &text_length);
         if (stage_bench) recognize_ms += std::chrono::duration<double, std::milli>(stage_clock() - rec_t0).count();
         const float rec_confidence = easyocr_ocr_last_confidence(ctx->recognizer);
+        // CRISPEMBED_EASYOCR_DEBUG_REGIONS=1 (default off, diagnostic only): one
+        // stderr line per recognized region. Added for the CUDA audit, where the
+        // x86 CPU arm dropped a line that CUDA, Metal and the M1 CPU all keep.
+        if (core_env::on("CRISPEMBED_EASYOCR_DEBUG_REGIONS"))
+            fprintf(stderr, "[easyocr-region] i=%zu crop=%dx%d canvas=%d len=%d conf=%.4f text=%.*s\n", i, crop_width,
+                    crop_height, recognizer_width, text_length, rec_confidence, text ? text_length : 0,
+                    text ? text : "");
         result item;
         item.detector_confidence = region.score;
         item.word.text = text ? std::string(text, text_length) : std::string();
