@@ -32,6 +32,7 @@ void stbi_image_free(void * retval_from_stbi_load);
 #include <memory>
 #include <string>
 #include <vector>
+#include "core/env_value.h"
 
 // ---------------------------------------------------------------------------
 // FP16/quantized → F32 dequantization for CPU-side tensor access
@@ -420,7 +421,7 @@ static ggml_tensor * g_mha_1q(ggml_context * g, ggml_tensor * Q, ggml_tensor * K
     // no overlap), transcript byte-identical on Metal AND CPU (fox + scan_strip).
     // Default is now cont-off; MATH_OCR_ATTN_CONT=1 restores the old copies for
     // regression bisection.
-    static const bool keep_cont = (std::getenv("MATH_OCR_ATTN_CONT") != nullptr);
+    static const bool keep_cont = core_env::on("MATH_OCR_ATTN_CONT");
     auto shape = [&](ggml_tensor * t, int seq) {
         t = ggml_permute(g, ggml_reshape_3d(g, t, hd, n_heads, seq), 0, 2, 1, 3); // [hd, seq, nh]
         return keep_cont ? ggml_cont(g, t) : t;
@@ -447,7 +448,7 @@ static ggml_cgraph * build_encoder_graph(math_ocr_context * ctx, ggml_context * 
     // ggml_set_output keeps each layer's activation live so run_encoder can read it
     // back and compare it to the Python reference — the doc's "first layer < 0.999
     // = the bug" recipe. Off by default (no perturbation of the normal forward).
-    const bool diff_layers = std::getenv("MATH_OCR_DIFF_REF") != nullptr;
+    const bool diff_layers = core_env::value("MATH_OCR_DIFF_REF") != nullptr;
 
     ggml_cgraph * gf = ggml_new_graph_custom(g, hp.enc_layers * 60 + 512, false);
 
@@ -707,7 +708,7 @@ static void run_encoder(math_ocr_context * ctx, const float * pixels_rgb, int im
     // the final output vs the Python reference. Per-token cos (row_dim=0 → D=
     // hidden, gguf dim order). If enc_embed < ~0.99999 the divergence is a
     // structural input/preprocessing mismatch, not a per-layer numeric bug.
-    if (const char * diff_ref = std::getenv("MATH_OCR_DIFF_REF")) {
+    if (const char * diff_ref = core_env::value("MATH_OCR_DIFF_REF")) {
         crispembed_diff::Ref ref;
         if (ref.load(diff_ref)) {
             auto report = [](const char * nm, const crispembed_diff::Report & r) {
@@ -1180,7 +1181,7 @@ static ggml_cgraph * build_decoder_step_graph(math_ocr_context * ctx, ggml_conte
     ggml_set_output(cur);
 
     ggml_build_forward_expand(gf, cur);
-    if (std::getenv("MATH_OCR_NODES")) {
+    if (core_env::on("MATH_OCR_NODES")) {
         static bool printed = false;
         if (!printed) {
             printed = true;
@@ -1246,7 +1247,7 @@ static std::vector<int> run_decoder_graph(math_ocr_context * ctx) {
     // node count is constant per step (only the self-attn KV read length grows
     // with n_kv), so every per-step alloc takes the no-realloc fast path and the
     // sched's split_graph is skipped. Output-identical. Same trick as got_ocr.
-    static const bool use_cache = (std::getenv("MATH_OCR_DECODE_CACHE") != nullptr);
+    static const bool use_cache = core_env::on("MATH_OCR_DECODE_CACHE");
     if (use_cache && !ctx->decode_galloc) {
         ctx->decode_galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
         ggml_context * rg = ggml_init(ip);

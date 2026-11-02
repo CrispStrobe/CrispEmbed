@@ -236,7 +236,7 @@ static void nafblock_forward(nafnet_context * ctx, const float * input, int c, i
                              std::vector<float> & tmp2, std::vector<float> & tmp3) {
     // Fused single-graph block (default). Replaces the per-conv mini-graphs +
     // scalar glue. Legacy path via NAFNET_LEGACY=1.
-    static const bool legacy = getenv("NAFNET_LEGACY") != nullptr;
+    static const bool legacy = core_env::on("NAFNET_LEGACY");
     if (!legacy && nafblock_forward_fused(ctx, input, c, h, w, wt, output) == 0) return;
 
     int hw = h * w;
@@ -395,8 +395,8 @@ nafnet_context * nafnet_init(const char * model_path, int n_threads) {
     // G4: cap the Metal pipeline-archive open before init_best can construct
     // the Metal device (idempotent; usually already applied by the
     // crispasr_init_gpu_backend() call above, but NAFNET_FORCE_CPU=1 skips it).
-    if (!getenv("NAFNET_CPU")) core_metal_cache::apply();
-    ctx->enc_backend = getenv("NAFNET_CPU") ? ggml_backend_cpu_init() : ggml_backend_init_best();
+    if (!core_env::on("NAFNET_CPU")) core_metal_cache::apply();
+    ctx->enc_backend = core_env::on("NAFNET_CPU") ? ggml_backend_cpu_init() : ggml_backend_init_best();
     if (!ctx->enc_backend) ctx->enc_backend = ggml_backend_cpu_init();
     if (ctx->enc_backend) {
         if (ggml_backend_is_cpu(ctx->enc_backend)) {

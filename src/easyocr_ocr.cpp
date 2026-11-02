@@ -322,7 +322,7 @@ static bool build_graph(easyocr_ocr_context * c) {
 
 easyocr_ocr_context * easyocr_ocr_init(const char * model_path, int n_threads) {
     auto * c = new easyocr_ocr_context();
-    const bool force_cpu = std::getenv("EASYOCR_FORCE_CPU") != nullptr;
+    const bool force_cpu = core_env::on("EASYOCR_FORCE_CPU");
     c->backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend_shared();
     // Ignored-n_threads bug class (O13b family): was discarded with (void).
     if (c->backend && ggml_backend_is_cpu(c->backend))
@@ -594,7 +594,7 @@ int easyocr_ocr_diff(easyocr_ocr_context * c, const char * ref_path) {
         const bool sparse_feature_pass = !strcmp(name, "features") && report.cos_global >= 0.99f;
         const bool pass = report.is_pass(0.99f) || sparse_feature_pass;
         print_diff_report(name, report, pass);
-        if (std::getenv("EASYOCR_DIFF_DEBUG") && row_dim >= 0 &&
+        if (core_env::on("EASYOCR_DIFF_DEBUG") && row_dim >= 0 &&
             (!pass || !strcmp(name, "sequence_input") || !strcmp(name, "bilstm_1") || !strcmp(name, "logits"))) {
             auto ref_values = ref.get_f32(name);
             const size_t row_size = row_dim < (int)ref.shape(name).size() ? (size_t)ref.shape(name)[row_dim] : 0;
@@ -644,7 +644,7 @@ int easyocr_ocr_diff(easyocr_ocr_context * c, const char * ref_path) {
                 }
             }
         }
-        if (!strcmp(name, "logits") && std::getenv("EASYOCR_DIFF_DEBUG")) {
+        if (!strcmp(name, "logits") && core_env::on("EASYOCR_DIFF_DEBUG")) {
             auto ref_logits = ref.get_f32(name);
             const int vocab = (int)t->ne[0];
             const int steps = (int)t->ne[1];

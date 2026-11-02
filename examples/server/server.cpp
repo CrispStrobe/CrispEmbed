@@ -1574,7 +1574,8 @@ int main(int argc, char ** argv) {
             if (n == "ovisocr2") return 21;
             if (n == "ovisocr3") return 22;
             if (n == "qwen3vl") return 12;
-            if (n == "unlimited_ocr") return 13;
+            if (n == "unlimited_ocr" || n == "unlimited-ocr") return 13;
+            if (n == "unlimited-ocr2" || n == "unlimited_ocr2") return 13;
             if (n == "unified") return 14;
             if (n == "tesseract-fraktur" || n == "tesseract_fraktur") return 15;
             if (n == "ppocrv6") return 16;
@@ -1684,6 +1685,9 @@ int main(int argc, char ** argv) {
                                 : (eid == 18) ? "olmocr-2-7b"
                                 : (eid == 23) ? "minicpm-ocr"
                                               : "qwen2vl-ocr";
+            // Unlimited-OCR-2 shares engine 13; the alias picks the v2 registry default.
+            if (eid == 13 && (ocr_engine_name == "unlimited-ocr2" || ocr_engine_name == "unlimited_ocr2"))
+                dflt = "unlimited-ocr2";
             ma = resolve(!ocr_rec_model_path.empty() ? ocr_rec_model_path : dflt);
         } else {
             // PP-OCRv6 pairs its own detector with its own CTC recognizer

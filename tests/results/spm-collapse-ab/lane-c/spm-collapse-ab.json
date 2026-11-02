@@ -1,0 +1,1584 @@
+{
+ "source": "7b5b5cc9aea0ad4980e60057d3a34b0d79cb7c2d",
+ "n_texts": 77,
+ "models": [
+  {
+   "alias": "bge-m3",
+   "hf": "BAAI/bge-m3",
+   "kind": "embed",
+   "registry_alias": "bge-m3-q8",
+   "file": "bge-m3-q8_0.gguf",
+   "url": "https://huggingface.co/cstr/bge-m3-GGUF/resolve/main/bge-m3-q8_0.gguf",
+   "hf_tokenizer": "XLMRobertaTokenizerFast",
+   "normalizer": {
+    "type": "Sequence",
+    "normalizers": [
+     {
+      "type": "Precompiled",
+      "precompiled_charsmap": "<charsmap>"
+     },
+     {
+      "type": "Replace",
+      "pattern": {
+       "Regex": " {2,}"
+      },
+      "content": " "
+     }
+    ]
+   },
+   "hf_max_length": 8192,
+   "excluded_over_length": [],
+   "slow_tokenizer": "XLMRobertaTokenizer",
+   "default (collapse on)": {
+    "ids_equal": 72,
+    "ids_equal_sentencepiece": 77,
+    "ids_mismatch_texts": [
+     47,
+     51,
+     52,
+     53,
+     54
+    ],
+    "ids_mismatch_examples": [
+     {
+      "text": 47,
+      "hf_len": 94,
+      "native_len": 93,
+      "first_diff": 92,
+      "hf": [
+       "▁No",
+       "ne",
+       "▁",
+       "</s>"
+      ],
+      "native": [
+       "▁No",
+       "ne",
+       "</s>"
+      ],
+      "excerpt": "def query_prefix(model: str) -> str | None:\n    if \"f2llm-v2\" in model:\n        "
+     },
+     {
+      "text": 51,
+      "hf_len": 44,
+      "native_len": 43,
+      "first_diff": 42,
+      "hf": [
+       "▁entry",
+       "▁written",
+       "▁",
+       "</s>"
+      ],
+      "native": [
+       "▁entry",
+       "▁written",
+       "</s>"
+      ],
+      "excerpt": "Checklist before release\n\n[x] unit tests green\n[x] clang-format clean\n[ ] PERFOR"
+     },
+     {
+      "text": 52,
+      "hf_len": 29,
+      "native_len": 28,
+      "first_diff": 27,
+      "hf": [
+       "▁12:00",
+       "▁Ende",
+       "▁",
+       "</s>"
+      ],
+      "native": [
+       "▁12:00",
+       "▁Ende",
+       "</s>"
+      ],
+      "excerpt": "Agenda\n\n09:00  Begrüßung\n09:15  Stand der Migration\n10:00  Pause\n10:15  Diskussi"
+     },
+     {
+      "text": 53,
+      "hf_len": 52,
+      "native_len": 51,
+      "first_diff": 50,
+      "hf": [
+       "▁necessary",
+       ".",
+       "▁",
+       "</s>"
+      ],
+      "native": [
+       "▁necessary",
+       ".",
+       "</s>"
+      ],
+      "excerpt": "Article 5\n\n1. Personal data shall be processed lawfully, fairly and transparentl"
+     },
+     {
+      "text": 54,
+      "hf_len": 68,
+      "native_len": 67,
+      "first_diff": 66,
+      "hf": [
+       "85",
+       "▁€",
+       "▁",
+       "</s>"
+      ],
+      "native": [
+       "85",
+       "▁€",
+       "</s>"
+      ],
+      "excerpt": "Rechnung Nr. 2026-0815\n\nPos.  Beschreibung              Menge   Einzelpreis   Ge"
+     }
+    ],
+    "cos_min": 0.998429041601563,
+    "cos_mean": 0.9994246545651806,
+    "worst_text": 52,
+    "per_text": [
+     0.999661,
+     0.999486,
+     0.999642,
+     0.999506,
+     0.999396,
+     0.999428,
+     0.999572,
+     0.999504,
+     0.999511,
+     0.999519,
+     0.999412,
+     0.999254,
+     0.999371,
+     0.999394,
+     0.999461,
+     0.999457,
+     0.999424,
+     0.999443,
+     0.999274,
+     0.999465,
+     0.999388,
+     0.999515,
+     0.999431,
+     0.999427,
+     0.999444,
+     0.999518,
+     0.999202,
+     0.999438,
+     0.999249,
+     0.999423,
+     0.99957,
+     0.999585,
+     0.999497,
+     0.999547,
+     0.99955,
+     0.99952,
+     0.999453,
+     0.999427,
+     0.999547,
+     0.999491,
+     0.999527,
+     0.999611,
+     0.999465,
+     0.999558,
+     0.999384,
+     0.999325,
+     0.999297,
+     0.998836,
+     0.999482,
+     0.999269,
+     0.999345,
+     0.998431,
+     0.998429,
+     0.998979,
+     0.998865,
+     0.999487,
+     0.999494,
+     0.999389,
+     0.999519,
+     0.999606,
+     0.999593,
+     0.999571,
+     0.999587,
+     0.999525,
+     0.99958,
+     0.998722,
+     0.999613,
+     0.999574,
+     0.999595,
+     0.999454,
+     0.999647,
+     0.999538,
+     0.999624,
+     0.999579,
+     0.999584,
+     0.99961,
+     0.999603
+    ],
+    "wall_s": 13.96
+   },
+   "CRISPEMBED_SPM_COLLAPSE_SPACES=0": {
+    "ids_equal": 67,
+    "ids_equal_sentencepiece": 67,
+    "ids_mismatch_texts": [
+     45,
+     46,
+     47,
+     48,
+     49,
+     50,
+     51,
+     52,
+     53,
+     54
+    ],
+    "ids_mismatch_examples": [
+     {
+      "text": 45,
+      "hf_len": 65,
+      "native_len": 75,
+      "first_diff": 13,
+      "hf": [
+       ")",
+       "▁{",
+       "▁con",
+       "st",
+       "▁results",
+       "▁="
+      ],
+      "native": [
+       ")",
+       "▁{",
+       "▁",
+       "▁",
+       "▁con",
+       "st"
+      ],
+      "excerpt": "async function fetchAll(urls) {\n  const results = await Promise.all(\n    urls.ma"
+     },
+     {
+      "text": 46,
+      "hf_len": 59,
+      "native_len": 132,
+      "first_diff": 9,
+      "hf": [
+       "▁Counter",
+       "▁{",
+       "▁type",
+       "▁Item",
+       "▁=",
+       "▁u"
+      ],
+      "native": [
+       "▁Counter",
+       "▁{",
+       "▁",
+       "▁",
+       "▁",
+       "▁"
+      ],
+      "excerpt": "impl Iterator for Counter {\n    type Item = u32;\n\n    fn next(&mut self) -> Opti"
+     },
+     {
+      "text": 47,
+      "hf_len": 94,
+      "native_len": 138,
+      "first_diff": 20,
+      "hf": [
+       "ne",
+       ":",
+       "▁if",
+       "▁\"",
+       "f",
+       "2"
+      ],
+      "native": [
+       "ne",
+       ":",
+       "▁",
+       "▁",
+       "▁",
+       "▁"
+      ],
+      "excerpt": "def query_prefix(model: str) -> str | None:\n    if \"f2llm-v2\" in model:\n        "
+     },
+     {
+      "text": 48,
+      "hf_len": 75,
+      "native_len": 84,
+      "first_diff": 8,
+      "hf": [
+       "▁=",
+       "▁",
+       "|",
+       "▁{",
+       "▁ok",
+       ":"
+      ],
+      "native": [
+       "▁=",
+       "▁",
+       "▁",
+       "▁",
+       "|",
+       "▁{"
+      ],
+      "excerpt": "type Result<T> =\n  | { ok: true; value: T }\n  | { ok: false; error: string };\n\nc"
+     },
+     {
+      "text": 49,
+      "hf_len": 81,
+      "native_len": 93,
+      "first_diff": 38,
+      "hf": [
+       ")",
+       "▁{",
+       "▁flo",
+       "at",
+       "▁s",
+       "▁="
+      ],
+      "native": [
+       ")",
+       "▁{",
+       "▁",
+       "▁",
+       "▁",
+       "▁"
+      ],
+      "excerpt": "// Kommentar auf Deutsch: berechnet den gleitenden Mittelwert\nfloat moving_avera"
+     },
+     {
+      "text": 50,
+      "hf_len": 49,
+      "native_len": 51,
+      "first_diff": 9,
+      "hf": [
+       "▁Herren",
+       ",",
+       "▁hier",
+       "mit",
+       "▁k",
+       "ündig"
+      ],
+      "native": [
+       "▁Herren",
+       ",",
+       "▁",
+       "▁hier",
+       "mit",
+       "▁k"
+      ],
+      "excerpt": "Sehr geehrte Damen und Herren,\n\nhiermit kündige ich meinen Mietvertrag für die W"
+     }
+    ],
+    "cos_min": 0.9684533165339754,
+    "cos_mean": 0.9982386050939691,
+    "worst_text": 54,
+    "per_text": [
+     0.999661,
+     0.999486,
+     0.999642,
+     0.999506,
+     0.999396,
+     0.999428,
+     0.999572,
+     0.999504,
+     0.999511,
+     0.999519,
+     0.999412,
+     0.999254,
+     0.999371,
+     0.999394,
+     0.999461,
+     0.999457,
+     0.999424,
+     0.999443,
+     0.999274,
+     0.999465,
+     0.999388,
+     0.999515,
+     0.999431,
+     0.999427,
+     0.999444,
+     0.999518,
+     0.999202,
+     0.999438,
+     0.999249,
+     0.999423,
+     0.99957,
+     0.999585,
+     0.999497,
+     0.999547,
+     0.99955,
+     0.99952,
+     0.999453,
+     0.999427,
+     0.999547,
+     0.999491,
+     0.999527,
+     0.999611,
+     0.999465,
+     0.999558,
+     0.999384,
+     0.995396,
+     0.972766,
+     0.985412,
+     0.996269,
+     0.995098,
+     0.997655,
+     0.998684,
+     0.990733,
+     0.998465,
+     0.968453,
+     0.999487,
+     0.999494,
+     0.999389,
+     0.999519,
+     0.999606,
+     0.999593,
+     0.999571,
+     0.999587,
+     0.999525,
+     0.99958,
+     0.998722,
+     0.999613,
+     0.999574,
+     0.999595,
+     0.999454,
+     0.999647,
+     0.999538,
+     0.999624,
+     0.999579,
+     0.999584,
+     0.99961,
+     0.999603
+    ],
+    "wall_s": 15.01
+   }
+  },
+  {
+   "alias": "bge-reranker-v2-m3",
+   "hf": "BAAI/bge-reranker-v2-m3",
+   "kind": "rerank",
+   "registry_alias": "bge-reranker-v2-m3",
+   "file": "bge-reranker-v2-m3-q8_0.gguf",
+   "url": "https://huggingface.co/cstr/bge-reranker-v2-m3-GGUF/resolve/main/bge-reranker-v2-m3-q8_0.gguf",
+   "hf_tokenizer": "XLMRobertaTokenizerFast",
+   "normalizer": {
+    "type": "Sequence",
+    "normalizers": [
+     {
+      "type": "Precompiled",
+      "precompiled_charsmap": "<charsmap>"
+     },
+     {
+      "type": "Strip",
+      "strip_left": false,
+      "strip_right": true
+     },
+     {
+      "type": "Replace",
+      "pattern": {
+       "Regex": " {2,}"
+      },
+      "content": "▁"
+     }
+    ]
+   },
+   "hf_max_length": 8192,
+   "excluded_over_length": [],
+   "slow_tokenizer": "XLMRobertaTokenizer",
+   "default (collapse on)": {
+    "ids_equal": 77,
+    "ids_equal_sentencepiece": 77,
+    "ids_mismatch_texts": [],
+    "ids_mismatch_examples": [],
+    "score_mapping": "raw",
+    "score_max_abs": 1.859513827636719,
+    "score_mean_abs": 0.0580625616617575,
+    "score_cos": 0.9997784188576767,
+    "worst_text": 6,
+    "order_equal": false,
+    "wall_s": 16.77
+   },
+   "CRISPEMBED_SPM_COLLAPSE_SPACES=0": {
+    "ids_equal": 67,
+    "ids_equal_sentencepiece": 67,
+    "ids_mismatch_texts": [
+     45,
+     46,
+     47,
+     48,
+     49,
+     50,
+     51,
+     52,
+     53,
+     54
+    ],
+    "ids_mismatch_examples": [
+     {
+      "text": 45,
+      "hf_len": 65,
+      "native_len": 75,
+      "first_diff": 13,
+      "hf": [
+       ")",
+       "▁{",
+       "▁con",
+       "st",
+       "▁results",
+       "▁="
+      ],
+      "native": [
+       ")",
+       "▁{",
+       "▁",
+       "▁",
+       "▁con",
+       "st"
+      ],
+      "excerpt": "async function fetchAll(urls) {\n  const results = await Promise.all(\n    urls.ma"
+     },
+     {
+      "text": 46,
+      "hf_len": 59,
+      "native_len": 132,
+      "first_diff": 9,
+      "hf": [
+       "▁Counter",
+       "▁{",
+       "▁type",
+       "▁Item",
+       "▁=",
+       "▁u"
+      ],
+      "native": [
+       "▁Counter",
+       "▁{",
+       "▁",
+       "▁",
+       "▁",
+       "▁"
+      ],
+      "excerpt": "impl Iterator for Counter {\n    type Item = u32;\n\n    fn next(&mut self) -> Opti"
+     },
+     {
+      "text": 47,
+      "hf_len": 93,
+      "native_len": 138,
+      "first_diff": 20,
+      "hf": [
+       "ne",
+       ":",
+       "▁if",
+       "▁\"",
+       "f",
+       "2"
+      ],
+      "native": [
+       "ne",
+       ":",
+       "▁",
+       "▁",
+       "▁",
+       "▁"
+      ],
+      "excerpt": "def query_prefix(model: str) -> str | None:\n    if \"f2llm-v2\" in model:\n        "
+     },
+     {
+      "text": 48,
+      "hf_len": 75,
+      "native_len": 84,
+      "first_diff": 8,
+      "hf": [
+       "▁=",
+       "▁",
+       "|",
+       "▁{",
+       "▁ok",
+       ":"
+      ],
+      "native": [
+       "▁=",
+       "▁",
+       "▁",
+       "▁",
+       "|",
+       "▁{"
+      ],
+      "excerpt": "type Result<T> =\n  | { ok: true; value: T }\n  | { ok: false; error: string };\n\nc"
+     },
+     {
+      "text": 49,
+      "hf_len": 81,
+      "native_len": 93,
+      "first_diff": 38,
+      "hf": [
+       ")",
+       "▁{",
+       "▁flo",
+       "at",
+       "▁s",
+       "▁="
+      ],
+      "native": [
+       ")",
+       "▁{",
+       "▁",
+       "▁",
+       "▁",
+       "▁"
+      ],
+      "excerpt": "// Kommentar auf Deutsch: berechnet den gleitenden Mittelwert\nfloat moving_avera"
+     },
+     {
+      "text": 50,
+      "hf_len": 49,
+      "native_len": 51,
+      "first_diff": 9,
+      "hf": [
+       "▁Herren",
+       ",",
+       "▁hier",
+       "mit",
+       "▁k",
+       "ündig"
+      ],
+      "native": [
+       "▁Herren",
+       ",",
+       "▁",
+       "▁hier",
+       "mit",
+       "▁k"
+      ],
+      "excerpt": "Sehr geehrte Damen und Herren,\n\nhiermit kündige ich meinen Mietvertrag für die W"
+     }
+    ],
+    "score_mapping": "raw",
+    "score_max_abs": 1.859513827636719,
+    "score_mean_abs": 0.06051268684882626,
+    "score_cos": 0.9997712841524733,
+    "worst_text": 6,
+    "order_equal": false,
+    "wall_s": 17.86
+   }
+  },
+  {
+   "alias": "bge-reranker-base",
+   "hf": "BAAI/bge-reranker-base",
+   "kind": "rerank",
+   "registry_alias": "bge-reranker-base",
+   "file": "bge-reranker-base-q8_0.gguf",
+   "url": "https://huggingface.co/cstr/bge-reranker-base-GGUF/resolve/main/bge-reranker-base-q8_0.gguf",
+   "hf_tokenizer": "XLMRobertaTokenizerFast",
+   "normalizer": {
+    "type": "Sequence",
+    "normalizers": [
+     {
+      "type": "Precompiled",
+      "precompiled_charsmap": "<charsmap>"
+     },
+     {
+      "type": "Replace",
+      "pattern": {
+       "Regex": " {2,}"
+      },
+      "content": " "
+     }
+    ]
+   },
+   "hf_max_length": 512,
+   "excluded_over_length": [
+    11
+   ],
+   "slow_tokenizer": "XLMRobertaTokenizer",
+   "long_input_probe": {
+    "rc": -6,
+    "stderr_tail": "a70)[0x7f4b9710b270]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x1acc6)[0x7f4b9708ecc6]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x1bc95)[0x7f4b9708fc95]\n/lib/x86_64-linux-gnu/libc.so.6(+0x9cb84)[0x7f4b9689cb84]\n/lib/x86_64-linux-gnu/libc.so.6(+0x129ecc)[0x7f4b96929ecc]\n",
+    "hf_len": 642
+   },
+   "default (collapse on)": {
+    "ids_equal": 71,
+    "ids_equal_sentencepiece": 76,
+    "ids_mismatch_texts": [
+     46,
+     50,
+     51,
+     52,
+     53
+    ],
+    "ids_mismatch_examples": [
+     {
+      "text": 46,
+      "hf_len": 94,
+      "native_len": 93,
+      "first_diff": 92,
+      "hf": [
+       "▁No",
+       "ne",
+       "▁",
+       "</s>"
+      ],
+      "native": [
+       "▁No",
+       "ne",
+       "</s>"
+      ],
+      "excerpt": "def query_prefix(model: str) -> str | None:\n    if \"f2llm-v2\" in model:\n        "
+     },
+     {
+      "text": 50,
+      "hf_len": 44,
+      "native_len": 43,
+      "first_diff": 42,
+      "hf": [
+       "▁entry",
+       "▁written",
+       "▁",
+       "</s>"
+      ],
+      "native": [
+       "▁entry",
+       "▁written",
+       "</s>"
+      ],
+      "excerpt": "Checklist before release\n\n[x] unit tests green\n[x] clang-format clean\n[ ] PERFOR"
+     },
+     {
+      "text": 51,
+      "hf_len": 29,
+      "native_len": 28,
+      "first_diff": 27,
+      "hf": [
+       "▁12:00",
+       "▁Ende",
+       "▁",
+       "</s>"
+      ],
+      "native": [
+       "▁12:00",
+       "▁Ende",
+       "</s>"
+      ],
+      "excerpt": "Agenda\n\n09:00  Begrüßung\n09:15  Stand der Migration\n10:00  Pause\n10:15  Diskussi"
+     },
+     {
+      "text": 52,
+      "hf_len": 52,
+      "native_len": 51,
+      "first_diff": 50,
+      "hf": [
+       "▁necessary",
+       ".",
+       "▁",
+       "</s>"
+      ],
+      "native": [
+       "▁necessary",
+       ".",
+       "</s>"
+      ],
+      "excerpt": "Article 5\n\n1. Personal data shall be processed lawfully, fairly and transparentl"
+     },
+     {
+      "text": 53,
+      "hf_len": 68,
+      "native_len": 67,
+      "first_diff": 66,
+      "hf": [
+       "85",
+       "▁€",
+       "▁",
+       "</s>"
+      ],
+      "native": [
+       "85",
+       "▁€",
+       "</s>"
+      ],
+      "excerpt": "Rechnung Nr. 2026-0815\n\nPos.  Beschreibung              Menge   Einzelpreis   Ge"
+     }
+    ],
+    "score_mapping": "raw",
+    "score_max_abs": 1.6019813037719732,
+    "score_mean_abs": 0.09652877560705878,
+    "score_cos": 0.9996127316616811,
+    "worst_text": 40,
+    "order_equal": false,
+    "wall_s": 4.31
+   },
+   "CRISPEMBED_SPM_COLLAPSE_SPACES=0": {
+    "ids_equal": 66,
+    "ids_equal_sentencepiece": 66,
+    "ids_mismatch_texts": [
+     44,
+     45,
+     46,
+     47,
+     48,
+     49,
+     50,
+     51,
+     52,
+     53
+    ],
+    "ids_mismatch_examples": [
+     {
+      "text": 44,
+      "hf_len": 65,
+      "native_len": 75,
+      "first_diff": 13,
+      "hf": [
+       ")",
+       "▁{",
+       "▁con",
+       "st",
+       "▁results",
+       "▁="
+      ],
+      "native": [
+       ")",
+       "▁{",
+       "▁",
+       "▁",
+       "▁con",
+       "st"
+      ],
+      "excerpt": "async function fetchAll(urls) {\n  const results = await Promise.all(\n    urls.ma"
+     },
+     {
+      "text": 45,
+      "hf_len": 59,
+      "native_len": 132,
+      "first_diff": 9,
+      "hf": [
+       "▁Counter",
+       "▁{",
+       "▁type",
+       "▁Item",
+       "▁=",
+       "▁u"
+      ],
+      "native": [
+       "▁Counter",
+       "▁{",
+       "▁",
+       "▁",
+       "▁",
+       "▁"
+      ],
+      "excerpt": "impl Iterator for Counter {\n    type Item = u32;\n\n    fn next(&mut self) -> Opti"
+     },
+     {
+      "text": 46,
+      "hf_len": 94,
+      "native_len": 138,
+      "first_diff": 20,
+      "hf": [
+       "ne",
+       ":",
+       "▁if",
+       "▁\"",
+       "f",
+       "2"
+      ],
+      "native": [
+       "ne",
+       ":",
+       "▁",
+       "▁",
+       "▁",
+       "▁"
+      ],
+      "excerpt": "def query_prefix(model: str) -> str | None:\n    if \"f2llm-v2\" in model:\n        "
+     },
+     {
+      "text": 47,
+      "hf_len": 75,
+      "native_len": 84,
+      "first_diff": 8,
+      "hf": [
+       "▁=",
+       "▁",
+       "|",
+       "▁{",
+       "▁ok",
+       ":"
+      ],
+      "native": [
+       "▁=",
+       "▁",
+       "▁",
+       "▁",
+       "|",
+       "▁{"
+      ],
+      "excerpt": "type Result<T> =\n  | { ok: true; value: T }\n  | { ok: false; error: string };\n\nc"
+     },
+     {
+      "text": 48,
+      "hf_len": 81,
+      "native_len": 93,
+      "first_diff": 38,
+      "hf": [
+       ")",
+       "▁{",
+       "▁flo",
+       "at",
+       "▁s",
+       "▁="
+      ],
+      "native": [
+       ")",
+       "▁{",
+       "▁",
+       "▁",
+       "▁",
+       "▁"
+      ],
+      "excerpt": "// Kommentar auf Deutsch: berechnet den gleitenden Mittelwert\nfloat moving_avera"
+     },
+     {
+      "text": 49,
+      "hf_len": 49,
+      "native_len": 51,
+      "first_diff": 9,
+      "hf": [
+       "▁Herren",
+       ",",
+       "▁hier",
+       "mit",
+       "▁k",
+       "ündig"
+      ],
+      "native": [
+       "▁Herren",
+       ",",
+       "▁",
+       "▁hier",
+       "mit",
+       "▁k"
+      ],
+      "excerpt": "Sehr geehrte Damen und Herren,\n\nhiermit kündige ich meinen Mietvertrag für die W"
+     }
+    ],
+    "score_mapping": "raw",
+    "score_max_abs": 1.6019813037719732,
+    "score_mean_abs": 0.09724749398602929,
+    "score_cos": 0.9996347491553682,
+    "worst_text": 40,
+    "order_equal": false,
+    "wall_s": 4.62
+   }
+  },
+  {
+   "alias": "jina-reranker-v2-base-multilingual",
+   "hf": "jinaai/jina-reranker-v2-base-multilingual",
+   "kind": "rerank",
+   "registry_alias": "jina-reranker-v2-base-multilingual",
+   "file": "jina-reranker-v2-base-multilingual-q8_0.gguf",
+   "url": "https://huggingface.co/cstr/jina-reranker-v2-base-multilingual-GGUF/resolve/main/jina-reranker-v2-base-multilingual-q8_0.gguf",
+   "hf_tokenizer": "XLMRobertaTokenizerFast",
+   "normalizer": {
+    "type": "Precompiled",
+    "precompiled_charsmap": "<charsmap>"
+   },
+   "hf_max_length": 1024,
+   "excluded_over_length": [],
+   "slow_tokenizer_error": "TypeError: 'bool' object is not callable",
+   "default (collapse on)": {
+    "ids_equal": 77,
+    "ids_mismatch_texts": [],
+    "ids_mismatch_examples": [],
+    "score_mapping": "raw",
+    "score_max_abs": 0.13726336402893047,
+    "score_mean_abs": 0.02113467455499824,
+    "score_cos": 0.999955695250082,
+    "worst_text": 10,
+    "order_equal": false,
+    "wall_s": 5.33
+   },
+   "CRISPEMBED_SPM_COLLAPSE_SPACES=0": {
+    "ids_equal": 67,
+    "ids_mismatch_texts": [
+     45,
+     46,
+     47,
+     48,
+     49,
+     50,
+     51,
+     52,
+     53,
+     54
+    ],
+    "ids_mismatch_examples": [
+     {
+      "text": 45,
+      "hf_len": 65,
+      "native_len": 75,
+      "first_diff": 13,
+      "hf": [
+       ")",
+       "▁{",
+       "▁con",
+       "st",
+       "▁results",
+       "▁="
+      ],
+      "native": [
+       ")",
+       "▁{",
+       "▁",
+       "▁",
+       "▁con",
+       "st"
+      ],
+      "excerpt": "async function fetchAll(urls) {\n  const results = await Promise.all(\n    urls.ma"
+     },
+     {
+      "text": 46,
+      "hf_len": 59,
+      "native_len": 132,
+      "first_diff": 9,
+      "hf": [
+       "▁Counter",
+       "▁{",
+       "▁type",
+       "▁Item",
+       "▁=",
+       "▁u"
+      ],
+      "native": [
+       "▁Counter",
+       "▁{",
+       "▁",
+       "▁",
+       "▁",
+       "▁"
+      ],
+      "excerpt": "impl Iterator for Counter {\n    type Item = u32;\n\n    fn next(&mut self) -> Opti"
+     },
+     {
+      "text": 47,
+      "hf_len": 93,
+      "native_len": 138,
+      "first_diff": 20,
+      "hf": [
+       "ne",
+       ":",
+       "▁if",
+       "▁\"",
+       "f",
+       "2"
+      ],
+      "native": [
+       "ne",
+       ":",
+       "▁",
+       "▁",
+       "▁",
+       "▁"
+      ],
+      "excerpt": "def query_prefix(model: str) -> str | None:\n    if \"f2llm-v2\" in model:\n        "
+     },
+     {
+      "text": 48,
+      "hf_len": 75,
+      "native_len": 84,
+      "first_diff": 8,
+      "hf": [
+       "▁=",
+       "▁",
+       "|",
+       "▁{",
+       "▁ok",
+       ":"
+      ],
+      "native": [
+       "▁=",
+       "▁",
+       "▁",
+       "▁",
+       "|",
+       "▁{"
+      ],
+      "excerpt": "type Result<T> =\n  | { ok: true; value: T }\n  | { ok: false; error: string };\n\nc"
+     },
+     {
+      "text": 49,
+      "hf_len": 81,
+      "native_len": 93,
+      "first_diff": 38,
+      "hf": [
+       ")",
+       "▁{",
+       "▁flo",
+       "at",
+       "▁s",
+       "▁="
+      ],
+      "native": [
+       ")",
+       "▁{",
+       "▁",
+       "▁",
+       "▁",
+       "▁"
+      ],
+      "excerpt": "// Kommentar auf Deutsch: berechnet den gleitenden Mittelwert\nfloat moving_avera"
+     },
+     {
+      "text": 50,
+      "hf_len": 49,
+      "native_len": 51,
+      "first_diff": 9,
+      "hf": [
+       "▁Herren",
+       ",",
+       "▁hier",
+       "mit",
+       "▁k",
+       "ündig"
+      ],
+      "native": [
+       "▁Herren",
+       ",",
+       "▁",
+       "▁hier",
+       "mit",
+       "▁k"
+      ],
+      "excerpt": "Sehr geehrte Damen und Herren,\n\nhiermit kündige ich meinen Mietvertrag für die W"
+     }
+    ],
+    "score_mapping": "raw",
+    "score_max_abs": 0.1635206732635499,
+    "score_mean_abs": 0.02375988205590187,
+    "score_cos": 0.9999410220060235,
+    "worst_text": 49,
+    "order_equal": false,
+    "wall_s": 5.63
+   }
+  },
+  {
+   "alias": "mxbai-rerank-xsmall-v1",
+   "hf": "mixedbread-ai/mxbai-rerank-xsmall-v1",
+   "kind": "rerank",
+   "registry_alias": "mxbai-rerank-xsmall-v1",
+   "file": "mxbai-rerank-xsmall-v1-q8_0-g7c.gguf",
+   "url": "https://huggingface.co/cstr/mxbai-rerank-xsmall-v1-GGUF/resolve/main/mxbai-rerank-xsmall-v1-q8_0-g7c.gguf",
+   "hf_tokenizer": "DebertaV2TokenizerFast",
+   "normalizer": {
+    "type": "Sequence",
+    "normalizers": [
+     {
+      "type": "Strip",
+      "strip_left": true,
+      "strip_right": true
+     },
+     {
+      "type": "Precompiled",
+      "precompiled_charsmap": "<charsmap>"
+     },
+     {
+      "type": "Replace",
+      "pattern": {
+       "Regex": " {2,}"
+      },
+      "content": " "
+     }
+    ]
+   },
+   "hf_max_length": 512,
+   "excluded_over_length": [],
+   "slow_tokenizer": "DebertaV2Tokenizer",
+   "default (collapse on)": {
+    "ids_equal": 77,
+    "ids_equal_sentencepiece": 77,
+    "ids_mismatch_texts": [],
+    "ids_mismatch_examples": [],
+    "score_mapping": "raw",
+    "score_max_abs": 0.06500539492797852,
+    "score_mean_abs": 0.022753681949070542,
+    "score_cos": 0.9999899037853642,
+    "worst_text": 67,
+    "order_equal": false,
+    "wall_s": 25.88
+   },
+   "CRISPEMBED_SPM_COLLAPSE_SPACES=0": {
+    "ids_equal": 67,
+    "ids_equal_sentencepiece": 67,
+    "ids_mismatch_texts": [
+     45,
+     46,
+     47,
+     48,
+     49,
+     50,
+     51,
+     52,
+     53,
+     54
+    ],
+    "ids_mismatch_examples": [
+     {
+      "text": 45,
+      "hf_len": 61,
+      "native_len": 71,
+      "first_diff": 11,
+      "hf": [
+       ")",
+       "▁{",
+       "▁const",
+       "▁results",
+       "▁=",
+       "▁await"
+      ],
+      "native": [
+       ")",
+       "▁{",
+       "▁",
+       "▁",
+       "▁const",
+       "▁results"
+      ],
+      "excerpt": "async function fetchAll(urls) {\n  const results = await Promise.all(\n    urls.ma"
+     },
+     {
+      "text": 46,
+      "hf_len": 57,
+      "native_len": 130,
+      "first_diff": 7,
+      "hf": [
+       "▁Counter",
+       "▁{",
+       "▁type",
+       "▁Item",
+       "▁=",
+       "▁u"
+      ],
+      "native": [
+       "▁Counter",
+       "▁{",
+       "▁",
+       "▁",
+       "▁",
+       "▁"
+      ],
+      "excerpt": "impl Iterator for Counter {\n    type Item = u32;\n\n    fn next(&mut self) -> Opti"
+     },
+     {
+      "text": 47,
+      "hf_len": 81,
+      "native_len": 126,
+      "first_diff": 16,
+      "hf": [
+       "▁None",
+       ":",
+       "▁if",
+       "▁\"",
+       "f",
+       "2"
+      ],
+      "native": [
+       "▁None",
+       ":",
+       "▁",
+       "▁",
+       "▁",
+       "▁"
+      ],
+      "excerpt": "def query_prefix(model: str) -> str | None:\n    if \"f2llm-v2\" in model:\n        "
+     },
+     {
+      "text": 48,
+      "hf_len": 72,
+      "native_len": 81,
+      "first_diff": 7,
+      "hf": [
+       ">",
+       "▁=",
+       "▁|",
+       "▁{",
+       "▁ok",
+       ":"
+      ],
+      "native": [
+       ">",
+       "▁=",
+       "▁",
+       "▁",
+       "▁|",
+       "▁{"
+      ],
+      "excerpt": "type Result<T> =\n  | { ok: true; value: T }\n  | { ok: false; error: string };\n\nc"
+     },
+     {
+      "text": 49,
+      "hf_len": 81,
+      "native_len": 93,
+      "first_diff": 38,
+      "hf": [
+       ")",
+       "▁{",
+       "▁float",
+       "▁s",
+       "▁=",
+       "▁0"
+      ],
+      "native": [
+       ")",
+       "▁{",
+       "▁",
+       "▁",
+       "▁",
+       "▁"
+      ],
+      "excerpt": "// Kommentar auf Deutsch: berechnet den gleitenden Mittelwert\nfloat moving_avera"
+     },
+     {
+      "text": 50,
+      "hf_len": 55,
+      "native_len": 57,
+      "first_diff": 9,
+      "hf": [
+       "▁Herren",
+       ",",
+       "▁hier",
+       "mit",
+       "▁kü",
+       "nd"
+      ],
+      "native": [
+       "▁Herren",
+       ",",
+       "▁",
+       "▁hier",
+       "mit",
+       "▁kü"
+      ],
+      "excerpt": "Sehr geehrte Damen und Herren,\n\nhiermit kündige ich meinen Mietvertrag für die W"
+     }
+    ],
+    "score_mapping": "raw",
+    "score_max_abs": 0.33449435165405283,
+    "score_mean_abs": 0.038846432221350764,
+    "score_cos": 0.9998958955855243,
+    "worst_text": 46,
+    "order_equal": false,
+    "wall_s": 28.98
+   }
+  },
+  {
+   "alias": "mxbai-rerank-base-v1",
+   "hf": "mixedbread-ai/mxbai-rerank-base-v1",
+   "kind": "rerank",
+   "registry_alias": "mxbai-rerank-base-v1",
+   "file": "mxbai-rerank-base-v1-q8_0-g7c.gguf",
+   "url": "https://huggingface.co/cstr/mxbai-rerank-base-v1-GGUF/resolve/main/mxbai-rerank-base-v1-q8_0-g7c.gguf",
+   "hf_tokenizer": "DebertaV2TokenizerFast",
+   "normalizer": {
+    "type": "Sequence",
+    "normalizers": [
+     {
+      "type": "Strip",
+      "strip_left": true,
+      "strip_right": true
+     },
+     {
+      "type": "Precompiled",
+      "precompiled_charsmap": "<charsmap>"
+     },
+     {
+      "type": "Replace",
+      "pattern": {
+       "Regex": " {2,}"
+      },
+      "content": " "
+     }
+    ]
+   },
+   "hf_max_length": 512,
+   "excluded_over_length": [],
+   "slow_tokenizer": "DebertaV2Tokenizer",
+   "default (collapse on)": {
+    "ids_equal": 77,
+    "ids_equal_sentencepiece": 77,
+    "ids_mismatch_texts": [],
+    "ids_mismatch_examples": [],
+    "score_mapping": "raw",
+    "score_max_abs": 0.07865090460205071,
+    "score_mean_abs": 0.019697023394497956,
+    "score_cos": 0.9999873578700549,
+    "worst_text": 11,
+    "order_equal": false,
+    "wall_s": 101.0
+   },
+   "CRISPEMBED_SPM_COLLAPSE_SPACES=0": {
+    "ids_equal": 67,
+    "ids_equal_sentencepiece": 67,
+    "ids_mismatch_texts": [
+     45,
+     46,
+     47,
+     48,
+     49,
+     50,
+     51,
+     52,
+     53,
+     54
+    ],
+    "ids_mismatch_examples": [
+     {
+      "text": 45,
+      "hf_len": 61,
+      "native_len": 71,
+      "first_diff": 11,
+      "hf": [
+       ")",
+       "▁{",
+       "▁const",
+       "▁results",
+       "▁=",
+       "▁await"
+      ],
+      "native": [
+       ")",
+       "▁{",
+       "▁",
+       "▁",
+       "▁const",
+       "▁results"
+      ],
+      "excerpt": "async function fetchAll(urls) {\n  const results = await Promise.all(\n    urls.ma"
+     },
+     {
+      "text": 46,
+      "hf_len": 57,
+      "native_len": 130,
+      "first_diff": 7,
+      "hf": [
+       "▁Counter",
+       "▁{",
+       "▁type",
+       "▁Item",
+       "▁=",
+       "▁u"
+      ],
+      "native": [
+       "▁Counter",
+       "▁{",
+       "▁",
+       "▁",
+       "▁",
+       "▁"
+      ],
+      "excerpt": "impl Iterator for Counter {\n    type Item = u32;\n\n    fn next(&mut self) -> Opti"
+     },
+     {
+      "text": 47,
+      "hf_len": 81,
+      "native_len": 126,
+      "first_diff": 16,
+      "hf": [
+       "▁None",
+       ":",
+       "▁if",
+       "▁\"",
+       "f",
+       "2"
+      ],
+      "native": [
+       "▁None",
+       ":",
+       "▁",
+       "▁",
+       "▁",
+       "▁"
+      ],
+      "excerpt": "def query_prefix(model: str) -> str | None:\n    if \"f2llm-v2\" in model:\n        "
+     },
+     {
+      "text": 48,
+      "hf_len": 72,
+      "native_len": 81,
+      "first_diff": 7,
+      "hf": [
+       ">",
+       "▁=",
+       "▁|",
+       "▁{",
+       "▁ok",
+       ":"
+      ],
+      "native": [
+       ">",
+       "▁=",
+       "▁",
+       "▁",
+       "▁|",
+       "▁{"
+      ],
+      "excerpt": "type Result<T> =\n  | { ok: true; value: T }\n  | { ok: false; error: string };\n\nc"
+     },
+     {
+      "text": 49,
+      "hf_len": 81,
+      "native_len": 93,
+      "first_diff": 38,
+      "hf": [
+       ")",
+       "▁{",
+       "▁float",
+       "▁s",
+       "▁=",
+       "▁0"
+      ],
+      "native": [
+       ")",
+       "▁{",
+       "▁",
+       "▁",
+       "▁",
+       "▁"
+      ],
+      "excerpt": "// Kommentar auf Deutsch: berechnet den gleitenden Mittelwert\nfloat moving_avera"
+     },
+     {
+      "text": 50,
+      "hf_len": 55,
+      "native_len": 57,
+      "first_diff": 9,
+      "hf": [
+       "▁Herren",
+       ",",
+       "▁hier",
+       "mit",
+       "▁kü",
+       "nd"
+      ],
+      "native": [
+       "▁Herren",
+       ",",
+       "▁",
+       "▁hier",
+       "mit",
+       "▁kü"
+      ],
+      "excerpt": "Sehr geehrte Damen und Herren,\n\nhiermit kündige ich meinen Mietvertrag für die W"
+     }
+    ],
+    "score_mapping": "raw",
+    "score_max_abs": 0.20353875598144544,
+    "score_mean_abs": 0.02743873250252859,
+    "score_cos": 0.999962097343712,
+    "worst_text": 47,
+    "order_equal": false,
+    "wall_s": 112.39
+   }
+  }
+ ]
+}

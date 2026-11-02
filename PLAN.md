@@ -1,3 +1,22 @@
+## Wiring and environment-variable audit — 2 November 2026
+
+Reference: [docs/wiring-audit-20261102.md](docs/wiring-audit-20261102.md) and
+[docs/environment-variables.md](docs/environment-variables.md). Mechanical fixes
+(named stage ids 13/23 in every binding, `unlimited-ocr[2]` CLI/server aliases)
+are merged. Open, scoped:
+
+- [x] 131 `presence` env reads → `core_env::on` / `core_env::value`; Lint guard
+      added (`tests/test_env_vars_documented.py`). Defaults unchanged.
+- [x] MiniCPM-OCR CLI default = server default (`minicpm-ocr` alias, gates required).
+- [ ] CrispSorter: merge [PR #19](https://github.com/CrispStrobe/CrispSorter/pull/19)
+      (experimental `unlimited_ocr2`→13, `minicpm_ocr`→23 selectors) once its CI is green.
+      CrispCalc: no engine-id selector; catalog entries only after the app pin moves past
+      0.17.12 (exact TODO in the wiring audit).
+- [ ] Optional, cross-repo: make `core_env::on`/`explicitly_off` treat `false`/`off`/`no`
+      as off. This needs a matching edit to CrispASR's `src/core/env_gate.h` in the same
+      change, because the Build sibling check requires the two copies to be code-identical.
+- [x] Unlimited-OCR v1 registry URL pinned to Hub commit `79d6658f` (same sha256).
+
 ## GOT-OCR2 F16 artifact — 2 November 2026 (`fix/got-ocr2-f16`)
 
 Root cause: the published `got-ocr2-f16.gguf` (Hub `5a0b0a1adc`) has an 8 MiB block of zero
@@ -45,8 +64,17 @@ Source: `docs/gpu-support-matrix.md` §CUDA audit (branch `feat/cuda-audit`, Kag
   - A CUDA re-run of the new files.
   - The bge-m3 Q8_0 mix has a thin ColBERT margin (0.9726 vs 0.97).
   - A ColBERT-qualifying Q4_K recipe for BGE-M3 (all tried mixes 0.37-0.60).
-  - Re-measure the other XLM-R embedders (e5, arctic-l-v2, …) against HF after the
-    `CRISPEMBED_SPM_COLLAPSE_SPACES` tokenizer fix (A/B'd on bge-m3 only).
+  - Done ([A/B](tests/results/spm-collapse-ab/SUMMARY.md)): `CRISPEMBED_SPM_COLLAPSE_SPACES` checked on all
+    16 SentencePiece-encoder registry models; no regression, and the IDs match SentencePiece 76-77/77.
+  - BGE-M3 Q8_0 mix ColBERT is 0.9667 on CUDA (T4, cuda-audit run 7) vs 0.9718 on the CPU arm. It is below
+    0.97 on CUDA, so a wider F16 block range is needed before it qualifies there.
+- Pre-existing defects that are independent of the tokenizer switch
+  ([A/B notes](tests/results/spm-collapse-ab/SUMMARY.md)):
+  - Inputs over 512 tokens abort (`GGML_ASSERT` in get_rows) instead of truncating. Affected:
+    e5-base/large, granite-107m/278m, bge-reranker-base, xlmr-ner-hrl.
+  - bge-reranker-v2-m3 and bge-reranker-base scores differ from HF by up to 1.9 logits, and the order differs.
+  - The xlmr-ner-hrl GGUF has no Unigram scores (12/76 texts tokenize like HF).
+  - paraphrase-multilingual: native truncates at 512, sentence-transformers at 128.
 - Stage-diff references that fail on both arms: PP-OCRv6 small rec fox ref, PAN, HAT.
 - Not reached on CUDA: PP-LCNet, CRAFT, TexTeller/Pix2TeX, BERT-NER, LFM2.5-VL, LFM2
   encoder, Unlimited/DeepSeek-OCR2, Text-SR, SAFMN, face recognition, BiDirLM audio.

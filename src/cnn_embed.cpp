@@ -568,7 +568,7 @@ std::vector<face_detection> detect(context * ctx, const float * pixels, int H, i
     ggml_backend_graph_compute(ctx->backend, gf);
 
     // Debug: compare output tensors with ONNX reference (CNN_DEBUG=1)
-    if (is_yunet && getenv("CNN_DEBUG")) {
+    if (is_yunet && core_env::on("CNN_DEBUG")) {
         const char * ref_dir = getenv("CNN_REF_DIR");
         if (!ref_dir) ref_dir = "/tmp";
         const char * det_names[] = { "cls_8",  "cls_16",  "cls_32",  "obj_8", "obj_16", "obj_32",

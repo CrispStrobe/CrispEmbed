@@ -1266,7 +1266,7 @@ const char * bttr_ocr_recognize(bttr_ocr_context * ctx, const float * pixels, in
                 std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
 
     t0 = std::chrono::steady_clock::now();
-    if (ctx->enc_sched && !std::getenv("BTTR_OCR_SCALAR_ENCODER"))
+    if (ctx->enc_sched && !core_env::on("BTTR_OCR_SCALAR_ENCODER"))
         run_encoder_ggml(ctx, input, w, h);
     else
         run_encoder(ctx, input, w, h);
@@ -1320,7 +1320,7 @@ const char * bttr_ocr_recognize_beam(bttr_ocr_context * ctx, const float * pixel
                 std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
 
     t0 = std::chrono::steady_clock::now();
-    if (ctx->enc_sched && !std::getenv("BTTR_OCR_SCALAR_ENCODER"))
+    if (ctx->enc_sched && !core_env::on("BTTR_OCR_SCALAR_ENCODER"))
         run_encoder_ggml(ctx, input, w, h);
     else
         run_encoder(ctx, input, w, h);

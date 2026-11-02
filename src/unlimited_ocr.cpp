@@ -34,6 +34,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include "core/env_value.h"
 
 // Internal types/helpers have internal linkage: deepseek_ocr2.cpp and lfm2_vl_ocr.cpp
 // define same-named structs (e.g. llm_layer_w), and differing layouts across TUs are an
@@ -3852,7 +3853,7 @@ static std::string decode_tokens(const uocr_ctx & ctx, const int32_t * ids, int 
     // byte-exact (src/unlimited_ocr2_text.h). CRISPEMBED_UNLIMITED_OCR2_OUTPUT=clean selects
     // the layout-stripped rendering, =legacy the old marker-dropping text below.
     if (ctx.m.lhp.variant == 2) {
-        const auto mode = uocr2_text::parse_output_mode(getenv("CRISPEMBED_UNLIMITED_OCR2_OUTPUT"));
+        const auto mode = uocr2_text::parse_output_mode(core_env::value("CRISPEMBED_UNLIMITED_OCR2_OUTPUT"));
         if (mode != uocr2_text::output_mode::legacy) {
             std::string raw = uocr2_text::decode_raw(ctx.id_to_piece, ids, n, ctx.m.lhp.eos_token_id);
             return mode == uocr2_text::output_mode::clean ? uocr2_text::clean(raw) : raw;

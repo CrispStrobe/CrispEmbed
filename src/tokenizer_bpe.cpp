@@ -15,6 +15,7 @@
 #include <queue>
 #include <string>
 #include <vector>
+#include "core/env_gate.h"
 
 bool BPETokenizer::load(const std::vector<std::string> & vocab, const std::vector<std::string> & merges, int eos_id,
                         int pad_id, int suffix_id, int bos_id, bool spm_style, int max_length, bool spm_dummy_prefix,
@@ -496,7 +497,7 @@ embed_tokens BPETokenizer::encode(const std::string & text) const {
             // snippet and 0.991 on this family's own "Instruct: …\nQuery: "
             // prompt, while newline-free text is unaffected (1.000000).
             // CRISPEMBED_BPE_LEGACY_WHITESPACE=1 restores the old behavior.
-            static const bool legacy_ws = (std::getenv("CRISPEMBED_BPE_LEGACY_WHITESPACE") != nullptr);
+            static const bool legacy_ws = core_env::on("CRISPEMBED_BPE_LEGACY_WHITESPACE");
             auto tokenize_run = [&](const std::string & t) {
                 return legacy_ws ? core_bpe::tokenize_simple(token_to_id_, merge_rank_, t)
                                  : core_bpe::tokenize_qwen(token_to_id_, merge_rank_, t);

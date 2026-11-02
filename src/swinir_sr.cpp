@@ -627,7 +627,7 @@ static void swinir_forward_tile(swinir_sr_context * ctx, const float * tile_in, 
         // Re-apply patch_embed norm for next RSTB
         sir_layernorm(tokens.data(), tokens.data(), N, D, ctx->get("patch_norm.weight"), ctx->get("patch_norm.bias"));
 
-        if (getenv("CRISPEMBED_SWINIR_DEBUG")) {
+        if (core_env::on("CRISPEMBED_SWINIR_DEBUG")) {
             float mn = 1e9, mx = -1e9;
             double sum = 0;
             for (int i = 0; i < N * D; i++) {
@@ -809,7 +809,7 @@ int swinir_sr_process(swinir_sr_context * ctx, const uint8_t * input, int width,
         fprintf(stderr, "[swinir_sr-bench] total: %.1f ms\n", ms_f(t_end - t_total).count());
     }
 
-    if (getenv("CRISPEMBED_SWINIR_DEBUG")) {
+    if (core_env::on("CRISPEMBED_SWINIR_DEBUG")) {
         // Print output pixel stats
         float mn = 256, mx = -1;
         double sum = 0;

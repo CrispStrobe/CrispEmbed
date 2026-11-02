@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ## 2 November 2026 — MiniCPM-OCR speed paths become the default
 
 - Default flip A/B (2026-11-02, `crispembed-ocr-real-scans-minicpm-fast` at `dded1384`, Kaggle Xeon 2.2 GHz x4,
@@ -9,6 +10,72 @@
 - Flipped via `core_env::explicitly_off`: graph KV decoder (matmul default `f32`), F32 vision copies, batched
   slices, vision flash attention. All old paths remain behind `=0`; 5 parity cases were already 5/5 exact
   (`tests/results/minicpm-ocr/bench-graph-v2.json`).
+=======
+## 3 November 2026: SentencePiece whitespace A/B across the registry; CUDA re-run of repaired files
+
+- **`CRISPEMBED_SPM_COLLAPSE_SPACES`** was checked against the original HF tokenizers and models for all 16
+  SentencePiece-encoder registry models (e5 ×3, paraphrase-multilingual, granite ×2, pixie-rune, arctic-l/m-v2,
+  nomic-v2-moe, bge-m3, five rerankers), plus xlmr-ner-hrl for IDs. The models were found by scanning the GGUF
+  headers of all 161 registry repos.
+  - With the switch on, IDs equal the models' SentencePiece tokenizer on every text, versus 66-67/77 with `=0`.
+  - The embedding minimum cosine is equal or better for every model (e.g. nomic-v2-moe 0.918 → 0.998,
+    arctic-l-v2 0.962 → 0.994).
+  - Reranker deviation is equal or lower.
+  - The transformers-4 fast tokenizer additionally keeps a lone trailing `▁` on 5 whitespace-ending texts.
+    SentencePiece and transformers 5 do not.
+  - The default stays global. [Summary](tests/results/spm-collapse-ab/SUMMARY.md).
+- **CUDA (T4, cuda-audit run 7, `b4e09b7b`)**, against each file's own F32/F16 base on the audit panel:
+  - f2llm q4_k-mixed 0.9706 (CPU arm 0.9693), clip q4_k-mixed 0.9878 (CPU 0.9878).
+  - bge-m3 heads F16: dense, sparse and ColBERT all ≥ 0.9992.
+  - bge-m3 heads Q8_0 mix: dense 0.9995, sparse 0.9999, but ColBERT **0.9667 on CUDA** (CPU 0.9718). Below
+    the 0.97 bar on CUDA only; open in PLAN.
+
+## 2 November 2026 — env presence reads, MiniCPM default, Unlimited-OCR v1 pin
+
+- All 131 raw presence env reads (`getenv(X)` truth tests, where `X=0` meant on) were
+  converted to `core_env::on`. Value-carrying variables moved to the new
+  `core_env::value` (`src/core/env_value.h`), which treats an empty value as unset.
+  No defaults changed. `env_gate.h` itself is unchanged (it is shared with CrispASR).
+  `tests/test_env_vars_documented.py` now fails on any new presence read
+  (`tools/list_env_vars.py --presence`).
+- The CLI `--ocr-engine minicpm-ocr` now defaults to the `minicpm-ocr` alias, the same
+  as the server. The gates are still required.
+- The Unlimited-OCR v1 registry URL is pinned to Hub commit `79d6658f` with the same sha256.
+- The CrispSorter selectors for ids 13-v2 and 23 are in PR #19. CrispCalc is N/A until
+  its app pin moves. Details are in `docs/wiring-audit-20261102.md`.
+
+## 2 November 2026 — CI queue reduction (ci/queue-reduction)
+
+- Branch protection on `main` has no required checks (API 404), so path filters cannot
+  leave a merge-blocking check pending. `origin/ci/cancel-superseded-runs` held no workflow
+  changes (only a stale merge of main); most push/PR workflows already used the main-safe
+  `run_id` concurrency group.
+- Main-safe superseded-run cancel added to `ocr-quality.yml` (had none) and switched on for
+  `inpaint-cli.yml` (3-OS matrix, was never-cancel), `ovisocr2-metadata.yml` (55 jobs, was
+  never-cancel) and `posformer-runtime-validation.yml` (was cancelling on main despite
+  uploading artifacts). Release/publication/dispatch-only evidence workflows unchanged.
+- `build.yml`/`build-wasm.yml`: `paths-ignore` for markdown, `docs/**`, `tests/results/**`
+  now also on pull_request (Build push also ignores `tests/results/**`).
+- `ultrabert-contract.yml`, `ultrabert-scifact-controls.yml`, `ultrabert-retrieval.yml`
+  merged into one-job `controls.yml` with identical commands/Python 3.12 and the union of
+  their paths; no test or protocol pinned those filenames (two doc links updated).
+- Pre-existing, unrelated: `tests/test_ultrabert_scifact.py` fails its `src/ultrabert_embed.cpp`
+  hash pin on current main, so `controls.yml` will be red until that pin is re-reviewed.
+  Policy: docs/contributing.md, "CI queue policy".
+
+## 2 November 2026 — environment-variable reference and wiring audit
+
+- `docs/environment-variables.md` is the single reference for runtime variables:
+  curated sections (core/backends, embeddings, MoEdern, Josev, Unlimited-OCR-2,
+  MiniCPM-OCR, qwen35 decoder, WASM rounding, inpainting) plus a generated
+  inventory of 394 `CRISPEMBED_*` and the legacy non-prefixed variables
+  (`tools/list_env_vars.py`). `tests/test_env_vars_documented.py` runs in Lint.
+- [Wiring audit](docs/wiring-audit-20261102.md) of Unlimited-OCR-2, MiniCPM-OCR,
+  MoEdern and Josev SystemOne. Added named stage ids 13/23 to C/Rust/Python/Dart.
+  The CLI and server now accept `unlimited-ocr`, `unlimited-ocr2` and
+  `unlimited_ocr2`; before this, the hyphenated name they printed was rejected
+  and fell back to engine 0. Remaining gaps are in PLAN.
+>>>>>>> origin/main
 
 ## 2 November 2026 — GOT-OCR2 pipeline parity with the original (fix/got-ocr2-pipeline-parity)
 

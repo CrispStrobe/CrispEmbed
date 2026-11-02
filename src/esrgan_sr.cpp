@@ -352,7 +352,7 @@ int esrgan_process_float(esrgan_context * ctx, const float * input_chw, int widt
     if (!ctx || !input_chw || !output_chw) return -1;
 
     // Use ggml graph path if available
-    if (ctx->enc_sched && !std::getenv("ESRGAN_SCALAR"))
+    if (ctx->enc_sched && !core_env::on("ESRGAN_SCALAR"))
         return esrgan_process_float_ggml(ctx, input_chw, width, height, output_chw);
 
     const bool bench = ctx->bench;

@@ -20,6 +20,8 @@
 #include <mutex>
 #include <string>
 #include <vector>
+#include "core/env_gate.h"
+#include "core/env_value.h"
 
 namespace {
 
@@ -36,7 +38,7 @@ std::map<std::string, uint64_t> g_count;
 
 bool is_active() {
     if (!g_checked) {
-        const char * p = getenv("CRISPEMBED_IMATRIX_OUT");
+        const char * p = core_env::value("CRISPEMBED_IMATRIX_OUT");
         if (p && p[0]) {
             g_active = true;
             g_path = p;

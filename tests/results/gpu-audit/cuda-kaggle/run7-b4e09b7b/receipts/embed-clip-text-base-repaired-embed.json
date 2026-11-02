@@ -1,0 +1,98 @@
+{
+ "kind": "embed",
+ "mode": "embed",
+ "base": "clip-text-base.gguf",
+ "files": {
+  "clip-text-base.gguf": {
+   "precision": "f32",
+   "type_hist": {
+    "f32": 63347200
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      1.067,
+      1.067
+     ],
+     "gpu_mem_peak_mib": 367,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "clip_text: BPE tokenizer loaded (49408 vocab, 48894 merges)\nclip_text: hidden=512 layers=12 heads=8 vocab=49408 max_pos=77 proj=512\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\nclip_text: loaded 12 layers\n"
+    },
+    "cpu": {
+     "wall_s": [
+      0.769,
+      0.769
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "clip_text: BPE tokenizer loaded (49408 vocab, 48894 merges)\nclip_text: hidden=512 layers=12 heads=8 vocab=49408 max_pos=77 proj=512\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\nclip_text: loaded 12 layers\n"
+    }
+   },
+   "cuda_vs_cpu_same_artifact": {
+    "cos_min": 0.9999998441224758,
+    "cos_mean": 0.9999999601875817,
+    "max_abs": 8.900000000000574e-05
+   },
+   "cuda_vs_cpu_reference": {
+    "cos_min": 0.9999998441224758,
+    "cos_mean": 0.9999999601875817,
+    "max_abs": 8.900000000000574e-05
+   },
+   "bar": 0.99,
+   "qualifies": true
+  },
+  "clip-text-base-q4_k-mixed.gguf": {
+   "precision": "q4_k",
+   "type_hist": {
+    "q8_0": 31365632,
+    "q4_k": 31981568
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      0.917,
+      0.867
+     ],
+     "gpu_mem_peak_mib": 167,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "clip_text: BPE tokenizer loaded (49408 vocab, 48894 merges)\nclip_text: hidden=512 layers=12 heads=8 vocab=49408 max_pos=77 proj=512\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\nclip_text: loaded 12 layers\n"
+    },
+    "cpu": {
+     "wall_s": [
+      0.817,
+      0.817
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "clip_text: BPE tokenizer loaded (49408 vocab, 48894 merges)\nclip_text: hidden=512 layers=12 heads=8 vocab=49408 max_pos=77 proj=512\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\nclip_text: loaded 12 layers\n"
+    }
+   },
+   "cuda_vs_cpu_same_artifact": {
+    "cos_min": 0.9990169888156676,
+    "cos_mean": 0.9996877655463151,
+    "max_abs": 0.007546999999999998
+   },
+   "cuda_vs_cpu_reference": {
+    "cos_min": 0.9877675806396303,
+    "cos_mean": 0.9953617178129429,
+    "max_abs": 0.023134
+   },
+   "cpu_vs_cpu_reference": {
+    "cos_min": 0.987831889549947,
+    "cos_mean": 0.9952366520098318,
+    "max_abs": 0.023854000000000004
+   },
+   "bar": 0.94,
+   "qualifies": true
+  }
+ },
+ "seconds": 17.5,
+ "id": "embed-clip-text-base-repaired-embed",
+ "commit": "b4e09b7b6c30d0a713805a88d377c163d2b7a645",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-02"
+}

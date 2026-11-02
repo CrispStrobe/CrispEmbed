@@ -23,6 +23,7 @@
 #include <cstring>
 #include <mutex>
 #include <string>
+#include "env_gate.h"
 
 namespace crispasr_gpu_pref {
 
@@ -201,7 +202,7 @@ inline bool crispasr_gpu_device_kind_present(const char * prefix) {
 // this, or the first engine to shut down frees the backend out from under its
 // peers.
 inline bool crispasr_shared_gpu_backend_enabled() {
-    static const bool on = std::getenv("CRISPEMBED_SHARED_GPU_BACKEND") != nullptr;
+    static const bool on = core_env::on("CRISPEMBED_SHARED_GPU_BACKEND");
     return on;
 }
 

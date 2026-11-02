@@ -1,0 +1,911 @@
+{
+ "source": "28e3109480d38531470012d2743844f73b2c01c9",
+ "n_texts": 77,
+ "models": [
+  {
+   "alias": "multilingual-e5-small",
+   "hf": "intfloat/multilingual-e5-small",
+   "kind": "embed",
+   "registry_alias": "multilingual-e5-small-q8",
+   "file": "multilingual-e5-small-q8_0.gguf",
+   "url": "https://huggingface.co/cstr/multilingual-e5-small-GGUF/resolve/main/multilingual-e5-small-q8_0.gguf",
+   "hf_tokenizer": "XLMRobertaTokenizerFast",
+   "normalizer": {
+    "type": "Sequence",
+    "normalizers": [
+     {
+      "type": "Precompiled",
+      "precompiled_charsmap": "<charsmap>"
+     },
+     {
+      "type": "Replace",
+      "pattern": {
+       "Regex": " {2,}"
+      },
+      "content": " "
+     }
+    ]
+   },
+   "hf_max_length": 512,
+   "default (collapse on)": {
+    "ids_equal": 72,
+    "ids_mismatch_texts": [
+     47,
+     51,
+     52,
+     53,
+     54
+    ],
+    "ids_mismatch_examples": [
+     {
+      "text": 47,
+      "hf_len": 94,
+      "native_len": 93,
+      "first_diff": 92,
+      "hf": [
+       "▁No",
+       "ne",
+       "▁",
+       "</s>"
+      ],
+      "native": [
+       "▁No",
+       "ne",
+       "</s>"
+      ],
+      "excerpt": "def query_prefix(model: str) -> str | None:\n    if \"f2llm-v2\" in model:\n        "
+     },
+     {
+      "text": 51,
+      "hf_len": 44,
+      "native_len": 43,
+      "first_diff": 42,
+      "hf": [
+       "▁entry",
+       "▁written",
+       "▁",
+       "</s>"
+      ],
+      "native": [
+       "▁entry",
+       "▁written",
+       "</s>"
+      ],
+      "excerpt": "Checklist before release\n\n[x] unit tests green\n[x] clang-format clean\n[ ] PERFOR"
+     },
+     {
+      "text": 52,
+      "hf_len": 29,
+      "native_len": 28,
+      "first_diff": 27,
+      "hf": [
+       "▁12:00",
+       "▁Ende",
+       "▁",
+       "</s>"
+      ],
+      "native": [
+       "▁12:00",
+       "▁Ende",
+       "</s>"
+      ],
+      "excerpt": "Agenda\n\n09:00  Begrüßung\n09:15  Stand der Migration\n10:00  Pause\n10:15  Diskussi"
+     },
+     {
+      "text": 53,
+      "hf_len": 52,
+      "native_len": 51,
+      "first_diff": 50,
+      "hf": [
+       "▁necessary",
+       ".",
+       "▁",
+       "</s>"
+      ],
+      "native": [
+       "▁necessary",
+       ".",
+       "</s>"
+      ],
+      "excerpt": "Article 5\n\n1. Personal data shall be processed lawfully, fairly and transparentl"
+     },
+     {
+      "text": 54,
+      "hf_len": 68,
+      "native_len": 67,
+      "first_diff": 66,
+      "hf": [
+       "85",
+       "▁€",
+       "▁",
+       "</s>"
+      ],
+      "native": [
+       "85",
+       "▁€",
+       "</s>"
+      ],
+      "excerpt": "Rechnung Nr. 2026-0815\n\nPos.  Beschreibung              Menge   Einzelpreis   Ge"
+     }
+    ],
+    "cos_min": 0.9852425309484453,
+    "cos_mean": 0.9994669024446095,
+    "worst_text": 53,
+    "per_text": [
+     0.999887,
+     0.99982,
+     0.999851,
+     0.999882,
+     0.999835,
+     0.999876,
+     0.99991,
+     0.999865,
+     0.999854,
+     0.999871,
+     0.999894,
+     0.999919,
+     0.999876,
+     0.999846,
+     0.999854,
+     0.999888,
+     0.99987,
+     0.999819,
+     0.999841,
+     0.999863,
+     0.999828,
+     0.999828,
+     0.999823,
+     0.999859,
+     0.999857,
+     0.999865,
+     0.999884,
+     0.99983,
+     0.999859,
+     0.999844,
+     0.999856,
+     0.999876,
+     0.999848,
+     0.999861,
+     0.999868,
+     0.999873,
+     0.999859,
+     0.999864,
+     0.999868,
+     0.999852,
+     0.999891,
+     0.999827,
+     0.999854,
+     0.999851,
+     0.999868,
+     0.999881,
+     0.999857,
+     0.998609,
+     0.999842,
+     0.999895,
+     0.999893,
+     0.989001,
+     0.99674,
+     0.985243,
+     0.999371,
+     0.999887,
+     0.999825,
+     0.99983,
+     0.999853,
+     0.999845,
+     0.99986,
+     0.999854,
+     0.999838,
+     0.999861,
+     0.999861,
+     0.999873,
+     0.999865,
+     0.999892,
+     0.99986,
+     0.999809,
+     0.999891,
+     0.999855,
+     0.999881,
+     0.999864,
+     0.999878,
+     0.99988,
+     0.999842
+    ],
+    "wall_s": 1.15
+   },
+   "CRISPEMBED_SPM_COLLAPSE_SPACES=0": {
+    "ids_equal": 67,
+    "ids_mismatch_texts": [
+     45,
+     46,
+     47,
+     48,
+     49,
+     50,
+     51,
+     52,
+     53,
+     54
+    ],
+    "ids_mismatch_examples": [
+     {
+      "text": 45,
+      "hf_len": 65,
+      "native_len": 75,
+      "first_diff": 13,
+      "hf": [
+       ")",
+       "▁{",
+       "▁con",
+       "st",
+       "▁results",
+       "▁="
+      ],
+      "native": [
+       ")",
+       "▁{",
+       "▁",
+       "▁",
+       "▁con",
+       "st"
+      ],
+      "excerpt": "async function fetchAll(urls) {\n  const results = await Promise.all(\n    urls.ma"
+     },
+     {
+      "text": 46,
+      "hf_len": 59,
+      "native_len": 132,
+      "first_diff": 9,
+      "hf": [
+       "▁Counter",
+       "▁{",
+       "▁type",
+       "▁Item",
+       "▁=",
+       "▁u"
+      ],
+      "native": [
+       "▁Counter",
+       "▁{",
+       "▁",
+       "▁",
+       "▁",
+       "▁"
+      ],
+      "excerpt": "impl Iterator for Counter {\n    type Item = u32;\n\n    fn next(&mut self) -> Opti"
+     },
+     {
+      "text": 47,
+      "hf_len": 94,
+      "native_len": 138,
+      "first_diff": 20,
+      "hf": [
+       "ne",
+       ":",
+       "▁if",
+       "▁\"",
+       "f",
+       "2"
+      ],
+      "native": [
+       "ne",
+       ":",
+       "▁",
+       "▁",
+       "▁",
+       "▁"
+      ],
+      "excerpt": "def query_prefix(model: str) -> str | None:\n    if \"f2llm-v2\" in model:\n        "
+     },
+     {
+      "text": 48,
+      "hf_len": 75,
+      "native_len": 84,
+      "first_diff": 8,
+      "hf": [
+       "▁=",
+       "▁",
+       "|",
+       "▁{",
+       "▁ok",
+       ":"
+      ],
+      "native": [
+       "▁=",
+       "▁",
+       "▁",
+       "▁",
+       "|",
+       "▁{"
+      ],
+      "excerpt": "type Result<T> =\n  | { ok: true; value: T }\n  | { ok: false; error: string };\n\nc"
+     },
+     {
+      "text": 49,
+      "hf_len": 81,
+      "native_len": 93,
+      "first_diff": 38,
+      "hf": [
+       ")",
+       "▁{",
+       "▁flo",
+       "at",
+       "▁s",
+       "▁="
+      ],
+      "native": [
+       ")",
+       "▁{",
+       "▁",
+       "▁",
+       "▁",
+       "▁"
+      ],
+      "excerpt": "// Kommentar auf Deutsch: berechnet den gleitenden Mittelwert\nfloat moving_avera"
+     },
+     {
+      "text": 50,
+      "hf_len": 49,
+      "native_len": 51,
+      "first_diff": 9,
+      "hf": [
+       "▁Herren",
+       ",",
+       "▁hier",
+       "mit",
+       "▁k",
+       "ündig"
+      ],
+      "native": [
+       "▁Herren",
+       ",",
+       "▁",
+       "▁hier",
+       "mit",
+       "▁k"
+      ],
+      "excerpt": "Sehr geehrte Damen und Herren,\n\nhiermit kündige ich meinen Mietvertrag für die W"
+     }
+    ],
+    "cos_min": 0.9747800207974827,
+    "cos_mean": 0.998909503900893,
+    "worst_text": 46,
+    "per_text": [
+     0.999887,
+     0.99982,
+     0.999851,
+     0.999882,
+     0.999835,
+     0.999876,
+     0.99991,
+     0.999865,
+     0.999854,
+     0.999871,
+     0.999894,
+     0.999919,
+     0.999876,
+     0.999846,
+     0.999854,
+     0.999888,
+     0.99987,
+     0.999819,
+     0.999841,
+     0.999863,
+     0.999828,
+     0.999828,
+     0.999823,
+     0.999859,
+     0.999857,
+     0.999865,
+     0.999884,
+     0.99983,
+     0.999859,
+     0.999844,
+     0.999856,
+     0.999876,
+     0.999848,
+     0.999861,
+     0.999868,
+     0.999873,
+     0.999859,
+     0.999864,
+     0.999868,
+     0.999852,
+     0.999891,
+     0.999827,
+     0.999854,
+     0.999851,
+     0.999868,
+     0.998715,
+     0.97478,
+     0.994748,
+     0.9955,
+     0.998694,
+     0.998345,
+     0.99854,
+     0.991013,
+     0.997906,
+     0.97717,
+     0.999887,
+     0.999825,
+     0.99983,
+     0.999853,
+     0.999845,
+     0.99986,
+     0.999854,
+     0.999838,
+     0.999861,
+     0.999861,
+     0.999873,
+     0.999865,
+     0.999892,
+     0.99986,
+     0.999809,
+     0.999891,
+     0.999855,
+     0.999881,
+     0.999864,
+     0.999878,
+     0.99988,
+     0.999842
+    ],
+    "wall_s": 1.27
+   }
+  },
+  {
+   "alias": "multilingual-e5-base",
+   "hf": "intfloat/multilingual-e5-base",
+   "kind": "embed",
+   "registry_alias": "multilingual-e5-base-q8",
+   "file": "multilingual-e5-base-q8_0.gguf",
+   "url": "https://huggingface.co/cstr/multilingual-e5-base-GGUF/resolve/main/multilingual-e5-base-q8_0.gguf",
+   "hf_tokenizer": "XLMRobertaTokenizerFast",
+   "normalizer": {
+    "type": "Precompiled",
+    "precompiled_charsmap": "<charsmap>"
+   },
+   "hf_max_length": 512,
+   "default (collapse on)": {
+    "ids_error": "RuntimeError: crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\ncrispembed: using CPU backend (4 threads)\ncrispembed: loaded 12 layers, 768 dims, 250002 vocab\n/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/ops.cpp:5112: GGML_ASSERT(i01 >= 0 && i01 < ne01) failed\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(+0x1c12b)[0x7fcdab56412b]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(ggml_print_backtrace+0x21c)[0x7fcdab5645ac]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(ggml_abort+0x15b)[0x7fcdab56478b]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(ggml_compute_forward_get_rows+0xa70)[0x7fcdab6ad270]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x1acc6)[0x7fcdab630cc6]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x1bc95)[0x7fcdab631c95]\n/lib/x86_64-linux-gnu/libc.so.6(+0x9cb84)[0x7fcdaae9cb84]\n/lib/x86_64-linux-gnu/libc.so.6(+0x129ecc)[0x7fcdaaf29ecc]\n",
+    "output_error": "RuntimeError: crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\ncrispembed: using CPU backend (4 threads)\ncrispembed: loaded 12 layers, 768 dims, 250002 vocab\n/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/ops.cpp:5112: GGML_ASSERT(i01 >= 0 && i01 < ne01) failed\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(+0x1c12b)[0x7fd86fbc212b]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(ggml_print_backtrace+0x21c)[0x7fd86fbc25ac]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(ggml_abort+0x15b)[0x7fd86fbc278b]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(ggml_compute_forward_get_rows+0xa70)[0x7fd86fd0b270]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x1acc6)[0x7fd86fc8ecc6]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x1bc95)[0x7fd86fc8fc95]\n/lib/x86_64-linux-gnu/libc.so.6(+0x9cb84)[0x7fd86f49cb84]\n/lib/x86_64-linux-gnu/libc.so.6(+0x129ecc)[0x7fd86f529ecc]\n"
+   },
+   "CRISPEMBED_SPM_COLLAPSE_SPACES=0": {
+    "ids_error": "RuntimeError: crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\ncrispembed: using CPU backend (4 threads)\ncrispembed: loaded 12 layers, 768 dims, 250002 vocab\n/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/ops.cpp:5112: GGML_ASSERT(i01 >= 0 && i01 < ne01) failed\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(+0x1c12b)[0x7fae76f0e12b]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(ggml_print_backtrace+0x21c)[0x7fae76f0e5ac]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(ggml_abort+0x15b)[0x7fae76f0e78b]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(ggml_compute_forward_get_rows+0xa70)[0x7fae77057270]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x1acc6)[0x7fae76fdacc6]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x1bc95)[0x7fae76fdbc95]\n/lib/x86_64-linux-gnu/libc.so.6(+0x9cb84)[0x7fae7689cb84]\n/lib/x86_64-linux-gnu/libc.so.6(+0x129ecc)[0x7fae76929ecc]\n",
+    "output_error": "RuntimeError: crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\ncrispembed: using CPU backend (4 threads)\ncrispembed: loaded 12 layers, 768 dims, 250002 vocab\n/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/ops.cpp:5112: GGML_ASSERT(i01 >= 0 && i01 < ne01) failed\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(+0x1c12b)[0x7f68b161f12b]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(ggml_print_backtrace+0x21c)[0x7f68b161f5ac]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(ggml_abort+0x15b)[0x7f68b161f78b]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(ggml_compute_forward_get_rows+0xa70)[0x7f68b1768270]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x1acc6)[0x7f68b16ebcc6]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x1bc95)[0x7f68b16ecc95]\n/lib/x86_64-linux-gnu/libc.so.6(+0x9cb84)[0x7f68b0e9cb84]\n/lib/x86_64-linux-gnu/libc.so.6(+0x129ecc)[0x7f68b0f29ecc]\n"
+   }
+  },
+  {
+   "alias": "multilingual-e5-large",
+   "hf": "intfloat/multilingual-e5-large",
+   "kind": "embed",
+   "registry_alias": "multilingual-e5-large-f32",
+   "file": "multilingual-e5-large.gguf",
+   "url": "https://huggingface.co/cstr/multilingual-e5-large-GGUF/resolve/main/multilingual-e5-large.gguf",
+   "hf_tokenizer": "XLMRobertaTokenizerFast",
+   "normalizer": {
+    "type": "Precompiled",
+    "precompiled_charsmap": "<charsmap>"
+   },
+   "hf_max_length": 512,
+   "default (collapse on)": {
+    "ids_error": "RuntimeError: crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\ncrispembed: using CPU backend (4 threads)\ncrispembed: loaded 24 layers, 1024 dims, 250002 vocab\n/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/ops.cpp:5235: GGML_ASSERT(i01 >= 0 && i01 < ne01) failed\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(+0x1c12b)[0x7ff6392b412b]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(ggml_print_backtrace+0x21c)[0x7ff6392b45ac]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(ggml_abort+0x15b)[0x7ff6392b478b]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x972b5)[0x7ff6393fd2b5]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x1acc6)[0x7ff639380cc6]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x1bc95)[0x7ff639381c95]\n/lib/x86_64-linux-gnu/libc.so.6(+0x9cb84)[0x7ff638c9cb84]\n/lib/x86_64-linux-gnu/libc.so.6(+0x129ecc)[0x7ff638d29ecc]\n",
+    "output_error": "RuntimeError: crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\ncrispembed: using CPU backend (4 threads)\ncrispembed: loaded 24 layers, 1024 dims, 250002 vocab\n/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/ops.cpp:5235: GGML_ASSERT(i01 >= 0 && i01 < ne01) failed\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(+0x1c12b)[0x7f60dc5f712b]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(ggml_print_backtrace+0x21c)[0x7f60dc5f75ac]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(ggml_abort+0x15b)[0x7f60dc5f778b]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x972b5)[0x7f60dc7402b5]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x1acc6)[0x7f60dc6c3cc6]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x1bc95)[0x7f60dc6c4c95]\n/lib/x86_64-linux-gnu/libc.so.6(+0x9cb84)[0x7f60dbe9cb84]\n/lib/x86_64-linux-gnu/libc.so.6(+0x129ecc)[0x7f60dbf29ecc]\n"
+   },
+   "CRISPEMBED_SPM_COLLAPSE_SPACES=0": {
+    "ids_error": "RuntimeError: crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\ncrispembed: using CPU backend (4 threads)\ncrispembed: loaded 24 layers, 1024 dims, 250002 vocab\n/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/ops.cpp:5235: GGML_ASSERT(i01 >= 0 && i01 < ne01) failed\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(+0x1c12b)[0x7f54ffb8412b]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(ggml_print_backtrace+0x21c)[0x7f54ffb845ac]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(ggml_abort+0x15b)[0x7f54ffb8478b]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x972b5)[0x7f54ffccd2b5]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x1acc6)[0x7f54ffc50cc6]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x1bc95)[0x7f54ffc51c95]\n/lib/x86_64-linux-gnu/libc.so.6(+0x9cb84)[0x7f54ff49cb84]\n/lib/x86_64-linux-gnu/libc.so.6(+0x129ecc)[0x7f54ff529ecc]\n",
+    "output_error": "RuntimeError: crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\ncrispembed: using CPU backend (4 threads)\ncrispembed: loaded 24 layers, 1024 dims, 250002 vocab\n/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/ops.cpp:5235: GGML_ASSERT(i01 >= 0 && i01 < ne01) failed\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(+0x1c12b)[0x7f3863fd112b]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(ggml_print_backtrace+0x21c)[0x7f3863fd15ac]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(ggml_abort+0x15b)[0x7f3863fd178b]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x972b5)[0x7f386411a2b5]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x1acc6)[0x7f386409dcc6]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x1bc95)[0x7f386409ec95]\n/lib/x86_64-linux-gnu/libc.so.6(+0x9cb84)[0x7f386389cb84]\n/lib/x86_64-linux-gnu/libc.so.6(+0x129ecc)[0x7f3863929ecc]\n"
+   }
+  },
+  {
+   "alias": "paraphrase-multilingual-MiniLM-L12-v2",
+   "hf": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+   "kind": "embed",
+   "registry_alias": "paraphrase-multilingual-MiniLM-L12-v2-q8",
+   "file": "paraphrase-multilingual-MiniLM-L12-v2-q8_0.gguf",
+   "url": "https://huggingface.co/cstr/paraphrase-multilingual-MiniLM-L12-v2-GGUF/resolve/main/paraphrase-multilingual-MiniLM-L12-v2-q8_0.gguf",
+   "hf_tokenizer": "PreTrainedTokenizerFast",
+   "normalizer": {
+    "type": "Precompiled",
+    "precompiled_charsmap": "<charsmap>"
+   },
+   "hf_max_length": 512,
+   "default (collapse on)": {
+    "ids_equal": 77,
+    "ids_mismatch_texts": [],
+    "ids_mismatch_examples": [],
+    "cos_min": 0.6117490523231869,
+    "cos_mean": 0.9903965199213596,
+    "worst_text": 11,
+    "per_text": [
+     0.999872,
+     0.999922,
+     0.999944,
+     0.99994,
+     0.99991,
+     0.999901,
+     0.999888,
+     0.999917,
+     0.999936,
+     0.999929,
+     0.6565,
+     0.611749,
+     0.999922,
+     0.999895,
+     0.999897,
+     0.999916,
+     0.999876,
+     0.999899,
+     0.999902,
+     0.999902,
+     0.99985,
+     0.999863,
+     0.999921,
+     0.99991,
+     0.999893,
+     0.999879,
+     0.999912,
+     0.999913,
+     0.999916,
+     0.999868,
+     0.999918,
+     0.999933,
+     0.999913,
+     0.999916,
+     0.999913,
+     0.999894,
+     0.999907,
+     0.999929,
+     0.999909,
+     0.999854,
+     0.999853,
+     0.999942,
+     0.999934,
+     0.999929,
+     0.999866,
+     0.999857,
+     0.999863,
+     0.999866,
+     0.999867,
+     0.999877,
+     0.999914,
+     0.999881,
+     0.99992,
+     0.999908,
+     0.999888,
+     0.999894,
+     0.999689,
+     0.999938,
+     0.999907,
+     0.999947,
+     0.999882,
+     0.999859,
+     0.999905,
+     0.999929,
+     0.999884,
+     0.999907,
+     0.999924,
+     0.999884,
+     0.999918,
+     0.999819,
+     0.999931,
+     0.999857,
+     0.99992,
+     0.999827,
+     0.999917,
+     0.999861,
+     0.99994
+    ],
+    "wall_s": 1.09
+   },
+   "CRISPEMBED_SPM_COLLAPSE_SPACES=0": {
+    "ids_equal": 67,
+    "ids_mismatch_texts": [
+     45,
+     46,
+     47,
+     48,
+     49,
+     50,
+     51,
+     52,
+     53,
+     54
+    ],
+    "ids_mismatch_examples": [
+     {
+      "text": 45,
+      "hf_len": 65,
+      "native_len": 75,
+      "first_diff": 13,
+      "hf": [
+       ")",
+       "▁{",
+       "▁con",
+       "st",
+       "▁results",
+       "▁="
+      ],
+      "native": [
+       ")",
+       "▁{",
+       "▁",
+       "▁",
+       "▁con",
+       "st"
+      ],
+      "excerpt": "async function fetchAll(urls) {\n  const results = await Promise.all(\n    urls.ma"
+     },
+     {
+      "text": 46,
+      "hf_len": 59,
+      "native_len": 132,
+      "first_diff": 9,
+      "hf": [
+       "▁Counter",
+       "▁{",
+       "▁type",
+       "▁Item",
+       "▁=",
+       "▁u"
+      ],
+      "native": [
+       "▁Counter",
+       "▁{",
+       "▁",
+       "▁",
+       "▁",
+       "▁"
+      ],
+      "excerpt": "impl Iterator for Counter {\n    type Item = u32;\n\n    fn next(&mut self) -> Opti"
+     },
+     {
+      "text": 47,
+      "hf_len": 93,
+      "native_len": 138,
+      "first_diff": 20,
+      "hf": [
+       "ne",
+       ":",
+       "▁if",
+       "▁\"",
+       "f",
+       "2"
+      ],
+      "native": [
+       "ne",
+       ":",
+       "▁",
+       "▁",
+       "▁",
+       "▁"
+      ],
+      "excerpt": "def query_prefix(model: str) -> str | None:\n    if \"f2llm-v2\" in model:\n        "
+     },
+     {
+      "text": 48,
+      "hf_len": 75,
+      "native_len": 84,
+      "first_diff": 8,
+      "hf": [
+       "▁=",
+       "▁",
+       "|",
+       "▁{",
+       "▁ok",
+       ":"
+      ],
+      "native": [
+       "▁=",
+       "▁",
+       "▁",
+       "▁",
+       "|",
+       "▁{"
+      ],
+      "excerpt": "type Result<T> =\n  | { ok: true; value: T }\n  | { ok: false; error: string };\n\nc"
+     },
+     {
+      "text": 49,
+      "hf_len": 81,
+      "native_len": 93,
+      "first_diff": 38,
+      "hf": [
+       ")",
+       "▁{",
+       "▁flo",
+       "at",
+       "▁s",
+       "▁="
+      ],
+      "native": [
+       ")",
+       "▁{",
+       "▁",
+       "▁",
+       "▁",
+       "▁"
+      ],
+      "excerpt": "// Kommentar auf Deutsch: berechnet den gleitenden Mittelwert\nfloat moving_avera"
+     },
+     {
+      "text": 50,
+      "hf_len": 49,
+      "native_len": 51,
+      "first_diff": 9,
+      "hf": [
+       "▁Herren",
+       ",",
+       "▁hier",
+       "mit",
+       "▁k",
+       "ündig"
+      ],
+      "native": [
+       "▁Herren",
+       ",",
+       "▁",
+       "▁hier",
+       "mit",
+       "▁k"
+      ],
+      "excerpt": "Sehr geehrte Damen und Herren,\n\nhiermit kündige ich meinen Mietvertrag für die W"
+     }
+    ],
+    "cos_min": 0.6117490523231869,
+    "cos_mean": 0.9870965588952944,
+    "worst_text": 11,
+    "per_text": [
+     0.999872,
+     0.999922,
+     0.999944,
+     0.99994,
+     0.99991,
+     0.999901,
+     0.999888,
+     0.999917,
+     0.999936,
+     0.999929,
+     0.6565,
+     0.611749,
+     0.999922,
+     0.999895,
+     0.999897,
+     0.999916,
+     0.999876,
+     0.999899,
+     0.999902,
+     0.999902,
+     0.99985,
+     0.999863,
+     0.999921,
+     0.99991,
+     0.999893,
+     0.999879,
+     0.999912,
+     0.999913,
+     0.999916,
+     0.999868,
+     0.999918,
+     0.999933,
+     0.999913,
+     0.999916,
+     0.999913,
+     0.999894,
+     0.999907,
+     0.999929,
+     0.999909,
+     0.999854,
+     0.999853,
+     0.999942,
+     0.999934,
+     0.999929,
+     0.999866,
+     0.998065,
+     0.928357,
+     0.967445,
+     0.997537,
+     0.995601,
+     0.988112,
+     0.998994,
+     0.991363,
+     0.999332,
+     0.879939,
+     0.999894,
+     0.999689,
+     0.999938,
+     0.999907,
+     0.999947,
+     0.999882,
+     0.999859,
+     0.999905,
+     0.999929,
+     0.999884,
+     0.999907,
+     0.999924,
+     0.999884,
+     0.999918,
+     0.999819,
+     0.999931,
+     0.999857,
+     0.99992,
+     0.999827,
+     0.999917,
+     0.999861,
+     0.99994
+    ],
+    "wall_s": 1.16
+   }
+  },
+  {
+   "alias": "xlmr-ner-hrl",
+   "hf": "Davlan/xlm-roberta-base-ner-hrl",
+   "kind": "tokens",
+   "registry_alias": "xlmr-ner-hrl",
+   "file": "xlmr-ner-hrl-iq4_xs.gguf",
+   "url": "https://huggingface.co/cstr/xlmr-ner-hrl-GGUF/resolve/main/xlmr-ner-hrl-iq4_xs.gguf",
+   "hf_tokenizer": "XLMRobertaTokenizerFast",
+   "normalizer": {
+    "type": "Sequence",
+    "normalizers": [
+     {
+      "type": "Precompiled",
+      "precompiled_charsmap": "<charsmap>"
+     },
+     {
+      "type": "Strip",
+      "strip_left": false,
+      "strip_right": true
+     },
+     {
+      "type": "Replace",
+      "pattern": {
+       "Regex": " {2,}"
+      },
+      "content": "▁"
+     }
+    ]
+   },
+   "hf_max_length": 512,
+   "reference_error": "UnboundLocalError: cannot access local variable 'm' where it is not associated with a value",
+   "default (collapse on)": {
+    "ids_error": "RuntimeError: crispembed: using SentencePiece tokenizer (250002 tokens, 0 scores)\ncrispembed: using CPU backend (4 threads)\ncrispembed: loaded 12 layers, 768 dims, 250002 vocab\n/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/ops.cpp:5112: GGML_ASSERT(i01 >= 0 && i01 < ne01) failed\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(+0x1c12b)[0x7f2d1850012b]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(ggml_print_backtrace+0x21c)[0x7f2d185005ac]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(ggml_abort+0x15b)[0x7f2d1850078b]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(ggml_compute_forward_get_rows+0xa70)[0x7f2d18649270]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x1acc6)[0x7f2d185cccc6]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x1bc95)[0x7f2d185cdc95]\n/lib/x86_64-linux-gnu/libc.so.6(+0x9cb84)[0x7f2d17e9cb84]\n/lib/x86_64-linux-gnu/libc.so.6(+0x129ecc)[0x7f2d17f29ecc]\n"
+   },
+   "CRISPEMBED_SPM_COLLAPSE_SPACES=0": {
+    "ids_error": "RuntimeError: crispembed: using SentencePiece tokenizer (250002 tokens, 0 scores)\ncrispembed: using CPU backend (4 threads)\ncrispembed: loaded 12 layers, 768 dims, 250002 vocab\n/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/ops.cpp:5112: GGML_ASSERT(i01 >= 0 && i01 < ne01) failed\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(+0x1c12b)[0x7f0e309ee12b]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(ggml_print_backtrace+0x21c)[0x7f0e309ee5ac]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(ggml_abort+0x15b)[0x7f0e309ee78b]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(ggml_compute_forward_get_rows+0xa70)[0x7f0e30b37270]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x1acc6)[0x7f0e30abacc6]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x1bc95)[0x7f0e30abbc95]\n/lib/x86_64-linux-gnu/libc.so.6(+0x9cb84)[0x7f0e3029cb84]\n/lib/x86_64-linux-gnu/libc.so.6(+0x129ecc)[0x7f0e30329ecc]\n"
+   }
+  },
+  {
+   "alias": "granite-embedding-107m",
+   "hf": "ibm-granite/granite-embedding-107m-multilingual",
+   "kind": "embed",
+   "registry_alias": "granite-embedding-107m",
+   "file": "granite-embedding-107m-multilingual-iq4_xs.gguf",
+   "url": "https://huggingface.co/cstr/granite-embedding-107m-multilingual-GGUF/resolve/main/granite-embedding-107m-multilingual-iq4_xs.gguf",
+   "hf_tokenizer": "XLMRobertaTokenizerFast",
+   "normalizer": {
+    "type": "Sequence",
+    "normalizers": [
+     {
+      "type": "Precompiled",
+      "precompiled_charsmap": "<charsmap>"
+     },
+     {
+      "type": "Replace",
+      "pattern": {
+       "Regex": " {2,}"
+      },
+      "content": " "
+     }
+    ]
+   },
+   "hf_max_length": 512,
+   "default (collapse on)": {
+    "ids_error": "RuntimeError: crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\ncrispembed: using CPU backend (4 threads)\ncrispembed: loaded 6 layers, 384 dims, 250002 vocab\n/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/ops.cpp:5112: GGML_ASSERT(i01 >= 0 && i01 < ne01) failed\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(+0x1c12b)[0x7fb8f6a1b12b]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(ggml_print_backtrace+0x21c)[0x7fb8f6a1b5ac]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(ggml_abort+0x15b)[0x7fb8f6a1b78b]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(ggml_compute_forward_get_rows+0xa70)[0x7fb8f6b64270]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x1acc6)[0x7fb8f6ae7cc6]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x1bc95)[0x7fb8f6ae8c95]\n/lib/x86_64-linux-gnu/libc.so.6(+0x9cb84)[0x7fb8f629cb84]\n/lib/x86_64-linux-gnu/libc.so.6(+0x129ecc)[0x7fb8f6329ecc]\n",
+    "output_error": "RuntimeError: crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\ncrispembed: using CPU backend (4 threads)\ncrispembed: loaded 6 layers, 384 dims, 250002 vocab\n/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/ops.cpp:5112: GGML_ASSERT(i01 >= 0 && i01 < ne01) failed\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(+0x1c12b)[0x7f544edf512b]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(ggml_print_backtrace+0x21c)[0x7f544edf55ac]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(ggml_abort+0x15b)[0x7f544edf578b]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(ggml_compute_forward_get_rows+0xa70)[0x7f544ef3e270]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x1acc6)[0x7f544eec1cc6]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x1bc95)[0x7f544eec2c95]\n/lib/x86_64-linux-gnu/libc.so.6(+0x9cb84)[0x7f544e69cb84]\n/lib/x86_64-linux-gnu/libc.so.6(+0x129ecc)[0x7f544e729ecc]\n"
+   },
+   "CRISPEMBED_SPM_COLLAPSE_SPACES=0": {
+    "ids_error": "RuntimeError: crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\ncrispembed: using CPU backend (4 threads)\ncrispembed: loaded 6 layers, 384 dims, 250002 vocab\n/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/ops.cpp:5112: GGML_ASSERT(i01 >= 0 && i01 < ne01) failed\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(+0x1c12b)[0x7f5bf436812b]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(ggml_print_backtrace+0x21c)[0x7f5bf43685ac]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(ggml_abort+0x15b)[0x7f5bf436878b]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(ggml_compute_forward_get_rows+0xa70)[0x7f5bf44b1270]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x1acc6)[0x7f5bf4434cc6]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x1bc95)[0x7f5bf4435c95]\n/lib/x86_64-linux-gnu/libc.so.6(+0x9cb84)[0x7f5bf3c9cb84]\n/lib/x86_64-linux-gnu/libc.so.6(+0x129ecc)[0x7f5bf3d29ecc]\n",
+    "output_error": "RuntimeError: crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\ncrispembed: using CPU backend (4 threads)\ncrispembed: loaded 6 layers, 384 dims, 250002 vocab\n/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/ops.cpp:5112: GGML_ASSERT(i01 >= 0 && i01 < ne01) failed\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(+0x1c12b)[0x7f968d67a12b]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(ggml_print_backtrace+0x21c)[0x7f968d67a5ac]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-base.so.0(ggml_abort+0x15b)[0x7f968d67a78b]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(ggml_compute_forward_get_rows+0xa70)[0x7f968d7c3270]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x1acc6)[0x7f968d746cc6]\n/mnt/heavy/scratch/build-cpu/ggml/src/libggml-cpu.so.0(+0x1bc95)[0x7f968d747c95]\n/lib/x86_64-linux-gnu/libc.so.6(+0x9cb84)[0x7f968ce9cb84]\n/lib/x86_64-linux-gnu/libc.so.6(+0x129ecc)[0x7f968cf29ecc]\n"
+   }
+  }
+ ]
+}

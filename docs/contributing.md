@@ -13,7 +13,11 @@ This guide covers adding a new model backend (OCR, embedding, face, etc.) to Cri
 7. [ ] **Regenerate SHA-256 pins** (`python tools/fetch_model_hashes.py`) — an
        unpinned registry URL refuses to download
 8. [ ] Verify parity, quantize, update CrispCalc catalog
-9. [ ] `tools/format.sh --fix`, claim/update `PLAN.md` ownership and pending gates;
+9. [ ] **Document every new environment variable** in
+       [`docs/environment-variables.md`](environment-variables.md) and run
+       `python tools/list_env_vars.py --write`; `tests/test_env_vars_documented.py`
+       (Lint) fails on an undocumented `CRISPEMBED_*` read
+10. [ ] `tools/format.sh --fix`, claim/update `PLAN.md` ownership and pending gates;
    put completed milestones/evidence in `HISTORY.md` and measured quality/timing in `PERFORMANCE.md`
 
 ---
@@ -702,3 +706,31 @@ node tests/test_wasm_ocr_live.js
 
 - `build-wasm.yml` — builds on push, uploads artifacts (30-day retention)
 - `release-wasm.yml` — attaches WASM bundles to GitHub releases
+
+## CI queue policy
+
+The repository has well over a hundred workflows; keep the Actions queue short.
+
+- **Cancel superseded runs.** Every push/pull_request-triggered workflow carries a
+  `concurrency` block. On branches and PRs a newer push cancels the older run.
+  On `main` (and for `workflow_dispatch`) the group is keyed by `github.run_id`,
+  so runs that produce evidence, receipts or artifacts are never cancelled:
+
+  ```yaml
+  concurrency:
+    group: <name>-${{ (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main') && github.run_id || github.ref }}
+    cancel-in-progress: true
+  ```
+
+  Pure build/lint gates (`build.yml`, `build-wasm*.yml`, `lint.yml`, `regression.yml`)
+  may cancel on `main` too. Tag/release, publication, card-refresh and
+  `workflow_dispatch`-only evidence workflows never get `cancel-in-progress: true`.
+- **Skip docs/receipt-only changes.** Heavy workflows use an allow-list `paths:`
+  filter or, for Build and Build WASM, `paths-ignore` for `*.md`, `**.md`, `docs/**`
+  and `tests/results/**`. `main` has no required status checks; if one is ever
+  added, replace that workflow's PR filter with an always-run lightweight job so the
+  check cannot stay pending.
+- **Batch tiny controls.** Seconds-long stdlib-python control/contract checks go as a
+  step in `controls.yml` (union of path filters, one runner slot) instead of a new
+  workflow file. Do not move a workflow whose path or blob is pinned by a protocol,
+  receipt or guard test. Docs-only pushes to `main` start no Build or Build WASM run.

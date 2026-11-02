@@ -165,7 +165,7 @@ additional operator probes may be needed when native attribution begins.
 The [hosted driver](../tools/ci-heavy/ultrabert_reference.py) verifies complete
 F32/F16 tensor round-trips and saves original reference archives remotely.
 Small [model-free negative controls](../tests/test_ultrabert_contract.py) run
-before downloads and in [contract CI](../.github/workflows/ultrabert-contract.yml).
+before downloads and in [contract CI](../.github/workflows/controls.yml).
 The hosted original reference and conversion checks pass. Native comparisons
 retain183 F32/1,294 F16 stage failures. Reference captures and storage round-trips do not
 establish native parity, SentenceTransformer wrapper parity, retrieval quality,

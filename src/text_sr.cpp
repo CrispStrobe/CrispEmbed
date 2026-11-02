@@ -278,7 +278,7 @@ text_sr_context * text_sr_init(const char * model_path, int n_threads) {
     // to remove (measured there at ~85% of a one-shot invocation).
     // TEXT_SR_GPU_LOAD=1 restores the old behaviour for bisection.
     const bool force_cpu = (getenv("TEXT_SR_FORCE_CPU") && atoi(getenv("TEXT_SR_FORCE_CPU")));
-    const bool gpu_load = getenv("TEXT_SR_GPU_LOAD") != nullptr && !force_cpu;
+    const bool gpu_load = core_env::on("TEXT_SR_GPU_LOAD") && !force_cpu;
     ggml_backend_t backend = gpu_load ? crispasr_init_gpu_backend() : ggml_backend_cpu_init();
     if (!backend) backend = ggml_backend_cpu_init();
     if (!core_gguf::load_weights(model_path, backend, "text_sr", ctx->wl)) {

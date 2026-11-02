@@ -207,6 +207,10 @@ pub struct CrispembedOcrPipelineParams {
     pub image_text_fallback: c_int,
 }
 
+/// Unlimited-OCR / Unlimited-OCR-2 stage selector (variant 2 needs `CRISPEMBED_UNLIMITED_OCR2=1`).
+pub const CRISPEMBED_OCR_ENGINE_UNLIMITED_OCR: c_int = 13;
+/// MiniCPM-OCR stage selector (needs `CRISPEMBED_MINICPM_OCR=1` and `CRISPEMBED_QWEN35_OCR=1`).
+pub const CRISPEMBED_OCR_ENGINE_MINICPM_OCR: c_int = 23;
 /// TeleOCR stage selector. Requires `CRISPEMBED_TELEOCR=1` and a local TeleOCR GGUF.
 pub const CRISPEMBED_OCR_ENGINE_TELEOCR: c_int = 24;
 pub const CRISPEMBED_OCR_ENGINE_MINERU25_PRO: c_int = 25;

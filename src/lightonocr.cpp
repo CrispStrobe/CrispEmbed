@@ -493,7 +493,7 @@ static std::vector<float> apply_patch_conv(context & ctx, const std::vector<floa
     }
 
     // Scalar fallback gated by env var
-    static const bool scalar_patch = (std::getenv("CRISPEMBED_LIGHTONOCR_SCALAR_PATCH") != nullptr);
+    static const bool scalar_patch = core_env::on("CRISPEMBED_LIGHTONOCR_SCALAR_PATCH");
     if (scalar_patch) {
         // weight: [D, patch_len] — dot product per output element
         std::vector<float> w(D * patch_len);
@@ -1289,7 +1289,7 @@ static bool run_decoder_prefill(context & ctx, const std::vector<float> & image_
         return { g2, gf2 };
     };
 
-    static const bool locr_cache = (std::getenv("LOCR_DECODE_CACHE") != nullptr);
+    static const bool locr_cache = core_env::on("LOCR_DECODE_CACHE");
     if (locr_cache && !ctx.decode_galloc) {
         ctx.decode_galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx.backend));
         auto [rg, rgf] = build_step_graph(ctx.kvc.max_seq - 1);

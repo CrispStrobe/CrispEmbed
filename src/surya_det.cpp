@@ -190,7 +190,7 @@ static ggml_tensor * find(const std::unordered_map<std::string, ggml_tensor *> &
 surya_det_context * surya_det_init(const char * model_path, int n_threads) {
     auto * ctx = new surya_det_context{};
     ctx->n_threads = n_threads > 0 ? n_threads : 1;
-    ctx->dump = (getenv("SURYA_DET_DUMP") != nullptr);
+    ctx->dump = core_env::on("SURYA_DET_DUMP");
     ctx->bench = core_env::on("CRISPEMBED_SURYA_DET_BENCH");
 
     // Pass 1: metadata
@@ -1028,7 +1028,7 @@ static const float * run_forward_graph(surya_det_context * ctx, const float * in
 static const float * run_forward(surya_det_context * ctx, const float * input_data, int H, int W, int * out_h,
                                  int * out_w) {
     // Use graph-accelerated path unless SURYA_DET_SCALAR is set
-    if (!getenv("SURYA_DET_SCALAR")) {
+    if (!core_env::on("SURYA_DET_SCALAR")) {
         return run_forward_graph(ctx, input_data, H, W, out_h, out_w);
     }
 
