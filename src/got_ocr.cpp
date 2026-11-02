@@ -13,6 +13,7 @@
 #include "ggml-cpu.h"
 #include "core/gpu_backend_pref.h"
 #include "core/env_gate.h"
+#include "image_preprocess.h"
 
 #include <algorithm>
 #include <cassert>
@@ -1378,6 +1379,42 @@ static bool run_cached_step(got_ocr::context & ctx, const int32_t * token_ids, i
 // Generate
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Pipeline-parity gates against the original stepfun-ai/GOT-OCR2_0 chat()
+// (modeling_GOT.py). Each one is a tri-state: "1" forces on, "0" forces off,
+// unset takes the default below. Defaults were chosen by the per-factor A/B in
+// tests/results/got-ocr2-pipeline-parity/ (see PLAN/HISTORY).
+//   CRISPEMBED_GOT_OCR_PIL_BICUBIC  torchvision Resize((1024,1024), BICUBIC) on a
+//                                   PIL image = Pillow's fixed-point bicubic with
+//                                   antialias; legacy = nearest neighbour.
+//   CRISPEMBED_GOT_OCR_ORIG_SYSTEM  the original MPT system string keeps the
+//                                   source indentation ("system\n        You ..."),
+//                                   which tiktoken encodes as 198, 286 (7 spaces),
+//                                   1446 (" You"); legacy drops token 286.
+//   CRISPEMBED_GOT_OCR_ORIG_NGRAM   generate(no_repeat_ngram_size=20) over the
+//                                   whole sequence (prompt + generated), as HF's
+//                                   NoRepeatNGramLogitsProcessor does; legacy =
+//                                   n=3 over the generated tokens only.
+//   CRISPEMBED_GOT_OCR_NO_REPEAT_NGRAM=<n>  diagnostic override of n (0 = off).
+// ---------------------------------------------------------------------------
+static constexpr bool kGotPilBicubicDefault = false;
+static constexpr bool kGotOrigSystemDefault = false;
+static constexpr bool kGotOrigNgramDefault = false;
+
+static bool got_gate(const char * name, bool default_on) {
+    return default_on ? !core_env::explicitly_off(name) : core_env::on(name);
+}
+
+static void got_dump_ids(const char * dir, const char * name, const int32_t * ids, int n) {
+    if (!dir || !*dir) return;
+    std::string path = std::string(dir) + "/" + name;
+    FILE * f = fopen(path.c_str(), "w");
+    if (!f) return;
+    for (int i = 0; i < n; i++) fprintf(f, "%s%d", i ? " " : "", ids[i]);
+    fprintf(f, "\n");
+    fclose(f);
+}
+
 static int argmax_no_repeat_ngram(const float * logits, int V, const std::vector<int32_t> & hist, int ngram) {
     std::unordered_set<int> banned;
     const int k = ngram - 1;
@@ -1420,6 +1457,26 @@ bool got_ocr::generate(context & ctx, const float * image_embeds, int n_image_to
     auto & l = ctx.m.lhp;
     int D = (int)l.hidden_size;
 
+    // No-repeat-ngram rule (see the gate block above argmax_no_repeat_ngram).
+    const bool orig_ngram = got_gate("CRISPEMBED_GOT_OCR_ORIG_NGRAM", kGotOrigNgramDefault);
+    int no_repeat_ngram = orig_ngram ? 20 : 3;
+    if (const char * e = std::getenv("CRISPEMBED_GOT_OCR_NO_REPEAT_NGRAM")) {
+        if (*e) no_repeat_ngram = atoi(e);
+    }
+    // History the ngram ban looks at: prompt + generated (original) or generated only (legacy).
+    std::vector<int32_t> ngram_hist;
+    if (orig_ngram) ngram_hist.assign(prompt_ids, prompt_ids + n_prompt);
+    const size_t ngram_hist_base = ngram_hist.size();
+    auto hist_for_ban = [&]() -> const std::vector<int32_t> & {
+        if (!orig_ngram) return out.token_ids;
+        ngram_hist.resize(ngram_hist_base);
+        ngram_hist.insert(ngram_hist.end(), out.token_ids.begin(), out.token_ids.end());
+        return ngram_hist;
+    };
+    if (ctx.verbosity >= 2)
+        fprintf(stderr, "got_ocr: no_repeat_ngram=%d history=%s\n", no_repeat_ngram,
+                orig_ngram ? "prompt+generated" : "generated");
+
     // KV cache
     int total_seq = n_prompt + max_new_tokens + 16;
     if (!alloc_kv_cache(ctx, total_seq)) return false;
@@ -1452,7 +1509,6 @@ bool got_ocr::generate(context & ctx, const float * image_embeds, int n_image_to
     // the SAME graph the per-layer parity diff validates — isolates whether the
     // KV-cache path (write/read views, cached RoPE/mask) is what corrupts output.
     if (std::getenv("GOT_OCR_NO_KV_CACHE") && atoi(std::getenv("GOT_OCR_NO_KV_CACHE"))) {
-        const int no_repeat_ngram = 3;
         const int V = (int)l.vocab_size;
         out.token_confidences.clear();
         std::vector<int32_t> seq(prompt_ids, prompt_ids + n_prompt);
@@ -1486,7 +1542,7 @@ bool got_ocr::generate(context & ctx, const float * image_embeds, int n_image_to
             std::vector<float> ll(V);
             ggml_backend_tensor_get(lg.logits_out, ll.data(), (size_t)(Tn - 1) * V * sizeof(float), V * sizeof(float));
             ggml_free(lg.gctx);
-            int nt = argmax_no_repeat_ngram(ll.data(), V, out.token_ids, no_repeat_ngram);
+            int nt = argmax_no_repeat_ngram(ll.data(), V, hist_for_ban(), no_repeat_ngram);
             out.token_ids.push_back(nt);
             seq.push_back(nt);
             if (nt == (int)l.eos_token_id || nt == 151645) break;
@@ -1534,10 +1590,9 @@ bool got_ocr::generate(context & ctx, const float * image_embeds, int n_image_to
     ggml_backend_tensor_get(lg.logits_out, last_logits.data(), offset, V * sizeof(float));
     ggml_free(lg.gctx);
 
-    // Argmax with no-repeat-ngram blocking (ngram=3)
-    const int no_repeat_ngram = 3;
+    // Argmax with no-repeat-ngram blocking
     out.token_confidences.clear();
-    int next_token = argmax_no_repeat_ngram(last_logits.data(), V, out.token_ids, no_repeat_ngram);
+    int next_token = argmax_no_repeat_ngram(last_logits.data(), V, hist_for_ban(), no_repeat_ngram);
 
     // Confidence: numerically-stable softmax for winning token
     {
@@ -1573,7 +1628,7 @@ bool got_ocr::generate(context & ctx, const float * image_embeds, int n_image_to
         if (!run_cached_step(ctx, &tok, 1, ctx.kvc.n_past, logits)) break;
         ctx.kvc.n_past += 1;
 
-        next_token = argmax_no_repeat_ngram(logits.data(), (int)logits.size(), out.token_ids, no_repeat_ngram);
+        next_token = argmax_no_repeat_ngram(logits.data(), (int)logits.size(), hist_for_ban(), no_repeat_ngram);
 
         {
             float max_l = logits[next_token];
@@ -1653,19 +1708,43 @@ const char * got_ocr_recognize_raw(got_ocr_context * ctx, const uint8_t * px, in
     auto & l = ctx->inner.m.lhp;
     int imgS = (int)v.image_size; // 1024
 
-    // Resize to (imgS, imgS) with bilinear interpolation + CLIP normalize
+    const char * dump_dir = std::getenv("CRISPEMBED_GOT_OCR_DUMP_DIR"); // diagnostic: pixels + ids
+
+    // Resize to (imgS, imgS) + CLIP normalize, CHW float32.
     std::vector<float> pixels(3 * imgS * imgS);
-    for (int c = 0; c < 3; c++) {
-        for (int y = 0; y < imgS; y++) {
-            float fy = (float)y * h / imgS;
-            int iy = std::min((int)fy, h - 1);
-            for (int x = 0; x < imgS; x++) {
-                float fx = (float)x * w / imgS;
-                int ix = std::min((int)fx, w - 1);
-                int ci = std::min(c, ch - 1);
-                float val = (float)px[(iy * w + ix) * ch + ci] / 255.0f;
-                pixels[c * imgS * imgS + y * imgS + x] = (val - v.image_mean[c]) / v.image_std[c];
+    if (got_gate("CRISPEMBED_GOT_OCR_PIL_BICUBIC", kGotPilBicubicDefault)) {
+        // Original: Image.open().convert('RGB') -> torchvision Resize((1024,1024),
+        // BICUBIC) on the PIL image (Pillow fixed-point bicubic with antialias)
+        // -> ToTensor (/255) -> Normalize.
+        std::vector<uint8_t> rgb((size_t)w * h * 3);
+        for (size_t i = 0; i < (size_t)w * h; i++)
+            for (int c = 0; c < 3; c++) rgb[i * 3 + c] = px[i * ch + std::min(c, ch - 1)];
+        std::vector<float> hwc((size_t)imgS * imgS * 3);
+        image_preproc::resize_bicubic_pil_u8_hwc(rgb.data(), h, w, hwc.data(), imgS, imgS, 3);
+        for (int c = 0; c < 3; c++)
+            for (size_t i = 0; i < (size_t)imgS * imgS; i++)
+                pixels[c * (size_t)imgS * imgS + i] = (hwc[i * 3 + c] / 255.0f - v.image_mean[c]) / v.image_std[c];
+    } else {
+        // Legacy: nearest neighbour.
+        for (int c = 0; c < 3; c++) {
+            for (int y = 0; y < imgS; y++) {
+                float fy = (float)y * h / imgS;
+                int iy = std::min((int)fy, h - 1);
+                for (int x = 0; x < imgS; x++) {
+                    float fx = (float)x * w / imgS;
+                    int ix = std::min((int)fx, w - 1);
+                    int ci = std::min(c, ch - 1);
+                    float val = (float)px[(iy * w + ix) * ch + ci] / 255.0f;
+                    pixels[c * imgS * imgS + y * imgS + x] = (val - v.image_mean[c]) / v.image_std[c];
+                }
             }
+        }
+    }
+    if (dump_dir && *dump_dir) {
+        std::string path = std::string(dump_dir) + "/pixels.f32";
+        if (FILE * f = fopen(path.c_str(), "wb")) {
+            fwrite(pixels.data(), sizeof(float), pixels.size(), f);
+            fclose(f);
         }
     }
 
@@ -1705,7 +1784,16 @@ const char * got_ocr_recognize_raw(got_ocr_context * ctx, const uint8_t * px, in
     prompt.push_back(im_start);
     prompt.insert(prompt.end(), std::begin(sys_role), std::end(sys_role));
     prompt.push_back(newline);
-    prompt.insert(prompt.end(), std::begin(sys_text), std::end(sys_text));
+    // Original modeling_GOT.py's system string is a triple-quoted literal whose
+    // second line keeps 8 spaces of source indentation; tiktoken splits that into
+    // 286 ("       ", 7 spaces) + 1446 (" You").
+    if (got_gate("CRISPEMBED_GOT_OCR_ORIG_SYSTEM", kGotOrigSystemDefault)) {
+        prompt.push_back(286);
+        prompt.push_back(1446);
+        prompt.insert(prompt.end(), std::begin(sys_text) + 1, std::end(sys_text));
+    } else {
+        prompt.insert(prompt.end(), std::begin(sys_text), std::end(sys_text));
+    }
     prompt.push_back(im_end);
 
     // User turn
@@ -1725,6 +1813,7 @@ const char * got_ocr_recognize_raw(got_ocr_context * ctx, const uint8_t * px, in
     prompt.push_back(newline);
 
     int prompt_len = (int)prompt.size();
+    got_dump_ids(dump_dir, "prompt_ids.txt", prompt.data(), prompt_len);
 
     // Generate
     got_ocr::generate_result gen;
@@ -1738,6 +1827,7 @@ const char * got_ocr_recognize_raw(got_ocr_context * ctx, const uint8_t * px, in
         return "";
     }
 
+    got_dump_ids(dump_dir, "gen_ids.txt", gen.token_ids.data(), (int)gen.token_ids.size());
     ctx->result = gen.text;
     ctx->char_confidences = std::move(gen.token_confidences);
     if (out_len) *out_len = (int)ctx->result.size();
