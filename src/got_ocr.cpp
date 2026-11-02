@@ -1384,9 +1384,12 @@ static bool run_cached_step(got_ocr::context & ctx, const int32_t * token_ids, i
 // (modeling_GOT.py). Each one is a tri-state: "1" forces on, "0" forces off,
 // unset takes the default below. All three default ON (opt out with =0) after
 // the per-factor A/B in tests/results/got-ocr2-pipeline-parity/ (heavy-cpu run
-// 41452383740): with all three, F16 is token-exact against the original on all
-// frozen cases (fox 16/16, receipt_example 220/220, simple_form 52/52 IDs), and
-// each factor's flip improves or keeps every case at F16 and Q4_K.
+// 41452383740, confirmed by 41456179762): with all three, F16 is token-exact
+// against the original on all frozen cases (fox 16/16, receipt_example 220/220,
+// simple_form 52/52 IDs); no subset of them is. Flipping any one of them with
+// the other two on improves or keeps every F16 case. Q4_K: bicubic and system
+// improve or keep every case; the ngram flip moves the receipt's first
+// divergence 78 -> 83 but its char ratio 0.7012 -> 0.7005 (quantization drift).
 //   CRISPEMBED_GOT_OCR_PIL_BICUBIC  torchvision Resize((1024,1024), BICUBIC) on a
 //                                   PIL image = Pillow's fixed-point bicubic with
 //                                   antialias; legacy = nearest neighbour.
