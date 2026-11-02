@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "started_utc": "2026-10-31T19:11:58.295540+00:00",
+  "completed_utc": "2026-10-31T19:12:17.377585+00:00",
+  "scope": "Focused model-free native document parser/processors/renderers. No GGML, PDFium, model weights, or inference.",
+  "compiler_version": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0",
+  "platform": {
+    "system": "Linux",
+    "machine": "x86_64"
+  },
+  "resource_preflight": {
+    "load_average": [
+      0.57373046875,
+      0.87890625,
+      0.77392578125
+    ],
+    "scratch_free_bytes": 24422977536,
+    "memory": {
+      "MemAvailable": "9232872 kB",
+      "SwapTotal": "0 kB",
+      "SwapFree": "0 kB"
+    }
+  },
+  "compile_command": [
+    "g++",
+    "-std=c++17",
+    "-O1",
+    "-g",
+    "-fno-omit-frame-pointer",
+    "-fsanitize=address,undefined",
+    "-fno-sanitize-recover=all",
+    "-Wall",
+    "-Wextra",
+    "-Wpedantic",
+    "-I",
+    "src",
+    "src/marker_document.cpp",
+    "tests/test-marker-document.cpp",
+    "-o",
+    "../validation/test-marker-document-asan-ubsan"
+  ],
+  "compile_exit_code": 0,
+  "compile_seconds": 19.049161376002303,
+  "run_command": [
+    "../validation/test-marker-document-asan-ubsan"
+  ],
+  "run_environment": {
+    "ASAN_OPTIONS": "detect_leaks=0:abort_on_error=1:strict_string_checks=1",
+    "UBSAN_OPTIONS": "halt_on_error=1:print_stacktrace=1"
+  },
+  "run_exit_code": 0,
+  "run_seconds": 0.031540019997919444,
+  "checks": 82,
+  "failures": 0,
+  "source_sha256": {
+    "src/marker_document.cpp": "43b26f348788bf8c861c7ecdb99049593e6e0dd49653e7b13012b4315792c2d9",
+    "src/marker_document.h": "6cfbd50d18e411c2f89c0df4183551beebc7d7bede4eb710a4383820e9e1425b",
+    "src/core/json.h": "7e72a6359897e9397e5bee3edf7563476fc4bd41516bf5245a16df50dc54c589",
+    "src/core/clean_exit.h": "2528210865cfc6aa8f2a389526aebae46e836f6bca88c00e4eabaedf6c83fdd6",
+    "tests/test-marker-document.cpp": "3987a65dded06f614179179e043165a0eda523022da82c646490093b8fcaa550"
+  },
+  "final_source_sha256": {
+    "src/marker_document.cpp": "43b26f348788bf8c861c7ecdb99049593e6e0dd49653e7b13012b4315792c2d9",
+    "src/marker_document.h": "6cfbd50d18e411c2f89c0df4183551beebc7d7bede4eb710a4383820e9e1425b",
+    "src/core/json.h": "7e72a6359897e9397e5bee3edf7563476fc4bd41516bf5245a16df50dc54c589",
+    "src/core/clean_exit.h": "2528210865cfc6aa8f2a389526aebae46e836f6bca88c00e4eabaedf6c83fdd6",
+    "tests/test-marker-document.cpp": "3987a65dded06f614179179e043165a0eda523022da82c646490093b8fcaa550"
+  },
+  "source_unchanged": true,
+  "sanitizers": [
+    "AddressSanitizer",
+    "UndefinedBehaviorSanitizer"
+  ],
+  "leak_sanitizer": "Disabled explicitly: repository test entry point uses clean_exit/_Exit; no leak-freedom claim.",
+  "passed": true,
+  "binary_sha256": "27eb594fb786e4a028371a849b377a657b946ca82b97c7a34ae3df4249f76cd8",
+  "logs_sha256": {
+    "compiler-version.txt": "78b5d66fa8e53c3cfadb14889dfb5936f1c58888ad49c019e15d3dc59fc64e30",
+    "compile.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "document-test.log": "cc9993735dd19ffeb1e46605081c4794035fba0059169e6cbcd7c17198e4c0e5",
+    "reproduce.sh": "e247a17ba3267274c50992208408d564f89114fe7f75851c7544e7a2dd9284cb"
+  },
+  "reproduction_script": "tests/results/marker/sanitizers/reproduce.sh"
+}

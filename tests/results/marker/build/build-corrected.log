@@ -1,0 +1,9 @@
+[1/9] Building CXX object CMakeFiles/crispembed.dir/src/marker_backend.cpp.o
+[2/9] Building CXX object CMakeFiles/crispembed.dir/src/marker.cpp.o
+[3/9] Building CXX object CMakeFiles/crispembed.dir/src/marker_document.cpp.o
+[4/9] Linking CXX static library libcrispembed-static.a
+[5/9] Linking CXX executable test-marker-document
+[6/9] Linking CXX executable test-marker-api
+[7/9] Linking CXX executable crispembed-marker
+[8/9] Linking CXX executable test-marker-backend
+[9/9] Linking CXX executable crispembed-server

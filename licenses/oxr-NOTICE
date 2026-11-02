@@ -1,0 +1,17 @@
+OXR-1.0 integration attribution
+
+OXR model and pipeline: Copyright (c) 2026 SoMark Team.
+Original model source: https://huggingface.co/SoMarkAI/OXR-1.0/tree/c708407f9d2b4df658f2543d9132b62bb7221df4
+Original document pipeline: https://github.com/SoMarkAI/OXR/tree/c1a1dcb312ee9f691404f127785510453c0d9350
+
+The OXR-specific native graph, image processing, conversion, reference probes
+and document adapter follow these pinned Python sources. Modified and translated
+implementation files are identified by the OXR names and documented in docs/oxr.md.
+The supplied OXR additional license terms and Apache License 2.0 must accompany
+redistributions of OXR or derivative works; see oxr-LICENSE and oxr-APACHE-2.0.
+OXR's additional commercial-use, attribution and competing-hosted-service terms
+are not replaced by CrispEmbed's general repository license. Third-party
+components separately identified under other licenses retain their own licenses.
+
+No model weights, pretrained layout detector weights, hosted API credentials
+or permission to operate an otherwise restricted service are included.

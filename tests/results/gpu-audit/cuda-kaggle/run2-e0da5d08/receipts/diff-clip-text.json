@@ -1,0 +1,45 @@
+{
+ "kind": "diff",
+ "binary": "test-clip-text-diff",
+ "arms": {
+  "cuda": {
+   "rc": 0,
+   "wall_s": 0.967,
+   "gpu_mem_peak_mib": 367,
+   "cuda_used": true,
+   "n_stages": 1,
+   "stages": {
+    "final_embedding": 1.0
+   },
+   "worst_stage": [
+    "final_embedding",
+    1.0
+   ],
+   "threshold_fails": [],
+   "threshold_missing": [],
+   "stdout_tail": "CLIP/SigLIP text encoder — parity test\n  Model: $SCRATCH/models/clip-text-base.gguf\n  Ref:   $SCRATCH/models/clip-text-ref.gguf\n  Text:  \"a photo of a fox\"\n\n  \u001b[32m[PASS]\u001b[0m model loads\n  \u001b[32m[PASS]\u001b[0m encode returns non-null\n  embedding dim: 512\n  final_embedding: cos_min=1.000000 max_abs=0.000031 (post text_proj)\n  vs pre_proj (EOS hidden, no proj): cos_min=-0.038063 max_abs=0.742487\n  \u001b[32m[PASS]\u001b[0m final_embedding cos >= 0.99\n\n=== Results: 3 passed, 0 failed ===\n\ncrispembed_diff: loaded 2 tensors from $SCRATCH/models/clip-text-ref.gguf\nclip_text: BPE tokenizer loaded (49408 vocab, 48894 merges)\nclip_text: hidden=512 layers=12 heads=8 vocab=49408 max_pos=77 proj=512\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\nclip_text: loaded 12 layers\n"
+  },
+  "cpu": {
+   "rc": 0,
+   "wall_s": 0.466,
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "n_stages": 1,
+   "stages": {
+    "final_embedding": 1.0
+   },
+   "worst_stage": [
+    "final_embedding",
+    1.0
+   ],
+   "threshold_fails": [],
+   "threshold_missing": [],
+   "stdout_tail": "CLIP/SigLIP text encoder — parity test\n  Model: $SCRATCH/models/clip-text-base.gguf\n  Ref:   $SCRATCH/models/clip-text-ref.gguf\n  Text:  \"a photo of a fox\"\n\n  \u001b[32m[PASS]\u001b[0m model loads\n  \u001b[32m[PASS]\u001b[0m encode returns non-null\n  embedding dim: 512\n  final_embedding: cos_min=1.000000 max_abs=0.000000 (post text_proj)\n  vs pre_proj (EOS hidden, no proj): cos_min=-0.038055 max_abs=0.742473\n  \u001b[32m[PASS]\u001b[0m final_embedding cos >= 0.99\n\n=== Results: 3 passed, 0 failed ===\n\ncrispembed_diff: loaded 2 tensors from $SCRATCH/models/clip-text-ref.gguf\nclip_text: BPE tokenizer loaded (49408 vocab, 48894 merges)\nclip_text: hidden=512 layers=12 heads=8 vocab=49408 max_pos=77 proj=512\nggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\nclip_text: loaded 12 layers\n"
+  }
+ },
+ "seconds": 1.8,
+ "id": "diff-clip-text",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

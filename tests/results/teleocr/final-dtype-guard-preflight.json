@@ -1,0 +1,74 @@
+{
+  "kind": "teleocr-final-dtype-guard-static-preflight",
+  "fixture_count": 43,
+  "new_tensor_fixture_count": 17,
+  "fixture_serialization_passed": true,
+  "python_syntax_passed": true,
+  "native_loader_executed": false,
+  "forward_math_changed": false,
+  "artifacts": [
+    {
+      "manifest": "/workspace/scratch/960329398638/teleocr-models/teleocr-f32.gguf.json",
+      "manifest_sha256": "abf4aacceeab278fdf33cc3ecd614c45b6cac2c91e9b9e3f91244d35ab486da2",
+      "vector_count": 340,
+      "vector_types": {
+        "F32": 340
+      },
+      "matrix_count": 360,
+      "matrix_types": {
+        "F32": 360
+      },
+      "headers_satisfy_guard": true
+    },
+    {
+      "manifest": "/workspace/scratch/960329398638/teleocr-models/teleocr-f16.gguf.json",
+      "manifest_sha256": "6a7a5df25a9a0e92b191a613014b51d8eef6c55860f6db1cb7c183e1b8aed335",
+      "vector_count": 340,
+      "vector_types": {
+        "F32": 340
+      },
+      "matrix_count": 360,
+      "matrix_types": {
+        "F16": 360
+      },
+      "headers_satisfy_guard": true
+    },
+    {
+      "manifest": "/workspace/scratch/960329398638/teleocr-models/teleocr-q8_0.gguf.json",
+      "manifest_sha256": "18607333af848f044301b57f547fa851554c09230dcf4f5a9522ad25f751410b",
+      "vector_count": 340,
+      "vector_types": {
+        "F32": 340
+      },
+      "matrix_count": 360,
+      "matrix_types": {
+        "Q8_0": 196,
+        "F16": 164
+      },
+      "headers_satisfy_guard": true
+    },
+    {
+      "manifest": "/workspace/scratch/960329398638/validation/quantize-q4-final-audit.json",
+      "manifest_sha256": "051df0077206fdcefea1b119c8b43173f41121c9aeb25121cda089ec1289ed78",
+      "vector_count": 340,
+      "vector_types": {
+        "F32": 340
+      },
+      "tensor_types": {
+        "Q4_K": 196,
+        "F32": 340,
+        "F16": 164
+      },
+      "protected_vector_proof": "all shapes unchanged and all 504 protected payloads identical to F16",
+      "headers_satisfy_guard": true
+    }
+  ],
+  "header_alignment_passed": true,
+  "source_sha256": {
+    "src/qwen2vl_ocr.cpp": "a83dc3b0255f790a5272458c29b754ed1eba2d88eae3c2d5d254def03d20f8c9",
+    "src/qwen2vl_ocr.h": "e5a15e5095bc8c9ee1365badf04bed8700b1cb63c1415c5464130929384fb061",
+    "src/crispembed.h": "ba543d0765f098a6bf2eafb10a256511600fb930e09270071891e45392ee44e4",
+    "docs/teleocr.md": "a977d05ecf5ab376c76d37691810931ce52ff50b362742e54f6254a7d4550f86",
+    "tests/test_teleocr_loader.py": "8ba90cc388273fab4fcdcd330ff18078ad15a2ca6497552125d44a0f164bf3f7"
+  }
+}

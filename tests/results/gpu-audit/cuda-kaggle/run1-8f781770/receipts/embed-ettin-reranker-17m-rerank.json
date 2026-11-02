@@ -1,0 +1,146 @@
+{
+ "kind": "embed",
+ "mode": "rerank",
+ "base": "ettin-reranker-17m-v1-f32.gguf",
+ "files": {
+  "ettin-reranker-17m-v1-f32.gguf": {
+   "precision": "f32",
+   "type_hist": {
+    "f32": 16859136
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      0.967,
+      0.867
+     ],
+     "gpu_mem_peak_mib": 199,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "crispembed: using GPT-2 BPE tokenizer (50368 tokens, pre=modern-bert)\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispembed: using CUDA0 backend with CPU fallback\ncrispembed: no position embeddings, using RoPE (theta=160000, pre-LN)\ncrispembed: classifier head loaded (reranker=2-layer+LN, act=gelu)\ncrispembed: loaded 50009 BPE merges from tensor\ncrispembed: loaded 7 layers, 256 dims, 50368 vocab\n"
+    },
+    "cpu": {
+     "wall_s": [
+      0.416,
+      0.467
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "crispembed: using GPT-2 BPE tokenizer (50368 tokens, pre=modern-bert)\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ncrispembed: using CPU backend (4 threads)\ncrispembed: no position embeddings, using RoPE (theta=160000, pre-LN)\ncrispembed: classifier head loaded (reranker=2-layer+LN, act=gelu)\ncrispembed: loaded 50009 BPE merges from tensor\ncrispembed: loaded 7 layers, 256 dims, 50368 vocab\n"
+    }
+   },
+   "cuda_vs_cpu_same_artifact": {
+    "cos_min": 0.9999999829866906,
+    "max_abs": 0.001806000000000002,
+    "same_order": true
+   },
+   "cuda_vs_cpu_reference": {
+    "cos_min": 0.9999999829866906,
+    "max_abs": 0.001806000000000002,
+    "same_order": true
+   },
+   "bar": 0.99,
+   "qualifies": true
+  },
+  "ettin-reranker-17m-v1-q8_0.gguf": {
+   "precision": "q8_0",
+   "type_hist": {
+    "q8_0": 16793600,
+    "f32": 65536
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      0.867,
+      0.767
+     ],
+     "gpu_mem_peak_mib": 147,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "crispembed: using GPT-2 BPE tokenizer (50368 tokens, pre=modern-bert)\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispembed: using CUDA0 backend with CPU fallback\ncrispembed: no position embeddings, using RoPE (theta=160000, pre-LN)\ncrispembed: classifier head loaded (reranker=2-layer+LN, act=gelu)\ncrispembed: loaded 50009 BPE merges from tensor\ncrispembed: loaded 7 layers, 256 dims, 50368 vocab\n"
+    },
+    "cpu": {
+     "wall_s": [
+      0.416,
+      0.417
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "crispembed: using GPT-2 BPE tokenizer (50368 tokens, pre=modern-bert)\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ncrispembed: using CPU backend (4 threads)\ncrispembed: no position embeddings, using RoPE (theta=160000, pre-LN)\ncrispembed: classifier head loaded (reranker=2-layer+LN, act=gelu)\ncrispembed: loaded 50009 BPE merges from tensor\ncrispembed: loaded 7 layers, 256 dims, 50368 vocab\n"
+    }
+   },
+   "cuda_vs_cpu_same_artifact": {
+    "cos_min": 0.999934742483599,
+    "max_abs": 0.07786300000000002,
+    "same_order": true
+   },
+   "cuda_vs_cpu_reference": {
+    "cos_min": 0.9997843241208134,
+    "max_abs": 0.16259200000000007,
+    "same_order": true
+   },
+   "cpu_vs_cpu_reference": {
+    "cos_min": 0.9998785264973301,
+    "max_abs": 0.10738100000000017,
+    "same_order": true
+   },
+   "bar": 0.97,
+   "qualifies": true
+  },
+  "ettin-reranker-17m-v1-q4_k.gguf": {
+   "precision": "q8_0",
+   "type_hist": {
+    "q8_0": 12894208,
+    "q4_k": 3211264,
+    "q4_0": 688128,
+    "f32": 65536
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      0.819,
+      0.766
+     ],
+     "gpu_mem_peak_mib": 133,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "crispembed: using GPT-2 BPE tokenizer (50368 tokens, pre=modern-bert)\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispembed: using CUDA0 backend with CPU fallback\ncrispembed: no position embeddings, using RoPE (theta=160000, pre-LN)\ncrispembed: classifier head loaded (reranker=2-layer+LN, act=gelu)\ncrispembed: loaded 50009 BPE merges from tensor\ncrispembed: loaded 7 layers, 256 dims, 50368 vocab\n"
+    },
+    "cpu": {
+     "wall_s": [
+      0.517,
+      0.516
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "crispembed: using GPT-2 BPE tokenizer (50368 tokens, pre=modern-bert)\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ncrispembed: using CPU backend (4 threads)\ncrispembed: no position embeddings, using RoPE (theta=160000, pre-LN)\ncrispembed: classifier head loaded (reranker=2-layer+LN, act=gelu)\ncrispembed: loaded 50009 BPE merges from tensor\ncrispembed: loaded 7 layers, 256 dims, 50368 vocab\n"
+    }
+   },
+   "cuda_vs_cpu_same_artifact": {
+    "cos_min": 0.9994167520557382,
+    "max_abs": 0.19957100000000016,
+    "same_order": false
+   },
+   "cuda_vs_cpu_reference": {
+    "cos_min": 0.9920120392513084,
+    "max_abs": 0.8637329999999999,
+    "same_order": false
+   },
+   "cpu_vs_cpu_reference": {
+    "cos_min": 0.9950528315070595,
+    "max_abs": 0.7168529999999997,
+    "same_order": false
+   },
+   "bar": 0.97,
+   "qualifies": true
+  }
+ },
+ "seconds": 17.9,
+ "id": "embed-ettin-reranker-17m-rerank",
+ "commit": "8f781770810956818ba76831a6bc607fbc0a1154",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

@@ -1,0 +1,9 @@
+{
+  "license": "MIT",
+  "source": "Authored for CrispEmbed TeleOCR validation before model execution",
+  "width": 640,
+  "height": 220,
+  "gold_text": "Hello TeleOCR\nInvoice 42\nTotal: EUR 19.50",
+  "sha256": "54505c242287c7f666bb9fa8953a2f419a16a8b802e79ab0dd09945400703be8",
+  "scoring": "Exact raw text plus CER/WER after whitespace normalization; punctuation and case preserved"
+}

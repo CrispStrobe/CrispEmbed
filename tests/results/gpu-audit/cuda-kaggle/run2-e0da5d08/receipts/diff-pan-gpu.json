@@ -1,0 +1,57 @@
+{
+ "kind": "diff",
+ "binary": "test-pan-diff",
+ "arms": {
+  "cuda": {
+   "rc": 1,
+   "wall_s": 0.816,
+   "gpu_mem_peak_mib": 125,
+   "cuda_used": true,
+   "n_stages": 1,
+   "stages": {
+    "output": 0.0
+   },
+   "worst_stage": [
+    "output",
+    0.0
+   ],
+   "threshold_fails": [
+    [
+     "output",
+     0.0,
+     0.99
+    ]
+   ],
+   "threshold_missing": [],
+   "stdout_tail": "Output: 128x128 (scale=4)\n  output                     cos_min=0.000000  max_abs=1.97e-03  FAIL\n\n0 passed, 1 failed\n\ncrispembed_diff: loaded 2 tensors from $SCRATCH/models/pan-ref.gguf\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\npan_sr: nf=40 unf=24 nb=16 scale=4x, 146 tensors\npan_sr: GPU path - forward graph on CUDA0 (CRISPEMBED_PAN_GPU=0 restores CPU)\npan_sr: 32x32 → 128x128 (4x), tiles=1x1\npan_sr: done 128x128\n"
+  },
+  "cpu": {
+   "rc": 1,
+   "wall_s": 0.315,
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "n_stages": 1,
+   "stages": {
+    "output": 0.0
+   },
+   "worst_stage": [
+    "output",
+    0.0
+   ],
+   "threshold_fails": [
+    [
+     "output",
+     0.0,
+     0.99
+    ]
+   ],
+   "threshold_missing": [],
+   "stdout_tail": "Output: 128x128 (scale=4)\n  output                     cos_min=0.000000  max_abs=1.97e-03  FAIL\n\n0 passed, 1 failed\n\ncrispembed_diff: loaded 2 tensors from $SCRATCH/models/pan-ref.gguf\nggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\npan_sr: nf=40 unf=24 nb=16 scale=4x, 146 tensors\npan_sr: 32x32 → 128x128 (4x), tiles=1x1\npan_sr: done 128x128\n"
+  }
+ },
+ "seconds": 1.9,
+ "id": "diff-pan-gpu",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

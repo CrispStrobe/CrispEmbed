@@ -1,3 +1,164 @@
+## CUDA GPU audit, Kaggle Tesla T4 (1-2 November 2026, `feat/cuda-audit`)
+
+Same-binary CUDA (`--gpu-backend cuda`) vs CPU (`--gpu-backend cpu`,
+`CUDA_VISIBLE_DEVICES=""`), 4 Xeon vCPUs, `-t 4`, best of two one-shot runs (load
+included). Matrix: [`docs/gpu-support-matrix.md`](docs/gpu-support-matrix.md);
+receipts: `tests/results/gpu-audit/cuda-kaggle/`.
+
+| Lane | CUDA s | CPU s | Output CUDA vs CPU |
+|---|---:|---:|---|
+| ESRGAN x4 F32, fox (**new CUDA default**) | 1.62 | 13.95 | max \|Δ\| 1/255, PSNR 106 dB |
+| InstructIR F16, scan_strip (**new CUDA default**) | 3.68 | 30.30 | max \|Δ\| 1/255, PSNR 104 dB |
+| PAN x4 F16, scan_strip (**new gate, CUDA default**) | 2.07 | 31.60 | max \|Δ\| 1/255, PSNR 102 dB |
+| Restormer F16, fox (**new gate, CUDA default**) | 13.40 | 234.75 | max \|Δ\| 1/255, PSNR 86.5 dB |
+| LightOnOCR 1B q4_k, receipt, 256 tok (**new CUDA default**) | 3.42 | 40.23 | byte-identical |
+| Surya det F16 (fixed on CUDA) | 6.98 | 18.07 | byte-identical |
+| DBNet+TrOCR q8, scan_page_pd (default lane) | 114.8 | 240.8 | 295/295 boxes ≤1 px, 290/295 words |
+| DBNet+TrOCR, `CRISPEMBED_DBNET_DECONV_MATMUL=1` | 113.7 | — | identical to stock CUDA — stays off |
+| PP-OCRv6 small, scan_page_pd (det on CUDA) | 2.22 | 17.18 | 38/38; det on CPU arm 4.53 s |
+| GOT-OCR2 q4_k, fox 128 tok | 2.17 | 24.22 | byte-identical |
+| GLM-OCR q8, receipt 128 tok | 3.32 | 30.33 | byte-identical |
+| H2OVL-800M q8, fox | 2.67 | 102.95 | byte-identical |
+| Granite-Vision 3.3 2B q4_k, fox | 4.08 | 70.23 | byte-identical |
+| SmolDocling F16, fox | 6.18 | 30.62 | byte-identical |
+| PP-FormulaNet-L q8, formula | 43.79 | 49.97 | byte-identical (only 1.14x) |
+| Transcoda q8, page | 2.22 | 24.20 | byte-identical |
+| SAM2.1 tiny F16, fox point | 1.12 | 9.60 | mask byte-identical |
+| NAFNet F16, scan_strip | 3.33 | 24.61 | byte-identical |
+| BiDirLM 2.5B q8, 12 texts | 2.27 | 33.08 | cos 0.99859 |
+| Qwen3-Embedding-0.6B q8, 12 texts | 1.42 | 10.85 | cos 0.99937 (vs F32 ref 0.99889) |
+| mxbai-rerank-xsmall F32 | 4.23 | 70.75 | scores cos 1.0, same order |
+| PARSeq q8, one line | 0.87 | 0.42 | byte-identical — CPU faster (CUDA init) |
+
+## Metal GPU audit, Apple M1 (1 November 2026, `feat/metal-audit`)
+
+Same-binary interleaved Metal (`--gpu-backend metal`) vs CPU (`--gpu-backend cpu`)
+one-shot CLI runs, `-t 4`, second run, on a shared contended M1. Full matrix and
+receipts: [`docs/gpu-support-matrix.md`](docs/gpu-support-matrix.md),
+`tests/results/gpu-audit/metal-m1/`.
+
+| Lane | Metal s | CPU s | Output Metal vs CPU |
+|---|---:|---:|---|
+| ESRGAN x4 F32, fox 800x200 (**new default on Metal**) | 1.92 | 8.94 | max \|Δ\| 1/255, PSNR 75.7 dB |
+| ESRGAN x4 F32, scan_strip 520x260 | 2.00 | 8.39 | max \|Δ\| 1/255, PSNR 69.3 dB |
+| InstructIR F16 (gated, stays off) | 14.5 | 10.4 | max \|Δ\| 1/255, PSNR 76.7 dB — slower |
+| DBNet+TrOCR q8, fox (default: det CPU, TrOCR Metal) | 2.20 | 2.89 | byte-identical |
+| DBNet+TrOCR q8, scan_page_pd 606x1000 (default lane) | 63.7 | 100-119 | 295 boxes identical, 290/295 words identical |
+| DBNet det on Metal, stock conv_transpose_2d, fox | 10.3 | 4.3 | same text, ≤1 px box, conf ±0.002 |
+| DBNet det on Metal + `CRISPEMBED_DBNET_DECONV_MATMUL=1`, fox | 2.36 | 3.11 | identical to stock-Metal det |
+| DBNet det on Metal + deconv mul_mat, scan_page_pd | 65.9 | 110 | char ratio 0.9978 (TrOCR dominates) |
+| PP-OCRv6 small det+rec, scan_page_pd (default: det CPU, rec Metal) | 3.21 | 5.38 | byte-identical |
+| PP-OCRv6 small, det on Metal (`CRISPEMBED_PPOCRV6_DET_GPU=1`) | 7.37 | 5.17 | char ratio 0.9997 — slower |
+| EasyOCR english-g2 behind DBNet, fox | 0.44 | 0.48 | byte-identical |
+| PARSeq q8 / PARSeq-tiny q8, one line | 0.11 / 0.08 | 0.07 / 0.03 | byte-identical |
+| Embedders, rerankers (19 artifacts) | see matrix | | float weights cos ≥ 0.9999979; quantized cos 0.977-0.99991, Metal closer to F32 refs |
+
+The Metal DBNet slowness (issue #25) was the `conv_transpose_2d` kernel: the
+gated mul_mat rewrite of the two kernel==stride head deconvs takes the Metal
+detector lane from 10.3 s to 2.4 s with output identical to the stock Metal
+kernel (and byte-identical on CPU, hosted run 41327259125). It is still not
+faster than the CPU detector on these pages, so the Metal default stays CPU.
+## 1 November 2026 — MI-GAN256 Metal vs CPU on Apple M1 (contended)
+
+[Receipts](tests/results/migan/metal-m1/). Warm median per 256 tile over the
+eight frozen fixtures, CPU at 4 threads, machine shared (load 6–27):
+
+| Path | ms/tile | Parity |
+| --- | ---: | --- |
+| CPU/F32 reviewed graph (same runs) | 470–730 | reference |
+| Metal F32 default | 348 | 0/1896 strict failures |
+| Metal F32 `PAD_K` | 284 | 0/1896 strict failures |
+| Metal F32, five-engines graph forms | 370 | 0/1896 |
+| Delivery-5 `test-migan-graph` Metal strict (ordinary call) | ~815 | exact |
+| Metal F16 / Q8_0 / Q4_K | 277 / 409 / 580 | owner bars: pass / pass / fail |
+| Metal Q8_0 / Q4_K `FAST_MATMUL` | 255 / 251 | pass / fail |
+
+1080p synthetic subtitle frames, Metal F32 batch 1: 14 tiles 10.7 s, 20 tiles
+11.9 s; CPU/F32 in the same processes 17–60 s. Hosted x86 4 vCPU: CPU/F32
+1080p 0.83 tiles/s; delivery-5 CPU kernels 630 ms/tile. Diagnostic only.
+## 1 November 2026 — TeleOCR / MinerU2.5-Pro on Apple M1 Metal vs CPU
+
+Warm wall time per recognition, resident context, shared M1 (other agents
+active; CPU figures are upper bounds, load average up to 39). Receipts:
+`tests/results/teleocr/metal-m1/`, `tests/results/mineru25/metal-m1/`.
+
+| Model | Precision | Device | Cases | Exact | Warm s (sum) |
+|---|---|---|---|---|---|
+| TeleOCR | F16 | Metal | 6 | 6/6 | 112.1 |
+| TeleOCR | Q8_0 | Metal | 6 | 6/6 | 97.1 |
+| TeleOCR | Q4_K_M | Metal | 6 | 6/6 | 87.7 |
+| TeleOCR | F16 | CPU 4 threads | 6 | 6/6 | 604.7 |
+| TeleOCR | F16 | Metal, old path (CPU attention) | 3 | 3/3 | 39.9 (new path 16.9) |
+| MinerU | F16 | Metal (F32-activation kernels) | 8 | 8/8 | 95.2 |
+| MinerU | Q8_0 | Metal (F32-activation kernels) | 8 | 8/8 | 85.1 |
+| MinerU | F32 | CPU 4 threads | 8 | 8/8 | 386.8 |
+
+A quieter CPU measurement of TeleOCR `text` took 15.6 s warm against 4.5 s on
+Metal. TODO: TeleOCR vision is still ~half of Metal time on large pages; the
+3420-wide FFN-down hits the bounds-checked mul_mm (opt-in
+`CRISPEMBED_QWEN2VL_METAL_SPLIT_K` is implemented but not A/B'd).
+
+## 31 October 2026 — Native Marker-style CPU document conversion
+
+These are individual conversion durations from
+[the retained pipeline receipts](tests/results/marker/summary.json), with
+two CPU threads and fixed 1024-token layout/recognition caps. Model loading is
+outside the per-case durations. All listed text metrics collapse whitespace
+only; punctuation, case and Unicode remain significant. These owned examples
+and diagnostic timings are not a representative corpus or controlled speed
+comparison with upstream Marker/Surya.
+
+| Precision/build | Input and mode | Seconds | Content CER / WER | Extra evidence |
+| --- | --- | ---: | --- | --- |
+| F16 initial full panel | Three-line image, auto | 126.277 | 0 / 0 | Native layout and crop recognition |
+| F16 initial full panel | Digital PDF, auto | 117.855 | 0 / 0 | Neural layout; embedded text reused, zero recognition tokens |
+| F16 initial full panel | Rasterized table, auto | 165.626 | 0 / 0 | Correct 4×3 cells; table header semantics unmeasured |
+| F16 final build | Same three-line image, auto | 129.878 | 0 / 0 | Exact initial raw layout/text/boxes retained |
+| Q8_0 final build | Same three-line image, auto | 129.758 | 0 / 0 | Same declared input/caps |
+| Q4_K final build | Same three-line image, auto | 124.335 | 0 / 0 | Same declared input/caps |
+| F16 final build | Digital PDF, force OCR | 135.745 | 0 / 0 | Embedded text bypassed; 73 layout + 17 recognition tokens |
+
+The F16 full panel peak process RSS is 4,986,436 KiB (approximately 4.76 GiB),
+including its loaded model and allocations. Other process peaks and exact
+model/library/source identities are in the receipts. Digital text mode needs
+no neural model; its native/CLI/HTTP tests are separate from these timings.
+The seven conversions reuse three distinct owned inputs. On the final
+synthetic run, peak RSS is 5,004,784 KiB for F16, 4,198,500 KiB for Q8_0 and
+3,768,260 KiB for Q4_K; these are separate process observations, not throughput
+or maximum-memory guarantees.
+
+On the short image, TeleOCR assigns three heading labels; the table title is
+a caption. Text success does not establish layout-label quality or box IoU.
+Confidence values are finite, but calibration is unmeasured. The inherited
+strict TeleOCR numerical qualification remains false for F16/Q8_0/Q4_K despite
+these exact decoded-content examples. No precision/default promotion follows.
+
+## 31 October 2026 — TeleOCR bounded CPU validation timings and quality limits
+
+The [complete matrix](tests/results/teleocr/summary.json) records two threads per
+forward, Linux x86_64 CPU, fixed 1024-token caps and the pinned original module.
+All cases reach EOS. Times below are native reported forward durations and
+original-model reference durations. Some executions overlapped bounded
+validation work; model loading and instrumentation differ. **These are
+individual diagnostic timings, not a controlled speed comparison or benchmark.**
+
+| Case | Original F32 seconds | Native F32 | Native F16 | Native Q8_0 | Native Q4_K |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| text | 29.04 | 22.07 | 52.74 | 35.24 | 37.45 |
+| formula | 71.97 | 50.14 | 110.96 | 80.87 | 77.90 |
+| table | 71.96 | 33.40 | 132.42 | 64.45 | 63.76 |
+| code | 259.06 | 186.07 | 307.98 | 245.17 | 246.91 |
+| layout | 389.97 | 205.22 | 439.85 | 303.27 | 297.38 |
+| synthetic | 13.79 | 14.75 | 24.21 | 19.68 | 20.90 |
+
+F32/F16/Q8_0 have six exact raw sequences each. Q4_K has five; code adds one
+trailing newline (raw CER 1/1260, normalized CER 0/1031, WER 0/134). Every strict
+numerical case fails; F32's largest floating-stage error is 1.39697265625 even
+though its worst first-logit error is only 0.0000495910644531. Confidence validity
+is not calibration. The [validation record](docs/teleocr-validation.md) retains
+all layer metrics, failure attribution, source/binary hashes and corpus limits.
+No throughput, GPU, maximum-context or representative OCR-quality claim follows.
+
 ## Unlimited-OCR-2 and MiniCPM-OCR CPU timings (28 October 2026, Kaggle 4 vCPU)
 
 | engine | page | variant | seconds | note |
@@ -7104,3 +7265,161 @@ errors0.001585498/0.000765428 retain the fixed0.001 threshold, leaving the
 first negative. All five discrete choices alone do not qualify probability or
 ordinal behavior. See the [review](tests/results/josev2b/mixed-recipes-v1-review.json).
 No speed claim or published precision follows from these role ablations.
+
+## MiniCPM retained vision limits (29 October)
+
+The [complete138-comparison review](docs/minicpm-retained-analysis-v2-result.md)
+retains99 pass/39 strict failures at0.002/0.99999. F32/F16/Q4 first fail at
+vision layer26; F32 maxima there are0.01654–0.03345. Q8 first fails at layer0,
+max0.09980–0.12817; its worst layer26 error639.711914/cosine0.93838806 is
+reported against original magnitude2037.914429. Structural completion and all23
+prior decoded-exact arms remain distinct from these failures. No speed or
+production-quality improvement follows from this compare-only analysis.
+
+## Ultra retained F32 retrieval boundary (29 October)
+
+[Zero-forward freeze40834743025](docs/ultrabert-retained-freeze-result.md) retains
+5483 positive F32 vectors: worst raw absolute0.00109803677/cosine0.999999996825,
+normalized max1.09114e-5 and reported300 ranking metrics exact/top1=1. No new
+F32 timing, Q4 quality or speed claim follows; the first conservative Q4 model
+conversion and686-row shard0 require separate immutable source/model pins.
+
+## MoEdern first strict mismatch after retained comparison (29 October)
+
+The [18-matrix diagnostic](docs/moedern-three-doc-compare-v2-result.md) leaves
+12 strict negatives. Fresh original versus retained native agrees for two
+documents;24726600 differs in one eligible token, input58/token29084, selected
+row57/component19: original0.02338916995 versus native0.00055977370, absolute
+0.02282939624/cosine0.9957477159. Capture actual intermediate/selection values
+under ordinary-anchor and byte-neutral observation gates before inferring cause.
+
+### 29 October — Josev protected storage versus final task error
+
+[Actual protected recipes](docs/josev2b-protected-recipes-v1-result.md) occupy
+3,630,289,376 /4,517,384,672 /5,483,909,600 /4,879,929,824 bytes. Last-pair Q4
+with F16 down first fails at layer23 (first-case max0.820132, RMS0.0195813,
+cosine0.99865779, original magnitude16.7336); minimum first-failure cosine
+across cases0.99848469. Both ordinal errors pass0.001, but probabilities
+0.000145704/0.000179201 fail0.0001. Keeping24 down projections F32 changes
+these probability errors only~1e-7 on the oldfour. No qualified quantized model
+or whole-task/held-out quality improvement is established.
+
+### 29 October — connected norm component recovery does not close full WASM parity
+
+[Actual full norm A/B](docs/wasm-native-order-norm-full-result.md) recovers12
+component norms byte-exact and preserves20 native/16 stage anchors and old OFF
+bytes, yet16/20 finals and6/16 stages fail. Earliest budget failure layer3:
+max0.00291892886/RMS0.00023248944/cos0.999999184331/original magnitude10.50798.
+Encoder max0.02850568295/RMS0.00623421436/cos0.999848220828/magnitude5.83756.
+First normalized final max0.00156465905/cos0.999954849513 fails cosine. All ten
+cases and both native thread targets retain their fixed budgets; no whole-model
+accuracy or performance improvement is established by the component recovery.
+
+### 29 October — Josev final-projection storage/quality ablation
+
+[Three actual recipes](docs/josev2b-last-projection-v1-result.md) occupy
+4,898,017,760 bytes for either single-Q4/F16-rest model and4,892,512,736 for the
+two-Q8/F16-rest model; all292 critical tensors stay F32. Q4 probability maxima
+0.000347853/0.000383541 fail the fixed0.0001 screen. Q8-pair worst0.0000433922
+passes that limited screen, but75 strict stages and complete JSON/logits remain
+negative. First Q8 failure layer23 max0.05596924/RMS0.00155646/cos0.99999103278
+against original magnitude16.73357. Only four development cases; no task holdout,
+precision selection or publication qualification follows.
+
+### 29 October — Ultra conservative Q4 shard0 numerical boundary
+
+[First686-row result](docs/ultrabert-first-q4-shard0-result.md): raw CLS max2.76205,
+RMS0.62445053/cos0.98075227 against maximum magnitude22.56587; normalized
+max0.02581254/RMS0.00612673/cos0.98075227 against magnitude0.228689. Both strict
+F32 budgets fail.905.04 seconds covers1,372 public calls in one process only;
+no paired performance claim. All5483 rows/300 task rankings remain required.
+
+##29 October: MiniCPM completed numerical coverage
+
+[Seven-arm completion](docs/minicpm-seven-arm-v3-result.md) retains exact30-case
+decoded outputs. F32/F16 each50/60, Q4_K25/30 and Q8_0 5/30 vision checks pass
+unchanged gates; combined130/180. Tiny F32 layer26 max0.0137939453 versus original
+absolute magnitude1629.5715 despite cosine0.999999999982 is still negative.
+These are quality/error measurements, not a paired speed or RSS improvement.
+
+##29 October: MoEdern real-input stage magnitudes
+
+[Actual one-document capture](docs/moedern-first-row-actual-v4-result.md): first
+bit difference embedding projection8.9406967e-8; first strict difference integer
+expert identity at row58. Layer1 FFN max0.57834816/RMS0.01056687/cosine0.99660470
+versus original magnitude141.67180; final normalized max0.02282943/cosine0.99574771.
+Selected top-k weights remain bit-identical despite a different second expert.
+No performance improvement or higher-precision correction is established.
+
+##29 October: typed Gemma CPU baseline capture discrepancy
+
+[Initial CPUv1 evidence](docs/gemma-first-q4-cpu-v1-initial-result.md) retains
+case0 pooled max2.55182385e-7/cosine0.999999999997759 while its saved post_embed
+max1929.546924/cosine-0.074559955 versus original magnitude11.844038 fails.
+All145 saved-stage flags remain20 pass/125 fail. This is a capture-attribution
+problem to investigate, not a model speed/precision improvement or a confirmed
+buffer-lifetime diagnosis.
+
+## MinerU2.5-Pro-2604 — measurement pending (31 October 2026)
+
+The new native profile and optional 256-slot-bucket decode graph have no
+full-model latency, throughput or decoded-quality measurement in this delivery.
+The paired driver separates cold and resident warm runs, records identical
+request/source/host/thread controls, and requires native/Python warm median
+≤1.0 together with exact IDs/text/EOS before its request-level speed gate passes.
+This is an acceptance protocol, not a result. See [the guide](docs/mineru25-pro.md)
+and [actual implementation checks](tests/results/mineru25/implementation-validation.json).
+The reuse graph stays default-off; vLLM batching and GPU performance remain
+separate unmeasured targets.
+
+
+## OXR-1.0 and D-FINE on Apple M1 Metal (1 November 2026)
+
+Shared host (8 GPU cores, 16 GiB; load average 8-50, swap in use, 3-4 min model loads from a
+contended external disk): timings are indicative and comparable only within one window.
+
+**ggml-metal matmul, F32 operands (`tools/metal/mm_bench.cpp`):** half-tile `mul_mm`
+1500-1780 GFLOP/s; `GGML_PREC_F32` via `mul_mv_ext` 82-93 GFLOP/s; via `_hp mul_mm`
+(`GGML_METAL_PREC_F32_MM=1`) 1130-1590 GFLOP/s.
+
+**OXR F16, warm request (s), 1024-token cap** — receipts `tests/results/oxr/metal-m1/f16-batch/`:
+
+| case (tokens) | CPU 4 threads | Metal default (dense F32 attention + `_hp`) | Metal + native flash |
+| --- | ---: | ---: | ---: |
+| formula (22) | 28.2 | 2.8 | 2.3 |
+| japanese (38) | 27.9 | 3.4 | 3.1 |
+| table (261) | 34.0 | 13.9 | 11.3 |
+| receipt (202) | 55.4 | 12.6 | 11.4 |
+| german (401, 3536 patches) | 149.7 | 44.8 | 24.2 |
+
+All arms token-exact against the original. Formula stage split on the default arm: vision +
+visual vocabulary 1.7-1.8 s, prefill 0.23 s, decode ~42 ms/token. Before the fixes the Metal
+F16 German request took 62 s (CPU-routed flash) / 77 s (dense on mat-vec kernels).
+
+**D-FINE F32 (960x960), encoder graph ms** — receipts `tests/results/oxr-dfine/metal-m1/`:
+receipt page in one interleaved window: `_hp` + direct depthwise 1134, `_hp` 1564, PREC_F32 via
+mul_mv_ext 3090, half-tile mul_mm 690 (wrong regions). CPU (earlier, quieter window) 1194.
+Profile of the mul_mv_ext route: MUL_MAT 71% (~120 GFLOP of conv GEMM), IM2COL 11%, CONT 10%.
+Same-window verification with no gates set (Apple default after this change): Metal
+0.65-0.68 s total vs CPU 1.36-1.47 s on all five pages (2.1-2.2x), regions equal.
+
+## OXR-1.0 — model measurements pending (31 October 2026)
+
+No native/Python latency, throughput, full-model error or representative document
+quality number is available from this implementation. The 31 profile checks,
+44 Python controls and 30 mocked C API checks do not establish those properties.
+
+The proposed primary speed gate compares ordinary resident F32 CPU inference on
+the same host/thread configuration, after exact prompt/input/completion IDs,
+raw/processed text, geometry, EOS/cap and repeated-context checks. Native median
+warm latency must be no greater than the original HF median for the same request.
+Different weight recipes cannot silently pass this same-precision gate. Model
+stages separately require all 66 observations and unchanged absolute/cosine budgets.
+The original HF cache/observer controls and native observer neutrality are required.
+
+The public default uses the original vLLM plugin's processor/history policy, but
+this native path has serial requests and does not reproduce vLLM continuous
+batching. Original vLLM BF16 quality/throughput and D-FINE service performance
+remain separate, unmeasured scopes. The optional 256-slot decode graph, GPU path,
+mixed-F16 quality/performance and Q8/Q4 recipes remain unqualified. See
+[the guide](docs/oxr.md) and [actual checks](tests/results/oxr/implementation-validation.json).

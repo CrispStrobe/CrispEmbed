@@ -1,0 +1,125 @@
+name: MinerU2.5-Pro qualification
+
+on:
+  pull_request:
+    paths:
+      - 'src/mineru*'
+      - 'src/qwen2vl_ocr.*'
+      - 'models/*mineru*'
+      - 'tools/mineru*'
+      - 'tests/*mineru*'
+      - 'python/crispembed/_mineru.py'
+      - '.github/workflows/mineru25-pro.yml'
+  workflow_dispatch:
+    inputs:
+      model_check:
+        description: 'Run the pinned full model CPU smoke (downloads 2.31 GB checkpoint)'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  components:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CRISPEMBED_MINERU25_PRO: '1'
+      QWEN2VL_OCR_FORCE_CPU: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install helper-only dependencies
+        run: pip install -r tools/mineru25-blueprint-requirements.txt numpy==2.2.6
+      - name: Native component build
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF
+          cmake --build build --target test-mineru-layout test-mineru25-profile test-mineru25-decode-graph test-mineru25-run test-mineru25-diff test-mineru25-preprocess -j2
+      - name: Weight-free controls
+        env:
+          PYTHONPATH: python
+        run: |
+          ./build/test-mineru-layout
+          ./build/test-mineru25-profile
+          ./build/test-mineru25-decode-graph
+          python -m unittest discover -s tests -p 'test_mineru*.py' -v
+          python tests/test_cli_engine_names.py
+          python tests/test_ocr_max_tokens_surfaces.py
+          bash tools/check_test_clean_exit.sh
+
+  model-smoke:
+    if: github.event_name == 'workflow_dispatch' && inputs.model_check
+    needs: components
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      CRISPEMBED_MINERU25_PRO: '1'
+      QWEN2VL_OCR_FORCE_CPU: '1'
+      OMP_NUM_THREADS: '4'
+      MKL_NUM_THREADS: '4'
+      PRECISION: f32
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check resources before model download
+        run: |
+          python - <<'PY'
+          import os, shutil
+          memory = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
+          if memory < 14 * 1024**3 or shutil.disk_usage('.').free < 20 * 1024**3:
+              raise SystemExit('Full-model smoke requires at least 14 GiB RAM and 20 GiB free disk')
+          PY
+      - name: Pinned Python reference environment
+        run: |
+          pip install torch==2.9.0 torchvision==0.24.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install -r tools/mineru25-reference-requirements.txt
+          git init blueprint
+          git -C blueprint fetch --depth 1 https://github.com/opendatalab/mineru-vl-utils.git c9797cde8f54cc48306196fc6aebe73ea31dd4a3
+          git -C blueprint checkout --detach FETCH_HEAD
+      - name: Build final source and freeze provenance
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF
+          cmake --build build --target test-mineru25-run test-mineru25-diff test-mineru25-preprocess -j2
+          mkdir -p evidence
+          git rev-parse HEAD > evidence/source.txt
+          git submodule status >> evidence/source.txt
+          pip freeze > evidence/packages.txt
+          lscpu > evidence/cpu.txt
+      - name: Download authenticated source and convert
+        run: |
+          python - <<'PY'
+          from huggingface_hub import snapshot_download
+          snapshot_download('opendatalab/MinerU2.5-Pro-2604-1.2B', revision='d3f5e08d073c21466bbabe21c71bb1e9c2e595da', local_dir='checkpoint')
+          PY
+          python models/convert-mineru25-pro-to-gguf.py --model checkpoint --dtype "$PRECISION" --output "mineru25-$PRECISION.gguf"
+          cp "mineru25-$PRECISION.gguf.json" evidence/conversion.json
+      - name: Freeze original reference before native comparison
+        run: |
+          python tools/mineru25_validate.py reference --model checkpoint --blueprint blueprint --image tests/regression/images/formula_quadratic.png --task formula --dtype "$PRECISION" --device cpu --threads 4 --repeat 3 --max-tokens 256 --output evidence/python.json --dump-reference evidence/python.gguf
+      - name: Preprocessing and all-stage numerical comparison
+        run: |
+          set -o pipefail
+          ./build/test-mineru25-preprocess --image tests/regression/images/formula_quadratic.png --reference evidence/python.gguf --task formula | tee evidence/preprocessing.txt
+          ./build/test-mineru25-diff "mineru25-$PRECISION.gguf" evidence/python.gguf 4 0.002 0.99999 | tee evidence/stages.txt
+      - name: Decoded output and same-host resident speed (legacy graph)
+        run: python tools/mineru25_validate.py compare --reference evidence/python.json --native build/test-mineru25-run --gguf "mineru25-$PRECISION.gguf" --image tests/regression/images/formula_quadratic.png --output evidence/native.json --max-slowdown 1.0
+      - name: Persistent decode graph A/B
+        if: always() && hashFiles('evidence/python.json') != ''
+        env:
+          CRISPEMBED_MINERU25_PRO_REUSE_DECODE_GRAPH: '1'
+        run: python tools/mineru25_validate.py compare --reference evidence/python.json --native build/test-mineru25-run --gguf "mineru25-$PRECISION.gguf" --image tests/regression/images/formula_quadratic.png --output evidence/native-reuse.json --max-slowdown 1.0
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mineru25-f32-${{ github.sha }}
+          path: evidence/
+          retention-days: 90

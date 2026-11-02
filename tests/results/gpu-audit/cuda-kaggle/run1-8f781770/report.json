@@ -1,0 +1,1714 @@
+{
+ "script_version": "cuda-audit-run-v1",
+ "jobs": {
+  "embed-minilm-l6-embed": {
+   "kind": "embed",
+   "seconds": 21.4,
+   "all-MiniLM-L6-v2-f32.gguf": {
+    "precision": "f32",
+    "bar": 0.99,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9999999999930036,
+    "cos_cuda_vs_cpu": 0.9999999999930036,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      2.821,
+      0.967
+     ],
+     "cpu": [
+      0.567,
+      0.567
+     ]
+    },
+    "cuda_used": true
+   },
+   "all-MiniLM-L6-v2-q8_0.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.972852262877808,
+    "cos_cuda_vs_cpu": 0.9998022219632586,
+    "cos_cpu_vs_ref": 0.9732635159544251,
+    "wall": {
+     "cuda": [
+      0.968,
+      0.867
+     ],
+     "cpu": [
+      0.567,
+      0.567
+     ]
+    },
+    "cuda_used": true
+   },
+   "all-MiniLM-L6-v2-q4_k.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": false,
+    "cos_cuda_vs_ref": 0.944426853653541,
+    "cos_cuda_vs_cpu": 0.9969936123045068,
+    "cos_cpu_vs_ref": 0.945441926010261,
+    "wall": {
+     "cuda": [
+      0.967,
+      0.918
+     ],
+     "cpu": [
+      0.617,
+      0.617
+     ]
+    },
+    "cuda_used": true
+   }
+  },
+  "embed-bge-small-embed": {
+   "kind": "embed",
+   "seconds": 28.0,
+   "bge-small-en-v1.5.gguf": {
+    "precision": "f32",
+    "bar": 0.99,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.999999999995,
+    "cos_cuda_vs_cpu": 0.999999999995,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      1.218,
+      1.169
+     ],
+     "cpu": [
+      0.968,
+      0.969
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-small-en-v1.5-q8_0.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9995956014036324,
+    "cos_cuda_vs_cpu": 0.9998225580248911,
+    "cos_cpu_vs_ref": 0.9996388751848644,
+    "wall": {
+     "cuda": [
+      1.068,
+      1.019
+     ],
+     "cpu": [
+      1.018,
+      1.068
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-small-en-v1.5-q4_k.gguf": {
+    "precision": "q4_0",
+    "bar": 0.94,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9758526861529611,
+    "cos_cuda_vs_cpu": 0.9996015004901736,
+    "cos_cpu_vs_ref": 0.975647695225982,
+    "wall": {
+     "cuda": [
+      1.119,
+      1.018
+     ],
+     "cpu": [
+      1.068,
+      1.068
+     ]
+    },
+    "cuda_used": true
+   }
+  },
+  "embed-e5-small-embed": {
+   "kind": "embed",
+   "seconds": 70.6,
+   "multilingual-e5-small.gguf": {
+    "precision": "f32",
+    "bar": 0.99,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9999999999965001,
+    "cos_cuda_vs_cpu": 0.9999999999965001,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      1.519,
+      1.469
+     ],
+     "cpu": [
+      1.47,
+      1.519
+     ]
+    },
+    "cuda_used": true
+   },
+   "multilingual-e5-small-q8_0.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9997980047261006,
+    "cos_cuda_vs_cpu": 0.9999524741261291,
+    "cos_cpu_vs_ref": 0.9998128230906395,
+    "wall": {
+     "cuda": [
+      1.375,
+      1.369
+     ],
+     "cpu": [
+      3.362,
+      1.319
+     ]
+    },
+    "cuda_used": true
+   },
+   "multilingual-e5-small-q4_k.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9862081006235078,
+    "cos_cuda_vs_cpu": 0.9993947465614748,
+    "cos_cpu_vs_ref": 0.9862666410007148,
+    "wall": {
+     "cuda": [
+      1.369,
+      1.368
+     ],
+     "cpu": [
+      1.37,
+      1.371
+     ]
+    },
+    "cuda_used": true
+   }
+  },
+  "embed-arctic-m-v2-embed": {
+   "kind": "embed",
+   "seconds": 97.6,
+   "arctic-embed-m-v2.gguf": {
+    "precision": "f32",
+    "bar": 0.99,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9999997002713142,
+    "cos_cuda_vs_cpu": 0.9999997002713142,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      2.622,
+      1.669
+     ],
+     "cpu": [
+      4.333,
+      4.128
+     ]
+    },
+    "cuda_used": true
+   },
+   "arctic-embed-m-v2-q8_0.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9993889565183857,
+    "cos_cuda_vs_cpu": 0.9998493251967201,
+    "cos_cpu_vs_ref": 0.999386910445386,
+    "wall": {
+     "cuda": [
+      1.269,
+      1.268
+     ],
+     "cpu": [
+      3.879,
+      4.027
+     ]
+    },
+    "cuda_used": true
+   },
+   "arctic-embed-m-v2-q4_k-imatrix.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": false,
+    "cos_cuda_vs_ref": 0.9481881353596903,
+    "cos_cuda_vs_cpu": 0.9911142988136787,
+    "cos_cpu_vs_ref": 0.9513126708019475,
+    "wall": {
+     "cuda": [
+      1.269,
+      1.269
+     ],
+     "cpu": [
+      5.484,
+      5.133
+     ]
+    },
+    "cuda_used": true
+   }
+  },
+  "embed-bge-m3-embed": {
+   "kind": "embed",
+   "seconds": 162.5,
+   "bge-m3.gguf": {
+    "precision": "f32",
+    "bar": 0.99,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9999989358088215,
+    "cos_cuda_vs_cpu": 0.9999989358088215,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      3.245,
+      2.22
+     ],
+     "cpu": [
+      9.35,
+      9.398
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-m3-q8_0.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9992771573908023,
+    "cos_cuda_vs_cpu": 0.9997702875611643,
+    "cos_cpu_vs_ref": 0.9992012787439641,
+    "wall": {
+     "cuda": [
+      1.418,
+      1.419
+     ],
+     "cpu": [
+      9.497,
+      9.655
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-m3-iq4_xs.gguf": {
+    "precision": "iq4_xs",
+    "bar": 0.94,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9690893413015873,
+    "cos_cuda_vs_cpu": 0.9967936019084246,
+    "cos_cpu_vs_ref": 0.964631278733775,
+    "wall": {
+     "cuda": [
+      1.368,
+      1.367
+     ],
+     "cpu": [
+      13.964,
+      13.809
+     ]
+    },
+    "cuda_used": true
+   }
+  },
+  "embed-bge-m3-sparse": {
+   "kind": "embed",
+   "seconds": 51.4,
+   "bge-m3.gguf": {
+    "precision": "f32",
+    "bar": 0.99,
+    "qualifies": null,
+    "cos_cuda_vs_ref": null,
+    "cos_cuda_vs_cpu": null,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      1.871,
+      1.82
+     ],
+     "cpu": [
+      2.673,
+      2.673
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-m3-q8_0.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": null,
+    "cos_cuda_vs_ref": null,
+    "cos_cuda_vs_cpu": null,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      1.167,
+      1.117
+     ],
+     "cpu": [
+      0.866,
+      0.867
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-m3-iq4_xs.gguf": {
+    "precision": "iq4_xs",
+    "bar": 0.94,
+    "qualifies": null,
+    "cos_cuda_vs_ref": null,
+    "cos_cuda_vs_cpu": null,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      1.118,
+      1.068
+     ],
+     "cpu": [
+      0.767,
+      0.767
+     ]
+    },
+    "cuda_used": true
+   }
+  },
+  "embed-bge-m3-colbert": {
+   "kind": "embed",
+   "seconds": 51.5,
+   "bge-m3.gguf": {
+    "precision": "f32",
+    "bar": 0.99,
+    "qualifies": null,
+    "cos_cuda_vs_ref": null,
+    "cos_cuda_vs_cpu": null,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      1.82,
+      1.821
+     ],
+     "cpu": [
+      2.673,
+      2.673
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-m3-q8_0.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": null,
+    "cos_cuda_vs_ref": null,
+    "cos_cuda_vs_cpu": null,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      1.219,
+      1.068
+     ],
+     "cpu": [
+      0.917,
+      0.917
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-m3-iq4_xs.gguf": {
+    "precision": "iq4_xs",
+    "bar": 0.94,
+    "qualifies": null,
+    "cos_cuda_vs_ref": null,
+    "cos_cuda_vs_cpu": null,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      1.118,
+      1.117
+     ],
+     "cpu": [
+      0.766,
+      0.766
+     ]
+    },
+    "cuda_used": true
+   }
+  },
+  "embed-qwen3-embed-0.6b-embed": {
+   "kind": "embed",
+   "seconds": 167.2,
+   "qwen3-embed-0.6b.gguf": {
+    "precision": "f32",
+    "bar": 0.99,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9999991810565773,
+    "cos_cuda_vs_cpu": 0.9999991810565773,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      2.22,
+      2.272
+     ],
+     "cpu": [
+      10.003,
+      11.266
+     ]
+    },
+    "cuda_used": true
+   },
+   "qwen3-embed-0.6b-q8_0.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9988862893395046,
+    "cos_cuda_vs_cpu": 0.9993705551477008,
+    "cos_cpu_vs_ref": 0.9986182250860507,
+    "wall": {
+     "cuda": [
+      1.42,
+      1.47
+     ],
+     "cpu": [
+      10.852,
+      10.849
+     ]
+    },
+    "cuda_used": true
+   },
+   "qwen3-embed-0.6b-q4_k-imatrix.gguf": {
+    "precision": "q4_k",
+    "bar": 0.94,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9529889816873779,
+    "cos_cuda_vs_cpu": 0.9922505909310566,
+    "cos_cpu_vs_ref": 0.9562314159077602,
+    "wall": {
+     "cuda": [
+      1.42,
+      1.37
+     ],
+     "cpu": [
+      14.008,
+      14.063
+     ]
+    },
+    "cuda_used": true
+   }
+  },
+  "embed-f2llm-v2-0.6b-embed": {
+   "kind": "embed",
+   "seconds": 180.5,
+   "f2llm-v2-0.6b.gguf": {
+    "precision": "f32",
+    "bar": 0.99,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.999998204734741,
+    "cos_cuda_vs_cpu": 0.999998204734741,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      2.323,
+      2.27
+     ],
+     "cpu": [
+      10.254,
+      9.951
+     ]
+    },
+    "cuda_used": true
+   },
+   "f2llm-v2-0.6b-q8_0.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9902859644617911,
+    "cos_cuda_vs_cpu": 0.9952579103333971,
+    "cos_cpu_vs_ref": 0.9899256129823513,
+    "wall": {
+     "cuda": [
+      1.52,
+      1.519
+     ],
+     "cpu": [
+      11.962,
+      11.407
+     ]
+    },
+    "cuda_used": true
+   },
+   "f2llm-v2-0.6b-q4_k-imatrix.gguf": {
+    "precision": "q4_k",
+    "bar": 0.94,
+    "qualifies": false,
+    "cos_cuda_vs_ref": 0.7817564243323457,
+    "cos_cuda_vs_cpu": 0.9213711457506638,
+    "cos_cpu_vs_ref": 0.789424821169163,
+    "wall": {
+     "cuda": [
+      1.469,
+      1.373
+     ],
+     "cpu": [
+      14.868,
+      14.721
+     ]
+    },
+    "cuda_used": true
+   }
+  },
+  "embed-jina-v5-nano-embed": {
+   "kind": "embed",
+   "seconds": 84.6,
+   "jina-v5-nano.gguf": {
+    "precision": "f32",
+    "bar": 0.99,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.999999598913992,
+    "cos_cuda_vs_cpu": 0.999999598913992,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      1.568,
+      1.569
+     ],
+     "cpu": [
+      3.126,
+      3.278
+     ]
+    },
+    "cuda_used": true
+   },
+   "jina-v5-nano-q8_0.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9996967063441823,
+    "cos_cuda_vs_cpu": 0.999806227458943,
+    "cos_cpu_vs_ref": 0.9996588102277945,
+    "wall": {
+     "cuda": [
+      1.268,
+      1.319
+     ],
+     "cpu": [
+      3.274,
+      3.377
+     ]
+    },
+    "cuda_used": true
+   },
+   "jina-v5-nano-q4_k.gguf": {
+    "precision": "q4_k",
+    "bar": 0.94,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9781652765322408,
+    "cos_cuda_vs_cpu": 0.9979598424558613,
+    "cos_cpu_vs_ref": 0.9782514105638392,
+    "wall": {
+     "cuda": [
+      1.319,
+      1.268
+     ],
+     "cpu": [
+      4.376,
+      4.28
+     ]
+    },
+    "cuda_used": true
+   }
+  },
+  "embed-harrier-270m-embed": {
+   "kind": "embed",
+   "seconds": 139.8,
+   "harrier-270m.gguf": {
+    "precision": "f32",
+    "bar": 0.99,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9999997669374049,
+    "cos_cuda_vs_cpu": 0.9999997669374049,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      2.122,
+      2.2
+     ],
+     "cpu": [
+      4.078,
+      3.877
+     ]
+    },
+    "cuda_used": true
+   },
+   "harrier-270m-q8_0.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9996259171401931,
+    "cos_cuda_vs_cpu": 0.999795291479217,
+    "cos_cpu_vs_ref": 0.9996384151455733,
+    "wall": {
+     "cuda": [
+      1.77,
+      1.77
+     ],
+     "cpu": [
+      3.827,
+      3.727
+     ]
+    },
+    "cuda_used": true
+   },
+   "harrier-270m-q4_k.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": false,
+    "cos_cuda_vs_ref": 0.9685443617726401,
+    "cos_cuda_vs_cpu": 0.9973868900219568,
+    "cos_cpu_vs_ref": 0.9681172105769864,
+    "wall": {
+     "cuda": [
+      1.77,
+      1.719
+     ],
+     "cpu": [
+      3.978,
+      3.876
+     ]
+    },
+    "cuda_used": true
+   }
+  },
+  "embed-embeddinggemma-300m-embed": {
+   "kind": "embed",
+   "seconds": 147.7,
+   "embeddinggemma-300m.gguf": {
+    "precision": "f32",
+    "bar": 0.99,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9999997889782845,
+    "cos_cuda_vs_cpu": 0.9999997889782845,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      2.272,
+      2.22
+     ],
+     "cpu": [
+      4.229,
+      4.127
+     ]
+    },
+    "cuda_used": true
+   },
+   "embeddinggemma-300m-q8_0.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9994914113080138,
+    "cos_cuda_vs_cpu": 0.9996794450039892,
+    "cos_cpu_vs_ref": 0.9993838851775446,
+    "wall": {
+     "cuda": [
+      1.87,
+      1.921
+     ],
+     "cpu": [
+      3.929,
+      3.931
+     ]
+    },
+    "cuda_used": true
+   },
+   "embeddinggemma-300m-q4_k.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": false,
+    "cos_cuda_vs_ref": 0.9500951459182889,
+    "cos_cuda_vs_cpu": 0.9981128046182117,
+    "cos_cpu_vs_ref": 0.949430809675825,
+    "wall": {
+     "cuda": [
+      1.92,
+      1.87
+     ],
+     "cpu": [
+      4.731,
+      4.63
+     ]
+    },
+    "cuda_used": true
+   }
+  },
+  "embed-lfm2-embed-embed": {
+   "kind": "embed",
+   "seconds": 111.6,
+   "lfm2-embed-f16.gguf": {
+    "precision": "f16",
+    "bar": 0.98,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9999993970747191,
+    "cos_cuda_vs_cpu": 0.9999993970747191,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      1.519,
+      4.068
+     ],
+     "cpu": [
+      15.912,
+      16.182
+     ]
+    },
+    "cuda_used": true
+   },
+   "lfm2-embed-q8_0.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9997483940260888,
+    "cos_cuda_vs_cpu": 0.99980065750148,
+    "cos_cpu_vs_ref": 0.9997427802106024,
+    "wall": {
+     "cuda": [
+      1.218,
+      1.268
+     ],
+     "cpu": [
+      7.245,
+      7.24
+     ]
+    },
+    "cuda_used": true
+   },
+   "lfm2-embed-q4_k.gguf": {
+    "precision": "q4_k",
+    "bar": 0.94,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9777208107906121,
+    "cos_cuda_vs_cpu": 0.9976448504930062,
+    "cos_cpu_vs_ref": 0.9783767603965784,
+    "wall": {
+     "cuda": [
+      1.167,
+      1.168
+     ],
+     "cpu": [
+      9.345,
+      9.247
+     ]
+    },
+    "cuda_used": true
+   }
+  },
+  "embed-clip-text-base-embed": {
+   "kind": "embed",
+   "seconds": 30.7,
+   "clip-text-base.gguf": {
+    "precision": "f32",
+    "bar": 0.99,
+    "qualifies": null,
+    "cos_cuda_vs_ref": null,
+    "cos_cuda_vs_cpu": null,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      1.067,
+      0.967
+     ],
+     "cpu": [
+      0.871,
+      0.767
+     ]
+    },
+    "cuda_used": true
+   },
+   "clip-text-base-q8_0.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": null,
+    "cos_cuda_vs_ref": null,
+    "cos_cuda_vs_cpu": null,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      0.918,
+      0.867
+     ],
+     "cpu": [
+      0.667,
+      0.667
+     ]
+    },
+    "cuda_used": true
+   },
+   "clip-text-base-q4_k.gguf": {
+    "precision": "q4_k",
+    "bar": 0.94,
+    "qualifies": null,
+    "cos_cuda_vs_ref": null,
+    "cos_cuda_vs_cpu": null,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      0.916,
+      0.917
+     ],
+     "cpu": [
+      0.867,
+      0.818
+     ]
+    },
+    "cuda_used": true
+   }
+  },
+  "embed-ms-marco-l6-rerank": {
+   "kind": "embed",
+   "seconds": 20.1,
+   "ms-marco-MiniLM-L-6-v2-g7c.gguf": {
+    "precision": "f32",
+    "bar": 0.99,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9999999999829295,
+    "cos_cuda_vs_cpu": 0.9999999999829295,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      1.068,
+      1.017
+     ],
+     "cpu": [
+      1.068,
+      1.018
+     ]
+    },
+    "cuda_used": true
+   },
+   "ms-marco-MiniLM-L-6-v2-q8_0-g7c.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9999982768227793,
+    "cos_cuda_vs_cpu": 0.9999996421830566,
+    "cos_cpu_vs_ref": 0.999999310930015,
+    "wall": {
+     "cuda": [
+      0.967,
+      0.868
+     ],
+     "cpu": [
+      0.617,
+      0.616
+     ]
+    },
+    "cuda_used": true
+   },
+   "ms-marco-MiniLM-L-6-v2-q4_k-g7c.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9999376459110461,
+    "cos_cuda_vs_cpu": 0.9999994278289185,
+    "cos_cpu_vs_ref": 0.9999433964475828,
+    "wall": {
+     "cuda": [
+      0.917,
+      1.393
+     ],
+     "cpu": [
+      0.667,
+      0.666
+     ]
+    },
+    "cuda_used": true
+   }
+  },
+  "embed-mxbai-rerank-xsmall-rerank": {
+   "kind": "embed",
+   "seconds": 254.8,
+   "mxbai-rerank-xsmall-v1-g7c.gguf": {
+    "precision": "f32",
+    "bar": 0.99,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9999999994853745,
+    "cos_cuda_vs_cpu": 0.9999999994853745,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      4.232,
+      4.283
+     ],
+     "cpu": [
+      70.754,
+      70.906
+     ]
+    },
+    "cuda_used": true
+   },
+   "mxbai-rerank-xsmall-v1-q8_0-g7c.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9999958740012882,
+    "cos_cuda_vs_cpu": 0.9999898716710005,
+    "cos_cpu_vs_ref": 0.9999944495488792,
+    "wall": {
+     "cuda": [
+      4.028,
+      4.033
+     ],
+     "cpu": [
+      37.653,
+      38.012
+     ]
+    },
+    "cuda_used": true
+   }
+  },
+  "embed-ettin-reranker-17m-rerank": {
+   "kind": "embed",
+   "seconds": 17.9,
+   "ettin-reranker-17m-v1-f32.gguf": {
+    "precision": "f32",
+    "bar": 0.99,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9999999829866906,
+    "cos_cuda_vs_cpu": 0.9999999829866906,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      0.967,
+      0.867
+     ],
+     "cpu": [
+      0.416,
+      0.467
+     ]
+    },
+    "cuda_used": true
+   },
+   "ettin-reranker-17m-v1-q8_0.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9997843241208134,
+    "cos_cuda_vs_cpu": 0.999934742483599,
+    "cos_cpu_vs_ref": 0.9998785264973301,
+    "wall": {
+     "cuda": [
+      0.867,
+      0.767
+     ],
+     "cpu": [
+      0.416,
+      0.417
+     ]
+    },
+    "cuda_used": true
+   },
+   "ettin-reranker-17m-v1-q4_k.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9920120392513084,
+    "cos_cuda_vs_cpu": 0.9994167520557382,
+    "cos_cpu_vs_ref": 0.9950528315070595,
+    "wall": {
+     "cuda": [
+      0.819,
+      0.766
+     ],
+     "cpu": [
+      0.517,
+      0.516
+     ]
+    },
+    "cuda_used": true
+   }
+  },
+  "dbnet-trocr.fox": {
+   "kind": "cmd",
+   "seconds": 53.9,
+   "precision": "q8_0",
+   "cuda": {
+    "rc": 0,
+    "wall": [
+     4.882,
+     4.881
+    ],
+    "cuda_used": true,
+    "identical": false,
+    "cos": 0.9999999999997211,
+    "char_ratio": null,
+    "ocr": {
+     "n_boxes": [
+      10,
+      10
+     ],
+     "texts_equal": 10,
+     "box_max_dpx": 0,
+     "conf_max_d": 0.0010000000000000009,
+     "joined_text_ratio": 1.0
+    },
+    "image": null,
+    "ref_cos": null
+   },
+   "cuda-detcpu": {
+    "rc": 0,
+    "wall": [
+     5.482,
+     5.381
+    ],
+    "cuda_used": true,
+    "identical": true,
+    "cos": 1.0000000000000002,
+    "char_ratio": null,
+    "ocr": {
+     "n_boxes": [
+      10,
+      10
+     ],
+     "texts_equal": 10,
+     "box_max_dpx": 0,
+     "conf_max_d": 0.0,
+     "joined_text_ratio": 1.0
+    },
+    "image": null,
+    "ref_cos": null
+   },
+   "cuda-deconvmm": {
+    "rc": 0,
+    "wall": [
+     4.831,
+     4.781
+    ],
+    "cuda_used": true,
+    "identical": false,
+    "cos": 0.9999999999997211,
+    "char_ratio": null,
+    "ocr": {
+     "n_boxes": [
+      10,
+      10
+     ],
+     "texts_equal": 10,
+     "box_max_dpx": 0,
+     "conf_max_d": 0.0010000000000000009,
+     "joined_text_ratio": 1.0
+    },
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 0,
+    "wall": [
+     9.097,
+     9.246
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  },
+  "dbnet-trocr.scan_page_pd": {
+   "kind": "cmd",
+   "seconds": 1177.1,
+   "precision": "q8_0",
+   "cuda": {
+    "rc": 0,
+    "wall": [
+     116.046,
+     114.83
+    ],
+    "cuda_used": true,
+    "identical": false,
+    "cos": 0.9999999977063224,
+    "char_ratio": null,
+    "ocr": {
+     "n_boxes": [
+      295,
+      295
+     ],
+     "texts_equal": 290,
+     "box_max_dpx": 1,
+     "conf_max_d": 0.007000000000000006,
+     "joined_text_ratio": 0.9967134747535106
+    },
+    "image": null,
+    "ref_cos": null
+   },
+   "cuda-detcpu": {
+    "rc": 0,
+    "wall": [
+     115.887,
+     114.991
+    ],
+    "cuda_used": true,
+    "identical": false,
+    "cos": 1.0000000000000002,
+    "char_ratio": null,
+    "ocr": {
+     "n_boxes": [
+      295,
+      295
+     ],
+     "texts_equal": 290,
+     "box_max_dpx": 0,
+     "conf_max_d": 0.0,
+     "joined_text_ratio": 0.9967134747535106
+    },
+    "image": null,
+    "ref_cos": null
+   },
+   "cuda-deconvmm": {
+    "rc": 0,
+    "wall": [
+     114.609,
+     113.748
+    ],
+    "cuda_used": true,
+    "identical": false,
+    "cos": 0.9999999977063224,
+    "char_ratio": null,
+    "ocr": {
+     "n_boxes": [
+      295,
+      295
+     ],
+     "texts_equal": 290,
+     "box_max_dpx": 1,
+     "conf_max_d": 0.007000000000000006,
+     "joined_text_ratio": 0.9967134747535106
+    },
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 0,
+    "wall": [
+     243.601,
+     240.841
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  },
+  "dbnet-trocr.scan_strip": {
+   "kind": "cmd",
+   "seconds": 381.2,
+   "precision": "q8_0",
+   "cuda": {
+    "rc": 0,
+    "wall": [
+     36.83,
+     37.375
+    ],
+    "cuda_used": true,
+    "identical": false,
+    "cos": 0.9999999999996066,
+    "char_ratio": null,
+    "ocr": {
+     "n_boxes": [
+      95,
+      95
+     ],
+     "texts_equal": 95,
+     "box_max_dpx": 0,
+     "conf_max_d": 0.0030000000000000027,
+     "joined_text_ratio": 1.0
+    },
+    "image": null,
+    "ref_cos": null
+   },
+   "cuda-detcpu": {
+    "rc": 0,
+    "wall": [
+     37.535,
+     37.937
+    ],
+    "cuda_used": true,
+    "identical": true,
+    "cos": 1.0000000000000002,
+    "char_ratio": null,
+    "ocr": {
+     "n_boxes": [
+      95,
+      95
+     ],
+     "texts_equal": 95,
+     "box_max_dpx": 0,
+     "conf_max_d": 0.0,
+     "joined_text_ratio": 1.0
+    },
+    "image": null,
+    "ref_cos": null
+   },
+   "cuda-deconvmm": {
+    "rc": 0,
+    "wall": [
+     37.08,
+     37.033
+    ],
+    "cuda_used": true,
+    "identical": false,
+    "cos": 0.9999999999996066,
+    "char_ratio": null,
+    "ocr": {
+     "n_boxes": [
+      95,
+      95
+     ],
+     "texts_equal": 95,
+     "box_max_dpx": 0,
+     "conf_max_d": 0.0030000000000000027,
+     "joined_text_ratio": 1.0
+    },
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 0,
+    "wall": [
+     77.831,
+     77.427
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  },
+  "dbnet-trocr-f32.fox": {
+   "kind": "cmd",
+   "seconds": 36.6,
+   "precision": "f32",
+   "cuda": {
+    "rc": 0,
+    "wall": [
+     5.484,
+     5.581
+    ],
+    "cuda_used": true,
+    "identical": false,
+    "cos": 0.9999999999997211,
+    "char_ratio": null,
+    "ocr": {
+     "n_boxes": [
+      10,
+      10
+     ],
+     "texts_equal": 10,
+     "box_max_dpx": 0,
+     "conf_max_d": 0.0010000000000000009,
+     "joined_text_ratio": 1.0
+    },
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 0,
+    "wall": [
+     8.796,
+     8.894
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  },
+  "ppocrv6-small.fox": {
+   "kind": "cmd",
+   "seconds": 13.3,
+   "precision": "f32",
+   "cuda": {
+    "rc": 0,
+    "wall": [
+     1.017,
+     0.917
+    ],
+    "cuda_used": true,
+    "identical": true,
+    "cos": 0.9999999999999999,
+    "char_ratio": null,
+    "ocr": {
+     "n_boxes": [
+      2,
+      2
+     ],
+     "texts_equal": 2,
+     "box_max_dpx": 0,
+     "conf_max_d": 0.0,
+     "joined_text_ratio": 1.0
+    },
+    "image": null,
+    "ref_cos": null
+   },
+   "cuda-detcpu": {
+    "rc": 0,
+    "wall": [
+     1.519,
+     1.519
+    ],
+    "cuda_used": true,
+    "identical": true,
+    "cos": 0.9999999999999999,
+    "char_ratio": null,
+    "ocr": {
+     "n_boxes": [
+      2,
+      2
+     ],
+     "texts_equal": 2,
+     "box_max_dpx": 0,
+     "conf_max_d": 0.0,
+     "joined_text_ratio": 1.0
+    },
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 0,
+    "wall": [
+     1.47,
+     1.42
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  },
+  "ppocrv6-small.scan_page_pd": {
+   "kind": "cmd",
+   "seconds": 49.2,
+   "precision": "f32",
+   "cuda": {
+    "rc": 0,
+    "wall": [
+     2.221,
+     2.222
+    ],
+    "cuda_used": true,
+    "identical": false,
+    "cos": 0.999999999999983,
+    "char_ratio": null,
+    "ocr": {
+     "n_boxes": [
+      38,
+      38
+     ],
+     "texts_equal": 38,
+     "box_max_dpx": 0,
+     "conf_max_d": 0.0010000000000000009,
+     "joined_text_ratio": 1.0
+    },
+    "image": null,
+    "ref_cos": null
+   },
+   "cuda-detcpu": {
+    "rc": 0,
+    "wall": [
+     4.526,
+     4.578
+    ],
+    "cuda_used": true,
+    "identical": true,
+    "cos": 1.0,
+    "char_ratio": null,
+    "ocr": {
+     "n_boxes": [
+      38,
+      38
+     ],
+     "texts_equal": 38,
+     "box_max_dpx": 0,
+     "conf_max_d": 0.0,
+     "joined_text_ratio": 1.0
+    },
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 0,
+    "wall": [
+     17.18,
+     17.137
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  }
+ },
+ "commit": "8f781770810956818ba76831a6bc607fbc0a1154",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "batch": "all",
+ "threads": 4,
+ "cpu_model": "Intel(R) Xeon(R) CPU @ 2.00GHz",
+ "date": "2026-11-01",
+ "phase": "23/90 ppocrv6-small.scan_page_pd",
+ "updated": "2026-11-01T21:48:45Z",
+ "downloads": {
+  "all-MiniLM-L6-v2-f32.gguf": {
+   "seconds": 2.4,
+   "error": null,
+   "bytes": 91304064
+  },
+  "all-MiniLM-L6-v2-q8_0.gguf": {
+   "seconds": 2.1,
+   "error": null,
+   "bytes": 24701376
+  },
+  "all-MiniLM-L6-v2-q4_k.gguf": {
+   "seconds": 1.6,
+   "error": null,
+   "bytes": 19392960
+  },
+  "bge-small-en-v1.5.gguf": {
+   "seconds": 7.0,
+   "error": null,
+   "bytes": 133487168
+  },
+  "bge-small-en-v1.5-q8_0.gguf": {
+   "seconds": 2.3,
+   "error": null,
+   "bytes": 36107040
+  },
+  "bge-small-en-v1.5-q4_k.gguf": {
+   "seconds": 1.6,
+   "error": null,
+   "bytes": 25490208
+  },
+  "multilingual-e5-small.gguf": {
+   "seconds": 12.4,
+   "error": null,
+   "bytes": 476618048
+  },
+  "multilingual-e5-small-q8_0.gguf": {
+   "seconds": 2.2,
+   "error": null,
+   "bytes": 131624960
+  },
+  "multilingual-e5-small-q4_k.gguf": {
+   "seconds": 2.1,
+   "error": null,
+   "bytes": 121008128
+  },
+  "arctic-embed-m-v2.gguf": {
+   "seconds": 24.7,
+   "error": null,
+   "bytes": 1227066368
+  },
+  "arctic-embed-m-v2-q8_0.gguf": {
+   "seconds": 6.3,
+   "error": null,
+   "bytes": 330297408
+  },
+  "arctic-embed-m-v2-q4_k-imatrix.gguf": {
+   "seconds": 4.5,
+   "error": null,
+   "bytes": 273674304
+  },
+  "bge-m3.gguf": {
+   "seconds": 29.6,
+   "error": null,
+   "bytes": 2273425056
+  },
+  "bge-m3-q8_0.gguf": {
+   "seconds": 13.6,
+   "error": null,
+   "bytes": 609676256
+  },
+  "bge-m3-iq4_xs.gguf": {
+   "seconds": 8.0,
+   "error": null,
+   "bytes": 449244128
+  },
+  "qwen3-embed-0.6b.gguf": {
+   "seconds": 31.1,
+   "error": null,
+   "bytes": 2389046720
+  },
+  "qwen3-embed-0.6b-q8_0.gguf": {
+   "seconds": 13.1,
+   "error": null,
+   "bytes": 639145792
+  },
+  "qwen3-embed-0.6b-q4_k-imatrix.gguf": {
+   "seconds": 16.0,
+   "error": null,
+   "bytes": 418944832
+  },
+  "f2llm-v2-0.6b.gguf": {
+   "seconds": 43.2,
+   "error": null,
+   "bytes": 2390146752
+  },
+  "f2llm-v2-0.6b-q8_0.gguf": {
+   "seconds": 12.6,
+   "error": null,
+   "bytes": 639442688
+  },
+  "f2llm-v2-0.6b-q4_k-imatrix.gguf": {
+   "seconds": 14.9,
+   "error": null,
+   "bytes": 419241728
+  },
+  "jina-v5-nano.gguf": {
+   "seconds": 12.9,
+   "error": null,
+   "bytes": 854888832
+  },
+  "jina-v5-nano-q8_0.gguf": {
+   "seconds": 5.8,
+   "error": null,
+   "bytes": 232882624
+  },
+  "jina-v5-nano-q4_k.gguf": {
+   "seconds": 3.4,
+   "error": null,
+   "bytes": 176259520
+  },
+  "harrier-270m.gguf": {
+   "seconds": 22.0,
+   "error": null,
+   "bytes": 1088170176
+  },
+  "harrier-270m-q8_0.gguf": {
+   "seconds": 6.4,
+   "error": null,
+   "bytes": 300796192
+  },
+  "harrier-270m-q4_k.gguf": {
+   "seconds": 4.7,
+   "error": null,
+   "bytes": 250661152
+  },
+  "embeddinggemma-300m.gguf": {
+   "seconds": 24.3,
+   "error": null,
+   "bytes": 1246109184
+  },
+  "embeddinggemma-300m-q8_0.gguf": {
+   "seconds": 7.6,
+   "error": null,
+   "bytes": 356703808
+  },
+  "embeddinggemma-300m-q4_k.gguf": {
+   "seconds": 6.1,
+   "error": null,
+   "bytes": 305978944
+  },
+  "lfm2-embed-f16.gguf": {
+   "seconds": 12.6,
+   "error": null,
+   "bytes": 711069504
+  },
+  "lfm2-embed-q8_0.gguf": {
+   "seconds": 8.5,
+   "error": null,
+   "bytes": 378802048
+  },
+  "lfm2-embed-q4_k.gguf": {
+   "seconds": 6.5,
+   "error": null,
+   "bytes": 235147136
+  },
+  "clip-text-base.gguf": {
+   "seconds": 6.4,
+   "error": null,
+   "bytes": 255611936
+  },
+  "clip-text-base-q8_0.gguf": {
+   "seconds": 2.9,
+   "error": null,
+   "bytes": 69529632
+  },
+  "clip-text-base-q4_k.gguf": {
+   "seconds": 2.2,
+   "error": null,
+   "bytes": 50524192
+  },
+  "ms-marco-MiniLM-L-6-v2-g7c.gguf": {
+   "seconds": 2.4,
+   "error": null,
+   "bytes": 70254080
+  },
+  "ms-marco-MiniLM-L-6-v2-q8_0-g7c.gguf": {
+   "seconds": 1.6,
+   "error": null,
+   "bytes": 25294528
+  },
+  "ms-marco-MiniLM-L-6-v2-q4_k-g7c.gguf": {
+   "seconds": 1.2,
+   "error": null,
+   "bytes": 19986112
+  },
+  "mxbai-rerank-xsmall-v1-g7c.gguf": {
+   "seconds": 6.3,
+   "error": null,
+   "bytes": 243991456
+  },
+  "mxbai-rerank-xsmall-v1-q8_0-g7c.gguf": {
+   "seconds": 3.1,
+   "error": null,
+   "bytes": 78577472
+  },
+  "ettin-reranker-17m-v1-f32.gguf": {
+   "seconds": 2.7,
+   "error": null,
+   "bytes": 68677536
+  },
+  "ettin-reranker-17m-v1-q8_0.gguf": {
+   "seconds": 2.1,
+   "error": null,
+   "bytes": 19346400
+  },
+  "ettin-reranker-17m-v1-q4_k.gguf": {
+   "seconds": 1.1,
+   "error": null,
+   "bytes": 17396704
+  },
+  "trocr": {
+   "seconds": 1.8,
+   "error": null,
+   "bytes": 67508320
+  },
+  "dbnet": {
+   "seconds": 1.1,
+   "error": null,
+   "bytes": 12960448
+  },
+  "trocr-f32": {
+   "seconds": 6.1,
+   "error": null,
+   "bytes": 246879072
+  },
+  "ppv6-rec": {
+   "seconds": 2.7,
+   "error": null,
+   "bytes": 21217312
+  },
+  "ppv6-det": {
+   "seconds": 1.5,
+   "error": null,
+   "bytes": 4941280
+  }
+ }
+}

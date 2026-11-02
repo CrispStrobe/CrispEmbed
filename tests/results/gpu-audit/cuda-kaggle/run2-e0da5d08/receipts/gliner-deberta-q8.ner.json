@@ -1,0 +1,74 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "-m",
+  "gliner-deberta-q8_0.gguf",
+  "--ner",
+  "Angela Merkel met Tim Cook at the Apple office in Berlin on Monday.",
+  "--ner-labels",
+  "person,organization,location,date",
+  "--ner-threshold",
+  "0.3"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    1.218,
+    1.167
+   ],
+   "gpu_mem_peak_mib": 333,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\n",
+   "stdout_sha256": "fe61a13cc2ce7a5cf6d6ae0b51f1f93dd4b1cf8b46546106fea9a6150ed29f56",
+   "stdout": "5 entities found:\n  [0] Angela Merkel (person) [0, 13) score=0.9992\n  [1] Tim Cook (person) [18, 26) score=0.9991\n  [2] Apple (organization) [34, 39) score=0.9721\n  [3] Berlin (location) [50, 56) score=0.9976\n  [4] Monday (date) [60, 66) score=0.9972\n",
+   "vs_cpu": {
+    "byte_identical": false,
+    "text_exact": false,
+    "char_ratio": 0.9800796812749004,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   },
+   "vs_reference_cpu": {
+    "byte_identical": false,
+    "text_exact": false,
+    "char_ratio": 0.9760956175298805,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    0.717,
+    0.767
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "crispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\n",
+   "stdout_sha256": "536295cb1824aeecc835ac05399666cdb2bb6b9b0f525040185f0c57a683dbcc",
+   "stdout": "5 entities found:\n  [0] Angela Merkel (person) [0, 13) score=0.9990\n  [1] Tim Cook (person) [18, 26) score=0.9991\n  [2] Apple (organization) [34, 39) score=0.9660\n  [3] Berlin (location) [50, 56) score=0.9976\n  [4] Monday (date) [60, 66) score=0.9974\n",
+   "vs_reference_cpu": {
+    "byte_identical": false,
+    "text_exact": false,
+    "char_ratio": 0.9760956175298805,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   }
+  }
+ },
+ "precision": "q8_0",
+ "reference_job": "gliner-deberta-f32.ner",
+ "bar": 0.97,
+ "seconds": 10.5,
+ "id": "gliner-deberta-q8.ner",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

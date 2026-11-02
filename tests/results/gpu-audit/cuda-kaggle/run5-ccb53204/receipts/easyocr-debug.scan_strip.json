@@ -1,0 +1,142 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "--json",
+  "-m",
+  "easyocr-english-g2-f16.gguf",
+  "--ocr-pipeline",
+  "scan_strip.png",
+  "--ocr-engine",
+  "easyocr",
+  "--ocr-det",
+  "dbnet-ic15-q8_0.gguf",
+  "--ocr-rec",
+  "easyocr-english-g2-f16.gguf"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {
+    "CRISPEMBED_EASYOCR_DEBUG_REGIONS": "1"
+   },
+   "wall_s": [
+    1.869
+   ],
+   "gpu_mem_peak_mib": 399,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": " MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\n[easyocr-region] i=0 crop=411x29 canvas=960 len=45 conf=0.0419 text=[hey are going to be  eucamped rea  Brighton \n[easyocr-region] i=1 crop=465x30 canvas=1024 len=54 conf=0.4835 text=a1d I do 8 want papa t0 take u8 all there for tke sum-\n[easyocr-region] i=2 crop=465x33 canvas=960 len=54 conf=0.7397 text=mer !   It would be such & delicious scheme,and [ dare\n[easyocr-region] i=3 crop=470x56 canvas=576 len=50 conf=0.0135 text=Re \"ouleo-naodi 9 OCosl7 \"ingg \" Only Vank avkould\n[easyocr-region] i=4 crop=310x34 canvas=640 len=34 conf=0.8007 text=miserable simer else we shall have\n[easyocr-region] i=5 crop=425x36 canvas=768 len=51 conf=0.2857 text=Yes;\" tho-ght Elizabeth, % that would be & delight-\n[easyocr-region] i=6 crop=467x37 canvas=832 len=53 conf=0.3147 text=ful scheme indeed, and  cOmpletely do for us at ouce:\nggml_backend_cuda_graph_compute: CUDA graph warmup complete\n[easyocr-region] i=7 crop=469x37 canvas=832 len=48 conf=0.1820 text=Good Heaven !   Brightox; &ud & whole  campful o\nggml_backend_cuda_graph_compute: CUDA graph warmup reset\n[easyocr-region] i=8 crop=469x36 canvas=896 len=53 conf=0.2727 text=~soldiers, t0 u8, who have been overset already &y oe\n[easyocr-region] i=9 crop=469x50 canvas=640 len=50 conf=0.1920 text=Mcrytoniment of miltia, and the monthly' balls  of\n",
+   "stdout_sha256": "c0af27caa30786fe40521804cdc4efca7ef29eb5c0b5af1224a4c07339320615",
+   "stdout": "{\"n_regions\":10,\"mean_confidence\":0.333,\"full_text\":\"a1d I do 8 want papa t0 take u8 all there for tke sum-\\n[hey are going to be  eucamped rea  Brighton \\nmer !   It would be such & delicious scheme,and [ dare\\nRe \\\"ouleo-naodi 9 OCosl7 \\\"ingg \\\" Only Vank avkould\\nmiserable simer else we shall have\\nful scheme indeed, and  cOmpletely do for us at ouce:\\nYes;\\\" tho-ght Elizabeth, % that would be & delight-\\nGood Heaven !   Brightox; &ud & whole  campful o\\n~soldiers, t0 u8, who have been overset already &y oe\\nMcrytoniment of miltia, and the monthly' balls  of\"}\n",
+   "vs_cpu": {
+    "byte_identical": false,
+    "json": {
+     "n_numbers": [
+      2,
+      2
+     ],
+     "strings_equal": false,
+     "n_strings": [
+      1,
+      1
+     ],
+     "string_ratio": 0.8142011834319527
+    },
+    "final_cosine": 0.9998794022737758,
+    "max_abs": 3.0,
+    "final_metric": "cosine over all JSON numbers"
+   }
+  },
+  "cpu-widthsort": {
+   "backend": "cpu",
+   "env": {
+    "CRISPEMBED_EASYOCR_DEBUG_REGIONS": "1",
+    "EASYOCR_WIDTH_SORT": "1"
+   },
+   "wall_s": [
+    3.025
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\n[easyocr-region] i=3 crop=470x56 canvas=576 len=50 conf=0.0135 text=Re \"ouleo-naodi 9 OCosl7 \"ingg \" Only Vank avkould\n[easyocr-region] i=4 crop=310x34 canvas=640 len=34 conf=0.8007 text=miserable simer else we shall have\n[easyocr-region] i=9 crop=469x50 canvas=640 len=50 conf=0.1919 text=Mcrytoniment of miltia, and the monthly' balls  of\n[easyocr-region] i=5 crop=425x36 canvas=768 len=51 conf=0.2857 text=Yes;\" tho-ght Elizabeth, % that would be & delight-\n[easyocr-region] i=6 crop=467x37 canvas=832 len=53 conf=0.3148 text=ful scheme indeed, and  cOmpletely do for us at ouce:\n[easyocr-region] i=7 crop=469x37 canvas=832 len=48 conf=0.1820 text=Good Heaven !   Brightox; &ud & whole  campful o\n[easyocr-region] i=8 crop=469x36 canvas=896 len=53 conf=0.2725 text=~soldiers, t0 u8, who have been overset already &y oe\n[easyocr-region] i=0 crop=411x29 canvas=960 len=45 conf=0.0420 text=[hey are going to be  eucamped rea  Brighton \n[easyocr-region] i=2 crop=465x33 canvas=960 len=54 conf=0.7398 text=mer !   It would be such & delicious scheme,and [ dare\n[easyocr-region] i=1 crop=465x30 canvas=1024 len=54 conf=0.4854 text=a1d I do 8 want papa t0 take u8 all there for tke sum-\n",
+   "stdout_sha256": "c0af27caa30786fe40521804cdc4efca7ef29eb5c0b5af1224a4c07339320615",
+   "stdout": "{\"n_regions\":10,\"mean_confidence\":0.333,\"full_text\":\"a1d I do 8 want papa t0 take u8 all there for tke sum-\\n[hey are going to be  eucamped rea  Brighton \\nmer !   It would be such & delicious scheme,and [ dare\\nRe \\\"ouleo-naodi 9 OCosl7 \\\"ingg \\\" Only Vank avkould\\nmiserable simer else we shall have\\nful scheme indeed, and  cOmpletely do for us at ouce:\\nYes;\\\" tho-ght Elizabeth, % that would be & delight-\\nGood Heaven !   Brightox; &ud & whole  campful o\\n~soldiers, t0 u8, who have been overset already &y oe\\nMcrytoniment of miltia, and the monthly' balls  of\"}\n",
+   "vs_cpu": {
+    "byte_identical": false,
+    "json": {
+     "n_numbers": [
+      2,
+      2
+     ],
+     "strings_equal": false,
+     "n_strings": [
+      1,
+      1
+     ],
+     "string_ratio": 0.8142011834319527
+    },
+    "final_cosine": 0.9998794022737758,
+    "max_abs": 3.0,
+    "final_metric": "cosine over all JSON numbers"
+   }
+  },
+  "cpu-gpupref-none": {
+   "backend": "cpu",
+   "env": {
+    "CRISPEMBED_EASYOCR_DEBUG_REGIONS": "1",
+    "EASYOCR_FORCE_CPU": "1"
+   },
+   "wall_s": [
+    3.024
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\n[easyocr-region] i=0 crop=411x29 canvas=960 len=45 conf=0.0420 text=[hey are going to be  eucamped rea  Brighton \n[easyocr-region] i=1 crop=465x30 canvas=1024 len=54 conf=0.4854 text=a1d I do 8 want papa t0 take u8 all there for tke sum-\n[easyocr-region] i=2 crop=465x33 canvas=960 len=0 conf=0.0000 text=\n[easyocr-region] i=3 crop=470x56 canvas=576 len=0 conf=0.0000 text=\n[easyocr-region] i=4 crop=310x34 canvas=640 len=34 conf=0.8007 text=miserable simer else we shall have\n[easyocr-region] i=5 crop=425x36 canvas=768 len=51 conf=0.2860 text=Yes;\" tho-ght Elizabeth, % that would be & delight-\n[easyocr-region] i=6 crop=467x37 canvas=832 len=53 conf=0.3145 text=ful scheme indeed, and  cOmpletely do for us at ouce:\n[easyocr-region] i=7 crop=469x37 canvas=832 len=48 conf=0.1823 text=Good Heaven !   Brightox; &ud & whole  campful o\n[easyocr-region] i=8 crop=469x36 canvas=896 len=53 conf=0.2797 text=~soldiers, t0 u8, who have been overset already &y oe\n[easyocr-region] i=9 crop=469x50 canvas=640 len=0 conf=0.0000 text=\n",
+   "stdout_sha256": "f31baa7e6b9af403e9ee0f8fc3355cbeabccfedf6a78e2317a3b46460e1d3798",
+   "stdout": "{\"n_regions\":7,\"mean_confidence\":0.342,\"full_text\":\"a1d I do 8 want papa t0 take u8 all there for tke sum-\\n[hey are going to be  eucamped rea  Brighton \\nmiserable simer else we shall have\\nful scheme indeed, and  cOmpletely do for us at ouce:\\nYes;\\\" tho-ght Elizabeth, % that would be & delight-\\nGood Heaven !   Brightox; &ud & whole  campful o\\n~soldiers, t0 u8, who have been overset already &y oe\"}\n",
+   "vs_cpu": {
+    "byte_identical": true,
+    "json": {
+     "n_numbers": [
+      2,
+      2
+     ],
+     "strings_equal": true,
+     "n_strings": [
+      1,
+      1
+     ]
+    },
+    "final_cosine": 1.0000000000000002,
+    "max_abs": 0.0,
+    "final_metric": "cosine over all JSON numbers"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {
+    "CRISPEMBED_EASYOCR_DEBUG_REGIONS": "1"
+   },
+   "wall_s": [
+    3.127
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\n[easyocr-region] i=0 crop=411x29 canvas=960 len=45 conf=0.0420 text=[hey are going to be  eucamped rea  Brighton \n[easyocr-region] i=1 crop=465x30 canvas=1024 len=54 conf=0.4854 text=a1d I do 8 want papa t0 take u8 all there for tke sum-\n[easyocr-region] i=2 crop=465x33 canvas=960 len=0 conf=0.0000 text=\n[easyocr-region] i=3 crop=470x56 canvas=576 len=0 conf=0.0000 text=\n[easyocr-region] i=4 crop=310x34 canvas=640 len=34 conf=0.8007 text=miserable simer else we shall have\n[easyocr-region] i=5 crop=425x36 canvas=768 len=51 conf=0.2860 text=Yes;\" tho-ght Elizabeth, % that would be & delight-\n[easyocr-region] i=6 crop=467x37 canvas=832 len=53 conf=0.3145 text=ful scheme indeed, and  cOmpletely do for us at ouce:\n[easyocr-region] i=7 crop=469x37 canvas=832 len=48 conf=0.1823 text=Good Heaven !   Brightox; &ud & whole  campful o\n[easyocr-region] i=8 crop=469x36 canvas=896 len=53 conf=0.2797 text=~soldiers, t0 u8, who have been overset already &y oe\n[easyocr-region] i=9 crop=469x50 canvas=640 len=0 conf=0.0000 text=\n",
+   "stdout_sha256": "f31baa7e6b9af403e9ee0f8fc3355cbeabccfedf6a78e2317a3b46460e1d3798",
+   "stdout": "{\"n_regions\":7,\"mean_confidence\":0.342,\"full_text\":\"a1d I do 8 want papa t0 take u8 all there for tke sum-\\n[hey are going to be  eucamped rea  Brighton \\nmiserable simer else we shall have\\nful scheme indeed, and  cOmpletely do for us at ouce:\\nYes;\\\" tho-ght Elizabeth, % that would be & delight-\\nGood Heaven !   Brightox; &ud & whole  campful o\\n~soldiers, t0 u8, who have been overset already &y oe\"}\n"
+  }
+ },
+ "precision": "f16",
+ "bar": 0.98,
+ "seconds": 11.4,
+ "id": "easyocr-debug.scan_strip",
+ "commit": "ccb532040c6b8610e9c7e9f10c1b5ee525f4cf87",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-02"
+}

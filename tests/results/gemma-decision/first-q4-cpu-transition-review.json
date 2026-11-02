@@ -1,0 +1,29 @@
+{
+  "schema": "crispembed-gemma-first-q4-cpu-transition-review-v1",
+  "previous_gha_run": 40868968991,
+  "previous_source": "6e327e902ebdd0feb531c3beae4b52902b7e781b",
+  "previous_status_before": "queued",
+  "previous_jobs": [
+    {
+      "id": 123430830655,
+      "status": "queued",
+      "started_at": "2026-10-29T11:54:20Z",
+      "steps": []
+    }
+  ],
+  "previous_status_after": "completed",
+  "previous_conclusion": "cancelled",
+  "no_old_model_forwards": true,
+  "cpu_source": "92ee94a77c95df33b272abfcbf4f365550c20a47",
+  "version_label": "v1",
+  "submitted_script_sha256": "d5ac6a794cf53c0a71e58b72daceb781e250be83cdceb9883e057aff680d4926",
+  "submitted_script_bytes": 6527,
+  "protocol_sha256": "4de105f4fe3e202a22fbef5e1175e74ff5a5670a41ea5667cfe0d71a813b9e0e",
+  "external_Get_Status_every_List_page_verified": true,
+  "verified_status": "RUNNING",
+  "no_gpu": true,
+  "no_credential_dataset": true,
+  "completed": false,
+  "publication_qualified": false,
+  "limits": "Exact source/script/version accepted and running; no model/parity/quantizer outcome claimed. Canonical service identity kept in private operator continuity; never resubmit from an initial slug lookup failure."
+}

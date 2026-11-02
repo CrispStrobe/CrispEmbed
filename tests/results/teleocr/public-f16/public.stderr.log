@@ -1,0 +1,61 @@
+qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-models/teleocr-f16.gguf
+TeleOCR requires CRISPEMBED_TELEOCR=1 and a CrispEmbed TeleOCR GGUF v1; convert the checkpoint with convert-teleocr-to-gguf.py.
+qwen2vl_ocr: failed to load hparams
+qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-models/teleocr-f16.gguf
+TeleOCR requires CRISPEMBED_TELEOCR=1 and a CrispEmbed TeleOCR GGUF v1; convert the checkpoint with convert-teleocr-to-gguf.py.
+qwen2vl_ocr: failed to load hparams
+qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-models/teleocr-f16.gguf
+TeleOCR requires CRISPEMBED_TELEOCR=1 and a CrispEmbed TeleOCR GGUF v1; convert the checkpoint with convert-teleocr-to-gguf.py.
+qwen2vl_ocr: failed to load hparams
+qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-models/teleocr-f16.gguf
+  vision: 32 layers, 1280d, 16 heads, patch=14, merge=2
+  llm: 28 layers, 1024d, 16/8 heads, inter=3072
+  vision variant: Qwen2.5-VL (RMSNorm, SwiGLU)
+qwen2vl_ocr: loaded successfully
+qwen2vl_ocr: loaded BPE tokenizer (151936 tokens, 151387 merges)
+qwen2vl_ocr: 482x164 → 476x168, 408 patches (12x34)
+  backend KV cache: 28 layers, max_seq=140, 30.6 MB
+  gen[0]: token=20742 score=12.56 (prefill)
+  gen[1]: token=23 score=15.54 (cached)
+  gen[2]: token=65727 score=16.96 (cached)
+  gen[3]: token=118 score=26.64 (cached)
+  gen[4]: token=99675 score=23.12 (cached)
+  gen[5]: token=104778 score=23.67 (cached)
+  gen[6]: token=33108 score=23.78 (cached)
+  gen[7]: token=24300 score=17.02 (cached)
+qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-models/teleocr-f16.gguf
+  vision: 32 layers, 1280d, 16 heads, patch=14, merge=2
+  llm: 28 layers, 1024d, 16/8 heads, inter=3072
+  vision variant: Qwen2.5-VL (RMSNorm, SwiGLU)
+qwen2vl_ocr: loaded successfully
+qwen2vl_ocr: loaded BPE tokenizer (151936 tokens, 151387 merges)
+qwen2vl_ocr: 482x164 → 476x168, 408 patches (12x34)
+  backend KV cache: 28 layers, max_seq=140, 30.6 MB
+  gen[0]: token=20742 score=12.56 (prefill)
+  gen[1]: token=23 score=15.54 (cached)
+  gen[2]: token=65727 score=16.96 (cached)
+  gen[3]: token=118 score=26.64 (cached)
+  gen[4]: token=99675 score=23.12 (cached)
+  gen[5]: token=104778 score=23.67 (cached)
+  gen[6]: token=33108 score=23.78 (cached)
+  gen[7]: token=24300 score=17.02 (cached)
+qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-models/teleocr-f16.gguf
+  vision: 32 layers, 1280d, 16 heads, patch=14, merge=2
+  llm: 28 layers, 1024d, 16/8 heads, inter=3072
+  vision variant: Qwen2.5-VL (RMSNorm, SwiGLU)
+qwen2vl_ocr: loaded successfully
+qwen2vl_ocr: loaded BPE tokenizer (151936 tokens, 151387 merges)
+qwen2vl_ocr: 482x164 → 476x168, 408 patches (12x34)
+  backend KV cache: 28 layers, max_seq=128, 28.0 MB
+  gen[0]: token=63895 score=11.94 (prefill)
+qwen2vl_ocr: 482x164 → 476x168, 408 patches (12x34)
+  backend KV cache: 28 layers, max_seq=140, 30.6 MB
+  gen[0]: token=20742 score=12.56 (prefill)
+  gen[1]: token=23 score=15.54 (cached)
+  gen[2]: token=65727 score=16.96 (cached)
+  gen[3]: token=118 score=26.64 (cached)
+  gen[4]: token=99675 score=23.12 (cached)
+  gen[5]: token=104778 score=23.67 (cached)
+  gen[6]: token=33108 score=23.78 (cached)
+  gen[7]: token=24300 score=17.02 (cached)
+ocr_orchestrator: teleocr requires a TeleOCR version 1 GGUF

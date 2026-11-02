@@ -1,0 +1,7 @@
+{
+  "kind": "source-delta-check-initial-execution-error",
+  "passed": false,
+  "failed_check": "Comment-stripped internal header compared byte-for-byte including whitespace",
+  "reason": "An added explanatory comment leaves an additional newline after comment stripping",
+  "correction": "Review the retained header diff and compare code after stripping comments and whitespace; no production or test source modified by this correction"
+}

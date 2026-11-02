@@ -1,0 +1,5 @@
+== /Volumes/backups/code/model-cache-20261101/mineru25/mineru25-pro-2604-f16.gguf:f16:cpu
+formula: exact=True n=29/29 div=None cold=9955 warm=10647ms
+table: exact=True n=140/140 div=None cold=17186 warm=14858ms
+receipt: exact=True n=202/202 div=None cold=58194 warm=66856ms
+Terminated: 15

@@ -1,0 +1,36 @@
+{
+  "expected_model_revision": "b3f6a0c084db72f971e19a779d2fd8a6bc9e3b8d",
+  "module_sha256": "7adac1cc17009f9f1b8e0c58284d7c0b9989a590f017b9e5964cc42270207922",
+  "config_sha256": "92c5e15f1768dcb54bceae170043fbfefd248508159700b2179824b88c33ae75",
+  "selected_weights_float32_sha256": {
+    "model.layers.2.input_layernorm.weight": "62daa64b7177eaa735844773485ad592ca64d8b704c0d369a9c23b453c140b73",
+    "model.layers.2.mlp.down_proj.weight": "867edfed92fd17c33dd205cff8a97ed96415c94c019ec1366426c4f570b70d39",
+    "model.layers.2.mlp.gate_proj.weight": "17e128d2177d126f97892e0fdd0ca96a00783273fd840767b1ed72277b28a2d2",
+    "model.layers.2.mlp.up_proj.weight": "2b3e36e22b535239255f00bba4e65987981ab159f9b0a12642d7d11ecf75e0be",
+    "model.layers.2.post_attention_layernorm.weight": "0e80a826c1762ade4eef3f4a43fbf7ed0c751a33b36ada4ffbd4ea736e53486a",
+    "model.layers.2.self_attn.k_norm.weight": "03531abc7a26a980c68c2656f747eda9b42f8bfccebc65ba583ce8f15ed95eae",
+    "model.layers.2.self_attn.k_proj.weight": "7ab448467c7f6d1058b0f400f4b4e6e9740ee672a5c64ac9bc796fef244ccd21",
+    "model.layers.2.self_attn.o_proj.weight": "f8a173ee6c312215dc509e3c90789201781c69e00b922d327cc6138be14bc5b4",
+    "model.layers.2.self_attn.q_norm.weight": "cbe752c78ec9e06276e87efecd58cc918af7b2d753dc867d18c42e51c0dab789",
+    "model.layers.2.self_attn.q_proj.weight": "9986d7d08e16b397a05ea4fce305a0136ddca7bbc1e5fa50ca329316fd50b780",
+    "model.layers.2.self_attn.v_proj.weight": "0182ea284205acf124466b102414f9caa467d7fe8d7039621baad51cc6101408"
+  },
+  "torch": "2.8.0+cpu",
+  "transformers": "4.57.1",
+  "numpy": "2.5.4",
+  "threads": 2,
+  "script_sha256": "633f65f7080fc5f8d7c1080f82bf268567042e4383d0e0616ada9491f6707b74",
+  "common_sha256": "4eb9bc3517c97010feeae57dfbd535559d693f134be91f759044671412481753",
+  "reference_sha256": {
+    "llm_layer_1": "3147cad76f4bee440d1d615ae82b2f18e4cfc5fd19b26cfcade0001ec571402b",
+    "llm_layer_2": "1db56c4091dedf7af9dc7d4d13c64302f82f0f9c5834fc0d474b9ee1de94c2ef",
+    "mrope_positions": "c461c176beda75797a855b7527944ae21c975994c3b53a716c05631f4cab3ec5"
+  },
+  "native_sha256": {
+    "llm_layer_1": "ae386d89ff6cfa4bcdb87a1707168a7fd9be8140a08f5f210922f2cfa853da54",
+    "llm_layer_2": "cd8e715f1456366e59ef15f3681d6d3e1160848172f5948fcddda79e6322580d"
+  },
+  "max_abs_budget": 0.002,
+  "min_cos_budget": 0.99999,
+  "scope": "single-block diagnosis; does not replace full-model qualification"
+}

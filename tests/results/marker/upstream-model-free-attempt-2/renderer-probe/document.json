@@ -1,0 +1,368 @@
+{
+  "children": [
+    {
+      "id": "/page/0/Page/15",
+      "block_type": "Page",
+      "html": "<content-ref src='/page/0/SectionHeader/0'></content-ref><content-ref src='/page/0/Text/3'></content-ref><content-ref src='/page/0/ListGroup/6'></content-ref><content-ref src='/page/0/Code/13'></content-ref><content-ref src='/page/0/Table/14'></content-ref><content-ref src='/page/0/Equation/15'></content-ref>",
+      "polygon": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          612.0,
+          0.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          0.0,
+          792.0
+        ]
+      ],
+      "bbox": [
+        0.0,
+        0.0,
+        612.0,
+        792.0
+      ],
+      "children": [
+        {
+          "id": "/page/0/SectionHeader/0",
+          "block_type": "SectionHeader",
+          "html": "<h2>Renderer contract</h2>",
+          "polygon": [
+            [
+              40.0,
+              40.0
+            ],
+            [
+              570.0,
+              40.0
+            ],
+            [
+              570.0,
+              64.0
+            ],
+            [
+              40.0,
+              64.0
+            ]
+          ],
+          "bbox": [
+            40.0,
+            40.0,
+            570.0,
+            64.0
+          ],
+          "children": null,
+          "section_hierarchy": {
+            "2": "/page/0/SectionHeader/0"
+          },
+          "images": {}
+        },
+        {
+          "id": "/page/0/Text/3",
+          "block_type": "Text",
+          "html": "<p block-type=\"Text\">Literal &lt;script&gt; &amp; \"quotes\"; *stars* _under_ $5.</p>",
+          "polygon": [
+            [
+              40.0,
+              124.0
+            ],
+            [
+              570.0,
+              124.0
+            ],
+            [
+              570.0,
+              148.0
+            ],
+            [
+              40.0,
+              148.0
+            ]
+          ],
+          "bbox": [
+            40.0,
+            124.0,
+            570.0,
+            148.0
+          ],
+          "children": null,
+          "section_hierarchy": {
+            "2": "/page/0/SectionHeader/0"
+          },
+          "images": {}
+        },
+        {
+          "id": "/page/0/ListGroup/6",
+          "block_type": "ListGroup",
+          "html": "<p block-type='ListGroup'><ul><content-ref src='/page/0/ListItem/7'></content-ref><content-ref src='/page/0/ListItem/10'></content-ref></ul></p>",
+          "polygon": [
+            [
+              40.0,
+              208.0
+            ],
+            [
+              570.0,
+              208.0
+            ],
+            [
+              570.0,
+              232.0
+            ],
+            [
+              40.0,
+              232.0
+            ]
+          ],
+          "bbox": [
+            40.0,
+            208.0,
+            570.0,
+            232.0
+          ],
+          "children": [
+            {
+              "id": "/page/0/ListItem/7",
+              "block_type": "ListItem",
+              "html": "<li block-type=\"ListItem\">First item</li>",
+              "polygon": [
+                [
+                  40.0,
+                  236.0
+                ],
+                [
+                  570.0,
+                  236.0
+                ],
+                [
+                  570.0,
+                  260.0
+                ],
+                [
+                  40.0,
+                  260.0
+                ]
+              ],
+              "bbox": [
+                40.0,
+                236.0,
+                570.0,
+                260.0
+              ],
+              "children": null,
+              "section_hierarchy": {
+                "2": "/page/0/SectionHeader/0"
+              },
+              "images": {}
+            },
+            {
+              "id": "/page/0/ListItem/10",
+              "block_type": "ListItem",
+              "html": "<li block-type=\"ListItem\">Second item</li>",
+              "polygon": [
+                [
+                  40.0,
+                  320.0
+                ],
+                [
+                  570.0,
+                  320.0
+                ],
+                [
+                  570.0,
+                  344.0
+                ],
+                [
+                  40.0,
+                  344.0
+                ]
+              ],
+              "bbox": [
+                40.0,
+                320.0,
+                570.0,
+                344.0
+              ],
+              "children": null,
+              "section_hierarchy": {
+                "2": "/page/0/SectionHeader/0"
+              },
+              "images": {}
+            }
+          ],
+          "section_hierarchy": {
+            "2": "/page/0/SectionHeader/0"
+          },
+          "images": null
+        },
+        {
+          "id": "/page/0/Code/13",
+          "block_type": "Code",
+          "html": "<pre>if (left &lt; right) {\n  return \"safe &amp; literal\";\n}</pre>",
+          "polygon": [
+            [
+              40.0,
+              404.0
+            ],
+            [
+              570.0,
+              404.0
+            ],
+            [
+              570.0,
+              428.0
+            ],
+            [
+              40.0,
+              428.0
+            ]
+          ],
+          "bbox": [
+            40.0,
+            404.0,
+            570.0,
+            428.0
+          ],
+          "children": null,
+          "section_hierarchy": {
+            "2": "/page/0/SectionHeader/0"
+          },
+          "images": {}
+        },
+        {
+          "id": "/page/0/Table/14",
+          "block_type": "Table",
+          "html": "<table><tbody><tr><th>A</th><th>B</th></tr><tr><td>one | two</td><td>&lt;cell&gt;</td></tr></tbody></table>",
+          "polygon": [
+            [
+              40.0,
+              432.0
+            ],
+            [
+              570.0,
+              432.0
+            ],
+            [
+              570.0,
+              456.0
+            ],
+            [
+              40.0,
+              456.0
+            ]
+          ],
+          "bbox": [
+            40.0,
+            432.0,
+            570.0,
+            456.0
+          ],
+          "children": [],
+          "section_hierarchy": {
+            "2": "/page/0/SectionHeader/0"
+          },
+          "images": null
+        },
+        {
+          "id": "/page/0/Equation/15",
+          "block_type": "Equation",
+          "html": "<p block-type=\"Equation\"><math display=\"block\">x^2 + y^2 = z^2</math></p>",
+          "polygon": [
+            [
+              40.0,
+              460.0
+            ],
+            [
+              570.0,
+              460.0
+            ],
+            [
+              570.0,
+              484.0
+            ],
+            [
+              40.0,
+              484.0
+            ]
+          ],
+          "bbox": [
+            40.0,
+            460.0,
+            570.0,
+            484.0
+          ],
+          "children": null,
+          "section_hierarchy": {
+            "2": "/page/0/SectionHeader/0"
+          },
+          "images": {}
+        }
+      ],
+      "section_hierarchy": {
+        "2": "/page/0/SectionHeader/0"
+      },
+      "images": null
+    }
+  ],
+  "block_type": "Document",
+  "metadata": {
+    "table_of_contents": null,
+    "page_stats": [
+      {
+        "page_id": 0,
+        "text_extraction_method": "pdftext",
+        "block_counts": [
+          [
+            "Line",
+            4
+          ],
+          [
+            "Span",
+            4
+          ],
+          [
+            "ListItem",
+            2
+          ],
+          [
+            "SectionHeader",
+            1
+          ],
+          [
+            "Text",
+            1
+          ],
+          [
+            "ListGroup",
+            1
+          ],
+          [
+            "Code",
+            1
+          ],
+          [
+            "Table",
+            1
+          ],
+          [
+            "Equation",
+            1
+          ]
+        ],
+        "block_metadata": {
+          "llm_request_count": 0,
+          "llm_error_count": 0,
+          "llm_tokens_used": 0,
+          "previous_text": "",
+          "previous_type": "",
+          "previous_order": 0
+        }
+      }
+    ]
+  }
+}

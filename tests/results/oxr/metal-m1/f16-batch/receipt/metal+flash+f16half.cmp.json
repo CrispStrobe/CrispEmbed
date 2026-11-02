@@ -1,0 +1,1 @@
+{"label": "receipt/metal+flash+f16half", "ids_exact": true, "first_divergence": null, "reference_tokens": 202, "native_tokens": 202, "text_exact": true, "cer": 0.0, "eos": true, "capped": false, "runs_ms": [12264.146709, 14841.317916], "warm_ms_median": 14841.317916, "load_ms": 214650.050041, "runs_identical": true}

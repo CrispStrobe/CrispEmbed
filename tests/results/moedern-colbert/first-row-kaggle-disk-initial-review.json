@@ -1,0 +1,37 @@
+{
+  "schema": "crispembed-moedern-first-row-kaggle-disk-initial-v1",
+  "source": "e7ff72f1a2fe1290f5d7b879d41e3fd5b6da26b8",
+  "provider": "Kaggle CPU",
+  "version_label": "v1",
+  "status": "ERROR",
+  "external_exact_Get_Status_all_List_pages": 1,
+  "serialized_version_checked": true,
+  "submitted_script_bytes": 8835,
+  "submitted_script_sha256": "54e440d673f00d524573727f0907a8a2f79ec2d56039d4a3b9c67beed7317cdb",
+  "producer_report_bytes": 557,
+  "producer_report_sha256": "b64257f20551f9ac3bf1cae5826ca375e24444b3f8fd92bfbc7032fbf458e83a",
+  "producer": {
+    "schema": "crispembed-moedern-first-row-private-bootstrap-v1",
+    "source": "e7ff72f1a2fe1290f5d7b879d41e3fd5b6da26b8",
+    "completed": false,
+    "phase": "provider-preflight",
+    "commands": [],
+    "publication_qualified": false,
+    "original_full_corpus_recaptured": false,
+    "external_exact_version_Get_Status_all_List_and_submitted_script_proof_required": true,
+    "resources": {
+      "available_ram_bytes": 32672014336,
+      "free_disk_bytes": 20940525568,
+      "cpu_count": 4
+    },
+    "error": "ValueError: 14GiB available RAM/24GiB disk/two CPUs required"
+  },
+  "original_forwards": 0,
+  "native_forwards": 0,
+  "quantizer_runs": 0,
+  "models_accessed": false,
+  "packages_installed": false,
+  "retained_inputs_transferred": false,
+  "publication_qualified": false,
+  "limits": "Private kernel locator/credential mount excluded from public evidence. Exact-version external service/source/output proof retained privately. Actual bootstrap resource failure precedes first command; no inference or numerical result."
+}

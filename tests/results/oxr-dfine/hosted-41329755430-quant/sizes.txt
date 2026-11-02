@@ -1,0 +1,9 @@
+-rw-r--r-- 1 runner runner 78118336 Nov  1 17:13 /mnt/heavy/scratch/d-f16-as-f32.gguf
+-rw-r--r-- 1 runner runner 39866368 Nov  1 17:13 /mnt/heavy/scratch/d-f16.gguf
+-rw-r--r-- 1 runner runner 78118336 Nov  1 17:13 /mnt/heavy/scratch/d-f32.gguf
+-rw-r--r-- 1 runner runner 30457632 Nov  1 17:13 /mnt/heavy/scratch/d-q4_k-convf16.gguf
+-rw-r--r-- 1 runner runner 55444512 Nov  1 17:13 /mnt/heavy/scratch/d-q4_k-convkeep.gguf
+-rw-r--r-- 1 runner runner 12498336 Nov  1 17:13 /mnt/heavy/scratch/d-q4_k-convq.gguf
+-rw-r--r-- 1 runner runner 33658656 Nov  1 17:13 /mnt/heavy/scratch/d-q8_0-convf16.gguf
+-rw-r--r-- 1 runner runner 58645536 Nov  1 17:13 /mnt/heavy/scratch/d-q8_0-convkeep.gguf
+-rw-r--r-- 1 runner runner 21946080 Nov  1 17:13 /mnt/heavy/scratch/d-q8_0-convq.gguf

@@ -1,0 +1,9 @@
+unicode_tables: regenerated for reference CPython 3.12.15 15.0.0
+self: pass
+otsl_golden: pass
+mineru_layout_unit: pass
+marker_document_unit: pass
+fuzz_regex: pass
+fuzz_postprocess: pass
+synthetic_pages: pass
+model step: initial failure, published GGUF filename wrong in script (404); weight-free gates all pass

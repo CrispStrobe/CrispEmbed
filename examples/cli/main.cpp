@@ -16,6 +16,7 @@
 #include "core/image_out.h"
 #include "core/provenance.h"
 #include "model_mgr.h"
+#include "inpaint_cli.h"
 #include "vit_embed.h"
 #include "clip_text_embed.h"
 #include "cnn_embed.h"
@@ -130,12 +131,13 @@ static void print_usage(const char * prog) {
             "pix2tex/texteller/hmer/bttr/posformer/ppformulanet/ppformulanet-l/texo/mixtex/smt(music)/"
             "tromr(music)/flova(music)/transcoda(music)/"
             "parseq/qwen2vl/qwen3vl/internvl2/glm-ocr/tesseract-lstm/lightonocr/qwen35-ocr/ovisocr2/ovisocr3/lfm2-vl/"
-            "unlimited-ocr/minicpm-ocr)\n");
+            "unlimited-ocr/minicpm-ocr/teleocr)\n");
     fprintf(stderr, "  --ocr-max-tokens N  max tokens for VLM OCR engines, --ocr and --ocr-pipeline alike\n");
     fprintf(stderr, "                      (default: engine-specific, 1024-2048; no-op for formula OCR)\n");
     fprintf(stderr, "  --ocr-prompt TEXT   custom instruction for prompt-following VLM OCR engines\n");
-    fprintf(stderr, "                      (qwen2vl/qwen3vl/paddleocr-vl/olmocr, internvl2, lfm2-vl, granite-vision,\n"
-                    "                      minicpm-ocr task prompt e.g. \"Table Recognition:\"),\n");
+    fprintf(stderr,
+            "                      (qwen2vl/qwen3vl/paddleocr-vl/olmocr/teleocr, internvl2, lfm2-vl, granite-vision,\n"
+            "                      minicpm-ocr task prompt e.g. \"Table Recognition:\"),\n");
     fprintf(stderr,
             "                      --ocr and --ocr-pipeline alike. Other engines ignore it (with a warning).\n");
     fprintf(stderr, "  --pix2struct FILE  Pix2Struct document understanding → text (needs -m pix2struct.gguf)\n");
@@ -171,10 +173,14 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  --deskew         deskew scanned documents before --image embedding (off by default)\n");
     fprintf(stderr, "  --detect-split F detect a two-up book spread; print JSON {pages,split_x} (no OCR)\n");
     fprintf(stderr, "  --detect-content F detect the printed content bbox; print JSON {x0,y0,x1,y1} (no OCR)\n");
+    fprintf(stderr, "  --oxr-document F native OXR document route (repeat per page; CRISPEMBED_OXR=1,\n"
+                    "       CRISPEMBED_OXR_NATIVE_DOC=1, -m oxr GGUF). --oxr-layout-model F: native OXR D-FINE GGUF\n"
+                    "       (default provider), or --oxr-layout F: D-FINE batch response JSON;\n"
+                    "       --oxr-doc-options JSON; --oxr-doc-format upstream|markdown|html|json|chunks\n");
     fprintf(stderr, "  --ocr-pipeline F full OCR pipeline: source-type routing + cleanup + accept-gate\n");
     fprintf(stderr, "       --ocr-engine N  primary engine "
                     "(dbnet_trocr|ppocrv6|easyocr|surya|tesseract|got|glm|qwen2vl|internvl2|lightonocr|qwen35-ocr|"
-                    "ovisocr2|ovisocr3|minicpm-ocr|qwen3vl|"
+                    "ovisocr2|ovisocr3|minicpm-ocr|teleocr|mineru25-pro|oxr|qwen3vl|"
                     "unlimited_ocr|olmocr|lfm2-vl)\n");
     fprintf(stderr, "       --denoise       NAFNet pre-processor; --punct-model M  post-OCR punctuation/spacing\n");
     fprintf(stderr, "       --lid-model M   text LID for language detection + Tesseract auto-select\n");
@@ -243,6 +249,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "  yunet (face detection, 0.2 MB)\n");
     fprintf(stderr, "  uni-mumer-qwen3-vl-2b, uni-mumer-qwen2.5-vl-3b (handwritten math OCR)\n");
     fprintf(stderr, "  texteller-3 (printed+handwritten math OCR, 310M)\n");
+    inpaint_cli::print_help(stderr);
     fprintf(stderr, "\n");
 }
 
@@ -251,6 +258,7 @@ static void print_usage(const char * prog) {
 // (Metal residency assert / CUDA use-after-free) after results are printed. Any
 // crispembed_free()/engine free() inside this body still runs first.
 static int cli_main(int argc, char ** argv) {
+    if (inpaint_cli::requested(argc, argv)) return inpaint_cli::run(argc, argv);
     std::string model_arg;
     std::string file_path;
     std::string prefix;
@@ -294,30 +302,32 @@ static int cli_main(int argc, char ** argv) {
     std::string kie_path;   // image for KIE extraction
     std::string kie_labels; // comma-separated field names (defaults to ner_labels)
     float kie_threshold = 0.5f;
-    std::string lilt_path;           // JSON file for LiLT token classification
-    std::string det_model;           // detection model for --face-pipeline
-    bool accept_biometric = false;   // --accept-biometric: ack face-recognition use
-    std::string ocr_det_path;        // general OCR: text detection model (DBNet)
-    std::string ocr_rec_path;        // general OCR: text recognition model (TrOCR)
-    std::string ocr_cls_path;        // optional line-orientation classifier (PP-LCNet 0/180)
-    std::string ocr_layout_path;     // optional RT-DETR layout GGUF (enables region routing)
-    std::string ocr_table_path;      // optional table-cell OCR GGUF (routes layout table regions)
-    std::string ocr_formula_path;    // optional formula GGUF (routes layout formula regions)
-    bool ocr_markdown = false;       // print the assembled document markdown after regions
-    bool cleanup_mode = false;       // --cleanup: preprocess before OCR
-    cleanup_overrides cleanup_ov;    // --no-deskew / --binarize / ... recipe tweaks
-    bool image_deskew = false;       // --deskew: deskew before --image embedding
-    std::string cleanup_only_path;   // --cleanup-only FILE: standalone cleanup
-    std::string detect_split_path;   // --detect-split FILE: report two-up page split
-    std::string detect_content_path; // --detect-content FILE: report content bbox
-    std::string ocr_pipeline_path;   // --ocr-pipeline FILE: full orchestrator
-    bool pipeline_denoise = false;   // --denoise: NAFNet tier-2 in the pipeline
-    std::string sr_model;            // --sr-model: text super-resolution GGUF
-    std::string pan_model;           // --pan-model: PAN super-resolution GGUF
-    std::string pan_sr_path;         // --pan-sr FILE: standalone PAN upscaling
-    std::string sam2_model;          // --sam2-model: SAM 2.1 GGUF or registry name
-    std::string sam2_path;           // --sam2 FILE: SAM 2.1 segmentation
-    std::vector<float> sam2_points;  // --sam2-point X,Y[:LABEL] (repeatable), image pixels
+    std::string lilt_path;                  // JSON file for LiLT token classification
+    std::string det_model;                  // detection model for --face-pipeline
+    bool accept_biometric = false;          // --accept-biometric: ack face-recognition use
+    std::string ocr_det_path;               // general OCR: text detection model (DBNet)
+    std::string ocr_rec_path;               // general OCR: text recognition model (TrOCR)
+    std::string ocr_cls_path;               // optional line-orientation classifier (PP-LCNet 0/180)
+    std::string ocr_layout_path;            // optional RT-DETR layout GGUF (enables region routing)
+    std::string ocr_table_path;             // optional table-cell OCR GGUF (routes layout table regions)
+    std::string ocr_formula_path;           // optional formula GGUF (routes layout formula regions)
+    bool ocr_markdown = false;              // print the assembled document markdown after regions
+    bool cleanup_mode = false;              // --cleanup: preprocess before OCR
+    cleanup_overrides cleanup_ov;           // --no-deskew / --binarize / ... recipe tweaks
+    bool image_deskew = false;              // --deskew: deskew before --image embedding
+    std::string cleanup_only_path;          // --cleanup-only FILE: standalone cleanup
+    std::string detect_split_path;          // --detect-split FILE: report two-up page split
+    std::string detect_content_path;        // --detect-content FILE: report content bbox
+    std::string ocr_pipeline_path;          // --ocr-pipeline FILE: full orchestrator
+    bool pipeline_denoise = false;          // --denoise: NAFNet tier-2 in the pipeline
+    std::string sr_model;                   // --sr-model: text super-resolution GGUF
+    std::string pan_model;                  // --pan-model: PAN super-resolution GGUF
+    std::string pan_sr_path;                // --pan-sr FILE: standalone PAN upscaling
+    std::string sam2_model;                 // --sam2-model: SAM 2.1 GGUF or registry name
+    std::string sam2_path;                  // --sam2 FILE: SAM 2.1 segmentation
+    std::vector<std::string> oxr_doc_pages; // --oxr-document FILE (repeatable): native OXR document route
+    std::string oxr_doc_layout, oxr_doc_layout_model, oxr_doc_options, oxr_doc_format = "upstream";
+    std::vector<float> sam2_points; // --sam2-point X,Y[:LABEL] (repeatable), image pixels
     std::vector<int> sam2_labels;
     std::vector<float> sam2_box;     // --sam2-box X0,Y0,X1,Y1
     bool sam2_multimask = false;     // --sam2-multimask
@@ -535,6 +545,16 @@ static int cli_main(int argc, char ** argv) {
             pan_model = argv[++i];
         } else if (strcmp(argv[i], "--sam2-model") == 0 && i + 1 < argc) {
             sam2_model = argv[++i];
+        } else if (strcmp(argv[i], "--oxr-document") == 0 && i + 1 < argc) {
+            oxr_doc_pages.push_back(argv[++i]);
+        } else if (strcmp(argv[i], "--oxr-layout") == 0 && i + 1 < argc) {
+            oxr_doc_layout = argv[++i];
+        } else if (strcmp(argv[i], "--oxr-layout-model") == 0 && i + 1 < argc) {
+            oxr_doc_layout_model = argv[++i];
+        } else if (strcmp(argv[i], "--oxr-doc-options") == 0 && i + 1 < argc) {
+            oxr_doc_options = argv[++i];
+        } else if (strcmp(argv[i], "--oxr-doc-format") == 0 && i + 1 < argc) {
+            oxr_doc_format = argv[++i];
         } else if (strcmp(argv[i], "--sam2") == 0 && i + 1 < argc) {
             sam2_path = argv[++i];
         } else if (strcmp(argv[i], "--sam2-point") == 0 && i + 1 < argc) {
@@ -780,6 +800,89 @@ static int cli_main(int argc, char ** argv) {
         }
         if (regions) free(regions);
         return 0;
+    }
+    if (!oxr_doc_pages.empty()) {
+        if (model_arg.empty() || (oxr_doc_layout.empty() == oxr_doc_layout_model.empty())) {
+            fprintf(stderr, "error: --oxr-document requires -m <oxr GGUF> and either --oxr-layout-model <OXR D-FINE "
+                            "GGUF> (native layout) or --oxr-layout <D-FINE response JSON>\n");
+            return 1;
+        }
+        std::ifstream lf;
+        if (!oxr_doc_layout.empty()) lf.open(oxr_doc_layout, std::ios::binary);
+        if (!oxr_doc_layout.empty() && !lf) {
+            fprintf(stderr, "error: cannot read %s\n", oxr_doc_layout.c_str());
+            return 1;
+        }
+        std::stringstream layout_buf;
+        if (lf) layout_buf << lf.rdbuf();
+        std::string layout = layout_buf.str();
+        // Accept a frozen fixture {"response": {...}, "provenance": {...}} as well.
+        const size_t key = layout.find("\"response\"");
+        if (key != std::string::npos && layout.find("\"provenance\"") != std::string::npos) {
+            const size_t start = layout.find('{', key);
+            size_t depth = 0, end = start;
+            bool in_str = false;
+            for (; end < layout.size(); ++end) {
+                const char c = layout[end];
+                if (in_str) {
+                    if (c == '\\')
+                        ++end;
+                    else if (c == '"')
+                        in_str = false;
+                } else if (c == '"')
+                    in_str = true;
+                else if (c == '{')
+                    ++depth;
+                else if (c == '}' && --depth == 0)
+                    break;
+            }
+            layout = layout.substr(start, end - start + 1);
+        }
+        std::vector<unsigned char *> images;
+        std::vector<const uint8_t *> ptrs;
+        std::vector<int> ws, hs, cs;
+        for (const auto & path : oxr_doc_pages) {
+            int w = 0, h = 0, ch = 0;
+            unsigned char * data = stbi_load(path.c_str(), &w, &h, &ch, 3);
+            if (!data) {
+                fprintf(stderr, "error: cannot load %s\n", path.c_str());
+                for (auto * d : images) stbi_image_free(d);
+                return 1;
+            }
+            images.push_back(data);
+            ptrs.push_back(data);
+            ws.push_back(w);
+            hs.push_back(h);
+            cs.push_back(3);
+        }
+        crispembed_oxr_context * octx = crispembed_oxr_init(model_arg.c_str(), n_threads);
+        if (!octx) {
+            for (auto * d : images) stbi_image_free(d);
+            fprintf(stderr, "error: cannot load OXR model '%s' (CRISPEMBED_OXR=1 and license acceptance required)\n",
+                    model_arg.c_str());
+            return 1;
+        }
+        const char * json = crispembed_oxr_process_pages(octx, ptrs.data(), ws.data(), hs.data(), cs.data(),
+                                                         (int)ptrs.size(), nullptr, nullptr, layout.c_str(),
+                                                         oxr_doc_options.empty() ? nullptr : oxr_doc_options.c_str());
+        for (auto * d : images) stbi_image_free(d);
+        int rc = 0;
+        if (!json) {
+            fprintf(stderr, "error: %s\n", crispembed_oxr_last_error(octx));
+            rc = 1;
+        } else if (oxr_doc_format == "upstream") {
+            printf("%s\n", json);
+        } else {
+            const char * rendered = crispembed_oxr_render_document(octx, oxr_doc_format.c_str());
+            if (rendered)
+                fputs(rendered, stdout);
+            else {
+                fprintf(stderr, "error: %s\n", crispembed_oxr_last_error(octx));
+                rc = 1;
+            }
+        }
+        crispembed_oxr_free(octx);
+        return rc;
     }
     if (!sam2_path.empty()) {
         if (sam2_model.empty() || (sam2_labels.empty() && sam2_box.empty())) {
@@ -1323,6 +1426,7 @@ static int cli_main(int argc, char ** argv) {
             if (n == "ovisocr2") return 21;
             if (n == "ovisocr3") return 22;
             if (n == "minicpm-ocr" || n == "minicpm_ocr") return 23;
+            if (n == "teleocr") return 24;
             if (n == "qwen3vl") return 12;
             if (n == "unlimited_ocr") return 13;
             if (n == "unified") return 14;
@@ -1330,6 +1434,8 @@ static int cli_main(int argc, char ** argv) {
             if (n == "ppocrv6") return 16;
             if (n == "easyocr") return 17;
             if (n == "olmocr") return 18;
+            if (n == "mineru25-pro" || n == "mineru25_pro") return 25;
+            if (n == "oxr" || n == "oxr-1.0") return 26;
             if (n == "lfm2-vl" || n == "lfm2_vl") return 19;
             return 0; // dbnet_trocr
         };
@@ -1359,17 +1465,52 @@ static int cli_main(int argc, char ** argv) {
             // no tokenizer, null patch embedding) and failed inside the vision
             // graph rather than at load.
             const bool is_vlm = (eid >= 2 && eid <= 5) || (eid >= 8 && eid <= 13) || eid == 14 || eid == 18 ||
-                                eid == 19 || eid == 20 || eid == 21 || eid == 22 || eid == 23;
+                                eid == 19 || eid == 20 || eid == 21 || eid == 22 || eid == 23 || eid == 24 ||
+                                eid == 25 || eid == 26;
             // Engines whose orchestrator stage forwards vlm_prompt: qwen2vl,
             // internvl2, granite-vision, qwen3vl, unified (model-dependent),
             // olmocr, lfm2-vl. Everywhere else the prompt cannot take effect.
             const bool takes_prompt = eid == 4 || eid == 5 || eid == 10 || eid == 12 || eid == 14 || eid == 18 ||
-                                      eid == 19 || eid == 20 || eid == 23;
+                                      eid == 19 || eid == 20 || eid == 23 || eid == 24 || eid == 26;
             if (!ocr_prompt.empty() && !takes_prompt && eid != 21 && eid != 22) {
                 fprintf(stderr,
                         "warning: --ocr-prompt ignored: --ocr-engine %s runs a fixed task prompt "
-                        "(custom prompts: qwen2vl, qwen3vl, olmocr, internvl2, lfm2-vl, granite-vision)\n",
+                        "(custom prompts: qwen2vl, qwen3vl, olmocr, teleocr, internvl2, lfm2-vl, granite-vision)\n",
                         pipeline_engine.c_str());
+            }
+            if (eid == 24) {
+                if (ocr_rec_path.empty() || !core_env::on("CRISPEMBED_TELEOCR")) {
+                    fprintf(stderr, "error: teleocr needs --ocr-rec FILE and CRISPEMBED_TELEOCR=1\n");
+                    return 1;
+                }
+                if (!core_env::on("CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE")) {
+                    fprintf(stderr,
+                            "error: teleocr's vision tower is under the Qwen RESEARCH LICENSE (non-commercial);\n"
+                            "       set CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1 to acknowledge\n");
+                    return 1;
+                }
+                auto * meta = core_gguf::open_metadata(ocr_rec_path.c_str());
+                const bool profile = meta && core_gguf::kv_str(meta, "general.architecture", "") == "teleocr" &&
+                                     core_gguf::kv_u32(meta, "teleocr.gguf_version", 0) == 1;
+                if (meta) core_gguf::free_metadata(meta);
+                if (!profile) {
+                    fprintf(stderr, "error: teleocr requires a local TeleOCR version 1 GGUF\n");
+                    return 1;
+                }
+            }
+            // Experimental OXR-1.0: explicit model file and own gate. This stage runs
+            // recognition; the full document pipeline uses CrispOXR with supplied layout.
+            if (eid == 26 && (ocr_rec_path.empty() || !core_env::on("CRISPEMBED_OXR"))) {
+                fprintf(stderr, "error: oxr needs --ocr-rec FILE and CRISPEMBED_OXR=1; this stage runs recognition, "
+                                "while the full document pipeline uses CrispOXR with supplied/external layout\n");
+                return 1;
+            }
+            // Experimental MinerU2.5-Pro: explicit model file, fixed task prompts, own gate.
+            if (eid == 25 &&
+                (ocr_rec_path.empty() || !ocr_prompt.empty() || !core_env::on("CRISPEMBED_MINERU25_PRO"))) {
+                fprintf(stderr,
+                        "error: mineru25-pro needs --ocr-rec FILE, no custom prompt, and CRISPEMBED_MINERU25_PRO=1\n");
+                return 1;
             }
             // Experimental MiniCPM-OCR-1.0: no registry default; the decoder reuses
             // the qwen35 kernels, so both gates are required.
@@ -2195,7 +2336,7 @@ static int cli_main(int argc, char ** argv) {
         if (ocr_max_tokens > 0) crispembed_ocr_model_set_max_tokens(octx, ocr_max_tokens);
         if (!ocr_prompt.empty() && !crispembed_ocr_model_set_prompt(octx, ocr_prompt.c_str())) {
             fprintf(stderr, "warning: --ocr-prompt ignored: this OCR model runs a fixed task prompt "
-                            "(custom prompts: qwen2vl/qwen3vl, internvl2, lfm2-vl, granite-vision)\n");
+                            "(custom prompts: qwen2vl/qwen3vl/teleocr, internvl2, lfm2-vl, granite-vision)\n");
         }
         int w, h, ch;
         // Normalize OCR input to RGB so model preprocessors see the same

@@ -1,0 +1,45 @@
+{
+ "kind": "diff",
+ "binary": "test-decoder-embed-diff",
+ "arms": {
+  "cuda": {
+   "rc": 0,
+   "wall_s": 1.674,
+   "gpu_mem_peak_mib": 721,
+   "cuda_used": true,
+   "n_stages": 1,
+   "stages": {
+    "final_embedding": 0.999226
+   },
+   "worst_stage": [
+    "final_embedding",
+    0.999226
+   ],
+   "threshold_fails": [],
+   "threshold_missing": [],
+   "stdout_tail": "decoder_embed (Qwen3/Gemma3) — parity test\n  Model: $SCRATCH/models/qwen3-embed-0.6b-q8_0.gguf\n  Ref:   $SCRATCH/models/qwen3-embed-ref.gguf\n\n  \u001b[32m[PASS]\u001b[0m model loads\n  \u001b[32m[PASS]\u001b[0m encode returns non-null\n  embedding dim: 1024\n  final_embedding: cos_min=0.999226 max_abs=0.004402 |mine|=0.999999 |ref|=1.000000  PASS\n  \u001b[32m[PASS]\u001b[0m final_embedding cos >= 0.98\n\n=== Results: 3 passed, 0 failed ===\n\ncrispembed_diff: loaded 1 tensors from $SCRATCH/models/qwen3-embed-ref.gguf\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispembed: using CUDA0 backend with CPU fallback\ndecoder_embed: n_vocab 0 → 151669 (from token_embd)\ndecoder_embed: loaded 28 layers, 1024 dims, 151669 vocab, 16 heads (8 kv), rope_theta=1000000, pool=last-token\ncrispembed: GPT-2 BPE tokenizer (151669 tokens, 151387 merges)\n"
+  },
+  "cpu": {
+   "rc": 0,
+   "wall_s": 1.118,
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "n_stages": 1,
+   "stages": {
+    "final_embedding": 0.999213
+   },
+   "worst_stage": [
+    "final_embedding",
+    0.999213
+   ],
+   "threshold_fails": [],
+   "threshold_missing": [],
+   "stdout_tail": "decoder_embed (Qwen3/Gemma3) — parity test\n  Model: $SCRATCH/models/qwen3-embed-0.6b-q8_0.gguf\n  Ref:   $SCRATCH/models/qwen3-embed-ref.gguf\n\n  \u001b[32m[PASS]\u001b[0m model loads\n  \u001b[32m[PASS]\u001b[0m encode returns non-null\n  embedding dim: 1024\n  final_embedding: cos_min=0.999213 max_abs=0.004737 |mine|=1.000000 |ref|=1.000000  PASS\n  \u001b[32m[PASS]\u001b[0m final_embedding cos >= 0.98\n\n=== Results: 3 passed, 0 failed ===\n\ncrispembed_diff: loaded 1 tensors from $SCRATCH/models/qwen3-embed-ref.gguf\nggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\ndecoder_embed: n_vocab 0 → 151669 (from token_embd)\ndecoder_embed: loaded 28 layers, 1024 dims, 151669 vocab, 16 heads (8 kv), rope_theta=1000000, pool=last-token\ncrispembed: GPT-2 BPE tokenizer (151669 tokens, 151387 merges)\n"
+  }
+ },
+ "seconds": 8.1,
+ "id": "diff-qwen3-embed-q8",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

@@ -1,0 +1,6 @@
+gguf_init_from_file: failed to open GGUF file 'missing-oxr-dfine.gguf' (No such file or directory)
+core_gguf: failed to open 'missing-oxr-dfine.gguf' for metadata read
+gguf_init_from_file: failed to open GGUF file 'missing-oxr-dfine.gguf' (No such file or directory)
+layout: failed to load tensor metadata from 'missing-oxr-dfine.gguf'
+layout_detect: failed to load weights
+PASS (0 failures)

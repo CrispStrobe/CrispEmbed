@@ -1,0 +1,16 @@
+OXR stage dump: unknown option: --only
+OXR stage dump: unknown option: --only
+Traceback (most recent call last):
+  File "/home/runner/work/CrispEmbed/CrispEmbed/tools/oxr_stage_compare.py", line 66, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/home/runner/work/CrispEmbed/CrispEmbed/tools/oxr_stage_compare.py", line 25, in main
+    ri = json.loads((a.ref / "index.json").read_text())
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/pathlib.py", line 1027, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/pathlib.py", line 1013, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/mnt/heavy/scratch/japanese-dump-f32/index.json'

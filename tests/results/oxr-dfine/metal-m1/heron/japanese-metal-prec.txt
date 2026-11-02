@@ -1,0 +1,6 @@
+Model loaded successfully.
+Detected 4 regions:
+  [0] formula (34,7)-(594,21) score=0.613
+  [1] text (23,48)-(603,62) score=0.577
+  [2] text (39,28)-(768,41) score=0.539
+  [3] text (36,7)-(766,62) score=0.303

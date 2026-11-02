@@ -1,0 +1,91 @@
+{
+ "kind": "diff",
+ "binary": "test-lilt-diff",
+ "arms": {
+  "cuda": {
+   "rc": 0,
+   "wall_s": 1.017,
+   "gpu_mem_peak_mib": 607,
+   "cuda_used": true,
+   "n_stages": 24,
+   "stages": {
+    "text_embed": 1.0,
+    "layout_embed": 1.0,
+    "layer_0_text": 1.0,
+    "layer_0_layout": 1.0,
+    "layer_1_text": 1.0,
+    "layer_1_layout": 1.0,
+    "layer_2_text": 1.0,
+    "layer_2_layout": 1.0,
+    "layer_3_text": 1.0,
+    "layer_3_layout": 1.0,
+    "layer_4_text": 1.0,
+    "layer_4_layout": 1.0,
+    "layer_5_text": 1.0,
+    "layer_5_layout": 1.0,
+    "layer_6_text": 1.0,
+    "layer_6_layout": 1.0,
+    "layer_7_text": 1.0,
+    "layer_7_layout": 1.0,
+    "layer_8_text": 1.0,
+    "layer_8_layout": 1.0,
+    "layer_9_text": 1.0,
+    "layer_9_layout": 1.0,
+    "layer_10_text": 1.0,
+    "layer_10_layout": 1.0
+   },
+   "worst_stage": [
+    "text_embed",
+    1.0
+   ],
+   "threshold_fails": [],
+   "threshold_missing": [],
+   "stdout_tail": ",10566,35,291,2481]\nbbox[1]=[10,50,110,80]\n\nRunning C++ inference with dump...\n\nStage                     Elements    cos_min    max_abs Status\n-----                     --------    -------    ------- ------\ntext_embed                   12288   1.000000   7.15e-07 PASS\nlayout_embed                  3072   1.000000   3.22e-06 PASS\noutput                       12288          -          - SKIP (no ref)\nlayer_0_text                 12288   1.000000   7.63e-06 PASS\nlayer_0_layout                3072   1.000000   3.34e-06 PASS\nlayer_1_text                 12288   1.000000   7.63e-06 PASS\nlayer_1_layout                3072   1.000000   4.89e-06 PASS\nlayer_2_text                 12288   1.000000   7.63e-06 PASS\nlayer_2_layout                3072   1.000000   7.26e-06 PASS\nlayer_3_text                 12288   1.000000   8.11e-06 PASS\nlayer_3_layout                3072   1.000000   7.15e-06 PASS\nlayer_4_text                 12288   1.000000   1.34e-05 PASS\nlayer_4_layout                3072   1.000000   7.27e-06 PASS\nlayer_5_text                 12288   1.000000   1.43e-05 PASS\nlayer_5_layout                3072   1.000000   7.51e-06 PASS\nlayer_6_text                 12288   1.000000   1.72e-05 PASS\nlayer_6_layout                3072   1.000000   9.86e-06 PASS\nlayer_7_text                 12288   1.000000   1.43e-05 PASS\nlayer_7_layout                3072   1.000000   8.63e-06 PASS\nlayer_8_text                 12288   1.000000   1.81e-05 PASS\nlayer_8_layout                3072   1.000000   7.90e-06 PASS\nlayer_9_text                 12288   1.000000   1.53e-05 PASS\nlayer_9_layout                3072   1.000000   9.30e-06 PASS\nlayer_10_text                12288   1.000000   1.62e-05 PASS\nlayer_10_layout               3072   1.000000   1.06e-05 PASS\n\n--- Label predictions ---\n  tok=    0  ref_label=0  cpp_label=588  MISMATCH\n  tok=10566  ref_label=0  cpp_label=588  MISMATCH\n  tok=   35  ref_label=0  cpp_label=588  MISMATCH\n  tok=  291  ref_label=1  cpp_label=588  MISMATCH\n  tok= 2481  ref_label=0  cpp_label=588  MISMATCH\n  tok=   12  ref_label=0  cpp_label=588  MISMATCH\n  tok= 4124  ref_label=0  cpp_label=588  MISMATCH\n  tok=   12  ref_label=0  cpp_label=588  MISMATCH\n  tok=  996  ref_label=0  cpp_label=588  MISMATCH\n  tok= 5480  ref_label=0  cpp_label=588  MISMATCH\n  tok=   35  ref_label=0  cpp_label=588  MISMATCH\n  tok=   68  ref_label=0  cpp_label=588  MISMATCH\n  tok= 3818  ref_label=0  cpp_label=588  MISMATCH\n  tok=    4  ref_label=0  cpp_label=588  MISMATCH\n  tok= 2466  ref_label=1  cpp_label=588  MISMATCH\n  tok=    2  ref_label=0  cpp_label=588  MISMATCH\nLabel match: 0/16 (0%)\n\n24 PASS, 0 FAIL, 1 SKIP\n\ncrispembed_diff: loaded 30 tensors from $SCRATCH/models/lilt-ref.gguf\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\nlilt_kie: 12 layers, 12 heads, 768 hidden, 192 layout_dim, 0 labels\n"
+  },
+  "cpu": {
+   "rc": 0,
+   "wall_s": 0.717,
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "n_stages": 24,
+   "stages": {
+    "text_embed": 1.0,
+    "layout_embed": 1.0,
+    "layer_0_text": 1.0,
+    "layer_0_layout": 1.0,
+    "layer_1_text": 1.0,
+    "layer_1_layout": 1.0,
+    "layer_2_text": 1.0,
+    "layer_2_layout": 1.0,
+    "layer_3_text": 1.0,
+    "layer_3_layout": 1.0,
+    "layer_4_text": 1.0,
+    "layer_4_layout": 1.0,
+    "layer_5_text": 1.0,
+    "layer_5_layout": 1.0,
+    "layer_6_text": 1.0,
+    "layer_6_layout": 1.0,
+    "layer_7_text": 1.0,
+    "layer_7_layout": 1.0,
+    "layer_8_text": 1.0,
+    "layer_8_layout": 1.0,
+    "layer_9_text": 1.0,
+    "layer_9_layout": 1.0,
+    "layer_10_text": 1.0,
+    "layer_10_layout": 1.0
+   },
+   "worst_stage": [
+    "text_embed",
+    1.0
+   ],
+   "threshold_fails": [],
+   "threshold_missing": [],
+   "stdout_tail": "ayer_11_layout: 3072 elements\n  layer_8_text: 12288 elements\n  logits: 32 elements\n  input_ids: 16 elements\nT=16, ids[0..4]=[0,10566,35,291,2481]\nbbox[1]=[10,50,110,80]\n\nRunning C++ inference with dump...\n\nStage                     Elements    cos_min    max_abs Status\n-----                     --------    -------    ------- ------\ntext_embed                   12288   1.000000   7.15e-07 PASS\nlayout_embed                  3072   1.000000   3.81e-06 PASS\noutput                       12288          -          - SKIP (no ref)\nlayer_0_text                 12288   1.000000   7.63e-06 PASS\nlayer_0_layout                3072   1.000000   3.22e-06 PASS\nlayer_1_text                 12288   1.000000   8.58e-06 PASS\nlayer_1_layout                3072   1.000000   4.92e-06 PASS\nlayer_2_text                 12288   1.000000   6.74e-06 PASS\nlayer_2_layout                3072   1.000000   7.48e-06 PASS\nlayer_3_text                 12288   1.000000   9.54e-06 PASS\nlayer_3_layout                3072   1.000000   6.88e-06 PASS\nlayer_4_text                 12288   1.000000   1.19e-05 PASS\nlayer_4_layout                3072   1.000000   7.15e-06 PASS\nlayer_5_text                 12288   1.000000   1.43e-05 PASS\nlayer_5_layout                3072   1.000000   8.17e-06 PASS\nlayer_6_text                 12288   1.000000   1.72e-05 PASS\nlayer_6_layout                3072   1.000000   9.30e-06 PASS\nlayer_7_text                 12288   1.000000   1.62e-05 PASS\nlayer_7_layout                3072   1.000000   8.05e-06 PASS\nlayer_8_text                 12288   1.000000   1.81e-05 PASS\nlayer_8_layout                3072   1.000000   8.17e-06 PASS\nlayer_9_text                 12288   1.000000   1.53e-05 PASS\nlayer_9_layout                3072   1.000000   9.30e-06 PASS\nlayer_10_text                12288   1.000000   1.81e-05 PASS\nlayer_10_layout               3072   1.000000   9.00e-06 PASS\n\n--- Label predictions ---\n  tok=    0  ref_label=0  cpp_label=588  MISMATCH\n  tok=10566  ref_label=0  cpp_label=588  MISMATCH\n  tok=   35  ref_label=0  cpp_label=588  MISMATCH\n  tok=  291  ref_label=1  cpp_label=588  MISMATCH\n  tok= 2481  ref_label=0  cpp_label=588  MISMATCH\n  tok=   12  ref_label=0  cpp_label=588  MISMATCH\n  tok= 4124  ref_label=0  cpp_label=588  MISMATCH\n  tok=   12  ref_label=0  cpp_label=588  MISMATCH\n  tok=  996  ref_label=0  cpp_label=588  MISMATCH\n  tok= 5480  ref_label=0  cpp_label=588  MISMATCH\n  tok=   35  ref_label=0  cpp_label=588  MISMATCH\n  tok=   68  ref_label=0  cpp_label=588  MISMATCH\n  tok= 3818  ref_label=0  cpp_label=588  MISMATCH\n  tok=    4  ref_label=0  cpp_label=588  MISMATCH\n  tok= 2466  ref_label=1  cpp_label=588  MISMATCH\n  tok=    2  ref_label=0  cpp_label=588  MISMATCH\nLabel match: 0/16 (0%)\n\n24 PASS, 0 FAIL, 1 SKIP\n\ncrispembed_diff: loaded 30 tensors from $SCRATCH/models/lilt-ref.gguf\nggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\nlilt_kie: 12 layers, 12 heads, 768 hidden, 192 layout_dim, 0 labels\n"
+  }
+ },
+ "seconds": 7.0,
+ "id": "diff-lilt",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

@@ -1,0 +1,520 @@
+{
+  "schema": "crispembed-moedern-first-row-softmax-initial-review-v1",
+  "source": "46bac4e1dc7ab81ba66a7d3b37794307f9958041",
+  "version_label": "v3",
+  "status": "ERROR",
+  "submitted_script_sha256": "1647be6549c1156c106c277b88a0482b0fd346fd8b26bd9fb6b9fe614156e4f1",
+  "external_Get_Status_all_List_verified": true,
+  "all_output_names": [
+    "moedern-first-row-v3/bootstrap.json",
+    "moedern-first-row-v3/first-row.log",
+    "moedern-first-row-v3/git-checkout.log",
+    "moedern-first-row-v3/git-clone.log",
+    "moedern-first-row-v3/git-fetch.log",
+    "moedern-first-row-v3/git-submodule.log",
+    "moedern-first-row-v3/isolated-python-proof.log",
+    "moedern-first-row-v3/python312-venv.log",
+    "moedern-first-row-v3/resource-controls.log",
+    "moedern-first-row-v3/retained/capture.log",
+    "moedern-first-row-v3/retained/input/anchors/native/doc-24726600-all.f32",
+    "moedern-first-row-v3/retained/input/anchors/native/doc-24726600-selected.f32",
+    "moedern-first-row-v3/retained/input/anchors/original/doc-24726600-all.f32",
+    "moedern-first-row-v3/retained/input/anchors/original/doc-24726600-selected.f32",
+    "moedern-first-row-v3/retained/input/input-packet.json",
+    "moedern-first-row-v3/retained/input/prepare.json",
+    "moedern-first-row-v3/retained/input/raw.zip",
+    "moedern-first-row-v3/retained/input/retained-compare.json",
+    "moedern-first-row-v3/retained/input/retained-three-doc-input.json",
+    "moedern-first-row-v3/retained/input/small.zip",
+    "moedern-first-row-v3/retained/kernel.json",
+    "moedern-first-row-v3/retained/output/raw/barriers.json",
+    "moedern-first-row-v3/retained/output/raw/ordinary/all.f32",
+    "moedern-first-row-v3/retained/output/raw/ordinary/anchor-current.gguf",
+    "moedern-first-row-v3/retained/output/raw/ordinary/anchor-original.gguf",
+    "moedern-first-row-v3/retained/output/raw/ordinary/anchor-ref.json",
+    "moedern-first-row-v3/retained/output/raw/ordinary/anchor-ref.log",
+    "moedern-first-row-v3/retained/output/raw/ordinary/original.json",
+    "moedern-first-row-v3/retained/output/raw/ordinary/selected.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/0299be88f42dfb283fa7c1bae1e08e398c5d38d50f9e9268d620c6159f0e1bf0.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/032d0c1a862491c8b5819cc0f98674f5fee33e429d94feb3728bad3e845ec460.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/03775ffca4fffedeb7c31ee321455d0e3caf1e58965139701de27d687ddecfc0.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/0be7604f6fa2e9b8e21c38fa486431c25183d00d868f29b4bdf843d728859690.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/0d653baabc6f3faeac62238f5979c1040edb9e1f1bf65b905d847ddb952cb10d.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/13c956d66c9645b58b74e3523a945fffc09dfa64c8b2b3fe69c7d3780367eedf.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/155e8b80545e94f72f4ef8e0fb6c423807d964b90e869fae6b1ee8879421860b.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/170081987fae4ca27c5231ec49fcd0e28c23deb951e8af9328eee2107894a2ee.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/1704c6fa5bd4789805d7471334f8fc3a652149ad0960f26253d0290947c8ccf3.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/194f8c95ad8b29c485bacc14048028aa4dfc7206721ca3afef2dd2d3d8ab9544.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/2748a6f3662941041f2c63017f964cc793a1ecb7b0c48b7ae8672cbc3b8a689f.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/29f9db9bb237b41185fc527d6e745373cd9df99862035125cb28880218a9fc01.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/30c19b8095694b90027fe9f4af67f3094f84b272eb173d6e0ec7d5876feb80fa.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/31450a1fb4c326ee0fe6e205fd12fedd1848a589d4de4d28d8ff7f0357c13b61.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/3250931a47c14a2b6eacec70400e63560ecfb1f29eacb4de297fd92ffe42b2c0.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/3331c635545fb5bf3efc82b5947ab90063a492325cf6f4fd3e97e9c18c4b7159.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/33c2fb6c9fcd101d6f5de889da430c1f91a026fee7d42744a5c46e725c7eb8e5.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/3580686bc2bae3e5cedb619806d024a906b1a406a51be2142fbfc6df080827c0.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/36d672c8bcd51926317e8721f43680be6086332f06bb0cd510b1e2c0a21dfda5.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/3709ba5ebab8c9292206203e7114b99abccd80c4e1bb85a69a9fc6c4f2d2dfd4.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/3860dfb0b039b80c1de9549a2128a4d972b3549361a79607871ca67006ac2094.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/389bb68e2aaf6ffb9bf1488ea510b6fcf45b8dd39b609a3ad2a7ba9370ed9bf3.u8",
+    "moedern-first-row-v3/retained/output/raw/original/observed/3bef9d607fb79e72c9d6ff53eae101debac19119ecb7c7980308a102182bcea4.i64",
+    "moedern-first-row-v3/retained/output/raw/original/observed/3d2818845973fe2591abcdb9372ed363a45d5c5a3f375798255bac8c2526f03a.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/3e9ce4585207063526479f3109e5b307852affefa78903865f09b475179d8bef.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/3f3817983beac97058f08f43932c8d9a149f0a29b8677f68da459f589b31d52b.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/4082e8a7e50490338fcb83197cfd8d1022a76d191e170ed9fcc731453294d073.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/463f2a1aa1492abeed2e0b46f993700556408d54229c0e0f89e0bab37dff4c1f.i64",
+    "moedern-first-row-v3/retained/output/raw/original/observed/485b2388409b195fce181e90406d3c6ec1460416b7a3bbcc2fb3e3c245a361d2.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/48a2b0974d164be73e7cc16f34aa84012df5a48d01e63efced7f0ab5f2dc4328.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/4a401a0c9f084714a1feab9b5893bb081e71f8f95e80452d51c3ea57f961c34e.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/4bcd45a6c8fca2059c08c090439a7f995d17e684e7b98d396169e1b182c38eb2.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/4d24a2309d54d6765639afd94d68322f7e51d03b8e23fa2ed817ef666d1db6bf.i64",
+    "moedern-first-row-v3/retained/output/raw/original/observed/4e0a85cb0c4a9b11f8e532f320028c0e59a51030f3f4117e3dab2b660aa81853.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/54c27b33580a93c9f1a7b5a7323acf45908a20feaec057c9c9902939747b0359.i64",
+    "moedern-first-row-v3/retained/output/raw/original/observed/54e5dbbc714ae415b3fd3dd7fc3656a843112cad21d3e6a12e6df78191b5e3c6.i64",
+    "moedern-first-row-v3/retained/output/raw/original/observed/5624528f6d2e5a6dd710b8c0202ff48f780fb459ae8c3916efd309904e3894d2.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/5a1d889b2ac258a6a526122c14f3d91ae50e7a29aa2a3dcb191d937676f46abe.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/6008fedfbcfc9883c15d67ae8fbce2d5e71e5fe07d1b40bd949d86704f897167.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/63b3dcb711ab9d5217140c5fd2c42f65ae4d6ea638d856f4b7591693a069a980.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/63dd6b42375481a9626c7556392db59016ce2c0865b139bd2782bc4b794a1b6e.i64",
+    "moedern-first-row-v3/retained/output/raw/original/observed/64532e6fdfeda620593cf6ccc3c0da0f4d358ddd682ab175e8397790b807e9c4.i64",
+    "moedern-first-row-v3/retained/output/raw/original/observed/67e0b6b4f941b3a7bce4e8138ed981da45145a3cb62234286bc7b216f63bd1e3.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/69528e3a85e96a81a8024272b67d07a0f8bbc6757fba71ade963bd15b09e3914.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/72e13b1ba563237efc556e756510a8a15ee2dddf9c8a163f27e457b43fa0d925.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/76807b03fe53f7497961e81dbb53e955c269c9788235d11e6bba509e2435340d.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/7684aaaa30cf7337ae5e328f4c477d50398d6965072ba5feae96fd9bcb18fe0f.i64",
+    "moedern-first-row-v3/retained/output/raw/original/observed/78db3ddd8665ed4798f71743d5c11658da0f85815179667618255d91f29f6d05.i64",
+    "moedern-first-row-v3/retained/output/raw/original/observed/794a05052f570c90b24cc3e126e1a57a5bbcfba61205c326a2bae9d65b68dcc0.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/79da521e8e232b0aee7b2d2d16f8f6f317ee77a9b0f971fa2fdea1140f2b6f13.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/7b3a5e512c7a24a2f32dc562fafdddf87405f4c15a7789964c6f0bebc3a8d3fe.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/7c5ce09d7915fd56afb120f711c3400f1027b9d2ee9c086e06c754df89152a94.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/7cae97776a2bfdad50d1f3ded8b8a04cd77304105d2fba89ae5402542c1d0882.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/7d62cdd1405f7ab3b80272d991ffc0c3ced4fde959c3e74b5d035d254ad157c3.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/7f39f5dd88556d7ce05ecc8cc358067195696a92357d3536036950381a1eeccb.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/826a9f39f3159617e588906d62a1a7f54f71bc0ca1b45e2a9f8d0ee199c8782e.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/84ad6ca655425b7ede208a533a925c6d95e3d8a0cf4f265330028f18bc103d64.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/88b6839d3d1d912dcacf079f4c59b175d6ec4506f70ab9ff9c74d4ac02834815.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/897a4b9ce8bbb27b4c6817519c27a833b2528f70c5b959c1df7a72fda459e68d.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/8c13cddfd5fe3fd4d634ec359d62cbb935d474f904a7412314a9cdb353ec6878.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/8cbd050817a37bc3ed8cb77629a3d36643ce4761faa54eb21aa557fb31cea036.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/8d3f10f1830277b9b3ad01efe099cb5594267f848b5b302b8236b23fcefb41ce.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/8e80b2fdbbb7ee1e338f3e0311dca90fc34b99f92317401052961393b8f4c5b9.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/906e80b7033c703a3edb9d1d5d017978bfac9f487bce487e31e012ba68c29fb5.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/96de987a50aa958fd04d578e699e4130350303730fa1c04535427c7097f08520.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/9dc7210b7d4d2fcf93e012311ea4069b11162e4b444c39c8a9500870c24e5acd.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/a1d686676d6078013da7cee79d67ca9d6e044b731cb3ac0f4f7dc65fcb3dfb14.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/a3e71dbd4fa41d2fae54001ca19a5e10ee111db739c10b561e58da6519dd2b55.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/a5a19da7b31e96d8a696f3de9904722cb666740e1365cc160ad1fbb0a27d7d49.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/a5ee8b57ce3dba36dc5c9b155c6aaa687f9ea523792747f13a71f71a1bdf3635.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/a97663c29ebd026600a71e3851c8a3805e4aa4293cd94ee104ba8cb32612e983.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/acd02e0f342bc31cf72bd9bb6740bda40595d95261c7ab87638461fc957d40a0.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/b003b4a9ad618578c81622e6a2c7c59a6ddf80b8310c769eb885c9b0e20fd2db.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/b073058a591e670370ded6df7ac6c576a38e703a9936445d2582f0f60080ceca.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/b177381c25616731467504c0c59e6f8f3202b6ae07741d7d3e1ccc997a652a0c.u8",
+    "moedern-first-row-v3/retained/output/raw/original/observed/b517252d72cf8e7194ac4e9d146802938eaa1e6c4022af747a9b464cef9f572b.i64",
+    "moedern-first-row-v3/retained/output/raw/original/observed/bfa128a9b9232d9b6a9a302a55965b1ce29b5a13cf489e17d344353c180ca4c7.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/bfb39655abbf73c596945a1bd0f64b9f2dcc616b43564d8929a19c92fe07cfbe.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/c242688b78ddaf6dd191db92e225e81c525dea2797261da89393abfd9e5778bd.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/c3052a5044157aaebc5327adfed6b5db050f707deac110e59a9f60de628982a9.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/c39ade3df9409b599b66449adcfc62bc7dec94c49e49eababc71bc2cff514237.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/c78d19b45ba1d3abe574aa0631759fe5537c3b428850a6db3731c56f261105ee.i64",
+    "moedern-first-row-v3/retained/output/raw/original/observed/c8398c8332a8dcca54376919dc24ebb4110da07f0a5ddba0afb47c46075e1398.u8",
+    "moedern-first-row-v3/retained/output/raw/original/observed/ca0cb47636baa0fd998b8d5d5887adb582fa0ef3e7238e20420b40781244a943.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/cb375308e0a0fac47d41ea16ca0540d66df04d50c7687264afb7b98b78913276.i64",
+    "moedern-first-row-v3/retained/output/raw/original/observed/cedc1e6c29b80042f064dd9305039b1320e6591a13dba894709c558b7d0a9aa4.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/cf8652c3c886e29621963ad6ea69de3a195ae566382ca2a3c910263e60162f3f.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/cfef1f9c8b32ab8ea0f6764382080b416ebdf76efc7d143fe4ba387fe37b1c28.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/d6c2a38581232bbb29503435eecb6a63b00bbfcb37eb8c313d0232b42b2075cc.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/d72a1ec3dc76d41ab3aa58d254b4e8e2fbcf8a247e7c94a82b3cfd15846b0e88.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/d8261be28827f608c4fb327c483c4649e089bfda4a786ae7a4347a85d4afde42.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/d8beaec0fe942d1417c333c68fa990fad06745f1581ea8824d19e6e9d32ea7ec.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/d9d80abc25377c55adad0666c9620fa866fb1580dc382502b83aeaa3412d108a.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/da8e3cbcc3b9e789448bc7f51859efeeeace261310c8dfc86a4e7fb65e97647c.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/da8e4945aace0a3f0ddfb0d23ef578403ff6400575fa4f6d5aa9965854d40fcd.i64",
+    "moedern-first-row-v3/retained/output/raw/original/observed/db1d944be97e9cf210027b794f53ae43ab05f699911b6bb1c845a0ea208415b7.i64",
+    "moedern-first-row-v3/retained/output/raw/original/observed/dba1f57b80d6ef29771704bec0bbdbfb89e2b7aa1a291364a83af4e39c1961c6.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/dba9b82453c695adc4d0fa503889a5ac2a379a6ddc03976d98acc3edf4220816.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/dd08960dbcdec858c43e97f1a804be89f2b3bc78a98db0c1ef64f6cf7c9da552.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/e2d884765a492ee3c4b4e9defbca2fdebc8e1f3554a1ea58a0e57fa3a08d56d6.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/e9ec9f262269d0f09fe21daea5847487cb6f2da6e76ba9ff647e426220b60ff3.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/ea07eec23f11ce5c0e67fda38a452caaa11264b0a5e0fb52694b13857ead322a.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/ebbc26ac160506a1ce1ca2c884675a761bc527469c52141f65687afcf2ad8e4f.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/ec4d9c731514a9ed1291b36f9dbedf68d0a3140aab483c9e012a91bbd0ab5af6.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/ec8e3d6947f9c94a89133263da8e110ce85345ed75499c3ced21e1907c7ec977.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/ecfebe1322e6c8ae0dc9b950c9fb9666325eed5da1c0abdb97993f01a62efaa0.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/ee803383b967040d72df078c338a1a2f153c6db4b959fb5092adebaed5fe26e1.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/f14d217373cb3748b9991ac639c19e3a05e29355b2b09b635722105f0b37e4a8.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/f1669f6a5cd38b3d67e551593586818d40fe0f9dd6504af365926f3943ae17c2.u8",
+    "moedern-first-row-v3/retained/output/raw/original/observed/f1abb8c2f0920621ebfd81b673f739df206d71f479051eb0a7a4b56e10395728.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/f3ff690ebe078bec69570071a9c9583956d25de3c139857417b2630182358391.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/f46c7b50d2bca7018d9680b6c401342a558e5b417e4890a4b663da70913eea14.i64",
+    "moedern-first-row-v3/retained/output/raw/original/observed/f4abf118796ac7de578efa1b619fe8cd7d754e9a174d2513343bd3ae2cee5b6b.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/f6bb59c1f358f5692a65871359ace4b0ecdb6edcd0e00f1eb8ace26427f0fc1f.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/f873362e789356cd6e17a91d504eced0060b4d3a8b6b1b23e8108fd24c5b520e.f32",
+    "moedern-first-row-v3/retained/output/raw/original/observed/ff10d1bb4c280d0d4eb98c36268f7d68a1907d3640c22d1279d72292e6057b8a.i64",
+    "moedern-first-row-v3/retained/output/raw/original/original.json",
+    "moedern-first-row-v3/retained/output/raw/plain/counts.json",
+    "moedern-first-row-v3/retained/output/raw/plain/doc-24726600/all.f32",
+    "moedern-first-row-v3/retained/output/raw/plain/doc-24726600/controls.json",
+    "moedern-first-row-v3/retained/output/raw/plain/doc-24726600/selected.f32",
+    "moedern-first-row-v3/retained/output/raw/plain/doc-24726600/tokens.json",
+    "moedern-first-row-v3/retained/output/raw/plain/init-route.json",
+    "moedern-first-row-v3/retained/output/raw/plain/scores.jsonl",
+    "moedern-first-row-v3/retained/output/raw/ref-controls/changed_row/diff.json",
+    "moedern-first-row-v3/retained/output/raw/ref-controls/changed_row/diff.log",
+    "moedern-first-row-v3/retained/output/raw/ref-controls/changed_row/native.f32",
+    "moedern-first-row-v3/retained/output/raw/ref-controls/changed_row/native.gguf",
+    "moedern-first-row-v3/retained/output/raw/ref-controls/changed_row/original.f32",
+    "moedern-first-row-v3/retained/output/raw/ref-controls/changed_row/original.gguf",
+    "moedern-first-row-v3/retained/output/raw/ref-controls/controls.json",
+    "moedern-first-row-v3/retained/output/raw/ref-controls/same/diff.json",
+    "moedern-first-row-v3/retained/output/raw/ref-controls/same/diff.log",
+    "moedern-first-row-v3/retained/output/raw/ref-controls/same/native.f32",
+    "moedern-first-row-v3/retained/output/raw/ref-controls/same/native.gguf",
+    "moedern-first-row-v3/retained/output/raw/ref-controls/same/original.f32",
+    "moedern-first-row-v3/retained/output/raw/ref-controls/same/original.gguf",
+    "moedern-first-row-v3/retained/output/raw/three-doc.tsv",
+    "moedern-first-row-v3/retained/output/raw/three-doc.tsv.pairs",
+    "moedern-first-row-v3/retained/output/review/build-profile.json",
+    "moedern-first-row-v3/retained/output/review/evidence-files.json",
+    "moedern-first-row-v3/retained/output/review/evidence/barriers.json",
+    "moedern-first-row-v3/retained/output/review/evidence/ordinary/anchor-ref.json",
+    "moedern-first-row-v3/retained/output/review/evidence/ordinary/anchor-ref.log",
+    "moedern-first-row-v3/retained/output/review/evidence/ordinary/original.json",
+    "moedern-first-row-v3/retained/output/review/evidence/original/original.json",
+    "moedern-first-row-v3/retained/output/review/evidence/plain/counts.json",
+    "moedern-first-row-v3/retained/output/review/evidence/plain/doc-24726600/controls.json",
+    "moedern-first-row-v3/retained/output/review/evidence/plain/doc-24726600/tokens.json",
+    "moedern-first-row-v3/retained/output/review/evidence/plain/init-route.json",
+    "moedern-first-row-v3/retained/output/review/evidence/ref-controls/changed_row/diff.json",
+    "moedern-first-row-v3/retained/output/review/evidence/ref-controls/changed_row/diff.log",
+    "moedern-first-row-v3/retained/output/review/evidence/ref-controls/controls.json",
+    "moedern-first-row-v3/retained/output/review/evidence/ref-controls/same/diff.json",
+    "moedern-first-row-v3/retained/output/review/evidence/ref-controls/same/diff.log",
+    "moedern-first-row-v3/retained/output/review/hosted.json",
+    "moedern-first-row-v3/retained/output/review/native-plain.log",
+    "moedern-first-row-v3/retained/output/review/original-observe.log",
+    "moedern-first-row-v3/retained/output/review/original-ordinary.log",
+    "moedern-first-row-v3/retained/output/review/probe-build.log",
+    "moedern-first-row-v3/retained/output/review/probe-configure.log",
+    "moedern-first-row-v3/retained/output/review/root-configure.log",
+    "moedern-first-row-v3/retained/output/review/root-ggml-build.log",
+    "moedern-first-row-v3/retained/pip-check.log",
+    "moedern-first-row-v3/retained/runtime.log",
+    "moedern-first-row-v3/retained/torch.log",
+    "moedern-first-row-v3/source-controls.log",
+    "moedern-first-row-v3/source-guard.log",
+    "moedern-first-row-v3/uv-tooling.log"
+  ],
+  "small_files": {
+    "moedern-first-row-v3/bootstrap.json": {
+      "bytes": 5130,
+      "sha256": "0053386386ac8662b998edd9453df6d70fd92d9a954acac241821ff58388fcf0"
+    },
+    "moedern-first-row-v3/first-row.log": {
+      "bytes": 641,
+      "sha256": "f1f86fa6e0429e03c6295fd713bd091c1bf125021512af1ad20c97e2173d8c64"
+    },
+    "moedern-first-row-v3/git-checkout.log": {
+      "bytes": 77,
+      "sha256": "3e80d6efdc8083094f045c6bf4dded4cd131559d26a9c27852a8298f28b7a87d"
+    },
+    "moedern-first-row-v3/git-clone.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "moedern-first-row-v3/git-fetch.log": {
+      "bytes": 125,
+      "sha256": "c9040fa954e8b24f3fd7f1c6784500b271cd98331c1cf6feaf840782e9ae25c4"
+    },
+    "moedern-first-row-v3/git-submodule.log": {
+      "bytes": 349,
+      "sha256": "c77cbfcdc6800a6bed23ddbc8b8e298f313c80782d9b5178bf54560c44ff4bcf"
+    },
+    "moedern-first-row-v3/isolated-python-proof.log": {
+      "bytes": 124,
+      "sha256": "da1ed683812a19b4220e7164fbd83e20feadb95c46d11295f562715c47893ded"
+    },
+    "moedern-first-row-v3/python312-venv.log": {
+      "bytes": 345,
+      "sha256": "b1b1bd31adcdc352110574486dde8f38e96aa39135642ae333679794f44aff12"
+    },
+    "moedern-first-row-v3/resource-controls.log": {
+      "bytes": 1661,
+      "sha256": "1efad531ae64c72e44b94804ffcf7da83ef8a6aca9a9cfcccfbf61f245e72d98"
+    },
+    "moedern-first-row-v3/retained/capture.log": {
+      "bytes": 941,
+      "sha256": "c1c08cec0f1044ca05e390ffaf9d66654308a797f4417383fab3b91b734ebc24"
+    },
+    "moedern-first-row-v3/retained/input/input-packet.json": {
+      "bytes": 15855,
+      "sha256": "9da0b5d6edd13e5c972927616159fe02315f27079dcc543124996fe5e34c5d61"
+    },
+    "moedern-first-row-v3/retained/input/prepare.json": {
+      "bytes": 3525,
+      "sha256": "c8537f2f3ac23772b3e03f3685a8077a5f40839a3f456a8689391387b9f63d08"
+    },
+    "moedern-first-row-v3/retained/input/retained-compare.json": {
+      "bytes": 123889,
+      "sha256": "e45d2ed45ce601a7ae5f959127c753e1d553625e3a7d19194ea672fec02f8cdb"
+    },
+    "moedern-first-row-v3/retained/input/retained-three-doc-input.json": {
+      "bytes": 57647,
+      "sha256": "f36490aa6309cded6f704ca9edf3b4fd67a4e13288bdb2db1452b4bd74f7ccb3"
+    },
+    "moedern-first-row-v3/retained/kernel.json": {
+      "bytes": 2923,
+      "sha256": "88ba7fcb9333f1cccf509ba62ca20bd1cdfad5af2e83af8e41d83b49aab7811e"
+    },
+    "moedern-first-row-v3/retained/output/raw/barriers.json": {
+      "bytes": 332,
+      "sha256": "7b08a8a822115bd3399ac40b57d4a1ac3f76422a741652312683dafe5cfdd649"
+    },
+    "moedern-first-row-v3/retained/output/raw/ordinary/anchor-ref.json": {
+      "bytes": 1201,
+      "sha256": "823e8e0318cdf71d8979a3c6c6974ff079b2ab7fa08584e1c8ad8b35808477dc"
+    },
+    "moedern-first-row-v3/retained/output/raw/ordinary/anchor-ref.log": {
+      "bytes": 426,
+      "sha256": "3ef897687a4b8c8e720d1b866858d04b2d156d7438b7c88fa96d55e5b3e7784d"
+    },
+    "moedern-first-row-v3/retained/output/raw/ordinary/original.json": {
+      "bytes": 24913,
+      "sha256": "c19339d2fcdd58de36cba50b3a3cc4dd41a6ac1a966e6ab5bccc74b52e789f11"
+    },
+    "moedern-first-row-v3/retained/output/raw/original/original.json": {
+      "bytes": 74792,
+      "sha256": "873b6eedebdd0f9f54e40eacdb35bb33d434f638426cf3a44a90ac635011ba16"
+    },
+    "moedern-first-row-v3/retained/output/raw/plain/counts.json": {
+      "bytes": 116,
+      "sha256": "1a2b1034b068c1388e664e9a39e85c16bdfdb2e15e95463f584105a8172b0e28"
+    },
+    "moedern-first-row-v3/retained/output/raw/plain/doc-24726600/controls.json": {
+      "bytes": 90,
+      "sha256": "33f8469405e282208390313b5d412ff65640e5a058e55f3f32d80527979e845c"
+    },
+    "moedern-first-row-v3/retained/output/raw/plain/doc-24726600/tokens.json": {
+      "bytes": 3281,
+      "sha256": "d7ad8dec3d6abc64e81e58aaddc5af6a08f71e3d3fd354391fb92185e7aaa057"
+    },
+    "moedern-first-row-v3/retained/output/raw/plain/init-route.json": {
+      "bytes": 39,
+      "sha256": "e9c945b2daf9ac6c8c8453a43bc508f8b2f59326913e7d8d3361a5a946bb5fbe"
+    },
+    "moedern-first-row-v3/retained/output/raw/ref-controls/changed_row/diff.json": {
+      "bytes": 555,
+      "sha256": "1528df63929d069c683b37c4e3c62765d233e85fec4fef150e3bfbe8ddf199ac"
+    },
+    "moedern-first-row-v3/retained/output/raw/ref-controls/changed_row/diff.log": {
+      "bytes": 377,
+      "sha256": "25fc9e8f008123525829cfe3b09ed72ae50fbd236026f8a3c38f3f01800a6a74"
+    },
+    "moedern-first-row-v3/retained/output/raw/ref-controls/controls.json": {
+      "bytes": 9193,
+      "sha256": "a86c3107bbdd05952b941ca75a4cbf0bd3e6ff6cd9d80e89277ffee4f3011c3d"
+    },
+    "moedern-first-row-v3/retained/output/raw/ref-controls/same/diff.json": {
+      "bytes": 508,
+      "sha256": "5d9ba7c272b1b83e165b3eb11fe0e3b6f80d979430096016c9857d8b06900fae"
+    },
+    "moedern-first-row-v3/retained/output/raw/ref-controls/same/diff.log": {
+      "bytes": 343,
+      "sha256": "050c2a1318e25be98d18816d31fffa82503917c8a6c5d1bdb83dad4be703ab14"
+    },
+    "moedern-first-row-v3/retained/output/review/build-profile.json": {
+      "bytes": 3780,
+      "sha256": "62e9faba51cd25ae2f69138c0f036969583433059dc091bd2065b2d929c48b9a"
+    },
+    "moedern-first-row-v3/retained/output/review/evidence-files.json": {
+      "bytes": 2052,
+      "sha256": "732166f61293c2fcc0b28813d69082117e0ea53db7c953f35d7d2ff520fcd058"
+    },
+    "moedern-first-row-v3/retained/output/review/evidence/barriers.json": {
+      "bytes": 332,
+      "sha256": "7b08a8a822115bd3399ac40b57d4a1ac3f76422a741652312683dafe5cfdd649"
+    },
+    "moedern-first-row-v3/retained/output/review/evidence/ordinary/anchor-ref.json": {
+      "bytes": 1201,
+      "sha256": "823e8e0318cdf71d8979a3c6c6974ff079b2ab7fa08584e1c8ad8b35808477dc"
+    },
+    "moedern-first-row-v3/retained/output/review/evidence/ordinary/anchor-ref.log": {
+      "bytes": 426,
+      "sha256": "3ef897687a4b8c8e720d1b866858d04b2d156d7438b7c88fa96d55e5b3e7784d"
+    },
+    "moedern-first-row-v3/retained/output/review/evidence/ordinary/original.json": {
+      "bytes": 24913,
+      "sha256": "c19339d2fcdd58de36cba50b3a3cc4dd41a6ac1a966e6ab5bccc74b52e789f11"
+    },
+    "moedern-first-row-v3/retained/output/review/evidence/original/original.json": {
+      "bytes": 74792,
+      "sha256": "873b6eedebdd0f9f54e40eacdb35bb33d434f638426cf3a44a90ac635011ba16"
+    },
+    "moedern-first-row-v3/retained/output/review/evidence/plain/counts.json": {
+      "bytes": 116,
+      "sha256": "1a2b1034b068c1388e664e9a39e85c16bdfdb2e15e95463f584105a8172b0e28"
+    },
+    "moedern-first-row-v3/retained/output/review/evidence/plain/doc-24726600/controls.json": {
+      "bytes": 90,
+      "sha256": "33f8469405e282208390313b5d412ff65640e5a058e55f3f32d80527979e845c"
+    },
+    "moedern-first-row-v3/retained/output/review/evidence/plain/doc-24726600/tokens.json": {
+      "bytes": 3281,
+      "sha256": "d7ad8dec3d6abc64e81e58aaddc5af6a08f71e3d3fd354391fb92185e7aaa057"
+    },
+    "moedern-first-row-v3/retained/output/review/evidence/plain/init-route.json": {
+      "bytes": 39,
+      "sha256": "e9c945b2daf9ac6c8c8453a43bc508f8b2f59326913e7d8d3361a5a946bb5fbe"
+    },
+    "moedern-first-row-v3/retained/output/review/evidence/ref-controls/changed_row/diff.json": {
+      "bytes": 555,
+      "sha256": "1528df63929d069c683b37c4e3c62765d233e85fec4fef150e3bfbe8ddf199ac"
+    },
+    "moedern-first-row-v3/retained/output/review/evidence/ref-controls/changed_row/diff.log": {
+      "bytes": 377,
+      "sha256": "25fc9e8f008123525829cfe3b09ed72ae50fbd236026f8a3c38f3f01800a6a74"
+    },
+    "moedern-first-row-v3/retained/output/review/evidence/ref-controls/controls.json": {
+      "bytes": 9193,
+      "sha256": "a86c3107bbdd05952b941ca75a4cbf0bd3e6ff6cd9d80e89277ffee4f3011c3d"
+    },
+    "moedern-first-row-v3/retained/output/review/evidence/ref-controls/same/diff.json": {
+      "bytes": 508,
+      "sha256": "5d9ba7c272b1b83e165b3eb11fe0e3b6f80d979430096016c9857d8b06900fae"
+    },
+    "moedern-first-row-v3/retained/output/review/evidence/ref-controls/same/diff.log": {
+      "bytes": 343,
+      "sha256": "050c2a1318e25be98d18816d31fffa82503917c8a6c5d1bdb83dad4be703ab14"
+    },
+    "moedern-first-row-v3/retained/output/review/hosted.json": {
+      "bytes": 16098,
+      "sha256": "660082a7d9e05f04a398eb0550b344d26fb0350cae729dbca6e5aeab92f00e88"
+    },
+    "moedern-first-row-v3/retained/output/review/native-plain.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "moedern-first-row-v3/retained/output/review/original-observe.log": {
+      "bytes": 1379,
+      "sha256": "963b25caf3b4f4b339b6bc9fc512199c1c5bb353368dc796807db073a657f5f1"
+    },
+    "moedern-first-row-v3/retained/output/review/original-ordinary.log": {
+      "bytes": 419,
+      "sha256": "c14a65cfa79bbb06a39948908437ffcb7d5ec30e8cad5f99e2fcd263270bf94a"
+    },
+    "moedern-first-row-v3/retained/output/review/probe-build.log": {
+      "bytes": 12697,
+      "sha256": "1ee65ae12e1fdf3cadf2efd174553c61b9ae312d244e83eda11f589d716229c3"
+    },
+    "moedern-first-row-v3/retained/output/review/probe-configure.log": {
+      "bytes": 799,
+      "sha256": "a5c745c1e0f5905cedd91408db224fe9d9c51301bfe97aa79423b65e9ebfe64e"
+    },
+    "moedern-first-row-v3/retained/output/review/root-configure.log": {
+      "bytes": 1901,
+      "sha256": "6539ddbb4ce0cf6770686b87ef418f9319ffd51bd50a3ef57a2b17d5c60a3f05"
+    },
+    "moedern-first-row-v3/retained/output/review/root-ggml-build.log": {
+      "bytes": 2374,
+      "sha256": "3586a18a5e7ec1c42b67add566da5df8fe37ed999057e5e9b9a1198287e80204"
+    },
+    "moedern-first-row-v3/retained/pip-check.log": {
+      "bytes": 30,
+      "sha256": "9261363b733079a641c2e4cc9bc46ffa1d8336945a87f807b6cf68847dbc9b09"
+    },
+    "moedern-first-row-v3/retained/runtime.log": {
+      "bytes": 15716,
+      "sha256": "34adc8604aa0f852cb1d0963df90484401df20104fc174f006da010bb6fdf967"
+    },
+    "moedern-first-row-v3/retained/torch.log": {
+      "bytes": 2956,
+      "sha256": "16f841877d2309902feeac2e283d9e742cc8004c518f773ccfbaa110b9eb189f"
+    },
+    "moedern-first-row-v3/source-controls.log": {
+      "bytes": 1908,
+      "sha256": "ca7c80310291145e3a0bbd76bba5b68092421173a6b390a4990ca0af401f22d9"
+    },
+    "moedern-first-row-v3/source-guard.log": {
+      "bytes": 29,
+      "sha256": "cd47bf0b55e19e25e31aeac14dd9f5e4dd4759e75d5903166b2a690c3e3a32d3"
+    },
+    "moedern-first-row-v3/uv-tooling.log": {
+      "bytes": 933,
+      "sha256": "65dc0c6c8d1924b2b39af2095bceeca3cb2082e34d54e073aab31503725b13b7"
+    }
+  },
+  "completed": false,
+  "error": "ValueError: actual two-layer softmax/topk/div/SDPA coverage differs",
+  "barriers": {
+    "completed": true,
+    "original_strict_anchor_passed": true,
+    "native93_plain_anchor_exact": true,
+    "native_plain_full_computations": 6,
+    "original_report_sha256": "c19339d2fcdd58de36cba50b3a3cc4dd41a6ac1a966e6ab5bccc74b52e789f11",
+    "plain_report_sha256": "33f8469405e282208390313b5d412ff65640e5a058e55f3f32d80527979e845c"
+  },
+  "native_plain_counts": {
+    "encode_attempts": 9,
+    "full_computations": 6,
+    "frontend_rejections": 3,
+    "pre_math_observer_abort": 0,
+    "init_rejections": 3
+  },
+  "original_targeted_forwards": 2,
+  "previous_original_targeted_forwards": 1,
+  "aggregate_original_targeted_forwards": 3,
+  "observed_forward_raw_feature_neutral": true,
+  "actual_operations": [
+    {
+      "stage": "actual.sdpa.0",
+      "operator": "torch.nn.functional.scaled_dot_product_attention"
+    },
+    {
+      "stage": "actual.layers.0.ffn.topk",
+      "operator": "aten.topk.default",
+      "schema": "aten::topk(Tensor self, SymInt k, int dim=-1, bool largest=True, bool sorted=True) -> (Tensor values, Tensor indices)",
+      "context": "layers.0.ffn"
+    },
+    {
+      "stage": "actual.layers.0.ffn.div",
+      "operator": "aten.div.Tensor",
+      "schema": "aten::div.Tensor(Tensor self, Tensor other) -> Tensor",
+      "context": "layers.0.ffn"
+    },
+    {
+      "stage": "actual.sdpa.1",
+      "operator": "torch.nn.functional.scaled_dot_product_attention"
+    },
+    {
+      "stage": "actual.layers.1.ffn.topk",
+      "operator": "aten.topk.default",
+      "schema": "aten::topk(Tensor self, SymInt k, int dim=-1, bool largest=True, bool sorted=True) -> (Tensor values, Tensor indices)",
+      "context": "layers.1.ffn"
+    },
+    {
+      "stage": "actual.layers.1.ffn.div",
+      "operator": "aten.div.Tensor",
+      "schema": "aten::div.Tensor(Tensor self, Tensor other) -> Tensor",
+      "context": "layers.1.ffn"
+    }
+  ],
+  "actual_sdpa_dispatches": [
+    {
+      "sequence": 0,
+      "sdpa": "actual.sdpa.0",
+      "operator": "aten.scaled_dot_product_attention.default",
+      "schema": "aten::scaled_dot_product_attention(Tensor query, Tensor key, Tensor value, Tensor? attn_mask=None, float dropout_p=0., bool is_causal=False, *, float? scale=None, bool enable_gqa=False) -> Tensor"
+    },
+    {
+      "sequence": 1,
+      "sdpa": "actual.sdpa.1",
+      "operator": "aten.scaled_dot_product_attention.default",
+      "schema": "aten::scaled_dot_product_attention(Tensor query, Tensor key, Tensor value, Tensor? attn_mask=None, float dropout_p=0., bool is_causal=False, *, float? scale=None, bool enable_gqa=False) -> Tensor"
+    }
+  ],
+  "partial_arrays": 116,
+  "missing_router_softmax_arrays": true,
+  "qualified": false,
+  "new_gold": false,
+  "limits": "Observation completed one forward and passed feature fingerprint neutrality, then strict eight-operation completeness rejected six recorded operations. No second observed/repeat/public original call; no native observed call or final comparison. Alternative operator spelling remains a hypothesis until actual dispatch metadata is retained."
+}

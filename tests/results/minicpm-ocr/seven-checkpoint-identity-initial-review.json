@@ -1,0 +1,130 @@
+{
+  "schema": "crispembed-minicpm-seven-checkpoint-identity-initial-review-v1",
+  "run": 40838280839,
+  "source": "db4c1bb25a342c3ee70a1610e8c3476600d0bccc",
+  "service_conclusion": "failure",
+  "small_artifact": {
+    "id": 12884236491,
+    "name": "minicpm-graph-seven-arm-v2-review-40838280839",
+    "size_in_bytes": 590851,
+    "digest": "sha256:2aad5b75ee6fe8ba2ae48dddb56777611bf74263d7d5df7e74b96701a0edc38f",
+    "expires_at": "2027-01-27T07:53:00Z"
+  },
+  "small_members": {
+    "approved-analysis/analysis.json": {
+      "bytes": 947005,
+      "sha256": "9f84356c5c31b0aec4f3182b1b84acb780ef5a9ddfaabffcd233917b97df3442"
+    },
+    "approved-analysis/authenticated.json": {
+      "bytes": 1507,
+      "sha256": "ef9e6f1affdd071b2341abe459b01e8e1f4737cfbcc4df8f1a9c9dd3792a7454"
+    },
+    "approved-analysis/review.zip": {
+      "bytes": 526540,
+      "sha256": "9ba37ef85e9c01e78c9dd5cab9486b2ef641971bad841c9a2ced1d7316af853d"
+    },
+    "build-continue.json": {
+      "bytes": 5386,
+      "sha256": "66187aea5ecdf66174af159c2b288bc63ae62dfc2326b50eac04c7c6979b3547"
+    },
+    "build-profile.json": {
+      "bytes": 16899,
+      "sha256": "35eb27ade0fd0f38409ac103eab2d9ac0b73a531850ac3489b11f59f5d714745"
+    },
+    "compile-probe.log": {
+      "bytes": 27641,
+      "sha256": "e811f46efcbd7b60a488fae8a1682636c347f370a1402e047a1c4db4aab054d3"
+    },
+    "compile-probe.log.process.json": {
+      "bytes": 368,
+      "sha256": "24be6823acb740a0be98e3745d323b2022b96a22d97091627fe7fcd43b23b3ce"
+    },
+    "compile-root.log": {
+      "bytes": 256733,
+      "sha256": "267370617960a938d83c61d897d86f50b28375f0a5ee5d0a15fd06f0fe1ca064"
+    },
+    "compile-root.log.process.json": {
+      "bytes": 373,
+      "sha256": "41d3d566378cd0863ef01823d92891bd28456dc05f759085385f5d3c8445b9cf"
+    },
+    "configure-probe.log": {
+      "bytes": 1242,
+      "sha256": "8b6a5e853f9a5404a1dc678691cfd8ae432812455af6c007dadd5f551f4bab90"
+    },
+    "configure-probe.log.process.json": {
+      "bytes": 373,
+      "sha256": "4edcf6cf7e934df9526cd4844b658a9627064ef9f9883f42f3866f087989c095"
+    },
+    "configure-root.log": {
+      "bytes": 1865,
+      "sha256": "e6ef774f538ca6d2464cb55d88e8c7420515f4cfe76085ba26e78c528e724943"
+    },
+    "configure-root.log.process.json": {
+      "bytes": 373,
+      "sha256": "d9c15af8bae1b73dd3582611699827785570632b24ee00247db55bd04814f0f6"
+    },
+    "fetch.json": {
+      "bytes": 1489,
+      "sha256": "43ef63a319d98de47b2d4c70378c44b826fe95e01d533764018c2ff3c8f05d79"
+    },
+    "graph-controls.log": {
+      "bytes": 81,
+      "sha256": "a200d7ce6a4bd1f60067100a0d2a3a530f7aa5e22ba5237c02a5e505c3a6d908"
+    },
+    "graph-controls.log.process.json": {
+      "bytes": 374,
+      "sha256": "b7f8955d4bdb778f6286f0020ca957c357db81bd34446419f60c8c7b9dc8aacc"
+    },
+    "override-controls.log.process.json": {
+      "bytes": 376,
+      "sha256": "76d885f7aa3d2d998a1a3fc89813e2779567f04a0dd8c2e611354b4b3dcb9a19"
+    },
+    "patch-controls.json": {
+      "bytes": 20246,
+      "sha256": "f3ebb432131105601b0f7ae0cfb551104eb22510614bd0d9f2fdb9a9ceaef47e"
+    },
+    "override-controls.log": {
+      "bytes": 149,
+      "sha256": "35b05ceb4010f0574e836dd237598317830a1c4e6cffc351154c2f2749e78b30"
+    },
+    "patch-controls.log": {
+      "bytes": 206,
+      "sha256": "f19e932ea71c6834d883191e2aab92153a244070d2f53caedf9496a97149add5"
+    },
+    "patch-controls.log.process.json": {
+      "bytes": 374,
+      "sha256": "408e387dccfc89f18a6f1999dc221b01b5c2bda9da55f308bc09963d0173d654"
+    },
+    "preflight.json": {
+      "bytes": 773,
+      "sha256": "18554dc951827ca48b96c15f50a0fa8f8460637953d7134f16b7be25b694effd"
+    },
+    "ultra-controls.log": {
+      "bytes": 91,
+      "sha256": "134346fec644a79fdeb3bcadce3b26f91869c6459b0124f8caf29ac5f0c43cd1"
+    },
+    "ultra-controls.log.process.json": {
+      "bytes": 375,
+      "sha256": "6b6b76912b1dbf23dd08f490848461ba65772257a3ba2be8b84c86537773c7e8"
+    }
+  },
+  "completed": false,
+  "error": "KeyError: 'sha256'",
+  "exact_trace": {
+    "caller": "tools/minicpm-retained-v3/fetch.py:96",
+    "failure": "tools/minicpm-retained-v3/fetch.py:26",
+    "expression": "pin['sha256']",
+    "checkpoint_file": ".gitattributes"
+  },
+  "checkpoint_identity": {
+    "bytes": 2213,
+    "git_oid": "6e5b931515842cfaa2c774e9117266bb19a23372"
+  },
+  "completed_retained_analysis_134_members_authenticated": true,
+  "model_free_build_completed": true,
+  "model_conversion_executed": false,
+  "native_model_forwards": 0,
+  "original_forwards": 0,
+  "publication_qualified": false,
+  "limits": "Whole small artifact authenticated; hosted failed-step traceback inspected separately. Failure occurs at first checkpoint member after retained original/native array transfers, before model conversion or seven-arm execution. No precision result follows; large arrays remain remote."
+}

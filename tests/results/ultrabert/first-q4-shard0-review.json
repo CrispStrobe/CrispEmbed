@@ -1,0 +1,202 @@
+{
+  "schema": "crispembed-ultrabert-first-q4-shard0-independent-review-v1",
+  "run": 40855927708,
+  "source": "a5feac83e177d7e08cfa23384089f7584f0736a9",
+  "small_artifact": {
+    "id": 12891807586,
+    "name": "ultrabert-reviewed-q4-shard0-review-40855927708",
+    "size_in_bytes": 145705,
+    "digest": "sha256:a57dfa20d200e809568610909a04b8db749a322ae83fbd906c91fa49dcc27d6c",
+    "expires_at": "2027-01-27T10:14:09Z"
+  },
+  "small_members": {
+    "CMakeCache.txt": {
+      "bytes": 28953,
+      "sha256": "a10631b26735a3dcc0e8bc524e057f2715f7754eab4d82523a5f54b744902134"
+    },
+    "comparator-build.log": {
+      "bytes": 10379,
+      "sha256": "dcd1e83abb1380c7cedf71ddc428cf8a854a4af12b7b4e6f4e762625aa07743d"
+    },
+    "build.log": {
+      "bytes": 255778,
+      "sha256": "3a8883e183f32fac2fc0d89181ad6aabc911b0a4ccf0c8652646147309437438"
+    },
+    "compile_commands.json": {
+      "bytes": 331392,
+      "sha256": "13782e74e8aceb4c2e428a1991f01c015768d5e5c18fc309ce881866de43d37a"
+    },
+    "configure.log": {
+      "bytes": 1852,
+      "sha256": "214dd1281f8a0eb29d6b367dd0b421c2a32e55bb05285f443bb88435805769aa"
+    },
+    "fresh-load.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "payload/manifest.json": {
+      "bytes": 1754,
+      "sha256": "e2898ee994ba439e51186fb626695e39c61fb0a858633fe6ea18d95308ccf655"
+    },
+    "payload/shard.json": {
+      "bytes": 9767,
+      "sha256": "ff561a165792fe696daccca1ae007694e5a95f131c30e5c92eab5746f5a1e8e1"
+    },
+    "profile-controls.log": {
+      "bytes": 91,
+      "sha256": "134346fec644a79fdeb3bcadce3b26f91869c6459b0124f8caf29ac5f0c43cd1"
+    },
+    "symbol-audit.json": {
+      "bytes": 2332,
+      "sha256": "c851e1faf25146874b184eb81babab82ef4e398c0d45e8741cc44ef13656bdf4"
+    },
+    "symbols.txt": {
+      "bytes": 1285718,
+      "sha256": "5f4bd0eb5541bffb5e2f06e9ffb56db96b1b926b083b5707fbcb860ebc3e88e1"
+    },
+    "ultrabert-object-strings.txt": {
+      "bytes": 11593,
+      "sha256": "c136cf59a18d988d53bc0b41d7ffcf868571ff861a2ac6918b719492bbf67bef"
+    },
+    "ultrabert-object-symbols.txt": {
+      "bytes": 14429,
+      "sha256": "c7e35e89e11be25967d5d78fc7928ea6efa41002bd02e5d1b8b44b495cd6c022"
+    }
+  },
+  "completed": true,
+  "rows": 686,
+  "shard": 0,
+  "all_ids_exact": true,
+  "raw_and_normalized_public_calls": 1372,
+  "elapsed_native_pair_process_seconds": 905.040843775,
+  "original_forwards": 0,
+  "f32_forwards": 0,
+  "recipe": "q4k-last-four-ffn",
+  "streams": {
+    "raw.f32": {
+      "bytes": 2107392,
+      "sha256": "638b962264351da26bf0493df1cfdc15a95c836b87d0010171e3d59a7a73e43b"
+    },
+    "normalized.f32": {
+      "bytes": 2107392,
+      "sha256": "923d26f371b1c0e944ef93a50b90e354f16dc1a50d1c47a8dc005bf510210a95"
+    },
+    "rows.jsonl": {
+      "bytes": 231197,
+      "sha256": "01b4c1b71bd0699d56d1a60a0c03578c491dcb45664e2dc6e0ca7ca59f03619e"
+    }
+  },
+  "actual_ref": {
+    "exit": 1,
+    "result": {
+      "schema": "crispembed-moedern-native-ref-v2",
+      "status": "numeric_rejection",
+      "max_absolute_budget": 0.002,
+      "minimum_row_cosine": 0.99999,
+      "stages": [
+        {
+          "name": "normalized",
+          "ggml_shape": [
+            768,
+            686
+          ],
+          "row_axis": 0,
+          "found": true,
+          "elements": 526848,
+          "passed": false,
+          "max_absolute": 0.0258125439286232,
+          "mean_absolute": 0.00494155939668417,
+          "rms": 0.006126729305833578,
+          "mean_error": -0.0002843424853247526,
+          "min_row_cosine": 0.9807522892951965,
+          "original_l2": 26.191600799560547,
+          "native_l2": 26.191600799560547,
+          "original_min": -0.17834985256195068,
+          "original_max": 0.22868873178958893,
+          "original_abs_min": 1.7898145188155468e-07,
+          "original_abs_max": 0.22868873178958893,
+          "native_min": -0.17437298595905304,
+          "native_max": 0.21640735864639282,
+          "native_abs_min": 3.431316386581784e-08,
+          "native_abs_max": 0.21640735864639282
+        },
+        {
+          "name": "raw",
+          "ggml_shape": [
+            768,
+            686
+          ],
+          "row_axis": 0,
+          "found": true,
+          "elements": 526848,
+          "passed": false,
+          "max_absolute": 2.762049913406372,
+          "mean_absolute": 0.5026262998580933,
+          "rms": 0.6244505047798157,
+          "mean_error": -0.029082206373689745,
+          "min_row_cosine": 0.9807522892951965,
+          "original_l2": 2669.132080078125,
+          "native_l2": 2669.27783203125,
+          "original_min": -21.487260818481445,
+          "original_max": 22.565872192382812,
+          "original_abs_min": 2.1082123566884547e-05,
+          "original_abs_max": 22.565872192382812,
+          "native_min": -20.067821502685547,
+          "native_max": 21.217527389526367,
+          "native_abs_min": 3.5134528388880426e-06,
+          "native_abs_max": 21.217527389526367
+        }
+      ]
+    },
+    "independent": {
+      "raw": {
+        "max_absolute": 2.762049913406372,
+        "mean_absolute": 0.5026262931053832,
+        "rms": 0.6244505331124921,
+        "min_row_cosine": 0.980752271407102,
+        "original_l2": 2669.1322007014787,
+        "native_l2": 2669.27779969781,
+        "f32_gate_passed": false
+      },
+      "normalized": {
+        "max_absolute": 0.0258125439286232,
+        "mean_absolute": 0.004941559309800671,
+        "rms": 0.00612672934979047,
+        "min_row_cosine": 0.9807522716620084,
+        "original_l2": 26.19160171140782,
+        "native_l2": 26.191601706298158,
+        "f32_gate_passed": false
+      }
+    },
+    "log": {
+      "bytes": 474,
+      "sha256": "42ff6b9188234e22024e5d833f89e7b33b622a1522719fe7b1e03044f0add961"
+    },
+    "adapters": {
+      "original.gguf": {
+        "bytes": 4214912,
+        "sha256": "e165dd2f2edf0db5f32f1965215980c5d0b9da060879fc57a7bd20b7eff6db1e"
+      },
+      "native.gguf": {
+        "bytes": 4214912,
+        "sha256": "79bb6686667a20e555a6c1d77230f6714574ece039f9f8721f16f2c9187a3dd2"
+      }
+    }
+  },
+  "strict_f32_vector_flags": false,
+  "full_retrieval_qualified": false,
+  "quantized_qualified": false,
+  "publication_qualified": false,
+  "legacy_header_from_frozen018_quantizer": true,
+  "standard_header_publication_qualified": false,
+  "model": {
+    "bytes": 576997440,
+    "sha256": "087c9be0fa50ba57db74e650889521c985d306863c94aabf731764538eb4533c"
+  },
+  "payload_remote_only": {
+    "id": 12891218847,
+    "bytes": 19663308,
+    "sha256": "f0be04cc0893eaf1ab814a3aadf2fe25d125ab6ac14321e6c1059084443f92e6"
+  },
+  "limits": "All13 small members authenticated; report/manifest stream identities and two actual Ref-vs-independent metric records checked. Raw vectors/journals/model remain remote and were not independently downloaded or rehashed locally. One686-row shard cannot compute full300-query/5483-vector retrieval gates. Strict vector failures retained; any remaining-shard activation requires a separately closed source with existing task gates unchanged."
+}

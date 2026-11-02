@@ -1,0 +1,87 @@
+name: Unlimited retained last1 numerical and decoded panel v1
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Exact reviewed forty-hex continuation source
+        type: string
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: unlimited-retained-last1-panel-v1
+  cancel-in-progress: false
+jobs:
+  replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      SOURCE: ${{ inputs.source_ref }}
+      KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_TOKEN }}
+      KAGGLE_ACCOUNT: ${{ secrets.KAGGLE_ACCOUNT }}
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+      PYTHONNOUSERSITE: '1'
+      PIP_CONFIG_FILE: /dev/null
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+          fetch-depth: 0
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Source and corrupt-input controls only
+        run: |
+          python tests/test_unlimited_reused_q4_v1.py -v
+          python tools/unlimited-reused-q4-v1/lane.py --source "$SOURCE" > "$RUNNER_TEMP/last1-source.json"
+      - name: Isolated hosted numerical/read tooling; no original framework
+        run: |
+          python -m venv "$RUNNER_TEMP/last1-env"
+          "$RUNNER_TEMP/last1-env/bin/python" -I -m pip install numpy==2.2.6 gguf==0.17.1 kaggle==2.2.2 kagglesdk==0.1.38
+          "$RUNNER_TEMP/last1-env/bin/python" -I -m pip check
+          "$RUNNER_TEMP/last1-env/bin/python" -I -m pip freeze > "$RUNNER_TEMP/last1-requirements.txt"
+      - name: Exact stopped-v3 provider and all540 payloads plus four frozen PNGs before arrays
+        run: |
+          "$RUNNER_TEMP/last1-env/bin/python" -I tools/unlimited-reused-q4-v1/fetch.py --source "$SOURCE" --scratch "$RUNNER_TEMP/last1-inputs" --out "$RUNNER_TEMP/last1-auth"
+      - name: Matched old-profile F16 barriers then reused last1 only, fixed source and gates
+        run: |
+          "$RUNNER_TEMP/last1-env/bin/python" -I tools/unlimited-reused-q4-v1/run.py --source "$SOURCE" --auth "$RUNNER_TEMP/last1-auth" --inputs "$RUNNER_TEMP/last1-inputs" --build "$RUNNER_TEMP/last1-build" --out "$RUNNER_TEMP/last1-review" --raw "$RUNNER_TEMP/last1-raw"
+      - name: Small complete or partial proofs and negative numerical results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unlimited-last1-replay-v1-review-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/last1-source.json
+            ${{ runner.temp }}/last1-requirements.txt
+            ${{ runner.temp }}/last1-auth/
+            ${{ runner.temp }}/last1-review/
+          retention-days: 90
+          if-no-files-found: warn
+      - name: New native traces and lossless adapters; old540/model remain at authenticated producer
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unlimited-last1-replay-v1-raw-${{ github.run_id }}
+          path: ${{ runner.temp }}/last1-raw/
+          compression-level: 1
+          retention-days: 90
+          if-no-files-found: warn
+      - name: Actual ordinary/test executables and build profiles remotely
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unlimited-last1-replay-v1-binaries-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/last1-build/plain/root/crispembed
+            ${{ runner.temp }}/last1-build/plain/unlimited-q4-diff
+            ${{ runner.temp }}/last1-build/plain/unlimited-q4-projection
+            ${{ runner.temp }}/last1-build/observed/crispembed
+            ${{ runner.temp }}/last1-build/**/CMakeCache.txt
+            ${{ runner.temp }}/last1-build/**/compile_commands.json
+          compression-level: 1
+          retention-days: 90
+          if-no-files-found: warn

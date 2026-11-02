@@ -1,0 +1,705 @@
+Loading model from '/kaggle/temp/teleocr/f16.gguf'
+Writing quantized model to '/kaggle/temp/teleocr/q4_k.gguf'
+[  1/700] l.blk.0.attn_k.weight                         -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[  2/700] l.blk.0.attn_k_norm.weight                    -    f32, copy 0.0 MB
+[  3/700] l.blk.0.attn_norm.weight                      -    f32, copy 0.0 MB
+[  4/700] l.blk.0.attn_o.weight                         -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[  5/700] l.blk.0.attn_q.weight                         -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[  6/700] l.blk.0.attn_q_norm.weight                    -    f32, copy 0.0 MB
+[  7/700] l.blk.0.attn_v.weight                         -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[  8/700] l.blk.0.ffn_down.weight                       -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[  9/700] l.blk.0.ffn_gate.weight                       -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[ 10/700] l.blk.0.ffn_norm.weight                       -    f32, copy 0.0 MB
+[ 11/700] l.blk.0.ffn_up.weight                         -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[ 12/700] l.blk.1.attn_k.weight                         -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[ 13/700] l.blk.1.attn_k_norm.weight                    -    f32, copy 0.0 MB
+[ 14/700] l.blk.1.attn_norm.weight                      -    f32, copy 0.0 MB
+[ 15/700] l.blk.1.attn_o.weight                         -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[ 16/700] l.blk.1.attn_q.weight                         -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[ 17/700] l.blk.1.attn_q_norm.weight                    -    f32, copy 0.0 MB
+[ 18/700] l.blk.1.attn_v.weight                         -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[ 19/700] l.blk.1.ffn_down.weight                       -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[ 20/700] l.blk.1.ffn_gate.weight                       -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[ 21/700] l.blk.1.ffn_norm.weight                       -    f32, copy 0.0 MB
+[ 22/700] l.blk.1.ffn_up.weight                         -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[ 23/700] l.blk.10.attn_k.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[ 24/700] l.blk.10.attn_k_norm.weight                   -    f32, copy 0.0 MB
+[ 25/700] l.blk.10.attn_norm.weight                     -    f32, copy 0.0 MB
+[ 26/700] l.blk.10.attn_o.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[ 27/700] l.blk.10.attn_q.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[ 28/700] l.blk.10.attn_q_norm.weight                   -    f32, copy 0.0 MB
+[ 29/700] l.blk.10.attn_v.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[ 30/700] l.blk.10.ffn_down.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[ 31/700] l.blk.10.ffn_gate.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[ 32/700] l.blk.10.ffn_norm.weight                      -    f32, copy 0.0 MB
+[ 33/700] l.blk.10.ffn_up.weight                        -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[ 34/700] l.blk.11.attn_k.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[ 35/700] l.blk.11.attn_k_norm.weight                   -    f32, copy 0.0 MB
+[ 36/700] l.blk.11.attn_norm.weight                     -    f32, copy 0.0 MB
+[ 37/700] l.blk.11.attn_o.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[ 38/700] l.blk.11.attn_q.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[ 39/700] l.blk.11.attn_q_norm.weight                   -    f32, copy 0.0 MB
+[ 40/700] l.blk.11.attn_v.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[ 41/700] l.blk.11.ffn_down.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[ 42/700] l.blk.11.ffn_gate.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[ 43/700] l.blk.11.ffn_norm.weight                      -    f32, copy 0.0 MB
+[ 44/700] l.blk.11.ffn_up.weight                        -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[ 45/700] l.blk.12.attn_k.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[ 46/700] l.blk.12.attn_k_norm.weight                   -    f32, copy 0.0 MB
+[ 47/700] l.blk.12.attn_norm.weight                     -    f32, copy 0.0 MB
+[ 48/700] l.blk.12.attn_o.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[ 49/700] l.blk.12.attn_q.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[ 50/700] l.blk.12.attn_q_norm.weight                   -    f32, copy 0.0 MB
+[ 51/700] l.blk.12.attn_v.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[ 52/700] l.blk.12.ffn_down.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[ 53/700] l.blk.12.ffn_gate.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[ 54/700] l.blk.12.ffn_norm.weight                      -    f32, copy 0.0 MB
+[ 55/700] l.blk.12.ffn_up.weight                        -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[ 56/700] l.blk.13.attn_k.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[ 57/700] l.blk.13.attn_k_norm.weight                   -    f32, copy 0.0 MB
+[ 58/700] l.blk.13.attn_norm.weight                     -    f32, copy 0.0 MB
+[ 59/700] l.blk.13.attn_o.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[ 60/700] l.blk.13.attn_q.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[ 61/700] l.blk.13.attn_q_norm.weight                   -    f32, copy 0.0 MB
+[ 62/700] l.blk.13.attn_v.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[ 63/700] l.blk.13.ffn_down.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[ 64/700] l.blk.13.ffn_gate.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[ 65/700] l.blk.13.ffn_norm.weight                      -    f32, copy 0.0 MB
+[ 66/700] l.blk.13.ffn_up.weight                        -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[ 67/700] l.blk.14.attn_k.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[ 68/700] l.blk.14.attn_k_norm.weight                   -    f32, copy 0.0 MB
+[ 69/700] l.blk.14.attn_norm.weight                     -    f32, copy 0.0 MB
+[ 70/700] l.blk.14.attn_o.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[ 71/700] l.blk.14.attn_q.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[ 72/700] l.blk.14.attn_q_norm.weight                   -    f32, copy 0.0 MB
+[ 73/700] l.blk.14.attn_v.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[ 74/700] l.blk.14.ffn_down.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[ 75/700] l.blk.14.ffn_gate.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[ 76/700] l.blk.14.ffn_norm.weight                      -    f32, copy 0.0 MB
+[ 77/700] l.blk.14.ffn_up.weight                        -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[ 78/700] l.blk.15.attn_k.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[ 79/700] l.blk.15.attn_k_norm.weight                   -    f32, copy 0.0 MB
+[ 80/700] l.blk.15.attn_norm.weight                     -    f32, copy 0.0 MB
+[ 81/700] l.blk.15.attn_o.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[ 82/700] l.blk.15.attn_q.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[ 83/700] l.blk.15.attn_q_norm.weight                   -    f32, copy 0.0 MB
+[ 84/700] l.blk.15.attn_v.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[ 85/700] l.blk.15.ffn_down.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[ 86/700] l.blk.15.ffn_gate.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[ 87/700] l.blk.15.ffn_norm.weight                      -    f32, copy 0.0 MB
+[ 88/700] l.blk.15.ffn_up.weight                        -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[ 89/700] l.blk.16.attn_k.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[ 90/700] l.blk.16.attn_k_norm.weight                   -    f32, copy 0.0 MB
+[ 91/700] l.blk.16.attn_norm.weight                     -    f32, copy 0.0 MB
+[ 92/700] l.blk.16.attn_o.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[ 93/700] l.blk.16.attn_q.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[ 94/700] l.blk.16.attn_q_norm.weight                   -    f32, copy 0.0 MB
+[ 95/700] l.blk.16.attn_v.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[ 96/700] l.blk.16.ffn_down.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[ 97/700] l.blk.16.ffn_gate.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[ 98/700] l.blk.16.ffn_norm.weight                      -    f32, copy 0.0 MB
+[ 99/700] l.blk.16.ffn_up.weight                        -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[100/700] l.blk.17.attn_k.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[101/700] l.blk.17.attn_k_norm.weight                   -    f32, copy 0.0 MB
+[102/700] l.blk.17.attn_norm.weight                     -    f32, copy 0.0 MB
+[103/700] l.blk.17.attn_o.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[104/700] l.blk.17.attn_q.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[105/700] l.blk.17.attn_q_norm.weight                   -    f32, copy 0.0 MB
+[106/700] l.blk.17.attn_v.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[107/700] l.blk.17.ffn_down.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[108/700] l.blk.17.ffn_gate.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[109/700] l.blk.17.ffn_norm.weight                      -    f32, copy 0.0 MB
+[110/700] l.blk.17.ffn_up.weight                        -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[111/700] l.blk.18.attn_k.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[112/700] l.blk.18.attn_k_norm.weight                   -    f32, copy 0.0 MB
+[113/700] l.blk.18.attn_norm.weight                     -    f32, copy 0.0 MB
+[114/700] l.blk.18.attn_o.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[115/700] l.blk.18.attn_q.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[116/700] l.blk.18.attn_q_norm.weight                   -    f32, copy 0.0 MB
+[117/700] l.blk.18.attn_v.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[118/700] l.blk.18.ffn_down.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[119/700] l.blk.18.ffn_gate.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[120/700] l.blk.18.ffn_norm.weight                      -    f32, copy 0.0 MB
+[121/700] l.blk.18.ffn_up.weight                        -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[122/700] l.blk.19.attn_k.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[123/700] l.blk.19.attn_k_norm.weight                   -    f32, copy 0.0 MB
+[124/700] l.blk.19.attn_norm.weight                     -    f32, copy 0.0 MB
+[125/700] l.blk.19.attn_o.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[126/700] l.blk.19.attn_q.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[127/700] l.blk.19.attn_q_norm.weight                   -    f32, copy 0.0 MB
+[128/700] l.blk.19.attn_v.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[129/700] l.blk.19.ffn_down.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[130/700] l.blk.19.ffn_gate.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[131/700] l.blk.19.ffn_norm.weight                      -    f32, copy 0.0 MB
+[132/700] l.blk.19.ffn_up.weight                        -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[133/700] l.blk.2.attn_k.weight                         -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[134/700] l.blk.2.attn_k_norm.weight                    -    f32, copy 0.0 MB
+[135/700] l.blk.2.attn_norm.weight                      -    f32, copy 0.0 MB
+[136/700] l.blk.2.attn_o.weight                         -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[137/700] l.blk.2.attn_q.weight                         -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[138/700] l.blk.2.attn_q_norm.weight                    -    f32, copy 0.0 MB
+[139/700] l.blk.2.attn_v.weight                         -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[140/700] l.blk.2.ffn_down.weight                       -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[141/700] l.blk.2.ffn_gate.weight                       -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[142/700] l.blk.2.ffn_norm.weight                       -    f32, copy 0.0 MB
+[143/700] l.blk.2.ffn_up.weight                         -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[144/700] l.blk.20.attn_k.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[145/700] l.blk.20.attn_k_norm.weight                   -    f32, copy 0.0 MB
+[146/700] l.blk.20.attn_norm.weight                     -    f32, copy 0.0 MB
+[147/700] l.blk.20.attn_o.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[148/700] l.blk.20.attn_q.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[149/700] l.blk.20.attn_q_norm.weight                   -    f32, copy 0.0 MB
+[150/700] l.blk.20.attn_v.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[151/700] l.blk.20.ffn_down.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[152/700] l.blk.20.ffn_gate.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[153/700] l.blk.20.ffn_norm.weight                      -    f32, copy 0.0 MB
+[154/700] l.blk.20.ffn_up.weight                        -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[155/700] l.blk.21.attn_k.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[156/700] l.blk.21.attn_k_norm.weight                   -    f32, copy 0.0 MB
+[157/700] l.blk.21.attn_norm.weight                     -    f32, copy 0.0 MB
+[158/700] l.blk.21.attn_o.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[159/700] l.blk.21.attn_q.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[160/700] l.blk.21.attn_q_norm.weight                   -    f32, copy 0.0 MB
+[161/700] l.blk.21.attn_v.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[162/700] l.blk.21.ffn_down.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[163/700] l.blk.21.ffn_gate.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[164/700] l.blk.21.ffn_norm.weight                      -    f32, copy 0.0 MB
+[165/700] l.blk.21.ffn_up.weight                        -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[166/700] l.blk.22.attn_k.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[167/700] l.blk.22.attn_k_norm.weight                   -    f32, copy 0.0 MB
+[168/700] l.blk.22.attn_norm.weight                     -    f32, copy 0.0 MB
+[169/700] l.blk.22.attn_o.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[170/700] l.blk.22.attn_q.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[171/700] l.blk.22.attn_q_norm.weight                   -    f32, copy 0.0 MB
+[172/700] l.blk.22.attn_v.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[173/700] l.blk.22.ffn_down.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[174/700] l.blk.22.ffn_gate.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[175/700] l.blk.22.ffn_norm.weight                      -    f32, copy 0.0 MB
+[176/700] l.blk.22.ffn_up.weight                        -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[177/700] l.blk.23.attn_k.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[178/700] l.blk.23.attn_k_norm.weight                   -    f32, copy 0.0 MB
+[179/700] l.blk.23.attn_norm.weight                     -    f32, copy 0.0 MB
+[180/700] l.blk.23.attn_o.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[181/700] l.blk.23.attn_q.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[182/700] l.blk.23.attn_q_norm.weight                   -    f32, copy 0.0 MB
+[183/700] l.blk.23.attn_v.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[184/700] l.blk.23.ffn_down.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[185/700] l.blk.23.ffn_gate.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[186/700] l.blk.23.ffn_norm.weight                      -    f32, copy 0.0 MB
+[187/700] l.blk.23.ffn_up.weight                        -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[188/700] l.blk.24.attn_k.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[189/700] l.blk.24.attn_k_norm.weight                   -    f32, copy 0.0 MB
+[190/700] l.blk.24.attn_norm.weight                     -    f32, copy 0.0 MB
+[191/700] l.blk.24.attn_o.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[192/700] l.blk.24.attn_q.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[193/700] l.blk.24.attn_q_norm.weight                   -    f32, copy 0.0 MB
+[194/700] l.blk.24.attn_v.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[195/700] l.blk.24.ffn_down.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[196/700] l.blk.24.ffn_gate.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[197/700] l.blk.24.ffn_norm.weight                      -    f32, copy 0.0 MB
+[198/700] l.blk.24.ffn_up.weight                        -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[199/700] l.blk.25.attn_k.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[200/700] l.blk.25.attn_k_norm.weight                   -    f32, copy 0.0 MB
+[201/700] l.blk.25.attn_norm.weight                     -    f32, copy 0.0 MB
+[202/700] l.blk.25.attn_o.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[203/700] l.blk.25.attn_q.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[204/700] l.blk.25.attn_q_norm.weight                   -    f32, copy 0.0 MB
+[205/700] l.blk.25.attn_v.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[206/700] l.blk.25.ffn_down.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[207/700] l.blk.25.ffn_gate.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[208/700] l.blk.25.ffn_norm.weight                      -    f32, copy 0.0 MB
+[209/700] l.blk.25.ffn_up.weight                        -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[210/700] l.blk.26.attn_k.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[211/700] l.blk.26.attn_k_norm.weight                   -    f32, copy 0.0 MB
+[212/700] l.blk.26.attn_norm.weight                     -    f32, copy 0.0 MB
+[213/700] l.blk.26.attn_o.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[214/700] l.blk.26.attn_q.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[215/700] l.blk.26.attn_q_norm.weight                   -    f32, copy 0.0 MB
+[216/700] l.blk.26.attn_v.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[217/700] l.blk.26.ffn_down.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[218/700] l.blk.26.ffn_gate.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[219/700] l.blk.26.ffn_norm.weight                      -    f32, copy 0.0 MB
+[220/700] l.blk.26.ffn_up.weight                        -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[221/700] l.blk.27.attn_k.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[222/700] l.blk.27.attn_k_norm.weight                   -    f32, copy 0.0 MB
+[223/700] l.blk.27.attn_norm.weight                     -    f32, copy 0.0 MB
+[224/700] l.blk.27.attn_o.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[225/700] l.blk.27.attn_q.weight                        -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[226/700] l.blk.27.attn_q_norm.weight                   -    f32, copy 0.0 MB
+[227/700] l.blk.27.attn_v.weight                        -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[228/700] l.blk.27.ffn_down.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[229/700] l.blk.27.ffn_gate.weight                      -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[230/700] l.blk.27.ffn_norm.weight                      -    f32, copy 0.0 MB
+[231/700] l.blk.27.ffn_up.weight                        -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[232/700] l.blk.3.attn_k.weight                         -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[233/700] l.blk.3.attn_k_norm.weight                    -    f32, copy 0.0 MB
+[234/700] l.blk.3.attn_norm.weight                      -    f32, copy 0.0 MB
+[235/700] l.blk.3.attn_o.weight                         -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[236/700] l.blk.3.attn_q.weight                         -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[237/700] l.blk.3.attn_q_norm.weight                    -    f32, copy 0.0 MB
+[238/700] l.blk.3.attn_v.weight                         -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[239/700] l.blk.3.ffn_down.weight                       -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[240/700] l.blk.3.ffn_gate.weight                       -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[241/700] l.blk.3.ffn_norm.weight                       -    f32, copy 0.0 MB
+[242/700] l.blk.3.ffn_up.weight                         -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[243/700] l.blk.4.attn_k.weight                         -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[244/700] l.blk.4.attn_k_norm.weight                    -    f32, copy 0.0 MB
+[245/700] l.blk.4.attn_norm.weight                      -    f32, copy 0.0 MB
+[246/700] l.blk.4.attn_o.weight                         -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[247/700] l.blk.4.attn_q.weight                         -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[248/700] l.blk.4.attn_q_norm.weight                    -    f32, copy 0.0 MB
+[249/700] l.blk.4.attn_v.weight                         -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[250/700] l.blk.4.ffn_down.weight                       -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[251/700] l.blk.4.ffn_gate.weight                       -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[252/700] l.blk.4.ffn_norm.weight                       -    f32, copy 0.0 MB
+[253/700] l.blk.4.ffn_up.weight                         -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[254/700] l.blk.5.attn_k.weight                         -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[255/700] l.blk.5.attn_k_norm.weight                    -    f32, copy 0.0 MB
+[256/700] l.blk.5.attn_norm.weight                      -    f32, copy 0.0 MB
+[257/700] l.blk.5.attn_o.weight                         -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[258/700] l.blk.5.attn_q.weight                         -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[259/700] l.blk.5.attn_q_norm.weight                    -    f32, copy 0.0 MB
+[260/700] l.blk.5.attn_v.weight                         -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[261/700] l.blk.5.ffn_down.weight                       -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[262/700] l.blk.5.ffn_gate.weight                       -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[263/700] l.blk.5.ffn_norm.weight                       -    f32, copy 0.0 MB
+[264/700] l.blk.5.ffn_up.weight                         -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[265/700] l.blk.6.attn_k.weight                         -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[266/700] l.blk.6.attn_k_norm.weight                    -    f32, copy 0.0 MB
+[267/700] l.blk.6.attn_norm.weight                      -    f32, copy 0.0 MB
+[268/700] l.blk.6.attn_o.weight                         -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[269/700] l.blk.6.attn_q.weight                         -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[270/700] l.blk.6.attn_q_norm.weight                    -    f32, copy 0.0 MB
+[271/700] l.blk.6.attn_v.weight                         -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[272/700] l.blk.6.ffn_down.weight                       -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[273/700] l.blk.6.ffn_gate.weight                       -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[274/700] l.blk.6.ffn_norm.weight                       -    f32, copy 0.0 MB
+[275/700] l.blk.6.ffn_up.weight                         -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[276/700] l.blk.7.attn_k.weight                         -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[277/700] l.blk.7.attn_k_norm.weight                    -    f32, copy 0.0 MB
+[278/700] l.blk.7.attn_norm.weight                      -    f32, copy 0.0 MB
+[279/700] l.blk.7.attn_o.weight                         -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[280/700] l.blk.7.attn_q.weight                         -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[281/700] l.blk.7.attn_q_norm.weight                    -    f32, copy 0.0 MB
+[282/700] l.blk.7.attn_v.weight                         -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[283/700] l.blk.7.ffn_down.weight                       -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[284/700] l.blk.7.ffn_gate.weight                       -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[285/700] l.blk.7.ffn_norm.weight                       -    f32, copy 0.0 MB
+[286/700] l.blk.7.ffn_up.weight                         -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[287/700] l.blk.8.attn_k.weight                         -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[288/700] l.blk.8.attn_k_norm.weight                    -    f32, copy 0.0 MB
+[289/700] l.blk.8.attn_norm.weight                      -    f32, copy 0.0 MB
+[290/700] l.blk.8.attn_o.weight                         -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[291/700] l.blk.8.attn_q.weight                         -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[292/700] l.blk.8.attn_q_norm.weight                    -    f32, copy 0.0 MB
+[293/700] l.blk.8.attn_v.weight                         -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[294/700] l.blk.8.ffn_down.weight                       -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[295/700] l.blk.8.ffn_gate.weight                       -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[296/700] l.blk.8.ffn_norm.weight                       -    f32, copy 0.0 MB
+[297/700] l.blk.8.ffn_up.weight                         -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[298/700] l.blk.9.attn_k.weight                         -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[299/700] l.blk.9.attn_k_norm.weight                    -    f32, copy 0.0 MB
+[300/700] l.blk.9.attn_norm.weight                      -    f32, copy 0.0 MB
+[301/700] l.blk.9.attn_o.weight                         -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[302/700] l.blk.9.attn_q.weight                         -    f16, quantizing to q4_K... 4.0 MB -> 1.1 MB
+[303/700] l.blk.9.attn_q_norm.weight                    -    f32, copy 0.0 MB
+[304/700] l.blk.9.attn_v.weight                         -    f16, quantizing to q4_K... 2.0 MB -> 0.6 MB
+[305/700] l.blk.9.ffn_down.weight                       -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[306/700] l.blk.9.ffn_gate.weight                       -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[307/700] l.blk.9.ffn_norm.weight                       -    f32, copy 0.0 MB
+[308/700] l.blk.9.ffn_up.weight                         -    f16, quantizing to q4_K... 6.0 MB -> 1.7 MB
+[309/700] l.embed_tokens.weight                         -    f16, copy 296.8 MB
+[310/700] l.output_norm.weight                          -    f32, copy 0.0 MB
+[311/700] v.blk.0.attn_proj.bias                        -    f32, copy 0.0 MB
+[312/700] v.blk.0.attn_proj.weight                      -    f16, (vision→Q8_0) copy 3.1 MB
+[313/700] v.blk.0.attn_qkv.bias                         -    f32, copy 0.0 MB
+[314/700] v.blk.0.attn_qkv.weight                       -    f16, (vision→Q8_0) copy 9.4 MB
+[315/700] v.blk.0.ffn_down.bias                         -    f32, copy 0.0 MB
+[316/700] v.blk.0.ffn_down.weight                       -    f16, (vision→Q8_0) copy 8.3 MB
+[317/700] v.blk.0.ffn_gate.bias                         -    f32, copy 0.0 MB
+[318/700] v.blk.0.ffn_gate.weight                       -    f16, (vision→Q8_0) copy 8.3 MB
+[319/700] v.blk.0.ffn_up.bias                           -    f32, copy 0.0 MB
+[320/700] v.blk.0.ffn_up.weight                         -    f16, (vision→Q8_0) copy 8.3 MB
+[321/700] v.blk.0.norm1.weight                          -    f32, copy 0.0 MB
+[322/700] v.blk.0.norm2.weight                          -    f32, copy 0.0 MB
+[323/700] v.blk.1.attn_proj.bias                        -    f32, copy 0.0 MB
+[324/700] v.blk.1.attn_proj.weight                      -    f16, (vision→Q8_0) copy 3.1 MB
+[325/700] v.blk.1.attn_qkv.bias                         -    f32, copy 0.0 MB
+[326/700] v.blk.1.attn_qkv.weight                       -    f16, (vision→Q8_0) copy 9.4 MB
+[327/700] v.blk.1.ffn_down.bias                         -    f32, copy 0.0 MB
+[328/700] v.blk.1.ffn_down.weight                       -    f16, (vision→Q8_0) copy 8.3 MB
+[329/700] v.blk.1.ffn_gate.bias                         -    f32, copy 0.0 MB
+[330/700] v.blk.1.ffn_gate.weight                       -    f16, (vision→Q8_0) copy 8.3 MB
+[331/700] v.blk.1.ffn_up.bias                           -    f32, copy 0.0 MB
+[332/700] v.blk.1.ffn_up.weight                         -    f16, (vision→Q8_0) copy 8.3 MB
+[333/700] v.blk.1.norm1.weight                          -    f32, copy 0.0 MB
+[334/700] v.blk.1.norm2.weight                          -    f32, copy 0.0 MB
+[335/700] v.blk.10.attn_proj.bias                       -    f32, copy 0.0 MB
+[336/700] v.blk.10.attn_proj.weight                     -    f16, (vision→Q8_0) copy 3.1 MB
+[337/700] v.blk.10.attn_qkv.bias                        -    f32, copy 0.0 MB
+[338/700] v.blk.10.attn_qkv.weight                      -    f16, (vision→Q8_0) copy 9.4 MB
+[339/700] v.blk.10.ffn_down.bias                        -    f32, copy 0.0 MB
+[340/700] v.blk.10.ffn_down.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[341/700] v.blk.10.ffn_gate.bias                        -    f32, copy 0.0 MB
+[342/700] v.blk.10.ffn_gate.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[343/700] v.blk.10.ffn_up.bias                          -    f32, copy 0.0 MB
+[344/700] v.blk.10.ffn_up.weight                        -    f16, (vision→Q8_0) copy 8.3 MB
+[345/700] v.blk.10.norm1.weight                         -    f32, copy 0.0 MB
+[346/700] v.blk.10.norm2.weight                         -    f32, copy 0.0 MB
+[347/700] v.blk.11.attn_proj.bias                       -    f32, copy 0.0 MB
+[348/700] v.blk.11.attn_proj.weight                     -    f16, (vision→Q8_0) copy 3.1 MB
+[349/700] v.blk.11.attn_qkv.bias                        -    f32, copy 0.0 MB
+[350/700] v.blk.11.attn_qkv.weight                      -    f16, (vision→Q8_0) copy 9.4 MB
+[351/700] v.blk.11.ffn_down.bias                        -    f32, copy 0.0 MB
+[352/700] v.blk.11.ffn_down.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[353/700] v.blk.11.ffn_gate.bias                        -    f32, copy 0.0 MB
+[354/700] v.blk.11.ffn_gate.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[355/700] v.blk.11.ffn_up.bias                          -    f32, copy 0.0 MB
+[356/700] v.blk.11.ffn_up.weight                        -    f16, (vision→Q8_0) copy 8.3 MB
+[357/700] v.blk.11.norm1.weight                         -    f32, copy 0.0 MB
+[358/700] v.blk.11.norm2.weight                         -    f32, copy 0.0 MB
+[359/700] v.blk.12.attn_proj.bias                       -    f32, copy 0.0 MB
+[360/700] v.blk.12.attn_proj.weight                     -    f16, (vision→Q8_0) copy 3.1 MB
+[361/700] v.blk.12.attn_qkv.bias                        -    f32, copy 0.0 MB
+[362/700] v.blk.12.attn_qkv.weight                      -    f16, (vision→Q8_0) copy 9.4 MB
+[363/700] v.blk.12.ffn_down.bias                        -    f32, copy 0.0 MB
+[364/700] v.blk.12.ffn_down.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[365/700] v.blk.12.ffn_gate.bias                        -    f32, copy 0.0 MB
+[366/700] v.blk.12.ffn_gate.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[367/700] v.blk.12.ffn_up.bias                          -    f32, copy 0.0 MB
+[368/700] v.blk.12.ffn_up.weight                        -    f16, (vision→Q8_0) copy 8.3 MB
+[369/700] v.blk.12.norm1.weight                         -    f32, copy 0.0 MB
+[370/700] v.blk.12.norm2.weight                         -    f32, copy 0.0 MB
+[371/700] v.blk.13.attn_proj.bias                       -    f32, copy 0.0 MB
+[372/700] v.blk.13.attn_proj.weight                     -    f16, (vision→Q8_0) copy 3.1 MB
+[373/700] v.blk.13.attn_qkv.bias                        -    f32, copy 0.0 MB
+[374/700] v.blk.13.attn_qkv.weight                      -    f16, (vision→Q8_0) copy 9.4 MB
+[375/700] v.blk.13.ffn_down.bias                        -    f32, copy 0.0 MB
+[376/700] v.blk.13.ffn_down.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[377/700] v.blk.13.ffn_gate.bias                        -    f32, copy 0.0 MB
+[378/700] v.blk.13.ffn_gate.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[379/700] v.blk.13.ffn_up.bias                          -    f32, copy 0.0 MB
+[380/700] v.blk.13.ffn_up.weight                        -    f16, (vision→Q8_0) copy 8.3 MB
+[381/700] v.blk.13.norm1.weight                         -    f32, copy 0.0 MB
+[382/700] v.blk.13.norm2.weight                         -    f32, copy 0.0 MB
+[383/700] v.blk.14.attn_proj.bias                       -    f32, copy 0.0 MB
+[384/700] v.blk.14.attn_proj.weight                     -    f16, (vision→Q8_0) copy 3.1 MB
+[385/700] v.blk.14.attn_qkv.bias                        -    f32, copy 0.0 MB
+[386/700] v.blk.14.attn_qkv.weight                      -    f16, (vision→Q8_0) copy 9.4 MB
+[387/700] v.blk.14.ffn_down.bias                        -    f32, copy 0.0 MB
+[388/700] v.blk.14.ffn_down.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[389/700] v.blk.14.ffn_gate.bias                        -    f32, copy 0.0 MB
+[390/700] v.blk.14.ffn_gate.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[391/700] v.blk.14.ffn_up.bias                          -    f32, copy 0.0 MB
+[392/700] v.blk.14.ffn_up.weight                        -    f16, (vision→Q8_0) copy 8.3 MB
+[393/700] v.blk.14.norm1.weight                         -    f32, copy 0.0 MB
+[394/700] v.blk.14.norm2.weight                         -    f32, copy 0.0 MB
+[395/700] v.blk.15.attn_proj.bias                       -    f32, copy 0.0 MB
+[396/700] v.blk.15.attn_proj.weight                     -    f16, (vision→Q8_0) copy 3.1 MB
+[397/700] v.blk.15.attn_qkv.bias                        -    f32, copy 0.0 MB
+[398/700] v.blk.15.attn_qkv.weight                      -    f16, (vision→Q8_0) copy 9.4 MB
+[399/700] v.blk.15.ffn_down.bias                        -    f32, copy 0.0 MB
+[400/700] v.blk.15.ffn_down.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[401/700] v.blk.15.ffn_gate.bias                        -    f32, copy 0.0 MB
+[402/700] v.blk.15.ffn_gate.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[403/700] v.blk.15.ffn_up.bias                          -    f32, copy 0.0 MB
+[404/700] v.blk.15.ffn_up.weight                        -    f16, (vision→Q8_0) copy 8.3 MB
+[405/700] v.blk.15.norm1.weight                         -    f32, copy 0.0 MB
+[406/700] v.blk.15.norm2.weight                         -    f32, copy 0.0 MB
+[407/700] v.blk.16.attn_proj.bias                       -    f32, copy 0.0 MB
+[408/700] v.blk.16.attn_proj.weight                     -    f16, (vision→Q8_0) copy 3.1 MB
+[409/700] v.blk.16.attn_qkv.bias                        -    f32, copy 0.0 MB
+[410/700] v.blk.16.attn_qkv.weight                      -    f16, (vision→Q8_0) copy 9.4 MB
+[411/700] v.blk.16.ffn_down.bias                        -    f32, copy 0.0 MB
+[412/700] v.blk.16.ffn_down.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[413/700] v.blk.16.ffn_gate.bias                        -    f32, copy 0.0 MB
+[414/700] v.blk.16.ffn_gate.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[415/700] v.blk.16.ffn_up.bias                          -    f32, copy 0.0 MB
+[416/700] v.blk.16.ffn_up.weight                        -    f16, (vision→Q8_0) copy 8.3 MB
+[417/700] v.blk.16.norm1.weight                         -    f32, copy 0.0 MB
+[418/700] v.blk.16.norm2.weight                         -    f32, copy 0.0 MB
+[419/700] v.blk.17.attn_proj.bias                       -    f32, copy 0.0 MB
+[420/700] v.blk.17.attn_proj.weight                     -    f16, (vision→Q8_0) copy 3.1 MB
+[421/700] v.blk.17.attn_qkv.bias                        -    f32, copy 0.0 MB
+[422/700] v.blk.17.attn_qkv.weight                      -    f16, (vision→Q8_0) copy 9.4 MB
+[423/700] v.blk.17.ffn_down.bias                        -    f32, copy 0.0 MB
+[424/700] v.blk.17.ffn_down.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[425/700] v.blk.17.ffn_gate.bias                        -    f32, copy 0.0 MB
+[426/700] v.blk.17.ffn_gate.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[427/700] v.blk.17.ffn_up.bias                          -    f32, copy 0.0 MB
+[428/700] v.blk.17.ffn_up.weight                        -    f16, (vision→Q8_0) copy 8.3 MB
+[429/700] v.blk.17.norm1.weight                         -    f32, copy 0.0 MB
+[430/700] v.blk.17.norm2.weight                         -    f32, copy 0.0 MB
+[431/700] v.blk.18.attn_proj.bias                       -    f32, copy 0.0 MB
+[432/700] v.blk.18.attn_proj.weight                     -    f16, (vision→Q8_0) copy 3.1 MB
+[433/700] v.blk.18.attn_qkv.bias                        -    f32, copy 0.0 MB
+[434/700] v.blk.18.attn_qkv.weight                      -    f16, (vision→Q8_0) copy 9.4 MB
+[435/700] v.blk.18.ffn_down.bias                        -    f32, copy 0.0 MB
+[436/700] v.blk.18.ffn_down.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[437/700] v.blk.18.ffn_gate.bias                        -    f32, copy 0.0 MB
+[438/700] v.blk.18.ffn_gate.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[439/700] v.blk.18.ffn_up.bias                          -    f32, copy 0.0 MB
+[440/700] v.blk.18.ffn_up.weight                        -    f16, (vision→Q8_0) copy 8.3 MB
+[441/700] v.blk.18.norm1.weight                         -    f32, copy 0.0 MB
+[442/700] v.blk.18.norm2.weight                         -    f32, copy 0.0 MB
+[443/700] v.blk.19.attn_proj.bias                       -    f32, copy 0.0 MB
+[444/700] v.blk.19.attn_proj.weight                     -    f16, (vision→Q8_0) copy 3.1 MB
+[445/700] v.blk.19.attn_qkv.bias                        -    f32, copy 0.0 MB
+[446/700] v.blk.19.attn_qkv.weight                      -    f16, (vision→Q8_0) copy 9.4 MB
+[447/700] v.blk.19.ffn_down.bias                        -    f32, copy 0.0 MB
+[448/700] v.blk.19.ffn_down.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[449/700] v.blk.19.ffn_gate.bias                        -    f32, copy 0.0 MB
+[450/700] v.blk.19.ffn_gate.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[451/700] v.blk.19.ffn_up.bias                          -    f32, copy 0.0 MB
+[452/700] v.blk.19.ffn_up.weight                        -    f16, (vision→Q8_0) copy 8.3 MB
+[453/700] v.blk.19.norm1.weight                         -    f32, copy 0.0 MB
+[454/700] v.blk.19.norm2.weight                         -    f32, copy 0.0 MB
+[455/700] v.blk.2.attn_proj.bias                        -    f32, copy 0.0 MB
+[456/700] v.blk.2.attn_proj.weight                      -    f16, (vision→Q8_0) copy 3.1 MB
+[457/700] v.blk.2.attn_qkv.bias                         -    f32, copy 0.0 MB
+[458/700] v.blk.2.attn_qkv.weight                       -    f16, (vision→Q8_0) copy 9.4 MB
+[459/700] v.blk.2.ffn_down.bias                         -    f32, copy 0.0 MB
+[460/700] v.blk.2.ffn_down.weight                       -    f16, (vision→Q8_0) copy 8.3 MB
+[461/700] v.blk.2.ffn_gate.bias                         -    f32, copy 0.0 MB
+[462/700] v.blk.2.ffn_gate.weight                       -    f16, (vision→Q8_0) copy 8.3 MB
+[463/700] v.blk.2.ffn_up.bias                           -    f32, copy 0.0 MB
+[464/700] v.blk.2.ffn_up.weight                         -    f16, (vision→Q8_0) copy 8.3 MB
+[465/700] v.blk.2.norm1.weight                          -    f32, copy 0.0 MB
+[466/700] v.blk.2.norm2.weight                          -    f32, copy 0.0 MB
+[467/700] v.blk.20.attn_proj.bias                       -    f32, copy 0.0 MB
+[468/700] v.blk.20.attn_proj.weight                     -    f16, (vision→Q8_0) copy 3.1 MB
+[469/700] v.blk.20.attn_qkv.bias                        -    f32, copy 0.0 MB
+[470/700] v.blk.20.attn_qkv.weight                      -    f16, (vision→Q8_0) copy 9.4 MB
+[471/700] v.blk.20.ffn_down.bias                        -    f32, copy 0.0 MB
+[472/700] v.blk.20.ffn_down.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[473/700] v.blk.20.ffn_gate.bias                        -    f32, copy 0.0 MB
+[474/700] v.blk.20.ffn_gate.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[475/700] v.blk.20.ffn_up.bias                          -    f32, copy 0.0 MB
+[476/700] v.blk.20.ffn_up.weight                        -    f16, (vision→Q8_0) copy 8.3 MB
+[477/700] v.blk.20.norm1.weight                         -    f32, copy 0.0 MB
+[478/700] v.blk.20.norm2.weight                         -    f32, copy 0.0 MB
+[479/700] v.blk.21.attn_proj.bias                       -    f32, copy 0.0 MB
+[480/700] v.blk.21.attn_proj.weight                     -    f16, (vision→Q8_0) copy 3.1 MB
+[481/700] v.blk.21.attn_qkv.bias                        -    f32, copy 0.0 MB
+[482/700] v.blk.21.attn_qkv.weight                      -    f16, (vision→Q8_0) copy 9.4 MB
+[483/700] v.blk.21.ffn_down.bias                        -    f32, copy 0.0 MB
+[484/700] v.blk.21.ffn_down.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[485/700] v.blk.21.ffn_gate.bias                        -    f32, copy 0.0 MB
+[486/700] v.blk.21.ffn_gate.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[487/700] v.blk.21.ffn_up.bias                          -    f32, copy 0.0 MB
+[488/700] v.blk.21.ffn_up.weight                        -    f16, (vision→Q8_0) copy 8.3 MB
+[489/700] v.blk.21.norm1.weight                         -    f32, copy 0.0 MB
+[490/700] v.blk.21.norm2.weight                         -    f32, copy 0.0 MB
+[491/700] v.blk.22.attn_proj.bias                       -    f32, copy 0.0 MB
+[492/700] v.blk.22.attn_proj.weight                     -    f16, (vision→Q8_0) copy 3.1 MB
+[493/700] v.blk.22.attn_qkv.bias                        -    f32, copy 0.0 MB
+[494/700] v.blk.22.attn_qkv.weight                      -    f16, (vision→Q8_0) copy 9.4 MB
+[495/700] v.blk.22.ffn_down.bias                        -    f32, copy 0.0 MB
+[496/700] v.blk.22.ffn_down.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[497/700] v.blk.22.ffn_gate.bias                        -    f32, copy 0.0 MB
+[498/700] v.blk.22.ffn_gate.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[499/700] v.blk.22.ffn_up.bias                          -    f32, copy 0.0 MB
+[500/700] v.blk.22.ffn_up.weight                        -    f16, (vision→Q8_0) copy 8.3 MB
+[501/700] v.blk.22.norm1.weight                         -    f32, copy 0.0 MB
+[502/700] v.blk.22.norm2.weight                         -    f32, copy 0.0 MB
+[503/700] v.blk.23.attn_proj.bias                       -    f32, copy 0.0 MB
+[504/700] v.blk.23.attn_proj.weight                     -    f16, (vision→Q8_0) copy 3.1 MB
+[505/700] v.blk.23.attn_qkv.bias                        -    f32, copy 0.0 MB
+[506/700] v.blk.23.attn_qkv.weight                      -    f16, (vision→Q8_0) copy 9.4 MB
+[507/700] v.blk.23.ffn_down.bias                        -    f32, copy 0.0 MB
+[508/700] v.blk.23.ffn_down.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[509/700] v.blk.23.ffn_gate.bias                        -    f32, copy 0.0 MB
+[510/700] v.blk.23.ffn_gate.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[511/700] v.blk.23.ffn_up.bias                          -    f32, copy 0.0 MB
+[512/700] v.blk.23.ffn_up.weight                        -    f16, (vision→Q8_0) copy 8.3 MB
+[513/700] v.blk.23.norm1.weight                         -    f32, copy 0.0 MB
+[514/700] v.blk.23.norm2.weight                         -    f32, copy 0.0 MB
+[515/700] v.blk.24.attn_proj.bias                       -    f32, copy 0.0 MB
+[516/700] v.blk.24.attn_proj.weight                     -    f16, (vision→Q8_0) copy 3.1 MB
+[517/700] v.blk.24.attn_qkv.bias                        -    f32, copy 0.0 MB
+[518/700] v.blk.24.attn_qkv.weight                      -    f16, (vision→Q8_0) copy 9.4 MB
+[519/700] v.blk.24.ffn_down.bias                        -    f32, copy 0.0 MB
+[520/700] v.blk.24.ffn_down.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[521/700] v.blk.24.ffn_gate.bias                        -    f32, copy 0.0 MB
+[522/700] v.blk.24.ffn_gate.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[523/700] v.blk.24.ffn_up.bias                          -    f32, copy 0.0 MB
+[524/700] v.blk.24.ffn_up.weight                        -    f16, (vision→Q8_0) copy 8.3 MB
+[525/700] v.blk.24.norm1.weight                         -    f32, copy 0.0 MB
+[526/700] v.blk.24.norm2.weight                         -    f32, copy 0.0 MB
+[527/700] v.blk.25.attn_proj.bias                       -    f32, copy 0.0 MB
+[528/700] v.blk.25.attn_proj.weight                     -    f16, (vision→Q8_0) copy 3.1 MB
+[529/700] v.blk.25.attn_qkv.bias                        -    f32, copy 0.0 MB
+[530/700] v.blk.25.attn_qkv.weight                      -    f16, (vision→Q8_0) copy 9.4 MB
+[531/700] v.blk.25.ffn_down.bias                        -    f32, copy 0.0 MB
+[532/700] v.blk.25.ffn_down.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[533/700] v.blk.25.ffn_gate.bias                        -    f32, copy 0.0 MB
+[534/700] v.blk.25.ffn_gate.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[535/700] v.blk.25.ffn_up.bias                          -    f32, copy 0.0 MB
+[536/700] v.blk.25.ffn_up.weight                        -    f16, (vision→Q8_0) copy 8.3 MB
+[537/700] v.blk.25.norm1.weight                         -    f32, copy 0.0 MB
+[538/700] v.blk.25.norm2.weight                         -    f32, copy 0.0 MB
+[539/700] v.blk.26.attn_proj.bias                       -    f32, copy 0.0 MB
+[540/700] v.blk.26.attn_proj.weight                     -    f16, (vision→Q8_0) copy 3.1 MB
+[541/700] v.blk.26.attn_qkv.bias                        -    f32, copy 0.0 MB
+[542/700] v.blk.26.attn_qkv.weight                      -    f16, (vision→Q8_0) copy 9.4 MB
+[543/700] v.blk.26.ffn_down.bias                        -    f32, copy 0.0 MB
+[544/700] v.blk.26.ffn_down.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[545/700] v.blk.26.ffn_gate.bias                        -    f32, copy 0.0 MB
+[546/700] v.blk.26.ffn_gate.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[547/700] v.blk.26.ffn_up.bias                          -    f32, copy 0.0 MB
+[548/700] v.blk.26.ffn_up.weight                        -    f16, (vision→Q8_0) copy 8.3 MB
+[549/700] v.blk.26.norm1.weight                         -    f32, copy 0.0 MB
+[550/700] v.blk.26.norm2.weight                         -    f32, copy 0.0 MB
+[551/700] v.blk.27.attn_proj.bias                       -    f32, copy 0.0 MB
+[552/700] v.blk.27.attn_proj.weight                     -    f16, (vision→Q8_0) copy 3.1 MB
+[553/700] v.blk.27.attn_qkv.bias                        -    f32, copy 0.0 MB
+[554/700] v.blk.27.attn_qkv.weight                      -    f16, (vision→Q8_0) copy 9.4 MB
+[555/700] v.blk.27.ffn_down.bias                        -    f32, copy 0.0 MB
+[556/700] v.blk.27.ffn_down.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[557/700] v.blk.27.ffn_gate.bias                        -    f32, copy 0.0 MB
+[558/700] v.blk.27.ffn_gate.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[559/700] v.blk.27.ffn_up.bias                          -    f32, copy 0.0 MB
+[560/700] v.blk.27.ffn_up.weight                        -    f16, (vision→Q8_0) copy 8.3 MB
+[561/700] v.blk.27.norm1.weight                         -    f32, copy 0.0 MB
+[562/700] v.blk.27.norm2.weight                         -    f32, copy 0.0 MB
+[563/700] v.blk.28.attn_proj.bias                       -    f32, copy 0.0 MB
+[564/700] v.blk.28.attn_proj.weight                     -    f16, (vision→Q8_0) copy 3.1 MB
+[565/700] v.blk.28.attn_qkv.bias                        -    f32, copy 0.0 MB
+[566/700] v.blk.28.attn_qkv.weight                      -    f16, (vision→Q8_0) copy 9.4 MB
+[567/700] v.blk.28.ffn_down.bias                        -    f32, copy 0.0 MB
+[568/700] v.blk.28.ffn_down.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[569/700] v.blk.28.ffn_gate.bias                        -    f32, copy 0.0 MB
+[570/700] v.blk.28.ffn_gate.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[571/700] v.blk.28.ffn_up.bias                          -    f32, copy 0.0 MB
+[572/700] v.blk.28.ffn_up.weight                        -    f16, (vision→Q8_0) copy 8.3 MB
+[573/700] v.blk.28.norm1.weight                         -    f32, copy 0.0 MB
+[574/700] v.blk.28.norm2.weight                         -    f32, copy 0.0 MB
+[575/700] v.blk.29.attn_proj.bias                       -    f32, copy 0.0 MB
+[576/700] v.blk.29.attn_proj.weight                     -    f16, (vision→Q8_0) copy 3.1 MB
+[577/700] v.blk.29.attn_qkv.bias                        -    f32, copy 0.0 MB
+[578/700] v.blk.29.attn_qkv.weight                      -    f16, (vision→Q8_0) copy 9.4 MB
+[579/700] v.blk.29.ffn_down.bias                        -    f32, copy 0.0 MB
+[580/700] v.blk.29.ffn_down.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[581/700] v.blk.29.ffn_gate.bias                        -    f32, copy 0.0 MB
+[582/700] v.blk.29.ffn_gate.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[583/700] v.blk.29.ffn_up.bias                          -    f32, copy 0.0 MB
+[584/700] v.blk.29.ffn_up.weight                        -    f16, (vision→Q8_0) copy 8.3 MB
+[585/700] v.blk.29.norm1.weight                         -    f32, copy 0.0 MB
+[586/700] v.blk.29.norm2.weight                         -    f32, copy 0.0 MB
+[587/700] v.blk.3.attn_proj.bias                        -    f32, copy 0.0 MB
+[588/700] v.blk.3.attn_proj.weight                      -    f16, (vision→Q8_0) copy 3.1 MB
+[589/700] v.blk.3.attn_qkv.bias                         -    f32, copy 0.0 MB
+[590/700] v.blk.3.attn_qkv.weight                       -    f16, (vision→Q8_0) copy 9.4 MB
+[591/700] v.blk.3.ffn_down.bias                         -    f32, copy 0.0 MB
+[592/700] v.blk.3.ffn_down.weight                       -    f16, (vision→Q8_0) copy 8.3 MB
+[593/700] v.blk.3.ffn_gate.bias                         -    f32, copy 0.0 MB
+[594/700] v.blk.3.ffn_gate.weight                       -    f16, (vision→Q8_0) copy 8.3 MB
+[595/700] v.blk.3.ffn_up.bias                           -    f32, copy 0.0 MB
+[596/700] v.blk.3.ffn_up.weight                         -    f16, (vision→Q8_0) copy 8.3 MB
+[597/700] v.blk.3.norm1.weight                          -    f32, copy 0.0 MB
+[598/700] v.blk.3.norm2.weight                          -    f32, copy 0.0 MB
+[599/700] v.blk.30.attn_proj.bias                       -    f32, copy 0.0 MB
+[600/700] v.blk.30.attn_proj.weight                     -    f16, (vision→Q8_0) copy 3.1 MB
+[601/700] v.blk.30.attn_qkv.bias                        -    f32, copy 0.0 MB
+[602/700] v.blk.30.attn_qkv.weight                      -    f16, (vision→Q8_0) copy 9.4 MB
+[603/700] v.blk.30.ffn_down.bias                        -    f32, copy 0.0 MB
+[604/700] v.blk.30.ffn_down.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[605/700] v.blk.30.ffn_gate.bias                        -    f32, copy 0.0 MB
+[606/700] v.blk.30.ffn_gate.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[607/700] v.blk.30.ffn_up.bias                          -    f32, copy 0.0 MB
+[608/700] v.blk.30.ffn_up.weight                        -    f16, (vision→Q8_0) copy 8.3 MB
+[609/700] v.blk.30.norm1.weight                         -    f32, copy 0.0 MB
+[610/700] v.blk.30.norm2.weight                         -    f32, copy 0.0 MB
+[611/700] v.blk.31.attn_proj.bias                       -    f32, copy 0.0 MB
+[612/700] v.blk.31.attn_proj.weight                     -    f16, (vision→Q8_0) copy 3.1 MB
+[613/700] v.blk.31.attn_qkv.bias                        -    f32, copy 0.0 MB
+[614/700] v.blk.31.attn_qkv.weight                      -    f16, (vision→Q8_0) copy 9.4 MB
+[615/700] v.blk.31.ffn_down.bias                        -    f32, copy 0.0 MB
+[616/700] v.blk.31.ffn_down.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[617/700] v.blk.31.ffn_gate.bias                        -    f32, copy 0.0 MB
+[618/700] v.blk.31.ffn_gate.weight                      -    f16, (vision→Q8_0) copy 8.3 MB
+[619/700] v.blk.31.ffn_up.bias                          -    f32, copy 0.0 MB
+[620/700] v.blk.31.ffn_up.weight                        -    f16, (vision→Q8_0) copy 8.3 MB
+[621/700] v.blk.31.norm1.weight                         -    f32, copy 0.0 MB
+[622/700] v.blk.31.norm2.weight                         -    f32, copy 0.0 MB
+[623/700] v.blk.4.attn_proj.bias                        -    f32, copy 0.0 MB
+[624/700] v.blk.4.attn_proj.weight                      -    f16, (vision→Q8_0) copy 3.1 MB
+[625/700] v.blk.4.attn_qkv.bias                         -    f32, copy 0.0 MB
+[626/700] v.blk.4.attn_qkv.weight                       -    f16, (vision→Q8_0) copy 9.4 MB
+[627/700] v.blk.4.ffn_down.bias                         -    f32, copy 0.0 MB
+[628/700] v.blk.4.ffn_down.weight                       -    f16, (vision→Q8_0) copy 8.3 MB
+[629/700] v.blk.4.ffn_gate.bias                         -    f32, copy 0.0 MB
+[630/700] v.blk.4.ffn_gate.weight                       -    f16, (vision→Q8_0) copy 8.3 MB
+[631/700] v.blk.4.ffn_up.bias                           -    f32, copy 0.0 MB
+[632/700] v.blk.4.ffn_up.weight                         -    f16, (vision→Q8_0) copy 8.3 MB
+[633/700] v.blk.4.norm1.weight                          -    f32, copy 0.0 MB
+[634/700] v.blk.4.norm2.weight                          -    f32, copy 0.0 MB
+[635/700] v.blk.5.attn_proj.bias                        -    f32, copy 0.0 MB
+[636/700] v.blk.5.attn_proj.weight                      -    f16, (vision→Q8_0) copy 3.1 MB
+[637/700] v.blk.5.attn_qkv.bias                         -    f32, copy 0.0 MB
+[638/700] v.blk.5.attn_qkv.weight                       -    f16, (vision→Q8_0) copy 9.4 MB
+[639/700] v.blk.5.ffn_down.bias                         -    f32, copy 0.0 MB
+[640/700] v.blk.5.ffn_down.weight                       -    f16, (vision→Q8_0) copy 8.3 MB
+[641/700] v.blk.5.ffn_gate.bias                         -    f32, copy 0.0 MB
+[642/700] v.blk.5.ffn_gate.weight                       -    f16, (vision→Q8_0) copy 8.3 MB
+[643/700] v.blk.5.ffn_up.bias                           -    f32, copy 0.0 MB
+[644/700] v.blk.5.ffn_up.weight                         -    f16, (vision→Q8_0) copy 8.3 MB
+[645/700] v.blk.5.norm1.weight                          -    f32, copy 0.0 MB
+[646/700] v.blk.5.norm2.weight                          -    f32, copy 0.0 MB
+[647/700] v.blk.6.attn_proj.bias                        -    f32, copy 0.0 MB
+[648/700] v.blk.6.attn_proj.weight                      -    f16, (vision→Q8_0) copy 3.1 MB
+[649/700] v.blk.6.attn_qkv.bias                         -    f32, copy 0.0 MB
+[650/700] v.blk.6.attn_qkv.weight                       -    f16, (vision→Q8_0) copy 9.4 MB
+[651/700] v.blk.6.ffn_down.bias                         -    f32, copy 0.0 MB
+[652/700] v.blk.6.ffn_down.weight                       -    f16, (vision→Q8_0) copy 8.3 MB
+[653/700] v.blk.6.ffn_gate.bias                         -    f32, copy 0.0 MB
+[654/700] v.blk.6.ffn_gate.weight                       -    f16, (vision→Q8_0) copy 8.3 MB
+[655/700] v.blk.6.ffn_up.bias                           -    f32, copy 0.0 MB
+[656/700] v.blk.6.ffn_up.weight                         -    f16, (vision→Q8_0) copy 8.3 MB
+[657/700] v.blk.6.norm1.weight                          -    f32, copy 0.0 MB
+[658/700] v.blk.6.norm2.weight                          -    f32, copy 0.0 MB
+[659/700] v.blk.7.attn_proj.bias                        -    f32, copy 0.0 MB
+[660/700] v.blk.7.attn_proj.weight                      -    f16, (vision→Q8_0) copy 3.1 MB
+[661/700] v.blk.7.attn_qkv.bias                         -    f32, copy 0.0 MB
+[662/700] v.blk.7.attn_qkv.weight                       -    f16, (vision→Q8_0) copy 9.4 MB
+[663/700] v.blk.7.ffn_down.bias                         -    f32, copy 0.0 MB
+[664/700] v.blk.7.ffn_down.weight                       -    f16, (vision→Q8_0) copy 8.3 MB
+[665/700] v.blk.7.ffn_gate.bias                         -    f32, copy 0.0 MB
+[666/700] v.blk.7.ffn_gate.weight                       -    f16, (vision→Q8_0) copy 8.3 MB
+[667/700] v.blk.7.ffn_up.bias                           -    f32, copy 0.0 MB
+[668/700] v.blk.7.ffn_up.weight                         -    f16, (vision→Q8_0) copy 8.3 MB
+[669/700] v.blk.7.norm1.weight                          -    f32, copy 0.0 MB
+[670/700] v.blk.7.norm2.weight                          -    f32, copy 0.0 MB
+[671/700] v.blk.8.attn_proj.bias                        -    f32, copy 0.0 MB
+[672/700] v.blk.8.attn_proj.weight                      -    f16, (vision→Q8_0) copy 3.1 MB
+[673/700] v.blk.8.attn_qkv.bias                         -    f32, copy 0.0 MB
+[674/700] v.blk.8.attn_qkv.weight                       -    f16, (vision→Q8_0) copy 9.4 MB
+[675/700] v.blk.8.ffn_down.bias                         -    f32, copy 0.0 MB
+[676/700] v.blk.8.ffn_down.weight                       -    f16, (vision→Q8_0) copy 8.3 MB
+[677/700] v.blk.8.ffn_gate.bias                         -    f32, copy 0.0 MB
+[678/700] v.blk.8.ffn_gate.weight                       -    f16, (vision→Q8_0) copy 8.3 MB
+[679/700] v.blk.8.ffn_up.bias                           -    f32, copy 0.0 MB
+[680/700] v.blk.8.ffn_up.weight                         -    f16, (vision→Q8_0) copy 8.3 MB
+[681/700] v.blk.8.norm1.weight                          -    f32, copy 0.0 MB
+[682/700] v.blk.8.norm2.weight                          -    f32, copy 0.0 MB
+[683/700] v.blk.9.attn_proj.bias                        -    f32, copy 0.0 MB
+[684/700] v.blk.9.attn_proj.weight                      -    f16, (vision→Q8_0) copy 3.1 MB
+[685/700] v.blk.9.attn_qkv.bias                         -    f32, copy 0.0 MB
+[686/700] v.blk.9.attn_qkv.weight                       -    f16, (vision→Q8_0) copy 9.4 MB
+[687/700] v.blk.9.ffn_down.bias                         -    f32, copy 0.0 MB
+[688/700] v.blk.9.ffn_down.weight                       -    f16, (vision→Q8_0) copy 8.3 MB
+[689/700] v.blk.9.ffn_gate.bias                         -    f32, copy 0.0 MB
+[690/700] v.blk.9.ffn_gate.weight                       -    f16, (vision→Q8_0) copy 8.3 MB
+[691/700] v.blk.9.ffn_up.bias                           -    f32, copy 0.0 MB
+[692/700] v.blk.9.ffn_up.weight                         -    f16, (vision→Q8_0) copy 8.3 MB
+[693/700] v.blk.9.norm1.weight                          -    f32, copy 0.0 MB
+[694/700] v.blk.9.norm2.weight                          -    f32, copy 0.0 MB
+[695/700] v.merger.fc1.bias                             -    f32, note: v.merger.fc1.bias — copying as-is (host-side computation)
+[696/700] v.merger.fc1.weight                           -    f16, note: v.merger.fc1.weight — copying as-is (host-side computation)
+[697/700] v.merger.fc2.bias                             -    f32, note: v.merger.fc2.bias — copying as-is (host-side computation)
+[698/700] v.merger.fc2.weight                           -    f16, note: v.merger.fc2.weight — copying as-is (host-side computation)
+[699/700] v.merger.norm.weight                          -    f32, note: v.merger.norm.weight — copying as-is (host-side computation)
+[700/700] v.patch_embed.weight                          -    f16, note: v.patch_embed.weight — copying as-is (host-side computation)
+
+196 quantized, 504 kept
+2403 MB -> 1800 MB (1.3x compression)

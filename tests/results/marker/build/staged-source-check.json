@@ -1,0 +1,18 @@
+{
+  "kind": "final staged source check; raw evidence/font attribution bytes preserve original whitespace",
+  "intentional_raw_whitespace": [
+    "tests/fixtures/marker/FONT-NOTICE.txt",
+    "tests/results/marker/post-review-document/compiler-version.txt",
+    "tests/results/marker/sanitizers-final/compiler-version.txt",
+    "tests/results/marker/sanitizers/compiler-version.txt"
+  ],
+  "raw_file_sha256": {
+    "tests/fixtures/marker/FONT-NOTICE.txt": "63d3ba759d12804c5b31a9d5940d855c1820d1f5999e6b0872eb1c7ff045fbc9",
+    "tests/results/marker/post-review-document/compiler-version.txt": "78b5d66fa8e53c3cfadb14889dfb5936f1c58888ad49c019e15d3dc59fc64e30",
+    "tests/results/marker/sanitizers-final/compiler-version.txt": "78b5d66fa8e53c3cfadb14889dfb5936f1c58888ad49c019e15d3dc59fc64e30",
+    "tests/results/marker/sanitizers/compiler-version.txt": "78b5d66fa8e53c3cfadb14889dfb5936f1c58888ad49c019e15d3dc59fc64e30"
+  },
+  "staged_check_exit_code": 0,
+  "diagnostics": "",
+  "gitattributes_sha256": "a2fd112dcc77a73bca0843d3817f42340858af4fd5ebd7391ebc5a6369faf33e"
+}

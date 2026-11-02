@@ -1,0 +1,562 @@
+Loading model from '/mnt/heavy/scratch/d-f32.gguf'
+Writing quantized model to '/mnt/heavy/scratch/d-q4_k-convkeep.gguf'
+[  1/533] backbone.stem.stem1.conv.weight               -    f32, skip (ncols 27 not div by 256)
+copy 0.0 MB
+[  2/533] backbone.stem.stem1.bn.scale                  -    f32, copy 0.0 MB
+[  3/533] backbone.stem.stem1.bn.shift                  -    f32, copy 0.0 MB
+[  4/533] backbone.stem.stem1.lab.scale                 -    f32, copy 0.0 MB
+[  5/533] backbone.stem.stem1.lab.bias                  -    f32, copy 0.0 MB
+[  6/533] backbone.stem.stem2a.conv.weight              -    f32, (fallback q4_0) copy 0.0 MB
+[  7/533] backbone.stem.stem2a.bn.scale                 -    f32, copy 0.0 MB
+[  8/533] backbone.stem.stem2a.bn.shift                 -    f32, copy 0.0 MB
+[  9/533] backbone.stem.stem2a.lab.scale                -    f32, copy 0.0 MB
+[ 10/533] backbone.stem.stem2a.lab.bias                 -    f32, copy 0.0 MB
+[ 11/533] backbone.stem.stem2b.conv.weight              -    f32, skip (ncols 48 not div by 256)
+copy 0.0 MB
+[ 12/533] backbone.stem.stem2b.bn.scale                 -    f32, copy 0.0 MB
+[ 13/533] backbone.stem.stem2b.bn.shift                 -    f32, copy 0.0 MB
+[ 14/533] backbone.stem.stem2b.lab.scale                -    f32, copy 0.0 MB
+[ 15/533] backbone.stem.stem2b.lab.bias                 -    f32, copy 0.0 MB
+[ 16/533] backbone.stem.stem3.conv.weight               -    f32, skip (ncols 432 not div by 256)
+copy 0.0 MB
+[ 17/533] backbone.stem.stem3.bn.scale                  -    f32, copy 0.0 MB
+[ 18/533] backbone.stem.stem3.bn.shift                  -    f32, copy 0.0 MB
+[ 19/533] backbone.stem.stem3.lab.scale                 -    f32, copy 0.0 MB
+[ 20/533] backbone.stem.stem3.lab.bias                  -    f32, copy 0.0 MB
+[ 21/533] backbone.stem.stem4.conv.weight               -    f32, skip (ncols 24 not div by 256)
+copy 0.0 MB
+[ 22/533] backbone.stem.stem4.bn.scale                  -    f32, copy 0.0 MB
+[ 23/533] backbone.stem.stem4.bn.shift                  -    f32, copy 0.0 MB
+[ 24/533] backbone.stem.stem4.lab.scale                 -    f32, copy 0.0 MB
+[ 25/533] backbone.stem.stem4.lab.bias                  -    f32, copy 0.0 MB
+[ 26/533] backbone.stages.0.blocks.0.layers.0.conv.weight -    f32, (fallback q4_0) copy 0.0 MB
+[ 27/533] backbone.stages.0.blocks.0.layers.0.bn.scale  -    f32, copy 0.0 MB
+[ 28/533] backbone.stages.0.blocks.0.layers.0.bn.shift  -    f32, copy 0.0 MB
+[ 29/533] backbone.stages.0.blocks.0.layers.0.lab.scale -    f32, copy 0.0 MB
+[ 30/533] backbone.stages.0.blocks.0.layers.0.lab.bias  -    f32, copy 0.0 MB
+[ 31/533] backbone.stages.0.blocks.0.layers.1.conv.weight -    f32, (fallback q4_0) copy 0.0 MB
+[ 32/533] backbone.stages.0.blocks.0.layers.1.bn.scale  -    f32, copy 0.0 MB
+[ 33/533] backbone.stages.0.blocks.0.layers.1.bn.shift  -    f32, copy 0.0 MB
+[ 34/533] backbone.stages.0.blocks.0.layers.1.lab.scale -    f32, copy 0.0 MB
+[ 35/533] backbone.stages.0.blocks.0.layers.1.lab.bias  -    f32, copy 0.0 MB
+[ 36/533] backbone.stages.0.blocks.0.layers.2.conv.weight -    f32, (fallback q4_0) copy 0.0 MB
+[ 37/533] backbone.stages.0.blocks.0.layers.2.bn.scale  -    f32, copy 0.0 MB
+[ 38/533] backbone.stages.0.blocks.0.layers.2.bn.shift  -    f32, copy 0.0 MB
+[ 39/533] backbone.stages.0.blocks.0.layers.2.lab.scale -    f32, copy 0.0 MB
+[ 40/533] backbone.stages.0.blocks.0.layers.2.lab.bias  -    f32, copy 0.0 MB
+[ 41/533] backbone.stages.0.blocks.0.layers.3.conv.weight -    f32, (fallback q4_0) copy 0.0 MB
+[ 42/533] backbone.stages.0.blocks.0.layers.3.bn.scale  -    f32, copy 0.0 MB
+[ 43/533] backbone.stages.0.blocks.0.layers.3.bn.shift  -    f32, copy 0.0 MB
+[ 44/533] backbone.stages.0.blocks.0.layers.3.lab.scale -    f32, copy 0.0 MB
+[ 45/533] backbone.stages.0.blocks.0.layers.3.lab.bias  -    f32, copy 0.0 MB
+[ 46/533] backbone.stages.0.blocks.0.aggregation.0.conv.weight -    f32, (fallback q4_0) copy 0.0 MB
+[ 47/533] backbone.stages.0.blocks.0.aggregation.0.bn.scale -    f32, copy 0.0 MB
+[ 48/533] backbone.stages.0.blocks.0.aggregation.0.bn.shift -    f32, copy 0.0 MB
+[ 49/533] backbone.stages.0.blocks.0.aggregation.0.lab.scale -    f32, copy 0.0 MB
+[ 50/533] backbone.stages.0.blocks.0.aggregation.0.lab.bias -    f32, copy 0.0 MB
+[ 51/533] backbone.stages.0.blocks.0.aggregation.1.conv.weight -    f32, skip (ncols 48 not div by 256)
+copy 0.0 MB
+[ 52/533] backbone.stages.0.blocks.0.aggregation.1.bn.scale -    f32, copy 0.0 MB
+[ 53/533] backbone.stages.0.blocks.0.aggregation.1.bn.shift -    f32, copy 0.0 MB
+[ 54/533] backbone.stages.0.blocks.0.aggregation.1.lab.scale -    f32, copy 0.0 MB
+[ 55/533] backbone.stages.0.blocks.0.aggregation.1.lab.bias -    f32, copy 0.0 MB
+[ 56/533] backbone.stages.1.downsample.conv.weight      -    f32, note: backbone.stages.1.downsample.conv.weight — copying as-is (host-side computation)
+[ 57/533] backbone.stages.1.downsample.bn.scale         -    f32, note: backbone.stages.1.downsample.bn.scale — copying as-is (host-side computation)
+[ 58/533] backbone.stages.1.downsample.bn.shift         -    f32, note: backbone.stages.1.downsample.bn.shift — copying as-is (host-side computation)
+[ 59/533] backbone.stages.1.blocks.0.layers.0.conv.weight -    f32, (fallback q4_0) copy 0.2 MB
+[ 60/533] backbone.stages.1.blocks.0.layers.0.bn.scale  -    f32, copy 0.0 MB
+[ 61/533] backbone.stages.1.blocks.0.layers.0.bn.shift  -    f32, copy 0.0 MB
+[ 62/533] backbone.stages.1.blocks.0.layers.0.lab.scale -    f32, copy 0.0 MB
+[ 63/533] backbone.stages.1.blocks.0.layers.0.lab.bias  -    f32, copy 0.0 MB
+[ 64/533] backbone.stages.1.blocks.0.layers.1.conv.weight -    f32, (fallback q4_0) copy 0.1 MB
+[ 65/533] backbone.stages.1.blocks.0.layers.1.bn.scale  -    f32, copy 0.0 MB
+[ 66/533] backbone.stages.1.blocks.0.layers.1.bn.shift  -    f32, copy 0.0 MB
+[ 67/533] backbone.stages.1.blocks.0.layers.1.lab.scale -    f32, copy 0.0 MB
+[ 68/533] backbone.stages.1.blocks.0.layers.1.lab.bias  -    f32, copy 0.0 MB
+[ 69/533] backbone.stages.1.blocks.0.layers.2.conv.weight -    f32, (fallback q4_0) copy 0.1 MB
+[ 70/533] backbone.stages.1.blocks.0.layers.2.bn.scale  -    f32, copy 0.0 MB
+[ 71/533] backbone.stages.1.blocks.0.layers.2.bn.shift  -    f32, copy 0.0 MB
+[ 72/533] backbone.stages.1.blocks.0.layers.2.lab.scale -    f32, copy 0.0 MB
+[ 73/533] backbone.stages.1.blocks.0.layers.2.lab.bias  -    f32, copy 0.0 MB
+[ 74/533] backbone.stages.1.blocks.0.layers.3.conv.weight -    f32, (fallback q4_0) copy 0.1 MB
+[ 75/533] backbone.stages.1.blocks.0.layers.3.bn.scale  -    f32, copy 0.0 MB
+[ 76/533] backbone.stages.1.blocks.0.layers.3.bn.shift  -    f32, copy 0.0 MB
+[ 77/533] backbone.stages.1.blocks.0.layers.3.lab.scale -    f32, copy 0.0 MB
+[ 78/533] backbone.stages.1.blocks.0.layers.3.lab.bias  -    f32, copy 0.0 MB
+[ 79/533] backbone.stages.1.blocks.0.aggregation.0.conv.weight -    f32, (fallback q4_0) copy 0.3 MB
+[ 80/533] backbone.stages.1.blocks.0.aggregation.0.bn.scale -    f32, copy 0.0 MB
+[ 81/533] backbone.stages.1.blocks.0.aggregation.0.bn.shift -    f32, copy 0.0 MB
+[ 82/533] backbone.stages.1.blocks.0.aggregation.0.lab.scale -    f32, copy 0.0 MB
+[ 83/533] backbone.stages.1.blocks.0.aggregation.0.lab.bias -    f32, copy 0.0 MB
+[ 84/533] backbone.stages.1.blocks.0.aggregation.1.conv.weight -    f32, (fallback q4_0) copy 0.3 MB
+[ 85/533] backbone.stages.1.blocks.0.aggregation.1.bn.scale -    f32, copy 0.0 MB
+[ 86/533] backbone.stages.1.blocks.0.aggregation.1.bn.shift -    f32, copy 0.0 MB
+[ 87/533] backbone.stages.1.blocks.0.aggregation.1.lab.scale -    f32, copy 0.0 MB
+[ 88/533] backbone.stages.1.blocks.0.aggregation.1.lab.bias -    f32, copy 0.0 MB
+[ 89/533] backbone.stages.2.downsample.conv.weight      -    f32, note: backbone.stages.2.downsample.conv.weight — copying as-is (host-side computation)
+[ 90/533] backbone.stages.2.downsample.bn.scale         -    f32, note: backbone.stages.2.downsample.bn.scale — copying as-is (host-side computation)
+[ 91/533] backbone.stages.2.downsample.bn.shift         -    f32, note: backbone.stages.2.downsample.bn.shift — copying as-is (host-side computation)
+[ 92/533] backbone.stages.2.blocks.0.layers.0.conv1.conv.weight -    f32, (fallback q4_0) copy 0.2 MB
+[ 93/533] backbone.stages.2.blocks.0.layers.0.conv1.bn.scale -    f32, copy 0.0 MB
+[ 94/533] backbone.stages.2.blocks.0.layers.0.conv1.bn.shift -    f32, copy 0.0 MB
+[ 95/533] backbone.stages.2.blocks.0.layers.0.conv2.conv.weight -    f32, skip (ncols 25 not div by 256)
+copy 0.0 MB
+[ 96/533] backbone.stages.2.blocks.0.layers.0.conv2.bn.scale -    f32, copy 0.0 MB
+[ 97/533] backbone.stages.2.blocks.0.layers.0.conv2.bn.shift -    f32, copy 0.0 MB
+[ 98/533] backbone.stages.2.blocks.0.layers.0.conv2.lab.scale -    f32, copy 0.0 MB
+[ 99/533] backbone.stages.2.blocks.0.layers.0.conv2.lab.bias -    f32, copy 0.0 MB
+[100/533] backbone.stages.2.blocks.0.layers.1.conv1.conv.weight -    f32, (fallback q4_0) copy 0.1 MB
+[101/533] backbone.stages.2.blocks.0.layers.1.conv1.bn.scale -    f32, copy 0.0 MB
+[102/533] backbone.stages.2.blocks.0.layers.1.conv1.bn.shift -    f32, copy 0.0 MB
+[103/533] backbone.stages.2.blocks.0.layers.1.conv2.conv.weight -    f32, skip (ncols 25 not div by 256)
+copy 0.0 MB
+[104/533] backbone.stages.2.blocks.0.layers.1.conv2.bn.scale -    f32, copy 0.0 MB
+[105/533] backbone.stages.2.blocks.0.layers.1.conv2.bn.shift -    f32, copy 0.0 MB
+[106/533] backbone.stages.2.blocks.0.layers.1.conv2.lab.scale -    f32, copy 0.0 MB
+[107/533] backbone.stages.2.blocks.0.layers.1.conv2.lab.bias -    f32, copy 0.0 MB
+[108/533] backbone.stages.2.blocks.0.layers.2.conv1.conv.weight -    f32, (fallback q4_0) copy 0.1 MB
+[109/533] backbone.stages.2.blocks.0.layers.2.conv1.bn.scale -    f32, copy 0.0 MB
+[110/533] backbone.stages.2.blocks.0.layers.2.conv1.bn.shift -    f32, copy 0.0 MB
+[111/533] backbone.stages.2.blocks.0.layers.2.conv2.conv.weight -    f32, skip (ncols 25 not div by 256)
+copy 0.0 MB
+[112/533] backbone.stages.2.blocks.0.layers.2.conv2.bn.scale -    f32, copy 0.0 MB
+[113/533] backbone.stages.2.blocks.0.layers.2.conv2.bn.shift -    f32, copy 0.0 MB
+[114/533] backbone.stages.2.blocks.0.layers.2.conv2.lab.scale -    f32, copy 0.0 MB
+[115/533] backbone.stages.2.blocks.0.layers.2.conv2.lab.bias -    f32, copy 0.0 MB
+[116/533] backbone.stages.2.blocks.0.layers.3.conv1.conv.weight -    f32, (fallback q4_0) copy 0.1 MB
+[117/533] backbone.stages.2.blocks.0.layers.3.conv1.bn.scale -    f32, copy 0.0 MB
+[118/533] backbone.stages.2.blocks.0.layers.3.conv1.bn.shift -    f32, copy 0.0 MB
+[119/533] backbone.stages.2.blocks.0.layers.3.conv2.conv.weight -    f32, skip (ncols 25 not div by 256)
+copy 0.0 MB
+[120/533] backbone.stages.2.blocks.0.layers.3.conv2.bn.scale -    f32, copy 0.0 MB
+[121/533] backbone.stages.2.blocks.0.layers.3.conv2.bn.shift -    f32, copy 0.0 MB
+[122/533] backbone.stages.2.blocks.0.layers.3.conv2.lab.scale -    f32, copy 0.0 MB
+[123/533] backbone.stages.2.blocks.0.layers.3.conv2.lab.bias -    f32, copy 0.0 MB
+[124/533] backbone.stages.2.blocks.0.aggregation.0.conv.weight -    f32, (fallback q4_0) copy 1.3 MB
+[125/533] backbone.stages.2.blocks.0.aggregation.0.bn.scale -    f32, copy 0.0 MB
+[126/533] backbone.stages.2.blocks.0.aggregation.0.bn.shift -    f32, copy 0.0 MB
+[127/533] backbone.stages.2.blocks.0.aggregation.0.lab.scale -    f32, copy 0.0 MB
+[128/533] backbone.stages.2.blocks.0.aggregation.0.lab.bias -    f32, copy 0.0 MB
+[129/533] backbone.stages.2.blocks.0.aggregation.1.conv.weight -    f32, (fallback q4_0) copy 1.1 MB
+[130/533] backbone.stages.2.blocks.0.aggregation.1.bn.scale -    f32, copy 0.0 MB
+[131/533] backbone.stages.2.blocks.0.aggregation.1.bn.shift -    f32, copy 0.0 MB
+[132/533] backbone.stages.2.blocks.0.aggregation.1.lab.scale -    f32, copy 0.0 MB
+[133/533] backbone.stages.2.blocks.0.aggregation.1.lab.bias -    f32, copy 0.0 MB
+[134/533] backbone.stages.2.blocks.1.layers.0.conv1.conv.weight -    f32, copy 0.4 MB
+[135/533] backbone.stages.2.blocks.1.layers.0.conv1.bn.scale -    f32, copy 0.0 MB
+[136/533] backbone.stages.2.blocks.1.layers.0.conv1.bn.shift -    f32, copy 0.0 MB
+[137/533] backbone.stages.2.blocks.1.layers.0.conv2.conv.weight -    f32, skip (ncols 25 not div by 256)
+copy 0.0 MB
+[138/533] backbone.stages.2.blocks.1.layers.0.conv2.bn.scale -    f32, copy 0.0 MB
+[139/533] backbone.stages.2.blocks.1.layers.0.conv2.bn.shift -    f32, copy 0.0 MB
+[140/533] backbone.stages.2.blocks.1.layers.0.conv2.lab.scale -    f32, copy 0.0 MB
+[141/533] backbone.stages.2.blocks.1.layers.0.conv2.lab.bias -    f32, copy 0.0 MB
+[142/533] backbone.stages.2.blocks.1.layers.1.conv1.conv.weight -    f32, (fallback q4_0) copy 0.1 MB
+[143/533] backbone.stages.2.blocks.1.layers.1.conv1.bn.scale -    f32, copy 0.0 MB
+[144/533] backbone.stages.2.blocks.1.layers.1.conv1.bn.shift -    f32, copy 0.0 MB
+[145/533] backbone.stages.2.blocks.1.layers.1.conv2.conv.weight -    f32, skip (ncols 25 not div by 256)
+copy 0.0 MB
+[146/533] backbone.stages.2.blocks.1.layers.1.conv2.bn.scale -    f32, copy 0.0 MB
+[147/533] backbone.stages.2.blocks.1.layers.1.conv2.bn.shift -    f32, copy 0.0 MB
+[148/533] backbone.stages.2.blocks.1.layers.1.conv2.lab.scale -    f32, copy 0.0 MB
+[149/533] backbone.stages.2.blocks.1.layers.1.conv2.lab.bias -    f32, copy 0.0 MB
+[150/533] backbone.stages.2.blocks.1.layers.2.conv1.conv.weight -    f32, (fallback q4_0) copy 0.1 MB
+[151/533] backbone.stages.2.blocks.1.layers.2.conv1.bn.scale -    f32, copy 0.0 MB
+[152/533] backbone.stages.2.blocks.1.layers.2.conv1.bn.shift -    f32, copy 0.0 MB
+[153/533] backbone.stages.2.blocks.1.layers.2.conv2.conv.weight -    f32, skip (ncols 25 not div by 256)
+copy 0.0 MB
+[154/533] backbone.stages.2.blocks.1.layers.2.conv2.bn.scale -    f32, copy 0.0 MB
+[155/533] backbone.stages.2.blocks.1.layers.2.conv2.bn.shift -    f32, copy 0.0 MB
+[156/533] backbone.stages.2.blocks.1.layers.2.conv2.lab.scale -    f32, copy 0.0 MB
+[157/533] backbone.stages.2.blocks.1.layers.2.conv2.lab.bias -    f32, copy 0.0 MB
+[158/533] backbone.stages.2.blocks.1.layers.3.conv1.conv.weight -    f32, (fallback q4_0) copy 0.1 MB
+[159/533] backbone.stages.2.blocks.1.layers.3.conv1.bn.scale -    f32, copy 0.0 MB
+[160/533] backbone.stages.2.blocks.1.layers.3.conv1.bn.shift -    f32, copy 0.0 MB
+[161/533] backbone.stages.2.blocks.1.layers.3.conv2.conv.weight -    f32, skip (ncols 25 not div by 256)
+copy 0.0 MB
+[162/533] backbone.stages.2.blocks.1.layers.3.conv2.bn.scale -    f32, copy 0.0 MB
+[163/533] backbone.stages.2.blocks.1.layers.3.conv2.bn.shift -    f32, copy 0.0 MB
+[164/533] backbone.stages.2.blocks.1.layers.3.conv2.lab.scale -    f32, copy 0.0 MB
+[165/533] backbone.stages.2.blocks.1.layers.3.conv2.lab.bias -    f32, copy 0.0 MB
+[166/533] backbone.stages.2.blocks.1.aggregation.0.conv.weight -    f32, copy 1.9 MB
+[167/533] backbone.stages.2.blocks.1.aggregation.0.bn.scale -    f32, copy 0.0 MB
+[168/533] backbone.stages.2.blocks.1.aggregation.0.bn.shift -    f32, copy 0.0 MB
+[169/533] backbone.stages.2.blocks.1.aggregation.0.lab.scale -    f32, copy 0.0 MB
+[170/533] backbone.stages.2.blocks.1.aggregation.0.lab.bias -    f32, copy 0.0 MB
+[171/533] backbone.stages.2.blocks.1.aggregation.1.conv.weight -    f32, (fallback q4_0) copy 1.1 MB
+[172/533] backbone.stages.2.blocks.1.aggregation.1.bn.scale -    f32, copy 0.0 MB
+[173/533] backbone.stages.2.blocks.1.aggregation.1.bn.shift -    f32, copy 0.0 MB
+[174/533] backbone.stages.2.blocks.1.aggregation.1.lab.scale -    f32, copy 0.0 MB
+[175/533] backbone.stages.2.blocks.1.aggregation.1.lab.bias -    f32, copy 0.0 MB
+[176/533] backbone.stages.2.blocks.2.layers.0.conv1.conv.weight -    f32, copy 0.4 MB
+[177/533] backbone.stages.2.blocks.2.layers.0.conv1.bn.scale -    f32, copy 0.0 MB
+[178/533] backbone.stages.2.blocks.2.layers.0.conv1.bn.shift -    f32, copy 0.0 MB
+[179/533] backbone.stages.2.blocks.2.layers.0.conv2.conv.weight -    f32, skip (ncols 25 not div by 256)
+copy 0.0 MB
+[180/533] backbone.stages.2.blocks.2.layers.0.conv2.bn.scale -    f32, copy 0.0 MB
+[181/533] backbone.stages.2.blocks.2.layers.0.conv2.bn.shift -    f32, copy 0.0 MB
+[182/533] backbone.stages.2.blocks.2.layers.0.conv2.lab.scale -    f32, copy 0.0 MB
+[183/533] backbone.stages.2.blocks.2.layers.0.conv2.lab.bias -    f32, copy 0.0 MB
+[184/533] backbone.stages.2.blocks.2.layers.1.conv1.conv.weight -    f32, (fallback q4_0) copy 0.1 MB
+[185/533] backbone.stages.2.blocks.2.layers.1.conv1.bn.scale -    f32, copy 0.0 MB
+[186/533] backbone.stages.2.blocks.2.layers.1.conv1.bn.shift -    f32, copy 0.0 MB
+[187/533] backbone.stages.2.blocks.2.layers.1.conv2.conv.weight -    f32, skip (ncols 25 not div by 256)
+copy 0.0 MB
+[188/533] backbone.stages.2.blocks.2.layers.1.conv2.bn.scale -    f32, copy 0.0 MB
+[189/533] backbone.stages.2.blocks.2.layers.1.conv2.bn.shift -    f32, copy 0.0 MB
+[190/533] backbone.stages.2.blocks.2.layers.1.conv2.lab.scale -    f32, copy 0.0 MB
+[191/533] backbone.stages.2.blocks.2.layers.1.conv2.lab.bias -    f32, copy 0.0 MB
+[192/533] backbone.stages.2.blocks.2.layers.2.conv1.conv.weight -    f32, (fallback q4_0) copy 0.1 MB
+[193/533] backbone.stages.2.blocks.2.layers.2.conv1.bn.scale -    f32, copy 0.0 MB
+[194/533] backbone.stages.2.blocks.2.layers.2.conv1.bn.shift -    f32, copy 0.0 MB
+[195/533] backbone.stages.2.blocks.2.layers.2.conv2.conv.weight -    f32, skip (ncols 25 not div by 256)
+copy 0.0 MB
+[196/533] backbone.stages.2.blocks.2.layers.2.conv2.bn.scale -    f32, copy 0.0 MB
+[197/533] backbone.stages.2.blocks.2.layers.2.conv2.bn.shift -    f32, copy 0.0 MB
+[198/533] backbone.stages.2.blocks.2.layers.2.conv2.lab.scale -    f32, copy 0.0 MB
+[199/533] backbone.stages.2.blocks.2.layers.2.conv2.lab.bias -    f32, copy 0.0 MB
+[200/533] backbone.stages.2.blocks.2.layers.3.conv1.conv.weight -    f32, (fallback q4_0) copy 0.1 MB
+[201/533] backbone.stages.2.blocks.2.layers.3.conv1.bn.scale -    f32, copy 0.0 MB
+[202/533] backbone.stages.2.blocks.2.layers.3.conv1.bn.shift -    f32, copy 0.0 MB
+[203/533] backbone.stages.2.blocks.2.layers.3.conv2.conv.weight -    f32, skip (ncols 25 not div by 256)
+copy 0.0 MB
+[204/533] backbone.stages.2.blocks.2.layers.3.conv2.bn.scale -    f32, copy 0.0 MB
+[205/533] backbone.stages.2.blocks.2.layers.3.conv2.bn.shift -    f32, copy 0.0 MB
+[206/533] backbone.stages.2.blocks.2.layers.3.conv2.lab.scale -    f32, copy 0.0 MB
+[207/533] backbone.stages.2.blocks.2.layers.3.conv2.lab.bias -    f32, copy 0.0 MB
+[208/533] backbone.stages.2.blocks.2.aggregation.0.conv.weight -    f32, copy 1.9 MB
+[209/533] backbone.stages.2.blocks.2.aggregation.0.bn.scale -    f32, copy 0.0 MB
+[210/533] backbone.stages.2.blocks.2.aggregation.0.bn.shift -    f32, copy 0.0 MB
+[211/533] backbone.stages.2.blocks.2.aggregation.0.lab.scale -    f32, copy 0.0 MB
+[212/533] backbone.stages.2.blocks.2.aggregation.0.lab.bias -    f32, copy 0.0 MB
+[213/533] backbone.stages.2.blocks.2.aggregation.1.conv.weight -    f32, (fallback q4_0) copy 1.1 MB
+[214/533] backbone.stages.2.blocks.2.aggregation.1.bn.scale -    f32, copy 0.0 MB
+[215/533] backbone.stages.2.blocks.2.aggregation.1.bn.shift -    f32, copy 0.0 MB
+[216/533] backbone.stages.2.blocks.2.aggregation.1.lab.scale -    f32, copy 0.0 MB
+[217/533] backbone.stages.2.blocks.2.aggregation.1.lab.bias -    f32, copy 0.0 MB
+[218/533] backbone.stages.3.downsample.conv.weight      -    f32, note: backbone.stages.3.downsample.conv.weight — copying as-is (host-side computation)
+[219/533] backbone.stages.3.downsample.bn.scale         -    f32, note: backbone.stages.3.downsample.bn.scale — copying as-is (host-side computation)
+[220/533] backbone.stages.3.downsample.bn.shift         -    f32, note: backbone.stages.3.downsample.bn.shift — copying as-is (host-side computation)
+[221/533] backbone.stages.3.blocks.0.layers.0.conv1.conv.weight -    f32, copy 0.8 MB
+[222/533] backbone.stages.3.blocks.0.layers.0.conv1.bn.scale -    f32, copy 0.0 MB
+[223/533] backbone.stages.3.blocks.0.layers.0.conv1.bn.shift -    f32, copy 0.0 MB
+[224/533] backbone.stages.3.blocks.0.layers.0.conv2.conv.weight -    f32, skip (ncols 25 not div by 256)
+copy 0.0 MB
+[225/533] backbone.stages.3.blocks.0.layers.0.conv2.bn.scale -    f32, copy 0.0 MB
+[226/533] backbone.stages.3.blocks.0.layers.0.conv2.bn.shift -    f32, copy 0.0 MB
+[227/533] backbone.stages.3.blocks.0.layers.0.conv2.lab.scale -    f32, copy 0.0 MB
+[228/533] backbone.stages.3.blocks.0.layers.0.conv2.lab.bias -    f32, copy 0.0 MB
+[229/533] backbone.stages.3.blocks.0.layers.1.conv1.conv.weight -    f32, copy 0.2 MB
+[230/533] backbone.stages.3.blocks.0.layers.1.conv1.bn.scale -    f32, copy 0.0 MB
+[231/533] backbone.stages.3.blocks.0.layers.1.conv1.bn.shift -    f32, copy 0.0 MB
+[232/533] backbone.stages.3.blocks.0.layers.1.conv2.conv.weight -    f32, skip (ncols 25 not div by 256)
+copy 0.0 MB
+[233/533] backbone.stages.3.blocks.0.layers.1.conv2.bn.scale -    f32, copy 0.0 MB
+[234/533] backbone.stages.3.blocks.0.layers.1.conv2.bn.shift -    f32, copy 0.0 MB
+[235/533] backbone.stages.3.blocks.0.layers.1.conv2.lab.scale -    f32, copy 0.0 MB
+[236/533] backbone.stages.3.blocks.0.layers.1.conv2.lab.bias -    f32, copy 0.0 MB
+[237/533] backbone.stages.3.blocks.0.layers.2.conv1.conv.weight -    f32, copy 0.2 MB
+[238/533] backbone.stages.3.blocks.0.layers.2.conv1.bn.scale -    f32, copy 0.0 MB
+[239/533] backbone.stages.3.blocks.0.layers.2.conv1.bn.shift -    f32, copy 0.0 MB
+[240/533] backbone.stages.3.blocks.0.layers.2.conv2.conv.weight -    f32, skip (ncols 25 not div by 256)
+copy 0.0 MB
+[241/533] backbone.stages.3.blocks.0.layers.2.conv2.bn.scale -    f32, copy 0.0 MB
+[242/533] backbone.stages.3.blocks.0.layers.2.conv2.bn.shift -    f32, copy 0.0 MB
+[243/533] backbone.stages.3.blocks.0.layers.2.conv2.lab.scale -    f32, copy 0.0 MB
+[244/533] backbone.stages.3.blocks.0.layers.2.conv2.lab.bias -    f32, copy 0.0 MB
+[245/533] backbone.stages.3.blocks.0.layers.3.conv1.conv.weight -    f32, copy 0.2 MB
+[246/533] backbone.stages.3.blocks.0.layers.3.conv1.bn.scale -    f32, copy 0.0 MB
+[247/533] backbone.stages.3.blocks.0.layers.3.conv1.bn.shift -    f32, copy 0.0 MB
+[248/533] backbone.stages.3.blocks.0.layers.3.conv2.conv.weight -    f32, skip (ncols 25 not div by 256)
+copy 0.0 MB
+[249/533] backbone.stages.3.blocks.0.layers.3.conv2.bn.scale -    f32, copy 0.0 MB
+[250/533] backbone.stages.3.blocks.0.layers.3.conv2.bn.shift -    f32, copy 0.0 MB
+[251/533] backbone.stages.3.blocks.0.layers.3.conv2.lab.scale -    f32, copy 0.0 MB
+[252/533] backbone.stages.3.blocks.0.layers.3.conv2.lab.bias -    f32, copy 0.0 MB
+[253/533] backbone.stages.3.blocks.0.aggregation.0.conv.weight -    f32, copy 5.2 MB
+[254/533] backbone.stages.3.blocks.0.aggregation.0.bn.scale -    f32, copy 0.0 MB
+[255/533] backbone.stages.3.blocks.0.aggregation.0.bn.shift -    f32, copy 0.0 MB
+[256/533] backbone.stages.3.blocks.0.aggregation.0.lab.scale -    f32, copy 0.0 MB
+[257/533] backbone.stages.3.blocks.0.aggregation.0.lab.bias -    f32, copy 0.0 MB
+[258/533] backbone.stages.3.blocks.0.aggregation.1.conv.weight -    f32, copy 4.5 MB
+[259/533] backbone.stages.3.blocks.0.aggregation.1.bn.scale -    f32, copy 0.0 MB
+[260/533] backbone.stages.3.blocks.0.aggregation.1.bn.shift -    f32, copy 0.0 MB
+[261/533] backbone.stages.3.blocks.0.aggregation.1.lab.scale -    f32, copy 0.0 MB
+[262/533] backbone.stages.3.blocks.0.aggregation.1.lab.bias -    f32, copy 0.0 MB
+[263/533] encoder.input_proj.0.conv.weight              -    f32, (fallback q4_0) copy 0.4 MB
+[264/533] encoder.input_proj.0.norm.scale               -    f32, copy 0.0 MB
+[265/533] encoder.input_proj.0.norm.shift               -    f32, copy 0.0 MB
+[266/533] encoder.input_proj.1.conv.weight              -    f32, copy 0.8 MB
+[267/533] encoder.input_proj.1.norm.scale               -    f32, copy 0.0 MB
+[268/533] encoder.input_proj.1.norm.shift               -    f32, copy 0.0 MB
+[269/533] encoder.input_proj.2.conv.weight              -    f32, copy 1.5 MB
+[270/533] encoder.input_proj.2.norm.scale               -    f32, copy 0.0 MB
+[271/533] encoder.input_proj.2.norm.shift               -    f32, copy 0.0 MB
+[272/533] encoder.encoder.0.layers.0.self_attn.out_proj.weight -    f32, quantizing to q4_K... 0.2 MB -> 0.0 MB
+[273/533] encoder.encoder.0.layers.0.self_attn.out_proj.bias -    f32, copy 0.0 MB
+[274/533] encoder.encoder.0.layers.0.self_attn.in_proj_weight -    f32, quantizing to q4_K... 0.8 MB -> 0.1 MB
+[275/533] encoder.encoder.0.layers.0.self_attn.in_proj_bias -    f32, copy 0.0 MB
+[276/533] encoder.encoder.0.layers.0.linear1.weight     -    f32, quantizing to q4_K... 1.0 MB -> 0.1 MB
+[277/533] encoder.encoder.0.layers.0.linear1.bias       -    f32, copy 0.0 MB
+[278/533] encoder.encoder.0.layers.0.linear2.weight     -    f32, quantizing to q4_K... 1.0 MB -> 0.1 MB
+[279/533] encoder.encoder.0.layers.0.linear2.bias       -    f32, copy 0.0 MB
+[280/533] encoder.encoder.0.layers.0.norm1.weight       -    f32, copy 0.0 MB
+[281/533] encoder.encoder.0.layers.0.norm1.bias         -    f32, copy 0.0 MB
+[282/533] encoder.encoder.0.layers.0.norm2.weight       -    f32, copy 0.0 MB
+[283/533] encoder.encoder.0.layers.0.norm2.bias         -    f32, copy 0.0 MB
+[284/533] encoder.pos_embed2                            -    f32, quantizing to q8_0... 0.9 MB -> 0.2 MB
+[285/533] encoder.lateral_convs.0.fused.weight          -    f32, copy 0.2 MB
+[286/533] encoder.lateral_convs.0.fused.bias            -    f32, copy 0.0 MB
+[287/533] encoder.downsample_convs.0.0.cv1.fused.weight -    f32, note: encoder.downsample_convs.0.0.cv1.fused.weight — copying as-is (host-side computation)
+[288/533] encoder.downsample_convs.0.0.cv1.fused.bias   -    f32, note: encoder.downsample_convs.0.0.cv1.fused.bias — copying as-is (host-side computation)
+[289/533] encoder.downsample_convs.0.0.cv2.fused.weight -    f32, note: encoder.downsample_convs.0.0.cv2.fused.weight — copying as-is (host-side computation)
+[290/533] encoder.downsample_convs.0.0.cv2.fused.bias   -    f32, note: encoder.downsample_convs.0.0.cv2.fused.bias — copying as-is (host-side computation)
+[291/533] encoder.fpn_blocks.0.cv1.fused.weight         -    f32, copy 1.0 MB
+[292/533] encoder.fpn_blocks.0.cv1.fused.bias           -    f32, copy 0.0 MB
+[293/533] encoder.fpn_blocks.0.cv4.fused.weight         -    f32, copy 0.8 MB
+[294/533] encoder.fpn_blocks.0.cv4.fused.bias           -    f32, copy 0.0 MB
+[295/533] encoder.fpn_blocks.0.cv2.0.conv1.fused.weight -    f32, copy 0.1 MB
+[296/533] encoder.fpn_blocks.0.cv2.0.conv1.fused.bias   -    f32, copy 0.0 MB
+[297/533] encoder.fpn_blocks.0.cv2.0.conv2.fused.weight -    f32, copy 0.1 MB
+[298/533] encoder.fpn_blocks.0.cv2.0.conv2.fused.bias   -    f32, copy 0.0 MB
+[299/533] encoder.fpn_blocks.0.cv2.0.bottlenecks.0.fused.weight -    f32, (fallback q4_0) copy 0.6 MB
+[300/533] encoder.fpn_blocks.0.cv2.0.bottlenecks.0.fused.bias -    f32, copy 0.0 MB
+[301/533] encoder.fpn_blocks.0.cv2.0.bottlenecks.1.fused.weight -    f32, (fallback q4_0) copy 0.6 MB
+[302/533] encoder.fpn_blocks.0.cv2.0.bottlenecks.1.fused.bias -    f32, copy 0.0 MB
+[303/533] encoder.fpn_blocks.0.cv2.1.fused.weight       -    f32, (fallback q4_0) copy 0.6 MB
+[304/533] encoder.fpn_blocks.0.cv2.1.fused.bias         -    f32, copy 0.0 MB
+[305/533] encoder.fpn_blocks.0.cv3.0.conv1.fused.weight -    f32, (fallback q4_0) copy 0.1 MB
+[306/533] encoder.fpn_blocks.0.cv3.0.conv1.fused.bias   -    f32, copy 0.0 MB
+[307/533] encoder.fpn_blocks.0.cv3.0.conv2.fused.weight -    f32, (fallback q4_0) copy 0.1 MB
+[308/533] encoder.fpn_blocks.0.cv3.0.conv2.fused.bias   -    f32, copy 0.0 MB
+[309/533] encoder.fpn_blocks.0.cv3.0.bottlenecks.0.fused.weight -    f32, (fallback q4_0) copy 0.6 MB
+[310/533] encoder.fpn_blocks.0.cv3.0.bottlenecks.0.fused.bias -    f32, copy 0.0 MB
+[311/533] encoder.fpn_blocks.0.cv3.0.bottlenecks.1.fused.weight -    f32, (fallback q4_0) copy 0.6 MB
+[312/533] encoder.fpn_blocks.0.cv3.0.bottlenecks.1.fused.bias -    f32, copy 0.0 MB
+[313/533] encoder.fpn_blocks.0.cv3.1.fused.weight       -    f32, (fallback q4_0) copy 0.6 MB
+[314/533] encoder.fpn_blocks.0.cv3.1.fused.bias         -    f32, copy 0.0 MB
+[315/533] encoder.pan_blocks.0.cv1.fused.weight         -    f32, copy 1.0 MB
+[316/533] encoder.pan_blocks.0.cv1.fused.bias           -    f32, copy 0.0 MB
+[317/533] encoder.pan_blocks.0.cv4.fused.weight         -    f32, copy 0.8 MB
+[318/533] encoder.pan_blocks.0.cv4.fused.bias           -    f32, copy 0.0 MB
+[319/533] encoder.pan_blocks.0.cv2.0.conv1.fused.weight -    f32, copy 0.1 MB
+[320/533] encoder.pan_blocks.0.cv2.0.conv1.fused.bias   -    f32, copy 0.0 MB
+[321/533] encoder.pan_blocks.0.cv2.0.conv2.fused.weight -    f32, copy 0.1 MB
+[322/533] encoder.pan_blocks.0.cv2.0.conv2.fused.bias   -    f32, copy 0.0 MB
+[323/533] encoder.pan_blocks.0.cv2.0.bottlenecks.0.fused.weight -    f32, (fallback q4_0) copy 0.6 MB
+[324/533] encoder.pan_blocks.0.cv2.0.bottlenecks.0.fused.bias -    f32, copy 0.0 MB
+[325/533] encoder.pan_blocks.0.cv2.0.bottlenecks.1.fused.weight -    f32, (fallback q4_0) copy 0.6 MB
+[326/533] encoder.pan_blocks.0.cv2.0.bottlenecks.1.fused.bias -    f32, copy 0.0 MB
+[327/533] encoder.pan_blocks.0.cv2.1.fused.weight       -    f32, (fallback q4_0) copy 0.6 MB
+[328/533] encoder.pan_blocks.0.cv2.1.fused.bias         -    f32, copy 0.0 MB
+[329/533] encoder.pan_blocks.0.cv3.0.conv1.fused.weight -    f32, (fallback q4_0) copy 0.1 MB
+[330/533] encoder.pan_blocks.0.cv3.0.conv1.fused.bias   -    f32, copy 0.0 MB
+[331/533] encoder.pan_blocks.0.cv3.0.conv2.fused.weight -    f32, (fallback q4_0) copy 0.1 MB
+[332/533] encoder.pan_blocks.0.cv3.0.conv2.fused.bias   -    f32, copy 0.0 MB
+[333/533] encoder.pan_blocks.0.cv3.0.bottlenecks.0.fused.weight -    f32, (fallback q4_0) copy 0.6 MB
+[334/533] encoder.pan_blocks.0.cv3.0.bottlenecks.0.fused.bias -    f32, copy 0.0 MB
+[335/533] encoder.pan_blocks.0.cv3.0.bottlenecks.1.fused.weight -    f32, (fallback q4_0) copy 0.6 MB
+[336/533] encoder.pan_blocks.0.cv3.0.bottlenecks.1.fused.bias -    f32, copy 0.0 MB
+[337/533] encoder.pan_blocks.0.cv3.1.fused.weight       -    f32, (fallback q4_0) copy 0.6 MB
+[338/533] encoder.pan_blocks.0.cv3.1.fused.bias         -    f32, copy 0.0 MB
+[339/533] encoder.lateral_convs.1.fused.weight          -    f32, copy 0.2 MB
+[340/533] encoder.lateral_convs.1.fused.bias            -    f32, copy 0.0 MB
+[341/533] encoder.downsample_convs.1.0.cv1.fused.weight -    f32, note: encoder.downsample_convs.1.0.cv1.fused.weight — copying as-is (host-side computation)
+[342/533] encoder.downsample_convs.1.0.cv1.fused.bias   -    f32, note: encoder.downsample_convs.1.0.cv1.fused.bias — copying as-is (host-side computation)
+[343/533] encoder.downsample_convs.1.0.cv2.fused.weight -    f32, note: encoder.downsample_convs.1.0.cv2.fused.weight — copying as-is (host-side computation)
+[344/533] encoder.downsample_convs.1.0.cv2.fused.bias   -    f32, note: encoder.downsample_convs.1.0.cv2.fused.bias — copying as-is (host-side computation)
+[345/533] encoder.fpn_blocks.1.cv1.fused.weight         -    f32, copy 1.0 MB
+[346/533] encoder.fpn_blocks.1.cv1.fused.bias           -    f32, copy 0.0 MB
+[347/533] encoder.fpn_blocks.1.cv4.fused.weight         -    f32, copy 0.8 MB
+[348/533] encoder.fpn_blocks.1.cv4.fused.bias           -    f32, copy 0.0 MB
+[349/533] encoder.fpn_blocks.1.cv2.0.conv1.fused.weight -    f32, copy 0.1 MB
+[350/533] encoder.fpn_blocks.1.cv2.0.conv1.fused.bias   -    f32, copy 0.0 MB
+[351/533] encoder.fpn_blocks.1.cv2.0.conv2.fused.weight -    f32, copy 0.1 MB
+[352/533] encoder.fpn_blocks.1.cv2.0.conv2.fused.bias   -    f32, copy 0.0 MB
+[353/533] encoder.fpn_blocks.1.cv2.0.bottlenecks.0.fused.weight -    f32, (fallback q4_0) copy 0.6 MB
+[354/533] encoder.fpn_blocks.1.cv2.0.bottlenecks.0.fused.bias -    f32, copy 0.0 MB
+[355/533] encoder.fpn_blocks.1.cv2.0.bottlenecks.1.fused.weight -    f32, (fallback q4_0) copy 0.6 MB
+[356/533] encoder.fpn_blocks.1.cv2.0.bottlenecks.1.fused.bias -    f32, copy 0.0 MB
+[357/533] encoder.fpn_blocks.1.cv2.1.fused.weight       -    f32, (fallback q4_0) copy 0.6 MB
+[358/533] encoder.fpn_blocks.1.cv2.1.fused.bias         -    f32, copy 0.0 MB
+[359/533] encoder.fpn_blocks.1.cv3.0.conv1.fused.weight -    f32, (fallback q4_0) copy 0.1 MB
+[360/533] encoder.fpn_blocks.1.cv3.0.conv1.fused.bias   -    f32, copy 0.0 MB
+[361/533] encoder.fpn_blocks.1.cv3.0.conv2.fused.weight -    f32, (fallback q4_0) copy 0.1 MB
+[362/533] encoder.fpn_blocks.1.cv3.0.conv2.fused.bias   -    f32, copy 0.0 MB
+[363/533] encoder.fpn_blocks.1.cv3.0.bottlenecks.0.fused.weight -    f32, (fallback q4_0) copy 0.6 MB
+[364/533] encoder.fpn_blocks.1.cv3.0.bottlenecks.0.fused.bias -    f32, copy 0.0 MB
+[365/533] encoder.fpn_blocks.1.cv3.0.bottlenecks.1.fused.weight -    f32, (fallback q4_0) copy 0.6 MB
+[366/533] encoder.fpn_blocks.1.cv3.0.bottlenecks.1.fused.bias -    f32, copy 0.0 MB
+[367/533] encoder.fpn_blocks.1.cv3.1.fused.weight       -    f32, (fallback q4_0) copy 0.6 MB
+[368/533] encoder.fpn_blocks.1.cv3.1.fused.bias         -    f32, copy 0.0 MB
+[369/533] encoder.pan_blocks.1.cv1.fused.weight         -    f32, copy 1.0 MB
+[370/533] encoder.pan_blocks.1.cv1.fused.bias           -    f32, copy 0.0 MB
+[371/533] encoder.pan_blocks.1.cv4.fused.weight         -    f32, copy 0.8 MB
+[372/533] encoder.pan_blocks.1.cv4.fused.bias           -    f32, copy 0.0 MB
+[373/533] encoder.pan_blocks.1.cv2.0.conv1.fused.weight -    f32, copy 0.1 MB
+[374/533] encoder.pan_blocks.1.cv2.0.conv1.fused.bias   -    f32, copy 0.0 MB
+[375/533] encoder.pan_blocks.1.cv2.0.conv2.fused.weight -    f32, copy 0.1 MB
+[376/533] encoder.pan_blocks.1.cv2.0.conv2.fused.bias   -    f32, copy 0.0 MB
+[377/533] encoder.pan_blocks.1.cv2.0.bottlenecks.0.fused.weight -    f32, (fallback q4_0) copy 0.6 MB
+[378/533] encoder.pan_blocks.1.cv2.0.bottlenecks.0.fused.bias -    f32, copy 0.0 MB
+[379/533] encoder.pan_blocks.1.cv2.0.bottlenecks.1.fused.weight -    f32, (fallback q4_0) copy 0.6 MB
+[380/533] encoder.pan_blocks.1.cv2.0.bottlenecks.1.fused.bias -    f32, copy 0.0 MB
+[381/533] encoder.pan_blocks.1.cv2.1.fused.weight       -    f32, (fallback q4_0) copy 0.6 MB
+[382/533] encoder.pan_blocks.1.cv2.1.fused.bias         -    f32, copy 0.0 MB
+[383/533] encoder.pan_blocks.1.cv3.0.conv1.fused.weight -    f32, (fallback q4_0) copy 0.1 MB
+[384/533] encoder.pan_blocks.1.cv3.0.conv1.fused.bias   -    f32, copy 0.0 MB
+[385/533] encoder.pan_blocks.1.cv3.0.conv2.fused.weight -    f32, (fallback q4_0) copy 0.1 MB
+[386/533] encoder.pan_blocks.1.cv3.0.conv2.fused.bias   -    f32, copy 0.0 MB
+[387/533] encoder.pan_blocks.1.cv3.0.bottlenecks.0.fused.weight -    f32, (fallback q4_0) copy 0.6 MB
+[388/533] encoder.pan_blocks.1.cv3.0.bottlenecks.0.fused.bias -    f32, copy 0.0 MB
+[389/533] encoder.pan_blocks.1.cv3.0.bottlenecks.1.fused.weight -    f32, (fallback q4_0) copy 0.6 MB
+[390/533] encoder.pan_blocks.1.cv3.0.bottlenecks.1.fused.bias -    f32, copy 0.0 MB
+[391/533] encoder.pan_blocks.1.cv3.1.fused.weight       -    f32, (fallback q4_0) copy 0.6 MB
+[392/533] encoder.pan_blocks.1.cv3.1.fused.bias         -    f32, copy 0.0 MB
+[393/533] decoder.anchors                               -    f32, skip (ncols 4 not div by 256)
+copy 0.3 MB
+[394/533] decoder.valid_mask                            -    f32, copy 0.1 MB
+[395/533] decoder.up                                    -    f32, copy 0.0 MB
+[396/533] decoder.reg_scale                             -    f32, copy 0.0 MB
+[397/533] decoder.project                               -    f32, copy 0.0 MB
+[398/533] decoder.enc_output.proj.weight                -    f32, quantizing to q4_K... 0.2 MB -> 0.0 MB
+[399/533] decoder.enc_output.proj.bias                  -    f32, copy 0.0 MB
+[400/533] decoder.enc_output.norm.weight                -    f32, copy 0.0 MB
+[401/533] decoder.enc_output.norm.bias                  -    f32, copy 0.0 MB
+[402/533] decoder.enc_score_head.weight                 -    f32, quantizing to q4_K... 0.0 MB -> 0.0 MB
+[403/533] decoder.enc_score_head.bias                   -    f32, copy 0.0 MB
+[404/533] decoder.enc_bbox_head.layers.0.weight         -    f32, quantizing to q4_K... 0.2 MB -> 0.0 MB
+[405/533] decoder.enc_bbox_head.layers.0.bias           -    f32, copy 0.0 MB
+[406/533] decoder.pre_bbox_head.layers.0.weight         -    f32, quantizing to q4_K... 0.2 MB -> 0.0 MB
+[407/533] decoder.pre_bbox_head.layers.0.bias           -    f32, copy 0.0 MB
+[408/533] decoder.enc_bbox_head.layers.1.weight         -    f32, quantizing to q4_K... 0.2 MB -> 0.0 MB
+[409/533] decoder.enc_bbox_head.layers.1.bias           -    f32, copy 0.0 MB
+[410/533] decoder.pre_bbox_head.layers.1.weight         -    f32, quantizing to q4_K... 0.2 MB -> 0.0 MB
+[411/533] decoder.pre_bbox_head.layers.1.bias           -    f32, copy 0.0 MB
+[412/533] decoder.enc_bbox_head.layers.2.weight         -    f32, quantizing to q4_K... 0.0 MB -> 0.0 MB
+[413/533] decoder.enc_bbox_head.layers.2.bias           -    f32, copy 0.0 MB
+[414/533] decoder.pre_bbox_head.layers.2.weight         -    f32, quantizing to q4_K... 0.0 MB -> 0.0 MB
+[415/533] decoder.pre_bbox_head.layers.2.bias           -    f32, copy 0.0 MB
+[416/533] decoder.query_pos_head.layers.0.weight        -    f32, skip (ncols 4 not div by 256)
+copy 0.0 MB
+[417/533] decoder.query_pos_head.layers.0.bias          -    f32, copy 0.0 MB
+[418/533] decoder.query_pos_head.layers.1.weight        -    f32, quantizing to q4_K... 0.5 MB -> 0.1 MB
+[419/533] decoder.query_pos_head.layers.1.bias          -    f32, copy 0.0 MB
+[420/533] decoder.dec_score_head.3.weight               -    f32, quantizing to q4_K... 0.0 MB -> 0.0 MB
+[421/533] decoder.dec_score_head.3.bias                 -    f32, copy 0.0 MB
+[422/533] decoder.dec_bbox_head.0.layers.0.weight       -    f32, quantizing to q4_K... 0.2 MB -> 0.0 MB
+[423/533] decoder.dec_bbox_head.0.layers.0.bias         -    f32, copy 0.0 MB
+[424/533] decoder.dec_bbox_head.0.layers.1.weight       -    f32, quantizing to q4_K... 0.2 MB -> 0.0 MB
+[425/533] decoder.dec_bbox_head.0.layers.1.bias         -    f32, copy 0.0 MB
+[426/533] decoder.dec_bbox_head.0.layers.2.weight       -    f32, quantizing to q4_K... 0.1 MB -> 0.0 MB
+[427/533] decoder.dec_bbox_head.0.layers.2.bias         -    f32, copy 0.0 MB
+[428/533] decoder.decoder.layers.0.self_attn.in_proj_weight -    f32, quantizing to q4_K... 0.8 MB -> 0.1 MB
+[429/533] decoder.decoder.layers.0.self_attn.in_proj_bias -    f32, copy 0.0 MB
+[430/533] decoder.decoder.layers.0.self_attn.out_proj.weight -    f32, quantizing to q4_K... 0.2 MB -> 0.0 MB
+[431/533] decoder.decoder.layers.0.self_attn.out_proj.bias -    f32, copy 0.0 MB
+[432/533] decoder.decoder.layers.0.cross_attn.sampling_offsets.weight -    f32, quantizing to q4_K... 0.2 MB -> 0.0 MB
+[433/533] decoder.decoder.layers.0.cross_attn.sampling_offsets.bias -    f32, copy 0.0 MB
+[434/533] decoder.decoder.layers.0.cross_attn.attention_weights.weight -    f32, quantizing to q4_K... 0.1 MB -> 0.0 MB
+[435/533] decoder.decoder.layers.0.cross_attn.attention_weights.bias -    f32, copy 0.0 MB
+[436/533] decoder.decoder.layers.0.cross_attn.num_points_scale -    f32, copy 0.0 MB
+[437/533] decoder.decoder.layers.0.gateway.gate.weight  -    f32, quantizing to q4_K... 1.0 MB -> 0.1 MB
+[438/533] decoder.decoder.layers.0.gateway.gate.bias    -    f32, copy 0.0 MB
+[439/533] decoder.decoder.layers.0.linear1.weight       -    f32, quantizing to q4_K... 1.0 MB -> 0.1 MB
+[440/533] decoder.decoder.layers.0.linear1.bias         -    f32, copy 0.0 MB
+[441/533] decoder.decoder.layers.0.linear2.weight       -    f32, quantizing to q4_K... 1.0 MB -> 0.1 MB
+[442/533] decoder.decoder.layers.0.linear2.bias         -    f32, copy 0.0 MB
+[443/533] decoder.decoder.layers.0.norm1.weight         -    f32, copy 0.0 MB
+[444/533] decoder.decoder.layers.0.norm1.bias           -    f32, copy 0.0 MB
+[445/533] decoder.decoder.layers.0.gateway.norm.weight  -    f32, copy 0.0 MB
+[446/533] decoder.decoder.layers.0.gateway.norm.bias    -    f32, copy 0.0 MB
+[447/533] decoder.decoder.layers.0.norm3.weight         -    f32, copy 0.0 MB
+[448/533] decoder.decoder.layers.0.norm3.bias           -    f32, copy 0.0 MB
+[449/533] decoder.dec_bbox_head.1.layers.0.weight       -    f32, quantizing to q4_K... 0.2 MB -> 0.0 MB
+[450/533] decoder.dec_bbox_head.1.layers.0.bias         -    f32, copy 0.0 MB
+[451/533] decoder.dec_bbox_head.1.layers.1.weight       -    f32, quantizing to q4_K... 0.2 MB -> 0.0 MB
+[452/533] decoder.dec_bbox_head.1.layers.1.bias         -    f32, copy 0.0 MB
+[453/533] decoder.dec_bbox_head.1.layers.2.weight       -    f32, quantizing to q4_K... 0.1 MB -> 0.0 MB
+[454/533] decoder.dec_bbox_head.1.layers.2.bias         -    f32, copy 0.0 MB
+[455/533] decoder.decoder.layers.1.self_attn.in_proj_weight -    f32, quantizing to q4_K... 0.8 MB -> 0.1 MB
+[456/533] decoder.decoder.layers.1.self_attn.in_proj_bias -    f32, copy 0.0 MB
+[457/533] decoder.decoder.layers.1.self_attn.out_proj.weight -    f32, quantizing to q4_K... 0.2 MB -> 0.0 MB
+[458/533] decoder.decoder.layers.1.self_attn.out_proj.bias -    f32, copy 0.0 MB
+[459/533] decoder.decoder.layers.1.cross_attn.sampling_offsets.weight -    f32, quantizing to q4_K... 0.2 MB -> 0.0 MB
+[460/533] decoder.decoder.layers.1.cross_attn.sampling_offsets.bias -    f32, copy 0.0 MB
+[461/533] decoder.decoder.layers.1.cross_attn.attention_weights.weight -    f32, quantizing to q4_K... 0.1 MB -> 0.0 MB
+[462/533] decoder.decoder.layers.1.cross_attn.attention_weights.bias -    f32, copy 0.0 MB
+[463/533] decoder.decoder.layers.1.cross_attn.num_points_scale -    f32, copy 0.0 MB
+[464/533] decoder.decoder.layers.1.gateway.gate.weight  -    f32, quantizing to q4_K... 1.0 MB -> 0.1 MB
+[465/533] decoder.decoder.layers.1.gateway.gate.bias    -    f32, copy 0.0 MB
+[466/533] decoder.decoder.layers.1.linear1.weight       -    f32, quantizing to q4_K... 1.0 MB -> 0.1 MB
+[467/533] decoder.decoder.layers.1.linear1.bias         -    f32, copy 0.0 MB
+[468/533] decoder.decoder.layers.1.linear2.weight       -    f32, quantizing to q4_K... 1.0 MB -> 0.1 MB
+[469/533] decoder.decoder.layers.1.linear2.bias         -    f32, copy 0.0 MB
+[470/533] decoder.decoder.layers.1.norm1.weight         -    f32, copy 0.0 MB
+[471/533] decoder.decoder.layers.1.norm1.bias           -    f32, copy 0.0 MB
+[472/533] decoder.decoder.layers.1.gateway.norm.weight  -    f32, copy 0.0 MB
+[473/533] decoder.decoder.layers.1.gateway.norm.bias    -    f32, copy 0.0 MB
+[474/533] decoder.decoder.layers.1.norm3.weight         -    f32, copy 0.0 MB
+[475/533] decoder.decoder.layers.1.norm3.bias           -    f32, copy 0.0 MB
+[476/533] decoder.dec_bbox_head.2.layers.0.weight       -    f32, quantizing to q4_K... 0.2 MB -> 0.0 MB
+[477/533] decoder.dec_bbox_head.2.layers.0.bias         -    f32, copy 0.0 MB
+[478/533] decoder.dec_bbox_head.2.layers.1.weight       -    f32, quantizing to q4_K... 0.2 MB -> 0.0 MB
+[479/533] decoder.dec_bbox_head.2.layers.1.bias         -    f32, copy 0.0 MB
+[480/533] decoder.dec_bbox_head.2.layers.2.weight       -    f32, quantizing to q4_K... 0.1 MB -> 0.0 MB
+[481/533] decoder.dec_bbox_head.2.layers.2.bias         -    f32, copy 0.0 MB
+[482/533] decoder.decoder.layers.2.self_attn.in_proj_weight -    f32, quantizing to q4_K... 0.8 MB -> 0.1 MB
+[483/533] decoder.decoder.layers.2.self_attn.in_proj_bias -    f32, copy 0.0 MB
+[484/533] decoder.decoder.layers.2.self_attn.out_proj.weight -    f32, quantizing to q4_K... 0.2 MB -> 0.0 MB
+[485/533] decoder.decoder.layers.2.self_attn.out_proj.bias -    f32, copy 0.0 MB
+[486/533] decoder.decoder.layers.2.cross_attn.sampling_offsets.weight -    f32, quantizing to q4_K... 0.2 MB -> 0.0 MB
+[487/533] decoder.decoder.layers.2.cross_attn.sampling_offsets.bias -    f32, copy 0.0 MB
+[488/533] decoder.decoder.layers.2.cross_attn.attention_weights.weight -    f32, quantizing to q4_K... 0.1 MB -> 0.0 MB
+[489/533] decoder.decoder.layers.2.cross_attn.attention_weights.bias -    f32, copy 0.0 MB
+[490/533] decoder.decoder.layers.2.cross_attn.num_points_scale -    f32, copy 0.0 MB
+[491/533] decoder.decoder.layers.2.gateway.gate.weight  -    f32, quantizing to q4_K... 1.0 MB -> 0.1 MB
+[492/533] decoder.decoder.layers.2.gateway.gate.bias    -    f32, copy 0.0 MB
+[493/533] decoder.decoder.layers.2.linear1.weight       -    f32, quantizing to q4_K... 1.0 MB -> 0.1 MB
+[494/533] decoder.decoder.layers.2.linear1.bias         -    f32, copy 0.0 MB
+[495/533] decoder.decoder.layers.2.linear2.weight       -    f32, quantizing to q4_K... 1.0 MB -> 0.1 MB
+[496/533] decoder.decoder.layers.2.linear2.bias         -    f32, copy 0.0 MB
+[497/533] decoder.decoder.layers.2.norm1.weight         -    f32, copy 0.0 MB
+[498/533] decoder.decoder.layers.2.norm1.bias           -    f32, copy 0.0 MB
+[499/533] decoder.decoder.layers.2.gateway.norm.weight  -    f32, copy 0.0 MB
+[500/533] decoder.decoder.layers.2.gateway.norm.bias    -    f32, copy 0.0 MB
+[501/533] decoder.decoder.layers.2.norm3.weight         -    f32, copy 0.0 MB
+[502/533] decoder.decoder.layers.2.norm3.bias           -    f32, copy 0.0 MB
+[503/533] decoder.dec_bbox_head.3.layers.0.weight       -    f32, quantizing to q4_K... 0.2 MB -> 0.0 MB
+[504/533] decoder.dec_bbox_head.3.layers.0.bias         -    f32, copy 0.0 MB
+[505/533] decoder.dec_bbox_head.3.layers.1.weight       -    f32, quantizing to q4_K... 0.2 MB -> 0.0 MB
+[506/533] decoder.dec_bbox_head.3.layers.1.bias         -    f32, copy 0.0 MB
+[507/533] decoder.dec_bbox_head.3.layers.2.weight       -    f32, quantizing to q4_K... 0.1 MB -> 0.0 MB
+[508/533] decoder.dec_bbox_head.3.layers.2.bias         -    f32, copy 0.0 MB
+[509/533] decoder.decoder.layers.3.self_attn.in_proj_weight -    f32, quantizing to q4_K... 0.8 MB -> 0.1 MB
+[510/533] decoder.decoder.layers.3.self_attn.in_proj_bias -    f32, copy 0.0 MB
+[511/533] decoder.decoder.layers.3.self_attn.out_proj.weight -    f32, quantizing to q4_K... 0.2 MB -> 0.0 MB
+[512/533] decoder.decoder.layers.3.self_attn.out_proj.bias -    f32, copy 0.0 MB
+[513/533] decoder.decoder.layers.3.cross_attn.sampling_offsets.weight -    f32, quantizing to q4_K... 0.2 MB -> 0.0 MB
+[514/533] decoder.decoder.layers.3.cross_attn.sampling_offsets.bias -    f32, copy 0.0 MB
+[515/533] decoder.decoder.layers.3.cross_attn.attention_weights.weight -    f32, quantizing to q4_K... 0.1 MB -> 0.0 MB
+[516/533] decoder.decoder.layers.3.cross_attn.attention_weights.bias -    f32, copy 0.0 MB
+[517/533] decoder.decoder.layers.3.cross_attn.num_points_scale -    f32, copy 0.0 MB
+[518/533] decoder.decoder.layers.3.gateway.gate.weight  -    f32, quantizing to q4_K... 1.0 MB -> 0.1 MB
+[519/533] decoder.decoder.layers.3.gateway.gate.bias    -    f32, copy 0.0 MB
+[520/533] decoder.decoder.layers.3.linear1.weight       -    f32, quantizing to q4_K... 1.0 MB -> 0.1 MB
+[521/533] decoder.decoder.layers.3.linear1.bias         -    f32, copy 0.0 MB
+[522/533] decoder.decoder.layers.3.linear2.weight       -    f32, quantizing to q4_K... 1.0 MB -> 0.1 MB
+[523/533] decoder.decoder.layers.3.linear2.bias         -    f32, copy 0.0 MB
+[524/533] decoder.decoder.layers.3.norm1.weight         -    f32, copy 0.0 MB
+[525/533] decoder.decoder.layers.3.norm1.bias           -    f32, copy 0.0 MB
+[526/533] decoder.decoder.layers.3.gateway.norm.weight  -    f32, copy 0.0 MB
+[527/533] decoder.decoder.layers.3.gateway.norm.bias    -    f32, copy 0.0 MB
+[528/533] decoder.decoder.layers.3.norm3.weight         -    f32, copy 0.0 MB
+[529/533] decoder.decoder.layers.3.norm3.bias           -    f32, copy 0.0 MB
+[530/533] decoder.decoder.lqe_layers.3.reg_conf.layers.0.weight -    f32, skip (ncols 20 not div by 256)
+copy 0.0 MB
+[531/533] decoder.decoder.lqe_layers.3.reg_conf.layers.0.bias -    f32, copy 0.0 MB
+[532/533] decoder.decoder.lqe_layers.3.reg_conf.layers.1.weight -    f32, copy 0.0 MB
+[533/533] decoder.decoder.lqe_layers.3.reg_conf.layers.1.bias -    f32, copy 0.0 MB
+
+55 quantized, 478 kept
+74 MB -> 53 MB (1.4x compression)

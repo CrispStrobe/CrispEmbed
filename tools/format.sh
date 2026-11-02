@@ -67,13 +67,18 @@ for arg in "$@"; do
 done
 
 if [[ ${#files[@]} -eq 0 ]]; then
-    # Default scope: project-owned C++ only. NEVER the vendored ggml/ submodule
-    # or bundled single-header libraries.
+    # Default scope: project-owned C++ only. NEVER the vendored ggml/ submodule,
+    # bundled single-header libraries, or tests/results/ (retained evidence:
+    # source snapshots and probes whose bytes must stay as executed). The
+    # layer3 F32 weightcast operator is SHA256-pinned by its executed frozen
+    # protocol (docs/wasm-layer3-f32-v1.json); reformatting would break replay.
     while IFS= read -r f; do files+=("$f"); done < <(
         find src examples tests \
              \( -name '*.cpp' -o -name '*.h' -o -name '*.c' -o -name '*.hpp' \) \
              ! -path '*/ggml/*' \
              ! -path '*/third_party/*' \
+             ! -path 'tests/results/*' \
+             ! -path 'tests/wasm-layer3-f32/operator.cpp' \
              ! -name 'httplib.h' \
              ! -name 'miniaudio.h' \
              ! -name 'json.hpp' \

@@ -1,0 +1,48 @@
+backend: MTL0, iters=5
+f16 vision ffn up  1280x3420 x952 default                      4.252 ms    1960.5 GFLOP/s
+f16 vision ffn up  1280x3420 x952 PREC_F32                    52.436 ms     159.0 GFLOP/s
+f16 vision ffn up  1280x3420 x952 PREC_F32+HP                  4.753 ms    1753.8 GFLOP/s
+f16 vision ffn down 3420x1280 x952 default                    18.232 ms     457.2 GFLOP/s
+f16 vision ffn down 3420x1280 x952 PREC_F32                   20.130 ms     414.1 GFLOP/s
+f16 vision ffn down 3420x1280 x952 PREC_F32+HP                20.065 ms     415.4 GFLOP/s
+f16 llm ffn up 1024x3072 x prompt 600 default                  1.945 ms    1940.7 GFLOP/s
+f16 llm ffn up 1024x3072 x prompt 600 PREC_F32                 7.588 ms     497.5 GFLOP/s
+f16 llm ffn up 1024x3072 x prompt 600 PREC_F32+HP              2.154 ms    1752.3 GFLOP/s
+f16 llm ffn up 1024x3072 x1 (decode) default                   0.278 ms      22.7 GFLOP/s
+f16 llm ffn up 1024x3072 x1 (decode) PREC_F32                  0.251 ms      25.0 GFLOP/s
+f16 llm ffn up 1024x3072 x1 (decode) PREC_F32+HP               0.278 ms      22.6 GFLOP/s
+f16 lm_head 1024x151936 x1 (decode) default                    5.818 ms      53.5 GFLOP/s
+f16 lm_head 1024x151936 x1 (decode) PREC_F32                   5.201 ms      59.8 GFLOP/s
+f16 lm_head 1024x151936 x1 (decode) PREC_F32+HP                5.631 ms      55.3 GFLOP/s
+q8_0 vision ffn up  1280x3420 x952 default                     4.673 ms    1783.6 GFLOP/s
+q8_0 vision ffn up  1280x3420 x952 PREC_F32                   73.971 ms     112.7 GFLOP/s
+q8_0 vision ffn up  1280x3420 x952 PREC_F32+HP                 5.178 ms    1609.6 GFLOP/s
+q8_0 llm ffn up 1024x3072 x prompt 600 default                 2.130 ms    1772.1 GFLOP/s
+q8_0 llm ffn up 1024x3072 x prompt 600 PREC_F32               33.754 ms     111.8 GFLOP/s
+q8_0 llm ffn up 1024x3072 x prompt 600 PREC_F32+HP             2.442 ms    1545.6 GFLOP/s
+q8_0 llm ffn up 1024x3072 x1 (decode) default                  0.224 ms      28.1 GFLOP/s
+q8_0 llm ffn up 1024x3072 x1 (decode) PREC_F32                 0.285 ms      22.1 GFLOP/s
+q8_0 llm ffn up 1024x3072 x1 (decode) PREC_F32+HP              0.253 ms      24.8 GFLOP/s
+q8_0 lm_head 1024x151936 x1 (decode) default                   3.259 ms      95.5 GFLOP/s
+q8_0 lm_head 1024x151936 x1 (decode) PREC_F32                  4.187 ms      74.3 GFLOP/s
+q8_0 lm_head 1024x151936 x1 (decode) PREC_F32+HP               3.639 ms      85.5 GFLOP/s
+q4_K vision ffn up  1280x3420 x952 default                     5.373 ms    1551.4 GFLOP/s
+q4_K vision ffn up  1280x3420 x952 PREC_F32                  172.217 ms      48.4 GFLOP/s
+q4_K vision ffn up  1280x3420 x952 PREC_F32+HP                 6.344 ms    1313.9 GFLOP/s
+q4_K llm ffn up 1024x3072 x prompt 600 default                 3.470 ms    1087.9 GFLOP/s
+q4_K llm ffn up 1024x3072 x prompt 600 PREC_F32               89.305 ms      42.3 GFLOP/s
+q4_K llm ffn up 1024x3072 x prompt 600 PREC_F32+HP             4.046 ms     932.9 GFLOP/s
+q4_K llm ffn up 1024x3072 x1 (decode) default                  0.341 ms      18.5 GFLOP/s
+q4_K llm ffn up 1024x3072 x1 (decode) PREC_F32                 0.780 ms       8.1 GFLOP/s
+q4_K llm ffn up 1024x3072 x1 (decode) PREC_F32+HP              0.293 ms      21.4 GFLOP/s
+q4_K lm_head 1024x151936 x1 (decode) default                   2.669 ms     116.6 GFLOP/s
+q4_K lm_head 1024x151936 x1 (decode) PREC_F32                  7.832 ms      39.7 GFLOP/s
+q4_K lm_head 1024x151936 x1 (decode) PREC_F32+HP               2.977 ms     104.5 GFLOP/s
+FA vision hd80 h16 n952 kv=f32                                 5.646 ms     821.9 GFLOP/s
+FA decode hd64 h16/8 1x1292 kv=f32                             0.287 ms      18.4 GFLOP/s
+FA vision hd80 h16 n952 kv=f16                                 4.975 ms     932.7 GFLOP/s
+FA decode hd64 h16/8 1x1292 kv=f16                             0.217 ms      24.3 GFLOP/s
+FA vision hd80 h16 n952 kv=f32 PREC_F32                    unsupported on this backend
+FA decode hd64 h16/8 1x1292 kv=f32 PREC_F32                unsupported on this backend
+6 PREC_F32                    unsupported on this backend
+FA decode hd64 h16/8 1x1292 kv=f16 PREC_F32                unsupported on this backend

@@ -258,7 +258,15 @@ bool load(context & ctx, const char * gguf_path, int n_threads) {
     // --gpu-backend); CRISPEMBED_LIGHTONOCR_FORCE_CPU=1 overrides it, matching
     // the *_FORCE_CPU convention of every sibling engine.
     const bool locr_force_cpu = core_env::on("CRISPEMBED_LIGHTONOCR_FORCE_CPU");
-    const bool locr_use_gpu = !locr_force_cpu && core_env::on("CRISPEMBED_LIGHTONOCR_GPU");
+    // CUDA audit 2026-11-01: tri-state. =1 forces GPU on any kind, =0 keeps CPU,
+    // unset = ON when a CUDA device is present (Kaggle T4, 1B q4_k, fox, 128
+    // tokens: decoded text byte-identical to the CPU arm, 1.7 s vs 17.3 s) and
+    // OFF on Metal, where it decoded identically but measured slower
+    // (18.6 s vs 6.4 s, tests/results/gpu-audit/metal-m1/vlm/).
+    const bool locr_use_gpu =
+        !locr_force_cpu &&
+        (core_env::on("CRISPEMBED_LIGHTONOCR_GPU") ||
+         (!core_env::explicitly_off("CRISPEMBED_LIGHTONOCR_GPU") && crispasr_gpu_device_kind_present("CUDA")));
     ctx.backend = locr_use_gpu ? crispasr_init_gpu_backend() : ggml_backend_cpu_init();
     if (!ctx.backend) ctx.backend = ggml_backend_cpu_init(); // GPU init failed -> CPU
     if (!core_gguf::load_weights(gguf_path, ctx.backend, "lightonocr", ctx.wl)) {

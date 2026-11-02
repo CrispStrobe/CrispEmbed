@@ -1,0 +1,44 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "surya-det-f16.gguf",
+  "scan_page_pd.png"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    1.167,
+    1.217
+   ],
+   "gpu_mem_peak_mib": 1021,
+   "cuda_used": true,
+   "rc": -6,
+   "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n/kaggle/temp/ce/ggml/src/ggml-cuda/unary.cu:144: GGML_ASSERT(ggml_is_contiguous(src0)) failed\n/kaggle/temp/build/ggml/src/libggml-base.so.0(+0x1c12b)[0x7f357f0e112b]\n/kaggle/temp/build/ggml/src/libggml-base.so.0(ggml_print_backtrace+0x21c)[0x7f357f0e15ac]\n/kaggle/temp/build/ggml/src/libggml-base.so.0(ggml_abort+0x15b)[0x7f357f0e178b]\n/kaggle/temp/build/ggml/src/ggml-cuda/libggml-cuda.so.0(_Z17ggml_cuda_op_reluR25ggml_backend_cuda_contextP11ggml_tensor+0x573)[0x7f357b80d4c3]\n/kaggle/temp/build/ggml/src/ggml-cuda/libggml-cuda.so.0(+0x2a7935)[0x7f357b640935]\n/kaggle/temp/build/ggml/src/libggml-base.so.0(ggml_backend_graph_compute+0x12)[0x7f357f0faf92]\n/kaggle/temp/build/test-surya-det(+0x50862)[0x57e54464e862]\n/kaggle/temp/build/test-surya-det(+0x517cd)[0x57e54464f7cd]\n/kaggle/temp/build/test-surya-det(+0x8689)[0x57e544606689]\n/lib/x86_64-linux-gnu/libc.so.6(+0x2a1ca)[0x7f357eb351ca]\n/lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0x8b)[0x7f357eb3528b]\n/kaggle/temp/build/test-surya-det(+0x8f75)[0x57e544606f75]\n",
+   "stdout_sha256": "da901b27b3bb230741f2de4d7a6d8ba8fb943f574b84f4c0bab4e6a2660a1d98",
+   "stdout": "Model loaded: input=1200x1200, classes=2\nLoaded image: tests/regression/images/scan_page_pd.png (606x1000)\nRunning detection on 606x1000 image...\n"
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    18.571,
+    18.72
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\n",
+   "stdout_sha256": "376d4be439a952c1a1714299ef4c4f0e283a70eb052205ef471419a001779d05",
+   "stdout": "Model loaded: input=1200x1200, classes=2\nLoaded image: tests/regression/images/scan_page_pd.png (606x1000)\nRunning detection on 606x1000 image...\nHeatmap: 300x300 (2 channels)\n  Channel 0: min=0.0000 max=0.9769 mean=0.2477 above_0.5=21347/90000\n  Channel 1: min=0.0000 max=0.8693 mean=0.0716 above_0.5=5526/90000\n\nDetected 39 text regions:\n  Box 0: (81,33)-(113,63) conf=0.898\n  Box 1: (202,37)-(416,57) conf=0.957\n  Box 2: (79,73)-(545,107) conf=0.987\n  Box 3: (81,97)-(545,127) conf=0.944\n  Box 4: (81,117)-(545,150) conf=0.986\n  Box 5: (79,140)-(208,170) conf=0.905\n  Box 6: (101,160)-(543,193) conf=0.991\n  Box 7: (81,183)-(545,213) conf=0.972\n  Box 8: (79,203)-(545,237) conf=0.972\n  Box 9: (81,223)-(356,257) conf=0.935\n  Box 10: (101,247)-(545,280) conf=0.974\n  Box 11: (81,267)-(545,300) conf=0.988\n  Box 12: (81,290)-(545,320) conf=0.952\n  Box 13: (81,310)-(545,343) conf=0.989\n  Box 14: (81,333)-(545,367) conf=0.979\n  Box 15: (81,353)-(545,387) conf=1.000\n  Box 16: (81,377)-(503,407) conf=0.980\n  Box 17: (103,397)-(545,427) conf=0.994\n  Box 18: (81,417)-(545,450) conf=0.983\n  Box 19: (81,440)-(545,473) conf=0.995\n  ... and 19 more\nPASS\n"
+  }
+ },
+ "precision": "f16",
+ "bar": 0.98,
+ "seconds": 40.1,
+ "id": "surya-det.scan_page_pd",
+ "commit": "c38304b4283da24cd88141a8b162b8c9be41b833",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

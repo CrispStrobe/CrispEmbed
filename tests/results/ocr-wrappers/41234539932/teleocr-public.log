@@ -1,0 +1,221 @@
+qwen2vl_ocr: loading /mnt/heavy/scratch/teleocr-f16.gguf
+TeleOCR requires CRISPEMBED_TELEOCR=1 and a CrispEmbed TeleOCR GGUF v1; convert the checkpoint with convert-teleocr-to-gguf.py.
+qwen2vl_ocr: failed to load hparams
+qwen2vl_ocr: loading /mnt/heavy/scratch/teleocr-f16.gguf
+TeleOCR requires CRISPEMBED_TELEOCR=1 and a CrispEmbed TeleOCR GGUF v1; convert the checkpoint with convert-teleocr-to-gguf.py.
+qwen2vl_ocr: failed to load hparams
+qwen2vl_ocr: loading /mnt/heavy/scratch/teleocr-f16.gguf
+TeleOCR requires CRISPEMBED_TELEOCR=1 and a CrispEmbed TeleOCR GGUF v1; convert the checkpoint with convert-teleocr-to-gguf.py.
+qwen2vl_ocr: failed to load hparams
+qwen2vl_ocr: loading /mnt/heavy/scratch/teleocr-f16.gguf
+  vision: 32 layers, 1280d, 16 heads, patch=14, merge=2
+  llm: 28 layers, 1024d, 16/8 heads, inter=3072
+  vision variant: Qwen2.5-VL (RMSNorm, SwiGLU)
+qwen2vl_ocr: loaded successfully
+qwen2vl_ocr: loaded BPE tokenizer (151936 tokens, 151387 merges)
+qwen2vl_ocr: 640x220 → 644x224, 736 patches (16x46)
+  backend KV cache: 28 layers, max_seq=222, 48.6 MB
+  gen[0]: token=9707 score=20.65 (prefill)
+  gen[1]: token=13563 score=19.97 (cached)
+  gen[2]: token=93495 score=24.51 (cached)
+  gen[3]: token=198 score=17.44 (cached)
+  gen[4]: token=34674 score=22.00 (cached)
+  gen[5]: token=220 score=18.68 (cached)
+  gen[6]: token=19 score=22.42 (cached)
+  gen[7]: token=17 score=20.86 (cached)
+qwen2vl_ocr: loading /mnt/heavy/scratch/teleocr-f16.gguf
+  vision: 32 layers, 1280d, 16 heads, patch=14, merge=2
+  llm: 28 layers, 1024d, 16/8 heads, inter=3072
+  vision variant: Qwen2.5-VL (RMSNorm, SwiGLU)
+qwen2vl_ocr: loaded successfully
+qwen2vl_ocr: loaded BPE tokenizer (151936 tokens, 151387 merges)
+qwen2vl_ocr: 640x220 → 644x224, 736 patches (16x46)
+  backend KV cache: 28 layers, max_seq=222, 48.6 MB
+  gen[0]: token=9707 score=20.65 (prefill)
+  gen[1]: token=13563 score=19.97 (cached)
+  gen[2]: token=93495 score=24.51 (cached)
+  gen[3]: token=198 score=17.44 (cached)
+  gen[4]: token=34674 score=22.00 (cached)
+  gen[5]: token=220 score=18.68 (cached)
+  gen[6]: token=19 score=22.42 (cached)
+  gen[7]: token=17 score=20.86 (cached)
+qwen2vl_ocr: loading /mnt/heavy/scratch/teleocr-f16.gguf
+  vision: 32 layers, 1280d, 16 heads, patch=14, merge=2
+  llm: 28 layers, 1024d, 16/8 heads, inter=3072
+  vision variant: Qwen2.5-VL (RMSNorm, SwiGLU)
+qwen2vl_ocr: loaded successfully
+qwen2vl_ocr: loaded BPE tokenizer (151936 tokens, 151387 merges)
+qwen2vl_ocr: 640x220 → 644x224, 736 patches (16x46)
+  backend KV cache: 28 layers, max_seq=210, 45.9 MB
+  gen[0]: token=9707 score=19.08 (prefill)
+qwen2vl_ocr: 640x220 → 644x224, 736 patches (16x46)
+  backend KV cache: 28 layers, max_seq=222, 48.6 MB
+  gen[0]: token=9707 score=20.65 (prefill)
+  gen[1]: token=13563 score=19.97 (cached)
+  gen[2]: token=93495 score=24.51 (cached)
+  gen[3]: token=198 score=17.44 (cached)
+  gen[4]: token=34674 score=22.00 (cached)
+  gen[5]: token=220 score=18.68 (cached)
+  gen[6]: token=19 score=22.42 (cached)
+  gen[7]: token=17 score=20.86 (cached)
+ocr_orchestrator: teleocr requires a TeleOCR version 1 GGUF
+{
+  "kind": "teleocr-public-interface-consistency",
+  "independent_model_parity": false,
+  "model": "teleocr-f16.gguf",
+  "image": "synthetic-text.png",
+  "image_sha256": "54505c242287c7f666bb9fa8953a2f419a16a8b802e79ab0dd09945400703be8",
+  "max_tokens": 8,
+  "threads": 2,
+  "checks": [
+    {
+      "name": "gate-reject-None",
+      "passed": true
+    },
+    {
+      "name": "gate-reject-",
+      "passed": true
+    },
+    {
+      "name": "gate-reject-0",
+      "passed": true
+    },
+    {
+      "name": "c-load",
+      "passed": true
+    },
+    {
+      "name": "c-default-cap",
+      "passed": true,
+      "actual": 4096
+    },
+    {
+      "name": "c-cap-roundtrip",
+      "passed": true
+    },
+    {
+      "name": "c-custom-prompt",
+      "passed": true
+    },
+    {
+      "name": "c-reset-prompt",
+      "passed": true
+    },
+    {
+      "name": "c-generation-get",
+      "passed": true
+    },
+    {
+      "name": "c-generation-defaults",
+      "passed": true
+    },
+    {
+      "name": "c-generation-set",
+      "passed": true
+    },
+    {
+      "name": "c-generation-invalid",
+      "passed": true
+    },
+    {
+      "name": "c-generation-reset",
+      "passed": true
+    },
+    {
+      "name": "c-recognize",
+      "passed": true
+    },
+    {
+      "name": "c-token-cap",
+      "passed": true,
+      "tokens": 8
+    },
+    {
+      "name": "c-confidence",
+      "passed": true,
+      "values": [
+        0.9994001388549805,
+        0.9919605851173401,
+        0.9999195337295532,
+        0.985042154788971,
+        0.9995073080062866,
+        0.9988201260566711,
+        0.9998981952667236,
+        0.9998922348022461
+      ]
+    },
+    {
+      "name": "python-generation-get",
+      "passed": true
+    },
+    {
+      "name": "python-generation-invalid",
+      "passed": true
+    },
+    {
+      "name": "python-generation-set",
+      "passed": true
+    },
+    {
+      "name": "python-text",
+      "passed": true
+    },
+    {
+      "name": "python-confidences",
+      "passed": true
+    },
+    {
+      "name": "orchestrator-text",
+      "passed": true,
+      "regions": 1
+    },
+    {
+      "name": "orchestrator-region",
+      "passed": true
+    },
+    {
+      "name": "orchestrator-wrong-model",
+      "passed": true
+    },
+    {
+      "name": "command-exit",
+      "passed": true,
+      "executable": "crispembed",
+      "returncode": 0,
+      "stderr_tail": ""
+    },
+    {
+      "name": "cli-text",
+      "passed": true
+    },
+    {
+      "name": "command-exit",
+      "passed": true,
+      "executable": "crispembed",
+      "returncode": 0,
+      "stderr_tail": ""
+    },
+    {
+      "name": "cli-stage-text",
+      "passed": true
+    },
+    {
+      "name": "http-invalid-image",
+      "passed": true
+    },
+    {
+      "name": "http-text",
+      "passed": true
+    },
+    {
+      "name": "http-cap-restored",
+      "passed": true
+    },
+    {
+      "name": "http-confidence",
+      "passed": true
+    }
+  ],
+  "anchor_text": "Hello TeleOCR\nInvoice 42",
+  "passed": true
+}

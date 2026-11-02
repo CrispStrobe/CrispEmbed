@@ -1,0 +1,98 @@
+{
+ "model": "harrier-270m-q4_k.gguf",
+ "mode": "embed",
+ "texts": "embed_texts.txt",
+ "threads": 4,
+ "env": {},
+ "wall_s": {
+  "metal": [
+   7.427,
+   0.716
+  ],
+  "cpu": [
+   1.177,
+   1.222
+  ]
+ },
+ "rows": [
+  {
+   "i": 0,
+   "cos": 0.9996254819604622,
+   "max_abs": 0.004692999999999989,
+   "dim": 640
+  },
+  {
+   "i": 1,
+   "cos": 0.9995354110458096,
+   "max_abs": 0.003757,
+   "dim": 640
+  },
+  {
+   "i": 2,
+   "cos": 0.9993139568842151,
+   "max_abs": 0.004379999999999995,
+   "dim": 640
+  },
+  {
+   "i": 3,
+   "cos": 0.999549202824979,
+   "max_abs": 0.005848999999999993,
+   "dim": 640
+  },
+  {
+   "i": 4,
+   "cos": 0.9996389253631602,
+   "max_abs": 0.0031979999999999995,
+   "dim": 640
+  },
+  {
+   "i": 5,
+   "cos": 0.999301693436226,
+   "max_abs": 0.005286000000000001,
+   "dim": 640
+  },
+  {
+   "i": 6,
+   "cos": 0.9993684001328613,
+   "max_abs": 0.0055630000000000054,
+   "dim": 640
+  },
+  {
+   "i": 7,
+   "cos": 0.9993639217597655,
+   "max_abs": 0.0040479999999999995,
+   "dim": 640
+  },
+  {
+   "i": 8,
+   "cos": 0.9995276816058042,
+   "max_abs": 0.004765000000000002,
+   "dim": 640
+  },
+  {
+   "i": 9,
+   "cos": 0.9995978547492629,
+   "max_abs": 0.0035180000000000003,
+   "dim": 640
+  },
+  {
+   "i": 10,
+   "cos": 0.9992858979173681,
+   "max_abs": 0.007140999999999995,
+   "dim": 640
+  },
+  {
+   "i": 11,
+   "cos": 0.99949583174803,
+   "max_abs": 0.006781000000000002,
+   "dim": 640
+  }
+ ],
+ "stderr_tail": {
+  "metal": "e: base = 'kernel_flash_attn_ext_pad', name = 'kernel_flash_attn_ext_pad_mask=1_ncpsg=64'\nggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_pad_mask=1_ncpsg=64      0xcac921200 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_blk', name = 'kernel_flash_attn_ext_blk_nqptg=8_ncpsg=64'\nggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_blk_nqptg=8_ncpsg=64      0xcac921500 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_f32_dk256_dv256', name = 'kernel_flash_attn_ext_f32_dk256_dv256_mask=1_sinks=0_bias=0_scap=0_kvpad=1_bcm=1_ns10=256_ns20=256_nsg=4'\nggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_f32_dk256_dv256_mask=1_sinks=0_bias=0_scap=0_kvpad=1_bcm=1_ns10=256_ns20=256_nsg=4      0xcac921800 | th_max =  384 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32_4', name = 'kernel_unary_f32_f32_4_op=103_cnt=0'\nggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_4_op=103_cnt=0           0xcac921b00 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32_4', name = 'kernel_unary_f32_f32_4_op=10_cnt=0'\nggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_4_op=10_cnt=0            0xcac921e00 | th_max = 1024 | th_width =   32\nggml_metal_free: deallocating\n",
+  "cpu": "crispasr_init_gpu_backend: --gpu-backend cpu \u2014 using the CPU backend, no GPU device initialised\ndecoder_embed: n_vocab 0 \u2192 262144 (from token_embd)\ndecoder_embed: loaded 18 layers, 640 dims, 262144 vocab, 4 heads (1 kv), rope_theta=1000000, pool=last-token\ncrispembed: SentencePiece BPE tokenizer (262144 tokens, 514906 merges)\n"
+ },
+ "date": "2026-11-01",
+ "cos_min": 0.9992858979173681,
+ "max_abs": 0.007140999999999995
+}

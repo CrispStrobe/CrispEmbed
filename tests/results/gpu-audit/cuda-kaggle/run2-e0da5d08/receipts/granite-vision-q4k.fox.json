@@ -1,0 +1,72 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "-m",
+  "granite-vision-3.3-2b-q4_k.gguf",
+  "--ocr",
+  "fox.png",
+  "--ocr-max-tokens",
+  "128"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    4.075
+   ],
+   "gpu_mem_peak_mib": 2211,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ngranite_vision: vis=27L×1152d (729 patches), llm=40L×2048d (heads=32/8, ffn=8192), vocab=49156, 804 tensors\n  multipliers: embed=12.0, residual=0.22, logits=8.0, attn=0.015625; tokenizer=embedded (49156 tokens)\ngranite_vision: KV cache 71.9 MB (max_seq=920, F16)\n",
+   "stdout_sha256": "f3e24234c7b7155f0bc96b061401c44696a8b23fb8bf7d39c9643c569c6fddfe",
+   "stdout": "<doc> The quick brown fox jumps \n over the lazy dog, 12345 </doc>\n",
+   "vs_cpu": {
+    "byte_identical": true,
+    "text_exact": true,
+    "char_ratio": 1.0,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   },
+   "vs_reference_cpu": {
+    "byte_identical": false,
+    "text_exact": false,
+    "char_ratio": 0.9848484848484849,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {
+    "CRISPEMBED_GRANITE_CPU": "1"
+   },
+   "wall_s": [
+    70.234
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "granite_vision: vis=27L×1152d (729 patches), llm=40L×2048d (heads=32/8, ffn=8192), vocab=49156, 804 tensors\n  multipliers: embed=12.0, residual=0.22, logits=8.0, attn=0.015625; tokenizer=embedded (49156 tokens)\ngranite_vision: KV cache 71.9 MB (max_seq=920, F16)\n",
+   "stdout_sha256": "f3e24234c7b7155f0bc96b061401c44696a8b23fb8bf7d39c9643c569c6fddfe",
+   "stdout": "<doc> The quick brown fox jumps \n over the lazy dog, 12345 </doc>\n",
+   "vs_reference_cpu": {
+    "byte_identical": false,
+    "text_exact": false,
+    "char_ratio": 0.9848484848484849,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   }
+  }
+ },
+ "precision": "q4_k",
+ "reference_job": "granite-vision-q8.fox",
+ "bar": 0.94,
+ "seconds": 92.1,
+ "id": "granite-vision-q4k.fox",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

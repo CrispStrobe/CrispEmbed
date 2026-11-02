@@ -1,0 +1,13 @@
+PASS Python half-to-even rounds 2.5 to 2
+PASS Python half-to-even rounds 3.5 to 4
+PASS natural image grid and patch width
+PASS 2 by 2 merge-block order
+PASS channel then repeated temporal frame then patch pixels
+PASS RGBA conversion drops alpha without altering RGB
+PASS grayscale expands to RGB before channel normalization
+PASS Pillow 13 vertical-first mixed resize
+PASS Pillow 13 horizontal-first upscale
+PASS Pillow 13 equal reduction threshold stays horizontal-first
+PASS Pillow 13 above reduction threshold becomes vertical-first
+PASS reject invalid dimensions, channels and extreme aspect ratio
+PASS reject invalid pixel budget

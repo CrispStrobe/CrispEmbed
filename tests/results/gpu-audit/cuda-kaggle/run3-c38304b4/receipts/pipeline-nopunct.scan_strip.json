@@ -1,0 +1,73 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "--json",
+  "-m",
+  "trocr-small-printed-q8_0.gguf",
+  "--ocr-pipeline",
+  "scan_strip.png",
+  "--ocr-engine",
+  "dbnet_trocr",
+  "--ocr-det",
+  "dbnet-ic15-q8_0.gguf",
+  "--ocr-rec",
+  "trocr-small-printed-q8_0.gguf"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    35.965,
+    35.955
+   ],
+   "gpu_mem_peak_mib": 1015,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": " 22.196 0.288 0.594] best=2\nocr_pipeline: recognizing region 92/94\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-10.531 -11.115 6.238 -1.239 3.084] best=13532\nmath_ocr: [graph] dec step 1: tok=13532 logits[0..4]=[-8.553 -11.172 11.079 10.203 -0.692] best=8325\nmath_ocr: [graph] dec step 2: tok=8325 logits[0..4]=[-10.471 -10.051 13.777 4.940 -2.523] best=143\nmath_ocr: [graph] dec step 3: tok=143 logits[0..4]=[-8.741 -6.951 22.479 -0.072 -1.684] best=2\nocr_pipeline: recognizing region 93/94\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-11.984 -13.713 2.623 -2.590 12.171] best=781\nmath_ocr: [graph] dec step 1: tok=781 logits[0..4]=[-13.218 -12.544 8.422 2.106 6.107] best=6519\nmath_ocr: [graph] dec step 2: tok=6519 logits[0..4]=[-11.122 -11.868 10.149 4.301 -4.679] best=2225\nmath_ocr: [graph] dec step 3: tok=2225 logits[0..4]=[-8.354 -13.604 11.304 6.362 2.967] best=14750\nmath_ocr: [graph] dec step 4: tok=14750 logits[0..4]=[-9.632 -6.253 22.489 -0.943 0.304] best=2\nocr_pipeline: recognizing region 94/94\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-16.013 -14.085 10.307 3.580 0.402] best=5429\nmath_ocr: [graph] dec step 1: tok=5429 logits[0..4]=[-10.665 -10.236 28.438 -0.866 5.980] best=2\nocr_pipeline: recognized 94/94 regions\n",
+   "stdout_sha256": "4cef126325cb2d23e5d10035bd0b0aa65164626f2cbc18b4d6fa40f44dcb72f4",
+   "stdout": "{\"n_regions\":94,\"mean_confidence\":0.630,\"full_text\":\"THEY\\nARE\\nGOODS\\nTO\\nBE\\nENCOMPED\\nNEAR\\nBRIGHTON :\\nAND\\nDO\\n80\\nWANT\\nPAPA\\nTAKE\\nUS\\nTHREE\\nFOR\\nTHE\\nSUM-\\nMER\\nWOULD\\nBE\\nSUCH\\nDEFICIOUS\\nSCEEME,\\nAND\\nDATE\\n%\\nWOULD\\nHARDLY\\nCST\\nANYTHING\\nAT\\nALL.\\nMAMMA\\nWOULD\\nGO\\nTOO\\nOF\\nALL\\nTHINGS\\nONLY\\nTHINK\\nWHAT\\nMISERABLE\\nSUMMER\\nELSE\\nWE\\nSHALL\\nHAVE !\\nYES,'\\nTHOUGHT E\\nELIZABETH,\\n< TBAT :\\nWOULD\\nLBE\\nDELIGHT-\\nGL\\nSCEEME\\nINDEED,\\nAND\\nGOOD\\nHEAVEN\\nCOMPLETELY\\nDD\\nFOR\\nUS\\nAT\\nONCE.\\nBRIGHTON,\\nAND\\nWHOLE\\nCAMPFUL\\nOF\\nSOLDIERS,\\nTO\\nUS,\\nWHO\\nHAVE\\nBEEN\\nOVERSET\\nALREADY\\nBY\\nONE\\nPOOR\\nMERYTON\\nREGIMENT\\nOF\\nMILITIA,\\nAND\\nTHE\\nMONTHLY\\nBAILS\\nOF\"}\n",
+   "vs_cpu": {
+    "byte_identical": false,
+    "json": {
+     "n_numbers": [
+      2,
+      2
+     ],
+     "strings_equal": false,
+     "n_strings": [
+      1,
+      1
+     ],
+     "string_ratio": 0.9961759082217974
+    },
+    "final_cosine": 1.0,
+    "max_abs": 0.0,
+    "final_metric": "cosine over all JSON numbers"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    73.478,
+    76.043
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "57 22.321 0.147 0.206] best=2\nocr_pipeline: recognizing region 92/94\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-10.769 -11.418 6.389 -1.364 2.916] best=13532\nmath_ocr: [graph] dec step 1: tok=13532 logits[0..4]=[-8.577 -11.256 11.183 9.940 -0.756] best=8325\nmath_ocr: [graph] dec step 2: tok=8325 logits[0..4]=[-10.219 -9.808 13.736 5.005 -2.712] best=143\nmath_ocr: [graph] dec step 3: tok=143 logits[0..4]=[-8.532 -6.451 22.179 -0.092 -1.884] best=2\nocr_pipeline: recognizing region 93/94\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-11.955 -13.744 2.869 -2.412 12.231] best=781\nmath_ocr: [graph] dec step 1: tok=781 logits[0..4]=[-13.440 -12.634 8.335 2.083 5.932] best=6519\nmath_ocr: [graph] dec step 2: tok=6519 logits[0..4]=[-10.916 -11.780 10.112 4.471 -4.794] best=2225\nmath_ocr: [graph] dec step 3: tok=2225 logits[0..4]=[-8.082 -13.455 11.246 6.429 3.107] best=14750\nmath_ocr: [graph] dec step 4: tok=14750 logits[0..4]=[-9.813 -6.333 22.364 -0.519 0.188] best=2\nocr_pipeline: recognizing region 94/94\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-16.073 -14.081 10.336 3.812 0.454] best=5429\nmath_ocr: [graph] dec step 1: tok=5429 logits[0..4]=[-10.758 -10.222 28.619 -0.971 6.268] best=2\nocr_pipeline: recognized 94/94 regions\n",
+   "stdout_sha256": "e55d2ae994d9588b0776ce54316c1fc7d38eca415991a565f48d9ec206beea32",
+   "stdout": "{\"n_regions\":94,\"mean_confidence\":0.630,\"full_text\":\"THEY\\nARE\\nGOODS\\nTO\\nBE\\nENCOMPED\\nNEAR\\nBRIGHTON :\\nAND\\nCO\\n80\\nWANT\\nPAPA\\nTAKE\\nUS\\nTHREE\\nFOR\\nTHE\\nSUM-\\nMER\\nWOULD\\nBE\\nSUCH\\nDELICIOUS\\nSCEEME,\\nAND\\nDATE\\n%\\nWOULD\\nHARDLY\\nCST\\nANYTHING\\nAT\\nALL.\\nMAMMA\\nWOULD\\nGO\\nTOO\\nOF\\nALL\\nTHINGS\\nONLY\\nTHINK\\nWHAT\\nMISERABLE\\nSUMMER\\nELSE\\nWE\\nSHALL\\nHAVE !\\nYES,'\\nTHOUGHT E\\nELIZABETH,\\n< TBAT :\\nWOULD\\nLBE\\nDELIGHT-\\nGL\\nSCEEME\\nINDEED,\\nAND\\nGOOD\\nHEAVEN\\nCOMPLETELY\\nDD\\nFOR\\nUS\\nAT\\nONCE.\\nBRIGHTON,\\nAND\\nWHOLE\\nCAMPFUL\\nOF\\nSOLDIERS,\\nTO\\nUS,\\nWHO\\nHAVE\\nBEEN\\nOVERSET\\nALREADY\\nBY\\nONE\\nPOOR\\nMERYTON\\nREGIMENT\\nOF\\nMILITIA,\\nAND\\nTHE\\nMONTHLY\\nBAILS\\nOF\"}\n"
+  }
+ },
+ "precision": "q8_0",
+ "bar": 0.97,
+ "seconds": 223.1,
+ "id": "pipeline-nopunct.scan_strip",
+ "commit": "c38304b4283da24cd88141a8b162b8c9be41b833",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

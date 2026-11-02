@@ -1,0 +1,322 @@
+{
+  "schema": "crispembed.mineru25.pilot.v1",
+  "run": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41212535075",
+  "source_commit": "6beb54110a6023c163100d18f6bd4c5a977c5f71",
+  "case": "formula_quadratic.png",
+  "task": "formula",
+  "max_tokens": 1024,
+  "repeat": 3,
+  "threads": 4,
+  "results": {
+    "decode-f16": "fail(1)",
+    "decode-f32-reuse": "fail(2)",
+    "decode-f32": "pass",
+    "decode-q4_k": "pass",
+    "decode-q8_0": "pass",
+    "preprocess": "pass",
+    "reference": "pass",
+    "stages-f16": "fail(1)",
+    "stages-f32": "fail(1)",
+    "stages-q4_k": "fail(1)",
+    "stages-q8_0": "fail(1)"
+  },
+  "python": {
+    "tokens": 29,
+    "eos": true,
+    "text": "\\[x = \\frac {- b \\pm \\sqrt {b ^ {2} - 4 a c}}{2 a}\\]",
+    "runs_ms": [
+      7217.292003000011,
+      7044.349017999992,
+      7028.021501000012
+    ],
+    "packages": {
+      "torch": "2.9.0+cpu",
+      "torchvision": "0.24.0+cpu",
+      "transformers": "4.57.3",
+      "Pillow": "12.3.0",
+      "numpy": "2.2.6",
+      "gguf": "0.17.1"
+    }
+  },
+  "arms": {
+    "f32-reuse0": {
+      "request_parity_pass": true,
+      "speed_pass": true,
+      "native_over_python": 0.7060977906731591,
+      "tokens": 29,
+      "ids_exact": true,
+      "gguf_sha256": "ef6ea875747011d46bcf6e560755556b17b77fa9a36fb74ef6642d5c6d215572"
+    },
+    "f32-reuse1": {
+      "status": "native_failed",
+      "returncode": 1,
+      "stderr_tail": " BPE tokenizer (151674 tokens, 151387 merges)\nqwen2vl_ocr: detected qwen2vl architecture, using OCR prompt\nqwen2vl_ocr: prompt tokenized to 4 tokens\nqwen2vl_ocr: 409x145 → 420x140, 300 patches (10x30)\n  backend KV cache: 24 layers, max_seq=1124, 26.3 MB\n  gen[0]: token=78045 score=27.51 (prefill)\n  gen[1]: token=87 score=22.87 (cached)\nqwen2vl_ocr: generation failed\nnative MinerU inference failed\n"
+    },
+    "f16-reuse0": {
+      "request_parity_pass": true,
+      "speed_pass": false,
+      "native_over_python": 1.445850656257866,
+      "tokens": 29,
+      "ids_exact": true,
+      "gguf_sha256": "7d464d375f7c20dd3e2bae7e20fed1f80485ae9ca69aaad201897652c74d746b"
+    },
+    "q8_0-reuse0": {
+      "request_parity_pass": true,
+      "speed_pass": true,
+      "native_over_python": 0.5723671781612786,
+      "tokens": 29,
+      "ids_exact": true,
+      "gguf_sha256": "4742a8ca2817d4f6be0a67f15e5eaedc60ee6ff35109ecea45ede57c65f7a18b"
+    },
+    "q4_k-reuse0": {
+      "request_parity_pass": true,
+      "speed_pass": true,
+      "native_over_python": 0.5791832350488154,
+      "tokens": 29,
+      "ids_exact": true,
+      "gguf_sha256": "9b5042eb7c2c3cbefa0fd49576ba24b41bf2f670d0876276c6d32d53632c998b"
+    }
+  },
+  "stages": {
+    "f32": {
+      "pass": false,
+      "failed": 55,
+      "stages": 64,
+      "first_failed_stage": "vis_layer_4",
+      "first_argmax_equal": true,
+      "selected": {
+        "vis_layer_0": {
+          "max_abs": 0.00180625916,
+          "rms": 0.000126084531,
+          "cos_min": 1,
+          "reference_norm": 601.516418
+        },
+        "vis_layer_4": {
+          "max_abs": 0.00242966413,
+          "rms": 0.000266085757,
+          "cos_min": 0.999999881,
+          "reference_norm": 777.196411
+        },
+        "vis_layer_31": {
+          "max_abs": 20.5664062,
+          "rms": 0.0482409224,
+          "cos_min": 0.999999583,
+          "reference_norm": 30412.7891
+        },
+        "vis_merger_output": {
+          "max_abs": 1.05148315,
+          "rms": 0.0113781262,
+          "cos_min": 0.999999344,
+          "reference_norm": 15761.3115
+        },
+        "llm_layer_0": {
+          "max_abs": 1.3314209,
+          "rms": 0.0108051505,
+          "cos_min": 0.999999642,
+          "reference_norm": 21077.5059
+        },
+        "llm_layer_23": {
+          "max_abs": 2.45263672,
+          "rms": 0.016028136,
+          "cos_min": 0.999999881,
+          "reference_norm": 46920.9492
+        },
+        "llm_final_norm": {
+          "max_abs": 0.0165286064,
+          "rms": 0.000629660732,
+          "cos_min": 0.99999541,
+          "reference_norm": 380.528809
+        },
+        "llm_logits_last": {
+          "max_abs": 0.00198364258,
+          "rms": 0.000146637147,
+          "cos_min": 1,
+          "reference_norm": 819.872498
+        }
+      }
+    },
+    "f16": {
+      "pass": false,
+      "failed": 55,
+      "stages": 64,
+      "first_failed_stage": "vis_layer_4",
+      "first_argmax_equal": true,
+      "selected": {
+        "vis_layer_0": {
+          "max_abs": 0.00180625916,
+          "rms": 0.000126075247,
+          "cos_min": 1,
+          "reference_norm": 601.516418
+        },
+        "vis_layer_4": {
+          "max_abs": 0.00244477391,
+          "rms": 0.00026620712,
+          "cos_min": 0.999999881,
+          "reference_norm": 777.196411
+        },
+        "vis_layer_31": {
+          "max_abs": 22.6464844,
+          "rms": 0.0539387204,
+          "cos_min": 0.999997377,
+          "reference_norm": 30412.7891
+        },
+        "vis_merger_output": {
+          "max_abs": 0.947814941,
+          "rms": 0.0125120142,
+          "cos_min": 0.999998271,
+          "reference_norm": 15761.3115
+        },
+        "llm_layer_0": {
+          "max_abs": 1.09106445,
+          "rms": 0.0118308719,
+          "cos_min": 0.999998868,
+          "reference_norm": 21077.5059
+        },
+        "llm_layer_23": {
+          "max_abs": 2.70629883,
+          "rms": 0.0196934268,
+          "cos_min": 0.999999702,
+          "reference_norm": 46920.9492
+        },
+        "llm_final_norm": {
+          "max_abs": 0.0239078999,
+          "rms": 0.000820118526,
+          "cos_min": 0.999989927,
+          "reference_norm": 380.528809
+        },
+        "llm_logits_last": {
+          "max_abs": 0.00161075592,
+          "rms": 0.000144987716,
+          "cos_min": 1,
+          "reference_norm": 819.872498
+        }
+      }
+    },
+    "q8_0": {
+      "pass": false,
+      "failed": 60,
+      "stages": 64,
+      "first_failed_stage": "vis_layer_0",
+      "first_argmax_equal": true,
+      "selected": {
+        "vis_layer_0": {
+          "max_abs": 0.140872002,
+          "rms": 0.00859153364,
+          "cos_min": 0.999913275,
+          "reference_norm": 601.516418
+        },
+        "vis_layer_4": {
+          "max_abs": 0.723311186,
+          "rms": 0.0339026153,
+          "cos_min": 0.999289393,
+          "reference_norm": 777.196411
+        },
+        "vis_layer_31": {
+          "max_abs": 1794.8501,
+          "rms": 3.96372032,
+          "cos_min": 0.987441123,
+          "reference_norm": 30412.7891
+        },
+        "vis_merger_output": {
+          "max_abs": 75.5149841,
+          "rms": 0.907497406,
+          "cos_min": 0.983918965,
+          "reference_norm": 15761.3115
+        },
+        "llm_layer_0": {
+          "max_abs": 149.893066,
+          "rms": 0.935228288,
+          "cos_min": 0.989686489,
+          "reference_norm": 21077.5059
+        },
+        "llm_layer_23": {
+          "max_abs": 194.725342,
+          "rms": 1.51852274,
+          "cos_min": 0.998304009,
+          "reference_norm": 46920.9492
+        },
+        "llm_final_norm": {
+          "max_abs": 1.56259418,
+          "rms": 0.0686425567,
+          "cos_min": 0.925560713,
+          "reference_norm": 380.528809
+        },
+        "llm_logits_last": {
+          "max_abs": 0.181008428,
+          "rms": 0.0276394319,
+          "cos_min": 0.999916434,
+          "reference_norm": 819.872498
+        }
+      }
+    },
+    "q4_k": {
+      "pass": false,
+      "failed": 60,
+      "stages": 64,
+      "first_failed_stage": "vis_layer_0",
+      "first_argmax_equal": true,
+      "selected": {
+        "vis_layer_0": {
+          "max_abs": 0.140872002,
+          "rms": 0.00859153364,
+          "cos_min": 0.999913275,
+          "reference_norm": 601.516418
+        },
+        "vis_layer_4": {
+          "max_abs": 0.723311186,
+          "rms": 0.0339026153,
+          "cos_min": 0.999289393,
+          "reference_norm": 777.196411
+        },
+        "vis_layer_31": {
+          "max_abs": 1794.8501,
+          "rms": 3.96372032,
+          "cos_min": 0.987441123,
+          "reference_norm": 30412.7891
+        },
+        "vis_merger_output": {
+          "max_abs": 75.5149841,
+          "rms": 0.907497406,
+          "cos_min": 0.983918965,
+          "reference_norm": 15761.3115
+        },
+        "llm_layer_0": {
+          "max_abs": 147.777649,
+          "rms": 1.1996665,
+          "cos_min": 0.989669144,
+          "reference_norm": 21077.5059
+        },
+        "llm_layer_23": {
+          "max_abs": 420.102539,
+          "rms": 4.2067523,
+          "cos_min": 0.997766495,
+          "reference_norm": 46920.9492
+        },
+        "llm_final_norm": {
+          "max_abs": 2.81708336,
+          "rms": 0.163409621,
+          "cos_min": 0.907442987,
+          "reference_norm": 380.528809
+        },
+        "llm_logits_last": {
+          "max_abs": 1.48833275,
+          "rms": 0.264742881,
+          "cos_min": 0.995014369,
+          "reference_norm": 819.872498
+        }
+      }
+    }
+  },
+  "gguf": [
+    "7d464d375f7c20dd3e2bae7e20fed1f80485ae9ca69aaad201897652c74d746b 2591511520 mineru25-f16.gguf",
+    "ef6ea875747011d46bcf6e560755556b17b77fa9a36fb74ef6642d5c6d215572 4630070208 mineru25-f32.gguf",
+    "9b5042eb7c2c3cbefa0fd49576ba24b41bf2f670d0876276c6d32d53632c998b 1152030720 mineru25-q4_k.gguf",
+    "4742a8ca2817d4f6be0a67f15e5eaedc60ee6ff35109ecea45ede57c65f7a18b 1330944000 mineru25-q8_0.gguf"
+  ],
+  "findings": [
+    "f32-reuse1 failed at decode step 2: stale kv_mask in the persistent graph (ggml-alloc frees inputs); fixed in 53854f7c",
+    "F32 stage gate fails from vis_layer_4 at unchanged budgets (0.002/0.99999) despite exact decode; ggml CPU gelu_quick fp16 table identified as a cause candidate; A/B behind CRISPEMBED_MINERU25_PRO_EXACT_GELU in 692f2130",
+    "F16 decodes token-exact but is 1.45x slower than Python F32 on this CPU (speed gate fails); Q8_0/Q4_K decode exact at 0.57-0.58x"
+  ],
+  "note": "Initial evidence at a superseded commit; retained, not a qualification receipt."
+}

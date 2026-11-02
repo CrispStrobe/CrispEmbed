@@ -1,0 +1,3 @@
+ggml_metal_device_init: GPU name:   MTL0 (Apple M1)
+      200.98 real         0.81 user         3.66 sys
+           614563840  maximum resident set size

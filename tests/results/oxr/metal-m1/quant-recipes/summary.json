@@ -1,0 +1,507 @@
+[
+ {
+  "recipe": "f16",
+  "case": "formula",
+  "label": "formula/metal",
+  "ids_exact": true,
+  "first_divergence": null,
+  "reference_tokens": 22,
+  "native_tokens": 22,
+  "text_exact": true,
+  "cer": 0.0,
+  "eos": true,
+  "capped": false,
+  "runs_ms": [
+   6197.650834
+  ],
+  "warm_ms_median": 6197.650834,
+  "load_ms": 233141.690459,
+  "runs_identical": true
+ },
+ {
+  "recipe": "f16",
+  "case": "german",
+  "label": "german/metal",
+  "ids_exact": true,
+  "first_divergence": null,
+  "reference_tokens": 401,
+  "native_tokens": 401,
+  "text_exact": true,
+  "cer": 0.0,
+  "eos": true,
+  "capped": false,
+  "runs_ms": [
+   98942.194875
+  ],
+  "warm_ms_median": 98942.194875,
+  "load_ms": 228334.048125,
+  "runs_identical": true
+ },
+ {
+  "recipe": "f16",
+  "case": "japanese",
+  "label": "japanese/metal",
+  "ids_exact": true,
+  "first_divergence": null,
+  "reference_tokens": 38,
+  "native_tokens": 38,
+  "text_exact": true,
+  "cer": 0.0,
+  "eos": true,
+  "capped": false,
+  "runs_ms": [
+   6408.054625
+  ],
+  "warm_ms_median": 6408.054625,
+  "load_ms": 268436.203583,
+  "runs_identical": true
+ },
+ {
+  "recipe": "f16",
+  "case": "receipt",
+  "label": "receipt/metal",
+  "ids_exact": true,
+  "first_divergence": null,
+  "reference_tokens": 202,
+  "native_tokens": 202,
+  "text_exact": true,
+  "cer": 0.0,
+  "eos": true,
+  "capped": false,
+  "runs_ms": [
+   31269.352792
+  ],
+  "warm_ms_median": 31269.352792,
+  "load_ms": 240557.770459,
+  "runs_identical": true
+ },
+ {
+  "recipe": "f16",
+  "case": "table",
+  "label": "table/metal",
+  "ids_exact": true,
+  "first_divergence": null,
+  "reference_tokens": 261,
+  "native_tokens": 261,
+  "text_exact": true,
+  "cer": 0.0,
+  "eos": true,
+  "capped": false,
+  "runs_ms": [
+   29558.971875
+  ],
+  "warm_ms_median": 29558.971875,
+  "load_ms": 373930.628375,
+  "runs_identical": true
+ },
+ {
+  "recipe": "q4mix",
+  "case": "formula",
+  "label": "formula/metal",
+  "ids_exact": true,
+  "first_divergence": null,
+  "reference_tokens": 22,
+  "native_tokens": 22,
+  "text_exact": true,
+  "cer": 0.0,
+  "eos": true,
+  "capped": false,
+  "runs_ms": [
+   9228.739333
+  ],
+  "warm_ms_median": 9228.739333,
+  "load_ms": 729833.528458,
+  "runs_identical": true,
+  "stages_vs_f16": {
+   "llm.layer.27": {
+    "cosine": 0.9999869640534166,
+    "max_abs": 17.259353637695312
+   },
+   "llm.logits": {
+    "cosine": 0.9997420793661682,
+    "max_abs": 0.2215215563774109
+   },
+   "llm.norm": {
+    "cosine": 0.9995660576490502,
+    "max_abs": 1.9330044761300087
+   },
+   "vision.merge": {
+    "cosine": 1.0,
+    "max_abs": 0.0
+   },
+   "visual.embeddings": {
+    "cosine": 0.9998328149436464,
+    "max_abs": 0.0025444328784942627
+   }
+  }
+ },
+ {
+  "recipe": "q4mix",
+  "case": "german",
+  "label": "german/metal",
+  "ids_exact": false,
+  "first_divergence": 209,
+  "reference_tokens": 401,
+  "native_tokens": 404,
+  "text_exact": false,
+  "cer": 0.00303951367781155,
+  "eos": true,
+  "capped": false,
+  "runs_ms": [
+   91924.213417
+  ],
+  "warm_ms_median": 91924.213417,
+  "load_ms": 50931.423042,
+  "runs_identical": true,
+  "stages_vs_f16": {
+   "llm.layer.27": {
+    "cosine": 0.9999494992236175,
+    "max_abs": 12.18359375
+   },
+   "llm.logits": {
+    "cosine": 0.9997077277572805,
+    "max_abs": 0.18409600923769176
+   },
+   "llm.norm": {
+    "cosine": 0.9996798187375796,
+    "max_abs": 1.6160887479782104
+   },
+   "vision.merge": {
+    "cosine": 0.9999999999999999,
+    "max_abs": 0.0
+   },
+   "visual.embeddings": {
+    "cosine": 0.9998745928105837,
+    "max_abs": 0.0024014776572585106
+   }
+  }
+ },
+ {
+  "recipe": "q4mix",
+  "case": "japanese",
+  "label": "japanese/metal",
+  "ids_exact": true,
+  "first_divergence": null,
+  "reference_tokens": 38,
+  "native_tokens": 38,
+  "text_exact": true,
+  "cer": 0.0,
+  "eos": true,
+  "capped": false,
+  "runs_ms": [
+   7105.288166
+  ],
+  "warm_ms_median": 7105.288166,
+  "load_ms": 58178.245875,
+  "runs_identical": true,
+  "stages_vs_f16": {
+   "llm.layer.27": {
+    "cosine": 0.9999857167128461,
+    "max_abs": 12.18359375
+   },
+   "llm.logits": {
+    "cosine": 0.9996995742921143,
+    "max_abs": 0.2145216464996338
+   },
+   "llm.norm": {
+    "cosine": 0.9996806098974534,
+    "max_abs": 1.297250747680664
+   },
+   "vision.merge": {
+    "cosine": 1.0000000000000002,
+    "max_abs": 0.0
+   },
+   "visual.embeddings": {
+    "cosine": 0.9998454491155825,
+    "max_abs": 0.0038669221103191376
+   }
+  }
+ },
+ {
+  "recipe": "q4mix",
+  "case": "receipt",
+  "label": "receipt/metal",
+  "ids_exact": true,
+  "first_divergence": null,
+  "reference_tokens": 202,
+  "native_tokens": 202,
+  "text_exact": true,
+  "cer": 0.0,
+  "eos": true,
+  "capped": false,
+  "runs_ms": [
+   28907.697125
+  ],
+  "warm_ms_median": 28907.697125,
+  "load_ms": 94250.775917,
+  "runs_identical": true,
+  "stages_vs_f16": {
+   "llm.layer.27": {
+    "cosine": 0.9999845857149154,
+    "max_abs": 12.18359375
+   },
+   "llm.logits": {
+    "cosine": 0.9997843851819106,
+    "max_abs": 0.2200014889240265
+   },
+   "llm.norm": {
+    "cosine": 0.9996361474837135,
+    "max_abs": 1.552581787109375
+   },
+   "vision.merge": {
+    "cosine": 1.0,
+    "max_abs": 0.0
+   },
+   "visual.embeddings": {
+    "cosine": 0.9998905885903318,
+    "max_abs": 0.0015635667368769646
+   }
+  }
+ },
+ {
+  "recipe": "q4mix",
+  "case": "table",
+  "label": "table/metal",
+  "ids_exact": true,
+  "first_divergence": null,
+  "reference_tokens": 261,
+  "native_tokens": 261,
+  "text_exact": true,
+  "cer": 0.0,
+  "eos": true,
+  "capped": false,
+  "runs_ms": [
+   27240.094166
+  ],
+  "warm_ms_median": 27240.094166,
+  "load_ms": 94004.899084,
+  "runs_identical": true,
+  "stages_vs_f16": {
+   "llm.layer.27": {
+    "cosine": 0.999993231976543,
+    "max_abs": 12.18359375
+   },
+   "llm.logits": {
+    "cosine": 0.9994884433003127,
+    "max_abs": 0.3048272132873535
+   },
+   "llm.norm": {
+    "cosine": 0.9996135870131729,
+    "max_abs": 1.6735347509384155
+   },
+   "vision.merge": {
+    "cosine": 1.0,
+    "max_abs": 0.0
+   },
+   "visual.embeddings": {
+    "cosine": 0.9998617790724333,
+    "max_abs": 0.004369750618934631
+   }
+  }
+ },
+ {
+  "recipe": "q8large",
+  "case": "formula",
+  "label": "formula/metal",
+  "ids_exact": true,
+  "first_divergence": null,
+  "reference_tokens": 22,
+  "native_tokens": 22,
+  "text_exact": true,
+  "cer": 0.0,
+  "eos": true,
+  "capped": false,
+  "runs_ms": [
+   5642.241125
+  ],
+  "warm_ms_median": 5642.241125,
+  "load_ms": 102390.2205,
+  "runs_identical": true,
+  "stages_vs_f16": {
+   "llm.layer.27": {
+    "cosine": 0.9999910224532953,
+    "max_abs": 12.18359375
+   },
+   "llm.logits": {
+    "cosine": 0.9997811297048406,
+    "max_abs": 0.22808074951171875
+   },
+   "llm.norm": {
+    "cosine": 0.9997375489557709,
+    "max_abs": 0.8889980316162109
+   },
+   "vision.merge": {
+    "cosine": 1.0,
+    "max_abs": 0.0
+   },
+   "visual.embeddings": {
+    "cosine": 0.999994210228907,
+    "max_abs": 0.0004617692902684212
+   }
+  }
+ },
+ {
+  "recipe": "q8large",
+  "case": "german",
+  "label": "german/metal",
+  "ids_exact": false,
+  "first_divergence": 35,
+  "reference_tokens": 401,
+  "native_tokens": 394,
+  "text_exact": false,
+  "cer": 0.04356636271529889,
+  "eos": true,
+  "capped": false,
+  "runs_ms": [
+   72918.473334
+  ],
+  "warm_ms_median": 72918.473334,
+  "load_ms": 61832.425625,
+  "runs_identical": true,
+  "stages_vs_f16": {
+   "llm.layer.27": {
+    "cosine": 0.9999611995482074,
+    "max_abs": 12.18359375
+   },
+   "llm.logits": {
+    "cosine": 0.9997532852289914,
+    "max_abs": 0.1828920841217041
+   },
+   "llm.norm": {
+    "cosine": 0.999765074095156,
+    "max_abs": 1.4259910583496094
+   },
+   "vision.merge": {
+    "cosine": 0.9999999999999999,
+    "max_abs": 0.0
+   },
+   "visual.embeddings": {
+    "cosine": 0.9999955707090878,
+    "max_abs": 0.000674927607178688
+   }
+  }
+ },
+ {
+  "recipe": "q8large",
+  "case": "japanese",
+  "label": "japanese/metal",
+  "ids_exact": true,
+  "first_divergence": null,
+  "reference_tokens": 38,
+  "native_tokens": 38,
+  "text_exact": true,
+  "cer": 0.0,
+  "eos": true,
+  "capped": false,
+  "runs_ms": [
+   5590.749125
+  ],
+  "warm_ms_median": 5590.749125,
+  "load_ms": 105428.693459,
+  "runs_identical": true,
+  "stages_vs_f16": {
+   "llm.layer.27": {
+    "cosine": 0.999988301732185,
+    "max_abs": 12.18359375
+   },
+   "llm.logits": {
+    "cosine": 0.9997235296427449,
+    "max_abs": 0.1948227882385254
+   },
+   "llm.norm": {
+    "cosine": 0.9997652290825638,
+    "max_abs": 1.0902061462402344
+   },
+   "vision.merge": {
+    "cosine": 1.0000000000000002,
+    "max_abs": 0.0
+   },
+   "visual.embeddings": {
+    "cosine": 0.9999955973488464,
+    "max_abs": 0.0003063604235649109
+   }
+  }
+ },
+ {
+  "recipe": "q8large",
+  "case": "receipt",
+  "label": "receipt/metal",
+  "ids_exact": true,
+  "first_divergence": null,
+  "reference_tokens": 202,
+  "native_tokens": 202,
+  "text_exact": true,
+  "cer": 0.0,
+  "eos": true,
+  "capped": false,
+  "runs_ms": [
+   23792.514916
+  ],
+  "warm_ms_median": 23792.514916,
+  "load_ms": 63725.827041,
+  "runs_identical": true,
+  "stages_vs_f16": {
+   "llm.layer.27": {
+    "cosine": 0.9999882526049164,
+    "max_abs": 12.18359375
+   },
+   "llm.logits": {
+    "cosine": 0.999852425948482,
+    "max_abs": 0.20320820808410645
+   },
+   "llm.norm": {
+    "cosine": 0.9997364624427628,
+    "max_abs": 0.9900637865066528
+   },
+   "vision.merge": {
+    "cosine": 1.0,
+    "max_abs": 0.0
+   },
+   "visual.embeddings": {
+    "cosine": 0.9999959523512953,
+    "max_abs": 0.00034580472856760025
+   }
+  }
+ },
+ {
+  "recipe": "q8large",
+  "case": "table",
+  "label": "table/metal",
+  "ids_exact": true,
+  "first_divergence": null,
+  "reference_tokens": 261,
+  "native_tokens": 261,
+  "text_exact": true,
+  "cer": 0.0,
+  "eos": true,
+  "capped": false,
+  "runs_ms": [
+   23406.38525
+  ],
+  "warm_ms_median": 23406.38525,
+  "load_ms": 101106.848917,
+  "runs_identical": true,
+  "stages_vs_f16": {
+   "llm.layer.27": {
+    "cosine": 0.9999949045466903,
+    "max_abs": 12.18359375
+   },
+   "llm.logits": {
+    "cosine": 0.9996263124543018,
+    "max_abs": 0.27926313877105713
+   },
+   "llm.norm": {
+    "cosine": 0.9997399745357889,
+    "max_abs": 1.487007975578308
+   },
+   "vision.merge": {
+    "cosine": 1.0,
+    "max_abs": 0.0
+   },
+   "visual.embeddings": {
+    "cosine": 0.9999952451718522,
+    "max_abs": 0.0005116555839776993
+   }
+  }
+ }
+]

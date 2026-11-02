@@ -1,0 +1,3750 @@
+{
+  "schema": "crispembed-encoder-precision-evidence-audit-v1",
+  "date_utc": "2026-10-29T10:50:13.363123+00:00",
+  "source": "5e3ff77c481ea852b78c01f96face483fa908a45",
+  "completed": true,
+  "audit_only": true,
+  "models_downloaded": 0,
+  "arrays_downloaded": 0,
+  "package_installs": 0,
+  "framework_imports": 0,
+  "builds": 0,
+  "original_forwards": 0,
+  "native_forwards": 0,
+  "publication_changes": false,
+  "alias_changes": false,
+  "default_changes": false,
+  "scope": [
+    "LiquidAI/LFM2.5-Encoder-230M masked encoder, not LFM2.5-Embedding retrieval model",
+    "mrm8488/embeddinggemma-2-ft-typed-decision complete custom head, not embeddinggemma-300m"
+  ],
+  "qualification_note": "Existing archived evidence is preserved. This source/metadata audit does not qualify any precision on the current full runtime, independent task benchmark, GPU MMQ, new dataset or release.",
+  "local_inputs": {
+    "docs/embeddinggemma2-typed-decision-hf-card.md": {
+      "bytes": 3198,
+      "sha256": "fb44162da42cd57f5430cfbb732e0d39a4636d1ad7921d8951c545c18d5b73bd"
+    },
+    "docs/embeddinggemma2-typed-decision.md": {
+      "bytes": 10129,
+      "sha256": "a5714886133360be4a3e38b07a461758ecf98d2501e98d0542a2518cd487efe6"
+    },
+    "docs/lfm2-encoder-hf-card.md": {
+      "bytes": 4192,
+      "sha256": "9b46abbf776241e3ab63af96249f90868578451697e142c43e57da4e40aa9e29"
+    },
+    "docs/lfm2-encoder.md": {
+      "bytes": 29372,
+      "sha256": "ea25eab6dffdcc45e616184b5a17c0b442c884ae0cbd21cd87f2307a67ee3a52"
+    },
+    "examples/cli/model_hashes.h": {
+      "bytes": 57036,
+      "sha256": "355c6d64bb4b8fd3fd5ebba1444b6eecde39655e4357082a5720287fde455408"
+    },
+    "examples/cli/model_mgr.cpp": {
+      "bytes": 155420,
+      "sha256": "9cd7ef77424092c35203382552b729c223ddfe7a2cd5a4c08c28bf771f248dfc"
+    },
+    "models/convert-gemma-decision-to-gguf.py": {
+      "bytes": 5375,
+      "sha256": "f268eeebfdbe01e62b816a841faf8b00d782d8b462c77ff4e19ec85791797efa"
+    },
+    "tests/gemma_decision_parity.py": {
+      "bytes": 9557,
+      "sha256": "0801f75ae63a8b3b516cef60cc4b710b7d623815c8a10a11c9e3b70ead09a941"
+    },
+    "tests/lfm2_encoder_parity.py": {
+      "bytes": 8501,
+      "sha256": "95a60e92beda4269737f635d69a98670c158d1fc0156e8c72c1416a63fcab18d"
+    },
+    "tests/results/gemma-decision/arm-f32-decisions.json": {
+      "bytes": 7757,
+      "sha256": "9ffd4288721e6f658bfe259581d3b94916de1b3cc0e54ac6d06f79c72dd18643"
+    },
+    "tests/results/gemma-decision/arm-q8-decisions.json": {
+      "bytes": 7766,
+      "sha256": "befd984aa10823aa3b2589a0b3e1c329b8b888a4cf5d4bc6a02762c0d43f0db3"
+    },
+    "tests/results/gemma-decision/arm-rendering.json": {
+      "bytes": 345,
+      "sha256": "6fd4ba3f214c3350bf03c87167569fa83e64ede13d579ccf10a5ff1f356ba85e"
+    },
+    "tests/results/gemma-decision/arm-validation.json": {
+      "bytes": 40223,
+      "sha256": "94c2ff563097945bc68293ee553647873d835b6e326a7709c6a3e28ed96a2bab"
+    },
+    "tests/results/gemma-decision/bindings.json": {
+      "bytes": 163,
+      "sha256": "847fded996440e864eacf8c686180c38b189ac6533a14a694b167fc2fea61f47"
+    },
+    "tests/results/gemma-decision/macos-f32-decisions.json": {
+      "bytes": 7768,
+      "sha256": "cc43c1b106d84ef0cf1ed7fe50622b8f554859de36b0674278a61093202338b5"
+    },
+    "tests/results/gemma-decision/macos-q8-decisions.json": {
+      "bytes": 7808,
+      "sha256": "6cd5ad7b3f15a07735728511dfa048b53ffe6588650b7272d4d0f57bf4613a81"
+    },
+    "tests/results/gemma-decision/macos-rendering.json": {
+      "bytes": 369,
+      "sha256": "af3d88f8fefebbeb2bcd3e37c340b2673c68cf44b457b82ce8a8f14a85e40377"
+    },
+    "tests/results/gemma-decision/publication.json": {
+      "bytes": 4118,
+      "sha256": "f6b9617aef9ef81e14442fe409002badf2b0281adeb6bd0e4f185d44996b1fb7"
+    },
+    "tests/results/gemma-decision/registry.json": {
+      "bytes": 693,
+      "sha256": "da59df64d1e60bccadf4bb2ff63e70415fa3d2d5e14a23d51d17cde5fbcf7a8e"
+    },
+    "tests/results/gemma-decision/validated-artifacts.json": {
+      "bytes": 3285,
+      "sha256": "1c2e217bb195235a5592725c9a89ef8b3541cff877d5aa14b84dd301a9237d07"
+    },
+    "tests/results/lfm2-encoder/arithmetic_audit.json": {
+      "bytes": 764679,
+      "sha256": "88626fd3e9c2cdae49ca16bdcebb5d28581ca8b2b9b0273ad28ca7420b81e9ee"
+    },
+    "tests/results/lfm2-encoder/cuda-f16-performance.json": {
+      "bytes": 65778,
+      "sha256": "22d8fdae06bd71d3a252bb5abebf849b895480e20c6ece58209871d957bde183"
+    },
+    "tests/results/lfm2-encoder/cuda-f16.json": {
+      "bytes": 63840,
+      "sha256": "c7546453d234f7b6c8d9ac98ac8d19a7650fa1c0e589a4a8c2e875d44594f3c2"
+    },
+    "tests/results/lfm2-encoder/initial-cuda-performance-timeout.json": {
+      "bytes": 6132,
+      "sha256": "3fd3a0be11a980970348cf31aeed648fbe44ae456c3122942cdb584ef35cc116"
+    },
+    "tests/results/lfm2-encoder/mixed_precision.json": {
+      "bytes": 406583,
+      "sha256": "a782376de805da1d15a8a5e5409cd43632a825856cf73cf96a9423b8870b90df"
+    },
+    "tests/results/lfm2-encoder/publication.json": {
+      "bytes": 4030,
+      "sha256": "711d162c83cee037050fc66257724c336f82765b5344ff37bcdc2039acbf48e3"
+    },
+    "tests/results/lfm2-encoder/quantization.json": {
+      "bytes": 181832,
+      "sha256": "345d7da69e2436fa46998ad371d997270d5be84b0e2007253243dde06055780c"
+    },
+    "tests/test_gemma_decision_diff.cpp": {
+      "bytes": 3182,
+      "sha256": "c0399335fc624b187d0ac41f4d76794a97ff263552931f4aafe8ff107ccc022a"
+    },
+    "tests/test_lfm2_diff.cpp": {
+      "bytes": 8585,
+      "sha256": "e9aa9e063547c5a2bcab855592e251f836120461bc989e22f9acb4940933c992"
+    },
+    "tools/calibrate_lfm2_encoder.py": {
+      "bytes": 3222,
+      "sha256": "651fd83cc20a23b63e297eabf61f3dce6ff4b8f8a163b18b34d56b8236cda1f5"
+    },
+    "tools/ci-heavy/gemma_decision_bindings.py": {
+      "bytes": 5888,
+      "sha256": "a2ca0e76d6230fe6584316548d3d4799137994ec3e3b8eb81efb5a974a1021db"
+    },
+    "tools/ci-heavy/gemma_decision_registry.py": {
+      "bytes": 4372,
+      "sha256": "f718df2341ab87bf519ee1ae02f0017c9ea7901d914a58740bf57861e78d3a34"
+    },
+    "tools/ci-heavy/gemma_decision_validate.py": {
+      "bytes": 6033,
+      "sha256": "ec3d6547e0760e9a42250be4ff988f7f635c9ba9c15d53203755e4734571e9b2"
+    },
+    "crispembed/tests/lfm2_encoder_live.rs": {
+      "bytes": 1891,
+      "sha256": "6b67617eb8f3d3a1b8966f217142a0b975e39d9605dcd1c3096c53b912877974"
+    },
+    "flutter/crispembed/example/lfm2_encoder.dart": {
+      "bytes": 1858,
+      "sha256": "f88e4c60991c612c141d0c8ea1cfd122f71e9250ccc23574afa0fc7885bf7579"
+    },
+    "tests/test_lfm2_bindings.py": {
+      "bytes": 2907,
+      "sha256": "c5bffab779018e2570714888238078fc6dc4ac0c610a4c17718385050527f4db"
+    }
+  },
+  "hub_metadata": {
+    "observed_at": "2026-10-29T10:43:10.291250+00:00",
+    "requests": [
+      {
+        "name": "lfm-official",
+        "url": "https://huggingface.co/api/models/LiquidAI/LFM2.5-Encoder-230M-GGUF/revision/bb26e78c7164b386028928ebfcecebcc42467689?blobs=true",
+        "repository": "LiquidAI/LFM2.5-Encoder-230M-GGUF",
+        "revision": "bb26e78c7164b386028928ebfcecebcc42467689",
+        "tree_prefix": null,
+        "bytes": 5164,
+        "sha256": "3672f26aaddfd8da84e7bcd17bbdf7cfb3297f22d14e4db85a8a81b0381620ce",
+        "row_count": 7,
+        "complete_single_page": true,
+        "card_license": "other",
+        "files": [
+          {
+            "path": ".gitattributes",
+            "bytes": 1716,
+            "git_blob_oid": "755007da11097f168e6dab8e1304309194ac66a3",
+            "lfs": null
+          },
+          {
+            "path": "LFM2.5-Encoder-230M-F16.gguf",
+            "bytes": 461882368,
+            "git_blob_oid": "a9fd192c036673cdf4e979b751332576cae443cb",
+            "lfs": {
+              "sha256": "f097dbdb27c565b6f08cdbbfeb5d674ad7c205cfd1d8362f5415e243b2ec2e93",
+              "size": 461882368,
+              "pointerSize": 134
+            }
+          },
+          {
+            "path": "LFM2.5-Encoder-230M-Q4_0.gguf",
+            "bytes": 149079040,
+            "git_blob_oid": "f42a6f45b8436af93a53403b47f50ef08917ce03",
+            "lfs": {
+              "sha256": "6c2a549f375b56cf9b22b8c7173df9c5b5a23b274316a7a70addecaea3963fcc",
+              "size": 149079040,
+              "pointerSize": 134
+            }
+          },
+          {
+            "path": "LFM2.5-Encoder-230M-Q8_0.gguf",
+            "bytes": 246596608,
+            "git_blob_oid": "8cdb9ecf94428d0cb4a94241c86a0f112c480f42",
+            "lfs": {
+              "sha256": "790d3fb0d97712e7c43bb446484e8b3935c0a3c471db23c7a45cfbcb165a36a4",
+              "size": 246596608,
+              "pointerSize": 134
+            }
+          },
+          {
+            "path": "LICENSE",
+            "bytes": 10574,
+            "git_blob_oid": "25e731c697c4fe4c52ee654cedf7106a827748d2",
+            "lfs": null
+          },
+          {
+            "path": "README.md",
+            "bytes": 2862,
+            "git_blob_oid": "4de36d2ef9c42b9b0df010d6c8d04752b3276797",
+            "lfs": null
+          },
+          {
+            "path": "fill-mask.py",
+            "bytes": 2151,
+            "git_blob_oid": "5fb4c12c51a36114d6c8fd815862e5ec27b62d62",
+            "lfs": null
+          }
+        ]
+      },
+      {
+        "name": "lfm-mixed",
+        "url": "https://huggingface.co/api/models/cstr/LFM2.5-Encoder-230M-GGUF/revision/dcb63d20fd326e705f0b1c74b0b61e529b0d5cc0?blobs=true",
+        "repository": "cstr/LFM2.5-Encoder-230M-GGUF",
+        "revision": "dcb63d20fd326e705f0b1c74b0b61e529b0d5cc0",
+        "tree_prefix": null,
+        "bytes": 2555,
+        "sha256": "28a3b9ad08e2fccc9e2f13bb56c6388814276f6203ec3ea5f56120269bfe181a",
+        "row_count": 9,
+        "complete_single_page": true,
+        "card_license": "other",
+        "files": [
+          {
+            "path": ".gitattributes",
+            "bytes": 1752,
+            "git_blob_oid": "e5d25a1de34bec5866d09fd3f36d47864ef0170f",
+            "lfs": null
+          },
+          {
+            "path": "LFM2.5-Encoder-230M-crisp-Q4_K-imatrix.gguf",
+            "bytes": 165331968,
+            "git_blob_oid": "fe64e0e19803d702c020ea88bbc13cfbf746830b",
+            "lfs": {
+              "sha256": "637e55268d57977b28cff6ccddb2f9fe64c5f9224e7d56004ddb7fff96a402b1",
+              "size": 165331968,
+              "pointerSize": 134
+            }
+          },
+          {
+            "path": "LFM2.5-Encoder-230M-q4_ops_down_q8.gguf",
+            "bytes": 209893888,
+            "git_blob_oid": "faefa2fc32421957f4c3ee3bc1a0d55d9d169ba4",
+            "lfs": {
+              "sha256": "217a92f55aefa85896083f83efde81fb80ff323a5ea3fea84fea63c917abb3fd",
+              "size": 209893888,
+              "pointerSize": 134
+            }
+          },
+          {
+            "path": "LFM2.5-Encoder-230M-q8_ops_down_f16.gguf",
+            "bytes": 330152448,
+            "git_blob_oid": "dd13299763d997b95ee65267b652887ae5f062e2",
+            "lfs": {
+              "sha256": "122d803449862fc1ad367db1de5c26212ec50ab9e8dbe92e5669a7b3e2643d90",
+              "size": 330152448,
+              "pointerSize": 134
+            }
+          },
+          {
+            "path": "LICENSE",
+            "bytes": 10574,
+            "git_blob_oid": "25e731c697c4fe4c52ee654cedf7106a827748d2",
+            "lfs": null
+          },
+          {
+            "path": "README.md",
+            "bytes": 4206,
+            "git_blob_oid": "4a1344d4e588c66685fc28e4b57f4bf7924f844d",
+            "lfs": null
+          },
+          {
+            "path": "results/arithmetic_audit.json",
+            "bytes": 764679,
+            "git_blob_oid": "35f4fefea4c0fe6af606350b0364f51dfe450b6b",
+            "lfs": null
+          },
+          {
+            "path": "results/mixed_precision.json",
+            "bytes": 406583,
+            "git_blob_oid": "ffbe47e6e1ddd1e41ad6cbb486f5fdea1242246a",
+            "lfs": null
+          },
+          {
+            "path": "results/quantization.json",
+            "bytes": 181832,
+            "git_blob_oid": "315d4429b718bad20c1ee98812dfa839e1c4f86d",
+            "lfs": null
+          }
+        ]
+      },
+      {
+        "name": "lfm-fixtures",
+        "url": "https://huggingface.co/api/datasets/cstr/crispembed-regression-fixtures/tree/e3599a94f861d85ab735d68cb57b9f5aedc395a6/lfm2-encoder-230m?recursive=true&expand=false&limit=1000",
+        "repository": "cstr/crispembed-regression-fixtures",
+        "revision": "e3599a94f861d85ab735d68cb57b9f5aedc395a6",
+        "tree_prefix": "lfm2-encoder-230m",
+        "bytes": 10454,
+        "sha256": "ff21b57d908856080ed2e1ae54b1668fa163d6812f0a2feab3eeaac8a64323d5",
+        "row_count": 40,
+        "complete_single_page": true,
+        "card_license": null,
+        "files": [
+          {
+            "path": "lfm2-encoder-230m/LICENSE",
+            "bytes": 10574,
+            "git_blob_oid": "25e731c697c4fe4c52ee654cedf7106a827748d2",
+            "lfs": null
+          },
+          {
+            "path": "lfm2-encoder-230m/README.md",
+            "bytes": 899,
+            "git_blob_oid": "89038a337fb3ce1ecc58cafb066b1653b3fa915a",
+            "lfs": null
+          },
+          {
+            "path": "lfm2-encoder-230m/original-fp32/000.gguf",
+            "bytes": 861312,
+            "git_blob_oid": "ae14f3ff374d62cd381078ce59424d1c59371689",
+            "lfs": {
+              "oid": "c13c73a3bfe1ad59f4aea5a8832b37c009570e74f107bfc9ca74d279bce2ebdf",
+              "size": 861312,
+              "pointerSize": 131
+            }
+          },
+          {
+            "path": "lfm2-encoder-230m/original-fp32/001.gguf",
+            "bytes": 861344,
+            "git_blob_oid": "954640f16c5b7417a26a74b0d3002587938fb789",
+            "lfs": {
+              "oid": "32c3b368d3e5188926783daac6651e6cbc80bc855f179fdf85ce11871580776a",
+              "size": 861344,
+              "pointerSize": 131
+            }
+          },
+          {
+            "path": "lfm2-encoder-230m/original-fp32/002.gguf",
+            "bytes": 926880,
+            "git_blob_oid": "7f1d4163f9caa393195d4404600d206620470e90",
+            "lfs": {
+              "oid": "8b4896bbb72bf1b76580a0dd765a9dd9ae71277613e85de7ab351ae6e87d7205",
+              "size": 926880,
+              "pointerSize": 131
+            }
+          },
+          {
+            "path": "lfm2-encoder-230m/original-fp32/003.gguf",
+            "bytes": 1647840,
+            "git_blob_oid": "dcfba80b980883143c0bf5bc6c75539f9793ac7b",
+            "lfs": {
+              "oid": "42aabe3a90d2f9056fd4a983de86c31c4aa398257cbfcd9376a695e5d0b8abac",
+              "size": 1647840,
+              "pointerSize": 132
+            }
+          },
+          {
+            "path": "lfm2-encoder-230m/original-fp32/004.gguf",
+            "bytes": 402528,
+            "git_blob_oid": "ad3838c92ce12e5d6499e37e6659091201f7eb1a",
+            "lfs": {
+              "oid": "d25133090c540486fe67825b94909accc39c213d29f5b61b6a3442a59bebf933",
+              "size": 402528,
+              "pointerSize": 131
+            }
+          },
+          {
+            "path": "lfm2-encoder-230m/original-fp32/005.gguf",
+            "bytes": 730208,
+            "git_blob_oid": "f4be7044f9c7839617df262545ae6f2d46d58318",
+            "lfs": {
+              "oid": "ec8e6824e123f556f70797ce977bdc5a8064a5361663cb6fd69b73c55f6c675b",
+              "size": 730208,
+              "pointerSize": 131
+            }
+          },
+          {
+            "path": "lfm2-encoder-230m/original-fp32/006.gguf",
+            "bytes": 74688,
+            "git_blob_oid": "7f555eb6b327351eff99c8fc2758c8ae062c8873",
+            "lfs": null
+          },
+          {
+            "path": "lfm2-encoder-230m/original-fp32/007.gguf",
+            "bytes": 205824,
+            "git_blob_oid": "06c53edfe35d2952af23e1a81896b6102628f8dc",
+            "lfs": {
+              "oid": "724f00a7c5540ae0051d2454cfabe8086ff73853d6ae676160cb1f17e1302a60",
+              "size": 205824,
+              "pointerSize": 131
+            }
+          },
+          {
+            "path": "lfm2-encoder-230m/original-fp32/008.gguf",
+            "bytes": 926784,
+            "git_blob_oid": "566e86f1b284ed1e06969317fa964ee4cd933b31",
+            "lfs": {
+              "oid": "a1d9d35c734098efefdf6308a9e036f5d3b94cc646051574b13265e23f85e79d",
+              "size": 926784,
+              "pointerSize": 131
+            }
+          },
+          {
+            "path": "lfm2-encoder-230m/original-fp32/009.gguf",
+            "bytes": 1451200,
+            "git_blob_oid": "a06e0a2d69196aef62ce5235b749700d2c9fe2b5",
+            "lfs": {
+              "oid": "8e587a6bc26e593545b5c740610d0eae61c5f5bf11fea7dc369f18e62a565744",
+              "size": 1451200,
+              "pointerSize": 132
+            }
+          },
+          {
+            "path": "lfm2-encoder-230m/original-fp32/010.gguf",
+            "bytes": 992416,
+            "git_blob_oid": "b6fbb8e1fab4588d9df54648aca3d312eafe1249",
+            "lfs": {
+              "oid": "1af170602341f94a77e155275d7e162e8a6b98ef66ef2c512a70d038eb3b49ae",
+              "size": 992416,
+              "pointerSize": 131
+            }
+          },
+          {
+            "path": "lfm2-encoder-230m/original-fp32/011.gguf",
+            "bytes": 861344,
+            "git_blob_oid": "ffde1eef692b9c57410d176529e5372cc781cbb0",
+            "lfs": {
+              "oid": "2629a306cc8a35f1fea6344d1f0ea3a1a55e89400dea9da50d3973568fe7a7d9",
+              "size": 861344,
+              "pointerSize": 131
+            }
+          },
+          {
+            "path": "lfm2-encoder-230m/original-fp32/012.gguf",
+            "bytes": 730240,
+            "git_blob_oid": "c3b3ef9efe974902626da828e693f8827ab841f6",
+            "lfs": {
+              "oid": "f6129c72fb26e0e4976aa30d4603dc7a0f98f895a5bd1bb7c756fe7c7407fdc7",
+              "size": 730240,
+              "pointerSize": 131
+            }
+          },
+          {
+            "path": "lfm2-encoder-230m/original-fp32/013.gguf",
+            "bytes": 1582304,
+            "git_blob_oid": "8e3f64b208b967fc29ca3c462a3372977e9becab",
+            "lfs": {
+              "oid": "8ab88c1e6629d380ce200532d6f38419589cd2beeda5139dc3ee504b924bab10",
+              "size": 1582304,
+              "pointerSize": 132
+            }
+          },
+          {
+            "path": "lfm2-encoder-230m/original-fp32/014.gguf",
+            "bytes": 42809792,
+            "git_blob_oid": "3675f19112a9202af09e5ad1ba42d12ac82aa88c",
+            "lfs": {
+              "oid": "21bebf1af934251a7557b8d5267a254b85bfbdbe781bd0cd0f28be205ea44c13",
+              "size": 42809792,
+              "pointerSize": 133
+            }
+          },
+          {
+            "path": "lfm2-encoder-230m/original-fp32/decoded_vocab.json",
+            "bytes": 658507,
+            "git_blob_oid": "ef58e1316f3bed3c0222a99e1f1e13f151b5fb98",
+            "lfs": null
+          },
+          {
+            "path": "lfm2-encoder-230m/original-fp32/index.json",
+            "bytes": 3530,
+            "git_blob_oid": "5122227789e9d8b9231a7aec846bc74ea8bef795",
+            "lfs": null
+          },
+          {
+            "path": "lfm2-encoder-230m/original-fp32/versions.json",
+            "bytes": 168,
+            "git_blob_oid": "172929554bdf5e2ee700a543f9357e32140271ae",
+            "lfs": null
+          },
+          {
+            "path": "lfm2-encoder-230m/same-q8-fp32/000.gguf",
+            "bytes": 861312,
+            "git_blob_oid": "ea16fb0a26106863f60df3fb81f06d8c730d8043",
+            "lfs": {
+              "oid": "2e3ec635aa779918683ca6a33834c92bceca4d724a8f5ea4f8967a470edb8cee",
+              "size": 861312,
+              "pointerSize": 131
+            }
+          },
+          {
+            "path": "lfm2-encoder-230m/same-q8-fp32/001.gguf",
+            "bytes": 861344,
+            "git_blob_oid": "1086a0f051df02540e0e85213d702d87448e3804",
+            "lfs": {
+              "oid": "6f9921fff236a3fe5dce82f3f6772088f326da171a784426b9db2448e583c62f",
+              "size": 861344,
+              "pointerSize": 131
+            }
+          },
+          {
+            "path": "lfm2-encoder-230m/same-q8-fp32/002.gguf",
+            "bytes": 926880,
+            "git_blob_oid": "a136cfaf3622bb254ab2c873f543d0aa8d3b601f",
+            "lfs": {
+              "oid": "5bae2f1214944748780fcd4f97e87a8a8cf7b9760bf39baf54e80b8cf9630663",
+              "size": 926880,
+              "pointerSize": 131
+            }
+          },
+          {
+            "path": "lfm2-encoder-230m/same-q8-fp32/003.gguf",
+            "bytes": 1647840,
+            "git_blob_oid": "25f77cb31b16e61bb6238051187c39563b5666cc",
+            "lfs": {
+              "oid": "e3b66b3d14ecb3ca09b89ec61de8365602bdcb7a30744139a31590156b389209",
+              "size": 1647840,
+              "pointerSize": 132
+            }
+          },
+          {
+            "path": "lfm2-encoder-230m/same-q8-fp32/004.gguf",
+            "bytes": 402528,
+            "git_blob_oid": "430ab9a97924458cb474c39240f3137065488709",
+            "lfs": {
+              "oid": "3d517d025cfb1f0fc154afc4bacc024c629c6fb1ed8cc481a6727b5902da372f",
+              "size": 402528,
+              "pointerSize": 131
+            }
+          },
+          {
+            "path": "lfm2-encoder-230m/same-q8-fp32/005.gguf",
+            "bytes": 730208,
+            "git_blob_oid": "68a59adb4c98469e31bdc337b5c40e5794a95d50",
+            "lfs": {
+              "oid": "c5476655334cec605895fb9a3a459511a94e2bbe52435693816c749a1a9b86e5",
+              "size": 730208,
+              "pointerSize": 131
+            }
+          },
+          {
+            "path": "lfm2-encoder-230m/same-q8-fp32/006.gguf",
+            "bytes": 74688,
+            "git_blob_oid": "4f22d9f8dd39bb3ffe4004d61aca510f2c33ea11",
+            "lfs": null
+          },
+          {
+            "path": "lfm2-encoder-230m/same-q8-fp32/007.gguf",
+            "bytes": 205824,
+            "git_blob_oid": "0aafc05b58895837f714fd6c32875f06470f2605",
+            "lfs": {
+              "oid": "ad502597fb6fb7323481a77f135ac9b849c78df6916d2d5483118faa7ebb1484",
+              "size": 205824,
+              "pointerSize": 131
+            }
+          },
+          {
+            "path": "lfm2-encoder-230m/same-q8-fp32/008.gguf",
+            "bytes": 926784,
+            "git_blob_oid": "d5962dbb0ce28856514c069167a7ceb409d787d8",
+            "lfs": {
+              "oid": "f33e31578493022a7c5ec3d71dcbadf54b34584072b8a3c2016e5ba5f54a4ac8",
+              "size": 926784,
+              "pointerSize": 131
+            }
+          },
+          {
+            "path": "lfm2-encoder-230m/same-q8-fp32/009.gguf",
+            "bytes": 1451200,
+            "git_blob_oid": "a709c91ad79ae118d42becd8e8bf5d103865c3b6",
+            "lfs": {
+              "oid": "db89f42e69cc82538fdf120309cabd7e16978a8003573a62b60c4299141d4dc9",
+              "size": 1451200,
+              "pointerSize": 132
+            }
+          },
+          {
+            "path": "lfm2-encoder-230m/same-q8-fp32/010.gguf",
+            "bytes": 992416,
+            "git_blob_oid": "7b92b9b149028822641f46d38368bb4e8f08533d",
+            "lfs": {
+              "oid": "183bd82dcd53f83fad441ae32c122f7e58362baf9c3da7a19d64441000b45871",
+              "size": 992416,
+              "pointerSize": 131
+            }
+          },
+          {
+            "path": "lfm2-encoder-230m/same-q8-fp32/011.gguf",
+            "bytes": 861344,
+            "git_blob_oid": "ee1df3c92d2b4af8e323189157bfd23164168a38",
+            "lfs": {
+              "oid": "80c2a21b3898924e788cdb2fc50100ff4dd681f9a085468eb1feb3b631d00308",
+              "size": 861344,
+              "pointerSize": 131
+            }
+          },
+          {
+            "path": "lfm2-encoder-230m/same-q8-fp32/012.gguf",
+            "bytes": 730240,
+            "git_blob_oid": "044f71c4146eb5f420fcda2c934740ea358ef5a1",
+            "lfs": {
+              "oid": "591d44d57eacb1dab85fb151d6993249180728d26dab5315d153d4dd5aa75760",
+              "size": 730240,
+              "pointerSize": 131
+            }
+          },
+          {
+            "path": "lfm2-encoder-230m/same-q8-fp32/013.gguf",
+            "bytes": 1582304,
+            "git_blob_oid": "8024e4e094cd67836f3d7e69e9ea3596ab3e4f18",
+            "lfs": {
+              "oid": "45106af8dd773c69cf63b84256071559883c00e7a65bd853d43e72cf9ecdcc24",
+              "size": 1582304,
+              "pointerSize": 132
+            }
+          },
+          {
+            "path": "lfm2-encoder-230m/same-q8-fp32/014.gguf",
+            "bytes": 42809792,
+            "git_blob_oid": "0dea3d59468abe1e70eac9fd3a7cc81b40b0ea69",
+            "lfs": {
+              "oid": "63081a943b7a5ef3838dc62618585c1bae4264f0dbd44e4e3605508ad051b1df",
+              "size": 42809792,
+              "pointerSize": 133
+            }
+          },
+          {
+            "path": "lfm2-encoder-230m/same-q8-fp32/decoded_vocab.json",
+            "bytes": 658507,
+            "git_blob_oid": "ef58e1316f3bed3c0222a99e1f1e13f151b5fb98",
+            "lfs": null
+          },
+          {
+            "path": "lfm2-encoder-230m/same-q8-fp32/index.json",
+            "bytes": 3530,
+            "git_blob_oid": "5122227789e9d8b9231a7aec846bc74ea8bef795",
+            "lfs": null
+          },
+          {
+            "path": "lfm2-encoder-230m/same-q8-fp32/versions.json",
+            "bytes": 219,
+            "git_blob_oid": "93f23a2be49147031ccf99e1acbf4dbaa30c1fb1",
+            "lfs": null
+          }
+        ]
+      },
+      {
+        "name": "gemma-models",
+        "url": "https://huggingface.co/api/models/cstr/embeddinggemma-2-ft-typed-decision-GGUF/revision/d8427e48a0c20bc63216d332ec0b5e8ec43430c9?blobs=true",
+        "repository": "cstr/embeddinggemma-2-ft-typed-decision-GGUF",
+        "revision": "d8427e48a0c20bc63216d332ec0b5e8ec43430c9",
+        "tree_prefix": null,
+        "bytes": 4011,
+        "sha256": "0887276f442798c74f4fbbe84e93ea0a4d3ac036d5150c532f5699143fa07e13",
+        "row_count": 25,
+        "complete_single_page": true,
+        "card_license": "apache-2.0",
+        "files": [
+          {
+            "path": ".gitattributes",
+            "bytes": 1680,
+            "git_blob_oid": "5b689744d53af40cd12f895c0cc804bc10340809",
+            "lfs": null
+          },
+          {
+            "path": "LICENSE",
+            "bytes": 11358,
+            "git_blob_oid": "d645695673349e3947e8e5ae42332d0ac3164cd7",
+            "lfs": null
+          },
+          {
+            "path": "README.md",
+            "bytes": 3198,
+            "git_blob_oid": "ab63d22a4a7cddd32fb7c5ed0a37c2b5fbdb67a3",
+            "lfs": null
+          },
+          {
+            "path": "UPSTREAM_README.md",
+            "bytes": 9354,
+            "git_blob_oid": "cdc74aa06e7e2922ae00e04dc79807295554d77d",
+            "lfs": null
+          },
+          {
+            "path": "embeddinggemma-2-ft-typed-decision-f32.gguf",
+            "bytes": 1102182464,
+            "git_blob_oid": "d441ac00ed8fae9e0782a7fe576812f58f100bcb",
+            "lfs": {
+              "sha256": "cfd0ab416c2ffafd0f42bf7b4562b2d610b89d15e43a1648097a919572cc9abe",
+              "size": 1102182464,
+              "pointerSize": 135
+            }
+          },
+          {
+            "path": "embeddinggemma-2-ft-typed-decision-q8_0.gguf",
+            "bytes": 307492928,
+            "git_blob_oid": "9bd24a2cb60245c2595ac4c87437f11fad831520",
+            "lfs": {
+              "sha256": "3d80c1758665cd42cb238dc6dd9ee25b6fc95a868267f25515bb81f417e5a497",
+              "size": 307492928,
+              "pointerSize": 134
+            }
+          },
+          {
+            "path": "results/arm-f32-decisions.json",
+            "bytes": 7757,
+            "git_blob_oid": "5294d6e4615f2aa8dc324a452c877494cadc3373",
+            "lfs": null
+          },
+          {
+            "path": "results/arm-q8-decisions.json",
+            "bytes": 7766,
+            "git_blob_oid": "3e7c53f048b0c6634eab2838d7ab26c6b5c66df6",
+            "lfs": null
+          },
+          {
+            "path": "results/bindings.json",
+            "bytes": 163,
+            "git_blob_oid": "4348e5aa896cd350f1351587976b1060769076aa",
+            "lfs": null
+          },
+          {
+            "path": "results/decisions.json",
+            "bytes": 707368,
+            "git_blob_oid": "d6630c0c8c42df5f50e70ce19cb0aee864b69997",
+            "lfs": null
+          },
+          {
+            "path": "results/diff-000.log",
+            "bytes": 4041,
+            "git_blob_oid": "c98b2f92e0fbf126fce379057855e36f598bf491",
+            "lfs": null
+          },
+          {
+            "path": "results/diff-001.log",
+            "bytes": 4043,
+            "git_blob_oid": "79becb7d2b95009b2f097ad745060d995d45aa3b",
+            "lfs": null
+          },
+          {
+            "path": "results/diff-002.log",
+            "bytes": 4047,
+            "git_blob_oid": "27d753bc4db8f640b039d0315462b248b870645c",
+            "lfs": null
+          },
+          {
+            "path": "results/diff-003.log",
+            "bytes": 4039,
+            "git_blob_oid": "b0edae6cc59975fa807aade03ab58ac3b3cc7457",
+            "lfs": null
+          },
+          {
+            "path": "results/diff-004.log",
+            "bytes": 4070,
+            "git_blob_oid": "ef6094bf5643e7551c33524efe81995e069fc57c",
+            "lfs": null
+          },
+          {
+            "path": "results/macos-f32-decisions.json",
+            "bytes": 7768,
+            "git_blob_oid": "8217b409c91c5982c48a9bc4ba0fec03e5db8f0d",
+            "lfs": null
+          },
+          {
+            "path": "results/macos-q8-decisions.json",
+            "bytes": 7808,
+            "git_blob_oid": "ced3cf35f8b5925511289e078278cc8366b90291",
+            "lfs": null
+          },
+          {
+            "path": "results/parity-f32.json",
+            "bytes": 7584,
+            "git_blob_oid": "1960d8e7389164e9ee0cee34063fb34b8dfda19f",
+            "lfs": null
+          },
+          {
+            "path": "results/parity-q8.json",
+            "bytes": 7593,
+            "git_blob_oid": "2e019667750fd747c4007fd473f5fc8b60beeb58",
+            "lfs": null
+          },
+          {
+            "path": "results/publication.json",
+            "bytes": 2579,
+            "git_blob_oid": "4fcbb4d0215a3b804451f571a707d2f0bac6af90",
+            "lfs": null
+          },
+          {
+            "path": "results/schema-0.json",
+            "bytes": 612,
+            "git_blob_oid": "0b5a15f7846391e7bb83783c694816aca88f4f7f",
+            "lfs": null
+          },
+          {
+            "path": "results/schema-1.json",
+            "bytes": 508,
+            "git_blob_oid": "d4755aaa383d84e50c49ce899432e21232873584",
+            "lfs": null
+          },
+          {
+            "path": "results/schema-2.json",
+            "bytes": 164,
+            "git_blob_oid": "22f5a3dee2d35d49eeea39528aa27345619d5652",
+            "lfs": null
+          },
+          {
+            "path": "results/validated-artifacts.json",
+            "bytes": 2721,
+            "git_blob_oid": "4b0f6c157ccd46f3aacc79c5a91c2771ef73588c",
+            "lfs": null
+          },
+          {
+            "path": "results/versions.json",
+            "bytes": 101,
+            "git_blob_oid": "fe9239d3b105017eda302683e62ce6d437dd601b",
+            "lfs": null
+          }
+        ]
+      },
+      {
+        "name": "gemma-fixtures",
+        "url": "https://huggingface.co/api/datasets/cstr/crispembed-regression-fixtures/tree/508188c36d0550b12a6a467f5d394c10aa33e04c/gemma-decision?recursive=true&expand=false&limit=1000",
+        "repository": "cstr/crispembed-regression-fixtures",
+        "revision": "508188c36d0550b12a6a467f5d394c10aa33e04c",
+        "tree_prefix": "gemma-decision",
+        "bytes": 2218,
+        "sha256": "40ac40dc81d01481596bbf5f822a5562725009bd235d909823a7c14734c11294",
+        "row_count": 10,
+        "complete_single_page": true,
+        "card_license": null,
+        "files": [
+          {
+            "path": "gemma-decision/original-fp32/000.gguf",
+            "bytes": 1903264,
+            "git_blob_oid": "4cf4d0a50219c9a039cfa3f635f7e21685c77481",
+            "lfs": {
+              "oid": "5b5a60553656f614e98d62bf7ff7d9b2aa3283a10a1d2837ced5f0ae4e4bf916",
+              "size": 1903264,
+              "pointerSize": 132
+            }
+          },
+          {
+            "path": "gemma-decision/original-fp32/001.gguf",
+            "bytes": 2114240,
+            "git_blob_oid": "41f4764348fff18a102ef08798276bfc81afec30",
+            "lfs": {
+              "oid": "2f1386e4f505bafb15ff459d34599a4b6aadc8a0981789d718c2aa50a33e687e",
+              "size": 2114240,
+              "pointerSize": 132
+            }
+          },
+          {
+            "path": "gemma-decision/original-fp32/002.gguf",
+            "bytes": 2641632,
+            "git_blob_oid": "9e8d47732313d659a5ac25b0e5a13fc44320e733",
+            "lfs": {
+              "oid": "7d7e0f98e5d08624c01261b92f0cdbd78061bcac6944592783b184f49d32a378",
+              "size": 2641632,
+              "pointerSize": 132
+            }
+          },
+          {
+            "path": "gemma-decision/original-fp32/003.gguf",
+            "bytes": 2008768,
+            "git_blob_oid": "a74edd45f5eba39cd02444711053390e1c78d08e",
+            "lfs": {
+              "oid": "95aa2a11a40511c59991e61ed0da2b02319f10d1a3ee5c57798a32404dfaf72f",
+              "size": 2008768,
+              "pointerSize": 132
+            }
+          },
+          {
+            "path": "gemma-decision/original-fp32/004.gguf",
+            "bytes": 57914400,
+            "git_blob_oid": "9385bd529f7da6b56cc55460dd333e65616c2f2a",
+            "lfs": {
+              "oid": "2938d8f90c9ed23e24189378e897bdfcde0e03a6524acfab8061a8d0f6cc5ecf",
+              "size": 57914400,
+              "pointerSize": 133
+            }
+          },
+          {
+            "path": "gemma-decision/original-fp32/LICENSE",
+            "bytes": 11358,
+            "git_blob_oid": "d645695673349e3947e8e5ae42332d0ac3164cd7",
+            "lfs": null
+          },
+          {
+            "path": "gemma-decision/original-fp32/README.md",
+            "bytes": 374,
+            "git_blob_oid": "c529e1d8c8c0622cc6a3263a349331fc17e3d1d3",
+            "lfs": null
+          },
+          {
+            "path": "gemma-decision/original-fp32/decisions.json",
+            "bytes": 707368,
+            "git_blob_oid": "d6630c0c8c42df5f50e70ce19cb0aee864b69997",
+            "lfs": null
+          },
+          {
+            "path": "gemma-decision/original-fp32/versions.json",
+            "bytes": 101,
+            "git_blob_oid": "fe9239d3b105017eda302683e62ce6d437dd601b",
+            "lfs": null
+          }
+        ]
+      },
+      {
+        "name": "gemma-original",
+        "url": "https://huggingface.co/api/models/mrm8488/embeddinggemma-2-ft-typed-decision/revision/fcc165b7d7d97827e241e09752e83fd11165a74b?blobs=true",
+        "repository": "mrm8488/embeddinggemma-2-ft-typed-decision",
+        "revision": "fcc165b7d7d97827e241e09752e83fd11165a74b",
+        "tree_prefix": null,
+        "bytes": 4420,
+        "sha256": "3f7e09125cdf3a8fe352c1d90038a8ce585f61aad3e22bb3215c7348e16e6f00",
+        "row_count": 11,
+        "complete_single_page": true,
+        "card_license": "apache-2.0",
+        "files": [
+          {
+            "path": ".gitattributes",
+            "bytes": 1616,
+            "git_blob_oid": "aadd52d74a74eb9c39c0b542b57703b629856d16",
+            "lfs": null
+          },
+          {
+            "path": "README.md",
+            "bytes": 9354,
+            "git_blob_oid": "cdc74aa06e7e2922ae00e04dc79807295554d77d",
+            "lfs": null
+          },
+          {
+            "path": "chat_template.jinja",
+            "bytes": 1016,
+            "git_blob_oid": "8df4ab8961aa08b66b470c5adbdc51374aabb63b",
+            "lfs": null
+          },
+          {
+            "path": "config.json",
+            "bytes": 4115,
+            "git_blob_oid": "20d712ffe24e5d0b305098e029a2516e353e3d5b",
+            "lfs": null
+          },
+          {
+            "path": "configuration_gemmadecision.py",
+            "bytes": 5192,
+            "git_blob_oid": "95b120b75de99649791378eecb7de0449d1547d9",
+            "lfs": null
+          },
+          {
+            "path": "eg2td.png",
+            "bytes": 101230,
+            "git_blob_oid": "94c478c163bc577882c33ca7836e9fd7c3e54c64",
+            "lfs": {
+              "sha256": "296e78a4b8f8d7ecfeb4d61bb39536f95d838f643ce3301b7e088d2644c21d8a",
+              "size": 101230,
+              "pointerSize": 131
+            }
+          },
+          {
+            "path": "egtd-logo.png",
+            "bytes": 97601,
+            "git_blob_oid": "f844b587380067600e20aa1287aa9e3631feda2f",
+            "lfs": null
+          },
+          {
+            "path": "model.safetensors",
+            "bytes": 1088537684,
+            "git_blob_oid": "d9a0daa6a4a08b725805d87b41441057c021e7f2",
+            "lfs": {
+              "sha256": "bccbe25c9664c2997785aa4f24a50ce9cc011e8c7722e085d684ca1dbfd72e28",
+              "size": 1088537684,
+              "pointerSize": 135
+            }
+          },
+          {
+            "path": "modeling_gemmadecision.py",
+            "bytes": 24783,
+            "git_blob_oid": "2a9f8f18b61be3e317d3b009b6e145aa3284b867",
+            "lfs": null
+          },
+          {
+            "path": "tokenizer.json",
+            "bytes": 32170764,
+            "git_blob_oid": "13ff7cb2300311e63dcda725c6124edc727408bc",
+            "lfs": {
+              "sha256": "dba1bf6b56fe71d2cc69a771a037fa6a7dac2e41f33ed3e1b3254b90fa17c3a5",
+              "size": 32170764,
+              "pointerSize": 133
+            }
+          },
+          {
+            "path": "tokenizer_config.json",
+            "bytes": 1677,
+            "git_blob_oid": "01cddfaf1b1af0eec276d2ccacac034ae511c0de",
+            "lfs": null
+          }
+        ]
+      },
+      {
+        "name": "gemma-registry-metadata",
+        "url": "https://huggingface.co/api/models/cstr/embeddinggemma-2-ft-typed-decision-GGUF/revision/7a093624993386b42e0b99d0cc3e7f25f9534fa4?blobs=true",
+        "repository": "cstr/embeddinggemma-2-ft-typed-decision-GGUF",
+        "revision": "7a093624993386b42e0b99d0cc3e7f25f9534fa4",
+        "tree_prefix": null,
+        "bytes": 4112,
+        "sha256": "88adf09db2f88fbed7ed79af3945d275f9c14447294baa4fd82fb34488c545e3",
+        "row_count": 26,
+        "complete_single_page": true,
+        "card_license": "apache-2.0",
+        "files": [
+          {
+            "path": ".gitattributes",
+            "bytes": 1680,
+            "git_blob_oid": "5b689744d53af40cd12f895c0cc804bc10340809",
+            "lfs": null
+          },
+          {
+            "path": "LICENSE",
+            "bytes": 11358,
+            "git_blob_oid": "d645695673349e3947e8e5ae42332d0ac3164cd7",
+            "lfs": null
+          },
+          {
+            "path": "README.md",
+            "bytes": 3198,
+            "git_blob_oid": "ab63d22a4a7cddd32fb7c5ed0a37c2b5fbdb67a3",
+            "lfs": null
+          },
+          {
+            "path": "UPSTREAM_README.md",
+            "bytes": 9354,
+            "git_blob_oid": "cdc74aa06e7e2922ae00e04dc79807295554d77d",
+            "lfs": null
+          },
+          {
+            "path": "embeddinggemma-2-ft-typed-decision-f32.gguf",
+            "bytes": 1102182464,
+            "git_blob_oid": "d441ac00ed8fae9e0782a7fe576812f58f100bcb",
+            "lfs": {
+              "sha256": "cfd0ab416c2ffafd0f42bf7b4562b2d610b89d15e43a1648097a919572cc9abe",
+              "size": 1102182464,
+              "pointerSize": 135
+            }
+          },
+          {
+            "path": "embeddinggemma-2-ft-typed-decision-q8_0.gguf",
+            "bytes": 307492928,
+            "git_blob_oid": "9bd24a2cb60245c2595ac4c87437f11fad831520",
+            "lfs": {
+              "sha256": "3d80c1758665cd42cb238dc6dd9ee25b6fc95a868267f25515bb81f417e5a497",
+              "size": 307492928,
+              "pointerSize": 134
+            }
+          },
+          {
+            "path": "results/arm-f32-decisions.json",
+            "bytes": 7757,
+            "git_blob_oid": "5294d6e4615f2aa8dc324a452c877494cadc3373",
+            "lfs": null
+          },
+          {
+            "path": "results/arm-q8-decisions.json",
+            "bytes": 7766,
+            "git_blob_oid": "3e7c53f048b0c6634eab2838d7ab26c6b5c66df6",
+            "lfs": null
+          },
+          {
+            "path": "results/bindings.json",
+            "bytes": 163,
+            "git_blob_oid": "4348e5aa896cd350f1351587976b1060769076aa",
+            "lfs": null
+          },
+          {
+            "path": "results/decisions.json",
+            "bytes": 707368,
+            "git_blob_oid": "d6630c0c8c42df5f50e70ce19cb0aee864b69997",
+            "lfs": null
+          },
+          {
+            "path": "results/diff-000.log",
+            "bytes": 4041,
+            "git_blob_oid": "c98b2f92e0fbf126fce379057855e36f598bf491",
+            "lfs": null
+          },
+          {
+            "path": "results/diff-001.log",
+            "bytes": 4043,
+            "git_blob_oid": "79becb7d2b95009b2f097ad745060d995d45aa3b",
+            "lfs": null
+          },
+          {
+            "path": "results/diff-002.log",
+            "bytes": 4047,
+            "git_blob_oid": "27d753bc4db8f640b039d0315462b248b870645c",
+            "lfs": null
+          },
+          {
+            "path": "results/diff-003.log",
+            "bytes": 4039,
+            "git_blob_oid": "b0edae6cc59975fa807aade03ab58ac3b3cc7457",
+            "lfs": null
+          },
+          {
+            "path": "results/diff-004.log",
+            "bytes": 4070,
+            "git_blob_oid": "ef6094bf5643e7551c33524efe81995e069fc57c",
+            "lfs": null
+          },
+          {
+            "path": "results/macos-f32-decisions.json",
+            "bytes": 7768,
+            "git_blob_oid": "8217b409c91c5982c48a9bc4ba0fec03e5db8f0d",
+            "lfs": null
+          },
+          {
+            "path": "results/macos-q8-decisions.json",
+            "bytes": 7808,
+            "git_blob_oid": "ced3cf35f8b5925511289e078278cc8366b90291",
+            "lfs": null
+          },
+          {
+            "path": "results/parity-f32.json",
+            "bytes": 7584,
+            "git_blob_oid": "1960d8e7389164e9ee0cee34063fb34b8dfda19f",
+            "lfs": null
+          },
+          {
+            "path": "results/parity-q8.json",
+            "bytes": 7593,
+            "git_blob_oid": "2e019667750fd747c4007fd473f5fc8b60beeb58",
+            "lfs": null
+          },
+          {
+            "path": "results/publication.json",
+            "bytes": 4044,
+            "git_blob_oid": "63884fbd4d23c0e5774d8e4d4c7ca74368645e8a",
+            "lfs": null
+          },
+          {
+            "path": "results/registry.json",
+            "bytes": 693,
+            "git_blob_oid": "68d0cde412c5172ddc887a39c0f297ba82c36dae",
+            "lfs": null
+          },
+          {
+            "path": "results/schema-0.json",
+            "bytes": 612,
+            "git_blob_oid": "0b5a15f7846391e7bb83783c694816aca88f4f7f",
+            "lfs": null
+          },
+          {
+            "path": "results/schema-1.json",
+            "bytes": 508,
+            "git_blob_oid": "d4755aaa383d84e50c49ce899432e21232873584",
+            "lfs": null
+          },
+          {
+            "path": "results/schema-2.json",
+            "bytes": 164,
+            "git_blob_oid": "22f5a3dee2d35d49eeea39528aa27345619d5652",
+            "lfs": null
+          },
+          {
+            "path": "results/validated-artifacts.json",
+            "bytes": 2721,
+            "git_blob_oid": "4b0f6c157ccd46f3aacc79c5a91c2771ef73588c",
+            "lfs": null
+          },
+          {
+            "path": "results/versions.json",
+            "bytes": 101,
+            "git_blob_oid": "fe9239d3b105017eda302683e62ce6d437dd601b",
+            "lfs": null
+          }
+        ]
+      }
+    ],
+    "total_response_bytes": 32934,
+    "model_payload_readback_performed": false,
+    "meaning": "Pinned API Git/LFS declarations independently match tracked identities; this is not a fresh whole-file payload hash or numerical replay."
+  },
+  "published_identity_metadata_checks": [
+    {
+      "repository": "LiquidAI/LFM2.5-Encoder-230M-GGUF",
+      "revision": "bb26e78c7164b386028928ebfcecebcc42467689",
+      "file": "LFM2.5-Encoder-230M-F16.gguf",
+      "bytes": 461882368,
+      "sha256": "f097dbdb27c565b6f08cdbbfeb5d674ad7c205cfd1d8362f5415e243b2ec2e93",
+      "pinned_hub_size_lfs_sha_match": true,
+      "current_registry_contains_sha": true
+    },
+    {
+      "repository": "LiquidAI/LFM2.5-Encoder-230M-GGUF",
+      "revision": "bb26e78c7164b386028928ebfcecebcc42467689",
+      "file": "LFM2.5-Encoder-230M-Q4_0.gguf",
+      "bytes": 149079040,
+      "sha256": "6c2a549f375b56cf9b22b8c7173df9c5b5a23b274316a7a70addecaea3963fcc",
+      "pinned_hub_size_lfs_sha_match": true,
+      "current_registry_contains_sha": true
+    },
+    {
+      "repository": "LiquidAI/LFM2.5-Encoder-230M-GGUF",
+      "revision": "bb26e78c7164b386028928ebfcecebcc42467689",
+      "file": "LFM2.5-Encoder-230M-Q8_0.gguf",
+      "bytes": 246596608,
+      "sha256": "790d3fb0d97712e7c43bb446484e8b3935c0a3c471db23c7a45cfbcb165a36a4",
+      "pinned_hub_size_lfs_sha_match": true,
+      "current_registry_contains_sha": true
+    },
+    {
+      "repository": "cstr/LFM2.5-Encoder-230M-GGUF",
+      "revision": "dcb63d20fd326e705f0b1c74b0b61e529b0d5cc0",
+      "file": "LFM2.5-Encoder-230M-crisp-Q4_K-imatrix.gguf",
+      "bytes": 165331968,
+      "sha256": "637e55268d57977b28cff6ccddb2f9fe64c5f9224e7d56004ddb7fff96a402b1",
+      "pinned_hub_size_lfs_sha_match": true,
+      "current_registry_contains_sha": true
+    },
+    {
+      "repository": "cstr/LFM2.5-Encoder-230M-GGUF",
+      "revision": "dcb63d20fd326e705f0b1c74b0b61e529b0d5cc0",
+      "file": "LFM2.5-Encoder-230M-q4_ops_down_q8.gguf",
+      "bytes": 209893888,
+      "sha256": "217a92f55aefa85896083f83efde81fb80ff323a5ea3fea84fea63c917abb3fd",
+      "pinned_hub_size_lfs_sha_match": true,
+      "current_registry_contains_sha": true
+    },
+    {
+      "repository": "cstr/LFM2.5-Encoder-230M-GGUF",
+      "revision": "dcb63d20fd326e705f0b1c74b0b61e529b0d5cc0",
+      "file": "LFM2.5-Encoder-230M-q8_ops_down_f16.gguf",
+      "bytes": 330152448,
+      "sha256": "122d803449862fc1ad367db1de5c26212ec50ab9e8dbe92e5669a7b3e2643d90",
+      "pinned_hub_size_lfs_sha_match": true,
+      "current_registry_contains_sha": true
+    },
+    {
+      "repository": "cstr/embeddinggemma-2-ft-typed-decision-GGUF",
+      "revision": "d8427e48a0c20bc63216d332ec0b5e8ec43430c9",
+      "file": "embeddinggemma-2-ft-typed-decision-f32.gguf",
+      "bytes": 1102182464,
+      "sha256": "cfd0ab416c2ffafd0f42bf7b4562b2d610b89d15e43a1648097a919572cc9abe",
+      "pinned_hub_size_lfs_sha_match": true,
+      "current_registry_contains_sha": true
+    },
+    {
+      "repository": "cstr/embeddinggemma-2-ft-typed-decision-GGUF",
+      "revision": "d8427e48a0c20bc63216d332ec0b5e8ec43430c9",
+      "file": "embeddinggemma-2-ft-typed-decision-q8_0.gguf",
+      "bytes": 307492928,
+      "sha256": "3d80c1758665cd42cb238dc6dd9ee25b6fc95a868267f25515bb81f417e5a497",
+      "pinned_hub_size_lfs_sha_match": true,
+      "current_registry_contains_sha": true
+    }
+  ],
+  "lfm2_encoder": {
+    "reference": {
+      "architecture": "Lfm2BidirectionalForMaskedLM",
+      "dtype": "float32",
+      "attention": "eager",
+      "torch": "2.11.0+cu130",
+      "transformers": "5.13.0.dev0",
+      "cases": 15,
+      "masks": 15,
+      "long_input_tokens": 649,
+      "model_id": "LiquidAI/LFM2.5-Encoder-230M"
+    },
+    "historical_sources": {
+      "quantization": {
+        "backend": "CPU",
+        "python_threads": 4,
+        "engine_commit": "209d46a421912aa82db6eeed26c7555bd236f6de",
+        "ggml_commit": "890278a8342c620197c90e702e1188bcab94f510",
+        "date": "2026-10-03"
+      },
+      "mixed": {
+        "backend": "CPU",
+        "python_threads": 4,
+        "engine_commit": "0fbbbd5c12d655fa41de20806042cf48f5da520e",
+        "ggml_commit": "890278a8342c620197c90e702e1188bcab94f510",
+        "date": "2026-10-03"
+      },
+      "arithmetic": {
+        "native_commit": "60ecfe65f8e85edd28444e336d907216eabf1c59",
+        "ggml_commit": "890278a8342c620197c90e702e1188bcab94f510"
+      }
+    },
+    "legacy_gates": {
+      "api_min_row_cosine": 0.999,
+      "api_max_relative_l2": 0.02,
+      "layer_min_row_cosine": 0.999,
+      "layer_max_norm_ratio_error": 0.05,
+      "absolute_error_is_reported_not_universal_002_gate": true,
+      "decoded_original_masks": 15
+    },
+    "calibration_initial": {
+      "corpus": "tools/kaggle/crispembed-imatrix-quant/calib_corpus.jsonl",
+      "sha256": "04112e6dc674c91986928bfedc30c5fe3892effaeceb5551777db711c4d6cd9a",
+      "sentences": 134,
+      "group_size": 8,
+      "samples": 151,
+      "tokens": 6711,
+      "importance_tensors": 82,
+      "held_out_text_overlap": 0
+    },
+    "calibration_expanded": {
+      "source": "LFM2.5-Encoder-230M-source-F32.gguf",
+      "sentences": 174,
+      "samples": 185,
+      "tokens": 12065,
+      "max_tokens": 1149,
+      "group_size": 16,
+      "importance_tensors": 82,
+      "exact_evaluation_text_overlap": 0,
+      "corpora": [
+        {
+          "path": "tools/kaggle/crispembed-imatrix-quant/calib_corpus.jsonl",
+          "sha256": "04112e6dc674c91986928bfedc30c5fe3892effaeceb5551777db711c4d6cd9a"
+        },
+        {
+          "path": "tools/lfm2_encoder_calibration_extra.jsonl",
+          "sha256": "0f107ff577272f9f07ac3c2d744410426b0150ef2a1ea8f720f449a4cc937d51"
+        }
+      ],
+      "q8_importance_weighted": false,
+      "source_sha256": "1d16e5d2981bdcc063d095676d4062749ade2dd77467d6a96f3002d7521abc0a",
+      "importance_sha256": "e34633ead09b8572375c899ffa2086b5523c4d0682e8549e305c27d2b235d0c3"
+    },
+    "critical_policy": {
+      "selected_54": "Attention matrices, ShortConv in/out projections, FFN down",
+      "mixed330": "54 F16 critical matrices;29 Q8_0 including28 gate/up and tied embedding/head;49 unchanged F32 norms/kernels",
+      "mixed210": "54 Q8_0 critical matrices plus Q8_0 tied embedding/head;28 calibrated Q4_K gate/up;49 unchanged F32 norms/kernels",
+      "selection": "Precision policies selected on old15-case probes; independent heldout task quality not established"
+    },
+    "stored_profiles": {
+      "f16": {
+        "filename": "LFM2.5-Encoder-230M-F16.gguf",
+        "bytes": 461882368,
+        "sha256": "f097dbdb27c565b6f08cdbbfeb5d674ad7c205cfd1d8362f5415e243b2ec2e93",
+        "tensor_types": {
+          "F16": 83,
+          "F32": 49
+        },
+        "top1_matches": 15,
+        "masks": 15,
+        "summary": {
+          "cls": {
+            "cos_min": 0.9999992412255218,
+            "cos_mean": 0.9999992412255218,
+            "cos_global": 0.9999992412255218,
+            "max_relative_error": 0.0012695893834979342
+          },
+          "hidden": {
+            "cos_min": 0.9999894746164296,
+            "cos_mean": 0.9999993421828685,
+            "cos_global": 0.9999984295178994,
+            "max_relative_error": 0.0018132946105112024
+          },
+          "logits": {
+            "cos_min": 0.9999995650547326,
+            "cos_mean": 0.9999995650547326,
+            "cos_global": 0.9999995650547339,
+            "max_relative_error": 0.0009755378035163239
+          }
+        },
+        "layer_probes": [
+          {
+            "case": 0,
+            "stage_count": 20,
+            "first_below_legacy_cosine_gate": null,
+            "final_norm": {
+              "name": "final_norm",
+              "cos_min": 0.999996,
+              "cos_mean": 0.99999934,
+              "cos_global": 0.99999857,
+              "norm_ratio": 0.9997504628214803,
+              "max_abs": 0.0871,
+              "passes_cos_0_999": true
+            },
+            "largest_absolute_error": 1.25
+          },
+          {
+            "case": 9,
+            "stage_count": 20,
+            "first_below_legacy_cosine_gate": null,
+            "final_norm": {
+              "name": "final_norm",
+              "cos_min": 0.999996,
+              "cos_mean": 0.99999964,
+              "cos_global": 0.99999964,
+              "norm_ratio": 0.9999752744913337,
+              "max_abs": 0.0975,
+              "passes_cos_0_999": true
+            },
+            "largest_absolute_error": 1.57
+          },
+          {
+            "case": 14,
+            "stage_count": 20,
+            "first_below_legacy_cosine_gate": null,
+            "final_norm": {
+              "name": "final_norm",
+              "cos_min": 0.999989,
+              "cos_mean": 0.99999958,
+              "cos_global": 0.99999946,
+              "norm_ratio": 1.0001363473643041,
+              "max_abs": 0.114,
+              "passes_cos_0_999": true
+            },
+            "largest_absolute_error": 1.79
+          }
+        ]
+      },
+      "q8": {
+        "filename": "LFM2.5-Encoder-230M-Q8_0.gguf",
+        "bytes": 246596608,
+        "sha256": "790d3fb0d97712e7c43bb446484e8b3935c0a3c471db23c7a45cfbcb165a36a4",
+        "tensor_types": {
+          "Q8_0": 83,
+          "F32": 49
+        },
+        "top1_matches": 13,
+        "masks": 15,
+        "summary": {
+          "cls": {
+            "cos_min": 0.993532201566922,
+            "cos_mean": 0.993532201566922,
+            "cos_global": 0.993532201566922,
+            "max_relative_error": 0.11878420714634425
+          },
+          "hidden": {
+            "cos_min": 0.9466521760080364,
+            "cos_mean": 0.9982315575726114,
+            "cos_global": 0.9973764136116854,
+            "max_relative_error": 0.07259237210087632
+          },
+          "logits": {
+            "cos_min": 0.9993487705785746,
+            "cos_mean": 0.9993487705785746,
+            "cos_global": 0.9993487705785756,
+            "max_relative_error": 0.03679553094759527
+          }
+        },
+        "layer_probes": [
+          {
+            "case": 0,
+            "stage_count": 20,
+            "first_below_legacy_cosine_gate": {
+              "name": "layer_13",
+              "cos_min": 0.99877,
+              "cos_mean": 0.99961305,
+              "cos_global": 0.99961627,
+              "norm_ratio": 1.0062706341023622,
+              "max_abs": 12.7,
+              "passes_cos_0_999": false
+            },
+            "final_norm": {
+              "name": "final_norm",
+              "cos_min": 0.998329,
+              "cos_mean": 0.99912399,
+              "cos_global": 0.99884349,
+              "norm_ratio": 0.9931368283701926,
+              "max_abs": 0.646,
+              "passes_cos_0_999": false
+            },
+            "largest_absolute_error": 12.7
+          },
+          {
+            "case": 9,
+            "stage_count": 20,
+            "first_below_legacy_cosine_gate": {
+              "name": "layer_13",
+              "cos_min": 0.9985,
+              "cos_mean": 0.99952096,
+              "cos_global": 0.9993813,
+              "norm_ratio": 1.0052931405835712,
+              "max_abs": 11.8,
+              "passes_cos_0_999": false
+            },
+            "final_norm": {
+              "name": "final_norm",
+              "cos_min": 0.998626,
+              "cos_mean": 0.99957919,
+              "cos_global": 0.99956816,
+              "norm_ratio": 0.9995110452626105,
+              "max_abs": 0.44,
+              "passes_cos_0_999": false
+            },
+            "largest_absolute_error": 21.7
+          },
+          {
+            "case": 14,
+            "stage_count": 20,
+            "first_below_legacy_cosine_gate": {
+              "name": "layer_5",
+              "cos_min": 0.998871,
+              "cos_mean": 0.99992192,
+              "cos_global": 0.99990106,
+              "norm_ratio": 0.998904507758883,
+              "max_abs": 2.82,
+              "passes_cos_0_999": false
+            },
+            "final_norm": {
+              "name": "final_norm",
+              "cos_min": 0.946652,
+              "cos_mean": 0.99877638,
+              "cos_global": 0.99850363,
+              "norm_ratio": 1.0089312643326112,
+              "max_abs": 5.21,
+              "passes_cos_0_999": false
+            },
+            "largest_absolute_error": 148.0
+          }
+        ]
+      },
+      "q4": {
+        "filename": "LFM2.5-Encoder-230M-Q4_0.gguf",
+        "bytes": 149079040,
+        "sha256": "6c2a549f375b56cf9b22b8c7173df9c5b5a23b274316a7a70addecaea3963fcc",
+        "tensor_types": {
+          "Q6_K": 1,
+          "F32": 49,
+          "Q4_0": 82
+        },
+        "top1_matches": 9,
+        "masks": 15,
+        "summary": {
+          "cls": {
+            "cos_min": 0.8540294756374573,
+            "cos_mean": 0.8540294756374573,
+            "cos_global": 0.8540294756374573,
+            "max_relative_error": 0.8659490543434933
+          },
+          "hidden": {
+            "cos_min": 0.7360318007895931,
+            "cos_mean": 0.8667443671906104,
+            "cos_global": 0.8769105462473484,
+            "max_relative_error": 0.7992899694053608
+          },
+          "logits": {
+            "cos_min": 0.9317541668193732,
+            "cos_mean": 0.9317541668193732,
+            "cos_global": 0.9317541668193747,
+            "max_relative_error": 0.5682195440752427
+          }
+        },
+        "layer_probes": [
+          {
+            "case": 0,
+            "stage_count": 20,
+            "first_below_legacy_cosine_gate": {
+              "name": "layer_0",
+              "cos_min": 0.997529,
+              "cos_mean": 0.99847221,
+              "cos_global": 0.998335,
+              "norm_ratio": 1.0039106780932412,
+              "max_abs": 0.254,
+              "passes_cos_0_999": false
+            },
+            "final_norm": {
+              "name": "final_norm",
+              "cos_min": 0.867064,
+              "cos_mean": 0.92920464,
+              "cos_global": 0.90314132,
+              "norm_ratio": 1.0284127124658542,
+              "max_abs": 6.12,
+              "passes_cos_0_999": false
+            },
+            "largest_absolute_error": 116.0
+          },
+          {
+            "case": 9,
+            "stage_count": 20,
+            "first_below_legacy_cosine_gate": {
+              "name": "layer_0",
+              "cos_min": 0.996058,
+              "cos_mean": 0.99752462,
+              "cos_global": 0.99731976,
+              "norm_ratio": 1.0022763514892268,
+              "max_abs": 0.287,
+              "passes_cos_0_999": false
+            },
+            "final_norm": {
+              "name": "final_norm",
+              "cos_min": 0.884809,
+              "cos_mean": 0.96741736,
+              "cos_global": 0.96675122,
+              "norm_ratio": 1.000090700046161,
+              "max_abs": 4.18,
+              "passes_cos_0_999": false
+            },
+            "largest_absolute_error": 105.0
+          },
+          {
+            "case": 14,
+            "stage_count": 20,
+            "first_below_legacy_cosine_gate": {
+              "name": "layer_0",
+              "cos_min": 0.996677,
+              "cos_mean": 0.99800718,
+              "cos_global": 0.99793565,
+              "norm_ratio": 1.0013370652447833,
+              "max_abs": 0.252,
+              "passes_cos_0_999": false
+            },
+            "final_norm": {
+              "name": "final_norm",
+              "cos_min": 0.736032,
+              "cos_mean": 0.9243021,
+              "cos_global": 0.90467989,
+              "norm_ratio": 0.9556931541835213,
+              "max_abs": 18.7,
+              "passes_cos_0_999": false
+            },
+            "largest_absolute_error": 598.0
+          }
+        ]
+      },
+      "q4k": {
+        "filename": "LFM2.5-Encoder-230M-crisp-Q4_K.gguf",
+        "bytes": 165331968,
+        "sha256": "660ceaaa3fee1a51be3843529b25acf9047077d880bc14e6f7f91c0f9508ad52",
+        "tensor_types": {
+          "Q8_0": 1,
+          "F32": 49,
+          "Q4_K": 82
+        },
+        "top1_matches": 10,
+        "masks": 15,
+        "summary": {
+          "cls": {
+            "cos_min": 0.9358514497168726,
+            "cos_mean": 0.9358514497168726,
+            "cos_global": 0.9358514497168727,
+            "max_relative_error": 0.4673613916706479
+          },
+          "hidden": {
+            "cos_min": 0.5563114354198847,
+            "cos_mean": 0.9397059168509161,
+            "cos_global": 0.9211599368718765,
+            "max_relative_error": 0.42552010649887023
+          },
+          "logits": {
+            "cos_min": 0.9743801637949254,
+            "cos_mean": 0.9743801637949254,
+            "cos_global": 0.9743801637949272,
+            "max_relative_error": 0.4157114641835097
+          }
+        },
+        "layer_probes": [
+          {
+            "case": 0,
+            "stage_count": 20,
+            "first_below_legacy_cosine_gate": {
+              "name": "layer_0",
+              "cos_min": 0.998398,
+              "cos_mean": 0.99891084,
+              "cos_global": 0.99882221,
+              "norm_ratio": 0.9962007858744366,
+              "max_abs": 0.201,
+              "passes_cos_0_999": false
+            },
+            "final_norm": {
+              "name": "final_norm",
+              "cos_min": 0.851733,
+              "cos_mean": 0.94881654,
+              "cos_global": 0.92115992,
+              "norm_ratio": 0.8699490687773411,
+              "max_abs": 8.59,
+              "passes_cos_0_999": false
+            },
+            "largest_absolute_error": 350.0
+          },
+          {
+            "case": 9,
+            "stage_count": 20,
+            "first_below_legacy_cosine_gate": {
+              "name": "layer_0",
+              "cos_min": 0.996405,
+              "cos_mean": 0.99790734,
+              "cos_global": 0.9977082,
+              "norm_ratio": 0.9995550313030305,
+              "max_abs": 0.42,
+              "passes_cos_0_999": false
+            },
+            "final_norm": {
+              "name": "final_norm",
+              "cos_min": 0.8693,
+              "cos_mean": 0.97155827,
+              "cos_global": 0.97125161,
+              "norm_ratio": 0.9893839338333434,
+              "max_abs": 5.8,
+              "passes_cos_0_999": false
+            },
+            "largest_absolute_error": 219.0
+          },
+          {
+            "case": 14,
+            "stage_count": 20,
+            "first_below_legacy_cosine_gate": {
+              "name": "layer_0",
+              "cos_min": 0.997529,
+              "cos_mean": 0.99847949,
+              "cos_global": 0.99841642,
+              "norm_ratio": 0.996113513471411,
+              "max_abs": 0.321,
+              "passes_cos_0_999": false
+            },
+            "final_norm": {
+              "name": "final_norm",
+              "cos_min": 0.556311,
+              "cos_mean": 0.94151694,
+              "cos_global": 0.93648052,
+              "norm_ratio": 0.9894417804809479,
+              "max_abs": 22.8,
+              "passes_cos_0_999": false
+            },
+            "largest_absolute_error": 686.0
+          }
+        ]
+      },
+      "q4ki": {
+        "filename": "LFM2.5-Encoder-230M-crisp-Q4_K-imatrix.gguf",
+        "bytes": 165331968,
+        "sha256": "637e55268d57977b28cff6ccddb2f9fe64c5f9224e7d56004ddb7fff96a402b1",
+        "tensor_types": {
+          "Q8_0": 1,
+          "F32": 49,
+          "Q4_K": 82
+        },
+        "top1_matches": 11,
+        "masks": 15,
+        "summary": {
+          "cls": {
+            "cos_min": 0.9707406138680231,
+            "cos_mean": 0.9707406138680231,
+            "cos_global": 0.9707406138680233,
+            "max_relative_error": 0.2635368417040259
+          },
+          "hidden": {
+            "cos_min": 0.7529067870940486,
+            "cos_mean": 0.9654244974023437,
+            "cos_global": 0.9606256383104916,
+            "max_relative_error": 0.28221160079517477
+          },
+          "logits": {
+            "cos_min": 0.9874921997638979,
+            "cos_mean": 0.9874921997638979,
+            "cos_global": 0.9874921997638992,
+            "max_relative_error": 0.1580733521145622
+          }
+        },
+        "layer_probes": [
+          {
+            "case": 0,
+            "stage_count": 20,
+            "first_below_legacy_cosine_gate": {
+              "name": "layer_1",
+              "cos_min": 0.998742,
+              "cos_mean": 0.99929339,
+              "cos_global": 0.99924701,
+              "norm_ratio": 0.9948470557214188,
+              "max_abs": 0.244,
+              "passes_cos_0_999": false
+            },
+            "final_norm": {
+              "name": "final_norm",
+              "cos_min": 0.9674,
+              "cos_mean": 0.97844017,
+              "cos_global": 0.97110569,
+              "norm_ratio": 1.1138997457373827,
+              "max_abs": 4.19,
+              "passes_cos_0_999": false
+            },
+            "largest_absolute_error": 76.9
+          },
+          {
+            "case": 9,
+            "stage_count": 20,
+            "first_below_legacy_cosine_gate": {
+              "name": "layer_0",
+              "cos_min": 0.998562,
+              "cos_mean": 0.99924201,
+              "cos_global": 0.99917185,
+              "norm_ratio": 1.0004213657062497,
+              "max_abs": 0.242,
+              "passes_cos_0_999": false
+            },
+            "final_norm": {
+              "name": "final_norm",
+              "cos_min": 0.982626,
+              "cos_mean": 0.99081129,
+              "cos_global": 0.99076688,
+              "norm_ratio": 0.999407275165132,
+              "max_abs": 1.66,
+              "passes_cos_0_999": false
+            },
+            "largest_absolute_error": 81.2
+          },
+          {
+            "case": 14,
+            "stage_count": 20,
+            "first_below_legacy_cosine_gate": {
+              "name": "layer_0",
+              "cos_min": 0.998555,
+              "cos_mean": 0.99910516,
+              "cos_global": 0.99906796,
+              "norm_ratio": 1.0004227025244599,
+              "max_abs": 0.219,
+              "passes_cos_0_999": false
+            },
+            "final_norm": {
+              "name": "final_norm",
+              "cos_min": 0.752907,
+              "cos_mean": 0.96542448,
+              "cos_global": 0.96062565,
+              "norm_ratio": 1.0100726730696936,
+              "max_abs": 14.4,
+              "passes_cos_0_999": false
+            },
+            "largest_absolute_error": 523.0
+          }
+        ]
+      },
+      "q4_ops_down_q8": {
+        "model": "LFM2.5-Encoder-230M-q4_ops_down_q8.gguf",
+        "bytes": 209893888,
+        "sha256": "217a92f55aefa85896083f83efde81fb80ff323a5ea3fea84fea63c917abb3fd",
+        "tensor_types": {
+          "Q8_0": 55,
+          "F32": 49,
+          "Q4_K": 28
+        },
+        "overrides": [
+          "*.attn*weight=q8_0",
+          "*conv.*_proj.weight=q8_0",
+          "*.ff.w2.weight=q8_0"
+        ],
+        "top1_matches": 13,
+        "masks": 15,
+        "summary": {
+          "cls_min_cos": 0.9801229367031192,
+          "hidden_min_cos": 0.8813764360991087,
+          "hidden_min_global_cos": 0.9878875298309803,
+          "hidden_max_relative_error": 0.1563646191791431,
+          "logits_min_cos": 0.9961958703336621
+        },
+        "unchanged_f32_tensor_count": 49,
+        "layer_probes": [
+          {
+            "case": 0,
+            "summary": "PASS: 6   FAIL: 17",
+            "first_below_legacy_cosine_gate": {
+              "name": "layer_4",
+              "cos_min": 0.998981,
+              "cos_mean": 0.99938464,
+              "cos_global": 0.99936491,
+              "mine_norm": 70.55986,
+              "ref_norm": 71.093254,
+              "norm_ratio": 0.9924972628204639,
+              "max_abs": 0.275,
+              "passes_cos_0_999": false
+            },
+            "largest_absolute_error": 98.8
+          },
+          {
+            "case": 9,
+            "summary": "PASS: 7   FAIL: 14",
+            "first_below_legacy_cosine_gate": {
+              "name": "layer_6",
+              "cos_min": 0.998952,
+              "cos_mean": 0.9991653,
+              "cos_global": 0.99912328,
+              "mine_norm": 127.743759,
+              "ref_norm": 127.864738,
+              "norm_ratio": 0.9990538517351046,
+              "max_abs": 1.64,
+              "passes_cos_0_999": false
+            },
+            "largest_absolute_error": 50.3
+          },
+          {
+            "case": 14,
+            "summary": "PASS: 5   FAIL: 15",
+            "first_below_legacy_cosine_gate": {
+              "name": "layer_4",
+              "cos_min": 0.998923,
+              "cos_mean": 0.99924123,
+              "cos_global": 0.99920273,
+              "mine_norm": 618.642029,
+              "ref_norm": 623.316406,
+              "norm_ratio": 0.9925007958157288,
+              "max_abs": 0.569,
+              "passes_cos_0_999": false
+            },
+            "largest_absolute_error": 614.0
+          }
+        ]
+      },
+      "q8_ops_down_f16": {
+        "model": "LFM2.5-Encoder-230M-q8_ops_down_f16.gguf",
+        "bytes": 330152448,
+        "sha256": "122d803449862fc1ad367db1de5c26212ec50ab9e8dbe92e5669a7b3e2643d90",
+        "tensor_types": {
+          "Q8_0": 29,
+          "F32": 49,
+          "F16": 54
+        },
+        "overrides": [
+          "*.attn*weight=f16",
+          "*conv.*_proj.weight=f16",
+          "*.ff.w2.weight=f16"
+        ],
+        "top1_matches": 14,
+        "masks": 15,
+        "summary": {
+          "cls_min_cos": 0.9989978406918747,
+          "hidden_min_cos": 0.9877462572495169,
+          "hidden_min_global_cos": 0.9995880227549327,
+          "hidden_max_relative_error": 0.029016235321270775,
+          "logits_min_cos": 0.999903576419209
+        },
+        "unchanged_f32_tensor_count": 49,
+        "layer_probes": [
+          {
+            "case": 0,
+            "summary": "PASS: 20   FAIL: 0",
+            "first_below_legacy_cosine_gate": null,
+            "largest_absolute_error": 7.39
+          },
+          {
+            "case": 9,
+            "summary": "PASS: 20   FAIL: 1",
+            "first_below_legacy_cosine_gate": null,
+            "largest_absolute_error": 8.11
+          },
+          {
+            "case": 14,
+            "summary": "PASS: 12   FAIL: 8",
+            "first_below_legacy_cosine_gate": {
+              "name": "layer_8",
+              "cos_min": 0.998635,
+              "cos_mean": 0.99995333,
+              "cos_global": 0.99995244,
+              "mine_norm": 1693.240479,
+              "ref_norm": 1694.364258,
+              "norm_ratio": 0.9993367547770828,
+              "max_abs": 0.668,
+              "passes_cos_0_999": false
+            },
+            "largest_absolute_error": 221.0
+          }
+        ]
+      }
+    },
+    "arithmetic_comparisons": {
+      "q8-sameweights": {
+        "model": "LFM2.5-Encoder-230M-Q8_0.gguf",
+        "summary": {
+          "native_vs_original": {
+            "hidden_min_cos": 0.9466521760080364,
+            "hidden_min_global": 0.9973764136116854,
+            "hidden_max_relative": 0.07259237210087632,
+            "mask_matches": 13,
+            "masks": 15
+          },
+          "native_vs_same_weights": {
+            "hidden_min_cos": 0.9468685397209851,
+            "hidden_min_global": 0.9964814467988362,
+            "hidden_max_relative": 0.08381471001325909,
+            "mask_matches": 14,
+            "masks": 15
+          },
+          "python_same_weights_vs_original": {
+            "hidden_min_cos": 0.9959248335172906,
+            "hidden_min_global": 0.9994514010577688,
+            "hidden_max_relative": 0.033412296498366745,
+            "mask_matches": 14,
+            "masks": 15
+          },
+          "native_f32_head_vs_original": {
+            "mask_matches": 13,
+            "masks": 15
+          }
+        }
+      },
+      "q8-f32-arithmetic": {
+        "model": "LFM2.5-Encoder-230M-Q8_0.gguf",
+        "summary": {
+          "native_vs_original": {
+            "hidden_min_cos": 0.995881032800192,
+            "hidden_min_global": 0.9994431611472252,
+            "hidden_max_relative": 0.03365800833622251,
+            "mask_matches": 14,
+            "masks": 15
+          },
+          "native_vs_same_weights": {
+            "hidden_min_cos": 0.9999997073749713,
+            "hidden_min_global": 0.9999998341475506,
+            "hidden_max_relative": 0.0005908124502501408,
+            "mask_matches": 15,
+            "masks": 15
+          },
+          "python_same_weights_vs_original": {
+            "hidden_min_cos": 0.9959248335172906,
+            "hidden_min_global": 0.9994514010577691,
+            "hidden_max_relative": 0.033412296498366745,
+            "mask_matches": 14,
+            "masks": 15
+          },
+          "native_f32_head_vs_original": {
+            "mask_matches": 14,
+            "masks": 15
+          }
+        }
+      },
+      "q8-rowdot-arithmetic": {
+        "model": "LFM2.5-Encoder-230M-Q8_0.gguf",
+        "summary": {
+          "native_vs_original": {
+            "hidden_min_cos": 0.9958780214910018,
+            "hidden_min_global": 0.9994431597748877,
+            "hidden_max_relative": 0.03365802694011268,
+            "mask_matches": 14,
+            "masks": 15
+          },
+          "native_vs_same_weights": {
+            "hidden_min_cos": 0.9999997071667516,
+            "hidden_min_global": 0.9999998340646622,
+            "hidden_max_relative": 0.000591051411613615,
+            "mask_matches": 15,
+            "masks": 15
+          },
+          "python_same_weights_vs_original": {
+            "hidden_min_cos": 0.9959248335172906,
+            "hidden_min_global": 0.9994514010577691,
+            "hidden_max_relative": 0.033412296498366745,
+            "mask_matches": 14,
+            "masks": 15
+          },
+          "native_f32_head_vs_original": {
+            "mask_matches": 14,
+            "masks": 15
+          }
+        }
+      },
+      "q8-upstream-comparison": {
+        "model": "LFM2.5-Encoder-230M-Q8_0.gguf",
+        "summary": {
+          "native_vs_original": {
+            "hidden_min_cos": 0.9466521760080364,
+            "hidden_min_global": 0.9973764136116857,
+            "hidden_max_relative": 0.07259237210087631,
+            "mask_matches": 13,
+            "masks": 15
+          },
+          "native_vs_same_weights": {
+            "hidden_min_cos": 0.9468685397209851,
+            "hidden_min_global": 0.9964814467988365,
+            "hidden_max_relative": 0.0838147100132591,
+            "mask_matches": 14,
+            "masks": 15
+          },
+          "python_same_weights_vs_original": {
+            "hidden_min_cos": 0.9959248335172906,
+            "hidden_min_global": 0.9994514010577691,
+            "hidden_max_relative": 0.033412296498366745,
+            "mask_matches": 14,
+            "masks": 15
+          },
+          "upstream_vs_original": {
+            "hidden_min_cos": 0.9808391678068822,
+            "hidden_min_global": 0.998587022021815,
+            "hidden_max_relative": 0.055601577308892945
+          },
+          "native_vs_upstream": {
+            "hidden_min_cos": 0.9395168677914695,
+            "hidden_min_global": 0.9978618621012451,
+            "hidden_max_relative": 0.0653583003726347
+          },
+          "native_f32_head_vs_original": {
+            "mask_matches": 13,
+            "masks": 15
+          },
+          "upstream_f32_head_vs_original": {
+            "mask_matches": 14,
+            "masks": 15
+          }
+        }
+      },
+      "q8-upstream-plain-comparison": {
+        "model": "LFM2.5-Encoder-230M-Q8_0.gguf",
+        "summary": {
+          "native_vs_original": {
+            "hidden_min_cos": 0.9466521760080364,
+            "hidden_min_global": 0.9973764136116857,
+            "hidden_max_relative": 0.07259237210087631,
+            "mask_matches": 13,
+            "masks": 15
+          },
+          "native_vs_same_weights": {
+            "hidden_min_cos": 0.9468685397209851,
+            "hidden_min_global": 0.9964814467988365,
+            "hidden_max_relative": 0.0838147100132591,
+            "mask_matches": 14,
+            "masks": 15
+          },
+          "python_same_weights_vs_original": {
+            "hidden_min_cos": 0.9959248335172906,
+            "hidden_min_global": 0.9994514010577691,
+            "hidden_max_relative": 0.033412296498366745,
+            "mask_matches": 14,
+            "masks": 15
+          },
+          "upstream_vs_original": {
+            "hidden_min_cos": 0.9257557657229525,
+            "hidden_min_global": 0.9982970665254745,
+            "hidden_max_relative": 0.059055086367696734
+          },
+          "native_vs_upstream": {
+            "hidden_min_cos": 0.9182053460124957,
+            "hidden_min_global": 0.9981324466848643,
+            "hidden_max_relative": 0.061139234805295685
+          },
+          "native_f32_head_vs_original": {
+            "mask_matches": 13,
+            "masks": 15
+          },
+          "upstream_f32_head_vs_original": {
+            "mask_matches": 13,
+            "masks": 15
+          }
+        }
+      },
+      "q4-upstream-comparison": {
+        "model": "LFM2.5-Encoder-230M-Q4_0.gguf",
+        "summary": {
+          "native_vs_original": {
+            "hidden_min_cos": 0.7360318007895931,
+            "hidden_min_global": 0.8769105462473484,
+            "hidden_max_relative": 0.7992899694053608,
+            "mask_matches": 9,
+            "masks": 15
+          },
+          "upstream_vs_original": {
+            "hidden_min_cos": 0.7371339028918357,
+            "hidden_min_global": 0.8746790939627768,
+            "hidden_max_relative": 0.7836366866871322
+          },
+          "native_vs_upstream": {
+            "hidden_min_cos": 0.9211012882762656,
+            "hidden_min_global": 0.9980477489464736,
+            "hidden_max_relative": 0.0624619048970609
+          },
+          "native_f32_head_vs_original": {
+            "mask_matches": 9,
+            "masks": 15
+          },
+          "upstream_f32_head_vs_original": {
+            "mask_matches": 9,
+            "masks": 15
+          }
+        }
+      },
+      "f16-upstream-comparison": {
+        "model": "LFM2.5-Encoder-230M-F16.gguf",
+        "summary": {
+          "native_vs_original": {
+            "hidden_min_cos": 0.9999894746164296,
+            "hidden_min_global": 0.9999984295178997,
+            "hidden_max_relative": 0.0018132946105112026,
+            "mask_matches": 15,
+            "masks": 15
+          },
+          "upstream_vs_original": {
+            "hidden_min_cos": 0.9998863308358347,
+            "hidden_min_global": 0.9999946786307721,
+            "hidden_max_relative": 0.003441543018995292
+          },
+          "native_vs_upstream": {
+            "hidden_min_cos": 0.9999319615857786,
+            "hidden_min_global": 0.999998569469091,
+            "hidden_max_relative": 0.0018187341621306613
+          },
+          "native_f32_head_vs_original": {
+            "mask_matches": 15,
+            "masks": 15
+          },
+          "upstream_f32_head_vs_original": {
+            "mask_matches": 15,
+            "masks": 15
+          }
+        }
+      },
+      "q4-f32-arithmetic": {
+        "model": "LFM2.5-Encoder-230M-Q4_0.gguf",
+        "summary": {
+          "native_vs_original": {
+            "hidden_min_cos": 0.730145983838376,
+            "hidden_min_global": 0.875063162692314,
+            "hidden_max_relative": 0.790299910485092,
+            "mask_matches": 9,
+            "masks": 15
+          },
+          "native_f32_head_vs_original": {
+            "mask_matches": 9,
+            "masks": 15
+          }
+        }
+      },
+      "q4ki-f32-arithmetic": {
+        "model": "LFM2.5-Encoder-230M-crisp-Q4_K-imatrix.gguf",
+        "summary": {
+          "native_vs_original": {
+            "hidden_min_cos": 0.8896895978106905,
+            "hidden_min_global": 0.9653322063444656,
+            "hidden_max_relative": 0.2619499370115718,
+            "mask_matches": 12,
+            "masks": 15
+          },
+          "native_f32_head_vs_original": {
+            "mask_matches": 12,
+            "masks": 15
+          }
+        }
+      },
+      "mixed330-f32-arithmetic": {
+        "model": "LFM2.5-Encoder-230M-q8_ops_down_f16.gguf",
+        "summary": {
+          "native_vs_original": {
+            "hidden_min_cos": 0.9998175631107589,
+            "hidden_min_global": 0.9998893282003469,
+            "hidden_max_relative": 0.015142090442342982,
+            "mask_matches": 14,
+            "masks": 15
+          },
+          "native_f32_head_vs_original": {
+            "mask_matches": 14,
+            "masks": 15
+          }
+        }
+      },
+      "mixed393-f32-arithmetic": {
+        "model": "LFM2.5-Encoder-230M-q8_ops_down_embed_f16.gguf",
+        "summary": {
+          "native_vs_original": {
+            "hidden_min_cos": 0.9997807081517277,
+            "hidden_min_global": 0.9999201443277809,
+            "hidden_max_relative": 0.012875152234383295,
+            "mask_matches": 14,
+            "masks": 15
+          },
+          "native_f32_head_vs_original": {
+            "mask_matches": 14,
+            "masks": 15
+          }
+        }
+      },
+      "mixed210-rowdot-arithmetic": {
+        "model": "LFM2.5-Encoder-230M-q4_ops_down_q8.gguf",
+        "summary": {
+          "native_vs_original": {
+            "hidden_min_cos": 0.9289120067010406,
+            "hidden_min_global": 0.9896781389976023,
+            "hidden_max_relative": 0.14493849077389992,
+            "mask_matches": 14,
+            "masks": 15
+          },
+          "native_f32_head_vs_original": {
+            "mask_matches": 14,
+            "masks": 15
+          }
+        }
+      }
+    },
+    "same_weight_layer_replays": {
+      "f32": {
+        "reference": "Exact Q8_0 weights in official FP32 Python",
+        "passed": 297,
+        "failed": 0,
+        "cases": 15,
+        "largest_recorded_absolute_error": 0.747,
+        "worst_absolute_stage": {
+          "name": "layer_9",
+          "cos_min": 1.0,
+          "cos_mean": 1.0,
+          "cos_global": 0.99999994,
+          "mine_norm": 923.455383,
+          "ref_norm": 924.317993,
+          "max_abs": 0.747
+        },
+        "precision": "Printed stage cosine rounds to six decimals; final API min-row metrics are retained separately."
+      },
+      "rowdot": {
+        "reference": "Exact Q8_0 weights in official FP32 Python",
+        "passed": 297,
+        "failed": 0,
+        "cases": 15,
+        "largest_recorded_absolute_error": 0.747,
+        "worst_absolute_stage": {
+          "name": "layer_9",
+          "cos_min": 1.0,
+          "cos_mean": 1.0,
+          "cos_global": 0.99999994,
+          "mine_norm": 923.455505,
+          "ref_norm": 924.317993,
+          "max_abs": 0.747
+        },
+        "precision": "Printed stage cosine rounds to six decimals; final API min-row metrics are retained separately."
+      }
+    },
+    "publication": {
+      "date": "2026-10-03",
+      "model_repo": "cstr/LFM2.5-Encoder-230M-GGUF",
+      "model_weight_revision": "dcb63d20fd326e705f0b1c74b0b61e529b0d5cc0",
+      "fixture_repo": "cstr/crispembed-regression-fixtures",
+      "fixture_revision": "e3599a94f861d85ab735d68cb57b9f5aedc395a6",
+      "fixture_path": "lfm2-encoder-230m",
+      "license": "lfm1.0",
+      "artifacts": {
+        "LFM2.5-Encoder-230M-crisp-Q4_K-imatrix.gguf": {
+          "filename": "LFM2.5-Encoder-230M-crisp-Q4_K-imatrix.gguf",
+          "bytes": 165331968,
+          "sha256": "637e55268d57977b28cff6ccddb2f9fe64c5f9224e7d56004ddb7fff96a402b1",
+          "tensor_types": {
+            "Q8_0": 1,
+            "F32": 49,
+            "Q4_K": 82
+          }
+        },
+        "LFM2.5-Encoder-230M-q4_ops_down_q8.gguf": {
+          "filename": "LFM2.5-Encoder-230M-q4_ops_down_q8.gguf",
+          "bytes": 209893888,
+          "sha256": "217a92f55aefa85896083f83efde81fb80ff323a5ea3fea84fea63c917abb3fd",
+          "tensor_types": {
+            "Q8_0": 55,
+            "F32": 49,
+            "Q4_K": 28
+          },
+          "overrides": [
+            "*.attn*weight=q8_0",
+            "*conv.*_proj.weight=q8_0",
+            "*.ff.w2.weight=q8_0"
+          ]
+        },
+        "LFM2.5-Encoder-230M-q8_ops_down_f16.gguf": {
+          "filename": "LFM2.5-Encoder-230M-q8_ops_down_f16.gguf",
+          "bytes": 330152448,
+          "sha256": "122d803449862fc1ad367db1de5c26212ec50ab9e8dbe92e5669a7b3e2643d90",
+          "tensor_types": {
+            "Q8_0": 29,
+            "F32": 49,
+            "F16": 54
+          },
+          "overrides": [
+            "*.attn*weight=f16",
+            "*conv.*_proj.weight=f16",
+            "*.ff.w2.weight=f16"
+          ]
+        }
+      },
+      "http_validation": {
+        "comparator": "tests/lfm2_server_parity.py",
+        "mode": "CRISPEMBED_LFM2_F32_DOT=1",
+        "profiles": [
+          "official Q8_0",
+          "mixed330"
+        ],
+        "cases_per_profile": 4,
+        "masks_per_profile": 7,
+        "predictions_per_mask": 100,
+        "contracts": [
+          "health discovery",
+          "raw and normalized tokens/IDs",
+          "full masked logits",
+          "decoded tokens/logits/probabilities",
+          "JSON escaping",
+          "adjacent and multilingual masks",
+          "repeated requests after alternating output shapes",
+          "empty/NUL/missing text",
+          "invalid top_k",
+          "no-mask failure"
+        ],
+        "result": "PASS",
+        "explicitly_disabled_capability_guard": {
+          "profile": "official Q8_0",
+          "result": "PASS"
+        }
+      },
+      "hosted_fixture_replay": {
+        "path": "lfm2-encoder-230m/same-q8-fp32/000.gguf",
+        "reference_text_source": "same-q8-fp32/index.json case 0",
+        "model": "official Q8_0",
+        "mode": "FP32 row-dot",
+        "layer_checks_passed": 20,
+        "layer_checks_failed": 0
+      },
+      "download_roundtrip": {
+        "alias": "lfm2-encoder-230m-mixed330",
+        "empty_cache": true,
+        "sha256_verified": true,
+        "text": "The capital of France is [MASK].",
+        "top_token_id": 5242,
+        "decoded": " Paris",
+        "result": "PASS"
+      },
+      "registry_validation": {
+        "new_pin_size_license_checks": "PASS for all three new URLs; upstream and rehost license agree",
+        "global_pin_check": "FAIL: pre-existing unrelated missing/drifted pins; existing pins preserved instead of accepting changed upstream bytes",
+        "unrelated_changed_upstream_files": [
+          "LiquidAI/LFM2.5-VL-3B-GGUF/LFM2.5-VL-3B-Q4_K_M.gguf",
+          "LiquidAI/LFM2.5-VL-3B-GGUF/mmproj-LFM2.5-VL-3B-F16.gguf"
+        ]
+      },
+      "contributing_checklist": {
+        "runtime": "src/lfm2_embed.cpp",
+        "converter": "models/convert-lfm2-to-gguf.py",
+        "reference": "tools/dump_lfm2_reference.py",
+        "c_api": "src/crispembed.{h,cpp}",
+        "cmake": "CMakeLists.txt",
+        "cli_registry": "examples/cli/{main,model_mgr,model_hashes}.{cpp,h}",
+        "bindings": [
+          "python/crispembed/_binding.py",
+          "crispembed-sys/src/lib.rs",
+          "crispembed/src/lib.rs",
+          "flutter/crispembed/lib/src/crispembed.dart"
+        ],
+        "http": "examples/server/server.cpp",
+        "publisher": "models/upload_to_hf.py",
+        "ocr_catalog": "Not applicable: text-only masked encoder, no image recognition",
+        "default": "Official F16 retained; precision modes opt-in"
+      }
+    },
+    "independent_task_quality_qualified": false,
+    "q8_gpu_qualified": false,
+    "q4k_gpu_qualified": false,
+    "excluded_incomplete_screen": {
+      "profile": "q4ki-rowdot-arithmetic",
+      "exit_code": 137,
+      "note": "Incomplete optional run; no metrics or conclusions included."
+    },
+    "screened_profile_count": 26,
+    "cuda_f16": {
+      "runtime_source": "898af2c2a76369ceecd700a2b021ca001483a9c1",
+      "model_revision": "bb26e78c7164b386028928ebfcecebcc42467689",
+      "fixture_revision": "e3599a94f861d85ab735d68cb57b9f5aedc395a6",
+      "model_sha256": "f097dbdb27c565b6f08cdbbfeb5d674ad7c205cfd1d8362f5415e243b2ec2e93",
+      "qualification": "pass",
+      "numerical_gate": {
+        "min_cos": 0.999,
+        "max_relative_error": 0.02,
+        "mask_top1": 15
+      },
+      "scope": "F16 CPU/CUDA reference agreement; no quantized MMQ, latency or independent task-quality claim",
+      "audit_provenance": {
+        "raw_report_sha256": "de7e927e8a06818df955e61206fe8951f8aefc9c88df5774383459e81cf6213e",
+        "uploaded_script_commit": "b6979a6f",
+        "runtime_source": "898af2c2a76369ceecd700a2b021ca001483a9c1",
+        "service": "Kaggle",
+        "hardware_scope": "CUDA0 on allocated Tesla T4 pair; only selected device tested",
+        "review": "30 native stage log hashes/summaries independently reparsed, both API logs/JSON checked, vocabulary/15-mask agreement and CUDA scheduler assignment records verified",
+        "limits": "594 passing direct checks; reference agreement only. No all-ops GPU residency, independent task quality, quantized MMQ or paired latency qualification. Runtime LFM/core/ggml files unchanged through PosFormer merge; only PosFormer runtime source differs."
+      }
+    },
+    "paired_f16_performance": {
+      "source": "7a17864f",
+      "service": "Kaggle genuine GPU session",
+      "review": {
+        "timing_samples_checked": 420,
+        "cross_block_vector_hashes_identical_within_backend": true,
+        "cpu_cuda_matmul_assignments": {
+          "cpu": 0,
+          "cuda": 180
+        },
+        "limits": "Timing summaries, report/block identity, source hashes and selected placement/build logs independently checked. Raw CLS/vector arrays were not retained in this performance run; numerical agreement relies on the pinned worker assertions and separate full-stage audit. CPU model/clock and VRAM not captured. One session, 15 fixed cases; no throughput, independent task quality or default promotion claim."
+      },
+      "initial_timeout_report": "tests/results/lfm2-encoder/initial-cuda-performance-timeout.json",
+      "precision_scope": "F16 only; session-scoped performance is not Q8/Q4 MMQ evidence"
+    },
+    "client_precision_interpretation": {
+      "c_python": {
+        "archived15_case_api_contracts": true,
+        "quantized_drift_not_port_parity": true
+      },
+      "http": {
+        "comparator": "tests/lfm2_server_parity.py",
+        "mode": "CRISPEMBED_LFM2_F32_DOT=1",
+        "profiles": [
+          "official Q8_0",
+          "mixed330"
+        ],
+        "cases_per_profile": 4,
+        "masks_per_profile": 7,
+        "predictions_per_mask": 100,
+        "contracts": [
+          "health discovery",
+          "raw and normalized tokens/IDs",
+          "full masked logits",
+          "decoded tokens/logits/probabilities",
+          "JSON escaping",
+          "adjacent and multilingual masks",
+          "repeated requests after alternating output shapes",
+          "empty/NUL/missing text",
+          "invalid top_k",
+          "no-mask failure"
+        ],
+        "result": "PASS",
+        "explicitly_disabled_capability_guard": {
+          "profile": "official Q8_0",
+          "result": "PASS"
+        }
+      },
+      "rust_live": {
+        "source": "crispembed/tests/lfm2_encoder_live.rs",
+        "documented_model": "official F16",
+        "ignored_test": true,
+        "precision_specific_quantized_run_receipt_found": false
+      },
+      "dart_example": {
+        "source": "flutter/crispembed/example/lfm2_encoder.dart",
+        "model_path_argument": true,
+        "precision_specific_quantized_run_receipt_found": false
+      },
+      "unrelated_test_excluded": {
+        "source": "tests/test_lfm2_bindings.py",
+        "reason": "Targets LFM2.5-Embedding350M retrieval aliases, not230M masked Encoder."
+      }
+    }
+  },
+  "typed_embeddinggemma": {
+    "source_model": "mrm8488/embeddinggemma-2-ft-typed-decision",
+    "source_revision": "fcc165b7d7d97827e241e09752e83fd11165a74b",
+    "publication": {
+      "source_model": "mrm8488/embeddinggemma-2-ft-typed-decision",
+      "source_revision": "fcc165b7d7d97827e241e09752e83fd11165a74b",
+      "native_commit": "17c08b3c25da81940ddb3d1a6634cf54c6dd50f6",
+      "workflow_run": "38374087175",
+      "artifacts": {
+        "embeddinggemma-2-ft-typed-decision-f32.gguf": {
+          "bytes": 1102182464,
+          "sha256": "cfd0ab416c2ffafd0f42bf7b4562b2d610b89d15e43a1648097a919572cc9abe"
+        },
+        "embeddinggemma-2-ft-typed-decision-q8_0.gguf": {
+          "bytes": 307492928,
+          "sha256": "3d80c1758665cd42cb238dc6dd9ee25b6fc95a868267f25515bb81f417e5a497"
+        }
+      },
+      "f32_contracts": "API/CLI/HTTP/schema/head/invalid/repeat PASS",
+      "f32_embeddings": [
+        {
+          "scenario": 0,
+          "texts": 13,
+          "cosine_min": 0.9999999403953552,
+          "relative_l2_error": 6.886171490805282e-07,
+          "max_absolute_error": 1.1920928955078125e-07,
+          "native_norm_min": 1.0,
+          "native_norm_max": 1.0
+        },
+        {
+          "scenario": 1,
+          "texts": 11,
+          "cosine_min": 1.0,
+          "relative_l2_error": 1.305256773775909e-06,
+          "max_absolute_error": 4.507601261138916e-07,
+          "native_norm_min": 0.9999999403953552,
+          "native_norm_max": 1.0
+        },
+        {
+          "scenario": 2,
+          "texts": 6,
+          "cosine_min": 0.9999999403953552,
+          "relative_l2_error": 7.52322250718862e-07,
+          "max_absolute_error": 1.4901161193847656e-07,
+          "native_norm_min": 1.0,
+          "native_norm_max": 1.0
+        }
+      ],
+      "q8_embeddings": [
+        {
+          "scenario": 0,
+          "texts": 13,
+          "cosine_min": 0.9999668598175049,
+          "relative_l2_error": 0.006827881094068289,
+          "max_absolute_error": 0.0010825181379914284,
+          "native_norm_min": 0.9999999403953552,
+          "native_norm_max": 1.0
+        },
+        {
+          "scenario": 1,
+          "texts": 11,
+          "cosine_min": 0.9999564290046692,
+          "relative_l2_error": 0.007368369959294796,
+          "max_absolute_error": 0.0011576898396015167,
+          "native_norm_min": 1.0,
+          "native_norm_max": 1.0
+        },
+        {
+          "scenario": 2,
+          "texts": 6,
+          "cosine_min": 0.9999722242355347,
+          "relative_l2_error": 0.006773179396986961,
+          "max_absolute_error": 0.0010066342074424028,
+          "native_norm_min": 1.0,
+          "native_norm_max": 1.0
+        }
+      ],
+      "q8_reference_labels": {
+        "matched": 8,
+        "total": 8
+      },
+      "bindings": {
+        "contracts": "Rust/Dart real FFI scores/typed JSON/errors/repeat PASS",
+        "scenarios": 3,
+        "dart": "3.13.5",
+        "rust": "rustc 1.99.0 (b940084d7 2026-09-28)"
+      },
+      "note": "Reference agreement on these probes, not downstream task accuracy. CPU only.",
+      "model_repo": "cstr/embeddinggemma-2-ft-typed-decision-GGUF",
+      "model_revision": "d8427e48a0c20bc63216d332ec0b5e8ec43430c9",
+      "fixture_repo": "cstr/crispembed-regression-fixtures",
+      "fixture_revision": "508188c36d0550b12a6a467f5d394c10aa33e04c",
+      "fixture_path": "gemma-decision/original-fp32",
+      "publication_state": "published_and_remote_hashes_verified",
+      "model_pr": "https://huggingface.co/cstr/embeddinggemma-2-ft-typed-decision-GGUF/discussions/1",
+      "model_pr_revision": "refs/pr/1",
+      "fixture_pr": "https://huggingface.co/datasets/cstr/crispembed-regression-fixtures/discussions/1",
+      "fixture_pr_revision": "refs/pr/1",
+      "metadata_revision": "50bc95288ec868e20a282f23ebc77dcc61a84331",
+      "registry_validation": {
+        "contracts": "fresh pinned alias downloads and real CLI decisions PASS",
+        "native_commit": "9b472380e19737d45ebc9abe7e07d0abe7bb3225",
+        "workflow_run": "38375586578",
+        "models": [
+          {
+            "alias": "embeddinggemma-2-ft-typed-decision",
+            "answers": 8,
+            "max_probability_error": 4.827623687697624e-06,
+            "sha256": "cfd0ab416c2ffafd0f42bf7b4562b2d610b89d15e43a1648097a919572cc9abe",
+            "bytes": 1102182464
+          },
+          {
+            "alias": "embeddinggemma-2-ft-typed-decision-q8",
+            "answers": 8,
+            "max_probability_error": 0.002824783235900852,
+            "sha256": "3d80c1758665cd42cb238dc6dd9ee25b6fc95a868267f25515bb81f417e5a497",
+            "bytes": 307492928
+          }
+        ]
+      },
+      "registry_report_revision": "7a093624993386b42e0b99d0cc3e7f25f9534fa4"
+    },
+    "f32_layer_report": {
+      "path": "tests/results/gemma-decision/arm-validation.json",
+      "native_commit": "82383e3e425f55bcf794b28543d6f1c38def1688",
+      "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38352165925",
+      "reference": {
+        "torch": "2.14.1+cpu",
+        "transformers": "5.19.0",
+        "dtype": "float32",
+        "attention": "eager"
+      },
+      "probes": 5,
+      "stages": 145,
+      "exact_id_counts": [
+        18,
+        20,
+        25,
+        19,
+        549
+      ],
+      "max_relative_l2": 1.481e-05,
+      "max_absolute_error": 0.0164185,
+      "worst_absolute_stage": {
+        "stage": "tokens",
+        "cosine_min": 1.0,
+        "cosine_global": 1.0,
+        "native_norm": 19613.912109,
+        "reference_norm": 19613.900391,
+        "max_absolute_error": 0.0164185,
+        "relative_l2_error": 9.9e-06
+      }
+    },
+    "legacy_f32_gates": {
+      "min_row_cosine": 0.99999,
+      "max_relative_l2": 0.003,
+      "absolute_error_is_reported_not_universal_002_gate": true
+    },
+    "q8_policy": {
+      "source": "models/convert-gemma-decision-to-gguf.py",
+      "quantized": "2D encoder.* tensors excluding embedding_projection",
+      "preserved": "Head, embedding projection, one-dimensional norms/biases/scalars and fitted temperatures remain FP32",
+      "actual_per_tensor_inventory_in_tracked_reports": false,
+      "actual_q8_tensor_count": null,
+      "activation_mode": "CRISPEMBED_GEMMA_DECISION_F32_DOT=1",
+      "embedding_gate_mode": "--measure-only",
+      "importance_matrix_calibration_found": false,
+      "probability_calibration": "Publisher fitted temperatures preserved without refit; this is not quantization imatrix calibration"
+    },
+    "q8_results": {
+      "arm-q8-decisions": {
+        "native_commit": "1d5b42f7",
+        "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38359818133",
+        "contracts": "API/CLI/HTTP/schema/head/invalid/repeat PASS",
+        "questions": 8,
+        "max_probability_error": 0.002824783235900852,
+        "embeddings": [
+          {
+            "scenario": 0,
+            "texts": 13,
+            "cosine_min": 0.9999668598175049,
+            "relative_l2_error": 0.006827881094068289,
+            "max_absolute_error": 0.0010825181379914284,
+            "native_norm_min": 0.9999999403953552,
+            "native_norm_max": 1.0
+          },
+          {
+            "scenario": 1,
+            "texts": 11,
+            "cosine_min": 0.9999564290046692,
+            "relative_l2_error": 0.007368369959294796,
+            "max_absolute_error": 0.0011576898396015167,
+            "native_norm_min": 1.0,
+            "native_norm_max": 1.0
+          },
+          {
+            "scenario": 2,
+            "texts": 6,
+            "cosine_min": 0.9999722242355347,
+            "relative_l2_error": 0.006773179396986961,
+            "max_absolute_error": 0.0010066342074424028,
+            "native_norm_min": 1.0,
+            "native_norm_max": 1.0
+          }
+        ],
+        "head_on_reference_embeddings": [
+          {
+            "scenario": 0,
+            "question": "action",
+            "max_logit_error": 5.7220458984375e-06,
+            "max_probability_error": 1.1622905731201172e-06
+          },
+          {
+            "scenario": 0,
+            "question": "risk",
+            "max_logit_error": 9.5367431640625e-06,
+            "max_probability_error": 1.6838312149047852e-06
+          },
+          {
+            "scenario": 0,
+            "question": "needs_review",
+            "max_logit_error": 1.33514404296875e-05,
+            "max_probability_error": 2.9206275939941406e-06
+          },
+          {
+            "scenario": 1,
+            "question": "accion",
+            "max_logit_error": 9.5367431640625e-06,
+            "max_probability_error": 3.3974647521972656e-06
+          },
+          {
+            "scenario": 1,
+            "question": "nivel",
+            "max_logit_error": 1.1444091796875e-05,
+            "max_probability_error": 1.4901161193847656e-06
+          },
+          {
+            "scenario": 1,
+            "question": "named",
+            "max_logit_error": 1.1444091796875e-05,
+            "max_probability_error": 1.7881393432617188e-07
+          },
+          {
+            "scenario": 2,
+            "question": "one",
+            "max_logit_error": 5.7220458984375e-06,
+            "max_probability_error": 0.0
+          },
+          {
+            "scenario": 2,
+            "question": "no",
+            "max_logit_error": 1.33514404296875e-05,
+            "max_probability_error": 1.7285346984863281e-06
+          }
+        ]
+      },
+      "macos-q8-decisions": {
+        "native_commit": "1d5b42f7",
+        "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38359820734",
+        "contracts": "API/CLI/HTTP/schema/head/invalid/repeat PASS",
+        "questions": 8,
+        "max_probability_error": 0.0028253194568023665,
+        "embeddings": [
+          {
+            "scenario": 0,
+            "texts": 13,
+            "cosine_min": 0.9999669790267944,
+            "relative_l2_error": 0.006827895995229483,
+            "max_absolute_error": 0.0010825505014508963,
+            "native_norm_min": 0.9999999403953552,
+            "native_norm_max": 1.0
+          },
+          {
+            "scenario": 1,
+            "texts": 11,
+            "cosine_min": 0.999956488609314,
+            "relative_l2_error": 0.0073683918453752995,
+            "max_absolute_error": 0.001157643273472786,
+            "native_norm_min": 0.9999999403953552,
+            "native_norm_max": 1.0
+          },
+          {
+            "scenario": 2,
+            "texts": 6,
+            "cosine_min": 0.9999721050262451,
+            "relative_l2_error": 0.006773211061954498,
+            "max_absolute_error": 0.0010065837996080518,
+            "native_norm_min": 1.0,
+            "native_norm_max": 1.0
+          }
+        ],
+        "head_on_reference_embeddings": [
+          {
+            "scenario": 0,
+            "question": "action",
+            "max_logit_error": 1.1444091796875e-05,
+            "max_probability_error": 8.642673492431641e-07
+          },
+          {
+            "scenario": 0,
+            "question": "risk",
+            "max_logit_error": 8.58306884765625e-06,
+            "max_probability_error": 1.1026859283447266e-06
+          },
+          {
+            "scenario": 0,
+            "question": "needs_review",
+            "max_logit_error": 9.5367431640625e-06,
+            "max_probability_error": 1.6689300537109375e-06
+          },
+          {
+            "scenario": 1,
+            "question": "accion",
+            "max_logit_error": 9.5367431640625e-06,
+            "max_probability_error": 3.337860107421875e-06
+          },
+          {
+            "scenario": 1,
+            "question": "nivel",
+            "max_logit_error": 9.5367431640625e-06,
+            "max_probability_error": 1.3560056686401367e-06
+          },
+          {
+            "scenario": 1,
+            "question": "named",
+            "max_logit_error": 1.71661376953125e-05,
+            "max_probability_error": 1.6093254089355469e-06
+          },
+          {
+            "scenario": 2,
+            "question": "one",
+            "max_logit_error": 5.7220458984375e-06,
+            "max_probability_error": 0.0
+          },
+          {
+            "scenario": 2,
+            "question": "no",
+            "max_logit_error": 1.33514404296875e-05,
+            "max_probability_error": 1.296401023864746e-06
+          }
+        ]
+      }
+    },
+    "q4k": {
+      "converter_supported": false,
+      "tracked_recipe_found": false,
+      "tracked_stage_ref_found": false,
+      "tracked_task_report_found": false,
+      "published_pinned_model_found": false,
+      "current_qualified": false
+    },
+    "independent_task_quality_qualified": false,
+    "gpu_qualified": false,
+    "performance_qualified": false,
+    "fp16": {
+      "exporter_supported": false,
+      "note": "Existing guide attributes overflow to publisher report; no FP16 artifact or native overflow experiment is established by this audit."
+    },
+    "search": {
+      "command": "rg -n Q4_K/Q4_0/q4_k/q4_0 in typed model docs/converter/ci-heavy helpers/tests/src",
+      "matches": 0,
+      "unrelated_models_excluded": [
+        "embeddinggemma-300m Q4_K/IQ4_XS registry entries",
+        "LFM2.5-Embedding-350M quantizations"
+      ]
+    },
+    "f32_results": {
+      "arm-f32-decisions": {
+        "native_commit": "1d5b42f7",
+        "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38359818133",
+        "contracts": "API/CLI/HTTP/schema/head/invalid/repeat PASS",
+        "questions": 8,
+        "max_probability_error": 4.827623687697624e-06,
+        "embeddings": [
+          {
+            "scenario": 0,
+            "texts": 13,
+            "cosine_min": 0.9999999403953552,
+            "relative_l2_error": 6.886171490805282e-07,
+            "max_absolute_error": 1.1920928955078125e-07,
+            "native_norm_min": 1.0,
+            "native_norm_max": 1.0
+          },
+          {
+            "scenario": 1,
+            "texts": 11,
+            "cosine_min": 1.0,
+            "relative_l2_error": 1.305256773775909e-06,
+            "max_absolute_error": 4.507601261138916e-07,
+            "native_norm_min": 0.9999999403953552,
+            "native_norm_max": 1.0
+          },
+          {
+            "scenario": 2,
+            "texts": 6,
+            "cosine_min": 0.9999999403953552,
+            "relative_l2_error": 7.52322250718862e-07,
+            "max_absolute_error": 1.4901161193847656e-07,
+            "native_norm_min": 1.0,
+            "native_norm_max": 1.0
+          }
+        ],
+        "head_on_reference_embeddings": [
+          {
+            "scenario": 0,
+            "question": "action",
+            "max_logit_error": 5.7220458984375e-06,
+            "max_probability_error": 1.1622905731201172e-06
+          },
+          {
+            "scenario": 0,
+            "question": "risk",
+            "max_logit_error": 9.5367431640625e-06,
+            "max_probability_error": 1.6838312149047852e-06
+          },
+          {
+            "scenario": 0,
+            "question": "needs_review",
+            "max_logit_error": 1.33514404296875e-05,
+            "max_probability_error": 2.9206275939941406e-06
+          },
+          {
+            "scenario": 1,
+            "question": "accion",
+            "max_logit_error": 9.5367431640625e-06,
+            "max_probability_error": 3.3974647521972656e-06
+          },
+          {
+            "scenario": 1,
+            "question": "nivel",
+            "max_logit_error": 1.1444091796875e-05,
+            "max_probability_error": 1.4901161193847656e-06
+          },
+          {
+            "scenario": 1,
+            "question": "named",
+            "max_logit_error": 1.1444091796875e-05,
+            "max_probability_error": 1.7881393432617188e-07
+          },
+          {
+            "scenario": 2,
+            "question": "one",
+            "max_logit_error": 5.7220458984375e-06,
+            "max_probability_error": 0.0
+          },
+          {
+            "scenario": 2,
+            "question": "no",
+            "max_logit_error": 1.33514404296875e-05,
+            "max_probability_error": 1.7285346984863281e-06
+          }
+        ]
+      },
+      "macos-f32-decisions": {
+        "native_commit": "1d5b42f7",
+        "workflow": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/38359820734",
+        "contracts": "API/CLI/HTTP/schema/head/invalid/repeat PASS",
+        "questions": 8,
+        "max_probability_error": 3.874786529523e-06,
+        "embeddings": [
+          {
+            "scenario": 0,
+            "texts": 13,
+            "cosine_min": 0.9999999403953552,
+            "relative_l2_error": 5.262393756311212e-07,
+            "max_absolute_error": 1.1920928955078125e-07,
+            "native_norm_min": 1.0,
+            "native_norm_max": 1.0
+          },
+          {
+            "scenario": 1,
+            "texts": 11,
+            "cosine_min": 1.0,
+            "relative_l2_error": 1.0078586001327494e-06,
+            "max_absolute_error": 3.91155481338501e-07,
+            "native_norm_min": 0.9999999403953552,
+            "native_norm_max": 1.0
+          },
+          {
+            "scenario": 2,
+            "texts": 6,
+            "cosine_min": 1.0,
+            "relative_l2_error": 5.478589173435466e-07,
+            "max_absolute_error": 1.1920928955078125e-07,
+            "native_norm_min": 1.0,
+            "native_norm_max": 1.0
+          }
+        ],
+        "head_on_reference_embeddings": [
+          {
+            "scenario": 0,
+            "question": "action",
+            "max_logit_error": 1.1444091796875e-05,
+            "max_probability_error": 8.642673492431641e-07
+          },
+          {
+            "scenario": 0,
+            "question": "risk",
+            "max_logit_error": 8.58306884765625e-06,
+            "max_probability_error": 1.1026859283447266e-06
+          },
+          {
+            "scenario": 0,
+            "question": "needs_review",
+            "max_logit_error": 9.5367431640625e-06,
+            "max_probability_error": 1.6689300537109375e-06
+          },
+          {
+            "scenario": 1,
+            "question": "accion",
+            "max_logit_error": 9.5367431640625e-06,
+            "max_probability_error": 3.337860107421875e-06
+          },
+          {
+            "scenario": 1,
+            "question": "nivel",
+            "max_logit_error": 9.5367431640625e-06,
+            "max_probability_error": 1.3560056686401367e-06
+          },
+          {
+            "scenario": 1,
+            "question": "named",
+            "max_logit_error": 1.71661376953125e-05,
+            "max_probability_error": 1.6093254089355469e-06
+          },
+          {
+            "scenario": 2,
+            "question": "one",
+            "max_logit_error": 5.7220458984375e-06,
+            "max_probability_error": 0.0
+          },
+          {
+            "scenario": 2,
+            "question": "no",
+            "max_logit_error": 1.33514404296875e-05,
+            "max_probability_error": 1.296401023864746e-06
+          }
+        ]
+      }
+    },
+    "client_precision_interpretation": {
+      "f32_rust_dart": {
+        "qualified_on_archived_reference_cases": true,
+        "helper": "tools/ci-heavy/gemma_decision_bindings.py",
+        "helper_git_blob_unchanged_since_publication": true,
+        "source_model_literal": "gemma-decision-f32.gguf",
+        "scenarios": 3
+      },
+      "q8_rust_dart": {
+        "precision_specific_actual_run_found": false,
+        "reason": "The real published helper hardcodes the F32 artifact; family-level bindings.json must not be applied to Q8."
+      },
+      "q8_c_python_cli_http": {
+        "archived_reference_cases_pass": true,
+        "measure_only_embedding_approximation": true
+      },
+      "q8_fresh_alias_cli": {
+        "run": 38375586578,
+        "answers": 8,
+        "max_probability_error": 0.002824783235900852
+      }
+    },
+    "gpu_implementation_status": {
+      "cpu_only": true,
+      "source": "src/gemma_decision.cpp",
+      "backend_init_line": 91,
+      "scheduler_backend_count": 1,
+      "explicit_backend": "ggml_backend_cpu_init",
+      "qualification_requires": "A new explicitly selected GPU/backend path and actual placement proof; allocating GPU hardware or generic CLI flags does not move this dedicated context."
+    }
+  },
+  "source_identity": {
+    "current_source": "5e3ff77c481ea852b78c01f96face483fa908a45",
+    "current_src_tree": "0dfb0da0fefe26185c5a585c1cda8c88952f2e7b",
+    "current_ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+    "current_paths": {
+      "src/lfm2_embed.cpp": {
+        "git_blob_oid": "764842c6e1b5a76767c9a10cb0d2ec9808337b35",
+        "sha256": "3403d8e490f953f45cd9cbbe9fe089ac07f3407c8cde613f58f7f28a65972ffe"
+      },
+      "src/lfm2_embed.h": {
+        "git_blob_oid": "1b97d85e4601b2ff4a08caa32e600044cfde7044",
+        "sha256": "99f42e9b892024c6e563d495b389b92260581c5869e4b1aafbad13dc4b7066ee"
+      },
+      "src/gemma_decision.cpp": {
+        "git_blob_oid": "102366038b3ee74818ed15a4e1e8a70c79b7898f",
+        "sha256": "8cc5b48786c908645e0fbfca1364a6f38427112ddc8789588b54a40528eac3e3"
+      },
+      "src/gemma_decision.h": {
+        "git_blob_oid": "beae36218844b6f1398b00d43b2b3c3e1e7e5558",
+        "sha256": "933eceab1c40a562adfdd83f6a968bc3e2f0d892f1eff2c1afc1a60f021aab09"
+      },
+      "src/core/quant_f32_matmul.h": {
+        "git_blob_oid": "d196d45b79f227df59b80b174700dd631f974d71",
+        "sha256": "a889681125f87187f506d2f63e4164842ac03e821d1dcb9ecb0cb42c9a9bef9a"
+      },
+      "src/core/decision_schema.h": {
+        "git_blob_oid": "46febcb8ef385b2ad88f9da580c13fb1d8b9ce26",
+        "sha256": "20f761bfa2761202333faf1e74cc92ad7c9f444719b5e4edea7e528edc79d52d"
+      },
+      "src/core/gguf_loader.cpp": {
+        "git_blob_oid": "0eb62837b68c48df88fddc5adf37477dd1a2927b",
+        "sha256": "069171bc417f2183cba8a4a0ccb7123bcb87d74fec3b89edd468e99acd1349bc"
+      },
+      "src/crispembed.cpp": {
+        "git_blob_oid": "aa27d617036ab70b3aed6b1e276bd8613b5397f7",
+        "sha256": "7f390317ab17bc5c89cfefb6d2ebb737f21dd81935f6df0ae3a74761c46aa35a"
+      },
+      "src/crispembed.h": {
+        "git_blob_oid": "3251521843885054ecf23aca467ed71a3e6d2a0c",
+        "sha256": "40d3be50d3478c7d6d76c1a71730334793c1fd37085731205cb497f71fb93372"
+      },
+      "CMakeLists.txt": {
+        "git_blob_oid": "9b8be802be5d99d6a7373585f04f610251446472",
+        "sha256": "d714311c81a573d1c8222494a07e7062b6d51b08b96173b0e0ffda02b3ed5ab3"
+      },
+      "tests/test_lfm2_diff.cpp": {
+        "git_blob_oid": "c95be94830e4d3ff7a521c1ffa32a0c445000a00",
+        "sha256": "e9aa9e063547c5a2bcab855592e251f836120461bc989e22f9acb4940933c992"
+      },
+      "tests/test_gemma_decision_diff.cpp": {
+        "git_blob_oid": "fbc359fba5e98e012a33848d96b0aa883f49a1ea",
+        "sha256": "c0399335fc624b187d0ac41f4d76794a97ff263552931f4aafe8ff107ccc022a"
+      }
+    },
+    "historical": {
+      "lfm-quant": {
+        "source": "209d46a421912aa82db6eeed26c7555bd236f6de",
+        "ggml": "890278a8342c620197c90e702e1188bcab94f510",
+        "paths": {
+          "src/lfm2_embed.cpp": {
+            "historical_git_blob_oid": "a6851fe0917112aa3d5fcb38ea6069d7e5f35b2a",
+            "current_equals_historical": false
+          },
+          "src/lfm2_embed.h": {
+            "historical_git_blob_oid": "1b97d85e4601b2ff4a08caa32e600044cfde7044",
+            "current_equals_historical": true
+          },
+          "src/gemma_decision.cpp": {
+            "historical_git_blob_oid": null,
+            "current_equals_historical": false
+          },
+          "src/gemma_decision.h": {
+            "historical_git_blob_oid": null,
+            "current_equals_historical": false
+          },
+          "src/core/quant_f32_matmul.h": {
+            "historical_git_blob_oid": null,
+            "current_equals_historical": false
+          },
+          "src/core/decision_schema.h": {
+            "historical_git_blob_oid": null,
+            "current_equals_historical": false
+          },
+          "src/core/gguf_loader.cpp": {
+            "historical_git_blob_oid": "8722089f1a392caac1e667c196bad5971c16e305",
+            "current_equals_historical": false
+          },
+          "src/crispembed.cpp": {
+            "historical_git_blob_oid": "91557422d2df47926252f201708448621e8bc5be",
+            "current_equals_historical": false
+          },
+          "src/crispembed.h": {
+            "historical_git_blob_oid": "f36cf7d9e4154d759d33767db12de376cb824f1f",
+            "current_equals_historical": false
+          },
+          "CMakeLists.txt": {
+            "historical_git_blob_oid": "3a8937abf1537c11ba56a9b0e53f694578ec2ceb",
+            "current_equals_historical": false
+          },
+          "tests/test_lfm2_diff.cpp": {
+            "historical_git_blob_oid": "d734bed2ab45b7c24e7000cbd361ed9adcd3b88b",
+            "current_equals_historical": false
+          },
+          "tests/test_gemma_decision_diff.cpp": {
+            "historical_git_blob_oid": null,
+            "current_equals_historical": false
+          }
+        }
+      },
+      "lfm-mixed": {
+        "source": "0fbbbd5c12d655fa41de20806042cf48f5da520e",
+        "ggml": "890278a8342c620197c90e702e1188bcab94f510",
+        "paths": {
+          "src/lfm2_embed.cpp": {
+            "historical_git_blob_oid": "a6851fe0917112aa3d5fcb38ea6069d7e5f35b2a",
+            "current_equals_historical": false
+          },
+          "src/lfm2_embed.h": {
+            "historical_git_blob_oid": "1b97d85e4601b2ff4a08caa32e600044cfde7044",
+            "current_equals_historical": true
+          },
+          "src/gemma_decision.cpp": {
+            "historical_git_blob_oid": null,
+            "current_equals_historical": false
+          },
+          "src/gemma_decision.h": {
+            "historical_git_blob_oid": null,
+            "current_equals_historical": false
+          },
+          "src/core/quant_f32_matmul.h": {
+            "historical_git_blob_oid": null,
+            "current_equals_historical": false
+          },
+          "src/core/decision_schema.h": {
+            "historical_git_blob_oid": null,
+            "current_equals_historical": false
+          },
+          "src/core/gguf_loader.cpp": {
+            "historical_git_blob_oid": "8722089f1a392caac1e667c196bad5971c16e305",
+            "current_equals_historical": false
+          },
+          "src/crispembed.cpp": {
+            "historical_git_blob_oid": "91557422d2df47926252f201708448621e8bc5be",
+            "current_equals_historical": false
+          },
+          "src/crispembed.h": {
+            "historical_git_blob_oid": "f36cf7d9e4154d759d33767db12de376cb824f1f",
+            "current_equals_historical": false
+          },
+          "CMakeLists.txt": {
+            "historical_git_blob_oid": "3a8937abf1537c11ba56a9b0e53f694578ec2ceb",
+            "current_equals_historical": false
+          },
+          "tests/test_lfm2_diff.cpp": {
+            "historical_git_blob_oid": "6fad1389ef95c36c3e2a8fd64f95ba75b0402fac",
+            "current_equals_historical": false
+          },
+          "tests/test_gemma_decision_diff.cpp": {
+            "historical_git_blob_oid": null,
+            "current_equals_historical": false
+          }
+        }
+      },
+      "lfm-arithmetic": {
+        "source": "60ecfe65f8e85edd28444e336d907216eabf1c59",
+        "ggml": "890278a8342c620197c90e702e1188bcab94f510",
+        "paths": {
+          "src/lfm2_embed.cpp": {
+            "historical_git_blob_oid": "764842c6e1b5a76767c9a10cb0d2ec9808337b35",
+            "current_equals_historical": true
+          },
+          "src/lfm2_embed.h": {
+            "historical_git_blob_oid": "1b97d85e4601b2ff4a08caa32e600044cfde7044",
+            "current_equals_historical": true
+          },
+          "src/gemma_decision.cpp": {
+            "historical_git_blob_oid": null,
+            "current_equals_historical": false
+          },
+          "src/gemma_decision.h": {
+            "historical_git_blob_oid": null,
+            "current_equals_historical": false
+          },
+          "src/core/quant_f32_matmul.h": {
+            "historical_git_blob_oid": "d196d45b79f227df59b80b174700dd631f974d71",
+            "current_equals_historical": true
+          },
+          "src/core/decision_schema.h": {
+            "historical_git_blob_oid": null,
+            "current_equals_historical": false
+          },
+          "src/core/gguf_loader.cpp": {
+            "historical_git_blob_oid": "8722089f1a392caac1e667c196bad5971c16e305",
+            "current_equals_historical": false
+          },
+          "src/crispembed.cpp": {
+            "historical_git_blob_oid": "91557422d2df47926252f201708448621e8bc5be",
+            "current_equals_historical": false
+          },
+          "src/crispembed.h": {
+            "historical_git_blob_oid": "f36cf7d9e4154d759d33767db12de376cb824f1f",
+            "current_equals_historical": false
+          },
+          "CMakeLists.txt": {
+            "historical_git_blob_oid": "08c9e859ef812a7878bffc9af0ac5d9265f24f1f",
+            "current_equals_historical": false
+          },
+          "tests/test_lfm2_diff.cpp": {
+            "historical_git_blob_oid": "6fad1389ef95c36c3e2a8fd64f95ba75b0402fac",
+            "current_equals_historical": false
+          },
+          "tests/test_gemma_decision_diff.cpp": {
+            "historical_git_blob_oid": null,
+            "current_equals_historical": false
+          }
+        }
+      },
+      "lfm-cuda": {
+        "source": "898af2c2a76369ceecd700a2b021ca001483a9c1",
+        "ggml": "890278a8342c620197c90e702e1188bcab94f510",
+        "paths": {
+          "src/lfm2_embed.cpp": {
+            "historical_git_blob_oid": "764842c6e1b5a76767c9a10cb0d2ec9808337b35",
+            "current_equals_historical": true
+          },
+          "src/lfm2_embed.h": {
+            "historical_git_blob_oid": "1b97d85e4601b2ff4a08caa32e600044cfde7044",
+            "current_equals_historical": true
+          },
+          "src/gemma_decision.cpp": {
+            "historical_git_blob_oid": "102366038b3ee74818ed15a4e1e8a70c79b7898f",
+            "current_equals_historical": true
+          },
+          "src/gemma_decision.h": {
+            "historical_git_blob_oid": "beae36218844b6f1398b00d43b2b3c3e1e7e5558",
+            "current_equals_historical": true
+          },
+          "src/core/quant_f32_matmul.h": {
+            "historical_git_blob_oid": "d196d45b79f227df59b80b174700dd631f974d71",
+            "current_equals_historical": true
+          },
+          "src/core/decision_schema.h": {
+            "historical_git_blob_oid": "46febcb8ef385b2ad88f9da580c13fb1d8b9ce26",
+            "current_equals_historical": true
+          },
+          "src/core/gguf_loader.cpp": {
+            "historical_git_blob_oid": "8722089f1a392caac1e667c196bad5971c16e305",
+            "current_equals_historical": false
+          },
+          "src/crispembed.cpp": {
+            "historical_git_blob_oid": "3d92cc91b5a2b9485a9d133189bb484cf6721d56",
+            "current_equals_historical": false
+          },
+          "src/crispembed.h": {
+            "historical_git_blob_oid": "d2a78c7165afc61a6625de6c41281be5b9360339",
+            "current_equals_historical": false
+          },
+          "CMakeLists.txt": {
+            "historical_git_blob_oid": "e17590258e89a7cb0d53d142318e694ab11eead9",
+            "current_equals_historical": false
+          },
+          "tests/test_lfm2_diff.cpp": {
+            "historical_git_blob_oid": "c95be94830e4d3ff7a521c1ffa32a0c445000a00",
+            "current_equals_historical": true
+          },
+          "tests/test_gemma_decision_diff.cpp": {
+            "historical_git_blob_oid": "fbc359fba5e98e012a33848d96b0aa883f49a1ea",
+            "current_equals_historical": true
+          }
+        }
+      },
+      "gemma-f32-layers": {
+        "source": "82383e3e425f55bcf794b28543d6f1c38def1688",
+        "ggml": "890278a8342c620197c90e702e1188bcab94f510",
+        "paths": {
+          "src/lfm2_embed.cpp": {
+            "historical_git_blob_oid": "764842c6e1b5a76767c9a10cb0d2ec9808337b35",
+            "current_equals_historical": true
+          },
+          "src/lfm2_embed.h": {
+            "historical_git_blob_oid": "1b97d85e4601b2ff4a08caa32e600044cfde7044",
+            "current_equals_historical": true
+          },
+          "src/gemma_decision.cpp": {
+            "historical_git_blob_oid": "102366038b3ee74818ed15a4e1e8a70c79b7898f",
+            "current_equals_historical": true
+          },
+          "src/gemma_decision.h": {
+            "historical_git_blob_oid": "beae36218844b6f1398b00d43b2b3c3e1e7e5558",
+            "current_equals_historical": true
+          },
+          "src/core/quant_f32_matmul.h": {
+            "historical_git_blob_oid": "d196d45b79f227df59b80b174700dd631f974d71",
+            "current_equals_historical": true
+          },
+          "src/core/decision_schema.h": {
+            "historical_git_blob_oid": "39b6966b884d1e4a3bd646370dd3ea761f35e2ce",
+            "current_equals_historical": false
+          },
+          "src/core/gguf_loader.cpp": {
+            "historical_git_blob_oid": "8722089f1a392caac1e667c196bad5971c16e305",
+            "current_equals_historical": false
+          },
+          "src/crispembed.cpp": {
+            "historical_git_blob_oid": "1979d090ed2c2d7dd067174a60f887660a42144a",
+            "current_equals_historical": false
+          },
+          "src/crispembed.h": {
+            "historical_git_blob_oid": "ea6ddcd740a46703cbcf7863f835ac0081735a66",
+            "current_equals_historical": false
+          },
+          "CMakeLists.txt": {
+            "historical_git_blob_oid": "1c544a51773cd56784196bffb7d193ddc0ddfc8b",
+            "current_equals_historical": false
+          },
+          "tests/test_lfm2_diff.cpp": {
+            "historical_git_blob_oid": "6fad1389ef95c36c3e2a8fd64f95ba75b0402fac",
+            "current_equals_historical": false
+          },
+          "tests/test_gemma_decision_diff.cpp": {
+            "historical_git_blob_oid": "fbc359fba5e98e012a33848d96b0aa883f49a1ea",
+            "current_equals_historical": true
+          }
+        }
+      },
+      "gemma-publication": {
+        "source": "17c08b3c25da81940ddb3d1a6634cf54c6dd50f6",
+        "ggml": "890278a8342c620197c90e702e1188bcab94f510",
+        "paths": {
+          "src/lfm2_embed.cpp": {
+            "historical_git_blob_oid": "764842c6e1b5a76767c9a10cb0d2ec9808337b35",
+            "current_equals_historical": true
+          },
+          "src/lfm2_embed.h": {
+            "historical_git_blob_oid": "1b97d85e4601b2ff4a08caa32e600044cfde7044",
+            "current_equals_historical": true
+          },
+          "src/gemma_decision.cpp": {
+            "historical_git_blob_oid": "102366038b3ee74818ed15a4e1e8a70c79b7898f",
+            "current_equals_historical": true
+          },
+          "src/gemma_decision.h": {
+            "historical_git_blob_oid": "beae36218844b6f1398b00d43b2b3c3e1e7e5558",
+            "current_equals_historical": true
+          },
+          "src/core/quant_f32_matmul.h": {
+            "historical_git_blob_oid": "d196d45b79f227df59b80b174700dd631f974d71",
+            "current_equals_historical": true
+          },
+          "src/core/decision_schema.h": {
+            "historical_git_blob_oid": "46febcb8ef385b2ad88f9da580c13fb1d8b9ce26",
+            "current_equals_historical": true
+          },
+          "src/core/gguf_loader.cpp": {
+            "historical_git_blob_oid": "8722089f1a392caac1e667c196bad5971c16e305",
+            "current_equals_historical": false
+          },
+          "src/crispembed.cpp": {
+            "historical_git_blob_oid": "1979d090ed2c2d7dd067174a60f887660a42144a",
+            "current_equals_historical": false
+          },
+          "src/crispembed.h": {
+            "historical_git_blob_oid": "ea6ddcd740a46703cbcf7863f835ac0081735a66",
+            "current_equals_historical": false
+          },
+          "CMakeLists.txt": {
+            "historical_git_blob_oid": "c5ff158d61d068a1e844528c8f715ec30688f520",
+            "current_equals_historical": false
+          },
+          "tests/test_lfm2_diff.cpp": {
+            "historical_git_blob_oid": "6fad1389ef95c36c3e2a8fd64f95ba75b0402fac",
+            "current_equals_historical": false
+          },
+          "tests/test_gemma_decision_diff.cpp": {
+            "historical_git_blob_oid": "fbc359fba5e98e012a33848d96b0aa883f49a1ea",
+            "current_equals_historical": true
+          }
+        }
+      },
+      "gemma-empty-cache-readback": {
+        "source": "9b472380e19737d45ebc9abe7e07d0abe7bb3225",
+        "ggml": "890278a8342c620197c90e702e1188bcab94f510",
+        "paths": {
+          "src/lfm2_embed.cpp": {
+            "historical_git_blob_oid": "764842c6e1b5a76767c9a10cb0d2ec9808337b35",
+            "current_equals_historical": true
+          },
+          "src/lfm2_embed.h": {
+            "historical_git_blob_oid": "1b97d85e4601b2ff4a08caa32e600044cfde7044",
+            "current_equals_historical": true
+          },
+          "src/gemma_decision.cpp": {
+            "historical_git_blob_oid": "102366038b3ee74818ed15a4e1e8a70c79b7898f",
+            "current_equals_historical": true
+          },
+          "src/gemma_decision.h": {
+            "historical_git_blob_oid": "beae36218844b6f1398b00d43b2b3c3e1e7e5558",
+            "current_equals_historical": true
+          },
+          "src/core/quant_f32_matmul.h": {
+            "historical_git_blob_oid": "d196d45b79f227df59b80b174700dd631f974d71",
+            "current_equals_historical": true
+          },
+          "src/core/decision_schema.h": {
+            "historical_git_blob_oid": "46febcb8ef385b2ad88f9da580c13fb1d8b9ce26",
+            "current_equals_historical": true
+          },
+          "src/core/gguf_loader.cpp": {
+            "historical_git_blob_oid": "8722089f1a392caac1e667c196bad5971c16e305",
+            "current_equals_historical": false
+          },
+          "src/crispembed.cpp": {
+            "historical_git_blob_oid": "1979d090ed2c2d7dd067174a60f887660a42144a",
+            "current_equals_historical": false
+          },
+          "src/crispembed.h": {
+            "historical_git_blob_oid": "ea6ddcd740a46703cbcf7863f835ac0081735a66",
+            "current_equals_historical": false
+          },
+          "CMakeLists.txt": {
+            "historical_git_blob_oid": "c5ff158d61d068a1e844528c8f715ec30688f520",
+            "current_equals_historical": false
+          },
+          "tests/test_lfm2_diff.cpp": {
+            "historical_git_blob_oid": "6fad1389ef95c36c3e2a8fd64f95ba75b0402fac",
+            "current_equals_historical": false
+          },
+          "tests/test_gemma_decision_diff.cpp": {
+            "historical_git_blob_oid": "fbc359fba5e98e012a33848d96b0aa883f49a1ea",
+            "current_equals_historical": true
+          }
+        }
+      }
+    },
+    "caveat": "Model-specific LFM arithmetic since60ec and Gemma since17c can be unchanged while loader/glue/root CMake and backend differ. Archived old890 results do not by themselves qualify current a06 shared binaries. No current numerical replay executed."
+  },
+  "unknowns": [
+    "Published GGUF general.file_type/quantization_version fields were not read: tree metadata proves immutable object identity, not GGUF header contents. Do not confuse Q4_K tensor storage enum12 with canonical file-type enum14/15.",
+    "Typed-Gemma Q8 per-tensor actual type census/preserved-payload hashes are not recorded in tracked validation summaries; preservation policy is source-derived. A hosted header/inventory audit can close this without an original forward.",
+    "Exact original LFM HF checkpoint revision is not recorded in the old quantization/mixed/arithmetic manifests; immutable original-fp32 fixture revision/file identities and GGUF model hashes are available. Do not choose a newer checkpoint as fallback.",
+    "No representative independent task benchmark, new precision GPU/MMQ result, current exact full-stack consumer replay or typed-Gemma Q4_K evidence is established here.",
+    "Precision-specific Q8 Rust/Dart typed-Gemma and quantized LFM encoder Rust/Dart runs were not found; existing helpers/examples are F32/F16-scoped or generic path acceptance, not a measured low-precision receipt.",
+    "Legacy CPU quantization/arithmetic summaries record source/backend/thread identities but not a complete modern compiler-cache closure; future current-source replay must record actual flags, binaries and backend placement."
+  ],
+  "next_steps": [
+    {
+      "id": "E1",
+      "lane": "Historical-to-current replay closure",
+      "action": "Freeze a replay-only current-source/runtime/compiler contract. Authenticate existing model/fixture Git/LFS identities on hosted CPU; never call old dump/validate helpers that regenerate original references.",
+      "acceptance": "Current F16 LFM and FP32 typed-Gemma controls first, exact IDs/rendering/vocabulary/typed outputs and legacy numerical gates. Actual Ref+independent errors/norms; ordinary/observer/repeat and source/binary provenance. Quantized drift separate."
+    },
+    {
+      "id": "E2",
+      "lane": "Typed-Gemma first Q4_K",
+      "action": "Prepare model-specific lossless FP32-to-protected-Q4_K recipe and inventory. Protect trained head, output projection, temperatures, norms/biases/scalars in F32; inspect each eligible row width, reject fallback/mislabeled Q4_0. Freeze any quant calibration corpus before outputs; keep fitted task temperatures unchanged.",
+      "acceptance": "Use existing five145-stage fixtures and8 typed answers, exact tokenizer/render/head/public clients; compare all intermediates and final calibrated probabilities/typed values. First run is development approximation, no independent task or publication claim."
+    },
+    {
+      "id": "E3",
+      "lane": "Existing LFM Q8/Q4 task qualification",
+      "action": "Reuse official Q8 and published calibratedQ4/mixed profiles plus original and same-Q8 fixtures. Preserve all rejected old precision profiles and compare arithmetic mode explicitly. Predeclare representative licensed heldout task/metric gates, separate from15 probes used for recipe selection.",
+      "acceptance": "No new original15-case capture; frozen original predictions remain authority for parity. Independent task quality must be measured before any qualified/default claim;14/15 is not parity or task accuracy."
+    },
+    {
+      "id": "E4",
+      "lane": "GPU low-precision and performance",
+      "action": "After CPU source closure, predeclare explicit CUDA/device/Q8 andQ4/MMQ profiles. Reuse frozen refs, actual backend placement, same-weight controls, per-layer Ref, ordinary scheduling, decoded output and paired timing/RSS. Typed-Gemma currently constructs a CPU-only context; implement explicit GPU selection/admission before any genuine GPU qualification task rather than assuming generic CLI GPU flags move it.",
+      "acceptance": "No CPU fallback/GPU lottery; F16 T4 success and420 timings do not qualify Q8/Q4 or other devices. Limits remain distinct from task accuracy."
+    },
+    {
+      "id": "E5",
+      "lane": "Metadata/current public consumers",
+      "action": "Hosted-only inspect actual GGUF tensor inventory/header metadata; record canonical filetype separately from stored tensor types and preserve old byte identities. Reuse existing aliases/binding tests for a current-source empty-cache readback when required, no republish in this audit. Explicitly extend typed-Gemma Rust/Dart to Q8 (current helper is F32-only), and audit per-precision LFM Rust/Dart evidence instead of borrowing retrieval-model tests.",
+      "acceptance": "Require whole-file SHA on hosted consumer and C/Python/Rust/Dart/CLI/HTTP contracts appropriate to each model. Metadata-only API checks here are not a new payload download/readback."
+    }
+  ],
+  "report_mirror_metadata_checks": [
+    {
+      "local_file": "tests/results/lfm2-encoder/arithmetic_audit.json",
+      "repository": "cstr/LFM2.5-Encoder-230M-GGUF",
+      "revision": "dcb63d20fd326e705f0b1c74b0b61e529b0d5cc0",
+      "remote_file": "results/arithmetic_audit.json",
+      "bytes": 764679,
+      "remote_bytes": 764679,
+      "local_git_blob_oid": "35f4fefea4c0fe6af606350b0364f51dfe450b6b",
+      "remote_git_blob_oid": "35f4fefea4c0fe6af606350b0364f51dfe450b6b",
+      "exact_mirror": true
+    },
+    {
+      "local_file": "tests/results/lfm2-encoder/mixed_precision.json",
+      "repository": "cstr/LFM2.5-Encoder-230M-GGUF",
+      "revision": "dcb63d20fd326e705f0b1c74b0b61e529b0d5cc0",
+      "remote_file": "results/mixed_precision.json",
+      "bytes": 406583,
+      "remote_bytes": 406583,
+      "local_git_blob_oid": "ffbe47e6e1ddd1e41ad6cbb486f5fdea1242246a",
+      "remote_git_blob_oid": "ffbe47e6e1ddd1e41ad6cbb486f5fdea1242246a",
+      "exact_mirror": true
+    },
+    {
+      "local_file": "tests/results/lfm2-encoder/quantization.json",
+      "repository": "cstr/LFM2.5-Encoder-230M-GGUF",
+      "revision": "dcb63d20fd326e705f0b1c74b0b61e529b0d5cc0",
+      "remote_file": "results/quantization.json",
+      "bytes": 181832,
+      "remote_bytes": 181832,
+      "local_git_blob_oid": "315d4429b718bad20c1ee98812dfa839e1c4f86d",
+      "remote_git_blob_oid": "315d4429b718bad20c1ee98812dfa839e1c4f86d",
+      "exact_mirror": true
+    },
+    {
+      "local_file": "tests/results/gemma-decision/arm-f32-decisions.json",
+      "repository": "cstr/embeddinggemma-2-ft-typed-decision-GGUF",
+      "revision": "d8427e48a0c20bc63216d332ec0b5e8ec43430c9",
+      "remote_file": "results/arm-f32-decisions.json",
+      "bytes": 7757,
+      "remote_bytes": 7757,
+      "local_git_blob_oid": "5294d6e4615f2aa8dc324a452c877494cadc3373",
+      "remote_git_blob_oid": "5294d6e4615f2aa8dc324a452c877494cadc3373",
+      "exact_mirror": true
+    },
+    {
+      "local_file": "tests/results/gemma-decision/arm-q8-decisions.json",
+      "repository": "cstr/embeddinggemma-2-ft-typed-decision-GGUF",
+      "revision": "d8427e48a0c20bc63216d332ec0b5e8ec43430c9",
+      "remote_file": "results/arm-q8-decisions.json",
+      "bytes": 7766,
+      "remote_bytes": 7766,
+      "local_git_blob_oid": "3e7c53f048b0c6634eab2838d7ab26c6b5c66df6",
+      "remote_git_blob_oid": "3e7c53f048b0c6634eab2838d7ab26c6b5c66df6",
+      "exact_mirror": true
+    },
+    {
+      "local_file": "tests/results/gemma-decision/bindings.json",
+      "repository": "cstr/embeddinggemma-2-ft-typed-decision-GGUF",
+      "revision": "d8427e48a0c20bc63216d332ec0b5e8ec43430c9",
+      "remote_file": "results/bindings.json",
+      "bytes": 163,
+      "remote_bytes": 163,
+      "local_git_blob_oid": "4348e5aa896cd350f1351587976b1060769076aa",
+      "remote_git_blob_oid": "4348e5aa896cd350f1351587976b1060769076aa",
+      "exact_mirror": true
+    },
+    {
+      "local_file": "tests/results/gemma-decision/macos-f32-decisions.json",
+      "repository": "cstr/embeddinggemma-2-ft-typed-decision-GGUF",
+      "revision": "d8427e48a0c20bc63216d332ec0b5e8ec43430c9",
+      "remote_file": "results/macos-f32-decisions.json",
+      "bytes": 7768,
+      "remote_bytes": 7768,
+      "local_git_blob_oid": "8217b409c91c5982c48a9bc4ba0fec03e5db8f0d",
+      "remote_git_blob_oid": "8217b409c91c5982c48a9bc4ba0fec03e5db8f0d",
+      "exact_mirror": true
+    },
+    {
+      "local_file": "tests/results/gemma-decision/macos-q8-decisions.json",
+      "repository": "cstr/embeddinggemma-2-ft-typed-decision-GGUF",
+      "revision": "d8427e48a0c20bc63216d332ec0b5e8ec43430c9",
+      "remote_file": "results/macos-q8-decisions.json",
+      "bytes": 7808,
+      "remote_bytes": 7808,
+      "local_git_blob_oid": "ced3cf35f8b5925511289e078278cc8366b90291",
+      "remote_git_blob_oid": "ced3cf35f8b5925511289e078278cc8366b90291",
+      "exact_mirror": true
+    },
+    {
+      "local_file": "tests/results/gemma-decision/publication.json",
+      "repository": "cstr/embeddinggemma-2-ft-typed-decision-GGUF",
+      "revision": "d8427e48a0c20bc63216d332ec0b5e8ec43430c9",
+      "remote_file": "results/publication.json",
+      "bytes": 4118,
+      "remote_bytes": 2579,
+      "local_git_blob_oid": "a57e6cb25fe524e4a903f83671b8b209cc5106dd",
+      "remote_git_blob_oid": "4fcbb4d0215a3b804451f571a707d2f0bac6af90",
+      "exact_mirror": false
+    },
+    {
+      "local_file": "tests/results/gemma-decision/validated-artifacts.json",
+      "repository": "cstr/embeddinggemma-2-ft-typed-decision-GGUF",
+      "revision": "d8427e48a0c20bc63216d332ec0b5e8ec43430c9",
+      "remote_file": "results/validated-artifacts.json",
+      "bytes": 3285,
+      "remote_bytes": 2721,
+      "local_git_blob_oid": "9068d5c7f9dea910825b223406afdfcdf658827d",
+      "remote_git_blob_oid": "4b0f6c157ccd46f3aacc79c5a91c2771ef73588c",
+      "exact_mirror": false
+    },
+    {
+      "local_file": "tests/results/gemma-decision/publication.json",
+      "repository": "cstr/embeddinggemma-2-ft-typed-decision-GGUF",
+      "revision": "7a093624993386b42e0b99d0cc3e7f25f9534fa4",
+      "remote_file": "results/publication.json",
+      "bytes": 4118,
+      "remote_bytes": 4044,
+      "local_git_blob_oid": "a57e6cb25fe524e4a903f83671b8b209cc5106dd",
+      "remote_git_blob_oid": "63884fbd4d23c0e5774d8e4d4c7ca74368645e8a",
+      "exact_mirror": false
+    },
+    {
+      "local_file": "tests/results/gemma-decision/registry.json",
+      "repository": "cstr/embeddinggemma-2-ft-typed-decision-GGUF",
+      "revision": "7a093624993386b42e0b99d0cc3e7f25f9534fa4",
+      "remote_file": "results/registry.json",
+      "bytes": 693,
+      "remote_bytes": 693,
+      "local_git_blob_oid": "68d0cde412c5172ddc887a39c0f297ba82c36dae",
+      "remote_git_blob_oid": "68d0cde412c5172ddc887a39c0f297ba82c36dae",
+      "exact_mirror": true
+    },
+    {
+      "local_file": "tests/results/gemma-decision/validated-artifacts.json",
+      "repository": "cstr/embeddinggemma-2-ft-typed-decision-GGUF",
+      "revision": "7a093624993386b42e0b99d0cc3e7f25f9534fa4",
+      "remote_file": "results/validated-artifacts.json",
+      "bytes": 3285,
+      "remote_bytes": 2721,
+      "local_git_blob_oid": "9068d5c7f9dea910825b223406afdfcdf658827d",
+      "remote_git_blob_oid": "4b0f6c157ccd46f3aacc79c5a91c2771ef73588c",
+      "exact_mirror": false
+    }
+  ],
+  "report_mirror_interpretation": "Eight scalar audit reports match exact Git blob identities at weight revisions, and the registry report matches its later pinned revision. Local Gemma publication/validated-artifact wrappers are not byte mirrors of the older remote reports. Remote report bodies were not downloaded, so no stronger correspondence or equality is asserted.",
+  "current_full_runtime_replay_performed": false
+}

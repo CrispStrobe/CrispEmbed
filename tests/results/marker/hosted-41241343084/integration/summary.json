@@ -1,0 +1,970 @@
+{
+  "schema_version": 1,
+  "scope": "Owned digital-PDF native integration; no Surya or model parity claim",
+  "checks": [
+    {
+      "name": "simpledigital: fixture hash",
+      "passed": true
+    },
+    {
+      "name": "simpledigital: pages",
+      "passed": true
+    },
+    {
+      "name": "simpledigital: provenance",
+      "passed": true
+    },
+    {
+      "name": "simpledigital: no model tokens",
+      "passed": true
+    },
+    {
+      "name": "simpledigital: visible content",
+      "passed": true,
+      "missing": []
+    },
+    {
+      "name": "simpledigital: unique block IDs",
+      "passed": true
+    },
+    {
+      "name": "simpledigital: finite geometry",
+      "passed": true
+    },
+    {
+      "name": "simpledigital: chunk pages",
+      "passed": true
+    },
+    {
+      "name": "simpledigital: heading",
+      "passed": true
+    },
+    {
+      "name": "simpledigital: save",
+      "passed": true
+    },
+    {
+      "name": "unicode: fixture hash",
+      "passed": true
+    },
+    {
+      "name": "unicode: pages",
+      "passed": true
+    },
+    {
+      "name": "unicode: provenance",
+      "passed": true
+    },
+    {
+      "name": "unicode: no model tokens",
+      "passed": true
+    },
+    {
+      "name": "unicode: visible content",
+      "passed": true,
+      "missing": []
+    },
+    {
+      "name": "unicode: unique block IDs",
+      "passed": true
+    },
+    {
+      "name": "unicode: finite geometry",
+      "passed": true
+    },
+    {
+      "name": "unicode: chunk pages",
+      "passed": true
+    },
+    {
+      "name": "unicode: heading",
+      "passed": true
+    },
+    {
+      "name": "Unicode escaped script",
+      "passed": true
+    },
+    {
+      "name": "Markdown literal escaping",
+      "passed": true
+    },
+    {
+      "name": "unicode: save",
+      "passed": true
+    },
+    {
+      "name": "structure: fixture hash",
+      "passed": true
+    },
+    {
+      "name": "structure: pages",
+      "passed": true
+    },
+    {
+      "name": "structure: provenance",
+      "passed": true
+    },
+    {
+      "name": "structure: no model tokens",
+      "passed": true
+    },
+    {
+      "name": "structure: visible content",
+      "passed": true,
+      "missing": []
+    },
+    {
+      "name": "structure: unique block IDs",
+      "passed": true
+    },
+    {
+      "name": "structure: finite geometry",
+      "passed": true
+    },
+    {
+      "name": "structure: chunk pages",
+      "passed": true
+    },
+    {
+      "name": "structure: all headings",
+      "passed": true,
+      "actual": [
+        "Document structure",
+        "1. Overview",
+        "2. Code example"
+      ]
+    },
+    {
+      "name": "structure: semantic list items",
+      "passed": true,
+      "actual": [
+        "First owned list item",
+        "Second owned list item"
+      ]
+    },
+    {
+      "name": "structure: exact code indentation",
+      "passed": true,
+      "actual": "if (left < right) {\n    print(\"safe & literal\");\n}"
+    },
+    {
+      "name": "structure: save",
+      "passed": true
+    },
+    {
+      "name": "multicolumn: fixture hash",
+      "passed": true
+    },
+    {
+      "name": "multicolumn: pages",
+      "passed": true
+    },
+    {
+      "name": "multicolumn: provenance",
+      "passed": true
+    },
+    {
+      "name": "multicolumn: no model tokens",
+      "passed": true
+    },
+    {
+      "name": "multicolumn: visible content",
+      "passed": true,
+      "missing": []
+    },
+    {
+      "name": "multicolumn: unique block IDs",
+      "passed": true
+    },
+    {
+      "name": "multicolumn: finite geometry",
+      "passed": true
+    },
+    {
+      "name": "multicolumn: chunk pages",
+      "passed": true
+    },
+    {
+      "name": "multicolumn: heading",
+      "passed": true
+    },
+    {
+      "name": "Column reading order",
+      "passed": true,
+      "positions": [
+        0,
+        25,
+        37,
+        62,
+        84,
+        113,
+        126,
+        149,
+        172
+      ]
+    },
+    {
+      "name": "multicolumn: save",
+      "passed": true
+    },
+    {
+      "name": "table: fixture hash",
+      "passed": true
+    },
+    {
+      "name": "table: pages",
+      "passed": true
+    },
+    {
+      "name": "table: provenance",
+      "passed": true
+    },
+    {
+      "name": "table: no model tokens",
+      "passed": true
+    },
+    {
+      "name": "table: visible content",
+      "passed": true,
+      "missing": []
+    },
+    {
+      "name": "table: unique block IDs",
+      "passed": true
+    },
+    {
+      "name": "table: finite geometry",
+      "passed": true
+    },
+    {
+      "name": "table: chunk pages",
+      "passed": true
+    },
+    {
+      "name": "table: heading",
+      "passed": true
+    },
+    {
+      "name": "Digital table structure",
+      "passed": true
+    },
+    {
+      "name": "Digital table cells",
+      "passed": true
+    },
+    {
+      "name": "table: save",
+      "passed": true
+    },
+    {
+      "name": "multipage: fixture hash",
+      "passed": true
+    },
+    {
+      "name": "multipage: pages",
+      "passed": true
+    },
+    {
+      "name": "multipage: provenance",
+      "passed": true
+    },
+    {
+      "name": "multipage: no model tokens",
+      "passed": true
+    },
+    {
+      "name": "multipage: visible content",
+      "passed": true,
+      "missing": []
+    },
+    {
+      "name": "multipage: unique block IDs",
+      "passed": true
+    },
+    {
+      "name": "multipage: finite geometry",
+      "passed": true
+    },
+    {
+      "name": "multipage: chunk pages",
+      "passed": true
+    },
+    {
+      "name": "multipage: save",
+      "passed": true
+    },
+    {
+      "name": "rotated: fixture hash",
+      "passed": true
+    },
+    {
+      "name": "rotated: pages",
+      "passed": true
+    },
+    {
+      "name": "rotated: provenance",
+      "passed": true
+    },
+    {
+      "name": "rotated: no model tokens",
+      "passed": true
+    },
+    {
+      "name": "rotated: visible content",
+      "passed": true,
+      "missing": []
+    },
+    {
+      "name": "rotated: unique block IDs",
+      "passed": true
+    },
+    {
+      "name": "rotated: finite geometry",
+      "passed": true
+    },
+    {
+      "name": "rotated: chunk pages",
+      "passed": true
+    },
+    {
+      "name": "rotated: save",
+      "passed": true
+    },
+    {
+      "name": "encrypted: fixture hash",
+      "passed": true
+    },
+    {
+      "name": "encrypted: pages",
+      "passed": true
+    },
+    {
+      "name": "encrypted: provenance",
+      "passed": true
+    },
+    {
+      "name": "encrypted: no model tokens",
+      "passed": true
+    },
+    {
+      "name": "encrypted: visible content",
+      "passed": true,
+      "missing": []
+    },
+    {
+      "name": "encrypted: unique block IDs",
+      "passed": true
+    },
+    {
+      "name": "encrypted: finite geometry",
+      "passed": true
+    },
+    {
+      "name": "encrypted: chunk pages",
+      "passed": true
+    },
+    {
+      "name": "encrypted: save",
+      "passed": true
+    },
+    {
+      "name": "Inclusive page range",
+      "passed": true
+    },
+    {
+      "name": "bad format",
+      "passed": true,
+      "error": "Unknown document format 'invalid' (expected markdown, html, json, or chunks)."
+    },
+    {
+      "name": "render recovery",
+      "passed": true
+    },
+    {
+      "name": "missing file",
+      "passed": true,
+      "error": "cannot open input file"
+    },
+    {
+      "name": "stale output cleared",
+      "passed": true,
+      "error": "no successful Marker conversion"
+    },
+    {
+      "name": "conversion recovery",
+      "passed": true
+    },
+    {
+      "name": "encrypted needs password",
+      "passed": true,
+      "error": "marker: PDF needs the correct password"
+    },
+    {
+      "name": "text mode refuses image",
+      "passed": true,
+      "error": "digital-text mode requires a PDF text layer; use auto/force-OCR for images"
+    },
+    {
+      "name": "raw wrong dtype",
+      "passed": true,
+      "error": "image must be a uint8 gray/RGB/RGBA array"
+    },
+    {
+      "name": "NUL path",
+      "passed": true,
+      "error": "path must be a NUL-free string"
+    },
+    {
+      "name": "NUL format",
+      "passed": true,
+      "error": "output_format must be a NUL-free string"
+    },
+    {
+      "name": "use after close",
+      "passed": true,
+      "error": "Marker context is closed"
+    },
+    {
+      "name": "max pages",
+      "passed": true,
+      "error": "PDF exceeds selected page limit"
+    },
+    {
+      "name": "out of range page",
+      "passed": true,
+      "error": "PDF page range exceeds document"
+    },
+    {
+      "name": "missing PDFium",
+      "passed": true,
+      "error": "marker: an explicit PDFium library path is required"
+    },
+    {
+      "name": "negative pixel config",
+      "passed": true,
+      "error": "max_pixels is out of range"
+    },
+    {
+      "name": "Python disabled gate",
+      "passed": true,
+      "error": "Marker requires CRISPEMBED_MARKER=1"
+    },
+    {
+      "name": "CLI markdown",
+      "passed": true,
+      "stderr": "Converted /home/runner/work/CrispEmbed/CrispEmbed/tests/fixtures/marker/simpledigital.pdf -> /home/runner/work/_temp/out/integration/cli-markdown.txt (0 image assets)\n"
+    },
+    {
+      "name": "CLI html",
+      "passed": true,
+      "stderr": "Converted /home/runner/work/CrispEmbed/CrispEmbed/tests/fixtures/marker/simpledigital.pdf -> /home/runner/work/_temp/out/integration/cli-html.txt (0 image assets)\n"
+    },
+    {
+      "name": "CLI json",
+      "passed": true,
+      "stderr": "Converted /home/runner/work/CrispEmbed/CrispEmbed/tests/fixtures/marker/simpledigital.pdf -> /home/runner/work/_temp/out/integration/cli-json.txt (0 image assets)\n"
+    },
+    {
+      "name": "CLI chunks",
+      "passed": true,
+      "stderr": "Converted /home/runner/work/CrispEmbed/CrispEmbed/tests/fixtures/marker/simpledigital.pdf -> /home/runner/work/_temp/out/integration/cli-chunks.txt (0 image assets)\n"
+    },
+    {
+      "name": "CLI disabled gate",
+      "passed": true
+    },
+    {
+      "name": "HTTP markdown",
+      "passed": true
+    },
+    {
+      "name": "HTTP html",
+      "passed": true
+    },
+    {
+      "name": "HTTP json",
+      "passed": true
+    },
+    {
+      "name": "HTTP chunks",
+      "passed": true
+    },
+    {
+      "name": "HTTP path confinement",
+      "passed": true
+    },
+    {
+      "name": "HTTP invalid format",
+      "passed": true
+    }
+  ],
+  "cases": [
+    {
+      "id": "simpledigital",
+      "seconds": 0.002641811999978927,
+      "text": "Native document test Hello from CrispEmbed. PDF text stays searchable.",
+      "metadata": {
+        "schema": "crispembed.marker/1",
+        "source": "simpledigital.pdf",
+        "backend": "pdfium-text",
+        "page_count": 1,
+        "generated_tokens": 0,
+        "layout_generated_tokens": 0,
+        "layout_capped_pages": 0,
+        "capped_blocks": 0,
+        "warning_count": 0,
+        "warnings": [],
+        "page_stats": [
+          {
+            "page_id": 0,
+            "width": 612,
+            "height": 792,
+            "text_extraction_method": "pdftext",
+            "block_count": 3,
+            "generated_tokens": 0,
+            "layout_generated_tokens": 0,
+            "layout_token_cap_reached": false,
+            "capped_blocks": 0,
+            "warnings": [],
+            "block_types": {
+              "SectionHeader": 1,
+              "Text": 2
+            }
+          }
+        ],
+        "assets": [],
+        "configuration": {
+          "elapsed_seconds": "0.002435",
+          "headers": "suppressed in rendered text; retained in JSON",
+          "implementation": "crispembed-marker-native",
+          "layout": "PDF font/geometry heuristics",
+          "layout_backend": "pdftext_heuristics",
+          "marker_source_revision": "71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4",
+          "processor": "native-marker-inspired-v1",
+          "schema": "crispembed.marker/1",
+          "software_version": "0.17.14",
+          "surya_model_parity": "not_claimed",
+          "surya_parity": "not claimed; alternative TeleOCR and deterministic processing",
+          "text_quality": "deterministic-unicode-glyph-and-repetition-v1",
+          "text_quality_check": "deterministic_unicode_heuristic",
+          "upstream_marker": "2.1.0@71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4"
+        }
+      }
+    },
+    {
+      "id": "unicode",
+      "seconds": 0.002409991000035916,
+      "text": "Unicode and escaping Café naïve résumé - Ελληνικά - кириллица. Literal <script>alert(1)</script> & <tag> text. Markdown *stars* _under_ [brackets] $19.95 | pipe.",
+      "metadata": {
+        "schema": "crispembed.marker/1",
+        "source": "unicode.pdf",
+        "backend": "pdfium-text",
+        "page_count": 1,
+        "generated_tokens": 0,
+        "layout_generated_tokens": 0,
+        "layout_capped_pages": 0,
+        "capped_blocks": 0,
+        "warning_count": 0,
+        "warnings": [],
+        "page_stats": [
+          {
+            "page_id": 0,
+            "width": 612,
+            "height": 792,
+            "text_extraction_method": "pdftext",
+            "block_count": 4,
+            "generated_tokens": 0,
+            "layout_generated_tokens": 0,
+            "layout_token_cap_reached": false,
+            "capped_blocks": 0,
+            "warnings": [],
+            "block_types": {
+              "SectionHeader": 1,
+              "Text": 3
+            }
+          }
+        ],
+        "assets": [],
+        "configuration": {
+          "elapsed_seconds": "0.002155",
+          "headers": "suppressed in rendered text; retained in JSON",
+          "implementation": "crispembed-marker-native",
+          "layout": "PDF font/geometry heuristics",
+          "layout_backend": "pdftext_heuristics",
+          "marker_source_revision": "71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4",
+          "processor": "native-marker-inspired-v1",
+          "schema": "crispembed.marker/1",
+          "software_version": "0.17.14",
+          "surya_model_parity": "not_claimed",
+          "surya_parity": "not claimed; alternative TeleOCR and deterministic processing",
+          "text_quality": "deterministic-unicode-glyph-and-repetition-v1",
+          "text_quality_check": "deterministic_unicode_heuristic",
+          "upstream_marker": "2.1.0@71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4"
+        }
+      }
+    },
+    {
+      "id": "structure",
+      "seconds": 0.0027483590000088043,
+      "text": "Document structure 1. Overview A short paragraph introduces the examples. First owned list item Second owned list item 2. Code example if (left < right) { print(\"safe & literal\"); }",
+      "metadata": {
+        "schema": "crispembed.marker/1",
+        "source": "structure.pdf",
+        "backend": "pdfium-text",
+        "page_count": 1,
+        "generated_tokens": 0,
+        "layout_generated_tokens": 0,
+        "layout_capped_pages": 0,
+        "capped_blocks": 0,
+        "warning_count": 1,
+        "warnings": [],
+        "page_stats": [
+          {
+            "page_id": 0,
+            "width": 612,
+            "height": 792,
+            "text_extraction_method": "pdftext",
+            "block_count": 8,
+            "generated_tokens": 0,
+            "layout_generated_tokens": 0,
+            "layout_token_cap_reached": false,
+            "capped_blocks": 0,
+            "warnings": [
+              "3 collapsed monospace spaces restored from PDF glyph advances"
+            ],
+            "block_types": {
+              "Code": 1,
+              "ListGroup": 1,
+              "ListItem": 2,
+              "SectionHeader": 3,
+              "Text": 1
+            }
+          }
+        ],
+        "assets": [],
+        "configuration": {
+          "elapsed_seconds": "0.002383",
+          "headers": "suppressed in rendered text; retained in JSON",
+          "implementation": "crispembed-marker-native",
+          "layout": "PDF font/geometry heuristics",
+          "layout_backend": "pdftext_heuristics",
+          "marker_source_revision": "71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4",
+          "processor": "native-marker-inspired-v1",
+          "schema": "crispembed.marker/1",
+          "software_version": "0.17.14",
+          "surya_model_parity": "not_claimed",
+          "surya_parity": "not claimed; alternative TeleOCR and deterministic processing",
+          "text_quality": "deterministic-unicode-glyph-and-repetition-v1",
+          "text_quality_check": "deterministic_unicode_heuristic",
+          "upstream_marker": "2.1.0@71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4"
+        }
+      }
+    },
+    {
+      "id": "multicolumn",
+      "seconds": 0.0025331419999474747,
+      "text": "Two-column reading order Left column Left one stays together. Left two follows one. Left three ends this column. Right column Right one begins here. Right two follows one. Right three ends the page.",
+      "metadata": {
+        "schema": "crispembed.marker/1",
+        "source": "multicolumn.pdf",
+        "backend": "pdfium-text",
+        "page_count": 1,
+        "generated_tokens": 0,
+        "layout_generated_tokens": 0,
+        "layout_capped_pages": 0,
+        "capped_blocks": 0,
+        "warning_count": 1,
+        "warnings": [],
+        "page_stats": [
+          {
+            "page_id": 0,
+            "width": 612,
+            "height": 792,
+            "text_extraction_method": "pdftext",
+            "block_count": 9,
+            "generated_tokens": 0,
+            "layout_generated_tokens": 0,
+            "layout_token_cap_reached": false,
+            "capped_blocks": 0,
+            "warnings": [
+              "Reading order uses a deterministic two-column whitespace heuristic."
+            ],
+            "block_types": {
+              "SectionHeader": 3,
+              "Text": 6
+            }
+          }
+        ],
+        "assets": [],
+        "configuration": {
+          "elapsed_seconds": "0.002178",
+          "headers": "suppressed in rendered text; retained in JSON",
+          "implementation": "crispembed-marker-native",
+          "layout": "PDF font/geometry heuristics",
+          "layout_backend": "pdftext_heuristics",
+          "marker_source_revision": "71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4",
+          "processor": "native-marker-inspired-v1",
+          "schema": "crispembed.marker/1",
+          "software_version": "0.17.14",
+          "surya_model_parity": "not_claimed",
+          "surya_parity": "not claimed; alternative TeleOCR and deterministic processing",
+          "text_quality": "deterministic-unicode-glyph-and-repetition-v1",
+          "text_quality_check": "deterministic_unicode_heuristic",
+          "upstream_marker": "2.1.0@71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4"
+        }
+      }
+    },
+    {
+      "id": "table",
+      "seconds": 0.0023881689999711853,
+      "text": "Aligned table fixture Item Quantity Price Alpha 2 $10 Beta 3 $15 Gamma 4 $20 All values are invented test data.",
+      "metadata": {
+        "schema": "crispembed.marker/1",
+        "source": "table.pdf",
+        "backend": "pdfium-text",
+        "page_count": 1,
+        "generated_tokens": 0,
+        "layout_generated_tokens": 0,
+        "layout_capped_pages": 0,
+        "capped_blocks": 0,
+        "warning_count": 0,
+        "warnings": [],
+        "page_stats": [
+          {
+            "page_id": 0,
+            "width": 612,
+            "height": 792,
+            "text_extraction_method": "pdftext",
+            "block_count": 3,
+            "generated_tokens": 0,
+            "layout_generated_tokens": 0,
+            "layout_token_cap_reached": false,
+            "capped_blocks": 0,
+            "warnings": [],
+            "block_types": {
+              "SectionHeader": 1,
+              "Table": 1,
+              "Text": 1
+            }
+          }
+        ],
+        "assets": [],
+        "configuration": {
+          "elapsed_seconds": "0.002162",
+          "headers": "suppressed in rendered text; retained in JSON",
+          "implementation": "crispembed-marker-native",
+          "layout": "PDF font/geometry heuristics",
+          "layout_backend": "pdftext_heuristics",
+          "marker_source_revision": "71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4",
+          "processor": "native-marker-inspired-v1",
+          "schema": "crispembed.marker/1",
+          "software_version": "0.17.14",
+          "surya_model_parity": "not_claimed",
+          "surya_parity": "not claimed; alternative TeleOCR and deterministic processing",
+          "text_quality": "deterministic-unicode-glyph-and-repetition-v1",
+          "text_quality_check": "deterministic_unicode_heuristic",
+          "upstream_marker": "2.1.0@71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4"
+        }
+      }
+    },
+    {
+      "id": "multipage",
+      "seconds": 0.002963215000022501,
+      "text": "Chapter 1 Page 1 has distinct body content. This sentence is part of the document body. Chapter 2 Page 2 has distinct body content. This sentence is part of the document body. Chapter 3 Page 3 has distinct body content. This sentence is part of the document body.",
+      "metadata": {
+        "schema": "crispembed.marker/1",
+        "source": "multipage.pdf",
+        "backend": "pdfium-text",
+        "page_count": 3,
+        "generated_tokens": 0,
+        "layout_generated_tokens": 0,
+        "layout_capped_pages": 0,
+        "capped_blocks": 0,
+        "warning_count": 6,
+        "warnings": [],
+        "page_stats": [
+          {
+            "page_id": 0,
+            "width": 612,
+            "height": 792,
+            "text_extraction_method": "pdftext",
+            "block_count": 4,
+            "generated_tokens": 0,
+            "layout_generated_tokens": 0,
+            "layout_token_cap_reached": false,
+            "capped_blocks": 0,
+            "warnings": [],
+            "block_types": {
+              "PageFooter": 1,
+              "PageHeader": 1,
+              "SectionHeader": 1,
+              "Text": 1
+            }
+          },
+          {
+            "page_id": 1,
+            "width": 612,
+            "height": 792,
+            "text_extraction_method": "pdftext",
+            "block_count": 4,
+            "generated_tokens": 0,
+            "layout_generated_tokens": 0,
+            "layout_token_cap_reached": false,
+            "capped_blocks": 0,
+            "warnings": [],
+            "block_types": {
+              "PageFooter": 1,
+              "PageHeader": 1,
+              "SectionHeader": 1,
+              "Text": 1
+            }
+          },
+          {
+            "page_id": 2,
+            "width": 612,
+            "height": 792,
+            "text_extraction_method": "pdftext",
+            "block_count": 4,
+            "generated_tokens": 0,
+            "layout_generated_tokens": 0,
+            "layout_token_cap_reached": false,
+            "capped_blocks": 0,
+            "warnings": [],
+            "block_types": {
+              "PageFooter": 1,
+              "PageHeader": 1,
+              "SectionHeader": 1,
+              "Text": 1
+            }
+          }
+        ],
+        "assets": [],
+        "configuration": {
+          "elapsed_seconds": "0.002382",
+          "headers": "suppressed in rendered text; retained in JSON",
+          "implementation": "crispembed-marker-native",
+          "layout": "PDF font/geometry heuristics",
+          "layout_backend": "pdftext_heuristics",
+          "marker_source_revision": "71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4",
+          "processor": "native-marker-inspired-v1",
+          "schema": "crispembed.marker/1",
+          "software_version": "0.17.14",
+          "surya_model_parity": "not_claimed",
+          "surya_parity": "not claimed; alternative TeleOCR and deterministic processing",
+          "text_quality": "deterministic-unicode-glyph-and-repetition-v1",
+          "text_quality_check": "deterministic_unicode_heuristic",
+          "upstream_marker": "2.1.0@71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4"
+        }
+      }
+    },
+    {
+      "id": "rotated",
+      "seconds": 0.002151999999966847,
+      "text": "Rotated page Rotation preserves this sentence.",
+      "metadata": {
+        "schema": "crispembed.marker/1",
+        "source": "rotated.pdf",
+        "backend": "pdfium-text",
+        "page_count": 1,
+        "generated_tokens": 0,
+        "layout_generated_tokens": 0,
+        "layout_capped_pages": 0,
+        "capped_blocks": 0,
+        "warning_count": 1,
+        "warnings": [],
+        "page_stats": [
+          {
+            "page_id": 0,
+            "width": 612,
+            "height": 792,
+            "text_extraction_method": "pdftext",
+            "block_count": 2,
+            "generated_tokens": 0,
+            "layout_generated_tokens": 0,
+            "layout_token_cap_reached": false,
+            "capped_blocks": 0,
+            "warnings": [
+              "Vertical word-span progression indicates a 90-degree quarter-turn; reading order uses unrotated geometry."
+            ],
+            "block_types": {
+              "SectionHeader": 1,
+              "Text": 1
+            }
+          }
+        ],
+        "assets": [],
+        "configuration": {
+          "elapsed_seconds": "0.001982",
+          "headers": "suppressed in rendered text; retained in JSON",
+          "implementation": "crispembed-marker-native",
+          "layout": "PDF font/geometry heuristics",
+          "layout_backend": "pdftext_heuristics",
+          "marker_source_revision": "71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4",
+          "processor": "native-marker-inspired-v1",
+          "schema": "crispembed.marker/1",
+          "software_version": "0.17.14",
+          "surya_model_parity": "not_claimed",
+          "surya_parity": "not claimed; alternative TeleOCR and deterministic processing",
+          "text_quality": "deterministic-unicode-glyph-and-repetition-v1",
+          "text_quality_check": "deterministic_unicode_heuristic",
+          "upstream_marker": "2.1.0@71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4"
+        }
+      }
+    },
+    {
+      "id": "encrypted",
+      "seconds": 0.0023529169999960686,
+      "text": "Encrypted fixture The supplied test password opens this PDF.",
+      "metadata": {
+        "schema": "crispembed.marker/1",
+        "source": "encrypted.pdf",
+        "backend": "pdfium-text",
+        "page_count": 1,
+        "generated_tokens": 0,
+        "layout_generated_tokens": 0,
+        "layout_capped_pages": 0,
+        "capped_blocks": 0,
+        "warning_count": 0,
+        "warnings": [],
+        "page_stats": [
+          {
+            "page_id": 0,
+            "width": 612,
+            "height": 792,
+            "text_extraction_method": "pdftext",
+            "block_count": 2,
+            "generated_tokens": 0,
+            "layout_generated_tokens": 0,
+            "layout_token_cap_reached": false,
+            "capped_blocks": 0,
+            "warnings": [],
+            "block_types": {
+              "SectionHeader": 1,
+              "Text": 1
+            }
+          }
+        ],
+        "assets": [],
+        "configuration": {
+          "elapsed_seconds": "0.002180",
+          "headers": "suppressed in rendered text; retained in JSON",
+          "implementation": "crispembed-marker-native",
+          "layout": "PDF font/geometry heuristics",
+          "layout_backend": "pdftext_heuristics",
+          "marker_source_revision": "71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4",
+          "processor": "native-marker-inspired-v1",
+          "schema": "crispembed.marker/1",
+          "software_version": "0.17.14",
+          "surya_model_parity": "not_claimed",
+          "surya_parity": "not claimed; alternative TeleOCR and deterministic processing",
+          "text_quality": "deterministic-unicode-glyph-and-repetition-v1",
+          "text_quality_check": "deterministic_unicode_heuristic",
+          "upstream_marker": "2.1.0@71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4"
+        }
+      }
+    }
+  ],
+  "passed": 112,
+  "total": 112,
+  "all_passed": true
+}

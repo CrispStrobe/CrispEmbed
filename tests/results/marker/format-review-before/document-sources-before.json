@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-10-31T19:21:55.803939+00:00",
+  "purpose": "Exact sources before targeted Markdown NUL/control fix and clang-format18.1.8 pass; prior82-check ASAN/UBSAN receipt remains unchanged.",
+  "files_sha256": {
+    "src/marker_document.cpp": "43b26f348788bf8c861c7ecdb99049593e6e0dd49653e7b13012b4315792c2d9",
+    "src/marker_document.h": "6cfbd50d18e411c2f89c0df4183551beebc7d7bede4eb710a4383820e9e1425b",
+    "tests/test-marker-document.cpp": "3987a65dded06f614179179e043165a0eda523022da82c646490093b8fcaa550"
+  },
+  "archive": "document-sources-before.zip",
+  "archive_sha256": "5bd6430f92fa1288f95f288fc85d2efebb899433b5a5a57e8904ea6a00e8fd32"
+}

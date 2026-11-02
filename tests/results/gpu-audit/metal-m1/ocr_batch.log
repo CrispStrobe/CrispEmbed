@@ -1,0 +1,12 @@
+{"out": "dbnet-trocr.fox.json", "identical": true, "wall_s": {"metal": [4.739, 2.2], "cpu": [2.91, 2.886]}, "char_ratio": 1.0}
+{"out": "dbnet-trocr.scan_strip.json", "identical": false, "wall_s": {"metal": [19.624, 21.638], "cpu": [28.928, 29.427]}, "char_ratio": 0.99951}
+{"out": "dbnet-gpu-trocr.fox.json", "identical": false, "wall_s": {"metal": [12.247, 10.273], "cpu": [5.233, 4.288]}, "char_ratio": 0.99435}
+{"out": "dbnet-gpu-deconvmm-trocr.fox.json", "identical": false, "wall_s": {"metal": [2.335, 2.359], "cpu": [3.079, 3.106]}, "char_ratio": 0.99435}
+{"out": "dbnet-gpu-deconvmm-trocr.scan_page_pd.json", "identical": false, "wall_s": {"metal": [61.333, 65.888], "cpu": [93.522, 110.326]}, "char_ratio": 0.99779}
+{"out": "ppocrv6-small.fox.json", "identical": true, "wall_s": {"metal": [1.258, 0.336], "cpu": [0.397, 0.365]}, "char_ratio": 1.0}
+{"out": "ppocrv6-small.scan_page_pd.json", "identical": true, "wall_s": {"metal": [3.171, 3.21], "cpu": [5.352, 5.38]}, "char_ratio": 1.0}
+{"out": "ppocrv6-small-detgpu.scan_page_pd.json", "identical": false, "wall_s": {"metal": [7.342, 7.37], "cpu": [5.324, 5.172]}, "char_ratio": 0.99972}
+{"out": "dbnet-easyocr.fox.json", "identical": true, "wall_s": {"metal": [1.126, 0.443], "cpu": [0.428, 0.48]}, "char_ratio": 1.0}
+{"out": "esrgan-gpu.fox.json", "identical": false, "wall_s": {"metal": [2.009, 1.976], "cpu": [8.286, 8.338]}, "image": {"shape": [1040, 2080, 3], "max_abs": 1, "mean_abs": 0.007650240384615385, "psnr_db": 69.2940527916896, "n_diff": 49647, "pixels_identical": false}}
+{"out": "instructir-gpu.scan_strip.json", "identical": false, "wall_s": {"metal": [14.538, 14.488], "cpu": [12.082, 10.389]}, "image": {"shape": [260, 520, 3], "max_abs": 1, "mean_abs": 0.0014053254437869822, "psnr_db": 76.65303451520698, "n_diff": 570, "pixels_identical": false}}
+DONE

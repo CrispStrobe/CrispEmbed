@@ -1,0 +1,261 @@
+{
+  "source": "dd592b15f8191be0b441eda3932c98364324e776",
+  "completed": true,
+  "models_accessed": false,
+  "corpus_access": false,
+  "model_qualified": false,
+  "publication_qualified": false,
+  "phase": "model-free-controls-complete",
+  "source_profile_sha256": "73da3b6175b06a815f1705bd8ed2f6c4d151e098f307f9b069f3ac05a4829e56",
+  "service": {
+    "run": 40837105606,
+    "source": "dd592b15f8191be0b441eda3932c98364324e776",
+    "attempt": 1,
+    "workflow": ".github/workflows/moedern-q8-controls-v1.yml"
+  },
+  "frozen_q8_source_closure": {
+    "schema": "crispembed-moedern-q8-f32-critical-source-v1",
+    "source": "dd592b15f8191be0b441eda3932c98364324e776",
+    "base": "7d886594d2f487cdaa9420712a8df39eda89e744",
+    "profile_sha256": "32a6e5751beb40db917d91d4dd5ea4cca4ae5436922c395948e1987dad876980",
+    "protected_objects": 314,
+    "owned_files": 13,
+    "model_qualified": false,
+    "dispatch_authorized": false
+  },
+  "resources": {
+    "available_ram_bytes": 15508987904,
+    "free_disk_bytes": 91382255616,
+    "threads": 2,
+    "models_accessed": false,
+    "old_model_14gib_24gib_guard_unchanged": true
+  },
+  "binaries": {
+    "moedern-q8-controls": {
+      "bytes": 91480,
+      "sha256": "ceec24a10bc1eea19447b9ed1e2b6d3b0525861f29b380978e1e91e58063fce8"
+    },
+    "moedern-q8-quantize": {
+      "bytes": 864568,
+      "sha256": "781f658093b8720884054b71fbb7b9661c2c69c15f5be4283a7dc82417bce7c2"
+    },
+    "libmoedern-q8.so": {
+      "bytes": 2392464,
+      "sha256": "5f7a9d1e04b211ea52913b974a6820e9d08cc0ff858a5f32a4cde8746744a247"
+    }
+  },
+  "plain_observer_exclusion": true,
+  "typed_profile_counts": {
+    "1.5M": 20,
+    "27M": 20,
+    "115M": 52
+  },
+  "actual_c_fixture": {
+    "q8_tensors": 2,
+    "critical_f32_tensors": 7
+  },
+  "authored_direct_expert_graphs": 6,
+  "full_model_quantization_executed": false,
+  "strict_f32_corpus_blockers_unchanged": true,
+  "schema": "crispembed-moedern-q8-component-independent-review-v1",
+  "small_artifact": {
+    "id": 12881414451,
+    "name": "moedern-q8-controls-review-40837105606",
+    "size_in_bytes": 40852,
+    "digest": "sha256:99cd31b0e4441a8de16e17781c7afbab480dd2f70ed8b9c9313de56ea6f18f64",
+    "expires_at": "2027-01-27T07:42:02Z"
+  },
+  "small_members": {
+    "CMakeCache.txt": {
+      "bytes": 29492,
+      "sha256": "3d3c0e5a4d519c462eb2b7239a2232291a6d4100f3e574edc9d7bd4e30ce49d8"
+    },
+    "actual-c-quantizer-fixture.json": {
+      "bytes": 2814,
+      "sha256": "b60ae8447e040b103f06715c2a3fee46fc5b6411c848b4916e6212e361658db9"
+    },
+    "actual-c-quantizer-fixture.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "build.log": {
+      "bytes": 3739,
+      "sha256": "fcf30d015064c3461d2bd322ae5cc6bcbbf1ca277c0c990c1e1b78d883be0da0"
+    },
+    "compile-commands.json": {
+      "bytes": 30483,
+      "sha256": "599b30e4600963acbc26de41016300624abf47984b4f2f262b72182d0f03037f"
+    },
+    "configure.log": {
+      "bytes": 1388,
+      "sha256": "38cee956a3584e97ab328fec84c0fb5e30273f116ad3ad31ed88022aa490e356"
+    },
+    "compiler.log": {
+      "bytes": 246,
+      "sha256": "88b7c4b67564a146863224148116065fee418539f0a408f3636a68f3bde51805"
+    },
+    "controls.json": {
+      "bytes": 10019,
+      "sha256": "7eced3d0653c77ca33a03aba58cd0617576151f46c31a75649ea542c08ec898c"
+    },
+    "controls.log": {
+      "bytes": 114,
+      "sha256": "e298f8a9d3663d28b98e45c9f8698441fd0ba77faaf275e9ae24046b87986af1"
+    },
+    "library-symbols.txt": {
+      "bytes": 257166,
+      "sha256": "58932c377eeb1ee856e11cb5e83c80d0fa4c0a69c77445660dce70141415e038"
+    },
+    "manifest.json": {
+      "bytes": 2375,
+      "sha256": "a7ac0b72458bb4d84226bccc357f9975ecad757dae99719a95c89f2aa8be5a8e"
+    }
+  },
+  "actual_c_fixture_report": {
+    "schema": "crispembed-moedern-authored-q8-storage-v1",
+    "completed": true,
+    "model_qualified": false,
+    "actual_c_quantizer": true,
+    "quantizer_sha256": "781f658093b8720884054b71fbb7b9661c2c69c15f5be4283a7dc82417bce7c2",
+    "source_sha256": "0adc849d9cf42c5839c7de00164bc1da996429f6dbb64d3b60cfb01eccb5cd84",
+    "output_sha256": "760186a9ae7c1a99c7ad8d51306841589a31bc15557e131b24ee24d37b5e123b",
+    "general_file_type": 7,
+    "actual_q8_tensors": 2,
+    "critical_f32_tensors": 7,
+    "records": [
+      {
+        "name": "blk.0.attn_q.weight",
+        "type": "Q8_0",
+        "shape": [
+          128,
+          2
+        ],
+        "payload_sha256": "ed1b0bc8acfe5c98bf581ca810a5e6e586b0eef938a60162c3b72f13658149b8",
+        "critical_byte_exact": false
+      },
+      {
+        "name": "blk.0.ffn_up_exps.weight",
+        "type": "Q8_0",
+        "shape": [
+          128,
+          2,
+          2
+        ],
+        "payload_sha256": "3668acf186bb37276e7edcd2c4ee80d0e22422ac24487caf7137d7e978a55e5d",
+        "critical_byte_exact": false
+      },
+      {
+        "name": "token_embd.hash.weight",
+        "type": "F32",
+        "shape": [
+          16,
+          2
+        ],
+        "payload_sha256": "5a6b494782756738a5b61c8cee9657d1d9de4612922cb0b9c6afbc0a8a5825b5",
+        "critical_byte_exact": true
+      },
+      {
+        "name": "token_embd.proj.weight",
+        "type": "F32",
+        "shape": [
+          16,
+          128
+        ],
+        "payload_sha256": "4fd8868e37865e46caee36653a4757e75246181bf75aeadfb729ae2e82780b72",
+        "critical_byte_exact": true
+      },
+      {
+        "name": "blk.0.ffn_gate_inp.weight",
+        "type": "F32",
+        "shape": [
+          128,
+          8
+        ],
+        "payload_sha256": "f241463aadaa7818c4451c58fb76daea5841aa706f067c9f4699528d6c670cf6",
+        "critical_byte_exact": true
+      },
+      {
+        "name": "dense_head.weight",
+        "type": "F32",
+        "shape": [
+          128,
+          2
+        ],
+        "payload_sha256": "116208fd818f81569d9443b44641803fe5a28b0799280fa66c24861f1cf9f87d",
+        "critical_byte_exact": true
+      },
+      {
+        "name": "token_embd.norm.weight",
+        "type": "F32",
+        "shape": [
+          128
+        ],
+        "payload_sha256": "b80d58c7ebf0809874bb21ffe10355b373119336dda6498efd8b5bee2c2afe04",
+        "critical_byte_exact": true
+      },
+      {
+        "name": "token_embd.norm.bias",
+        "type": "F32",
+        "shape": [
+          128
+        ],
+        "payload_sha256": "b80d58c7ebf0809874bb21ffe10355b373119336dda6498efd8b5bee2c2afe04",
+        "critical_byte_exact": true
+      },
+      {
+        "name": "blk.0.conv_dw.weight",
+        "type": "F32",
+        "shape": [
+          128,
+          3
+        ],
+        "payload_sha256": "dcfa9bfdd6f8e60e64a019fe3c5c5b540ed9559bb72fd4e12143ec3d78fd9877",
+        "critical_byte_exact": true
+      }
+    ],
+    "log_sha256": "7aa8ecacc8665bcc0bc9d93623fde63c2559e1d77fa37fdd1406cc85c4bf4013"
+  },
+  "commands": {
+    "compiler": {
+      "exit": 0,
+      "timed_out": false,
+      "reaped": true,
+      "seconds": 0.08342793900000345,
+      "maximum_rss_bytes": 25870336,
+      "sha256": "88b7c4b67564a146863224148116065fee418539f0a408f3636a68f3bde51805"
+    },
+    "configure": {
+      "exit": 0,
+      "timed_out": false,
+      "reaped": true,
+      "seconds": 1.304194803999998,
+      "maximum_rss_bytes": 26001408,
+      "sha256": "38cee956a3584e97ab328fec84c0fb5e30273f116ad3ad31ed88022aa490e356"
+    },
+    "build": {
+      "exit": 0,
+      "timed_out": false,
+      "reaped": true,
+      "seconds": 39.925682608,
+      "maximum_rss_bytes": 433737728,
+      "sha256": "fcf30d015064c3461d2bd322ae5cc6bcbbf1ca277c0c990c1e1b78d883be0da0"
+    },
+    "controls": {
+      "exit": 0,
+      "timed_out": false,
+      "reaped": true,
+      "seconds": 0.15092164300000377,
+      "maximum_rss_bytes": 29081600,
+      "sha256": "e298f8a9d3663d28b98e45c9f8698441fd0ba77faaf275e9ae24046b87986af1"
+    },
+    "actual-c-quantizer-fixture": {
+      "exit": 0,
+      "timed_out": false,
+      "reaped": true,
+      "seconds": 0.10085346200000345,
+      "maximum_rss_bytes": 27967488,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  },
+  "limits": "Authored component/storage controls only. All eleven small ZIP members authenticated; large binary/fixture artifact remains remote. No real-model, corpus, original or model-quality inference."
+}

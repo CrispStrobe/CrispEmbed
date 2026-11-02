@@ -1,0 +1,45 @@
+{
+ "kind": "diff",
+ "binary": "test-modernbert-diff",
+ "arms": {
+  "cuda": {
+   "rc": 0,
+   "wall_s": 0.867,
+   "gpu_mem_peak_mib": 277,
+   "cuda_used": true,
+   "n_stages": 1,
+   "stages": {
+    "final_hidden": 0.997965
+   },
+   "worst_stage": [
+    "final_hidden",
+    0.997965
+   ],
+   "threshold_fails": [],
+   "threshold_missing": [],
+   "stdout_tail": "C++ tokens: 113, dim: 768\nfinal_hidden: cos_min=0.997965 max_abs=8.69e-01 PASS\n  All 113 token IDs match\n\ncrispembed_diff: loaded 2 tensors from $SCRATCH/models/modernbert-ref.gguf\ncrispembed: using GPT-2 BPE tokenizer (50368 tokens, pre=default)\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispembed: using CUDA0 backend with CPU fallback\ncrispembed: no position embeddings, using RoPE (theta=10000, pre-LN)\ncrispembed: loaded 50009 BPE merges from tensor\ncrispembed: loaded 22 layers, 768 dims, 50368 vocab\n"
+  },
+  "cpu": {
+   "rc": 0,
+   "wall_s": 0.667,
+   "gpu_mem_peak_mib": 1,
+   "cuda_used": false,
+   "n_stages": 1,
+   "stages": {
+    "final_hidden": 0.996976
+   },
+   "worst_stage": [
+    "final_hidden",
+    0.996976
+   ],
+   "threshold_fails": [],
+   "threshold_missing": [],
+   "stdout_tail": "C++ tokens: 113, dim: 768\nfinal_hidden: cos_min=0.996976 max_abs=1.08e+00 PASS\n  All 113 token IDs match\n\ncrispembed_diff: loaded 2 tensors from $SCRATCH/models/modernbert-ref.gguf\ncrispembed: using GPT-2 BPE tokenizer (50368 tokens, pre=default)\nggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\ncrispembed: using CPU backend (4 threads)\ncrispembed: no position embeddings, using RoPE (theta=10000, pre-LN)\ncrispembed: loaded 50009 BPE merges from tensor\ncrispembed: loaded 22 layers, 768 dims, 50368 vocab\n"
+  }
+ },
+ "seconds": 4.2,
+ "id": "diff-modernbert-q8",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

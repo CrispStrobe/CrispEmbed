@@ -10,6 +10,8 @@
 #   - $HEAVY_OUT      write results here; uploaded as the run's artifact
 #   - $HEAVY_SCRATCH  big scratch dir (models, builds); not uploaded
 #   - $HF_TOKEN       from the HF_TOKEN repository secret (may be empty)
+#   - $HF_TOKEN_2     from the HF_TOKEN_2 secret: a write token, for scripts that
+#                     upload (e.g. private research repos); may be empty
 #   - optional $HEAVY_OUT/summary.md is appended to the job summary
 #   - exit non-zero on a failed check, so the run shows red
 #
@@ -71,6 +73,7 @@ jobs:
       PIP_EXTRA: ${{ inputs.pip }}
       TIMEOUT_MIN: ${{ inputs.timeout_minutes }}
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      HF_TOKEN_2: ${{ secrets.HF_TOKEN_2 }}
     steps:
       - uses: actions/checkout@v4
         with:

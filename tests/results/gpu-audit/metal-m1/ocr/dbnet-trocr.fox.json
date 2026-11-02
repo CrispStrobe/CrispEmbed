@@ -1,0 +1,44 @@
+{
+ "cmd": [
+  "crispembed",
+  "-t",
+  "4",
+  "--json",
+  "-m",
+  "/Volumes/backups/code/model-cache-20261101/metal-audit/trocr-small-printed-q8_0.gguf",
+  "--ocr-det",
+  "/Volumes/backups/code/model-cache-20261101/metal-audit/dbnet-ic15-q8_0.gguf",
+  "--ocr-rec",
+  "/Volumes/backups/code/model-cache-20261101/metal-audit/trocr-small-printed-q8_0.gguf",
+  "--ocr",
+  "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/regression/images/fox.png"
+ ],
+ "metal_env": {},
+ "cpu_env": {},
+ "wall_s": {
+  "metal": [
+   4.739,
+   2.2
+  ],
+  "cpu": [
+   2.91,
+   2.886
+  ]
+ },
+ "metal_device_seen": true,
+ "byte_identical": true,
+ "sha256": {
+  "metal": "1d88ac524f87456ce72eb41be230d84ac7ba7841c39703ae5c63c3724b77037e",
+  "cpu": "1d88ac524f87456ce72eb41be230d84ac7ba7841c39703ae5c63c3724b77037e"
+ },
+ "date": "2026-11-01",
+ "stdout": {
+  "metal": "[{\"text\":\"THE\",\"bbox\":[27,35,104,77],\"conf\":0.779},{\"text\":\"QUICK\",\"bbox\":[107,36,205,79],\"conf\":0.793},{\"text\":\"BROWN\",\"bbox\":[211,39,323,76],\"conf\":0.762},{\"text\":\"FOX\",\"bbox\":[329,37,393,77],\"conf\":0.770},{\"text\":\"JUMPS\",\"bbox\":[394,39,509,78],\"conf\":0.784},{\"text\":\"OVER\",\"bbox\":[25,113,110,146],\"conf\":0.761},{\"text\":\"THE\",\"bbox\":[113,105,179,147],\"conf\":0.779},{\"text\":\"IAZY\",\"bbox\":[179,108,261,152],\"conf\":0.777},{\"text\":\"DOG.\",\"bbox\":[263,109,345,152],\"conf\":0.781},{\"text\":\"12345\",\"bbox\":[355,105,472,149],\"conf\":0.789}]\n",
+  "cpu": "[{\"text\":\"THE\",\"bbox\":[27,35,104,77],\"conf\":0.779},{\"text\":\"QUICK\",\"bbox\":[107,36,205,79],\"conf\":0.793},{\"text\":\"BROWN\",\"bbox\":[211,39,323,76],\"conf\":0.762},{\"text\":\"FOX\",\"bbox\":[329,37,393,77],\"conf\":0.770},{\"text\":\"JUMPS\",\"bbox\":[394,39,509,78],\"conf\":0.784},{\"text\":\"OVER\",\"bbox\":[25,113,110,146],\"conf\":0.761},{\"text\":\"THE\",\"bbox\":[113,105,179,147],\"conf\":0.779},{\"text\":\"IAZY\",\"bbox\":[179,108,261,152],\"conf\":0.777},{\"text\":\"DOG.\",\"bbox\":[263,109,345,152],\"conf\":0.781},{\"text\":\"12345\",\"bbox\":[355,105,472,149],\"conf\":0.789}]\n"
+ },
+ "char_ratio": 1.0,
+ "stderr_tail": {
+  "metal": "=893\nmath_ocr: [graph] dec step 1: tok=893 logits[0..4]=[-5.647 -9.686 11.293 8.193 -0.112] best=49053\nmath_ocr: [graph] dec step 2: tok=49053 logits[0..4]=[-10.934 -7.363 15.463 11.155 -1.185] best=143\nmath_ocr: [graph] dec step 3: tok=143 logits[0..4]=[-8.665 -6.785 23.744 -0.986 -0.005] best=2\nocr_pipeline: recognizing region 6/10\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-13.058 -12.288 8.363 -2.302 4.510] best=28916\nmath_ocr: [graph] dec step 1: tok=28916 logits[0..4]=[-8.486 -8.270 22.861 0.360 1.863] best=2\nocr_pipeline: recognizing region 7/10\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-13.554 -14.628 8.168 3.023 21.870] best=2673\nmath_ocr: [graph] dec step 1: tok=2673 logits[0..4]=[-10.809 -11.069 25.136 -0.583 3.620] best=2\nocr_pipeline: recognizing region 8/10\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-7.478 -8.430 7.664 -2.513 2.240] best=14\nmath_ocr: [graph] dec step 1: tok=14 logits[0..4]=[-13.878 -13.457 13.363 7.304 1.120] best=370\nmath_ocr: [graph] dec step 2: tok=370 logits[0..4]=[-8.240 -6.742 10.758 8.401 -6.370] best=2441\nmath_ocr: [graph] dec step 3: tok=2441 logits[0..4]=[-11.507 -10.440 17.271 6.158 -1.687] best=2225\nmath_ocr: [graph] dec step 4: tok=2225 logits[0..4]=[-9.419 -8.550 23.425 -0.535 -2.763] best=2\nocr_pipeline: recognizing region 9/10\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-9.194 -11.255 4.862 -1.501 4.786] best=8774\nmath_ocr: [graph] dec step 1: tok=8774 logits[0..4]=[-5.076 -6.942 13.497 11.012 -4.240] best=1048\nmath_ocr: [graph] dec step 2: tok=1048 logits[0..4]=[-8.451 -9.634 17.656 0.332 0.242] best=5\nmath_ocr: [graph] dec step 3: tok=5 logits[0..4]=[-7.663 -9.046 27.260 2.359 -0.267] best=2\nocr_pipeline: recognizing region 10/10\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-12.695 -12.040 10.155 4.596 6.614] best=496\nmath_ocr: [graph] dec step 1: tok=496 logits[0..4]=[-12.117 -16.313 11.539 6.882 2.294] best=43477\nmath_ocr: [graph] dec step 2: tok=43477 logits[0..4]=[-11.848 -11.435 28.199 4.189 0.458] best=2\nocr_pipeline: recognized 10/10 regions\nggml_metal_free: deallocating\n",
+  "cpu": "3.651 2.826 -0.424 -3.050] best=893\nmath_ocr: [graph] dec step 1: tok=893 logits[0..4]=[-5.640 -9.742 11.290 8.097 -0.007] best=49053\nmath_ocr: [graph] dec step 2: tok=49053 logits[0..4]=[-11.119 -7.631 15.621 11.129 -1.034] best=143\nmath_ocr: [graph] dec step 3: tok=143 logits[0..4]=[-9.030 -7.018 23.839 -0.962 0.144] best=2\nocr_pipeline: recognizing region 6/10\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-13.010 -12.240 8.374 -2.312 4.435] best=28916\nmath_ocr: [graph] dec step 1: tok=28916 logits[0..4]=[-8.615 -8.290 22.740 0.168 1.954] best=2\nocr_pipeline: recognizing region 7/10\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-13.576 -14.563 8.036 3.018 21.864] best=2673\nmath_ocr: [graph] dec step 1: tok=2673 logits[0..4]=[-10.789 -11.025 25.209 -0.680 3.615] best=2\nocr_pipeline: recognizing region 8/10\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-7.440 -8.276 7.485 -2.610 2.410] best=14\nmath_ocr: [graph] dec step 1: tok=14 logits[0..4]=[-13.918 -13.499 13.241 7.247 1.305] best=370\nmath_ocr: [graph] dec step 2: tok=370 logits[0..4]=[-8.296 -6.728 10.647 8.487 -6.347] best=2441\nmath_ocr: [graph] dec step 3: tok=2441 logits[0..4]=[-11.696 -10.533 17.386 6.241 -1.688] best=2225\nmath_ocr: [graph] dec step 4: tok=2225 logits[0..4]=[-9.579 -8.715 23.489 -0.555 -2.752] best=2\nocr_pipeline: recognizing region 9/10\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-9.308 -11.377 4.889 -1.569 4.952] best=8774\nmath_ocr: [graph] dec step 1: tok=8774 logits[0..4]=[-5.102 -7.008 13.494 10.944 -4.190] best=1048\nmath_ocr: [graph] dec step 2: tok=1048 logits[0..4]=[-8.481 -9.542 17.851 0.229 0.351] best=5\nmath_ocr: [graph] dec step 3: tok=5 logits[0..4]=[-7.631 -8.900 27.344 2.274 -0.210] best=2\nocr_pipeline: recognizing region 10/10\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-12.661 -11.978 10.336 4.652 6.771] best=496\nmath_ocr: [graph] dec step 1: tok=496 logits[0..4]=[-12.083 -16.230 11.562 6.854 2.178] best=43477\nmath_ocr: [graph] dec step 2: tok=43477 logits[0..4]=[-11.772 -11.376 28.378 4.028 0.511] best=2\nocr_pipeline: recognized 10/10 regions\n"
+ }
+}

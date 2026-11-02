@@ -1,0 +1,501 @@
+qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-models/teleocr-f16.gguf
+  vision: 32 layers, 1280d, 16 heads, patch=14, merge=2
+  llm: 28 layers, 1024d, 16/8 heads, inter=3072
+  vision variant: Qwen2.5-VL (RMSNorm, SwiGLU)
+qwen2vl_ocr: loaded successfully
+qwen2vl_ocr: loaded BPE tokenizer (151936 tokens, 151387 merges)
+input_patches: max_abs=0 cos_min=1 rms=2.01636018/2.01636 PASS
+image_grid: max_abs=0 cos_min=1 rms=70.1450877/70.1451 PASS
+qwen2vl_ocr: 931x1436 → 924x1428, 6732 patches (102x66)
+vis_patch_embed: max_abs=1.62124634e-05 cos_min=0.999999999999 rms=0.568091699/0.568092 PASS
+vis_layer_0: max_abs=1.62124634e-05 cos_min=0.999999999999 rms=0.664463017/0.664463 PASS
+vis_layer_1: max_abs=1.66893005e-05 cos_min=0.999999999999 rms=0.802620627/0.802621 PASS
+vis_layer_2: max_abs=1.6450882e-05 cos_min=1 rms=0.965986687/0.965987 PASS
+vis_layer_3: max_abs=1.62124634e-05 cos_min=0.999999999999 rms=1.11391139/1.11391 PASS
+vis_layer_4: max_abs=1.6450882e-05 cos_min=0.999999999999 rms=1.21658411/1.21658 PASS
+vis_layer_5: max_abs=1.90734863e-05 cos_min=0.999999999999 rms=1.28274627/1.28275 PASS
+vis_layer_6: max_abs=1.90734863e-05 cos_min=0.999999999999 rms=1.36378505/1.36379 PASS
+vis_layer_7: max_abs=3.43322754e-05 cos_min=0.999999999996 rms=1.48253899/1.48254 PASS
+vis_layer_8: max_abs=3.43322754e-05 cos_min=0.999999999995 rms=1.44259674/1.4426 PASS
+vis_layer_9: max_abs=4.57763672e-05 cos_min=0.999999999995 rms=1.42248172/1.42248 PASS
+vis_layer_10: max_abs=5.34057617e-05 cos_min=0.999999999995 rms=1.40465246/1.40465 PASS
+vis_layer_11: max_abs=6.10351562e-05 cos_min=0.999999999995 rms=1.39260519/1.39261 PASS
+vis_layer_12: max_abs=9.15527344e-05 cos_min=0.999999999992 rms=1.38864738/1.38865 PASS
+vis_layer_13: max_abs=0.000114440918 cos_min=0.999999999986 rms=1.39087116/1.39087 PASS
+vis_layer_14: max_abs=0.000122070312 cos_min=0.999999999953 rms=1.40399908/1.404 PASS
+vis_layer_15: max_abs=0.000190734863 cos_min=0.999999999902 rms=1.51759521/1.5176 PASS
+vis_layer_16: max_abs=0.00129699707 cos_min=0.999999999775 rms=1.44416616/1.44417 PASS
+vis_layer_17: max_abs=0.524902344 cos_min=0.999998472701 rms=18.8352842/18.8353 FAIL
+vis_layer_18: max_abs=0.525024414 cos_min=0.999997978136 rms=18.8331242/18.8331 FAIL
+vis_layer_19: max_abs=0.525146484 cos_min=0.99999793865 rms=18.8342427/18.8342 FAIL
+vis_layer_20: max_abs=0.525146484 cos_min=0.999998307241 rms=18.8401297/18.8401 FAIL
+vis_layer_21: max_abs=0.525268555 cos_min=0.999998742662 rms=18.8591277/18.8591 FAIL
+vis_layer_22: max_abs=0.525634766 cos_min=0.999998377321 rms=18.868348/18.8683 FAIL
+vis_layer_23: max_abs=0.525756836 cos_min=0.999996443749 rms=18.9239552/18.9239 FAIL
+vis_layer_24: max_abs=0.525878906 cos_min=0.999996757273 rms=18.9642919/18.9643 FAIL
+vis_layer_25: max_abs=0.525878906 cos_min=0.999997255432 rms=18.9979905/18.998 FAIL
+vis_layer_26: max_abs=0.525756836 cos_min=0.999997882604 rms=19.0857413/19.0857 FAIL
+vis_layer_27: max_abs=0.526000977 cos_min=0.999998231276 rms=19.1786374/19.1786 FAIL
+vis_layer_28: max_abs=0.526611328 cos_min=0.999998544122 rms=19.2969649/19.297 FAIL
+vis_layer_29: max_abs=0.526977539 cos_min=0.99999870721 rms=19.4289534/19.4289 FAIL
+vis_layer_30: max_abs=0.528442383 cos_min=0.999998370695 rms=19.5678361/19.5678 FAIL
+vis_layer_31: max_abs=1.16235352 cos_min=0.999999802729 rms=36.1970253/36.197 FAIL
+vis_pre_merger: max_abs=0.00377511978 cos_min=0.999999501218 rms=0.399747419/0.399747 FAIL
+merger_output: max_abs=0.0370483398 cos_min=0.999999951737 rms=17.5608764/17.5609 FAIL
+prompt_ids: max_abs=0 cos_min=1 rms=150475.053/150475 PASS
+  backend KV cache: 28 layers, max_seq=2741, 599.6 MB
+mrope_positions: max_abs=0 cos_min=1 rms=32.7698243/32.7698 PASS
+llm_embed: max_abs=0.0370483398 cos_min=0.999999951737 rms=17.3861374/17.3861 FAIL
+llm_L0_Q_pre_rope: max_abs=0.00367736816 cos_min=0.999999981888 rms=1.64650883/1.64651 FAIL
+llm_L0_Q_rope: max_abs=0.00367355347 cos_min=0.999999981888 rms=1.64650884/1.64651 FAIL
+llm_L0_attn_out: max_abs=0.000579833984 cos_min=0.99999999752 rms=1.1260224/1.12602 PASS
+llm_L0_post_attn: max_abs=0.0370788574 cos_min=0.999999955546 rms=17.9363234/17.9363 FAIL
+llm_layer_0: max_abs=0.0390930176 cos_min=0.999999955538 rms=18.3696115/18.3696 FAIL
+llm_layer_1: max_abs=0.0440673828 cos_min=0.999999956363 rms=19.0871138/19.0871 FAIL
+llm_layer_2: max_abs=0.0496826172 cos_min=0.999999958451 rms=85.2912347/85.2912 FAIL
+llm_layer_3: max_abs=0.0481262207 cos_min=0.999999959201 rms=85.3837517/85.3837 FAIL
+llm_layer_4: max_abs=0.048248291 cos_min=0.999999962094 rms=85.5645789/85.5646 FAIL
+llm_layer_5: max_abs=0.0518188477 cos_min=0.999999964024 rms=85.8341841/85.8342 FAIL
+llm_layer_6: max_abs=0.0539245605 cos_min=0.999999963056 rms=86.0304033/86.0304 FAIL
+llm_layer_7: max_abs=0.0551757812 cos_min=0.999999965829 rms=86.2417981/86.2418 FAIL
+llm_layer_8: max_abs=0.0565185547 cos_min=0.999999966134 rms=86.3664352/86.3664 FAIL
+llm_layer_9: max_abs=0.0564575195 cos_min=0.999999966087 rms=86.5102554/86.5103 FAIL
+llm_layer_10: max_abs=0.0570678711 cos_min=0.999999967311 rms=86.6641656/86.6642 FAIL
+llm_layer_11: max_abs=0.0575561523 cos_min=0.999999967322 rms=86.9268032/86.9268 FAIL
+llm_layer_12: max_abs=0.0648193359 cos_min=0.999999968863 rms=87.0458035/87.0458 FAIL
+llm_layer_13: max_abs=0.0679321289 cos_min=0.999999969343 rms=87.1487081/87.1487 FAIL
+llm_layer_14: max_abs=0.0715942383 cos_min=0.999999969327 rms=87.2084153/87.2084 FAIL
+llm_layer_15: max_abs=0.0679931641 cos_min=0.99999996978 rms=87.319976/87.32 FAIL
+llm_layer_16: max_abs=0.0677490234 cos_min=0.999999969279 rms=87.4913088/87.4913 FAIL
+llm_layer_17: max_abs=0.0684204102 cos_min=0.999999969045 rms=87.6287762/87.6288 FAIL
+llm_layer_18: max_abs=0.0693969727 cos_min=0.999999967115 rms=87.7133006/87.7133 FAIL
+llm_layer_19: max_abs=0.0661010742 cos_min=0.999999965581 rms=87.733241/87.7332 FAIL
+llm_layer_20: max_abs=0.0649414062 cos_min=0.999999959108 rms=88.0220078/88.022 FAIL
+llm_layer_21: max_abs=0.0740356445 cos_min=0.999999949623 rms=87.9674971/87.9675 FAIL
+llm_layer_22: max_abs=0.0953979492 cos_min=0.9999999435 rms=88.2736056/88.2736 FAIL
+llm_layer_23: max_abs=0.126647949 cos_min=0.999999938366 rms=88.8505716/88.8506 FAIL
+llm_layer_24: max_abs=0.130126953 cos_min=0.999999941506 rms=90.0456227/90.0456 FAIL
+llm_layer_25: max_abs=0.139465332 cos_min=0.999999943779 rms=91.4261941/91.4262 FAIL
+llm_layer_26: max_abs=0.156738281 cos_min=0.999999920771 rms=94.6312015/94.6312 FAIL
+llm_layer_27: max_abs=0.334960938 cos_min=0.999999922857 rms=89.4633217/89.4633 FAIL
+llm_final_norm: max_abs=0.00637817383 cos_min=0.999999784842 rms=3.09942398/3.09942 FAIL
+logits_step0: max_abs=1.38282776e-05 cos_min=1 rms=2.63548883/2.63549 PASS
+  gen[0]: token=32399 score=25.78 (prefill)
+  gen[1]: token=29475 score=19.31 (cached)
+  gen[2]: token=98377 score=21.08 (cached)
+  gen[3]: token=1688 score=18.53 (cached)
+  gen[4]: token=10041 score=23.35 (cached)
+  gen[5]: token=2164 score=30.83 (cached)
+  gen[6]: token=368 score=22.62 (cached)
+  gen[7]: token=1476 score=17.62 (cached)
+  gen[8]: token=220 score=17.19 (cached)
+  gen[9]: token=421 score=26.47 (cached)
+  gen[10]: token=1505 score=23.26 (cached)
+  gen[11]: token=19943 score=23.87 (cached)
+  gen[12]: token=7916 score=22.73 (cached)
+  gen[13]: token=2140 score=33.91 (cached)
+  gen[14]: token=341 score=20.39 (cached)
+  gen[15]: token=688 score=15.68 (cached)
+  gen[16]: token=470 score=23.47 (cached)
+  gen[17]: token=280 score=21.03 (cached)
+  gen[18]: token=286 score=20.71 (cached)
+  gen[19]: token=555 score=20.08 (cached)
+  gen[20]: token=220 score=17.84 (cached)
+  gen[21]: token=729 score=23.72 (cached)
+  gen[22]: token=220 score=17.36 (cached)
+  gen[23]: token=4038 score=25.84 (cached)
+  gen[24]: token=7971 score=25.67 (cached)
+  gen[25]: token=1719 score=22.97 (cached)
+  gen[26]: token=341 score=19.23 (cached)
+  gen[27]: token=414 score=18.42 (cached)
+  gen[28]: token=2266 score=26.89 (cached)
+  gen[29]: token=44286 score=21.98 (cached)
+  gen[30]: token=284 score=20.22 (cached)
+  gen[31]: token=5875 score=25.28 (cached)
+  gen[32]: token=90637 score=21.21 (cached)
+  gen[33]: token=7099 score=19.17 (cached)
+  gen[34]: token=1010 score=24.94 (cached)
+  gen[35]: token=414 score=20.94 (cached)
+  gen[36]: token=2266 score=27.99 (cached)
+  gen[37]: token=47204 score=24.30 (cached)
+  gen[38]: token=7 score=22.89 (cached)
+  gen[39]: token=15 score=25.55 (cached)
+  gen[40]: token=11 score=23.35 (cached)
+  gen[41]: token=220 score=21.43 (cached)
+  gen[42]: token=15 score=24.16 (cached)
+  gen[43]: token=11 score=21.75 (cached)
+  gen[44]: token=279 score=21.68 (cached)
+  gen[45]: token=18226 score=26.92 (cached)
+  gen[46]: token=5441 score=27.34 (cached)
+  gen[47]: token=11 score=20.79 (cached)
+  gen[48]: token=279 score=21.13 (cached)
+  gen[49]: token=18226 score=26.02 (cached)
+  gen[50]: token=5727 score=25.65 (cached)
+  gen[51]: token=317 score=22.04 (cached)
+  gen[52]: token=414 score=18.91 (cached)
+  gen[53]: token=442 score=27.40 (cached)
+  gen[54]: token=1611 score=26.91 (cached)
+  gen[55]: token=198 score=18.28 (cached)
+  gen[56]: token=414 score=22.02 (cached)
+  gen[57]: token=2266 score=28.05 (cached)
+  gen[58]: token=30324 score=18.76 (cached)
+  gen[59]: token=2323 score=25.03 (cached)
+  gen[60]: token=284 score=21.84 (cached)
+  gen[61]: token=5875 score=24.58 (cached)
+  gen[62]: token=15 score=25.10 (cached)
+  gen[63]: token=15 score=25.08 (cached)
+  gen[64]: token=15 score=24.50 (cached)
+  gen[65]: token=15 score=24.06 (cached)
+  gen[66]: token=15 score=24.25 (cached)
+  gen[67]: token=15 score=20.95 (cached)
+  gen[68]: token=1010 score=21.59 (cached)
+  gen[69]: token=414 score=23.18 (cached)
+  gen[70]: token=2266 score=28.58 (cached)
+  gen[71]: token=30324 score=20.22 (cached)
+  gen[72]: token=4415 score=26.75 (cached)
+  gen[73]: token=7 score=29.72 (cached)
+  gen[74]: token=16 score=26.56 (cached)
+  gen[75]: token=11 score=23.63 (cached)
+  gen[76]: token=220 score=16.72 (cached)
+  gen[77]: token=220 score=19.28 (cached)
+  gen[78]: token=16 score=22.90 (cached)
+  gen[79]: token=11 score=21.02 (cached)
+  gen[80]: token=279 score=20.54 (cached)
+  gen[81]: token=18226 score=26.21 (cached)
+  gen[82]: token=5441 score=27.17 (cached)
+  gen[83]: token=12 score=26.06 (cached)
+  gen[84]: token=17 score=29.24 (cached)
+  gen[85]: token=11 score=21.68 (cached)
+  gen[86]: token=279 score=20.97 (cached)
+  gen[87]: token=18226 score=25.54 (cached)
+  gen[88]: token=5727 score=26.73 (cached)
+  gen[89]: token=12 score=24.80 (cached)
+  gen[90]: token=17 score=28.55 (cached)
+  gen[91]: token=317 score=22.10 (cached)
+  gen[92]: token=414 score=22.19 (cached)
+  gen[93]: token=4935 score=23.52 (cached)
+  gen[94]: token=1993 score=36.50 (cached)
+  gen[95]: token=1421 score=27.63 (cached)
+  gen[96]: token=856 score=21.69 (cached)
+  gen[97]: token=25643 score=24.57 (cached)
+  gen[98]: token=280 score=24.16 (cached)
+  gen[99]: token=414 score=23.37 (cached)
+  gen[100]: token=4935 score=23.06 (cached)
+  gen[101]: token=2384 score=36.70 (cached)
+  gen[102]: token=1421 score=27.61 (cached)
+  gen[103]: token=379 score=23.77 (cached)
+  gen[104]: token=25643 score=25.06 (cached)
+  gen[105]: token=280 score=25.66 (cached)
+  gen[106]: token=414 score=23.78 (cached)
+  gen[107]: token=2266 score=28.58 (cached)
+  gen[108]: token=44286 score=24.82 (cached)
+  gen[109]: token=284 score=19.90 (cached)
+  gen[110]: token=5869 score=24.00 (cached)
+  gen[111]: token=15 score=22.61 (cached)
+  gen[112]: token=15 score=24.60 (cached)
+  gen[113]: token=15 score=24.80 (cached)
+  gen[114]: token=15 score=24.40 (cached)
+  gen[115]: token=15 score=25.42 (cached)
+  gen[116]: token=15 score=21.66 (cached)
+  gen[117]: token=876 score=21.37 (cached)
+  gen[118]: token=414 score=22.99 (cached)
+  gen[119]: token=2266 score=27.10 (cached)
+  gen[120]: token=56179 score=24.14 (cached)
+  gen[121]: token=543 score=21.07 (cached)
+  gen[122]: token=414 score=23.38 (cached)
+  gen[123]: token=2266 score=26.99 (cached)
+  gen[124]: token=46056 score=22.05 (cached)
+  gen[125]: token=79319 score=22.10 (cached)
+  gen[126]: token=1993 score=33.07 (cached)
+  gen[127]: token=11 score=20.55 (cached)
+  gen[128]: token=3959 score=19.79 (cached)
+  gen[129]: token=2384 score=33.69 (cached)
+  gen[130]: token=11 score=23.11 (cached)
+  gen[131]: token=16 score=23.63 (cached)
+  gen[132]: token=20 score=23.24 (cached)
+  gen[133]: token=11 score=19.37 (cached)
+  gen[134]: token=15 score=23.65 (cached)
+  gen[135]: token=11 score=20.43 (cached)
+  gen[136]: token=8815 score=24.14 (cached)
+  gen[137]: token=20385 score=25.85 (cached)
+  gen[138]: token=9 score=23.03 (cached)
+  gen[139]: token=17 score=25.14 (cached)
+  gen[140]: token=21347 score=22.33 (cached)
+  gen[141]: token=317 score=22.87 (cached)
+  gen[142]: token=414 score=23.63 (cached)
+  gen[143]: token=2266 score=28.41 (cached)
+  gen[144]: token=98289 score=20.17 (cached)
+  gen[145]: token=543 score=22.07 (cached)
+  gen[146]: token=414 score=24.52 (cached)
+  gen[147]: token=2266 score=26.65 (cached)
+  gen[148]: token=12467 score=25.63 (cached)
+  gen[149]: token=1428 score=20.67 (cached)
+  gen[150]: token=414 score=21.29 (cached)
+  gen[151]: token=421 score=24.45 (cached)
+  gen[152]: token=320 score=21.91 (cached)
+  gen[153]: token=3959 score=21.00 (cached)
+  gen[154]: token=1993 score=36.87 (cached)
+  gen[155]: token=861 score=24.64 (cached)
+  gen[156]: token=279 score=21.34 (cached)
+  gen[157]: token=18226 score=25.90 (cached)
+  gen[158]: token=5441 score=27.82 (cached)
+  gen[159]: token=1369 score=25.78 (cached)
+  gen[160]: token=4935 score=20.11 (cached)
+  gen[161]: token=1993 score=35.58 (cached)
+  gen[162]: token=366 score=23.80 (cached)
+  gen[163]: token=220 score=20.24 (cached)
+  gen[164]: token=15 score=22.60 (cached)
+  gen[165]: token=873 score=25.87 (cached)
+  gen[166]: token=341 score=21.04 (cached)
+  gen[167]: token=286 score=16.32 (cached)
+  gen[168]: token=9210 score=24.74 (cached)
+  gen[169]: token=284 score=22.67 (cached)
+  gen[170]: token=220 score=21.56 (cached)
+  gen[171]: token=16 score=25.12 (cached)
+  gen[172]: token=23 score=24.86 (cached)
+  gen[173]: token=15 score=24.05 (cached)
+  gen[174]: token=481 score=23.38 (cached)
+  gen[175]: token=9210 score=25.92 (cached)
+  gen[176]: token=280 score=23.25 (cached)
+  gen[177]: token=286 score=24.35 (cached)
+  gen[178]: token=2647 score=22.89 (cached)
+  gen[179]: token=35907 score=22.62 (cached)
+  gen[180]: token=543 score=22.65 (cached)
+  gen[181]: token=414 score=23.23 (cached)
+  gen[182]: token=335 score=28.00 (cached)
+  gen[183]: token=770 score=26.94 (cached)
+  gen[184]: token=421 score=26.91 (cached)
+  gen[185]: token=320 score=22.38 (cached)
+  gen[186]: token=3959 score=20.57 (cached)
+  gen[187]: token=2384 score=35.97 (cached)
+  gen[188]: token=861 score=27.55 (cached)
+  gen[189]: token=279 score=22.52 (cached)
+  gen[190]: token=18226 score=25.21 (cached)
+  gen[191]: token=5727 score=26.15 (cached)
+  gen[192]: token=1369 score=26.89 (cached)
+  gen[193]: token=4935 score=19.64 (cached)
+  gen[194]: token=2384 score=34.35 (cached)
+  gen[195]: token=366 score=24.55 (cached)
+  gen[196]: token=220 score=23.14 (cached)
+  gen[197]: token=15 score=27.88 (cached)
+  gen[198]: token=8 score=24.44 (cached)
+  gen[199]: token=341 score=22.24 (cached)
+  gen[200]: token=286 score=20.91 (cached)
+  gen[201]: token=9210 score=25.57 (cached)
+  gen[202]: token=284 score=24.44 (cached)
+  gen[203]: token=220 score=23.02 (cached)
+  gen[204]: token=18 score=27.00 (cached)
+  gen[205]: token=21 score=25.45 (cached)
+  gen[206]: token=15 score=24.33 (cached)
+  gen[207]: token=481 score=24.94 (cached)
+  gen[208]: token=9210 score=27.40 (cached)
+  gen[209]: token=280 score=26.14 (cached)
+  gen[210]: token=286 score=26.40 (cached)
+  gen[211]: token=2647 score=28.25 (cached)
+  gen[212]: token=35907 score=22.39 (cached)
+  gen[213]: token=543 score=24.37 (cached)
+  gen[214]: token=414 score=23.70 (cached)
+  gen[215]: token=555 score=18.99 (cached)
+  gen[216]: token=262 score=22.43 (cached)
+  gen[217]: token=555 score=19.68 (cached)
+  gen[218]: token=262 score=20.21 (cached)
+  gen[219]: token=729 score=24.30 (cached)
+  gen[220]: token=2647 score=25.51 (cached)
+  gen[221]: token=35907 score=23.34 (cached)
+  gen[222]: token=368 score=27.13 (cached)
+  gen[223]: token=341 score=21.33 (cached)
+  gen[224]: token=414 score=21.19 (cached)
+  gen[225]: token=50784 score=22.06 (cached)
+  gen[226]: token=284 score=23.08 (cached)
+  gen[227]: token=9210 score=28.12 (cached)
+  gen[228]: token=353 score=23.95 (cached)
+  gen[229]: token=4149 score=26.40 (cached)
+  gen[230]: token=20385 score=26.74 (cached)
+  gen[231]: token=14 score=23.96 (cached)
+  gen[232]: token=220 score=20.94 (cached)
+  gen[233]: token=16 score=25.83 (cached)
+  gen[234]: token=23 score=25.12 (cached)
+  gen[235]: token=15 score=23.71 (cached)
+  gen[236]: token=280 score=22.56 (cached)
+  gen[237]: token=414 score=24.76 (cached)
+  gen[238]: token=856 score=20.68 (cached)
+  gen[239]: token=25643 score=25.33 (cached)
+  gen[240]: token=284 score=24.71 (cached)
+  gen[241]: token=4149 score=26.54 (cached)
+  gen[242]: token=21147 score=26.38 (cached)
+  gen[243]: token=2601 score=22.33 (cached)
+  gen[244]: token=20736 score=21.67 (cached)
+  gen[245]: token=8 score=28.23 (cached)
+  gen[246]: token=353 score=24.08 (cached)
+  gen[247]: token=4628 score=23.22 (cached)
+  gen[248]: token=280 score=26.09 (cached)
+  gen[249]: token=414 score=24.97 (cached)
+  gen[250]: token=379 score=20.55 (cached)
+  gen[251]: token=25643 score=25.91 (cached)
+  gen[252]: token=284 score=24.80 (cached)
+  gen[253]: token=4149 score=28.01 (cached)
+  gen[254]: token=16318 score=24.85 (cached)
+  gen[255]: token=2601 score=26.96 (cached)
+  gen[256]: token=20736 score=23.56 (cached)
+  gen[257]: token=8 score=30.33 (cached)
+  gen[258]: token=353 score=25.79 (cached)
+  gen[259]: token=4628 score=23.83 (cached)
+  gen[260]: token=280 score=26.10 (cached)
+  gen[261]: token=262 score=24.24 (cached)
+  gen[262]: token=555 score=20.86 (cached)
+  gen[263]: token=262 score=20.43 (cached)
+  gen[264]: token=762 score=24.26 (cached)
+  gen[265]: token=4628 score=22.00 (cached)
+  gen[266]: token=284 score=26.80 (cached)
+  gen[267]: token=220 score=24.30 (cached)
+  gen[268]: token=20 score=26.19 (cached)
+  gen[269]: token=280 score=24.03 (cached)
+  gen[270]: token=262 score=20.95 (cached)
+  gen[271]: token=762 score=25.04 (cached)
+  gen[272]: token=281 score=29.81 (cached)
+  gen[273]: token=16 score=27.51 (cached)
+  gen[274]: token=284 score=25.19 (cached)
+  gen[275]: token=314 score=26.30 (cached)
+  gen[276]: token=87 score=30.18 (cached)
+  gen[277]: token=25 score=26.98 (cached)
+  gen[278]: token=17 score=27.93 (cached)
+  gen[279]: token=15 score=25.33 (cached)
+  gen[280]: token=7358 score=34.19 (cached)
+  gen[281]: token=25 score=27.05 (cached)
+  gen[282]: token=17 score=27.80 (cached)
+  gen[283]: token=15 score=27.43 (cached)
+  gen[284]: token=2440 score=26.88 (cached)
+  gen[285]: token=262 score=21.46 (cached)
+  gen[286]: token=762 score=25.29 (cached)
+  gen[287]: token=9210 score=27.11 (cached)
+  gen[288]: token=284 score=25.26 (cached)
+  gen[289]: token=220 score=23.62 (cached)
+  gen[290]: token=18 score=27.05 (cached)
+  gen[291]: token=20 score=26.05 (cached)
+  gen[292]: token=280 score=25.04 (cached)
+  gen[293]: token=262 score=21.45 (cached)
+  gen[294]: token=762 score=24.52 (cached)
+  gen[295]: token=50784 score=22.43 (cached)
+  gen[296]: token=284 score=25.10 (cached)
+  gen[297]: token=220 score=22.93 (cached)
+  gen[298]: token=15 score=26.56 (cached)
+  gen[299]: token=280 score=25.35 (cached)
+  gen[300]: token=262 score=22.22 (cached)
+  gen[301]: token=762 score=25.18 (cached)
+  gen[302]: token=856 score=24.37 (cached)
+  gen[303]: token=25643 score=27.34 (cached)
+  gen[304]: token=284 score=27.16 (cached)
+  gen[305]: token=220 score=23.97 (cached)
+  gen[306]: token=15 score=27.92 (cached)
+  gen[307]: token=280 score=26.39 (cached)
+  gen[308]: token=262 score=23.03 (cached)
+  gen[309]: token=762 score=26.45 (cached)
+  gen[310]: token=379 score=23.44 (cached)
+  gen[311]: token=25643 score=27.72 (cached)
+  gen[312]: token=284 score=25.79 (cached)
+  gen[313]: token=220 score=23.61 (cached)
+  gen[314]: token=15 score=27.35 (cached)
+  gen[315]: token=280 score=25.51 (cached)
+  gen[316]: token=262 score=22.29 (cached)
+  gen[317]: token=762 score=26.34 (cached)
+  gen[318]: token=4935 score=23.15 (cached)
+  gen[319]: token=284 score=26.03 (cached)
+  gen[320]: token=314 score=26.62 (cached)
+  gen[321]: token=87 score=31.10 (cached)
+  gen[322]: token=44389 score=29.99 (cached)
+  gen[323]: token=16 score=27.64 (cached)
+  gen[324]: token=1993 score=37.48 (cached)
+  gen[325]: token=11 score=23.05 (cached)
+  gen[326]: token=379 score=25.35 (cached)
+  gen[327]: token=44389 score=30.81 (cached)
+  gen[328]: token=16 score=27.17 (cached)
+  gen[329]: token=2384 score=33.72 (cached)
+  gen[330]: token=2440 score=24.01 (cached)
+  gen[331]: token=262 score=22.96 (cached)
+  gen[332]: token=2647 score=26.78 (cached)
+  gen[333]: token=35907 score=23.02 (cached)
+  gen[334]: token=1428 score=21.40 (cached)
+  gen[335]: token=262 score=18.83 (cached)
+  gen[336]: token=279 score=20.56 (cached)
+  gen[337]: token=18226 score=24.40 (cached)
+  gen[338]: token=284 score=22.97 (cached)
+  gen[339]: token=2197 score=24.65 (cached)
+  gen[340]: token=4749 score=27.13 (cached)
+  gen[341]: token=445 score=29.89 (cached)
+  gen[342]: token=19943 score=24.67 (cached)
+  gen[343]: token=3966 score=21.81 (cached)
+  gen[344]: token=797 score=23.31 (cached)
+  gen[345]: token=262 score=22.34 (cached)
+  gen[346]: token=2266 score=27.20 (cached)
+  gen[347]: token=284 score=25.97 (cached)
+  gen[348]: token=279 score=22.63 (cached)
+  gen[349]: token=18226 score=25.33 (cached)
+  gen[350]: token=24546 score=25.01 (cached)
+  gen[351]: token=445 score=26.71 (cached)
+  gen[352]: token=17 score=24.60 (cached)
+  gen[353]: token=67 score=24.99 (cached)
+  gen[354]: token=3071 score=19.07 (cached)
+  gen[355]: token=262 score=21.01 (cached)
+  gen[356]: token=35479 score=23.32 (cached)
+  gen[357]: token=56062 score=23.50 (cached)
+  gen[358]: token=7971 score=24.26 (cached)
+  gen[359]: token=11 score=22.78 (cached)
+  gen[360]: token=220 score=22.69 (cached)
+  gen[361]: token=18 score=24.88 (cached)
+  gen[362]: token=18 score=24.10 (cached)
+  gen[363]: token=626 score=20.33 (cached)
+  gen[364]: token=92 score=14.68 (cached)
+  gen[365]: token=151645 score=19.38 (cached)
+generated_ids: max_abs=0 cos_min=1 rms=16821.8915/16821.9 PASS
+TeleOCR: stages=75 numerical=0 decoded=1 EOS=1 seconds=307.981
+<_JavaScript_>function canvasApp() {
+
+  if (!canvasSupport()) {
+          return;
+        }
+
+  function  drawScreen () {
+      context.fillStyle = '#EEEEEE';
+      context.fillRect(0, 0, theCanvas.width, theCanvas.height);
+      //Box
+      context.strokeStyle = '#000000';
+      context.strokeRect(1,  1, theCanvas.width-2, theCanvas.height-2);
+      ball.x += xunits;
+      ball.y += yunits;
+      context.fillStyle = "#000000";
+      context.beginPath();
+      context.arc(ball.x,ball.y,15,0,Math.PI*2,true);
+      context.closePath();
+      context.fill();
+
+      if (ball.x > theCanvas.width || ball.x < 0 ) {
+        angle = 180 - angle;
+        updateBall();
+      } else if (ball.y > theCanvas.height || ball.y < 0) {
+        angle = 360 - angle;
+        updateBall();
+      }
+
+    }
+
+    function updateBall() {
+      radians = angle * Math.PI/ 180;
+      xunits = Math.cos(radians) * speed;
+      yunits = Math.sin(radians) * speed;
+    }
+
+    var speed = 5;
+    var p1 = {x:20,y:20};
+    var angle = 35;
+    var radians = 0;
+    var xunits = 0;
+    var yunits = 0;
+    var ball = {x:p1.x, y:p1.y};
+    updateBall();
+
+    theCanvas = document.getElementById("canvasOne");
+    context = theCanvas.getContext("2d");
+
+    setInterval(drawScreen, 33);
+
+}

@@ -1,0 +1,70 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "-m",
+  "smt-grandstaff-q8_0.gguf",
+  "--ocr",
+  "staff_smt.png"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    1.719,
+    1.669
+   ],
+   "gpu_mem_peak_mib": 333,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "smt_ocr: enc 3 stages /16, dec 8L/4H/d256 ff256 vocab=20578(20578) maxlen=1281 scale_attn=0 head_relu=1 reduce_ratio=0.000 invert=0\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\nsmt_ocr: loaded 361 tensors, init complete\n",
+   "stdout_sha256": "a757d79349405fa03299538d9ca3b56fd1589f0ff1e68f180a712ebb982d5019",
+   "stdout": "**ekern_1.0 <t> **ekern_1.0 <b> *clefF4 <t> *clefG2 <b> *k[b-] <t> *k[b-] <b> *M2/4 <t> *M2/4 <b> =- <t> =- <b> 8FL <t> 16r <b> . <t> 16ffLL <b> 8cJ <s> 8A <t> 16ee <b> . <t> 16ddJJ <b> 8CL <t> 16ccLL <b> . <t> 16b <b> 8cJ <s> 8A <t> 16cc <b> . <t> 16aJJ <b> = <t> = <b> 8GL <t> 8.aaL <s> 8.b- <b> 8eJ <s> 8c <s> 8B- <t> . <b> . <t> 16ggJk <b> 8CL <t> 4b-[ <b> 8eJ <s> 8c <s> 8B- <t> . <b> = <t> = <b> 4G <t> 16b-LL] <b> . <t> 16cc <b> . <t> 16ee <s> 16b- <b> . <t> 16ccJJ <b> 4C <t> 16ddLL <b> . <t> 16ee <b> . <t> 16dd <b> . <t> 16ccJJ <b> = <t> = <b> 8FL <t> 8.ggL <s> 8.a <b> 8fJ <s> 8A <t> . <b> . <t> 16ffJk <b> 8CL <t> 4a[ <b> 8fJ <s> 8c <s> 8A <t> . <b> = <t> = <b> *- <t> *- <b>  <b> \n",
+   "vs_cpu": {
+    "byte_identical": true,
+    "text_exact": true,
+    "char_ratio": 1.0,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   },
+   "vs_reference_cpu": {
+    "byte_identical": true,
+    "text_exact": true,
+    "char_ratio": 1.0,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    2.524,
+    2.677
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "smt_ocr: enc 3 stages /16, dec 8L/4H/d256 ff256 vocab=20578(20578) maxlen=1281 scale_attn=0 head_relu=1 reduce_ratio=0.000 invert=0\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\nsmt_ocr: loaded 361 tensors, init complete\n",
+   "stdout_sha256": "a757d79349405fa03299538d9ca3b56fd1589f0ff1e68f180a712ebb982d5019",
+   "stdout": "**ekern_1.0 <t> **ekern_1.0 <b> *clefF4 <t> *clefG2 <b> *k[b-] <t> *k[b-] <b> *M2/4 <t> *M2/4 <b> =- <t> =- <b> 8FL <t> 16r <b> . <t> 16ffLL <b> 8cJ <s> 8A <t> 16ee <b> . <t> 16ddJJ <b> 8CL <t> 16ccLL <b> . <t> 16b <b> 8cJ <s> 8A <t> 16cc <b> . <t> 16aJJ <b> = <t> = <b> 8GL <t> 8.aaL <s> 8.b- <b> 8eJ <s> 8c <s> 8B- <t> . <b> . <t> 16ggJk <b> 8CL <t> 4b-[ <b> 8eJ <s> 8c <s> 8B- <t> . <b> = <t> = <b> 4G <t> 16b-LL] <b> . <t> 16cc <b> . <t> 16ee <s> 16b- <b> . <t> 16ccJJ <b> 4C <t> 16ddLL <b> . <t> 16ee <b> . <t> 16dd <b> . <t> 16ccJJ <b> = <t> = <b> 8FL <t> 8.ggL <s> 8.a <b> 8fJ <s> 8A <t> . <b> . <t> 16ffJk <b> 8CL <t> 4a[ <b> 8fJ <s> 8c <s> 8A <t> . <b> = <t> = <b> *- <t> *- <b>  <b> \n",
+   "vs_reference_cpu": {
+    "byte_identical": true,
+    "text_exact": true,
+    "char_ratio": 1.0,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   }
+  }
+ },
+ "precision": "q8_0",
+ "reference_job": "smt-f32.staff",
+ "bar": 0.97,
+ "seconds": 10.4,
+ "id": "smt-q8.staff",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

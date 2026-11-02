@@ -1,0 +1,55 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "-m",
+  "got-ocr2-f16.gguf",
+  "--ocr",
+  "fox.png",
+  "--ocr-max-tokens",
+  "128"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    2.672
+   ],
+   "gpu_mem_peak_mib": 3197,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ngot_ocr: loaded $SCRATCH/models/got-ocr2-f16.gguf\n  vision: 12L 768d 12H patch=16 img=1024 ws=14\n  llm: 24L 1024d 16H/16KV inter=2816 vocab=151860\n  rope_theta=1000000 rms_eps=1e-06\n  tokenizer: 151860 tokens\ngot_ocr: ViT done 935 ms (12 layers)\n",
+   "stdout_sha256": "336196843066bdfa66996b12b6e4090dde6122e2df1c3f4ff44dc111997d7c2e",
+   "stdout": "colorcolorcolor:,,};\n\ncolorcolor westcolorcolor-,};\n\n westcolor:\n",
+   "vs_cpu": {
+    "byte_identical": true,
+    "text_exact": true,
+    "char_ratio": 1.0,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    39.065
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "crispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ngot_ocr: loaded $SCRATCH/models/got-ocr2-f16.gguf\n  vision: 12L 768d 12H patch=16 img=1024 ws=14\n  llm: 24L 1024d 16H/16KV inter=2816 vocab=151860\n  rope_theta=1000000 rms_eps=1e-06\n  tokenizer: 151860 tokens\ngot_ocr: ViT done 30434 ms (12 layers)\n",
+   "stdout_sha256": "336196843066bdfa66996b12b6e4090dde6122e2df1c3f4ff44dc111997d7c2e",
+   "stdout": "colorcolorcolor:,,};\n\ncolorcolor westcolorcolor-,};\n\n westcolor:\n"
+  }
+ },
+ "precision": "f16",
+ "bar": 0.98,
+ "seconds": 59.3,
+ "id": "got-ocr2-f16.fox",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

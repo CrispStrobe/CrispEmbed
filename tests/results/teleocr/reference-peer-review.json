@@ -1,0 +1,177 @@
+{
+  "kind": "teleocr-reference-independent-structure-review",
+  "passed": true,
+  "native_parity_claimed": false,
+  "value_comparison_claimed": false,
+  "expected_stages_per_case": 75,
+  "cases": [
+    {
+      "case": "text",
+      "stages": 75,
+      "tokens": 66,
+      "prompt_tokens": 268,
+      "vision_patches": 952,
+      "reached_eos": true,
+      "shapes_match_contract": true,
+      "source_image": "text.png",
+      "source_image_sha256": "462ec6c1aa47504cf55a53bca8e3ad04a5270c0e5583d6a5d2b66c0ec16257e7",
+      "source_image_size": [
+        941,
+        205
+      ],
+      "input_image": "text.png",
+      "input_image_size": [
+        941,
+        205
+      ],
+      "input_image_sha256": "5cd3911c28f1f76a27ba16802e6981ac7bcac76bd12248ea4e3ad7dc7238ae75",
+      "prompt": "Please output the text content from the image.",
+      "eos_token_id": 151645,
+      "hit_cap": false
+    },
+    {
+      "case": "formula",
+      "stages": 75,
+      "tokens": 166,
+      "prompt_tokens": 500,
+      "vision_patches": 1856,
+      "reached_eos": true,
+      "shapes_match_contract": true,
+      "source_image": "formula.png",
+      "source_image_sha256": "b8b18551c426ca59744e69f24d6084b13acfb5348065560ad8190054bfc2a925",
+      "source_image_size": [
+        824,
+        435
+      ],
+      "input_image": "formula.png",
+      "input_image_size": [
+        824,
+        435
+      ],
+      "input_image_sha256": "5410689369d99c70ba32bc46fb1d2e9ffdbaf6c1bc9b0278aff571be87796512",
+      "prompt": "Please write out the expression of the formula in the image using LaTeX format.",
+      "eos_token_id": 151645,
+      "hit_cap": false
+    },
+    {
+      "case": "table",
+      "stages": 75,
+      "tokens": 283,
+      "prompt_tokens": 140,
+      "vision_patches": 408,
+      "reached_eos": true,
+      "shapes_match_contract": true,
+      "source_image": "table.png",
+      "source_image_sha256": "fadfc0d58be495f292eb45361e10305a983383217ef2b8d45dba15b9800ea73d",
+      "source_image_size": [
+        482,
+        164
+      ],
+      "input_image": "table.png",
+      "input_image_size": [
+        482,
+        164
+      ],
+      "input_image_sha256": "7087b4508d71b9ac7de17d16342a251ccd6b0db76f22faef6480f4ca9eb7b259",
+      "prompt": "This is the image of a table. Please output the table in OTSL format.",
+      "eos_token_id": 151645,
+      "hit_cap": false
+    },
+    {
+      "case": "code",
+      "stages": 75,
+      "tokens": 366,
+      "prompt_tokens": 1717,
+      "vision_patches": 6732,
+      "reached_eos": true,
+      "shapes_match_contract": true,
+      "source_image": "code.png",
+      "source_image_sha256": "741314175f5bbf26dbaa7e4f35a4294d4f81525aa8d4a1c361a1ee3ff95de956",
+      "source_image_size": [
+        931,
+        1436
+      ],
+      "input_image": "code.png",
+      "input_image_size": [
+        931,
+        1436
+      ],
+      "input_image_sha256": "f85276ac708f9cefb55cfbc7afc49254003b4a00321e6d87a55d84f6523ca3a9",
+      "prompt": "The image contains a code snippet, please output the parsing result.",
+      "eos_token_id": 151645,
+      "hit_cap": false
+    },
+    {
+      "case": "layout",
+      "stages": 75,
+      "tokens": 768,
+      "prompt_tokens": 1396,
+      "vision_patches": 5476,
+      "reached_eos": true,
+      "shapes_match_contract": true,
+      "source_image": "layout.jpg",
+      "source_image_sha256": "2ae27f3a9284810bf7ce479ac8921359ccf00b7ebee1017b5e8da3e28ebe4af4",
+      "source_image_size": [
+        1653,
+        2206
+      ],
+      "input_image": "layout.png",
+      "input_image_size": [
+        1036,
+        1036
+      ],
+      "input_image_sha256": "905600c0a4d18dd0ab43c5f9cd6cbcc9ed039245da864c8e565e343b41342f91",
+      "prompt": "Analyze the image layout.",
+      "eos_token_id": 151645,
+      "hit_cap": false
+    },
+    {
+      "case": "synthetic",
+      "stages": 75,
+      "tokens": 19,
+      "prompt_tokens": 214,
+      "vision_patches": 736,
+      "reached_eos": true,
+      "shapes_match_contract": true,
+      "source_image": "synthetic-text.png",
+      "source_image_sha256": "54505c242287c7f666bb9fa8953a2f419a16a8b802e79ab0dd09945400703be8",
+      "source_image_size": [
+        640,
+        220
+      ],
+      "input_image": "synthetic.png",
+      "input_image_size": [
+        640,
+        220
+      ],
+      "input_image_sha256": "54505c242287c7f666bb9fa8953a2f419a16a8b802e79ab0dd09945400703be8",
+      "prompt": "Please output the text content from the image.",
+      "eos_token_id": 151645,
+      "hit_cap": false
+    }
+  ],
+  "synthetic_text": "Hello TeleOCR\nInvoice 42\nTotal: EUR 19.50",
+  "producer": {
+    "executed_script_sha256": "92a04f42f979f9028f268377e56808fb6b92e9f4b47944e8af026f579b657f62",
+    "receipt_matches_executed_snapshot": true,
+    "deliverable_script_sha256": "eaa7ed29b8d389944bdc83ff4f11e8f40a09a0d82c1a2ccd85f32153f6630999",
+    "later_changes": "Pin config before remote code; require all 75 stages; reject nonempty output directory; record source/capture hashes. Reviewed diff: no inference, prompt, image or hook math changes."
+  },
+  "synthetic_gold": {
+    "source": "Authored fixture; frozen before model execution",
+    "gold_image_sha256": "54505c242287c7f666bb9fa8953a2f419a16a8b802e79ab0dd09945400703be8",
+    "gold_text": "Hello TeleOCR\nInvoice 42\nTotal: EUR 19.50",
+    "raw_text_exact": true,
+    "normalization": "Collapse whitespace; preserve punctuation and case",
+    "character_errors": 0,
+    "reference_characters": 41,
+    "cer": 0.0,
+    "word_errors": 0,
+    "reference_words": 7,
+    "wer": 0.0,
+    "scope": "One synthetic three-line image; not a benchmark corpus"
+  },
+  "observer_neutral_text": true,
+  "verified_model_module_sha256": "7adac1cc17009f9f1b8e0c58284d7c0b9989a590f017b9e5964cc42270207922",
+  "verified_model_config_sha256": "92c5e15f1768dcb54bceae170043fbfefd248508159700b2179824b88c33ae75"
+}

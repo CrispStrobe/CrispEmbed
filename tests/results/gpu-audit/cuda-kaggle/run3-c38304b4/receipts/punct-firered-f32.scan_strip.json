@@ -1,0 +1,109 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "--json",
+  "-m",
+  "trocr-small-printed-q8_0.gguf",
+  "--ocr-pipeline",
+  "scan_strip.png",
+  "--ocr-engine",
+  "dbnet_trocr",
+  "--ocr-det",
+  "dbnet-ic15-q8_0.gguf",
+  "--ocr-rec",
+  "trocr-small-printed-q8_0.gguf",
+  "--punct-model",
+  "fireredpunc.gguf"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    36.471,
+    35.873
+   ],
+   "gpu_mem_peak_mib": 1237,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": " 22.196 0.288 0.594] best=2\nocr_pipeline: recognizing region 92/94\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-10.531 -11.115 6.238 -1.239 3.084] best=13532\nmath_ocr: [graph] dec step 1: tok=13532 logits[0..4]=[-8.553 -11.172 11.079 10.203 -0.692] best=8325\nmath_ocr: [graph] dec step 2: tok=8325 logits[0..4]=[-10.471 -10.051 13.777 4.940 -2.523] best=143\nmath_ocr: [graph] dec step 3: tok=143 logits[0..4]=[-8.741 -6.951 22.479 -0.072 -1.684] best=2\nocr_pipeline: recognizing region 93/94\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-11.984 -13.713 2.623 -2.590 12.171] best=781\nmath_ocr: [graph] dec step 1: tok=781 logits[0..4]=[-13.218 -12.544 8.422 2.106 6.107] best=6519\nmath_ocr: [graph] dec step 2: tok=6519 logits[0..4]=[-11.122 -11.868 10.149 4.301 -4.679] best=2225\nmath_ocr: [graph] dec step 3: tok=2225 logits[0..4]=[-8.354 -13.604 11.304 6.362 2.967] best=14750\nmath_ocr: [graph] dec step 4: tok=14750 logits[0..4]=[-9.632 -6.253 22.489 -0.943 0.304] best=2\nocr_pipeline: recognizing region 94/94\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-16.013 -14.085 10.307 3.580 0.402] best=5429\nmath_ocr: [graph] dec step 1: tok=5429 logits[0..4]=[-10.665 -10.236 28.438 -0.866 5.980] best=2\nocr_pipeline: recognized 94/94 regions\n",
+   "stdout_sha256": "b7a751020ab15f840fc8cb14070f07aa987441ca6ba40e3edb3761b6a05541d5",
+   "stdout": "{\"n_regions\":94,\"mean_confidence\":0.630,\"full_text\":\"THEY ARE GOODS TO BE ENCOMPED NEAR BRIGHTON:AND DO 80 WANT PAPA TAKE US THREE FOR THE SUM-MER WOULD BE SUCH DEFICIOUS SCEEME,AND DATE%WOULD HARDLY CST ANYTHING AT ALL.MAMMA WOULD GO TOO OF ALL THINGS ONLY THINK WHAT MISERABLE SUMMER ELSE WE SHALL HAVE!YES,'THOUGHT E ELIZABETH,<TBAT:WOULD LBE DELIGHT-GL SCEEME INDEED,AND GOOD HEAVEN COMPLETELY DD FOR US AT ONCE.BRIGHTON,AND WHOLE CAMPFUL OF SOLDIERS,TO US,WHO HAVE BEEN OVERSET ALREADY BY ONE POOR MERYTON REGIMENT OF MILITIA,AND THE MONTHLY BAILS OF.\"}\n",
+   "vs_cpu": {
+    "byte_identical": false,
+    "json": {
+     "n_numbers": [
+      2,
+      2
+     ],
+     "strings_equal": false,
+     "n_strings": [
+      1,
+      1
+     ],
+     "string_ratio": 0.9960238568588469
+    },
+    "final_cosine": 1.0,
+    "max_abs": 0.0,
+    "final_metric": "cosine over all JSON numbers"
+   }
+  },
+  "cuda-punctcpu": {
+   "backend": "cuda",
+   "env": {
+    "FIREREDPUNC_BACKEND": "cpu"
+   },
+   "wall_s": [
+    37.172,
+    37.056
+   ],
+   "gpu_mem_peak_mib": 1015,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": " 22.196 0.288 0.594] best=2\nocr_pipeline: recognizing region 92/94\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-10.531 -11.115 6.238 -1.239 3.084] best=13532\nmath_ocr: [graph] dec step 1: tok=13532 logits[0..4]=[-8.553 -11.172 11.079 10.203 -0.692] best=8325\nmath_ocr: [graph] dec step 2: tok=8325 logits[0..4]=[-10.471 -10.051 13.777 4.940 -2.523] best=143\nmath_ocr: [graph] dec step 3: tok=143 logits[0..4]=[-8.741 -6.951 22.479 -0.072 -1.684] best=2\nocr_pipeline: recognizing region 93/94\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-11.984 -13.713 2.623 -2.590 12.171] best=781\nmath_ocr: [graph] dec step 1: tok=781 logits[0..4]=[-13.218 -12.544 8.422 2.106 6.107] best=6519\nmath_ocr: [graph] dec step 2: tok=6519 logits[0..4]=[-11.122 -11.868 10.149 4.301 -4.679] best=2225\nmath_ocr: [graph] dec step 3: tok=2225 logits[0..4]=[-8.354 -13.604 11.304 6.362 2.967] best=14750\nmath_ocr: [graph] dec step 4: tok=14750 logits[0..4]=[-9.632 -6.253 22.489 -0.943 0.304] best=2\nocr_pipeline: recognizing region 94/94\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-16.013 -14.085 10.307 3.580 0.402] best=5429\nmath_ocr: [graph] dec step 1: tok=5429 logits[0..4]=[-10.665 -10.236 28.438 -0.866 5.980] best=2\nocr_pipeline: recognized 94/94 regions\n",
+   "stdout_sha256": "b7a751020ab15f840fc8cb14070f07aa987441ca6ba40e3edb3761b6a05541d5",
+   "stdout": "{\"n_regions\":94,\"mean_confidence\":0.630,\"full_text\":\"THEY ARE GOODS TO BE ENCOMPED NEAR BRIGHTON:AND DO 80 WANT PAPA TAKE US THREE FOR THE SUM-MER WOULD BE SUCH DEFICIOUS SCEEME,AND DATE%WOULD HARDLY CST ANYTHING AT ALL.MAMMA WOULD GO TOO OF ALL THINGS ONLY THINK WHAT MISERABLE SUMMER ELSE WE SHALL HAVE!YES,'THOUGHT E ELIZABETH,<TBAT:WOULD LBE DELIGHT-GL SCEEME INDEED,AND GOOD HEAVEN COMPLETELY DD FOR US AT ONCE.BRIGHTON,AND WHOLE CAMPFUL OF SOLDIERS,TO US,WHO HAVE BEEN OVERSET ALREADY BY ONE POOR MERYTON REGIMENT OF MILITIA,AND THE MONTHLY BAILS OF.\"}\n",
+   "vs_cpu": {
+    "byte_identical": false,
+    "json": {
+     "n_numbers": [
+      2,
+      2
+     ],
+     "strings_equal": false,
+     "n_strings": [
+      1,
+      1
+     ],
+     "string_ratio": 0.9960238568588469
+    },
+    "final_cosine": 1.0,
+    "max_abs": 0.0,
+    "final_metric": "cosine over all JSON numbers"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    75.386,
+    75.432
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "57 22.321 0.147 0.206] best=2\nocr_pipeline: recognizing region 92/94\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-10.769 -11.418 6.389 -1.364 2.916] best=13532\nmath_ocr: [graph] dec step 1: tok=13532 logits[0..4]=[-8.577 -11.256 11.183 9.940 -0.756] best=8325\nmath_ocr: [graph] dec step 2: tok=8325 logits[0..4]=[-10.219 -9.808 13.736 5.005 -2.712] best=143\nmath_ocr: [graph] dec step 3: tok=143 logits[0..4]=[-8.532 -6.451 22.179 -0.092 -1.884] best=2\nocr_pipeline: recognizing region 93/94\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-11.955 -13.744 2.869 -2.412 12.231] best=781\nmath_ocr: [graph] dec step 1: tok=781 logits[0..4]=[-13.440 -12.634 8.335 2.083 5.932] best=6519\nmath_ocr: [graph] dec step 2: tok=6519 logits[0..4]=[-10.916 -11.780 10.112 4.471 -4.794] best=2225\nmath_ocr: [graph] dec step 3: tok=2225 logits[0..4]=[-8.082 -13.455 11.246 6.429 3.107] best=14750\nmath_ocr: [graph] dec step 4: tok=14750 logits[0..4]=[-9.813 -6.333 22.364 -0.519 0.188] best=2\nocr_pipeline: recognizing region 94/94\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-16.073 -14.081 10.336 3.812 0.454] best=5429\nmath_ocr: [graph] dec step 1: tok=5429 logits[0..4]=[-10.758 -10.222 28.619 -0.971 6.268] best=2\nocr_pipeline: recognized 94/94 regions\n",
+   "stdout_sha256": "2e8e1e12b596accc435dc11ca7f388a3bccaab5b80dc2b1eae02328b180385c5",
+   "stdout": "{\"n_regions\":94,\"mean_confidence\":0.630,\"full_text\":\"THEY ARE GOODS TO BE ENCOMPED NEAR BRIGHTON:AND CO 80 WANT PAPA TAKE US THREE FOR THE SUM-MER WOULD BE SUCH DELICIOUS SCEEME,AND DATE%WOULD HARDLY CST ANYTHING AT ALL.MAMMA WOULD GO TOO OF ALL THINGS ONLY THINK WHAT MISERABLE SUMMER ELSE WE SHALL HAVE!YES,'THOUGHT E ELIZABETH,<TBAT:WOULD LBE DELIGHT-GL SCEEME INDEED,AND GOOD HEAVEN COMPLETELY DD FOR US AT ONCE.BRIGHTON,AND WHOLE CAMPFUL OF SOLDIERS,TO US,WHO HAVE BEEN OVERSET ALREADY BY ONE POOR MERYTON REGIMENT OF MILITIA,AND THE MONTHLY BAILS OF.\"}\n"
+  }
+ },
+ "precision": "q8_0",
+ "bar": 0.97,
+ "seconds": 305.7,
+ "id": "punct-firered-f32.scan_strip",
+ "commit": "c38304b4283da24cd88141a8b162b8c9be41b833",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

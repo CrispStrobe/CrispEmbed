@@ -1,0 +1,125 @@
+{
+ "schema": "crispembed.oxr.native-doc.local/1",
+ "date": "2026-10-31",
+ "host": "macOS arm64 (Apple silicon), model-free",
+ "source_commit": "be6eae74",
+ "blueprint_revision": "c1a1dcb312ee9f691404f127785510453c0d9350",
+ "environment": {
+  "python": "3.11.8",
+  "numpy": "2.4.6",
+  "opencv": "5.0.0",
+  "note": "pinned blueprint requirements (numpy 1.26.4, opencv 4.11.0.86 headless arm64 wheel)"
+ },
+ "helpers": {
+  "seed": 20261031,
+  "cases": 200,
+  "families": {
+   "clean_formula": {
+    "checks": 200,
+    "mismatches": 0
+   },
+   "float_repr": {
+    "checks": 1,
+    "mismatches": 0
+   },
+   "gray": {
+    "checks": 200,
+    "mismatches": 0
+   },
+   "move_numbering": {
+    "checks": 200,
+    "mismatches": 0
+   },
+   "page_cleanup:default": {
+    "checks": 200,
+    "mismatches": 0
+   },
+   "page_cleanup:full": {
+    "checks": 200,
+    "mismatches": 0
+   },
+   "parse_layout": {
+    "checks": 200,
+    "mismatches": 0
+   },
+   "postprocess:Chemical Structure": {
+    "checks": 22,
+    "mismatches": 0
+   },
+   "postprocess:Code Block": {
+    "checks": 37,
+    "mismatches": 0
+   },
+   "postprocess:Formula": {
+    "checks": 29,
+    "mismatches": 0
+   },
+   "postprocess:Table": {
+    "checks": 37,
+    "mismatches": 0
+   },
+   "postprocess:Text": {
+    "checks": 36,
+    "mismatches": 0
+   },
+   "postprocess:Title": {
+    "checks": 39,
+    "mismatches": 0
+   },
+   "resize_area": {
+    "checks": 200,
+    "mismatches": 22
+   },
+   "ro_parse": {
+    "checks": 200,
+    "mismatches": 0
+   },
+   "ro_prompt": {
+    "checks": 200,
+    "mismatches": 0
+   },
+   "ro_repair": {
+    "checks": 200,
+    "mismatches": 0
+   },
+   "ro_supplement": {
+    "checks": 200,
+    "mismatches": 0
+   },
+   "space_markdown_math": {
+    "checks": 200,
+    "mismatches": 0
+   },
+   "xycut": {
+    "checks": 200,
+    "mismatches": 0
+   }
+  },
+  "mismatch_details": "resize_area only: +-1 single-pixel differences against the arm64 cv2 wheel, under both FMA and non-FMA native builds; the authoritative x86-64 comparison runs in the hosted lane"
+ },
+ "replay": {
+  "seed": 20261031,
+  "identical": 60,
+  "total": 60
+ },
+ "initial_failures_retained": [
+  {
+   "run": "helpers seed 1, 40 cases",
+   "family": "gray",
+   "mismatches": "32/40",
+   "cause": "14-bit BGR2GRAY coefficients (4899/9617/1868); OpenCV 4.11 uses 15-bit 9798/19235/3735 (0 mismatches over 2M random colours after the fix)"
+  },
+  {
+   "run": "helpers seed 1, 40 cases",
+   "family": "page_cleanup:full",
+   "mismatches": "40/40",
+   "cause": "harness environment: original orchestrator import needed sopdf (not installed); C++ unaffected"
+  },
+  {
+   "run": "replay seed 1, 20 cases",
+   "identical": "19/20",
+   "cause": "case 14 table length recovery: native 0.75 INTER_AREA crop differs from the arm64 cv2 wheel, so the replay found no recorded request (resize_area family)"
+  }
+ ],
+ "status": "model-free local evidence only; hosted x86-64 helpers/replay/native parity pending"
+}

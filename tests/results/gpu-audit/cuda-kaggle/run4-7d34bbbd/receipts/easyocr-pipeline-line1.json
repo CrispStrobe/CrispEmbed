@@ -1,0 +1,105 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "--json",
+  "-m",
+  "easyocr-english-g2-f16.gguf",
+  "--ocr-pipeline",
+  "fox-line1.png",
+  "--ocr-engine",
+  "easyocr",
+  "--ocr-det",
+  "dbnet-ic15-q8_0.gguf",
+  "--ocr-rec",
+  "easyocr-english-g2-f16.gguf"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    1.068,
+    1.017
+   ],
+   "gpu_mem_peak_mib": 537,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\n",
+   "stdout_sha256": "178ebf82003b569b91362f9cdaaf4b73af7efee0c20cee3e74baaf17c35cff6d",
+   "stdout": "{\"n_regions\":1,\"mean_confidence\":0.715,\"full_text\":\"The quick brown fox jumps\"}\n",
+   "vs_cpu": {
+    "byte_identical": true,
+    "json": {
+     "n_numbers": [
+      2,
+      2
+     ],
+     "strings_equal": true,
+     "n_strings": [
+      1,
+      1
+     ]
+    },
+    "final_cosine": 1.0,
+    "max_abs": 0.0,
+    "final_metric": "cosine over all JSON numbers"
+   }
+  },
+  "cuda-reccpu": {
+   "backend": "cuda",
+   "env": {
+    "EASYOCR_FORCE_CPU": "1"
+   },
+   "wall_s": [
+    1.067,
+    1.018
+   ],
+   "gpu_mem_peak_mib": 501,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\n",
+   "stdout_sha256": "178ebf82003b569b91362f9cdaaf4b73af7efee0c20cee3e74baaf17c35cff6d",
+   "stdout": "{\"n_regions\":1,\"mean_confidence\":0.715,\"full_text\":\"The quick brown fox jumps\"}\n",
+   "vs_cpu": {
+    "byte_identical": true,
+    "json": {
+     "n_numbers": [
+      2,
+      2
+     ],
+     "strings_equal": true,
+     "n_strings": [
+      1,
+      1
+     ]
+    },
+    "final_cosine": 1.0,
+    "max_abs": 0.0,
+    "final_metric": "cosine over all JSON numbers"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    2.126,
+    2.121
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\n",
+   "stdout_sha256": "178ebf82003b569b91362f9cdaaf4b73af7efee0c20cee3e74baaf17c35cff6d",
+   "stdout": "{\"n_regions\":1,\"mean_confidence\":0.715,\"full_text\":\"The quick brown fox jumps\"}\n"
+  }
+ },
+ "precision": "f16",
+ "bar": 0.98,
+ "seconds": 9.7,
+ "id": "easyocr-pipeline-line1",
+ "commit": "7d34bbbd700cd1c8fc3d977c09f89dbbadd76054",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-02"
+}

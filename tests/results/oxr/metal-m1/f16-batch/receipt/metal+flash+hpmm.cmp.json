@@ -1,0 +1,1 @@
+{"label": "receipt/metal+flash+hpmm", "ids_exact": true, "first_divergence": null, "reference_tokens": 202, "native_tokens": 202, "text_exact": true, "cer": 0.0, "eos": true, "capped": false, "runs_ms": [10784.840459, 11444.2005], "warm_ms_median": 11444.2005, "load_ms": 313478.394, "runs_identical": true}

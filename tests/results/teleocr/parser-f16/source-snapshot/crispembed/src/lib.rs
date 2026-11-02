@@ -1,0 +1,4259 @@
+//! Safe Rust wrapper for crispembed text embedding inference.
+//!
+//! # Quick start
+//!
+//! ```no_run
+//! use crispembed::CrispEmbed;
+//!
+//! let mut model = CrispEmbed::new("/path/to/model.gguf", 0).unwrap();
+//! let vec = model.encode("Hello, world!");
+//! println!("dim={}, first={:.4}", vec.len(), vec[0]);
+//!
+//! // Batch (single graph pass)
+//! let vecs = model.encode_batch(&["foo", "bar", "baz"]);
+//!
+//! // Sparse (BGE-M3)
+//! if model.has_sparse() {
+//!     let sparse = model.encode_sparse("query text");
+//!     for (vocab_id, weight) in &sparse {
+//!         println!("  token {} → {:.4}", vocab_id, weight);
+//!     }
+//! }
+//! ```
+
+use std::ffi::{c_char, CStr, CString};
+use std::path::Path;
+
+pub use crispembed_sys::CrispembedHparams;
+mod systemone;
+pub use systemone::SystemOne;
+
+pub mod moedern_text;
+pub use moedern_text::MoEdern;
+
+#[derive(Debug, Clone)]
+pub struct ModelInfo {
+    pub name: String,
+    pub desc: String,
+    pub filename: String,
+    pub size: String,
+    pub license: String,
+    pub model_card_url: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct MaskPrediction {
+    pub token_id: i32,
+    pub token: String,
+    pub logit: f32,
+    pub score: f64,
+}
+
+#[derive(Debug, Clone)]
+pub struct MaskResult {
+    pub position: i32,
+    pub predictions: Vec<MaskPrediction>,
+}
+
+/// A loaded crispembed model.
+///
+/// Not `Sync` — do not share between threads. Each thread should hold its
+/// own `CrispEmbed` instance. `Send`-safe: you can move it across threads.
+pub struct CrispEmbed {
+    ctx: *mut crispembed_sys::CrispembedContext,
+    dim: usize,
+}
+
+// Safety: the underlying C library serialises all mutable access through
+// the opaque context pointer; we hold the only reference.
+unsafe impl Send for CrispEmbed {}
+
+/// Set the process-global GPU backend preference ("metal", "cuda", "vulkan",
+/// ...), matched case-insensitively against the ggml device and registry
+/// names. Call once BEFORE constructing any model. Empty string = auto.
+/// An unavailable preference warns on stderr and falls back to auto; use the
+/// per-engine `*_FORCE_CPU` environment variables to force CPU.
+pub fn set_gpu_backend(name: &str) {
+    let cn = CString::new(name).unwrap_or_default();
+    unsafe { crispembed_sys::crispembed_set_gpu_backend(cn.as_ptr()) }
+}
+
+/// Acknowledge that this process may run face *recognition* models.
+///
+/// A face template is biometric data — special-category personal data under
+/// GDPR Art. 9, which generally needs an Art. 9(2) basis (e.g. explicit
+/// consent) before you process it. Constructing a [`CrispFace`] over a
+/// recognition model fails without this acknowledgement or the
+/// `CRISPEMBED_ACCEPT_BIOMETRIC=1` environment variable. Detection is never
+/// gated: a bounding box is not a template. See `POLICY.md`.
+///
+/// This is a speed bump and an audit trail, not a security control.
+pub fn accept_biometric_use() {
+    unsafe { crispembed_sys::crispembed_accept_biometric_use() }
+}
+
+impl CrispEmbed {
+    /// Load a GGUF model file.
+    ///
+    /// - `model_path` — path to the `.gguf` file.
+    /// - `n_threads`  — CPU thread count; pass `0` for automatic.
+    pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let resolved = Self::resolve_model(model_path, None)?;
+        Self::new_resolved(&resolved, n_threads)
+    }
+
+    fn new_resolved(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let path = CString::new(model_path).map_err(|e| format!("invalid path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_init(path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err(format!("crispembed_init failed for '{model_path}'"));
+        }
+        let dim = unsafe {
+            let hp = crispembed_sys::crispembed_get_hparams(ctx);
+            if hp.is_null() {
+                0
+            } else {
+                (*hp).n_output as usize
+            }
+        };
+        Ok(Self { ctx, dim })
+    }
+
+    pub fn cache_dir() -> String {
+        let ptr = unsafe { crispembed_sys::crispembed_cache_dir() };
+        if ptr.is_null() {
+            String::new()
+        } else {
+            unsafe { CStr::from_ptr(ptr) }
+                .to_string_lossy()
+                .into_owned()
+        }
+    }
+
+    pub fn resolve_model(model_path: &str, auto_download: Option<bool>) -> Result<String, String> {
+        let should_download = auto_download.unwrap_or_else(|| {
+            !model_path.contains(".gguf") && !model_path.contains('/') && !model_path.contains('\\')
+        });
+        if Path::new(model_path).is_file() {
+            return Ok(model_path.to_string());
+        }
+
+        // Prefer an existing cache hit before asking the native resolver to
+        // download. Mirror native selection semantics: exact match first,
+        // then the first fuzzy substring match.
+        let cache_dir = Self::cache_dir();
+        if !cache_dir.is_empty() {
+            let model_key = model_path.to_ascii_lowercase();
+            let models = Self::list_models();
+
+            if let Some(model) = models.iter().find(|model| {
+                model.name.eq_ignore_ascii_case(model_path)
+                    || model.filename.eq_ignore_ascii_case(model_path)
+            }) {
+                let cached = Path::new(&cache_dir).join(&model.filename);
+                if cached.is_file() {
+                    return Ok(cached.to_string_lossy().into_owned());
+                }
+            }
+
+            if let Some(model) = models.iter().find(|model| {
+                model.name.to_ascii_lowercase().contains(&model_key)
+                    || model.filename.to_ascii_lowercase().contains(&model_key)
+            }) {
+                let cached = Path::new(&cache_dir).join(&model.filename);
+                if cached.is_file() {
+                    return Ok(cached.to_string_lossy().into_owned());
+                }
+            }
+        }
+
+        let arg = CString::new(model_path).map_err(|e| format!("invalid model path: {e}"))?;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_resolve_model(
+                arg.as_ptr(),
+                if should_download { 1 } else { 0 },
+            )
+        };
+        if ptr.is_null() {
+            return Err(format!("could not resolve model '{model_path}'"));
+        }
+        let resolved = unsafe { CStr::from_ptr(ptr) }
+            .to_string_lossy()
+            .into_owned();
+        if resolved.is_empty() {
+            Err(format!("could not resolve model '{model_path}'"))
+        } else {
+            Ok(resolved)
+        }
+    }
+
+    /// Query prefix from the built-in registry name table, or empty string.
+    pub fn query_prefix(model_name: &str) -> String {
+        let name = match CString::new(model_name) {
+            Ok(s) => s,
+            Err(_) => return String::new(),
+        };
+        let ptr = unsafe { crispembed_sys::crispembed_query_prefix(name.as_ptr()) };
+        if ptr.is_null() {
+            String::new()
+        } else {
+            unsafe { CStr::from_ptr(ptr) }
+                .to_string_lossy()
+                .into_owned()
+        }
+    }
+
+    /// Passage/document prefix from the built-in registry name table, or empty string.
+    pub fn passage_prefix(model_name: &str) -> String {
+        let name = match CString::new(model_name) {
+            Ok(s) => s,
+            Err(_) => return String::new(),
+        };
+        let ptr = unsafe { crispembed_sys::crispembed_passage_prefix(name.as_ptr()) };
+        if ptr.is_null() {
+            String::new()
+        } else {
+            unsafe { CStr::from_ptr(ptr) }
+                .to_string_lossy()
+                .into_owned()
+        }
+    }
+
+    pub fn list_models() -> Vec<ModelInfo> {
+        let n = unsafe { crispembed_sys::crispembed_n_models() };
+        let mut models = Vec::with_capacity(n.max(0) as usize);
+        for i in 0..n {
+            let read = |ptr: *const c_char| {
+                if ptr.is_null() {
+                    String::new()
+                } else {
+                    unsafe { CStr::from_ptr(ptr) }
+                        .to_string_lossy()
+                        .into_owned()
+                }
+            };
+            models.push(ModelInfo {
+                name: read(unsafe { crispembed_sys::crispembed_model_name(i) }),
+                desc: read(unsafe { crispembed_sys::crispembed_model_desc(i) }),
+                filename: read(unsafe { crispembed_sys::crispembed_model_filename(i) }),
+                size: read(unsafe { crispembed_sys::crispembed_model_size(i) }),
+                license: read(unsafe { crispembed_sys::crispembed_model_license(i) }),
+                model_card_url: read(unsafe { crispembed_sys::crispembed_model_card_url(i) }),
+            });
+        }
+        models
+    }
+
+    /// Output embedding dimension.
+    pub fn dim(&self) -> usize {
+        self.dim
+    }
+
+    /// Set Matryoshka truncation dimension. Pass `0` to use the model default.
+    pub fn set_dim(&mut self, dim: i32) {
+        unsafe { crispembed_sys::crispembed_set_dim(self.ctx, dim) }
+    }
+
+    // ── LoRA adapter hot-swap ──────────────────────────────────────
+
+    /// Activate a LoRA adapter by name.  Pass an empty string to deactivate
+    /// all adapters (base model only).  Returns `true` on success.
+    pub fn set_lora(&mut self, adapter_name: &str) -> bool {
+        let c = CString::new(adapter_name).unwrap_or_default();
+        unsafe { crispembed_sys::crispembed_set_lora(self.ctx, c.as_ptr()) == 1 }
+    }
+
+    /// Currently active LoRA adapter name, or `None` if none active.
+    pub fn get_lora(&self) -> Option<String> {
+        let ptr = unsafe { crispembed_sys::crispembed_get_lora(self.ctx) };
+        if ptr.is_null() {
+            return None;
+        }
+        let s = unsafe { CStr::from_ptr(ptr) }
+            .to_str()
+            .unwrap_or("")
+            .to_string();
+        if s.is_empty() {
+            None
+        } else {
+            Some(s)
+        }
+    }
+
+    /// List available LoRA adapter names (empty if the model has no adapters).
+    pub fn list_lora(&self) -> Vec<String> {
+        let mut names_ptr: *const *const std::os::raw::c_char = std::ptr::null();
+        let mut count: std::os::raw::c_int = 0;
+        let ok =
+            unsafe { crispembed_sys::crispembed_list_lora(self.ctx, &mut names_ptr, &mut count) };
+        if ok == 0 || count <= 0 || names_ptr.is_null() {
+            return Vec::new();
+        }
+        (0..count as usize)
+            .filter_map(|i| {
+                let p = unsafe { *names_ptr.add(i) };
+                if p.is_null() {
+                    None
+                } else {
+                    Some(unsafe { CStr::from_ptr(p) }.to_string_lossy().into_owned())
+                }
+            })
+            .collect()
+    }
+
+    /// Set a text prefix prepended to all inputs before tokenization.
+    ///
+    /// Typical values:
+    /// - `"query: "` (E5, Jina v5)
+    /// - `"search_query: "` / `"search_document: "` (Nomic)
+    /// - `"Represent this sentence for searching relevant passages: "` (BGE)
+    ///
+    /// Pass an empty string to clear.
+    pub fn set_prefix(&mut self, prefix: &str) {
+        let cp = CString::new(prefix).unwrap_or_default();
+        unsafe { crispembed_sys::crispembed_set_prefix(self.ctx, cp.as_ptr()) }
+    }
+
+    /// Get the current prefix (empty string if none set).
+    pub fn prefix(&self) -> String {
+        let ptr = unsafe { crispembed_sys::crispembed_get_prefix(self.ctx) };
+        if ptr.is_null() {
+            String::new()
+        } else {
+            unsafe { CStr::from_ptr(ptr) }
+                .to_string_lossy()
+                .into_owned()
+        }
+    }
+
+    /// Query prefix from GGUF metadata (`colbert.query_prefix`), or empty string.
+    pub fn ctx_query_prefix(&self) -> String {
+        let ptr = unsafe { crispembed_sys::crispembed_ctx_query_prefix(self.ctx) };
+        if ptr.is_null() {
+            String::new()
+        } else {
+            unsafe { CStr::from_ptr(ptr) }
+                .to_string_lossy()
+                .into_owned()
+        }
+    }
+
+    /// Passage/document prefix from GGUF metadata, or empty string.
+    pub fn ctx_passage_prefix(&self) -> String {
+        let ptr = unsafe { crispembed_sys::crispembed_ctx_passage_prefix(self.ctx) };
+        if ptr.is_null() {
+            String::new()
+        } else {
+            unsafe { CStr::from_ptr(ptr) }
+                .to_string_lossy()
+                .into_owned()
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Capability queries
+    // ------------------------------------------------------------------
+
+    /// Returns `true` if the model has a sparse retrieval head (BGE-M3 sparse).
+    pub fn has_sparse(&self) -> bool {
+        unsafe { crispembed_sys::crispembed_has_sparse(self.ctx) != 0 }
+    }
+
+    /// Returns `true` if the model has a ColBERT multi-vector head.
+    pub fn has_colbert(&self) -> bool {
+        unsafe { crispembed_sys::crispembed_has_colbert(self.ctx) != 0 }
+    }
+
+    /// Returns `true` if the model is a cross-encoder reranker.
+    pub fn is_reranker(&self) -> bool {
+        unsafe { crispembed_sys::crispembed_is_reranker(self.ctx) != 0 }
+    }
+
+    // ------------------------------------------------------------------
+    // Dense encode
+    // ------------------------------------------------------------------
+
+    /// Encode a single text to an L2-normalised embedding.
+    pub fn encode(&mut self, text: &str) -> Vec<f32> {
+        let ctext = match CString::new(text) {
+            Ok(s) => s,
+            Err(_) => return vec![],
+        };
+        let mut n_dim: i32 = 0;
+        let ptr =
+            unsafe { crispembed_sys::crispembed_encode(self.ctx, ctext.as_ptr(), &mut n_dim) };
+        if ptr.is_null() || n_dim <= 0 {
+            return vec![];
+        }
+        unsafe { std::slice::from_raw_parts(ptr, n_dim as usize) }.to_vec()
+    }
+
+    /// Encode multiple texts and return one embedding per input in the same order.
+    ///
+    /// The current native dense batch implementation runs items sequentially
+    /// to preserve exact agreement with repeated single-text encodes.
+    pub fn encode_batch(&mut self, texts: &[&str]) -> Vec<Vec<f32>> {
+        if texts.is_empty() {
+            return vec![];
+        }
+        let cstrings: Vec<CString> = texts.iter().filter_map(|t| CString::new(*t).ok()).collect();
+        if cstrings.len() != texts.len() {
+            return vec![];
+        }
+        let ptrs: Vec<*const c_char> = cstrings.iter().map(|s| s.as_ptr()).collect();
+
+        let mut n_dim: i32 = 0;
+        let flat = unsafe {
+            crispembed_sys::crispembed_encode_batch(
+                self.ctx,
+                ptrs.as_ptr(),
+                ptrs.len() as i32,
+                &mut n_dim,
+            )
+        };
+        if flat.is_null() || n_dim <= 0 {
+            return vec![];
+        }
+        let dim = n_dim as usize;
+        let raw = unsafe { std::slice::from_raw_parts(flat, dim * texts.len()) };
+        raw.chunks(dim).map(|c| c.to_vec()).collect()
+    }
+
+    // ------------------------------------------------------------------
+    // Sparse encode (BGE-M3 SPLADE-style)
+    // ------------------------------------------------------------------
+
+    /// Encode `text` to a sparse term-weight vector.
+    ///
+    /// Returns a list of `(vocab_token_id, weight)` pairs with `weight > 0`.
+    /// Returns an empty vector if the model has no sparse head or encoding fails.
+    pub fn encode_sparse(&mut self, text: &str) -> Vec<(i32, f32)> {
+        if !self.has_sparse() {
+            return vec![];
+        }
+        let ctext = match CString::new(text) {
+            Ok(s) => s,
+            Err(_) => return vec![],
+        };
+        let mut indices_ptr: *const i32 = std::ptr::null();
+        let mut values_ptr: *const f32 = std::ptr::null();
+        let n = unsafe {
+            crispembed_sys::crispembed_encode_sparse(
+                self.ctx,
+                ctext.as_ptr(),
+                &mut indices_ptr,
+                &mut values_ptr,
+            )
+        };
+        if n <= 0 || indices_ptr.is_null() || values_ptr.is_null() {
+            return vec![];
+        }
+        let indices = unsafe { std::slice::from_raw_parts(indices_ptr, n as usize) };
+        let values = unsafe { std::slice::from_raw_parts(values_ptr, n as usize) };
+        indices
+            .iter()
+            .zip(values.iter())
+            .map(|(&i, &v)| (i, v))
+            .collect()
+    }
+
+    // ------------------------------------------------------------------
+    // Multi-vector encode (ColBERT)
+    // ------------------------------------------------------------------
+
+    /// Encode `text` to per-token L2-normalised embeddings.
+    ///
+    /// Returns one `Vec<f32>` per (non-padding) token.
+    /// Returns an empty vector if the model has no ColBERT head or encoding fails.
+    pub fn encode_multivec(&mut self, text: &str) -> Vec<Vec<f32>> {
+        if !self.has_colbert() {
+            return vec![];
+        }
+        let ctext = match CString::new(text) {
+            Ok(s) => s,
+            Err(_) => return vec![],
+        };
+        let mut n_tokens: i32 = 0;
+        let mut out_dim: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_encode_multivec(
+                self.ctx,
+                ctext.as_ptr(),
+                &mut n_tokens,
+                &mut out_dim,
+            )
+        };
+        if ptr.is_null() || n_tokens <= 0 || out_dim <= 0 {
+            return vec![];
+        }
+        let dim = out_dim as usize;
+        let raw = unsafe { std::slice::from_raw_parts(ptr, (n_tokens * out_dim) as usize) };
+        raw.chunks(dim).map(|c| c.to_vec()).collect()
+    }
+
+    /// ColBERT MaxSim score between query and document token vectors.
+    pub fn colbert_score(
+        query_vecs: &[f32],
+        n_query: i32,
+        doc_vecs: &[f32],
+        n_doc: i32,
+        dim: i32,
+    ) -> f32 {
+        unsafe {
+            crispembed_sys::crispembed_colbert_score(
+                query_vecs.as_ptr(),
+                n_query,
+                doc_vecs.as_ptr(),
+                n_doc,
+                dim,
+            )
+        }
+    }
+
+    // ------------------------------------------------------------------
+    // Per-token contextual embeddings (any encoder model)
+    // ------------------------------------------------------------------
+
+    /// Tokenizer family: `1`=WordPiece (`##` continuation), `2`=SentencePiece
+    /// (`▁` word-start marker), `3`=BPE, `0`=unknown. Aligner code uses this
+    /// to interpret subword markers when grouping tokens back into words.
+    pub fn tokenizer_kind(&self) -> i32 {
+        unsafe { crispembed_sys::crispembed_tokenizer_kind(self.ctx) as i32 }
+    }
+
+    /// Encode `text` to per-token L2-normalised final hidden states. Works
+    /// on any encoder model — not gated on the ColBERT head. Returns one
+    /// `(token_string, embedding)` tuple per non-padding token, in order.
+    ///
+    /// Designed for SimAlign-style word aligners that take cosine
+    /// similarity over contextual token embeddings between two languages.
+    pub fn encode_tokens(&mut self, text: &str) -> Vec<(String, Vec<f32>)> {
+        let ctext = match CString::new(text) {
+            Ok(s) => s,
+            Err(_) => return vec![],
+        };
+        let mut n_tokens: i32 = 0;
+        let mut out_dim: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_encode_tokens(
+                self.ctx,
+                ctext.as_ptr(),
+                &mut n_tokens,
+                &mut out_dim,
+            )
+        };
+        if ptr.is_null() || n_tokens <= 0 || out_dim <= 0 {
+            return vec![];
+        }
+        let dim = out_dim as usize;
+        let n = n_tokens as usize;
+        let raw = unsafe { std::slice::from_raw_parts(ptr, n * dim) };
+        let ids_ptr = unsafe { crispembed_sys::crispembed_last_token_ids(self.ctx) };
+        let ids: &[i32] = if ids_ptr.is_null() {
+            &[]
+        } else {
+            unsafe { std::slice::from_raw_parts(ids_ptr, n) }
+        };
+
+        let mut out = Vec::with_capacity(n);
+        for (t, vec) in raw.chunks(dim).enumerate() {
+            let tok_id = ids.get(t).copied().unwrap_or(-1);
+            let tok = if tok_id < 0 {
+                String::new()
+            } else {
+                let cstr = unsafe { crispembed_sys::crispembed_token_str(self.ctx, tok_id) };
+                if cstr.is_null() {
+                    String::new()
+                } else {
+                    unsafe { std::ffi::CStr::from_ptr(cstr) }
+                        .to_string_lossy()
+                        .into_owned()
+                }
+            };
+            out.push((tok, vec.to_vec()));
+        }
+        out
+    }
+
+    /// Native hidden states, with vocabulary IDs including BOS/EOS. No L2
+    /// normalization. LFM2 masked encoders default on for CPU; GPU requires CRISPEMBED_LFM2_ENCODER=1.
+    pub fn encode_tokens_raw(&mut self, text: &str) -> Result<(Vec<i32>, Vec<Vec<f32>>), String> {
+        let text = CString::new(text).map_err(|e| e.to_string())?;
+        let (mut n, mut dim) = (0, 0);
+        let ptr = unsafe {
+            crispembed_sys::crispembed_encode_tokens_raw(self.ctx, text.as_ptr(), &mut n, &mut dim)
+        };
+        if ptr.is_null() || n <= 0 || dim <= 0 {
+            return Err("Raw token encoding failed or is unsupported".into());
+        }
+        let ids = unsafe { crispembed_sys::crispembed_last_token_ids(self.ctx) };
+        if ids.is_null() {
+            return Err("Token encoding returned no IDs".into());
+        }
+        let features = unsafe { std::slice::from_raw_parts(ptr, n as usize * dim as usize) }
+            .chunks(dim as usize)
+            .map(|row| row.to_vec())
+            .collect();
+        Ok((
+            unsafe { std::slice::from_raw_parts(ids, n as usize) }.to_vec(),
+            features,
+        ))
+    }
+
+    pub fn has_masked_lm(&self) -> bool {
+        unsafe { crispembed_sys::crispembed_has_masked_lm(self.ctx) != 0 }
+    }
+
+    /// Raw vocabulary logits for each literal <|mask|>, evaluated jointly.
+    /// No query/document prefix is applied.
+    pub fn masked_logits(&mut self, text: &str) -> Result<(Vec<i32>, Vec<Vec<f32>>), String> {
+        let text = CString::new(text).map_err(|e| e.to_string())?;
+        let (mut n, mut vocab) = (0, 0);
+        let mut positions = std::ptr::null();
+        let ptr = unsafe {
+            crispembed_sys::crispembed_masked_logits(
+                self.ctx,
+                text.as_ptr(),
+                &mut n,
+                &mut vocab,
+                &mut positions,
+            )
+        };
+        if ptr.is_null() || positions.is_null() || n <= 0 || vocab <= 0 {
+            return Err("Masked prediction requires an enabled encoder and <|mask|> token".into());
+        }
+        let logits = unsafe { std::slice::from_raw_parts(ptr, n as usize * vocab as usize) }
+            .chunks(vocab as usize)
+            .map(|row| row.to_vec())
+            .collect();
+        Ok((
+            unsafe { std::slice::from_raw_parts(positions, n as usize) }.to_vec(),
+            logits,
+        ))
+    }
+
+    pub fn token_bytes(&self, token_id: i32) -> Result<Vec<u8>, String> {
+        let mut size = 0;
+        let ptr = unsafe { crispembed_sys::crispembed_token_bytes(self.ctx, token_id, &mut size) };
+        if ptr.is_null() || size < 0 {
+            return Err("Invalid token ID or unsupported decoder".into());
+        }
+        Ok(unsafe { std::slice::from_raw_parts(ptr.cast::<u8>(), size as usize) }.to_vec())
+    }
+
+    /// Whether the model exposes the calibrated typed-decision head.
+    pub fn has_decision(&self) -> bool {
+        unsafe { crispembed_sys::crispembed_has_decision(self.ctx) != 0 }
+    }
+
+    /// Score normalized embeddings through the calibrated head. type_id is
+    /// 0=choice, 1=score, 2=noul; each input vector has 768 coordinates.
+    pub fn decision_scores(
+        &mut self,
+        state: &[f32],
+        question: &[f32],
+        options: &[Vec<f32>],
+        type_id: i32,
+    ) -> Result<(Vec<f32>, Vec<f32>), String> {
+        if !self.has_decision()
+            || state.len() != 768
+            || question.len() != 768
+            || options.is_empty()
+            || options.len() > 4096
+            || !(0..=2).contains(&type_id)
+            || options.iter().any(|v| v.len() != 768)
+        {
+            return Err("Invalid decision embedding dimensions/type or unsupported model".into());
+        }
+        let flat: Vec<f32> = options.iter().flatten().copied().collect();
+        if state
+            .iter()
+            .chain(question)
+            .chain(&flat)
+            .any(|v| !v.is_finite())
+        {
+            return Err("Embeddings must be finite".into());
+        }
+        let mut logits = vec![0.; options.len()];
+        let mut probabilities = vec![0.; options.len()];
+        let ok = unsafe {
+            crispembed_sys::crispembed_decision_scores(
+                self.ctx,
+                state.as_ptr(),
+                question.as_ptr(),
+                flat.as_ptr(),
+                options.len() as i32,
+                type_id,
+                logits.as_mut_ptr(),
+                probabilities.as_mut_ptr(),
+            )
+        };
+        if ok == 0 {
+            return Err("Decision scoring failed".into());
+        }
+        Ok((logits, probabilities))
+    }
+
+    /// Submit {state, questions, workflow?} JSON and return typed-answer JSON.
+    /// Values retain their string/integer/boolean types. Requires the opt-in
+    /// CPU GemmaDecision backend; returned data is copied before reuse.
+    pub fn decide_json(&mut self, request: &str) -> Result<String, String> {
+        if !self.has_decision() {
+            return Err("Model has no typed-decision head".into());
+        }
+        let request = CString::new(request).map_err(|_| "Request contains NUL")?;
+        let result = unsafe { crispembed_sys::crispembed_decide_json(self.ctx, request.as_ptr()) };
+        if result.is_null() {
+            let error = unsafe { crispembed_sys::crispembed_decision_error(self.ctx) };
+            return Err(if error.is_null() {
+                "Typed decision failed".into()
+            } else {
+                unsafe { CStr::from_ptr(error) }
+                    .to_string_lossy()
+                    .into_owned()
+            });
+        }
+        Ok(unsafe { CStr::from_ptr(result) }
+            .to_string_lossy()
+            .into_owned())
+    }
+
+    /// Top predictions per [MASK]/<|mask|>, with full-vocabulary probabilities.
+    pub fn fill_mask(&mut self, text: &str, top_k: usize) -> Result<Vec<MaskResult>, String> {
+        if top_k == 0 {
+            return Err("top_k must be positive".into());
+        }
+        let (positions, logits) = self.masked_logits(&text.replace("[MASK]", "<|mask|>"))?;
+        let mut result = Vec::with_capacity(positions.len());
+        for (position, row) in positions.into_iter().zip(logits) {
+            if top_k > row.len() {
+                return Err("top_k exceeds vocabulary size".into());
+            }
+            let mut ids: Vec<usize> = (0..row.len()).collect();
+            ids.sort_by(|&a, &b| row[b].total_cmp(&row[a]).then(a.cmp(&b)));
+            let maximum = row[ids[0]] as f64;
+            let denominator: f64 = row.iter().map(|&v| (v as f64 - maximum).exp()).sum();
+            let mut predictions = Vec::with_capacity(top_k);
+            for &id in &ids[..top_k] {
+                predictions.push(MaskPrediction {
+                    token_id: id as i32,
+                    token: String::from_utf8_lossy(&self.token_bytes(id as i32)?).into_owned(),
+                    logit: row[id],
+                    score: (row[id] as f64 - maximum).exp() / denominator,
+                });
+            }
+            result.push(MaskResult {
+                position,
+                predictions,
+            });
+        }
+        Ok(result)
+    }
+
+    // ------------------------------------------------------------------
+    // Audio encoding (BidirLM-Omni and similar)
+    // ------------------------------------------------------------------
+
+    /// Whether this build of CrispEmbed has audio support compiled in.
+    /// (Whether *this model* has an audio tower is only known after the
+    /// first `encode_audio` call — failures return an empty vector.)
+    pub fn has_audio(&self) -> bool {
+        unsafe { crispembed_sys::crispembed_has_audio(self.ctx) != 0 }
+    }
+
+    /// Encode raw 16 kHz mono float32 PCM into the model's shared
+    /// embedding space (same dim as `encode(text)` for omnimodal models,
+    /// suitable for cross-modal cosine similarity).
+    ///
+    /// Returns an empty vector if the model lacks an audio tower or
+    /// encoding fails.
+    pub fn encode_audio(&mut self, pcm: &[f32]) -> Vec<f32> {
+        if !self.has_audio() {
+            return vec![];
+        }
+        let mut out_dim: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_encode_audio(
+                self.ctx,
+                pcm.as_ptr(),
+                pcm.len() as i32,
+                &mut out_dim,
+            )
+        };
+        if ptr.is_null() || out_dim <= 0 {
+            return vec![];
+        }
+        unsafe { std::slice::from_raw_parts(ptr, out_dim as usize) }.to_vec()
+    }
+
+    // ------------------------------------------------------------------
+    // Image encoding (BidirLM-Omni vision tower)
+    // ------------------------------------------------------------------
+
+    /// Whether this build has vision support compiled in. Whether the
+    /// loaded GGUF has a vision tower is only known after the first
+    /// `encode_image` call.
+    pub fn has_vision(&self) -> bool {
+        unsafe { crispembed_sys::crispembed_has_vision(self.ctx) != 0 }
+    }
+
+    /// Encode pre-flattened pixel patches into the model's shared
+    /// embedding space. Mean-pools across merged tokens and L2-normalizes.
+    ///
+    /// `pixel_patches` is row-major `(n_patches, 1536)` float32, produced
+    /// by an HF `Qwen2VLImageProcessorFast`-equivalent pipeline.
+    /// `grid_thw` is `(n_images, 3)` int32.
+    pub fn encode_image(&mut self, pixel_patches: &[f32], grid_thw: &[i32]) -> Vec<f32> {
+        if grid_thw.len() % 3 != 0 {
+            return vec![];
+        }
+        let n_images = (grid_thw.len() / 3) as i32;
+        // patch_flat_dim = 1536 for the standard 16×16 RGB / temporal=2 config —
+        // could be queried from hparams, but matching the converter contract is
+        // simpler. Caller is expected to have used a compatible preprocessor.
+        let n_patches = if pixel_patches.is_empty() {
+            0
+        } else {
+            // Recover from grid_thw: sum of t·h·w across images.
+            grid_thw.chunks(3).map(|c| c[0] * c[1] * c[2]).sum::<i32>()
+        };
+        if n_patches <= 0 {
+            return vec![];
+        }
+
+        let mut out_dim: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_encode_image(
+                self.ctx,
+                pixel_patches.as_ptr(),
+                n_patches,
+                grid_thw.as_ptr(),
+                n_images,
+                &mut out_dim,
+            )
+        };
+        if ptr.is_null() || out_dim <= 0 {
+            return vec![];
+        }
+        unsafe { std::slice::from_raw_parts(ptr, out_dim as usize) }.to_vec()
+    }
+
+    /// Raw vision tower output (un-pooled, un-normalized).
+    /// Returns `(image_embeds, deepstack_features)` where each entry is a
+    /// flat row-major buffer of `n_merged * dim` floats.
+    pub fn encode_image_raw(
+        &mut self,
+        pixel_patches: &[f32],
+        grid_thw: &[i32],
+    ) -> (Vec<f32>, Vec<Vec<f32>>) {
+        let empty = (Vec::new(), Vec::new());
+        if grid_thw.len() % 3 != 0 {
+            return empty;
+        }
+        let n_images = (grid_thw.len() / 3) as i32;
+        let n_patches = grid_thw.chunks(3).map(|c| c[0] * c[1] * c[2]).sum::<i32>();
+        if n_patches <= 0 {
+            return empty;
+        }
+
+        let mut n_merged: i32 = 0;
+        let mut out_dim: i32 = 0;
+        let mut n_deepstack: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_encode_image_raw(
+                self.ctx,
+                pixel_patches.as_ptr(),
+                n_patches,
+                grid_thw.as_ptr(),
+                n_images,
+                &mut n_merged,
+                &mut out_dim,
+                &mut n_deepstack,
+            )
+        };
+        if ptr.is_null() || n_merged <= 0 {
+            return empty;
+        }
+        let per_slab = (n_merged * out_dim) as usize;
+        let total = (1 + n_deepstack as usize) * per_slab;
+        let flat = unsafe { std::slice::from_raw_parts(ptr, total) };
+        let img = flat[..per_slab].to_vec();
+        let mut deepstack = Vec::with_capacity(n_deepstack as usize);
+        for k in 0..n_deepstack as usize {
+            let beg = (1 + k) * per_slab;
+            deepstack.push(flat[beg..beg + per_slab].to_vec());
+        }
+        (img, deepstack)
+    }
+
+    /// Load an image from disk, preprocess it, and encode it via the vision
+    /// tower. Returns an L2-normalized cross-modal embedding (same dim as
+    /// `encode(text)` for omnimodal models).
+    ///
+    /// The C++ preprocessor uses bilinear resize (vs torchvision bicubic +
+    /// antialias used by HF) — expect cosine ≈ 0.95–0.98 on photographs.
+    ///
+    /// Returns an empty vector on failure (disk error, missing vision tower).
+    pub fn encode_image_file(&mut self, path: &str) -> Vec<f32> {
+        let cpath = match CString::new(path) {
+            Ok(s) => s,
+            Err(_) => return vec![],
+        };
+        let mut out_dim: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_encode_image_file(self.ctx, cpath.as_ptr(), &mut out_dim)
+        };
+        if ptr.is_null() || out_dim <= 0 {
+            return vec![];
+        }
+        unsafe { std::slice::from_raw_parts(ptr, out_dim as usize) }.to_vec()
+    }
+
+    /// Load an image from disk, preprocess it, and produce a text-conditioned
+    /// multimodal embedding. `text` must contain the correct number of
+    /// `image_token_id` placeholders for the grid that `smart_resize` will
+    /// produce — call `preprocess_image` first to learn `grid_thw`, then
+    /// build the text template.
+    ///
+    /// Same bilinear-resize parity caveat as `encode_image_file`.
+    ///
+    /// Returns an empty vector on failure.
+    pub fn encode_text_with_image_file(&mut self, text: &str, image_path: &str) -> Vec<f32> {
+        let ctext = match CString::new(text) {
+            Ok(s) => s,
+            Err(_) => return vec![],
+        };
+        let cpath = match CString::new(image_path) {
+            Ok(s) => s,
+            Err(_) => return vec![],
+        };
+        let mut out_dim: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_encode_text_with_image_file(
+                self.ctx,
+                ctext.as_ptr(),
+                cpath.as_ptr(),
+                &mut out_dim,
+            )
+        };
+        if ptr.is_null() || out_dim <= 0 {
+            return vec![];
+        }
+        unsafe { std::slice::from_raw_parts(ptr, out_dim as usize) }.to_vec()
+    }
+
+    // ------------------------------------------------------------------
+    // Reranker
+    // ------------------------------------------------------------------
+
+    /// Score a (query, document) pair. Returns a raw relevance logit.
+    ///
+    /// Higher is more relevant. Returns `f32::NAN` if the model is not a
+    /// reranker or if encoding fails.
+    pub fn rerank(&mut self, query: &str, document: &str) -> f32 {
+        if !self.is_reranker() {
+            return f32::NAN;
+        }
+        let cq = match CString::new(query) {
+            Ok(s) => s,
+            Err(_) => return f32::NAN,
+        };
+        let cd = match CString::new(document) {
+            Ok(s) => s,
+            Err(_) => return f32::NAN,
+        };
+        unsafe { crispembed_sys::crispembed_rerank(self.ctx, cq.as_ptr(), cd.as_ptr()) }
+    }
+
+    // ------------------------------------------------------------------
+    // Bi-encoder reranking (cosine similarity of L2-normalised embeddings)
+    // ------------------------------------------------------------------
+
+    /// Rank documents by cosine similarity to the query embedding.
+    ///
+    /// Encodes query and all documents in a single batch, computes dot
+    /// products of L2-normalised embeddings (= cosine similarity), and
+    /// returns `(document_index, score)` pairs sorted by score descending.
+    ///
+    /// If `top_n` is `Some(k)`, only the top-k results are returned.
+    pub fn rerank_biencoder(
+        &mut self,
+        query: &str,
+        documents: &[&str],
+        top_n: Option<usize>,
+    ) -> Vec<(usize, f32)> {
+        let mut all_texts: Vec<&str> = Vec::with_capacity(1 + documents.len());
+        all_texts.push(query);
+        all_texts.extend_from_slice(documents);
+
+        let embeddings = self.encode_batch(&all_texts);
+        if embeddings.is_empty() || embeddings.len() != all_texts.len() {
+            return vec![];
+        }
+
+        let query_vec = &embeddings[0];
+        let mut scored: Vec<(usize, f32)> = embeddings[1..]
+            .iter()
+            .enumerate()
+            .map(|(i, doc_vec)| {
+                let dot: f32 = query_vec
+                    .iter()
+                    .zip(doc_vec.iter())
+                    .map(|(a, b)| a * b)
+                    .sum();
+                (i, dot)
+            })
+            .collect();
+
+        scored.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+
+        if let Some(k) = top_n {
+            scored.truncate(k);
+        }
+        scored
+    }
+}
+
+impl Drop for CrispEmbed {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_free(self.ctx) }
+    }
+}
+
+// ======================================================================
+// Face detection & recognition
+// ======================================================================
+
+pub use crispembed_sys::{CrispembedFaceDetection, CrispembedFaceResult};
+
+/// A loaded face model — either a detector (e.g. SCRFD) or a recogniser
+/// (e.g. SFace).
+///
+/// Not `Sync` — do not share between threads. Each thread should hold its
+/// own `CrispFace` instance. `Send`-safe: you can move it across threads.
+pub struct CrispFace {
+    ctx: *mut crispembed_sys::CrispembedFaceContext,
+}
+
+// Safety: same guarantee as CrispEmbed — the C library serialises all
+// mutable access through the opaque context pointer.
+unsafe impl Send for CrispFace {}
+
+impl CrispFace {
+    /// Load a face model from `model_path`.
+    ///
+    /// - `model_path` — path to the model file.
+    /// - `n_threads`  — CPU thread count; pass `0` for automatic.
+    pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let path = CString::new(model_path).map_err(|e| format!("invalid path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_face_init(path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err(format!("crispembed_face_init failed for '{model_path}'"));
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Embedding dimension produced by a recognition model.
+    /// Returns `0` for a pure detection model.
+    pub fn dim(&self) -> usize {
+        unsafe { crispembed_sys::crispembed_face_dim(self.ctx) }.max(0) as usize
+    }
+
+    /// Model type string (e.g. `"scrfd"`, `"sface"`).
+    pub fn model_type(&self) -> String {
+        let ptr = unsafe { crispembed_sys::crispembed_face_type(self.ctx) };
+        if ptr.is_null() {
+            String::new()
+        } else {
+            unsafe { CStr::from_ptr(ptr) }
+                .to_string_lossy()
+                .into_owned()
+        }
+    }
+
+    /// Detect faces in the image at `image_path`.
+    ///
+    /// - `conf_threshold` — minimum detection confidence in `[0, 1]`.
+    ///
+    /// Returns a `Vec` of [`CrispembedFaceDetection`] structs (bounding box,
+    /// confidence, 5-point landmarks). Returns an empty vector on failure.
+    pub fn detect(
+        &mut self,
+        image_path: &str,
+        conf_threshold: f32,
+    ) -> Vec<CrispembedFaceDetection> {
+        self.detect_with_size(image_path, conf_threshold, 0)
+    }
+
+    /// Like [`detect`] but with a configurable detection input resolution.
+    /// `det_size = 0` uses the default (640).
+    pub fn detect_with_size(
+        &mut self,
+        image_path: &str,
+        conf_threshold: f32,
+        det_size: i32,
+    ) -> Vec<CrispembedFaceDetection> {
+        let path = match CString::new(image_path) {
+            Ok(s) => s,
+            Err(_) => return vec![],
+        };
+        let mut n_faces: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_detect_faces(
+                self.ctx,
+                path.as_ptr(),
+                conf_threshold,
+                det_size,
+                &mut n_faces,
+            )
+        };
+        if ptr.is_null() || n_faces <= 0 {
+            return vec![];
+        }
+        // Copy structs out of the context-owned buffer so the caller owns them.
+        let slice = unsafe { std::slice::from_raw_parts(ptr, n_faces as usize) };
+        slice
+            .iter()
+            .map(|d| CrispembedFaceDetection {
+                x: d.x,
+                y: d.y,
+                w: d.w,
+                h: d.h,
+                confidence: d.confidence,
+                landmarks: d.landmarks,
+            })
+            .collect()
+    }
+
+    /// Encode the face described by `landmarks` (10 floats: 5 × [x, y])
+    /// cropped from `image_path` into a face embedding.
+    ///
+    /// Returns an empty vector on failure.
+    pub fn encode_face(&mut self, image_path: &str, landmarks: &[f32; 10]) -> Vec<f32> {
+        let path = match CString::new(image_path) {
+            Ok(s) => s,
+            Err(_) => return vec![],
+        };
+        let mut out_dim: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_encode_face(
+                self.ctx,
+                path.as_ptr(),
+                landmarks.as_ptr(),
+                &mut out_dim,
+            )
+        };
+        if ptr.is_null() || out_dim <= 0 {
+            return vec![];
+        }
+        unsafe { std::slice::from_raw_parts(ptr, out_dim as usize) }.to_vec()
+    }
+}
+
+impl Drop for CrispFace {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_face_free(self.ctx) }
+    }
+}
+
+// ----------------------------------------------------------------------
+
+/// Combined detector + recogniser pipeline.
+///
+/// Holds one detection context and one recognition context. Call [`run`]
+/// to detect all faces in an image and return their embeddings in one shot.
+///
+/// Both contexts are freed independently when this struct is dropped.
+///
+/// # Example
+///
+/// ```no_run
+/// use crispembed::CrispFacePipeline;
+///
+/// let mut pipeline = CrispFacePipeline::new(
+///     "/path/to/scrfd.gguf",
+///     "/path/to/sface.gguf",
+///     0,
+/// ).unwrap();
+///
+/// let faces = pipeline.run("/path/to/photo.jpg", 0.5);
+/// for (det, emb) in &faces {
+///     println!("face at ({}, {}) conf={:.2} emb_dim={}", det.x, det.y, det.confidence, emb.len());
+/// }
+/// ```
+pub struct CrispFacePipeline {
+    det_ctx: *mut crispembed_sys::CrispembedFaceContext,
+    rec_ctx: *mut crispembed_sys::CrispembedFaceContext,
+}
+
+// Safety: same guarantee as CrispEmbed.
+unsafe impl Send for CrispFacePipeline {}
+
+impl CrispFacePipeline {
+    /// Load a detection model and a recognition model.
+    ///
+    /// - `det_path`  — path to the face detector model file.
+    /// - `rec_path`  — path to the face recogniser model file.
+    /// - `n_threads` — CPU thread count; pass `0` for automatic.
+    pub fn new(det_path: &str, rec_path: &str, n_threads: i32) -> Result<Self, String> {
+        let det_cpath = CString::new(det_path).map_err(|e| format!("invalid det_path: {e}"))?;
+        let rec_cpath = CString::new(rec_path).map_err(|e| format!("invalid rec_path: {e}"))?;
+
+        let det_ctx =
+            unsafe { crispembed_sys::crispembed_face_init(det_cpath.as_ptr(), n_threads) };
+        if det_ctx.is_null() {
+            return Err(format!(
+                "crispembed_face_init failed for detector '{det_path}'"
+            ));
+        }
+
+        let rec_ctx =
+            unsafe { crispembed_sys::crispembed_face_init(rec_cpath.as_ptr(), n_threads) };
+        if rec_ctx.is_null() {
+            // Free the already-allocated detector context before returning.
+            unsafe { crispembed_sys::crispembed_face_free(det_ctx) };
+            return Err(format!(
+                "crispembed_face_init failed for recogniser '{rec_path}'"
+            ));
+        }
+
+        Ok(Self { det_ctx, rec_ctx })
+    }
+
+    /// Embedding dimension of the recogniser model.
+    pub fn dim(&self) -> usize {
+        unsafe { crispembed_sys::crispembed_face_dim(self.rec_ctx) }.max(0) as usize
+    }
+
+    /// Model type strings `(detector_type, recogniser_type)`.
+    pub fn model_type(&self) -> (String, String) {
+        let read = |ptr: *const std::ffi::c_char| {
+            if ptr.is_null() {
+                String::new()
+            } else {
+                unsafe { CStr::from_ptr(ptr) }
+                    .to_string_lossy()
+                    .into_owned()
+            }
+        };
+        (
+            read(unsafe { crispembed_sys::crispembed_face_type(self.det_ctx) }),
+            read(unsafe { crispembed_sys::crispembed_face_type(self.rec_ctx) }),
+        )
+    }
+
+    /// Detect all faces in `image_path` and encode each one.
+    ///
+    /// - `conf_threshold` — minimum detection confidence in `[0, 1]`.
+    ///
+    /// Returns a `Vec` of `(detection, embedding)` pairs — one per detected
+    /// face — sorted in the same order as the detector output.
+    /// Returns an empty vector on failure or when no faces are found.
+    pub fn run(
+        &mut self,
+        image_path: &str,
+        conf_threshold: f32,
+    ) -> Vec<(CrispembedFaceDetection, Vec<f32>)> {
+        self.run_with_size(image_path, conf_threshold, 0)
+    }
+
+    /// Like [`run`] but with a configurable detection input resolution.
+    /// `det_size = 0` uses the default (640).
+    pub fn run_with_size(
+        &mut self,
+        image_path: &str,
+        conf_threshold: f32,
+        det_size: i32,
+    ) -> Vec<(CrispembedFaceDetection, Vec<f32>)> {
+        let path = match CString::new(image_path) {
+            Ok(s) => s,
+            Err(_) => return vec![],
+        };
+        let mut n_faces: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_face_pipeline(
+                self.det_ctx,
+                self.rec_ctx,
+                path.as_ptr(),
+                conf_threshold,
+                det_size,
+                &mut n_faces,
+            )
+        };
+        if ptr.is_null() || n_faces <= 0 {
+            return vec![];
+        }
+        let results = unsafe { std::slice::from_raw_parts(ptr, n_faces as usize) };
+        results
+            .iter()
+            .map(|r| {
+                let det = CrispembedFaceDetection {
+                    x: r.det.x,
+                    y: r.det.y,
+                    w: r.det.w,
+                    h: r.det.h,
+                    confidence: r.det.confidence,
+                    landmarks: r.det.landmarks,
+                };
+                let emb = if r.embedding.is_null() || r.embedding_dim <= 0 {
+                    vec![]
+                } else {
+                    unsafe { std::slice::from_raw_parts(r.embedding, r.embedding_dim as usize) }
+                        .to_vec()
+                };
+                (det, emb)
+            })
+            .collect()
+    }
+}
+
+impl Drop for CrispFacePipeline {
+    fn drop(&mut self) {
+        unsafe {
+            crispembed_sys::crispembed_face_free(self.det_ctx);
+            crispembed_sys::crispembed_face_free(self.rec_ctx);
+        }
+    }
+}
+
+// ======================================================================
+// Math OCR (pix2tex) — image → LaTeX via ViT encoder + transformer decoder.
+// ======================================================================
+
+/// A loaded pix2tex math OCR model (encoder-decoder).
+///
+/// Not `Sync` — do not share between threads. Each thread should hold its
+/// own `OcrModel` instance. `Send`-safe: you can move it across threads.
+///
+/// # Example
+///
+/// ```no_run
+/// use crispembed::OcrModel;
+///
+/// let mut ocr = OcrModel::new("/path/to/model.gguf", 0).unwrap();
+///
+/// // pixels: (height, width, 3) row-major uint8 RGB
+/// let pixels: Vec<u8> = vec![255u8; 64 * 64 * 3];
+/// if let Some(latex) = ocr.recognize(&pixels, 64, 64) {
+///     println!("LaTeX: {latex}");
+/// }
+/// ```
+pub struct OcrModel {
+    ctx: *mut crispembed_sys::OcrModelContext,
+}
+
+// Safety: the underlying C library serialises all mutable access through
+// the opaque context pointer; we hold the only reference.
+unsafe impl Send for OcrModel {}
+
+impl OcrModel {
+    /// Load a math OCR GGUF model file (auto-detects architecture).
+    ///
+    /// - `model_path` — path to the `.gguf` file.
+    /// - `n_threads`  — CPU thread count; pass `0` for automatic.
+    pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let path = CString::new(model_path).map_err(|e| format!("invalid path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_ocr_model_init(path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err(format!(
+                "crispembed_ocr_model_init failed for '{model_path}'"
+            ));
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Recognize math in a raw grayscale or RGB(A) pixel buffer.
+    ///
+    /// - `pixel_bytes` — `(height, width, channels)` row-major uint8;
+    ///   `channels` must be 3 (RGB) or 4 (RGBA, alpha is dropped by the C lib).
+    ///   For convenience, a single-channel (grayscale) buffer of length
+    ///   `width * height` may be passed as `channels = 1` — but the C API
+    ///   documents 3 or 4, so prefer converting to RGB first.
+    /// - `width`, `height` — image dimensions in pixels.
+    ///
+    /// Returns `Some(latex_string)` on success, `None` on failure.
+    pub fn recognize(&mut self, pixel_bytes: &[u8], width: i32, height: i32) -> Option<String> {
+        if width <= 0 || height <= 0 {
+            return None;
+        }
+        let area = (width as usize).checked_mul(height as usize)?;
+        let channels = if pixel_bytes.len() == area {
+            1
+        } else if pixel_bytes.len() == area.checked_mul(3)? {
+            3
+        } else if pixel_bytes.len() == area.checked_mul(4)? {
+            4
+        } else {
+            return None;
+        };
+
+        let mut out_len: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_ocr_model_recognize(
+                self.ctx,
+                pixel_bytes.as_ptr(),
+                width,
+                height,
+                channels,
+                &mut out_len,
+            )
+        };
+        if ptr.is_null() {
+            return None;
+        }
+        Some(
+            unsafe { CStr::from_ptr(ptr) }
+                .to_string_lossy()
+                .into_owned(),
+        )
+    }
+
+    /// Recognize math from grayscale float pixels [0..1].
+    ///
+    /// - `pixels` — `(height, width)` row-major float32, values in [0, 1].
+    /// - `width`, `height` — image dimensions.
+    ///
+    /// Returns `Some(latex_string)` on success, `None` on failure.
+    pub fn recognize_gray(&mut self, pixels: &[f32], width: i32, height: i32) -> Option<String> {
+        if width <= 0
+            || height <= 0
+            || pixels.len() != (width as usize).checked_mul(height as usize)?
+        {
+            return None;
+        }
+        let mut out_len: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_ocr_model_recognize_gray(
+                self.ctx,
+                pixels.as_ptr(),
+                width,
+                height,
+                &mut out_len,
+            )
+        };
+        if ptr.is_null() {
+            return None;
+        }
+        Some(
+            unsafe { CStr::from_ptr(ptr) }
+                .to_string_lossy()
+                .into_owned(),
+        )
+    }
+    /// Generation cap for VLMs (including gated Qwen3.5 OCR).
+    pub fn set_max_tokens(&mut self, max_tokens: i32) {
+        unsafe { crispembed_sys::crispembed_ocr_model_set_max_tokens(self.ctx, max_tokens) }
+    }
+    pub fn get_max_tokens(&self) -> i32 {
+        unsafe { crispembed_sys::crispembed_ocr_model_get_max_tokens(self.ctx) }
+    }
+    pub fn set_prompt(&mut self, prompt: Option<&str>) -> Result<bool, String> {
+        let text = prompt
+            .map(CString::new)
+            .transpose()
+            .map_err(|e| e.to_string())?;
+        Ok(unsafe {
+            crispembed_sys::crispembed_ocr_model_set_prompt(
+                self.ctx,
+                text.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
+            ) != 0
+        })
+    }
+    /// Set TeleOCR logit penalties. Returns false for unsupported engines or invalid values.
+    pub fn set_generation_params(
+        &mut self,
+        repetition: f32,
+        presence: f32,
+        frequency: f32,
+        ngram: i32,
+    ) -> bool {
+        unsafe {
+            crispembed_sys::crispembed_ocr_model_set_generation_params(
+                self.ctx, repetition, presence, frequency, ngram,
+            ) != 0
+        }
+    }
+    /// Read (repetition, presence, frequency, no-repeat-ngram), or None for other engines.
+    pub fn generation_params(&self) -> Option<(f32, f32, f32, i32)> {
+        let (mut repetition, mut presence, mut frequency, mut ngram) = (0.0, 0.0, 0.0, 0);
+        let ok = unsafe {
+            crispembed_sys::crispembed_ocr_model_get_generation_params(
+                self.ctx,
+                &mut repetition,
+                &mut presence,
+                &mut frequency,
+                &mut ngram,
+            )
+        };
+        (ok != 0).then_some((repetition, presence, frequency, ngram))
+    }
+    /// Selected-token probabilities, including EOS for Qwen3.5 OCR.
+    pub fn confidences(&self) -> Vec<f32> {
+        let mut n = 0;
+        let p = unsafe { crispembed_sys::crispembed_ocr_model_confidences(self.ctx, &mut n) };
+        if p.is_null() || n <= 0 {
+            Vec::new()
+        } else {
+            unsafe { std::slice::from_raw_parts(p, n as usize).to_vec() }
+        }
+    }
+    pub fn mean_confidence(&self) -> f32 {
+        unsafe { crispembed_sys::crispembed_ocr_model_mean_confidence(self.ctx) }
+    }
+}
+
+impl Drop for OcrModel {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_ocr_model_free(self.ctx) }
+    }
+}
+
+/// Deprecated alias for [`OcrModel`]. The dispatcher now handles general
+/// text/document OCR in addition to math, so it was renamed.
+#[deprecated(note = "renamed to OcrModel")]
+pub type MathOcr = OcrModel;
+
+// ---------------------------------------------------------------------------
+// General OCR Pipeline — text detection (DBNet) + recognition (TrOCR)
+// ---------------------------------------------------------------------------
+
+/// General OCR pipeline — detects text regions (DBNet) then recognizes each
+/// crop (TrOCR). Wraps `crispembed_ocr_init` / `crispembed_ocr`.
+///
+/// Not `Sync`. Each thread should hold its own instance.
+pub struct OcrPipeline {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for OcrPipeline {}
+
+/// A single detected + recognized text region.
+pub struct OcrResult {
+    pub text: String,
+    pub x: f32,
+    pub y: f32,
+    pub w: f32,
+    pub h: f32,
+    pub confidence: f32,
+    pub orientation_corrected: bool,
+}
+
+/// Alias used by the model-free detector (`cc_detect`) and the result
+/// renderers (`ocr_render`): same box+text+confidence shape as [`OcrResult`].
+pub type OcrRegion = OcrResult;
+
+impl OcrPipeline {
+    /// Load an OCR pipeline from detection + recognition GGUF models.
+    pub fn new(det_model: &str, rec_model: &str, n_threads: i32) -> Result<Self, String> {
+        let det = CString::new(det_model).map_err(|e| format!("invalid det path: {e}"))?;
+        let rec = CString::new(rec_model).map_err(|e| format!("invalid rec path: {e}"))?;
+        let ctx =
+            unsafe { crispembed_sys::crispembed_ocr_init(det.as_ptr(), rec.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err(format!("crispembed_ocr_init failed"));
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Detect and recognize text in an image file.
+    pub fn run(&mut self, image_path: &str) -> Vec<OcrResult> {
+        let path = match CString::new(image_path) {
+            Ok(p) => p,
+            Err(_) => return Vec::new(),
+        };
+        let mut n: i32 = 0;
+        let ptr = unsafe { crispembed_sys::crispembed_ocr(self.ctx, path.as_ptr(), &mut n) };
+        if ptr.is_null() || n <= 0 {
+            return Vec::new();
+        }
+        let mut results = Vec::with_capacity(n as usize);
+        for i in 0..n as isize {
+            let r = unsafe { &*ptr.offset(i) };
+            let text = if r.text.is_null() {
+                String::new()
+            } else {
+                unsafe { CStr::from_ptr(r.text) }
+                    .to_string_lossy()
+                    .into_owned()
+            };
+            results.push(OcrResult {
+                text,
+                x: r.x,
+                y: r.y,
+                w: r.w,
+                h: r.h,
+                confidence: r.confidence,
+                orientation_corrected: r.orientation_corrected != 0,
+            });
+        }
+        results
+    }
+}
+
+impl Drop for OcrPipeline {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_ocr_free(self.ctx) }
+    }
+}
+
+// ======================================================================
+// Standalone ViT image embedding (SigLIP, CLIP)
+// ======================================================================
+
+/// A loaded standalone ViT model for image embedding (SigLIP, CLIP).
+///
+/// Not `Sync` — do not share between threads. Each thread should hold its
+/// own `CrispVit` instance. `Send`-safe: you can move it across threads.
+///
+/// # Example
+///
+/// ```no_run
+/// use crispembed::CrispVit;
+///
+/// let mut vit = CrispVit::new("/path/to/siglip.gguf", 0).unwrap();
+/// println!("dim = {}", vit.dim());
+/// let embedding = vit.encode_file("/path/to/image.jpg");
+/// println!("embedding length = {}", embedding.len());
+/// ```
+pub struct CrispVit {
+    ctx: *mut crispembed_sys::VitContext,
+}
+
+// Safety: the underlying C library serialises all mutable access through
+// the opaque context pointer; we hold the only reference.
+unsafe impl Send for CrispVit {}
+
+impl CrispVit {
+    /// Load a SigLIP/CLIP GGUF model file.
+    ///
+    /// - `model_path` — path to the `.gguf` file.
+    /// - `n_threads`  — CPU thread count; pass `0` for automatic.
+    pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let path = CString::new(model_path).map_err(|e| format!("invalid path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_vit_init(path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err(format!("crispembed_vit_init failed for '{model_path}'"));
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Embedding dimension produced by the ViT model.
+    pub fn dim(&self) -> i32 {
+        unsafe { crispembed_sys::crispembed_vit_dim(self.ctx) }
+    }
+
+    /// Encode an image file to a dense embedding via the ViT model.
+    ///
+    /// Returns an L2-normalized embedding vector. Returns an empty vector
+    /// on failure (bad path, unsupported image format, etc.).
+    pub fn encode_file(&mut self, image_path: &str) -> Vec<f32> {
+        let cpath = match CString::new(image_path) {
+            Ok(s) => s,
+            Err(_) => return vec![],
+        };
+        let mut out_dim: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_vit_encode_file(self.ctx, cpath.as_ptr(), &mut out_dim)
+        };
+        if ptr.is_null() || out_dim <= 0 {
+            return vec![];
+        }
+        unsafe { std::slice::from_raw_parts(ptr, out_dim as usize) }.to_vec()
+    }
+}
+
+impl Drop for CrispVit {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_vit_free(self.ctx) }
+    }
+}
+
+// ── Layout Detection (RT-DETRv2) ──
+
+/// A detected layout region.
+pub struct DetectedRegion {
+    pub x1: f32,
+    pub y1: f32,
+    pub x2: f32,
+    pub y2: f32,
+    pub score: f32,
+    pub label: i32,
+    pub label_name: String,
+}
+
+/// RT-DETRv2 document layout detection (17 region classes).
+pub struct CrispLayout {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispLayout {}
+
+impl CrispLayout {
+    pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let c_path = std::ffi::CString::new(model_path).map_err(|e| e.to_string())?;
+        let ctx = unsafe { crispembed_sys::crispembed_layout_init(c_path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err(format!("Failed to load layout model: {}", model_path));
+        }
+        Ok(Self { ctx })
+    }
+
+    pub fn detect(&self, image_path: &str, threshold: f32) -> Vec<DetectedRegion> {
+        let c_path = std::ffi::CString::new(image_path).unwrap();
+        let mut n: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_layout_detect(self.ctx, c_path.as_ptr(), threshold, &mut n)
+        };
+        let mut results = Vec::new();
+        if !ptr.is_null() && n > 0 {
+            for i in 0..n as usize {
+                let r = unsafe { &*ptr.add(i) };
+                let name = if r.label_name.is_null() {
+                    String::new()
+                } else {
+                    unsafe { std::ffi::CStr::from_ptr(r.label_name) }
+                        .to_str()
+                        .unwrap_or("")
+                        .to_string()
+                };
+                results.push(DetectedRegion {
+                    x1: r.x1,
+                    y1: r.y1,
+                    x2: r.x2,
+                    y2: r.y2,
+                    score: r.score,
+                    label: r.label,
+                    label_name: name,
+                });
+            }
+        }
+        results
+    }
+}
+
+impl Drop for CrispLayout {
+    fn drop(&mut self) {
+        if !self.ctx.is_null() {
+            unsafe { crispembed_sys::crispembed_layout_free(self.ctx) }
+        }
+    }
+}
+
+// ── Named Entity Recognition (GLiNER) ──
+
+/// A single extracted named entity.
+pub struct NerEntity {
+    pub text: String,
+    pub label: String,
+    pub start: i32,
+    pub end: i32,
+    pub score: f32,
+}
+
+/// GLiNER zero-shot named entity recognition.
+///
+/// Not `Sync` -- do not share between threads. Each thread should hold its
+/// own `CrispNER` instance. `Send`-safe: you can move it across threads.
+///
+/// # Example
+///
+/// ```no_run
+/// use crispembed::CrispNER;
+///
+/// let mut ner = CrispNER::new("/path/to/gliner.gguf", 0).unwrap();
+/// let entities = ner.extract(
+///     "John works at Google in New York.",
+///     &["person", "organization", "location"],
+///     0.5,
+/// );
+/// for e in &entities {
+///     println!("{} ({}) [{}, {}) score={:.3}", e.text, e.label, e.start, e.end, e.score);
+/// }
+/// ```
+pub struct CrispNER {
+    ctx: *mut crispembed_sys::NerContext,
+}
+
+unsafe impl Send for CrispNER {}
+
+impl CrispNER {
+    /// Load a NER GGUF model file (auto-detects architecture).
+    ///
+    /// - `model_path` -- path to the `.gguf` file.
+    /// - `n_threads`  -- CPU thread count; pass `0` for automatic.
+    pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let path = CString::new(model_path).map_err(|e| format!("invalid path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_ner_init(path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err(format!("crispembed_ner_init failed for '{model_path}'"));
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Extract named entities from `text` using zero-shot `labels`.
+    ///
+    /// - `labels`    -- entity types to detect (e.g. `["person", "organization"]`).
+    /// - `threshold` -- confidence threshold in `[0, 1]` (recommended 0.5).
+    ///
+    /// Returns a `Vec<NerEntity>` sorted by position in the input text.
+    /// Returns an empty vector on failure.
+    pub fn extract(&mut self, text: &str, labels: &[&str], threshold: f32) -> Vec<NerEntity> {
+        let ctext = match CString::new(text) {
+            Ok(s) => s,
+            Err(_) => return vec![],
+        };
+        let clabels: Vec<CString> = labels
+            .iter()
+            .filter_map(|l| CString::new(*l).ok())
+            .collect();
+        if clabels.len() != labels.len() {
+            return vec![];
+        }
+        let label_ptrs: Vec<*const c_char> = clabels.iter().map(|s| s.as_ptr()).collect();
+
+        let mut out_entities: *mut crispembed_sys::NerEntity = std::ptr::null_mut();
+        let n = unsafe {
+            crispembed_sys::crispembed_ner_extract(
+                self.ctx,
+                ctext.as_ptr(),
+                label_ptrs.as_ptr(),
+                label_ptrs.len() as i32,
+                threshold,
+                &mut out_entities,
+            )
+        };
+        if n <= 0 || out_entities.is_null() {
+            return vec![];
+        }
+        let raw = unsafe { std::slice::from_raw_parts(out_entities, n as usize) };
+        raw.iter()
+            .map(|e| {
+                let text = if e.text.is_null() {
+                    String::new()
+                } else {
+                    unsafe { CStr::from_ptr(e.text) }
+                        .to_string_lossy()
+                        .into_owned()
+                };
+                let label = if e.label.is_null() {
+                    String::new()
+                } else {
+                    unsafe { CStr::from_ptr(e.label) }
+                        .to_string_lossy()
+                        .into_owned()
+                };
+                NerEntity {
+                    text,
+                    label,
+                    start: e.start_char,
+                    end: e.end_char,
+                    score: e.score,
+                }
+            })
+            .collect()
+    }
+}
+
+impl Drop for CrispNER {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_ner_free(self.ctx) }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Scan Cleanup
+// ---------------------------------------------------------------------------
+
+/// Document scan preprocessing (deskew, crop, whiten, denoise).
+///
+/// Tier 1 (classical): no model needed — pass `None` for model_path.
+/// Tier 2 (learned): pass a NAFNet GGUF model path for CNN denoising.
+///
+/// ```no_run
+/// let cleanup = CrispScanCleanup::new(None, 4).unwrap();
+/// let cleaned = cleanup.process(&pixels, width, height, 3);
+/// ```
+pub struct CrispScanCleanup {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispScanCleanup {}
+
+impl CrispScanCleanup {
+    /// Create a scan cleanup context.
+    /// model_path: None for tier-1 only, Some("nafnet.gguf") for tier 2.
+    pub fn new(model_path: Option<&str>, n_threads: i32) -> Result<Self, String> {
+        let c_path = model_path.map(|p| std::ffi::CString::new(p).unwrap());
+        let ptr = c_path.as_ref().map_or(std::ptr::null(), |p| p.as_ptr());
+        let ctx = unsafe { crispembed_sys::crispembed_scan_cleanup_init(ptr, n_threads) };
+        if ctx.is_null() {
+            return Err("Failed to init scan cleanup".into());
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Process a scan image. Input: RGB uint8 pixels (h * w * channels).
+    /// Returns cleaned RGB pixels and (width, height).
+    pub fn process(
+        &self,
+        pixels: &[u8],
+        width: i32,
+        height: i32,
+        channels: i32,
+    ) -> Result<(Vec<u8>, i32, i32), String> {
+        let params = unsafe { crispembed_sys::crispembed_scan_cleanup_defaults() };
+        self.process_with_params(pixels, width, height, channels, params)
+    }
+
+    /// Process with custom parameters.
+    pub fn process_with_params(
+        &self,
+        pixels: &[u8],
+        width: i32,
+        height: i32,
+        channels: i32,
+        params: crispembed_sys::ScanCleanupParams,
+    ) -> Result<(Vec<u8>, i32, i32), String> {
+        let mut out_ptr: *mut u8 = std::ptr::null_mut();
+        let mut ow: i32 = 0;
+        let mut oh: i32 = 0;
+
+        let rc = unsafe {
+            crispembed_sys::crispembed_scan_cleanup_process(
+                self.ctx,
+                pixels.as_ptr(),
+                width,
+                height,
+                channels,
+                params,
+                &mut out_ptr,
+                &mut ow,
+                &mut oh,
+            )
+        };
+
+        if rc != 0 || out_ptr.is_null() {
+            return Err("Scan cleanup failed".into());
+        }
+
+        let len = (ow * oh * 3) as usize;
+        let result = unsafe { std::slice::from_raw_parts(out_ptr, len).to_vec() };
+        unsafe { crispembed_sys::crispembed_scan_cleanup_free_image(out_ptr) };
+
+        Ok((result, ow, oh))
+    }
+
+    /// Detect a two-up (double-page) book spread. Returns the gutter column to
+    /// split at, or `None` for a single page.
+    pub fn detect_page_split(
+        &self,
+        pixels: &[u8],
+        width: i32,
+        height: i32,
+        channels: i32,
+    ) -> Option<i32> {
+        let sx = unsafe {
+            crispembed_sys::crispembed_scan_cleanup_detect_page_split(
+                pixels.as_ptr(),
+                width,
+                height,
+                channels,
+            )
+        };
+        if sx < 0 {
+            None
+        } else {
+            Some(sx)
+        }
+    }
+
+    /// Detect the printed content bounding box (trims blank margins). Returns
+    /// `(x0, y0, x1, y1)` with x1/y1 exclusive, or `None` for a blank page.
+    pub fn content_bbox(
+        &self,
+        pixels: &[u8],
+        width: i32,
+        height: i32,
+        channels: i32,
+    ) -> Option<(i32, i32, i32, i32)> {
+        let (mut x0, mut y0, mut x1, mut y1) = (0i32, 0i32, 0i32, 0i32);
+        let rc = unsafe {
+            crispembed_sys::crispembed_scan_cleanup_content_bbox(
+                pixels.as_ptr(),
+                width,
+                height,
+                channels,
+                &mut x0,
+                &mut y0,
+                &mut x1,
+                &mut y1,
+            )
+        };
+        if rc != 0 {
+            None
+        } else {
+            Some((x0, y0, x1, y1))
+        }
+    }
+}
+
+impl Drop for CrispScanCleanup {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_scan_cleanup_free(self.ctx) }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Text Super-Resolution (NAFNet-SR)
+// ---------------------------------------------------------------------------
+
+/// NAFNet text super-resolution — upscales low-DPI document images.
+///
+/// ```no_run
+/// let sr = CrispTextSr::new("nafnet-sr.gguf", 4).unwrap();
+/// println!("upscale factor: {}", sr.upscale_factor());
+/// let (pixels, out_w, out_h) = sr.process(&rgb_bytes, 320, 80, 0, 0).unwrap();
+/// ```
+pub struct CrispTextSr {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispTextSr {}
+
+impl CrispTextSr {
+    /// Load a NAFNet-SR GGUF model.
+    ///
+    /// - `model_path` -- path to the `.gguf` file.
+    /// - `n_threads`  -- CPU thread count; pass `0` for automatic.
+    pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let path = CString::new(model_path).map_err(|e| format!("invalid path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_text_sr_init(path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err(format!("crispembed_text_sr_init failed for '{model_path}'"));
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Return the upscale factor reported by the model (e.g. 2 or 4).
+    pub fn upscale_factor(&self) -> i32 {
+        unsafe { crispembed_sys::crispembed_text_sr_upscale_factor(self.ctx) }
+    }
+
+    /// Upscale an RGB image.
+    ///
+    /// - `pixels`       -- RGB uint8 bytes (h * w * 3).
+    /// - `width`/`height` -- input image dimensions.
+    /// - `tile_size`    -- tile size for tiled inference (0 = full image).
+    /// - `tile_overlap` -- overlap between tiles in pixels.
+    ///
+    /// Returns `(output_rgb_bytes, out_width, out_height)`.
+    pub fn process(
+        &self,
+        pixels: &[u8],
+        width: i32,
+        height: i32,
+        tile_size: i32,
+        tile_overlap: i32,
+    ) -> Result<(Vec<u8>, i32, i32), String> {
+        let mut out_ptr: *mut u8 = std::ptr::null_mut();
+        let mut ow: i32 = 0;
+        let mut oh: i32 = 0;
+
+        let rc = unsafe {
+            crispembed_sys::crispembed_text_sr_process(
+                self.ctx,
+                pixels.as_ptr(),
+                width,
+                height,
+                tile_size,
+                tile_overlap,
+                &mut out_ptr,
+                &mut ow,
+                &mut oh,
+            )
+        };
+
+        if rc != 0 || out_ptr.is_null() {
+            return Err("Text SR processing failed".into());
+        }
+
+        let len = (ow * oh * 3) as usize;
+        let result = unsafe { std::slice::from_raw_parts(out_ptr, len).to_vec() };
+        unsafe { crispembed_sys::crispembed_text_sr_free_image(out_ptr) };
+
+        Ok((result, ow, oh))
+    }
+}
+
+impl Drop for CrispTextSr {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_text_sr_free(self.ctx) }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// TBSRN text-line super-resolution (Telescope)
+// ---------------------------------------------------------------------------
+
+/// TBSRN text-line super-resolution (PaddleOCR Telescope, 1.1M params).
+///
+/// Designed for text-line crops rather than whole images.
+///
+/// ```no_run
+/// let sr = CrispTbsrnSr::new("tbsrn-telescope.gguf", 4).unwrap();
+/// let (pixels, out_w, out_h) = sr.process(&rgb_bytes, 320, 32).unwrap();
+/// ```
+pub struct CrispTbsrnSr {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispTbsrnSr {}
+
+impl CrispTbsrnSr {
+    /// Load a TBSRN GGUF model.
+    ///
+    /// - `model_path` -- path to the `.gguf` file.
+    /// - `n_threads`  -- CPU thread count; pass `0` for automatic.
+    pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let path = CString::new(model_path).map_err(|e| format!("invalid path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_tbsrn_sr_init(path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err(format!(
+                "crispembed_tbsrn_sr_init failed for '{model_path}'"
+            ));
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Upscale a text-line crop (RGB, 32-pixel height typical).
+    ///
+    /// - `pixels`       -- RGB uint8 bytes (h * w * 3).
+    /// - `width`/`height` -- input image dimensions.
+    ///
+    /// Returns `(output_rgb_bytes, out_width, out_height)`.
+    pub fn process(
+        &self,
+        pixels: &[u8],
+        width: i32,
+        height: i32,
+    ) -> Result<(Vec<u8>, i32, i32), String> {
+        let mut out_ptr: *mut u8 = std::ptr::null_mut();
+        let mut ow: i32 = 0;
+        let mut oh: i32 = 0;
+
+        let rc = unsafe {
+            crispembed_sys::crispembed_tbsrn_sr_process(
+                self.ctx,
+                pixels.as_ptr(),
+                width,
+                height,
+                &mut out_ptr,
+                &mut ow,
+                &mut oh,
+            )
+        };
+
+        if rc != 0 || out_ptr.is_null() {
+            return Err("TBSRN SR processing failed".into());
+        }
+
+        let len = (ow * oh * 3) as usize;
+        let result = unsafe { std::slice::from_raw_parts(out_ptr, len).to_vec() };
+        unsafe { crispembed_sys::crispembed_tbsrn_sr_free_image(out_ptr) };
+
+        Ok((result, ow, oh))
+    }
+}
+
+impl Drop for CrispTbsrnSr {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_tbsrn_sr_free(self.ctx) }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// PAN super-resolution (Pixel Attention Network)
+// ---------------------------------------------------------------------------
+
+/// PAN whole-image super-resolution (Pixel Attention Network, 272K params).
+///
+/// ```no_run
+/// let sr = CrispPanSr::new("pan-x4.gguf", 4).unwrap();
+/// println!("scale: {}", sr.scale());
+/// let (pixels, out_w, out_h) = sr.process(&rgb_bytes, 320, 240, 0, 0).unwrap();
+/// ```
+pub struct CrispPanSr {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispPanSr {}
+
+impl CrispPanSr {
+    /// Load a PAN GGUF model.
+    ///
+    /// - `model_path` -- path to the `.gguf` file.
+    /// - `n_threads`  -- CPU thread count; pass `0` for automatic.
+    pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let path = CString::new(model_path).map_err(|e| format!("invalid path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_pan_sr_init(path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err(format!("crispembed_pan_sr_init failed for '{model_path}'"));
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Return the scale factor reported by the model (e.g. 2 or 4).
+    pub fn scale(&self) -> i32 {
+        unsafe { crispembed_sys::crispembed_pan_sr_scale(self.ctx) }
+    }
+
+    /// Upscale an RGB image.
+    ///
+    /// - `pixels`       -- RGB uint8 bytes (h * w * 3).
+    /// - `width`/`height` -- input image dimensions.
+    /// - `tile_size`    -- tile size for tiled inference (0 = full image).
+    /// - `tile_overlap` -- overlap between tiles in pixels.
+    ///
+    /// Returns `(output_rgb_bytes, out_width, out_height)`.
+    pub fn process(
+        &self,
+        pixels: &[u8],
+        width: i32,
+        height: i32,
+        tile_size: i32,
+        tile_overlap: i32,
+    ) -> Result<(Vec<u8>, i32, i32), String> {
+        let mut out_ptr: *mut u8 = std::ptr::null_mut();
+        let mut ow: i32 = 0;
+        let mut oh: i32 = 0;
+
+        let rc = unsafe {
+            crispembed_sys::crispembed_pan_sr_process(
+                self.ctx,
+                pixels.as_ptr(),
+                width,
+                height,
+                tile_size,
+                tile_overlap,
+                &mut out_ptr,
+                &mut ow,
+                &mut oh,
+            )
+        };
+
+        if rc != 0 || out_ptr.is_null() {
+            return Err("PAN SR processing failed".into());
+        }
+
+        let len = (ow * oh * 3) as usize;
+        let result = unsafe { std::slice::from_raw_parts(out_ptr, len).to_vec() };
+        unsafe { crispembed_sys::crispembed_pan_sr_free_image(out_ptr) };
+
+        Ok((result, ow, oh))
+    }
+}
+
+impl Drop for CrispPanSr {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_pan_sr_free(self.ctx) }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// SAM 2.1 image segmentation (Meta, Apache-2.0; image mode)
+// ---------------------------------------------------------------------------
+
+/// SAM 2.1 segmentation with point and box prompts.
+///
+/// ```no_run
+/// let sam = crispembed::CrispSam2::new("sam2.1-hiera-tiny-f32.gguf", 4).unwrap();
+/// // One mask for an object point and a box, in image pixels.
+/// let (masks, scores) = sam.segment(&rgb_bytes, 1749, 1155, &[(888.0, 884.0, 1)], Some([453.0, 288.0, 1305.0, 1132.0]), false).unwrap();
+/// ```
+pub struct CrispSam2 {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispSam2 {}
+
+impl CrispSam2 {
+    /// Load a SAM 2.1 GGUF model (`n_threads` 0: automatic).
+    pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let path = CString::new(model_path).map_err(|e| format!("invalid path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_sam2_init(path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err(format!("crispembed_sam2_init failed for '{model_path}'"));
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Side of the network input (1024).
+    pub fn image_size(&self) -> i32 {
+        unsafe { crispembed_sys::crispembed_sam2_image_size(self.ctx) }
+    }
+
+    /// Side of the low-resolution mask logits (256).
+    pub fn mask_size(&self) -> i32 {
+        unsafe { crispembed_sys::crispembed_sam2_mask_size(self.ctx) }
+    }
+
+    /// Masks for `(x, y, label)` points (label 1 object, 0 background) and/or a box, in image pixels.
+    /// Returns `count` masks of `width * height` bytes (0/255) one after another, and their scores:
+    /// one mask, or SAM's three alternatives with `multimask`.
+    pub fn segment(
+        &self,
+        rgb: &[u8],
+        width: i32,
+        height: i32,
+        points: &[(f32, f32, i32)],
+        box_xyxy: Option<[f32; 4]>,
+        multimask: bool,
+    ) -> Result<(Vec<u8>, Vec<f32>), String> {
+        if rgb.len() != (width * height * 3) as usize {
+            return Err("rgb must hold width * height * 3 bytes".into());
+        }
+        let xy: Vec<f32> = points.iter().flat_map(|p| [p.0, p.1]).collect();
+        let labels: Vec<i32> = points.iter().map(|p| p.2).collect();
+        let mut out: *mut u8 = std::ptr::null_mut();
+        let mut scores = [0f32; 3];
+        let mut count: i32 = 0;
+        let rc = unsafe {
+            crispembed_sys::crispembed_sam2_process(
+                self.ctx,
+                rgb.as_ptr(),
+                width,
+                height,
+                if xy.is_empty() {
+                    std::ptr::null()
+                } else {
+                    xy.as_ptr()
+                },
+                if labels.is_empty() {
+                    std::ptr::null()
+                } else {
+                    labels.as_ptr()
+                },
+                labels.len() as i32,
+                box_xyxy.as_ref().map_or(std::ptr::null(), |b| b.as_ptr()),
+                multimask as i32,
+                &mut out,
+                scores.as_mut_ptr(),
+                &mut count,
+            )
+        };
+        if rc != 0 || out.is_null() {
+            return Err("SAM 2 segmentation failed".into());
+        }
+        let len = count as usize * (width * height) as usize;
+        let masks = unsafe { std::slice::from_raw_parts(out, len).to_vec() };
+        unsafe { crispembed_sys::crispembed_sam2_free_masks(out) };
+        Ok((masks, scores[..count as usize].to_vec()))
+    }
+
+    /// Encodes an image already resized to `image_size` square, planar RGB, ImageNet-normalised.
+    pub fn set_image_f32(&mut self, chw: &[f32]) -> Result<(), String> {
+        let side = self.image_size() as usize;
+        if chw.len() != 3 * side * side {
+            return Err(format!("expected 3 x {side} x {side} floats"));
+        }
+        match unsafe { crispembed_sys::crispembed_sam2_set_image_f32(self.ctx, chw.as_ptr()) } {
+            0 => Ok(()),
+            rc => Err(format!("SAM 2 image encoding failed ({rc})")),
+        }
+    }
+
+    /// Encodes an 8-bit RGB image (resized and normalised inside).
+    pub fn set_image(&mut self, rgb: &[u8], width: i32, height: i32) -> Result<(), String> {
+        if rgb.len() != (width * height * 3) as usize {
+            return Err("rgb must hold width * height * 3 bytes".into());
+        }
+        match unsafe {
+            crispembed_sys::crispembed_sam2_set_image(self.ctx, rgb.as_ptr(), width, height)
+        } {
+            0 => Ok(()),
+            rc => Err(format!("SAM 2 image encoding failed ({rc})")),
+        }
+    }
+
+    /// Raw decoder output for the current image: points in the network frame (box corners first,
+    /// labels 2 and 3). Returns 4 logit maps of `mask_size` squared (token 0 single mask) and 4 scores.
+    pub fn predict(
+        &mut self,
+        points_xy: &[[f32; 2]],
+        labels: &[i32],
+    ) -> Result<(Vec<f32>, [f32; 4]), String> {
+        if points_xy.is_empty() || points_xy.len() != labels.len() {
+            return Err("one label per point".into());
+        }
+        let side = self.mask_size() as usize;
+        let mut logits = vec![0f32; 4 * side * side];
+        let mut scores = [0f32; 4];
+        let rc = unsafe {
+            crispembed_sys::crispembed_sam2_predict(
+                self.ctx,
+                points_xy.as_ptr() as *const f32,
+                labels.as_ptr(),
+                labels.len() as i32,
+                logits.as_mut_ptr(),
+                scores.as_mut_ptr(),
+            )
+        };
+        if rc != 0 {
+            return Err(format!("SAM 2 prediction failed ({rc})"));
+        }
+        Ok((logits, scores))
+    }
+}
+
+impl Drop for CrispSam2 {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_sam2_free(self.ctx) }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// HAT super-resolution (Hybrid Attention Transformer, CVPR 2023)
+// ---------------------------------------------------------------------------
+
+/// HAT whole-image super-resolution (Hybrid Attention Transformer, 21M params, CVPR 2023 SOTA).
+///
+/// ```no_run
+/// let sr = CrispHatSr::new("hat-sr-x4-f16.gguf", 4).unwrap();
+/// println!("scale: {}", sr.scale());
+/// let (pixels, out_w, out_h) = sr.process(&rgb_bytes, 320, 240, 64, 8).unwrap();
+/// ```
+pub struct CrispHatSr {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispHatSr {}
+
+impl CrispHatSr {
+    /// Load a HAT GGUF model.
+    ///
+    /// - `model_path` -- path to the `.gguf` file.
+    /// - `n_threads`  -- CPU thread count; pass `0` for automatic.
+    pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let path = CString::new(model_path).map_err(|e| format!("invalid path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_hat_sr_init(path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err(format!("crispembed_hat_sr_init failed for '{model_path}'"));
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Return the scale factor reported by the model (e.g. 2 or 4).
+    pub fn scale(&self) -> i32 {
+        unsafe { crispembed_sys::crispembed_hat_sr_scale(self.ctx) }
+    }
+
+    /// Upscale an RGB image.
+    ///
+    /// - `pixels`       -- RGB uint8 bytes (h * w * 3).
+    /// - `width`/`height` -- input image dimensions.
+    /// - `tile_size`    -- tile size for tiled inference (0 = full image).
+    /// - `tile_overlap` -- overlap between tiles in pixels.
+    ///
+    /// Returns `(output_rgb_bytes, out_width, out_height)`.
+    pub fn process(
+        &self,
+        pixels: &[u8],
+        width: i32,
+        height: i32,
+        tile_size: i32,
+        tile_overlap: i32,
+    ) -> Result<(Vec<u8>, i32, i32), String> {
+        let mut out_ptr: *mut u8 = std::ptr::null_mut();
+        let mut ow: i32 = 0;
+        let mut oh: i32 = 0;
+
+        let rc = unsafe {
+            crispembed_sys::crispembed_hat_sr_process(
+                self.ctx,
+                pixels.as_ptr(),
+                width,
+                height,
+                tile_size,
+                tile_overlap,
+                &mut out_ptr,
+                &mut ow,
+                &mut oh,
+            )
+        };
+
+        if rc != 0 || out_ptr.is_null() {
+            return Err("HAT SR processing failed".into());
+        }
+
+        let len = (ow * oh * 3) as usize;
+        let result = unsafe { std::slice::from_raw_parts(out_ptr, len).to_vec() };
+        unsafe { crispembed_sys::crispembed_hat_sr_free_image(out_ptr) };
+
+        Ok((result, ow, oh))
+    }
+}
+
+impl Drop for CrispHatSr {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_hat_sr_free(self.ctx) }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// DAT super-resolution (Dual Aggregation Transformer, ICCV 2023)
+// ---------------------------------------------------------------------------
+
+/// DAT whole-image super-resolution (830K params, dual spatial+channel attention).
+pub struct CrispDatSr {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispDatSr {}
+
+impl CrispDatSr {
+    pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let path = CString::new(model_path).map_err(|e| format!("invalid path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_dat_sr_init(path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err(format!("crispembed_dat_sr_init failed for '{model_path}'"));
+        }
+        Ok(Self { ctx })
+    }
+
+    pub fn process(
+        &self,
+        pixels: &[u8],
+        width: i32,
+        height: i32,
+        tile_w: i32,
+        tile_h: i32,
+    ) -> Result<(Vec<u8>, i32, i32), String> {
+        let mut out_ptr: *mut u8 = std::ptr::null_mut();
+        let mut ow: i32 = 0;
+        let mut oh: i32 = 0;
+        let rc = unsafe {
+            crispembed_sys::crispembed_dat_sr_process(
+                self.ctx,
+                pixels.as_ptr(),
+                width,
+                height,
+                tile_w,
+                tile_h,
+                &mut out_ptr,
+                &mut ow,
+                &mut oh,
+            )
+        };
+        if rc != 0 || out_ptr.is_null() {
+            return Err("DAT SR processing failed".into());
+        }
+        let len = (ow * oh * 3) as usize;
+        let result = unsafe { std::slice::from_raw_parts(out_ptr, len).to_vec() };
+        unsafe { crispembed_sys::crispembed_dat_sr_free_image(out_ptr) };
+        Ok((result, ow, oh))
+    }
+}
+
+impl Drop for CrispDatSr {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_dat_sr_free(self.ctx) }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Restormer image restoration (CVPR 2022)
+// ---------------------------------------------------------------------------
+
+/// Restormer whole-image restoration (denoising, deblurring, deraining).
+///
+/// ```no_run
+/// let r = CrispRestormer::new("restormer-denoise.gguf", 4).unwrap();
+/// let pixels = r.process(&rgb_bytes, 640, 480, 0, 0).unwrap();
+/// ```
+pub struct CrispRestormer {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispRestormer {}
+
+impl CrispRestormer {
+    /// Load a Restormer GGUF model.
+    ///
+    /// - `model_path` -- path to the `.gguf` file.
+    /// - `n_threads`  -- CPU thread count; pass `0` for automatic.
+    pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let path = CString::new(model_path).map_err(|e| format!("invalid path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_restormer_init(path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err(format!(
+                "crispembed_restormer_init failed for '{model_path}'"
+            ));
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Restore an RGB image (denoising / deblurring / deraining).
+    ///
+    /// - `pixels`       -- RGB uint8 bytes (h * w * 3).
+    /// - `width`/`height` -- input image dimensions.
+    /// - `tile_size`    -- tile size for tiled inference (0 = full image).
+    /// - `tile_overlap` -- overlap between tiles in pixels.
+    ///
+    /// Returns output RGB bytes of the same dimensions as the input.
+    pub fn process(
+        &self,
+        pixels: &[u8],
+        width: i32,
+        height: i32,
+        tile_size: i32,
+        tile_overlap: i32,
+    ) -> Result<Vec<u8>, String> {
+        let mut out_ptr: *mut u8 = std::ptr::null_mut();
+
+        let rc = unsafe {
+            crispembed_sys::crispembed_restormer_process(
+                self.ctx,
+                pixels.as_ptr(),
+                width,
+                height,
+                tile_size,
+                tile_overlap,
+                &mut out_ptr,
+            )
+        };
+
+        if rc != 0 || out_ptr.is_null() {
+            return Err("Restormer processing failed".into());
+        }
+
+        let len = (width * height * 3) as usize;
+        let result = unsafe { std::slice::from_raw_parts(out_ptr, len).to_vec() };
+        unsafe { crispembed_sys::crispembed_restormer_free_image(out_ptr) };
+
+        Ok(result)
+    }
+}
+
+impl Drop for CrispRestormer {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_restormer_free(self.ctx) }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// OCR Pipeline (orchestrator)
+// ---------------------------------------------------------------------------
+
+/// One recognized text region from the OCR pipeline.
+pub struct OcrPipelineRegion {
+    pub text: String,
+    pub x: f32,
+    pub y: f32,
+    pub w: f32,
+    pub h: f32,
+    pub confidence: f32,
+    /// Recognition confidence (mean per-char softmax); 0 if unavailable.
+    pub rec_confidence: f32,
+    /// Per-character confidence; empty when the recognizer doesn't expose it
+    /// (e.g. VLM engines). Aligns with `text`'s characters when present.
+    pub char_conf: Vec<f32>,
+}
+
+/// Result of a full OCR pipeline run.
+pub struct OcrPipelineResult {
+    pub regions: Vec<OcrPipelineRegion>,
+    /// Regions joined in reading order.
+    pub full_text: String,
+    pub mean_confidence: f32,
+    pub reading_order: Vec<i32>,
+    pub markdown: String,
+}
+
+/// Per-stage cleanup recipe (the 10 classical knobs + NAFNet denoise toggle).
+#[derive(Clone)]
+pub struct OcrCleanupSpec {
+    pub enabled: bool,
+    pub deskew: bool,
+    pub crop_borders: bool,
+    pub whiten_background: bool,
+    pub binarize: bool,
+    pub binarize_method: i32, // 0=Otsu 1=Sauvola
+    pub sauvola_k: f32,
+    pub sauvola_window: i32,
+    pub morph_kernel: i32,
+    pub border_threshold: f32,
+    pub deskew_max_angle: f32,
+    pub deskew_consensus: bool, // cross-check the two skew detectors before rotating
+    pub denoise: bool,          // NAFNet tier-2
+}
+
+impl Default for OcrCleanupSpec {
+    fn default() -> Self {
+        Self {
+            enabled: true,
+            deskew: true,
+            crop_borders: true,
+            whiten_background: true,
+            binarize: false,
+            binarize_method: 0,
+            sauvola_k: 0.2,
+            sauvola_window: 25,
+            morph_kernel: 51,
+            border_threshold: 0.15,
+            deskew_max_angle: 15.0,
+            deskew_consensus: true,
+            denoise: false,
+        }
+    }
+}
+
+/// TeleOCR stage selector. Requires `CRISPEMBED_TELEOCR=1` and an explicit local GGUF.
+pub const OCR_ENGINE_TELEOCR: i32 = crispembed_sys::CRISPEMBED_OCR_ENGINE_TELEOCR;
+
+/// One fully-specified pipeline stage for [`CrispOcrPipeline::from_stages`].
+#[derive(Clone)]
+pub struct OcrStageSpec {
+    pub source_type: i32, // 0=auto 1=screenshot 2=scanned_doc 3=photo
+    pub engine: i32, // 0..19 existing; 20=qwen35_ocr, 21=ovisocr2, 22=ovisocr3, 23=minicpm_ocr, 24=teleocr
+    pub model_a: String,
+    pub model_b: String,
+    pub cleanup: OcrCleanupSpec,
+    pub det_prob_threshold: f32,
+    pub det_box_threshold: f32,
+    pub det_target_short: i32,
+    pub vlm_max_tokens: i32,
+    pub vlm_prompt: String,
+    pub min_chars: i32,
+    pub min_confidence: f32,
+}
+
+/// Configurable OCR pipeline: source-type routing + per-stage image cleanup
+/// (classical + NAFNet) + engine + text-yield/confidence accept-gate escalation.
+/// Wraps the C++ `ocr_orchestrator`. `Send` (own your own instance per thread).
+///
+/// ```no_run
+/// use crispembed::CrispOcrPipeline;
+/// let mut p = CrispOcrPipeline::new("dbnet.gguf", "trocr.gguf", Some("nafnet.gguf"),
+///                                   true, true, 8, 0.5,
+///                                   None, 0, None, 4).unwrap();
+/// let res = p.run("scan.png").unwrap();
+/// println!("{}", res.full_text);
+/// ```
+pub struct CrispOcrPipeline {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispOcrPipeline {}
+
+impl CrispOcrPipeline {
+    /// Build a pipeline. `nafnet_model = None` (or "") runs classical cleanup
+    /// only (no learned tier-2 denoise). `vlm_model = None` disables VLM
+    /// escalation; when set, `vlm_engine` selects the backend
+    /// (0=GOT, 1=GLM, 2=Qwen2-VL/PaddleOCR-VL, 3=InternVL2, 4=Qwen3-VL).
+    #[allow(clippy::too_many_arguments)]
+    pub fn new(
+        det_model: &str,
+        rec_model: &str,
+        nafnet_model: Option<&str>,
+        router: bool,
+        cleanup_enabled: bool,
+        min_chars: i32,
+        min_confidence: f32,
+        vlm_model: Option<&str>,
+        vlm_engine: i32,
+        punct_model: Option<&str>,
+        lid_model: Option<&str>,
+        truecase_model: Option<&str>,
+        tess_model_dir: Option<&str>,
+        n_threads: i32,
+    ) -> Result<Self, String> {
+        let det = CString::new(det_model).map_err(|e| format!("det path: {e}"))?;
+        let rec = CString::new(rec_model).map_err(|e| format!("rec path: {e}"))?;
+        let naf = match nafnet_model {
+            Some(p) if !p.is_empty() => {
+                Some(CString::new(p).map_err(|e| format!("nafnet path: {e}"))?)
+            }
+            _ => None,
+        };
+        let vlm = match vlm_model {
+            Some(p) if !p.is_empty() => {
+                Some(CString::new(p).map_err(|e| format!("vlm path: {e}"))?)
+            }
+            _ => None,
+        };
+        let punct = match punct_model {
+            Some(p) if !p.is_empty() => {
+                Some(CString::new(p).map_err(|e| format!("punct path: {e}"))?)
+            }
+            _ => None,
+        };
+        // Optional post-OCR LID / truecasing / Tesseract LID auto-select.
+        let cstr_opt = |o: Option<&str>, what: &str| -> Result<Option<CString>, String> {
+            match o {
+                Some(p) if !p.is_empty() => Ok(Some(
+                    CString::new(p).map_err(|e| format!("{what} path: {e}"))?,
+                )),
+                _ => Ok(None),
+            }
+        };
+        let lid = cstr_opt(lid_model, "lid")?;
+        let truecase = cstr_opt(truecase_model, "truecase")?;
+        let tess_dir = cstr_opt(tess_model_dir, "tess_model_dir")?;
+        let params = crispembed_sys::CrispembedOcrPipelineParams {
+            router: router as std::os::raw::c_int,
+            cleanup_enabled: cleanup_enabled as std::os::raw::c_int,
+            min_chars: min_chars as std::os::raw::c_int,
+            min_confidence,
+            det_model: det.as_ptr(),
+            rec_model: rec.as_ptr(),
+            nafnet_model: naf.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
+            vlm_model: vlm.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
+            vlm_engine: vlm_engine as std::os::raw::c_int,
+            punct_model: punct.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
+            sr_model: std::ptr::null(),
+            lid_model: lid.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
+            truecase_model: truecase.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
+            tess_model_dir: tess_dir.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
+            layout_model: std::ptr::null(),
+            table_model: std::ptr::null(),
+            formula_model: std::ptr::null(),
+            route_tables: 0,
+            route_formulas: 0,
+            image_text_fallback: 1,
+        };
+        let ctx = unsafe { crispembed_sys::crispembed_ocr_pipeline_init(&params, n_threads) };
+        if ctx.is_null() {
+            return Err("crispembed_ocr_pipeline_init failed".into());
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Run the full pipeline on an image file.
+    pub fn run(&mut self, image_path: &str) -> Result<OcrPipelineResult, String> {
+        let path = CString::new(image_path).map_err(|e| format!("path: {e}"))?;
+        let mut n: std::os::raw::c_int = 0;
+        let mut full_text_ptr: *const std::os::raw::c_char = std::ptr::null();
+        let mut mean_conf: f32 = 0.0;
+        let arr = unsafe {
+            crispembed_sys::crispembed_ocr_pipeline_run(
+                self.ctx,
+                path.as_ptr(),
+                &mut n,
+                &mut full_text_ptr,
+                &mut mean_conf,
+            )
+        };
+        let full_text = if full_text_ptr.is_null() {
+            String::new()
+        } else {
+            unsafe { CStr::from_ptr(full_text_ptr) }
+                .to_string_lossy()
+                .into_owned()
+        };
+        let mut order_n: std::os::raw::c_int = 0;
+        let order_ptr = unsafe {
+            crispembed_sys::crispembed_ocr_pipeline_reading_order(self.ctx, &mut order_n)
+        };
+        let reading_order = if order_ptr.is_null() || order_n <= 0 {
+            Vec::new()
+        } else {
+            unsafe { std::slice::from_raw_parts(order_ptr, order_n as usize) }.to_vec()
+        };
+        let mut markdown_len: std::os::raw::c_int = 0;
+        let markdown_ptr = unsafe {
+            crispembed_sys::crispembed_ocr_pipeline_markdown(self.ctx, &mut markdown_len)
+        };
+        let markdown = if markdown_ptr.is_null() || markdown_len <= 0 {
+            String::new()
+        } else {
+            String::from_utf8_lossy(unsafe {
+                std::slice::from_raw_parts(markdown_ptr as *const u8, markdown_len as usize)
+            })
+            .into_owned()
+        };
+        let mut regions = Vec::new();
+        if !arr.is_null() && n > 0 {
+            let slice = unsafe { std::slice::from_raw_parts(arr, n as usize) };
+            for (i, r) in slice.iter().enumerate() {
+                let text = if r.text.is_null() {
+                    String::new()
+                } else {
+                    unsafe { CStr::from_ptr(r.text) }
+                        .to_string_lossy()
+                        .into_owned()
+                };
+                // Per-region + per-character confidence from the last run (side
+                // accessors; empty/0 for recognizers that don't expose them).
+                let rec_confidence = unsafe {
+                    crispembed_sys::crispembed_ocr_pipeline_region_rec_confidence(
+                        self.ctx,
+                        i as std::os::raw::c_int,
+                    )
+                };
+                let mut cc_len: std::os::raw::c_int = 0;
+                let cc_ptr = unsafe {
+                    crispembed_sys::crispembed_ocr_pipeline_region_char_conf(
+                        self.ctx,
+                        i as std::os::raw::c_int,
+                        &mut cc_len,
+                    )
+                };
+                let char_conf = if cc_ptr.is_null() || cc_len <= 0 {
+                    Vec::new()
+                } else {
+                    unsafe { std::slice::from_raw_parts(cc_ptr, cc_len as usize) }.to_vec()
+                };
+                regions.push(OcrPipelineRegion {
+                    text,
+                    x: r.x,
+                    y: r.y,
+                    w: r.w,
+                    h: r.h,
+                    confidence: r.confidence,
+                    rec_confidence,
+                    char_conf,
+                });
+            }
+        }
+        Ok(OcrPipelineResult {
+            regions,
+            full_text,
+            mean_confidence: mean_conf,
+            reading_order,
+            markdown,
+        })
+    }
+
+    /// Return the ISO 639-1 language code detected by the LID model after the
+    /// last `run()` call (e.g. `"en"`, `"de"`). Returns `None` if LID was not
+    /// configured or the result was empty.
+    pub fn detected_lang(&self) -> Option<String> {
+        let mut conf: f32 = 0.0;
+        let ptr =
+            unsafe { crispembed_sys::crispembed_ocr_pipeline_detected_lang(self.ctx, &mut conf) };
+        if ptr.is_null() {
+            return None;
+        }
+        let s = unsafe { std::ffi::CStr::from_ptr(ptr) }
+            .to_str()
+            .unwrap_or("")
+            .to_string();
+        if s.is_empty() {
+            None
+        } else {
+            Some(s)
+        }
+    }
+
+    /// Full per-stage builder: compose arbitrary per-source-type chains. Each
+    /// stage picks an engine + models + cleanup recipe + engine params + gate.
+    pub fn from_stages(
+        router: bool,
+        nafnet_model: Option<&str>,
+        sr_model: Option<&str>,
+        punct_model: Option<&str>,
+        lid_model: Option<&str>,
+        truecase_model: Option<&str>,
+        tess_model_dir: Option<&str>,
+        stages: &[OcrStageSpec],
+        n_threads: i32,
+    ) -> Result<Self, String> {
+        let naf = match nafnet_model {
+            Some(p) if !p.is_empty() => Some(CString::new(p).map_err(|e| format!("nafnet: {e}"))?),
+            _ => None,
+        };
+        let sr = match sr_model {
+            Some(p) if !p.is_empty() => Some(CString::new(p).map_err(|e| format!("sr: {e}"))?),
+            _ => None,
+        };
+        let punct = match punct_model {
+            Some(p) if !p.is_empty() => Some(CString::new(p).map_err(|e| format!("punct: {e}"))?),
+            _ => None,
+        };
+        let cstr_opt = |o: Option<&str>, what: &str| -> Result<Option<CString>, String> {
+            match o {
+                Some(p) if !p.is_empty() => {
+                    Ok(Some(CString::new(p).map_err(|e| format!("{what}: {e}"))?))
+                }
+                _ => Ok(None),
+            }
+        };
+        let lid = cstr_opt(lid_model, "lid")?;
+        let truecase = cstr_opt(truecase_model, "truecase")?;
+        let tess_dir = cstr_opt(tess_model_dir, "tess_model_dir")?;
+        // Keep the per-stage CStrings alive until after the init call (C++
+        // copies them into std::string).
+        let mut keep: Vec<CString> = Vec::with_capacity(stages.len() * 3);
+        let mut c_stages: Vec<crispembed_sys::CrispembedOcrStage> =
+            Vec::with_capacity(stages.len());
+        for s in stages {
+            let a = CString::new(s.model_a.as_str()).map_err(|e| format!("model_a: {e}"))?;
+            let b = CString::new(s.model_b.as_str()).map_err(|e| format!("model_b: {e}"))?;
+            let p = CString::new(s.vlm_prompt.as_str()).map_err(|e| format!("vlm_prompt: {e}"))?;
+            let (a_ptr, b_ptr) = (a.as_ptr(), b.as_ptr());
+            let p_ptr = if s.vlm_prompt.is_empty() {
+                std::ptr::null()
+            } else {
+                p.as_ptr()
+            };
+            keep.push(a);
+            keep.push(b);
+            keep.push(p);
+            c_stages.push(crispembed_sys::CrispembedOcrStage {
+                source_type: s.source_type,
+                engine: s.engine,
+                model_a: a_ptr,
+                model_b: b_ptr,
+                // Not surfaced by OcrStageSpec yet; NULL = "no orientation model",
+                // which is what the pipeline did before the field existed here.
+                model_c: std::ptr::null(),
+                cleanup_enabled: s.cleanup.enabled as std::os::raw::c_int,
+                denoise: s.cleanup.denoise as std::os::raw::c_int,
+                cleanup: crispembed_sys::ScanCleanupParams {
+                    deskew: s.cleanup.deskew as std::os::raw::c_int,
+                    crop_borders: s.cleanup.crop_borders as std::os::raw::c_int,
+                    whiten_background: s.cleanup.whiten_background as std::os::raw::c_int,
+                    binarize: s.cleanup.binarize as std::os::raw::c_int,
+                    binarize_method: s.cleanup.binarize_method,
+                    sauvola_k: s.cleanup.sauvola_k,
+                    sauvola_window: s.cleanup.sauvola_window,
+                    morph_kernel: s.cleanup.morph_kernel,
+                    border_threshold: s.cleanup.border_threshold,
+                    deskew_max_angle: s.cleanup.deskew_max_angle,
+                    deskew_consensus: s.cleanup.deskew_consensus as std::os::raw::c_int,
+                    // despeckle/blackfilter knobs are not in OcrCleanupSpec; take
+                    // the library defaults (also covers fields added later).
+                    ..unsafe { crispembed_sys::crispembed_scan_cleanup_defaults() }
+                },
+                det_prob_threshold: s.det_prob_threshold,
+                det_box_threshold: s.det_box_threshold,
+                det_target_short: s.det_target_short,
+                // The header documents 0 as "use the library default" for every
+                // one of these, so zeroing them reproduces the behaviour this
+                // binding had while the fields were missing.
+                det_max_side: 0,
+                det_min_height: 0,
+                det_width_height_ratio: 0.0,
+                det_max_candidates: 0,
+                det_dilation: 0,
+                det_score_mode: 0,
+                vlm_max_tokens: s.vlm_max_tokens,
+                vlm_prompt: p_ptr,
+                min_chars: s.min_chars,
+                min_confidence: s.min_confidence,
+                page_segmentation: 0, // 0 = DBNet, as before this field existed here
+            });
+        }
+        let ctx = unsafe {
+            crispembed_sys::crispembed_ocr_pipeline_init_stages(
+                router as std::os::raw::c_int,
+                naf.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
+                sr.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
+                punct.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
+                lid.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
+                truecase.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
+                tess_dir.as_ref().map_or(std::ptr::null(), |p| p.as_ptr()),
+                c_stages.as_ptr(),
+                c_stages.len() as std::os::raw::c_int,
+                n_threads,
+            )
+        };
+        drop(keep);
+        if ctx.is_null() {
+            return Err("crispembed_ocr_pipeline_init_stages failed".into());
+        }
+        Ok(Self { ctx })
+    }
+}
+
+impl Drop for CrispOcrPipeline {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_ocr_pipeline_free(self.ctx) }
+    }
+}
+
+// ── Classical Preprocessing ────────────────────────────────────────
+
+/// PDF DPI profiling -- analyse embedded images in a PDF page.
+/// Returns `(dpi, n_images)` on success, or an error message.
+pub fn pdf_page_dpi(path: &str, page: i32) -> Result<(f32, i32), String> {
+    let c_path = CString::new(path).map_err(|e| format!("invalid path: {e}"))?;
+    let mut dpi: f32 = 0.0;
+    let mut n_images: i32 = 0;
+    let ret = unsafe {
+        crispembed_sys::crispembed_pdf_page_dpi(c_path.as_ptr(), page, &mut dpi, &mut n_images)
+    };
+    if ret != 0 {
+        return Err(format!("pdf_page_dpi failed for '{path}' page {page}"));
+    }
+    Ok((dpi, n_images))
+}
+
+/// Dewarp a grayscale page image (straighten curved text lines).
+/// Returns the dewarped image as a Vec<u8>, or Err if dewarping failed.
+pub fn dewarp(gray: &[u8], width: i32, height: i32) -> Result<(Vec<u8>, i32, i32), String> {
+    let mut out = vec![0u8; (width * height) as usize];
+    let mut ow: i32 = 0;
+    let mut oh: i32 = 0;
+    let ret = unsafe {
+        crispembed_sys::crispembed_dewarp(
+            gray.as_ptr(),
+            width,
+            height,
+            out.as_mut_ptr(),
+            &mut ow,
+            &mut oh,
+        )
+    };
+    if ret != 0 {
+        return Err("dewarping failed (too few textlines?)".into());
+    }
+    Ok((out, ow, oh))
+}
+
+/// TPS auto-dewarp using a learned localizer model (GGUF).
+/// Returns the dewarped image as a Vec<u8>, or Err if dewarping failed.
+pub fn tps_auto_dewarp(
+    gray: &[u8],
+    width: i32,
+    height: i32,
+    model_path: &str,
+) -> Result<Vec<u8>, String> {
+    let c_path = std::ffi::CString::new(model_path).map_err(|e| e.to_string())?;
+    let mut out = vec![0u8; (width * height) as usize];
+    let ret = unsafe {
+        crispembed_sys::crispembed_tps_auto_dewarp(
+            gray.as_ptr(),
+            width,
+            height,
+            c_path.as_ptr(),
+            out.as_mut_ptr(),
+        )
+    };
+    if ret != 0 {
+        return Err("TPS auto-dewarp failed".into());
+    }
+    Ok(out)
+}
+
+/// Detect text line regions using connected components (model-free, GPU-free).
+pub fn cc_detect(gray: &[u8], width: i32, height: i32) -> Vec<OcrRegion> {
+    let mut n: i32 = 0;
+    let ptr = unsafe { crispembed_sys::crispembed_cc_detect(gray.as_ptr(), width, height, &mut n) };
+    if ptr.is_null() || n <= 0 {
+        return vec![];
+    }
+    let mut regions = Vec::with_capacity(n as usize);
+    for i in 0..n as usize {
+        let r = unsafe { &*ptr.add(i) };
+        regions.push(OcrRegion {
+            text: String::new(),
+            x: r.x,
+            y: r.y,
+            w: r.w,
+            h: r.h,
+            confidence: r.confidence,
+            orientation_corrected: r.orientation_corrected != 0,
+        });
+    }
+    unsafe { libc::free(ptr as *mut std::ffi::c_void) };
+    regions
+}
+
+/// Table structure recognition — parse a table image into HTML (rule-based
+/// morphological line detection + per-cell OCR).
+pub struct CrispTableParse {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispTableParse {}
+
+impl CrispTableParse {
+    /// Load a table parser. `ocr_model_path` is the recognition GGUF used to
+    /// read cell text (e.g. a TrOCR / Tesseract model).
+    pub fn new(ocr_model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let c = CString::new(ocr_model_path).map_err(|e| format!("ocr model path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_table_parse_init(c.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err("crispembed_table_parse_init failed".into());
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Parse a grayscale table image (row-major `height × width`) into an HTML
+    /// `<table>` string. Returns `None` on failure.
+    pub fn to_html(&self, gray: &[u8], width: i32, height: i32) -> Option<String> {
+        let ptr = unsafe {
+            crispembed_sys::crispembed_table_parse_to_html(self.ctx, gray.as_ptr(), width, height)
+        };
+        if ptr.is_null() {
+            return None;
+        }
+        let s = unsafe { std::ffi::CStr::from_ptr(ptr).to_string_lossy().into_owned() };
+        unsafe { crispembed_sys::crispembed_table_parse_free_string(ptr) };
+        Some(s)
+    }
+
+    /// Detect the grid dimensions (rows, cols) of a table image without OCR.
+    pub fn detect_grid(gray: &[u8], width: i32, height: i32) -> Option<(i32, i32)> {
+        let mut rows: i32 = 0;
+        let mut cols: i32 = 0;
+        let rc = unsafe {
+            crispembed_sys::crispembed_table_parse_detect_grid(
+                gray.as_ptr(),
+                width,
+                height,
+                &mut rows,
+                &mut cols,
+            )
+        };
+        if rc != 0 {
+            return None;
+        }
+        Some((rows, cols))
+    }
+}
+
+impl Drop for CrispTableParse {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_table_parse_free(self.ctx) };
+    }
+}
+
+/// One LiLT-classified token (label + confidence).
+pub struct LiltToken {
+    pub token_id: i32,
+    pub label_id: i32,
+    pub label: String,
+    pub score: f32,
+}
+
+/// LiLT — layout-aware token classification for documents (FUNSD-style labels).
+/// Lower-level: takes pre-tokenized `input_ids` + normalized `bbox` (in
+/// `[0,1000]`); the caller supplies a matching tokenizer + OCR boxes.
+pub struct CrispLiLT {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispLiLT {}
+
+impl CrispLiLT {
+    pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let c = CString::new(model_path).map_err(|e| format!("model path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_lilt_init(c.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err("crispembed_lilt_init failed".into());
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Classify tokens. `bbox` is `input_ids.len() * 4` normalized coords.
+    pub fn classify(&self, input_ids: &[i32], bbox: &[i32]) -> Vec<LiltToken> {
+        let n = input_ids.len() as i32;
+        if bbox.len() != input_ids.len() * 4 {
+            return vec![];
+        }
+        let mut out_n: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_lilt_classify(
+                self.ctx,
+                input_ids.as_ptr(),
+                bbox.as_ptr(),
+                n,
+                &mut out_n,
+            )
+        };
+        if ptr.is_null() || out_n <= 0 {
+            return vec![];
+        }
+        let mut toks = Vec::with_capacity(out_n as usize);
+        for i in 0..out_n as usize {
+            let t = unsafe { &*ptr.add(i) };
+            let label = if t.label.is_null() {
+                String::new()
+            } else {
+                unsafe {
+                    std::ffi::CStr::from_ptr(t.label)
+                        .to_string_lossy()
+                        .into_owned()
+                }
+            };
+            toks.push(LiltToken {
+                token_id: t.token_id,
+                label_id: t.label_id,
+                label,
+                score: t.score,
+            });
+        }
+        toks
+    }
+}
+
+impl Drop for CrispLiLT {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_lilt_free(self.ctx) };
+    }
+}
+
+/// One KIE field extracted from a document (label + value + box + score).
+pub struct KieField {
+    pub label: String,
+    pub value: String,
+    pub score: f32,
+    pub x: f32,
+    pub y: f32,
+    pub w: f32,
+    pub h: f32,
+}
+
+/// High-level key-information extraction (image → structured fields). OCRs the
+/// image internally and runs GLiNER (and, via [`Self::new_lilt`], LiLT
+/// layout-aware classification) to extract the requested field labels.
+pub struct CrispKie {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispKie {}
+
+impl CrispKie {
+    /// GLiNER-based KIE (OCR det + rec + NER models).
+    pub fn new(
+        ocr_det: &str,
+        ocr_rec: &str,
+        ner_model: &str,
+        n_threads: i32,
+    ) -> Result<Self, String> {
+        Self::init(ocr_det, ocr_rec, ner_model, None, n_threads)
+    }
+
+    /// Layout-aware KIE with a LiLT model (plus optional GLiNER `ner_model`).
+    pub fn new_lilt(
+        ocr_det: &str,
+        ocr_rec: &str,
+        ner_model: &str,
+        lilt_model: &str,
+        n_threads: i32,
+    ) -> Result<Self, String> {
+        Self::init(ocr_det, ocr_rec, ner_model, Some(lilt_model), n_threads)
+    }
+
+    fn init(
+        ocr_det: &str,
+        ocr_rec: &str,
+        ner_model: &str,
+        lilt_model: Option<&str>,
+        n_threads: i32,
+    ) -> Result<Self, String> {
+        let det = CString::new(ocr_det).map_err(|e| format!("det: {e}"))?;
+        let rec = CString::new(ocr_rec).map_err(|e| format!("rec: {e}"))?;
+        let ner = CString::new(ner_model).map_err(|e| format!("ner: {e}"))?;
+        let ctx = match lilt_model {
+            Some(lilt) => {
+                let l = CString::new(lilt).map_err(|e| format!("lilt: {e}"))?;
+                unsafe {
+                    crispembed_sys::crispembed_kie_init_lilt(
+                        det.as_ptr(),
+                        rec.as_ptr(),
+                        ner.as_ptr(),
+                        l.as_ptr(),
+                        n_threads,
+                    )
+                }
+            }
+            None => unsafe {
+                crispembed_sys::crispembed_kie_init(
+                    det.as_ptr(),
+                    rec.as_ptr(),
+                    ner.as_ptr(),
+                    n_threads,
+                )
+            },
+        };
+        if ctx.is_null() {
+            return Err("crispembed_kie_init failed".into());
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Extract the requested `labels` from a document image.
+    pub fn extract(
+        &self,
+        image_path: &str,
+        labels: &[&str],
+        threshold: f32,
+    ) -> Result<Vec<KieField>, String> {
+        let img = CString::new(image_path).map_err(|e| format!("image path: {e}"))?;
+        let cstrs: Vec<CString> = labels
+            .iter()
+            .map(|l| CString::new(*l).unwrap_or_default())
+            .collect();
+        let ptrs: Vec<*const std::os::raw::c_char> = cstrs.iter().map(|c| c.as_ptr()).collect();
+        let res = unsafe {
+            crispembed_sys::crispembed_kie_extract(
+                self.ctx,
+                img.as_ptr(),
+                ptrs.as_ptr(),
+                ptrs.len() as i32,
+                threshold,
+            )
+        };
+        let mut out = Vec::new();
+        if !res.fields.is_null() && res.n_fields > 0 {
+            let cstr = |p: *const std::os::raw::c_char| {
+                if p.is_null() {
+                    String::new()
+                } else {
+                    unsafe { std::ffi::CStr::from_ptr(p).to_string_lossy().into_owned() }
+                }
+            };
+            for i in 0..res.n_fields as usize {
+                let f = unsafe { &*res.fields.add(i) };
+                out.push(KieField {
+                    label: cstr(f.label),
+                    value: cstr(f.value),
+                    score: f.score,
+                    x: f.x,
+                    y: f.y,
+                    w: f.w,
+                    h: f.h,
+                });
+            }
+        }
+        Ok(out)
+    }
+}
+
+impl Drop for CrispKie {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_kie_free(self.ctx) };
+    }
+}
+
+/// Find the skew angle of a document image (degrees).
+pub fn find_skew(gray: &[u8], width: i32, height: i32) -> Result<(f32, f32), String> {
+    let mut angle: f32 = 0.0;
+    let mut conf: f32 = 0.0;
+    let ret = unsafe {
+        crispembed_sys::crispembed_find_skew(gray.as_ptr(), width, height, &mut angle, &mut conf)
+    };
+    if ret != 0 {
+        return Err("skew detection failed".into());
+    }
+    Ok((angle, conf))
+}
+
+/// Render OCR results to a format string ("text", "hocr", "alto", "pdf").
+pub fn ocr_render(results: &[OcrRegion], page_w: i32, page_h: i32, format: &str) -> Option<String> {
+    if results.is_empty() {
+        return None;
+    }
+    let fmt = std::ffi::CString::new(format).ok()?;
+    // Build C-compatible result array
+    let texts: Vec<std::ffi::CString> = results
+        .iter()
+        .map(|r| std::ffi::CString::new(r.text.as_str()).unwrap_or_default())
+        .collect();
+    let c_results: Vec<crispembed_sys::CrispembedOcrResult> = results
+        .iter()
+        .enumerate()
+        .map(|(i, r)| crispembed_sys::CrispembedOcrResult {
+            x: r.x,
+            y: r.y,
+            w: r.w,
+            h: r.h,
+            confidence: r.confidence,
+            text: texts[i].as_ptr(),
+            text_len: texts[i].as_bytes().len() as i32,
+            orientation_corrected: if r.orientation_corrected { 1 } else { 0 },
+            // `OcrResult` does not carry the angle/confidence pair, so the
+            // renderer gets "no rotation measured". They still have to be
+            // written: this array is read by C at the header's 48-byte
+            // stride, and omitting them made it 40 — the same layout skew
+            // that crashed the read-back path, in the opposite direction.
+            orientation_angle: 0,
+            orientation_confidence: 0.0,
+        })
+        .collect();
+    let ptr = unsafe {
+        crispembed_sys::crispembed_ocr_render(
+            c_results.as_ptr(),
+            c_results.len() as i32,
+            page_w,
+            page_h,
+            fmt.as_ptr(),
+        )
+    };
+    if ptr.is_null() {
+        return None;
+    }
+    let s = unsafe { std::ffi::CStr::from_ptr(ptr).to_string_lossy().into_owned() };
+    unsafe { libc::free(ptr as *mut std::ffi::c_void) };
+    Some(s)
+}
+
+/// One page of OCR regions for [`ocr_render_pages`].
+pub struct OcrRenderPageInput<'a> {
+    pub regions: &'a [OcrRegion],
+    pub page_width: i32,
+    pub page_height: i32,
+    /// Original image path (used by the searchable-PDF image layer).
+    pub image_path: Option<&'a str>,
+}
+
+/// Render one or more pages to **bytes** via the lower-level `ocr_render.h` API
+/// (`create → begin → add_page* → end → output_size`). Unlike [`ocr_render`]
+/// (one-shot, `String`, single-page, NUL-truncated), this is:
+///   - **binary-safe** — uses `output_size`, so searchable **PDF** works;
+///   - **multi-page** — emits a single document spanning all pages.
+///
+/// `format`: `"text"` | `"hocr"` | `"alto"` | `"pdf"`. Each region becomes a
+/// one-word line (the orchestrator emits region-level boxes). `pdfa` enables
+/// PDF/A-2b archival compliance (XMP metadata + sRGB OutputIntent) — only
+/// affects the `"pdf"` format; ignored otherwise. Returns `None` on
+/// allocation/render failure.
+pub fn ocr_render_pages(pages: &[OcrRenderPageInput], format: &str, pdfa: bool) -> Option<Vec<u8>> {
+    use crispembed_sys::{OcrRenderLine, OcrRenderPage, OcrRenderWord};
+    let fmt = match format {
+        "hocr" => 1,
+        "alto" => 2,
+        "pdf" => 3,
+        _ => 0,
+    };
+    let r = unsafe { crispembed_sys::ocr_render_create(fmt) };
+    if r.is_null() {
+        return None;
+    }
+    // PDF/A-2b must be set before begin(); no-op for non-PDF formats.
+    if pdfa {
+        unsafe { crispembed_sys::ocr_render_set_pdfa(r, 1) };
+    }
+    unsafe { crispembed_sys::ocr_render_begin(r) };
+
+    for page in pages {
+        // Build per-page C structs. The renderer copies the data during
+        // add_page, so these buffers only need to live for that call.
+        let texts: Vec<std::ffi::CString> = page
+            .regions
+            .iter()
+            .map(|reg| std::ffi::CString::new(reg.text.as_str()).unwrap_or_default())
+            .collect();
+        let words: Vec<OcrRenderWord> = page
+            .regions
+            .iter()
+            .enumerate()
+            .map(|(i, reg)| OcrRenderWord {
+                text: texts[i].as_ptr(),
+                x: reg.x as i32,
+                y: reg.y as i32,
+                w: reg.w as i32,
+                h: reg.h as i32,
+                confidence: reg.confidence,
+            })
+            .collect();
+        // One word per line (region-level granularity).
+        let lines: Vec<OcrRenderLine> = page
+            .regions
+            .iter()
+            .enumerate()
+            .map(|(i, reg)| OcrRenderLine {
+                words: &words[i],
+                n_words: 1,
+                x: reg.x as i32,
+                y: reg.y as i32,
+                w: reg.w as i32,
+                h: reg.h as i32,
+            })
+            .collect();
+        let img = page.image_path.and_then(|p| std::ffi::CString::new(p).ok());
+        let c_page = OcrRenderPage {
+            lines: lines.as_ptr(),
+            n_lines: lines.len() as i32,
+            page_width: page.page_width,
+            page_height: page.page_height,
+            image_path: img.as_ref().map_or(std::ptr::null(), |c| c.as_ptr()),
+        };
+        unsafe { crispembed_sys::ocr_render_add_page(r, &c_page) };
+        // texts/words/lines/img dropped here — safe (add_page copied).
+    }
+
+    unsafe { crispembed_sys::ocr_render_end(r) };
+    let size = unsafe { crispembed_sys::ocr_render_output_size(r) };
+    let ptr = unsafe { crispembed_sys::ocr_render_output(r) } as *const u8;
+    let bytes = if ptr.is_null() || size <= 0 {
+        Vec::new()
+    } else {
+        unsafe { std::slice::from_raw_parts(ptr, size as usize) }.to_vec()
+    };
+    unsafe { crispembed_sys::ocr_render_free(r) };
+    Some(bytes)
+}
+
+// ---------------------------------------------------------------------------
+// SAFMN super-resolution
+// ---------------------------------------------------------------------------
+
+/// Safe wrapper for the SAFMN whole-image super-resolution engine.
+pub struct CrispSafmnSr {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispSafmnSr {}
+
+impl CrispSafmnSr {
+    /// Load a SAFMN GGUF model.  `n_threads = 0` → auto.
+    pub fn new(model_path: impl AsRef<Path>, n_threads: i32) -> Option<Self> {
+        let c_path = CString::new(model_path.as_ref().to_str()?).ok()?;
+        let ctx = unsafe { crispembed_sys::crispembed_safmn_sr_init(c_path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            None
+        } else {
+            Some(Self { ctx })
+        }
+    }
+
+    /// Upscale factor (2 or 4).
+    pub fn scale(&self) -> i32 {
+        unsafe { crispembed_sys::crispembed_safmn_sr_scale(self.ctx) }
+    }
+
+    /// Super-resolve an RGB image (H×W×3, row-major uint8).
+    /// Returns `(pixels, out_w, out_h)` or `None` on failure.
+    pub fn process(
+        &mut self,
+        pixels: &[u8],
+        width: i32,
+        height: i32,
+    ) -> Option<(Vec<u8>, i32, i32)> {
+        let mut out_ptr: *mut u8 = std::ptr::null_mut();
+        let mut out_w: i32 = 0;
+        let mut out_h: i32 = 0;
+        let rc = unsafe {
+            crispembed_sys::crispembed_safmn_sr_process(
+                self.ctx,
+                pixels.as_ptr(),
+                width,
+                height,
+                0,
+                0,
+                &mut out_ptr,
+                &mut out_w,
+                &mut out_h,
+            )
+        };
+        if rc != 0 || out_ptr.is_null() {
+            return None;
+        }
+        let n = (out_w as usize) * (out_h as usize) * 3;
+        let data = unsafe { std::slice::from_raw_parts(out_ptr, n) }.to_vec();
+        unsafe { crispembed_sys::crispembed_safmn_sr_free_image(out_ptr) };
+        Some((data, out_w, out_h))
+    }
+}
+
+impl Drop for CrispSafmnSr {
+    fn drop(&mut self) {
+        if !self.ctx.is_null() {
+            unsafe { crispembed_sys::crispembed_safmn_sr_free(self.ctx) };
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Real-ESRGAN Super-Resolution
+// ---------------------------------------------------------------------------
+
+/// Safe wrapper for the Real-ESRGAN whole-image super-resolution engine.
+pub struct CrispEsrganSr {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispEsrganSr {}
+
+impl CrispEsrganSr {
+    /// Load a Real-ESRGAN GGUF model.  `n_threads = 0` → auto.
+    pub fn new(model_path: impl AsRef<Path>, n_threads: i32) -> Option<Self> {
+        let c_path = CString::new(model_path.as_ref().to_str()?).ok()?;
+        let ctx = unsafe { crispembed_sys::crispembed_esrgan_sr_init(c_path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            None
+        } else {
+            Some(Self { ctx })
+        }
+    }
+
+    /// Upscale factor (e.g. 4).
+    pub fn scale(&self) -> i32 {
+        unsafe { crispembed_sys::crispembed_esrgan_sr_scale(self.ctx) }
+    }
+
+    /// Super-resolve an RGB image (H×W×3, row-major uint8).
+    /// Returns `(pixels, out_w, out_h)` or `None` on failure.
+    pub fn process(
+        &mut self,
+        pixels: &[u8],
+        width: i32,
+        height: i32,
+    ) -> Option<(Vec<u8>, i32, i32)> {
+        let mut out_ptr: *mut u8 = std::ptr::null_mut();
+        let mut out_w: i32 = 0;
+        let mut out_h: i32 = 0;
+        let rc = unsafe {
+            crispembed_sys::crispembed_esrgan_sr_process(
+                self.ctx,
+                pixels.as_ptr(),
+                width,
+                height,
+                0,
+                0,
+                &mut out_ptr,
+                &mut out_w,
+                &mut out_h,
+            )
+        };
+        if rc != 0 || out_ptr.is_null() {
+            return None;
+        }
+        let n = (out_w as usize) * (out_h as usize) * 3;
+        let data = unsafe { std::slice::from_raw_parts(out_ptr, n) }.to_vec();
+        unsafe { crispembed_sys::crispembed_esrgan_sr_free_image(out_ptr) };
+        Some((data, out_w, out_h))
+    }
+}
+
+impl Drop for CrispEsrganSr {
+    fn drop(&mut self) {
+        if !self.ctx.is_null() {
+            unsafe { crispembed_sys::crispembed_esrgan_sr_free(self.ctx) };
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// SwinIR Super-Resolution
+// ---------------------------------------------------------------------------
+
+/// Safe wrapper for the SwinIR whole-image super-resolution engine.
+pub struct CrispSwinirSr {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispSwinirSr {}
+
+impl CrispSwinirSr {
+    /// Load a SwinIR GGUF model.  `n_threads = 0` → auto.
+    pub fn new(model_path: impl AsRef<Path>, n_threads: i32) -> Option<Self> {
+        let c_path = CString::new(model_path.as_ref().to_str()?).ok()?;
+        let ctx = unsafe { crispembed_sys::crispembed_swinir_sr_init(c_path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            None
+        } else {
+            Some(Self { ctx })
+        }
+    }
+
+    /// Upscale factor (2, 3, or 4).
+    pub fn scale(&self) -> i32 {
+        unsafe { crispembed_sys::crispembed_swinir_sr_scale(self.ctx) }
+    }
+
+    /// Super-resolve an RGB image (H×W×3, row-major uint8).
+    /// `tile_size` and `tile_overlap` may be 0 for defaults.
+    /// Returns `(pixels, out_w, out_h)` or `None` on failure.
+    pub fn process(
+        &mut self,
+        pixels: &[u8],
+        width: i32,
+        height: i32,
+        tile_size: i32,
+        tile_overlap: i32,
+    ) -> Option<(Vec<u8>, i32, i32)> {
+        let mut out_ptr: *mut u8 = std::ptr::null_mut();
+        let mut out_w: i32 = 0;
+        let mut out_h: i32 = 0;
+        let rc = unsafe {
+            crispembed_sys::crispembed_swinir_sr_process(
+                self.ctx,
+                pixels.as_ptr(),
+                width,
+                height,
+                tile_size,
+                tile_overlap,
+                &mut out_ptr,
+                &mut out_w,
+                &mut out_h,
+            )
+        };
+        if rc != 0 || out_ptr.is_null() {
+            return None;
+        }
+        let n = (out_w as usize) * (out_h as usize) * 3;
+        let data = unsafe { std::slice::from_raw_parts(out_ptr, n) }.to_vec();
+        unsafe { crispembed_sys::crispembed_swinir_sr_free_image(out_ptr) };
+        Some((data, out_w, out_h))
+    }
+}
+
+impl Drop for CrispSwinirSr {
+    fn drop(&mut self) {
+        if !self.ctx.is_null() {
+            unsafe { crispembed_sys::crispembed_swinir_sr_free(self.ctx) };
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// SCUNet Image Denoising
+// ---------------------------------------------------------------------------
+
+/// Safe wrapper for the SCUNet image denoising engine.
+pub struct CrispScunet {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispScunet {}
+
+impl CrispScunet {
+    /// Load a SCUNet GGUF model.  `n_threads = 0` → auto.
+    pub fn new(model_path: impl AsRef<Path>, n_threads: i32) -> Option<Self> {
+        let c_path = CString::new(model_path.as_ref().to_str()?).ok()?;
+        let ctx = unsafe { crispembed_sys::crispembed_scunet_init(c_path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            None
+        } else {
+            Some(Self { ctx })
+        }
+    }
+
+    /// Denoise an RGB image (H×W×3, row-major uint8).
+    /// Returns `(pixels, width, height)` or `None` on failure.
+    /// Output has the same dimensions as input.
+    pub fn process(
+        &mut self,
+        pixels: &[u8],
+        width: i32,
+        height: i32,
+    ) -> Option<(Vec<u8>, i32, i32)> {
+        let mut out_ptr: *mut u8 = std::ptr::null_mut();
+        let rc = unsafe {
+            crispembed_sys::crispembed_scunet_process(
+                self.ctx,
+                pixels.as_ptr(),
+                width,
+                height,
+                &mut out_ptr,
+            )
+        };
+        if rc != 0 || out_ptr.is_null() {
+            return None;
+        }
+        let n = (width as usize) * (height as usize) * 3;
+        let data = unsafe { std::slice::from_raw_parts(out_ptr, n) }.to_vec();
+        unsafe { crispembed_sys::crispembed_scunet_free_image(out_ptr) };
+        Some((data, width, height))
+    }
+}
+
+impl Drop for CrispScunet {
+    fn drop(&mut self) {
+        if !self.ctx.is_null() {
+            unsafe { crispembed_sys::crispembed_scunet_free(self.ctx) };
+        }
+    }
+}
+
+/// Safe wrapper for the InstructIR all-in-one image restoration engine.
+pub struct CrispInstructIR {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispInstructIR {}
+
+impl CrispInstructIR {
+    /// Load an InstructIR GGUF model.  `n_threads = 0` → auto.
+    pub fn new(model_path: impl AsRef<Path>, n_threads: i32) -> Option<Self> {
+        let c_path = CString::new(model_path.as_ref().to_str()?).ok()?;
+        let ctx = unsafe { crispembed_sys::crispembed_instructir_init(c_path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            None
+        } else {
+            Some(Self { ctx })
+        }
+    }
+
+    /// Return the number of supported tasks (7).
+    pub fn n_tasks(&self) -> i32 {
+        unsafe { crispembed_sys::crispembed_instructir_n_tasks(self.ctx) }
+    }
+
+    /// Restore an RGB image (H×W×3, row-major uint8) with the given task.
+    /// Returns `(pixels, width, height)` or `None` on failure.
+    /// Output has the same dimensions as input.
+    pub fn process(
+        &mut self,
+        pixels: &[u8],
+        width: i32,
+        height: i32,
+        task: i32,
+    ) -> Option<(Vec<u8>, i32, i32)> {
+        let mut out_ptr: *mut u8 = std::ptr::null_mut();
+        let rc = unsafe {
+            crispembed_sys::crispembed_instructir_process(
+                self.ctx,
+                task,
+                pixels.as_ptr(),
+                width,
+                height,
+                &mut out_ptr,
+            )
+        };
+        if rc != 0 || out_ptr.is_null() {
+            return None;
+        }
+        let n = (width as usize) * (height as usize) * 3;
+        let data = unsafe { std::slice::from_raw_parts(out_ptr, n) }.to_vec();
+        unsafe { crispembed_sys::crispembed_instructir_free_image(out_ptr) };
+        Some((data, width, height))
+    }
+}
+
+impl Drop for CrispInstructIR {
+    fn drop(&mut self) {
+        if !self.ctx.is_null() {
+            unsafe { crispembed_sys::crispembed_instructir_free(self.ctx) };
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// AdaIR All-in-One Image Restoration
+// ---------------------------------------------------------------------------
+
+/// Safe wrapper for the AdaIR all-in-one image restoration engine.
+pub struct CrispAdaIR {
+    ctx: *mut std::ffi::c_void,
+}
+
+unsafe impl Send for CrispAdaIR {}
+
+impl CrispAdaIR {
+    /// Load an AdaIR GGUF model.  `n_threads = 0` -> auto.
+    pub fn new(model_path: impl AsRef<Path>, n_threads: i32) -> Option<Self> {
+        let c_path = CString::new(model_path.as_ref().to_str()?).ok()?;
+        let ctx = unsafe { crispembed_sys::crispembed_adair_init(c_path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            None
+        } else {
+            Some(Self { ctx })
+        }
+    }
+
+    /// Restore an RGB image (H*W*3, row-major uint8).
+    /// Returns `(pixels, width, height)` or `None` on failure.
+    /// Output has the same dimensions as input.
+    pub fn process(
+        &mut self,
+        pixels: &[u8],
+        width: i32,
+        height: i32,
+    ) -> Option<(Vec<u8>, i32, i32)> {
+        let mut out_ptr: *mut u8 = std::ptr::null_mut();
+        let rc = unsafe {
+            crispembed_sys::crispembed_adair_process(
+                self.ctx,
+                pixels.as_ptr(),
+                width,
+                height,
+                &mut out_ptr,
+            )
+        };
+        if rc != 0 || out_ptr.is_null() {
+            return None;
+        }
+        let n = (width as usize) * (height as usize) * 3;
+        let data = unsafe { std::slice::from_raw_parts(out_ptr, n) }.to_vec();
+        unsafe { crispembed_sys::crispembed_adair_free_image(out_ptr) };
+        Some((data, width, height))
+    }
+}
+
+impl Drop for CrispAdaIR {
+    fn drop(&mut self) {
+        if !self.ctx.is_null() {
+            unsafe { crispembed_sys::crispembed_adair_free(self.ctx) };
+        }
+    }
+}
+
+// ======================================================================
+// Pix2Struct — image-to-text document understanding
+// ======================================================================
+
+/// Pix2Struct image-to-text model (variable-resolution ViT + T5 decoder, 282M params).
+///
+/// Not `Sync` — do not share between threads. Each thread should hold its
+/// own `CrispPix2Struct` instance. `Send`-safe: you can move it across threads.
+///
+/// # Example
+///
+/// ```no_run
+/// use crispembed::CrispPix2Struct;
+///
+/// let mut p2s = CrispPix2Struct::new("/path/to/pix2struct.gguf", 0).unwrap();
+/// let text = p2s.generate(b"...", 800, 600, 256);
+/// println!("output: {:?}", text);
+/// ```
+pub struct CrispPix2Struct {
+    ctx: *mut crispembed_sys::Pix2StructContext,
+}
+
+// Safety: the underlying C library serialises all mutable access through
+// the opaque context pointer; we hold the only reference.
+unsafe impl Send for CrispPix2Struct {}
+
+impl CrispPix2Struct {
+    /// Load a Pix2Struct GGUF model file.
+    ///
+    /// - `model_path` — path to the `.gguf` file.
+    /// - `n_threads`  — CPU thread count; pass `0` for automatic.
+    pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let path = CString::new(model_path).map_err(|e| format!("invalid path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_pix2struct_init(path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err(format!(
+                "crispembed_pix2struct_init failed for '{model_path}'"
+            ));
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Generate text from a raw RGB/RGBA image buffer.
+    ///
+    /// - `image`      — row-major pixel bytes (RGB or RGBA).
+    /// - `width`      — image width in pixels.
+    /// - `height`     — image height in pixels.
+    /// - `max_tokens` — maximum number of tokens to generate.
+    ///
+    /// Returns the generated text, or `None` on failure.
+    /// The returned string is a fresh allocation — no lifetime ties to `self`.
+    pub fn generate(
+        &mut self,
+        image: &[u8],
+        width: i32,
+        height: i32,
+        max_tokens: i32,
+    ) -> Option<String> {
+        let ptr = unsafe {
+            crispembed_sys::crispembed_pix2struct_generate(
+                self.ctx,
+                image.as_ptr(),
+                width,
+                height,
+                max_tokens,
+            )
+        };
+        if ptr.is_null() {
+            return None;
+        }
+        let s = unsafe { std::ffi::CStr::from_ptr(ptr) }
+            .to_str()
+            .ok()?
+            .to_string();
+        unsafe { crispembed_sys::crispembed_pix2struct_free_text(ptr) };
+        Some(s)
+    }
+
+    /// Encode image patches to hidden-state embeddings.
+    ///
+    /// Returns a dense float vector of length `out_dim`, or an empty vector
+    /// on failure.
+    pub fn encode_patches(&mut self, patches: &[f32], n_patches: i32) -> Vec<f32> {
+        let mut out_dim: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_pix2struct_encode_patches(
+                self.ctx,
+                patches.as_ptr(),
+                n_patches,
+                &mut out_dim,
+            )
+        };
+        if ptr.is_null() || out_dim <= 0 {
+            return vec![];
+        }
+        unsafe { std::slice::from_raw_parts(ptr, out_dim as usize) }.to_vec()
+    }
+
+    /// Per-token softmax confidences from the last `generate` call.
+    pub fn confidences(&self) -> Vec<f32> {
+        let mut n: std::os::raw::c_int = 0;
+        let ptr = unsafe { crispembed_sys::crispembed_pix2struct_confidences(self.ctx, &mut n) };
+        if ptr.is_null() || n <= 0 {
+            return vec![];
+        }
+        unsafe { std::slice::from_raw_parts(ptr, n as usize) }.to_vec()
+    }
+
+    /// Mean softmax confidence from the last `generate` call.
+    pub fn mean_confidence(&self) -> f32 {
+        unsafe { crispembed_sys::crispembed_pix2struct_mean_confidence(self.ctx) }
+    }
+}
+
+impl Drop for CrispPix2Struct {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_pix2struct_free(self.ctx) }
+    }
+}
+
+// ======================================================================
+// Granite Vision OCR — LLaVA-Next (OCRBench 852)
+// ======================================================================
+
+/// Granite Vision OCR model (SigLIP ViT + Granite-3.1-2B decoder).
+///
+/// Not `Sync` — do not share between threads. Each thread should hold its
+/// own `CrispGraniteVision` instance. `Send`-safe: you can move it across threads.
+///
+/// # Example
+///
+/// ```no_run
+/// use crispembed::CrispGraniteVision;
+///
+/// let mut gv = CrispGraniteVision::new("/path/to/granite-vision.gguf", 0).unwrap();
+/// let text = gv.recognize(b"...", 800, 600, 3, None);
+/// println!("output: {:?}", text);
+/// ```
+pub struct CrispGraniteVision {
+    ctx: *mut crispembed_sys::GraniteVisionContext,
+}
+
+unsafe impl Send for CrispGraniteVision {}
+
+impl CrispGraniteVision {
+    /// Load a Granite Vision GGUF model file.
+    pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let path = CString::new(model_path).map_err(|e| format!("invalid path: {e}"))?;
+        let ctx =
+            unsafe { crispembed_sys::crispembed_granite_vision_init(path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err(format!(
+                "crispembed_granite_vision_init failed for '{model_path}'"
+            ));
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Recognize text from raw pixel bytes.
+    ///
+    /// - `pixels`   — row-major RGB(A) bytes.
+    /// - `width`    — image width in pixels.
+    /// - `height`   — image height in pixels.
+    /// - `channels` — 3 (RGB) or 4 (RGBA).
+    /// - `prompt`   — optional prompt; `None` for default OCR prompt.
+    pub fn recognize(
+        &mut self,
+        pixels: &[u8],
+        width: i32,
+        height: i32,
+        channels: i32,
+        prompt: Option<&str>,
+    ) -> Option<String> {
+        let prompt_c = prompt.map(|p| CString::new(p).ok()).flatten();
+        let prompt_ptr = prompt_c.as_ref().map_or(std::ptr::null(), |c| c.as_ptr());
+        let mut out_len: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_granite_vision_recognize(
+                self.ctx,
+                pixels.as_ptr(),
+                width,
+                height,
+                channels,
+                prompt_ptr,
+                &mut out_len,
+            )
+        };
+        if ptr.is_null() {
+            return None;
+        }
+        Some(unsafe { CStr::from_ptr(ptr) }.to_str().ok()?.to_string())
+    }
+}
+
+impl Drop for CrispGraniteVision {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_granite_vision_free(self.ctx) }
+    }
+}
+
+// ======================================================================
+// LightOnOCR — Pixtral ViT + Qwen3 decoder
+// ======================================================================
+
+/// LightOnOCR model (Pixtral ViT + Qwen3 decoder, 2-1B).
+///
+/// Not `Sync` — do not share between threads. Each thread should hold its
+/// own `CrispLightOnOcr` instance. `Send`-safe: you can move it across threads.
+///
+/// # Example
+///
+/// ```no_run
+/// use crispembed::CrispLightOnOcr;
+///
+/// let mut locr = CrispLightOnOcr::new("/path/to/lightonocr.gguf", 0).unwrap();
+/// let text = locr.recognize(b"...", 800, 600, 3);
+/// println!("output: {:?}", text);
+/// ```
+pub struct CrispLightOnOcr {
+    ctx: *mut crispembed_sys::LightOnOcrContext,
+}
+
+unsafe impl Send for CrispLightOnOcr {}
+
+impl CrispLightOnOcr {
+    /// Load a LightOnOCR GGUF model file.
+    pub fn new(model_path: &str, n_threads: i32) -> Result<Self, String> {
+        let path = CString::new(model_path).map_err(|e| format!("invalid path: {e}"))?;
+        let ctx = unsafe { crispembed_sys::crispembed_lightonocr_init(path.as_ptr(), n_threads) };
+        if ctx.is_null() {
+            return Err(format!(
+                "crispembed_lightonocr_init failed for '{model_path}'"
+            ));
+        }
+        Ok(Self { ctx })
+    }
+
+    /// Recognize text from raw pixel bytes.
+    ///
+    /// - `pixels`   — row-major RGB(A) bytes.
+    /// - `width`    — image width in pixels.
+    /// - `height`   — image height in pixels.
+    /// - `channels` — 3 (RGB) or 4 (RGBA).
+    pub fn recognize(
+        &mut self,
+        pixels: &[u8],
+        width: i32,
+        height: i32,
+        channels: i32,
+    ) -> Option<String> {
+        let mut out_len: i32 = 0;
+        let ptr = unsafe {
+            crispembed_sys::crispembed_lightonocr_recognize(
+                self.ctx,
+                pixels.as_ptr(),
+                width,
+                height,
+                channels,
+                &mut out_len,
+            )
+        };
+        if ptr.is_null() {
+            return None;
+        }
+        Some(unsafe { CStr::from_ptr(ptr) }.to_str().ok()?.to_string())
+    }
+}
+
+impl Drop for CrispLightOnOcr {
+    fn drop(&mut self) {
+        unsafe { crispembed_sys::crispembed_lightonocr_free(self.ctx) }
+    }
+}

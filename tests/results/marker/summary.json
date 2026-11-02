@@ -1,0 +1,514 @@
+{
+  "schema_version": 1,
+  "implementation": "Native Marker-style PDF/image document processing with TeleOCR GGUF/GGML",
+  "upstream_marker_revision": "71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4",
+  "source_baseline": "4776ef977214890b416e871f6f66a6891d2f4b2d",
+  "inherited_teleocr_revision": "68bd30b4db5d1dd2c899136491b14b9269948609",
+  "final_library_sha256": "f117761723bc909b4c6194e096e6bbfe18ba6bf5576d24108b6af0b780f5a5e9",
+  "source_identity": "Final delivery SOURCE-PINS.json identifies the committed tree; file hashes bind these tests.",
+  "default_off_gates": [
+    "CRISPEMBED_MARKER",
+    "CRISPEMBED_TELEOCR"
+  ],
+  "qualification": {
+    "bounded_processing_and_public_checks_passed": true,
+    "declared_neural_functional_panel_passed": true,
+    "declared_neural_text_and_cell_panel_passed": true,
+    "strict_numerical_qualification": false,
+    "original_surya_model_port_or_parity": false,
+    "representative_OCR_or_layout_quality": false,
+    "GPU_mobile_WASM_or_nonLinux_qualification": false,
+    "release_publication_or_default_promotion": false
+  },
+  "source_hashes_still_match": {
+    "CMakeLists.txt": true,
+    "src/crispembed.h": true,
+    "src/marker.cpp": true,
+    "src/marker_backend.cpp": true,
+    "src/marker_backend.h": true,
+    "src/marker_document.cpp": true,
+    "src/marker_document.h": true,
+    "src/qwen2vl_ocr.cpp": true,
+    "src/image_preprocess.h": true,
+    "python/crispembed/_marker.py": true,
+    "examples/marker/main.cpp": true,
+    "examples/marker/save_bundle.h": true,
+    "examples/server/server.cpp": true,
+    "crispembed/src/marker.rs": true,
+    "crispembed-sys/src/lib.rs": true,
+    "flutter/crispembed/lib/src/marker.dart": true,
+    "tests/marker_native.py": true,
+    "tests/marker_integration.py": true
+  },
+  "final_model_source_checks": [
+    {
+      "panel": "native-final-f16",
+      "sources_match": {
+        "src/marker.cpp": true,
+        "src/marker_backend.cpp": true,
+        "src/marker_document.cpp": true,
+        "src/qwen2vl_ocr.cpp": true,
+        "tests/marker_native.py": true,
+        "python/crispembed/_marker.py": true
+      }
+    },
+    {
+      "panel": "native-final-q8",
+      "sources_match": {
+        "src/marker.cpp": true,
+        "src/marker_backend.cpp": true,
+        "src/marker_document.cpp": true,
+        "src/qwen2vl_ocr.cpp": true,
+        "tests/marker_native.py": true,
+        "python/crispembed/_marker.py": true
+      }
+    },
+    {
+      "panel": "native-final-q4",
+      "sources_match": {
+        "src/marker.cpp": true,
+        "src/marker_backend.cpp": true,
+        "src/marker_document.cpp": true,
+        "src/qwen2vl_ocr.cpp": true,
+        "tests/marker_native.py": true,
+        "python/crispembed/_marker.py": true
+      }
+    },
+    {
+      "panel": "native-final-force-pdf",
+      "sources_match": {
+        "src/marker.cpp": true,
+        "src/marker_backend.cpp": true,
+        "src/marker_document.cpp": true,
+        "src/qwen2vl_ocr.cpp": true,
+        "tests/marker_native.py": true,
+        "python/crispembed/_marker.py": true
+      }
+    }
+  ],
+  "model_free": {
+    "native_units": [
+      {
+        "target": "test-marker-document",
+        "exit_code": 0,
+        "seconds": 0.005956991997663863,
+        "last_line": "marker document: 86 checks, 0 failures",
+        "log": "tests/results/marker/build/test-marker-document-final.log",
+        "log_sha256": "d47b9c2eeb785f32abe760b6c18e7ae6a3d69182581fb6e8846677ccdc166c4a"
+      },
+      {
+        "target": "test-marker-backend",
+        "exit_code": 0,
+        "seconds": 0.01156527700368315,
+        "last_line": "marker backend: 39 passed, 0 failed",
+        "log": "tests/results/marker/build/test-marker-backend-final.log",
+        "log_sha256": "487b1dc7f05ac39023fe13341c942423488b4028065d0ac928a44979c122eec6"
+      },
+      {
+        "target": "test-marker-api",
+        "exit_code": 0,
+        "seconds": 0.008257920999312773,
+        "last_line": "Marker C API: 38 checks passed",
+        "log": "tests/results/marker/build/test-marker-api-final.log",
+        "log_sha256": "144ca9aedf2d0d2e61b1525656c26a32c36ee328245b666148a45e772dc3f54d"
+      },
+      {
+        "target": "test-marker-save",
+        "exit_code": 0,
+        "seconds": 0.004645890003303066,
+        "last_line": "38/38 Marker save checks passed",
+        "log": "tests/results/marker/build/test-marker-save-final.log",
+        "log_sha256": "087bc3dfe299813a79ad2e168a3b4b1d5eeca8dd716678fe681bd2c7873b97d2"
+      }
+    ],
+    "public_Python_CLI_HTTP": {
+      "passed": 112,
+      "total": 112,
+      "all_passed": true
+    },
+    "compiled_consumers": [
+      {
+        "client": "rust",
+        "exit_code": 0,
+        "output": "{\"client\":\"Rust\",\"passed\":13,\"total\":13}",
+        "binary_sha256": "94c1abf7d0a06ceb5850cb4e9eef26aa0866155aba0f63d7ca1dd93c3bf2c381"
+      },
+      {
+        "client": "dart",
+        "exit_code": 0,
+        "output": "{\"client\":\"Dart\",\"passed\":14,\"total\":14}",
+        "binary_sha256": "992312bf5fb90b82f55878e42ad37b306dc09a8d687fb4d0c1bc0099ef245d4d"
+      }
+    ],
+    "independent_native": {
+      "pdf_cases": 8,
+      "checks_passed": 86,
+      "check_count": 86,
+      "owned_gold_zero_cer_wer_cases": 7,
+      "rendered_gold_zero_cer_wer_cases": 8,
+      "original_reference_zero_cer_wer_cases": 4,
+      "original_reference_cases": 7
+    },
+    "original_marker": {
+      "captured_pdf_cases": 7,
+      "captured_pdf_pages": 9,
+      "neural_model_calls": 0,
+      "network_attempts": 0,
+      "checkpoint_open_attempts": 0,
+      "process_launch_attempts": 0,
+      "owned_content_checks_passed": true,
+      "renderer_checks_passed": 10,
+      "renderer_check_count": 10,
+      "forced_layout_order_matches": 6,
+      "scope": "Deterministic source behavior only; no learned layout/OCR or native parity claim."
+    },
+    "client_regressions": [
+      {
+        "command": "../.teleocr-venv/bin/python tests/test_marker_clients.py",
+        "exit_code": 0,
+        "passed": 17,
+        "total": 17,
+        "log": "tests/results/marker/client-python.log"
+      },
+      {
+        "command": "g++ -std=c++17 -O2 -Wall -Wextra -Werror -Isrc tests/test-marker-save.cpp -o ../marker-work/test-marker-save-client-review",
+        "exit_code": 0,
+        "log": "tests/results/marker/client-cpp-build.log"
+      },
+      {
+        "command": "../marker-work/test-marker-save-client-review",
+        "exit_code": 0,
+        "passed": 38,
+        "total": 38,
+        "log": "tests/results/marker/client-cpp.log"
+      },
+      {
+        "command": "git diff --check",
+        "exit_code": 0
+      }
+    ],
+    "ASAN_UBSAN": {
+      "checks": 86,
+      "failures": 0,
+      "passed": true,
+      "leak_sanitizer": "Disabled explicitly: repository test entry point uses clean_exit/_Exit; no leak-freedom claim."
+    },
+    "python_packaging_checks": 26,
+    "python_packaging_passed": true,
+    "CMake_install_file_comparisons": 8,
+    "fixture_hash_matches": 20,
+    "counts_overlap": true
+  },
+  "neural_execution": {
+    "conversion_trials": 7,
+    "distinct_owned_inputs": 3,
+    "independent_saved_output_review_checks": 156,
+    "independent_saved_output_review_passed": true,
+    "panels": [
+      {
+        "receipt": "native-ocr-f16/summary.json",
+        "build": "initial-full-F16",
+        "precision": "teleocr-f16.gguf",
+        "mode": "auto",
+        "model_sha256": "6c52a2800e313964717cf4e5d06e0392c2b5936d8adeac423d563b8a026a2780",
+        "library_sha256": "6453530ae6272064e4633ea7d7be0e80c5464cbaf9871108a02adced687c591d",
+        "threads": 2,
+        "max_tokens": 1024,
+        "max_layout_tokens": 1024,
+        "peak_rss_kib": 4986436,
+        "total_seconds_including_load": 411.0433643180004,
+        "functional_passed": true,
+        "quality_passed": true,
+        "results": [
+          {
+            "id": "synthetic-image",
+            "seconds": 126.27704750699922,
+            "checks": {
+              "has_layout_tokens": true,
+              "no_layout_cap": true,
+              "no_block_cap": true,
+              "valid_confidences": true,
+              "document_nonempty": true,
+              "actual_backend": true,
+              "native_recognition_ran": true
+            },
+            "quality": {
+              "text_exact": true,
+              "CER": 0.0,
+              "WER": 0.0
+            },
+            "functional_passed": true,
+            "quality_passed": true,
+            "actual_text": "Hello TeleOCR Invoice 42 Total: EUR 19.50",
+            "error": null
+          },
+          {
+            "id": "digital-auto",
+            "seconds": 117.85461035400658,
+            "checks": {
+              "has_layout_tokens": true,
+              "no_layout_cap": true,
+              "no_block_cap": true,
+              "valid_confidences": true,
+              "document_nonempty": true,
+              "actual_backend": true,
+              "embedded_text_used": true
+            },
+            "quality": {
+              "text_exact": true,
+              "CER": 0.0,
+              "WER": 0.0
+            },
+            "functional_passed": true,
+            "quality_passed": true,
+            "actual_text": "Native document test Hello from CrispEmbed. PDF text stays searchable.",
+            "error": null
+          },
+          {
+            "id": "table-image",
+            "seconds": 165.6255986909964,
+            "checks": {
+              "has_layout_tokens": true,
+              "no_layout_cap": true,
+              "no_block_cap": true,
+              "valid_confidences": true,
+              "document_nonempty": true,
+              "actual_backend": true,
+              "native_recognition_ran": true
+            },
+            "quality": {
+              "text_exact": true,
+              "CER": 0.0,
+              "WER": 0.0,
+              "cells_exact": true,
+              "cells_expected": [
+                "Item",
+                "Quantity",
+                "Price",
+                "Alpha",
+                "2",
+                "$10",
+                "Beta",
+                "3",
+                "$15",
+                "Gamma",
+                "4",
+                "$20"
+              ],
+              "cells_actual": [
+                "Item",
+                "Quantity",
+                "Price",
+                "Alpha",
+                "2",
+                "$10",
+                "Beta",
+                "3",
+                "$15",
+                "Gamma",
+                "4",
+                "$20"
+              ]
+            },
+            "functional_passed": true,
+            "quality_passed": true,
+            "actual_text": "Aligned table fixture Item Quantity Price Alpha 2 $10 Beta 3 $15 Gamma 4 $20 All values are invented test data.",
+            "error": null
+          }
+        ]
+      },
+      {
+        "receipt": "native-final-f16/summary.json",
+        "build": "final",
+        "precision": "teleocr-f16.gguf",
+        "mode": "auto",
+        "model_sha256": "6c52a2800e313964717cf4e5d06e0392c2b5936d8adeac423d563b8a026a2780",
+        "library_sha256": "f117761723bc909b4c6194e096e6bbfe18ba6bf5576d24108b6af0b780f5a5e9",
+        "threads": 2,
+        "max_tokens": 1024,
+        "max_layout_tokens": 1024,
+        "peak_rss_kib": 5004784,
+        "total_seconds_including_load": 131.22418836200086,
+        "functional_passed": true,
+        "quality_passed": true,
+        "results": [
+          {
+            "id": "synthetic-image",
+            "seconds": 129.87756207599887,
+            "checks": {
+              "has_layout_tokens": true,
+              "no_layout_cap": true,
+              "no_block_cap": true,
+              "valid_confidences": true,
+              "document_nonempty": true,
+              "actual_backend": true,
+              "native_recognition_ran": true
+            },
+            "quality": {
+              "text_exact": true,
+              "CER": 0.0,
+              "WER": 0.0
+            },
+            "functional_passed": true,
+            "quality_passed": true,
+            "actual_text": "Hello TeleOCR Invoice 42 Total: EUR 19.50",
+            "error": null
+          }
+        ]
+      },
+      {
+        "receipt": "native-final-q8/summary.json",
+        "build": "final",
+        "precision": "teleocr-q8_0.gguf",
+        "mode": "auto",
+        "model_sha256": "9de7e45ce6c13ba03d3d2879f2a1bff9f8407e12808be588cf057cd2553f224b",
+        "library_sha256": "f117761723bc909b4c6194e096e6bbfe18ba6bf5576d24108b6af0b780f5a5e9",
+        "threads": 2,
+        "max_tokens": 1024,
+        "max_layout_tokens": 1024,
+        "peak_rss_kib": 4198500,
+        "total_seconds_including_load": 130.86975302200153,
+        "functional_passed": true,
+        "quality_passed": true,
+        "results": [
+          {
+            "id": "synthetic-image",
+            "seconds": 129.75833681699442,
+            "checks": {
+              "has_layout_tokens": true,
+              "no_layout_cap": true,
+              "no_block_cap": true,
+              "valid_confidences": true,
+              "document_nonempty": true,
+              "actual_backend": true,
+              "native_recognition_ran": true
+            },
+            "quality": {
+              "text_exact": true,
+              "CER": 0.0,
+              "WER": 0.0
+            },
+            "functional_passed": true,
+            "quality_passed": true,
+            "actual_text": "Hello TeleOCR Invoice 42 Total: EUR 19.50",
+            "error": null
+          }
+        ]
+      },
+      {
+        "receipt": "native-final-q4/summary.json",
+        "build": "final",
+        "precision": "teleocr-q4_k.gguf",
+        "mode": "auto",
+        "model_sha256": "1933ab72f57d14bd0473a86ecadb4bd815e13003caa40ab94478727ac12770cd",
+        "library_sha256": "f117761723bc909b4c6194e096e6bbfe18ba6bf5576d24108b6af0b780f5a5e9",
+        "threads": 2,
+        "max_tokens": 1024,
+        "max_layout_tokens": 1024,
+        "peak_rss_kib": 3768260,
+        "total_seconds_including_load": 125.22100128600141,
+        "functional_passed": true,
+        "quality_passed": true,
+        "results": [
+          {
+            "id": "synthetic-image",
+            "seconds": 124.33504162100144,
+            "checks": {
+              "has_layout_tokens": true,
+              "no_layout_cap": true,
+              "no_block_cap": true,
+              "valid_confidences": true,
+              "document_nonempty": true,
+              "actual_backend": true,
+              "native_recognition_ran": true
+            },
+            "quality": {
+              "text_exact": true,
+              "CER": 0.0,
+              "WER": 0.0
+            },
+            "functional_passed": true,
+            "quality_passed": true,
+            "actual_text": "Hello TeleOCR Invoice 42 Total: EUR 19.50",
+            "error": null
+          }
+        ]
+      },
+      {
+        "receipt": "native-final-force-pdf/summary.json",
+        "build": "final",
+        "precision": "teleocr-f16.gguf",
+        "mode": "ocr",
+        "model_sha256": "6c52a2800e313964717cf4e5d06e0392c2b5936d8adeac423d563b8a026a2780",
+        "library_sha256": "f117761723bc909b4c6194e096e6bbfe18ba6bf5576d24108b6af0b780f5a5e9",
+        "threads": 2,
+        "max_tokens": 1024,
+        "max_layout_tokens": 1024,
+        "peak_rss_kib": 4809836,
+        "total_seconds_including_load": 136.99079038900527,
+        "functional_passed": true,
+        "quality_passed": true,
+        "results": [
+          {
+            "id": "digital-force-ocr",
+            "seconds": 135.74455399100407,
+            "checks": {
+              "has_layout_tokens": true,
+              "no_layout_cap": true,
+              "no_block_cap": true,
+              "valid_confidences": true,
+              "document_nonempty": true,
+              "actual_backend": true,
+              "native_recognition_ran": true,
+              "embedded_text_bypassed": true
+            },
+            "quality": {
+              "text_exact": true,
+              "CER": 0.0,
+              "WER": 0.0
+            },
+            "functional_passed": true,
+            "quality_passed": true,
+            "actual_text": "Native document test Hello from CrispEmbed. PDF text stays searchable.",
+            "error": null
+          }
+        ]
+      }
+    ],
+    "generated_token_ID_or_EOS_parity_measured_by_this_runner": false,
+    "quality_metric": "Whitespace-collapse-only visible text CER/WER; table cells additionally checked. Exact code indentation is separately checked in the digital panel.",
+    "layout_limits": "Synthetic lines are heading-labeled; table title is caption-labeled. Table row/column content passes but header semantics and label/box-IoU accuracy are not qualified."
+  },
+  "retained_initial_evidence": [
+    "native-initial/summary.json",
+    "native-reference-attempt-1/receipt.json",
+    "upstream-model-free-attempt-1/receipt.json",
+    "native-ocr-f16/summary.json",
+    "format-review-before/",
+    "client-review-before/",
+    "sanitizers/receipt.json"
+  ],
+  "inherited_numerical_evidence": "../teleocr/summary.json",
+  "receipt_sha256": {
+    "native-final-public/summary.json": "52a3a31e7f32640c0dc16a51b940a3e0c00803ab777d4ae0f23adc384ba4bb27",
+    "native-reference-final/receipt.json": "8fb998a022710395c25c6c780ca79d99c2501147a081ec457b90fbb4644464e5",
+    "upstream-model-free-attempt-2/receipt.json": "700eef02dc93d3a0d6c92af624cfda6c054a615e4bc2617fcbd54820404ded1b",
+    "build/unit-final.json": "8abdaeaa518b2c30b9a2365504bcdf2b432c8dd2e6e41765af617c68d700bcd0",
+    "build/compiled-consumers-final.json": "3dfe842426ebf2262d62b5c0e549d949b711c5f2be9a88706ee9ff2a4a2ea7af",
+    "sanitizers-final/receipt.json": "e4f7f2f6244834758db3e771e3affea4bbf0764d4d4847556a3905a5bd11cac6",
+    "client-review-receipt.json": "5d2298a6cbef6a0ca453e40865bf14d4dbbd6af8b6273481d066175ba03f4ab0",
+    "python-packaging/receipt.json": "cd7cf037384f0c9525c12fe5a0db982fff672ed884d175141571ea1595eb7f26",
+    "cmake-install/receipt.json": "798209dcd38e87b0928bda69e21f0a766e7c7dee74ad51ac809ab6c950084ba3",
+    "fixture-reproducibility.json": "84a8feb0a85be487c41be510b0c6a8d17e73e2b47dbd922d2bd9063b57f76720",
+    "build/final-source.json": "1669d9965a39d3eacad2f52758d19f199c454e95f58ce2cc0a7cc5fa206b97a2",
+    "teleocr-source-continuity.json": "fa8552bc18dc4ea9010ca01e07ebcaae7d8025cd4780310eec937eaef0abdcfb",
+    "build/static-final.json": "04aba3857bad337ddcaeeb4d7166477e39ab87b3d9a045ad3cb0ca69881ab478",
+    "native-review.json": "22c9cb73fd19119e50f0e9bd2cb40c73baf5d08616bcf44d615c48e11ec45de6",
+    "native-ocr-f16/summary.json": "33866cca8873a2c2becaa82b3a264f5d1c2da3ca8f59a2daf355ae6b28fdd30d",
+    "native-final-f16/summary.json": "5a07cbed69f9edb86d4988240d8fda0e5d4f8f962f4f9dbae21a3e3abb74ac40",
+    "native-final-q8/summary.json": "b5bf95a8a1d6ea58bf0f648a6a8e1def5cac75f3fbe65e5071ff1ec81675da33",
+    "native-final-q4/summary.json": "901d6a269456760eff81b1d1bed852214814a8253feabc65cd1288ed801840bb",
+    "native-final-force-pdf/summary.json": "a47748a70654b326be147977709b5550a214203da4c78f65ec152a637618ea58"
+  },
+  "aggregator_sha256": "c13deb55cc471569d65eeb5c66fe3c7376b34f1006af84ebd02bb5c0c057e252"
+}

@@ -1,0 +1,19 @@
+{
+  "kind": "teleocr-temporary-disk-capacity-recovery",
+  "trigger": "Sandbox process setup reported no space while completing the final Q4 case",
+  "removed_task_generated_files": [
+    {
+      "name": "teleocr-q4_k-initial.gguf",
+      "bytes": 1893032256,
+      "basis": "Superseded metadata-only variant; final audit proves all700 payloads identical; original hash/metadata audit retained"
+    },
+    {
+      "name": "teleocr-f32.gguf",
+      "bytes": 5043933472,
+      "basis": "Completed F32 six-case matrix, all tensor/manifests and hashes retained; regenerable from pinned checkpoint; excluded from source delivery"
+    }
+  ],
+  "retained": "Active/final Q4, F16/Q8 models, HF checkpoint, frozen references, all completed reports/logs and source snapshots",
+  "q4_layout_report_survived": true,
+  "source_or_acceptance_changes": false
+}

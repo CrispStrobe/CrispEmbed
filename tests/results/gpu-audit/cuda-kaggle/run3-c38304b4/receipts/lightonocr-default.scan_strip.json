@@ -1,0 +1,77 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "-m",
+  "lightonocr-1b-q4_k.gguf",
+  "--ocr",
+  "scan_strip.png",
+  "--ocr-max-tokens",
+  "256"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    2.671
+   ],
+   "gpu_mem_peak_mib": 1053,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "ached\n  gen[167] tok=1012 (7ms) cached\n  gen[168] tok=17460 (7ms) cached\n  gen[169] tok=295 (7ms) cached\n  gen[170] tok=2669 (7ms) cached\n  gen[171] tok=553 (7ms) cached\n  gen[172] tok=825 (7ms) cached\n  gen[173] tok=7852 (7ms) cached\n  gen[174] tok=67028 (7ms) cached\n  gen[175] tok=315 (7ms) cached\n  gen[176] tok=57598 (7ms) cached\n  gen[177] tok=11 (7ms) cached\n  gen[178] tok=323 (7ms) cached\n  gen[179] tok=279 (7ms) cached\n  gen[180] tok=15088 (7ms) cached\n  gen[181] tok=20332 (7ms) cached\n  gen[182] tok=315 (7ms) cached\n  gen[183] tok=386 (7ms) cached\n  gen[184] tok=722 (7ms) cached\n  gen[185] tok=777 (7ms) cached\n  gen[186] tok=8958 (7ms) cached\nlightonocr: generated: \"They are going to be encamped near Brighton; and I do so want papa to take us all there for the summer! It would be such a delicious scheme, and I dare say would hardly cost anything at all. Mamma would like to go too of all things! Only think what a miserable summer else we shall have!\"\n\n\"Yes,\" thought Elizabeth, \"that would be a delightful scheme indeed, and completely do for us at once. Good Heaven! Brighton, and a whole campful of soldiers, to us, who have been overset already by one poor regimen of militia, and the monthly balls of Meryton!\"\n\n\"Yes,\" thought Elizabeth, \"that would be a delightful scheme indeed, and completely do for us at once. Good Heaven! Brighton, and a whole campful of soldiers, to us, who have been overset already by one poor regimen of militia, and the monthly balls of Meryton!\"\n",
+   "stdout_sha256": "b4f2389e985a0207d32de929d3be674605f950b84aaabde657a7b9b1b3321875",
+   "stdout": "\"They are going to be encamped near Brighton; and I do so want papa to take us all there for the summer! It would be such a delicious scheme, and I dare say would hardly cost anything at all. Mamma would like to go too of all things! Only think what a miserable summer else we shall have!\"\n\n\"Yes,\" thought Elizabeth, \"that would be a delightful scheme indeed, and completely do for us at once. Good Heaven! Brighton, and a whole campful of soldiers, to us, who have been overset already by one poor regimen of militia, and the monthly balls of Meryton!\"\n\n\"Yes,\" thought Elizabeth, \"that would be a delightful scheme indeed, and completely do for us at once. Good Heaven! Brighton, and a whole campful of soldiers, to us, who have been overset already by one poor regimen of militia, and the monthly balls of Meryton!\"\n",
+   "vs_cpu": {
+    "byte_identical": false,
+    "text_exact": false,
+    "char_ratio": 0.9632446134347274,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   }
+  },
+  "cuda-gate0": {
+   "backend": "cuda",
+   "env": {
+    "CRISPEMBED_LIGHTONOCR_GPU": "0"
+   },
+   "wall_s": [
+    19.427
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "ms) cached\n  gen[153] tok=614 (39ms) cached\n  gen[154] tok=1012 (35ms) cached\n  gen[155] tok=17460 (36ms) cached\n  gen[156] tok=295 (35ms) cached\n  gen[157] tok=2669 (37ms) cached\n  gen[158] tok=553 (37ms) cached\n  gen[159] tok=825 (37ms) cached\n  gen[160] tok=7852 (37ms) cached\n  gen[161] tok=67028 (37ms) cached\n  gen[162] tok=315 (42ms) cached\n  gen[163] tok=57598 (38ms) cached\n  gen[164] tok=11 (37ms) cached\n  gen[165] tok=323 (36ms) cached\n  gen[166] tok=279 (39ms) cached\n  gen[167] tok=15088 (38ms) cached\n  gen[168] tok=20332 (37ms) cached\n  gen[169] tok=315 (36ms) cached\n  gen[170] tok=386 (36ms) cached\n  gen[171] tok=722 (38ms) cached\n  gen[172] tok=777 (37ms) cached\n  gen[173] tok=8958 (35ms) cached\nlightonocr: generated: \"They are going to be encamped near Brighton; and I do so want papa to take us all there for the summer! It would be such a delicious Mamma would like to go too of all things! Only think what a miserable summer else we shall have!\"\n\n\"Yes,\" thought Elizabeth, \"that would be a delightful scheme indeed, and completely do for us at once. Good Heaven! Brighton, and a whole campful of soldiers, to us, who have been overset already by one poor regimen of militia, and the monthly balls of Meryton!\"\n\n\"Yes,\" thought Elizabeth, \"that would be a delightful scheme indeed, and completely do for us at once. Good Heaven! Brighton, and a whole campful of soldiers, to us, who have been overset already by one poor regimen of militia, and the monthly balls of Meryton!\"\n",
+   "stdout_sha256": "ef366738577591f2b5b2b143f634a88695d7735d947fc672639bef3bb4b8671b",
+   "stdout": "\"They are going to be encamped near Brighton; and I do so want papa to take us all there for the summer! It would be such a delicious Mamma would like to go too of all things! Only think what a miserable summer else we shall have!\"\n\n\"Yes,\" thought Elizabeth, \"that would be a delightful scheme indeed, and completely do for us at once. Good Heaven! Brighton, and a whole campful of soldiers, to us, who have been overset already by one poor regimen of militia, and the monthly balls of Meryton!\"\n\n\"Yes,\" thought Elizabeth, \"that would be a delightful scheme indeed, and completely do for us at once. Good Heaven! Brighton, and a whole campful of soldiers, to us, who have been overset already by one poor regimen of militia, and the monthly balls of Meryton!\"\n",
+   "vs_cpu": {
+    "byte_identical": true,
+    "text_exact": true,
+    "char_ratio": 1.0,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    19.627
+   ],
+   "gpu_mem_peak_mib": 1,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "ms) cached\n  gen[153] tok=614 (37ms) cached\n  gen[154] tok=1012 (36ms) cached\n  gen[155] tok=17460 (37ms) cached\n  gen[156] tok=295 (36ms) cached\n  gen[157] tok=2669 (37ms) cached\n  gen[158] tok=553 (37ms) cached\n  gen[159] tok=825 (37ms) cached\n  gen[160] tok=7852 (37ms) cached\n  gen[161] tok=67028 (39ms) cached\n  gen[162] tok=315 (36ms) cached\n  gen[163] tok=57598 (37ms) cached\n  gen[164] tok=11 (37ms) cached\n  gen[165] tok=323 (36ms) cached\n  gen[166] tok=279 (37ms) cached\n  gen[167] tok=15088 (37ms) cached\n  gen[168] tok=20332 (37ms) cached\n  gen[169] tok=315 (37ms) cached\n  gen[170] tok=386 (37ms) cached\n  gen[171] tok=722 (37ms) cached\n  gen[172] tok=777 (37ms) cached\n  gen[173] tok=8958 (36ms) cached\nlightonocr: generated: \"They are going to be encamped near Brighton; and I do so want papa to take us all there for the summer! It would be such a delicious Mamma would like to go too of all things! Only think what a miserable summer else we shall have!\"\n\n\"Yes,\" thought Elizabeth, \"that would be a delightful scheme indeed, and completely do for us at once. Good Heaven! Brighton, and a whole campful of soldiers, to us, who have been overset already by one poor regimen of militia, and the monthly balls of Meryton!\"\n\n\"Yes,\" thought Elizabeth, \"that would be a delightful scheme indeed, and completely do for us at once. Good Heaven! Brighton, and a whole campful of soldiers, to us, who have been overset already by one poor regimen of militia, and the monthly balls of Meryton!\"\n",
+   "stdout_sha256": "ef366738577591f2b5b2b143f634a88695d7735d947fc672639bef3bb4b8671b",
+   "stdout": "\"They are going to be encamped near Brighton; and I do so want papa to take us all there for the summer! It would be such a delicious Mamma would like to go too of all things! Only think what a miserable summer else we shall have!\"\n\n\"Yes,\" thought Elizabeth, \"that would be a delightful scheme indeed, and completely do for us at once. Good Heaven! Brighton, and a whole campful of soldiers, to us, who have been overset already by one poor regimen of militia, and the monthly balls of Meryton!\"\n\n\"Yes,\" thought Elizabeth, \"that would be a delightful scheme indeed, and completely do for us at once. Good Heaven! Brighton, and a whole campful of soldiers, to us, who have been overset already by one poor regimen of militia, and the monthly balls of Meryton!\"\n"
+  }
+ },
+ "precision": "q4_k",
+ "bar": 0.94,
+ "seconds": 45.2,
+ "id": "lightonocr-default.scan_strip",
+ "commit": "c38304b4283da24cd88141a8b162b8c9be41b833",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

@@ -1,5 +1,18 @@
 # CrispEmbed
 
+**Experimental OXR-1.0 integration:** dedicated SigLIP2-NaViT / visual-tokenizer /
+Qwen3 GGML inference, F32 and mixed-F16 conversion, C/Python/Rust/Dart APIs, and
+the pinned official document helper with supplied regions or an explicit layout
+service. Enable `CRISPEMBED_OXR=1`. Full-model quality and speed are unverified;
+OXR has additional license terms. See [the implementation and validation guide](docs/oxr.md).
+
+**Experimental MinerU2.5-Pro-2604 integration:** native Qwen2-VL GGML inference,
+authenticated F32/F16 conversion, a complete Python document-helper adapter,
+and native basic page extraction are available behind
+`CRISPEMBED_MINERU25_PRO=1`. See [the implementation and qualification guide](docs/mineru25-pro.md).
+Full-model quality and speed parity remain unverified; this source addition
+does not create a published model alias or change existing defaults.
+
 [![Build](https://github.com/CrispStrobe/CrispEmbed/actions/workflows/build.yml/badge.svg)](https://github.com/CrispStrobe/CrispEmbed/actions/workflows/build.yml)
 
 **A single C++/ggml binary for retrieval and document understanding — no Python
@@ -27,7 +40,7 @@ Android, and in the browser.
 | **Retrieval** | Sparse + multi-vector + reranking | SPLADE / BGE-M3 sparse term weights, ColBERT per-token + MaxSim, cross-encoder & bi-encoder rerankers |
 | **Typed decisions** | State + question schemas → choices, integer scores or booleans | [EmbeddingGemma 2 fine-tune](docs/embeddinggemma2-typed-decision.md), complete encoder/head and fitted calibration; opt-in CPU. Python-reference parity checked; independent task accuracy unmeasured |
 | **OCR** | 15+ engines, image → text/LaTeX/notation | General (DBNet+TrOCR), scene-text (PARSeq), 7 math engines, 4 music (OMR) engines, 6 document VLMs, 12-language Tesseract-LSTM |
-| **Document AI** | Understand page structure | RT-DETRv2 layout (17 classes), Surya text detection, LiLT layout-aware KIE, hOCR/ALTO/searchable-PDF output |
+| **Document AI** | Understand page structure | RT-DETRv2 layout (17 classes), Surya text detection, LiLT layout-aware KIE, hOCR/ALTO/searchable-PDF output; [native Marker-style PDF/image conversion](docs/marker.md) to Markdown/HTML/JSON/chunks (experimental, opt-in, TeleOCR backend) |
 | **NER / KIE / LID** | Extract structured info | Zero-shot (GLiNER) + fixed-label (BERT/XLM-R) NER, receipt/form KIE, CLD3/GlotLID language ID |
 | **Vision & face** | Cross-modal + biometrics | CLIP/SigLIP text-image search, YuNet/SCRFD detect, ArcFace/SFace/AuraFace recognize |
 | **Preprocessing** | Clean & upscale before OCR | Classical deskew/binarize/dewarp, NAFNet denoise, TPS dewarp, 8 super-resolution engines, PDF-DPI auto-tuning |
@@ -377,6 +390,7 @@ unified `crispembed_ocr_model_*` C API. Available through CLI (`--ocr`), server
 | **GLM-OCR** | CogViT + GLM-0.5B | 0.9B | Doc OCR (OmniDocBench #1, 8 langs) | MIT |
 | **InternVL2 / 2.5** | InternViT + Qwen2/InternLM2.5 | 0.9–2.1B | Edge/WASM & EN+DE VLM OCR | MIT |
 | **Qwen2.5-VL / Qwen3-VL** | ViT (+DeepStack) + Qwen LLM | 2.4–3.6B | General/multilingual VLM OCR | Apache-2.0 |
+| **[TeleOCR (experimental CPU)](docs/teleocr.md)** | Windowed ViT + QK-normalized Qwen decoder | 1.26B | Default-off; explicit local GGUF; CPU execution tested | Apache-2.0; see [provenance](docs/teleocr-license.md) |
 | **DeepSeek-OCR-2 / Unlimited-OCR** | dual ViT + DeepSeek-V2 MoE | 3–3.3B | Full-page doc OCR + layout grounding | Apache-2.0 / MIT |
 | **jina-ocr-v1** | SAM + CLIP-L + DeepSeek-V2 MoE (Unlimited-OCR engine) | 3.4B (570M active) | Doc OCR → Markdown; text exact vs transformers | CC BY-NC 4.0 |
 | **Qari-OCR** | Qwen2-VL-2B + LoRA | 2B | Arabic OCR with diacritics | Apache-2.0 |
@@ -451,6 +465,12 @@ Three permissively-licensed engines, all auto-detected via `--ocr`:
 - **Text super-resolution** — PAN (4× whole-page, 0.5 MB), TBSRN (2× per-line,
   2 MB), NAFNet-SR scaffold; parity cos ≥ 0.9996. Eight SR backbones total (HAT,
   DAT, ESRGAN, SwinIR, TBSRN, SAFMN, Restormer, SCUNet).
+- **Experimental inpainting** — MI-GAN CPU/F32 removes masked image regions,
+  including burned-in subtitles, with same-size PNG output. Includes overlapping
+  native-resolution tiles, optional DBNet text masks and a persistent-model
+  directory/TSV batch mode. Opt in with `CRISPEMBED_MIGAN=1`; see the
+  [inpainting guide](docs/inpainting-cli.md) for model preparation, commands and
+  validation limits. Temporal processing and LaMa are not implemented.
 - **PDF DPI profiling** — zero-dependency PDF parser computes effective page DPI
   to auto-select OCR resolution (downsample high-DPI, super-resolve low-DPI).
 - **Output formats** — plain text, hOCR, ALTO 3.1 XML, searchable PDF, with
@@ -730,7 +750,7 @@ is governed by its **upstream** license. Check the **License** column in
 | **CC BY-NC 4.0** (non-commercial) | `jina-v5-*`, `jina-reranker-v2`, `jina-ocr-v1`, PosFormer (ours) | research/eval only; commercial needs a vendor license |
 | **LFM Open License v1.0** | `lfm2-embed*`, `lfm2-colbert`, `gliner-lfm` | free under $10M annual revenue |
 | **Gemma Terms** | `embeddinggemma-300m` | commercial OK, subject to Google's Prohibited Use Policy |
-| **Other restricted** | Surya weights (OpenRAIL-M, free < $5M), Texo (AGPL) | see the model card |
+| **Other restricted** | Surya weights (modified OpenRAIL-M; revenue/funding and use restrictions), Texo (AGPL) | see the model card and [current Marker/Surya audit](docs/marker-license.md) |
 
 Restricted entries are flagged with `*` in `--list-models` and require explicit
 consent to auto-download (interactive prompt, `--accept-license <spdx>`, or

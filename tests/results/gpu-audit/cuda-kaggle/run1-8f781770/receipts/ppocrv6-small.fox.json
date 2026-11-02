@@ -1,0 +1,123 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "--json",
+  "-m",
+  "PP-OCRv6_small_rec-q8-head.gguf",
+  "--ocr-det",
+  "PP-OCRv6_small_det-f16.gguf",
+  "--ocr-rec",
+  "PP-OCRv6_small_rec-q8-head.gguf",
+  "--ocr",
+  "fox.png"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    1.017,
+    0.917
+   ],
+   "gpu_mem_peak_mib": 351,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\nppocrv6-det: persistent GGML detector graph ready (CUDA0, 800x192)\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\nppocrv6: persistent GGML graph ready (CUDA0, logits, 18710x128x1)\n",
+   "stdout_sha256": "f42a9cd344f42c22890bbf68e17af2ffdf6046bd8258e177f9e4f499fda796ce",
+   "stdout": "[{\"text\":\"The quick brown fox jumps\",\"bbox\":[30,38,506,81],\"conf\":0.943},{\"text\":\"over the lazy dog. 12345\",\"bbox\":[28,109,468,150],\"conf\":0.938}]\n",
+   "vs_cpu": {
+    "byte_identical": true,
+    "json": {
+     "n_numbers": [
+      10,
+      10
+     ],
+     "strings_equal": true,
+     "n_strings": [
+      2,
+      2
+     ]
+    },
+    "final_cosine": 0.9999999999999999,
+    "max_abs": 0.0,
+    "final_metric": "cosine over all JSON numbers",
+    "ocr": {
+     "n_boxes": [
+      2,
+      2
+     ],
+     "texts_equal": 2,
+     "box_max_dpx": 0,
+     "conf_max_d": 0.0,
+     "joined_text_ratio": 1.0
+    }
+   }
+  },
+  "cuda-detcpu": {
+   "backend": "cuda",
+   "env": {
+    "CRISPEMBED_PPOCRV6_DET_GPU": "0"
+   },
+   "wall_s": [
+    1.519,
+    1.519
+   ],
+   "gpu_mem_peak_mib": 183,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "ppocrv6-det: persistent GGML detector graph ready (CPU, 800x192)\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\nppocrv6: persistent GGML graph ready (CUDA0, logits, 18710x128x1)\n",
+   "stdout_sha256": "f42a9cd344f42c22890bbf68e17af2ffdf6046bd8258e177f9e4f499fda796ce",
+   "stdout": "[{\"text\":\"The quick brown fox jumps\",\"bbox\":[30,38,506,81],\"conf\":0.943},{\"text\":\"over the lazy dog. 12345\",\"bbox\":[28,109,468,150],\"conf\":0.938}]\n",
+   "vs_cpu": {
+    "byte_identical": true,
+    "json": {
+     "n_numbers": [
+      10,
+      10
+     ],
+     "strings_equal": true,
+     "n_strings": [
+      2,
+      2
+     ]
+    },
+    "final_cosine": 0.9999999999999999,
+    "max_abs": 0.0,
+    "final_metric": "cosine over all JSON numbers",
+    "ocr": {
+     "n_boxes": [
+      2,
+      2
+     ],
+     "texts_equal": 2,
+     "box_max_dpx": 0,
+     "conf_max_d": 0.0,
+     "joined_text_ratio": 1.0
+    }
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    1.47,
+    1.42
+   ],
+   "gpu_mem_peak_mib": 1,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\nppocrv6-det: persistent GGML detector graph ready (CPU, 800x192)\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\nppocrv6: persistent GGML graph ready (CPU, logits, 18710x128x1)\n",
+   "stdout_sha256": "f42a9cd344f42c22890bbf68e17af2ffdf6046bd8258e177f9e4f499fda796ce",
+   "stdout": "[{\"text\":\"The quick brown fox jumps\",\"bbox\":[30,38,506,81],\"conf\":0.943},{\"text\":\"over the lazy dog. 12345\",\"bbox\":[28,109,468,150],\"conf\":0.938}]\n"
+  }
+ },
+ "precision": "f32",
+ "bar": 0.99,
+ "seconds": 13.3,
+ "id": "ppocrv6-small.fox",
+ "commit": "8f781770810956818ba76831a6bc607fbc0a1154",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

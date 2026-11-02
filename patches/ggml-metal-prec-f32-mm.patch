@@ -1,0 +1,62 @@
+diff --git a/src/ggml-metal/ggml-metal-ops.cpp b/src/ggml-metal/ggml-metal-ops.cpp
+index fefe9c3e..e9a713b3 100644
+--- a/src/ggml-metal/ggml-metal-ops.cpp
++++ b/src/ggml-metal/ggml-metal-ops.cpp
+@@ -9,6 +9,8 @@
+ #include "ggml-metal-device.h"
+ 
+ #include <cassert>
++#include <cstdlib>
++#include <cstring>
+ #include <algorithm>
+ #include <limits>
+ #include <cmath>
+@@ -2096,6 +2098,21 @@ int ggml_metal_op_mul_mat(ggml_metal_op_t ctx, int idx) {
+     const enum ggml_prec prec = (enum ggml_prec) ggml_get_op_params_i32(op, 0);
+     const bool prec_f32 = (prec == GGML_PREC_F32);
+ 
++    // CrispEmbed patch (OXR/D-FINE Metal, opt-in GGML_METAL_PREC_F32_MM=1, value
++    // parsed: unset/""/"0" = off): for PREC_F32 products with more than 8 src1
++    // rows, use the F32-tile simdgroup mul_mm `_hp` kernel instead of the
++    // mul_mv_ext / bespoke integer mat-vec routes below. Those routes are
++    // precise but are mat-vec kernels: ~90 GFLOP/s on an Apple M1 for
++    // 14400x1152x128 (tools/metal/mm_bench.cpp in CrispEmbed). `_hp` keeps
++    // F32 operands (quantized weights dequantized to F32, activations not
++    // quantized). Default off: CPU-bit-identical PREC_F32 users are unchanged.
++    static int prec_f32_mm_gate = -1;
++    if (prec_f32_mm_gate < 0) {
++        const char * e = getenv("GGML_METAL_PREC_F32_MM");
++        prec_f32_mm_gate = (e && *e && strcmp(e, "0") != 0) ? 1 : 0;
++    }
++    const bool prec_f32_mm = prec_f32 && prec_f32_mm_gate == 1 && ne11 > ne11_mm_min;
++
+     // CrispASR patch (#83): the deepest fix path — when PREC_F32 is set with
+     // Q4_K weights × F32 input and ne00 % 256 == 0, mirror CPU's
+     // `ggml_vec_dot_q4_K_q8_K_generic` exactly: pre-quantise the F32 input
+@@ -2104,7 +2121,7 @@ int ggml_metal_op_mul_mat(ggml_metal_op_t ctx, int idx) {
+     // output (verified by comparing K-projection dump). Used for chatterbox
+     // T3 where mul_mv_ext's F32-input dot product still drifts vs CPU's
+     // Q8_K-input integer dot product.
+-    if (prec_f32 &&
++    if (prec_f32 && !prec_f32_mm &&
+         op->src[0]->type == GGML_TYPE_Q4_K &&
+         op->src[1]->type == GGML_TYPE_F32 &&
+         ne00 % 256 == 0) {
+@@ -2195,7 +2212,7 @@ int ggml_metal_op_mul_mat(ggml_metal_op_t ctx, int idx) {
+     // Used for chatterbox S3Gen UNet (Q8_0 quantised diffusion decoder,
+     // 396 mul_mats × 10 CFM steps) where mul_mv_ext's F32 accumulator
+     // still drifts ~1e-3 vs CPU.
+-    if (prec_f32 &&
++    if (prec_f32 && !prec_f32_mm &&
+         op->src[0]->type == GGML_TYPE_Q8_0 &&
+         op->src[1]->type == GGML_TYPE_F32 &&
+         ne00 % 32 == 0) {
+@@ -2321,7 +2338,7 @@ int ggml_metal_op_mul_mat(ggml_metal_op_t ctx, int idx) {
+          // CrispASR patch (#83): force mul_mv_ext for PREC_F32 even at larger
+          // ne11 — F32-precise dot-product accumulator. Kernel instantiations
+          // support r1ptg in {2,3,4,5}; r1ptg=4 is picked below for ne11>8.
+-         (prec_f32 && ext_supported && ne11 >= 2)
++         (prec_f32 && !prec_f32_mm && ext_supported && ne11 >= 2)
+         )
+        ) {
+         // TODO: determine the optimal parameters based on grid utilization

@@ -1,0 +1,166 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "--json",
+  "-m",
+  "trocr-small-printed-q8_0.gguf",
+  "--ocr-det",
+  "dbnet-ic15-q8_0.gguf",
+  "--ocr-rec",
+  "trocr-small-printed-q8_0.gguf",
+  "--ocr",
+  "scan_strip.png"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    36.83,
+    37.375
+   ],
+   "gpu_mem_peak_mib": 1021,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "34 24.215 0.642 -0.615] best=2\nocr_pipeline: recognizing region 93/95\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-10.786 -12.055 5.811 -1.580 1.873] best=13532\nmath_ocr: [graph] dec step 1: tok=13532 logits[0..4]=[-9.431 -11.947 10.523 8.796 -1.670] best=8325\nmath_ocr: [graph] dec step 2: tok=8325 logits[0..4]=[-11.385 -10.821 12.875 6.715 -3.538] best=143\nmath_ocr: [graph] dec step 3: tok=143 logits[0..4]=[-8.750 -6.582 21.487 -0.803 -1.912] best=2\nocr_pipeline: recognizing region 94/95\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-13.816 -12.498 8.790 0.279 0.987] best=5429\nmath_ocr: [graph] dec step 1: tok=5429 logits[0..4]=[-10.646 -9.782 23.452 -1.689 5.241] best=2\nocr_pipeline: recognizing region 95/95\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-11.187 -13.427 2.363 -1.577 12.442] best=781\nmath_ocr: [graph] dec step 1: tok=781 logits[0..4]=[-12.539 -12.595 7.645 2.515 5.663] best=6519\nmath_ocr: [graph] dec step 2: tok=6519 logits[0..4]=[-11.285 -12.986 10.293 3.871 -4.443] best=2225\nmath_ocr: [graph] dec step 3: tok=2225 logits[0..4]=[-9.690 -14.325 12.061 5.663 2.852] best=14750\nmath_ocr: [graph] dec step 4: tok=14750 logits[0..4]=[-8.744 -6.217 21.358 -0.307 0.002] best=2\nocr_pipeline: recognized 95/95 regions\n",
+   "stdout_sha256": "61f8dd1236da9d80f2b8e89dd49ad67456b60b22b450a97a7addd961bc3c5990",
+   "stdout": "[{\"text\":\"THEY\",\"bbox\":[68,0,112,24],\"conf\":0.611},{\"text\":\"ARE\",\"bbox\":[113,0,148,22],\"conf\":0.634},{\"text\":\"gOING\",\"bbox\":[148,0,202,24],\"conf\":0.651},{\"text\":\"TO\",\"bbox\":[204,0,226,18],\"conf\":0.504},{\"text\":\"BE\",\"bbox\":[229,0,257,21],\"conf\":0.571},{\"text\":\"ENCOMPED\",\"bbox\":[257,0,346,24],\"conf\":0.635},{\"text\":\"NEAR\",\"bbox\":[346,0,389,24],\"conf\":0.638},{\"text\":\"BRIGHTON :\",\"bbox\":[394,0,475,25],\"conf\":0.656},{\"text\":\"AND\",\"bbox\":[22,16,61,40],\"conf\":0.634},{\"text\":\"DO\",\"bbox\":[74,16,104,41],\"conf\":0.614},{\"text\":\"SO\",\"bbox\":[102,19,127,40],\"conf\":0.565},{\"text\":\"WANT\",\"bbox\":[124,17,175,41],\"conf\":0.629},{\"text\":\"PAPA\",\"bbox\":[171,19,215,41],\"conf\":0.664},{\"text\":\"TAKE\",\"bbox\":[236,18,279,40],\"conf\":0.619},{\"text\":\"US\",\"bbox\":[277,19,303,41],\"conf\":0.580},{\"text\":\"ALL\",\"bbox\":[297,16,328,40],\"conf\":0.594},{\"text\":\"THERE\",\"bbox\":[325,16,377,42],\"conf\":0.669},{\"text\":\"FOR\",\"bbox\":[373,16,406,41],\"conf\":0.638},{\"text\":\"THE\",\"bbox\":[404,17,438,41],\"conf\":0.629},{\"text\":\"SUM-\",\"bbox\":[436,19,484,41],\"conf\":0.623},{\"text\":\"MER\",\"bbox\":[23,40,62,62],\"conf\":0.620},{\"text\":\"WOULD\",\"bbox\":[109,35,167,62],\"conf\":0.683},{\"text\":\"BE\",\"bbox\":[166,39,192,61],\"conf\":0.601},{\"text\":\"SUCH\",\"bbox\":[188,39,233,62],\"conf\":0.645},{\"text\":\"DELICIOUS\",\"bbox\":[247,37,327,63],\"conf\":0.685},{\"text\":\"SCEEME,\",\"bbox\":[322,38,392,64],\"conf\":0.671},{\"text\":\",AND\",\"bbox\":[388,39,426,62],\"conf\":0.664},{\"text\":\"DATE\",\"bbox\":[441,37,487,63],\"conf\":0.658},{\"text\":\"SAY\",\"bbox\":[23,61,57,87],\"conf\":0.621},{\"text\":\"WOULD\",\"bbox\":[54,57,113,84],\"conf\":0.649},{\"text\":\"HARDLY\",\"bbox\":[110,57,171,85],\"conf\":0.698},{\"text\":\"COST\",\"bbox\":[167,60,210,83],\"conf\":0.643},{\"text\":\"ANYTHING\",\"bbox\":[204,60,284,88],\"conf\":0.663},{\"text\":\"AT\",\"bbox\":[284,62,309,83],\"conf\":0.580},{\"text\":\"ALL.\",\"bbox\":[306,58,340,84],\"conf\":0.621},{\"text\":\"MAMMA\",\"bbox\":[352,58,429,85],\"conf\":0.680},{\"text\":\"WOULD\",\"bbox\":[426,59,486,85],\"conf\":0.680},{\"text\":\"LIKE\",\"bbox\":[22,75,61,105],\"conf\":0.622},{\"text\":\"GO\",\"bbox\":[92,82,122,108],\"conf\":0.617},{\"text\":\"TOO\",\"bbox\":[121,81,157,105],\"conf\":0.638},{\"text\":\"OF\",\"bbox\":[160,80,188,103],\"conf\":0.583},{\"text\":\"ALL\",\"bbox\":[188,79,219,105],\"conf\":0.646},{\"text\":\"THINGS\",\"bbox\":[220,80,279,108],\"conf\":0.623},{\"text\":\"ONLY\",\"bbox\":[308,79,359,108],\"conf\":0.649},{\"text\":\"THINK\",\"bbox\":[360,77,415,106],\"conf\":0.695},{\"text\":\"WHAT\",\"bbox\":[414,81,466,106],\"conf\":0.669},{\"text\":\"MISERBBLE\",\"bbox\":[23,102,106,126],\"conf\":0.667},{\"text\":\"SUMMER\",\"bbox\":[103,106,173,126],\"conf\":0.614},{\"text\":\"ELSE\",\"bbox\":[171,103,210,127],\"conf\":0.658},{\"text\":\"WE\",\"bbox\":[207,105,240,128],\"conf\":0.595},{\"text\":\"SHALL\",\"bbox\":[238,101,286,128],\"conf\":0.671},{\"text\":\"HAVE\",\"bbox\":[281,103,329,128],\"conf\":0.664},{\"text\":\"YES,\",\"bbox\":[67,126,102,147],\"conf\":0.521},{\"text\":\"CHANGEABLE\",\"bbox\":[109,118,192,175],\"conf\":0.669},{\"text\":\"ELIZABETH,\",\"bbox\":[181,123,267,149],\"conf\":0.668},{\"text\":\"TBAT :\",\"bbox\":[282,123,325,150],\"conf\":0.646},{\"text\":\"WOULD\",\"bbox\":[318,123,377,149],\"conf\":0.692},{\"text\":\"BE\",\"bbox\":[373,126,400,148],\"conf\":0.615},{\"text\":\"DELIGHT-\",\"bbox\":[412,124,487,150],\"conf\":0.668},{\"text\":\"FALL\",\"bbox\":[23,142,55,168],\"conf\":0.604},{\"text\":\"SCLEME\",\"bbox\":[50,144,119,169],\"conf\":0.659},{\"text\":\"AND\",\"bbox\":[183,145,222,170],\"conf\":0.643},{\"text\":\"COMPLETELY\",\"bbox\":[222,147,318,172],\"conf\":0.680},{\"text\":\"OO\",\"bbox\":[319,145,349,170],\"conf\":0.608},{\"text\":\"FOR\",\"bbox\":[348,145,382,170],\"conf\":0.648},{\"text\":\"US\",\"bbox\":[383,149,409,170],\"conf\":0.595},{\"text\":\"AT\",\"bbox\":[410,149,436,169],\"conf\":0.581},{\"text\":\"ONCE.\",\"bbox\":[435,149,485,170],\"conf\":0.612},{\"text\":\"GOOD\",\"bbox\":[24,162,81,191],\"conf\":0.659},{\"text\":\"HEAVEN\",\"bbox\":[82,163,155,191],\"conf\":0.677},{\"text\":\"BRIGHTON,\",\"bbox\":[179,165,264,194],\"conf\":0.664},{\"text\":\"AND\",\"bbox\":[267,168,304,191],\"conf\":0.601},{\"text\":\"WHOLE\",\"bbox\":[326,169,382,191],\"conf\":0.631},{\"text\":\"CAMPFUL\",\"bbox\":[390,168,462,191],\"conf\":0.657},{\"text\":\"OF\",\"bbox\":[463,168,489,191],\"conf\":0.562},{\"text\":\"SOLDIERS,\",\"bbox\":[23,186,97,213],\"conf\":0.665},{\"text\":\"TO\",\"bbox\":[94,190,119,211],\"conf\":0.533},{\"text\":\"US,\",\"bbox\":[119,190,152,215],\"conf\":0.635},{\"text\":\"WHO\",\"bbox\":[147,188,194,213],\"conf\":0.661},{\"text\":\"HAVE\",\"bbox\":[191,188,241,214],\"conf\":0.675},{\"text\":\"BEEN\",\"bbox\":[239,190,285,213],\"conf\":0.638},{\"text\":\"OVERSET\",\"bbox\":[287,192,352,213],\"conf\":0.657},{\"text\":\"ALREADY\",\"bbox\":[353,189,419,215],\"conf\":0.670},{\"text\":\"BY\",\"bbox\":[422,192,449,214],\"conf\":0.564},{\"text\":\"ONE\",\"bbox\":[450,192,488,215],\"conf\":0.610},{\"text\":\"POOR\",\"bbox\":[25,211,69,234],\"conf\":0.624},{\"text\":\"REGINENT\",\"bbox\":[71,210,153,234],\"conf\":0.660},{\"text\":\"OF\",\"bbox\":[155,210,182,232],\"conf\":0.593},{\"text\":\"MILITIA,\",\"bbox\":[182,209,250,236],\"conf\":0.671},{\"text\":\"AND\",\"bbox\":[251,211,290,235],\"conf\":0.626},{\"text\":\"THE\",\"bbox\":[293,211,331,235],\"conf\":0.644},{\"text\":\"MONTHLY\",\"bbox\":[332,211,408,236],\"conf\":0.656},{\"text\":\"BAILS\",\"bbox\":[410,209,460,235],\"conf\":0.647},{\"text\":\"OF\",\"bbox\":[462,211,490,234],\"conf\":0.555},{\"text\":\"MERYTON\",\"bbox\":[24,223,102,256],\"conf\":0.672}]\n",
+   "vs_cpu": {
+    "byte_identical": false,
+    "json": {
+     "n_numbers": [
+      475,
+      475
+     ],
+     "strings_equal": true,
+     "n_strings": [
+      95,
+      95
+     ]
+    },
+    "final_cosine": 0.9999999999996066,
+    "max_abs": 0.0030000000000000027,
+    "final_metric": "cosine over all JSON numbers",
+    "ocr": {
+     "n_boxes": [
+      95,
+      95
+     ],
+     "texts_equal": 95,
+     "box_max_dpx": 0,
+     "conf_max_d": 0.0030000000000000027,
+     "joined_text_ratio": 1.0
+    }
+   }
+  },
+  "cuda-detcpu": {
+   "backend": "cuda",
+   "env": {
+    "OCR_DETECT_USE_GPU": "0"
+   },
+   "wall_s": [
+    37.535,
+    37.937
+   ],
+   "gpu_mem_peak_mib": 883,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "34 24.215 0.642 -0.615] best=2\nocr_pipeline: recognizing region 93/95\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-10.786 -12.055 5.811 -1.580 1.873] best=13532\nmath_ocr: [graph] dec step 1: tok=13532 logits[0..4]=[-9.431 -11.947 10.523 8.796 -1.670] best=8325\nmath_ocr: [graph] dec step 2: tok=8325 logits[0..4]=[-11.385 -10.821 12.875 6.715 -3.538] best=143\nmath_ocr: [graph] dec step 3: tok=143 logits[0..4]=[-8.750 -6.582 21.487 -0.803 -1.912] best=2\nocr_pipeline: recognizing region 94/95\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-13.816 -12.498 8.790 0.279 0.987] best=5429\nmath_ocr: [graph] dec step 1: tok=5429 logits[0..4]=[-10.646 -9.782 23.452 -1.689 5.241] best=2\nocr_pipeline: recognizing region 95/95\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-11.187 -13.427 2.363 -1.577 12.442] best=781\nmath_ocr: [graph] dec step 1: tok=781 logits[0..4]=[-12.539 -12.595 7.645 2.515 5.663] best=6519\nmath_ocr: [graph] dec step 2: tok=6519 logits[0..4]=[-11.285 -12.986 10.293 3.871 -4.443] best=2225\nmath_ocr: [graph] dec step 3: tok=2225 logits[0..4]=[-9.690 -14.325 12.061 5.663 2.852] best=14750\nmath_ocr: [graph] dec step 4: tok=14750 logits[0..4]=[-8.744 -6.217 21.358 -0.307 0.002] best=2\nocr_pipeline: recognized 95/95 regions\n",
+   "stdout_sha256": "98dd120f14291ed39878b4a39d5e5c30f116d462f1c51180eb7154bc4c202a89",
+   "stdout": "[{\"text\":\"THEY\",\"bbox\":[68,0,112,24],\"conf\":0.611},{\"text\":\"ARE\",\"bbox\":[113,0,148,22],\"conf\":0.634},{\"text\":\"gOING\",\"bbox\":[148,0,202,24],\"conf\":0.651},{\"text\":\"TO\",\"bbox\":[204,0,226,18],\"conf\":0.504},{\"text\":\"BE\",\"bbox\":[229,0,257,21],\"conf\":0.571},{\"text\":\"ENCOMPED\",\"bbox\":[257,0,346,24],\"conf\":0.635},{\"text\":\"NEAR\",\"bbox\":[346,0,389,24],\"conf\":0.638},{\"text\":\"BRIGHTON :\",\"bbox\":[394,0,475,25],\"conf\":0.656},{\"text\":\"AND\",\"bbox\":[22,16,61,40],\"conf\":0.634},{\"text\":\"DO\",\"bbox\":[74,16,104,41],\"conf\":0.614},{\"text\":\"SO\",\"bbox\":[102,19,127,40],\"conf\":0.565},{\"text\":\"WANT\",\"bbox\":[124,17,175,41],\"conf\":0.629},{\"text\":\"PAPA\",\"bbox\":[171,19,215,41],\"conf\":0.664},{\"text\":\"TAKE\",\"bbox\":[236,18,279,40],\"conf\":0.619},{\"text\":\"US\",\"bbox\":[277,19,303,41],\"conf\":0.580},{\"text\":\"ALL\",\"bbox\":[297,16,328,40],\"conf\":0.594},{\"text\":\"THERE\",\"bbox\":[325,16,377,42],\"conf\":0.669},{\"text\":\"FOR\",\"bbox\":[373,16,406,41],\"conf\":0.638},{\"text\":\"THE\",\"bbox\":[404,17,438,41],\"conf\":0.631},{\"text\":\"SUM-\",\"bbox\":[436,19,484,41],\"conf\":0.623},{\"text\":\"MER\",\"bbox\":[23,40,62,62],\"conf\":0.620},{\"text\":\"WOULD\",\"bbox\":[109,35,167,62],\"conf\":0.683},{\"text\":\"BE\",\"bbox\":[166,39,192,61],\"conf\":0.601},{\"text\":\"SUCH\",\"bbox\":[188,39,233,62],\"conf\":0.645},{\"text\":\"DELICIOUS\",\"bbox\":[247,37,327,63],\"conf\":0.685},{\"text\":\"SCEEME,\",\"bbox\":[322,38,392,64],\"conf\":0.671},{\"text\":\",AND\",\"bbox\":[388,39,426,62],\"conf\":0.664},{\"text\":\"DATE\",\"bbox\":[441,37,487,63],\"conf\":0.658},{\"text\":\"SAY\",\"bbox\":[23,61,57,87],\"conf\":0.621},{\"text\":\"WOULD\",\"bbox\":[54,57,113,84],\"conf\":0.649},{\"text\":\"HARDLY\",\"bbox\":[110,57,171,85],\"conf\":0.698},{\"text\":\"COST\",\"bbox\":[167,60,210,83],\"conf\":0.643},{\"text\":\"ANYTHING\",\"bbox\":[204,60,284,88],\"conf\":0.663},{\"text\":\"AT\",\"bbox\":[284,62,309,83],\"conf\":0.580},{\"text\":\"ALL.\",\"bbox\":[306,58,340,84],\"conf\":0.621},{\"text\":\"MAMMA\",\"bbox\":[352,58,429,85],\"conf\":0.680},{\"text\":\"WOULD\",\"bbox\":[426,59,486,85],\"conf\":0.680},{\"text\":\"LIKE\",\"bbox\":[22,75,61,105],\"conf\":0.622},{\"text\":\"GO\",\"bbox\":[92,82,122,108],\"conf\":0.617},{\"text\":\"TOO\",\"bbox\":[121,81,157,105],\"conf\":0.638},{\"text\":\"OF\",\"bbox\":[160,80,188,103],\"conf\":0.583},{\"text\":\"ALL\",\"bbox\":[188,79,219,105],\"conf\":0.646},{\"text\":\"THINGS\",\"bbox\":[220,80,279,108],\"conf\":0.623},{\"text\":\"ONLY\",\"bbox\":[308,79,359,108],\"conf\":0.649},{\"text\":\"THINK\",\"bbox\":[360,77,415,106],\"conf\":0.695},{\"text\":\"WHAT\",\"bbox\":[414,81,466,106],\"conf\":0.669},{\"text\":\"MISERBBLE\",\"bbox\":[23,102,106,126],\"conf\":0.667},{\"text\":\"SUMMER\",\"bbox\":[103,106,173,126],\"conf\":0.614},{\"text\":\"ELSE\",\"bbox\":[171,103,210,127],\"conf\":0.658},{\"text\":\"WE\",\"bbox\":[207,105,240,128],\"conf\":0.595},{\"text\":\"SHALL\",\"bbox\":[238,101,286,128],\"conf\":0.671},{\"text\":\"HAVE\",\"bbox\":[281,103,329,128],\"conf\":0.664},{\"text\":\"YES,\",\"bbox\":[67,126,102,147],\"conf\":0.521},{\"text\":\"CHANGEABLE\",\"bbox\":[109,118,192,175],\"conf\":0.669},{\"text\":\"ELIZABETH,\",\"bbox\":[181,123,267,149],\"conf\":0.668},{\"text\":\"TBAT :\",\"bbox\":[282,123,325,150],\"conf\":0.646},{\"text\":\"WOULD\",\"bbox\":[318,123,377,149],\"conf\":0.692},{\"text\":\"BE\",\"bbox\":[373,126,400,148],\"conf\":0.615},{\"text\":\"DELIGHT-\",\"bbox\":[412,124,487,150],\"conf\":0.668},{\"text\":\"FALL\",\"bbox\":[23,142,55,168],\"conf\":0.604},{\"text\":\"SCLEME\",\"bbox\":[50,144,119,169],\"conf\":0.659},{\"text\":\"AND\",\"bbox\":[183,145,222,170],\"conf\":0.643},{\"text\":\"COMPLETELY\",\"bbox\":[222,147,318,172],\"conf\":0.680},{\"text\":\"OO\",\"bbox\":[319,145,349,170],\"conf\":0.608},{\"text\":\"FOR\",\"bbox\":[348,145,382,170],\"conf\":0.648},{\"text\":\"US\",\"bbox\":[383,149,409,170],\"conf\":0.595},{\"text\":\"AT\",\"bbox\":[410,149,436,169],\"conf\":0.581},{\"text\":\"ONCE.\",\"bbox\":[435,149,485,170],\"conf\":0.612},{\"text\":\"GOOD\",\"bbox\":[24,162,81,191],\"conf\":0.659},{\"text\":\"HEAVEN\",\"bbox\":[82,163,155,191],\"conf\":0.677},{\"text\":\"BRIGHTON,\",\"bbox\":[179,165,264,194],\"conf\":0.664},{\"text\":\"AND\",\"bbox\":[267,168,304,191],\"conf\":0.601},{\"text\":\"WHOLE\",\"bbox\":[326,169,382,191],\"conf\":0.631},{\"text\":\"CAMPFUL\",\"bbox\":[390,168,462,191],\"conf\":0.657},{\"text\":\"OF\",\"bbox\":[463,168,489,191],\"conf\":0.562},{\"text\":\"SOLDIERS,\",\"bbox\":[23,186,97,213],\"conf\":0.665},{\"text\":\"TO\",\"bbox\":[94,190,119,211],\"conf\":0.533},{\"text\":\"US,\",\"bbox\":[119,190,152,215],\"conf\":0.635},{\"text\":\"WHO\",\"bbox\":[147,188,194,213],\"conf\":0.661},{\"text\":\"HAVE\",\"bbox\":[191,188,241,214],\"conf\":0.675},{\"text\":\"BEEN\",\"bbox\":[239,190,285,213],\"conf\":0.638},{\"text\":\"OVERSET\",\"bbox\":[287,192,352,213],\"conf\":0.657},{\"text\":\"ALREADY\",\"bbox\":[353,189,419,215],\"conf\":0.670},{\"text\":\"BY\",\"bbox\":[422,192,449,214],\"conf\":0.564},{\"text\":\"ONE\",\"bbox\":[450,192,488,215],\"conf\":0.610},{\"text\":\"POOR\",\"bbox\":[25,211,69,234],\"conf\":0.624},{\"text\":\"REGINENT\",\"bbox\":[71,210,153,234],\"conf\":0.660},{\"text\":\"OF\",\"bbox\":[155,210,182,232],\"conf\":0.592},{\"text\":\"MILITIA,\",\"bbox\":[182,209,250,236],\"conf\":0.671},{\"text\":\"AND\",\"bbox\":[251,211,290,235],\"conf\":0.626},{\"text\":\"THE\",\"bbox\":[293,211,331,235],\"conf\":0.644},{\"text\":\"MONTHLY\",\"bbox\":[332,211,408,236],\"conf\":0.659},{\"text\":\"BAILS\",\"bbox\":[410,209,460,235],\"conf\":0.646},{\"text\":\"OF\",\"bbox\":[462,211,490,234],\"conf\":0.555},{\"text\":\"MERYTON\",\"bbox\":[24,223,102,256],\"conf\":0.672}]\n",
+   "vs_cpu": {
+    "byte_identical": true,
+    "json": {
+     "n_numbers": [
+      475,
+      475
+     ],
+     "strings_equal": true,
+     "n_strings": [
+      95,
+      95
+     ]
+    },
+    "final_cosine": 1.0000000000000002,
+    "max_abs": 0.0,
+    "final_metric": "cosine over all JSON numbers",
+    "ocr": {
+     "n_boxes": [
+      95,
+      95
+     ],
+     "texts_equal": 95,
+     "box_max_dpx": 0,
+     "conf_max_d": 0.0,
+     "joined_text_ratio": 1.0
+    }
+   }
+  },
+  "cuda-deconvmm": {
+   "backend": "cuda",
+   "env": {
+    "CRISPEMBED_DBNET_DECONV_MATMUL": "1"
+   },
+   "wall_s": [
+    37.08,
+    37.033
+   ],
+   "gpu_mem_peak_mib": 1021,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "34 24.215 0.642 -0.615] best=2\nocr_pipeline: recognizing region 93/95\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-10.786 -12.055 5.811 -1.580 1.873] best=13532\nmath_ocr: [graph] dec step 1: tok=13532 logits[0..4]=[-9.431 -11.947 10.523 8.796 -1.670] best=8325\nmath_ocr: [graph] dec step 2: tok=8325 logits[0..4]=[-11.385 -10.821 12.875 6.715 -3.538] best=143\nmath_ocr: [graph] dec step 3: tok=143 logits[0..4]=[-8.750 -6.582 21.487 -0.803 -1.912] best=2\nocr_pipeline: recognizing region 94/95\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-13.816 -12.498 8.790 0.279 0.987] best=5429\nmath_ocr: [graph] dec step 1: tok=5429 logits[0..4]=[-10.646 -9.782 23.452 -1.689 5.241] best=2\nocr_pipeline: recognizing region 95/95\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-11.187 -13.427 2.363 -1.577 12.442] best=781\nmath_ocr: [graph] dec step 1: tok=781 logits[0..4]=[-12.539 -12.595 7.645 2.515 5.663] best=6519\nmath_ocr: [graph] dec step 2: tok=6519 logits[0..4]=[-11.285 -12.986 10.293 3.871 -4.443] best=2225\nmath_ocr: [graph] dec step 3: tok=2225 logits[0..4]=[-9.690 -14.325 12.061 5.663 2.852] best=14750\nmath_ocr: [graph] dec step 4: tok=14750 logits[0..4]=[-8.744 -6.217 21.358 -0.307 0.002] best=2\nocr_pipeline: recognized 95/95 regions\n",
+   "stdout_sha256": "61f8dd1236da9d80f2b8e89dd49ad67456b60b22b450a97a7addd961bc3c5990",
+   "stdout": "[{\"text\":\"THEY\",\"bbox\":[68,0,112,24],\"conf\":0.611},{\"text\":\"ARE\",\"bbox\":[113,0,148,22],\"conf\":0.634},{\"text\":\"gOING\",\"bbox\":[148,0,202,24],\"conf\":0.651},{\"text\":\"TO\",\"bbox\":[204,0,226,18],\"conf\":0.504},{\"text\":\"BE\",\"bbox\":[229,0,257,21],\"conf\":0.571},{\"text\":\"ENCOMPED\",\"bbox\":[257,0,346,24],\"conf\":0.635},{\"text\":\"NEAR\",\"bbox\":[346,0,389,24],\"conf\":0.638},{\"text\":\"BRIGHTON :\",\"bbox\":[394,0,475,25],\"conf\":0.656},{\"text\":\"AND\",\"bbox\":[22,16,61,40],\"conf\":0.634},{\"text\":\"DO\",\"bbox\":[74,16,104,41],\"conf\":0.614},{\"text\":\"SO\",\"bbox\":[102,19,127,40],\"conf\":0.565},{\"text\":\"WANT\",\"bbox\":[124,17,175,41],\"conf\":0.629},{\"text\":\"PAPA\",\"bbox\":[171,19,215,41],\"conf\":0.664},{\"text\":\"TAKE\",\"bbox\":[236,18,279,40],\"conf\":0.619},{\"text\":\"US\",\"bbox\":[277,19,303,41],\"conf\":0.580},{\"text\":\"ALL\",\"bbox\":[297,16,328,40],\"conf\":0.594},{\"text\":\"THERE\",\"bbox\":[325,16,377,42],\"conf\":0.669},{\"text\":\"FOR\",\"bbox\":[373,16,406,41],\"conf\":0.638},{\"text\":\"THE\",\"bbox\":[404,17,438,41],\"conf\":0.629},{\"text\":\"SUM-\",\"bbox\":[436,19,484,41],\"conf\":0.623},{\"text\":\"MER\",\"bbox\":[23,40,62,62],\"conf\":0.620},{\"text\":\"WOULD\",\"bbox\":[109,35,167,62],\"conf\":0.683},{\"text\":\"BE\",\"bbox\":[166,39,192,61],\"conf\":0.601},{\"text\":\"SUCH\",\"bbox\":[188,39,233,62],\"conf\":0.645},{\"text\":\"DELICIOUS\",\"bbox\":[247,37,327,63],\"conf\":0.685},{\"text\":\"SCEEME,\",\"bbox\":[322,38,392,64],\"conf\":0.671},{\"text\":\",AND\",\"bbox\":[388,39,426,62],\"conf\":0.664},{\"text\":\"DATE\",\"bbox\":[441,37,487,63],\"conf\":0.658},{\"text\":\"SAY\",\"bbox\":[23,61,57,87],\"conf\":0.621},{\"text\":\"WOULD\",\"bbox\":[54,57,113,84],\"conf\":0.649},{\"text\":\"HARDLY\",\"bbox\":[110,57,171,85],\"conf\":0.698},{\"text\":\"COST\",\"bbox\":[167,60,210,83],\"conf\":0.643},{\"text\":\"ANYTHING\",\"bbox\":[204,60,284,88],\"conf\":0.663},{\"text\":\"AT\",\"bbox\":[284,62,309,83],\"conf\":0.580},{\"text\":\"ALL.\",\"bbox\":[306,58,340,84],\"conf\":0.621},{\"text\":\"MAMMA\",\"bbox\":[352,58,429,85],\"conf\":0.680},{\"text\":\"WOULD\",\"bbox\":[426,59,486,85],\"conf\":0.680},{\"text\":\"LIKE\",\"bbox\":[22,75,61,105],\"conf\":0.622},{\"text\":\"GO\",\"bbox\":[92,82,122,108],\"conf\":0.617},{\"text\":\"TOO\",\"bbox\":[121,81,157,105],\"conf\":0.638},{\"text\":\"OF\",\"bbox\":[160,80,188,103],\"conf\":0.583},{\"text\":\"ALL\",\"bbox\":[188,79,219,105],\"conf\":0.646},{\"text\":\"THINGS\",\"bbox\":[220,80,279,108],\"conf\":0.623},{\"text\":\"ONLY\",\"bbox\":[308,79,359,108],\"conf\":0.649},{\"text\":\"THINK\",\"bbox\":[360,77,415,106],\"conf\":0.695},{\"text\":\"WHAT\",\"bbox\":[414,81,466,106],\"conf\":0.669},{\"text\":\"MISERBBLE\",\"bbox\":[23,102,106,126],\"conf\":0.667},{\"text\":\"SUMMER\",\"bbox\":[103,106,173,126],\"conf\":0.614},{\"text\":\"ELSE\",\"bbox\":[171,103,210,127],\"conf\":0.658},{\"text\":\"WE\",\"bbox\":[207,105,240,128],\"conf\":0.595},{\"text\":\"SHALL\",\"bbox\":[238,101,286,128],\"conf\":0.671},{\"text\":\"HAVE\",\"bbox\":[281,103,329,128],\"conf\":0.664},{\"text\":\"YES,\",\"bbox\":[67,126,102,147],\"conf\":0.521},{\"text\":\"CHANGEABLE\",\"bbox\":[109,118,192,175],\"conf\":0.669},{\"text\":\"ELIZABETH,\",\"bbox\":[181,123,267,149],\"conf\":0.668},{\"text\":\"TBAT :\",\"bbox\":[282,123,325,150],\"conf\":0.646},{\"text\":\"WOULD\",\"bbox\":[318,123,377,149],\"conf\":0.692},{\"text\":\"BE\",\"bbox\":[373,126,400,148],\"conf\":0.615},{\"text\":\"DELIGHT-\",\"bbox\":[412,124,487,150],\"conf\":0.668},{\"text\":\"FALL\",\"bbox\":[23,142,55,168],\"conf\":0.604},{\"text\":\"SCLEME\",\"bbox\":[50,144,119,169],\"conf\":0.659},{\"text\":\"AND\",\"bbox\":[183,145,222,170],\"conf\":0.643},{\"text\":\"COMPLETELY\",\"bbox\":[222,147,318,172],\"conf\":0.680},{\"text\":\"OO\",\"bbox\":[319,145,349,170],\"conf\":0.608},{\"text\":\"FOR\",\"bbox\":[348,145,382,170],\"conf\":0.648},{\"text\":\"US\",\"bbox\":[383,149,409,170],\"conf\":0.595},{\"text\":\"AT\",\"bbox\":[410,149,436,169],\"conf\":0.581},{\"text\":\"ONCE.\",\"bbox\":[435,149,485,170],\"conf\":0.612},{\"text\":\"GOOD\",\"bbox\":[24,162,81,191],\"conf\":0.659},{\"text\":\"HEAVEN\",\"bbox\":[82,163,155,191],\"conf\":0.677},{\"text\":\"BRIGHTON,\",\"bbox\":[179,165,264,194],\"conf\":0.664},{\"text\":\"AND\",\"bbox\":[267,168,304,191],\"conf\":0.601},{\"text\":\"WHOLE\",\"bbox\":[326,169,382,191],\"conf\":0.631},{\"text\":\"CAMPFUL\",\"bbox\":[390,168,462,191],\"conf\":0.657},{\"text\":\"OF\",\"bbox\":[463,168,489,191],\"conf\":0.562},{\"text\":\"SOLDIERS,\",\"bbox\":[23,186,97,213],\"conf\":0.665},{\"text\":\"TO\",\"bbox\":[94,190,119,211],\"conf\":0.533},{\"text\":\"US,\",\"bbox\":[119,190,152,215],\"conf\":0.635},{\"text\":\"WHO\",\"bbox\":[147,188,194,213],\"conf\":0.661},{\"text\":\"HAVE\",\"bbox\":[191,188,241,214],\"conf\":0.675},{\"text\":\"BEEN\",\"bbox\":[239,190,285,213],\"conf\":0.638},{\"text\":\"OVERSET\",\"bbox\":[287,192,352,213],\"conf\":0.657},{\"text\":\"ALREADY\",\"bbox\":[353,189,419,215],\"conf\":0.670},{\"text\":\"BY\",\"bbox\":[422,192,449,214],\"conf\":0.564},{\"text\":\"ONE\",\"bbox\":[450,192,488,215],\"conf\":0.610},{\"text\":\"POOR\",\"bbox\":[25,211,69,234],\"conf\":0.624},{\"text\":\"REGINENT\",\"bbox\":[71,210,153,234],\"conf\":0.660},{\"text\":\"OF\",\"bbox\":[155,210,182,232],\"conf\":0.593},{\"text\":\"MILITIA,\",\"bbox\":[182,209,250,236],\"conf\":0.671},{\"text\":\"AND\",\"bbox\":[251,211,290,235],\"conf\":0.626},{\"text\":\"THE\",\"bbox\":[293,211,331,235],\"conf\":0.644},{\"text\":\"MONTHLY\",\"bbox\":[332,211,408,236],\"conf\":0.656},{\"text\":\"BAILS\",\"bbox\":[410,209,460,235],\"conf\":0.647},{\"text\":\"OF\",\"bbox\":[462,211,490,234],\"conf\":0.555},{\"text\":\"MERYTON\",\"bbox\":[24,223,102,256],\"conf\":0.672}]\n",
+   "vs_cpu": {
+    "byte_identical": false,
+    "json": {
+     "n_numbers": [
+      475,
+      475
+     ],
+     "strings_equal": true,
+     "n_strings": [
+      95,
+      95
+     ]
+    },
+    "final_cosine": 0.9999999999996066,
+    "max_abs": 0.0030000000000000027,
+    "final_metric": "cosine over all JSON numbers",
+    "ocr": {
+     "n_boxes": [
+      95,
+      95
+     ],
+     "texts_equal": 95,
+     "box_max_dpx": 0,
+     "conf_max_d": 0.0030000000000000027,
+     "joined_text_ratio": 1.0
+    }
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    77.831,
+    77.427
+   ],
+   "gpu_mem_peak_mib": 1,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "67 23.958 0.763 -0.695] best=2\nocr_pipeline: recognizing region 93/95\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-10.984 -12.209 5.950 -1.392 2.107] best=13532\nmath_ocr: [graph] dec step 1: tok=13532 logits[0..4]=[-9.655 -12.117 10.653 8.907 -1.737] best=8325\nmath_ocr: [graph] dec step 2: tok=8325 logits[0..4]=[-11.619 -10.884 12.685 6.712 -3.265] best=143\nmath_ocr: [graph] dec step 3: tok=143 logits[0..4]=[-8.767 -6.645 21.500 -0.892 -1.651] best=2\nocr_pipeline: recognizing region 94/95\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-13.852 -12.496 8.991 0.420 0.803] best=5429\nmath_ocr: [graph] dec step 1: tok=5429 logits[0..4]=[-10.806 -9.850 23.839 -1.421 5.075] best=2\nocr_pipeline: recognizing region 95/95\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-11.001 -13.262 2.218 -1.761 12.279] best=781\nmath_ocr: [graph] dec step 1: tok=781 logits[0..4]=[-12.670 -12.602 7.621 2.561 5.456] best=6519\nmath_ocr: [graph] dec step 2: tok=6519 logits[0..4]=[-11.201 -12.889 10.400 4.201 -4.527] best=2225\nmath_ocr: [graph] dec step 3: tok=2225 logits[0..4]=[-9.501 -14.382 11.903 5.988 2.644] best=14750\nmath_ocr: [graph] dec step 4: tok=14750 logits[0..4]=[-9.100 -6.528 21.664 0.074 -0.023] best=2\nocr_pipeline: recognized 95/95 regions\n",
+   "stdout_sha256": "98dd120f14291ed39878b4a39d5e5c30f116d462f1c51180eb7154bc4c202a89",
+   "stdout": "[{\"text\":\"THEY\",\"bbox\":[68,0,112,24],\"conf\":0.611},{\"text\":\"ARE\",\"bbox\":[113,0,148,22],\"conf\":0.634},{\"text\":\"gOING\",\"bbox\":[148,0,202,24],\"conf\":0.651},{\"text\":\"TO\",\"bbox\":[204,0,226,18],\"conf\":0.504},{\"text\":\"BE\",\"bbox\":[229,0,257,21],\"conf\":0.571},{\"text\":\"ENCOMPED\",\"bbox\":[257,0,346,24],\"conf\":0.635},{\"text\":\"NEAR\",\"bbox\":[346,0,389,24],\"conf\":0.638},{\"text\":\"BRIGHTON :\",\"bbox\":[394,0,475,25],\"conf\":0.656},{\"text\":\"AND\",\"bbox\":[22,16,61,40],\"conf\":0.634},{\"text\":\"DO\",\"bbox\":[74,16,104,41],\"conf\":0.614},{\"text\":\"SO\",\"bbox\":[102,19,127,40],\"conf\":0.565},{\"text\":\"WANT\",\"bbox\":[124,17,175,41],\"conf\":0.629},{\"text\":\"PAPA\",\"bbox\":[171,19,215,41],\"conf\":0.664},{\"text\":\"TAKE\",\"bbox\":[236,18,279,40],\"conf\":0.619},{\"text\":\"US\",\"bbox\":[277,19,303,41],\"conf\":0.580},{\"text\":\"ALL\",\"bbox\":[297,16,328,40],\"conf\":0.594},{\"text\":\"THERE\",\"bbox\":[325,16,377,42],\"conf\":0.669},{\"text\":\"FOR\",\"bbox\":[373,16,406,41],\"conf\":0.638},{\"text\":\"THE\",\"bbox\":[404,17,438,41],\"conf\":0.631},{\"text\":\"SUM-\",\"bbox\":[436,19,484,41],\"conf\":0.623},{\"text\":\"MER\",\"bbox\":[23,40,62,62],\"conf\":0.620},{\"text\":\"WOULD\",\"bbox\":[109,35,167,62],\"conf\":0.683},{\"text\":\"BE\",\"bbox\":[166,39,192,61],\"conf\":0.601},{\"text\":\"SUCH\",\"bbox\":[188,39,233,62],\"conf\":0.645},{\"text\":\"DELICIOUS\",\"bbox\":[247,37,327,63],\"conf\":0.685},{\"text\":\"SCEEME,\",\"bbox\":[322,38,392,64],\"conf\":0.671},{\"text\":\",AND\",\"bbox\":[388,39,426,62],\"conf\":0.664},{\"text\":\"DATE\",\"bbox\":[441,37,487,63],\"conf\":0.658},{\"text\":\"SAY\",\"bbox\":[23,61,57,87],\"conf\":0.621},{\"text\":\"WOULD\",\"bbox\":[54,57,113,84],\"conf\":0.649},{\"text\":\"HARDLY\",\"bbox\":[110,57,171,85],\"conf\":0.698},{\"text\":\"COST\",\"bbox\":[167,60,210,83],\"conf\":0.643},{\"text\":\"ANYTHING\",\"bbox\":[204,60,284,88],\"conf\":0.663},{\"text\":\"AT\",\"bbox\":[284,62,309,83],\"conf\":0.580},{\"text\":\"ALL.\",\"bbox\":[306,58,340,84],\"conf\":0.621},{\"text\":\"MAMMA\",\"bbox\":[352,58,429,85],\"conf\":0.680},{\"text\":\"WOULD\",\"bbox\":[426,59,486,85],\"conf\":0.680},{\"text\":\"LIKE\",\"bbox\":[22,75,61,105],\"conf\":0.622},{\"text\":\"GO\",\"bbox\":[92,82,122,108],\"conf\":0.617},{\"text\":\"TOO\",\"bbox\":[121,81,157,105],\"conf\":0.638},{\"text\":\"OF\",\"bbox\":[160,80,188,103],\"conf\":0.583},{\"text\":\"ALL\",\"bbox\":[188,79,219,105],\"conf\":0.646},{\"text\":\"THINGS\",\"bbox\":[220,80,279,108],\"conf\":0.623},{\"text\":\"ONLY\",\"bbox\":[308,79,359,108],\"conf\":0.649},{\"text\":\"THINK\",\"bbox\":[360,77,415,106],\"conf\":0.695},{\"text\":\"WHAT\",\"bbox\":[414,81,466,106],\"conf\":0.669},{\"text\":\"MISERBBLE\",\"bbox\":[23,102,106,126],\"conf\":0.667},{\"text\":\"SUMMER\",\"bbox\":[103,106,173,126],\"conf\":0.614},{\"text\":\"ELSE\",\"bbox\":[171,103,210,127],\"conf\":0.658},{\"text\":\"WE\",\"bbox\":[207,105,240,128],\"conf\":0.595},{\"text\":\"SHALL\",\"bbox\":[238,101,286,128],\"conf\":0.671},{\"text\":\"HAVE\",\"bbox\":[281,103,329,128],\"conf\":0.664},{\"text\":\"YES,\",\"bbox\":[67,126,102,147],\"conf\":0.521},{\"text\":\"CHANGEABLE\",\"bbox\":[109,118,192,175],\"conf\":0.669},{\"text\":\"ELIZABETH,\",\"bbox\":[181,123,267,149],\"conf\":0.668},{\"text\":\"TBAT :\",\"bbox\":[282,123,325,150],\"conf\":0.646},{\"text\":\"WOULD\",\"bbox\":[318,123,377,149],\"conf\":0.692},{\"text\":\"BE\",\"bbox\":[373,126,400,148],\"conf\":0.615},{\"text\":\"DELIGHT-\",\"bbox\":[412,124,487,150],\"conf\":0.668},{\"text\":\"FALL\",\"bbox\":[23,142,55,168],\"conf\":0.604},{\"text\":\"SCLEME\",\"bbox\":[50,144,119,169],\"conf\":0.659},{\"text\":\"AND\",\"bbox\":[183,145,222,170],\"conf\":0.643},{\"text\":\"COMPLETELY\",\"bbox\":[222,147,318,172],\"conf\":0.680},{\"text\":\"OO\",\"bbox\":[319,145,349,170],\"conf\":0.608},{\"text\":\"FOR\",\"bbox\":[348,145,382,170],\"conf\":0.648},{\"text\":\"US\",\"bbox\":[383,149,409,170],\"conf\":0.595},{\"text\":\"AT\",\"bbox\":[410,149,436,169],\"conf\":0.581},{\"text\":\"ONCE.\",\"bbox\":[435,149,485,170],\"conf\":0.612},{\"text\":\"GOOD\",\"bbox\":[24,162,81,191],\"conf\":0.659},{\"text\":\"HEAVEN\",\"bbox\":[82,163,155,191],\"conf\":0.677},{\"text\":\"BRIGHTON,\",\"bbox\":[179,165,264,194],\"conf\":0.664},{\"text\":\"AND\",\"bbox\":[267,168,304,191],\"conf\":0.601},{\"text\":\"WHOLE\",\"bbox\":[326,169,382,191],\"conf\":0.631},{\"text\":\"CAMPFUL\",\"bbox\":[390,168,462,191],\"conf\":0.657},{\"text\":\"OF\",\"bbox\":[463,168,489,191],\"conf\":0.562},{\"text\":\"SOLDIERS,\",\"bbox\":[23,186,97,213],\"conf\":0.665},{\"text\":\"TO\",\"bbox\":[94,190,119,211],\"conf\":0.533},{\"text\":\"US,\",\"bbox\":[119,190,152,215],\"conf\":0.635},{\"text\":\"WHO\",\"bbox\":[147,188,194,213],\"conf\":0.661},{\"text\":\"HAVE\",\"bbox\":[191,188,241,214],\"conf\":0.675},{\"text\":\"BEEN\",\"bbox\":[239,190,285,213],\"conf\":0.638},{\"text\":\"OVERSET\",\"bbox\":[287,192,352,213],\"conf\":0.657},{\"text\":\"ALREADY\",\"bbox\":[353,189,419,215],\"conf\":0.670},{\"text\":\"BY\",\"bbox\":[422,192,449,214],\"conf\":0.564},{\"text\":\"ONE\",\"bbox\":[450,192,488,215],\"conf\":0.610},{\"text\":\"POOR\",\"bbox\":[25,211,69,234],\"conf\":0.624},{\"text\":\"REGINENT\",\"bbox\":[71,210,153,234],\"conf\":0.660},{\"text\":\"OF\",\"bbox\":[155,210,182,232],\"conf\":0.592},{\"text\":\"MILITIA,\",\"bbox\":[182,209,250,236],\"conf\":0.671},{\"text\":\"AND\",\"bbox\":[251,211,290,235],\"conf\":0.626},{\"text\":\"THE\",\"bbox\":[293,211,331,235],\"conf\":0.644},{\"text\":\"MONTHLY\",\"bbox\":[332,211,408,236],\"conf\":0.659},{\"text\":\"BAILS\",\"bbox\":[410,209,460,235],\"conf\":0.646},{\"text\":\"OF\",\"bbox\":[462,211,490,234],\"conf\":0.555},{\"text\":\"MERYTON\",\"bbox\":[24,223,102,256],\"conf\":0.672}]\n"
+  }
+ },
+ "precision": "q8_0",
+ "bar": 0.97,
+ "seconds": 381.2,
+ "id": "dbnet-trocr.scan_strip",
+ "commit": "8f781770810956818ba76831a6bc607fbc0a1154",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

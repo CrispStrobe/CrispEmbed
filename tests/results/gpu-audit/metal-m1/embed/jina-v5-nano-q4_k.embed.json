@@ -1,0 +1,127 @@
+{
+ "model": "jina-v5-nano-q4_k.gguf",
+ "mode": "embed",
+ "texts": "embed_texts.txt",
+ "threads": 4,
+ "env": {},
+ "wall_s": {
+  "metal": [
+   5.085,
+   0.543
+  ],
+  "cpu": [
+   1.244,
+   1.146
+  ]
+ },
+ "rows": [
+  {
+   "i": 0,
+   "cos": 0.9970954545020068,
+   "max_abs": 0.009069,
+   "dim": 768,
+   "cos_metal_vs_ref": 0.9192926816461581,
+   "cos_cpu_vs_ref": 0.9217305274483361
+  },
+  {
+   "i": 1,
+   "cos": 0.9971890705382543,
+   "max_abs": 0.008975999999999998,
+   "dim": 768,
+   "cos_metal_vs_ref": 0.9100724297132999,
+   "cos_cpu_vs_ref": 0.920481102033462
+  },
+  {
+   "i": 2,
+   "cos": 0.998314425715044,
+   "max_abs": 0.007304,
+   "dim": 768,
+   "cos_metal_vs_ref": 0.9580665214962453,
+   "cos_cpu_vs_ref": 0.9581423646220906
+  },
+  {
+   "i": 3,
+   "cos": 0.9985430011034425,
+   "max_abs": 0.007302000000000003,
+   "dim": 768,
+   "cos_metal_vs_ref": 0.9655065200467008,
+   "cos_cpu_vs_ref": 0.9629389675526847
+  },
+  {
+   "i": 4,
+   "cos": 0.9961672458833067,
+   "max_abs": 0.014706,
+   "dim": 768,
+   "cos_metal_vs_ref": 0.8718990605410548,
+   "cos_cpu_vs_ref": 0.8715801783429529
+  },
+  {
+   "i": 5,
+   "cos": 0.9977336130557644,
+   "max_abs": 0.007373,
+   "dim": 768,
+   "cos_metal_vs_ref": 0.9388338113279714,
+   "cos_cpu_vs_ref": 0.9379285908410332
+  },
+  {
+   "i": 6,
+   "cos": 0.9989135372823937,
+   "max_abs": 0.00514,
+   "dim": 768,
+   "cos_metal_vs_ref": 0.9444366836961188,
+   "cos_cpu_vs_ref": 0.9437730973921475
+  },
+  {
+   "i": 7,
+   "cos": 0.9980233342302238,
+   "max_abs": 0.010202,
+   "dim": 768,
+   "cos_metal_vs_ref": 0.9471985537129173,
+   "cos_cpu_vs_ref": 0.9470433964711858
+  },
+  {
+   "i": 8,
+   "cos": 0.9978698511721615,
+   "max_abs": 0.007718000000000003,
+   "dim": 768,
+   "cos_metal_vs_ref": 0.94797159737687,
+   "cos_cpu_vs_ref": 0.9510336959951602
+  },
+  {
+   "i": 9,
+   "cos": 0.9930980649285854,
+   "max_abs": 0.015607999999999997,
+   "dim": 768,
+   "cos_metal_vs_ref": 0.8700563794414861,
+   "cos_cpu_vs_ref": 0.8689863167981526
+  },
+  {
+   "i": 10,
+   "cos": 0.9991944659271654,
+   "max_abs": 0.0045509999999999995,
+   "dim": 768,
+   "cos_metal_vs_ref": 0.9615531486020957,
+   "cos_cpu_vs_ref": 0.961709330166879
+  },
+  {
+   "i": 11,
+   "cos": 0.9986688260335531,
+   "max_abs": 0.006434000000000002,
+   "dim": 768,
+   "cos_metal_vs_ref": 0.9479680800755632,
+   "cos_cpu_vs_ref": 0.9482507194115966
+  }
+ ],
+ "stderr_tail": {
+  "metal": "_f32_f32_4_op=106_cnt=0           0xa73338900 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_pad', name = 'kernel_flash_attn_ext_pad_mask=1_ncpsg=64'\nggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_pad_mask=1_ncpsg=64      0xa73338c00 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_blk', name = 'kernel_flash_attn_ext_blk_nqptg=8_ncpsg=64'\nggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_blk_nqptg=8_ncpsg=64      0xa73338f00 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_f32_dk64_dv64', name = 'kernel_flash_attn_ext_f32_dk64_dv64_mask=1_sinks=0_bias=0_scap=0_kvpad=1_bcm=1_ns10=768_ns20=768_nsg=4'\nggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_f32_dk64_dv64_mask=1_sinks=0_bias=0_scap=0_kvpad=1_bcm=1_ns10=768_ns20=768_nsg=4      0xa73339200 | th_max =  640 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_f32_dk64_dv64', name = 'kernel_flash_attn_ext_f32_dk64_dv64_mask=1_sinks=0_bias=0_scap=0_kvpad=1_bcm=0_ns10=768_ns20=768_nsg=4'\nggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_f32_dk64_dv64_mask=1_sinks=0_bias=0_scap=0_kvpad=1_bcm=0_ns10=768_ns20=768_nsg=4      0xa73339500 | th_max =  640 | th_width =   32\nggml_metal_free: deallocating\n",
+  "cpu": "crispasr_init_gpu_backend: --gpu-backend cpu \u2014 using the CPU backend, no GPU device initialised\ndecoder_embed: n_vocab 0 \u2192 128256 (from token_embd)\ndecoder_embed: loaded 12 layers, 768 dims, 128256 vocab, 12 heads (12 kv), rope_theta=1000000, pool=last-token\ncrispembed: GPT-2 BPE tokenizer (128256 tokens, 280147 merges)\ncrispembed: auto-prefix \"Query: \" (use --prefix \"\" to disable)\n"
+ },
+ "date": "2026-11-01",
+ "cos_min": 0.9930980649285854,
+ "max_abs": 0.015607999999999997,
+ "reference": {
+  "ref": "jina-v5-nano.gguf",
+  "cos_min_metal_vs_ref": 0.8700563794414861,
+  "cos_min_cpu_vs_ref": 0.8689863167981526
+ }
+}

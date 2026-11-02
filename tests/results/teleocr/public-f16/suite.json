@@ -1,0 +1,128 @@
+{
+  "kind": "teleocr-public-and-parser-validation",
+  "independent_model_parity": false,
+  "backend": "cpu",
+  "model": "teleocr-f16.gguf",
+  "model_sha256": "6c52a2800e313964717cf4e5d06e0392c2b5936d8adeac423d563b8a026a2780",
+  "binary_sha256": {
+    "library": "96b1f5707fadabbf7f7060b2b2d2841d728d5f2c1268d4fdb8725247ed8539b5",
+    "cli": "6c4d925064a436ddb179724a01bd9d24b7375cda71a0e8123d7dd3301949d53e",
+    "server": "ed45a21126927b5618989aa4548191eb3eab568420c73bac3aa37d6ee3c406a0",
+    "rust": "1efc683e48e82d1541d35a711a94d35d1c6dcb819abad1d18af86eba33277226",
+    "dart": "9f7500c7a57b31eaa41032ad4ee83b802043091f24d8b3eee711512851198d3c"
+  },
+  "source_sha256": {
+    "crispembed/src/lib.rs": "a7691d754da16e1868204d4ef419169fdb688bea2c6e240b73595695858c3cbc",
+    "crispembed-sys/src/lib.rs": "75aca2214cf152f8d9f9523e6de66a278f098dca163304937f601e904bf69ea9",
+    "flutter/crispembed/lib/src/crispembed.dart": "54162f01fee2041ef3adb935931506e58874cf7b6e913e1c2f11429151fa5370",
+    "flutter/crispembed/lib/src/crispembed_bindings.dart": "7a4a38bb27a6a678fa0219c597f571bc7ca7f69b6346b9c247d90b4b6b6f41a3",
+    "tests/teleocr_public_bindings.rs": "36f5a2baaa44c654a966d380325222be8e96c1467acdb1bc43a1bd389a912116",
+    "tests/teleocr_public_bindings.dart": "0be45470843e4498227746ddefbf18e36385279e07ee601cb47a73216443f98c",
+    "python/crispembed/_moedern_text.py": "18f5212c8330e2a7cc501e9e42902aed7331f4564665b911188ee91c94e7d029",
+    "python/crispembed/_systemone.py": "9795e11374b4c00f6ea06da040816785f63533de1de4f6cdb5bf7aa8602a35d1",
+    "python/crispembed/image.py": "f9e62ab9251adb950ea980a5c4f8b7f6d6cc518f11079edfcbfd94fa384415ca",
+    "python/crispembed/__init__.py": "b80e74e480104db30e70a158248a6524707a6bbbd0fd6d77f3b9ccc6c74fd6e9",
+    "python/crispembed/_binding.py": "7c4ea6adf84c9e89e04fa49d495cff6e51d30c84c9a440052bbc6149522caf72",
+    "tests/test_teleocr_public.py": "888b251582fe6f420e7ed4a862b297f514235465ef3294e2cb2d0238a5729383",
+    "tests/test_teleocr_parser_native.py": "1442896fecb1dfe17e2f71f3e3ec729bc4f8870903fe29b792cca9331b9f1bca",
+    "tools/teleocr_parse.py": "9e9517fdc594bf56307bd719e82b9a5b5a90b29cffc7d113b19b28bd2214d7ea",
+    "src/crispembed.cpp": "5ce1ee0b9710f1ddc80880435f06ce4c8fd014608bd97a6e148390111cd2fd24",
+    "src/crispembed.h": "3497373c915a3545c0c7b72a4b1ea8abd30278826eb231bff2aa23d9e7ebd201",
+    "src/ocr_orchestrator.cpp": "b0718937e9ef49ba0f582b01d33783955ae8f7ca94b078ff91e0e95dfc2729ec",
+    "src/ocr_orchestrator.h": "7b43900814e84373a55caf4e00756c77059dd2fc2150533e45d28da0d3cd9b05",
+    "src/qwen2vl_ocr.cpp": "e8c3e6a023678a00eb60636cfd06f32fb0f32dabd4ad6ad38d00e322518ddc35",
+    "src/qwen2vl_ocr.h": "15483e1394e5a016047042bee74de8d15b70b103bf29e6d4aa8c8e43566ae717",
+    "examples/cli/main.cpp": "3f627f1d2ef5a874ccb5aa934e45bfa067da01b8d7c2bc455dee945a6fb2b5a2",
+    "examples/server/server.cpp": "0de6942c3eaf8c2ba75441da1d674947805d20eca16c77916085e39674266a8a",
+    "crispembed/Cargo.toml": "b66b872c372feebd1dd4f3bb4c32de58fd5ad45aff825e64a7b1ebaa4285bc9a",
+    "crispembed-sys/Cargo.toml": "2b26822adfa4e17a47c287f9dc34add6f3610dcbbd21212ab3563255221fa745",
+    "crispembed-sys/build.rs": "cf82ef5726196c42f1b29d3f387429848c9ced4230062e5ba2f1de824dd13ce1",
+    "LICENSE": "a70d0ab5fb2dbab83d1a63071776891e6dfc7ba6e3063b3940c21274c1225a3e",
+    "NOTICE.teleocr": "5a1c3e65d34b6a9079394eee2fb439d7f0a531bb679ecf88f226d6c450787250",
+    "models/licenses/apache-2.0/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "docs/teleocr-license.md": "c76f1e5519aed9045f49bb19625f83942b6ced779b20b3ec11b0cafd8b3a1d11"
+  },
+  "runner_sha256": "9811dbc17c61fe9c5d3865ed392487338c2424a4996e06387ba5102b6d67708d",
+  "image_sha256": {
+    "table.png": "7087b4508d71b9ac7de17d16342a251ccd6b0db76f22faef6480f4ca9eb7b259",
+    "synthetic-text.png": "54505c242287c7f666bb9fa8953a2f419a16a8b802e79ab0dd09945400703be8",
+    "table.rgb": "1025225e0d5fdebc9f15a12f596cb6b22961280345db399a66fcdb2b99786e8a"
+  },
+  "public_max_tokens": 8,
+  "parser_max_tokens": 1024,
+  "threads": 2,
+  "requested_scope": "public-interfaces",
+  "phases": [
+    {
+      "name": "public",
+      "command": [
+        "/workspace/scratch/960329398638/.teleocr-venv/bin/python",
+        "/workspace/scratch/960329398638/validation/public-f16/source-snapshot/tests/test_teleocr_public.py",
+        "--lib",
+        "/workspace/scratch/960329398638/build-teleocr/libcrispembed.so",
+        "--cli",
+        "/workspace/scratch/960329398638/build-teleocr/crispembed",
+        "--server",
+        "/workspace/scratch/960329398638/build-teleocr/crispembed-server",
+        "--model",
+        "/workspace/scratch/960329398638/teleocr-models/teleocr-f16.gguf",
+        "--image",
+        "/workspace/scratch/960329398638/validation/public-f16/table.png",
+        "--max-tokens",
+        "8",
+        "--threads",
+        "2",
+        "--report",
+        "/workspace/scratch/960329398638/validation/public-f16/public.json"
+      ],
+      "passed": true,
+      "exit_code": 0,
+      "elapsed_seconds": 80.09776801899716
+    },
+    {
+      "name": "multilingual-anchor",
+      "passed": true
+    },
+    {
+      "name": "rust",
+      "command": [
+        "/workspace/scratch/960329398638/teleocr-bindings-check/rust/target/release/teleocr-public-probe",
+        "/workspace/scratch/960329398638/teleocr-models/teleocr-f16.gguf",
+        "/workspace/scratch/960329398638/validation/public-f16/table.rgb",
+        "482",
+        "164",
+        "/workspace/scratch/960329398638/validation/public-f16/table.png",
+        "/workspace/scratch/960329398638/validation/public-f16/anchor.txt",
+        "8"
+      ],
+      "passed": true,
+      "exit_code": 0,
+      "elapsed_seconds": 23.047931267999957
+    },
+    {
+      "name": "dart",
+      "command": [
+        "/workspace/scratch/960329398638/teleocr-bindings-check/dart/teleocr-public-probe",
+        "/workspace/scratch/960329398638/teleocr-models/teleocr-f16.gguf",
+        "/workspace/scratch/960329398638/validation/public-f16/table.rgb",
+        "482",
+        "164",
+        "/workspace/scratch/960329398638/validation/public-f16/table.png",
+        "/workspace/scratch/960329398638/build-teleocr/libcrispembed.so",
+        "/workspace/scratch/960329398638/validation/public-f16/anchor.txt",
+        "8"
+      ],
+      "passed": true,
+      "exit_code": 0,
+      "elapsed_seconds": 22.09217756900034
+    },
+    {
+      "name": "parser",
+      "skipped": "Explicit --skip-parser request"
+    }
+  ],
+  "passed": true,
+  "anchor_text": "表8 出厂检验和型",
+  "anchor_sha256": "3bce3f377e4962144933458880683b745843190007452771ce44e411a3aa3929",
+  "anchor_has_non_ascii": true
+}

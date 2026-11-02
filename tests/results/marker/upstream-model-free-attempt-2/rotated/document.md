@@ -1,0 +1,1 @@
+Rotation preserves this sentence. **Rotated page**

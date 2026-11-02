@@ -1,0 +1,66 @@
+name: Typed Gemma first protected mixed Q4 diagnostic v1
+on:
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: gemma-decision-first-q4-v1
+  cancel-in-progress: false
+jobs:
+  engine:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CMAKE_BUILD_PARALLEL_LEVEL: '2'
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Source-only recipe, input mapping, closure and barrier controls
+        run: python tests/test_gemma_decision_first_q4.py -v
+      - name: Genuine hosted admission and exact engine/build source
+        run: python -I tools/ci-heavy/gemma_decision_first_q4.py preflight --output "$RUNNER_TEMP/gemma-q4"
+      - name: Only locked independent NumPy; no original framework install or import
+        run: |
+          python -m pip install --require-hashes --no-deps -r tools/gemma-decision-q4-v1/requirements.lock
+          python tests/test_gemma_decision_first_q4.py --numeric -v
+      - name: Minimal actual Gemma engine, production C quantizer and model-free renderer
+        run: python -I tools/ci-heavy/gemma_decision_first_q4.py build --output "$RUNNER_TEMP/gemma-q4"
+      - name: Exact five frozen stage references, typed fixtures, notices and complete published F32
+        run: python -I tools/ci-heavy/gemma_decision_first_q4.py prepare --output "$RUNNER_TEMP/gemma-q4"
+      - name: Fail closed on all145 current-source F32 stages and8 typed answers before model quantization
+        run: python -I tools/ci-heavy/gemma_decision_first_q4.py baseline --output "$RUNNER_TEMP/gemma-q4"
+      - name: Actual C type/critical-byte fixtures then both fixed mixed recipes; keep all negatives
+        run: python -I tools/ci-heavy/gemma_decision_first_q4.py candidates --output "$RUNNER_TEMP/gemma-q4"
+      - name: Complete small source, compiler, tensor inventory, numeric and typed reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gemma-decision-first-q4-v1-review-${{ github.run_id }}
+          path: ${{ runner.temp }}/gemma-q4/review/
+          if-no-files-found: warn
+          retention-days: 90
+      - name: Retain native captures, exact frozen references and diagnostic candidates remotely
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gemma-decision-first-q4-v1-raw-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/gemma-q4/raw/
+            ${{ runner.temp }}/gemma-q4/models/
+            ${{ runner.temp }}/gemma-q4/frozen/
+            ${{ runner.temp }}/gemma-q4/build/gemma-q4-probe
+            ${{ runner.temp }}/gemma-q4/build/crispembed-quantize
+            ${{ runner.temp }}/gemma-q4/build/libgemma-audit-engine.a
+          if-no-files-found: warn
+          retention-days: 90

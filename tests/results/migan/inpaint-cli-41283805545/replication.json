@@ -1,0 +1,14 @@
+{
+  "schema": "crispembed-migan-byte-replication-v1",
+  "checkpoint_sha256": "8b82b2e82fc8e5a2e1f06827594aac1a5d66a9ca41e24199ddd969847788097f",
+  "gguf_sha256": "b8fcefc3de7e04f96867b9d15bd84a2cf7e0c444d2925644a7e8b15081809c8b",
+  "gguf_bytes": 25185504,
+  "tensor_count": 154,
+  "all_reviewed_tensor_bytes_exact": true,
+  "original_review_sha256": "ed43228a14627efef8e22fbd7b9e41c95cc7ab5e247a77f789cae6e34533460c",
+  "reference_contract_sha256": "ffbba862956246feb69dd1c118e7db65e2ee788d4a3ba7c8cb7f6986c698fb4b",
+  "source_commit": "2b793c5ece43f4253e32d4afc257120a5deed6f5",
+  "framework_imported": false,
+  "inference_performed": false,
+  "new_quality_or_backend_qualification": false
+}

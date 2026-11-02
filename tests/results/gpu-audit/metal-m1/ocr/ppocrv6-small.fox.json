@@ -1,0 +1,44 @@
+{
+ "cmd": [
+  "crispembed",
+  "-t",
+  "4",
+  "--json",
+  "-m",
+  "/Volumes/backups/code/model-cache-20261101/metal-audit/PP-OCRv6_small_rec-q8-head.gguf",
+  "--ocr-det",
+  "/Volumes/backups/code/model-cache-20261101/metal-audit/PP-OCRv6_small_det-f16.gguf",
+  "--ocr-rec",
+  "/Volumes/backups/code/model-cache-20261101/metal-audit/PP-OCRv6_small_rec-q8-head.gguf",
+  "--ocr",
+  "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/regression/images/fox.png"
+ ],
+ "metal_env": {},
+ "cpu_env": {},
+ "wall_s": {
+  "metal": [
+   1.258,
+   0.336
+  ],
+  "cpu": [
+   0.397,
+   0.365
+  ]
+ },
+ "metal_device_seen": true,
+ "byte_identical": true,
+ "sha256": {
+  "metal": "f42a9cd344f42c22890bbf68e17af2ffdf6046bd8258e177f9e4f499fda796ce",
+  "cpu": "f42a9cd344f42c22890bbf68e17af2ffdf6046bd8258e177f9e4f499fda796ce"
+ },
+ "date": "2026-11-01",
+ "stdout": {
+  "metal": "[{\"text\":\"The quick brown fox jumps\",\"bbox\":[30,38,506,81],\"conf\":0.943},{\"text\":\"over the lazy dog. 12345\",\"bbox\":[28,109,468,150],\"conf\":0.938}]\n",
+  "cpu": "[{\"text\":\"The quick brown fox jumps\",\"bbox\":[30,38,506,81],\"conf\":0.943},{\"text\":\"over the lazy dog. 12345\",\"bbox\":[28,109,468,150],\"conf\":0.938}]\n"
+ },
+ "char_ratio": 1.0,
+ "stderr_tail": {
+  "metal": "r3=2'\nggml_metal_library_compile_pipeline: loaded kernel_mul_mv_f32_f32_short_nsg=1_ne12=384_r2=1_r3=2      0xb4738e700 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32_4', name = 'kernel_unary_f32_f32_4_op=106_cnt=1'\nggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_4_op=106_cnt=1           0xb4738ea00 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mv_f32_f32_short', name = 'kernel_mul_mv_f32_f32_short_nsg=1_ne12=120_r2=1_r3=2'\nggml_metal_library_compile_pipeline: loaded kernel_mul_mv_f32_f32_short_nsg=1_ne12=120_r2=1_r3=2      0xb4738ed00 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_norm_mul_add_f32_4', name = 'kernel_norm_mul_add_f32_4'\nggml_metal_library_compile_pipeline: loaded kernel_norm_mul_add_f32_4                     0xb4738f000 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_f32_f32', name = 'kernel_mul_mm_f32_f32_bci=1_bco=1_ne12=2_ne13=1_r2=2_r3=1'\nggml_metal_library_compile_pipeline: loaded kernel_mul_mm_f32_f32_bci=1_bco=1_ne12=2_ne13=1_r2=2_r3=1      0xb4738f300 | th_max =  896 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32_4', name = 'kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=1_cb=0'\nggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=1_cb=0      0xb4738f600 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mv_f32_f32_short', name = 'kernel_mul_mv_f32_f32_short_nsg=1_ne12=8_r2=1_r3=1'\nggml_metal_library_compile_pipeline: loaded kernel_mul_mv_f32_f32_short_nsg=1_ne12=8_r2=1_r3=1      0xb4738f900 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_soft_max_f32_4', name = 'kernel_soft_max_f32_4'\nggml_metal_library_compile_pipeline: loaded kernel_soft_max_f32_4                         0xb4738fc00 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_f32_f32', name = 'kernel_mul_mm_f32_f32_bci=0_bco=1_ne12=8_ne13=2_r2=1_r3=1'\nggml_metal_library_compile_pipeline: loaded kernel_mul_mm_f32_f32_bci=0_bco=1_ne12=8_ne13=2_r2=1_r3=1      0xb473b4000 | th_max =  832 | th_width =   32\nggml_metal_free: deallocating\n",
+  "cpu": "crispasr_metal_pipeline_cache_open: pipeline cache loaded — /Users/christianstrobele/Library/Caches/ggml-metal/Apple_M1.archive\nggml_metal_device_init: tensor API disabled for pre-M5 and pre-A19 devices\nggml_metal_library_init: using embedded metal library\nggml_metal_library_init: loaded in 0.012 sec\nggml_metal_device_init: GPU name:   MTL0 (Apple M1)\nggml_metal_device_init: GPU family: MTLGPUFamilyApple7  (1007)\nggml_metal_device_init: GPU family: MTLGPUFamilyCommon3 (3003)\nggml_metal_device_init: GPU family: MTLGPUFamilyMetal4  (5002)\nggml_metal_device_init: simdgroup reduction   = true\nggml_metal_device_init: simdgroup matrix mul. = true\nggml_metal_device_init: has unified memory    = true\nggml_metal_device_init: has bfloat            = true\nggml_metal_device_init: has tensor            = false\nggml_metal_device_init: use residency sets    = false\nggml_metal_device_init: use shared buffers    = true\nggml_metal_device_init: recommendedMaxWorkingSetSize  = 12713.12 MB\nppocrv6-det: persistent GGML detector graph ready (CPU, 800x192)\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\nppocrv6: persistent GGML graph ready (CPU, logits, 18710x128x1)\n"
+ }
+}

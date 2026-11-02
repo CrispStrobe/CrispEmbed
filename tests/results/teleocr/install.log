@@ -1,0 +1,42 @@
+-- Install configuration: "Release"
+-- Installing: /workspace/scratch/960329398638/validation/install/lib/libggml-cpu.a
+-- Installing: /workspace/scratch/960329398638/validation/install/lib/libggml.a
+-- Installing: /workspace/scratch/960329398638/validation/install/include/ggml.h
+-- Installing: /workspace/scratch/960329398638/validation/install/include/ggml-cpu.h
+-- Installing: /workspace/scratch/960329398638/validation/install/include/ggml-alloc.h
+-- Installing: /workspace/scratch/960329398638/validation/install/include/ggml-backend.h
+-- Installing: /workspace/scratch/960329398638/validation/install/include/ggml-blas.h
+-- Installing: /workspace/scratch/960329398638/validation/install/include/ggml-cann.h
+-- Installing: /workspace/scratch/960329398638/validation/install/include/ggml-cpp.h
+-- Installing: /workspace/scratch/960329398638/validation/install/include/ggml-cuda.h
+-- Installing: /workspace/scratch/960329398638/validation/install/include/ggml-opt.h
+-- Installing: /workspace/scratch/960329398638/validation/install/include/ggml-metal.h
+-- Installing: /workspace/scratch/960329398638/validation/install/include/ggml-rpc.h
+-- Installing: /workspace/scratch/960329398638/validation/install/include/ggml-virtgpu.h
+-- Installing: /workspace/scratch/960329398638/validation/install/include/ggml-sycl.h
+-- Installing: /workspace/scratch/960329398638/validation/install/include/ggml-vulkan.h
+-- Installing: /workspace/scratch/960329398638/validation/install/include/ggml-webgpu.h
+-- Installing: /workspace/scratch/960329398638/validation/install/include/ggml-zendnn.h
+-- Installing: /workspace/scratch/960329398638/validation/install/include/ggml-openvino.h
+-- Installing: /workspace/scratch/960329398638/validation/install/include/gguf.h
+-- Installing: /workspace/scratch/960329398638/validation/install/lib/libggml-base.a
+-- Installing: /workspace/scratch/960329398638/validation/install/lib/cmake/ggml/ggml-config.cmake
+-- Installing: /workspace/scratch/960329398638/validation/install/lib/cmake/ggml/ggml-version.cmake
+-- Installing: /workspace/scratch/960329398638/validation/install/bin/crispembed
+-- Set non-toolchain portion of runtime path of "validation/install/bin/crispembed" to "$ORIGIN/../lib"
+-- Installing: /workspace/scratch/960329398638/validation/install/bin/crispembed-server
+-- Set non-toolchain portion of runtime path of "validation/install/bin/crispembed-server" to "$ORIGIN/../lib"
+-- Installing: /workspace/scratch/960329398638/validation/install/bin/crispembed-quantize
+-- Set non-toolchain portion of runtime path of "validation/install/bin/crispembed-quantize" to "$ORIGIN/../lib"
+-- Installing: /workspace/scratch/960329398638/validation/install/lib/libcrispembed.so.0.17.14
+-- Installing: /workspace/scratch/960329398638/validation/install/lib/libcrispembed.so.0
+-- Set non-toolchain portion of runtime path of "validation/install/lib/libcrispembed.so.0.17.14" to "$ORIGIN"
+-- Installing: /workspace/scratch/960329398638/validation/install/lib/libcrispembed.so
+-- Installing: /workspace/scratch/960329398638/validation/install/include/crispembed.h
+-- Installing: /workspace/scratch/960329398638/validation/install/include/moedern_text_api.h
+-- Installing: /workspace/scratch/960329398638/validation/install/lib/cmake/crispembed/crispembed-config.cmake
+-- Installing: /workspace/scratch/960329398638/validation/install/lib/cmake/crispembed/crispembed-config-version.cmake
+-- Installing: /workspace/scratch/960329398638/validation/install/share/licenses/crispembed/LICENSE
+-- Installing: /workspace/scratch/960329398638/validation/install/share/licenses/crispembed/NOTICE.teleocr
+-- Installing: /workspace/scratch/960329398638/validation/install/share/licenses/crispembed/Apache-2.0.txt
+-- Installing: /workspace/scratch/960329398638/validation/install/lib/pkgconfig/crispembed.pc

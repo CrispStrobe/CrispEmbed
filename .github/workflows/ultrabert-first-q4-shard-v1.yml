@@ -1,0 +1,119 @@
+name: UltraBERT conservative Q4 conversion then reviewed shard0 v1
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Exact reviewed forty-hex caller source, matching dispatch ref
+        required: true
+        type: string
+      phase:
+        description: Convert first; shard0 stays blocked until model SHA review
+        required: true
+        type: choice
+        options: [model, shard0]
+      resume_artifact:
+        description: Explicit reviewed partial-shard payload ID;0 starts fresh
+        type: string
+        default: '0'
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: ultrabert-first-q4-${{ inputs.phase }}
+  cancel-in-progress: false
+jobs:
+  bounded:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      SOURCE: ${{ inputs.source_ref }}
+      PHASE: ${{ inputs.phase }}
+      RESUME_ARTIFACT: ${{ inputs.resume_artifact }}
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+      MKL_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Closed source and reviewed phase barriers before any payload
+        run: |
+          python tests/test_ultrabert_first_q4_shard.py -v
+          python - <<'PYCODE'
+          import pathlib,sys,os
+          sys.path.insert(0,str(pathlib.Path('tools/portfolio').resolve()))
+          import ultrabert_first_q4_contract as c
+          c.require(os.environ['SOURCE']==os.environ['GITHUB_SHA'],'exact source/service required')
+          cfg=c.verify_source(os.environ['SOURCE']);c.phase_admission(os.environ['PHASE'],cfg)
+          c.legacy.admission(pathlib.Path(os.environ['RUNNER_TEMP'])/'ultra-output')
+          PYCODE
+      - name: Exact frozen runtime and isolated numerical tooling
+        run: |
+          git worktree add --detach "$RUNNER_TEMP/ultra-runtime" 018cf85b7bb6ee2ac98011738aaa289d63b896ac
+          git -C "$RUNNER_TEMP/ultra-runtime" submodule update --init --depth 1 ggml
+          python -m venv "$RUNNER_TEMP/ultra-venv"
+          "$RUNNER_TEMP/ultra-venv/bin/python" -m pip install --only-binary=:all: numpy==2.2.6 gguf==0.17.1 huggingface-hub==0.36.0 safetensors==0.6.2
+          "$RUNNER_TEMP/ultra-venv/bin/python" -m pip check
+      - name: Actual frozen018 root library and Ref; no model forward
+        run: |
+          mkdir -p "$RUNNER_TEMP/ultra-output" "$RUNNER_TEMP/ultra-scratch"
+          cmake -S "$RUNNER_TEMP/ultra-runtime" -B "$RUNNER_TEMP/ultra-build" -DCMAKE_BUILD_TYPE=Release -DCRISPEMBED_BUILD_SHARED=ON -DBUILD_SHARED_LIBS=OFF -DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF -DGGML_LLAMAFILE=ON -DGGML_METAL=OFF -DGGML_CUDA=OFF -DGGML_BLAS=OFF -DCMAKE_EXPORT_COMPILE_COMMANDS=ON > "$RUNNER_TEMP/ultra-output/configure.log" 2>&1
+          cmake --build "$RUNNER_TEMP/ultra-build" --target crispembed-shared crispembed-quantize test-ultrabert-profile --parallel 2 > "$RUNNER_TEMP/ultra-output/build.log" 2>&1
+          "$RUNNER_TEMP/ultra-build/test-ultrabert-profile" > "$RUNNER_TEMP/ultra-output/profile-controls.log" 2>&1
+          c++ -std=c++17 -O2 -ffp-contract=off -I "$RUNNER_TEMP/ultra-runtime/src" "$RUNNER_TEMP/ultra-runtime/tests/moedern-native-v2/diff.cpp" -o "$RUNNER_TEMP/ultra-build/vector-diff" > "$RUNNER_TEMP/ultra-output/comparator-build.log" 2>&1
+          cp "$RUNNER_TEMP/ultra-build/CMakeCache.txt" "$RUNNER_TEMP/ultra-output/"
+          cp "$RUNNER_TEMP/ultra-build/compile_commands.json" "$RUNNER_TEMP/ultra-output/"
+          python - <<'PYCODE'
+          import importlib.util, os, pathlib
+          p=pathlib.Path('tools/portfolio/ultrabert_q4k_sharded.py')
+          s=importlib.util.spec_from_file_location('audit',p);m=importlib.util.module_from_spec(s);s.loader.exec_module(m)
+          temporary=pathlib.Path(os.environ['RUNNER_TEMP']);runtime=temporary/'ultra-runtime'
+          m.source(runtime,os.environ['SOURCE'])
+          m.symbol_audit(runtime,temporary/'ultra-build',temporary/'ultra-output')
+          PYCODE
+      - name: One explicit phase; raw and normalized public calls checkpoint each row
+        run: |
+          # Fresh interpreter sees the EXISTING exact library directory at startup.
+          PYTHON_LIB=$("$RUNNER_TEMP/ultra-venv/bin/python" -c 'import pathlib,sys;print(pathlib.Path(sys.base_prefix)/"lib")')
+          export LD_LIBRARY_PATH="$RUNNER_TEMP/ultra-build:$PYTHON_LIB"
+          "$RUNNER_TEMP/ultra-venv/bin/python" -c 'import ctypes,os,pathlib; p=pathlib.Path(os.environ["RUNNER_TEMP"])/"ultra-build/libcrispembed.so"; lib=ctypes.CDLL(str(p)); assert all(getattr(lib,n) for n in ("crispembed_init","crispembed_free","crispembed_encode","crispembed_encode_tokens_raw","crispembed_last_token_ids")); maps=pathlib.Path("/proc/self/maps").read_text(); paths={line.split()[-1] for line in maps.splitlines() if "libggml" in line or "libcrispembed" in line}; assert paths and all(pathlib.Path(x).resolve().parent==p.parent.resolve() for x in paths)' > "$RUNNER_TEMP/ultra-output/fresh-load.log" 2>&1
+          if [ "$PHASE" = shard0 ]; then
+            export CRISPEMBED_ULTRABERT=1 CRISPEMBED_ULTRABERT_UNICODE_PRETOKEN=1 CRISPEMBED_ULTRABERT_TRUNCATE=1 CRISPEMBED_ULTRABERT_QUANT=1
+          fi
+          "$RUNNER_TEMP/ultra-venv/bin/python" tools/portfolio/ultrabert_first_q4_shard.py "$PHASE" --reviewed-source "$SOURCE" --runtime "$RUNNER_TEMP/ultra-runtime" --out "$RUNNER_TEMP/ultra-output/payload" --scratch "$RUNNER_TEMP/ultra-scratch" --library "$RUNNER_TEMP/ultra-build/libcrispembed.so" --quantizer "$RUNNER_TEMP/ultra-build/crispembed-quantize" --diff "$RUNNER_TEMP/ultra-build/vector-diff" --resume-artifact "$RESUME_ARTIFACT"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ultrabert-first-q4-${{ inputs.phase }}-review-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/ultra-output/*.log
+            ${{ runner.temp }}/ultra-output/*.txt
+            ${{ runner.temp }}/ultra-output/*.json
+            ${{ runner.temp }}/ultra-output/payload/model.json
+            ${{ runner.temp }}/ultra-output/payload/shard.json
+            ${{ runner.temp }}/ultra-output/payload/manifest.json
+          retention-days: 90
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ultrabert-first-q4-${{ inputs.phase }}-payload-${{ github.run_id }}
+          path: ${{ runner.temp }}/ultra-output/payload/
+          retention-days: 90
+          compression-level: 1
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ultrabert-first-q4-${{ inputs.phase }}-binaries-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/ultra-build/libcrispembed.so*
+            ${{ runner.temp }}/ultra-build/crispembed-quantize
+            ${{ runner.temp }}/ultra-build/vector-diff
+          retention-days: 90
+          if-no-files-found: warn

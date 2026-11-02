@@ -1,0 +1,282 @@
+{
+  "schema": "crispembed.oxr.implementation-validation.v1",
+  "date": "2026-10-31",
+  "status": "experimental_source_implementation_component_checked_model_unqualified",
+  "base_commit": "2f4241d389c025c35dbe440b2429a398a30e1600",
+  "upstream_commit": "b8cd2497765f2fd8db0b9c713d952898bdd9b996",
+  "preceding_mineru_commit": "96309c7736db2202618b29834d2136d9745f1db6",
+  "model_revision": "c708407f9d2b4df658f2543d9132b62bb7221df4",
+  "blueprint_revision": "c1a1dcb312ee9f691404f127785510453c0d9350",
+  "ggml_commit": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+  "checks": [
+    {
+      "name": "Combined Python controls",
+      "status": "passed",
+      "command": "PYTHONPATH=<helper-dependencies>:python OXR_BLUEPRINT_PATH=<pinned-OXR-source> python3 -m unittest discover -s tests -p 'test_oxr*.py' -v",
+      "tests": 44,
+      "failures": 0,
+      "skips": 0,
+      "elapsed_seconds": 1.183,
+      "uses_model_weights": false,
+      "groups": [
+        {
+          "name": "Converter and qualification protocol",
+          "tests": 28
+        },
+        {
+          "name": "Native binding with real pinned document helper",
+          "tests": 16,
+          "native_inference": "mocked"
+        }
+      ]
+    },
+    {
+      "name": "Native profile executable",
+      "status": "passed",
+      "checks": 31,
+      "failures": 0,
+      "output": "OXR profile: 31 checks, 0 failures",
+      "compiler": "g++ -std=c++17 -O0 -Wall -Wextra -Werror",
+      "uses_model_weights": false,
+      "fixtures": {
+        "bilinear_resize_cases": 6,
+        "original_smart_resize_cases": 11,
+        "bit_exact_normalized_patch_values": 3072,
+        "gold_producer": "independent Pillow 12.3.0 and NumPy calculations"
+      }
+    },
+    {
+      "name": "C API executable",
+      "status": "passed",
+      "checks": 30,
+      "failures": 0,
+      "output": "OXR public API controls: 30 checks, 0 failures (mock inference)",
+      "compiler": "g++ -std=c++17 -O0 -Wall -Wextra -Werror",
+      "production_source": "src/oxr_api.cpp",
+      "native_model_backend": "mocked",
+      "uses_model_weights": false
+    },
+    {
+      "name": "C++ integration syntax",
+      "status": "passed",
+      "compiler": "g++ -std=c++17 -fsyntax-only",
+      "include_directories": [
+        "src",
+        "ggml/include",
+        "ggml/examples",
+        "examples/cli"
+      ],
+      "translation_units": [
+        {
+          "file": "src/oxr_ocr.cpp",
+          "status": "passed",
+          "linked": false
+        },
+        {
+          "file": "src/oxr_api.cpp",
+          "status": "passed",
+          "linked": false
+        },
+        {
+          "file": "src/crispembed.cpp",
+          "status": "passed",
+          "linked": false
+        },
+        {
+          "file": "src/ocr_orchestrator.cpp",
+          "status": "passed",
+          "linked": false
+        },
+        {
+          "file": "src/qwen2vl_ocr.cpp",
+          "status": "passed",
+          "linked": false
+        },
+        {
+          "file": "examples/cli/main.cpp",
+          "status": "passed",
+          "linked": false
+        },
+        {
+          "file": "examples/server/server.cpp",
+          "status": "passed",
+          "linked": false
+        },
+        {
+          "file": "tests/oxr_run.cpp",
+          "status": "passed",
+          "linked": false
+        },
+        {
+          "file": "tests/oxr_diff.cpp",
+          "status": "passed",
+          "linked": false
+        },
+        {
+          "file": "tests/test_oxr_graph.cpp",
+          "status": "passed",
+          "linked": false
+        },
+        {
+          "file": "tests/test_mineru25_decode_graph.cpp",
+          "status": "passed",
+          "linked": false
+        }
+      ],
+      "linked_or_executed": false
+    },
+    {
+      "name": "CLI engine name coverage",
+      "status": "passed",
+      "command": "python3 tests/test_cli_engine_names.py",
+      "engine_ids": 26
+    },
+    {
+      "name": "OCR generation-cap surface coverage",
+      "status": "passed",
+      "command": "python3 tests/test_ocr_max_tokens_surfaces.py",
+      "vlm_engines": 18,
+      "generic_setter_engines": 13
+    },
+    {
+      "name": "one-shot clean_exit guard",
+      "status": "passed",
+      "command": "bash tools/check_test_clean_exit.sh",
+      "main_functions": 206
+    },
+    {
+      "name": "YAML workflow parse",
+      "status": "passed",
+      "jobs": [
+        "components",
+        "model-smoke"
+      ],
+      "execution": "not_dispatched"
+    },
+    {
+      "name": "C++ formatter",
+      "status": "passed",
+      "version": "18.1.8",
+      "scope": "new C++ files and changed lines in existing C++ files"
+    },
+    {
+      "name": "git diff --check",
+      "status": "passed"
+    },
+    {
+      "name": "Independent documentation/API audit",
+      "status": "passed",
+      "scope": "commands, target names, API contracts, helper options, validation limits and external layout boundary"
+    }
+  ],
+  "review_findings_corrected": [
+    "Wrong generic default recognition prompt replaced with exact source prompt.",
+    "Illegal transposed visual-embedding RHS stride replaced with one persistent contiguous F32 transpose.",
+    "Zero generation cap consistently resets to 2048; excessive explicit caps fail before vision work.",
+    "Valid decoder output IDs beyond tokenizer entries retain generation history and decode empty, as original tokenizer does.",
+    "Implicit GGML F16 tanh-GELU lookup removed from OXR path using an explicit F32 graph.",
+    "Native comparison records actual conversion recipe; primary speed gate requires F32 on both sides.",
+    "Stage comparator requires ordinary/observed native output and confidence neutrality.",
+    "Related MinerU-only QuickGELU F16 lookup replaced by shared explicit F32 arithmetic."
+  ],
+  "scope_limits": {
+    "layout_detector": "Native D-FINE graph and converter are not implemented. Document helpers require supplied regions or an explicitly configured original D-FINE service.",
+    "public_profile": "Original vLLM processor limits and prompt-plus-completion repetition history; resident serial native requests.",
+    "primary_reference_profile": "Original HF model with explicit matching pixel limits and completion-only repetition history, F32 CPU.",
+    "native_gpu": "opt-in, unqualified",
+    "decode_graph_reuse": "opt-in, default off, unqualified",
+    "rust_dart": "source wrappers only, uncompiled",
+    "related_mineru_change": "268-value QuickGELU operator regression is prepared and syntax-checked but has not been linked or run. Existing MinerU receipt describes the preceding source snapshot."
+  },
+  "not_run": [
+    "Complete native library/executable build and link",
+    "Linked OXR GGML operator execution (16 prepared controls)",
+    "Linked MinerU QuickGELU/decode-graph operator execution",
+    "Full 3,068,857,520-byte checkpoint download, authenticated conversion and loading",
+    "66-stage native/original neural-model numerical comparison",
+    "Completion IDs, raw/processed text, EOS and confidence model-backed comparison",
+    "Representative full-document corpus quality (text, table, formula, chemical, reading order)",
+    "Same-host F32 Python/native latency or throughput measurement",
+    "Decode graph reuse model-backed A/B and measured speedup",
+    "GPU or cross-platform native execution",
+    "Mixed-F16 recipe full conversion, quality and speed qualification",
+    "Rust compilation and Dart analysis/runtime",
+    "Original vLLM BF16 quality and batched throughput comparison",
+    "Native D-FINE graph and converter",
+    "Q8/Q4 recipes and qualification",
+    "Hosted workflow dispatch",
+    "GitHub push, pull request, merge or release publication"
+  ],
+  "qualification": {
+    "source_implementation": true,
+    "component_checks": true,
+    "complete_native_build": false,
+    "model_numerical_parity": false,
+    "representative_quality_parity": false,
+    "same_precision_speed_parity": false,
+    "vllm_throughput_parity": false,
+    "native_layout_detector": false,
+    "production_ready": false
+  },
+  "source_sha256": {
+    ".github/workflows/oxr.yml": "5cfb700b738547ecec0f6faaea5b4e9665fbcfd4f3f33410000614d9982966de",
+    "CMakeLists.txt": "8b3b4bf7998668145a5c75775184a68e7a937af0b973f13b9f3cd3dfc12309b5",
+    "HISTORY.md": "41b655d8fbbab106973af7fbb7b1a8c2093cddaf5acd2b74fff58ce52f8ba862",
+    "PERFORMANCE.md": "aee19cd77c137ac62289dacc79bcd69117e6caed7d1634d4095cb62095a0ea1b",
+    "PLAN.md": "2cdb1781fdeabe5efa1ffe7c6a4040dcd48f96ab0ce06bcfc605b3dc0cc00a95",
+    "README.md": "0ac4d96c463e328648d73b9f59955ce8e2212b78e20af8579b2ff8b806e3498c",
+    "crispembed-sys/src/lib.rs": "059eae243fff653c2528b8448e7e1ee6904dc6783f6da4fc410ffcbaef61c6bb",
+    "crispembed/src/lib.rs": "8f8f30812d1798573bea9e9a7b6e08928fd0708f7aca735a64d5ee860be995cd",
+    "crispembed/src/oxr.rs": "df2ceef81f7dca5989608b33d95a5f0b563995c6f086544e161a2716d6de2bde",
+    "docs/mineru25-pro.md": "c26f325b2fb9759bcf00c2eb24b762903e99cd89a82cc7c75d530e8d01ce2713",
+    "docs/oxr.md": "672fcc9a597dd9601271bff650c7d03b77fd88efc26847a9da6c06a44d338fe5",
+    "examples/cli/main.cpp": "91152bbcd5364a306117be16c11975c66e60a06dbfa3c7c7ac9331db82bb3a3f",
+    "examples/server/server.cpp": "e0160106cb89c9949a373f5c6c1b2ed59a0ec387797797582fd5e3fadc604383",
+    "flutter/crispembed/lib/crispembed.dart": "4f7b5172fcfde326f93190564b3314a571d62710f82dd61d83f6e6144c539d7c",
+    "flutter/crispembed/lib/src/crispembed_bindings.dart": "63144f8ff15b84d6ba2f7761f7d3a616a8360586ebc1792feed2f1ae4ac1c9b6",
+    "flutter/crispembed/lib/src/oxr.dart": "1e44b624332e666b0c7794045d005dc66fb63550281e0fbff4de2ce73bf3b7f1",
+    "licenses/oxr-APACHE-2.0": "0b0c9cbb9e9f032856deef12e761c0661f14fdbaf88753bb1e1c68d1f7e5a3da",
+    "licenses/oxr-LICENSE": "4577df88e499926976b390c4ea3992cc91baa9ebac29386f35b557bd3cb4a662",
+    "licenses/oxr-NOTICE": "34720c2d4f57ccd47509d22d27b38ba2cff9c04df0e0ab594020b1b73db192ac",
+    "models/convert-oxr-to-gguf.py": "90ccbd5443bccc3c5569a776238a6b4da07b1bf880ed660a56cb49f89dafa053",
+    "models/oxr-source.json": "4804eb1ca86eeb9b6cd93f6c0c61d5a8024e69da63e6a21b252e7b1c1ff2ab63",
+    "python/crispembed/__init__.py": "8b25ca7ba060626087aa4bf36fe28e862819cebf769da3daf5a1e4d060e0ef6d",
+    "python/crispembed/_oxr.py": "52da3255605d05794341ed9990c380494b14bb5fa4b7317a4f4e19650136e52b",
+    "src/crispembed.cpp": "c2340de2c6b993a73e24db51d10021fac95b04f9dd0f93aae8b73b1fb5f05920",
+    "src/crispembed.h": "7af2885b5bd6395b7787b26ddc5928707b85703753de1906ccb486b516905257",
+    "src/mineru_graph_ops.h": "170b0ab5910f1ed13e5fa61bd720227e9a87725279e0633e92b1453d83a7a56b",
+    "src/ocr_orchestrator.cpp": "e934adda92558bba7731a7f33d11640d6e9ce140bddd1cf2c5411aeec068fa3a",
+    "src/ocr_orchestrator.h": "47ec266ead0525a1d0e3634399b74c27d0a5c1d364435edd99b16ce0dddcdb0d",
+    "src/oxr_api.cpp": "e45664b241e74e81911413637f983587278c63939b9a03e956695b7e5de62ed1",
+    "src/oxr_graph_ops.h": "530070f9cc50c59a2916dc5fbab728ccb290f483406aef04cfd9e23076185fe7",
+    "src/oxr_model_profile.h": "8c76185d5bf0a4daacf9b8053261a2db927d4b46aa9d2942fe363f6bc358760f",
+    "src/oxr_ocr.cpp": "41869ef154324845c48ae83a1f8ebd9006ae3a54e2b7b045a531c6895a2bc474",
+    "src/oxr_ocr.h": "309a2c9b2aed8026ff8aa412c56c4ef6cdf4fbae670a1fd5269520a5c31128d9",
+    "src/qwen2vl_ocr.cpp": "26b71945af6488c65f0128a72cd1838fa270a7f0cc25686b505f864672fd6d85",
+    "tests/fixtures/oxr/SOURCE.md": "a0d6dedff24065a79af8d9bc64d5430a0144f19f65041253c228cc13b650ff4e",
+    "tests/fixtures/oxr/chat_template.jinja": "8d6f5059459a1d4d91da3c9e7d17cb19d4544eaa2dc0c07a10b61be3c918e970",
+    "tests/fixtures/oxr/config.json": "758481181d106aef0a0a22c6059f2ab2a224ec1cba2b2c8d8255cb3ce99a0b24",
+    "tests/fixtures/oxr/generation_config.json": "ce3df60200308da1ed68ac498048baca9464e38b020b64761548cb3973d65948",
+    "tests/fixtures/oxr/preprocess_gold.h": "33ea05ce3d7887d0abdb4845ec54b6e569d72757dd24fb74f5fc582744a351f5",
+    "tests/fixtures/oxr/preprocessor_config.json": "63ff380d3e424f93e6fbca5cc8e74eeed882e96fd6be2b7728aed308f3ad1513",
+    "tests/fixtures/oxr/safetensors-header.json": "03c75e03ae75bbb5673304fb0bfd602d00effda0c03f83e908627dd65c001362",
+    "tests/fixtures/oxr/tokenizer-cases.json": "8179f51fb6077eff7ec9e88ba6eaea84a6d6c21dc397e714e2f62496ef94f61b",
+    "tests/fixtures/oxr/tokenizer_config.json": "0e18563d7a30d4d8f8c344410fb256f0c4de7b66146872e5afb01caf7b767372",
+    "tests/gen_oxr_profile_fixtures.py": "85caf64594724afddde3b9ebb18214424719072eb929933f7498eb1c269d5fa3",
+    "tests/oxr_diff.cpp": "6299596b98a7e8ddc18ed6d95395c013aa78fa9987c3d4b0f873fa613508c330",
+    "tests/oxr_run.cpp": "4623cc689173bfcc896c2fe5f16a24655b68d93b37d97cb0eaf7d96679fe8ca7",
+    "tests/oxr_test_common.h": "b614822aebe45bd2362ab5f97825bc026030fdcd04cc94d65d9d1648c65c5941",
+    "tests/test_mineru25_decode_graph.cpp": "e344b0176eae7e789e044a11e8bd54fc008b8c811e15b87b44a73b2a606cb306",
+    "tests/test_ocr_max_tokens_surfaces.py": "10a62bdc07af3e669bbad72cffe0867d577fffcc4076d7f7cf08f1079775bf89",
+    "tests/test_oxr_api.cpp": "bba20d8ac8e0eb5236f947e8590d5727c495ebce4a92b8a5676ff2a123d4d3c4",
+    "tests/test_oxr_binding.py": "4bae57864fe270a5d8973354963eca140eb46ddaa1770b1839f85c7cdaff4aeb",
+    "tests/test_oxr_conversion.py": "4c12dea723eee72281c8a7fd3b0fabae06963d65d4deb9bc1aabc76883dd4091",
+    "tests/test_oxr_graph.cpp": "e573510e6a8e0da87a723ec084ebcc9025d242fb259f78d0efec5dd97c801a41",
+    "tests/test_oxr_profile.cpp": "e202bf6c8ac13c40a0f383590eae7e8079d1ef7a257d8ce1eca9f11b1e0d2926",
+    "tools/oxr-blueprint-requirements.txt": "354530b9746b431279551cd8079c86d5410fd65adbc4a7c8ad8a1236df45b0ec",
+    "tools/oxr-conversion-requirements.txt": "97818bfaaae62f6c57775dec8dc77dbf8a95c0f038bceb60281ff2c88f457b4a",
+    "tools/oxr-reference-requirements.txt": "6f671d142b9f8562fbb9007bc3368e6da4771bc359ee86e8e6f7012d8273b63f",
+    "tools/oxr_validate.py": "511f4c1e979429e77a2e914799fa34d645a7cddb48bfa43aeb7f46e0a0e8e110"
+  },
+  "source_hash_scope": "All changed implementation files relative to base_commit, excluding this receipt to avoid a self-hash cycle. Archive-level manifest identifies the final commit and every delivered source file."
+}

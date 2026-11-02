@@ -1,0 +1,16 @@
+
+crispembed-server: listening on 127.0.0.1:54341
+  POST /ocr/marker      — {"file": "doc.pdf", "format": "json"}
+  POST /table/parse     — {"image": "table.png"} → {"html": "<table>..."}
+  POST /scan/cleanup    — {"image": "scan.png"} (deskew, crop, whiten)
+  POST /pdf/dpi              — {"file": "..."} (PDF DPI profiling)
+  POST /preprocess/skew      — {"image": "..."} (find skew angle)
+  POST /preprocess/orientation — {"image": "..."} (four-way orientation advisory)
+  POST /preprocess/dewarp    — {"image": "..."} (straighten curved text)
+  POST /preprocess/tps-dewarp — {"image": "...", "model": "tps-loc.gguf"}
+  POST /preprocess/cc-detect — {"image": "..."} (model-free line detection)
+  POST /render/ocr           — {"results": [...], "format": "hocr|alto|pdf"}
+  POST /ocr/document         — multi-page OCR → searchable PDF/hOCR/text (upload or paths)
+  GET  /health
+
+crispembed-server: rejected 'file' path outside --image-root (/workspace/scratch/960329398638/CrispEmbed-Marker/tests/fixtures/marker): /workspace/scratch/960329398638/CrispEmbed-Marker/LICENSE

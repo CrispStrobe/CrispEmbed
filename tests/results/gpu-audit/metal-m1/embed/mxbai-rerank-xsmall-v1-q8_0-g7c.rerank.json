@@ -1,0 +1,57 @@
+{
+ "model": "mxbai-rerank-xsmall-v1-q8_0-g7c.gguf",
+ "mode": "rerank",
+ "texts": "embed_texts.txt",
+ "threads": 4,
+ "env": {},
+ "wall_s": {
+  "metal": [
+   9.47,
+   13.416
+  ],
+  "cpu": [
+   14.866,
+   16.159
+  ]
+ },
+ "rows": [
+  {
+   "scores_metal": [
+    -4.222184,
+    -4.616219,
+    -4.473675,
+    -3.404872,
+    -3.904615,
+    -3.260977,
+    -3.739591,
+    -3.64492,
+    -4.370549,
+    -3.646223,
+    -4.024133,
+    5.56915
+   ],
+   "scores_cpu": [
+    -4.222907,
+    -4.634232,
+    -4.49101,
+    -3.377519,
+    -3.910756,
+    -3.274745,
+    -3.743618,
+    -3.6448,
+    -4.38027,
+    -3.652379,
+    -4.016136,
+    5.564139
+   ],
+   "max_abs": 0.027353000000000183,
+   "same_order": true
+  }
+ ],
+ "stderr_tail": {
+  "metal": "th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mv_f32_f32_4', name = 'kernel_mul_mv_f32_f32_4_nsg=1_ne12=6_r2=1_r3=1'\nggml_metal_library_compile_pipeline: loaded kernel_mul_mv_f32_f32_4_nsg=1_ne12=6_r2=1_r3=1      0xb5a1df900 | th_max =  768 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mv_f32_f32_4', name = 'kernel_mul_mv_f32_f32_4_nsg=1_ne12=1356_r2=1_r3=1'\nggml_metal_library_compile_pipeline: loaded kernel_mul_mv_f32_f32_4_nsg=1_ne12=1356_r2=1_r3=1      0xb5a1dfc00 | th_max =  768 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32', name = 'kernel_unary_f32_f32_op=10_cnt=0'\nggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_op=10_cnt=0              0xb5a230000 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_f32_f32', name = 'kernel_mul_mm_f32_f32_bci=1_bco=1_ne12=6_ne13=1_r2=1_r3=1'\nggml_metal_library_compile_pipeline: loaded kernel_mul_mm_f32_f32_bci=1_bco=1_ne12=6_ne13=1_r2=1_r3=1      0xb5a230300 | th_max =  896 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mv_f32_f32_4', name = 'kernel_mul_mv_f32_f32_4_nsg=1_ne12=3060_r2=1_r3=1'\nggml_metal_library_compile_pipeline: loaded kernel_mul_mv_f32_f32_4_nsg=1_ne12=3060_r2=1_r3=1      0xb5a230600 | th_max =  768 | th_width =   32\nggml_metal_free: deallocating\n",
+  "cpu": "crispembed: using SentencePiece tokenizer (128100 tokens, 128100 scores)\ncrispasr_init_gpu_backend: --gpu-backend cpu \u2014 using the CPU backend, no GPU device initialised\ncrispembed: using CPU backend (4 threads)\ncrispembed: DeBERTa disentangled relative-position attention\ncrispembed: classifier head loaded (reranker=1-layer, act=tanh)\ncrispembed: loaded 12 layers, 384 dims, 128100 vocab\n"
+ },
+ "date": "2026-11-01",
+ "max_abs": 0.027353000000000183
+}
