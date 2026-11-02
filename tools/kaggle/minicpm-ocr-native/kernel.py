@@ -14,7 +14,7 @@ MAX_NEW = int(os.environ.get('MINICPM_MAX_NEW_TOKENS', '1024'))
 # Optional extra runtime env for every native run (JSON object), e.g. the default-off
 # speed gates; substitute @ENV@ in a scratch copy. Unsubstituted = the plain runtime.
 _ENV_RAW = os.environ.get('MINICPM_NATIVE_ENV', '@ENV@')
-EXTRA_ENV = {} if _ENV_RAW == '@ENV@' else json.loads(_ENV_RAW)
+EXTRA_ENV = {} if _ENV_RAW == '@' + 'ENV@' else json.loads(_ENV_RAW)
 
 
 def sh(*a, **k):
