@@ -279,7 +279,7 @@ static void wmsa_forward(const float * x_chw, int C, int H, int W, const float *
             }
         }
     };
-    static const bool wmsa_scalar = (std::getenv("SCUNET_WMSA_SCALAR") != nullptr);
+    static const bool wmsa_scalar = core_env::on("SCUNET_WMSA_SCALAR");
     int n_thr = wmsa_scalar ? 1 : std::min(g_wmsa_threads, nW);
     if (n_thr <= 1) {
         for (int wi = 0; wi < nW; wi++) run_window(wi, scratch);

@@ -89,7 +89,7 @@ bool load(context ** out, const char * model_path, int n_threads) {
     // purely to pull the GGUF -- the same waste CRISPEMBED_TESSERACT_GPU_LOAD
     // was added to remove. BERT_NER_GPU_LOAD=1 restores it for bisection.
     const bool force_cpu = (getenv("BERT_NER_FORCE_CPU") && atoi(getenv("BERT_NER_FORCE_CPU")));
-    const bool gpu_load = getenv("BERT_NER_GPU_LOAD") != nullptr && !force_cpu;
+    const bool gpu_load = core_env::on("BERT_NER_GPU_LOAD") && !force_cpu;
     ggml_backend_t cls_backend = gpu_load ? crispasr_init_gpu_backend() : ggml_backend_cpu_init();
     if (!cls_backend) cls_backend = ggml_backend_cpu_init();
     if (ggml_backend_is_cpu(cls_backend)) ggml_backend_cpu_set_n_threads(cls_backend, n_threads);

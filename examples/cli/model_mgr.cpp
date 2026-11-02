@@ -1878,7 +1878,8 @@ static const ModelEntry k_registry[] = {
     // layout; the loader falls back to per-expert for older GGUFs. Distinct cache
     // filename so an existing per-expert cache re-downloads the stacked file.
     { "unlimited-ocr", "unlimited-ocr-q4_k-stacked.gguf",
-      "https://huggingface.co/cstr/unlimited-ocr-crispembed-GGUF/resolve/main/unlimited-ocr-q4_k-stacked.gguf",
+      "https://huggingface.co/cstr/unlimited-ocr-crispembed-GGUF/resolve/79d6658f26712df9479a77d0f0a5aaf8f807b6b5/"
+      "unlimited-ocr-q4_k-stacked.gguf",
       "Unlimited-OCR (SAM + CLIP + MoE decoder, 3.3B, full-page OCR; stacked experts)", "2.1 GB", "mit",
       "https://huggingface.co/cstr/unlimited-ocr-crispembed-GGUF" },
 

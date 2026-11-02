@@ -8,23 +8,29 @@ checked in CI by [`tests/test_env_vars_documented.py`](../tests/test_env_vars_do
 which fails when a `CRISPEMBED_*` variable read by code is missing from this file
 or when the generated block is stale.
 
-Adding a variable: read it through `core_env::on()` (default-off gate) or
-`core_env::explicitly_off()` (default-on gate with `=0` opt-out) from
+Adding a variable: read it through `core_env::on()` (default-off gate),
+`core_env::explicitly_off()` (default-on gate with `=0` opt-out) or
+`core_env::value()` (path/int/string; empty counts as unset) from
 `src/core/env_gate.h`, add a sentence to the matching curated section if users
 need it, then run `python tools/list_env_vars.py --write`. See the
 [contribution checklist](contributing.md).
 
 ## Semantics
 
-| Kind | Reader | Unset | `=0` | Any other non-empty value |
-|---|---|---|---|---|
-| `on` | `core_env::on` | off | off | on |
-| `off` | `core_env::explicitly_off` | **on** (default) | off | on |
-| `presence` | raw `getenv(X)` truth test | off | **on** (legacy defect class) | on |
-| `value` | getenv + parse | built-in default | parsed | parsed |
+| Kind | Reader | Unset | `=` (empty) | `=0` / `false` / `off` / `no` | Any other non-empty value |
+|---|---|---|---|---|---|
+| `on` | `core_env::on` | off | off | off | on |
+| `off` | `core_env::explicitly_off` | **on** (default) | on (default) | off | on |
+| `value` | `core_env::value` / getenv + parse | built-in default | built-in default (`core_env::value`) | parsed | parsed |
 
-`presence` reads predate `core_env`; unset them to disable rather than setting
-`0`. Converting them is tracked in [PLAN.md](../PLAN.md). Status values in the
+The off-words are matched exactly and ASCII-case-insensitively (`FALSE`, `Off`);
+`00` or `0 ` are not off-words. Raw presence truth tests (`getenv(X) != nullptr`,
+`if (getenv(X))`, `!getenv(X)`), for which `X=0` meant *on*, were all converted
+on 2 November 2026 (131 variables; defaults unchanged, only explicit
+`=0`/`false`/`off`/empty changed meaning). `tests/test_env_vars_documented.py`
+fails on any new one (`python tools/list_env_vars.py --presence` lists them);
+deliberate exceptions go in its `PRESENCE_ALLOWLIST` with a reason.
+Status values in the
 inventory: *production default (opt-out)*, *default-off experimental / opt-in*,
 *debug* (dumps, timing, bench, trace output), *tuning / config* (value knobs) and
 *internal* (written by the CLI/orchestrator, not a user knob).
@@ -34,7 +40,7 @@ inventory: *production default (opt-out)*, *default-off experimental / opt-in*,
 | Variable | Default | Meaning |
 |---|---|---|
 | `CRISPEMBED_FORCE_CPU` | unset | Force the CPU backend for the main embedding context (also honoured by GLiNER). |
-| `CRISPEMBED_SHARED_GPU_BACKEND` | unset (presence) | Share one GPU backend between contexts. |
+| `CRISPEMBED_SHARED_GPU_BACKEND` | off | Share one GPU backend between contexts. |
 | `CRISPEMBED_GPU_PREF_CPU_LEGACY` | unset | Restore the legacy CPU-preference rule for GPU backend selection. |
 | `CRISPEMBED_METAL_RESIDENCY`, `CRISPEMBED_METAL_PIPELINE_CACHE_MAX_MB` | unset | Metal residency-set and pipeline-cache tuning. |
 | `CRISPEMBED_CONV2D_GEMM`, `CRISPEMBED_CONV2D_MK`, `CRISPEMBED_CONV2D_THREADS`, `CRISPEMBED_CONV1X1_FAST`, `CRISPEMBED_CONVDW_FAST` | unset | Shared CPU convolution kernels (`src/core/cpu_ops.h`): GEMM path, micro-kernel, thread count. |
@@ -108,6 +114,9 @@ See [the inference spec](unlimited-ocr2-inference-spec.md).
 
 ### MiniCPM-OCR (`minicpm-ocr`, `minicpm-ocr-q8`; orchestrator engine 23)
 
+`--ocr-engine minicpm-ocr` without a model resolves the published `minicpm-ocr`
+alias in both the CLI and the HTTP server; both gates below are still required.
+
 | Variable | Default | Meaning |
 |---|---|---|
 | `CRISPEMBED_MINICPM_OCR` | off | **Required** engine gate. |
@@ -163,14 +172,14 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-398 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (any value incl. `0` enables; unset it to disable), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+399 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0`/`false`/`off`/`no` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_ACCEPT_BIOMETRIC` | value | unset | string | tuning / config | `examples/cli/model_mgr.cpp`, `examples/face_verify.py`, `src/crispembed.cpp` |  |
-| `CRISPEMBED_ACCEPT_LICENSE` | value | unset | presence/value | tuning / config | `examples/cli/model_mgr.cpp` |  |
+| `CRISPEMBED_ACCEPT_LICENSE` | value | unset | value | tuning / config | `examples/cli/model_mgr.cpp` |  |
 | `CRISPEMBED_ALLOW_UNPINNED_MODEL` | value | unset | path | tuning / config | `examples/cli/model_mgr.cpp` |  |
 | `CRISPEMBED_CACHE_DIR` | set/value | unset | path | tuning / config | `examples/cli/main.cpp`, `examples/cli/model_mgr.cpp` | else |
 | `CRISPEMBED_LAYOUT_REPEAT` | value | unset | int | tuning / config | `examples/cli/main.cpp` |  |
@@ -178,7 +187,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `CRISPEMBED_MODEL` | value | unset | path | tuning / config | `examples/demo/demo.py`, `examples/demo/demo.rs` |  |
 | `CRISPEMBED_OFFLINE` | on | off | bool | default-off experimental / opt-in | `examples/cli/model_mgr.cpp` |  |
 | `CRISPEMBED_ONESHOT_CPU` | value | unset | string | tuning / config | `examples/cli/main.cpp` | coordinator's — a default flip should come with a size/thread rule, not a blanket switch. |
-| `CRISPEMBED_PPOCRV6_ONESHOT_GPU` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `examples/cli/main.cpp` |  |
+| `CRISPEMBED_PPOCRV6_ONESHOT_GPU` | on | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp` |  |
 | `CRISPEMBED_SERVER_RERANK_RAW_SCORES` | on | off | bool | default-off experimental / opt-in | `examples/server/server.cpp` | Read once: a per-request getenv in a served path is pointless work. |
 
 ### Rust bindings
@@ -231,7 +240,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_CLIP_TEXT_BENCH` | on | off | bool | debug | `src/clip_text_embed.cpp` |  |
 | `CRISPEMBED_CLIP_TEXT_KEEP_EOS` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/clip_text_embed.cpp` |  |
-| `CRISPEMBED_IMATRIX_OUT` | presence/value | off (any value, even `0`, = on) | path | tuning / config | `src/clip_text_embed.cpp`, `src/gliner_ner.cpp`, `src/imatrix.cpp` | When calibrating an imatrix, build a scheduler so the collector can hook the per-node eval callback (the fast gallocr path below has no such hook). |
+| `CRISPEMBED_IMATRIX_OUT` | value | unset | path | tuning / config | `src/clip_text_embed.cpp`, `src/gliner_ner.cpp`, `src/imatrix.cpp` | When calibrating an imatrix, build a scheduler so the collector can hook the per-node eval callback (the fast gallocr path below has no such hook). |
 
 ### cnn_embed
 
@@ -243,43 +252,44 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_ARCH_HPARAMS` | value | unset | presence/value | tuning / config | `src/core/hparam_keys.h` |  |
-| `CRISPEMBED_BPE_LEGACY_WHITESPACE` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/core/bpe.h`, `src/qwen2vl_ocr.cpp`, `src/tokenizer_bpe.cpp` | prompt, while newline-free text is unaffected (1.000000). CRISPEMBED_BPE_LEGACY_WHITESPACE=1 restores the old behavior. |
-| `CRISPEMBED_C2PA_CERT` | presence/value | off (any value, even `0`, = on) | presence/value | tuning / config | `src/core/image_out.cpp`, `src/core/image_out.h` |  |
-| `CRISPEMBED_C2PA_KEY` | presence/value | off (any value, even `0`, = on) | presence/value | tuning / config | `src/core/image_out.cpp`, `src/core/image_out.h` |  |
-| `CRISPEMBED_CONV1X1_FAST` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/core/cpu_ops.h` |  |
-| `CRISPEMBED_CONV2D_GEMM` | value | unset | presence/value | tuning / config | `src/core/cpu_ops.h` |  |
-| `CRISPEMBED_CONV2D_MK` | value | unset | presence/value | tuning / config | `src/core/cpu_ops.h` | consume (task 3 / R6 follow-on; NOT bitwise vs the reference — its acceptance is per-engine decoded output) and implies the GEMM path. |
-| `CRISPEMBED_CONV2D_THREADS` | value | unset | presence/value | tuning / config | `src/core/cpu_ops.h` |  |
-| `CRISPEMBED_CONVDW_FAST` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/core/cpu_ops.h` |  |
+| `CRISPEMBED_ARCH_HPARAMS` | value | unset | value | tuning / config | `src/core/hparam_keys.h` |  |
+| `CRISPEMBED_BPE_LEGACY_WHITESPACE` | on | off | bool | default-off experimental / opt-in | `src/core/bpe.h`, `src/qwen2vl_ocr.cpp`, `src/tokenizer_bpe.cpp` | prompt, while newline-free text is unaffected (1.000000). CRISPEMBED_BPE_LEGACY_WHITESPACE=1 restores the old behavior. |
+| `CRISPEMBED_C2PA_CERT` | value | unset | value | tuning / config | `src/core/image_out.cpp`, `src/core/image_out.h` |  |
+| `CRISPEMBED_C2PA_KEY` | value | unset | value | tuning / config | `src/core/image_out.cpp`, `src/core/image_out.h` |  |
+| `CRISPEMBED_CONV1X1_FAST` | on | off | bool | default-off experimental / opt-in | `src/core/cpu_ops.h` |  |
+| `CRISPEMBED_CONV2D_GEMM` | value | unset | value | tuning / config | `src/core/cpu_ops.h` |  |
+| `CRISPEMBED_CONV2D_MK` | value | unset | value | tuning / config | `src/core/cpu_ops.h` | consume (task 3 / R6 follow-on; NOT bitwise vs the reference — its acceptance is per-engine decoded output) and implies the GEMM path. |
+| `CRISPEMBED_CONV2D_THREADS` | value | unset | value | tuning / config | `src/core/cpu_ops.h` |  |
+| `CRISPEMBED_CONVDW_FAST` | on | off | bool | default-off experimental / opt-in | `src/core/cpu_ops.h` |  |
 | `CRISPEMBED_CRISPEMBED_BENCH` | on | off | bool | debug | `src/crispembed.cpp` |  |
 | `CRISPEMBED_DEBUG_ENCODE` | value | unset | string | debug | `src/crispembed.cpp` |  |
 | `CRISPEMBED_DEBUG_TOKENS` | value | unset | string | debug | `src/crispembed.cpp` | Used by tests/parity_layers_bert.py to diff against an HF tokenizer without exposing a tokenize-only public API. |
-| `CRISPEMBED_DECODER_PREFIX_CACHE` | value | unset | presence/value | tuning / config | `src/crispembed.cpp` |  |
-| `CRISPEMBED_DOT_WIDE` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/core/cpu_ops.h` | times per page. This is initialised once before main and reads as a plain load, so the branch is perfectly predicted. |
-| `CRISPEMBED_EMBED_RAW_NORM` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/crispembed.cpp` | uniform scale error is invisible to cosine parity. Print it on request — same lever as CRISPEMBED_DECODER_EMBED_RAW_NORM on the decoder path. |
+| `CRISPEMBED_DECODER_PREFIX_CACHE` | value | unset | value | tuning / config | `src/crispembed.cpp` |  |
+| `CRISPEMBED_DOT_WIDE` | on | off | bool | default-off experimental / opt-in | `src/core/cpu_ops.h` | times per page. This is initialised once before main and reads as a plain load, so the branch is perfectly predicted. |
+| `CRISPEMBED_EMBED_RAW_NORM` | on | off | bool | default-off experimental / opt-in | `src/crispembed.cpp` | uniform scale error is invisible to cosine parity. Print it on request — same lever as CRISPEMBED_DECODER_EMBED_RAW_NORM on the decoder path. |
 | `CRISPEMBED_ENCODER_4D` | value | unset | string | tuning / config | `src/crispembed.cpp` |  |
 | `CRISPEMBED_ENCODER_4D_GROUP` | value | unset | int | tuning / config | `src/crispembed.cpp` |  |
 | `CRISPEMBED_ENCODER_NO_SWA` | value | unset | string | tuning / config | `src/crispembed.cpp` |  |
 | `CRISPEMBED_ENCODER_PACKED` | value | unset | string | tuning / config | `src/crispembed.cpp` |  |
 | `CRISPEMBED_ENCODER_PACK_MAXTOK` | value | unset | int | tuning / config | `src/crispembed.cpp` |  |
+| `CRISPEMBED_FOO_REF` | value | unset | path | tuning / config | `src/core/env_gate.h` | if (const char * ref = core_env::value("CRISPEMBED_FOO_REF")) { ... } |
 | `CRISPEMBED_GGUF_REPARSE` | value | unset | string | tuning / config | `src/crispembed.cpp` |  |
-| `CRISPEMBED_GPU_PREF_CPU_LEGACY` | value | unset | presence/value | tuning / config | `src/core/gpu_backend_pref.h` |  |
+| `CRISPEMBED_GPU_PREF_CPU_LEGACY` | value | unset | value | tuning / config | `src/core/gpu_backend_pref.h` |  |
 | `CRISPEMBED_IMAGE_FORMAT` | value | unset | string | tuning / config | `src/core/image_out.h` |  |
 | `CRISPEMBED_INIT_BENCH` | on | off | bool | debug | `src/core/init_bench.h` | Shared value-parsed semantics (set and not "0" => on); see core/env_gate.h. |
 | `CRISPEMBED_MARK_GENERATED` | value | unset | string | tuning / config | `src/core/provenance.h` |  |
-| `CRISPEMBED_METAL_PIPELINE_CACHE_MAX_MB` | value | unset | presence/value | tuning / config | `src/core/metal_pipeline_cache_policy.h` |  |
-| `CRISPEMBED_METAL_RESIDENCY` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/core/gguf_loader.cpp` |  |
-| `CRISPEMBED_MOE_NO_REPEAT` | value | unset | presence/value | tuning / config | `src/crispembed.cpp` |  |
-| `CRISPEMBED_OCR_POOL_SIZE` | value | unset | presence/value | tuning / config | `src/crispembed.cpp` |  |
-| `CRISPEMBED_RAM_GUARD` | value | unset | presence/value | tuning / config | `src/core/ram_guard.h` |  |
+| `CRISPEMBED_METAL_PIPELINE_CACHE_MAX_MB` | value | unset | value | tuning / config | `src/core/metal_pipeline_cache_policy.h` |  |
+| `CRISPEMBED_METAL_RESIDENCY` | on | off | bool | default-off experimental / opt-in | `src/core/gguf_loader.cpp` |  |
+| `CRISPEMBED_MOE_NO_REPEAT` | value | unset | value | tuning / config | `src/crispembed.cpp` |  |
+| `CRISPEMBED_OCR_POOL_SIZE` | value | unset | value | tuning / config | `src/crispembed.cpp` |  |
+| `CRISPEMBED_RAM_GUARD` | value | unset | value | tuning / config | `src/core/ram_guard.h` |  |
 | `CRISPEMBED_RAM_GUARD_AVAILABLE_MB` | value | unset | int | tuning / config | `src/core/ram_guard.h` |  |
 | `CRISPEMBED_RERANK_POOLER_GELU_ERF` | value | unset | string | tuning / config | `src/crispembed.cpp` |  |
-| `CRISPEMBED_SERVER_LEGACY_JSON` | value | unset | presence/value | tuning / config | `src/core/json.h` |  |
-| `CRISPEMBED_SHARED_GPU_BACKEND` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/core/gpu_backend_pref.h` |  |
+| `CRISPEMBED_SERVER_LEGACY_JSON` | value | unset | value | tuning / config | `src/core/json.h` |  |
+| `CRISPEMBED_SHARED_GPU_BACKEND` | on | off | bool | default-off experimental / opt-in | `src/core/gpu_backend_pref.h` |  |
 | `CRISPEMBED_SPARSE_KEEP_SPECIAL` | on | off | bool | default-off experimental / opt-in | `src/crispembed.cpp` | (below-bar panel: 0/77 identical term sets, min cosine 0.675 on "hello"). Default on; CRISPEMBED_SPARSE_KEEP_SPECIAL=1 restores the old output. |
-| `CRISPEMBED_STRICT_HPARAMS` | value | unset | presence/value | tuning / config | `src/core/hparam_keys.h` |  |
-| `CRISPEMBED_VERBOSE_OCR` | value | unset | presence/value | debug | `src/crispembed.cpp` | Enable verbose logging via environment variable |
+| `CRISPEMBED_STRICT_HPARAMS` | value | unset | value | tuning / config | `src/core/hparam_keys.h` |  |
+| `CRISPEMBED_VERBOSE_OCR` | value | unset | value | debug | `src/crispembed.cpp` | Enable verbose logging via environment variable |
 | `CRISPEMBED_WARN_UNK` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/crispembed.cpp` |  |
 | `CRISPEMBED_WASM_Q8_0_ROUND` | on | off | bool | default-off experimental / opt-in | `src/crispembed.cpp` | value-parsed opt-in is enabled. Settings belong to this backend/context; changing another context's environment cannot rewrite an existing plan. |
 
@@ -287,7 +297,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_DIFF_COS_THRESHOLD` | value | unset | presence/value | tuning / config | `src/crispembed_diff.h` |  |
+| `CRISPEMBED_DIFF_COS_THRESHOLD` | value | unset | value | tuning / config | `src/crispembed_diff.h` |  |
 | `CRISPEMBED_DIFF_DUMP_DIR` | value | unset | path | debug | `src/crispembed_diff.h` | float32 <dir>/<name>.f32, so a summary number that looks wrong can be taken apart row by row outside the binary (row order, token count). |
 
 ### dat_sr
@@ -301,11 +311,11 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_DECODER_EMBED_BENCH` | on | off | bool | debug | `src/decoder_embed.cpp` |  |
-| `CRISPEMBED_DECODER_EMBED_RAW_NORM` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/decoder_embed.cpp` | caller can see (the returned vector is unit-length by contract), so a uniform scale error is invisible to cosine parity. Print it on request. |
-| `CRISPEMBED_DECODER_PREFIX_DEBUG` | presence | off (any value, even `0`, = on) | presence/value | debug | `src/decoder_embed.cpp` |  |
-| `CRISPEMBED_DUMP_LAYERS` | presence | off (any value, even `0`, = on) | presence/value | debug | `src/crispembed.cpp`, `src/decoder_embed.cpp` |  |
-| `CRISPEMBED_DUMP_LAYERS_GGUF` | value | unset | presence/value | debug | `src/crispembed.cpp`, `src/decoder_embed.cpp` | tools/dump_encoder_reference.py: emb_ln_out == HF hidden_states[0], layer_i == HF hidden_states[i+1]. |
-| `CRISPEMBED_SKIP_DEEPSTACK` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/decoder_embed.cpp` | splice + 3D MRoPE. If parity improves with DEEPSTACK_OFF=1, the bug is in the deepstack hook; otherwise look at splice / MRoPE. |
+| `CRISPEMBED_DECODER_EMBED_RAW_NORM` | on | off | bool | default-off experimental / opt-in | `src/decoder_embed.cpp` | caller can see (the returned vector is unit-length by contract), so a uniform scale error is invisible to cosine parity. Print it on request. |
+| `CRISPEMBED_DECODER_PREFIX_DEBUG` | on | off | bool | debug | `src/decoder_embed.cpp` |  |
+| `CRISPEMBED_DUMP_LAYERS` | on | off | bool | debug | `src/crispembed.cpp`, `src/decoder_embed.cpp` |  |
+| `CRISPEMBED_DUMP_LAYERS_GGUF` | value | unset | value | debug | `src/crispembed.cpp`, `src/decoder_embed.cpp` | tools/dump_encoder_reference.py: emb_ln_out == HF hidden_states[0], layer_i == HF hidden_states[i+1]. |
+| `CRISPEMBED_SKIP_DEEPSTACK` | on | off | bool | default-off experimental / opt-in | `src/decoder_embed.cpp` | splice + 3D MRoPE. If parity improves with DEEPSTACK_OFF=1, the bug is in the deepstack hook; otherwise look at splice / MRoPE. |
 
 ### deepseek_ocr2
 
@@ -379,7 +389,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_GLM_OCR_BENCH` | on | off | bool | debug | `src/glm_ocr.cpp` |  |
-| `CRISPEMBED_GLM_OCR_SCALAR_MERGER` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/glm_ocr.cpp` |  |
+| `CRISPEMBED_GLM_OCR_SCALAR_MERGER` | on | off | bool | default-off experimental / opt-in | `src/glm_ocr.cpp` |  |
 
 ### got_ocr
 
@@ -387,25 +397,25 @@ Regenerate with `python tools/list_env_vars.py --write`.
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE` | on | off | bool | default-off experimental / opt-in | `src/got_ocr.cpp` | Qianwen RESEARCH LICENSE: non-commercial, and no use of the model or its outputs to improve any other large language model. |
 | `CRISPEMBED_GOT_OCR_BENCH` | on | off | bool | debug | `src/got_ocr.cpp` |  |
-| `CRISPEMBED_GOT_OCR_DEBUG` | presence | off (any value, even `0`, = on) | presence/value | debug | `src/got_ocr.cpp` |  |
+| `CRISPEMBED_GOT_OCR_DEBUG` | on | off | bool | debug | `src/got_ocr.cpp` |  |
 | `CRISPEMBED_GOT_OCR_DUMP_DIR` | value | unset | path | debug | `src/got_ocr.cpp` | diagnostic: pixels + ids |
 | `CRISPEMBED_GOT_OCR_NO_REPEAT_NGRAM` | value | unset | int | tuning / config | `src/got_ocr.cpp` |  |
 | `CRISPEMBED_GOT_OCR_ORIG_NGRAM` | on/off | per-gate default | bool | tuning / config | `src/got_ocr.cpp` | No-repeat-ngram rule (see the gate block above argmax_no_repeat_ngram). |
 | `CRISPEMBED_GOT_OCR_ORIG_SYSTEM` | on/off | per-gate default | bool | tuning / config | `src/got_ocr.cpp` | second line keeps 8 spaces of source indentation; tiktoken splits that into 286 ("       ", 7 spaces) + 1446 (" You"). |
 | `CRISPEMBED_GOT_OCR_PIL_BICUBIC` | on/off | per-gate default | bool | tuning / config | `src/got_ocr.cpp` |  |
-| `CRISPEMBED_GOT_OCR_SCALAR_NECK` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/got_ocr.cpp` |  |
-| `CRISPEMBED_GOT_OCR_SCALAR_PATCH` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/got_ocr.cpp` |  |
+| `CRISPEMBED_GOT_OCR_SCALAR_NECK` | on | off | bool | default-off experimental / opt-in | `src/got_ocr.cpp` |  |
+| `CRISPEMBED_GOT_OCR_SCALAR_PATCH` | on | off | bool | default-off experimental / opt-in | `src/got_ocr.cpp` |  |
 
 ### granite_vision_ocr
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_GRANITE_CPU` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/granite_vision_ocr.cpp` |  |
-| `CRISPEMBED_GRANITE_LLM_GRAPH` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/granite_vision_ocr.cpp` | last token's per-layer hidden states — the gv_llm_decode_step scalar path does NOT exercise the graph, so this is the only way to diff it. |
-| `CRISPEMBED_GRANITE_LLM_SCALAR` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/granite_vision_ocr.cpp` |  |
+| `CRISPEMBED_GRANITE_CPU` | on | off | bool | default-off experimental / opt-in | `src/granite_vision_ocr.cpp` |  |
+| `CRISPEMBED_GRANITE_LLM_GRAPH` | on | off | bool | default-off experimental / opt-in | `src/granite_vision_ocr.cpp` | last token's per-layer hidden states — the gv_llm_decode_step scalar path does NOT exercise the graph, so this is the only way to diff it. |
+| `CRISPEMBED_GRANITE_LLM_SCALAR` | on | off | bool | default-off experimental / opt-in | `src/granite_vision_ocr.cpp` |  |
 | `CRISPEMBED_GRANITE_OCR_BENCH` | on | off | bool | debug | `src/granite_vision_ocr.cpp` |  |
-| `CRISPEMBED_GRANITE_VIS_DBG` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/granite_vision_ocr.cpp` |  |
-| `CRISPEMBED_GRANITE_VIS_SCALAR` | value | unset | presence/value | tuning / config | `src/granite_vision_ocr.cpp` | F16-table gelu + Q8_0-quantized activations in the attn matmuls — is fixed inside gv_run_vit_graph via explicit F32 gelu + CPU F32 weight casts.) |
+| `CRISPEMBED_GRANITE_VIS_DBG` | on | off | bool | debug | `src/granite_vision_ocr.cpp` |  |
+| `CRISPEMBED_GRANITE_VIS_SCALAR` | on | off | bool | default-off experimental / opt-in | `src/granite_vision_ocr.cpp` | F16-table gelu + Q8_0-quantized activations in the attn matmuls — is fixed inside gv_run_vit_graph via explicit F32 gelu + CPU F32 weight casts.) |
 
 ### hat_sr
 
@@ -433,7 +443,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_INPAINT_BACKEND` | value | unset | presence/value | tuning / config | `src/inpaint_graph.cpp` |  |
+| `CRISPEMBED_INPAINT_BACKEND` | value | unset | value | tuning / config | `src/inpaint_graph.cpp` |  |
 | `CRISPEMBED_INPAINT_CPU_ATTENTION_TILES` | on | off | bool | default-off experimental / opt-in | `src/inpaint_graph.cpp` |  |
 | `CRISPEMBED_INPAINT_CPU_DEPTHWISE` | on | off | bool | default-off experimental / opt-in | `src/inpaint_graph.cpp` |  |
 | `CRISPEMBED_INPAINT_FAST` | on | off | bool | default-off experimental / opt-in | `examples/cli/inpaint_cli.cpp`, `src/inpaint_graph.cpp`, `src/migan.cpp` |  |
@@ -468,7 +478,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_INTERNVL2_ADD_BOS` | value | unset | int | tuning / config | `src/internvl2_ocr.cpp` |  |
 | `CRISPEMBED_INTERNVL2_BENCH` | on | off | bool | debug | `src/internvl2_ocr.cpp` |  |
-| `CRISPEMBED_INTERNVL2_PROMPT` | value | unset | presence/value | tuning / config | `src/internvl2_ocr.cpp` | description, a verbatim transcription, or an immediate <\|end\|> depending only on the instruction, and that is only findable by trying. |
+| `CRISPEMBED_INTERNVL2_PROMPT` | value | unset | value | tuning / config | `src/internvl2_ocr.cpp` | description, a verbatim transcription, or an immediate <\|end\|> depending only on the instruction, and that is only findable by trying. |
 | `CRISPEMBED_MAX_PIXELS` | value | unset | int | tuning / config | `src/internvl2_ocr.cpp`, `src/lightonocr.cpp`, `src/qwen2vl_ocr.cpp` | Allow runtime override for CPU-friendly inference (fewer tiles = faster) |
 
 ### josev2b_answer_serializer
@@ -483,7 +493,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_JOSEV_BACKBONE` | on | off | bool | default-off experimental / opt-in | `src/josev2b_backbone.cpp`, `src/josev2b_composed.cpp`, `src/qwen35_decoder.cpp` |  |
 | `CRISPEMBED_JOSEV_QUANT` | on | off | bool | default-off experimental / opt-in | `src/josev2b_backbone.cpp`, `src/josev2b_composed.cpp`, `src/josev2b_text_frontend.cpp` |  |
-| `CRISPEMBED_QWEN35_OCR` | on | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp`, `examples/server/server.cpp`, `src/josev2b_backbone.cpp` +14 | Experimental MiniCPM-OCR-1.0 reuses the qwen35 decoder kernels, so both gates are required. |
+| `CRISPEMBED_QWEN35_OCR` | on | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp`, `examples/server/server.cpp`, `src/josev2b_backbone.cpp` +14 | 'minicpm-ocr' registry alias (same default as the HTTP server). The decoder reuses the qwen35 kernels, so both gates are still required. |
 | `CRISPEMBED_QWEN35_QUANT` | on | off | bool | default-off experimental / opt-in | `src/josev2b_backbone.cpp`, `src/qwen35_linear.cpp` |  |
 
 ### josev2b_composed
@@ -527,12 +537,12 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_ACCEPT_OXR_LICENSE` | on | off | bool | default-off experimental / opt-in | `src/layout_detect.cpp`, `src/oxr_document_api.cpp`, `src/oxr_layout_api.cpp` +1 | OXR License gate (Apache-2.0 plus additional terms, licenses/oxr-LICENSE), identical to src/oxr_ocr.cpp: every surface loading these weights. |
-| `CRISPEMBED_LAYOUT_DEBUG` | presence | off (any value, even `0`, = on) | presence/value | debug | `src/layout_detect.cpp` | Backbone Verify stem weight is the folded version |
+| `CRISPEMBED_LAYOUT_DEBUG` | on | off | bool | debug | `src/layout_detect.cpp` | Backbone Verify stem weight is the folded version |
 | `CRISPEMBED_LAYOUT_DETECT_BENCH` | on | off | bool | debug | `src/layout_detect.cpp` |  |
 | `CRISPEMBED_LAYOUT_GPU_HP_MM` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/layout_detect.cpp` |  |
 | `CRISPEMBED_LAYOUT_GPU_PREC_F32` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/layout_detect.cpp` | heron/: regions equal CPU on 5/5 pages, the half-tile default added a German region); CRISPEMBED_LAYOUT_GPU_PREC_F32=0 / CRISPEMBED_LAYOUT_GPU_HP_MM=0 opt out. |
-| `CRISPEMBED_LAYOUT_VALPROJ_GPU` | value | unset | presence/value | tuning / config | `src/layout_detect.cpp` |  |
-| `CRISPEMBED_OXR` | on/value | off | presence/value | default-off experimental / opt-in | `examples/cli/main.cpp`, `examples/server/server.cpp`, `src/layout_detect.cpp` +4 | OXR License gate (Apache-2.0 plus additional terms, licenses/oxr-LICENSE), identical to src/oxr_ocr.cpp: every surface loading these weights. |
+| `CRISPEMBED_LAYOUT_VALPROJ_GPU` | value | unset | value | tuning / config | `src/layout_detect.cpp` |  |
+| `CRISPEMBED_OXR` | on/value | off | value | default-off experimental / opt-in | `examples/cli/main.cpp`, `examples/server/server.cpp`, `src/layout_detect.cpp` +4 | OXR License gate (Apache-2.0 plus additional terms, licenses/oxr-LICENSE), identical to src/oxr_ocr.cpp: every surface loading these weights. |
 | `CRISPEMBED_OXR_LAYOUT_DW_DIRECT` | off/on | mixed (see code) | bool | default-off experimental / opt-in | `src/layout_detect.cpp` | GPU forwards default to the direct kernel (region-exact on Metal, faster); CRISPEMBED_OXR_LAYOUT_DW_DIRECT=0 restores im2col there. CPU default unchanged. |
 | `CRISPEMBED_OXR_LAYOUT_GPU` | off/on | mixed (see code) | bool | default-off experimental / opt-in | `src/layout_detect.cpp` |  |
 | `CRISPEMBED_OXR_LAYOUT_GPU_HP_MM` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/layout_detect.cpp` | process-wide; an explicit GGML_METAL_PREC_F32_MM wins). Opt out with CRISPEMBED_OXR_LAYOUT_GPU_HP_MM=0 (mat-vec PREC_F32 route, ~2.5x slower). |
@@ -564,10 +574,10 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `CRISPEMBED_LIGHTONOCR_DEBUG` | on | off | bool | debug | `src/lightonocr.cpp` |  |
 | `CRISPEMBED_LIGHTONOCR_FORCE_CPU` | on | off | bool | default-off experimental / opt-in | `src/lightonocr.cpp` | --gpu-backend); CRISPEMBED_LIGHTONOCR_FORCE_CPU=1 overrides it, matching the *_FORCE_CPU convention of every sibling engine. |
 | `CRISPEMBED_LIGHTONOCR_GPU` | off/on | mixed (see code) | bool | default-off experimental / opt-in | `src/lightonocr.cpp` |  |
-| `CRISPEMBED_LIGHTONOCR_NO_FLASH` | value | unset | presence/value | tuning / config | `src/lightonocr.cpp` |  |
+| `CRISPEMBED_LIGHTONOCR_NO_FLASH` | value | unset | value | tuning / config | `src/lightonocr.cpp` |  |
 | `CRISPEMBED_LIGHTONOCR_NO_KV` | on | off | bool | default-off experimental / opt-in | `src/lightonocr.cpp` | define LOCR_DEBUG env_flag("CRISPEMBED_LIGHTONOCR_DEBUG") |
-| `CRISPEMBED_LIGHTONOCR_SCALAR_PATCH` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/lightonocr.cpp` | Scalar fallback gated by env var |
-| `CRISPEMBED_LIGHTON_DUMP` | value | unset | presence/value | debug | `src/lightonocr.cpp` |  |
+| `CRISPEMBED_LIGHTONOCR_SCALAR_PATCH` | on | off | bool | default-off experimental / opt-in | `src/lightonocr.cpp` | Scalar fallback gated by env var |
+| `CRISPEMBED_LIGHTON_DUMP` | value | unset | value | debug | `src/lightonocr.cpp` |  |
 
 ### lilt_kie
 
@@ -608,7 +618,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_MINERU25_PRO` | on/value | off | presence/value | default-off experimental / opt-in | `examples/cli/main.cpp`, `examples/server/server.cpp`, `src/mineru_model_profile.h` +1 |  |
+| `CRISPEMBED_MINERU25_PRO` | on/value | off | value | default-off experimental / opt-in | `examples/cli/main.cpp`, `examples/server/server.cpp`, `src/mineru_model_profile.h` +1 |  |
 
 ### mineru_ocr
 
@@ -620,7 +630,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_MINICPM_OCR` | on | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp`, `examples/server/server.cpp`, `src/minicpm_ocr.cpp` +1 | Experimental MiniCPM-OCR-1.0: no registry default; the decoder reuses the qwen35 kernels, so both gates are required. |
+| `CRISPEMBED_MINICPM_OCR` | on | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp`, `examples/server/server.cpp`, `src/minicpm_ocr.cpp` +1 | 'minicpm-ocr' registry alias (same default as the HTTP server). The decoder reuses the qwen35 kernels, so both gates are still required. |
 | `CRISPEMBED_MINICPM_OCR_DUMP` | value | unset | string | debug | `src/minicpm_ocr.cpp` |  |
 | `CRISPEMBED_MINICPM_OCR_GRAPH` | on | off | bool | default-off experimental / opt-in | `src/minicpm_ocr.cpp`, `src/qwen35_graph_decoder.cpp` | Snapshot once for the entire request. Never silently fall back after a candidate failure, which would mix arithmetic within one decode. |
 | `CRISPEMBED_MINICPM_OCR_TIMING` | on | off | bool | debug | `src/minicpm_ocr.cpp` |  |
@@ -639,8 +649,8 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_MIXTEX_BENCH` | on | off | bool | debug | `src/mixtex_ocr.cpp` |  |
-| `CRISPEMBED_MIXTEX_DEBUG` | presence | off (any value, even `0`, = on) | presence/value | debug | `src/mixtex_ocr.cpp` | Diff: after self-attention (step 0, layer 0) |
-| `CRISPEMBED_MIXTEX_TRACE` | presence | off (any value, even `0`, = on) | presence/value | debug | `src/mixtex_ocr.cpp` |  |
+| `CRISPEMBED_MIXTEX_DEBUG` | on | off | bool | debug | `src/mixtex_ocr.cpp` | Diff: after self-attention (step 0, layer 0) |
+| `CRISPEMBED_MIXTEX_TRACE` | on | off | bool | debug | `src/mixtex_ocr.cpp` |  |
 
 ### moedern_colbert
 
@@ -706,27 +716,27 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `CRISPEMBED_OVISOCR3_FRONTEND` | on | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp`, `examples/server/server.cpp`, `src/ocr_orchestrator.cpp` +2 |  |
 | `CRISPEMBED_OVISOCR3_INFERENCE` | on | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp`, `examples/server/server.cpp`, `src/ocr_orchestrator.cpp` +1 |  |
 | `CRISPEMBED_PPOCRV6_BENCH` | on | off | bool | debug | `src/ocr_orchestrator.cpp`, `src/ppocrv6_ocr.cpp` |  |
-| `CRISPEMBED_PPOCRV6_CLEANUP` | value | unset | presence/value | tuning / config | `src/ocr_orchestrator.cpp` |  |
-| `CRISPEMBED_PPOCRV6_FIXED_WIDTH` | presence | off (any value, even `0`, = on) | float | legacy presence gate | `src/ocr_orchestrator.cpp`, `src/ppocrv6_ocr.cpp` |  |
-| `CRISPEMBED_PPOCRV6_FORCE_CPU` | presence/set | off (any value, even `0`, = on) | presence/value | tuning / config | `examples/cli/main.cpp`, `src/ocr_orchestrator.cpp`, `src/ppocrv6_det.cpp` +1 | while user+sys stayed stable. An earlier cross-run wall comparison reported the opposite result.) |
-| `CRISPEMBED_PPOCRV6_GRAPH_ACCEPT` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `examples/cli/main.cpp`, `src/ocr_orchestrator.cpp`, `src/ppocrv6_ocr.cpp` |  |
+| `CRISPEMBED_PPOCRV6_CLEANUP` | on | off | bool | default-off experimental / opt-in | `src/ocr_orchestrator.cpp` |  |
+| `CRISPEMBED_PPOCRV6_FIXED_WIDTH` | on | off | bool | default-off experimental / opt-in | `src/ocr_orchestrator.cpp`, `src/ppocrv6_ocr.cpp` |  |
+| `CRISPEMBED_PPOCRV6_FORCE_CPU` | on/set | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp`, `src/ocr_orchestrator.cpp`, `src/ppocrv6_det.cpp` +1 | while user+sys stayed stable. An earlier cross-run wall comparison reported the opposite result.) |
+| `CRISPEMBED_PPOCRV6_GRAPH_ACCEPT` | on | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp`, `src/ocr_orchestrator.cpp`, `src/ppocrv6_ocr.cpp` |  |
 | `CRISPEMBED_PPOCRV6_GRAPH_MAX_REGIONS` | value | unset | int | tuning / config | `src/ocr_orchestrator.cpp` |  |
-| `CRISPEMBED_PPOCRV6_ONESHOT` | presence/set | off (any value, even `0`, = on) | presence/value | tuning / config | `examples/cli/main.cpp`, `src/ocr_orchestrator.cpp` | the environment wins. MSVC has no setenv, and _putenv_s always overwrites, so the presence check carries that. |
+| `CRISPEMBED_PPOCRV6_ONESHOT` | on/set | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp`, `src/ocr_orchestrator.cpp` | the environment wins. MSVC has no setenv, and _putenv_s always overwrites, so the presence check carries that. |
 | `CRISPEMBED_PPOCRV6_ONESHOT_CPU_MAX_REGIONS` | value | unset | int | tuning / config | `src/ocr_orchestrator.cpp` |  |
 | `CRISPEMBED_PPOCRV6_WIDTH_BUCKET` | value | unset | int | tuning / config | `src/ocr_orchestrator.cpp`, `src/ppocrv6_ocr.cpp` |  |
 | `CRISPEMBED_TESSERACT_BENCH` | on | off | bool | debug | `src/ocr_orchestrator.cpp`, `src/tesseract_lstm.cpp` |  |
-| `CRISPEMBED_TESSERACT_COMPONENT_PAGESEG` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/ocr_orchestrator.cpp`, `src/tesseract_pageseg.cpp` |  |
+| `CRISPEMBED_TESSERACT_COMPONENT_PAGESEG` | on | off | bool | default-off experimental / opt-in | `src/ocr_orchestrator.cpp`, `src/tesseract_pageseg.cpp` |  |
 | `CRISPEMBED_TESSERACT_CROP_DUMP_DIR` | value | unset | path | debug | `src/ocr_orchestrator.cpp` |  |
-| `CRISPEMBED_TESSERACT_CROP_PAD` | value | unset | presence/value | tuning / config | `src/ocr_orchestrator.cpp` |  |
-| `CRISPEMBED_TESSERACT_CROP_TRIM_INK` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/ocr_orchestrator.cpp` |  |
+| `CRISPEMBED_TESSERACT_CROP_PAD` | value | unset | value | tuning / config | `src/ocr_orchestrator.cpp` |  |
+| `CRISPEMBED_TESSERACT_CROP_TRIM_INK` | on | off | bool | default-off experimental / opt-in | `src/ocr_orchestrator.cpp` |  |
 | `CRISPEMBED_TESSERACT_CROP_TRIM_THRESHOLD` | value | unset | int | tuning / config | `src/ocr_orchestrator.cpp` |  |
 | `CRISPEMBED_TESSERACT_MIN_REC_CONFIDENCE` | value | unset | float | tuning / config | `src/ocr_orchestrator.cpp` |  |
-| `CRISPEMBED_TESSERACT_PAGESEG` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/ocr_orchestrator.cpp` |  |
+| `CRISPEMBED_TESSERACT_PAGESEG` | on | off | bool | default-off experimental / opt-in | `src/ocr_orchestrator.cpp` |  |
 | `CRISPEMBED_TESSERACT_PAGESEG_CLEANUP` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/ocr_orchestrator.cpp` |  |
-| `CRISPEMBED_TESSERACT_PAGESEG_DEBUG` | presence/value | off (any value, even `0`, = on) | presence/value | debug | `src/ocr_orchestrator.cpp`, `src/tesseract_pageseg.cpp` |  |
-| `CRISPEMBED_TESSERACT_PAGESEG_PROJECTION` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/ocr_orchestrator.cpp` |  |
-| `CRISPEMBED_TESSERACT_PARALLEL_LOAD` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/ocr_orchestrator.cpp` |  |
-| `CRISPEMBED_TESSERACT_SEG_COVERAGE` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/ocr_orchestrator.cpp` |  |
+| `CRISPEMBED_TESSERACT_PAGESEG_DEBUG` | on/value | off | value | debug | `src/ocr_orchestrator.cpp`, `src/tesseract_pageseg.cpp` |  |
+| `CRISPEMBED_TESSERACT_PAGESEG_PROJECTION` | on | off | bool | default-off experimental / opt-in | `src/ocr_orchestrator.cpp` |  |
+| `CRISPEMBED_TESSERACT_PARALLEL_LOAD` | on | off | bool | default-off experimental / opt-in | `src/ocr_orchestrator.cpp` |  |
+| `CRISPEMBED_TESSERACT_SEG_COVERAGE` | on | off | bool | default-off experimental / opt-in | `src/ocr_orchestrator.cpp` |  |
 | `CRISPEMBED_TESSERACT_SEG_GUTTER_BALANCE` | on | off | bool | default-off experimental / opt-in | `src/ocr_orchestrator.cpp` |  |
 | `CRISPEMBED_TESSERACT_SEG_ROUTER` | value | unset | string | tuning / config | `src/ocr_orchestrator.cpp` | CRISPEMBED_TESSERACT_SEG_ROUTER=0 restores the dbnet-first default. Value-parsed (the UOCR =0 lesson). |
 | `CRISPEMBED_TESSERACT_WORKERS` | value | unset | int | tuning / config | `src/ocr_orchestrator.cpp` |  |
@@ -780,8 +790,8 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_PIX2STRUCT_BENCH` | on | off | bool | debug | `src/pix2struct.cpp` |  |
-| `CRISPEMBED_PIX2STRUCT_ENC_GPU` | value | unset | presence/value | tuning / config | `src/pix2struct.cpp` |  |
-| `CRISPEMBED_PIX2STRUCT_GGML_DECODE` | value | unset | presence/value | tuning / config | `src/pix2struct.cpp` |  |
+| `CRISPEMBED_PIX2STRUCT_ENC_GPU` | value | unset | value | tuning / config | `src/pix2struct.cpp` |  |
+| `CRISPEMBED_PIX2STRUCT_GGML_DECODE` | value | unset | value | tuning / config | `src/pix2struct.cpp` |  |
 
 ### posformer_ocr
 
@@ -806,59 +816,59 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_PPOCRV6_CONV_DIRECT` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/ppocrv6_det.cpp`, `src/ppocrv6_ocr.cpp` |  |
+| `CRISPEMBED_PPOCRV6_CONV_DIRECT` | on | off | bool | default-off experimental / opt-in | `src/ppocrv6_det.cpp`, `src/ppocrv6_ocr.cpp` |  |
 | `CRISPEMBED_PPOCRV6_DET_BENCH` | on | off | bool | debug | `src/ppocrv6_det.cpp` |  |
-| `CRISPEMBED_PPOCRV6_DET_F32_WEIGHTS` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/ppocrv6_det.cpp` | resident half weights. Keep CPU graph parity in F32 and provide an explicit F32 override for backend-diff debugging. |
-| `CRISPEMBED_PPOCRV6_DET_GPU` | value | unset | presence/value | tuning / config | `src/ppocrv6_det.cpp` |  |
-| `CRISPEMBED_PPOCRV6_DET_GPU_LOAD` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/ppocrv6_det.cpp` |  |
-| `CRISPEMBED_PPOCRV6_DET_GRAPH_COMPARE` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/ppocrv6_det.cpp` |  |
-| `CRISPEMBED_PPOCRV6_DET_PROFILE` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/ppocrv6_det.cpp` |  |
-| `CRISPEMBED_PPOCRV6_DET_SCALAR` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/ppocrv6_det.cpp` | (the CPU-scalar medium detector was why the medium tier timed out in every benchmark). German CER graph 0.04856 vs scalar 0.04955. |
+| `CRISPEMBED_PPOCRV6_DET_F32_WEIGHTS` | on | off | bool | default-off experimental / opt-in | `src/ppocrv6_det.cpp` | resident half weights. Keep CPU graph parity in F32 and provide an explicit F32 override for backend-diff debugging. |
+| `CRISPEMBED_PPOCRV6_DET_GPU` | value | unset | value | tuning / config | `src/ppocrv6_det.cpp` |  |
+| `CRISPEMBED_PPOCRV6_DET_GPU_LOAD` | on | off | bool | default-off experimental / opt-in | `src/ppocrv6_det.cpp` |  |
+| `CRISPEMBED_PPOCRV6_DET_GRAPH_COMPARE` | on | off | bool | default-off experimental / opt-in | `src/ppocrv6_det.cpp` |  |
+| `CRISPEMBED_PPOCRV6_DET_PROFILE` | on | off | bool | debug | `src/ppocrv6_det.cpp` |  |
+| `CRISPEMBED_PPOCRV6_DET_SCALAR` | on | off | bool | default-off experimental / opt-in | `src/ppocrv6_det.cpp` | (the CPU-scalar medium detector was why the medium tier timed out in every benchmark). German CER graph 0.04856 vs scalar 0.04955. |
 
 ### ppocrv6_ocr
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_PPOCRV6_BATCH_CPU_DECODER` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/ppocrv6_ocr.cpp` | (attention over [120,320]) take ~250 ms of GPU-serial kernel launches — that arithmetic is microseconds of NEON work per item. |
-| `CRISPEMBED_PPOCRV6_BATCH_GRAPH` | presence/value | off (any value, even `0`, = on) | string | tuning / config | `examples/cli/main.cpp`, `src/ppocrv6_ocr.cpp` | An explicit accept-override of 0 (diagnostic runs demanding the scalar reference) also disables the fused lane. |
-| `CRISPEMBED_PPOCRV6_BATCH_GRAPH_CPU_ONLY` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/ppocrv6_ocr.cpp` |  |
+| `CRISPEMBED_PPOCRV6_BATCH_CPU_DECODER` | on | off | bool | default-off experimental / opt-in | `src/ppocrv6_ocr.cpp` | (attention over [120,320]) take ~250 ms of GPU-serial kernel launches — that arithmetic is microseconds of NEON work per item. |
+| `CRISPEMBED_PPOCRV6_BATCH_GRAPH` | on/value | off | string | default-off experimental / opt-in | `examples/cli/main.cpp`, `src/ppocrv6_ocr.cpp` | An explicit accept-override of 0 (diagnostic runs demanding the scalar reference) also disables the fused lane. |
+| `CRISPEMBED_PPOCRV6_BATCH_GRAPH_CPU_ONLY` | on | off | bool | default-off experimental / opt-in | `src/ppocrv6_ocr.cpp` |  |
 | `CRISPEMBED_PPOCRV6_BATCH_MAX` | value | unset | int | tuning / config | `src/ppocrv6_ocr.cpp` |  |
 | `CRISPEMBED_PPOCRV6_GRAPH_BENCH` | on | off | bool | debug | `src/ppocrv6_ocr.cpp` |  |
-| `CRISPEMBED_PPOCRV6_GRAPH_DEBUG` | presence | off (any value, even `0`, = on) | presence/value | debug | `src/ppocrv6_ocr.cpp` | recognizer pools [H,W] with a 3x2 kernel and 3x2 stride. Swap the arguments here so graph pooling matches the CPU sequence contract. |
-| `CRISPEMBED_PPOCRV6_GRAPH_DEQUANT` | value | unset | presence/value | tuning / config | `src/ppocrv6_ocr.cpp` |  |
-| `CRISPEMBED_PPOCRV6_GRAPH_F16` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/ppocrv6_ocr.cpp` |  |
+| `CRISPEMBED_PPOCRV6_GRAPH_DEBUG` | on | off | bool | debug | `src/ppocrv6_ocr.cpp` | recognizer pools [H,W] with a 3x2 kernel and 3x2 stride. Swap the arguments here so graph pooling matches the CPU sequence contract. |
+| `CRISPEMBED_PPOCRV6_GRAPH_DEQUANT` | on | off | bool | default-off experimental / opt-in | `src/ppocrv6_ocr.cpp` |  |
+| `CRISPEMBED_PPOCRV6_GRAPH_F16` | on | off | bool | default-off experimental / opt-in | `src/ppocrv6_ocr.cpp` |  |
 | `CRISPEMBED_PPOCRV6_GRAPH_STOP` | value | unset | string | tuning / config | `src/ppocrv6_ocr.cpp` | graph after the backbone so [ppocrv6-graph-bench] attributes compute to backbone vs neck/decoder/head. CRISPEMBED_PPOCRV6_GRAPH_STOP=backbone. |
-| `CRISPEMBED_PPOCRV6_NO_BATCH_GRAPH` | value | unset | presence/value | tuning / config | `src/ppocrv6_ocr.cpp` |  |
-| `CRISPEMBED_PPOCRV6_NO_GRAPH` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `examples/cli/main.cpp`, `src/ppocrv6_ocr.cpp` | batch-graph probe to select the CPU backend while still exercising the GGML graph; ordinary FORCE_CPU runs remain graph-free. |
-| `CRISPEMBED_PPOCRV6_RGB` | presence | off (any value, even `0`, = on) | float | legacy presence gate | `src/ppocrv6_ocr.cpp` | explicit diagnostic switch so the two source formats can be compared without rebuilding the runtime. |
+| `CRISPEMBED_PPOCRV6_NO_BATCH_GRAPH` | on | off | bool | default-off experimental / opt-in | `src/ppocrv6_ocr.cpp` |  |
+| `CRISPEMBED_PPOCRV6_NO_GRAPH` | on | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp`, `src/ppocrv6_ocr.cpp` |  |
+| `CRISPEMBED_PPOCRV6_RGB` | on | off | bool | default-off experimental / opt-in | `src/ppocrv6_ocr.cpp` | explicit diagnostic switch so the two source formats can be compared without rebuilding the runtime. |
 | `CRISPEMBED_PPOCRV6_WIDTH_FLOOR` | value | unset | int | tuning / config | `src/ppocrv6_ocr.cpp` |  |
 
 ### qwen2vl_ocr
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_DUMP_MERGER` | value | unset | presence/value | debug | `src/qwen2vl_ocr.cpp` |  |
-| `CRISPEMBED_DUMP_PATCHES` | value | unset | presence/value | debug | `src/qwen2vl_ocr.cpp` |  |
+| `CRISPEMBED_DUMP_MERGER` | value | unset | value | debug | `src/qwen2vl_ocr.cpp` |  |
+| `CRISPEMBED_DUMP_PATCHES` | value | unset | value | debug | `src/qwen2vl_ocr.cpp` |  |
 | `CRISPEMBED_MINERU25_PRO_EXACT_GELU` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/qwen2vl_ocr.cpp` |  |
 | `CRISPEMBED_MINERU25_PRO_METAL_F32_MATMUL` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/qwen2vl_ocr.cpp` |  |
 | `CRISPEMBED_MINERU25_PRO_REUSE_DECODE_GRAPH` | on | off | bool | default-off experimental / opt-in | `src/qwen2vl_ocr.cpp` |  |
 | `CRISPEMBED_NO_KV_CACHE` | on | off | bool | default-off experimental / opt-in | `src/qwen2vl_ocr.cpp` |  |
 | `CRISPEMBED_OLMOCR_LONGEST` | value | unset | int | tuning / config | `src/qwen2vl_ocr.cpp` |  |
-| `CRISPEMBED_OLMOCR_RAW` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/qwen2vl_ocr.cpp` | document text is what OCR callers want, so strip the block by default; CRISPEMBED_OLMOCR_RAW=1 keeps the full model output. |
-| `CRISPEMBED_PADDLEOCR_STD_PROMPT` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/qwen2vl_ocr.cpp` |  |
-| `CRISPEMBED_QARI_NO_SYSTEM` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/qwen2vl_ocr.cpp` |  |
-| `CRISPEMBED_QARI_STD_PROMPT` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/qwen2vl_ocr.cpp` | preamble. Set CRISPEMBED_QARI_STD_PROMPT=1 for the generic "Describe this image." fallback instead. |
+| `CRISPEMBED_OLMOCR_RAW` | on | off | bool | default-off experimental / opt-in | `src/qwen2vl_ocr.cpp` | document text is what OCR callers want, so strip the block by default; CRISPEMBED_OLMOCR_RAW=1 keeps the full model output. |
+| `CRISPEMBED_PADDLEOCR_STD_PROMPT` | on | off | bool | default-off experimental / opt-in | `src/qwen2vl_ocr.cpp` |  |
+| `CRISPEMBED_QARI_NO_SYSTEM` | on | off | bool | default-off experimental / opt-in | `src/qwen2vl_ocr.cpp` |  |
+| `CRISPEMBED_QARI_STD_PROMPT` | on | off | bool | default-off experimental / opt-in | `src/qwen2vl_ocr.cpp` | preamble. Set CRISPEMBED_QARI_STD_PROMPT=1 for the generic "Describe this image." fallback instead. |
 | `CRISPEMBED_QWEN2VL_BENCH` | on | off | bool | debug | `src/qwen2vl_ocr.cpp` |  |
 | `CRISPEMBED_QWEN2VL_FORCE_FROM_CALL` | value | unset | int | tuning / config | `src/qwen2vl_ocr.cpp` |  |
-| `CRISPEMBED_QWEN2VL_FORCE_IDS` | value | unset | presence/value | tuning / config | `src/qwen2vl_ocr.cpp` |  |
+| `CRISPEMBED_QWEN2VL_FORCE_IDS` | value | unset | value | tuning / config | `src/qwen2vl_ocr.cpp` |  |
 | `CRISPEMBED_QWEN2VL_METAL_FA` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/qwen2vl_ocr.cpp` |  |
 | `CRISPEMBED_QWEN2VL_METAL_SPLIT_K` | on | off | bool | default-off experimental / opt-in | `src/qwen2vl_ocr.cpp` | tiles keep it at 0.9996 (tests/results/mineru25/metal-m1). =0 restores ggml-metal's default kernels for either profile. |
-| `CRISPEMBED_QWEN2VL_NO_REPEAT_NGRAM` | presence | off (any value, even `0`, = on) | int | legacy presence gate | `src/qwen2vl_ocr.cpp` | code in this file was unreachable before: nothing ever set diff_ref_path. Verbosity 2 also enables the mRoPE position comparison. |
+| `CRISPEMBED_QWEN2VL_NO_REPEAT_NGRAM` | value | unset | int | tuning / config | `src/qwen2vl_ocr.cpp` |  |
 | `CRISPEMBED_QWEN2VL_REF` | value | unset | path | tuning / config | `src/qwen2vl_ocr.cpp` |  |
-| `CRISPEMBED_QWEN2VL_STAGE_DUMP` | value | unset | presence/value | debug | `src/qwen2vl_ocr.cpp` |  |
+| `CRISPEMBED_QWEN2VL_STAGE_DUMP` | value | unset | value | debug | `src/qwen2vl_ocr.cpp` |  |
 | `CRISPEMBED_QWEN2VL_STAGE_DUMP_CALL` | value | unset | int | debug | `src/qwen2vl_ocr.cpp` |  |
 | `CRISPEMBED_QWEN2VL_STAGE_DUMP_STEPS` | value | unset | int | debug | `src/qwen2vl_ocr.cpp` |  |
-| `CRISPEMBED_QWEN3VL_SYSTEM` | presence | off (any value, even `0`, = on) | string | legacy presence gate | `src/qwen2vl_ocr.cpp` | Includes Uni-MuMER: its processor uses the same template (stage diff vs phxember/Uni-MuMER-Qwen3-VL-2B: 11 extra leading tokens). |
+| `CRISPEMBED_QWEN3VL_SYSTEM` | on | off | bool | default-off experimental / opt-in | `src/qwen2vl_ocr.cpp` | Includes Uni-MuMER: its processor uses the same template (stage diff vs phxember/Uni-MuMER-Qwen3-VL-2B: 11 extra leading tokens). |
 | `CRISPEMBED_TELEOCR_GPU` | off/on | mixed (see code) | bool | default-off experimental / opt-in | `src/qwen2vl_ocr.cpp` |  |
 | `CRISPEMBED_TELEOCR_METAL_F32_MATMUL` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/qwen2vl_ocr.cpp` |  |
 | `CRISPEMBED_TELEOCR_REUSE_DECODE_GRAPH` | on | off | bool | default-off experimental / opt-in | `src/qwen2vl_ocr.cpp` |  |
@@ -887,7 +897,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_QWEN35_PARALLEL_F16` | on | off | bool | default-off experimental / opt-in | `src/qwen35_linear.cpp` |  |
-| `CRISPEMBED_QWEN35_WEIGHT_CACHE_BYTES` | value | unset | presence/value | tuning / config | `src/qwen35_linear.cpp` |  |
+| `CRISPEMBED_QWEN35_WEIGHT_CACHE_BYTES` | value | unset | value | tuning / config | `src/qwen35_linear.cpp` |  |
 
 ### qwen35_math
 
@@ -921,7 +931,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_RESTORMER_BENCH` | on | off | bool | debug | `src/restormer.cpp` |  |
-| `CRISPEMBED_RESTORMER_DEBUG` | presence | off (any value, even `0`, = on) | presence/value | debug | `src/restormer.cpp` | Manual check: output[0,0,0] should be sum of 3x3 weighted patches |
+| `CRISPEMBED_RESTORMER_DEBUG` | on | off | bool | debug | `src/restormer.cpp` | Manual check: output[0,0,0] should be sum of 3x3 weighted patches |
 | `CRISPEMBED_RESTORMER_GPU` | off/on | mixed (see code) | bool | default-off experimental / opt-in | `src/restormer.cpp` |  |
 
 ### safmn_sr
@@ -955,7 +965,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_SMOLDOCLING_BENCH` | on | off | bool | debug | `src/smoldocling_ocr.cpp` |  |
-| `CRISPEMBED_SMOLDOCLING_SCALAR_PATCH` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/smoldocling_ocr.cpp` |  |
+| `CRISPEMBED_SMOLDOCLING_SCALAR_PATCH` | on | off | bool | default-off experimental / opt-in | `src/smoldocling_ocr.cpp` |  |
 
 ### surya_det
 
@@ -967,14 +977,14 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_SWINIR_DEBUG` | presence | off (any value, even `0`, = on) | presence/value | debug | `src/swinir_sr.cpp` |  |
+| `CRISPEMBED_SWINIR_DEBUG` | on | off | bool | debug | `src/swinir_sr.cpp` |  |
 | `CRISPEMBED_SWINIR_SR_BENCH` | on | off | bool | debug | `src/swinir_sr.cpp` |  |
 
 ### table_parse
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_TABLE_DEBUG` | presence | off (any value, even `0`, = on) | presence/value | debug | `src/table_parse.cpp` |  |
+| `CRISPEMBED_TABLE_DEBUG` | on | off | bool | debug | `src/table_parse.cpp` |  |
 | `CRISPEMBED_TABLE_PARSE_BENCH` | on | off | bool | debug | `src/table_parse.cpp` |  |
 
 ### tbsrn_sr
@@ -988,30 +998,30 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_TESSERACT_BEAM_WIDTH` | value | unset | int | tuning / config | `src/tesseract_lstm.cpp` |  |
-| `CRISPEMBED_TESSERACT_DAWG_LOAD` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/tesseract_lstm.cpp` | DAWG payloads are opt-in. Existing GGUFs do not contain them, and loading them must not alter the default recognition path. |
-| `CRISPEMBED_TESSERACT_DAWG_PREFIX_SCORE` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/tesseract_lstm.cpp` |  |
-| `CRISPEMBED_TESSERACT_DAWG_SCORE` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/tesseract_lstm.cpp` |  |
-| `CRISPEMBED_TESSERACT_DISABLE_INT_CACHE` | value | unset | presence/value | tuning / config | `src/tesseract_lstm.cpp` |  |
-| `CRISPEMBED_TESSERACT_FORCE_CPU` | value | unset | presence/value | tuning / config | `src/tesseract_lstm.cpp` |  |
-| `CRISPEMBED_TESSERACT_GPU_LOAD` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/tesseract_lstm.cpp` | device this engine never uses. CRISPEMBED_TESSERACT_GPU_LOAD restores the old behaviour for bisection. |
+| `CRISPEMBED_TESSERACT_DAWG_LOAD` | on | off | bool | default-off experimental / opt-in | `src/tesseract_lstm.cpp` | DAWG payloads are opt-in. Existing GGUFs do not contain them, and loading them must not alter the default recognition path. |
+| `CRISPEMBED_TESSERACT_DAWG_PREFIX_SCORE` | on | off | bool | default-off experimental / opt-in | `src/tesseract_lstm.cpp` |  |
+| `CRISPEMBED_TESSERACT_DAWG_SCORE` | on | off | bool | default-off experimental / opt-in | `src/tesseract_lstm.cpp` |  |
+| `CRISPEMBED_TESSERACT_DISABLE_INT_CACHE` | on | off | bool | default-off experimental / opt-in | `src/tesseract_lstm.cpp` |  |
+| `CRISPEMBED_TESSERACT_FORCE_CPU` | on | off | bool | default-off experimental / opt-in | `src/tesseract_lstm.cpp` |  |
+| `CRISPEMBED_TESSERACT_GPU_LOAD` | on | off | bool | default-off experimental / opt-in | `src/tesseract_lstm.cpp` |  |
 | `CRISPEMBED_TESSERACT_RECODE_BEAM_WIDTH` | value | unset | int | tuning / config | `src/tesseract_lstm.cpp` |  |
-| `CRISPEMBED_TESSERACT_RECODE_COMPOSE` | value | unset | presence/value | tuning / config | `src/tesseract_lstm.cpp` | opt-in, preserved for Latin A/Bs). The old presence test treated ...COMPOSE=0 as ON — value-parse instead. |
-| `CRISPEMBED_TESSERACT_REUSE_SCRATCH` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/tesseract_lstm.cpp` |  |
+| `CRISPEMBED_TESSERACT_RECODE_COMPOSE` | value | unset | value | tuning / config | `src/tesseract_lstm.cpp` | opt-in, preserved for Latin A/Bs). The old presence test treated ...COMPOSE=0 as ON — value-parse instead. |
+| `CRISPEMBED_TESSERACT_REUSE_SCRATCH` | on | off | bool | default-off experimental / opt-in | `src/tesseract_lstm.cpp` |  |
 
 ### tesseract_pageseg
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_TESSERACT_COMPONENT_BASELINE` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/tesseract_pageseg.cpp` |  |
-| `CRISPEMBED_TESSERACT_COMPONENT_DEBUG` | presence | off (any value, even `0`, = on) | presence/value | debug | `src/tesseract_pageseg.cpp` |  |
-| `CRISPEMBED_TESSERACT_LEGACY_BAND_PROFILE` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/tesseract_pageseg.cpp` |  |
-| `CRISPEMBED_TESSERACT_LEGACY_BAND_ROWS` | value | unset | presence/value | tuning / config | `src/tesseract_pageseg.cpp` | 24-image arms gate (synthetic 20 + CC0) at equal stage time and takes the Fraktur page CER 0.271 -> 0.218; =0 restores the greedy chain. |
-| `CRISPEMBED_TESSERACT_LEGACY_ROW_DEBUG` | presence | off (any value, even `0`, = on) | presence/value | debug | `src/tesseract_pageseg.cpp` |  |
-| `CRISPEMBED_TESSERACT_PAGESEG_BASELINE_TOLERANCE` | value | unset | presence/value | tuning / config | `src/tesseract_pageseg.cpp` |  |
-| `CRISPEMBED_TESSERACT_PAGESEG_BOX_PAD` | value | unset | presence/value | tuning / config | `src/tesseract_pageseg.cpp` |  |
-| `CRISPEMBED_TESSERACT_PAGESEG_KEEP_RULES` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/tesseract_pageseg.cpp` |  |
-| `CRISPEMBED_TESSERACT_PAGESEG_ROW_BLOB_BOUNDS` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/tesseract_pageseg.cpp` |  |
-| `CRISPEMBED_TESSERACT_PAGESEG_ROW_GAP` | value | unset | presence/value | tuning / config | `src/tesseract_pageseg.cpp` |  |
+| `CRISPEMBED_TESSERACT_COMPONENT_BASELINE` | on | off | bool | default-off experimental / opt-in | `src/tesseract_pageseg.cpp` |  |
+| `CRISPEMBED_TESSERACT_COMPONENT_DEBUG` | on | off | bool | debug | `src/tesseract_pageseg.cpp` |  |
+| `CRISPEMBED_TESSERACT_LEGACY_BAND_PROFILE` | on | off | bool | debug | `src/tesseract_pageseg.cpp` |  |
+| `CRISPEMBED_TESSERACT_LEGACY_BAND_ROWS` | value | unset | value | tuning / config | `src/tesseract_pageseg.cpp` | 24-image arms gate (synthetic 20 + CC0) at equal stage time and takes the Fraktur page CER 0.271 -> 0.218; =0 restores the greedy chain. |
+| `CRISPEMBED_TESSERACT_LEGACY_ROW_DEBUG` | on | off | bool | debug | `src/tesseract_pageseg.cpp` |  |
+| `CRISPEMBED_TESSERACT_PAGESEG_BASELINE_TOLERANCE` | value | unset | value | tuning / config | `src/tesseract_pageseg.cpp` |  |
+| `CRISPEMBED_TESSERACT_PAGESEG_BOX_PAD` | value | unset | value | tuning / config | `src/tesseract_pageseg.cpp` |  |
+| `CRISPEMBED_TESSERACT_PAGESEG_KEEP_RULES` | on | off | bool | default-off experimental / opt-in | `src/tesseract_pageseg.cpp` |  |
+| `CRISPEMBED_TESSERACT_PAGESEG_ROW_BLOB_BOUNDS` | on | off | bool | default-off experimental / opt-in | `src/tesseract_pageseg.cpp` |  |
+| `CRISPEMBED_TESSERACT_PAGESEG_ROW_GAP` | value | unset | value | tuning / config | `src/tesseract_pageseg.cpp` |  |
 
 ### text_sr
 
@@ -1065,7 +1075,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_UNLIMITED_OCR2` | on | off | bool | default-off experimental / opt-in | `src/unlimited_ocr.cpp` | Unlimited-OCR-2 must not silently run v1 attention: its own gate is required. |
 | `CRISPEMBED_UNLIMITED_OCR2_FAST` | on | off | bool | default-off experimental / opt-in | `src/unlimited_ocr.cpp` |  |
-| `CRISPEMBED_UNLIMITED_OCR2_OUTPUT` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/unlimited_ocr.cpp` |  |
+| `CRISPEMBED_UNLIMITED_OCR2_OUTPUT` | value | unset | value | tuning / config | `src/unlimited_ocr.cpp` |  |
 | `CRISPEMBED_UNLIMITED_OCR2_TILES` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/unlimited_ocr.cpp` |  |
 | `CRISPEMBED_UNLIMITED_OCR2_TILES_LEGACY_PREP` | on | off | bool | default-off experimental / opt-in | `src/unlimited_ocr.cpp` |  |
 | `CRISPEMBED_UNLIMITED_OCR2_TILES_LEGACY_UPSAMPLE` | on | off | bool | default-off experimental / opt-in | `src/unlimited_ocr.cpp` |  |
@@ -1086,14 +1096,14 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `ADAIR_LEGACY_NE3_DIMS` | value | unset | int | tuning / config | `src/adair.cpp` |  |
 | `ADAIR_SCALAR` | value | unset | int | tuning / config | `src/adair.cpp` | heavy), so the convs dominate the forward — default ON, opt out with ADAIR_SCALAR=1. The 2D FFT (AFLB) and attention softmax stay SIMD-scalar. |
 | `BERT_NER_FORCE_CPU` | value | unset | int | tuning / config | `src/bert_ner.cpp` | purely to pull the GGUF -- the same waste CRISPEMBED_TESSERACT_GPU_LOAD was added to remove. BERT_NER_GPU_LOAD=1 restores it for bisection. |
-| `BERT_NER_GPU_LOAD` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/bert_ner.cpp` |  |
-| `BTTR_OCR_SCALAR_ENCODER` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/bttr_ocr.cpp` |  |
-| `CARGO_CFG_TARGET_OS` | value | unset | presence/value | tuning / config | `crispembed-sys/build.rs` |  |
+| `BERT_NER_GPU_LOAD` | on | off | bool | default-off experimental / opt-in | `src/bert_ner.cpp` |  |
+| `BTTR_OCR_SCALAR_ENCODER` | on | off | bool | default-off experimental / opt-in | `src/bttr_ocr.cpp` |  |
+| `CARGO_CFG_TARGET_OS` | value | unset | value | tuning / config | `crispembed-sys/build.rs` |  |
 | `CLIP_TEXT_FORCE_CPU` | value | unset | int | tuning / config | `src/clip_text_embed.cpp` | Load weights — prefer GPU backend when available |
-| `CNN_DEBUG` | presence | off (any value, even `0`, = on) | presence/value | debug | `src/cnn_embed.cpp` | Debug: compare output tensors with ONNX reference (CNN_DEBUG=1) |
+| `CNN_DEBUG` | on | off | bool | debug | `src/cnn_embed.cpp` | Debug: compare output tensors with ONNX reference (CNN_DEBUG=1) |
 | `CNN_EMBED_FORCE_CPU` | value | unset | int | tuning / config | `src/cnn_embed.cpp` | Load weights — prefer GPU backend when available |
 | `CNN_REF_DIR` | value | unset | path | tuning / config | `src/cnn_embed.cpp` |  |
-| `CUDA` | value | unset | presence/value | tuning / config | `src/instructir.cpp`, `src/lightonocr.cpp`, `src/pan_sr.cpp` +1 |  |
+| `CUDA` | value | unset | value | tuning / config | `src/instructir.cpp`, `src/lightonocr.cpp`, `src/pan_sr.cpp` +1 |  |
 | `DAT_DUMP_DIR` | value | unset | path | debug | `src/dat_sr.cpp` |  |
 | `DAT_SR_GGML_CONV` | value | unset | int | tuning / config | `src/dat_sr.cpp` | and gate the ggml path behind DAT_SR_GGML_CONV=1 (opt-in for benchmarking / a future batched-graph rewrite). Contrast swinir/scunet (conv-heavy → wins). |
 | `DS2_CROP_MODE` | value | unset | string | tuning / config | `src/deepseek_ocr2.cpp` |  |
@@ -1102,63 +1112,63 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `DS2_LEGACY_DECODE` | value | unset | string | tuning / config | `src/deepseek_ocr2.cpp` | Value-parsed (G2b, same audit class as the DS2_KV_F16 fix 73beea9f): DS2_LEGACY_DECODE=0 must NOT select the legacy path. |
 | `DS2_NO_REPEAT_NGRAM` | value | unset | int | tuning / config | `src/deepseek_ocr2.cpp` |  |
 | `DS_REF` | value | unset | path | tuning / config | `src/deepseek_ocr2.cpp` | compared against the reference and a cos_min/max_abs line is printed. See tools/dump_deepseek_ocr2_reference.py. |
-| `DS_TEXT_TEST` | value | unset | presence/value | tuning / config | `src/deepseek_ocr2.cpp` | Isolation test: DS_TEXT_TEST runs the LLM decoder as a pure language model (no vision) to verify the decoder/MoE/rope in isolation. |
+| `DS_TEXT_TEST` | value | unset | value | tuning / config | `src/deepseek_ocr2.cpp` | Isolation test: DS_TEXT_TEST runs the LLM decoder as a pure language model (no vision) to verify the decoder/MoE/rope in isolation. |
 | `EASYOCR_BENCH` | on | off | bool | debug | `src/easyocr_ocr.cpp` |  |
-| `EASYOCR_CRAFT_FORCE_CPU` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/easyocr_craft.cpp` |  |
-| `EASYOCR_DIFF_DEBUG` | presence | off (any value, even `0`, = on) | string | debug | `src/easyocr_ocr.cpp` |  |
-| `EASYOCR_FORCE_CPU` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/easyocr_ocr.cpp` |  |
-| `EASYOCR_WIDTH_SORT` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/easyocr_pipeline.cpp` |  |
-| `ESRGAN_SCALAR` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/esrgan_sr.cpp` | Use ggml graph path if available |
+| `EASYOCR_CRAFT_FORCE_CPU` | on | off | bool | default-off experimental / opt-in | `src/easyocr_craft.cpp` |  |
+| `EASYOCR_DIFF_DEBUG` | on | off | bool | debug | `src/easyocr_ocr.cpp` |  |
+| `EASYOCR_FORCE_CPU` | on | off | bool | default-off experimental / opt-in | `src/easyocr_ocr.cpp` |  |
+| `EASYOCR_WIDTH_SORT` | on | off | bool | default-off experimental / opt-in | `src/easyocr_pipeline.cpp` |  |
+| `ESRGAN_SCALAR` | on | off | bool | default-off experimental / opt-in | `src/esrgan_sr.cpp` | Use ggml graph path if available |
 | `FIREREDPUNC_BACKEND` | value | unset | string | tuning / config | `src/fireredpunc.cpp` | local workaround, 'FIREREDPUNC_BACKEND=cpu' forces CPU and 'FIREREDPUNC_BACKEND=gpu' forces 'init_best()'. |
 | `FIREREDPUNC_BENCH` | on | off | bool | debug | `src/fireredpunc.cpp` |  |
-| `FIREREDPUNC_DEBUG` | presence | off (any value, even `0`, = on) | presence/value | debug | `src/fireredpunc.cpp` | Dump embedding output for diff-testing |
-| `FIREREDPUNC_DUMP_LOGITS` | value | unset | presence/value | debug | `src/fireredpunc.cpp` | the pre-argmax distribution — where quantization/imatrix effects actually live — instead of the thresholded restored-string exact-match. |
-| `GGML_METAL_NO_RESIDENCY` | set | set internally | presence/value | internal | `src/core/gguf_loader.cpp` |  |
-| `GGML_METAL_PIPELINE_CACHE` | value | unset | presence/value | tuning / config | `src/core/metal_pipeline_cache_policy.h` |  |
-| `GGML_METAL_PIPELINE_CACHE_DISABLE` | set/value | unset | presence/value | tuning / config | `src/core/metal_pipeline_cache_policy.h` | Respect an explicit caller decision either way. |
-| `GGML_METAL_PREC_F32_MM` | set | set internally | presence/value | internal | `src/layout_detect.cpp`, `src/oxr_ocr.cpp` | else |
-| `GLINER_DEBUG` | presence | off (any value, even `0`, = on) | presence/value | debug | `src/gliner_ner.cpp` |  |
+| `FIREREDPUNC_DEBUG` | on | off | bool | debug | `src/fireredpunc.cpp` | Dump embedding output for diff-testing |
+| `FIREREDPUNC_DUMP_LOGITS` | value | unset | value | debug | `src/fireredpunc.cpp` | the pre-argmax distribution — where quantization/imatrix effects actually live — instead of the thresholded restored-string exact-match. |
+| `GGML_METAL_NO_RESIDENCY` | set | set internally | value | internal | `src/core/gguf_loader.cpp` |  |
+| `GGML_METAL_PIPELINE_CACHE` | value | unset | value | tuning / config | `src/core/metal_pipeline_cache_policy.h` |  |
+| `GGML_METAL_PIPELINE_CACHE_DISABLE` | set/value | unset | value | tuning / config | `src/core/metal_pipeline_cache_policy.h` | Respect an explicit caller decision either way. |
+| `GGML_METAL_PREC_F32_MM` | set | set internally | value | internal | `src/layout_detect.cpp`, `src/oxr_ocr.cpp` | else |
+| `GLINER_DEBUG` | on | off | bool | debug | `src/gliner_ner.cpp` |  |
 | `GLINER_DIFF_REF` | value | unset | path | tuning / config | `src/gliner_ner.cpp` |  |
-| `GLM_OCR_DECODE_CACHE` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/glm_ocr.cpp` | Cache DECODE steps only (n_past > 0). Prefill (n_past == 0) has a different graph shape (image splice, full-sequence mRoPE) and stays on the sched. |
-| `GLM_OCR_DUMP_EMBEDS` | presence | off (any value, even `0`, = on) | presence/value | debug | `src/glm_ocr.cpp` |  |
-| `GLM_OCR_DUMP_LLM_LAYERS` | value | unset | presence/value | debug | `src/glm_ocr.cpp` | Divergence tracing: dump every layer's hidden states (T x D each). |
-| `GLM_OCR_DUMP_LOGITS` | value | unset | presence/value | debug | `src/glm_ocr.cpp` | Divergence tracing: append each step's last-token logits row. |
-| `GLM_OCR_DUMP_VIS_OUTPUT` | value | unset | presence/value | debug | `src/glm_ocr.cpp` | output (honours GLM_OCR_VISION_MAX_LAYERS). The bisection axis: run the same N on CPU and on Metal and diff the two files. |
+| `GLM_OCR_DECODE_CACHE` | on | off | bool | default-off experimental / opt-in | `src/glm_ocr.cpp` | Cache DECODE steps only (n_past > 0). Prefill (n_past == 0) has a different graph shape (image splice, full-sequence mRoPE) and stays on the sched. |
+| `GLM_OCR_DUMP_EMBEDS` | on | off | bool | debug | `src/glm_ocr.cpp` |  |
+| `GLM_OCR_DUMP_LLM_LAYERS` | value | unset | value | debug | `src/glm_ocr.cpp` | Divergence tracing: dump every layer's hidden states (T x D each). |
+| `GLM_OCR_DUMP_LOGITS` | value | unset | value | debug | `src/glm_ocr.cpp` | Divergence tracing: append each step's last-token logits row. |
+| `GLM_OCR_DUMP_VIS_OUTPUT` | value | unset | value | debug | `src/glm_ocr.cpp` | output (honours GLM_OCR_VISION_MAX_LAYERS). The bisection axis: run the same N on CPU and on Metal and diff the two files. |
 | `GLM_OCR_FORCE_CPU` | value | unset | int | tuning / config | `src/glm_ocr.cpp` | Prefer GPU backend when available |
-| `GLM_OCR_INJECT_MERGER` | value | unset | presence/value | debug | `src/glm_ocr.cpp` | Debug: inject Python reference merger output if GLM_OCR_INJECT_MERGER is set |
-| `GLM_OCR_INJECT_VIS` | value | unset | presence/value | debug | `src/glm_ocr.cpp` | Vision encoder output is now in layer_data (vis_D × n_patches) Debug: inject Python reference vision output if GLM_OCR_INJECT_VIS is set |
+| `GLM_OCR_INJECT_MERGER` | value | unset | value | debug | `src/glm_ocr.cpp` | Debug: inject Python reference merger output if GLM_OCR_INJECT_MERGER is set |
+| `GLM_OCR_INJECT_VIS` | value | unset | value | debug | `src/glm_ocr.cpp` | Vision encoder output is now in layer_data (vis_D × n_patches) Debug: inject Python reference vision output if GLM_OCR_INJECT_VIS is set |
 | `GLM_OCR_NO_REPEAT_NGRAM` | value | unset | int | tuning / config | `src/glm_ocr.cpp` |  |
 | `GLM_OCR_NO_ROPE_PERMUTE` | on | off | bool | default-off experimental / opt-in | `src/glm_ocr.cpp` | artifact works unchanged. GLM_OCR_NO_ROPE_PERMUTE=1 restores the old (mis-paired) behavior for A/B. |
-| `GLM_OCR_ROPE_DEBUG` | presence | off (any value, even `0`, = on) | presence/value | debug | `src/glm_ocr.cpp` |  |
-| `GLM_OCR_ROPE_MERGE_ORDER` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/glm_ocr.cpp` |  |
-| `GLM_OCR_VISION_BAKE_F32` | value | unset | presence/value | tuning / config | `src/glm_ocr.cpp` | exact, q8_0 dequant is deterministic), the per-image cast nodes become no-ops, and the price is ~4x tower-weight RAM — hence opt-in. |
-| `GLM_OCR_VISION_F16MM` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/glm_ocr.cpp` | cosine collapses. Cast quantized/F16 weights to F32 so matmuls stay F32. GLM_OCR_VISION_F16MM=1 restores the old (lossy) behavior for A/B testing. |
-| `GLM_OCR_VISION_FLASH` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/glm_ocr.cpp` | Explicit F32 attention by default (flash-attn's F16 K/V loses precision on this ViT's massive activations); GLM_OCR_VISION_FLASH=1 to A/B the flash path. |
+| `GLM_OCR_ROPE_DEBUG` | on | off | bool | debug | `src/glm_ocr.cpp` |  |
+| `GLM_OCR_ROPE_MERGE_ORDER` | on | off | bool | default-off experimental / opt-in | `src/glm_ocr.cpp` |  |
+| `GLM_OCR_VISION_BAKE_F32` | value | unset | value | tuning / config | `src/glm_ocr.cpp` | exact, q8_0 dequant is deterministic), the per-image cast nodes become no-ops, and the price is ~4x tower-weight RAM — hence opt-in. |
+| `GLM_OCR_VISION_F16MM` | on | off | bool | default-off experimental / opt-in | `src/glm_ocr.cpp` | cosine collapses. Cast quantized/F16 weights to F32 so matmuls stay F32. GLM_OCR_VISION_F16MM=1 restores the old (lossy) behavior for A/B testing. |
+| `GLM_OCR_VISION_FLASH` | on | off | bool | default-off experimental / opt-in | `src/glm_ocr.cpp` | Explicit F32 attention by default (flash-attn's F16 K/V loses precision on this ViT's massive activations); GLM_OCR_VISION_FLASH=1 to A/B the flash path. |
 | `GLM_OCR_VISION_MAX_LAYERS` | value | unset | int | tuning / config | `src/glm_ocr.cpp` |  |
 | `GLM_OCR_VISION_PIN_INPUT` | on | off | bool | default-off experimental / opt-in | `src/glm_ocr.cpp` | nothing measured, so the default stays as-is per the A/B rule. GLM_OCR_VISION_PIN_INPUT=1 enables. |
 | `GLM_OCR_VISION_ROPE` | value | unset | int | tuning / config | `src/glm_ocr.cpp` | do NOT validate the rope path — regenerate refs with rope before using per-layer diff as a gate. |
-| `GOT_OCR_ATTN_CONT` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/got_ocr.cpp` | GOT_OCR_ATTN_CONT=1 restores the copy for regression bisection. (Same removal proven byte-identical for math_ocr, MATH_OCR_ATTN_CONT.) |
-| `GOT_OCR_DECODE_CACHE` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/got_ocr.cpp` | grow with n_past), so once reserved for the longest graph every subsequent ggml_gallocr_alloc_graph takes the no-realloc fast path. Output-identical. |
-| `GOT_OCR_DUMP_VIS` | value | unset | presence/value | debug | `src/got_ocr.cpp` | Diagnostic: dump final vision features (n_vis_tokens x vis_D) for HF diff. |
+| `GOT_OCR_ATTN_CONT` | on | off | bool | default-off experimental / opt-in | `src/got_ocr.cpp` | GOT_OCR_ATTN_CONT=1 restores the copy for regression bisection. (Same removal proven byte-identical for math_ocr, MATH_OCR_ATTN_CONT.) |
+| `GOT_OCR_DECODE_CACHE` | on | off | bool | default-off experimental / opt-in | `src/got_ocr.cpp` | grow with n_past), so once reserved for the longest graph every subsequent ggml_gallocr_alloc_graph takes the no-realloc fast path. Output-identical. |
+| `GOT_OCR_DUMP_VIS` | value | unset | value | debug | `src/got_ocr.cpp` | Diagnostic: dump final vision features (n_vis_tokens x vis_D) for HF diff. |
 | `GOT_OCR_FORCE_CPU` | value | unset | int | tuning / config | `src/got_ocr.cpp` | Useful to sidestep Metal op gaps and to A/B Metal-vs-CPU outputs while debugging vision-encoder correctness (issue #25). |
 | `GOT_OCR_NC_MAX` | value | unset | int | tuning / config | `src/got_ocr.cpp` |  |
 | `GOT_OCR_NO_KV_CACHE` | value | unset | int | tuning / config | `src/got_ocr.cpp` | the SAME graph the per-layer parity diff validates — isolates whether the KV-cache path (write/read views, cached RoPE/mask) is what corrupts output. |
-| `GOT_OCR_STEP_PROFILE` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/got_ocr.cpp` |  |
+| `GOT_OCR_STEP_PROFILE` | on | off | bool | debug | `src/got_ocr.cpp` |  |
 | `HAT_SR_FORCE_CPU` | value | unset | int | tuning / config | `src/hat_sr.cpp` |  |
 | `HAT_SR_SCALAR` | value | unset | int | tuning / config | `src/hat_sr.cpp` | upsample/conv_last convs run at the 4×-upsampled resolution, so unlike attention-bound DAT the convs are a meaningful fraction of the forward. |
-| `HF_HUB_OFFLINE` | value | unset | presence/value | tuning / config | `examples/cli/model_mgr.cpp` |  |
+| `HF_HUB_OFFLINE` | value | unset | value | tuning / config | `examples/cli/model_mgr.cpp` |  |
 | `HMER_OCR_SCALAR_ENCODER` | on | off | bool | default-off experimental / opt-in | `src/hmer_ocr.cpp` | Value-parsed: HMER_OCR_SCALAR_ENCODER=0 must mean "no", not "yes". The presence test this replaces turned the documented off-switch on. |
-| `HOME` | value | unset | presence/value | tuning / config | `examples/cli/model_mgr.cpp`, `src/core/metal_pipeline_cache_policy.h` | else |
-| `INSTRUCTIR_LEGACY` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/instructir.cpp` |  |
-| `INTERNVL2_DECODE_CACHE` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/internvl2_ocr.cpp` | Cache DECODE steps only (n_past > 0). Prefill (n_past == 0) has a different graph shape (image splice) and stays on the sched. |
+| `HOME` | value | unset | value | tuning / config | `examples/cli/model_mgr.cpp`, `src/core/metal_pipeline_cache_policy.h` | else |
+| `INSTRUCTIR_LEGACY` | on | off | bool | default-off experimental / opt-in | `src/instructir.cpp` |  |
+| `INTERNVL2_DECODE_CACHE` | on | off | bool | default-off experimental / opt-in | `src/internvl2_ocr.cpp` | Cache DECODE steps only (n_past > 0). Prefill (n_past == 0) has a different graph shape (image splice) and stays on the sched. |
 | `INTERNVL2_OCR_FORCE_CPU` | value | unset | int | tuning / config | `src/internvl2_ocr.cpp` | Init backend — prefer GPU when available |
-| `LAYOUT_CONV_DIRECT` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/layout_detect.cpp` |  |
+| `LAYOUT_CONV_DIRECT` | on | off | bool | default-off experimental / opt-in | `src/layout_detect.cpp` |  |
 | `LAYOUT_CONV_F16` | on | off | bool | default-off experimental / opt-in | `src/layout_detect.cpp` |  |
-| `LAYOUT_DEBUG` | presence | off (any value, even `0`, = on) | presence/value | debug | `src/layout_detect.cpp` | Dump encoder intermediates for diff comparison (ggml raw byte order) |
-| `LAYOUT_DETECT_FLASH` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/layout_detect.cpp` |  |
+| `LAYOUT_DEBUG` | on | off | bool | debug | `src/layout_detect.cpp` | Dump encoder intermediates for diff comparison (ggml raw byte order) |
+| `LAYOUT_DETECT_FLASH` | on | off | bool | default-off experimental / opt-in | `src/layout_detect.cpp` |  |
 | `LAYOUT_DETECT_FORCE_CPU` | value | unset | int | tuning / config | `src/layout_detect.cpp` | Load weights — prefer GPU backend when available |
-| `LAYOUT_INJECT_MEMORY` | presence/value | off (any value, even `0`, = on) | presence/value | debug | `src/layout_detect.cpp` | Debug: also inject HF reference memory (raw encoder features for cross-attn) |
-| `LAYOUT_INJECT_REF` | presence/value | off (any value, even `0`, = on) | path | debug | `src/layout_detect.cpp` | Debug: inject HF reference enc_output for decoder parity testing |
+| `LAYOUT_INJECT_MEMORY` | value | unset | value | debug | `src/layout_detect.cpp` | Debug: also inject HF reference memory (raw encoder features for cross-attn) |
+| `LAYOUT_INJECT_REF` | value | unset | path | debug | `src/layout_detect.cpp` | Debug: inject HF reference enc_output for decoder parity testing |
 | `LFM2_COLBERT_DIFF_REF` | value | unset | path | tuning / config | `src/lfm2_embed.cpp` | hidden_states PASSES here but colbert_output FAILs, the discrepancy is the ColBERT projection head, not the backbone. |
 | `LFM2_VL_ATTN_PREC_F32` | on | off | bool | default-off experimental / opt-in | `src/lfm2_vl_ocr.cpp` |  |
 | `LFM2_VL_BILINEAR_RESIZE` | on | off | bool | default-off experimental / opt-in | `src/lfm2_vl_ocr.cpp` |  |
@@ -1180,111 +1190,111 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `LFM2_VL_TV_RESIZE` | on | off | bool | default-off experimental / opt-in | `src/lfm2_vl_ocr.cpp` | by at most 1/255 on ~100 pixels of 750k elsewhere. LFM2_VL_TV_RESIZE=1 selects the torchvision resampler for A/B. |
 | `LFM2_VL_ZERO_CONV_STATE` | on | off | bool | default-off experimental / opt-in | `src/lfm2_vl_ocr.cpp` | Optionally skip conv state extraction (for debugging decode issues) |
 | `LILT_KIE_FORCE_CPU` | value | unset | int | tuning / config | `src/lilt_kie.cpp` | Init backend — prefer GPU when available |
-| `LOCR_DECODE_CACHE` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/lightonocr.cpp` |  |
-| `MATH_OCR_ATTN_CONT` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/math_ocr.cpp` | Default is now cont-off; MATH_OCR_ATTN_CONT=1 restores the old copies for regression bisection. |
-| `MATH_OCR_DECODE_CACHE` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/math_ocr.cpp` | with n_kv), so every per-step alloc takes the no-realloc fast path and the sched's split_graph is skipped. Output-identical. Same trick as got_ocr. |
+| `LOCR_DECODE_CACHE` | on | off | bool | default-off experimental / opt-in | `src/lightonocr.cpp` |  |
+| `MATH_OCR_ATTN_CONT` | on | off | bool | default-off experimental / opt-in | `src/math_ocr.cpp` | Default is now cont-off; MATH_OCR_ATTN_CONT=1 restores the old copies for regression bisection. |
+| `MATH_OCR_DECODE_CACHE` | on | off | bool | default-off experimental / opt-in | `src/math_ocr.cpp` | with n_kv), so every per-step alloc takes the no-realloc fast path and the sched's split_graph is skipped. Output-identical. Same trick as got_ocr. |
 | `MATH_OCR_DEC_CPU` | value | unset | int | tuning / config | `src/math_ocr.cpp` | Decoder-on-CPU split (opt-in, requires a GPU primary backend). |
-| `MATH_OCR_DIFF_REF` | presence/value | off (any value, even `0`, = on) | path | tuning / config | `src/math_ocr.cpp` | back and compare it to the Python reference — the doc's "first layer < 0.999 = the bug" recipe. Off by default (no perturbation of the normal forward). |
-| `MATH_OCR_DUMP_ENC` | value | unset | presence/value | debug | `src/math_ocr.cpp` | DEBUG: dump encoder memory [T,H] |
+| `MATH_OCR_DIFF_REF` | value | unset | path | tuning / config | `src/math_ocr.cpp` | back and compare it to the Python reference — the doc's "first layer < 0.999 = the bug" recipe. Off by default (no perturbation of the normal forward). |
+| `MATH_OCR_DUMP_ENC` | value | unset | value | debug | `src/math_ocr.cpp` | DEBUG: dump encoder memory [T,H] |
 | `MATH_OCR_FFN_GELU` | value | unset | int | tuning / config | `src/math_ocr.cpp` |  |
 | `MATH_OCR_FORCE_CPU` | value | unset | int | tuning / config | `src/math_ocr.cpp` |  |
 | `MATH_OCR_MEAN` | value | unset | float | tuning / config | `src/math_ocr.cpp` |  |
-| `MATH_OCR_NODES` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/math_ocr.cpp` |  |
+| `MATH_OCR_NODES` | on | off | bool | default-off experimental / opt-in | `src/math_ocr.cpp` |  |
 | `MATH_OCR_PAD` | value | unset | int | tuning / config | `src/math_ocr.cpp` |  |
-| `MATH_OCR_PV_BIN` | value | unset | presence/value | tuning / config | `src/math_ocr.cpp` | DEBUG: inject a raw normalized pixel_values buffer (S*S f32, replicated to n_channels) to isolate the graph from native preprocessing (see LEARNINGS). |
+| `MATH_OCR_PV_BIN` | value | unset | value | tuning / config | `src/math_ocr.cpp` | DEBUG: inject a raw normalized pixel_values buffer (S*S f32, replicated to n_channels) to isolate the graph from native preprocessing (see LEARNINGS). |
 | `MATH_OCR_STD` | value | unset | float | tuning / config | `src/math_ocr.cpp` |  |
-| `MIXTEX_BILINEAR` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/mixtex_ocr.cpp` | ViTImageProcessor uses bicubic (resample=3), so this diverges from HF at borderline greedy steps; the default below matches HF. |
-| `MIXTEX_DEC_DEQUANT_PER_STEP` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/mixtex_ocr.cpp` | Decoder layers |
+| `MIXTEX_BILINEAR` | on | off | bool | default-off experimental / opt-in | `src/mixtex_ocr.cpp` | ViTImageProcessor uses bicubic (resample=3), so this diverges from HF at borderline greedy steps; the default below matches HF. |
+| `MIXTEX_DEC_DEQUANT_PER_STEP` | on | off | bool | default-off experimental / opt-in | `src/mixtex_ocr.cpp` | Decoder layers |
 | `MIXTEX_DEC_REF` | value | unset | path | tuning / config | `src/mixtex_ocr.cpp` | Decoder diff harness |
 | `MIXTEX_DIFF_REF` | value | unset | path | tuning / config | `src/mixtex_ocr.cpp` | Diff harness: compare with Python reference |
-| `MIXTEX_DUMP` | presence | off (any value, even `0`, = on) | presence/value | debug | `src/mixtex_ocr.cpp` |  |
+| `MIXTEX_DUMP` | on | off | bool | debug | `src/mixtex_ocr.cpp` |  |
 | `MIXTEX_ENC_STAGE_REF` | value | unset | path | tuning / config | `src/mixtex_ocr.cpp` | Diff: per-stage encoder output |
-| `MIXTEX_WMSA_SCALAR` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/mixtex_ocr.cpp` |  |
-| `NAFNET_CPU` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/nafnet_denoise.cpp` | the Metal device (idempotent; usually already applied by the crispasr_init_gpu_backend() call above, but NAFNET_FORCE_CPU=1 skips it). |
+| `MIXTEX_WMSA_SCALAR` | on | off | bool | default-off experimental / opt-in | `src/mixtex_ocr.cpp` |  |
+| `NAFNET_CPU` | on | off | bool | default-off experimental / opt-in | `src/nafnet_denoise.cpp` | the Metal device (idempotent; usually already applied by the crispasr_init_gpu_backend() call above, but NAFNET_FORCE_CPU=1 skips it). |
 | `NAFNET_FORCE_CPU` | value | unset | int | tuning / config | `src/nafnet_denoise.cpp` | Forward pass is scalar CPU but weights can reside on GPU (read via ggml_backend_tensor_get). Backend kept alive for tensor access. |
-| `NAFNET_LEGACY` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/nafnet_denoise.cpp` | Fused single-graph block (default). Replaces the per-conv mini-graphs + scalar glue. Legacy path via NAFNET_LEGACY=1. |
+| `NAFNET_LEGACY` | on | off | bool | default-off experimental / opt-in | `src/nafnet_denoise.cpp` | Fused single-graph block (default). Replaces the per-conv mini-graphs + scalar glue. Legacy path via NAFNET_LEGACY=1. |
 | `NAFNET_SCALAR` | value | unset | int | tuning / config | `src/nafnet_denoise.cpp` |  |
-| `OCR_DETECT_CAPTURE_TAPS` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/ocr_detect.cpp` |  |
-| `OCR_DETECT_DEBUG` | presence | off (any value, even `0`, = on) | presence/value | debug | `src/ocr_detect.cpp` |  |
-| `OCR_DETECT_DIRECT_CONV` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/ocr_detect.cpp` |  |
+| `OCR_DETECT_CAPTURE_TAPS` | on | off | bool | default-off experimental / opt-in | `src/ocr_detect.cpp` |  |
+| `OCR_DETECT_DEBUG` | on | off | bool | debug | `src/ocr_detect.cpp` |  |
+| `OCR_DETECT_DIRECT_CONV` | on | off | bool | default-off experimental / opt-in | `src/ocr_detect.cpp` |  |
 | `OCR_DETECT_FORCE_CPU` | value | unset | int | tuning / config | `src/ocr_detect.cpp` | OCR_DETECT_USE_GPU=0 forces CPU, =1 forces the GPU path (either kind); unset = the per-kind default. |
-| `OCR_DETECT_SCALAR_SCORE` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/ocr_detect.cpp` | box output is byte-identical. OCR_DETECT_SCALAR_SCORE=1 restores the old per-pixel path for bisection. |
+| `OCR_DETECT_SCALAR_SCORE` | on | off | bool | default-off experimental / opt-in | `src/ocr_detect.cpp` | box output is byte-identical. OCR_DETECT_SCALAR_SCORE=1 restores the old per-pixel path for bisection. |
 | `OCR_DETECT_USE_GPU` | value | unset | int | tuning / config | `src/ocr_detect.cpp` |  |
 | `OUT_DIR` | value | unset | path | tuning / config | `crispembed-sys/build.rs` |  |
 | `PAN_SR_FORCE_CPU` | value | unset | int | tuning / config | `src/pan_sr.cpp` |  |
 | `PAN_SR_SCALAR` | value | unset | int | tuning / config | `src/pan_sr.cpp` |  |
 | `PARSEQ_OCR_FORCE_CPU` | value | unset | int | tuning / config | `src/parseq_ocr.cpp` |  |
-| `PATH` | value | unset | presence/value | tuning / config | `python/crispembed/_binding.py` |  |
-| `PCS_DEBUG` | presence | off (any value, even `0`, = on) | presence/value | debug | `src/pcs.cpp` | Diff-harness dump: PCS_DEBUG=1 prints tokenization + per-token head predictions so they can be compared against the ONNX reference (tools/dump_pcs_reference.... |
-| `PCS_DUMP_HIDDEN` | value | unset | presence/value | debug | `src/pcs.cpp` | Diff-harness: dump encoder hidden (row-major [N, d]) for cosine parity vs ONNX. With PCS_DUMP_LAYER set, dump that layer's full [seq_len, d] output instead. |
+| `PATH` | value | unset | value | tuning / config | `python/crispembed/_binding.py` |  |
+| `PCS_DEBUG` | on | off | bool | debug | `src/pcs.cpp` | Diff-harness dump: PCS_DEBUG=1 prints tokenization + per-token head predictions so they can be compared against the ONNX reference (tools/dump_pcs_reference.... |
+| `PCS_DUMP_HIDDEN` | value | unset | value | debug | `src/pcs.cpp` | Diff-harness: dump encoder hidden (row-major [N, d]) for cosine parity vs ONNX. With PCS_DUMP_LAYER set, dump that layer's full [seq_len, d] output instead. |
 | `PCS_DUMP_LAYER` | value | unset | int | debug | `src/pcs.cpp` |  |
-| `PCS_DUMP_LOGITS` | value | unset | presence/value | debug | `src/pcs.cpp` | just the thresholded restored string. Plain fprintf — no imatrix dep, so it stays identical in the CrispASR copy. |
-| `PCS_FLASH_ATTN` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/pcs.cpp` |  |
-| `PCS_FORCE_CPU` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/pcs.cpp` | Load weights. PCS_FORCE_CPU pins the CPU backend (diff-harness parity: match the ONNX/onnxruntime CPU reference without GPU float-noise on borderline logits). |
-| `PIX2STRUCT_DUMP_ENC` | value | unset | presence/value | debug | `src/pix2struct.cpp` | Parity tracing: dump the encoder output cache ([n_enc, hidden]) |
-| `PIX2STRUCT_DUMP_PATCHES` | value | unset | presence/value | debug | `src/pix2struct.cpp` | Parity tracing: dump the packed patch tensor ([max_patches, 2+patch_flat]) |
+| `PCS_DUMP_LOGITS` | value | unset | value | debug | `src/pcs.cpp` | just the thresholded restored string. Plain fprintf — no imatrix dep, so it stays identical in the CrispASR copy. |
+| `PCS_FLASH_ATTN` | on | off | bool | default-off experimental / opt-in | `src/pcs.cpp` |  |
+| `PCS_FORCE_CPU` | on | off | bool | default-off experimental / opt-in | `src/pcs.cpp` | Load weights. PCS_FORCE_CPU pins the CPU backend (diff-harness parity: match the ONNX/onnxruntime CPU reference without GPU float-noise on borderline logits). |
+| `PIX2STRUCT_DUMP_ENC` | value | unset | value | debug | `src/pix2struct.cpp` | Parity tracing: dump the encoder output cache ([n_enc, hidden]) |
+| `PIX2STRUCT_DUMP_PATCHES` | value | unset | value | debug | `src/pix2struct.cpp` | Parity tracing: dump the packed patch tensor ([max_patches, 2+patch_flat]) |
 | `PIX2STRUCT_RAW_IDS` | on | off | bool | default-off experimental / opt-in | `src/pix2struct.cpp` |  |
-| `POSFORMER_DUMP` | value | unset | presence/value | debug | `src/posformer_ocr.cpp` | Dump encoder output if requested |
-| `POSFORMER_SCALAR_ENCODER` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/posformer_ocr.cpp` |  |
+| `POSFORMER_DUMP` | value | unset | value | debug | `src/posformer_ocr.cpp` | Dump encoder output if requested |
+| `POSFORMER_SCALAR_ENCODER` | on | off | bool | default-off experimental / opt-in | `src/posformer_ocr.cpp` |  |
 | `PPFNL_OCR_FORCE_CPU` | value | unset | int | tuning / config | `src/ppformulanet_l_ocr.cpp` | Prefer GPU backend when available |
-| `PPFN_DEBUG` | presence | off (any value, even `0`, = on) | presence/value | debug | `src/ppformulanet_ocr.cpp` | Embedding LayerNorm |
-| `PPFN_SCALAR_ENCODER` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/ppformulanet_ocr.cpp` | Input is already preprocessed CHW [3, S, S] normalized data |
-| `PPLCNET_ORIENTATION_GRAPH` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/pplcnet_orientation.cpp` |  |
-| `PPLCNET_ORIENTATION_GRAPH_ACCEPT` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/pplcnet_orientation.cpp` |  |
-| `PPLCNET_ORIENTATION_GRAPH_CPU` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/pplcnet_orientation.cpp` |  |
-| `PPLCNET_ORIENTATION_GRAPH_DEBUG` | presence | off (any value, even `0`, = on) | presence/value | debug | `src/pplcnet_orientation.cpp` |  |
-| `PPLCNET_ORIENTATION_GRAPH_PIPELINE` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/pplcnet_orientation.cpp` |  |
+| `PPFN_DEBUG` | on | off | bool | debug | `src/ppformulanet_ocr.cpp` | Embedding LayerNorm |
+| `PPFN_SCALAR_ENCODER` | on | off | bool | default-off experimental / opt-in | `src/ppformulanet_ocr.cpp` | Input is already preprocessed CHW [3, S, S] normalized data |
+| `PPLCNET_ORIENTATION_GRAPH` | on | off | bool | default-off experimental / opt-in | `src/pplcnet_orientation.cpp` |  |
+| `PPLCNET_ORIENTATION_GRAPH_ACCEPT` | on | off | bool | default-off experimental / opt-in | `src/pplcnet_orientation.cpp` |  |
+| `PPLCNET_ORIENTATION_GRAPH_CPU` | on | off | bool | default-off experimental / opt-in | `src/pplcnet_orientation.cpp` |  |
+| `PPLCNET_ORIENTATION_GRAPH_DEBUG` | on | off | bool | debug | `src/pplcnet_orientation.cpp` |  |
+| `PPLCNET_ORIENTATION_GRAPH_PIPELINE` | on | off | bool | default-off experimental / opt-in | `src/pplcnet_orientation.cpp` |  |
 | `PPOCRV6_REF` | value | unset | path | tuning / config | `src/ppocrv6_ocr.cpp` |  |
 | `QWEN2VL_OCR_FORCE_CPU` | value | unset | int | tuning / config | `src/qwen2vl_ocr.cpp` | CRISPEMBED_TELEOCR_GPU=1; CRISPEMBED_TELEOCR_GPU=0 or QWEN2VL_OCR_FORCE_CPU=1 force the CPU path everywhere. |
-| `QWEN2VL_OCR_NO_WINDOW` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/qwen2vl_ocr.cpp` |  |
-| `QWEN_DBG` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/qwen2vl_ocr.cpp` |  |
-| `RESTORMER_SCALAR` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/restormer.cpp` |  |
-| `SAFMN_SR_LEGACY` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/safmn_sr.cpp` | Fused single-graph forward (default). The per-conv legacy path below is kept for A/B via SAFMN_SR_LEGACY=1. |
-| `SAFMN_SR_METAL` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/safmn_sr.cpp` | G4: this opt-in Metal path bypasses crispasr_init_gpu_backend(), so cap the MTLBinaryArchive open here too (idempotent, no-op on CPU default). |
+| `QWEN2VL_OCR_NO_WINDOW` | on | off | bool | default-off experimental / opt-in | `src/qwen2vl_ocr.cpp` |  |
+| `QWEN_DBG` | on | off | bool | debug | `src/qwen2vl_ocr.cpp` |  |
+| `RESTORMER_SCALAR` | on | off | bool | default-off experimental / opt-in | `src/restormer.cpp` |  |
+| `SAFMN_SR_LEGACY` | on | off | bool | default-off experimental / opt-in | `src/safmn_sr.cpp` | Fused single-graph forward (default). The per-conv legacy path below is kept for A/B via SAFMN_SR_LEGACY=1. |
+| `SAFMN_SR_METAL` | on | off | bool | default-off experimental / opt-in | `src/safmn_sr.cpp` | G4: this opt-in Metal path bypasses crispasr_init_gpu_backend(), so cap the MTLBinaryArchive open here too (idempotent, no-op on CPU default). |
 | `SAM2_FORCE_CPU` | on | off | bool | default-off experimental / opt-in | `src/sam2.cpp` |  |
 | `SCUNET_FORCE_CPU` | value | unset | int | tuning / config | `src/scunet_denoise.cpp` |  |
 | `SCUNET_SCALAR` | value | unset | int | tuning / config | `src/scunet_denoise.cpp` | POINTERS held in the context — not by shape, which can't tell a 1×1 conv (ne=[1,1,IC,OC]) from a 2D linear. |
-| `SCUNET_WMSA_SCALAR` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/scunet_denoise.cpp` |  |
-| `SMOLDOCLING_DEBUG_PROMPT` | value | unset | presence/value | debug | `src/smoldocling_ocr.cpp` | Prompt-contract debug: dump the prefill ids for parity checks against the reference processor (one id per line). |
+| `SCUNET_WMSA_SCALAR` | on | off | bool | default-off experimental / opt-in | `src/scunet_denoise.cpp` |  |
+| `SMOLDOCLING_DEBUG_PROMPT` | value | unset | value | debug | `src/smoldocling_ocr.cpp` | Prompt-contract debug: dump the prefill ids for parity checks against the reference processor (one id per line). |
 | `SMOLDOCLING_FORCE_CPU` | value | unset | int | tuning / config | `src/smoldocling_ocr.cpp` |  |
-| `SMOLDOCLING_LEGACY_PREPROC` | value | unset | presence/value | tuning / config | `src/smoldocling_ocr.cpp` | 512x512 input (regression-bisection gate; known to hallucinate duplicated regions on non-square pages). |
-| `SMT_OCR_DEBUG` | presence/value | off (any value, even `0`, = on) | presence/value | debug | `src/smt_ocr.cpp` |  |
+| `SMOLDOCLING_LEGACY_PREPROC` | value | unset | value | tuning / config | `src/smoldocling_ocr.cpp` | 512x512 input (regression-bisection gate; known to hallucinate duplicated regions on non-square pages). |
+| `SMT_OCR_DEBUG` | on/value | off | value | debug | `src/smt_ocr.cpp` |  |
 | `SMT_OCR_FORCE_CPU` | value | unset | int | tuning / config | `src/smt_ocr.cpp` |  |
-| `SMT_OCR_FULL_DECODE` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/smt_ocr.cpp` | SMT_OCR_HOSTKV=1 = the host-round-trip KV path; SMT_OCR_FULL_DECODE=1 = the no-cache teacher-forced full graph. The three are output-identical. |
-| `SMT_OCR_HOSTKV` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/smt_ocr.cpp` |  |
-| `SMT_OCR_NO_DECODE_CACHE` | value | unset | presence/value | tuning / config | `src/smt_ocr.cpp` | is the win for the ~thousands-of-steps full-page decode. Gated so the sched path stays available (SMT_OCR_NO_DECODE_CACHE=1); output-identical. |
+| `SMT_OCR_FULL_DECODE` | on | off | bool | default-off experimental / opt-in | `src/smt_ocr.cpp` | SMT_OCR_HOSTKV=1 = the host-round-trip KV path; SMT_OCR_FULL_DECODE=1 = the no-cache teacher-forced full graph. The three are output-identical. |
+| `SMT_OCR_HOSTKV` | on | off | bool | default-off experimental / opt-in | `src/smt_ocr.cpp` |  |
+| `SMT_OCR_NO_DECODE_CACHE` | on | off | bool | default-off experimental / opt-in | `src/smt_ocr.cpp` | is the win for the ~thousands-of-steps full-page decode. Gated so the sched path stays available (SMT_OCR_NO_DECODE_CACHE=1); output-identical. |
 | `SMT_OCR_REDUCE_RATIO` | value | unset | float | tuning / config | `src/smt_ocr.cpp` | test-only scale override |
-| `SURYA_DET_DUMP` | presence | off (any value, even `0`, = on) | presence/value | debug | `src/surya_det.cpp` |  |
+| `SURYA_DET_DUMP` | on | off | bool | debug | `src/surya_det.cpp` |  |
 | `SURYA_DET_FORCE_CPU` | value | unset | string | tuning / config | `src/surya_det.cpp` | Silicon, CUDA elsewhere) so the stage 0-2 / decode-head graph runs on GPU; set SURYA_DET_FORCE_CPU=1 to pin to CPU for parity debugging. |
-| `SURYA_DET_SCALAR` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/surya_det.cpp` | Use graph-accelerated path unless SURYA_DET_SCALAR is set |
+| `SURYA_DET_SCALAR` | on | off | bool | default-off experimental / opt-in | `src/surya_det.cpp` | Use graph-accelerated path unless SURYA_DET_SCALAR is set |
 | `SWINIR_DUMP_DIR` | value | unset | path | debug | `src/swinir_sr.cpp` |  |
 | `SWINIR_SR_FORCE_CPU` | value | unset | int | tuning / config | `src/swinir_sr.cpp` |  |
 | `SWINIR_SR_SCALAR` | value | unset | int | tuning / config | `src/swinir_sr.cpp` | conv_after_body, upsample) with ggml_conv_2d on a dedicated CPU sched. The Swin window attention / norms / pixel-shuffle stay scalar. |
 | `TBSRN_SR_FORCE_CPU` | value | unset | int | tuning / config | `src/tbsrn_sr.cpp` |  |
 | `TBSRN_SR_SCALAR` | value | unset | int | tuning / config | `src/tbsrn_sr.cpp` | fused data where present). Kernels are custom-writer PyTorch [OC,IC,KH,KW]; reverse the 4 ne axes to ggml [KW,KH,IC,OC] over the same bytes. |
-| `TEMP` | value | unset | presence/value | tuning / config | `src/core/temp_file.h` |  |
-| `TESSERACT_DIFF_DEBUG` | presence | off (any value, even `0`, = on) | presence/value | debug | `src/tesseract_lstm.cpp` |  |
+| `TEMP` | value | unset | value | tuning / config | `src/core/temp_file.h` |  |
+| `TESSERACT_DIFF_DEBUG` | on | off | bool | debug | `src/tesseract_lstm.cpp` |  |
 | `TEXT_SR_FORCE_CPU` | value | unset | int | tuning / config | `src/text_sr.cpp` | to remove (measured there at ~85% of a one-shot invocation). TEXT_SR_GPU_LOAD=1 restores the old behaviour for bisection. |
-| `TEXT_SR_GPU_LOAD` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/text_sr.cpp` |  |
-| `TMPDIR` | value | unset | presence/value | tuning / config | `src/core/temp_file.h` |  |
+| `TEXT_SR_GPU_LOAD` | on | off | bool | default-off experimental / opt-in | `src/text_sr.cpp` |  |
+| `TMPDIR` | value | unset | value | tuning / config | `src/core/temp_file.h` |  |
 | `TPS_LOCNET_FORCE_CPU` | value | unset | int | tuning / config | `src/tps_locnet.cpp` | nothing -- the waste CRISPEMBED_TESSERACT_GPU_LOAD was introduced to remove. TPS_LOCNET_GPU_LOAD=1 restores the old behaviour for bisection. |
-| `TPS_LOCNET_GPU_LOAD` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/tps_locnet.cpp` |  |
-| `TRANSCODA_OCR_DUMP_PX` | value | unset | presence/value | debug | `src/transcoda_ocr.cpp` |  |
+| `TPS_LOCNET_GPU_LOAD` | on | off | bool | default-off experimental / opt-in | `src/tps_locnet.cpp` |  |
+| `TRANSCODA_OCR_DUMP_PX` | value | unset | value | debug | `src/transcoda_ocr.cpp` |  |
 | `TRANSCODA_OCR_FORCE_CPU` | value | unset | int | tuning / config | `src/transcoda_ocr.cpp` |  |
-| `TRANSCODA_OCR_FULL_DECODE` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/transcoda_ocr.cpp` |  |
-| `TRANSCODA_OCR_HOST_KV` | presence | off (any value, even `0`, = on) | presence/value | legacy presence gate | `src/transcoda_ocr.cpp` |  |
+| `TRANSCODA_OCR_FULL_DECODE` | on | off | bool | default-off experimental / opt-in | `src/transcoda_ocr.cpp` |  |
+| `TRANSCODA_OCR_HOST_KV` | on | off | bool | default-off experimental / opt-in | `src/transcoda_ocr.cpp` |  |
 | `TROMR_OCR_FORCE_CPU` | value | unset | int | tuning / config | `src/tromr_ocr.cpp` |  |
-| `UOCR2_DUMP_VISION` | value | unset | presence/value | debug | `src/unlimited_ocr.cpp` | view_separator; untiled: global + view_separator. Diagnostics only; the decode is unchanged. Tile pixels (if tiled) go to <path>.tiles.f32. |
+| `UOCR2_DUMP_VISION` | value | unset | value | debug | `src/unlimited_ocr.cpp` | view_separator; untiled: global + view_separator. Diagnostics only; the decode is unchanged. Tile pixels (if tiled) go to <path>.tiles.f32. |
 | `UOCR2_FAST_CHUNK` | value | unset | int | tuning / config | `src/unlimited_ocr.cpp` |  |
 | `UOCR_CLIP_DBG` | on | off | bool | debug | `src/unlimited_ocr.cpp` | Pre-LN output check |
 | `UOCR_DBG` | on | off | bool | debug | `src/unlimited_ocr.cpp` |  |
 | `UOCR_DECODE_REBUILD` | on | off | bool | default-off experimental / opt-in | `src/unlimited_ocr.cpp` |  |
 | `UOCR_DECODE_TIMING` | on | off | bool | debug | `src/unlimited_ocr.cpp` |  |
-| `UOCR_DUMP_PIXELS` | value | unset | presence/value | debug | `src/unlimited_ocr.cpp` | (float32), so a reference can be run on exactly these pixels - separates preprocessing rounding from model differences. |
+| `UOCR_DUMP_PIXELS` | value | unset | value | debug | `src/unlimited_ocr.cpp` | (float32), so a reference can be run on exactly these pixels - separates preprocessing rounding from model differences. |
 | `UOCR_FA_F32` | on | off | bool | default-off experimental / opt-in | `src/unlimited_ocr.cpp` | debug |
 | `UOCR_INJECT_REF` | on | off | bool | debug | `src/unlimited_ocr.cpp` | UOCR_INJECT_REF: replace C++ SAM output with Python reference SAM output to isolate CLIP encoder bugs from SAM quantization noise. |
 | `UOCR_INJECT_VIS` | on | off | bool | debug | `src/unlimited_ocr.cpp` | (perfect, HF-equal vision input) AND avoids the vision Metal buffers so f16/q8_0 fit in memory. Used to prove decode bugs are not "quantization". |
-| `UOCR_INSTR` | value | unset | presence/value | tuning / config | `src/unlimited_ocr.cpp` |  |
+| `UOCR_INSTR` | value | unset | value | tuning / config | `src/unlimited_ocr.cpp` |  |
 | `UOCR_LMHEAD_CPU` | on | off | bool | default-off experimental / opt-in | `src/unlimited_ocr.cpp` |  |
 | `UOCR_MAX_NEW` | value | unset | int | tuning / config | `src/unlimited_ocr.cpp` |  |
 | `UOCR_MMAP` | on | off | bool | default-off experimental / opt-in | `src/unlimited_ocr.cpp` |  |
@@ -1301,9 +1311,9 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `UOCR_PD_REPLAY` | on | off | bool | default-off experimental / opt-in | `src/unlimited_ocr.cpp` | winning mode (and its decode still diverges, see the gate comment above); it remains an opt-in research path. |
 | `UOCR_REF` | value | unset | path | tuning / config | `src/unlimited_ocr.cpp` |  |
 | `UOCR_SAM_CONV_CPU` | on | off | bool | default-off experimental / opt-in | `src/unlimited_ocr.cpp` |  |
-| `UOCR_TEXT_TEST` | value | unset | presence/value | tuning / config | `src/unlimited_ocr.cpp` | Isolation test: UOCR_TEXT_TEST runs the LLM decoder as a pure language model |
-| `USERPROFILE` | value | unset | presence/value | debug | `examples/cli/model_mgr.cpp` |  |
-| `VIT_DEBUG` | presence | off (any value, even `0`, = on) | presence/value | debug | `src/vit_embed.cpp` | Debug: mark intermediates for per-layer comparison (VIT_DEBUG=1) |
+| `UOCR_TEXT_TEST` | value | unset | value | tuning / config | `src/unlimited_ocr.cpp` | Isolation test: UOCR_TEXT_TEST runs the LLM decoder as a pure language model |
+| `USERPROFILE` | value | unset | value | debug | `examples/cli/model_mgr.cpp` |  |
+| `VIT_DEBUG` | on | off | bool | debug | `src/vit_embed.cpp` | Debug: mark intermediates for per-layer comparison (VIT_DEBUG=1) |
 | `VIT_EMBED_FORCE_CPU` | value | unset | int | tuning / config | `src/vit_embed.cpp` | Load weights — prefer GPU backend when available |
 
 <!-- END GENERATED: tools/list_env_vars.py -->

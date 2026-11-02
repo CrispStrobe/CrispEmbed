@@ -1,3 +1,17 @@
+## 2 November 2026 — env presence reads, MiniCPM default, Unlimited-OCR v1 pin
+
+- All 131 raw presence env reads (`getenv(X)` truth tests, where `X=0` meant on) were
+  converted to `core_env::on`. Value-carrying variables moved to the new
+  `core_env::value`, which treats an empty value as unset. `core_env::on` and
+  `explicitly_off` now also accept `false`/`off`/`no` as off. No defaults changed.
+  `tests/test_env_vars_documented.py` now fails on any new presence read
+  (`tools/list_env_vars.py --presence`).
+- The CLI `--ocr-engine minicpm-ocr` now defaults to the `minicpm-ocr` alias, the same
+  as the server. The gates are still required.
+- The Unlimited-OCR v1 registry URL is pinned to Hub commit `79d6658f` with the same sha256.
+- The CrispSorter selectors for ids 13-v2 and 23 are in PR #19. CrispCalc is N/A until
+  its app pin moves. Details are in `docs/wiring-audit-20261102.md`.
+
 ## 2 November 2026 — CI queue reduction (ci/queue-reduction)
 
 - Branch protection on `main` has no required checks (API 404), so path filters cannot

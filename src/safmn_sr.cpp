@@ -217,8 +217,8 @@ safmn_context * safmn_init(const char * model_path, int n_threads) {
     // off on the larger SR/restoration siblings.
     // G4: this opt-in Metal path bypasses crispasr_init_gpu_backend(), so cap
     // the MTLBinaryArchive open here too (idempotent, no-op on CPU default).
-    if (std::getenv("SAFMN_SR_METAL")) core_metal_cache::apply();
-    ggml_backend_t backend = std::getenv("SAFMN_SR_METAL") ? ggml_backend_init_best() : ggml_backend_cpu_init();
+    if (core_env::on("SAFMN_SR_METAL")) core_metal_cache::apply();
+    ggml_backend_t backend = core_env::on("SAFMN_SR_METAL") ? ggml_backend_init_best() : ggml_backend_cpu_init();
     if (!backend) backend = ggml_backend_cpu_init();
 
     core_gguf::WeightLoad wl;
@@ -515,7 +515,7 @@ int safmn_process_float(safmn_context * ctx, const float * input_chw, int width,
 
     // Fused single-graph forward (default). The per-conv legacy path below is
     // kept for A/B via SAFMN_SR_LEGACY=1.
-    static const bool legacy = getenv("SAFMN_SR_LEGACY") != nullptr;
+    static const bool legacy = core_env::on("SAFMN_SR_LEGACY");
     if (!legacy && ctx->enc_sched) {
         int out_ch = 3 * ctx->scale * ctx->scale;
         std::vector<float> pre_shuffle(out_ch * hw);

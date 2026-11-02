@@ -90,7 +90,7 @@ static std::vector<result> recognize_regions_locked(context * ctx, const std::ve
     // crops of equal width into one graph dispatch.
     std::vector<size_t> visit(ordered.size());
     for (size_t i = 0; i < visit.size(); ++i) visit[i] = i;
-    if (std::getenv("EASYOCR_WIDTH_SORT") != nullptr) {
+    if (core_env::on("EASYOCR_WIDTH_SORT")) {
         // The sort key must use the SAME crop geometry the loop below will use,
         // or it orders by widths that are never requested and the grouping
         // under-delivers. This previously hardcoded the 2-pixel detector margin
@@ -195,7 +195,7 @@ static std::vector<result> recognize_regions_locked(context * ctx, const std::ve
                 "[easyocr-recognize-bench] regions=%zu crop_ms=%.1f set_width_ms=%.1f recognize_ms=%.1f "
                 "loop_ms=%.1f width_calls=%ld width_changes=%ld width_sort=%d\n",
                 ordered.size(), crop_ms, width_ms, recognize_ms, loop_ms, width_calls, width_changes,
-                std::getenv("EASYOCR_WIDTH_SORT") != nullptr ? 1 : 0);
+                core_env::on("EASYOCR_WIDTH_SORT") ? 1 : 0);
     }
 
     // Back to reading order, dropping regions that produced no crop.

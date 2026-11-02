@@ -374,7 +374,7 @@ std::vector<float> encode(context * ctx, const float * pixels, int H, int W) {
     // Build ggml graph
     const int extra = (ctx->has_attn_pool ? 60 : 0) + (ctx->has_cls_token ? 10 : 0);
     const int ops_per_layer = (ctx->rope_2d || ctx->swiglu) ? 90 : (ctx->use_quick_gelu ? 50 : 40);
-    const int debug_extra = (getenv("VIT_DEBUG") ? ctx->n_layers + 5 : 0);
+    const int debug_extra = (core_env::on("VIT_DEBUG") ? ctx->n_layers + 5 : 0);
     const int total_nodes = ctx->n_layers * ops_per_layer + 200 + extra + debug_extra;
     size_t buf_size = ggml_tensor_overhead() * total_nodes + ggml_graph_overhead_custom(total_nodes, false);
     std::vector<uint8_t> buf(buf_size);
@@ -428,7 +428,7 @@ std::vector<float> encode(context * ctx, const float * pixels, int H, int W) {
     }
 
     // Debug: mark intermediates for per-layer comparison (VIT_DEBUG=1)
-    bool vit_debug = (getenv("VIT_DEBUG") != nullptr);
+    bool vit_debug = core_env::on("VIT_DEBUG");
     if (vit_debug) {
         ggml_set_name(x, "dbg_embed");
         ggml_set_output(x);

@@ -68,6 +68,28 @@ static int crispembed_test_main() {
     set_var("0 ");
     expect(core_env::on(V), true, "\"0 \" => on (only exactly \"0\" is off)");
 
+    // Off-words: exact and ASCII-case-insensitive "0"/"false"/"off"/"no".
+    set_var("false");
+    expect(core_env::on(V), false, "\"false\" => off");
+    set_var("OFF");
+    expect(core_env::on(V), false, "\"OFF\" => off");
+    set_var("No");
+    expect(core_env::on(V), false, "\"No\" => off");
+    set_var("true");
+    expect(core_env::on(V), true, "\"true\" => on");
+    set_var("falsey");
+    expect(core_env::on(V), true, "\"falsey\" => on (only exact off-words)");
+
+    // value(): empty folds into unset; any non-empty value is returned as-is.
+    set_var(nullptr);
+    expect(core_env::value(V) != nullptr, false, "value: unset => nullptr");
+    set_var("0");
+    expect(core_env::value(V) != nullptr, true, "value: \"0\" is a value");
+#ifndef _WIN32
+    set_var("");
+    expect(core_env::value(V) != nullptr, false, "value: \"\" => nullptr");
+#endif
+
     // A null name is never on (defensive: callers pass string literals).
     expect(core_env::on(nullptr), false, "nullptr name => off");
 
@@ -86,6 +108,8 @@ static int crispembed_test_main() {
     expect(core_env::explicitly_off(V), true, "\"0\" => explicitly off");
     set_var("1");
     expect(core_env::explicitly_off(V), false, "\"1\" => not off");
+    set_var("false");
+    expect(core_env::explicitly_off(V), true, "\"false\" => explicitly off");
     set_var("00");
     expect(core_env::explicitly_off(V), false, "\"00\" => not off (only exactly \"0\", same as on())");
     set_var("0 ");

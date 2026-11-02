@@ -796,7 +796,7 @@ static std::vector<float> decoder_step(ppformulanet_ocr_context * ctx, int tok, 
     }
 
     // Embedding LayerNorm
-    static const bool dbg = (std::getenv("PPFN_DEBUG") != nullptr);
+    static const bool dbg = core_env::on("PPFN_DEBUG");
     if (dbg && step == 0) {
         fprintf(stderr, "ppfn: [dbg] tok_emb+pos first 5: %.5f %.5f %.5f %.5f %.5f\n", x[0], x[1], x[2], x[3], x[4]);
     }
@@ -1185,7 +1185,7 @@ const char * ppformulanet_ocr_recognize(ppformulanet_ocr_context * ctx, const fl
 
     // Run encoder
     t0 = std::chrono::steady_clock::now();
-    if (ctx->enc_sched && !std::getenv("PPFN_SCALAR_ENCODER"))
+    if (ctx->enc_sched && !core_env::on("PPFN_SCALAR_ENCODER"))
         run_encoder_ggml(ctx, rgb.data(), S, S);
     else
         run_encoder(ctx, rgb.data(), S, S);
@@ -1250,7 +1250,7 @@ const char * ppformulanet_ocr_recognize_chw(ppformulanet_ocr_context * ctx, cons
     const int S = ctx->hparams.image_size;
 
     // Input is already preprocessed CHW [3, S, S] normalized data
-    if (ctx->enc_sched && !std::getenv("PPFN_SCALAR_ENCODER"))
+    if (ctx->enc_sched && !core_env::on("PPFN_SCALAR_ENCODER"))
         run_encoder_ggml(ctx, chw_data, S, S);
     else
         run_encoder(ctx, chw_data, S, S);
@@ -1299,7 +1299,7 @@ const char * ppformulanet_ocr_recognize_beam(ppformulanet_ocr_context * ctx, con
         }
     }
 
-    if (ctx->enc_sched && !std::getenv("PPFN_SCALAR_ENCODER"))
+    if (ctx->enc_sched && !core_env::on("PPFN_SCALAR_ENCODER"))
         run_encoder_ggml(ctx, rgb.data(), S, S);
     else
         run_encoder(ctx, rgb.data(), S, S);

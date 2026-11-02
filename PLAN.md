@@ -5,16 +5,14 @@ Reference: [docs/wiring-audit-20261102.md](docs/wiring-audit-20261102.md) and
 (named stage ids 13/23 in every binding, `unlimited-ocr[2]` CLI/server aliases)
 are merged. Open, scoped:
 
-- [ ] Convert the 131 `presence` env reads (raw `getenv(X)` truth tests, `X=0`
-      means on) to `core_env::on`; behaviour changes only for explicit `=0`.
-      Start with `CRISPEMBED_SHARED_GPU_BACKEND`, `CRISPEMBED_PPOCRV6_*`,
-      `CRISPEMBED_NO_KV_CACHE`, then legacy non-prefixed `*_FORCE_CPU`.
-- [ ] Decide one MiniCPM-OCR default for `--ocr-engine minicpm-ocr` without a
-      model (server resolves `minicpm-ocr`, CLI demands `--ocr-rec`).
-- [ ] CrispSorter / CrispCalc: verify engine ids 13 (Unlimited-OCR-2 variant) and
-      23 (MiniCPM-OCR) in the consumer selectors; keep them disabled until a
-      qualified runtime and model pin exist.
-- [ ] Pin the Unlimited-OCR v1 registry URL to an immutable revision.
+- [x] 131 `presence` env reads → `core_env::on` / `core_env::value`; Lint guard
+      added (`tests/test_env_vars_documented.py`). Defaults unchanged.
+- [x] MiniCPM-OCR CLI default = server default (`minicpm-ocr` alias, gates required).
+- [ ] CrispSorter: merge [PR #19](https://github.com/CrispStrobe/CrispSorter/pull/19)
+      (experimental `unlimited_ocr2`→13, `minicpm_ocr`→23 selectors) once its CI is green.
+      CrispCalc: no engine-id selector; catalog entries only after the app pin moves past
+      0.17.12 (exact TODO in the wiring audit).
+- [x] Unlimited-OCR v1 registry URL pinned to Hub commit `79d6658f` (same sha256).
 
 ## GOT-OCR2 F16 artifact — 2 November 2026 (`fix/got-ocr2-f16`)
 

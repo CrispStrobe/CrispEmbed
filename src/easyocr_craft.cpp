@@ -16,6 +16,7 @@
 #include <cstring>
 #include <string>
 #include <vector>
+#include "core/env_gate.h"
 
 struct easyocr_craft_context {
     core_gguf::WeightLoad wl;
@@ -165,7 +166,7 @@ easyocr_craft_context * easyocr_craft_init(const char * model_path, int width, i
     auto * c = new easyocr_craft_context();
     c->width = width;
     c->height = height;
-    c->backend = std::getenv("EASYOCR_CRAFT_FORCE_CPU") ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
+    c->backend = core_env::on("EASYOCR_CRAFT_FORCE_CPU") ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
     if (!c->backend || !core_gguf::load_weights(model_path, c->backend, "easyocr-craft", c->wl) || !build_graph(c)) {
         easyocr_craft_free(c);
         return nullptr;

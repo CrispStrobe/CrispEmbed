@@ -193,7 +193,7 @@ void observe_tensor(context & ctx, ggml_cgraph * graph, const char * tensor_name
 using qwen_clock = std::chrono::steady_clock;
 
 bool qwen_dbg() {
-    return getenv("QWEN_DBG") != nullptr;
+    return core_env::on("QWEN_DBG");
 }
 
 long long qwen_ms_since(qwen_clock::time_point t0) {
@@ -952,7 +952,7 @@ void compute_vision_rope(host_rope & out, const int32_t * grid_thw, int n_patche
 // dropped window attention (deepstack). Gate purely on architecture so a
 // missing gguf field can't silently disable it for a real Qwen2.5-VL model.
 bool vision_uses_window(const vision_hparams & vhp) {
-    if (getenv("QWEN2VL_OCR_NO_WINDOW")) return false;
+    if (core_env::on("QWEN2VL_OCR_NO_WINDOW")) return false;
     return !vhp.is_qwen2_vl && vhp.deepstack_indexes.empty() && !vhp.fullatt_block_indexes.empty() &&
            vhp.window_size > 0;
 }
@@ -3345,7 +3345,7 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
     // Pre-allocate backend KV cache before prefill so run_llm_forward can write
     // K/V directly into it (eliminates n_layers GPU→CPU→GPU round-trips).
     const bool no_kv_cache =
-        ctx.is_mineru25_pro ? core_env::on("CRISPEMBED_NO_KV_CACHE") : (getenv("CRISPEMBED_NO_KV_CACHE") != nullptr);
+        ctx.is_mineru25_pro ? core_env::on("CRISPEMBED_NO_KV_CACHE") : core_env::on("CRISPEMBED_NO_KV_CACHE");
     bool pre_alloc_ok = !no_kv_cache && alloc_kv_cache(ctx, n_prompt_tokens + max_new_tokens);
 
     // ── Prefill: full forward pass, extract KV cache ──
@@ -3892,7 +3892,7 @@ struct qwen2vl_ocr_context {
         // Qwen2-VL's chat template prepends a default system message when none
         // is supplied. Include it (set CRISPEMBED_QARI_NO_SYSTEM=1 to drop it).
         if (inner.is_mineru25_pro ||
-            ((inner.is_teleocr || !getenv("CRISPEMBED_QARI_NO_SYSTEM")) && !no_default_system)) {
+            ((inner.is_teleocr || !core_env::on("CRISPEMBED_QARI_NO_SYSTEM")) && !no_default_system)) {
             ids.push_back(im_start_id);
             ids.push_back(system_id);
             ids.push_back(newline_id);
@@ -3966,7 +3966,8 @@ static bool post_load_init(qwen2vl_ocr_context * ctx, const char * gguf_path) {
     // llm_final_norm) - e.g. tools/ci-heavy/qwen3vl_stage_diff.py. The compare
     // code in this file was unreachable before: nothing ever set diff_ref_path.
     // Verbosity 2 also enables the mRoPE position comparison.
-    if (const char * nr = ctx->inner.is_mineru25_pro ? nullptr : getenv("CRISPEMBED_QWEN2VL_NO_REPEAT_NGRAM")) {
+    if (const char * nr =
+            ctx->inner.is_mineru25_pro ? nullptr : core_env::value("CRISPEMBED_QWEN2VL_NO_REPEAT_NGRAM")) {
         if (*nr) ctx->inner.no_repeat_ngram = atoi(nr);
     }
     if (const char * ref = getenv("CRISPEMBED_QWEN2VL_REF")) {
@@ -3984,7 +3985,7 @@ static bool post_load_init(qwen2vl_ocr_context * ctx, const char * gguf_path) {
     // Qari-OCR direct OCR prompt: outputs only the transcribed text with no
     // preamble. Set CRISPEMBED_QARI_STD_PROMPT=1 for the generic "Describe this
     // image." fallback instead.
-    if (is_qari && !getenv("CRISPEMBED_QARI_STD_PROMPT")) {
+    if (is_qari && !core_env::on("CRISPEMBED_QARI_STD_PROMPT")) {
         ctx->use_qari_default_prompt = true;
         ctx->prompt = "Read all text in this image and output it exactly as it appears. "
                       "Output only the transcribed text, nothing else.";
@@ -3993,7 +3994,7 @@ static bool post_load_init(qwen2vl_ocr_context * ctx, const char * gguf_path) {
     // Plain greedy like upstream: the n-gram ban turned "x ^ { 2 } + y ^ { 2 }"
     // into "y ^ { \prime ..." (stage diff: prefill exact, text off).
     if (is_unimumer) {
-        if (!getenv("CRISPEMBED_QWEN2VL_NO_REPEAT_NGRAM")) ctx->inner.no_repeat_ngram = 0;
+        if (!core_env::value("CRISPEMBED_QWEN2VL_NO_REPEAT_NGRAM")) ctx->inner.no_repeat_ngram = 0;
         ctx->prompt = "I have an image of a handwritten mathematical expression. Please "
                       "write out the expression of the formula in the image using LaTeX "
                       "format.";
@@ -4115,7 +4116,7 @@ static bool post_load_init(qwen2vl_ocr_context * ctx, const char * gguf_path) {
             // CRISPEMBED_QWEN3VL_SYSTEM=1 restores the Qwen2-VL-style block).
             // Includes Uni-MuMER: its processor uses the same template (stage
             // diff vs phxember/Uni-MuMER-Qwen3-VL-2B: 11 extra leading tokens).
-            if (arch == "qwen3vl" && !getenv("CRISPEMBED_QWEN3VL_SYSTEM")) {
+            if (arch == "qwen3vl" && !core_env::on("CRISPEMBED_QWEN3VL_SYSTEM")) {
                 ctx->no_default_system = true;
             }
             if ((arch == "qwen3vl" || arch == "qwen2vl") && !is_qari && !is_unimumer && !ctx->is_olmocr) {
@@ -4136,7 +4137,7 @@ static bool post_load_init(qwen2vl_ocr_context * ctx, const char * gguf_path) {
             std::string model_name = core_gguf::kv_str(g, "general.name", "");
             std::string name_lc = model_name;
             for (char & c : name_lc) c = (char)std::tolower((unsigned char)c);
-            if (!is_qari && !getenv("CRISPEMBED_QARI_STD_PROMPT") && name_lc.find("qari") != std::string::npos) {
+            if (!is_qari && !core_env::on("CRISPEMBED_QARI_STD_PROMPT") && name_lc.find("qari") != std::string::npos) {
                 is_qari = true;
                 ctx->use_qari_default_prompt = true;
                 ctx->prompt = "Read all text in this image and output it exactly as it appears. "
@@ -4157,7 +4158,7 @@ static bool post_load_init(qwen2vl_ocr_context * ctx, const char * gguf_path) {
             if (name_lc.find("paddleocr") != std::string::npos || ctx->image_pad_id == 100295) {
                 ctx->is_paddleocr = true;
                 ctx->inner.eos_token_id = 2; // </s> (PaddleOCR-VL generation_config)
-                if (!getenv("CRISPEMBED_PADDLEOCR_STD_PROMPT")) ctx->prompt = "OCR:";
+                if (!core_env::on("CRISPEMBED_PADDLEOCR_STD_PROMPT")) ctx->prompt = "OCR:";
                 if (ctx->inner.verbosity >= 1)
                     fprintf(stderr, "qwen2vl_ocr: detected PaddleOCR-VL (ERNIE-4.5), "
                                     "using ERNIE chat template + OCR prompt\n");
@@ -4183,7 +4184,7 @@ static bool post_load_init(qwen2vl_ocr_context * ctx, const char * gguf_path) {
             ctx->prompt =
                 core_gguf::kv_str(g, "teleocr.default_prompt", "Please output the text content from the image.");
             ctx->max_tokens = 4096;
-            if (!getenv("CRISPEMBED_QWEN2VL_NO_REPEAT_NGRAM")) ctx->inner.no_repeat_ngram = 0;
+            if (!core_env::value("CRISPEMBED_QWEN2VL_NO_REPEAT_NGRAM")) ctx->inner.no_repeat_ngram = 0;
             ctx->inner.eos_token_id = 151645;
         }
 
@@ -4230,8 +4231,7 @@ static bool post_load_init(qwen2vl_ocr_context * ctx, const char * gguf_path) {
         if (specials_valid)
             for (size_t i = 0; i < sizeof(specials) / sizeof(specials[0]); ++i)
                 specials_valid = specials_valid && vocab[151643 + i] == specials[i];
-        if (!ctx->tokenizer_can_encode || !specials_valid ||
-            std::getenv("CRISPEMBED_BPE_LEGACY_WHITESPACE") != nullptr) {
+        if (!ctx->tokenizer_can_encode || !specials_valid || core_env::on("CRISPEMBED_BPE_LEGACY_WHITESPACE")) {
             fprintf(stderr, "qwen2vl_ocr: invalid MinerU tokenizer or incompatible legacy whitespace override\n");
             return false;
         }
@@ -4503,7 +4503,7 @@ static const char * run_generation(qwen2vl_ocr_context * ctx, qwen2vl_ocr::visio
     // metadata (primary_language / rotation / is_table / is_diagram). The
     // document text is what OCR callers want, so strip the block by default;
     // CRISPEMBED_OLMOCR_RAW=1 keeps the full model output.
-    if (ctx->is_olmocr && !getenv("CRISPEMBED_OLMOCR_RAW")) {
+    if (ctx->is_olmocr && !core_env::on("CRISPEMBED_OLMOCR_RAW")) {
         std::string & r = ctx->last_result;
         size_t p = r.find_first_not_of(" \n\t");
         if (p != std::string::npos && r.compare(p, 3, "---") == 0) {

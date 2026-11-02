@@ -582,7 +582,7 @@ bool got_ocr::encode_vision(context & ctx, const float * pixels, vision_result &
                             pixels[c * imgS * imgS + (py * PS + ky) * imgS + (px * PS + kx)];
         }
 
-    static const bool scalar_patch = (std::getenv("CRISPEMBED_GOT_OCR_SCALAR_PATCH") != nullptr);
+    static const bool scalar_patch = core_env::on("CRISPEMBED_GOT_OCR_SCALAR_PATCH");
     if (scalar_patch) {
         auto pe_w = to_f32(ctx.m.patch_embed_w);
         auto pe_b = to_f32(ctx.m.patch_embed_b);
@@ -770,7 +770,7 @@ bool got_ocr::encode_vision(context & ctx, const float * pixels, vision_result &
     int vis_D = ds2_out_ch;           // 1024
     std::vector<float> proj_out(n_vis_tokens * vis_D);
 
-    static const bool scalar_neck = (std::getenv("CRISPEMBED_GOT_OCR_SCALAR_NECK") != nullptr);
+    static const bool scalar_neck = core_env::on("CRISPEMBED_GOT_OCR_SCALAR_NECK");
 
     // Permute to CHW: [N, C] = [nP*nP, 768] → [nP, nP, 768] in ggml = (W, H, C)
     std::vector<float> chw(C * nP * nP);
@@ -1137,7 +1137,7 @@ static llm_graph build_llm_graph(got_ocr::context & ctx, int n_tokens, int n_pas
         // Kfull/Vfull are already non-cont cache views. Default is cont-off;
         // GOT_OCR_ATTN_CONT=1 restores the copy for regression bisection.
         // (Same removal proven byte-identical for math_ocr, MATH_OCR_ATTN_CONT.)
-        static const bool keep_cont = (std::getenv("GOT_OCR_ATTN_CONT") != nullptr);
+        static const bool keep_cont = core_env::on("GOT_OCR_ATTN_CONT");
         Q = ggml_permute(g, Q, 0, 2, 1, 3);
         if (keep_cont) Q = ggml_cont(g, Q);
         ggml_tensor * attn = ggml_flash_attn_ext(g, Q, Kfull, Vfull, lg.mask_in, 1.0f / sqrtf((float)hd), 0.0f, 0.0f);
@@ -1274,7 +1274,7 @@ static bool run_cached_step(got_ocr::context & ctx, const int32_t * token_ids, i
     // ctx.backend), and its node COUNT is constant per step (only tensor shapes
     // grow with n_past), so once reserved for the longest graph every subsequent
     // ggml_gallocr_alloc_graph takes the no-realloc fast path. Output-identical.
-    static const bool use_cache = (std::getenv("GOT_OCR_DECODE_CACHE") != nullptr);
+    static const bool use_cache = core_env::on("GOT_OCR_DECODE_CACHE");
     auto & l = ctx.m.lhp;
     int T = n_tokens;
     int D = (int)l.hidden_size;
@@ -1365,7 +1365,7 @@ static bool run_cached_step(got_ocr::context & ctx, const int32_t * token_ids, i
     auto _t5 = std::chrono::steady_clock::now();
 
     ggml_free(lg.gctx);
-    if (std::getenv("GOT_OCR_STEP_PROFILE")) {
+    if (core_env::on("GOT_OCR_STEP_PROFILE")) {
         auto ms = [](auto a, auto b) {
             return std::chrono::duration_cast<std::chrono::microseconds>(b - a).count() / 1000.0;
         };
@@ -1690,7 +1690,7 @@ extern "C" int got_ocr_get_max_tokens(const got_ocr_context * ctx) {
 
 got_ocr_context * got_ocr_init(const char * model_path, int n_threads) {
     auto * c = new got_ocr_context;
-    int verbosity = std::getenv("CRISPEMBED_GOT_OCR_DEBUG") ? 2 : 1;
+    int verbosity = core_env::on("CRISPEMBED_GOT_OCR_DEBUG") ? 2 : 1;
     if (!got_ocr::load(c->inner, model_path, n_threads, verbosity)) {
         delete c;
         return nullptr;

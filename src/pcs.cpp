@@ -40,6 +40,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include "core/env_gate.h"
 
 // ---------------------------------------------------------------------------
 // SentencePiece tokenizer (greedy longest-match, same as fireredpunc SP path)
@@ -298,7 +299,7 @@ static bool pcs_load(pcs_context & ctx, const char * path) {
 
     // Load weights. PCS_FORCE_CPU pins the CPU backend (diff-harness parity: match
     // the ONNX/onnxruntime CPU reference without GPU float-noise on borderline logits).
-    ctx.backend = std::getenv("PCS_FORCE_CPU") ? nullptr : crispasr_init_gpu_backend();
+    ctx.backend = core_env::on("PCS_FORCE_CPU") ? nullptr : crispasr_init_gpu_backend();
     if (!ctx.backend) ctx.backend = ggml_backend_cpu_init();
     ctx.backend_cpu = ggml_backend_cpu_init();
 
@@ -488,7 +489,7 @@ static PCSResult pcs_run(pcs_context & ctx, const std::vector<int> & token_ids) 
         // borderline punctuation argmaxes. F32 mul_mat + soft_max_ext is exact.
         // (Set PCS_FLASH_ATTN=1 to A/B the old flash path.)
         ggml_tensor * KQV;
-        if (std::getenv("PCS_FLASH_ATTN")) {
+        if (core_env::on("PCS_FLASH_ATTN")) {
             KQV = ggml_flash_attn_ext(ctx0, Q, K, V, nullptr, scale, 0.0f, 0.0f);
             KQV = ggml_reshape_2d(ctx0, KQV, d, seq_len);
         } else {
@@ -861,7 +862,7 @@ char * pcs_process(pcs_context * ctx, const char * text) {
 
     // Diff-harness dump: PCS_DEBUG=1 prints tokenization + per-token head predictions
     // so they can be compared against the ONNX reference (tools/dump_pcs_reference.py).
-    if (std::getenv("PCS_DEBUG")) {
+    if (core_env::on("PCS_DEBUG")) {
         fprintf(stderr, "[pcs-debug] %zu tokens\n", token_ids.size());
         fprintf(stderr, "[pcs-debug] token_ids:");
         for (int id : token_ids) fprintf(stderr, " %d", id);

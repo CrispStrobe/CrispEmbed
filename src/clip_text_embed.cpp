@@ -267,7 +267,7 @@ bool load(context ** out, const char * path, int n_threads) {
     fprintf(stderr, "clip_text: loaded %d layers\n", ctx->n_layers);
 
     ctx->galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
-    ctx->imatrix_active = (std::getenv("CRISPEMBED_IMATRIX_OUT") != nullptr);
+    ctx->imatrix_active = (core_env::value("CRISPEMBED_IMATRIX_OUT") != nullptr);
     if (ctx->imatrix_active) {
         // ggml_backend_sched_new asserts the LAST backend is CPU.
         std::vector<ggml_backend_t> bes;

@@ -21,6 +21,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include "env_gate.h"
 #endif
 
 // ── Metal residency-set teardown guard (ggml v0.10.0 regression) ────────────
@@ -42,7 +43,7 @@
 // safely.) See memory ggml-8be60f-sched-teardown-asserts.
 #if defined(__APPLE__)
 __attribute__((constructor)) static void crispembed_metal_residency_default(void) {
-    if (!getenv("CRISPEMBED_METAL_RESIDENCY")) {
+    if (!core_env::on("CRISPEMBED_METAL_RESIDENCY")) {
         setenv("GGML_METAL_NO_RESIDENCY", "1", /*overwrite=*/0);
     }
 }

@@ -4,8 +4,9 @@
 Scans src/, examples/, python/, crispembed/, crispembed-sys/ and flutter/ for
 string literals naming an environment variable and classifies how each is read:
 
-  on        core_env::on(...)              bool gate, default OFF (unset/"0" = off)
-  off       core_env::explicitly_off(...)  bool gate, default ON  (only "0" = off)
+  on        core_env::on(...)              bool gate, default OFF (unset/""/0/false/off/no = off)
+  off       core_env::explicitly_off(...)  bool gate, default ON  (only 0/false/off/no = off)
+  presence  raw getenv(X) truth test       forbidden (X=0 would mean ON); see --presence
   value     getenv/os.environ/env::var     value (int/float/path/string) or raw presence
   set       setenv/_putenv_s/set_var       written by the CLI/orchestrator, not a user knob
 
@@ -19,6 +20,7 @@ Usage:
                                              # docs/environment-variables.md
   python tools/list_env_vars.py --check      # exit 1 if the block is stale
   python tools/list_env_vars.py --names      # one CRISPEMBED_* name per line
+  python tools/list_env_vars.py --presence   # raw presence truth tests (must be none)
 
 The generated block sits between the BEGIN/END GENERATED markers; everything
 outside it is hand-written and preserved.
@@ -74,10 +76,28 @@ def classify(line: str, name: str) -> str:
         return "on/off"
     # Raw presence test: getenv("X") used directly as a boolean. Any value,
     # including "0", turns it on -- the defect class core_env exists to avoid.
-    if re.search(r"getenv\(\s*" + q + r"\s*\)\s*(!=\s*nullptr|\)|&&|\|\||\?)", line) and not re.search(
+    if re.search(r"getenv\(\s*" + q + r"\s*\)\s*([!=]=\s*(nullptr|NULL)|\)|&&|\|\||\?)", line) and not re.search(
             r"(const char\s*\*\s*\w+\s*=|auto\s*\*?\s*\w+\s*=|ato[ifl]\(|strto\w+\(|sto\w+\(|std::string\()\s*(std::)?getenv\(\s*" + q, line):
         return "presence"
     return "value"
+
+
+def presence_sites():
+    """(rel:line, name, source) for every raw presence truth test still in the tree."""
+    out = []
+    for p in iter_files():
+        rel = p.relative_to(ROOT).as_posix()
+        try:
+            text = p.read_text(errors="replace").splitlines()
+        except OSError:
+            continue
+        for i, line in enumerate(text):
+            if "getenv" not in line:
+                continue
+            for n in sorted((set(PREFIXED.findall(line)) | set(ANY_NAME.findall(line))) - NOT_ENV):
+                if classify(line, n) == "presence":
+                    out.append((f"{rel}:{i + 1}", n, line.strip()))
+    return out
 
 
 def value_type(name: str, lines: list[str]) -> str:
@@ -90,7 +110,7 @@ def value_type(name: str, lines: list[str]) -> str:
         return "int"
     if re.search(r"strcmp|== *std::string|== *\"|\bin \(", blob):
         return "string"
-    return "presence/value"
+    return "value"
 
 
 def area_of(name: str, files: list[str]) -> str:
@@ -194,8 +214,8 @@ def render(recs) -> str:
            f"{sum(1 for n in recs if n.startswith('CRISPEMBED_'))} `CRISPEMBED_*` variables and "
            f"{sum(1 for n in recs if not n.startswith('CRISPEMBED_'))} non-prefixed variables. "
            "Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` "
-           "(default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (any value incl. `0` enables; "
-           "unset it to disable), `value` = value read via getenv/os.environ, `set` = written by the "
+           "(default on, `=0`/`false`/`off`/`no` opts out), `presence` = raw `getenv(X)` truth test (forbidden: "
+           "`tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the "
            "CLI/orchestrator. Hint = nearest source comment (may be empty).", ""]
     for g in sorted(groups, key=lambda k: (k.startswith("non-prefixed"), k)):
         out += [f"### {g}", "", "| Variable | Kind | Default | Type | Status | Where | Hint |",
@@ -217,7 +237,13 @@ def main() -> int:
     g.add_argument("--write", action="store_true")
     g.add_argument("--check", action="store_true")
     g.add_argument("--names", action="store_true")
+    g.add_argument("--presence", action="store_true",
+                   help="list raw getenv presence truth tests (should be empty; use core_env::on/value)")
     a = ap.parse_args()
+    if a.presence:
+        for loc, n, src in presence_sites():
+            print(f"{loc}\t{n}\t{src}")
+        return 0
     recs = collect()
     if a.names:
         print("\n".join(sorted(n for n in recs if n.startswith("CRISPEMBED_"))))

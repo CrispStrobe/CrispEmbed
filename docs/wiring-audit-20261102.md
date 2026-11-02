@@ -32,7 +32,7 @@ and was not verified here).
 | `ocr_orchestrator.cpp` dispatch | wired `src/ocr_orchestrator.cpp:1951` | wired `src/ocr_orchestrator.cpp:1738` | N/A | N/A |
 | VLM cap lists (`is_vlm_engine`, set_max_tokens) | wired (`tests/test_ocr_max_tokens_surfaces.py` passes) | wired (same test) | N/A | N/A |
 | CMake | wired `CMakeLists.txt:376` | wired `CMakeLists.txt:390` | wired `CMakeLists.txt:424` | wired `CMakeLists.txt:355` |
-| CLI | **fixed**: `--ocr-engine` accepted only `unlimited_ocr` while help and logs print `unlimited-ocr`; now also `unlimited-ocr`, `unlimited-ocr2`, `unlimited_ocr2` (`examples/cli/main.cpp:1432`), and the `unlimited-ocr2` alias defaults to the v2 registry model instead of v1 (`examples/cli/main.cpp:1588`) | wired `examples/cli/main.cpp:1428` (id 23; explicit `--ocr-rec` required) | wired `examples/cli/main.cpp:10` | wired `examples/cli/main.cpp:115` |
+| CLI | **fixed**: `--ocr-engine` accepted only `unlimited_ocr` while help and logs print `unlimited-ocr`; now also `unlimited-ocr`, `unlimited-ocr2`, `unlimited_ocr2` (`examples/cli/main.cpp:1432`), and the `unlimited-ocr2` alias defaults to the v2 registry model instead of v1 (`examples/cli/main.cpp:1588`) | **fixed** (follow-up): id 23 now defaults to the `minicpm-ocr` alias like the server; gates still required (`tests/test_cli_engine_names.py` checks both surfaces) | wired `examples/cli/main.cpp:10` | wired `examples/cli/main.cpp:115` |
 | HTTP server | **fixed** the same aliases and v2 default (`examples/server/server.cpp:1578`, `:1690`) | wired `examples/server/server.cpp:1586` (id 23, default `minicpm-ocr`) | wired `examples/server/server.cpp:39` | wired `examples/server/server.cpp:6` (`POST /systemone`) |
 | Model registry | wired `examples/cli/model_mgr.cpp:1896` | wired `examples/cli/model_mgr.cpp:1885` | wired `examples/cli/model_mgr.cpp:1641` | wired `examples/cli/model_mgr.cpp:1636` |
 | SHA-256 pins | wired `examples/cli/model_hashes.h:579` (immutable revision) | wired `examples/cli/model_hashes.h:575` | wired `examples/cli/model_hashes.h:501` | wired `examples/cli/model_hashes.h:499` |
@@ -40,7 +40,7 @@ and was not verified here).
 | Rust | wired (stage int); **fixed** `OCR_ENGINE_UNLIMITED_OCR` (`crispembed-sys/src/lib.rs:211`, `crispembed/src/lib.rs:2721`) | **fixed** `OCR_ENGINE_MINICPM_OCR` (`crispembed-sys/src/lib.rs:213`, `crispembed/src/lib.rs:2722`) | wired `MoEdern` (`crispembed/src/lib.rs:40`) | wired `SystemOne` (`crispembed/src/lib.rs:29`) |
 | Dart / Flutter | **fixed** `crispOcrEngineUnlimitedOcr` (`flutter/crispembed/lib/src/crispembed.dart:4073`) | **fixed** `crispOcrEngineMinicpmOcr` (`flutter/crispembed/lib/src/crispembed.dart:4076`) | wired `flutter/crispembed/lib/crispembed.dart:9` | wired `flutter/crispembed/lib/crispembed.dart:17` |
 | Env vars documented | wired (this audit) | wired (incl. PR #109 speed gates) | wired | wired |
-| CrispSorter / CrispCalc catalog | external, not verified | external, not verified | N/A (not OCR) | N/A |
+| CrispSorter / CrispCalc catalog | CrispSorter: `unlimited_ocr2` → 13 selector in [CrispSorter PR #19](https://github.com/CrispStrobe/CrispSorter/pull/19) (experimental, gated); CrispCalc: N/A (see below) | CrispSorter: `minicpm_ocr` → 23 in the same PR; CrispCalc: N/A | N/A (not OCR) | N/A |
 
 ## Fixes made
 
@@ -55,19 +55,47 @@ and was not verified here).
    explicit model is given. The plain `unlimited_ocr` name keeps the v1 default.
    The engine still refuses a variant-2 GGUF unless `CRISPEMBED_UNLIMITED_OCR2=1`.
 
-## Open gaps
+## Follow-up (2 November 2026, same day) — gaps closed
 
-The scoped TODOs are in [PLAN.md](../PLAN.md#wiring-and-environment-variable-audit--2-november-2026).
-
-- **CLI vs server default for MiniCPM-OCR.** The server resolves `minicpm-ocr`
-  by default for id 23. The CLI requires an explicit `--ocr-rec`. Pick one
-  behaviour.
-- **CrispSorter / CrispCalc.** Neither consumer repository was checked for
-  ids 13 (v2) or 23, and neither engine is qualified for a consumer default.
-- **131 raw presence-style env reads.** For these, `X=0` means *on*. They are
-  marked `presence` in the inventory, for example `CRISPEMBED_SHARED_GPU_BACKEND`,
-  `CRISPEMBED_PPOCRV6_FORCE_CPU` and several `*_DEBUG` switches. They should
-  move to `core_env::on`, which changes behaviour only for an explicit `=0`.
-- **Unlimited-OCR v1 registry URL** (`unlimited-ocr-q4_k-stacked.gguf`) is pinned
-  by hash but resolves `main`, not an immutable revision. This predates the
-  engines in this audit.
+- **CLI vs server default for MiniCPM-OCR: fixed.** The CLI now resolves the
+  published `minicpm-ocr` alias when `--ocr-engine minicpm-ocr` has no
+  `--ocr-rec`, matching the server. `CRISPEMBED_MINICPM_OCR=1` and
+  `CRISPEMBED_QWEN35_OCR=1` are still required, and the orchestrator and engine
+  enforce them too. `tests/test_cli_engine_names.py` fails if the two surfaces
+  diverge again.
+- **CrispSorter: PR open.** [CrispSorter PR #19](https://github.com/CrispStrobe/CrispSorter/pull/19)
+  adds the `unlimited_ocr2` (→ 13, alias `unlimited-ocr2`) and `minicpm_ocr`
+  (→ 23, alias `minicpm-ocr`) stage selectors and exposes the existing `unlimited_ocr`.
+  Neither is a default. CrispEmbed refuses to initialise them without their gates.
+  CrispSorter's CI must pass before merge.
+- **CrispCalc: N/A, with a TODO.** CrispCalc has no orchestrator engine-id selector. Its
+  `lib/engine/ocr_model_catalog.dart` is a download catalog of formula, layout,
+  detection and VLM GGUFs, and the app is pinned to the immutable CrispEmbed 0.17.12
+  runtime. If a catalog entry is wanted after a qualified release, add
+  `OcrModelVariant`s under a new experimental group with the pinned URLs and hashes from
+  `examples/cli/model_hashes.h` (`unlimited-ocr2` at its immutable revision, and
+  `minicpm-ocr-1.0-f16.gguf` at `6705b065…`). Mark them desktop-only and experimental.
+  Do this only after the app pin moves past a runtime that has ids 13-v2 and 23.
+- **131 raw presence-style env reads: fixed.** All were converted:
+  `core_env::on` for default-off switches and `NO_*`/`*_SCALAR`/`*_LEGACY` opt-outs, and
+  the new `core_env::value` (empty = unset) for path, int and string variables
+  (`CRISPEMBED_IMATRIX_OUT`, `CRISPEMBED_C2PA_*`, `LAYOUT_INJECT_*`,
+  `MATH_OCR_DIFF_REF`, `CRISPEMBED_QWEN2VL_NO_REPEAT_NGRAM`,
+  `CRISPEMBED_UNLIMITED_OCR2_OUTPUT`). `core_env::on`/`explicitly_off` now also read
+  `false`/`off`/`no` (exact, case-insensitive) as off. No default changed. The
+  inventory shows 0 `presence` reads, and `tests/test_env_vars_documented.py` fails on
+  a new one, with a detector self-test and an explicit (empty) allowlist. Set-if-unset
+  forwards of third-party variables (`GGML_METAL_PREC_F32_MM`) keep raw `getenv` on
+  purpose, so an operator value is never overwritten.
+  Pin impact: almost every `src/*.cpp` is listed in historical source-hash manifests
+  under `docs/*.json`, such as `gguf-standard-file-type-v1.json` and the moedern and
+  josev protocol manifests. Those receipts are frozen and were not edited, so a re-run
+  of such a protocol needs a new versioned source pin. `python/crispembed/_moedern_text.py`
+  (`CRISPEMBED_MOEDERN_FAST` now ignores `false`/`off`/`no`) is in
+  `docs/moedern-public-text.json` `owned_sha256`. That pin was already stale on main
+  before this change, so `tests/test_moedern_public_text.py` already failed there and
+  is not run in CI.
+- **Unlimited-OCR v1 registry URL: fixed.** It is now pinned to Hub commit
+  `79d6658f26712df9479a77d0f0a5aaf8f807b6b5`. The LFS `x-linked-etag` at that commit
+  equals the existing pin `84a9d881…`, size 2,252,419,328. The cache filename is
+  unchanged, so existing caches stay valid.

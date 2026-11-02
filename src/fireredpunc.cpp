@@ -617,7 +617,7 @@ static std::vector<int> fireredpunc_run(fireredpunc_context & ctx, const std::ve
     // emb: [d_model, seq_len] (ggml column-major)
 
     // Dump embedding output for diff-testing
-    if (getenv("FIREREDPUNC_DEBUG")) {
+    if (core_env::on("FIREREDPUNC_DEBUG")) {
         ggml_set_name(emb, "emb_out");
         ggml_set_output(emb);
     }
@@ -714,7 +714,7 @@ static std::vector<int> fireredpunc_run(fireredpunc_context & ctx, const std::ve
     ggml_backend_sched_graph_compute(ctx.sched, gf);
 
     // Dump embedding for diff-testing
-    if (getenv("FIREREDPUNC_DEBUG")) {
+    if (core_env::on("FIREREDPUNC_DEBUG")) {
         ggml_tensor * emb_t = ggml_get_tensor(ctx0, "emb_out");
         if (emb_t) {
             // emb is [d, seq_len], read values at position 15 (first "you")
@@ -766,7 +766,7 @@ static std::vector<int> fireredpunc_run(fireredpunc_context & ctx, const std::ve
     }
 
     // Debug: print first 5 tokens' logits + IDs for diff-testing
-    if (getenv("FIREREDPUNC_DEBUG")) {
+    if (core_env::on("FIREREDPUNC_DEBUG")) {
         fprintf(stderr, "fireredpunc: %d tokens, %d classes\n", N, ctx.n_classes);
         for (int t = 0; t < N; t++) {
             fprintf(stderr, "  [%d] id=%d pred=%d logits=[", t, token_ids[t], preds[t]);

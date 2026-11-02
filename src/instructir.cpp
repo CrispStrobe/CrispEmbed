@@ -199,7 +199,7 @@ static int nafblock_forward_fused(instructir_context * ctx, float * x, int c, in
 
 static void nafblock_forward(instructir_context * ctx, float * x, int c, int h, int w, const nafblock_wt & wt,
                              core_cpu::DequantCache & dqc) {
-    static const bool legacy = getenv("INSTRUCTIR_LEGACY") != nullptr;
+    static const bool legacy = core_env::on("INSTRUCTIR_LEGACY");
     if (!legacy && nafblock_forward_fused(ctx, x, c, h, w, wt) == 0) return;
     int hw = h * w, c2 = c * 2;
     if (!wt.beta || !wt.gamma || !wt.norm1_w || !wt.conv1_w || !wt.conv2_w || !wt.sca_w || !wt.conv3_w || !wt.norm2_w ||
