@@ -108,6 +108,8 @@ static const ModelHash k_model_hashes[] = {
       "17543604ad7c30d39041562f2790b55e9e6b8a803799b3bf05faad4c60b12b98" },
     { "https://huggingface.co/cstr/f2llm-v2-0.6b-GGUF/resolve/main/f2llm-v2-0.6b-q8_0.gguf",
       "2fc30ef8e016c408c7ed676665cd30ec1708166dcb51b9856380aa215313919c" },
+    { "https://huggingface.co/cstr/f2llm-v2-0.6b-GGUF/resolve/c29299b73fe0e2135707e89c43badf3077cd38df/f2llm-v2-0.6b-q4_k-mixed.gguf",
+      "f600b43edc5b3e3e03b3bfa6704adac0e759e8790a0275825b86cc17c6054385" },
     { "https://huggingface.co/cstr/f2llm-v2-0.6b-GGUF/resolve/main/f2llm-v2-0.6b-q4_k-imatrix.gguf",
       "8eafc1b41558e31ea547dd2a9ee908fc136bd8fa8b29aa3ec0061e64429f8de7" },
     { "https://huggingface.co/cstr/f2llm-v2-0.6b-GGUF/resolve/main/f2llm-v2-0.6b-iq4_xs.gguf",

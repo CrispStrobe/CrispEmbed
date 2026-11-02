@@ -551,9 +551,21 @@ static const ModelEntry k_registry[] = {
     { "f2llm-v2-0.6b", "f2llm-v2-0.6b-q8_0.gguf",
       "https://huggingface.co/cstr/f2llm-v2-0.6b-GGUF/resolve/main/f2llm-v2-0.6b-q8_0.gguf",
       "Qwen3 1024d multilingual (Q8_0)", "639 MB", "apache-2.0", "https://huggingface.co/codefuse-ai/F2LLM-v2-0.6B" },
-    { "f2llm-v2-0.6b-q4k", "f2llm-v2-0.6b-q4_k-imatrix.gguf",
+    // Q4_K+imatrix alone is far below the Q4_K bar on this checkpoint (0.77 vs the
+    // original; the same weights run as F16 matmuls score 0.78, so it is weight error,
+    // not activation quantization). The mixed recipe keeps ffn_down at Q6_K and
+    // attn_v plus blocks 25-27 at Q8_0: min cosine 0.9644 / mean 0.9762 against
+    // sentence-transformers over the 78-text below-bar panel (tests/results/below-bar/).
+    { "f2llm-v2-0.6b-q4k", "f2llm-v2-0.6b-q4_k-mixed.gguf",
+      "https://huggingface.co/cstr/f2llm-v2-0.6b-GGUF/resolve/c29299b73fe0e2135707e89c43badf3077cd38df/"
+      "f2llm-v2-0.6b-q4_k-mixed.gguf",
+      "Qwen3 1024d multilingual (Q4_K mixed: ffn_down Q6_K, attn_v + last 3 blocks Q8_0)", "454 MB", "apache-2.0",
+      "https://huggingface.co/codefuse-ai/F2LLM-v2-0.6B" },
+    // SUPERSEDED 2026-11-02 by f2llm-v2-0.6b-q4k (min cosine 0.769 vs the original, below
+    // the 0.94 Q4_K bar). Kept downloadable and pinned for reproducibility only.
+    { "f2llm-v2-0.6b-q4k-superseded", "f2llm-v2-0.6b-q4_k-imatrix.gguf",
       "https://huggingface.co/cstr/f2llm-v2-0.6b-GGUF/resolve/main/f2llm-v2-0.6b-q4_k-imatrix.gguf",
-      "Qwen3 1024d multilingual (Q4_K+imatrix)", "419 MB", "apache-2.0",
+      "SUPERSEDED: Qwen3 1024d multilingual (Q4_K+imatrix, below the Q4_K bar)", "419 MB", "apache-2.0",
       "https://huggingface.co/codefuse-ai/F2LLM-v2-0.6B" },
     { "f2llm-v2-0.6b-iq4xs", "f2llm-v2-0.6b-iq4_xs.gguf",
       "https://huggingface.co/cstr/f2llm-v2-0.6b-GGUF/resolve/main/f2llm-v2-0.6b-iq4_xs.gguf",

@@ -356,6 +356,19 @@ MODELS = {
             "q5_k": 0.9031,
             "q4_k": 0.6999,
         },
+        # Revision lineage (tools/ci-heavy/below_bar_recipes.py, tests/results/below-bar/):
+        # min cosine vs codefuse-ai/F2LLM-v2-0.6B (sentence-transformers fp32) over the
+        # 78-text below-bar panel. Superseded files stay in the repo unchanged.
+        "revisions": [
+            {"date": "2026-11-02", "commit": "c29299b73fe0e2135707e89c43badf3077cd38df",
+             "file": "f2llm-v2-0.6b-q4_k-mixed.gguf",
+             "sha256": "f600b43edc5b3e3e03b3bfa6704adac0e759e8790a0275825b86cc17c6054385",
+             "recipe": "q4_k+imatrix; ffn_down q6_k; attn_v, blk.25-27 q8_0",
+             "min_cos": 0.9644, "mean_cos": 0.9762,
+             "supersedes": {"f2llm-v2-0.6b-q4_k-imatrix.gguf": 0.7694,
+                            "f2llm-v2-0.6b-q4_k-imatrix-c2.gguf": 0.7637,
+                            "f2llm-v2-0.6b-q4_k.gguf": 0.5874}},
+        ],
     },
     "jina-v5-nano": {
         "base_model": "jinaai/jina-embeddings-v5-text-nano",
@@ -719,6 +732,24 @@ MODELS = {
             "q5_k": 0.9884,
             "q4_k": 0.9662,
         },
+    },
+    "clip-text-base": {
+        "base_model": "openai/clip-vit-base-patch16",
+        "arch": "CLIP text encoder (causal, EOS pooling + text_projection)",
+        "dim": 512,
+        "layers": 12,
+        "params": "63M",
+        "pooling": "EOS token + projection",
+        "tokenizer": "CLIP byte-level BPE",
+        "license": "mit",
+        "langs": ["en"],
+        "desc": "CLIP ViT-B/16 text tower for text-to-image retrieval.",
+        # Lineage of the 2026-11-02 below-bar repair (tests/results/below-bar/).
+        "revisions": [
+            {"date": "2026-11-02", "file": "clip-text-base-q4_k-mixed.gguf",
+             "recipe": "q4_k+imatrix; attn.v, enc.0 q8_0",
+             "supersedes": {"clip-text-base-q4_k.gguf": 0.933}},
+        ],
     },
     "nomic-embed-vision-v1.5": {
         "base_model": "nomic-ai/nomic-embed-vision-v1.5",

@@ -82,6 +82,10 @@ std::string SentencePieceTokenizer::hf_normalize_text(const std::string & text) 
             if (ch == ' ' && !c.empty() && c.back() == ' ') continue;
             c += ch;
         }
+        // The original also emits no lone trailing "▁" for text ending in whitespace
+        // ("…Ende\n": HF ends "▁Ende </s>", the native path added id 6 before </s>;
+        // 5 of 77 panel texts, tests/results/below-bar/token-audit-bgem3.json).
+        while (!c.empty() && c.back() == ' ') c.pop_back();
         out.swap(c);
     }
     return out;

@@ -189,6 +189,18 @@ def reference(model, cfg, P):
         ref["embed"] = [np.asarray(v, np.float32).tolist() for v in o["dense_vecs"]]
         ref["sparse"] = [{int(k): float(v) for k, v in dict(d).items()} for d in o["lexical_weights"]]
         ref["colbert"] = [np.asarray(v, np.float32).tolist() for v in o["colbert_vecs"]]
+        try:  # un-normalised ColBERT norms per token (diagnosis of direction-unstable vectors)
+            tok, mm = m.tokenizer, m.model
+            norms = []
+            with torch.no_grad():
+                for t in P["docs"]:
+                    e = tok([t], return_tensors="pt", truncation=True, max_length=8192)
+                    h = mm.model(**e).last_hidden_state
+                    cv = mm.colbert_linear(h[:, 1:])[0]
+                    norms.append([round(float(x), 4) for x in cv.norm(dim=-1)])
+            ref["colbert_raw_norms"] = norms
+        except Exception as e:  # noqa: BLE001
+            ref["colbert_raw_norms_error"] = f"{type(e).__name__}: {e}"
         ref["impl"] = "FlagEmbedding.BGEM3FlagModel (fp32, batch 1, max_length 8192)"
     ref["seconds"] = time.time() - t0
     del m
@@ -256,7 +268,10 @@ def compare(mode, x, y, drop_cls_x=False):
     v = [c for c, _, _ in cs]
     w = min(cs)
     r = {"min": w[0], "mean": float(np.mean(v)), "worst_text": w[1], "worst_token": w[2] + 1,
-         "tokens": len(v), "same_token_counts": counts == len(x)}
+         "tokens": len(v), "same_token_counts": counts == len(x),
+         "p001": float(np.quantile(v, 0.001)), "p01": float(np.quantile(v, 0.01)),
+         "below_0.97": int(sum(c <= 0.97 for c in v)), "below_0.94": int(sum(c <= 0.94 for c in v)),
+         "worst10": [[round(c, 5), t, i + 1] for c, t, i in sorted(cs)[:10]]}
     if cls:
         r["cls_row_min"] = min(cls)
     return r
