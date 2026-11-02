@@ -110,3 +110,57 @@ directory hold per-page text, IDs, timings and RSS.
 - Both models score badly on the dot-leader page rgbl-1867-403 (CER 0.38-0.39, from leader dots and padding). Both drop the
   EB1911 superscript footnote markers, and both read Fraktur long s as f (`Brautfchau`).
 - The CORD ground truth is partial (annotated fields only), so word recall is the meaningful metric for receipts, not CER.
+
+## Unlimited-OCR-2 native re-run after the trial fixes (v2, 2 November 2026)
+
+The native Unlimited-OCR-2 arm was re-run alone at `c077c719` (main `a1ccc1c1`, which includes the trial fixes: the
+original raw decode with the added-token fallback for `<tr>/<td>` and layout markup, and the original tiling rule, plus
+the v2 manifest). Receipt: [native-uocr2-v2.json](native-uocr2-v2.json). The v1 receipt
+[native-uocr2.json](native-uocr2.json) is kept. Host: Intel Xeon 2.2 GHz x4, 2.96 h. It is compared with the unchanged
+original [ref-uocr2.json](ref-uocr2.json), which ran on an EPYC host, so the timings are indicative only.
+
+**Census page failed the sha256 gate.** en-form-economic-journal-67 failed by design. Kaggle confirmed that the Commons file
+revision was the pinned one (`revision_ok`), but both the revision-qualified URL and the bare URL returned the other JPEG
+rendering, `b09f8c1c…`. The v1 native run got the same bytes. The pinned rendering is `4d6e0d71…`, which this VPS and the
+original-model run received. So Wikimedia serves different thumbnail encodings of one revision depending on the data
+centre, and pinning the revision cannot fix the bytes. The page is excluded below (19 paired pages).
+TODO: host the exact bytes, or render from the sha1-pinned DjVu, in a v3 manifest.
+
+Generated token IDs are identical to v1 on every page. The fix changes only how the IDs are turned into text.
+
+| metric (19 paired pages) | native v1 (before) | native v2 (after) | original F32 |
+|---|---|---|---|
+| IDs identical to the original | 11/19 | 11/19 | - |
+| normalised text equal to the original | 10/19 | **14/19** | - |
+| 14 scans: mean CER / WER / word recall | 0.0600 / 0.0596 / 0.955 | 0.0594 / 0.0544 / 0.961 | 0.0589 / 0.0542 / 0.961 |
+| 5 receipts: mean word recall | 0.233 | **0.533** | 0.533 |
+| receipt-cord-test-14: CER / word recall | 0.122 / 0.132 | **0.004 / 0.981** | 0.004 / 0.981 |
+| receipt-cord-test-16: CER / word recall | 0.137 / 0.302 | **0.041 / 0.954** | 0.041 / 0.954 |
+
+The table defect is fixed. On every page where the IDs match the original, the native text now equals the original after
+normalisation (amtrak-23, climatic-26 and receipts 14 and 16 were the v1 misses). The five remaining text differences come
+from the 8 ID divergences, and their CER stays within 0.008 of the original. The receipt failures (29, 4, 20) belong to the
+source model and are reproduced exactly.
+
+| page | IDs = original v1 / v2 | CER v1 / v2 / original | WER v1 / v2 / original | word recall v1 / v2 / original | normalised text = original v1 / v2 |
+|---|---|---|---|---|---|
+| de-2col-meyers-b13-103 | False / False | 0.0369 / 0.0369 / 0.0371 | 0.1699 / 0.1699 / 0.171 | 0.8414 / 0.8414 / 0.8403 | False / False |
+| de-antiqua-kafka-betrachtung-94 | False / False | 0.008 / 0.008 / 0.008 | 0.0129 / 0.0129 / 0.0129 | 0.9871 / 0.9871 / 0.9871 | True / True |
+| de-antiqua-kafka-schloss-211 | True / True | 0.0061 / 0.0061 / 0.0061 | 0.0109 / 0.0109 / 0.0109 | 0.9891 / 0.9891 / 0.9891 | True / True |
+| de-degraded-freiligrath-46 | True / True | 0.0412 / 0.0412 / 0.0412 | 0.1266 / 0.1266 / 0.1266 | 0.8734 / 0.8734 / 0.8734 | True / True |
+| de-fraktur-grimm-319 | True / True | 0.0221 / 0.0221 / 0.0221 | 0.0604 / 0.0604 / 0.0604 | 0.9396 / 0.9396 / 0.9396 | True / True |
+| de-mixed-welzheim-188 | True / True | 0.0151 / 0.0151 / 0.0151 | 0.059 / 0.059 / 0.059 | 0.9487 / 0.9487 / 0.9487 | True / True |
+| de-table-rgbl-1867-403 | False / False | 0.3751 / 0.3751 / 0.3751 | 0.1068 / 0.1068 / 0.1068 | 0.8932 / 0.8932 / 0.8932 | True / True |
+| en-2col-eb1911-v04-246 | True / True | 0.0614 / 0.0614 / 0.0614 | 0.0709 / 0.0709 / 0.0709 | 0.9985 / 0.9985 / 0.9985 | True / True |
+| en-2col-eb1911-v25-5 | False / False | 0.1117 / 0.1117 / 0.1117 | 0.0132 / 0.0132 / 0.0151 | 0.9925 / 0.9925 / 0.9906 | False / False |
+| en-old-statutes-v1-772 | False / False | 0.0433 / 0.0417 / 0.0339 | 0.0385 / 0.0385 / 0.033 | 0.9927 / 0.9927 / 0.9945 | False / False |
+| en-prose-constitution-13 | True / True | 0.046 / 0.046 / 0.046 | 0.0291 / 0.0291 / 0.0291 | 1.0 / 1.0 / 1.0 | True / True |
+| en-prose-constitution-81 | False / False | 0.0389 / 0.0389 / 0.0399 | 0.0307 / 0.0307 / 0.0307 | 1.0 / 1.0 / 1.0 | False / False |
+| en-report-amtrak-23 | True / True | 0.0062 / 0.0 / 0.0 | 0.0535 / 0.0 / 0.0 | 0.9465 / 1.0 / 1.0 | False / True |
+| en-table-climatic-26 | True / True | 0.0285 / 0.0268 / 0.0268 | 0.0524 / 0.033 / 0.033 | 0.9709 / 0.9981 / 0.9981 | False / True |
+| receipt-cord-test-14 | True / True | 0.1218 / 0.0042 / 0.0042 | 0.8679 / 0.0189 / 0.0189 | 0.1321 / 0.9811 / 0.9811 | False / True |
+| receipt-cord-test-16 | True / True | 0.1371 / 0.0406 / 0.0406 | 0.6977 / 0.0465 / 0.0465 | 0.3023 / 0.9535 / 0.9535 | False / True |
+| receipt-cord-test-20 | False / False | 3.0978 / 3.0978 / 3.1957 | 2.381 / 2.381 / 2.5 | 0.7143 / 0.7143 / 0.7143 | False / False |
+| receipt-cord-test-29 | True / True | 0.9961 / 0.9961 / 0.9961 | 0.9825 / 0.9825 / 0.9825 | 0.0175 / 0.0175 / 0.0175 | True / True |
+| receipt-cord-test-4 | False / False | 7.585 / 7.585 / 7.585 | 5.7742 / 5.7742 / 5.7742 | 0.0 / 0.0 / 0.0 | True / True |
+

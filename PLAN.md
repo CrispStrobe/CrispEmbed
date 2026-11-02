@@ -356,24 +356,28 @@ handoff take precedence over historical commands.
 1. Inspect the two already queued jobs: Unlimited40868634374 and
    Ultra40871150002. Verify exact source/attempt and collect small reports after
    completion; do not duplicate them. Keep models/raw arrays remote.
-2. WASM layer3 divergence (branch `fix/wasm-live-norm-component-inventory-20261102`):
-   attribution is complete through the FFN matmuls. v4 run41432135298: all 208
-   same-input norm replays are bit-exact, and the first budget failure is
-   layer3 fc2_raw (0.00331). Same-input FFN replay run41438394031: kernel
-   accumulation order contributes at most 1.43e-6 (fc1 IQ4_NL: tinyBLAS vs
-   generic) and 9.54e-7 (fc2 IQ4_XS: AVX2 vs generic). Identical inputs give
-   identical Q8 bytes. The error is inherited input (about 1e-6) amplified by
-   activation quantization: one fc1 Q8_0 FP16 scale step, and 38 fc2 Q8_K
-   scales plus 3 values. The emulated native-order WASM kernel is bit-exact on
-   the same input but leaves the natural error unchanged, so no candidate is
-   proposed. Next: apply the same same-input crosswise method to the earliest
-   bit-differing op (norm01 input 1.19e-7, i.e. layer0 attention/FFN) to find
-   where the first bit difference originates. No default, gate or budget change
-   and no ten-case retry. Receipts:
+2. WASM layer0-3 divergence (branch `fix/wasm-live-norm-component-inventory-20261102`):
+   origin found. Layer0 op-by-op replay run41441512356 starts from the
+   bit-identical captured norm00 output. Every elementwise op is bit-exact on
+   identical inputs. The first differing op is layer0 `q_raw` (IQ4_NL x Q8_0
+   mul_mat: tinyBLAS vs generic scalar order, 9.54e-7). k/v/o mul_mat (same
+   kernel) and `flash_attn_ext` (8.94e-7: `vec_dot_f32`/`vec_mad_f32` FMA and
+   lane width, `expf`) differ independently. FFN replay run41438394031:
+   IQ4_XS kernel order 9.54e-7, and the layer3 fc2 failure (0.00331) is these
+   ~1e-7 differences amplified by activation quantization (Q8_0/Q8_K scale
+   steps). At least three kernel families differ (IQ4_NL, IQ4_XS, flash F32),
+   so no single-op default-off candidate can remove the failure; none is
+   proposed. Open decision for the owner: either accept WASM-vs-native drift
+   for this quantized model as a documented platform tolerance, or scope a
+   multi-kernel native-order WASM build (IQ4_NL tinyBLAS order, IQ4_XS AVX2
+   order, flash `vec_dot_f32`/`vec_mad_f32` with fmaf and AVX lane order,
+   matching expf) as one gated experiment measured on the one-sentence scope.
+   No default, gate or budget change and no ten-case retry. Receipts:
    [v2](tests/results/packaging/wasm-live-norm-v2-component-admission.json),
    [v3](tests/results/packaging/wasm-live-norm-v3-observer.json),
    [v4](tests/results/packaging/wasm-live-norm-v4-attribution.json),
-   [FFN](tests/results/packaging/wasm-layer3-ffn-matmul-v1.json).
+   [FFN](tests/results/packaging/wasm-layer3-ffn-matmul-v1.json),
+   [layer0](tests/results/packaging/wasm-layer0-attention-v1.json).
 3. Independently review MoE real-router source81fa4e26, then execute its
    component-only replay using exact-v4 attached captures. No whole-model or
    original forward. Require own-byte controls before cross-input conclusions.
