@@ -1,3 +1,20 @@
+## 2 November 2026 — GOT-OCR2 F16 `colorcolor…` root cause (fix/got-ocr2-f16)
+
+Hosted CPU reproduces the CUDA-audit result: published F16 decodes `colorcolorcolor:,,};…` on fox,
+and Q4_K decodes `The quick brown fox jumps over the lazy dog. 12345`. Bisecting from the same F16
+bytes (LLM→F32, vision→F32, ffn_down→F32, →Q8_0) leaves all four variants broken, so this is data,
+not precision. HF original F32 activations peak at 6990 (no F16 overflow). The per-tensor audit
+against stepfun-ai/GOT-OCR2_0 found 289/290 LLM tensors exact. `l.embed_tokens.weight` had cos 0.9931
+because file bytes 202930256-211318866 (8 MiB) are zero. The earliest stage divergence is llm_layer_0,
+cos 0.936596 / max_abs 8.92 (vision exact). Reconversion with a byte-readback check (`--verify`)
+gives cos 1.000000 everywhere and fox token-exact. Qualification run 41391040980 was rejected by its
+page-similarity gate (receipt char ratio vs the original 0.530 < q4_k 0.592). That gap is shared with
+q4_k; it is kept on record. Under the coordinator's decision applying the owner bar (F16 > 0.98:
+stage min cos 1.000000 x19, fox token-exact), run 41397551540 reconverted byte-identically
+(sha256 98b431ab…) and published `got-ocr2-f16-r2.gguf` at Hub `c0f1aa7b5b52`. Local, LFS and
+empty-cache readback hashes match, and the old file is unchanged. M1 Metal: fox exact, 17.9 s.
+Registry `got-ocr2-f16` was added; `got-ocr2` (q4_k) is unchanged. Receipts: `tests/results/got-ocr2-f16/`.
+
 ## 2 November 2026 — WASM live norm: one-sentence attribution complete (v4, numerical negative)
 
 * 41432135298 (v4 at `77ed7122`) completed the full one-sentence attribution and exited1 on

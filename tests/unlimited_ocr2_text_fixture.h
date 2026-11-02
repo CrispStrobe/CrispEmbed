@@ -6,7 +6,10 @@
 #include <cstdint>
 
 namespace uocr2_text_fixture {
-struct piece { int32_t id; const char * text; };
+struct piece {
+    int32_t id;
+    const char * text;
+};
 static const piece kPieces[] = {
     { 1, "<\357\275\234end\342\226\201of\342\226\201sentence\357\275\234>" },
     { 3, "!" },
@@ -347,24 +350,125 @@ static const piece kPieces[] = {
     { 128829, "<FORK>" },
     { 128830, "<CHILD>" },
 };
-static const int32_t kIds0[] = { 128827, 128828, 10212, 30, 114086, 19, 86594, 2170, 14, 223, 2597, 14, 223, 21895, 14, 223, 8717, 63, 128829, 97083, 367, 25257, 9658, 201, 128828, 2067, 61, 2170, 14, 223, 10857, 14, 223, 32716, 14, 223, 15458, 63, 128829, 671, 46893, 295, 70086, 10156, 1009, 5002, 304, 270, 1017, 90004, 1487, 295, 5773, 16, 12565, 1408, 16205, 538, 223, 19, 14, 23670, 304, 223, 20, 14, 17070, 116886, 716, 6857, 14, 1901, 270, 5610, 3711, 377, 67922, 22377, 10677, 4167, 223, 18, 16, 22, 3416, 362, 270, 1257, 1014, 603, 128828, 2067, 61, 2170, 14, 223, 20892, 14, 223, 32608, 14, 223, 25880, 63, 128829, 14959, 4653, 6645, 2526, 16, 455, 8147, 8412, 4761, 377, 2192, 223, 20, 2413, 8773, 5169, 70423, 2184, 270, 4666, 9428, 14, 305, 270, 19233, 36869, 39772, 4086, 260, 84837, 9502, 1936, 270, 19264, 5029, 12600, 377, 223, 19, 5899, 16 };
-static const int32_t kIds1[] = { 128827, 128828, 8603, 61, 3661, 14, 223, 1977, 14, 223, 30155, 14, 223, 28922, 63, 128829, 114761, 32, 128823, 128821, 12299, 128822, 128821, 43893, 128822, 128821, 78698, 128822, 128821, 109612, 128822, 128824, 128823, 128821, 6343, 24949, 334, 23, 128822, 128821, 32424, 128822, 128821, 19, 14, 6793, 128822, 128821, 26, 14, 15098, 16, 504, 128822, 128824, 128823, 128821, 6311, 77, 71448, 128822, 128821, 31108, 128822, 128821, 18736, 128822, 128821, 736, 14, 21952, 16, 1328, 128822, 128824, 128823, 128821, 50900, 20280, 128822, 128821, 56280, 128822, 128821, 5936, 128822, 128821, 1002, 14, 7965, 16, 504, 128822, 128824, 128823, 128821, 92123, 223, 1477, 113019, 29, 128822, 128821, 34989, 128822, 128821, 12326, 128822, 128821, 3180, 14, 6860, 16, 504, 128822, 128824, 128823, 128821, 9538, 128822, 128821, 128822, 128821, 19, 14, 29818, 128822, 128821, 1892, 14, 10669, 16, 1328, 128822, 128824, 1718, 8603, 32 };
-static const int32_t kIds2[] = { 128827, 128828, 10212, 30, 114086, 19, 86594, 4414, 14, 223, 2240, 14, 223, 21817, 14, 223, 4610, 63, 128829, 102331, 52088, 406, 20390, 44238, 201, 128828, 2067, 61, 4287, 14, 223, 7335, 14, 223, 28002, 14, 223, 10334, 63, 128829, 42, 37530, 2533, 18420, 223, 736, 14, 223, 4460, 856, 17575, 201, 128828, 2067, 61, 4414, 14, 223, 11454, 14, 223, 25472, 14, 223, 939, 63, 128829, 101968, 17186, 3011, 16, 223, 14453, 30615, 201, 128828, 2067, 61, 4414, 14, 223, 15894, 14, 223, 24842, 14, 223, 16674, 63, 128829, 939, 24, 15, 553, 15, 1449, 223, 3019, 28, 3180, 201, 128828, 2067, 61, 4414, 14, 223, 15836, 14, 223, 27803, 14, 223, 14461, 63, 128829, 20, 90, 20679, 57577, 223, 21, 16, 1892, 201, 128828, 2067, 61, 4414, 14, 223, 21398, 14, 223, 27803, 14, 223, 21577, 63, 128829, 19, 90, 433, 8863, 57216, 223, 22, 16, 397, 201, 128828, 2067, 61, 4414, 14, 223, 21835, 14, 223, 27803, 14, 223, 19864, 63, 128829, 19, 90, 94571, 36281, 3873, 223, 21, 16, 553, 201, 128828, 2067, 61, 4414, 14, 223, 23931, 14, 223, 27803, 14, 223, 22580, 63, 128829, 19, 90, 37070, 115552, 223, 20, 16, 2225, 201, 128828, 2067, 61, 4414, 14, 223, 19749, 14, 223, 27803, 14, 223, 27618, 63, 128829, 5399, 22724, 223, 929, 16, 504, 201, 128828, 2067, 61, 4414, 14, 223, 20807, 14, 223, 27803, 14, 223, 26681, 63, 128829, 56, 2063, 223, 25, 7, 223, 18, 16, 3565, 201, 128828, 2067, 61, 4414, 14, 223, 26602, 14, 223, 27803, 14, 223, 28405, 63, 128829, 54, 70480, 223, 929, 16, 3565, 201, 128828, 2067, 61, 4414, 14, 223, 29556, 14, 223, 15551, 14, 223, 29496, 63, 128829, 10749, 329, 513, 5474, 201, 128828, 2067, 61, 4414, 14, 223, 29483, 14, 223, 17622, 14, 223, 30236, 63, 128829, 17093, 440, 3 };
-static const int32_t kIds3[] = { 128827, 128828, 2067, 61, 2491, 14, 223, 6152, 14, 223, 26407, 14, 223, 7833, 63, 128829, 47, 6150, 321, 1617, 411, 11036, 114685, 2304, 2634, 25140, 932, 114685, 2304, 2634, 201, 128828, 2067, 61, 2491, 14, 223, 7593, 14, 223, 32182, 14, 223, 21010, 63, 128829, 6754, 10399, 409, 14846, 1424, 54651, 25621, 617, 80, 9515, 2317, 11894, 8025, 2464, 657, 28473, 641, 68949, 4179, 6981, 6796, 603, 59202, 19235, 318, 19227, 31140, 1650, 5299, 223, 25, 28, 1059, 14832, 223, 27, 28, 504, 63318, 14, 37774, 409, 38295, 639, 223, 779, 28, 1883, 63318, 603, 36, 6150, 18992, 1424, 11559, 28, 25132, 6870, 73945, 25820, 14404, 49938, 1095, 46310, 690, 50111, 14832, 13602, 279, 409, 201, 21910, 37461, 10827, 16, 54395, 92293, 72, 44729, 281, 17194, 11559, 9005, 411, 75426, 75065, 603, 128828, 2067, 61, 2491, 14, 223, 21365, 14, 223, 27278, 14, 223, 23369, 63, 128829, 32882, 2134, 30234, 9200, 2092, 28969, 81196, 20582, 2134, 54306, 14, 552, 6136, 73, 38903, 6796 };
-struct text_case { const char * name; const int32_t * ids; int n; const char * text; const char * clean; };
+static const int32_t kIds0[] = {
+    128827, 128828, 10212, 30,     114086, 19,    86594, 2170,   14,     223,    2597,  14,    223,   21895, 14,
+    223,    8717,   63,    128829, 97083,  367,   25257, 9658,   201,    128828, 2067,  61,    2170,  14,    223,
+    10857,  14,     223,   32716,  14,     223,   15458, 63,     128829, 671,    46893, 295,   70086, 10156, 1009,
+    5002,   304,    270,   1017,   90004,  1487,  295,   5773,   16,     12565,  1408,  16205, 538,   223,   19,
+    14,     23670,  304,   223,    20,     14,    17070, 116886, 716,    6857,   14,    1901,  270,   5610,  3711,
+    377,    67922,  22377, 10677,  4167,   223,   18,    16,     22,     3416,   362,   270,   1257,  1014,  603,
+    128828, 2067,   61,    2170,   14,     223,   20892, 14,     223,    32608,  14,    223,   25880, 63,    128829,
+    14959,  4653,   6645,  2526,   16,     455,   8147,  8412,   4761,   377,    2192,  223,   20,    2413,  8773,
+    5169,   70423,  2184,  270,    4666,   9428,  14,    305,    270,    19233,  36869, 39772, 4086,  260,   84837,
+    9502,   1936,   270,   19264,  5029,   12600, 377,   223,    19,     5899,   16
+};
+static const int32_t kIds1[] = {
+    128827, 128828, 8603,   61,     3661,   14,     223,    1977,   14,     223,    30155,  14,     223,    28922,
+    63,     128829, 114761, 32,     128823, 128821, 12299,  128822, 128821, 43893,  128822, 128821, 78698,  128822,
+    128821, 109612, 128822, 128824, 128823, 128821, 6343,   24949,  334,    23,     128822, 128821, 32424,  128822,
+    128821, 19,     14,     6793,   128822, 128821, 26,     14,     15098,  16,     504,    128822, 128824, 128823,
+    128821, 6311,   77,     71448,  128822, 128821, 31108,  128822, 128821, 18736,  128822, 128821, 736,    14,
+    21952,  16,     1328,   128822, 128824, 128823, 128821, 50900,  20280,  128822, 128821, 56280,  128822, 128821,
+    5936,   128822, 128821, 1002,   14,     7965,   16,     504,    128822, 128824, 128823, 128821, 92123,  223,
+    1477,   113019, 29,     128822, 128821, 34989,  128822, 128821, 12326,  128822, 128821, 3180,   14,     6860,
+    16,     504,    128822, 128824, 128823, 128821, 9538,   128822, 128821, 128822, 128821, 19,     14,     29818,
+    128822, 128821, 1892,   14,     10669,  16,     1328,   128822, 128824, 1718,   8603,   32
+};
+static const int32_t kIds2[] = {
+    128827, 128828, 10212,  30,     114086, 19,     86594, 4414,   14,     223,   2240,   14,     223,   21817,
+    14,     223,    4610,   63,     128829, 102331, 52088, 406,    20390,  44238, 201,    128828, 2067,  61,
+    4287,   14,     223,    7335,   14,     223,    28002, 14,     223,    10334, 63,     128829, 42,    37530,
+    2533,   18420,  223,    736,    14,     223,    4460,  856,    17575,  201,   128828, 2067,   61,    4414,
+    14,     223,    11454,  14,     223,    25472,  14,    223,    939,    63,    128829, 101968, 17186, 3011,
+    16,     223,    14453,  30615,  201,    128828, 2067,  61,     4414,   14,    223,    15894,  14,    223,
+    24842,  14,     223,    16674,  63,     128829, 939,   24,     15,     553,   15,     1449,   223,   3019,
+    28,     3180,   201,    128828, 2067,   61,     4414,  14,     223,    15836, 14,     223,    27803, 14,
+    223,    14461,  63,     128829, 20,     90,     20679, 57577,  223,    21,    16,     1892,   201,   128828,
+    2067,   61,     4414,   14,     223,    21398,  14,    223,    27803,  14,    223,    21577,  63,    128829,
+    19,     90,     433,    8863,   57216,  223,    22,    16,     397,    201,   128828, 2067,   61,    4414,
+    14,     223,    21835,  14,     223,    27803,  14,    223,    19864,  63,    128829, 19,     90,    94571,
+    36281,  3873,   223,    21,     16,     553,    201,   128828, 2067,   61,    4414,   14,     223,   23931,
+    14,     223,    27803,  14,     223,    22580,  63,    128829, 19,     90,    37070,  115552, 223,   20,
+    16,     2225,   201,    128828, 2067,   61,     4414,  14,     223,    19749, 14,     223,    27803, 14,
+    223,    27618,  63,     128829, 5399,   22724,  223,   929,    16,     504,   201,    128828, 2067,  61,
+    4414,   14,     223,    20807,  14,     223,    27803, 14,     223,    26681, 63,     128829, 56,    2063,
+    223,    25,     7,      223,    18,     16,     3565,  201,    128828, 2067,  61,     4414,   14,    223,
+    26602,  14,     223,    27803,  14,     223,    28405, 63,     128829, 54,    70480,  223,    929,   16,
+    3565,   201,    128828, 2067,   61,     4414,   14,    223,    29556,  14,    223,    15551,  14,    223,
+    29496,  63,     128829, 10749,  329,    513,    5474,  201,    128828, 2067,  61,     4414,   14,    223,
+    29483,  14,     223,    17622,  14,     223,    30236, 63,     128829, 17093, 440,    3
+};
+static const int32_t kIds3[] = {
+    128827, 128828, 2067,  61,    2491,  14,    223,   6152,   14,    223,   26407, 14,    223,    7833,   63,
+    128829, 47,     6150,  321,   1617,  411,   11036, 114685, 2304,  2634,  25140, 932,   114685, 2304,   2634,
+    201,    128828, 2067,  61,    2491,  14,    223,   7593,   14,    223,   32182, 14,    223,    21010,  63,
+    128829, 6754,   10399, 409,   14846, 1424,  54651, 25621,  617,   80,    9515,  2317,  11894,  8025,   2464,
+    657,    28473,  641,   68949, 4179,  6981,  6796,  603,    59202, 19235, 318,   19227, 31140,  1650,   5299,
+    223,    25,     28,    1059,  14832, 223,   27,    28,     504,   63318, 14,    37774, 409,    38295,  639,
+    223,    779,    28,    1883,  63318, 603,   36,    6150,   18992, 1424,  11559, 28,    25132,  6870,   73945,
+    25820,  14404,  49938, 1095,  46310, 690,   50111, 14832,  13602, 279,   409,   201,   21910,  37461,  10827,
+    16,     54395,  92293, 72,    44729, 281,   17194, 11559,  9005,  411,   75426, 75065, 603,    128828, 2067,
+    61,     2491,   14,    223,   21365, 14,    223,   27278,  14,    223,   23369, 63,    128829, 32882,  2134,
+    30234,  9200,   2092,  28969, 81196, 20582, 2134,  54306,  14,    552,   6136,  73,    38903,  6796
+};
+struct text_case {
+    const char * name;
+    const int32_t * ids;
+    int n;
+    const char * text;
+    const char * clean;
+};
 static const text_case kCases[] = {
     { "paragraphs", kIds0, 146,
-      "<PAGE><BLOCK>title<LEVEL1>[48, 78, 388, 117]<FORK>Quarterly Operations Report\012<BLOCK>text[48, 171, 959, 303]<FORK>The warehouse in Leipzig completed its move to the new conveyor system in September. Throughput rose from 1,840 to 2,315 parcels per hour, while the error rate on outgoing labels fell below 0.4 percent for the first time.\012<BLOCK>text[48, 358, 934, 492]<FORK>Two issues remain open. The cold storage unit on level 2 still reports temperature spikes during the night shift, and the loading dock scanner needs a firmware update before the holiday season begins on 1 December.",
-      "Quarterly Operations Report\012The warehouse in Leipzig completed its move to the new conveyor system in September. Throughput rose from 1,840 to 2,315 parcels per hour, while the error rate on outgoing labels fell below 0.4 percent for the first time.\012Two issues remain open. The cold storage unit on level 2 still reports temperature spikes during the night shift, and the loading dock scanner needs a firmware update before the holiday season begins on 1 December." },
+      "<PAGE><BLOCK>title<LEVEL1>[48, 78, 388, 117]<FORK>Quarterly Operations Report\012<BLOCK>text[48, 171, 959, "
+      "303]<FORK>The warehouse in Leipzig completed its move to the new conveyor system in September. Throughput rose "
+      "from 1,840 to 2,315 parcels per hour, while the error rate on outgoing labels fell below 0.4 percent for the "
+      "first time.\012<BLOCK>text[48, 358, 934, 492]<FORK>Two issues remain open. The cold storage unit on level 2 "
+      "still reports temperature spikes during the night shift, and the loading dock scanner needs a firmware update "
+      "before the holiday season begins on 1 December.",
+      "Quarterly Operations Report\012The warehouse in Leipzig completed its move to the new conveyor system in "
+      "September. Throughput rose from 1,840 to 2,315 parcels per hour, while the error rate on outgoing labels fell "
+      "below 0.4 percent for the first time.\012Two issues remain open. The cold storage unit on level 2 still reports "
+      "temperature spikes during the night shift, and the loading dock scanner needs a firmware update before the "
+      "holiday season begins on 1 December." },
     { "table", kIds1, 138,
-      "<PAGE><BLOCK>table[56, 99, 921, 658]<FORK><table><tr><td>Product</td><td>Region</td><td>Units</td><td>Revenue</td></tr><tr><td>Notebook A5</td><td>North</td><td>1,250</td><td>8,750.00</td></tr><tr><td>Desk Lamp</td><td>South</td><td>430</td><td>12,040.50</td></tr><tr><td>Office Chair</td><td>East</td><td>96</td><td>17,184.00</td></tr><tr><td>Monitor 27&quot;</td><td>West</td><td>212</td><td>42,188.00</td></tr><tr><td>Total</td><td></td><td>1,988</td><td>80,162.50</td></tr></table>",
-      "<table><tr><td>Product</td><td>Region</td><td>Units</td><td>Revenue</td></tr><tr><td>Notebook A5</td><td>North</td><td>1,250</td><td>8,750.00</td></tr><tr><td>Desk Lamp</td><td>South</td><td>430</td><td>12,040.50</td></tr><tr><td>Office Chair</td><td>East</td><td>96</td><td>17,184.00</td></tr><tr><td>Monitor 27&quot;</td><td>West</td><td>212</td><td>42,188.00</td></tr><tr><td>Total</td><td></td><td>1,988</td><td>80,162.50</td></tr></table>" },
+      "<PAGE><BLOCK>table[56, 99, 921, "
+      "658]<FORK><table><tr><td>Product</td><td>Region</td><td>Units</td><td>Revenue</td></tr><tr><td>Notebook "
+      "A5</td><td>North</td><td>1,250</td><td>8,750.00</td></tr><tr><td>Desk "
+      "Lamp</td><td>South</td><td>430</td><td>12,040.50</td></tr><tr><td>Office "
+      "Chair</td><td>East</td><td>96</td><td>17,184.00</td></tr><tr><td>Monitor "
+      "27&quot;</td><td>West</td><td>212</td><td>42,188.00</td></tr><tr><td>Total</td><td></td><td>1,988</"
+      "td><td>80,162.50</td></tr></table>",
+      "<table><tr><td>Product</td><td>Region</td><td>Units</td><td>Revenue</td></tr><tr><td>Notebook "
+      "A5</td><td>North</td><td>1,250</td><td>8,750.00</td></tr><tr><td>Desk "
+      "Lamp</td><td>South</td><td>430</td><td>12,040.50</td></tr><tr><td>Office "
+      "Chair</td><td>East</td><td>96</td><td>17,184.00</td></tr><tr><td>Monitor "
+      "27&quot;</td><td>West</td><td>212</td><td>42,188.00</td></tr><tr><td>Total</td><td></td><td>1,988</"
+      "td><td>80,162.50</td></tr></table>" },
     { "receipt", kIds2, 306,
-      "<PAGE><BLOCK>title<LEVEL1>[53, 44, 392, 72]<FORK>CORNER BAKERY\012<BLOCK>text[51, 109, 799, 139]<FORK>Hauptstrasse 12, 10115 Berlin\012<BLOCK>text[53, 173, 517, 202]<FORK>Receipt No. 004817\012<BLOCK>text[53, 238, 467, 265]<FORK>2026-10-28 08:42\012<BLOCK>text[53, 302, 672, 330]<FORK>2x Croissant 3.80\012<BLOCK>text[53, 367, 672, 395]<FORK>1x Rye Bread 4.20\012<BLOCK>text[53, 431, 672, 460]<FORK>1x Cappuccino 3.10\012<BLOCK>text[53, 496, 672, 525]<FORK>1x Orange Juice 2.90\012<BLOCK>text[53, 560, 672, 588]<FORK>Subtotal 14.00\012<BLOCK>text[53, 625, 672, 653]<FORK>VAT 7% 0.98\012<BLOCK>text[53, 690, 672, 717]<FORK>TOTAL 14.98\012<BLOCK>text[53, 754, 365, 784]<FORK>Paid by card\012<BLOCK>text[53, 818, 306, 848]<FORK>Thank you!",
-      "CORNER BAKERY\012Hauptstrasse 12, 10115 Berlin\012Receipt No. 004817\0122026-10-28 08:42\0122x Croissant 3.80\0121x Rye Bread 4.20\0121x Cappuccino 3.10\0121x Orange Juice 2.90\012Subtotal 14.00\012VAT 7% 0.98\012TOTAL 14.98\012Paid by card\012Thank you!" },
+      "<PAGE><BLOCK>title<LEVEL1>[53, 44, 392, 72]<FORK>CORNER BAKERY\012<BLOCK>text[51, 109, 799, "
+      "139]<FORK>Hauptstrasse 12, 10115 Berlin\012<BLOCK>text[53, 173, 517, 202]<FORK>Receipt No. "
+      "004817\012<BLOCK>text[53, 238, 467, 265]<FORK>2026-10-28 08:42\012<BLOCK>text[53, 302, 672, 330]<FORK>2x "
+      "Croissant 3.80\012<BLOCK>text[53, 367, 672, 395]<FORK>1x Rye Bread 4.20\012<BLOCK>text[53, 431, 672, "
+      "460]<FORK>1x Cappuccino 3.10\012<BLOCK>text[53, 496, 672, 525]<FORK>1x Orange Juice 2.90\012<BLOCK>text[53, "
+      "560, 672, 588]<FORK>Subtotal 14.00\012<BLOCK>text[53, 625, 672, 653]<FORK>VAT 7% 0.98\012<BLOCK>text[53, 690, "
+      "672, 717]<FORK>TOTAL 14.98\012<BLOCK>text[53, 754, 365, 784]<FORK>Paid by card\012<BLOCK>text[53, 818, 306, "
+      "848]<FORK>Thank you!",
+      "CORNER BAKERY\012Hauptstrasse 12, 10115 Berlin\012Receipt No. 004817\0122026-10-28 08:42\0122x Croissant "
+      "3.80\0121x Rye Bread 4.20\0121x Cappuccino 3.10\0121x Orange Juice 2.90\012Subtotal 14.00\012VAT 7% "
+      "0.98\012TOTAL 14.98\012Paid by card\012Thank you!" },
     { "german", kIds3, 164,
-      "<PAGE><BLOCK>text[47, 92, 644, 128]<FORK>Mitteilung an alle Mitarbeiterinnen und Mitarbeiter\012<BLOCK>text[47, 185, 878, 362]<FORK>Ab Montag gelten neue \303\226ffnungszeiten f\303\274r die Kantine im Erdgescho\303\237.\012Fr\303\274hst\303\274ck gibt es von 7:30 bis 9:00 Uhr, Mittagessen ab 11:45 Uhr.\012Bitte beachten Sie: \303\234bergr\303\266\303\237en bei Arbeitsschuhen m\303\274ssen bis Freitag\012bestellt werden. F\303\274r R\303\274ckfragen wenden Sie sich an Frau M\303\274ller.\012<BLOCK>text[47, 421, 557, 457]<FORK>Gr\303\274\303\237e aus der Gesch\303\244ftsf\303\274hrung, J\303\266rg Wei\303\237",
-      "Mitteilung an alle Mitarbeiterinnen und Mitarbeiter\012Ab Montag gelten neue \303\226ffnungszeiten f\303\274r die Kantine im Erdgescho\303\237.\012Fr\303\274hst\303\274ck gibt es von 7:30 bis 9:00 Uhr, Mittagessen ab 11:45 Uhr.\012Bitte beachten Sie: \303\234bergr\303\266\303\237en bei Arbeitsschuhen m\303\274ssen bis Freitag\012bestellt werden. F\303\274r R\303\274ckfragen wenden Sie sich an Frau M\303\274ller.\012Gr\303\274\303\237e aus der Gesch\303\244ftsf\303\274hrung, J\303\266rg Wei\303\237" },
+      "<PAGE><BLOCK>text[47, 92, 644, 128]<FORK>Mitteilung an alle Mitarbeiterinnen und Mitarbeiter\012<BLOCK>text[47, "
+      "185, 878, 362]<FORK>Ab Montag gelten neue \303\226ffnungszeiten f\303\274r die Kantine im "
+      "Erdgescho\303\237.\012Fr\303\274hst\303\274ck gibt es von 7:30 bis 9:00 Uhr, Mittagessen ab 11:45 Uhr.\012Bitte "
+      "beachten Sie: \303\234bergr\303\266\303\237en bei Arbeitsschuhen m\303\274ssen bis Freitag\012bestellt werden. "
+      "F\303\274r R\303\274ckfragen wenden Sie sich an Frau M\303\274ller.\012<BLOCK>text[47, 421, 557, "
+      "457]<FORK>Gr\303\274\303\237e aus der Gesch\303\244ftsf\303\274hrung, J\303\266rg Wei\303\237",
+      "Mitteilung an alle Mitarbeiterinnen und Mitarbeiter\012Ab Montag gelten neue \303\226ffnungszeiten f\303\274r "
+      "die Kantine im Erdgescho\303\237.\012Fr\303\274hst\303\274ck gibt es von 7:30 bis 9:00 Uhr, Mittagessen ab "
+      "11:45 Uhr.\012Bitte beachten Sie: \303\234bergr\303\266\303\237en bei Arbeitsschuhen m\303\274ssen bis "
+      "Freitag\012bestellt werden. F\303\274r R\303\274ckfragen wenden Sie sich an Frau "
+      "M\303\274ller.\012Gr\303\274\303\237e aus der Gesch\303\244ftsf\303\274hrung, J\303\266rg Wei\303\237" },
 };
 // Every added token above the BPE vocab (the GGUF tokenizer.ggml.tokens stops at 128000).
 static const piece kAdded[] = {

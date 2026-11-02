@@ -1,4 +1,27 @@
-## CUDA GPU audit follow-ups — 2 November 2026
+## GOT-OCR2 F16 artifact — 2 November 2026 (`fix/got-ocr2-f16`)
+
+Root cause: the published `got-ocr2-f16.gguf` (Hub `5a0b0a1adc`) has an 8 MiB block of zero
+bytes inside `l.embed_tokens.weight` (token rows 43-2091). Artifact defect only: every other
+tensor matches the original, F32 activations never exceed the F16 range (HF max 6990), and the
+runtime is fine. Reconverted `got-ocr2-f16-r2.gguf` (sha256 `98b431ab…`, converter `--verify`)
+differs from the old file only inside that span. Stage diff is cos 1.000000 on all 19 stages
+(llm_layer_0 max_abs 5.1e-5, was 0.9366 / 8.92), and fox is token-exact against the original.
+- Qualification run 41391040980 was REJECTED by its own page-similarity gate (receipt char ratio
+  r2 0.530 < q4_k 0.592; simple_form r2 0.44 vs q4_k 0.07). The receipt is kept on record.
+  Coordinator decision (owner bar, docs/precision-acceptance.md): r2 qualifies as F16 on stage cos
+  1.000000 x19 and fox token-exact. Page similarity stays a recorded diagnostic. Published by run
+  41397551540 as `got-ocr2-f16-r2.gguf`, Hub `c0f1aa7b5b52c15002e911d5d630e6d0dcb3ba8f`, sha256
+  `98b431ab…` (local = LFS = empty-cache readback). Registry `got-ocr2-f16`. M1 Metal fox exact.
+  DONE except the item below.
+- **GOT pipeline gap against the original, all precisions** (q4_k, q8_0, F16 alike): native
+  output is not token-exact against stepfun-ai/GOT-OCR-2.0-hf on receipt_example and simple_form.
+  The native arms add receipt Qty/Price columns that the original omits, and they drop simple_form
+  fields. Candidates to A/B one at a time, each behind a gate against the original's token IDs:
+  (1) image resize: native nearest-neighbour 1024x1024 vs HF processor interpolation;
+  (2) prompt "OCR" token 93495 (native) vs 80577 (HF processor);
+  (3) native no-repeat-ngram 3 vs the original generation config.
+  Harness: `tools/ci-heavy/got_ocr2_f16_republish.sh` (compare.json) / `got_ocr2_hf_probe.py`.
+
 
 Source: `docs/gpu-support-matrix.md` §CUDA audit (branch `feat/cuda-audit`, Kaggle T4).
 
@@ -14,8 +37,8 @@ Source: `docs/gpu-support-matrix.md` §CUDA audit (branch `feat/cuda-audit`, Kag
   the M1 (b3318ffa) and x86/CUDA (ad8d340b) on both the fixed and legacy paths, so it is
   not caused by this fix; attribute it (DBNet boxes vs recognizer).
 - Artifacts below their bar against F32 on both arms: republish/requantize
-  `f2llm-v2-0.6b-q4_k-imatrix`, `clip-text-base-q4_k`; GOT-OCR2 F16 decodes
-  `colorcolor…`; publish a bge-m3 GGUF converted with `--crisp` (sparse/ColBERT heads)
+  `f2llm-v2-0.6b-q4_k-imatrix`, `clip-text-base-q4_k`; GOT-OCR2 F16: root cause found
+  (see GOT-OCR2 F16 below); publish a bge-m3 GGUF converted with `--crisp` (sparse/ColBERT heads)
   and find why its q8_0 ColBERT output is 0.59 vs F16.
 - Stage-diff references that fail on both arms: PP-OCRv6 small rec fox ref, PAN, HAT.
 - Not reached on CUDA: PP-LCNet, CRAFT, TexTeller/Pix2TeX, BERT-NER, LFM2.5-VL, LFM2
