@@ -1,0 +1,54 @@
+name: Layer3 FFN mul_mat same-input replay v1 (native vs WASM kernels)
+on:
+  workflow_dispatch:
+  workflow_call:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: wasm-layer3-ffn-matmul-v1
+  cancel-in-progress: false
+jobs:
+  diagnostic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CMAKE_BUILD_PARALLEL_LEVEL: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Bounded admission, metric and decision controls (no build, no model)
+        run: python tests/test_wasm_layer3_ffn_matmul_v1.py -v
+      - name: Exact source and genuine hosted admission
+        run: python -I tools/ci-heavy/wasm_layer3_ffn_matmul_v1.py preflight --output "$RUNNER_TEMP/ffn"
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: '6.0.2'
+      - name: Save full compile inventories, admit kernel profiles against production, build native and WASM probes
+        run: python -I tools/ci-heavy/wasm_layer3_ffn_matmul_v1.py build --output "$RUNNER_TEMP/ffn"
+      - name: Weight-free authored IQ4_NL/IQ4_XS kernel-order controls on both builds (before model access)
+        run: python -I tools/ci-heavy/wasm_layer3_ffn_matmul_v1.py selftest --output "$RUNNER_TEMP/ffn"
+      - name: Authenticate pinned v4 captures and the frozen model
+        run: python -I tools/ci-heavy/wasm_layer3_ffn_matmul_v1.py prepare --output "$RUNNER_TEMP/ffn"
+      - name: Same-input crosswise fc1/fc2 replay, own reproduction, activation bytes, candidate effect
+        run: python -I tools/ci-heavy/wasm_layer3_ffn_matmul_v1.py replay --output "$RUNNER_TEMP/ffn"
+      - name: Preserve complete report, inventories, probe outputs and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wasm-layer3-ffn-matmul-v1-review-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/ffn/review/
+            ${{ runner.temp }}/ffn/selftest/
+            ${{ runner.temp }}/ffn/replay/
+          if-no-files-found: warn
+          retention-days: 90
