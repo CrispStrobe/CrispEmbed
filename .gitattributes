@@ -17,3 +17,6 @@ licenses/latent-inpaint/sdxl-vae-model-card.md -text whitespace=-blank-at-eol
 # tests: Windows autocrlf checkouts must not rewrite them (inpaint-cli Windows).
 docs/*contract*.json -text
 tests/results/migan/** -text
+# Licence texts published byte for byte (docs/inpaint-publication-v1.json pins their SHA-256).
+licenses/latent-inpaint/*.txt -text
+licenses/latent-inpaint/NOTICE.md -text
