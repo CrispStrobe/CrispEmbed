@@ -1,4 +1,19 @@
-## CUDA GPU audit follow-ups — 2 November 2026
+## GOT-OCR2 F16 artifact — 2 November 2026 (`fix/got-ocr2-f16`)
+
+Root cause: the published `got-ocr2-f16.gguf` (Hub `5a0b0a1adc`) has an 8 MiB block of zero
+bytes inside `l.embed_tokens.weight` (token rows 43-2091). Artifact defect only: every other
+tensor matches the original, F32 activations never exceed the F16 range (HF max 6990), and the
+runtime is fine. Reconverted `got-ocr2-f16-r2.gguf` (sha256 `98b431ab…`, converter `--verify`)
+differs from the old file only inside that span. Stage diff is cos 1.000000 on all 19 stages
+(llm_layer_0 max_abs 5.1e-5, was 0.9366 / 8.92), and fox is token-exact against the original.
+- **Open / blocked on a decision**: qualification run 41391040980 REJECTED r2 under its own gate
+  (char ratio vs original ≥ published q4_k on 3 cases): receipt 0.530 < q4_k 0.592. Both native
+  arms add Qty/Price columns that the original omits. r2 reaches EOS with no loop, and
+  simple_form r2 0.44 vs q4_k 0.07. Not published. The registry is unchanged.
+  Next: decide the gate, or first close the native-vs-original gap shared with q4_k
+  (nearest vs bicubic resize, "OCR" token 93495 vs HF 80577, no-repeat-ngram 3), then
+  rerun `tools/ci-heavy/got_ocr2_f16_republish.sh publish` and a Metal M1 run of r2.
+
 
 Source: `docs/gpu-support-matrix.md` §CUDA audit (branch `feat/cuda-audit`, Kaggle T4).
 
@@ -11,8 +26,8 @@ Source: `docs/gpu-support-matrix.md` §CUDA audit (branch `feat/cuda-audit`, Kag
   then A/B against Python EasyOCR. Do not flip WIDTH_SORT as the fix (a second page still
   shrinks).
 - Artifacts below their bar against F32 on both arms: republish/requantize
-  `f2llm-v2-0.6b-q4_k-imatrix`, `clip-text-base-q4_k`; GOT-OCR2 F16 decodes
-  `colorcolor…`; publish a bge-m3 GGUF converted with `--crisp` (sparse/ColBERT heads)
+  `f2llm-v2-0.6b-q4_k-imatrix`, `clip-text-base-q4_k`; GOT-OCR2 F16: root cause found
+  (see GOT-OCR2 F16 below); publish a bge-m3 GGUF converted with `--crisp` (sparse/ColBERT heads)
   and find why its q8_0 ColBERT output is 0.59 vs F16.
 - Stage-diff references that fail on both arms: PP-OCRv6 small rec fox ref, PAN, HAT.
 - Not reached on CUDA: PP-LCNet, CRAFT, TexTeller/Pix2TeX, BERT-NER, LFM2.5-VL, LFM2

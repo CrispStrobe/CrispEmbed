@@ -1,3 +1,15 @@
+## 2 November 2026 — GOT-OCR2 F16 `colorcolor…` root cause (fix/got-ocr2-f16)
+
+Hosted CPU reproduces the CUDA-audit result: published F16 decodes `colorcolorcolor:,,};…` on fox,
+and Q4_K decodes `The quick brown fox jumps over the lazy dog. 12345`. Bisecting from the same F16
+bytes (LLM→F32, vision→F32, ffn_down→F32, →Q8_0) leaves all four variants broken, so this is data,
+not precision. HF original F32 activations peak at 6990 (no F16 overflow). The per-tensor audit
+against stepfun-ai/GOT-OCR2_0 found 289/290 LLM tensors exact. `l.embed_tokens.weight` had cos 0.9931
+because file bytes 202930256-211318866 (8 MiB) are zero. The earliest stage divergence is llm_layer_0,
+cos 0.936596 / max_abs 8.92 (vision exact). Reconversion with a byte-readback check (`--verify`)
+gives cos 1.000000 everywhere and fox token-exact, but receipt char ratio vs the original is below
+q4_k, so the qualification gate rejected it. Not published. Receipts: `tests/results/got-ocr2-f16/`.
+
 ## 2 November 2026 — CUDA GPU audit on Kaggle (feat/cuda-audit)
 
 Five runs of `${KAGGLE_ACCOUNT}/crispembed-cuda-audit` on a Tesla T4 (sm_75), harness
