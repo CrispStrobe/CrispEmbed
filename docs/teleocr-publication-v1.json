@@ -115,6 +115,19 @@
       "note": "decoder FFN Q4_K, attention Q8_0; vision, merger and tied embedding F16",
       "precision_receipt": "tests/results/teleocr/hosted-precision.json",
       "precision_dtype": "q4_k-attn8"
+    },
+    "Q4_K_MIX": {
+      "filename": "teleocr-q4_k-mix.gguf",
+      "from": "F16",
+      "type": "q8_0",
+      "quantize_env": {
+        "CRISPEMBED_QUANTIZE_QWEN2VL_POLICY": "teleocr_q4k_v1"
+      },
+      "note": "Named policy teleocr_q4k_v1 (docs/qwen2vl-q4k-recipes.md): vision FFN gate/up and the tied embedding/LM head Q4_K, vision attention Q6_K, vision FFN down F16 (3420-wide), decoder attn_q/attn_k Q4_K and the rest of the decoder Q8_0. 1,140 MiB vs 2,015 MiB Q8_0. Clears the Q4_K final-logit cosine bar (> 0.94) on all six cases on CPU, Metal and CUDA; free-running decoding is not token-exact on the table case.",
+      "precision_receipt": "tests/results/qwen2vl-q4k/teleocr-q4k-precision.json",
+      "precision_dtype": "teleocr_q4k_v1",
+      "precision_tier": "q4_k",
+      "precision_gate": "cosine"
     }
   },
   "receipts": {
