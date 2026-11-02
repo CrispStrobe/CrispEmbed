@@ -1,0 +1,105 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "--json",
+  "-m",
+  "easyocr-english-g2-f16.gguf",
+  "--ocr-pipeline",
+  "fox-line2.png",
+  "--ocr-engine",
+  "easyocr",
+  "--ocr-det",
+  "dbnet-ic15-q8_0.gguf",
+  "--ocr-rec",
+  "easyocr-english-g2-f16.gguf"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    0.967,
+    0.967
+   ],
+   "gpu_mem_peak_mib": 535,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\n",
+   "stdout_sha256": "63c8fc034c2e3563961af30d20fa37c3a380bd87e7afcc3adc84dfcb03e08819",
+   "stdout": "{\"n_regions\":1,\"mean_confidence\":0.530,\"full_text\":\"over the lazy dog. 12345\"}\n",
+   "vs_cpu": {
+    "byte_identical": true,
+    "json": {
+     "n_numbers": [
+      2,
+      2
+     ],
+     "strings_equal": true,
+     "n_strings": [
+      1,
+      1
+     ]
+    },
+    "final_cosine": 1.0,
+    "max_abs": 0.0,
+    "final_metric": "cosine over all JSON numbers"
+   }
+  },
+  "cuda-reccpu": {
+   "backend": "cuda",
+   "env": {
+    "EASYOCR_FORCE_CPU": "1"
+   },
+   "wall_s": [
+    1.016,
+    1.017
+   ],
+   "gpu_mem_peak_mib": 501,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\n",
+   "stdout_sha256": "63c8fc034c2e3563961af30d20fa37c3a380bd87e7afcc3adc84dfcb03e08819",
+   "stdout": "{\"n_regions\":1,\"mean_confidence\":0.530,\"full_text\":\"over the lazy dog. 12345\"}\n",
+   "vs_cpu": {
+    "byte_identical": true,
+    "json": {
+     "n_numbers": [
+      2,
+      2
+     ],
+     "strings_equal": true,
+     "n_strings": [
+      1,
+      1
+     ]
+    },
+    "final_cosine": 1.0,
+    "max_abs": 0.0,
+    "final_metric": "cosine over all JSON numbers"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    2.122,
+    2.071
+   ],
+   "gpu_mem_peak_mib": 1,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\n",
+   "stdout_sha256": "63c8fc034c2e3563961af30d20fa37c3a380bd87e7afcc3adc84dfcb03e08819",
+   "stdout": "{\"n_regions\":1,\"mean_confidence\":0.530,\"full_text\":\"over the lazy dog. 12345\"}\n"
+  }
+ },
+ "precision": "f16",
+ "bar": 0.98,
+ "seconds": 8.8,
+ "id": "easyocr-pipeline-line2",
+ "commit": "7d34bbbd700cd1c8fc3d977c09f89dbbadd76054",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-02"
+}

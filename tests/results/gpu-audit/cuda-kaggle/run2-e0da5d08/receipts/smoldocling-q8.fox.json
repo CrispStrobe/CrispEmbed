@@ -1,0 +1,70 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "-m",
+  "smoldocling-q8_0.gguf",
+  "--ocr",
+  "fox.png",
+  "--ocr-max-tokens",
+  "128"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    4.233
+   ],
+   "gpu_mem_peak_mib": 281,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\nsmoldocling: weight residency: gpu=88 MiB (197 tensors), cpu=172 MiB (274 tensors)\nsmoldocling: vis=12L x 768d (1024 patches -> 64 after shuffle), llm=30L x 576d (heads=9/3, ffn=1536), vocab=49280, 471 tensors\nsmoldocling: running vision encoder on 5 sub-image(s) (1x4 grid)...\nggml_backend_cuda_graph_compute: CUDA graph warmup complete\nggml_backend_cuda_graph_compute: CUDA graph warmup complete\nsmoldocling: vision+connector done, 320 tokens (64 per sub-image)\nsmoldocling: prompt has 347 tokens (320 image + 27 text)\n  smoldocling KV cache: 30 layers, max_seq=479, 10.5 MB\nsmoldocling: starting prefill of 347 tokens (ggml batched)...\n",
+   "stdout_sha256": "8df26c5fe6f129ae9a039dc200f19163b53b32242089a4ce86ad8a8e6feff7fa",
+   "stdout": " <doctag><section_header_level_1><loc_18><loc_31><loc_317><loc_128>The quick brown fox jumps over the lazy dog. 12345</section_header_level_1>\n</doctag>\n",
+   "vs_cpu": {
+    "byte_identical": false,
+    "text_exact": false,
+    "char_ratio": 0.9934640522875817,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   },
+   "vs_reference_cpu": {
+    "byte_identical": false,
+    "text_exact": false,
+    "char_ratio": 0.8074074074074075,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    15.975
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "crispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\nsmoldocling: vis=12L x 768d (1024 patches -> 64 after shuffle), llm=30L x 576d (heads=9/3, ffn=1536), vocab=49280, 471 tensors\nsmoldocling: running vision encoder on 5 sub-image(s) (1x4 grid)...\nsmoldocling: vision+connector done, 320 tokens (64 per sub-image)\nsmoldocling: prompt has 347 tokens (320 image + 27 text)\n  smoldocling KV cache: 30 layers, max_seq=479, 10.5 MB\nsmoldocling: starting prefill of 347 tokens (ggml batched)...\n",
+   "stdout_sha256": "06d1e5d14bc6d3cdc67a245711a4a1680db2411612e72b3778b1cb5d0f9bd1aa",
+   "stdout": " <doctag><section_header_level_1><loc_18><loc_31><loc_317><loc_127>The quick brown fox jumps over the lazy dog. 12345</section_header_level_1>\n</doctag>\n",
+   "vs_reference_cpu": {
+    "byte_identical": false,
+    "text_exact": false,
+    "char_ratio": 0.8074074074074075,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   }
+  }
+ },
+ "precision": "q8_0",
+ "reference_job": "smoldocling-f16.fox",
+ "bar": 0.97,
+ "seconds": 25.6,
+ "id": "smoldocling-q8.fox",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

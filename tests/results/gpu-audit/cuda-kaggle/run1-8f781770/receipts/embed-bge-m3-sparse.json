@@ -1,0 +1,103 @@
+{
+ "kind": "embed",
+ "mode": "sparse",
+ "base": "bge-m3.gguf",
+ "files": {
+  "bge-m3.gguf": {
+   "precision": "f32",
+   "type_hist": {
+    "f32": 566382592
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      1.871,
+      1.82
+     ],
+     "gpu_mem_peak_mib": 2557,
+     "cuda_used": true,
+     "rc": 1,
+     "stderr_tail": "crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispembed: using CUDA0 backend with CPU fallback\ncrispembed: loaded 24 layers, 1024 dims, 250002 vocab\nerror: model does not support sparse retrieval\n"
+    },
+    "cpu": {
+     "wall_s": [
+      2.673,
+      2.673
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 1,
+     "stderr_tail": "crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ncrispembed: using CPU backend (4 threads)\ncrispembed: loaded 24 layers, 1024 dims, 250002 vocab\nerror: model does not support sparse retrieval\n"
+    }
+   },
+   "bar": 0.99,
+   "qualifies": null
+  },
+  "bge-m3-q8_0.gguf": {
+   "precision": "q8_0",
+   "type_hist": {
+    "q8_0": 566382592
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      1.167,
+      1.117
+     ],
+     "gpu_mem_peak_mib": 681,
+     "cuda_used": true,
+     "rc": 1,
+     "stderr_tail": "crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispembed: using CUDA0 backend with CPU fallback\ncrispembed: loaded 24 layers, 1024 dims, 250002 vocab\nerror: model does not support sparse retrieval\n"
+    },
+    "cpu": {
+     "wall_s": [
+      0.866,
+      0.867
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 1,
+     "stderr_tail": "crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ncrispembed: using CPU backend (4 threads)\ncrispembed: loaded 24 layers, 1024 dims, 250002 vocab\nerror: model does not support sparse retrieval\n"
+    }
+   },
+   "bar": 0.97,
+   "qualifies": null
+  },
+  "bge-m3-iq4_xs.gguf": {
+   "precision": "iq4_xs",
+   "type_hist": {
+    "q8_0": 264392704,
+    "iq4_xs": 301989888
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      1.118,
+      1.068
+     ],
+     "gpu_mem_peak_mib": 529,
+     "cuda_used": true,
+     "rc": 1,
+     "stderr_tail": "crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispembed: using CUDA0 backend with CPU fallback\ncrispembed: loaded 24 layers, 1024 dims, 250002 vocab\nerror: model does not support sparse retrieval\n"
+    },
+    "cpu": {
+     "wall_s": [
+      0.767,
+      0.767
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 1,
+     "stderr_tail": "crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ncrispembed: using CPU backend (4 threads)\ncrispembed: loaded 24 layers, 1024 dims, 250002 vocab\nerror: model does not support sparse retrieval\n"
+    }
+   },
+   "bar": 0.94,
+   "qualifies": null
+  }
+ },
+ "seconds": 51.4,
+ "id": "embed-bge-m3-sparse",
+ "commit": "8f781770810956818ba76831a6bc607fbc0a1154",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

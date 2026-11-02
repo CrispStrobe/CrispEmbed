@@ -1,0 +1,98 @@
+{
+ "kind": "embed",
+ "mode": "rerank",
+ "base": "mxbai-rerank-xsmall-v1-g7c.gguf",
+ "files": {
+  "mxbai-rerank-xsmall-v1-g7c.gguf": {
+   "precision": "f32",
+   "type_hist": {
+    "f32": 49534464,
+    "f16": 21233664
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      4.232,
+      4.283
+     ],
+     "gpu_mem_peak_mib": 1511,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "crispembed: using SentencePiece tokenizer (128100 tokens, 128100 scores)\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispembed: using CUDA0 backend with CPU fallback\ncrispembed: DeBERTa disentangled relative-position attention\ncrispembed: classifier head loaded (reranker=1-layer, act=tanh)\ncrispembed: loaded 12 layers, 384 dims, 128100 vocab\n"
+    },
+    "cpu": {
+     "wall_s": [
+      70.754,
+      70.906
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "crispembed: using SentencePiece tokenizer (128100 tokens, 128100 scores)\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ncrispembed: using CPU backend (4 threads)\ncrispembed: DeBERTa disentangled relative-position attention\ncrispembed: classifier head loaded (reranker=1-layer, act=tanh)\ncrispembed: loaded 12 layers, 384 dims, 128100 vocab\n"
+    }
+   },
+   "cuda_vs_cpu_same_artifact": {
+    "cos_min": 0.9999999994853745,
+    "max_abs": 0.0004770000000000607,
+    "same_order": true
+   },
+   "cuda_vs_cpu_reference": {
+    "cos_min": 0.9999999994853745,
+    "max_abs": 0.0004770000000000607,
+    "same_order": true
+   },
+   "bar": 0.99,
+   "qualifies": true
+  },
+  "mxbai-rerank-xsmall-v1-q8_0-g7c.gguf": {
+   "precision": "q8_0",
+   "type_hist": {
+    "q8_0": 70768128
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      4.028,
+      4.033
+     ],
+     "gpu_mem_peak_mib": 1539,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "crispembed: using SentencePiece tokenizer (128100 tokens, 128100 scores)\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispembed: using CUDA0 backend with CPU fallback\ncrispembed: DeBERTa disentangled relative-position attention\ncrispembed: classifier head loaded (reranker=1-layer, act=tanh)\ncrispembed: loaded 12 layers, 384 dims, 128100 vocab\n"
+    },
+    "cpu": {
+     "wall_s": [
+      37.653,
+      38.012
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "crispembed: using SentencePiece tokenizer (128100 tokens, 128100 scores)\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ncrispembed: using CPU backend (4 threads)\ncrispembed: DeBERTa disentangled relative-position attention\ncrispembed: classifier head loaded (reranker=1-layer, act=tanh)\ncrispembed: loaded 12 layers, 384 dims, 128100 vocab\n"
+    }
+   },
+   "cuda_vs_cpu_same_artifact": {
+    "cos_min": 0.9999898716710005,
+    "max_abs": 0.037195999999999785,
+    "same_order": false
+   },
+   "cuda_vs_cpu_reference": {
+    "cos_min": 0.9999958740012882,
+    "max_abs": 0.04304100000000055,
+    "same_order": false
+   },
+   "cpu_vs_cpu_reference": {
+    "cos_min": 0.9999944495488792,
+    "max_abs": 0.049262999999999835,
+    "same_order": true
+   },
+   "bar": 0.97,
+   "qualifies": true
+  }
+ },
+ "seconds": 254.8,
+ "id": "embed-mxbai-rerank-xsmall-rerank",
+ "commit": "8f781770810956818ba76831a6bc607fbc0a1154",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

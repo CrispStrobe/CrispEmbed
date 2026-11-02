@@ -1,0 +1,64 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "--sam2",
+  "fox.png",
+  "--sam2-model",
+  "sam2.1-hiera-tiny-f32.gguf",
+  "--sam2-point",
+  "200,60:1"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    1.167,
+    1.218
+   ],
+   "gpu_mem_peak_mib": 649,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\nsam2: 12 blocks, 296 tensors, backend CUDA0\nsam2: mask 0 of 1, predicted IoU 0.5947\n",
+   "stdout_sha256": "6cf17f9dcce4278d88c0b9f791e667b723ae5fac36ed30979ce10126497d442d",
+   "vs_cpu": {
+    "byte_identical": true,
+    "image": {
+     "shape": [
+      200,
+      800
+     ],
+     "max_abs": 0.0,
+     "mean_abs": 0.0,
+     "psnr_db": 99.0,
+     "n_diff": 0,
+     "mask_iou": 1.0
+    },
+    "final_cosine": 1.0000000000000002,
+    "final_metric": "centered pixel cosine"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    5.284,
+    5.185
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "crispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\nsam2: 12 blocks, 296 tensors, backend CPU\nsam2: mask 0 of 1, predicted IoU 0.5947\n",
+   "stdout_sha256": "6cf17f9dcce4278d88c0b9f791e667b723ae5fac36ed30979ce10126497d442d"
+  }
+ },
+ "precision": "f32",
+ "bar": 0.99,
+ "seconds": 15.3,
+ "id": "sam2-f32.fox",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

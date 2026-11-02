@@ -1,0 +1,55 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "-m",
+  "transcoda-q8_0.gguf",
+  "--ocr",
+  "page_transcoda.png"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    2.221,
+    2.22
+   ],
+   "gpu_mem_peak_mib": 2201,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "transcoda_ocr: dec 8L/8H/d512 ff1024 vocab=3000(3000), enc /32 3ch, img 1485x1050\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ntranscoda_ocr: loaded 383 tensors, init complete\n",
+   "stdout_sha256": "78495fe1c127d0b345a6e0edaf3258049df27b1c92c1055496846e6c5dd24038",
+   "stdout": "*clefG2\n*k[f#]\n*M2/4\n8d\n=\n16gLL\n16a\n16b\n16ccJJ\n8ddL\n8bJ\n=\n8ccL\n8ee\n8dd\n8gJ\n=\n8.aL\n16bJk\n16ddLL\n16cc\n16b\n16aJJ\n=\n8gL\n8f#\n8g\n8dJ\n=\n16gLL\n16a\n16b\n16ccJJ\n8ddL\n8bJ\n=\n8ccL\n8ee\n8dd\n8gJ\n=\n8aL\n8bJ\n16ddLL\n16cc\n16b\n16aJJ\n=\n8gL\n8f#J\n8g\n=:|!|:\n8dd\n=\n8ggL\n8ggJ\n16ggLL\n16aa\n16bb\n16ggJJ\n=\n8eeL\n8eeJ\n4ee\n=\n8aaL\n8aaJ\n16aaLL\n16bb\n16aa\n16ggJJ\n=\n8ff#L\n8ddJ\n8ddL\n16eeL\n16ff#JJ\n=\n8ggL\n8ee\n8ee\n8aaJ\n=\n8ff#L\n8dd\n8dd\n8ggJ\n=\n16eeLL\n16dd\n16cc\n16bJJ\n16aLL\n16b\n16cc\n16ddJJ\n=\n8bL\n8gJ\n8g\n=:|!\n",
+   "vs_cpu": {
+    "byte_identical": true,
+    "text_exact": true,
+    "char_ratio": 1.0,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    24.196,
+    24.198
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "transcoda_ocr: dec 8L/8H/d512 ff1024 vocab=3000(3000), enc /32 3ch, img 1485x1050\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ntranscoda_ocr: loaded 383 tensors, init complete\n",
+   "stdout_sha256": "78495fe1c127d0b345a6e0edaf3258049df27b1c92c1055496846e6c5dd24038",
+   "stdout": "*clefG2\n*k[f#]\n*M2/4\n8d\n=\n16gLL\n16a\n16b\n16ccJJ\n8ddL\n8bJ\n=\n8ccL\n8ee\n8dd\n8gJ\n=\n8.aL\n16bJk\n16ddLL\n16cc\n16b\n16aJJ\n=\n8gL\n8f#\n8g\n8dJ\n=\n16gLL\n16a\n16b\n16ccJJ\n8ddL\n8bJ\n=\n8ccL\n8ee\n8dd\n8gJ\n=\n8aL\n8bJ\n16ddLL\n16cc\n16b\n16aJJ\n=\n8gL\n8f#J\n8g\n=:|!|:\n8dd\n=\n8ggL\n8ggJ\n16ggLL\n16aa\n16bb\n16ggJJ\n=\n8eeL\n8eeJ\n4ee\n=\n8aaL\n8aaJ\n16aaLL\n16bb\n16aa\n16ggJJ\n=\n8ff#L\n8ddJ\n8ddL\n16eeL\n16ff#JJ\n=\n8ggL\n8ee\n8ee\n8aaJ\n=\n8ff#L\n8dd\n8dd\n8ggJ\n=\n16eeLL\n16dd\n16cc\n16bJJ\n16aLL\n16b\n16cc\n16ddJJ\n=\n8bL\n8gJ\n8g\n=:|!\n"
+  }
+ },
+ "precision": "q8_0",
+ "bar": 0.97,
+ "seconds": 54.8,
+ "id": "transcoda-q8.page",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

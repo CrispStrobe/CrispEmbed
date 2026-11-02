@@ -1,3 +1,35 @@
+## CUDA GPU audit, Kaggle Tesla T4 (1-2 November 2026, `feat/cuda-audit`)
+
+Same-binary CUDA (`--gpu-backend cuda`) vs CPU (`--gpu-backend cpu`,
+`CUDA_VISIBLE_DEVICES=""`), 4 Xeon vCPUs, `-t 4`, best of two one-shot runs (load
+included). Matrix: [`docs/gpu-support-matrix.md`](docs/gpu-support-matrix.md);
+receipts: `tests/results/gpu-audit/cuda-kaggle/`.
+
+| Lane | CUDA s | CPU s | Output CUDA vs CPU |
+|---|---:|---:|---|
+| ESRGAN x4 F32, fox (**new CUDA default**) | 1.62 | 13.95 | max \|Δ\| 1/255, PSNR 106 dB |
+| InstructIR F16, scan_strip (**new CUDA default**) | 3.68 | 30.30 | max \|Δ\| 1/255, PSNR 104 dB |
+| PAN x4 F16, scan_strip (**new gate, CUDA default**) | 2.07 | 31.60 | max \|Δ\| 1/255, PSNR 102 dB |
+| Restormer F16, fox (**new gate, CUDA default**) | 13.40 | 234.75 | max \|Δ\| 1/255, PSNR 86.5 dB |
+| LightOnOCR 1B q4_k, receipt, 256 tok (**new CUDA default**) | 3.42 | 40.23 | byte-identical |
+| Surya det F16 (fixed on CUDA) | 6.98 | 18.07 | byte-identical |
+| DBNet+TrOCR q8, scan_page_pd (default lane) | 114.8 | 240.8 | 295/295 boxes ≤1 px, 290/295 words |
+| DBNet+TrOCR, `CRISPEMBED_DBNET_DECONV_MATMUL=1` | 113.7 | — | identical to stock CUDA — stays off |
+| PP-OCRv6 small, scan_page_pd (det on CUDA) | 2.22 | 17.18 | 38/38; det on CPU arm 4.53 s |
+| GOT-OCR2 q4_k, fox 128 tok | 2.17 | 24.22 | byte-identical |
+| GLM-OCR q8, receipt 128 tok | 3.32 | 30.33 | byte-identical |
+| H2OVL-800M q8, fox | 2.67 | 102.95 | byte-identical |
+| Granite-Vision 3.3 2B q4_k, fox | 4.08 | 70.23 | byte-identical |
+| SmolDocling F16, fox | 6.18 | 30.62 | byte-identical |
+| PP-FormulaNet-L q8, formula | 43.79 | 49.97 | byte-identical (only 1.14x) |
+| Transcoda q8, page | 2.22 | 24.20 | byte-identical |
+| SAM2.1 tiny F16, fox point | 1.12 | 9.60 | mask byte-identical |
+| NAFNet F16, scan_strip | 3.33 | 24.61 | byte-identical |
+| BiDirLM 2.5B q8, 12 texts | 2.27 | 33.08 | cos 0.99859 |
+| Qwen3-Embedding-0.6B q8, 12 texts | 1.42 | 10.85 | cos 0.99937 (vs F32 ref 0.99889) |
+| mxbai-rerank-xsmall F32 | 4.23 | 70.75 | scores cos 1.0, same order |
+| PARSeq q8, one line | 0.87 | 0.42 | byte-identical — CPU faster (CUDA init) |
+
 ## Metal GPU audit, Apple M1 (1 November 2026, `feat/metal-audit`)
 
 Same-binary interleaved Metal (`--gpu-backend metal`) vs CPU (`--gpu-backend cpu`)

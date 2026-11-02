@@ -1,0 +1,44 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "surya-det-f16.gguf",
+  "fox.png"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    1.169,
+    1.168
+   ],
+   "gpu_mem_peak_mib": 1021,
+   "cuda_used": true,
+   "rc": -6,
+   "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n/kaggle/temp/ce/ggml/src/ggml-cuda/unary.cu:144: GGML_ASSERT(ggml_is_contiguous(src0)) failed\n/kaggle/temp/build/ggml/src/libggml-base.so.0(+0x1c12b)[0x7c47b38a312b]\n/kaggle/temp/build/ggml/src/libggml-base.so.0(ggml_print_backtrace+0x21c)[0x7c47b38a35ac]\n/kaggle/temp/build/ggml/src/libggml-base.so.0(ggml_abort+0x15b)[0x7c47b38a378b]\n/kaggle/temp/build/ggml/src/ggml-cuda/libggml-cuda.so.0(_Z17ggml_cuda_op_reluR25ggml_backend_cuda_contextP11ggml_tensor+0x573)[0x7c47affcf4c3]\n/kaggle/temp/build/ggml/src/ggml-cuda/libggml-cuda.so.0(+0x2a7935)[0x7c47afe02935]\n/kaggle/temp/build/ggml/src/libggml-base.so.0(ggml_backend_graph_compute+0x12)[0x7c47b38bcf92]\n/kaggle/temp/build/test-surya-det(+0x50862)[0x55a77c011862]\n/kaggle/temp/build/test-surya-det(+0x517cd)[0x55a77c0127cd]\n/kaggle/temp/build/test-surya-det(+0x8689)[0x55a77bfc9689]\n/lib/x86_64-linux-gnu/libc.so.6(+0x2a1ca)[0x7c47b32f71ca]\n/lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0x8b)[0x7c47b32f728b]\n/kaggle/temp/build/test-surya-det(+0x8f75)[0x55a77bfc9f75]\n",
+   "stdout_sha256": "c7c01e3c471eb6dd4c31f012019a2bcda7acdabd5513fee836ca31b7e0c4f663",
+   "stdout": "Model loaded: input=1200x1200, classes=2\nLoaded image: tests/regression/images/fox.png (800x200)\nRunning detection on 800x200 image...\n"
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    18.774,
+    18.724
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\n",
+   "stdout_sha256": "917c1d84b6c0f6a31ca143e27c0dcff3390061143d76416441c4bd4f2ad14b7b",
+   "stdout": "Model loaded: input=1200x1200, classes=2\nLoaded image: tests/regression/images/fox.png (800x200)\nRunning detection on 800x200 image...\nHeatmap: 300x300 (2 channels)\n  Channel 0: min=0.0000 max=0.9686 mean=0.1080 above_0.5=9440/90000\n  Channel 1: min=0.0000 max=0.4887 mean=0.0091 above_0.5=0/90000\n\nDetected 2 text regions:\n  Box 0: (11,41)-(523,77) conf=0.996\n  Box 1: (11,111)-(485,147) conf=1.000\nPASS\n"
+  }
+ },
+ "precision": "f16",
+ "bar": 0.98,
+ "seconds": 43.5,
+ "id": "surya-det.fox",
+ "commit": "c38304b4283da24cd88141a8b162b8c9be41b833",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

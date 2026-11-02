@@ -1,0 +1,57 @@
+{
+ "kind": "diff",
+ "binary": "test-hat-diff",
+ "arms": {
+  "cuda": {
+   "rc": 1,
+   "wall_s": 17.957,
+   "gpu_mem_peak_mib": 147,
+   "cuda_used": true,
+   "n_stages": 1,
+   "stages": {
+    "output": 0.0
+   },
+   "worst_stage": [
+    "output",
+    0.0
+   ],
+   "threshold_fails": [
+    [
+     "output",
+     0.0,
+     0.99
+    ]
+   ],
+   "threshold_missing": [],
+   "stdout_tail": "Output: 128x128 (scale=4)\n  ref stage conv_first: [180,32,32]\n  ref stage rhag_0: [180,32,32]\n  ref stage rhag_1: [180,32,32]\n  ref stage deep_features: [180,32,32]\n  output                     cos_min=0.000000  max_abs=1.89e-02  FAIL\n\n0 passed, 1 failed\n\ncrispembed_diff: loaded 10 tensors from $SCRATCH/models/hat-ref.gguf\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\nhat_sr: embed=180, ws=16, upscale=4x, layers=6, 864 tensors\nhat_sr: conv path = ggml_conv_2d (CPU sched)\nhat_sr: 32x32 → 128x128 (4x), tiles=1x1\nhat_sr: conv_first done, starting RHAG layers\nhat_sr: RHAG layer 0/6\n  HAB 0/6 layer.0.hab.0\n  HAB 1/6 layer.0.hab.1\n  HAB 2/6 layer.0.hab.2\n  HAB 3/6 layer.0.hab.3\n  HAB 4/6 layer.0.hab.4\n  HAB 5/6 layer.0.hab.5\nhat_sr: RHAG layer 1/6\n  HAB 0/6 layer.1.hab.0\n  HAB 1/6 layer.1.hab.1\n  HAB 2/6 layer.1.hab.2\n  HAB 3/6 layer.1.hab.3\n  HAB 4/6 layer.1.hab.4\n  HAB 5/6 layer.1.hab.5\nhat_sr: RHAG layer 2/6\n  HAB 0/6 layer.2.hab.0\n  HAB 1/6 layer.2.hab.1\n  HAB 2/6 layer.2.hab.2\n  HAB 3/6 layer.2.hab.3\n  HAB 4/6 layer.2.hab.4\n  HAB 5/6 layer.2.hab.5\nhat_sr: RHAG layer 3/6\n  HAB 0/6 layer.3.hab.0\n  HAB 1/6 layer.3.hab.1\n  HAB 2/6 layer.3.hab.2\n  HAB 3/6 layer.3.hab.3\n  HAB 4/6 layer.3.hab.4\n  HAB 5/6 layer.3.hab.5\nhat_sr: RHAG layer 4/6\n  HAB 0/6 layer.4.hab.0\n  HAB 1/6 layer.4.hab.1\n  HAB 2/6 layer.4.hab.2\n  HAB 3/6 layer.4.hab.3\n  HAB 4/6 layer.4.hab.4\n  HAB 5/6 layer.4.hab.5\nhat_sr: RHAG layer 5/6\n  HAB 0/6 layer.5.hab.0\n  HAB 1/6 layer.5.hab.1\n  HAB 2/6 layer.5.hab.2\n  HAB 3/6 layer.5.hab.3\n  HAB 4/6 layer.5.hab.4\n  HAB 5/6 layer.5.hab.5\nhat_sr: done 128x128\n"
+  },
+  "cpu": {
+   "rc": 1,
+   "wall_s": 17.455,
+   "gpu_mem_peak_mib": 1,
+   "cuda_used": false,
+   "n_stages": 1,
+   "stages": {
+    "output": 0.0
+   },
+   "worst_stage": [
+    "output",
+    0.0
+   ],
+   "threshold_fails": [
+    [
+     "output",
+     0.0,
+     0.99
+    ]
+   ],
+   "threshold_missing": [],
+   "stdout_tail": "Output: 128x128 (scale=4)\n  ref stage conv_first: [180,32,32]\n  ref stage rhag_0: [180,32,32]\n  ref stage rhag_1: [180,32,32]\n  ref stage deep_features: [180,32,32]\n  output                     cos_min=0.000000  max_abs=1.89e-02  FAIL\n\n0 passed, 1 failed\n\ncrispembed_diff: loaded 10 tensors from $SCRATCH/models/hat-ref.gguf\nggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\nhat_sr: embed=180, ws=16, upscale=4x, layers=6, 864 tensors\nhat_sr: conv path = ggml_conv_2d (CPU sched)\nhat_sr: 32x32 → 128x128 (4x), tiles=1x1\nhat_sr: conv_first done, starting RHAG layers\nhat_sr: RHAG layer 0/6\n  HAB 0/6 layer.0.hab.0\n  HAB 1/6 layer.0.hab.1\n  HAB 2/6 layer.0.hab.2\n  HAB 3/6 layer.0.hab.3\n  HAB 4/6 layer.0.hab.4\n  HAB 5/6 layer.0.hab.5\nhat_sr: RHAG layer 1/6\n  HAB 0/6 layer.1.hab.0\n  HAB 1/6 layer.1.hab.1\n  HAB 2/6 layer.1.hab.2\n  HAB 3/6 layer.1.hab.3\n  HAB 4/6 layer.1.hab.4\n  HAB 5/6 layer.1.hab.5\nhat_sr: RHAG layer 2/6\n  HAB 0/6 layer.2.hab.0\n  HAB 1/6 layer.2.hab.1\n  HAB 2/6 layer.2.hab.2\n  HAB 3/6 layer.2.hab.3\n  HAB 4/6 layer.2.hab.4\n  HAB 5/6 layer.2.hab.5\nhat_sr: RHAG layer 3/6\n  HAB 0/6 layer.3.hab.0\n  HAB 1/6 layer.3.hab.1\n  HAB 2/6 layer.3.hab.2\n  HAB 3/6 layer.3.hab.3\n  HAB 4/6 layer.3.hab.4\n  HAB 5/6 layer.3.hab.5\nhat_sr: RHAG layer 4/6\n  HAB 0/6 layer.4.hab.0\n  HAB 1/6 layer.4.hab.1\n  HAB 2/6 layer.4.hab.2\n  HAB 3/6 layer.4.hab.3\n  HAB 4/6 layer.4.hab.4\n  HAB 5/6 layer.4.hab.5\nhat_sr: RHAG layer 5/6\n  HAB 0/6 layer.5.hab.0\n  HAB 1/6 layer.5.hab.1\n  HAB 2/6 layer.5.hab.2\n  HAB 3/6 layer.5.hab.3\n  HAB 4/6 layer.5.hab.4\n  HAB 5/6 layer.5.hab.5\nhat_sr: done 128x128\n"
+  }
+ },
+ "seconds": 37.3,
+ "id": "diff-hat",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

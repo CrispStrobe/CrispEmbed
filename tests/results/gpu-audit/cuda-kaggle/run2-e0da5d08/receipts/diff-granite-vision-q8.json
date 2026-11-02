@@ -1,0 +1,79 @@
+{
+ "kind": "diff",
+ "binary": "test-granite-vision-diff",
+ "arms": {
+  "cuda": {
+   "rc": 1,
+   "wall_s": 3.174,
+   "gpu_mem_peak_mib": 3435,
+   "cuda_used": true,
+   "n_stages": 7,
+   "stages": {
+    "stage_1": 1.0,
+    "stage_2": 0.999785,
+    "stage_3": 0.999088,
+    "stage_4": 0.988179,
+    "stage_5": 0.946906,
+    "stage_6": 0.92899,
+    "stage_7": 0.912979
+   },
+   "worst_stage": [
+    "stage_7",
+    0.912979
+   ],
+   "threshold_fails": [
+    [
+     "stage_5",
+     0.946906,
+     0.95
+    ],
+    [
+     "stage_6",
+     0.92899,
+     0.95
+    ],
+    [
+     "stage_7",
+     0.912979,
+     0.95
+    ]
+   ],
+   "threshold_missing": [],
+   "stdout_tail": "Reference stages:\n  projector: [729,2048]\n  vis_features_concat: [729,4608]\n  vis_layer_26: [729,1152]\n  vis_layer_15: [729,1152]\n  vis_layer_3: [729,1152]\n  vis_patch_embed: [729,1152]\n  vis_layer_7: [729,1152]\n  input: [3,384,384]\n\nRunning vision encoder + projector...\n  C++ stage: vis_patch_embed (839808 elements)\n    cos_min=1.000000  max_abs=6.20e-06  PASS\n  C++ stage: vis_layer_3 (839808 elements)\n    cos_min=0.999785  max_abs=8.32e-02  PASS\n  C++ stage: vis_layer_7 (839808 elements)\n    cos_min=0.999088  max_abs=7.30e-02  PASS\n  C++ stage: vis_layer_15 (839808 elements)\n    cos_min=0.988179  max_abs=1.27e+00  FAIL\n  C++ stage: vis_layer_26 (839808 elements)\n    cos_min=0.946906  max_abs=3.87e+00  FAIL\n  C++ stage: vis_features_concat (3359232 elements)\n    cos_min=0.928990  max_abs=3.87e+00  FAIL\n  C++ stage: projector (1492992 elements)\n    cos_min=0.912979  max_abs=4.58e+00  FAIL\n\n3 passed, 4 failed\n\ncrispembed_diff: loaded 8 tensors from $SCRATCH/models/granite-vision-ref.gguf\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ngranite_vision: vis=27L×1152d (729 patches), llm=40L×2048d (heads=32/8, ffn=8192), vocab=49156, 804 tensors\n  multipliers: embed=12.0, residual=0.22, logits=8.0, attn=0.015625; tokenizer=embedded (49156 tokens)\n"
+  },
+  "cpu": {
+   "rc": 1,
+   "wall_s": 14.167,
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "n_stages": 7,
+   "stages": {
+    "stage_1": 1.0,
+    "stage_2": 0.999864,
+    "stage_3": 0.999656,
+    "stage_4": 0.995082,
+    "stage_5": 0.962645,
+    "stage_6": 0.949704,
+    "stage_7": 0.954125
+   },
+   "worst_stage": [
+    "stage_6",
+    0.949704
+   ],
+   "threshold_fails": [
+    [
+     "stage_6",
+     0.949704,
+     0.95
+    ]
+   ],
+   "threshold_missing": [],
+   "stdout_tail": "Reference stages:\n  projector: [729,2048]\n  vis_features_concat: [729,4608]\n  vis_layer_26: [729,1152]\n  vis_layer_15: [729,1152]\n  vis_layer_3: [729,1152]\n  vis_patch_embed: [729,1152]\n  vis_layer_7: [729,1152]\n  input: [3,384,384]\n\nRunning vision encoder + projector...\n  C++ stage: vis_patch_embed (839808 elements)\n    cos_min=1.000000  max_abs=6.20e-06  PASS\n  C++ stage: vis_layer_3 (839808 elements)\n    cos_min=0.999864  max_abs=2.90e-02  PASS\n  C++ stage: vis_layer_7 (839808 elements)\n    cos_min=0.999656  max_abs=4.03e-02  PASS\n  C++ stage: vis_layer_15 (839808 elements)\n    cos_min=0.995082  max_abs=8.67e-01  PASS\n  C++ stage: vis_layer_26 (839808 elements)\n    cos_min=0.962645  max_abs=2.70e+00  FAIL\n  C++ stage: vis_features_concat (3359232 elements)\n    cos_min=0.949704  max_abs=2.70e+00  FAIL\n  C++ stage: projector (1492992 elements)\n    cos_min=0.954125  max_abs=4.29e+00  FAIL\n\n4 passed, 3 failed\n\ncrispembed_diff: loaded 8 tensors from $SCRATCH/models/granite-vision-ref.gguf\nggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\ngranite_vision: vis=27L×1152d (729 patches), llm=40L×2048d (heads=32/8, ffn=8192), vocab=49156, 804 tensors\n  multipliers: embed=12.0, residual=0.22, logits=8.0, attn=0.015625; tokenizer=embedded (49156 tokens)\n"
+  }
+ },
+ "seconds": 18.6,
+ "id": "diff-granite-vision-q8",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

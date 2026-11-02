@@ -108,6 +108,10 @@ struct pan_sr_context {
     // ggml conv infrastructure
     ggml_backend_t enc_backend = nullptr;
     ggml_backend_sched_t enc_sched = nullptr;
+    // CRISPEMBED_PAN_GPU=1 (value-parsed, default off): the persistent graph
+    // weights live on this GPU backend and the forward graph is scheduled on
+    // it first, with enc_backend (CPU) as the fallback. nullptr = CPU path.
+    ggml_backend_t gpu_backend = nullptr;
 
     // Persistent F32 graph weights (conv kernels + biases), keyed by tensor name.
     ggml_context * gw_ctx = nullptr;
@@ -167,10 +171,35 @@ pan_sr_context * pan_sr_init(const char * model_path, int n_threads) {
     ctx->bench = core_env::on("CRISPEMBED_PAN_SR_BENCH");
 
     ctx->enc_backend = ggml_backend_cpu_init();
+    // CUDA audit 2026-11-01: opt-in GPU forward. The whole-image graph only
+    // reads the persistent gw weights, so placing gw_buf on the GPU and the GPU
+    // first in the sched moves the full conv chain there; the scalar path and
+    // the default CPU graph are untouched. --gpu-backend cpu keeps CPU.
+    // Tri-state: =1 forces it on any GPU kind, =0 keeps CPU, unset = ON when a
+    // CUDA device is present (Kaggle T4: 2.1 s vs 33.9 s CPU, max |delta| 1/255,
+    // PSNR 102 dB vs the CPU graph; receipts under
+    // tests/results/gpu-audit/cuda-kaggle/), OFF on Metal (not measured there).
+    const bool pan_gpu = core_env::on("CRISPEMBED_PAN_GPU") ||
+                         (!core_env::explicitly_off("CRISPEMBED_PAN_GPU") && crispasr_gpu_device_kind_present("CUDA"));
+    if (pan_gpu && !force_cpu) {
+        ggml_backend_t gpu = crispasr_init_gpu_backend();
+        if (gpu && !ggml_backend_is_cpu(gpu)) {
+            ctx->gpu_backend = gpu;
+            fprintf(stderr, "pan_sr: GPU path - forward graph on %s (CRISPEMBED_PAN_GPU=0 restores CPU)\n",
+                    ggml_backend_name(gpu));
+        } else if (gpu) {
+            ggml_backend_free(gpu);
+        }
+    }
     if (ctx->enc_backend) {
         ggml_backend_cpu_set_n_threads(ctx->enc_backend, ctx->n_threads > 0 ? ctx->n_threads : 1);
-        ggml_backend_t backends[] = { ctx->enc_backend };
-        ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
+        if (ctx->gpu_backend) {
+            ggml_backend_t backends[] = { ctx->gpu_backend, ctx->enc_backend };
+            ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 2, 4096, false, false);
+        } else {
+            ggml_backend_t backends[] = { ctx->enc_backend };
+            ctx->enc_sched = ggml_backend_sched_new(backends, nullptr, 1, 4096, false, false);
+        }
     }
 
     // Build persistent F32 graph weights for the ggml_conv_2d forward path.
@@ -201,7 +230,8 @@ pan_sr_context * pan_sr_init(const char * model_path, int n_threads) {
             ctx->gw[name] = w;
             to_fill.push_back({ name, w });
         }
-        ctx->gw_buf = ggml_backend_alloc_ctx_tensors(ctx->gw_ctx, ctx->enc_backend);
+        ctx->gw_buf =
+            ggml_backend_alloc_ctx_tensors(ctx->gw_ctx, ctx->gpu_backend ? ctx->gpu_backend : ctx->enc_backend);
         for (auto & [name, w] : to_fill) {
             const float * src = ctx->get(name); // dequantized F32, native memory order
             if (src) ggml_backend_tensor_set(w, src, 0, ggml_nbytes(w));
@@ -216,6 +246,7 @@ void pan_sr_free(pan_sr_context * ctx) {
         if (ctx->gw_ctx) ggml_free(ctx->gw_ctx);
         if (ctx->enc_sched) ggml_backend_sched_free(ctx->enc_sched);
         if (ctx->enc_backend) ggml_backend_free(ctx->enc_backend);
+        if (ctx->gpu_backend) ggml_backend_free(ctx->gpu_backend);
         core_gguf::free_weights(ctx->wl);
         delete ctx;
     }

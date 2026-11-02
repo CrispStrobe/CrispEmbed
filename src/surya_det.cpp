@@ -775,8 +775,13 @@ static ggml_tensor * g_litemla(ggml_context * g, ggml_tensor * x, const litemla_
     ggml_tensor * V = ggml_view_3d(g, multi_r, HW, head_dim, n_groups, nb1, nb2, (size_t)(2 * head_dim) * nb1);
 
     // 5. ReLU kernel on Q and K (ggml_relu output is contiguous)
-    Q = ggml_relu(g, Q);
-    K = ggml_relu(g, K);
+    //    The Q/K views skip the other two thirds of every group (nb2 > 3*nb1),
+    //    so they are NOT contiguous. ggml-cpu's unary ops accept that; the CUDA
+    //    unary kernel asserts ggml_is_contiguous(src0) (unary.cu) and aborted
+    //    every surya-det run on CUDA (CUDA audit 2026-11-01, Kaggle T4, rc -6).
+    //    Copy first: identical values on CPU, valid on every backend.
+    Q = ggml_relu(g, ggml_cont(g, Q));
+    K = ggml_relu(g, ggml_cont(g, K));
     V = ggml_cont(g, V); // contiguous copy for matmul
 
     // 6. KTV = K^T @ V → [head_dim, head_dim, n_groups]

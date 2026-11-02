@@ -1,0 +1,9 @@
+kernel: ${KAGGLE_ACCOUNT}/crispembed-cuda-audit version 1, batch "all", tools/kaggle/cuda-audit
+source commit: 8f781770810956818ba76831a6bc607fbc0a1154 (feat/cuda-audit)
+gpu: Tesla T4 x2 (sm_75, 15 GiB each; one device used), cpu: 4x Intel Xeon @ 2.00GHz, -t 4
+build: GGML_CUDA=ON, CMAKE_CUDA_ARCHITECTURES=75, GGML_NATIVE=ON, CRISPEMBED_NATIVE=ON, Release (1447 s)
+date: 2026-11-01
+outcome: 23 of 90 jobs recorded, then the kernel died in the EasyOCR model fetch
+(NameError: __file__ in the exec'd easyocr config), which ran outside the per-job try.
+Fixed in e0da5d08; run 2 re-runs everything not measured here.
+CPU arm = same binary, --gpu-backend cpu with CUDA_VISIBLE_DEVICES="".

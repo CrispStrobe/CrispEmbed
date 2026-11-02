@@ -1,0 +1,75 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "1",
+  "--json",
+  "-m",
+  "easyocr-english-g2-f16.gguf",
+  "--ocr-pipeline",
+  "fox.png",
+  "--ocr-engine",
+  "easyocr",
+  "--ocr-det",
+  "dbnet-ic15-q8_0.gguf",
+  "--ocr-rec",
+  "easyocr-english-g2-f16.gguf"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {
+    "CRISPEMBED_EASYOCR_DEBUG_REGIONS": "1"
+   },
+   "wall_s": [
+    1.067
+   ],
+   "gpu_mem_peak_mib": 295,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\n[easyocr-region] i=0 crop=486x48 canvas=704 len=25 conf=0.8166 text=The quick brown fox jumps\n[easyocr-region] i=1 crop=451x51 canvas=576 len=24 conf=0.7014 text=over the lazy dog. 12345\n",
+   "stdout_sha256": "41a156bfd35a98a4b41944b4614a82b0e9230114a2f0a1984a9abcb30a8d9f23",
+   "stdout": "{\"n_regions\":2,\"mean_confidence\":0.759,\"full_text\":\"The quick brown fox jumps\\nover the lazy dog. 12345\"}\n",
+   "vs_cpu": {
+    "byte_identical": false,
+    "json": {
+     "n_numbers": [
+      2,
+      2
+     ],
+     "strings_equal": false,
+     "n_strings": [
+      1,
+      1
+     ],
+     "string_ratio": 0.6666666666666666
+    },
+    "final_cosine": 0.9486957565917765,
+    "max_abs": 1.0,
+    "final_metric": "cosine over all JSON numbers"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {
+    "CRISPEMBED_EASYOCR_DEBUG_REGIONS": "1"
+   },
+   "wall_s": [
+    1.869
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\n[easyocr-region] i=0 crop=486x48 canvas=704 len=25 conf=0.8163 text=The quick brown fox jumps\n[easyocr-region] i=1 crop=451x51 canvas=576 len=0 conf=0.0000 text=\n",
+   "stdout_sha256": "f6b1981c0fbccd95859a7c057295213772b8f5a0e9c9e563a100e39a643393e2",
+   "stdout": "{\"n_regions\":1,\"mean_confidence\":0.816,\"full_text\":\"The quick brown fox jumps\"}\n"
+  }
+ },
+ "precision": "f16",
+ "bar": 0.98,
+ "seconds": 3.2,
+ "id": "easyocr-debug-t1.fox",
+ "commit": "ccb532040c6b8610e9c7e9f10c1b5ee525f4cf87",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-02"
+}

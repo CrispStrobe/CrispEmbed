@@ -1,0 +1,93 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "--instructir-model",
+  "instructir-f16.gguf",
+  "--instructir",
+  "scan_strip.png"
+ ],
+ "arms": {
+  "cuda-gate1": {
+   "backend": "cuda",
+   "env": {
+    "CRISPEMBED_INSTRUCTIR_GPU": "1"
+   },
+   "wall_s": [
+    3.73,
+    3.679
+   ],
+   "gpu_mem_peak_mib": 343,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ninstructir: 520x260, tiles=3x2 (size=256)\n",
+   "stdout_sha256": "50eeb42d289a5bb9868a8484dd0f2097877a3dd51eccfdc5db2db3cf7843b84d",
+   "vs_cpu": {
+    "byte_identical": false,
+    "image": {
+     "shape": [
+      260,
+      520,
+      3
+     ],
+     "max_abs": 1.0,
+     "mean_abs": 2.4654832347140038e-06,
+     "psnr_db": 104.21178307193189,
+     "n_diff": 1
+    },
+    "final_cosine": 0.9999999992685448,
+    "final_metric": "centered pixel cosine"
+   }
+  },
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    32.425,
+    32.58
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "instructir: 520x260, tiles=3x2 (size=256)\n",
+   "stdout_sha256": "d90dcda99600b3150cbd32be57f03816ccab73927a8b67bad38ea6080a627b91",
+   "vs_cpu": {
+    "byte_identical": true,
+    "image": {
+     "shape": [
+      260,
+      520,
+      3
+     ],
+     "max_abs": 0.0,
+     "mean_abs": 0.0,
+     "psnr_db": 99.0,
+     "n_diff": 0
+    },
+    "final_cosine": 0.9999999999999998,
+    "final_metric": "centered pixel cosine"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    32.573,
+    32.829
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "instructir: 520x260, tiles=3x2 (size=256)\n",
+   "stdout_sha256": "d90dcda99600b3150cbd32be57f03816ccab73927a8b67bad38ea6080a627b91"
+  }
+ },
+ "precision": "f16",
+ "bar": 0.98,
+ "seconds": 139.4,
+ "id": "instructir.scan_strip",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

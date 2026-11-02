@@ -1,0 +1,55 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "-m",
+  "scrfd-det-10g.gguf",
+  "--detect",
+  "face.png"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    0.867,
+    0.867
+   ],
+   "gpu_mem_peak_mib": 273,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "cnn_embed: scrfd-det-10g (detection), embed_dim=0, input=640x640\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncnn_embed: loaded 0 conv blocks (no embedding head)\ncnn_embed: SCRFD stride 8: 12800 anchors, 0 dets above 0.50\ncnn_embed: SCRFD stride 16: 3200 anchors, 0 dets above 0.50\ncnn_embed: SCRFD stride 32: 800 anchors, 5 dets above 0.50\ncnn_embed: SCRFD detected 1 faces\n",
+   "stdout_sha256": "cc5e23614b71c6a10c580676e3743ae2e10c9d49b93383a5e0e71425a20bafc9",
+   "stdout": "164.9 129.8 309.4 441.0 0.839 254.1 292.3 393.3 299.0 323.5 376.0 259.7 449.6 378.8 455.6\n",
+   "vs_cpu": {
+    "byte_identical": true,
+    "text_exact": true,
+    "char_ratio": 1.0,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    1.826,
+    1.82
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "cnn_embed: scrfd-det-10g (detection), embed_dim=0, input=640x640\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ncnn_embed: loaded 0 conv blocks (no embedding head)\ncnn_embed: SCRFD stride 8: 12800 anchors, 0 dets above 0.50\ncnn_embed: SCRFD stride 16: 3200 anchors, 0 dets above 0.50\ncnn_embed: SCRFD stride 32: 800 anchors, 5 dets above 0.50\ncnn_embed: SCRFD detected 1 faces\n",
+   "stdout_sha256": "cc5e23614b71c6a10c580676e3743ae2e10c9d49b93383a5e0e71425a20bafc9",
+   "stdout": "164.9 129.8 309.4 441.0 0.839 254.1 292.3 393.3 299.0 323.5 376.0 259.7 449.6 378.8 455.6\n"
+  }
+ },
+ "precision": "f32",
+ "bar": 0.99,
+ "seconds": 6.8,
+ "id": "scrfd.detect",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

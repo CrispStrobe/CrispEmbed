@@ -1,3 +1,21 @@
+## 2 November 2026 — CUDA GPU audit on Kaggle (feat/cuda-audit)
+
+Five runs of `${KAGGLE_ACCOUNT}/crispembed-cuda-audit` on a Tesla T4 (sm_75), harness
+`tools/kaggle/cuda-audit/`, receipts `tests/results/gpu-audit/cuda-kaggle/run{1..5}-*`.
+CUDA arm vs a same-binary CPU arm with the GPU hidden. All 19+ embedder/reranker
+artifacts qualify against their CPU F32/F16 reference (float ≥ 0.9999989; Q8_0
+≥ 0.9729; Q4_K/IQ4 ≥ 0.944), except three artifacts that miss the bar on BOTH arms.
+DBNet+TrOCR, PP-OCRv6, PARSeq, GOT-OCR2, GLM-OCR, H2OVL, Granite-Vision, SmolDocling,
+PP-FormulaNet-L, SMT/TrOMR/Transcoda, SAM2, LiLT, NAFNet, CLIP/ViT, SCRFD are
+byte-identical or within budget. Fix: surya-det aborted on every CUDA run (relu on
+non-contiguous LiteMLA views) and is now byte-identical, 2.7x. New CUDA defaults
+(tri-state, `=0` restores CPU): ESRGAN, InstructIR, LightOnOCR, and new gates
+`CRISPEMBED_PAN_GPU`, `CRISPEMBED_RESTORMER_GPU` (8-18x, max 1/255). Initial harness
+failures kept in the receipts: run 1 died in the EasyOCR fetch (outside the job try);
+run 2's bge-m3 had no heads (Ollama format), its Surya job used the DBNet loader and
+its punctuation jobs fed whole-page TrOCR text. EasyOCR's CUDA/CPU difference traced
+to the x86 CPU arm dropping lines (CUDA = Metal = M1 CPU = Python per stage).
+
 ## 1 November 2026 — OXR-1.0 and D-FINE on Metal (feat/metal-oxr)
 
 * Defects: (1) OXR's PREC_F32 flash-attention nodes were refused by ggml-metal and run on the

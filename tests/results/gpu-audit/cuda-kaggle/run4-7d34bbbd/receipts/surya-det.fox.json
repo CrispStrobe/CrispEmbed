@@ -1,0 +1,51 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "surya-det-f16.gguf",
+  "fox.png"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    9.636,
+    6.982
+   ],
+   "gpu_mem_peak_mib": 1021,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n",
+   "stdout_sha256": "917c1d84b6c0f6a31ca143e27c0dcff3390061143d76416441c4bd4f2ad14b7b",
+   "stdout": "Model loaded: input=1200x1200, classes=2\nLoaded image: tests/regression/images/fox.png (800x200)\nRunning detection on 800x200 image...\nHeatmap: 300x300 (2 channels)\n  Channel 0: min=0.0000 max=0.9686 mean=0.1080 above_0.5=9440/90000\n  Channel 1: min=0.0000 max=0.4887 mean=0.0091 above_0.5=0/90000\n\nDetected 2 text regions:\n  Box 0: (11,41)-(523,77) conf=0.996\n  Box 1: (11,111)-(485,147) conf=1.000\nPASS\n",
+   "vs_cpu": {
+    "byte_identical": true,
+    "text_exact": true,
+    "char_ratio": 1.0,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    18.367,
+    18.071
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\n",
+   "stdout_sha256": "917c1d84b6c0f6a31ca143e27c0dcff3390061143d76416441c4bd4f2ad14b7b",
+   "stdout": "Model loaded: input=1200x1200, classes=2\nLoaded image: tests/regression/images/fox.png (800x200)\nRunning detection on 800x200 image...\nHeatmap: 300x300 (2 channels)\n  Channel 0: min=0.0000 max=0.9686 mean=0.1080 above_0.5=9440/90000\n  Channel 1: min=0.0000 max=0.4887 mean=0.0091 above_0.5=0/90000\n\nDetected 2 text regions:\n  Box 0: (11,41)-(523,77) conf=0.996\n  Box 1: (11,111)-(485,147) conf=1.000\nPASS\n"
+  }
+ },
+ "precision": "f16",
+ "bar": 0.98,
+ "seconds": 55.6,
+ "id": "surya-det.fox",
+ "commit": "7d34bbbd700cd1c8fc3d977c09f89dbbadd76054",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-02"
+}

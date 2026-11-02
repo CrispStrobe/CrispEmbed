@@ -1,0 +1,143 @@
+{
+ "kind": "embed",
+ "mode": "embed",
+ "base": "f2llm-v2-0.6b.gguf",
+ "files": {
+  "f2llm-v2-0.6b.gguf": {
+   "precision": "f32",
+   "type_hist": {
+    "f32": 595984384
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      2.323,
+      2.27
+     ],
+     "gpu_mem_peak_mib": 2431,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispembed: using CUDA0 backend with CPU fallback\ndecoder_embed: n_vocab 0 → 151936 (from token_embd)\ndecoder_embed: loaded 28 layers, 1024 dims, 151936 vocab, 16 heads (8 kv), rope_theta=1000000, pool=last-token\ncrispembed: GPT-2 BPE tokenizer (151936 tokens, 151387 merges)\ncrispembed: auto-prefix \"Instruct: Given a question, retrieve passages that can help answer the question.\nQuery: \" (use --prefix \"\" to disable)\n"
+    },
+    "cpu": {
+     "wall_s": [
+      10.254,
+      9.951
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "crispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ndecoder_embed: n_vocab 0 → 151936 (from token_embd)\ndecoder_embed: loaded 28 layers, 1024 dims, 151936 vocab, 16 heads (8 kv), rope_theta=1000000, pool=last-token\ncrispembed: GPT-2 BPE tokenizer (151936 tokens, 151387 merges)\ncrispembed: auto-prefix \"Instruct: Given a question, retrieve passages that can help answer the question.\nQuery: \" (use --prefix \"\" to disable)\n"
+    }
+   },
+   "cuda_vs_cpu_same_artifact": {
+    "cos_min": 0.999998204734741,
+    "cos_mean": 0.9999990560633126,
+    "max_abs": 0.00022099999999999898
+   },
+   "cuda_vs_cpu_reference": {
+    "cos_min": 0.999998204734741,
+    "cos_mean": 0.9999990560633126,
+    "max_abs": 0.00022099999999999898
+   },
+   "bar": 0.99,
+   "qualifies": true
+  },
+  "f2llm-v2-0.6b-q8_0.gguf": {
+   "precision": "q8_0",
+   "type_hist": {
+    "q8_0": 595984384
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      1.52,
+      1.519
+     ],
+     "gpu_mem_peak_mib": 761,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispembed: using CUDA0 backend with CPU fallback\ndecoder_embed: n_vocab 0 → 151936 (from token_embd)\ndecoder_embed: loaded 28 layers, 1024 dims, 151936 vocab, 16 heads (8 kv), rope_theta=1000000, pool=last-token\ncrispembed: GPT-2 BPE tokenizer (151936 tokens, 151387 merges)\ncrispembed: auto-prefix \"Instruct: Given a question, retrieve passages that can help answer the question.\nQuery: \" (use --prefix \"\" to disable)\n"
+    },
+    "cpu": {
+     "wall_s": [
+      11.962,
+      11.407
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "crispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ndecoder_embed: n_vocab 0 → 151936 (from token_embd)\ndecoder_embed: loaded 28 layers, 1024 dims, 151936 vocab, 16 heads (8 kv), rope_theta=1000000, pool=last-token\ncrispembed: GPT-2 BPE tokenizer (151936 tokens, 151387 merges)\ncrispembed: auto-prefix \"Instruct: Given a question, retrieve passages that can help answer the question.\nQuery: \" (use --prefix \"\" to disable)\n"
+    }
+   },
+   "cuda_vs_cpu_same_artifact": {
+    "cos_min": 0.9952579103333971,
+    "cos_mean": 0.9974207706491741,
+    "max_abs": 0.033982
+   },
+   "cuda_vs_cpu_reference": {
+    "cos_min": 0.9902859644617911,
+    "cos_mean": 0.992291004913032,
+    "max_abs": 0.045280999999999995
+   },
+   "cpu_vs_cpu_reference": {
+    "cos_min": 0.9899256129823513,
+    "cos_mean": 0.9921904679202119,
+    "max_abs": 0.04896199999999999
+   },
+   "bar": 0.97,
+   "qualifies": true
+  },
+  "f2llm-v2-0.6b-q4_k-imatrix.gguf": {
+   "precision": "q4_k",
+   "type_hist": {
+    "q8_0": 155582464,
+    "q4_k": 440401920
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      1.469,
+      1.373
+     ],
+     "gpu_mem_peak_mib": 551,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispembed: using CUDA0 backend with CPU fallback\ndecoder_embed: n_vocab 0 → 151936 (from token_embd)\ndecoder_embed: loaded 28 layers, 1024 dims, 151936 vocab, 16 heads (8 kv), rope_theta=1000000, pool=last-token\ncrispembed: GPT-2 BPE tokenizer (151936 tokens, 151387 merges)\ncrispembed: auto-prefix \"Instruct: Given a question, retrieve passages that can help answer the question.\nQuery: \" (use --prefix \"\" to disable)\n"
+    },
+    "cpu": {
+     "wall_s": [
+      14.868,
+      14.721
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "crispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ndecoder_embed: n_vocab 0 → 151936 (from token_embd)\ndecoder_embed: loaded 28 layers, 1024 dims, 151936 vocab, 16 heads (8 kv), rope_theta=1000000, pool=last-token\ncrispembed: GPT-2 BPE tokenizer (151936 tokens, 151387 merges)\ncrispembed: auto-prefix \"Instruct: Given a question, retrieve passages that can help answer the question.\nQuery: \" (use --prefix \"\" to disable)\n"
+    }
+   },
+   "cuda_vs_cpu_same_artifact": {
+    "cos_min": 0.9213711457506638,
+    "cos_mean": 0.9624523102692777,
+    "max_abs": 0.104986
+   },
+   "cuda_vs_cpu_reference": {
+    "cos_min": 0.7817564243323457,
+    "cos_mean": 0.8163052013281602,
+    "max_abs": 0.149376
+   },
+   "cpu_vs_cpu_reference": {
+    "cos_min": 0.789424821169163,
+    "cos_mean": 0.8195982031297998,
+    "max_abs": 0.148392
+   },
+   "bar": 0.94,
+   "qualifies": false
+  }
+ },
+ "seconds": 180.5,
+ "id": "embed-f2llm-v2-0.6b-embed",
+ "commit": "8f781770810956818ba76831a6bc607fbc0a1154",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

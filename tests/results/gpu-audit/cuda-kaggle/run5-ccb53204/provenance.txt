@@ -1,0 +1,12 @@
+kernel: ${KAGGLE_ACCOUNT}/crispembed-cuda-audit version 5, batch "e", tools/kaggle/cuda-audit
+source commit: ccb532040c6b8610e9c7e9f10c1b5ee525f4cf87 (feat/cuda-audit)
+gpu: Tesla T4 (sm_75), cpu: 4x Intel Xeon @ 2.00GHz (x86, GGML_NATIVE=ON)
+date: 2026-11-02
+outcome: 6/6 jobs. With CRISPEMBED_EASYOCR_DEBUG_REGIONS=1 the x86 CPU arm returns len=0 conf=0
+for exactly the regions whose recognizer canvas is SMALLER than the previous one (fox 704->576;
+scan_strip 1024->960, 960->576, 896->640), at -t 4 and -t 1. EASYOCR_WIDTH_SORT=1 (canvas only
+grows) gives all regions on x86 CPU, matching CUDA (and Metal and an M1 CPU build in reading order).
+The recognizer diff vs Python at 576 and 704 (single build) decodes line 2 correctly on both arms.
+Conclusion: an x86 ggml-cpu / EasyOCR shrink-rebuild defect, not a CUDA defect. Not fixed here.
+(The "features" stage reports 0.0 at 576/704 on both arms: the reference archive's feature map
+width does not match a 64-multiple canvas; logits 0.999996.)

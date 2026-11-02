@@ -508,8 +508,16 @@ instructir_context * instructir_init(const char * model_path, int n_threads) {
     // off) loads the weights on the GPU backend instead; the sched below then
     // already puts that backend first with an owned CPU fallback. Kept opt-in
     // until the Metal A/B in docs/gpu-support-matrix.md says otherwise.
-    ggml_backend_t backend =
-        core_env::on("CRISPEMBED_INSTRUCTIR_GPU") ? crispasr_init_gpu_backend() : ggml_backend_cpu_init();
+    //
+    // CUDA audit 2026-11-01: tri-state since then. =1 forces GPU on any kind,
+    // =0 keeps the CPU path, unset = ON when a CUDA device is present (Kaggle
+    // T4: 3.7 s vs 32.6 s CPU, max |delta| 1/255, PSNR 104 dB; receipt
+    // tests/results/gpu-audit/cuda-kaggle/run2-e0da5d08/receipts/instructir.scan_strip.json)
+    // and OFF on Metal, where it measured slower (14.5 s vs 10.4 s).
+    const bool instructir_gpu =
+        core_env::on("CRISPEMBED_INSTRUCTIR_GPU") ||
+        (!core_env::explicitly_off("CRISPEMBED_INSTRUCTIR_GPU") && crispasr_gpu_device_kind_present("CUDA"));
+    ggml_backend_t backend = instructir_gpu ? crispasr_init_gpu_backend() : ggml_backend_cpu_init();
     if (!backend) backend = ggml_backend_cpu_init();
     if (!backend) return nullptr;
     core_gguf::WeightLoad wl;

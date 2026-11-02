@@ -1,0 +1,11 @@
+kernel: ${KAGGLE_ACCOUNT}/crispembed-cuda-audit version 4, batch "d", tools/kaggle/cuda-audit
+source commit: 7d34bbbd700cd1c8fc3d977c09f89dbbadd76054 (feat/cuda-audit; surya-det relu fix)
+gpu: Tesla T4 x2 (sm_75; one device used), cpu: 4x Intel Xeon @ 2.00GHz, -t 4
+date: 2026-11-02
+outcome: 14/14 jobs. surya-det F16/Q8 now byte-identical CUDA vs CPU on fox and scan_page_pd
+(6.9-7.0 s vs 18.1-18.9 s). EasyOCR recognizer vs Python reference (tools/dump_easyocr_reference.py
+on fox line crops, widths 200/540/610): CUDA and CPU stage cosines equal to 1e-6 and decoded text
+equal; single-line page runs byte-identical. The fox page difference is therefore not CUDA:
+the x86 CPU arm drops line 2 (empty text after a 704->576 width rebuild), while CUDA, Metal and
+the M1 CPU all return it (local M1 CPU build: 2 regions, line 2 conf 0.7016). Run 5 diagnoses x86.
+CPU arm = same binary, --gpu-backend cpu with CUDA_VISIBLE_DEVICES="".

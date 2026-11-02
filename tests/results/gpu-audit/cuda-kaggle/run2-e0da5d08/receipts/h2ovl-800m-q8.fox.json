@@ -1,0 +1,55 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "-m",
+  "h2ovl-800m-q8_0.gguf",
+  "--ocr",
+  "fox.png",
+  "--ocr-max-tokens",
+  "128"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    2.672
+   ],
+   "gpu_mem_peak_mib": 1721,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "ls/h2ovl-800m-q8_0.gguf\ninternvl2_ocr: chat template 'h2ogpt2'\n  Vision: 24L, 1024d, 16H, patch=14, image=448\n  Projector: ratio=0.5, 1024→256 tokens, dim 4096→1536\n  LLM: 16L, 1536d, 16H/8KV, inter=4096, vocab=32010\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\n  Ready (GPU, 4 threads)\ninternvl2_ocr: 800x200 → 5 tiles (1x4 grid, 448px)\nggml_backend_cuda_graph_compute: CUDA graph warmup complete\nggml_backend_cuda_graph_compute: CUDA graph warmup complete\nggml_backend_cuda_graph_compute: CUDA graph warmup complete\n  KV cache: 16 layers, max_seq=1467, 68.8 MB\n  Spliced 1280 image tokens into 1323 prompt tokens\n  gen[0]: token=1014 score=20.52 (prefill 1323 tokens)\n  gen[1]: token=2936 score=18.33\n  gen[2]: token=9060 score=21.43\n  gen[3]: token=285 score=18.92\n  gen[4]: token=1142 score=18.99\n  gen[5]: token=461 score=21.41\n  gen[6]: token=10575 score=27.79\n  gen[7]: token=754 score=17.77\n  gen[8]: token=272 score=18.77\n  gen[9]: token=17898 score=24.71\n  gen[10]: token=3914 score=20.35\n  gen[11]: token=28723 score=18.83\n  gen[12]: token=28705 score=18.61\n  gen[13]: token=28740 score=24.13\n  gen[14]: token=28750 score=24.13\n  gen[15]: token=28770 score=24.60\n  gen[16]: token=28781 score=24.75\n  gen[17]: token=28782 score=21.23\n  gen[18]: token=32009 score=17.26\n",
+   "stdout_sha256": "afae153d8d54b9fa514b1afc9643019a1aec552fce144714b96a5e574a4da49c",
+   "stdout": "The quick brown fox jumps over the lazy dog. 12345\n",
+   "vs_cpu": {
+    "byte_identical": true,
+    "text_exact": true,
+    "char_ratio": 1.0,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    102.948
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "internvl2_ocr: loading $SCRATCH/models/h2ovl-800m-q8_0.gguf\ninternvl2_ocr: chat template 'h2ogpt2'\n  Vision: 24L, 1024d, 16H, patch=14, image=448\n  Projector: ratio=0.5, 1024→256 tokens, dim 4096→1536\n  LLM: 16L, 1536d, 16H/8KV, inter=4096, vocab=32010\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\n  Ready (CPU, 4 threads)\ninternvl2_ocr: 800x200 → 5 tiles (1x4 grid, 448px)\n  KV cache: 16 layers, max_seq=1467, 68.8 MB\n  Spliced 1280 image tokens into 1323 prompt tokens\n  gen[0]: token=1014 score=20.36 (prefill 1323 tokens)\n  gen[1]: token=2936 score=18.27\n  gen[2]: token=9060 score=21.14\n  gen[3]: token=285 score=18.83\n  gen[4]: token=1142 score=18.99\n  gen[5]: token=461 score=21.40\n  gen[6]: token=10575 score=27.75\n  gen[7]: token=754 score=17.79\n  gen[8]: token=272 score=18.77\n  gen[9]: token=17898 score=24.76\n  gen[10]: token=3914 score=20.23\n  gen[11]: token=28723 score=18.77\n  gen[12]: token=28705 score=18.49\n  gen[13]: token=28740 score=24.05\n  gen[14]: token=28750 score=24.09\n  gen[15]: token=28770 score=24.53\n  gen[16]: token=28781 score=24.58\n  gen[17]: token=28782 score=21.16\n  gen[18]: token=32009 score=17.12\n",
+   "stdout_sha256": "afae153d8d54b9fa514b1afc9643019a1aec552fce144714b96a5e574a4da49c",
+   "stdout": "The quick brown fox jumps over the lazy dog. 12345\n"
+  }
+ },
+ "precision": "q8_0",
+ "bar": 0.97,
+ "seconds": 118.1,
+ "id": "h2ovl-800m-q8.fox",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

@@ -1,0 +1,45 @@
+{
+ "kind": "diff",
+ "binary": "test-esrgan-diff",
+ "arms": {
+  "cuda": {
+   "rc": 0,
+   "wall_s": 0.666,
+   "gpu_mem_peak_mib": 3,
+   "cuda_used": false,
+   "n_stages": 1,
+   "stages": {
+    "output": 1.0
+   },
+   "worst_stage": [
+    "output",
+    1.0
+   ],
+   "threshold_fails": [],
+   "threshold_missing": [],
+   "stdout_tail": "Real-ESRGAN (SRVGGNetCompact) — parity test\n  Model: $SCRATCH/models/esrgan-x4-f32.gguf\n  Ref:   $SCRATCH/models/esrgan-ref.gguf\n\n  \u001b[32m[PASS]\u001b[0m model loads\n  Scale: 4x\n\n  \u001b[32m[PASS]\u001b[0m process returns 0\n  Inference: 240.1 ms (64x64 → 256x256)\n\n=== Output comparison ===\n  output: cos=1.000000 max_abs=0.001287  PASS\n  \u001b[32m[PASS]\u001b[0m output cos >= 0.95\n  \u001b[32m[PASS]\u001b[0m output max_abs < 0.01 (got 0.001287)\n  Output range: [-0.7018, 1.6105]\n  \u001b[32m[PASS]\u001b[0m output not all zeros\n\n=== Results: 5 passed, 0 failed ===\n\ncrispembed_diff: loaded 20 tensors from $SCRATCH/models/esrgan-ref.gguf\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n"
+  },
+  "cpu": {
+   "rc": 0,
+   "wall_s": 0.415,
+   "gpu_mem_peak_mib": 1,
+   "cuda_used": false,
+   "n_stages": 1,
+   "stages": {
+    "output": 1.0
+   },
+   "worst_stage": [
+    "output",
+    1.0
+   ],
+   "threshold_fails": [],
+   "threshold_missing": [],
+   "stdout_tail": "Real-ESRGAN (SRVGGNetCompact) — parity test\n  Model: $SCRATCH/models/esrgan-x4-f32.gguf\n  Ref:   $SCRATCH/models/esrgan-ref.gguf\n\n  \u001b[32m[PASS]\u001b[0m model loads\n  Scale: 4x\n\n  \u001b[32m[PASS]\u001b[0m process returns 0\n  Inference: 234.3 ms (64x64 → 256x256)\n\n=== Output comparison ===\n  output: cos=1.000000 max_abs=0.001287  PASS\n  \u001b[32m[PASS]\u001b[0m output cos >= 0.95\n  \u001b[32m[PASS]\u001b[0m output max_abs < 0.01 (got 0.001287)\n  Output range: [-0.7018, 1.6105]\n  \u001b[32m[PASS]\u001b[0m output not all zeros\n\n=== Results: 5 passed, 0 failed ===\n\ncrispembed_diff: loaded 20 tensors from $SCRATCH/models/esrgan-ref.gguf\nggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\n"
+  }
+ },
+ "seconds": 2.2,
+ "id": "diff-esrgan",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

@@ -1,0 +1,166 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "--json",
+  "-m",
+  "trocr-small-printed-q8_0.gguf",
+  "--ocr-det",
+  "dbnet-ic15-q8_0.gguf",
+  "--ocr-rec",
+  "trocr-small-printed-q8_0.gguf",
+  "--ocr",
+  "fox.png"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    4.882,
+    4.881
+   ],
+   "gpu_mem_peak_mib": 421,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-7.208 -8.100 7.551 -2.415 2.157] best=14\nmath_ocr: [graph] dec step 1: tok=14 logits[0..4]=[-13.961 -13.575 13.595 7.410 1.321] best=370\nmath_ocr: [graph] dec step 2: tok=370 logits[0..4]=[-8.217 -6.761 10.758 8.395 -6.556] best=2441\nmath_ocr: [graph] dec step 3: tok=2441 logits[0..4]=[-11.648 -10.540 17.309 6.397 -1.643] best=2225\nmath_ocr: [graph] dec step 4: tok=2225 logits[0..4]=[-9.422 -8.503 23.597 -0.436 -2.863] best=2\nocr_pipeline: recognizing region 9/10\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-9.140 -11.233 4.820 -1.599 4.739] best=8774\nmath_ocr: [graph] dec step 1: tok=8774 logits[0..4]=[-4.954 -6.804 13.531 10.937 -4.396] best=1048\nmath_ocr: [graph] dec step 2: tok=1048 logits[0..4]=[-8.315 -9.440 17.811 0.273 0.194] best=5\nmath_ocr: [graph] dec step 3: tok=5 logits[0..4]=[-7.643 -8.983 27.601 2.342 -0.136] best=2\nocr_pipeline: recognizing region 10/10\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-12.637 -12.017 10.186 4.510 6.703] best=496\nmath_ocr: [graph] dec step 1: tok=496 logits[0..4]=[-12.037 -16.143 11.527 6.838 2.349] best=43477\nmath_ocr: [graph] dec step 2: tok=43477 logits[0..4]=[-11.779 -11.329 28.032 4.229 0.459] best=2\nocr_pipeline: recognized 10/10 regions\n",
+   "stdout_sha256": "4ed79b8df809f880bd27c1e228e9063de51009bc1f783774a563e87382c276ae",
+   "stdout": "[{\"text\":\"THE\",\"bbox\":[27,35,104,77],\"conf\":0.779},{\"text\":\"QUICK\",\"bbox\":[107,36,205,79],\"conf\":0.793},{\"text\":\"BROWN\",\"bbox\":[211,39,323,76],\"conf\":0.762},{\"text\":\"FOX\",\"bbox\":[329,37,393,77],\"conf\":0.770},{\"text\":\"JUMPS\",\"bbox\":[394,39,509,78],\"conf\":0.785},{\"text\":\"OVER\",\"bbox\":[25,113,110,146],\"conf\":0.761},{\"text\":\"THE\",\"bbox\":[113,105,179,147],\"conf\":0.779},{\"text\":\"IAZY\",\"bbox\":[179,108,261,152],\"conf\":0.777},{\"text\":\"DOG.\",\"bbox\":[263,109,345,152],\"conf\":0.781},{\"text\":\"12345\",\"bbox\":[355,105,472,149],\"conf\":0.789}]\n",
+   "vs_cpu": {
+    "byte_identical": false,
+    "json": {
+     "n_numbers": [
+      50,
+      50
+     ],
+     "strings_equal": true,
+     "n_strings": [
+      10,
+      10
+     ]
+    },
+    "final_cosine": 0.9999999999997211,
+    "max_abs": 0.0010000000000000009,
+    "final_metric": "cosine over all JSON numbers",
+    "ocr": {
+     "n_boxes": [
+      10,
+      10
+     ],
+     "texts_equal": 10,
+     "box_max_dpx": 0,
+     "conf_max_d": 0.0010000000000000009,
+     "joined_text_ratio": 1.0
+    }
+   }
+  },
+  "cuda-detcpu": {
+   "backend": "cuda",
+   "env": {
+    "OCR_DETECT_USE_GPU": "0"
+   },
+   "wall_s": [
+    5.482,
+    5.381
+   ],
+   "gpu_mem_peak_mib": 267,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-7.208 -8.100 7.551 -2.415 2.157] best=14\nmath_ocr: [graph] dec step 1: tok=14 logits[0..4]=[-13.961 -13.575 13.595 7.410 1.321] best=370\nmath_ocr: [graph] dec step 2: tok=370 logits[0..4]=[-8.217 -6.761 10.758 8.395 -6.556] best=2441\nmath_ocr: [graph] dec step 3: tok=2441 logits[0..4]=[-11.648 -10.540 17.309 6.397 -1.643] best=2225\nmath_ocr: [graph] dec step 4: tok=2225 logits[0..4]=[-9.422 -8.503 23.597 -0.436 -2.863] best=2\nocr_pipeline: recognizing region 9/10\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-9.140 -11.233 4.820 -1.599 4.739] best=8774\nmath_ocr: [graph] dec step 1: tok=8774 logits[0..4]=[-4.954 -6.804 13.531 10.937 -4.396] best=1048\nmath_ocr: [graph] dec step 2: tok=1048 logits[0..4]=[-8.315 -9.440 17.811 0.273 0.194] best=5\nmath_ocr: [graph] dec step 3: tok=5 logits[0..4]=[-7.643 -8.983 27.601 2.342 -0.136] best=2\nocr_pipeline: recognizing region 10/10\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-12.637 -12.017 10.186 4.510 6.703] best=496\nmath_ocr: [graph] dec step 1: tok=496 logits[0..4]=[-12.037 -16.143 11.527 6.838 2.349] best=43477\nmath_ocr: [graph] dec step 2: tok=43477 logits[0..4]=[-11.779 -11.329 28.032 4.229 0.459] best=2\nocr_pipeline: recognized 10/10 regions\n",
+   "stdout_sha256": "1d88ac524f87456ce72eb41be230d84ac7ba7841c39703ae5c63c3724b77037e",
+   "stdout": "[{\"text\":\"THE\",\"bbox\":[27,35,104,77],\"conf\":0.779},{\"text\":\"QUICK\",\"bbox\":[107,36,205,79],\"conf\":0.793},{\"text\":\"BROWN\",\"bbox\":[211,39,323,76],\"conf\":0.762},{\"text\":\"FOX\",\"bbox\":[329,37,393,77],\"conf\":0.770},{\"text\":\"JUMPS\",\"bbox\":[394,39,509,78],\"conf\":0.784},{\"text\":\"OVER\",\"bbox\":[25,113,110,146],\"conf\":0.761},{\"text\":\"THE\",\"bbox\":[113,105,179,147],\"conf\":0.779},{\"text\":\"IAZY\",\"bbox\":[179,108,261,152],\"conf\":0.777},{\"text\":\"DOG.\",\"bbox\":[263,109,345,152],\"conf\":0.781},{\"text\":\"12345\",\"bbox\":[355,105,472,149],\"conf\":0.789}]\n",
+   "vs_cpu": {
+    "byte_identical": true,
+    "json": {
+     "n_numbers": [
+      50,
+      50
+     ],
+     "strings_equal": true,
+     "n_strings": [
+      10,
+      10
+     ]
+    },
+    "final_cosine": 1.0000000000000002,
+    "max_abs": 0.0,
+    "final_metric": "cosine over all JSON numbers",
+    "ocr": {
+     "n_boxes": [
+      10,
+      10
+     ],
+     "texts_equal": 10,
+     "box_max_dpx": 0,
+     "conf_max_d": 0.0,
+     "joined_text_ratio": 1.0
+    }
+   }
+  },
+  "cuda-deconvmm": {
+   "backend": "cuda",
+   "env": {
+    "CRISPEMBED_DBNET_DECONV_MATMUL": "1"
+   },
+   "wall_s": [
+    4.831,
+    4.781
+   ],
+   "gpu_mem_peak_mib": 421,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-7.208 -8.100 7.551 -2.415 2.157] best=14\nmath_ocr: [graph] dec step 1: tok=14 logits[0..4]=[-13.961 -13.575 13.595 7.410 1.321] best=370\nmath_ocr: [graph] dec step 2: tok=370 logits[0..4]=[-8.217 -6.761 10.758 8.395 -6.556] best=2441\nmath_ocr: [graph] dec step 3: tok=2441 logits[0..4]=[-11.648 -10.540 17.309 6.397 -1.643] best=2225\nmath_ocr: [graph] dec step 4: tok=2225 logits[0..4]=[-9.422 -8.503 23.597 -0.436 -2.863] best=2\nocr_pipeline: recognizing region 9/10\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-9.140 -11.233 4.820 -1.599 4.739] best=8774\nmath_ocr: [graph] dec step 1: tok=8774 logits[0..4]=[-4.954 -6.804 13.531 10.937 -4.396] best=1048\nmath_ocr: [graph] dec step 2: tok=1048 logits[0..4]=[-8.315 -9.440 17.811 0.273 0.194] best=5\nmath_ocr: [graph] dec step 3: tok=5 logits[0..4]=[-7.643 -8.983 27.601 2.342 -0.136] best=2\nocr_pipeline: recognizing region 10/10\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-12.637 -12.017 10.186 4.510 6.703] best=496\nmath_ocr: [graph] dec step 1: tok=496 logits[0..4]=[-12.037 -16.143 11.527 6.838 2.349] best=43477\nmath_ocr: [graph] dec step 2: tok=43477 logits[0..4]=[-11.779 -11.329 28.032 4.229 0.459] best=2\nocr_pipeline: recognized 10/10 regions\n",
+   "stdout_sha256": "4ed79b8df809f880bd27c1e228e9063de51009bc1f783774a563e87382c276ae",
+   "stdout": "[{\"text\":\"THE\",\"bbox\":[27,35,104,77],\"conf\":0.779},{\"text\":\"QUICK\",\"bbox\":[107,36,205,79],\"conf\":0.793},{\"text\":\"BROWN\",\"bbox\":[211,39,323,76],\"conf\":0.762},{\"text\":\"FOX\",\"bbox\":[329,37,393,77],\"conf\":0.770},{\"text\":\"JUMPS\",\"bbox\":[394,39,509,78],\"conf\":0.785},{\"text\":\"OVER\",\"bbox\":[25,113,110,146],\"conf\":0.761},{\"text\":\"THE\",\"bbox\":[113,105,179,147],\"conf\":0.779},{\"text\":\"IAZY\",\"bbox\":[179,108,261,152],\"conf\":0.777},{\"text\":\"DOG.\",\"bbox\":[263,109,345,152],\"conf\":0.781},{\"text\":\"12345\",\"bbox\":[355,105,472,149],\"conf\":0.789}]\n",
+   "vs_cpu": {
+    "byte_identical": false,
+    "json": {
+     "n_numbers": [
+      50,
+      50
+     ],
+     "strings_equal": true,
+     "n_strings": [
+      10,
+      10
+     ]
+    },
+    "final_cosine": 0.9999999999997211,
+    "max_abs": 0.0010000000000000009,
+    "final_metric": "cosine over all JSON numbers",
+    "ocr": {
+     "n_boxes": [
+      10,
+      10
+     ],
+     "texts_equal": 10,
+     "box_max_dpx": 0,
+     "conf_max_d": 0.0010000000000000009,
+     "joined_text_ratio": 1.0
+    }
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    9.097,
+    9.246
+   ],
+   "gpu_mem_peak_mib": 1,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-7.580 -8.335 7.522 -2.553 2.230] best=14\nmath_ocr: [graph] dec step 1: tok=14 logits[0..4]=[-13.927 -13.426 13.209 7.435 0.983] best=370\nmath_ocr: [graph] dec step 2: tok=370 logits[0..4]=[-8.396 -6.781 10.747 8.588 -6.385] best=2441\nmath_ocr: [graph] dec step 3: tok=2441 logits[0..4]=[-11.692 -10.578 17.410 6.156 -1.765] best=2225\nmath_ocr: [graph] dec step 4: tok=2225 logits[0..4]=[-9.867 -8.989 23.525 -0.456 -2.877] best=2\nocr_pipeline: recognizing region 9/10\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-9.363 -11.454 4.996 -1.409 4.863] best=8774\nmath_ocr: [graph] dec step 1: tok=8774 logits[0..4]=[-5.006 -6.907 13.504 11.058 -4.377] best=1048\nmath_ocr: [graph] dec step 2: tok=1048 logits[0..4]=[-8.308 -9.448 17.748 0.093 0.298] best=5\nmath_ocr: [graph] dec step 3: tok=5 logits[0..4]=[-7.647 -9.070 27.225 2.151 -0.318] best=2\nocr_pipeline: recognizing region 10/10\nmath_ocr: [graph] dec embed+pos+ln x[:5]=[0.1828 -0.1273 0.0431 -0.0379 -0.1756]\nmath_ocr: [graph] dec step 0: tok=2 logits[0..4]=[-12.699 -12.100 10.097 4.600 6.682] best=496\nmath_ocr: [graph] dec step 1: tok=496 logits[0..4]=[-12.119 -16.285 11.590 6.888 2.232] best=43477\nmath_ocr: [graph] dec step 2: tok=43477 logits[0..4]=[-11.883 -11.443 27.885 4.098 0.529] best=2\nocr_pipeline: recognized 10/10 regions\n",
+   "stdout_sha256": "1d88ac524f87456ce72eb41be230d84ac7ba7841c39703ae5c63c3724b77037e",
+   "stdout": "[{\"text\":\"THE\",\"bbox\":[27,35,104,77],\"conf\":0.779},{\"text\":\"QUICK\",\"bbox\":[107,36,205,79],\"conf\":0.793},{\"text\":\"BROWN\",\"bbox\":[211,39,323,76],\"conf\":0.762},{\"text\":\"FOX\",\"bbox\":[329,37,393,77],\"conf\":0.770},{\"text\":\"JUMPS\",\"bbox\":[394,39,509,78],\"conf\":0.784},{\"text\":\"OVER\",\"bbox\":[25,113,110,146],\"conf\":0.761},{\"text\":\"THE\",\"bbox\":[113,105,179,147],\"conf\":0.779},{\"text\":\"IAZY\",\"bbox\":[179,108,261,152],\"conf\":0.777},{\"text\":\"DOG.\",\"bbox\":[263,109,345,152],\"conf\":0.781},{\"text\":\"12345\",\"bbox\":[355,105,472,149],\"conf\":0.789}]\n"
+  }
+ },
+ "precision": "q8_0",
+ "bar": 0.97,
+ "seconds": 53.9,
+ "id": "dbnet-trocr.fox",
+ "commit": "8f781770810956818ba76831a6bc607fbc0a1154",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

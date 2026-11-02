@@ -1,0 +1,147 @@
+{
+ "kind": "embed",
+ "mode": "rerank",
+ "base": "ms-marco-MiniLM-L-6-v2-g7c.gguf",
+ "files": {
+  "ms-marco-MiniLM-L-6-v2-g7c.gguf": {
+   "precision": "f32",
+   "type_hist": {
+    "f32": 12064512,
+    "f16": 10616832
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      1.068,
+      1.017
+     ],
+     "gpu_mem_peak_mib": 207,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "crispembed: using WordPiece tokenizer (30522 tokens, uncased)\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispembed: using CUDA0 backend with CPU fallback\ncrispembed: classifier head loaded (reranker=2-layer, act=tanh)\ncrispembed: loaded 6 layers, 384 dims, 30522 vocab\n"
+    },
+    "cpu": {
+     "wall_s": [
+      1.068,
+      1.018
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "crispembed: using WordPiece tokenizer (30522 tokens, uncased)\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ncrispembed: using CPU backend (4 threads)\ncrispembed: classifier head loaded (reranker=2-layer, act=tanh)\ncrispembed: loaded 6 layers, 384 dims, 30522 vocab\n"
+    }
+   },
+   "cuda_vs_cpu_same_artifact": {
+    "cos_min": 0.9999999999829295,
+    "max_abs": 0.0002259999999996154,
+    "same_order": true
+   },
+   "cuda_vs_cpu_reference": {
+    "cos_min": 0.9999999999829295,
+    "max_abs": 0.0002259999999996154,
+    "same_order": true
+   },
+   "bar": 0.99,
+   "qualifies": true
+  },
+  "ms-marco-MiniLM-L-6-v2-q8_0-g7c.gguf": {
+   "precision": "q8_0",
+   "type_hist": {
+    "q8_0": 22533888,
+    "f32": 147456
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      0.967,
+      0.868
+     ],
+     "gpu_mem_peak_mib": 165,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "crispembed: using WordPiece tokenizer (30522 tokens, uncased)\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispembed: using CUDA0 backend with CPU fallback\ncrispembed: classifier head loaded (reranker=2-layer, act=tanh)\ncrispembed: loaded 6 layers, 384 dims, 30522 vocab\n"
+    },
+    "cpu": {
+     "wall_s": [
+      0.617,
+      0.616
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "crispembed: using WordPiece tokenizer (30522 tokens, uncased)\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ncrispembed: using CPU backend (4 threads)\ncrispembed: classifier head loaded (reranker=2-layer, act=tanh)\ncrispembed: loaded 6 layers, 384 dims, 30522 vocab\n"
+    }
+   },
+   "cuda_vs_cpu_same_artifact": {
+    "cos_min": 0.9999996421830566,
+    "max_abs": 0.026087000000000415,
+    "same_order": true
+   },
+   "cuda_vs_cpu_reference": {
+    "cos_min": 0.9999982768227793,
+    "max_abs": 0.0672170000000003,
+    "same_order": false
+   },
+   "cpu_vs_cpu_reference": {
+    "cos_min": 0.999999310930015,
+    "max_abs": 0.04112999999999989,
+    "same_order": false
+   },
+   "bar": 0.97,
+   "qualifies": true
+  },
+  "ms-marco-MiniLM-L-6-v2-q4_k-g7c.gguf": {
+   "precision": "q8_0",
+   "type_hist": {
+    "q8_0": 11917056,
+    "q4_0": 7077888,
+    "q4_k": 3538944,
+    "f32": 147456
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      0.917,
+      1.393
+     ],
+     "gpu_mem_peak_mib": 161,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "crispembed: using WordPiece tokenizer (30522 tokens, uncased)\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispembed: using CUDA0 backend with CPU fallback\ncrispembed: classifier head loaded (reranker=2-layer, act=tanh)\ncrispembed: loaded 6 layers, 384 dims, 30522 vocab\n"
+    },
+    "cpu": {
+     "wall_s": [
+      0.667,
+      0.666
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "crispembed: using WordPiece tokenizer (30522 tokens, uncased)\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ncrispembed: using CPU backend (4 threads)\ncrispembed: classifier head loaded (reranker=2-layer, act=tanh)\ncrispembed: loaded 6 layers, 384 dims, 30522 vocab\n"
+    }
+   },
+   "cuda_vs_cpu_same_artifact": {
+    "cos_min": 0.9999994278289185,
+    "max_abs": 0.02955899999999989,
+    "same_order": true
+   },
+   "cuda_vs_cpu_reference": {
+    "cos_min": 0.9999376459110461,
+    "max_abs": 0.3997609999999998,
+    "same_order": true
+   },
+   "cpu_vs_cpu_reference": {
+    "cos_min": 0.9999433964475828,
+    "max_abs": 0.3702019999999999,
+    "same_order": true
+   },
+   "bar": 0.97,
+   "qualifies": true
+  }
+ },
+ "seconds": 20.1,
+ "id": "embed-ms-marco-l6-rerank",
+ "commit": "8f781770810956818ba76831a6bc607fbc0a1154",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

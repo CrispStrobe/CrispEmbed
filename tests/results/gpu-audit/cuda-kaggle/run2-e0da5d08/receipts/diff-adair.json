@@ -1,0 +1,45 @@
+{
+ "kind": "diff",
+ "binary": "test-adair-diff",
+ "arms": {
+  "cuda": {
+   "rc": 0,
+   "wall_s": 9.843,
+   "gpu_mem_peak_mib": 215,
+   "cuda_used": true,
+   "n_stages": 1,
+   "stages": {
+    "output": 0.999846
+   },
+   "worst_stage": [
+    "output",
+    0.999846
+   ],
+   "threshold_fails": [],
+   "threshold_missing": [],
+   "stdout_tail": "AdaIR — parity test\n  Model: $SCRATCH/models/adair-5d-f32.gguf\n  Ref: $SCRATCH/models/adair-ref.gguf\n\n  \u001b[32m[PASS]\u001b[0m model loads\n  Input: 64x64\n  \u001b[32m[PASS]\u001b[0m process returns 0\n  Inference: 9056.4 ms\n\n  output: cos=0.999846 max_abs=0.027892  PASS\n  \u001b[32m[PASS]\u001b[0m output cos >= 0.999\n\n=== Results: 3 passed, 0 failed ===\n\ncrispembed_diff: loaded 2 tensors from $SCRATCH/models/adair-ref.gguf\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\nadair: conv path = ggml_conv_2d (CPU sched)\n"
+  },
+  "cpu": {
+   "rc": 0,
+   "wall_s": 8.988,
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "n_stages": 1,
+   "stages": {
+    "output": 0.999846
+   },
+   "worst_stage": [
+    "output",
+    0.999846
+   ],
+   "threshold_fails": [],
+   "threshold_missing": [],
+   "stdout_tail": "AdaIR — parity test\n  Model: $SCRATCH/models/adair-5d-f32.gguf\n  Ref: $SCRATCH/models/adair-ref.gguf\n\n  \u001b[32m[PASS]\u001b[0m model loads\n  Input: 64x64\n  \u001b[32m[PASS]\u001b[0m process returns 0\n  Inference: 8688.4 ms\n\n  output: cos=0.999846 max_abs=0.027892  PASS\n  \u001b[32m[PASS]\u001b[0m output cos >= 0.999\n\n=== Results: 3 passed, 0 failed ===\n\ncrispembed_diff: loaded 2 tensors from $SCRATCH/models/adair-ref.gguf\nggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\nadair: conv path = ggml_conv_2d (CPU sched)\n"
+  }
+ },
+ "seconds": 20.9,
+ "id": "diff-adair",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

@@ -1,0 +1,296 @@
+{
+ "script_version": "cuda-audit-run-v1",
+ "jobs": {
+  "easyocr-debug.fox": {
+   "kind": "cmd",
+   "seconds": 22.0,
+   "precision": "f16",
+   "cuda": {
+    "rc": 0,
+    "wall": [
+     3.422
+    ],
+    "cuda_used": true,
+    "identical": false,
+    "cos": 0.9486957565917765,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu-widthsort": {
+    "rc": 0,
+    "wall": [
+     1.268
+    ],
+    "cuda_used": false,
+    "identical": false,
+    "cos": 0.9486957565917765,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu-gpupref-none": {
+    "rc": 0,
+    "wall": [
+     1.217
+    ],
+    "cuda_used": false,
+    "identical": true,
+    "cos": 1.0,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 0,
+    "wall": [
+     1.218
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  },
+  "easyocr-debug-t1.fox": {
+   "kind": "cmd",
+   "seconds": 3.2,
+   "precision": "f16",
+   "cuda": {
+    "rc": 0,
+    "wall": [
+     1.067
+    ],
+    "cuda_used": true,
+    "identical": false,
+    "cos": 0.9486957565917765,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 0,
+    "wall": [
+     1.869
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  },
+  "easyocr-debug.scan_strip": {
+   "kind": "cmd",
+   "seconds": 11.4,
+   "precision": "f16",
+   "cuda": {
+    "rc": 0,
+    "wall": [
+     1.869
+    ],
+    "cuda_used": true,
+    "identical": false,
+    "cos": 0.9998794022737758,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu-widthsort": {
+    "rc": 0,
+    "wall": [
+     3.025
+    ],
+    "cuda_used": false,
+    "identical": false,
+    "cos": 0.9998794022737758,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu-gpupref-none": {
+    "rc": 0,
+    "wall": [
+     3.024
+    ],
+    "cuda_used": false,
+    "identical": true,
+    "cos": 1.0000000000000002,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 0,
+    "wall": [
+     3.127
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  },
+  "easyocr-debug-t1.scan_strip": {
+   "kind": "cmd",
+   "seconds": 6.8,
+   "precision": "f16",
+   "cuda": {
+    "rc": 0,
+    "wall": [
+     1.869
+    ],
+    "cuda_used": true,
+    "identical": false,
+    "cos": 0.9998794022737758,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 0,
+    "wall": [
+     4.727
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  },
+  "diff-easyocr-line2-w576": {
+   "kind": "diff",
+   "seconds": 25.9,
+   "cuda": {
+    "rc": 0,
+    "n": 6,
+    "worst": [
+     "features",
+     0.0
+    ],
+    "fails": [
+     [
+      "features",
+      0.0,
+      0.999
+     ]
+    ],
+    "wall": 0.916,
+    "cuda_used": true
+   },
+   "cpu": {
+    "rc": 0,
+    "n": 6,
+    "worst": [
+     "features",
+     0.0
+    ],
+    "fails": [
+     [
+      "features",
+      0.0,
+      0.999
+     ]
+    ],
+    "wall": 0.466,
+    "cuda_used": false
+   }
+  },
+  "diff-easyocr-line2-w704": {
+   "kind": "diff",
+   "seconds": 5.7,
+   "cuda": {
+    "rc": 0,
+    "n": 6,
+    "worst": [
+     "features",
+     0.0
+    ],
+    "fails": [
+     [
+      "features",
+      0.0,
+      0.999
+     ]
+    ],
+    "wall": 0.967,
+    "cuda_used": true
+   },
+   "cpu": {
+    "rc": 0,
+    "n": 6,
+    "worst": [
+     "features",
+     0.0
+    ],
+    "fails": [
+     [
+      "features",
+      0.0,
+      0.999
+     ]
+    ],
+    "wall": 0.567,
+    "cuda_used": false
+   }
+  }
+ },
+ "commit": "ccb532040c6b8610e9c7e9f10c1b5ee525f4cf87",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "batch": "e",
+ "threads": 4,
+ "cpu_model": "Intel(R) Xeon(R) CPU @ 2.00GHz",
+ "date": "2026-11-02",
+ "phase": "done",
+ "updated": "2026-11-02T01:56:50Z",
+ "downloads": {
+  "easyocr": {
+   "seconds": 13.5,
+   "error": null,
+   "bytes": 7585568
+  },
+  "dbnet": {
+   "seconds": 0.6,
+   "error": null,
+   "bytes": 12960448
+  },
+  "fox-line2": {
+   "seconds": 0.0,
+   "error": null,
+   "bytes": 6956
+  },
+  "easyocr-ref-line2-w576": {
+   "seconds": 24.2,
+   "error": null,
+   "bytes": 30864544
+  },
+  "easyocr-ref-line2-w704": {
+   "seconds": 3.8,
+   "error": null,
+   "bytes": 37725472
+  }
+ },
+ "conversions": {
+  "easyocr-ref-line2-w576": "wrote /kaggle/temp/cuda-audit/models/easyocr-ref-line2-w576.gguf; decoded='over the lazy dog: 12345'; stages=26\n",
+  "easyocr-ref-line2-w704": "wrote /kaggle/temp/cuda-audit/models/easyocr-ref-line2-w704.gguf; decoded='over the lazy dog: 12345'; stages=26\n"
+ }
+}
