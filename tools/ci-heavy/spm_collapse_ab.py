@@ -161,8 +161,29 @@ def run_model(cli, reg, alias, hf, kind, texts):
     rec["normalizer"] = normalizer_spec(tok)
     ml = tok.model_max_length if 0 < (tok.model_max_length or 0) < 100000 else 8192
     rec["hf_max_length"] = ml
-    hf_ids = [tok(t, truncation=True, max_length=ml)["input_ids"] for t in texts]
-    ref = None
+    # Inputs the original truncates are left out of the A/B: whitespace handling is the question here,
+    # and several native GGUFs abort on over-length input in BOTH arms (recorded as long_input_probe).
+    full = [tok(t)["input_ids"] for t in texts]
+    keep = [i for i, f in enumerate(full) if len(f) <= ml]
+    rec["excluded_over_length"] = [i for i in range(len(texts)) if i not in keep]
+    texts = [texts[i] for i in keep]
+    hf_ids = [full[i] for i in keep]
+    # Two references: the fast tokenizer.json (tokenizers, as transformers 4.x uses it) and the model's
+    # own SentencePiece model (slow tokenizer). They differ on a lone trailing "▁" for text ending in
+    # whitespace; transformers 5 rebuilds the tokenizer and agrees with SentencePiece there.
+    slow_ids = None
+    try:
+        slow = AutoTokenizer.from_pretrained(hf, use_fast=False, trust_remote_code=True)
+        slow_ids = [slow(t)["input_ids"] for t in texts]
+        rec["slow_tokenizer"] = type(slow).__name__
+    except Exception as e:  # noqa: BLE001
+        rec["slow_tokenizer_error"] = f"{type(e).__name__}: {e}"[:300]
+    ref, m = None, None
+    if rec["excluded_over_length"]:
+        long_t = [t for i, t in enumerate(full) if len(t) > ml]
+        r, _ = sh([cli, "-m", gguf, "-t", NT, "--json", "--prefix", "", "--tokens-raw",
+                   [tt for i, tt in enumerate(panel()) if i in rec["excluded_over_length"]][0]])
+        rec["long_input_probe"] = {"rc": r.returncode, "stderr_tail": r.stderr[-300:], "hf_len": len(long_t[0])}
     try:
         import torch
         torch.set_num_threads(int(NT))
@@ -180,7 +201,6 @@ def run_model(cli, reg, alias, hf, kind, texts):
                 for t in texts:
                     e = tok(QUERY, t, return_tensors="pt", truncation=True, max_length=512)
                     ref.append(float(m(**e).logits.reshape(-1)[0]))
-        del m
     except Exception as e:  # noqa: BLE001
         rec["reference_error"] = f"{type(e).__name__}: {e}"[:1500]
     for arm, env in ARMS.items():
@@ -190,6 +210,8 @@ def run_model(cli, reg, alias, hf, kind, texts):
             nat = [x.get("token_ids", []) for x in j]
             bad = [i for i, (h, n) in enumerate(zip(hf_ids, nat)) if h != n]
             a["ids_equal"] = len(texts) - len(bad)
+            if slow_ids is not None:
+                a["ids_equal_sentencepiece"] = sum(h == n for h, n in zip(slow_ids, nat))
             a["ids_mismatch_texts"] = bad
             a["ids_mismatch_examples"] = []
             for i in bad[:6]:
@@ -244,8 +266,8 @@ def main():
         (OUT / "spm-collapse-ab.json").write_text(json.dumps(out, indent=1, ensure_ascii=False))
     d0, d1 = "default (collapse on)", "CRISPEMBED_SPM_COLLAPSE_SPACES=0"
     lines = [f"### SPM collapse A/B ({(out['source'] or '')[:8]}, {len(texts)} texts)", "",
-             "| model | file | ids = HF on / off | cos min on / off (embed) or max |Δscore| on / off (rerank) |",
-             "|---|---|---|---|"]
+             "| model | file | texts | ids = HF fast on / off | ids = SentencePiece on / off | cos min on / off (embed) or max abs score diff on / off (rerank) |",
+             "|---|---|---:|---|---|---|"]
     regress = False
     for m in out["models"]:
         if "error" in m:
@@ -254,7 +276,7 @@ def main():
             continue
         a, b = m.get(d0, {}), m.get(d1, {})
         ia, ib = a.get("ids_equal"), b.get("ids_equal")
-        if ia is None or (ib is not None and ia < ib):
+        if ia is None:
             regress = True
         if m["kind"] == "embed":
             q = f"{a.get('cos_min', float('nan')):.5f} / {b.get('cos_min', float('nan')):.5f}"
@@ -262,7 +284,11 @@ def main():
             q = f"{a.get('score_max_abs', float('nan')):.5f} / {b.get('score_max_abs', float('nan')):.5f}"
         else:
             q = "-"
-        lines.append(f"| {m['alias']} | {m.get('file')} | {ia} / {ib} | {q} |")
+        sa, sb = a.get("ids_equal_sentencepiece"), b.get("ids_equal_sentencepiece")
+        if sa is not None and sb is not None and sa < sb:
+            regress = True
+        n = len(texts) - len(m.get("excluded_over_length", []))
+        lines.append(f"| {m['alias']} | {m.get('file')} | {n} | {ia} / {ib} | {sa} / {sb} | {q} |")
     (OUT / "summary.md").write_text("\n".join(lines) + "\n")
     log("\n".join(lines))
     sys.exit(1 if regress else 0)
