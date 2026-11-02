@@ -229,7 +229,8 @@ def compare(mode, x, y, drop_cls_x=False):
     """x = native candidate, y = reference (original or native F32)."""
     if mode == "embed":
         cs = [cos(a, b) for a, b in zip(x, y)]
-        return {"min": min(cs), "mean": float(np.mean(cs)), "worst_text": int(np.argmin(cs))}
+        return {"min": min(cs), "mean": float(np.mean(cs)), "worst_text": int(np.argmin(cs)),
+                "per_text": [round(c, 6) for c in cs]}
     if mode == "sparse":
         cs, same = [], 0
         for a, b in zip(x, y):
@@ -237,7 +238,7 @@ def compare(mode, x, y, drop_cls_x=False):
             cs.append(cos([a.get(i, 0.0) for i in k], [b.get(i, 0.0) for i in k]))
             same += set(a) == set(b)
         return {"min": min(cs), "mean": float(np.mean(cs)), "worst_text": int(np.argmin(cs)),
-                "same_term_sets": same, "n": len(cs)}
+                "same_term_sets": same, "n": len(cs), "per_text": [round(c, 6) for c in cs]}
     cs, cls, counts = [], [], 0
     for ti, (a, b) in enumerate(zip(x, y)):
         a = np.asarray(a)
@@ -262,15 +263,17 @@ def compare(mode, x, y, drop_cls_x=False):
 def census(path):
     import gguf
     rd = gguf.GGUFReader(str(path))
-    byt, cnt = {}, {}
+    byt, cnt, el = {}, {}, {}
     for t in rd.tensors:
         if len([d for d in t.shape if d > 1]) < 2:
             continue
         n = t.tensor_type.name.lower()
         byt[n] = byt.get(n, 0) + int(t.n_bytes)
         cnt[n] = cnt.get(n, 0) + 1
-    dom = max(byt, key=byt.get) if byt else None
-    return {"bytes_by_type": byt, "count_by_type": cnt, "dominant": dom}
+        el[n] = el.get(n, 0) + int(t.n_elements)
+    # Dominant type by element count over 2-D weights, as the CUDA audit reads precision.
+    dom = max(el, key=el.get) if el else None
+    return {"bytes_by_type": byt, "count_by_type": cnt, "elements_by_type": el, "dominant": dom}
 
 
 def tensor_groups(path):
@@ -297,13 +300,14 @@ class Evaluator:
         self.f32 = None
         self.rows = []
 
-    def run(self, name, path, recipe=None, keep=False):
+    def run(self, name, path, recipe=None, keep=False, env=None):
         row = {"arm": name, "file": Path(path).name, "recipe": recipe, "bytes": os.path.getsize(path),
                "sha256": sha256(path), "census": census(path), "vs_original": {}, "vs_f32": {}, "wall_s": {}}
         outs = {}
         try:
             for mode in self.cfg["modes"]:
-                v, dt = native(self.cli, path, self.P, mode, self.cfg["query_prefix"])
+                v, dt = native(self.cli, path, self.P, mode, self.cfg["query_prefix"],
+                               env=dict(os.environ, **env) if env else None)
                 outs[mode] = v
                 row["wall_s"][mode] = round(dt, 2)
                 row["vs_original"][mode] = compare(mode, v, self.ref[mode], drop_cls_x=True)
@@ -375,6 +379,9 @@ def sweep(model, cfg, cli, quant, P, C, ref, hfpath):
     ev = Evaluator(model, cfg, cli, quant, P, ref)
     src = prepare_source(model, cfg, cli, hfpath)
     _, ev.f32 = ev.run("source-f32", src, keep=True)
+    if model == "clip":  # A/B of the EOS-preserving truncation fix against the old path
+        ev.run("source-f32 CRISPEMBED_CLIP_TEXT_KEEP_EOS=0 (old truncation)", src,
+               env={"CRISPEMBED_CLIP_TEXT_KEEP_EOS": "0"})
     work = S / "arms"
     work.mkdir(exist_ok=True)
     imat = S / f"{model}.imatrix"
