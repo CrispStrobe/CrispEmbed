@@ -1,3 +1,24 @@
+## CUDA GPU audit follow-ups — 2 November 2026
+
+Source: `docs/gpu-support-matrix.md` §CUDA audit (branch `feat/cuda-audit`, Kaggle T4).
+
+- EasyOCR page lane on **x86 CPU** drops lines that CUDA, Metal and the M1 CPU keep
+  (fox 1/2, scan_strip 7/10 regions; empty text after a 704→576 canvas rebuild).
+  Diagnose with `CRISPEMBED_EASYOCR_DEBUG_REGIONS=1` on hosted x86 CPU (run-5 receipts
+  under `tests/results/gpu-audit/cuda-kaggle/`), fix, A/B against Python EasyOCR.
+- Artifacts below their bar against F32 on both arms: republish/requantize
+  `f2llm-v2-0.6b-q4_k-imatrix`, `clip-text-base-q4_k`; GOT-OCR2 F16 decodes
+  `colorcolor…`; publish a bge-m3 GGUF converted with `--crisp` (sparse/ColBERT heads)
+  and find why its q8_0 ColBERT output is 0.59 vs F16.
+- Stage-diff references that fail on both arms: PP-OCRv6 small rec fox ref, PAN, HAT.
+- Not reached on CUDA: PP-LCNet, CRAFT, TexTeller/Pix2TeX, BERT-NER, LFM2.5-VL, LFM2
+  encoder, Unlimited/DeepSeek-OCR2, Text-SR, SAFMN, face recognition, BiDirLM audio.
+- GPU ports still open (CPU-only graphs): UltraBERT, MoEdern, Josev2B, PP-FormulaNet,
+  MixTeX, HMER/BTTR/PosFormer, FLOVA; `wload` SR family (SwinIR/HAT/DAT/SCUNet/TBSRN/
+  Text-SR/AdaIR) — the PAN/Restormer pattern (weights + sched on the GPU) gave 8-18x.
+- Metal A/B of the new `CRISPEMBED_PAN_GPU` / `CRISPEMBED_RESTORMER_GPU` (CUDA-only
+  defaults until measured there).
+
 ## Metal GPU audit follow-ups — 1 November 2026
 
 Source: `docs/gpu-support-matrix.md` (branch `feat/metal-audit`).
