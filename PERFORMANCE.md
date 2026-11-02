@@ -1,3 +1,24 @@
+## Real-scan OCR quality, native vs original (2 November 2026, Kaggle 4 vCPU)
+
+Twenty real pages: 15 public-domain book, report and table scans from Wikisource/Commons, plus 5 CORD-v2 receipts
+([manifest v2](docs/ocr-real-scans-v2.json)). Metrics follow `tools/kaggle/ocr-real-scans/score.py`, with markup stripped.
+CORD ground truth is partial, so word recall is the receipt metric. Receipts and per-page tables are in
+[summary](tests/results/ocr-real-scans/summary.md). Each arm ran in its own session, and the sessions landed on
+different CPUs (Xeon 2.2 GHz or EPYC 7B12), so **timings are indicative only**.
+
+| engine / arm | pages | scans mean CER / WER / word recall | receipts word recall | IDs = original | median wall s / scan | peak RSS GB |
+|---|---|---|---|---|---|---|
+| Unlimited-OCR-2 native F16, default tiling, fast decoder ([v2](tests/results/ocr-real-scans/native-uocr2-v2.json), `c077c719`) | 14 + 5 | 0.0594 / 0.0544 / 0.961 | 0.533 | 11/19 | 517 (Xeon) | 12.8 |
+| Unlimited-OCR-2 native before the trial fixes ([v1](tests/results/ocr-real-scans/native-uocr2.json)) | 14 + 5 | 0.0600 / 0.0596 / 0.955 | 0.233 | 11/19 | 465 (Xeon) | 12.8 |
+| Unlimited-OCR-2 original PyTorch F32 ([ref](tests/results/ocr-real-scans/ref-uocr2.json)) | 14 + 5 | 0.0589 / 0.0542 / 0.961 | 0.533 | - | 253 (EPYC) | 18.2 |
+| MiniCPM-OCR native F16 ([native](tests/results/ocr-real-scans/native-minicpm.json)) | 15 + 5 | 0.0574 / 0.0635 / 0.945 | 0.944 | 18/20 | 1793 (EPYC) | 5.1 |
+| MiniCPM-OCR original Transformers F32 ([ref](tests/results/ocr-real-scans/ref-minicpm.json)) | 15 + 5 | 0.0574 / 0.0636 / 0.945 | 0.944 | - | 275 (Xeon) | 8.5 |
+
+Unlimited-OCR-2 rows exclude the census-form page. In v2 it failed the sha256 gate because Wikimedia served a
+data-centre-dependent JPEG rendering of the pinned revision. After the fixes, native Unlimited-OCR-2 text equals the
+original on every page with identical IDs. The receipt failures (3 of 5) belong to the source model. Native MiniCPM is on
+par with the original but much slower on CPU (TODO in PLAN: profile it on one host).
+
 ## CUDA GPU audit, Kaggle Tesla T4 (1-2 November 2026, `feat/cuda-audit`)
 
 Same-binary CUDA (`--gpu-backend cuda`) vs CPU (`--gpu-backend cpu`,

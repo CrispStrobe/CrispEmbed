@@ -1,3 +1,24 @@
+## 2 November 2026: Unlimited-OCR-2 trial fixes confirmed on real scans; real-scan manifest v2
+
+- **Trial fixes (merged to main as `8e4fe4a8`, runtime `8ca9d3de`).** The default output is now the original raw decode
+  (`skip_special_tokens=False`). The published GGUFs lack the 831 added pieces, including `<tr>/<td>` and layout markup,
+  so the runtime supplies them as a fallback, and the converter writes them for future conversions. Default tiling follows
+  the original (tiles above 640 px). Bit-exact vision-cache and prefill-chunk changes give 1.03-1.15x. F16 IDs and raw
+  text bytes equal the original on all 4 trial pages
+  ([verify-text-v2](tests/results/unlimited-ocr2/verify-text-v2.json)). Q8_0 differs by 1-3 in one box coordinate on
+  2/4 tiled pages.
+- **Real scans, native re-run** ([native-uocr2-v2](tests/results/ocr-real-scans/native-uocr2-v2.json), Kaggle CPU,
+  `c077c719`). Token IDs are identical to the v1 run, and normalised text equal to the original rose from 10/19 to 14/19
+  pages. Receipt word recall went from 0.233 to 0.533 (original 0.533); receipt-14 from 0.13 to 0.98 and receipt-16 from
+  0.30 to 0.95. Scan mean CER is 0.0594 (original 0.0589). See [summary](tests/results/ocr-real-scans/summary.md).
+- **Manifest v2** ([ocr-real-scans-v2.json](docs/ocr-real-scans-v2.json), `tools/ocr-real-scans/pin_v2.py`). Each
+  Wikimedia image is pinned to its Commons file revision (timestamp and sha1, checked against the API at run time) and
+  fetched from a revision-qualified URL. The kernel fails a page loudly on sha256 mismatch and does not score it. The
+  first v2 run showed that this does not stabilise the census-form thumbnail: Kaggle still received the other rendering of
+  the same revision, and the page was correctly failed. Open: host the exact bytes or render from the pinned DjVu.
+- **Model card** for `cstr/Unlimited-OCR-2-GGUF`: card-only refresh with the real-scan result. The Hub commit is
+  recorded in [publication](tests/results/unlimited-ocr2/publication.json) under `card_update`, and weights are unchanged.
+
 ## 2 November 2026 — EasyOCR x86 CPU dropped lines fixed (fix/easyocr-x86-lines, PR #100)
 
 * Root cause: not a SIMD or ggml-cpu kernel defect. Both BiLSTM layers named their initial
