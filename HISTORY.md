@@ -24,6 +24,45 @@
   registry entries are now described as dense-only.
 - Evidence and negative results: [below-bar summary](tests/results/below-bar/SUMMARY.md).
 
+## 2 November 2026 — OCR quality contract: stale source pins recorded and re-pinned (fix/ocr-quality-contract-pins)
+
+- Initial failure retained: the OCR quality contract failed in runs 41416111941 and
+  41416124827 (`ValueError: Source bytes changed: src/qwen35_math.h`, two errors in
+  `tests/test_qwen35_quality_audit.py`); last success was 38967869242 on 2026-10-16.
+  The workflow only triggered on its own paths, so later source edits were never
+  checked. The auditor stops at the first mismatch; five pins had drifted:
+  `src/qwen35_math.h`, `src/qwen35_linear.cpp` (#81 weight cache), `src/qwen35_ocr.cpp`
+  (#80/#81 and Ovis gates), `src/qwen35_vision.cpp` (#80, 59603adf interpolation) and
+  the diagnostic `tools/quantize.cpp` (other-family quantizer work).
+- Reviewed each diff: every change is behind a default-off gate
+  (`CRISPEMBED_QWEN35_WEIGHT_CACHE`, `CRISPEMBED_OVISOCR2_/OVISOCR3_*`,
+  `CRISPEMBED_QWEN35_VISION_SOURCE_INTERPOLATION`, Ovis2 large-image gates) or keyed on
+  another architecture; the format-1 LightOn default path keeps its arithmetic.
+- The q8/q8-q6/q4 receipts are unchanged. New `tools/qwen35_source_pins.py` records
+  re-pins (previous hash → new hash/blob, changing commits, reason) in
+  `tests/results/qwen35-ocr/source-pin-amendments.json`; the auditor accepts drift only
+  through that chain, and CI verifies every frozen digest is the blob at its receipt's
+  source commit (15 pins). The workflow now also runs on changes to the pinned sources.
+  No inference repeated; no model, gold, budget or default changed.
+
+## 2 November 2026 — WASM divergence origin: layer0 Q mul_mat, then flash attention (op-by-op replay)
+
+* 41441512356 (`wasm-layer0-attention-v1` at `8f7ea115`) replayed every production layer0
+  attention op on native and WASM. It started from the captured norm00 output, which is
+  bit-identical on both. Production kernel profiles were admitted, and weight-free
+  determinism/op-isolation controls passed before model access. Both chains reproduce their
+  captured norm01 input bit-exactly.
+* On identical inputs, all elementwise ops (LN scale/bias, bias adds, residual) are
+  bit-exact. The first differing op is `q_raw` (IQ4_NL x Q8_0 mul_mat, 9.54e-7). `k_raw`,
+  `v_raw` and `o_raw` (same kernel: native llamafile tinyBLAS order vs WASM generic scalar)
+  and `flash_attn_ext` one_chunk (8.94e-7: `ggml_vec_dot_f32`/`ggml_vec_mad_f32` FMA and
+  lane width, scalar `expf`) differ independently. The propagated norm01 difference is
+  1.19e-7.
+* With the FFN replay (IQ4_XS order differs too, and activation quantization amplifies any
+  ~1e-7 difference into the layer3 fc2 failure), no single deterministic op explains the
+  divergence, so no candidate is proposed. Receipt:
+  `tests/results/packaging/wasm-layer0-attention-v1.json`.
+
 ## 2 November 2026: Unlimited-OCR-2 trial fixes confirmed on real scans; real-scan manifest v2
 
 - **Trial fixes (merged to main as `8e4fe4a8`, runtime `8ca9d3de`).** The default output is now the original raw decode
