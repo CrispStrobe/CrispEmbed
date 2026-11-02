@@ -434,7 +434,14 @@ def run_recipes(model, cfg, cli, quant, P, C, ref, hfpath):
                 continue
         else:
             try:
-                quantize(quant, src, dst, rc["qtype"], imat if rc.get("imatrix") else None, rc.get("overrides", ()))
+                if rc.get("dequant_from"):  # same quantized weights, stored F16 (F16 matmuls)
+                    mid = S / "cand-mid.gguf"
+                    quantize(quant, src, mid, rc["dequant_from"], imat if rc.get("imatrix") else None)
+                    quantize(quant, mid, dst, "f16")
+                    mid.unlink(missing_ok=True)
+                else:
+                    quantize(quant, src, dst, rc["qtype"], imat if rc.get("imatrix") else None,
+                             rc.get("overrides", ()))
             except RuntimeError as e:
                 ev.rows.append({"arm": rc["name"], "error": str(e)[:1500]})
                 continue

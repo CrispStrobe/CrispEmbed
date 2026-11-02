@@ -126,43 +126,50 @@
   ]
  },
  "bgem3": {
-  "env_arms": {
-   "CRISPEMBED_SPARSE_KEEP_SPECIAL=1 (old sparse)": {
-    "CRISPEMBED_SPARSE_KEEP_SPECIAL": "1"
-   },
-   "CRISPEMBED_SPM_COLLAPSE_SPACES=0 (old whitespace)": {
-    "CRISPEMBED_SPM_COLLAPSE_SPACES": "0"
-   }
-  },
+  "env_arms": {},
   "recipes": [
    {
-    "name": "q8_0",
-    "qtype": "q8_0",
-    "overrides": []
+    "name": "q8_0 -> f16 (dequantised Q8_0 weights)",
+    "dequant_from": "q8_0"
    },
    {
-    "name": "q8_0; enc.23 f16",
+    "name": "q8_0; enc.0 f16",
     "qtype": "q8_0",
     "overrides": [
-     "enc.23.*=f16"
+     "enc.0.*=f16"
     ]
    },
    {
-    "name": "q8_0; enc.12-23 f16",
+    "name": "q8_0; enc.0-2 f16",
     "qtype": "q8_0",
     "overrides": [
-     "enc.12.*=f16",
-     "enc.13.*=f16",
-     "enc.14.*=f16",
-     "enc.15.*=f16",
-     "enc.16.*=f16",
-     "enc.17.*=f16",
-     "enc.18.*=f16",
-     "enc.19.*=f16",
-     "enc.20.*=f16",
-     "enc.21.*=f16",
-     "enc.22.*=f16",
-     "enc.23.*=f16"
+     "enc.0.*=f16",
+     "enc.1.*=f16",
+     "enc.2.*=f16"
+    ]
+   },
+   {
+    "name": "q8_0; enc.0-5 f16",
+    "qtype": "q8_0",
+    "overrides": [
+     "enc.0.*=f16",
+     "enc.1.*=f16",
+     "enc.2.*=f16",
+     "enc.3.*=f16",
+     "enc.4.*=f16",
+     "enc.5.*=f16"
+    ]
+   },
+   {
+    "name": "q8_0; enc.6-11 f16",
+    "qtype": "q8_0",
+    "overrides": [
+     "enc.6.*=f16",
+     "enc.7.*=f16",
+     "enc.8.*=f16",
+     "enc.9.*=f16",
+     "enc.10.*=f16",
+     "enc.11.*=f16"
     ]
    },
    {
@@ -184,31 +191,56 @@
     ]
    },
    {
-    "name": "q8_0; attn f16",
+    "name": "q8_0; ffn.fc2 f16",
     "qtype": "q8_0",
     "overrides": [
-     "*.attn.q.weight=f16",
-     "*.attn.k.weight=f16",
-     "*.attn.v.weight=f16",
-     "*.attn.o.weight=f16"
-    ]
-   },
-   {
-    "name": "q8_0; ffn f16",
-    "qtype": "q8_0",
-    "overrides": [
-     "*.ffn.fc1.weight=f16",
      "*.ffn.fc2.weight=f16"
     ]
    },
    {
-    "name": "q4_k+im",
-    "qtype": "q4_k",
-    "imatrix": true,
-    "overrides": []
+    "name": "q8_0; enc.0-11 ffn.fc2 f16",
+    "qtype": "q8_0",
+    "overrides": [
+     "enc.0.ffn.fc2.weight=f16",
+     "enc.1.ffn.fc2.weight=f16",
+     "enc.2.ffn.fc2.weight=f16",
+     "enc.3.ffn.fc2.weight=f16",
+     "enc.4.ffn.fc2.weight=f16",
+     "enc.5.ffn.fc2.weight=f16",
+     "enc.6.ffn.fc2.weight=f16",
+     "enc.7.ffn.fc2.weight=f16",
+     "enc.8.ffn.fc2.weight=f16",
+     "enc.9.ffn.fc2.weight=f16",
+     "enc.10.ffn.fc2.weight=f16",
+     "enc.11.ffn.fc2.weight=f16"
+    ]
    },
    {
-    "name": "q4_k+im; attn,ffn.fc2 q8_0",
+    "name": "q4_k+im -> f16 (dequantised Q4_K weights)",
+    "dequant_from": "q4_k",
+    "imatrix": true
+   },
+   {
+    "name": "q4_k+im; enc.0-11 f16",
+    "qtype": "q4_k",
+    "imatrix": true,
+    "overrides": [
+     "enc.0.*=f16",
+     "enc.1.*=f16",
+     "enc.2.*=f16",
+     "enc.3.*=f16",
+     "enc.4.*=f16",
+     "enc.5.*=f16",
+     "enc.6.*=f16",
+     "enc.7.*=f16",
+     "enc.8.*=f16",
+     "enc.9.*=f16",
+     "enc.10.*=f16",
+     "enc.11.*=f16"
+    ]
+   },
+   {
+    "name": "q4_k+im; enc.0-5 f16; attn,fc2 q8_0",
     "qtype": "q4_k",
     "imatrix": true,
     "overrides": [
@@ -216,7 +248,13 @@
      "*.attn.k.weight=q8_0",
      "*.attn.v.weight=q8_0",
      "*.attn.o.weight=q8_0",
-     "*.ffn.fc2.weight=q8_0"
+     "*.ffn.fc2.weight=q8_0",
+     "enc.0.*=f16",
+     "enc.1.*=f16",
+     "enc.2.*=f16",
+     "enc.3.*=f16",
+     "enc.4.*=f16",
+     "enc.5.*=f16"
     ]
    }
   ]
