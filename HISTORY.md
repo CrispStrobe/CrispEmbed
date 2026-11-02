@@ -1,3 +1,22 @@
+## 2 November 2026 — WASM layer3 FFN mul_mat: kernel order ruled out (same-input replay)
+
+* 41438394031 (`wasm-layer3-ffn-matmul-v1` at `295d7e79`) completed and exited1 on numbers.
+  Native (x86 AVX2/FMA, llamafile) and WASM (simd128) probes built with kernel-file
+  arithmetic profiles equal to the production full inventories. Before model access, an
+  authored-weight selftest reproduced both orders bit-exactly through the real ggml graph:
+  fc1 IQ4_NL x Q8_0 = llamafile tinyBLAS natively vs `vec_dot_iq4_nl_q8_0_generic` on WASM;
+  fc2 IQ4_XS x Q8_K = AVX2 `vec_dot_iq4_xs_q8_K` vs generic. Both sides then reproduced
+  their own captured fc1_raw/fc2_raw bytes from run 41432135298.
+* On identical inputs, WASM vs native kernels differ by at most 1.43e-6 (fc1) and 9.54e-7
+  (fc2), and identical inputs quantize to identical Q8 bytes. The native kernel fed the
+  WASM-captured inputs reproduces the full natural error (fc1 5.73e-4, fc2 0.00331, fails
+  0.002). Cause: inherited input differences of about 1e-6 change one fc1 Q8_0 block scale
+  (one FP16 rounding step) and 38 fc2 Q8_K scales plus 3 quantized values.
+* A native-order WASM kernel (exact int lanes, `fmaf`, AVX2 hsum order) was emulated. It is
+  bit-exact with native on the same input but leaves the natural error unchanged, so no
+  default-off candidate is proposed. Receipt:
+  `tests/results/packaging/wasm-layer3-ffn-matmul-v1.json`.
+
 ## 2 November 2026 — GOT-OCR2 F16 `colorcolor…` root cause (fix/got-ocr2-f16)
 
 Hosted CPU reproduces the CUDA-audit result: published F16 decodes `colorcolorcolor:,,};…` on fox,

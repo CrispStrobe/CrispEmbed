@@ -313,19 +313,24 @@ handoff take precedence over historical commands.
 1. Inspect the two already queued jobs: Unlimited40868634374 and
    Ultra40871150002. Verify exact source/attempt and collect small reports after
    completion; do not duplicate them. Keep models/raw arrays remote.
-2. WASM live norm (branch `fix/wasm-live-norm-component-inventory-20261102`):
-   the one-sentence attribution is complete (v4 run41432135298) and is a
-   numerical negative. All 208 same-input norm replays are bit-exact.
-   Natural comparisons: 132/196 pass. Error stays at or below 1.9e-6 until it
-   rises about 300x at layer3 FC1 (fc1_raw 5.73e-4) and first fails at fc2_raw
-   (0.00331, cosine 0.99999569). Results are identical for gate 0/1 and threads
-   1/2. The norm is not the source. Next: a same-input replay of the layer3
-   FC1/FC2 matmul (WASM-captured inputs, frozen quantized weights, native vs
-   WASM mul_mat) to separate kernel accumulation order from propagation. No
-   default, gate or budget change and no ten-case retry. Receipts:
+2. WASM layer3 divergence (branch `fix/wasm-live-norm-component-inventory-20261102`):
+   attribution is complete through the FFN matmuls. v4 run41432135298: all 208
+   same-input norm replays are bit-exact, and the first budget failure is
+   layer3 fc2_raw (0.00331). Same-input FFN replay run41438394031: kernel
+   accumulation order contributes at most 1.43e-6 (fc1 IQ4_NL: tinyBLAS vs
+   generic) and 9.54e-7 (fc2 IQ4_XS: AVX2 vs generic). Identical inputs give
+   identical Q8 bytes. The error is inherited input (about 1e-6) amplified by
+   activation quantization: one fc1 Q8_0 FP16 scale step, and 38 fc2 Q8_K
+   scales plus 3 values. The emulated native-order WASM kernel is bit-exact on
+   the same input but leaves the natural error unchanged, so no candidate is
+   proposed. Next: apply the same same-input crosswise method to the earliest
+   bit-differing op (norm01 input 1.19e-7, i.e. layer0 attention/FFN) to find
+   where the first bit difference originates. No default, gate or budget change
+   and no ten-case retry. Receipts:
    [v2](tests/results/packaging/wasm-live-norm-v2-component-admission.json),
    [v3](tests/results/packaging/wasm-live-norm-v3-observer.json),
-   [v4](tests/results/packaging/wasm-live-norm-v4-attribution.json).
+   [v4](tests/results/packaging/wasm-live-norm-v4-attribution.json),
+   [FFN](tests/results/packaging/wasm-layer3-ffn-matmul-v1.json).
 3. Independently review MoE real-router source81fa4e26, then execute its
    component-only replay using exact-v4 attached captures. No whole-model or
    original forward. Require own-byte controls before cross-input conclusions.
