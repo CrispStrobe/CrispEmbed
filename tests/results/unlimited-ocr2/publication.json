@@ -60,7 +60,10 @@
     },
     "README.md": "e84d2c04f20c7d082a7f314a15dee49837caba221d9102826b83ceee9255fef6",
     "manifest.json": "7b411a88afafd253b4b660fa8625b039b8343471acb2b0c38d9f3c56ff207142",
-    "reason": "Four original-F16 synthetic tiled cases match full raw token IDs/text; documented831 added-token runtime fallback; weights unchanged."
+    "reason": "Four original-F16 synthetic tiled cases match full raw token IDs/text; documented831 added-token runtime fallback; weights unchanged.",
+    "date": "2026-10-28T18:15:39Z",
+    "provenance": "not recorded here at the time; registered run 40732344399 was cancelled in the runner queue before any step. Reviewed 2026-11-02: README/manifest bytes equal main's card renderer output (a1ccc1c1) for the e3af0c0c weights.",
+    "reason_main": "original raw decode/added-token fallback, original tiling, F16/Q8 trial limits; weights unchanged"
   },
   "card_update_history": [
     {
@@ -68,6 +71,14 @@
       "reason": "tiled pages token-ID exact after tile-token fix 595156ea; weights unchanged (aliases pin e3af0c0c)",
       "README.md": "1ebf03926c28bd234410c03f3606e88b254d936145530c2d3968b16002cca68a",
       "manifest.json": "4dfcddcb9cb601194fa851bf499eea6093bf795d6a2db6560dc36b78f5374a34"
+    },
+    {
+      "hub_commit": "e39412255db0fc67952c8614cd03438822cf0957",
+      "date": "2026-10-28T18:15:39Z",
+      "reason": "original raw decode/added-token fallback, original tiling, F16/Q8 trial limits; weights unchanged",
+      "provenance": "not recorded here at the time; registered run 40732344399 was cancelled in the runner queue before any step. Reviewed 2026-11-02: README/manifest bytes equal main's card renderer output (a1ccc1c1) for the e3af0c0c weights.",
+      "README.md": "e84d2c04f20c7d082a7f314a15dee49837caba221d9102826b83ceee9255fef6",
+      "manifest.json": "7b411a88afafd253b4b660fa8625b039b8343471acb2b0c38d9f3c56ff207142"
     }
   ]
 }

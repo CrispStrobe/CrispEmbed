@@ -1,7 +1,8 @@
-"""Kaggle CPU kernel: OCR quality on REAL scans (docs/ocr-real-scans-v1.json).
+"""Kaggle CPU kernel: OCR quality on REAL scans (docs/ocr-real-scans-v2.json; v1 receipts used v1).
 
 Clones CrispEmbed at @COMMIT@, fetches every page image by URL (or CORD-v2 parquet row) and verifies its
-sha256, then runs one MODE (@MODE@; the same file is pushed once per mode so the four arms run in parallel
+sha256 (v2: also checks the pinned Commons file revision; a page whose bytes do not match is FAILED loudly
+and not run), then runs one MODE (@MODE@; the same file is pushed once per mode so the four arms run in parallel
 sessions):
   native-uocr2   published alias `unlimited-ocr2` (F16), fast decoder, gundam tiles (the original default)
   native-minicpm published alias `minicpm-ocr` (F16), prompt "Text Recognition:"
@@ -30,12 +31,13 @@ sh(PY, '-m', 'pip', 'install', '-q', 'pillow==11.3.0', 'numpy==2.2.6', 'pyarrow=
 sh(sys.executable, '-m', 'pip', 'install', '-q', 'rapidfuzz==3.9.7')
 sys.path.insert(0, 'tools/kaggle/ocr-real-scans')
 NT = str(os.cpu_count())
-manifest = json.load(open('docs/ocr-real-scans-v1.json'))
+MANIFEST = 'docs/ocr-real-scans-v2.json'
+manifest = json.load(open(MANIFEST))
 from receipt import select_pages
 selected_pages = select_pages(manifest, PAGE_IDS)
-report = dict(schema='crispembed-ocr-real-scans-run-v1', mode=MODE, commit=COMMIT, cpu_count=os.cpu_count(), images=[], runs=[],
+report = dict(schema='crispembed-ocr-real-scans-run-v1', mode=MODE, commit=COMMIT, manifest=MANIFEST, failed_pages=[], cpu_count=os.cpu_count(), images=[], runs=[],
               scope=dict(full_manifest=not PAGE_IDS, selected_page_ids=[p['id']for p in selected_pages],
-                         manifest_sha256=hashlib.sha256(open('docs/ocr-real-scans-v1.json','rb').read()).hexdigest()),
+                         manifest_sha256=hashlib.sha256(open(MANIFEST,'rb').read()).hexdigest()),
               pages_meta={p['id']: dict(priority=p['priority'], tags=p['tags'], max_tokens=p['max_tokens']) for p in manifest['pages']})
 try:
     report['cpu_model'] = next(l.split(':', 1)[1].strip() for l in open('/proc/cpuinfo') if l.startswith('model name'))
@@ -77,13 +79,24 @@ for p in selected_pages:
                                   parquets[hp['url']], str(hp['row'])], capture_output=True, check=True).stdout
             data = out
         else:
-            data = fetch(im['url'])
+            if 'revision' in im:   # v2: the Commons file must still be the pinned revision
+                pg = next(iter(json.loads(fetch(im['revision']['api']))['query']['pages'].values()))['imageinfo'][0]
+                rec['revision_ok'] = (pg['sha1'], pg['timestamp']) == (im['revision']['file_sha1'], im['revision']['timestamp'])
+                if not rec['revision_ok']:
+                    rec['revision_seen'] = dict(file_sha1=pg['sha1'], timestamp=pg['timestamp'])
+            for url in [im['url']] + im.get('fallback_urls', []):
+                data = fetch(url); rec['fetched_url'] = url
+                if hashlib.sha256(data).hexdigest() == im['sha256']: break
         rec['sha256'] = hashlib.sha256(data).hexdigest(); rec['sha256_ok'] = rec['sha256'] == im['sha256']
+        if not rec['sha256_ok'] or rec.get('revision_ok') is False:
+            raise RuntimeError(f"PINNED IMAGE MISMATCH for {p['id']}: got sha256 {rec['sha256']}, expected {im['sha256']}"
+                               f", revision_ok={rec.get('revision_ok')}; page FAILED, not run")
         admit_image(data, im)  # Reject before admitting a page to either inference arm.
         path = f"{OUT}/input-images/{p['id']}.jpg"; open(path, 'wb').write(data)
         pages.append(dict(id=p['id'], path=path, max_tokens=p['max_tokens'], gt=p['ground_truth'], priority=p['priority']))
     except Exception as e:
-        rec['error'] = repr(e)[:500]
+        rec['error'] = repr(e)[:500]; report['failed_pages'].append(p['id'])
+        print('!' * 100 + f"\nFAILED PAGE {p['id']}: {rec['error']}\n" + '!' * 100, flush=True)
     report['images'].append(rec); print('image', rec, flush=True)
 save()
 from score import score  # noqa: E402  (rapidfuzz may be absent in the Kaggle base python: pure-python fallback)
