@@ -117,7 +117,65 @@ Decoded agreement is a separate free-running run in the same process.
 "Worst stage" is the lowest of the vision-merger rows, the prefill
 final-norm rows and the first 32 decode final-norm states.
 
-RESCORE_TABLE
+### TeleOCR (reference: CPU F16, F32 compute; 6 cases)
+
+| Precision | Device | Final-output cosine (worst case) | Bar | Pass | Decoded exact | First divergence | Worst stage |
+|---|---|---|---|---|---|---|---|
+| f16 | gpu | 0.999883 (table) | > 0.98 | yes | 6/6 | - | code prefill_final_norm(row) 0.8952 |
+| f16 | metal | 0.999997 (table) | > 0.98 | yes | 6/6 | - | code prefill_final_norm(row) 0.9983 |
+| q4_k | cpu | 0.815384 (formula) | > 0.94 | no | 5/6 | code@364 | code prefill_final_norm(row) 0.5539 |
+| q4_k | gpu | 0.873399 (formula) | > 0.94 | no | 5/6 | code@364 | synthetic prefill_final_norm(row) 0.5501 |
+| q4_k | metal | 0.835997 (formula) | > 0.94 | no | 5/6 | code@364 | code prefill_final_norm(row) 0.5545 |
+| q4_k-attn8 | cpu | 0.852627 (formula) | > 0.94 | no | 4/6 | table@35, code@364 | code prefill_final_norm(row) 0.5554 |
+| q4_k-attn8 | gpu | 0.843844 (formula) | > 0.94 | no | 5/6 | code@364 | text prefill_final_norm(row) 0.5518 |
+| q4_k-attn8 | metal | 0.866214 (formula) | > 0.94 | no | 5/6 | code@364 | code prefill_final_norm(row) 0.5561 |
+| q4_k-m | cpu | 0.904747 (layout) | > 0.94 | no | 6/6 | - | code prefill_final_norm(row) 0.9012 |
+| q4_k-m | gpu | 0.921535 (layout) | > 0.94 | no | 6/6 | - | code prefill_final_norm(row) 0.8765 |
+| q4_k-m | metal | 0.904728 (layout) | > 0.94 | no | 6/6 | - | code prefill_final_norm(row) 0.9012 |
+| q8_0 | cpu | 0.998452 (layout) | > 0.97 | yes | 6/6 | - | code prefill_final_norm(row) 0.9910 |
+| q8_0 | gpu | 0.993890 (formula) | > 0.97 | yes | 6/6 | - | code prefill_final_norm(row) 0.8939 |
+| q8_0 | metal | 0.998480 (layout) | > 0.97 | yes | 6/6 | - | code prefill_final_norm(row) 0.9910 |
+
+TeleOCR F16 on CPU is the reference itself. Every Q4_K recipe (plain, ATTN8,
+the published Q4_K_M) misses 0.94 on all three devices with near-identical
+scores; the lowest positions are confident steps (top-2 margin 14-23 logits,
+argmax unchanged) whose full-vocabulary logit tail moves. CPU/Metal/CUDA
+numbers for one recipe agree within 0.02-0.04, so runtime is not the limit.
+
+### MinerU2.5-Pro (reference: CPU F32; 8 cases)
+
+| Precision | Device | Final-output cosine (worst case) | Bar | Pass | Decoded exact | First divergence | Worst stage |
+|---|---|---|---|---|---|---|---|
+| f16 | cpu | 1.000000 (japanese) | > 0.98 | yes | 8/8 | - | german prefill_final_norm(row) 1.0000 |
+| f16 | gpu | 0.999946 (german) | > 0.98 | yes | 8/8 | - | german prefill_final_norm(row) 0.8647 |
+| f16 | metal | 1.000000 (german) | > 0.98 | yes | 8/8 | - | german prefill_final_norm(row) 0.9996 |
+| q4_k | cpu | 0.914481 (japanese) | > 0.94 | no | 6/8 | german@3, arabic@4 | german prefill_final_norm(row) 0.2888 |
+| q4_k | gpu | 0.923131 (japanese) | > 0.94 | no | 6/8 | german@3, arabic@4 | german prefill_final_norm(row) 0.2818 |
+| q4_k | metal | 0.924067 (japanese) | > 0.94 | no | 6/8 | german@3, arabic@4 | german prefill_final_norm(row) 0.7962 |
+| q4_k-df16 | cpu | 0.999372 (japanese) | > 0.94 | yes | 7/8 | layout-page@180 | german prefill_final_norm(row) 0.2902 |
+| q4_k-df16 | gpu | 0.998766 (japanese) | > 0.94 | yes | 7/8 | layout-page@180 | german prefill_final_norm(row) 0.2820 |
+| q4_k-df16 | metal | 0.999787 (japanese) | > 0.94 | yes | 8/8 | - | german prefill_final_norm(row) 0.8028 |
+| q4_k-dq8 | cpu | 0.998114 (german) | > 0.94 | yes | 8/8 | - | german prefill_final_norm(row) 0.2896 |
+| q4_k-dq8 | gpu | 0.998809 (japanese) | > 0.94 | yes | 7/8 | layout-page@180 | german prefill_final_norm(row) 0.2803 |
+| q4_k-dq8 | metal | 0.999585 (japanese) | > 0.94 | yes | 8/8 | - | german prefill_final_norm(row) 0.8020 |
+| q4_k-vf16 | cpu | 0.925344 (japanese) | > 0.94 | no | 6/8 | german@3, arabic@4 | layout-rot90 prefill_final_norm(row) 0.9607 |
+| q4_k-vf16 | gpu | 0.939804 (japanese) | > 0.94 | no | 5/8 | german@3, arabic@4, layout-page@38 | german prefill_final_norm(row) 0.8410 |
+| q4_k-vf16 | metal | 0.930233 (japanese) | > 0.94 | no | 6/8 | german@3, arabic@4 | arabic prefill_final_norm(row) 0.9613 |
+| q8_0 | cpu | 0.998803 (german) | > 0.97 | yes | 8/8 | - | layout-rot90 prefill_final_norm(row) 0.9984 |
+| q8_0 | gpu | 0.999314 (japanese) | > 0.97 | yes | 8/8 | - | german prefill_final_norm(row) 0.8575 |
+| q8_0 | metal | 0.999838 (german) | > 0.97 | yes | 8/8 | - | german prefill_final_norm(row) 0.9993 |
+
+"q4_k-dq8" and "q4_k-df16" pass but contain no Q4_K tensor (the quantizer
+floors vision at Q8_0 and the override keeps the whole decoder at Q8_0/F16).
+Recipes with Q4_K decoder matrices ("q4_k", "q4_k-vf16") fail on every device
+and flip German at token 3 and Arabic at token 4 everywhere. Layout-page
+token 180 (CPU df16, CUDA dq8/df16) is a near-tie: the F32 reference's top-2
+margin there is 0.024 logits (IDs 22 vs 23), with logit cosine 1.0. Worst
+stage: the German prompt final-norm row falls to 0.28-0.29 for every Q8_0
+vision recipe on CPU and CUDA (int8 / half activation handling) but stays at
+0.80 on Metal with F32-activation kernels; CUDA F16/Q8_0 show 0.86 on the
+same row (CUDA half-precision activations), Metal 0.9996.
+
 
 ## Metal precision traps checked
 
