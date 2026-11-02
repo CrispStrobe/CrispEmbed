@@ -25,14 +25,17 @@ differs from the old file only inside that span. Stage diff is cos 1.000000 on a
 
 Source: `docs/gpu-support-matrix.md` §CUDA audit (branch `feat/cuda-audit`, Kaggle T4).
 
-- EasyOCR page lane on **x86 CPU** drops lines that CUDA, Metal and the M1 CPU keep
-  (fox 1/2, scan_strip 7/10 regions; empty text after a 704→576 canvas rebuild).
-  Run 5 isolated it: on x86 every region whose canvas is smaller than the previous
-  graph build returns empty text (conf 0), at -t 1 too; `EASYOCR_WIDTH_SORT=1` avoids it.
-  Next: on hosted x86 CPU, check whether an op reads unwritten gallocr memory after a
-  shrinking rebuild (e.g. zero the compute buffer after alloc as an A/B), fix the root cause,
-  then A/B against Python EasyOCR. Do not flip WIDTH_SORT as the fix (a second page still
-  shrinks).
+- EasyOCR x86 CPU dropped lines: **fixed in PR #100** (second BiLSTM layer's initial
+  state never reset; see HISTORY 2 November). Still open: native page crops vs Python
+  EasyOCR's own recognizer on the same crops agree on 1/2 (fox), 6/11 (scan_strip),
+  21/36 (scan_page_pd) lines; every difference is punctuation/spacing on a low-confidence
+  line, and the same on CUDA/Metal (pre-existing). Confidences differ too (fox line 2
+  0.60 native vs 0.95 Python), which points at crop/resize preprocessing in
+  `Reader.recognize` (e.g. `int()` vs `ceil()` resized width) rather than the recognizer,
+  which matches Python per stage. Next: dump Python's per-crop recognizer input and diff
+  `input_image` with test-easyocr-diff. Also: scan_page_pd's page output differs between
+  the M1 (b3318ffa) and x86/CUDA (ad8d340b) on both the fixed and legacy paths, so it is
+  not caused by this fix; attribute it (DBNet boxes vs recognizer).
 - Artifacts below their bar against F32 on both arms: republish/requantize
   `f2llm-v2-0.6b-q4_k-imatrix`, `clip-text-base-q4_k`; GOT-OCR2 F16: root cause found
   (see GOT-OCR2 F16 below); publish a bge-m3 GGUF converted with `--crisp` (sparse/ColBERT heads)

@@ -1,0 +1,47 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "easyocr-english-g2-f16.gguf",
+  "fox-line1.png",
+  "fox-line2.png"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {
+    "CRISPEMBED_EASYOCR_LSTM_STATE_RESET": "0"
+   },
+   "wall_s": [
+    1.618
+   ],
+   "gpu_mem_peak_mib": 147,
+   "cuda_used": true,
+   "rc": 1,
+   "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n",
+   "stdout_sha256": "f126555218db3b658391e7601b64df2d5f4367d8eedbf79ab5a3a8c2853d06fb",
+   "stdout": "poison=1 lstm_state_reset=0\nstep=0 image=$SCRATCH/models/fox-line2.png canvas=896 reused=\"\" conf=0.000000 fresh=\"\" conf=0.000000 FAIL\nstep=1 image=$SCRATCH/models/fox-line1.png canvas=640 reused=\"\" conf=0.000000 fresh=\"\" conf=0.000000 FAIL\nstep=2 image=$SCRATCH/models/fox-line2.png canvas=576 reused=\"\" conf=0.000000 fresh=\"\" conf=0.000000 FAIL\nstep=3 image=$SCRATCH/models/fox-line2.png canvas=896 reused=\"\" conf=0.000000 fresh=\"\" conf=0.000000 FAIL\nstep=4 image=$SCRATCH/models/fox-line2.png canvas=576 reused=\"\" conf=0.000000 fresh=\"\" conf=0.000000 FAIL\neasyocr-width-shrink steps=5 failures=5 FAIL\n"
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {
+    "CRISPEMBED_EASYOCR_LSTM_STATE_RESET": "0"
+   },
+   "wall_s": [
+    3.179
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 1,
+   "stderr_tail": "ggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\n",
+   "stdout_sha256": "f126555218db3b658391e7601b64df2d5f4367d8eedbf79ab5a3a8c2853d06fb",
+   "stdout": "poison=1 lstm_state_reset=0\nstep=0 image=$SCRATCH/models/fox-line2.png canvas=896 reused=\"\" conf=0.000000 fresh=\"\" conf=0.000000 FAIL\nstep=1 image=$SCRATCH/models/fox-line1.png canvas=640 reused=\"\" conf=0.000000 fresh=\"\" conf=0.000000 FAIL\nstep=2 image=$SCRATCH/models/fox-line2.png canvas=576 reused=\"\" conf=0.000000 fresh=\"\" conf=0.000000 FAIL\nstep=3 image=$SCRATCH/models/fox-line2.png canvas=896 reused=\"\" conf=0.000000 fresh=\"\" conf=0.000000 FAIL\nstep=4 image=$SCRATCH/models/fox-line2.png canvas=576 reused=\"\" conf=0.000000 fresh=\"\" conf=0.000000 FAIL\neasyocr-width-shrink steps=5 failures=5 FAIL\n"
+  }
+ },
+ "precision": "f16",
+ "bar": 0.98,
+ "seconds": 5.0,
+ "id": "easyocr-width-shrink-legacy",
+ "commit": "43d055729b107320d95094932e83a71e457ab6f2",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-02"
+}

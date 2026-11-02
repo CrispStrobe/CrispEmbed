@@ -1,0 +1,2 @@
+[easyocr-region] i=0 crop=486x48 canvas=704 len=25 conf=0.8165 text=The quick brown fox jumps
+[easyocr-region] i=1 crop=451x51 canvas=576 len=24 conf=0.7018 text=over the lazy dog. 12345

@@ -469,7 +469,29 @@ def batch_e():
     return jobs
 
 
-BATCHES = {"a": batch_a, "b": batch_b, "all": lambda: batch_a() + batch_b(), "rest": batch_rest, "c": batch_c, "d": batch_d, "e": batch_e}
+def batch_f():
+    """Run 6 (fix/easyocr-x86-lines): the BiLSTM initial-state reset fix on CUDA and the x86 CPU of the same
+    build. Default (all states reset) vs legacy CRISPEMBED_EASYOCR_LSTM_STATE_RESET=0, a NaN-poisoned compute
+    buffer, and the decreasing-width regression test."""
+    legacy = {"CRISPEMBED_EASYOCR_LSTM_STATE_RESET": "0"}
+    poison = {"CRISPEMBED_EASYOCR_POISON_COMPUTE": "1"}
+    dbg = {"CRISPEMBED_EASYOCR_DEBUG_REGIONS": "1"}
+    arms = (("cuda", "cuda", dbg), ("cuda-legacy", "cuda", {**dbg, **legacy}),
+            ("cuda-poison", "cuda", {**dbg, **poison}), ("cpu-legacy", "cpu", {**dbg, **legacy}),
+            ("cpu", "cpu", dbg))
+    jobs = []
+    for img in ("fox", "scan_strip", "scan_page_pd"):
+        jobs.append(cmd(f"easyocr-fix.{img}", ["-t", "@NT", "--json", "-m", "@M:easyocr", "--ocr-pipeline",
+                                               f"{IMG}/{img}.png", "--ocr-engine", "easyocr", "--ocr-det",
+                                               "@M:dbnet", "--ocr-rec", "@M:easyocr"], arms=arms, repeat=1))
+    for name, env in (("default", {}), ("legacy", legacy)):
+        jobs.append(cmd(f"easyocr-width-shrink-{name}", ["@M:easyocr", "@M:fox-line1", "@M:fox-line2"],
+                        arms=(("cuda", "cuda", env), ("cpu", "cpu", env)), repeat=1,
+                        binary="test-easyocr-width-shrink"))
+    return jobs
+
+
+BATCHES = {"a": batch_a, "b": batch_b, "all": lambda: batch_a() + batch_b(), "rest": batch_rest, "c": batch_c, "d": batch_d, "e": batch_e, "f": batch_f}
 
 
 def jobs_for(batch):

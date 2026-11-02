@@ -556,6 +556,8 @@ target_include_directories(test-hparam-keys PRIVATE ${CMAKE_SOURCE_DIR}/src)
 
 add_executable(test-unlimited-ocr2-tiles tests/test_unlimited_ocr2_tiles.cpp)
 target_include_directories(test-unlimited-ocr2-tiles PRIVATE ${CMAKE_SOURCE_DIR}/src)
+add_executable(test-unlimited-ocr2-text tests/test_unlimited_ocr2_text.cpp)
+target_include_directories(test-unlimited-ocr2-text PRIVATE ${CMAKE_SOURCE_DIR}/src ${CMAKE_SOURCE_DIR}/tests)
 add_executable(test-minicpm-ocr-tiles tests/test_minicpm_ocr_tiles.cpp)
 target_include_directories(test-minicpm-ocr-tiles PRIVATE ${CMAKE_SOURCE_DIR}/src)
 
@@ -607,6 +609,10 @@ target_link_libraries(test-easyocr-postprocess PRIVATE crispembed)
 
 add_executable(test-easyocr-pipeline tests/test_easyocr_pipeline.cpp)
 target_link_libraries(test-easyocr-pipeline PRIVATE crispembed)
+
+add_executable(test-easyocr-width-shrink tests/test_easyocr_width_shrink.cpp)
+target_include_directories(test-easyocr-width-shrink PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+target_link_libraries(test-easyocr-width-shrink PRIVATE crispembed)
 
 add_executable(test-easyocr-craft-diff tests/test_easyocr_craft_diff.cpp)
 target_include_directories(test-easyocr-craft-diff PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
