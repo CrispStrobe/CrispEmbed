@@ -34,7 +34,8 @@
   "recipes": {
     "F32": {"filename": "minicpm-ocr-1.0-f32.gguf", "from": "convert", "convert_args": ["--dtype", "f32"]},
     "F16": {"filename": "minicpm-ocr-1.0-f16.gguf", "from": "convert", "convert_args": ["--dtype", "f16"]},
-    "Q8_0": {"filename": "minicpm-ocr-1.0-q8_0.gguf", "from": "F32", "type": "q8_0", "tensor_type": [],
+    "Q8_0": {"filename": "minicpm-ocr-1.0-q8_0.gguf", "from": "F16", "type": "q8_0", "tensor_type": [],
+             "from_note": "Quantized from the F16 GGUF exactly as qualified in the precision receipt: crispembed-quantize flattens 4-D F32 tensors, which the runtime rejects for v.emb.patch_embedding.weight.",
              "precision_receipt": "tests/results/minicpm-ocr/bench.json", "precision_dtype": "q8_0"}
   },
   "receipts": {
@@ -45,7 +46,7 @@
   "qualification": {
     "default_enabled": false,
     "receipts_precision": "F32 and F16 conversions, 5 cases, token-ID exact vs Transformers 5.21.0 (CPU, greedy)",
-    "q8_0": "publishable only when the precision receipt shows every q8_0 case token-ID exact; otherwise F16 only",
+    "q8_0": "publishable only when the precision receipt shows every q8_0 case token-ID exact; tests/results/minicpm-ocr/bench.json (b42e094d) shows 5/5 exact at 2 and 4 threads",
     "registry_alias": "TODO(follow-up after upload): add a registry alias with the real published SHA256; none is added here"
   }
 }

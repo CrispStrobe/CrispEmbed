@@ -114,22 +114,18 @@ def precision(cfg, variant, root=ROOT):
 
 
 def plan(cfg, variants):
-    """Ordered build steps: F32 is converted whenever any variant quantizes from it."""
-    need_f32 = "F32" in variants or any(cfg["recipes"][v]["from"] == "F32" for v in variants)
-    steps = []
-    if need_f32:
-        steps.append(("convert", "F32", cfg["recipes"]["F32"]["filename"], cfg["recipes"]["F32"]["convert_args"]))
+    """Ordered build steps. A quantized variant is built from its source conversion ("from"),
+    which is converted first and dropped afterwards when it was not itself requested."""
+    sources = {cfg["recipes"][v]["from"] for v in variants if cfg["recipes"][v]["from"] != "convert"}
+    need = [v for v in cfg["recipes"] if cfg["recipes"][v]["from"] == "convert" and (v in variants or v in sources)]
+    steps = [("convert", v, cfg["recipes"][v]["filename"], cfg["recipes"][v]["convert_args"]) for v in need]
     for v in variants:
         rec = cfg["recipes"][v]
-        if v == "F32":
-            continue
-        if rec["from"] == "convert":
-            steps.append(("convert", v, rec["filename"], rec["convert_args"]))
-        else:
+        if rec["from"] != "convert":
             tt = [a for o in rec.get("tensor_type", []) for a in ("--tensor-type", o)]
-            steps.append(("quantize", v, rec["filename"], [rec["type"], *tt]))
-    steps.sort(key=lambda s: s[0] != "convert")
-    return steps, need_f32 and "F32" not in variants
+            steps.append(("quantize", v, rec["filename"], [cfg["recipes"][rec["from"]]["filename"], rec["type"], *tt]))
+    drop = [cfg["recipes"][v]["filename"] for v in need if v not in variants]
+    return steps, drop
 
 
 def fetch(url, expected, opener=urllib.request.urlopen):
@@ -206,7 +202,8 @@ No weights were trained, fine-tuned, merged or otherwise altered.
    SHA256 pins in CrispEmbed's `docs/minicpm-ocr-source.json`.
 2. Converted with `models/convert-minicpm-ocr-to-gguf.py` (`--dtype f32` lossless; `--dtype f16`; norms, biases and
    other 1-D tensors stay F32).
-3. Quantized variants, if any, were produced from the F32 GGUF with CrispEmbed's own `crispembed-quantize`.
+3. Quantized variants, if any, were produced from the F16 GGUF with CrispEmbed's own `crispembed-quantize`
+   (Q8_0: every matrix to Q8_0, 1-D tensors and the patch-embedding conv weight unchanged).
 4. Built and uploaded by CrispEmbed commit `{source_commit}` (workflow `minicpm-ocr-publish.yml`);
    `manifest.json` lists every recipe, input pin, receipt and file hash.
 
@@ -302,10 +299,11 @@ def main(argv):
         receipts(cfg)
         for v in variants:
             precision(cfg, v)
-        steps, drop_f32 = plan(cfg, variants)
+        steps, drop = plan(cfg, variants)
         for kind, v, name, args in steps:
             print(kind, v, name, *args)
-        print("drop-f32" if drop_f32 else "keep-f32")
+        for name in drop:
+            print("drop", "-", name)
         return
     if cmd == "notices":
         notices(cfg, argv[2])
