@@ -2,6 +2,7 @@
 // This target does not execute MI-GAN and is never installed or shipped.
 #include "inpaint_cli.h"
 #include "inpaint.h"
+#include "latent_inpaint.h"
 #include "ocr_detect.h"
 #include "core/clean_exit.h"
 
@@ -36,6 +37,11 @@ const char * weight_precision(const context *) {
 int max_batch(const context *) {
     return 1;
 }
+context * init_variant(const char * path, const char *, const char *, int resolution, int threads,
+                       std::string & error) {
+    std::fprintf(stderr, "INPAINT_TEST_VARIANT resolution=%d\n", resolution);
+    return init(path, threads, error);
+}
 
 void free(context * ctx) {
     if (ctx) std::fprintf(stderr, "INPAINT_TEST_FREE frames=%d\n", ctx->frames);
@@ -69,6 +75,28 @@ bool process_rgb8(context * ctx, const uint8_t * rgb, size_t rgb_bytes, const ui
     return true;
 }
 } // namespace inpaint
+
+namespace latent_inpaint {
+struct context {
+    inpaint::context * inner = nullptr;
+};
+context * init(const Options & options, std::string & error) {
+    std::fprintf(stderr, "INPAINT_TEST_LATENT model=%s steps=%d seed=%llu tiles=%d guidance=%.9g noise_offset=%.9g\n",
+                 options.model.c_str(), options.steps, static_cast<unsigned long long>(options.seed),
+                 int(options.tiled), double(options.guidance), double(options.noise_offset));
+    auto * inner = inpaint::init(options.denoiser_path.c_str(), options.threads, error);
+    return inner ? new context{ inner } : nullptr;
+}
+void free(context * ctx) {
+    if (ctx) inpaint::free(ctx->inner);
+    delete ctx;
+}
+bool process_rgb8(context * ctx, const uint8_t * rgb, size_t rgb_bytes, const uint8_t * mask, size_t mask_bytes,
+                  int width, int height, uint8_t * output, size_t output_bytes, std::string & error) {
+    return inpaint::process_rgb8(ctx->inner, rgb, rgb_bytes, mask, mask_bytes, width, height, output, output_bytes,
+                                 error);
+}
+} // namespace latent_inpaint
 
 namespace ocr_detect {
 struct context {};

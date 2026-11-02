@@ -1,0 +1,1345 @@
+{
+  "schema": "crispembed-pixelhacker-ordinary-api-cpu-public-v1",
+  "recorded_date_utc": "2026-11-01",
+  "current_pair_complete": true,
+  "current_native_image_agreement_passed": true,
+  "performance_qualified": false,
+  "original_pixelhacker_parity_qualified": false,
+  "perceptual_quality_qualified": false,
+  "temporal_quality_qualified": false,
+  "gpu_execution_qualified": false,
+  "scope": "One pinned 512x512 public photo, two native CPU/F32 implementations, one cold plus three warm images per complete arm. Original CUDA/FLA execution was not performed.",
+  "hardware": {
+    "source_record_sha256": "565fc8e00e4e67f3596dacf903ab5ca7ead9b552cb5937bedb68f0ed891012e4",
+    "platform": "Linux-6.18.57-x86_64-with-glibc2.39",
+    "cpu_model": "AMD EPYC 9V74 80-Core Processor",
+    "cpu_features": {
+      "avx2": true,
+      "fma": true,
+      "avx512f": true,
+      "avx512bw": true,
+      "avx512vl": true,
+      "avx512_bf16": true,
+      "avx512_vnni": true
+    },
+    "affinity_cpu_count": 9,
+    "cpu_quota_us": 800000,
+    "cpu_period_us": 100000,
+    "cpu_quota_equivalent": 8.0,
+    "memory_limit_bytes": 8589934592,
+    "cuda_toolchain_detected": false,
+    "cuda_driver_tool_detected": false,
+    "nvidia_device_detected": false,
+    "dri_device_detected": false,
+    "metal_available_on_this_linux_host": false
+  },
+  "hardware_record_identity": {
+    "path": "repo/tests/results/inpainting/cpu-components-2026-11-01.json",
+    "bytes": 166892,
+    "sha256": "507563073f2b0ad536e190828222a738a9a0fe9897f143cd361cbc14b928666a"
+  },
+  "settings": {
+    "engine": "pixelhacker",
+    "geometry": [
+      512,
+      512
+    ],
+    "threads": 8,
+    "requested_steps": 20,
+    "candidate_executed_steps_per_image": 19,
+    "eager_executed_step_counter_available": false,
+    "cold_calls_per_arm": 1,
+    "warm_calls_per_arm": 3,
+    "precision": "f32",
+    "weights_quantized": false,
+    "source_bound_defaults": {
+      "seed": 0,
+      "guidance": 4.5,
+      "noise_offset": 0.0357
+    },
+    "defaults_logged_individually_in_native_summary": false
+  },
+  "models": {
+    "pixelhacker": {
+      "bytes": 3449075872,
+      "sha256": "5b486aa5d80647dbf298b0296d2cea7cb410dfb978b8bdfea806617f73ea588d",
+      "original_checkpoint": {
+        "repository": "hustvl/PixelHacker",
+        "revision": "012fd343158936a265b8a0ee38a791a7a2841f45",
+        "filename": "ft_places2/diffusion_pytorch_model.bin",
+        "url": "https://huggingface.co/hustvl/PixelHacker/resolve/012fd343158936a265b8a0ee38a791a7a2841f45/ft_places2/diffusion_pytorch_model.bin",
+        "bytes": 3449345440,
+        "sha256": "ef5e28199cd03344ac22a6e6ff456ba8b868e83fb90d8174cc2ad83d7ef4296c",
+        "pickle_sha256": "03c048230eb6650dcac5e7a03315c692b35aba6edb4257873f3b630715ab2125",
+        "pickle_bytes": 182804
+      },
+      "license": "MIT",
+      "original_reference_executed_for_this_pair": false
+    },
+    "sdxl_vae": {
+      "bytes": 334636224,
+      "sha256": "e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2",
+      "original_checkpoint": {
+        "repository": "hustvl/PixelHacker",
+        "revision": "012fd343158936a265b8a0ee38a791a7a2841f45",
+        "filename": "vae/diffusion_pytorch_model.bin",
+        "url": "https://huggingface.co/hustvl/PixelHacker/resolve/012fd343158936a265b8a0ee38a791a7a2841f45/vae/diffusion_pytorch_model.bin",
+        "bytes": 167394306,
+        "sha256": "a59d7ea697f2942d22002dc3469e8c53db807a6b78f7f5ec03bd4c1f70f98efe",
+        "pickle_sha256": "afcd9646b70f3e70472ddfd24806834f447b50acc75cc196d6049ec9fbdd666d",
+        "pickle_bytes": 34709
+      },
+      "license": "MIT",
+      "original_reference_executed_for_this_pair": false
+    }
+  },
+  "fixture": {
+    "manifest": {
+      "path": "evidence/migan-assets/photos512/fixtures.json",
+      "bytes": 2066,
+      "sha256": "84213e7fec278c0f915ea69dcb97151d6e43ef46ddd96381dec2ee13514264a5"
+    },
+    "case": {
+      "name": "formula_photo_bar",
+      "source": {
+        "name": "formula_photo_bar",
+        "path": "tests/regression/images/cc0/public_domain_formula_photo.jpg",
+        "sha256": "1d2fe4b325bd2c73093901d4ccf52a670544649884fa8e7913817d099f7fe1eb",
+        "source_name": "public_domain_formula_photo",
+        "mask": "bar"
+      },
+      "source_page": "https://commons.wikimedia.org/wiki/File:Pure-mathematics-formul%C3%A6-blackboard.jpg",
+      "license": "Public-Domain",
+      "source_geometry": [
+        1600,
+        1200
+      ],
+      "crop_xyxy": [
+        544,
+        344,
+        1056,
+        856
+      ],
+      "rgb_sha256": "7de1d0ce1bc46b8f563ad715136510d572e26c55e7562eed711eb5e923b7fc86",
+      "mask_sha256": "642078416b455bf415d69e291d40b0e55894a10535f16b847552cb9c9a190e91",
+      "fill_pixels": 24576,
+      "known_pixels": 237568
+    }
+  },
+  "predeclared_plan": {
+    "identity": {
+      "path": "evidence/resume-2026-11-01/pixelhacker-api-export/predeclared-plan.json",
+      "bytes": 2071,
+      "sha256": "ef6c64e828ea1a1ff5b3c85e776bf8c804a1932d82cc972343b9834294282b03"
+    },
+    "data": {
+      "schema": "crispembed-resumed-latent-api-plan-v1",
+      "status": "pending-convolution-screen-and-final-source-freeze",
+      "prior_delivery_commit": "2e9c8f6183e0877353f25c8ddbec9cbbc4245b29",
+      "geometry": [
+        512,
+        512
+      ],
+      "fixture": "formula_photo_bar",
+      "threads": 8,
+      "requested_steps": 20,
+      "actual_steps_for_persistent_graphs": 19,
+      "precision": "f32",
+      "cold_images": 1,
+      "warm_images_per_arm": 3,
+      "serialize_native_work": true,
+      "arms": [
+        {
+          "engine": "moebius",
+          "profile": "candidate",
+          "local_reassoc": true,
+          "cpu_depthwise": false,
+          "sha256_accel": false,
+          "purpose": "delivered local/relative/GEMM implementation baseline"
+        },
+        {
+          "engine": "moebius",
+          "profile": "candidate",
+          "local_reassoc": true,
+          "cpu_depthwise": true,
+          "sha256_accel": true,
+          "require_actual_sha256_accel": true,
+          "purpose": "incremental depthwise plus loading optimization; compare exact baseline RGB"
+        },
+        {
+          "engine": "pixelhacker",
+          "profile": "eager",
+          "sha256_accel": false,
+          "purpose": "complete previously interrupted native output and ordinary API comparison"
+        },
+        {
+          "engine": "pixelhacker",
+          "profile": "candidate",
+          "sha256_accel": true,
+          "require_actual_sha256_accel": true,
+          "purpose": "current recurrent-GLA/GEMM candidate and loading optimization; compare eager RGB"
+        }
+      ],
+      "native_rgb_budgets": {
+        "filled_max_abs": 2,
+        "filled_mean_abs": 0.1,
+        "minimum_filled_psnr_db": 50,
+        "known_pixel_errors": 0
+      },
+      "qualification": "No resolution, precision, schedule or model-weight change. Native comparison is distinct from original-model qualification. Portable Pixel graph is a follow-up only if needed to attribute an observed native quality mismatch. Timing claims require completed paired samples and retained resource observations.",
+      "cold_checkpoint": "Every completed cold image is preserved independently of warm-series completion. Partial images do not promote incomplete benchmark status."
+    }
+  },
+  "source_preparation": {
+    "identity": {
+      "path": "evidence/resume-2026-11-01/pixelhacker-api-export/preparation.json",
+      "bytes": 4582,
+      "sha256": "d766e4c246f4df39936133af4017bdcb1f0b767c51f0a61eed135f1a237e16b8"
+    },
+    "data": {
+      "schema": "crispembed-pixelhacker-api-export-preparation-v1",
+      "recorded_utc": "2026-11-01T14:30:50.913540+00:00",
+      "scope": "Source and small admission metadata captured while eager was active; no output/model reads or model execution.",
+      "binary_sha256": "8e860a3401f8010ba7b1f023cba3ce9862fee5d0b6d6d4b87826290fe190a8bd",
+      "driver_sha256": "c056e9790db54d2394ba0afde78a07f02af0e319e6f1b33135b2a6963380fb93",
+      "source_pins": [
+        {
+          "path": "native-optimization/run_latent_api.py",
+          "bytes": 29434,
+          "sha256": "c056e9790db54d2394ba0afde78a07f02af0e319e6f1b33135b2a6963380fb93"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/latent_inpaint.cpp",
+          "bytes": 20461,
+          "sha256": "9b08cff8ce0f0de0457100c99ca9226ccb47c4225e8248e1c117b9934f6688c4"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/latent_inpaint_ops.cpp",
+          "bytes": 22262,
+          "sha256": "d012cd1c46cdb45e8e82e39f1e8d5e4eb890541fb7a0acb36c0188f3ac8b35dd"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/latent_inpaint_unet.cpp",
+          "bytes": 20408,
+          "sha256": "a7807d6070904052655761ca5439af8b4e98db59f99e09edf0ae5ed9b4c9826f"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/latent_inpaint_graph.cpp",
+          "bytes": 13603,
+          "sha256": "60be70173f85994b67da9e2b38bb64ad797a40f9898b4d3441bce4fc16fdbfa8"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/latent_inpaint_graph_unet.cpp",
+          "bytes": 27760,
+          "sha256": "2a2771012731749cbfdb8f8fdf6b2e5e37b0673a416039cb488efd1d277a2580"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/latent_inpaint_vae.cpp",
+          "bytes": 3931,
+          "sha256": "18fe9b2134862b8b2f76f6475348c7959ea0a926f299d030e3b61c32e0e342ef"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/inpaint_graph.cpp",
+          "bytes": 46970,
+          "sha256": "6757e28ee1fe6a43b3a291b1797ade86f19537411c2e822c3e7ee1b34cb340eb"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/inpaint_graph.h",
+          "bytes": 6620,
+          "sha256": "d6a41ab9111e6c65ac99a447de2899773581ead360d4afdbef98124f0108fde0"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/inpaint_graph_spectral.cpp",
+          "bytes": 30872,
+          "sha256": "eb20e813075727e7281c38e0db949db69e5c74cb38f345416a73045d0a582752"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/core/sha256.h",
+          "bytes": 5024,
+          "sha256": "409ab494061b042d4a84698b7bf2caf6dd68f6639cbeb532cb47a2f2337d9a6f"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/core/sha256_accelerated.h",
+          "bytes": 12420,
+          "sha256": "46f0050cae097fd6d0d1a9bc0021a57ae55465088ffa1d330e7f2adab37baa2e"
+        },
+        {
+          "path": "CrispEmbed-issue71/tests/test_inpaint_benchmark.cpp",
+          "bytes": 13637,
+          "sha256": "a3d4eed9aa6e3eab419ca8864ff55f1d15892ce2c6b0466673ccb1a83661aa23"
+        },
+        {
+          "path": "CrispEmbed-issue71/tools/dump_migan_photo_reference.py",
+          "bytes": 15144,
+          "sha256": "97d6978b0130aa4ee3b5e871fe3877c0340e80b914459dc7d197223d77382c4d"
+        },
+        {
+          "path": "CrispEmbed-issue71/tools/inpaint_hash_evidence.py",
+          "bytes": 4964,
+          "sha256": "4fece7408ea18b781724410866af9bca64586368f643850473add3b76f3054fb"
+        },
+        {
+          "path": "CrispEmbed-issue71/tests/test_inpaint_engine_live.py",
+          "bytes": 41690,
+          "sha256": "dc4a3460341ab80fd48db2c6c767e8eb4a36d31d3df486f5a140408c4edf7750"
+        },
+        {
+          "path": "CrispEmbed-issue71/CMakeLists.txt",
+          "bytes": 72676,
+          "sha256": "7e1a2ccad64e9d5f0e0bab3cfebdc678d2f163aed0aae6f21ad666434ae734bb"
+        },
+        {
+          "path": "CrispEmbed-issue71/tests/test_inpaint_cli.py",
+          "bytes": 28318,
+          "sha256": "ac69bd57828145ed67ae29b5ddbfed9768db78a13ad4261bfe994866bc5f3ee0"
+        },
+        {
+          "path": "CrispEmbed-issue71/src/latent_inpaint.h",
+          "bytes": 2287,
+          "sha256": "e4c9c2aec679cfd485564cceb384095c148e2f531349c3dd4707dcbb28c729b5"
+        },
+        {
+          "path": "CrispEmbed-issue71/docs/latent-inpaint-source-contract.json",
+          "bytes": 972741,
+          "sha256": "b4f632d6939a8f57897c88e253bd96b7155fe3426a60ed77eac64b059d69983d"
+        },
+        {
+          "path": "CrispEmbed-issue71/tests/regression/cc0_sources.json",
+          "bytes": 4695,
+          "sha256": "58aa0d265864c6cddc40afc2898b1f7cd58afd1257e06a379866533097287d38"
+        }
+      ],
+      "eager_admission_sha256": "1235787440dc5d8a27de1e1f5886ddc8494231bcb3f09245ecf6bdee72820768",
+      "predeclared_plan_sha256": "ef6c64e828ea1a1ff5b3c85e776bf8c804a1932d82cc972343b9834294282b03",
+      "prior_v2_report_sha256": "7ecaabc5171cd7a53ec6a829d1a3100f31247b3412d20d64d1f1fc103bd9086f",
+      "heavy_or_model_work_performed": false
+    }
+  },
+  "binary_sha256": "8e860a3401f8010ba7b1f023cba3ce9862fee5d0b6d6d4b87826290fe190a8bd",
+  "producer_driver_sha256": "c056e9790db54d2394ba0afde78a07f02af0e319e6f1b33135b2a6963380fb93",
+  "source_to_binary_attestation": "Exact same executable and observed source pins are bound; a clean-source build attestation is not inferred.",
+  "arms": [
+    {
+      "profile": "eager",
+      "run_id": "pixelhacker-eager-rest-t8-v1",
+      "status": "passed",
+      "producer": {
+        "path": "evidence/latent-api/pixelhacker-eager-rest-t8-v1/process.json",
+        "bytes": 13717,
+        "sha256": "b7c87d3a737ccf892e86627d77b68c993621a28f635a2b889b87cad1603aafba"
+      },
+      "report": {
+        "schema": "crispembed-local-latent-image-api-v1",
+        "complete": true,
+        "passed": true,
+        "status": "passed",
+        "engine": "pixelhacker",
+        "profile": "eager",
+        "case": "formula_photo_bar",
+        "timeout_seconds": 3600,
+        "address_space_limit_bytes": 8053063680,
+        "original_model_quality_qualified": false,
+        "performance_qualified": false,
+        "performance_note": "Raw samples retained; inspect competing workloads and matched comparisons before qualifying timing.",
+        "timing_statistics_validation": "Ten-significant-digit sample/output rounding bounds: median max error, mean average error, stddev RMS error; plus 64 ULP arithmetic slack. This changes no image/numerical acceptance budget.",
+        "source_observation_limitation": "Source hashes observed in a dirty worktree are not a clean-build proof.",
+        "optimizer_evidence_scope": "Controlled gates are confirmed by the executable's summary; actual backend/precision and full graph execution counts are checked in profiles. The cpu_depthwise_nodes counter proves actual finalized depthwise-node selection. Independently pinned model hashes, file sizes and complete/accelerated block counts prove the selected hashing path; other specialized paths remain requested-gate evidence only.",
+        "driver_sha256": "c056e9790db54d2394ba0afde78a07f02af0e319e6f1b33135b2a6963380fb93",
+        "runs": [
+          {
+            "engine": "pixelhacker",
+            "iteration": 0,
+            "milliseconds": 314108,
+            "rgb_sha256": "dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a"
+          },
+          {
+            "engine": "pixelhacker",
+            "iteration": 1,
+            "milliseconds": 310958,
+            "rgb_sha256": "dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a"
+          },
+          {
+            "engine": "pixelhacker",
+            "iteration": 2,
+            "milliseconds": 311827,
+            "rgb_sha256": "dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a"
+          },
+          {
+            "engine": "pixelhacker",
+            "iteration": 3,
+            "milliseconds": 306760,
+            "rgb_sha256": "dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a"
+          }
+        ],
+        "argv": [
+          "evidence/build-current/test-inpaint-benchmark",
+          "--engine",
+          "pixelhacker",
+          "--model",
+          "evidence/latent-assets/pixelhacker.names-v1.gguf",
+          "--model-sha256",
+          "5b486aa5d80647dbf298b0296d2cea7cb410dfb978b8bdfea806617f73ea588d",
+          "--vae",
+          "evidence/latent-assets/sdxl_vae.names-v1.gguf",
+          "--vae-sha256",
+          "e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2",
+          "--rgb",
+          "evidence/migan-assets/photos512/formula_photo_bar/input.rgb8",
+          "--mask",
+          "evidence/migan-assets/photos512/formula_photo_bar/fill-mask.u8",
+          "--width",
+          "512",
+          "--height",
+          "512",
+          "--output",
+          "evidence/latent-api/pixelhacker-eager-rest-t8-v1/output.rgb8",
+          "--threads",
+          "8",
+          "--runs",
+          "3",
+          "--steps",
+          "20",
+          "--backend",
+          "cpu",
+          "--checkpoint-output",
+          "evidence/latent-api/pixelhacker-eager-rest-t8-v1/cold.rgb8"
+        ],
+        "environment": {
+          "CRISPEMBED_INPAINT_GRAPH": "0",
+          "CRISPEMBED_INPAINT_FAST": "0",
+          "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+          "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+          "CRISPEMBED_INPAINT_CPU_FFT": "0",
+          "CRISPEMBED_INPAINT_CPU_GLA": "0",
+          "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+          "CRISPEMBED_INPAINT_SHA256_ACCEL": "0",
+          "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+          "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+          "CRISPEMBED_MIGAN_CPU_KERNELS": "0",
+          "CRISPEMBED_INPAINT_BACKEND": "cpu",
+          "CRISPEMBED_INPAINT_PROFILE": "1",
+          "CRISPEMBED_MOEBIUS": "0",
+          "CRISPEMBED_PIXELHACKER": "1"
+        },
+        "binary_sha256": "8e860a3401f8010ba7b1f023cba3ce9862fee5d0b6d6d4b87826290fe190a8bd",
+        "binary_bytes": 3930552,
+        "model_sha256": "5b486aa5d80647dbf298b0296d2cea7cb410dfb978b8bdfea806617f73ea588d",
+        "vae_sha256": "e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2",
+        "fixture_manifest_sha256": "84213e7fec278c0f915ea69dcb97151d6e43ef46ddd96381dec2ee13514264a5",
+        "source_file_sha256_observed_before_run": {
+          "src/latent_inpaint.cpp": "9b08cff8ce0f0de0457100c99ca9226ccb47c4225e8248e1c117b9934f6688c4",
+          "src/latent_inpaint_ops.cpp": "d012cd1c46cdb45e8e82e39f1e8d5e4eb890541fb7a0acb36c0188f3ac8b35dd",
+          "src/latent_inpaint_unet.cpp": "a7807d6070904052655761ca5439af8b4e98db59f99e09edf0ae5ed9b4c9826f",
+          "src/latent_inpaint_graph.cpp": "60be70173f85994b67da9e2b38bb64ad797a40f9898b4d3441bce4fc16fdbfa8",
+          "src/latent_inpaint_graph_unet.cpp": "2a2771012731749cbfdb8f8fdf6b2e5e37b0673a416039cb488efd1d277a2580",
+          "src/latent_inpaint_vae.cpp": "18fe9b2134862b8b2f76f6475348c7959ea0a926f299d030e3b61c32e0e342ef",
+          "src/inpaint_graph.cpp": "6757e28ee1fe6a43b3a291b1797ade86f19537411c2e822c3e7ee1b34cb340eb",
+          "src/inpaint_graph.h": "d6a41ab9111e6c65ac99a447de2899773581ead360d4afdbef98124f0108fde0",
+          "src/inpaint_graph_spectral.cpp": "eb20e813075727e7281c38e0db949db69e5c74cb38f345416a73045d0a582752",
+          "src/core/sha256.h": "409ab494061b042d4a84698b7bf2caf6dd68f6639cbeb532cb47a2f2337d9a6f",
+          "src/core/sha256_accelerated.h": "46f0050cae097fd6d0d1a9bc0021a57ae55465088ffa1d330e7f2adab37baa2e",
+          "tests/test_inpaint_benchmark.cpp": "a3d4eed9aa6e3eab419ca8864ff55f1d15892ce2c6b0466673ccb1a83661aa23",
+          "tools/dump_migan_photo_reference.py": "97d6978b0130aa4ee3b5e871fe3877c0340e80b914459dc7d197223d77382c4d",
+          "tools/inpaint_hash_evidence.py": "4fece7408ea18b781724410866af9bca64586368f643850473add3b76f3054fb",
+          "tests/test_inpaint_engine_live.py": "dc4a3460341ab80fd48db2c6c767e8eb4a36d31d3df486f5a140408c4edf7750",
+          "CMakeLists.txt": "7e1a2ccad64e9d5f0e0bab3cfebdc678d2f163aed0aae6f21ad666434ae734bb"
+        },
+        "before_resources": {
+          "time_utc": "2026-11-01T14:25:02.473808+00:00",
+          "loadavg": [
+            1.26318359375,
+            5.66650390625,
+            7.10302734375
+          ],
+          "cpu.max": "800000 100000",
+          "cpu.stat": "usage_usec 65755818632\nuser_usec 62230984506\nsystem_usec 3524834126\nnice_usec 0\nnr_periods 186046\nnr_throttled 61439\nthrottled_usec 3055725515\nnr_bursts 0\nburst_usec 0",
+          "memory.current": "8553799680",
+          "memory.max": "8589934592",
+          "memory.events": "low 0\nhigh 0\nmax 2497274\noom 0\noom_kill 0\noom_group_kill 0",
+          "process_resource_snapshot": "COMMAND         %CPU   RSS\nMainThread       115 287220\npython3         98.3 32096\nrsync           11.6 31596\nzstd             3.8 53452\nzstd             2.7 53452\ncodex            0.6 15144\ncodex-linux-san  0.6 15808\ncaas-prefix-tra  0.2   724\ncodex            0.2 50504\ncodex            0.1 69112\nsites-preview    0.0   300\nsupervisord      0.0 23220\nsync_share.sh    0.0  2080\nrsync            0.0  2372\nsync_share.sh    0.0  2072\ninotifywait      0.0   832\nsh               0.0   764\nsh               0.0   760\nbwrap            0.0   916\nbash             0.0  2036\nps               0.0  2512\n",
+          "process_snapshot_returncode": 0,
+          "affinity_cpu_count": 9
+        },
+        "returncode": 0,
+        "timed_out": false,
+        "wall_seconds": 1260.2704008439978,
+        "peak_rss_kib": 4478836,
+        "user_cpu_seconds": 3874.415783,
+        "system_cpu_seconds": 183.0755,
+        "peak_rss_scope": "RUSAGE_CHILDREN high-water mark includes the small pre-run ps child; successful model runs dominate it.",
+        "input_hashes_unchanged": true,
+        "model_hashes_unchanged": true,
+        "binary_hash_unchanged": true,
+        "benchmark": {
+          "schema": "crispembed-image-api-benchmark-v1",
+          "engine": "pixelhacker",
+          "requested_backend": "cpu",
+          "width": 512,
+          "height": 512,
+          "threads": 8,
+          "requested_steps": 20,
+          "load_and_validation_ms": 16535.94504,
+          "cold_image_ms": 314108.3606,
+          "warm_median_ms": 310958.0282,
+          "warm_mean_ms": 309848.2472,
+          "warm_stddev_ms": 2212.167988,
+          "warm_samples_ms": [
+            310958.0282,
+            311826.5011,
+            306760.2123
+          ],
+          "input_rgb_sha256": "7de1d0ce1bc46b8f563ad715136510d572e26c55e7562eed711eb5e923b7fc86",
+          "mask_sha256": "642078416b455bf415d69e291d40b0e55894a10535f16b847552cb9c9a190e91",
+          "output_sha256": "dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a",
+          "cold_checkpoint_sha256": "dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a",
+          "model_sha256": "5b486aa5d80647dbf298b0296d2cea7cb410dfb978b8bdfea806617f73ea588d",
+          "vae_sha256": "e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2",
+          "known_pixel_errors": 0,
+          "repeat_bit_exact": true,
+          "gates": {
+            "CRISPEMBED_INPAINT_GRAPH": false,
+            "CRISPEMBED_INPAINT_FAST": false,
+            "CRISPEMBED_INPAINT_GEMM_LAYOUT": false,
+            "CRISPEMBED_INPAINT_REFLECT_GATHER": false,
+            "CRISPEMBED_INPAINT_CPU_FFT": false,
+            "CRISPEMBED_INPAINT_CPU_GLA": false,
+            "CRISPEMBED_INPAINT_CPU_DEPTHWISE": false,
+            "CRISPEMBED_INPAINT_SHA256_ACCEL": false,
+            "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": false,
+            "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": false,
+            "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": false,
+            "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": false,
+            "CRISPEMBED_MIGAN_CPU_KERNELS": false
+          },
+          "ordinary_image_api": true,
+          "observers": false,
+          "original_quality_qualification": false,
+          "passed": true
+        },
+        "output_sha256": "dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a",
+        "independent_known_channel_errors": 0,
+        "cold_checkpoint": {
+          "path": "evidence/latent-api/pixelhacker-eager-rest-t8-v1/cold.rgb8",
+          "bytes": 786432,
+          "sha256": "dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a",
+          "completed_cold_image": true,
+          "independent_known_channel_errors": 0,
+          "completed_progress_rows": [
+            {
+              "engine": "pixelhacker",
+              "iteration": 0,
+              "milliseconds": 314108,
+              "rgb_sha256": "dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a"
+            },
+            {
+              "engine": "pixelhacker",
+              "iteration": 1,
+              "milliseconds": 310958,
+              "rgb_sha256": "dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a"
+            },
+            {
+              "engine": "pixelhacker",
+              "iteration": 2,
+              "milliseconds": 311827,
+              "rgb_sha256": "dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a"
+            },
+            {
+              "engine": "pixelhacker",
+              "iteration": 3,
+              "milliseconds": 306760,
+              "rgb_sha256": "dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a"
+            }
+          ],
+          "scope": "Completed cold-image evidence only; this does not make an incomplete benchmark pass or establish backend, model parity or speedup."
+        },
+        "actual_backend_profiles": [],
+        "cpu_depthwise_selection_verified": false,
+        "hash_execution_evidence": {
+          "requested": false,
+          "require_hardware": false,
+          "profiles": [
+            {
+              "label": "pixelhacker",
+              "backend": "scalar",
+              "requested": false,
+              "hardware_available": true,
+              "bytes": 3449075872,
+              "complete_blocks": 53891810,
+              "accelerated_blocks": 0,
+              "sha256": "5b486aa5d80647dbf298b0296d2cea7cb410dfb978b8bdfea806617f73ea588d"
+            },
+            {
+              "label": "sdxl_vae",
+              "backend": "scalar",
+              "requested": false,
+              "hardware_available": true,
+              "bytes": 334636224,
+              "complete_blocks": 5228691,
+              "accelerated_blocks": 0,
+              "sha256": "e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2"
+            }
+          ],
+          "verified_model_labels": [
+            "pixelhacker",
+            "sdxl_vae"
+          ],
+          "all_model_identities_verified": true,
+          "hardware_acceleration_verified": false,
+          "scalar_fallback": false,
+          "empty_mask_bypass_without_hash_profiles": false,
+          "scope": "Actual verified model hashing and full input-block counts only; no inference or hardware-speed qualification."
+        },
+        "output_logs_sha256": {
+          "stdout.log": "29f581f818f074c1e2b639707bd9cc7d50e065ada4cb29d48b5ed61f2df10da9",
+          "stderr.log": "cde75a36c6f121f26f5d6cff290c2e8fdbb02f5301072885dd016202fded2f92"
+        },
+        "after_resources": {
+          "time_utc": "2026-11-01T14:46:05.663575+00:00",
+          "loadavg": [
+            2.84375,
+            3.8125,
+            4.8564453125
+          ],
+          "cpu.max": "800000 100000",
+          "cpu.stat": "usage_usec 70584207655\nuser_usec 66769329309\nsystem_usec 3814878345\nnice_usec 0\nnr_periods 198678\nnr_throttled 61543\nthrottled_usec 3056969130\nnr_bursts 0\nburst_usec 0",
+          "memory.current": "8256614400",
+          "memory.max": "8589934592",
+          "memory.events": "low 0\nhigh 0\nmax 2748983\noom 0\noom_kill 0\noom_group_kill 0",
+          "process_resource_snapshot": "COMMAND         %CPU   RSS\nrsync           14.1 30380\nzstd             3.2 53452\nzstd             2.3 53452\npython3          0.6 32192\ncodex            0.2 51612\ncaas-prefix-tra  0.2   724\ncodex            0.1 67572\nsites-preview    0.0   300\nsupervisord      0.0 23224\nsync_share.sh    0.0  2080\nrsync            0.0  2372\nsync_share.sh    0.0  2072\ninotifywait      0.0   832\nsh               0.0   764\nsh               0.0   760\nps               0.0  2472\n",
+          "process_snapshot_returncode": 0,
+          "affinity_cpu_count": 9
+        }
+      },
+      "raw_logs": {
+        "stdout.log": {
+          "identity": {
+            "path": "evidence/latent-api/pixelhacker-eager-rest-t8-v1/stdout.log",
+            "bytes": 2156,
+            "sha256": "29f581f818f074c1e2b639707bd9cc7d50e065ada4cb29d48b5ed61f2df10da9"
+          },
+          "text": "INPAINT_RUN {\"engine\":\"pixelhacker\",\"iteration\":0,\"milliseconds\":314108,\"rgb_sha256\":\"dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a\"}\nINPAINT_RUN {\"engine\":\"pixelhacker\",\"iteration\":1,\"milliseconds\":310958,\"rgb_sha256\":\"dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a\"}\nINPAINT_RUN {\"engine\":\"pixelhacker\",\"iteration\":2,\"milliseconds\":311827,\"rgb_sha256\":\"dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a\"}\nINPAINT_RUN {\"engine\":\"pixelhacker\",\"iteration\":3,\"milliseconds\":306760,\"rgb_sha256\":\"dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a\"}\nINPAINT_BENCHMARK {\"schema\":\"crispembed-image-api-benchmark-v1\",\"engine\":\"pixelhacker\",\"requested_backend\":\"cpu\",\"width\":512,\"height\":512,\"threads\":8,\"requested_steps\":20,\"load_and_validation_ms\":16535.94504,\"cold_image_ms\":314108.3606,\"warm_median_ms\":310958.0282,\"warm_mean_ms\":309848.2472,\"warm_stddev_ms\":2212.167988,\"warm_samples_ms\":[310958.0282,311826.5011,306760.2123],\"input_rgb_sha256\":\"7de1d0ce1bc46b8f563ad715136510d572e26c55e7562eed711eb5e923b7fc86\",\"mask_sha256\":\"642078416b455bf415d69e291d40b0e55894a10535f16b847552cb9c9a190e91\",\"output_sha256\":\"dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a\",\"cold_checkpoint_sha256\":\"dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a\",\"model_sha256\":\"5b486aa5d80647dbf298b0296d2cea7cb410dfb978b8bdfea806617f73ea588d\",\"vae_sha256\":\"e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2\",\"known_pixel_errors\":0,\"repeat_bit_exact\":true,\"gates\":{\"CRISPEMBED_INPAINT_GRAPH\":false,\"CRISPEMBED_INPAINT_FAST\":false,\"CRISPEMBED_INPAINT_GEMM_LAYOUT\":false,\"CRISPEMBED_INPAINT_REFLECT_GATHER\":false,\"CRISPEMBED_INPAINT_CPU_FFT\":false,\"CRISPEMBED_INPAINT_CPU_GLA\":false,\"CRISPEMBED_INPAINT_CPU_DEPTHWISE\":false,\"CRISPEMBED_INPAINT_SHA256_ACCEL\":false,\"CRISPEMBED_INPAINT_CPU_ATTENTION_TILES\":false,\"CRISPEMBED_MOEBIUS_RELATIVE_REASSOC\":false,\"CRISPEMBED_MOEBIUS_LOCAL_REASSOC\":false,\"CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM\":false,\"CRISPEMBED_MIGAN_CPU_KERNELS\":false},\"ordinary_image_api\":true,\"observers\":false,\"original_quality_qualification\":false,\"passed\":true}\n"
+        },
+        "stderr.log": {
+          "identity": {
+            "path": "evidence/latent-api/pixelhacker-eager-rest-t8-v1/stderr.log",
+            "bytes": 425,
+            "sha256": "cde75a36c6f121f26f5d6cff290c2e8fdbb02f5301072885dd016202fded2f92"
+          },
+          "text": "inpaint_hash: label=pixelhacker backend=scalar requested=0 hardware_available=1 bytes=3449075872 complete_blocks=53891810 accelerated_blocks=0 sha256=5b486aa5d80647dbf298b0296d2cea7cb410dfb978b8bdfea806617f73ea588d\ninpaint_hash: label=sdxl_vae backend=scalar requested=0 hardware_available=1 bytes=334636224 complete_blocks=5228691 accelerated_blocks=0 sha256=e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2\n"
+        }
+      },
+      "completed_call_records_from_stdout": [
+        {
+          "engine": "pixelhacker",
+          "iteration": 0,
+          "milliseconds": 314108,
+          "rgb_sha256": "dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a"
+        },
+        {
+          "engine": "pixelhacker",
+          "iteration": 1,
+          "milliseconds": 310958,
+          "rgb_sha256": "dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a"
+        },
+        {
+          "engine": "pixelhacker",
+          "iteration": 2,
+          "milliseconds": 311827,
+          "rgb_sha256": "dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a"
+        },
+        {
+          "engine": "pixelhacker",
+          "iteration": 3,
+          "milliseconds": 306760,
+          "rgb_sha256": "dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a"
+        }
+      ],
+      "passed": true,
+      "current_full_benchmark_validated": true,
+      "performance_qualified": false,
+      "cold_checkpoint_independently_checked": {
+        "path": "evidence/latent-api/pixelhacker-eager-rest-t8-v1/cold.rgb8",
+        "bytes": 786432,
+        "sha256": "dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a",
+        "known_channel_errors": 0,
+        "known_pixel_check_passed": true
+      },
+      "output": {
+        "path": "evidence/latent-api/pixelhacker-eager-rest-t8-v1/output.rgb8",
+        "bytes": 786432,
+        "sha256": "dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a"
+      },
+      "graph_execution_evidence": {
+        "verified": false,
+        "scope": "Eager execution has no persistent-graph step counters; source/settings and repeated RGB are bound separately."
+      },
+      "hashing_evidence": {
+        "requested": false,
+        "require_hardware": false,
+        "profiles": [
+          {
+            "label": "pixelhacker",
+            "backend": "scalar",
+            "requested": false,
+            "hardware_available": true,
+            "bytes": 3449075872,
+            "complete_blocks": 53891810,
+            "accelerated_blocks": 0,
+            "sha256": "5b486aa5d80647dbf298b0296d2cea7cb410dfb978b8bdfea806617f73ea588d"
+          },
+          {
+            "label": "sdxl_vae",
+            "backend": "scalar",
+            "requested": false,
+            "hardware_available": true,
+            "bytes": 334636224,
+            "complete_blocks": 5228691,
+            "accelerated_blocks": 0,
+            "sha256": "e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2"
+          }
+        ],
+        "verified_model_labels": [
+          "pixelhacker",
+          "sdxl_vae"
+        ],
+        "all_model_identities_verified": true,
+        "hardware_acceleration_verified": false,
+        "scalar_fallback": false,
+        "empty_mask_bypass_without_hash_profiles": false,
+        "scope": "Actual verified model hashing and full input-block counts only; no inference or hardware-speed qualification."
+      },
+      "known_channel_errors_independent": 0,
+      "timing": {
+        "load_and_validation_ms": 16535.94504,
+        "cold_image_ms": 314108.3606,
+        "warm_samples_ms": [
+          310958.0282,
+          311826.5011,
+          306760.2123
+        ],
+        "warm_median_ms": 310958.0282,
+        "warm_mean_ms": 309848.2472,
+        "warm_stddev_ms": 2212.167988
+      },
+      "peak_rss_kib": 4478836
+    },
+    {
+      "profile": "candidate",
+      "run_id": "pixelhacker-candidate-sha-rest-t8-v1",
+      "status": "passed",
+      "producer": {
+        "path": "evidence/latent-api/pixelhacker-candidate-sha-rest-t8-v1/process.json",
+        "bytes": 15689,
+        "sha256": "beaba5e826dcb8b03aabea7f19d8362008c55b983a9ac4d51faebcbb79dd8785"
+      },
+      "report": {
+        "schema": "crispembed-local-latent-image-api-v1",
+        "complete": true,
+        "passed": true,
+        "status": "passed",
+        "engine": "pixelhacker",
+        "profile": "candidate",
+        "case": "formula_photo_bar",
+        "timeout_seconds": 3600,
+        "address_space_limit_bytes": 8053063680,
+        "original_model_quality_qualified": false,
+        "performance_qualified": false,
+        "performance_note": "Raw samples retained; inspect competing workloads and matched comparisons before qualifying timing.",
+        "timing_statistics_validation": "Ten-significant-digit sample/output rounding bounds: median max error, mean average error, stddev RMS error; plus 64 ULP arithmetic slack. This changes no image/numerical acceptance budget.",
+        "source_observation_limitation": "Source hashes observed in a dirty worktree are not a clean-build proof.",
+        "optimizer_evidence_scope": "Controlled gates are confirmed by the executable's summary; actual backend/precision and full graph execution counts are checked in profiles. The cpu_depthwise_nodes counter proves actual finalized depthwise-node selection. Independently pinned model hashes, file sizes and complete/accelerated block counts prove the selected hashing path; other specialized paths remain requested-gate evidence only.",
+        "driver_sha256": "c056e9790db54d2394ba0afde78a07f02af0e319e6f1b33135b2a6963380fb93",
+        "runs": [
+          {
+            "engine": "pixelhacker",
+            "iteration": 0,
+            "milliseconds": 149553,
+            "rgb_sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1"
+          },
+          {
+            "engine": "pixelhacker",
+            "iteration": 1,
+            "milliseconds": 144243,
+            "rgb_sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1"
+          },
+          {
+            "engine": "pixelhacker",
+            "iteration": 2,
+            "milliseconds": 141174,
+            "rgb_sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1"
+          },
+          {
+            "engine": "pixelhacker",
+            "iteration": 3,
+            "milliseconds": 145701,
+            "rgb_sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1"
+          }
+        ],
+        "comparison_raw": "evidence/latent-api/pixelhacker-eager-rest-t8-v1/output.rgb8",
+        "comparison_sha256": "dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a",
+        "argv": [
+          "evidence/build-current/test-inpaint-benchmark",
+          "--engine",
+          "pixelhacker",
+          "--model",
+          "evidence/latent-assets/pixelhacker.names-v1.gguf",
+          "--model-sha256",
+          "5b486aa5d80647dbf298b0296d2cea7cb410dfb978b8bdfea806617f73ea588d",
+          "--vae",
+          "evidence/latent-assets/sdxl_vae.names-v1.gguf",
+          "--vae-sha256",
+          "e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2",
+          "--rgb",
+          "evidence/migan-assets/photos512/formula_photo_bar/input.rgb8",
+          "--mask",
+          "evidence/migan-assets/photos512/formula_photo_bar/fill-mask.u8",
+          "--width",
+          "512",
+          "--height",
+          "512",
+          "--output",
+          "evidence/latent-api/pixelhacker-candidate-sha-rest-t8-v1/output.rgb8",
+          "--threads",
+          "8",
+          "--runs",
+          "3",
+          "--steps",
+          "20",
+          "--backend",
+          "cpu",
+          "--checkpoint-output",
+          "evidence/latent-api/pixelhacker-candidate-sha-rest-t8-v1/cold.rgb8"
+        ],
+        "environment": {
+          "CRISPEMBED_INPAINT_GRAPH": "1",
+          "CRISPEMBED_INPAINT_FAST": "0",
+          "CRISPEMBED_INPAINT_GEMM_LAYOUT": "1",
+          "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+          "CRISPEMBED_INPAINT_CPU_FFT": "0",
+          "CRISPEMBED_INPAINT_CPU_GLA": "1",
+          "CRISPEMBED_INPAINT_CPU_DEPTHWISE": "0",
+          "CRISPEMBED_INPAINT_SHA256_ACCEL": "1",
+          "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+          "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+          "CRISPEMBED_MIGAN_CPU_KERNELS": "0",
+          "CRISPEMBED_INPAINT_BACKEND": "cpu",
+          "CRISPEMBED_INPAINT_PROFILE": "1",
+          "CRISPEMBED_MOEBIUS": "0",
+          "CRISPEMBED_PIXELHACKER": "1"
+        },
+        "binary_sha256": "8e860a3401f8010ba7b1f023cba3ce9862fee5d0b6d6d4b87826290fe190a8bd",
+        "binary_bytes": 3930552,
+        "model_sha256": "5b486aa5d80647dbf298b0296d2cea7cb410dfb978b8bdfea806617f73ea588d",
+        "vae_sha256": "e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2",
+        "fixture_manifest_sha256": "84213e7fec278c0f915ea69dcb97151d6e43ef46ddd96381dec2ee13514264a5",
+        "source_file_sha256_observed_before_run": {
+          "src/latent_inpaint.cpp": "9b08cff8ce0f0de0457100c99ca9226ccb47c4225e8248e1c117b9934f6688c4",
+          "src/latent_inpaint_ops.cpp": "d012cd1c46cdb45e8e82e39f1e8d5e4eb890541fb7a0acb36c0188f3ac8b35dd",
+          "src/latent_inpaint_unet.cpp": "a7807d6070904052655761ca5439af8b4e98db59f99e09edf0ae5ed9b4c9826f",
+          "src/latent_inpaint_graph.cpp": "60be70173f85994b67da9e2b38bb64ad797a40f9898b4d3441bce4fc16fdbfa8",
+          "src/latent_inpaint_graph_unet.cpp": "2a2771012731749cbfdb8f8fdf6b2e5e37b0673a416039cb488efd1d277a2580",
+          "src/latent_inpaint_vae.cpp": "18fe9b2134862b8b2f76f6475348c7959ea0a926f299d030e3b61c32e0e342ef",
+          "src/inpaint_graph.cpp": "6757e28ee1fe6a43b3a291b1797ade86f19537411c2e822c3e7ee1b34cb340eb",
+          "src/inpaint_graph.h": "d6a41ab9111e6c65ac99a447de2899773581ead360d4afdbef98124f0108fde0",
+          "src/inpaint_graph_spectral.cpp": "eb20e813075727e7281c38e0db949db69e5c74cb38f345416a73045d0a582752",
+          "src/core/sha256.h": "409ab494061b042d4a84698b7bf2caf6dd68f6639cbeb532cb47a2f2337d9a6f",
+          "src/core/sha256_accelerated.h": "46f0050cae097fd6d0d1a9bc0021a57ae55465088ffa1d330e7f2adab37baa2e",
+          "tests/test_inpaint_benchmark.cpp": "a3d4eed9aa6e3eab419ca8864ff55f1d15892ce2c6b0466673ccb1a83661aa23",
+          "tools/dump_migan_photo_reference.py": "97d6978b0130aa4ee3b5e871fe3877c0340e80b914459dc7d197223d77382c4d",
+          "tools/inpaint_hash_evidence.py": "4fece7408ea18b781724410866af9bca64586368f643850473add3b76f3054fb",
+          "tests/test_inpaint_engine_live.py": "dc4a3460341ab80fd48db2c6c767e8eb4a36d31d3df486f5a140408c4edf7750",
+          "CMakeLists.txt": "7e1a2ccad64e9d5f0e0bab3cfebdc678d2f163aed0aae6f21ad666434ae734bb"
+        },
+        "before_resources": {
+          "time_utc": "2026-11-01T14:48:29.122205+00:00",
+          "loadavg": [
+            0.33056640625,
+            2.35595703125,
+            4.1533203125
+          ],
+          "cpu.max": "800000 100000",
+          "cpu.stat": "usage_usec 70595785506\nuser_usec 66775349096\nsystem_usec 3820436410\nnice_usec 0\nnr_periods 200113\nnr_throttled 61543\nthrottled_usec 3056969130\nnr_bursts 0\nburst_usec 0",
+          "memory.current": "8588623872",
+          "memory.max": "8589934592",
+          "memory.events": "low 0\nhigh 0\nmax 2753213\noom 0\noom_kill 0\noom_group_kill 0",
+          "process_resource_snapshot": "COMMAND         %CPU   RSS\npython3         99.3 32108\nrsync            7.6 30380\nzstd             3.1 53452\nzstd             2.2 53452\ncodex            0.2 55640\ncaas-prefix-tra  0.2   724\ncodex            0.1 67268\nsites-preview    0.0   300\nsupervisord      0.0 23224\nsync_share.sh    0.0  2080\nrsync            0.0  2372\nsync_share.sh    0.0  2072\ninotifywait      0.0   832\nsh               0.0   764\nsh               0.0   760\nps               0.0  2468\n",
+          "process_snapshot_returncode": 0,
+          "affinity_cpu_count": 9
+        },
+        "returncode": 0,
+        "timed_out": false,
+        "wall_seconds": 584.1339294219979,
+        "peak_rss_kib": 6275732,
+        "user_cpu_seconds": 4498.2756580000005,
+        "system_cpu_seconds": 37.12482,
+        "peak_rss_scope": "RUSAGE_CHILDREN high-water mark includes the small pre-run ps child; successful model runs dominate it.",
+        "input_hashes_unchanged": true,
+        "model_hashes_unchanged": true,
+        "binary_hash_unchanged": true,
+        "benchmark": {
+          "schema": "crispembed-image-api-benchmark-v1",
+          "engine": "pixelhacker",
+          "requested_backend": "cpu",
+          "width": 512,
+          "height": 512,
+          "threads": 8,
+          "requested_steps": 20,
+          "load_and_validation_ms": 3195.764783,
+          "cold_image_ms": 149552.8553,
+          "warm_median_ms": 144243.4729,
+          "warm_mean_ms": 143706.2448,
+          "warm_stddev_ms": 1886.856251,
+          "warm_samples_ms": [
+            144243.4729,
+            141174.032,
+            145701.2295
+          ],
+          "input_rgb_sha256": "7de1d0ce1bc46b8f563ad715136510d572e26c55e7562eed711eb5e923b7fc86",
+          "mask_sha256": "642078416b455bf415d69e291d40b0e55894a10535f16b847552cb9c9a190e91",
+          "output_sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1",
+          "cold_checkpoint_sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1",
+          "model_sha256": "5b486aa5d80647dbf298b0296d2cea7cb410dfb978b8bdfea806617f73ea588d",
+          "vae_sha256": "e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2",
+          "known_pixel_errors": 0,
+          "repeat_bit_exact": true,
+          "gates": {
+            "CRISPEMBED_INPAINT_GRAPH": true,
+            "CRISPEMBED_INPAINT_FAST": false,
+            "CRISPEMBED_INPAINT_GEMM_LAYOUT": true,
+            "CRISPEMBED_INPAINT_REFLECT_GATHER": false,
+            "CRISPEMBED_INPAINT_CPU_FFT": false,
+            "CRISPEMBED_INPAINT_CPU_GLA": true,
+            "CRISPEMBED_INPAINT_CPU_DEPTHWISE": false,
+            "CRISPEMBED_INPAINT_SHA256_ACCEL": true,
+            "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": false,
+            "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": false,
+            "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": false,
+            "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": false,
+            "CRISPEMBED_MIGAN_CPU_KERNELS": false
+          },
+          "ordinary_image_api": true,
+          "observers": false,
+          "original_quality_qualification": false,
+          "passed": true
+        },
+        "output_sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1",
+        "independent_known_channel_errors": 0,
+        "cold_checkpoint": {
+          "path": "evidence/latent-api/pixelhacker-candidate-sha-rest-t8-v1/cold.rgb8",
+          "bytes": 786432,
+          "sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1",
+          "completed_cold_image": true,
+          "independent_known_channel_errors": 0,
+          "completed_progress_rows": [
+            {
+              "engine": "pixelhacker",
+              "iteration": 0,
+              "milliseconds": 149553,
+              "rgb_sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1"
+            },
+            {
+              "engine": "pixelhacker",
+              "iteration": 1,
+              "milliseconds": 144243,
+              "rgb_sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1"
+            },
+            {
+              "engine": "pixelhacker",
+              "iteration": 2,
+              "milliseconds": 141174,
+              "rgb_sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1"
+            },
+            {
+              "engine": "pixelhacker",
+              "iteration": 3,
+              "milliseconds": 145701,
+              "rgb_sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1"
+            }
+          ],
+          "scope": "Completed cold-image evidence only; this does not make an incomplete benchmark pass or establish backend, model parity or speedup."
+        },
+        "actual_backend_profiles": [
+          {
+            "backend": "CPU",
+            "runs": 4,
+            "precision": "f32",
+            "line": "inpaint_graph label=vae-decoder backend=CPU precision=f32 nodes=6219 allocation_bytes=999292928 runs=4 upload_bytes=0 download_bytes=12582912 compute_ms=53659.169 cpu_depthwise_nodes=0",
+            "label": "vae-decoder",
+            "cpu_depthwise_nodes": 0
+          },
+          {
+            "backend": "CPU",
+            "runs": 76,
+            "precision": "f32",
+            "line": "inpaint_graph label=unet-cfg-ddim-batch2 backend=CPU precision=f32 nodes=6687 allocation_bytes=234941728 runs=76 upload_bytes=98496 download_bytes=0 compute_ms=472790.919 cpu_depthwise_nodes=0",
+            "label": "unet-cfg-ddim-batch2",
+            "cpu_depthwise_nodes": 0
+          },
+          {
+            "backend": "CPU",
+            "runs": 4,
+            "precision": "f32",
+            "line": "inpaint_graph label=vae-encoder-batch2 backend=CPU precision=f32 nodes=7871 allocation_bytes=1364873280 runs=4 upload_bytes=17563712 download_bytes=0 compute_ms=54151.686 cpu_depthwise_nodes=0",
+            "label": "vae-encoder-batch2",
+            "cpu_depthwise_nodes": 0
+          }
+        ],
+        "graph_execution_counts": {
+          "verified": true,
+          "image_calls": 4,
+          "executed_timesteps_per_call": 19,
+          "graphs": {
+            "vae-encoder-batch2": 4,
+            "unet-cfg-ddim-batch2": 76,
+            "vae-decoder": 4
+          }
+        },
+        "cpu_depthwise_selection_verified": false,
+        "hash_execution_evidence": {
+          "requested": true,
+          "require_hardware": true,
+          "profiles": [
+            {
+              "label": "pixelhacker",
+              "backend": "sha-ni",
+              "requested": true,
+              "hardware_available": true,
+              "bytes": 3449075872,
+              "complete_blocks": 53891810,
+              "accelerated_blocks": 53891810,
+              "sha256": "5b486aa5d80647dbf298b0296d2cea7cb410dfb978b8bdfea806617f73ea588d"
+            },
+            {
+              "label": "sdxl_vae",
+              "backend": "sha-ni",
+              "requested": true,
+              "hardware_available": true,
+              "bytes": 334636224,
+              "complete_blocks": 5228691,
+              "accelerated_blocks": 5228691,
+              "sha256": "e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2"
+            }
+          ],
+          "verified_model_labels": [
+            "pixelhacker",
+            "sdxl_vae"
+          ],
+          "all_model_identities_verified": true,
+          "hardware_acceleration_verified": true,
+          "scalar_fallback": false,
+          "empty_mask_bypass_without_hash_profiles": false,
+          "scope": "Actual verified model hashing and full input-block counts only; no inference or hardware-speed qualification."
+        },
+        "native_rgb_comparison": {
+          "filled_components": 73728,
+          "filled_max_abs": 1,
+          "filled_mean_abs": 9.494357638888889e-05,
+          "filled_rmse": 0.009743899444723805,
+          "filled_psnr_db": 88.35614773924733,
+          "known_pixel_errors": 0,
+          "known_error_count_unit": "RGB channels",
+          "bit_exact": false,
+          "budgets": {
+            "max_abs": 2,
+            "mean_abs": 0.1,
+            "psnr_db": 50,
+            "known_exact": true
+          },
+          "qualification": "native implementation agreement only, not original-model or perceptual quality",
+          "passed": true
+        },
+        "output_logs_sha256": {
+          "stdout.log": "6c0d953d88e78e25c5f45fa3e51c17dfab513fb1e4f280ffead126cae12e90bd",
+          "stderr.log": "a59ebe68b0f9e63432589dcefdd57e16a897f687cd55ad0730899dffba5f3b64"
+        },
+        "after_resources": {
+          "time_utc": "2026-11-01T14:58:16.332281+00:00",
+          "loadavg": [
+            7.75537109375,
+            7.2958984375,
+            6.04638671875
+          ],
+          "cpu.max": "800000 100000",
+          "cpu.stat": "usage_usec 75240514775\nuser_usec 71342003134\nsystem_usec 3898511640\nnice_usec 0\nnr_periods 205985\nnr_throttled 67188\nthrottled_usec 3160060251\nnr_bursts 0\nburst_usec 0",
+          "memory.current": "6939942912",
+          "memory.max": "8589934592",
+          "memory.events": "low 0\nhigh 0\nmax 2896919\noom 0\noom_kill 0\noom_group_kill 0",
+          "process_resource_snapshot": "COMMAND         %CPU   RSS\nrsync           43.2 30232\nzstd             2.9 53452\nzstd             2.1 53452\npython3          1.1 32200\ncodex            0.2 49992\ncaas-prefix-tra  0.2   724\ncodex            0.1 67180\nsites-preview    0.0   300\nsupervisord      0.0 23228\nsync_share.sh    0.0  2080\nrsync            0.0  2372\nsync_share.sh    0.0  2072\ninotifywait      0.0   832\nsh               0.0   764\nsh               0.0   760\nps               0.0  2472\n",
+          "process_snapshot_returncode": 0,
+          "affinity_cpu_count": 9
+        }
+      },
+      "raw_logs": {
+        "stdout.log": {
+          "identity": {
+            "path": "evidence/latent-api/pixelhacker-candidate-sha-rest-t8-v1/stdout.log",
+            "bytes": 2151,
+            "sha256": "6c0d953d88e78e25c5f45fa3e51c17dfab513fb1e4f280ffead126cae12e90bd"
+          },
+          "text": "INPAINT_RUN {\"engine\":\"pixelhacker\",\"iteration\":0,\"milliseconds\":149553,\"rgb_sha256\":\"1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1\"}\nINPAINT_RUN {\"engine\":\"pixelhacker\",\"iteration\":1,\"milliseconds\":144243,\"rgb_sha256\":\"1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1\"}\nINPAINT_RUN {\"engine\":\"pixelhacker\",\"iteration\":2,\"milliseconds\":141174,\"rgb_sha256\":\"1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1\"}\nINPAINT_RUN {\"engine\":\"pixelhacker\",\"iteration\":3,\"milliseconds\":145701,\"rgb_sha256\":\"1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1\"}\nINPAINT_BENCHMARK {\"schema\":\"crispembed-image-api-benchmark-v1\",\"engine\":\"pixelhacker\",\"requested_backend\":\"cpu\",\"width\":512,\"height\":512,\"threads\":8,\"requested_steps\":20,\"load_and_validation_ms\":3195.764783,\"cold_image_ms\":149552.8553,\"warm_median_ms\":144243.4729,\"warm_mean_ms\":143706.2448,\"warm_stddev_ms\":1886.856251,\"warm_samples_ms\":[144243.4729,141174.032,145701.2295],\"input_rgb_sha256\":\"7de1d0ce1bc46b8f563ad715136510d572e26c55e7562eed711eb5e923b7fc86\",\"mask_sha256\":\"642078416b455bf415d69e291d40b0e55894a10535f16b847552cb9c9a190e91\",\"output_sha256\":\"1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1\",\"cold_checkpoint_sha256\":\"1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1\",\"model_sha256\":\"5b486aa5d80647dbf298b0296d2cea7cb410dfb978b8bdfea806617f73ea588d\",\"vae_sha256\":\"e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2\",\"known_pixel_errors\":0,\"repeat_bit_exact\":true,\"gates\":{\"CRISPEMBED_INPAINT_GRAPH\":true,\"CRISPEMBED_INPAINT_FAST\":false,\"CRISPEMBED_INPAINT_GEMM_LAYOUT\":true,\"CRISPEMBED_INPAINT_REFLECT_GATHER\":false,\"CRISPEMBED_INPAINT_CPU_FFT\":false,\"CRISPEMBED_INPAINT_CPU_GLA\":true,\"CRISPEMBED_INPAINT_CPU_DEPTHWISE\":false,\"CRISPEMBED_INPAINT_SHA256_ACCEL\":true,\"CRISPEMBED_INPAINT_CPU_ATTENTION_TILES\":false,\"CRISPEMBED_MOEBIUS_RELATIVE_REASSOC\":false,\"CRISPEMBED_MOEBIUS_LOCAL_REASSOC\":false,\"CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM\":false,\"CRISPEMBED_MIGAN_CPU_KERNELS\":false},\"ordinary_image_api\":true,\"observers\":false,\"original_quality_qualification\":false,\"passed\":true}\n"
+        },
+        "stderr.log": {
+          "identity": {
+            "path": "evidence/latent-api/pixelhacker-candidate-sha-rest-t8-v1/stderr.log",
+            "bytes": 1009,
+            "sha256": "a59ebe68b0f9e63432589dcefdd57e16a897f687cd55ad0730899dffba5f3b64"
+          },
+          "text": "inpaint_hash: label=pixelhacker backend=sha-ni requested=1 hardware_available=1 bytes=3449075872 complete_blocks=53891810 accelerated_blocks=53891810 sha256=5b486aa5d80647dbf298b0296d2cea7cb410dfb978b8bdfea806617f73ea588d\ninpaint_hash: label=sdxl_vae backend=sha-ni requested=1 hardware_available=1 bytes=334636224 complete_blocks=5228691 accelerated_blocks=5228691 sha256=e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2\ninpaint_graph label=vae-decoder backend=CPU precision=f32 nodes=6219 allocation_bytes=999292928 runs=4 upload_bytes=0 download_bytes=12582912 compute_ms=53659.169 cpu_depthwise_nodes=0\ninpaint_graph label=unet-cfg-ddim-batch2 backend=CPU precision=f32 nodes=6687 allocation_bytes=234941728 runs=76 upload_bytes=98496 download_bytes=0 compute_ms=472790.919 cpu_depthwise_nodes=0\ninpaint_graph label=vae-encoder-batch2 backend=CPU precision=f32 nodes=7871 allocation_bytes=1364873280 runs=4 upload_bytes=17563712 download_bytes=0 compute_ms=54151.686 cpu_depthwise_nodes=0\n"
+        }
+      },
+      "completed_call_records_from_stdout": [
+        {
+          "engine": "pixelhacker",
+          "iteration": 0,
+          "milliseconds": 149553,
+          "rgb_sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1"
+        },
+        {
+          "engine": "pixelhacker",
+          "iteration": 1,
+          "milliseconds": 144243,
+          "rgb_sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1"
+        },
+        {
+          "engine": "pixelhacker",
+          "iteration": 2,
+          "milliseconds": 141174,
+          "rgb_sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1"
+        },
+        {
+          "engine": "pixelhacker",
+          "iteration": 3,
+          "milliseconds": 145701,
+          "rgb_sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1"
+        }
+      ],
+      "passed": true,
+      "current_full_benchmark_validated": true,
+      "performance_qualified": false,
+      "cold_checkpoint_independently_checked": {
+        "path": "evidence/latent-api/pixelhacker-candidate-sha-rest-t8-v1/cold.rgb8",
+        "bytes": 786432,
+        "sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1",
+        "known_channel_errors": 0,
+        "known_pixel_check_passed": true
+      },
+      "output": {
+        "path": "evidence/latent-api/pixelhacker-candidate-sha-rest-t8-v1/output.rgb8",
+        "bytes": 786432,
+        "sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1"
+      },
+      "graph_execution_evidence": {
+        "verified": true,
+        "image_calls": 4,
+        "executed_timesteps_per_call": 19,
+        "graphs": {
+          "vae-encoder-batch2": 4,
+          "unet-cfg-ddim-batch2": 76,
+          "vae-decoder": 4
+        }
+      },
+      "hashing_evidence": {
+        "requested": true,
+        "require_hardware": true,
+        "profiles": [
+          {
+            "label": "pixelhacker",
+            "backend": "sha-ni",
+            "requested": true,
+            "hardware_available": true,
+            "bytes": 3449075872,
+            "complete_blocks": 53891810,
+            "accelerated_blocks": 53891810,
+            "sha256": "5b486aa5d80647dbf298b0296d2cea7cb410dfb978b8bdfea806617f73ea588d"
+          },
+          {
+            "label": "sdxl_vae",
+            "backend": "sha-ni",
+            "requested": true,
+            "hardware_available": true,
+            "bytes": 334636224,
+            "complete_blocks": 5228691,
+            "accelerated_blocks": 5228691,
+            "sha256": "e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2"
+          }
+        ],
+        "verified_model_labels": [
+          "pixelhacker",
+          "sdxl_vae"
+        ],
+        "all_model_identities_verified": true,
+        "hardware_acceleration_verified": true,
+        "scalar_fallback": false,
+        "empty_mask_bypass_without_hash_profiles": false,
+        "scope": "Actual verified model hashing and full input-block counts only; no inference or hardware-speed qualification."
+      },
+      "known_channel_errors_independent": 0,
+      "timing": {
+        "load_and_validation_ms": 3195.764783,
+        "cold_image_ms": 149552.8553,
+        "warm_samples_ms": [
+          144243.4729,
+          141174.032,
+          145701.2295
+        ],
+        "warm_median_ms": 144243.4729,
+        "warm_mean_ms": 143706.2448,
+        "warm_stddev_ms": 1886.856251
+      },
+      "peak_rss_kib": 6275732
+    }
+  ],
+  "current_native_rgb_comparison": {
+    "filled_components": 73728,
+    "filled_max_abs": 1,
+    "filled_mean_abs": 9.494357638888889e-05,
+    "filled_rmse": 0.009743899444723805,
+    "filled_psnr_db": 88.35614773924733,
+    "known_pixel_errors": 0,
+    "known_error_count_unit": "RGB channels",
+    "bit_exact": false,
+    "budgets": {
+      "max_abs": 2,
+      "mean_abs": 0.1,
+      "psnr_db": 50,
+      "known_exact": true
+    },
+    "qualification": "native implementation agreement only, not original-model or perceptual quality",
+    "passed": true
+  },
+  "timing_review": {
+    "qualified": false,
+    "load_validation_initialization_qualified": false,
+    "cold_storage_qualified": false,
+    "scope": "Raw measurements and diagnostic ratios only: one fixed-order eager/candidate pair, one photo, and three requested warm calls per arm on a shared CPU host. No general performance or cold-storage qualification is claimed."
+  },
+  "observed_paired_ratios": {
+    "eager_warm_median_over_candidate": 2.1557857832193115,
+    "eager_load_validation_over_candidate": 5.17433107967258,
+    "diagnostic_until_reviewed": true,
+    "cold_storage_speedup_claimed": false
+  },
+  "timing_scope": "Ordinary image API timings exclude observers. Loading/validation is separate from cold and warm inference. The controller hashes inputs before launch, so load timings use potentially cached data and are not cold-storage measurements.",
+  "prior_v2_history": {
+    "record": {
+      "path": "tests/results/inpainting/pixelhacker-cpu-2026-11-01.json",
+      "sha256": "7ecaabc5171cd7a53ec6a829d1a3100f31247b3412d20d64d1f1fc103bd9086f",
+      "bytes": 59766
+    },
+    "immutable": true,
+    "completed_candidate_calls": 4,
+    "earlier_eager_completed_calls_before_user_cancellation": 2,
+    "earlier_eager_was_cancelled": true,
+    "earlier_portable_graph_started": false,
+    "rounding_failure_and_independent_revalidation_retained": true,
+    "scope": "Historical runs use their own binary and controller identities; their samples are not pooled into this pair."
+  },
+  "early_cross_version_diagnostic": {
+    "identity": {
+      "path": "evidence/resume-2026-11-01/pixelhacker-v2-cold-comparison-v1.json",
+      "bytes": 3738,
+      "sha256": "a448d2e9bb53a917c8c4e65e88ca9f8e9752892a35bd93d71981dd93009176ca"
+    },
+    "data": {
+      "schema": "crispembed-pixelhacker-early-native-image-diagnostic-v1",
+      "recorded_utc": "2026-11-01T14:33:39.256064+00:00",
+      "purpose": "Current eager cold image versus the preserved v2 candidate on the identical pinned photo; no model rerun.",
+      "model_inference_executed_by_comparison": false,
+      "native_benchmark_executed_by_comparison": false,
+      "current_candidate_qualified": false,
+      "completed_eager_benchmark_qualified": false,
+      "performance_qualified": false,
+      "original_pixelhacker_parity_qualified": false,
+      "gpu_execution_qualified": false,
+      "pins": [
+        {
+          "label": "current_eager_cold",
+          "path": "native-optimization/latent-api/pixelhacker-eager-rest-t8-v1/cold.rgb8",
+          "bytes": 786432,
+          "sha256": "dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a",
+          "metadata_unchanged_during_read": true
+        },
+        {
+          "label": "preserved_v2_candidate",
+          "path": "native-optimization/latent-api/pixelhacker-candidate-photo-t8/output.rgb8",
+          "bytes": 786432,
+          "sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1",
+          "metadata_unchanged_during_read": true
+        },
+        {
+          "label": "input_rgb",
+          "path": "native-optimization/migan-assets/photos512/formula_photo_bar/input.rgb8",
+          "bytes": 786432,
+          "sha256": "7de1d0ce1bc46b8f563ad715136510d572e26c55e7562eed711eb5e923b7fc86",
+          "metadata_unchanged_during_read": true
+        },
+        {
+          "label": "fill_mask",
+          "path": "native-optimization/migan-assets/photos512/formula_photo_bar/fill-mask.u8",
+          "bytes": 262144,
+          "sha256": "642078416b455bf415d69e291d40b0e55894a10535f16b847552cb9c9a190e91",
+          "metadata_unchanged_during_read": true
+        }
+      ],
+      "fixture_manifest_sha256": "84213e7fec278c0f915ea69dcb97151d6e43ef46ddd96381dec2ee13514264a5",
+      "unchanged_validator": {
+        "path": "native-optimization/resume-2026-11-01/pixelhacker-api-export/source-used/native-optimization/run_latent_api.py",
+        "sha256": "c056e9790db54d2394ba0afde78a07f02af0e319e6f1b33135b2a6963380fb93",
+        "function": "run_latent_api.compare_rgb",
+        "source_preparation_sha256": "d766e4c246f4df39936133af4017bdcb1f0b767c51f0a61eed135f1a237e16b8"
+      },
+      "current_eager_admission_snapshot_sha256": "1235787440dc5d8a27de1e1f5886ddc8494231bcb3f09245ecf6bdee72820768",
+      "current_eager_binary_sha256": "8e860a3401f8010ba7b1f023cba3ce9862fee5d0b6d6d4b87826290fe190a8bd",
+      "current_eager_cold_record": {
+        "engine": "pixelhacker",
+        "iteration": 0,
+        "milliseconds": 314108,
+        "rgb_sha256": "dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a"
+      },
+      "preserved_v2_producer_sha256": "4a1736e9c4079cdc4476373ff4337dcafcefa309a099c988ebe3226aa05ceff3",
+      "preserved_v2_revalidation_sha256": "e3c521c6627375f18571b855b7c5955f97df49bf6b93e0c460a80ed364f65179",
+      "known_channel_errors_independent": {
+        "current_eager_cold": 0,
+        "preserved_v2_candidate": 0
+      },
+      "comparison": {
+        "filled_components": 73728,
+        "filled_max_abs": 1,
+        "filled_mean_abs": 9.494357638888889e-05,
+        "filled_rmse": 0.009743899444723805,
+        "filled_psnr_db": 88.35614773924733,
+        "known_pixel_errors": 0,
+        "known_error_count_unit": "RGB channels",
+        "bit_exact": false,
+        "budgets": {
+          "max_abs": 2,
+          "mean_abs": 0.1,
+          "psnr_db": 50,
+          "known_exact": true
+        },
+        "qualification": "native implementation agreement only, not original-model or perceptual quality",
+        "passed": true
+      },
+      "budgets_changed": false,
+      "planned_current_candidate_calls_replaced": false,
+      "note": "This finite native-output diagnostic does not complete the current eager warm series or replace the planned current-binary candidate cold-plus-three-warm calls."
+    },
+    "current_candidate_or_performance_qualification": false
+  },
+  "portable_graph": {
+    "executed_for_this_pair": false,
+    "plan": "A separate attribution arm only if required by a native output mismatch."
+  },
+  "actual_cli_execution_included": false,
+  "exporter_sha256": "4ddf03e0c5c2c9153751d232da613818aeb87c945a93d70281eff97789466e41",
+  "artifact_policy": {
+    "model_weights_included": false,
+    "prior_receipts_modified": false,
+    "public_paths_sanitized": true,
+    "raw_samples_and_failures_retained": true
+  }
+}

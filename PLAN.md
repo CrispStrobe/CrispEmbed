@@ -52,6 +52,48 @@ Source: `docs/gpu-support-matrix.md` (branch `feat/metal-audit`).
 - Merge the ggml branch `crispembed/metal-mul-mat-prec-hp` into the fork's
   main line before this branch merges.
 
+## Permissive inpainting engines to main — 2 November 2026
+
+Branch `feat/inpaint-permissive` (from origin/main) carries MI-GAN512 (MIT
+weights), Moebius (Apache-2.0), PixelHacker (MIT weights, Apache-2.0 code), the
+SDXL VAE (MIT) and the shared graph/CPU-kernel/SHA-NI infrastructure from the
+issue71 branches, without the research-only engine (owner ruling; see
+"Not shipped" in docs/inpainting-engines.md). All
+engine gates stay experimental and default off; main's MI-GAN Metal path and
+the persistent graph both remain gated.
+
+- Open: hosted byte/tensor-type check that `CRISPEMBED_QUANTIZE_INPAINT_MIX=1`
+  reproduces the qualified private Moebius Q4_K-mix and Q8_0 VAE files.
+- Open: publication of the qualifying public GGUFs and registry entries (only
+  variants that clear the bars; Moebius Q4_K only as Q4_K-mix). Publication: pending.
+- Open: all CI green (Windows, macOS, Linux, Static guards, sibling-crispasr,
+  secret scan). MI-GAN512 Q4_K stays caveated (0.9019 on the DBNet street crop).
+
+## Issue 71 latent / MI-GAN512 qualification — 1 November 2026
+
+Branch `feat/issue71-latent-qual` (five-engines c4bb1f93 + graphs delivery 4
+06d75fb8). Not merged into feat/teleocr or main; nothing published or
+registered. Status and numbers: [precision guide](docs/inpainting-precision.md),
+HISTORY 1 November.
+
+- MI-GAN512: F32 eager and graph pass the frozen 8-fixture panel; F16/Q8_0/Q4_K
+  pass the owner cosine gate on all four execution arms. Live real-photo
+  evaluation recorded. Open: representative subtitle/video quality, a reviewed
+  author digest (only first-observed), publication decision.
+- Moebius / PixelHacker: original CUDA captures exist (Kaggle T4; PixelHacker
+  with the recorded torch 2.6.0 deviation). Eager F32 Moebius reproduces the
+  original image (RGB max diff 1) but exceeds the strict 0.002 component budget
+  on VAE moments and late UNet steps; keep that failure recorded and unchanged.
+  Pending in hosted lanes: PixelHacker native, all graph arms after the pin
+  fix, precision arms and live photos.
+- Graph core (delivery 4): initializers and parameters are now pinned against
+  gallocr reuse; graph controls pass on CPU (41302790327). CUDA/Metal graph
+  qualification needs provisioned runners.
+- Speed: the eager latent path takes 6–9 min per 512 image on 4 vCPU; graph is
+  about 25% faster. Profile before any default change.
+- HF private storage for the account is full; further private preservation
+  needs the owner to free space or upgrade.
+
 ## Native Marker-style document pipeline — 31 October 2026
 
 The requested implementation and bounded validation are complete on
@@ -445,6 +487,49 @@ outside this lane. Do not infer weight permission from a public repository.
   flicker and text-derived masks need their own gold. Other model resolutions,
   F16/quantization and GPU backends remain separate. LaMa is held on checkpoint
   terms/FFT semantics. Keep issue71 open.
+- CPU inpainting execution, 1 November 2026: native builds, unit checks and
+  live model tests were executed for this authorized run. Persistent-input
+  allocation and long GGUF tensor-name loading defects are corrected; all
+  2,080 latent tensor payloads remain unchanged. The source package records
+  executed checks separately from the remaining qualification gaps. See the
+  [completed-results report](docs/inpainting-optimization-results.md).
+- MI-GAN256/512 baseline and optimized paths each pass 20 original-model cases
+  and 1,070 stage comparisons; corresponding native stage hashes are identical.
+  Ordinary image API medians improve 2.61–3.27 times over eager on the admitted
+  256/512, four/eight-thread arms. The 512/eight-thread quiet confirmation
+  improves 3.24 times. Initial contended samples remain excluded and retained.
+- Moebius completes the four-case original replay with local/relative lambda
+  reassociation. Its integrated optional CPU depthwise path preserves all eight
+  prior generated/composited RGB outputs and all 608 reference metric records;
+  the same 35 strict absolute-stage failures remain. A completed ordinary API
+  pair also has exact RGB and known pixels, but the warm median changes from
+  142.796 to 181.397 seconds under contention. No complete-image speedup is
+  qualified; keep depthwise outside the recommended throughput preset.
+- The resumed PixelHacker eager/candidate pair completes one cold and three
+  warm calls per arm on the same executable. Native RGB agreement passes:
+  filled-channel maximum difference 1, mean 0.0000949436 and known errors 0.
+  Warm medians are 310.958/144.243 seconds; the observed 2.156 ratio remains a
+  diagnostic result from one fixture and fixed run order. Preserve the earlier
+  cancelled eager arm and timing-only revalidation unchanged. Original CUDA/FLA
+  parity, portable-only graph timing and representative quality remain open.
+- Optional SHA-NI model verification hashes every byte against the same digest,
+  with observed hardware/block counts and scalar fallback. Its bounded memory
+  hashing benchmark measures 4.6835 times the scalar throughput, separate from
+  image inference. Production CPU convolution stays at 32 MiB; the private
+  128 MiB workspace screen was mixed and is not integrated. The resumed control
+  suites pass 244 Python/CLI tests, 20 native configurations and 21 additional
+  private API-controller controls; exact reports are linked from the results.
+- Actual production CLI checks cover both MI-GAN sizes,
+  with empty masks, exact API outputs and batch-context reuse. GPU execution,
+  original PixelHacker parity, representative perceptual/video quality,
+  quantization, public bindings and downstream release qualification remain
+  separate. The current SHA-enabled CLI panel passes for every profile of that
+  research build:
+  12 invocations/16 PNGs on one binary, with exact ordinary-API outputs, empty
+  masks and both latent filled/empty/filled batches. The earlier CLI panels
+  remain separate. Keep issue71 open, all candidates default off and the
+  model/source pins intact. Follow-up work must preserve prior receipts and
+  fixed numerical budgets, including every original intermediate failure.
 - Source/wheel success is not release qualification. Require fresh portable
   native/WASM producers, installed bundle/ABI/platform consumers and full
   aggregation for the final source, then update release metadata coherently.

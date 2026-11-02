@@ -2,9 +2,17 @@
 
 This implements the image-and-mask CLI requested in
 [issue 71](https://github.com/CrispStrobe/CrispEmbed/issues/71), with persistent
-batch processing and optional DBNet text masks. The engine is the existing
-MI-GAN fixed256 CPU/F32 graph. Enable it explicitly with
-`CRISPEMBED_MIGAN=1`; unset, empty and `0` keep it disabled.
+batch processing and optional DBNet text masks. The default engine is the
+existing MI-GAN fixed256 CPU/F32 graph. Additional explicit profiles are
+MI-GAN512, Moebius and PixelHacker. See the
+[engine selection and preparation guide](inpainting-engines.md) for their
+source contracts, model conversion and command examples. Every engine requires
+its own opt-in gate; unset, empty and `0` keep it disabled.
+
+The additional `CRISPEMBED_INPAINT_GRAPH=1` execution path caches complete
+native CPU/CUDA/Metal graphs, with device-resident FFT/attention and sampling.
+See [persistent graph execution](inpainting-ggml-graphs.md) for backend
+selection, explicit mixed precision, builds and pending hardware qualification.
 
 The graph's earlier [original reference](../tests/results/migan/original-reference.json)
 and [native comparison](../tests/results/migan/native-parity.json) are unchanged.
@@ -29,14 +37,22 @@ cmake --build build-inpaint --config Release --target crispembed-cli --parallel 
 
 The executable is `build-inpaint/crispembed` with single-configuration
 generators, or `build-inpaint/Release/crispembed.exe` with Visual Studio.
-The MI-GAN inference path uses the CPU even when other CrispEmbed engines are
-built with GPU backends. No Python runtime, PyTorch or CUDA is required to run
-inpainting.
+Without the new graph gate, these paths use the earlier CPU implementations.
+The graph path selects CPU, CUDA or Metal explicitly; GPU builds and examples
+are in the linked graph guide. Native inference requires no Python or PyTorch
+runtime, and CPU/Metal execution does not require CUDA.
 
-## Prepare the exact model
+MI-GAN keeps two independently gated GPU routes. The persistent graph
+(`CRISPEMBED_INPAINT_GRAPH=1`) honours `--gpu-backend` for every engine. The
+earlier MI-GAN Metal/GPU path (`CRISPEMBED_MIGAN_GPU=1`, see
+[migan-metal.md](migan-metal.md)) also honours `--gpu-backend` for `migan256`
+and `migan512` without the graph gate; any other non-CPU `--gpu-backend`
+request without one of these gates is rejected.
 
-The CLI accepts one reviewed model, rather than guessing an architecture from a
-filename. The preparation helper uses Python 3.10 or later and only its standard
+## Prepare the default MI-GAN256 model
+
+Each engine accepts an explicit source/checkpoint contract. The default
+MI-GAN256 preparation helper uses Python 3.10 or later and only its standard
 library:
 
 ```sh
@@ -65,6 +81,7 @@ Keep `replication.json` and the `licenses/` directory beside it. The native
 loader independently checks the model's byte count and full hash before loading
 it, then uses the existing strict tensor/metadata/checkpoint checks.
 F16, quantized, 512-resolution and renamed LaMa files are rejected.
+Select the other engines explicitly; their model receipts and gates differ.
 
 For offline preparation, supply the official checkpoint and an upstream MI-GAN
 source directory at commit `2b793c5ece43f4253e32d4afc257120a5deed6f5` containing
@@ -184,7 +201,7 @@ motion estimation or blending across frames.
 
 ## Image geometry and file behavior
 
-Images larger than 256 pixels use overlapping native 256×256 tiles with a
+For the default MI-GAN256 profile, images larger than 256 pixels use overlapping native 256×256 tiles with a
 192-pixel stride. The last tile on each axis aligns to the image boundary;
 small dimensions use edge replication. The model is never resized or converted
 to a different resolution. Tiles always read the original frame, empty tiles
@@ -231,8 +248,22 @@ from prepared hosted checks. No hosted result is asserted merely because this
 workflow exists. Native compilation, actual model replication and runtime tests
 must pass before treating the new interface as validated on a platform.
 
+The additional [engine profiles](inpainting-engines.md) add their own
+source-derived native implementations and independent reference harnesses.
+Their full-model parity and hosted runtime evidence are still pending.
+
 Real subtitle/scene perceptual and seam quality, temporal consistency, LaMa,
 other MI-GAN resolutions/precisions, GPU inference, C ABI/server/language bindings,
 model publication and downstream release qualification remain separate work.
 The issue's requested video propagation and motion compensation are not exposed
 as nonfunctional flags.
+
+## Precision variants
+
+`inpaint-v1` GGUFs from `crispembed-quantize MODEL-F32.gguf OUT.gguf f16|q8_0|q4_k`
+(MI-GAN512, Moebius, PixelHacker, SDXL VAE) load with the same CLI arguments,
+passing the variant file's own SHA-256 to `--inpaint-model-sha256` /
+`--inpaint-vae-sha256`, plus `CRISPEMBED_INPAINT_QUANT=1`. Add
+`CRISPEMBED_INPAINT_QUANT_MATMUL=1` to keep stored matrices for mul_mat
+(lower memory) and `CRISPEMBED_INPAINT_GRAPH=1` for the faster persistent
+graph. See [inpainting-precision.md](inpainting-precision.md).
