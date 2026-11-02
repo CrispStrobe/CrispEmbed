@@ -10,6 +10,7 @@ tests/fixtures/marker/FONT-NOTICE.txt -whitespace
 # These first-party model cards are retained verbatim with recorded SHA-256s.
 # Preserve their original line endings and intentional Markdown line breaks.
 licenses/latent-inpaint/moebius-weights-model-card.md -text whitespace=-blank-at-eol
+licenses/latent-inpaint/moebius-upstream-README.md -text whitespace=-blank-at-eol
 licenses/latent-inpaint/pixelhacker-weights-model-card.md -text whitespace=-blank-at-eol
 licenses/latent-inpaint/sdxl-vae-model-card.md -text whitespace=-blank-at-eol
 # Frozen contracts/receipts whose exact bytes are SHA-256 pinned by tools and

@@ -1,8 +1,8 @@
 {
   "schema": "crispembed-inpaint-gguf-publication-v1",
-  "status": "prepared",
-  "approved_by_owner": false,
-  "approval": "Not yet approved for this protocol. The owner approved private preservation of these files and, earlier, public publication of experimentally working permissively licensed models with licences preserved. No existing owner-approved workflow covers inpainting GGUFs (.github/workflows/ocr-gguf-publish.yml accepts only its OCR protocols), so upload waits for an explicit go-ahead on this protocol.",
+  "status": "approved",
+  "approved_by_owner": true,
+  "approval": "Owner, 2026-11-02 (relayed by the coordinating session): \"The owner approves public publication of the permissive inpainting models per your docs/inpaint-publication-v1.json.\" Publish exactly the approved variants below, sourced from the private repositories with SHA-256 verified before upload; the private repositories stay unchanged.",
   "acceptance": "Final-output cosine against the original model, minimum over cases: F32 > 0.99, F16 > 0.98, Q8_0 > 0.97, Q4_K > 0.94 (docs/inpainting-precision.md, qualification summary). Only variants listed here clear the bar; caveats are copied into each model card.",
   "copy_rule": "Upload the exact preserved bytes (SHA-256 below) from the private repository revision; never requantize at publication time. Read back every uploaded file from the new immutable revision and compare SHA-256 before any registry entry is added.",
   "token_secret": "HF_PUBLISH_TOKEN",
@@ -30,7 +30,7 @@
             "source_revision": "e55a0e9d200633c8b6b750e5519a6fc29f5f2063",
             "source_path": "licenses/LICENSE",
             "bytes": 1083,
-            "sha256": null
+            "sha256": "674e33456b8d03693b84ab305aa7372d93c91e68b234651b0adad106d518e6eb"
           }
         },
         {
@@ -40,7 +40,7 @@
             "source_revision": "e55a0e9d200633c8b6b750e5519a6fc29f5f2063",
             "source_path": "licenses/LICENSE-WEIGHTS",
             "bytes": 1083,
-            "sha256": null
+            "sha256": "674e33456b8d03693b84ab305aa7372d93c91e68b234651b0adad106d518e6eb"
           }
         }
       ],
@@ -101,15 +101,29 @@
       "license_files": [
         {
           "path": "licenses/moebius-Apache-2.0.txt",
-          "from_repo_path": "licenses/latent-inpaint/moebius-Apache-2.0.txt"
+          "from_repo_path": "licenses/latent-inpaint/moebius-Apache-2.0.txt",
+          "bytes": 11217,
+          "sha256": "4ecabceee3bc23f3c2fa833c678eb58aad40b0845d5bb0759568c33117fa9ab4"
+        },
+        {
+          "path": "licenses/moebius-upstream-README.md",
+          "from_repo_path": "licenses/latent-inpaint/moebius-upstream-README.md",
+          "bytes": 12143,
+          "sha256": "a8a150dc5714937ac4443e966ed97dc975050184bf6f5da5f192b4986119bdc5",
+          "note": "Pinned upstream README (b88d462b); its License section states Apache-2.0 for code and weights."
         },
         {
           "path": "licenses/moebius-weights-model-card.md",
-          "from_repo_path": "licenses/latent-inpaint/moebius-weights-model-card.md"
+          "from_repo_path": "licenses/latent-inpaint/moebius-weights-model-card.md",
+          "bytes": 297,
+          "sha256": "468ac44c98f2c653675bdff4e7c1acf71d1c587f3de58fac5962863d218b11de",
+          "note": "Author Hugging Face model card (license: mit)."
         },
         {
           "path": "licenses/NOTICE.md",
-          "from_repo_path": "licenses/latent-inpaint/NOTICE.md"
+          "from_repo_path": "licenses/latent-inpaint/NOTICE.md",
+          "bytes": 5500,
+          "sha256": "f3c20309294642ac276ec74d1e6cf6afa300c8f22b240cf68e7328e3cbf21643"
         },
         {
           "path": "licenses/AUTHOR-WEIGHTS-README.md",
@@ -118,7 +132,7 @@
             "source_revision": "25f3ce9a467931c7765fcb19195d214172869f8f",
             "source_path": "gguf/moebius-f32.gguf.licenses/AUTHOR-WEIGHTS-README.md",
             "bytes": 297,
-            "sha256": null
+            "sha256": "468ac44c98f2c653675bdff4e7c1acf71d1c587f3de58fac5962863d218b11de"
           }
         },
         {
@@ -128,7 +142,7 @@
             "source_revision": "25f3ce9a467931c7765fcb19195d214172869f8f",
             "source_path": "gguf/moebius-f32.gguf.licenses/SOURCE.txt",
             "bytes": 1149,
-            "sha256": null
+            "sha256": "ad462f02f06d4fd75f1320313af58d64a5d22d9f575a68719f5991564272cdbe"
           }
         }
       ],
@@ -179,11 +193,11 @@
       "excluded": {
         "Q4_K": "plain Q4_K fails the bar on photos (0.859)"
       },
-      "companion": "cstr/SDXL-VAE-inpaint-GGUF or the VAE files inside each repo (owner choice)",
       "runtime_gates": [
         "CRISPEMBED_MOEBIUS=1",
         "CRISPEMBED_INPAINT_QUANT=1 for F16/Q8_0/Q4_K-mix"
-      ]
+      ],
+      "vae_repo": "cstr/SDXL-VAE-inpaint-GGUF"
     },
     "cstr/PixelHacker-GGUF": {
       "model": "pixelhacker",
@@ -197,19 +211,27 @@
       "license_files": [
         {
           "path": "licenses/pixelhacker-Apache-2.0.txt",
-          "from_repo_path": "licenses/latent-inpaint/pixelhacker-Apache-2.0.txt"
+          "from_repo_path": "licenses/latent-inpaint/pixelhacker-Apache-2.0.txt",
+          "bytes": 11357,
+          "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
         },
         {
           "path": "licenses/pixelhacker-weights-model-card.md",
-          "from_repo_path": "licenses/latent-inpaint/pixelhacker-weights-model-card.md"
+          "from_repo_path": "licenses/latent-inpaint/pixelhacker-weights-model-card.md",
+          "bytes": 300,
+          "sha256": "40b63b144af101b632ac003595b5fb287db26b79b9e3d6581ee475c37ca10c75"
         },
         {
           "path": "licenses/flash-linear-attention-MIT.txt",
-          "from_repo_path": "licenses/latent-inpaint/flash-linear-attention-MIT.txt"
+          "from_repo_path": "licenses/latent-inpaint/flash-linear-attention-MIT.txt",
+          "bytes": 1074,
+          "sha256": "98d913740dd16462d79ca94c88269a166673058d95c941f8fc98cb3fb39a7b45"
         },
         {
           "path": "licenses/NOTICE.md",
-          "from_repo_path": "licenses/latent-inpaint/NOTICE.md"
+          "from_repo_path": "licenses/latent-inpaint/NOTICE.md",
+          "bytes": 5500,
+          "sha256": "f3c20309294642ac276ec74d1e6cf6afa300c8f22b240cf68e7328e3cbf21643"
         },
         {
           "path": "licenses/SOURCE.txt",
@@ -218,7 +240,7 @@
             "source_revision": "fadc6a8c132e256bed314a6c3a05d02cf25bcd3d",
             "source_path": "gguf/pixelhacker-f32.gguf.licenses/SOURCE.txt",
             "bytes": 1058,
-            "sha256": null
+            "sha256": "c9efb812735cea0b0e9ed4cb9d4ed46b0d6188e4b3dcadf21d7b05ee8c70c643"
           }
         }
       ],
@@ -269,11 +291,11 @@
       "runtime_gates": [
         "CRISPEMBED_PIXELHACKER=1",
         "CRISPEMBED_INPAINT_QUANT=1 for F16/Q8_0/Q4_K"
-      ]
+      ],
+      "vae_repo": "cstr/SDXL-VAE-inpaint-GGUF"
     },
-    "sdxl_vae": {
+    "cstr/SDXL-VAE-inpaint-GGUF": {
       "model": "sdxl_vae",
-      "note": "Shared by Moebius and PixelHacker; byte-identical in both private repos. Published next to each denoiser (or in one companion repo) with the qualified pairing above.",
       "upstream": {
         "weights": "https://huggingface.co/hustvl/PixelHacker/resolve/012fd343158936a265b8a0ee38a791a7a2841f45/vae/diffusion_pytorch_model.bin",
         "checkpoint_sha256": "a59d7ea697f2942d22002dc3469e8c53db807a6b78f7f5ec03bd4c1f70f98efe",
@@ -282,7 +304,9 @@
       "license_files": [
         {
           "path": "licenses/sdxl-vae-model-card.md",
-          "from_repo_path": "licenses/latent-inpaint/sdxl-vae-model-card.md"
+          "from_repo_path": "licenses/latent-inpaint/sdxl-vae-model-card.md",
+          "bytes": 3172,
+          "sha256": "53a552bcc5cb660bd17d53e463690cd8f4d0205671603536fffbce8719d21f77"
         },
         {
           "path": "licenses/SOURCE.txt",
@@ -291,7 +315,7 @@
             "source_revision": "25f3ce9a467931c7765fcb19195d214172869f8f",
             "source_path": "gguf/sdxl-vae-f32.gguf.licenses/SOURCE.txt",
             "bytes": 1092,
-            "sha256": null
+            "sha256": "cda091029add1de228c20334edca70e8b7ec4a471906f04a114a830161dcdec6"
           }
         }
       ],
@@ -329,7 +353,8 @@
           "filename": "sdxl-vae-q4_k.gguf",
           "caveat": "qualified only paired with PixelHacker Q4_K"
         }
-      }
+      },
+      "note": "Shared by Moebius and PixelHacker (byte-identical in both private repositories). Pairings: Moebius F32/F16/Q8_0 and Q4_K-mix use the VAE F32/F16/Q8_0/Q8_0; PixelHacker F32/F16/Q8_0/Q4_K use F32/F16/Q8_0/Q4_K."
     }
   },
   "model_card_required_sections": [
@@ -337,5 +362,13 @@
     "licence of code and weights with verbatim files",
     "lineage: upstream commit, checkpoint SHA-256, converter, quantizer command and policy",
     "measured precision table with every caveat above"
-  ]
+  ],
+  "workflow": ".github/workflows/inpaint-gguf-publish.yml (tools/ci-heavy/inpaint_gguf_publish.py)",
+  "source_token_secret": "HF_TOKEN_2",
+  "converters": {
+    "migan512": "models/convert-migan-to-gguf.py (via tools/ci-heavy/migan512_qualify.sh)",
+    "moebius": "models/convert-latent-inpaint-to-gguf.py",
+    "pixelhacker": "models/convert-latent-inpaint-to-gguf.py",
+    "sdxl_vae": "models/convert-latent-inpaint-to-gguf.py"
+  }
 }
