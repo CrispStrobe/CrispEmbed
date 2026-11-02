@@ -1,3 +1,17 @@
+## 2 November 2026 — Inpainting GGUFs published and registered
+
+- Owner-approved `docs/inpaint-publication-v1.json` published by
+  `inpaint-gguf-publish.yml` from main 4290176e (runs 41467884047, 41467897168,
+  41467910374, 41467923288): exact private bytes, SHA-256 checked before upload,
+  every file re-read anonymously from an empty cache. Hub revisions:
+  cstr/MI-GAN-512-GGUF e1481f21, cstr/Moebius-inpaint-GGUF 1b2d1692,
+  cstr/PixelHacker-GGUF c93816db, cstr/SDXL-VAE-inpaint-GGUF ea6a2363. Private
+  repositories unchanged.
+- Initial PR 107 CI failure: Windows autocrlf rewrote a pinned licence text;
+  `licenses/latent-inpaint` texts are now `-text`.
+- Registry: migan512-*, moebius-* (q4_k-mix only below Q8_0), pixelhacker-*,
+  sdxl-vae-inpaint-*; engines stay experimental and gated.
+
 ## 2 November 2026 — OCR quality contract: stale source pins recorded and re-pinned (fix/ocr-quality-contract-pins)
 
 - Initial failure retained: the OCR quality contract failed in runs 41416111941 and
