@@ -61,7 +61,8 @@ def main():
         rec["lm_head_vs_embed_maxabs"] = float(np.abs(a - b).max())
         del a, b
     for fn in files:
-        path = os.path.join(SCR, "models", fn)
+        path = fn if os.path.isabs(fn) else os.path.join(SCR, "models", fn)
+        fn = os.path.basename(fn)
         if not os.path.exists(path):
             os.makedirs(os.path.dirname(path), exist_ok=True)
             urllib.request.urlretrieve(
@@ -83,11 +84,13 @@ def main():
                          "max_abs_delta": float(np.abs(d).max()), "ref_max_abs": float(np.abs(ref).max()),
                          "rel_l2": float(np.linalg.norm(d) / (np.linalg.norm(ref) + 1e-30))})
         rows.sort(key=lambda x: x.get("cos", -9))
+        exact = sum(1 for x in rows if x.get("cos", 0) > 0.999999)
+        print(f"   {fn}: {exact}/{len(rows)} tensors at cos > 0.999999")
         rec["files"][fn] = rows
         print(f"== {fn}: {len(rows)} LLM tensors; worst 12 by cosine")
         for x in rows[:12]:
             print("  ", json.dumps(x))
-    with open(os.path.join(OUT, "tensor-audit.json"), "w") as fo:
+    with open(os.path.join(OUT, os.environ.get("AUDIT_NAME", "tensor-audit.json")), "w") as fo:
         json.dump(rec, fo, indent=1)
     print("original head tensors:", head, "lm_head==embed:", rec.get("lm_head_equals_embed"))
 
