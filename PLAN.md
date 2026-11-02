@@ -13,14 +13,18 @@ differs from the old file only inside that span. Stage diff is cos 1.000000 on a
   41397551540 as `got-ocr2-f16-r2.gguf`, Hub `c0f1aa7b5b52c15002e911d5d630e6d0dcb3ba8f`, sha256
   `98b431ab…` (local = LFS = empty-cache readback). Registry `got-ocr2-f16`. M1 Metal fox exact.
   DONE except the item below.
-- **GOT pipeline gap against the original, all precisions** (q4_k, q8_0, F16 alike): native
-  output is not token-exact against stepfun-ai/GOT-OCR-2.0-hf on receipt_example and simple_form.
-  The native arms add receipt Qty/Price columns that the original omits, and they drop simple_form
-  fields. Candidates to A/B one at a time, each behind a gate against the original's token IDs:
-  (1) image resize: native nearest-neighbour 1024x1024 vs HF processor interpolation;
-  (2) prompt "OCR" token 93495 (native) vs 80577 (HF processor);
-  (3) native no-repeat-ngram 3 vs the original generation config.
-  Harness: `tools/ci-heavy/got_ocr2_f16_republish.sh` (compare.json) / `got_ocr2_hf_probe.py`.
+- **GOT pipeline gap against the original: fixed on `fix/got-ocr2-pipeline-parity`** (PR open,
+  see HISTORY 2 November). Three causes, all gated and default on: Pillow bicubic resize
+  (`CRISPEMBED_GOT_OCR_PIL_BICUBIC`), the original system string's indentation token 286
+  (`CRISPEMBED_GOT_OCR_ORIG_SYSTEM`), and no-repeat-ngram 20 over prompt+generated
+  (`CRISPEMBED_GOT_OCR_ORIG_NGRAM`). F16 is now token-exact against stepfun-ai/GOT-OCR2_0 on
+  all three frozen cases (x86 CPU and M1 Metal). The "OCR" token was not a cause: 93495 is the
+  original's; 80577 (" OCR") is a leading-space artifact of the HF port's processor, which is not
+  a faithful reference (it also drops the indentation and the ngram rule).
+  Open: Q4_K stays non-exact on receipt_example (ratio 0.7005, first divergence 83) and
+  simple_form (0.8865, divergence 20) — quantization drift, now measurable against the exact
+  F16 pipeline; the earlier HF-port-based page comparisons (got_ocr2_f16_republish.sh) used the
+  HF port as "original" and should be re-pointed at got_ocr2_orig_probe.py if rerun.
 
 
 Source: `docs/gpu-support-matrix.md` §CUDA audit (branch `feat/cuda-audit`, Kaggle T4).
