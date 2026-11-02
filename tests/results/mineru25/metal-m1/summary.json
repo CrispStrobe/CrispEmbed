@@ -1,0 +1,197 @@
+{
+ "schema": "crispembed.qwen2vl.device-summary.v1",
+ "rows": [
+  {
+   "receipt": "f16-metal-hp.json",
+   "precision": "f16",
+   "device": "metal",
+   "label": "hp",
+   "extra_env": {
+    "CRISPEMBED_MINERU25_PRO_METAL_F32_MATMUL": "1"
+   },
+   "cases": 8,
+   "exact": 8,
+   "divergences": {},
+   "consistent": true,
+   "warm_ms_sum": 95227.181957,
+   "cold_ms_sum": 101488.759834,
+   "max_rss_mib": 2876.875,
+   "per_case_warm_ms": {
+    "formula": 1455.773916,
+    "table": 4521.485083,
+    "receipt": 8939.368208,
+    "german": 37886.245,
+    "japanese": 2709.889417,
+    "arabic": 670.454875,
+    "layout-page": 21751.584708,
+    "layout-rot90": 17292.38075
+   },
+   "min_final_cosine": 0.9995777597857606,
+   "cosine_bar_pass": true,
+   "cosine_reference": "f32-cpu"
+  },
+  {
+   "receipt": "f16-metal.json",
+   "precision": "f16",
+   "device": "metal",
+   "label": "",
+   "extra_env": {},
+   "cases": 8,
+   "exact": 8,
+   "divergences": {},
+   "consistent": true,
+   "warm_ms_sum": 99235.21683399999,
+   "cold_ms_sum": 121176.255792,
+   "max_rss_mib": 2339.015625,
+   "per_case_warm_ms": {
+    "formula": 1600.503,
+    "table": 4664.108583,
+    "receipt": 9792.419959,
+    "german": 43543.861625,
+    "japanese": 2481.652959,
+    "arabic": 643.465708,
+    "layout-page": 20836.8675,
+    "layout-rot90": 15672.3375
+   },
+   "min_final_cosine": 0.8800105582139324,
+   "cosine_bar_pass": false,
+   "cosine_reference": "f32-cpu"
+  },
+  {
+   "receipt": "f32-cpu.json",
+   "precision": "f32",
+   "device": "cpu",
+   "label": "",
+   "extra_env": {},
+   "cases": 8,
+   "exact": 8,
+   "divergences": {},
+   "consistent": true,
+   "warm_ms_sum": 386827.73441699997,
+   "cold_ms_sum": 350132.28804,
+   "max_rss_mib": 4526.15625,
+   "per_case_warm_ms": {
+    "formula": 3108.665041,
+    "table": 11519.877875,
+    "receipt": 24470.494417,
+    "german": 173054.765167,
+    "japanese": 10712.09475,
+    "arabic": 2132.568583,
+    "layout-page": 85149.348,
+    "layout-rot90": 76679.920584
+   }
+  },
+  {
+   "receipt": "q4_k-dq8-metal-hp.json",
+   "precision": "q4_k-dq8",
+   "device": "metal",
+   "label": "hp",
+   "extra_env": {
+    "CRISPEMBED_MINERU25_PRO_METAL_F32_MATMUL": "1"
+   },
+   "cases": 8,
+   "exact": 8,
+   "divergences": {},
+   "consistent": true,
+   "warm_ms_sum": 78307.96708399999,
+   "cold_ms_sum": 80059.728335,
+   "max_rss_mib": 2563.609375,
+   "per_case_warm_ms": {
+    "formula": 946.748583,
+    "table": 2645.39325,
+    "receipt": 6395.629792,
+    "german": 32836.623292,
+    "japanese": 1900.439042,
+    "arabic": 564.205458,
+    "layout-page": 17377.792208,
+    "layout-rot90": 15641.135459
+   },
+   "min_final_cosine": 0.8020092381006515,
+   "cosine_bar_pass": false,
+   "cosine_reference": "f32-cpu"
+  },
+  {
+   "receipt": "q4_k-dq8-metal.json",
+   "precision": "q4_k-dq8",
+   "device": "metal",
+   "label": "",
+   "extra_env": {},
+   "cases": 8,
+   "exact": 8,
+   "divergences": {},
+   "consistent": true,
+   "warm_ms_sum": 79429.514625,
+   "cold_ms_sum": 81841.710247,
+   "max_rss_mib": 2615.828125,
+   "per_case_warm_ms": {
+    "formula": 1017.989125,
+    "table": 2948.381125,
+    "receipt": 6635.39975,
+    "german": 32604.569542,
+    "japanese": 1963.876917,
+    "arabic": 527.932583,
+    "layout-page": 17968.760583,
+    "layout-rot90": 15762.605
+   },
+   "min_final_cosine": 0.7252688487933288,
+   "cosine_bar_pass": false,
+   "cosine_reference": "f32-cpu"
+  },
+  {
+   "receipt": "q8_0-metal-hp.json",
+   "precision": "q8_0",
+   "device": "metal",
+   "label": "hp",
+   "extra_env": {
+    "CRISPEMBED_MINERU25_PRO_METAL_F32_MATMUL": "1"
+   },
+   "cases": 8,
+   "exact": 8,
+   "divergences": {},
+   "consistent": true,
+   "warm_ms_sum": 85094.579333,
+   "cold_ms_sum": 87156.554375,
+   "max_rss_mib": 2155.78125,
+   "per_case_warm_ms": {
+    "formula": 955.163334,
+    "table": 2674.80775,
+    "receipt": 7235.506541,
+    "german": 34775.50625,
+    "japanese": 1998.916834,
+    "arabic": 542.053125,
+    "layout-page": 19641.235208,
+    "layout-rot90": 17271.390291
+   },
+   "min_final_cosine": 0.9993421648256406,
+   "cosine_bar_pass": true,
+   "cosine_reference": "f32-cpu"
+  },
+  {
+   "receipt": "q8_0-metal.json",
+   "precision": "q8_0",
+   "device": "metal",
+   "label": "",
+   "extra_env": {},
+   "cases": 8,
+   "exact": 8,
+   "divergences": {},
+   "consistent": true,
+   "warm_ms_sum": 76976.997917,
+   "cold_ms_sum": 81511.97475,
+   "max_rss_mib": 2540.53125,
+   "per_case_warm_ms": {
+    "formula": 929.190917,
+    "table": 2875.846,
+    "receipt": 6344.657709,
+    "german": 31356.367916,
+    "japanese": 2036.994041,
+    "arabic": 520.674875,
+    "layout-page": 17751.426959,
+    "layout-rot90": 15161.8395
+   },
+   "min_final_cosine": 0.8813054622358213,
+   "cosine_bar_pass": false,
+   "cosine_reference": "f32-cpu"
+  }
+ ]
+}

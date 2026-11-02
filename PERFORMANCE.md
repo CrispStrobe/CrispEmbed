@@ -44,6 +44,27 @@ eight frozen fixtures, CPU at 4 threads, machine shared (load 6–27):
 1080p synthetic subtitle frames, Metal F32 batch 1: 14 tiles 10.7 s, 20 tiles
 11.9 s; CPU/F32 in the same processes 17–60 s. Hosted x86 4 vCPU: CPU/F32
 1080p 0.83 tiles/s; delivery-5 CPU kernels 630 ms/tile. Diagnostic only.
+## 1 November 2026 — TeleOCR / MinerU2.5-Pro on Apple M1 Metal vs CPU
+
+Warm wall time per recognition, resident context, shared M1 (other agents
+active; CPU figures are upper bounds, load average up to 39). Receipts:
+`tests/results/teleocr/metal-m1/`, `tests/results/mineru25/metal-m1/`.
+
+| Model | Precision | Device | Cases | Exact | Warm s (sum) |
+|---|---|---|---|---|---|
+| TeleOCR | F16 | Metal | 6 | 6/6 | 112.1 |
+| TeleOCR | Q8_0 | Metal | 6 | 6/6 | 97.1 |
+| TeleOCR | Q4_K_M | Metal | 6 | 6/6 | 87.7 |
+| TeleOCR | F16 | CPU 4 threads | 6 | 6/6 | 604.7 |
+| TeleOCR | F16 | Metal, old path (CPU attention) | 3 | 3/3 | 39.9 (new path 16.9) |
+| MinerU | F16 | Metal (F32-activation kernels) | 8 | 8/8 | 95.2 |
+| MinerU | Q8_0 | Metal (F32-activation kernels) | 8 | 8/8 | 85.1 |
+| MinerU | F32 | CPU 4 threads | 8 | 8/8 | 386.8 |
+
+A quieter CPU measurement of TeleOCR `text` took 15.6 s warm against 4.5 s on
+Metal. TODO: TeleOCR vision is still ~half of Metal time on large pages; the
+3420-wide FFN-down hits the bounds-checked mul_mm (opt-in
+`CRISPEMBED_QWEN2VL_METAL_SPLIT_K` is implemented but not A/B'd).
 
 ## 31 October 2026 — Native Marker-style CPU document conversion
 
