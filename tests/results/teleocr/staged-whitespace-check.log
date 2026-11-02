@@ -1,0 +1,70 @@
+tests/results/teleocr/binding-compilation/dart/lib/crispembed.dart:1893: trailing whitespace.
++    
+tests/results/teleocr/build-production.log:2152: trailing whitespace.
++      |              ~~~~~~~~~~~~~          
+tests/results/teleocr/build-production.log:2174: trailing whitespace.
++      |               ~~~~~~~~~~~~~~~~~~~~  
+tests/results/teleocr/build-production.log:2192: trailing whitespace.
++      |               ~~~~~~~~~~~~~~        
+tests/results/teleocr/build-production.log:2246: trailing whitespace.
++      |               ~~~~~~~~~~~~~~~~      
+tests/results/teleocr/build-production.log:2264: trailing whitespace.
++      |              ~~~~~~~~~~~~~          
+tests/results/teleocr/build-production.log:2282: trailing whitespace.
++      |               ~~~~~~~~~~~~~~~~~~~~  
+tests/results/teleocr/build-production.log:2300: trailing whitespace.
++      |               ~~~~~~~~~~~~~~        
+tests/results/teleocr/build-production.log:2354: trailing whitespace.
++      |               ~~~~~~~~~~~~~~~~      
+tests/results/teleocr/build-production.log:2372: trailing whitespace.
++      |              ~~~~~~~~~~~~~          
+tests/results/teleocr/build-production.log:2390: trailing whitespace.
++      |               ~~~~~~~~~~~~~~~~~~~~  
+tests/results/teleocr/build-production.log:2408: trailing whitespace.
++      |               ~~~~~~~~~~~~~~        
+tests/results/teleocr/build-production.log:2462: trailing whitespace.
++      |               ~~~~~~~~~~~~~~~~      
+tests/results/teleocr/build-production.log:4644: trailing whitespace.
++      |              ~~~~~~~~~~~~~          
+tests/results/teleocr/build-production.log:4666: trailing whitespace.
++      |               ~~~~~~~~~~~~~~~~~~~~  
+tests/results/teleocr/build-production.log:4684: trailing whitespace.
++      |               ~~~~~~~~~~~~~~        
+tests/results/teleocr/build-production.log:4738: trailing whitespace.
++      |               ~~~~~~~~~~~~~~~~      
+tests/results/teleocr/build-production.log:4756: trailing whitespace.
++      |              ~~~~~~~~~~~~~          
+tests/results/teleocr/build-production.log:4774: trailing whitespace.
++      |               ~~~~~~~~~~~~~~~~~~~~  
+tests/results/teleocr/build-production.log:4792: trailing whitespace.
++      |               ~~~~~~~~~~~~~~        
+tests/results/teleocr/build-production.log:4846: trailing whitespace.
++      |               ~~~~~~~~~~~~~~~~      
+tests/results/teleocr/build-production.log:4864: trailing whitespace.
++      |              ~~~~~~~~~~~~~          
+tests/results/teleocr/build-production.log:4882: trailing whitespace.
++      |               ~~~~~~~~~~~~~~~~~~~~  
+tests/results/teleocr/build-production.log:4900: trailing whitespace.
++      |               ~~~~~~~~~~~~~~        
+tests/results/teleocr/build-production.log:4954: trailing whitespace.
++      |               ~~~~~~~~~~~~~~~~      
+tests/results/teleocr/final-source-review/src-qwen2vl_ocr.cpp.patch:4: trailing whitespace.
++ 
+tests/results/teleocr/final-source-review/src-qwen2vl_ocr.cpp.patch:6: trailing whitespace.
++ 
+tests/results/teleocr/final-source-review/src-qwen2vl_ocr.cpp.patch:38: trailing whitespace.
++ 
+tests/results/teleocr/final-source-review/src-qwen2vl_ocr.h.patch:10: trailing whitespace.
++ 
+tests/results/teleocr/final-source-review/src-qwen2vl_ocr.h.patch:10: new blank line at EOF.
+tests/results/teleocr/native-q4-large/code.log:502: new blank line at EOF.
+tests/results/teleocr/parser-f16/source-snapshot/flutter/crispembed/lib/src/crispembed.dart:1893: trailing whitespace.
++    
+tests/results/teleocr/public-f16/source-snapshot/flutter/crispembed/lib/src/crispembed.dart:1893: trailing whitespace.
++    
+tests/results/teleocr/rust-install.log:13: trailing whitespace.
++To get started you need Cargo's bin directory 
+tests/results/teleocr/rust-install.log:18: trailing whitespace.
++the corresponding env file under 
+tests/results/teleocr/rust-install.log:22: trailing whitespace.
++. "/workspace/scratch/960329398638/toolchains/cargo/env" # For 

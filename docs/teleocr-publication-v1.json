@@ -1,0 +1,173 @@
+{
+  "schema": "crispembed-ocr-gguf-publication-v1",
+  "approved_by_owner": true,
+  "approval": "Owner instructed conversion, quantization and upload to a CrispEmbed HF repo with full wiring (2026-10-31). A variant is publishable only when its committed receipt shows every case token-ID exact against the pinned original Python model.",
+  "destination": "cstr/TeleOCR-GGUF",
+  "token_secret": "HF_PUBLISH_TOKEN",
+  "source_contract": "tests/results/teleocr/source-manifest.json",
+  "spec": "docs/teleocr.md",
+  "upstream": {
+    "repo": "XingChen-AGI/TeleOCR",
+    "revision": "b3f6a0c084db72f971e19a779d2fd8a6bc9e3b8d",
+    "license": "qwen-research",
+    "copyright": "XingChen-AGI / China Telecom; modeling code Copyright 2025 The Qwen Team and The HuggingFace Inc. team",
+    "readme": {
+      "bytes": 16801,
+      "sha256": "176c705cd92eeb9006c048e72274741e839f2bafa2bae858e64c3277264eb0db"
+    },
+    "license_file": {
+      "note": "Neither the model repository nor the official code repository ships a LICENSE file (2026-10-31); the model card declares apache-2.0 and modeling_naviocr.py carries an Apache-2.0 header. The verbatim text is the canonical Apache-2.0 file, byte-identical to models/licenses/apache-2.0/LICENSE.",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    "notice_file": {
+      "present": false,
+      "note": "No upstream NOTICE file exists; the card carries attribution and the statement of changes."
+    },
+    "license_lineage": {
+      "evidence": "tests/results/licenses/qwen-vision-lineage.json",
+      "note": "Upstream declares apache-2.0, but the vision tower derives from Qwen/Qwen2.5-VL-3B-Instruct (deep-layer cosine 0.99 vs <=0.56 for every Apache-2.0 Qwen2.5 tower), released under the Qwen RESEARCH LICENSE AGREEMENT. That agreement governs the weights; Apache-2.0 covers the TeleOCR authors' own modifications and the Qwen3-0.6B-derived decoder to the extent separable."
+    }
+  },
+  "converter": {
+    "script": "models/convert-teleocr-to-gguf.py",
+    "args": [
+      "--model",
+      "{src}",
+      "--output",
+      "{out}"
+    ],
+    "requirements": "models/requirements-teleocr.txt"
+  },
+  "default_variants": [
+    "F16",
+    "Q8_0",
+    "Q4_K_M"
+  ],
+  "recipes": {
+    "F32": {
+      "filename": "teleocr-f32.gguf",
+      "from": "convert",
+      "convert_args": [
+        "--dtype",
+        "f32"
+      ],
+      "note": "lossless conversion"
+    },
+    "F16": {
+      "filename": "teleocr-f16.gguf",
+      "from": "convert",
+      "convert_args": [
+        "--dtype",
+        "f16"
+      ],
+      "note": "F16 matrices, F32 norms/biases",
+      "precision_receipt": "tests/results/teleocr/hosted-precision.json",
+      "precision_dtype": "f16"
+    },
+    "Q8_0": {
+      "filename": "teleocr-q8_0.gguf",
+      "from": "convert",
+      "convert_args": [
+        "--dtype",
+        "q8_0"
+      ],
+      "note": "decoder matrices Q8_0; vision, merger and tied embedding F16",
+      "precision_receipt": "tests/results/teleocr/hosted-precision.json",
+      "precision_dtype": "q8_0"
+    },
+    "Q4_K": {
+      "filename": "teleocr-q4_k.gguf",
+      "from": "F16",
+      "type": "q4_k",
+      "tensor_type": [
+        "v.*=f16",
+        "l.embed_tokens.weight=f16"
+      ],
+      "note": "decoder matrices Q4_K; vision, merger and tied embedding F16",
+      "precision_receipt": "tests/results/teleocr/hosted-precision.json",
+      "precision_dtype": "q4_k"
+    },
+    "Q4_K_M": {
+      "filename": "teleocr-q4_k-m.gguf",
+      "from": "F16",
+      "type": "q4_k",
+      "tensor_type": [
+        "v.*=f16",
+        "l.embed_tokens.weight=f16",
+        "l.blk.*.ffn_down.weight=q6_k",
+        "l.blk.*.attn_v.weight=q6_k"
+      ],
+      "note": "decoder Q4_K with ffn_down/attn_v Q6_K; vision, merger and tied embedding F16",
+      "precision_receipt": "tests/results/teleocr/hosted-precision.json",
+      "precision_dtype": "q4_k-m"
+    },
+    "Q4_K_ATTN8": {
+      "filename": "teleocr-q4_k-attn8.gguf",
+      "from": "F16",
+      "type": "q4_k",
+      "tensor_type": [
+        "v.*=f16",
+        "l.embed_tokens.weight=f16",
+        "l.blk.*.attn_*=q8_0"
+      ],
+      "note": "decoder FFN Q4_K, attention Q8_0; vision, merger and tied embedding F16",
+      "precision_receipt": "tests/results/teleocr/hosted-precision.json",
+      "precision_dtype": "q4_k-attn8"
+    }
+  },
+  "receipts": {
+    "parity": "tests/results/teleocr/hosted-parity.json"
+  },
+  "parity_arms": [
+    "f32"
+  ],
+  "parity_cases": [
+    "text",
+    "formula",
+    "table",
+    "code",
+    "layout",
+    "synthetic"
+  ],
+  "qualification": {
+    "default_enabled": false,
+    "gate": "F32 token-ID exact on all six frozen cases against the pinned original module; reduced precisions publish only when token-ID exact on every case",
+    "registry_alias": "added only after upload, with the real published SHA256",
+    "recipe_note": "Hosted 41221930556: F32/F16/Q8_0 and Q4_K_M token-exact on all six cases; plain Q4_K diverges on code (also 41218184857), Q4_K_ATTN8 on table and code. Vision stays F16 in every recipe, so Q4_K_M is 1,834 MB vs 2,015 MB for Q8_0."
+  },
+  "card": {
+    "title": "TeleOCR",
+    "authors": "XingChen-AGI / China Telecom",
+    "tags": [
+      "document-parsing",
+      "teleocr",
+      "qwen2.5-vl",
+      "non-commercial"
+    ],
+    "runtime_note": "They target CrispEmbed's TeleOCR profile (`general.architecture = teleocr`, GGUF v1) and are not loadable by llama.cpp.",
+    "license_note": "the model card declares `license: apache-2.0` and the model's `modeling_naviocr.py` carries an Apache-2.0 header, but no LICENSE file is shipped upstream, so this is the canonical Apache-2.0 text from apache.org",
+    "not_verified": "Strict intermediate numerical budgets are not met, including F32: one-ulp differences on the model's massive activations are amplified where they emerge (vision block 17); decoded IDs and text are exact. Also not verified: GPU numerical parity, other CPU/kernel combinations, mobile/WASM, aggregate OCR benchmarks beyond the six frozen cases.",
+    "usage": "TeleOCR support is experimental and default-off in CrispEmbed (CPU by default), and non-commercial only:\n\n```bash\nCRISPEMBED_TELEOCR=1 CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1 crispembed --ocr-pipeline page.png \\\\\n  --ocr-engine teleocr --ocr-rec {first}\n```",
+    "license_frontmatter": "license: other\nlicense_name: qwen-research\nlicense_link: LICENSE",
+    "license_md": "- **Non-commercial use only.** TeleOCR's vision encoder derives from [Qwen/Qwen2.5-VL-3B-Instruct](https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct), which Alibaba Cloud releases under the **Qwen RESEARCH LICENSE AGREEMENT** (`LICENSE`, verbatim). That agreement governs these weights: research and evaluation use only; commercial use requires a license from Alibaba Cloud.\n- The upstream TeleOCR card declares `apache-2.0`; that declaration (`LICENSE-APACHE-2.0`) covers the TeleOCR authors' own contributions but cannot relax the inherited Qwen terms (agreement section 3d). The lineage evidence (per-tensor weight cosines against every Qwen2.5-VL tower) is in CrispEmbed's `tests/results/licenses/qwen-vision-lineage.json`.\n- `NOTICE` carries the attribution the Qwen agreement requires. **Built with Qwen.**\n- CrispEmbed only loads these files with `CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1`, and its model registry requires `--accept-license qwen-research` to download them."
+  },
+  "license_files": [
+    {
+      "name": "LICENSE",
+      "url": "https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct/resolve/66285546d2b821cf421d4f5eb2576359d3770cd3/LICENSE",
+      "bytes": 7387,
+      "sha256": "b5c0e5cf74cf51af1ecbc4af597cfcd13fd9925611838884a681070838a14a50",
+      "note": "Qwen RESEARCH LICENSE AGREEMENT, verbatim, from Qwen/Qwen2.5-VL-3B-Instruct at a pinned revision"
+    },
+    {
+      "name": "LICENSE-APACHE-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "note": "Apache-2.0 text for the TeleOCR authors' declared license and the Qwen3-0.6B decoder lineage"
+    }
+  ],
+  "notice_text": "Qwen is licensed under the Qwen RESEARCH LICENSE AGREEMENT, Copyright (c) Alibaba Cloud. All Rights Reserved.\n\nBuilt with Qwen.\n\nThese GGUF files are format conversions (and, where noted, quantizations) by CrispEmbed of XingChen-AGI/TeleOCR (revision b3f6a0c084db72f971e19a779d2fd8a6bc9e3b8d). TeleOCR's vision encoder derives from Qwen2.5-VL-3B-Instruct and its language model from Qwen3-0.6B. Use is limited to non-commercial purposes under the Qwen RESEARCH LICENSE AGREEMENT (see LICENSE); commercial use requires a license from Alibaba Cloud. The TeleOCR authors' Apache-2.0 declaration (see LICENSE-APACHE-2.0) does not remove that restriction.\n"
+}

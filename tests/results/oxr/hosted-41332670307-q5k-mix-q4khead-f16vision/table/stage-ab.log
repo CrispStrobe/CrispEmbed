@@ -1,0 +1,7 @@
+vision.merge           max_abs=2.556e-04 rel=5.613e-07 cos=1.000000000
+visual.embeddings      max_abs=5.358e-03 rel=4.220e-02 cos=0.999825828
+llm.input              max_abs=1.236e-02 rel=3.696e-03 cos=0.999982591
+llm.layer.27           max_abs=1.761e+02 rel=7.829e-03 cos=0.999744357
+llm.norm               max_abs=9.242e+00 rel=1.401e-01 cos=0.985764191
+llm.logits             max_abs=1.873e+00 rel=7.948e-02 cos=0.981157527
+earliest_over_budget: visual.embeddings first tokens: 20993 20993

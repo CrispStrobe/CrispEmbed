@@ -1,0 +1,55 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "-m",
+  "parseq-tiny-q8_0.gguf",
+  "--ocr",
+  "fox.png"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    0.716,
+    0.716
+   ],
+   "gpu_mem_peak_mib": 115,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\nparseq: embed=192 enc_layers=12 heads=3 ffn=768 patch=[4,8] img=[32,128] patches=128\nparseq: charset=97 tokens\n",
+   "stdout_sha256": "8faaa71a0fe37e6c2397307116fb5dcb0ae03fd91ec3cb6452c5ba503325344a",
+   "stdout": "Gooducalicanos.com\n",
+   "vs_cpu": {
+    "byte_identical": true,
+    "text_exact": true,
+    "char_ratio": 1.0,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    0.215,
+    0.215
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "crispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\nparseq: embed=192 enc_layers=12 heads=3 ffn=768 patch=[4,8] img=[32,128] patches=128\nparseq: charset=97 tokens\n",
+   "stdout_sha256": "8faaa71a0fe37e6c2397307116fb5dcb0ae03fd91ec3cb6452c5ba503325344a",
+   "stdout": "Gooducalicanos.com\n"
+  }
+ },
+ "precision": "q8_0",
+ "bar": 0.97,
+ "seconds": 2.8,
+ "id": "parseq-tiny.fox",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

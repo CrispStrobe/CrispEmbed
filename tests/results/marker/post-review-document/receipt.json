@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "completed_utc": "2026-10-31T19:22:30.254196+00:00",
+  "change": "Targeted Markdown Code/ChemicalBlock/Equation control-byte normalization for NUL-terminated C API output, plus regression tests; clang-format18.1.8 formatting only otherwise.",
+  "before_snapshot": "../format-review-before/document-sources-before.zip",
+  "formatter_version": "clang-format version 18.1.8",
+  "format_command": [
+    "clang-format-18",
+    "-i",
+    "src/marker_document.cpp",
+    "src/marker_document.h",
+    "tests/test-marker-document.cpp"
+  ],
+  "format_exit_code": 0,
+  "format_check_exit_code": 0,
+  "compiler_version": "g++ (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0",
+  "compile_command": [
+    "g++",
+    "-std=c++17",
+    "-O0",
+    "-g",
+    "-Wall",
+    "-Wextra",
+    "-Wpedantic",
+    "-I",
+    "src",
+    "src/marker_document.cpp",
+    "tests/test-marker-document.cpp",
+    "-o",
+    "../validation/test-marker-document-post-review"
+  ],
+  "compile_exit_code": 0,
+  "compile_seconds": 4.729963590994885,
+  "run_command": [
+    "../validation/test-marker-document-post-review"
+  ],
+  "run_exit_code": 0,
+  "expected_checks": 86,
+  "source_sha256": {
+    "src/marker_document.cpp": "58ec0d2c03bfe33798f5c04ae5b62de0b64f9e35ec9bf7eef48ff176115da1af",
+    "src/marker_document.h": "478460f76c827440f30f8d66af20791307e7fd74cb4047628d1833b2f864d3d5",
+    "tests/test-marker-document.cpp": "a43ad9641e9ede10d848fe50eff794595abaa0c09ef43161235200caa238a52a"
+  },
+  "final_source_sha256": {
+    "src/marker_document.cpp": "58ec0d2c03bfe33798f5c04ae5b62de0b64f9e35ec9bf7eef48ff176115da1af",
+    "src/marker_document.h": "478460f76c827440f30f8d66af20791307e7fd74cb4047628d1833b2f864d3d5",
+    "tests/test-marker-document.cpp": "a43ad9641e9ede10d848fe50eff794595abaa0c09ef43161235200caa238a52a"
+  },
+  "source_unchanged_during_test": true,
+  "passed": true,
+  "logs_sha256": {
+    "compiler-version.txt": "78b5d66fa8e53c3cfadb14889dfb5936f1c58888ad49c019e15d3dc59fc64e30",
+    "document-test.log": "d47b9c2eeb785f32abe760b6c18e7ae6a3d69182581fb6e8846677ccdc166c4a",
+    "format.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "compile.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "format-check.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

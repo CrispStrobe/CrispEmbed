@@ -1,0 +1,45 @@
+{
+ "kind": "diff",
+ "binary": "test-nafnet-diff",
+ "arms": {
+  "cuda": {
+   "rc": 0,
+   "wall_s": 1.117,
+   "gpu_mem_peak_mib": 277,
+   "cuda_used": true,
+   "n_stages": 1,
+   "stages": {
+    "output": 0.999995
+   },
+   "worst_stage": [
+    "output",
+    0.999995
+   ],
+   "threshold_fails": [],
+   "threshold_missing": [],
+   "stdout_tail": "Output: 64x64\noutput: cos_min=0.999995 max_abs=2.34e-03 PASS\n\n1 passed, 0 failed\n\ncrispembed_diff: loaded 16 tensors from $SCRATCH/models/nafnet-ref.gguf\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\nnafnet: width=32, enc=[2,2,4,8], mid=12, dec=[2,2,2,2], 664 tensors\nnafnet: intro done (64x64, 32 ch)\nnafnet: enc stage 0 done (32x32, 64 ch)\nnafnet: enc stage 1 done (16x16, 128 ch)\nnafnet: enc stage 2 done (8x8, 256 ch)\nnafnet: enc stage 3 done (4x4, 512 ch)\nnafnet: middle done (12 blocks)\nnafnet: dec stage 0 done (8x8, 256 ch)\nnafnet: dec stage 1 done (16x16, 128 ch)\nnafnet: dec stage 2 done (32x32, 64 ch)\nnafnet: dec stage 3 done (64x64, 32 ch)\nnafnet: done (64x64)\n"
+  },
+  "cpu": {
+   "rc": 0,
+   "wall_s": 0.817,
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "n_stages": 1,
+   "stages": {
+    "output": 0.999995
+   },
+   "worst_stage": [
+    "output",
+    0.999995
+   ],
+   "threshold_fails": [],
+   "threshold_missing": [],
+   "stdout_tail": "Output: 64x64\noutput: cos_min=0.999995 max_abs=2.34e-03 PASS\n\n1 passed, 0 failed\n\ncrispembed_diff: loaded 16 tensors from $SCRATCH/models/nafnet-ref.gguf\nggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\nnafnet: width=32, enc=[2,2,4,8], mid=12, dec=[2,2,2,2], 664 tensors\nnafnet: intro done (64x64, 32 ch)\nnafnet: enc stage 0 done (32x32, 64 ch)\nnafnet: enc stage 1 done (16x16, 128 ch)\nnafnet: enc stage 2 done (8x8, 256 ch)\nnafnet: enc stage 3 done (4x4, 512 ch)\nnafnet: middle done (12 blocks)\nnafnet: dec stage 0 done (8x8, 256 ch)\nnafnet: dec stage 1 done (16x16, 128 ch)\nnafnet: dec stage 2 done (32x32, 64 ch)\nnafnet: dec stage 3 done (64x64, 32 ch)\nnafnet: done (64x64)\n"
+  }
+ },
+ "seconds": 2.9,
+ "id": "diff-nafnet-f16",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

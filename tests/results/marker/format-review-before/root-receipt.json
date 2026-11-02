@@ -1,0 +1,14 @@
+{
+  "stage": "executed F16 full panel before final formatting/review",
+  "source_sha256": {
+    "src/marker.cpp": "00d892433a64497fb657cc31b95f7770d02aa101ddce624457f771931b297db2",
+    "src/marker_backend.cpp": "ce0982e5e0278960bac0a8fde1aec83b32563f7571eedbbf17b35d1d02466bae",
+    "src/marker_backend.h": "e4f028f64d3a9aecd0b582064b574c4fa7d8edcca3fcf6bc149b4c1c7c50bbe6",
+    "src/crispembed.h": "872d2e8cab569320e984ee60f86a9ee07b5d5fe01b2e3faf859b3a9594bfe33c",
+    "tests/test-marker-api.cpp": "1262be79c9f7f45281cc6f399d82537e82deb33806fd197ffa4beee164c8ff76",
+    "tests/test-marker-backend.cpp": "a65b425e0cf68b7437dccf43b53c8f9864491ef4661d2620f3c9649d5626840d",
+    "CMakeLists.txt": "2064c2ff29ee1f788982b1b8299c0b816c0c624d5f0e0085c169faf48ffbf94b",
+    "examples/server/server.cpp": "e644536dffba1ba066a03db6e0602f9a4669e9c948f76b9068cfce24ccc3cc93"
+  },
+  "library_sha256": "6453530ae6272064e4633ea7d7be0e80c5464cbaf9871108a02adced687c591d"
+}

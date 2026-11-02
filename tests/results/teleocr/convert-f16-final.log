@@ -1,0 +1,25 @@
+Converted 50/700 tensors
+Converted 100/700 tensors
+Converted 150/700 tensors
+Converted 200/700 tensors
+Converted 250/700 tensors
+Converted 300/700 tensors
+Converted 350/700 tensors
+Converted 400/700 tensors
+Converted 450/700 tensors
+Converted 500/700 tensors
+Converted 550/700 tensors
+Converted 600/700 tensors
+Converted 650/700 tensors
+Converted 700/700 tensors
+{
+  "source_tensor_count": 701,
+  "output_tensor_count": 700,
+  "tensor_types": {
+    "F16": 360,
+    "F32": 340
+  },
+  "output_file": "teleocr-f16.gguf",
+  "output_size": 2526109984,
+  "output_sha256": "6c52a2800e313964717cf4e5d06e0392c2b5936d8adeac423d563b8a026a2780"
+}

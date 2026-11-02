@@ -1,0 +1,47 @@
+{
+  "schema": "crispembed.marker/1",
+  "source": "simpledigital.pdf",
+  "backend": "pdfium-text",
+  "page_count": 1,
+  "generated_tokens": 0,
+  "layout_generated_tokens": 0,
+  "layout_capped_pages": 0,
+  "capped_blocks": 0,
+  "warning_count": 0,
+  "warnings": [],
+  "page_stats": [
+    {
+      "page_id": 0,
+      "width": 612,
+      "height": 792,
+      "text_extraction_method": "pdftext",
+      "block_count": 3,
+      "generated_tokens": 0,
+      "layout_generated_tokens": 0,
+      "layout_token_cap_reached": false,
+      "capped_blocks": 0,
+      "warnings": [],
+      "block_types": {
+        "SectionHeader": 1,
+        "Text": 2
+      }
+    }
+  ],
+  "assets": [],
+  "configuration": {
+    "elapsed_seconds": "0.004277",
+    "headers": "suppressed in rendered text; retained in JSON",
+    "implementation": "crispembed-marker-native",
+    "layout": "PDF font/geometry heuristics",
+    "layout_backend": "pdftext_heuristics",
+    "marker_source_revision": "71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4",
+    "processor": "native-marker-inspired-v1",
+    "schema": "crispembed.marker/1",
+    "software_version": "0.17.14",
+    "surya_model_parity": "not_claimed",
+    "surya_parity": "not claimed; alternative TeleOCR and deterministic processing",
+    "text_quality": "deterministic-unicode-glyph-and-repetition-v1",
+    "text_quality_check": "deterministic_unicode_heuristic",
+    "upstream_marker": "2.1.0@71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4"
+  }
+}

@@ -1,0 +1,55 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "-m",
+  "parseq-q8_0.gguf",
+  "--ocr",
+  "fox.png"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    0.967,
+    0.866
+   ],
+   "gpu_mem_peak_mib": 151,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\nparseq: embed=384 enc_layers=12 heads=6 ffn=1536 patch=[4,8] img=[32,128] patches=128\nparseq: charset=97 tokens\n",
+   "stdout_sha256": "cc3361617807deb5a2950ce6ba128e0fb8678b3fd3619eaea682c0ea8a60e441",
+   "stdout": "COFFEERSETTERSTATION\n",
+   "vs_cpu": {
+    "byte_identical": true,
+    "text_exact": true,
+    "char_ratio": 1.0,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    0.417,
+    0.416
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "crispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\nparseq: embed=384 enc_layers=12 heads=6 ffn=1536 patch=[4,8] img=[32,128] patches=128\nparseq: charset=97 tokens\n",
+   "stdout_sha256": "cc3361617807deb5a2950ce6ba128e0fb8678b3fd3619eaea682c0ea8a60e441",
+   "stdout": "COFFEERSETTERSTATION\n"
+  }
+ },
+ "precision": "q8_0",
+ "bar": 0.97,
+ "seconds": 3.8,
+ "id": "parseq.fox",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

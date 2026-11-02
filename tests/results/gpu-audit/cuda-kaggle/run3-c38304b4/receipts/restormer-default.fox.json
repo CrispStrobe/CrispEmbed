@@ -1,0 +1,93 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "--restormer",
+  "restormer-denoise-f16.gguf",
+  "--restormer-input",
+  "fox.png"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    13.444,
+    13.397
+   ],
+   "gpu_mem_peak_mib": 543,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\nrestormer: GPU path - graphs on CUDA0 (CRISPEMBED_RESTORMER_GPU=0 restores CPU)\nrestormer: dim=48, blocks=[4,6,6,8], heads=[1,2,4,8], ffn=2.65, refine=4, 406 tensors\nrestormer: 800x200, tiles=8x2 (size=128, overlap=16)\nrestormer: done 800x200\n",
+   "stdout_sha256": "bc33620f5402f478fb09a74a14560ab2dadd307c12c16ff634fc3bed22d97c89",
+   "vs_cpu": {
+    "byte_identical": false,
+    "image": {
+     "shape": [
+      200,
+      800,
+      3
+     ],
+     "max_abs": 1.0,
+     "mean_abs": 0.00014583333333333335,
+     "psnr_db": 86.49223558229241,
+     "n_diff": 70
+    },
+    "final_cosine": 0.9999999722746776,
+    "final_metric": "centered pixel cosine"
+   }
+  },
+  "cuda-gate0": {
+   "backend": "cuda",
+   "env": {
+    "CRISPEMBED_RESTORMER_GPU": "0"
+   },
+   "wall_s": [
+    235.479,
+    233.745
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "restormer: dim=48, blocks=[4,6,6,8], heads=[1,2,4,8], ffn=2.65, refine=4, 406 tensors\nrestormer: 800x200, tiles=8x2 (size=128, overlap=16)\nrestormer: done 800x200\n",
+   "stdout_sha256": "18ff0f618df6d3bf9f3a32a46e30af326e0917dc608d5a8a2736a411934284dd",
+   "vs_cpu": {
+    "byte_identical": true,
+    "image": {
+     "shape": [
+      200,
+      800,
+      3
+     ],
+     "max_abs": 0.0,
+     "mean_abs": 0.0,
+     "psnr_db": 99.0,
+     "n_diff": 0
+    },
+    "final_cosine": 0.9999999999999998,
+    "final_metric": "centered pixel cosine"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    234.749,
+    236.945
+   ],
+   "gpu_mem_peak_mib": 1,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\nrestormer: dim=48, blocks=[4,6,6,8], heads=[1,2,4,8], ffn=2.65, refine=4, 406 tensors\nrestormer: 800x200, tiles=8x2 (size=128, overlap=16)\nrestormer: done 800x200\n",
+   "stdout_sha256": "18ff0f618df6d3bf9f3a32a46e30af326e0917dc608d5a8a2736a411934284dd"
+  }
+ },
+ "precision": "f16",
+ "bar": 0.98,
+ "seconds": 971.0,
+ "id": "restormer-default.fox",
+ "commit": "c38304b4283da24cd88141a8b162b8c9be41b833",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

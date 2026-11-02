@@ -1,0 +1,702 @@
+{
+  "schema_version": 1,
+  "kind": "original-marker-model-free-reference",
+  "status": "pass",
+  "cases": [
+    {
+      "id": "simpledigital",
+      "pdf_sha256": "5abed1c20795f862b63e3792f1964b2d5932c9d28ccaf8398e2e5b9ec0217374",
+      "status": "captured",
+      "elapsed_seconds": 0.03673495700058993,
+      "pages": 1,
+      "page_extraction_methods": [
+        "pdftext"
+      ],
+      "provider_vs_authored_gold": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 70,
+        "actual_characters": 70,
+        "expected_words": 10,
+        "actual_words": 10,
+        "character_edits": 0,
+        "word_edits": 0,
+        "cer": 0.0,
+        "wer": 0.0,
+        "exact_after_whitespace": true
+      },
+      "html_text_vs_authored_gold": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 70,
+        "actual_characters": 70,
+        "expected_words": 10,
+        "actual_words": 10,
+        "character_edits": 0,
+        "word_edits": 0,
+        "cer": 0.0,
+        "wer": 0.0,
+        "exact_after_whitespace": true
+      },
+      "content_checks": {
+        "Native document test": true,
+        "Hello from CrispEmbed.": true,
+        "PDF text stays searchable.": true
+      },
+      "literal_html_checks": {},
+      "authored_logical_order_preserved": true,
+      "output_sha256": {
+        "document.html": "dbf88152fc79ca880261a463a95484fa6262474f7dd8c299410cf5d13e2ce837",
+        "document.json": "ba7fd55adcd991a155f9f7def1c42ef250b2fd82b305ed5d45ab5c535ecd2e82",
+        "document.md": "7c38dc35349bc3f3c62f5e159537561ae41cfa9b9f1b7deee8cfbbba603c09e2",
+        "provider.json": "679f209f866d549004eabf43f50bd101a07f009abdfff6bd3ac71cdd623be135"
+      },
+      "upstream_page_stats": [
+        {
+          "page_id": 0,
+          "text_extraction_method": "pdftext",
+          "block_counts": [
+            [
+              "Span",
+              5
+            ],
+            [
+              "Line",
+              3
+            ],
+            [
+              "Text",
+              1
+            ]
+          ],
+          "block_metadata": {
+            "llm_request_count": 0,
+            "llm_error_count": 0,
+            "llm_tokens_used": 0,
+            "previous_text": "",
+            "previous_type": "",
+            "previous_order": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "unicode",
+      "pdf_sha256": "9df44fdae486479314fdc22f9a3dc38c683d31e853e9c6447ac1798168162e64",
+      "status": "captured",
+      "elapsed_seconds": 0.04926331299793674,
+      "pages": 1,
+      "page_extraction_methods": [
+        "pdftext"
+      ],
+      "provider_vs_authored_gold": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 161,
+        "actual_characters": 161,
+        "expected_words": 22,
+        "actual_words": 22,
+        "character_edits": 0,
+        "word_edits": 0,
+        "cer": 0.0,
+        "wer": 0.0,
+        "exact_after_whitespace": true
+      },
+      "html_text_vs_authored_gold": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 161,
+        "actual_characters": 161,
+        "expected_words": 22,
+        "actual_words": 22,
+        "character_edits": 0,
+        "word_edits": 0,
+        "cer": 0.0,
+        "wer": 0.0,
+        "exact_after_whitespace": true
+      },
+      "content_checks": {
+        "Unicode and escaping": true,
+        "Café naïve résumé - Ελληνικά - кириллица.": true,
+        "Literal <script>alert(1)</script> & <tag> text.": true,
+        "Markdown *stars* _under_ [brackets] $19.95 | pipe.": true
+      },
+      "literal_html_checks": {
+        "script": true,
+        "tag": true
+      },
+      "authored_logical_order_preserved": true,
+      "output_sha256": {
+        "document.html": "72a12139d5ac680beec1c757eeaf3c01e707bec64c9ff47e38935b3e79b5fb1d",
+        "document.json": "10e23aab0a5bcc8fa0baa581c39ef56916c79d2257081f62c071f207d9314472",
+        "document.md": "9bae560330adba3a11ccbddc666058dbb27aad3f56e4a48989996a9256dcce9c",
+        "provider.json": "d8684a9cbf482f9a5d94d1513c53c9471db03750e72b80b6bc87366d5ac2a747"
+      },
+      "upstream_page_stats": [
+        {
+          "page_id": 0,
+          "text_extraction_method": "pdftext",
+          "block_counts": [
+            [
+              "Span",
+              7
+            ],
+            [
+              "Line",
+              4
+            ],
+            [
+              "Text",
+              1
+            ]
+          ],
+          "block_metadata": {
+            "llm_request_count": 0,
+            "llm_error_count": 0,
+            "llm_tokens_used": 0,
+            "previous_text": "",
+            "previous_type": "",
+            "previous_order": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "structure",
+      "pdf_sha256": "cb6a47c22436c7b52ec1e5add2015bd693a2bddd9af34ff3dd2f18f141a5d2b3",
+      "status": "captured",
+      "elapsed_seconds": 0.035412789999099914,
+      "pages": 1,
+      "page_extraction_methods": [
+        "pdftext"
+      ],
+      "provider_vs_authored_gold": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 185,
+        "actual_characters": 185,
+        "expected_words": 32,
+        "actual_words": 32,
+        "character_edits": 0,
+        "word_edits": 0,
+        "cer": 0.0,
+        "wer": 0.0,
+        "exact_after_whitespace": true
+      },
+      "html_text_vs_authored_gold": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 185,
+        "actual_characters": 185,
+        "expected_words": 32,
+        "actual_words": 32,
+        "character_edits": 0,
+        "word_edits": 0,
+        "cer": 0.0,
+        "wer": 0.0,
+        "exact_after_whitespace": true
+      },
+      "content_checks": {
+        "Document structure": true,
+        "1. Overview": true,
+        "A short paragraph introduces the examples.": true,
+        "- First owned list item": true,
+        "- Second owned list item": true,
+        "2. Code example": true,
+        "if (left < right) {": true,
+        "    print(\"safe & literal\");": true,
+        "}": true
+      },
+      "literal_html_checks": {},
+      "authored_logical_order_preserved": true,
+      "output_sha256": {
+        "document.html": "bab241fff47f590e901587ba867f7f47685f9eae05c1751a0de16c3ff5b4cbd8",
+        "document.json": "56afa4b5d22c4513fa7c844e4235045885678c8186319532faac1dba9f6cd591",
+        "document.md": "dee87cea22c535da83c2a803c8bc1cfbbe1554d762580b8c37755098e4cfb055",
+        "provider.json": "ae239035462c7b3c2f48fb8fe78fde7bd186f59635587e98bec965e15a53e5de"
+      },
+      "upstream_page_stats": [
+        {
+          "page_id": 0,
+          "text_extraction_method": "pdftext",
+          "block_counts": [
+            [
+              "Span",
+              17
+            ],
+            [
+              "Line",
+              9
+            ],
+            [
+              "Text",
+              1
+            ]
+          ],
+          "block_metadata": {
+            "llm_request_count": 0,
+            "llm_error_count": 0,
+            "llm_tokens_used": 0,
+            "previous_text": "",
+            "previous_type": "",
+            "previous_order": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "multicolumn",
+      "pdf_sha256": "9b1f2b5f7538ae3754706efe660ab142877e1144d6c9292600b79a66f5f5a301",
+      "status": "captured",
+      "elapsed_seconds": 0.031559808005113155,
+      "pages": 1,
+      "page_extraction_methods": [
+        "pdftext"
+      ],
+      "provider_vs_authored_gold": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 198,
+        "actual_characters": 198,
+        "expected_words": 33,
+        "actual_words": 33,
+        "character_edits": 0,
+        "word_edits": 0,
+        "cer": 0.0,
+        "wer": 0.0,
+        "exact_after_whitespace": true
+      },
+      "html_text_vs_authored_gold": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 198,
+        "actual_characters": 198,
+        "expected_words": 33,
+        "actual_words": 33,
+        "character_edits": 0,
+        "word_edits": 0,
+        "cer": 0.0,
+        "wer": 0.0,
+        "exact_after_whitespace": true
+      },
+      "content_checks": {
+        "Two-column reading order": true,
+        "Left column": true,
+        "Left one stays together.": true,
+        "Left two follows one.": true,
+        "Left three ends this column.": true,
+        "Right column": true,
+        "Right one begins here.": true,
+        "Right two follows one.": true,
+        "Right three ends the page.": true
+      },
+      "literal_html_checks": {},
+      "authored_logical_order_preserved": true,
+      "output_sha256": {
+        "document.html": "23d3e696625d3e5ed5413e1287423cb2bab636a128b07e7a16551d19a42a1c31",
+        "document.json": "5c0dec0b4bf1405c7cfde2b90a10f8ccb6fea7ab1848e2e5a22664fc34022131",
+        "document.md": "b2d7ef640777a21b75a656b889e2d87f49589c2a2a0bfb0ff4d2c612e3125fee",
+        "provider.json": "f65c80ee3e90d5f909ab8f574d0d412bd4119e52c7defc21d863e09a42370487"
+      },
+      "upstream_page_stats": [
+        {
+          "page_id": 0,
+          "text_extraction_method": "pdftext",
+          "block_counts": [
+            [
+              "Span",
+              17
+            ],
+            [
+              "Line",
+              9
+            ],
+            [
+              "Text",
+              1
+            ]
+          ],
+          "block_metadata": {
+            "llm_request_count": 0,
+            "llm_error_count": 0,
+            "llm_tokens_used": 0,
+            "previous_text": "",
+            "previous_type": "",
+            "previous_order": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "table",
+      "pdf_sha256": "278363b26040cd39f8c0fa5b5e79b959270a2f66694ac511173205aeedf24ac1",
+      "status": "captured",
+      "elapsed_seconds": 0.03185233700060053,
+      "pages": 1,
+      "page_extraction_methods": [
+        "pdftext"
+      ],
+      "provider_vs_authored_gold": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 111,
+        "actual_characters": 111,
+        "expected_words": 21,
+        "actual_words": 21,
+        "character_edits": 0,
+        "word_edits": 0,
+        "cer": 0.0,
+        "wer": 0.0,
+        "exact_after_whitespace": true
+      },
+      "html_text_vs_authored_gold": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 111,
+        "actual_characters": 111,
+        "expected_words": 21,
+        "actual_words": 21,
+        "character_edits": 0,
+        "word_edits": 0,
+        "cer": 0.0,
+        "wer": 0.0,
+        "exact_after_whitespace": true
+      },
+      "content_checks": {
+        "Aligned table fixture": true,
+        "Item": true,
+        "Quantity": true,
+        "Price": true,
+        "Alpha": true,
+        "2": true,
+        "$10": true,
+        "Beta": true,
+        "3": true,
+        "$15": true,
+        "Gamma": true,
+        "4": true,
+        "$20": true,
+        "All values are invented test data.": true
+      },
+      "literal_html_checks": {},
+      "authored_logical_order_preserved": true,
+      "output_sha256": {
+        "document.html": "32a6e9d36272e10cd510423a50cd1cbe609b515c49c99ae5c726bab991a75fd1",
+        "document.json": "b7132e3de65727647b7f5672989c3980888a0e81483faa19c312c965d1bd0895",
+        "document.md": "f5100396e8ad83a510c4f0664af47d03121035922a5fff29bbd5c3d520f8d50b",
+        "provider.json": "3e408504d3de0852754339da9a5bcdbd41161dd3eb1a60e61638f7e47b4fdc7c"
+      },
+      "upstream_page_stats": [
+        {
+          "page_id": 0,
+          "text_extraction_method": "pdftext",
+          "block_counts": [
+            [
+              "Span",
+              27
+            ],
+            [
+              "Line",
+              6
+            ],
+            [
+              "Text",
+              1
+            ]
+          ],
+          "block_metadata": {
+            "llm_request_count": 0,
+            "llm_error_count": 0,
+            "llm_tokens_used": 0,
+            "previous_text": "",
+            "previous_type": "",
+            "previous_order": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "multipage",
+      "pdf_sha256": "72a200cdd666705f921bd75e1e4b80b152f3390adcbbd79ca3b561af3638c6b1",
+      "status": "captured",
+      "elapsed_seconds": 0.05674512199766468,
+      "pages": 3,
+      "page_extraction_methods": [
+        "pdftext",
+        "pdftext",
+        "pdftext"
+      ],
+      "provider_vs_authored_gold": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 389,
+        "actual_characters": 389,
+        "expected_words": 72,
+        "actual_words": 72,
+        "character_edits": 0,
+        "word_edits": 0,
+        "cer": 0.0,
+        "wer": 0.0,
+        "exact_after_whitespace": true
+      },
+      "html_text_vs_authored_gold": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 389,
+        "actual_characters": 389,
+        "expected_words": 72,
+        "actual_words": 72,
+        "character_edits": 0,
+        "word_edits": 0,
+        "cer": 0.0,
+        "wer": 0.0,
+        "exact_after_whitespace": true
+      },
+      "content_checks": {
+        "Chapter 1": true,
+        "Page 1 has distinct body content.": true,
+        "This sentence is part of the document body.": true,
+        "Chapter 2": true,
+        "Page 2 has distinct body content.": true,
+        "Chapter 3": true,
+        "Page 3 has distinct body content.": true
+      },
+      "literal_html_checks": {},
+      "authored_logical_order_preserved": true,
+      "output_sha256": {
+        "document.html": "6046a8bdf5ad0006aea1c26134925455a209ce928cc40c49f30b9a66ced0c813",
+        "document.json": "f1e1570dc0c47a23b7be1bc1673d9043c4210459149a41dddd96931cb88fc32d",
+        "document.md": "2fc6c793a82cf87de3300988711841aedc698281ac9e782e8d036e680dfee3fa",
+        "provider.json": "78607d6c7a83fea31609f1c05dd4c4d1e354a735ef7d6365a1a5843a012f51ee"
+      },
+      "upstream_page_stats": [
+        {
+          "page_id": 0,
+          "text_extraction_method": "pdftext",
+          "block_counts": [
+            [
+              "Span",
+              9
+            ],
+            [
+              "Line",
+              5
+            ],
+            [
+              "Text",
+              1
+            ]
+          ],
+          "block_metadata": {
+            "llm_request_count": 0,
+            "llm_error_count": 0,
+            "llm_tokens_used": 0,
+            "previous_text": "",
+            "previous_type": "",
+            "previous_order": 0
+          }
+        },
+        {
+          "page_id": 1,
+          "text_extraction_method": "pdftext",
+          "block_counts": [
+            [
+              "Span",
+              9
+            ],
+            [
+              "Line",
+              5
+            ],
+            [
+              "Text",
+              1
+            ]
+          ],
+          "block_metadata": {
+            "llm_request_count": 0,
+            "llm_error_count": 0,
+            "llm_tokens_used": 0,
+            "previous_text": "",
+            "previous_type": "",
+            "previous_order": 0
+          }
+        },
+        {
+          "page_id": 2,
+          "text_extraction_method": "pdftext",
+          "block_counts": [
+            [
+              "Span",
+              9
+            ],
+            [
+              "Line",
+              5
+            ],
+            [
+              "Text",
+              1
+            ]
+          ],
+          "block_metadata": {
+            "llm_request_count": 0,
+            "llm_error_count": 0,
+            "llm_tokens_used": 0,
+            "previous_text": "",
+            "previous_type": "",
+            "previous_order": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "rotated",
+      "pdf_sha256": "99725853b6d4978de6339b7a6a7bd9d48e934622961cad68673bf8a79aedd18f",
+      "status": "captured",
+      "elapsed_seconds": 0.020275137001590338,
+      "pages": 1,
+      "page_extraction_methods": [
+        "pdftext"
+      ],
+      "provider_vs_authored_gold": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 46,
+        "actual_characters": 46,
+        "expected_words": 6,
+        "actual_words": 6,
+        "character_edits": 26,
+        "word_edits": 4,
+        "cer": 0.5652173913043478,
+        "wer": 0.6666666666666666,
+        "exact_after_whitespace": false
+      },
+      "html_text_vs_authored_gold": {
+        "normalization": "collapse Unicode whitespace only",
+        "expected_characters": 46,
+        "actual_characters": 46,
+        "expected_words": 6,
+        "actual_words": 6,
+        "character_edits": 26,
+        "word_edits": 4,
+        "cer": 0.5652173913043478,
+        "wer": 0.6666666666666666,
+        "exact_after_whitespace": false
+      },
+      "content_checks": {
+        "Rotated page": true,
+        "Rotation preserves this sentence.": true
+      },
+      "literal_html_checks": {},
+      "authored_logical_order_preserved": false,
+      "output_sha256": {
+        "document.html": "00ba6ea61cb3b7fbea846a5811b57a2f50ac1bf95461595ec8625672b78d085e",
+        "document.json": "88d777250a436fe3d7b04a0e8ccbf1e1dd404fea17704d400ca70bc750a22390",
+        "document.md": "6c34e5c93d1d9bd7aaa643b5f958e225b2d9b9d690a31cbb06a578c411a84086",
+        "provider.json": "7521781377e8994a5d113e2f478893d476abefa80972dc84e023d6a32ffb8ab6"
+      },
+      "upstream_page_stats": [
+        {
+          "page_id": 0,
+          "text_extraction_method": "pdftext",
+          "block_counts": [
+            [
+              "Span",
+              3
+            ],
+            [
+              "Line",
+              2
+            ],
+            [
+              "Text",
+              1
+            ]
+          ],
+          "block_metadata": {
+            "llm_request_count": 0,
+            "llm_error_count": 0,
+            "llm_tokens_used": 0,
+            "previous_text": "",
+            "previous_type": "",
+            "previous_order": 0
+          }
+        }
+      ]
+    },
+    {
+      "id": "encrypted",
+      "pdf_sha256": "93363a6430861bdfd755e19cc7002456e216b9fdfe56f82f9443a70ec62a9ba7",
+      "status": "not-run",
+      "reason": "skip: the pinned PdfProvider does not accept a password"
+    }
+  ],
+  "neural_inference_tested": false,
+  "marker_revision": "71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4",
+  "surya_source_license_audit_revision": "9d5aadfebb07939755c24e8a80d0e61b3be80895",
+  "surya_runtime_source": "published surya-ocr package; version and source hashes below",
+  "fixture_gold_sha256": "a250d007848a99028c33b74d96da66c77b8ca8d6841097e5dde52f7244a0e4c3",
+  "reference_script_sha256": "c784ddc780d0f10a1c84c11b8073a6488f093d4da9bfc6e6c9153377dbbed6a1",
+  "font": {
+    "name": "DejaVuSans.ttf",
+    "sha256": "ae7b7855e115a5966d8b1b3f80f254ccc117ec86f9965e202ee2940453837280"
+  },
+  "dependencies": {
+    "surya-ocr": "0.23.0",
+    "pdftext": "0.7.1",
+    "pypdfium2": "5.10.1",
+    "torch": "2.8.0+cpu",
+    "torchvision": "0.23.0+cpu",
+    "transformers": "5.14.1",
+    "pillow": "10.4.0",
+    "pydantic": "2.14.2",
+    "markdownify": "1.2.3",
+    "beautifulsoup4": "4.15.0",
+    "reportlab": "4.5.1"
+  },
+  "guard_selftests": {
+    "network": true,
+    "checkpoint": true,
+    "predictor": true,
+    "process": true
+  },
+  "configuration": {
+    "disable_ocr": true,
+    "force_layout_block": "Text",
+    "mode": "fast",
+    "use_llm": false,
+    "pdftext_workers": 1,
+    "disable_tqdm": true,
+    "extract_images": false,
+    "paginate_output": false
+  },
+  "renderer_probe": {
+    "checks": {
+      "heading_level_2": true,
+      "literal_script_is_text": true,
+      "markdown_literal_asterisks": true,
+      "markdown_literal_underscores": true,
+      "markdown_literal_dollar": true,
+      "list_items": true,
+      "code_escaped_in_html": true,
+      "table_html_keeps_pipe": true,
+      "equation_retained": true,
+      "json_document_pages": true
+    },
+    "markdown_table_pipe_behavior": "The original Markdown renderer replaces literal cell pipes with spaces; HTML retains them.",
+    "output_sha256": {
+      "document.html": "f6dd14c86a8d778cd9e4d2cd670b6adef6d7ab16fb4b115a57c84cf0f34ecedf",
+      "document.json": "afecbfe47b494c2e591532b2cacb401eb6b9cce27527c0ee3c08581d6db6a0c8",
+      "document.md": "a8451737069c3d97ec6c1c774a99928c9a7440818e0995db4b102d6654639824",
+      "gold.json": "89f3d735214a3b9f41d18dd782c2d6c9bbd4925c6ce8cfb58c03c2573108e4fe"
+    }
+  },
+  "unexpected_attempts": {
+    "network": [],
+    "checkpoint": [],
+    "process": [],
+    "predictor": []
+  },
+  "summary": {
+    "captured_pdf_cases": 7,
+    "captured_pdf_pages": 9,
+    "neural_model_calls": 0,
+    "network_attempts": 0,
+    "checkpoint_open_attempts": 0,
+    "process_launch_attempts": 0,
+    "owned_content_checks_passed": true,
+    "renderer_checks_passed": 10,
+    "renderer_check_count": 10,
+    "forced_layout_order_matches": 6,
+    "scope": "Deterministic source behavior only; no learned layout/OCR or native parity claim."
+  },
+  "elapsed_seconds": 5.646463860000949
+}

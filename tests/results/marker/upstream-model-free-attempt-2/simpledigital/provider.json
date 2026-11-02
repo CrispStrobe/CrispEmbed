@@ -1,0 +1,111 @@
+[
+  {
+    "page_id": 0,
+    "lines": [
+      {
+        "text": "Native document test",
+        "bbox": [
+          48.0,
+          55.280029296875,
+          316.3340148925781,
+          77.280029296875
+        ],
+        "spans": [
+          {
+            "text": "Native document test",
+            "bbox": [
+              48.0,
+              55.280029296875,
+              316.3340148925781,
+              77.280029296875
+            ],
+            "font": "DejaVuSans-Bold",
+            "font_size": 22.0,
+            "formats": [
+              "bold",
+              "plain"
+            ]
+          },
+          {
+            "text": "\n",
+            "bbox": [
+              316.3340148925781,
+              72.0,
+              317.3340148925781,
+              73.0
+            ],
+            "font": "Unknown",
+            "font_size": 1.0,
+            "formats": [
+              "plain"
+            ]
+          }
+        ]
+      },
+      {
+        "text": "Hello from CrispEmbed.",
+        "bbox": [
+          48.0,
+          109.8800048828125,
+          190.29600524902344,
+          121.8800048828125
+        ],
+        "spans": [
+          {
+            "text": "Hello from CrispEmbed.",
+            "bbox": [
+              48.0,
+              109.8800048828125,
+              190.29600524902344,
+              121.8800048828125
+            ],
+            "font": "DejaVuSans",
+            "font_size": 12.0,
+            "formats": [
+              "plain"
+            ]
+          },
+          {
+            "text": "\n",
+            "bbox": [
+              190.29600524902344,
+              119.0,
+              191.29600524902344,
+              120.0
+            ],
+            "font": "Unknown",
+            "font_size": 1.0,
+            "formats": [
+              "plain"
+            ]
+          }
+        ]
+      },
+      {
+        "text": "PDF text stays searchable.",
+        "bbox": [
+          48.0,
+          132.8800048828125,
+          207.8280029296875,
+          144.8800048828125
+        ],
+        "spans": [
+          {
+            "text": "PDF text stays searchable.",
+            "bbox": [
+              48.0,
+              132.8800048828125,
+              207.8280029296875,
+              144.8800048828125
+            ],
+            "font": "DejaVuSans",
+            "font_size": 12.0,
+            "formats": [
+              "plain"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]

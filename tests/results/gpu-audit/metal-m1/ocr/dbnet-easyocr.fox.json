@@ -1,0 +1,46 @@
+{
+ "cmd": [
+  "crispembed",
+  "-t",
+  "4",
+  "--json",
+  "-m",
+  "/Volumes/backups/code/model-cache-20261101/metal-audit/easyocr-english-g2-f16.gguf",
+  "--ocr-pipeline",
+  "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/regression/images/fox.png",
+  "--ocr-engine",
+  "easyocr",
+  "--ocr-det",
+  "/Volumes/backups/code/model-cache-20261101/metal-audit/dbnet-ic15-q8_0.gguf",
+  "--ocr-rec",
+  "/Volumes/backups/code/model-cache-20261101/metal-audit/easyocr-english-g2-f16.gguf"
+ ],
+ "metal_env": {},
+ "cpu_env": {},
+ "wall_s": {
+  "metal": [
+   1.126,
+   0.443
+  ],
+  "cpu": [
+   0.428,
+   0.48
+  ]
+ },
+ "metal_device_seen": true,
+ "byte_identical": true,
+ "sha256": {
+  "metal": "41a156bfd35a98a4b41944b4614a82b0e9230114a2f0a1984a9abcb30a8d9f23",
+  "cpu": "41a156bfd35a98a4b41944b4614a82b0e9230114a2f0a1984a9abcb30a8d9f23"
+ },
+ "date": "2026-11-01",
+ "stdout": {
+  "metal": "{\"n_regions\":2,\"mean_confidence\":0.759,\"full_text\":\"The quick brown fox jumps\\nover the lazy dog. 12345\"}\n",
+  "cpu": "{\"n_regions\":2,\"mean_confidence\":0.759,\"full_text\":\"The quick brown fox jumps\\nover the lazy dog. 12345\"}\n"
+ },
+ "char_ratio": 1.0,
+ "stderr_tail": {
+  "metal": "ool_2d_avg_f32', name = 'kernel_pool_2d_avg_f32'\nggml_metal_library_compile_pipeline: loaded kernel_pool_2d_avg_f32                        0x7f52b4600 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mv_f16_f32_4', name = 'kernel_mul_mv_f16_f32_4_nsg=2_ne12=1_r2=1_r3=1'\nggml_metal_library_compile_pipeline: loaded kernel_mul_mv_f16_f32_4_nsg=2_ne12=1_r2=1_r3=1      0x7f52b4900 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32_4', name = 'kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=1_cb=0'\nggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=1_cb=0      0x7f52b4c00 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32_4', name = 'kernel_unary_f32_f32_4_op=102_cnt=1'\nggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_4_op=102_cnt=1           0x7f52b4f00 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32_4', name = 'kernel_bin_fuse_f32_f32_f32_4_op=2_nf=1_rb=1_cb=0'\nggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_4_op=2_nf=1_rb=1_cb=0      0x7f52b5200 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32_4', name = 'kernel_unary_f32_f32_4_op=100_cnt=1'\nggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_4_op=100_cnt=1           0x7f52b5500 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_concat_f32', name = 'kernel_concat_f32'\nggml_metal_library_compile_pipeline: loaded kernel_concat_f32                             0x7f52b5800 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_f16_f32', name = 'kernel_mul_mm_f16_f32_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1'\nggml_metal_library_compile_pipeline: loaded kernel_mul_mm_f16_f32_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1      0x7f52b5b00 | th_max =  896 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32', name = 'kernel_bin_fuse_f32_f32_f32_op=0_nf=1_rb=1_cb=0'\nggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_op=0_nf=1_rb=1_cb=0      0x7f52b5e00 | th_max = 1024 | th_width =   32\nggml_metal_free: deallocating\n",
+  "cpu": "crispasr_metal_pipeline_cache_open: pipeline cache loaded — /Users/christianstrobele/Library/Caches/ggml-metal/Apple_M1.archive\nggml_metal_device_init: tensor API disabled for pre-M5 and pre-A19 devices\nggml_metal_library_init: using embedded metal library\nggml_metal_library_init: loaded in 0.013 sec\nggml_metal_device_init: GPU name:   MTL0 (Apple M1)\nggml_metal_device_init: GPU family: MTLGPUFamilyApple7  (1007)\nggml_metal_device_init: GPU family: MTLGPUFamilyCommon3 (3003)\nggml_metal_device_init: GPU family: MTLGPUFamilyMetal4  (5002)\nggml_metal_device_init: simdgroup reduction   = true\nggml_metal_device_init: simdgroup matrix mul. = true\nggml_metal_device_init: has unified memory    = true\nggml_metal_device_init: has bfloat            = true\nggml_metal_device_init: has tensor            = false\nggml_metal_device_init: use residency sets    = false\nggml_metal_device_init: use shared buffers    = true\nggml_metal_device_init: recommendedMaxWorkingSetSize  = 12713.12 MB\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\n"
+ }
+}

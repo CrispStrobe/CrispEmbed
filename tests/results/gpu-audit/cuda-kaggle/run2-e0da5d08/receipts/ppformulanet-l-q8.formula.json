@@ -1,0 +1,70 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "-m",
+  "ppformulanet-l-q8_0.gguf",
+  "--ocr",
+  "formula_quadratic.png"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    44.192,
+    43.793
+   ],
+   "gpu_mem_peak_mib": 917,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "ppfnl: encoder=12L/12H/768 (ws=14) decoder=8L/16H/512 vocab=50000(50000)\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\nppfnl: 398 tensors loaded\nppfnl: patch_embed done, shape=(48, 768)\nppfnl: enc_layer_0 done (windowed, T=3136, nW=16)\nppfnl: enc_layer_1 done (windowed, T=3136, nW=16)\nppfnl: enc_layer_2 done (global, T=2304, nW=1)\nppfnl: enc_layer_11 done (global, T=2304, nW=1)\nppfnl: ViT graph compute: 621 ms (12 layers)\nppfnl: neck done, shape=(256, 48, 48)\nppfnl: projector done, shape=(144, 512)\nppfnl: dec step 0: tok=0 best=82 (14.637)\nppfnl: dec step 1: tok=82 best=2722 (10.536)\nppfnl: dec step 2: tok=2722 best=113 (16.339)\nppfnl: dec step 3: tok=113 best=2502 (16.606)\nppfnl: dec step 4: tok=2502 best=115 (17.638)\n",
+   "stdout_sha256": "fc4e75855483391b0067b058526cacd992200b1a4df5702e850c9dd589b60d7e",
+   "stdout": "\\begin{array} { r } { { \\pmb { \\mathscr { x } } } = \\frac { - b \\pm \\sqrt { b ^ { 2 } - 4 a c \\, } } { 2 a } } \\end{array}\n",
+   "vs_cpu": {
+    "byte_identical": true,
+    "text_exact": true,
+    "char_ratio": 1.0,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   },
+   "vs_reference_cpu": {
+    "byte_identical": true,
+    "text_exact": true,
+    "char_ratio": 1.0,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    49.972,
+    50.029
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "ppfnl: encoder=12L/12H/768 (ws=14) decoder=8L/16H/512 vocab=50000(50000)\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\nppfnl: 398 tensors loaded\nppfnl: patch_embed done, shape=(48, 768)\nppfnl: enc_layer_0 done (windowed, T=3136, nW=16)\nppfnl: enc_layer_1 done (windowed, T=3136, nW=16)\nppfnl: enc_layer_2 done (global, T=2304, nW=1)\nppfnl: enc_layer_11 done (global, T=2304, nW=1)\nppfnl: ViT graph compute: 9332 ms (12 layers)\nppfnl: neck done, shape=(256, 48, 48)\nppfnl: projector done, shape=(144, 512)\nppfnl: dec step 0: tok=0 best=82 (14.629)\nppfnl: dec step 1: tok=82 best=2722 (10.552)\nppfnl: dec step 2: tok=2722 best=113 (16.340)\nppfnl: dec step 3: tok=113 best=2502 (16.615)\nppfnl: dec step 4: tok=2502 best=115 (17.640)\n",
+   "stdout_sha256": "fc4e75855483391b0067b058526cacd992200b1a4df5702e850c9dd589b60d7e",
+   "stdout": "\\begin{array} { r } { { \\pmb { \\mathscr { x } } } = \\frac { - b \\pm \\sqrt { b ^ { 2 } - 4 a c \\, } } { 2 a } } \\end{array}\n",
+   "vs_reference_cpu": {
+    "byte_identical": true,
+    "text_exact": true,
+    "char_ratio": 1.0,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   }
+  }
+ },
+ "precision": "q8_0",
+ "reference_job": "ppformulanet-l-f16.formula",
+ "bar": 0.97,
+ "seconds": 191.9,
+ "id": "ppformulanet-l-q8.formula",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

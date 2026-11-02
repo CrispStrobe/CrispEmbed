@@ -1,0 +1,102 @@
+{
+  "children": [
+    {
+      "id": "/page/0/Page/26",
+      "block_type": "Page",
+      "html": "<content-ref src='/page/0/Text/0'></content-ref>",
+      "polygon": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          612.0,
+          0.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          0.0,
+          792.0
+        ]
+      ],
+      "bbox": [
+        0.0,
+        0.0,
+        612.0,
+        792.0
+      ],
+      "children": [
+        {
+          "id": "/page/0/Text/0",
+          "block_type": "Text",
+          "html": "<p block-type=\"Text\"><b>Two-column reading order</b> <b>Left column</b> Left one stays together. Left two follows one. Left three ends this column. <b>Right column</b> Right one begins here. Right two follows one. Right three ends the page.</p>",
+          "polygon": [
+            [
+              0.0,
+              0.0
+            ],
+            [
+              612.0,
+              0.0
+            ],
+            [
+              612.0,
+              792.0
+            ],
+            [
+              0.0,
+              792.0
+            ]
+          ],
+          "bbox": [
+            0.0,
+            0.0,
+            612.0,
+            792.0
+          ],
+          "children": null,
+          "section_hierarchy": {},
+          "images": {}
+        }
+      ],
+      "section_hierarchy": {},
+      "images": null
+    }
+  ],
+  "block_type": "Document",
+  "metadata": {
+    "table_of_contents": [],
+    "page_stats": [
+      {
+        "page_id": 0,
+        "text_extraction_method": "pdftext",
+        "block_counts": [
+          [
+            "Span",
+            17
+          ],
+          [
+            "Line",
+            9
+          ],
+          [
+            "Text",
+            1
+          ]
+        ],
+        "block_metadata": {
+          "llm_request_count": 0,
+          "llm_error_count": 0,
+          "llm_tokens_used": 0,
+          "previous_text": "",
+          "previous_type": "",
+          "previous_order": 0
+        }
+      }
+    ],
+    "debug_data_path": "debug_data/multicolumn"
+  }
+}

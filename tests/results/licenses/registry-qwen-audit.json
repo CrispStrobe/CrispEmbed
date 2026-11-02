@@ -1,0 +1,126 @@
+{
+  "schema": "crispembed.license.registry-qwen-audit.v1",
+  "date": "2026-10-31",
+  "method": "upstream card license/license_name and declared base_model via the HF API; weight lineage (tools/weight_lineage.py) where the base is undeclared or ambiguous",
+  "mismatches": [
+    {
+      "entries": [
+        "qwen2vl-3b"
+      ],
+      "rehost": "cstr/qwen2.5-vl-3b-crispembed-GGUF",
+      "rehost_license": "apache-2.0",
+      "upstream": "Qwen/Qwen2.5-VL-3B-Instruct",
+      "effective_license": "qwen-research",
+      "evidence": "the re-host's own base_model; upstream license_name qwen-research"
+    },
+    {
+      "entries": [
+        "nanonets-ocr-s"
+      ],
+      "rehost": "cstr/nanonets-ocr-s-crispembed-GGUF",
+      "rehost_license": "apache-2.0",
+      "upstream": "nanonets/Nanonets-OCR-s (no license declared)",
+      "effective_license": "qwen-research",
+      "evidence": "upstream base_model Qwen/Qwen2.5-VL-3B-Instruct"
+    },
+    {
+      "entries": [
+        "uni-mumer-qwen2.5-vl-3b"
+      ],
+      "rehost": "cstr/uni-mumer-qwen2.5-vl-3b-GGUF",
+      "rehost_license": "apache-2.0",
+      "upstream": "phxember/Uni-MuMER-Qwen2.5-VL-3B (declares apache-2.0)",
+      "effective_license": "qwen-research",
+      "evidence": "upstream base_model Qwen/Qwen2.5-VL-3B-Instruct"
+    },
+    {
+      "entries": [
+        "teleocr-f16",
+        "teleocr-q8_0",
+        "teleocr-q4_k-m"
+      ],
+      "rehost": "cstr/TeleOCR-GGUF",
+      "rehost_license": "apache-2.0 (relabel in progress)",
+      "upstream": "XingChen-AGI/TeleOCR (declares apache-2.0)",
+      "effective_license": "qwen-research",
+      "evidence": "qwen-vision-lineage.json: vision tower 0.99 to Qwen2.5-VL-3B"
+    },
+    {
+      "entries": [
+        "got-ocr2"
+      ],
+      "rehost": "cstr/got-ocr2-crispembed-GGUF",
+      "rehost_license": "apache-2.0",
+      "upstream": "stepfun-ai/GOT-OCR2_0 (declares apache-2.0, no base_model)",
+      "effective_license": "tongyi-qianwen-research",
+      "evidence": "decoder config equals Qwen1.5-0.5B (hidden 1024, FFN 2816, 24 layers, 16 heads / 16 KV heads, rope 1e6) and differs from Qwen2-0.5B (896/4864, 14/2 heads); weight cosine to Qwen1.5-0.5B 0.855 (layer 0), 0.612 (12), 0.426 (23); GOT paper (arXiv:2409.01704 sec. 3.3.1) 'we adopt the Qwen [4] with 500M parameters as the decoder', citing the 2023 Qwen technical report; the first 0.5B Qwen was Qwen1.5-0.5B",
+      "note": "Tongyi Qianwen RESEARCH LICENSE: non-commercial and 'can not use the Materials or any output therefrom to improve any other large language model'; registry description says Qwen2-0.5B, which is wrong",
+      "upstream_base_licenses": {
+        "Qwen/Qwen1.5-0.5B": "tongyi-qianwen-research",
+        "Qwen/Qwen1.5-0.5B-Chat": "tongyi-qianwen-research"
+      }
+    },
+    {
+      "entries": [
+        "transcoda"
+      ],
+      "rehost": "cstr/transcoda-omr-GGUF",
+      "rehost_license": "cc-by-4.0",
+      "upstream": "btrkeks/transcoda-59M-zeroshot-v1 (declares cc-by-4.0, base_model facebook/convnextv2-tiny-22k-224, card says 'trained from scratch')",
+      "effective_license": "cc-by-nc-4.0",
+      "evidence": "encoder tensors vs facebook/convnextv2-tiny-22k-224: stage0 dwconv 0.9878, stage1 pwconv1 0.9511, stage2 pwconv2 0.9886, stage3 dwconv 0.9826, patch embed 0.9916 (fine-tuned, not from scratch); ConvNeXt-V2 README: 'MIT license except ImageNet pre-trained and fine-tuned models which are licensed under a CC-BY-NC'; the HF port's apache-2.0 tag is not the rights holder's statement",
+      "note": "not Qwen-derived; found while auditing music OMR models"
+    }
+  ],
+  "soft_obligations": [
+    {
+      "entries": [
+        "internvl2-2b"
+      ],
+      "upstream": "OpenGVLab/InternVL2_5-2B (MIT)",
+      "component": "internlm/internlm2_5-1_8b-chat",
+      "note": "InternLM weights: academic use open, free commercial use after submitting InternLM's application form; InternVL2.5's card calls the component Apache-2.0"
+    }
+  ],
+  "consistent": {
+    "qari-ocr": "Qwen2-VL-2B-Instruct (apache-2.0)",
+    "nanonets-ocr2-1.5b": "Qwen2-VL-2B-Instruct (apache-2.0)",
+    "german-ocr-3.1": "Qwen2-VL-2B-Instruct (apache-2.0) per its GGUF metadata (general.architecture qwen2vl, base_model Qwen/Qwen2-VL-2B-Instruct, projector qwen2vl_merger). Both keyvan-ai/ and Keyven/german-ocr-3.1 ship the same files; their card's 'Aufgebaut auf Qwen3.5' does not match the files (a Qwen3.5 model cannot be a qwen2vl GGUF). Either base is apache-2.0, so the license conclusion is unchanged; the registry description (Qwen2-VL-2B) matches the files.",
+    "olmocr-2-7b": "Qwen2.5-VL-7B-Instruct (apache-2.0)",
+    "firered-ocr": "Qwen3-VL-2B-Instruct (apache-2.0)",
+    "uni-mumer-qwen3-vl-2b": "Qwen3-VL-2B-Instruct (apache-2.0)",
+    "qwen3vl-2b": "Qwen3-VL-2B (apache-2.0)",
+    "internvl2-1b": "InternViT-300M + Qwen2-0.5B-Instruct (mit/apache-2.0)",
+    "ovisocr2-f16": "Qwen3.5-0.8B (apache-2.0)",
+    "minicpm-ocr": "MiniCPM-V-4.6 (apache-2.0)",
+    "deepseek-ocr2": "encoder 0.963 to Qwen2-0.5B (apache-2.0)",
+    "lightonocr": "Pixtral + Qwen3 (apache-2.0)",
+    "mineru25-pro": "Qwen2-VL-2B + Qwen2-0.5B family (apache-2.0)",
+    "qwen3-embed-*, octen-*, f2llm-*, harrier-*": "Qwen3 (apache-2.0) or own restrictive label already",
+    "jina-v5-*, jina-ocr-v1": "already cc-by-nc-4.0",
+    "smt-grandstaff, smt-fp": "mit (no declared base)",
+    "tromr": "apache-2.0",
+    "flova": "apache-2.0 (donut-swin + mbart, no declared base)"
+  },
+  "license_terms": {
+    "qwen-research": "non-commercial only; redistribute with agreement + NOTICE line; 'Built with Qwen' when used to build distributed models; no anti-competition clause",
+    "qwen": "commercial allowed below 100M monthly active users; same attribution",
+    "tongyi-qianwen / tongyi-qianwen-research": "older Qwen1/1.5 terms; prohibit using the materials or their outputs to improve any other LLM; the research variant is also non-commercial"
+  },
+  "remediation": {
+    "date": "2026-10-31",
+    "hf_relabel_commits": {
+      "cstr/qwen2.5-vl-3b-crispembed-GGUF": "6cd1ae05a3437a12a32f3d956803b28a281ac885",
+      "cstr/nanonets-ocr-s-crispembed-GGUF": "166a24025a635362033e258133eccd80e7564d10",
+      "cstr/uni-mumer-qwen2.5-vl-3b-GGUF": "38ec87ce640d4ff49c1799a14cc52aba32429967",
+      "cstr/got-ocr2-crispembed-GGUF": "5a0b0a1adcf5d1efbc17e77927b4fa32325d0316",
+      "cstr/TeleOCR-GGUF": "1de0119f27f470cfc7ef0be14327f5953730c7e8 (republished, GGUF bytes unchanged)"
+    },
+    "registry": "qwen2vl-3b, nanonets-ocr-s, uni-mumer-qwen2.5-vl-3b, teleocr-* -> qwen-research; got-ocr2 -> tongyi-qianwen-research (restricted list extended)",
+    "engine_gates": {
+      "CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE": "Qwen2.5-VL with 2048-wide 36-layer decoder, and TeleOCR",
+      "CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE": "every GOT-OCR2 GGUF"
+    },
+    "upstream_issues": "not opened (owner decision)"
+  }
+}

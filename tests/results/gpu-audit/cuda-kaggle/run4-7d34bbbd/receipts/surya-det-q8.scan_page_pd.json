@@ -1,0 +1,51 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "surya-det-q8_0.gguf",
+  "scan_page_pd.png"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    7.035,
+    7.184
+   ],
+   "gpu_mem_peak_mib": 1003,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n",
+   "stdout_sha256": "885bb895f5ac4d76eaa190b3589d437e938713dade0b3d8a2a8848f11296a719",
+   "stdout": "Model loaded: input=1200x1200, classes=2\nLoaded image: tests/regression/images/scan_page_pd.png (606x1000)\nRunning detection on 606x1000 image...\nHeatmap: 300x300 (2 channels)\n  Channel 0: min=0.0000 max=0.9772 mean=0.2482 above_0.5=21388/90000\n  Channel 1: min=0.0000 max=0.8685 mean=0.0720 above_0.5=5599/90000\n\nDetected 39 text regions:\n  Box 0: (81,33)-(113,63) conf=0.900\n  Box 1: (202,37)-(416,57) conf=0.958\n  Box 2: (79,73)-(545,107) conf=0.987\n  Box 3: (81,97)-(545,127) conf=0.944\n  Box 4: (81,117)-(545,150) conf=0.985\n  Box 5: (79,140)-(208,170) conf=0.906\n  Box 6: (101,160)-(543,193) conf=0.991\n  Box 7: (81,183)-(545,213) conf=0.972\n  Box 8: (79,203)-(545,237) conf=0.971\n  Box 9: (81,223)-(356,257) conf=0.935\n  Box 10: (101,247)-(545,280) conf=0.975\n  Box 11: (81,267)-(545,300) conf=0.988\n  Box 12: (81,290)-(545,320) conf=0.952\n  Box 13: (81,310)-(545,343) conf=0.989\n  Box 14: (81,333)-(545,367) conf=0.979\n  Box 15: (81,353)-(545,387) conf=1.000\n  Box 16: (81,377)-(503,407) conf=0.980\n  Box 17: (103,397)-(545,427) conf=0.994\n  Box 18: (81,417)-(545,450) conf=0.983\n  Box 19: (81,440)-(545,473) conf=0.995\n  ... and 19 more\nPASS\n",
+   "vs_cpu": {
+    "byte_identical": true,
+    "text_exact": true,
+    "char_ratio": 1.0,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    18.919,
+    19.219
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\n",
+   "stdout_sha256": "885bb895f5ac4d76eaa190b3589d437e938713dade0b3d8a2a8848f11296a719",
+   "stdout": "Model loaded: input=1200x1200, classes=2\nLoaded image: tests/regression/images/scan_page_pd.png (606x1000)\nRunning detection on 606x1000 image...\nHeatmap: 300x300 (2 channels)\n  Channel 0: min=0.0000 max=0.9772 mean=0.2482 above_0.5=21388/90000\n  Channel 1: min=0.0000 max=0.8685 mean=0.0720 above_0.5=5599/90000\n\nDetected 39 text regions:\n  Box 0: (81,33)-(113,63) conf=0.900\n  Box 1: (202,37)-(416,57) conf=0.958\n  Box 2: (79,73)-(545,107) conf=0.987\n  Box 3: (81,97)-(545,127) conf=0.944\n  Box 4: (81,117)-(545,150) conf=0.985\n  Box 5: (79,140)-(208,170) conf=0.906\n  Box 6: (101,160)-(543,193) conf=0.991\n  Box 7: (81,183)-(545,213) conf=0.972\n  Box 8: (79,203)-(545,237) conf=0.971\n  Box 9: (81,223)-(356,257) conf=0.935\n  Box 10: (101,247)-(545,280) conf=0.975\n  Box 11: (81,267)-(545,300) conf=0.988\n  Box 12: (81,290)-(545,320) conf=0.952\n  Box 13: (81,310)-(545,343) conf=0.989\n  Box 14: (81,333)-(545,367) conf=0.979\n  Box 15: (81,353)-(545,387) conf=1.000\n  Box 16: (81,377)-(503,407) conf=0.980\n  Box 17: (103,397)-(545,427) conf=0.994\n  Box 18: (81,417)-(545,450) conf=0.983\n  Box 19: (81,440)-(545,473) conf=0.995\n  ... and 19 more\nPASS\n"
+  }
+ },
+ "precision": "q8_0",
+ "bar": 0.97,
+ "seconds": 52.9,
+ "id": "surya-det-q8.scan_page_pd",
+ "commit": "7d34bbbd700cd1c8fc3d977c09f89dbbadd76054",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-02"
+}

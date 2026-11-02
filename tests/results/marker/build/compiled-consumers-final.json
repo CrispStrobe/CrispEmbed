@@ -1,0 +1,25 @@
+{
+  "library_sha256": "f117761723bc909b4c6194e096e6bbfe18ba6bf5576d24108b6af0b780f5a5e9",
+  "source_sha256": {
+    "crispembed/src/marker.rs": "3d0cf2acf900d9cb1502f0372f8bc9dcb37103b2eaa7ed42769c621f52e862fe",
+    "crispembed-sys/src/lib.rs": "2361773b1ba12968fb895309baf008a7b5409b6d254ad28471002efec52ce69b",
+    "flutter/crispembed/lib/src/marker.dart": "3c2cf56357937b13da2cc4323cfb030f3288b3007e47095325acf90ee60f75d6",
+    "tests/marker_public_bindings.rs": "c992f57324cb37273ca34e52ba898d432b3caf30449951c83b15047bb9b4597a",
+    "tests/marker_public_bindings.dart": "9e7a6922e02ae6eff82c3e605bf8f712925555687e039c4a71249e8a55f1ca6d"
+  },
+  "results": [
+    {
+      "client": "rust",
+      "exit_code": 0,
+      "output": "{\"client\":\"Rust\",\"passed\":13,\"total\":13}",
+      "binary_sha256": "94c1abf7d0a06ceb5850cb4e9eef26aa0866155aba0f63d7ca1dd93c3bf2c381"
+    },
+    {
+      "client": "dart",
+      "exit_code": 0,
+      "output": "{\"client\":\"Dart\",\"passed\":14,\"total\":14}",
+      "binary_sha256": "992312bf5fb90b82f55878e42ad37b306dc09a8d687fb4d0c1bc0099ef245d4d"
+    }
+  ],
+  "passed": true
+}

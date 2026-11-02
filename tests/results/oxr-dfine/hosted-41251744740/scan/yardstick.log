@@ -1,0 +1,1 @@
+{"topk_same_set_as_f64": {"pytorch_fp32": true, "native": true}, "stages_native_mean_closer_to_f64": 56, "stages_compared": 56}

@@ -1,0 +1,271 @@
+{
+  "kind": "teleocr-native-loader-metadata-validation",
+  "model_weights_used": false,
+  "model_parity_claimed": false,
+  "library_sha256": "96b1f5707fadabbf7f7060b2b2d2841d728d5f2c1268d4fdb8725247ed8539b5",
+  "checks": [
+    {
+      "name": "typed-array-control",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: unsupported or inconsistent model metadata",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-lxeodcet/typed-array-control.gguf\nTeleOCR: unsupported or inconsistent model metadata\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "b24092bc369486e4f237222f945121d4b032013b792fc869538cb5bc03ae519e"
+    },
+    {
+      "name": "gate-unset",
+      "gate": null,
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR requires CRISPEMBED_TELEOCR=1 and a CrispEmbed TeleOCR GGUF v1",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-lxeodcet/gate-unset.gguf\nTeleOCR requires CRISPEMBED_TELEOCR=1 and a CrispEmbed TeleOCR GGUF v1; convert the checkpoint with convert-teleocr-to-gguf.py.\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "b24092bc369486e4f237222f945121d4b032013b792fc869538cb5bc03ae519e"
+    },
+    {
+      "name": "gate-empty",
+      "gate": "",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR requires CRISPEMBED_TELEOCR=1 and a CrispEmbed TeleOCR GGUF v1",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-lxeodcet/gate-empty.gguf\nTeleOCR requires CRISPEMBED_TELEOCR=1 and a CrispEmbed TeleOCR GGUF v1; convert the checkpoint with convert-teleocr-to-gguf.py.\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "b24092bc369486e4f237222f945121d4b032013b792fc869538cb5bc03ae519e"
+    },
+    {
+      "name": "gate-zero",
+      "gate": "0",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR requires CRISPEMBED_TELEOCR=1 and a CrispEmbed TeleOCR GGUF v1",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-lxeodcet/gate-zero.gguf\nTeleOCR requires CRISPEMBED_TELEOCR=1 and a CrispEmbed TeleOCR GGUF v1; convert the checkpoint with convert-teleocr-to-gguf.py.\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "b24092bc369486e4f237222f945121d4b032013b792fc869538cb5bc03ae519e"
+    },
+    {
+      "name": "gate-nonempty-false-is-on",
+      "gate": "false",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: unsupported or inconsistent model metadata",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-lxeodcet/gate-nonempty-false-is-on.gguf\nTeleOCR: unsupported or inconsistent model metadata\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "b24092bc369486e4f237222f945121d4b032013b792fc869538cb5bc03ae519e"
+    },
+    {
+      "name": "missing-format-version",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR requires CRISPEMBED_TELEOCR=1 and a CrispEmbed TeleOCR GGUF v1",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-lxeodcet/missing-format-version.gguf\nTeleOCR requires CRISPEMBED_TELEOCR=1 and a CrispEmbed TeleOCR GGUF v1; convert the checkpoint with convert-teleocr-to-gguf.py.\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "5d79cb16f5b4e21dfd2f6399c3e80107f5e93b19355f1d3854f23b983f491a88"
+    },
+    {
+      "name": "unsupported-format-version",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR requires CRISPEMBED_TELEOCR=1 and a CrispEmbed TeleOCR GGUF v1",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-lxeodcet/unsupported-format-version.gguf\nTeleOCR requires CRISPEMBED_TELEOCR=1 and a CrispEmbed TeleOCR GGUF v1; convert the checkpoint with convert-teleocr-to-gguf.py.\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "286b7c836ce990a7de3163a924b3da898199e1752ef4b0e773f9eb8104235521"
+    },
+    {
+      "name": "wrong-format-version-type",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR requires CRISPEMBED_TELEOCR=1 and a CrispEmbed TeleOCR GGUF v1",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-lxeodcet/wrong-format-version-type.gguf\nTeleOCR requires CRISPEMBED_TELEOCR=1 and a CrispEmbed TeleOCR GGUF v1; convert the checkpoint with convert-teleocr-to-gguf.py.\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "b301ff13ff9b56eb357bc37a4ea3e59c2a1e8f7e95c53d5478219b7a6af58d36"
+    },
+    {
+      "name": "qwen2vl.vision.fullatt_block_indexes-missing",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-lxeodcet/qwen2vl.vision.fullatt_block_indexes-missing.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "08cdea2d0cca8717ad00a93a18bc3e19462aac4f75381569f295e4b863ea699d"
+    },
+    {
+      "name": "qwen2vl.vision.fullatt_block_indexes-scalar",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-lxeodcet/qwen2vl.vision.fullatt_block_indexes-scalar.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "0c2e901f42cbcbec8045f88e4551798916d20f315b941704c5fea2100f07c257"
+    },
+    {
+      "name": "qwen2vl.vision.fullatt_block_indexes-wrong-count",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-lxeodcet/qwen2vl.vision.fullatt_block_indexes-wrong-count.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "cff480fa4781e7d85cd80ed9a5bdcf1d802093869e198b6fcd9b606f4c4bf28c"
+    },
+    {
+      "name": "qwen2vl.vision.fullatt_block_indexes-wrong-element-type",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-lxeodcet/qwen2vl.vision.fullatt_block_indexes-wrong-element-type.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "f6dfe50afc596daf693076bc5a8ca9b519d603f7b0b32d779797354fcf4a1b3d"
+    },
+    {
+      "name": "qwen2vl.vision.image_mean-missing",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-lxeodcet/qwen2vl.vision.image_mean-missing.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "0c65599dcb01234e964175fd453b4af92787019b6e1e0f9acdb19e2ad36eda44"
+    },
+    {
+      "name": "qwen2vl.vision.image_mean-scalar",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-lxeodcet/qwen2vl.vision.image_mean-scalar.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "eee6631113da91c165b3dd3097c1e99d6cd978f51b4d18320408ca7170d82773"
+    },
+    {
+      "name": "qwen2vl.vision.image_mean-wrong-count",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-lxeodcet/qwen2vl.vision.image_mean-wrong-count.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "e8bc23488b8d062f845e42a8600f712573c38d068b408ff8898cdb05f31c910c"
+    },
+    {
+      "name": "qwen2vl.vision.image_mean-wrong-element-type",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-lxeodcet/qwen2vl.vision.image_mean-wrong-element-type.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "faa52415421ea087521116ba7bbc5c997d849bfd21ad5ec969bfe67a0902bca1"
+    },
+    {
+      "name": "qwen2vl.vision.image_std-missing",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-lxeodcet/qwen2vl.vision.image_std-missing.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "9be52848e934bc9df69502161cc0876f8be2b646f4af38d88827e79dd3246872"
+    },
+    {
+      "name": "qwen2vl.vision.image_std-scalar",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-lxeodcet/qwen2vl.vision.image_std-scalar.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "73ba758beb718019d731582c9d9b773653303c3d606c54db8702749a6ff82979"
+    },
+    {
+      "name": "qwen2vl.vision.image_std-wrong-count",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-lxeodcet/qwen2vl.vision.image_std-wrong-count.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "10c148db473c66a33d8be8cc8b2ec5b421a08bf8823c271ff881a32fef1625a7"
+    },
+    {
+      "name": "qwen2vl.vision.image_std-wrong-element-type",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-lxeodcet/qwen2vl.vision.image_std-wrong-element-type.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "58797fbf7763e6a5eb11fb3bf089720e9da6357c1b832b58023922cf556447cc"
+    },
+    {
+      "name": "qwen2vl.rope_sections-missing",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-lxeodcet/qwen2vl.rope_sections-missing.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "e50cdbde591c5819f0f7783667849f2f80ed07f37ecfccb704b99fe08a939a6e"
+    },
+    {
+      "name": "qwen2vl.rope_sections-scalar",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-lxeodcet/qwen2vl.rope_sections-scalar.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "0b1aa94e34c219310eae49000e5842f3cc1cc2c6260654b1c4e76d531f38aca0"
+    },
+    {
+      "name": "qwen2vl.rope_sections-wrong-count",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-lxeodcet/qwen2vl.rope_sections-wrong-count.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "7a3781af6bf5fa031b2204cba1b50ff9b5532ab64b7c53fb23821ad4dcd916bd"
+    },
+    {
+      "name": "qwen2vl.rope_sections-wrong-element-type",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-lxeodcet/qwen2vl.rope_sections-wrong-element-type.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "03f6cf5130fe7647387ace0df2c895c9fbb01887e0cca4865e1dfdec350d6a3b"
+    },
+    {
+      "name": "wrong-optional-norm-epsilon-type",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-lxeodcet/wrong-optional-norm-epsilon-type.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "c661e2738da8a60b6fa2037f35d601c2eac788488c4ee483b3c374f25d3033bf"
+    },
+    {
+      "name": "conflicting-qwen3vl-prefix",
+      "gate": "1",
+      "passed": true,
+      "returncode": 0,
+      "expected_diagnostic": "TeleOCR: malformed metadata array or conflicting architecture prefix",
+      "stdout": "native loader returned null\n",
+      "stderr": "qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-loader-lxeodcet/conflicting-qwen3vl-prefix.gguf\nTeleOCR: malformed metadata array or conflicting architecture prefix\nqwen2vl_ocr: failed to load hparams\n",
+      "fixture_sha256": "42096ece9f445b68133b47be5f88dfcd7f48e417506d2596f9ffec15dbfae403"
+    }
+  ],
+  "passed": true,
+  "passed_count": 26,
+  "total_count": 26
+}

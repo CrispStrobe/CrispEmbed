@@ -1,0 +1,99 @@
+{
+ "seed": 2,
+ "cases_per_function": 1500,
+ "python": "3.12.15",
+ "functions": {
+  "otsl": {
+   "cases": 1500,
+   "mismatches": 0
+  },
+  "equation": {
+   "cases": 1500,
+   "mismatches": 0
+  },
+  "brackets": {
+   "cases": 1500,
+   "mismatches": 0
+  },
+  "left_right": {
+   "cases": 1500,
+   "mismatches": 0
+  },
+  "big": {
+   "cases": 1500,
+   "mismatches": 0
+  },
+  "braces": {
+   "cases": 1500,
+   "mismatches": 0
+  },
+  "double_subscript": {
+   "cases": 1500,
+   "mismatches": 0
+  },
+  "text": {
+   "cases": 1500,
+   "mismatches": 0
+  },
+  "eq_wrap": {
+   "cases": 1500,
+   "mismatches": 0
+  },
+  "md_table": {
+   "cases": 1500,
+   "mismatches": 0
+  },
+  "malformed": {
+   "cases": 1500,
+   "mismatches": 0
+  },
+  "mermaid_strict": {
+   "cases": 1500,
+   "mismatches": 0
+  },
+  "mermaid_rep": {
+   "cases": 1500,
+   "mismatches": 0
+  },
+  "mermaid_legal": {
+   "cases": 1500,
+   "mismatches": 0
+  },
+  "mermaid_edges": {
+   "cases": 1500,
+   "mismatches": 0
+  },
+  "mermaid_subgraph": {
+   "cases": 1500,
+   "mismatches": 0
+  },
+  "chart_rep": {
+   "cases": 1500,
+   "mismatches": 0
+  },
+  "chart_valid": {
+   "cases": 1500,
+   "mismatches": 0
+  },
+  "image": {
+   "cases": 1500,
+   "mismatches": 0
+  },
+  "pure_table": {
+   "cases": 1500,
+   "mismatches": 0
+  },
+  "lower": {
+   "cases": 1500,
+   "mismatches": 0
+  },
+  "layout": {
+   "cases": 1500,
+   "mismatches": 0
+  }
+ },
+ "first_mismatch": {},
+ "total_mismatches": 0,
+ "lines_returned": 33000,
+ "lines_sent": 33000
+}

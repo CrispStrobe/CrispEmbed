@@ -1,0 +1,1 @@
+{"label": "japanese/cpu", "ids_exact": true, "first_divergence": null, "reference_tokens": 38, "native_tokens": 38, "text_exact": true, "cer": 0.0, "eos": true, "capped": false, "runs_ms": [28537.187792, 27917.805666], "warm_ms_median": 27917.805666, "load_ms": 224574.10625, "runs_identical": true}

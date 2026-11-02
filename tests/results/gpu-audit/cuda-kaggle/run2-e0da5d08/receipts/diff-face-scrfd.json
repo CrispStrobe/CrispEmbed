@@ -1,0 +1,45 @@
+{
+ "kind": "diff",
+ "binary": "test-face-diff",
+ "arms": {
+  "cuda": {
+   "rc": 0,
+   "wall_s": 0.866,
+   "gpu_mem_peak_mib": 273,
+   "cuda_used": true,
+   "n_stages": 1,
+   "stages": {
+    "detection": 1.0
+   },
+   "worst_stage": [
+    "detection",
+    1.0
+   ],
+   "threshold_fails": [],
+   "threshold_missing": [],
+   "stdout_tail": "SCRFD face detection — parity test\n  Model: $SCRATCH/models/scrfd-det-10g.gguf\n  Ref:   $SCRATCH/models/face-ref.gguf\n  Image: tests/regression/images/face.png\n\n  \u001b[32m[PASS]\u001b[0m ref loaded\n  \u001b[32m[PASS]\u001b[0m model loads\n  detected 1 face(s) (ref 1)\n  \u001b[32m[PASS]\u001b[0m face count matches ref\n  bbox/landmark max error: 2.67 px   conf error: 0.0032\n  detection: cos_min=1.000000 max_abs=2.6701  PASS\n  \u001b[32m[PASS]\u001b[0m detection within tolerance\n\n=== Results: 4 passed, 0 failed ===\n\ncrispembed_diff: loaded 1 tensors from $SCRATCH/models/face-ref.gguf\ncnn_embed: scrfd-det-10g (detection), embed_dim=0, input=640x640\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncnn_embed: loaded 0 conv blocks (no embedding head)\ncnn_embed: SCRFD stride 8: 12800 anchors, 0 dets above 0.50\ncnn_embed: SCRFD stride 16: 3200 anchors, 0 dets above 0.50\ncnn_embed: SCRFD stride 32: 800 anchors, 5 dets above 0.50\ncnn_embed: SCRFD detected 1 faces\n"
+  },
+  "cpu": {
+   "rc": 0,
+   "wall_s": 1.871,
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "n_stages": 1,
+   "stages": {
+    "detection": 1.0
+   },
+   "worst_stage": [
+    "detection",
+    1.0
+   ],
+   "threshold_fails": [],
+   "threshold_missing": [],
+   "stdout_tail": "SCRFD face detection — parity test\n  Model: $SCRATCH/models/scrfd-det-10g.gguf\n  Ref:   $SCRATCH/models/face-ref.gguf\n  Image: tests/regression/images/face.png\n\n  \u001b[32m[PASS]\u001b[0m ref loaded\n  \u001b[32m[PASS]\u001b[0m model loads\n  detected 1 face(s) (ref 1)\n  \u001b[32m[PASS]\u001b[0m face count matches ref\n  bbox/landmark max error: 2.67 px   conf error: 0.0032\n  detection: cos_min=1.000000 max_abs=2.6701  PASS\n  \u001b[32m[PASS]\u001b[0m detection within tolerance\n\n=== Results: 4 passed, 0 failed ===\n\ncrispembed_diff: loaded 1 tensors from $SCRATCH/models/face-ref.gguf\ncnn_embed: scrfd-det-10g (detection), embed_dim=0, input=640x640\nggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\ncnn_embed: loaded 0 conv blocks (no embedding head)\ncnn_embed: SCRFD stride 8: 12800 anchors, 0 dets above 0.50\ncnn_embed: SCRFD stride 16: 3200 anchors, 0 dets above 0.50\ncnn_embed: SCRFD stride 32: 800 anchors, 5 dets above 0.50\ncnn_embed: SCRFD detected 1 faces\n"
+  }
+ },
+ "seconds": 3.1,
+ "id": "diff-face-scrfd",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

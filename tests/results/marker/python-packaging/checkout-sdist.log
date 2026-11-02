@@ -1,0 +1,84 @@
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/setuptools/config/_apply_pyprojecttoml.py:82: SetuptoolsDeprecationWarning: `project.license` as a TOML table is deprecated
+!!
+
+        ********************************************************************************
+        Please use a simple string containing a SPDX expression for `project.license`. You can also use `project.license-files`. (Both options available on setuptools>=77.0.0).
+
+        By 2027-Feb-18, you need to update your project and remove deprecated calls
+        or your builds will no longer be supported.
+
+        See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license for details.
+        ********************************************************************************
+
+!!
+  corresp(dist, value, root_dir)
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/setuptools/config/_apply_pyprojecttoml.py:61: SetuptoolsDeprecationWarning: License classifiers are deprecated.
+!!
+
+        ********************************************************************************
+        Please consider removing the following classifiers in favor of a SPDX license expression:
+
+        License :: OSI Approved :: MIT License
+
+        See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license for details.
+        ********************************************************************************
+
+!!
+  dist._finalize_license_expression()
+/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/site-packages/setuptools/dist.py:765: SetuptoolsDeprecationWarning: License classifiers are deprecated.
+!!
+
+        ********************************************************************************
+        Please consider removing the following classifiers in favor of a SPDX license expression:
+
+        License :: OSI Approved :: MIT License
+
+        See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license for details.
+        ********************************************************************************
+
+!!
+  self._finalize_license_expression()
+running sdist
+running egg_info
+writing crispembed.egg-info/PKG-INFO
+writing dependency_links to crispembed.egg-info/dependency_links.txt
+writing requirements to crispembed.egg-info/requires.txt
+writing top-level names to crispembed.egg-info/top_level.txt
+reading manifest file 'crispembed.egg-info/SOURCES.txt'
+reading manifest template 'MANIFEST.in'
+warning: no files found matching '*.so.*' under directory 'crispembed'
+warning: no files found matching '*.dylib' under directory 'crispembed'
+warning: no files found matching '*.dll' under directory 'crispembed'
+warning: no files found matching '*.pyd' under directory 'crispembed'
+adding license file 'LICENSE'
+writing manifest file 'crispembed.egg-info/SOURCES.txt'
+running check
+creating crispembed-0.17.14
+creating crispembed-0.17.14/crispembed
+creating crispembed-0.17.14/crispembed.egg-info
+copying files to crispembed-0.17.14...
+copying LICENSE -> crispembed-0.17.14
+copying MANIFEST.in -> crispembed-0.17.14
+copying README.md -> crispembed-0.17.14
+copying pyproject.toml -> crispembed-0.17.14
+copying setup.py -> crispembed-0.17.14
+copying crispembed/Apache-2.0.txt -> crispembed-0.17.14/crispembed
+copying crispembed/NOTICE.marker -> crispembed-0.17.14/crispembed
+copying crispembed/NOTICE.teleocr -> crispembed-0.17.14/crispembed
+copying crispembed/POLICY.md -> crispembed-0.17.14/crispembed
+copying crispembed/__init__.py -> crispembed-0.17.14/crispembed
+copying crispembed/_binding.py -> crispembed-0.17.14/crispembed
+copying crispembed/_marker.py -> crispembed-0.17.14/crispembed
+copying crispembed/_moedern_text.py -> crispembed-0.17.14/crispembed
+copying crispembed/_systemone.py -> crispembed-0.17.14/crispembed
+copying crispembed/image.py -> crispembed-0.17.14/crispembed
+copying crispembed/libcrispembed.so -> crispembed-0.17.14/crispembed
+copying crispembed.egg-info/PKG-INFO -> crispembed-0.17.14/crispembed.egg-info
+copying crispembed.egg-info/SOURCES.txt -> crispembed-0.17.14/crispembed.egg-info
+copying crispembed.egg-info/dependency_links.txt -> crispembed-0.17.14/crispembed.egg-info
+copying crispembed.egg-info/requires.txt -> crispembed-0.17.14/crispembed.egg-info
+copying crispembed.egg-info/top_level.txt -> crispembed-0.17.14/crispembed.egg-info
+Writing crispembed-0.17.14/setup.cfg
+creating artifacts-sdist
+Creating tar archive
+removing 'crispembed-0.17.14' (and everything under it)

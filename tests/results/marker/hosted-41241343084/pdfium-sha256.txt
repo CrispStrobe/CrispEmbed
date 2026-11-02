@@ -1,0 +1,1 @@
+cb59522bf0c48a6408fd2adc8c87120a1418bacbda193f898e8cdccda7d5ca27  /opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/site-packages/pypdfium2_raw/libpdfium.so

@@ -1,0 +1,61 @@
+{
+ "kind": "diff",
+ "binary": "test-scunet-diff",
+ "arms": {
+  "cuda": {
+   "rc": 0,
+   "wall_s": 1.668,
+   "gpu_mem_peak_mib": 175,
+   "cuda_used": true,
+   "n_stages": 9,
+   "stages": {
+    "head": 1.0,
+    "m_down1": 1.0,
+    "m_down2": 1.0,
+    "m_down3": 1.0,
+    "body": 1.0,
+    "m_up3": 1.0,
+    "m_up2": 1.0,
+    "m_up1": 1.0,
+    "output": 1.0
+   },
+   "worst_stage": [
+    "head",
+    1.0
+   ],
+   "threshold_fails": [],
+   "threshold_missing": [],
+   "stdout_tail": "SCUNet Swin-Conv-UNet — per-stage parity test\n  Model: $SCRATCH/models/scunet-color-f32.gguf\n  Ref:   $SCRATCH/models/scunet-ref.gguf\n\n  \u001b[32m[PASS]\u001b[0m model loads\n  Input: 64x64\n\n  head         cos=1.000000 max_abs=0.000000  PASS\n  m_down1      cos=1.000000 max_abs=0.000002  PASS\n  m_down2      cos=1.000000 max_abs=0.000007  PASS\n  m_down3      cos=1.000000 max_abs=0.000028  PASS\n  body         cos=1.000000 max_abs=0.000046  PASS\n  m_up3        cos=1.000000 max_abs=0.000041  PASS\n  m_up2        cos=1.000000 max_abs=0.000007  PASS\n  m_up1        cos=1.000000 max_abs=0.000001  PASS\n  \u001b[32m[PASS]\u001b[0m process returns 0\n  Inference: 850.1 ms\n\n=== Final output ===\n  output: cos=1.000000 max_abs=0.000001  PASS\n  \u001b[32m[PASS]\u001b[0m output cos >= 0.999\n\n=== Results: 3 passed, 0 failed ===\n\ncrispembed_diff: loaded 10 tensors from $SCRATCH/models/scunet-ref.gguf\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\nscunet: conv path = ggml_conv_2d/conv_transpose (CPU sched)\n"
+  },
+  "cpu": {
+   "rc": 0,
+   "wall_s": 1.167,
+   "gpu_mem_peak_mib": 1,
+   "cuda_used": false,
+   "n_stages": 9,
+   "stages": {
+    "head": 1.0,
+    "m_down1": 1.0,
+    "m_down2": 1.0,
+    "m_down3": 1.0,
+    "body": 1.0,
+    "m_up3": 1.0,
+    "m_up2": 1.0,
+    "m_up1": 1.0,
+    "output": 1.0
+   },
+   "worst_stage": [
+    "head",
+    1.0
+   ],
+   "threshold_fails": [],
+   "threshold_missing": [],
+   "stdout_tail": "SCUNet Swin-Conv-UNet — per-stage parity test\n  Model: $SCRATCH/models/scunet-color-f32.gguf\n  Ref:   $SCRATCH/models/scunet-ref.gguf\n\n  \u001b[32m[PASS]\u001b[0m model loads\n  Input: 64x64\n\n  head         cos=1.000000 max_abs=0.000000  PASS\n  m_down1      cos=1.000000 max_abs=0.000002  PASS\n  m_down2      cos=1.000000 max_abs=0.000007  PASS\n  m_down3      cos=1.000000 max_abs=0.000028  PASS\n  body         cos=1.000000 max_abs=0.000046  PASS\n  m_up3        cos=1.000000 max_abs=0.000041  PASS\n  m_up2        cos=1.000000 max_abs=0.000007  PASS\n  m_up1        cos=1.000000 max_abs=0.000001  PASS\n  \u001b[32m[PASS]\u001b[0m process returns 0\n  Inference: 857.5 ms\n\n=== Final output ===\n  output: cos=1.000000 max_abs=0.000001  PASS\n  \u001b[32m[PASS]\u001b[0m output cos >= 0.999\n\n=== Results: 3 passed, 0 failed ===\n\ncrispembed_diff: loaded 10 tensors from $SCRATCH/models/scunet-ref.gguf\nggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\nscunet: conv path = ggml_conv_2d/conv_transpose (CPU sched)\n"
+  }
+ },
+ "seconds": 5.0,
+ "id": "diff-scunet",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

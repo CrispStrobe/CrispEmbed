@@ -1,0 +1,5 @@
+   Compiling crispembed-sys v0.17.14 (/workspace/scratch/960329398638/CrispEmbed-Marker/crispembed-sys)
+   Compiling libc v0.2.191
+   Compiling crispembed v0.17.14 (/workspace/scratch/960329398638/CrispEmbed-Marker/crispembed)
+   Compiling marker-public-test v0.1.0 (/workspace/scratch/960329398638/marker-work/rust-public)
+    Finished `release` profile [optimized] target(s) in 2.64s

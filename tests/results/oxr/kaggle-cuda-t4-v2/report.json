@@ -1,0 +1,431 @@
+{
+  "script_version": "oxr-kaggle-gpu-v2",
+  "commit": "1a15c950d4731b90040106ab3938c0638ee6cb41",
+  "gpu": "Tesla T4, 7.5\nTesla T4, 7.5",
+  "variants": {
+    "f16": {
+      "source": "https://huggingface.co/cstr/OXR-1.0-GGUF/resolve/f1e262e276349aa2647a85da6fc6326dd6aaf271/oxr-1.0-f16.gguf",
+      "sha256_ok": true,
+      "seconds": 47.4,
+      "error": ""
+    },
+    "f32-source": {
+      "returncode": 0,
+      "seconds": 50.2,
+      "log_tail": "Authenticated 752 tensors, 151669 tokens and 151387 merges\nConverted 1/752\nConverted 65/752\nConverted 129/752\nConverted 193/752\nConverted 257/752\nConverted 321/752\nConverted 385/752\nConverted 449/752\nConverted 513/752\nConverted 577/752\nConverted 641/752\nConverted 705/752\n"
+    },
+    "q8_0-large": {
+      "returncode": 0,
+      "bytes": 2029456896,
+      "log_tail": "-vision→F16) quantizing to f16... 5.1 MB -> 2.5 MB\n[748/752] vit.encoder.layers.26.self_attn.out_proj.bias -    f32, copy 0.0 MB\n[749/752] visual_tokenizer.head.0.weight                -    f32, (oxr-large→q8_0) quantizing to q8_0... 1151.9 MB -> 306.0 MB\n[750/752] visual_tokenizer.head.1.weight                -    f32, copy 0.2 MB\n[751/752] visual_tokenizer.head.1.bias                  -    f32, copy 0.2 MB\n[752/752] vte.weight                                    -    f32, (oxr-large→q8_0) quantizing to q8_0... 256.0 MB -> 68.0 MB\n\n362 quantized, 390 kept\n5853 MB -> 1930 MB (3.0x compression)\n"
+    },
+    "q4khead-mix": {
+      "returncode": 0,
+      "bytes": 1878471168,
+      "log_tail": "-vision→F16) quantizing to f16... 5.1 MB -> 2.5 MB\n[748/752] vit.encoder.layers.26.self_attn.out_proj.bias -    f32, copy 0.0 MB\n[749/752] visual_tokenizer.head.0.weight                -    f32, (oxr-large→q4_K) quantizing to q4_K... 1151.9 MB -> 162.0 MB\n[750/752] visual_tokenizer.head.1.weight                -    f32, copy 0.2 MB\n[751/752] visual_tokenizer.head.1.bias                  -    f32, copy 0.2 MB\n[752/752] vte.weight                                    -    f32, (oxr-large→q8_0) quantizing to q8_0... 256.0 MB -> 68.0 MB\n\n362 quantized, 390 kept\n5853 MB -> 1786 MB (3.3x compression)\n"
+    }
+  },
+  "cases": {
+    "formula": {
+      "reference_tokens": 22,
+      "arms": {
+        "f16": {
+          "returncode": 0,
+          "seconds": 22.22,
+          "ids_exact": true,
+          "text_exact": true,
+          "tokens": 22,
+          "first_divergence": null,
+          "eos": true,
+          "inference_ms": 1103.631349,
+          "device": "auto",
+          "text": "$x=\\frac{-b\\pm\\sqrt{b^{2}-4ac}}{2a}$",
+          "stage_dump_rc": 0
+        },
+        "q8_0-large": {
+          "returncode": 0,
+          "seconds": 4.78,
+          "ids_exact": true,
+          "text_exact": true,
+          "tokens": 22,
+          "first_divergence": null,
+          "eos": true,
+          "inference_ms": 808.620022,
+          "device": "auto",
+          "text": "$x=\\frac{-b\\pm\\sqrt{b^{2}-4ac}}{2a}$",
+          "stage_dump_rc": 0,
+          "stages_vs_cuda_f16": {
+            "vision.merge": {
+              "cosine": 1.0,
+              "max_abs": 0.0
+            },
+            "visual.embeddings": {
+              "cosine": 0.9999889851519405,
+              "max_abs": 0.0007170466706156731
+            },
+            "llm.norm": {
+              "cosine": 0.9992948783007729,
+              "max_abs": 1.430600881576538
+            },
+            "llm.logits": {
+              "cosine": 0.9995176488996325,
+              "max_abs": 0.36711347103118896
+            }
+          }
+        },
+        "q4khead-mix": {
+          "returncode": 0,
+          "seconds": 4.68,
+          "ids_exact": true,
+          "text_exact": true,
+          "tokens": 22,
+          "first_divergence": null,
+          "eos": true,
+          "inference_ms": 784.02093,
+          "device": "auto",
+          "text": "$x=\\frac{-b\\pm\\sqrt{b^{2}-4ac}}{2a}$",
+          "stage_dump_rc": 0,
+          "stages_vs_cuda_f16": {
+            "vision.merge": {
+              "cosine": 1.0,
+              "max_abs": 0.0
+            },
+            "visual.embeddings": {
+              "cosine": 0.9998278976336218,
+              "max_abs": 0.0028165150433778763
+            },
+            "llm.norm": {
+              "cosine": 0.9991229289383514,
+              "max_abs": 2.212445452809334
+            },
+            "llm.logits": {
+              "cosine": 0.9981077499186795,
+              "max_abs": 0.4847147464752197
+            }
+          }
+        }
+      }
+    },
+    "table": {
+      "reference_tokens": 261,
+      "arms": {
+        "f16": {
+          "returncode": 0,
+          "seconds": 9.89,
+          "ids_exact": true,
+          "text_exact": true,
+          "tokens": 261,
+          "first_divergence": null,
+          "eos": true,
+          "inference_ms": 3899.322585,
+          "device": "auto",
+          "text": "<table><tr><td colspan=\"5\">Temperature of Substances Over Heat</td></tr><tr><td>Time (min)</td><td>Sample 1</td><td>Sample 2</td><td>Sample 3</td><td>Sample 3</td></tr><tr><td>0</td><td>20*</td><td>50*</td><td>51*</td><td>1*</td></tr><tr><td>5</td><td>30*</td><td>74*</td><td>80*</td><td>40*</td></tr><tr><td>10</td><td>55*</td><td>79*</td><td>90*</td><td>74*</td></tr><tr><td>15</td><td>74*</td><td>",
+          "stage_dump_rc": 0
+        },
+        "q8_0-large": {
+          "returncode": 0,
+          "seconds": 8.74,
+          "ids_exact": true,
+          "text_exact": true,
+          "tokens": 261,
+          "first_divergence": null,
+          "eos": true,
+          "inference_ms": 2868.56827,
+          "device": "auto",
+          "text": "<table><tr><td colspan=\"5\">Temperature of Substances Over Heat</td></tr><tr><td>Time (min)</td><td>Sample 1</td><td>Sample 2</td><td>Sample 3</td><td>Sample 3</td></tr><tr><td>0</td><td>20*</td><td>50*</td><td>51*</td><td>1*</td></tr><tr><td>5</td><td>30*</td><td>74*</td><td>80*</td><td>40*</td></tr><tr><td>10</td><td>55*</td><td>79*</td><td>90*</td><td>74*</td></tr><tr><td>15</td><td>74*</td><td>",
+          "stage_dump_rc": 0,
+          "stages_vs_cuda_f16": {
+            "vision.merge": {
+              "cosine": 1.0000000000000002,
+              "max_abs": 0.0
+            },
+            "visual.embeddings": {
+              "cosine": 0.9999901633026167,
+              "max_abs": 0.0006760130636394024
+            },
+            "llm.norm": {
+              "cosine": 0.9993143294174639,
+              "max_abs": 1.3976199626922607
+            },
+            "llm.logits": {
+              "cosine": 0.9986967747604943,
+              "max_abs": 0.42993974685668945
+            }
+          }
+        },
+        "q4khead-mix": {
+          "returncode": 0,
+          "seconds": 9.0,
+          "ids_exact": true,
+          "text_exact": true,
+          "tokens": 261,
+          "first_divergence": null,
+          "eos": true,
+          "inference_ms": 2907.623172,
+          "device": "auto",
+          "text": "<table><tr><td colspan=\"5\">Temperature of Substances Over Heat</td></tr><tr><td>Time (min)</td><td>Sample 1</td><td>Sample 2</td><td>Sample 3</td><td>Sample 3</td></tr><tr><td>0</td><td>20*</td><td>50*</td><td>51*</td><td>1*</td></tr><tr><td>5</td><td>30*</td><td>74*</td><td>80*</td><td>40*</td></tr><tr><td>10</td><td>55*</td><td>79*</td><td>90*</td><td>74*</td></tr><tr><td>15</td><td>74*</td><td>",
+          "stage_dump_rc": 0,
+          "stages_vs_cuda_f16": {
+            "vision.merge": {
+              "cosine": 1.0000000000000002,
+              "max_abs": 0.0
+            },
+            "visual.embeddings": {
+              "cosine": 0.9998517166483206,
+              "max_abs": 0.005219563841819763
+            },
+            "llm.norm": {
+              "cosine": 0.9991680447226451,
+              "max_abs": 1.718085765838623
+            },
+            "llm.logits": {
+              "cosine": 0.998924500171527,
+              "max_abs": 0.40614694356918335
+            }
+          }
+        }
+      }
+    },
+    "japanese": {
+      "reference_tokens": 38,
+      "arms": {
+        "f16": {
+          "returncode": 0,
+          "seconds": 4.23,
+          "ids_exact": true,
+          "text_exact": true,
+          "tokens": 38,
+          "first_divergence": null,
+          "eos": true,
+          "inference_ms": 1028.778511,
+          "device": "auto",
+          "text": "日本語のテキスト認識テスト\nこんなには、世界。カタカナもテスト\n東京都渋谷区 2026年8月8日",
+          "stage_dump_rc": 0
+        },
+        "q8_0-large": {
+          "returncode": 0,
+          "seconds": 4.93,
+          "ids_exact": true,
+          "text_exact": true,
+          "tokens": 38,
+          "first_divergence": null,
+          "eos": true,
+          "inference_ms": 899.23381,
+          "device": "auto",
+          "text": "日本語のテキスト認識テスト\nこんなには、世界。カタカナもテスト\n東京都渋谷区 2026年8月8日",
+          "stage_dump_rc": 0,
+          "stages_vs_cuda_f16": {
+            "vision.merge": {
+              "cosine": 1.0,
+              "max_abs": 0.0
+            },
+            "visual.embeddings": {
+              "cosine": 0.9999914056517534,
+              "max_abs": 0.0007322710007429123
+            },
+            "llm.norm": {
+              "cosine": 0.9993613687524723,
+              "max_abs": 1.9069194793701172
+            },
+            "llm.logits": {
+              "cosine": 0.9994565476324014,
+              "max_abs": 0.26641345024108887
+            }
+          }
+        },
+        "q4khead-mix": {
+          "returncode": 0,
+          "seconds": 4.88,
+          "ids_exact": true,
+          "text_exact": true,
+          "tokens": 38,
+          "first_divergence": null,
+          "eos": true,
+          "inference_ms": 907.636406,
+          "device": "auto",
+          "text": "日本語のテキスト認識テスト\nこんなには、世界。カタカナもテスト\n東京都渋谷区 2026年8月8日",
+          "stage_dump_rc": 0,
+          "stages_vs_cuda_f16": {
+            "vision.merge": {
+              "cosine": 1.0,
+              "max_abs": 0.0
+            },
+            "visual.embeddings": {
+              "cosine": 0.999840031192493,
+              "max_abs": 0.0038092173635959625
+            },
+            "llm.norm": {
+              "cosine": 0.9992856083786519,
+              "max_abs": 2.339508295059204
+            },
+            "llm.logits": {
+              "cosine": 0.9993251138122617,
+              "max_abs": 0.29293107986450195
+            }
+          }
+        }
+      }
+    },
+    "receipt": {
+      "reference_tokens": 202,
+      "arms": {
+        "f16": {
+          "returncode": 0,
+          "seconds": 9.15,
+          "ids_exact": true,
+          "text_exact": true,
+          "tokens": 202,
+          "first_divergence": null,
+          "eos": true,
+          "inference_ms": 3512.929634,
+          "device": "auto",
+          "text": "Jackson-Washington\n6640 Ortiz Cove, Markmouth, PW\n69940\nTransaction ID: 8F88C299\nDate: 2025-02-16 11:25:12\nItem Qty Price\nStrategy Accessory 1 $ 43.31 $\nConference Product 1 $ 48.40 $\nScientist Item 3 $ 48.07 $\nSituation Item 3 $ 23.87 $\nLife Accessory 4 $ 48.04 $\nMusic Accessory 1 $ 24.45 $\nSubtotal: $524.14\nGST (5%): $26.21\nPST (7%): $36.69\nTotal: $587.04\nPayment: Gift Card (****3486)\nHave a gre",
+          "stage_dump_rc": 0
+        },
+        "q8_0-large": {
+          "returncode": 0,
+          "seconds": 8.44,
+          "ids_exact": true,
+          "text_exact": true,
+          "tokens": 202,
+          "first_divergence": null,
+          "eos": true,
+          "inference_ms": 2682.288614,
+          "device": "auto",
+          "text": "Jackson-Washington\n6640 Ortiz Cove, Markmouth, PW\n69940\nTransaction ID: 8F88C299\nDate: 2025-02-16 11:25:12\nItem Qty Price\nStrategy Accessory 1 $ 43.31 $\nConference Product 1 $ 48.40 $\nScientist Item 3 $ 48.07 $\nSituation Item 3 $ 23.87 $\nLife Accessory 4 $ 48.04 $\nMusic Accessory 1 $ 24.45 $\nSubtotal: $524.14\nGST (5%): $26.21\nPST (7%): $36.69\nTotal: $587.04\nPayment: Gift Card (****3486)\nHave a gre",
+          "stage_dump_rc": 0,
+          "stages_vs_cuda_f16": {
+            "vision.merge": {
+              "cosine": 1.0,
+              "max_abs": 0.0
+            },
+            "visual.embeddings": {
+              "cosine": 0.9999920529330752,
+              "max_abs": 0.00076250359416008
+            },
+            "llm.norm": {
+              "cosine": 0.999297379871195,
+              "max_abs": 1.8169050216674805
+            },
+            "llm.logits": {
+              "cosine": 0.9996015333200596,
+              "max_abs": 0.2994415760040283
+            }
+          }
+        },
+        "q4khead-mix": {
+          "returncode": 0,
+          "seconds": 8.55,
+          "ids_exact": true,
+          "text_exact": true,
+          "tokens": 202,
+          "first_divergence": null,
+          "eos": true,
+          "inference_ms": 2720.597689,
+          "device": "auto",
+          "text": "Jackson-Washington\n6640 Ortiz Cove, Markmouth, PW\n69940\nTransaction ID: 8F88C299\nDate: 2025-02-16 11:25:12\nItem Qty Price\nStrategy Accessory 1 $ 43.31 $\nConference Product 1 $ 48.40 $\nScientist Item 3 $ 48.07 $\nSituation Item 3 $ 23.87 $\nLife Accessory 4 $ 48.04 $\nMusic Accessory 1 $ 24.45 $\nSubtotal: $524.14\nGST (5%): $26.21\nPST (7%): $36.69\nTotal: $587.04\nPayment: Gift Card (****3486)\nHave a gre",
+          "stage_dump_rc": 0,
+          "stages_vs_cuda_f16": {
+            "vision.merge": {
+              "cosine": 1.0,
+              "max_abs": 0.0
+            },
+            "visual.embeddings": {
+              "cosine": 0.9998868537748369,
+              "max_abs": 0.0016085710376501083
+            },
+            "llm.norm": {
+              "cosine": 0.9991809269972419,
+              "max_abs": 1.9190483093261719
+            },
+            "llm.logits": {
+              "cosine": 0.9996758511209687,
+              "max_abs": 0.29880380630493164
+            }
+          }
+        }
+      }
+    },
+    "german": {
+      "reference_tokens": 401,
+      "arms": {
+        "f16": {
+          "returncode": 0,
+          "seconds": 20.74,
+          "ids_exact": true,
+          "text_exact": true,
+          "tokens": 401,
+          "first_divergence": null,
+          "eos": true,
+          "inference_ms": 9207.076581,
+          "device": "auto",
+          "text": "1\nReichs = Gefezblatt.\nM 1.\nZuhalt. Verordnung, betreffend das Infraittretten der Militärfrazerichtsordnung vom 1. December 1898. C. 1. — Verordnung, betreffend die Rebertragung der Defeugnche des preuflähen General-Militarivats auf das Reichsmitärtz坦tdt. C. 2.\n(Dr. 2642.) Verordnung, betreffend das Infraittretten der Militärfrazerichtsordnung vom 1. December 1898. Dom 28. December 1899.\nWir Wilhe",
+          "stage_dump_rc": 0
+        },
+        "q8_0-large": {
+          "returncode": 0,
+          "seconds": 18.12,
+          "ids_exact": false,
+          "text_exact": false,
+          "tokens": 403,
+          "first_divergence": 55,
+          "eos": true,
+          "inference_ms": 7375.193192,
+          "device": "auto",
+          "text": "1\nReichs = Gefezblatt.\nM 1.\nZuhalt. Verordnung, betreffend das Infraittretten der Militärfrazerichtsordnung vom 1. December 1898. C 1. — Verordnung, betreffend die Rebertragung der Defeugnche des preuflähen General-Militarivats auf das Reichsmitärtz坦tdt. C 2.\n(Dr. 2642.) Verordnung, betreffend das Infraittretten der Militärfrazerichtsordnung vom 1. December 1898. Dom 28. December 1899.\nWir Wilhelm",
+          "stage_dump_rc": 0,
+          "stages_vs_cuda_f16": {
+            "vision.merge": {
+              "cosine": 0.9999999999999999,
+              "max_abs": 0.0
+            },
+            "visual.embeddings": {
+              "cosine": 0.9999912711972948,
+              "max_abs": 0.0008255749708041549
+            },
+            "llm.norm": {
+              "cosine": 0.9993378148256302,
+              "max_abs": 2.104534149169922
+            },
+            "llm.logits": {
+              "cosine": 0.9995743063689465,
+              "max_abs": 0.28262460231781006
+            }
+          }
+        },
+        "q4khead-mix": {
+          "returncode": 0,
+          "seconds": 18.32,
+          "ids_exact": false,
+          "text_exact": false,
+          "tokens": 404,
+          "first_divergence": 209,
+          "eos": true,
+          "inference_ms": 7473.621678,
+          "device": "auto",
+          "text": "1\nReichs = Gefezblatt.\nM 1.\nZuhalt. Verordnung, betreffend das Infraittretten der Militärfrazerichtsordnung vom 1. December 1898. C. 1. — Verordnung, betreffend die Rebertragung der Defeugnche des preuflähen General-Militarivats auf das Reichsmitärtz坦tdt. C. 2.\n(Dr. 2642.) Verordnung, betreffend das Infraittretten der Militärfrazerichtsordnung vom 1. December 1898. Dom 28. December 1899.\nWir Wilhe",
+          "stage_dump_rc": 0,
+          "stages_vs_cuda_f16": {
+            "vision.merge": {
+              "cosine": 0.9999999999999999,
+              "max_abs": 0.0
+            },
+            "visual.embeddings": {
+              "cosine": 0.999870031116212,
+              "max_abs": 0.0024866340681910515
+            },
+            "llm.norm": {
+              "cosine": 0.9992538646296899,
+              "max_abs": 2.1427392959594727
+            },
+            "llm.logits": {
+              "cosine": 0.9995968814411265,
+              "max_abs": 0.2558324337005615
+            }
+          }
+        }
+      }
+    }
+  },
+  "phase": "done"
+}

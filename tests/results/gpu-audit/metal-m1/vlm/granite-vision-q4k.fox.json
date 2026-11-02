@@ -1,0 +1,41 @@
+{
+ "cmd": [
+  "crispembed",
+  "-t",
+  "4",
+  "-m",
+  "/Volumes/backups/code/model-cache-20261101/metal-audit/granite-vision-3.3-2b-q4_k-visq8.tok.gguf",
+  "--ocr",
+  "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/regression/images/fox.png",
+  "--ocr-max-tokens",
+  "128"
+ ],
+ "metal_env": {},
+ "cpu_env": {
+  "CRISPEMBED_GRANITE_CPU": "1"
+ },
+ "wall_s": {
+  "metal": [
+   112.824
+  ],
+  "cpu": [
+   132.404
+  ]
+ },
+ "metal_device_seen": true,
+ "byte_identical": true,
+ "sha256": {
+  "metal": "ab005014e2c0e6e429b9504c682e31a830301a8434797b369667059f87631529",
+  "cpu": "ab005014e2c0e6e429b9504c682e31a830301a8434797b369667059f87631529"
+ },
+ "date": "2026-11-01",
+ "stdout": {
+  "metal": "<doc> The quick brown fox jumps \n over the lazy dog. 12345 </doc>\n",
+  "cpu": "<doc> The quick brown fox jumps \n over the lazy dog. 12345 </doc>\n"
+ },
+ "char_ratio": 1.0,
+ "stderr_tail": {
+  "metal": " name = 'kernel_flash_attn_ext_pad_mask=1_ncpsg=32'\nggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_pad_mask=1_ncpsg=32      0xc2d062d00 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_vec_f16_dk64_dv64', name = 'kernel_flash_attn_ext_vec_f16_dk64_dv64_mask=1_sink=0_bias=0_scap=0_kvpad=1_ns10=64_ns20=64_nsg=1_nwg=32'\nggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_vec_f16_dk64_dv64_mask=1_sink=0_bias=0_scap=0_kvpad=1_ns10=64_ns20=64_nsg=1_nwg=32      0xc2d063000 | th_max =  640 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_vec_reduce', name = 'kernel_flash_attn_ext_vec_reduce_dv=64_nwg=32'\nggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_vec_reduce_dv=64_nwg=32      0xc2d063300 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32_4', name = 'kernel_unary_f32_f32_4_op=10_cnt=1'\nggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_4_op=10_cnt=1            0xc2d063600 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32_4', name = 'kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=1_cb=0'\nggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=1_cb=0      0xc2d063900 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32_4', name = 'kernel_unary_f32_f32_4_op=106_cnt=1'\nggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_4_op=106_cnt=1           0xc2d063c00 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32_4', name = 'kernel_bin_fuse_f32_f32_f32_4_op=2_nf=1_rb=1_cb=0'\nggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_4_op=2_nf=1_rb=1_cb=0      0xc2d0bc000 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_vec_f16_dk64_dv64', name = 'kernel_flash_attn_ext_vec_f16_dk64_dv64_mask=1_sink=0_bias=0_scap=0_kvpad=0_ns10=64_ns20=64_nsg=1_nwg=32'\nggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_vec_f16_dk64_dv64_mask=1_sink=0_bias=0_scap=0_kvpad=0_ns10=64_ns20=64_nsg=1_nwg=32      0xc2d0bc300 | th_max =  768 | th_width =   32\nggml_metal_free: deallocating\n",
+  "cpu": "granite_vision: vis=27L×1152d (729 patches), llm=40L×2048d (heads=32/8, ffn=8192), vocab=49156, 804 tensors\n  multipliers: embed=12.0, residual=0.22, logits=8.0, attn=0.015625; tokenizer=embedded (49156 tokens)\ngranite_vision: KV cache 71.9 MB (max_seq=920, F16)\n"
+ }
+}

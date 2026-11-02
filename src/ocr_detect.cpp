@@ -391,9 +391,37 @@ static ggml_tensor * prep_deconv_weight(ggml_context * g, ggml_tensor * w, int O
 static ggml_tensor * conv_transpose_bias_relu(ggml_context * g, ggml_tensor * x, const conv_layer & cl, int OC, int KH,
                                               int KW, int stride, bool relu) {
     ggml_tensor * w = prep_deconv_weight(g, cl.w, OC, KH, KW);
-    // ggml_conv_transpose_2d_p0(kernel, input, stride)
-    // kernel: [KW, KH, OC, IC], input: [W, H, IC, 1]
-    x = ggml_conv_transpose_2d_p0(g, w, x, stride);
+    // GPU audit 2026-11-01: CRISPEMBED_DBNET_DECONV_MATMUL=1 (value-parsed,
+    // default off) rewrites the non-overlapping case (kernel == stride, as in
+    // both DBNet head deconvs) as one mul_mat per kernel row plus a concat:
+    //   out[x*KW+kw, y*KH+kh, oc] = sum_ic in[x, y, ic] * w[kw, kh, oc, ic]
+    // ggml-metal's conv_transpose_2d kernel loops over the whole input for
+    // every output pixel, which is what made Metal DBNet ~14x slower than CPU
+    // (issue #25); mul_mat is the GEMM it is good at. Same math, so the
+    // default path is untouched and both stay selectable for A/B.
+    static const bool deconv_matmul = core_env::on("CRISPEMBED_DBNET_DECONV_MATMUL");
+    if (deconv_matmul && KH == stride && KW == stride && x->ne[3] == 1) {
+        const int64_t W = x->ne[0], H = x->ne[1], IC = x->ne[2];
+        GGML_ASSERT(w->ne[0] == KW && w->ne[1] == KH && w->ne[2] == OC && w->ne[3] == IC);
+        // [W, H, IC] -> [IC, W*H]
+        ggml_tensor * xs = ggml_reshape_2d(g, ggml_cont(g, ggml_permute(g, x, 1, 2, 0, 3)), IC, W * H);
+        ggml_tensor * rows = nullptr;
+        for (int kh = 0; kh < KH; ++kh) {
+            // kernel row kh: [KW, OC, IC] -> [IC, KW*OC]
+            ggml_tensor * wk = ggml_view_3d(g, w, KW, OC, IC, w->nb[2], w->nb[3], (size_t)kh * w->nb[1]);
+            wk = ggml_cont(g, ggml_transpose(g, ggml_reshape_2d(g, ggml_cont(g, wk), KW * OC, IC)));
+            ggml_tensor * y = ggml_mul_mat(g, wk, xs);        // [KW*OC, W*H]
+            y = ggml_reshape_4d(g, y, KW, OC, W, H);          // kw, oc, x, y
+            y = ggml_cont(g, ggml_permute(g, y, 0, 3, 1, 2)); // kw, x, y, oc
+            y = ggml_reshape_4d(g, y, KW * W, 1, H, OC);      // ox, 1, y, oc
+            rows = rows ? ggml_concat(g, rows, y, 1) : y;     // ox, kh, y, oc
+        }
+        x = ggml_reshape_4d(g, rows, KW * W, KH * H, OC, 1);
+    } else {
+        // ggml_conv_transpose_2d_p0(kernel, input, stride)
+        // kernel: [KW, KH, OC, IC], input: [W, H, IC, 1]
+        x = ggml_conv_transpose_2d_p0(g, w, x, stride);
+    }
 
     if (cl.b) {
         int OC = (int)cl.b->ne[0];
@@ -420,9 +448,13 @@ static ggml_tensor * sigmoid_op(ggml_context * g, ggml_tensor * x) {
 // Run the full detection graph and return the probability map.
 // pixels: [3, H, W] CHW float32, already preprocessed.
 // Returns prob_map as [H, W] in [0, 1].
-static std::vector<float> forward(context * ctx, const float * pixels, int H, int W) {
+static std::vector<float> forward(context * ctx, const float * pixels, int H, int W, bool checked = false) {
     if (!ctx->graph_ctx || ctx->graph_h != H || ctx->graph_w != W) {
         if (ctx->graph_ctx) ggml_free(ctx->graph_ctx);
+        ctx->graph_ctx = nullptr;
+        ctx->graph = nullptr;
+        ctx->graph_input = nullptr;
+        ctx->graph_prob = nullptr;
         // Estimate graph size: ~200 nodes for ResNet-18 + FPNC + head, plus
         // extra nodes for quantized-weight dequantization.
         const int max_nodes = 1024;
@@ -566,6 +598,10 @@ static std::vector<float> forward(context * ctx, const float * pixels, int H, in
         if (!ggml_gallocr_alloc_graph(ctx->galloc, gf)) {
             fprintf(stderr, "ocr_detect: graph allocation failed\n");
             ggml_free(g);
+            ctx->graph_ctx = nullptr;
+            ctx->graph_input = nullptr;
+            ctx->graph_prob = nullptr;
+            ctx->graph_taps.clear();
             return {};
         }
         ctx->graph = gf;
@@ -578,7 +614,11 @@ static std::vector<float> forward(context * ctx, const float * pixels, int H, in
     ggml_backend_tensor_set(ctx->graph_input, pixels, 0, 3 * H * W * sizeof(float));
 
     // Compute
-    ggml_backend_graph_compute(ctx->backend, gf);
+    const auto status = ggml_backend_graph_compute(ctx->backend, gf);
+    if (checked && status != GGML_STATUS_SUCCESS) {
+        fprintf(stderr, "ocr_detect: graph compute failed\n");
+        return {};
+    }
 
     // Read probability map
     ggml_tensor * prob = ctx->graph_prob;
@@ -588,6 +628,10 @@ static std::vector<float> forward(context * ctx, const float * pixels, int H, in
     int prob_total = prob_w * prob_h;
     std::vector<float> prob_map(prob_total);
     ggml_backend_tensor_get(prob, prob_map.data(), 0, prob_total * sizeof(float));
+    if (checked && !std::all_of(prob_map.begin(), prob_map.end(), [](float value) { return std::isfinite(value); })) {
+        fprintf(stderr, "ocr_detect: nonfinite probability map\n");
+        return {};
+    }
 
     // Store for debugging
     ctx->last_prob_map = prob_map;
@@ -1068,14 +1112,15 @@ std::vector<text_box> postprocess_probability_map(const float * prob_map, int ma
 
 static std::vector<text_box> detect_with_options(context * ctx, const float * pixels, int H, int W,
                                                  float prob_threshold, float box_threshold, float unclip_ratio,
-                                                 int dilation, int max_candidates, score_mode scoring) {
+                                                 int dilation, int max_candidates, score_mode scoring,
+                                                 bool checked = false) {
     if (!ctx || !pixels) return {};
 
     const bool bench = ctx->bench;
     auto t_total = std::chrono::steady_clock::now();
 
     auto t0 = std::chrono::steady_clock::now();
-    std::vector<float> prob_map = forward(ctx, pixels, H, W);
+    std::vector<float> prob_map = forward(ctx, pixels, H, W, checked);
     if (bench)
         fprintf(stderr, "[ocr-detect-bench] graph compute: %.1f ms\n",
                 std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
@@ -1117,8 +1162,8 @@ detect_options rapid_defaults() {
     return {};
 }
 
-std::vector<text_box> detect_rgb_ex(context * ctx, const uint8_t * raw, int img_w, int img_h, int img_c,
-                                    const detect_options & options) {
+static std::vector<text_box> detect_rgb_impl(context * ctx, const uint8_t * raw, int img_w, int img_h, int img_c,
+                                             const detect_options & options, bool checked) {
     if (!ctx || !raw || img_w <= 0 || img_h <= 0 || img_c <= 0 || options.target_short_side <= 0) return {};
 
     // Resize (keep aspect ratio, short side = target)
@@ -1136,6 +1181,10 @@ std::vector<text_box> detect_rgb_ex(context * ctx, const uint8_t * raw, int img_
     scale = std::max(scale, 1.0f / std::max(img_w, img_h));
     int new_w = (int)(img_w * scale);
     int new_h = (int)(img_h * scale);
+    if (checked && (new_w < 1 || new_h < 1 || ctx->pad_divisor <= 0)) {
+        fprintf(stderr, "ocr_detect: invalid resized dimensions; crop or pad extreme-aspect-ratio images\n");
+        return {};
+    }
 
     // Keep very short lines visible to the detector and avoid the extreme
     // aspect-ratio failure mode common on receipt/document strips.
@@ -1151,6 +1200,11 @@ std::vector<text_box> detect_rgb_ex(context * ctx, const uint8_t * raw, int img_
     int pad_h = (ctx->pad_divisor - content_h % ctx->pad_divisor) % ctx->pad_divisor;
     int padded_w = new_w + pad_w;
     int padded_h = content_h + pad_h;
+    if (checked &&
+        (padded_w <= 0 || padded_h <= 0 || size_t(padded_w) > (size_t(16) * 1024 * 1024) / size_t(padded_h))) {
+        fprintf(stderr, "ocr_detect: checked detection exceeds its padded image size limit\n");
+        return {};
+    }
 
     // Allocate CHW buffer
     std::vector<float> pixels(3 * padded_h * padded_w, 0.0f);
@@ -1192,7 +1246,7 @@ std::vector<text_box> detect_rgb_ex(context * ctx, const uint8_t * raw, int img_
     // Run detection
     auto boxes =
         detect_with_options(ctx, pixels.data(), padded_h, padded_w, options.prob_threshold, options.box_threshold,
-                            options.unclip_ratio, options.dilation, options.max_candidates, options.scoring);
+                            options.unclip_ratio, options.dilation, options.max_candidates, options.scoring, checked);
 
     // Scale coordinates back to original image space
     float inv_scale = 1.0f / scale;
@@ -1216,6 +1270,35 @@ std::vector<text_box> detect_rgb_ex(context * ctx, const uint8_t * raw, int img_
     }
 
     return boxes;
+}
+
+std::vector<text_box> detect_rgb_ex(context * ctx, const uint8_t * raw, int img_w, int img_h, int img_c,
+                                    const detect_options & options) {
+    return detect_rgb_impl(ctx, raw, img_w, img_h, img_c, options, false);
+}
+
+bool detect_rgb_checked(context * ctx, const uint8_t * raw, int img_w, int img_h, int img_c,
+                        const detect_options & options, std::vector<text_box> & boxes, std::string & error) {
+    boxes.clear();
+    error.clear();
+    if (!ctx) {
+        error = "text detector context is null";
+        return false;
+    }
+    ctx->last_prob_map.clear();
+    ctx->last_prob_h = ctx->last_prob_w = 0;
+    ctx->last_intermediates.clear();
+    if (!raw || img_w <= 0 || img_h <= 0 || (img_c != 1 && img_c != 3) || options.target_short_side <= 0) {
+        error = "invalid text detector image or options";
+        return false;
+    }
+    boxes = detect_rgb_impl(ctx, raw, img_w, img_h, img_c, options, true);
+    if (ctx->last_prob_map.empty() || ctx->last_prob_h <= 0 || ctx->last_prob_w <= 0) {
+        boxes.clear();
+        error = "text detection failed; no completed finite probability map";
+        return false;
+    }
+    return true;
 }
 
 std::vector<text_box> detect_rgb(context * ctx, const uint8_t * raw, int img_w, int img_h, int img_c,

@@ -1,0 +1,65 @@
+{
+ "schema": "crispembed.oxr-dfine.api.v1",
+ "image": "table.png",
+ "checks": {
+  "compact_python_json_text": true,
+  "top_level_keys": true,
+  "data_keys": true,
+  "params_empty": true,
+  "page_count": true,
+  "candidate_count": true,
+  "label_types": true,
+  "box_arity": true,
+  "confidence_params": true,
+  "confidence_filter": true,
+  "python_wrapper_equal": true,
+  "oxr_parse_layout_batch_equivalent": true
+ },
+ "pass": true,
+ "parsed": {
+  "native": [
+   {
+    "type": "Table",
+    "bbox": [
+     21.61096954345703,
+     24.445802688598633,
+     178.60289001464844,
+     75.15620422363281
+    ],
+    "score": 0.9641660451889038
+   },
+   {
+    "type": "Title",
+    "bbox": [
+     53.092315673828125,
+     15.803071022033691,
+     155.86373901367188,
+     22.974294662475586
+    ],
+    "score": 0.924754798412323
+   }
+  ],
+  "reference": [
+   {
+    "type": "Table",
+    "bbox": [
+     21.610963821411133,
+     24.445802688598633,
+     178.60289001464844,
+     75.15620422363281
+    ],
+    "score": 0.9641662836074829
+   },
+   {
+    "type": "Title",
+    "bbox": [
+     53.09233474731445,
+     15.803077697753906,
+     155.8637237548828,
+     22.974294662475586
+    ],
+    "score": 0.9247589707374573
+   }
+  ]
+ }
+}

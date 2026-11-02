@@ -1,0 +1,93 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "--pan-model",
+  "pan-x4-f16.gguf",
+  "--pan-sr",
+  "scan_strip.png"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    2.07,
+    2.07
+   ],
+   "gpu_mem_peak_mib": 399,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\npan_sr: nf=40 unf=24 nb=16 scale=4x, 146 tensors\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\npan_sr: GPU path - forward graph on CUDA0 (CRISPEMBED_PAN_GPU=0 restores CPU)\npan_sr: 520x260 → 2080x1040 (4x), tiles=5x3\nggml_backend_cuda_graph_compute: CUDA graph warmup complete\nggml_backend_cuda_graph_compute: CUDA graph warmup complete\npan_sr: done 2080x1040\n",
+   "stdout_sha256": "6a5622412fdb2c18d6bfca163e826726a1987ceffcd1f698316f4d922f8b483e",
+   "vs_cpu": {
+    "byte_identical": false,
+    "image": {
+     "shape": [
+      1040,
+      2080,
+      3
+     ],
+     "max_abs": 1.0,
+     "mean_abs": 4.3145956607495065e-06,
+     "psnr_db": 101.78140258506895,
+     "n_diff": 28
+    },
+    "final_cosine": 0.9999999987341859,
+    "final_metric": "centered pixel cosine"
+   }
+  },
+  "cuda-gate0": {
+   "backend": "cuda",
+   "env": {
+    "CRISPEMBED_PAN_GPU": "0"
+   },
+   "wall_s": [
+    32.304,
+    31.998
+   ],
+   "gpu_mem_peak_mib": 107,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\npan_sr: nf=40 unf=24 nb=16 scale=4x, 146 tensors\npan_sr: 520x260 → 2080x1040 (4x), tiles=5x3\npan_sr: done 2080x1040\n",
+   "stdout_sha256": "471a20d3e79ebfbfb12eec0505ddebe7de19160bfe918c7818ad700351bef82c",
+   "vs_cpu": {
+    "byte_identical": true,
+    "image": {
+     "shape": [
+      1040,
+      2080,
+      3
+     ],
+     "max_abs": 0.0,
+     "mean_abs": 0.0,
+     "psnr_db": 99.0,
+     "n_diff": 0
+    },
+    "final_cosine": 1.0,
+    "final_metric": "centered pixel cosine"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    32.16,
+    31.602
+   ],
+   "gpu_mem_peak_mib": 1,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "crispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\npan_sr: nf=40 unf=24 nb=16 scale=4x, 146 tensors\nggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\npan_sr: 520x260 → 2080x1040 (4x), tiles=5x3\npan_sr: done 2080x1040\n",
+   "stdout_sha256": "471a20d3e79ebfbfb12eec0505ddebe7de19160bfe918c7818ad700351bef82c"
+  }
+ },
+ "precision": "f16",
+ "bar": 0.98,
+ "seconds": 135.9,
+ "id": "pan-default.scan_strip",
+ "commit": "c38304b4283da24cd88141a8b162b8c9be41b833",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

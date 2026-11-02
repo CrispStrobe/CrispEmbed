@@ -13,10 +13,13 @@
 #include "gguf.h"
 
 #include "../src/core/imatrix_alias.h"
+#include "../src/core/json.h"
+#include "../src/core/sha256.h"
 
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <set>
 #include <string>
 #include <vector>
 #include <map>
@@ -69,6 +72,7 @@ static bool tensor_name_matches(const std::string & pattern, const std::string &
 // importance[c] = sum_of_squares[c] / count. Passed to ggml_quantize_chunk,
 // which uses it to minimise activation-weighted error for k-quants / IQ-quants.
 static std::map<std::string, std::vector<float>> g_imatrix;
+static bool g_imatrix_requested = false;
 
 // BERT-family runtimes pre-merge the per-layer attn q/k/v weights into one F32
 // tensor at load time, so the imatrix collector records that matmul's input
@@ -94,6 +98,38 @@ using core_imatrix::qkv_merged_alias;
 enum class qkv_imatrix_mode { direct, merged, sum };
 
 static qkv_imatrix_mode g_qkv_mode = qkv_imatrix_mode::direct;
+
+// TeleOCR's converter stores a precision recipe. Re-quantization must replace
+// that recipe, since inheriting "f16" would mislabel a mixed Q4/Q8 output.
+// Record requested policies rather than promising every tensor has one type:
+// built-in guards, overrides and row-width fallbacks still apply. The final
+// type census below describes the tensors actually written.
+static std::string teleocr_quantization_recipe(ggml_type requested_type) {
+    const auto boolean = [](bool value) { return value ? "true" : "false"; };
+    const char * mode = g_qkv_mode == qkv_imatrix_mode::merged ? "merged"
+                        : g_qkv_mode == qkv_imatrix_mode::sum  ? "sum"
+                                                               : "direct";
+    std::string result = "{\"schema_version\":1,\"tool\":\"crispembed-quantize\",\"requested_type\":\"";
+    result += ggml_type_name(requested_type);
+    result += "\",\"decoder_f16\":";
+    result += boolean(g_decoder_f16);
+    result += ",\"decoder_attn_q8\":";
+    result += boolean(g_decoder_attn_q8);
+    result += ",\"ppocrv6_q8_head\":";
+    result += boolean(g_ppocrv6_q8_head);
+    result += ",\"imatrix_requested\":";
+    result += boolean(g_imatrix_requested);
+    result += ",\"imatrix_vectors_loaded\":" + std::to_string(g_imatrix.size());
+    result += ",\"imatrix_qkv_mode\":\"" + std::string(mode) + "\",\"tensor_overrides\":[";
+    for (size_t i = 0; i < g_tensor_types.size(); ++i) {
+        if (i) result += ',';
+        result += "{\"pattern\":\"" + core_json::json_escape(g_tensor_types[i].pattern) + "\",\"type\":\"";
+        result += ggml_type_name(g_tensor_types[i].type);
+        result += "\"}";
+    }
+    result += "],\"override_order\":\"last_match_wins\",\"built_in_guards\":true}";
+    return result;
+}
 
 static void init_qkv_imatrix_mode() {
     const char * e = std::getenv("CRISPEMBED_QUANT_IMATRIX_QKV");
@@ -139,6 +175,104 @@ static bool load_imatrix(const std::string & path) {
     ggml_free(ctx);
     fprintf(stderr, "imatrix: loaded importance vectors for %d tensors from '%s'\n", loaded, path.c_str());
     return loaded > 0;
+}
+
+// MI-GAN (fixed256 inpainting) family policy "migan-pointwise-v1".
+// Only the separable blocks' 1x1 pointwise kernels (*.conv2.weight, [1,1,IC,OC],
+// ~97% of the parameters) change type; they are stored flattened as [IC,OC] so
+// the block row runs along the contracted input channels. fromRGB/toRGB
+// (first/last convs), every depthwise/up/down filter, biases, noise and
+// insertion masks stay F32. Q4_K needs IC%256: IC=128 layers fall back to Q8_0.
+// The container records the policy and the exact source F32 GGUF SHA, which
+// src/migan.cpp requires (CRISPEMBED_MIGAN_QUANT=1) before loading.
+static bool quantize_migan(const std::string & fname_inp, const std::string & fname_out, ggml_type qtype,
+                           ggml_ftype ftype) {
+    if (qtype != GGML_TYPE_F16 && qtype != GGML_TYPE_Q8_0 && qtype != GGML_TYPE_Q4_K) {
+        fprintf(stderr, "MI-GAN policy supports only f16, q8_0 and q4_k\n");
+        return false;
+    }
+    ggml_context * meta_ctx = nullptr;
+    gguf_init_params params = { /*no_alloc*/ false, /*ctx*/ &meta_ctx };
+    gguf_context * in = gguf_init_from_file(fname_inp.c_str(), params);
+    if (!in || !meta_ctx) {
+        fprintf(stderr, "Failed to load MI-GAN model from '%s'\n", fname_inp.c_str());
+        return false;
+    }
+    if (gguf_get_val_u32(in, gguf_find_key(in, "general.file_type")) != 0) {
+        fprintf(stderr, "MI-GAN quantization requires the F32 source container\n");
+        gguf_free(in);
+        ggml_free(meta_ctx);
+        return false;
+    }
+    const std::string source_sha = core_sha256::file(fname_inp);
+    const int n = gguf_get_n_tensors(in);
+    size_t bytes = 0;
+    for (int i = 0; i < n; ++i) bytes += ggml_nbytes(ggml_get_tensor(meta_ctx, gguf_get_tensor_name(in, i))) + 1024;
+    ggml_context * out_ctx = ggml_init({ bytes + size_t(n + 8) * ggml_tensor_overhead(), nullptr, false });
+    gguf_context * out = gguf_init_empty();
+    gguf_set_kv(out, in);
+    gguf_set_val_u32(out, "general.quantization_version", GGML_QNT_VERSION);
+    gguf_set_val_u32(out, "general.file_type", qtype == GGML_TYPE_Q4_K ? 15u : (uint32_t)ftype);
+    gguf_set_val_str(out, "migan.quantization.policy", "migan-pointwise-v1");
+    gguf_set_val_str(out, "migan.quantization.source_gguf_sha256", source_sha.c_str());
+    if (const char * keep = getenv("CRISPEMBED_QUANTIZE_MIGAN_Q8"))
+        gguf_set_val_str(out, "migan.quantization.q8_0_prefixes", keep);
+    std::map<std::string, int> counts;
+    std::vector<float> dequant;
+    for (int i = 0; i < n; ++i) {
+        const char * name = gguf_get_tensor_name(in, i);
+        ggml_tensor * src = ggml_get_tensor(meta_ctx, name);
+        const std::string sname(name);
+        const bool pointwise = sname.size() > 13 && sname.compare(sname.size() - 13, 13, ".conv2.weight") == 0 &&
+                               src->type == GGML_TYPE_F32 && src->ne[0] == 1 && src->ne[1] == 1;
+        ggml_type type = GGML_TYPE_F32;
+        if (pointwise) {
+            type = qtype;
+            // Optional sensitive-layer exceptions for sub-Q8 targets:
+            // CRISPEMBED_QUANTIZE_MIGAN_Q8=prefix[,prefix...] keeps matching
+            // pointwise kernels at Q8_0 (recorded in the container metadata).
+            if (const char * keep = getenv("CRISPEMBED_QUANTIZE_MIGAN_Q8")) {
+                std::string list(keep);
+                for (size_t at = 0; at <= list.size();) {
+                    const size_t end = std::min(list.find(',', at), list.size());
+                    const std::string prefix = list.substr(at, end - at);
+                    if (!prefix.empty() && sname.rfind(prefix, 0) == 0 && ggml_blck_size(qtype) > 32)
+                        type = GGML_TYPE_Q8_0;
+                    at = end + 1;
+                }
+            }
+            if (src->ne[2] % ggml_blck_size(type) != 0) type = GGML_TYPE_Q8_0;
+            if (src->ne[2] % ggml_blck_size(type) != 0) type = GGML_TYPE_F16;
+        }
+        ggml_tensor * dst = nullptr;
+        if (type == GGML_TYPE_F32) {
+            dst = ggml_dup_tensor(out_ctx, src);
+            memcpy(dst->data, src->data, ggml_nbytes(src));
+        } else {
+            const int64_t ic = src->ne[2], oc = src->ne[3];
+            dst = ggml_new_tensor_2d(out_ctx, type, ic, oc);
+            const float * values = (const float *)src->data; // OIHW 1x1: contiguous [OC][IC]
+            if (type == GGML_TYPE_F16) {
+                ggml_fp32_to_fp16_row(values, (ggml_fp16_t *)dst->data, ic * oc);
+            } else {
+                ggml_quantize_chunk(type, values, dst->data, 0, oc, ic, nullptr);
+            }
+        }
+        ggml_set_name(dst, name);
+        gguf_add_tensor(out, dst);
+        counts[ggml_type_name(type)]++;
+        printf("[%3d/%3d] %-48s %s -> %s\n", i + 1, n, name, ggml_type_name(src->type), ggml_type_name(type));
+    }
+    const bool ok = gguf_write_to_file(out, fname_out.c_str(), false);
+    printf("MI-GAN policy migan-pointwise-v1 (source %s):", source_sha.c_str());
+    for (const auto & c : counts) printf(" %s=%d", c.first.c_str(), c.second);
+    printf("\n");
+    gguf_free(out);
+    ggml_free(out_ctx);
+    gguf_free(in);
+    ggml_free(meta_ctx);
+    if (!ok) fprintf(stderr, "failed to write '%s'\n", fname_out.c_str());
+    return ok;
 }
 
 static bool quantize_model(const std::string & fname_inp, const std::string & fname_out, ggml_ftype ftype) {
@@ -189,6 +323,16 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         return false;
     }
 
+    {
+        // Family policies that need a whole-file layout of their own.
+        gguf_init_params probe_params = { /*no_alloc*/ true, /*ctx*/ nullptr };
+        gguf_context * probe = gguf_init_from_file(fname_inp.c_str(), probe_params);
+        const int64_t arch = probe ? gguf_find_key(probe, "general.architecture") : -1;
+        const bool is_migan = arch >= 0 && std::string(gguf_get_val_str(probe, arch)) == "migan";
+        if (probe) gguf_free(probe);
+        if (is_migan) return quantize_migan(fname_inp, fname_out, qtype, ftype);
+    }
+
     printf("Loading model from '%s'\n", fname_inp.c_str());
 
     // Load with no_alloc=true so we can read tensor data from file directly
@@ -226,6 +370,70 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
     const bool is_ppocrv6 = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "ppocrv6";
     const bool is_tesseract_lstm = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "tesseract_lstm";
     const bool is_internvl2 = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "internvl2";
+    const bool is_teleocr = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "teleocr";
+    const bool is_oxr = arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, arch_key)) == "oxr";
+    // OXR large-tensor policy (opt-in, default unchanged): CRISPEMBED_QUANTIZE_OXR_LARGE
+    //   q8_0  embed_tokens, lm_head, vte and the 65532x4608 visual head -> Q8_0
+    //   mix   visual head -> Q4_K, the other three -> Q8_0
+    // (after fusor-rs/oxr-wasm, MIT: its default bundle keeps the visual head
+    // 4-bit and every other large matrix 7-bit). The loader accepts these
+    // tensors quantized only when this key is present.
+    std::string oxr_large;
+    if (is_oxr) {
+        if (const char * v = getenv("CRISPEMBED_QUANTIZE_OXR_LARGE")) oxr_large = v;
+        if (!oxr_large.empty() && oxr_large != "q8_0" && oxr_large != "mix") {
+            fprintf(stderr, "CRISPEMBED_QUANTIZE_OXR_LARGE must be q8_0 or mix\n");
+            gguf_free(ctx_out);
+            return false;
+        }
+        if (!oxr_large.empty()) gguf_set_val_str(ctx_out, "oxr.quantize.large", oxr_large.c_str());
+    }
+    std::set<std::string> dfine_convs; // flattened D-FINE conv kernels (pre-scan)
+    const int layout_arch_key = gguf_find_key(ctx_in, "layout.arch");
+    const bool is_dfine_layout =
+        layout_arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, layout_arch_key)) == "dfine";
+    const int family_key = gguf_find_key(ctx_in, "qwen2vl.model_family");
+    const bool is_mineru25 =
+        family_key >= 0 && std::string(gguf_get_val_str(ctx_in, family_key)) == "mineru2.5-pro-2604";
+    if (is_teleocr) {
+        // ggml_ftype and the GGUF general.file_type enumeration differ for
+        // K/IQ quants (see ggml/docs/gguf.md). This tool uses one requested
+        // matrix type, so select the corresponding uniform/S GGUF variant;
+        // explicit exceptions are retained in the recipe and exact census.
+        uint32_t container_type = (uint32_t)ftype;
+        switch (qtype) {
+        case GGML_TYPE_Q4_K:
+            container_type = 14;
+            break;
+        case GGML_TYPE_Q5_K:
+            container_type = 16;
+            break;
+        case GGML_TYPE_Q6_K:
+            container_type = 18;
+            break;
+        case GGML_TYPE_IQ4_NL:
+            container_type = 25;
+            break;
+        case GGML_TYPE_IQ4_XS:
+            container_type = 30;
+            break;
+        default:
+            break; // F16, legacy quants, Q2_K and Q3_K already agree.
+        }
+        gguf_set_val_u32(ctx_out, "general.file_type", container_type);
+        const std::string recipe = teleocr_quantization_recipe(qtype);
+        gguf_set_val_str(ctx_out, "teleocr.precision_recipe", recipe.c_str());
+        gguf_set_val_u32(ctx_out, "teleocr.quantization.tensor_count", (uint32_t)n_tensors);
+        gguf_set_val_u32(ctx_out, "teleocr.quantization.converted_tensor_count", 0);
+        gguf_set_val_u32(ctx_out, "teleocr.quantization.copied_tensor_count", 0);
+        gguf_set_val_u32(ctx_out, "teleocr.quantization.imatrix_applied_count", 0);
+        // Fixed-size fields are reserved before writing the metadata
+        // placeholder, then populated from final tensor types. Array index is
+        // the ggml_type enum value, not a preferred/advertised precision.
+        const std::vector<uint32_t> counts(GGML_TYPE_COUNT, 0);
+        gguf_set_arr_data(ctx_out, "teleocr.quantization.tensor_type_counts", GGUF_TYPE_UINT32, counts.data(),
+                          counts.size());
+    }
     const bool ppocr_q8_late = is_ppocrv6 && ftype == GGML_FTYPE_MOSTLY_Q8_0 && g_ppocrv6_q8_head;
     // Sub-Q8 on an InternVL2-family decoder is checkpoint-dependent: WARN, do
     // not refuse. Measured on h2ovl-mississippi-2b (2560d, 32H/8KV, head_dim 80)
@@ -284,7 +492,17 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
     for (int i = 0; i < n_tensors; i++) {
         const char * name = gguf_get_tensor_name(ctx_in, i);
         struct ggml_tensor * t = ggml_get_tensor(ctx_in_ggml, name);
-        if (ggml_n_dims(t) == 4 && t->type == GGML_TYPE_F32) {
+        // OXR's loader validates its 4D patch-embedding shape and reshapes it
+        // itself, so its conv kernel keeps the source metadata.
+        if (ggml_n_dims(t) == 4 && t->type == GGML_TYPE_F32 && !is_oxr) {
+            // OXR D-FINE layout: record the original conv shape so the loader
+            // can restore it after dequantizing (src/layout_detect.cpp).
+            if (is_dfine_layout) {
+                dfine_convs.insert(name);
+                const int32_t shape4[4] = { (int32_t)t->ne[0], (int32_t)t->ne[1], (int32_t)t->ne[2],
+                                            (int32_t)t->ne[3] };
+                gguf_set_arr_data(ctx_out, (std::string("layout.qshape.") + name).c_str(), GGUF_TYPE_INT32, shape4, 4);
+            }
             // Flatten [KW, KH, IC, OC] → [IC*KH*KW, OC]
             int64_t flat_cols = t->ne[0] * t->ne[1] * t->ne[2];
             int64_t OC = t->ne[3];
@@ -544,6 +762,20 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         bool src_ok = (type == GGML_TYPE_F32 || type == GGML_TYPE_F16 || ggml_is_quantized(type));
         bool quantize =
             (ggml_is_quantized(qtype) || qtype == GGML_TYPE_F16) && src_ok && (ggml_n_dims(t) >= 2) && !is_tiny_embd;
+        // OXR: only the attention/MLP matrices may change type; the loader
+        // (src/oxr_ocr.cpp validate_tensors) requires every other tensor
+        // (embeddings, lm_head, visual vocabulary/head, patch/position tables)
+        // to stay F32.
+        if (is_oxr && quantize) {
+            const bool vision_matrix =
+                sname.rfind("vit.encoder.layers.", 0) == 0 &&
+                (sname.find(".self_attn.") != std::string::npos || sname.find(".mlp.fc") != std::string::npos);
+            const bool llm_matrix =
+                sname.rfind("llm.model.layers.", 0) == 0 && (sname.find("_proj.weight") != std::string::npos);
+            const bool large = sname == "llm.model.embed_tokens.weight" || sname == "llm.lm_head.weight" ||
+                               sname == "vte.weight" || sname == "visual_tokenizer.head.0.weight";
+            if (!vision_matrix && !llm_matrix && !(large && !oxr_large.empty())) quantize = false;
+        }
         const int64_t ncols = t->ne[0];
         ggml_type qtype_used = qtype;
 
@@ -567,7 +799,8 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         // quantizing it to Q4_K measurably hurt parity (HF-blueprint projector
         // cos 0.929 at Q4_K vs ~0.95 at Q8_0) for negligible size.
         bool is_vision_weight = sname.rfind("v.", 0) == 0 || sname.rfind("c.", 0) == 0 || sname.rfind("qe.", 0) == 0 ||
-                                sname.rfind("vis.", 0) == 0 || sname.rfind("proj.", 0) == 0;
+                                sname.rfind("vis.", 0) == 0 || sname.rfind("proj.", 0) == 0 ||
+                                (is_oxr && sname.rfind("vit.", 0) == 0);
         if (quantize && is_vision_weight && qtype != GGML_TYPE_Q8_0 && qtype != GGML_TYPE_F16 &&
             qtype != GGML_TYPE_Q6_K && qtype != GGML_TYPE_Q5_K) {
             qtype_used = GGML_TYPE_Q8_0;
@@ -628,6 +861,43 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         if (quantize && is_internvl2_vision && qtype != GGML_TYPE_F16 && qtype != GGML_TYPE_F32) {
             qtype_used = GGML_TYPE_F16;
             printf("(internvl2-vision→F16) ");
+        }
+
+        // MinerU2.5-Pro vision tower (v.*, incl. merger): same policy, same scope.
+        // At Q8_0 the CPU stage diff spikes rather than decaying smoothly (formula
+        // case worst-row cosine 0.93 at vis_layer_18, 0.49 at vis_layer_30, 0.99
+        // again at 31; merger 0.95). A same-weight probe localised it: Q8_0 weights
+        // with float32 activations stay >= 0.999 against the original model, so
+        // the loss comes from the quantized-activation matmul meeting the vision
+        // tower's outlier channels, not from the stored weights. F16 vision stays
+        // >= 0.99999999 at every stage. Q8_0 target only; the Q4 size tier keeps
+        // the generic Q8_0 floor. CRISPEMBED_QUANTIZE_NO_VISION_F16=1 opts out.
+        bool is_mineru25_vision = is_mineru25 && ftype == GGML_FTYPE_MOSTLY_Q8_0 && sname.rfind("v.", 0) == 0;
+        if (const char * off = getenv("CRISPEMBED_QUANTIZE_NO_VISION_F16")) {
+            if (atoi(off)) is_mineru25_vision = false;
+        }
+        if (quantize && is_mineru25_vision && qtype != GGML_TYPE_F16 && qtype != GGML_TYPE_F32) {
+            qtype_used = GGML_TYPE_F16;
+            printf("(mineru25-vision→F16) ");
+        }
+
+        // OXR-1.0 SigLIP2 tower (vit.*): same policy. At Q8_0 (vision Q8_0) the
+        // hosted five-case lane decoded 4/5 exactly but the German page diverged
+        // at token 68 (41273999602), the MinerU-style CPU activation-quant spike.
+        bool is_oxr_vision = is_oxr && ftype == GGML_FTYPE_MOSTLY_Q8_0 && sname.rfind("vit.", 0) == 0;
+        if (const char * off = getenv("CRISPEMBED_QUANTIZE_NO_VISION_F16")) {
+            if (atoi(off)) is_oxr_vision = false;
+        }
+        // Opt-in CRISPEMBED_QUANTIZE_OXR_VISION=f16: the SigLIP2 tower F16 for any
+        // target type (e.g. Q4_K language layers over an F16 vision tower).
+        if (is_oxr && sname.rfind("vit.", 0) == 0) {
+            if (const char * v = getenv("CRISPEMBED_QUANTIZE_OXR_VISION")) {
+                if (std::string(v) == "f16") is_oxr_vision = true;
+            }
+        }
+        if (quantize && is_oxr_vision && qtype != GGML_TYPE_F16 && qtype != GGML_TYPE_F32) {
+            qtype_used = GGML_TYPE_F16;
+            printf("(oxr-vision→F16) ");
         }
 
         // MoE router / gating weights (DeepSeek-V2: "*.mlp_gate.weight", also
@@ -757,6 +1027,27 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
                 printf("skip (ncols %lld not div by %lld)\n", (long long)ncols, (long long)qk);
                 quantize = false;
             }
+        }
+
+        // OXR D-FINE conv policy (opt-in CRISPEMBED_QUANTIZE_DFINE_CONV):
+        //   keep = conv kernels stay F32 (only linear layers quantized), f16 = F16.
+        if (quantize && dfine_convs.count(sname)) {
+            if (const char * v = getenv("CRISPEMBED_QUANTIZE_DFINE_CONV")) {
+                if (std::string(v) == "keep")
+                    quantize = false;
+                else if (std::string(v) == "f16")
+                    qtype_used = GGML_TYPE_F16;
+            }
+        }
+
+        // OXR large-tensor policy (see oxr_large above): applied last, so no
+        // generic embedding/vision rule changes these four tensors' types.
+        if (quantize && is_oxr && !oxr_large.empty() &&
+            (sname == "llm.model.embed_tokens.weight" || sname == "llm.lm_head.weight" || sname == "vte.weight" ||
+             sname == "visual_tokenizer.head.0.weight")) {
+            qtype_used =
+                oxr_large == "mix" && sname == "visual_tokenizer.head.0.weight" ? GGML_TYPE_Q4_K : GGML_TYPE_Q8_0;
+            printf("(oxr-large→%s) ", ggml_type_name(qtype_used));
         }
 
         // Source already at the target type (e.g. a q8_0 embedding kept at q8_0):
@@ -891,6 +1182,16 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         total_orig += size;
     }
 
+    if (is_teleocr) {
+        std::vector<uint32_t> counts(GGML_TYPE_COUNT, 0);
+        for (int i = 0; i < n_tensors; ++i) ++counts[(size_t)gguf_get_tensor_type(ctx_out, i)];
+        gguf_set_val_u32(ctx_out, "teleocr.quantization.converted_tensor_count", (uint32_t)n_quantized);
+        gguf_set_val_u32(ctx_out, "teleocr.quantization.copied_tensor_count", (uint32_t)n_kept);
+        gguf_set_val_u32(ctx_out, "teleocr.quantization.imatrix_applied_count", (uint32_t)n_imatrix);
+        gguf_set_arr_data(ctx_out, "teleocr.quantization.tensor_type_counts", GGUF_TYPE_UINT32, counts.data(),
+                          counts.size());
+    }
+
     // Rewrite metadata header now that tensor types/offsets are final
     rewind(fout);
     gguf_get_meta_data(ctx_out, meta_data.data());
@@ -947,6 +1248,7 @@ int main(int argc, char ** argv) {
                 return 1;
             }
             imatrix_path = argv[++i];
+            g_imatrix_requested = true;
         } else
             pos.push_back(a);
     }

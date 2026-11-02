@@ -1,0 +1,6 @@
+reference=pass
+stages-default=fail(1)
+stages-dense=fail(1)
+decode-default=fail(1)
+decode-reuse=fail(1)
+stage-ab=recorded

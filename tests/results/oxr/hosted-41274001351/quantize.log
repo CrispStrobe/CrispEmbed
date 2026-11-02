@@ -1,0 +1,784 @@
+Loading model from '/mnt/heavy/scratch/oxr-f32.gguf'
+Writing quantized model to '/mnt/heavy/scratch/oxr-q4_k.gguf'
+[  1/752] llm.model.embed_tokens.weight                 -    f32, copy 593.5 MB
+[  2/752] llm.lm_head.weight                            -    f32, copy 593.5 MB
+[  3/752] llm.model.norm.weight                         -    f32, copy 0.0 MB
+[  4/752] llm.model.layers.0.input_layernorm.weight     -    f32, copy 0.0 MB
+[  5/752] llm.model.layers.0.post_attention_layernorm.weight -    f32, copy 0.0 MB
+[  6/752] llm.model.layers.0.self_attn.q_proj.weight    -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[  7/752] llm.model.layers.0.self_attn.k_proj.weight    -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[  8/752] llm.model.layers.0.self_attn.v_proj.weight    -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[  9/752] llm.model.layers.0.self_attn.o_proj.weight    -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[ 10/752] llm.model.layers.0.self_attn.q_norm.weight    -    f32, copy 0.0 MB
+[ 11/752] llm.model.layers.0.self_attn.k_norm.weight    -    f32, copy 0.0 MB
+[ 12/752] llm.model.layers.0.mlp.gate_proj.weight       -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[ 13/752] llm.model.layers.0.mlp.up_proj.weight         -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[ 14/752] llm.model.layers.0.mlp.down_proj.weight       -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[ 15/752] llm.model.layers.1.input_layernorm.weight     -    f32, copy 0.0 MB
+[ 16/752] llm.model.layers.1.post_attention_layernorm.weight -    f32, copy 0.0 MB
+[ 17/752] llm.model.layers.1.self_attn.q_proj.weight    -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[ 18/752] llm.model.layers.1.self_attn.k_proj.weight    -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[ 19/752] llm.model.layers.1.self_attn.v_proj.weight    -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[ 20/752] llm.model.layers.1.self_attn.o_proj.weight    -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[ 21/752] llm.model.layers.1.self_attn.q_norm.weight    -    f32, copy 0.0 MB
+[ 22/752] llm.model.layers.1.self_attn.k_norm.weight    -    f32, copy 0.0 MB
+[ 23/752] llm.model.layers.1.mlp.gate_proj.weight       -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[ 24/752] llm.model.layers.1.mlp.up_proj.weight         -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[ 25/752] llm.model.layers.1.mlp.down_proj.weight       -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[ 26/752] llm.model.layers.2.input_layernorm.weight     -    f32, copy 0.0 MB
+[ 27/752] llm.model.layers.2.post_attention_layernorm.weight -    f32, copy 0.0 MB
+[ 28/752] llm.model.layers.2.self_attn.q_proj.weight    -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[ 29/752] llm.model.layers.2.self_attn.k_proj.weight    -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[ 30/752] llm.model.layers.2.self_attn.v_proj.weight    -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[ 31/752] llm.model.layers.2.self_attn.o_proj.weight    -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[ 32/752] llm.model.layers.2.self_attn.q_norm.weight    -    f32, copy 0.0 MB
+[ 33/752] llm.model.layers.2.self_attn.k_norm.weight    -    f32, copy 0.0 MB
+[ 34/752] llm.model.layers.2.mlp.gate_proj.weight       -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[ 35/752] llm.model.layers.2.mlp.up_proj.weight         -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[ 36/752] llm.model.layers.2.mlp.down_proj.weight       -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[ 37/752] llm.model.layers.3.input_layernorm.weight     -    f32, copy 0.0 MB
+[ 38/752] llm.model.layers.3.post_attention_layernorm.weight -    f32, copy 0.0 MB
+[ 39/752] llm.model.layers.3.self_attn.q_proj.weight    -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[ 40/752] llm.model.layers.3.self_attn.k_proj.weight    -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[ 41/752] llm.model.layers.3.self_attn.v_proj.weight    -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[ 42/752] llm.model.layers.3.self_attn.o_proj.weight    -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[ 43/752] llm.model.layers.3.self_attn.q_norm.weight    -    f32, copy 0.0 MB
+[ 44/752] llm.model.layers.3.self_attn.k_norm.weight    -    f32, copy 0.0 MB
+[ 45/752] llm.model.layers.3.mlp.gate_proj.weight       -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[ 46/752] llm.model.layers.3.mlp.up_proj.weight         -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[ 47/752] llm.model.layers.3.mlp.down_proj.weight       -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[ 48/752] llm.model.layers.4.input_layernorm.weight     -    f32, copy 0.0 MB
+[ 49/752] llm.model.layers.4.post_attention_layernorm.weight -    f32, copy 0.0 MB
+[ 50/752] llm.model.layers.4.self_attn.q_proj.weight    -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[ 51/752] llm.model.layers.4.self_attn.k_proj.weight    -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[ 52/752] llm.model.layers.4.self_attn.v_proj.weight    -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[ 53/752] llm.model.layers.4.self_attn.o_proj.weight    -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[ 54/752] llm.model.layers.4.self_attn.q_norm.weight    -    f32, copy 0.0 MB
+[ 55/752] llm.model.layers.4.self_attn.k_norm.weight    -    f32, copy 0.0 MB
+[ 56/752] llm.model.layers.4.mlp.gate_proj.weight       -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[ 57/752] llm.model.layers.4.mlp.up_proj.weight         -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[ 58/752] llm.model.layers.4.mlp.down_proj.weight       -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[ 59/752] llm.model.layers.5.input_layernorm.weight     -    f32, copy 0.0 MB
+[ 60/752] llm.model.layers.5.post_attention_layernorm.weight -    f32, copy 0.0 MB
+[ 61/752] llm.model.layers.5.self_attn.q_proj.weight    -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[ 62/752] llm.model.layers.5.self_attn.k_proj.weight    -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[ 63/752] llm.model.layers.5.self_attn.v_proj.weight    -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[ 64/752] llm.model.layers.5.self_attn.o_proj.weight    -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[ 65/752] llm.model.layers.5.self_attn.q_norm.weight    -    f32, copy 0.0 MB
+[ 66/752] llm.model.layers.5.self_attn.k_norm.weight    -    f32, copy 0.0 MB
+[ 67/752] llm.model.layers.5.mlp.gate_proj.weight       -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[ 68/752] llm.model.layers.5.mlp.up_proj.weight         -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[ 69/752] llm.model.layers.5.mlp.down_proj.weight       -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[ 70/752] llm.model.layers.6.input_layernorm.weight     -    f32, copy 0.0 MB
+[ 71/752] llm.model.layers.6.post_attention_layernorm.weight -    f32, copy 0.0 MB
+[ 72/752] llm.model.layers.6.self_attn.q_proj.weight    -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[ 73/752] llm.model.layers.6.self_attn.k_proj.weight    -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[ 74/752] llm.model.layers.6.self_attn.v_proj.weight    -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[ 75/752] llm.model.layers.6.self_attn.o_proj.weight    -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[ 76/752] llm.model.layers.6.self_attn.q_norm.weight    -    f32, copy 0.0 MB
+[ 77/752] llm.model.layers.6.self_attn.k_norm.weight    -    f32, copy 0.0 MB
+[ 78/752] llm.model.layers.6.mlp.gate_proj.weight       -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[ 79/752] llm.model.layers.6.mlp.up_proj.weight         -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[ 80/752] llm.model.layers.6.mlp.down_proj.weight       -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[ 81/752] llm.model.layers.7.input_layernorm.weight     -    f32, copy 0.0 MB
+[ 82/752] llm.model.layers.7.post_attention_layernorm.weight -    f32, copy 0.0 MB
+[ 83/752] llm.model.layers.7.self_attn.q_proj.weight    -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[ 84/752] llm.model.layers.7.self_attn.k_proj.weight    -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[ 85/752] llm.model.layers.7.self_attn.v_proj.weight    -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[ 86/752] llm.model.layers.7.self_attn.o_proj.weight    -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[ 87/752] llm.model.layers.7.self_attn.q_norm.weight    -    f32, copy 0.0 MB
+[ 88/752] llm.model.layers.7.self_attn.k_norm.weight    -    f32, copy 0.0 MB
+[ 89/752] llm.model.layers.7.mlp.gate_proj.weight       -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[ 90/752] llm.model.layers.7.mlp.up_proj.weight         -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[ 91/752] llm.model.layers.7.mlp.down_proj.weight       -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[ 92/752] llm.model.layers.8.input_layernorm.weight     -    f32, copy 0.0 MB
+[ 93/752] llm.model.layers.8.post_attention_layernorm.weight -    f32, copy 0.0 MB
+[ 94/752] llm.model.layers.8.self_attn.q_proj.weight    -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[ 95/752] llm.model.layers.8.self_attn.k_proj.weight    -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[ 96/752] llm.model.layers.8.self_attn.v_proj.weight    -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[ 97/752] llm.model.layers.8.self_attn.o_proj.weight    -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[ 98/752] llm.model.layers.8.self_attn.q_norm.weight    -    f32, copy 0.0 MB
+[ 99/752] llm.model.layers.8.self_attn.k_norm.weight    -    f32, copy 0.0 MB
+[100/752] llm.model.layers.8.mlp.gate_proj.weight       -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[101/752] llm.model.layers.8.mlp.up_proj.weight         -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[102/752] llm.model.layers.8.mlp.down_proj.weight       -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[103/752] llm.model.layers.9.input_layernorm.weight     -    f32, copy 0.0 MB
+[104/752] llm.model.layers.9.post_attention_layernorm.weight -    f32, copy 0.0 MB
+[105/752] llm.model.layers.9.self_attn.q_proj.weight    -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[106/752] llm.model.layers.9.self_attn.k_proj.weight    -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[107/752] llm.model.layers.9.self_attn.v_proj.weight    -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[108/752] llm.model.layers.9.self_attn.o_proj.weight    -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[109/752] llm.model.layers.9.self_attn.q_norm.weight    -    f32, copy 0.0 MB
+[110/752] llm.model.layers.9.self_attn.k_norm.weight    -    f32, copy 0.0 MB
+[111/752] llm.model.layers.9.mlp.gate_proj.weight       -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[112/752] llm.model.layers.9.mlp.up_proj.weight         -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[113/752] llm.model.layers.9.mlp.down_proj.weight       -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[114/752] llm.model.layers.10.input_layernorm.weight    -    f32, copy 0.0 MB
+[115/752] llm.model.layers.10.post_attention_layernorm.weight -    f32, copy 0.0 MB
+[116/752] llm.model.layers.10.self_attn.q_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[117/752] llm.model.layers.10.self_attn.k_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[118/752] llm.model.layers.10.self_attn.v_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[119/752] llm.model.layers.10.self_attn.o_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[120/752] llm.model.layers.10.self_attn.q_norm.weight   -    f32, copy 0.0 MB
+[121/752] llm.model.layers.10.self_attn.k_norm.weight   -    f32, copy 0.0 MB
+[122/752] llm.model.layers.10.mlp.gate_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[123/752] llm.model.layers.10.mlp.up_proj.weight        -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[124/752] llm.model.layers.10.mlp.down_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[125/752] llm.model.layers.11.input_layernorm.weight    -    f32, copy 0.0 MB
+[126/752] llm.model.layers.11.post_attention_layernorm.weight -    f32, copy 0.0 MB
+[127/752] llm.model.layers.11.self_attn.q_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[128/752] llm.model.layers.11.self_attn.k_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[129/752] llm.model.layers.11.self_attn.v_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[130/752] llm.model.layers.11.self_attn.o_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[131/752] llm.model.layers.11.self_attn.q_norm.weight   -    f32, copy 0.0 MB
+[132/752] llm.model.layers.11.self_attn.k_norm.weight   -    f32, copy 0.0 MB
+[133/752] llm.model.layers.11.mlp.gate_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[134/752] llm.model.layers.11.mlp.up_proj.weight        -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[135/752] llm.model.layers.11.mlp.down_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[136/752] llm.model.layers.12.input_layernorm.weight    -    f32, copy 0.0 MB
+[137/752] llm.model.layers.12.post_attention_layernorm.weight -    f32, copy 0.0 MB
+[138/752] llm.model.layers.12.self_attn.q_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[139/752] llm.model.layers.12.self_attn.k_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[140/752] llm.model.layers.12.self_attn.v_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[141/752] llm.model.layers.12.self_attn.o_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[142/752] llm.model.layers.12.self_attn.q_norm.weight   -    f32, copy 0.0 MB
+[143/752] llm.model.layers.12.self_attn.k_norm.weight   -    f32, copy 0.0 MB
+[144/752] llm.model.layers.12.mlp.gate_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[145/752] llm.model.layers.12.mlp.up_proj.weight        -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[146/752] llm.model.layers.12.mlp.down_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[147/752] llm.model.layers.13.input_layernorm.weight    -    f32, copy 0.0 MB
+[148/752] llm.model.layers.13.post_attention_layernorm.weight -    f32, copy 0.0 MB
+[149/752] llm.model.layers.13.self_attn.q_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[150/752] llm.model.layers.13.self_attn.k_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[151/752] llm.model.layers.13.self_attn.v_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[152/752] llm.model.layers.13.self_attn.o_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[153/752] llm.model.layers.13.self_attn.q_norm.weight   -    f32, copy 0.0 MB
+[154/752] llm.model.layers.13.self_attn.k_norm.weight   -    f32, copy 0.0 MB
+[155/752] llm.model.layers.13.mlp.gate_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[156/752] llm.model.layers.13.mlp.up_proj.weight        -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[157/752] llm.model.layers.13.mlp.down_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[158/752] llm.model.layers.14.input_layernorm.weight    -    f32, copy 0.0 MB
+[159/752] llm.model.layers.14.post_attention_layernorm.weight -    f32, copy 0.0 MB
+[160/752] llm.model.layers.14.self_attn.q_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[161/752] llm.model.layers.14.self_attn.k_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[162/752] llm.model.layers.14.self_attn.v_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[163/752] llm.model.layers.14.self_attn.o_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[164/752] llm.model.layers.14.self_attn.q_norm.weight   -    f32, copy 0.0 MB
+[165/752] llm.model.layers.14.self_attn.k_norm.weight   -    f32, copy 0.0 MB
+[166/752] llm.model.layers.14.mlp.gate_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[167/752] llm.model.layers.14.mlp.up_proj.weight        -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[168/752] llm.model.layers.14.mlp.down_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[169/752] llm.model.layers.15.input_layernorm.weight    -    f32, copy 0.0 MB
+[170/752] llm.model.layers.15.post_attention_layernorm.weight -    f32, copy 0.0 MB
+[171/752] llm.model.layers.15.self_attn.q_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[172/752] llm.model.layers.15.self_attn.k_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[173/752] llm.model.layers.15.self_attn.v_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[174/752] llm.model.layers.15.self_attn.o_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[175/752] llm.model.layers.15.self_attn.q_norm.weight   -    f32, copy 0.0 MB
+[176/752] llm.model.layers.15.self_attn.k_norm.weight   -    f32, copy 0.0 MB
+[177/752] llm.model.layers.15.mlp.gate_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[178/752] llm.model.layers.15.mlp.up_proj.weight        -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[179/752] llm.model.layers.15.mlp.down_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[180/752] llm.model.layers.16.input_layernorm.weight    -    f32, copy 0.0 MB
+[181/752] llm.model.layers.16.post_attention_layernorm.weight -    f32, copy 0.0 MB
+[182/752] llm.model.layers.16.self_attn.q_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[183/752] llm.model.layers.16.self_attn.k_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[184/752] llm.model.layers.16.self_attn.v_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[185/752] llm.model.layers.16.self_attn.o_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[186/752] llm.model.layers.16.self_attn.q_norm.weight   -    f32, copy 0.0 MB
+[187/752] llm.model.layers.16.self_attn.k_norm.weight   -    f32, copy 0.0 MB
+[188/752] llm.model.layers.16.mlp.gate_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[189/752] llm.model.layers.16.mlp.up_proj.weight        -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[190/752] llm.model.layers.16.mlp.down_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[191/752] llm.model.layers.17.input_layernorm.weight    -    f32, copy 0.0 MB
+[192/752] llm.model.layers.17.post_attention_layernorm.weight -    f32, copy 0.0 MB
+[193/752] llm.model.layers.17.self_attn.q_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[194/752] llm.model.layers.17.self_attn.k_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[195/752] llm.model.layers.17.self_attn.v_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[196/752] llm.model.layers.17.self_attn.o_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[197/752] llm.model.layers.17.self_attn.q_norm.weight   -    f32, copy 0.0 MB
+[198/752] llm.model.layers.17.self_attn.k_norm.weight   -    f32, copy 0.0 MB
+[199/752] llm.model.layers.17.mlp.gate_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[200/752] llm.model.layers.17.mlp.up_proj.weight        -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[201/752] llm.model.layers.17.mlp.down_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[202/752] llm.model.layers.18.input_layernorm.weight    -    f32, copy 0.0 MB
+[203/752] llm.model.layers.18.post_attention_layernorm.weight -    f32, copy 0.0 MB
+[204/752] llm.model.layers.18.self_attn.q_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[205/752] llm.model.layers.18.self_attn.k_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[206/752] llm.model.layers.18.self_attn.v_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[207/752] llm.model.layers.18.self_attn.o_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[208/752] llm.model.layers.18.self_attn.q_norm.weight   -    f32, copy 0.0 MB
+[209/752] llm.model.layers.18.self_attn.k_norm.weight   -    f32, copy 0.0 MB
+[210/752] llm.model.layers.18.mlp.gate_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[211/752] llm.model.layers.18.mlp.up_proj.weight        -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[212/752] llm.model.layers.18.mlp.down_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[213/752] llm.model.layers.19.input_layernorm.weight    -    f32, copy 0.0 MB
+[214/752] llm.model.layers.19.post_attention_layernorm.weight -    f32, copy 0.0 MB
+[215/752] llm.model.layers.19.self_attn.q_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[216/752] llm.model.layers.19.self_attn.k_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[217/752] llm.model.layers.19.self_attn.v_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[218/752] llm.model.layers.19.self_attn.o_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[219/752] llm.model.layers.19.self_attn.q_norm.weight   -    f32, copy 0.0 MB
+[220/752] llm.model.layers.19.self_attn.k_norm.weight   -    f32, copy 0.0 MB
+[221/752] llm.model.layers.19.mlp.gate_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[222/752] llm.model.layers.19.mlp.up_proj.weight        -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[223/752] llm.model.layers.19.mlp.down_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[224/752] llm.model.layers.20.input_layernorm.weight    -    f32, copy 0.0 MB
+[225/752] llm.model.layers.20.post_attention_layernorm.weight -    f32, copy 0.0 MB
+[226/752] llm.model.layers.20.self_attn.q_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[227/752] llm.model.layers.20.self_attn.k_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[228/752] llm.model.layers.20.self_attn.v_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[229/752] llm.model.layers.20.self_attn.o_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[230/752] llm.model.layers.20.self_attn.q_norm.weight   -    f32, copy 0.0 MB
+[231/752] llm.model.layers.20.self_attn.k_norm.weight   -    f32, copy 0.0 MB
+[232/752] llm.model.layers.20.mlp.gate_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[233/752] llm.model.layers.20.mlp.up_proj.weight        -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[234/752] llm.model.layers.20.mlp.down_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[235/752] llm.model.layers.21.input_layernorm.weight    -    f32, copy 0.0 MB
+[236/752] llm.model.layers.21.post_attention_layernorm.weight -    f32, copy 0.0 MB
+[237/752] llm.model.layers.21.self_attn.q_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[238/752] llm.model.layers.21.self_attn.k_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[239/752] llm.model.layers.21.self_attn.v_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[240/752] llm.model.layers.21.self_attn.o_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[241/752] llm.model.layers.21.self_attn.q_norm.weight   -    f32, copy 0.0 MB
+[242/752] llm.model.layers.21.self_attn.k_norm.weight   -    f32, copy 0.0 MB
+[243/752] llm.model.layers.21.mlp.gate_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[244/752] llm.model.layers.21.mlp.up_proj.weight        -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[245/752] llm.model.layers.21.mlp.down_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[246/752] llm.model.layers.22.input_layernorm.weight    -    f32, copy 0.0 MB
+[247/752] llm.model.layers.22.post_attention_layernorm.weight -    f32, copy 0.0 MB
+[248/752] llm.model.layers.22.self_attn.q_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[249/752] llm.model.layers.22.self_attn.k_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[250/752] llm.model.layers.22.self_attn.v_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[251/752] llm.model.layers.22.self_attn.o_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[252/752] llm.model.layers.22.self_attn.q_norm.weight   -    f32, copy 0.0 MB
+[253/752] llm.model.layers.22.self_attn.k_norm.weight   -    f32, copy 0.0 MB
+[254/752] llm.model.layers.22.mlp.gate_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[255/752] llm.model.layers.22.mlp.up_proj.weight        -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[256/752] llm.model.layers.22.mlp.down_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[257/752] llm.model.layers.23.input_layernorm.weight    -    f32, copy 0.0 MB
+[258/752] llm.model.layers.23.post_attention_layernorm.weight -    f32, copy 0.0 MB
+[259/752] llm.model.layers.23.self_attn.q_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[260/752] llm.model.layers.23.self_attn.k_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[261/752] llm.model.layers.23.self_attn.v_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[262/752] llm.model.layers.23.self_attn.o_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[263/752] llm.model.layers.23.self_attn.q_norm.weight   -    f32, copy 0.0 MB
+[264/752] llm.model.layers.23.self_attn.k_norm.weight   -    f32, copy 0.0 MB
+[265/752] llm.model.layers.23.mlp.gate_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[266/752] llm.model.layers.23.mlp.up_proj.weight        -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[267/752] llm.model.layers.23.mlp.down_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[268/752] llm.model.layers.24.input_layernorm.weight    -    f32, copy 0.0 MB
+[269/752] llm.model.layers.24.post_attention_layernorm.weight -    f32, copy 0.0 MB
+[270/752] llm.model.layers.24.self_attn.q_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[271/752] llm.model.layers.24.self_attn.k_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[272/752] llm.model.layers.24.self_attn.v_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[273/752] llm.model.layers.24.self_attn.o_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[274/752] llm.model.layers.24.self_attn.q_norm.weight   -    f32, copy 0.0 MB
+[275/752] llm.model.layers.24.self_attn.k_norm.weight   -    f32, copy 0.0 MB
+[276/752] llm.model.layers.24.mlp.gate_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[277/752] llm.model.layers.24.mlp.up_proj.weight        -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[278/752] llm.model.layers.24.mlp.down_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[279/752] llm.model.layers.25.input_layernorm.weight    -    f32, copy 0.0 MB
+[280/752] llm.model.layers.25.post_attention_layernorm.weight -    f32, copy 0.0 MB
+[281/752] llm.model.layers.25.self_attn.q_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[282/752] llm.model.layers.25.self_attn.k_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[283/752] llm.model.layers.25.self_attn.v_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[284/752] llm.model.layers.25.self_attn.o_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[285/752] llm.model.layers.25.self_attn.q_norm.weight   -    f32, copy 0.0 MB
+[286/752] llm.model.layers.25.self_attn.k_norm.weight   -    f32, copy 0.0 MB
+[287/752] llm.model.layers.25.mlp.gate_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[288/752] llm.model.layers.25.mlp.up_proj.weight        -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[289/752] llm.model.layers.25.mlp.down_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[290/752] llm.model.layers.26.input_layernorm.weight    -    f32, copy 0.0 MB
+[291/752] llm.model.layers.26.post_attention_layernorm.weight -    f32, copy 0.0 MB
+[292/752] llm.model.layers.26.self_attn.q_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[293/752] llm.model.layers.26.self_attn.k_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[294/752] llm.model.layers.26.self_attn.v_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[295/752] llm.model.layers.26.self_attn.o_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[296/752] llm.model.layers.26.self_attn.q_norm.weight   -    f32, copy 0.0 MB
+[297/752] llm.model.layers.26.self_attn.k_norm.weight   -    f32, copy 0.0 MB
+[298/752] llm.model.layers.26.mlp.gate_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[299/752] llm.model.layers.26.mlp.up_proj.weight        -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[300/752] llm.model.layers.26.mlp.down_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[301/752] llm.model.layers.27.input_layernorm.weight    -    f32, copy 0.0 MB
+[302/752] llm.model.layers.27.post_attention_layernorm.weight -    f32, copy 0.0 MB
+[303/752] llm.model.layers.27.self_attn.q_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[304/752] llm.model.layers.27.self_attn.k_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[305/752] llm.model.layers.27.self_attn.v_proj.weight   -    f32, quantizing to q4_K... 4.0 MB -> 0.6 MB
+[306/752] llm.model.layers.27.self_attn.o_proj.weight   -    f32, quantizing to q4_K... 8.0 MB -> 1.1 MB
+[307/752] llm.model.layers.27.self_attn.q_norm.weight   -    f32, copy 0.0 MB
+[308/752] llm.model.layers.27.self_attn.k_norm.weight   -    f32, copy 0.0 MB
+[309/752] llm.model.layers.27.mlp.gate_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[310/752] llm.model.layers.27.mlp.up_proj.weight        -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[311/752] llm.model.layers.27.mlp.down_proj.weight      -    f32, quantizing to q4_K... 12.0 MB -> 1.7 MB
+[312/752] vit.embeddings.patch_embedding.weight         -    f32, note: vit.embeddings.patch_embedding.weight — copying as-is (host-side computation)
+[313/752] vit.embeddings.patch_embedding.bias           -    f32, note: vit.embeddings.patch_embedding.bias — copying as-is (host-side computation)
+[314/752] vit.embeddings.position_embedding.weight      -    f32, copy 4.5 MB
+[315/752] vit.post_layernorm.weight                     -    f32, copy 0.0 MB
+[316/752] vit.post_layernorm.bias                       -    f32, copy 0.0 MB
+[317/752] vit.encoder.layers.0.layer_norm1.weight       -    f32, copy 0.0 MB
+[318/752] vit.encoder.layers.0.layer_norm1.bias         -    f32, copy 0.0 MB
+[319/752] vit.encoder.layers.0.layer_norm2.weight       -    f32, copy 0.0 MB
+[320/752] vit.encoder.layers.0.layer_norm2.bias         -    f32, copy 0.0 MB
+[321/752] vit.encoder.layers.0.mlp.fc1.weight           -    f32, (vision→Q8_0) quantizing to q8_0... 18.9 MB -> 5.0 MB
+[322/752] vit.encoder.layers.0.mlp.fc1.bias             -    f32, copy 0.0 MB
+[323/752] vit.encoder.layers.0.mlp.fc2.weight           -    f32, (vision→Q8_0) skip (ncols 4304 not div by 32)
+copy 18.9 MB
+[324/752] vit.encoder.layers.0.mlp.fc2.bias             -    f32, copy 0.0 MB
+[325/752] vit.encoder.layers.0.self_attn.q_proj.weight  -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[326/752] vit.encoder.layers.0.self_attn.q_proj.bias    -    f32, copy 0.0 MB
+[327/752] vit.encoder.layers.0.self_attn.k_proj.weight  -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[328/752] vit.encoder.layers.0.self_attn.k_proj.bias    -    f32, copy 0.0 MB
+[329/752] vit.encoder.layers.0.self_attn.v_proj.weight  -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[330/752] vit.encoder.layers.0.self_attn.v_proj.bias    -    f32, copy 0.0 MB
+[331/752] vit.encoder.layers.0.self_attn.out_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[332/752] vit.encoder.layers.0.self_attn.out_proj.bias  -    f32, copy 0.0 MB
+[333/752] vit.encoder.layers.1.layer_norm1.weight       -    f32, copy 0.0 MB
+[334/752] vit.encoder.layers.1.layer_norm1.bias         -    f32, copy 0.0 MB
+[335/752] vit.encoder.layers.1.layer_norm2.weight       -    f32, copy 0.0 MB
+[336/752] vit.encoder.layers.1.layer_norm2.bias         -    f32, copy 0.0 MB
+[337/752] vit.encoder.layers.1.mlp.fc1.weight           -    f32, (vision→Q8_0) quantizing to q8_0... 18.9 MB -> 5.0 MB
+[338/752] vit.encoder.layers.1.mlp.fc1.bias             -    f32, copy 0.0 MB
+[339/752] vit.encoder.layers.1.mlp.fc2.weight           -    f32, (vision→Q8_0) skip (ncols 4304 not div by 32)
+copy 18.9 MB
+[340/752] vit.encoder.layers.1.mlp.fc2.bias             -    f32, copy 0.0 MB
+[341/752] vit.encoder.layers.1.self_attn.q_proj.weight  -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[342/752] vit.encoder.layers.1.self_attn.q_proj.bias    -    f32, copy 0.0 MB
+[343/752] vit.encoder.layers.1.self_attn.k_proj.weight  -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[344/752] vit.encoder.layers.1.self_attn.k_proj.bias    -    f32, copy 0.0 MB
+[345/752] vit.encoder.layers.1.self_attn.v_proj.weight  -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[346/752] vit.encoder.layers.1.self_attn.v_proj.bias    -    f32, copy 0.0 MB
+[347/752] vit.encoder.layers.1.self_attn.out_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[348/752] vit.encoder.layers.1.self_attn.out_proj.bias  -    f32, copy 0.0 MB
+[349/752] vit.encoder.layers.2.layer_norm1.weight       -    f32, copy 0.0 MB
+[350/752] vit.encoder.layers.2.layer_norm1.bias         -    f32, copy 0.0 MB
+[351/752] vit.encoder.layers.2.layer_norm2.weight       -    f32, copy 0.0 MB
+[352/752] vit.encoder.layers.2.layer_norm2.bias         -    f32, copy 0.0 MB
+[353/752] vit.encoder.layers.2.mlp.fc1.weight           -    f32, (vision→Q8_0) quantizing to q8_0... 18.9 MB -> 5.0 MB
+[354/752] vit.encoder.layers.2.mlp.fc1.bias             -    f32, copy 0.0 MB
+[355/752] vit.encoder.layers.2.mlp.fc2.weight           -    f32, (vision→Q8_0) skip (ncols 4304 not div by 32)
+copy 18.9 MB
+[356/752] vit.encoder.layers.2.mlp.fc2.bias             -    f32, copy 0.0 MB
+[357/752] vit.encoder.layers.2.self_attn.q_proj.weight  -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[358/752] vit.encoder.layers.2.self_attn.q_proj.bias    -    f32, copy 0.0 MB
+[359/752] vit.encoder.layers.2.self_attn.k_proj.weight  -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[360/752] vit.encoder.layers.2.self_attn.k_proj.bias    -    f32, copy 0.0 MB
+[361/752] vit.encoder.layers.2.self_attn.v_proj.weight  -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[362/752] vit.encoder.layers.2.self_attn.v_proj.bias    -    f32, copy 0.0 MB
+[363/752] vit.encoder.layers.2.self_attn.out_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[364/752] vit.encoder.layers.2.self_attn.out_proj.bias  -    f32, copy 0.0 MB
+[365/752] vit.encoder.layers.3.layer_norm1.weight       -    f32, copy 0.0 MB
+[366/752] vit.encoder.layers.3.layer_norm1.bias         -    f32, copy 0.0 MB
+[367/752] vit.encoder.layers.3.layer_norm2.weight       -    f32, copy 0.0 MB
+[368/752] vit.encoder.layers.3.layer_norm2.bias         -    f32, copy 0.0 MB
+[369/752] vit.encoder.layers.3.mlp.fc1.weight           -    f32, (vision→Q8_0) quantizing to q8_0... 18.9 MB -> 5.0 MB
+[370/752] vit.encoder.layers.3.mlp.fc1.bias             -    f32, copy 0.0 MB
+[371/752] vit.encoder.layers.3.mlp.fc2.weight           -    f32, (vision→Q8_0) skip (ncols 4304 not div by 32)
+copy 18.9 MB
+[372/752] vit.encoder.layers.3.mlp.fc2.bias             -    f32, copy 0.0 MB
+[373/752] vit.encoder.layers.3.self_attn.q_proj.weight  -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[374/752] vit.encoder.layers.3.self_attn.q_proj.bias    -    f32, copy 0.0 MB
+[375/752] vit.encoder.layers.3.self_attn.k_proj.weight  -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[376/752] vit.encoder.layers.3.self_attn.k_proj.bias    -    f32, copy 0.0 MB
+[377/752] vit.encoder.layers.3.self_attn.v_proj.weight  -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[378/752] vit.encoder.layers.3.self_attn.v_proj.bias    -    f32, copy 0.0 MB
+[379/752] vit.encoder.layers.3.self_attn.out_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[380/752] vit.encoder.layers.3.self_attn.out_proj.bias  -    f32, copy 0.0 MB
+[381/752] vit.encoder.layers.4.layer_norm1.weight       -    f32, copy 0.0 MB
+[382/752] vit.encoder.layers.4.layer_norm1.bias         -    f32, copy 0.0 MB
+[383/752] vit.encoder.layers.4.layer_norm2.weight       -    f32, copy 0.0 MB
+[384/752] vit.encoder.layers.4.layer_norm2.bias         -    f32, copy 0.0 MB
+[385/752] vit.encoder.layers.4.mlp.fc1.weight           -    f32, (vision→Q8_0) quantizing to q8_0... 18.9 MB -> 5.0 MB
+[386/752] vit.encoder.layers.4.mlp.fc1.bias             -    f32, copy 0.0 MB
+[387/752] vit.encoder.layers.4.mlp.fc2.weight           -    f32, (vision→Q8_0) skip (ncols 4304 not div by 32)
+copy 18.9 MB
+[388/752] vit.encoder.layers.4.mlp.fc2.bias             -    f32, copy 0.0 MB
+[389/752] vit.encoder.layers.4.self_attn.q_proj.weight  -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[390/752] vit.encoder.layers.4.self_attn.q_proj.bias    -    f32, copy 0.0 MB
+[391/752] vit.encoder.layers.4.self_attn.k_proj.weight  -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[392/752] vit.encoder.layers.4.self_attn.k_proj.bias    -    f32, copy 0.0 MB
+[393/752] vit.encoder.layers.4.self_attn.v_proj.weight  -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[394/752] vit.encoder.layers.4.self_attn.v_proj.bias    -    f32, copy 0.0 MB
+[395/752] vit.encoder.layers.4.self_attn.out_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[396/752] vit.encoder.layers.4.self_attn.out_proj.bias  -    f32, copy 0.0 MB
+[397/752] vit.encoder.layers.5.layer_norm1.weight       -    f32, copy 0.0 MB
+[398/752] vit.encoder.layers.5.layer_norm1.bias         -    f32, copy 0.0 MB
+[399/752] vit.encoder.layers.5.layer_norm2.weight       -    f32, copy 0.0 MB
+[400/752] vit.encoder.layers.5.layer_norm2.bias         -    f32, copy 0.0 MB
+[401/752] vit.encoder.layers.5.mlp.fc1.weight           -    f32, (vision→Q8_0) quantizing to q8_0... 18.9 MB -> 5.0 MB
+[402/752] vit.encoder.layers.5.mlp.fc1.bias             -    f32, copy 0.0 MB
+[403/752] vit.encoder.layers.5.mlp.fc2.weight           -    f32, (vision→Q8_0) skip (ncols 4304 not div by 32)
+copy 18.9 MB
+[404/752] vit.encoder.layers.5.mlp.fc2.bias             -    f32, copy 0.0 MB
+[405/752] vit.encoder.layers.5.self_attn.q_proj.weight  -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[406/752] vit.encoder.layers.5.self_attn.q_proj.bias    -    f32, copy 0.0 MB
+[407/752] vit.encoder.layers.5.self_attn.k_proj.weight  -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[408/752] vit.encoder.layers.5.self_attn.k_proj.bias    -    f32, copy 0.0 MB
+[409/752] vit.encoder.layers.5.self_attn.v_proj.weight  -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[410/752] vit.encoder.layers.5.self_attn.v_proj.bias    -    f32, copy 0.0 MB
+[411/752] vit.encoder.layers.5.self_attn.out_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[412/752] vit.encoder.layers.5.self_attn.out_proj.bias  -    f32, copy 0.0 MB
+[413/752] vit.encoder.layers.6.layer_norm1.weight       -    f32, copy 0.0 MB
+[414/752] vit.encoder.layers.6.layer_norm1.bias         -    f32, copy 0.0 MB
+[415/752] vit.encoder.layers.6.layer_norm2.weight       -    f32, copy 0.0 MB
+[416/752] vit.encoder.layers.6.layer_norm2.bias         -    f32, copy 0.0 MB
+[417/752] vit.encoder.layers.6.mlp.fc1.weight           -    f32, (vision→Q8_0) quantizing to q8_0... 18.9 MB -> 5.0 MB
+[418/752] vit.encoder.layers.6.mlp.fc1.bias             -    f32, copy 0.0 MB
+[419/752] vit.encoder.layers.6.mlp.fc2.weight           -    f32, (vision→Q8_0) skip (ncols 4304 not div by 32)
+copy 18.9 MB
+[420/752] vit.encoder.layers.6.mlp.fc2.bias             -    f32, copy 0.0 MB
+[421/752] vit.encoder.layers.6.self_attn.q_proj.weight  -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[422/752] vit.encoder.layers.6.self_attn.q_proj.bias    -    f32, copy 0.0 MB
+[423/752] vit.encoder.layers.6.self_attn.k_proj.weight  -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[424/752] vit.encoder.layers.6.self_attn.k_proj.bias    -    f32, copy 0.0 MB
+[425/752] vit.encoder.layers.6.self_attn.v_proj.weight  -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[426/752] vit.encoder.layers.6.self_attn.v_proj.bias    -    f32, copy 0.0 MB
+[427/752] vit.encoder.layers.6.self_attn.out_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[428/752] vit.encoder.layers.6.self_attn.out_proj.bias  -    f32, copy 0.0 MB
+[429/752] vit.encoder.layers.7.layer_norm1.weight       -    f32, copy 0.0 MB
+[430/752] vit.encoder.layers.7.layer_norm1.bias         -    f32, copy 0.0 MB
+[431/752] vit.encoder.layers.7.layer_norm2.weight       -    f32, copy 0.0 MB
+[432/752] vit.encoder.layers.7.layer_norm2.bias         -    f32, copy 0.0 MB
+[433/752] vit.encoder.layers.7.mlp.fc1.weight           -    f32, (vision→Q8_0) quantizing to q8_0... 18.9 MB -> 5.0 MB
+[434/752] vit.encoder.layers.7.mlp.fc1.bias             -    f32, copy 0.0 MB
+[435/752] vit.encoder.layers.7.mlp.fc2.weight           -    f32, (vision→Q8_0) skip (ncols 4304 not div by 32)
+copy 18.9 MB
+[436/752] vit.encoder.layers.7.mlp.fc2.bias             -    f32, copy 0.0 MB
+[437/752] vit.encoder.layers.7.self_attn.q_proj.weight  -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[438/752] vit.encoder.layers.7.self_attn.q_proj.bias    -    f32, copy 0.0 MB
+[439/752] vit.encoder.layers.7.self_attn.k_proj.weight  -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[440/752] vit.encoder.layers.7.self_attn.k_proj.bias    -    f32, copy 0.0 MB
+[441/752] vit.encoder.layers.7.self_attn.v_proj.weight  -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[442/752] vit.encoder.layers.7.self_attn.v_proj.bias    -    f32, copy 0.0 MB
+[443/752] vit.encoder.layers.7.self_attn.out_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[444/752] vit.encoder.layers.7.self_attn.out_proj.bias  -    f32, copy 0.0 MB
+[445/752] vit.encoder.layers.8.layer_norm1.weight       -    f32, copy 0.0 MB
+[446/752] vit.encoder.layers.8.layer_norm1.bias         -    f32, copy 0.0 MB
+[447/752] vit.encoder.layers.8.layer_norm2.weight       -    f32, copy 0.0 MB
+[448/752] vit.encoder.layers.8.layer_norm2.bias         -    f32, copy 0.0 MB
+[449/752] vit.encoder.layers.8.mlp.fc1.weight           -    f32, (vision→Q8_0) quantizing to q8_0... 18.9 MB -> 5.0 MB
+[450/752] vit.encoder.layers.8.mlp.fc1.bias             -    f32, copy 0.0 MB
+[451/752] vit.encoder.layers.8.mlp.fc2.weight           -    f32, (vision→Q8_0) skip (ncols 4304 not div by 32)
+copy 18.9 MB
+[452/752] vit.encoder.layers.8.mlp.fc2.bias             -    f32, copy 0.0 MB
+[453/752] vit.encoder.layers.8.self_attn.q_proj.weight  -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[454/752] vit.encoder.layers.8.self_attn.q_proj.bias    -    f32, copy 0.0 MB
+[455/752] vit.encoder.layers.8.self_attn.k_proj.weight  -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[456/752] vit.encoder.layers.8.self_attn.k_proj.bias    -    f32, copy 0.0 MB
+[457/752] vit.encoder.layers.8.self_attn.v_proj.weight  -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[458/752] vit.encoder.layers.8.self_attn.v_proj.bias    -    f32, copy 0.0 MB
+[459/752] vit.encoder.layers.8.self_attn.out_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[460/752] vit.encoder.layers.8.self_attn.out_proj.bias  -    f32, copy 0.0 MB
+[461/752] vit.encoder.layers.9.layer_norm1.weight       -    f32, copy 0.0 MB
+[462/752] vit.encoder.layers.9.layer_norm1.bias         -    f32, copy 0.0 MB
+[463/752] vit.encoder.layers.9.layer_norm2.weight       -    f32, copy 0.0 MB
+[464/752] vit.encoder.layers.9.layer_norm2.bias         -    f32, copy 0.0 MB
+[465/752] vit.encoder.layers.9.mlp.fc1.weight           -    f32, (vision→Q8_0) quantizing to q8_0... 18.9 MB -> 5.0 MB
+[466/752] vit.encoder.layers.9.mlp.fc1.bias             -    f32, copy 0.0 MB
+[467/752] vit.encoder.layers.9.mlp.fc2.weight           -    f32, (vision→Q8_0) skip (ncols 4304 not div by 32)
+copy 18.9 MB
+[468/752] vit.encoder.layers.9.mlp.fc2.bias             -    f32, copy 0.0 MB
+[469/752] vit.encoder.layers.9.self_attn.q_proj.weight  -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[470/752] vit.encoder.layers.9.self_attn.q_proj.bias    -    f32, copy 0.0 MB
+[471/752] vit.encoder.layers.9.self_attn.k_proj.weight  -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[472/752] vit.encoder.layers.9.self_attn.k_proj.bias    -    f32, copy 0.0 MB
+[473/752] vit.encoder.layers.9.self_attn.v_proj.weight  -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[474/752] vit.encoder.layers.9.self_attn.v_proj.bias    -    f32, copy 0.0 MB
+[475/752] vit.encoder.layers.9.self_attn.out_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[476/752] vit.encoder.layers.9.self_attn.out_proj.bias  -    f32, copy 0.0 MB
+[477/752] vit.encoder.layers.10.layer_norm1.weight      -    f32, copy 0.0 MB
+[478/752] vit.encoder.layers.10.layer_norm1.bias        -    f32, copy 0.0 MB
+[479/752] vit.encoder.layers.10.layer_norm2.weight      -    f32, copy 0.0 MB
+[480/752] vit.encoder.layers.10.layer_norm2.bias        -    f32, copy 0.0 MB
+[481/752] vit.encoder.layers.10.mlp.fc1.weight          -    f32, (vision→Q8_0) quantizing to q8_0... 18.9 MB -> 5.0 MB
+[482/752] vit.encoder.layers.10.mlp.fc1.bias            -    f32, copy 0.0 MB
+[483/752] vit.encoder.layers.10.mlp.fc2.weight          -    f32, (vision→Q8_0) skip (ncols 4304 not div by 32)
+copy 18.9 MB
+[484/752] vit.encoder.layers.10.mlp.fc2.bias            -    f32, copy 0.0 MB
+[485/752] vit.encoder.layers.10.self_attn.q_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[486/752] vit.encoder.layers.10.self_attn.q_proj.bias   -    f32, copy 0.0 MB
+[487/752] vit.encoder.layers.10.self_attn.k_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[488/752] vit.encoder.layers.10.self_attn.k_proj.bias   -    f32, copy 0.0 MB
+[489/752] vit.encoder.layers.10.self_attn.v_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[490/752] vit.encoder.layers.10.self_attn.v_proj.bias   -    f32, copy 0.0 MB
+[491/752] vit.encoder.layers.10.self_attn.out_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[492/752] vit.encoder.layers.10.self_attn.out_proj.bias -    f32, copy 0.0 MB
+[493/752] vit.encoder.layers.11.layer_norm1.weight      -    f32, copy 0.0 MB
+[494/752] vit.encoder.layers.11.layer_norm1.bias        -    f32, copy 0.0 MB
+[495/752] vit.encoder.layers.11.layer_norm2.weight      -    f32, copy 0.0 MB
+[496/752] vit.encoder.layers.11.layer_norm2.bias        -    f32, copy 0.0 MB
+[497/752] vit.encoder.layers.11.mlp.fc1.weight          -    f32, (vision→Q8_0) quantizing to q8_0... 18.9 MB -> 5.0 MB
+[498/752] vit.encoder.layers.11.mlp.fc1.bias            -    f32, copy 0.0 MB
+[499/752] vit.encoder.layers.11.mlp.fc2.weight          -    f32, (vision→Q8_0) skip (ncols 4304 not div by 32)
+copy 18.9 MB
+[500/752] vit.encoder.layers.11.mlp.fc2.bias            -    f32, copy 0.0 MB
+[501/752] vit.encoder.layers.11.self_attn.q_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[502/752] vit.encoder.layers.11.self_attn.q_proj.bias   -    f32, copy 0.0 MB
+[503/752] vit.encoder.layers.11.self_attn.k_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[504/752] vit.encoder.layers.11.self_attn.k_proj.bias   -    f32, copy 0.0 MB
+[505/752] vit.encoder.layers.11.self_attn.v_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[506/752] vit.encoder.layers.11.self_attn.v_proj.bias   -    f32, copy 0.0 MB
+[507/752] vit.encoder.layers.11.self_attn.out_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[508/752] vit.encoder.layers.11.self_attn.out_proj.bias -    f32, copy 0.0 MB
+[509/752] vit.encoder.layers.12.layer_norm1.weight      -    f32, copy 0.0 MB
+[510/752] vit.encoder.layers.12.layer_norm1.bias        -    f32, copy 0.0 MB
+[511/752] vit.encoder.layers.12.layer_norm2.weight      -    f32, copy 0.0 MB
+[512/752] vit.encoder.layers.12.layer_norm2.bias        -    f32, copy 0.0 MB
+[513/752] vit.encoder.layers.12.mlp.fc1.weight          -    f32, (vision→Q8_0) quantizing to q8_0... 18.9 MB -> 5.0 MB
+[514/752] vit.encoder.layers.12.mlp.fc1.bias            -    f32, copy 0.0 MB
+[515/752] vit.encoder.layers.12.mlp.fc2.weight          -    f32, (vision→Q8_0) skip (ncols 4304 not div by 32)
+copy 18.9 MB
+[516/752] vit.encoder.layers.12.mlp.fc2.bias            -    f32, copy 0.0 MB
+[517/752] vit.encoder.layers.12.self_attn.q_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[518/752] vit.encoder.layers.12.self_attn.q_proj.bias   -    f32, copy 0.0 MB
+[519/752] vit.encoder.layers.12.self_attn.k_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[520/752] vit.encoder.layers.12.self_attn.k_proj.bias   -    f32, copy 0.0 MB
+[521/752] vit.encoder.layers.12.self_attn.v_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[522/752] vit.encoder.layers.12.self_attn.v_proj.bias   -    f32, copy 0.0 MB
+[523/752] vit.encoder.layers.12.self_attn.out_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[524/752] vit.encoder.layers.12.self_attn.out_proj.bias -    f32, copy 0.0 MB
+[525/752] vit.encoder.layers.13.layer_norm1.weight      -    f32, copy 0.0 MB
+[526/752] vit.encoder.layers.13.layer_norm1.bias        -    f32, copy 0.0 MB
+[527/752] vit.encoder.layers.13.layer_norm2.weight      -    f32, copy 0.0 MB
+[528/752] vit.encoder.layers.13.layer_norm2.bias        -    f32, copy 0.0 MB
+[529/752] vit.encoder.layers.13.mlp.fc1.weight          -    f32, (vision→Q8_0) quantizing to q8_0... 18.9 MB -> 5.0 MB
+[530/752] vit.encoder.layers.13.mlp.fc1.bias            -    f32, copy 0.0 MB
+[531/752] vit.encoder.layers.13.mlp.fc2.weight          -    f32, (vision→Q8_0) skip (ncols 4304 not div by 32)
+copy 18.9 MB
+[532/752] vit.encoder.layers.13.mlp.fc2.bias            -    f32, copy 0.0 MB
+[533/752] vit.encoder.layers.13.self_attn.q_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[534/752] vit.encoder.layers.13.self_attn.q_proj.bias   -    f32, copy 0.0 MB
+[535/752] vit.encoder.layers.13.self_attn.k_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[536/752] vit.encoder.layers.13.self_attn.k_proj.bias   -    f32, copy 0.0 MB
+[537/752] vit.encoder.layers.13.self_attn.v_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[538/752] vit.encoder.layers.13.self_attn.v_proj.bias   -    f32, copy 0.0 MB
+[539/752] vit.encoder.layers.13.self_attn.out_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[540/752] vit.encoder.layers.13.self_attn.out_proj.bias -    f32, copy 0.0 MB
+[541/752] vit.encoder.layers.14.layer_norm1.weight      -    f32, copy 0.0 MB
+[542/752] vit.encoder.layers.14.layer_norm1.bias        -    f32, copy 0.0 MB
+[543/752] vit.encoder.layers.14.layer_norm2.weight      -    f32, copy 0.0 MB
+[544/752] vit.encoder.layers.14.layer_norm2.bias        -    f32, copy 0.0 MB
+[545/752] vit.encoder.layers.14.mlp.fc1.weight          -    f32, (vision→Q8_0) quantizing to q8_0... 18.9 MB -> 5.0 MB
+[546/752] vit.encoder.layers.14.mlp.fc1.bias            -    f32, copy 0.0 MB
+[547/752] vit.encoder.layers.14.mlp.fc2.weight          -    f32, (vision→Q8_0) skip (ncols 4304 not div by 32)
+copy 18.9 MB
+[548/752] vit.encoder.layers.14.mlp.fc2.bias            -    f32, copy 0.0 MB
+[549/752] vit.encoder.layers.14.self_attn.q_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[550/752] vit.encoder.layers.14.self_attn.q_proj.bias   -    f32, copy 0.0 MB
+[551/752] vit.encoder.layers.14.self_attn.k_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[552/752] vit.encoder.layers.14.self_attn.k_proj.bias   -    f32, copy 0.0 MB
+[553/752] vit.encoder.layers.14.self_attn.v_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[554/752] vit.encoder.layers.14.self_attn.v_proj.bias   -    f32, copy 0.0 MB
+[555/752] vit.encoder.layers.14.self_attn.out_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[556/752] vit.encoder.layers.14.self_attn.out_proj.bias -    f32, copy 0.0 MB
+[557/752] vit.encoder.layers.15.layer_norm1.weight      -    f32, copy 0.0 MB
+[558/752] vit.encoder.layers.15.layer_norm1.bias        -    f32, copy 0.0 MB
+[559/752] vit.encoder.layers.15.layer_norm2.weight      -    f32, copy 0.0 MB
+[560/752] vit.encoder.layers.15.layer_norm2.bias        -    f32, copy 0.0 MB
+[561/752] vit.encoder.layers.15.mlp.fc1.weight          -    f32, (vision→Q8_0) quantizing to q8_0... 18.9 MB -> 5.0 MB
+[562/752] vit.encoder.layers.15.mlp.fc1.bias            -    f32, copy 0.0 MB
+[563/752] vit.encoder.layers.15.mlp.fc2.weight          -    f32, (vision→Q8_0) skip (ncols 4304 not div by 32)
+copy 18.9 MB
+[564/752] vit.encoder.layers.15.mlp.fc2.bias            -    f32, copy 0.0 MB
+[565/752] vit.encoder.layers.15.self_attn.q_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[566/752] vit.encoder.layers.15.self_attn.q_proj.bias   -    f32, copy 0.0 MB
+[567/752] vit.encoder.layers.15.self_attn.k_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[568/752] vit.encoder.layers.15.self_attn.k_proj.bias   -    f32, copy 0.0 MB
+[569/752] vit.encoder.layers.15.self_attn.v_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[570/752] vit.encoder.layers.15.self_attn.v_proj.bias   -    f32, copy 0.0 MB
+[571/752] vit.encoder.layers.15.self_attn.out_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[572/752] vit.encoder.layers.15.self_attn.out_proj.bias -    f32, copy 0.0 MB
+[573/752] vit.encoder.layers.16.layer_norm1.weight      -    f32, copy 0.0 MB
+[574/752] vit.encoder.layers.16.layer_norm1.bias        -    f32, copy 0.0 MB
+[575/752] vit.encoder.layers.16.layer_norm2.weight      -    f32, copy 0.0 MB
+[576/752] vit.encoder.layers.16.layer_norm2.bias        -    f32, copy 0.0 MB
+[577/752] vit.encoder.layers.16.mlp.fc1.weight          -    f32, (vision→Q8_0) quantizing to q8_0... 18.9 MB -> 5.0 MB
+[578/752] vit.encoder.layers.16.mlp.fc1.bias            -    f32, copy 0.0 MB
+[579/752] vit.encoder.layers.16.mlp.fc2.weight          -    f32, (vision→Q8_0) skip (ncols 4304 not div by 32)
+copy 18.9 MB
+[580/752] vit.encoder.layers.16.mlp.fc2.bias            -    f32, copy 0.0 MB
+[581/752] vit.encoder.layers.16.self_attn.q_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[582/752] vit.encoder.layers.16.self_attn.q_proj.bias   -    f32, copy 0.0 MB
+[583/752] vit.encoder.layers.16.self_attn.k_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[584/752] vit.encoder.layers.16.self_attn.k_proj.bias   -    f32, copy 0.0 MB
+[585/752] vit.encoder.layers.16.self_attn.v_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[586/752] vit.encoder.layers.16.self_attn.v_proj.bias   -    f32, copy 0.0 MB
+[587/752] vit.encoder.layers.16.self_attn.out_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[588/752] vit.encoder.layers.16.self_attn.out_proj.bias -    f32, copy 0.0 MB
+[589/752] vit.encoder.layers.17.layer_norm1.weight      -    f32, copy 0.0 MB
+[590/752] vit.encoder.layers.17.layer_norm1.bias        -    f32, copy 0.0 MB
+[591/752] vit.encoder.layers.17.layer_norm2.weight      -    f32, copy 0.0 MB
+[592/752] vit.encoder.layers.17.layer_norm2.bias        -    f32, copy 0.0 MB
+[593/752] vit.encoder.layers.17.mlp.fc1.weight          -    f32, (vision→Q8_0) quantizing to q8_0... 18.9 MB -> 5.0 MB
+[594/752] vit.encoder.layers.17.mlp.fc1.bias            -    f32, copy 0.0 MB
+[595/752] vit.encoder.layers.17.mlp.fc2.weight          -    f32, (vision→Q8_0) skip (ncols 4304 not div by 32)
+copy 18.9 MB
+[596/752] vit.encoder.layers.17.mlp.fc2.bias            -    f32, copy 0.0 MB
+[597/752] vit.encoder.layers.17.self_attn.q_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[598/752] vit.encoder.layers.17.self_attn.q_proj.bias   -    f32, copy 0.0 MB
+[599/752] vit.encoder.layers.17.self_attn.k_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[600/752] vit.encoder.layers.17.self_attn.k_proj.bias   -    f32, copy 0.0 MB
+[601/752] vit.encoder.layers.17.self_attn.v_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[602/752] vit.encoder.layers.17.self_attn.v_proj.bias   -    f32, copy 0.0 MB
+[603/752] vit.encoder.layers.17.self_attn.out_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[604/752] vit.encoder.layers.17.self_attn.out_proj.bias -    f32, copy 0.0 MB
+[605/752] vit.encoder.layers.18.layer_norm1.weight      -    f32, copy 0.0 MB
+[606/752] vit.encoder.layers.18.layer_norm1.bias        -    f32, copy 0.0 MB
+[607/752] vit.encoder.layers.18.layer_norm2.weight      -    f32, copy 0.0 MB
+[608/752] vit.encoder.layers.18.layer_norm2.bias        -    f32, copy 0.0 MB
+[609/752] vit.encoder.layers.18.mlp.fc1.weight          -    f32, (vision→Q8_0) quantizing to q8_0... 18.9 MB -> 5.0 MB
+[610/752] vit.encoder.layers.18.mlp.fc1.bias            -    f32, copy 0.0 MB
+[611/752] vit.encoder.layers.18.mlp.fc2.weight          -    f32, (vision→Q8_0) skip (ncols 4304 not div by 32)
+copy 18.9 MB
+[612/752] vit.encoder.layers.18.mlp.fc2.bias            -    f32, copy 0.0 MB
+[613/752] vit.encoder.layers.18.self_attn.q_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[614/752] vit.encoder.layers.18.self_attn.q_proj.bias   -    f32, copy 0.0 MB
+[615/752] vit.encoder.layers.18.self_attn.k_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[616/752] vit.encoder.layers.18.self_attn.k_proj.bias   -    f32, copy 0.0 MB
+[617/752] vit.encoder.layers.18.self_attn.v_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[618/752] vit.encoder.layers.18.self_attn.v_proj.bias   -    f32, copy 0.0 MB
+[619/752] vit.encoder.layers.18.self_attn.out_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[620/752] vit.encoder.layers.18.self_attn.out_proj.bias -    f32, copy 0.0 MB
+[621/752] vit.encoder.layers.19.layer_norm1.weight      -    f32, copy 0.0 MB
+[622/752] vit.encoder.layers.19.layer_norm1.bias        -    f32, copy 0.0 MB
+[623/752] vit.encoder.layers.19.layer_norm2.weight      -    f32, copy 0.0 MB
+[624/752] vit.encoder.layers.19.layer_norm2.bias        -    f32, copy 0.0 MB
+[625/752] vit.encoder.layers.19.mlp.fc1.weight          -    f32, (vision→Q8_0) quantizing to q8_0... 18.9 MB -> 5.0 MB
+[626/752] vit.encoder.layers.19.mlp.fc1.bias            -    f32, copy 0.0 MB
+[627/752] vit.encoder.layers.19.mlp.fc2.weight          -    f32, (vision→Q8_0) skip (ncols 4304 not div by 32)
+copy 18.9 MB
+[628/752] vit.encoder.layers.19.mlp.fc2.bias            -    f32, copy 0.0 MB
+[629/752] vit.encoder.layers.19.self_attn.q_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[630/752] vit.encoder.layers.19.self_attn.q_proj.bias   -    f32, copy 0.0 MB
+[631/752] vit.encoder.layers.19.self_attn.k_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[632/752] vit.encoder.layers.19.self_attn.k_proj.bias   -    f32, copy 0.0 MB
+[633/752] vit.encoder.layers.19.self_attn.v_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[634/752] vit.encoder.layers.19.self_attn.v_proj.bias   -    f32, copy 0.0 MB
+[635/752] vit.encoder.layers.19.self_attn.out_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[636/752] vit.encoder.layers.19.self_attn.out_proj.bias -    f32, copy 0.0 MB
+[637/752] vit.encoder.layers.20.layer_norm1.weight      -    f32, copy 0.0 MB
+[638/752] vit.encoder.layers.20.layer_norm1.bias        -    f32, copy 0.0 MB
+[639/752] vit.encoder.layers.20.layer_norm2.weight      -    f32, copy 0.0 MB
+[640/752] vit.encoder.layers.20.layer_norm2.bias        -    f32, copy 0.0 MB
+[641/752] vit.encoder.layers.20.mlp.fc1.weight          -    f32, (vision→Q8_0) quantizing to q8_0... 18.9 MB -> 5.0 MB
+[642/752] vit.encoder.layers.20.mlp.fc1.bias            -    f32, copy 0.0 MB
+[643/752] vit.encoder.layers.20.mlp.fc2.weight          -    f32, (vision→Q8_0) skip (ncols 4304 not div by 32)
+copy 18.9 MB
+[644/752] vit.encoder.layers.20.mlp.fc2.bias            -    f32, copy 0.0 MB
+[645/752] vit.encoder.layers.20.self_attn.q_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[646/752] vit.encoder.layers.20.self_attn.q_proj.bias   -    f32, copy 0.0 MB
+[647/752] vit.encoder.layers.20.self_attn.k_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[648/752] vit.encoder.layers.20.self_attn.k_proj.bias   -    f32, copy 0.0 MB
+[649/752] vit.encoder.layers.20.self_attn.v_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[650/752] vit.encoder.layers.20.self_attn.v_proj.bias   -    f32, copy 0.0 MB
+[651/752] vit.encoder.layers.20.self_attn.out_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[652/752] vit.encoder.layers.20.self_attn.out_proj.bias -    f32, copy 0.0 MB
+[653/752] vit.encoder.layers.21.layer_norm1.weight      -    f32, copy 0.0 MB
+[654/752] vit.encoder.layers.21.layer_norm1.bias        -    f32, copy 0.0 MB
+[655/752] vit.encoder.layers.21.layer_norm2.weight      -    f32, copy 0.0 MB
+[656/752] vit.encoder.layers.21.layer_norm2.bias        -    f32, copy 0.0 MB
+[657/752] vit.encoder.layers.21.mlp.fc1.weight          -    f32, (vision→Q8_0) quantizing to q8_0... 18.9 MB -> 5.0 MB
+[658/752] vit.encoder.layers.21.mlp.fc1.bias            -    f32, copy 0.0 MB
+[659/752] vit.encoder.layers.21.mlp.fc2.weight          -    f32, (vision→Q8_0) skip (ncols 4304 not div by 32)
+copy 18.9 MB
+[660/752] vit.encoder.layers.21.mlp.fc2.bias            -    f32, copy 0.0 MB
+[661/752] vit.encoder.layers.21.self_attn.q_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[662/752] vit.encoder.layers.21.self_attn.q_proj.bias   -    f32, copy 0.0 MB
+[663/752] vit.encoder.layers.21.self_attn.k_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[664/752] vit.encoder.layers.21.self_attn.k_proj.bias   -    f32, copy 0.0 MB
+[665/752] vit.encoder.layers.21.self_attn.v_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[666/752] vit.encoder.layers.21.self_attn.v_proj.bias   -    f32, copy 0.0 MB
+[667/752] vit.encoder.layers.21.self_attn.out_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[668/752] vit.encoder.layers.21.self_attn.out_proj.bias -    f32, copy 0.0 MB
+[669/752] vit.encoder.layers.22.layer_norm1.weight      -    f32, copy 0.0 MB
+[670/752] vit.encoder.layers.22.layer_norm1.bias        -    f32, copy 0.0 MB
+[671/752] vit.encoder.layers.22.layer_norm2.weight      -    f32, copy 0.0 MB
+[672/752] vit.encoder.layers.22.layer_norm2.bias        -    f32, copy 0.0 MB
+[673/752] vit.encoder.layers.22.mlp.fc1.weight          -    f32, (vision→Q8_0) quantizing to q8_0... 18.9 MB -> 5.0 MB
+[674/752] vit.encoder.layers.22.mlp.fc1.bias            -    f32, copy 0.0 MB
+[675/752] vit.encoder.layers.22.mlp.fc2.weight          -    f32, (vision→Q8_0) skip (ncols 4304 not div by 32)
+copy 18.9 MB
+[676/752] vit.encoder.layers.22.mlp.fc2.bias            -    f32, copy 0.0 MB
+[677/752] vit.encoder.layers.22.self_attn.q_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[678/752] vit.encoder.layers.22.self_attn.q_proj.bias   -    f32, copy 0.0 MB
+[679/752] vit.encoder.layers.22.self_attn.k_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[680/752] vit.encoder.layers.22.self_attn.k_proj.bias   -    f32, copy 0.0 MB
+[681/752] vit.encoder.layers.22.self_attn.v_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[682/752] vit.encoder.layers.22.self_attn.v_proj.bias   -    f32, copy 0.0 MB
+[683/752] vit.encoder.layers.22.self_attn.out_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[684/752] vit.encoder.layers.22.self_attn.out_proj.bias -    f32, copy 0.0 MB
+[685/752] vit.encoder.layers.23.layer_norm1.weight      -    f32, copy 0.0 MB
+[686/752] vit.encoder.layers.23.layer_norm1.bias        -    f32, copy 0.0 MB
+[687/752] vit.encoder.layers.23.layer_norm2.weight      -    f32, copy 0.0 MB
+[688/752] vit.encoder.layers.23.layer_norm2.bias        -    f32, copy 0.0 MB
+[689/752] vit.encoder.layers.23.mlp.fc1.weight          -    f32, (vision→Q8_0) quantizing to q8_0... 18.9 MB -> 5.0 MB
+[690/752] vit.encoder.layers.23.mlp.fc1.bias            -    f32, copy 0.0 MB
+[691/752] vit.encoder.layers.23.mlp.fc2.weight          -    f32, (vision→Q8_0) skip (ncols 4304 not div by 32)
+copy 18.9 MB
+[692/752] vit.encoder.layers.23.mlp.fc2.bias            -    f32, copy 0.0 MB
+[693/752] vit.encoder.layers.23.self_attn.q_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[694/752] vit.encoder.layers.23.self_attn.q_proj.bias   -    f32, copy 0.0 MB
+[695/752] vit.encoder.layers.23.self_attn.k_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[696/752] vit.encoder.layers.23.self_attn.k_proj.bias   -    f32, copy 0.0 MB
+[697/752] vit.encoder.layers.23.self_attn.v_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[698/752] vit.encoder.layers.23.self_attn.v_proj.bias   -    f32, copy 0.0 MB
+[699/752] vit.encoder.layers.23.self_attn.out_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[700/752] vit.encoder.layers.23.self_attn.out_proj.bias -    f32, copy 0.0 MB
+[701/752] vit.encoder.layers.24.layer_norm1.weight      -    f32, copy 0.0 MB
+[702/752] vit.encoder.layers.24.layer_norm1.bias        -    f32, copy 0.0 MB
+[703/752] vit.encoder.layers.24.layer_norm2.weight      -    f32, copy 0.0 MB
+[704/752] vit.encoder.layers.24.layer_norm2.bias        -    f32, copy 0.0 MB
+[705/752] vit.encoder.layers.24.mlp.fc1.weight          -    f32, (vision→Q8_0) quantizing to q8_0... 18.9 MB -> 5.0 MB
+[706/752] vit.encoder.layers.24.mlp.fc1.bias            -    f32, copy 0.0 MB
+[707/752] vit.encoder.layers.24.mlp.fc2.weight          -    f32, (vision→Q8_0) skip (ncols 4304 not div by 32)
+copy 18.9 MB
+[708/752] vit.encoder.layers.24.mlp.fc2.bias            -    f32, copy 0.0 MB
+[709/752] vit.encoder.layers.24.self_attn.q_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[710/752] vit.encoder.layers.24.self_attn.q_proj.bias   -    f32, copy 0.0 MB
+[711/752] vit.encoder.layers.24.self_attn.k_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[712/752] vit.encoder.layers.24.self_attn.k_proj.bias   -    f32, copy 0.0 MB
+[713/752] vit.encoder.layers.24.self_attn.v_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[714/752] vit.encoder.layers.24.self_attn.v_proj.bias   -    f32, copy 0.0 MB
+[715/752] vit.encoder.layers.24.self_attn.out_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[716/752] vit.encoder.layers.24.self_attn.out_proj.bias -    f32, copy 0.0 MB
+[717/752] vit.encoder.layers.25.layer_norm1.weight      -    f32, copy 0.0 MB
+[718/752] vit.encoder.layers.25.layer_norm1.bias        -    f32, copy 0.0 MB
+[719/752] vit.encoder.layers.25.layer_norm2.weight      -    f32, copy 0.0 MB
+[720/752] vit.encoder.layers.25.layer_norm2.bias        -    f32, copy 0.0 MB
+[721/752] vit.encoder.layers.25.mlp.fc1.weight          -    f32, (vision→Q8_0) quantizing to q8_0... 18.9 MB -> 5.0 MB
+[722/752] vit.encoder.layers.25.mlp.fc1.bias            -    f32, copy 0.0 MB
+[723/752] vit.encoder.layers.25.mlp.fc2.weight          -    f32, (vision→Q8_0) skip (ncols 4304 not div by 32)
+copy 18.9 MB
+[724/752] vit.encoder.layers.25.mlp.fc2.bias            -    f32, copy 0.0 MB
+[725/752] vit.encoder.layers.25.self_attn.q_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[726/752] vit.encoder.layers.25.self_attn.q_proj.bias   -    f32, copy 0.0 MB
+[727/752] vit.encoder.layers.25.self_attn.k_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[728/752] vit.encoder.layers.25.self_attn.k_proj.bias   -    f32, copy 0.0 MB
+[729/752] vit.encoder.layers.25.self_attn.v_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[730/752] vit.encoder.layers.25.self_attn.v_proj.bias   -    f32, copy 0.0 MB
+[731/752] vit.encoder.layers.25.self_attn.out_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[732/752] vit.encoder.layers.25.self_attn.out_proj.bias -    f32, copy 0.0 MB
+[733/752] vit.encoder.layers.26.layer_norm1.weight      -    f32, copy 0.0 MB
+[734/752] vit.encoder.layers.26.layer_norm1.bias        -    f32, copy 0.0 MB
+[735/752] vit.encoder.layers.26.layer_norm2.weight      -    f32, copy 0.0 MB
+[736/752] vit.encoder.layers.26.layer_norm2.bias        -    f32, copy 0.0 MB
+[737/752] vit.encoder.layers.26.mlp.fc1.weight          -    f32, (vision→Q8_0) quantizing to q8_0... 18.9 MB -> 5.0 MB
+[738/752] vit.encoder.layers.26.mlp.fc1.bias            -    f32, copy 0.0 MB
+[739/752] vit.encoder.layers.26.mlp.fc2.weight          -    f32, (vision→Q8_0) skip (ncols 4304 not div by 32)
+copy 18.9 MB
+[740/752] vit.encoder.layers.26.mlp.fc2.bias            -    f32, copy 0.0 MB
+[741/752] vit.encoder.layers.26.self_attn.q_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[742/752] vit.encoder.layers.26.self_attn.q_proj.bias   -    f32, copy 0.0 MB
+[743/752] vit.encoder.layers.26.self_attn.k_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[744/752] vit.encoder.layers.26.self_attn.k_proj.bias   -    f32, copy 0.0 MB
+[745/752] vit.encoder.layers.26.self_attn.v_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[746/752] vit.encoder.layers.26.self_attn.v_proj.bias   -    f32, copy 0.0 MB
+[747/752] vit.encoder.layers.26.self_attn.out_proj.weight -    f32, (vision→Q8_0) quantizing to q8_0... 5.1 MB -> 1.3 MB
+[748/752] vit.encoder.layers.26.self_attn.out_proj.bias -    f32, copy 0.0 MB
+[749/752] visual_tokenizer.head.0.weight                -    f32, copy 1151.9 MB
+[750/752] visual_tokenizer.head.1.weight                -    f32, copy 0.2 MB
+[751/752] visual_tokenizer.head.1.bias                  -    f32, copy 0.2 MB
+[752/752] vte.weight                                    -    f32, copy 256.0 MB
+
+331 quantized, 421 kept
+5853 MB -> 3633 MB (1.6x compression)

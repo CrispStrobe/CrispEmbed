@@ -1,0 +1,20 @@
+{
+  "checks": [
+    {
+      "check": "clang-format18.1.8 new C++ files",
+      "exit_code": 0,
+      "diagnostics": ""
+    },
+    {
+      "check": "clean_exit static guard",
+      "exit_code": 0,
+      "diagnostics": "OK: all 202 one-shot main()s route through core_util::clean_exit.\n"
+    },
+    {
+      "check": "git diff whitespace",
+      "exit_code": 0,
+      "diagnostics": ""
+    }
+  ],
+  "passed": true
+}

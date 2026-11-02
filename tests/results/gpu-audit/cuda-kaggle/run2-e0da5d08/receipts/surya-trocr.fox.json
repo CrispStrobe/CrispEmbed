@@ -1,0 +1,53 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "--json",
+  "-m",
+  "trocr-small-printed-q8_0.gguf",
+  "--ocr-det",
+  "surya-det-f16.gguf",
+  "--ocr-rec",
+  "trocr-small-printed-q8_0.gguf",
+  "--ocr",
+  "fox.png"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    0.766,
+    0.666
+   ],
+   "gpu_mem_peak_mib": 179,
+   "cuda_used": true,
+   "rc": 1,
+   "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\nocr_detect: missing stem conv\nocr_pipeline: failed to load detection model: $SCRATCH/models/surya-det-f16.gguf\nerror: cannot load OCR models\n",
+   "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "stdout": ""
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    0.265,
+    0.265
+   ],
+   "gpu_mem_peak_mib": 1,
+   "cuda_used": false,
+   "rc": 1,
+   "stderr_tail": "ggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\nocr_detect: missing stem conv\nocr_pipeline: failed to load detection model: $SCRATCH/models/surya-det-f16.gguf\nerror: cannot load OCR models\n",
+   "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+   "stdout": ""
+  }
+ },
+ "precision": "q8_0",
+ "bar": 0.97,
+ "seconds": 6.3,
+ "id": "surya-trocr.fox",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

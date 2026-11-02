@@ -1,0 +1,83 @@
+{
+ "kind": "diff",
+ "binary": "test-lfm2-diff",
+ "arms": {
+  "cuda": {
+   "rc": 0,
+   "wall_s": 0.566,
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "n_stages": 20,
+   "stages": {
+    "post_embed": 0.999937,
+    "layer_0": 0.999871,
+    "layer_1": 0.999813,
+    "layer_2": 0.999771,
+    "layer_3": 0.999753,
+    "layer_4": 0.999761,
+    "layer_5": 0.999696,
+    "layer_6": 0.999682,
+    "layer_7": 0.999712,
+    "layer_8": 0.999678,
+    "layer_9": 0.999713,
+    "layer_10": 0.999705,
+    "layer_11": 0.999725,
+    "layer_12": 0.999672,
+    "layer_13": 0.999699,
+    "layer_14": 0.999669,
+    "layer_15": 0.999563,
+    "final_norm": 0.99963,
+    "cls_raw": 0.999641,
+    "cls_norm": 0.999641
+   },
+   "worst_stage": [
+    "layer_15",
+    0.999563
+   ],
+   "threshold_fails": [],
+   "threshold_missing": [],
+   "stdout_tail": "e-03 mean_abs=1.66e-04\n  \u001b[32m[PASS]\u001b[0m layer_6                                      cos=0.999682  (thr=0.999)\n        cos_mean=0.99981803 cos_global=0.99980903\n        |mine|=0.654792 |ref|=0.656442 max_abs=1.08e-03 mean_abs=1.67e-04\n  \u001b[32m[PASS]\u001b[0m layer_7                                      cos=0.999712  (thr=0.999)\n        cos_mean=0.99984300 cos_global=0.99985838\n        |mine|=0.774896 |ref|=0.777455 max_abs=1.40e-03 mean_abs=1.68e-04\n  \u001b[32m[PASS]\u001b[0m layer_8                                      cos=0.999678  (thr=0.999)\n        cos_mean=0.99981034 cos_global=0.99979287\n        |mine|=0.696308 |ref|=0.699074 max_abs=1.79e-03 mean_abs=1.87e-04\n  \u001b[32m[PASS]\u001b[0m layer_9                                      cos=0.999713  (thr=0.999)\n        cos_mean=0.99983943 cos_global=0.99983341\n        |mine|=0.832020 |ref|=0.835413 max_abs=1.51e-03 mean_abs=1.96e-04\n  \u001b[32m[PASS]\u001b[0m layer_10                                     cos=0.999705  (thr=0.999)\n        cos_mean=0.99982309 cos_global=0.99978811\n        |mine|=0.926338 |ref|=0.931654 max_abs=1.70e-03 mean_abs=2.55e-04\n  \u001b[32m[PASS]\u001b[0m layer_11                                     cos=0.999725  (thr=0.999)\n        cos_mean=0.99984902 cos_global=0.99986327\n        |mine|=1.358198 |ref|=1.364756 max_abs=3.00e-03 mean_abs=2.99e-04\n  \u001b[32m[PASS]\u001b[0m layer_12                                     cos=0.999672  (thr=0.999)\n        cos_mean=0.99982017 cos_global=0.99982673\n        |mine|=1.483202 |ref|=1.489882 max_abs=4.77e-03 mean_abs=3.61e-04\n  \u001b[32m[PASS]\u001b[0m layer_13                                     cos=0.999699  (thr=0.999)\n        cos_mean=0.99982172 cos_global=0.99985993\n        |mine|=2.045287 |ref|=2.050151 max_abs=3.57e-03 mean_abs=4.42e-04\n  \u001b[32m[PASS]\u001b[0m layer_14                                     cos=0.999669  (thr=0.999)\n        cos_mean=0.99980342 cos_global=0.99980778\n        |mine|=3.028965 |ref|=3.034578 max_abs=1.29e-02 mean_abs=8.06e-04\n  \u001b[32m[PASS]\u001b[0m layer_15                                     cos=0.999563  (thr=0.999)\n        cos_mean=0.99973691 cos_global=0.99972051\n        |mine|=3.109986 |ref|=3.116758 max_abs=1.97e-02 mean_abs=9.75e-04\n  \u001b[32m[PASS]\u001b[0m final_norm                                   cos=0.999630  (thr=0.999)\n        cos_mean=0.99965483 cos_global=0.99965745\n        |mine|=158.405502 |ref|=158.897415 max_abs=3.09e-01 mean_abs=5.79e-02\n  \u001b[32m[PASS]\u001b[0m cls_raw                                      cos=0.999641  (thr=0.999)\n        cos_mean=0.99964136 cos_global=0.99964136\n        |mine|=51.313725 |ref|=51.350243 max_abs=1.58e-01 mean_abs=3.38e-02\n  \u001b[32m[PASS]\u001b[0m cls_norm                                     cos=0.999641  (thr=0.999)\n        cos_mean=0.99964136 cos_global=0.99964136\n        |mine|=1.000000 |ref|=1.000000 max_abs=3.07e-03 mean_abs=6.58e-04\n\n--- Summary ---\n  PASS: 20   FAIL: 0\n\ncrispembed_diff: loaded 20 tensors from $SCRATCH/models/lfm2-ref.gguf\n[lfm2_embed] loaded: hidden=1024, layers=16, heads=16/8, ff=4608, vocab=65536\n"
+  },
+  "cpu": {
+   "rc": 0,
+   "wall_s": 0.57,
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "n_stages": 20,
+   "stages": {
+    "post_embed": 0.999937,
+    "layer_0": 0.999871,
+    "layer_1": 0.999813,
+    "layer_2": 0.999771,
+    "layer_3": 0.999753,
+    "layer_4": 0.999761,
+    "layer_5": 0.999696,
+    "layer_6": 0.999682,
+    "layer_7": 0.999712,
+    "layer_8": 0.999678,
+    "layer_9": 0.999713,
+    "layer_10": 0.999705,
+    "layer_11": 0.999725,
+    "layer_12": 0.999672,
+    "layer_13": 0.999699,
+    "layer_14": 0.999669,
+    "layer_15": 0.999563,
+    "final_norm": 0.99963,
+    "cls_raw": 0.999641,
+    "cls_norm": 0.999641
+   },
+   "worst_stage": [
+    "layer_15",
+    0.999563
+   ],
+   "threshold_fails": [],
+   "threshold_missing": [],
+   "stdout_tail": "e-03 mean_abs=1.66e-04\n  \u001b[32m[PASS]\u001b[0m layer_6                                      cos=0.999682  (thr=0.999)\n        cos_mean=0.99981803 cos_global=0.99980903\n        |mine|=0.654792 |ref|=0.656442 max_abs=1.08e-03 mean_abs=1.67e-04\n  \u001b[32m[PASS]\u001b[0m layer_7                                      cos=0.999712  (thr=0.999)\n        cos_mean=0.99984300 cos_global=0.99985838\n        |mine|=0.774896 |ref|=0.777455 max_abs=1.40e-03 mean_abs=1.68e-04\n  \u001b[32m[PASS]\u001b[0m layer_8                                      cos=0.999678  (thr=0.999)\n        cos_mean=0.99981034 cos_global=0.99979287\n        |mine|=0.696308 |ref|=0.699074 max_abs=1.79e-03 mean_abs=1.87e-04\n  \u001b[32m[PASS]\u001b[0m layer_9                                      cos=0.999713  (thr=0.999)\n        cos_mean=0.99983943 cos_global=0.99983341\n        |mine|=0.832020 |ref|=0.835413 max_abs=1.51e-03 mean_abs=1.96e-04\n  \u001b[32m[PASS]\u001b[0m layer_10                                     cos=0.999705  (thr=0.999)\n        cos_mean=0.99982309 cos_global=0.99978811\n        |mine|=0.926338 |ref|=0.931654 max_abs=1.70e-03 mean_abs=2.55e-04\n  \u001b[32m[PASS]\u001b[0m layer_11                                     cos=0.999725  (thr=0.999)\n        cos_mean=0.99984902 cos_global=0.99986327\n        |mine|=1.358198 |ref|=1.364756 max_abs=3.00e-03 mean_abs=2.99e-04\n  \u001b[32m[PASS]\u001b[0m layer_12                                     cos=0.999672  (thr=0.999)\n        cos_mean=0.99982017 cos_global=0.99982673\n        |mine|=1.483202 |ref|=1.489882 max_abs=4.77e-03 mean_abs=3.61e-04\n  \u001b[32m[PASS]\u001b[0m layer_13                                     cos=0.999699  (thr=0.999)\n        cos_mean=0.99982172 cos_global=0.99985993\n        |mine|=2.045287 |ref|=2.050151 max_abs=3.57e-03 mean_abs=4.42e-04\n  \u001b[32m[PASS]\u001b[0m layer_14                                     cos=0.999669  (thr=0.999)\n        cos_mean=0.99980342 cos_global=0.99980778\n        |mine|=3.028965 |ref|=3.034578 max_abs=1.29e-02 mean_abs=8.06e-04\n  \u001b[32m[PASS]\u001b[0m layer_15                                     cos=0.999563  (thr=0.999)\n        cos_mean=0.99973691 cos_global=0.99972051\n        |mine|=3.109986 |ref|=3.116758 max_abs=1.97e-02 mean_abs=9.75e-04\n  \u001b[32m[PASS]\u001b[0m final_norm                                   cos=0.999630  (thr=0.999)\n        cos_mean=0.99965483 cos_global=0.99965745\n        |mine|=158.405502 |ref|=158.897415 max_abs=3.09e-01 mean_abs=5.79e-02\n  \u001b[32m[PASS]\u001b[0m cls_raw                                      cos=0.999641  (thr=0.999)\n        cos_mean=0.99964136 cos_global=0.99964136\n        |mine|=51.313725 |ref|=51.350243 max_abs=1.58e-01 mean_abs=3.38e-02\n  \u001b[32m[PASS]\u001b[0m cls_norm                                     cos=0.999641  (thr=0.999)\n        cos_mean=0.99964136 cos_global=0.99964136\n        |mine|=1.000000 |ref|=1.000000 max_abs=3.07e-03 mean_abs=6.58e-04\n\n--- Summary ---\n  PASS: 20   FAIL: 0\n\ncrispembed_diff: loaded 20 tensors from $SCRATCH/models/lfm2-ref.gguf\n[lfm2_embed] loaded: hidden=1024, layers=16, heads=16/8, ff=4608, vocab=65536\n"
+  }
+ },
+ "seconds": 5.8,
+ "id": "diff-lfm2-embed-q8",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

@@ -1,0 +1,7 @@
+norm max_abs=1.52587891e-05 index=27 row=0 column=27 native=-111.69413 ref=-111.694115
+gate max_abs=3.05175781e-05 index=55 row=0 column=55 native=70.4875107 ref=70.4874802
+up max_abs=3.05175781e-05 index=18487 row=6 column=55 native=146.010956 ref=146.010986
+silu max_abs=3.05175781e-05 index=55 row=0 column=55 native=70.4875107 ref=70.4874802
+product max_abs=0.005859375 index=55 row=0 column=55 native=10113.7383 ref=10113.7324
+down max_abs=0.03515625 index=1059 row=1 column=35 native=39427.168 ref=39427.2031
+output max_abs=0.03515625 index=1059 row=1 column=35 native=39418.6641 ref=39418.6992

@@ -1,0 +1,22 @@
+test_all_assets_are_preflighted_before_creating_any (__main__.MarkerClientTests.test_all_assets_are_preflighted_before_creating_any) ... ok
+test_asset_hardlink_to_output_is_rejected (__main__.MarkerClientTests.test_asset_hardlink_to_output_is_rejected) ... ok
+test_asset_must_not_alias_output_or_metadata (__main__.MarkerClientTests.test_asset_must_not_alias_output_or_metadata) ... ok
+test_asset_symlink_rejected_even_if_bytes_match (__main__.MarkerClientTests.test_asset_symlink_rejected_even_if_bytes_match) ... ok
+test_conflicting_asset_leaves_all_existing_files_unchanged (__main__.MarkerClientTests.test_conflicting_asset_leaves_all_existing_files_unchanged) ... ok
+test_duplicate_asset_hardlinks_rejected_before_writes (__main__.MarkerClientTests.test_duplicate_asset_hardlinks_rejected_before_writes) ... ok
+test_file_convert_method_is_byte_unchanged (__main__.MarkerClientTests.test_file_convert_method_is_byte_unchanged) ... ok
+test_identical_asset_reused_without_timestamp_change (__main__.MarkerClientTests.test_identical_asset_reused_without_timestamp_change) ... ok
+test_metadata_hardlink_to_output_is_rejected (__main__.MarkerClientTests.test_metadata_hardlink_to_output_is_rejected) ... ok
+test_metadata_symlink_is_rejected_before_primary_write (__main__.MarkerClientTests.test_metadata_symlink_is_rejected_before_primary_write) ... ok
+test_new_bundle_creates_parent_and_preserves_binary_asset (__main__.MarkerClientTests.test_new_bundle_creates_parent_and_preserves_binary_asset) ... ok
+test_opaque_pil_is_rgba_and_numpy_rgb_is_unchanged (__main__.MarkerClientTests.test_opaque_pil_is_rgba_and_numpy_rgb_is_unchanged) ... ok
+test_output_symlink_is_rejected_without_touching_target (__main__.MarkerClientTests.test_output_symlink_is_rejected_without_touching_target) ... ok
+test_palette_png_transparency_reaches_native_alpha (__main__.MarkerClientTests.test_palette_png_transparency_reaches_native_alpha) ... ok
+test_parent_symlink_and_nonregular_output_rejected (__main__.MarkerClientTests.test_parent_symlink_and_nonregular_output_rejected) ... ok
+test_rgb_png_trns_reaches_native_alpha (__main__.MarkerClientTests.test_rgb_png_trns_reaches_native_alpha) ... ok
+test_unsafe_asset_names_rejected_before_writes (__main__.MarkerClientTests.test_unsafe_asset_names_rejected_before_writes) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 0.591s
+
+OK

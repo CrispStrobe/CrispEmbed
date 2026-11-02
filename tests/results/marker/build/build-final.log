@@ -1,0 +1,19 @@
+[1/19] Building CXX object CMakeFiles/crispembed.dir/src/marker_backend.cpp.o
+[2/19] Building CXX object CMakeFiles/crispembed-shared.dir/src/marker.cpp.o
+[3/19] Building CXX object CMakeFiles/crispembed.dir/src/marker.cpp.o
+[4/19] Building CXX object CMakeFiles/crispembed-marker.dir/examples/marker/main.cpp.o
+[5/19] Building CXX object CMakeFiles/crispembed-shared.dir/src/marker_backend.cpp.o
+[6/19] Building CXX object CMakeFiles/crispembed.dir/src/marker_document.cpp.o
+[7/19] Building CXX object CMakeFiles/test-marker-document.dir/tests/test-marker-document.cpp.o
+[8/19] Linking CXX static library libcrispembed-static.a
+[9/19] Building CXX object CMakeFiles/test-marker-api.dir/tests/test-marker-api.cpp.o
+[10/19] Linking CXX executable crispembed-marker
+[11/19] Linking CXX executable test-marker-document
+[12/19] Linking CXX executable test-marker-api
+[13/19] Building CXX object CMakeFiles/test-marker-backend.dir/tests/test-marker-backend.cpp.o
+[14/19] Linking CXX executable test-marker-backend
+[15/19] Building CXX object CMakeFiles/crispembed-shared.dir/src/marker_document.cpp.o
+[16/19] Linking CXX shared library libcrispembed.so.0.17.14
+[17/19] Creating library symlink libcrispembed.so.0 libcrispembed.so
+[18/19] Building CXX object CMakeFiles/crispembed-server.dir/examples/server/server.cpp.o
+[19/19] Linking CXX executable crispembed-server

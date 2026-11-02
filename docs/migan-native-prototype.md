@@ -1,5 +1,11 @@
 # MI-GAN fixed-256 CPU/F32 prototype
 
+**1 November source follow-up:** the opt-in [inpainting CLI](inpainting-cli.md)
+now wraps this unchanged graph with native256 tiling, PNG/mask handling and
+persistent batches. The original boundary and reviewed results below describe
+the fixed256 experiment. They do not qualify the new wrapper or extend its
+numerical, backend or perceptual claims; the CLI's hosted checks remain separate.
+
 This is a separately built experimental graph, following the unchanged original
 module and [frozen reference protocol](migan-reference.md). Source preparation
 and native execution are separate: no native result qualifies before the first
@@ -38,8 +44,10 @@ The C++ header exposes an internal prepared-F32 graph plus fixed-size RGB8/
 binary-mask preprocessing and original uint8 truncation/composition helpers.
 Dimensions and byte counts are strict; nonbinary masks and nonfinite input/
 output reject. White255 means fill. Known RGB bytes are copied from the original
-image. There is no arbitrary-size resize/crop, ONNX smoothing wrapper, public
-C ABI, orchestrator/CLI/server/binding/registry integration or installed artifact.
+image. The original prototype has no arbitrary-size resize/crop, ONNX smoothing
+wrapper, public C ABI, orchestrator/server/binding/registry integration or
+installed archive. The later CLI uses a separate tiling wrapper; this internal
+graph's fixed256 contract remains unchanged.
 
 ## Hosted validation interface
 

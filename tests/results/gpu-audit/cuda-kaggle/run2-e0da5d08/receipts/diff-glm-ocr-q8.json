@@ -1,0 +1,210 @@
+{
+ "kind": "diff",
+ "binary": "test-glm-ocr-diff",
+ "arms": {
+  "cuda": {
+   "rc": 0,
+   "wall_s": 2.371,
+   "gpu_mem_peak_mib": 1373,
+   "cuda_used": true,
+   "n_stages": 30,
+   "stages": {
+    "vis_layer_0": 0.999991,
+    "vis_layer_1": 0.999991,
+    "vis_layer_2": 0.999993,
+    "vis_layer_3": 0.999994,
+    "vis_layer_4": 0.999994,
+    "vis_layer_5": 0.999993,
+    "vis_layer_6": 0.999989,
+    "vis_layer_7": 0.999984,
+    "vis_layer_8": 0.999967,
+    "vis_layer_9": 0.999958,
+    "vis_layer_10": 0.999943,
+    "vis_layer_11": 0.999926,
+    "vis_layer_12": 0.999881,
+    "vis_layer_13": 0.999555,
+    "vis_layer_14": 0.998812,
+    "vis_layer_15": 0.994033,
+    "vis_layer_16": 0.993949,
+    "vis_layer_17": 0.99003,
+    "vis_layer_18": 0.982503,
+    "vis_layer_19": 0.983479,
+    "vis_layer_20": 0.984776,
+    "vis_layer_21": 0.981975,
+    "vis_layer_22": 0.985183,
+    "vis_layer_23": 0.968344,
+    "vis_patch_embed": 1.0,
+    "vis_post_norm": 0.964824,
+    "vis_merger_output": 0.989913,
+    "llm_embed": 0.999984,
+    "llm_layer_0": 0.944393,
+    "llm_layer_1": 0.913378
+   },
+   "worst_stage": [
+    "llm_layer_1",
+    0.913378
+   ],
+   "threshold_fails": [
+    [
+     "vis_layer_18",
+     0.982503,
+     0.99
+    ],
+    [
+     "vis_layer_19",
+     0.983479,
+     0.99
+    ],
+    [
+     "vis_layer_20",
+     0.984776,
+     0.99
+    ],
+    [
+     "vis_layer_21",
+     0.981975,
+     0.99
+    ],
+    [
+     "vis_layer_22",
+     0.985183,
+     0.99
+    ],
+    [
+     "vis_layer_23",
+     0.968344,
+     0.99
+    ],
+    [
+     "vis_post_norm",
+     0.964824,
+     0.99
+    ],
+    [
+     "vis_merger_output",
+     0.989913,
+     0.99
+    ],
+    [
+     "llm_layer_0",
+     0.944393,
+     0.99
+    ],
+    [
+     "llm_layer_1",
+     0.913378,
+     0.99
+    ]
+   ],
+   "threshold_missing": [],
+   "stdout_tail": "er_13: cos=0.999555 max_abs=0.442231 |mine|=857.4396 |ref|=855.4263 cos_glob=0.999876 cos_mean=0.999880 PASS\n  vis_layer_14: cos=0.998812 max_abs=0.617249 |mine|=1257.9622 |ref|=1256.0719 cos_glob=0.999908 cos_mean=0.999851 FAIL\n  vis_layer_15: cos=0.994033 max_abs=9.656876 |mine|=11822.9795 |ref|=11831.9297 cos_glob=0.999954 cos_mean=0.999795 FAIL\n  vis_layer_16: cos=0.993949 max_abs=11.520630 |mine|=42953.8672 |ref|=42942.0781 cos_glob=0.999993 cos_mean=0.999673 FAIL\n  vis_layer_17: cos=0.990030 max_abs=11.501099 |mine|=45352.8086 |ref|=45338.5312 cos_glob=0.999993 cos_mean=0.999526 FAIL\n  vis_layer_18: cos=0.982503 max_abs=12.598511 |mine|=57756.6602 |ref|=57736.5938 cos_glob=0.999995 cos_mean=0.999327 FAIL\n  vis_layer_19: cos=0.983479 max_abs=12.581421 |mine|=57775.8984 |ref|=57755.8359 cos_glob=0.999995 cos_mean=0.999118 FAIL\n  vis_layer_20: cos=0.984776 max_abs=12.581299 |mine|=57787.5391 |ref|=57767.5312 cos_glob=0.999995 cos_mean=0.998940 FAIL\n  vis_layer_21: cos=0.981975 max_abs=12.589966 |mine|=57834.7969 |ref|=57814.9961 cos_glob=0.999994 cos_mean=0.998702 FAIL\n  vis_layer_22: cos=0.985183 max_abs=12.837891 |mine|=59651.3125 |ref|=59636.6641 cos_glob=0.999992 cos_mean=0.998620 FAIL\n  vis_layer_23: cos=0.968344 max_abs=218.088013 |mine|=85834.4844 |ref|=86006.2188 cos_glob=0.999368 cos_mean=0.999479 FAIL\n  vis_patch_embed: cos=1.000000 max_abs=0.000002 |mine|=295.1100 |ref|=295.1100 cos_glob=1.000000 cos_mean=1.000000 PASS\n  vis_post_norm: cos=0.964824 max_abs=1.077253 |mine|=679.0753 |ref|=678.8914 cos_glob=0.999414 cos_mean=0.999450 FAIL\n  vis_merger_output: cos=0.989913 max_abs=0.027783 |mine|=22.2544 |ref|=22.3620 cos_glob=0.998336 cos_mean=0.998271 FAIL\nVision output: 144 tokens, 1536 dim\n\nRunning LLM decoder...\n  llm_embed: cos=0.999984 max_abs=0.000460 |mine|=2.3631 |ref|=2.3627 cos_glob=0.999986 cos_mean=0.999985 PASS\n  llm_layer_0: cos=0.944393 max_abs=0.084678 |mine|=2.8764 |ref|=2.8518 cos_glob=0.982507 cos_mean=0.980153 FAIL\n  llm_layer_1: cos=0.913378 max_abs=0.039107 |mine|=3.1265 |ref|=3.1641 cos_glob=0.976438 cos_mean=0.969669 FAIL\nLLM output: 5 tokens, 1536 dim\n\nDone.\n\ncrispembed_diff: loaded 31 tensors from $SCRATCH/models/glm-ocr-ref-full.gguf\nglm_ocr: loading $SCRATCH/models/glm-ocr-q8_0.gguf\n  Vision: 24L, 1024d, 16H, patch=14, image=336\n  LLM: 16L, 1536d, 16H/8KV, hd=128, inter=4608, vocab=59392\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Ready (GPU, 4 threads)\ncrispembed_diff: loaded 31 tensors from $SCRATCH/models/glm-ocr-ref-full.gguf\ncrispembed_diff: loaded 31 tensors from $SCRATCH/models/glm-ocr-ref-full.gguf\ncrispembed_diff: loaded 31 tensors from $SCRATCH/models/glm-ocr-ref-full.gguf\ncrispembed_diff: loaded 31 tensors from $SCRATCH/models/glm-ocr-ref-full.gguf\n"
+  },
+  "cpu": {
+   "rc": 0,
+   "wall_s": 6.49,
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "n_stages": 30,
+   "stages": {
+    "vis_layer_0": 0.999991,
+    "vis_layer_1": 0.999991,
+    "vis_layer_2": 0.999993,
+    "vis_layer_3": 0.999994,
+    "vis_layer_4": 0.999994,
+    "vis_layer_5": 0.999993,
+    "vis_layer_6": 0.999989,
+    "vis_layer_7": 0.999984,
+    "vis_layer_8": 0.999967,
+    "vis_layer_9": 0.999958,
+    "vis_layer_10": 0.999943,
+    "vis_layer_11": 0.999926,
+    "vis_layer_12": 0.999881,
+    "vis_layer_13": 0.999561,
+    "vis_layer_14": 0.998474,
+    "vis_layer_15": 0.993204,
+    "vis_layer_16": 0.993091,
+    "vis_layer_17": 0.988199,
+    "vis_layer_18": 0.979484,
+    "vis_layer_19": 0.980935,
+    "vis_layer_20": 0.982441,
+    "vis_layer_21": 0.979229,
+    "vis_layer_22": 0.983174,
+    "vis_layer_23": 0.967815,
+    "vis_patch_embed": 1.0,
+    "vis_post_norm": 0.964224,
+    "vis_merger_output": 0.98991,
+    "llm_embed": 0.999984,
+    "llm_layer_0": 0.944358,
+    "llm_layer_1": 0.913022
+   },
+   "worst_stage": [
+    "llm_layer_1",
+    0.913022
+   ],
+   "threshold_fails": [
+    [
+     "vis_layer_17",
+     0.988199,
+     0.99
+    ],
+    [
+     "vis_layer_18",
+     0.979484,
+     0.99
+    ],
+    [
+     "vis_layer_19",
+     0.980935,
+     0.99
+    ],
+    [
+     "vis_layer_20",
+     0.982441,
+     0.99
+    ],
+    [
+     "vis_layer_21",
+     0.979229,
+     0.99
+    ],
+    [
+     "vis_layer_22",
+     0.983174,
+     0.99
+    ],
+    [
+     "vis_layer_23",
+     0.967815,
+     0.99
+    ],
+    [
+     "vis_post_norm",
+     0.964224,
+     0.99
+    ],
+    [
+     "vis_merger_output",
+     0.98991,
+     0.99
+    ],
+    [
+     "llm_layer_0",
+     0.944358,
+     0.99
+    ],
+    [
+     "llm_layer_1",
+     0.913022,
+     0.99
+    ]
+   ],
+   "threshold_missing": [],
+   "stdout_tail": " vis_layer_12: cos=0.999881 max_abs=0.063402 |mine|=858.3660 |ref|=859.5051 cos_glob=0.999922 cos_mean=0.999923 PASS\n  vis_layer_13: cos=0.999561 max_abs=0.430697 |mine|=857.4579 |ref|=855.4263 cos_glob=0.999876 cos_mean=0.999880 PASS\n  vis_layer_14: cos=0.998474 max_abs=0.600220 |mine|=1257.9669 |ref|=1256.0719 cos_glob=0.999907 cos_mean=0.999850 FAIL\n  vis_layer_15: cos=0.993204 max_abs=8.913940 |mine|=11824.9883 |ref|=11831.9297 cos_glob=0.999963 cos_mean=0.999794 FAIL\n  vis_layer_16: cos=0.993091 max_abs=10.642700 |mine|=42959.2266 |ref|=42942.0781 cos_glob=0.999993 cos_mean=0.999672 FAIL\n  vis_layer_17: cos=0.988199 max_abs=10.633667 |mine|=45358.1641 |ref|=45338.5312 cos_glob=0.999994 cos_mean=0.999523 FAIL\n  vis_layer_18: cos=0.979484 max_abs=11.660400 |mine|=57762.7500 |ref|=57736.5938 cos_glob=0.999995 cos_mean=0.999322 FAIL\n  vis_layer_19: cos=0.980935 max_abs=11.643433 |mine|=57781.9844 |ref|=57755.8359 cos_glob=0.999995 cos_mean=0.999113 FAIL\n  vis_layer_20: cos=0.982441 max_abs=11.643555 |mine|=57793.6289 |ref|=57767.5312 cos_glob=0.999995 cos_mean=0.998935 FAIL\n  vis_layer_21: cos=0.979229 max_abs=11.652710 |mine|=57840.8867 |ref|=57814.9961 cos_glob=0.999995 cos_mean=0.998696 FAIL\n  vis_layer_22: cos=0.983174 max_abs=11.852783 |mine|=59657.4336 |ref|=59636.6641 cos_glob=0.999993 cos_mean=0.998615 FAIL\n  vis_layer_23: cos=0.967815 max_abs=217.949707 |mine|=85834.9062 |ref|=86006.2188 cos_glob=0.999367 cos_mean=0.999472 FAIL\n  vis_patch_embed: cos=1.000000 max_abs=0.000011 |mine|=295.1100 |ref|=295.1100 cos_glob=1.000000 cos_mean=1.000000 PASS\n  vis_post_norm: cos=0.964224 max_abs=1.078012 |mine|=679.0751 |ref|=678.8914 cos_glob=0.999406 cos_mean=0.999443 FAIL\n  vis_merger_output: cos=0.989910 max_abs=0.029359 |mine|=22.2543 |ref|=22.3620 cos_glob=0.998327 cos_mean=0.998262 FAIL\nVision output: 144 tokens, 1536 dim\n\nRunning LLM decoder...\n  llm_embed: cos=0.999984 max_abs=0.000460 |mine|=2.3631 |ref|=2.3627 cos_glob=0.999986 cos_mean=0.999985 PASS\n  llm_layer_0: cos=0.944358 max_abs=0.084089 |mine|=2.8769 |ref|=2.8518 cos_glob=0.982496 cos_mean=0.980127 FAIL\n  llm_layer_1: cos=0.913022 max_abs=0.042053 |mine|=3.1259 |ref|=3.1641 cos_glob=0.976327 cos_mean=0.969524 FAIL\nLLM output: 5 tokens, 1536 dim\n\nDone.\n\ncrispembed_diff: loaded 31 tensors from $SCRATCH/models/glm-ocr-ref-full.gguf\nglm_ocr: loading $SCRATCH/models/glm-ocr-q8_0.gguf\n  Vision: 24L, 1024d, 16H, patch=14, image=336\n  LLM: 16L, 1536d, 16H/8KV, hd=128, inter=4608, vocab=59392\nggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\n  Ready (CPU, 4 threads)\ncrispembed_diff: loaded 31 tensors from $SCRATCH/models/glm-ocr-ref-full.gguf\ncrispembed_diff: loaded 31 tensors from $SCRATCH/models/glm-ocr-ref-full.gguf\ncrispembed_diff: loaded 31 tensors from $SCRATCH/models/glm-ocr-ref-full.gguf\ncrispembed_diff: loaded 31 tensors from $SCRATCH/models/glm-ocr-ref-full.gguf\n"
+  }
+ },
+ "seconds": 10.5,
+ "id": "diff-glm-ocr-q8",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

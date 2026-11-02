@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "architecture": "teleocr",
+  "profile_version": 1,
+  "status": "experimental candidate; decoded/numerical quality not established by this audit",
+  "precision": "q4_k",
+  "precision_recipe": "decoder-q4_k-vision-f16",
+  "source_repository": "XingChen-AGI/TeleOCR",
+  "source_revision": "b3f6a0c084db72f971e19a779d2fd8a6bc9e3b8d",
+  "upstream_source_files": {
+    "config.json": "92c5e15f1768dcb54bceae170043fbfefd248508159700b2179824b88c33ae75",
+    "preprocessor_config.json": "f2058c716eef96ccaed1cc1e2d0c08306b62586d535b28d9d08e691b2fab7ca0",
+    "tokenizer.json": "9c5ae00e602b8860cbd784ba82a8aa14e8feecec692e7076590d014d7b7fdafa",
+    "model.safetensors": "9817b18041bd96403f75e38a33b28ed0cd5fb2641f67eead673afabd3c408109",
+    "generation_config.json": "50867494bddf9ddc8e289e6214be5a2263e68f16c127a3652c6eb9f17990e5d9",
+    "tokenizer_config.json": "e04be4dd17e9f661bc487ba848a37f66a8f1adf2eef412f5d4ecb40cab4d39e7"
+  },
+  "input_gguf": "teleocr-f16.gguf",
+  "input_gguf_sha256": "6c52a2800e313964717cf4e5d06e0392c2b5936d8adeac423d563b8a026a2780",
+  "input_manifest_sha256": "6a7a5df25a9a0e92b191a613014b51d8eef6c55860f6db1cb7c183e1b8aed335",
+  "quantizer_source": "tools/quantize.cpp",
+  "quantizer_source_sha256": "1e84e8f53439bc430e4c7838087e9fe53dfe9fdf963e90fe3b0789373fe46a8e",
+  "quantizer_binary_sha256": "1e358729e269216e9e18c228c2e9344ab1905f146279ed4faf6fd1f48196b03b",
+  "command": "build/crispembed-quantize teleocr-f16.gguf teleocr-q4_k.gguf q4_k --tensor-type 'v.*=f16' --tensor-type 'l.embed_tokens.weight=f16'",
+  "output_file": "teleocr-q4_k.gguf",
+  "output_size": 1893032256,
+  "output_sha256": "ebdf250c53dacb4ce7d86e97aa8642648a140c463f37374ab858bca7c2d809a6",
+  "source_tensor_count": 700,
+  "output_tensor_count": 700,
+  "tensor_types": {
+    "Q4_K": 196,
+    "F32": 340,
+    "F16": 164
+  },
+  "protected_tensor_count": 504,
+  "quantized_tensor_count": 196,
+  "all_protected_payloads_byte_exact": true,
+  "all_shapes_unchanged": true,
+  "embedded_file_type": 12,
+  "embedded_precision_recipe": "f16",
+  "embedded_recipe_note": "Generic quantizer inherits the input profile recipe string; effective precision is described by this audited tensor census and general.file_type."
+}

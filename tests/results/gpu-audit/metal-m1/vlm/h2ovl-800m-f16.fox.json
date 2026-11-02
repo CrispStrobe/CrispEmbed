@@ -1,0 +1,39 @@
+{
+ "cmd": [
+  "crispembed",
+  "-t",
+  "4",
+  "-m",
+  "/Volumes/backups/code/model-cache-20261101/metal-audit/h2ovl-800m-f16.gguf",
+  "--ocr",
+  "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/regression/images/fox.png",
+  "--ocr-max-tokens",
+  "128"
+ ],
+ "metal_env": {},
+ "cpu_env": {},
+ "wall_s": {
+  "metal": [
+   98.627
+  ],
+  "cpu": [
+   165.321
+  ]
+ },
+ "metal_device_seen": true,
+ "byte_identical": true,
+ "sha256": {
+  "metal": "afae153d8d54b9fa514b1afc9643019a1aec552fce144714b96a5e574a4da49c",
+  "cpu": "afae153d8d54b9fa514b1afc9643019a1aec552fce144714b96a5e574a4da49c"
+ },
+ "date": "2026-11-01",
+ "stdout": {
+  "metal": "The quick brown fox jumps over the lazy dog. 12345\n",
+  "cpu": "The quick brown fox jumps over the lazy dog. 12345\n"
+ },
+ "char_ratio": 1.0,
+ "stderr_tail": {
+  "metal": "ash_attn_ext_vec_f16_dk96_dv96_mask=1_sink=0_bias=0_scap=0_kvpad=1_ns10=96_ns20=96_nsg=1_nwg=32      0xb48172d00 | th_max =  576 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_vec_reduce', name = 'kernel_flash_attn_ext_vec_reduce_dv=96_nwg=32'\nggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_vec_reduce_dv=96_nwg=32      0xb48173000 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32_4', name = 'kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=1_cb=0'\nggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=1_cb=0      0xb48173300 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32_4', name = 'kernel_unary_f32_f32_4_op=106_cnt=1'\nggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_4_op=106_cnt=1           0xb48173600 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32_4', name = 'kernel_bin_fuse_f32_f32_f32_4_op=2_nf=1_rb=1_cb=0'\nggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_4_op=2_nf=1_rb=1_cb=0      0xb48173900 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_rms_norm_f32_4', name = 'kernel_rms_norm_f32_4'\nggml_metal_library_compile_pipeline: loaded kernel_rms_norm_f32_4                         0xb48173c00 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mv_f32_f32_4', name = 'kernel_mul_mv_f32_f32_4_nsg=4_ne12=1_r2=1_r3=1'\nggml_metal_library_compile_pipeline: loaded kernel_mul_mv_f32_f32_4_nsg=4_ne12=1_r2=1_r3=1      0xb48228000 | th_max =  768 | th_width =   32\n  gen[1]: token=2936 score=18.24\n  gen[2]: token=9060 score=21.28\n  gen[3]: token=285 score=18.98\n  gen[4]: token=1142 score=18.99\n  gen[5]: token=461 score=21.38\n  gen[6]: token=10575 score=27.89\n  gen[7]: token=754 score=17.87\n  gen[8]: token=272 score=18.77\n  gen[9]: token=17898 score=24.83\n  gen[10]: token=3914 score=20.31\n  gen[11]: token=28723 score=18.85\n  gen[12]: token=28705 score=18.52\n  gen[13]: token=28740 score=23.97\n  gen[14]: token=28750 score=24.03\n  gen[15]: token=28770 score=24.43\n  gen[16]: token=28781 score=24.63\n  gen[17]: token=28782 score=21.20\n  gen[18]: token=32009 score=17.18\nggml_metal_free: deallocating\n",
+  "cpu": "internvl2_ocr: loading /Volumes/backups/code/model-cache-20261101/metal-audit/h2ovl-800m-f16.gguf\ninternvl2_ocr: chat template 'h2ogpt2'\n  Vision: 24L, 1024d, 16H, patch=14, image=448\n  Projector: ratio=0.5, 1024→256 tokens, dim 4096→1536\n  LLM: 16L, 1536d, 16H/8KV, inter=4096, vocab=32010\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\n  Ready (CPU, 4 threads)\ninternvl2_ocr: 800x200 → 5 tiles (1x4 grid, 448px)\n  KV cache: 16 layers, max_seq=1467, 68.8 MB\n  Spliced 1280 image tokens into 1323 prompt tokens\n  gen[0]: token=1014 score=20.54 (prefill 1323 tokens)\n  gen[1]: token=2936 score=18.24\n  gen[2]: token=9060 score=21.28\n  gen[3]: token=285 score=18.97\n  gen[4]: token=1142 score=19.00\n  gen[5]: token=461 score=21.37\n  gen[6]: token=10575 score=27.88\n  gen[7]: token=754 score=17.88\n  gen[8]: token=272 score=18.78\n  gen[9]: token=17898 score=24.83\n  gen[10]: token=3914 score=20.31\n  gen[11]: token=28723 score=18.85\n  gen[12]: token=28705 score=18.53\n  gen[13]: token=28740 score=23.97\n  gen[14]: token=28750 score=24.05\n  gen[15]: token=28770 score=24.45\n  gen[16]: token=28781 score=24.64\n  gen[17]: token=28782 score=21.22\n  gen[18]: token=32009 score=17.18\n"
+ }
+}

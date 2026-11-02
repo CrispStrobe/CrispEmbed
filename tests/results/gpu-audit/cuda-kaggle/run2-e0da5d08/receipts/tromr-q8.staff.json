@@ -1,0 +1,70 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "-m",
+  "tromr-q8_0.gguf",
+  "--ocr",
+  "staff_tromr.jpg"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    1.971,
+    1.971
+   ],
+   "gpu_mem_peak_mib": 213,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "tromr_ocr: enc d256/4L/8H dec d256/4x3/8H vocab r260 p71 l7\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ntromr_ocr: loaded 261 tensors, init complete\n",
+   "stdout_sha256": "e17fb891de1755b92ca0a27f94faccf47c76a3d5386afb6e888c3413c6f2d0f0",
+   "stdout": "clef-F4+keySignature-CM+note-E3_eighth.|note-C4_eighth.+note-E3_sixteenth|note-D4_sixteenth+note-E3_eighth.|note-E4_eighth.+note-E3_sixteenth|note-F4_sixteenth+note-E3_eighth.|note-C4_eighth.+note-E3_sixteenth|note-B3_sixteenth+note-E3_eighth.|note-D4_eighth.+note-E3_sixteenth|note-C4_sixteenth+barline+note-D3_eighth.|note-F3_eighth.|note-C4_whole+note-D3_sixteenth|note-F3_sixteenth+note-D3_eighth.|note-F3_eighth.+note-D3_sixteenth|note-F3_sixteenth+note-D3_half|note-F3_half+barline+note-D3_eighth.|note-B3_eighth.+note-E3_sixteenth|note-B3_sixteenth+note-F3_eighth.|note-B3_eighth.+note-G3_sixteenth|note-B3_sixteenth+note-B3_quarter|note-D4_quarter+note-G3_quarter|note-B3_quarter+barline\n",
+   "vs_cpu": {
+    "byte_identical": true,
+    "text_exact": true,
+    "char_ratio": 1.0,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   },
+   "vs_reference_cpu": {
+    "byte_identical": true,
+    "text_exact": true,
+    "char_ratio": 1.0,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    3.983,
+    3.781
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "tromr_ocr: enc d256/4L/8H dec d256/4x3/8H vocab r260 p71 l7\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ntromr_ocr: loaded 261 tensors, init complete\n",
+   "stdout_sha256": "e17fb891de1755b92ca0a27f94faccf47c76a3d5386afb6e888c3413c6f2d0f0",
+   "stdout": "clef-F4+keySignature-CM+note-E3_eighth.|note-C4_eighth.+note-E3_sixteenth|note-D4_sixteenth+note-E3_eighth.|note-E4_eighth.+note-E3_sixteenth|note-F4_sixteenth+note-E3_eighth.|note-C4_eighth.+note-E3_sixteenth|note-B3_sixteenth+note-E3_eighth.|note-D4_eighth.+note-E3_sixteenth|note-C4_sixteenth+barline+note-D3_eighth.|note-F3_eighth.|note-C4_whole+note-D3_sixteenth|note-F3_sixteenth+note-D3_eighth.|note-F3_eighth.+note-D3_sixteenth|note-F3_sixteenth+note-D3_half|note-F3_half+barline+note-D3_eighth.|note-B3_eighth.+note-E3_sixteenth|note-B3_sixteenth+note-F3_eighth.|note-B3_eighth.+note-G3_sixteenth|note-B3_sixteenth+note-B3_quarter|note-D4_quarter+note-G3_quarter|note-B3_quarter+barline\n",
+   "vs_reference_cpu": {
+    "byte_identical": true,
+    "text_exact": true,
+    "char_ratio": 1.0,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   }
+  }
+ },
+ "precision": "q8_0",
+ "reference_job": "tromr-f32.staff",
+ "bar": 0.97,
+ "seconds": 13.3,
+ "id": "tromr-q8.staff",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

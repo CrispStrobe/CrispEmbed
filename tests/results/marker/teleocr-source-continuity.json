@@ -1,0 +1,32 @@
+{
+  "teleocr_commit": "68bd30b4db5d1dd2c899136491b14b9269948609",
+  "files": [
+    {
+      "file": "src/qwen2vl_ocr.cpp",
+      "identical_to_teleocr_delivery": true,
+      "sha256": "a83dc3b0255f790a5272458c29b754ed1eba2d88eae3c2d5d254def03d20f8c9"
+    },
+    {
+      "file": "src/qwen2vl_ocr.h",
+      "identical_to_teleocr_delivery": true,
+      "sha256": "e5a15e5095bc8c9ee1365badf04bed8700b1cb63c1415c5464130929384fb061"
+    },
+    {
+      "file": "models/convert-teleocr-to-gguf.py",
+      "identical_to_teleocr_delivery": true,
+      "sha256": "192a60147ab9dab5980557c9067ac815a391e7c283a8c74b9d4bcf7bc9d3631f"
+    },
+    {
+      "file": "tools/quantize.cpp",
+      "identical_to_teleocr_delivery": true,
+      "sha256": "97587b3801d38e3fae2f10e328e441d3a46ee4d0efcf531f099edac8c0544939"
+    },
+    {
+      "file": "src/image_preprocess.h",
+      "identical_to_teleocr_delivery": true,
+      "sha256": "2739104748629e824b0dcbdf1fc60eb7d185e7d2b7153f61ae8a7832e3382e61"
+    }
+  ],
+  "strict_numerical_qualification": false,
+  "scope": "Source/byte continuity only. Document pipeline and crop behavior have separate checks."
+}

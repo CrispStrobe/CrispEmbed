@@ -1,0 +1,1 @@
+{"label": "formula/metal+flash+split", "ids_exact": true, "first_divergence": null, "reference_tokens": 22, "native_tokens": 22, "text_exact": true, "cer": 0.0, "eos": true, "capped": false, "runs_ms": [24679.408959, 28151.0325], "warm_ms_median": 28151.0325, "load_ms": 290292.602833, "runs_identical": true}

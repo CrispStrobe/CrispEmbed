@@ -1,0 +1,45 @@
+{
+ "kind": "diff",
+ "binary": "test-dat-diff",
+ "arms": {
+  "cuda": {
+   "rc": 0,
+   "wall_s": 4.024,
+   "gpu_mem_peak_mib": 145,
+   "cuda_used": true,
+   "n_stages": 1,
+   "stages": {
+    "output": 0.999995
+   },
+   "worst_stage": [
+    "output",
+    0.999995
+   ],
+   "threshold_fails": [],
+   "threshold_missing": [],
+   "stdout_tail": "Reference input: 64x64\nLoading DAT model: $SCRATCH/models/dat-light-x2-f32.gguf\nOutput: 128x128\n  output                  cos=0.999995  cos_ch_min=0.999995  max_abs=1.07e-02  PASS\n    (note: engine uint8 vs DAT ref clamped to [0,1]; residual is uint8 quant)\n\n1 passed, 0 failed\n\ncrispembed_diff: loaded 21 tensors from $SCRATCH/models/dat-ref.gguf\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ndat_sr: fused 54 conv+BN pairs at load time\ndat_sr: loaded embed=60, heads=6, depth=18 blocks, split=[8,32], upscale=2x, 3conv+pixelshuffledirect\ndat_sr: conv path = scalar\ndat_sr: 64x64 → 128x128 (2x), single pass\n"
+  },
+  "cpu": {
+   "rc": 0,
+   "wall_s": 3.724,
+   "gpu_mem_peak_mib": 1,
+   "cuda_used": false,
+   "n_stages": 1,
+   "stages": {
+    "output": 0.999995
+   },
+   "worst_stage": [
+    "output",
+    0.999995
+   ],
+   "threshold_fails": [],
+   "threshold_missing": [],
+   "stdout_tail": "Reference input: 64x64\nLoading DAT model: $SCRATCH/models/dat-light-x2-f32.gguf\nOutput: 128x128\n  output                  cos=0.999995  cos_ch_min=0.999995  max_abs=1.07e-02  PASS\n    (note: engine uint8 vs DAT ref clamped to [0,1]; residual is uint8 quant)\n\n1 passed, 0 failed\n\ncrispembed_diff: loaded 21 tensors from $SCRATCH/models/dat-ref.gguf\nggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\ndat_sr: fused 54 conv+BN pairs at load time\ndat_sr: loaded embed=60, heads=6, depth=18 blocks, split=[8,32], upscale=2x, 3conv+pixelshuffledirect\ndat_sr: conv path = scalar\ndat_sr: 64x64 → 128x128 (2x), single pass\n"
+  }
+ },
+ "seconds": 9.7,
+ "id": "diff-dat",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

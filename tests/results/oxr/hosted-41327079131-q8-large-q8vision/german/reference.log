@@ -1,0 +1,2 @@
+Loading weights:   0%|          | 0/752 [00:00<?, ?it/s]Loading weights:  23%|██▎       | 171/752 [00:00<00:00, 1695.47it/s]Loading weights:  45%|████▌     | 341/752 [00:00<00:00, 494.19it/s] Loading weights: 100%|██████████| 752/752 [00:00<00:00, 1156.41it/s]
+{"output": "/home/runner/work/_temp/out/german/python.json", "generated_tokens": 401, "eos": true, "warm_median_ms": 79807.13088150002, "stage_count": 66}

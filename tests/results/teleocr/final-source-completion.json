@@ -1,0 +1,20 @@
+{
+  "kind": "teleocr-final-source-execution-completion",
+  "source_delta_receipt": "final-source-review/source-delta.json",
+  "runtime_source_sha256": "a83dc3b0255f790a5272458c29b754ed1eba2d88eae3c2d5d254def03d20f8c9",
+  "build_receipt": "build-post-review.json",
+  "loader_receipt": "teleocr-loader-post-review.json",
+  "loader_passed": true,
+  "loader_checks": 43,
+  "final_production_text_control": "production-post-review-f16/report.json",
+  "production_text_ids_and_eos_exact": true,
+  "final_binary_native_matrix_cases": [
+    "native-q4-large/code.json",
+    "native-q4-large/layout.json"
+  ],
+  "q4_code_raw_difference_retained": true,
+  "earlier_panels_not_rerun_after_loader_only_edit": true,
+  "arithmetic_source_unchanged": true,
+  "strict_numerical_qualification_pass": false,
+  "matrix_peer_review": "final-matrix-peer-review.json"
+}

@@ -1,0 +1,4 @@
+Model loaded successfully.
+Detected 2 regions:
+  [0] picture (7,3)-(55,12) score=0.897
+  [1] section_header (17,3)-(48,4) score=0.436

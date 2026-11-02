@@ -1,0 +1,247 @@
+{
+  "schema_version": 1,
+  "completed_utc": "2026-10-31T19:26:36.629802+00:00",
+  "scope": "Local wheel/sdist attribution and binary-byte preservation only. Native library not loaded; no models, network or publication.",
+  "python_version": "3.12.14",
+  "build_packages": {
+    "setuptools": "84.1.0",
+    "wheel": "0.48.0"
+  },
+  "input_native_sha256": "6453530ae6272064e4633ea7d7be0e80c5464cbaf9871108a02adced687c591d",
+  "input_native_bytes": 9710640,
+  "source_sha256": {
+    "python/setup.py": "7d4f171378b8e55824a6a381fec2c2060e9012b2724862bb736812772b3cd607",
+    "python/MANIFEST.in": "3eadb6e9c822c42c936419f70163f98cd2dda28bfe457a7f5b6962778f14ea90",
+    "python/pyproject.toml": "bb1947f23898ef773307144fba38e2d3ac3a635d12730500c427618081f93b78",
+    "tests/test_marker_packaging.py": "986b7d38213114999709b4bfd5dcd07d9f5859a80b4dee4180a88dd0a0d3e5e3",
+    "NOTICE.marker": "faa7305bea2c0c0f17db85ab85e9035478b8598b732f7c7271c68b1c2338d589",
+    "NOTICE.teleocr": "5a1c3e65d34b6a9079394eee2fb439d7f0a531bb679ecf88f226d6c450787250",
+    "models/licenses/apache-2.0/LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+  },
+  "notices_sha256": {
+    "NOTICE.marker": "faa7305bea2c0c0f17db85ab85e9035478b8598b732f7c7271c68b1c2338d589",
+    "NOTICE.teleocr": "5a1c3e65d34b6a9079394eee2fb439d7f0a531bb679ecf88f226d6c450787250",
+    "Apache-2.0.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+  },
+  "environment_overrides": {
+    "PIP_NO_INDEX": "1",
+    "PIP_DISABLE_PIP_VERSION_CHECK": "1",
+    "PYTHONNOUSERSITE": "1"
+  },
+  "commands": [
+    {
+      "label": "checkout-wheel",
+      "command": [
+        "python",
+        "setup.py",
+        "bdist_wheel",
+        "--dist-dir",
+        "artifacts-wheel"
+      ],
+      "exit_code": 0
+    },
+    {
+      "label": "checkout-sdist",
+      "command": [
+        "python",
+        "setup.py",
+        "sdist",
+        "--dist-dir",
+        "artifacts-sdist"
+      ],
+      "exit_code": 0
+    },
+    {
+      "label": "isolated-sdist-wheel",
+      "command": [
+        "python",
+        "setup.py",
+        "bdist_wheel",
+        "--dist-dir",
+        "rebuilt-wheel"
+      ],
+      "exit_code": 0
+    },
+    {
+      "label": "reject-missing-NOTICE-marker",
+      "command": [
+        "python",
+        "setup.py",
+        "--name"
+      ],
+      "exit_code": 1
+    },
+    {
+      "label": "reject-missing-NOTICE-teleocr",
+      "command": [
+        "python",
+        "setup.py",
+        "--name"
+      ],
+      "exit_code": 1
+    },
+    {
+      "label": "reject-missing-Apache-2-0-txt",
+      "command": [
+        "python",
+        "setup.py",
+        "--name"
+      ],
+      "exit_code": 1
+    },
+    {
+      "label": "reject-empty-apache-license",
+      "command": [
+        "python",
+        "setup.py",
+        "--name"
+      ],
+      "exit_code": 1
+    }
+  ],
+  "archives": [
+    {
+      "kind": "checkout wheel",
+      "filename": "crispembed-0.17.14-cp312-cp312-linux_x86_64.whl",
+      "bytes": 4439886,
+      "sha256": "19741ed63049f4d6bd4af4703298abff16cd1c6c56f6d100698767fd96318625"
+    },
+    {
+      "kind": "sdist",
+      "filename": "crispembed-0.17.14.tar.gz",
+      "bytes": 4427719,
+      "sha256": "f54ea5e4255830c45851d9a4146f805a8ba252f81a3d2cf85b4781220ab00d80"
+    },
+    {
+      "kind": "isolated sdist wheel",
+      "filename": "crispembed-0.17.14-cp312-cp312-linux_x86_64.whl",
+      "bytes": 4439886,
+      "sha256": "987a095c03f4b8353070cb853fa9d7d3cf2b2538aff899cce1c42d16c92853c8"
+    }
+  ],
+  "checks": [
+    {
+      "name": "checkout-wheel: command status",
+      "passed": true
+    },
+    {
+      "name": "checkout wheel: NOTICE.marker",
+      "passed": true,
+      "expected_sha256": "faa7305bea2c0c0f17db85ab85e9035478b8598b732f7c7271c68b1c2338d589"
+    },
+    {
+      "name": "checkout wheel: NOTICE.teleocr",
+      "passed": true,
+      "expected_sha256": "5a1c3e65d34b6a9079394eee2fb439d7f0a531bb679ecf88f226d6c450787250"
+    },
+    {
+      "name": "checkout wheel: Apache-2.0.txt",
+      "passed": true,
+      "expected_sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "name": "checkout wheel: native bytes",
+      "passed": true
+    },
+    {
+      "name": "checkout-sdist: command status",
+      "passed": true
+    },
+    {
+      "name": "sdist: NOTICE.marker",
+      "passed": true,
+      "expected_sha256": "faa7305bea2c0c0f17db85ab85e9035478b8598b732f7c7271c68b1c2338d589"
+    },
+    {
+      "name": "sdist: NOTICE.teleocr",
+      "passed": true,
+      "expected_sha256": "5a1c3e65d34b6a9079394eee2fb439d7f0a531bb679ecf88f226d6c450787250"
+    },
+    {
+      "name": "sdist: Apache-2.0.txt",
+      "passed": true,
+      "expected_sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "name": "sdist: native bytes",
+      "passed": true
+    },
+    {
+      "name": "isolated sdist has no repository-parent notices",
+      "passed": true
+    },
+    {
+      "name": "isolated-sdist-wheel: command status",
+      "passed": true
+    },
+    {
+      "name": "isolated sdist wheel: NOTICE.marker",
+      "passed": true,
+      "expected_sha256": "faa7305bea2c0c0f17db85ab85e9035478b8598b732f7c7271c68b1c2338d589"
+    },
+    {
+      "name": "isolated sdist wheel: NOTICE.teleocr",
+      "passed": true,
+      "expected_sha256": "5a1c3e65d34b6a9079394eee2fb439d7f0a531bb679ecf88f226d6c450787250"
+    },
+    {
+      "name": "isolated sdist wheel: Apache-2.0.txt",
+      "passed": true,
+      "expected_sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "name": "isolated sdist wheel: native bytes",
+      "passed": true
+    },
+    {
+      "name": "reject-missing-NOTICE-marker: command status",
+      "passed": true
+    },
+    {
+      "name": "missing NOTICE.marker: explicit diagnostic",
+      "passed": true
+    },
+    {
+      "name": "reject-missing-NOTICE-teleocr: command status",
+      "passed": true
+    },
+    {
+      "name": "missing NOTICE.teleocr: explicit diagnostic",
+      "passed": true
+    },
+    {
+      "name": "reject-missing-Apache-2-0-txt: command status",
+      "passed": true
+    },
+    {
+      "name": "missing Apache-2.0.txt: explicit diagnostic",
+      "passed": true
+    },
+    {
+      "name": "reject-empty-apache-license: command status",
+      "passed": true
+    },
+    {
+      "name": "empty license: explicit diagnostic",
+      "passed": true
+    },
+    {
+      "name": "input native binary unchanged",
+      "passed": true
+    },
+    {
+      "name": "packaging sources unchanged",
+      "passed": true
+    }
+  ],
+  "passed": true,
+  "logs_sha256": {
+    "reject-missing-NOTICE-marker.log": "1caf0eb7169b98a9fda121e12fdc9665921fcdc44445f06e25d975c4fb699c8c",
+    "isolated-sdist-wheel.log": "20372da0165ef0d38d28dbc046c21b511a93032b453027986a82968e4a2c8726",
+    "checkout-wheel.log": "6569c949b0105c759ac64536ac2525f676dc356ce7a66467f847760723e38815",
+    "reject-missing-NOTICE-teleocr.log": "eafbcd24ce8968d3be26e2e1a2900288c107bc673848c93601c63f50bf50c07f",
+    "reject-missing-Apache-2-0-txt.log": "65dba91fae83d395daf52db91f07f1da7759a240e956ff8a1983450442d14f2a",
+    "reject-empty-apache-license.log": "65dba91fae83d395daf52db91f07f1da7759a240e956ff8a1983450442d14f2a",
+    "checkout-sdist.log": "e67f0a1ad1bb72392a60e47907c12aa8ef7b7ec0af555f2799e1e69e0eb38c1d"
+  }
+}

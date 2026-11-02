@@ -1,0 +1,1 @@
+{"label": "formula/metal", "ids_exact": true, "first_divergence": null, "reference_tokens": 22, "native_tokens": 22, "text_exact": true, "cer": 0.0, "eos": true, "capped": false, "runs_ms": [9228.739333], "warm_ms_median": 9228.739333, "load_ms": 729833.528458, "runs_identical": true}

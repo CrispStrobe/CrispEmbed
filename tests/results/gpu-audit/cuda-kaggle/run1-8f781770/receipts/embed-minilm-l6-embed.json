@@ -1,0 +1,144 @@
+{
+ "kind": "embed",
+ "mode": "embed",
+ "base": "all-MiniLM-L6-v2-f32.gguf",
+ "files": {
+  "all-MiniLM-L6-v2-f32.gguf": {
+   "precision": "f32",
+   "type_hist": {
+    "f32": 22681344
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      2.821,
+      0.967
+     ],
+     "gpu_mem_peak_mib": 237,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "crispembed: using WordPiece tokenizer (30522 tokens, uncased)\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispembed: using CUDA0 backend with CPU fallback\ncrispembed: loaded 6 layers, 384 dims, 30522 vocab\ncrispembed: warning: 66% of input tokens are [UNK] — this model's vocabulary may not cover this script; see docs/LANGUAGES.md for models that do (silence with CRISPEMBED_WARN_UNK=0)\n"
+    },
+    "cpu": {
+     "wall_s": [
+      0.567,
+      0.567
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "crispembed: using WordPiece tokenizer (30522 tokens, uncased)\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ncrispembed: using CPU backend (4 threads)\ncrispembed: loaded 6 layers, 384 dims, 30522 vocab\ncrispembed: warning: 66% of input tokens are [UNK] — this model's vocabulary may not cover this script; see docs/LANGUAGES.md for models that do (silence with CRISPEMBED_WARN_UNK=0)\n"
+    }
+   },
+   "cuda_vs_cpu_same_artifact": {
+    "cos_min": 0.9999999999930036,
+    "cos_mean": 0.9999999999965898,
+    "max_abs": 1.000000000001e-06
+   },
+   "cuda_vs_cpu_reference": {
+    "cos_min": 0.9999999999930036,
+    "cos_mean": 0.9999999999965898,
+    "max_abs": 1.000000000001e-06
+   },
+   "bar": 0.99,
+   "qualifies": true
+  },
+  "all-MiniLM-L6-v2-q8_0.gguf": {
+   "precision": "q8_0",
+   "type_hist": {
+    "q8_0": 22533888
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      0.968,
+      0.867
+     ],
+     "gpu_mem_peak_mib": 169,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "crispembed: using WordPiece tokenizer (30522 tokens, uncased)\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispembed: using CUDA0 backend with CPU fallback\ncrispembed: loaded 6 layers, 384 dims, 30522 vocab\ncrispembed: warning: 66% of input tokens are [UNK] — this model's vocabulary may not cover this script; see docs/LANGUAGES.md for models that do (silence with CRISPEMBED_WARN_UNK=0)\n"
+    },
+    "cpu": {
+     "wall_s": [
+      0.567,
+      0.567
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "crispembed: using WordPiece tokenizer (30522 tokens, uncased)\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ncrispembed: using CPU backend (4 threads)\ncrispembed: loaded 6 layers, 384 dims, 30522 vocab\ncrispembed: warning: 66% of input tokens are [UNK] — this model's vocabulary may not cover this script; see docs/LANGUAGES.md for models that do (silence with CRISPEMBED_WARN_UNK=0)\n"
+    }
+   },
+   "cuda_vs_cpu_same_artifact": {
+    "cos_min": 0.9998022219632586,
+    "cos_mean": 0.9998999158431835,
+    "max_abs": 0.003590000000000003
+   },
+   "cuda_vs_cpu_reference": {
+    "cos_min": 0.972852262877808,
+    "cos_mean": 0.9973500437292664,
+    "max_abs": 0.039014
+   },
+   "cpu_vs_cpu_reference": {
+    "cos_min": 0.9732635159544251,
+    "cos_mean": 0.9973829508660125,
+    "max_abs": 0.038679
+   },
+   "bar": 0.97,
+   "qualifies": true
+  },
+  "all-MiniLM-L6-v2-q4_k.gguf": {
+   "precision": "q8_0",
+   "type_hist": {
+    "q8_0": 11917056,
+    "q4_0": 7077888,
+    "q4_k": 3538944
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      0.967,
+      0.918
+     ],
+     "gpu_mem_peak_mib": 163,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "crispembed: using WordPiece tokenizer (30522 tokens, uncased)\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispembed: using CUDA0 backend with CPU fallback\ncrispembed: loaded 6 layers, 384 dims, 30522 vocab\ncrispembed: warning: 66% of input tokens are [UNK] — this model's vocabulary may not cover this script; see docs/LANGUAGES.md for models that do (silence with CRISPEMBED_WARN_UNK=0)\n"
+    },
+    "cpu": {
+     "wall_s": [
+      0.617,
+      0.617
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "crispembed: using WordPiece tokenizer (30522 tokens, uncased)\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ncrispembed: using CPU backend (4 threads)\ncrispembed: loaded 6 layers, 384 dims, 30522 vocab\ncrispembed: warning: 66% of input tokens are [UNK] — this model's vocabulary may not cover this script; see docs/LANGUAGES.md for models that do (silence with CRISPEMBED_WARN_UNK=0)\n"
+    }
+   },
+   "cuda_vs_cpu_same_artifact": {
+    "cos_min": 0.9969936123045068,
+    "cos_mean": 0.999513663628017,
+    "max_abs": 0.013119000000000006
+   },
+   "cuda_vs_cpu_reference": {
+    "cos_min": 0.944426853653541,
+    "cos_mean": 0.9638293304352034,
+    "max_abs": 0.057697000000000005
+   },
+   "cpu_vs_cpu_reference": {
+    "cos_min": 0.945441926010261,
+    "cos_mean": 0.9646112330916649,
+    "max_abs": 0.05874600000000001
+   },
+   "bar": 0.97,
+   "qualifies": false
+  }
+ },
+ "seconds": 21.4,
+ "id": "embed-minilm-l6-embed",
+ "commit": "8f781770810956818ba76831a6bc607fbc0a1154",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

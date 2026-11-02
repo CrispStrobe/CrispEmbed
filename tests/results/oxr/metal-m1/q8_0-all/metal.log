@@ -1,0 +1,6 @@
+[oxr-timing] vision+vocabulary 14140.4 ms (884 merged tokens)
+[oxr-timing] prefill 1226.1 ms (902 tokens)
+[oxr-timing] decode 27424.1 ms for 400 tokens (graph build+inputs 1435.6, compute 25091.9)
+[oxr-timing] vision+vocabulary 14773.0 ms (884 merged tokens)
+[oxr-timing] prefill 2554.4 ms (902 tokens)
+[oxr-batch] /Volumes/backups/code/model-cache-20261101/oxr/ab/oxr-q8all-batch/german/metal done (1 runs)

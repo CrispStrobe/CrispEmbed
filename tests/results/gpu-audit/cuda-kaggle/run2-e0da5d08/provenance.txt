@@ -1,0 +1,12 @@
+kernel: ${KAGGLE_ACCOUNT}/crispembed-cuda-audit version 2, batch "rest", tools/kaggle/cuda-audit
+source commit: e0da5d08791ff8895e30fff01657668f1731b94c (feat/cuda-audit)
+gpu: Tesla T4 x2 (sm_75; one device used), cpu: 4x Intel Xeon @ 2.00GHz, -t 4
+build: GGML_CUDA=ON, CMAKE_CUDA_ARCHITECTURES=75, GGML_NATIVE=ON, CRISPEMBED_NATIVE=ON, Release
+date: 2026-11-01/02
+outcome: 71/71 jobs completed (everything run 1 did not measure).
+Known harness defects in this run, corrected in run 3: bge-m3-heads was converted in the
+default Ollama format, which drops sparse/ColBERT heads (rc=1 "model does not support");
+surya-trocr used --ocr-det, which only loads DBNet ("missing stem conv"); the
+trocr-*punc jobs fed whole-page TrOCR output to the punctuation model, so the CUDA/CPU
+difference there is not attributable to the punctuation engine.
+CPU arm = same binary, --gpu-backend cpu with CUDA_VISIBLE_DEVICES="".

@@ -1,0 +1,3 @@
+source=1cd0e3e925a0373d020450682087ee44198e8a3b
+Python 3.12.15
+Model name:                              AMD EPYC 7763 64-Core Processor

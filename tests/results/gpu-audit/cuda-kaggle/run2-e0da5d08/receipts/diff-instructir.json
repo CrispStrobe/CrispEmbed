@@ -1,0 +1,45 @@
+{
+ "kind": "diff",
+ "binary": "test-instructir-diff",
+ "arms": {
+  "cuda": {
+   "rc": 0,
+   "wall_s": 1.017,
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "n_stages": 1,
+   "stages": {
+    "output": 1.0
+   },
+   "worst_stage": [
+    "output",
+    1.0
+   ],
+   "threshold_fails": [],
+   "threshold_missing": [],
+   "stdout_tail": "InstructIR — parity test (task=denoise)\n  Model: $SCRATCH/models/instructir-f32.gguf\n  Ref:   $SCRATCH/models/instructir-ref.gguf\n\n  \u001b[32m[PASS]\u001b[0m model loads\n  Tasks: 7\n\n  Input: 64x64\n  \u001b[32m[PASS]\u001b[0m process returns 0\n  Inference: 810.1 ms\n\n=== Output comparison ===\n  output: cos=1.000000 max_abs=0.000310  PASS\n  \u001b[32m[PASS]\u001b[0m output cos >= 0.999\n  \u001b[32m[PASS]\u001b[0m output max_abs < 0.01 (got 0.000310)\n\n=== Results: 4 passed, 0 failed ===\n\ncrispembed_diff: loaded 2 tensors from $SCRATCH/models/instructir-ref.gguf\n"
+  },
+  "cpu": {
+   "rc": 0,
+   "wall_s": 1.017,
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "n_stages": 1,
+   "stages": {
+    "output": 1.0
+   },
+   "worst_stage": [
+    "output",
+    1.0
+   ],
+   "threshold_fails": [],
+   "threshold_missing": [],
+   "stdout_tail": "InstructIR — parity test (task=denoise)\n  Model: $SCRATCH/models/instructir-f32.gguf\n  Ref:   $SCRATCH/models/instructir-ref.gguf\n\n  \u001b[32m[PASS]\u001b[0m model loads\n  Tasks: 7\n\n  Input: 64x64\n  \u001b[32m[PASS]\u001b[0m process returns 0\n  Inference: 816.7 ms\n\n=== Output comparison ===\n  output: cos=1.000000 max_abs=0.000310  PASS\n  \u001b[32m[PASS]\u001b[0m output cos >= 0.999\n  \u001b[32m[PASS]\u001b[0m output max_abs < 0.01 (got 0.000310)\n\n=== Results: 4 passed, 0 failed ===\n\ncrispembed_diff: loaded 2 tensors from $SCRATCH/models/instructir-ref.gguf\n"
+  }
+ },
+ "seconds": 3.5,
+ "id": "diff-instructir",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

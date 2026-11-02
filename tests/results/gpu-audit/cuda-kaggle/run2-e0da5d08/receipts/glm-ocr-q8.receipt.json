@@ -1,0 +1,55 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "-m",
+  "glm-ocr-q8_0.gguf",
+  "--ocr",
+  "receipt_example.png",
+  "--ocr-max-tokens",
+  "128"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    3.324
+   ],
+   "gpu_mem_peak_mib": 1509,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "  gen[83]: token=32 score=35.15\n  gen[84]: token=49 score=37.47\n  gen[85]: token=36 score=19.37\n  gen[86]: token=32 score=33.50\n  gen[87]: token=52 score=34.76\n  gen[88]: token=56 score=40.67\n  gen[89]: token=46 score=37.10\n  gen[90]: token=52 score=35.72\n  gen[91]: token=48 score=37.05\n  gen[92]: token=54000 score=29.10\n  gen[93]: token=83 score=30.98\n  gen[94]: token=12857 score=30.64\n  gen[95]: token=464 score=33.51\n  gen[96]: token=22972 score=32.04\n  gen[97]: token=32 score=35.58\n  gen[98]: token=51 score=35.99\n  gen[99]: token=773 score=31.40\n  gen[100]: token=32 score=32.79\n  gen[101]: token=32 score=17.80\n  gen[102]: token=52 score=36.27\n  gen[103]: token=57 score=18.26\n  gen[104]: token=46 score=28.70\n  gen[105]: token=48 score=33.43\n  gen[106]: token=55 score=32.02\n  gen[107]: token=54000 score=27.80\n  gen[108]: token=83 score=28.21\n  gen[109]: token=278 score=28.19\n  gen[110]: token=4837 score=29.02\n  gen[111]: token=22972 score=30.94\n  gen[112]: token=32 score=30.63\n  gen[113]: token=32 score=22.89\n  gen[114]: token=51 score=33.10\n  gen[115]: token=36 score=26.13\n  gen[116]: token=32 score=24.98\n  gen[117]: token=50 score=24.31\n  gen[118]: token=51 score=29.17\n  gen[119]: token=46 score=33.16\n  gen[120]: token=56 score=33.11\n  gen[121]: token=55 score=35.28\n  gen[122]: token=54000 score=29.60\n  gen[123]: token=37612 score=32.00\n  gen[124]: token=14911 score=31.28\n  gen[125]: token=1110 score=28.66\n  gen[126]: token=256 score=19.40\n  gen[127]: token=32 score=32.30\n",
+   "stdout_sha256": "69d75c94b4a460042ae018dcd95a6b6870a9fdcce2d9b6402d223a082d2a4ed7",
+   "stdout": "Jackson-Washington\n6640 Ortiz Cove, Markmouth, PW\n69940\n\nTransaction ID: 8F88C299\nDate: 2025-02-16 11:25:12\n\nItem Qty Price\nStrategy Accessory 1 $ 43.31 $\nConference Product 1$ 48.40 $\nScientist Item 3 $  49.07 $\nSituation Item  3$ 23.87 $\nLife Accessory   \n",
+   "vs_cpu": {
+    "byte_identical": true,
+    "text_exact": true,
+    "char_ratio": 1.0,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    30.333
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "  gen[83]: token=32 score=35.08\n  gen[84]: token=49 score=37.44\n  gen[85]: token=36 score=19.25\n  gen[86]: token=32 score=33.40\n  gen[87]: token=52 score=34.68\n  gen[88]: token=56 score=40.59\n  gen[89]: token=46 score=37.08\n  gen[90]: token=52 score=35.68\n  gen[91]: token=48 score=36.87\n  gen[92]: token=54000 score=28.99\n  gen[93]: token=83 score=30.88\n  gen[94]: token=12857 score=30.71\n  gen[95]: token=464 score=33.49\n  gen[96]: token=22972 score=32.07\n  gen[97]: token=32 score=35.59\n  gen[98]: token=51 score=35.98\n  gen[99]: token=773 score=31.42\n  gen[100]: token=32 score=32.73\n  gen[101]: token=32 score=17.95\n  gen[102]: token=52 score=36.29\n  gen[103]: token=57 score=18.25\n  gen[104]: token=46 score=28.71\n  gen[105]: token=48 score=33.50\n  gen[106]: token=55 score=32.09\n  gen[107]: token=54000 score=27.78\n  gen[108]: token=83 score=28.26\n  gen[109]: token=278 score=28.23\n  gen[110]: token=4837 score=29.09\n  gen[111]: token=22972 score=30.93\n  gen[112]: token=32 score=30.54\n  gen[113]: token=32 score=22.82\n  gen[114]: token=51 score=33.15\n  gen[115]: token=36 score=26.14\n  gen[116]: token=32 score=24.94\n  gen[117]: token=50 score=24.31\n  gen[118]: token=51 score=29.20\n  gen[119]: token=46 score=33.17\n  gen[120]: token=56 score=33.11\n  gen[121]: token=55 score=35.29\n  gen[122]: token=54000 score=29.55\n  gen[123]: token=37612 score=32.04\n  gen[124]: token=14911 score=31.23\n  gen[125]: token=1110 score=28.75\n  gen[126]: token=256 score=19.39\n  gen[127]: token=32 score=32.25\n",
+   "stdout_sha256": "69d75c94b4a460042ae018dcd95a6b6870a9fdcce2d9b6402d223a082d2a4ed7",
+   "stdout": "Jackson-Washington\n6640 Ortiz Cove, Markmouth, PW\n69940\n\nTransaction ID: 8F88C299\nDate: 2025-02-16 11:25:12\n\nItem Qty Price\nStrategy Accessory 1 $ 43.31 $\nConference Product 1$ 48.40 $\nScientist Item 3 $  49.07 $\nSituation Item  3$ 23.87 $\nLife Accessory   \n"
+  }
+ },
+ "precision": "q8_0",
+ "bar": 0.97,
+ "seconds": 35.6,
+ "id": "glm-ocr-q8.receipt",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

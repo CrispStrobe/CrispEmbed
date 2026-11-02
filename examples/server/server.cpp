@@ -70,6 +70,7 @@
 #include <cmath>
 #include <filesystem>
 #include <iomanip>
+#include <limits>
 #include <system_error>
 
 #ifdef _WIN32
@@ -487,13 +488,18 @@ int main(int argc, char ** argv) {
     std::string vit_model_path;       // standalone ViT model (SigLIP/CLIP)
     std::string clip_text_model_path; // CLIP text encoder
     std::string ocr_model_path;       // math OCR model (PP-FormulaNet, HMER, BTTR, PosFormer, etc.)
-    std::string ocr_det_model_path;   // general OCR: text detection model (DBNet)
-    std::string ocr_rec_model_path;   // general OCR: text recognition model (TrOCR)
-    std::string ocr_engine_name;      // --ocr-engine: explicit orchestrator engine (CLI parity)
-    std::string ocr_cls_model_path;   // --ocr-cls: optional PP-LCNet 0/180 line-orientation classifier
-    std::string layout_model_path;    // layout detection model (RT-DETRv2)
-    std::string table_model_path;     // table cell OCR model (Tesseract-LSTM GGUF)
-    std::string formula_model_path;   // formula OCR model (PP-FormulaNet GGUF)
+    std::string marker_model_path, marker_pdfium_path;
+    int marker_mode = 0;
+    bool marker_enabled = false;
+    std::string ocr_det_model_path;  // general OCR: text detection model (DBNet)
+    std::string ocr_rec_model_path;  // general OCR: text recognition model (TrOCR)
+    std::string ocr_engine_name;     // --ocr-engine: explicit orchestrator engine (CLI parity)
+    std::string ocr_cls_model_path;  // --ocr-cls: optional PP-LCNet 0/180 line-orientation classifier
+    std::string layout_model_path;   // layout detection model (RT-DETRv2)
+    std::string oxr_doc_model_path;  // --oxr-doc-model: native OXR document route (CRISPEMBED_OXR_NATIVE_DOC)
+    std::string oxr_doc_layout_path; // --oxr-doc-layout-model: native OXR D-FINE default layout provider
+    std::string table_model_path;    // table cell OCR model (Tesseract-LSTM GGUF)
+    std::string formula_model_path;  // formula OCR model (PP-FormulaNet GGUF)
     bool route_tables = false;
     bool route_formulas = false;
     std::string text_det_model_path;   // surya text detection model
@@ -559,12 +565,27 @@ int main(int argc, char ** argv) {
             clip_text_model_path = argv[++i];
         else if (strcmp(argv[i], "--ocr") == 0 && i + 1 < argc)
             ocr_model_path = argv[++i];
-        else if (strcmp(argv[i], "--ocr-det") == 0 && i + 1 < argc)
+        else if (strcmp(argv[i], "--marker-model") == 0 && i + 1 < argc) {
+            marker_model_path = argv[++i];
+            marker_enabled = true;
+        } else if (strcmp(argv[i], "--marker-pdfium") == 0 && i + 1 < argc)
+            marker_pdfium_path = argv[++i];
+        else if (strcmp(argv[i], "--marker-text") == 0) {
+            marker_mode = 1;
+            marker_enabled = true;
+        } else if (strcmp(argv[i], "--marker-force-ocr") == 0) {
+            marker_mode = 2;
+            marker_enabled = true;
+        } else if (strcmp(argv[i], "--ocr-det") == 0 && i + 1 < argc)
             ocr_det_model_path = argv[++i];
         else if (strcmp(argv[i], "--ocr-rec") == 0 && i + 1 < argc)
             ocr_rec_model_path = argv[++i];
         else if (strcmp(argv[i], "--layout") == 0 && i + 1 < argc)
             layout_model_path = argv[++i];
+        else if (strcmp(argv[i], "--oxr-doc-model") == 0 && i + 1 < argc)
+            oxr_doc_model_path = argv[++i];
+        else if (strcmp(argv[i], "--oxr-doc-layout-model") == 0 && i + 1 < argc)
+            oxr_doc_layout_path = argv[++i];
         else if (strcmp(argv[i], "--table") == 0 && i + 1 < argc)
             table_model_path = argv[++i];
         else if (strcmp(argv[i], "--formula") == 0 && i + 1 < argc)
@@ -636,13 +657,13 @@ int main(int argc, char ** argv) {
     // --ocr-rec R` is a complete standalone configuration (it was rejected
     // with the usage text before, forcing an unrelated -m just to start the
     // OCR endpoint — noticed while smoke-testing the issue-#45 thread fix).
-    if (systemone_model_path.empty() && model_path.empty() && det_model_path.empty() && vit_model_path.empty() &&
-        ocr_model_path.empty() && ocr_det_model_path.empty() && ocr_engine_name.empty() && layout_model_path.empty() &&
-        ner_model_path.empty() && sr_model_path.empty() && pan_model_path.empty() && hat_model_path.empty() &&
-        dat_model_path.empty() && safmn_model_path.empty() && esrgan_model_path.empty() && swinir_model_path.empty() &&
-        moedern_model_path.empty() && tbsrn_model_path.empty() && restormer_model_path.empty() &&
-        scunet_model_path.empty() && instructir_model_path.empty() && adair_model_path.empty() &&
-        sam2_model_path.empty()) {
+    if (!marker_enabled && systemone_model_path.empty() && model_path.empty() && det_model_path.empty() &&
+        vit_model_path.empty() && ocr_model_path.empty() && ocr_det_model_path.empty() && ocr_engine_name.empty() &&
+        layout_model_path.empty() && ner_model_path.empty() && sr_model_path.empty() && pan_model_path.empty() &&
+        hat_model_path.empty() && dat_model_path.empty() && safmn_model_path.empty() && esrgan_model_path.empty() &&
+        swinir_model_path.empty() && moedern_model_path.empty() && tbsrn_model_path.empty() &&
+        restormer_model_path.empty() && scunet_model_path.empty() && instructir_model_path.empty() &&
+        adair_model_path.empty() && sam2_model_path.empty()) {
         fprintf(stderr, "Usage: crispembed-server -m MODEL [--port 8080] [--host 127.0.0.1]\n");
         fprintf(stderr, "  MODEL can be a .gguf path or a model name (auto-downloads from HuggingFace)\n");
         fprintf(stderr, "  Examples: -m all-MiniLM-L6-v2   -m octen-0.6b   -m model.gguf\n");
@@ -683,8 +704,12 @@ int main(int argc, char ** argv) {
         fprintf(stderr, "\nOCR orchestrator (full pipeline with routing + cleanup + accept-gate):\n");
         fprintf(stderr, "  --ocr-pipeline    enable POST /ocr/pipeline endpoint\n");
         fprintf(stderr, "  --ocr-max-tokens N  generation cap for VLM OCR engines (0 = engine default)\n");
+        fprintf(stderr, "  --marker-model FILE native Marker-style processing with a local TeleOCR GGUF\n");
+        fprintf(stderr, "  --marker-text       model-free PDF text mode; --marker-force-ocr forces recognition\n");
+        fprintf(stderr, "  --marker-pdfium LIB explicit native PDFium library for PDF inputs\n");
         fprintf(stderr, "  --ocr-prompt TEXT   default instruction for prompt-following VLM OCR engines\n");
-        fprintf(stderr, "                      (qwen2vl/qwen3vl/olmocr, internvl2, lfm2-vl, granite-vision);\n");
+        fprintf(stderr,
+                "                      (qwen2vl/qwen3vl/olmocr/teleocr, internvl2, lfm2-vl, granite-vision);\n");
         fprintf(stderr, "                      POST /ocr/model also takes a per-request \"prompt\"\n");
         fprintf(stderr, "  --ocr-det MODEL   detection model (required with --ocr-pipeline unless --ocr-engine)\n");
         fprintf(stderr, "  --ocr-rec MODEL   recognition model (required with --ocr-pipeline unless --ocr-engine)\n");
@@ -1490,12 +1515,28 @@ int main(int argc, char ** argv) {
     // ── Math OCR ──
     void * ocr_model_ctx = nullptr;
     std::mutex ocr_model_mutex;
+    crispembed_marker_context * marker_ctx = nullptr;
+    std::mutex marker_mutex;
+    if (marker_enabled) {
+        auto config = crispembed_marker_default_config();
+        config.model_path = marker_model_path.c_str();
+        config.pdfium_path = marker_pdfium_path.c_str();
+        config.mode = marker_mode;
+        if (n_threads != 0) config.n_threads = n_threads;
+        if (ocr_max_tokens > 0) config.max_tokens = ocr_max_tokens;
+        marker_ctx = crispembed_marker_init(&config);
+        if (!marker_ctx) {
+            fprintf(stderr, "Marker initialization failed: %s\n", crispembed_marker_error(nullptr));
+            return 1;
+        }
+    }
 
     if (!ocr_model_path.empty()) {
         std::string resolved = crispembed_mgr::resolve_model(ocr_model_path, true);
         if (!resolved.empty()) ocr_model_path = resolved;
         ocr_model_ctx = crispembed_ocr_model_init(ocr_model_path.c_str(), n_threads);
         if (!ocr_model_ctx) fprintf(stderr, "Warning: failed to load math OCR model '%s'\n", ocr_model_path.c_str());
+        if (ocr_model_ctx && ocr_max_tokens > 0) crispembed_ocr_model_set_max_tokens(ocr_model_ctx, ocr_max_tokens);
         if (ocr_model_ctx && !ocr_prompt.empty() && !crispembed_ocr_model_set_prompt(ocr_model_ctx, ocr_prompt.c_str()))
             fprintf(stderr, "Warning: --ocr-prompt ignored: OCR model '%s' runs a fixed task prompt\n",
                     ocr_model_path.c_str());
@@ -1539,19 +1580,59 @@ int main(int argc, char ** argv) {
             if (n == "ppocrv6") return 16;
             if (n == "easyocr") return 17;
             if (n == "olmocr") return 18;
+            if (n == "mineru25-pro" || n == "mineru25_pro") return 25;
+            if (n == "oxr" || n == "oxr-1.0") return 26;
             if (n == "minicpm-ocr" || n == "minicpm_ocr") return 23;
+            if (n == "teleocr") return 24;
             return 0; // dbnet_trocr
         };
         const int eid = eng_id(ocr_engine_name);
         const bool is_vlm = (eid >= 2 && eid <= 5) || (eid >= 8 && eid <= 13) || eid == 14 || eid == 18 || eid == 20 ||
-                            eid == 21 || eid == 22 || eid == 23;
-        if ((eid == 14 || eid == 15 || eid == 20 || eid == 21 || eid == 22) && ocr_rec_model_path.empty()) {
+                            eid == 21 || eid == 22 || eid == 23 || eid == 24 || eid == 25;
+        if ((eid == 14 || eid == 15 || eid == 20 || eid == 21 || eid == 22 || eid == 24) &&
+            ocr_rec_model_path.empty()) {
             fprintf(stderr, "error: --ocr-engine %s needs the model via --ocr-rec FILE\n", ocr_engine_name.c_str());
+            return 1;
+        }
+        if (eid == 24) {
+            if (!core_env::on("CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE")) {
+                fprintf(stderr, "error: teleocr's vision tower is under the Qwen RESEARCH LICENSE (non-commercial);\n"
+                                "       set CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1 to acknowledge\n");
+                return 1;
+            }
+            if (!core_env::on("CRISPEMBED_TELEOCR")) {
+                fprintf(stderr, "error: teleocr needs CRISPEMBED_TELEOCR=1\n");
+                return 1;
+            }
+            auto * meta = core_gguf::open_metadata(ocr_rec_model_path.c_str());
+            const bool profile = meta && core_gguf::kv_str(meta, "general.architecture", "") == "teleocr" &&
+                                 core_gguf::kv_u32(meta, "teleocr.gguf_version", 0) == 1;
+            if (meta) core_gguf::free_metadata(meta);
+            if (!profile) {
+                fprintf(stderr, "error: teleocr requires a local TeleOCR version 1 GGUF\n");
+                return 1;
+            }
+        }
+        // Experimental OXR-1.0: explicit model file and own gate (recognition stage only).
+        if (eid == 26 && (ocr_rec_model_path.empty() || !core_env::on("CRISPEMBED_OXR"))) {
+            fprintf(stderr, "error: oxr needs --ocr-rec FILE and CRISPEMBED_OXR=1; this stage runs recognition\n");
+            return 1;
+        }
+        if (eid == 26)
+            fprintf(stderr, "warning: OXR License section 3 forbids offering a hosted OCR/document-parsing API that\n"
+                            "         competes with SoMark's to third parties without their written license, and\n"
+                            "         section 2 requires crediting SoMark OXR in any online service.\n");
+        // Experimental MinerU2.5-Pro: explicit model file, fixed task prompts, own gate.
+        if (eid == 25 &&
+            (ocr_rec_model_path.empty() || !ocr_prompt.empty() || !core_env::on("CRISPEMBED_MINERU25_PRO"))) {
+            fprintf(stderr,
+                    "error: mineru25-pro needs --ocr-rec FILE, no custom prompt, and CRISPEMBED_MINERU25_PRO=1\n");
             return 1;
         }
         // Experimental MiniCPM-OCR-1.0 reuses the qwen35 decoder kernels, so both gates are required.
         if (eid == 23 && (!core_env::on("CRISPEMBED_MINICPM_OCR") || !core_env::on("CRISPEMBED_QWEN35_OCR"))) {
-            fprintf(stderr, "error: experimental minicpm-ocr needs CRISPEMBED_MINICPM_OCR=1 and CRISPEMBED_QWEN35_OCR=1\n");
+            fprintf(stderr,
+                    "error: experimental minicpm-ocr needs CRISPEMBED_MINICPM_OCR=1 and CRISPEMBED_QWEN35_OCR=1\n");
             return 1;
         }
         if (eid == 22 &&
@@ -1722,6 +1803,29 @@ int main(int argc, char ** argv) {
         if (!resolved.empty()) layout_model_path = resolved;
         layout_ctx = crispembed_layout_init(layout_model_path.c_str(), n_threads);
         if (!layout_ctx) fprintf(stderr, "Warning: failed to load layout model '%s'\n", layout_model_path.c_str());
+    }
+
+    // Experimental native OXR document route (explicit local GGUF, both gates).
+    crispembed_oxr_context * oxr_doc_ctx = nullptr;
+    std::mutex oxr_doc_mutex;
+    if (!oxr_doc_model_path.empty()) {
+        if (!core_env::on("CRISPEMBED_OXR") || !core_env::on("CRISPEMBED_OXR_NATIVE_DOC")) {
+            fprintf(stderr, "error: --oxr-doc-model needs CRISPEMBED_OXR=1 and CRISPEMBED_OXR_NATIVE_DOC=1\n");
+            return 1;
+        }
+        fprintf(stderr, "warning: OXR License section 3 forbids offering a hosted OCR/document-parsing API that\n"
+                        "         competes with SoMark's to third parties without their written license, and\n"
+                        "         section 2 requires crediting SoMark OXR in any online service.\n");
+        oxr_doc_ctx = crispembed_oxr_init(oxr_doc_model_path.c_str(), n_threads);
+        if (!oxr_doc_ctx) {
+            fprintf(stderr, "error: cannot load OXR model '%s'\n", oxr_doc_model_path.c_str());
+            return 1;
+        }
+        if (!oxr_doc_layout_path.empty() &&
+            !crispembed_oxr_document_layout_model(oxr_doc_ctx, oxr_doc_layout_path.c_str(), n_threads)) {
+            fprintf(stderr, "error: %s\n", crispembed_oxr_last_error(oxr_doc_ctx));
+            return 1;
+        }
     }
 
     // Surya text detection
@@ -2156,6 +2260,63 @@ int main(int argc, char ** argv) {
         res.set_content(js.str(), "application/json");
     });
 
+    // PDF/image path confinement is shared with the existing image endpoints.
+    // A complete response owns its output, metadata and base64 PNG assets.
+    svr.Post("/ocr/marker", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!marker_ctx) {
+            res.status = 503;
+            res.set_content("{\"error\":\"Marker is not configured\"}", "application/json");
+            return;
+        }
+        const std::string file = extract_path_field(req.body, "file", g_image_root, "--image-root");
+        std::vector<std::string> formats;
+        json_extract_strings(req.body, "format", formats);
+        const std::string format = formats.empty() ? "json" : formats.front();
+        if (file.empty() || (format != "markdown" && format != "html" && format != "json" && format != "chunks")) {
+            res.status = 400;
+            res.set_content("{\"error\":\"valid file path and markdown/html/json/chunks format required\"}",
+                            "application/json");
+            return;
+        }
+        std::lock_guard<std::mutex> lock(marker_mutex);
+        if (!crispembed_marker_convert(marker_ctx, file.c_str())) {
+            res.status = 422;
+            res.set_content("{\"error\":\"" + core_json::json_escape_strict(crispembed_marker_error(marker_ctx)) +
+                                "\"}",
+                            "application/json");
+            return;
+        }
+        const char * rendered = crispembed_marker_render(marker_ctx, format.c_str());
+        if (!rendered) {
+            res.status = 500;
+            res.set_content("{\"error\":\"" + core_json::json_escape_strict(crispembed_marker_error(marker_ctx)) +
+                                "\"}",
+                            "application/json");
+            return;
+        }
+        std::ostringstream out;
+        out << "{\"format\":\"" << format << "\",\"output\":\"" << core_json::json_escape_strict(rendered)
+            << "\",\"metadata\":" << crispembed_marker_metadata(marker_ctx) << ",\"images\":{";
+        const char * alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        const int count = crispembed_marker_asset_count(marker_ctx);
+        for (int i = 0; i < count; ++i) {
+            if (i) out << ',';
+            size_t size = 0;
+            const auto * data = crispembed_marker_asset_data(marker_ctx, i, &size);
+            out << '\"' << core_json::json_escape_strict(crispembed_marker_asset_name(marker_ctx, i))
+                << "\":\"data:image/png;base64,";
+            for (size_t j = 0; j < size; j += 3) {
+                const unsigned v = (unsigned(data[j]) << 16) | (j + 1 < size ? unsigned(data[j + 1]) << 8 : 0) |
+                                   (j + 2 < size ? unsigned(data[j + 2]) : 0);
+                out << alphabet[(v >> 18) & 63] << alphabet[(v >> 12) & 63]
+                    << (j + 1 < size ? alphabet[(v >> 6) & 63] : '=') << (j + 2 < size ? alphabet[v & 63] : '=');
+            }
+            out << '\"';
+        }
+        out << "}}";
+        res.set_content(out.str(), "application/json");
+    });
+
     // POST /ocr/model — single-model OCR recognition (math or text, auto-dispatched).
     // /math/ocr is kept as a deprecated alias for the same handler.
     // Request:  {"image": "/path/to/formula.png"}
@@ -2189,6 +2350,38 @@ int main(int argc, char ** argv) {
         }
 
         std::lock_guard<std::mutex> lock(ocr_model_mutex);
+        const bool has_generation_params =
+            core_json::json_find_key_value(body, "repetition_penalty") != std::string::npos ||
+            core_json::json_find_key_value(body, "presence_penalty") != std::string::npos ||
+            core_json::json_find_key_value(body, "frequency_penalty") != std::string::npos ||
+            core_json::json_find_key_value(body, "no_repeat_ngram") != std::string::npos;
+        float previous_repetition = 0, previous_presence = 0, previous_frequency = 0;
+        int previous_ngram = 0;
+        if (has_generation_params) {
+            if (!crispembed_ocr_model_get_generation_params(ocr_model_ctx, &previous_repetition, &previous_presence,
+                                                            &previous_frequency, &previous_ngram)) {
+                res.status = 400;
+                res.set_content("{\"error\":\"generation penalties require a TeleOCR model\"}", "application/json");
+                return;
+            }
+            auto penalty = [&](const char * key, double fallback) {
+                return core_json::json_find_key_value(body, key) == std::string::npos
+                           ? fallback
+                           : json_extract_number(body, key, std::numeric_limits<double>::quiet_NaN());
+            };
+            const double rep = penalty("repetition_penalty", previous_repetition);
+            const double pres = penalty("presence_penalty", previous_presence);
+            const double freq = penalty("frequency_penalty", previous_frequency);
+            const double ngram = penalty("no_repeat_ngram", previous_ngram);
+            if (!std::isfinite(rep) || !std::isfinite(pres) || !std::isfinite(freq) || !std::isfinite(ngram) ||
+                ngram < 0 || ngram > 4096 || std::floor(ngram) != ngram ||
+                !crispembed_ocr_model_set_generation_params(ocr_model_ctx, (float)rep, (float)pres, (float)freq,
+                                                            (int)ngram)) {
+                res.status = 400;
+                res.set_content("{\"error\":\"invalid TeleOCR generation penalties\"}", "application/json");
+                return;
+            }
+        }
         const int previous_max_tokens = crispembed_ocr_model_get_max_tokens(ocr_model_ctx);
         if (req_max_tokens > 0) crispembed_ocr_model_set_max_tokens(ocr_model_ctx, req_max_tokens);
         int prompt_applied = -1; // -1 = no per-request prompt
@@ -2199,11 +2392,19 @@ int main(int argc, char ** argv) {
             int previous_max_tokens;
             bool prompt_active;
             bool max_tokens_active;
+            bool generation_active;
+            float repetition, presence, frequency;
+            int ngram;
             ~request_state_restore() {
                 if (prompt_active) crispembed_ocr_model_set_prompt(ctx, dflt.empty() ? nullptr : dflt.c_str());
                 if (max_tokens_active) crispembed_ocr_model_set_max_tokens(ctx, previous_max_tokens);
+                if (generation_active)
+                    crispembed_ocr_model_set_generation_params(ctx, repetition, presence, frequency, ngram);
             }
-        } restore{ ocr_model_ctx, ocr_prompt, previous_max_tokens, prompt_applied == 1, req_max_tokens > 0 };
+        } restore{ ocr_model_ctx,       ocr_prompt,         previous_max_tokens,
+                   prompt_applied == 1, req_max_tokens > 0, has_generation_params,
+                   previous_repetition, previous_presence,  previous_frequency,
+                   previous_ngram };
         auto t0 = std::chrono::steady_clock::now();
 
         int w = 0, h = 0, ch = 0;
@@ -2392,6 +2593,82 @@ int main(int argc, char ** argv) {
 
         fprintf(stderr, "crispembed-server: /layout/detect in %.1f ms (%d regions)\n", ms, n_regions);
         res.set_content(js.str(), "application/json");
+    });
+
+    // POST /oxr/document — native OXR document route over supplied layout.
+    // Request:  {"images": ["/path/page1.png", ...], "layout_response": {D-FINE batch},
+    //            "options": {...}, "format": "upstream"|"markdown"|"html"|"json"|"chunks"}
+    // Response: upstream-shaped OXR document JSON, or the rendered document.
+    svr.Post("/oxr/document", [&](const httplib::Request & req, httplib::Response & res) {
+        if (!oxr_doc_ctx) {
+            res.status = 503;
+            res.set_content("{\"error\": \"no OXR document model loaded (use --oxr-doc-model)\"}", "application/json");
+            return;
+        }
+        const std::string & body = req.body;
+        std::vector<std::string> paths;
+        json_extract_strings(body, "images", paths);
+        auto raw_value = [&](const char * key) -> std::string {
+            const size_t at = core_json::json_find_key_value(body, key);
+            if (at == std::string::npos) return {};
+            const size_t end = core_json::json_skip_value(body, at);
+            return end == std::string::npos ? std::string() : body.substr(at, end - at);
+        };
+        const std::string layout = raw_value("layout_response"), options = raw_value("options");
+        std::vector<std::string> fmt;
+        json_extract_strings(body, "format", fmt);
+        const std::string format = fmt.empty() ? "upstream" : fmt[0];
+        if (paths.empty() || (layout.empty() && oxr_doc_layout_path.empty())) {
+            res.status = 400;
+            res.set_content("{\"error\": \"images and layout_response (or --oxr-doc-layout-model) are required\"}",
+                            "application/json");
+            return;
+        }
+        std::vector<unsigned char *> images;
+        std::vector<const uint8_t *> ptrs;
+        std::vector<int> ws, hs, cs;
+        for (const auto & path : paths) {
+            int w = 0, h = 0, ch = 0;
+            unsigned char * data = stbi_load(path.c_str(), &w, &h, &ch, 3);
+            if (!data) {
+                for (auto * d : images) stbi_image_free(d);
+                res.status = 400;
+                res.set_content("{\"error\": \"cannot load image\"}", "application/json");
+                return;
+            }
+            images.push_back(data);
+            ptrs.push_back(data);
+            ws.push_back(w);
+            hs.push_back(h);
+            cs.push_back(3);
+        }
+        std::lock_guard<std::mutex> lock(oxr_doc_mutex);
+        const char * json =
+            crispembed_oxr_process_pages(oxr_doc_ctx, ptrs.data(), ws.data(), hs.data(), cs.data(), (int)ptrs.size(),
+                                         nullptr, nullptr, layout.c_str(), options.empty() ? nullptr : options.c_str());
+        for (auto * d : images) stbi_image_free(d);
+        if (!json) {
+            res.status = 422;
+            res.set_content("{\"error\": \"" + core_json::json_escape_strict(crispembed_oxr_last_error(oxr_doc_ctx)) +
+                                "\"}",
+                            "application/json");
+            return;
+        }
+        if (format == "upstream") {
+            res.set_content(json, "application/json");
+            return;
+        }
+        const char * rendered = crispembed_oxr_render_document(oxr_doc_ctx, format.c_str());
+        if (!rendered) {
+            res.status = 400;
+            res.set_content("{\"error\": \"" + core_json::json_escape_strict(crispembed_oxr_last_error(oxr_doc_ctx)) +
+                                "\"}",
+                            "application/json");
+            return;
+        }
+        res.set_content(rendered, format == "html"       ? "text/html"
+                                  : format == "markdown" ? "text/markdown"
+                                                         : "application/json");
     });
 
     // POST /table/parse — rule-based table structure recognition
@@ -4197,6 +4474,7 @@ int main(int argc, char ** argv) {
     if (clip_text_ctx) fprintf(stderr, "  POST /clip/text       — {\"text\": \"query\"}\n");
     if (pix2struct_ctx)
         fprintf(stderr, "  POST /pix2struct/generate — {\"image\": \"doc.png\", \"max_tokens\": 256}\n");
+    if (marker_ctx) fprintf(stderr, "  POST /ocr/marker      — {\"file\": \"doc.pdf\", \"format\": \"json\"}\n");
     if (ocr_model_ctx) fprintf(stderr, "  POST /ocr/model       — {\"image\": \"formula.png\"}  (alias: /math/ocr)\n");
     if (ocr_pipeline_ctx)
         fprintf(stderr, "  POST /ocr             — {\"image\": \"document.png\"} (detect+recognize)\n");
@@ -4293,6 +4571,7 @@ int main(int argc, char ** argv) {
     if (ocr_orch_ctx) crispembed_ocr_pipeline_free(ocr_orch_ctx);
     if (ocr_pipeline_ctx) crispembed_ocr_free(ocr_pipeline_ctx);
     if (ocr_model_ctx) crispembed_ocr_model_free(ocr_model_ctx);
+    if (marker_ctx) crispembed_marker_free(marker_ctx);
     if (clip_text_ctx) crispembed_clip_text_free(clip_text_ctx);
     if (vit_ctx) crispembed_vit_free(vit_ctx);
     if (pix2struct_ctx) crispembed_pix2struct_free(pix2struct_ctx);

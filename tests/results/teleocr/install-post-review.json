@@ -1,0 +1,22 @@
+{
+  "kind": "teleocr-final-install-notices",
+  "passed": true,
+  "files": [
+    {
+      "installed_name": "LICENSE",
+      "sha256": "a70d0ab5fb2dbab83d1a63071776891e6dfc7ba6e3063b3940c21274c1225a3e",
+      "identical_to_source": true
+    },
+    {
+      "installed_name": "NOTICE.teleocr",
+      "sha256": "5a1c3e65d34b6a9079394eee2fb439d7f0a531bb679ecf88f226d6c450787250",
+      "identical_to_source": true
+    },
+    {
+      "installed_name": "Apache-2.0.txt",
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "identical_to_source": true
+    }
+  ],
+  "installed_binary_scope": "The rebuilt native CLI/shared library/server and the declared notices were installed; see install-post-review.log"
+}

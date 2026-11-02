@@ -1,0 +1,45 @@
+{
+ "kind": "diff",
+ "binary": "test-swinir-diff",
+ "arms": {
+  "cuda": {
+   "rc": 0,
+   "wall_s": 2.821,
+   "gpu_mem_peak_mib": 121,
+   "cuda_used": true,
+   "n_stages": 1,
+   "stages": {
+    "output": 0.998403
+   },
+   "worst_stage": [
+    "output",
+    0.998403
+   ],
+   "threshold_fails": [],
+   "threshold_missing": [],
+   "stdout_tail": "Reference stages:\n  input: [64,64,3]\n  conv_first: [64,64,60]\n  rstb_0: [64,64,60]\n  rstb_1: [64,64,60]\n  rstb_2: [64,64,60]\n  rstb_3: [64,64,60]\n  output: [256,256,3]\n\nLoading SwinIR model: $SCRATCH/models/swinir-light-x4-f16.gguf\nScale: 4x\nOutput: 256x256\n  output                     cos=0.998403  cos_ch_min=0.997874  max_abs=5.71e-01  PASS\n    (note: uint8-clamped output vs float ref; max_abs is a single near-zero edge pixel)\n\n1 passed, 0 failed\n\ncrispembed_diff: loaded 7 tensors from $SCRATCH/models/swinir-ref.gguf\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\nswinir_sr: dim=60, rstb=4, blocks=6, heads=6, ws=8, scale=4x, 366 tensors\nswinir_sr: conv path = ggml_conv_2d (CPU sched)\nswinir_sr: 64x64 → 256x256 (4x), tiles=1x1\nswinir_sr: done (256x256)\n"
+  },
+  "cpu": {
+   "rc": 0,
+   "wall_s": 2.37,
+   "gpu_mem_peak_mib": 1,
+   "cuda_used": false,
+   "n_stages": 1,
+   "stages": {
+    "output": 0.998403
+   },
+   "worst_stage": [
+    "output",
+    0.998403
+   ],
+   "threshold_fails": [],
+   "threshold_missing": [],
+   "stdout_tail": "Reference stages:\n  input: [64,64,3]\n  conv_first: [64,64,60]\n  rstb_0: [64,64,60]\n  rstb_1: [64,64,60]\n  rstb_2: [64,64,60]\n  rstb_3: [64,64,60]\n  output: [256,256,3]\n\nLoading SwinIR model: $SCRATCH/models/swinir-light-x4-f16.gguf\nScale: 4x\nOutput: 256x256\n  output                     cos=0.998403  cos_ch_min=0.997874  max_abs=5.71e-01  PASS\n    (note: uint8-clamped output vs float ref; max_abs is a single near-zero edge pixel)\n\n1 passed, 0 failed\n\ncrispembed_diff: loaded 7 tensors from $SCRATCH/models/swinir-ref.gguf\nggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\nswinir_sr: dim=60, rstb=4, blocks=6, heads=6, ws=8, scale=4x, 366 tensors\nswinir_sr: conv path = ggml_conv_2d (CPU sched)\nswinir_sr: 64x64 → 256x256 (4x), tiles=1x1\nswinir_sr: done (256x256)\n"
+  }
+ },
+ "seconds": 6.8,
+ "id": "diff-swinir",
+ "commit": "e0da5d08791ff8895e30fff01657668f1731b94c",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

@@ -1,0 +1,27 @@
+{
+  "kind": "actual license-component installs in shared and static-only configurations",
+  "results": [
+    {
+      "configuration": "shared",
+      "exit_code": 0,
+      "notices_exact": {
+        "LICENSE": true,
+        "NOTICE.marker": true,
+        "NOTICE.teleocr": true,
+        "Apache-2.0.txt": true
+      }
+    },
+    {
+      "configuration": "static-only",
+      "exit_code": 0,
+      "notices_exact": {
+        "LICENSE": true,
+        "NOTICE.marker": true,
+        "NOTICE.teleocr": true,
+        "Apache-2.0.txt": true
+      }
+    }
+  ],
+  "CMakeLists_sha256": "3594067de5c44f0fa27514d64489fbea675dedab762651e9ebcb43ff9651bf74",
+  "passed": true
+}

@@ -1,0 +1,597 @@
+[1/37] Building CXX object CMakeFiles/crispembed.dir/src/decoder_embed.cpp.o
+In file included from /usr/include/c++/13/bits/stl_tree.h:63,
+                 from /usr/include/c++/13/map:62,
+                 from /workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/core/gguf_loader.h:57,
+                 from /workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/decoder_embed_internal.h:3,
+                 from /workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/decoder_embed.cpp:11:
+In static member function ‘static _Up* std::__copy_move<_IsMove, true, std::random_access_iterator_tag>::__copy_m(_Tp*, _Tp*, _Up*) [with _Tp = const load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap; _Up = load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap; bool _IsMove = false]’,
+    inlined from ‘_OI std::__copy_move_a2(_II, _II, _OI) [with bool _IsMove = false; _II = const load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*; _OI = load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*]’ at /usr/include/c++/13/bits/stl_algobase.h:506:30,
+    inlined from ‘_OI std::__copy_move_a1(_II, _II, _OI) [with bool _IsMove = false; _II = const load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*; _OI = load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*]’ at /usr/include/c++/13/bits/stl_algobase.h:533:42,
+    inlined from ‘_OI std::__copy_move_a(_II, _II, _OI) [with bool _IsMove = false; _II = const load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*; _OI = load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*]’ at /usr/include/c++/13/bits/stl_algobase.h:540:31,
+    inlined from ‘_OI std::copy(_II, _II, _OI) [with _II = const load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*; _OI = load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*]’ at /usr/include/c++/13/bits/stl_algobase.h:633:7,
+    inlined from ‘void std::vector<_Tp, _Alloc>::_M_assign_aux(_ForwardIterator, _ForwardIterator, std::forward_iterator_tag) [with _ForwardIterator = const load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*; _Tp = load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap; _Alloc = std::allocator<load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap>]’ at /usr/include/c++/13/bits/vector.tcc:336:19:
+/usr/include/c++/13/bits/stl_algobase.h:437:30: warning: argument 1 null where non-null expected [-Wnonnull]
+  437 |             __builtin_memmove(__result, __first, sizeof(_Tp) * _Num);
+      |             ~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/usr/include/c++/13/bits/stl_algobase.h:437:30: note: in a call to built-in function ‘void* __builtin_memmove(void*, const void*, long unsigned int)’
+In static member function ‘static _Up* std::__copy_move<_IsMove, true, std::random_access_iterator_tag>::__copy_m(_Tp*, _Tp*, _Up*) [with _Tp = const load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap; _Up = load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap; bool _IsMove = false]’,
+    inlined from ‘_OI std::__copy_move_a2(_II, _II, _OI) [with bool _IsMove = false; _II = const load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*; _OI = load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*]’ at /usr/include/c++/13/bits/stl_algobase.h:506:30,
+    inlined from ‘_OI std::__copy_move_a1(_II, _II, _OI) [with bool _IsMove = false; _II = const load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*; _OI = load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*]’ at /usr/include/c++/13/bits/stl_algobase.h:533:42,
+    inlined from ‘_OI std::__copy_move_a(_II, _II, _OI) [with bool _IsMove = false; _II = const load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*; _OI = load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*]’ at /usr/include/c++/13/bits/stl_algobase.h:540:31,
+    inlined from ‘_OI std::copy(_II, _II, _OI) [with _II = const load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*; _OI = load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*]’ at /usr/include/c++/13/bits/stl_algobase.h:633:7,
+    inlined from ‘void std::vector<_Tp, _Alloc>::_M_assign_aux(_ForwardIterator, _ForwardIterator, std::forward_iterator_tag) [with _ForwardIterator = const load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*; _Tp = load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap; _Alloc = std::allocator<load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap>]’ at /usr/include/c++/13/bits/vector.tcc:341:15:
+/usr/include/c++/13/bits/stl_algobase.h:437:30: warning: argument 1 null where non-null expected [-Wnonnull]
+  437 |             __builtin_memmove(__result, __first, sizeof(_Tp) * _Num);
+      |             ~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/usr/include/c++/13/bits/stl_algobase.h:437:30: note: in a call to built-in function ‘void* __builtin_memmove(void*, const void*, long unsigned int)’
+[2/37] Building CXX object CMakeFiles/crispembed.dir/examples/cli/model_mgr.cpp.o
+[3/37] Building CXX object CMakeFiles/crispembed.dir/src/crispembed.cpp.o
+[4/37] Building CXX object CMakeFiles/crispembed.dir/src/ocr_orchestrator.cpp.o
+[5/37] Building CXX object CMakeFiles/crispembed.dir/src/lfm2_embed.cpp.o
+In file included from /workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/lfm2_embed.cpp:20:
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h: In member function ‘bool crispembed_diff::Ref::load(const std::string&)’:
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:167:10: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  167 |     fread(&magic, 4, 1, f);
+      |     ~~~~~^~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:174:10: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  174 |     fread(&version, 4, 1, f);
+      |     ~~~~~^~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:182:10: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  182 |     fread(&n_tensors, 8, 1, f);
+      |     ~~~~~^~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:183:10: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  183 |     fread(&n_kv, 8, 1, f);
+      |     ~~~~~^~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:198:14: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  198 |         fread(&vtype, 4, 1, f);
+      |         ~~~~~^~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:202:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  202 |             fread(&v, 1, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:207:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  207 |             fread(&v, 1, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:212:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  212 |             fread(&v, 2, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:217:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  217 |             fread(&v, 2, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:222:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  222 |             fread(&v, 4, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:227:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  227 |             fread(&v, 4, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:232:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  232 |             fread(&v, 4, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:237:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  237 |             fread(&v, 1, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:247:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  247 |             fread(&arr_type, 4, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:249:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  249 |             fread(&arr_n, 8, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:257:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  257 |                     fread(&v, 1, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:263:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  263 |                     fread(&v, 2, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:269:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  269 |                     fread(&v, 4, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:274:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  274 |                     fread(&v, 4, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:282:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  282 |                     fread(&v, 8, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:287:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  287 |                     fread(&v, 8, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:292:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  292 |                     fread(&v, 8, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:303:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  303 |             fread(&v, 8, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:308:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  308 |             fread(&v, 8, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:313:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  313 |             fread(&v, 8, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:333:14: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  333 |         fread(&ti.n_dims, 4, 1, f);
+      |         ~~~~~^~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:336:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  336 |             fread(&ti.dims[d], 8, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:338:14: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  338 |         fread(&ti.type, 4, 1, f);
+      |         ~~~~~^~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:339:14: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  339 |         fread(&ti.offset, 8, 1, f);
+      |         ~~~~~^~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:369:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  369 |             fread(td.data.data(), sizeof(float), n_elem, f);
+      |             ~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:373:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  373 |             fread(ibuf.data(), sizeof(int32_t), n_elem, f);
+      |             ~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h: In lambda function:
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:188:14: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  188 |         fread(&len, 8, 1, f);
+      |         ~~~~~^~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:190:14: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  190 |         fread(&s[0], 1, len, f);
+      |         ~~~~~^~~~~~~~~~~~~~~~~~
+[6/37] Building CXX object CMakeFiles/crispembed.dir/src/qwen2vl_ocr.cpp.o
+In file included from /workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/qwen2vl_ocr.cpp:31:
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h: In member function ‘bool crispembed_diff::Ref::load(const std::string&)’:
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:167:10: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  167 |     fread(&magic, 4, 1, f);
+      |     ~~~~~^~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:174:10: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  174 |     fread(&version, 4, 1, f);
+      |     ~~~~~^~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:182:10: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  182 |     fread(&n_tensors, 8, 1, f);
+      |     ~~~~~^~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:183:10: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  183 |     fread(&n_kv, 8, 1, f);
+      |     ~~~~~^~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:198:14: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  198 |         fread(&vtype, 4, 1, f);
+      |         ~~~~~^~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:202:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  202 |             fread(&v, 1, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:207:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  207 |             fread(&v, 1, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:212:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  212 |             fread(&v, 2, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:217:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  217 |             fread(&v, 2, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:222:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  222 |             fread(&v, 4, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:227:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  227 |             fread(&v, 4, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:232:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  232 |             fread(&v, 4, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:237:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  237 |             fread(&v, 1, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:247:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  247 |             fread(&arr_type, 4, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:249:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  249 |             fread(&arr_n, 8, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:257:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  257 |                     fread(&v, 1, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:263:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  263 |                     fread(&v, 2, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:269:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  269 |                     fread(&v, 4, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:274:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  274 |                     fread(&v, 4, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:282:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  282 |                     fread(&v, 8, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:287:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  287 |                     fread(&v, 8, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:292:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  292 |                     fread(&v, 8, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:303:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  303 |             fread(&v, 8, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:308:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  308 |             fread(&v, 8, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:313:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  313 |             fread(&v, 8, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:333:14: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  333 |         fread(&ti.n_dims, 4, 1, f);
+      |         ~~~~~^~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:336:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  336 |             fread(&ti.dims[d], 8, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:338:14: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  338 |         fread(&ti.type, 4, 1, f);
+      |         ~~~~~^~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:339:14: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  339 |         fread(&ti.offset, 8, 1, f);
+      |         ~~~~~^~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:369:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  369 |             fread(td.data.data(), sizeof(float), n_elem, f);
+      |             ~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:373:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  373 |             fread(ibuf.data(), sizeof(int32_t), n_elem, f);
+      |             ~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h: In lambda function:
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:188:14: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  188 |         fread(&len, 8, 1, f);
+      |         ~~~~~^~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:190:14: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  190 |         fread(&s[0], 1, len, f);
+      |         ~~~~~^~~~~~~~~~~~~~~~~~
+[7/37] Building CXX object CMakeFiles/crispembed.dir/src/gemma_decision.cpp.o
+[8/37] Building CXX object CMakeFiles/crispembed.dir/src/ultrabert_embed.cpp.o
+[9/37] Building CXX object CMakeFiles/crispembed.dir/src/systemone_api.cpp.o
+[10/37] Building CXX object CMakeFiles/crispembed.dir/src/sam2_capi.cpp.o
+[11/37] Building CXX object CMakeFiles/crispembed.dir/src/moedern_text_api.cpp.o
+[12/37] Building CXX object CMakeFiles/crispembed.dir/src/bert_ner.cpp.o
+[13/37] Building CXX object CMakeFiles/crispembed-shared.dir/src/decoder_embed.cpp.o
+In file included from /usr/include/c++/13/bits/stl_tree.h:63,
+                 from /usr/include/c++/13/map:62,
+                 from /workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/core/gguf_loader.h:57,
+                 from /workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/decoder_embed_internal.h:3,
+                 from /workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/decoder_embed.cpp:11:
+In static member function ‘static _Up* std::__copy_move<_IsMove, true, std::random_access_iterator_tag>::__copy_m(_Tp*, _Tp*, _Up*) [with _Tp = const load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap; _Up = load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap; bool _IsMove = false]’,
+    inlined from ‘_OI std::__copy_move_a2(_II, _II, _OI) [with bool _IsMove = false; _II = const load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*; _OI = load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*]’ at /usr/include/c++/13/bits/stl_algobase.h:506:30,
+    inlined from ‘_OI std::__copy_move_a1(_II, _II, _OI) [with bool _IsMove = false; _II = const load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*; _OI = load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*]’ at /usr/include/c++/13/bits/stl_algobase.h:533:42,
+    inlined from ‘_OI std::__copy_move_a(_II, _II, _OI) [with bool _IsMove = false; _II = const load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*; _OI = load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*]’ at /usr/include/c++/13/bits/stl_algobase.h:540:31,
+    inlined from ‘_OI std::copy(_II, _II, _OI) [with _II = const load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*; _OI = load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*]’ at /usr/include/c++/13/bits/stl_algobase.h:633:7,
+    inlined from ‘void std::vector<_Tp, _Alloc>::_M_assign_aux(_ForwardIterator, _ForwardIterator, std::forward_iterator_tag) [with _ForwardIterator = const load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*; _Tp = load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap; _Alloc = std::allocator<load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap>]’ at /usr/include/c++/13/bits/vector.tcc:336:19:
+/usr/include/c++/13/bits/stl_algobase.h:437:30: warning: argument 1 null where non-null expected [-Wnonnull]
+  437 |             __builtin_memmove(__result, __first, sizeof(_Tp) * _Num);
+      |             ~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/usr/include/c++/13/bits/stl_algobase.h:437:30: note: in a call to built-in function ‘void* __builtin_memmove(void*, const void*, long unsigned int)’
+In static member function ‘static _Up* std::__copy_move<_IsMove, true, std::random_access_iterator_tag>::__copy_m(_Tp*, _Tp*, _Up*) [with _Tp = const load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap; _Up = load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap; bool _IsMove = false]’,
+    inlined from ‘_OI std::__copy_move_a2(_II, _II, _OI) [with bool _IsMove = false; _II = const load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*; _OI = load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*]’ at /usr/include/c++/13/bits/stl_algobase.h:506:30,
+    inlined from ‘_OI std::__copy_move_a1(_II, _II, _OI) [with bool _IsMove = false; _II = const load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*; _OI = load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*]’ at /usr/include/c++/13/bits/stl_algobase.h:533:42,
+    inlined from ‘_OI std::__copy_move_a(_II, _II, _OI) [with bool _IsMove = false; _II = const load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*; _OI = load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*]’ at /usr/include/c++/13/bits/stl_algobase.h:540:31,
+    inlined from ‘_OI std::copy(_II, _II, _OI) [with _II = const load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*; _OI = load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*]’ at /usr/include/c++/13/bits/stl_algobase.h:633:7,
+    inlined from ‘void std::vector<_Tp, _Alloc>::_M_assign_aux(_ForwardIterator, _ForwardIterator, std::forward_iterator_tag) [with _ForwardIterator = const load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap*; _Tp = load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap; _Alloc = std::allocator<load_decoder_model(dec_model&, core_gguf::WeightLoad&, const char*, ggml_backend_t)::ProjMap>]’ at /usr/include/c++/13/bits/vector.tcc:341:15:
+/usr/include/c++/13/bits/stl_algobase.h:437:30: warning: argument 1 null where non-null expected [-Wnonnull]
+  437 |             __builtin_memmove(__result, __first, sizeof(_Tp) * _Num);
+      |             ~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/usr/include/c++/13/bits/stl_algobase.h:437:30: note: in a call to built-in function ‘void* __builtin_memmove(void*, const void*, long unsigned int)’
+[14/37] Building CXX object CMakeFiles/crispembed-shared.dir/examples/cli/model_mgr.cpp.o
+[15/37] Building CXX object CMakeFiles/crispembed-shared.dir/src/crispembed.cpp.o
+[16/37] Building CXX object CMakeFiles/crispembed-shared.dir/src/ocr_orchestrator.cpp.o
+[17/37] Building CXX object CMakeFiles/crispembed-shared.dir/src/lfm2_embed.cpp.o
+In file included from /workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/lfm2_embed.cpp:20:
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h: In member function ‘bool crispembed_diff::Ref::load(const std::string&)’:
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:167:10: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  167 |     fread(&magic, 4, 1, f);
+      |     ~~~~~^~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:174:10: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  174 |     fread(&version, 4, 1, f);
+      |     ~~~~~^~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:182:10: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  182 |     fread(&n_tensors, 8, 1, f);
+      |     ~~~~~^~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:183:10: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  183 |     fread(&n_kv, 8, 1, f);
+      |     ~~~~~^~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:198:14: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  198 |         fread(&vtype, 4, 1, f);
+      |         ~~~~~^~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:202:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  202 |             fread(&v, 1, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:207:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  207 |             fread(&v, 1, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:212:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  212 |             fread(&v, 2, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:217:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  217 |             fread(&v, 2, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:222:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  222 |             fread(&v, 4, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:227:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  227 |             fread(&v, 4, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:232:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  232 |             fread(&v, 4, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:237:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  237 |             fread(&v, 1, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:247:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  247 |             fread(&arr_type, 4, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:249:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  249 |             fread(&arr_n, 8, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:257:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  257 |                     fread(&v, 1, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:263:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  263 |                     fread(&v, 2, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:269:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  269 |                     fread(&v, 4, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:274:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  274 |                     fread(&v, 4, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:282:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  282 |                     fread(&v, 8, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:287:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  287 |                     fread(&v, 8, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:292:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  292 |                     fread(&v, 8, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:303:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  303 |             fread(&v, 8, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:308:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  308 |             fread(&v, 8, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:313:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  313 |             fread(&v, 8, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:333:14: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  333 |         fread(&ti.n_dims, 4, 1, f);
+      |         ~~~~~^~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:336:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  336 |             fread(&ti.dims[d], 8, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:338:14: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  338 |         fread(&ti.type, 4, 1, f);
+      |         ~~~~~^~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:339:14: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  339 |         fread(&ti.offset, 8, 1, f);
+      |         ~~~~~^~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:369:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  369 |             fread(td.data.data(), sizeof(float), n_elem, f);
+      |             ~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:373:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  373 |             fread(ibuf.data(), sizeof(int32_t), n_elem, f);
+      |             ~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h: In lambda function:
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:188:14: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  188 |         fread(&len, 8, 1, f);
+      |         ~~~~~^~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:190:14: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  190 |         fread(&s[0], 1, len, f);
+      |         ~~~~~^~~~~~~~~~~~~~~~~~
+[18/37] Building CXX object CMakeFiles/crispembed-shared.dir/src/qwen2vl_ocr.cpp.o
+In file included from /workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/qwen2vl_ocr.cpp:31:
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h: In member function ‘bool crispembed_diff::Ref::load(const std::string&)’:
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:167:10: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  167 |     fread(&magic, 4, 1, f);
+      |     ~~~~~^~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:174:10: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  174 |     fread(&version, 4, 1, f);
+      |     ~~~~~^~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:182:10: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  182 |     fread(&n_tensors, 8, 1, f);
+      |     ~~~~~^~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:183:10: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  183 |     fread(&n_kv, 8, 1, f);
+      |     ~~~~~^~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:198:14: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  198 |         fread(&vtype, 4, 1, f);
+      |         ~~~~~^~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:202:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  202 |             fread(&v, 1, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:207:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  207 |             fread(&v, 1, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:212:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  212 |             fread(&v, 2, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:217:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  217 |             fread(&v, 2, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:222:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  222 |             fread(&v, 4, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:227:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  227 |             fread(&v, 4, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:232:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  232 |             fread(&v, 4, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:237:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  237 |             fread(&v, 1, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:247:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  247 |             fread(&arr_type, 4, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:249:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  249 |             fread(&arr_n, 8, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:257:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  257 |                     fread(&v, 1, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:263:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  263 |                     fread(&v, 2, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:269:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  269 |                     fread(&v, 4, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:274:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  274 |                     fread(&v, 4, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:282:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  282 |                     fread(&v, 8, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:287:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  287 |                     fread(&v, 8, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:292:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  292 |                     fread(&v, 8, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:303:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  303 |             fread(&v, 8, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:308:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  308 |             fread(&v, 8, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:313:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  313 |             fread(&v, 8, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:333:14: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  333 |         fread(&ti.n_dims, 4, 1, f);
+      |         ~~~~~^~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:336:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  336 |             fread(&ti.dims[d], 8, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:338:14: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  338 |         fread(&ti.type, 4, 1, f);
+      |         ~~~~~^~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:339:14: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  339 |         fread(&ti.offset, 8, 1, f);
+      |         ~~~~~^~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:369:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  369 |             fread(td.data.data(), sizeof(float), n_elem, f);
+      |             ~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:373:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  373 |             fread(ibuf.data(), sizeof(int32_t), n_elem, f);
+      |             ~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h: In lambda function:
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:188:14: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  188 |         fread(&len, 8, 1, f);
+      |         ~~~~~^~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:190:14: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  190 |         fread(&s[0], 1, len, f);
+      |         ~~~~~^~~~~~~~~~~~~~~~~~
+[19/37] Building CXX object CMakeFiles/crispembed-shared.dir/src/ultrabert_embed.cpp.o
+[20/37] Building CXX object CMakeFiles/crispembed-shared.dir/src/systemone_api.cpp.o
+[21/37] Building CXX object CMakeFiles/crispembed-shared.dir/src/sam2_capi.cpp.o
+[22/37] Building CXX object CMakeFiles/crispembed-shared.dir/src/gemma_decision.cpp.o
+[23/37] Building CXX object CMakeFiles/crispembed-shared.dir/src/moedern_text_api.cpp.o
+[24/37] Linking CXX static library libcrispembed-static.a
+[25/37] Building CXX object CMakeFiles/crispembed-shared.dir/src/bert_ner.cpp.o
+[26/37] Building CXX object CMakeFiles/crispembed-cli.dir/examples/cli/main.cpp.o
+[27/37] Building CXX object CMakeFiles/test-teleocr-diff.dir/tests/test_teleocr_diff.cpp.o
+[28/37] Building CXX object CMakeFiles/test-teleocr-diff.dir/src/qwen2vl_ocr.cpp.o
+In file included from /workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/qwen2vl_ocr.cpp:31:
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h: In member function ‘bool crispembed_diff::Ref::load(const std::string&)’:
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:167:10: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  167 |     fread(&magic, 4, 1, f);
+      |     ~~~~~^~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:174:10: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  174 |     fread(&version, 4, 1, f);
+      |     ~~~~~^~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:182:10: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  182 |     fread(&n_tensors, 8, 1, f);
+      |     ~~~~~^~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:183:10: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  183 |     fread(&n_kv, 8, 1, f);
+      |     ~~~~~^~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:198:14: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  198 |         fread(&vtype, 4, 1, f);
+      |         ~~~~~^~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:202:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  202 |             fread(&v, 1, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:207:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  207 |             fread(&v, 1, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:212:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  212 |             fread(&v, 2, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:217:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  217 |             fread(&v, 2, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:222:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  222 |             fread(&v, 4, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:227:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  227 |             fread(&v, 4, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:232:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  232 |             fread(&v, 4, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:237:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  237 |             fread(&v, 1, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:247:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  247 |             fread(&arr_type, 4, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:249:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  249 |             fread(&arr_n, 8, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:257:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  257 |                     fread(&v, 1, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:263:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  263 |                     fread(&v, 2, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:269:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  269 |                     fread(&v, 4, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:274:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  274 |                     fread(&v, 4, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:282:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  282 |                     fread(&v, 8, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:287:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  287 |                     fread(&v, 8, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:292:26: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  292 |                     fread(&v, 8, 1, f);
+      |                     ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:303:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  303 |             fread(&v, 8, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:308:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  308 |             fread(&v, 8, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:313:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  313 |             fread(&v, 8, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:333:14: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  333 |         fread(&ti.n_dims, 4, 1, f);
+      |         ~~~~~^~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:336:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  336 |             fread(&ti.dims[d], 8, 1, f);
+      |             ~~~~~^~~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:338:14: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  338 |         fread(&ti.type, 4, 1, f);
+      |         ~~~~~^~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:339:14: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  339 |         fread(&ti.offset, 8, 1, f);
+      |         ~~~~~^~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:369:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  369 |             fread(td.data.data(), sizeof(float), n_elem, f);
+      |             ~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:373:18: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  373 |             fread(ibuf.data(), sizeof(int32_t), n_elem, f);
+      |             ~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h: In lambda function:
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:188:14: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  188 |         fread(&len, 8, 1, f);
+      |         ~~~~~^~~~~~~~~~~~~~~
+/workspace/scratch/960329398638/CrispEmbed-TeleOCR/src/crispembed_diff.h:190:14: warning: ignoring return value of ‘size_t fread(void*, size_t, size_t, FILE*)’ declared with attribute ‘warn_unused_result’ [-Wunused-result]
+  190 |         fread(&s[0], 1, len, f);
+      |         ~~~~~^~~~~~~~~~~~~~~~~~
+[29/37] Building CXX object CMakeFiles/test-teleocr-preprocess.dir/tests/test_teleocr_preprocess.cpp.o
+[30/37] Linking CXX shared library libcrispembed.so.0.17.14
+[31/37] Linking CXX executable crispembed
+[32/37] Linking CXX executable test-teleocr-diff
+[33/37] Linking CXX executable test-teleocr-preprocess
+[34/37] Linking CXX executable test-teleocr-ffn
+[35/37] Creating library symlink libcrispembed.so.0 libcrispembed.so
+[36/37] Building CXX object CMakeFiles/crispembed-server.dir/examples/server/server.cpp.o
+[37/37] Linking CXX executable crispembed-server

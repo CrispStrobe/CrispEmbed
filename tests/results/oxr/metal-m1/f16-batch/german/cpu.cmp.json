@@ -1,0 +1,1 @@
+{"label": "german/cpu", "ids_exact": true, "first_divergence": null, "reference_tokens": 401, "native_tokens": 401, "text_exact": true, "cer": 0.0, "eos": true, "capped": false, "runs_ms": [175042.657, 149674.972666], "warm_ms_median": 149674.972666, "load_ms": 224574.10625, "runs_identical": true}

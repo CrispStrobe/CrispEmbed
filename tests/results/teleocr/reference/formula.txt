@@ -1,0 +1,1 @@
+$$\begin{array}{rcl}\binom{\alpha}{n}-\binom{\alpha-1}{n}&=&\frac{1}{n!}\alpha(\alpha-1)(\alpha-2)\dots(\alpha-n+1)\\ &&-\frac{1}{n!}(\alpha-1)(\alpha-2)\dots(\alpha-n)\\ &=&\frac{1}{n!}(\alpha-1)(\alpha-2)\dots(\alpha-n+1)(\alpha-(\alpha-n))\\ &=&\frac{1}{(n-1)!}(\alpha-1)(\alpha-2)\dots(\alpha-n+1)\\ &=&\binom{\alpha-1}{n-1}.\end{array}$$

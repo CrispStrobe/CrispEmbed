@@ -4,9 +4,119 @@
 use std::ffi::{c_char, c_float, c_int};
 use std::os::raw::c_void;
 
+#[repr(C)]
+pub struct CrispembedMarkerContext(c_void);
+
+/// Versioned mirror of crispembed_marker_config; obtain defaults from C.
+#[repr(C)]
+#[derive(Clone, Copy)]
+pub struct CrispembedMarkerConfig {
+    pub struct_size: usize,
+    pub model_path: *const c_char,
+    pub pdfium_path: *const c_char,
+    pub password: *const c_char,
+    pub mode: c_int,
+    pub n_threads: c_int,
+    pub first_page: c_int,
+    pub last_page: c_int,
+    pub dpi: c_int,
+    pub max_tokens: c_int,
+    pub max_layout_tokens: c_int,
+    pub max_blocks: c_int,
+    pub max_pages: c_int,
+    pub max_pixels: u64,
+    pub max_asset_bytes: u64,
+    pub include_page_headers: c_int,
+    pub extract_images: c_int,
+}
+
+extern "C" {
+    pub fn crispembed_marker_default_config() -> CrispembedMarkerConfig;
+    pub fn crispembed_marker_init(config: *const CrispembedMarkerConfig) -> *mut CrispembedMarkerContext;
+    pub fn crispembed_marker_free(ctx: *mut CrispembedMarkerContext);
+    pub fn crispembed_marker_convert(ctx: *mut CrispembedMarkerContext, file: *const c_char) -> c_int;
+    pub fn crispembed_marker_convert_raw(ctx: *mut CrispembedMarkerContext, pixels: *const u8,
+        width: c_int, height: c_int, channels: c_int) -> c_int;
+    pub fn crispembed_marker_render(ctx: *mut CrispembedMarkerContext, format: *const c_char) -> *const c_char;
+    pub fn crispembed_marker_metadata(ctx: *mut CrispembedMarkerContext) -> *const c_char;
+    pub fn crispembed_marker_error(ctx: *const CrispembedMarkerContext) -> *const c_char;
+    pub fn crispembed_marker_asset_count(ctx: *const CrispembedMarkerContext) -> c_int;
+    pub fn crispembed_marker_asset_name(ctx: *const CrispembedMarkerContext, index: c_int) -> *const c_char;
+    pub fn crispembed_marker_asset_data(ctx: *const CrispembedMarkerContext, index: c_int,
+        out_size: *mut usize) -> *const u8;
+}
+
 /// Opaque handle to a loaded crispembed model.
 #[repr(C)]
 pub struct CrispembedContext(c_void);
+
+/// Experimental resident MinerU2.5-Pro context (CRISPEMBED_MINERU25_PRO=1).
+#[repr(C)]
+pub struct MineruContext(c_void);
+
+/// Experimental resident OXR-1.0 context (CRISPEMBED_OXR=1).
+#[repr(C)]
+pub struct OxrContext(c_void);
+
+extern "C" {
+    pub fn crispembed_oxr_init(model_path: *const c_char, n_threads: c_int) -> *mut OxrContext;
+    pub fn crispembed_oxr_free(ctx: *mut OxrContext);
+    pub fn crispembed_oxr_predict(ctx: *mut OxrContext, pixels: *const u8,
+        width: c_int, height: c_int, channels: c_int, prompt: *const c_char,
+        max_new_tokens: c_int, repetition_penalty: c_float) -> *const c_char;
+    pub fn crispembed_oxr_last_error(ctx: *const OxrContext) -> *const c_char;
+    /// Native document route (CRISPEMBED_OXR_NATIVE_DOC=1). `regions` points to
+    /// `OxrLayoutRegion` records; pass NULL with `layout_json` instead.
+    pub fn crispembed_oxr_process_pages(ctx: *mut OxrContext, pixels: *const *const u8,
+        widths: *const c_int, heights: *const c_int, channels: *const c_int, n_pages: c_int,
+        regions: *const OxrLayoutRegion, region_counts: *const c_int,
+        layout_json: *const c_char, options_json: *const c_char) -> *const c_char;
+    pub fn crispembed_oxr_document_layout_model(ctx: *mut OxrContext, model_path: *const c_char,
+        n_threads: c_int) -> c_int;
+    pub fn crispembed_oxr_last_trace(ctx: *const OxrContext) -> *const c_char;
+    pub fn crispembed_oxr_render_document(ctx: *mut OxrContext, format: *const c_char) -> *const c_char;
+}
+
+/// One supplied D-FINE layout candidate (`crispembed_oxr_layout_region`).
+#[repr(C)]
+#[derive(Clone, Copy, Debug)]
+pub struct OxrLayoutRegion {
+    pub label: c_int,
+    pub x1: f64,
+    pub y1: f64,
+    pub x2: f64,
+    pub y2: f64,
+    pub score: f64,
+}
+
+/// Experimental OXR-1.0 D-FINE layout context (CRISPEMBED_OXR=1 and
+/// CRISPEMBED_ACCEPT_OXR_LICENSE=1).
+#[repr(C)]
+pub struct OxrLayoutContext(c_void);
+
+extern "C" {
+    pub fn crispembed_oxr_layout_init(model_path: *const c_char, n_threads: c_int) -> *mut OxrLayoutContext;
+    pub fn crispembed_oxr_layout_free(ctx: *mut OxrLayoutContext);
+    pub fn crispembed_oxr_layout_detect(ctx: *mut OxrLayoutContext, pixels: *const u8, width: c_int,
+        height: c_int, channels: c_int, confidence: c_float) -> *const c_char;
+    pub fn crispembed_oxr_layout_timings(ctx: *mut OxrLayoutContext) -> *const c_char;
+    pub fn crispembed_oxr_layout_last_error(ctx: *const OxrLayoutContext) -> *const c_char;
+}
+
+extern "C" {
+    pub fn crispembed_mineru_init(model_path: *const c_char, n_threads: c_int) -> *mut MineruContext;
+    pub fn crispembed_mineru_free(ctx: *mut MineruContext);
+    pub fn crispembed_mineru_predict(ctx: *mut MineruContext, pixels: *const u8,
+        width: c_int, height: c_int, channels: c_int, prompt: *const c_char, max_new_tokens: c_int) -> *const c_char;
+    pub fn crispembed_mineru_extract(ctx: *mut MineruContext, pixels: *const u8,
+        width: c_int, height: c_int, channels: c_int, image_analysis: c_int, max_new_tokens: c_int) -> *const c_char;
+    pub fn crispembed_mineru_extract_document(ctx: *mut MineruContext, pixels: *const u8,
+        width: c_int, height: c_int, channels: c_int, options_json: *const c_char,
+        max_new_tokens: c_int) -> *const c_char;
+    pub fn crispembed_mineru_last_document(ctx: *mut MineruContext, format: *const c_char) -> *const c_char;
+    pub fn crispembed_mineru_last_markdown(ctx: *const MineruContext) -> *const c_char;
+    pub fn crispembed_mineru_last_error(ctx: *const MineruContext) -> *const c_char;
+}
 
 /// Opaque joint-schema SystemOne context; separate from embedding/Gemma handles.
 #[repr(C)]
@@ -97,6 +207,11 @@ pub struct CrispembedOcrPipelineParams {
     pub image_text_fallback: c_int,
 }
 
+/// TeleOCR stage selector. Requires `CRISPEMBED_TELEOCR=1` and a local TeleOCR GGUF.
+pub const CRISPEMBED_OCR_ENGINE_TELEOCR: c_int = 24;
+pub const CRISPEMBED_OCR_ENGINE_MINERU25_PRO: c_int = 25;
+pub const CRISPEMBED_OCR_ENGINE_OXR: c_int = 26;
+
 /// One fully-specified OCR pipeline stage (full per-stage builder). Field order
 /// must match `crispembed_ocr_stage` in crispembed.h exactly.
 #[repr(C)]
@@ -109,6 +224,9 @@ pub struct CrispembedOcrStage {
     // 10=granite_vision 11=lightonocr 12=qwen3vl 13=unlimited_ocr
     // 14=unified 15=tesseract_fraktur 16=ppocrv6 17=easyocr 18=olmocr
     // 19=lfm2_vl 20=qwen35_ocr (experimental) 21=ovisocr2 (explicit gated format2) 22=ovisocr3 (gated format3)
+    // 23=minicpm_ocr (experimental), 24=teleocr (CRISPEMBED_TELEOCR),
+    // 25=mineru25_pro (gated native basic page pipeline)
+    // 26=oxr (gated recognition/reading order; external layout remains separate)
     pub engine: c_int,
     pub model_a: *const c_char,
     pub model_b: *const c_char,
@@ -680,6 +798,22 @@ extern "C" {
     pub fn crispembed_ocr_model_set_prompt(
         ctx: *mut OcrModelContext,
         prompt: *const c_char,
+    ) -> c_int;
+
+    /// TeleOCR-only generation controls. Returns 1 for valid settings, 0 otherwise.
+    pub fn crispembed_ocr_model_set_generation_params(
+        ctx: *mut OcrModelContext,
+        repetition_penalty: c_float,
+        presence_penalty: c_float,
+        frequency_penalty: c_float,
+        no_repeat_ngram: c_int,
+    ) -> c_int;
+    pub fn crispembed_ocr_model_get_generation_params(
+        ctx: *const OcrModelContext,
+        repetition_penalty: *mut c_float,
+        presence_penalty: *mut c_float,
+        frequency_penalty: *mut c_float,
+        no_repeat_ngram: *mut c_int,
     ) -> c_int;
 
     /// Recognize math from grayscale float pixels [0..1].

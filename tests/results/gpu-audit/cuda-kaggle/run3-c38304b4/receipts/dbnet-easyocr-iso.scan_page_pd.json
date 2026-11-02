@@ -1,0 +1,140 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "--json",
+  "-m",
+  "easyocr-english-g2-f16.gguf",
+  "--ocr-pipeline",
+  "scan_page_pd.png",
+  "--ocr-engine",
+  "easyocr",
+  "--ocr-det",
+  "dbnet-ic15-q8_0.gguf",
+  "--ocr-rec",
+  "easyocr-english-g2-f16.gguf"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    4.275,
+    4.226
+   ],
+   "gpu_mem_peak_mib": 747,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\nggml_backend_cuda_graph_compute: CUDA graph warmup complete\nggml_backend_cuda_graph_compute: CUDA graph warmup reset\nggml_backend_cuda_graph_compute: CUDA graph warmup complete\nggml_backend_cuda_graph_compute: CUDA graph warmup reset\nggml_backend_cuda_graph_compute: CUDA graph warmup complete\nggml_backend_cuda_graph_compute: CUDA graph warmup reset\nggml_backend_cuda_graph_compute: CUDA graph warmup complete\nggml_backend_cuda_graph_compute: CUDA graph warmup reset\nggml_backend_cuda_graph_compute: CUDA graph warmup complete\nggml_backend_cuda_graph_compute: CUDA graph warmup reset\nggml_backend_cuda_graph_compute: CUDA graph warmup complete\nggml_backend_cuda_graph_compute: CUDA graph warmup reset\n",
+   "stdout_sha256": "ad8d340bf84faf3dfbbe8fa89ef00b2e23ec8c980893885ada8ec251b8cbc06a",
+   "stdout": "{\"n_regions\":34,\"mean_confidence\":0.403,\"full_text\":\"36 PRIDE AND PREJUDICE\\nThese two girls had bcen  above a hour in the place,\\nhappily   employed   iu   visiting   an   opposite   miiliner:\\nwatching the sentinel o guard, and  dressing & [salad\\nand cucumber.\\nplayed : table set out with wuch cold meat a8 an inn\\nAfter welcoming their sisters; they triumphantly dis-\\nlarder usually affords, exclziming, * Is cot this nice\\nnot this &0 agreeable surprize =\\nAnd we mean to ireat you all;\\\"  added Lydia _\\nbut You must lend us the moncy, for we have just spent\\nours at the shop out there \\\"   Then, shewing her pEr-\\nchases _\\\" Look here; I have bo-ght this bonne:.  i do\\n1o: think it is very pretty ; but 1 thought I night as\\nwell buy it &5 not. ' f shail pll it to pieces :8 son as\\nget home; and se€ if [ can make % #p any better:'\\nAnd when Ler sisters .bused i as ugly, she added,\\nOonc Rucier-coouredterih o !ardrben {ha\\\"; Lcnnnk\\nwith perfect  unconcers, % On . but there 'were two &\\nwill be very %oleratle:   Besides, % will   not  much\\nhrAcft Vecytoindeod #cy _tejFOElga tortin\\\" the\\nsgriry wha: One wears this summe ; after the -,_shire\\ngreatest satisfaction:\\nThey are going to be encamped rear  Brighton ;\\n~a1d [ do 80 want papa t0 take 48 ail there for the sum-\\nmer !   It would be such a deiicious scheme,and [ dare\\nRxze \\\"oulcohaod' Ocost,nxingg \\\" Oaly Hank whoald\\nmiserable sutimer else we shall have\\nYes;\\\" thought Elizabeth, % that would be & delight-\\nsoldiers; [0 us, who have been overset already By one\\nGood Heaven : \\\"' Brightos; &ud & whole  campful 0\\nful scheme indeed, and   completely do for us at ouce:\\npoor   regimert  of militia, and   the  monthly  balls   of\\nMeryton\"}\n",
+   "vs_cpu": {
+    "byte_identical": false,
+    "json": {
+     "n_numbers": [
+      2,
+      2
+     ],
+     "strings_equal": false,
+     "n_strings": [
+      1,
+      1
+     ],
+     "string_ratio": 0.633696563285834
+    },
+    "final_cosine": 0.999885376405564,
+    "max_abs": 19.0,
+    "final_metric": "cosine over all JSON numbers"
+   }
+  },
+  "cuda-detcpu": {
+   "backend": "cuda",
+   "env": {
+    "OCR_DETECT_USE_GPU": "0"
+   },
+   "wall_s": [
+    6.182,
+    5.981
+   ],
+   "gpu_mem_peak_mib": 279,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\nggml_backend_cuda_graph_compute: CUDA graph warmup complete\nggml_backend_cuda_graph_compute: CUDA graph warmup reset\nggml_backend_cuda_graph_compute: CUDA graph warmup complete\nggml_backend_cuda_graph_compute: CUDA graph warmup reset\nggml_backend_cuda_graph_compute: CUDA graph warmup complete\nggml_backend_cuda_graph_compute: CUDA graph warmup reset\nggml_backend_cuda_graph_compute: CUDA graph warmup complete\nggml_backend_cuda_graph_compute: CUDA graph warmup reset\nggml_backend_cuda_graph_compute: CUDA graph warmup complete\nggml_backend_cuda_graph_compute: CUDA graph warmup reset\nggml_backend_cuda_graph_compute: CUDA graph warmup complete\nggml_backend_cuda_graph_compute: CUDA graph warmup reset\n",
+   "stdout_sha256": "ad8d340bf84faf3dfbbe8fa89ef00b2e23ec8c980893885ada8ec251b8cbc06a",
+   "stdout": "{\"n_regions\":34,\"mean_confidence\":0.403,\"full_text\":\"36 PRIDE AND PREJUDICE\\nThese two girls had bcen  above a hour in the place,\\nhappily   employed   iu   visiting   an   opposite   miiliner:\\nwatching the sentinel o guard, and  dressing & [salad\\nand cucumber.\\nplayed : table set out with wuch cold meat a8 an inn\\nAfter welcoming their sisters; they triumphantly dis-\\nlarder usually affords, exclziming, * Is cot this nice\\nnot this &0 agreeable surprize =\\nAnd we mean to ireat you all;\\\"  added Lydia _\\nbut You must lend us the moncy, for we have just spent\\nours at the shop out there \\\"   Then, shewing her pEr-\\nchases _\\\" Look here; I have bo-ght this bonne:.  i do\\n1o: think it is very pretty ; but 1 thought I night as\\nwell buy it &5 not. ' f shail pll it to pieces :8 son as\\nget home; and se€ if [ can make % #p any better:'\\nAnd when Ler sisters .bused i as ugly, she added,\\nOonc Rucier-coouredterih o !ardrben {ha\\\"; Lcnnnk\\nwith perfect  unconcers, % On . but there 'were two &\\nwill be very %oleratle:   Besides, % will   not  much\\nhrAcft Vecytoindeod #cy _tejFOElga tortin\\\" the\\nsgriry wha: One wears this summe ; after the -,_shire\\ngreatest satisfaction:\\nThey are going to be encamped rear  Brighton ;\\n~a1d [ do 80 want papa t0 take 48 ail there for the sum-\\nmer !   It would be such a deiicious scheme,and [ dare\\nRxze \\\"oulcohaod' Ocost,nxingg \\\" Oaly Hank whoald\\nmiserable sutimer else we shall have\\nYes;\\\" thought Elizabeth, % that would be & delight-\\nsoldiers; [0 us, who have been overset already By one\\nGood Heaven : \\\"' Brightos; &ud & whole  campful 0\\nful scheme indeed, and   completely do for us at ouce:\\npoor   regimert  of militia, and   the  monthly  balls   of\\nMeryton\"}\n",
+   "vs_cpu": {
+    "byte_identical": false,
+    "json": {
+     "n_numbers": [
+      2,
+      2
+     ],
+     "strings_equal": false,
+     "n_strings": [
+      1,
+      1
+     ],
+     "string_ratio": 0.633696563285834
+    },
+    "final_cosine": 0.999885376405564,
+    "max_abs": 19.0,
+    "final_metric": "cosine over all JSON numbers"
+   }
+  },
+  "cuda-reccpu": {
+   "backend": "cuda",
+   "env": {
+    "EASYOCR_FORCE_CPU": "1"
+   },
+   "wall_s": [
+    8.088,
+    8.087
+   ],
+   "gpu_mem_peak_mib": 577,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\n",
+   "stdout_sha256": "2be71d89069761b4f3f7f40e810ccc2d35a12eb3624c7798f792a27e50393ae8",
+   "stdout": "{\"n_regions\":15,\"mean_confidence\":0.405,\"full_text\":\"36 PRIDE AND PREJUDICE\\nThese two girls had bcen  above a hour in the place,\\nAfter welcoming their sisters; they triumphantly dis-\\nAnd we mean to ireat you all;\\\"  added Lydia _\\nbut You must lend us the moncy, for we have just spent\\nours at the shop out there \\\"   Then, shewing her pEr-\\nwell buy it &5 not. ' f shail pll it to pieces :8 son as\\n with perfect  unconcers, % On . but there 'were two &\\n~will be very %oleratle:   Besides, % will   not  much\\n~sgriry wha: One wears this summe ; after the -,_shire\\n'They are going to be encamped rear  Brighton ;\\n~a1d [ do 80 want papa t0 take 48 ail there for the sum-\\nmiserable sutmer else we shall have\\nYes;\\\" thought Elizabeth, % that would be & delight-\\npoor   regimert  of militia, and   the  monthly  balls   of\"}\n",
+   "vs_cpu": {
+    "byte_identical": true,
+    "json": {
+     "n_numbers": [
+      2,
+      2
+     ],
+     "strings_equal": true,
+     "n_strings": [
+      1,
+      1
+     ]
+    },
+    "final_cosine": 0.9999999999999999,
+    "max_abs": 0.0,
+    "final_metric": "cosine over all JSON numbers"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    9.544,
+    9.547
+   ],
+   "gpu_mem_peak_mib": 1,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "ggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\n",
+   "stdout_sha256": "2be71d89069761b4f3f7f40e810ccc2d35a12eb3624c7798f792a27e50393ae8",
+   "stdout": "{\"n_regions\":15,\"mean_confidence\":0.405,\"full_text\":\"36 PRIDE AND PREJUDICE\\nThese two girls had bcen  above a hour in the place,\\nAfter welcoming their sisters; they triumphantly dis-\\nAnd we mean to ireat you all;\\\"  added Lydia _\\nbut You must lend us the moncy, for we have just spent\\nours at the shop out there \\\"   Then, shewing her pEr-\\nwell buy it &5 not. ' f shail pll it to pieces :8 son as\\n with perfect  unconcers, % On . but there 'were two &\\n~will be very %oleratle:   Besides, % will   not  much\\n~sgriry wha: One wears this summe ; after the -,_shire\\n'They are going to be encamped rear  Brighton ;\\n~a1d [ do 80 want papa t0 take 48 ail there for the sum-\\nmiserable sutmer else we shall have\\nYes;\\\" thought Elizabeth, % that would be & delight-\\npoor   regimert  of militia, and   the  monthly  balls   of\"}\n"
+  }
+ },
+ "precision": "f16",
+ "bar": 0.98,
+ "seconds": 57.0,
+ "id": "dbnet-easyocr-iso.scan_page_pd",
+ "commit": "c38304b4283da24cd88141a8b162b8c9be41b833",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

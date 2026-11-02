@@ -1,0 +1,42 @@
+{
+  "original block, original input vs frozen": {
+    "max_abs": 0.0009765625,
+    "index": [
+      217,
+      849
+    ],
+    "actual": -4856.2666015625,
+    "reference": -4856.265625,
+    "values_above_0_002": 0
+  },
+  "original block, native input vs frozen": {
+    "max_abs": 0.08642578125,
+    "index": [
+      913,
+      849
+    ],
+    "actual": -926.8772583007812,
+    "reference": -926.9636840820312,
+    "values_above_0_002": 12
+  },
+  "native pipeline vs original block with native input": {
+    "max_abs": 0.00390625,
+    "index": [
+      280,
+      849
+    ],
+    "actual": -5876.29296875,
+    "reference": -5876.2890625,
+    "values_above_0_002": 6
+  },
+  "worst pipeline coordinate": {
+    "index": [
+      913,
+      849
+    ],
+    "frozen": -926.9636840820312,
+    "source_original_input": -926.9638061523438,
+    "source_native_input": -926.8772583007812,
+    "native": -926.876953125
+  }
+}

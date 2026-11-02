@@ -1,0 +1,4 @@
+[1/4] Building CXX object CMakeFiles/test-teleocr-diff.dir/tests/test_teleocr_diff.cpp.o
+[2/4] Linking CXX executable test-teleocr-diff
+[3/4] Building CXX object CMakeFiles/crispembed-quantize.dir/tools/quantize.cpp.o
+[4/4] Linking CXX executable crispembed-quantize

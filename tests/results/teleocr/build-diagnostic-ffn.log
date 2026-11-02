@@ -1,0 +1,21 @@
+[0/1] Re-running CMake...
+Problem opening /proc/cpuinfo
+Problem opening /proc/meminfo
+-- Warning: ccache not found - consider installing it for faster compilation or disable this warning with GGML_CCACHE=OFF
+-- CMAKE_SYSTEM_PROCESSOR: x86_64
+-- GGML_SYSTEM_ARCH: x86
+-- Including CPU backend
+-- x86 detected
+-- Adding CPU backend variant ggml-cpu: -msse4.2;-mf16c;-mfma;-mbmi2;-mavx;-mavx2 GGML_SSE42;GGML_F16C;GGML_FMA;GGML_BMI2;GGML_AVX;GGML_AVX2
+-- ggml version: 0.17.0
+-- ggml commit:  a06fc0b
+-- crispembed: crisp_audio not found at /workspace/scratch/960329398638/CrispEmbed-TeleOCR/../CrispASR/crisp_audio — audio paths disabled
+-- crispembed: crisp_punc not found at /workspace/scratch/960329398638/CrispEmbed-TeleOCR/../CrispASR/crisp_punc — using local copies
+-- crispembed: crisp_lid not found at /workspace/scratch/960329398638/CrispEmbed-TeleOCR/../CrispASR/crisp_lid — LID disabled
+-- crispembed: crisp_truecase not found at /workspace/scratch/960329398638/CrispEmbed-TeleOCR/../CrispASR/crisp_truecase — truecasing disabled
+-- C2PA: not found — images are still PNG with iTXt provenance, just unsigned (-DCRISPEMBED_C2PA_FETCH=ON to enable)
+-- Configuring done (0.1s)
+-- Generating done (0.1s)
+-- Build files have been written to: /workspace/scratch/960329398638/build-teleocr
+[1/3] Building CXX object CMakeFiles/test-teleocr-ffn.dir/tests/test_teleocr_ffn.cpp.o
+[2/3] Linking CXX executable test-teleocr-ffn

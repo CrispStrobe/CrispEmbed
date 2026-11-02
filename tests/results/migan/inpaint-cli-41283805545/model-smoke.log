@@ -1,0 +1,43 @@
+{
+  "schema": "crispembed-inpaint-cli-smoke-v1",
+  "passed": true,
+  "cases": [
+    {
+      "case": "empty",
+      "width": 256,
+      "height": 256,
+      "fill_pixels": 0,
+      "known_rgb_exact": true,
+      "png_sha256": "f0c387cba4dcde9ffa430e5d8723ad72c340eb75bbc5cb41687fedb48b6b7033"
+    },
+    {
+      "case": "subtitle",
+      "width": 256,
+      "height": 256,
+      "fill_pixels": 2560,
+      "known_rgb_exact": true,
+      "png_sha256": "1cd36ef7862f5a816b14148c85ac06e4fbe87cc9832c6d5e381b2f64713f3553"
+    },
+    {
+      "case": "edge",
+      "width": 173,
+      "height": 91,
+      "fill_pixels": 180,
+      "known_rgb_exact": true,
+      "png_sha256": "30eba41fd4c709c11908c24e76d834b47a134bdc7e353f5ae415efd615088d91"
+    },
+    {
+      "case": "tiles",
+      "width": 449,
+      "height": 385,
+      "fill_pixels": 9640,
+      "known_rgb_exact": true,
+      "png_sha256": "483e85cb816b6af7c82052cc12a3467b93a80a47ea5ffe76018cf725f7764ca6"
+    }
+  ],
+  "same_context_repeat_exact": true,
+  "single_and_batch_exact": true,
+  "batch_wall_seconds_diagnostic": 6.420101209999984,
+  "real_scene_quality_qualified": false,
+  "temporal_quality_qualified": false
+}

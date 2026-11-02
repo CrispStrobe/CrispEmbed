@@ -1,0 +1,5 @@
+# Local conversion requires only these packages; Python 3.11 or newer.
+numpy>=1.26,<3
+gguf==0.19.0
+# Used only with --model XingChen-AGI/TeleOCR (local directories work offline).
+huggingface_hub>=0.23,<2

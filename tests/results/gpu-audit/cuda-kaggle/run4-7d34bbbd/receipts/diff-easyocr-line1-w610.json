@@ -1,0 +1,73 @@
+{
+ "kind": "diff",
+ "binary": "test-easyocr-diff",
+ "arms": {
+  "cuda": {
+   "rc": 0,
+   "wall_s": 0.967,
+   "gpu_mem_peak_mib": 141,
+   "cuda_used": true,
+   "n_stages": 6,
+   "stages": {
+    "input_image": 0.9999972,
+    "features": 0.9182681,
+    "sequence_input": 0.9999881,
+    "bilstm_0": 0.9999929,
+    "bilstm_1": 0.9998397,
+    "logits": 0.9998773
+   },
+   "worst_stage": [
+    "features",
+    0.9182681
+   ],
+   "threshold_fails": [
+    [
+     "features",
+     0.9182681,
+     0.999
+    ]
+   ],
+   "threshold_missing": [],
+   "decoded": [
+    "The quick brown fox jumps"
+   ],
+   "stdout_tail": "decoded=The quick brown fox jumps\neasyocr-diff input_image      n=39040 max=0.0078432 mean=0.000165341 rms=0.00113877 cos=0.9999972 global=0.9999993 mine=187.381 ref=187.376 PASS\neasyocr-diff features         n=115968 max=0.0995085 mean=0.000691109 rms=0.00321899 cos=0.9182681 global=0.9999985 mine=628.128 ref=628.099 PASS\neasyocr-diff sequence_input   n=38656 max=0.0331695 mean=0.000643668 rms=0.00197866 cos=0.9999881 global=0.9999987 mine=241.596 ref=241.584 PASS\neasyocr-diff bilstm_0         n=38656 max=0.00972974 mean=0.00109497 rms=0.00148207 cos=0.9999929 global=0.9999986 mine=172.413 ref=172.415 PASS\neasyocr-diff bilstm_1         n=38656 max=0.111853 mean=0.00225702 rms=0.00461675 cos=0.9998397 global=0.9999979 mine=442.112 ref=442.071 PASS\neasyocr-diff logits           n=14647 max=0.661175 mean=0.00942091 rms=0.0250222 cos=0.9998773 global=0.9999990 mine=2184.83 ref=2184.79 PASS\n\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispembed_diff: loaded 26 tensors from $SCRATCH/models/easyocr-ref-line1-w610.gguf\ncrispembed_diff: loaded 26 tensors from $SCRATCH/models/easyocr-ref-line1-w610.gguf\n"
+  },
+  "cpu": {
+   "rc": 0,
+   "wall_s": 0.516,
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "n_stages": 6,
+   "stages": {
+    "input_image": 0.9999972,
+    "features": 0.9182613,
+    "sequence_input": 0.9999881,
+    "bilstm_0": 0.999993,
+    "bilstm_1": 0.9998434,
+    "logits": 0.9998797
+   },
+   "worst_stage": [
+    "features",
+    0.9182613
+   ],
+   "threshold_fails": [
+    [
+     "features",
+     0.9182613,
+     0.999
+    ]
+   ],
+   "threshold_missing": [],
+   "decoded": [
+    "The quick brown fox jumps"
+   ],
+   "stdout_tail": "decoded=The quick brown fox jumps\neasyocr-diff input_image      n=39040 max=0.0078432 mean=0.000165341 rms=0.00113877 cos=0.9999972 global=0.9999993 mine=187.381 ref=187.376 PASS\neasyocr-diff features         n=115968 max=0.099508 mean=0.000691107 rms=0.00321898 cos=0.9182613 global=0.9999985 mine=628.128 ref=628.099 PASS\neasyocr-diff sequence_input   n=38656 max=0.0331694 mean=0.000643665 rms=0.00197865 cos=0.9999881 global=0.9999987 mine=241.596 ref=241.584 PASS\neasyocr-diff bilstm_0         n=38656 max=0.00984704 mean=0.00108159 rms=0.00146719 cos=0.9999930 global=0.9999986 mine=172.413 ref=172.415 PASS\neasyocr-diff bilstm_1         n=38656 max=0.109953 mean=0.00221036 rms=0.00456695 cos=0.9998434 global=0.9999979 mine=442.11 ref=442.071 PASS\neasyocr-diff logits           n=14647 max=0.653416 mean=0.00938146 rms=0.0249007 cos=0.9998797 global=0.9999990 mine=2184.84 ref=2184.79 PASS\n\nggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\ncrispembed_diff: loaded 26 tensors from $SCRATCH/models/easyocr-ref-line1-w610.gguf\ncrispembed_diff: loaded 26 tensors from $SCRATCH/models/easyocr-ref-line1-w610.gguf\n"
+  }
+ },
+ "seconds": 39.3,
+ "id": "diff-easyocr-line1-w610",
+ "commit": "7d34bbbd700cd1c8fc3d977c09f89dbbadd76054",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-02"
+}

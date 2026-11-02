@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "kind": "original-marker-model-free-reference",
+  "status": "failed",
+  "cases": [],
+  "neural_inference_tested": false,
+  "marker_revision": "71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4",
+  "surya_source_license_audit_revision": "9d5aadfebb07939755c24e8a80d0e61b3be80895",
+  "surya_runtime_source": "published surya-ocr package; version and source hashes below",
+  "fixture_gold_sha256": "a250d007848a99028c33b74d96da66c77b8ca8d6841097e5dde52f7244a0e4c3",
+  "reference_script_sha256": "d21fb2ad79d4a6b55390d4d011bfcff3bb0792ab88d733e647f94c2ecc5900b9",
+  "font": {
+    "name": "DejaVuSans.ttf",
+    "sha256": "ae7b7855e115a5966d8b1b3f80f254ccc117ec86f9965e202ee2940453837280"
+  },
+  "dependencies": {
+    "surya-ocr": "0.23.0",
+    "pdftext": "0.7.1",
+    "pypdfium2": "5.10.1",
+    "torch": "2.8.0+cpu",
+    "torchvision": "0.23.0+cpu",
+    "transformers": "5.14.1",
+    "pillow": "10.4.0",
+    "pydantic": "2.14.2",
+    "markdownify": "1.2.3",
+    "beautifulsoup4": "4.15.0",
+    "reportlab": "4.5.1"
+  },
+  "error": {
+    "type": "TypeError",
+    "message": "argument should be a str or an os.PathLike object where __fspath__ returns a str, not 'NoneType'"
+  },
+  "unexpected_attempts": {
+    "network": [],
+    "checkpoint": [],
+    "process": [],
+    "predictor": []
+  },
+  "elapsed_seconds": 5.037977637999575
+}

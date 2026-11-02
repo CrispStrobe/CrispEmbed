@@ -1,0 +1,115 @@
+{
+ "kind": "embed",
+ "mode": "embed",
+ "base": "clip-text-base.gguf",
+ "files": {
+  "clip-text-base.gguf": {
+   "precision": "f32",
+   "type_hist": {
+    "f32": 63347200
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      1.067,
+      0.967
+     ],
+     "gpu_mem_peak_mib": 367,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "clip_text: BPE tokenizer loaded (49408 vocab, 48894 merges)\nclip_text: hidden=512 layers=12 heads=8 vocab=49408 max_pos=77 proj=512\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\nclip_text: loaded 12 layers\n",
+     "parse_error": "JSONDecodeError: Extra data: line 2 column 1 (char 5404)",
+     "stdout_head": "{\"text\": \"hello\", \"embedding\": [0.021465, 0.001756, 0.008390, 0.011747, 0.006021, -0.007078, -0.001455, 0.004210, 0.001327, 0.001020, -0.008997, -0.021164, 0.016608, 0.031024, -0.000112, 0.002796, -0.007287, -0.018972, 0.022536, 0.020135, 0.009348, -0.002319, 0.017917, -0.008281, -0.018121, 0.018725, 0.003159, 0.007355, -0.002214, 0.016247, -0.002170, 0.005212, -0.017375, -0.007898, 0.018187, 0.007760, -0.012945, -0.007674, 0.019148, -0.008503, 0.003755, -0.005499, -0.010870, 0.001587, 0.004771, 0.018049, 0.007794, 0.004646, -0.003903, 0.017721, 0.052594, 0.006011, 0.003225, 0.002132, -0.01170"
+    },
+    "cpu": {
+     "wall_s": [
+      0.871,
+      0.767
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "clip_text: BPE tokenizer loaded (49408 vocab, 48894 merges)\nclip_text: hidden=512 layers=12 heads=8 vocab=49408 max_pos=77 proj=512\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\nclip_text: loaded 12 layers\n",
+     "parse_error": "JSONDecodeError: Extra data: line 2 column 1 (char 5404)",
+     "stdout_head": "{\"text\": \"hello\", \"embedding\": [0.021459, 0.001760, 0.008391, 0.011747, 0.006019, -0.007071, -0.001453, 0.004203, 0.001325, 0.001022, -0.008986, -0.021163, 0.016612, 0.031022, -0.000105, 0.002798, -0.007287, -0.018975, 0.022537, 0.020137, 0.009349, -0.002308, 0.017913, -0.008272, -0.018120, 0.018719, 0.003164, 0.007362, -0.002208, 0.016242, -0.002171, 0.005212, -0.017372, -0.007899, 0.018185, 0.007762, -0.012937, -0.007678, 0.019155, -0.008500, 0.003747, -0.005503, -0.010875, 0.001586, 0.004771, 0.018047, 0.007786, 0.004650, -0.003899, 0.017709, 0.052591, 0.006014, 0.003222, 0.002141, -0.01170"
+    }
+   },
+   "bar": 0.99,
+   "qualifies": null
+  },
+  "clip-text-base-q8_0.gguf": {
+   "precision": "q8_0",
+   "type_hist": {
+    "q8_0": 63347200
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      0.918,
+      0.867
+     ],
+     "gpu_mem_peak_mib": 183,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "clip_text: BPE tokenizer loaded (49408 vocab, 48894 merges)\nclip_text: hidden=512 layers=12 heads=8 vocab=49408 max_pos=77 proj=512\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\nclip_text: loaded 12 layers\n",
+     "parse_error": "JSONDecodeError: Extra data: line 2 column 1 (char 5403)",
+     "stdout_head": "{\"text\": \"hello\", \"embedding\": [0.021523, 0.001718, 0.008418, 0.011779, 0.005437, -0.007826, -0.002501, 0.004294, 0.000964, 0.001142, -0.008873, -0.020958, 0.016612, 0.030316, 0.000094, 0.002245, -0.006597, -0.019316, 0.023014, 0.019571, 0.009636, -0.002912, 0.018706, -0.008177, -0.018770, 0.019030, 0.003394, 0.007270, -0.002381, 0.015916, -0.001757, 0.005433, -0.017537, -0.007770, 0.018042, 0.008822, -0.013107, -0.008092, 0.018852, -0.008084, 0.003406, -0.005378, -0.010921, 0.001582, 0.004495, 0.018034, 0.007504, 0.004552, -0.002771, 0.017210, 0.052583, 0.005944, 0.002986, 0.002282, -0.011105"
+    },
+    "cpu": {
+     "wall_s": [
+      0.667,
+      0.667
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "clip_text: BPE tokenizer loaded (49408 vocab, 48894 merges)\nclip_text: hidden=512 layers=12 heads=8 vocab=49408 max_pos=77 proj=512\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\nclip_text: loaded 12 layers\n",
+     "parse_error": "JSONDecodeError: Extra data: line 2 column 1 (char 5405)",
+     "stdout_head": "{\"text\": \"hello\", \"embedding\": [0.021668, 0.002018, 0.008217, 0.011971, 0.005971, -0.007422, -0.002409, 0.004147, 0.001082, 0.000914, -0.008801, -0.021107, 0.016350, 0.030267, 0.000031, 0.002525, -0.006227, -0.019037, 0.022867, 0.019693, 0.009594, -0.002274, 0.018486, -0.008792, -0.018358, 0.018553, 0.003143, 0.007434, -0.002297, 0.016308, -0.001829, 0.005479, -0.017327, -0.007435, 0.017813, 0.007981, -0.012702, -0.007389, 0.018823, -0.007896, 0.002971, -0.005542, -0.010347, 0.001381, 0.004688, 0.017773, 0.007526, 0.004451, -0.002770, 0.017464, 0.052258, 0.006452, 0.003076, 0.002538, -0.011318"
+    }
+   },
+   "bar": 0.97,
+   "qualifies": null
+  },
+  "clip-text-base-q4_k.gguf": {
+   "precision": "q4_k",
+   "type_hist": {
+    "q8_0": 25336320,
+    "q4_k": 38010880
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      0.916,
+      0.917
+     ],
+     "gpu_mem_peak_mib": 165,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "clip_text: BPE tokenizer loaded (49408 vocab, 48894 merges)\nclip_text: hidden=512 layers=12 heads=8 vocab=49408 max_pos=77 proj=512\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\nclip_text: loaded 12 layers\n",
+     "parse_error": "JSONDecodeError: Extra data: line 2 column 1 (char 5410)",
+     "stdout_head": "{\"text\": \"hello\", \"embedding\": [0.022238, 0.003750, 0.012407, 0.011737, 0.006152, -0.007996, -0.005034, 0.002753, 0.002713, -0.001349, -0.013860, -0.017827, 0.014499, 0.028269, 0.003583, 0.000590, -0.007681, -0.021145, 0.026110, 0.025246, 0.007122, -0.004361, 0.019580, -0.004189, -0.022385, 0.021187, 0.004907, 0.006937, 0.001506, 0.020018, -0.005507, 0.001362, -0.013607, -0.006386, 0.018749, 0.012107, -0.010993, -0.007770, 0.015425, -0.009186, 0.001055, 0.000443, -0.007480, 0.000712, 0.002709, 0.016858, 0.005866, 0.011384, -0.004632, 0.017915, 0.053524, 0.011988, 0.002955, 0.004824, -0.012437,"
+    },
+    "cpu": {
+     "wall_s": [
+      0.867,
+      0.818
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "clip_text: BPE tokenizer loaded (49408 vocab, 48894 merges)\nclip_text: hidden=512 layers=12 heads=8 vocab=49408 max_pos=77 proj=512\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\nclip_text: loaded 12 layers\n",
+     "parse_error": "JSONDecodeError: Extra data: line 2 column 1 (char 5412)",
+     "stdout_head": "{\"text\": \"hello\", \"embedding\": [0.022085, 0.003688, 0.011679, 0.010578, 0.005092, -0.007447, -0.004530, 0.002722, 0.002472, -0.000573, -0.012643, -0.017875, 0.015008, 0.027391, 0.003319, 0.001180, -0.008435, -0.020423, 0.025471, 0.025160, 0.006394, -0.004818, 0.018719, -0.004167, -0.021888, 0.021391, 0.004357, 0.007833, 0.002284, 0.020925, -0.005143, 0.001949, -0.013422, -0.007576, 0.018688, 0.013016, -0.009463, -0.008349, 0.015011, -0.009578, 0.001945, 0.001214, -0.007663, 0.001114, 0.001720, 0.017317, 0.005192, 0.011748, -0.004515, 0.017319, 0.055288, 0.010698, 0.003200, 0.005039, -0.013655,"
+    }
+   },
+   "bar": 0.94,
+   "qualifies": null
+  }
+ },
+ "seconds": 30.7,
+ "id": "embed-clip-text-base-embed",
+ "commit": "8f781770810956818ba76831a6bc607fbc0a1154",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

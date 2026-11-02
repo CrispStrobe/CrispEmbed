@@ -1,0 +1,152 @@
+name: OXR source and model qualification
+
+on:
+  pull_request:
+    paths:
+      - 'src/oxr*'
+      - 'models/*oxr*'
+      - 'python/crispembed/_oxr.py'
+      - 'tools/oxr*'
+      - 'tests/*oxr*'
+      - 'tests/fixtures/oxr/**'
+      - '.github/workflows/oxr.yml'
+  workflow_dispatch:
+    inputs:
+      model_check:
+        description: 'Run F32 CPU reference and native smoke; downloads the 3.07 GB checkpoint'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  components:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      CRISPEMBED_OXR: '1'
+      CRISPEMBED_ACCEPT_OXR_LICENSE: '1'
+      CRISPEMBED_OXR_FORCE_CPU: '1'
+      PYTHONPATH: python
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install pinned document-helper dependencies
+        run: pip install -r tools/oxr-blueprint-requirements.txt
+      - name: Build native controls and qualification executables
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF
+          cmake --build build --target test-oxr-profile test-oxr-api test-oxr-graph test-oxr-run test-oxr-diff -j2
+      - name: Run weight-free controls
+        run: |
+          ./build/test-oxr-profile
+          ./build/test-oxr-api
+          ./build/test-oxr-graph
+          python -m unittest discover -s tests -p 'test_oxr*.py' -v
+          python tests/test_cli_engine_names.py
+          python tests/test_ocr_max_tokens_surfaces.py
+          bash tools/check_test_clean_exit.sh
+
+  model-smoke:
+    if: github.event_name == 'workflow_dispatch' && inputs.model_check
+    needs: components
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      CRISPEMBED_OXR: '1'
+      CRISPEMBED_ACCEPT_OXR_LICENSE: '1'
+      CRISPEMBED_OXR_FORCE_CPU: '1'
+      OMP_NUM_THREADS: '4'
+      MKL_NUM_THREADS: '4'
+      OPENBLAS_NUM_THREADS: '4'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check resources before model acquisition
+        run: |
+          python - <<'PY'
+          import os, shutil
+          memory = os.sysconf('SC_PAGE_SIZE') * os.sysconf('SC_PHYS_PAGES')
+          if memory < 14 * 1024**3 or shutil.disk_usage('.').free < 24 * 1024**3:
+              raise SystemExit('OXR F32 smoke requires at least 14 GiB RAM and 24 GiB free disk')
+          PY
+      - name: Install the exact original reference runtime
+        run: |
+          pip install torch==2.11.0 torchvision==0.26.0 --index-url https://download.pytorch.org/whl/cpu
+          pip install -r tools/oxr-reference-requirements.txt
+      - name: Build exact source and retain provenance
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF
+          cmake --build build --target test-oxr-run test-oxr-diff -j2
+          mkdir -p evidence
+          git rev-parse HEAD > evidence/source.txt
+          git submodule status >> evidence/source.txt
+          pip freeze > evidence/packages.txt
+          lscpu > evidence/cpu.txt
+      - name: Download authenticated source and convert F32
+        run: |
+          python - <<'PY'
+          import json
+          from huggingface_hub import snapshot_download
+          manifest = json.load(open('models/oxr-source.json'))
+          snapshot_download(manifest['model_id'], revision=manifest['revision'],
+                            allow_patterns=list(manifest['files']), local_dir='checkpoint')
+          PY
+          python models/convert-oxr-to-gguf.py --model checkpoint --dtype f32 --output oxr-f32.gguf
+          cp oxr-f32.gguf.json evidence/conversion.json
+      - name: Freeze original Python results and all 66 stages
+        id: reference
+        run: |
+          python tools/oxr_validate.py reference --model checkpoint \
+            --image tests/regression/images/formula_quadratic.png --task formula \
+            --dtype f32 --device cpu --attention sdpa --threads 4 --repeat 3 --max-tokens 256 \
+            --output evidence/python.json --dump-reference evidence/python.gguf
+      - name: Native preprocessing, all stages, and observer neutrality
+        run: |
+          set -o pipefail
+          ./build/test-oxr-diff --model oxr-f32.gguf --reference evidence/python.gguf \
+            --image tests/regression/images/formula_quadratic.png \
+            --prompt 'Recognize the formula of the image into KaTex format.' \
+            --threads 4 --max-abs 0.002 --min-cos 0.99999 \
+            2> evidence/stages.stderr.log | tee evidence/stages.json
+      - name: Same-host decoded output and resident speed
+        run: |
+          python tools/oxr_validate.py compare --reference evidence/python.json \
+            --native build/test-oxr-run --gguf oxr-f32.gguf \
+            --image tests/regression/images/formula_quadratic.png --max-slowdown 1.0 \
+            --output evidence/native.json
+      - name: Dense-attention alternative stage control
+        if: always() && steps.reference.outcome == 'success'
+        env:
+          CRISPEMBED_OXR_FLASH_ATTN: '0'
+        run: |
+          set -o pipefail
+          ./build/test-oxr-diff --model oxr-f32.gguf --reference evidence/python.gguf \
+            --image tests/regression/images/formula_quadratic.png \
+            --prompt 'Recognize the formula of the image into KaTex format.' \
+            --threads 4 --max-abs 0.002 --min-cos 0.99999 \
+            2> evidence/stages-dense.stderr.log | tee evidence/stages-dense.json
+      - name: Reused decode graph output and speed A/B
+        if: always() && steps.reference.outcome == 'success'
+        env:
+          CRISPEMBED_OXR_REUSE_DECODE_GRAPH: '1'
+        run: |
+          python tools/oxr_validate.py compare --reference evidence/python.json \
+            --native build/test-oxr-run --gguf oxr-f32.gguf \
+            --image tests/regression/images/formula_quadratic.png --max-slowdown 1.0 \
+            --output evidence/native-reuse.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: oxr-f32-${{ github.sha }}
+          path: evidence/
+          retention-days: 90

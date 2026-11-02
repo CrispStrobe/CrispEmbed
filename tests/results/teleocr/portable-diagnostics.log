@@ -1,0 +1,4 @@
+{'component': 'vision17', 'phase': 'source-producer', 'exit_code': 1, 'seconds': 6.135002973001974, 'expected_strict_failure': True}
+{'component': 'vision17', 'phase': 'native-ffn', 'exit_code': 1, 'expected_strict_failure': True}
+{'component': 'decoder2', 'phase': 'source-producer', 'exit_code': 1, 'seconds': 3.5691712320003717, 'expected_strict_failure': True}
+{'component': 'decoder2', 'phase': 'native-ffn', 'exit_code': 1, 'expected_strict_failure': True}

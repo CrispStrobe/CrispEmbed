@@ -1,0 +1,47 @@
+{
+  "kind": "native-marker-post-capture-source-check",
+  "pass": true,
+  "files": [
+    {
+      "file": "src/marker.cpp",
+      "captured_sha256": "a7d21c6106cae5ebac0af3a8e09fae348448db9877c7f96bfaabfbb6d2410369",
+      "current_sha256": "a7d21c6106cae5ebac0af3a8e09fae348448db9877c7f96bfaabfbb6d2410369"
+    },
+    {
+      "file": "src/marker_document.cpp",
+      "captured_sha256": "58ec0d2c03bfe33798f5c04ae5b62de0b64f9e35ec9bf7eef48ff176115da1af",
+      "current_sha256": "58ec0d2c03bfe33798f5c04ae5b62de0b64f9e35ec9bf7eef48ff176115da1af"
+    },
+    {
+      "file": "src/marker_document.h",
+      "captured_sha256": "478460f76c827440f30f8d66af20791307e7fd74cb4047628d1833b2f864d3d5",
+      "current_sha256": "478460f76c827440f30f8d66af20791307e7fd74cb4047628d1833b2f864d3d5"
+    },
+    {
+      "file": "src/marker_backend.cpp",
+      "captured_sha256": "c958373236a3ccbdcd3c32cc202f1210990ccf4b649c0135b475509552f8e257",
+      "current_sha256": "c958373236a3ccbdcd3c32cc202f1210990ccf4b649c0135b475509552f8e257"
+    },
+    {
+      "file": "src/marker_backend.h",
+      "captured_sha256": "3ef58a4ed22874c3d485125ba56e547942607b165e42798fcb8e68728463211c",
+      "current_sha256": "3ef58a4ed22874c3d485125ba56e547942607b165e42798fcb8e68728463211c"
+    },
+    {
+      "file": "src/crispembed.h",
+      "captured_sha256": "0259b314539c5fcbe2023c4e9790e4235407e9c6303bc7d2f6c999f9e4eb5af5",
+      "current_sha256": "0259b314539c5fcbe2023c4e9790e4235407e9c6303bc7d2f6c999f9e4eb5af5"
+    },
+    {
+      "file": "python/crispembed/_marker.py",
+      "captured_sha256": "e766a803a010d05bf705746692e227fa6a0d03df4ab70e248e16eb51e138b6fc",
+      "current_sha256": "e766a803a010d05bf705746692e227fa6a0d03df4ab70e248e16eb51e138b6fc"
+    },
+    {
+      "file": "CMakeLists.txt",
+      "captured_sha256": "b65cb92e99631f2c68702360eac2236d22b96edf0d91a39f06db9588624fc32d",
+      "current_sha256": "b65cb92e99631f2c68702360eac2236d22b96edf0d91a39f06db9588624fc32d"
+    }
+  ],
+  "scope": "Checks workspace stability since the synchronized build/capture; binary identity is recorded separately in receipt.json."
+}

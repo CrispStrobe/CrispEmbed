@@ -1,0 +1,116 @@
+eru25-f16.gguf --image tests/regression/images/formula_quadratic.png --task formula --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":1678.731088772,"data":"== formula f16\n"}
+,{"stream_name":"stdout","time":1678.731119393,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q8_0.gguf --image tests/regression/images/formula_quadratic.png --task formula --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":1681.421077523,"data":"== formula q8_0\n"}
+,{"stream_name":"stdout","time":1681.421112553,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q4_k.gguf --image tests/regression/images/formula_quadratic.png --task formula --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":1683.558736452,"data":"== formula q4_k\n"}
+,{"stream_name":"stdout","time":1683.55876117,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q4_k-dq8.gguf --image tests/regression/images/formula_quadratic.png --task formula --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":1685.699657285,"data":"== formula q4_k-dq8\n"}
+,{"stream_name":"stdout","time":1685.699694787,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q4_k-df16.gguf --image tests/regression/images/formula_quadratic.png --task formula --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":1688.390584458,"data":"== formula q4_k-df16\n"}
+,{"stream_name":"stdout","time":1688.390611113,"data":"+ /kaggle/temp/venv/bin/python tools/mineru25_validate.py reference --model /kaggle/temp/mineru25/checkpoint --blueprint /kaggle/temp/mineru25/blueprint --image tests/regression/images/cc0/simple_table.jpg --task table --dtype f32 --device cpu --threads 4 --repeat 2 --max-tokens 2048 --output /kaggle/working/mineru25-gpu/table-python.json\n"}
+,{"stream_name":"stdout","time":1754.37261902,"data":"== table reference\n"}
+,{"stream_name":"stdout","time":1754.372787949,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-f32.gguf --image tests/regression/images/cc0/simple_table.jpg --task table --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":1760.83474655,"data":"== table f32\n"}
+,{"stream_name":"stdout","time":1760.834766717,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-f16.gguf --image tests/regression/images/cc0/simple_table.jpg --task table --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":1766.758184896,"data":"== table f16\n"}
+,{"stream_name":"stdout","time":1766.758207705,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q8_0.gguf --image tests/regression/images/cc0/simple_table.jpg --task table --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":1771.039248619,"data":"== table q8_0\n"}
+,{"stream_name":"stdout","time":1771.039274771,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q4_k.gguf --image tests/regression/images/cc0/simple_table.jpg --task table --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":1774.247363052,"data":"== table q4_k\n"}
+,{"stream_name":"stdout","time":1774.24739006,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q4_k-dq8.gguf --image tests/regression/images/cc0/simple_table.jpg --task table --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":1778.002034998,"data":"== table q4_k-dq8\n"}
+,{"stream_name":"stdout","time":1778.002085587,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q4_k-df16.gguf --image tests/regression/images/cc0/simple_table.jpg --task table --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":1782.81711047,"data":"== table q4_k-df16\n"}
+,{"stream_name":"stdout","time":1782.817211594,"data":"+ /kaggle/temp/venv/bin/python tools/mineru25_validate.py reference --model /kaggle/temp/mineru25/checkpoint --blueprint /kaggle/temp/mineru25/blueprint --image tests/regression/images/cc0/receipt_example.png --task text --dtype f32 --device cpu --threads 4 --repeat 2 --max-tokens 2048 --output /kaggle/working/mineru25-gpu/receipt-python.json\n"}
+,{"stream_name":"stdout","time":1912.973797959,"data":"== receipt reference\n"}
+,{"stream_name":"stdout","time":1912.974010017,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-f32.gguf --image tests/regression/images/cc0/receipt_example.png --task text --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":1922.103605738,"data":"== receipt f32\n"}
+,{"stream_name":"stdout","time":1922.103642008,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-f16.gguf --image tests/regression/images/cc0/receipt_example.png --task text --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":1930.123732086,"data":"== receipt f16\n"}
+,{"stream_name":"stdout","time":1930.123757056,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q8_0.gguf --image tests/regression/images/cc0/receipt_example.png --task text --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":1936.539758104,"data":"== receipt q8_0\n"}
+,{"stream_name":"stdout","time":1936.539785413,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q4_k.gguf --image tests/regression/images/cc0/receipt_example.png --task text --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":1941.358186646,"data":"== receipt q4_k\n"}
+,{"stream_name":"stdout","time":1941.358216736,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q4_k-dq8.gguf --image tests/regression/images/cc0/receipt_example.png --task text --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":1946.705865108,"data":"== receipt q4_k-dq8\n"}
+,{"stream_name":"stdout","time":1946.705894107,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q4_k-df16.gguf --image tests/regression/images/cc0/receipt_example.png --task text --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":1953.655992639,"data":"== receipt q4_k-df16\n"}
+,{"stream_name":"stdout","time":1953.65610688,"data":"+ /kaggle/temp/venv/bin/python tools/mineru25_validate.py reference --model /kaggle/temp/mineru25/checkpoint --blueprint /kaggle/temp/mineru25/blueprint --image tests/regression/images/cc0/german_official_print.jpg --task text --dtype f32 --device cpu --threads 4 --repeat 2 --max-tokens 2048 --output /kaggle/working/mineru25-gpu/german-python.json\n"}
+,{"stream_name":"stdout","time":2526.029089897,"data":"== german reference\n"}
+,{"stream_name":"stdout","time":2526.029335038,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-f32.gguf --image tests/regression/images/cc0/german_official_print.jpg --task text --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":2549.095881837,"data":"== german f32\n"}
+,{"stream_name":"stdout","time":2549.095912639,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-f16.gguf --image tests/regression/images/cc0/german_official_print.jpg --task text --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":2570.482361363,"data":"== german f16\n"}
+,{"stream_name":"stdout","time":2570.482403488,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q8_0.gguf --image tests/regression/images/cc0/german_official_print.jpg --task text --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":2589.195415213,"data":"== german q8_0\n"}
+,{"stream_name":"stdout","time":2589.195442677,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q4_k.gguf --image tests/regression/images/cc0/german_official_print.jpg --task text --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":2602.031291933,"data":"== german q4_k\n"}
+,{"stream_name":"stdout","time":2602.031341349,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q4_k-dq8.gguf --image tests/regression/images/cc0/german_official_print.jpg --task text --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":2616.016141422,"data":"== german q4_k-dq8\n"}
+,{"stream_name":"stdout","time":2616.016170475,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q4_k-df16.gguf --image tests/regression/images/cc0/german_official_print.jpg --task text --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":2634.195918628,"data":"== german q4_k-df16\n"}
+,{"stream_name":"stdout","time":2634.196031551,"data":"+ /kaggle/temp/venv/bin/python tools/mineru25_validate.py reference --model /kaggle/temp/mineru25/checkpoint --blueprint /kaggle/temp/mineru25/blueprint --image tests/regression/images/japanese_print.png --task text --dtype f32 --device cpu --threads 4 --repeat 2 --max-tokens 2048 --output /kaggle/working/mineru25-gpu/japanese-python.json\n"}
+,{"stream_name":"stdout","time":2680.635162175,"data":"== japanese reference\n"}
+,{"stream_name":"stdout","time":2680.635362148,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-f32.gguf --image tests/regression/images/japanese_print.png --task text --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":2684.951818221,"data":"== japanese f32\n"}
+,{"stream_name":"stdout","time":2684.951867504,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-f16.gguf --image tests/regression/images/japanese_print.png --task text --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":2688.691780505,"data":"== japanese f16\n"}
+,{"stream_name":"stdout","time":2688.691802661,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q8_0.gguf --image tests/regression/images/japanese_print.png --task text --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":2691.907806783,"data":"== japanese q8_0\n"}
+,{"stream_name":"stdout","time":2691.90786196,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q4_k.gguf --image tests/regression/images/japanese_print.png --task text --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":2694.049444311,"data":"== japanese q4_k\n"}
+,{"stream_name":"stdout","time":2694.049471701,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q4_k-dq8.gguf --image tests/regression/images/japanese_print.png --task text --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":2696.747297408,"data":"== japanese q4_k-dq8\n"}
+,{"stream_name":"stdout","time":2696.747333505,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q4_k-df16.gguf --image tests/regression/images/japanese_print.png --task text --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":2699.979644054,"data":"== japanese q4_k-df16\n"}
+,{"stream_name":"stdout","time":2699.979669304,"data":"+ /kaggle/temp/venv/bin/python tools/mineru25_validate.py reference --model /kaggle/temp/mineru25/checkpoint --blueprint /kaggle/temp/mineru25/blueprint --image tests/regression/images/cc0/arabic_printed_line.png --task text --dtype f32 --device cpu --threads 4 --repeat 2 --max-tokens 2048 --output /kaggle/working/mineru25-gpu/arabic-python.json\n"}
+,{"stream_name":"stdout","time":2723.119497584,"data":"== arabic reference\n"}
+,{"stream_name":"stdout","time":2723.119690177,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-f32.gguf --image tests/regression/images/cc0/arabic_printed_line.png --task text --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":2726.36541284,"data":"== arabic f32\n"}
+,{"stream_name":"stdout","time":2726.365437255,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-f16.gguf --image tests/regression/images/cc0/arabic_printed_line.png --task text --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":2729.039353776,"data":"== arabic f16\n"}
+,{"stream_name":"stdout","time":2729.039375109,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q8_0.gguf --image tests/regression/images/cc0/arabic_printed_line.png --task text --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":2731.180497956,"data":"== arabic q8_0\n"}
+,{"stream_name":"stdout","time":2731.180519202,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q4_k.gguf --image tests/regression/images/cc0/arabic_printed_line.png --task text --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":2732.787455241,"data":"== arabic q4_k\n"}
+,{"stream_name":"stdout","time":2732.787940194,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q4_k-dq8.gguf --image tests/regression/images/cc0/arabic_printed_line.png --task text --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":2734.394349455,"data":"== arabic q4_k-dq8\n"}
+,{"stream_name":"stdout","time":2734.394401135,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q4_k-df16.gguf --image tests/regression/images/cc0/arabic_printed_line.png --task text --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":2736.621262693,"data":"== arabic q4_k-df16\n"}
+,{"stream_name":"stdout","time":2736.621367527,"data":"+ /kaggle/temp/venv/bin/python tools/mineru25_validate.py reference --model /kaggle/temp/mineru25/checkpoint --blueprint /kaggle/temp/mineru25/blueprint --image tests/regression/images/scan_page_pd.png --task layout --dtype f32 --device cpu --threads 4 --repeat 2 --max-tokens 2048 --output /kaggle/working/mineru25-gpu/layout-page-python.json\n"}
+,{"stream_name":"stdout","time":3065.558164651,"data":"== layout-page reference\n"}
+,{"stream_name":"stdout","time":3065.558386962,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-f32.gguf --image tests/regression/images/scan_page_pd.png --task layout --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":3079.588218316,"data":"== layout-page f32\n"}
+,{"stream_name":"stdout","time":3079.588258714,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-f16.gguf --image tests/regression/images/scan_page_pd.png --task layout --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":3092.471596689,"data":"== layout-page f16\n"}
+,{"stream_name":"stdout","time":3092.471634739,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q8_0.gguf --image tests/regression/images/scan_page_pd.png --task layout --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":3103.219430974,"data":"== layout-page q8_0\n"}
+,{"stream_name":"stdout","time":3103.219484221,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q4_k.gguf --image tests/regression/images/scan_page_pd.png --task layout --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":3111.355121749,"data":"== layout-page q4_k\n"}
+,{"stream_name":"stdout","time":3111.355155302,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q4_k-dq8.gguf --image tests/regression/images/scan_page_pd.png --task layout --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":3119.422633812,"data":"== layout-page q4_k-dq8\n"}
+,{"stream_name":"stdout","time":3119.422664212,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q4_k-df16.gguf --image tests/regression/images/scan_page_pd.png --task layout --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":3129.622422566,"data":"== layout-page q4_k-df16\n"}
+,{"stream_name":"stdout","time":3129.622571427,"data":"+ /kaggle/temp/venv/bin/python tools/mineru25_validate.py reference --model /kaggle/temp/mineru25/checkpoint --blueprint /kaggle/temp/mineru25/blueprint --image tests/regression/images/derived/german_official_document__rot90.png --task layout --dtype f32 --device cpu --threads 4 --repeat 2 --max-tokens 2048 --output /kaggle/working/mineru25-gpu/layout-rot90-python.json\n"}
+,{"stream_name":"stdout","time":3390.670265486,"data":"== layout-rot90 reference\n"}
+,{"stream_name":"stdout","time":3390.670435949,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-f32.gguf --image tests/regression/images/derived/german_official_document__rot90.png --task layout --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":3400.34236411,"data":"== layout-rot90 f32\n"}
+,{"stream_name":"stdout","time":3400.342391654,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-f16.gguf --image tests/regression/images/derived/german_official_document__rot90.png --task layout --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":3409.447290041,"data":"== layout-rot90 f16\n"}
+,{"stream_name":"stdout","time":3409.447345418,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q8_0.gguf --image tests/regression/images/derived/german_official_document__rot90.png --task layout --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":3417.471265634,"data":"== layout-rot90 q8_0\n"}
+,{"stream_name":"stdout","time":3417.471331148,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q4_k.gguf --image tests/regression/images/derived/german_official_document__rot90.png --task layout --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":3422.82676485,"data":"== layout-rot90 q4_k\n"}
+,{"stream_name":"stdout","time":3422.826803428,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q4_k-dq8.gguf --image tests/regression/images/derived/german_official_document__rot90.png --task layout --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":3428.18377954,"data":"== layout-rot90 q4_k-dq8\n"}
+,{"stream_name":"stdout","time":3428.183804375,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q4_k-df16.gguf --image tests/regression/images/derived/german_official_document__rot90.png --task layout --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":3434.675880933,"data":"== layout-rot90 q4_k-df16\n"}
+,{"stream_name":"stdout","time":3434.677714469,"data":"== complete\n"}
+,{"stream_name":"stderr","time":3437.801626042,"data":"/usr/local/lib/python3.13/dist-packages/mistune.py:435: SyntaxWarning: invalid escape sequence '\\|'\n"}
+,{"stream_name":"stderr","time":3437.801658094,"data":"  cells[i][c] = re.sub('\\\\\\\\\\|', '|', cell)\n"}
+,{"stream_name":"stderr","time":3438.40410173,"data":"/usr/local/lib/python3.13/dist-packages/nbconvert/filters/filter_links.py:36: SyntaxWarning: invalid escape sequence '\\_'\n"}
+,{"stream_name":"stderr","time":3438.404163315,"data":"  text = re.sub(r'_', '\\_', text) # Escape underscores in display text\n"}
+,{"stream_name":"stderr","time":3440.078287023,"data":"[NbConvertApp] Converting notebook __script__.ipynb to html\n"}
+,{"stream_name":"stderr","time":3441.606047122,"data":"[NbConvertApp] Writing 284657 bytes to __results__.html\n"}
+]

@@ -1,0 +1,79 @@
+{
+ "schema": "crispembed.oxr.stage-ab.v1",
+ "ref": "/mnt/heavy/scratch/formula-dump-f32",
+ "test": "/mnt/heavy/scratch/formula-dump-q8_0",
+ "max_abs_budget": 0.002,
+ "first_token_ref": 62983,
+ "first_token_test": 62983,
+ "earliest_over_budget": "vision.merge",
+ "stages": [
+  {
+   "name": "vision.merge",
+   "found": true,
+   "shape_equal": true,
+   "max_abs": 2.1375732421875,
+   "mean_abs": 0.03489113281671895,
+   "ref_max": 544.05419921875,
+   "rel": 0.0039289711305546555,
+   "cosine": 0.9999380064220118,
+   "within_max_abs": false
+  },
+  {
+   "name": "visual.embeddings",
+   "found": true,
+   "shape_equal": true,
+   "max_abs": 0.0034318268299102783,
+   "mean_abs": 0.00014125790441591826,
+   "ref_max": 0.13292530179023743,
+   "rel": 0.02581770952324688,
+   "cosine": 0.9999367971988412,
+   "within_max_abs": false
+  },
+  {
+   "name": "llm.input",
+   "found": true,
+   "shape_equal": true,
+   "max_abs": 0.012359619140625,
+   "mean_abs": 0.00017096450010455056,
+   "ref_max": 3.34375,
+   "rel": 0.0036963346962616823,
+   "cosine": 0.9999848731840693,
+   "within_max_abs": false
+  },
+  {
+   "name": "llm.layer.27",
+   "found": true,
+   "shape_equal": true,
+   "max_abs": 31.478515625,
+   "mean_abs": 0.2277325372382192,
+   "ref_max": 22486.744140625,
+   "rel": 0.0013998698712514048,
+   "cosine": 0.9999725110929748,
+   "within_max_abs": false
+  },
+  {
+   "name": "llm.norm",
+   "found": true,
+   "shape_equal": true,
+   "max_abs": 2.130155563354492,
+   "mean_abs": 0.12887689204520816,
+   "ref_max": 44.17543029785156,
+   "rel": 0.04822036930918341,
+   "cosine": 0.9991374151371105,
+   "within_max_abs": false
+  },
+  {
+   "name": "llm.logits",
+   "found": true,
+   "shape_equal": true,
+   "max_abs": 0.38384509086608887,
+   "mean_abs": 0.04398484853380332,
+   "ref_max": 32.982364654541016,
+   "rel": 0.011637888759235491,
+   "cosine": 0.9994629839775763,
+   "within_max_abs": false,
+   "argmax_ref": 62983,
+   "argmax_test": 62983
+  }
+ ]
+}
