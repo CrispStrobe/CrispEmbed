@@ -1,0 +1,37 @@
+{
+  "expected_model_revision": "b3f6a0c084db72f971e19a779d2fd8a6bc9e3b8d",
+  "module_sha256": "7adac1cc17009f9f1b8e0c58284d7c0b9989a590f017b9e5964cc42270207922",
+  "config_sha256": "92c5e15f1768dcb54bceae170043fbfefd248508159700b2179824b88c33ae75",
+  "selected_weights_float32_sha256": {
+    "visual.blocks.17.attn.proj.bias": "0ad00eb698a34cf6b38639c8e541f720441dc53f8c5190dd235ccf562ffed1e5",
+    "visual.blocks.17.attn.proj.weight": "a7c899e5c8f2aa7b5d449a2a2c90894ef04d79dd51232d5122e17ade505e932b",
+    "visual.blocks.17.attn.qkv.bias": "61f867714aa1b386446940fd3df779cfc752aa71cb4a135d2098d89581c573fd",
+    "visual.blocks.17.attn.qkv.weight": "ef2d20a999db901135ce157dab840176039b1a6bad45606260fd3f7ba993ce30",
+    "visual.blocks.17.mlp.down_proj.bias": "515dabede244863922fee0ed572e79a998e8314192db3cb99284ed34e615518a",
+    "visual.blocks.17.mlp.down_proj.weight": "24d1f09e9ccf0429f16a2aeb7a3f8ee55855b0421e8065eaa22f6c7a34170704",
+    "visual.blocks.17.mlp.gate_proj.bias": "a5000b251fdecdc891cc8331aa092aff09791b84121347d6cfa815af38048aa0",
+    "visual.blocks.17.mlp.gate_proj.weight": "19f5795ea5d561acc158832fd3c69df9ba1b961f0497210a4eb2a0e9455f1daa",
+    "visual.blocks.17.mlp.up_proj.bias": "7804129e6f54082af99c39716e64cb2b4cd47be9091c439674770ef7a6995b8f",
+    "visual.blocks.17.mlp.up_proj.weight": "ebdacf6d9fa405898a15ae0cd8bf5a0dcd112b6435c5545c0666e8b269c7bae7",
+    "visual.blocks.17.norm1.weight": "f84d2938ab8129abb9cdb206efbaee1303eafc48076165412f1bc10fa2cc377b",
+    "visual.blocks.17.norm2.weight": "6f702d86f66a73128fd2ed5b803344867152b45ee54ce96a335cdfdde0915cba"
+  },
+  "torch": "2.8.0+cpu",
+  "transformers": "4.57.1",
+  "numpy": "2.5.4",
+  "threads": 2,
+  "script_sha256": "2ff02fce182555f628ebce5c6c981c27f5cb3634192b38cea923b0a56447ebe1",
+  "common_sha256": "4eb9bc3517c97010feeae57dfbd535559d693f134be91f759044671412481753",
+  "reference_sha256": {
+    "vis_layer_16": "9dd4554c6a4071a23738b8bb63166cfbe5960c78e5fd4307839b61262de7a195",
+    "vis_layer_17": "8d8b3d4d59ef27f03f8b4210aa5c402a4aceaede78d3de79b0dc0bb66f11512f",
+    "image_grid": "7da5305594ec5c20af927dcc2c1f20b49bddf20b3820060198b1e040d6894274"
+  },
+  "native_sha256": {
+    "vis_layer_16": "319e720b04facbfb3108b0cc25d1c74c874b3e3dbee9aeca9709275ee0e90cc3",
+    "vis_layer_17": "780880d902f92f89694e7fff62323497edebb4a9624268ca302160e3c4876184"
+  },
+  "max_abs_budget": 0.002,
+  "min_cos_budget": 0.99999,
+  "scope": "single-block diagnosis; does not replace full-model qualification"
+}

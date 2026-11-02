@@ -332,6 +332,21 @@ list(APPEND CRISPEMBED_SOURCES src/layout_detect.cpp)
 list(APPEND CRISPEMBED_SOURCES src/surya_det.cpp)
 list(APPEND CRISPEMBED_SOURCES src/mixtex_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/qwen2vl_ocr.cpp)
+list(APPEND CRISPEMBED_SOURCES src/mineru_ocr.cpp src/mineru_document.cpp src/mineru_postprocess.cpp
+     src/mineru_table_image.cpp)
+# Exact Python float semantics (bbox ratios, luminance): never fuse mul+add.
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    set_source_files_properties(src/mineru_document.cpp src/mineru_postprocess.cpp src/mineru_table_image.cpp
+                                PROPERTIES COMPILE_OPTIONS -ffp-contract=off)
+endif()
+list(APPEND CRISPEMBED_SOURCES src/oxr_ocr.cpp src/oxr_api.cpp src/oxr_layout_api.cpp)
+# Native OXR document route (CRISPEMBED_OXR_NATIVE_DOC=1) and its generic parts.
+list(APPEND CRISPEMBED_SOURCES src/oxr_document.cpp src/oxr_document_text.cpp src/oxr_document_api.cpp
+     src/xycut_plus_plus.cpp src/cv_compat.cpp)
+# OpenCV-exact float accumulation: no FMA contraction (x86-64 SSE baseline wheels).
+if(NOT MSVC)
+    set_source_files_properties(src/cv_compat.cpp PROPERTIES COMPILE_OPTIONS "-ffp-contract=off")
+endif()
 list(APPEND CRISPEMBED_SOURCES src/internvl2_ocr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/gliner_ner.cpp)
 list(APPEND CRISPEMBED_SOURCES src/lfm2_embed.cpp src/gemma_decision.cpp src/ultrabert_embed.cpp)
@@ -396,6 +411,11 @@ list(APPEND CRISPEMBED_SOURCES src/esrgan_sr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/swinir_sr.cpp)
 list(APPEND CRISPEMBED_SOURCES src/scunet_denoise.cpp)
 list(APPEND CRISPEMBED_SOURCES src/pdf_info.cpp)
+list(APPEND CRISPEMBED_SOURCES src/marker.cpp src/marker_document.cpp src/marker_backend.cpp)
+# The shared target compiles these sources separately from the static library.
+# Keep Marker provenance identical in both, without changing other backends.
+set_source_files_properties(src/marker.cpp PROPERTIES
+    COMPILE_DEFINITIONS CRISPEMBED_VERSION_STR="${CRISPEMBED_VERSION_RAW}")
 list(APPEND CRISPEMBED_SOURCES src/table_parse.cpp)
 # MoEdern1.5M raw-text/role public API: default-off gates, exact arithmetic.
 set(CRISPEMBED_MOEDERN_SOURCES src/moedern_text_engine.cpp src/moedern_text_frontend.cpp src/moedern_family_engine.cpp
@@ -432,6 +452,7 @@ target_link_libraries(crispembed PUBLIC
     ggml-base
     ggml-cpu
     Threads::Threads
+    ${CMAKE_DL_LIBS}
 )
 if(GGML_BLAS)
     find_package(BLAS)
@@ -470,6 +491,7 @@ endif()
 
 add_executable(crispembed-cli
     examples/cli/main.cpp
+    examples/cli/inpaint_cli.cpp
 )
 target_include_directories(crispembed-cli PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/examples/cli
@@ -480,6 +502,11 @@ set_target_properties(crispembed-cli PROPERTIES
     INSTALL_RPATH "${CRISPEMBED_BIN_INSTALL_RPATH}"
 )
 install(TARGETS crispembed-cli RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+add_executable(crispembed-marker examples/marker/main.cpp)
+target_link_libraries(crispembed-marker PRIVATE crispembed)
+set_target_properties(crispembed-marker PROPERTIES INSTALL_RPATH "${CRISPEMBED_BIN_INSTALL_RPATH}")
+install(TARGETS crispembed-marker RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 add_executable(crispembed-server
     examples/server/server.cpp
@@ -847,8 +874,80 @@ target_link_libraries(test-ocr-pipeline-pool PRIVATE crispembed)
 add_executable(test-qwen2vl tests/test_qwen2vl.cpp)
 target_link_libraries(test-qwen2vl PRIVATE crispembed)
 
+add_executable(test-mineru-doc tests/test_mineru_doc.cpp)
+target_link_libraries(test-mineru-doc PRIVATE crispembed)
+target_include_directories(test-mineru-doc PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+add_executable(test-otsl-table tests/test_otsl_table.cpp)
+target_link_libraries(test-otsl-table PRIVATE crispembed)
+target_include_directories(test-otsl-table PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+add_executable(test-mineru-layout tests/test_mineru_layout.cpp)
+target_include_directories(test-mineru-layout PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+add_executable(test-mineru25-run tests/mineru25_run.cpp)
+target_link_libraries(test-mineru25-run PRIVATE crispembed)
+target_include_directories(test-mineru25-run PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+add_executable(test-mineru25-diff tests/mineru25_diff.cpp)
+target_link_libraries(test-mineru25-diff PRIVATE crispembed)
+add_executable(test-mineru25-preprocess tests/mineru25_preprocess.cpp)
+target_link_libraries(test-mineru25-preprocess PRIVATE crispembed)
+target_include_directories(test-mineru25-preprocess PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+add_executable(test-mineru25-decode-graph tests/test_mineru25_decode_graph.cpp)
+target_link_libraries(test-mineru25-decode-graph PRIVATE crispembed)
+add_executable(test-mineru25-profile tests/test_mineru25_profile.cpp)
+target_include_directories(test-mineru25-profile PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+add_executable(test-oxr-profile tests/test_oxr_profile.cpp)
+target_include_directories(test-oxr-profile PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+add_executable(test-oxr-graph tests/test_oxr_graph.cpp)
+target_link_libraries(test-oxr-graph PRIVATE crispembed)
+add_executable(test-oxr-api tests/test_oxr_api.cpp src/oxr_api.cpp)
+target_include_directories(test-oxr-api PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+add_executable(test-oxr-run tests/oxr_run.cpp)
+target_link_libraries(test-oxr-run PRIVATE crispembed)
+target_include_directories(test-oxr-run PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+add_executable(test-oxr-dfine-unit tests/test_oxr_dfine_unit.cpp)
+target_link_libraries(test-oxr-dfine-unit PRIVATE crispembed)
+add_executable(test-oxr-dfine-diff tests/oxr_dfine_diff.cpp)
+target_link_libraries(test-oxr-dfine-diff PRIVATE crispembed)
+add_executable(test-oxr-stage-dump tests/oxr_stage_dump.cpp)
+target_link_libraries(test-oxr-stage-dump PRIVATE crispembed)
+target_include_directories(test-oxr-stage-dump PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+add_executable(test-oxr-batch tests/oxr_batch.cpp)
+target_link_libraries(test-oxr-batch PRIVATE crispembed)
+target_include_directories(test-oxr-batch PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+add_executable(test-oxr-document tests/test_oxr_document.cpp)
+target_link_libraries(test-oxr-document PRIVATE crispembed)
+target_include_directories(test-oxr-document PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+add_executable(test-oxr-diff tests/oxr_diff.cpp)
+target_link_libraries(test-oxr-diff PRIVATE crispembed)
+target_include_directories(test-oxr-diff PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+
 add_executable(test-qwen2vl-diff tests/test_qwen2vl_diff.cpp)
 target_link_libraries(test-qwen2vl-diff PRIVATE crispembed)
+
+# TeleOCR observers exist only in this validation translation unit. The normal
+# static/shared libraries contain no observer setter or callback implementation.
+add_executable(test-teleocr-diff tests/test_teleocr_diff.cpp src/qwen2vl_ocr.cpp)
+target_compile_definitions(test-teleocr-diff PRIVATE CRISPEMBED_TELEOCR_TESTING=1)
+crispembed_apply_arch_flags(test-teleocr-diff)
+target_link_libraries(test-teleocr-diff PRIVATE crispembed)
+
+add_executable(test-teleocr-preprocess tests/test_teleocr_preprocess.cpp)
+target_link_libraries(test-teleocr-preprocess PRIVATE crispembed)
+
+add_executable(test-marker-document tests/test-marker-document.cpp)
+target_link_libraries(test-marker-document PRIVATE crispembed)
+
+add_executable(test-marker-api tests/test-marker-api.cpp)
+target_link_libraries(test-marker-api PRIVATE crispembed)
+
+add_executable(test-marker-backend tests/test-marker-backend.cpp)
+target_link_libraries(test-marker-backend PRIVATE crispembed)
+
+add_executable(test-marker-save tests/test-marker-save.cpp)
+target_include_directories(test-marker-save PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
+add_executable(test-teleocr-ffn tests/test_teleocr_ffn.cpp)
+target_link_libraries(test-teleocr-ffn PRIVATE crispembed)
 
 add_executable(test-paddleocr-vl-diff tests/test_paddleocr_vl_diff.cpp)
 target_link_libraries(test-paddleocr-vl-diff PRIVATE crispembed)
@@ -967,12 +1066,31 @@ endif()
 add_executable(test-sam2-diff tests/test_sam2_diff.cpp)
 target_link_libraries(test-sam2-diff PRIVATE crispembed-sam2)
 
-# Fixed-256 MI-GAN CPU/F32 prototype. Explicit targets only: no production
-# shared-library, registry, install or public C ABI integration.
+# Fixed-256 MI-GAN CPU/F32 graph. The opt-in CLI links the ordinary archive;
+# reference observers remain confined to the separate validation archive.
 add_library(crispembed-migan STATIC EXCLUDE_FROM_ALL src/migan.cpp)
 target_include_directories(crispembed-migan PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
 crispembed_apply_arch_flags(crispembed-migan)
 target_link_libraries(crispembed-migan PUBLIC crispembed-core ggml ggml-base ggml-cpu)
+
+# Issue 71: native-resolution tiling around the unchanged MI-GAN graph.
+# This internal CLI library adds no shared-library ABI or model registry alias.
+add_library(crispembed-inpaint STATIC EXCLUDE_FROM_ALL src/inpaint.cpp)
+target_include_directories(crispembed-inpaint PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+crispembed_apply_arch_flags(crispembed-inpaint)
+target_link_libraries(crispembed-inpaint PUBLIC crispembed-migan)
+target_link_libraries(crispembed-cli PRIVATE crispembed-inpaint)
+
+# Model-free contracts use the real tile/composition/hash implementation.
+add_executable(test-inpaint EXCLUDE_FROM_ALL tests/test_inpaint.cpp)
+target_link_libraries(test-inpaint PRIVATE crispembed-inpaint)
+
+# Exercise the actual CLI parser/image/batch/output code with test-only model
+# and detector implementations. This driver is never installed or distributed.
+add_executable(test-inpaint-cli-driver EXCLUDE_FROM_ALL
+    tests/inpaint_cli_driver.cpp examples/cli/inpaint_cli.cpp)
+target_include_directories(test-inpaint-cli-driver PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/examples/cli)
+target_link_libraries(test-inpaint-cli-driver PRIVATE crispembed-core)
 
 # Observer code is compiled solely into this separate validation archive.
 add_library(crispembed-migan-test STATIC EXCLUDE_FROM_ALL src/migan.cpp)
@@ -982,6 +1100,10 @@ crispembed_apply_arch_flags(crispembed-migan-test)
 target_link_libraries(crispembed-migan-test PUBLIC crispembed-core ggml ggml-base ggml-cpu)
 add_executable(test-migan-diff EXCLUDE_FROM_ALL tests/test_migan_diff.cpp)
 target_link_libraries(test-migan-diff PRIVATE crispembed-migan-test)
+# Device/precision A/B against the reviewed CPU/F32 graph (docs/migan-metal.md):
+# per-stage GPU/quantized vs CPU/F32 comparison and 1080p tile throughput.
+add_executable(test-migan-gpu-ab EXCLUDE_FROM_ALL tests/test_migan_gpu_ab.cpp src/inpaint.cpp)
+target_link_libraries(test-migan-gpu-ab PRIVATE crispembed-migan-test)
 
 add_executable(test-restormer-diff tests/test_restormer_diff.cpp)
 target_link_libraries(test-restormer-diff PRIVATE crispembed)
@@ -1118,7 +1240,7 @@ if(CRISPEMBED_BUILD_SHARED)
     # set — consumers of crispembed::crispembed (find_package) only see the
     # C ABI in crispembed.h, never these internal symbols.
     target_link_libraries(crispembed-shared PRIVATE
-        crispembed-core ggml ggml-base ggml-cpu Threads::Threads
+        crispembed-core ggml ggml-base ggml-cpu Threads::Threads ${CMAKE_DL_LIBS}
     )
     if(CRISPEMBED_HAS_CRISP_AUDIO)
         target_link_libraries(crispembed-shared PRIVATE crisp_audio)
@@ -1191,10 +1313,6 @@ if(CRISPEMBED_BUILD_SHARED)
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/crispembed
     )
 
-    install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE
-        DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/crispembed
-    )
-
     # pkg-config for autotools / meson consumers.
     configure_file(
         ${CMAKE_CURRENT_SOURCE_DIR}/cmake/crispembed.pc.in
@@ -1205,6 +1323,22 @@ if(CRISPEMBED_BUILD_SHARED)
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
     )
 endif()
+
+# Static CLI installations also redistribute the Apache-derived integrations.
+install(FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE
+    ${CMAKE_CURRENT_SOURCE_DIR}/NOTICE.teleocr
+    ${CMAKE_CURRENT_SOURCE_DIR}/NOTICE.marker
+    ${CMAKE_CURRENT_SOURCE_DIR}/licenses/oxr-LICENSE
+    ${CMAKE_CURRENT_SOURCE_DIR}/licenses/oxr-NOTICE
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/crispembed
+    COMPONENT licenses
+)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/models/licenses/apache-2.0/LICENSE
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/crispembed
+    RENAME Apache-2.0.txt
+    COMPONENT licenses
+)
 
 option(CRISPEMBED_WASM_EMBED "Build WASM text-embedding target (Emscripten)" OFF)
 if(CRISPEMBED_WASM_EMBED AND EMSCRIPTEN)

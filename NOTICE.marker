@@ -1,0 +1,40 @@
+Native Marker-style document processing in CrispEmbed
+===================================================
+
+CrispEmbed's existing original code remains under its MIT license. Native
+document-processing files carrying an Apache-2.0 SPDX header and referring to
+this notice adapt or are based on the Apache-2.0 Marker implementation. Retain
+this notice and models/licenses/apache-2.0/LICENSE when redistributing those
+portions or binaries containing them.
+
+Marker, by Vik Paruchuri and Datalab
+https://github.com/datalab-to/marker
+Revision: 71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4 (marker-pdf 2.1.0)
+
+Reference areas include the document/block schema, deterministic document
+processors, table reconstruction and Markdown/HTML/JSON renderer contracts.
+Changes for CrispEmbed include a new native C++ document representation,
+bounded parsing, PDFium integration, conservative text-layout heuristics,
+native TeleOCR backend selection, safe output rendering and public interfaces.
+This is not the original Python package or the original Surya model pipeline.
+
+TeleOCR inference and its separately licensed model/converter retain the
+attributions and terms in NOTICE.teleocr and docs/teleocr-license.md.
+
+The test-only upstream Marker reference uses Apache-2.0 Marker and Surya source,
+Apache-2.0 pdftext, and pypdfium2/PDFium. It disables every model-dependent
+stage and rejects model calls and network access. Python reference execution
+is not a production dependency. No Marker/Surya checkpoint or generated
+neural-model output is incorporated in the reference fixtures.
+
+PDFium is an optional, separately supplied native dependency. Redistributors
+of a PDFium binary must retain that build's PDFium and third-party licenses.
+pypdfium2's test-only binding is Apache-2.0 OR BSD-3-Clause; see the selected
+distribution's license files. The native runtime does not use that binding.
+
+Marker/Surya source permission does not relicense model weights. Current
+Surya 2.5, official GGUF and fast-layout/reading-order checkpoints carry the
+modified AI Pubs OpenRAIL-M license. They are not bundled, downloaded, loaded
+or required by this implementation. The optional upstream EbookLib/EPUB
+dependency is not included. See docs/marker-license.md for exact revisions,
+scope, source evidence and unresolved model-license provenance.

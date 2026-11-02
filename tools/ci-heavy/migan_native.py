@@ -175,7 +175,11 @@ def safe_extract(archive, destination, max_bytes=8 * 1024**3):
         for member in members:
             path = PurePosixPath(member.filename)
             mode = member.external_attr >> 16
+            # zipfile rewrites os.sep to "/" when it reads members on Windows;
+            # orig_filename keeps the stored bytes, so check both spellings.
+            raw = member.orig_filename
             if (not member.filename or "\\" in member.filename or ":" in member.filename or path.is_absolute()
+                    or "\\" in raw or ":" in raw
                     or ".." in path.parts or member.filename in names or stat.S_ISLNK(mode)):
                 raise ValueError("unsafe/duplicate artifact ZIP path")
             total += member.file_size

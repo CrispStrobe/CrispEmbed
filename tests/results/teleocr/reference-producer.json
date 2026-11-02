@@ -1,0 +1,5 @@
+{
+  "script_sha256": "92a04f42f979f9028f268377e56808fb6b92e9f4b47944e8af026f579b657f62",
+  "source_snapshot": "dump_teleocr_reference.executed.py",
+  "note": "Executed capture snapshot; later deliverable adds preflight guards and required stage inventory without changing original module math or capture semantics."
+}

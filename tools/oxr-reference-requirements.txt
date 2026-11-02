@@ -1,0 +1,10 @@
+# Original HF model capture. Install matching CPU torch/torchvision wheels first
+# from https://download.pytorch.org/whl/cpu for CPU runs; run models on hosted CI.
+-r oxr-conversion-requirements.txt
+torch==2.11.0
+torchvision==0.26.0
+transformers==5.13.1
+tokenizers==0.22.2
+safetensors==0.8.0
+Pillow==12.3.0
+Jinja2==3.1.6

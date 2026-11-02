@@ -1,0 +1,5 @@
+{
+  "note": "This retained initial library was tested while source corrections were being edited. Its native_source_sha256 fields describe workspace files at test time, not proven original build inputs. The independently recorded native_library_sha256 identifies the actual tested binary. Final corrected evidence requires a new build and new receipt.",
+  "initial_library_sha256": "84d125c05244ba490f43dcbf78b6155265621a804a415545853cab042f4cdf44",
+  "comparison_correction": "Two initial structure checks compared literal PDF bullet markers to HTML list text. The later harness retains literal metrics and additionally checks an explicit rendered-text profile based only on authored list-item declarations. Code-indentation and other runtime failures remain unchanged."
+}

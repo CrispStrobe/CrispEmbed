@@ -1,0 +1,373 @@
+{
+ "schema": "crispembed.oxr-dfine.refdiff.v1",
+ "a": "japanese-generic-t1.gguf",
+ "b": "japanese-generic.gguf",
+ "stages": [
+  {
+   "name": "bb.stage0",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "bb.stage1",
+   "max_abs": 2.9802322387695312e-06,
+   "rel": 4.529234943373693e-07,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "bb.stage2",
+   "max_abs": 3.0517578125e-05,
+   "rel": 5.84531940432688e-07,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "bb.stage3",
+   "max_abs": 0.00139617919921875,
+   "rel": 8.737637675089367e-06,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "bb.stem",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.0.bbox",
+   "max_abs": 6.461143493652344e-05,
+   "rel": 6.572345824226127e-05,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.0.corners",
+   "max_abs": 0.057450294494628906,
+   "rel": 0.0002907742529504022,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.0.cross",
+   "max_abs": 0.0004306882619857788,
+   "rel": 0.00018352143958120918,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.0.gate",
+   "max_abs": 0.003325223922729492,
+   "rel": 0.00028169436240449316,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.0.out",
+   "max_abs": 0.0019402503967285156,
+   "rel": 0.0002733952675406849,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.0.qpos",
+   "max_abs": 5.488097667694092e-05,
+   "rel": 3.141743668247701e-05,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.0.self",
+   "max_abs": 9.447336196899414e-05,
+   "rel": 0.00011596908154536081,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.1.bbox",
+   "max_abs": 0.0009617209434509277,
+   "rel": 0.0009765708340084393,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.1.corners",
+   "max_abs": 0.06173896789550781,
+   "rel": 0.00030041589164335036,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.1.cross",
+   "max_abs": 0.0008181333541870117,
+   "rel": 0.0004946919902641618,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.1.gate",
+   "max_abs": 0.005756020545959473,
+   "rel": 0.0006769689512610396,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.1.out",
+   "max_abs": 0.0052689313888549805,
+   "rel": 0.0005977059903720098,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.1.qpos",
+   "max_abs": 9.298324584960938e-05,
+   "rel": 5.5503139876664905e-05,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.1.self",
+   "max_abs": 0.000186920166015625,
+   "rel": 9.722134211830672e-05,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.2.bbox",
+   "max_abs": 0.00022539496421813965,
+   "rel": 0.00022945647062392864,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.2.corners",
+   "max_abs": 0.1905345916748047,
+   "rel": 0.0009169599188232306,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.2.cross",
+   "max_abs": 0.011831104755401611,
+   "rel": 0.00562823145601046,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.2.gate",
+   "max_abs": 0.0863664448261261,
+   "rel": 0.0061561563207411275,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.2.out",
+   "max_abs": 0.033865951001644135,
+   "rel": 0.0027831833666440973,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.2.qpos",
+   "max_abs": 0.0022471249103546143,
+   "rel": 0.0013447625936951803,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.2.self",
+   "max_abs": 0.002973932772874832,
+   "rel": 0.000955773200619856,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.3.bbox",
+   "max_abs": 0.00022467970848083496,
+   "rel": 0.00022862042689398635,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.3.corners",
+   "max_abs": 0.190582275390625,
+   "rel": 0.0009172421400279917,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.3.cross",
+   "max_abs": 0.0029600858688354492,
+   "rel": 0.0016507316209272431,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.3.gate",
+   "max_abs": 0.09656500816345215,
+   "rel": 0.004224041184586667,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.3.out",
+   "max_abs": 0.005379676818847656,
+   "rel": 0.0008556124750452682,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.3.qpos",
+   "max_abs": 0.000589907169342041,
+   "rel": 0.0003566722725634945,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.3.self",
+   "max_abs": 0.008192062377929688,
+   "rel": 0.0023311008542371997,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.content",
+   "max_abs": 7.161498069763184e-05,
+   "rel": 3.048776774426145e-05,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.enc_bbox_delta",
+   "max_abs": 0.0006923675537109375,
+   "rel": 0.00010375776021581614,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.enc_logits",
+   "max_abs": 0.0014314651489257812,
+   "rel": 2.898237084057603e-05,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.logits",
+   "max_abs": 0.006291389465332031,
+   "rel": 0.0006047984527720892,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.memory",
+   "max_abs": 0.0005939006805419922,
+   "rel": 2.711422842375749e-05,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.output_memory",
+   "max_abs": 8.147954940795898e-05,
+   "rel": 3.301984369415673e-05,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.pre_bbox_delta",
+   "max_abs": 0.0004807114601135254,
+   "rel": 0.00013226045966224892,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.project",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.ref_initial",
+   "max_abs": 7.149577140808105e-05,
+   "rel": 7.212490988144336e-05,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.ref_unact",
+   "max_abs": 0.0006923675537109375,
+   "rel": 0.0001309659169318907,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.topk_anchor",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "dec.topk_index",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "enc.aifi",
+   "max_abs": 5.7697296142578125e-05,
+   "rel": 7.39388793114616e-06,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "enc.down0",
+   "max_abs": 0.00033283233642578125,
+   "rel": 6.718764751442667e-06,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "enc.down1",
+   "max_abs": 0.00042438507080078125,
+   "rel": 9.658474601727916e-06,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "enc.fpn0",
+   "max_abs": 0.00022912025451660156,
+   "rel": 6.248577977103442e-06,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "enc.fpn1",
+   "max_abs": 9.66787338256836e-05,
+   "rel": 4.41381759367068e-06,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "enc.lat0",
+   "max_abs": 9.810924530029297e-05,
+   "rel": 9.893233855083815e-06,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "enc.lat1",
+   "max_abs": 0.00017279386520385742,
+   "rel": 4.851652889021227e-06,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "enc.pan0",
+   "max_abs": 0.0004417896270751953,
+   "rel": 2.7584949437219395e-05,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "enc.pan1",
+   "max_abs": 0.0005939006805419922,
+   "rel": 4.168365974433442e-05,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "enc.proj0",
+   "max_abs": 7.867813110351562e-06,
+   "rel": 6.316198545758447e-07,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "enc.proj1",
+   "max_abs": 6.4849853515625e-05,
+   "rel": 6.789998061255847e-07,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "enc.proj2",
+   "max_abs": 5.91278076171875e-05,
+   "rel": 2.0320426912504504e-06,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "input",
+   "max_abs": 0.0,
+   "rel": 0.0,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "post.boxes",
+   "max_abs": 563.0191497802734,
+   "rel": 0.8051517943016289,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "post.labels",
+   "max_abs": 4.0,
+   "rel": 0.5,
+   "nonfinite_equal": true
+  },
+  {
+   "name": "post.scores",
+   "max_abs": 0.0003330931067466736,
+   "rel": 0.0004370973956280992,
+   "nonfinite_equal": true
+  }
+ ]
+}

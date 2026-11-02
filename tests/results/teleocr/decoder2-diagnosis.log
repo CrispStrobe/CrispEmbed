@@ -1,0 +1,5 @@
+Error in cpuinfo: failed to parse processor information from /proc/cpuinfo
+source original input vs frozen {'max_abs': 0.00390625, 'index': [0, 5, 35], 'actual': 37987.5703125, 'reference': 37987.56640625, 'count_over_0_002': 2}
+source native input vs frozen {'max_abs': 0.009765625, 'index': [0, 265, 35], 'actual': 24448.75, 'reference': 24448.759765625, 'count_over_0_002': 6}
+native vs source native input {'max_abs': 0.02734375, 'index': [0, 1, 35], 'actual': 39418.66796875, 'reference': 39418.6953125, 'count_over_0_002': 7}
+source F32 vs F64 MLP {'max_abs': 0.015326580571127124, 'index': [0, 5, 35], 'actual': 37987.5703125, 'reference': 37987.58563908057, 'count_over_0_002': 7}

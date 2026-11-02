@@ -1,0 +1,23 @@
+otsl                 1500 cases     0 mismatches
+equation             1500 cases     0 mismatches
+brackets             1500 cases     0 mismatches
+left_right           1500 cases     0 mismatches
+big                  1500 cases     0 mismatches
+braces               1500 cases     0 mismatches
+double_subscript     1500 cases     0 mismatches
+text                 1500 cases     0 mismatches
+eq_wrap              1500 cases     0 mismatches
+md_table             1500 cases     0 mismatches
+malformed            1500 cases     0 mismatches
+mermaid_strict       1500 cases     0 mismatches
+mermaid_rep          1500 cases     0 mismatches
+mermaid_legal        1500 cases     0 mismatches
+mermaid_edges        1500 cases     0 mismatches
+mermaid_subgraph     1500 cases     0 mismatches
+chart_rep            1500 cases     0 mismatches
+chart_valid          1500 cases     0 mismatches
+image                1500 cases     0 mismatches
+pure_table           1500 cases     0 mismatches
+lower                1500 cases     0 mismatches
+layout               1500 cases     0 mismatches
+fuzz_postprocess: pass

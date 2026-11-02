@@ -1,0 +1,21 @@
+# Test-only dependencies for tests/marker_reference.py.
+# Install CPU torch==2.8.0 and torchvision==0.23.0 from the official CPU index
+# first, or use a compatible already-installed CPU build in an isolated env.
+# Marker source is read from an explicit, authenticated pinned checkout.
+# No marker-pdf[full], development extras or model checkpoint is required.
+surya-ocr==0.23.0
+pdftext==0.7.1
+pypdfium2==5.10.1
+Pillow==10.4.0
+transformers==5.14.1
+pydantic==2.14.2
+pydantic-settings==2.16.2
+beautifulsoup4==4.15.0
+ftfy==6.3.1
+rapidfuzz==3.14.6
+markdownify==1.2.3
+markdown2==2.5.5
+google-genai==2.34.0
+anthropic==0.125.0
+scikit-learn==1.9.1
+reportlab==4.5.1

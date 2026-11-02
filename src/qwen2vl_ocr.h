@@ -30,6 +30,11 @@
 #include <string>
 #include <vector>
 
+namespace image_preproc {
+struct config;
+struct result;
+} // namespace image_preproc
+
 namespace qwen2vl_ocr {
 
 // ── Hyperparameters ──────────────────────────────────────────────────
@@ -182,12 +187,35 @@ struct context {
     int verbosity = 1;
     bool bench = false;
 
+    // TeleOCR combines a Qwen2.5-VL vision encoder with a Qwen3-style
+    // decoder. This profile is admitted only with CRISPEMBED_TELEOCR=1.
+    bool is_teleocr = false;
+    float repetition_penalty = 1.0f;
+    float presence_penalty = 0.0f;
+    float frequency_penalty = 0.0f;
+
+#ifdef CRISPEMBED_TELEOCR_TESTING
+    // Test-only live tensor observer; absent from production builds.
+    using observer_fn = void (*)(void *, const char *, const float *, size_t, int64_t);
+    observer_fn observer = nullptr;
+    void * observer_data = nullptr;
+#endif
+
     // Generation stop token. Qwen2/2.5/3-VL use <|im_end|> (151645); ERNIE-4.5
     // (PaddleOCR-VL) uses <|end_of_sentence|> (100272). Set at load time.
     int eos_token_id = 151645;
 
+    // Explicit GGUF profile, never inferred from a filename. The opt-in
+    // MinerU contract also stops on endoftext and applies HF's ngram ban to
+    // the whole prompt+completion history.
+    bool is_mineru25_pro = false;
+
     // Optional diff harness path (set before encode to enable comparison)
     std::string diff_ref_path;
+    // Test-only observer of the already materialized reference stages. Leave
+    // null in production; setting diff_ref_path preserves graph intermediates.
+    void (*stage_observer)(void *, const char *, const float *, size_t) = nullptr;
+    void * stage_observer_user = nullptr;
     // Greedy decode bans repeated n-grams of this size (0/1 = off). 3 keeps VLM
     // OCR out of loops (#25); formula models set 0 - LaTeX legitimately repeats
     // trigrams ("^ { 2" in x^2 + y^2) and upstream decodes plain greedy.
@@ -226,6 +254,11 @@ struct context {
 // pass the vision encoder mmproj GGUF as the second path.
 bool load(context & ctx, const char * gguf_path, int n_threads = 1, int verbosity = 1,
           const char * mmproj_path = nullptr);
+
+// TeleOCR's slow processor: Pillow 13 bicubic, Python half-to-even geometry,
+// float32 normalization and temporal/merge-block patch order.
+bool preprocess_teleocr(const uint8_t * pixels, int height, int width, int channels, const image_preproc::config & cfg,
+                        image_preproc::result & out);
 
 // Free model resources.
 void free_(context & ctx);
@@ -313,6 +346,40 @@ const char * qwen2vl_ocr_get_prompt(const qwen2vl_ocr_context * ctx);
 
 // Set max generation tokens (default: 512)
 void qwen2vl_ocr_set_max_tokens(qwen2vl_ocr_context * ctx, int max_tokens);
+// MinerU: max_tokens=0 restores the reference total-context budget (8192).
+int qwen2vl_ocr_get_max_tokens(const qwen2vl_ocr_context * ctx);
+
+// TeleOCR sampling contract: repetition covers prompt+output; presence and
+// frequency cover generated tokens only. Returns 0 for invalid values or
+// contexts belonging to another architecture.
+int qwen2vl_ocr_set_generation_params(qwen2vl_ocr_context * ctx, float repetition_penalty, float presence_penalty,
+                                      float frequency_penalty, int no_repeat_ngram);
+// Each output pointer may be null to skip that value.
+int qwen2vl_ocr_get_generation_params(const qwen2vl_ocr_context * ctx, float * repetition_penalty,
+                                      float * presence_penalty, float * frequency_penalty, int * no_repeat_ngram);
+
+#ifdef CRISPEMBED_TELEOCR_TESTING
+void qwen2vl_ocr_test_set_observer(qwen2vl_ocr_context * ctx, qwen2vl_ocr::context::observer_fn callback,
+                                   void * user_data);
+#endif
+
+// Text-only ChatML generation, needed by MinerU's cross-page table merge.
+// Restricted to the opted-in MinerU profile; does not add vision placeholders.
+const char * qwen2vl_ocr_generate_text(qwen2vl_ocr_context * ctx, const char * prompt, int * out_len);
+
+// Last-call diagnostics. Buffers belong to ctx and are invalidated on the
+// next recognition/generation call. Completion IDs include an emitted EOS;
+// raw_text decodes all IDs, while recognize returns only BOS/EOS/PAD-filtered
+// text for MinerU. Structured layout/table tokens are preserved in both.
+int qwen2vl_ocr_is_mineru(const qwen2vl_ocr_context * ctx);
+int qwen2vl_ocr_last_ok(const qwen2vl_ocr_context * ctx);
+const int32_t * qwen2vl_ocr_completion_ids(const qwen2vl_ocr_context * ctx, int * count);
+const int32_t * qwen2vl_ocr_prompt_ids(const qwen2vl_ocr_context * ctx, int * count);
+const char * qwen2vl_ocr_raw_text(const qwen2vl_ocr_context * ctx);
+int qwen2vl_ocr_stopped_eos(const qwen2vl_ocr_context * ctx);
+int qwen2vl_ocr_capped(const qwen2vl_ocr_context * ctx);
+const int32_t * qwen2vl_ocr_grid_thw(const qwen2vl_ocr_context * ctx);
+int qwen2vl_ocr_effective_max_tokens(const qwen2vl_ocr_context * ctx);
 
 // Run OCR on raw pixel bytes (RGB/RGBA/grayscale).
 // Returns generated text (owned by ctx, valid until next call or free).

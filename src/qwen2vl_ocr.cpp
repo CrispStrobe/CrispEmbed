@@ -18,12 +18,20 @@
 //
 // Per-layer diff comparison via crispembed_diff.h when ctx.diff_ref_path is
 // set.
+//
+// TeleOCR-specific support portions are adaptations of the Apache-2.0
+// TeleOCR model (Copyright 2025 The Qwen Team and The HuggingFace Inc. team)
+// and teleocr-rs (Rija Z. / rzafiamy). See NOTICE.teleocr and
+// models/licenses/apache-2.0/LICENSE. Existing Qwen engine code retains its
+// project MIT license.
 
 #include "qwen2vl_ocr.h"
 #include "core/bpe.h"
 #include "core/gguf_loader.h"
 #include "crispembed_diff.h"
 #include "image_preprocess.h"
+#include "mineru_graph_ops.h"
+#include "mineru_model_profile.h"
 #include "tokenizer.h"
 
 #include "ggml-alloc.h"
@@ -34,6 +42,7 @@
 #include "core/no_repeat_ngram.h"
 #include "gguf.h"
 #include "core/env_gate.h"
+#include "core/quant_f32_matmul.h"
 
 #include <algorithm>
 #include <cctype>
@@ -42,7 +51,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <limits>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 #include <unordered_set>
@@ -50,6 +61,55 @@
 namespace qwen2vl_ocr {
 
 namespace {
+
+bool teleocr_tensor_type_supported(ggml_type type, const int64_t * dimensions) {
+    // The v1 converter flattens every matrix and retains all norm/bias
+    // vectors in F32. CPU elementwise operations do not accept a compressed
+    // weight vector as the second operand of an F32 activation.
+    if (dimensions[2] != 1 || dimensions[3] != 1) return false;
+    if (dimensions[1] == 1) return type == GGML_TYPE_F32;
+    return type == GGML_TYPE_F32 || type == GGML_TYPE_F16 || type == GGML_TYPE_BF16 ||
+           (ggml_is_quantized(type) && ggml_get_type_traits(type)->to_float != nullptr);
+}
+
+ggml_tensor * model_matmul(context & ctx, ggml_context * g, ggml_tensor * weights, ggml_tensor * input) {
+    if (ctx.is_teleocr && ggml_backend_is_cpu(ctx.backend) && weights->type != GGML_TYPE_F32) {
+        if (ggml_is_quantized(weights->type)) {
+            return core_cpu::quant_f32_matmul(g, weights, ggml_cont(g, input));
+        }
+        // CPU ggml's ordinary F16 matmul rounds the activations to F16 as
+        // well. TeleOCR uses float32 activations with compressed weights.
+        // A graph-local cast preserves those values and releases scratch
+        // after the consumer; it does not duplicate the complete model.
+        weights = ggml_cast(g, weights, GGML_TYPE_F32);
+    }
+    ggml_tensor * result = ggml_mul_mat(g, weights, input);
+    if (ctx.is_teleocr) ggml_mul_mat_set_prec(result, GGML_PREC_F32);
+    return result;
+}
+
+bool observing(const context & ctx) {
+#ifdef CRISPEMBED_TELEOCR_TESTING
+    return !ctx.diff_ref_path.empty() || ctx.observer != nullptr;
+#else
+    return !ctx.diff_ref_path.empty();
+#endif
+}
+
+#ifdef CRISPEMBED_TELEOCR_TESTING
+void observe(context & ctx, const char * name, const float * data, size_t count, int64_t row_width) {
+    if (ctx.observer) ctx.observer(ctx.observer_data, name, data, count, row_width);
+}
+
+void observe_tensor(context & ctx, ggml_cgraph * graph, const char * tensor_name, const char * name = nullptr) {
+    if (!ctx.observer) return;
+    ggml_tensor * tensor = ggml_graph_get_tensor(graph, tensor_name);
+    if (!tensor || tensor->type != GGML_TYPE_F32) return;
+    std::vector<float> values((size_t)ggml_nelements(tensor));
+    ggml_backend_tensor_get(tensor, values.data(), 0, values.size() * sizeof(float));
+    observe(ctx, name ? name : tensor_name, values.data(), values.size(), tensor->ne[0]);
+}
+#endif
 
 using qwen_clock = std::chrono::steady_clock;
 
@@ -66,6 +126,77 @@ long long qwen_ms_since(qwen_clock::time_point t0) {
 bool load_hparams(context & ctx, const char * path) {
     gguf_context * g = core_gguf::open_metadata(path);
     if (!g) return false;
+
+    ctx.is_teleocr = core_gguf::kv_str(g, "general.architecture", "") == "teleocr";
+    if (ctx.is_teleocr &&
+        (!core_env::on("CRISPEMBED_TELEOCR") || core_gguf::kv_u32(g, "teleocr.gguf_version", 0) != 1)) {
+        fprintf(stderr, "TeleOCR requires CRISPEMBED_TELEOCR=1 and a CrispEmbed TeleOCR GGUF v1; "
+                        "convert the checkpoint with convert-teleocr-to-gguf.py.\n");
+        core_gguf::free_metadata(g);
+        return false;
+    }
+    // License gate (same pattern as LFM2-VL). TeleOCR's vision tower derives from
+    // Qwen2.5-VL-3B-Instruct (tests/results/licenses/qwen-vision-lineage.json),
+    // which is under the Qwen RESEARCH LICENSE: non-commercial use only.
+    if (ctx.is_teleocr && !core_env::on("CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE")) {
+        fprintf(stderr, "TeleOCR: its vision tower derives from Qwen2.5-VL-3B-Instruct, released under the Qwen\n"
+                        "  RESEARCH LICENSE AGREEMENT (non-commercial use only; commercial use needs a license\n"
+                        "  from Alibaba Cloud). Set CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1 to acknowledge.\n"
+                        "  See: https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct/blob/main/LICENSE\n");
+        core_gguf::free_metadata(g);
+        return false;
+    }
+    if (ctx.is_teleocr) {
+        auto array_type = [&](const char * key, gguf_type type, size_t count) {
+            const int index = gguf_find_key(g, key);
+            return index >= 0 && gguf_get_kv_type(g, index) == GGUF_TYPE_ARRAY && gguf_get_arr_type(g, index) == type &&
+                   gguf_get_arr_n(g, index) == count;
+        };
+        bool types_ok = array_type("qwen2vl.vision.fullatt_block_indexes", GGUF_TYPE_UINT32, 4) &&
+                        array_type("qwen2vl.vision.image_mean", GGUF_TYPE_FLOAT32, 3) &&
+                        array_type("qwen2vl.vision.image_std", GGUF_TYPE_FLOAT32, 3) &&
+                        array_type("qwen2vl.rope_sections", GGUF_TYPE_UINT32, 3);
+        for (int64_t i = 0; i < gguf_get_n_kv(g); ++i) {
+            const std::string key = gguf_get_key(g, i);
+            if (key.compare(0, 8, "qwen3vl.") == 0) types_ok = false;
+        }
+        const int norm_eps = gguf_find_key(g, "qwen2vl.vision.layer_norm_eps");
+        if (norm_eps >= 0 && gguf_get_kv_type(g, norm_eps) != GGUF_TYPE_FLOAT32) types_ok = false;
+        if (!types_ok) {
+            fprintf(stderr, "TeleOCR: malformed metadata array or conflicting architecture prefix\n");
+            core_gguf::free_metadata(g);
+            return false;
+        }
+        // Check tensor headers before allocating weights or building a graph.
+        // A correctly shaped F16/quantized norm or bias would otherwise reach
+        // an unsupported elementwise operation and abort in the CPU backend.
+        for (int64_t i = 0; i < gguf_get_n_tensors(g); ++i) {
+            const ggml_type type = gguf_get_tensor_type(g, i);
+            if (!teleocr_tensor_type_supported(type, gguf_get_tensor_ne(g, i))) {
+                fprintf(stderr, "TeleOCR: incompatible tensor type or rank: %s (%s)\n", gguf_get_tensor_name(g, i),
+                        ggml_type_name(type));
+                core_gguf::free_metadata(g);
+                return false;
+            }
+        }
+    }
+    const std::string family = core_gguf::kv_str(g, "qwen2vl.model_family", "");
+    ctx.is_mineru25_pro = family == mineru25_profile::family;
+    std::string model_name = core_gguf::kv_str(g, "general.name", "");
+    std::transform(model_name.begin(), model_name.end(), model_name.begin(),
+                   [](unsigned char c) { return char(std::tolower(c)); });
+    if ((family.find("mineru") != std::string::npos || model_name.find("mineru") != std::string::npos) &&
+        !ctx.is_mineru25_pro) {
+        fprintf(stderr, "qwen2vl_ocr: MinerU requires the explicit mineru2.5-pro-2604 conversion profile\n");
+        core_gguf::free_metadata(g);
+        return false;
+    }
+    if (ctx.is_mineru25_pro && (!core_env::on(mineru25_profile::gate) ||
+                                core_gguf::kv_str(g, "qwen2vl.mineru.processor", "") != "qwen2vl-fast")) {
+        fprintf(stderr, "qwen2vl_ocr: MinerU requires CRISPEMBED_MINERU25_PRO=1 and qwen2vl-fast metadata\n");
+        core_gguf::free_metadata(g);
+        return false;
+    }
 
     auto u32 = [&](const char * k, uint32_t d) { return core_gguf::kv_u32(g, k, d); };
     auto f32v = [&](const char * k, float d) { return core_gguf::kv_f32(g, k, d); };
@@ -162,6 +293,7 @@ bool load_hparams(context & ctx, const char * path) {
     int interleaved_idx = gguf_find_key(g, "qwen3vl.mrope_interleaved");
     lhp.mrope_interleaved = boolv(interleaved_idx, lhp.mrope_interleaved);
     int qknorm_idx = gguf_find_key(g, "qwen3vl.has_qk_norm");
+    if (qknorm_idx < 0) qknorm_idx = gguf_find_key(g, "qwen2vl.has_qk_norm");
     lhp.has_qk_norm = boolv(qknorm_idx, lhp.has_qk_norm);
 
     // Qwen3-VL: deepstack visual indexes
@@ -226,6 +358,84 @@ bool load_hparams(context & ctx, const char * path) {
     int tie_idx = gguf_find_key(g, "qwen3vl.tie_word_embeddings");
     if (tie_idx < 0) tie_idx = gguf_find_key(g, "qwen2vl.tie_word_embeddings");
     lhp.tie_word_embeddings = boolv(tie_idx, lhp.tie_word_embeddings);
+
+    if (ctx.is_teleocr) {
+        // Admit the published TeleOCR profile before allocating tensor buffers.
+        // The explicit format marker also distinguishes teleocr-rs GGUFs,
+        // whose tensor namespace and metadata are different.
+        const bool valid = vhp.depth == 32 && vhp.hidden_size == 1280 && vhp.intermediate_size == 3420 &&
+                           vhp.num_heads == 16 && vhp.in_channels == 3 && vhp.spatial_patch_size == 14 &&
+                           vhp.temporal_patch_size == 2 && vhp.spatial_merge_size == 2 && vhp.out_hidden_size == 1024 &&
+                           vhp.window_size == 112 && vhp.fullatt_block_indexes == std::vector<int>({ 7, 15, 23, 31 }) &&
+                           vhp.deepstack_indexes.empty() && !vhp.has_position_embed && lhp.hidden_size == 1024 &&
+                           lhp.intermediate_size == 3072 && lhp.num_hidden_layers == 28 &&
+                           lhp.num_attention_heads == 16 && lhp.num_key_value_heads == 8 && lhp.head_dim == 128 &&
+                           lhp.vocab_size == 151936 && lhp.has_qk_norm && !lhp.mrope_interleaved &&
+                           lhp.tie_word_embeddings && lhp.rope_sections[0] == 16 && lhp.rope_sections[1] == 24 &&
+                           lhp.rope_sections[2] == 24 && lhp.rope_sections[3] == 0 && lhp.image_token_id == 151655 &&
+                           lhp.vision_start_token_id == 151652 && lhp.vision_end_token_id == 151653 &&
+                           lhp.max_position_embeddings == 128000 && std::isfinite(lhp.rms_norm_eps) &&
+                           lhp.rms_norm_eps == 1e-6f && std::isfinite(lhp.rope_theta) && lhp.rope_theta == 1000000.0f &&
+                           vhp.min_pixels >= 784 && vhp.min_pixels <= vhp.max_pixels && vhp.max_pixels <= 12845056;
+        bool normalization_ok = true;
+        for (int c = 0; c < 3; ++c) {
+            normalization_ok &=
+                std::isfinite(vhp.image_mean[c]) && std::isfinite(vhp.image_std[c]) && vhp.image_std[c] > 0.0f;
+        }
+        ctx.repetition_penalty = f32v("teleocr.repetition_penalty", 1.05f);
+        if (!valid || !normalization_ok || !std::isfinite(ctx.repetition_penalty) || ctx.repetition_penalty <= 0.0f) {
+            fprintf(stderr, "TeleOCR: unsupported or inconsistent model metadata\n");
+            core_gguf::free_metadata(g);
+            return false;
+        }
+        ctx.no_repeat_ngram = 0;
+        ctx.eos_token_id = 151645;
+    }
+    if (ctx.is_mineru25_pro) {
+        // Fail before allocating a backend or loading weights if a renamed
+        // generic Qwen file is supplied. This lane supports one pinned model.
+        const bool valid =
+            vhp.depth == 32 && vhp.hidden_size == 1280 && vhp.intermediate_size == 5120 && vhp.num_heads == 16 &&
+            vhp.in_channels == 3 && vhp.spatial_patch_size == 14 && vhp.spatial_merge_size == 2 &&
+            vhp.temporal_patch_size == 2 && vhp.out_hidden_size == 896 && !vhp.has_position_embed &&
+            vhp.deepstack_indexes.empty() && vhp.window_size == 0 && vhp.min_pixels == 50176 &&
+            vhp.max_pixels == 1605632 && lhp.hidden_size == 896 && lhp.intermediate_size == 4864 &&
+            lhp.num_hidden_layers == 24 && lhp.num_attention_heads == 14 && lhp.num_key_value_heads == 2 &&
+            (lhp.head_dim == 0 || lhp.head_dim == 64) && lhp.vocab_size == 151936 &&
+            lhp.max_position_embeddings == mineru25_profile::context_length && lhp.rope_sections[0] == 8 &&
+            lhp.rope_sections[1] == 12 && lhp.rope_sections[2] == 12 && lhp.rope_sections[3] == 0 &&
+            !lhp.mrope_interleaved && !lhp.has_qk_norm && lhp.tie_word_embeddings && lhp.image_token_id == 151655 &&
+            lhp.vision_start_token_id == 151652 && lhp.vision_end_token_id == 151653 && lhp.rope_theta == 1000000.0f &&
+            lhp.rms_norm_eps == 1e-6f;
+        bool pixels_valid = true;
+        for (int i = 0; i < 3; ++i)
+            pixels_valid = pixels_valid && vhp.image_mean[i] == image_preproc::kCLIPMean[i] &&
+                           vhp.image_std[i] == image_preproc::kCLIPStd[i];
+        if (!valid || !pixels_valid) {
+            fprintf(stderr, "qwen2vl_ocr: unsupported MinerU architecture/preprocessor metadata\n");
+            core_gguf::free_metadata(g);
+            return false;
+        }
+        ctx.no_repeat_ngram = mineru25_profile::no_repeat_ngram;
+        ctx.eos_token_id = 151645;
+    }
+
+    // License gate for Qwen2.5-VL-3B derivatives (qwen2vl-3b, nanonets-ocr-s,
+    // uni-mumer-qwen2.5-vl-3b; tests/results/licenses/registry-qwen-audit.json).
+    // Only the 3B pairs the Qwen2.5-VL windowed vision tower with a 2048-wide,
+    // 36-layer decoder (7B is 3584 wide, Qwen3-VL-2B has 28 layers and DeepStack);
+    // it is released under the Qwen RESEARCH LICENSE: non-commercial use only.
+    const bool qwen25vl_3b = !ctx.is_teleocr && !ctx.is_mineru25_pro && vhp.window_size > 0 &&
+                             !vhp.fullatt_block_indexes.empty() && vhp.deepstack_indexes.empty() &&
+                             lhp.hidden_size == 2048 && lhp.num_hidden_layers == 36;
+    if (qwen25vl_3b && !core_env::on("CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE")) {
+        fprintf(stderr, "qwen2vl_ocr: this model derives from Qwen2.5-VL-3B-Instruct, released under the Qwen\n"
+                        "  RESEARCH LICENSE AGREEMENT (non-commercial use only; commercial use needs a license\n"
+                        "  from Alibaba Cloud). Set CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1 to acknowledge.\n"
+                        "  See: https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct/blob/main/LICENSE\n");
+        core_gguf::free_metadata(g);
+        return false;
+    }
 
     core_gguf::free_metadata(g);
     return true;
@@ -471,7 +681,7 @@ bool load_tensors(context & ctx, const char * path) {
     // Vision blocks: detect by qkv_w.ne[0]. Correct (CrispEmbed): ne[0]=H.
     // Wrong order: ne[0]=3*H (fused QKV stored out-first).
     const int64_t H = (int64_t)m.vhp.hidden_size;
-    if (H > 0 && m.vhp.depth > 0 && m.vis_blocks[0].qkv_w && m.vis_blocks[0].qkv_w->ne[0] != H) {
+    if (!ctx.is_teleocr && H > 0 && m.vhp.depth > 0 && m.vis_blocks[0].qkv_w && m.vis_blocks[0].qkv_w->ne[0] != H) {
         if (ctx.verbosity >= 1) fprintf(stderr, "  vision: fixing transposed weights (PyTorch→ggml)\n");
         for (uint32_t i = 0; i < m.vhp.depth; i++) {
             auto & blk = m.vis_blocks[i];
@@ -497,7 +707,8 @@ bool load_tensors(context & ctx, const char * path) {
 
     // LLM layers: detect by ffn_gate_w.ne[0]. Correct: ne[0]=D. Wrong: ne[0]=inter.
     const int64_t D = (int64_t)m.lhp.hidden_size;
-    if (D > 0 && m.lhp.num_hidden_layers > 0 && m.llm_layers[0].ffn_gate_w && m.llm_layers[0].ffn_gate_w->ne[0] != D) {
+    if (!ctx.is_teleocr && D > 0 && m.lhp.num_hidden_layers > 0 && m.llm_layers[0].ffn_gate_w &&
+        m.llm_layers[0].ffn_gate_w->ne[0] != D) {
         if (ctx.verbosity >= 1) fprintf(stderr, "  llm: fixing transposed weights (PyTorch→ggml)\n");
         for (uint32_t i = 0; i < m.lhp.num_hidden_layers; i++) {
             auto & ly = m.llm_layers[i];
@@ -524,7 +735,69 @@ bool load_tensors(context & ctx, const char * path) {
     }
     if (m.lhp.head_dim == 0) m.lhp.head_dim = m.lhp.hidden_size / m.lhp.num_attention_heads;
 
+    if (ctx.is_mineru25_pro) {
+        // Vectors (norms/biases) must stay float; weight matrices may also be
+        // crispembed-quantize outputs, which only ever feed mul_mat/get_rows.
+        auto shape = [](const ggml_tensor * t, int64_t x, int64_t y = 1) {
+            const bool type_ok =
+                t && (t->type == GGML_TYPE_F32 || t->type == GGML_TYPE_F16 || (y > 1 && ggml_is_quantized(t->type)));
+            return type_ok && t->ne[0] == x && t->ne[1] == y && t->ne[2] == 1 && t->ne[3] == 1;
+        };
+        bool valid = m.vhp.is_qwen2_vl && !m.patch_embed_b && !m.position_embed_w &&
+                     shape(m.patch_embed_w, 1176, 1280) && shape(m.embed_tokens, 896, 151936) &&
+                     shape(m.output_norm_w, 896) && m.lm_head_w == m.embed_tokens && m.lhp.head_dim == 64 &&
+                     shape(m.merger.norm_w, 1280) && shape(m.merger.norm_b, 1280) &&
+                     shape(m.merger.fc1_w, 5120, 5120) && shape(m.merger.fc1_b, 5120) &&
+                     shape(m.merger.fc2_w, 5120, 896) && shape(m.merger.fc2_b, 896);
+        for (const auto & b : m.vis_blocks) {
+            valid = valid && shape(b.norm1_w, 1280) && shape(b.norm1_b, 1280) && shape(b.norm2_w, 1280) &&
+                    shape(b.norm2_b, 1280) && shape(b.qkv_w, 1280, 3840) && shape(b.qkv_b, 3840) &&
+                    shape(b.proj_w, 1280, 1280) && shape(b.proj_b, 1280) && shape(b.ffn_fc1_w, 1280, 5120) &&
+                    shape(b.ffn_fc1_b, 5120) && shape(b.ffn_fc2_w, 5120, 1280) && shape(b.ffn_fc2_b, 1280) &&
+                    !b.ffn_gate_w;
+        }
+        for (const auto & l : m.llm_layers) {
+            valid = valid && shape(l.attn_norm_w, 896) && shape(l.ffn_norm_w, 896) && shape(l.q_w, 896, 896) &&
+                    shape(l.q_b, 896) && shape(l.k_w, 896, 128) && shape(l.k_b, 128) && shape(l.v_w, 896, 128) &&
+                    shape(l.v_b, 128) && shape(l.o_w, 896, 896) && !l.o_b && shape(l.ffn_gate_w, 896, 4864) &&
+                    shape(l.ffn_up_w, 896, 4864) && shape(l.ffn_down_w, 4864, 896) && !l.q_norm_w && !l.k_norm_w;
+        }
+        if (!valid) {
+            fprintf(stderr, "qwen2vl_ocr: missing or incompatible MinerU tensors\n");
+            return false;
+        }
+    }
+
     return true;
+}
+
+bool validate_teleocr_tensors(const context & ctx) {
+    const auto & m = ctx.m;
+    auto shape = [](const ggml_tensor * t, int64_t n0, int64_t n1 = 1) {
+        return t && t->ne[0] == n0 && t->ne[1] == n1 && t->ne[2] == 1 && t->ne[3] == 1 && ggml_is_contiguous(t) &&
+               teleocr_tensor_type_supported(t->type, t->ne);
+    };
+    bool valid = shape(m.patch_embed_w, 1176, 1280) && !m.patch_embed_b && !m.position_embed_w &&
+                 !m.packing_pos_embed_w && !m.post_layernorm_w && !m.vhp.is_qwen2_vl && shape(m.merger.norm_w, 1280) &&
+                 !m.merger.norm_b && shape(m.merger.fc1_w, 5120, 5120) && shape(m.merger.fc1_b, 5120) &&
+                 shape(m.merger.fc2_w, 5120, 1024) && shape(m.merger.fc2_b, 1024) &&
+                 shape(m.embed_tokens, 1024, 151936) && shape(m.output_norm_w, 1024) &&
+                 shape(m.lm_head_w, 1024, 151936);
+    for (const auto & b : m.vis_blocks) {
+        valid &= shape(b.norm1_w, 1280) && !b.norm1_b && shape(b.norm2_w, 1280) && !b.norm2_b &&
+                 shape(b.qkv_w, 1280, 3840) && shape(b.qkv_b, 3840) && shape(b.proj_w, 1280, 1280) &&
+                 shape(b.proj_b, 1280) && shape(b.ffn_gate_w, 1280, 3420) && shape(b.ffn_gate_b, 3420) &&
+                 shape(b.ffn_up_w, 1280, 3420) && shape(b.ffn_up_b, 3420) && shape(b.ffn_down_w, 3420, 1280) &&
+                 shape(b.ffn_down_b, 1280);
+    }
+    for (const auto & l : m.llm_layers) {
+        valid &= shape(l.attn_norm_w, 1024) && shape(l.ffn_norm_w, 1024) && shape(l.q_w, 1024, 2048) &&
+                 shape(l.k_w, 1024, 1024) && shape(l.v_w, 1024, 1024) && shape(l.o_w, 2048, 1024) && !l.q_b && !l.k_b &&
+                 !l.v_b && !l.o_b && shape(l.q_norm_w, 128) && shape(l.k_norm_w, 128) &&
+                 shape(l.ffn_gate_w, 1024, 3072) && shape(l.ffn_up_w, 1024, 3072) && shape(l.ffn_down_w, 3072, 1024);
+    }
+    if (!valid) fprintf(stderr, "TeleOCR: missing tensor or incompatible tensor shape\n");
+    return valid;
 }
 
 // ── 2D RoPE computation (host-side) ──────────────────────────────────
@@ -629,8 +902,48 @@ void compute_window_ids(const int32_t * grid_thw, int merge, int patch_size, int
     }
 }
 
+// TeleOCR preserves the reference's window ordering, then batches windows
+// with equal lengths. Attention work and scratch are proportional to N*64,
+// rather than allocating an N*N mask for every local-attention block.
+struct teleocr_window_plan {
+    std::vector<int32_t> patches;
+    std::vector<int32_t> units;
+    std::map<int, std::vector<int32_t>> groups;
+    std::vector<int32_t> restore;
+};
+
+teleocr_window_plan make_teleocr_window_plan(const int32_t * grid, const vision_hparams & vhp) {
+    teleocr_window_plan plan;
+    const int merge = (int)vhp.spatial_merge_size;
+    const int unit = merge * merge;
+    const int h = grid[1] / merge, w = grid[2] / merge;
+    const int win = (int)vhp.window_size / (int)vhp.spatial_patch_size / merge;
+    for (int y = 0; y < h; y += win) {
+        for (int x = 0; x < w; x += win) {
+            const int start = (int)plan.patches.size();
+            for (int yy = y; yy < std::min(h, y + win); ++yy) {
+                for (int xx = x; xx < std::min(w, x + win); ++xx) {
+                    const int u = yy * w + xx;
+                    plan.units.push_back(u);
+                    for (int k = 0; k < unit; ++k) plan.patches.push_back(u * unit + k);
+                }
+            }
+            const int length = (int)plan.patches.size() - start;
+            auto & group = plan.groups[length];
+            for (int p = start; p < start + length; ++p) group.push_back(p);
+        }
+    }
+    plan.restore.resize(plan.patches.size());
+    int grouped = 0;
+    for (const auto & group : plan.groups) {
+        for (int index : group.second) plan.restore[index] = grouped++;
+    }
+    return plan;
+}
+
 struct vision_graph_result {
     ggml_cgraph * gf = nullptr;
+    ggml_context * owner = nullptr;
     ggml_tensor * output = nullptr;
     int h_patches = 0;
     int w_patches = 0;
@@ -674,10 +987,25 @@ vision_graph_result build_vision_graph(context & ctx, int n_patches, const int32
 
     // Windowed attention (Qwen2.5-VL): a (n_patches, n_patches) additive mask
     // (0 within a window, -inf across windows), applied on non-fullatt blocks.
-    const bool use_window = vision_uses_window(vhp);
+    const bool use_window = ctx.is_teleocr || vision_uses_window(vhp);
     std::unordered_set<int> fullatt(vhp.fullatt_block_indexes.begin(), vhp.fullatt_block_indexes.end());
     ggml_tensor * window_mask = nullptr;
-    if (use_window) {
+    teleocr_window_plan window_plan;
+    std::map<int, ggml_tensor *> window_groups;
+    ggml_tensor * window_restore = nullptr;
+    if (ctx.is_teleocr) {
+        window_plan = make_teleocr_window_plan(grid_thw, vhp);
+        for (const auto & group : window_plan.groups) {
+            ggml_tensor * indices = ggml_new_tensor_1d(g, GGML_TYPE_I32, (int64_t)group.second.size());
+            const std::string name = "teleocr_window_" + std::to_string(group.first);
+            ggml_set_name(indices, name.c_str());
+            ggml_set_input(indices);
+            window_groups.emplace(group.first, indices);
+        }
+        window_restore = ggml_new_tensor_1d(g, GGML_TYPE_I32, n_patches);
+        ggml_set_name(window_restore, "teleocr_window_restore");
+        ggml_set_input(window_restore);
+    } else if (use_window) {
         window_mask = ggml_new_tensor_2d(g, GGML_TYPE_F32, n_patches, n_patches);
         ggml_set_name(window_mask, "window_mask");
         ggml_set_input(window_mask);
@@ -685,7 +1013,7 @@ vision_graph_result build_vision_graph(context & ctx, int n_patches, const int32
 
     // ── Patch embedding ──
     // Use model tensor directly — no reshape (already ne=(patch_flat_dim, H))
-    ggml_tensor * x = ggml_mul_mat(g, ctx.m.patch_embed_w, pixel_in);
+    ggml_tensor * x = model_matmul(ctx, g, ctx.m.patch_embed_w, pixel_in);
     if (ctx.m.patch_embed_b) {
         x = ggml_add(g, x, ctx.m.patch_embed_b);
     }
@@ -709,7 +1037,13 @@ vision_graph_result build_vision_graph(context & ctx, int n_patches, const int32
     }
 
     ggml_set_name(x, "patch_embed_out");
-    if (!ctx.diff_ref_path.empty()) ggml_set_output(x);
+    if (observing(ctx)) ggml_set_output(x);
+    if (ctx.is_teleocr) {
+        ggml_tensor * order = ggml_new_tensor_1d(g, GGML_TYPE_I32, n_patches);
+        ggml_set_name(order, "teleocr_patch_order");
+        ggml_set_input(order);
+        x = ggml_get_rows(g, x, order);
+    }
 
     // ── RMSNorm helper ──
     auto rmsnorm = [&](ggml_tensor * t, ggml_tensor * w) -> ggml_tensor * {
@@ -758,7 +1092,7 @@ vision_graph_result build_vision_graph(context & ctx, int n_patches, const int32
         // QKV: fused (CrispEmbed/Qwen2.5-VL) or separate (llama.cpp mmproj)
         ggml_tensor *Q, *K, *V;
         if (blk.qkv_w) {
-            ggml_tensor * qkv = ggml_mul_mat(g, blk.qkv_w, y);
+            ggml_tensor * qkv = model_matmul(ctx, g, blk.qkv_w, y);
             if (blk.qkv_b) qkv = ggml_add(g, qkv, blk.qkv_b);
             qkv = ggml_reshape_4d(g, qkv, head_dim, n_heads, 3, n_patches);
             Q = ggml_view_3d(g, qkv, head_dim, n_heads, n_patches, qkv->nb[1], qkv->nb[3], 0 * qkv->nb[2]);
@@ -766,11 +1100,11 @@ vision_graph_result build_vision_graph(context & ctx, int n_patches, const int32
             V = ggml_view_3d(g, qkv, head_dim, n_heads, n_patches, qkv->nb[1], qkv->nb[3], 2 * qkv->nb[2]);
         } else {
             // Separate Q/K/V (llama.cpp mmproj)
-            Q = ggml_mul_mat(g, blk.q_w, y);
+            Q = model_matmul(ctx, g, blk.q_w, y);
             if (blk.q_b) Q = ggml_add(g, Q, blk.q_b);
-            K = ggml_mul_mat(g, blk.k_w, y);
+            K = model_matmul(ctx, g, blk.k_w, y);
             if (blk.k_b) K = ggml_add(g, K, blk.k_b);
-            V = ggml_mul_mat(g, blk.v_w, y);
+            V = model_matmul(ctx, g, blk.v_w, y);
             if (blk.v_b) V = ggml_add(g, V, blk.v_b);
             Q = ggml_reshape_3d(g, Q, head_dim, n_heads, n_patches);
             K = ggml_reshape_3d(g, K, head_dim, n_heads, n_patches);
@@ -791,15 +1125,35 @@ vision_graph_result build_vision_graph(context & ctx, int n_patches, const int32
 
         // Attention. Q/K/V are (head_dim, n_patches, n_heads).
         ggml_tensor * attn_out;
-        if (use_window && !fullatt.count((int)il)) {
+        if (ctx.is_teleocr && !fullatt.count((int)il)) {
+            auto gather_windows = [&](ggml_tensor * t, ggml_tensor * ids, int length) {
+                t = ggml_cont(g, ggml_permute(g, t, 0, 2, 1, 3)); // hd, heads, patches
+                t = ggml_reshape_2d(g, t, H, n_patches);
+                t = ggml_get_rows(g, t, ids);
+                t = ggml_reshape_4d(g, t, head_dim, n_heads, length, ids->ne[0] / length);
+                return ggml_cont(g, ggml_permute(g, t, 0, 2, 1, 3)); // hd, len, heads, windows
+            };
+            ggml_tensor * joined = nullptr;
+            for (const auto & group : window_groups) {
+                ggml_tensor * qw = gather_windows(Q, group.second, group.first);
+                ggml_tensor * kw = gather_windows(K, group.second, group.first);
+                ggml_tensor * vw = gather_windows(V, group.second, group.first);
+                ggml_tensor * a = ggml_flash_attn_ext(g, qw, kw, vw, nullptr, attn_scale, 0.0f, 0.0f);
+                ggml_flash_attn_ext_set_prec(a, GGML_PREC_F32);
+                // Flash attention returns hd, heads, len, windows.
+                a = ggml_reshape_2d(g, a, H, group.second->ne[0]);
+                joined = joined ? ggml_concat(g, joined, a, 1) : a;
+            }
+            attn_out = ggml_get_rows(g, joined, window_restore);
+        } else if (use_window && !fullatt.count((int)il)) {
             // Windowed block: manual masked attention. flash_attn_ext's mask layout
             // is finicky (F16, padded); soft_max_ext takes a plain F32 mask that
             // broadcasts over heads, which is what we need for the block-diagonal
             // window mask.
-            ggml_tensor * scores = ggml_mul_mat(g, K, Q); // (n_kv, n_q, n_heads)
+            ggml_tensor * scores = model_matmul(ctx, g, K, Q); // (n_kv, n_q, n_heads)
             scores = ggml_soft_max_ext(g, scores, window_mask, attn_scale, 0.0f);
             ggml_tensor * Vt = ggml_cont(g, ggml_permute(g, V, 1, 0, 2, 3));
-            attn_out = ggml_mul_mat(g, Vt, scores); // (head_dim, n_q, n_heads)
+            attn_out = model_matmul(ctx, g, Vt, scores); // (head_dim, n_q, n_heads)
             attn_out = ggml_cont(g, ggml_permute(g, attn_out, 0, 2, 1, 3));
             attn_out = ggml_reshape_2d(g, attn_out, H, n_patches);
         } else {
@@ -809,7 +1163,7 @@ vision_graph_result build_vision_graph(context & ctx, int n_patches, const int32
             attn_out = ggml_reshape_2d(g, attn_out, H, n_patches);
         }
 
-        attn_out = ggml_mul_mat(g, blk.proj_w, attn_out);
+        attn_out = model_matmul(ctx, g, blk.proj_w, attn_out);
         if (blk.proj_b) attn_out = ggml_add(g, attn_out, blk.proj_b);
 
         x = ggml_add(g, residual, attn_out);
@@ -824,25 +1178,31 @@ vision_graph_result build_vision_graph(context & ctx, int n_patches, const int32
             // Qwen2-VL VisionMlp: ACT2FN[config.hidden_act]:
             //   quick_gelu = x*sigmoid(1.702*x) (Qwen2-VL default)
             //   gelu_pytorch_tanh = GELU(tanh approximation) (PaddleOCR-VL)
-            ffn = ggml_mul_mat(g, blk.ffn_fc1_w, y);
+            ffn = model_matmul(ctx, g, blk.ffn_fc1_w, y);
             if (blk.ffn_fc1_b) ffn = ggml_add(g, ffn, blk.ffn_fc1_b);
             if (vhp.has_position_embed) {
                 // PaddleOCR-VL: gelu_pytorch_tanh
                 ffn = ggml_gelu(g, ffn);
+            } else if (ctx.is_mineru25_pro && !core_env::explicitly_off("CRISPEMBED_MINERU25_PRO_EXACT_GELU")) {
+                // The CPU ggml_gelu_quick rounds input and output through an
+                // fp16 table (GGML_GELU_QUICK_FP16); HF evaluates it in F32.
+                // Default for MinerU after a four-case A/B (decode exact both
+                // ways, stage error ~100x lower); =0 restores the table path.
+                ffn = mineru_graph_ops::quick_gelu_f32(g, ffn);
             } else {
                 ffn = ggml_gelu_quick(g, ffn);
             }
-            ffn = ggml_mul_mat(g, blk.ffn_fc2_w, ffn);
+            ffn = model_matmul(ctx, g, blk.ffn_fc2_w, ffn);
             if (blk.ffn_fc2_b) ffn = ggml_add(g, ffn, blk.ffn_fc2_b);
         } else {
             // Qwen2.5-VL: SwiGLU gate * silu(up) → down
-            ggml_tensor * gate = ggml_mul_mat(g, blk.ffn_gate_w, y);
+            ggml_tensor * gate = model_matmul(ctx, g, blk.ffn_gate_w, y);
             if (blk.ffn_gate_b) gate = ggml_add(g, gate, blk.ffn_gate_b);
             gate = ggml_silu(g, gate);
-            ggml_tensor * up = ggml_mul_mat(g, blk.ffn_up_w, y);
+            ggml_tensor * up = model_matmul(ctx, g, blk.ffn_up_w, y);
             if (blk.ffn_up_b) up = ggml_add(g, up, blk.ffn_up_b);
             ffn = ggml_mul(g, gate, up);
-            ffn = ggml_mul_mat(g, blk.ffn_down_w, ffn);
+            ffn = model_matmul(ctx, g, blk.ffn_down_w, ffn);
             if (blk.ffn_down_b) ffn = ggml_add(g, ffn, blk.ffn_down_b);
         }
 
@@ -851,7 +1211,7 @@ vision_graph_result build_vision_graph(context & ctx, int n_patches, const int32
         char name[64];
         std::snprintf(name, sizeof(name), "vis_layer_%u", il);
         ggml_set_name(x, name);
-        if (!ctx.diff_ref_path.empty()) ggml_set_output(x);
+        if (observing(ctx)) ggml_set_output(x);
 
         // Qwen3-VL: mark deepstack layers as outputs for extraction
         for (int dsi = 0; dsi < (int)vhp.deepstack_indexes.size(); dsi++) {
@@ -871,7 +1231,7 @@ vision_graph_result build_vision_graph(context & ctx, int n_patches, const int32
         }
         x = pln;
         ggml_set_name(x, "post_layernorm_out");
-        if (!ctx.diff_ref_path.empty()) ggml_set_output(x);
+        if (observing(ctx)) ggml_set_output(x);
     }
 
     // ── Merger (LayerNorm → spatial merge on CPU → FC1 → GELU → FC2) ──
@@ -903,6 +1263,7 @@ vision_graph_result build_vision_graph(context & ctx, int n_patches, const int32
 
     vision_graph_result out;
     out.gf = gf;
+    out.owner = g;
     out.output = x;
     out.h_patches = h_patches;
     out.w_patches = w_patches;
@@ -913,7 +1274,98 @@ vision_graph_result build_vision_graph(context & ctx, int n_patches, const int32
 
 // ── Public API ───────────────────────────────────────────────────────
 
+bool preprocess_teleocr(const uint8_t * pixels, int height, int width, int channels, const image_preproc::config & cfg,
+                        image_preproc::result & out) {
+    out = {};
+    if (!pixels || height <= 0 || width <= 0 || (channels != 1 && channels != 3 && channels != 4) ||
+        cfg.patch_size != 14 || cfg.temporal_patch_size != 2 || cfg.merge_size != 2 || cfg.min_pixels < 784 ||
+        cfg.max_pixels < cfg.min_pixels || cfg.max_pixels > 12845056 ||
+        (double)std::max(height, width) / std::min(height, width) > 200.0 ||
+        (uint64_t)height * width > (uint64_t)std::numeric_limits<int>::max() / 4)
+        return false;
+    for (int c = 0; c < 3; ++c)
+        if (!std::isfinite(cfg.mean[c]) || !std::isfinite(cfg.std[c]) || cfg.std[c] <= 0.0f) return false;
+
+    constexpr int factor = 28;
+    auto half_even = [](double x) {
+        const double low = std::floor(x), fraction = x - low;
+        return (int)(low + (fraction > 0.5 || (fraction == 0.5 && (int64_t)low % 2)));
+    };
+    int rh = std::max(factor, half_even((double)height / factor) * factor);
+    int rw = std::max(factor, half_even((double)width / factor) * factor);
+    if ((int64_t)rh * rw > cfg.max_pixels) {
+        const double scale = std::sqrt((double)height * width / cfg.max_pixels);
+        rh = std::max(factor, (int)std::floor(height / scale / factor) * factor);
+        rw = std::max(factor, (int)std::floor(width / scale / factor) * factor);
+    } else if ((int64_t)rh * rw < cfg.min_pixels) {
+        const double scale = std::sqrt((double)cfg.min_pixels / ((double)height * width));
+        rh = std::max(factor, (int)std::ceil(height * scale / factor) * factor);
+        rw = std::max(factor, (int)std::ceil(width * scale / factor) * factor);
+    }
+    if ((int64_t)rh * rw > 12845056 || rh <= 0 || rw <= 0) return false;
+
+    std::vector<uint8_t> rgb;
+    const uint8_t * source = pixels;
+    if (channels != 3) {
+        rgb.resize((size_t)height * width * 3);
+        for (size_t i = 0; i < (size_t)height * width; ++i) {
+            for (int c = 0; c < 3; ++c) rgb[i * 3 + c] = pixels[i * channels + (channels == 1 ? 0 : c)];
+        }
+        source = rgb.data();
+    }
+    std::vector<float> resized((size_t)rh * rw * 3);
+    // Pillow 13 chooses the vertical pass first when its positive height
+    // reduction is more than twice its width reduction. The intermediate
+    // is uint8, so reversing the passes changes pixels through clipping and
+    // rounding. Transposing lets the existing fixed-point Pillow kernel
+    // perform that order without changing preprocessing for other models.
+    const bool vertical_first = height > rh && (int64_t)height - rh > ((int64_t)width - rw) * 2;
+    if (vertical_first) {
+        std::vector<uint8_t> transposed((size_t)height * width * 3);
+        for (int y = 0; y < height; ++y)
+            for (int x = 0; x < width; ++x)
+                for (int c = 0; c < 3; ++c)
+                    transposed[((size_t)x * height + y) * 3 + c] = source[((size_t)y * width + x) * 3 + c];
+        image_preproc::resize_bicubic_pil_u8_hwc(transposed.data(), width, height, resized.data(), rw, rh, 3);
+    } else {
+        image_preproc::resize_bicubic_pil_u8_hwc(source, height, width, resized.data(), rh, rw, 3);
+    }
+
+    // The slow HF processor rescales in float64 and then casts to float32,
+    // before subtracting/dividing float32 channel statistics.
+    float normalized[3][256];
+    for (int c = 0; c < 3; ++c)
+        for (int value = 0; value < 256; ++value) {
+            const float scaled = (float)((double)value / 255.0);
+            normalized[c][value] = (scaled - cfg.mean[c]) / cfg.std[c];
+        }
+    out.resized_h = rh;
+    out.resized_w = rw;
+    out.grid_thw[0] = 1;
+    out.grid_thw[1] = rh / 14;
+    out.grid_thw[2] = rw / 14;
+    out.n_patches = out.grid_thw[1] * out.grid_thw[2];
+    out.row_dim = 3 * 2 * 14 * 14;
+    out.patches.resize((size_t)out.n_patches * out.row_dim);
+    size_t index = 0;
+    for (int by = 0; by < rh; by += factor)
+        for (int bx = 0; bx < rw; bx += factor)
+            for (int my = 0; my < 2; ++my)
+                for (int mx = 0; mx < 2; ++mx)
+                    for (int c = 0; c < 3; ++c)
+                        for (int t = 0; t < 2; ++t)
+                            for (int py = 0; py < 14; ++py)
+                                for (int px = 0; px < 14; ++px) {
+                                    const int y = by + my * 14 + py, x = bx + mx * 14 + px;
+                                    const size_t pixel =
+                                        (vertical_first ? (size_t)x * rh + y : (size_t)y * rw + x) * 3 + c;
+                                    out.patches[index++] = normalized[c][(int)resized[pixel]];
+                                }
+    return true;
+}
+
 bool load(context & ctx, const char * gguf_path, int n_threads, int verbosity, const char * mmproj_path) {
+    if (!gguf_path) return false;
     ctx.n_threads = n_threads;
     ctx.verbosity = verbosity;
 
@@ -923,6 +1375,15 @@ bool load(context & ctx, const char * gguf_path, int n_threads, int verbosity, c
 
     if (!load_hparams(ctx, gguf_path)) {
         fprintf(stderr, "qwen2vl_ocr: failed to load hparams\n");
+        return false;
+    }
+    if (ctx.is_teleocr && mmproj_path) {
+        fprintf(stderr, "TeleOCR: split mmproj files are not supported by this format\n");
+        return false;
+    }
+    if (ctx.is_teleocr) ctx.n_threads = n_threads = std::max(1, n_threads);
+    if (ctx.is_mineru25_pro && mmproj_path) {
+        fprintf(stderr, "qwen2vl_ocr: MinerU requires the converter's single-file GGUF\n");
         return false;
     }
 
@@ -935,8 +1396,16 @@ bool load(context & ctx, const char * gguf_path, int n_threads, int verbosity, c
                 lhp.num_attention_heads, lhp.num_key_value_heads, lhp.intermediate_size);
     }
 
-    // Init backend — prefer GPU when available
+    // Existing Qwen profiles prefer GPU when available. TeleOCR defaults to
+    // the CPU arithmetic tested by its reference panel; GPU execution has a
+    // separate opt-in because quantized GPU kernels can round activations.
     bool force_cpu = (getenv("QWEN2VL_OCR_FORCE_CPU") && atoi(getenv("QWEN2VL_OCR_FORCE_CPU")));
+    if (ctx.is_teleocr) {
+        if (!core_env::on("CRISPEMBED_TELEOCR_GPU")) force_cpu = true;
+        if (!force_cpu)
+            fprintf(stderr, "TeleOCR: experimental GPU path requested; GPU numerical and decoded-output "
+                            "parity have not been qualified.\n");
+    }
     ctx.backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend();
     if (!ctx.backend) ctx.backend = ggml_backend_cpu_init();
     if (ggml_backend_is_cpu(ctx.backend)) ggml_backend_cpu_set_n_threads(ctx.backend, n_threads);
@@ -958,6 +1427,11 @@ bool load(context & ctx, const char * gguf_path, int n_threads, int verbosity, c
 
     if (!load_tensors(ctx, gguf_path)) {
         fprintf(stderr, "qwen2vl_ocr: failed to load tensors\n");
+        free_(ctx);
+        return false;
+    }
+    if (ctx.is_teleocr && !validate_teleocr_tensors(ctx)) {
+        free_(ctx);
         return false;
     }
 
@@ -1122,8 +1596,12 @@ static bool alloc_kv_cache(context & ctx, int max_seq) {
 
     // Match the existing prefill side-output layout:
     // k_out/v_out are (head_dim * kv_heads, tokens) per layer.
-    ctx.kvc.k = ggml_new_tensor_3d(ctx.kvc.ctx, GGML_TYPE_F16, kv_dim, max_seq, n_layers);
-    ctx.kvc.v = ggml_new_tensor_3d(ctx.kvc.ctx, GGML_TYPE_F16, kv_dim, max_seq, n_layers);
+    // TeleOCR and MinerU keep the recurrent state in F32 even with F16 stored
+    // weights: rounding every K/V to F16 would invalidate their F32 reference
+    // arms and let decoder drift accumulate beyond the checked prefill.
+    const ggml_type cache_type = (ctx.is_teleocr || ctx.is_mineru25_pro) ? GGML_TYPE_F32 : GGML_TYPE_F16;
+    ctx.kvc.k = ggml_new_tensor_3d(ctx.kvc.ctx, cache_type, kv_dim, max_seq, n_layers);
+    ctx.kvc.v = ggml_new_tensor_3d(ctx.kvc.ctx, cache_type, kv_dim, max_seq, n_layers);
     ggml_set_name(ctx.kvc.k, "qwen_kv_k");
     ggml_set_name(ctx.kvc.v, "qwen_kv_v");
 
@@ -1172,6 +1650,18 @@ void free_(context & ctx) {
 }
 
 bool encode_vision(context & ctx, const float * patches, int n_patches, const int32_t * grid_thw, vision_result & out) {
+    if (ctx.is_teleocr &&
+        (!patches || !grid_thw || grid_thw[0] != 1 || grid_thw[1] <= 0 || grid_thw[2] <= 0 || grid_thw[1] % 2 ||
+         grid_thw[2] % 2 || (int64_t)grid_thw[1] * grid_thw[2] != n_patches || !core_env::on("CRISPEMBED_TELEOCR")))
+        return false;
+    if (ctx.is_mineru25_pro && (!core_env::on(mineru25_profile::gate) || !patches || !grid_thw || grid_thw[0] != 1 ||
+                                grid_thw[1] <= 0 || grid_thw[2] <= 0 || grid_thw[1] % 2 || grid_thw[2] % 2 ||
+                                n_patches <= 0 || n_patches > 16384 || int64_t(grid_thw[1]) * grid_thw[2] != n_patches))
+        return false;
+    if (ctx.stage_observer)
+        ctx.stage_observer(ctx.stage_observer_user, "input_patches", patches,
+                           size_t(n_patches) * ctx.m.vhp.in_channels * ctx.m.vhp.temporal_patch_size *
+                               ctx.m.vhp.spatial_patch_size * ctx.m.vhp.spatial_patch_size);
     const bool bench = ctx.bench;
     auto t_vis_start = std::chrono::steady_clock::now();
     const bool dbg_t = qwen2vl_ocr::qwen_dbg();
@@ -1214,10 +1704,25 @@ bool encode_vision(context & ctx, const float * patches, int n_patches, const in
     const bool rope_merge_order = true;
     host_rope rope;
     compute_vision_rope(rope, grid_thw, n_patches, head_dim, (int)ctx.m.vhp.spatial_merge_size, rope_merge_order);
+    teleocr_window_plan window_plan;
+    if (ctx.is_teleocr) {
+        window_plan = make_teleocr_window_plan(grid_thw, ctx.m.vhp);
+        host_rope reordered;
+        reordered.cos_buf.resize(rope.cos_buf.size());
+        reordered.sin_buf.resize(rope.sin_buf.size());
+        for (int p = 0; p < n_patches; ++p) {
+            const size_t source = (size_t)window_plan.patches[p] * head_dim;
+            const size_t dest = (size_t)p * head_dim;
+            std::copy_n(rope.cos_buf.data() + source, head_dim, reordered.cos_buf.data() + dest);
+            std::copy_n(rope.sin_buf.data() + source, head_dim, reordered.sin_buf.data() + dest);
+        }
+        rope = std::move(reordered);
+    }
     stage_ms("rope");
 
     // Build graph
     auto gr = build_vision_graph(ctx, n_patches, grid_thw);
+    std::unique_ptr<ggml_context, decltype(&ggml_free)> graph_owner(gr.owner, ggml_free);
     if (!gr.gf) return false;
     stage_ms("graph_build");
 
@@ -1247,8 +1752,18 @@ bool encode_vision(context & ctx, const float * patches, int n_patches, const in
     if (!set_in("cos_in", rope.cos_buf.data(), rope.cos_buf.size() * sizeof(float))) return false;
     if (!set_in("sin_in", rope.sin_buf.data(), rope.sin_buf.size() * sizeof(float))) return false;
 
+    if (ctx.is_teleocr) {
+        if (!set_in("teleocr_patch_order", window_plan.patches.data(), window_plan.patches.size() * sizeof(int32_t)) ||
+            !set_in("teleocr_window_restore", window_plan.restore.data(), window_plan.restore.size() * sizeof(int32_t)))
+            return false;
+        for (const auto & group : window_plan.groups) {
+            const std::string name = "teleocr_window_" + std::to_string(group.first);
+            if (!set_in(name.c_str(), group.second.data(), group.second.size() * sizeof(int32_t))) return false;
+        }
+    }
+
     // Qwen2.5-VL windowed attention mask (0 within a window, -inf across).
-    if (vision_uses_window(ctx.m.vhp)) {
+    if (!ctx.is_teleocr && vision_uses_window(ctx.m.vhp)) {
         std::vector<int32_t> win_id;
         compute_window_ids(grid_thw, (int)ctx.m.vhp.spatial_merge_size, (int)ctx.m.vhp.spatial_patch_size,
                            (int)ctx.m.vhp.window_size, win_id);
@@ -1418,6 +1933,15 @@ bool encode_vision(context & ctx, const float * patches, int n_patches, const in
         return false;
     }
 
+#ifdef CRISPEMBED_TELEOCR_TESTING
+    observe_tensor(ctx, gr.gf, "patch_embed_out", "vis_patch_embed");
+    for (uint32_t il = 0; il < ctx.m.vhp.depth; ++il) {
+        const std::string name = "vis_layer_" + std::to_string(il);
+        observe_tensor(ctx, gr.gf, name.c_str());
+    }
+    observe_tensor(ctx, gr.gf, "vis_pre_merger");
+#endif
+
     // Per-layer vision diff — done HERE while gr.gf buffers are still valid
     // (the merger graph below resets the scheduler and reuses these buffers).
     if (!ctx.diff_ref_path.empty()) {
@@ -1431,6 +1955,8 @@ bool encode_vision(context & ctx, const float * patches, int n_patches, const in
                 if (pe) {
                     std::vector<float> pd((size_t)n_patches * Hd);
                     ggml_backend_tensor_get(pe, pd.data(), 0, pd.size() * sizeof(float));
+                    if (ctx.stage_observer)
+                        ctx.stage_observer(ctx.stage_observer_user, "vis_patch_embed", pd.data(), pd.size());
                     auto r = vref.compare("vis_patch_embed", pd.data(), pd.size());
                     fprintf(stderr,
                             "  diff vis_patch_embed: cos_min=%.6f max_abs=%.2e %s "
@@ -1450,6 +1976,7 @@ bool encode_vision(context & ctx, const float * patches, int n_patches, const in
                 }
                 std::vector<float> ld((size_t)n_patches * Hd);
                 ggml_backend_tensor_get(lt, ld.data(), 0, ld.size() * sizeof(float));
+                if (ctx.stage_observer) ctx.stage_observer(ctx.stage_observer_user, nm, ld.data(), ld.size());
                 auto r = vref.compare(nm, ld.data(), ld.size());
                 fprintf(stderr,
                         "  diff %s: cos_min=%.6f max_abs=%.2e %s "
@@ -1542,10 +2069,10 @@ bool encode_vision(context & ctx, const float * patches, int n_patches, const in
             }
 
             // FC1 → GELU → FC2
-            ds = ggml_mul_mat(g_ds, dm.fc1_w, ds);
+            ds = model_matmul(ctx, g_ds, dm.fc1_w, ds);
             if (dm.fc1_b) ds = ggml_add(g_ds, ds, dm.fc1_b);
             ds = ggml_gelu_erf(g_ds, ds);
-            ds = ggml_mul_mat(g_ds, dm.fc2_w, ds);
+            ds = model_matmul(ctx, g_ds, dm.fc2_w, ds);
             if (dm.fc2_b) ds = ggml_add(g_ds, ds, dm.fc2_b);
 
             ggml_set_name(ds, "ds_out");
@@ -1657,10 +2184,10 @@ bool encode_vision(context & ctx, const float * patches, int n_patches, const in
         ggml_set_name(merged_in, "merged_in");
         ggml_set_input(merged_in);
 
-        ggml_tensor * m = ggml_mul_mat(g2, ctx.m.merger.fc1_w, merged_in);
+        ggml_tensor * m = model_matmul(ctx, g2, ctx.m.merger.fc1_w, merged_in);
         if (ctx.m.merger.fc1_b) m = ggml_add(g2, m, ctx.m.merger.fc1_b);
         m = ggml_gelu_erf(g2, m); // Qwen2.5-VL merger uses exact GELU (nn.GELU())
-        m = ggml_mul_mat(g2, ctx.m.merger.fc2_w, m);
+        m = model_matmul(ctx, g2, ctx.m.merger.fc2_w, m);
         if (ctx.m.merger.fc2_b) m = ggml_add(g2, m, ctx.m.merger.fc2_b);
 
         ggml_set_name(m, "merger_output");
@@ -1690,6 +2217,18 @@ bool encode_vision(context & ctx, const float * patches, int n_patches, const in
         out.image_embeds = (float *)malloc((size_t)n_merged * out_dim * sizeof(float));
         ggml_backend_tensor_get(mout, out.image_embeds, 0, (size_t)n_merged * out_dim * sizeof(float));
 
+        if (ctx.is_teleocr) {
+            std::vector<float> natural((size_t)n_merged * out_dim);
+            for (int u = 0; u < n_merged; ++u) {
+                std::copy_n(out.image_embeds + (size_t)u * out_dim, out_dim,
+                            natural.data() + (size_t)window_plan.units[u] * out_dim);
+            }
+            std::copy(natural.begin(), natural.end(), out.image_embeds);
+        }
+#ifdef CRISPEMBED_TELEOCR_TESTING
+        observe(ctx, "merger_output", out.image_embeds, (size_t)n_merged * out_dim, out_dim);
+#endif
+
         ggml_free(g2);
     }
     stage_ms("merger");
@@ -1698,6 +2237,10 @@ bool encode_vision(context & ctx, const float * patches, int n_patches, const in
                       .count();
         fprintf(stderr, "[qwen2vl-bench] merger: %lldms\n", (long long)ms);
     }
+
+    if (ctx.stage_observer && out.image_embeds)
+        ctx.stage_observer(ctx.stage_observer_user, "vis_merger_output", out.image_embeds,
+                           size_t(out.n_merged) * out.embed_dim);
 
     // Note: per-vision-layer diff comparison is done earlier (right after the
     // vision graph compute), while gr.gf's buffers are still valid — the merger
@@ -1721,6 +2264,35 @@ void vision_result_free(vision_result & r) {
 
 bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm_result & out, const image_input * img,
                      bool logits_last_only, bool materialize_hidden, bool populate_kvc) {
+    if (ctx.is_teleocr) {
+        if (!core_env::on("CRISPEMBED_TELEOCR") || !token_ids || n_tokens <= 0 ||
+            n_tokens > (int)ctx.m.lhp.max_position_embeddings)
+            return false;
+        for (int i = 0; i < n_tokens; ++i)
+            if (token_ids[i] < 0 || token_ids[i] >= (int)ctx.m.lhp.vocab_size) return false;
+        if (img && img->image_embeds &&
+            (img->n_images != 1 || img->n_image_tokens <= 0 || !img->grid_thw || img->grid_thw[0] != 1 ||
+             img->grid_thw[1] <= 0 || img->grid_thw[2] <= 0 || img->grid_thw[1] % 2 || img->grid_thw[2] % 2 ||
+             (int64_t)img->grid_thw[1] * img->grid_thw[2] / 4 != img->n_image_tokens ||
+             std::count(token_ids, token_ids + n_tokens, (int32_t)ctx.m.lhp.image_token_id) != img->n_image_tokens))
+            return false;
+    }
+    if (ctx.is_mineru25_pro) {
+        if (!core_env::on(mineru25_profile::gate) || !token_ids || n_tokens < 1 ||
+            n_tokens > mineru25_profile::context_length)
+            return false;
+        for (int i = 0; i < n_tokens; ++i)
+            if (token_ids[i] < 0 || uint32_t(token_ids[i]) >= ctx.m.lhp.vocab_size) return false;
+        if (img && img->image_embeds) {
+            if (!img->grid_thw || img->n_images != 1 || img->grid_thw[0] != 1 || img->n_image_tokens < 1 ||
+                img->n_image_tokens > n_tokens || img->grid_thw[1] <= 0 || img->grid_thw[2] <= 0 ||
+                img->grid_thw[1] % 2 || img->grid_thw[2] % 2 ||
+                int64_t(img->grid_thw[1]) * img->grid_thw[2] != int64_t(img->n_image_tokens) * 4)
+                return false;
+            if (std::count(token_ids, token_ids + n_tokens, int32_t(ctx.m.lhp.image_token_id)) != img->n_image_tokens)
+                return false;
+        }
+    }
     const auto & lhp = ctx.m.lhp;
     const int D = (int)lhp.hidden_size;
     const int n_heads = (int)lhp.num_attention_heads;
@@ -1770,7 +2342,7 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
     }
 
     ggml_set_name(x, "llm_embed");
-    if (!ctx.diff_ref_path.empty()) ggml_set_output(x);
+    if (observing(ctx)) ggml_set_output(x);
 
     // Causal mask: (n_tokens, n_tokens) with -inf for future positions
     ggml_tensor * causal_mask = ggml_new_tensor_2d(g, GGML_TYPE_F16, n_tokens, n_tokens);
@@ -1828,11 +2400,11 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
         ggml_tensor * normed = rmsnorm(x, ly.attn_norm_w);
 
         // Q/K/V projections (separate, not fused)
-        ggml_tensor * Q = ggml_mul_mat(g, ly.q_w, normed);
+        ggml_tensor * Q = model_matmul(ctx, g, ly.q_w, normed);
         if (ly.q_b) Q = ggml_add(g, Q, ly.q_b);
-        ggml_tensor * K = ggml_mul_mat(g, ly.k_w, normed);
+        ggml_tensor * K = model_matmul(ctx, g, ly.k_w, normed);
         if (ly.k_b) K = ggml_add(g, K, ly.k_b);
-        ggml_tensor * V = ggml_mul_mat(g, ly.v_w, normed);
+        ggml_tensor * V = model_matmul(ctx, g, ly.v_w, normed);
         if (ly.v_b) V = ggml_add(g, V, ly.v_b);
 
         // Reshape for multi-head: Q (head_dim, n_heads, T), K/V (head_dim, n_kv, T)
@@ -1851,9 +2423,9 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
         }
 
         // Layer 0 debug: Q before RoPE
-        if (il == 0 && !ctx.diff_ref_path.empty()) {
+        if (il == 0 && observing(ctx)) {
             ggml_tensor * Q_pre = ggml_cont(g, Q);
-            Q_pre = ggml_reshape_2d(g, Q_pre, D, n_tokens);
+            Q_pre = ggml_reshape_2d(g, Q_pre, q_dim, n_tokens);
             Q_pre = ggml_cont(g, Q_pre);
             ggml_set_name(Q_pre, "llm_L0_Q_pre_rope");
             ggml_set_output(Q_pre);
@@ -1875,10 +2447,10 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
                             0.0f, 0.0f);
 
         // Layer 0 debug: dump Q/K after RoPE for parity testing
-        if (il == 0 && !ctx.diff_ref_path.empty()) {
+        if (il == 0 && observing(ctx)) {
             // Q: (head_dim, n_heads, T) → cont → reshape to (D, T) for comparison
             ggml_tensor * Q_dbg = ggml_cont(g, Q);
-            Q_dbg = ggml_reshape_2d(g, Q_dbg, D, n_tokens);
+            Q_dbg = ggml_reshape_2d(g, Q_dbg, q_dim, n_tokens);
             Q_dbg = ggml_cont(g, Q_dbg); // ensure separate buffer
             ggml_set_name(Q_dbg, "llm_L0_Q_rope");
             ggml_set_output(Q_dbg);
@@ -1921,21 +2493,21 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
         attn_out = ggml_reshape_2d(g, attn_out, q_dim, n_tokens);
 
         // Output projection
-        attn_out = ggml_mul_mat(g, ly.o_w, attn_out);
+        attn_out = model_matmul(ctx, g, ly.o_w, attn_out);
         if (ly.o_b) attn_out = ggml_add(g, attn_out, ly.o_b);
 
         // Layer 0 debug: dump attn output and post-attn
-        if (il == 0 && !ctx.diff_ref_path.empty()) {
+        if (il == 0 && observing(ctx)) {
             ggml_set_name(attn_out, "llm_L0_attn_out");
             ggml_set_output(attn_out);
         }
 
         x = ggml_add(g, residual, attn_out);
 
-        if (il == 0 && !ctx.diff_ref_path.empty()) {
-            ggml_tensor * pa = ggml_cont(g, x); // force materialization
-            ggml_set_name(pa, "llm_L0_post_attn");
-            ggml_set_output(pa);
+        if (il == 0 && observing(ctx)) {
+            x = ggml_cont(g, x); // keep the materialized observation in the live graph
+            ggml_set_name(x, "llm_L0_post_attn");
+            ggml_set_output(x);
         }
 
         // Pre-FFN RMSNorm
@@ -1943,17 +2515,17 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
         normed = rmsnorm(x, ly.ffn_norm_w);
 
         // SwiGLU FFN
-        ggml_tensor * gate = ggml_mul_mat(g, ly.ffn_gate_w, normed);
+        ggml_tensor * gate = model_matmul(ctx, g, ly.ffn_gate_w, normed);
         gate = ggml_silu(g, gate);
-        ggml_tensor * up = ggml_mul_mat(g, ly.ffn_up_w, normed);
+        ggml_tensor * up = model_matmul(ctx, g, ly.ffn_up_w, normed);
         ggml_tensor * ffn = ggml_mul(g, gate, up);
-        ffn = ggml_mul_mat(g, ly.ffn_down_w, ffn);
+        ffn = model_matmul(ctx, g, ly.ffn_down_w, ffn);
         x = ggml_add(g, residual, ffn);
 
         char name[64];
         std::snprintf(name, sizeof(name), "llm_layer_%d", il);
         ggml_set_name(x, name);
-        if (!ctx.diff_ref_path.empty()) ggml_set_output(x);
+        if (observing(ctx)) ggml_set_output(x);
 
         // Qwen3-VL deepstack: deepstack[il] is added at image positions to the
         // OUTPUT of decoder layer il (transformers Qwen3VLTextModel.forward:
@@ -1976,7 +2548,7 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
     if (ctx.m.output_norm_w) {
         x = rmsnorm(x, ctx.m.output_norm_w);
         ggml_set_name(x, "llm_final_norm");
-        if (!ctx.diff_ref_path.empty()) ggml_set_output(x);
+        if (observing(ctx)) ggml_set_output(x);
     }
 
     // LM head (logits) — compute in graph to handle quantized weights
@@ -1990,7 +2562,7 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
             logit_input = ggml_view_2d(g, x, D, 1, x->nb[1], (size_t)(n_tokens - 1) * x->nb[1]);
             logit_input = ggml_cont(g, logit_input);
         }
-        ggml_tensor * logits = ggml_mul_mat(g, lm_head, logit_input);
+        ggml_tensor * logits = model_matmul(ctx, g, lm_head, logit_input);
         ggml_set_name(logits, "logits");
         ggml_set_output(logits);
         x = logits;
@@ -2144,8 +2716,27 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
         }
     }
 
+    if (ctx.stage_observer) {
+        std::vector<float> observed_ids(token_ids, token_ids + n_tokens), observed_positions(size_t(n_tokens) * 3);
+        for (int i = 0; i < n_tokens; ++i)
+            for (int axis = 0; axis < 3; ++axis)
+                observed_positions[3 * size_t(i) + axis] = float(pos_data[size_t(axis) * n_tokens + i]);
+        ctx.stage_observer(ctx.stage_observer_user, "input_ids", observed_ids.data(), observed_ids.size());
+        ctx.stage_observer(ctx.stage_observer_user, "mrope_positions", observed_positions.data(),
+                           observed_positions.size());
+    }
+
     ggml_tensor * pos_t_tensor = ggml_graph_get_tensor(gf, "pos_ids");
     ggml_backend_tensor_set(pos_t_tensor, pos_data.data(), 0, pos_data.size() * sizeof(int32_t));
+
+#ifdef CRISPEMBED_TELEOCR_TESTING
+    if (ctx.observer) {
+        std::vector<float> positions((size_t)n_tokens * 3);
+        for (int i = 0; i < n_tokens; ++i)
+            for (int axis = 0; axis < 3; ++axis) positions[(size_t)i * 3 + axis] = (float)pos_data[axis * n_tokens + i];
+        observe(ctx, "mrope_positions", positions.data(), positions.size(), 3);
+    }
+#endif
 
     // Debug: dump mRoPE positions for comparison
     if (ctx.verbosity >= 2 && !ctx.diff_ref_path.empty()) {
@@ -2202,6 +2793,18 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
         return false;
     }
 
+#ifdef CRISPEMBED_TELEOCR_TESTING
+    observe_tensor(ctx, gf, "llm_embed");
+    for (const char * name : { "llm_L0_Q_pre_rope", "llm_L0_Q_rope", "llm_L0_attn_out", "llm_L0_post_attn" })
+        observe_tensor(ctx, gf, name);
+    for (int il = 0; il < n_layers; ++il) {
+        const std::string name = "llm_layer_" + std::to_string(il);
+        observe_tensor(ctx, gf, name.c_str());
+    }
+    observe_tensor(ctx, gf, "llm_final_norm");
+    observe_tensor(ctx, gf, "logits", "logits_step0");
+#endif
+
     // Read outputs
     out.n_tokens = n_tokens;
     out.hidden_dim = D;
@@ -2216,6 +2819,8 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
         out.n_logits = n_logits;
         out.logits = (float *)malloc((size_t)n_logits * V * sizeof(float));
         ggml_backend_tensor_get(logits_t, out.logits, 0, (size_t)n_logits * V * sizeof(float));
+        if (ctx.stage_observer)
+            ctx.stage_observer(ctx.stage_observer_user, "llm_logits_last", out.logits + size_t(n_logits - 1) * V, V);
     }
 
     // Read hidden states
@@ -2236,6 +2841,8 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
             if (emb && ref.has("llm_embed")) {
                 std::vector<float> emb_data((size_t)n_tokens * D);
                 ggml_backend_tensor_get(emb, emb_data.data(), 0, emb_data.size() * sizeof(float));
+                if (ctx.stage_observer)
+                    ctx.stage_observer(ctx.stage_observer_user, "llm_embed", emb_data.data(), emb_data.size());
                 auto r = ref.compare("llm_embed", emb_data.data(), emb_data.size());
                 fprintf(stderr, "  diff llm_embed: cos_min=%.6f max_abs=%.2e %s\n", r.cos_min, r.max_abs,
                         r.is_pass() ? "PASS" : "FAIL");
@@ -2286,6 +2893,7 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
                 if (lt && ref.has(name)) {
                     std::vector<float> ld((size_t)n_tokens * D);
                     ggml_backend_tensor_get(lt, ld.data(), 0, ld.size() * sizeof(float));
+                    if (ctx.stage_observer) ctx.stage_observer(ctx.stage_observer_user, name, ld.data(), ld.size());
                     auto r = ref.compare(name, ld.data(), ld.size());
                     fprintf(stderr, "  diff %s: cos_min=%.6f max_abs=%.2e %s\n", name, r.cos_min, r.max_abs,
                             r.is_pass() ? "PASS" : "FAIL");
@@ -2299,6 +2907,8 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
 
             // Compare final norm
             if (ref.has("llm_final_norm") && out.hidden) {
+                if (ctx.stage_observer)
+                    ctx.stage_observer(ctx.stage_observer_user, "llm_final_norm", out.hidden, size_t(n_tokens) * D);
                 auto r = ref.compare("llm_final_norm", out.hidden, (size_t)n_tokens * D);
                 fprintf(stderr, "  diff llm_final_norm: cos_min=%.6f max_abs=%.2e %s\n", r.cos_min, r.max_abs,
                         r.is_pass() ? "PASS" : "FAIL");
@@ -2329,7 +2939,8 @@ bool run_llm_forward(context & ctx, const int32_t * token_ids, int n_tokens, llm
 //     writes still use ggml_cpy into a position-specific view.  Constant
 //     tensor shapes across all decode steps let ggml_backend_sched_alloc_graph
 //     take the fast path (no reallocation) from step 2 onwards.
-static ggml_cgraph * build_decode_step_graph(context & ctx, ggml_context * g, int n_kv, int pos, int max_seq) {
+static ggml_cgraph * build_decode_step_graph(context & ctx, ggml_context * g, int n_kv, int pos, int max_seq,
+                                             bool dynamic_kv_index = false) {
     const auto & lhp = ctx.m.lhp;
     const int D = (int)lhp.hidden_size;
     const int n_heads = (int)lhp.num_attention_heads;
@@ -2363,6 +2974,15 @@ static ggml_cgraph * build_decode_step_graph(context & ctx, ggml_context * g, in
     ggml_set_name(kv_mask, "kv_mask");
     ggml_set_input(kv_mask);
 
+    // A graph input selects the cache row without changing any view offsets.
+    // The opt-in MinerU graph can therefore be allocated once per request.
+    ggml_tensor * kv_index = nullptr;
+    if (dynamic_kv_index) {
+        kv_index = ggml_new_tensor_1d(g, GGML_TYPE_I64, 1);
+        ggml_set_name(kv_index, "kv_index");
+        ggml_set_input(kv_index);
+    }
+
     int sections[4] = {
         lhp.rope_sections[0],
         lhp.rope_sections[1],
@@ -2382,11 +3002,11 @@ static ggml_cgraph * build_decode_step_graph(context & ctx, ggml_context * g, in
         ggml_tensor * normed = rmsnorm(x, ly.attn_norm_w);
 
         // Q/K/V for the single new token
-        ggml_tensor * Q = ggml_mul_mat(g, ly.q_w, normed);
+        ggml_tensor * Q = model_matmul(ctx, g, ly.q_w, normed);
         if (ly.q_b) Q = ggml_add(g, Q, ly.q_b);
-        ggml_tensor * K_new = ggml_mul_mat(g, ly.k_w, normed);
+        ggml_tensor * K_new = model_matmul(ctx, g, ly.k_w, normed);
         if (ly.k_b) K_new = ggml_add(g, K_new, ly.k_b);
-        ggml_tensor * V_new = ggml_mul_mat(g, ly.v_w, normed);
+        ggml_tensor * V_new = model_matmul(ctx, g, ly.v_w, normed);
         if (ly.v_b) V_new = ggml_add(g, V_new, ly.v_b);
 
         // Reshape: Q (head_dim, n_heads, 1), K/V (head_dim, n_kv_heads, 1)
@@ -2419,19 +3039,29 @@ static ggml_cgraph * build_decode_step_graph(context & ctx, ggml_context * g, in
         // Write K_new/V_new into the backend KV cache at slot n_kv.
         // view_offs varies per step but shape (kv_dim,1) is constant →
         // sched_alloc compatibility check passes → fast-path from step 2 on.
-        ggml_tensor * k_write = ggml_view_2d(g, ctx.kvc.k, kv_dim, 1, ctx.kvc.k->nb[1],
-                                             (size_t)il * ctx.kvc.k->nb[2] + (size_t)n_kv * ctx.kvc.k->nb[1]);
-        ggml_tensor * v_write = ggml_view_2d(g, ctx.kvc.v, kv_dim, 1, ctx.kvc.v->nb[1],
-                                             (size_t)il * ctx.kvc.v->nb[2] + (size_t)n_kv * ctx.kvc.v->nb[1]);
-        ggml_build_forward_expand(gf, ggml_cpy(g, K_flat, k_write));
-        ggml_build_forward_expand(gf, ggml_cpy(g, V_flat, v_write));
+        const int write_extent = dynamic_kv_index ? ctx.kvc.max_seq : max_seq;
+        ggml_tensor * k_layer =
+            ggml_view_2d(g, ctx.kvc.k, kv_dim, write_extent, ctx.kvc.k->nb[1], (size_t)il * ctx.kvc.k->nb[2]);
+        ggml_tensor * v_layer =
+            ggml_view_2d(g, ctx.kvc.v, kv_dim, write_extent, ctx.kvc.v->nb[1], (size_t)il * ctx.kvc.v->nb[2]);
+        if (dynamic_kv_index) {
+            // Feed the write nodes directly into attention. This explicit
+            // dependency prevents a scheduler from reading the previous row.
+            k_layer = ggml_set_rows(g, k_layer, K_flat, kv_index);
+            v_layer = ggml_set_rows(g, v_layer, V_flat, kv_index);
+            k_layer = ggml_view_2d(g, k_layer, kv_dim, max_seq, ctx.kvc.k->nb[1], 0);
+            v_layer = ggml_view_2d(g, v_layer, kv_dim, max_seq, ctx.kvc.v->nb[1], 0);
+        } else {
+            ggml_tensor * k_write = ggml_view_2d(g, ctx.kvc.k, kv_dim, 1, ctx.kvc.k->nb[1],
+                                                 (size_t)il * ctx.kvc.k->nb[2] + (size_t)n_kv * ctx.kvc.k->nb[1]);
+            ggml_tensor * v_write = ggml_view_2d(g, ctx.kvc.v, kv_dim, 1, ctx.kvc.v->nb[1],
+                                                 (size_t)il * ctx.kvc.v->nb[2] + (size_t)n_kv * ctx.kvc.v->nb[1]);
+            ggml_build_forward_expand(gf, ggml_cpy(g, K_flat, k_write));
+            ggml_build_forward_expand(gf, ggml_cpy(g, V_flat, v_write));
+        }
 
         // Fixed-size KV read view — constant shape across all steps.
         // kv_mask (0.0 / -INF) ensures only the populated prefix is attended to.
-        ggml_tensor * k_layer =
-            ggml_view_2d(g, ctx.kvc.k, kv_dim, max_seq, ctx.kvc.k->nb[1], (size_t)il * ctx.kvc.k->nb[2]);
-        ggml_tensor * v_layer =
-            ggml_view_2d(g, ctx.kvc.v, kv_dim, max_seq, ctx.kvc.v->nb[1], (size_t)il * ctx.kvc.v->nb[2]);
         ggml_tensor * K_full = ggml_reshape_3d(g, k_layer, head_dim, n_kv_heads, max_seq);
         ggml_tensor * V_full = ggml_reshape_3d(g, v_layer, head_dim, n_kv_heads, max_seq);
 
@@ -2444,16 +3074,16 @@ static ggml_cgraph * build_decode_step_graph(context & ctx, ggml_context * g, in
         ggml_flash_attn_ext_set_prec(attn_out, GGML_PREC_F32);
         attn_out = ggml_reshape_2d(g, attn_out, q_dim, 1);
 
-        attn_out = ggml_mul_mat(g, ly.o_w, attn_out);
+        attn_out = model_matmul(ctx, g, ly.o_w, attn_out);
         if (ly.o_b) attn_out = ggml_add(g, attn_out, ly.o_b);
         x = ggml_add(g, residual, attn_out);
 
         // FFN
         residual = x;
         normed = rmsnorm(x, ly.ffn_norm_w);
-        ggml_tensor * gate = ggml_silu(g, ggml_mul_mat(g, ly.ffn_gate_w, normed));
-        ggml_tensor * up = ggml_mul_mat(g, ly.ffn_up_w, normed);
-        ggml_tensor * ffn = ggml_mul_mat(g, ly.ffn_down_w, ggml_mul(g, gate, up));
+        ggml_tensor * gate = ggml_silu(g, model_matmul(ctx, g, ly.ffn_gate_w, normed));
+        ggml_tensor * up = model_matmul(ctx, g, ly.ffn_up_w, normed);
+        ggml_tensor * ffn = model_matmul(ctx, g, ly.ffn_down_w, ggml_mul(g, gate, up));
         x = ggml_add(g, residual, ffn);
     }
 
@@ -2466,7 +3096,7 @@ static ggml_cgraph * build_decode_step_graph(context & ctx, ggml_context * g, in
         lm_head = ctx.m.embed_tokens;
     }
     if (lm_head) {
-        x = ggml_mul_mat(g, lm_head, x);
+        x = model_matmul(ctx, g, lm_head, x);
     }
     ggml_set_name(x, "logits");
     ggml_set_output(x);
@@ -2486,6 +3116,28 @@ using core_decode::argmax_no_repeat_ngram;
 bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int embed_dim,
               const int32_t * grid_thw, // actual image grid (t,h,w) for mRoPE
               const int32_t * prompt_token_ids, int n_prompt_tokens, int max_new_tokens, generate_result & out) {
+    out = {};
+    if (!prompt_token_ids || n_prompt_tokens <= 0 || max_new_tokens <= 0 ||
+        (ctx.is_mineru25_pro &&
+         (!core_env::on(mineru25_profile::gate) || n_prompt_tokens >= mineru25_profile::context_length ||
+          max_new_tokens > mineru25_profile::context_length - n_prompt_tokens)))
+        return false;
+    std::vector<int32_t> mineru_history;
+    if (ctx.is_mineru25_pro) mineru_history.assign(prompt_token_ids, prompt_token_ids + n_prompt_tokens);
+    if (ctx.is_teleocr) {
+        out = {};
+        if (!core_env::on("CRISPEMBED_TELEOCR") || !prompt_token_ids || n_prompt_tokens <= 0 || max_new_tokens <= 0 ||
+            (int64_t)n_prompt_tokens + max_new_tokens > ctx.m.lhp.max_position_embeddings ||
+            (image_embeds && embed_dim != (int)ctx.m.lhp.hidden_size))
+            return false;
+        for (int i = 0; i < n_prompt_tokens; ++i)
+            if (prompt_token_ids[i] < 0 || prompt_token_ids[i] >= (int)ctx.m.lhp.vocab_size) return false;
+        if (image_embeds && (n_image_tokens <= 0 || !grid_thw || grid_thw[0] != 1 ||
+                             (int64_t)grid_thw[1] * grid_thw[2] / 4 != n_image_tokens ||
+                             std::count(prompt_token_ids, prompt_token_ids + n_prompt_tokens,
+                                        (int32_t)ctx.m.lhp.image_token_id) != n_image_tokens))
+            return false;
+    }
     const bool bench = ctx.bench;
     auto t_gen_total = std::chrono::steady_clock::now();
     const bool dbg_t = qwen2vl_ocr::qwen_dbg();
@@ -2506,6 +3158,31 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
     const int head_dim = (int)lhp.head_dim;
     const int kv_dim = head_dim * n_kv_heads;
 
+    std::vector<uint8_t> prompt_seen;
+    std::vector<int> output_counts;
+    std::vector<float> processed_logits;
+    if (ctx.is_teleocr) {
+        prompt_seen.assign(V, 0);
+        output_counts.assign(V, 0);
+        processed_logits.resize(V);
+        for (int i = 0; i < n_prompt_tokens; ++i) prompt_seen[prompt_token_ids[i]] = 1;
+    }
+    auto process_logits = [&](const float * logits) -> const float * {
+        if (!ctx.is_teleocr) return logits;
+        std::copy_n(logits, V, processed_logits.data());
+        for (int token = 0; token < V; ++token) {
+            float & value = processed_logits[token];
+            if (prompt_seen[token] || output_counts[token])
+                value = value < 0.0f ? value * ctx.repetition_penalty : value / ctx.repetition_penalty;
+            if (output_counts[token]) value -= ctx.presence_penalty + ctx.frequency_penalty * output_counts[token];
+        }
+        return processed_logits.data();
+    };
+    auto is_eos = [&](int token) {
+        if (ctx.is_mineru25_pro) return mineru25_profile::is_eos(token);
+        return token == ctx.eos_token_id || (ctx.is_teleocr && token == 151643);
+    };
+
     // ── Step 1: Prefill — full forward pass to get logits + KV cache ──
     image_input img_in = {};
     if (image_embeds && n_image_tokens > 0) {
@@ -2520,7 +3197,8 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
 
     // Pre-allocate backend KV cache before prefill so run_llm_forward can write
     // K/V directly into it (eliminates n_layers GPU→CPU→GPU round-trips).
-    const bool no_kv_cache = (getenv("CRISPEMBED_NO_KV_CACHE") != nullptr);
+    const bool no_kv_cache =
+        ctx.is_mineru25_pro ? core_env::on("CRISPEMBED_NO_KV_CACHE") : (getenv("CRISPEMBED_NO_KV_CACHE") != nullptr);
     bool pre_alloc_ok = !no_kv_cache && alloc_kv_cache(ctx, n_prompt_tokens + max_new_tokens);
 
     // ── Prefill: full forward pass, extract KV cache ──
@@ -2573,13 +3251,23 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
                         break;
                     }
                     ggml_backend_tensor_get(kt, kv_seed.data(), 0, kv_seed_sz * sizeof(float));
-                    for (size_t i = 0; i < kv_seed_sz; i++) kv_seed_f16[i] = ggml_fp32_to_fp16(kv_seed[i]);
-                    ggml_backend_tensor_set(ctx.kvc.k, kv_seed_f16.data(), (size_t)il * ctx.kvc.k->nb[2],
-                                            kv_seed_sz * sizeof(ggml_fp16_t));
+                    if (ctx.kvc.k->type == GGML_TYPE_F32) {
+                        ggml_backend_tensor_set(ctx.kvc.k, kv_seed.data(), (size_t)il * ctx.kvc.k->nb[2],
+                                                kv_seed_sz * sizeof(float));
+                    } else {
+                        for (size_t i = 0; i < kv_seed_sz; i++) kv_seed_f16[i] = ggml_fp32_to_fp16(kv_seed[i]);
+                        ggml_backend_tensor_set(ctx.kvc.k, kv_seed_f16.data(), (size_t)il * ctx.kvc.k->nb[2],
+                                                kv_seed_sz * sizeof(ggml_fp16_t));
+                    }
                     ggml_backend_tensor_get(vt, kv_seed.data(), 0, kv_seed_sz * sizeof(float));
-                    for (size_t i = 0; i < kv_seed_sz; i++) kv_seed_f16[i] = ggml_fp32_to_fp16(kv_seed[i]);
-                    ggml_backend_tensor_set(ctx.kvc.v, kv_seed_f16.data(), (size_t)il * ctx.kvc.v->nb[2],
-                                            kv_seed_sz * sizeof(ggml_fp16_t));
+                    if (ctx.kvc.v->type == GGML_TYPE_F32) {
+                        ggml_backend_tensor_set(ctx.kvc.v, kv_seed.data(), (size_t)il * ctx.kvc.v->nb[2],
+                                                kv_seed_sz * sizeof(float));
+                    } else {
+                        for (size_t i = 0; i < kv_seed_sz; i++) kv_seed_f16[i] = ggml_fp32_to_fp16(kv_seed[i]);
+                        ggml_backend_tensor_set(ctx.kvc.v, kv_seed_f16.data(), (size_t)il * ctx.kvc.v->nb[2],
+                                                kv_seed_sz * sizeof(ggml_fp16_t));
+                    }
                 }
                 if (!backend_kv_ok) free_kv_cache(ctx);
             }
@@ -2590,13 +3278,25 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
     // Greedy: argmax prefill logits at last position
     out.token_confidences.clear();
     const int prefill_logit_row = (prefill.n_logits == n_prompt_tokens) ? (n_prompt_tokens - 1) : 0;
-    const float * last_logits = prefill.logits + (size_t)prefill_logit_row * V;
+    const float * last_logits = process_logits(prefill.logits + (size_t)prefill_logit_row * V);
     const int no_repeat_ngram = ctx.no_repeat_ngram;
-    int best_id = argmax_no_repeat_ngram(last_logits, V, out.token_ids, no_repeat_ngram);
+    auto initial_choice = ctx.is_mineru25_pro ? mineru25_profile::greedy_choice(last_logits, V, mineru_history)
+                                              : mineru25_profile::token_choice{};
+    int best_id = ctx.is_mineru25_pro ? initial_choice.id
+                                      : argmax_no_repeat_ngram(last_logits, V, out.token_ids, no_repeat_ngram);
+    if (best_id < 0 || best_id >= V) {
+        if (prefill.hidden) free(prefill.hidden);
+        free(prefill.logits);
+        if (prefill.kv_graph_ctx) ggml_free(prefill.kv_graph_ctx);
+        fprintf(stderr, "qwen2vl_ocr: non-finite or fully masked logits\n");
+        return false;
+    }
     float best_score = last_logits[best_id];
 
     // Confidence: numerically-stable softmax for winning token
-    {
+    if (ctx.is_mineru25_pro) {
+        out.token_confidences.push_back(initial_choice.probability);
+    } else {
         float max_l = best_score;
         float sum_exp = 0.0f;
         for (int v = 0; v < V; v++) sum_exp += expf(last_logits[v] - max_l);
@@ -2609,12 +3309,13 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
     if (prefill.kv_graph_ctx) ggml_free(prefill.kv_graph_ctx);
 
     out.token_ids.push_back(best_id);
+    if (ctx.is_teleocr) ++output_counts[best_id];
+    if (ctx.is_mineru25_pro) mineru_history.push_back(best_id);
     if (ctx.verbosity >= 1) {
         fprintf(stderr, "  gen[0]: token=%d score=%.2f (prefill)\n", best_id, best_score);
     }
 
-    int eos_id = ctx.eos_token_id;
-    if (best_id == eos_id || max_new_tokens <= 1) return true;
+    if (is_eos(best_id) || max_new_tokens <= 1) return true;
 
     // ── Decode: single-token steps with KV cache ──
     long long decode_total_ms = 0;
@@ -2635,6 +3336,22 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
     // Logits buffer reused every step.
     std::vector<float> logits_data(V);
 
+    const bool reuse_decode =
+        ctx.is_mineru25_pro && core_env::on("CRISPEMBED_MINERU25_PRO_REUSE_DECODE_GRAPH") && backend_kv_ok;
+    struct decode_graph_owner {
+        context & owner;
+        std::vector<uint8_t> meta;
+        ggml_context * g = nullptr;
+        ggml_cgraph * gf = nullptr;
+        int attention_extent = 0;
+        ~decode_graph_owner() {
+            if (g) {
+                ggml_backend_sched_reset(owner.sched);
+                ggml_free(g);
+            }
+        }
+    } cached{ ctx, {}, nullptr, nullptr, 0 };
+
     for (int gen = 1; gen < max_new_tokens; gen++) {
         auto t_step = std::chrono::steady_clock::now();
         if (!kv_ok || !backend_kv_ok) {
@@ -2650,16 +3367,32 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
                 if (fwd.logits) free(fwd.logits);
                 return false;
             }
-            last_logits = fwd.logits + (size_t)((int)all_tokens.size() - 1) * V;
-            best_id = 0;
-            best_score = -INFINITY;
-            for (int v = 0; v < V; v++) {
-                if (last_logits[v] > best_score) {
-                    best_score = last_logits[v];
-                    best_id = v;
+            last_logits = process_logits(fwd.logits + (size_t)((int)all_tokens.size() - 1) * V);
+            if (ctx.is_mineru25_pro) {
+                const auto choice = mineru25_profile::greedy_choice(last_logits, V, mineru_history);
+                best_id = choice.id;
+                best_score = choice.logit;
+                if (best_id < 0) {
+                    if (fwd.hidden) free(fwd.hidden);
+                    free(fwd.logits);
+                    if (fwd.kv_graph_ctx) ggml_free(fwd.kv_graph_ctx);
+                    return false;
                 }
-            }
-            {
+                out.token_confidences.push_back(choice.probability);
+            } else {
+                if (ctx.is_teleocr) {
+                    best_id = argmax_no_repeat_ngram(last_logits, V, out.token_ids, no_repeat_ngram);
+                    best_score = last_logits[best_id];
+                } else {
+                    best_id = 0;
+                    best_score = -INFINITY;
+                    for (int v = 0; v < V; v++) {
+                        if (last_logits[v] > best_score) {
+                            best_score = last_logits[v];
+                            best_id = v;
+                        }
+                    }
+                }
                 float max_l = best_score;
                 float sum_exp = 0.0f;
                 for (int v = 0; v < V; v++) sum_exp += expf(last_logits[v] - max_l);
@@ -2667,6 +3400,7 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
             }
             if (fwd.hidden) free(fwd.hidden);
             free(fwd.logits);
+            if (fwd.kv_graph_ctx) ggml_free(fwd.kv_graph_ctx);
         } else {
             // ── KV-cached decode step ──
             auto t_decode = qwen_clock::now();
@@ -2677,15 +3411,37 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
             // ggml_cpy → flash_attn_ext ordering in the graph is correct.
             kv_mask_data[n_kv] = ggml_fp32_to_fp16(0.0f);
 
-            ggml_init_params ip{ ctx.compute_meta.size(), ctx.compute_meta.data(), true };
-            ggml_context * g = ggml_init(ip);
-            ggml_cgraph * gf = build_decode_step_graph(ctx, g, n_kv, pos, max_seq_kv);
-
-            ggml_backend_sched_reset(ctx.sched);
-            if (!ggml_backend_sched_alloc_graph(ctx.sched, gf)) {
-                fprintf(stderr, "qwen2vl_ocr: decode step alloc failed\n");
-                ggml_free(g);
-                return false;
+            // Read only a 256-token bucket around the populated prefix. The
+            // future cache remains allocated but attention need not scan all
+            // 8192 slots after a short prompt. Rebuild at bucket boundaries.
+            const int attention_extent = reuse_decode ? std::min(max_seq_kv, ((n_kv + 256) / 256) * 256) : max_seq_kv;
+            if (reuse_decode && cached.g && attention_extent != cached.attention_extent) {
+                ggml_backend_sched_reset(ctx.sched);
+                ggml_free(cached.g);
+                cached.g = nullptr;
+                cached.gf = nullptr;
+            }
+            const bool first_cached_step = reuse_decode && !cached.g;
+            ggml_context * g = cached.g;
+            ggml_cgraph * gf = cached.gf;
+            if (!reuse_decode || first_cached_step) {
+                if (reuse_decode) cached.meta.resize(ctx.compute_meta.size());
+                ggml_init_params ip{ ctx.compute_meta.size(),
+                                     reuse_decode ? cached.meta.data() : ctx.compute_meta.data(), true };
+                g = ggml_init(ip);
+                if (!g) return false;
+                gf = build_decode_step_graph(ctx, g, n_kv, pos, attention_extent, reuse_decode);
+                if (reuse_decode) {
+                    cached.g = g;
+                    cached.gf = gf;
+                    cached.attention_extent = attention_extent;
+                }
+                ggml_backend_sched_reset(ctx.sched);
+                if (!ggml_backend_sched_alloc_graph(ctx.sched, gf)) {
+                    fprintf(stderr, "qwen2vl_ocr: decode step alloc failed\n");
+                    if (!reuse_decode) ggml_free(g);
+                    return false;
+                }
             }
             long long build_ms = qwen_ms_since(t_decode);
             auto t_part = qwen_clock::now();
@@ -2699,13 +3455,20 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
             ggml_backend_tensor_set(pi, pos_data, 0, 4 * sizeof(int32_t));
 
             ggml_tensor * km = ggml_graph_get_tensor(gf, "kv_mask");
-            ggml_backend_tensor_set(km, kv_mask_data.data(), 0, (size_t)max_seq_kv * sizeof(ggml_fp16_t));
+            if (reuse_decode) {
+                const int64_t row = n_kv;
+                ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "kv_index"), &row, 0, sizeof(row));
+            }
+            // Upload the whole mask every step, also for the persistent graph:
+            // ggml-alloc frees graph inputs after their last consumer, so the
+            // mask's memory holds intermediates from the previous compute.
+            ggml_backend_tensor_set(km, kv_mask_data.data(), 0, size_t(attention_extent) * sizeof(ggml_fp16_t));
             long long upload_ms = qwen_ms_since(t_part);
             t_part = qwen_clock::now();
 
             if (ggml_backend_sched_graph_compute(ctx.sched, gf) != GGML_STATUS_SUCCESS) {
                 fprintf(stderr, "qwen2vl_ocr: decode step compute failed\n");
-                ggml_free(g);
+                if (!reuse_decode) ggml_free(g);
                 return false;
             }
             long long compute_ms = qwen_ms_since(t_part);
@@ -2714,12 +3477,23 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
             // Read logits + greedy argmax.
             ggml_tensor * logits_t = ggml_graph_get_tensor(gf, "logits");
             ggml_backend_tensor_get(logits_t, logits_data.data(), 0, V * sizeof(float));
-            best_id = argmax_no_repeat_ngram(logits_data.data(), V, out.token_ids, no_repeat_ngram);
-            best_score = logits_data[best_id];
-            {
+            if (ctx.is_mineru25_pro) {
+                const auto choice = mineru25_profile::greedy_choice(logits_data.data(), V, mineru_history);
+                best_id = choice.id;
+                best_score = choice.logit;
+                if (best_id < 0) {
+                    fprintf(stderr, "qwen2vl_ocr: non-finite or fully masked decode logits (step %d)\n", gen);
+                    if (!reuse_decode) ggml_free(g);
+                    return false;
+                }
+                out.token_confidences.push_back(choice.probability);
+            } else {
+                const float * scores = process_logits(logits_data.data());
+                best_id = argmax_no_repeat_ngram(scores, V, out.token_ids, no_repeat_ngram);
+                best_score = scores[best_id];
                 float max_l = best_score;
                 float sum_exp = 0.0f;
-                for (int v = 0; v < V; v++) sum_exp += expf(logits_data[v] - max_l);
+                for (int v = 0; v < V; v++) sum_exp += expf(scores[v] - max_l);
                 out.token_confidences.push_back(expf(best_score - max_l) / sum_exp);
             }
 
@@ -2732,10 +3506,12 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
                         gen, build_ms, upload_ms, compute_ms, read_ms, qwen_ms_since(t_decode));
             }
 
-            ggml_free(g);
+            if (!reuse_decode) ggml_free(g);
         }
 
         out.token_ids.push_back(best_id);
+        if (ctx.is_teleocr) ++output_counts[best_id];
+        if (ctx.is_mineru25_pro) mineru_history.push_back(best_id);
         if (ctx.verbosity >= 1) {
             fprintf(stderr, "  gen[%d]: token=%d score=%.2f%s\n", gen, best_id, best_score, kv_ok ? " (cached)" : "");
         }
@@ -2747,7 +3523,7 @@ bool generate(context & ctx, const float * image_embeds, int n_image_tokens, int
             decode_steps++;
             fprintf(stderr, "[qwen2vl-bench] decode_step[%d]: %lldms\n", gen, (long long)step_ms);
         }
-        if (best_id == eos_id) break;
+        if (is_eos(best_id)) break;
     }
 
     if (bench) {
@@ -2830,6 +3606,26 @@ struct qwen2vl_ocr_context {
     int max_tokens = 2048;
     std::string last_result;
     std::vector<float> char_confidences;
+    std::unordered_set<int32_t> special_tokens;
+    std::vector<int32_t> last_prompt_ids;
+    std::vector<int32_t> last_completion_ids;
+    std::string last_raw_text;
+    int32_t last_grid[3] = { 0, 0, 0 };
+    int last_max_tokens = 0;
+    bool last_ok = false;
+    bool last_eos = false;
+    bool last_capped = false;
+
+    void clear_last() {
+        last_result.clear();
+        char_confidences.clear();
+        last_prompt_ids.clear();
+        last_completion_ids.clear();
+        last_raw_text.clear();
+        last_grid[0] = last_grid[1] = last_grid[2] = 0;
+        last_max_tokens = 0;
+        last_ok = last_eos = last_capped = false;
+    }
 
     // Special token IDs (from GGUF metadata)
     int32_t im_start_id = 151644;
@@ -2858,6 +3654,31 @@ struct qwen2vl_ocr_context {
     // tokenizer.
     std::vector<int32_t> tokenize(const std::string & text) {
         if (has_tokenizer && tokenizer_can_encode) {
+            if (inner.is_mineru25_pro) {
+                // These seven added tokens are not <|...|>-shaped; the
+                // generic Qwen tokenizer otherwise splits them as ordinary
+                // punctuation. Required by text-only cross-page table input.
+                const auto & vocab = tokenizer.get_vocab();
+                std::vector<int32_t> ids;
+                size_t pos = 0;
+                while (pos < text.size()) {
+                    size_t at = std::string::npos;
+                    int32_t special = -1;
+                    for (int32_t id = 151661; id <= 151667 && id < int32_t(vocab.size()); ++id) {
+                        const size_t found = text.find(vocab[id], pos);
+                        if (found < at) {
+                            at = found;
+                            special = id;
+                        }
+                    }
+                    const auto ordinary = tokenizer.encode(text.substr(pos, at == std::string::npos ? at : at - pos));
+                    ids.insert(ids.end(), ordinary.ids.begin(), ordinary.ids.end());
+                    if (special < 0) break;
+                    ids.push_back(special);
+                    pos = at + vocab[special].size();
+                }
+                return ids;
+            }
             auto enc = tokenizer.encode(text);
             // BPETokenizer.encode() adds BOS/EOS — strip them for raw text
             // We just want the raw token IDs without special tokens
@@ -2870,6 +3691,22 @@ struct qwen2vl_ocr_context {
     // Build full chat-format token sequence with image placeholders
     std::vector<int32_t> build_token_ids(int n_image_tokens) {
         std::vector<int32_t> ids;
+
+        if (inner.is_mineru25_pro) {
+            // Tokenize the complete rendered template: adjacent newlines in a
+            // text-only custom prompt may form one BPE token with the role's
+            // newline. Concatenating separately tokenized fragments is wrong.
+            std::string rendered = "<|im_start|>system\nYou are a helpful assistant.<|im_end|>\n"
+                                   "<|im_start|>user\n";
+            if (n_image_tokens > 0) {
+                rendered += "<|vision_start|>";
+                for (int i = 0; i < n_image_tokens; ++i) rendered += "<|image_pad|>";
+                rendered += "<|vision_end|>";
+            }
+            rendered += prompt;
+            rendered += "<|im_end|>\n<|im_start|>assistant\n";
+            return tokenize(rendered);
+        }
 
         // PaddleOCR-VL (ERNIE-4.5) template:
         //   <|begin_of_sentence|>User: <|IMAGE_START|><|IMAGE_PLACEHOLDER|>...
@@ -2897,7 +3734,8 @@ struct qwen2vl_ocr_context {
         // the image + OCR instruction), so skip the system block in that mode.
         // Qwen2-VL's chat template prepends a default system message when none
         // is supplied. Include it (set CRISPEMBED_QARI_NO_SYSTEM=1 to drop it).
-        if (!getenv("CRISPEMBED_QARI_NO_SYSTEM") && !no_default_system) {
+        if (inner.is_mineru25_pro ||
+            ((inner.is_teleocr || !getenv("CRISPEMBED_QARI_NO_SYSTEM")) && !no_default_system)) {
             ids.push_back(im_start_id);
             ids.push_back(system_id);
             ids.push_back(newline_id);
@@ -2918,6 +3756,10 @@ struct qwen2vl_ocr_context {
         ids.push_back(newline_id);
 
         auto push_prompt_text = [&]() {
+            if (inner.is_mineru25_pro) {
+                ids.insert(ids.end(), prompt_ids.begin(), prompt_ids.end());
+                return;
+            }
             if (!prompt_ids.empty()) {
                 ids.insert(ids.end(), prompt_ids.begin(), prompt_ids.end());
             } else {
@@ -2931,6 +3773,7 @@ struct qwen2vl_ocr_context {
             }
         };
         auto push_vision_block = [&]() {
+            if (inner.is_mineru25_pro && n_image_tokens == 0) return;
             ids.push_back(vision_start_id);
             for (int i = 0; i < n_image_tokens; i++) ids.push_back(image_pad_id);
             ids.push_back(vision_end_id);
@@ -2960,13 +3803,13 @@ struct qwen2vl_ocr_context {
 };
 
 // Shared post-load init: load tokenizer from GGUF, set special IDs
-static void post_load_init(qwen2vl_ocr_context * ctx, const char * gguf_path) {
+static bool post_load_init(qwen2vl_ocr_context * ctx, const char * gguf_path) {
     // Stage-by-stage comparison against a reference GGUF (vis_patch_embed,
     // vis_layer_N, mrope_positions, llm_embed, llm_layer_N, llm_post_ds_N,
     // llm_final_norm) - e.g. tools/ci-heavy/qwen3vl_stage_diff.py. The compare
     // code in this file was unreachable before: nothing ever set diff_ref_path.
     // Verbosity 2 also enables the mRoPE position comparison.
-    if (const char * nr = getenv("CRISPEMBED_QWEN2VL_NO_REPEAT_NGRAM")) {
+    if (const char * nr = ctx->inner.is_mineru25_pro ? nullptr : getenv("CRISPEMBED_QWEN2VL_NO_REPEAT_NGRAM")) {
         if (*nr) ctx->inner.no_repeat_ngram = atoi(nr);
     }
     if (const char * ref = getenv("CRISPEMBED_QWEN2VL_REF")) {
@@ -3020,6 +3863,37 @@ static void post_load_init(qwen2vl_ocr_context * ctx, const char * gguf_path) {
     gguf_context * g = core_gguf::open_metadata(gguf_path);
     if (g) {
         int tok_idx = gguf_find_key(g, "tokenizer.ggml.tokens");
+        if (ctx->inner.is_teleocr) {
+            const int merges = gguf_find_key(g, "tokenizer.ggml.merges");
+            const int types = gguf_find_key(g, "tokenizer.ggml.token_type");
+            if (tok_idx < 0 || gguf_get_kv_type(g, tok_idx) != GGUF_TYPE_ARRAY ||
+                gguf_get_arr_type(g, tok_idx) != GGUF_TYPE_STRING ||
+                gguf_get_arr_n(g, tok_idx) != ctx->inner.m.lhp.vocab_size || merges < 0 ||
+                gguf_get_kv_type(g, merges) != GGUF_TYPE_ARRAY || gguf_get_arr_type(g, merges) != GGUF_TYPE_STRING ||
+                gguf_get_arr_n(g, merges) == 0 || types < 0 || gguf_get_kv_type(g, types) != GGUF_TYPE_ARRAY ||
+                gguf_get_arr_type(g, types) != GGUF_TYPE_INT32 ||
+                gguf_get_arr_n(g, types) != ctx->inner.m.lhp.vocab_size) {
+                fprintf(stderr, "TeleOCR: tokenizer tokens, merges and types are required\n");
+                core_gguf::free_metadata(g);
+                return false;
+            }
+            const auto * token_types = static_cast<const int32_t *>(gguf_get_arr_data(g, types));
+            for (uint32_t i = 0; i < ctx->inner.m.lhp.vocab_size; ++i)
+                if (token_types[i] == 3 || token_types[i] == 5) ctx->special_tokens.insert((int32_t)i);
+            for (const auto & expected : std::vector<std::pair<int, const char *>>{ { 151643, "<|endoftext|>" },
+                                                                                    { 151644, "<|im_start|>" },
+                                                                                    { 151645, "<|im_end|>" },
+                                                                                    { 151652, "<|vision_start|>" },
+                                                                                    { 151653, "<|vision_end|>" },
+                                                                                    { 151655, "<|image_pad|>" } }) {
+                if (std::string(gguf_get_arr_str(g, tok_idx, expected.first)) != expected.second ||
+                    token_types[expected.first] != 3) {
+                    fprintf(stderr, "TeleOCR: incompatible special token vocabulary\n");
+                    core_gguf::free_metadata(g);
+                    return false;
+                }
+            }
+        }
         if (tok_idx >= 0) {
             int n = gguf_get_arr_n(g, tok_idx);
             std::vector<std::string> vocab(n);
@@ -3052,7 +3926,8 @@ static void post_load_init(qwen2vl_ocr_context * ctx, const char * gguf_path) {
                 }
             }
             // GPT-2 BPE for Qwen (Ġ); SentencePiece BPE + add_dummy_prefix for ERNIE.
-            ctx->tokenizer.load(vocab, merges, eos_id, pad_id, -1, -1, spm_vocab, 8192,
+            ctx->tokenizer.load(vocab, merges, eos_id, pad_id, -1, -1, spm_vocab,
+                                ctx->inner.is_mineru25_pro ? 8193 : 8192,
                                 /*spm_dummy_prefix=*/spm_vocab);
             ctx->has_tokenizer = true;
             ctx->tokenizer_can_encode = !merges.empty();
@@ -3141,21 +4016,98 @@ static void post_load_init(qwen2vl_ocr_context * ctx, const char * gguf_path) {
             }
         }
 
+        if (ctx->inner.is_teleocr) {
+            // Architecture metadata takes precedence over filenames and
+            // other fine-tune heuristics in this shared backend.
+            ctx->is_paddleocr = false;
+            ctx->is_olmocr = false;
+            ctx->use_qari_default_prompt = false;
+            ctx->no_default_system = false;
+            ctx->prompt =
+                core_gguf::kv_str(g, "teleocr.default_prompt", "Please output the text content from the image.");
+            ctx->max_tokens = 4096;
+            if (!getenv("CRISPEMBED_QWEN2VL_NO_REPEAT_NGRAM")) ctx->inner.no_repeat_ngram = 0;
+            ctx->inner.eos_token_id = 151645;
+        }
+
         core_gguf::free_metadata(g);
+    }
+
+    if (ctx->inner.is_mineru25_pro) {
+        // Metadata, not a filename heuristic, owns the complete profile.
+        // Reject the generic tokenizer's historical whitespace experiment:
+        // that path removes prompt newlines even if its variable says "0".
+        const auto & vocab = ctx->tokenizer.get_vocab();
+        static const char * specials[] = { "<|endoftext|>",
+                                           "<|im_start|>",
+                                           "<|im_end|>",
+                                           "<|object_ref_start|>",
+                                           "<|object_ref_end|>",
+                                           "<|box_start|>",
+                                           "<|box_end|>",
+                                           "<|quad_start|>",
+                                           "<|quad_end|>",
+                                           "<|vision_start|>",
+                                           "<|vision_end|>",
+                                           "<|vision_pad|>",
+                                           "<|image_pad|>",
+                                           "<|video_pad|>",
+                                           "<|ref_start|>",
+                                           "<|ref_end|>",
+                                           "<|md_start|>",
+                                           "<|md_end|>",
+                                           "<ched>",
+                                           "<ecel>",
+                                           "<fcel>",
+                                           "<lcel>",
+                                           "<ucel>",
+                                           "<xcel>",
+                                           "<nl>",
+                                           "<|rotate_up|>",
+                                           "<|rotate_down|>",
+                                           "<|rotate_left|>",
+                                           "<|rotate_right|>",
+                                           "<|txt_contd|>",
+                                           "<|paratext|>" };
+        bool specials_valid = vocab.size() == 151674;
+        if (specials_valid)
+            for (size_t i = 0; i < sizeof(specials) / sizeof(specials[0]); ++i)
+                specials_valid = specials_valid && vocab[151643 + i] == specials[i];
+        if (!ctx->tokenizer_can_encode || !specials_valid ||
+            std::getenv("CRISPEMBED_BPE_LEGACY_WHITESPACE") != nullptr) {
+            fprintf(stderr, "qwen2vl_ocr: invalid MinerU tokenizer or incompatible legacy whitespace override\n");
+            return false;
+        }
+        ctx->is_paddleocr = ctx->is_olmocr = ctx->use_qari_default_prompt = false;
+        ctx->no_default_system = false;
+        ctx->inner.no_repeat_ngram = mineru25_profile::no_repeat_ngram;
+        ctx->inner.eos_token_id = 151645;
+        ctx->prompt = "\nText Recognition:";
+        ctx->max_tokens = 0; // HF max_length=8192, subtract prompt at call time.
     }
 
     // Pre-tokenize prompt when BPE merges are available
     if (ctx->tokenizer_can_encode) ctx->prompt_ids = ctx->tokenize(ctx->prompt);
+    if (ctx->inner.is_teleocr &&
+        (!ctx->tokenizer_can_encode || ctx->prompt_ids.empty() || ctx->prompt_ids.size() >= 8192)) {
+        fprintf(stderr, "TeleOCR: invalid default prompt or tokenizer\n");
+        return false;
+    }
+    return true;
 }
 
 qwen2vl_ocr_context * qwen2vl_ocr_init(const char * model_path, int n_threads) {
     if (!model_path) return nullptr;
     auto * ctx = new qwen2vl_ocr_context();
     if (!qwen2vl_ocr::load(ctx->inner, model_path, n_threads, 1)) {
+        qwen2vl_ocr::free_(ctx->inner);
         delete ctx;
         return nullptr;
     }
-    post_load_init(ctx, model_path);
+    if (!post_load_init(ctx, model_path)) {
+        qwen2vl_ocr_free(ctx);
+        return nullptr;
+    }
     return ctx;
 }
 
@@ -3163,10 +4115,14 @@ qwen2vl_ocr_context * qwen2vl_ocr_init_split(const char * llm_path, const char *
     if (!llm_path) return nullptr;
     auto * ctx = new qwen2vl_ocr_context();
     if (!qwen2vl_ocr::load(ctx->inner, llm_path, n_threads, 1, mmproj_path)) {
+        qwen2vl_ocr::free_(ctx->inner);
         delete ctx;
         return nullptr;
     }
-    post_load_init(ctx, llm_path);
+    if (!post_load_init(ctx, llm_path)) {
+        qwen2vl_ocr_free(ctx);
+        return nullptr;
+    }
     return ctx;
 }
 
@@ -3179,6 +4135,16 @@ void qwen2vl_ocr_free(qwen2vl_ocr_context * ctx) {
 
 int qwen2vl_ocr_set_prompt(qwen2vl_ocr_context * ctx, const char * prompt) {
     if (ctx && prompt) {
+        if (ctx->inner.is_teleocr) {
+            const std::string text(prompt);
+            if (text.empty() || text.size() > 65536) return 0;
+            auto ids = ctx->tokenize(text);
+            if (ids.empty() || ids.size() >= 8192) return 0;
+            ctx->prompt = text;
+            ctx->prompt_ids = std::move(ids);
+            return 1;
+        }
+        if (ctx->inner.is_mineru25_pro && std::strlen(prompt) > 1048576) return 0;
         ctx->prompt = prompt;
         if (ctx->tokenizer_can_encode) {
             ctx->use_qari_default_prompt = false;
@@ -3203,15 +4169,53 @@ const char * qwen2vl_ocr_get_prompt(const qwen2vl_ocr_context * ctx) {
 }
 
 void qwen2vl_ocr_set_max_tokens(qwen2vl_ocr_context * ctx, int max_tokens) {
-    if (ctx) ctx->max_tokens = max_tokens;
+    if (ctx && ctx->inner.is_teleocr &&
+        (max_tokens <= 0 || max_tokens >= (int)ctx->inner.m.lhp.max_position_embeddings))
+        return;
+    if (ctx) ctx->max_tokens = ctx->inner.is_mineru25_pro ? std::max(0, max_tokens) : max_tokens;
 }
 
 extern "C" int qwen2vl_ocr_get_max_tokens(const qwen2vl_ocr_context * ctx) {
     return ctx ? ctx->max_tokens : 0;
 }
 
-// Internal: run full pipeline (preprocess → vision → tokenize → generate)
-static const char * run_pipeline(qwen2vl_ocr_context * ctx, const image_preproc::result & pp, int * out_len) {
+int qwen2vl_ocr_set_generation_params(qwen2vl_ocr_context * ctx, float repetition_penalty, float presence_penalty,
+                                      float frequency_penalty, int no_repeat_ngram) {
+    if (!ctx || !ctx->inner.is_teleocr || !std::isfinite(repetition_penalty) || repetition_penalty <= 0.0f ||
+        repetition_penalty > 100.0f || !std::isfinite(presence_penalty) || std::abs(presence_penalty) > 2.0f ||
+        !std::isfinite(frequency_penalty) || std::abs(frequency_penalty) > 2.0f || no_repeat_ngram < 0 ||
+        no_repeat_ngram > 4096)
+        return 0;
+    ctx->inner.repetition_penalty = repetition_penalty;
+    ctx->inner.presence_penalty = presence_penalty;
+    ctx->inner.frequency_penalty = frequency_penalty;
+    ctx->inner.no_repeat_ngram = no_repeat_ngram;
+    return 1;
+}
+
+int qwen2vl_ocr_get_generation_params(const qwen2vl_ocr_context * ctx, float * repetition_penalty,
+                                      float * presence_penalty, float * frequency_penalty, int * no_repeat_ngram) {
+    if (!ctx || !ctx->inner.is_teleocr) return 0;
+    if (repetition_penalty) *repetition_penalty = ctx->inner.repetition_penalty;
+    if (presence_penalty) *presence_penalty = ctx->inner.presence_penalty;
+    if (frequency_penalty) *frequency_penalty = ctx->inner.frequency_penalty;
+    if (no_repeat_ngram) *no_repeat_ngram = ctx->inner.no_repeat_ngram;
+    return 1;
+}
+
+#ifdef CRISPEMBED_TELEOCR_TESTING
+void qwen2vl_ocr_test_set_observer(qwen2vl_ocr_context * ctx, qwen2vl_ocr::context::observer_fn callback,
+                                   void * user_data) {
+    if (ctx) {
+        ctx->inner.observer = callback;
+        ctx->inner.observer_data = user_data;
+    }
+}
+#endif
+
+// Shared image/text generation and exact result capture. Takes ownership of vis buffers.
+static const char * run_generation(qwen2vl_ocr_context * ctx, qwen2vl_ocr::vision_result & vis,
+                                   const int32_t * grid_thw, int * out_len) {
     const bool dbg_t = qwen2vl_ocr::qwen_dbg();
     auto t_stage = qwen2vl_ocr::qwen_clock::now();
     auto stage_ms = [&](const char * name) {
@@ -3222,27 +4226,32 @@ static const char * run_pipeline(qwen2vl_ocr_context * ctx, const image_preproc:
         t_stage = now;
     };
 
-    // 1. Run vision encoder
-    qwen2vl_ocr::vision_result vis = {};
-    if (!qwen2vl_ocr::encode_vision(ctx->inner, pp.patches.data(), pp.n_patches, pp.grid_thw, vis)) {
-        fprintf(stderr, "qwen2vl_ocr: vision encoder failed\n");
-        return nullptr;
-    }
-    stage_ms("vision");
-
-    if (const char * dp = getenv("CRISPEMBED_DUMP_MERGER")) {
-        FILE * df = fopen(dp, "wb");
-        if (df) {
-            int hdr[2] = { vis.n_merged, vis.embed_dim };
-            fwrite(hdr, sizeof(int), 2, df);
-            fwrite(vis.image_embeds, sizeof(float), (size_t)vis.n_merged * vis.embed_dim, df);
-            fclose(df);
-            fprintf(stderr, "qwen2vl_ocr: dumped merger to %s (%d x %d)\n", dp, vis.n_merged, vis.embed_dim);
-        }
-    }
-
     // 2. Build token IDs with image_pad placeholders
     auto token_ids = ctx->build_token_ids(vis.n_merged);
+    int max_tokens = ctx->max_tokens;
+    if (ctx->inner.is_mineru25_pro) {
+        const int available = mineru25_profile::context_length - int(token_ids.size());
+        if (available <= 0 || !core_env::on(mineru25_profile::gate)) {
+            qwen2vl_ocr::vision_result_free(vis);
+            return nullptr;
+        }
+        if (max_tokens > available) {
+            fprintf(stderr, "qwen2vl_ocr: requested MinerU generation exceeds the supported 8192-token context; "
+                            "use max_tokens=0 for the remaining-context budget\n");
+            qwen2vl_ocr::vision_result_free(vis);
+            return nullptr;
+        }
+        max_tokens = max_tokens == 0 ? available : max_tokens;
+    }
+    ctx->last_prompt_ids = token_ids;
+    ctx->last_max_tokens = max_tokens;
+    if (grid_thw) std::copy_n(grid_thw, 3, ctx->last_grid);
+#ifdef CRISPEMBED_TELEOCR_TESTING
+    if (ctx->inner.observer) {
+        std::vector<float> ids(token_ids.begin(), token_ids.end());
+        qwen2vl_ocr::observe(ctx->inner, "prompt_ids", ids.data(), ids.size(), (int64_t)ids.size());
+    }
+#endif
 
     // 3. Generate text
     qwen2vl_ocr::generate_result gen = {};
@@ -3257,8 +4266,8 @@ static const char * run_pipeline(qwen2vl_ocr_context * ctx, const image_preproc:
     ctx->inner.n_deepstack_tmp = (int)ds_ptrs.size();
 
     bool ok = qwen2vl_ocr::generate(ctx->inner, vis.image_embeds, vis.n_merged, vis.embed_dim,
-                                    pp.grid_thw, // pass actual grid for mRoPE
-                                    token_ids.data(), (int)token_ids.size(), ctx->max_tokens, gen);
+                                    grid_thw, // actual grid, or null for text-only
+                                    token_ids.data(), (int)token_ids.size(), max_tokens, gen);
     stage_ms("generate");
 
     ctx->inner.deepstack_embeds_tmp = nullptr;
@@ -3271,14 +4280,35 @@ static const char * run_pipeline(qwen2vl_ocr_context * ctx, const image_preproc:
         return nullptr;
     }
 
+#ifdef CRISPEMBED_TELEOCR_TESTING
+    if (ctx->inner.observer) {
+        std::vector<float> ids(gen.token_ids.begin(), gen.token_ids.end());
+        qwen2vl_ocr::observe(ctx->inner, "generated_ids", ids.data(), ids.size(), (int64_t)ids.size());
+    }
+#endif
+
     ctx->char_confidences = std::move(gen.token_confidences);
+    ctx->last_completion_ids = gen.token_ids;
+    ctx->last_eos =
+        !gen.token_ids.empty() && (ctx->inner.is_mineru25_pro ? mineru25_profile::is_eos(gen.token_ids.back())
+                                                              : gen.token_ids.back() == ctx->inner.eos_token_id);
+    ctx->last_capped = !ctx->last_eos && int(gen.token_ids.size()) >= max_tokens;
+    if (ctx->has_tokenizer) {
+        ctx->last_raw_text = ctx->is_paddleocr ? spm_decode(gen.token_ids, ctx->tokenizer.get_vocab())
+                                               : gpt2_bpe_decode(gen.token_ids, ctx->tokenizer.get_vocab());
+        if (ctx->inner.is_mineru25_pro) ctx->last_raw_text = mineru25_profile::replace_invalid_utf8(ctx->last_raw_text);
+    }
 
     // 4. Decode token IDs to text (strip EOS/special tokens first)
     std::vector<int32_t> decode_ids;
     decode_ids.reserve(gen.token_ids.size());
     for (int32_t id : gen.token_ids) {
-        if (id == ctx->im_end_id || id == ctx->im_start_id || id == ctx->inner.eos_token_id ||
-            id == ctx->begin_of_sentence_id)
+        if (ctx->inner.is_teleocr) {
+            if (ctx->special_tokens.count(id)) continue;
+        } else if (ctx->inner.is_mineru25_pro) {
+            if (mineru25_profile::is_eos(id)) continue; // only BOS/EOS/PAD, as TransformersVlmClient
+        } else if (id == ctx->im_end_id || id == ctx->im_start_id || id == ctx->inner.eos_token_id ||
+                   id == ctx->begin_of_sentence_id)
             continue;
         decode_ids.push_back(id);
     }
@@ -3294,9 +4324,11 @@ static const char * run_pipeline(qwen2vl_ocr_context * ctx, const image_preproc:
         }
     }
 
+    if (ctx->inner.is_mineru25_pro) ctx->last_result = mineru25_profile::replace_invalid_utf8(ctx->last_result);
+
     // Strip Qwen3 <think>...</think> blocks (nothink fine-tunes emit empty
     // thinking tags; regular Qwen3 models may emit actual thinking content).
-    {
+    if (!ctx->inner.is_teleocr && !ctx->inner.is_mineru25_pro) {
         size_t think_start = ctx->last_result.find("<think>");
         if (think_start != std::string::npos) {
             size_t think_end = ctx->last_result.find("</think>", think_start);
@@ -3342,13 +4374,60 @@ static const char * run_pipeline(qwen2vl_ocr_context * ctx, const image_preproc:
     }
     stage_ms("decode_text");
 
+    ctx->last_ok = true;
     if (out_len) *out_len = (int)ctx->last_result.size();
     return ctx->last_result.c_str();
 }
 
+static const char * run_pipeline(qwen2vl_ocr_context * ctx, const image_preproc::result & pp, int * out_len) {
+    const auto t_vision = qwen2vl_ocr::qwen_clock::now();
+    // 1. Run vision encoder
+    qwen2vl_ocr::vision_result vis = {};
+    if (!qwen2vl_ocr::encode_vision(ctx->inner, pp.patches.data(), pp.n_patches, pp.grid_thw, vis)) {
+        fprintf(stderr, "qwen2vl_ocr: vision encoder failed\n");
+        qwen2vl_ocr::vision_result_free(vis);
+        return nullptr;
+    }
+    if (qwen2vl_ocr::qwen_dbg())
+        fprintf(
+            stderr, "  [time] vision %lldms\n",
+            (long long)std::chrono::duration_cast<std::chrono::milliseconds>(qwen2vl_ocr::qwen_clock::now() - t_vision)
+                .count());
+
+    if (const char * dp = getenv("CRISPEMBED_DUMP_MERGER")) {
+        FILE * df = fopen(dp, "wb");
+        if (df) {
+            int hdr[2] = { vis.n_merged, vis.embed_dim };
+            fwrite(hdr, sizeof(int), 2, df);
+            fwrite(vis.image_embeds, sizeof(float), (size_t)vis.n_merged * vis.embed_dim, df);
+            fclose(df);
+            fprintf(stderr, "qwen2vl_ocr: dumped merger to %s (%d x %d)\n", dp, vis.n_merged, vis.embed_dim);
+        }
+    }
+
+    return run_generation(ctx, vis, pp.grid_thw, out_len);
+}
+
+const char * qwen2vl_ocr_generate_text(qwen2vl_ocr_context * ctx, const char * prompt, int * out_len) {
+    if (out_len) *out_len = 0;
+    if (!ctx) return nullptr;
+    ctx->clear_last();
+    if (!ctx->inner.is_mineru25_pro || !core_env::on(mineru25_profile::gate) || !prompt ||
+        !qwen2vl_ocr_set_prompt(ctx, prompt))
+        return nullptr;
+    qwen2vl_ocr::vision_result vis;
+    return run_generation(ctx, vis, nullptr, out_len);
+}
+
 const char * qwen2vl_ocr_recognize_raw(qwen2vl_ocr_context * ctx, const uint8_t * pixel_bytes, int width, int height,
                                        int channels, int * out_len) {
-    if (!ctx || !pixel_bytes) return nullptr;
+    if (out_len) *out_len = 0;
+    if (!ctx) return nullptr;
+    ctx->clear_last();
+    if (!pixel_bytes || width <= 0 || height <= 0 ||
+        (ctx->inner.is_mineru25_pro && !core_env::on(mineru25_profile::gate)) ||
+        (ctx->inner.is_teleocr && !core_env::on("CRISPEMBED_TELEOCR")))
+        return nullptr;
 
     const bool dbg_t = qwen2vl_ocr::qwen_dbg();
     auto t0 = qwen2vl_ocr::qwen_clock::now();
@@ -3362,8 +4441,8 @@ const char * qwen2vl_ocr_recognize_raw(qwen2vl_ocr_context * ctx, const uint8_t 
     cfg.min_pixels = (int)vhp.min_pixels;
     cfg.max_pixels = (int)vhp.max_pixels;
     // Allow runtime override of max_pixels for CPU-friendly inference
-    if (const char * mp = getenv("CRISPEMBED_MAX_PIXELS")) {
-        cfg.max_pixels = atoi(mp);
+    if (!ctx->inner.is_mineru25_pro) {
+        if (const char * mp = getenv("CRISPEMBED_MAX_PIXELS")) cfg.max_pixels = atoi(mp);
     }
     // olmOCR's reference renders every page with its longest side at 1288 px
     // before the standard resize; match that geometry (up- and downscale).
@@ -3379,10 +4458,19 @@ const char * qwen2vl_ocr_recognize_raw(qwen2vl_ocr_context * ctx, const uint8_t 
     }
 
     image_preproc::result pp;
-    if (!image_preproc::preprocess_rgb(pixel_bytes, height, width, channels, cfg, pp)) {
+    const bool preprocessed =
+        ctx->inner.is_teleocr        ? qwen2vl_ocr::preprocess_teleocr(pixel_bytes, height, width, channels, cfg, pp)
+        : ctx->inner.is_mineru25_pro ? mineru25_profile::preprocess_rgb(pixel_bytes, height, width, channels, cfg, pp)
+                                     : image_preproc::preprocess_rgb(pixel_bytes, height, width, channels, cfg, pp);
+    if (!preprocessed) {
         fprintf(stderr, "qwen2vl_ocr: image preprocessing failed\n");
         return nullptr;
     }
+#ifdef CRISPEMBED_TELEOCR_TESTING
+    qwen2vl_ocr::observe(ctx->inner, "input_patches", pp.patches.data(), pp.patches.size(), pp.row_dim);
+    const float grid[] = { (float)pp.grid_thw[0], (float)pp.grid_thw[1], (float)pp.grid_thw[2] };
+    qwen2vl_ocr::observe(ctx->inner, "image_grid", grid, 3, 3);
+#endif
     if (dbg_t) {
         fprintf(stderr, "  [time] preprocess %lldms\n", qwen2vl_ocr::qwen_ms_since(t0));
     }
@@ -3406,12 +4494,26 @@ const char * qwen2vl_ocr_recognize_raw(qwen2vl_ocr_context * ctx, const uint8_t 
 
 const char * qwen2vl_ocr_recognize(qwen2vl_ocr_context * ctx, const float * pixels, int width, int height,
                                    int * out_len) {
+    if (out_len) *out_len = 0;
     if (!ctx || !pixels) return nullptr;
+    if (ctx->inner.is_teleocr &&
+        (width <= 0 || height <= 0 || (uint64_t)width * height > (uint64_t)std::numeric_limits<int>::max() / 4))
+        return nullptr;
+    if (ctx->inner.is_mineru25_pro) {
+        ctx->clear_last();
+        if (out_len) *out_len = 0;
+        if (width < 1 || height < 1 || width > 65536 || height > 65536 || int64_t(width) * height > 67108864 ||
+            !core_env::on(mineru25_profile::gate))
+            return nullptr;
+        for (size_t i = 0; i < size_t(width) * height; ++i)
+            if (!std::isfinite(pixels[i]) || pixels[i] < 0 || pixels[i] > 1) return nullptr;
+    }
 
     // Convert grayscale float [0,1] to uint8 RGB for preprocess_rgb
     std::vector<uint8_t> rgb(width * height * 3);
     for (int i = 0; i < width * height; i++) {
-        uint8_t v = (uint8_t)(pixels[i] * 255.0f + 0.5f);
+        const float value = ctx->inner.is_teleocr ? std::max(0.0f, std::min(1.0f, pixels[i])) : pixels[i];
+        uint8_t v = (uint8_t)(value * 255.0f + 0.5f);
         rgb[i * 3 + 0] = rgb[i * 3 + 1] = rgb[i * 3 + 2] = v;
     }
 
@@ -3425,6 +4527,40 @@ const float * qwen2vl_ocr_confidences(const qwen2vl_ocr_context * ctx, int * n_t
     }
     if (n_tokens) *n_tokens = (int)ctx->char_confidences.size();
     return ctx->char_confidences.data();
+}
+
+int qwen2vl_ocr_is_mineru(const qwen2vl_ocr_context * ctx) {
+    return ctx && ctx->inner.is_mineru25_pro;
+}
+
+int qwen2vl_ocr_last_ok(const qwen2vl_ocr_context * ctx) {
+    return ctx && ctx->last_ok;
+}
+
+const int32_t * qwen2vl_ocr_completion_ids(const qwen2vl_ocr_context * ctx, int * count) {
+    if (count) *count = ctx ? int(ctx->last_completion_ids.size()) : 0;
+    return ctx && !ctx->last_completion_ids.empty() ? ctx->last_completion_ids.data() : nullptr;
+}
+
+const int32_t * qwen2vl_ocr_prompt_ids(const qwen2vl_ocr_context * ctx, int * count) {
+    if (count) *count = ctx ? int(ctx->last_prompt_ids.size()) : 0;
+    return ctx && !ctx->last_prompt_ids.empty() ? ctx->last_prompt_ids.data() : nullptr;
+}
+
+const char * qwen2vl_ocr_raw_text(const qwen2vl_ocr_context * ctx) {
+    return ctx ? ctx->last_raw_text.c_str() : nullptr;
+}
+int qwen2vl_ocr_stopped_eos(const qwen2vl_ocr_context * ctx) {
+    return ctx && ctx->last_eos;
+}
+int qwen2vl_ocr_capped(const qwen2vl_ocr_context * ctx) {
+    return ctx && ctx->last_capped;
+}
+const int32_t * qwen2vl_ocr_grid_thw(const qwen2vl_ocr_context * ctx) {
+    return ctx ? ctx->last_grid : nullptr;
+}
+int qwen2vl_ocr_effective_max_tokens(const qwen2vl_ocr_context * ctx) {
+    return ctx ? ctx->last_max_tokens : 0;
 }
 
 float qwen2vl_ocr_mean_confidence(const qwen2vl_ocr_context * ctx) {

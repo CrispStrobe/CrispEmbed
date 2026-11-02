@@ -1,0 +1,19 @@
+[1/19] Building CXX object CMakeFiles/crispembed.dir/src/ocr_orchestrator.cpp.o
+[2/19] Building CXX object CMakeFiles/crispembed.dir/src/crispembed.cpp.o
+[3/19] Building CXX object CMakeFiles/crispembed-shared.dir/src/ocr_orchestrator.cpp.o
+[4/19] Linking CXX static library libcrispembed-static.a
+[5/19] Building CXX object CMakeFiles/crispembed-shared.dir/src/crispembed.cpp.o
+[6/19] Building CXX object CMakeFiles/crispembed-cli.dir/examples/cli/main.cpp.o
+[7/19] Building CXX object CMakeFiles/test-qwen-pretokenize.dir/tests/test_qwen_pretokenize.cpp.o
+[8/19] Building CXX object CMakeFiles/test-bpe-pretokenize.dir/tests/test_bpe_pretokenize.cpp.o
+[9/19] Building CXX object CMakeFiles/test-teleocr-diff.dir/tests/test_teleocr_diff.cpp.o
+[10/19] Building CXX object CMakeFiles/test-teleocr-preprocess.dir/tests/test_teleocr_preprocess.cpp.o
+[11/19] Linking CXX shared library libcrispembed.so.0.17.14
+[12/19] Linking CXX executable crispembed
+[13/19] Linking CXX executable test-qwen-pretokenize
+[14/19] Linking CXX executable test-bpe-pretokenize
+[15/19] Linking CXX executable test-teleocr-diff
+[16/19] Linking CXX executable test-teleocr-preprocess
+[17/19] Creating library symlink libcrispembed.so.0 libcrispembed.so
+[18/19] Building CXX object CMakeFiles/crispembed-server.dir/examples/server/server.cpp.o
+[19/19] Linking CXX executable crispembed-server

@@ -11,6 +11,42 @@ import 'package:ffi/ffi.dart';
 // Opaque handle
 typedef CrispembedContext = Void;
 
+// OXR recognition/read-order context; enable CRISPEMBED_OXR.
+typedef OxrInitNative = Pointer<Void> Function(Pointer<Utf8>, Int32);
+typedef OxrInit = Pointer<Void> Function(Pointer<Utf8>, int);
+typedef OxrFreeNative = Void Function(Pointer<Void>);
+typedef OxrFree = void Function(Pointer<Void>);
+typedef OxrPredictNative = Pointer<Utf8> Function(Pointer<Void>, Pointer<Uint8>, Int32, Int32, Int32, Pointer<Utf8>, Int32, Float);
+typedef OxrPredict = Pointer<Utf8> Function(Pointer<Void>, Pointer<Uint8>, int, int, int, Pointer<Utf8>, int, double);
+typedef OxrStringNative = Pointer<Utf8> Function(Pointer<Void>);
+typedef OxrString = Pointer<Utf8> Function(Pointer<Void>);
+typedef OxrLayoutDetectNative = Pointer<Utf8> Function(Pointer<Void>, Pointer<Uint8>, Int32, Int32, Int32, Float);
+typedef OxrLayoutDetect = Pointer<Utf8> Function(Pointer<Void>, Pointer<Uint8>, int, int, int, double);
+typedef OxrProcessPagesNative = Pointer<Utf8> Function(Pointer<Void>, Pointer<Pointer<Uint8>>, Pointer<Int32>,
+    Pointer<Int32>, Pointer<Int32>, Int32, Pointer<Void>, Pointer<Int32>, Pointer<Utf8>, Pointer<Utf8>);
+typedef OxrProcessPages = Pointer<Utf8> Function(Pointer<Void>, Pointer<Pointer<Uint8>>, Pointer<Int32>,
+    Pointer<Int32>, Pointer<Int32>, int, Pointer<Void>, Pointer<Int32>, Pointer<Utf8>, Pointer<Utf8>);
+typedef OxrAttachLayoutNative = Int32 Function(Pointer<Void>, Pointer<Utf8>, Int32);
+typedef OxrAttachLayout = int Function(Pointer<Void>, Pointer<Utf8>, int);
+typedef OxrRenderNative = Pointer<Utf8> Function(Pointer<Void>, Pointer<Utf8>);
+typedef OxrRender = Pointer<Utf8> Function(Pointer<Void>, Pointer<Utf8>);
+
+// Experimental MinerU2.5-Pro resident context; enable CRISPEMBED_MINERU25_PRO.
+typedef MineruInitNative = Pointer<Void> Function(Pointer<Utf8>, Int32);
+typedef MineruInit = Pointer<Void> Function(Pointer<Utf8>, int);
+typedef MineruFreeNative = Void Function(Pointer<Void>);
+typedef MineruFree = void Function(Pointer<Void>);
+typedef MineruPredictNative = Pointer<Utf8> Function(Pointer<Void>, Pointer<Uint8>, Int32, Int32, Int32, Pointer<Utf8>, Int32);
+typedef MineruPredict = Pointer<Utf8> Function(Pointer<Void>, Pointer<Uint8>, int, int, int, Pointer<Utf8>, int);
+typedef MineruExtractNative = Pointer<Utf8> Function(Pointer<Void>, Pointer<Uint8>, Int32, Int32, Int32, Int32, Int32);
+typedef MineruExtract = Pointer<Utf8> Function(Pointer<Void>, Pointer<Uint8>, int, int, int, int, int);
+typedef MineruDocumentNative = Pointer<Utf8> Function(Pointer<Void>, Pointer<Uint8>, Int32, Int32, Int32, Pointer<Utf8>, Int32);
+typedef MineruDocument = Pointer<Utf8> Function(Pointer<Void>, Pointer<Uint8>, int, int, int, Pointer<Utf8>, int);
+typedef MineruRenderNative = Pointer<Utf8> Function(Pointer<Void>, Pointer<Utf8>);
+typedef MineruRender = Pointer<Utf8> Function(Pointer<Void>, Pointer<Utf8>);
+typedef MineruStringNative = Pointer<Utf8> Function(Pointer<Void>);
+typedef MineruString = Pointer<Utf8> Function(Pointer<Void>);
+
 // --- Lifecycle ---
 typedef CrispembedInitNative = Pointer<CrispembedContext> Function(
     Pointer<Utf8> modelPath, Int32 nThreads);
@@ -1238,7 +1274,9 @@ final class CrispembedOcrStageFFI extends Struct {
   @Int32()
   external int sourceType;
   @Int32()
-  // 20=qwen35_ocr; 21=ovisocr2 (format2); 22=ovisocr3 (format3), each with three opt-in gates.
+  // 20=qwen35_ocr; 21=ovisocr2 (format2); 22=ovisocr3 (format3).
+  // 23=minicpm_ocr; 24=teleocr (CRISPEMBED_TELEOCR), 25=mineru25_pro
+  // (CRISPEMBED_MINERU25_PRO), 26=oxr (CRISPEMBED_OXR), with explicit local models.
   external int engine;
   external Pointer<Utf8> modelA;
   external Pointer<Utf8> modelB;
@@ -1335,8 +1373,38 @@ typedef CrispembedOcrSetMaxDart = void Function(Pointer<Void>, int);
 typedef CrispembedOcrGetMaxNative = Int32 Function(Pointer<Void>);
 typedef CrispembedOcrGetMaxDart = int Function(Pointer<Void>);
 typedef CrispembedOcrSetPromptNative = Int32 Function(
-    Pointer<Void>, Pointer<Utf8>);
+  Pointer<Void>,
+  Pointer<Utf8>,
+);
 typedef CrispembedOcrSetPromptDart = int Function(Pointer<Void>, Pointer<Utf8>);
+typedef CrispembedOcrSetGenerationNative = Int32 Function(
+  Pointer<Void>,
+  Float,
+  Float,
+  Float,
+  Int32,
+);
+typedef CrispembedOcrSetGenerationDart = int Function(
+  Pointer<Void>,
+  double,
+  double,
+  double,
+  int,
+);
+typedef CrispembedOcrGetGenerationNative = Int32 Function(
+  Pointer<Void>,
+  Pointer<Float>,
+  Pointer<Float>,
+  Pointer<Float>,
+  Pointer<Int32>,
+);
+typedef CrispembedOcrGetGenerationDart = int Function(
+  Pointer<Void>,
+  Pointer<Float>,
+  Pointer<Float>,
+  Pointer<Float>,
+  Pointer<Int32>,
+);
 typedef CrispembedOcrConfidenceNative = Pointer<Float> Function(
     Pointer<Void>, Pointer<Int32>);
 typedef CrispembedOcrConfidenceDart = Pointer<Float> Function(

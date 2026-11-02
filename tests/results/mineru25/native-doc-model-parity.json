@@ -1,0 +1,86 @@
+{
+ "run": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41251475795",
+ "source": "source=1480946f489265ee64500c623cc1e8ca1466c996",
+ "model": "cstr/MinerU2.5-Pro-2604-1.2B-GGUF@e63c95cf mineru25-pro-2604-f16.gguf sha256 7d464d37...",
+ "python": "3.12.15",
+ "max_new_tokens": 2048,
+ "image_analysis": true,
+ "identical": 8,
+ "cases": 8,
+ "per_case": {
+  "formula": {
+   "status": "identical",
+   "requests": 2,
+   "json": "identical",
+   "markdown": "identical",
+   "capped_regions": 0,
+   "python_route_s": 131.9,
+   "native_route_s": 133.2
+  },
+  "table": {
+   "status": "identical",
+   "requests": 3,
+   "json": "identical",
+   "markdown": "identical",
+   "capped_regions": 0,
+   "python_route_s": 145.8,
+   "native_route_s": 146.1
+  },
+  "receipt": {
+   "status": "identical",
+   "requests": 8,
+   "json": "identical",
+   "markdown": "identical",
+   "capped_regions": 0,
+   "python_route_s": 187.2,
+   "native_route_s": 189.4
+  },
+  "german": {
+   "status": "identical",
+   "requests": 19,
+   "json": "identical",
+   "markdown": "identical",
+   "capped_regions": 0,
+   "python_route_s": 360.5,
+   "native_route_s": 358.7
+  },
+  "japanese": {
+   "status": "identical",
+   "requests": 4,
+   "json": "identical",
+   "markdown": "identical",
+   "capped_regions": 0,
+   "python_route_s": 155.7,
+   "native_route_s": 147.8
+  },
+  "arabic": {
+   "status": "identical",
+   "requests": 2,
+   "json": "identical",
+   "markdown": "identical",
+   "capped_regions": 0,
+   "python_route_s": 133.2,
+   "native_route_s": 134.2
+  },
+  "layout-page": {
+   "status": "identical",
+   "requests": 10,
+   "json": "identical",
+   "markdown": "identical",
+   "capped_regions": 0,
+   "python_route_s": 199.5,
+   "native_route_s": 198.5
+  },
+  "layout-rot90": {
+   "status": "identical",
+   "requests": 2,
+   "json": "identical",
+   "markdown": "identical",
+   "capped_regions": 0,
+   "python_route_s": 273.4,
+   "native_route_s": 277.4
+  }
+ },
+ "initial_failure": "run 41250564149: weight-free gates passed, model step 404 (wrong GGUF filename in script); retained in native-doc-41250564149/",
+ "recorded_replay": "8/8 identical (test-mineru-doc replay of the Python-side recognition)"
+}

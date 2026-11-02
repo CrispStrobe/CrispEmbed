@@ -1,0 +1,7 @@
+vision.merge           max_abs=3.696e+01 rel=4.238e-02 cos=0.999611303
+visual.embeddings      max_abs=1.679e-02 rel=1.270e-01 cos=0.999672556
+llm.input              max_abs=1.679e-02 rel=5.021e-03 cos=0.999955111
+llm.layer.27           max_abs=3.148e+01 rel=1.400e-03 cos=0.999702774
+llm.norm               max_abs=8.823e+00 rel=1.773e-01 cos=0.998002165
+llm.logits             max_abs=3.001e-01 rel=1.593e-02 cos=0.999598630
+earliest_over_budget: vision.merge first tokens: 16 16

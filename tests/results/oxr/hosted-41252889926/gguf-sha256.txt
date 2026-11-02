@@ -1,0 +1,1 @@
+bc4d4e1916196f313ad0e063ef77032c31c7c401af01de90ccf52e4e9e4d6273  /mnt/heavy/scratch/oxr-f32.gguf

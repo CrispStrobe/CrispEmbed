@@ -1,0 +1,51 @@
+/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/ops.cpp:580: fatal error
+/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/ops.cpp:580: fatal error
+/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/ops.cpp:580: fatal error
+/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/ops.cpp:580: fatal error
+/mnt/heavy/scratch/build/ggml/src/libggml-base.so.0(+0x1c12b)[0x7f6e19a0812b]
+/mnt/heavy/scratch/build/ggml/src/libggml-base.so.0(ggml_print_backtrace+0x21c)[0x7f6e19a085ac]
+/mnt/heavy/scratch/build/ggml/src/libggml-base.so.0(ggml_abort+0x15b)[0x7f6e19a0878b]
+/mnt/heavy/scratch/build/ggml/src/libggml-cpu.so.0(ggml_compute_forward_dup+0x52b9)[0x7f6e19b3fb49]
+/mnt/heavy/scratch/build/ggml/src/libggml-cpu.so.0(+0x1ac36)[0x7f6e19ad4c36]
+/mnt/heavy/scratch/build/ggml/src/libggml-cpu.so.0(ggml_graph_compute+0xe6)[0x7f6e19ad7436]
+/mnt/heavy/scratch/build/ggml/src/libggml-cpu.so.0(+0x1d932)[0x7f6e19ad7932]
+/mnt/heavy/scratch/build/ggml/src/libggml-base.so.0(ggml_backend_sched_graph_compute_async+0x88f)[0x7f6e19a27bdf]
+/mnt/heavy/scratch/build/ggml/src/libggml-base.so.0(ggml_backend_sched_graph_compute+0x12)[0x7f6e19a27fd2]
+/mnt/heavy/scratch/build/test-oxr-stage-dump(+0x41d47)[0x558ee1ee0d47]
+/mnt/heavy/scratch/build/test-oxr-stage-dump(+0x485d8)[0x558ee1ee75d8]
+/mnt/heavy/scratch/build/test-oxr-stage-dump(+0x4e7c2)[0x558ee1eed7c2]
+/mnt/heavy/scratch/build/test-oxr-stage-dump(+0xde72)[0x558ee1eace72]
+/mnt/heavy/scratch/build/test-oxr-stage-dump(+0xbe8a)[0x558ee1eaae8a]
+/lib/x86_64-linux-gnu/libc.so.6(+0x2a1ca)[0x7f6e1922a1ca]
+/lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0x8b)[0x7f6e1922a28b]
+/mnt/heavy/scratch/build/test-oxr-stage-dump(+0xbf95)[0x558ee1eaaf95]
+/mnt/heavy/scratch/build/ggml/src/libggml-base.so.0(+0x1c12b)[0x7f6e19a0812b]
+/mnt/heavy/scratch/build/ggml/src/libggml-base.so.0(ggml_print_backtrace+0x21c)[0x7f6e19a085ac]
+/mnt/heavy/scratch/build/ggml/src/libggml-base.so.0(ggml_abort+0x15b)[0x7f6e19a0878b]
+/mnt/heavy/scratch/build/ggml/src/libggml-cpu.so.0(ggml_compute_forward_dup+0x52b9)[0x7f6e19b3fb49]
+/mnt/heavy/scratch/build/ggml/src/libggml-cpu.so.0(+0x1ac36)[0x7f6e19ad4c36]
+/mnt/heavy/scratch/build/ggml/src/libggml-cpu.so.0(+0x1bbd5)[0x7f6e19ad5bd5]
+/lib/x86_64-linux-gnu/libc.so.6(+0x9cb84)[0x7f6e1929cb84]
+/lib/x86_64-linux-gnu/libc.so.6(+0x129ecc)[0x7f6e19329ecc]
+/mnt/heavy/scratch/build/ggml/src/libggml-base.so.0(+0x1c12b)[0x7f6e19a0812b]
+/mnt/heavy/scratch/build/ggml/src/libggml-base.so.0(ggml_print_backtrace+0x21c)[0x7f6e19a085ac]
+/mnt/heavy/scratch/build/ggml/src/libggml-base.so.0(ggml_abort+0x15b)[0x7f6e19a0878b]
+/mnt/heavy/scratch/build/ggml/src/libggml-cpu.so.0(ggml_compute_forward_dup+0x52b9)[0x7f6e19b3fb49]
+/mnt/heavy/scratch/build/ggml/src/libggml-cpu.so.0(+0x1ac36)[0x7f6e19ad4c36]
+/mnt/heavy/scratch/build/ggml/src/libggml-cpu.so.0(+0x1bbd5)[0x7f6e19ad5bd5]
+/lib/x86_64-linux-gnu/libc.so.6(+0x9cb84)[0x7f6e1929cb84]
+/lib/x86_64-linux-gnu/libc.so.6(+0x129ecc)[0x7f6e19329ecc]
+Traceback (most recent call last):
+  File "/home/runner/work/CrispEmbed/CrispEmbed/tools/oxr_stage_compare.py", line 66, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/home/runner/work/CrispEmbed/CrispEmbed/tools/oxr_stage_compare.py", line 26, in main
+    ti = json.loads((a.test / "index.json").read_text())
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/pathlib.py", line 1027, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/pathlib.py", line 1013, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/mnt/heavy/scratch/table-dump-q8_0/index.json'

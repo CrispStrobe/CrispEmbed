@@ -18,6 +18,7 @@
 #include "got_ocr.h"
 #include "glm_ocr.h"
 #include "qwen2vl_ocr.h"
+#include "oxr_ocr.h"
 #include "internvl2_ocr.h"
 #include "deepseek_ocr2.h"
 #include "pix2struct.h"
@@ -63,6 +64,7 @@
 
 #include "core/temp_file.h"
 #include "core/env_gate.h"
+#include "core/json.h"
 
 #include <atomic>
 #include <algorithm>
@@ -336,10 +338,18 @@ struct context {
     table_parse_context * table = nullptr;
     ppformulanet_ocr_context * formula = nullptr;
     ppformulanet_l_ocr_context * formula_l = nullptr;
-    got_ocr_context * got = nullptr;          // GOT-OCR2 (single-shot VLM)
-    glm_ocr_context * glm = nullptr;          // GLM-OCR (single-shot VLM)
-    qwen2vl_ocr_context * qwen = nullptr;     // Qwen2.5-VL (single-shot VLM)
-    qwen2vl_ocr_context * qwen3 = nullptr;    // Qwen3-VL (DeepStack + IMROPE)
+    got_ocr_context * got = nullptr;         // GOT-OCR2 (single-shot VLM)
+    glm_ocr_context * glm = nullptr;         // GLM-OCR (single-shot VLM)
+    qwen2vl_ocr_context * qwen = nullptr;    // Qwen2.5-VL (single-shot VLM)
+    qwen2vl_ocr_context * qwen3 = nullptr;   // Qwen3-VL (DeepStack + IMROPE)
+    qwen2vl_ocr_context * teleocr = nullptr; // TeleOCR owns its model/prompt independently of Qwen stages
+    std::string teleocr_model_path;
+    std::string teleocr_default_prompt;
+    int teleocr_default_max_tokens = 4096;
+    crispembed_mineru_context * mineru = nullptr;
+    std::string mineru_model_path;
+    oxr_ocr_context * oxr = nullptr;
+    std::string oxr_model_path;
     internvl2_ocr_context * intern = nullptr; // InternVL2 (single-shot VLM)
     deepseek_ocr2_context * dsocr2 = nullptr; // DeepSeek-OCR-2 (MoE VLM)
     pix2struct_context * p2s = nullptr;       // Pix2Struct (doc/chart understanding)
@@ -909,6 +919,100 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         if (loaded) stbi_image_free(loaded);
         return out;
     }
+    case engine::oxr: {
+        if (st.params.vlm_max_tokens < 0 || st.model_a.empty()) {
+            fprintf(stderr, "ocr_orchestrator: OXR requires an explicit model and nonnegative token cap\n");
+            return {};
+        }
+        if (!ctx->oxr || ctx->oxr_model_path != st.model_a) {
+            oxr_ocr_free(ctx->oxr);
+            ctx->oxr = nullptr;
+            ctx->oxr_model_path.clear();
+            ctx->oxr = oxr_ocr_init(st.model_a.c_str(), ctx->n_threads);
+            if (!ctx->oxr) return {};
+            ctx->oxr_model_path = st.model_a;
+        }
+        // Recognition is one task. The full official document pipeline has a
+        // separate layout detector and is exposed by the CrispOXR adapter.
+        const char * prompt =
+            st.params.vlm_prompt.empty() ? "Recognize the content of the image." : st.params.vlm_prompt.c_str();
+        if (!oxr_ocr_set_prompt(ctx->oxr, prompt) || !oxr_ocr_set_repetition_penalty(ctx->oxr, 1.f)) return {};
+        oxr_ocr_set_max_tokens(ctx->oxr, st.params.vlm_max_tokens);
+        int w = pw, h = ph;
+        unsigned char * loaded = nullptr;
+        const unsigned char * img = px;
+        if (!img) {
+            int channels = 0;
+            loaded = stbi_load(path, &w, &h, &channels, 3);
+            img = loaded;
+        }
+        if (!img) return {};
+        int length = 0;
+        const char * text = oxr_ocr_recognize_raw(ctx->oxr, img, w, h, 3, &length);
+        if (loaded) stbi_image_free(loaded);
+        if (!text || !oxr_ocr_last_ok(ctx->oxr)) {
+            fprintf(stderr, "ocr_orchestrator: OXR: %s\n", oxr_ocr_last_error(ctx->oxr));
+            return {};
+        }
+        if (oxr_ocr_capped(ctx->oxr) || !oxr_ocr_stopped_eos(ctx->oxr)) {
+            fprintf(stderr, "ocr_orchestrator: OXR did not complete within the token budget\n");
+            return {};
+        }
+        int count = 0;
+        const float * confidence = oxr_ocr_confidences(ctx->oxr, &count);
+        return wrap_fulltext(text, w, h, confidence, count, oxr_ocr_mean_confidence(ctx->oxr));
+    }
+    case engine::mineru25_pro: {
+        if (!st.params.vlm_prompt.empty() || st.params.vlm_max_tokens < 0) {
+            fprintf(stderr,
+                    "ocr_orchestrator: MinerU page extraction requires fixed task prompts and a nonnegative cap\n");
+            return {};
+        }
+        if (!ctx->mineru || ctx->mineru_model_path != st.model_a) {
+            crispembed_mineru_free(ctx->mineru);
+            ctx->mineru = nullptr;
+            ctx->mineru_model_path.clear();
+            if (st.model_a.empty()) return {};
+            ctx->mineru = crispembed_mineru_init(st.model_a.c_str(), ctx->n_threads);
+            if (!ctx->mineru) return {};
+            ctx->mineru_model_path = st.model_a;
+        }
+        int w = pw, h = ph;
+        unsigned char * loaded = nullptr;
+        const unsigned char * img = px;
+        if (!img) {
+            int channels = 0;
+            loaded = stbi_load(path, &w, &h, &channels, 3);
+            img = loaded;
+        }
+        if (!img) return {};
+            // The complete native document route (upstream-exact postprocessing) is
+            // the default after an 8-case byte-identical A/B against the original
+            // Python pipeline; CRISPEMBED_MINERU25_PRO_FULL_DOC=0 restores basic.
+#ifdef __EMSCRIPTEN__
+        // WASM keeps the basic route: the full document route would exceed the
+        // module size budget, and a 1.2B VLM is not a browser target.
+        const char * data =
+            crispembed_mineru_extract(ctx->mineru, img, w, h, 3, 0, std::max(0, st.params.vlm_max_tokens));
+#else
+        const bool full_doc = !core_env::explicitly_off("CRISPEMBED_MINERU25_PRO_FULL_DOC");
+        const char * data =
+            full_doc ? crispembed_mineru_extract_document(ctx->mineru, img, w, h, 3, nullptr,
+                                                          std::max(0, st.params.vlm_max_tokens))
+                     : crispembed_mineru_extract(ctx->mineru, img, w, h, 3, 0, std::max(0, st.params.vlm_max_tokens));
+#endif
+        if (loaded) stbi_image_free(loaded);
+        if (!data) {
+            fprintf(stderr, "ocr_orchestrator: MinerU: %s\n", crispembed_mineru_last_error(ctx->mineru));
+            return {};
+        }
+        if (core_json::json_extract_bool(data, "capped", true)) {
+            fprintf(stderr, "ocr_orchestrator: MinerU page did not complete within the token budget\n");
+            return {};
+        }
+        const float conf = float(core_json::json_extract_number(data, "confidence", 0.0));
+        return wrap_fulltext(crispembed_mineru_last_markdown(ctx->mineru), w, h, nullptr, 0, conf);
+    }
     // olmocr is the same runtime as qwen2vl — the fine-tune is auto-detected
     // inside qwen2vl_ocr_init from the model file, which switches the prompt
     // contract, token order, and output post-processing.
@@ -941,6 +1045,61 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         int nconf = 0;
         const float * conf = qwen2vl_ocr_confidences(ctx->qwen, &nconf);
         auto out = wrap_fulltext(t, w, h, conf, nconf, qwen2vl_ocr_mean_confidence(ctx->qwen));
+        if (loaded) stbi_image_free(loaded);
+        return out;
+    }
+    case engine::teleocr: {
+        if (!core_env::on("CRISPEMBED_TELEOCR")) {
+            fprintf(stderr, "ocr_orchestrator: teleocr needs CRISPEMBED_TELEOCR=1\n");
+            return {};
+        }
+        if (st.model_a != ctx->teleocr_model_path) {
+            if (ctx->teleocr) qwen2vl_ocr_free(ctx->teleocr);
+            ctx->teleocr = nullptr;
+            ctx->teleocr_model_path.clear();
+            ctx->teleocr_default_prompt.clear();
+        }
+        if (!ctx->teleocr) {
+            if (st.model_a.empty()) {
+                fprintf(stderr, "ocr_orchestrator: teleocr stage needs an explicit local model_a\n");
+                return {};
+            }
+            auto * meta = core_gguf::open_metadata(st.model_a.c_str());
+            const bool profile = meta && core_gguf::kv_str(meta, "general.architecture", "") == "teleocr" &&
+                                 core_gguf::kv_u32(meta, "teleocr.gguf_version", 0) == 1;
+            if (meta) core_gguf::free_metadata(meta);
+            if (!profile) {
+                fprintf(stderr, "ocr_orchestrator: teleocr requires a TeleOCR version 1 GGUF\n");
+                return {};
+            }
+            ctx->teleocr = qwen2vl_ocr_init(st.model_a.c_str(), ctx->n_threads);
+            if (!ctx->teleocr) return {};
+            ctx->teleocr_model_path = st.model_a;
+            const char * initial_prompt = qwen2vl_ocr_get_prompt(ctx->teleocr);
+            ctx->teleocr_default_prompt = initial_prompt ? initial_prompt : "";
+            ctx->teleocr_default_max_tokens = qwen2vl_ocr_get_max_tokens(ctx->teleocr);
+        }
+        // Reset both knobs on every stage: a previous stage/request must not
+        // leak a custom prompt or generation cap into this one.
+        qwen2vl_ocr_set_max_tokens(ctx->teleocr, st.params.vlm_max_tokens > 0 ? st.params.vlm_max_tokens
+                                                                              : ctx->teleocr_default_max_tokens);
+        if (!qwen2vl_ocr_set_prompt(ctx->teleocr, st.params.vlm_prompt.empty() ? ctx->teleocr_default_prompt.c_str()
+                                                                               : st.params.vlm_prompt.c_str()))
+            return {};
+        int w = pw, h = ph;
+        unsigned char * loaded = nullptr;
+        const unsigned char * img = px;
+        if (!img) {
+            int channels = 0;
+            loaded = stbi_load(path, &w, &h, &channels, 3);
+            img = loaded;
+        }
+        if (!img) return {};
+        int len = 0;
+        const char * text = qwen2vl_ocr_recognize_raw(ctx->teleocr, img, w, h, 3, &len);
+        int nconf = 0;
+        const float * conf = qwen2vl_ocr_confidences(ctx->teleocr, &nconf);
+        auto out = wrap_fulltext(text, w, h, conf, nconf, qwen2vl_ocr_mean_confidence(ctx->teleocr));
         if (loaded) stbi_image_free(loaded);
         return out;
     }
@@ -2204,8 +2363,14 @@ static const char * engine_name(engine e) {
         return "glm";
     case engine::qwen2vl:
         return "qwen2vl";
+    case engine::mineru25_pro:
+        return "mineru25-pro";
+    case engine::oxr:
+        return "oxr";
     case engine::qwen3vl:
         return "qwen3vl";
+    case engine::teleocr:
+        return "teleocr";
     case engine::internvl2:
         return "internvl2";
     case engine::tesseract:
@@ -2260,9 +2425,12 @@ static const char * source_type_name(source_type t) {
 
 static bool is_vlm_engine(engine e) {
     switch (e) {
+    case engine::oxr:
+    case engine::mineru25_pro:
     case engine::olmocr:
     case engine::qwen2vl:
     case engine::qwen3vl:
+    case engine::teleocr:
     case engine::got:
     case engine::glm:
     case engine::internvl2:
@@ -2547,6 +2715,9 @@ void free(context * ctx) {
     if (ctx->glm) glm_ocr_free(ctx->glm);
     if (ctx->qwen) qwen2vl_ocr_free(ctx->qwen);
     if (ctx->qwen3) qwen2vl_ocr_free(ctx->qwen3);
+    if (ctx->teleocr) qwen2vl_ocr_free(ctx->teleocr);
+    if (ctx->mineru) crispembed_mineru_free(ctx->mineru);
+    if (ctx->oxr) oxr_ocr_free(ctx->oxr);
     if (ctx->intern) internvl2_ocr_free(ctx->intern);
     if (ctx->dsocr2) deepseek_ocr2_free(ctx->dsocr2);
     if (ctx->p2s) pix2struct_free(ctx->p2s);

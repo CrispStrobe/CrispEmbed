@@ -1,0 +1,154 @@
+{
+ "model": "mineru25-pro-f16.gguf",
+ "max_new_tokens": 2048,
+ "image_analysis": true,
+ "python": "3.12.15",
+ "identical": 8,
+ "cases": 8,
+ "rows": [
+  {
+   "case": "formula",
+   "image": "formula_quadratic.png",
+   "task": "formula",
+   "seed": 1000,
+   "python_route_s": 131.908364892,
+   "native_route_s": 133.23164926099992,
+   "json": "identical",
+   "markdown": "identical",
+   "markdown_result_field": "identical",
+   "requests": {
+    "python": 2,
+    "native": 2,
+    "differences": []
+   },
+   "capped_regions": 0,
+   "status": "identical"
+  },
+  {
+   "case": "table",
+   "image": "cc0/simple_table.jpg",
+   "task": "table",
+   "seed": 1001,
+   "python_route_s": 145.78548901099998,
+   "native_route_s": 146.05252216000008,
+   "json": "identical",
+   "markdown": "identical",
+   "markdown_result_field": "identical",
+   "requests": {
+    "python": 3,
+    "native": 3,
+    "differences": []
+   },
+   "capped_regions": 0,
+   "status": "identical"
+  },
+  {
+   "case": "receipt",
+   "image": "cc0/receipt_example.png",
+   "task": "text",
+   "seed": 1002,
+   "python_route_s": 187.24918570399996,
+   "native_route_s": 189.35993591200008,
+   "json": "identical",
+   "markdown": "identical",
+   "markdown_result_field": "identical",
+   "requests": {
+    "python": 8,
+    "native": 8,
+    "differences": []
+   },
+   "capped_regions": 0,
+   "status": "identical"
+  },
+  {
+   "case": "german",
+   "image": "cc0/german_official_print.jpg",
+   "task": "text",
+   "seed": 1003,
+   "python_route_s": 360.4723680080001,
+   "native_route_s": 358.6653483289999,
+   "json": "identical",
+   "markdown": "identical",
+   "markdown_result_field": "identical",
+   "requests": {
+    "python": 19,
+    "native": 19,
+    "differences": []
+   },
+   "capped_regions": 0,
+   "status": "identical"
+  },
+  {
+   "case": "japanese",
+   "image": "japanese_print.png",
+   "task": "text",
+   "seed": 1004,
+   "python_route_s": 155.72377344000006,
+   "native_route_s": 147.7862393690002,
+   "json": "identical",
+   "markdown": "identical",
+   "markdown_result_field": "identical",
+   "requests": {
+    "python": 4,
+    "native": 4,
+    "differences": []
+   },
+   "capped_regions": 0,
+   "status": "identical"
+  },
+  {
+   "case": "arabic",
+   "image": "cc0/arabic_printed_line.png",
+   "task": "text",
+   "seed": 1005,
+   "python_route_s": 133.17830677599977,
+   "native_route_s": 134.18914961400014,
+   "json": "identical",
+   "markdown": "identical",
+   "markdown_result_field": "identical",
+   "requests": {
+    "python": 2,
+    "native": 2,
+    "differences": []
+   },
+   "capped_regions": 0,
+   "status": "identical"
+  },
+  {
+   "case": "layout-page",
+   "image": "scan_page_pd.png",
+   "task": "layout",
+   "seed": 1006,
+   "python_route_s": 199.54281163299993,
+   "native_route_s": 198.48048680300008,
+   "json": "identical",
+   "markdown": "identical",
+   "markdown_result_field": "identical",
+   "requests": {
+    "python": 10,
+    "native": 10,
+    "differences": []
+   },
+   "capped_regions": 0,
+   "status": "identical"
+  },
+  {
+   "case": "layout-rot90",
+   "image": "derived/german_official_document__rot90.png",
+   "task": "layout",
+   "seed": 1007,
+   "python_route_s": 273.44569755400016,
+   "native_route_s": 277.3812778749998,
+   "json": "identical",
+   "markdown": "identical",
+   "markdown_result_field": "identical",
+   "requests": {
+    "python": 2,
+    "native": 2,
+    "differences": []
+   },
+   "capped_regions": 0,
+   "status": "identical"
+  }
+ ]
+}

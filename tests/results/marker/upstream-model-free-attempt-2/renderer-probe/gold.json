@@ -1,0 +1,20 @@
+{
+  "description": "Owned explicit schema, not layout/OCR inference",
+  "heading": "Renderer contract",
+  "literal": "Literal <script> & \"quotes\"; *stars* _under_ $5.",
+  "list_items": [
+    "First item",
+    "Second item"
+  ],
+  "code": "if (left < right) {\n  return \"safe & literal\";\n}",
+  "table_html": "<table><tbody><tr><th>A</th><th>B</th></tr><tr><td>one | two</td><td>&lt;cell&gt;</td></tr></tbody></table>",
+  "equation": "x^2 + y^2 = z^2",
+  "top_level_types": [
+    "SectionHeader",
+    "Text",
+    "ListGroup",
+    "Code",
+    "Table",
+    "Equation"
+  ]
+}

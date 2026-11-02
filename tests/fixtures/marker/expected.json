@@ -1,0 +1,444 @@
+{
+  "schema_version": 1,
+  "description": "Owned text/geometry gold, generated before reference/native outputs.",
+  "license": "MIT for fixture text and generator; embedded fonts retain FONT-NOTICE.txt.",
+  "font_files": {
+    "regular": {
+      "name": "DejaVuSans.ttf",
+      "sha256": "ae7b7855e115a5966d8b1b3f80f254ccc117ec86f9965e202ee2940453837280"
+    },
+    "bold": {
+      "name": "DejaVuSans-Bold.ttf",
+      "sha256": "5c1247acef7f2b8522a31742c76d6adcb5569bacc0be7ceaa4dc39dd252ce895"
+    },
+    "mono": {
+      "name": "DejaVuSansMono.ttf",
+      "sha256": "c805f9436dbc268644c1d9584f01a601a653e028e08fd74b9b949f6cf8304d88"
+    }
+  },
+  "cases": [
+    {
+      "id": "simpledigital",
+      "pdf": "simpledigital.pdf",
+      "page_count": 1,
+      "text_lines_by_page": [
+        [
+          "Native document test",
+          "Hello from CrispEmbed.",
+          "PDF text stays searchable."
+        ]
+      ],
+      "logical_order": [
+        "Native document test",
+        "Hello from CrispEmbed.",
+        "PDF text stays searchable."
+      ],
+      "must_contain": [
+        "Native document test",
+        "Hello from CrispEmbed.",
+        "PDF text stays searchable."
+      ],
+      "expected_heading": "Native document test",
+      "pdf_sha256": "5abed1c20795f862b63e3792f1964b2d5932c9d28ccaf8398e2e5b9ec0217374",
+      "pngs": [
+        {
+          "file": "simpledigital-page-1.png",
+          "sha256": "0f739de5f863fe7a63078ccbd3b72038409c50f6debf06f0f0aa3296e0ec854a"
+        }
+      ]
+    },
+    {
+      "id": "unicode",
+      "pdf": "unicode.pdf",
+      "page_count": 1,
+      "text_lines_by_page": [
+        [
+          "Unicode and escaping",
+          "Café naïve résumé - Ελληνικά - кириллица.",
+          "Literal <script>alert(1)</script> & <tag> text.",
+          "Markdown *stars* _under_ [brackets] $19.95 | pipe."
+        ]
+      ],
+      "logical_order": [
+        "Unicode and escaping",
+        "Café naïve résumé - Ελληνικά - кириллица.",
+        "Literal <script>alert(1)</script> & <tag> text.",
+        "Markdown *stars* _under_ [brackets] $19.95 | pipe."
+      ],
+      "must_contain": [
+        "Unicode and escaping",
+        "Café naïve résumé - Ελληνικά - кириллица.",
+        "Literal <script>alert(1)</script> & <tag> text.",
+        "Markdown *stars* _under_ [brackets] $19.95 | pipe."
+      ],
+      "expected_heading": "Unicode and escaping",
+      "html_forbidden_tags": [
+        "script",
+        "tag"
+      ],
+      "exact_unicode": [
+        "Café",
+        "naïve",
+        "résumé",
+        "Ελληνικά",
+        "кириллица"
+      ],
+      "pdf_sha256": "9df44fdae486479314fdc22f9a3dc38c683d31e853e9c6447ac1798168162e64",
+      "pngs": [
+        {
+          "file": "unicode-page-1.png",
+          "sha256": "bbb009233b2fbe4385125ce76a6455bb804ae182e9479a6c6ffdc85c2b97056e"
+        }
+      ]
+    },
+    {
+      "id": "structure",
+      "pdf": "structure.pdf",
+      "page_count": 1,
+      "text_lines_by_page": [
+        [
+          "Document structure",
+          "1. Overview",
+          "A short paragraph introduces the examples.",
+          "- First owned list item",
+          "- Second owned list item",
+          "2. Code example",
+          "if (left < right) {",
+          "    print(\"safe & literal\");",
+          "}"
+        ]
+      ],
+      "logical_order": [
+        "Document structure",
+        "1. Overview",
+        "A short paragraph introduces the examples.",
+        "- First owned list item",
+        "- Second owned list item",
+        "2. Code example",
+        "if (left < right) {",
+        "    print(\"safe & literal\");",
+        "}"
+      ],
+      "must_contain": [
+        "Document structure",
+        "1. Overview",
+        "A short paragraph introduces the examples.",
+        "- First owned list item",
+        "- Second owned list item",
+        "2. Code example",
+        "if (left < right) {",
+        "    print(\"safe & literal\");",
+        "}"
+      ],
+      "expected_headings": [
+        "Document structure",
+        "1. Overview",
+        "2. Code example"
+      ],
+      "expected_list_items": [
+        "- First owned list item",
+        "- Second owned list item"
+      ],
+      "expected_code": "if (left < right) {\n    print(\"safe & literal\");\n}",
+      "pdf_sha256": "cb6a47c22436c7b52ec1e5add2015bd693a2bddd9af34ff3dd2f18f141a5d2b3",
+      "pngs": [
+        {
+          "file": "structure-page-1.png",
+          "sha256": "d53276a9a2554bb7de01d5d9404907007f84cff65cc7ad128c58848176fe7421"
+        }
+      ]
+    },
+    {
+      "id": "multicolumn",
+      "pdf": "multicolumn.pdf",
+      "page_count": 1,
+      "text_lines_by_page": [
+        [
+          "Two-column reading order",
+          "Left column",
+          "Left one stays together.",
+          "Left two follows one.",
+          "Left three ends this column.",
+          "Right column",
+          "Right one begins here.",
+          "Right two follows one.",
+          "Right three ends the page."
+        ]
+      ],
+      "logical_order": [
+        "Two-column reading order",
+        "Left column",
+        "Left one stays together.",
+        "Left two follows one.",
+        "Left three ends this column.",
+        "Right column",
+        "Right one begins here.",
+        "Right two follows one.",
+        "Right three ends the page."
+      ],
+      "must_contain": [
+        "Two-column reading order",
+        "Left column",
+        "Left one stays together.",
+        "Left two follows one.",
+        "Left three ends this column.",
+        "Right column",
+        "Right one begins here.",
+        "Right two follows one.",
+        "Right three ends the page."
+      ],
+      "expected_columns": [
+        [
+          "Left column",
+          "Left one stays together.",
+          "Left two follows one.",
+          "Left three ends this column."
+        ],
+        [
+          "Right column",
+          "Right one begins here.",
+          "Right two follows one.",
+          "Right three ends the page."
+        ]
+      ],
+      "expected_heading": "Two-column reading order",
+      "pdf_sha256": "9b1f2b5f7538ae3754706efe660ab142877e1144d6c9292600b79a66f5f5a301",
+      "pngs": [
+        {
+          "file": "multicolumn-page-1.png",
+          "sha256": "c5e5b9046c99f940bed4485009d443093411a21683d5959d401688ca2b4ae255"
+        }
+      ]
+    },
+    {
+      "id": "table",
+      "pdf": "table.pdf",
+      "page_count": 1,
+      "text_lines_by_page": [
+        [
+          "Aligned table fixture",
+          "Item",
+          "Quantity",
+          "Price",
+          "Alpha",
+          "2",
+          "$10",
+          "Beta",
+          "3",
+          "$15",
+          "Gamma",
+          "4",
+          "$20",
+          "All values are invented test data."
+        ]
+      ],
+      "logical_order": [
+        "Aligned table fixture",
+        "Item",
+        "Quantity",
+        "Price",
+        "Alpha",
+        "2",
+        "$10",
+        "Beta",
+        "3",
+        "$15",
+        "Gamma",
+        "4",
+        "$20",
+        "All values are invented test data."
+      ],
+      "must_contain": [
+        "Aligned table fixture",
+        "Item",
+        "Quantity",
+        "Price",
+        "Alpha",
+        "2",
+        "$10",
+        "Beta",
+        "3",
+        "$15",
+        "Gamma",
+        "4",
+        "$20",
+        "All values are invented test data."
+      ],
+      "expected_table": [
+        [
+          "Item",
+          "Quantity",
+          "Price"
+        ],
+        [
+          "Alpha",
+          "2",
+          "$10"
+        ],
+        [
+          "Beta",
+          "3",
+          "$15"
+        ],
+        [
+          "Gamma",
+          "4",
+          "$20"
+        ]
+      ],
+      "expected_heading": "Aligned table fixture",
+      "pdf_sha256": "278363b26040cd39f8c0fa5b5e79b959270a2f66694ac511173205aeedf24ac1",
+      "pngs": [
+        {
+          "file": "table-page-1.png",
+          "sha256": "cce791c7de646d362321311f1894536da90b4d4ddd9de5764868eee677cd0f90"
+        }
+      ]
+    },
+    {
+      "id": "multipage",
+      "pdf": "multipage.pdf",
+      "page_count": 3,
+      "text_lines_by_page": [
+        [
+          "Owned repeated running header",
+          "Chapter 1",
+          "Page 1 has distinct body content.",
+          "This sentence is part of the document body.",
+          "Page 1 of 3"
+        ],
+        [
+          "Owned repeated running header",
+          "Chapter 2",
+          "Page 2 has distinct body content.",
+          "This sentence is part of the document body.",
+          "Page 2 of 3"
+        ],
+        [
+          "Owned repeated running header",
+          "Chapter 3",
+          "Page 3 has distinct body content.",
+          "This sentence is part of the document body.",
+          "Page 3 of 3"
+        ]
+      ],
+      "logical_order": [
+        "Owned repeated running header",
+        "Chapter 1",
+        "Page 1 has distinct body content.",
+        "This sentence is part of the document body.",
+        "Page 1 of 3",
+        "Owned repeated running header",
+        "Chapter 2",
+        "Page 2 has distinct body content.",
+        "This sentence is part of the document body.",
+        "Page 2 of 3",
+        "Owned repeated running header",
+        "Chapter 3",
+        "Page 3 has distinct body content.",
+        "This sentence is part of the document body.",
+        "Page 3 of 3"
+      ],
+      "must_contain": [
+        "Chapter 1",
+        "Page 1 has distinct body content.",
+        "This sentence is part of the document body.",
+        "Chapter 2",
+        "Page 2 has distinct body content.",
+        "This sentence is part of the document body.",
+        "Chapter 3",
+        "Page 3 has distinct body content.",
+        "This sentence is part of the document body."
+      ],
+      "body_lines_by_page": [
+        [
+          "Chapter 1",
+          "Page 1 has distinct body content.",
+          "This sentence is part of the document body."
+        ],
+        [
+          "Chapter 2",
+          "Page 2 has distinct body content.",
+          "This sentence is part of the document body."
+        ],
+        [
+          "Chapter 3",
+          "Page 3 has distinct body content.",
+          "This sentence is part of the document body."
+        ]
+      ],
+      "repeated_header": "Owned repeated running header",
+      "pdf_sha256": "72a200cdd666705f921bd75e1e4b80b152f3390adcbbd79ca3b561af3638c6b1",
+      "pngs": [
+        {
+          "file": "multipage-page-1.png",
+          "sha256": "32fef0bae67983f4b09bed9ec111332b187bb91ca1c8163353f8e3863db97f75"
+        },
+        {
+          "file": "multipage-page-2.png",
+          "sha256": "22614f3a8c68bc41827966e1f8acac55e10b5eb60608dc6a8dc5b5d0198b9b0c"
+        },
+        {
+          "file": "multipage-page-3.png",
+          "sha256": "5ae1b6000e89424b285d59555fcd4e392ab8b4946d2e1ff8391c2e77f728a86b"
+        }
+      ]
+    },
+    {
+      "id": "rotated",
+      "pdf": "rotated.pdf",
+      "page_count": 1,
+      "text_lines_by_page": [
+        [
+          "Rotated page",
+          "Rotation preserves this sentence."
+        ]
+      ],
+      "logical_order": [
+        "Rotated page",
+        "Rotation preserves this sentence."
+      ],
+      "must_contain": [
+        "Rotated page",
+        "Rotation preserves this sentence."
+      ],
+      "page_rotation_degrees": 90,
+      "pdf_sha256": "99725853b6d4978de6339b7a6a7bd9d48e934622961cad68673bf8a79aedd18f",
+      "pngs": [
+        {
+          "file": "rotated-page-1.png",
+          "sha256": "eaaa4e7ea80e80e0936650f9f166e17f4708a21eb7eee782cb5042859517a4ad"
+        }
+      ]
+    },
+    {
+      "id": "encrypted",
+      "pdf": "encrypted.pdf",
+      "page_count": 1,
+      "text_lines_by_page": [
+        [
+          "Encrypted fixture",
+          "The supplied test password opens this PDF."
+        ]
+      ],
+      "logical_order": [
+        "Encrypted fixture",
+        "The supplied test password opens this PDF."
+      ],
+      "must_contain": [
+        "Encrypted fixture",
+        "The supplied test password opens this PDF."
+      ],
+      "password": "marker-fixture",
+      "password_notice": "Public synthetic fixture password, not a credential.",
+      "upstream_reference": "skip: the pinned PdfProvider does not accept a password",
+      "pdf_sha256": "93363a6430861bdfd755e19cc7002456e216b9fdfe56f82f9443a70ec62a9ba7",
+      "pngs": [
+        {
+          "file": "encrypted-page-1.png",
+          "sha256": "08c10915c751f65340cf4eda9d62f92f584d483d01857909db408df0884a9378"
+        }
+      ]
+    }
+  ]
+}

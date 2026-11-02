@@ -1,0 +1,48 @@
+{
+  "kind": "final Marker runtime and consumers source/build identity",
+  "base_commit": "4776ef977214890b416e871f6f66a6891d2f4b2d",
+  "source_commit": "Recorded by final delivery SOURCE-PINS.json; this capture authenticates assembled file bytes.",
+  "system": "Linux",
+  "machine": "x86_64",
+  "compiler": "c++ (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0",
+  "configuration": {
+    "build_type": "Release",
+    "GGML_NATIVE": false,
+    "CRISPEMBED_NATIVE": false,
+    "GGML_OPENMP": false,
+    "GGML_BLAS": false,
+    "GGML_CUDA": false,
+    "GGML_METAL": false,
+    "GGML_VULKAN": false,
+    "CRISPEMBED_C2PA_FETCH": false
+  },
+  "source_sha256": {
+    "CMakeLists.txt": "3594067de5c44f0fa27514d64489fbea675dedab762651e9ebcb43ff9651bf74",
+    "src/crispembed.h": "0259b314539c5fcbe2023c4e9790e4235407e9c6303bc7d2f6c999f9e4eb5af5",
+    "src/marker.cpp": "a7d21c6106cae5ebac0af3a8e09fae348448db9877c7f96bfaabfbb6d2410369",
+    "src/marker_backend.cpp": "c958373236a3ccbdcd3c32cc202f1210990ccf4b649c0135b475509552f8e257",
+    "src/marker_backend.h": "3ef58a4ed22874c3d485125ba56e547942607b165e42798fcb8e68728463211c",
+    "src/marker_document.cpp": "58ec0d2c03bfe33798f5c04ae5b62de0b64f9e35ec9bf7eef48ff176115da1af",
+    "src/marker_document.h": "478460f76c827440f30f8d66af20791307e7fd74cb4047628d1833b2f864d3d5",
+    "src/qwen2vl_ocr.cpp": "a83dc3b0255f790a5272458c29b754ed1eba2d88eae3c2d5d254def03d20f8c9",
+    "src/image_preprocess.h": "2739104748629e824b0dcbdf1fc60eb7d185e7d2b7153f61ae8a7832e3382e61",
+    "python/crispembed/_marker.py": "e766a803a010d05bf705746692e227fa6a0d03df4ab70e248e16eb51e138b6fc",
+    "examples/marker/main.cpp": "fee6cb1340b241d9e561886dc2c2f47d59396e5cbd7f5ff71840f8d5603e494d",
+    "examples/marker/save_bundle.h": "71d2bd6542cc0396e18b45034f23179177b024a6dff3c888397e13c56dd8c4b3",
+    "examples/server/server.cpp": "a2c3933ccee92b63792c61061062b7f80c0a28552deb61a00a8c30297cde2cc8",
+    "crispembed/src/marker.rs": "3d0cf2acf900d9cb1502f0372f8bc9dcb37103b2eaa7ed42769c621f52e862fe",
+    "crispembed-sys/src/lib.rs": "2361773b1ba12968fb895309baf008a7b5409b6d254ad28471002efec52ce69b",
+    "flutter/crispembed/lib/src/marker.dart": "3c2cf56357937b13da2cc4323cfb030f3288b3007e47095325acf90ee60f75d6",
+    "tests/marker_native.py": "5c997a0fc99829dcd3fbb1d3360bcd10abf438a95483f36924fd6f2043036679",
+    "tests/marker_integration.py": "fd4695b1287f8956d01026a5d1ba6c9e436de92ea65f3462d7d1f501de552e6e"
+  },
+  "binary_sha256": {
+    "libcrispembed.so.0.17.14": "f117761723bc909b4c6194e096e6bbfe18ba6bf5576d24108b6af0b780f5a5e9",
+    "crispembed-marker": "4423632219bc9a94452c8b562a8a2d9c0b020714ea8c1da942514a7d541ed8e9",
+    "crispembed-server": "089a878401e413240385516974d6c5867dc8dd6ad09f0cf00f51a8403ec98d6b",
+    "test-marker-document": "6a92bf8e00d8f8ae07a7876306b8e949e3909477b3c089071b67115f140b3863",
+    "test-marker-backend": "5b30316a6f0dca66952e72a686bc6f9949c81b90bc295e8cc2463fb6492eee76",
+    "test-marker-api": "be029ae7508a3acabc8694d94d90367117275125efc706f9c761c5286ff8f5a6",
+    "test-marker-save": "aec69547d91013d2ac4ba17798b14dd9cee075418460ee5ddf93e2a37aebe69f"
+  }
+}

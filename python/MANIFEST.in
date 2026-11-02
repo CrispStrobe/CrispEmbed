@@ -7,3 +7,7 @@ include LICENSE
 include README.md
 # Staged by setup.py from the repo root; see _stage_policy().
 include crispembed/POLICY.md
+# Staged from the repository by setup.py, and retained for sdist-only rebuilds.
+include crispembed/NOTICE.marker
+include crispembed/NOTICE.teleocr
+include crispembed/Apache-2.0.txt

@@ -1,0 +1,7 @@
+norm max_abs=1.90734863e-06 row=21 column=1109 native=-11.3183594 ref=-11.3183613 cos_min=1 over_0.002=0 PASS
+gate max_abs=1.33514404e-05 row=861 column=1727 native=-27.9082985 ref=-27.9082851 cos_min=1 over_0.002=0 PASS
+up max_abs=4.57763672e-05 row=217 column=1727 native=-146.312042 ref=-146.312088 cos_min=1 over_0.002=0 PASS
+silu max_abs=1.14440918e-05 row=348 column=1727 native=33.9220734 ref=33.9220848 cos_min=1 over_0.002=0 PASS
+product max_abs=0.0029296875 row=348 column=1727 native=-4976.13867 ref=-4976.1416 cos_min=1 over_0.002=1 FAIL
+down max_abs=0.00244140625 row=280 column=849 native=-5760.26904 ref=-5760.2666 cos_min=1 over_0.002=1 FAIL
+output max_abs=0.00244140625 row=280 column=849 native=-5876.28369 ref=-5876.28125 cos_min=1 over_0.002=1 FAIL

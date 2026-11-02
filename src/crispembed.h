@@ -9,6 +9,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <stddef.h>
 
 // DLL export/import on Windows.
 // - CRISPEMBED_BUILD:  defined when building the shared library (exports)
@@ -40,6 +41,124 @@ extern "C" {
 // `crispembed_context *` form. (Discovered by the install verification test
 // at find_package() time — a C-only consumer of the installed header.)
 typedef struct crispembed_context crispembed_context;
+
+// Experimental MinerU2.5-Pro-2604. Requires CRISPEMBED_MINERU25_PRO=1 and a
+// profile-marked GGUF from models/convert-mineru25-pro-to-gguf.py. One context
+// owns a resident native GGML model; serialize calls on each context.
+typedef struct crispembed_mineru_context crispembed_mineru_context;
+CRISPEMBED_API crispembed_mineru_context * crispembed_mineru_init(const char * model_path, int n_threads);
+CRISPEMBED_API void crispembed_mineru_free(crispembed_mineru_context * ctx);
+// Single prompt: RGB/RGBA/gray uint8 pixels, or NULL with zero dimensions for a
+// text-only request. Pixels are not layout-resized or region-cropped here.
+// max_new_tokens=0 uses the Python blueprint's remaining 8192-token context.
+// Returns JSON containing text, raw_text, prompt_ids, token_ids (including EOS),
+// grid_thw, eos, capped, confidence and inference_ms. NULL means failure.
+// Returned pointers belong to ctx and remain valid until its next call/free.
+CRISPEMBED_API const char * crispembed_mineru_predict(crispembed_mineru_context * ctx, const uint8_t * pixels,
+                                                      int width, int height, int channels, const char * prompt,
+                                                      int max_new_tokens);
+// Native two-step *basic* page extraction: PIL layout resize, layout parsing,
+// crop/rotation, native recognition and basic OTSL/Markdown rendering. Full
+// MinerU document postprocessing is available through Python CrispMinerU's
+// two_step_extract, which reuses the pinned upstream helper with native model
+// inference. See docs/mineru25-pro.md for the exact contract and limitations.
+CRISPEMBED_API const char * crispembed_mineru_extract(crispembed_mineru_context * ctx, const uint8_t * pixels,
+                                                      int width, int height, int channels, int image_analysis,
+                                                      int max_new_tokens);
+// Complete native two-step document route (all mineru-vl-utils c9797cde
+// postprocessing translated to C++; no Python). Default on;
+// CRISPEMBED_MINERU25_PRO_FULL_DOC=0 disables it. Requires
+// CRISPEMBED_MINERU25_PRO=1. options_json (NULL/"" = defaults) accepts
+// image_analysis, simple_post_process, handle_equation_block, abandon_list,
+// abandon_paratext, enable_table_formula_eq_wrap, not_extract_list,
+// allow_truncated_content and table_token_seed (Python random.seed for
+// table-image tokens; null = OS entropy like upstream). Returns JSON with the
+// upstream-exact "blocks" array and "markdown", per-region receipts and caps.
+CRISPEMBED_API const char * crispembed_mineru_extract_document(crispembed_mineru_context * ctx, const uint8_t * pixels,
+                                                               int width, int height, int channels,
+                                                               const char * options_json, int max_new_tokens);
+// Render the last extract_document result: "mineru-json", "mineru-markdown"
+// (upstream profile) or the Marker renderers "markdown", "html", "json", "chunks".
+CRISPEMBED_API const char * crispembed_mineru_last_document(crispembed_mineru_context * ctx, const char * format);
+CRISPEMBED_API const char * crispembed_mineru_last_markdown(const crispembed_mineru_context * ctx);
+CRISPEMBED_API const char * crispembed_mineru_last_error(const crispembed_mineru_context * ctx);
+
+// Experimental OXR-1.0 recognition and reading order. Requires CRISPEMBED_OXR=1
+// and a pinned oxr GGUF. Layout detection is a separate model: the native
+// crispembed_oxr_layout_* D-FINE detector below, supplied regions, or an
+// external detector service.
+// Model inference is native GGML. Serialize all calls on one context.
+typedef struct crispembed_oxr_context crispembed_oxr_context;
+CRISPEMBED_API crispembed_oxr_context * crispembed_oxr_init(const char * model_path, int n_threads);
+CRISPEMBED_API void crispembed_oxr_free(crispembed_oxr_context * ctx);
+// Exact arbitrary task prompt, uint8 gray/RGB/RGBA image (alpha discarded), or
+// NULL pixels with zero dimensions for text-only input. max_new_tokens=0 uses
+// the native default of 2048; explicit caps must fit the 32768-token context.
+// The published vLLM processor profile is used (200704..921600 pixels), with
+// repetition penalty over prompt+completion history. This does not imply
+// vLLM BF16 numerical or throughput equivalence. See docs/oxr.md.
+// Returns owned-by-context JSON with text/raw_text, input/completion IDs,
+// image grid, EOS/cap, finish_reason and timing. NULL means failure.
+CRISPEMBED_API const char * crispembed_oxr_predict(crispembed_oxr_context * ctx, const uint8_t * pixels, int width,
+                                                   int height, int channels, const char * prompt, int max_new_tokens,
+                                                   float repetition_penalty);
+CRISPEMBED_API const char * crispembed_oxr_last_error(const crispembed_oxr_context * ctx);
+
+// Experimental OXR-1.0 D-FINE layout detector (layout_analysis/last.pth via
+// models/convert-oxr-dfine-to-gguf.py), a JSON view over layout_detect's
+// `dfine` architecture. Requires CRISPEMBED_OXR=1 and
+// CRISPEMBED_ACCEPT_OXR_LICENSE=1 (OXR License). Serialize calls per context.
+typedef struct crispembed_oxr_layout_context crispembed_oxr_layout_context;
+CRISPEMBED_API crispembed_oxr_layout_context * crispembed_oxr_layout_init(const char * model_path, int n_threads);
+CRISPEMBED_API void crispembed_oxr_layout_free(crispembed_oxr_layout_context * ctx);
+// One uint8 gray/RGB/RGBA page (alpha discarded, like cv2.IMREAD_COLOR). Returns
+// owned-by-context JSON identical in structure to the OXR layout service's
+// /inference body for a one-page batch:
+//   {"status":"success","params":{},"data":{"labels":[[int...]],
+//    "boxes":[[[x1,y1,x2,y2]...]],"scores":[[float...]]}}
+// with all 300 candidates in service order (top-k score descending). A finite
+// confidence in [0,1] applies the service's `confidence` form field (keep
+// score >= confidence; params echo it); NaN or a negative value means none.
+// NULL means failure (see last_error).
+CRISPEMBED_API const char * crispembed_oxr_layout_detect(crispembed_oxr_layout_context * ctx, const uint8_t * pixels,
+                                                         int width, int height, int channels, float confidence);
+// Timings (ms) of the last detect call as JSON: preprocess/encoder/decoder/postprocess/total.
+CRISPEMBED_API const char * crispembed_oxr_layout_timings(crispembed_oxr_layout_context * ctx);
+CRISPEMBED_API const char * crispembed_oxr_layout_last_error(const crispembed_oxr_layout_context * ctx);
+// Experimental native OXR document route (CRISPEMBED_OXR_NATIVE_DOC=1 as well
+// as CRISPEMBED_OXR=1): the translated original SoMarkAI/OXR @ c1a1dcb3
+// document helper (layout validation/threshold/NMS, crops, prompt routing,
+// native reading order with repair/XY-Cut++ fallback, recovery, content
+// postprocessing, cleanup, upstream JSON and Markdown). Layout detection is
+// supplied: one D-FINE candidate per region, before filtering.
+typedef struct crispembed_oxr_layout_region {
+    int label;             // 0 Caption, 1 Footnote, 2 Formula, 3 Text, 4 Page-footer, 5 Page-header,
+                           // 6 Picture, 7 Title, 8 Table, 9 Code Block, 10 Stamp, 11 Chemical Structure
+    double x1, y1, x2, y2; // page pixel coordinates
+    double score;          // detector confidence 0..1
+} crispembed_oxr_layout_region;
+// pixels/widths/heights/channels: n_pages uint8 gray/RGB/RGBA pages. Supply
+// regions (flat, region_counts[p] per page) or layout_json (the official
+// D-FINE /inference batch response), not both. options_json may be NULL; see
+// docs/oxr.md. Returns owned upstream-shaped JSON
+// {"file_name","outputs":{"json","markdown"},"metadata"}; NULL on failure.
+CRISPEMBED_API const char * crispembed_oxr_process_pages(crispembed_oxr_context * ctx, const uint8_t * const * pixels,
+                                                         const int * widths, const int * heights, const int * channels,
+                                                         int n_pages, const crispembed_oxr_layout_region * regions,
+                                                         const int * region_counts, const char * layout_json,
+                                                         const char * options_json);
+// Attach the default layout provider: an OXR D-FINE GGUF (layout.arch="dfine",
+// models/convert-oxr-dfine-to-gguf.py, F32). With it, process_pages accepts
+// NULL regions and NULL layout_json and detects each page natively; the route
+// then filters candidates exactly as for a service response. NULL/"" detaches.
+// Returns 1 on success, 0 on failure (see last_error).
+CRISPEMBED_API int crispembed_oxr_document_layout_model(crispembed_oxr_context * ctx, const char * model_path,
+                                                        int n_threads);
+// JSON array of every native request of the last document call (kept on failure).
+CRISPEMBED_API const char * crispembed_oxr_last_trace(const crispembed_oxr_context * ctx);
+// Render the last native document through CrispEmbed's shared document model:
+// "markdown", "html", "json" or "chunks" (marker_document renderers).
+CRISPEMBED_API const char * crispembed_oxr_render_document(crispembed_oxr_context * ctx, const char * format);
 
 // Model hyperparameters (read-only after init)
 typedef struct crispembed_hparams {
@@ -620,7 +739,8 @@ CRISPEMBED_API void crispembed_free(crispembed_context * ctx);
 //   math:  pix2tex (printed), PP-FormulaNet / PP-FormulaNet-L, Texo-Distill,
 //          HMER / BTTR / PosFormer (handwritten), MixTex (zh+en LaTeX)
 //   text:  PARSeq (scene text), Qwen2.5-VL, InternVL2.5/2-1B, GLM-OCR,
-//          GOT-OCR, Tesseract-LSTM, Granite-Vision, LightOnOCR, DeepSeek-OCR2
+//          GOT-OCR, Tesseract-LSTM, Granite-Vision, LightOnOCR, DeepSeek-OCR2,
+//          TeleOCR (opt-in CRISPEMBED_TELEOCR=1; explicit local GGUF)
 //
 // This is the single-model recognizer. For detection + recognition see the
 // crispembed_ocr_* pipeline, and for source-routing + cleanup + escalation see
@@ -656,12 +776,24 @@ CRISPEMBED_API void crispembed_ocr_model_set_max_tokens(void * ctx, int max_toke
 CRISPEMBED_API int crispembed_ocr_model_get_max_tokens(const void * ctx);
 
 /// Replace the instruction text sent to an instruction-following VLM engine
-/// (Qwen2-VL / Qwen2.5-VL / Qwen3-VL / PaddleOCR-VL / olmOCR, InternVL2,
+/// (Qwen2-VL / Qwen2.5-VL / Qwen3-VL / PaddleOCR-VL / olmOCR / TeleOCR, InternVL2,
 /// LFM2-VL, Granite-Vision). NULL or "" restores the engine's default prompt.
 /// Returns 1 when the loaded engine accepts a custom prompt, 0 when it does not
 /// (formula/line recognizers and fixed-task document VLMs) — in that case the
 /// call has no effect. Applies to subsequent crispembed_ocr_model_recognize calls.
 CRISPEMBED_API int crispembed_ocr_model_set_prompt(void * ctx, const char * prompt);
+
+/// TeleOCR generation penalties. Returns 1 on success, 0 for other engines or
+/// invalid arguments. Repetition applies to prompt + generated IDs; presence
+/// and frequency apply to generated IDs only. no_repeat_ngram=0 disables it.
+/// Model-card defaults are 1.05, 0, 0, 0. The document parser sets task presets.
+CRISPEMBED_API int crispembed_ocr_model_set_generation_params(void * ctx, float repetition_penalty,
+                                                              float presence_penalty, float frequency_penalty,
+                                                              int no_repeat_ngram);
+/// Read TeleOCR penalties; each output pointer may be NULL to skip that value.
+CRISPEMBED_API int crispembed_ocr_model_get_generation_params(const void * ctx, float * repetition_penalty,
+                                                              float * presence_penalty, float * frequency_penalty,
+                                                              int * no_repeat_ngram);
 
 // --- Deprecated aliases (pre-rename names; forward to crispembed_ocr_model_*).
 // Kept for ABI compatibility; prefer the crispembed_ocr_model_* names above.
@@ -1266,6 +1398,11 @@ CRISPEMBED_API int crispembed_scan_cleanup_process_simple(void * ctx, const uint
 // (not by the other crispembed_ocr_pipeline_* decls) because crispembed_ocr_stage
 // embeds crispembed_scan_cleanup_params, defined just above.
 
+// Explicit TeleOCR stage selector (append-only public ABI).
+#define CRISPEMBED_OCR_ENGINE_TELEOCR 24
+#define CRISPEMBED_OCR_ENGINE_MINERU25_PRO 25
+#define CRISPEMBED_OCR_ENGINE_OXR 26
+
 /// One pipeline stage: engine + models + cleanup + engine params + accept-gate.
 typedef struct crispembed_ocr_stage {
     int source_type;      // 0=auto 1=screenshot 2=scanned_doc 3=photo
@@ -1280,6 +1417,9 @@ typedef struct crispembed_ocr_stage {
                           // 21=ovisocr2 (explicit gated format2; no registry default)
                           // 22=ovisocr3 (explicit gated format3 plain OCR)
                           // 23=minicpm_ocr (experimental, CRISPEMBED_MINICPM_OCR)
+                          // 24=teleocr (experimental, CRISPEMBED_TELEOCR; explicit local GGUF)
+                          // 25=mineru25_pro (native basic page pipeline; CRISPEMBED_MINERU25_PRO)
+                          // 26=oxr (recognition/read-order only; CRISPEMBED_OXR)
     const char * model_a; // det / single-model GGUF
     const char * model_b; // rec GGUF (dbnet_trocr / surya)
     const char * model_c; // optional line-orientation GGUF (PP-LCNet 0/180)
@@ -1457,6 +1597,57 @@ CRISPEMBED_API const char * crispembed_systemone_run_json(crispembed_systemone_c
 // NULL ctx returns this thread's last initialization/invalid-handle error.
 CRISPEMBED_API const char * crispembed_systemone_error(const crispembed_systemone_context * ctx);
 CRISPEMBED_API const char * crispembed_systemone_profile(const crispembed_systemone_context * ctx);
+
+// ---------------------------------------------------------------------------
+// Native Marker-style document conversion. Apache-derived document processing,
+// optional native PDFium, and the separately gated TeleOCR GGUF/GGML backend.
+// This is an alternative inference pipeline, not a Surya model port.
+// ---------------------------------------------------------------------------
+typedef struct crispembed_marker_context crispembed_marker_context;
+
+typedef struct crispembed_marker_config {
+    size_t struct_size;       // Must equal sizeof(crispembed_marker_config).
+    const char * model_path;  // Local TeleOCR GGUF. Required for modes 0 and 2.
+    const char * pdfium_path; // Explicit native PDFium library; required for PDF.
+    const char * password;    // Optional PDF password; copied during init.
+    int mode;                 // 0=auto (PDF text + TeleOCR), 1=digital text only, 2=force OCR.
+    int n_threads;
+    int first_page; // Inclusive, zero-based.
+    int last_page;  // Inclusive; -1 selects the final page.
+    int dpi;
+    int max_tokens;
+    int max_layout_tokens;
+    int max_blocks;
+    int max_pages;
+    uint64_t max_pixels;
+    uint64_t max_asset_bytes;
+    int include_page_headers;
+    int extract_images;
+} crispembed_marker_config;
+
+/// Returns a fully initialized, versioned configuration.
+CRISPEMBED_API crispembed_marker_config crispembed_marker_default_config(void);
+/// Requires CRISPEMBED_MARKER=1. Modes 0/2 also require CRISPEMBED_TELEOCR=1.
+/// No model/library downloads. Copies strings; returns NULL with marker_error(NULL).
+CRISPEMBED_API crispembed_marker_context * crispembed_marker_init(const crispembed_marker_config * config);
+CRISPEMBED_API void crispembed_marker_free(crispembed_marker_context * ctx);
+/// Convert a PDF or an image file. 1=success, 0=failure. Failure clears old output.
+CRISPEMBED_API int crispembed_marker_convert(crispembed_marker_context * ctx, const char * file_path);
+/// Convert tightly packed gray/RGB/RGBA pixels as a single page (modes 0/2).
+CRISPEMBED_API int crispembed_marker_convert_raw(crispembed_marker_context * ctx, const uint8_t * pixels, int width,
+                                                 int height, int channels);
+/// Format is markdown, html, json or chunks. Owned result valid until next render,
+/// convert or free. JSON/chunks include provenance, warnings and block geometry.
+CRISPEMBED_API const char * crispembed_marker_render(crispembed_marker_context * ctx, const char * format);
+CRISPEMBED_API const char * crispembed_marker_metadata(crispembed_marker_context * ctx);
+/// NULL ctx returns this thread's last initialization/invalid-handle error.
+CRISPEMBED_API const char * crispembed_marker_error(const crispembed_marker_context * ctx);
+/// Image assets use safe generated basenames. Borrowed pointers remain valid
+/// until the next conversion or free. Client must synchronize borrowed reads.
+CRISPEMBED_API int crispembed_marker_asset_count(const crispembed_marker_context * ctx);
+CRISPEMBED_API const char * crispembed_marker_asset_name(const crispembed_marker_context * ctx, int index);
+CRISPEMBED_API const uint8_t * crispembed_marker_asset_data(const crispembed_marker_context * ctx, int index,
+                                                            size_t * out_size);
 
 #ifdef __cplusplus
 }

@@ -1,0 +1,1246 @@
+{
+  "schema_version": 1,
+  "kind": "independent-saved-native-marker-model-output-review",
+  "review_date": "2026-10-31",
+  "reviewer_source": "tests/results/marker/native-review.executed.py",
+  "reviewer_source_sha256": "1b1314e4a0558af4eeb1de2798befbeed89fae9d7f90b1d78fce57727e96c69c",
+  "reviewer_executed_models": false,
+  "reviewer_rehashed_model_payloads": false,
+  "identity_scope": "Runner's actual model hash is checked against its frozen declaration and converter manifest; source snapshots and every saved output are independently hashed.",
+  "quality_protocol": "Independently parse saved HTML, collapse whitespace only, preserve case/punctuation/Unicode, compare against pre-existing authored fixture gold; table row/column sequence and unit spans checked separately.",
+  "panels": [
+    {
+      "path": "tests/results/marker/native-final-f16",
+      "model_file": "teleocr-f16.gguf",
+      "model_sha256": "6c52a2800e313964717cf4e5d06e0392c2b5936d8adeac423d563b8a026a2780",
+      "library_sha256": "f117761723bc909b4c6194e096e6bbfe18ba6bf5576d24108b6af0b780f5a5e9",
+      "pdfium_sha256_recorded": "cb59522bf0c48a6408fd2adc8c87120a1418bacbda193f898e8cdccda7d5ca27",
+      "model_manifest": "tests/results/teleocr/model-manifests/teleocr-f16.gguf.json",
+      "model_manifest_sha256": "6a7a5df25a9a0e92b191a613014b51d8eef6c55860f6db1cb7c183e1b8aed335",
+      "checks": {
+        "summary_preserves_every_declared_field": true,
+        "model_identity_matches_declaration_and_converter_manifest": true,
+        "declared_source_snapshots_available": true,
+        "frozen_runner_source_identified": true,
+        "caps_and_backend_unchanged": true,
+        "no_surya_or_numerical_parity_claim": true,
+        "one_result_per_declared_case": true,
+        "summary_agrees_with_progress": true
+      },
+      "source_checks": {
+        "src/marker.cpp": {
+          "declared": "a7d21c6106cae5ebac0af3a8e09fae348448db9877c7f96bfaabfbb6d2410369",
+          "current": "a7d21c6106cae5ebac0af3a8e09fae348448db9877c7f96bfaabfbb6d2410369",
+          "current_matches": true,
+          "preserved_snapshot": null,
+          "source_available": true
+        },
+        "src/marker_backend.cpp": {
+          "declared": "c958373236a3ccbdcd3c32cc202f1210990ccf4b649c0135b475509552f8e257",
+          "current": "c958373236a3ccbdcd3c32cc202f1210990ccf4b649c0135b475509552f8e257",
+          "current_matches": true,
+          "preserved_snapshot": null,
+          "source_available": true
+        },
+        "src/marker_document.cpp": {
+          "declared": "58ec0d2c03bfe33798f5c04ae5b62de0b64f9e35ec9bf7eef48ff176115da1af",
+          "current": "58ec0d2c03bfe33798f5c04ae5b62de0b64f9e35ec9bf7eef48ff176115da1af",
+          "current_matches": true,
+          "preserved_snapshot": null,
+          "source_available": true
+        },
+        "src/qwen2vl_ocr.cpp": {
+          "declared": "a83dc3b0255f790a5272458c29b754ed1eba2d88eae3c2d5d254def03d20f8c9",
+          "current": "a83dc3b0255f790a5272458c29b754ed1eba2d88eae3c2d5d254def03d20f8c9",
+          "current_matches": true,
+          "preserved_snapshot": null,
+          "source_available": true
+        },
+        "tests/marker_native.py": {
+          "declared": "5c997a0fc99829dcd3fbb1d3360bcd10abf438a95483f36924fd6f2043036679",
+          "current": "5c997a0fc99829dcd3fbb1d3360bcd10abf438a95483f36924fd6f2043036679",
+          "current_matches": true,
+          "preserved_snapshot": "tests/results/marker/native-final-f16/marker_native.executed.py",
+          "source_available": true
+        },
+        "python/crispembed/_marker.py": {
+          "declared": "e766a803a010d05bf705746692e227fa6a0d03df4ab70e248e16eb51e138b6fc",
+          "current": "e766a803a010d05bf705746692e227fa6a0d03df4ab70e248e16eb51e138b6fc",
+          "current_matches": true,
+          "preserved_snapshot": null,
+          "source_available": true
+        }
+      },
+      "cases": [
+        {
+          "id": "synthetic-image",
+          "checks": {
+            "input_hash_matches_declaration": true,
+            "declared_gold_matches_authored_fixture": true,
+            "independent_visible_text_matches_gold": true,
+            "independent_metrics_match_runner": true,
+            "runner_text_matches_saved_html": true,
+            "all_metadata_copies_match": true,
+            "unique_document_ids": true,
+            "finite_in_page_geometry": true,
+            "all_block_confidences_present_finite_in_range": true,
+            "all_cap_fields_present_and_false": true,
+            "token_and_cap_metadata_consistent": true,
+            "warnings_count_matches_all_document_nodes": true,
+            "backend_identifies_teleocr": true,
+            "all_outputs_valid_utf8_without_literal_nul": true,
+            "chunk_ids_match_document_blocks": true,
+            "native_recognition_executed": true
+          },
+          "review_passed": true,
+          "input_sha256": "54505c242287c7f666bb9fa8953a2f419a16a8b802e79ab0dd09945400703be8",
+          "visible_text": "Hello TeleOCR Invoice 42 Total: EUR 19.50",
+          "character_edits": 0,
+          "reference_characters": 41,
+          "word_edits": 0,
+          "reference_words": 7,
+          "CER": 0.0,
+          "WER": 0.0,
+          "block_types": {
+            "SectionHeader": 3
+          },
+          "block_sources": [
+            "teleocr-native",
+            "teleocr-native",
+            "teleocr-native"
+          ],
+          "raw_layout": [
+            "<box:048 152 430 300><label:title><up>\n<box:048 387 317 533><label:title><up>\n<box:048 618 472 760><label:title><up>"
+          ],
+          "raw_block_text": [
+            "Hello TeleOCR",
+            "Invoice 42",
+            "Total: EUR 19.50"
+          ],
+          "block_bboxes": [
+            [
+              30.72,
+              33.44,
+              275.2,
+              66
+            ],
+            [
+              30.72,
+              85.14,
+              202.88,
+              117.26
+            ],
+            [
+              30.72,
+              135.96,
+              302.08,
+              167.2
+            ]
+          ],
+          "confidences": [
+            0.996596,
+            0.999027,
+            0.999125
+          ],
+          "recognition_tokens": 19,
+          "layout_tokens": 73,
+          "warnings": [
+            "Non-table supplied HTML rendered as escaped text.",
+            "Non-table supplied HTML rendered as escaped text.",
+            "Non-table supplied HTML rendered as escaped text."
+          ],
+          "table": null,
+          "software_version": "0.17.14",
+          "seconds_reported": 129.87756207599887
+        }
+      ],
+      "review_passed": true,
+      "seconds_reported": 131.22418836200086,
+      "peak_rss_kib_reported": 5004784,
+      "output_sha256": {
+        "tests/results/marker/native-final-f16/declared-panel.json": "f9a12c9e18af196d97111c5c00a4cd66e32a31494553c74ff3c890b1f1b9af8d",
+        "tests/results/marker/native-final-f16/marker_native.executed.py": "5c997a0fc99829dcd3fbb1d3360bcd10abf438a95483f36924fd6f2043036679",
+        "tests/results/marker/native-final-f16/progress.json": "bc3ee1074f3ac52da85d3dc9706a5cad072e4cbf53afb739f9e9fff33fc237e6",
+        "tests/results/marker/native-final-f16/summary.json": "5a07cbed69f9edb86d4988240d8fda0e5d4f8f962f4f9dbae21a3e3abb74ac40",
+        "tests/results/marker/native-final-f16/synthetic-image.chunks": "a472aa42c8b291503c52356ab9030ae9f891c592d6645661d381a5dd8e47d8e4",
+        "tests/results/marker/native-final-f16/synthetic-image.html": "93f75113d8b6f47e824d5802dd91946aaecfce4dfb6f01ccfe561fb73268f12b",
+        "tests/results/marker/native-final-f16/synthetic-image.json": "e89862b0f2d4e9a283c30a78c3cb323ca67709c32fdeb28c14c9291b7ac338f7",
+        "tests/results/marker/native-final-f16/synthetic-image.markdown": "0d4f03110748e538c9a587f483ede1643081abd4775f8a58b3ea2745f04cfafd",
+        "tests/results/marker/native-final-f16/synthetic-image.meta.json": "d32b9ff4e9f8413b7f29d9cc137fa24774ccc0e59e13fad431603d43ce8eb318"
+      }
+    },
+    {
+      "path": "tests/results/marker/native-final-force-pdf",
+      "model_file": "teleocr-f16.gguf",
+      "model_sha256": "6c52a2800e313964717cf4e5d06e0392c2b5936d8adeac423d563b8a026a2780",
+      "library_sha256": "f117761723bc909b4c6194e096e6bbfe18ba6bf5576d24108b6af0b780f5a5e9",
+      "pdfium_sha256_recorded": "cb59522bf0c48a6408fd2adc8c87120a1418bacbda193f898e8cdccda7d5ca27",
+      "model_manifest": "tests/results/teleocr/model-manifests/teleocr-f16.gguf.json",
+      "model_manifest_sha256": "6a7a5df25a9a0e92b191a613014b51d8eef6c55860f6db1cb7c183e1b8aed335",
+      "checks": {
+        "summary_preserves_every_declared_field": true,
+        "model_identity_matches_declaration_and_converter_manifest": true,
+        "declared_source_snapshots_available": true,
+        "frozen_runner_source_identified": true,
+        "caps_and_backend_unchanged": true,
+        "no_surya_or_numerical_parity_claim": true,
+        "one_result_per_declared_case": true,
+        "summary_agrees_with_progress": true
+      },
+      "source_checks": {
+        "src/marker.cpp": {
+          "declared": "a7d21c6106cae5ebac0af3a8e09fae348448db9877c7f96bfaabfbb6d2410369",
+          "current": "a7d21c6106cae5ebac0af3a8e09fae348448db9877c7f96bfaabfbb6d2410369",
+          "current_matches": true,
+          "preserved_snapshot": null,
+          "source_available": true
+        },
+        "src/marker_backend.cpp": {
+          "declared": "c958373236a3ccbdcd3c32cc202f1210990ccf4b649c0135b475509552f8e257",
+          "current": "c958373236a3ccbdcd3c32cc202f1210990ccf4b649c0135b475509552f8e257",
+          "current_matches": true,
+          "preserved_snapshot": null,
+          "source_available": true
+        },
+        "src/marker_document.cpp": {
+          "declared": "58ec0d2c03bfe33798f5c04ae5b62de0b64f9e35ec9bf7eef48ff176115da1af",
+          "current": "58ec0d2c03bfe33798f5c04ae5b62de0b64f9e35ec9bf7eef48ff176115da1af",
+          "current_matches": true,
+          "preserved_snapshot": null,
+          "source_available": true
+        },
+        "src/qwen2vl_ocr.cpp": {
+          "declared": "a83dc3b0255f790a5272458c29b754ed1eba2d88eae3c2d5d254def03d20f8c9",
+          "current": "a83dc3b0255f790a5272458c29b754ed1eba2d88eae3c2d5d254def03d20f8c9",
+          "current_matches": true,
+          "preserved_snapshot": null,
+          "source_available": true
+        },
+        "tests/marker_native.py": {
+          "declared": "5c997a0fc99829dcd3fbb1d3360bcd10abf438a95483f36924fd6f2043036679",
+          "current": "5c997a0fc99829dcd3fbb1d3360bcd10abf438a95483f36924fd6f2043036679",
+          "current_matches": true,
+          "preserved_snapshot": "tests/results/marker/native-final-force-pdf/marker_native.executed.py",
+          "source_available": true
+        },
+        "python/crispembed/_marker.py": {
+          "declared": "e766a803a010d05bf705746692e227fa6a0d03df4ab70e248e16eb51e138b6fc",
+          "current": "e766a803a010d05bf705746692e227fa6a0d03df4ab70e248e16eb51e138b6fc",
+          "current_matches": true,
+          "preserved_snapshot": null,
+          "source_available": true
+        }
+      },
+      "cases": [
+        {
+          "id": "digital-force-ocr",
+          "checks": {
+            "input_hash_matches_declaration": true,
+            "declared_gold_matches_authored_fixture": true,
+            "independent_visible_text_matches_gold": true,
+            "independent_metrics_match_runner": true,
+            "runner_text_matches_saved_html": true,
+            "all_metadata_copies_match": true,
+            "unique_document_ids": true,
+            "finite_in_page_geometry": true,
+            "all_block_confidences_present_finite_in_range": true,
+            "all_cap_fields_present_and_false": true,
+            "token_and_cap_metadata_consistent": true,
+            "warnings_count_matches_all_document_nodes": true,
+            "backend_identifies_teleocr": true,
+            "all_outputs_valid_utf8_without_literal_nul": true,
+            "chunk_ids_match_document_blocks": true,
+            "native_recognition_executed": true,
+            "force_ocr_mode_declared": true
+          },
+          "review_passed": true,
+          "input_sha256": "5abed1c20795f862b63e3792f1964b2d5932c9d28ccaf8398e2e5b9ec0217374",
+          "visible_text": "Native document test Hello from CrispEmbed. PDF text stays searchable.",
+          "character_edits": 0,
+          "reference_characters": 70,
+          "word_edits": 0,
+          "reference_words": 10,
+          "CER": 0.0,
+          "WER": 0.0,
+          "block_types": {
+            "SectionHeader": 1,
+            "Text": 2
+          },
+          "block_sources": [
+            "teleocr-native",
+            "teleocr-native",
+            "teleocr-native"
+          ],
+          "raw_layout": [
+            "<box:076 066 522 096><label:title><up>\n<box:074 135 316 155><label:text><up>\n<box:074 164 343 184><label:text><up>"
+          ],
+          "raw_block_text": [
+            "Native document test",
+            "Hello from CrispEmbed.",
+            "PDF text stays searchable."
+          ],
+          "block_bboxes": [
+            [
+              46.512,
+              52.272,
+              319.464,
+              76.032
+            ],
+            [
+              45.288,
+              106.92,
+              193.392,
+              122.76
+            ],
+            [
+              45.288,
+              129.888,
+              209.916,
+              145.728
+            ]
+          ],
+          "confidences": [
+            0.997077,
+            0.998663,
+            0.998301
+          ],
+          "recognition_tokens": 17,
+          "layout_tokens": 73,
+          "warnings": [
+            "Non-table supplied HTML rendered as escaped text.",
+            "Non-table supplied HTML rendered as escaped text.",
+            "Non-table supplied HTML rendered as escaped text."
+          ],
+          "table": null,
+          "software_version": "0.17.14",
+          "seconds_reported": 135.74455399100407
+        }
+      ],
+      "review_passed": true,
+      "seconds_reported": 136.99079038900527,
+      "peak_rss_kib_reported": 4809836,
+      "output_sha256": {
+        "tests/results/marker/native-final-force-pdf/declared-panel.json": "bd6861c3dd9b64551617268fc6c7a3499cd48ce3b7ff260be2ae6db9b089fd1a",
+        "tests/results/marker/native-final-force-pdf/digital-force-ocr.chunks": "20e6d58de0ee9e545782fcf5831031aa8f38da93928d06907fe32e30a772c84f",
+        "tests/results/marker/native-final-force-pdf/digital-force-ocr.html": "e464348eb5e2552b15d6b05200b45a07a9a493d38b433f4af245bc60a328ef3b",
+        "tests/results/marker/native-final-force-pdf/digital-force-ocr.json": "4c8508aaeb9c9a4b0b78a632aaa65d863f68af550bcf60776f0e5c5d716cab64",
+        "tests/results/marker/native-final-force-pdf/digital-force-ocr.markdown": "a0e2c05671388d24787d4767adfbcae5143f13c7d8a84dc4039b7a831999950c",
+        "tests/results/marker/native-final-force-pdf/digital-force-ocr.meta.json": "a5fcc0013aaeaa104f08790446b45d5994f7675105e689829847e51d7b55427f",
+        "tests/results/marker/native-final-force-pdf/marker_native.executed.py": "5c997a0fc99829dcd3fbb1d3360bcd10abf438a95483f36924fd6f2043036679",
+        "tests/results/marker/native-final-force-pdf/progress.json": "a8c4edaf2489ed204641276297b27365c1a93550ab3c0d7baff6a26e266adedf",
+        "tests/results/marker/native-final-force-pdf/summary.json": "a47748a70654b326be147977709b5550a214203da4c78f65ec152a637618ea58"
+      }
+    },
+    {
+      "path": "tests/results/marker/native-final-q4",
+      "model_file": "teleocr-q4_k.gguf",
+      "model_sha256": "1933ab72f57d14bd0473a86ecadb4bd815e13003caa40ab94478727ac12770cd",
+      "library_sha256": "f117761723bc909b4c6194e096e6bbfe18ba6bf5576d24108b6af0b780f5a5e9",
+      "pdfium_sha256_recorded": "cb59522bf0c48a6408fd2adc8c87120a1418bacbda193f898e8cdccda7d5ca27",
+      "model_manifest": "tests/results/teleocr/model-manifests/teleocr-q4_k.gguf.json",
+      "model_manifest_sha256": "4e098fcd91002af57f6c4632a0377a05c90a467b1f906c69fd8c8b07a9c7148c",
+      "checks": {
+        "summary_preserves_every_declared_field": true,
+        "model_identity_matches_declaration_and_converter_manifest": true,
+        "declared_source_snapshots_available": true,
+        "frozen_runner_source_identified": true,
+        "caps_and_backend_unchanged": true,
+        "no_surya_or_numerical_parity_claim": true,
+        "one_result_per_declared_case": true,
+        "summary_agrees_with_progress": true
+      },
+      "source_checks": {
+        "src/marker.cpp": {
+          "declared": "a7d21c6106cae5ebac0af3a8e09fae348448db9877c7f96bfaabfbb6d2410369",
+          "current": "a7d21c6106cae5ebac0af3a8e09fae348448db9877c7f96bfaabfbb6d2410369",
+          "current_matches": true,
+          "preserved_snapshot": null,
+          "source_available": true
+        },
+        "src/marker_backend.cpp": {
+          "declared": "c958373236a3ccbdcd3c32cc202f1210990ccf4b649c0135b475509552f8e257",
+          "current": "c958373236a3ccbdcd3c32cc202f1210990ccf4b649c0135b475509552f8e257",
+          "current_matches": true,
+          "preserved_snapshot": null,
+          "source_available": true
+        },
+        "src/marker_document.cpp": {
+          "declared": "58ec0d2c03bfe33798f5c04ae5b62de0b64f9e35ec9bf7eef48ff176115da1af",
+          "current": "58ec0d2c03bfe33798f5c04ae5b62de0b64f9e35ec9bf7eef48ff176115da1af",
+          "current_matches": true,
+          "preserved_snapshot": null,
+          "source_available": true
+        },
+        "src/qwen2vl_ocr.cpp": {
+          "declared": "a83dc3b0255f790a5272458c29b754ed1eba2d88eae3c2d5d254def03d20f8c9",
+          "current": "a83dc3b0255f790a5272458c29b754ed1eba2d88eae3c2d5d254def03d20f8c9",
+          "current_matches": true,
+          "preserved_snapshot": null,
+          "source_available": true
+        },
+        "tests/marker_native.py": {
+          "declared": "5c997a0fc99829dcd3fbb1d3360bcd10abf438a95483f36924fd6f2043036679",
+          "current": "5c997a0fc99829dcd3fbb1d3360bcd10abf438a95483f36924fd6f2043036679",
+          "current_matches": true,
+          "preserved_snapshot": "tests/results/marker/native-final-q4/marker_native.executed.py",
+          "source_available": true
+        },
+        "python/crispembed/_marker.py": {
+          "declared": "e766a803a010d05bf705746692e227fa6a0d03df4ab70e248e16eb51e138b6fc",
+          "current": "e766a803a010d05bf705746692e227fa6a0d03df4ab70e248e16eb51e138b6fc",
+          "current_matches": true,
+          "preserved_snapshot": null,
+          "source_available": true
+        }
+      },
+      "cases": [
+        {
+          "id": "synthetic-image",
+          "checks": {
+            "input_hash_matches_declaration": true,
+            "declared_gold_matches_authored_fixture": true,
+            "independent_visible_text_matches_gold": true,
+            "independent_metrics_match_runner": true,
+            "runner_text_matches_saved_html": true,
+            "all_metadata_copies_match": true,
+            "unique_document_ids": true,
+            "finite_in_page_geometry": true,
+            "all_block_confidences_present_finite_in_range": true,
+            "all_cap_fields_present_and_false": true,
+            "token_and_cap_metadata_consistent": true,
+            "warnings_count_matches_all_document_nodes": true,
+            "backend_identifies_teleocr": true,
+            "all_outputs_valid_utf8_without_literal_nul": true,
+            "chunk_ids_match_document_blocks": true,
+            "native_recognition_executed": true
+          },
+          "review_passed": true,
+          "input_sha256": "54505c242287c7f666bb9fa8953a2f419a16a8b802e79ab0dd09945400703be8",
+          "visible_text": "Hello TeleOCR Invoice 42 Total: EUR 19.50",
+          "character_edits": 0,
+          "reference_characters": 41,
+          "word_edits": 0,
+          "reference_words": 7,
+          "CER": 0.0,
+          "WER": 0.0,
+          "block_types": {
+            "SectionHeader": 3
+          },
+          "block_sources": [
+            "teleocr-native",
+            "teleocr-native",
+            "teleocr-native"
+          ],
+          "raw_layout": [
+            "<box:048 152 430 300><label:title><up>\n<box:048 387 317 533><label:title><up>\n<box:048 618 472 760><label:title><up>"
+          ],
+          "raw_block_text": [
+            "Hello TeleOCR",
+            "Invoice 42",
+            "Total: EUR 19.50"
+          ],
+          "block_bboxes": [
+            [
+              30.72,
+              33.44,
+              275.2,
+              66
+            ],
+            [
+              30.72,
+              85.14,
+              202.88,
+              117.26
+            ],
+            [
+              30.72,
+              135.96,
+              302.08,
+              167.2
+            ]
+          ],
+          "confidences": [
+            0.996686,
+            0.998918,
+            0.999391
+          ],
+          "recognition_tokens": 19,
+          "layout_tokens": 73,
+          "warnings": [
+            "Non-table supplied HTML rendered as escaped text.",
+            "Non-table supplied HTML rendered as escaped text.",
+            "Non-table supplied HTML rendered as escaped text."
+          ],
+          "table": null,
+          "software_version": "0.17.14",
+          "seconds_reported": 124.33504162100144
+        }
+      ],
+      "review_passed": true,
+      "seconds_reported": 125.22100128600141,
+      "peak_rss_kib_reported": 3768260,
+      "output_sha256": {
+        "tests/results/marker/native-final-q4/declared-panel.json": "68e1fb66f3ed7d6d987364d6cf00d46e7c751eea36c795c8788b8a67ecacb80e",
+        "tests/results/marker/native-final-q4/marker_native.executed.py": "5c997a0fc99829dcd3fbb1d3360bcd10abf438a95483f36924fd6f2043036679",
+        "tests/results/marker/native-final-q4/progress.json": "a767fa1c5386cfb8493e4d4545f52eb5707000ba195be9dad3dbbdc49dd125a5",
+        "tests/results/marker/native-final-q4/summary.json": "901d6a269456760eff81b1d1bed852214814a8253feabc65cd1288ed801840bb",
+        "tests/results/marker/native-final-q4/synthetic-image.chunks": "aae9ac376ec95bc5150ff7bc70907380377bfe72e4673aee7a1c774b42889eca",
+        "tests/results/marker/native-final-q4/synthetic-image.html": "93f75113d8b6f47e824d5802dd91946aaecfce4dfb6f01ccfe561fb73268f12b",
+        "tests/results/marker/native-final-q4/synthetic-image.json": "8b93d3b100be40d8ca501c949b872ed714f4e103596a598a59c7f32b237a2180",
+        "tests/results/marker/native-final-q4/synthetic-image.markdown": "0d4f03110748e538c9a587f483ede1643081abd4775f8a58b3ea2745f04cfafd",
+        "tests/results/marker/native-final-q4/synthetic-image.meta.json": "1b7f6a38d6a0a713197195f69b32a8e4abd5a21c2714b2cc3afa9e248277156f"
+      }
+    },
+    {
+      "path": "tests/results/marker/native-final-q8",
+      "model_file": "teleocr-q8_0.gguf",
+      "model_sha256": "9de7e45ce6c13ba03d3d2879f2a1bff9f8407e12808be588cf057cd2553f224b",
+      "library_sha256": "f117761723bc909b4c6194e096e6bbfe18ba6bf5576d24108b6af0b780f5a5e9",
+      "pdfium_sha256_recorded": "cb59522bf0c48a6408fd2adc8c87120a1418bacbda193f898e8cdccda7d5ca27",
+      "model_manifest": "tests/results/teleocr/model-manifests/teleocr-q8_0.gguf.json",
+      "model_manifest_sha256": "18607333af848f044301b57f547fa851554c09230dcf4f5a9522ad25f751410b",
+      "checks": {
+        "summary_preserves_every_declared_field": true,
+        "model_identity_matches_declaration_and_converter_manifest": true,
+        "declared_source_snapshots_available": true,
+        "frozen_runner_source_identified": true,
+        "caps_and_backend_unchanged": true,
+        "no_surya_or_numerical_parity_claim": true,
+        "one_result_per_declared_case": true,
+        "summary_agrees_with_progress": true
+      },
+      "source_checks": {
+        "src/marker.cpp": {
+          "declared": "a7d21c6106cae5ebac0af3a8e09fae348448db9877c7f96bfaabfbb6d2410369",
+          "current": "a7d21c6106cae5ebac0af3a8e09fae348448db9877c7f96bfaabfbb6d2410369",
+          "current_matches": true,
+          "preserved_snapshot": null,
+          "source_available": true
+        },
+        "src/marker_backend.cpp": {
+          "declared": "c958373236a3ccbdcd3c32cc202f1210990ccf4b649c0135b475509552f8e257",
+          "current": "c958373236a3ccbdcd3c32cc202f1210990ccf4b649c0135b475509552f8e257",
+          "current_matches": true,
+          "preserved_snapshot": null,
+          "source_available": true
+        },
+        "src/marker_document.cpp": {
+          "declared": "58ec0d2c03bfe33798f5c04ae5b62de0b64f9e35ec9bf7eef48ff176115da1af",
+          "current": "58ec0d2c03bfe33798f5c04ae5b62de0b64f9e35ec9bf7eef48ff176115da1af",
+          "current_matches": true,
+          "preserved_snapshot": null,
+          "source_available": true
+        },
+        "src/qwen2vl_ocr.cpp": {
+          "declared": "a83dc3b0255f790a5272458c29b754ed1eba2d88eae3c2d5d254def03d20f8c9",
+          "current": "a83dc3b0255f790a5272458c29b754ed1eba2d88eae3c2d5d254def03d20f8c9",
+          "current_matches": true,
+          "preserved_snapshot": null,
+          "source_available": true
+        },
+        "tests/marker_native.py": {
+          "declared": "5c997a0fc99829dcd3fbb1d3360bcd10abf438a95483f36924fd6f2043036679",
+          "current": "5c997a0fc99829dcd3fbb1d3360bcd10abf438a95483f36924fd6f2043036679",
+          "current_matches": true,
+          "preserved_snapshot": "tests/results/marker/native-final-q8/marker_native.executed.py",
+          "source_available": true
+        },
+        "python/crispembed/_marker.py": {
+          "declared": "e766a803a010d05bf705746692e227fa6a0d03df4ab70e248e16eb51e138b6fc",
+          "current": "e766a803a010d05bf705746692e227fa6a0d03df4ab70e248e16eb51e138b6fc",
+          "current_matches": true,
+          "preserved_snapshot": null,
+          "source_available": true
+        }
+      },
+      "cases": [
+        {
+          "id": "synthetic-image",
+          "checks": {
+            "input_hash_matches_declaration": true,
+            "declared_gold_matches_authored_fixture": true,
+            "independent_visible_text_matches_gold": true,
+            "independent_metrics_match_runner": true,
+            "runner_text_matches_saved_html": true,
+            "all_metadata_copies_match": true,
+            "unique_document_ids": true,
+            "finite_in_page_geometry": true,
+            "all_block_confidences_present_finite_in_range": true,
+            "all_cap_fields_present_and_false": true,
+            "token_and_cap_metadata_consistent": true,
+            "warnings_count_matches_all_document_nodes": true,
+            "backend_identifies_teleocr": true,
+            "all_outputs_valid_utf8_without_literal_nul": true,
+            "chunk_ids_match_document_blocks": true,
+            "native_recognition_executed": true
+          },
+          "review_passed": true,
+          "input_sha256": "54505c242287c7f666bb9fa8953a2f419a16a8b802e79ab0dd09945400703be8",
+          "visible_text": "Hello TeleOCR Invoice 42 Total: EUR 19.50",
+          "character_edits": 0,
+          "reference_characters": 41,
+          "word_edits": 0,
+          "reference_words": 7,
+          "CER": 0.0,
+          "WER": 0.0,
+          "block_types": {
+            "SectionHeader": 3
+          },
+          "block_sources": [
+            "teleocr-native",
+            "teleocr-native",
+            "teleocr-native"
+          ],
+          "raw_layout": [
+            "<box:048 152 430 300><label:title><up>\n<box:048 387 317 533><label:title><up>\n<box:048 618 472 760><label:title><up>"
+          ],
+          "raw_block_text": [
+            "Hello TeleOCR",
+            "Invoice 42",
+            "Total: EUR 19.50"
+          ],
+          "block_bboxes": [
+            [
+              30.72,
+              33.44,
+              275.2,
+              66
+            ],
+            [
+              30.72,
+              85.14,
+              202.88,
+              117.26
+            ],
+            [
+              30.72,
+              135.96,
+              302.08,
+              167.2
+            ]
+          ],
+          "confidences": [
+            0.996649,
+            0.999032,
+            0.999101
+          ],
+          "recognition_tokens": 19,
+          "layout_tokens": 73,
+          "warnings": [
+            "Non-table supplied HTML rendered as escaped text.",
+            "Non-table supplied HTML rendered as escaped text.",
+            "Non-table supplied HTML rendered as escaped text."
+          ],
+          "table": null,
+          "software_version": "0.17.14",
+          "seconds_reported": 129.75833681699442
+        }
+      ],
+      "review_passed": true,
+      "seconds_reported": 130.86975302200153,
+      "peak_rss_kib_reported": 4198500,
+      "output_sha256": {
+        "tests/results/marker/native-final-q8/declared-panel.json": "67377a34ce2ac1921b02d52c268839ec00ab1e80ebdc241a3ad3b6f742febee3",
+        "tests/results/marker/native-final-q8/marker_native.executed.py": "5c997a0fc99829dcd3fbb1d3360bcd10abf438a95483f36924fd6f2043036679",
+        "tests/results/marker/native-final-q8/progress.json": "e9e30e801754c6f4c05c2af30c6f7fd86503a1002276ee3fc40f848a3d803541",
+        "tests/results/marker/native-final-q8/summary.json": "b5bf95a8a1d6ea58bf0f648a6a8e1def5cac75f3fbe65e5071ff1ec81675da33",
+        "tests/results/marker/native-final-q8/synthetic-image.chunks": "cbb79e0fd67cbbc9819ae49ef20f8d67b22abf0a5a430961738eda8ba281397c",
+        "tests/results/marker/native-final-q8/synthetic-image.html": "93f75113d8b6f47e824d5802dd91946aaecfce4dfb6f01ccfe561fb73268f12b",
+        "tests/results/marker/native-final-q8/synthetic-image.json": "9edfdab0bced75219163ced6696fa64cf5cb1fc99977bb4d9a2c3b3ba59174c9",
+        "tests/results/marker/native-final-q8/synthetic-image.markdown": "0d4f03110748e538c9a587f483ede1643081abd4775f8a58b3ea2745f04cfafd",
+        "tests/results/marker/native-final-q8/synthetic-image.meta.json": "1ac80b2dafb9e2671a00150ff46b219fc37b23855e90769db0de1b6a88a93dbd"
+      }
+    },
+    {
+      "path": "tests/results/marker/native-ocr-f16",
+      "model_file": "teleocr-f16.gguf",
+      "model_sha256": "6c52a2800e313964717cf4e5d06e0392c2b5936d8adeac423d563b8a026a2780",
+      "library_sha256": "6453530ae6272064e4633ea7d7be0e80c5464cbaf9871108a02adced687c591d",
+      "pdfium_sha256_recorded": null,
+      "model_manifest": "tests/results/teleocr/model-manifests/teleocr-f16.gguf.json",
+      "model_manifest_sha256": "6a7a5df25a9a0e92b191a613014b51d8eef6c55860f6db1cb7c183e1b8aed335",
+      "checks": {
+        "summary_preserves_every_declared_field": true,
+        "model_identity_matches_declaration_and_converter_manifest": true,
+        "declared_source_snapshots_available": true,
+        "frozen_runner_source_identified": true,
+        "caps_and_backend_unchanged": true,
+        "no_surya_or_numerical_parity_claim": true,
+        "one_result_per_declared_case": true,
+        "summary_agrees_with_progress": true
+      },
+      "source_checks": {
+        "src/marker.cpp": {
+          "declared": "00d892433a64497fb657cc31b95f7770d02aa101ddce624457f771931b297db2",
+          "current": "a7d21c6106cae5ebac0af3a8e09fae348448db9877c7f96bfaabfbb6d2410369",
+          "current_matches": false,
+          "preserved_snapshot": "tests/results/marker/format-review-before/root-sources.zip",
+          "source_available": true
+        },
+        "src/marker_backend.cpp": {
+          "declared": "ce0982e5e0278960bac0a8fde1aec83b32563f7571eedbbf17b35d1d02466bae",
+          "current": "c958373236a3ccbdcd3c32cc202f1210990ccf4b649c0135b475509552f8e257",
+          "current_matches": false,
+          "preserved_snapshot": "tests/results/marker/format-review-before/root-sources.zip",
+          "source_available": true
+        },
+        "src/marker_document.cpp": {
+          "declared": "43b26f348788bf8c861c7ecdb99049593e6e0dd49653e7b13012b4315792c2d9",
+          "current": "58ec0d2c03bfe33798f5c04ae5b62de0b64f9e35ec9bf7eef48ff176115da1af",
+          "current_matches": false,
+          "preserved_snapshot": "tests/results/marker/format-review-before/document-sources-before.zip",
+          "source_available": true
+        },
+        "src/qwen2vl_ocr.cpp": {
+          "declared": "a83dc3b0255f790a5272458c29b754ed1eba2d88eae3c2d5d254def03d20f8c9",
+          "current": "a83dc3b0255f790a5272458c29b754ed1eba2d88eae3c2d5d254def03d20f8c9",
+          "current_matches": true,
+          "preserved_snapshot": null,
+          "source_available": true
+        },
+        "tests/marker_native.py": {
+          "declared": "01fd044f1455acef389d393f7e63e138de67bb48221aa8b00b696c5e07debead",
+          "current": "5c997a0fc99829dcd3fbb1d3360bcd10abf438a95483f36924fd6f2043036679",
+          "current_matches": false,
+          "preserved_snapshot": "tests/results/marker/native-ocr-f16/marker_native.executed.py",
+          "source_available": true
+        }
+      },
+      "cases": [
+        {
+          "id": "synthetic-image",
+          "checks": {
+            "input_hash_matches_declaration": true,
+            "declared_gold_matches_authored_fixture": true,
+            "independent_visible_text_matches_gold": true,
+            "independent_metrics_match_runner": true,
+            "runner_text_matches_saved_html": true,
+            "all_metadata_copies_match": true,
+            "unique_document_ids": true,
+            "finite_in_page_geometry": true,
+            "all_block_confidences_present_finite_in_range": true,
+            "all_cap_fields_present_and_false": true,
+            "token_and_cap_metadata_consistent": true,
+            "warnings_count_matches_all_document_nodes": true,
+            "backend_identifies_teleocr": true,
+            "all_outputs_valid_utf8_without_literal_nul": true,
+            "chunk_ids_match_document_blocks": true,
+            "native_recognition_executed": true
+          },
+          "review_passed": true,
+          "input_sha256": "54505c242287c7f666bb9fa8953a2f419a16a8b802e79ab0dd09945400703be8",
+          "visible_text": "Hello TeleOCR Invoice 42 Total: EUR 19.50",
+          "character_edits": 0,
+          "reference_characters": 41,
+          "word_edits": 0,
+          "reference_words": 7,
+          "CER": 0.0,
+          "WER": 0.0,
+          "block_types": {
+            "SectionHeader": 3
+          },
+          "block_sources": [
+            "teleocr-native",
+            "teleocr-native",
+            "teleocr-native"
+          ],
+          "raw_layout": [
+            "<box:048 152 430 300><label:title><up>\n<box:048 387 317 533><label:title><up>\n<box:048 618 472 760><label:title><up>"
+          ],
+          "raw_block_text": [
+            "Hello TeleOCR",
+            "Invoice 42",
+            "Total: EUR 19.50"
+          ],
+          "block_bboxes": [
+            [
+              30.72,
+              33.44,
+              275.2,
+              66
+            ],
+            [
+              30.72,
+              85.14,
+              202.88,
+              117.26
+            ],
+            [
+              30.72,
+              135.96,
+              302.08,
+              167.2
+            ]
+          ],
+          "confidences": [
+            0.996596,
+            0.999027,
+            0.999125
+          ],
+          "recognition_tokens": 19,
+          "layout_tokens": 73,
+          "warnings": [
+            "Non-table supplied HTML rendered as escaped text.",
+            "Non-table supplied HTML rendered as escaped text.",
+            "Non-table supplied HTML rendered as escaped text."
+          ],
+          "table": null,
+          "software_version": "unknown",
+          "seconds_reported": 126.27704750699922
+        },
+        {
+          "id": "digital-auto",
+          "checks": {
+            "input_hash_matches_declaration": true,
+            "declared_gold_matches_authored_fixture": true,
+            "independent_visible_text_matches_gold": true,
+            "independent_metrics_match_runner": true,
+            "runner_text_matches_saved_html": true,
+            "all_metadata_copies_match": true,
+            "unique_document_ids": true,
+            "finite_in_page_geometry": true,
+            "all_block_confidences_present_finite_in_range": true,
+            "all_cap_fields_present_and_false": true,
+            "token_and_cap_metadata_consistent": true,
+            "warnings_count_matches_all_document_nodes": true,
+            "backend_identifies_teleocr": true,
+            "all_outputs_valid_utf8_without_literal_nul": true,
+            "chunk_ids_match_document_blocks": true,
+            "auto_uses_embedded_pdf_text_without_recognition": true
+          },
+          "review_passed": true,
+          "input_sha256": "5abed1c20795f862b63e3792f1964b2d5932c9d28ccaf8398e2e5b9ec0217374",
+          "visible_text": "Native document test Hello from CrispEmbed. PDF text stays searchable.",
+          "character_edits": 0,
+          "reference_characters": 70,
+          "word_edits": 0,
+          "reference_words": 10,
+          "CER": 0.0,
+          "WER": 0.0,
+          "block_types": {
+            "SectionHeader": 1,
+            "Text": 2
+          },
+          "block_sources": [
+            "pdftext",
+            "pdftext",
+            "pdftext"
+          ],
+          "raw_layout": [
+            "<box:076 066 522 096><label:title><up>\n<box:074 135 316 155><label:text><up>\n<box:074 164 343 184><label:text><up>"
+          ],
+          "raw_block_text": [
+            "<box:076 066 522 096><label:title><up>",
+            "<box:074 135 316 155><label:text><up>",
+            "<box:074 164 343 184><label:text><up>"
+          ],
+          "block_bboxes": [
+            [
+              46.512,
+              52.272,
+              319.464,
+              76.032
+            ],
+            [
+              45.288,
+              106.92,
+              193.392,
+              122.76
+            ],
+            [
+              45.288,
+              129.888,
+              209.916,
+              145.728
+            ]
+          ],
+          "confidences": [
+            0.967936,
+            0.967936,
+            0.967936
+          ],
+          "recognition_tokens": 0,
+          "layout_tokens": 73,
+          "warnings": [],
+          "table": null,
+          "software_version": "unknown",
+          "seconds_reported": 117.85461035400658
+        },
+        {
+          "id": "table-image",
+          "checks": {
+            "input_hash_matches_declaration": true,
+            "declared_gold_matches_authored_fixture": true,
+            "independent_visible_text_matches_gold": true,
+            "independent_metrics_match_runner": true,
+            "runner_text_matches_saved_html": true,
+            "all_metadata_copies_match": true,
+            "unique_document_ids": true,
+            "finite_in_page_geometry": true,
+            "all_block_confidences_present_finite_in_range": true,
+            "all_cap_fields_present_and_false": true,
+            "token_and_cap_metadata_consistent": true,
+            "warnings_count_matches_all_document_nodes": true,
+            "backend_identifies_teleocr": true,
+            "all_outputs_valid_utf8_without_literal_nul": true,
+            "chunk_ids_match_document_blocks": true,
+            "native_recognition_executed": true,
+            "table_rows_columns_and_order_match_gold": true,
+            "table_has_only_unit_spans": true,
+            "table_document_and_block_html_agree": true
+          },
+          "review_passed": true,
+          "input_sha256": "cce791c7de646d362321311f1894536da90b4d4ddd9de5764868eee677cd0f90",
+          "visible_text": "Aligned table fixture Item Quantity Price Alpha 2 $10 Beta 3 $15 Gamma 4 $20 All values are invented test data.",
+          "character_edits": 0,
+          "reference_characters": 111,
+          "word_edits": 0,
+          "reference_words": 21,
+          "CER": 0.0,
+          "WER": 0.0,
+          "block_types": {
+            "Caption": 1,
+            "Table": 1,
+            "Text": 1
+          },
+          "block_sources": [
+            "teleocr-native",
+            "teleocr-native",
+            "teleocr-native"
+          ],
+          "raw_layout": [
+            "<box:074 065 502 099><label:table_caption><up>\n<box:074 154 745 297><label:table><up>\n<box:074 383 405 401><label:text><up>"
+          ],
+          "raw_block_text": [
+            "Aligned table fixture",
+            "<fcel>Item<fcel>Quantity<fcel>Price<nl><fcel>Alpha<fcel>2<fcel>$10<nl><fcel>Beta<fcel>3<fcel>$15<nl><fcel>Gamma<fcel>4<fcel>$20<nl>",
+            "All values are invented test data."
+          ],
+          "block_bboxes": [
+            [
+              90.576,
+              102.96,
+              614.448,
+              156.816
+            ],
+            [
+              90.576,
+              243.936,
+              911.88,
+              470.448
+            ],
+            [
+              90.576,
+              606.672,
+              495.72,
+              635.184
+            ]
+          ],
+          "confidences": [
+            0.999044,
+            0.999948,
+            0.996366
+          ],
+          "recognition_tokens": 76,
+          "layout_tokens": 76,
+          "warnings": [
+            "Non-table supplied HTML rendered as escaped text.",
+            "Non-table supplied HTML rendered as escaped text."
+          ],
+          "table": {
+            "expected": [
+              [
+                "Item",
+                "Quantity",
+                "Price"
+              ],
+              [
+                "Alpha",
+                "2",
+                "$10"
+              ],
+              [
+                "Beta",
+                "3",
+                "$15"
+              ],
+              [
+                "Gamma",
+                "4",
+                "$20"
+              ]
+            ],
+            "observed": [
+              [
+                [
+                  "Item",
+                  "Quantity",
+                  "Price"
+                ],
+                [
+                  "Alpha",
+                  "2",
+                  "$10"
+                ],
+                [
+                  "Beta",
+                  "3",
+                  "$15"
+                ],
+                [
+                  "Gamma",
+                  "4",
+                  "$20"
+                ]
+              ]
+            ],
+            "row_lengths": [
+              [
+                3,
+                3,
+                3,
+                3
+              ]
+            ],
+            "cell_tags": [
+              [
+                "td",
+                "td",
+                "td",
+                "td",
+                "td",
+                "td",
+                "td",
+                "td",
+                "td",
+                "td",
+                "td",
+                "td"
+              ]
+            ],
+            "spans": [
+              [
+                [
+                  1,
+                  1
+                ],
+                [
+                  1,
+                  1
+                ],
+                [
+                  1,
+                  1
+                ],
+                [
+                  1,
+                  1
+                ],
+                [
+                  1,
+                  1
+                ],
+                [
+                  1,
+                  1
+                ],
+                [
+                  1,
+                  1
+                ],
+                [
+                  1,
+                  1
+                ],
+                [
+                  1,
+                  1
+                ],
+                [
+                  1,
+                  1
+                ],
+                [
+                  1,
+                  1
+                ],
+                [
+                  1,
+                  1
+                ]
+              ]
+            ]
+          },
+          "software_version": "unknown",
+          "seconds_reported": 165.6255986909964
+        }
+      ],
+      "review_passed": true,
+      "seconds_reported": 411.0433643180004,
+      "peak_rss_kib_reported": 4986436,
+      "output_sha256": {
+        "tests/results/marker/native-ocr-f16/declared-panel.json": "ff032d12dc621337131175384adcdde7267452aa0047fa4bee63a4b676d7638f",
+        "tests/results/marker/native-ocr-f16/digital-auto.chunks": "10da0592edbb3760d88530c77c2319bc389557006be7c4897d14bcbe7fa70d8c",
+        "tests/results/marker/native-ocr-f16/digital-auto.html": "c4e87a4df7c9e0b79cabc6dc292fa49b57402f6b0f6e508f8f2db9e6eab10645",
+        "tests/results/marker/native-ocr-f16/digital-auto.json": "188f5febed86dfb05d36a55b5440e891c42993b2a5762840da87a43f4f577678",
+        "tests/results/marker/native-ocr-f16/digital-auto.markdown": "a0e2c05671388d24787d4767adfbcae5143f13c7d8a84dc4039b7a831999950c",
+        "tests/results/marker/native-ocr-f16/digital-auto.meta.json": "0f3ef53bbb5f16ec4c81b66fbbae7e364173e330486e6e63362a783323c0dc01",
+        "tests/results/marker/native-ocr-f16/marker_native.executed.py": "01fd044f1455acef389d393f7e63e138de67bb48221aa8b00b696c5e07debead",
+        "tests/results/marker/native-ocr-f16/progress.json": "7d7d0b9c3313fa9c6fddc5755059ea68c0dc1c9b59e2faf37c3d3c7c0bb2e48b",
+        "tests/results/marker/native-ocr-f16/summary.json": "33866cca8873a2c2becaa82b3a264f5d1c2da3ca8f59a2daf355ae6b28fdd30d",
+        "tests/results/marker/native-ocr-f16/synthetic-image.chunks": "5ea1cd5f8c949470915134c8268dfd73bb1ae3c41c20867edbd24cf0c5e9d3c8",
+        "tests/results/marker/native-ocr-f16/synthetic-image.html": "93f75113d8b6f47e824d5802dd91946aaecfce4dfb6f01ccfe561fb73268f12b",
+        "tests/results/marker/native-ocr-f16/synthetic-image.json": "702afaf0c1064576ee2f500e6c5bd8f75a426ea3030006d7440d16a06427d0be",
+        "tests/results/marker/native-ocr-f16/synthetic-image.markdown": "0d4f03110748e538c9a587f483ede1643081abd4775f8a58b3ea2745f04cfafd",
+        "tests/results/marker/native-ocr-f16/synthetic-image.meta.json": "9f3ccdf80105359ee94f697f30072f9c12ec1699b12807de70e496d4c5754f8b",
+        "tests/results/marker/native-ocr-f16/table-image.chunks": "46f818cac00b1306fdb4dee62c39a2a00df6f53266455c23198fb15734e1ac5b",
+        "tests/results/marker/native-ocr-f16/table-image.html": "b991d43e9a9675d970217d9c8a72918e7ad3d575707e1a29655df837e11f1825",
+        "tests/results/marker/native-ocr-f16/table-image.json": "8388f4b012964bf13b2dced763c909f250f79f18a47845def791e687f3836e7f",
+        "tests/results/marker/native-ocr-f16/table-image.markdown": "58dce31845ab86edfc44b44ac8298332364ef4a388870603fff1cc6b780566c8",
+        "tests/results/marker/native-ocr-f16/table-image.meta.json": "ad3290f3064e1655d92190c13fa7546c00a84e28fd4c456f416e418c7c029333"
+      }
+    }
+  ],
+  "same_build_synthetic_precision_comparisons": [
+    {
+      "quantized_panel": "tests/results/marker/native-final-q4",
+      "f16_panel": "tests/results/marker/native-final-f16",
+      "same_build_f16_available": true,
+      "same_input_sha256": true,
+      "same_declared_source_hashes": true,
+      "visible_text_exact": true,
+      "raw_recognition_text_exact": true,
+      "raw_layout_exact": true,
+      "block_types_match": true,
+      "bbox_max_absolute_difference": 0.0,
+      "aggregate_block_confidence_max_absolute_difference": 0.00026599999999998847,
+      "recognition_token_count_equal": true,
+      "layout_token_count_equal": true,
+      "token_ids_or_eos_compared": false,
+      "numerical_qualification": false
+    },
+    {
+      "quantized_panel": "tests/results/marker/native-final-q8",
+      "f16_panel": "tests/results/marker/native-final-f16",
+      "same_build_f16_available": true,
+      "same_input_sha256": true,
+      "same_declared_source_hashes": true,
+      "visible_text_exact": true,
+      "raw_recognition_text_exact": true,
+      "raw_layout_exact": true,
+      "block_types_match": true,
+      "bbox_max_absolute_difference": 0.0,
+      "aggregate_block_confidence_max_absolute_difference": 5.299999999996974e-05,
+      "recognition_token_count_equal": true,
+      "layout_token_count_equal": true,
+      "token_ids_or_eos_compared": false,
+      "numerical_qualification": false
+    }
+  ],
+  "counts": {
+    "saved_panels": 5,
+    "mode_build_precision_conversions": 7,
+    "distinct_input_sha256": 3,
+    "distinct_model_sha256": 3,
+    "distinct_native_library_sha256": 2,
+    "independently_exact_visible_text_conversions": 7,
+    "independent_review_checks": 156
+  },
+  "same_model_synthetic_build_repeats": [
+    {
+      "earlier_panel": "tests/results/marker/native-ocr-f16",
+      "later_panel": "tests/results/marker/native-final-f16",
+      "same_library": false,
+      "same_model": true,
+      "same_input": true,
+      "visible_text_exact": true,
+      "raw_recognition_text_exact": true,
+      "raw_layout_exact": true,
+      "block_boxes_exact": true,
+      "software_versions": [
+        "unknown",
+        "0.17.14"
+      ]
+    }
+  ],
+  "expected_review_roles_present": {
+    "initial_full_f16": true,
+    "final_f16_synthetic": true,
+    "final_q8_synthetic": true,
+    "final_q4_synthetic": true,
+    "final_f16_force_pdf": true
+  },
+  "review_complete": true,
+  "final_build_receipt": {
+    "path": "tests/results/marker/build/final-source.json",
+    "sha256": "1669d9965a39d3eacad2f52758d19f199c454e95f58ce2cc0a7cc5fa206b97a2",
+    "library_sha256": "f117761723bc909b4c6194e096e6bbfe18ba6bf5576d24108b6af0b780f5a5e9",
+    "current_source_matches": {
+      "CMakeLists.txt": true,
+      "src/crispembed.h": true,
+      "src/marker.cpp": true,
+      "src/marker_backend.cpp": true,
+      "src/marker_backend.h": true,
+      "src/marker_document.cpp": true,
+      "src/marker_document.h": true,
+      "src/qwen2vl_ocr.cpp": true,
+      "src/image_preprocess.h": true,
+      "python/crispembed/_marker.py": true,
+      "examples/marker/main.cpp": true,
+      "examples/marker/save_bundle.h": true,
+      "examples/server/server.cpp": true,
+      "crispembed/src/marker.rs": true,
+      "crispembed-sys/src/lib.rs": true,
+      "flutter/crispembed/lib/src/marker.dart": true,
+      "tests/marker_native.py": true,
+      "tests/marker_integration.py": true
+    },
+    "all_current_sources_match": true
+  },
+  "inherited_numerical_review": {
+    "path": "tests/results/teleocr/final-matrix-peer-review.json",
+    "sha256": "0b208b94b1f666754fae9617f0e24232b914a1eccddd61d5687680baff270bab",
+    "scope": "Existing independent TeleOCR differential review; not re-executed by this document review.",
+    "thresholds": {
+      "input_patches_max_abs": 2e-06,
+      "other_float_max_abs": 0.002,
+      "other_float_min_row_cosine": 0.99999,
+      "integer_arrays": "exact",
+      "generated_ids_and_text_and_first_logits_argmax": "exact"
+    },
+    "counts": {
+      "formats": 4,
+      "cases": 24,
+      "decoded_exact_cases": 23,
+      "eos_cases": 24,
+      "input_exact_cases": 24,
+      "coverage_complete_cases": 24,
+      "confidence_valid_cases": 24,
+      "strict_numerical_pass_cases": 0,
+      "strict_overall_pass_cases": 0,
+      "stage_records": 1800,
+      "strict_stage_passes": 635,
+      "strict_stage_failures": 1165,
+      "native_generated_ids": 6672,
+      "generated_id_mismatches": 1,
+      "raw_character_edits": 1
+    },
+    "qualification": false
+  },
+  "all_review_checks_passed": true,
+  "review_passed": true,
+  "limits": [
+    "This evaluates a small owned synthetic panel, not representative document accuracy.",
+    "Digital-auto uses learned layout and PDF embedded text, with zero recognition tokens; it is not a PDF OCR accuracy test.",
+    "Synthetic text lines are all classified SectionHeader; the table title is classified Caption. Exact text does not establish learned label accuracy.",
+    "Table cell values, row/column sequence and no-span topology pass on one simple 4-by-3 table; header semantics and merged-cell inference are not qualified.",
+    "Geometry checks establish finite in-page coordinates, not box-IoU or layout accuracy.",
+    "Finite aggregate block confidences are not probability calibration or per-token confidence parity.",
+    "No caps are reported; this harness does not export token IDs or terminal tokens, so EOS and generation-token parity are not independently established here.",
+    "Q8_0 and Q4_K are synthetic-image-only panels; full table/digital panels are F16 only.",
+    "Existing TeleOCR intermediate-activation numerical gates remain failed; these document outputs do not change that qualification.",
+    "Original Surya models were not executed and no original-model parity is claimed.",
+    "Reported wall times and Linux peak RSS are single-run observations, not controlled performance benchmarks.",
+    "The initial full F16 manifest did not hash the PDFium binary or Python binding; the later runner records both. Its original source and outputs are preserved without retroactively changing that manifest."
+  ]
+}

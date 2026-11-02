@@ -1842,6 +1842,16 @@ def _setup_ocr_model_signatures(lib):
         lib.crispembed_ocr_model_set_prompt.restype = ctypes.c_int
 
 
+    if hasattr(lib, "crispembed_ocr_model_set_generation_params"):
+        lib.crispembed_ocr_model_set_generation_params.argtypes = [
+            ctypes.c_void_p, ctypes.c_float, ctypes.c_float, ctypes.c_float, ctypes.c_int]
+        lib.crispembed_ocr_model_set_generation_params.restype = ctypes.c_int
+        lib.crispembed_ocr_model_get_generation_params.argtypes = [
+            ctypes.c_void_p, ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_float),
+            ctypes.POINTER(ctypes.c_float), ctypes.POINTER(ctypes.c_int)]
+        lib.crispembed_ocr_model_get_generation_params.restype = ctypes.c_int
+
+
 class CrispOcrModel:
     """Math/document OCR  - recognizes LaTeX or text from images.
 
@@ -1850,6 +1860,8 @@ class CrispOcrModel:
     HMER (handwritten math), BTTR (handwritten math), PosFormer (handwritten),
     MixTex (Chinese+English LaTeX), PARSeq (scene text),
     Qwen2.5-VL (VLM, German docs), Qwen3-VL-2B (VLM, DeepStack),
+    TeleOCR (CRISPEMBED_TELEOCR=1 and CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1, non-commercial;
+    explicit local GGUF),
     InternVL2.5/2-1B (VLM, EN+DE),
     GLM-OCR (VLM, 8 langs, OmniDocBench #1).
     Experimental Qwen3.5/LightOnOCR-3-0.8B requires CRISPEMBED_QWEN35_OCR=1.
@@ -1891,7 +1903,7 @@ class CrispOcrModel:
         """Set the instruction sent to a prompt-following VLM engine.
 
         Supported: Qwen2-VL / Qwen2.5-VL / Qwen3-VL (incl. PaddleOCR-VL,
-        olmOCR), InternVL2, LFM2-VL, Granite-Vision, Qwen3.5 OCR. ``None`` or ``""``
+        olmOCR), TeleOCR, InternVL2, LFM2-VL, Granite-Vision, Qwen3.5 OCR. ``None`` or ``""``
         restores the engine's default prompt.
 
         Returns:
@@ -1902,6 +1914,31 @@ class CrispOcrModel:
             raise RuntimeError("this libcrispembed build predates crispembed_ocr_model_set_prompt")
         arg = prompt.encode("utf-8") if prompt else None
         return bool(self._lib.crispembed_ocr_model_set_prompt(self._ctx, arg))
+
+    def set_generation_params(self, *, repetition_penalty: float = 1.05,
+                              presence_penalty: float = 0.0, frequency_penalty: float = 0.0,
+                              no_repeat_ngram: int = 0) -> bool:
+        """Set TeleOCR logit penalties; False for unsupported models/invalid values.
+
+        Repetition applies to prompt and output tokens; presence/frequency
+        apply to output tokens only. These settings persist until changed.
+        """
+        if not hasattr(self._lib, "crispembed_ocr_model_set_generation_params"):
+            raise RuntimeError("this native library predates TeleOCR generation controls")
+        return bool(self._lib.crispembed_ocr_model_set_generation_params(
+            self._ctx, repetition_penalty, presence_penalty, frequency_penalty, no_repeat_ngram))
+
+    def get_generation_params(self):
+        """Return TeleOCR generation controls, or None for unsupported engines."""
+        if not hasattr(self._lib, "crispembed_ocr_model_get_generation_params"):
+            return None
+        repetition, presence, frequency, ngram = ctypes.c_float(), ctypes.c_float(), ctypes.c_float(), ctypes.c_int()
+        if not self._lib.crispembed_ocr_model_get_generation_params(
+                self._ctx, ctypes.byref(repetition), ctypes.byref(presence),
+                ctypes.byref(frequency), ctypes.byref(ngram)):
+            return None
+        return {"repetition_penalty": repetition.value, "presence_penalty": presence.value,
+                "frequency_penalty": frequency.value, "no_repeat_ngram": ngram.value}
 
     def recognize(self, image) -> str:
         """Recognize LaTeX from an image.
@@ -4160,8 +4197,15 @@ class _CrispOcrPipelineParams(ctypes.Structure):
     ]
 
 
+# Append-only C stage selector; CRISPEMBED_TELEOCR=1 plus CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1
+# (non-commercial Qwen Research License vision tower) enable the native loader.
+OCR_ENGINE_TELEOCR = 24
+OCR_ENGINE_MINERU25_PRO = 25
+OCR_ENGINE_OXR = 26
+
+
 class _CrispOcrStage(ctypes.Structure):
-    """Exact native stage layout; engine20 is Qwen3.5, engine21 is gated OvisOCR2, engine22 gated OvisOCR3."""
+    """Exact native stage layout; engine20 is Qwen3.5, engine21 is gated OvisOCR2, engine22 gated OvisOCR3, engine24 gated TeleOCR."""
     _fields_ = [
         ("source_type", ctypes.c_int),
         ("engine", ctypes.c_int),
@@ -4223,9 +4267,15 @@ class CrispOcrOrchestrator:
     classification (screenshot vs scan vs photo), per-stage cleanup, and
     cascading with confidence-based accept gates.
 
+    TeleOCR uses ``stages=[{"engine": OCR_ENGINE_TELEOCR,
+    "model_a": "teleocr-f16.gguf", "vlm_max_tokens": 1024}]`` and requires
+    ``CRISPEMBED_TELEOCR=1`` plus ``CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1``
+    (its vision tower is under the non-commercial Qwen Research License). The stage accepts an optional exact task prompt
+    through ``vlm_prompt``; an empty value restores the model's text task.
+
     Usage::
 
-        orch = CrispOcrOrchestrator("surya-det", "qwen2vl-3b")
+        orch = CrispOcrOrchestrator("surya-det", "qwen3vl-2b")
         result = orch.run("document.png")
         print(result["text"])
         print(f"  {result['n_regions']} regions, confidence={result['mean_confidence']:.2f}")

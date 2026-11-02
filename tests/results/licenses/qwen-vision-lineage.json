@@ -1,0 +1,90 @@
+{
+  "schema": "crispembed.license.weight-lineage.v1",
+  "date": "2026-10-31",
+  "tool": "tools/weight_lineage.py",
+  "method": "cosine between same-named tensors read from upstream safetensors by HTTP range request",
+  "teleocr": {
+    "model": "XingChen-AGI/TeleOCR@b3f6a0c084db72f971e19a779d2fd8a6bc9e3b8d",
+    "paper": "arXiv:2608.12898 Section 4: vision encoder 'inherited from Qwen2.5-VL' (size unstated), language model Qwen3-0.6B",
+    "vision_cosines": {
+      "visual.patch_embed.proj.weight": {
+        "Qwen2.5-VL-3B-Instruct": 0.991855,
+        "Qwen2.5-VL-7B-Instruct": 0.988242,
+        "Qwen2.5-VL-32B-Instruct": 0.988361
+      },
+      "visual.blocks.0.attn.qkv.weight": {
+        "Qwen2.5-VL-3B-Instruct": 0.952486,
+        "Qwen2.5-VL-7B-Instruct": 0.911815,
+        "Qwen2.5-VL-32B-Instruct": 0.912005
+      },
+      "visual.blocks.15.mlp.down_proj.weight": {
+        "Qwen2.5-VL-3B-Instruct": 0.965343,
+        "Qwen2.5-VL-7B-Instruct": 0.847824
+      },
+      "visual.blocks.31.attn.proj.weight": {
+        "Qwen2.5-VL-3B-Instruct": 0.992621,
+        "Qwen2.5-VL-7B-Instruct": 0.539488,
+        "Qwen2.5-VL-32B-Instruct": 0.521771
+      }
+    },
+    "conclusion": "vision tower derives from Qwen2.5-VL-3B-Instruct (license qwen-research, non-commercial); decoder from Qwen3-0.6B (apache-2.0)"
+  },
+  "qwen25vl3b_tower_alternatives": {
+    "reference": "Qwen/Qwen2.5-VL-3B-Instruct",
+    "visual.blocks.31.attn.proj.weight": {
+      "Qwen2.5-Omni-3B (qwen-research)": 0.929665,
+      "Qwen2.5-Omni-7B (apache-2.0)": 0.555416,
+      "Qwen2.5-VL-7B-Instruct (apache-2.0)": 0.547262,
+      "TeleOCR": 0.992621
+    },
+    "visual.blocks.31.mlp.down_proj.weight": {
+      "Qwen2.5-Omni-3B (qwen-research)": 0.841055,
+      "Qwen2.5-Omni-7B (apache-2.0)": 0.350774,
+      "Qwen2.5-VL-7B-Instruct (apache-2.0)": 0.343274,
+      "TeleOCR": 0.985633
+    },
+    "conclusion": "no Apache-2.0 Qwen release carries the 3B vision tower; it is not a drop-in replacement candidate (TeleOCR fine-tuned its tower; swapping would require retraining)"
+  },
+  "mineru25_pro": {
+    "model": "opendatalab/MinerU2.5-Pro-2604-1.2B@d3f5e08d073c21466bbabe21c71bb1e9c2e595da",
+    "report": "arXiv:2509.22186: vision encoder initialized from Qwen2-VL-2B-Instruct, language model from Qwen2-Instruct-0.5B",
+    "cosines": {
+      "visual.blocks.0.attn.qkv.weight": {
+        "Qwen2-VL-2B-Instruct": 0.9648,
+        "Qwen2-VL-7B-Instruct": 0.9524,
+        "MinerU2.5-2509-1.2B": 0.9524
+      },
+      "visual.blocks.31.attn.proj.weight": {
+        "Qwen2-VL-2B-Instruct": 0.9867,
+        "Qwen2-VL-7B-Instruct": 0.8492,
+        "MinerU2.5-2509-1.2B": 0.9821
+      },
+      "visual.blocks.31.mlp.fc2.weight": {
+        "Qwen2-VL-2B-Instruct": 0.9794,
+        "Qwen2-VL-7B-Instruct": 0.7245,
+        "MinerU2.5-2509-1.2B": 0.9678
+      },
+      "model.layers.0.self_attn.q_proj.weight": {
+        "Qwen2-0.5B-Instruct": 0.6274,
+        "MinerU2.5-2509-1.2B": 0.6359
+      },
+      "model.layers.23.mlp.down_proj.weight": {
+        "Qwen2-0.5B-Instruct": 0.3593,
+        "MinerU2.5-2509-1.2B": 0.384
+      }
+    },
+    "conclusion": "vision from Qwen2-VL-2B-Instruct (apache-2.0); decoder far trained from a Qwen2-0.5B family base (apache-2.0); declared apache-2.0 is consistent. MinerU2.5-2509 (agpl-3.0) is the same publisher's earlier release."
+  },
+  "upstream_licenses_checked": {
+    "Qwen/Qwen2.5-VL-3B-Instruct": "qwen-research",
+    "Qwen/Qwen2.5-Omni-3B": "qwen-research",
+    "Qwen/Qwen2.5-VL-7B-Instruct": "apache-2.0",
+    "Qwen/Qwen2.5-Omni-7B": "apache-2.0",
+    "Qwen/Qwen2.5-VL-32B-Instruct": "apache-2.0",
+    "Qwen/Qwen2.5-VL-72B-Instruct": "qwen",
+    "Qwen/Qwen2-VL-2B-Instruct": "apache-2.0",
+    "Qwen/Qwen2-0.5B-Instruct": "apache-2.0",
+    "Qwen/Qwen3-0.6B": "apache-2.0",
+    "opendatalab/MinerU2.5-2509-1.2B": "agpl-3.0"
+  }
+}

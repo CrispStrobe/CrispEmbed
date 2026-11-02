@@ -1,0 +1,27 @@
+PASS typed-array-control
+PASS gate-unset
+PASS gate-empty
+PASS gate-zero
+PASS gate-nonempty-false-is-on
+PASS missing-format-version
+PASS unsupported-format-version
+PASS wrong-format-version-type
+PASS qwen2vl.vision.fullatt_block_indexes-missing
+PASS qwen2vl.vision.fullatt_block_indexes-scalar
+PASS qwen2vl.vision.fullatt_block_indexes-wrong-count
+PASS qwen2vl.vision.fullatt_block_indexes-wrong-element-type
+PASS qwen2vl.vision.image_mean-missing
+PASS qwen2vl.vision.image_mean-scalar
+PASS qwen2vl.vision.image_mean-wrong-count
+PASS qwen2vl.vision.image_mean-wrong-element-type
+PASS qwen2vl.vision.image_std-missing
+PASS qwen2vl.vision.image_std-scalar
+PASS qwen2vl.vision.image_std-wrong-count
+PASS qwen2vl.vision.image_std-wrong-element-type
+PASS qwen2vl.rope_sections-missing
+PASS qwen2vl.rope_sections-scalar
+PASS qwen2vl.rope_sections-wrong-count
+PASS qwen2vl.rope_sections-wrong-element-type
+PASS wrong-optional-norm-epsilon-type
+PASS conflicting-qwen3vl-prefix
+26/26 native metadata checks passed

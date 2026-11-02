@@ -1,0 +1,11 @@
+[package]
+name = "teleocr-public-probe"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+crispembed = { path = "../../CrispEmbed-TeleOCR/crispembed" }
+
+[[bin]]
+name = "teleocr-public-probe"
+path = "../../CrispEmbed-TeleOCR/tests/teleocr_public_bindings.rs"

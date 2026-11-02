@@ -1,0 +1,4 @@
+{"passed": 100, "total": 103, "all_passed": false}
+FAIL {'name': 'structure: visible content', 'passed': False, 'missing': ['- First owned list item', '- Second owned list item']}
+FAIL {'name': 'Column reading order', 'passed': False, 'positions': [0, 25, 50, 98, 143, 37, 75, 120, 172]}
+FAIL {'name': 'rotated: visible content', 'passed': False, 'missing': ['Rotated page', 'Rotation preserves this sentence.']}

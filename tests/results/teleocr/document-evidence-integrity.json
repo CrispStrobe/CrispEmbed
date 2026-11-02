@@ -1,0 +1,26 @@
+{
+  "kind": "teleocr-final-document-evidence-integrity",
+  "passed": true,
+  "links": [
+    {
+      "path": "docs/teleocr.md",
+      "relative_links_exist": true
+    },
+    {
+      "path": "docs/teleocr-license.md",
+      "relative_links_exist": true
+    },
+    {
+      "path": "docs/teleocr-validation.md",
+      "relative_links_exist": true
+    },
+    {
+      "path": "tests/results/teleocr/README.md",
+      "relative_links_exist": true
+    }
+  ],
+  "native_report_hashes_match_run_receipts": true,
+  "matrix_producer_hash_matches": true,
+  "documentation_placeholders_remaining": false,
+  "scope": "Static documentation and retained-evidence integrity; model qualification remains false"
+}

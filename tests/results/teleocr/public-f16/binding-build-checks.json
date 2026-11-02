@@ -1,0 +1,25 @@
+{
+  "kind": "teleocr-bindings-compilation",
+  "model_inference_executed": false,
+  "rust": {
+    "compiler": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+    "release_build_exit_code": 0,
+    "consumer_sha256": "1efc683e48e82d1541d35a711a94d35d1c6dcb819abad1d18af86eba33277226"
+  },
+  "dart": {
+    "compiler": "Dart SDK version: 3.13.7 (stable) (Thu Oct 22 14:28:57 2026 -0700) on \"linux_x64\"",
+    "analyze_exit_code": 0,
+    "analysis": "No issues found!",
+    "compile_exe_exit_code": 0,
+    "ffi_package": "2.2.0",
+    "consumer_sha256": "9f7500c7a57b31eaa41032ad4ee83b802043091f24d8b3eee711512851198d3c"
+  },
+  "source_sha256": {
+    "crispembed/src/lib.rs": "a7691d754da16e1868204d4ef419169fdb688bea2c6e240b73595695858c3cbc",
+    "crispembed-sys/src/lib.rs": "75aca2214cf152f8d9f9523e6de66a278f098dca163304937f601e904bf69ea9",
+    "flutter/crispembed/lib/src/crispembed.dart": "54162f01fee2041ef3adb935931506e58874cf7b6e913e1c2f11429151fa5370",
+    "flutter/crispembed/lib/src/crispembed_bindings.dart": "7a4a38bb27a6a678fa0219c597f571bc7ca7f69b6346b9c247d90b4b6b6f41a3",
+    "tests/teleocr_public_bindings.rs": "36f5a2baaa44c654a966d380325222be8e96c1467acdb1bc43a1bd389a912116",
+    "tests/teleocr_public_bindings.dart": "0be45470843e4498227746ddefbf18e36385279e07ee601cb47a73216443f98c"
+  }
+}

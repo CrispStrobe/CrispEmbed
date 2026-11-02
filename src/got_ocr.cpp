@@ -366,6 +366,19 @@ bool got_ocr::load(context & ctx, const char * gguf_path, int n_threads, int ver
     ctx.n_threads = n_threads;
     ctx.verbosity = verbosity;
 
+    // License gate: GOT-OCR2's decoder is Qwen1.5-0.5B (config and weight lineage,
+    // tests/results/licenses/registry-qwen-audit.json), released under the Tongyi
+    // Qianwen RESEARCH LICENSE: non-commercial, and no use of the model or its
+    // outputs to improve any other large language model.
+    if (!core_env::on("CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE")) {
+        fprintf(stderr, "got_ocr: GOT-OCR2's decoder derives from Qwen1.5-0.5B, released under the Tongyi Qianwen\n"
+                        "  RESEARCH LICENSE AGREEMENT (non-commercial use only; the model and its outputs may not\n"
+                        "  be used to improve other large language models). Set\n"
+                        "  CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE=1 to acknowledge.\n"
+                        "  See: https://huggingface.co/Qwen/Qwen1.5-0.5B/blob/main/LICENSE\n");
+        return false;
+    }
+
     if (!load_hparams(ctx, gguf_path)) {
         fprintf(stderr, "got_ocr: failed to load hparams\n");
         return false;

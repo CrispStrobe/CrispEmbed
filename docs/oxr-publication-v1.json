@@ -1,0 +1,143 @@
+{
+  "schema": "crispembed-ocr-gguf-publication-v1",
+  "approved_by_owner": true,
+  "approval": "Owner instructed publication and registry wiring of OXR and its D-FINE layout model, loading only after the user affirms the OXR License (2026-11-01). A variant is publishable only when its committed receipt shows every case exact against the pinned original model.",
+  "token_secret": "HF_PUBLISH_TOKEN",
+  "source_contract": "models/oxr-source.json",
+  "upstream": {
+    "repo": "SoMarkAI/OXR-1.0",
+    "revision": "c708407f9d2b4df658f2543d9132b62bb7221df4",
+    "license": "oxr",
+    "copyright": "Copyright (c) 2026 SoMark Team",
+    "readme": {
+      "bytes": 19677,
+      "sha256": "a3241e175099ea57a4491be25cce8e965945889e41ed25c3c01911fd17a2236f"
+    }
+  },
+  "license_files": [
+    {
+      "name": "LICENSE",
+      "url": "https://huggingface.co/SoMarkAI/OXR-1.0/resolve/c708407f9d2b4df658f2543d9132b62bb7221df4/LICENSE",
+      "bytes": 6588,
+      "sha256": "4577df88e499926976b390c4ea3992cc91baa9ebac29386f35b557bd3cb4a662",
+      "note": "OXR License (Apache-2.0 with additional terms), verbatim from the model repository at the pinned revision; byte-identical to CrispEmbed licenses/oxr-LICENSE"
+    },
+    {
+      "name": "LICENSE-APACHE-2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0.txt",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "note": "Apache License 2.0, canonical text (the base license the OXR additional terms modify)"
+    }
+  ],
+  "notice_text": "OXR-1.0 by SoMark Team. Copyright (c) 2026 SoMark Team.\nOriginal model: https://huggingface.co/SoMarkAI/OXR-1.0/tree/c708407f9d2b4df658f2543d9132b62bb7221df4\n\nThese GGUF files are format conversions (and, where noted, quantizations) by CrispEmbed of the files above.\nThey are distributed under the OXR License (Apache-2.0 with additional terms; see LICENSE and LICENSE-APACHE-2.0).\nOnline services using OXR or its derivative works must prominently identify SoMark OXR.\n",
+  "destination": "cstr/OXR-1.0-GGUF",
+  "spec": "docs/oxr.md",
+  "converter": {
+    "script": "models/convert-oxr-to-gguf.py",
+    "args": [
+      "--model",
+      "{src}",
+      "--output",
+      "{out}"
+    ],
+    "requirements": "tools/oxr-conversion-requirements.txt"
+  },
+  "default_variants": [
+    "F16"
+  ],
+  "recipes": {
+    "F32": {
+      "filename": "oxr-1.0-f32.gguf",
+      "from": "convert",
+      "convert_args": [
+        "--dtype",
+        "f32"
+      ],
+      "note": "lossless conversion"
+    },
+    "F16": {
+      "filename": "oxr-1.0-f16.gguf",
+      "from": "convert",
+      "convert_args": [
+        "--dtype",
+        "f16"
+      ],
+      "note": "F16 attention/MLP matrices; embeddings, lm_head, visual vocabulary/head, patch/position tables and norms F32",
+      "precision_receipt": "tests/results/oxr/precision.json",
+      "precision_dtype": "f16"
+    },
+    "Q8_0": {
+      "filename": "oxr-1.0-q8_0-llm-only.gguf",
+      "from": "F32",
+      "type": "q8_0",
+      "note": "LLM attention/MLP matrices Q8_0; SigLIP2 vision tower F16; all other tensors F32 (crispembed-quantize OXR policy) \u2014 token-ID gate: German page diverges (receipt q8_0-cpu); not published",
+      "precision_receipt": "tests/results/oxr/precision.json",
+      "precision_dtype": "q8_0"
+    },
+    "Q8_0-LARGE": {
+      "filename": "oxr-1.0-q8_0.gguf",
+      "from": "F32",
+      "type": "q8_0",
+      "quantize_env": {
+        "CRISPEMBED_QUANTIZE_OXR_LARGE": "q8_0",
+        "CRISPEMBED_QUANTIZE_OXR_VISION": "f16"
+      },
+      "note": "LLM matrices plus embeddings, lm_head and visual tables Q8_0; SigLIP2 vision tower F16; norms F32. Clears the Q8_0 final-logit cosine bar (> 0.97) on all five cases; the German page differs late (CER 1.1%).",
+      "precision_receipt": "tests/results/oxr/precision-cosine.json",
+      "precision_dtype": "q8_0-large",
+      "precision_tier": "q8_0",
+      "precision_gate": "cosine"
+    },
+    "Q4_K-HEAD": {
+      "filename": "oxr-1.0-q4_k-head.gguf",
+      "from": "F32",
+      "type": "q8_0",
+      "quantize_env": {
+        "CRISPEMBED_QUANTIZE_OXR_LARGE": "mix",
+        "CRISPEMBED_QUANTIZE_OXR_VISION": "f16"
+      },
+      "note": "Mixed recipe after fusor-rs/oxr-wasm (MIT): visual head Q4_K, LLM matrices/embeddings/lm_head Q8_0, SigLIP2 vision tower F16. Clears the Q4_K bar (> 0.94) on all five cases.",
+      "precision_receipt": "tests/results/oxr/precision-cosine.json",
+      "precision_dtype": "q4_k-head",
+      "precision_tier": "q4_k",
+      "precision_gate": "cosine"
+    }
+  },
+  "receipts": {
+    "parity": "tests/results/oxr/hosted-parity.json"
+  },
+  "parity_arms": [
+    "f32",
+    "f32-reuse"
+  ],
+  "parity_cases": [
+    "formula",
+    "table",
+    "japanese",
+    "receipt",
+    "german"
+  ],
+  "qualification": {
+    "default_enabled": false,
+    "gate": "F32 token-ID exact on all five frozen cases against the pinned original model; reduced precisions publish only when token-ID exact on every case",
+    "registry_alias": "added only after upload, with the real published SHA256",
+    "recipe_note": "Hosted 41251971237/41252889926: F32 (default and reused decode graph) token-exact on five cases; F16 (41255835479/41255837490) token-exact on five; Q8_0 with Q8_0 vision diverged on the German page (41273999602), plain Q4_K on three of five (41274001351). Q8_0 with F16 vision (41277219829) still diverges on German at token 35 and would save only 0.6 GB over F16 (3.84 vs 4.44 GB; ~0.7B parameters stay F32 by design), so Q8_0 is rejected and F16 is the published precision."
+  },
+  "card": {
+    "title": "OXR-1.0",
+    "authors": "SoMark Team",
+    "tags": [
+      "document-parsing",
+      "oxr",
+      "siglip2",
+      "qwen3",
+      "license-oxr"
+    ],
+    "runtime_note": "They target CrispEmbed's native OXR profile (`general.architecture = oxr`, short `vit.` vision tensor names) and are not loadable by llama.cpp. Full-page document parsing additionally uses the D-FINE layout detector published separately as cstr/OXR-1.0-DFINE-layout-GGUF.",
+    "license_frontmatter": "license: other\nlicense_name: oxr\nlicense_link: LICENSE",
+    "license_md": "- **OXR License: Apache-2.0 with additional terms** (`LICENSE`, verbatim; base text in `LICENSE-APACHE-2.0`). The additional terms take precedence:\n  - commercial use without a separate SoMark commercial license is permitted only while you and your affiliates stay below **USD 2,000,000** in total funding **and** in annual revenue;\n  - an online service built on OXR or its derivatives must **prominently identify SoMark OXR**;\n  - offering third parties a **hosted API that competes** with SoMark's document parsing / OCR / layout services is not permitted at any size without SoMark's written license;\n  - violating these terms terminates the license automatically.\n- These GGUF files are derivative works and are redistributed under the same terms; `NOTICE` carries the attribution.\n- CrispEmbed only loads them after explicit acknowledgement (`CRISPEMBED_OXR=1` and `CRISPEMBED_ACCEPT_OXR_LICENSE=1`); its model registry requires `--accept-license oxr` to download them, and `crispembed-server` warns about sections 2 and 3 when an OXR stage is configured.",
+    "not_verified": "Strict per-stage numerical budgets are not met, including F32: one-ulp F32 differences at the decoder's ~2^15 outlier activations exceed the fixed 0.002 absolute budget (worst cosine 0.99999988); decoded IDs and text are exact. Also not verified: GPU execution, mobile/WASM, representative document corpora beyond the five frozen cases.",
+    "usage": "OXR support is experimental and requires acknowledging the OXR License:\n\n```bash\nCRISPEMBED_OXR=1 CRISPEMBED_ACCEPT_OXR_LICENSE=1 crispembed --ocr-pipeline page.png \\\\\n  --ocr-engine oxr --ocr-rec {first}\n```"
+  }
+}

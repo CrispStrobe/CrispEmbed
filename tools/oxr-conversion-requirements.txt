@@ -1,0 +1,4 @@
+# No Torch or remote model-code execution is needed for GGUF conversion.
+numpy==1.26.4
+huggingface_hub==1.5.0
+gguf==0.17.1

@@ -1,4 +1,89 @@
+## Metal GPU audit follow-ups — 1 November 2026
+
+Source: `docs/gpu-support-matrix.md` (branch `feat/metal-audit`).
+
+- CUDA A/B (Kaggle) of `CRISPEMBED_ESRGAN_GPU=1` and `CRISPEMBED_DBNET_DECONV_MATMUL=1`
+  (DBNet det is already GPU-default on CUDA; the deconv rewrite may speed it further).
+- Not reached on Metal (no A/B yet): VLM lanes beyond the queued GOT/SmolDocling/H2OVL/
+  LightOnOCR/Granite runs, GLM vision drift root cause, Surya, SAM2, GLiNER, LiLT,
+  FireRedPunc/PCS, CLIP/ViT/CNN, BiDirLM, NAFNet, SMT/TrOMR/Transcoda, PP-FormulaNet-L.
+- CPU-forced engines with ggml graphs that still need a gated GPU path: UltraBERT,
+  EmbeddingGemma2 decision (needs a GPU form of its CPU custom GELU), MoEdern, Josev2B,
+  Qwen3.5-OCR/Ovis, MiniCPM, PP-FormulaNet, MixTeX, HMER/BTTR/PosFormer, FLOVA,
+  Restormer, the `wload` SR family (SwinIR/HAT/DAT/PAN/SCUNet/TBSRN/Text-SR/AdaIR).
+
 # CrispEmbed active plan —29 October2026 wrap-up
+
+## Native Marker-style document pipeline — 31 October 2026
+
+The requested implementation and bounded validation are complete on
+`feat/marker-native`, preserving the completed TeleOCR
+branch and merges `origin/main@b8cd249` before code changes. Marker source is
+pinned to `71dd5fd7e51ab24f8624b6ba2fcb6014b4e40ed4` (2.1.0, Apache-2.0).
+The requested GGUF/GGML route uses the existing native TeleOCR backend and a
+C++ document pipeline. Current Surya checkpoint inference/parity is outside
+this alternative backend: its separately restricted models are not downloaded.
+
+- Native C ABI/orchestration, optional PDFium, layout/crop OCR, document
+  processors/renderers, CLI, Python/Rust/Dart and HTTP are implemented. See
+  [usage](docs/marker.md), [coverage](docs/marker-feature-coverage.md),
+  [licenses](docs/marker-license.md) and [validation](docs/marker-validation.md).
+- Final document/backend/C API/save panels pass 86/39/38/38 checks; public
+  integration 112, compiled Rust/Dart 13/14, final ASAN/UBSAN 86 and actual
+  Python packaging 26. The independent native/reference panel passes 86
+  checks across eight PDFs/ten pages. Initial failures and corrections remain.
+- Real model runs use a declared, tiny owned panel. Final-source F16/Q8_0/Q4_K
+  recover the three-line image exactly; the initial F16 full panel also covers
+  neural PDF layout with text reuse and a 4×3 table. Keep raw label errors and
+  table-header semantics limitations visible. The separately declared final
+  force-OCR PDF also matches authored text with embedded extraction bypassed.
+  Seven mode/build/precision trials reuse three distinct inputs; complete
+  per-build receipts remain in [the aggregate](tests/results/marker/summary.json).
+- Keep `CRISPEMBED_MARKER` and `CRISPEMBED_TELEOCR` default-off. No model
+  publication, registry alias, runtime release or numerical qualification change.
+- Remaining qualification is representative multilingual/layout/reading-order
+  quality, more than two columns, complex tables, large-document resource
+  boundaries and non-Linux backends/consumers. This implementation does not
+  claim the original Surya model behavior, Office/EPUB providers or hosted LLM
+  processors. Upstream models retain their separate restrictions.
+- Resource check before bounded work: idle host, CPU-only inference sequentially,
+  no simultaneous model forwards. Reuse the frozen TeleOCR numerical evidence;
+  this pipeline does not waive its failed strict intermediate gates.
+
+## TeleOCR GGUF/GGML integration — 31 October 2026
+
+The requested native implementation and bounded CPU validation are complete
+on `feat/teleocr-ggml`, based on `15adb672f71f8470a23db1284dafa102515adae9`;
+ggml remains pinned to `a06fc0bb46b73cc10011fc90ae4054aee8438aeb`. The complete
+source delivery includes ggml, an applicable patch and retained evidence.
+See [usage](docs/teleocr.md), [license audit](docs/teleocr-license.md),
+[validation](docs/teleocr-validation.md) and the [matrix](tests/results/teleocr/summary.json).
+
+- Sources: `XingChen-AGI/TeleOCR@b3f6a0c084db72f971e19a779d2fd8a6bc9e3b8d`
+  and Apache-2.0 `rzafiamy/teleocr-rs@957cdbabe80e86d652c5fcc938ed7fbcf1eb2bbe`.
+  The pinned HF model module has an explicit Apache source header. Official
+  unlicensed document-client/postprocessor files were not directly translated.
+- Converter checks 701 source tensors and writes 700; F32/F16 and protected
+  Q8_0/Q4_K artifacts were actually converted and tested. C/Python/CLI/HTTP,
+  stage 24, compiled Rust/Dart and the native-backed document parser are wired.
+- All 24 CPU cases reach EOS with complete 75-stage coverage and valid
+  confidences. F32/F16/Q8_0 each match six complete original sequences; Q4_K
+  matches five and adds a trailing newline on code. Raw and normalized scores
+  remain separate. Final loader guards pass 43 metadata/header cases and the
+  rebuilt production CLI repeats the full 66-token text result exactly.
+- **Strict numerical qualification remains false for every precision** under
+  the unchanged 0.002 absolute / 0.99999 row-cosine gates. Preserve the initial
+  failures, original references and current decoded results. The limited
+  F32 ULP/propagation diagnosis does not waive the gates or explain all errors.
+- Keep `CRISPEMBED_TELEOCR=1` default-off and CPU placement default. Next work is
+  numerical qualification against the same frozen source, representative
+  independent OCR/layout gold, then actual CUDA/Metal/Vulkan/mobile/WASM and
+  resource-boundary qualification. Quantized raw differences must remain visible.
+- Model publication, immutable registry aliases, release tags and downstream
+  app changes remain separate. No runtime version or default is promoted here.
+
+Unrelated portfolio work and downstream application pins remain with their
+existing owners. Completed details are recorded in HISTORY and PERFORMANCE.
 
 Start with [the executable handoff](docs/handoff-2026-10-29.md). It gives exact
 sources, job states, inputs, commands, limits and acceptance gates. Completed
@@ -39,6 +124,124 @@ publication by registry readback. No version bump or publication is made by
 this handoff.
 
 ## Immediate executable order
+
+### Model weight licenses (31 October 2026)
+
+[The registry audit](tests/results/licenses/registry-qwen-audit.json) found
+five families labelled apache-2.0 whose weights inherit stricter Qwen terms:
+`qwen2vl-3b`, `nanonets-ocr-s`, `uni-mumer-qwen2.5-vl-3b` and `teleocr-*`
+(Qwen2.5-VL-3B: Qwen RESEARCH LICENSE, non-commercial) and `got-ocr2`
+(Qwen1.5-0.5B decoder: Tongyi Qianwen RESEARCH LICENSE, non-commercial and no
+use to improve other LLMs). Registry licenses, download acceptance, engine gates
+(`CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE`, `CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE`)
+and the published cstr/* cards are corrected. Open: CrispSorter/CrispCalc must
+not offer these models without the acknowledgement; Apache-2.0 replacements for
+GOT's tasks are MinerU2.5-Pro, FireRed-OCR, Uni-MuMER-Qwen3-VL-2B and PaddleOCR-VL.
+
+
+### OXR / D-FINE on Metal and precision recipes (feat/metal-oxr, 1 November 2026)
+
+Done (receipts `tests/results/oxr/metal-m1/`, `tests/results/oxr-dfine/metal-m1/`, hosted
+`tests/results/oxr*/hosted-413*`; details in docs/oxr.md "GPU: Metal" and docs/oxr-dfine.md):
+OXR F16 on Metal token-exact 5/5 and now the Apple default for that recipe; D-FINE F32 on
+Metal region-exact 5/5 (opt-in); ggml patch `GGML_METAL_PREC_F32_MM`; D-FINE F16 re-scored
+(passes the owner bar); OXR Q8_0 with quantized large tables (1.93 GB, F16 vision) passes;
+Q4_K-head mixed recipes pass; plain Q4_K LLM layers fail (table 0.896).
+
+Open, in order:
+
+1. Heron: done; GPU default now PREC_F32 + `_hp` (regions equal CPU 5/5). D-FINE is Metal by
+   default on Apple (region-exact 5/5, 2.1-2.2x CPU).
+2. OXR quantized: CPU `CRISPEMBED_OXR_DEQUANT_VISION=1` makes Q8_0-everything 5/5 token-exact
+   (41340880860); Metal five-case A/B done (Q8_0-large and Q4_K-head: 4/5, logits cos >= 0.9995 vs
+   Metal F16). Remaining German divergence comes from decode-step activation quantization
+   (integer mat-vec on every backend); an opt-in F32-activation decode path is the next A/B.
+   Publication decision for the qualifying recipes is the owner's (none made here).
+3. OXR F32 on Metal (needs a local F32 conversion; volume was below its free-space floor).
+4. CUDA: done on T4 (kernel v2): F16 5/5 token-exact with the new dense attention; Q8_0-large
+   and Q4_K-head 4/5 (German 55/209), logits cos >= 0.998 vs CUDA F16. CUDA quantized products
+   still quantize activations like the CPU; a CUDA analogue of the vision dequant gate is open.
+5. Dense GPU decode copies the whole V cache per layer per token (permute+cont); a
+   transposed-V cache would cut it. Flash is 1.85x faster on German but less close to CPU.
+
+### OXR-1.0 native integration (31 October 2026)
+
+The isolated `feat/oxr-1.0` worktree retains the earlier MinerU integration and
+merges upstream `b8cd2497765f2fd8db0b9c713d952898bdd9b996`. The OXR model pin is
+`c708407f9d2b4df658f2543d9132b62bb7221df4`; the document helper pin is
+`c1a1dcb312ee9f691404f127785510453c0d9350`. A dedicated native graph, strict
+converter, document adapter, public bindings, and original-reference qualification
+tools are implemented behind `CRISPEMBED_OXR=1`. This is a separate source lane
+under OXR's additional license terms, not an addition to the permissive-model
+publication queue. [The guide](docs/oxr.md) records exact scope and commands.
+
+Completed component evidence is in
+[the implementation receipt](tests/results/oxr/implementation-validation.json).
+Full library linking, the linked GGML contracts, checkpoint conversion/inference,
+all 66 original/native stages, representative document metrics, same-host F32
+speed, reusable-graph A/B, GPU/backends and Rust/Dart runtime checks remain open.
+The supplied [hosted workflow](.github/workflows/oxr.yml) has not been dispatched.
+Do not publish aliases, promote defaults or infer vLLM throughput from component
+checks. The original D-FINE layout service remains separate; supplied regions
+allow the adapter to avoid that service. The native D-FINE layout detector now
+lives on `feat/oxr-dfine` (see below).
+
+### OXR-1.0 D-FINE layout detector (feat/oxr-dfine, 1 November 2026)
+
+Native `dfine` architecture of `layout_detect` ([docs/oxr-dfine.md](docs/oxr-dfine.md)),
+gated by `CRISPEMBED_OXR=1` + `CRISPEMBED_ACCEPT_OXR_LICENSE=1`. Hosted run
+41250159815: F32 OXR-selected regions match the original service on all five
+pages (boxes <= 4.4e-4 px, scores <= 1.8e-4), preprocessing bit-exact, heron
+byte-identical; stage budget 5e-3 fails in decoder layers 2-3 on receipt/german
+(native closer to float64 than PyTorch FP32 on 55-56/56 stages); F16 rejected.
+Open, in order:
+
+1. Speed: native 1.44 s vs PyTorch 0.52 s per page (run 41251744740, 4 threads;
+   2.6-2.7x). Opt-in dw-direct is 18% faster, same regions, one extra stage-budget
+   failure; conv-direct is slower. Next: per-op profile of the encoder graph
+   (im2col 3x3 convs, concat chains) before any default change; keep paths gated.
+2. End-to-end `CrispOXR(layout_model=)` document output vs the service-backed
+   pipeline on the same pages (JSON/Markdown), once the document-assembly lane lands.
+3. Optional: `class_confidences`, GPU backend qualification, Rust/Dart runtime tests.
+No publication, alias, merge into feat/teleocr, tag or default flip follows.
+
+**Native OXR document route (`feat/oxr-native-doc`, `CRISPEMBED_OXR_NATIVE_DOC=1`, default off).**
+The pinned helper's `process_pages`, minus the layout detector, is translated to C++
+([guide](docs/oxr.md#native-c-document-route-experimental-crispembed_oxr_native_doc1)).
+Local model-free parity on arm64 matches 2,801 helper checks and 60/60 scripted documents.
+The only differences are arm64-wheel `INTER_AREA` pixels
+([receipt](tests/results/oxr/native-doc-local-macos-arm64.json)). Open items:
+hosted x86-64 helpers/replay/native parity on the five original-D-FINE cases
+(`tools/ci-heavy/oxr_native_doc.sh`); Markdown-table output, table-image placeholders
+and `asset_dir` (rejected, not ported); and plugging the native D-FINE provider
+into `from_layout_detect` after `layout_detect::region` carries raw labels. Keep the route
+default-off until hosted parity holds on every case.
+
+The shared-operator audit additionally replaces MinerU-only QuickGELU's F16 LUT
+with explicit F32 math. Its linked operator check and full-model replay remain
+pending; the earlier MinerU component receipt retains its original source hashes.
+
+### MinerU2.5-Pro-2604 integration (31 October 2026)
+
+The isolated `feat/mineru25-pro-2604` source delivery adds the checkpoint
+`opendatalab/MinerU2.5-Pro-2604-1.2B` at revision
+`d3f5e08d073c21466bbabe21c71bb1e9c2e595da`. The implementation reuses the
+Qwen2-VL GGML graph behind `CRISPEMBED_MINERU25_PRO=1`. Its converter,
+preprocessing/token contracts, document adapter and qualification tools are
+tracked in [the integration guide](docs/mineru25-pro.md). Model-backed
+intermediate, decoded-quality and same-host speed gates must pass before this
+path is qualified or receives a published model alias. No existing model default,
+release version, application pin or remote model artifact is changed here.
+
+Full native document route (`feat/mineru-native-doc`): C++ port of every
+mineru-vl-utils branch behind `CRISPEMBED_MINERU25_PRO_FULL_DOC` (default off),
+composed from the layout/router/Marker-document components with an exact
+upstream output profile. Weight-free parity is identical (see the guide).
+Model-backed parity on hosted run 41251475795: 8/8 protocol cases identical.
+Next: review and decide default-on (keep basic/Python routes); add an
+image-bearing-table fixture to exercise masking with the real model; token-glyph pixels in image-bearing tables and
+cross-page table merge remain documented exceptions.
+
 
 Choose one bounded lane. The source table and current remote states in the
 handoff take precedence over historical commands.
@@ -159,8 +362,9 @@ Proceed smallest applicable backend first after the current closure:
    community GGUF quality is unverified.
 2. LightOnOCR-3-1B: verify exact official preprocessing, tokenizer, transcription
    and grounding against the existing LightOn backend.
-3. TeleOCR: audit base/NaviDC provenance and structured output before reusing
-   Qwen2.5-VL.
+3. TeleOCR: the gated CPU implementation and bounded panel are complete;
+   continue its numerical/representative-quality and provenance limits in
+   the TeleOCR lane above before publication or platform promotion.
 4. LightOnOCR-3-4B and Qwen3.5-9B: separate long-page/memory/GPU reference and
    task protocols after small dense-model parity.
 5. Qwen3.6-27B: dense64-layer config and resource-qualified long-context port.
@@ -173,12 +377,36 @@ outside this lane. Do not infer weight permission from a public repository.
 
 ## Issue71, packaging and downstream delivery
 
+- Bounded source delivery, 1 November 2026: issue71 CLI implementation on
+  `feat/issue71-inpainting`, based on `b8cd2497765f2fd8db0b9c713d952898bdd9b996`.
+  Adds a default-off, exact-model-pinned MI-GAN CLI, native256 tiling, explicit or
+  DBNet-derived masks, PNG provenance and persistent directory/TSV batches.
+  The existing MI-GAN graph/reference receipts remain unchanged. The
+  [implementation and validation contract](docs/inpainting-cli.md) distinguishes
+  model-free wrapper checks from pending native hosted execution and real-scene
+  quality. Thirty-six dependency-free Python checks, six C++ syntax-only checks,
+  Python/YAML syntax, formatting and the clean-exit guard pass. Compiled native
+  tests, actual CLI execution and checkpoint replication remain unexecuted;
+  the new three-platform workflow and opt-in model smoke are prepared, not
+  observed hosted results. This source delivery creates no model alias, runtime release, shared
+  C ABI or downstream pin change; temporal/video and LaMa remain separate.
+- `feat/metal-migan` (1 November 2026): gated MI-GAN GPU/Metal path, `migan-pointwise-v1`
+  F16/Q8_0/Q4_K containers ([doc](docs/migan-metal.md)). Metal F32 exact on all eight
+  fixtures (0/1896 strict failures); `PAD_K` 284 ms vs CPU ~650 ms per tile on the M1.
+  Owner bars: F32/F16/Q8_0 pass on CPU and Metal; Q4_K fails (generated 0.9395,
+  masked 0.805). TODO: (1) finish the queued Q4_K sensitive-layer (`CRISPEMBED_QUANTIZE_MIGAN_Q8`)
+  and `DEQUANT_WEIGHTS` probes and rerun the eight-fixture panel for any candidate;
+  (2) run delivery-5's CPU-kernel graph on the M1 CPU; (3) reconcile with
+  `feat/issue71-five-engines-graphs` and only then flip GPU via `explicitly_off`
+  with `PAD_K`; (4) attribute the ~2x per-tile gap of 1080p frames vs isolated
+  calls; (5) CUDA/Vulkan untested.
 - Issue71 MI-GAN: fixed256 CPU/F32 prototype and494/eight-fixture audit are
-  complete. Next freeze licensed real subtitle/scene images and masks, perceptual/
-  seam criteria; then separately implement C ABI/orchestrator/CLI/server/bindings,
-  registry, error/recovery and consumers. Video/motion/flicker and text-derived
-  masks need their own gold. Other sizes/F16/quantization/backends/batching remain
-  separate. LaMa is held on checkpoint terms/FFT semantics. Keep issue71 open.
+  complete. Qualify the new CLI separately, then freeze licensed real subtitle/
+  scene images and masks with perceptual/seam criteria. C ABI/orchestrator/server/
+  bindings, registry and downstream consumers remain separate. Video/motion/
+  flicker and text-derived masks need their own gold. Other model resolutions,
+  F16/quantization and GPU backends remain separate. LaMa is held on checkpoint
+  terms/FFT semantics. Keep issue71 open.
 - Source/wheel success is not release qualification. Require fresh portable
   native/WASM producers, installed bundle/ABI/platform consumers and full
   aggregation for the final source, then update release metadata coherently.

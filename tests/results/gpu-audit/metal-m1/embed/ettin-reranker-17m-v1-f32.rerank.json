@@ -1,0 +1,57 @@
+{
+ "model": "ettin-reranker-17m-v1-f32.gguf",
+ "mode": "rerank",
+ "texts": "embed_texts.txt",
+ "threads": 4,
+ "env": {},
+ "wall_s": {
+  "metal": [
+   0.319,
+   0.267
+  ],
+  "cpu": [
+   0.26,
+   0.266
+  ]
+ },
+ "rows": [
+  {
+   "scores_metal": [
+    1.591901,
+    -0.766613,
+    -2.234904,
+    2.330104,
+    2.847691,
+    1.11811,
+    0.757984,
+    0.460329,
+    -0.178714,
+    2.556597,
+    0.595935,
+    10.507463
+   ],
+   "scores_cpu": [
+    1.594132,
+    -0.76619,
+    -2.235257,
+    2.32913,
+    2.848424,
+    1.118397,
+    0.758137,
+    0.458962,
+    -0.177918,
+    2.556607,
+    0.595279,
+    10.508386
+   ],
+   "max_abs": 0.002231000000000094,
+   "same_order": true
+  }
+ ],
+ "stderr_tail": {
+  "metal": "attn_ext_pad_mask=0_ncpsg=64      0xc17ab4c00 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_f32_dk64_dv64', name = 'kernel_flash_attn_ext_f32_dk64_dv64_mask=0_sinks=0_bias=0_scap=0_kvpad=1_bcm=0_ns10=256_ns20=256_nsg=4'\nggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_f32_dk64_dv64_mask=0_sinks=0_bias=0_scap=0_kvpad=1_bcm=0_ns10=256_ns20=256_nsg=4      0xc17ab4f00 | th_max =  704 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_pad', name = 'kernel_flash_attn_ext_pad_mask=1_ncpsg=64'\nggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_pad_mask=1_ncpsg=64      0xc17ab5200 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_blk', name = 'kernel_flash_attn_ext_blk_nqptg=8_ncpsg=64'\nggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_blk_nqptg=8_ncpsg=64      0xc17ab5500 | th_max = 1024 | th_width =   32\nggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_f32_dk64_dv64', name = 'kernel_flash_attn_ext_f32_dk64_dv64_mask=1_sinks=0_bias=0_scap=0_kvpad=1_bcm=1_ns10=256_ns20=256_nsg=4'\nggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_f32_dk64_dv64_mask=1_sinks=0_bias=0_scap=0_kvpad=1_bcm=1_ns10=256_ns20=256_nsg=4      0xc17ab5800 | th_max =  640 | th_width =   32\nggml_metal_free: deallocating\n",
+  "cpu": "crispembed: using GPT-2 BPE tokenizer (50368 tokens, pre=modern-bert)\ncrispasr_init_gpu_backend: --gpu-backend cpu \u2014 using the CPU backend, no GPU device initialised\ncrispembed: using CPU backend (4 threads)\ncrispembed: no position embeddings, using RoPE (theta=160000, pre-LN)\ncrispembed: classifier head loaded (reranker=2-layer+LN, act=gelu)\ncrispembed: loaded 50009 BPE merges from tensor\ncrispembed: loaded 7 layers, 256 dims, 50368 vocab\n"
+ },
+ "date": "2026-11-01",
+ "max_abs": 0.002231000000000094
+}

@@ -1,0 +1,114 @@
+name: Inpainting CLI and image contracts
+
+on:
+  pull_request:
+    paths:
+      - 'src/inpaint.*'
+      - 'src/migan.*'
+      - 'src/ocr_detect.*'
+      - 'src/core/sha256.h'
+      - 'src/core/image_out.*'
+      - 'examples/cli/inpaint_cli.*'
+      - 'examples/cli/main.cpp'
+      - 'tests/*inpaint*'
+      - 'tools/prepare_migan_inpaint.py'
+      - 'tools/migan_reference_contract.py'
+      - 'CMakeLists.txt'
+      - 'ggml'
+      - '.github/workflows/inpaint-cli.yml'
+  push:
+    paths:
+      - 'src/inpaint.*'
+      - 'src/migan.*'
+      - 'src/ocr_detect.*'
+      - 'src/core/sha256.h'
+      - 'examples/cli/inpaint_cli.*'
+      - 'tests/*inpaint*'
+      - 'tools/prepare_migan_inpaint.py'
+      - 'CMakeLists.txt'
+      - '.github/workflows/inpaint-cli.yml'
+  workflow_dispatch:
+    inputs:
+      model_smoke:
+        description: 'Reproduce the exact reviewed 25 MB model and run synthetic real-inference smoke on Linux'
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: inpaint-cli-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  contracts:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-14, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    env:
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Model preparation and independent PNG controls
+        run: |
+          python tests/test_prepare_migan_inpaint.py -v
+          python tests/test_inpaint_png.py -v
+          python tests/test_migan_reference_contract.py -v
+          python tests/test_migan_native_driver.py -v
+      - name: Configure portable CPU build
+        run: >-
+          cmake -S . -B build-inpaint -DCMAKE_BUILD_TYPE=Release
+          -DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF -DBUILD_SHARED_LIBS=OFF
+          -DGGML_BLAS=OFF -DGGML_METAL=OFF -DGGML_CUDA=OFF -DGGML_VULKAN=OFF
+          -DGGML_OPENMP=OFF -DGGML_LLAMAFILE=OFF -DCRISPEMBED_BUILD_SHARED=OFF
+      - name: Build CLI, image contracts and isolated test driver
+        run: >-
+          cmake --build build-inpaint --config Release --parallel 2
+          --target crispembed-cli test-inpaint test-inpaint-cli-driver test-migan-diff
+      - name: Native and actual CLI model-free controls
+        run: |
+          bin=build-inpaint
+          suffix=
+          if [ -f build-inpaint/Release/crispembed.exe ]; then
+            bin=build-inpaint/Release
+            suffix=.exe
+          fi
+          "$bin/test-inpaint$suffix"
+          "$bin/test-migan-diff$suffix" --contracts
+          "$bin/test-migan-diff$suffix" --gate-controls
+          "$bin/test-migan-diff$suffix" --observer-retention
+          python tests/test_inpaint_cli.py --binary "$bin/test-inpaint-cli-driver$suffix" \
+            --real-binary "$bin/crispembed$suffix" -v
+      - name: Reproduce the reviewed model without framework dependencies
+        if: github.event_name == 'workflow_dispatch' && inputs.model_smoke && matrix.os == 'ubuntu-24.04'
+        run: python tools/prepare_migan_inpaint.py --download --output-dir "$RUNNER_TEMP/migan-inpaint-model"
+      - name: Production CLI synthetic model smoke
+        if: github.event_name == 'workflow_dispatch' && inputs.model_smoke && matrix.os == 'ubuntu-24.04'
+        run: >-
+          python tests/test_inpaint_model.py --binary build-inpaint/crispembed
+          --model "$RUNNER_TEMP/migan-inpaint-model/migan-256-places2-f32-experimental.gguf"
+          --output-dir "$RUNNER_TEMP/inpaint-model-smoke"
+      - name: Retain synthetic smoke evidence
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.model_smoke && matrix.os == 'ubuntu-24.04'
+        uses: actions/upload-artifact@v4
+        with:
+          name: inpaint-cli-smoke-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/inpaint-model-smoke/
+            ${{ runner.temp }}/migan-inpaint-model/replication.json
+            ${{ runner.temp }}/migan-inpaint-model/licenses/
+          if-no-files-found: warn
+          retention-days: 30

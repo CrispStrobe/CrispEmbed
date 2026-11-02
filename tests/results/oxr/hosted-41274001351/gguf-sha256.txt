@@ -1,0 +1,1 @@
+2ec3728f5734257aadfa3c382a188c38a7774b31ee67731ad1fdddfca233fced  /mnt/heavy/scratch/oxr-q4_k.gguf

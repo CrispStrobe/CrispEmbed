@@ -1,0 +1,111 @@
+{"model": "all-MiniLM-L6-v2-q8_0.gguf", "mode": "embed", "wall_s": {"metal": [1.262, 0.151], "cpu": [0.133, 0.112]}, "cos_min": 0.9993573139809854, "max_abs": 0.0060160000000000005}
+{"model": "bge-small-en-v1.5-q8_0.gguf", "mode": "embed", "wall_s": {"metal": [1.661, 0.189], "cpu": [0.233, 0.236]}, "cos_min": 0.9997977040691874, "max_abs": 0.0031189999999999968}
+{"model": "multilingual-e5-small-q8_0.gguf", "mode": "embed", "wall_s": {"metal": [4.327, 0.332], "cpu": [0.343, 0.339]}, "cos_min": 0.9998899540605457, "max_abs": 0.002269}
+{"model": "arctic-embed-m-v2-q4_k-imatrix.gguf", "mode": "embed", "wall_s": {"metal": [8.303, 0.549], "cpu": [1.407, 1.36]}, "cos_min": 0.9965614587944558, "max_abs": 0.012777999999999998}
+{"model": "bge-m3-iq4_xs.gguf", "mode": "embed", "wall_s": {"metal": [25.243, 1.195], "cpu": [3.627, 3.718]}, "cos_min": 0.9967032467427936, "max_abs": 0.009986}
+Traceback (most recent call last):
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/./ab_embed.py", line 140, in <module>
+    main()
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/./ab_embed.py", line 103, in main
+    o, w, e = run(a.bin, a.model, a.mode, a.texts, be, a.query, env_extra, a.threads)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/./ab_embed.py", line 30, in run
+    raise RuntimeError(f"{backend} arm failed rc={p.returncode}: {p.stderr[-2000:]}")
+RuntimeError: metal arm failed rc=1: crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)
+crispasr_metal_pipeline_cache_open: pipeline cache loaded — /Users/christianstrobele/Library/Caches/ggml-metal/Apple_M1.archive
+ggml_metal_device_init: tensor API disabled for pre-M5 and pre-A19 devices
+ggml_metal_library_init: using embedded metal library
+ggml_metal_library_init: loaded in 0.012 sec
+ggml_metal_device_init: GPU name:   MTL0 (Apple M1)
+ggml_metal_device_init: GPU family: MTLGPUFamilyApple7  (1007)
+ggml_metal_device_init: GPU family: MTLGPUFamilyCommon3 (3003)
+ggml_metal_device_init: GPU family: MTLGPUFamilyMetal4  (5002)
+ggml_metal_device_init: simdgroup reduction   = true
+ggml_metal_device_init: simdgroup matrix mul. = true
+ggml_metal_device_init: has unified memory    = true
+ggml_metal_device_init: has bfloat            = true
+ggml_metal_device_init: has tensor            = false
+ggml_metal_device_init: use residency sets    = false
+ggml_metal_device_init: use shared buffers    = true
+ggml_metal_device_init: recommendedMaxWorkingSetSize  = 12713.12 MB
+ggml_metal_init: allocating
+ggml_metal_init: found device: Apple M1
+ggml_metal_init: picking default device: Apple M1
+ggml_metal_init: use fusion         = true
+ggml_metal_init: use concurrency    = true
+ggml_metal_init: use graph optimize = true
+crispasr_init_gpu_backend: using preferred GPU backend: MTL0
+crispembed: using MTL0 backend with CPU fallback
+crispembed: loaded 24 layers, 1024 dims, 250002 vocab
+error: model does not support sparse retrieval
+ggml_metal_free: deallocating
+
+FAIL bge-m3-iq4_xs.gguf sparse
+Traceback (most recent call last):
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/./ab_embed.py", line 140, in <module>
+    main()
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/./ab_embed.py", line 103, in main
+    o, w, e = run(a.bin, a.model, a.mode, a.texts, be, a.query, env_extra, a.threads)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/./ab_embed.py", line 30, in run
+    raise RuntimeError(f"{backend} arm failed rc={p.returncode}: {p.stderr[-2000:]}")
+RuntimeError: metal arm failed rc=1: crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)
+crispasr_metal_pipeline_cache_open: pipeline cache loaded — /Users/christianstrobele/Library/Caches/ggml-metal/Apple_M1.archive
+ggml_metal_device_init: tensor API disabled for pre-M5 and pre-A19 devices
+ggml_metal_library_init: using embedded metal library
+ggml_metal_library_init: loaded in 0.014 sec
+ggml_metal_device_init: GPU name:   MTL0 (Apple M1)
+ggml_metal_device_init: GPU family: MTLGPUFamilyApple7  (1007)
+ggml_metal_device_init: GPU family: MTLGPUFamilyCommon3 (3003)
+ggml_metal_device_init: GPU family: MTLGPUFamilyMetal4  (5002)
+ggml_metal_device_init: simdgroup reduction   = true
+ggml_metal_device_init: simdgroup matrix mul. = true
+ggml_metal_device_init: has unified memory    = true
+ggml_metal_device_init: has bfloat            = true
+ggml_metal_device_init: has tensor            = false
+ggml_metal_device_init: use residency sets    = false
+ggml_metal_device_init: use shared buffers    = true
+ggml_metal_device_init: recommendedMaxWorkingSetSize  = 12713.12 MB
+ggml_metal_init: allocating
+ggml_metal_init: found device: Apple M1
+ggml_metal_init: picking default device: Apple M1
+ggml_metal_init: use fusion         = true
+ggml_metal_init: use concurrency    = true
+ggml_metal_init: use graph optimize = true
+crispasr_init_gpu_backend: using preferred GPU backend: MTL0
+crispembed: using MTL0 backend with CPU fallback
+crispembed: loaded 24 layers, 1024 dims, 250002 vocab
+error: model does not support ColBERT multi-vector retrieval
+ggml_metal_free: deallocating
+
+FAIL bge-m3-iq4_xs.gguf colbert
+Traceback (most recent call last):
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/./ab_embed.py", line 140, in <module>
+    main()
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/./ab_embed.py", line 106, in main
+    rows = compare(a.mode, outs["metal"], outs["cpu"])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/./ab_embed.py", line 74, in compare
+    key = "index" if "index" in m[0] else None
+                                ~^^^
+KeyError: 0
+FAIL ms-marco-MiniLM-L-6-v2-q8_0-g7c.gguf rerank
+Traceback (most recent call last):
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/./ab_embed.py", line 140, in <module>
+    
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/./ab_embed.py", line 106, in main
+    o, w, e = run(a.bin, a.model, a.mode, a.texts, be, a.query, env_extra, a.threads)
+   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Volumes/backups/code/crispembed-metal-audit-20261101/tests/results/gpu-audit/metal-m1/./ab_embed.py", line 74, in compare
+    rows.append({"i": i, "terms_metal": len(dm), "terms_cpu": len(dc),
+                            ^^^^
+KeyError: 0
+FAIL mxbai-rerank-xsmall-v1-q8_0-g7c.gguf rerank
+{"model": "ettin-reranker-17m-v1-q8_0.gguf", "mode": "rerank", "wall_s": {"metal": [77.597, 2.524], "cpu": [4.074, 0.077]}, "max_abs": 0.10237399999999974}
+{"model": "Qwen3-Embedding-0.6B-Q8_0.gguf", "mode": "embed", "wall_s": {"metal": [20.061, 4.595], "cpu": [4.796, 3.706]}, "cos_min": 0.9994275902572967, "max_abs": 0.006355000000000001}
+{"model": "f2llm-v2-0.6b-q4_k-imatrix.gguf", "mode": "embed", "wall_s": {"metal": [14.073, 1.383], "cpu": [4.253, 4.307]}, "cos_min": 0.9773765823863821, "max_abs": 0.05798400000000001}
+{"model": "jina-v5-nano-q4_k.gguf", "mode": "embed", "wall_s": {"metal": [4.872, 0.588], "cpu": [1.406, 1.444]}, "cos_min": 0.9930980649285854, "max_abs": 0.015607999999999997}
+{"model": "harrier-270m-q4_k.gguf", "mode": "embed", "wall_s": {"metal": [7.427, 0.716], "cpu": [1.177, 1.222]}, "cos_min": 0.9992858979173681, "max_abs": 0.007140999999999995}
+{"model": "embeddinggemma-300m-qat-Q8_0.gguf", "mode": "embed", "wall_s": {"metal": [8.738, 0.514], "cpu": [0.958, 0.924]}, "cos_min": 0.9999087607838671, "max_abs": 0.003150999999999987}
+{"model": "LFM2.5-Embedding-350M-Q8_0.gguf", "mode": "embed", "wall_s": {"metal": [12.08, 1.986], "cpu": [2.736, 1.723]}, "cos_min": 0.9998343450395283, "max_abs": 0.0022779999999999988}
+DONE

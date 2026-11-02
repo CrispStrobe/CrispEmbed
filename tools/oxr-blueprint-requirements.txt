@@ -1,0 +1,18 @@
+# Official document helper only. Native CrispEmbed executes OXR recognition.
+# The separate default D-FINE layout model still needs its own official service,
+# or use an explicitly supplied layout detector/regions. No neural runtime here.
+somark-oxr @ git+https://github.com/SoMarkAI/OXR.git@c1a1dcb312ee9f691404f127785510453c0d9350
+# Exact official API-side pins from docker/requirements.allinone.txt.
+fastapi==0.136.1
+httpx==0.28.1
+numpy==1.26.4
+openai==2.32.0
+opencv-python==4.11.0.86
+pydantic==2.11.10
+pydantic-settings==2.14.0
+python-multipart==0.0.26
+PyYAML==6.0.3
+sopdf==0.2.0
+typer==0.24.1
+uvicorn==0.46.0
+Pillow==12.3.0

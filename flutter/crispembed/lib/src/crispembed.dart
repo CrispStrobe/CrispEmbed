@@ -1522,6 +1522,53 @@ class CrispOcrModel {
     }
   }
 
+  /// TeleOCR-only logit penalties; returns false for unsupported engines or invalid values.
+  bool setGenerationParams({
+    double repetitionPenalty = 1.05,
+    double presencePenalty = 0,
+    double frequencyPenalty = 0,
+    int noRepeatNgram = 0,
+  }) {
+    _checkDisposed();
+    return _lib.lookupFunction<
+          CrispembedOcrSetGenerationNative,
+          CrispembedOcrSetGenerationDart
+        >('crispembed_ocr_model_set_generation_params')(
+          _ctx,
+          repetitionPenalty,
+          presencePenalty,
+          frequencyPenalty,
+          noRepeatNgram,
+        ) !=
+        0;
+  }
+
+  /// Current TeleOCR controls, or null when the loaded engine does not support them.
+  Map<String, num>? get generationParams {
+    _checkDisposed();
+    final values = calloc<Float>(3);
+    final ngram = calloc<Int32>();
+    try {
+      final ok = _lib
+          .lookupFunction<
+            CrispembedOcrGetGenerationNative,
+            CrispembedOcrGetGenerationDart
+          >(
+            'crispembed_ocr_model_get_generation_params',
+          )(_ctx, values, values + 1, values + 2, ngram);
+      if (ok == 0) return null;
+      return {
+        'repetition_penalty': values[0],
+        'presence_penalty': values[1],
+        'frequency_penalty': values[2],
+        'no_repeat_ngram': ngram.value,
+      };
+    } finally {
+      calloc.free(values);
+      calloc.free(ngram);
+    }
+  }
+
   /// Selected-token scores; includes EOS for experimental Qwen3.5 OCR.
   Float32List get confidences {
     _checkDisposed();
@@ -4016,6 +4063,17 @@ class CrispTableParse {
 // ---------------------------------------------------------------------------
 // OCR Orchestrator (source-type routing + cleanup + accept-gate)
 // ---------------------------------------------------------------------------
+
+/// TeleOCR stage selector. Enable CRISPEMBED_TELEOCR=1 and
+/// CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1 (non-commercial Qwen Research License
+/// vision tower) and supply a local GGUF.
+const int crispOcrEngineTeleocr = 24;
+
+/// MinerU2.5-Pro native basic page stage (CRISPEMBED_MINERU25_PRO=1, local GGUF).
+const int crispOcrEngineMineru25Pro = 25;
+
+/// OXR-1.0 recognition stage (CRISPEMBED_OXR=1 and CRISPEMBED_ACCEPT_OXR_LICENSE=1, local GGUF).
+const int crispOcrEngineOxr = 26;
 
 /// Stage selection for the native explicit builder (cleanup disabled).
 class CrispOcrStageSpec {

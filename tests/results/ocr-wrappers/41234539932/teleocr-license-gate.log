@@ -1,0 +1,6 @@
+qwen2vl_ocr: loading /mnt/heavy/scratch/teleocr-f16.gguf
+TeleOCR: its vision tower derives from Qwen2.5-VL-3B-Instruct, released under the Qwen
+  RESEARCH LICENSE AGREEMENT (non-commercial use only; commercial use needs a license
+  from Alibaba Cloud). Set CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1 to acknowledge.
+  See: https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct/blob/main/LICENSE
+qwen2vl_ocr: failed to load hparams

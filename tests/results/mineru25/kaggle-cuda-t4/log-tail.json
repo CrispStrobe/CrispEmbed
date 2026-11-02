@@ -1,0 +1,131 @@
+lude/x86_64-linux-gnu/bits/stdio2.h:54:35: note: ‘__builtin___snprintf_chk’ output between 18 and 273 bytes into a destination of size 256\n"}
+,{"stream_name":"stderr","time":1572.564646029,"data":"   54 |   return __builtin___snprintf_chk (__s, __n, __USE_FORTIFY_LEVEL - 1,\n"}
+,{"stream_name":"stderr","time":1572.564649849,"data":"      |          ~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"}
+,{"stream_name":"stderr","time":1572.564653764,"data":"   55 |                                    __glibc_objsize (__s), __fmt,\n"}
+,{"stream_name":"stderr","time":1572.564657485,"data":"      |                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"}
+,{"stream_name":"stderr","time":1572.564661315,"data":"   56 |                                    __va_arg_pack ());\n"}
+,{"stream_name":"stderr","time":1572.564668705,"data":"      |                                    ~~~~~~~~~~~~~~~~~\n"}
+,{"stream_name":"stderr","time":1572.56467269,"data":"/kaggle/temp/ce/src/adair.cpp: In function ‘void load_fre(core_gguf::WeightLoad\u0026, const char*, fre_wt\u0026)’:\n"}
+,{"stream_name":"stderr","time":1572.564676592,"data":"/kaggle/temp/ce/src/adair.cpp:823:36: warning: ‘%s’ directive output may be truncated writing 18 bytes into a region of size between 0 and 255 [-Wformat-truncation=]\n"}
+,{"stream_name":"stderr","time":1572.564680832,"data":"  823 |         snprintf(b, sizeof(b), \"%s.%s\", pfx, s);\n"}
+,{"stream_name":"stderr","time":1572.564684554,"data":"      |                                    ^~\n"}
+,{"stream_name":"stderr","time":1572.564688158,"data":"......\n"}
+,{"stream_name":"stderr","time":1572.564691753,"data":"  830 |     ca.proj_w = g(\"project_out.weight\");\n"}
+,{"stream_name":"stderr","time":1572.564695688,"data":"      |                 ~~~~~~~~~~~~~~~~~~~~~~~\n"}
+,{"stream_name":"stderr","time":1572.564699297,"data":"In function ‘int snprintf(char*, size_t, const char*, ...)’,\n"}
+,{"stream_name":"stderr","time":1572.564702987,"data":"    inlined from ‘load_cross_attn(core_gguf::WeightLoad\u0026, const char*, cross_attn_wt\u0026)::\u003clambda(const char*)\u003e’ at /kaggle/temp/ce/src/adair.cpp:823:17,\n"}
+,{"stream_name":"stderr","time":1572.564707487,"data":"    inlined from ‘void load_cross_attn(core_gguf::WeightLoad\u0026, const char*, cross_attn_wt\u0026)’ at /kaggle/temp/ce/src/adair.cpp:830:18,\n"}
+,{"stream_name":"stderr","time":1572.56471149,"data":"    inlined from ‘void load_fre(core_gguf::WeightLoad\u0026, const char*, fre_wt\u0026)’ at /kaggle/temp/ce/src/adair.cpp:870:20:\n"}
+,{"stream_name":"stderr","time":1572.564715553,"data":"/usr/include/x86_64-linux-gnu/bits/stdio2.h:54:35: note: ‘__builtin___snprintf_chk’ output between 20 and 275 bytes into a destination of size 256\n"}
+,{"stream_name":"stderr","time":1572.564719784,"data":"   54 |   return __builtin___snprintf_chk (__s, __n, __USE_FORTIFY_LEVEL - 1,\n"}
+,{"stream_name":"stderr","time":1572.564723633,"data":"      |          ~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"}
+,{"stream_name":"stderr","time":1572.564727408,"data":"   55 |                                    __glibc_objsize (__s), __fmt,\n"}
+,{"stream_name":"stderr","time":1572.564731103,"data":"      |                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"}
+,{"stream_name":"stderr","time":1572.5647349,"data":"   56 |                                    __va_arg_pack ());\n"}
+,{"stream_name":"stderr","time":1572.564739595,"data":"      |                                    ~~~~~~~~~~~~~~~~~\n"}
+,{"stream_name":"stderr","time":1572.564743373,"data":"/kaggle/temp/ce/src/adair.cpp: In function ‘void load_fre(core_gguf::WeightLoad\u0026, const char*, fre_wt\u0026)’:\n"}
+,{"stream_name":"stderr","time":1572.564747401,"data":"/kaggle/temp/ce/src/adair.cpp:823:36: warning: ‘%s’ directive output may be truncated writing 11 bytes into a region of size between 0 and 255 [-Wformat-truncation=]\n"}
+,{"stream_name":"stderr","time":1572.564751991,"data":"  823 |         snprintf(b, sizeof(b), \"%s.%s\", pfx, s);\n"}
+,{"stream_name":"stderr","time":1572.564756107,"data":"      |                                    ^~\n"}
+,{"stream_name":"stderr","time":1572.564759936,"data":"......\n"}
+,{"stream_name":"stderr","time":1572.5647637,"data":"  831 |     ca.temp = g(\"temperature\");\n"}
+,{"stream_name":"stderr","time":1572.564767613,"data":"      |               ~~~~~~~~~~~~~~~~      \n"}
+,{"stream_name":"stderr","time":1572.564771228,"data":"In function ‘int snprintf(char*, size_t, const char*, ...)’,\n"}
+,{"stream_name":"stderr","time":1572.564779563,"data":"    inlined from ‘load_cross_attn(core_gguf::WeightLoad\u0026, const char*, cross_attn_wt\u0026)::\u003clambda(const char*)\u003e’ at /kaggle/temp/ce/src/adair.cpp:823:17,\n"}
+,{"stream_name":"stderr","time":1572.564784195,"data":"    inlined from ‘void load_cross_attn(core_gguf::WeightLoad\u0026, const char*, cross_attn_wt\u0026)’ at /kaggle/temp/ce/src/adair.cpp:831:16,\n"}
+,{"stream_name":"stderr","time":1572.564788216,"data":"    inlined from ‘void load_fre(core_gguf::WeightLoad\u0026, const char*, fre_wt\u0026)’ at /kaggle/temp/ce/src/adair.cpp:870:20:\n"}
+,{"stream_name":"stderr","time":1572.564792381,"data":"/usr/include/x86_64-linux-gnu/bits/stdio2.h:54:35: note: ‘__builtin___snprintf_chk’ output between 13 and 268 bytes into a destination of size 256\n"}
+,{"stream_name":"stderr","time":1572.5647968,"data":"   54 |   return __builtin___snprintf_chk (__s, __n, __USE_FORTIFY_LEVEL - 1,\n"}
+,{"stream_name":"stderr","time":1572.564800579,"data":"      |          ~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"}
+,{"stream_name":"stderr","time":1572.56480456,"data":"   55 |                                    __glibc_objsize (__s), __fmt,\n"}
+,{"stream_name":"stderr","time":1572.564808771,"data":"      |                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n"}
+,{"stream_name":"stderr","time":1572.564812782,"data":"   56 |                                    __va_arg_pack ());\n"}
+,{"stream_name":"stderr","time":1572.564816653,"data":"      |                                    ~~~~~~~~~~~~~~~~~\n"}
+,{"stream_name":"stdout","time":1573.262049384,"data":"[ 97%] Building CXX object CMakeFiles/crispembed.dir/src/swinir_sr.cpp.o\n"}
+,{"stream_name":"stdout","time":1574.232946222,"data":"[ 97%] Building CXX object CMakeFiles/crispembed.dir/src/scunet_denoise.cpp.o\n"}
+,{"stream_name":"stdout","time":1575.61194073,"data":"[ 97%] Building CXX object CMakeFiles/crispembed.dir/src/pdf_info.cpp.o\n"}
+,{"stream_name":"stdout","time":1577.230643495,"data":"[ 97%] Building CXX object CMakeFiles/crispembed.dir/src/table_parse.cpp.o\n"}
+,{"stream_name":"stdout","time":1578.304542574,"data":"[100%] Building CXX object CMakeFiles/crispembed.dir/src/moedern_text_engine.cpp.o\n"}
+,{"stream_name":"stdout","time":1580.466572084,"data":"[100%] Building CXX object CMakeFiles/crispembed.dir/src/moedern_text_frontend.cpp.o\n"}
+,{"stream_name":"stdout","time":1581.495249718,"data":"[100%] Building CXX object CMakeFiles/crispembed.dir/src/moedern_family_engine.cpp.o\n"}
+,{"stream_name":"stdout","time":1582.770158693,"data":"[100%] Building CXX object CMakeFiles/crispembed.dir/src/moedern_text.cpp.o\n"}
+,{"stream_name":"stdout","time":1584.464359593,"data":"[100%] Building CXX object CMakeFiles/crispembed.dir/src/moedern_text_api.cpp.o\n"}
+,{"stream_name":"stdout","time":1587.254424449,"data":"[100%] Linking CXX static library libcrispembed-static.a\n"}
+,{"stream_name":"stdout","time":1587.4152938,"data":"[100%] Built target crispembed\n"}
+,{"stream_name":"stdout","time":1587.427561754,"data":"[100%] Building CXX object CMakeFiles/test-mineru25-run.dir/tests/mineru25_run.cpp.o\n"}
+,{"stream_name":"stdout","time":1589.213851861,"data":"[100%] Linking CXX executable test-mineru25-run\n"}
+,{"stream_name":"stdout","time":1589.367101126,"data":"[100%] Built target test-mineru25-run\n"}
+,{"stream_name":"stdout","time":1589.442541582,"data":"[  4%] Built target ggml-base\n"}
+,{"stream_name":"stdout","time":1589.483359175,"data":"[ 14%] Built target ggml-cpu\n"}
+,{"stream_name":"stdout","time":1589.785804568,"data":"[100%] Built target ggml-cuda\n"}
+,{"stream_name":"stdout","time":1589.805117581,"data":"[100%] Built target ggml\n"}
+,{"stream_name":"stdout","time":1589.816994852,"data":"[100%] Building CXX object CMakeFiles/crispembed-quantize.dir/tools/quantize.cpp.o\n"}
+,{"stream_name":"stdout","time":1591.73363823,"data":"[100%] Linking CXX executable crispembed-quantize\n"}
+,{"stream_name":"stdout","time":1591.823115687,"data":"[100%] Built target crispembed-quantize\n"}
+,{"stream_name":"stdout","time":1591.829843944,"data":"+ /usr/bin/python3 -m pip install -q uv==0.8.17\n"}
+,{"stream_name":"stdout","time":1598.925561635,"data":"+ /usr/bin/python3 -m uv venv -q --python 3.12 --seed /kaggle/temp/venv\n"}
+,{"stream_name":"stdout","time":1599.575959908,"data":"+ /kaggle/temp/venv/bin/python -m pip install -q torch==2.9.0 torchvision==0.24.0 --index-url https://download.pytorch.org/whl/cpu\n"}
+,{"stream_name":"stdout","time":1636.822471621,"data":"+ /kaggle/temp/venv/bin/python -m pip install -q -r tools/mineru25-reference-requirements.txt\n"}
+,{"stream_name":"stdout","time":1669.044531433,"data":"== setup\n"}
+,{"stream_name":"stdout","time":1669.04456782,"data":"+ git init -q /kaggle/temp/mineru25/blueprint\n"}
+,{"stream_name":"stdout","time":1669.051659997,"data":"+ git -C /kaggle/temp/mineru25/blueprint fetch -q --depth 1 https://github.com/opendatalab/mineru-vl-utils.git c9797cde8f54cc48306196fc6aebe73ea31dd4a3\n"}
+,{"stream_name":"stdout","time":1669.297113224,"data":"+ git -C /kaggle/temp/mineru25/blueprint checkout -q --detach FETCH_HEAD\n"}
+,{"stream_name":"stderr","time":1674.726703624,"data":"\rFetching 13 files:   0%|          | 0/13 [00:00\u003c?, ?it/s]\rFetching 13 files:  62%|██████▏   | 8/13 [00:00\u003c00:00, 28.47it/s]\rFetching 13 files: 100%|██████████| 13/13 [00:04\u003c00:00,  2.60it/s]\n"}
+,{"stream_name":"stdout","time":1674.727896761,"data":"+ /kaggle/temp/venv/bin/python models/convert-mineru25-pro-to-gguf.py --model /kaggle/temp/mineru25/checkpoint --dtype f32 --output /kaggle/temp/mineru25/mineru25-f32.gguf\n"}
+,{"stream_name":"stdout","time":1720.626478972,"data":"== variant f32\n"}
+,{"stream_name":"stdout","time":1720.626529503,"data":"+ /kaggle/temp/venv/bin/python models/convert-mineru25-pro-to-gguf.py --model /kaggle/temp/mineru25/checkpoint --dtype f16 --output /kaggle/temp/mineru25/mineru25-f16.gguf\n"}
+,{"stream_name":"stdout","time":1748.092215967,"data":"== variant f16\n"}
+,{"stream_name":"stdout","time":1748.092283428,"data":"+ /kaggle/temp/build/crispembed-quantize /kaggle/temp/mineru25/mineru25-f32.gguf /kaggle/temp/mineru25/mineru25-q8_0.gguf q8_0\n"}
+,{"stream_name":"stdout","time":1757.652499273,"data":"== variant q8_0\n"}
+,{"stream_name":"stdout","time":1757.652551707,"data":"+ /kaggle/temp/build/crispembed-quantize /kaggle/temp/mineru25/mineru25-f32.gguf /kaggle/temp/mineru25/mineru25-q4_k.gguf q4_k\n"}
+,{"stream_name":"stdout","time":1781.939834448,"data":"== variant q4_k\n"}
+,{"stream_name":"stdout","time":1781.939871824,"data":"+ /kaggle/temp/build/crispembed-quantize /kaggle/temp/mineru25/mineru25-f32.gguf /kaggle/temp/mineru25/mineru25-q4_k-dq8.gguf q4_k --tensor-type l.*=q8_0\n"}
+,{"stream_name":"stdout","time":1794.162430698,"data":"== variant q4_k-dq8\n"}
+,{"stream_name":"stdout","time":1794.162470618,"data":"+ /kaggle/temp/build/crispembed-quantize /kaggle/temp/mineru25/mineru25-f32.gguf /kaggle/temp/mineru25/mineru25-q4_k-df16.gguf q4_k --decoder-f16\n"}
+,{"stream_name":"stdout","time":1805.385270637,"data":"== variant q4_k-df16\n"}
+,{"stream_name":"stdout","time":1805.385713145,"data":"+ /kaggle/temp/venv/bin/python tools/mineru25_validate.py reference --model /kaggle/temp/mineru25/checkpoint --blueprint /kaggle/temp/mineru25/blueprint --image tests/regression/images/formula_quadratic.png --task formula --dtype f32 --device cpu --threads 4 --repeat 2 --max-tokens 2048 --output /kaggle/working/mineru25-gpu/formula-python.json\n"}
+,{"stream_name":"stdout","time":1847.111929533,"data":"== formula reference\n"}
+,{"stream_name":"stdout","time":1847.112226618,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-f32.gguf --image tests/regression/images/formula_quadratic.png --task formula --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":1853.703153734,"data":"== formula f32\n"}
+,{"stream_name":"stdout","time":1853.703188694,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-f16.gguf --image tests/regression/images/formula_quadratic.png --task formula --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":1858.028807766,"data":"== formula f16\n"}
+,{"stream_name":"stdout","time":1858.028839642,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q8_0.gguf --image tests/regression/images/formula_quadratic.png --task formula --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":1860.178221592,"data":"== formula q8_0\n"}
+,{"stream_name":"stdout","time":1860.178256001,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q4_k.gguf --image tests/regression/images/formula_quadratic.png --task formula --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":1862.334854404,"data":"== formula q4_k\n"}
+,{"stream_name":"stdout","time":1862.334899412,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q4_k-dq8.gguf --image tests/regression/images/formula_quadratic.png --task formula --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":1864.481693925,"data":"== formula q4_k-dq8\n"}
+,{"stream_name":"stdout","time":1864.481739731,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q4_k-df16.gguf --image tests/regression/images/formula_quadratic.png --task formula --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":1867.245699502,"data":"== formula q4_k-df16\n"}
+,{"stream_name":"stdout","time":1867.245729208,"data":"+ /kaggle/temp/venv/bin/python tools/mineru25_validate.py reference --model /kaggle/temp/mineru25/checkpoint --blueprint /kaggle/temp/mineru25/blueprint --image tests/regression/images/cc0/simple_table.jpg --task table --dtype f32 --device cpu --threads 4 --repeat 2 --max-tokens 2048 --output /kaggle/working/mineru25-gpu/table-python.json\n"}
+,{"stream_name":"stdout","time":1939.787848017,"data":"== table reference\n"}
+,{"stream_name":"stdout","time":1939.788029242,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-f32.gguf --image tests/regression/images/cc0/simple_table.jpg --task table --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":1946.283709055,"data":"== table f32\n"}
+,{"stream_name":"stdout","time":1946.283747817,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-f16.gguf --image tests/regression/images/cc0/simple_table.jpg --task table --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":1952.739512241,"data":"== table f16\n"}
+,{"stream_name":"stdout","time":1952.739543239,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q8_0.gguf --image tests/regression/images/cc0/simple_table.jpg --task table --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":1956.505047452,"data":"== table q8_0\n"}
+,{"stream_name":"stdout","time":1956.505084179,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q4_k.gguf --image tests/regression/images/cc0/simple_table.jpg --task table --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":1960.312172855,"data":"== table q4_k\n"}
+,{"stream_name":"stdout","time":1960.312213472,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q4_k-dq8.gguf --image tests/regression/images/cc0/simple_table.jpg --task table --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":1964.074940508,"data":"== table q4_k-dq8\n"}
+,{"stream_name":"stdout","time":1964.074968373,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q4_k-df16.gguf --image tests/regression/images/cc0/simple_table.jpg --task table --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":1968.910895818,"data":"== table q4_k-df16\n"}
+,{"stream_name":"stdout","time":1968.910937639,"data":"+ /kaggle/temp/venv/bin/python tools/mineru25_validate.py reference --model /kaggle/temp/mineru25/checkpoint --blueprint /kaggle/temp/mineru25/blueprint --image tests/regression/images/cc0/receipt_example.png --task text --dtype f32 --device cpu --threads 4 --repeat 2 --max-tokens 2048 --output /kaggle/working/mineru25-gpu/receipt-python.json\n"}
+,{"stream_name":"stdout","time":2114.43797438,"data":"== receipt reference\n"}
+,{"stream_name":"stdout","time":2114.438231688,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-f32.gguf --image tests/regression/images/cc0/receipt_example.png --task text --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":2123.607916633,"data":"== receipt f32\n"}
+,{"stream_name":"stdout","time":2123.60795292,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-f16.gguf --image tests/regression/images/cc0/receipt_example.png --task text --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":2132.251386564,"data":"== receipt f16\n"}
+,{"stream_name":"stdout","time":2132.251412124,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q8_0.gguf --image tests/regression/images/cc0/receipt_example.png --task text --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":2137.62362698,"data":"== receipt q8_0\n"}
+,{"stream_name":"stdout","time":2137.623675686,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q4_k.gguf --image tests/regression/images/cc0/receipt_example.png --task text --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":2142.459736545,"data":"== receipt q4_k\n"}
+,{"stream_name":"stdout","time":2142.459764372,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q4_k-dq8.gguf --image tests/regression/images/cc0/receipt_example.png --task text --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":2147.83242206,"data":"== receipt q4_k-dq8\n"}
+,{"stream_name":"stdout","time":2147.832458458,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-q4_k-df16.gguf --image tests/regression/images/cc0/receipt_example.png --task text --max-tokens 2048 --threads 4 --repeat 2\n"}
+,{"stream_name":"stdout","time":2154.813599966,"data":"== receipt q4_k-df16\n"}
+,{"stream_name":"stdout","time":2154.813688365,"data":"+ /kaggle/temp/venv/bin/python tools/mineru25_validate.py reference --model /kaggle/temp/mineru25/checkpoint --blueprint /kaggle/temp/mineru25/blueprint --image tests/regression/images/cc0/german_official_print.jpg --task text --dtype f32 --device cpu --threads 4 --repeat 2 --max-tokens 2048 --output /kaggle/working/mineru25-gpu/german-python.json\n"}
+,{"stream_name":"stdout","time":2796.071423817,"data":"== german reference\n"}
+,{"stream_name":"stdout","time":2796.071628726,"data":"+ /kaggle/temp/build/test-mineru25-run --model /kaggle/temp/mineru25/mineru25-f32.gguf --image tests/regression/images/cc0/german_official_print.jpg --task text --max-tokens 2048 --threads 4 --repeat 2\n"}
+]

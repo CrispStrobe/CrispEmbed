@@ -1,0 +1,106 @@
+qwen2vl_ocr: loading /workspace/scratch/960329398638/teleocr-models/teleocr-f16.gguf
+  vision: 32 layers, 1280d, 16 heads, patch=14, merge=2
+  llm: 28 layers, 1024d, 16/8 heads, inter=3072
+  vision variant: Qwen2.5-VL (RMSNorm, SwiGLU)
+qwen2vl_ocr: loaded successfully
+qwen2vl_ocr: loaded BPE tokenizer (151936 tokens, 151387 merges)
+input_patches: max_abs=0 cos_min=1 rms=2.02147475/2.02147 PASS
+image_grid: max_abs=0 cos_min=1 rms=28.1247222/28.1247 PASS
+qwen2vl_ocr: 640x220 → 644x224, 736 patches (16x46)
+vis_patch_embed: max_abs=1.43051147e-05 cos_min=0.999999999999 rms=0.579794332/0.579794 PASS
+vis_layer_0: max_abs=1.43051147e-05 cos_min=1 rms=0.643601217/0.643601 PASS
+vis_layer_1: max_abs=1.52587891e-05 cos_min=0.999999999999 rms=0.779015773/0.779016 PASS
+vis_layer_2: max_abs=1.52587891e-05 cos_min=1 rms=0.940666486/0.940667 PASS
+vis_layer_3: max_abs=1.38282776e-05 cos_min=1 rms=1.08292373/1.08292 PASS
+vis_layer_4: max_abs=1.28746033e-05 cos_min=1 rms=1.18328576/1.18329 PASS
+vis_layer_5: max_abs=1.1920929e-05 cos_min=1 rms=1.25170729/1.25171 PASS
+vis_layer_6: max_abs=1.23977661e-05 cos_min=1 rms=1.34320307/1.3432 PASS
+vis_layer_7: max_abs=1.52587891e-05 cos_min=1 rms=1.46945424/1.46945 PASS
+vis_layer_8: max_abs=1.71661377e-05 cos_min=1 rms=1.42083564/1.42084 PASS
+vis_layer_9: max_abs=1.71661377e-05 cos_min=0.999999999999 rms=1.4086767/1.40868 PASS
+vis_layer_10: max_abs=1.90734863e-05 cos_min=0.999999999999 rms=1.39622471/1.39622 PASS
+vis_layer_11: max_abs=2.28881836e-05 cos_min=0.999999999999 rms=1.39790723/1.39791 PASS
+vis_layer_12: max_abs=5.34057617e-05 cos_min=0.999999999997 rms=1.41096471/1.41096 PASS
+vis_layer_13: max_abs=6.86645508e-05 cos_min=0.999999999994 rms=1.41555053/1.41555 PASS
+vis_layer_14: max_abs=7.2479248e-05 cos_min=0.999999999989 rms=1.44164871/1.44165 PASS
+vis_layer_15: max_abs=0.000110626221 cos_min=0.999999999982 rms=1.56468347/1.56468 PASS
+vis_layer_16: max_abs=0.000381469727 cos_min=0.999999999974 rms=1.41820237/1.4182 PASS
+vis_layer_17: max_abs=0.0286865234 cos_min=0.999999994458 rms=16.1711415/16.1711 FAIL
+vis_layer_18: max_abs=0.0286865234 cos_min=0.999999995591 rms=16.1690161/16.169 FAIL
+vis_layer_19: max_abs=0.0286865234 cos_min=0.999999996866 rms=16.1704991/16.1705 FAIL
+vis_layer_20: max_abs=0.0286865234 cos_min=0.999999997585 rms=16.1751162/16.1751 FAIL
+vis_layer_21: max_abs=0.0286865234 cos_min=0.999999998105 rms=16.1910761/16.1911 FAIL
+vis_layer_22: max_abs=0.0286865234 cos_min=0.999999997891 rms=16.2012115/16.2012 FAIL
+vis_layer_23: max_abs=0.0288085938 cos_min=0.999999998535 rms=16.2487843/16.2488 FAIL
+vis_layer_24: max_abs=0.0288085938 cos_min=0.999999998764 rms=16.2897828/16.2898 FAIL
+vis_layer_25: max_abs=0.0288085938 cos_min=0.999999998777 rms=16.3276423/16.3276 FAIL
+vis_layer_26: max_abs=0.0288085938 cos_min=0.999999998959 rms=16.4047711/16.4048 FAIL
+vis_layer_27: max_abs=0.0288085938 cos_min=0.999999999107 rms=16.4896381/16.4896 FAIL
+vis_layer_28: max_abs=0.0288085938 cos_min=0.9999999995 rms=16.6402989/16.6403 FAIL
+vis_layer_29: max_abs=0.0288085938 cos_min=0.999999999527 rms=16.7874276/16.7874 FAIL
+vis_layer_30: max_abs=0.0288085938 cos_min=0.999999999572 rms=16.941468/16.9415 FAIL
+vis_layer_31: max_abs=0.0518798828 cos_min=0.999999999736 rms=30.6588334/30.6588 FAIL
+vis_pre_merger: max_abs=0.00018787384 cos_min=0.999999999507 rms=0.41678549/0.416785 PASS
+merger_output: max_abs=0.00228881836 cos_min=0.999999999782 rms=16.5763776/16.5764 FAIL
+prompt_ids: max_abs=0 cos_min=1 rms=143379.693/143380 PASS
+  backend KV cache: 28 layers, max_seq=1238, 270.8 MB
+mrope_positions: max_abs=0 cos_min=1 rms=22.7689875/22.769 PASS
+llm_embed: max_abs=0.00228881836 cos_min=0.999999999782 rms=15.370633/15.3706 FAIL
+llm_L0_Q_pre_rope: max_abs=0.000195503235 cos_min=0.99999999994 rms=1.66253861/1.66254 PASS
+llm_L0_Q_rope: max_abs=0.000195264816 cos_min=0.99999999994 rms=1.66253862/1.66254 PASS
+llm_L0_attn_out: max_abs=2.95639038e-05 cos_min=0.99999999999 rms=1.3709697/1.37097 PASS
+llm_L0_post_attn: max_abs=0.00228881836 cos_min=0.999999999804 rms=15.8925475/15.8925 FAIL
+llm_layer_0: max_abs=0.00225830078 cos_min=0.999999999799 rms=16.3020879/16.3021 FAIL
+llm_layer_1: max_abs=0.00213623047 cos_min=0.999999999794 rms=17.1926341/17.1926 FAIL
+llm_layer_2: max_abs=0.02734375 cos_min=0.999999999785 rms=235.828726/235.829 FAIL
+llm_layer_3: max_abs=0.02734375 cos_min=0.999999999786 rms=235.874936/235.875 FAIL
+llm_layer_4: max_abs=0.02734375 cos_min=0.999999999781 rms=235.942129/235.942 FAIL
+llm_layer_5: max_abs=0.02734375 cos_min=0.999999999801 rms=236.103389/236.103 FAIL
+llm_layer_6: max_abs=0.02734375 cos_min=0.999999999807 rms=236.207592/236.208 FAIL
+llm_layer_7: max_abs=0.02734375 cos_min=0.999999999827 rms=236.308739/236.309 FAIL
+llm_layer_8: max_abs=0.02734375 cos_min=0.999999999835 rms=236.385146/236.385 FAIL
+llm_layer_9: max_abs=0.02734375 cos_min=0.999999999839 rms=236.455178/236.455 FAIL
+llm_layer_10: max_abs=0.02734375 cos_min=0.99999999985 rms=236.521006/236.521 FAIL
+llm_layer_11: max_abs=0.02734375 cos_min=0.999999999847 rms=236.610649/236.611 FAIL
+llm_layer_12: max_abs=0.02734375 cos_min=0.999999999858 rms=236.670301/236.67 FAIL
+llm_layer_13: max_abs=0.02734375 cos_min=0.999999999862 rms=236.722706/236.723 FAIL
+llm_layer_14: max_abs=0.02734375 cos_min=0.999999999866 rms=236.762645/236.763 FAIL
+llm_layer_15: max_abs=0.02734375 cos_min=0.999999999868 rms=236.820223/236.82 FAIL
+llm_layer_16: max_abs=0.02734375 cos_min=0.999999999864 rms=236.902878/236.903 FAIL
+llm_layer_17: max_abs=0.02734375 cos_min=0.999999999869 rms=236.995302/236.995 FAIL
+llm_layer_18: max_abs=0.02734375 cos_min=0.999999999868 rms=237.110225/237.11 FAIL
+llm_layer_19: max_abs=0.02734375 cos_min=0.999999999885 rms=237.227083/237.227 FAIL
+llm_layer_20: max_abs=0.02734375 cos_min=0.99999999988 rms=237.54818/237.548 FAIL
+llm_layer_21: max_abs=0.02734375 cos_min=0.999999999873 rms=237.78101/237.781 FAIL
+llm_layer_22: max_abs=0.02734375 cos_min=0.999999999869 rms=238.270089/238.27 FAIL
+llm_layer_23: max_abs=0.02734375 cos_min=0.999999999872 rms=238.844429/238.844 FAIL
+llm_layer_24: max_abs=0.02734375 cos_min=0.999999999886 rms=239.675203/239.675 FAIL
+llm_layer_25: max_abs=0.02734375 cos_min=0.999999999898 rms=240.607619/240.608 FAIL
+llm_layer_26: max_abs=0.02734375 cos_min=0.999999999867 rms=241.625992/241.626 FAIL
+llm_layer_27: max_abs=0.02734375 cos_min=0.999999999327 rms=239.387181/239.387 FAIL
+llm_final_norm: max_abs=0.000885009766 cos_min=0.999999999371 rms=3.0099185/3.00992 PASS
+logits_step0: max_abs=1.07288361e-05 cos_min=0.999999999999 rms=1.490419/1.49042 PASS
+  gen[0]: token=9707 score=20.65 (prefill)
+  gen[1]: token=13563 score=19.97 (cached)
+  gen[2]: token=93495 score=24.51 (cached)
+  gen[3]: token=198 score=17.44 (cached)
+  gen[4]: token=34674 score=22.00 (cached)
+  gen[5]: token=220 score=18.68 (cached)
+  gen[6]: token=19 score=22.42 (cached)
+  gen[7]: token=17 score=20.86 (cached)
+  gen[8]: token=198 score=19.92 (cached)
+  gen[9]: token=7595 score=25.43 (cached)
+  gen[10]: token=25 score=20.11 (cached)
+  gen[11]: token=37088 score=20.59 (cached)
+  gen[12]: token=220 score=19.87 (cached)
+  gen[13]: token=16 score=24.63 (cached)
+  gen[14]: token=24 score=25.02 (cached)
+  gen[15]: token=13 score=21.09 (cached)
+  gen[16]: token=20 score=26.78 (cached)
+  gen[17]: token=15 score=24.80 (cached)
+  gen[18]: token=151645 score=19.41 (cached)
+generated_ids: max_abs=0 cos_min=1 rms=42705.46/42705.5 PASS
+TeleOCR: stages=75 numerical=0 decoded=1 EOS=1 seconds=24.210
+Hello TeleOCR
+Invoice 42
+Total: EUR 19.50

@@ -1,0 +1,270 @@
+{
+  "schema": "crispembed.oxr.precision.v1",
+  "reference_revision": "c708407f9d2b4df658f2543d9132b62bb7221df4",
+  "arms": [
+    {
+      "name": "f16-cpu",
+      "dtype": "f16",
+      "cases": [
+        {
+          "id": "formula",
+          "lane": "hosted-41255835479",
+          "commit": "a05f939a2eec91749963db9b7e95ca63a2ba2a06",
+          "exit": 0,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "native_over_python": 1.5394598927483205,
+          "speed_pass": false,
+          "report_sha256": "6804115a4d8541b76c0358c5c89d4cb9f510fdecbec331d5d2c3e904660127d3"
+        },
+        {
+          "id": "table",
+          "lane": "hosted-41255835479",
+          "commit": "a05f939a2eec91749963db9b7e95ca63a2ba2a06",
+          "exit": 0,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "native_over_python": 0.534344982980838,
+          "speed_pass": false,
+          "report_sha256": "9450797bdace58c47e53c7dc7fa5560333fdc0c869fcfdef90627f8b06369f3f"
+        },
+        {
+          "id": "japanese",
+          "lane": "hosted-41255835479",
+          "commit": "a05f939a2eec91749963db9b7e95ca63a2ba2a06",
+          "exit": 0,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "native_over_python": 1.2822773444823654,
+          "speed_pass": false,
+          "report_sha256": "cce65235b6d6239d1eeac6efa9393ca631f9e0e734c5dcdaa15888bbe9945383"
+        },
+        {
+          "id": "receipt",
+          "lane": "hosted-41255837490",
+          "commit": "a05f939a2eec91749963db9b7e95ca63a2ba2a06",
+          "exit": 0,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "native_over_python": 0.6811767116884384,
+          "speed_pass": false,
+          "report_sha256": "9d027f5de8fab0b2143fe62f197ad884c8bb8f32b81cd0f9eae5d623f23dca05"
+        },
+        {
+          "id": "german",
+          "lane": "hosted-41255837490",
+          "commit": "a05f939a2eec91749963db9b7e95ca63a2ba2a06",
+          "exit": 0,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "native_over_python": 0.79933085759459,
+          "speed_pass": false,
+          "report_sha256": "3e262f058ab0880f8ffd59b08d8455850c076e050c97d5ada1e8600ccc29cb3c"
+        }
+      ]
+    },
+    {
+      "name": "q8_0-cpu",
+      "dtype": "q8_0",
+      "cases": [
+        {
+          "id": "formula",
+          "lane": "hosted-41277219829",
+          "commit": "67366954cc85791e7e8de766cf45d89232817708",
+          "exit": 0,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "native_over_python": 1.6147233446837532,
+          "speed_pass": false,
+          "report_sha256": "29cfe2c61730dd8d6e49c6b45e223e0e0133c0e425f72851e0514b798ecbf8bb"
+        },
+        {
+          "id": "table",
+          "lane": "hosted-41277219829",
+          "commit": "67366954cc85791e7e8de766cf45d89232817708",
+          "exit": 0,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "native_over_python": 0.5780402178282623,
+          "speed_pass": true,
+          "report_sha256": "7bb21243ba8aa0376e31465bda0d9d4383b78d196b4bd0f495fd3e14390a8733"
+        },
+        {
+          "id": "japanese",
+          "lane": "hosted-41277219829",
+          "commit": "67366954cc85791e7e8de766cf45d89232817708",
+          "exit": 0,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "native_over_python": 1.3727078266231354,
+          "speed_pass": false,
+          "report_sha256": "87e31406211ad2aeb6578152148c31fa4d49bae4eddbad7b606bf565916fcca8"
+        },
+        {
+          "id": "receipt",
+          "lane": "hosted-41277219829",
+          "commit": "67366954cc85791e7e8de766cf45d89232817708",
+          "exit": 0,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "native_over_python": 0.8192573758364878,
+          "speed_pass": true,
+          "report_sha256": "d1dde7f044986354cb47593c38cfd336f29875445c4b8191936b6ec87ff7be68"
+        },
+        {
+          "id": "german",
+          "lane": "hosted-41277219829",
+          "commit": "67366954cc85791e7e8de766cf45d89232817708",
+          "exit": 1,
+          "ids_exact": false,
+          "text_exact": false,
+          "eos": true,
+          "native_over_python": 0.9539355091822536,
+          "speed_pass": false,
+          "report_sha256": "bd763cc2b99987acc8396a7ac7b7b5de3503fe4b54e5c6e5d5e230177b589763"
+        }
+      ]
+    },
+    {
+      "name": "q8_0-v8-cpu",
+      "dtype": "q8_0-v8",
+      "cases": [
+        {
+          "id": "formula",
+          "lane": "hosted-41273999602",
+          "commit": "35523e1359a9419ac7a86aa6d467fc4456f3a82d",
+          "exit": 0,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "native_over_python": 0.86892654813031,
+          "speed_pass": true,
+          "report_sha256": "c4fc957f74c452aef8301f5fcf7cad606505daa3ef506f27e733b882f7fcd3b5"
+        },
+        {
+          "id": "table",
+          "lane": "hosted-41273999602",
+          "commit": "35523e1359a9419ac7a86aa6d467fc4456f3a82d",
+          "exit": 0,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "native_over_python": 0.40021499699663127,
+          "speed_pass": true,
+          "report_sha256": "072661db23654b0ac90a2eecc6aa8d30832dad259e575bad26f612c35483e454"
+        },
+        {
+          "id": "japanese",
+          "lane": "hosted-41273999602",
+          "commit": "35523e1359a9419ac7a86aa6d467fc4456f3a82d",
+          "exit": 0,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "native_over_python": 0.750161556624463,
+          "speed_pass": true,
+          "report_sha256": "f7424cd0e5792f595d0a33d7816a9ed4c0c6c09c0fb01c99058f13cd28fe1939"
+        },
+        {
+          "id": "receipt",
+          "lane": "hosted-41273999602",
+          "commit": "35523e1359a9419ac7a86aa6d467fc4456f3a82d",
+          "exit": 0,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "native_over_python": 0.5064332818159745,
+          "speed_pass": true,
+          "report_sha256": "5eb3af8e1dedc84331bc8d4ec17fa865e93d4f214b0349a8ac5995a2fc085944"
+        },
+        {
+          "id": "german",
+          "lane": "hosted-41273999602",
+          "commit": "35523e1359a9419ac7a86aa6d467fc4456f3a82d",
+          "exit": 1,
+          "ids_exact": false,
+          "text_exact": false,
+          "eos": true,
+          "native_over_python": 0.6083336794043017,
+          "speed_pass": false,
+          "report_sha256": "7b40caa6dd680fc4a7d35bb15e2fa43cdef3eb253213a8496327b9ac915c3ff1"
+        }
+      ]
+    },
+    {
+      "name": "q4_k-cpu",
+      "dtype": "q4_k",
+      "cases": [
+        {
+          "id": "formula",
+          "lane": "hosted-41274001351",
+          "commit": "35523e1359a9419ac7a86aa6d467fc4456f3a82d",
+          "exit": 1,
+          "ids_exact": false,
+          "text_exact": false,
+          "eos": true,
+          "native_over_python": 0.8005336067746537,
+          "speed_pass": false,
+          "report_sha256": "cfd1491cfef31d8e3a516c06a92d2e8a065ae1674db863a1c8dd1571eef7c5ca"
+        },
+        {
+          "id": "table",
+          "lane": "hosted-41274001351",
+          "commit": "35523e1359a9419ac7a86aa6d467fc4456f3a82d",
+          "exit": 1,
+          "ids_exact": false,
+          "text_exact": false,
+          "eos": true,
+          "native_over_python": 0.3196412357938964,
+          "speed_pass": false,
+          "report_sha256": "f2df16fbff74bec859b9fb85ded28271392d73cb620fe09a0a90499e10053ab0"
+        },
+        {
+          "id": "japanese",
+          "lane": "hosted-41274001351",
+          "commit": "35523e1359a9419ac7a86aa6d467fc4456f3a82d",
+          "exit": 0,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "native_over_python": 0.6668574111616998,
+          "speed_pass": true,
+          "report_sha256": "1ce01adf51ca8873a403cc7f5a375d031483dae086fb3c8432e1e507c3b250a9"
+        },
+        {
+          "id": "receipt",
+          "lane": "hosted-41274001351",
+          "commit": "35523e1359a9419ac7a86aa6d467fc4456f3a82d",
+          "exit": 0,
+          "ids_exact": true,
+          "text_exact": true,
+          "eos": true,
+          "native_over_python": 0.4274484941443051,
+          "speed_pass": true,
+          "report_sha256": "554ddfbf340bcd9f9e9ad2358ece3d4063e60ce3e3884230d97d52e0dc9f1b21"
+        },
+        {
+          "id": "german",
+          "lane": "hosted-41274001351",
+          "commit": "35523e1359a9419ac7a86aa6d467fc4456f3a82d",
+          "exit": 1,
+          "ids_exact": false,
+          "text_exact": false,
+          "eos": true,
+          "native_over_python": 0.514741030308093,
+          "speed_pass": false,
+          "report_sha256": "cb0cb5496e587f1d90f8ad235a398e1c989c2966df091c1956b982988ad130bc"
+        }
+      ]
+    }
+  ]
+}

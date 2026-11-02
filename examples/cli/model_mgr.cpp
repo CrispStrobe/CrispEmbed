@@ -1518,10 +1518,12 @@ static const ModelEntry k_registry[] = {
     { "text-sr", "text-sr-nafnet.gguf", "", "NAFNet-SR text super-resolution engine (custom trained model required)",
       "", "apache-2.0", "" },
 
+    // License: weights inherit the Qwen RESEARCH LICENSE of Qwen2.5-VL-3B (non-commercial);
+    // engine gate CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1. tests/results/licenses/registry-qwen-audit.json
     { "qwen2vl-3b", "qwen2.5-vl-3b-q4_k.gguf",
       "https://huggingface.co/cstr/qwen2.5-vl-3b-crispembed-GGUF/resolve/main/qwen2.5-vl-3b-q4_k.gguf",
-      "Qwen2.5-VL-3B VLM OCR (32-layer ViT + 36-layer Qwen2.5, German docs)", "2610 MB", "apache-2.0",
-      "https://huggingface.co/cstr/qwen2.5-vl-3b-crispembed-GGUF" },
+      "Qwen2.5-VL-3B VLM OCR (32-layer ViT + 36-layer Qwen2.5, German docs; non-commercial)", "2610 MB",
+      "qwen-research", "https://huggingface.co/cstr/qwen2.5-vl-3b-crispembed-GGUF" },
 
     { "olmocr-2-7b", "olmocr-2-7b-q4_k.gguf",
       "https://huggingface.co/cstr/olmOCR-2-7B-1025-GGUF/resolve/main/olmocr-2-7b-q4_k.gguf",
@@ -1543,9 +1545,11 @@ static const ModelEntry k_registry[] = {
       "German-OCR-3.1 VLM (Qwen2-VL-2B fine-tune, German invoices/forms/receipts)", "1684 MB", "apache-2.0",
       "https://huggingface.co/keyvan-ai/german-ocr-3.1" },
 
+    // License: weights inherit the Qwen RESEARCH LICENSE of Qwen2.5-VL-3B (non-commercial);
+    // engine gate CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1. tests/results/licenses/registry-qwen-audit.json
     { "nanonets-ocr-s", "nanonets-ocr-s-q4_k.gguf",
       "https://huggingface.co/cstr/nanonets-ocr-s-crispembed-GGUF/resolve/main/nanonets-ocr-s-q4_k.gguf",
-      "Nanonets-OCR-s VLM OCR (Qwen2.5-VL-3B fine-tune, 12+ languages)", "2610 MB", "apache-2.0",
+      "Nanonets-OCR-s VLM OCR (Qwen2.5-VL-3B fine-tune, 12+ languages; non-commercial)", "2610 MB", "qwen-research",
       "https://huggingface.co/cstr/nanonets-ocr-s-crispembed-GGUF" },
 
     { "nanonets-ocr2-1.5b", "nanonets-ocr2-1.5b-q4_k.gguf",
@@ -1611,11 +1615,64 @@ static const ModelEntry k_registry[] = {
       "https://huggingface.co/cstr/OvisOCR2-GGUF/resolve/b7229e46f31bcf342d0999966bae8a03bf02bb07/ovisocr2-f16.gguf",
       "OvisOCR2 experimental CPU OCR (853M, f16, format2; gated, <=1024 patches)", "1.717 GB", "apache-2.0",
       "https://huggingface.co/cstr/OvisOCR2-GGUF" },
+    // TeleOCR: vision tower derives from Qwen2.5-VL-3B-Instruct, so the Qwen RESEARCH
+    // LICENSE (non-commercial) governs these weights despite the upstream card's
+    // apache-2.0 tag (tests/results/licenses/qwen-vision-lineage.json). The engine also
+    // requires CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1.
+    { "teleocr-f16", "teleocr-f16.gguf",
+      "https://huggingface.co/cstr/TeleOCR-GGUF/resolve/1de0119f27f470cfc7ef0be14327f5953730c7e8/teleocr-f16.gguf",
+      "TeleOCR experimental document OCR (Qwen2.5-VL vision + Qwen3-style decoder, f16; non-commercial Qwen Research "
+      "License vision tower; gated CRISPEMBED_TELEOCR, CPU)",
+      "2.526 GB", "qwen-research", "https://huggingface.co/cstr/TeleOCR-GGUF" },
+    { "teleocr-q8_0", "teleocr-q8_0.gguf",
+      "https://huggingface.co/cstr/TeleOCR-GGUF/resolve/1de0119f27f470cfc7ef0be14327f5953730c7e8/teleocr-q8_0.gguf",
+      "TeleOCR experimental document OCR (Qwen2.5-VL vision + Qwen3-style decoder, q8_0 decoder, f16 vision; "
+      "non-commercial Qwen Research License vision tower; gated CRISPEMBED_TELEOCR, CPU)",
+      "2.113 GB", "qwen-research", "https://huggingface.co/cstr/TeleOCR-GGUF" },
+    { "teleocr-q4_k-m", "teleocr-q4_k-m.gguf",
+      "https://huggingface.co/cstr/TeleOCR-GGUF/resolve/1de0119f27f470cfc7ef0be14327f5953730c7e8/teleocr-q4_k-m.gguf",
+      "TeleOCR experimental document OCR (Qwen2.5-VL vision + Qwen3-style decoder, q4_k-m decoder, f16 vision; "
+      "non-commercial Qwen Research License vision tower; gated CRISPEMBED_TELEOCR, CPU)",
+      "1.923 GB", "qwen-research", "https://huggingface.co/cstr/TeleOCR-GGUF" },
+    // MinerU2.5-Pro-2604 (apache-2.0): every published variant decodes the pinned Python
+    // reference token-exactly on the 8-case protocol (tests/results/mineru25/). Gated
+    // CRISPEMBED_MINERU25_PRO=1; run as --ocr-engine mineru25-pro --ocr-rec FILE.
+    { "mineru25-pro-f16", "mineru25-pro-2604-f16.gguf",
+      "https://huggingface.co/cstr/MinerU2.5-Pro-2604-1.2B-GGUF/resolve/e63c95cfd4e9f753783f588a187b9a3b89a7c201/"
+      "mineru25-pro-2604-f16.gguf",
+      "MinerU2.5-Pro-2604 document parsing (layout + text/table/formula, 1.2B, f16; gated "
+      "CRISPEMBED_MINERU25_PRO, CPU)",
+      "2.592 GB", "apache-2.0", "https://huggingface.co/cstr/MinerU2.5-Pro-2604-1.2B-GGUF" },
+    { "mineru25-pro-q8_0", "mineru25-pro-2604-q8_0.gguf",
+      "https://huggingface.co/cstr/MinerU2.5-Pro-2604-1.2B-GGUF/resolve/e63c95cfd4e9f753783f588a187b9a3b89a7c201/"
+      "mineru25-pro-2604-q8_0.gguf",
+      "MinerU2.5-Pro-2604 document parsing (1.2B, q8_0 decoder, f16 vision; gated CRISPEMBED_MINERU25_PRO, CPU)",
+      "1.921 GB", "apache-2.0", "https://huggingface.co/cstr/MinerU2.5-Pro-2604-1.2B-GGUF" },
 
+    // OXR-1.0 (SoMark): OXR License = Apache-2.0 + USD 2M commercial thresholds, SoMark
+    // attribution for online services, no competing hosted API (licenses/oxr-LICENSE).
+    // Downloads need --accept-license oxr; loading needs CRISPEMBED_OXR=1 and
+    // CRISPEMBED_ACCEPT_OXR_LICENSE=1. F16 token-exact on five cases (tests/results/oxr/).
+    { "oxr-1.0-f16", "oxr-1.0-f16.gguf",
+      "https://huggingface.co/cstr/OXR-1.0-GGUF/resolve/f1e262e276349aa2647a85da6fc6326dd6aaf271/oxr-1.0-f16.gguf",
+      "OXR-1.0 document OCR / reading order (SigLIP2 + Qwen3 decoder, 1.4B, f16; OXR License; gated CRISPEMBED_OXR, "
+      "CPU)",
+      "4.441 GB", "oxr", "https://huggingface.co/cstr/OXR-1.0-GGUF" },
+    // OXR's D-FINE layout detector for layout_detect (layout.arch=dfine); same license and
+    // gates. F32 region-exact on five pages (tests/results/oxr-dfine/); F16 not published.
+    { "oxr-1.0-dfine-layout", "oxr-1.0-dfine-layout-f32.gguf",
+      "https://huggingface.co/cstr/OXR-1.0-DFINE-layout-GGUF/resolve/2f71550fab18580c09b2c48084922212343e3ebe/"
+      "oxr-1.0-dfine-layout-f32.gguf",
+      "OXR-1.0 D-FINE document layout detector (HGNetv2-B2, f32; OXR License; gated CRISPEMBED_OXR)", "78 MB", "oxr",
+      "https://huggingface.co/cstr/OXR-1.0-DFINE-layout-GGUF" },
+
+    // License: GOT-OCR2's decoder is Qwen1.5-0.5B (config + weight lineage), so the Tongyi Qianwen
+    // RESEARCH LICENSE applies: non-commercial, and no use of the model or its outputs to improve
+    // other LLMs. Engine gate CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE=1.
     { "got-ocr2", "got-ocr2-q4_k.gguf",
       "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF/resolve/main/got-ocr2-q4_k.gguf",
-      "GOT-OCR2 document OCR (SAM-ViT-B + Qwen2-0.5B, 0.7B, text/LaTeX/tables)", "445 MB", "apache-2.0",
-      "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF" },
+      "GOT-OCR2 document OCR (SAM-ViT-B + Qwen1.5-0.5B, 0.7B, text/LaTeX/tables; non-commercial)", "445 MB",
+      "tongyi-qianwen-research", "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF" },
 
     // LFM2.5-VL-3B — LiquidAI's own GGUF export, used directly rather than
     // re-hosted: our loader reads it unchanged, so a cstr/* mirror would add a
@@ -1982,9 +2039,11 @@ static const ModelEntry k_registry[] = {
       "Uni-MuMER handwritten math→LaTeX (Qwen3-VL-2B, 82% CROHME)", "1509 MB", "apache-2.0",
       "https://huggingface.co/cstr/uni-mumer-qwen3-vl-2b-GGUF" },
 
+    // License: weights inherit the Qwen RESEARCH LICENSE of Qwen2.5-VL-3B (non-commercial);
+    // engine gate CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1. tests/results/licenses/registry-qwen-audit.json
     { "uni-mumer-qwen2.5-vl-3b", "uni-mumer-qwen2.5-vl-3b-q4_k.gguf",
       "https://huggingface.co/cstr/uni-mumer-qwen2.5-vl-3b-GGUF/resolve/main/uni-mumer-qwen2.5-vl-3b-q4_k.gguf",
-      "Uni-MuMER handwritten math→LaTeX (Qwen2.5-VL-3B, 82.25% CROHME)", "2614 MB", "apache-2.0",
+      "Uni-MuMER handwritten math→LaTeX (Qwen2.5-VL-3B, 82.25% CROHME; non-commercial)", "2614 MB", "qwen-research",
       "https://huggingface.co/cstr/uni-mumer-qwen2.5-vl-3b-GGUF" },
 
     // TexTeller 3.0 math OCR (ViT + TrOCR, 310M, printed + handwritten)
@@ -2035,9 +2094,12 @@ static const ModelEntry k_registry[] = {
     // Transcoda-59M — zero-shot full-page OMR (ConvNeXt-V2 enc + 8L RoPE cross-attn
     // decoder, 59M). Score image→Humdrum **kern. OMR-NED SOTA on real historical
     // scans. Weights cc-by-4.0 (attribution required).
+    // License: the encoder is fine-tuned from facebook/convnextv2-tiny-22k-224 (stage cosines
+    // 0.95-0.99), whose ImageNet pre-trained weights Meta licenses CC-BY-NC; the upstream
+    // cc-by-4.0 tag and "trained from scratch" note do not match the weights.
     { "transcoda", "transcoda-q8_0.gguf",
       "https://huggingface.co/cstr/transcoda-omr-GGUF/resolve/main/transcoda-q8_0.gguf",
-      "Transcoda-59M zero-shot OMR: full-page score→Humdrum **kern (59M)", "69 MB", "cc-by-4.0",
+      "Transcoda-59M zero-shot OMR: full-page score→Humdrum **kern (59M; non-commercial)", "69 MB", "cc-by-nc-4.0",
       "https://huggingface.co/btrkeks/transcoda-59M-zeroshot-v1" },
 
     { nullptr, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr }
@@ -2246,10 +2308,23 @@ bool license_requires_acceptance(const char * spdx) {
     if (strncmp(spdx, "cc-by-nc", 8) == 0) return true;
     // Vendor licenses with use-restriction policies the user must accept.
     static const char * restricted[] = {
-        "gemma",    "llama2",        "llama3",
-        "llama3.1", "llama3.2",      "llama3.3",
-        "llama4",   "qwen-research", "mistral-ai-research",
-        "lfm1.0",   "other",         nullptr,
+        "gemma",
+        "llama2",
+        "llama3",
+        "llama3.1",
+        "llama3.2",
+        "llama3.3",
+        "llama4",
+        "qwen-research",
+        "mistral-ai-research",
+        "tongyi-qianwen-research",
+        "tongyi-qianwen",
+        "lfm1.0",
+        // OXR License: Apache-2.0 plus USD 2M commercial thresholds, SoMark attribution
+        // for online services, no competing hosted API (licenses/oxr-LICENSE).
+        "oxr",
+        "other",
+        nullptr,
     };
     for (const char ** p = restricted; *p; ++p) {
         if (strcmp(spdx, *p) == 0) return true;

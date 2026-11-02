@@ -1,0 +1,1 @@
+{"label": "receipt/metal", "ids_exact": true, "first_divergence": null, "reference_tokens": 202, "native_tokens": 202, "text_exact": true, "cer": 0.0, "eos": true, "capped": false, "runs_ms": [35311.141667, 34059.113833], "warm_ms_median": 34059.113833, "load_ms": 257486.162833, "runs_identical": true}

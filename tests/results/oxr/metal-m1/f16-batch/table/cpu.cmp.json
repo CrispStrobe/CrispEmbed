@@ -1,0 +1,1 @@
+{"label": "table/cpu", "ids_exact": true, "first_divergence": null, "reference_tokens": 261, "native_tokens": 261, "text_exact": true, "cer": 0.0, "eos": true, "capped": false, "runs_ms": [38795.387375, 34034.548084], "warm_ms_median": 34034.548084, "load_ms": 224574.10625, "runs_identical": true}
