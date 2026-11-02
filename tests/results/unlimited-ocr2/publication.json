@@ -34,8 +34,8 @@
     }
   },
   "card_update": {
-    "hub_commit": "e39412255db0fc67952c8614cd03438822cf0957",
-    "previous_hub_commit": "44540403eb112d2349f47bb13933ce96f808cae1",
+    "hub_commit": "2f4555f4d56769761754ad55bf9681bd44df2038",
+    "previous_hub_commit": "e39412255db0fc67952c8614cd03438822cf0957",
     "changed_files": [
       "README.md",
       "manifest.json"
@@ -58,12 +58,29 @@
       "receipt_sha256": "681a1b7ca03def1d6b676f9fce7a460183dcce45822fa41c3fd604fb0f54c66e",
       "published_tokenizer_uses_runtime_added_token_fallback": true
     },
-    "README.md": "e84d2c04f20c7d082a7f314a15dee49837caba221d9102826b83ceee9255fef6",
-    "manifest.json": "7b411a88afafd253b4b660fa8625b039b8343471acb2b0c38d9f3c56ff207142",
-    "reason": "Four original-F16 synthetic tiled cases match full raw token IDs/text; documented831 added-token runtime fallback; weights unchanged.",
-    "date": "2026-10-28T18:15:39Z",
-    "provenance": "not recorded here at the time; registered run 40732344399 was cancelled in the runner queue before any step. Reviewed 2026-11-02: README/manifest bytes equal main's card renderer output (a1ccc1c1) for the e3af0c0c weights.",
-    "reason_main": "original raw decode/added-token fallback, original tiling, F16/Q8 trial limits; weights unchanged"
+    "real_scans": {
+      "receipt": "tests/results/ocr-real-scans/native-uocr2-v2.json",
+      "receipt_sha256": "4b8206c4c80a5a441408cdace6038ffcd25e8a3183d3bcd5835ee25d1e08ecef",
+      "reference_receipt": "tests/results/ocr-real-scans/ref-uocr2.json",
+      "commit": "c077c7197cb4d90c3c0db8a0581bc37ca491b321",
+      "pairs": 19,
+      "ids_exact": 11,
+      "scans": 14,
+      "receipts": 5,
+      "scan_cer_native": 0.0594,
+      "scan_cer_original": 0.0589,
+      "receipt_recall_native": 0.5333,
+      "receipt_recall_original": 0.5333,
+      "receipts_original_below_0_8": 3,
+      "failed_pages": [
+        "en-form-economic-journal-67"
+      ]
+    },
+    "README.md": "09633bf13ab56b84ea1cfb615d325a59c9f294b66877874c23e32d38b0b78b55",
+    "manifest.json": "475b308a81f911bef302b69365de3d25a4888ef8986a481a2c6e2ba4b6b1d409",
+    "workflow_run": 41441036229,
+    "source_ref": "9a47dd869b8f99495a68bd62d64cccb090a1c05b",
+    "reason": "real-scan result added; original-exact raw decode, original tiling, F16 recommended (Q8_0 box-coordinate differences); weights unchanged"
   },
   "card_update_history": [
     {
@@ -71,6 +88,38 @@
       "reason": "tiled pages token-ID exact after tile-token fix 595156ea; weights unchanged (aliases pin e3af0c0c)",
       "README.md": "1ebf03926c28bd234410c03f3606e88b254d936145530c2d3968b16002cca68a",
       "manifest.json": "4dfcddcb9cb601194fa851bf499eea6093bf795d6a2db6560dc36b78f5374a34"
+    },
+    {
+      "hub_commit": "e39412255db0fc67952c8614cd03438822cf0957",
+      "date": "2026-10-28T18:15:39Z",
+      "reason": "original raw decode/added-token fallback, original tiling, F16/Q8 trial limits; weights unchanged",
+      "provenance": "not recorded here at the time; registered run 40732344399 was cancelled in the runner queue before any step. Reviewed 2026-11-02: README/manifest bytes equal main's card renderer output (a1ccc1c1) for the e3af0c0c weights.",
+      "README.md": "e84d2c04f20c7d082a7f314a15dee49837caba221d9102826b83ceee9255fef6",
+      "manifest.json": "7b411a88afafd253b4b660fa8625b039b8343471acb2b0c38d9f3c56ff207142",
+      "previous_hub_commit": "44540403eb112d2349f47bb13933ce96f808cae1",
+      "changed_files": [
+        "README.md",
+        "manifest.json"
+      ],
+      "weights_unchanged": true,
+      "notices_unchanged": true,
+      "source_commit": "e165d5d1f46ab3c63ebe86bf78bd3a12bb017908",
+      "verification": {
+        "source": "8ca9d3de2a8160e6f5235156d3550c9719583744",
+        "scope": "four synthetic tiled pages, published F16",
+        "default_ids_exact": true,
+        "raw_text_bytes_exact": true,
+        "cases": [
+          "german",
+          "paragraphs",
+          "receipt",
+          "table"
+        ],
+        "receipt": "tests/results/unlimited-ocr2/verify-text-v2.json",
+        "receipt_sha256": "681a1b7ca03def1d6b676f9fce7a460183dcce45822fa41c3fd604fb0f54c66e",
+        "published_tokenizer_uses_runtime_added_token_fallback": true
+      },
+      "reason_main": "original raw decode/added-token fallback, original tiling, F16/Q8 trial limits; weights unchanged"
     },
     {
       "hub_commit": "e39412255db0fc67952c8614cd03438822cf0957",
