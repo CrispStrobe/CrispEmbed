@@ -69,7 +69,7 @@
  "v3_profile_sha256": "bcbcca40c79795287159eef4a473551efc0166ace4cec7712d8696f36b15586a",
  "owned_sha256": {
   ".github/workflows/wasm-live-norm-operands-v4.yml": "abfa05f3bcd5a947317c3d08bcd083bc9f8778b38306449e3fa7201c5a68c22e",
-  "docs/wasm-live-norm-operands-v4.md": "5e66ea50c2bb3c792a581f1023342db76c61a3f3b8d5fe3477efd0167c9fb6aa",
+  "docs/wasm-live-norm-operands-v4.md": "9217a769a676cdc86f3eb0ea3a7ea82d314b2f31b1040a5d92a5bf70a546dc67",
   "tools/ci-heavy/wasm_live_norm_v4.py": "8f75a103969b6e97fb662bef79cb208e21cdb171808416b5b962a21c354d1122",
   "tools/wasm-live-norm-v4/diff_adapter_v4.py": "05df377df2e59dba18e034f77701eb17439529deafbf8e1523774eda36cf7609",
   "tests/test_wasm_live_norm_v4.py": "2bb741c8a8c51fb5f2ee796a6282c7f5f53517e03708721b4351085fb0f4e996"

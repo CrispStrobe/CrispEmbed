@@ -36,3 +36,17 @@ v2 admission, the v3 observer, the v3 observer controls before model access, and
 every v1 phase run unchanged in the same component-first order.
 
 ## Attempts
+
+- [41432135298](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41432135298)
+  at `77ed7122`: the attribution **completed** and is a numerical rejection
+  (exit1), as designed ([receipt](../tests/results/packaging/wasm-live-norm-v4-attribution.json)).
+  All weight-free controls passed before model access.
+  - Local attribution passes: 104/104 replay controls, and all 208 same-input
+    norm replays are bit-exact.
+  - Natural comparisons: 132/196 pass and 64 fail (40 norm rows, 24 layer3
+    rows). C++ Ref and independent metrics agree.
+  - Error stays at or below 1.9e-6 through layers 0-2 and layer3 attention. It
+    rises about 300x at FC1 (`fc1_raw` 5.73e-4) and first fails at `fc2_raw`
+    (0.00331, cosine 0.99999569), then reaches 0.185 at norm12.
+  - Results are identical for gate 0/1 and threads 1/2. The norm operator is
+    not the source.
