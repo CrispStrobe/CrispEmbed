@@ -623,6 +623,17 @@ MODELS = {
         "license": "mit",
         "langs": ["multilingual"],
         "desc": "BGE-M3. Dense + sparse + ColBERT multi-vector retrieval in one model. 100+ languages, 8192 context.",
+        # Lineage: files before 2026-11-02 are Ollama-layout (dense only, no heads).
+        "revisions": [
+            {"date": "2026-11-02", "commit": "6016c35502f2d8419a593d545f91bc303bc5b261",
+             "files": {"bge-m3-heads-f16.gguf": "ffef924ba5d161bdd1084f713d22e579eb2c8c1ca649b63055f50f6d5685ea8d",
+                       "bge-m3-heads-q8_0-mixed.gguf": "b8ecf56f5ab3d8c8aaaaa947348e5cd2881f2ecf7436684787dcbf5174fd37e2"},
+             "recipe": {"bge-m3-heads-f16.gguf": "convert --crisp --dtype f16 (heads F32)",
+                        "bge-m3-heads-q8_0-mixed.gguf": "q8_0; enc.0-11 f16"},
+             "min_cos_dense_sparse_colbert": {"bge-m3-heads-f16.gguf": [1.0, 1.0, 1.0],
+                                              "bge-m3-heads-q8_0-mixed.gguf": [0.99945, 0.99913, 0.97255]},
+             "not_published": {"q8_0 uniform": "ColBERT 0.612", "q4_k+imatrix (+mixes)": "ColBERT 0.37-0.60"}},
+        ],
     },
     # --- Reranker models ---
     "bge-reranker-base": {

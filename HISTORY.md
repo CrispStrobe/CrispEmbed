@@ -1,3 +1,29 @@
+## 2 November 2026: below-bar registry artifacts repaired (fix/below-bar-artifacts)
+
+- **f2llm-v2-0.6b Q4_K.** The published `-q4_k-imatrix` scores 0.769 min / 0.822 mean against the original
+  (sentence-transformers fp32) on the 78-text panel. The same weights, dequantized and run as F16 matmuls,
+  score 0.782, so this is weight sensitivity. The replacement `-q4_k-mixed` keeps `ffn_down` at Q6_K and
+  `attn_v` plus blocks 25-27 at Q8_0. It scores 0.9644 / 0.9762 at 454 MB, published at
+  `cstr/f2llm-v2-0.6b-GGUF@c29299b7`. Registry `f2llm-v2-0.6b-q4k` is repointed and the old file is kept as
+  `-q4k-superseded`.
+- **clip-text-base Q4_K.** Fixed a runtime defect: inputs over 75 tokens lost EOS on truncation (F32 vs the
+  original was 0.568). `CRISPEMBED_CLIP_TEXT_KEEP_EOS`, default on. The replacement `-q4_k-mixed` (attn.v and
+  block 0 at Q8_0) scores 0.9878 / 0.9953 at 51 MB, published at `cstr/clip-text-base-GGUF@3d52b127`. It is
+  the new registry default; the previous default stays as `-q4k-imatrix`.
+- **BGE-M3 with sparse and ColBERT heads.** Native F32 vs FlagEmbedding was dense 0.969, sparse 0.675 and
+  ColBERT 0.179. There were two runtime defects:
+  - The XLM-R `Replace(" {2,}")` normalizer was missing and trailing whitespace became a lone `▁`. Fixed
+    under `CRISPEMBED_SPM_COLLAPSE_SPACES`, default on; this affects every XLM-R SentencePiece embedder.
+  - The sparse output kept special tokens. Fixed under `CRISPEMBED_SPARSE_KEEP_SPECIAL=1` (restores the old
+    output).
+
+  After the fixes F32 and F16 are exactly 1.0000 on all three heads. `bge-m3-heads-f16` and
+  `bge-m3-heads-q8_0-mixed` (Q8_0 with blocks 0-11 at F16; dense 0.9995, sparse 0.9991, ColBERT 0.9726) are
+  published at `cstr/bge-m3-GGUF@6016c355` and registered as `bge-m3-heads-f16` / `bge-m3-heads`. Uniform
+  Q8_0 ColBERT (0.612) and every Q4_K-with-heads mix (ColBERT 0.37-0.60) were rejected. The old bge-m3
+  registry entries are now described as dense-only.
+- Evidence and negative results: [below-bar summary](tests/results/below-bar/SUMMARY.md).
+
 ## 2 November 2026: Unlimited-OCR-2 trial fixes confirmed on real scans; real-scan manifest v2
 
 - **Trial fixes (merged to main as `8e4fe4a8`, runtime `8ca9d3de`).** The default output is now the original raw decode
