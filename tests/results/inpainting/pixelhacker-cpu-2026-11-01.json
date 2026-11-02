@@ -1,0 +1,1216 @@
+{
+  "schema": "crispembed-pixelhacker-native-cpu-evidence-v1",
+  "recorded_date_utc": "2026-11-01",
+  "all_three_attempts_have_final_receipts": false,
+  "complete_case_matrix": false,
+  "native_execution_and_agreement_passed": false,
+  "original_pixelhacker_parity_qualified": false,
+  "perceptual_quality_qualified": false,
+  "gpu_execution_qualified": false,
+  "clean_build_attestation_claimed": false,
+  "scope": "One pinned 512-pixel photo. Candidate completed one cold and three warm calls. Eager was cancelled at the user's immediate-delivery request after one cold and one warm call; its next call was interrupted. Portable graph was not run. No completed cross-implementation RGB comparison or speedup claim is available. Original PixelHacker FLA requires CUDA and is not executed here.",
+  "hardware": {
+    "source_record_sha256": "565fc8e00e4e67f3596dacf903ab5ca7ead9b552cb5937bedb68f0ed891012e4",
+    "platform": "Linux-6.18.57-x86_64-with-glibc2.39",
+    "cpu_model": "AMD EPYC 9V74 80-Core Processor",
+    "cpu_features": {
+      "avx2": true,
+      "fma": true,
+      "avx512f": true,
+      "avx512bw": true,
+      "avx512vl": true,
+      "avx512_bf16": true,
+      "avx512_vnni": true
+    },
+    "affinity_cpu_count": 9,
+    "cpu_quota_us": 800000,
+    "cpu_period_us": 100000,
+    "cpu_quota_equivalent": 8.0,
+    "memory_limit_bytes": 8589934592,
+    "cuda_toolchain_detected": false,
+    "cuda_driver_tool_detected": false,
+    "nvidia_device_detected": false,
+    "dri_device_detected": false,
+    "metal_available_on_this_linux_host": false
+  },
+  "models": {
+    "pixelhacker": {
+      "original_checkpoint": {
+        "repository": "hustvl/PixelHacker",
+        "revision": "012fd343158936a265b8a0ee38a791a7a2841f45",
+        "filename": "ft_places2/diffusion_pytorch_model.bin",
+        "url": "https://huggingface.co/hustvl/PixelHacker/resolve/012fd343158936a265b8a0ee38a791a7a2841f45/ft_places2/diffusion_pytorch_model.bin",
+        "bytes": 3449345440,
+        "sha256": "ef5e28199cd03344ac22a6e6ff456ba8b868e83fb90d8174cc2ad83d7ef4296c",
+        "pickle_sha256": "03c048230eb6650dcac5e7a03315c692b35aba6edb4257873f3b630715ab2125",
+        "pickle_bytes": 182804
+      },
+      "weight_license": "MIT",
+      "license_evidence": [
+        "https://huggingface.co/hustvl/PixelHacker"
+      ],
+      "license_note": "Author-owned weight repository declares MIT; source implementation is separately Apache-2.0.",
+      "export_tensor_count": 753,
+      "converted_gguf_sha256": "5b486aa5d80647dbf298b0296d2cea7cb410dfb978b8bdfea806617f73ea588d",
+      "converted_gguf_bytes": 3449075872,
+      "original_reference_executed_for_this_panel": false
+    },
+    "sdxl_vae": {
+      "original_checkpoint": {
+        "repository": "hustvl/PixelHacker",
+        "revision": "012fd343158936a265b8a0ee38a791a7a2841f45",
+        "filename": "vae/diffusion_pytorch_model.bin",
+        "url": "https://huggingface.co/hustvl/PixelHacker/resolve/012fd343158936a265b8a0ee38a791a7a2841f45/vae/diffusion_pytorch_model.bin",
+        "bytes": 167394306,
+        "sha256": "a59d7ea697f2942d22002dc3469e8c53db807a6b78f7f5ec03bd4c1f70f98efe",
+        "pickle_sha256": "afcd9646b70f3e70472ddfd24806834f447b50acc75cc196d6049ec9fbdd666d",
+        "pickle_bytes": 34709
+      },
+      "weight_license": "MIT",
+      "license_evidence": [
+        "https://huggingface.co/stabilityai/sdxl-vae",
+        "https://huggingface.co/hustvl/PixelHacker"
+      ],
+      "license_note": "Author-owned weight repository declares MIT; source implementation is separately Apache-2.0.",
+      "export_tensor_count": 248,
+      "converted_gguf_sha256": "e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2",
+      "converted_gguf_bytes": 334636224,
+      "original_reference_executed_for_this_panel": false
+    }
+  },
+  "source_contract": {
+    "identity": {
+      "path": "repo/docs/latent-inpaint-source-contract.json",
+      "sha256": "b4f632d6939a8f57897c88e253bd96b7155fe3426a60ed77eac64b059d69983d",
+      "bytes": 972741
+    },
+    "original_pixelhacker_source": {
+      "repository": "https://github.com/hustvl/PixelHacker",
+      "commit": "f5567db2871598aa178fe7a34c520dd478a0b41b"
+    },
+    "tensor_name_encoding": "sha256-56-v1",
+    "original_source_execution_qualification": false
+  },
+  "predeclared_plan": {
+    "identity": {
+      "path": "evidence/pixelhacker-api-plan.json",
+      "sha256": "7e41e2264c192dc5019b75da674501349e96902b3deda1822041b60b592ea15a",
+      "bytes": 3565
+    },
+    "data": {
+      "schema": "crispembed-pixelhacker-cpu-api-plan-v1",
+      "status": "predeclared; awaiting explicit heavy-slot grant",
+      "controller": "native-optimization/run_latent_api.py",
+      "engine": "pixelhacker",
+      "case": "formula_photo_bar",
+      "width": 512,
+      "height": 512,
+      "threads": 8,
+      "cold_calls_per_arm": 1,
+      "warm_calls_per_arm": 3,
+      "arm_order": [
+        "candidate",
+        "eager",
+        "graph"
+      ],
+      "run_ids": {
+        "candidate": "pixelhacker-candidate-photo-t8",
+        "eager": "pixelhacker-eager-photo-t8",
+        "graph": "pixelhacker-graph-photo-t8"
+      },
+      "timeout_seconds_per_arm": 1800,
+      "timeout_policy": "No automatic extension. A prospective extension requires observed progress and parent coordination; any failed attempt and its evidence remain preserved.",
+      "profile": {
+        "backend": "cpu",
+        "weight_storage": "F32",
+        "fast_mixed_precision": false,
+        "requested_ddim_steps": 20,
+        "executed_timesteps": 19,
+        "guidance": 4.5,
+        "noise_offset": 0.0357,
+        "native_seed": 0,
+        "tiled": false,
+        "candidate_gates": [
+          "CRISPEMBED_INPAINT_GEMM_LAYOUT",
+          "CRISPEMBED_INPAINT_CPU_GLA"
+        ],
+        "graph_profiles": [
+          "candidate",
+          "graph"
+        ],
+        "other_candidate_gates": "explicitly zero through the reviewed controller"
+      },
+      "pins": {
+        "model_gguf_sha256": "5b486aa5d80647dbf298b0296d2cea7cb410dfb978b8bdfea806617f73ea588d",
+        "vae_gguf_sha256": "e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2",
+        "fixture_manifest_sha256": "84213e7fec278c0f915ea69dcb97151d6e43ef46ddd96381dec2ee13514264a5",
+        "input_rgb_sha256": "7de1d0ce1bc46b8f563ad715136510d572e26c55e7562eed711eb5e923b7fc86",
+        "mask_sha256": "642078416b455bf415d69e291d40b0e55894a10535f16b847552cb9c9a190e91"
+      },
+      "binary_policy": "After the explicit slot grant and before the first arm, preserve the exact build-current/test-inpaint-benchmark bytes and record its SHA/size. Require the same binary digest before and after every arm; do not rebuild or modify runtime code.",
+      "graph_counter_expectations": {
+        "vae-encoder-batch2": 4,
+        "unet-cfg-ddim-batch2": 76,
+        "vae-decoder": 4,
+        "required_for_profiles": [
+          "candidate",
+          "graph"
+        ],
+        "records_per_label": 1,
+        "timesteps_per_call_from_stepper_counter": 19,
+        "eager_counter_scope": "The eager path has no equivalent graph execution counters. Its requested20-step setting and source-defined19-step schedule are recorded without claiming profile-backed eager step counting."
+      },
+      "comparison": {
+        "reference": "actual completed candidate output.rgb8",
+        "candidate_producer_receipt_required": true,
+        "exact_reference_sha256_required": true,
+        "eager_and_graph_compare_to_candidate": true,
+        "max_filled_channel_abs": 2,
+        "mean_filled_channel_abs": 0.1,
+        "minimum_filled_psnr_db": 50,
+        "known_channels_exact": true,
+        "every_cold_and_warm_output_bit_exact_within_each_arm": true,
+        "scope": "Agreement among native implementations only. Original PixelHacker FLA requires CUDA and is not executed here."
+      },
+      "admission_and_failure_policy": {
+        "no_execution_before_root_heavy_slot": true,
+        "address_space_cap_bytes": 8053063680,
+        "candidate_first_for_execution_and_memory_admission": true,
+        "candidate_failure_stops_following_arms_without_a_reference": true,
+        "subsequent_numerical_failures_retained_without_relaxing_budgets": true,
+        "no_model_weight_or_framework_changes": true
+      },
+      "claims": {
+        "original_pixelhacker_parity": false,
+        "perceptual_quality": false,
+        "gpu_execution": false,
+        "performance_qualified_before_measurement": false
+      }
+    }
+  },
+  "binary_and_source_admission": {
+    "identity": {
+      "path": "evidence/pixelhacker-execution/admission.json",
+      "sha256": "584e5feba9e62849ab06ed27d3593df1f309b58df90cad2fd6058f6ff3659965",
+      "bytes": 8535
+    },
+    "data": {
+      "schema": "crispembed-pixelhacker-cpu-admission-v1",
+      "recorded_utc": "2026-11-01T12:07:48.735450+00:00",
+      "parent_heavy_slot_granted": true,
+      "plan": {
+        "path": "evidence/pixelhacker-api-plan.json",
+        "bytes": 3565,
+        "sha256": "7e41e2264c192dc5019b75da674501349e96902b3deda1822041b60b592ea15a"
+      },
+      "binary": {
+        "path": "evidence/build-current/test-inpaint-benchmark",
+        "bytes": 3924968,
+        "sha256": "147be9f40d43f165f52b3a6bfa6ca942ece0c1e1354a82d344a46ed2e7844030"
+      },
+      "preserved_binary": {
+        "path": "evidence/pixelhacker-execution/test-inpaint-benchmark",
+        "bytes": 3924968,
+        "sha256": "147be9f40d43f165f52b3a6bfa6ca942ece0c1e1354a82d344a46ed2e7844030"
+      },
+      "controller": {
+        "path": "evidence/run_latent_api.py",
+        "bytes": 22608,
+        "sha256": "de69ad4eb2158230067f5d3727819d1fb8e71d59afb6dddea2e9a93bc8ad6624"
+      },
+      "source_files_observed": [
+        {
+          "path": "evidence/run_latent_api.py",
+          "bytes": 22608,
+          "sha256": "de69ad4eb2158230067f5d3727819d1fb8e71d59afb6dddea2e9a93bc8ad6624",
+          "preserved_path": "evidence/pixelhacker-execution/source-observed/controller/run_latent_api.py"
+        },
+        {
+          "path": "repo/tests/test_inpaint_benchmark.cpp",
+          "bytes": 12269,
+          "sha256": "986e0c83deff8720efd0949cc1b232684855d525e13efb5df5235df1497b55bd",
+          "preserved_path": "evidence/pixelhacker-execution/source-observed/tests/test_inpaint_benchmark.cpp"
+        },
+        {
+          "path": "repo/src/latent_inpaint.cpp",
+          "bytes": 20151,
+          "sha256": "0f5513f5a19f438b1bceb01ed0e8802bd4b62d353c23320c8dfa213dabbde50a",
+          "preserved_path": "evidence/pixelhacker-execution/source-observed/src/latent_inpaint.cpp"
+        },
+        {
+          "path": "repo/src/latent_inpaint.h",
+          "bytes": 2287,
+          "sha256": "e4c9c2aec679cfd485564cceb384095c148e2f531349c3dd4707dcbb28c729b5",
+          "preserved_path": "evidence/pixelhacker-execution/source-observed/src/latent_inpaint.h"
+        },
+        {
+          "path": "repo/src/latent_inpaint_ops.cpp",
+          "bytes": 22262,
+          "sha256": "d012cd1c46cdb45e8e82e39f1e8d5e4eb890541fb7a0acb36c0188f3ac8b35dd",
+          "preserved_path": "evidence/pixelhacker-execution/source-observed/src/latent_inpaint_ops.cpp"
+        },
+        {
+          "path": "repo/src/latent_inpaint_ops.h",
+          "bytes": 2886,
+          "sha256": "f4b53a683773f2427e917bcb61de07e163e21dc550525a4a26146f1e4d111d26",
+          "preserved_path": "evidence/pixelhacker-execution/source-observed/src/latent_inpaint_ops.h"
+        },
+        {
+          "path": "repo/src/latent_inpaint_unet.cpp",
+          "bytes": 20408,
+          "sha256": "a7807d6070904052655761ca5439af8b4e98db59f99e09edf0ae5ed9b4c9826f",
+          "preserved_path": "evidence/pixelhacker-execution/source-observed/src/latent_inpaint_unet.cpp"
+        },
+        {
+          "path": "repo/src/latent_inpaint_graph.cpp",
+          "bytes": 13603,
+          "sha256": "60be70173f85994b67da9e2b38bb64ad797a40f9898b4d3441bce4fc16fdbfa8",
+          "preserved_path": "evidence/pixelhacker-execution/source-observed/src/latent_inpaint_graph.cpp"
+        },
+        {
+          "path": "repo/src/latent_inpaint_graph_unet.cpp",
+          "bytes": 27760,
+          "sha256": "2a2771012731749cbfdb8f8fdf6b2e5e37b0673a416039cb488efd1d277a2580",
+          "preserved_path": "evidence/pixelhacker-execution/source-observed/src/latent_inpaint_graph_unet.cpp"
+        },
+        {
+          "path": "repo/src/latent_inpaint_vae.cpp",
+          "bytes": 3931,
+          "sha256": "18fe9b2134862b8b2f76f6475348c7959ea0a926f299d030e3b61c32e0e342ef",
+          "preserved_path": "evidence/pixelhacker-execution/source-observed/src/latent_inpaint_vae.cpp"
+        },
+        {
+          "path": "repo/src/inpaint_graph.cpp",
+          "bytes": 42535,
+          "sha256": "12166e1fde240caa74ce3ff4d1c3addbeb552efbae1d9ecf4a447ddb150d3b3d",
+          "preserved_path": "evidence/pixelhacker-execution/source-observed/src/inpaint_graph.cpp"
+        },
+        {
+          "path": "repo/src/inpaint_graph.h",
+          "bytes": 6224,
+          "sha256": "5d85feba52c8060259b7cffa7ae8c845f05e25341aacc2fe9669d08e4e258ddf",
+          "preserved_path": "evidence/pixelhacker-execution/source-observed/src/inpaint_graph.h"
+        },
+        {
+          "path": "repo/src/inpaint_graph_spectral.cpp",
+          "bytes": 30872,
+          "sha256": "eb20e813075727e7281c38e0db949db69e5c74cb38f345416a73045d0a582752",
+          "preserved_path": "evidence/pixelhacker-execution/source-observed/src/inpaint_graph_spectral.cpp"
+        },
+        {
+          "path": "repo/src/inpaint_graph_spectral.h",
+          "bytes": 2064,
+          "sha256": "7a915ce0ec06a9f922c2a28b7cb100b915071e64b91273b0848a534ce0bd963e",
+          "preserved_path": "evidence/pixelhacker-execution/source-observed/src/inpaint_graph_spectral.h"
+        },
+        {
+          "path": "repo/src/inpaint_weight_names.h",
+          "bytes": 2241,
+          "sha256": "d456ee1e1b192d7be8780f746f890d2b1424506759c0461a1ab17e11bfd31884",
+          "preserved_path": "evidence/pixelhacker-execution/source-observed/src/inpaint_weight_names.h"
+        },
+        {
+          "path": "repo/src/latent_inpaint_schema.h",
+          "bytes": 177878,
+          "sha256": "d67c270ad26ada34a1c3e9186b9911f2579ebaeb228d52328b3181b645ced961",
+          "preserved_path": "evidence/pixelhacker-execution/source-observed/src/latent_inpaint_schema.h"
+        },
+        {
+          "path": "repo/tools/dump_migan_photo_reference.py",
+          "bytes": 15144,
+          "sha256": "97d6978b0130aa4ee3b5e871fe3877c0340e80b914459dc7d197223d77382c4d",
+          "preserved_path": "evidence/pixelhacker-execution/source-observed/tools/dump_migan_photo_reference.py"
+        },
+        {
+          "path": "repo/tests/test_inpaint_engine_live.py",
+          "bytes": 35508,
+          "sha256": "6679b4fff0bc22127425c4c66f65095b60c5cb8f462d1f0208cfcf5d2eaafe97",
+          "preserved_path": "evidence/pixelhacker-execution/source-observed/tests/test_inpaint_engine_live.py"
+        },
+        {
+          "path": "repo/tests/test_inpaint_cli.py",
+          "bytes": 28318,
+          "sha256": "ac69bd57828145ed67ae29b5ddbfed9768db78a13ad4261bfe994866bc5f3ee0",
+          "preserved_path": "evidence/pixelhacker-execution/source-observed/tests/test_inpaint_cli.py"
+        },
+        {
+          "path": "repo/docs/latent-inpaint-source-contract.json",
+          "bytes": 972741,
+          "sha256": "b4f632d6939a8f57897c88e253bd96b7155fe3426a60ed77eac64b059d69983d",
+          "preserved_path": "evidence/pixelhacker-execution/source-observed/docs/latent-inpaint-source-contract.json"
+        }
+      ],
+      "native_commit_observed": "5dc87e1641d91f4c92517620af977e738d8c8aa5",
+      "ggml_commit_observed": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+      "source_tree_clean": false,
+      "clean_build_attestation_claimed": false,
+      "original_pixelhacker_parity_claimed": false,
+      "runs": []
+    }
+  },
+  "timing_print_correction": {
+    "revalidation": {
+      "identity": {
+        "path": "evidence/pixelhacker-execution/candidate-revalidation.json",
+        "sha256": "e3c521c6627375f18571b855b7c5955f97df49bf6b93e0c460a80ed364f65179",
+        "bytes": 4154
+      },
+      "data": {
+        "schema": "crispembed-retained-timing-print-revalidation-v1",
+        "complete": true,
+        "passed": true,
+        "recorded_utc": "2026-11-01T12:21:41.490997+00:00",
+        "model_executed": false,
+        "original_producer_receipt_modified": false,
+        "original_pixelhacker_parity_qualified": false,
+        "image_budgets_changed": false,
+        "runtime_or_binary_changed": false,
+        "revalidation_script": {
+          "path": "evidence/revalidate_pixelhacker_candidate.py",
+          "bytes": 10626,
+          "sha256": "74666b89836596d0a27d3d5609c36bc6ecf6dbe1fbffca36b33036b6fe31bba6"
+        },
+        "original_failed_producer_receipt": {
+          "path": "evidence/latent-api/pixelhacker-candidate-photo-t8/process.json",
+          "bytes": 9603,
+          "sha256": "4a1736e9c4079cdc4476373ff4337dcafcefa309a099c988ebe3226aa05ceff3"
+        },
+        "retained_native_outputs": {
+          "stdout.log": {
+            "path": "evidence/latent-api/pixelhacker-candidate-photo-t8/stdout.log",
+            "bytes": 1977,
+            "sha256": "9dba90027992d53da3b217b02f9f03bce41bcd79e75e3dc2f1f669aa6a5bcf86"
+          },
+          "stderr.log": {
+            "path": "evidence/latent-api/pixelhacker-candidate-photo-t8/stderr.log",
+            "bytes": 505,
+            "sha256": "bebc2f6447d2bbbde64928555653804f3a47ab18d22d7362054907f862d23295"
+          },
+          "output.rgb8": {
+            "path": "evidence/latent-api/pixelhacker-candidate-photo-t8/output.rgb8",
+            "bytes": 786432,
+            "sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1"
+          }
+        },
+        "original_controller": {
+          "path": "evidence/pixelhacker-execution/source-observed/controller/run_latent_api.py",
+          "bytes": 22608,
+          "sha256": "de69ad4eb2158230067f5d3727819d1fb8e71d59afb6dddea2e9a93bc8ad6624"
+        },
+        "corrected_validator": {
+          "path": "evidence/pixelhacker-execution/source-observed/controller/run_latent_api.print-rounding-v1.py",
+          "bytes": 23905,
+          "sha256": "2374a198ed158d1ce04b27d1bc48526c84eab66aa9376295e6969a7db94bf7cd"
+        },
+        "actual_backend_profiles": [
+          {
+            "backend": "CPU",
+            "runs": 4,
+            "precision": "f32",
+            "line": "inpaint_graph label=vae-decoder backend=CPU precision=f32 nodes=6219 allocation_bytes=999292928 runs=4 upload_bytes=0 download_bytes=12582912 compute_ms=49874.885",
+            "label": "vae-decoder"
+          },
+          {
+            "backend": "CPU",
+            "runs": 76,
+            "precision": "f32",
+            "line": "inpaint_graph label=unet-cfg-ddim-batch2 backend=CPU precision=f32 nodes=6687 allocation_bytes=234941728 runs=76 upload_bytes=98496 download_bytes=0 compute_ms=458402.989",
+            "label": "unet-cfg-ddim-batch2"
+          },
+          {
+            "backend": "CPU",
+            "runs": 4,
+            "precision": "f32",
+            "line": "inpaint_graph label=vae-encoder-batch2 backend=CPU precision=f32 nodes=7871 allocation_bytes=1364873280 runs=4 upload_bytes=17563712 download_bytes=0 compute_ms=49857.681",
+            "label": "vae-encoder-batch2"
+          }
+        ],
+        "native_summary_and_all_four_repeat_records_revalidated": true,
+        "native_gate_inventory_revalidated": true,
+        "known_channel_errors": 0,
+        "output_sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1",
+        "model_digest_validation_scope": "The original completed producer hashed model and VAE before/after execution. This no-inference revalidation verifies its immutable receipt, without rehashing large weights.",
+        "print_rounding_diagnosis": {
+          "reported_stddev_ms": 912.2995772,
+          "stddev_from_printed_samples_ms": 912.29955450041,
+          "absolute_difference_ms": 2.269959009026934e-05,
+          "basis": "The corrected validator accounts for ten-significant-digit serialization of each input sample and aggregate, plus floating-point arithmetic slack."
+        },
+        "graph_schedule": {
+          "image_calls": 4,
+          "expected_graph_runs": {
+            "vae-encoder-batch2": 4,
+            "unet-cfg-ddim-batch2": 76,
+            "vae-decoder": 4
+          },
+          "executed_steps_per_image": 19,
+          "passed": true
+        }
+      }
+    },
+    "continuation": {
+      "identity": {
+        "path": "evidence/pixelhacker-execution/continuation-admission.json",
+        "sha256": "0951dd7cf0320871c0091bebfdb635644ccfb37bf9c87964ffec4081bab957d8",
+        "bytes": 1861
+      },
+      "data": {
+        "schema": "crispembed-pixelhacker-continuation-admission-v1",
+        "recorded_utc": "2026-11-01T12:21:52.111716+00:00",
+        "parent_approved_print_rounding_correction": true,
+        "runtime_or_model_changed": false,
+        "native_image_budgets_changed": false,
+        "inference_rerun_for_revalidation": false,
+        "original_failed_producer_receipt": {
+          "path": "evidence/latent-api/pixelhacker-candidate-photo-t8/process.json",
+          "bytes": 9603,
+          "sha256": "4a1736e9c4079cdc4476373ff4337dcafcefa309a099c988ebe3226aa05ceff3"
+        },
+        "independent_revalidation": {
+          "path": "evidence/pixelhacker-execution/candidate-revalidation.json",
+          "bytes": 4154,
+          "sha256": "e3c521c6627375f18571b855b7c5955f97df49bf6b93e0c460a80ed364f65179"
+        },
+        "comparison_rgb": {
+          "path": "evidence/latent-api/pixelhacker-candidate-photo-t8/output.rgb8",
+          "bytes": 786432,
+          "sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1"
+        },
+        "corrected_controller": {
+          "path": "evidence/run_latent_api.py",
+          "bytes": 23905,
+          "sha256": "2374a198ed158d1ce04b27d1bc48526c84eab66aa9376295e6969a7db94bf7cd"
+        },
+        "same_preserved_binary": {
+          "path": "evidence/build-current/test-inpaint-benchmark",
+          "bytes": 3924968,
+          "sha256": "147be9f40d43f165f52b3a6bfa6ca942ece0c1e1354a82d344a46ed2e7844030"
+        },
+        "next_arms": [
+          "pixelhacker-eager-photo-t8",
+          "pixelhacker-graph-photo-t8"
+        ],
+        "correction_scope": "Account mathematically for ten-significant-digit sample and aggregate serialization in timing checks; original failure receipt retained verbatim. All image, identity, gate, repeat, backend and schedule checks retained."
+      }
+    },
+    "scope": "Corrected decimal serialization bounds in the timing-statistic checker, with the original failed producer and every measured sample retained. No runtime, inference setting or image budget changed, and no model was rerun for this reporting correction."
+  },
+  "candidate_comparison_reference": {
+    "kind": "actual native candidate output",
+    "output": {
+      "path": "evidence/latent-api/pixelhacker-candidate-photo-t8/output.rgb8",
+      "sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1",
+      "bytes": 786432
+    },
+    "producer_receipt": {
+      "path": "evidence/latent-api/pixelhacker-candidate-photo-t8/process.json",
+      "sha256": "4a1736e9c4079cdc4476373ff4337dcafcefa309a099c988ebe3226aa05ceff3",
+      "bytes": 9603
+    },
+    "independent_revalidation_receipt": {
+      "path": "evidence/pixelhacker-execution/candidate-revalidation.json",
+      "sha256": "e3c521c6627375f18571b855b7c5955f97df49bf6b93e0c460a80ed364f65179",
+      "bytes": 4154
+    },
+    "original_model_reference": false
+  },
+  "user_requested_stop": {
+    "identity": {
+      "path": "evidence/pixelhacker-execution/user-stop.json",
+      "sha256": "269db3b3fe673ab4f657fc6635bc453327d7729b4a5a226fa139550ed697965a",
+      "bytes": 1585
+    },
+    "data": {
+      "schema": "crispembed-pixelhacker-user-stop-v1",
+      "recorded_utc": "2026-11-01T12:37:10.388789+00:00",
+      "reason": "User explicitly requested immediate completion and ZIP delivery; remaining benchmark scope cancelled.",
+      "parent_instruction": "Stop the owned active eager controller/native process group, preserve flushed samples and final cancellation receipt, and do not start graph.",
+      "owned_controller_pid": 176247,
+      "owned_native_pid": 176273,
+      "signal": "SIGTERM",
+      "native_still_exists": false,
+      "producer_final_receipt": {
+        "path": "evidence/latent-api/pixelhacker-eager-photo-t8/process.json",
+        "bytes": 7620,
+        "sha256": "5f7ea02b04f93f4951bccd43e939d0b2f26183a524a1ee591bb69dce81fd714d"
+      },
+      "native_returncode": -15,
+      "completed_eager_call_records": [
+        {
+          "engine": "pixelhacker",
+          "iteration": 0,
+          "milliseconds": 311464,
+          "rgb_sha256": "dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a"
+        },
+        {
+          "engine": "pixelhacker",
+          "iteration": 1,
+          "milliseconds": 312904,
+          "rgb_sha256": "dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a"
+        }
+      ],
+      "eager_final_rgb_payload_exists": false,
+      "graph_started": false,
+      "heavy_slot_released": true,
+      "comparison_verdict_available": false,
+      "speedup_claim_qualified": false,
+      "original_pixelhacker_parity_qualified": false,
+      "partial_eager_hash_scope": "Hashes are the flushed native progress records. No final eager RGB payload or independent candidate comparison was produced."
+    }
+  },
+  "producer_settings": {
+    "controller": "run_latent_api.py",
+    "backend": "cpu",
+    "storage": "F32",
+    "requested_ddim_steps": 20,
+    "seed_from_preserved_source": 0,
+    "guidance_from_preserved_source": 4.5,
+    "noise_offset_from_preserved_source": 0.0357
+  },
+  "benchmark_method": {
+    "planned_order": [
+      "candidate",
+      "eager",
+      "graph"
+    ],
+    "threads": 8,
+    "planned_cold_calls_per_arm": 1,
+    "planned_warm_calls_per_arm": 3,
+    "randomized_order": false,
+    "executed_completed_calls": {
+      "candidate": 4,
+      "eager": 2,
+      "graph": 0
+    },
+    "speedup_comparison_qualified": false,
+    "confidence_intervals_computed": false,
+    "image_timing_scope": "Ordinary image API: preprocessing, complete stock diffusion schedule and final RGB composition; no observers.",
+    "load_timing_scope": "Model initialization and digest validation, reported separately from cold/warm calls.",
+    "rss_scope": "Per-driver RUSAGE_CHILDREN high-water mark includes the small pre-run ps child; successful model runs dominate it.",
+    "shared_host_limit": "Serialized heavy-work admission and before/after process snapshots, not a continuous whole-host interference trace.",
+    "original_model_comparison": false
+  },
+  "summary": [
+    {
+      "profile": "candidate",
+      "load_and_validation_ms": 14269.74963,
+      "cold_image_ms": 140994.4446,
+      "warm_samples_ms": [
+        140079.5728,
+        137870.6314,
+        139267.917
+      ],
+      "warm_median_ms": 139267.917,
+      "warm_mean_ms": 139072.707,
+      "warm_stddev_ms": 912.2995772,
+      "peak_rss_kib": 6284516,
+      "passed": true
+    }
+  ],
+  "ratios_of_warm_medians": null,
+  "runs": [
+    {
+      "profile": "candidate",
+      "status": "failed",
+      "source_receipt": {
+        "path": "evidence/latent-api/pixelhacker-candidate-photo-t8/process.json",
+        "sha256": "4a1736e9c4079cdc4476373ff4337dcafcefa309a099c988ebe3226aa05ceff3",
+        "bytes": 9603
+      },
+      "same_preserved_executable": true,
+      "same_reviewed_controller": true,
+      "controller_version": "original",
+      "same_pinned_fixture_manifest": true,
+      "graph_schedule_evidence": {
+        "available": true,
+        "passed": true,
+        "expected_runs": {
+          "vae-encoder-batch2": 4,
+          "unet-cfg-ddim-batch2": 76,
+          "vae-decoder": 4
+        },
+        "observed": {
+          "vae-decoder": [
+            {
+              "backend": "CPU",
+              "precision": "f32",
+              "runs": 4,
+              "nodes": 6219,
+              "allocation_bytes": 999292928,
+              "upload_bytes": 0,
+              "download_bytes": 12582912,
+              "compute_ms": 49874.885
+            }
+          ],
+          "unet-cfg-ddim-batch2": [
+            {
+              "backend": "CPU",
+              "precision": "f32",
+              "runs": 76,
+              "nodes": 6687,
+              "allocation_bytes": 234941728,
+              "upload_bytes": 98496,
+              "download_bytes": 0,
+              "compute_ms": 458402.989
+            }
+          ],
+          "vae-encoder-batch2": [
+            {
+              "backend": "CPU",
+              "precision": "f32",
+              "runs": 4,
+              "nodes": 7871,
+              "allocation_bytes": 1364873280,
+              "upload_bytes": 17563712,
+              "download_bytes": 0,
+              "compute_ms": 49857.681
+            }
+          ]
+        },
+        "image_calls": 4,
+        "executed_timesteps_per_image": 19,
+        "scope": "Required reuse pattern: one retained encoder and decoder each execute four images, and one retained combined UNet/CFG/DDIM graph executes 76 steps. The observed counts and their verdict are reported separately. Arena bytes exclude mapped weights and other process memory."
+      },
+      "report": {
+        "schema": "crispembed-local-latent-image-api-v1",
+        "complete": true,
+        "passed": false,
+        "status": "failed",
+        "engine": "pixelhacker",
+        "profile": "candidate",
+        "case": "formula_photo_bar",
+        "timeout_seconds": 1800,
+        "address_space_limit_bytes": 8053063680,
+        "original_model_quality_qualified": false,
+        "performance_qualified": false,
+        "performance_note": "Raw samples retained; inspect competing workloads and matched comparisons before qualifying timing.",
+        "source_observation_limitation": "Source hashes observed in a dirty worktree are not a clean-build proof.",
+        "optimizer_evidence_scope": "Controlled gates are confirmed by the executable's summary; actual backend/precision is checked in profiles. Specialized-kernel selection is not identified by the current profiler.",
+        "driver_sha256": "de69ad4eb2158230067f5d3727819d1fb8e71d59afb6dddea2e9a93bc8ad6624",
+        "runs": [
+          {
+            "engine": "pixelhacker",
+            "iteration": 0,
+            "milliseconds": 140994,
+            "rgb_sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1"
+          },
+          {
+            "engine": "pixelhacker",
+            "iteration": 1,
+            "milliseconds": 140080,
+            "rgb_sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1"
+          },
+          {
+            "engine": "pixelhacker",
+            "iteration": 2,
+            "milliseconds": 137871,
+            "rgb_sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1"
+          },
+          {
+            "engine": "pixelhacker",
+            "iteration": 3,
+            "milliseconds": 139268,
+            "rgb_sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1"
+          }
+        ],
+        "argv": [
+          "evidence/build-current/test-inpaint-benchmark",
+          "--engine",
+          "pixelhacker",
+          "--model",
+          "evidence/latent-assets/pixelhacker.names-v1.gguf",
+          "--model-sha256",
+          "5b486aa5d80647dbf298b0296d2cea7cb410dfb978b8bdfea806617f73ea588d",
+          "--vae",
+          "evidence/latent-assets/sdxl_vae.names-v1.gguf",
+          "--vae-sha256",
+          "e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2",
+          "--rgb",
+          "evidence/migan-assets/photos512/formula_photo_bar/input.rgb8",
+          "--mask",
+          "evidence/migan-assets/photos512/formula_photo_bar/fill-mask.u8",
+          "--width",
+          "512",
+          "--height",
+          "512",
+          "--output",
+          "evidence/latent-api/pixelhacker-candidate-photo-t8/output.rgb8",
+          "--threads",
+          "8",
+          "--runs",
+          "3",
+          "--steps",
+          "20",
+          "--backend",
+          "cpu"
+        ],
+        "environment": {
+          "CRISPEMBED_INPAINT_GRAPH": "1",
+          "CRISPEMBED_INPAINT_FAST": "0",
+          "CRISPEMBED_INPAINT_GEMM_LAYOUT": "1",
+          "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+          "CRISPEMBED_INPAINT_CPU_FFT": "0",
+          "CRISPEMBED_INPAINT_CPU_GLA": "1",
+          "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+          "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+          "CRISPEMBED_MIGAN_CPU_KERNELS": "0",
+          "CRISPEMBED_INPAINT_BACKEND": "cpu",
+          "CRISPEMBED_INPAINT_PROFILE": "1",
+          "CRISPEMBED_MOEBIUS": "0",
+          "CRISPEMBED_PIXELHACKER": "1"
+        },
+        "binary_sha256": "147be9f40d43f165f52b3a6bfa6ca942ece0c1e1354a82d344a46ed2e7844030",
+        "binary_bytes": 3924968,
+        "model_sha256": "5b486aa5d80647dbf298b0296d2cea7cb410dfb978b8bdfea806617f73ea588d",
+        "vae_sha256": "e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2",
+        "fixture_manifest_sha256": "84213e7fec278c0f915ea69dcb97151d6e43ef46ddd96381dec2ee13514264a5",
+        "source_file_sha256_observed_before_run": {
+          "src/latent_inpaint.cpp": "0f5513f5a19f438b1bceb01ed0e8802bd4b62d353c23320c8dfa213dabbde50a",
+          "src/latent_inpaint_ops.cpp": "d012cd1c46cdb45e8e82e39f1e8d5e4eb890541fb7a0acb36c0188f3ac8b35dd",
+          "src/latent_inpaint_unet.cpp": "a7807d6070904052655761ca5439af8b4e98db59f99e09edf0ae5ed9b4c9826f",
+          "src/latent_inpaint_graph.cpp": "60be70173f85994b67da9e2b38bb64ad797a40f9898b4d3441bce4fc16fdbfa8",
+          "src/latent_inpaint_graph_unet.cpp": "2a2771012731749cbfdb8f8fdf6b2e5e37b0673a416039cb488efd1d277a2580",
+          "src/latent_inpaint_vae.cpp": "18fe9b2134862b8b2f76f6475348c7959ea0a926f299d030e3b61c32e0e342ef",
+          "src/inpaint_graph.cpp": "12166e1fde240caa74ce3ff4d1c3addbeb552efbae1d9ecf4a447ddb150d3b3d",
+          "src/inpaint_graph_spectral.cpp": "eb20e813075727e7281c38e0db949db69e5c74cb38f345416a73045d0a582752",
+          "tests/test_inpaint_benchmark.cpp": "986e0c83deff8720efd0949cc1b232684855d525e13efb5df5235df1497b55bd",
+          "tools/dump_migan_photo_reference.py": "97d6978b0130aa4ee3b5e871fe3877c0340e80b914459dc7d197223d77382c4d",
+          "tests/test_inpaint_engine_live.py": "6679b4fff0bc22127425c4c66f65095b60c5cb8f462d1f0208cfcf5d2eaafe97"
+        },
+        "before_resources": {
+          "time_utc": "2026-11-01T12:08:08.859784+00:00",
+          "loadavg": [
+            0.45703125,
+            3.41259765625,
+            4.76123046875
+          ],
+          "cpu.max": "800000 100000",
+          "cpu.stat": "usage_usec 28950846926\nuser_usec 27707709405\nsystem_usec 1243137521\nnice_usec 0\nnr_periods 103930\nnr_throttled 26924\nthrottled_usec 861173079\nnr_bursts 0\nburst_usec 0",
+          "memory.current": "8589746176",
+          "memory.max": "8589934592",
+          "memory.events": "low 0\nhigh 0\nmax 641199\noom 0\noom_kill 0\noom_group_kill 0",
+          "process_resource_snapshot": "COMMAND         %CPU   RSS\npython3         99.3 31744\nrsync            5.7 19716\ncodex            0.2 53532\ncodex            0.1 66976\nsites-preview    0.0   300\nsupervisord      0.0 23136\nsync_share.sh    0.0  2080\ncaas-prefix-tra  0.0   456\nrsync            0.0  2372\nsync_share.sh    0.0  2072\ninotifywait      0.0   832\nps               0.0  2456\n",
+          "process_snapshot_returncode": 0,
+          "affinity_cpu_count": 9
+        },
+        "returncode": 0,
+        "timed_out": false,
+        "wall_seconds": 572.6228900030001,
+        "peak_rss_kib": 6284516,
+        "user_cpu_seconds": 4331.910406,
+        "system_cpu_seconds": 32.362899999999996,
+        "peak_rss_scope": "RUSAGE_CHILDREN high-water mark includes the small pre-run ps child; successful model runs dominate it.",
+        "input_hashes_unchanged": true,
+        "model_hashes_unchanged": true,
+        "binary_hash_unchanged": true,
+        "benchmark": {
+          "schema": "crispembed-image-api-benchmark-v1",
+          "engine": "pixelhacker",
+          "requested_backend": "cpu",
+          "width": 512,
+          "height": 512,
+          "threads": 8,
+          "requested_steps": 20,
+          "load_and_validation_ms": 14269.74963,
+          "cold_image_ms": 140994.4446,
+          "warm_median_ms": 139267.917,
+          "warm_mean_ms": 139072.707,
+          "warm_stddev_ms": 912.2995772,
+          "warm_samples_ms": [
+            140079.5728,
+            137870.6314,
+            139267.917
+          ],
+          "input_rgb_sha256": "7de1d0ce1bc46b8f563ad715136510d572e26c55e7562eed711eb5e923b7fc86",
+          "mask_sha256": "642078416b455bf415d69e291d40b0e55894a10535f16b847552cb9c9a190e91",
+          "output_sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1",
+          "model_sha256": "5b486aa5d80647dbf298b0296d2cea7cb410dfb978b8bdfea806617f73ea588d",
+          "vae_sha256": "e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2",
+          "known_pixel_errors": 0,
+          "repeat_bit_exact": true,
+          "gates": {
+            "CRISPEMBED_INPAINT_GRAPH": true,
+            "CRISPEMBED_INPAINT_FAST": false,
+            "CRISPEMBED_INPAINT_GEMM_LAYOUT": true,
+            "CRISPEMBED_INPAINT_REFLECT_GATHER": false,
+            "CRISPEMBED_INPAINT_CPU_FFT": false,
+            "CRISPEMBED_INPAINT_CPU_GLA": true,
+            "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": false,
+            "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": false,
+            "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": false,
+            "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": false,
+            "CRISPEMBED_MIGAN_CPU_KERNELS": false
+          },
+          "ordinary_image_api": true,
+          "observers": false,
+          "original_quality_qualification": false,
+          "passed": true
+        },
+        "output_sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1",
+        "independent_known_channel_errors": 0,
+        "error": "ValueError: reported aggregate differs from the preserved warm samples: warm_stddev_ms",
+        "output_logs_sha256": {
+          "stdout.log": "9dba90027992d53da3b217b02f9f03bce41bcd79e75e3dc2f1f669aa6a5bcf86",
+          "stderr.log": "bebc2f6447d2bbbde64928555653804f3a47ab18d22d7362054907f862d23295"
+        },
+        "after_resources": {
+          "time_utc": "2026-11-01T12:17:44.080939+00:00",
+          "loadavg": [
+            8.47607421875,
+            7.49755859375,
+            6.3125
+          ],
+          "cpu.max": "800000 100000",
+          "cpu.stat": "usage_usec 33432894299\nuser_usec 32128504797\nsystem_usec 1304389501\nnice_usec 0\nnr_periods 109683\nnr_throttled 32399\nthrottled_usec 978301540\nnr_bursts 0\nburst_usec 0",
+          "memory.current": "6127579136",
+          "memory.max": "8589934592",
+          "memory.events": "low 0\nhigh 0\nmax 676699\noom 0\noom_kill 0\noom_group_kill 0",
+          "process_resource_snapshot": "COMMAND         %CPU   RSS\nrsync           17.9 20384\npython3          1.0 31828\ncodex            0.2 53992\ncodex            0.1 64528\nsites-preview    0.0   300\nsupervisord      0.0 23136\nsync_share.sh    0.0  2080\ncaas-prefix-tra  0.0   456\nrsync            0.0  2372\nsync_share.sh    0.0  2072\ninotifywait      0.0   832\nps               0.0  2456\n",
+          "process_snapshot_returncode": 0,
+          "affinity_cpu_count": 9
+        }
+      },
+      "raw_native_logs": {
+        "stdout.log": {
+          "identity": {
+            "path": "evidence/latent-api/pixelhacker-candidate-photo-t8/stdout.log",
+            "sha256": "9dba90027992d53da3b217b02f9f03bce41bcd79e75e3dc2f1f669aa6a5bcf86",
+            "bytes": 1977
+          },
+          "text": "INPAINT_RUN {\"engine\":\"pixelhacker\",\"iteration\":0,\"milliseconds\":140994,\"rgb_sha256\":\"1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1\"}\nINPAINT_RUN {\"engine\":\"pixelhacker\",\"iteration\":1,\"milliseconds\":140080,\"rgb_sha256\":\"1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1\"}\nINPAINT_RUN {\"engine\":\"pixelhacker\",\"iteration\":2,\"milliseconds\":137871,\"rgb_sha256\":\"1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1\"}\nINPAINT_RUN {\"engine\":\"pixelhacker\",\"iteration\":3,\"milliseconds\":139268,\"rgb_sha256\":\"1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1\"}\nINPAINT_BENCHMARK {\"schema\":\"crispembed-image-api-benchmark-v1\",\"engine\":\"pixelhacker\",\"requested_backend\":\"cpu\",\"width\":512,\"height\":512,\"threads\":8,\"requested_steps\":20,\"load_and_validation_ms\":14269.74963,\"cold_image_ms\":140994.4446,\"warm_median_ms\":139267.917,\"warm_mean_ms\":139072.707,\"warm_stddev_ms\":912.2995772,\"warm_samples_ms\":[140079.5728,137870.6314,139267.917],\"input_rgb_sha256\":\"7de1d0ce1bc46b8f563ad715136510d572e26c55e7562eed711eb5e923b7fc86\",\"mask_sha256\":\"642078416b455bf415d69e291d40b0e55894a10535f16b847552cb9c9a190e91\",\"output_sha256\":\"1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1\",\"model_sha256\":\"5b486aa5d80647dbf298b0296d2cea7cb410dfb978b8bdfea806617f73ea588d\",\"vae_sha256\":\"e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2\",\"known_pixel_errors\":0,\"repeat_bit_exact\":true,\"gates\":{\"CRISPEMBED_INPAINT_GRAPH\":true,\"CRISPEMBED_INPAINT_FAST\":false,\"CRISPEMBED_INPAINT_GEMM_LAYOUT\":true,\"CRISPEMBED_INPAINT_REFLECT_GATHER\":false,\"CRISPEMBED_INPAINT_CPU_FFT\":false,\"CRISPEMBED_INPAINT_CPU_GLA\":true,\"CRISPEMBED_INPAINT_CPU_ATTENTION_TILES\":false,\"CRISPEMBED_MOEBIUS_RELATIVE_REASSOC\":false,\"CRISPEMBED_MOEBIUS_LOCAL_REASSOC\":false,\"CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM\":false,\"CRISPEMBED_MIGAN_CPU_KERNELS\":false},\"ordinary_image_api\":true,\"observers\":false,\"original_quality_qualification\":false,\"passed\":true}\n"
+        },
+        "stderr.log": {
+          "identity": {
+            "path": "evidence/latent-api/pixelhacker-candidate-photo-t8/stderr.log",
+            "sha256": "bebc2f6447d2bbbde64928555653804f3a47ab18d22d7362054907f862d23295",
+            "bytes": 505
+          },
+          "text": "inpaint_graph label=vae-decoder backend=CPU precision=f32 nodes=6219 allocation_bytes=999292928 runs=4 upload_bytes=0 download_bytes=12582912 compute_ms=49874.885\ninpaint_graph label=unet-cfg-ddim-batch2 backend=CPU precision=f32 nodes=6687 allocation_bytes=234941728 runs=76 upload_bytes=98496 download_bytes=0 compute_ms=458402.989\ninpaint_graph label=vae-encoder-batch2 backend=CPU precision=f32 nodes=7871 allocation_bytes=1364873280 runs=4 upload_bytes=17563712 download_bytes=0 compute_ms=49857.681\n"
+        }
+      },
+      "completed_call_records_from_stdout": [
+        {
+          "engine": "pixelhacker",
+          "iteration": 0,
+          "milliseconds": 140994,
+          "rgb_sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1"
+        },
+        {
+          "engine": "pixelhacker",
+          "iteration": 1,
+          "milliseconds": 140080,
+          "rgb_sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1"
+        },
+        {
+          "engine": "pixelhacker",
+          "iteration": 2,
+          "milliseconds": 137871,
+          "rgb_sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1"
+        },
+        {
+          "engine": "pixelhacker",
+          "iteration": 3,
+          "milliseconds": 139268,
+          "rgb_sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1"
+        }
+      ],
+      "original_controller_passed": false,
+      "independent_revalidation_passed": true,
+      "passed": true,
+      "effective_validation_status": "native run passed independent revalidation; initial controller printing failure retained",
+      "independent_revalidation_receipt": {
+        "path": "evidence/pixelhacker-execution/candidate-revalidation.json",
+        "sha256": "e3c521c6627375f18571b855b7c5955f97df49bf6b93e0c460a80ed364f65179",
+        "bytes": 4154
+      }
+    },
+    {
+      "profile": "eager",
+      "status": "failed",
+      "source_receipt": {
+        "path": "evidence/latent-api/pixelhacker-eager-photo-t8/process.json",
+        "sha256": "5f7ea02b04f93f4951bccd43e939d0b2f26183a524a1ee591bb69dce81fd714d",
+        "bytes": 7620
+      },
+      "same_preserved_executable": true,
+      "same_reviewed_controller": true,
+      "controller_version": "timing-print-rounding-correction",
+      "same_pinned_fixture_manifest": true,
+      "graph_schedule_evidence": {
+        "available": false,
+        "passed": null,
+        "scope": "The eager path has no equivalent graph execution counters. Its requested20-step setting and source-defined19-step schedule are recorded without claiming profile-backed eager step counting."
+      },
+      "report": {
+        "schema": "crispembed-local-latent-image-api-v1",
+        "complete": true,
+        "passed": false,
+        "status": "failed",
+        "engine": "pixelhacker",
+        "profile": "eager",
+        "case": "formula_photo_bar",
+        "timeout_seconds": 1800,
+        "address_space_limit_bytes": 8053063680,
+        "original_model_quality_qualified": false,
+        "performance_qualified": false,
+        "performance_note": "Raw samples retained; inspect competing workloads and matched comparisons before qualifying timing.",
+        "timing_statistics_validation": "Ten-significant-digit sample/output rounding bounds: median max error, mean average error, stddev RMS error; plus 64 ULP arithmetic slack. This changes no image/numerical acceptance budget.",
+        "source_observation_limitation": "Source hashes observed in a dirty worktree are not a clean-build proof.",
+        "optimizer_evidence_scope": "Controlled gates are confirmed by the executable's summary; actual backend/precision is checked in profiles. Specialized-kernel selection is not identified by the current profiler.",
+        "driver_sha256": "2374a198ed158d1ce04b27d1bc48526c84eab66aa9376295e6969a7db94bf7cd",
+        "runs": [],
+        "comparison_raw": "evidence/latent-api/pixelhacker-candidate-photo-t8/output.rgb8",
+        "comparison_sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1",
+        "argv": [
+          "evidence/build-current/test-inpaint-benchmark",
+          "--engine",
+          "pixelhacker",
+          "--model",
+          "evidence/latent-assets/pixelhacker.names-v1.gguf",
+          "--model-sha256",
+          "5b486aa5d80647dbf298b0296d2cea7cb410dfb978b8bdfea806617f73ea588d",
+          "--vae",
+          "evidence/latent-assets/sdxl_vae.names-v1.gguf",
+          "--vae-sha256",
+          "e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2",
+          "--rgb",
+          "evidence/migan-assets/photos512/formula_photo_bar/input.rgb8",
+          "--mask",
+          "evidence/migan-assets/photos512/formula_photo_bar/fill-mask.u8",
+          "--width",
+          "512",
+          "--height",
+          "512",
+          "--output",
+          "evidence/latent-api/pixelhacker-eager-photo-t8/output.rgb8",
+          "--threads",
+          "8",
+          "--runs",
+          "3",
+          "--steps",
+          "20",
+          "--backend",
+          "cpu"
+        ],
+        "environment": {
+          "CRISPEMBED_INPAINT_GRAPH": "0",
+          "CRISPEMBED_INPAINT_FAST": "0",
+          "CRISPEMBED_INPAINT_GEMM_LAYOUT": "0",
+          "CRISPEMBED_INPAINT_REFLECT_GATHER": "0",
+          "CRISPEMBED_INPAINT_CPU_FFT": "0",
+          "CRISPEMBED_INPAINT_CPU_GLA": "0",
+          "CRISPEMBED_INPAINT_CPU_ATTENTION_TILES": "0",
+          "CRISPEMBED_MOEBIUS_RELATIVE_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_REASSOC": "0",
+          "CRISPEMBED_MOEBIUS_LOCAL_PAD_GEMM": "0",
+          "CRISPEMBED_MIGAN_CPU_KERNELS": "0",
+          "CRISPEMBED_INPAINT_BACKEND": "cpu",
+          "CRISPEMBED_INPAINT_PROFILE": "1",
+          "CRISPEMBED_MOEBIUS": "0",
+          "CRISPEMBED_PIXELHACKER": "1"
+        },
+        "binary_sha256": "147be9f40d43f165f52b3a6bfa6ca942ece0c1e1354a82d344a46ed2e7844030",
+        "binary_bytes": 3924968,
+        "model_sha256": "5b486aa5d80647dbf298b0296d2cea7cb410dfb978b8bdfea806617f73ea588d",
+        "vae_sha256": "e186f73e729a08beddac800f6c0267da5111603263be9e6055b757bb25f15be2",
+        "fixture_manifest_sha256": "84213e7fec278c0f915ea69dcb97151d6e43ef46ddd96381dec2ee13514264a5",
+        "source_file_sha256_observed_before_run": {
+          "src/latent_inpaint.cpp": "0f5513f5a19f438b1bceb01ed0e8802bd4b62d353c23320c8dfa213dabbde50a",
+          "src/latent_inpaint_ops.cpp": "d012cd1c46cdb45e8e82e39f1e8d5e4eb890541fb7a0acb36c0188f3ac8b35dd",
+          "src/latent_inpaint_unet.cpp": "a7807d6070904052655761ca5439af8b4e98db59f99e09edf0ae5ed9b4c9826f",
+          "src/latent_inpaint_graph.cpp": "60be70173f85994b67da9e2b38bb64ad797a40f9898b4d3441bce4fc16fdbfa8",
+          "src/latent_inpaint_graph_unet.cpp": "2a2771012731749cbfdb8f8fdf6b2e5e37b0673a416039cb488efd1d277a2580",
+          "src/latent_inpaint_vae.cpp": "18fe9b2134862b8b2f76f6475348c7959ea0a926f299d030e3b61c32e0e342ef",
+          "src/inpaint_graph.cpp": "12166e1fde240caa74ce3ff4d1c3addbeb552efbae1d9ecf4a447ddb150d3b3d",
+          "src/inpaint_graph_spectral.cpp": "eb20e813075727e7281c38e0db949db69e5c74cb38f345416a73045d0a582752",
+          "tests/test_inpaint_benchmark.cpp": "986e0c83deff8720efd0949cc1b232684855d525e13efb5df5235df1497b55bd",
+          "tools/dump_migan_photo_reference.py": "97d6978b0130aa4ee3b5e871fe3877c0340e80b914459dc7d197223d77382c4d",
+          "tests/test_inpaint_engine_live.py": "6679b4fff0bc22127425c4c66f65095b60c5cb8f462d1f0208cfcf5d2eaafe97"
+        },
+        "before_resources": {
+          "time_utc": "2026-11-01T12:22:09.099507+00:00",
+          "loadavg": [
+            0.7158203125,
+            3.36083984375,
+            4.8447265625
+          ],
+          "cpu.max": "800000 100000",
+          "cpu.stat": "usage_usec 33560377718\nuser_usec 32217855699\nsystem_usec 1342522019\nnice_usec 0\nnr_periods 112325\nnr_throttled 32399\nthrottled_usec 978301540\nnr_bursts 0\nburst_usec 0",
+          "memory.current": "8589062144",
+          "memory.max": "8589934592",
+          "memory.events": "low 0\nhigh 0\nmax 702666\noom 0\noom_kill 0\noom_group_kill 0",
+          "process_resource_snapshot": "COMMAND         %CPU   RSS\npython3         99.3 31800\nzstd            27.3 53452\nrsync           20.3 20384\ntar              4.7  2316\ncodex            0.2 56988\ncodex            0.1 68324\nsites-preview    0.0   300\ncaas-prefix-tra  0.0   604\nsupervisord      0.0 23136\nsync_share.sh    0.0  2080\nrsync            0.0  2372\nsync_share.sh    0.0  2072\ninotifywait      0.0   832\nsh               0.0   764\nps               0.0  2464\n",
+          "process_snapshot_returncode": 0,
+          "affinity_cpu_count": 9
+        },
+        "timed_out": false,
+        "error": "RuntimeError: latent API run cancelled by signal 15",
+        "returncode": -15,
+        "wall_seconds": 842.8720235979999,
+        "peak_rss_kib": 4483672,
+        "user_cpu_seconds": 2563.312231,
+        "system_cpu_seconds": 159.270938,
+        "output_logs_sha256": {
+          "stdout.log": "dc1c8d0f67802ea68789032194caa6e9c132bc155b74764d19dd2ba987c32ce4",
+          "stderr.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        },
+        "after_resources": {
+          "time_utc": "2026-11-01T12:36:11.981993+00:00",
+          "loadavg": [
+            5.00244140625,
+            5.19775390625,
+            5.01806640625
+          ],
+          "cpu.max": "800000 100000",
+          "cpu.stat": "usage_usec 37080229001\nuser_usec 35441470840\nsystem_usec 1638758161\nnice_usec 0\nnr_periods 120754\nnr_throttled 32523\nthrottled_usec 980358520\nnr_bursts 0\nburst_usec 0",
+          "memory.current": "8394100736",
+          "memory.max": "8589934592",
+          "memory.events": "low 0\nhigh 0\nmax 813210\noom 0\noom_kill 0\noom_group_kill 0",
+          "process_resource_snapshot": "COMMAND         %CPU   RSS\nrsync           22.6 25808\nzstd            15.4 53452\nzstd            12.9 53452\nzstd            10.0 53364\ntar              2.6  1836\ntar              1.8  2328\ntar              1.7  2304\npython3          0.5 31904\ncodex            0.2 57608\ncaas-prefix-tra  0.1   828\ncodex            0.1 67588\nsites-preview    0.0   300\nsupervisord      0.0 23136\nsync_share.sh    0.0  2080\nrsync            0.0  2372\nsync_share.sh    0.0  2072\ninotifywait      0.0   832\nsh               0.0   764\nsh               0.0   764\nsh               0.0   760\nps               0.0  2488\n",
+          "process_snapshot_returncode": 0,
+          "affinity_cpu_count": 9
+        }
+      },
+      "raw_native_logs": {
+        "stdout.log": {
+          "identity": {
+            "path": "evidence/latent-api/pixelhacker-eager-photo-t8/stdout.log",
+            "sha256": "dc1c8d0f67802ea68789032194caa6e9c132bc155b74764d19dd2ba987c32ce4",
+            "bytes": 306
+          },
+          "text": "INPAINT_RUN {\"engine\":\"pixelhacker\",\"iteration\":0,\"milliseconds\":311464,\"rgb_sha256\":\"dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a\"}\nINPAINT_RUN {\"engine\":\"pixelhacker\",\"iteration\":1,\"milliseconds\":312904,\"rgb_sha256\":\"dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a\"}\n"
+        },
+        "stderr.log": {
+          "identity": {
+            "path": "evidence/latent-api/pixelhacker-eager-photo-t8/stderr.log",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "bytes": 0
+          },
+          "text": ""
+        }
+      },
+      "completed_call_records_from_stdout": [
+        {
+          "engine": "pixelhacker",
+          "iteration": 0,
+          "milliseconds": 311464,
+          "rgb_sha256": "dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a"
+        },
+        {
+          "engine": "pixelhacker",
+          "iteration": 1,
+          "milliseconds": 312904,
+          "rgb_sha256": "dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a"
+        }
+      ],
+      "original_controller_passed": false,
+      "independent_revalidation_passed": false,
+      "passed": false,
+      "execution_disposition": "cancelled at user request; no final RGB comparison",
+      "cancellation_is_numerical_failure": false,
+      "candidate_reference_identity_matches": true,
+      "native_agreement_passed": false
+    },
+    {
+      "profile": "graph",
+      "status": "not_executed",
+      "passed": false
+    }
+  ],
+  "limitations": [
+    "Native agreement does not establish parity with original PyTorch/CUDA/FLA execution or perceptual inpainting quality.",
+    "The requested immediate-delivery stop left the eager benchmark incomplete and portable graph unrun; no cross-implementation native agreement or speedup is claimed.",
+    "Partial eager timings and hashes come from flushed native progress rows, with lower printed timing precision and no finalized RGB output for independent comparison.",
+    "Only one photograph and one binary mask were exercised in this ordinary-API matrix.",
+    "Three warm samples on one CPU host do not establish confidence intervals or performance on other hardware.",
+    "The candidate combines GEMM layout and CPU recurrent GLA; this incomplete panel does not measure either contribution or a relative speedup.",
+    "F32 checkpoint files under 4 GB do not imply process memory under 4 GB; measured process RSS is reported separately.",
+    "Graph counters verify 19 steps per image where emitted; the eager schedule has no corresponding execution-counter proof.",
+    "Current source hashes and preserved executable bytes are separately observed; no clean-commit build attestation is inferred."
+  ],
+  "artifact_policy": {
+    "weights_in_public_record": false,
+    "binary_in_public_record": false,
+    "failed_or_incomplete_attempts_retained": true,
+    "raw_samples_and_negative_verdicts_retained": true,
+    "path_sanitization": "Workspace prefixes replaced with repo/evidence labels; CPU affinity reduced to a count."
+  },
+  "exporter_sha256": "f56f8b097a4ee1c3122a768a939921638f4262ea13ccd5c738676e050ff23f07",
+  "progress_observations": {
+    "identity": {
+      "path": "evidence/pixelhacker-execution/progress.jsonl",
+      "sha256": "6b2bd2076e6cf14c1ad3097293f616d1d325cc2708ce3e6b463938cab08c4915",
+      "bytes": 2128
+    },
+    "data": [
+      {
+        "observed_utc": "2026-11-01T12:12:12.861181+00:00",
+        "run_id": "pixelhacker-candidate-photo-t8",
+        "native_record": {
+          "engine": "pixelhacker",
+          "iteration": 0,
+          "milliseconds": 140994,
+          "rgb_sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1"
+        },
+        "timing_precision": "rounded native progress line; final summary samples are authoritative"
+      },
+      {
+        "observed_utc": "2026-11-01T12:13:43.039140+00:00",
+        "run_id": "pixelhacker-candidate-photo-t8",
+        "native_record": {
+          "engine": "pixelhacker",
+          "iteration": 1,
+          "milliseconds": 140080,
+          "rgb_sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1"
+        },
+        "timing_precision": "rounded native progress line; final summary samples are authoritative"
+      },
+      {
+        "observed_utc": "2026-11-01T12:19:16.155789+00:00",
+        "run_id": "pixelhacker-candidate-photo-t8",
+        "native_record": {
+          "engine": "pixelhacker",
+          "iteration": 2,
+          "milliseconds": 137871,
+          "rgb_sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1"
+        },
+        "timing_precision": "rounded native progress line; final summary samples are authoritative"
+      },
+      {
+        "observed_utc": "2026-11-01T12:19:16.155803+00:00",
+        "run_id": "pixelhacker-candidate-photo-t8",
+        "native_record": {
+          "engine": "pixelhacker",
+          "iteration": 3,
+          "milliseconds": 139268,
+          "rgb_sha256": "1982807ba74491073b8d0aba6329f2b28e2213e54edd41c785744ec0b43497d1"
+        },
+        "timing_precision": "rounded native progress line; final summary samples are authoritative"
+      },
+      {
+        "observed_utc": "2026-11-01T12:28:04.858479+00:00",
+        "run_id": "pixelhacker-eager-photo-t8",
+        "native_record": {
+          "engine": "pixelhacker",
+          "iteration": 0,
+          "milliseconds": 311464,
+          "rgb_sha256": "dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a"
+        },
+        "timing_precision": "rounded native progress line; final summary samples are authoritative"
+      },
+      {
+        "observed_utc": "2026-11-01T12:33:09.275820+00:00",
+        "run_id": "pixelhacker-eager-photo-t8",
+        "native_record": {
+          "engine": "pixelhacker",
+          "iteration": 1,
+          "milliseconds": 312904,
+          "rgb_sha256": "dc29ada7b8bd68a3a7d0b7cd1040d507c1135eb479171434f64a7a383417e69a"
+        },
+        "timing_precision": "rounded native progress line; final summary samples are authoritative"
+      }
+    ]
+  }
+}

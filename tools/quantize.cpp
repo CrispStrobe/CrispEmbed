@@ -15,6 +15,7 @@
 #include "../src/core/imatrix_alias.h"
 #include "../src/core/json.h"
 #include "../src/core/sha256.h"
+#include "../src/core/env_gate.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -275,6 +276,115 @@ static bool quantize_migan(const std::string & fname_inp, const std::string & fn
     return ok;
 }
 
+// Natural-row storage record for the inpaint-v1 policy below: the stored type
+// and row width (stored ne[0]) of a flattened 2D layout; rows 0 keeps the shape.
+struct InpaintPlan {
+    ggml_type type = GGML_TYPE_F32;
+    int64_t rows = 0;
+};
+
+// K-quant fallback when a natural row is not 256-aligned.
+static ggml_type kquant_fallback(ggml_type type) {
+    switch (type) {
+    case GGML_TYPE_Q2_K:
+    case GGML_TYPE_Q3_K:
+    case GGML_TYPE_Q4_K:
+        return GGML_TYPE_Q4_0;
+    case GGML_TYPE_Q5_K:
+        return GGML_TYPE_Q5_0;
+    case GGML_TYPE_Q6_K:
+        return GGML_TYPE_Q8_0;
+    default:
+        return GGML_TYPE_Q8_0;
+    }
+}
+
+// Issue-71 inpainting families (general.architecture "migan", "moebius",
+// "pixelhacker", "sdxl_vae"), policy "inpaint-v1". Loader: src/inpaint_weights.cpp
+// (CRISPEMBED_INPAINT_QUANT=1). Every tensor is either F32 in its original
+// shape or a 2D natural-row matrix: [IC*KH*KW, OC] for a conv (a pure reshape
+// of the contiguous OIHW bytes, one output channel per row, exactly the
+// im2col/mul_mat layout) or [IN, OUT] for a linear. Natural rows let the
+// gated CRISPEMBED_INPAINT_QUANT_MATMUL path consume the stored matrix
+// directly; by default the loader dequantizes to F32 at load.
+//   * F32-pinned: vectors (bias/norm/BN/scalars), depthwise and other
+//     one-input-channel-per-group kernels (direct F32 consumers), fixed
+//     buffers (MI-GAN noise/filter constants), embeddings and relative
+//     position tables read as floats, and the first/last pixel/latent convs.
+//   * Everything else: the requested type, falling back along the K-quant
+//     chain (Q4_K->Q4_0, Q5_K->Q5_0, Q6_K->Q8_0) when the natural row is not
+//     256-aligned, then to F16 when it is not 32-aligned.
+// The family path runs before the generic name guards: those would, e.g.,
+// copy PixelHacker's "downsamplers" 3x3 kernels after a header flatten.
+static bool inpaint_family(const std::string & arch) {
+    return arch == "migan" || arch == "moebius" || arch == "pixelhacker" || arch == "sdxl_vae";
+}
+
+static bool inpaint_pinned_f32(const std::string & arch, const std::string & name, const ggml_tensor * t) {
+    const bool vector = t->ne[1] == 1 && t->ne[2] == 1 && t->ne[3] == 1;
+    const bool one_input_channel = ggml_n_dims(t) == 4 && t->ne[2] == 1;
+    // Names of 64+ bytes are stored as "t.<sha256>" (inpaint_weight_names), so
+    // Moebius' rel_pos_emb tables [N,M,dk,1] (ne[0]==1, ne[1]==dk) are pinned by
+    // shape too: no convolution in these models has KW==1 with KH>1.
+    const bool relative_table = ggml_n_dims(t) == 4 && t->ne[0] == 1 && t->ne[1] > 1;
+    auto has = [&](const char * part) { return name.find(part) != std::string::npos; };
+    if (vector || one_input_channel || relative_table || has("rel_pos_emb") || has("embedding_layer") ||
+        has("noise_const") || has("filter_const") || has("noise_strength"))
+        return true;
+    if (arch == "migan") return has(".fromrgb.") || has(".torgb.");
+    if (arch == "sdxl_vae")
+        return has("encoder.conv_in.") || has("encoder.conv_out.") || has("decoder.conv_in.") ||
+               has("decoder.conv_out.") || has("quant_conv.");
+    return name.rfind("diff_model.conv_in.", 0) == 0 || name.rfind("diff_model.conv_out.", 0) == 0;
+}
+
+// Opt-in CRISPEMBED_QUANTIZE_INPAINT_MIX=1 ("q4_k-mix", default off): for a
+// sub-Q8 Moebius request every attention-block tensor (original name contains
+// ".attentions.") is stored at Q8_0, and an SDXL VAE request is promoted to
+// Q8_0 as a whole (quantize_model). This is the built-in form of the recipe
+// qualified in run 41328479130 (docs/inpainting-precision.md), which passed
+// the 630 attention tensors as explicit --tensor-type overrides. Names of 64+
+// bytes are stored as "t.<sha256[:56]>" (crispembed.tensor_name_encoding
+// sha256-56-v1); in the Moebius denoiser every such name is an attention-block
+// tensor (540 of the 630), so a hashed name is selected as well. --tensor-type
+// overrides still apply afterwards.
+static bool inpaint_mix_requested() {
+    return core_env::on("CRISPEMBED_QUANTIZE_INPAINT_MIX");
+}
+
+static bool inpaint_sub_q8(ggml_type requested) {
+    return requested != GGML_TYPE_F16 && requested != GGML_TYPE_Q8_0 && requested != GGML_TYPE_Q6_K;
+}
+
+static bool inpaint_mix_attention(const std::string & name, bool hashed_names) {
+    return name.find(".attentions.") != std::string::npos || (hashed_names && name.rfind("t.", 0) == 0);
+}
+
+static InpaintPlan inpaint_tensor_plan(const std::string & arch, const std::string & name, const ggml_tensor * t,
+                                       ggml_type requested, bool mix = false, bool hashed_names = false) {
+    InpaintPlan plan;
+    if (inpaint_pinned_f32(arch, name, t)) return plan;
+    ggml_type type = requested;
+    if (mix && arch == "moebius" && inpaint_sub_q8(requested) && inpaint_mix_attention(name, hashed_names))
+        type = GGML_TYPE_Q8_0;
+    // MI-GAN512 hosted sweep (run 41294631042): all-Q4_K fell to cosine 0.79
+    // on the full-mask fixture; Q4_K encoder with Q8_0 synthesis kept every
+    // fixture >= 0.977 vs the original (hi-res-Q8 0.845, low-res-Q8 0.923,
+    // encoder-Q8 0.789). So sub-Q8 requests keep MI-GAN synthesis at Q8_0.
+    const bool sub_q8 = inpaint_sub_q8(requested);
+    if (arch == "migan" && sub_q8 && name.rfind("synthesis.", 0) == 0) type = GGML_TYPE_Q8_0;
+    for (const auto & rule : g_tensor_types)
+        if (tensor_name_matches(rule.pattern, name)) type = rule.type;
+    if (type == GGML_TYPE_F32) return plan;
+    const int64_t row = ggml_n_dims(t) == 4 ? t->ne[0] * t->ne[1] * t->ne[2] : t->ne[0];
+    if (ggml_n_dims(t) > 4 || ggml_n_dims(t) == 3) return plan;
+    if (row % ggml_blck_size(type) != 0) type = kquant_fallback(type);
+    if (row % ggml_blck_size(type) != 0) type = GGML_TYPE_F16;
+    plan.type = type;
+    plan.rows = row;
+    return plan;
+}
+
 static bool quantize_model(const std::string & fname_inp, const std::string & fname_out, ggml_ftype ftype) {
     ggml_type qtype = GGML_TYPE_F32;
 
@@ -328,9 +438,31 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         gguf_init_params probe_params = { /*no_alloc*/ true, /*ctx*/ nullptr };
         gguf_context * probe = gguf_init_from_file(fname_inp.c_str(), probe_params);
         const int64_t arch = probe ? gguf_find_key(probe, "general.architecture") : -1;
-        const bool is_migan = arch >= 0 && std::string(gguf_get_val_str(probe, arch)) == "migan";
+        const std::string arch_name = arch >= 0 ? std::string(gguf_get_val_str(probe, arch)) : std::string();
+        const int64_t size_key = probe ? gguf_find_key(probe, "migan.image_size") : -1;
+        const uint32_t migan_size = size_key >= 0 ? gguf_get_val_u32(probe, size_key) : 0;
         if (probe) gguf_free(probe);
-        if (is_migan) return quantize_migan(fname_inp, fname_out, qtype, ftype);
+        // MI-GAN has two policies. migan-pointwise-v1 (CRISPEMBED_MIGAN_QUANT,
+        // docs/migan-metal.md) stays the fixed256 default; fixed512 uses
+        // inpaint-v1 (CRISPEMBED_INPAINT_QUANT, docs/inpainting-precision.md),
+        // the policy its variants were qualified with.
+        // CRISPEMBED_QUANTIZE_MIGAN_POLICY=migan-pointwise-v1|inpaint-v1 selects explicitly.
+        if (arch_name == "migan") {
+            const char * policy = getenv("CRISPEMBED_QUANTIZE_MIGAN_POLICY");
+            const std::string chosen = policy && *policy   ? policy
+                                       : migan_size == 512 ? "inpaint-v1"
+                                                           : "migan-pointwise-v1";
+            if (chosen != "inpaint-v1" && chosen != "migan-pointwise-v1") {
+                fprintf(stderr, "CRISPEMBED_QUANTIZE_MIGAN_POLICY must be migan-pointwise-v1 or inpaint-v1\n");
+                return false;
+            }
+            if (chosen == "migan-pointwise-v1") return quantize_migan(fname_inp, fname_out, qtype, ftype);
+        }
+        // The SDXL VAE half of the opt-in Moebius mix recipe is plain Q8_0.
+        if (arch_name == "sdxl_vae" && inpaint_mix_requested() && inpaint_sub_q8(qtype)) {
+            fprintf(stderr, "inpaint-v1 mix (CRISPEMBED_QUANTIZE_INPAINT_MIX): SDXL VAE quantized as q8_0\n");
+            return quantize_model(fname_inp, fname_out, GGML_FTYPE_MOSTLY_Q8_0);
+        }
     }
 
     printf("Loading model from '%s'\n", fname_inp.c_str());
@@ -392,6 +524,56 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
     const int layout_arch_key = gguf_find_key(ctx_in, "layout.arch");
     const bool is_dfine_layout =
         layout_arch_key >= 0 && std::string(gguf_get_val_str(ctx_in, layout_arch_key)) == "dfine";
+    const std::string inpaint_arch = arch_key >= 0 ? std::string(gguf_get_val_str(ctx_in, arch_key)) : std::string();
+    const bool is_inpaint = inpaint_family(inpaint_arch);
+    std::map<std::string, InpaintPlan> inpaint_plans;
+    if (is_inpaint) {
+        if (qtype == GGML_TYPE_F32) {
+            fprintf(stderr, "inpaint-v1: requested type must be F16 or a quantized type\n");
+            gguf_free(ctx_out);
+            gguf_free(ctx_in);
+            ggml_free(ctx_in_ggml);
+            return false;
+        }
+        const bool mix = inpaint_mix_requested() && inpaint_sub_q8(qtype);
+        if (mix && inpaint_arch != "moebius") {
+            fprintf(stderr,
+                    "CRISPEMBED_QUANTIZE_INPAINT_MIX: only the Moebius denoiser and the SDXL VAE have a "
+                    "qualified mix recipe (got %s)\n",
+                    inpaint_arch.c_str());
+            gguf_free(ctx_out);
+            gguf_free(ctx_in);
+            ggml_free(ctx_in_ggml);
+            return false;
+        }
+        const int encoding_key = gguf_find_key(ctx_in, "crispembed.tensor_name_encoding");
+        const bool hashed_names = encoding_key >= 0 && gguf_get_kv_type(ctx_in, encoding_key) == GGUF_TYPE_STRING &&
+                                  std::string(gguf_get_val_str(ctx_in, encoding_key)) == "sha256-56-v1";
+        int mix_selected = 0;
+        for (int i = 0; i < n_tensors; i++) {
+            const char * name = gguf_get_tensor_name(ctx_in, i);
+            const ggml_tensor * t = ggml_get_tensor(ctx_in_ggml, name);
+            if (t->type != GGML_TYPE_F32) {
+                fprintf(stderr, "inpaint-v1: quantize from the F32 conversion (tensor %s is %s)\n", name,
+                        ggml_type_name(t->type));
+                gguf_free(ctx_out);
+                gguf_free(ctx_in);
+                ggml_free(ctx_in_ggml);
+                return false;
+            }
+            inpaint_plans[name] = inpaint_tensor_plan(inpaint_arch, name, t, qtype, mix, hashed_names);
+            if (mix && inpaint_mix_attention(name, hashed_names)) ++mix_selected;
+        }
+        if (mix)
+            fprintf(stderr, "inpaint-v1 mix (CRISPEMBED_QUANTIZE_INPAINT_MIX): %d attention-block tensors at q8_0\n",
+                    mix_selected);
+        gguf_set_val_str(ctx_out, "inpaint.quantization.policy", "inpaint-v1");
+        gguf_set_val_str(ctx_out, "inpaint.quantization.requested_type", ggml_type_name(qtype));
+        fprintf(stderr,
+                "%s inpaint-v1 policy: vectors, depthwise/one-channel kernels, buffers, embeddings and "
+                "first/last convs F32; other kernels natural-row [IC*KH*KW,OC] / [IN,OUT] storage\n",
+                inpaint_arch.c_str());
+    }
     const int family_key = gguf_find_key(ctx_in, "qwen2vl.model_family");
     const bool is_mineru25 =
         family_key >= 0 && std::string(gguf_get_val_str(ctx_in, family_key)) == "mineru2.5-pro-2604";
@@ -494,7 +676,20 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         struct ggml_tensor * t = ggml_get_tensor(ctx_in_ggml, name);
         // OXR's loader validates its 4D patch-embedding shape and reshapes it
         // itself, so its conv kernel keeps the source metadata.
-        if (ggml_n_dims(t) == 4 && t->type == GGML_TYPE_F32 && !is_oxr) {
+        if (is_inpaint) {
+            const InpaintPlan & plan = inpaint_plans.at(name);
+            if (plan.rows > 0) {
+                const int64_t count = ggml_nelements(t);
+                t->ne[0] = plan.rows;
+                t->ne[1] = count / plan.rows;
+                t->ne[2] = 1;
+                t->ne[3] = 1;
+                t->nb[0] = sizeof(float);
+                t->nb[1] = plan.rows * sizeof(float);
+                t->nb[2] = t->nb[1] * t->ne[1];
+                t->nb[3] = t->nb[2];
+            }
+        } else if (ggml_n_dims(t) == 4 && t->type == GGML_TYPE_F32 && !is_oxr) {
             // OXR D-FINE layout: record the original conv shape so the loader
             // can restore it after dequantizing (src/layout_detect.cpp).
             if (is_dfine_layout) {
@@ -553,6 +748,44 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         size_t offset = data_offset_in + gguf_get_tensor_offset(ctx_in, i);
 
         printf("[%3d/%3d] %-45s - %6s, ", i + 1, n_tensors, name, ggml_type_name(type));
+
+        if (is_inpaint) {
+            // Self-contained inpaint-v1 write: F32 source verified above.
+            const InpaintPlan & plan = inpaint_plans.at(name);
+            const int64_t nelements = ggml_nelements(t);
+            f32_data.resize(nelements);
+#ifdef _WIN32
+            _fseeki64(fin, (int64_t)offset, SEEK_SET);
+#else
+            fseeko(fin, (off_t)offset, SEEK_SET);
+#endif
+            if (fread(f32_data.data(), sizeof(float), nelements, fin) != (size_t)nelements) {
+                fprintf(stderr, "failed to read f32 data\n");
+                fclose(fin);
+                fclose(fout);
+                return false;
+            }
+            size_t written = size;
+            if (plan.type == GGML_TYPE_F32) {
+                fwrite(f32_data.data(), sizeof(float), nelements, fout);
+                n_kept++;
+                printf("(inpaint-v1 F32) copy %.1f MB\n", size / 1048576.0);
+            } else {
+                q_data.resize(ggml_row_size(plan.type, plan.rows) * (nelements / plan.rows));
+                written = ggml_quantize_chunk(plan.type, f32_data.data(), q_data.data(), 0, nelements / plan.rows,
+                                              plan.rows, nullptr);
+                fwrite(q_data.data(), 1, written, fout);
+                gguf_set_tensor_type(ctx_out, name, plan.type);
+                n_quantized++;
+                printf("(inpaint-v1 %s rows=%lld) %.1f MB -> %.1f MB\n", ggml_type_name(plan.type),
+                       (long long)plan.rows, size / 1048576.0, written / 1048576.0);
+            }
+            const size_t pad = GGML_PAD(written, GGUF_DEFAULT_ALIGNMENT) - written;
+            for (size_t j = 0; j < pad; j++) fputc(0, fout);
+            total_orig += size;
+            total_new += written;
+            continue;
+        }
 
         // Decide whether to quantize this tensor:
         // - Must be F32 or F16 source

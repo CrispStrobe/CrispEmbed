@@ -136,7 +136,10 @@ class InpaintCliTests(unittest.TestCase):
         environment = os.environ.copy()
         for key in list(environment):
             if key.startswith("INPAINT_TEST_") or key in (
-                    "CRISPEMBED_IMAGE_FORMAT", "CRISPEMBED_C2PA_CERT", "CRISPEMBED_C2PA_KEY"):
+                    "CRISPEMBED_IMAGE_FORMAT", "CRISPEMBED_C2PA_CERT", "CRISPEMBED_C2PA_KEY",
+                    "CRISPEMBED_INPAINT_GRAPH", "CRISPEMBED_INPAINT_FAST", "CRISPEMBED_INPAINT_BACKEND",
+                    "CRISPEMBED_INPAINT_PROFILE",
+                    "CRISPEMBED_MIGAN512", "CRISPEMBED_MIGAN_GPU", "CRISPEMBED_MOEBIUS", "CRISPEMBED_PIXELHACKER"):
                 environment.pop(key, None)
         environment["CRISPEMBED_MIGAN"] = "1"
         for key, value in (env or {}).items():
@@ -171,6 +174,116 @@ class InpaintCliTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0)
         self.assertIn(b"--mask-from-text", result.stdout)
         self.assertNotIn(b"INPAINT_TEST_LOAD", result.stderr)
+
+    def test_graph_backend_parser_and_required_gate(self):
+        for backend in ("auto", "cuda", "metal", "mps"):
+            with self.subTest(backend=backend):
+                result = self.single(["--gpu-backend", backend])
+                self.assertEqual(result.returncode, 2)
+                self.assertIn(b"CRISPEMBED_INPAINT_GRAPH=1", result.stderr)
+                self.assertNotIn(b"INPAINT_TEST_LOAD", result.stderr)
+        result = self.single(["--gpu-backend", "unknown"])
+        self.assertEqual(result.returncode, 2)
+        self.assertIn(b"--gpu-backend must be", result.stderr)
+        result = self.single(env={"CRISPEMBED_INPAINT_FAST": "1"})
+        self.assertEqual(result.returncode, 2)
+        self.assertIn(b"CRISPEMBED_INPAINT_FAST requires", result.stderr)
+
+    def test_graph_parser_records_request_without_claiming_device_execution(self):
+        # This parser driver stubs model inference. Actual backend execution is
+        # tested by the native graph controls, not by this PNG metadata check.
+        result = self.single(["--gpu-backend", "mps"], env={"CRISPEMBED_INPAINT_GRAPH": "1"})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        _, _, _, metadata = decode_png(result.stdout)
+        self.assertIn(b"execution=ggml-graph;backend_request=metal;precision_request=f32", metadata)
+
+    def latent_args(self, engine="moebius", tiled=True):
+        vae = self.root / "vae.gguf"
+        vae.write_bytes(b"test-only VAE placeholder; never actual inference")
+        return ["--inpaint-engine", engine, "--inpaint-vae", vae,
+                "--inpaint-model-sha256", "a" * 64, "--inpaint-vae-sha256", "b" * 64,
+                *(["--inpaint-tiles"] if tiled else [])]
+
+    def test_latent_engine_dispatch_and_settings(self):
+        for engine in ("moebius", "pixelhacker"):
+            with self.subTest(engine=engine):
+                result = self.single(self.latent_args(engine) + ["--inpaint-steps", "30",
+                    "--inpaint-seed", "18446744073709551615", "--inpaint-guidance", "3.5"],
+                    env={"CRISPEMBED_MIGAN": "0", "CRISPEMBED_" + engine.upper(): "1"})
+                self.assertEqual(result.returncode, 0, result.stderr)
+                w, h, rgb, metadata = decode_png(result.stdout)
+                self.assertEqual((w, h), (self.width, self.height))
+                self.assertEqual(rgb, self.expected(i for i, v in enumerate(self.mask) if v >= 128))
+                self.assertIn(("engine=" + engine + "-inpaint").encode(), metadata)
+                self.assertIn(b"steps=30", metadata)
+                self.assertIn(b"seed=18446744073709551615", metadata)
+                self.assertIn(("INPAINT_TEST_LATENT model=" + engine).encode(), result.stderr)
+                self.assertIn(b"guidance=3.5", result.stderr)
+                self.assertIn(b"noise_offset=0.035", result.stderr)
+                self.assertEqual(result.stderr.count(b"INPAINT_TEST_LOAD"), 1)
+
+    def test_latent_model_specific_guidance_defaults(self):
+        for engine, guidance in (("moebius", b"guidance=2"), ("pixelhacker", b"guidance=4.5")):
+            result = self.single(self.latent_args(engine), env={"CRISPEMBED_" + engine.upper(): "1"})
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn(guidance, result.stderr)
+
+    def test_latent_gate_zero_and_unset_reject(self):
+        for engine in ("moebius", "pixelhacker"):
+            for value in (None, "", "0"):
+                with self.subTest(engine=engine, value=value):
+                    result = self.single(self.latent_args(engine),
+                        env={"CRISPEMBED_" + engine.upper(): value})
+                    self.assertEqual(result.returncode, 2, result.stderr)
+                    self.assertEqual(result.stdout, b"")
+                    self.assertNotIn(b"INPAINT_TEST_LOAD", result.stderr)
+
+    def test_latent_geometry_requires_explicit_tiling(self):
+        result = self.single(self.latent_args(tiled=False), env={"CRISPEMBED_MOEBIUS": "1"})
+        self.assertEqual(result.returncode, 2)
+        self.assertIn(b"512x512", result.stderr)
+        self.assertNotIn(b"INPAINT_TEST_LOAD", result.stderr)
+
+    def test_latent_vae_is_protected_from_output(self):
+        args = self.latent_args()
+        vae = self.root / "vae.gguf"
+        before = vae.read_bytes()
+        result = self.single(args + ["--inpaint-output", vae, "--inpaint-overwrite"],
+                             env={"CRISPEMBED_MOEBIUS": "1"})
+        self.assertEqual(result.returncode, 2)
+        self.assertIn(b"overwrite an input or model", result.stderr)
+        self.assertEqual(vae.read_bytes(), before)
+
+    def test_latent_sampler_rejects_nonfinite_and_overflow(self):
+        for extra in (["--inpaint-guidance", "nan"], ["--inpaint-guidance", "inf"],
+                      ["--inpaint-noise-offset", "1.1"], ["--inpaint-steps", "1"],
+                      ["--inpaint-steps", "101"], ["--inpaint-seed", "-1"],
+                      ["--inpaint-seed", "18446744073709551616"]):
+            with self.subTest(extra=extra):
+                result = self.single(self.latent_args() + extra, env={"CRISPEMBED_MOEBIUS": "1"})
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertNotIn(b"INPAINT_TEST_LOAD", result.stderr)
+
+    def test_engine_and_digest_contracts_reject_before_load(self):
+        for extra in (["--inpaint-engine", "unknown"], ["--inpaint-engine", "moebius"],
+                      ["--inpaint-engine", "migan512"], ["--inpaint-steps", "20"],
+                      ["--inpaint-tiles"], ["--inpaint-model-sha256", "a" * 64]):
+            with self.subTest(extra=extra):
+                result = self.single(extra)
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertNotIn(b"INPAINT_TEST_LOAD", result.stderr)
+
+    def test_migan512_dispatch_and_additional_gate(self):
+        args = ["--inpaint-engine", "migan512", "--inpaint-model-sha256", "a" * 64,
+                "--inpaint-checkpoint-sha256", "b" * 64]
+        rejected = self.single(args, env={"CRISPEMBED_MIGAN512": "0"})
+        self.assertEqual(rejected.returncode, 2)
+        result = self.single(args, env={"CRISPEMBED_MIGAN512": "1"})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(b"INPAINT_TEST_VARIANT resolution=512", result.stderr)
+        self.assertIn(b"engine=migan512-inpaint", decode_png(result.stdout)[3])
+        self.assertIn(b"model_sha256=" + b"a" * 64, decode_png(result.stdout)[3])
+        self.assertIn(b"checkpoint_sha256=" + b"b" * 64, decode_png(result.stdout)[3])
 
     def test_unset_empty_and_zero_gate(self):
         for value in (None, "", "0"):

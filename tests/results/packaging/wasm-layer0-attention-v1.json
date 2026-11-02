@@ -1,0 +1,37 @@
+{
+ "schema": "crispembed-wasm-layer0-attention-review-v1",
+ "run": 41441512356,
+ "source": "8f7ea115982a324f6bce845355b1b968d28b729d",
+ "branch": "fix/wasm-live-norm-component-inventory-20261102",
+ "completed": true,
+ "passed": true,
+ "note": "Passed means controls pass and every layer0 difference is within the unchanged 0.002/0.99999 budgets; bit differences are reported below.",
+ "controls": {
+  "admission": "native and WASM kernel-file arithmetic profiles equal production (40852835039); probe -ffp-contract=off",
+  "weight_free": "authored chain deterministic on both builds; every isolated op reproduces its own chain bit-exactly",
+  "model": "captured norm00 output identical native/wasm; native chain reproduces captured native norm01 input and WASM chain the captured WASM norm01 input bit-exactly; isolation holds on the model",
+  "weights": "token_embd_norm F32; blk.0.attn_{q,k,v,output}.weight IQ4_NL [384,384]; biases F32; plain CPU buffer"
+ },
+ "ops_same_input_wasm_vs_native": {
+  "ln_mul": "bit-exact", "ln_add": "bit-exact",
+  "q_raw": [9.54e-07, 3416], "k_raw": [9.54e-07, 3316], "v_raw": [2.38e-07, 3357],
+  "q": "bit-exact", "k": "bit-exact", "v": "bit-exact",
+  "flash": [8.94e-07, 2503], "o_raw": [1.19e-07, 3347],
+  "o": "bit-exact", "residual": "bit-exact",
+  "format": "[max_absolute, differing elements of 4608]; cosine 1.0 to 9 digits everywhere"
+ },
+ "first_same_input_differing_op": "q_raw",
+ "independently_differing_ops": ["q_raw", "k_raw", "v_raw", "flash", "o_raw"],
+ "differing_op_kinds": ["mul_mat IQ4_NL x Q8_0", "flash_attn_ext"],
+ "single_deterministic_op_kind": false,
+ "propagated_norm01_input": [1.19e-07, 1996],
+ "source_level_cause": {
+  "mul_mat": "IQ4_NL x Q8_0 with identical Q8_0 activation bytes (shown in run 41438394031): native llamafile tinyBLAS_Q0_AVX (8-lane exact-int lanes, FMA per block, AVX hsum) vs WASM ggml_vec_dot_iq4_nl_q8_0_generic (no WASM kernel in arch/wasm/quants.c; scalar per-block sumf += d*sumi). Accumulation order only.",
+  "flash_attn_ext": "flash_attn_ext_f16_one_chunk on both (12 rows < 64-row tile; split-KV needs 1 row). Build-dependent parts: Q.K via ggml_vec_dot_f32 (x86 AVX2: 8-wide lanes, FMA; WASM simd128: 4-wide lanes, separate mul+add, different step/reduction), V accumulation via ggml_vec_mad_f32/ggml_vec_scale_f32 (FMA vs mul+add), scalar expf (glibc vs musl). This protocol does not split flash further."
+ },
+ "candidate": {"proposed": false,
+   "reason": "Two independent op kinds differ on identical inputs in layer0 alone (IQ4_NL mul_mat and flash_attn_ext); the FFN replay showed IQ4_XS mul_mat differs too. A single-op default-off candidate cannot make norm01 bit-identical. The downstream fc2 failure is amplification of any ~1e-7 difference by activation quantization, so a partial fix is not expected to remove it. No full-model candidate measurement was run."},
+ "new_original_forwards": 0,
+ "gates_defaults_changed": false,
+ "qualification": false
+}

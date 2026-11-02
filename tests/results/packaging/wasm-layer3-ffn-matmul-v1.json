@@ -1,0 +1,45 @@
+{
+ "schema": "crispembed-wasm-layer3-ffn-matmul-review-v1",
+ "run": 41438394031,
+ "source": "295d7e79608f4a5d75b19e408a4af0877023c3f9",
+ "branch": "fix/wasm-live-norm-component-inventory-20261102",
+ "completed": true,
+ "passed": false,
+ "exit": "numerical rejection (exit 1) after the complete report; every control passed",
+ "code_paths": {
+  "fc1": {"tensor": "blk.3.ffn_up.weight", "type": "iq4_nl", "ne": [384, 1536], "activation": "q8_0",
+          "native": "x86 AVX2/FMA, GGML_USE_LLAMAFILE: x86 quantize_row_q8_0 (round-nearest-even); llamafile tinyBLAS_Q0_AVX<block_iq4_nl,block_q8_0>: one 8-lane F32 accumulator per output, lane L = exact int sum of elements 4L..4L+3 per 32-block, fma(d_w*d_a, lane, acc) over 12 blocks, hsum ((x0+x4)+(x2+x6))+((x1+x5)+(x3+x7))",
+          "wasm": "simd128, no llamafile: quantize_row_q8_0_wasm_nearest (held CRISPEMBED_WASM_Q8_0_ROUND=1); ggml_vec_dot_iq4_nl_q8_0_generic (no WASM kernel): per block sumf += d*(int sum), scalar F32, no FMA"},
+  "fc2": {"tensor": "blk.3.ffn_down.weight", "type": "iq4_xs", "ne": [1536, 384], "activation": "q8_K",
+          "native": "quantize_row_q8_K_ref; AVX2 ggml_vec_dot_iq4_xs_q8_K (llamafile has no IQ4_XS): exact int32 lanes incl. integer sub-block scales per 256-superblock, one FMA per superblock per lane, hsum_float_8",
+          "wasm": "WASM SIMD quantize_row_q8_K; ggml_vec_dot_iq4_xs_q8_K_generic: 8 scalar F32 multiply-adds per superblock (48 per output)"},
+  "weights_buffer": "CPU (not CPU_REPACK) on both",
+  "intermediates": "FP16 scales widened exactly; int lanes < 2^24 (exact F32 conversion)"
+ },
+ "controls": {
+  "admission": "native and WASM kernel-file arithmetic profiles equal the production full inventories (40852835039); probe -ffp-contract=off",
+  "weight_free_selftest": "passed: authored IQ4_NL/IQ4_XS through the real ggml graph; native production == native-order emulation and WASM production == generic-order emulation bit-exactly, each sensitive to the other order",
+  "own_reproduction": "native fc1_raw/fc2_raw and wasm0/wasm1 fc1_raw, wasm0 fc2_raw captured bytes reproduced bit-exactly; emulations equal production on all model cases"
+ },
+ "results": {
+  "fc1": {
+   "four_way_vs_native_kernel_native_input": {"wasm_kernel(wasm_input)": [0.000573, 0.999999992], "native_kernel(wasm_input)": [0.000573, 0.999999992], "wasm_kernel(native_input)": [1.43e-06, 1.0]},
+   "kernel_effect_same_input": 1.43e-06, "input_effect_same_kernel": 0.000573,
+   "activation_bytes_native_vs_wasm_quantizer_same_input": "identical (144/144 blocks)",
+   "activation_native_input_vs_wasm_input": "1 of 144 Q8_0 blocks differs, only its FP16 scale; no quantized value changes",
+   "candidate_native_order_on_wasm": {"vs_native_kernel_same_input": "bit-exact", "natural_vs_native": [0.000573, 0.999999992]}},
+  "fc2": {
+   "four_way_vs_native_kernel_native_input": {"wasm_kernel(wasm_input)": [0.00331, 0.99999569], "native_kernel(wasm_input)": [0.00331, 0.99999569], "wasm_kernel(native_input)": [9.54e-07, 1.0]},
+   "kernel_effect_same_input": 9.54e-07, "input_effect_same_kernel": 0.00331,
+   "activation_bytes_native_vs_wasm_quantizer_same_input": "identical (72/72 blocks)",
+   "activation_native_input_vs_wasm_input": "38 of 72 Q8_K blocks change their F32 scale; 3 quantized values move by one step",
+   "candidate_native_order_on_wasm": {"vs_native_kernel_same_input": "bit-exact", "natural_vs_native": [0.00331, 0.99999569]}}
+ },
+ "attribution_sentence": "Kernel accumulation order is not the cause. On identical inputs the WASM generic kernels differ from the native AVX2/tinyBLAS kernels by at most 1.43e-6 (fc1) and 9.54e-7 (fc2), and both builds quantize identical inputs to identical Q8 bytes. The native kernel fed the WASM-captured inputs reproduces the full natural error (fc1 5.73e-4, fc2 0.00331). The amplification comes from activation quantization: input differences of about 1e-6 inherited from earlier layers change one fc1 Q8_0 block scale (one FP16 rounding step, about 4.9e-4 relative) and 38 fc2 Q8_K scales plus 3 quantized values.",
+ "candidate": {"proposed_for_enabling": false,
+   "reason": "A native-order WASM IQ4_NL/IQ4_XS kernel (exact int lanes, fmaf, AVX2 hsum order) was emulated and reproduces native bit-exactly on the same input, but its expected natural effect is unchanged: fc2 stays 0.00331 (fails), fc1 stays 5.73e-4. It would remove only the <=1.4e-6 kernel component, so no default-off candidate is recommended from this evidence."},
+ "next": "Locate where the inherited WASM-vs-native input bits first diverge (norm01 input 1.19e-7, layer3 input 5.96e-7) with the same same-input crosswise method on the earliest differing op. No default, gate or budget change.",
+ "new_original_forwards": 0,
+ "gates_defaults_changed": false,
+ "qualification": false
+}

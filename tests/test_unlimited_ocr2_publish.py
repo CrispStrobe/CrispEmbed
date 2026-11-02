@@ -107,6 +107,23 @@ class Protocol(unittest.TestCase):
         text = files["README.md"].decode(); self.assertIn("128000 base pieces", text); self.assertIn("pinned831", text)
         self.assertIn("published weights", text); self.assertIn("unchanged", text); self.assertIn("Q8_0", text)
 
+    def test_real_scan_receipt_summary_and_card_section(self):
+        src = ROOT / "tests/results/ocr-real-scans"
+        with tempfile.TemporaryDirectory() as folder:
+            root = pathlib.Path(folder); d = root / "tests/results/ocr-real-scans"; d.mkdir(parents=True)
+            self.assertIsNone(p.real_scan_receipt(root))
+            (d / "ref-uocr2.json").write_bytes((src / "ref-uocr2.json").read_bytes())
+            (d / "native-uocr2-v2.json").write_bytes((src / "native-uocr2.json").read_bytes())  # v1 shape as fixture
+            r = p.real_scan_receipt(root)
+            self.assertEqual((r["pairs"], r["ids_exact"], r["scans"], r["receipts"]), (20, 12, 15, 5))
+            self.assertAlmostEqual(r["receipt_recall_original"], 0.533, places=3)
+            self.assertEqual(r["receipts_original_below_0_8"], 3)
+            text = p.card(self.cfg, [], dict(p.receipts(self.cfg), real_scans=r), "e" * 40)
+            self.assertIn("**Real scans**", text); self.assertIn("12/20 pages token-ID identical", text)
+            bad = json.loads((src / "native-uocr2.json").read_text()); bad["mode"] = "ref-uocr2"
+            (d / "native-uocr2-v2.json").write_text(json.dumps(bad))
+            with self.assertRaises(ValueError): p.real_scan_receipt(root)
+
     def test_actual_card_refresh_operation_allowlist_parent_and_small_readback(self):
         cfg = copy.deepcopy(self.cfg); parent, new = "a" * 40, "b" * 40
         weights = [dict(variant="F16", filename=cfg["recipes"]["F16"]["filename"], bytes=2_000_000_000, sha256="c" * 64)]

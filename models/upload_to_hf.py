@@ -767,6 +767,10 @@ MODELS = {
         "license": "tongyi-qianwen-research",
         "langs": [],
         "desc": "GOT-OCR2 (Qwen1.5-0.5B decoder). Non-commercial; no use to improve other LLMs.",
+        # Lineage: got-ocr2-f16-r2.gguf (Hub c0f1aa7b5b52, sha256 98b431ab...) = convert-got-ocr-to-gguf.py
+        # --dtype f16 --verify from stepfun-ai/GOT-OCR2_0, published by tools/ci-heavy/got_ocr2_f16_republish.sh
+        # (heavy-cpu run 41397551540). Supersedes got-ocr2-f16.gguf (5a0b0a1adc, zeroed 8 MiB in
+        # l.embed_tokens.weight), which stays on the Hub unchanged.
         "publish_files": [],
     },
     "transcoda-omr": {  # license lineage only (registry-qwen-audit.json); never uploaded by this script

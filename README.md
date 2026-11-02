@@ -471,6 +471,9 @@ Three permissively-licensed engines, all auto-detected via `--ocr`:
   directory/TSV batch mode. Opt in with `CRISPEMBED_MIGAN=1`; see the
   [inpainting guide](docs/inpainting-cli.md) for model preparation, commands and
   validation limits. Temporal processing and LaMa are not implemented.
+  Separately gated MI-GAN512, Moebius and PixelHacker profiles (shared SDXL
+  VAE) are described in the [engine guide](docs/inpainting-engines.md); their
+  full-model hosted parity remains pending.
 - **PDF DPI profiling** — zero-dependency PDF parser computes effective page DPI
   to auto-select OCR resolution (downsample high-DPI, super-resolve low-DPI).
 - **Output formats** — plain text, hOCR, ALTO 3.1 XML, searchable PDF, with
