@@ -164,9 +164,11 @@ def reference(model, cfg, P):
         ref["embed"] = enc(P["docs"], None) + enc(P["queries"], cfg["query_prefix"])
         ref["impl"] = "sentence_transformers.SentenceTransformer (fp32, batch 1)"
     elif model == "clip":
-        from transformers import CLIPModel, CLIPTokenizer
+        from transformers import CLIPModel, CLIPTokenizerFast
         m = CLIPModel.from_pretrained(path, torch_dtype=torch.float32).eval()
-        tok = CLIPTokenizer.from_pretrained(path)
+        # The fast tokenizer reproduces OpenAI's regex BPE. The slow CLIPTokenizer without ftfy
+        # falls back to BERT's BasicTokenizer, which splits CJK characters apart.
+        tok = CLIPTokenizerFast.from_pretrained(path)
         vs = []
         with torch.no_grad():
             for t in P["docs"]:
@@ -175,7 +177,7 @@ def reference(model, cfg, P):
                 f = f if torch.is_tensor(f) else getattr(f, "text_embeds", f[0])
                 vs.append((f[0] / f[0].norm()).tolist())
         ref["embed"] = vs
-        ref["impl"] = "transformers CLIPModel.get_text_features (fp32, truncation 77)"
+        ref["impl"] = "transformers CLIPModel.get_text_features + CLIPTokenizerFast (fp32, truncation 77)"
     else:
         from FlagEmbedding import BGEM3FlagModel
         try:
@@ -374,6 +376,57 @@ def prepare_source(model, cfg, cli, src_path_hf):
     return out
 
 
+def token_audit(cli, src, hfpath, P):
+    """Native token ids (--tokens-raw) against the original tokenizer, per panel text."""
+    from transformers import AutoTokenizer
+    tok = AutoTokenizer.from_pretrained(hfpath)
+    texts = P["docs"] + P["queries"]
+    r, _ = sh([cli, "-m", src, "-t", NT, "--json", "--prefix", "", "--tokens-raw"] + texts)
+    if r.returncode:
+        return {"error": r.stderr[-1500:]}
+    j = json.loads(r.stdout)
+    bad = []
+    for i, (t, x) in enumerate(zip(texts, j)):
+        hf = tok(t, truncation=True, max_length=8192)["input_ids"]
+        nat = x.get("token_ids", [])
+        if hf != nat:
+            k = next((n for n, (a, b) in enumerate(zip(hf, nat)) if a != b), min(len(hf), len(nat)))
+            bad.append({"text": i, "hf_len": len(hf), "native_len": len(nat), "first_diff": k,
+                        "hf": hf[max(0, k - 3):k + 6], "native": nat[max(0, k - 3):k + 6],
+                        "hf_pieces": tok.convert_ids_to_tokens(hf[max(0, k - 3):k + 6]),
+                        "excerpt": t[:120]})
+    return {"n": len(texts), "mismatched": len(bad), "cases": bad}
+
+
+def run_recipes(model, cfg, cli, quant, P, C, ref, hfpath):
+    """Evaluate explicit candidate recipes (tests/results/below-bar/candidates.json)."""
+    cands = json.loads((ROOT / "tests/results/below-bar/candidates.json").read_text())[model]
+    ev = Evaluator(model, cfg, cli, quant, P, ref)
+    src = prepare_source(model, cfg, cli, hfpath)
+    _, ev.f32 = ev.run("source-f32", src, keep=True)
+    for nm, env in cands.get("env_arms", {}).items():
+        ev.run(f"source-f32 {nm}", src, env=env)
+    imat = S / f"{model}.imatrix"
+    calibrate(cli, src, C, cfg, imat)
+    for rc in cands["recipes"]:
+        dst = S / "cand.gguf"
+        if rc.get("converter"):
+            r, _ = sh([sys.executable, "models/convert-bert-to-gguf.py", "--model", hfpath, "--output", dst]
+                      + rc["converter"].split())
+            if r.returncode:
+                ev.rows.append({"arm": rc["name"], "error": r.stderr[-1500:]})
+                continue
+        else:
+            try:
+                quantize(quant, src, dst, rc["qtype"], imat if rc.get("imatrix") else None, rc.get("overrides", ()))
+            except RuntimeError as e:
+                ev.rows.append({"arm": rc["name"], "error": str(e)[:1500]})
+                continue
+        ev.run(rc["name"], dst, rc)
+        dst.unlink(missing_ok=True)
+    return ev
+
+
 # ───────────────────────────── sweep ─────────────────────────────
 def sweep(model, cfg, cli, quant, P, C, ref, hfpath):
     ev = Evaluator(model, cfg, cli, quant, P, ref)
@@ -532,7 +585,7 @@ def upload_to_hf_name(model):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("phase", choices=["sweep", "publish"])
+    ap.add_argument("phase", choices=["sweep", "recipes", "publish"])
     ap.add_argument("model", choices=sorted(CFG))
     a = ap.parse_args()
     cfg = CFG[a.model]
@@ -542,8 +595,15 @@ def main():
     (OUT / f"reference-{a.model}.json").write_text(json.dumps(
         {k: v for k, v in ref.items() if k not in ("embed", "sparse", "colbert")}
         | {"n_docs": len(P["docs"]), "n_queries": len(P["queries"]), "n_audit_texts": P["n_audit"]}, indent=1))
+    if a.model == "bgem3":
+        src = prepare_source(a.model, cfg, cli, hfpath)
+        ta = token_audit(cli, src, hfpath, P)
+        (OUT / "token-audit-bgem3.json").write_text(json.dumps(ta, indent=1, ensure_ascii=False))
+        log(f"token audit: {ta.get('mismatched')} of {ta.get('n')} texts differ from the original tokenizer")
     if a.phase == "sweep":
         ev, meta = sweep(a.model, cfg, cli, quant, P, C, ref, hfpath)
+    elif a.phase == "recipes":
+        ev = run_recipes(a.model, cfg, cli, quant, P, C, ref, hfpath)
     else:
         ev = publish(a.model, cfg, cli, quant, P, C, ref, hfpath)
     lines = [f"### below-bar {a.phase} {a.model} ({os.environ.get('GITHUB_SHA', '')[:8]})", "",

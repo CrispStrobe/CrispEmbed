@@ -292,7 +292,10 @@ struct crispembed_context {
     int matryoshka_dim = 0;         // 0 = use model default
     int image_deskew = 0;           // optional scan deskew on the file/RGB image paths
     float image_deskew_max_angle = 15.0f;
-    int unk_id = -1;         // unknown-token id (for E6 UNK-ratio warning); -1 = not set
+    int unk_id = -1; // unknown-token id (for E6 UNK-ratio warning); -1 = not set
+    // Special-token ids (CLS/BOS, SEP/EOS, PAD, UNK) of the encoder tokenizer. The
+    // BGE-M3 lexical (sparse) head drops them, as FlagEmbedding's unused_tokens do.
+    std::vector<int32_t> special_ids;
     bool unk_warned = false; // one-shot: suppress after first warning
     std::string prefix;      // prepended to text before tokenization (e.g. "query: ")
     // ColBERT self-describing metadata (read from GGUF, empty = not set)
@@ -620,6 +623,7 @@ static bool load_model(crispembed_context * ctx, const char * path, gguf_context
             int pad_id = u32("tokenizer.ggml.padding_token_id", 1);
             ctx->sp_tokenizer.load(vocab, scores, bos_id, eos_id, unk_id, pad_id, hp.n_max_tokens);
             ctx->unk_id = unk_id;
+            ctx->special_ids = { bos_id, eos_id, unk_id, pad_id };
             ctx->sp_tokenizer.set_add_flags(tok_add_bos, tok_add_eos);
             // HF's `Precompiled` (nmt_nfkc charsmap) normalizer, which every
             // XLM-R-family Unigram embedder declares and which we implemented
@@ -687,6 +691,7 @@ static bool load_model(crispembed_context * ctx, const char * path, gguf_context
             }
             ctx->wp_tokenizer.load(vocab, cls_id, sep_id, unk_id, pad_id, hp.n_max_tokens, do_lower_case);
             ctx->unk_id = unk_id;
+            ctx->special_ids = { cls_id, sep_id, unk_id, pad_id };
             // `tokenizer.ggml.pre = "bert"` selects the HF BertNormalizer +
             // BertPreTokenizer path (core/bert_pretok.h) — written by the
             // converter when tokenizer.json itself declares it (LaBSE class).
@@ -3230,12 +3235,21 @@ extern "C" int crispembed_encode_sparse(crispembed_context * ctx, const char * t
     if (out_dim == 1) {
         // BGE-M3 style: raw is [1, T] — one scalar per token.
         // Scatter to vocab positions via input_ids, take max per vocab id.
+        // FlagEmbedding (BGEM3Model._process_token_weights) drops the CLS/EOS/PAD/UNK
+        // ids before building lexical weights; the native path used to keep them, so
+        // every output carried large <s>/</s> weights the original never emits
+        // (below-bar panel: 0/77 identical term sets, min cosine 0.675 on "hello").
+        // Default on; CRISPEMBED_SPARSE_KEEP_SPECIAL=1 restores the old output.
+        const bool drop_special = !core_env::on("CRISPEMBED_SPARSE_KEEP_SPECIAL");
         std::unordered_map<int32_t, float> vocab_weights;
         for (int t = 0; t < raw_T; t++) {
             if (!tokens.attn_mask[t]) continue;
             float weight = raw[t]; // element [0, t]
             if (weight <= 0.0f) continue;
             int32_t vid = tokens.ids[t];
+            if (drop_special &&
+                std::find(ctx->special_ids.begin(), ctx->special_ids.end(), vid) != ctx->special_ids.end())
+                continue;
             auto it = vocab_weights.find(vid);
             if (it == vocab_weights.end() || it->second < weight) vocab_weights[vid] = weight;
         }
