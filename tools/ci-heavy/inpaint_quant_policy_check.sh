@@ -45,8 +45,10 @@ for t in GGUFReader(sys.argv[1]).tensors:
 EOF
 }
 failed=0
+compared=0
 compare() { # LABEL PRODUCED EXPECTED
     local label=$1 got=$2 want=$3 a b
+    compared=$((compared + 1))
     a=$(sha256sum "$got" | cut -d' ' -f1); b=$(sha256sum "$want" | cut -d' ' -f1)
     census "$got" > "$OUT/$label.produced.types"; census "$want" > "$OUT/$label.expected.types"
     local types=identical
@@ -65,7 +67,8 @@ quant() { # LABEL ENV... -- IN OUT TYPE
     local envs=()
     while [ "$1" != -- ]; do envs+=("$1"); shift; done; shift
     env "${envs[@]}" "$Q" "$1" "$2" "$3" > "$OUT/$label.quantize.log" 2>&1 || { log "- $label: quantize FAILED"; tail -20 "$OUT/$label.quantize.log"; failed=1; return 1; }
-    grep -E 'inpaint-v1|mix|policy' "$OUT/$label.quantize.log" | head -5 >> "$OUT/summary.md"
+    { grep -E 'mix \(|policy \(' "$OUT/$label.quantize.log" || true; } >> "$OUT/summary.md"
+    return 0
 }
 
 log "## inpaint quantizer policy byte check"
@@ -92,5 +95,8 @@ for q in f16 q8_0 q4_k; do
     quant migan512-$q CRISPEMBED_QUANTIZE_INPAINT_MIX=0 -- "$G/migan-512-places2-f32-experimental.gguf" "$S/migan512-$q.gguf" $q && \
         compare migan512-$q "$S/migan512-$q.gguf" "$G/migan-512-places2-$q.gguf"
 done
+# Initial run 41388773676 reported PASS without comparing anything (a
+# SIGPIPE in the log filter skipped every comparison); require all seven.
+[ $compared = 7 ] || { log "only $compared of 7 comparisons ran"; failed=1; }
 log "result: $([ $failed = 0 ] && echo PASS || echo FAIL)"
 exit $failed
