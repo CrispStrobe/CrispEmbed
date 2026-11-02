@@ -518,6 +518,8 @@ static const ModelHash k_model_hashes[] = {
       "f092601e1571c57b62e0ce8ae4e1ed8e91334405cbb8ca95e20dd5c012fbf7ef" },
     { "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF/resolve/main/got-ocr2-q4_k.gguf",
       "ba276f2e246273af7d1bcd58f35ac7bae09c30340b923ed4440effe82d5e7613" },
+    { "https://huggingface.co/cstr/got-ocr2-crispembed-GGUF/resolve/c0f1aa7b5b52c15002e911d5d630e6d0dcb3ba8f/got-ocr2-f16-r2.gguf",
+      "98b431abc3e6b5715363e7296f7fc665a2eca829127ccb8693511926c4784a7f" },
     { "https://huggingface.co/LiquidAI/LFM2.5-VL-3B-GGUF/resolve/3e0e828198e2abb75a957ad823f5d691c13f0f28/LFM2.5-VL-3B-Q4_K_M.gguf",
       "83c18dfba02c75769cdd63f73e37c343400e82d434ff1b14bcc1cb02fcf2f5f2" },
     { "https://huggingface.co/LiquidAI/LFM2.5-VL-3B-GGUF/resolve/3e0e828198e2abb75a957ad823f5d691c13f0f28/mmproj-LFM2.5-VL-3B-F16.gguf",

@@ -6,13 +6,21 @@ tensor matches the original, F32 activations never exceed the F16 range (HF max 
 runtime is fine. Reconverted `got-ocr2-f16-r2.gguf` (sha256 `98b431ab…`, converter `--verify`)
 differs from the old file only inside that span. Stage diff is cos 1.000000 on all 19 stages
 (llm_layer_0 max_abs 5.1e-5, was 0.9366 / 8.92), and fox is token-exact against the original.
-- **Open / blocked on a decision**: qualification run 41391040980 REJECTED r2 under its own gate
-  (char ratio vs original ≥ published q4_k on 3 cases): receipt 0.530 < q4_k 0.592. Both native
-  arms add Qty/Price columns that the original omits. r2 reaches EOS with no loop, and
-  simple_form r2 0.44 vs q4_k 0.07. Not published. The registry is unchanged.
-  Next: decide the gate, or first close the native-vs-original gap shared with q4_k
-  (nearest vs bicubic resize, "OCR" token 93495 vs HF 80577, no-repeat-ngram 3), then
-  rerun `tools/ci-heavy/got_ocr2_f16_republish.sh publish` and a Metal M1 run of r2.
+- Qualification run 41391040980 was REJECTED by its own page-similarity gate (receipt char ratio
+  r2 0.530 < q4_k 0.592; simple_form r2 0.44 vs q4_k 0.07). The receipt is kept on record.
+  Coordinator decision (owner bar, docs/precision-acceptance.md): r2 qualifies as F16 on stage cos
+  1.000000 x19 and fox token-exact. Page similarity stays a recorded diagnostic. Published by run
+  41397551540 as `got-ocr2-f16-r2.gguf`, Hub `c0f1aa7b5b52c15002e911d5d630e6d0dcb3ba8f`, sha256
+  `98b431ab…` (local = LFS = empty-cache readback). Registry `got-ocr2-f16`. M1 Metal fox exact.
+  DONE except the item below.
+- **GOT pipeline gap against the original, all precisions** (q4_k, q8_0, F16 alike): native
+  output is not token-exact against stepfun-ai/GOT-OCR-2.0-hf on receipt_example and simple_form.
+  The native arms add receipt Qty/Price columns that the original omits, and they drop simple_form
+  fields. Candidates to A/B one at a time, each behind a gate against the original's token IDs:
+  (1) image resize: native nearest-neighbour 1024x1024 vs HF processor interpolation;
+  (2) prompt "OCR" token 93495 (native) vs 80577 (HF processor);
+  (3) native no-repeat-ngram 3 vs the original generation config.
+  Harness: `tools/ci-heavy/got_ocr2_f16_republish.sh` (compare.json) / `got_ocr2_hf_probe.py`.
 
 
 Source: `docs/gpu-support-matrix.md` §CUDA audit (branch `feat/cuda-audit`, Kaggle T4).

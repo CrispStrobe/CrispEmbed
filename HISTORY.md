@@ -7,8 +7,13 @@ not precision. HF original F32 activations peak at 6990 (no F16 overflow). The p
 against stepfun-ai/GOT-OCR2_0 found 289/290 LLM tensors exact. `l.embed_tokens.weight` had cos 0.9931
 because file bytes 202930256-211318866 (8 MiB) are zero. The earliest stage divergence is llm_layer_0,
 cos 0.936596 / max_abs 8.92 (vision exact). Reconversion with a byte-readback check (`--verify`)
-gives cos 1.000000 everywhere and fox token-exact, but receipt char ratio vs the original is below
-q4_k, so the qualification gate rejected it. Not published. Receipts: `tests/results/got-ocr2-f16/`.
+gives cos 1.000000 everywhere and fox token-exact. Qualification run 41391040980 was rejected by its
+page-similarity gate (receipt char ratio vs the original 0.530 < q4_k 0.592). That gap is shared with
+q4_k; it is kept on record. Under the coordinator's decision applying the owner bar (F16 > 0.98:
+stage min cos 1.000000 x19, fox token-exact), run 41397551540 reconverted byte-identically
+(sha256 98b431ab…) and published `got-ocr2-f16-r2.gguf` at Hub `c0f1aa7b5b52`. Local, LFS and
+empty-cache readback hashes match, and the old file is unchanged. M1 Metal: fox exact, 17.9 s.
+Registry `got-ocr2-f16` was added; `got-ocr2` (q4_k) is unchanged. Receipts: `tests/results/got-ocr2-f16/`.
 
 ## 2 November 2026 — ggml submodule back on the shared fork line
 
