@@ -28,6 +28,64 @@ import numpy as np
 import re
 
 
+
+def tokenizer_metadata(tokenizer, embedding_vocab_size):
+    """Preserve base AND added pieces at their original IDs, including layout markup.
+
+    Pure stdlib helper: tests can extract it without importing model frameworks.
+    Flags retain the serialized AddedToken semantics for future tokenizer readers;
+    output decoding uses every piece (upstream skip_special_tokens=False).
+    """
+    if type(embedding_vocab_size) is not int or not 0 < embedding_vocab_size <= 1_000_000:
+        raise ValueError("bounded embedding vocabulary size required")
+    vocab = tokenizer.get("model", {}).get("vocab")
+    added = tokenizer.get("added_tokens", [])
+    if not isinstance(vocab, dict) or not vocab or not isinstance(added, list):
+        raise ValueError("base vocabulary and added-token list required")
+    pieces = {}
+    def insert(index, content):
+        if type(index) is not int or not 0 <= index < embedding_vocab_size:
+            raise ValueError("token ID outside embedding vocabulary")
+        if not isinstance(content, str) or not content or "\0" in content:
+            raise ValueError("nonempty NUL-free token content required")
+        content.encode("utf-8")
+        if index in pieces and pieces[index] != content:
+            raise ValueError("conflicting content for token ID")
+        pieces[index] = content
+    for content, index in vocab.items():
+        insert(index, content)
+    flag_names = ("single_word", "lstrip", "rstrip", "normalized", "special")
+    records = []
+    seen = set()
+    for record in added:
+        if not isinstance(record, dict) or not {"id", "content", *flag_names} <= record.keys():
+            raise ValueError("complete serialized AddedToken record required")
+        if any(type(record[name]) is not bool for name in flag_names):
+            raise ValueError("AddedToken flags must be booleans")
+        index = record["id"]
+        if type(index) is not int or index in seen:
+            raise ValueError("duplicate/invalid added-token ID")
+        seen.add(index)
+        insert(index, record["content"])
+        records.append((index, record["content"], sum(int(record[name]) << bit for bit, name in enumerate(flag_names))))
+    records.sort()
+    tokens = [""] * (max(pieces) + 1)
+    for index, content in pieces.items():
+        tokens[index] = content
+    return tokens, records
+
+
+def write_tokenizer_metadata(writer, tokenizer, embedding_vocab_size):
+    tokens, records = tokenizer_metadata(tokenizer, embedding_vocab_size)
+    writer.add_array("tokenizer.ggml.tokens", tokens)
+    if records:
+        writer.add_array("unlimited_ocr.tokenizer.added_ids", [row[0] for row in records])
+        writer.add_array("unlimited_ocr.tokenizer.added_content", [row[1] for row in records])
+        # bit0 single_word, bit1 lstrip, bit2 rstrip, bit3 normalized, bit4 special.
+        writer.add_array("unlimited_ocr.tokenizer.added_flags", [row[2] for row in records])
+    return len(tokens), len(records)
+
+
 def map_tensor_name(n):
     """Map HuggingFace Unlimited-OCR tensor name to the GGUF short scheme.
     Returns None for tensors the engine does not consume."""
@@ -341,11 +399,8 @@ def main():
     writer.add_uint32("unlimited_ocr.projector.output_dim", proj_output_dim)
 
     # Tokenizer
-    tokens = [""] * len(vocab)
-    for tok, idx in vocab.items():
-        if idx < len(tokens):
-            tokens[idx] = tok
-    writer.add_array("tokenizer.ggml.tokens", tokens)
+    n_pieces, n_added = write_tokenizer_metadata(writer, tok_data, vocab_size)
+    print(f"Tokenizer GGUF: {n_pieces} indexed pieces, {n_added} serialized added tokens")
     if merges:
         merges_str = []
         for mg in merges:
