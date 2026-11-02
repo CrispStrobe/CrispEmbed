@@ -1,0 +1,1 @@
+-rw-r--r-- 1 runner runner 4630070208 Nov  1 17:02 /mnt/heavy/scratch/f32.gguf

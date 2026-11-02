@@ -1,0 +1,1 @@
+-rw-r--r-- 1 root root 4630070208 Nov  1 20:03 /kaggle/temp/mineru/f32.gguf
