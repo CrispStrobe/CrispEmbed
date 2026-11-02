@@ -1,0 +1,10 @@
+{
+ "f2llm": {
+  "imatrix_name": "q4_k-mixed.imatrix",
+  "files": [
+   {"file": "f2llm-v2-0.6b-q4_k-mixed.gguf", "qtype": "q4_k", "imatrix": true,
+    "overrides": ["*.ffn_down.weight=q6_k", "*.attn_v.weight=q8_0", "blk.25.*=q8_0", "blk.26.*=q8_0", "blk.27.*=q8_0"]}
+  ],
+  "card_note": "## Revision 2026-11-02: `f2llm-v2-0.6b-q4_k-mixed.gguf` supersedes the Q4_K files\n\nThe CUDA/CPU audit measured `f2llm-v2-0.6b-q4_k-imatrix.gguf` at cosine 0.78 against the F32 file, below the Q4_K acceptance bar of 0.94 (`-q4_k-imatrix-c2` 0.76, plain `-q4_k` 0.59). They remain here unchanged for reproducibility but are **superseded**. The replacement keeps Q4_K+imatrix (134-text calibration corpus) for most matrices, with `ffn_down` at Q6_K, `attn_v` and the last three blocks (25-27) at Q8_0, and token embeddings at Q8_0. On a 78-text panel (13 audit texts plus 65 held-out German/English/code/query texts), minimum cosine against `codefuse-ai/F2LLM-v2-0.6B` (sentence-transformers, FP32) is about 0.96, versus 0.77 for the superseded file. The imatrix used is `f2llm-v2-0.6b-q4_k-mixed.imatrix`. Evidence: CrispEmbed `tests/results/below-bar/`."
+ }
+}
