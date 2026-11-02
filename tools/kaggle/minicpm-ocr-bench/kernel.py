@@ -155,7 +155,13 @@ ARMS = [
                                    CRISPEMBED_MINICPM_OCR_VISION_BATCH='1'), True),
     ('f16-t4-fast-flash', 'f16', 4, dict(CRISPEMBED_QWEN35_GRAPH_DECODER='1', CRISPEMBED_MINICPM_OCR_VISION_F32='1',
                                          CRISPEMBED_MINICPM_OCR_VISION_BATCH='1', CRISPEMBED_MINICPM_OCR_VISION_FLASH='1'), True),
-    ('f16-t2-fast', 'f16', 2, dict(CRISPEMBED_QWEN35_GRAPH_DECODER='1', CRISPEMBED_MINICPM_OCR_VISION_F32='1',
+    ('f16-t4-fast-f32w-flash', 'f16', 4, dict(CRISPEMBED_QWEN35_GRAPH_DECODER='1', CRISPEMBED_QWEN35_GRAPH_MATMUL='f32',
+                                              CRISPEMBED_MINICPM_OCR_VISION_F32='1', CRISPEMBED_MINICPM_OCR_VISION_BATCH='1',
+                                              CRISPEMBED_MINICPM_OCR_VISION_FLASH='1'), True),
+    ('f16-t4-fast-native-flash', 'f16', 4, dict(CRISPEMBED_QWEN35_GRAPH_DECODER='1', CRISPEMBED_QWEN35_GRAPH_MATMUL='native',
+                                                CRISPEMBED_MINICPM_OCR_VISION_F32='1', CRISPEMBED_MINICPM_OCR_VISION_BATCH='1',
+                                                CRISPEMBED_MINICPM_OCR_VISION_FLASH='1'), True),
+    ('f16-t2-fast','f16', 2, dict(CRISPEMBED_QWEN35_GRAPH_DECODER='1', CRISPEMBED_MINICPM_OCR_VISION_F32='1',
                                    CRISPEMBED_MINICPM_OCR_VISION_BATCH='1'), True),
 ]
 CASES = ref['cases']
