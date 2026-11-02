@@ -275,7 +275,7 @@ graph_kv_decoder::graph_kv_decoder() : p_(new impl) {}
 graph_kv_decoder::~graph_kv_decoder() = default;
 
 bool graph_kv_decoder::enabled() {
-    return core_env::on("CRISPEMBED_QWEN35_GRAPH_DECODER");
+    return !core_env::explicitly_off("CRISPEMBED_QWEN35_GRAPH_DECODER");
 }
 
 const char * graph_kv_decoder::mode() const {

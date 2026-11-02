@@ -19,7 +19,7 @@
 //   * RoPE uses host cos/sin tables computed with the reference formula.
 // Only 1-D sequential positions (equal t/h/w axes, as MiniCPM-OCR) are supported.
 //
-// Gate: enabled() is CRISPEMBED_QWEN35_GRAPH_DECODER=1 (core_env::on). MiniCPM-OCR, the only
+// Gate: enabled() unless CRISPEMBED_QWEN35_GRAPH_DECODER=0 (core_env::explicitly_off). MiniCPM-OCR, the only
 // caller, turns it on by default (=0 opts out); decoder_cpu and every other engine are unchanged.
 #pragma once
 
