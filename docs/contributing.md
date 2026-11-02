@@ -733,4 +733,4 @@ The repository has well over a hundred workflows; keep the Actions queue short.
 - **Batch tiny controls.** Seconds-long stdlib-python control/contract checks go as a
   step in `controls.yml` (union of path filters, one runner slot) instead of a new
   workflow file. Do not move a workflow whose path or blob is pinned by a protocol,
-  receipt or guard test.
+  receipt or guard test. Docs-only pushes to `main` start no Build or Build WASM run.
