@@ -1,0 +1,3 @@
+aeaf1b44925eeb449584d716f181fc486cdd6becf596ec896276c5d633e996bb  /mnt/heavy/scratch/models/got-ocr2-f16.gguf
+ba276f2e246273af7d1bcd58f35ac7bae09c30340b923ed4440effe82d5e7613  /mnt/heavy/scratch/models/got-ocr2-q4_k.gguf
+27de920f22b7b44c65d4fb32087e51f35b7bc38c9e45d438b2251df05849ffe5  /mnt/heavy/scratch/models/got-ocr2-ref-full.gguf

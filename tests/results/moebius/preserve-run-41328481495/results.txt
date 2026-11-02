@@ -1,0 +1,16 @@
+fetch-capture rc=0 seconds=18
+verify-capture rc=0 seconds=5
+sources rc=0 seconds=7
+checkpoints rc=0 seconds=15
+convert-denoiser rc=0 seconds=15
+convert-vae rc=0 seconds=7
+configure rc=0 seconds=1
+build rc=0 seconds=176
+quantize-denoiser-f16 rc=0 seconds=1
+quantize-vae-f16 rc=0 seconds=0
+quantize-denoiser-q8_0 rc=0 seconds=1
+quantize-vae-q8_0 rc=0 seconds=0
+quantize-denoiser-q4_k rc=0 seconds=6
+quantize-vae-q4_k rc=0 seconds=4
+quantize-denoiser-q4_k-mix rc=0 seconds=3
+hf-preserve rc=0 seconds=9
