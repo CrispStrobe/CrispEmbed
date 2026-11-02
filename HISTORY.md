@@ -15,6 +15,49 @@ stage min cos 1.000000 x19, fox token-exact), run 41397551540 reconverted byte-i
 empty-cache readback hashes match, and the old file is unchanged. M1 Metal: fox exact, 17.9 s.
 Registry `got-ocr2-f16` was added; `got-ocr2` (q4_k) is unchanged. Receipts: `tests/results/got-ocr2-f16/`.
 
+## 2 November 2026 — WASM live norm: one-sentence attribution complete (v4, numerical negative)
+
+* 41432135298 (v4 at `77ed7122`) completed the full one-sentence attribution and exited1 on
+  numbers, as designed. v4 replaces only the Ref adapter. It runs the SHA-pinned frozen
+  `diff_adapter.py` code with an exact shape allowlist {[12,384],[12,1536],[2,8]} instead of
+  the 512 cap that blocked 41427588368. Full-row metrics and 0.002/0.99999 budgets are
+  unchanged. Tests prove bit-for-bit parity with the frozen adapter on all allowlisted
+  shapes up to 512 wide.
+* All controls before model access pass. There are 12 native anchors, the capture proof
+  (65/65, 32 old WASM stage hashes) and 104/104 replay controls. All 208 same-input norm
+  replays are bit-exact. Natural comparisons: 132/196 pass and 64 fail (40 norm, 24 layer3);
+  C++ Ref and independent metrics agree.
+* Natural error stays at or below 1.9e-6 through layers 0-2 and layer3 attention. It rises
+  about 300x at the layer3 FC1 matmul (`fc1_raw` 5.73e-4) and first fails at `fc2_raw`
+  (0.00331, cosine 0.99999569), then grows to 0.185 at norm12. Results are identical for norm
+  gate 0/1 and threads 1/2. The norm operator is not the source; the earliest
+  budget-relevant divergence is the layer3 FFN matmul path. Receipt:
+  `tests/results/packaging/wasm-live-norm-v4-attribution.json`.
+
+## 2 November 2026 — WASM live norm: component admission (v2) and observer (v3) repaired
+
+* 40867038915 (ff3b8a01) rejected `Actual component rounding flags differ`. v1 assumed one
+  `wasm_native_order_norm.cpp` compile entry, but the live CMake compiles it in both
+  `frozen-controls/norm-candidate-controls` and `live-norm-replay`. v2 (branch
+  `fix/wasm-live-norm-component-inventory-20261102`) saves the full compile commands after
+  configure, then admits exactly five declared (target, source, directory) entries. Each needs
+  `-ffp-contract=off` only, no fast-math/`-Ofast`/`-msimd128`, and the SHA-pinned
+  40852835039 per-entry and GGML backend profiles.
+* 41416683981: a v2 parser defect rejected before build (CMake's `output` field is
+  relative to the top-level build). The saved 30-entry inventory had exactly the five
+  declared entries and became a regression fixture.
+* 41418312256: admission and all weight-free/browser controls passed. The native observed
+  encode then aborted in `add_norm`. Diagnostic 41421952964 logged the real graph:
+  `norm00_input ADD f32 ne=[384,16]`, the unevaluated scheduler-reservation graph at
+  `bucket_seq_len(12)=16`. v3 brackets the three reservation builds so the observer ignores
+  them, keeps every v1 rule for the evaluated graph, and adds 11 weight-free C++ observer
+  controls before model access.
+* 41427588368 (v3): every control, native anchor, capture proof (65/65, 32 old WASM stage
+  hashes) and all 208 same-input comparisons pass, all bit-exact. Replay then stopped at
+  `Bounded exact NumPy shape required`: the frozen Ref adapter caps dimensions at 512, and the
+  layer3 fc1/gelu tensors are [12,1536]. The 196 natural comparisons and the attribution
+  sentence are not reached. No original forward, no ten-case retry, gates/defaults unchanged.
+  All five runs are retained as negatives.
 ## 2 November 2026 — EasyOCR x86 CPU dropped lines fixed (fix/easyocr-x86-lines, PR #100)
 
 * Root cause: not a SIMD or ggml-cpu kernel defect. Both BiLSTM layers named their initial

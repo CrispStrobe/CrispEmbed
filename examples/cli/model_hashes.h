@@ -534,6 +534,8 @@ static const ModelHash k_model_hashes[] = {
       "84a9d88112d01633ba31f589ad5f73aa4bad66cb6e0c97f1188545211b0c85e8" },
     { "https://huggingface.co/cstr/MiniCPM-OCR-1.0-GGUF/resolve/6705b0652744a880e79c8ec856fac73ce56e1105/minicpm-ocr-1.0-f16.gguf",
       "e024db8b1312116f68be6318b42203a1f99db6ddcb60fb1fce672f5e8f1f0362" },
+    { "https://huggingface.co/cstr/MiniCPM-OCR-1.0-GGUF/resolve/e7d49f3188e00d89b4058d0c0b12ef928a772aba/minicpm-ocr-1.0-q8_0.gguf",
+      "381065950c5cc5fa5579e7dcde2b0ba9091386732941ad555673e30064e4d412" },
     { "https://huggingface.co/cstr/Unlimited-OCR-2-GGUF/resolve/e3af0c0c4bfa241c161db64ca36f3c63d3ca8378/unlimited-ocr-2-f16.gguf",
       "487b887eddaf73e070cd98c3e10d112d21749036ca06b5e7fc103c3fb4def517" },
     { "https://huggingface.co/cstr/Unlimited-OCR-2-GGUF/resolve/e3af0c0c4bfa241c161db64ca36f3c63d3ca8378/unlimited-ocr-2-q8_0.gguf",
