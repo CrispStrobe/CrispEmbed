@@ -69,7 +69,14 @@ max-abs is at most 6.4e-5. All gates stay default-off.
   `CRISPEMBED_QWEN35_GRAPH_DECODER=1 CRISPEMBED_QWEN35_GRAPH_MATMUL=f32
   CRISPEMBED_MINICPM_OCR_VISION_F32=1 CRISPEMBED_MINICPM_OCR_VISION_BATCH=1
   CRISPEMBED_MINICPM_OCR_VISION_FLASH=1`. It keeps about 4.6 GB of extra F32 weight copies.
-  All gates stay default-off.
+  **Default since 2026-11-02** (each gate `=0` opts out; `CRISPEMBED_QWEN35_GRAPH_MATMUL=exact|native`).
+
+  Default flip A/B (2026-11-02, `crispembed-ocr-real-scans-minicpm-fast` at `dded1384`, Kaggle Xeon 2.2 GHz x4,
+  receipt `tests/results/ocr-real-scans/native-minicpm-fast.json`): all 20 real-scan pages produce token IDs
+  **identical to the previous default** (`native-minicpm.json`), so CER is unchanged (mean 0.0515 vs original 0.0515).
+  Against the original Transformers IDs 18/20 are exact; the same two pages (`en-form-economic-journal-67`,
+  `en-2col-eb1911-v04-246`) differ as they already did on the old path. Wall time 5,094 s vs 31,725 s for the old
+  default (6.2x; original 5,161 s). Peak RSS 7.7-8.4 GB vs 5.0-5.1 GB (original 8.1-8.5 GB).
 
 ## Real-scan OCR quality, native vs original (2 November 2026, Kaggle 4 vCPU)
 

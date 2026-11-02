@@ -1,3 +1,15 @@
+## 2 November 2026 — MiniCPM-OCR speed paths become the default
+
+- Default flip A/B (2026-11-02, `crispembed-ocr-real-scans-minicpm-fast` at `dded1384`, Kaggle Xeon 2.2 GHz x4,
+  receipt `tests/results/ocr-real-scans/native-minicpm-fast.json`): all 20 real-scan pages produce token IDs
+  **identical to the previous default** (`native-minicpm.json`), so CER is unchanged (mean 0.0515 vs original 0.0515).
+  Against the original Transformers IDs 18/20 are exact; the same two pages (`en-form-economic-journal-67`,
+  `en-2col-eb1911-v04-246`) differ as they already did on the old path. Wall time 5,094 s vs 31,725 s for the old
+  default (6.2x; original 5,161 s). Peak RSS 7.7-8.4 GB vs 5.0-5.1 GB (original 8.1-8.5 GB).
+- Flipped via `core_env::explicitly_off`: graph KV decoder (matmul default `f32`), F32 vision copies, batched
+  slices, vision flash attention. All old paths remain behind `=0`; 5 parity cases were already 5/5 exact
+  (`tests/results/minicpm-ocr/bench-graph-v2.json`).
+
 ## 2 November 2026 — GOT-OCR2 pipeline parity with the original (fix/got-ocr2-pipeline-parity)
 
 - Ground truth is now the original stepfun-ai/GOT-OCR2_0 remote code (rev `979938bf`,

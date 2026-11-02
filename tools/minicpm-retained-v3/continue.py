@@ -53,6 +53,8 @@ def run_case(args, base, case, dtype, graph, model, output, scratch):
     env=dict(os.environ,CRISPEMBED_MINICPM_OCR='1',CRISPEMBED_QWEN35_OCR='1',CRISPEMBED_QWEN35_QUANT='1' if dtype in ('q8_0','q4_k') else '0',CRISPEMBED_MINICPM_OCR_GRAPH=str(graph),CRISPEMBED_QWEN35_WEIGHT_CACHE='0',CRISPEMBED_MINICPM_OCR_TIMING='1',CRISPEMBED_MINICPM_OCR_DUMP=str(dump),OMP_NUM_THREADS=str(args.threads))
     for name in ['CRISPEMBED_QWEN35_IMATRIX','CRISPEMBED_QWEN35_PARALLEL_F16','CRISPEMBED_MINICPM_OCR_VISION_FLASH']:
         env.pop(name,None)
+    # Pin the pre-flip MiniCPM paths these frozen panels measure (defaults flipped 2026-11-02).
+    env.update(CRISPEMBED_QWEN35_GRAPH_DECODER='0',CRISPEMBED_MINICPM_OCR_VISION_F32='0',CRISPEMBED_MINICPM_OCR_VISION_BATCH='0',CRISPEMBED_MINICPM_OCR_VISION_FLASH='0')
     start=time.monotonic()
     process=captured([str(args.cli),'-m',str(model),'--ocr',str(base/(case['id']+'.png')),'--ocr-prompt',case['task'],'--ocr-max-tokens',str(MAXIMUM),'-t',str(args.threads)],folder,'native',env,5400)
     row=dict(id=case['id'],dtype=dtype,graph=graph,exit=process.returncode,wall_seconds=time.monotonic()-start,stdout_sha256=digest(folder/'native.stdout'),stderr_sha256=digest(folder/'native.stderr'),timed_out=process.timed_out,timings=parse_timing(process.stderr.decode('utf-8','replace')))

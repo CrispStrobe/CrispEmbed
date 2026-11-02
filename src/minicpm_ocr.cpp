@@ -222,9 +222,9 @@ const char * recognize(minicpm_ocr_context & c, const uint8_t * pixels, int w, i
     std::vector<float> merged;
     minicpm_ocr::vision_debug dbg;
     dbg.enabled = !dump.empty();
-    // CRISPEMBED_MINICPM_OCR_VISION_BATCH (default off): equally sized consecutive
-    // parts (the slices) run as one graph of independent sequences; rows stay in order.
-    const bool batch = core_env::on("CRISPEMBED_MINICPM_OCR_VISION_BATCH");
+    // CRISPEMBED_MINICPM_OCR_VISION_BATCH (default on since 2026-11-02, =0 opts out): equally
+    // sized consecutive parts (the slices) run as one graph of independent sequences.
+    const bool batch = !core_env::explicitly_off("CRISPEMBED_MINICPM_OCR_VISION_BATCH");
     for (size_t i = 0; i < parts.size();) {
         const auto & p = parts[i];
         size_t count = 1;
@@ -277,7 +277,7 @@ const char * recognize(minicpm_ocr_context & c, const uint8_t * pixels, int w, i
     // Snapshot once for the entire request. Never silently fall back after a
     // candidate failure, which would mix arithmetic within one decode.
     const bool graph = core_env::on("CRISPEMBED_MINICPM_OCR_GRAPH");
-    // CRISPEMBED_QWEN35_GRAPH_DECODER (default off, bound at init): the decoder as one ggml
+    // CRISPEMBED_QWEN35_GRAPH_DECODER (default on for MiniCPM, bound at init): the decoder as one ggml
     // graph per call with a persistent KV / delta-net state; logits go into current.logits
     // and the sequence length into current.cache.tokens, so the greedy loop is shared.
     auto * graph_kv = c.graph_kv.get();
@@ -409,14 +409,19 @@ extern "C" minicpm_ocr_context * minicpm_ocr_init(const char * path, int threads
             std::fprintf(stderr, "minicpm_ocr: %s\n", error.c_str());
             return nullptr;
         }
-        if (core_env::on("CRISPEMBED_MINICPM_OCR_VISION_F32")) {
+        if (!core_env::explicitly_off("CRISPEMBED_MINICPM_OCR_VISION_F32")) {
             c->vision_f32 = std::make_unique<minicpm_ocr::vision_f32_store>();
             if (!minicpm_ocr::upcast_vision_f32(c->vision, c->backend, *c->vision_f32)) {
                 std::fprintf(stderr, "minicpm_ocr: F32 vision weight copy failed\n");
                 return nullptr;
             }
         }
-        if (qwen35_ocr::graph_kv_decoder::enabled()) {
+        // Graph decoder default on for MiniCPM since 2026-11-02 (=0 opts out); it yields to
+        // the exclusive stateless CRISPEMBED_MINICPM_OCR_GRAPH candidate unless forced with =1.
+        const bool graph_kv_on = core_env::on("CRISPEMBED_QWEN35_GRAPH_DECODER") ||
+                                 (!core_env::explicitly_off("CRISPEMBED_QWEN35_GRAPH_DECODER") &&
+                                  !core_env::on("CRISPEMBED_MINICPM_OCR_GRAPH"));
+        if (graph_kv_on) {
             c->graph_kv = std::make_unique<qwen35_ocr::graph_kv_decoder>();
             if (!c->graph_kv->init(c->decoder, c->attention, c->backend, kMaxContext)) {
                 std::fprintf(stderr, "minicpm_ocr: graph decoder initialization failed\n");

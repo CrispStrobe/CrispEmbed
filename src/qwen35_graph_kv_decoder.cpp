@@ -36,9 +36,11 @@ enum class matmul_mode { exact, native, f32 };
 
 matmul_mode mode_from_env() {
     const char * v = std::getenv("CRISPEMBED_QWEN35_GRAPH_MATMUL");
+    // Default "f32" since the 2026-11-02 MiniCPM default flip (the only caller); "exact"
+    // and "native" stay selectable.
     if (v && std::strcmp(v, "native") == 0) return matmul_mode::native;
-    if (v && std::strcmp(v, "f32") == 0) return matmul_mode::f32;
-    return matmul_mode::exact;
+    if (v && std::strcmp(v, "exact") == 0) return matmul_mode::exact;
+    return matmul_mode::f32;
 }
 
 bool is_matrix(const ggml_tensor * t, int64_t columns, int64_t rows) {
