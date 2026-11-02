@@ -303,7 +303,11 @@ struct crispembed_context {
     std::string colbert_doc_prefix;
     std::string colbert_similarity_fn;
     int colbert_query_length = 0;
-    std::vector<float> last_output;          // reused buffer (dense encode)
+    std::vector<float> last_output; // reused buffer (dense encode)
+    // Observed tokenizer output of the last crispembed_encode_batch call
+    // (sum of attention-active ids, specials included); -1 = not observed
+    // (paths that tokenize internally). Accounting only, never inference input.
+    int64_t last_batch_prompt_tokens = -1;
     std::vector<uint8_t> compute_meta;       // graph metadata buffer (no_alloc=true)
     ggml_context * qkv_ctx = nullptr;        // pre-merged QKV tensor metadata
     ggml_backend_buffer_t qkv_buf = nullptr; // backend buffer for merged QKV
@@ -2935,6 +2939,7 @@ extern "C" const float * crispembed_encode_batch(crispembed_context * ctx, const
                                                  int * out_n_dim) {
     if (ctx && (ctx->decision_ctx || ctx->ultrabert_ctx)) {
         if (out_n_dim) *out_n_dim = 0;
+        ctx->last_batch_prompt_tokens = -1;
         if (!texts || n_texts <= 0) return nullptr;
         std::vector<float> batch;
         int dim = 0;
@@ -2949,6 +2954,7 @@ extern "C" const float * crispembed_encode_batch(crispembed_context * ctx, const
     }
 
     if (!ctx || !texts || n_texts <= 0) return nullptr;
+    ctx->last_batch_prompt_tokens = -1;
     auto t_batch_start = std::chrono::steady_clock::now();
 
     if (ctx->is_lfm2 && ctx->lfm2_ctx) {
@@ -3050,6 +3056,10 @@ extern "C" const float * crispembed_encode_batch(crispembed_context * ctx, const
         }
     }
 
+    int64_t observed_prompt_tokens = 0;
+    for (const auto & t : all_tokens)
+        for (int32_t m : t.attn_mask) observed_prompt_tokens += m ? 1 : 0;
+
     // For encoder models: true batched inference (one graph, all texts)
     std::vector<std::vector<float>> batch_results;
 
@@ -3091,8 +3101,13 @@ extern "C" const float * crispembed_encode_batch(crispembed_context * ctx, const
         double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_batch_start).count();
         fprintf(stderr, "[crispembed-bench] crispembed_encode_batch total (%d texts): %.1f ms\n", n_texts, ms);
     }
+    ctx->last_batch_prompt_tokens = observed_prompt_tokens;
     if (out_n_dim) *out_n_dim = out_dim;
     return ctx->last_output.data();
+}
+
+extern "C" int64_t crispembed_last_prompt_tokens(const crispembed_context * ctx) {
+    return ctx ? ctx->last_batch_prompt_tokens : -1;
 }
 
 // ---------------------------------------------------------------------------

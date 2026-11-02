@@ -262,6 +262,13 @@ CRISPEMBED_API const float * crispembed_encode(crispembed_context * ctx, const c
 CRISPEMBED_API const float * crispembed_encode_batch(crispembed_context * ctx, const char ** texts, int n_texts,
                                                      int * out_n_dim);
 
+// Number of tokenizer ids (specials included, padding excluded) the last
+// successful crispembed_encode_batch call fed to the model, for API usage
+// accounting. Returns -1 when it was not observed: no successful batch yet,
+// a failed batch, or a model family that tokenizes internally (LFM2,
+// typed-decision, UltraBERT).
+CRISPEMBED_API int64_t crispembed_last_prompt_tokens(const crispembed_context * ctx);
+
 // ---------------------------------------------------------------------------
 // Sparse retrieval (BGE-M3 sparse head, SPLADE-style)
 // ---------------------------------------------------------------------------

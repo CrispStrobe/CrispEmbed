@@ -56,6 +56,8 @@
 #define SERVER_HAS_LID 0
 #endif
 #include "httplib.h"
+#include "load_control.h"
+#include "openai_compat.h"
 
 // stb_image for /math/ocr image loading
 #define STB_IMAGE_STATIC
@@ -71,6 +73,8 @@
 #include <filesystem>
 #include <iomanip>
 #include <limits>
+#include <memory>
+#include <cstring>
 #include <system_error>
 
 #ifdef _WIN32
@@ -86,6 +90,41 @@
 using core_json::json_escape;
 using core_json::json_extract_number;
 using core_json::json_extract_strings;
+
+// httplib::Server whose POST routes pass through admission control and load
+// accounting (examples/server/load_control.h). Every POST route is registered
+// through Post() below, so a new route cannot forget it. GET routes (health,
+// metrics, capabilities) are never admitted or capped: a saturated server must
+// still answer its probes.
+class admitting_server : public httplib::Server {
+public:
+    const server_load::config load_cfg = server_load::config::from_env();
+
+    using httplib::Server::Post;
+    httplib::Server & Post(const std::string & pattern, Handler handler) {
+        const server_load::config * cfg = &load_cfg;
+        return httplib::Server::Post(pattern, [cfg, handler = std::move(handler)](const httplib::Request & req,
+                                                                                  httplib::Response & res) {
+            auto & c = server_load::global();
+            if (!server_load::try_admit(c, cfg->max_inflight)) {
+                res.status = 429;
+                if (cfg->retry_after >= 0) res.set_header("Retry-After", std::to_string(cfg->retry_after));
+                res.set_content(server_load::rejection_body(cfg->max_inflight), "application/json");
+                return;
+            }
+            struct finish {
+                server_load::counters & c;
+                std::chrono::steady_clock::time_point t0;
+                ~finish() {
+                    server_load::release(
+                        c, std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - t0)
+                               .count());
+                }
+            } done{ c, std::chrono::steady_clock::now() };
+            handler(req, res);
+        });
+    }
+};
 
 // --- Request image paths -------------------------------------------------
 //
@@ -166,7 +205,7 @@ static std::string extract_path_field(const std::string & body, const char * key
 // Preserve context-owned outputs until serialization completes, under the same
 // lock as pooled embeddings. Fill-mask and full logits share one inference path.
 static void handle_encoder_request(const httplib::Request & req, httplib::Response & res, crispembed_context * ctx,
-                                   std::mutex & model_mutex, int mode) {
+                                   server_load::counted_mutex & model_mutex, int mode) {
     auto error = [&](int status, const char * message) {
         res.status = status;
         res.set_content("{\"error\":\"" + json_escape(message) + "\"}", "application/json");
@@ -191,7 +230,7 @@ static void handle_encoder_request(const httplib::Request & req, httplib::Respon
         (!std::isfinite(requested_k) || requested_k < 1 || requested_k > 100 || std::floor(requested_k) != requested_k))
         return error(400, "top_k must be an integer from 1 to 100");
     const bool normalize = core_json::json_extract_bool(req.body, "normalize", false);
-    std::lock_guard<std::mutex> lock(model_mutex);
+    std::lock_guard<server_load::counted_mutex> lock(model_mutex);
     int rows = 0, dim = 0;
     const int32_t * positions = nullptr;
     const float * data = mode        ? crispembed_masked_logits(ctx, text.c_str(), &rows, &dim, &positions)
@@ -289,7 +328,8 @@ static void handle_encoder_request(const httplib::Request & req, httplib::Respon
 // count, and inventing a plausible one would be worse than leaving the optional
 // field out.
 static void handle_rerank_request(const httplib::Request & req, httplib::Response & res, crispembed_context * ctx,
-                                  std::mutex & model_mutex, const std::string & model_name, bool cohere_shape) {
+                                  server_load::counted_mutex & model_mutex, const std::string & model_name,
+                                  bool cohere_shape) {
     const char * route = cohere_shape ? "/v1/rerank" : "/rerank";
     if (!ctx) {
         res.status = 503;
@@ -329,7 +369,7 @@ static void handle_rerank_request(const httplib::Request & req, httplib::Respons
     // Cohere's default is false; the caller already holds the documents it sent.
     const bool return_documents = cohere_shape && core_json::json_extract_bool(req.body, "return_documents", false);
 
-    std::lock_guard<std::mutex> lock(model_mutex);
+    std::lock_guard<server_load::counted_mutex> lock(model_mutex);
     auto t0 = std::chrono::steady_clock::now();
 
     // Batch rerank (caches the classifier weights → avoids a per-document
@@ -762,7 +802,7 @@ int main(int argc, char ** argv) {
     crispembed_context * ctx = nullptr;
     const crispembed_hparams * hp = nullptr;
     int dim = 0;
-    std::mutex model_mutex;
+    server_load::counted_mutex model_mutex;
     std::string model_name;
 
     if (!model_path.empty()) {
@@ -824,7 +864,7 @@ int main(int argc, char ** argv) {
 
     std::unique_ptr<crispembed_systemone_context, decltype(&crispembed_systemone_free)> systemone(
         nullptr, crispembed_systemone_free);
-    std::mutex systemone_mutex;
+    server_load::counted_mutex systemone_mutex;
     if (!systemone_model_path.empty()) {
         const auto resolved = crispembed_mgr::resolve_model(systemone_model_path, true);
         if (resolved.empty()) {
@@ -840,7 +880,7 @@ int main(int argc, char ** argv) {
 
     std::unique_ptr<crispembed_moedern_context, decltype(&crispembed_moedern_free)> moedern(nullptr,
                                                                                             crispembed_moedern_free);
-    std::mutex moedern_mutex;
+    server_load::counted_mutex moedern_mutex;
     if (!moedern_model_path.empty()) {
         const auto resolved = crispembed_mgr::resolve_model(moedern_model_path, true);
         if (resolved.empty()) {
@@ -854,7 +894,13 @@ int main(int argc, char ** argv) {
         }
     }
 
-    httplib::Server svr;
+    admitting_server svr;
+    if (svr.load_cfg.max_inflight > 0)
+        fprintf(stderr, "crispembed-server: admission cap %lld in-flight POST requests (429 above it%s)\n",
+                (long long)svr.load_cfg.max_inflight, svr.load_cfg.retry_after >= 0 ? ", with Retry-After" : "");
+    // API usage reports observed tokenizer counts; CRISPEMBED_SERVER_USAGE_TOKENS=0
+    // restores the historical zeros.
+    const bool usage_tokens = !core_env::explicitly_off("CRISPEMBED_SERVER_USAGE_TOKENS");
 
     // CORS: allow browser access from any origin
     svr.set_default_headers({
@@ -877,7 +923,7 @@ int main(int argc, char ** argv) {
             res.set_content("{\"error\":\"SystemOne requires NUL-free JSON within64KiB\"}", "application/json");
             return;
         }
-        std::lock_guard<std::mutex> lock(systemone_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(systemone_mutex);
         const auto * result = crispembed_systemone_run_json(systemone.get(), req.body.c_str());
         if (!result) {
             res.status = 400;
@@ -905,7 +951,7 @@ int main(int argc, char ** argv) {
             !moedern_field(req.body, "role", role) || (role != "query" && role != "document") ||
             text.find('\0') != std::string::npos)
             return moedern_reject(res, 400, "MoEdern requires {text, role: query|document}");
-        std::lock_guard<std::mutex> lock(moedern_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(moedern_mutex);
         const auto * r = crispembed_moedern_encode(moedern.get(), text.c_str(), role == "query" ? 0 : 1);
         if (!r) return moedern_reject(res, 400, crispembed_moedern_error(moedern.get()));
         std::ostringstream js;
@@ -938,7 +984,7 @@ int main(int argc, char ** argv) {
             !moedern_field(req.body, "document", document) || query.find('\0') != std::string::npos ||
             document.find('\0') != std::string::npos)
             return moedern_reject(res, 400, "MoEdern score requires {query, document}");
-        std::lock_guard<std::mutex> lock(moedern_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(moedern_mutex);
         float value = 0;
         if (crispembed_moedern_score(moedern.get(), query.c_str(), document.c_str(), &value) != 1)
             return moedern_reject(res, 400, crispembed_moedern_error(moedern.get()));
@@ -958,7 +1004,7 @@ int main(int argc, char ** argv) {
             res.set_content("{\"error\":\"model has no typed-decision head\"}", "application/json");
             return;
         }
-        std::lock_guard<std::mutex> lock(model_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(model_mutex);
         const char * result = crispembed_decide_json(ctx, req.body.c_str());
         if (!result) {
             res.status = 400;
@@ -1006,7 +1052,7 @@ int main(int argc, char ** argv) {
             return;
         }
 
-        std::lock_guard<std::mutex> lock(model_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(model_mutex);
         dim_scope dscope{ ctx, server_dim, req_dim > 0 };
         if (req_dim > 0) crispembed_set_dim(ctx, req_dim);
         auto t0 = std::chrono::steady_clock::now();
@@ -1091,7 +1137,7 @@ int main(int argc, char ** argv) {
             return;
         }
 
-        std::lock_guard<std::mutex> lock(model_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(model_mutex);
         dim_scope dscope{ ctx, server_dim, req_dim > 0 };
         if (req_dim > 0) crispembed_set_dim(ctx, req_dim);
 
@@ -1117,8 +1163,13 @@ int main(int argc, char ** argv) {
             }
             js << "]}";
         }
-        js << "], \"model\": \"" << json_escape(model_name)
-           << "\", \"usage\": {\"prompt_tokens\": 0, \"total_tokens\": 0}}";
+        // Observed tokenizer ids, never an estimate: a model family whose count
+        // is not observed (crispembed_last_prompt_tokens < 0) keeps reporting 0.
+        const int64_t observed = usage_tokens ? crispembed_last_prompt_tokens(ctx) : -1;
+        const int64_t prompt_tokens = observed > 0 ? observed : 0;
+        server_load::record_usage(server_load::global(), observed, 0);
+        js << "], \"model\": \"" << json_escape(model_name) << "\", \"usage\": {\"prompt_tokens\": " << prompt_tokens
+           << ", \"total_tokens\": " << prompt_tokens << "}}";
         res.set_content(js.str(), "application/json");
     });
 
@@ -1150,7 +1201,7 @@ int main(int argc, char ** argv) {
             return;
         }
 
-        std::lock_guard<std::mutex> lock(model_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(model_mutex);
         dim_scope dscope{ ctx, server_dim, req_dim > 0 };
         if (req_dim > 0) crispembed_set_dim(ctx, req_dim);
         auto t0 = std::chrono::steady_clock::now();
@@ -1179,8 +1230,12 @@ int main(int argc, char ** argv) {
             }
             js << "]";
         }
+        // Ollama's prompt_eval_count is a token count; the historical value was the
+        // text count. Use the observed tokens when available.
+        const int64_t observed = usage_tokens ? crispembed_last_prompt_tokens(ctx) : -1;
+        server_load::record_usage(server_load::global(), observed, 0);
         js << "], \"total_duration\": " << total_ns << ", \"load_duration\": 0"
-           << ", \"prompt_eval_count\": " << texts.size() << "}";
+           << ", \"prompt_eval_count\": " << (observed > 0 ? observed : (int64_t)texts.size()) << "}";
 
         fprintf(stderr, "crispembed-server: /api/embed %zu text(s) in %.1f ms\n", texts.size(), total_ns / 1e6);
         res.set_content(js.str(), "application/json");
@@ -1215,7 +1270,7 @@ int main(int argc, char ** argv) {
             return;
         }
 
-        std::lock_guard<std::mutex> lock(model_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(model_mutex);
         dim_scope dscope{ ctx, server_dim, req_dim > 0 };
         if (req_dim > 0) crispembed_set_dim(ctx, req_dim);
 
@@ -1241,7 +1296,7 @@ int main(int argc, char ** argv) {
     // ── Face pipeline endpoints ───────────────────────────────────────
     crispembed_face_context * face_det = nullptr;
     crispembed_face_context * face_rec = nullptr;
-    std::mutex face_mutex;
+    server_load::counted_mutex face_mutex;
 
     if (!det_model_path.empty()) {
         face_det = crispembed_face_init(det_model_path.c_str(), n_threads);
@@ -1307,7 +1362,7 @@ int main(int argc, char ** argv) {
             return;
         }
 
-        std::lock_guard<std::mutex> lock(face_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(face_mutex);
         int n = 0;
         auto * dets = crispembed_detect_faces(face_det, image_path.c_str(), conf, det_size, &n);
 
@@ -1352,7 +1407,7 @@ int main(int argc, char ** argv) {
             return;
         }
 
-        std::lock_guard<std::mutex> lock(face_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(face_mutex);
         auto t0 = std::chrono::steady_clock::now();
         int n = 0;
         auto * results = crispembed_face_pipeline(face_det, face_rec, image_path.c_str(), conf, det_size, &n);
@@ -1384,7 +1439,7 @@ int main(int argc, char ** argv) {
 
     // ── Standalone ViT (SigLIP/CLIP) endpoints ─────────────────────────
     crispembed_vit_context * vit_ctx = nullptr;
-    std::mutex vit_mutex;
+    server_load::counted_mutex vit_mutex;
 
     if (!vit_model_path.empty()) {
         vit_ctx = crispembed_vit_init(vit_model_path.c_str(), n_threads);
@@ -1412,7 +1467,7 @@ int main(int argc, char ** argv) {
             return;
         }
 
-        std::lock_guard<std::mutex> lock(vit_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(vit_mutex);
         auto t0 = std::chrono::steady_clock::now();
 
         int d = 0;
@@ -1440,7 +1495,7 @@ int main(int argc, char ** argv) {
 
     // ── Pix2Struct (document understanding) ──
     crispembed_pix2struct_context * pix2struct_ctx = nullptr;
-    std::mutex pix2struct_mutex;
+    server_load::counted_mutex pix2struct_mutex;
 
     if (!pix2struct_model_path.empty()) {
         pix2struct_ctx = crispembed_pix2struct_init(pix2struct_model_path.c_str(), n_threads);
@@ -1479,7 +1534,7 @@ int main(int argc, char ** argv) {
             return;
         }
 
-        std::lock_guard<std::mutex> lock(pix2struct_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(pix2struct_mutex);
         auto t0 = std::chrono::steady_clock::now();
 
         const char * text = crispembed_pix2struct_generate(pix2struct_ctx, data, w, h, max_tokens);
@@ -1504,7 +1559,7 @@ int main(int argc, char ** argv) {
 
     // ── CLIP text encoder ──
     crispembed_clip_text_context * clip_text_ctx = nullptr;
-    std::mutex clip_text_mutex;
+    server_load::counted_mutex clip_text_mutex;
 
     if (!clip_text_model_path.empty()) {
         clip_text_ctx = crispembed_clip_text_init(clip_text_model_path.c_str(), n_threads);
@@ -1514,9 +1569,9 @@ int main(int argc, char ** argv) {
 
     // ── Math OCR ──
     void * ocr_model_ctx = nullptr;
-    std::mutex ocr_model_mutex;
+    server_load::counted_mutex ocr_model_mutex;
     crispembed_marker_context * marker_ctx = nullptr;
-    std::mutex marker_mutex;
+    server_load::counted_mutex marker_mutex;
     if (marker_enabled) {
         auto config = crispembed_marker_default_config();
         config.model_path = marker_model_path.c_str();
@@ -1544,11 +1599,11 @@ int main(int argc, char ** argv) {
 
     // ── General OCR Pipeline (text detection + recognition) ──
     void * ocr_pipeline_ctx = nullptr;
-    std::mutex ocr_pipeline_mutex;
+    server_load::counted_mutex ocr_pipeline_mutex;
 
     // ── OCR Orchestrator (source-type routing + cleanup + accept-gate) ──
     void * ocr_orch_ctx = nullptr;
-    std::mutex ocr_orch_mutex;
+    server_load::counted_mutex ocr_orch_mutex;
 
     if (enable_ocr_orch && !ocr_engine_name.empty()) {
         // Explicit primary engine → single-stage pipeline via the stages
@@ -1796,7 +1851,7 @@ int main(int argc, char ** argv) {
 
     // ── Layout Detection ──
     void * layout_ctx = nullptr;
-    std::mutex layout_mutex;
+    server_load::counted_mutex layout_mutex;
 
     if (!layout_model_path.empty()) {
         std::string resolved = crispembed_mgr::resolve_model(layout_model_path, true);
@@ -1807,7 +1862,7 @@ int main(int argc, char ** argv) {
 
     // Experimental native OXR document route (explicit local GGUF, both gates).
     crispembed_oxr_context * oxr_doc_ctx = nullptr;
-    std::mutex oxr_doc_mutex;
+    server_load::counted_mutex oxr_doc_mutex;
     if (!oxr_doc_model_path.empty()) {
         if (!core_env::on("CRISPEMBED_OXR") || !core_env::on("CRISPEMBED_OXR_NATIVE_DOC")) {
             fprintf(stderr, "error: --oxr-doc-model needs CRISPEMBED_OXR=1 and CRISPEMBED_OXR_NATIVE_DOC=1\n");
@@ -1830,7 +1885,7 @@ int main(int argc, char ** argv) {
 
     // Surya text detection
     void * text_det_ctx = nullptr;
-    std::mutex text_det_mutex;
+    server_load::counted_mutex text_det_mutex;
 
     if (!text_det_model_path.empty()) {
         std::string resolved = crispembed_mgr::resolve_model(text_det_model_path, true);
@@ -1842,7 +1897,7 @@ int main(int argc, char ** argv) {
 
     // NER (GLiNER)
     void * ner_ctx = nullptr;
-    std::mutex ner_mutex;
+    server_load::counted_mutex ner_mutex;
 
     if (!ner_model_path.empty()) {
         std::string resolved = crispembed_mgr::resolve_model(ner_model_path, true);
@@ -1854,7 +1909,7 @@ int main(int argc, char ** argv) {
     // Text LID
 #if SERVER_HAS_LID
     text_lid_context * lid_ctx = nullptr;
-    std::mutex lid_mutex;
+    server_load::counted_mutex lid_mutex;
 
     if (!lid_model_path.empty()) {
         std::string resolved = crispembed_mgr::resolve_model(lid_model_path, true);
@@ -1866,7 +1921,7 @@ int main(int argc, char ** argv) {
 
     // KIE (OCR + NER pipeline) — auto-enabled when NER + OCR det/rec are all loaded.
     void * kie_ctx = nullptr;
-    std::mutex kie_mutex;
+    server_load::counted_mutex kie_mutex;
 
     if (ner_ctx && !ocr_det_model_path.empty() && !ocr_rec_model_path.empty()) {
         kie_ctx = crispembed_kie_init(ocr_det_model_path.c_str(), ocr_rec_model_path.c_str(), ner_model_path.c_str(),
@@ -1876,7 +1931,7 @@ int main(int argc, char ** argv) {
 
     // ── Text Super-Resolution ──
     void * text_sr_ctx = nullptr;
-    std::mutex text_sr_mutex;
+    server_load::counted_mutex text_sr_mutex;
 
     if (!sr_model_path.empty()) {
         text_sr_ctx = crispembed_text_sr_init(sr_model_path.c_str(), n_threads);
@@ -1885,7 +1940,7 @@ int main(int argc, char ** argv) {
 
     // ── PAN Super-Resolution ──
     void * pan_sr_ctx = nullptr;
-    std::mutex pan_sr_mutex;
+    server_load::counted_mutex pan_sr_mutex;
 
     if (!pan_model_path.empty()) {
         pan_sr_ctx = crispembed_pan_sr_init(pan_model_path.c_str(), n_threads);
@@ -1894,7 +1949,7 @@ int main(int argc, char ** argv) {
 
     // ── SAM 2.1 segmentation ──
     void * sam2_ctx = nullptr;
-    std::mutex sam2_mutex;
+    server_load::counted_mutex sam2_mutex;
     if (!sam2_model_path.empty()) {
         const std::string resolved = crispembed_mgr::resolve_model(sam2_model_path, true);
         if (!resolved.empty()) sam2_ctx = crispembed_sam2_init(resolved.c_str(), n_threads);
@@ -1903,7 +1958,7 @@ int main(int argc, char ** argv) {
 
     // ── HAT Super-Resolution ──
     void * hat_sr_ctx = nullptr;
-    std::mutex hat_sr_mutex;
+    server_load::counted_mutex hat_sr_mutex;
 
     if (!hat_model_path.empty()) {
         hat_sr_ctx = crispembed_hat_sr_init(hat_model_path.c_str(), n_threads);
@@ -1912,7 +1967,7 @@ int main(int argc, char ** argv) {
 
     // ── DAT Super-Resolution ──
     void * dat_sr_ctx = nullptr;
-    std::mutex dat_sr_mutex;
+    server_load::counted_mutex dat_sr_mutex;
 
     if (!dat_model_path.empty()) {
         dat_sr_ctx = crispembed_dat_sr_init(dat_model_path.c_str(), n_threads);
@@ -1921,7 +1976,7 @@ int main(int argc, char ** argv) {
 
     // ── SAFMN Super-Resolution ──
     void * safmn_sr_ctx = nullptr;
-    std::mutex safmn_sr_mutex;
+    server_load::counted_mutex safmn_sr_mutex;
 
     if (!safmn_model_path.empty()) {
         safmn_sr_ctx = crispembed_safmn_sr_init(safmn_model_path.c_str(), n_threads);
@@ -1930,7 +1985,7 @@ int main(int argc, char ** argv) {
 
     // ── Real-ESRGAN Super-Resolution ──
     void * esrgan_sr_ctx = nullptr;
-    std::mutex esrgan_sr_mutex;
+    server_load::counted_mutex esrgan_sr_mutex;
 
     if (!esrgan_model_path.empty()) {
         esrgan_sr_ctx = crispembed_esrgan_sr_init(esrgan_model_path.c_str(), n_threads);
@@ -1940,7 +1995,7 @@ int main(int argc, char ** argv) {
 
     // ── SwinIR Super-Resolution ──
     void * swinir_sr_ctx = nullptr;
-    std::mutex swinir_sr_mutex;
+    server_load::counted_mutex swinir_sr_mutex;
 
     if (!swinir_model_path.empty()) {
         swinir_sr_ctx = crispembed_swinir_sr_init(swinir_model_path.c_str(), n_threads);
@@ -1950,7 +2005,7 @@ int main(int argc, char ** argv) {
 
     // ── TBSRN text-line Super-Resolution ──
     void * tbsrn_sr_ctx = nullptr;
-    std::mutex tbsrn_sr_mutex;
+    server_load::counted_mutex tbsrn_sr_mutex;
 
     if (!tbsrn_model_path.empty()) {
         tbsrn_sr_ctx = crispembed_tbsrn_sr_init(tbsrn_model_path.c_str(), n_threads);
@@ -1959,7 +2014,7 @@ int main(int argc, char ** argv) {
 
     // ── Restormer image restoration ──
     void * restormer_ctx = nullptr;
-    std::mutex restormer_mutex;
+    server_load::counted_mutex restormer_mutex;
 
     if (!restormer_model_path.empty()) {
         restormer_ctx = crispembed_restormer_init(restormer_model_path.c_str(), n_threads);
@@ -1969,7 +2024,7 @@ int main(int argc, char ** argv) {
 
     // ── SCUNet image denoising ──
     void * scunet_ctx = nullptr;
-    std::mutex scunet_mutex;
+    server_load::counted_mutex scunet_mutex;
 
     if (!scunet_model_path.empty()) {
         scunet_ctx = crispembed_scunet_init(scunet_model_path.c_str(), n_threads);
@@ -1978,7 +2033,7 @@ int main(int argc, char ** argv) {
 
     // ── InstructIR all-in-one restoration ──
     void * instructir_ctx = nullptr;
-    std::mutex instructir_mutex;
+    server_load::counted_mutex instructir_mutex;
 
     if (!instructir_model_path.empty()) {
         instructir_ctx = crispembed_instructir_init(instructir_model_path.c_str(), n_threads);
@@ -1988,7 +2043,7 @@ int main(int argc, char ** argv) {
 
     // ── AdaIR all-in-one restoration ──
     void * adair_ctx = nullptr;
-    std::mutex adair_mutex;
+    server_load::counted_mutex adair_mutex;
 
     if (!adair_model_path.empty()) {
         adair_ctx = crispembed_adair_init(adair_model_path.c_str(), n_threads);
@@ -2017,7 +2072,7 @@ int main(int argc, char ** argv) {
             return;
         }
 
-        std::lock_guard<std::mutex> lock(clip_text_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(clip_text_mutex);
         auto t0 = std::chrono::steady_clock::now();
 
         int d = 0;
@@ -2083,7 +2138,7 @@ int main(int argc, char ** argv) {
         bool stream =
             req.has_header("Accept") && req.get_header_value("Accept").find("text/event-stream") != std::string::npos;
 
-        std::lock_guard<std::mutex> lock(model_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(model_mutex);
         auto t0 = std::chrono::high_resolution_clock::now();
 
         // Encode query
@@ -2237,7 +2292,7 @@ int main(int argc, char ** argv) {
             return;
         }
 
-        std::lock_guard<std::mutex> lock(model_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(model_mutex);
         auto t0 = std::chrono::steady_clock::now();
 
         std::ostringstream js;
@@ -2278,7 +2333,7 @@ int main(int argc, char ** argv) {
                             "application/json");
             return;
         }
-        std::lock_guard<std::mutex> lock(marker_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(marker_mutex);
         if (!crispembed_marker_convert(marker_ctx, file.c_str())) {
             res.status = 422;
             res.set_content("{\"error\":\"" + core_json::json_escape_strict(crispembed_marker_error(marker_ctx)) +
@@ -2349,7 +2404,7 @@ int main(int argc, char ** argv) {
             if (json_extract_strings(body, "prompt", pv) > 0) req_prompt = pv.front();
         }
 
-        std::lock_guard<std::mutex> lock(ocr_model_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(ocr_model_mutex);
         const bool has_generation_params =
             core_json::json_find_key_value(body, "repetition_penalty") != std::string::npos ||
             core_json::json_find_key_value(body, "presence_penalty") != std::string::npos ||
@@ -2444,6 +2499,122 @@ int main(int argc, char ** argv) {
     svr.Post("/ocr/model", ocr_model_handler);
     svr.Post("/math/ocr", ocr_model_handler); // deprecated alias
 
+    // POST /v1/chat/completions — OpenAI-shaped OCR for the --ocr model.
+    // Opt-in: CRISPEMBED_SERVER_OPENAI_CHAT=1. Lets OpenAI-compatible batch
+    // clients (saturate, the OpenAI SDKs, vLLM OCR recipes) run a dataset of page
+    // images through a CrispEmbed OCR model unchanged. Exactly one base64 data-URL
+    // image per request; the user text parts become the per-request prompt; see
+    // examples/server/openai_compat.h for what is rejected and why. The decode is
+    // the same crispembed_ocr_model_recognize call /ocr/model makes, with the same
+    // per-request prompt / max_tokens save-and-restore.
+    const bool openai_chat = core_env::on("CRISPEMBED_SERVER_OPENAI_CHAT");
+    const std::string ocr_model_id = [&] {
+        std::string n = ocr_model_path;
+        const auto slash = n.find_last_of("/\\");
+        if (slash != std::string::npos) n = n.substr(slash + 1);
+        return n;
+    }();
+    if (openai_chat) {
+        const int64_t max_image_bytes = server_load::env_int("CRISPEMBED_SERVER_MAX_IMAGE_BYTES", 64ll << 20);
+        std::shared_ptr<std::atomic<uint64_t>> chat_seq = std::make_shared<std::atomic<uint64_t>>(0);
+        svr.Post("/v1/chat/completions", [&, max_image_bytes, chat_seq](const httplib::Request & req,
+                                                                        httplib::Response & res) {
+            auto fail = [&](int status, const std::string & msg, const char * type) {
+                res.status = status;
+                res.set_content("{\"error\": {\"message\": \"" + json_escape(msg) + "\", \"type\": \"" + type + "\"}}",
+                                "application/json");
+            };
+            if (!ocr_model_ctx) return fail(503, "no OCR model loaded (use --ocr)", "server_error");
+            server_compat::chat_ocr_request cr;
+            std::string err;
+            if (!server_compat::parse_chat_ocr_request(req.body, cr, err))
+                return fail(400, err, "invalid_request_error");
+            std::string bytes;
+            if (!server_compat::decode_data_url(cr.image_url, bytes, err, (size_t)max_image_bytes))
+                return fail(400, err, "invalid_request_error");
+            cr.image_url.clear();
+            cr.image_url.shrink_to_fit();
+
+            int w = 0, h = 0, ch = 0;
+            unsigned char * pixels = stbi_load_from_memory(reinterpret_cast<const stbi_uc *>(bytes.data()),
+                                                           (int)bytes.size(), &w, &h, &ch, 0);
+            bytes.clear();
+            bytes.shrink_to_fit();
+            if (!pixels) return fail(400, "failed to decode image", "invalid_request_error");
+            std::unique_ptr<unsigned char, void (*)(void *)> pixel_owner(pixels, stbi_image_free);
+
+            std::lock_guard<server_load::counted_mutex> lock(ocr_model_mutex);
+            const int previous_max_tokens = crispembed_ocr_model_get_max_tokens(ocr_model_ctx);
+            if (cr.max_tokens > 0) crispembed_ocr_model_set_max_tokens(ocr_model_ctx, cr.max_tokens);
+            int prompt_applied = -1;
+            if (!cr.prompt.empty()) prompt_applied = crispembed_ocr_model_set_prompt(ocr_model_ctx, cr.prompt.c_str());
+            struct restore_state {
+                void * ctx;
+                const std::string & dflt;
+                int previous_max_tokens;
+                bool prompt_active, max_tokens_active;
+                ~restore_state() {
+                    if (prompt_active) crispembed_ocr_model_set_prompt(ctx, dflt.empty() ? nullptr : dflt.c_str());
+                    if (max_tokens_active) crispembed_ocr_model_set_max_tokens(ctx, previous_max_tokens);
+                }
+            } restore{ ocr_model_ctx, ocr_prompt, previous_max_tokens, prompt_applied == 1, cr.max_tokens > 0 };
+            const int active_cap = crispembed_ocr_model_get_max_tokens(ocr_model_ctx);
+
+            auto t0 = std::chrono::steady_clock::now();
+            int out_len = 0;
+            const char * text = crispembed_ocr_model_recognize(ocr_model_ctx, pixels, w, h, ch, &out_len);
+            pixel_owner.reset();
+            if (!text) return fail(500, "recognition failed", "server_error");
+            const std::string content(text, out_len > 0 ? (size_t)out_len : std::strlen(text));
+            int n_steps = 0;
+            crispembed_ocr_model_confidences(ocr_model_ctx, &n_steps);
+            const float mean_conf = crispembed_ocr_model_mean_confidence(ocr_model_ctx);
+            const double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+
+            // completion_tokens = observed decode steps. The prompt's token count
+            // (image patches + text) is not exposed by the OCR ABI, so it is
+            // reported as 0 rather than estimated.
+            server_load::record_usage(server_load::global(), -1, n_steps);
+            // "length" only when a cap was active and the decode used all of it;
+            // the OCR ABI does not report EOS separately.
+            const char * finish = (active_cap > 0 && n_steps >= active_cap) ? "length" : "stop";
+            const uint64_t seq = chat_seq->fetch_add(1) + 1;
+            const long long created = (long long)std::chrono::duration_cast<std::chrono::seconds>(
+                                          std::chrono::system_clock::now().time_since_epoch())
+                                          .count();
+            std::ostringstream js;
+            js << "{\"id\": \"chatcmpl-crispembed-" << created << "-" << seq
+               << "\", \"object\": \"chat.completion\", \"created\": " << created << ", \"model\": \""
+               << json_escape(cr.model.empty() ? ocr_model_id : cr.model)
+               << "\", \"choices\": [{\"index\": 0, \"message\": {\"role\": \"assistant\", \"content\": \""
+               << json_escape(content) << "\"}, \"finish_reason\": \"" << finish << "\"}], \"usage\": "
+               << "{\"prompt_tokens\": 0, \"completion_tokens\": " << n_steps << ", \"total_tokens\": " << n_steps
+               << "}, \"crispembed\": {\"confidence\": " << std::fixed << std::setprecision(4) << mean_conf;
+            if (prompt_applied >= 0) js << ", \"prompt_applied\": " << (prompt_applied ? "true" : "false");
+            js << ", \"ms\": " << std::setprecision(1) << ms << "}}";
+            fprintf(stderr, "crispembed-server: /v1/chat/completions in %.1f ms (%d steps, %s)\n", ms, n_steps, finish);
+            res.set_content(js.str(), "application/json");
+        });
+
+        // GET /v1/models — OpenAI model listing, so clients that probe it before
+        // sending work find the OCR model (and the embedding model, if loaded).
+        svr.Get("/v1/models", [&](const httplib::Request &, httplib::Response & res) {
+            std::ostringstream js;
+            js << "{\"object\": \"list\", \"data\": [";
+            bool first = true;
+            auto entry = [&](const std::string & id) {
+                if (id.empty()) return;
+                js << (first ? "" : ", ") << "{\"id\": \"" << json_escape(id)
+                   << "\", \"object\": \"model\", \"created\": 0, \"owned_by\": \"crispembed\"}";
+                first = false;
+            };
+            if (ocr_model_ctx) entry(ocr_model_id);
+            if (ctx) entry(model_name);
+            js << "]}";
+            res.set_content(js.str(), "application/json");
+        });
+    }
+
     // POST /ocr — general text detection + recognition pipeline
     // Request:  {"image": "/path/to/document.png"}
     // Response: {"results": [{"text": "Hello", "bbox": [x,y,x2,y2], "confidence": 0.99}], "ms": M}
@@ -2464,7 +2635,7 @@ int main(int argc, char ** argv) {
 
         auto t0 = std::chrono::high_resolution_clock::now();
 
-        std::lock_guard<std::mutex> lock(ocr_pipeline_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(ocr_pipeline_mutex);
         int n_results = 0;
         const crispembed_ocr_result * results = crispembed_ocr(ocr_pipeline_ctx, image_path.c_str(), &n_results);
 
@@ -2510,7 +2681,7 @@ int main(int argc, char ** argv) {
 
         auto t0 = std::chrono::high_resolution_clock::now();
 
-        std::lock_guard<std::mutex> lock(ocr_orch_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(ocr_orch_mutex);
         int n_results = 0;
         const char * full_text = nullptr;
         float mean_conf = 0.0f;
@@ -2571,7 +2742,7 @@ int main(int argc, char ** argv) {
             return;
         }
 
-        std::lock_guard<std::mutex> lock(layout_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(layout_mutex);
         auto t0 = std::chrono::steady_clock::now();
 
         int n_regions = 0;
@@ -2642,7 +2813,7 @@ int main(int argc, char ** argv) {
             hs.push_back(h);
             cs.push_back(3);
         }
-        std::lock_guard<std::mutex> lock(oxr_doc_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(oxr_doc_mutex);
         const char * json =
             crispembed_oxr_process_pages(oxr_doc_ctx, ptrs.data(), ws.data(), hs.data(), cs.data(), (int)ptrs.size(),
                                          nullptr, nullptr, layout.c_str(), options.empty() ? nullptr : options.c_str());
@@ -2748,7 +2919,7 @@ int main(int argc, char ** argv) {
             return;
         }
 
-        std::lock_guard<std::mutex> lock(text_det_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(text_det_mutex);
         auto t0 = std::chrono::steady_clock::now();
 
         int n_boxes = 0;
@@ -2809,7 +2980,7 @@ int main(int argc, char ** argv) {
         std::vector<const char *> label_ptrs(labels.size());
         for (size_t i = 0; i < labels.size(); i++) label_ptrs[i] = labels[i].c_str();
 
-        std::lock_guard<std::mutex> lock(ner_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(ner_mutex);
         auto t0 = std::chrono::steady_clock::now();
 
         crispembed_ner_entity * entities = nullptr;
@@ -2858,7 +3029,7 @@ int main(int argc, char ** argv) {
             return;
         }
 
-        std::lock_guard<std::mutex> lock(lid_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(lid_mutex);
         auto t0 = std::chrono::steady_clock::now();
 
         float conf = 0.0f;
@@ -2910,7 +3081,7 @@ int main(int argc, char ** argv) {
         std::vector<const char *> label_ptrs(labels.size());
         for (size_t i = 0; i < labels.size(); i++) label_ptrs[i] = labels[i].c_str();
 
-        std::lock_guard<std::mutex> lock(kie_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(kie_mutex);
         auto t0 = std::chrono::steady_clock::now();
 
         crispembed_kie_result kr =
@@ -3390,7 +3561,7 @@ int main(int argc, char ** argv) {
             return;
         }
 
-        std::lock_guard<std::mutex> lock(text_sr_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(text_sr_mutex);
         auto t0 = std::chrono::steady_clock::now();
 
         uint8_t * out = nullptr;
@@ -3451,7 +3622,7 @@ int main(int argc, char ** argv) {
             return;
         }
 
-        std::lock_guard<std::mutex> lock(pan_sr_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(pan_sr_mutex);
         auto t0 = std::chrono::steady_clock::now();
 
         uint8_t * out = nullptr;
@@ -3525,7 +3696,7 @@ int main(int argc, char ** argv) {
             res.set_content("{\"error\": \"cannot load image\"}", "application/json");
             return;
         }
-        std::lock_guard<std::mutex> lock(sam2_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(sam2_mutex);
         auto t0 = std::chrono::steady_clock::now();
         uint8_t * masks = nullptr;
         float scores[3] = { 0, 0, 0 };
@@ -3580,7 +3751,7 @@ int main(int argc, char ** argv) {
             return;
         }
 
-        std::lock_guard<std::mutex> lock(hat_sr_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(hat_sr_mutex);
         auto t0 = std::chrono::steady_clock::now();
 
         uint8_t * out = nullptr;
@@ -3640,7 +3811,7 @@ int main(int argc, char ** argv) {
             return;
         }
 
-        std::lock_guard<std::mutex> lock(dat_sr_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(dat_sr_mutex);
         auto t0 = std::chrono::steady_clock::now();
 
         uint8_t * out = nullptr;
@@ -3700,7 +3871,7 @@ int main(int argc, char ** argv) {
             return;
         }
 
-        std::lock_guard<std::mutex> lock(safmn_sr_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(safmn_sr_mutex);
         auto t0 = std::chrono::steady_clock::now();
 
         uint8_t * out = nullptr;
@@ -3760,7 +3931,7 @@ int main(int argc, char ** argv) {
             return;
         }
 
-        std::lock_guard<std::mutex> lock(esrgan_sr_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(esrgan_sr_mutex);
         auto t0 = std::chrono::steady_clock::now();
 
         uint8_t * out = nullptr;
@@ -3820,7 +3991,7 @@ int main(int argc, char ** argv) {
             return;
         }
 
-        std::lock_guard<std::mutex> lock(swinir_sr_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(swinir_sr_mutex);
         auto t0 = std::chrono::steady_clock::now();
 
         uint8_t * out = nullptr;
@@ -3881,7 +4052,7 @@ int main(int argc, char ** argv) {
             return;
         }
 
-        std::lock_guard<std::mutex> lock(tbsrn_sr_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(tbsrn_sr_mutex);
         auto t0 = std::chrono::steady_clock::now();
 
         uint8_t * out = nullptr;
@@ -3939,7 +4110,7 @@ int main(int argc, char ** argv) {
             return;
         }
 
-        std::lock_guard<std::mutex> lock(restormer_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(restormer_mutex);
         auto t0 = std::chrono::steady_clock::now();
 
         uint8_t * out = nullptr;
@@ -3996,7 +4167,7 @@ int main(int argc, char ** argv) {
             return;
         }
 
-        std::lock_guard<std::mutex> lock(scunet_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(scunet_mutex);
         auto t0 = std::chrono::steady_clock::now();
 
         uint8_t * out = nullptr;
@@ -4061,7 +4232,7 @@ int main(int argc, char ** argv) {
             return;
         }
 
-        std::lock_guard<std::mutex> lock(instructir_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(instructir_mutex);
         auto t0 = std::chrono::steady_clock::now();
 
         uint8_t * out = nullptr;
@@ -4118,7 +4289,7 @@ int main(int argc, char ** argv) {
             return;
         }
 
-        std::lock_guard<std::mutex> lock(adair_mutex);
+        std::lock_guard<server_load::counted_mutex> lock(adair_mutex);
         auto t0 = std::chrono::steady_clock::now();
 
         uint8_t * out = nullptr;
@@ -4302,11 +4473,11 @@ int main(int argc, char ** argv) {
             const crispembed_ocr_result * results = nullptr;
 
             if (ocr_orch_ctx) {
-                std::lock_guard<std::mutex> lock(ocr_orch_mutex);
+                std::lock_guard<server_load::counted_mutex> lock(ocr_orch_mutex);
                 results =
                     crispembed_ocr_pipeline_run(ocr_orch_ctx, page_source.c_str(), &n_results, &full_text, &mean_conf);
             } else if (ocr_model_ctx) {
-                std::lock_guard<std::mutex> lock(ocr_model_mutex);
+                std::lock_guard<server_load::counted_mutex> lock(ocr_model_mutex);
                 int out_len = 0;
                 const char * text = crispembed_ocr_model_recognize(ocr_model_ctx, img, w, h, ch, &out_len);
                 // Wrap single result
@@ -4461,6 +4632,15 @@ int main(int argc, char ** argv) {
         res.set_content(ready ? "{\"status\":\"ready\"}" : "{\"status\":\"not_ready\"}", "application/json");
     });
 
+    // GET /metrics — Prometheus load gauges (examples/server/load_control.h).
+    // Opt-in: CRISPEMBED_SERVER_METRICS=1.
+    if (svr.load_cfg.metrics) {
+        svr.Get("/metrics", [&](const httplib::Request &, httplib::Response & res) {
+            res.set_content(server_load::prometheus_text(server_load::global(), svr.load_cfg),
+                            "text/plain; version=0.0.4; charset=utf-8");
+        });
+    }
+
     fprintf(stderr, "\ncrispembed-server: listening on %s:%d\n", host.c_str(), port);
     if (ctx) {
         fprintf(stderr, "  POST /embed           — {\"texts\": [\"hello\"]}\n");
@@ -4544,6 +4724,9 @@ int main(int argc, char ** argv) {
     }
     if (ctx && crispembed_has_sparse(ctx))
         fprintf(stderr, "  POST /sparse          — {\"texts\": [\"...\"]}  (SPLADE/BGE-M3 term weights)\n");
+    if (openai_chat && ocr_model_ctx)
+        fprintf(stderr, "  POST /v1/chat/completions — OpenAI-shaped OCR (one data-URL image per request)\n");
+    if (svr.load_cfg.metrics) fprintf(stderr, "  GET  /metrics         — Prometheus load gauges\n");
     fprintf(stderr, "  GET  /health\n\n");
 
     svr.listen(host, port);

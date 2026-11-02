@@ -540,6 +540,13 @@ add_executable(test-server-json-input tests/test_server_json_input.cpp)
 target_include_directories(test-server-json-input PRIVATE ${CMAKE_SOURCE_DIR}/examples/server
                                                           ${CMAKE_SOURCE_DIR}/src)
 
+# Host-only: server admission/metrics and the OpenAI-shaped OCR request parser.
+add_executable(test-server-load-control tests/test_server_load_control.cpp)
+target_include_directories(test-server-load-control PRIVATE ${CMAKE_SOURCE_DIR}/examples/server
+                                                            ${CMAKE_SOURCE_DIR}/src)
+find_package(Threads REQUIRED)
+target_link_libraries(test-server-load-control PRIVATE Threads::Threads)
+
 # Host-only: the "never stack punctuation on punctuation" predicate (#300).
 add_executable(test-punct-marks tests/test_punct_marks.cpp)
 target_include_directories(test-punct-marks PRIVATE src)
