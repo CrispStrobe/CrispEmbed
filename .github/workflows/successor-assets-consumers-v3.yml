@@ -114,7 +114,7 @@ jobs:
   bindings:
     needs: [producer-identity, desktop]
     if: always() && !cancelled() && needs.producer-identity.result == 'success'
-    uses: ./.github/workflows/successor-bindings.yml
+    uses: ./.github/workflows/successor-bindings-v3.yml
     with:
       native_run: ${{ inputs.native_run }}
       consumer_run: ${{ github.run_id }}

@@ -32,7 +32,8 @@ git_blob, RUNTIME_PATHS, PRODUCER_PATHS, git_closure = V2.git_blob, V2.RUNTIME_P
 STRICT_ABSOLUTE, STRICT_COSINE = 0.002, 0.99999  # unchanged native/desktop/binding gates
 V3_OWN = ('.github/workflows/successor-assets-v3.yml', '.github/workflows/successor-assets-consumers-v3.yml',
           'docs/successor-assets-v3.md', 'docs/successor-assets-v3.json', 'tools/successor_assets_v3.py',
-          'tools/ci-heavy/successor_review_v3.py', 'tests/test_successor_wasm_v3.cjs', 'tests/test_successor_assets_v3.py')
+          'tools/ci-heavy/successor_review_v3.py', 'tests/test_successor_wasm_v3.cjs', 'tests/test_successor_assets_v3.py',
+          '.github/workflows/successor-bindings-v3.yml', 'tools/ci-heavy/successor_bindings_v3.py')
 
 
 class ProtocolError(ValueError):
@@ -112,6 +113,17 @@ DERIVATIONS = {
          'node tests/test_successor_wasm_v3.cjs "$RUNNER_TEMP/browser" "$RUNNER_TEMP/browser/browser.json"'
          ' && python tools/successor_assets_v3.py browser-gate --report "$RUNNER_TEMP/browser/browser.json"'),
         ('python tools/ci-heavy/successor_review.py --root', 'python tools/ci-heavy/successor_review_v3.py --root'),
+        ('    uses: ./.github/workflows/successor-bindings.yml\n', '    uses: ./.github/workflows/successor-bindings-v3.yml\n'),
+    ]),
+    # Identity allowlist only: the frozen bindings consumer accepts fixtures from named caller workflows.
+    '.github/workflows/successor-bindings-v3.yml': ('.github/workflows/successor-bindings.yml', [
+        ('name: Successor Linux prebuilt Rust and Dart consumers\n', 'name: Successor Linux prebuilt Rust and Dart consumers v3 (derived; caller allowlist only)\n'),
+        ('python tools/ci-heavy/successor_bindings.py --self-test', 'python tools/ci-heavy/successor_bindings_v3.py --self-test'),
+        ('python tools/ci-heavy/successor_bindings.py --native-run', 'python tools/ci-heavy/successor_bindings_v3.py --native-run'),
+    ]),
+    'tools/ci-heavy/successor_bindings_v3.py': ('tools/ci-heavy/successor_bindings.py', [
+        ("                                '.github/workflows/successor-assets-v2.yml')",
+         "                                '.github/workflows/successor-assets-v2.yml', '.github/workflows/successor-assets-v3.yml')"),
     ]),
     'tests/test_successor_wasm_v3.cjs': ('tests/test_successor_wasm.cjs', [
         ("schema:'crispembed-successor-wasm-consumer-v1',", "schema:'crispembed-successor-wasm-consumer-v3',text:fixture.text,native_vector:b,"),
