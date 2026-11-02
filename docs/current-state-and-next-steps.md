@@ -39,11 +39,13 @@ The app remains immutable0.17.12. No new runtime release or quantized qualificat
   50 fail; F32/F16 each50/60, Q4_K25/30, Q8_0 5/30.96 later crop parts lack
   original tensors. Same-input F32 attribution precedes further precision
   recipes; no original recapture or qualification from high cosine/exact text.
-- **WASM:** full norm64 remains rejected16/20 final and6/16 stage checks.
-  One-sentence40867038915/ff3 now fails its component compile-profile guard
-  before model acquisition or forwards; [initial evidence](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/packaging/wasm-live-norm-initial-build-review.json)
-  preserves39 small members. Repair exact target inventory/flags before any
-  model capture. All rounding/norm defaults remain unchanged.
+- **WASM:** attribution is complete, and the drift is accepted as a documented
+  WASM-only platform tolerance in [successor assets v3](successor-assets-v3.md):
+  packaged browser final vector max_abs<=0.0101, cosine>=0.99837; native gates
+  are unchanged. Run 41471904133 passes the WASM consumer, but the strict review
+  fails macOS arm64 vs Linux x86_64 desktop parity (0.00255 > 0.002), so the run
+  is not green. That native gate is not relaxed; it needs an owner decision.
+  All rounding/norm defaults remain unchanged.
 - **LFM/typed Gemma:** [source/evidence audit](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/encoder-precision-evidence-20261029.md)
   distinguishes existing masked230M LFM Q8/Q4 failures from other models;
   mixed330 precision improves but one masked prediction remains wrong.
