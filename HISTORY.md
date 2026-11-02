@@ -1,3 +1,18 @@
+## 2 November 2026 — Permissive inpainting engines to main (feat/inpaint-permissive)
+
+- MI-GAN512, Moebius, PixelHacker, SDXL VAE and the delivery 4–6 graph/CPU/
+  SHA-NI infrastructure moved to main as one squashed commit without the
+  research-only engine; main's MI-GAN Metal/quant path and the persistent graph
+  were merged and both stay gated.
+- Built-in `CRISPEMBED_QUANTIZE_INPAINT_MIX=1` (Moebius Q4_K-mix) reproduces the
+  qualified private file byte for byte (run 41390172098; also the VAE Q8_0, plain
+  Moebius Q4_K and MI-GAN512 F16/Q8_0/Q4_K). Initial run 41388773676 compared
+  nothing yet printed PASS (log-filter SIGPIPE); retained, lane fixed.
+- Initial PR CI failure: Windows `contracts` could not compile
+  `tests/test_latent_inpaint_pipeline.cpp` (`near` is a windef.h macro); helper
+  renamed.
+- Publication prepared only (`docs/inpaint-publication-v1.json`); no registry entry.
+
 ## 2 November 2026 — CUDA GPU audit on Kaggle (feat/cuda-audit)
 
 Five runs of `${KAGGLE_ACCOUNT}/crispembed-cuda-audit` on a Tesla T4 (sm_75), harness

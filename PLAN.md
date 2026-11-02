@@ -62,10 +62,11 @@ issue71 branches, without the research-only engine (owner ruling; see
 engine gates stay experimental and default off; main's MI-GAN Metal path and
 the persistent graph both remain gated.
 
-- Open: hosted byte/tensor-type check that `CRISPEMBED_QUANTIZE_INPAINT_MIX=1`
-  reproduces the qualified private Moebius Q4_K-mix and Q8_0 VAE files.
 - Open: publication of the qualifying public GGUFs and registry entries (only
-  variants that clear the bars; Moebius Q4_K only as Q4_K-mix). Publication: pending.
+  variants that clear the bars; Moebius Q4_K only as Q4_K-mix). Prepared in
+  `docs/inpaint-publication-v1.json`; needs the owner's go-ahead for a new
+  inpainting publication protocol/workflow, then upload, readback, and only then
+  `model_mgr.cpp`/`model_hashes.h`/`upload_to_hf.py` entries.
 - Open: all CI green (Windows, macOS, Linux, Static guards, sibling-crispasr,
   secret scan). MI-GAN512 Q4_K stays caveated (0.9019 on the DBNet street crop).
 

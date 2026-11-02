@@ -34,7 +34,9 @@ as qualified on the synthetic panel but below the bar for that DBNet crop.
 bar on that crop.** It is not hidden by the per-engine minimum: any listing of
 this variant must carry the caveat.
 
-Publication: pending.
+Publication: prepared, not performed. No owner-approved workflow covers
+inpainting GGUFs yet; `docs/inpaint-publication-v1.json` lists the exact
+qualifying files, licences and caveats for the owner's go-ahead.
 
 ## Gates
 
@@ -349,5 +351,12 @@ attention-block tensors in the Moebius denoiser) at Q8_0, and the same gate
 turns a sub-Q8 SDXL VAE request into plain Q8_0. It replaces the 630 explicit
 `--tensor-type` overrides the lane passed (the original lane command remains
 valid). The gate is opt-in and default off; it is refused for other inpaint
-architectures. Byte reproduction of the qualified private file is pending a
-hosted check.
+architectures. Hosted run 41390172098 (`tools/ci-heavy/inpaint_quant_policy_check.sh`)
+reproduces the qualified files byte for byte: `moebius-q4_k-mix.gguf`
+(sha256 4fcb546b…, 630 attention tensors selected, 150 stored Q8_0, the rest
+F32-pinned vectors) and, for the VAE half, `sdxl-vae-q8_0.gguf` (07ef5ba1…).
+Without the gate, plain Q4_K Moebius (dd0f400f…) and the MI-GAN512
+F16/Q8_0/Q4_K variants (default fixed512 -> inpaint-v1 dispatch) are also
+byte-identical. Initial run 41388773676 printed PASS without running any
+comparison (a log-filter SIGPIPE); it is kept on record and the lane now
+requires all seven comparisons.
