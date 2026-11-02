@@ -307,6 +307,53 @@
     "l.blk.*.attn_o.weight=q4_k"
    ],
    "imatrix": true
+  },
+  "r7": {
+   "source": "f16",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=f16",
+    "l.embed_tokens.weight=f16",
+    "v.blk.*.attn_*=q8_0",
+    "v.blk.*.ffn_gate.weight=q4_k",
+    "v.blk.*.ffn_up.weight=q4_k",
+    "l.embed_tokens.weight=q6_k",
+    "l.blk.*.attn_q.weight=q4_k",
+    "l.blk.*.attn_k.weight=q4_k",
+    "v.blk.*.attn_*=q6_k"
+   ]
+  },
+  "r8": {
+   "source": "f16",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=f16",
+    "l.embed_tokens.weight=f16",
+    "v.blk.*.attn_*=q8_0",
+    "v.blk.*.ffn_gate.weight=q4_k",
+    "v.blk.*.ffn_up.weight=q4_k",
+    "l.embed_tokens.weight=q6_k",
+    "l.blk.*.attn_q.weight=q4_k",
+    "l.blk.*.attn_k.weight=q4_k",
+    "v.blk.*.attn_*=q6_k",
+    "l.blk.*.attn_o.weight=q4_k"
+   ]
+  },
+  "r9": {
+   "source": "f16",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=f16",
+    "l.embed_tokens.weight=f16",
+    "v.blk.*.attn_*=q8_0",
+    "v.blk.*.ffn_gate.weight=q4_k",
+    "v.blk.*.ffn_up.weight=q4_k",
+    "l.embed_tokens.weight=q6_k",
+    "l.blk.*.attn_q.weight=q4_k",
+    "l.blk.*.attn_k.weight=q4_k",
+    "v.blk.*.attn_*=q6_k",
+    "l.embed_tokens.weight=q4_k"
+   ]
   }
  },
  "mineru": {
