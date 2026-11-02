@@ -40,16 +40,21 @@ def component(name):
 def census(path):
     from gguf import GGUFReader  # gguf==0.17.1 in the sweep job
 
+    import hashlib
+
+    data = hashlib.sha256()  # tensor names, types and bytes in file order (metadata excluded)
     by_type = defaultdict(lambda: {"tensors": 0, "bytes": 0})
     by_comp = defaultdict(lambda: defaultdict(lambda: {"tensors": 0, "bytes": 0}))
     for t in GGUFReader(path).tensors:
         ty = t.tensor_type.name
+        data.update(f"{t.name}:{ty}:".encode())
+        data.update(t.data.tobytes())
         by_type[ty]["tensors"] += 1
         by_type[ty]["bytes"] += int(t.n_bytes)
         c = by_comp[component(t.name)][ty]
         c["tensors"] += 1
         c["bytes"] += int(t.n_bytes)
-    return {"file_bytes": Path(path).stat().st_size, "by_type": dict(by_type),
+    return {"file_bytes": Path(path).stat().st_size, "tensor_data_sha256": data.hexdigest(), "by_type": dict(by_type),
             "by_component": {k: dict(v) for k, v in by_comp.items()}}
 
 

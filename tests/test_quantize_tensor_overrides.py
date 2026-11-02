@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exercise mixed matrix precision on a small real GGUF, without model weights."""
 import argparse
+import os
 from pathlib import Path
 import subprocess
 import tempfile
@@ -59,6 +60,25 @@ def main():
         for name in ["token_embd.weight", "blk.0.ffn_down.weight", "blk.0.shortconv.in_proj.weight"]:
             np.testing.assert_array_equal(after[name].data, data[name].astype(np.float16))
         np.testing.assert_array_equal(after["float32.weight"].data, data["float32.weight"])
+        # 4-bit override targets (docs/qwen2vl-q4k-recipes.md): from a Q8_0 base,
+        # Q4_K on 256-wide rows, the legacy fallback on narrow rows, IQ4_NL.
+        lowered = root / "lowered.gguf"
+        p = subprocess.run([quantizer, str(source), str(lowered), "q8_0", "--tensor-type", "blk.0.ffn_gate.weight=q4_k",
+                            "--tensor-type", "narrow.weight=q4_k", "--tensor-type", "blk.0.ffn_down.weight=iq4_nl",
+                            "--tensor-type", "untouched.weight=q5_0"], capture_output=True, text=True)
+        assert p.returncode == 0, p.stderr
+        low = {t.name: t.tensor_type.name for t in GGUFReader(lowered).tensors}
+        for name, expected in {"blk.0.ffn_gate.weight": "Q4_K", "narrow.weight": "Q4_0",
+                               "blk.0.ffn_down.weight": "IQ4_NL", "untouched.weight": "Q5_0",
+                               "token_embd.weight": "Q8_0", "blk.0.ffn_norm.weight": "F32"}.items():
+            assert low[name] == expected, (name, low[name])
+        # A named qwen2vl policy refuses a model it was not measured on.
+        p = subprocess.run([quantizer, str(source), str(root / "policy.gguf"), "q8_0"], capture_output=True, text=True,
+                           env={**os.environ, "CRISPEMBED_QUANTIZE_QWEN2VL_POLICY": "teleocr_q4k_v1"})
+        assert p.returncode != 0 and "needs a teleocr source" in p.stderr, p.stderr
+        p = subprocess.run([quantizer, str(source), str(root / "policy.gguf"), "q8_0"], capture_output=True, text=True,
+                           env={**os.environ, "CRISPEMBED_QUANTIZE_QWEN2VL_POLICY": "nope"})
+        assert p.returncode != 0 and "unknown CRISPEMBED_QUANTIZE_QWEN2VL_POLICY" in p.stderr, p.stderr
         # A typo must fail before truncating a destination, rather than silently
         # producing the wrong precision mix. Invalid types fail at parsing.
         protected = root / "protected.gguf"
@@ -68,7 +88,8 @@ def main():
             assert p.returncode != 0 and message in p.stderr
             assert protected.read_bytes() == b"existing-output"
         print("PASS: stored matrix types, wildcard/precedence, norm/conv preservation, "
-              "F16/F32 values, Q6 fallback and rejected overrides without output truncation")
+              "F16/F32 values, Q6 fallback, 4-bit targets, qwen2vl policy guard and rejected overrides without "
+              "output truncation")
 
 
 if __name__ == "__main__":

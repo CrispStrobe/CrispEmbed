@@ -354,6 +354,24 @@
     "v.blk.*.attn_*=q6_k",
     "l.embed_tokens.weight=q4_k"
    ]
+  },
+  "teleocr_q4k_v1": {
+   "source": "f16",
+   "type": "q8_0",
+   "tensor_type": [],
+   "env": {
+    "CRISPEMBED_QUANTIZE_QWEN2VL_POLICY": "teleocr_q4k_v1"
+   },
+   "equivalent_to": "r9",
+   "policy_rules": [
+    "v.*=f16",
+    "v.blk.*.attn_*=q6_k",
+    "v.blk.*.ffn_gate.weight=q4_k",
+    "v.blk.*.ffn_up.weight=q4_k",
+    "l.embed_tokens.weight=q4_k",
+    "l.blk.*.attn_q.weight=q4_k",
+    "l.blk.*.attn_k.weight=q4_k"
+   ]
   }
  },
  "mineru": {
@@ -624,6 +642,21 @@
     "l.blk.*.ffn_down.weight=q4_k"
    ],
    "imatrix": true
+  },
+  "mineru_q4k_v1": {
+   "source": "f32",
+   "type": "q8_0",
+   "tensor_type": [],
+   "env": {
+    "CRISPEMBED_QUANTIZE_QWEN2VL_POLICY": "mineru_q4k_v1"
+   },
+   "equivalent_to": "r2",
+   "policy_rules": [
+    "v.*=q4_k",
+    "l.blk.*.*=iq4_nl",
+    "l.blk.*.ffn_down.weight=q4_k",
+    "l.embed_tokens.weight=iq4_nl"
+   ]
   }
  }
 }
