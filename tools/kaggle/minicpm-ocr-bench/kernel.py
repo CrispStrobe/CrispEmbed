@@ -145,6 +145,18 @@ ARMS = [
     ('f32-t4', 'f32', 4, {}, True),
     ('q8_0-t2', 'q8_0', 2, dict(CRISPEMBED_QWEN35_QUANT='1'), True),
     ('f16-t4-no-timing', 'f16', 4, {}, False),
+    # Speed paths (default-off gates; each must stay token-ID exact on all cases).
+    ('f16-t4-graph', 'f16', 4, dict(CRISPEMBED_QWEN35_GRAPH_DECODER='1'), True),
+    ('f16-t4-graph-native', 'f16', 4, dict(CRISPEMBED_QWEN35_GRAPH_DECODER='1', CRISPEMBED_QWEN35_GRAPH_MATMUL='native'), True),
+    ('f16-t4-graph-f32w', 'f16', 4, dict(CRISPEMBED_QWEN35_GRAPH_DECODER='1', CRISPEMBED_QWEN35_GRAPH_MATMUL='f32'), True),
+    ('f16-t4-vision-f32', 'f16', 4, dict(CRISPEMBED_MINICPM_OCR_VISION_F32='1'), True),
+    ('f16-t4-vision-f32-batch', 'f16', 4, dict(CRISPEMBED_MINICPM_OCR_VISION_F32='1', CRISPEMBED_MINICPM_OCR_VISION_BATCH='1'), True),
+    ('f16-t4-fast', 'f16', 4, dict(CRISPEMBED_QWEN35_GRAPH_DECODER='1', CRISPEMBED_MINICPM_OCR_VISION_F32='1',
+                                   CRISPEMBED_MINICPM_OCR_VISION_BATCH='1'), True),
+    ('f16-t4-fast-flash', 'f16', 4, dict(CRISPEMBED_QWEN35_GRAPH_DECODER='1', CRISPEMBED_MINICPM_OCR_VISION_F32='1',
+                                         CRISPEMBED_MINICPM_OCR_VISION_BATCH='1', CRISPEMBED_MINICPM_OCR_VISION_FLASH='1'), True),
+    ('f16-t2-fast', 'f16', 2, dict(CRISPEMBED_QWEN35_GRAPH_DECODER='1', CRISPEMBED_MINICPM_OCR_VISION_F32='1',
+                                   CRISPEMBED_MINICPM_OCR_VISION_BATCH='1'), True),
 ]
 CASES = ref['cases']
 # Optional subset (comma-separated arm names) for a follow-up run; empty = every arm.

@@ -11,6 +11,10 @@ Replace @COMMIT@ with the pushed commit before pushing (tools/kaggle/kpush.py).
 import glob, json, os, subprocess, sys, time
 COMMIT = '@COMMIT@'
 MAX_NEW = int(os.environ.get('MINICPM_MAX_NEW_TOKENS', '1024'))
+# Optional extra runtime env for every native run (JSON object), e.g. the default-off
+# speed gates; substitute @ENV@ in a scratch copy. Unsubstituted = the plain runtime.
+_ENV_RAW = os.environ.get('MINICPM_NATIVE_ENV', '@ENV@')
+EXTRA_ENV = {} if _ENV_RAW == '@ENV@' else json.loads(_ENV_RAW)
 
 
 def sh(*a, **k):
@@ -98,7 +102,7 @@ def compare_pixels(refa, parts):
 def run_case(case, dtype):
     dump = f'/kaggle/temp/dump/{dtype}/{case["id"]}'; os.makedirs(dump, exist_ok=True)
     run_env = dict(os.environ, CRISPEMBED_MINICPM_OCR='1', CRISPEMBED_QWEN35_OCR='1', CRISPEMBED_QWEN35_WEIGHT_CACHE='1',
-                   CRISPEMBED_MINICPM_OCR_DUMP=dump, OMP_NUM_THREADS=str(os.cpu_count()))
+                   CRISPEMBED_MINICPM_OCR_DUMP=dump, OMP_NUM_THREADS=str(os.cpu_count()), **EXTRA_ENV)
     t0 = time.monotonic()
     r = subprocess.run(['/kaggle/temp/b/crispembed', '-m', f'/kaggle/temp/minicpm-{dtype}.gguf',
                         '--ocr', os.path.join(base, case['id'] + '.png'), '--ocr-prompt', case['task'],
@@ -159,7 +163,7 @@ def run_case(case, dtype):
     return row
 
 
-report = dict(schema='crispembed-minicpm-ocr-native-v1', commit=COMMIT, reference_revision=ref['revision'],
+report = dict(schema='crispembed-minicpm-ocr-native-v1', commit=COMMIT, extra_env=EXTRA_ENV, reference_revision=ref['revision'],
               reference_versions=ref.get('versions'), max_new_tokens=MAX_NEW, cases=[])
 for case in ref['cases']:
     arms = {dt: run_case(case, dt) for dt in ('f32', 'f16')}

@@ -170,8 +170,11 @@ bool preprocess(const uint8_t * rgb, int width, int height, const minicpm_ocr_ti
     return !parts.empty();
 }
 
-bool encode(const vision_weights & w, ggml_backend_t backend, const image_part & image, int threads,
-            std::vector<float> & merged, vision_debug * debug, vision_timing * timing) {
+namespace {
+bool encode_parts(const vision_weights & w, ggml_backend_t backend, const image_part * parts, int count, int threads,
+                  std::vector<float> & merged, vision_debug * debug, vision_timing * timing) {
+    if (!parts || count < 1 || count > 64) return false;
+    const image_part & image = parts[0];
     using clock = std::chrono::steady_clock;
     auto mark = clock::now();
     auto lap = [&](double vision_timing::*slot) {
@@ -181,24 +184,30 @@ bool encode(const vision_weights & w, ggml_backend_t backend, const image_part &
         mark = now;
     };
     const int P = w.patch, D = w.width, H = w.heads, hd = D / H, S = w.merge;
-    if (!backend || image.width % (P * S) || image.height % (P * S) ||
-        image.chw.size() != size_t(3) * image.width * image.height)
-        return false;
+    if (!backend || image.width % (P * S) || image.height % (P * S)) return false;
+    for (int n = 0; n < count; ++n)
+        if (parts[n].width != image.width || parts[n].height != image.height ||
+            parts[n].chw.size() != size_t(3) * image.width * image.height)
+            return false;
     const int ph = image.height / P, pw = image.width / P, T = ph * pw, K = 3 * P * P;
-    if (T < 1 || T > 16384) return false;
+    if (T < 1 || T > 16384 || int64_t(T) * count > 65536) return false;
+    const int N = T * count; // all rows of all parts, part-major
 
-    // im2col in conv-weight order (c, ky, kx); row-major patches.
-    std::vector<float> cols(size_t(T) * K);
-    for (int py = 0; py < ph; ++py)
-        for (int px = 0; px < pw; ++px) {
-            float * dst = cols.data() + size_t(py * pw + px) * K;
-            for (int c = 0; c < 3; ++c)
-                for (int ky = 0; ky < P; ++ky)
-                    for (int kx = 0; kx < P; ++kx)
-                        dst[(c * P + ky) * P + kx] =
-                            image.chw[(size_t(c) * image.height + py * P + ky) * image.width + px * P + kx];
-        }
-    const auto pos_ids = minicpm_ocr_tiles::position_ids(ph, pw, w.pos_grid);
+    // im2col in conv-weight order (c, ky, kx); row-major patches, parts stacked.
+    std::vector<float> cols(size_t(N) * K);
+    for (int n = 0; n < count; ++n)
+        for (int py = 0; py < ph; ++py)
+            for (int px = 0; px < pw; ++px) {
+                float * dst = cols.data() + (size_t(n) * T + size_t(py * pw + px)) * K;
+                for (int c = 0; c < 3; ++c)
+                    for (int ky = 0; ky < P; ++ky)
+                        for (int kx = 0; kx < P; ++kx)
+                            dst[(c * P + ky) * P + kx] =
+                                parts[n].chw[(size_t(c) * image.height + py * P + ky) * image.width + px * P + kx];
+            }
+    const auto one_ids = minicpm_ocr_tiles::position_ids(ph, pw, w.pos_grid);
+    std::vector<int> pos_ids;
+    for (int n = 0; n < count; ++n) pos_ids.insert(pos_ids.end(), one_ids.begin(), one_ids.end());
 
     static constexpr int kMaxNodes = 8192;
     const size_t meta = ggml_tensor_overhead() * kMaxNodes + ggml_graph_overhead_custom(kMaxNodes, false);
@@ -207,10 +216,10 @@ bool encode(const vision_weights & w, ggml_backend_t backend, const image_part &
     if (!gctx) return false;
     ggml_context * g = gctx.get();
 
-    ggml_tensor * in = ggml_new_tensor_2d(g, GGML_TYPE_F32, K, T);
+    ggml_tensor * in = ggml_new_tensor_2d(g, GGML_TYPE_F32, K, N);
     ggml_set_name(in, "im2col");
     ggml_set_input(in);
-    ggml_tensor * ids = ggml_new_tensor_1d(g, GGML_TYPE_I32, T);
+    ggml_tensor * ids = ggml_new_tensor_1d(g, GGML_TYPE_I32, N);
     ggml_set_name(ids, "pos_ids");
     ggml_set_input(ids);
 
@@ -232,24 +241,27 @@ bool encode(const vision_weights & w, ggml_backend_t backend, const image_part &
     for (size_t li = 0; li < w.layers.size(); ++li) {
         const auto & l = w.layers[li];
         ggml_tensor * h = layer_norm(g, x, l.ln1_w, l.ln1_b, w.eps);
-        ggml_tensor * q = ggml_permute(g, ggml_reshape_3d(g, linear(g, h, l.q_w, l.q_b), hd, H, T), 0, 2, 1, 3);
-        ggml_tensor * k = ggml_permute(g, ggml_reshape_3d(g, linear(g, h, l.k_w, l.k_b), hd, H, T), 0, 2, 1, 3);
+        // [hd, T, H, count]: attention never mixes parts (independent sequences).
+        ggml_tensor * q = ggml_permute(g, ggml_reshape_4d(g, linear(g, h, l.q_w, l.q_b), hd, H, T, count), 0, 2, 1, 3);
+        ggml_tensor * k = ggml_permute(g, ggml_reshape_4d(g, linear(g, h, l.k_w, l.k_b), hd, H, T, count), 0, 2, 1, 3);
         ggml_tensor * att;
         if (flash) {
             // Same fused bidirectional path as lfm2_vl_ocr.cpp (LFM2_VL_FLASH_ATTN): output
             // is already [hd, H, T], so no trailing permute.
-            ggml_tensor * v = ggml_permute(g, ggml_reshape_3d(g, linear(g, h, l.v_w, l.v_b), hd, H, T), 0, 2, 1, 3);
+            ggml_tensor * v =
+                ggml_permute(g, ggml_reshape_4d(g, linear(g, h, l.v_w, l.v_b), hd, H, T, count), 0, 2, 1, 3);
             att = ggml_flash_attn_ext(g, q, k, v, nullptr, scale, 0.0f, 0.0f);
             ggml_flash_attn_ext_set_prec(att, GGML_PREC_F32);
         } else {
-            ggml_tensor * v = ggml_cont(
-                g, ggml_permute(g, ggml_reshape_3d(g, linear(g, h, l.v_w, l.v_b), hd, H, T), 1, 2, 0, 3)); // [T, hd, H]
-            ggml_tensor * kq = ggml_mul_mat(g, k, q);                                                      // [T, T, H]
+            ggml_tensor * v =
+                ggml_cont(g, ggml_permute(g, ggml_reshape_4d(g, linear(g, h, l.v_w, l.v_b), hd, H, T, count), 1, 2, 0,
+                                          3));        // [T, hd, H, count]
+            ggml_tensor * kq = ggml_mul_mat(g, k, q); // [T, T, H, count]
             kq = ggml_soft_max_ext(g, kq, nullptr, scale, 0.0f);
-            att = ggml_mul_mat(g, v, kq); // [hd, T, H]
+            att = ggml_mul_mat(g, v, kq); // [hd, T, H, count]
             att = ggml_cont(g, ggml_permute(g, att, 0, 2, 1, 3));
         }
-        att = linear(g, ggml_reshape_2d(g, att, D, T), l.o_w, l.o_b);
+        att = linear(g, ggml_reshape_2d(g, att, D, N), l.o_w, l.o_b);
         x = ggml_add(g, x, att);
         h = layer_norm(g, x, l.ln2_w, l.ln2_b, w.eps);
         h = linear(g, h, l.fc1_w, l.fc1_b);
@@ -264,9 +276,10 @@ bool encode(const vision_weights & w, ggml_backend_t backend, const image_part &
     // view(mh, 2, mw, 2, D).permute(0, 2, 1, 3, 4) -> per merged cell the
     // order is (dy, dx) row-major: [(0,0),(0,1),(1,0),(1,1)] x D; cells row-major.
     auto merger = [&](ggml_context * mg, ggml_tensor * enc) {
-        ggml_tensor * m = ggml_reshape_4d(mg, enc, D * S, pw / S, S, ph / S);
-        m = ggml_cont(mg, ggml_permute(mg, m, 0, 2, 1, 3)); // [2D, 2(dy), pw/2, ph/2]
-        m = ggml_reshape_2d(mg, m, D * S * S, (pw / S) * (ph / S));
+        // Stacked parts add whole 2-row bands (ph is even), so cells never straddle parts.
+        ggml_tensor * m = ggml_reshape_4d(mg, enc, D * S, pw / S, S, (ph / S) * count);
+        m = ggml_cont(mg, ggml_permute(mg, m, 0, 2, 1, 3)); // [2D, 2(dy), pw/2, ph/2 * count]
+        m = ggml_reshape_2d(mg, m, D * S * S, (pw / S) * (ph / S) * count);
         m = layer_norm(mg, m, w.mln_w, w.mln_b, w.merger_eps);
         m = linear(mg, m, w.m1_w, w.m1_b);
         m = ggml_gelu_erf(mg, m); // nn.GELU() default approximate="none" (erf), modeling_minicpm_ocr.py:502
@@ -309,7 +322,7 @@ bool encode(const vision_weights & w, ggml_backend_t backend, const image_part &
         ggml_init_params pp = { pmeta, nullptr, true };
         pctx.reset(ggml_init(pp));
         if (!pctx) return false;
-        ggml_tensor * enc = ggml_new_tensor_2d(pctx.get(), GGML_TYPE_F32, D, T);
+        ggml_tensor * enc = ggml_new_tensor_2d(pctx.get(), GGML_TYPE_F32, D, N);
         ggml_set_input(enc);
         m = merger(pctx.get(), enc);
         ggml_cgraph * pf = ggml_new_graph_custom(pctx.get(), 64, false);
@@ -325,7 +338,9 @@ bool encode(const vision_weights & w, ggml_backend_t backend, const image_part &
     const size_t before = merged.size();
     read_rows(m, merged);
     lap(&vision_timing::readback_ms);
-    if (merged.size() - before != size_t(image.tokens) * w.out_width) return false;
+    size_t expected = 0;
+    for (int n = 0; n < count; ++n) expected += size_t(parts[n].tokens) * w.out_width;
+    if (merged.size() - before != expected) return false;
     if (!std::all_of(merged.begin() + before, merged.end(), [](float f) { return std::isfinite(f); })) return false;
     if (dbg && taps.size() == 5) {
         read_rows(taps[0], debug->embeddings);
@@ -334,6 +349,60 @@ bool encode(const vision_weights & w, ggml_backend_t backend, const image_part &
         read_rows(taps[3], debug->layer26);
         read_rows(taps[4], debug->post_ln);
         debug->merged.insert(debug->merged.end(), merged.begin() + before, merged.end());
+    }
+    return true;
+}
+} // namespace
+
+bool encode(const vision_weights & w, ggml_backend_t backend, const image_part & image, int threads,
+            std::vector<float> & merged, vision_debug * debug, vision_timing * timing) {
+    return encode_parts(w, backend, &image, 1, threads, merged, debug, timing);
+}
+
+bool encode_batch(const vision_weights & w, ggml_backend_t backend, const image_part * parts, int count, int threads,
+                  std::vector<float> & merged, vision_debug * debug, vision_timing * timing) {
+    if (!core_env::on("CRISPEMBED_MINICPM_OCR_VISION_BATCH")) return false;
+    return encode_parts(w, backend, parts, count, threads, merged, debug, timing);
+}
+
+vision_f32_store::~vision_f32_store() {
+    if (buffer) ggml_backend_buffer_free(buffer);
+    if (ctx) ggml_free(ctx);
+}
+
+bool upcast_vision_f32(vision_weights & w, ggml_backend_t backend, vision_f32_store & store) {
+    if (!core_env::on("CRISPEMBED_MINICPM_OCR_VISION_F32") || !backend || store.ctx) return false;
+    std::vector<ggml_tensor **> slots = { &w.patch_w, &w.m1_w, &w.m2_w };
+    for (auto & l : w.layers) {
+        slots.push_back(&l.q_w);
+        slots.push_back(&l.k_w);
+        slots.push_back(&l.v_w);
+        slots.push_back(&l.o_w);
+        slots.push_back(&l.fc1_w);
+        slots.push_back(&l.fc2_w);
+    }
+    store.ctx = ggml_init({ (slots.size() + 1) * ggml_tensor_overhead(), nullptr, true });
+    if (!store.ctx) return false;
+    std::vector<std::pair<ggml_tensor **, ggml_tensor *>> todo;
+    for (auto ** slot : slots) {
+        ggml_tensor * src = *slot;
+        if (!src || src->type == GGML_TYPE_F32) continue;
+        if (!ggml_is_contiguous(src) || !ggml_get_type_traits(src->type)->to_float) return false;
+        todo.emplace_back(slot, ggml_new_tensor(store.ctx, GGML_TYPE_F32, GGML_MAX_DIMS, src->ne));
+    }
+    if (todo.empty()) return true;
+    store.buffer = ggml_backend_alloc_ctx_tensors(store.ctx, backend);
+    if (!store.buffer) return false;
+    std::vector<uint8_t> raw;
+    std::vector<float> values;
+    for (auto & item : todo) {
+        ggml_tensor * src = *item.first;
+        raw.resize(ggml_nbytes(src));
+        values.resize(size_t(ggml_nelements(src)));
+        ggml_backend_tensor_get(src, raw.data(), 0, raw.size());
+        ggml_get_type_traits(src->type)->to_float(raw.data(), values.data(), int64_t(values.size()));
+        ggml_backend_tensor_set(item.second, values.data(), 0, values.size() * sizeof(float));
+        *item.first = item.second;
     }
     return true;
 }

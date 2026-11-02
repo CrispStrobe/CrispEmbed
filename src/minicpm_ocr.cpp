@@ -18,6 +18,7 @@
 #include "minicpm_ocr_vision.h"
 #include "qwen35_decoder.h"
 #include "qwen35_frontend.h"
+#include "qwen35_graph_decoder.h"
 #include "qwen35_weight_cache.h"
 
 #include <algorithm>
@@ -80,6 +81,9 @@ struct minicpm_ocr_context {
     qwen35_ocr::decoder_weights decoder;
     qwen35_ocr::attention_config attention;
     qwen35_ocr::converted_weight_cache weights_cache;
+    // Default-off speed paths (CRISPEMBED_QWEN35_GRAPH_DECODER, CRISPEMBED_MINICPM_OCR_VISION_F32).
+    std::unique_ptr<qwen35_ocr::graph_decoder> graph;
+    std::unique_ptr<minicpm_ocr::vision_f32_store> vision_f32;
     minicpm_ocr_tiles::config tiles;
     int threads = 1, max_tokens = 1024;
     std::string task = kDefaultTask, text, error;
@@ -87,6 +91,8 @@ struct minicpm_ocr_context {
     std::vector<float> confidences;
     ~minicpm_ocr_context() {
         weights_cache.clear();
+        graph.reset();
+        vision_f32.reset();
         core_gguf::free_weights(loaded);
         if (backend) ggml_backend_free(backend);
     }
@@ -213,18 +219,29 @@ const char * recognize(minicpm_ocr_context & c, const uint8_t * pixels, int w, i
     std::vector<float> merged;
     minicpm_ocr::vision_debug dbg;
     dbg.enabled = !dump.empty();
-    for (size_t i = 0; i < parts.size(); ++i) {
+    // CRISPEMBED_MINICPM_OCR_VISION_BATCH (default off): equally sized consecutive
+    // parts (the slices) run as one graph of independent sequences; rows stay in order.
+    const bool batch = core_env::on("CRISPEMBED_MINICPM_OCR_VISION_BATCH");
+    for (size_t i = 0; i < parts.size();) {
         const auto & p = parts[i];
+        size_t count = 1;
+        while (batch && i + count < parts.size() && count < 64 && parts[i + count].width == p.width &&
+               parts[i + count].height == p.height)
+            ++count;
         minicpm_ocr::vision_timing vt;
-        if (!minicpm_ocr::encode(c.vision, c.backend, p, c.threads, merged, &dbg, clk.on ? &vt : nullptr))
-            return c.fail("vision inference failed");
+        const bool ok =
+            count > 1 ? minicpm_ocr::encode_batch(c.vision, c.backend, parts.data() + i, int(count), c.threads, merged,
+                                                  &dbg, clk.on ? &vt : nullptr)
+                      : minicpm_ocr::encode(c.vision, c.backend, p, c.threads, merged, &dbg, clk.on ? &vt : nullptr);
+        if (!ok) return c.fail("vision inference failed");
         const double total = clk.lap();
         if (clk.on)
             std::fprintf(stderr,
                          "  [time] minicpm_ocr.vision part=%zu %dx%d patches=%d tokens=%d total=%.3fms setup=%.3fms "
-                         "encoder=%.3fms projector=%.3fms readback=%.3fms\n",
-                         i, p.width, p.height, (p.width / 14) * (p.height / 14), p.tokens, total, vt.setup_ms,
-                         vt.encoder_ms, vt.projector_ms, vt.readback_ms);
+                         "encoder=%.3fms projector=%.3fms readback=%.3fms count=%zu\n",
+                         i, p.width, p.height, int(count) * (p.width / 14) * (p.height / 14), int(count) * p.tokens,
+                         total, vt.setup_ms, vt.encoder_ms, vt.projector_ms, vt.readback_ms, count);
+        i += count;
     }
     if (!dump.empty()) {
         const size_t D = size_t(c.vision.width);
@@ -254,10 +271,24 @@ const char * recognize(minicpm_ocr_context & c, const uint8_t * pixels, int w, i
     // over 64 of 256 dims (partial_rotary_factor 0.25), theta 1e7, rotate_half (NeoX) pairs.
     auto positions = equal_axes(0, int(ids.size()));
     qwen35_ocr::decoder_outputs current;
-    if (!qwen35_ocr::decoder_cpu(c.decoder, c.attention, hidden.data(), positions.data(), 1, int(ids.size()), c.threads,
-                                 nullptr, current, cache_ptr))
+    // CRISPEMBED_QWEN35_GRAPH_DECODER (default off): the same decoder as one ggml graph per
+    // call with a persistent KV / delta-net state; logits go into current.logits and the
+    // sequence length into current.cache.tokens, so the greedy loop below is shared.
+    auto * graph = c.graph.get();
+    if (graph) {
+        graph->reset();
+        std::vector<std::vector<float>> layers;
+        if (!graph->forward(hidden.data(), int(ids.size()), c.threads, current.logits, dump.empty() ? nullptr : &layers,
+                            dump.empty() ? nullptr : &current.norm))
+            return c.fail("graph decoder prefill failed");
+        current.hidden = std::move(layers);
+        current.cache.tokens = graph->tokens();
+    } else if (!qwen35_ocr::decoder_cpu(c.decoder, c.attention, hidden.data(), positions.data(), 1, int(ids.size()),
+                                        c.threads, nullptr, current, cache_ptr)) {
         return c.fail("decoder prefill failed");
-    clk.stage("prefill", "tokens=" + std::to_string(ids.size()));
+    }
+    clk.stage("prefill",
+              "tokens=" + std::to_string(ids.size()) + (graph ? std::string(" graph=") + graph->mode() : ""));
     if (!dump.empty()) {
         for (size_t i = 0; i < current.hidden.size(); ++i)
             dump_f32(dump, "model_language_model_layers_" + std::to_string(i), current.hidden[i], size_t(kWidth));
@@ -280,10 +311,17 @@ const char * recognize(minicpm_ocr_context & c, const uint8_t * pixels, int w, i
         if (step + 1 == c.max_tokens || current.cache.tokens >= kMaxContext) break;
         auto cache = std::move(current.cache);
         if (!qwen35_ocr::embed_cpu(c.decoder.embedding, { id }, hidden)) return c.fail("embedding failed");
-        positions = equal_axes(cache.tokens, 1);
-        if (!qwen35_ocr::decoder_cpu(c.decoder, c.attention, hidden.data(), positions.data(), 1, 1, c.threads, &cache,
-                                     current, cache_ptr))
-            return c.fail("cached decoder failed");
+        if (graph) {
+            current = {};
+            if (!graph->forward(hidden.data(), 1, c.threads, current.logits))
+                return c.fail("graph decoder step failed");
+            current.cache.tokens = graph->tokens();
+        } else {
+            positions = equal_axes(cache.tokens, 1);
+            if (!qwen35_ocr::decoder_cpu(c.decoder, c.attention, hidden.data(), positions.data(), 1, 1, c.threads,
+                                         &cache, current, cache_ptr))
+                return c.fail("cached decoder failed");
+        }
         if (clk.on) step_ms.push_back(clk.lap()); // argmax + embed + one cached decoder step
     }
     if (clk.on) {
@@ -364,6 +402,20 @@ extern "C" minicpm_ocr_context * minicpm_ocr_init(const char * path, int threads
         if (!error.empty() || !minicpm_ocr::map_vision(c->loaded.tensors, c->vision, error)) {
             std::fprintf(stderr, "minicpm_ocr: %s\n", error.c_str());
             return nullptr;
+        }
+        if (core_env::on("CRISPEMBED_MINICPM_OCR_VISION_F32")) {
+            c->vision_f32 = std::make_unique<minicpm_ocr::vision_f32_store>();
+            if (!minicpm_ocr::upcast_vision_f32(c->vision, c->backend, *c->vision_f32)) {
+                std::fprintf(stderr, "minicpm_ocr: F32 vision weight copy failed\n");
+                return nullptr;
+            }
+        }
+        if (qwen35_ocr::graph_decoder::enabled()) {
+            c->graph = std::make_unique<qwen35_ocr::graph_decoder>();
+            if (!c->graph->init(c->decoder, c->attention, c->backend, kMaxContext)) {
+                std::fprintf(stderr, "minicpm_ocr: graph decoder initialization failed\n");
+                return nullptr;
+            }
         }
         clk.stage("init");
         return c.release();
