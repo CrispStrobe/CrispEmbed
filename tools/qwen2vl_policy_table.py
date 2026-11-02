@@ -17,7 +17,11 @@ BARS = {"f32": 0.99, "f16": 0.98, "q8_0": 0.97}
 
 
 def bar_for(precision):
-    return BARS.get(precision, 0.94 if precision.startswith("q4") else None)
+    if precision in BARS:
+        return BARS[precision]
+    if precision.startswith("q8_0"):  # q8_0-all, q8_0-vision-f16-decoder: lowest tensor tier is Q8_0
+        return 0.97
+    return 0.94 if precision.startswith("q4") else None
 
 
 def main():

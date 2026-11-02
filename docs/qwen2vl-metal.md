@@ -90,19 +90,20 @@ precision of the Q4_K/Q6_K decoder, not the runtime. Decoded IDs stay exact.
 | F16 | F32 tiles (new default) | 8/8 | 95.2 | 0.999999 | 0.999578 | 1.000000 |
 | Q8_0 (F16 vision) | half tiles | 8/8 | 77.0 | 0.999890 | **0.881305** | 0.999831 |
 | Q8_0 (F16 vision) | F32 tiles | 8/8 | 85.1 | 0.999960 | 0.999342 | 0.999840 |
-| "q4_k-dq8" (all Q8_0) | half tiles | 8/8 | 79.4 | 0.999099 | **0.725269** | 0.999594 |
-| "q4_k-dq8" (all Q8_0) | F32 tiles | 8/8 | 78.3 | 0.999217 | **0.802009** | 0.999585 |
+| q8_0-all (formerly "q4_k-dq8") | half tiles | 8/8 | 79.4 | 0.999099 | **0.725269** | 0.999594 |
+| q8_0-all (formerly "q4_k-dq8") | F32 tiles | 8/8 | 78.3 | 0.999217 | **0.802009** | 0.999585 |
 | F32 | CPU (reference) | 8/8 | 386.8* | 1 | 1 | 1 |
 
 The half-tile drop (German prompt row 1961, 0.880) is runtime: the same
 weights with F32 tiles give 0.9996, and the vision-merger worst row moves from
-0.99096 to 0.99995. The Kaggle "Q4_K with Q8_0 decoder" recipe
+0.99096 to 0.99995. The Kaggle "Q4_K with Q8_0 decoder" recipe (now labelled `q8_0-all`)
 (`q4_k --tensor-type 'l.*=q8_0'`) contains **no Q4_K tensor**: the
 quantizer floors vision at Q8_0 and the override covers the whole decoder
 (297 matrices, all Q8_0, embeddings included). Its weak rows come from the
 Q8_0 vision tower (German merger worst row 0.978) and remain on both kernel
 choices, so they are precision. Unlike CUDA, it was exact on layout-page on
-Metal. Real Q4_K decoder candidates are listed below.
+Metal. Real Q4_K decoder candidates are listed below; the Q4_K recipe search is in
+[qwen2vl-q4k-recipes.md](qwen2vl-q4k-recipes.md).
 
 ## Precision-policy re-score (docs/precision-acceptance.md)
 
@@ -152,12 +153,12 @@ numbers for one recipe agree within 0.02-0.04, so runtime is not the limit.
 | q4_k | cpu | 0.914481 (japanese) | > 0.94 | no | 6/8 | german@3, arabic@4 | german prefill_final_norm(row) 0.2888 |
 | q4_k | gpu | 0.923131 (japanese) | > 0.94 | no | 6/8 | german@3, arabic@4 | german prefill_final_norm(row) 0.2818 |
 | q4_k | metal | 0.924067 (japanese) | > 0.94 | no | 6/8 | german@3, arabic@4 | german prefill_final_norm(row) 0.7962 |
-| q4_k-df16 | cpu | 0.999372 (japanese) | > 0.94 | yes | 7/8 | layout-page@180 | german prefill_final_norm(row) 0.2902 |
-| q4_k-df16 | gpu | 0.998766 (japanese) | > 0.94 | yes | 7/8 | layout-page@180 | german prefill_final_norm(row) 0.2820 |
-| q4_k-df16 | metal | 0.999787 (japanese) | > 0.94 | yes | 8/8 | - | german prefill_final_norm(row) 0.8028 |
-| q4_k-dq8 | cpu | 0.998114 (german) | > 0.94 | yes | 8/8 | - | german prefill_final_norm(row) 0.2896 |
-| q4_k-dq8 | gpu | 0.998809 (japanese) | > 0.94 | yes | 7/8 | layout-page@180 | german prefill_final_norm(row) 0.2803 |
-| q4_k-dq8 | metal | 0.999585 (japanese) | > 0.94 | yes | 8/8 | - | german prefill_final_norm(row) 0.8020 |
+| q8_0-vision-f16-decoder | cpu | 0.999372 (japanese) | > 0.94 | yes | 7/8 | layout-page@180 | german prefill_final_norm(row) 0.2902 |
+| q8_0-vision-f16-decoder | gpu | 0.998766 (japanese) | > 0.94 | yes | 7/8 | layout-page@180 | german prefill_final_norm(row) 0.2820 |
+| q8_0-vision-f16-decoder | metal | 0.999787 (japanese) | > 0.94 | yes | 8/8 | - | german prefill_final_norm(row) 0.8028 |
+| q8_0-all | cpu | 0.998114 (german) | > 0.94 | yes | 8/8 | - | german prefill_final_norm(row) 0.2896 |
+| q8_0-all | gpu | 0.998809 (japanese) | > 0.94 | yes | 7/8 | layout-page@180 | german prefill_final_norm(row) 0.2803 |
+| q8_0-all | metal | 0.999585 (japanese) | > 0.94 | yes | 8/8 | - | german prefill_final_norm(row) 0.8020 |
 | q4_k-vf16 | cpu | 0.925344 (japanese) | > 0.94 | no | 6/8 | german@3, arabic@4 | layout-rot90 prefill_final_norm(row) 0.9607 |
 | q4_k-vf16 | gpu | 0.939804 (japanese) | > 0.94 | no | 5/8 | german@3, arabic@4, layout-page@38 | german prefill_final_norm(row) 0.8410 |
 | q4_k-vf16 | metal | 0.930233 (japanese) | > 0.94 | no | 6/8 | german@3, arabic@4 | arabic prefill_final_norm(row) 0.9613 |
@@ -165,11 +166,13 @@ numbers for one recipe agree within 0.02-0.04, so runtime is not the limit.
 | q8_0 | gpu | 0.999314 (japanese) | > 0.97 | yes | 8/8 | - | german prefill_final_norm(row) 0.8575 |
 | q8_0 | metal | 0.999838 (german) | > 0.97 | yes | 8/8 | - | german prefill_final_norm(row) 0.9993 |
 
-"q4_k-dq8" and "q4_k-df16" pass but contain no Q4_K tensor (the quantizer
+`q8_0-all` and `q8_0-vision-f16-decoder` (measured as "q4_k-dq8" and
+"q4_k-df16", renamed 2026-11-02 in these tables and the receipts) pass the
+Q8_0 bar too (0.97), but contain no Q4_K tensor (the quantizer
 floors vision at Q8_0 and the override keeps the whole decoder at Q8_0/F16).
 Recipes with Q4_K decoder matrices ("q4_k", "q4_k-vf16") fail on every device
 and flip German at token 3 and Arabic at token 4 everywhere. Layout-page
-token 180 (CPU df16, CUDA dq8/df16) is a near-tie: the F32 reference's top-2
+token 180 (CPU q8_0-vision-f16-decoder, CUDA both) is a near-tie: the F32 reference's top-2
 margin there is 0.024 logits (IDs 22 vs 23), with logit cosine 1.0. Worst
 stage: the German prompt final-norm row falls to 0.28-0.29 for every Q8_0
 vision recipe on CPU and CUDA (int8 / half activation handling) but stays at

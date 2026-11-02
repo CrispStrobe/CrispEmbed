@@ -56,6 +56,21 @@ Source: `docs/gpu-support-matrix.md` §CUDA audit (branch `feat/cuda-audit`, Kag
 - Metal A/B of the new `CRISPEMBED_PAN_GPU` / `CRISPEMBED_RESTORMER_GPU` (CUDA-only
   defaults until measured there).
 
+## TeleOCR / MinerU Q4_K-class recipes — 2 November 2026 (feat/qwen2vl-q4k-recipes)
+
+Source: `docs/qwen2vl-q4k-recipes.md`. Winners clear the Q4_K bar on CPU, Metal and
+CUDA; `Q4_K_MIX` publication recipes are prepared, not published.
+
+- Coordinator: dispatch `Q4_K_MIX` publication for TeleOCR and MinerU (cosine gate),
+  then add registry aliases with the read-back SHA-256.
+- Neither winner is token-exact free-running (TeleOCR table@35, three CJK characters;
+  MinerU German masthead/"Infrafttreten" and a layout box coordinate). A token-exact
+  Q4-class recipe would need more Q8_0 (MinerU `r4` keeps the same two divergences).
+- TeleOCR decoder Q4_K remains out of reach (best whole-decoder 0.870 with imatrix);
+  a larger, in-distribution calibration set for the opt-in imatrix path is untested.
+- Hosted CPU builds use `-march=native`: MinerU's CPU cosine moves by up to 0.015 with
+  the runner ISA on identical bytes; pin `GGML_NATIVE=OFF` for future CPU receipts.
+
 ## Metal GPU audit follow-ups — 1 November 2026
 
 Source: `docs/gpu-support-matrix.md` (branch `feat/metal-audit`).
@@ -79,7 +94,7 @@ Source: `docs/gpu-support-matrix.md` (branch `feat/metal-audit`).
 - No Q4_K-decoder recipe meets the 0.94 final-output bar for either model on
   any device; search recipes (per-layer sensitivity, Q6_K/Q8_0 for the
   weakest matrices) rather than runtime changes. MinerU's passing
-  "q4_k-dq8"/"q4_k-df16" contain no Q4_K tensor and should be renamed if published.
+  "q4_k-dq8"/"q4_k-df16" were renamed `q8_0-all` / `q8_0-vision-f16-decoder` (no Q4_K tensor).
 - CUDA F16/Q8_0 show prompt-row cosine 0.86-0.90 (CUDA half-precision
   activations; Metal fixed the analogous trap): check cuBLAS/MMQ precision.
 - Merge the ggml branch `crispembed/metal-mul-mat-prec-hp` into the fork's

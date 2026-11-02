@@ -150,6 +150,19 @@
             "715c5860169d3949677b183ccf5feff9a7ab1990 quantize: honor literal F16 4D patch casts and preserve actual MiniCPM rejection"
           ],
           "reason": "PR89: new opt-in paths only, default output byte-identical. Adds --standard-file-type / CRISPEMBED_QUANTIZE_STANDARD_FTYPE=1 (standard GGUF general.file_type label; default keeps the legacy internal-enum label), an exact-name --tensor-type <patch_embed>=f16 cast that keeps 4D axes, and --metadata-string. Verified 2026-11-02: main vs PR quantizer on one F32 GGUF give byte-identical q4_k/q5_k/q6_k/q8_0/f16 output by default and with a glob override; the opt-in changes only the one header byte for K quants."
+        },
+        {
+          "from_sha256": "6519688caf42914483604fba7903c1739dd5e7d7e3dfa97ae79f838a40300f7c",
+          "to_sha256": "c348d502f476a1c6edf2befe758ae6bd5d4ad28257b1928561db1c8e815c952f",
+          "to_blob": "b64fd0b5623e500fc180c462722173bc307eae08",
+          "recorded_at_commit": "78ec92c2bc15f60f16428fa649a86abab448cc10",
+          "recorded": "2026-11-02",
+          "changed_by": [
+            "c8c045f69e6d54cc4b67932f81648b4c680092ca Merge remote-tracking branch 'origin/main' into feat/qwen2vl-q4k-recipes",
+            "4b4e4cbb0139f77a25ba4203aa0f67199e68840d quantize: opt-in named policies teleocr_q4k_v1 / mineru_q4k_v1 (CRISPEMBED_QUANTIZE_QWEN2VL_POLICY)",
+            "8d843fdfef038a40e60afde4dd8adb1a997ef5b2 qwen2vl: Q4_K recipe sweep harness; quantizer accepts 4/5-bit tensor overrides"
+          ],
+          "reason": "feat/qwen2vl-q4k-recipes: --tensor-type also accepts q4_k/q5_0/q4_0/iq4_nl, and opt-in named policies (CRISPEMBED_QUANTIZE_QWEN2VL_POLICY=teleocr_q4k_v1|mineru_q4k_v1) guarded to the TeleOCR/MinerU qwen2vl_ocr families. Without the env var and without explicit rules every existing qwen35_ocr quantization decision and its default policy are unchanged."
         }
       ]
     }

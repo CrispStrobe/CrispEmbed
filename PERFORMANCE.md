@@ -184,6 +184,22 @@ eight frozen fixtures, CPU at 4 threads, machine shared (load 6–27):
 1080p synthetic subtitle frames, Metal F32 batch 1: 14 tiles 10.7 s, 20 tiles
 11.9 s; CPU/F32 in the same processes 17–60 s. Hosted x86 4 vCPU: CPU/F32
 1080p 0.83 tiles/s; delivery-5 CPU kernels 630 ms/tile. Diagnostic only.
+## 2 November 2026 — TeleOCR / MinerU2.5-Pro Q4_K-class policies (size and final-logit cosine)
+
+Final cos min = minimum final-logit cosine over every generated position of every
+frozen case, teacher-forced (bar 0.94). Warm s = sum over cases of the free-running run.
+
+| Model | Recipe | MiB | CPU (hosted) | Metal (M1) | CUDA (T4) | Decoded exact | CUDA warm s |
+|---|---|---|---|---|---|---|---|
+| TeleOCR | `teleocr_q4k_v1` | 1,140 | 0.9677 | 0.9677 | 0.9570 | 5/6 | 25.8 |
+| TeleOCR | Q8_0 (published) | 2,015 | 0.9985 | 0.9985 | 0.9939 | 6/6 | |
+| TeleOCR | Q4_K_M (published) | 1,834 | 0.9047 | 0.9047 | 0.9215 | 6/6 | |
+| MinerU | `mineru_q4k_v1` | 734 | 0.9673 / 0.9521 | 0.9602 | 0.9611 | 6/8 | 30.3 |
+| MinerU | Q8_0 (published, vision F16) | 1,832 | 0.9988 | 0.9998 | 0.9993 | 8/8 | |
+
+Status: on par with the bar on every device (not token-exact). Source:
+`docs/qwen2vl-q4k-recipes.md`.
+
 ## 1 November 2026 — TeleOCR / MinerU2.5-Pro on Apple M1 Metal vs CPU
 
 Warm wall time per recognition, resident context, shared M1 (other agents

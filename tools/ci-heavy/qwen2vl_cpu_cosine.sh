@@ -6,7 +6,7 @@
 # against a native CPU reference, plus the worst intermediate-stage cosine.
 #
 #   gh workflow run heavy-cpu.yml --ref feat/metal-qwen2vl \
-#       -f script=tools/ci-heavy/qwen2vl_cpu_cosine.sh -f args="mineru f16,q8_0,q4_k,q4_k-dq8,q4_k-df16,q4_k-vf16" \
+#       -f script=tools/ci-heavy/qwen2vl_cpu_cosine.sh -f args="mineru f16,q8_0,q4_k,q8_0-all,q8_0-vision-f16-decoder,q4_k-vf16" \
 #       -f pip="numpy==2.2.6 safetensors==0.6.2 huggingface_hub==0.36.0 gguf==0.17.1" \
 #       -f isolated_lane=qwen2vl-cpu-cosine-mineru
 #   ... -f args="teleocr q8_0,q4_k-m,q4_k,q4_k-attn8" -f isolated_lane=qwen2vl-cpu-cosine-teleocr
@@ -25,6 +25,7 @@ VARIANTS=${2:?comma list}
 CASES=${3:-}
 OUT=${HEAVY_OUT:?}
 S=${HEAVY_SCRATCH:?}
+(lscpu 2>/dev/null || sysctl -a 2>/dev/null | grep -i brand) > "$OUT/cpu.txt" # -march=native: kernels follow the runner ISA
 # shellcheck disable=SC2086  # CMAKE_EXTRA is a flag list
 cmake -S . -B "$S/build" -DCMAKE_BUILD_TYPE=Release ${CMAKE_EXTRA:-} > "$OUT/cmake.log" 2>&1 &&
     cmake --build "$S/build" --target test-mineru25-run test-teleocr-run crispembed-quantize -j"$(nproc)" \
@@ -56,11 +57,17 @@ gguf_for() {
     case $1 in
     f16 | q8_0 | q4_k-m) curl -sSL --retry 5 -o "$f" "${PUB}/${PRE}$1.gguf" ;;
     q4_k) "$Q" "$SRC" "$f" q4_k "${PROTECT[@]}" > "$OUT/quantize-$1.log" 2>&1 ;;
-    q4_k-dq8) "$Q" "$SRC" "$f" q4_k --tensor-type 'l.*=q8_0' > "$OUT/quantize-$1.log" 2>&1 ;;
-    q4_k-df16) "$Q" "$SRC" "$f" q4_k --decoder-f16 > "$OUT/quantize-$1.log" 2>&1 ;;
+    q4_k-dq8 | q8_0-all) "$Q" "$SRC" "$f" q4_k --tensor-type 'l.*=q8_0' > "$OUT/quantize-$1.log" 2>&1 ;;
+    q4_k-df16 | q8_0-vision-f16-decoder) "$Q" "$SRC" "$f" q4_k --decoder-f16 > "$OUT/quantize-$1.log" 2>&1 ;;
     q4_k-vf16) "$Q" "$SRC" "$f" q4_k --tensor-type 'v.*=f16' --tensor-type 'l.embed_tokens.weight=q8_0' \
         > "$OUT/quantize-$1.log" 2>&1 ;;
     q4_k-attn8) "$Q" "$SRC" "$f" q4_k "${PROTECT[@]}" --tensor-type 'l.blk.*.attn_*=q8_0' > "$OUT/quantize-$1.log" 2>&1 ;;
+    *) # named recipe from tools/qwen2vl_quant_recipes.json (docs/qwen2vl-q4k-recipes.md)
+        local qa qe
+        mapfile -t qa < <(python tools/qwen2vl_quant_census.py args "$MODEL" "$1")
+        mapfile -t qe < <(python tools/qwen2vl_quant_census.py env "$MODEL" "$1")
+        env "${qe[@]}" "$Q" "$SRC" "$f" "${qa[@]}" > "$OUT/quantize-$1.log" 2>&1
+        python tools/qwen2vl_quant_census.py census "$f" "$OUT/$1.census.json" ;;
     esac
     echo "$f"
 }

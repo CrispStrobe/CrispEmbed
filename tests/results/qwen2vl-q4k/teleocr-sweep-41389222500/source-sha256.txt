@@ -1,0 +1,1 @@
+6c52a2800e313964717cf4e5d06e0392c2b5936d8adeac423d563b8a026a2780  /mnt/heavy/scratch/f16.gguf

@@ -1,0 +1,149 @@
+{
+ "file_bytes": 2081776928,
+ "by_type": {
+  "Q8_0": {
+   "tensors": 168,
+   "bytes": 401080320
+  },
+  "F32": {
+   "tensors": 340,
+   "bytes": 2314240
+  },
+  "Q4_K": {
+   "tensors": 28,
+   "bytes": 35389440
+  },
+  "F16": {
+   "tensors": 164,
+   "bytes": 1637019648
+  }
+ },
+ "by_component": {
+  "decoder.attn_k": {
+   "Q8_0": {
+    "tensors": 24,
+    "bytes": 26738688
+   },
+   "Q4_K": {
+    "tensors": 4,
+    "bytes": 2359296
+   }
+  },
+  "decoder.attn_k_norm": {
+   "F32": {
+    "tensors": 28,
+    "bytes": 14336
+   }
+  },
+  "decoder.attn_norm": {
+   "F32": {
+    "tensors": 28,
+    "bytes": 114688
+   }
+  },
+  "decoder.attn_o": {
+   "Q8_0": {
+    "tensors": 24,
+    "bytes": 53477376
+   },
+   "Q4_K": {
+    "tensors": 4,
+    "bytes": 4718592
+   }
+  },
+  "decoder.attn_q": {
+   "Q8_0": {
+    "tensors": 24,
+    "bytes": 53477376
+   },
+   "Q4_K": {
+    "tensors": 4,
+    "bytes": 4718592
+   }
+  },
+  "decoder.attn_q_norm": {
+   "F32": {
+    "tensors": 28,
+    "bytes": 14336
+   }
+  },
+  "decoder.attn_v": {
+   "Q8_0": {
+    "tensors": 24,
+    "bytes": 26738688
+   },
+   "Q4_K": {
+    "tensors": 4,
+    "bytes": 2359296
+   }
+  },
+  "decoder.ffn_down": {
+   "Q8_0": {
+    "tensors": 24,
+    "bytes": 80216064
+   },
+   "Q4_K": {
+    "tensors": 4,
+    "bytes": 7077888
+   }
+  },
+  "decoder.ffn_gate": {
+   "Q8_0": {
+    "tensors": 24,
+    "bytes": 80216064
+   },
+   "Q4_K": {
+    "tensors": 4,
+    "bytes": 7077888
+   }
+  },
+  "decoder.ffn_norm": {
+   "F32": {
+    "tensors": 28,
+    "bytes": 114688
+   }
+  },
+  "decoder.ffn_up": {
+   "Q8_0": {
+    "tensors": 24,
+    "bytes": 80216064
+   },
+   "Q4_K": {
+    "tensors": 4,
+    "bytes": 7077888
+   }
+  },
+  "embedding": {
+   "F16": {
+    "tensors": 1,
+    "bytes": 311164928
+   }
+  },
+  "other": {
+   "F32": {
+    "tensors": 1,
+    "bytes": 4096
+   }
+  },
+  "vision": {
+   "F32": {
+    "tensors": 224,
+    "bytes": 2022400
+   },
+   "F16": {
+    "tensors": 160,
+    "bytes": 1259929600
+   }
+  },
+  "vision_host": {
+   "F32": {
+    "tensors": 3,
+    "bytes": 29696
+   },
+   "F16": {
+    "tensors": 3,
+    "bytes": 65925120
+   }
+  }
+ }
+}
