@@ -89,7 +89,9 @@ def check(kind, commands, frozen, root, build, frozen_root):
 
     seen, rows = {}, []
     for rel, r in own:
-        target = target_of(r['output'])
+        t = tokens(r['command'])
+        require('-o' in t, 'Compile output absent: ' + rel)
+        target = target_of(t[t.index('-o') + 1])
         key = (target, rel)
         require(key not in seen, 'Duplicate declared compile entry: ' + repr(key))
         seen[key] = r
@@ -98,7 +100,7 @@ def check(kind, commands, frozen, root, build, frozen_root):
 
     frozen_profiles = {}
     for rel, r in frozen_own:
-        frozen_profiles[(target_of(r['output']), rel)] = profile(r['command'])
+        ft = tokens(r['command']);frozen_profiles[(target_of(ft[ft.index('-o') + 1]), rel)] = profile(r['command'])
     require(set(frozen_profiles) == {k for k in declared if k[0] in FROZEN_TARGETS}, 'Frozen component inventory differs')
 
     for key, r in sorted(seen.items()):
@@ -106,6 +108,8 @@ def check(kind, commands, frozen, root, build, frozen_root):
         directory = build if declared[key] == '.' else build / declared[key]
         require(Path(r['directory']) == directory, 'Compile directory differs: ' + repr(key))
         t = tokens(r['command'])
+        # CMake records `output` relative to the top-level build, `-o` relative to `directory`.
+        require(Path(r['output']) == Path(declared[key]) / t[t.index('-o') + 1], 'Compile output path differs: ' + repr(key))
         require('-c' in t and Path(t[t.index('-c') + 1]) == Path(root) / rel and Path(r['file']) == Path(root) / rel, 'Compiled source path differs: ' + repr(key))
         compiler = Path(t[0]).name
         require(compiler in (('em++',) if kind == 'wasm' else ('c++', 'g++', 'clang++')), 'Compiler differs: ' + repr(key) + ' ' + compiler)

@@ -1,0 +1,182 @@
+[
+{
+  "directory": "/home/runner/work/_temp/live-norm/component-native",
+  "command": "/usr/bin/c++ -DGGML_USE_CPU -I/home/runner/work/CrispEmbed/CrispEmbed/src -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -ffp-contract=off -o CMakeFiles/live-norm-replay.dir/replay.cpp.o -c /home/runner/work/CrispEmbed/CrispEmbed/tests/wasm-live-norm/replay.cpp",
+  "file": "/home/runner/work/CrispEmbed/CrispEmbed/tests/wasm-live-norm/replay.cpp",
+  "output": "CMakeFiles/live-norm-replay.dir/replay.cpp.o"
+},
+{
+  "directory": "/home/runner/work/_temp/live-norm/component-native",
+  "command": "/usr/bin/c++ -DGGML_USE_CPU -I/home/runner/work/CrispEmbed/CrispEmbed/src -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -ffp-contract=off -o CMakeFiles/live-norm-replay.dir/home/runner/work/CrispEmbed/CrispEmbed/src/core/wasm_native_order_norm.cpp.o -c /home/runner/work/CrispEmbed/CrispEmbed/src/core/wasm_native_order_norm.cpp",
+  "file": "/home/runner/work/CrispEmbed/CrispEmbed/src/core/wasm_native_order_norm.cpp",
+  "output": "CMakeFiles/live-norm-replay.dir/home/runner/work/CrispEmbed/CrispEmbed/src/core/wasm_native_order_norm.cpp.o"
+},
+{
+  "directory": "/home/runner/work/_temp/live-norm/component-native/frozen-controls",
+  "command": "/usr/bin/c++ -DGGML_USE_CPU -I/home/runner/work/CrispEmbed/CrispEmbed/src -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -ffp-contract=off -o CMakeFiles/norm-candidate-controls.dir/controls.cpp.o -c /home/runner/work/CrispEmbed/CrispEmbed/tests/wasm-native-order-norm/controls.cpp",
+  "file": "/home/runner/work/CrispEmbed/CrispEmbed/tests/wasm-native-order-norm/controls.cpp",
+  "output": "frozen-controls/CMakeFiles/norm-candidate-controls.dir/controls.cpp.o"
+},
+{
+  "directory": "/home/runner/work/_temp/live-norm/component-native/frozen-controls",
+  "command": "/usr/bin/c++ -DGGML_USE_CPU -I/home/runner/work/CrispEmbed/CrispEmbed/src -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -ffp-contract=off -o CMakeFiles/norm-candidate-controls.dir/home/runner/work/CrispEmbed/CrispEmbed/src/core/wasm_native_order_norm.cpp.o -c /home/runner/work/CrispEmbed/CrispEmbed/src/core/wasm_native_order_norm.cpp",
+  "file": "/home/runner/work/CrispEmbed/CrispEmbed/src/core/wasm_native_order_norm.cpp",
+  "output": "frozen-controls/CMakeFiles/norm-candidate-controls.dir/home/runner/work/CrispEmbed/CrispEmbed/src/core/wasm_native_order_norm.cpp.o"
+},
+{
+  "directory": "/home/runner/work/_temp/live-norm/component-native/frozen-controls",
+  "command": "/usr/bin/c++  -I/home/runner/work/CrispEmbed/CrispEmbed/src -O3 -DNDEBUG -std=gnu++17 -ffp-contract=off -o CMakeFiles/norm-candidate-ref.dir/home/runner/work/CrispEmbed/CrispEmbed/tests/moedern-native-v2/diff.cpp.o -c /home/runner/work/CrispEmbed/CrispEmbed/tests/moedern-native-v2/diff.cpp",
+  "file": "/home/runner/work/CrispEmbed/CrispEmbed/tests/moedern-native-v2/diff.cpp",
+  "output": "frozen-controls/CMakeFiles/norm-candidate-ref.dir/home/runner/work/CrispEmbed/CrispEmbed/tests/moedern-native-v2/diff.cpp.o"
+},
+{
+  "directory": "/home/runner/work/_temp/live-norm/component-native/frozen-controls/ggml-build/src",
+  "command": "/usr/bin/cc -DGGML_COMMIT=\\\"a06fc0bb\\\" -DGGML_SCHED_MAX_COPIES=4 -DGGML_VERSION=\\\"0.17.0\\\" -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/../include -O3 -DNDEBUG -std=gnu11 -Wshadow -Wstrict-prototypes -Wpointer-arith -Wmissing-prototypes -Werror=implicit-int -Werror=implicit-function-declaration -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wdouble-promotion -o CMakeFiles/ggml-base.dir/ggml.c.o -c /home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml.c",
+  "file": "/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml.c",
+  "output": "frozen-controls/ggml-build/src/CMakeFiles/ggml-base.dir/ggml.c.o"
+},
+{
+  "directory": "/home/runner/work/_temp/live-norm/component-native/frozen-controls/ggml-build/src",
+  "command": "/usr/bin/c++ -DGGML_COMMIT=\\\"a06fc0bb\\\" -DGGML_SCHED_MAX_COPIES=4 -DGGML_VERSION=\\\"0.17.0\\\" -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -o CMakeFiles/ggml-base.dir/ggml.cpp.o -c /home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml.cpp",
+  "file": "/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml.cpp",
+  "output": "frozen-controls/ggml-build/src/CMakeFiles/ggml-base.dir/ggml.cpp.o"
+},
+{
+  "directory": "/home/runner/work/_temp/live-norm/component-native/frozen-controls/ggml-build/src",
+  "command": "/usr/bin/cc -DGGML_COMMIT=\\\"a06fc0bb\\\" -DGGML_SCHED_MAX_COPIES=4 -DGGML_VERSION=\\\"0.17.0\\\" -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/../include -O3 -DNDEBUG -std=gnu11 -Wshadow -Wstrict-prototypes -Wpointer-arith -Wmissing-prototypes -Werror=implicit-int -Werror=implicit-function-declaration -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wdouble-promotion -o CMakeFiles/ggml-base.dir/ggml-alloc.c.o -c /home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-alloc.c",
+  "file": "/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-alloc.c",
+  "output": "frozen-controls/ggml-build/src/CMakeFiles/ggml-base.dir/ggml-alloc.c.o"
+},
+{
+  "directory": "/home/runner/work/_temp/live-norm/component-native/frozen-controls/ggml-build/src",
+  "command": "/usr/bin/c++ -DGGML_COMMIT=\\\"a06fc0bb\\\" -DGGML_SCHED_MAX_COPIES=4 -DGGML_VERSION=\\\"0.17.0\\\" -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -o CMakeFiles/ggml-base.dir/ggml-backend.cpp.o -c /home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-backend.cpp",
+  "file": "/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-backend.cpp",
+  "output": "frozen-controls/ggml-build/src/CMakeFiles/ggml-base.dir/ggml-backend.cpp.o"
+},
+{
+  "directory": "/home/runner/work/_temp/live-norm/component-native/frozen-controls/ggml-build/src",
+  "command": "/usr/bin/c++ -DGGML_COMMIT=\\\"a06fc0bb\\\" -DGGML_SCHED_MAX_COPIES=4 -DGGML_VERSION=\\\"0.17.0\\\" -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -o CMakeFiles/ggml-base.dir/ggml-backend-meta.cpp.o -c /home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-backend-meta.cpp",
+  "file": "/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-backend-meta.cpp",
+  "output": "frozen-controls/ggml-build/src/CMakeFiles/ggml-base.dir/ggml-backend-meta.cpp.o"
+},
+{
+  "directory": "/home/runner/work/_temp/live-norm/component-native/frozen-controls/ggml-build/src",
+  "command": "/usr/bin/c++ -DGGML_COMMIT=\\\"a06fc0bb\\\" -DGGML_SCHED_MAX_COPIES=4 -DGGML_VERSION=\\\"0.17.0\\\" -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -o CMakeFiles/ggml-base.dir/ggml-opt.cpp.o -c /home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-opt.cpp",
+  "file": "/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-opt.cpp",
+  "output": "frozen-controls/ggml-build/src/CMakeFiles/ggml-base.dir/ggml-opt.cpp.o"
+},
+{
+  "directory": "/home/runner/work/_temp/live-norm/component-native/frozen-controls/ggml-build/src",
+  "command": "/usr/bin/c++ -DGGML_COMMIT=\\\"a06fc0bb\\\" -DGGML_SCHED_MAX_COPIES=4 -DGGML_VERSION=\\\"0.17.0\\\" -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -o CMakeFiles/ggml-base.dir/ggml-threading.cpp.o -c /home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-threading.cpp",
+  "file": "/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-threading.cpp",
+  "output": "frozen-controls/ggml-build/src/CMakeFiles/ggml-base.dir/ggml-threading.cpp.o"
+},
+{
+  "directory": "/home/runner/work/_temp/live-norm/component-native/frozen-controls/ggml-build/src",
+  "command": "/usr/bin/cc -DGGML_COMMIT=\\\"a06fc0bb\\\" -DGGML_SCHED_MAX_COPIES=4 -DGGML_VERSION=\\\"0.17.0\\\" -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/../include -O3 -DNDEBUG -std=gnu11 -Wshadow -Wstrict-prototypes -Wpointer-arith -Wmissing-prototypes -Werror=implicit-int -Werror=implicit-function-declaration -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wdouble-promotion -o CMakeFiles/ggml-base.dir/ggml-quants.c.o -c /home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-quants.c",
+  "file": "/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-quants.c",
+  "output": "frozen-controls/ggml-build/src/CMakeFiles/ggml-base.dir/ggml-quants.c.o"
+},
+{
+  "directory": "/home/runner/work/_temp/live-norm/component-native/frozen-controls/ggml-build/src",
+  "command": "/usr/bin/c++ -DGGML_COMMIT=\\\"a06fc0bb\\\" -DGGML_SCHED_MAX_COPIES=4 -DGGML_VERSION=\\\"0.17.0\\\" -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -o CMakeFiles/ggml-base.dir/gguf.cpp.o -c /home/runner/work/CrispEmbed/CrispEmbed/ggml/src/gguf.cpp",
+  "file": "/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/gguf.cpp",
+  "output": "frozen-controls/ggml-build/src/CMakeFiles/ggml-base.dir/gguf.cpp.o"
+},
+{
+  "directory": "/home/runner/work/_temp/live-norm/component-native/frozen-controls/ggml-build/src",
+  "command": "/usr/bin/cc -DGGML_AVX -DGGML_AVX2 -DGGML_BMI2 -DGGML_F16C -DGGML_FMA -DGGML_SCHED_MAX_COPIES=4 -DGGML_SSE42 -DGGML_USE_CPU_REPACK -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/.. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/../include -O3 -DNDEBUG -std=gnu11 -Wshadow -Wstrict-prototypes -Wpointer-arith -Wmissing-prototypes -Werror=implicit-int -Werror=implicit-function-declaration -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wdouble-promotion -msse4.2 -mf16c -mfma -mbmi2 -mavx -mavx2 -o CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.c.o -c /home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/ggml-cpu.c",
+  "file": "/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/ggml-cpu.c",
+  "output": "frozen-controls/ggml-build/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.c.o"
+},
+{
+  "directory": "/home/runner/work/_temp/live-norm/component-native/frozen-controls/ggml-build/src",
+  "command": "/usr/bin/c++ -DGGML_AVX -DGGML_AVX2 -DGGML_BMI2 -DGGML_F16C -DGGML_FMA -DGGML_SCHED_MAX_COPIES=4 -DGGML_SSE42 -DGGML_USE_CPU_REPACK -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/.. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -msse4.2 -mf16c -mfma -mbmi2 -mavx -mavx2 -o CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.cpp.o -c /home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/ggml-cpu.cpp",
+  "file": "/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/ggml-cpu.cpp",
+  "output": "frozen-controls/ggml-build/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ggml-cpu.cpp.o"
+},
+{
+  "directory": "/home/runner/work/_temp/live-norm/component-native/frozen-controls/ggml-build/src",
+  "command": "/usr/bin/c++ -DGGML_AVX -DGGML_AVX2 -DGGML_BMI2 -DGGML_F16C -DGGML_FMA -DGGML_SCHED_MAX_COPIES=4 -DGGML_SSE42 -DGGML_USE_CPU_REPACK -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/.. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -msse4.2 -mf16c -mfma -mbmi2 -mavx -mavx2 -o CMakeFiles/ggml-cpu.dir/ggml-cpu/repack.cpp.o -c /home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/repack.cpp",
+  "file": "/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/repack.cpp",
+  "output": "frozen-controls/ggml-build/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/repack.cpp.o"
+},
+{
+  "directory": "/home/runner/work/_temp/live-norm/component-native/frozen-controls/ggml-build/src",
+  "command": "/usr/bin/c++ -DGGML_AVX -DGGML_AVX2 -DGGML_BMI2 -DGGML_F16C -DGGML_FMA -DGGML_SCHED_MAX_COPIES=4 -DGGML_SSE42 -DGGML_USE_CPU_REPACK -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/.. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -msse4.2 -mf16c -mfma -mbmi2 -mavx -mavx2 -o CMakeFiles/ggml-cpu.dir/ggml-cpu/hbm.cpp.o -c /home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/hbm.cpp",
+  "file": "/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/hbm.cpp",
+  "output": "frozen-controls/ggml-build/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/hbm.cpp.o"
+},
+{
+  "directory": "/home/runner/work/_temp/live-norm/component-native/frozen-controls/ggml-build/src",
+  "command": "/usr/bin/cc -DGGML_AVX -DGGML_AVX2 -DGGML_BMI2 -DGGML_F16C -DGGML_FMA -DGGML_SCHED_MAX_COPIES=4 -DGGML_SSE42 -DGGML_USE_CPU_REPACK -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/.. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/../include -O3 -DNDEBUG -std=gnu11 -Wshadow -Wstrict-prototypes -Wpointer-arith -Wmissing-prototypes -Werror=implicit-int -Werror=implicit-function-declaration -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wdouble-promotion -msse4.2 -mf16c -mfma -mbmi2 -mavx -mavx2 -o CMakeFiles/ggml-cpu.dir/ggml-cpu/quants.c.o -c /home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/quants.c",
+  "file": "/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/quants.c",
+  "output": "frozen-controls/ggml-build/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/quants.c.o"
+},
+{
+  "directory": "/home/runner/work/_temp/live-norm/component-native/frozen-controls/ggml-build/src",
+  "command": "/usr/bin/c++ -DGGML_AVX -DGGML_AVX2 -DGGML_BMI2 -DGGML_F16C -DGGML_FMA -DGGML_SCHED_MAX_COPIES=4 -DGGML_SSE42 -DGGML_USE_CPU_REPACK -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/.. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -msse4.2 -mf16c -mfma -mbmi2 -mavx -mavx2 -o CMakeFiles/ggml-cpu.dir/ggml-cpu/traits.cpp.o -c /home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/traits.cpp",
+  "file": "/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/traits.cpp",
+  "output": "frozen-controls/ggml-build/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/traits.cpp.o"
+},
+{
+  "directory": "/home/runner/work/_temp/live-norm/component-native/frozen-controls/ggml-build/src",
+  "command": "/usr/bin/c++ -DGGML_AVX -DGGML_AVX2 -DGGML_BMI2 -DGGML_F16C -DGGML_FMA -DGGML_SCHED_MAX_COPIES=4 -DGGML_SSE42 -DGGML_USE_CPU_REPACK -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/.. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -msse4.2 -mf16c -mfma -mbmi2 -mavx -mavx2 -o CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/amx.cpp.o -c /home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/amx/amx.cpp",
+  "file": "/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/amx/amx.cpp",
+  "output": "frozen-controls/ggml-build/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/amx.cpp.o"
+},
+{
+  "directory": "/home/runner/work/_temp/live-norm/component-native/frozen-controls/ggml-build/src",
+  "command": "/usr/bin/c++ -DGGML_AVX -DGGML_AVX2 -DGGML_BMI2 -DGGML_F16C -DGGML_FMA -DGGML_SCHED_MAX_COPIES=4 -DGGML_SSE42 -DGGML_USE_CPU_REPACK -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/.. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -msse4.2 -mf16c -mfma -mbmi2 -mavx -mavx2 -o CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/mmq.cpp.o -c /home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/amx/mmq.cpp",
+  "file": "/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/amx/mmq.cpp",
+  "output": "frozen-controls/ggml-build/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/amx/mmq.cpp.o"
+},
+{
+  "directory": "/home/runner/work/_temp/live-norm/component-native/frozen-controls/ggml-build/src",
+  "command": "/usr/bin/c++ -DGGML_AVX -DGGML_AVX2 -DGGML_BMI2 -DGGML_F16C -DGGML_FMA -DGGML_SCHED_MAX_COPIES=4 -DGGML_SSE42 -DGGML_USE_CPU_REPACK -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/.. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -msse4.2 -mf16c -mfma -mbmi2 -mavx -mavx2 -o CMakeFiles/ggml-cpu.dir/ggml-cpu/binary-ops.cpp.o -c /home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/binary-ops.cpp",
+  "file": "/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/binary-ops.cpp",
+  "output": "frozen-controls/ggml-build/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/binary-ops.cpp.o"
+},
+{
+  "directory": "/home/runner/work/_temp/live-norm/component-native/frozen-controls/ggml-build/src",
+  "command": "/usr/bin/c++ -DGGML_AVX -DGGML_AVX2 -DGGML_BMI2 -DGGML_F16C -DGGML_FMA -DGGML_SCHED_MAX_COPIES=4 -DGGML_SSE42 -DGGML_USE_CPU_REPACK -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/.. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -msse4.2 -mf16c -mfma -mbmi2 -mavx -mavx2 -o CMakeFiles/ggml-cpu.dir/ggml-cpu/unary-ops.cpp.o -c /home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/unary-ops.cpp",
+  "file": "/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/unary-ops.cpp",
+  "output": "frozen-controls/ggml-build/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/unary-ops.cpp.o"
+},
+{
+  "directory": "/home/runner/work/_temp/live-norm/component-native/frozen-controls/ggml-build/src",
+  "command": "/usr/bin/c++ -DGGML_AVX -DGGML_AVX2 -DGGML_BMI2 -DGGML_F16C -DGGML_FMA -DGGML_SCHED_MAX_COPIES=4 -DGGML_SSE42 -DGGML_USE_CPU_REPACK -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/.. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -msse4.2 -mf16c -mfma -mbmi2 -mavx -mavx2 -o CMakeFiles/ggml-cpu.dir/ggml-cpu/vec.cpp.o -c /home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/vec.cpp",
+  "file": "/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/vec.cpp",
+  "output": "frozen-controls/ggml-build/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/vec.cpp.o"
+},
+{
+  "directory": "/home/runner/work/_temp/live-norm/component-native/frozen-controls/ggml-build/src",
+  "command": "/usr/bin/c++ -DGGML_AVX -DGGML_AVX2 -DGGML_BMI2 -DGGML_F16C -DGGML_FMA -DGGML_SCHED_MAX_COPIES=4 -DGGML_SSE42 -DGGML_USE_CPU_REPACK -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/.. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -msse4.2 -mf16c -mfma -mbmi2 -mavx -mavx2 -o CMakeFiles/ggml-cpu.dir/ggml-cpu/ops.cpp.o -c /home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/ops.cpp",
+  "file": "/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/ops.cpp",
+  "output": "frozen-controls/ggml-build/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/ops.cpp.o"
+},
+{
+  "directory": "/home/runner/work/_temp/live-norm/component-native/frozen-controls/ggml-build/src",
+  "command": "/usr/bin/cc -DGGML_AVX -DGGML_AVX2 -DGGML_BMI2 -DGGML_F16C -DGGML_FMA -DGGML_SCHED_MAX_COPIES=4 -DGGML_SSE42 -DGGML_USE_CPU_REPACK -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/.. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/../include -O3 -DNDEBUG -std=gnu11 -Wshadow -Wstrict-prototypes -Wpointer-arith -Wmissing-prototypes -Werror=implicit-int -Werror=implicit-function-declaration -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wdouble-promotion -msse4.2 -mf16c -mfma -mbmi2 -mavx -mavx2 -o CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86/quants.c.o -c /home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/arch/x86/quants.c",
+  "file": "/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/arch/x86/quants.c",
+  "output": "frozen-controls/ggml-build/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86/quants.c.o"
+},
+{
+  "directory": "/home/runner/work/_temp/live-norm/component-native/frozen-controls/ggml-build/src",
+  "command": "/usr/bin/c++ -DGGML_AVX -DGGML_AVX2 -DGGML_BMI2 -DGGML_F16C -DGGML_FMA -DGGML_SCHED_MAX_COPIES=4 -DGGML_SSE42 -DGGML_USE_CPU_REPACK -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/.. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/. -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -msse4.2 -mf16c -mfma -mbmi2 -mavx -mavx2 -o CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86/repack.cpp.o -c /home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/arch/x86/repack.cpp",
+  "file": "/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-cpu/arch/x86/repack.cpp",
+  "output": "frozen-controls/ggml-build/src/CMakeFiles/ggml-cpu.dir/ggml-cpu/arch/x86/repack.cpp.o"
+},
+{
+  "directory": "/home/runner/work/_temp/live-norm/component-native/frozen-controls/ggml-build/src",
+  "command": "/usr/bin/c++ -DGGML_SCHED_MAX_COPIES=4 -DGGML_USE_CPU -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -o CMakeFiles/ggml.dir/ggml-backend-dl.cpp.o -c /home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-backend-dl.cpp",
+  "file": "/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-backend-dl.cpp",
+  "output": "frozen-controls/ggml-build/src/CMakeFiles/ggml.dir/ggml-backend-dl.cpp.o"
+},
+{
+  "directory": "/home/runner/work/_temp/live-norm/component-native/frozen-controls/ggml-build/src",
+  "command": "/usr/bin/c++ -DGGML_SCHED_MAX_COPIES=4 -DGGML_USE_CPU -D_GNU_SOURCE -D_XOPEN_SOURCE=600 -I/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/../include -O3 -DNDEBUG -std=gnu++17 -Wmissing-declarations -Wmissing-noreturn -Wall -Wextra -Wpedantic -Wcast-qual -Wno-unused-function -Wno-array-bounds -Wextra-semi -o CMakeFiles/ggml.dir/ggml-backend-reg.cpp.o -c /home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-backend-reg.cpp",
+  "file": "/home/runner/work/CrispEmbed/CrispEmbed/ggml/src/ggml-backend-reg.cpp",
+  "output": "frozen-controls/ggml-build/src/CMakeFiles/ggml.dir/ggml-backend-reg.cpp.o"
+}
+]

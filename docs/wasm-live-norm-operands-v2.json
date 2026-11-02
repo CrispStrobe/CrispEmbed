@@ -71,11 +71,20 @@
  "full_inventory_saved_before_rejection": true,
  "owned_sha256": {
   ".github/workflows/wasm-live-norm-operands-v2.yml": "93a9b2398f24a0faf59dd882e251d8ef0b131ac616138ca1eadaaa6cee618f4f",
-  "docs/wasm-live-norm-operands-v2.md": "2a3d1b407ec2b29d126abc40375afa853ef0ae79c354d7eb6fcbf394106a4f50",
+  "docs/wasm-live-norm-operands-v2.md": "ab3290d5ddb19485d4fca0e2dec854a50d43879a7184be7b561b01c2011b3a9e",
   "tools/ci-heavy/wasm_live_norm_v2.py": "8cb42a9cbeb7d4468ce6e265f24a82023a46f0d7969b96d8add656f82f3f1fa2",
-  "tools/wasm-live-norm-v2/inventory.py": "5b3c95a6e4d378b0feeb22e1d5830eaef6e18060355cae40c9348f757a5dbb47",
-  "tests/test_wasm_live_norm_v2.py": "22fc9a4d7c30b1b4931865cc520aeae5f5425361e891df91ea98e71c64564f11",
+  "tools/wasm-live-norm-v2/inventory.py": "797290bafef46ad0d8982de781724a78329257d57ee845084bc1a37dcc929569",
+  "tests/test_wasm_live_norm_v2.py": "689579b78b637b07af1ec89029f9429c9958e3be5e2624fc81692bfee9a2d8ae",
   "tests/wasm-live-norm-v2/frozen-40852835039-native-compile.json": "84a55535a37892e17ad32a6f6bd5ce7c5f512d0b53857e5152593305c7d239cd",
-  "tests/wasm-live-norm-v2/frozen-40852835039-wasm-compile.json": "fe37d6709f86eb3d3818445dbc161d47b8f6443a8bb5d802276fe296d117ecf2"
- }
+  "tests/wasm-live-norm-v2/frozen-40852835039-wasm-compile.json": "fe37d6709f86eb3d3818445dbc161d47b8f6443a8bb5d802276fe296d117ecf2",
+  "tests/wasm-live-norm-v2/actual-41416683981-native-compile.json": "7526de1cb9f4571506a8e4dd0cb4e9952b3cf2d7441e5ab2b883ddad267e0224"
+ },
+ "retained_v2_negatives": [
+  {
+   "run": 41416683981,
+   "source": "1b93141bc527125a8c626e848727307e9ebe6603",
+   "phase": "component-build",
+   "error": "Unrecognised compile output (parser, before build)"
+  }
+ ]
 }

@@ -12,19 +12,23 @@ NEW_ROOT='/w/src'
 def frozen(kind):return json.loads((FIX/f'frozen-40852835039-{kind}-compile.json').read_text())
 
 def synthetic(kind,build='/w/out/component-'):
- """Actual v1 live CMake layout: frozen controls under frozen-controls/, live target at root."""
+ """Actual live CMake layout (as in run 41416683981): frozen controls under frozen-controls/
+ with top-level-relative `output`; live target at the build root."""
  build=build+kind;rows=[]
  for r in frozen(kind):
-  r=copy.deepcopy(r);r['command']=r['command'].replace(FROZEN_ROOT,NEW_ROOT);r['file']=r['file'].replace(FROZEN_ROOT,NEW_ROOT)
-  r['output']=r['output'].replace(FROZEN_ROOT,NEW_ROOT)
-  r['directory']=build+'/frozen-controls'+r['directory'].split('component-'+kind,1)[1]
+  r=copy.deepcopy(r)
+  for k in ['command','file','output']:r[k]=r[k].replace(FROZEN_ROOT,NEW_ROOT)
+  sub=r['directory'].split('component-'+kind,1)[1].lstrip('/')
+  r['directory']=build+'/frozen-controls'+('/'+sub if sub else '')
+  minus_o=r['output'];r['output']='frozen-controls/'+(sub+'/' if sub else '')+minus_o
   rows.append(r)
-  if r['output'].startswith('CMakeFiles/norm-candidate-controls.dir/'):
-   live=copy.deepcopy(r);name=pathlib.Path(r['file']).name
-   src=r['file']if name=='wasm_native_order_norm.cpp'else NEW_ROOT+'/tests/wasm-live-norm/replay.cpp'
-   live['command']=live['command'].replace(r['file'],src).replace('norm-candidate-controls.dir','live-norm-replay.dir')
-   live['output']=live['output'].replace(r['file'],src).replace('norm-candidate-controls.dir','live-norm-replay.dir').replace('controls.cpp','replay.cpp')
-   live['command']=live['command'].replace('controls.cpp.o','replay.cpp.o');live['file']=src;live['directory']=build
+  if minus_o.startswith('CMakeFiles/norm-candidate-controls.dir/'):
+   live=copy.deepcopy(r);helper=r['file'].endswith('wasm_native_order_norm.cpp')
+   src=r['file']if helper else NEW_ROOT+'/tests/wasm-live-norm/replay.cpp'
+   out=minus_o.replace('norm-candidate-controls.dir','live-norm-replay.dir')
+   if not helper:out=out.replace('controls.cpp.o','replay.cpp.o')
+   live['command']=r['command'].replace(minus_o,out).replace(r['file'],src)
+   live['file']=src;live['output']=out;live['directory']=build
    rows.append(live)
  return rows,pathlib.Path(build)
 
@@ -69,7 +73,7 @@ class Inventory(unittest.TestCase):
    self.mutate(kind,lambda rows:rows.append(copy.deepcopy(self.helper(rows))),'Duplicate declared')
    self.mutate(kind,lambda rows:rows.remove(self.helper(rows)),'inventory differs')
    def extra(rows):
-    r=copy.deepcopy(self.helper(rows));r['output']=r['output'].replace('live-norm-replay','other');rows.append(r)
+    r=copy.deepcopy(self.helper(rows));r['output']=r['output'].replace('live-norm-replay','other');r['command']=r['command'].replace('live-norm-replay','other');rows.append(r)
    self.mutate(kind,extra,'inventory differs')
    def source(rows):
     r=self.helper(rows);r['file']=r['file'].replace('src/core','src/x');r['command']=r['command'].replace('src/core','src/x')
@@ -79,6 +83,18 @@ class Inventory(unittest.TestCase):
     r=copy.deepcopy(self.helper(rows));r['file']='/elsewhere/x.cpp';rows.append(r)
    self.mutate(kind,outside,'Unexpected compile entries')
    self.mutate(kind,lambda rows:self.helper(rows).__setitem__('directory','/w/out/elsewhere'),'directory differs')
+ def test_actual_41416683981_native_inventory_admitted(self):
+  # Full inventory saved by the first v2 run before its parser rejection.
+  rows=json.loads((FIX/'actual-41416683981-native-compile.json').read_text())
+  report=I.check('native',rows,frozen('native'),FROZEN_ROOT,'/home/runner/work/_temp/live-norm/component-native',FROZEN_ROOT)
+  self.assertEqual(report['declared_entries'],5);self.assertEqual(report['total_entries'],30)
+  r=next(r for r in rows if 'live-norm-replay.dir' in r['output']and r['file'].endswith('wasm_native_order_norm.cpp'))
+  r['command']=r['command'].replace(' -c ',' -ffast-math -c ')
+  with self.assertRaisesRegex(ValueError,'rounding flags differ'):I.check('native',rows,frozen('native'),FROZEN_ROOT,'/home/runner/work/_temp/live-norm/component-native',FROZEN_ROOT)
+ def test_output_path_negative(self):
+  def bad(rows):
+   r=next(r for r in rows if 'norm-candidate-controls.dir' in r['output']);r['output']=r['output'].replace('frozen-controls/','')
+  self.mutate('native',bad,'output path differs')
  def test_compiler_backend(self):
   self.mutate('wasm',lambda rows:self.helper(rows).__setitem__('command','/usr/bin/c++'+self.helper(rows)['command'].split('em++',1)[1]),'Compiler differs')
   self.mutate('native',lambda rows:self.helper(rows).__setitem__('command','/x/em++'+self.helper(rows)['command'].split('c++',1)[1]),'Compiler differs')

@@ -41,3 +41,16 @@ The one-sentence scope is the same: 13 norm pairs, 23 layer3 boundaries,
 byte anchors. A complete numerical negative still exits1. Gates, defaults,
 0.002/0.99999 budgets and the full-norm64 rejection are unchanged. No ten-case
 retry.
+
+## Hosted attempts
+
+- [41416683981](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41416683981)
+  at `1b93141b`: the v1 tests, v2 tests, preflight, prepare (frozen inventory
+  extraction) and browser setup pass. Component admission saved the full
+  30-entry native inventory, then rejected before any build with
+  `Unrecognised compile output: frozen-controls/CMakeFiles/...`. The saved
+  inventory contains exactly the five declared entries with the frozen flags.
+  The v2 parser had assumed `output` was relative to `directory`. CMake writes
+  it relative to the top-level build. The repair reads the target from `-o` and
+  requires `output == <declared dir>/<-o>`. The saved inventory is now a
+  regression fixture. This rejection is kept unchanged.
