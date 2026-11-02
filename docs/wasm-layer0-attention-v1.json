@@ -1,0 +1,82 @@
+{
+ "schema": "crispembed-wasm-layer0-attention-v1",
+ "workflow": ".github/workflows/wasm-layer0-attention-v1.yml",
+ "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+ "runtime_change": false,
+ "qualification": false,
+ "candidate_enabled": false,
+ "ops": [
+  "ln_mul",
+  "ln_add",
+  "q_raw",
+  "k_raw",
+  "v_raw",
+  "q",
+  "k",
+  "v",
+  "flash",
+  "o_raw",
+  "o",
+  "residual"
+ ],
+ "production_inventories": {
+  "native": "5e05d7291f92716c80474bf00f2b18c4328f8c8612b61356509bc10ae05732c3",
+  "wasm": "e2a7318d71bc7d492ea4da24b181c75ec92303889554baac387bd7d61fb50974"
+ },
+ "captures": {
+  "artifact": {
+   "run": 41432135298,
+   "source": "77ed71226c5d3824aa51858a1606154545f4a79e",
+   "workflow": ".github/workflows/wasm-live-norm-operands-v4.yml",
+   "conclusion": "failure",
+   "name": "wasm-live-norm-operands-v4-raw-41432135298",
+   "id": 13136527687,
+   "bytes": 41256713,
+   "sha256": "1b9ef49b0838041b4810227549d6fe3ae3aca424b6c35641bb3d43af9eb32d60"
+  },
+  "members": {
+   "native/norm00_output": {
+    "member": "raw/native1-observed-observed-0/norm00_output.f32",
+    "bytes": 18432,
+    "sha256": "c0c889d3481fc4fed3b9f225ce7cb9939c348f331a92abf90a7063131cf41683"
+   },
+   "native/norm01_input": {
+    "member": "raw/native1-observed-observed-0/norm01_input.f32",
+    "bytes": 18432,
+    "sha256": "826949383d90a0ab3cd8f2fbf9fce32e57eaeadbebaab3d6949f61f219b2f3ec"
+   },
+   "wasm0/norm00_output": {
+    "member": "browser/arrays/wasm0-observed-0/norm00_output.f32",
+    "bytes": 18432,
+    "sha256": "c0c889d3481fc4fed3b9f225ce7cb9939c348f331a92abf90a7063131cf41683"
+   },
+   "wasm0/norm01_input": {
+    "member": "browser/arrays/wasm0-observed-0/norm01_input.f32",
+    "bytes": 18432,
+    "sha256": "4866a6d2de336ab1f52f0678b51704ce4cb5035ea03fc63ec2afad0c0ac88d5a"
+   }
+  }
+ },
+ "model": {
+  "artifact": {
+   "run": 40354251257,
+   "source": "49161f608af811154bfeb816ac38caea34224cae",
+   "name": "successor-minilm-fixture-40354251257",
+   "id": 12671621333,
+   "bytes": 18259261,
+   "sha256": "a67abb8439d2af274c175dad9cefb8ba9606bec9c4ba024cf568a7359f41c8bf",
+   "conclusion": "failure",
+   "workflow": ".github/workflows/ovisocr2-metadata.yml"
+  },
+  "sha256": "77087a5dd455f5eeae6d6d098bac82793610438518a91071c72c253940db18a2"
+ },
+ "owned_sha256": {
+  ".github/workflows/wasm-layer0-attention-v1.yml": "f6b80b135f63c9ec050c594f3dd38ac4fe6d54fe26be96aeb2cb71c98eb32e10",
+  "docs/wasm-layer0-attention-v1.md": "af3de1eec0540d3d571cb83e07b9129ff8fa1c8ef85bd0db0ad249207fe31fa8",
+  "tools/ci-heavy/wasm_layer0_attention_v1.py": "9e6ebefa54132339334d85e159e9a2267af31c3ebfe85599d6bce1b904d6a750",
+  "tools/wasm-layer0-attention/analysis.py": "437cb261d87bafe1e54ce55f25f1198c63964fc3c239f2e39b27fb3a8857065c",
+  "tests/wasm-layer0-attention/probe.cpp": "8a02235c9bb7141f01e99f350fd1cee254dcabf266052dfec7157b9c183f3f4e",
+  "tests/wasm-layer0-attention/CMakeLists.txt": "dd29a827773dc78818d23613b1daedd8e06e94f37700dde2254337c0419b407d",
+  "tests/test_wasm_layer0_attention_v1.py": "613bd66f34b91ac014caf6e6be6f66961f0478eb3d88ca3cea81b6fa71fc4a01"
+ }
+}
