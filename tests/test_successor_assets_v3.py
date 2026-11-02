@@ -85,7 +85,7 @@ class StrictUnchanged(unittest.TestCase):
         with self.assertRaises(V.ProtocolError): V.check_declared(q)
 
     def test_derived_files_exact_and_native_gates_byte_identical(self):
-        self.assertEqual(V.check_derived(), 3)
+        self.assertEqual(V.check_derived(), 5)
         review = (ROOT / 'tools/ci-heavy/successor_review_v3.py').read_text()
         v1 = (ROOT / 'tools/ci-heavy/successor_review.py').read_text()
         for line in ["  'passed':maximum<=.002 and math.isfinite(cosine) and cosine>=.99999}",
@@ -97,7 +97,9 @@ class StrictUnchanged(unittest.TestCase):
         v1wf = (ROOT / '.github/workflows/successor-assets.yml').read_text()
         self.assertNotIn('test_successor_wasm.cjs', wf); self.assertIn('successor_assets_v3.py browser-gate', wf)
         self.assertEqual(len(wf.splitlines()), len(v1wf.splitlines()))
-        self.assertEqual(sum(a != b for a, b in zip(wf.splitlines(), v1wf.splitlines())), 3)  # name, browser step, review step
+        self.assertEqual(sum(a != b for a, b in zip(wf.splitlines(), v1wf.splitlines())), 4)  # name, bindings uses, browser step, review step
+        b3 = (ROOT / 'tools/ci-heavy/successor_bindings_v3.py').read_text(); b1 = (ROOT / 'tools/ci-heavy/successor_bindings.py').read_text()
+        self.assertEqual(sum(a != b for a, b in zip(b3.splitlines(), b1.splitlines())), 1); self.assertEqual(len(b3.splitlines()), len(b1.splitlines()))
 
     def test_derivation_rejects_moved_anchor(self):
         src = (ROOT / 'tests/test_successor_wasm.cjs').read_text()
@@ -135,7 +137,7 @@ class StrictUnchanged(unittest.TestCase):
 
     def test_controls(self):
         out = V.controls()
-        self.assertEqual(out['derived_files'], 3); self.assertEqual(out['wasm_bound'], (0.0101, 0.99837))
+        self.assertEqual(out['derived_files'], 5); self.assertEqual(out['wasm_bound'], (0.0101, 0.99837))
 
 
 if __name__ == '__main__':
