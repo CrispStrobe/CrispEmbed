@@ -10,6 +10,15 @@ cos 0.936596 / max_abs 8.92 (vision exact). Reconversion with a byte-readback ch
 gives cos 1.000000 everywhere and fox token-exact, but receipt char ratio vs the original is below
 q4_k, so the qualification gate rejected it. Not published. Receipts: `tests/results/got-ocr2-f16/`.
 
+## 2 November 2026 — ggml submodule back on the shared fork line
+
+* CrispEmbed's ggml pointer had drifted onto fork feature branches (`feat/wasm-q8-rounding-candidate-20261026`,
+  then `crispembed/metal-combined` 2672d26c from PR #96) while `.gitmodules` still named `sync/upstream-v0.17`.
+  The six CrispEmbed-only commits (WASM rounding test entry, `GGML_METAL_PREC_F32_MM`, the PREC_F32_HP marker and
+  their merge) are now merged into `sync/upstream-v0.17` as `3a27b6c6`, which also brings that branch's two
+  newer fixes (NVFP4 UE4M3 LUT initialised on first use; Metal reports missing TQ1_0/TQ2_0 matmul kernels).
+  The submodule pins `3a27b6c6`; CrispASR pins its own commit and is unaffected until it bumps.
+
 ## 2 November 2026 — CUDA GPU audit on Kaggle (feat/cuda-audit)
 
 Five runs of `${KAGGLE_ACCOUNT}/crispembed-cuda-audit` on a Tesla T4 (sm_75), harness
