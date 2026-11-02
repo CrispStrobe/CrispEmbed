@@ -308,6 +308,18 @@ handoff take precedence over historical commands.
    reviewed opt-ins and qualify final runtime/assets/consumers. Each new model
    or arithmetic source needs its own reference/quality/consumer evidence.
 
+## MiniCPM-OCR speed (SPEED only; Q8/Q4 lanes stay with their owners) — 2 November 2026
+
+Branch `perf/minicpm-ocr-graph-decoder-20261102`. Default-off gates, F16 GGUF:
+`CRISPEMBED_QWEN35_GRAPH_DECODER` (qwen35 text decoder as a ggml graph with persistent
+KV/delta-net state; `CRISPEMBED_QWEN35_GRAPH_MATMUL=exact|native|f32`),
+`CRISPEMBED_MINICPM_OCR_VISION_F32` (F32 vision matrices made once at init) and
+`CRISPEMBED_MINICPM_OCR_VISION_BATCH` (equal slices in one graph). Only MiniCPM calls
+them; decoder_cpu and OvisOCR/LightOn are unchanged. Kaggle kernels with separate slugs
+(`crispembed-minicpm-ocr-native-graph`, `crispembed-minicpm-ocr-bench-graph`) so the
+shared `crispembed-minicpm-ocr-bench` slug is not disturbed. Gate: all 5 cases token-ID
+exact per arm before any merge; no default flip until A/B on more pages.
+
 ## Required Q8_0 and Q4_K coverage for new permissive models (29 October)
 
 Use actual `crispembed-quantize`, original Python/ONNX dumps and actual
