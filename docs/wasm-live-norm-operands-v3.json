@@ -1,0 +1,37 @@
+{
+ "schema": "crispembed-wasm-live-norm-operands-v3",
+ "workflow": ".github/workflows/wasm-live-norm-operands-v3.yml",
+ "scope_unchanged_from_v1": true,
+ "runtime_change": false,
+ "qualification": false,
+ "component_admission": "v2",
+ "observer": "tests/wasm-live-norm-v3/observer.h",
+ "retained_negatives": [
+  {
+   "run": 40867038915,
+   "source": "ff3b8a0171d2cdb5cfcdd65701fadaa49a99d265",
+   "phase": "component-build"
+  },
+  {
+   "run": 41416683981,
+   "source": "1b93141bc527125a8c626e848727307e9ebe6603",
+   "phase": "component-build"
+  },
+  {
+   "run": 41418312256,
+   "source": "f9693ad8b319c6d9a5476b9b1ecfefa7d79c53e7",
+   "phase": "native",
+   "error": "GGML_ASSERT(ctx->live_norm.add_norm(input, result)) failed"
+  }
+ ],
+ "v1_profile_sha256": "c46375102543163b0cd2d28b4c6a0c4421bdffbe525643e331996af903d8af1d",
+ "v2_profile_sha256": "ab2869c1d1e84444be335195f4725b1b5ed7be85d6585da2433d8aea07a6672a",
+ "owned_sha256": {
+  ".github/workflows/wasm-live-norm-operands-v3.yml": "0358dfa50c269181e150af44cde9ad25dc93c2787293dd5542cef21a9796f86c",
+  "docs/wasm-live-norm-operands-v3.md": "0e6f9a92436e31dfff0c95f0942f4425ae6cc20e0686155192f2b16a71a6dd2c",
+  "tools/ci-heavy/wasm_live_norm_v3.py": "28c1a82fcb97cf7e448c6d5fdfa46fa8afeb9547df4dac6203b29e170a7361dd",
+  "tools/wasm-live-norm-v3/overlay.py": "e16982512457fdf295bb6ddac24d91be8055a4802c440735c66c15eeadee5124",
+  "tests/wasm-live-norm-v3/observer.h": "ae0e3e70463f0e3afa2b5030fc4fb82baa42c8d809945bb8ea2487b33c548672",
+  "tests/test_wasm_live_norm_v3.py": "a33a5d512465540d86c505bb0dbdc9972989da9ee477c0f7a0be7ac5d94f92c3"
+ }
+}
