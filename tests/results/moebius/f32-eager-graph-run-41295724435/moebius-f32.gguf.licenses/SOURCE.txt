@@ -1,0 +1,13 @@
+Model: moebius
+Source: https://github.com/hustvl/Moebius/tree/b88d462bacb9af6e7128a3b4cc4a07418bedfd61
+Checkpoint: https://huggingface.co/hustvl/Moebius/resolve/cd01f47fb648219d3fa605806c5ce00b713faa5e/ft_places2/diffusion_pytorch_model.bin
+Checkpoint SHA-256: 6525afb888e55f9b5c74fa0a5d19ca0762d720d6c716fb0f8422fbeb6868a09a
+Author weight model card: https://huggingface.co/hustvl/Moebius/raw/cd01f47fb648219d3fa605806c5ce00b713faa5e/README.md
+Declared weight licence: Apache-2.0
+Official README explicitly covers weights under Apache-2.0; author HF card currently says MIT. Preserve both evidence records; do not claim dual licence.
+Licence evidence:
+https://github.com/hustvl/Moebius#-license
+https://huggingface.co/hustvl/Moebius
+Conversion: floating weights stored as F32; named singleton-depth axes squeezed;
+inference-inert BatchNorm training counters omitted with individual hashes in receipt.
+No inference quality, commercial clearance or native parity result is asserted by conversion.

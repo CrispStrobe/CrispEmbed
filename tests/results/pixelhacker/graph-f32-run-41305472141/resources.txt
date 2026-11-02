@@ -1,0 +1,4 @@
+/home/runner/work/_temp/out/native-f32-g.log:	Elapsed (wall clock) time (h:mm:ss or m:ss): 47:30.93
+/home/runner/work/_temp/out/native-f32-g.log:	Maximum resident set size (kbytes): 7283328
+/home/runner/work/_temp/out/cli-f32-g.log:	Elapsed (wall clock) time (h:mm:ss or m:ss): 11:58.51
+/home/runner/work/_temp/out/cli-f32-g.log:	Maximum resident set size (kbytes): 6303892

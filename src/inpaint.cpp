@@ -1,9 +1,9 @@
-// Still-image geometry around the unchanged, reviewed MI-GAN CPU/F32 graph.
+// Still-image geometry around the MI-GAN CPU/F32 graph (reviewed256, experimental512).
 // Overlap composition is a new wrapper, not original ONNX-wrapper parity.
 #include "inpaint.h"
 #include "migan.h"
 #include "core/env_gate.h"
-#include "core/sha256.h"
+#include "core/sha256_accelerated.h"
 #include "core/gpu_backend_pref.h"
 
 #include <algorithm>
@@ -18,8 +18,10 @@ namespace inpaint {
 
 struct context {
     migan::context * model = nullptr;
-    std::vector<float> input = std::vector<float>(migan::input_elements);
-    std::vector<float> raw = std::vector<float>(migan::rgb_elements);
+    int resolution;
+    std::vector<float> input;
+    std::vector<float> raw;
+    explicit context(int side) : resolution(side), input(size_t(side) * side * 4), raw(size_t(side) * side * 3) {}
     ~context() { migan::free(model); }
 };
 
@@ -28,13 +30,14 @@ namespace {
 struct batch_adapter {
     tile_processor single;
     void * opaque;
+    size_t tile_pixels;
 };
 bool adapt_single(void * opaque, size_t count, const uint8_t * rgb, const uint8_t * mask, uint8_t * output,
                   std::string & error) {
     auto * adapter = static_cast<batch_adapter *>(opaque);
+    const size_t pixels = adapter->tile_pixels;
     for (size_t i = 0; i < count; ++i)
-        if (!adapter->single(adapter->opaque, rgb + i * migan::rgb_elements, mask + i * migan::mask_elements,
-                             output + i * migan::rgb_elements, error))
+        if (!adapter->single(adapter->opaque, rgb + i * 3 * pixels, mask + i * pixels, output + i * 3 * pixels, error))
             return false;
     return true;
 }
@@ -48,11 +51,18 @@ bool fail(std::string & error, const std::string & message) {
     return false;
 }
 
-bool enabled(std::string & error) {
-    return core_env::on("CRISPEMBED_MIGAN") || fail(error, "MI-GAN requires CRISPEMBED_MIGAN=1");
+bool enabled(int resolution, std::string & error) {
+    if (!core_env::on("CRISPEMBED_MIGAN")) return fail(error, "MI-GAN requires CRISPEMBED_MIGAN=1");
+    return resolution != 512 || core_env::on("CRISPEMBED_MIGAN512") ||
+           fail(error, "MI-GAN512 additionally requires CRISPEMBED_MIGAN512=1");
 }
 
-std::vector<int> starts(int extent) {
+bool valid_digest(const char * value) {
+    if (!value || std::strlen(value) != 64) return false;
+    return std::all_of(value, value + 64, [](char c) { return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f'); });
+}
+
+std::vector<int> starts(int extent, int tile_size, int tile_stride) {
     const int last = std::max(0, extent - tile_size);
     std::vector<int> result;
     for (int at = 0;; at = std::min(at + tile_stride, last)) {
@@ -63,11 +73,12 @@ std::vector<int> starts(int extent) {
 
 bool run_tile(void * opaque, const uint8_t * rgb, const uint8_t * mask, uint8_t * output, std::string & error) {
     auto * ctx = static_cast<context *>(opaque);
-    return migan::preprocess_rgb8(rgb, migan::rgb_elements, mask, migan::mask_elements, tile_size, tile_size,
-                                  ctx->input.data(), ctx->input.size(), error) &&
-           migan::run(ctx->model, ctx->input.data(), ctx->input.size(), ctx->raw.data(), ctx->raw.size(), error) &&
-           migan::composite_rgb8(ctx->raw.data(), ctx->raw.size(), rgb, migan::rgb_elements, mask, migan::mask_elements,
-                                 output, migan::rgb_elements, error);
+    const size_t pixels = size_t(ctx->resolution) * ctx->resolution;
+    return migan::preprocess_rgb8_variant(ctx->resolution, rgb, 3 * pixels, mask, pixels, ctx->resolution,
+                                          ctx->resolution, ctx->input.data(), 4 * pixels, error) &&
+           migan::run(ctx->model, ctx->input.data(), 4 * pixels, ctx->raw.data(), 3 * pixels, error) &&
+           migan::composite_rgb8_variant(ctx->resolution, ctx->raw.data(), ctx->raw.size(), rgb, 3 * pixels, mask,
+                                         pixels, output, 3 * pixels, error);
 }
 
 // Several tiles per graph execution (GPU). Preprocess/composite are the same
@@ -76,18 +87,19 @@ bool run_tiles(void * opaque, size_t count, const uint8_t * rgb, const uint8_t *
                std::string & error) {
     auto * ctx = static_cast<context *>(opaque);
     if (count == 1) return run_tile(opaque, rgb, mask, output, error);
-    ctx->input.resize(count * migan::input_elements);
-    ctx->raw.resize(count * migan::rgb_elements);
+    const int side = ctx->resolution;
+    const size_t pixels = size_t(side) * side;
+    ctx->input.resize(count * 4 * pixels);
+    ctx->raw.resize(count * 3 * pixels);
     for (size_t i = 0; i < count; ++i)
-        if (!migan::preprocess_rgb8(rgb + i * migan::rgb_elements, migan::rgb_elements, mask + i * migan::mask_elements,
-                                    migan::mask_elements, tile_size, tile_size,
-                                    ctx->input.data() + i * migan::input_elements, migan::input_elements, error))
+        if (!migan::preprocess_rgb8_variant(side, rgb + i * 3 * pixels, 3 * pixels, mask + i * pixels, pixels, side,
+                                            side, ctx->input.data() + i * 4 * pixels, 4 * pixels, error))
             return false;
     if (!migan::run_batch(ctx->model, ctx->input.data(), count, ctx->raw.data(), error)) return false;
     for (size_t i = 0; i < count; ++i)
-        if (!migan::composite_rgb8(ctx->raw.data() + i * migan::rgb_elements, migan::rgb_elements,
-                                   rgb + i * migan::rgb_elements, migan::rgb_elements, mask + i * migan::mask_elements,
-                                   migan::mask_elements, output + i * migan::rgb_elements, migan::rgb_elements, error))
+        if (!migan::composite_rgb8_variant(side, ctx->raw.data() + i * 3 * pixels, 3 * pixels, rgb + i * 3 * pixels,
+                                           3 * pixels, mask + i * pixels, pixels, output + i * 3 * pixels, 3 * pixels,
+                                           error))
             return false;
     return true;
 }
@@ -100,10 +112,28 @@ struct weighted_pixel {
 } // namespace
 
 context * init(const char * path, int n_threads, std::string & error) {
+    return init_variant(path, checkpoint_sha256, model_sha256, tile_size, n_threads, error);
+}
+
+context * init_variant(const char * path, const char * expected_checkpoint_sha256, const char * expected_gguf_sha256,
+                       int resolution, int n_threads, std::string & error) {
     error.clear();
-    if (!enabled(error)) return nullptr;
+    if (resolution != 256 && resolution != 512) {
+        fail(error, "MI-GAN supports only fixed256 or fixed512");
+        return nullptr;
+    }
+    if (!enabled(resolution, error)) return nullptr;
     if (!path || !*path || n_threads < 1 || n_threads > 64) {
         fail(error, "inpainting requires a model path and 1..64 CPU threads");
+        return nullptr;
+    }
+    if (!valid_digest(expected_checkpoint_sha256) || !valid_digest(expected_gguf_sha256)) {
+        fail(error, "MI-GAN requires independently reviewed lowercase checkpoint and GGUF SHA-256 values");
+        return nullptr;
+    }
+    if (resolution == 256 && (std::strcmp(expected_checkpoint_sha256, checkpoint_sha256) != 0 ||
+                              std::strcmp(expected_gguf_sha256, model_sha256) != 0)) {
+        fail(error, "MI-GAN256 retains the exact reviewed checkpoint and GGUF pins");
         return nullptr;
     }
     try {
@@ -113,23 +143,37 @@ context * init(const char * path, int n_threads, std::string & error) {
             fail(error, "cannot read inpainting model file");
             return nullptr;
         }
-        const bool reviewed = size == model_bytes && core_sha256::file(path) == model_sha256;
-        // A derived F16/Q8_0/Q4_K container (CRISPEMBED_MIGAN_QUANT=1) is not
-        // byte-pinned here: migan validates its policy, every tensor type/
-        // shape and its recorded source = the reviewed F32 GGUF SHA.
-        if (!reviewed && !core_env::on("CRISPEMBED_MIGAN_QUANT")) {
-            fail(error, "inpainting model differs from the reviewed MI-GAN fixed256 F32 GGUF (SHA-256 mismatch)");
+        const bool profile = core_env::on("CRISPEMBED_INPAINT_PROFILE");
+        core_sha256_accel::Stats hash_stats;
+        const bool size_ok = (resolution != 256 || size == model_bytes) && size > 0 && size <= size_t(64) * 1024 * 1024;
+        const std::string observed =
+            size_ok ? core_sha256_accel::file(path, core_env::on("CRISPEMBED_INPAINT_SHA256_ACCEL"),
+                                              profile ? &hash_stats : nullptr)
+                    : std::string();
+        // For256, a derived F16/Q8_0/Q4_K migan-pointwise-v1 container
+        // (CRISPEMBED_MIGAN_QUANT=1) is not byte-pinned here: migan validates
+        // its policy, every tensor type/shape and its recorded source = the
+        // reviewed F32 GGUF SHA.
+        const bool derived256 =
+            resolution == 256 && core_env::on("CRISPEMBED_MIGAN_QUANT") && size > 0 && size <= size_t(64) * 1024 * 1024;
+        if (!derived256 && (!size_ok || observed != expected_gguf_sha256)) {
+            fail(error, "inpainting model differs from the selected MI-GAN F32 GGUF (size/SHA-256 mismatch)");
             return nullptr;
         }
-        std::unique_ptr<context> ctx(new context);
-        ctx->model =
-            migan::init_ex(path, checkpoint_sha256, n_threads, migan::device_choice::automatic, model_sha256, error);
+        if (profile && size_ok) core_sha256_accel::profile_verified("migan", hash_stats, observed);
+        std::unique_ptr<context> ctx(new context(resolution));
+        ctx->model = migan::init_variant_ex(path, expected_checkpoint_sha256, resolution, n_threads,
+                                            migan::device_choice::automatic, expected_gguf_sha256, error);
         if (!ctx->model) return nullptr;
         return ctx.release();
     } catch (const std::exception & exception) {
         fail(error, std::string("inpainting model initialization failed: ") + exception.what());
         return nullptr;
     }
+}
+
+int image_resolution(const context * ctx) {
+    return ctx ? ctx->resolution : 0;
 }
 
 void free(context * ctx) {
@@ -139,14 +183,15 @@ void free(context * ctx) {
 bool process_rgb8(context * ctx, const uint8_t * rgb, size_t rgb_bytes, const uint8_t * fill_mask, size_t mask_bytes,
                   int width, int height, uint8_t * output_rgb, size_t output_bytes, std::string & error) {
     error.clear();
-    if (!enabled(error)) return false;
+    if (!enabled(ctx ? ctx->resolution : 256, error)) return false;
     if (!ctx || !ctx->model) return fail(error, "inpainting requires an initialized model context");
     const int batch = migan::max_batch(ctx->model);
     if (batch <= 1)
-        return detail::process_tiles_rgb8(run_tile, ctx, rgb, rgb_bytes, fill_mask, mask_bytes, width, height,
-                                          output_rgb, output_bytes, error);
-    return detail::process_tiles_rgb8_batched(run_tiles, ctx, size_t(batch), rgb, rgb_bytes, fill_mask, mask_bytes,
-                                              width, height, output_rgb, output_bytes, error);
+        return detail::process_tiles_rgb8_variant(ctx->resolution, run_tile, ctx, rgb, rgb_bytes, fill_mask, mask_bytes,
+                                                  width, height, output_rgb, output_bytes, error);
+    return detail::process_tiles_rgb8_variant_batched(ctx->resolution, run_tiles, ctx, size_t(batch), rgb, rgb_bytes,
+                                                      fill_mask, mask_bytes, width, height, output_rgb, output_bytes,
+                                                      error);
 }
 
 void set_gpu_backend(const char * name) {
@@ -170,17 +215,35 @@ namespace detail {
 bool process_tiles_rgb8(tile_processor process_tile, void * opaque, const uint8_t * rgb, size_t rgb_bytes,
                         const uint8_t * fill_mask, size_t mask_bytes, int width, int height, uint8_t * output_rgb,
                         size_t output_bytes, std::string & error) {
-    batch_adapter adapter{ process_tile, opaque };
-    return process_tiles_rgb8_batched(process_tile ? adapt_single : nullptr, &adapter, 1, rgb, rgb_bytes, fill_mask,
-                                      mask_bytes, width, height, output_rgb, output_bytes, error);
+    return process_tiles_rgb8_variant(tile_size, process_tile, opaque, rgb, rgb_bytes, fill_mask, mask_bytes, width,
+                                      height, output_rgb, output_bytes, error);
+}
+
+bool process_tiles_rgb8_variant(int resolution, tile_processor process_tile, void * opaque, const uint8_t * rgb,
+                                size_t rgb_bytes, const uint8_t * fill_mask, size_t mask_bytes, int width, int height,
+                                uint8_t * output_rgb, size_t output_bytes, std::string & error) {
+    batch_adapter adapter{ process_tile, opaque, size_t(resolution) * resolution };
+    return process_tiles_rgb8_variant_batched(resolution, process_tile ? adapt_single : nullptr, &adapter, 1, rgb,
+                                              rgb_bytes, fill_mask, mask_bytes, width, height, output_rgb, output_bytes,
+                                              error);
 }
 
 bool process_tiles_rgb8_batched(tile_batch_processor process_tiles, void * opaque, size_t max_batch,
                                 const uint8_t * rgb, size_t rgb_bytes, const uint8_t * fill_mask, size_t mask_bytes,
                                 int width, int height, uint8_t * output_rgb, size_t output_bytes, std::string & error) {
+    return process_tiles_rgb8_variant_batched(tile_size, process_tiles, opaque, max_batch, rgb, rgb_bytes, fill_mask,
+                                              mask_bytes, width, height, output_rgb, output_bytes, error);
+}
+
+bool process_tiles_rgb8_variant_batched(int resolution, tile_batch_processor process_tile, void * opaque,
+                                        size_t max_batch, const uint8_t * rgb, size_t rgb_bytes,
+                                        const uint8_t * fill_mask, size_t mask_bytes, int width, int height,
+                                        uint8_t * output_rgb, size_t output_bytes, std::string & error) {
     error.clear();
     if (max_batch < 1 || max_batch > 64) return fail(error, "inpainting batch must be 1..64 tiles");
-    tile_batch_processor process_tile = process_tiles;
+    if (resolution != 256 && resolution != 512) return fail(error, "MI-GAN supports only fixed256 or fixed512");
+    const int tile_size = resolution, tile_stride = resolution * 3 / 4;
+    const size_t tile_pixels = size_t(tile_size) * tile_size;
     if (width < 1 || height < 1 || width > max_dimension || height > max_dimension ||
         size_t(width) > max_pixels / size_t(height))
         return fail(error, "inpainting dimensions must be positive, at most 32768 per side and 64M pixels");
@@ -204,16 +267,17 @@ bool process_tiles_rgb8_batched(tile_batch_processor process_tiles, void * opaqu
         // Transactional result also makes in-place calls safe: all tiles always
         // see the original frame, including when another tile has filled it.
         std::vector<uint8_t> result(rgb, rgb + rgb_bytes);
-        std::vector<uint8_t> tile_rgb(max_batch * migan::rgb_elements), tile_mask(max_batch * migan::mask_elements);
-        std::vector<uint8_t> tile_output(max_batch * migan::rgb_elements);
-        const std::vector<int> xs = starts(width), ys = starts(height);
+        std::vector<uint8_t> tile_rgb(max_batch * 3 * tile_pixels), tile_mask(max_batch * tile_pixels);
+        std::vector<uint8_t> tile_output(max_batch * 3 * tile_pixels);
+        const std::vector<int> xs = starts(width, tile_size, tile_stride), ys = starts(height, tile_size, tile_stride);
         const int band_height = std::min(height, tile_size);
         std::vector<weighted_pixel> band(size_t(width) * band_height);
         int flushed = 0;
+        std::vector<int> lefts;
 
         for (size_t yi = 0; yi < ys.size(); ++yi) {
             const int top = ys[yi], actual_height = std::min(tile_size, height - top);
-            std::vector<int> lefts;
+            lefts.clear();
             for (int left : xs) {
                 const int actual_width = std::min(tile_size, width - left);
                 bool tile_has_fill = false;
@@ -232,9 +296,9 @@ bool process_tiles_rgb8_batched(tile_batch_processor process_tiles, void * opaqu
                 const size_t count = std::min(max_batch, lefts.size() - first);
                 for (size_t k = 0; k < count; ++k) {
                     const int left = lefts[first + k];
-                    uint8_t * trgb = tile_rgb.data() + k * migan::rgb_elements;
-                    uint8_t * tmask = tile_mask.data() + k * migan::mask_elements;
-                    // Clamp padding only when an image dimension is below256.
+                    uint8_t * trgb = tile_rgb.data() + k * 3 * tile_pixels;
+                    uint8_t * tmask = tile_mask.data() + k * tile_pixels;
+                    // Clamp padding only when an image dimension is below the model resolution.
                     // Every generated tile reads original pixels, never previous fills.
                     for (int y = 0; y < tile_size; ++y)
                         for (int x = 0; x < tile_size; ++x) {
@@ -254,7 +318,7 @@ bool process_tiles_rgb8_batched(tile_batch_processor process_tiles, void * opaqu
                 for (size_t k = 0; k < count; ++k) {
                     const int left = lefts[first + k];
                     const int actual_width = std::min(tile_size, width - left);
-                    const uint8_t * tout = tile_output.data() + k * migan::rgb_elements;
+                    const uint8_t * tout = tile_output.data() + k * 3 * tile_pixels;
                     for (int y = 0; y < actual_height; ++y) {
                         const uint32_t wy = uint32_t(std::min(y + 1, tile_size - y));
                         for (int x = 0; x < actual_width; ++x) {
@@ -263,8 +327,8 @@ bool process_tiles_rgb8_batched(tile_batch_processor process_tiles, void * opaqu
                             const uint32_t weight = wy * uint32_t(std::min(x + 1, tile_size - x));
                             weighted_pixel & sum = band[size_t((top + y) % band_height) * width + left + x];
                             const size_t local = size_t(y) * tile_size + x;
-                            // At most3x3 overlapping tiles, each weight <=128^2:
-                            // every RGB sum <=9*128^2*255, safely within uint32.
+                            // At most3x3 overlapping tiles, each weight <=256^2:
+                            // every RGB sum <=9*256^2*255, safely within uint32.
                             for (int c = 0; c < 3; ++c) sum.rgb[c] += weight * tout[3 * local + c];
                             sum.weight += weight;
                         }
@@ -273,7 +337,7 @@ bool process_tiles_rgb8_batched(tile_batch_processor process_tiles, void * opaqu
             }
 
             // No later tile touches rows before the next origin. Recycle them
-            // in a256-row ring rather than allocating frame-sized float planes.
+            // in a tile-height ring rather than allocating frame-sized float planes.
             const int flush_end = yi + 1 < ys.size() ? ys[yi + 1] : height;
             for (; flushed < flush_end; ++flushed) {
                 weighted_pixel * row = band.data() + size_t(flushed % band_height) * width;
