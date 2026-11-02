@@ -169,14 +169,26 @@ IDs against the original-Python IDs.
 
 | Model | Recipe | Device | Final cos min | Decoded exact | Divergences |
 |---|---|---|---|---|---|
-| TeleOCR | r9 | CPU (hosted) | 0.9677 (table) | see CPU policy run | |
-| TeleOCR | r9 | Metal (M1) | 0.9677 (table) | 5/6 | table@35 |
-| MinerU | r2 | CPU (hosted, 2 runners) | 0.9521 / 0.9673 (japanese) | 6/8 | german@7, layout-page@52 |
-| MinerU | r2 | Metal (M1) | 0.9602 (german) | 6/8 | german@7, layout-page@180 |
+| TeleOCR | `teleocr_q4k_v1` | CPU (hosted, AMD EPYC 9V45) | 0.9677 (table) | 5/6 | table@35 |
+| TeleOCR | r9 (same tensors) | Metal (M1) | 0.9677 (table) | 5/6 | table@35 |
+| TeleOCR | r9 (same tensors) | CUDA (Kaggle T4) | 0.9570 (table) | 5/6 | table@35 |
+| TeleOCR | r1 | CUDA (Kaggle T4) | 0.9639 | 5/6 | table@35 |
+| MinerU | `mineru_q4k_v1` | CPU (hosted, AMD EPYC 9V45) | 0.9673 (japanese) | 6/8 | german@7, layout-page@52 |
+| MinerU | r2 (same tensors) | CPU (hosted, other runner, forced only) | 0.9521 (japanese) | - | - |
+| MinerU | r2 (same tensors) | Metal (M1) | 0.9602 (german) | 6/8 | german@7, layout-page@180 |
+| MinerU | r2 (same tensors) | CUDA (Kaggle T4) | 0.9611 (japanese) | 6/8 | german@7, layout-page@48 |
 | MinerU | r4 | CPU (hosted) | 0.9732 (table) | 6/8 | german@7, layout-page@48 |
 | MinerU | r4 | Metal (M1) | 0.9643 (table) | 6/8 | german@7, layout-page@48 |
+| MinerU | r4 | CUDA (Kaggle T4) | 0.9724 | 6/8 | german@7, layout-page@48 |
 
-<!-- CUDA and CPU policy rows: see below -->
+Both winners clear 0.94 on every case on every device; the lowest arm is
+TeleOCR on CUDA (0.9570) and MinerU on hosted CPU/Metal (0.952/0.960).
+Receipts: `tests/results/qwen2vl-q4k/{teleocr,mineru}-q4k-precision.json`
+(publication schema, `final_cos_min` per case per arm), with the raw device
+receipts beside them. Kaggle re-quantized byte-identical GGUFs; the Metal and
+CUDA arms ran the r9/r2 files, whose tensor data equal the policy files'
+(`tensor_data_sha256`); the policy adds only its metadata key. `r4` (MinerU,
+755 MiB, last three decoder layers Q8_0) is the fallback with more margin.
 
 Decoded changes, recorded rather than hidden: MinerU German page reads the
 masthead as "Reichs-Gefehbl. 1900. Ausgegeben zu Berlin ..." instead of
@@ -190,3 +202,22 @@ Worst intermediate stage, for the record: the MinerU German prompt's
 final-norm row (an attention-sink token) drops to 0.08-0.11 with Q4_K vision
 (0.29 with Q8_0 vision on CPU); TeleOCR's code prefill row 0.49. Neither moves
 the logits below the bar.
+
+## Publication
+
+`docs/teleocr-publication-v1.json` and `docs/mineru25-pro-publication-v1.json`
+carry a `Q4_K_MIX` recipe each: `type` q8_0 plus `quantize_env`
+`CRISPEMBED_QUANTIZE_QWEN2VL_POLICY`, `precision_gate` cosine,
+`precision_tier` q4_k, and the receipts above (`ocr_gguf_publish.py
+precision` passes for both). Not published, and not in `default_variants`;
+TeleOCR's research-licence handling is unchanged.
+
+## Reproduce
+
+```sh
+gh workflow run heavy-cpu.yml --ref <branch> -f script=tools/ci-heavy/qwen2vl_q4k_sweep.sh \
+  -f args="teleocr q8,fd,v4ffn" -f pip="numpy==2.2.6 safetensors==0.6.2 huggingface_hub==0.36.0 gguf==0.17.1"
+gh workflow run heavy-cpu.yml --ref <branch> -f script=tools/ci-heavy/qwen2vl_cpu_cosine.sh \
+  -f args="mineru mineru_q4k_v1" -f pip="..."     # free-running + teacher-forced
+CRISPEMBED_QUANTIZE_QWEN2VL_POLICY=teleocr_q4k_v1 crispembed-quantize teleocr-f16.gguf teleocr-q4_k-mix.gguf q8_0
+```

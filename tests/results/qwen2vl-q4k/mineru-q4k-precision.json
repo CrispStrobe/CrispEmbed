@@ -1,0 +1,299 @@
+{
+ "schema": "crispembed.qwen2vl.q4k-precision.v1",
+ "model": "mineru",
+ "dtype": "mineru_q4k_v1",
+ "metric": "minimum final-logit cosine over every generated position, teacher-forced on the committed original-Python IDs (docs/qwen2vl-q4k-recipes.md)",
+ "reference": "native CPU F32 converted from the pinned checkpoint, teacher-forced",
+ "bar": 0.94,
+ "commit": "4b4e4cbb0139f77a25ba4203aa0f67199e68840d",
+ "worst_final_cos": 0.9602043819604748,
+ "arms": [
+  {
+   "name": "cpu-hosted",
+   "dtype": "mineru_q4k_v1",
+   "device": "cpu",
+   "gguf_sha256": "f45e9447b78e95c9f6bcdfeb7e455ec3a498354a8b7e6bb3b8700be9512509a6",
+   "commit": "4b4e4cbb0139f77a25ba4203aa0f67199e68840d",
+   "extra_env": {},
+   "final_output_complete": true,
+   "cases": [
+    {
+     "id": "formula",
+     "ids_exact": true,
+     "first_divergence": null,
+     "final_cos_min": 0.980265068451055,
+     "positions": 29,
+     "positions_total": 29,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.5867527423048964
+    },
+    {
+     "id": "table",
+     "ids_exact": true,
+     "first_divergence": null,
+     "final_cos_min": 0.9772847160677735,
+     "positions": 140,
+     "positions_total": 140,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.2812286818238805
+    },
+    {
+     "id": "receipt",
+     "ids_exact": true,
+     "first_divergence": null,
+     "final_cos_min": 0.9841024302160374,
+     "positions": 202,
+     "positions_total": 202,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.1753172585782012
+    },
+    {
+     "id": "german",
+     "ids_exact": false,
+     "first_divergence": 7,
+     "final_cos_min": 0.9684649531643311,
+     "positions": 389,
+     "positions_total": 389,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.08207805215494547
+    },
+    {
+     "id": "japanese",
+     "ids_exact": true,
+     "first_divergence": null,
+     "final_cos_min": 0.9672800112532082,
+     "positions": 37,
+     "positions_total": 37,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.5248802491417089
+    },
+    {
+     "id": "arabic",
+     "ids_exact": true,
+     "first_divergence": null,
+     "final_cos_min": 0.9976210207886401,
+     "positions": 7,
+     "positions_total": 7,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.8830794084635508
+    },
+    {
+     "id": "layout-page",
+     "ids_exact": false,
+     "first_divergence": 52,
+     "final_cos_min": 0.9925974812890409,
+     "positions": 199,
+     "positions_total": 199,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.2643966465650958
+    },
+    {
+     "id": "layout-rot90",
+     "ids_exact": true,
+     "first_divergence": null,
+     "final_cos_min": 0.9892334282576601,
+     "positions": 44,
+     "positions_total": 44,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.26484952318431565
+    }
+   ]
+  },
+  {
+   "name": "metal-m1",
+   "dtype": "mineru_q4k_v1",
+   "device": "metal",
+   "gguf_sha256": "ed2ee2a8daa37d78af8a2b48aabbfaa8392e54a266085f8662d85ee32c7cad69",
+   "commit": "3790b535ad121f09d11b0bfb5b3033672e586ab6",
+   "extra_env": {},
+   "final_output_complete": true,
+   "cases": [
+    {
+     "id": "formula",
+     "ids_exact": true,
+     "first_divergence": null,
+     "final_cos_min": 0.9826933373186195,
+     "positions": 29,
+     "positions_total": 29,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.7723107799637351
+    },
+    {
+     "id": "table",
+     "ids_exact": true,
+     "first_divergence": null,
+     "final_cos_min": 0.9705391482277251,
+     "positions": 140,
+     "positions_total": 140,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.3848172954752002
+    },
+    {
+     "id": "receipt",
+     "ids_exact": true,
+     "first_divergence": null,
+     "final_cos_min": 0.9831804776179547,
+     "positions": 202,
+     "positions_total": 202,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.4014332570304105
+    },
+    {
+     "id": "german",
+     "ids_exact": false,
+     "first_divergence": 7,
+     "final_cos_min": 0.9602043819604748,
+     "positions": 389,
+     "positions_total": 389,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.10578170209941466
+    },
+    {
+     "id": "japanese",
+     "ids_exact": true,
+     "first_divergence": null,
+     "final_cos_min": 0.9644434490616428,
+     "positions": 37,
+     "positions_total": 37,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.7305558578584563
+    },
+    {
+     "id": "arabic",
+     "ids_exact": true,
+     "first_divergence": null,
+     "final_cos_min": 0.9978470423329507,
+     "positions": 7,
+     "positions_total": 7,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.9257035819492657
+    },
+    {
+     "id": "layout-page",
+     "ids_exact": false,
+     "first_divergence": 180,
+     "final_cos_min": 0.9928959143092233,
+     "positions": 199,
+     "positions_total": 199,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.34740151229780364
+    },
+    {
+     "id": "layout-rot90",
+     "ids_exact": true,
+     "first_divergence": null,
+     "final_cos_min": 0.9892369320321351,
+     "positions": 44,
+     "positions_total": 44,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.2786289885279828
+    }
+   ]
+  },
+  {
+   "name": "cuda-t4",
+   "dtype": "mineru_q4k_v1",
+   "device": "gpu",
+   "gguf_sha256": "ed2ee2a8daa37d78af8a2b48aabbfaa8392e54a266085f8662d85ee32c7cad69",
+   "commit": "0424f6650dd9f4876e79b84585a229463a7e5317",
+   "extra_env": {},
+   "final_output_complete": true,
+   "cases": [
+    {
+     "id": "formula",
+     "ids_exact": true,
+     "first_divergence": null,
+     "final_cos_min": 0.9810734203491199,
+     "positions": 29,
+     "positions_total": 29,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.7308703427957212
+    },
+    {
+     "id": "table",
+     "ids_exact": true,
+     "first_divergence": null,
+     "final_cos_min": 0.9756456627003366,
+     "positions": 140,
+     "positions_total": 140,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.28049516330508556
+    },
+    {
+     "id": "receipt",
+     "ids_exact": true,
+     "first_divergence": null,
+     "final_cos_min": 0.9821718195048573,
+     "positions": 202,
+     "positions_total": 202,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.17355541773512406
+    },
+    {
+     "id": "german",
+     "ids_exact": false,
+     "first_divergence": 7,
+     "final_cos_min": 0.9633000180028259,
+     "positions": 389,
+     "positions_total": 389,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.10350103837052052
+    },
+    {
+     "id": "japanese",
+     "ids_exact": true,
+     "first_divergence": null,
+     "final_cos_min": 0.9610821382364573,
+     "positions": 37,
+     "positions_total": 37,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.6312618412360314
+    },
+    {
+     "id": "arabic",
+     "ids_exact": true,
+     "first_divergence": null,
+     "final_cos_min": 0.9977763406572995,
+     "positions": 7,
+     "positions_total": 7,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.8939287990720329
+    },
+    {
+     "id": "layout-page",
+     "ids_exact": false,
+     "first_divergence": 48,
+     "final_cos_min": 0.99249304301624,
+     "positions": 199,
+     "positions_total": 199,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.29956599922066823
+    },
+    {
+     "id": "layout-rot90",
+     "ids_exact": true,
+     "first_divergence": null,
+     "final_cos_min": 0.9890510851964088,
+     "positions": 44,
+     "positions_total": 44,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.2753592480161777
+    }
+   ]
+  }
+ ],
+ "tensor_data_sha256": "a7ef84d4c6cc97738b5d61b9a5ed73d1ba90fded5dc9df00bf5bf11f7329659e",
+ "file_bytes": 769390656,
+ "identity_note": "The metal-m1 and cuda-t4 arms ran the hosted recipe 'r2' bytes (GGUF SHA-256 in each arm; Kaggle re-quantized the same bytes). Their tensor names, types and data equal the policy file's (tensor_data_sha256); the policy file adds only the qwen2vl.quantization.policy key.",
+ "other_cpu_observations": [
+  {
+   "run": 41413473704,
+   "recipe": "r2",
+   "gguf_sha256": "ed2ee2a8daa37d78af8a2b48aabbfaa8392e54a266085f8662d85ee32c7cad69",
+   "teacher_forced_only": true,
+   "final_cos_min": 0.952109,
+   "worst_case": "japanese",
+   "note": "same bytes, another hosted runner: MinerU CPU matmuls quantize activations in ISA-specific kernels (-march=native builds), so the CPU score moves by up to 0.015 with the runner; still above the bar"
+  }
+ ]
+}

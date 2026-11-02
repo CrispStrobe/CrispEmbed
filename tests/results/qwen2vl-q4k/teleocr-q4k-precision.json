@@ -1,0 +1,238 @@
+{
+ "schema": "crispembed.qwen2vl.q4k-precision.v1",
+ "model": "teleocr",
+ "dtype": "teleocr_q4k_v1",
+ "metric": "minimum final-logit cosine over every generated position, teacher-forced on the committed original-Python IDs (docs/qwen2vl-q4k-recipes.md)",
+ "reference": "native CPU F16 (F32 compute on the bf16-exact weights), teacher-forced, hosted run per arm",
+ "bar": 0.94,
+ "commit": "4b4e4cbb0139f77a25ba4203aa0f67199e68840d",
+ "worst_final_cos": 0.9569908495732327,
+ "arms": [
+  {
+   "name": "cpu-hosted",
+   "dtype": "teleocr_q4k_v1",
+   "device": "cpu",
+   "gguf_sha256": "31219f3ac469228f13a46cbfcc6ca6afb86436f3d62b51a0ae5a4fef4ee02a35",
+   "commit": "4b4e4cbb0139f77a25ba4203aa0f67199e68840d",
+   "extra_env": {},
+   "final_output_complete": true,
+   "cases": [
+    {
+     "id": "text",
+     "ids_exact": true,
+     "first_divergence": null,
+     "final_cos_min": 0.9760051529817351,
+     "positions": 66,
+     "positions_total": 66,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.8236866995318676
+    },
+    {
+     "id": "formula",
+     "ids_exact": true,
+     "first_divergence": null,
+     "final_cos_min": 0.9782935418810974,
+     "positions": 166,
+     "positions_total": 166,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.7667511476636895
+    },
+    {
+     "id": "table",
+     "ids_exact": false,
+     "first_divergence": 35,
+     "final_cos_min": 0.9677186807240586,
+     "positions": 283,
+     "positions_total": 283,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.6546323580138981
+    },
+    {
+     "id": "code",
+     "ids_exact": true,
+     "first_divergence": null,
+     "final_cos_min": 0.9731300787529467,
+     "positions": 366,
+     "positions_total": 366,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.4897433854083504
+    },
+    {
+     "id": "layout",
+     "ids_exact": true,
+     "first_divergence": null,
+     "final_cos_min": 0.9707795876618323,
+     "positions": 768,
+     "positions_total": 768,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.6381548038325221
+    },
+    {
+     "id": "synthetic",
+     "ids_exact": true,
+     "first_divergence": null,
+     "final_cos_min": 0.9848935780319364,
+     "positions": 19,
+     "positions_total": 19,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.7871533860639729
+    }
+   ]
+  },
+  {
+   "name": "metal-m1",
+   "dtype": "teleocr_q4k_v1",
+   "device": "metal",
+   "gguf_sha256": null,
+   "commit": "e94e801f092e29d7974dea2c2d47e471a3c092f9",
+   "extra_env": {},
+   "final_output_complete": true,
+   "cases": [
+    {
+     "id": "text",
+     "ids_exact": true,
+     "first_divergence": null,
+     "final_cos_min": 0.975968300118189,
+     "positions": 66,
+     "positions_total": 66,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.822224424977916
+    },
+    {
+     "id": "formula",
+     "ids_exact": true,
+     "first_divergence": null,
+     "final_cos_min": 0.9783056637066461,
+     "positions": 166,
+     "positions_total": 166,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.7666824056822186
+    },
+    {
+     "id": "table",
+     "ids_exact": false,
+     "first_divergence": 35,
+     "final_cos_min": 0.967734601430967,
+     "positions": 283,
+     "positions_total": 283,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.657257123640628
+    },
+    {
+     "id": "code",
+     "ids_exact": true,
+     "first_divergence": null,
+     "final_cos_min": 0.9730842892600253,
+     "positions": 366,
+     "positions_total": 366,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.4900344817239368
+    },
+    {
+     "id": "layout",
+     "ids_exact": true,
+     "first_divergence": null,
+     "final_cos_min": 0.9706366815071521,
+     "positions": 768,
+     "positions_total": 768,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.6393378772697058
+    },
+    {
+     "id": "synthetic",
+     "ids_exact": true,
+     "first_divergence": null,
+     "final_cos_min": 0.9848999045851187,
+     "positions": 19,
+     "positions_total": 19,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.7859976822308358
+    }
+   ]
+  },
+  {
+   "name": "cuda-t4",
+   "dtype": "teleocr_q4k_v1",
+   "device": "gpu",
+   "gguf_sha256": "120e70922bd0f7a0ef2b7c25f27a0ac15c0012050470425b05b35a55a9b7a6c5",
+   "commit": "0424f6650dd9f4876e79b84585a229463a7e5317",
+   "extra_env": {},
+   "final_output_complete": true,
+   "cases": [
+    {
+     "id": "text",
+     "ids_exact": true,
+     "first_divergence": null,
+     "final_cos_min": 0.976453834832297,
+     "positions": 66,
+     "positions_total": 66,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.47319139622401757
+    },
+    {
+     "id": "formula",
+     "ids_exact": true,
+     "first_divergence": null,
+     "final_cos_min": 0.9797595383107325,
+     "positions": 166,
+     "positions_total": 166,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.748696010909655
+    },
+    {
+     "id": "table",
+     "ids_exact": false,
+     "first_divergence": 35,
+     "final_cos_min": 0.9569908495732327,
+     "positions": 283,
+     "positions_total": 283,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.649714407325931
+    },
+    {
+     "id": "code",
+     "ids_exact": true,
+     "first_divergence": null,
+     "final_cos_min": 0.9670291915884154,
+     "positions": 366,
+     "positions_total": 366,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.43522767340045215
+    },
+    {
+     "id": "layout",
+     "ids_exact": true,
+     "first_divergence": null,
+     "final_cos_min": 0.9752336998921409,
+     "positions": 768,
+     "positions_total": 768,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.5376529059305144
+    },
+    {
+     "id": "synthetic",
+     "ids_exact": true,
+     "first_divergence": null,
+     "final_cos_min": 0.9848365019856768,
+     "positions": 19,
+     "positions_total": 19,
+     "worst_stage": "prefill_final_norm(row)",
+     "worst_stage_cosine": 0.7406259666577566
+    }
+   ]
+  }
+ ],
+ "tensor_data_sha256": "891c27e30793787403567cb621ded48612011eb3d0342f4b292987c1a42c1ce8",
+ "file_bytes": 1195406784,
+ "identity_note": "The metal-m1 and cuda-t4 arms ran the hosted recipe 'r9' bytes (GGUF SHA-256 in each arm; Kaggle re-quantized the same bytes). Their tensor names, types and data equal the policy file's (tensor_data_sha256); the policy file adds only the qwen2vl.quantization.policy key.",
+ "other_cpu_observations": [
+  {
+   "run": 41440008347,
+   "recipe": "r9",
+   "gguf_sha256": "120e70922bd0f7a0ef2b7c25f27a0ac15c0012050470425b05b35a55a9b7a6c5",
+   "teacher_forced_only": true,
+   "final_cos_min": 0.967718,
+   "worst_case": "table"
+  }
+ ]
+}
