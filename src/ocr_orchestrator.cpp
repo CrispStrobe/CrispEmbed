@@ -14,6 +14,7 @@
 #include "ocr_crop.h"
 #include "easyocr_layout.h"
 #include "easyocr_pipeline.h"
+#include "ocr_reading_order.h"
 // Single-shot VLM/document OCR engines (full image → text). C API.
 #include "got_ocr.h"
 #include "glm_ocr.h"
@@ -2112,13 +2113,24 @@ static result assemble(std::vector<ocr_pipeline::ocr_result> regions, engine eng
     r.regions = std::move(regions);
     r.reading_order.resize(r.regions.size());
     std::iota(r.reading_order.begin(), r.reading_order.end(), 0);
-    std::stable_sort(r.reading_order.begin(), r.reading_order.end(), [&](int a, int b) {
-        const auto & x = r.regions[(size_t)a].box;
-        const auto & y = r.regions[(size_t)b].box;
-        const float row = std::max(8.0f, std::min(x.h, y.h) * 0.65f);
-        if (std::fabs(x.y - y.y) > row) return x.y < y.y;
-        return x.x < y.x;
-    });
+    if (core_env::explicitly_off("CRISPEMBED_OCR_READING_ORDER_ROWS")) {
+        // Legacy comparator, kept for A/B. It is not a strict weak ordering:
+        // "same row" (|dy| <= 0.65 * min h) is not transitive, so on tightly
+        // spaced lines a < b, b < c, c < a can all hold. std::stable_sort with
+        // such a comparator is undefined, and libc++ (macOS) and libstdc++
+        // (Linux) really do return different orders: scan_page_pd's easyocr
+        // page text differed between the M1 and x86/CUDA in exactly three
+        // swapped lines with byte-identical regions.
+        std::stable_sort(r.reading_order.begin(), r.reading_order.end(), [&](int a, int b) {
+            const auto & x = r.regions[(size_t)a].box;
+            const auto & y = r.regions[(size_t)b].box;
+            const float row = std::max(8.0f, std::min(x.h, y.h) * 0.65f);
+            if (std::fabs(x.y - y.y) > row) return x.y < y.y;
+            return x.x < y.x;
+        });
+    } else {
+        r.reading_order = ocr_reading_order::rows(r.regions);
+    }
     std::string joined;
     for (int index : r.reading_order) {
         auto & reg = r.regions[(size_t)index];
@@ -2570,6 +2582,16 @@ result run_file(context * ctx, const char * image_path) {
             // 0.0260 -> 0.0273). CRISPEMBED_PPOCRV6_CLEANUP=1 restores the
             // old behaviour.
             if (verbose) fprintf(stderr, "ocr_orchestrator: ppocrv6 stage skips destructive cleanup\n");
+            stage_cleanup.enabled = false;
+            stage_cleanup.denoise = false;
+        }
+        if (s.eng == engine::easyocr && stage_cleanup.enabled &&
+            core_env::explicitly_off("CRISPEMBED_EASYOCR_CLEANUP")) {
+            // Python EasyOCR runs on the raw page; the scan chain's classical
+            // cleanup (deskew/crop/whiten, binarize on scans) is a native-only
+            // step. CRISPEMBED_EASYOCR_CLEANUP=0 runs the easyocr stage on the
+            // raw page for A/B against Python (default unchanged, see PLAN).
+            if (verbose) fprintf(stderr, "ocr_orchestrator: easyocr stage skips cleanup (EASYOCR_CLEANUP=0)\n");
             stage_cleanup.enabled = false;
             stage_cleanup.denoise = false;
         }
