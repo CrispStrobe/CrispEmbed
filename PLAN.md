@@ -291,15 +291,18 @@ handoff take precedence over historical commands.
    Ultra40871150002. Verify exact source/attempt and collect small reports after
    completion; do not duplicate them. Keep models/raw arrays remote.
 2. WASM live norm (branch `fix/wasm-live-norm-component-inventory-20261102`):
-   v2 component admission and v3 observer are repaired. In run41427588368 all
-   weight-free component/browser/observer controls, native anchors, capture
-   (65/65 incl. 32 old stage hashes) and 208/208 same-input comparisons pass,
-   all bit-exact. The 196 natural comparisons are blocked: the frozen Ref
-   adapter caps dimensions at 512, and layer3 fc1_raw/fc1/gelu are [12,1536].
-   Next: a reviewed v4 Ref path that keeps full 1536-row cosine semantics (no
-   reshape), then rerun under the same order. Receipts:
+   the one-sentence attribution is complete (v4 run41432135298) and is a
+   numerical negative. All 208 same-input norm replays are bit-exact.
+   Natural comparisons: 132/196 pass. Error stays at or below 1.9e-6 until it
+   rises about 300x at layer3 FC1 (fc1_raw 5.73e-4) and first fails at fc2_raw
+   (0.00331, cosine 0.99999569). Results are identical for gate 0/1 and threads
+   1/2. The norm is not the source. Next: a same-input replay of the layer3
+   FC1/FC2 matmul (WASM-captured inputs, frozen quantized weights, native vs
+   WASM mul_mat) to separate kernel accumulation order from propagation. No
+   default, gate or budget change and no ten-case retry. Receipts:
    [v2](tests/results/packaging/wasm-live-norm-v2-component-admission.json),
-   [v3](tests/results/packaging/wasm-live-norm-v3-observer.json).
+   [v3](tests/results/packaging/wasm-live-norm-v3-observer.json),
+   [v4](tests/results/packaging/wasm-live-norm-v4-attribution.json).
 3. Independently review MoE real-router source81fa4e26, then execute its
    component-only replay using exact-v4 attached captures. No whole-model or
    original forward. Require own-byte controls before cross-input conclusions.

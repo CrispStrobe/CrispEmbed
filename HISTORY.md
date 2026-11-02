@@ -1,3 +1,22 @@
+## 2 November 2026 — WASM live norm: one-sentence attribution complete (v4, numerical negative)
+
+* 41432135298 (v4 at `77ed7122`) completed the full one-sentence attribution and exited1 on
+  numbers, as designed. v4 replaces only the Ref adapter. It runs the SHA-pinned frozen
+  `diff_adapter.py` code with an exact shape allowlist {[12,384],[12,1536],[2,8]} instead of
+  the 512 cap that blocked 41427588368. Full-row metrics and 0.002/0.99999 budgets are
+  unchanged. Tests prove bit-for-bit parity with the frozen adapter on all allowlisted
+  shapes up to 512 wide.
+* All controls before model access pass. There are 12 native anchors, the capture proof
+  (65/65, 32 old WASM stage hashes) and 104/104 replay controls. All 208 same-input norm
+  replays are bit-exact. Natural comparisons: 132/196 pass and 64 fail (40 norm, 24 layer3);
+  C++ Ref and independent metrics agree.
+* Natural error stays at or below 1.9e-6 through layers 0-2 and layer3 attention. It rises
+  about 300x at the layer3 FC1 matmul (`fc1_raw` 5.73e-4) and first fails at `fc2_raw`
+  (0.00331, cosine 0.99999569), then grows to 0.185 at norm12. Results are identical for norm
+  gate 0/1 and threads 1/2. The norm operator is not the source; the earliest
+  budget-relevant divergence is the layer3 FFN matmul path. Receipt:
+  `tests/results/packaging/wasm-live-norm-v4-attribution.json`.
+
 ## 2 November 2026 — WASM live norm: component admission (v2) and observer (v3) repaired
 
 * 40867038915 (ff3b8a01) rejected `Actual component rounding flags differ`. v1 assumed one
