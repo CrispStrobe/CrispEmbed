@@ -1,0 +1,39 @@
+crispembed: using WordPiece tokenizer (30522 tokens, uncased)
+crispembed: forcing CPU backend via CRISPEMBED_FORCE_CPU
+crispembed: using CPU backend (1 threads)
+crispembed: loaded 6 layers, 384 dims, 30522 vocab
+crispembed: token_ids (n=12): 101 1037 2235 16360 14127 21104 7861 8270 4667 7325 1012 102
+crispembed: token_ids (n=12): 101 1037 2235 16360 14127 21104 7861 8270 4667 7325 1012 102
+crispembed: token_ids (n=12): 101 1037 2235 16360 14127 21104 7861 8270 4667 7325 1012 102
+crispembed: token_ids (n=12): 101 1037 2235 16360 14127 21104 7861 8270 4667 7325 1012 102
+crispembed: using WordPiece tokenizer (30522 tokens, uncased)
+crispembed: forcing CPU backend via CRISPEMBED_FORCE_CPU
+crispembed: using CPU backend (1 threads)
+crispembed: loaded 6 layers, 384 dims, 30522 vocab
+crispembed: token_ids (n=12): 101 1037 2235 16360 14127 21104 7861 8270 4667 7325 1012 102
+live_norm_reject: geometry name=norm00_input op=ADD type=f32 contiguous=1 ne=[384,16,1,1] nb=[4,1536,24576,24576] src0_is_input=0 src0_op=ADD view_src=0
+/home/runner/work/_temp/live-norm/observer-source/src/crispembed.cpp:1186: GGML_ASSERT(ctx->live_norm.add_norm(input, result)) failed
+/home/runner/work/_temp/live-norm/native-observed/ggml/src/libggml-base.so.0(+0x1c12b)[0x7f531fdc012b]
+/home/runner/work/_temp/live-norm/native-observed/ggml/src/libggml-base.so.0(ggml_print_backtrace+0x21c)[0x7f531fdc05ac]
+/home/runner/work/_temp/live-norm/native-observed/ggml/src/libggml-base.so.0(ggml_abort+0x15b)[0x7f531fdc078b]
+/home/runner/work/_temp/live-norm/native-observed/libcrispembed.so(+0xb5f56)[0x7f53200b5f56]
+/home/runner/work/_temp/live-norm/native-observed/libcrispembed.so(+0xbd198)[0x7f53200bd198]
+/home/runner/work/_temp/live-norm/native-observed/libcrispembed.so(crispembed_encode+0xbf2)[0x7f53200bfda2]
+/lib/x86_64-linux-gnu/libffi.so.8(+0x7b16)[0x7f5320f5bb16]
+/lib/x86_64-linux-gnu/libffi.so.8(+0x43ef)[0x7f5320f583ef]
+/lib/x86_64-linux-gnu/libffi.so.8(ffi_call+0x12e)[0x7f5320f5b0be]
+/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/lib-dynload/_ctypes.cpython-312-x86_64-linux-gnu.so(+0xde63)[0x7f5320f6de63]
+/opt/hostedtoolcache/Python/3.12.15/x64/lib/python3.12/lib-dynload/_ctypes.cpython-312-x86_64-linux-gnu.so(+0x1412a)[0x7f5320f7412a]
+/opt/hostedtoolcache/Python/3.12.15/x64/lib/libpython3.12.so.1.0(_PyObject_MakeTpCall+0x6f)[0x7f5321c1414f]
+/opt/hostedtoolcache/Python/3.12.15/x64/lib/libpython3.12.so.1.0(+0x18d20b)[0x7f5321b8d20b]
+/opt/hostedtoolcache/Python/3.12.15/x64/lib/libpython3.12.so.1.0(PyEval_EvalCode+0xb6)[0x7f5321ce8f36]
+/opt/hostedtoolcache/Python/3.12.15/x64/lib/libpython3.12.so.1.0(+0x309f77)[0x7f5321d09f77]
+/opt/hostedtoolcache/Python/3.12.15/x64/lib/libpython3.12.so.1.0(+0x309aab)[0x7f5321d09aab]
+/opt/hostedtoolcache/Python/3.12.15/x64/lib/libpython3.12.so.1.0(+0x3099f2)[0x7f5321d099f2]
+/opt/hostedtoolcache/Python/3.12.15/x64/lib/libpython3.12.so.1.0(_PyRun_SimpleFileObject+0x1d3)[0x7f5321d09853]
+/opt/hostedtoolcache/Python/3.12.15/x64/lib/libpython3.12.so.1.0(_PyRun_AnyFileObject+0x48)[0x7f5321d09668]
+/opt/hostedtoolcache/Python/3.12.15/x64/lib/libpython3.12.so.1.0(Py_RunMain+0x3b4)[0x7f5321d12944]
+/opt/hostedtoolcache/Python/3.12.15/x64/lib/libpython3.12.so.1.0(Py_BytesMain+0x3b)[0x7f5321d1243b]
+/lib/x86_64-linux-gnu/libc.so.6(+0x2a1ca)[0x7f532162a1ca]
+/lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0x8b)[0x7f532162a28b]
+/opt/hostedtoolcache/Python/3.12.15/x64/bin/python(_start+0x25)[0x556f7fa13095]

@@ -1,5 +1,9 @@
 // TEST OVERLAY ONLY (v3): v1 observer plus metadata-only rejection diagnostics on stderr.
-// No numeric graph nodes; acceptance rules are byte-for-byte the v1 rules.
+// No numeric graph nodes; acceptance rules for evaluated graphs are the v1 rules.
+// v3 change (run 41421952964): the native first encode builds an unevaluated
+// scheduler-reservation graph at bucket_seq_len(T) (16 for the 12-token sentence).
+// The overlay brackets those builds with `measuring`; they are neither registered
+// nor allowed to reset or redirect the evaluated graph's observation.
 #pragma once
 #include "ggml-backend.h"
 #include "ggml.h"
@@ -23,6 +27,8 @@ struct live_norm_observer {
     int width = 0, layers = 0, heads = 0, intermediate = 0, norms = 0;
     float epsilon = 0;
     bool cpu = false, pre_ln = false, enabled = false, failed = false;
+    bool measuring = false;  // v3: inside an unevaluated reservation build
+    int measured_builds = 0; // v3: count, for the completion proof
     void configure(const char * arch, int h, int l, int n, int f, bool pre, float eps, bool is_cpu, bool on) {
         architecture = arch;
         width = h;
@@ -59,6 +65,7 @@ struct live_norm_observer {
         return ask ? wanted : true;
     }
     void begin(ggml_backend_sched_t scheduler) {
+        if (measuring) { ++measured_builds; return; }
         const char * path = std::getenv("CRISPEMBED_LIVE_NORM_CAPTURE");
         directory = path ? path : "";
         norms = 0;
@@ -76,7 +83,7 @@ struct live_norm_observer {
             t->src[0] ? ggml_op_name(t->src[0]->op) : "none", int(t->view_src != nullptr));
     }
     bool add(const std::string & name, ggml_tensor * tensor) {
-        if (!active()) return true;
+        if (measuring || !active()) return true;
         if (!tensor || tensor->type != GGML_TYPE_F32 || !ggml_is_contiguous(tensor) || tensor->ne[1] != 12 ||
             tensor->ne[2] != 1 || tensor->ne[3] != 1 || (tensor->ne[0] != 384 && tensor->ne[0] != 1536)) {
             describe("geometry", name, tensor);
@@ -88,7 +95,7 @@ struct live_norm_observer {
         return true;
     }
     bool add_norm(ggml_tensor * input, ggml_tensor * output) {
-        if (!active()) return true;
+        if (measuring || !active()) return true;
         if (!input || !output || norms >= 13 || output->src[0] != input || input->ne[0] != 384 ||
             output->ne[0] != 384 || output->op != (enabled ? GGML_OP_MAP_CUSTOM1 : GGML_OP_NORM)) {
             std::fprintf(stderr, "live_norm_reject: add_norm norms=%d enabled=%d\n", norms, int(enabled));

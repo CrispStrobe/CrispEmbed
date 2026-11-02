@@ -41,7 +41,23 @@ def source():
 V1.source=source;V2.source=source
 V1.apply=OVERLAY.apply
 V1.__file__=str(Path(__file__).resolve())
-PHASES=V2.PHASES
+def observer_controls(out):
+ """Weight-free: build and run the v3 observer metadata controls, before model access."""
+ source();K.require(K.read(out/'browser/component-proof.json')['passed'],'Component recoveries required first')
+ build=out/'observer-controls'
+ V1.command(out,'observer-controls-configure',['cmake','-S',ROOT/'tests/wasm-live-norm-v3','-B',build,'-DCMAKE_BUILD_TYPE=Release'])
+ V1.command(out,'observer-controls-build',['cmake','--build',build,'--target','live-norm-observer-controls','--parallel','2'])
+ import tempfile
+ with tempfile.TemporaryDirectory()as tmp:V1.command(out,'observer-controls',[build/'live-norm-observer-controls',tmp])
+ log=(out/'review/observer-controls.log').read_text()
+ passed=log.count('PASS ');K.require(passed==11 and 'FAIL 'not in log,'All11 observer controls required')
+ K.write(out/'review/observer-controls.json',dict(passed=True,controls=passed,reproduces='41418312256 reservation-graph rejection',qualification=False))
+
+def model(out):
+ source();K.require(K.read(out/'review/observer-controls.json')['passed'],'Observer controls BEFORE model access')
+ return V1.model(out)
+
+PHASES=dict(V2.PHASES,model=model,**{'observer-controls':observer_controls})
 
 def main():
  import argparse

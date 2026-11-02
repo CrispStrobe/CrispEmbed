@@ -22,16 +22,28 @@
    "source": "f9693ad8b319c6d9a5476b9b1ecfefa7d79c53e7",
    "phase": "native",
    "error": "GGML_ASSERT(ctx->live_norm.add_norm(input, result)) failed"
+  },
+  {
+   "run": 41421952964,
+   "source": "6288db9c9f0a06700aba704688db323b4e2b679f",
+   "phase": "native",
+   "error": "live_norm_reject: geometry norm00_input ADD f32 ne=[384,16,1,1] (unevaluated reservation graph at bucket_seq_len(12)=16)"
   }
  ],
  "v1_profile_sha256": "c46375102543163b0cd2d28b4c6a0c4421bdffbe525643e331996af903d8af1d",
  "v2_profile_sha256": "ab2869c1d1e84444be335195f4725b1b5ed7be85d6585da2433d8aea07a6672a",
  "owned_sha256": {
-  ".github/workflows/wasm-live-norm-operands-v3.yml": "0358dfa50c269181e150af44cde9ad25dc93c2787293dd5542cef21a9796f86c",
-  "docs/wasm-live-norm-operands-v3.md": "0e6f9a92436e31dfff0c95f0942f4425ae6cc20e0686155192f2b16a71a6dd2c",
-  "tools/ci-heavy/wasm_live_norm_v3.py": "28c1a82fcb97cf7e448c6d5fdfa46fa8afeb9547df4dac6203b29e170a7361dd",
-  "tools/wasm-live-norm-v3/overlay.py": "e16982512457fdf295bb6ddac24d91be8055a4802c440735c66c15eeadee5124",
-  "tests/wasm-live-norm-v3/observer.h": "ae0e3e70463f0e3afa2b5030fc4fb82baa42c8d809945bb8ea2487b33c548672",
-  "tests/test_wasm_live_norm_v3.py": "a33a5d512465540d86c505bb0dbdc9972989da9ee477c0f7a0be7ac5d94f92c3"
- }
+  ".github/workflows/wasm-live-norm-operands-v3.yml": "eb6c972d92ed9e87a638821446fcefed2f1395c6738e68e2ff57e689d8093015",
+  "docs/wasm-live-norm-operands-v3.md": "4c712f26dd9dbb13137c42463e43c91512c6796eea87759f46ef3e5d7318e5e1",
+  "tools/ci-heavy/wasm_live_norm_v3.py": "6f8b104de238887927efa16da76c7ee44e730bac75f462f1724f4e4e8adaafe0",
+  "tools/wasm-live-norm-v3/overlay.py": "e1676252610a817c7f8cddb1e4b5e47739077102592dd24c4d80756e67abba90",
+  "tests/wasm-live-norm-v3/observer.h": "6fdf179ba0a979454f16f683ab4a11eb2417106b422f91d173d56d347335658b",
+  "tests/wasm-live-norm-v3/observer_controls.cpp": "e166263b214a5c569f1c10328822e382eb839bd51332795ddd18bc7f1b4c2f1f",
+  "tests/wasm-live-norm-v3/CMakeLists.txt": "e030433351ea568e60391c72edef653683923c403729169f8322ebb692de1dcb",
+  "tests/wasm-live-norm-v3/actual-41421952964-native1-observed.log": "378ea6266f6649d6b3339fd1d6aff17a0d62938a49cf71d02d5642c3d9f9e884",
+  "tests/test_wasm_live_norm_v3.py": "dbc1437094e2860ebe6b6a5cfcc043f8d08f68da9d8dc05a5f1ac6ef761fe6d9"
+ },
+ "reservation_builds_bracketed": 3,
+ "observer_controls": 11,
+ "v1_rules_unchanged_for_evaluated_graph": true
 }
