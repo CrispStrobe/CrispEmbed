@@ -50,6 +50,8 @@ jobs:
         run: python -I tools/ci-heavy/wasm_live_norm_v3.py component-check --output "$RUNNER_TEMP/live-norm"
       - name: Actual Ref positive and rejecting controls
         run: python -I tools/ci-heavy/wasm_live_norm_v3.py ref-controls --output "$RUNNER_TEMP/live-norm"
+      - name: Weight-free v3 observer controls (reproduce reservation-graph abort) before model access
+        run: python -I tools/ci-heavy/wasm_live_norm_v3.py observer-controls --output "$RUNNER_TEMP/live-norm"
       - name: Authenticate exact frozen model without original recapture
         run: python -I tools/ci-heavy/wasm_live_norm_v3.py model --output "$RUNNER_TEMP/live-norm"
       - name: Disposable observer overlay and plain production exclusion
