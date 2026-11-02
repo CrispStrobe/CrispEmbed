@@ -1,3 +1,29 @@
+## 2 November 2026 — EasyOCR x86 CPU dropped lines fixed (fix/easyocr-x86-lines, PR #100)
+
+* Root cause: not a SIMD or ggml-cpu kernel defect. Both BiLSTM layers named their initial
+  states `lstm_{fwd,rev}_{h0,c0}`; the host zeroed them by name and `ggml_graph_get_tensor()`
+  returns only the first match, so layer 1's h0/c0 were never written. They read zero on a
+  fresh allocation (macOS, Metal, CUDA in practice, glibc mmap) and stale data when glibc
+  reused the freed block of a wider graph after a shrinking width rebuild. Proof (hosted x86,
+  41387161875, legacy path): `GLIBC_TUNABLES=glibc.malloc.mmap_threshold=0` (fresh zero pages)
+  recovers every line; the same drop appears in GGML_NATIVE=ON, OFF and SSE-only builds and at
+  `-t 1`; a NaN-poisoned compute buffer (`CRISPEMBED_EASYOCR_POISON_COMPUTE=1`, new, test-only)
+  empties every line on every backend.
+* Fix: the graph records all 8 state tensors and the host resets every one (default on;
+  `CRISPEMBED_EASYOCR_LSTM_STATE_RESET=0` restores the legacy first-match reset for A/B).
+* x86 CPU before → after (regions, empty): fox 1/2 → 2/2, scan_strip 7/10 → 10/10,
+  scan_page_pd 15/34 (19 empty) → 34/34, in all three SIMD builds; e.g. fox now returns
+  `The quick brown fox jumps\nover the lazy dog. 12345` where it returned only the first line.
+  Kaggle T4 batch f: x86 CPU output is now byte-identical to CUDA on all three pages; CUDA
+  output is byte-identical with the fix, the legacy path and the poisoned buffer. M1 CPU and
+  Metal (lock): fixed = legacy byte-identical on all three pages (fox 41a156bf = audit hash).
+* Regression test `test-easyocr-width-shrink` (decreasing canvases 896→640→576, reused vs fresh
+  context, NaN-poisoned by default): passes on x86 (3 builds), CUDA, M1 CPU and Metal; the
+  legacy path fails 5/5 steps on every backend.
+* Python EasyOCR's recognizer on the same native crops: 1/2, 6/11, 21/36 exact lines (legacy
+  x86: 1/2, 2/11, 7/36 with 6 and 16 empty). Remaining differences are punctuation/spacing on
+  low-confidence lines and identical on CUDA/Metal (open in PLAN). Receipts:
+  `tests/results/gpu-audit/easyocr-x86-fix/`.
 ## 2 November 2026 — ggml submodule back on the shared fork line
 
 * CrispEmbed's ggml pointer had drifted onto fork feature branches (`feat/wasm-q8-rounding-candidate-20261026`,

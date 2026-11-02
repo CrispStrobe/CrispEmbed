@@ -41,6 +41,9 @@ struct easyocr_ocr_context {
     int time_steps = 0;
     int network = 0;
     std::vector<std::string> tokens;
+    // Every BiLSTM initial state (h0, c0) of every layer and direction, in
+    // graph-build order. Two layers x two directions x {h, c} = 8 tensors.
+    std::vector<ggml_tensor *> lstm_states;
     std::vector<float> input_host;
     std::string result;
     float last_confidence = 0.0f;
@@ -129,7 +132,7 @@ static void resize_easyocr_linear_u8(const uint8_t * src, int src_h, int src_w, 
 
 static ggml_tensor * lstm_direction(ggml_context * g, ggml_tensor * seq, int T, int in_dim, int hidden,
                                     ggml_tensor * wih, ggml_tensor * whh, ggml_tensor * bih, ggml_tensor * bhh,
-                                    bool reverse) {
+                                    bool reverse, std::vector<ggml_tensor *> * states) {
     std::vector<ggml_tensor *> out((size_t)T);
     ggml_tensor * h = ggml_new_tensor_1d(g, GGML_TYPE_F32, hidden);
     ggml_tensor * c = ggml_new_tensor_1d(g, GGML_TYPE_F32, hidden);
@@ -142,6 +145,11 @@ static ggml_tensor * lstm_direction(ggml_context * g, ggml_tensor * seq, int T, 
     // initial-state buffer as an intermediate from an earlier timestep.
     ggml_set_output(h);
     ggml_set_output(c);
+    // Both BiLSTM layers reuse these names, so a by-name lookup finds only the
+    // first layer's tensors. Record every state so the host can reset all of
+    // them (see easyocr_ocr_recognize).
+    states->push_back(h);
+    states->push_back(c);
 
     for (int step = 0; step < T; ++step) {
         const int t = reverse ? T - 1 - step : step;
@@ -175,6 +183,7 @@ static bool build_graph(easyocr_ocr_context * c) {
     c->graph_ctx = ggml_init(ip);
     if (!c->graph_ctx) return false;
     ggml_context * g = c->graph_ctx;
+    c->lstm_states.clear();
 
     c->input = ggml_new_tensor_4d(g, GGML_TYPE_F32, c->width, c->height, 1, 1);
     ggml_set_name(c->input, "input_image");
@@ -272,18 +281,18 @@ static bool build_graph(easyocr_ocr_context * c) {
         return req(c, n);
     };
     ggml_tensor * f0 = lstm_direction(g, x, T, D, c->hidden, rn(0, "weight_ih_l0"), rn(0, "weight_hh_l0"),
-                                      rn(0, "bias_ih_l0"), rn(0, "bias_hh_l0"), false);
+                                      rn(0, "bias_ih_l0"), rn(0, "bias_hh_l0"), false, &c->lstm_states);
     ggml_tensor * r0 =
         lstm_direction(g, x, T, D, c->hidden, rn(0, "weight_ih_l0_reverse"), rn(0, "weight_hh_l0_reverse"),
-                       rn(0, "bias_ih_l0_reverse"), rn(0, "bias_hh_l0_reverse"), true);
+                       rn(0, "bias_ih_l0_reverse"), rn(0, "bias_hh_l0_reverse"), true, &c->lstm_states);
     x = linear(g, ln(0, "weight"), ln(0, "bias"), ggml_concat(g, f0, r0, 0));
     ggml_set_name(x, "bilstm_0");
     ggml_set_output(x);
     ggml_tensor * f1 = lstm_direction(g, x, T, D, c->hidden, rn(1, "weight_ih_l0"), rn(1, "weight_hh_l0"),
-                                      rn(1, "bias_ih_l0"), rn(1, "bias_hh_l0"), false);
+                                      rn(1, "bias_ih_l0"), rn(1, "bias_hh_l0"), false, &c->lstm_states);
     ggml_tensor * r1 =
         lstm_direction(g, x, T, D, c->hidden, rn(1, "weight_ih_l0_reverse"), rn(1, "weight_hh_l0_reverse"),
-                       rn(1, "bias_ih_l0_reverse"), rn(1, "bias_hh_l0_reverse"), true);
+                       rn(1, "bias_ih_l0_reverse"), rn(1, "bias_hh_l0_reverse"), true, &c->lstm_states);
     x = linear(g, ln(1, "weight"), ln(1, "bias"), ggml_concat(g, f1, r1, 0));
     ggml_set_name(x, "bilstm_1");
     ggml_set_output(x);
@@ -299,7 +308,16 @@ static bool build_graph(easyocr_ocr_context * c) {
     c->graph = ggml_new_graph_custom(g, graph_nodes, false);
     ggml_build_forward_expand(c->graph, c->logits);
     c->alloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(c->backend));
-    return c->alloc && ggml_gallocr_alloc_graph(c->alloc, c->graph);
+    if (!c->alloc || !ggml_gallocr_alloc_graph(c->alloc, c->graph)) return false;
+    // CRISPEMBED_EASYOCR_POISON_COMPUTE=1 (default off, test/diagnostic only):
+    // fill the freshly allocated compute buffer with 0xFF bytes (NaN as F32), so
+    // any graph tensor that is read before it is written shows up as NaN output
+    // on every platform. Without it, unwritten memory is usually zero on a fresh
+    // allocation (macOS, Metal, mmap-backed glibc) and stale only when glibc
+    // reuses a freed heap block — which is how the x86 CPU line drop surfaced.
+    if (core_env::on("CRISPEMBED_EASYOCR_POISON_COMPUTE") && c->logits && c->logits->buffer)
+        ggml_backend_buffer_clear(c->logits->buffer, 0xFF);
+    return true;
 }
 
 easyocr_ocr_context * easyocr_ocr_init(const char * model_path, int n_threads) {
@@ -379,8 +397,21 @@ const char * easyocr_ocr_recognize(easyocr_ocr_context * c, const uint8_t * px, 
     const auto preprocess_end = std::chrono::steady_clock::now();
     ggml_backend_tensor_set(c->input, c->input_host.data(), 0, c->input_host.size() * sizeof(float));
     std::vector<float> zero((size_t)c->hidden, 0.0f);
-    for (const char * n : { "lstm_fwd_h0", "lstm_fwd_c0", "lstm_rev_h0", "lstm_rev_c0" })
-        ggml_backend_tensor_set(ggml_graph_get_tensor(c->graph, n), zero.data(), 0, zero.size() * sizeof(float));
+    // Reset the initial state of BOTH BiLSTM layers. Both layers reuse the same
+    // tensor names and ggml_graph_get_tensor() returns only the first match, so
+    // the legacy by-name reset left the second layer's h0/c0 as whatever the
+    // compute buffer held. That is zero on a fresh allocation (macOS, Metal,
+    // CUDA in practice) but stale data when glibc hands back a freed heap block
+    // after a shrinking width rebuild: x86 CPU then returned empty text.
+    // Default on; CRISPEMBED_EASYOCR_LSTM_STATE_RESET=0 restores the legacy
+    // first-match reset for A/B only.
+    if (core_env::explicitly_off("CRISPEMBED_EASYOCR_LSTM_STATE_RESET")) {
+        for (const char * n : { "lstm_fwd_h0", "lstm_fwd_c0", "lstm_rev_h0", "lstm_rev_c0" })
+            ggml_backend_tensor_set(ggml_graph_get_tensor(c->graph, n), zero.data(), 0, zero.size() * sizeof(float));
+    } else {
+        for (ggml_tensor * state : c->lstm_states)
+            ggml_backend_tensor_set(state, zero.data(), 0, zero.size() * sizeof(float));
+    }
     const auto graph_start = std::chrono::steady_clock::now();
     if (ggml_backend_graph_compute(c->backend, c->graph) != GGML_STATUS_SUCCESS) return nullptr;
     const auto graph_end = std::chrono::steady_clock::now();

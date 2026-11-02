@@ -1,0 +1,7 @@
+poison=1 lstm_state_reset=(default)
+step=0 image=mac-bin/fox-line2.png canvas=896 reused="over the lazy dog: 12345" conf=0.568829 fresh="over the lazy dog: 12345" conf=0.568829 PASS
+step=1 image=mac-bin/fox-line1.png canvas=640 reused="The quick brown fox jumps" conf=0.836289 fresh="The quick brown fox jumps" conf=0.836289 PASS
+step=2 image=mac-bin/fox-line2.png canvas=576 reused="over the lazy dog: 12345" conf=0.562585 fresh="over the lazy dog: 12345" conf=0.562585 PASS
+step=3 image=mac-bin/fox-line2.png canvas=896 reused="over the lazy dog: 12345" conf=0.568829 fresh="over the lazy dog: 12345" conf=0.568829 PASS
+step=4 image=mac-bin/fox-line2.png canvas=576 reused="over the lazy dog: 12345" conf=0.562585 fresh="over the lazy dog: 12345" conf=0.562585 PASS
+easyocr-width-shrink steps=5 failures=0 PASS
