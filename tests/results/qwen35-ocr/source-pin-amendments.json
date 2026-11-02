@@ -135,6 +135,19 @@
             "58fe52aacc66cb80e18da87d370be0081e86bb37 Add experimental TeleOCR profile on the Qwen2-VL GGML path"
           ],
           "reason": "Quantizer changes for other families only (TeleOCR, MinerU2.5, OXR, D-FINE, MI-GAN/Moebius/PixelHacker/SDXL VAE inpaint, 2026-10-31..11-02). Every new branch is keyed on another general.architecture / layout.arch / qwen2vl.model_family value or an opt-in env var; the qwen35_ocr tensor policy, 4D-flatten condition for non-OXR models and log format are unchanged. Quantized receipt files are verified by GGUF/tensor hashes, not re-quantized."
+        },
+        {
+          "from_sha256": "032c36bc3aab0875cca693c975169abe75670cbbc5a7f26b9bfeb8b8913ea980",
+          "to_sha256": "139761f2ad458ce3ffe737b2c6e04c30761c271befcdaf3b3aa9ecb45836dd68",
+          "to_blob": "fe17089a5bff4fd6b6b93aef4ce8aa7538b400b1",
+          "recorded_at_commit": "db3f784bba94ce57e95d11bdcda3c4d8b2cdc099",
+          "recorded": "2026-11-02",
+          "changed_by": [
+            "c8c045f69e6d54cc4b67932f81648b4c680092ca Merge remote-tracking branch 'origin/main' into feat/qwen2vl-q4k-recipes",
+            "4b4e4cbb0139f77a25ba4203aa0f67199e68840d quantize: opt-in named policies teleocr_q4k_v1 / mineru_q4k_v1 (CRISPEMBED_QUANTIZE_QWEN2VL_POLICY)",
+            "8d843fdfef038a40e60afde4dd8adb1a997ef5b2 qwen2vl: Q4_K recipe sweep harness; quantizer accepts 4/5-bit tensor overrides"
+          ],
+          "reason": "feat/qwen2vl-q4k-recipes: --tensor-type also accepts q4_k/q5_0/q4_0/iq4_nl, and opt-in named policies (CRISPEMBED_QUANTIZE_QWEN2VL_POLICY=teleocr_q4k_v1|mineru_q4k_v1) guarded to the TeleOCR/MinerU qwen2vl_ocr families. Without the env var and without explicit rules every existing qwen35_ocr quantization decision and its default policy are unchanged."
         }
       ]
     }
