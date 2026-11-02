@@ -1676,6 +1676,13 @@ static const ModelEntry k_registry[] = {
       "TeleOCR experimental document OCR (Qwen2.5-VL vision + Qwen3-style decoder, q4_k-m decoder, f16 vision; "
       "non-commercial Qwen Research License vision tower; gated CRISPEMBED_TELEOCR, CPU)",
       "1.923 GB", "qwen-research", "https://huggingface.co/cstr/TeleOCR-GGUF" },
+    // Policy teleocr_q4k_v1 (docs/qwen2vl-q4k-recipes.md): clears the Q4_K bar (worst final-logit
+    // cosine 0.957 CUDA / 0.968 CPU, Metal) on all six cases; not token-exact (table differs).
+    { "teleocr-q4_k-mix", "teleocr-q4_k-mix.gguf",
+      "https://huggingface.co/cstr/TeleOCR-GGUF/resolve/68a65df9c3035cdab6d01e59980edf0ec2b421ee/teleocr-q4_k-mix.gguf",
+      "TeleOCR experimental document OCR (mixed 4-bit policy teleocr_q4k_v1; non-commercial Qwen Research "
+      "License vision tower; gated CRISPEMBED_TELEOCR)",
+      "1.195 GB", "qwen-research", "https://huggingface.co/cstr/TeleOCR-GGUF" },
     // MinerU2.5-Pro-2604 (apache-2.0): every published variant decodes the pinned Python
     // reference token-exactly on the 8-case protocol (tests/results/mineru25/). Gated
     // CRISPEMBED_MINERU25_PRO=1; run as --ocr-engine mineru25-pro --ocr-rec FILE.
@@ -1690,6 +1697,14 @@ static const ModelEntry k_registry[] = {
       "mineru25-pro-2604-q8_0.gguf",
       "MinerU2.5-Pro-2604 document parsing (1.2B, q8_0 decoder, f16 vision; gated CRISPEMBED_MINERU25_PRO, CPU)",
       "1.921 GB", "apache-2.0", "https://huggingface.co/cstr/MinerU2.5-Pro-2604-1.2B-GGUF" },
+    // Policy mineru_q4k_v1 (docs/qwen2vl-q4k-recipes.md): every quantized matrix 4-bit (Q4_K, IQ4_NL
+    // for 896-wide rows); clears the Q4_K bar (worst 0.952-0.967 CPU, 0.960 Metal, 0.961 CUDA) on all
+    // eight cases; not token-exact (german, layout-page differ).
+    { "mineru25-pro-q4_k-mix", "mineru25-pro-2604-q4_k-mix.gguf",
+      "https://huggingface.co/cstr/MinerU2.5-Pro-2604-1.2B-GGUF/resolve/a5d0508061d28ad8e6fffe15f925856da4e4d63f/"
+      "mineru25-pro-2604-q4_k-mix.gguf",
+      "MinerU2.5-Pro-2604 document parsing (1.2B, mixed 4-bit policy mineru_q4k_v1; gated CRISPEMBED_MINERU25_PRO)",
+      "769 MB", "apache-2.0", "https://huggingface.co/cstr/MinerU2.5-Pro-2604-1.2B-GGUF" },
 
     // OXR-1.0 (SoMark): OXR License = Apache-2.0 + USD 2M commercial thresholds, SoMark
     // attribution for online services, no competing hosted API (licenses/oxr-LICENSE).

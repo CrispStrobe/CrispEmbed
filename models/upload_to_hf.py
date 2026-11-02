@@ -832,7 +832,7 @@ MODELS = {
         "dim": 896, "layers": 24, "params": "1.2B", "pooling": "n/a (OCR)", "tokenizer": "Qwen2 BPE",
         "license": "apache-2.0",
         "langs": [],
-        "desc": "MinerU2.5-Pro-2604 document parsing; registry mineru25-pro-f16 / -q8_0.",
+        "desc": "MinerU2.5-Pro-2604 document parsing; registry mineru25-pro-f16 / -q8_0 / -q4_k-mix.",
         "publish_files": [],
     },
     "OXR-1.0-DFINE-layout": {  # license lineage only; published by tools/ci-heavy/ocr_gguf_publish.py
