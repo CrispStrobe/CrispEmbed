@@ -17,7 +17,6 @@ differs from both the default and the original (it was already inexact; CER 0.03
 0.0371). **Not flipped**: it is not ids-identical to the default everywhere and not exact everywhere. Proposed default
 flip pending a decision on that one page (no page regresses from exact; mean CER unchanged or better).
 
-<<<<<<< HEAD
 ## 2 November 2026 — MiniCPM-OCR speed paths become the default
 
 - Default flip A/B (2026-11-02, `crispembed-ocr-real-scans-minicpm-fast` at `dded1384`, Kaggle Xeon 2.2 GHz x4,
@@ -29,7 +28,27 @@ flip pending a decision on that one page (no page regresses from exact; mean CER
 - Flipped via `core_env::explicitly_off`: graph KV decoder (matmul default `f32`), F32 vision copies, batched
   slices, vision flash attention. All old paths remain behind `=0`; 5 parity cases were already 5/5 exact
   (`tests/results/minicpm-ocr/bench-graph-v2.json`).
-=======
+## 2 November 2026 — Successor assets v3: WASM-only platform tolerance; WASM consumer passes, native cross-platform review fails
+
+* Owner decision: accept the attributed WASM-vs-native drift of the quantized MiniLM as a
+  documented platform tolerance. `docs/successor-assets-v3.{md,json}` and
+  `tools/successor_assets_v3.py` pin 50 v1/v2 files unchanged and keep v2's producers, final
+  base and runtime-closure check. The consumer matrix, browser consumer, review and Rust/Dart
+  bindings consumer are derived from frozen v1 with exactly declared replacements, verified by
+  the controls, so every native gate stays strict and byte-identical. Browser final-vector bound:
+  max_abs<=0.0101 and cosine>=0.99837, i.e. measured deterministic drift
+  0.00837269052863121/0.9986498388732901 (runs 40354251257 and 40710490021) plus 20%, rounded
+  outward. Tests accept the measured values and reject values just above the bound.
+* Run 41452489743 (adopted producers 40724938611/40725005968 at `11f2ef7c`): the WASM consumer
+  passed. Bindings rejected the v3 caller (frozen allowlist; fixed by a derived bindings consumer
+  that adds one allowlist line). apple-released rejected corpus proof 40386968045 (v2 used
+  40629090339).
+* Run 41471904133: every consumer job passes, including WASM within the bound (0.00837269 /
+  0.99864984). The unchanged strict review fails cross-platform desktop parity: macOS arm64 vs
+  Linux x86_64 max_abs 0.00255, cosine 0.99989. This was the first time that gate executed for
+  these producers. It is a native negative and stays failing; the run is not green.
+  Receipt: `tests/results/packaging/successor-assets-v3-run.json`.
+
 ## 3 November 2026: SentencePiece whitespace A/B across the registry; CUDA re-run of repaired files
 
 - **`CRISPEMBED_SPM_COLLAPSE_SPACES`** was checked against the original HF tokenizers and models for all 16
@@ -94,7 +113,6 @@ flip pending a decision on that one page (no page regresses from exact; mean CER
   The CLI and server now accept `unlimited-ocr`, `unlimited-ocr2` and
   `unlimited_ocr2`; before this, the hyphenated name they printed was rejected
   and fell back to engine 0. Remaining gaps are in PLAN.
->>>>>>> origin/main
 
 ## 2 November 2026 — GOT-OCR2 pipeline parity with the original (fix/got-ocr2-pipeline-parity)
 

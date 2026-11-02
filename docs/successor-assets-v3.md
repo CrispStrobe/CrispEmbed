@@ -101,3 +101,10 @@ the AVX lane order, and a matching `expf`. It is recorded, not scheduled.
     proof 40629090339 at `b345f6ab`.
 
   The review was skipped and the run is not green. This failure is retained.
+- [41471904133](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41471904133)
+  at `9b471c75` (corpus proof 40629090339): **every consumer job passes**,
+  including WASM within the bound (0.00837269052863121 / 0.9986498388732883)
+  and the derived bindings consumer. The unchanged strict review fails
+  cross-platform desktop parity, macOS arm64 vs Linux x86_64 (max_abs 0.00255,
+  cosine 0.99989). This native gate stays strict, so the run is **not green**
+  ([receipt](../tests/results/packaging/successor-assets-v3-run.json)).

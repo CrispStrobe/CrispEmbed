@@ -403,28 +403,26 @@ handoff take precedence over historical commands.
 1. Inspect the two already queued jobs: Unlimited40868634374 and
    Ultra40871150002. Verify exact source/attempt and collect small reports after
    completion; do not duplicate them. Keep models/raw arrays remote.
-2. WASM layer0-3 divergence (branch `fix/wasm-live-norm-component-inventory-20261102`):
-   origin found. Layer0 op-by-op replay run41441512356 starts from the
-   bit-identical captured norm00 output. Every elementwise op is bit-exact on
-   identical inputs. The first differing op is layer0 `q_raw` (IQ4_NL x Q8_0
-   mul_mat: tinyBLAS vs generic scalar order, 9.54e-7). k/v/o mul_mat (same
-   kernel) and `flash_attn_ext` (8.94e-7: `vec_dot_f32`/`vec_mad_f32` FMA and
-   lane width, `expf`) differ independently. FFN replay run41438394031:
-   IQ4_XS kernel order 9.54e-7, and the layer3 fc2 failure (0.00331) is these
-   ~1e-7 differences amplified by activation quantization (Q8_0/Q8_K scale
-   steps). At least three kernel families differ (IQ4_NL, IQ4_XS, flash F32),
-   so no single-op default-off candidate can remove the failure; none is
-   proposed. Open decision for the owner: either accept WASM-vs-native drift
-   for this quantized model as a documented platform tolerance, or scope a
-   multi-kernel native-order WASM build (IQ4_NL tinyBLAS order, IQ4_XS AVX2
-   order, flash `vec_dot_f32`/`vec_mad_f32` with fmaf and AVX lane order,
-   matching expf) as one gated experiment measured on the one-sentence scope.
-   No default, gate or budget change and no ten-case retry. Receipts:
-   [v2](tests/results/packaging/wasm-live-norm-v2-component-admission.json),
-   [v3](tests/results/packaging/wasm-live-norm-v3-observer.json),
+2. WASM drift lane: **closed with a documented platform tolerance** (owner
+   decision, 2 Nov 2026). Attribution is complete: the
    [v4](tests/results/packaging/wasm-live-norm-v4-attribution.json),
-   [FFN](tests/results/packaging/wasm-layer3-ffn-matmul-v1.json),
-   [layer0](tests/results/packaging/wasm-layer0-attention-v1.json).
+   [FFN](tests/results/packaging/wasm-layer3-ffn-matmul-v1.json) and
+   [layer0](tests/results/packaging/wasm-layer0-attention-v1.json) receipts show
+   kernel accumulation order (IQ4_NL, IQ4_XS, flash_attn F32), amplified by
+   activation quantization; no single-op fix. [Successor assets v3](docs/successor-assets-v3.md)
+   adds a WASM-only bound for the quantized MiniLM's packaged browser final
+   vector: max_abs<=0.0101 and cosine>=0.99837 (measured deterministic
+   0.00837269/0.99864984 plus 20%). Native gates stay strict and byte-identical.
+   Run 41471904133: the WASM consumer passes under the bound and every other
+   consumer job passes. The run is **not green**: the unchanged strict review
+   rejects cross-platform desktop parity, macOS arm64 vs Linux x86_64
+   (max_abs 0.00255 > 0.002, cosine 0.99989). This native gate never ran
+   before for these producers. Next (owner): decide whether that native
+   cross-platform drift also needs its own attribution and decision. It is not
+   relaxed here. Parked optional future experiment: a multi-kernel native-order
+   WASM build (IQ4_NL tinyBLAS order, IQ4_XS AVX2 order, flash
+   `vec_dot_f32`/`vec_mad_f32` with fmaf and AVX lane order, matching expf).
+   [Run receipt](tests/results/packaging/successor-assets-v3-run.json).
 3. Independently review MoE real-router source81fa4e26, then execute its
    component-only replay using exact-v4 attached captures. No whole-model or
    original forward. Require own-byte controls before cross-input conclusions.
