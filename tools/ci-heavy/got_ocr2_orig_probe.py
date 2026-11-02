@@ -30,6 +30,7 @@ from PIL import Image
 from transformers import AutoModel, AutoTokenizer
 
 REPO = "stepfun-ai/GOT-OCR2_0"
+REV = "979938bf89ccdc949c0131ddd3841e24578a4742"  # remote code + weights revision captured
 # Verbatim from modeling_GOT.py chat(): the triple-quoted literal keeps the
 # 8-space source indentation of its second line.
 SYSTEM = """<|im_start|>system
@@ -41,8 +42,8 @@ def main():
     cases = [a.split("=", 1) for a in sys.argv[4:]]
     torch.manual_seed(0)
     torch.set_num_threads(os.cpu_count() or 4)
-    tok = AutoTokenizer.from_pretrained(REPO, trust_remote_code=True)
-    model = AutoModel.from_pretrained(REPO, trust_remote_code=True, low_cpu_mem_usage=True,
+    tok = AutoTokenizer.from_pretrained(REPO, revision=REV, trust_remote_code=True)
+    model = AutoModel.from_pretrained(REPO, revision=REV, trust_remote_code=True, low_cpu_mem_usage=True,
                                       use_safetensors=True, pad_token_id=151643,
                                       torch_dtype=torch.float32).eval()
     mod = sys.modules[type(model).__module__]
@@ -58,7 +59,7 @@ def main():
     proc = mod.GOTImageEvalProcessor(image_size=1024)
     conv = mod.Conversation(system=SYSTEM, roles=("<|im_start|>user\n", "<|im_start|>assistant\n"),
                             version="mpt", messages=(), offset=0, sep_style=mod.SeparatorStyle.MPT,
-                            sep="<|im_end|>")
+                            sep="<|im_end|>").copy()  # chat() copies too (messages tuple -> list)
     qs = mod.DEFAULT_IM_START_TOKEN + mod.DEFAULT_IMAGE_PATCH_TOKEN * 256 + mod.DEFAULT_IM_END_TOKEN + "\n" + "OCR: "
     conv.append_message(conv.roles[0], qs)
     conv.append_message(conv.roles[1], None)
@@ -66,7 +67,7 @@ def main():
     input_ids = torch.as_tensor(tok([prompt]).input_ids)
     prompt_ids = input_ids[0].tolist()
 
-    rec = {"model": REPO, "transformers_remote_code": True, "device": "cpu", "dtype": "float32",
+    rec = {"model": REPO, "revision": REV, "transformers_remote_code": True, "device": "cpu", "dtype": "float32",
            "note": "chat() runs CUDA bf16 autocast with a .half() image; this capture is the same pipeline in F32 on CPU",
            "prompt": prompt, "prompt_ids": prompt_ids,
            "prompt_ids_no_imgpad": [i for i in prompt_ids if i != 151859],
