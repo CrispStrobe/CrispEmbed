@@ -25,6 +25,7 @@ VARIANTS=${2:?comma list}
 CASES=${3:-}
 OUT=${HEAVY_OUT:?}
 S=${HEAVY_SCRATCH:?}
+(lscpu 2>/dev/null || sysctl -a 2>/dev/null | grep -i brand) > "$OUT/cpu.txt" # -march=native: kernels follow the runner ISA
 # shellcheck disable=SC2086  # CMAKE_EXTRA is a flag list
 cmake -S . -B "$S/build" -DCMAKE_BUILD_TYPE=Release ${CMAKE_EXTRA:-} > "$OUT/cmake.log" 2>&1 &&
     cmake --build "$S/build" --target test-mineru25-run test-teleocr-run crispembed-quantize -j"$(nproc)" \
