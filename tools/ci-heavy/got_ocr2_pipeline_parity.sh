@@ -36,7 +36,7 @@ python -m venv "$S/venv-orig"
 VP="$S/venv-orig/bin/python"
 "$VP" -m pip install -q --upgrade pip
 "$VP" -m pip install -q torch==2.4.1 torchvision==0.19.1 --index-url https://download.pytorch.org/whl/cpu
-"$VP" -m pip install -q "transformers==4.37.2" "tokenizers<0.16" tiktoken accelerate pillow "numpy<2" safetensors \
+"$VP" -m pip install -q "transformers==4.37.2" "tokenizers<0.16" tiktoken verovio requests accelerate pillow "numpy<2" safetensors \
     > "$OUT/venv-orig.log" 2>&1 || { note "venv-orig install FAILED"; tail -20 "$OUT/venv-orig.log"; exit 1; }
 "$VP" -m pip freeze | grep -i -E "^(torch|torchvision|transformers|tiktoken|pillow|numpy)=" >> "$OUT/provenance.txt"
 "$VP" -I tools/ci-heavy/got_ocr2_orig_probe.py "$OUT" "$MAXNEW" 20,0 "${CASES[@]}" > "$OUT/orig.log" 2>&1 \
