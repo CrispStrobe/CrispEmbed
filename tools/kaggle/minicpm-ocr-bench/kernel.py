@@ -52,10 +52,10 @@ QUANT = next(p for p in glob.glob('/kaggle/temp/b/**/crispembed-quantize', recur
 for dt in ('f32', 'f16'):
     extra = [] if src == ckpt or dt == 'f16' else ['--download']
     sh(PY, 'models/convert-minicpm-ocr-to-gguf.py', src, f'/kaggle/temp/minicpm-{dt}.gguf', '--dtype', dt, *extra, env=env)
-# The 4-D patch-embedding conv weight (14x14x3x1152) must keep a float type: the runtime binds it
-# by its [14,14,3,1152] shape, which a q8_0 block layout does not preserve.
-q8 = subprocess.run([QUANT, '/kaggle/temp/minicpm-f32.gguf', '/kaggle/temp/minicpm-q8_0.gguf', 'q8_0',
-                     '--tensor-type', 'v.emb.patch_embedding.weight=f16'],
+# Quantized from the F16 GGUF: crispembed-quantize flattens every 4-D *F32* tensor to 2-D
+# (tools/quantize.cpp pre-scan), and the runtime binds v.emb.patch_embedding.weight by its
+# [14,14,3,1152] shape. In the F16 GGUF that conv weight is F16 and passes through unchanged.
+q8 = subprocess.run([QUANT, '/kaggle/temp/minicpm-f16.gguf', '/kaggle/temp/minicpm-q8_0.gguf', 'q8_0'],
                     capture_output=True, text=True)
 print(q8.stdout[-3000:], q8.stderr[-3000:], flush=True)
 GGUF = {dt: f'/kaggle/temp/minicpm-{dt}.gguf' for dt in ('f32', 'f16', 'q8_0')}
