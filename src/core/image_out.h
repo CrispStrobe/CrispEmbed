@@ -33,6 +33,7 @@
 #include <string>
 #include <vector>
 #include "env_gate.h"
+#include "env_value.h"
 
 namespace core_imgout {
 

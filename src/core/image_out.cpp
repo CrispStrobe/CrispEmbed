@@ -18,6 +18,7 @@
 #include <fstream>
 #include <sstream>
 #include "env_gate.h"
+#include "env_value.h"
 
 namespace core_imgout {
 

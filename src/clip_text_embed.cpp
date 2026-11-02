@@ -29,6 +29,7 @@
 #include <cstring>
 #include <string>
 #include <vector>
+#include "core/env_value.h"
 
 namespace clip_text {
 

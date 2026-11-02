@@ -58,6 +58,7 @@
 #include <string>
 #include <vector>
 #include <unordered_set>
+#include "core/env_value.h"
 
 namespace qwen2vl_ocr {
 

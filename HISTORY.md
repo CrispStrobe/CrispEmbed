@@ -2,8 +2,8 @@
 
 - All 131 raw presence env reads (`getenv(X)` truth tests, where `X=0` meant on) were
   converted to `core_env::on`. Value-carrying variables moved to the new
-  `core_env::value`, which treats an empty value as unset. `core_env::on` and
-  `explicitly_off` now also accept `false`/`off`/`no` as off. No defaults changed.
+  `core_env::value` (`src/core/env_value.h`), which treats an empty value as unset.
+  No defaults changed. `env_gate.h` itself is unchanged (it is shared with CrispASR).
   `tests/test_env_vars_documented.py` now fails on any new presence read
   (`tools/list_env_vars.py --presence`).
 - The CLI `--ocr-engine minicpm-ocr` now defaults to the `minicpm-ocr` alias, the same

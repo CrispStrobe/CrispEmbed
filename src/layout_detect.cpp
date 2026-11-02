@@ -39,6 +39,7 @@ void stbi_image_free(void * retval_from_stbi_load);
 #include <string>
 #include <thread>
 #include <vector>
+#include "core/env_value.h"
 
 // Debug logging gated on LAYOUT_DEBUG env var
 static bool layout_debug() {

@@ -78,11 +78,12 @@ and was not verified here).
   Do this only after the app pin moves past a runtime that has ids 13-v2 and 23.
 - **131 raw presence-style env reads: fixed.** All were converted:
   `core_env::on` for default-off switches and `NO_*`/`*_SCALAR`/`*_LEGACY` opt-outs, and
-  the new `core_env::value` (empty = unset) for path, int and string variables
+  the new `core_env::value` (`src/core/env_value.h`) (empty = unset) for path, int and string variables
   (`CRISPEMBED_IMATRIX_OUT`, `CRISPEMBED_C2PA_*`, `LAYOUT_INJECT_*`,
   `MATH_OCR_DIFF_REF`, `CRISPEMBED_QWEN2VL_NO_REPEAT_NGRAM`,
-  `CRISPEMBED_UNLIMITED_OCR2_OUTPUT`). `core_env::on`/`explicitly_off` now also read
-  `false`/`off`/`no` (exact, case-insensitive) as off. No default changed. The
+  `CRISPEMBED_UNLIMITED_OCR2_OUTPUT`). No default changed. `false`/`off`/`no`
+  still mean ON: `src/core/env_gate.h` must stay code-identical to CrispASR's copy
+  (Build sibling check), so the off-word extension is a cross-repo TODO in PLAN. The
   inventory shows 0 `presence` reads, and `tests/test_env_vars_documented.py` fails on
   a new one, with a detector self-test and an explicit (empty) allowlist. Set-if-unset
   forwards of third-party variables (`GGML_METAL_PREC_F32_MM`) keep raw `getenv` on
@@ -91,7 +92,7 @@ and was not verified here).
   under `docs/*.json`, such as `gguf-standard-file-type-v1.json` and the moedern and
   josev protocol manifests. Those receipts are frozen and were not edited, so a re-run
   of such a protocol needs a new versioned source pin. `python/crispembed/_moedern_text.py`
-  (`CRISPEMBED_MOEDERN_FAST` now ignores `false`/`off`/`no`) is in
+  was touched and then reverted; it is in
   `docs/moedern-public-text.json` `owned_sha256`. That pin was already stale on main
   before this change, so `tests/test_moedern_public_text.py` already failed there and
   is not run in CI.

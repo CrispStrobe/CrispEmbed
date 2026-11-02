@@ -32,6 +32,7 @@ void stbi_image_free(void * retval_from_stbi_load);
 #include <memory>
 #include <string>
 #include <vector>
+#include "core/env_value.h"
 
 // ---------------------------------------------------------------------------
 // FP16/quantized → F32 dequantization for CPU-side tensor access

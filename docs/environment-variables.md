@@ -17,17 +17,18 @@ need it, then run `python tools/list_env_vars.py --write`. See the
 
 ## Semantics
 
-| Kind | Reader | Unset | `=` (empty) | `=0` / `false` / `off` / `no` | Any other non-empty value |
+| Kind | Reader | Unset | `=` (empty) | `=0` | Any other non-empty value |
 |---|---|---|---|---|---|
 | `on` | `core_env::on` | off | off | off | on |
 | `off` | `core_env::explicitly_off` | **on** (default) | on (default) | off | on |
 | `value` | `core_env::value` / getenv + parse | built-in default | built-in default (`core_env::value`) | parsed | parsed |
 
-The off-words are matched exactly and ASCII-case-insensitively (`FALSE`, `Off`);
-`00` or `0 ` are not off-words. Raw presence truth tests (`getenv(X) != nullptr`,
+Only an exact `0` is off: `false`/`off`/`no` currently count as ON. Treating them as
+off needs the same change in CrispASR's code-identical `src/core/env_gate.h`; this is
+tracked in PLAN. `core_env::value` lives in `src/core/env_value.h`. Raw presence truth tests (`getenv(X) != nullptr`,
 `if (getenv(X))`, `!getenv(X)`), for which `X=0` meant *on*, were all converted
 on 2 November 2026 (131 variables; defaults unchanged, only explicit
-`=0`/`false`/`off`/empty changed meaning). `tests/test_env_vars_documented.py`
+`=0`/empty changed meaning). `tests/test_env_vars_documented.py`
 fails on any new one (`python tools/list_env_vars.py --presence` lists them);
 deliberate exceptions go in its `PRESENCE_ALLOWLIST` with a reason.
 Status values in the
@@ -172,7 +173,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-399 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0`/`false`/`off`/`no` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+399 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -272,7 +273,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `CRISPEMBED_ENCODER_NO_SWA` | value | unset | string | tuning / config | `src/crispembed.cpp` |  |
 | `CRISPEMBED_ENCODER_PACKED` | value | unset | string | tuning / config | `src/crispembed.cpp` |  |
 | `CRISPEMBED_ENCODER_PACK_MAXTOK` | value | unset | int | tuning / config | `src/crispembed.cpp` |  |
-| `CRISPEMBED_FOO_REF` | value | unset | path | tuning / config | `src/core/env_gate.h` | if (const char * ref = core_env::value("CRISPEMBED_FOO_REF")) { ... } |
+| `CRISPEMBED_FOO_REF` | value | unset | path | tuning / config | `src/core/env_value.h` | if (const char * ref = core_env::value("CRISPEMBED_FOO_REF")) { ... } |
 | `CRISPEMBED_GGUF_REPARSE` | value | unset | string | tuning / config | `src/crispembed.cpp` |  |
 | `CRISPEMBED_GPU_PREF_CPU_LEGACY` | value | unset | value | tuning / config | `src/core/gpu_backend_pref.h` |  |
 | `CRISPEMBED_IMAGE_FORMAT` | value | unset | string | tuning / config | `src/core/image_out.h` |  |

@@ -4,8 +4,8 @@
 Scans src/, examples/, python/, crispembed/, crispembed-sys/ and flutter/ for
 string literals naming an environment variable and classifies how each is read:
 
-  on        core_env::on(...)              bool gate, default OFF (unset/""/0/false/off/no = off)
-  off       core_env::explicitly_off(...)  bool gate, default ON  (only 0/false/off/no = off)
+  on        core_env::on(...)              bool gate, default OFF (unset/""/"0" = off)
+  off       core_env::explicitly_off(...)  bool gate, default ON  (only "0" = off)
   presence  raw getenv(X) truth test       forbidden (X=0 would mean ON); see --presence
   value     getenv/os.environ/env::var     value (int/float/path/string) or raw presence
   set       setenv/_putenv_s/set_var       written by the CLI/orchestrator, not a user knob
@@ -214,7 +214,7 @@ def render(recs) -> str:
            f"{sum(1 for n in recs if n.startswith('CRISPEMBED_'))} `CRISPEMBED_*` variables and "
            f"{sum(1 for n in recs if not n.startswith('CRISPEMBED_'))} non-prefixed variables. "
            "Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` "
-           "(default on, `=0`/`false`/`off`/`no` opts out), `presence` = raw `getenv(X)` truth test (forbidden: "
+           "(default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: "
            "`tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the "
            "CLI/orchestrator. Hint = nearest source comment (may be empty).", ""]
     for g in sorted(groups, key=lambda k: (k.startswith("non-prefixed"), k)):

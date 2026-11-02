@@ -21,6 +21,7 @@
 #include <string>
 #include <vector>
 #include "core/env_gate.h"
+#include "core/env_value.h"
 
 namespace {
 

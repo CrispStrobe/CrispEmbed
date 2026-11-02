@@ -12,6 +12,9 @@ are merged. Open, scoped:
       (experimental `unlimited_ocr2`→13, `minicpm_ocr`→23 selectors) once its CI is green.
       CrispCalc: no engine-id selector; catalog entries only after the app pin moves past
       0.17.12 (exact TODO in the wiring audit).
+- [ ] Optional, cross-repo: make `core_env::on`/`explicitly_off` treat `false`/`off`/`no`
+      as off. This needs a matching edit to CrispASR's `src/core/env_gate.h` in the same
+      change, because the Build sibling check requires the two copies to be code-identical.
 - [x] Unlimited-OCR v1 registry URL pinned to Hub commit `79d6658f` (same sha256).
 
 ## GOT-OCR2 F16 artifact — 2 November 2026 (`fix/got-ocr2-f16`)

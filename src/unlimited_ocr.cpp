@@ -34,6 +34,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include "core/env_value.h"
 
 // Internal types/helpers have internal linkage: deepseek_ocr2.cpp and lfm2_vl_ocr.cpp
 // define same-named structs (e.g. llm_layer_w), and differing layouts across TUs are an
