@@ -1,6 +1,8 @@
 """Reject tampered evidence without downloading checkpoints or running inference."""
 import copy
 import json
+import os
+import subprocess
 from pathlib import Path
 import sys
 import tempfile
@@ -9,6 +11,7 @@ import unittest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tools'))
 from audit_qwen35_quality_quant import audit, verify_frozen, verify_quantizer
+import qwen35_source_pins as pins
 
 
 class QualityAudit(unittest.TestCase):
@@ -100,6 +103,43 @@ class QualityAudit(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             with self.assertRaises(FileNotFoundError):
                 audit(self.path, Path(directory), self.original['source_commit'])
+
+
+class SourcePins(unittest.TestCase):
+    """Frozen receipt pins change only through a recorded, reviewed re-pin chain."""
+
+    def test_every_pin_is_current_or_recorded(self):
+        self.assertEqual(pins.drift(), [])
+
+    def test_unrecorded_or_stale_repins_are_rejected(self):
+        path, frozen = 'src/qwen35_math.h', 'ae542fa73d48dc622fe0e5813ca49fc9616a343fc9d3ba2a927e2a82d7908357'
+        recorded = pins.load()
+        self.assertTrue(pins.source_matches(ROOT, path, frozen, recorded))
+        self.assertFalse(pins.source_matches(ROOT, path, frozen, {}))
+        self.assertFalse(pins.source_matches(ROOT, path, '0' * 64, recorded))
+        stale = copy.deepcopy(recorded)
+        stale[(path, frozen)]['repins'][-1]['to_sha256'] = '1' * 64
+        stale[(path, frozen)]['repins'].append(dict(from_sha256='1' * 64, to_sha256='2' * 64))
+        self.assertFalse(pins.source_matches(ROOT, path, frozen, stale))
+        broken = copy.deepcopy(recorded)
+        broken[(path, frozen)]['repins'][0]['from_sha256'] = '3' * 64
+        with self.assertRaises(ValueError):
+            pins.source_matches(ROOT, path, frozen, broken)
+
+    def test_frozen_digests_are_the_receipt_commit_blobs(self):
+        commits = {c for *_, c in pins.pins()}
+        present = all(subprocess.run(['git', '-C', str(ROOT), 'cat-file', '-e', c + '^{commit}'],
+                                     capture_output=True).returncode == 0 for c in commits)
+        if not present:
+            if os.environ.get('OCR_PIN_REQUIRE_GIT') == '1':
+                self.fail('Receipt commits are not fetched: ' + ', '.join(sorted(commits)))
+            self.skipTest('receipt commits not available in this checkout')
+        self.assertEqual(pins.verify_git(), 15)
+
+    def test_workflow_runs_when_a_pinned_source_changes(self):
+        workflow = (ROOT / '.github/workflows/ocr-quality.yml').read_text()
+        for path in sorted({p for _, _, p, _, _ in pins.pins()} | {pins.AMENDMENTS, 'tools/qwen35_source_pins.py'}):
+            self.assertEqual(workflow.count("- '%s'" % path), 2, path)
 
 
 if __name__ == '__main__':
