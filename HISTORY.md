@@ -1,3 +1,42 @@
+## 2 November 2026 — WASM divergence origin: layer0 Q mul_mat, then flash attention (op-by-op replay)
+
+* 41441512356 (`wasm-layer0-attention-v1` at `8f7ea115`) replayed every production layer0
+  attention op on native and WASM. It started from the captured norm00 output, which is
+  bit-identical on both. Production kernel profiles were admitted, and weight-free
+  determinism/op-isolation controls passed before model access. Both chains reproduce their
+  captured norm01 input bit-exactly.
+* On identical inputs, all elementwise ops (LN scale/bias, bias adds, residual) are
+  bit-exact. The first differing op is `q_raw` (IQ4_NL x Q8_0 mul_mat, 9.54e-7). `k_raw`,
+  `v_raw` and `o_raw` (same kernel: native llamafile tinyBLAS order vs WASM generic scalar)
+  and `flash_attn_ext` one_chunk (8.94e-7: `ggml_vec_dot_f32`/`ggml_vec_mad_f32` FMA and
+  lane width, scalar `expf`) differ independently. The propagated norm01 difference is
+  1.19e-7.
+* With the FFN replay (IQ4_XS order differs too, and activation quantization amplifies any
+  ~1e-7 difference into the layer3 fc2 failure), no single deterministic op explains the
+  divergence, so no candidate is proposed. Receipt:
+  `tests/results/packaging/wasm-layer0-attention-v1.json`.
+
+## 2 November 2026: Unlimited-OCR-2 trial fixes confirmed on real scans; real-scan manifest v2
+
+- **Trial fixes (merged to main as `8e4fe4a8`, runtime `8ca9d3de`).** The default output is now the original raw decode
+  (`skip_special_tokens=False`). The published GGUFs lack the 831 added pieces, including `<tr>/<td>` and layout markup,
+  so the runtime supplies them as a fallback, and the converter writes them for future conversions. Default tiling follows
+  the original (tiles above 640 px). Bit-exact vision-cache and prefill-chunk changes give 1.03-1.15x. F16 IDs and raw
+  text bytes equal the original on all 4 trial pages
+  ([verify-text-v2](tests/results/unlimited-ocr2/verify-text-v2.json)). Q8_0 differs by 1-3 in one box coordinate on
+  2/4 tiled pages.
+- **Real scans, native re-run** ([native-uocr2-v2](tests/results/ocr-real-scans/native-uocr2-v2.json), Kaggle CPU,
+  `c077c719`). Token IDs are identical to the v1 run, and normalised text equal to the original rose from 10/19 to 14/19
+  pages. Receipt word recall went from 0.233 to 0.533 (original 0.533); receipt-14 from 0.13 to 0.98 and receipt-16 from
+  0.30 to 0.95. Scan mean CER is 0.0594 (original 0.0589). See [summary](tests/results/ocr-real-scans/summary.md).
+- **Manifest v2** ([ocr-real-scans-v2.json](docs/ocr-real-scans-v2.json), `tools/ocr-real-scans/pin_v2.py`). Each
+  Wikimedia image is pinned to its Commons file revision (timestamp and sha1, checked against the API at run time) and
+  fetched from a revision-qualified URL. The kernel fails a page loudly on sha256 mismatch and does not score it. The
+  first v2 run showed that this does not stabilise the census-form thumbnail: Kaggle still received the other rendering of
+  the same revision, and the page was correctly failed. Open: host the exact bytes or render from the pinned DjVu.
+- **Model card** for `cstr/Unlimited-OCR-2-GGUF`: card-only refresh with the real-scan result. The Hub commit is
+  recorded in [publication](tests/results/unlimited-ocr2/publication.json) under `card_update`, and weights are unchanged.
+
 ## 2 November 2026 — Permissive inpainting engines to main (feat/inpaint-permissive)
 
 - MI-GAN512, Moebius, PixelHacker, SDXL VAE and the delivery 4–6 graph/CPU/
