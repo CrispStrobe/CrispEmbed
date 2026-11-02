@@ -1,0 +1,12 @@
+kernel: ${KAGGLE_ACCOUNT}/crispembed-cuda-audit version 3, batch "c", tools/kaggle/cuda-audit
+source commit: c38304b4283da24cd88141a8b162b8c9be41b833 (feat/cuda-audit; the new CUDA per-kind defaults)
+gpu: Tesla T4 x2 (sm_75; one device used), cpu: 4x Intel Xeon @ 2.00GHz, -t 4
+date: 2026-11-02
+outcome: 22/22 jobs completed. True default arms of ESRGAN/InstructIR/PAN/Restormer/LightOnOCR
+run on CUDA and =0 restores the byte-identical CPU path. test-surya-det aborted on every CUDA
+arm (rc -6, GGML_ASSERT(ggml_is_contiguous(src0)) in ggml-cuda unary.cu, relu on the LiteMLA
+Q/K views) - fixed after this run. EasyOCR: forcing the CRNN recognizer to CPU on the CUDA
+box restores byte-identity, so the region-count difference is the recognizer on CUDA.
+bge-m3 converted with --crisp carries both heads; its q8_0 ColBERT output is ~0.59 vs F16 on
+BOTH arms (artifact made here with crispembed-quantize), F16 sparse/ColBERT qualify.
+CPU arm = same binary, --gpu-backend cpu with CUDA_VISIBLE_DEVICES="".

@@ -1,0 +1,77 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "-m",
+  "lightonocr-1b-q4_k.gguf",
+  "--ocr",
+  "receipt_example.png",
+  "--ocr-max-tokens",
+  "256"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    3.425
+   ],
+   "gpu_mem_peak_mib": 1123,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "6] tok=262 (8ms) cached\n  gen[227] tok=366 (8ms) cached\n  gen[228] tok=1296 (8ms) cached\n  gen[229] tok=29 (8ms) cached\n  gen[230] tok=18 (8ms) cached\n  gen[231] tok=522 (8ms) cached\n  gen[232] tok=1296 (8ms) cached\n  gen[233] tok=397 (8ms) cached\n  gen[234] tok=262 (8ms) cached\n  gen[235] tok=366 (8ms) cached\n  gen[236] tok=1296 (8ms) cached\n  gen[237] tok=23586 (8ms) cached\n  gen[238] tok=220 (8ms) cached\n  gen[239] tok=17 (8ms) cached\n  gen[240] tok=18 (8ms) cached\n  gen[241] tok=13 (8ms) cached\n  gen[242] tok=23 (8ms) cached\n  gen[243] tok=22 (8ms) cached\n  gen[244] tok=400 (8ms) cached\n  gen[245] tok=522 (8ms) cached\n  gen[246] tok=1296 (8ms) cached\n  gen[247] tok=397 (8ms) cached\n  gen[248] tok=220 (8ms) cached\n  gen[249] tok=690 (8ms) cached\n  gen[250] tok=376 (8ms) cached\n  gen[251] tok=397 (8ms) cached\n  gen[252] tok=220 (8ms) cached\n  gen[253] tok=366 (8ms) cached\n  gen[254] tok=376 (8ms) cached\n  gen[255] tok=397 (8ms) cached\nlightonocr: generated: Jackson-Washington\n6640 Ortiz Cove, Markmouth, PW\n69940\n\nTransaction ID: 8F88C299\nDate: 2025-02-16 11:25:12\n\n<table>\n  <tr>\n    <th>Item</th>\n    <th>Qty</th>\n    <th>Price</th>\n  </tr>\n  <tr>\n    <td>Strategy Accessory</td>\n    <td>1</td>\n    <td>$ 43.31 $</td>\n  </tr>\n  <tr>\n    <td>Conference Product</td>\n    <td>1</td>\n    <td>$ 48.40 $</td>\n  </tr>\n  <tr>\n    <td>Scientist Item</td>\n    <td>3</td>\n    <td>$ 48.07 $</td>\n  </tr>\n  <tr>\n    <td>Situation Item</td>\n    <td>3</td>\n    <td>$ 23.87 $</td>\n  </tr>\n  <tr>\n\n",
+   "stdout_sha256": "6d560efdbc4e5711aaa5d40b3aa6a6296dde459787c89a76ede666bfb2df1054",
+   "stdout": "Jackson-Washington\n6640 Ortiz Cove, Markmouth, PW\n69940\n\nTransaction ID: 8F88C299\nDate: 2025-02-16 11:25:12\n\n<table>\n  <tr>\n    <th>Item</th>\n    <th>Qty</th>\n    <th>Price</th>\n  </tr>\n  <tr>\n    <td>Strategy Accessory</td>\n    <td>1</td>\n    <td>$ 43.31 $</td>\n  </tr>\n  <tr>\n    <td>Conference Product</td>\n    <td>1</td>\n    <td>$ 48.40 $</td>\n  </tr>\n  <tr>\n    <td>Scientist Item</td>\n    <td>3</td>\n    <td>$ 48.07 $</td>\n  </tr>\n  <tr>\n    <td>Situation Item</td>\n    <td>3</td>\n    <td>$ 23.87 $</td>\n  </tr>\n  <tr>\n\n",
+   "vs_cpu": {
+    "byte_identical": true,
+    "text_exact": true,
+    "char_ratio": 1.0,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   }
+  },
+  "cuda-gate0": {
+   "backend": "cuda",
+   "env": {
+    "CRISPEMBED_LIGHTONOCR_GPU": "0"
+   },
+   "wall_s": [
+    40.838
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "[227] tok=366 (52ms) cached\n  gen[228] tok=1296 (48ms) cached\n  gen[229] tok=29 (49ms) cached\n  gen[230] tok=18 (46ms) cached\n  gen[231] tok=522 (45ms) cached\n  gen[232] tok=1296 (44ms) cached\n  gen[233] tok=397 (44ms) cached\n  gen[234] tok=262 (44ms) cached\n  gen[235] tok=366 (44ms) cached\n  gen[236] tok=1296 (42ms) cached\n  gen[237] tok=23586 (44ms) cached\n  gen[238] tok=220 (45ms) cached\n  gen[239] tok=17 (44ms) cached\n  gen[240] tok=18 (44ms) cached\n  gen[241] tok=13 (46ms) cached\n  gen[242] tok=23 (46ms) cached\n  gen[243] tok=22 (44ms) cached\n  gen[244] tok=400 (45ms) cached\n  gen[245] tok=522 (43ms) cached\n  gen[246] tok=1296 (43ms) cached\n  gen[247] tok=397 (44ms) cached\n  gen[248] tok=220 (44ms) cached\n  gen[249] tok=690 (46ms) cached\n  gen[250] tok=376 (50ms) cached\n  gen[251] tok=397 (44ms) cached\n  gen[252] tok=220 (44ms) cached\n  gen[253] tok=366 (45ms) cached\n  gen[254] tok=376 (47ms) cached\n  gen[255] tok=397 (45ms) cached\nlightonocr: generated: Jackson-Washington\n6640 Ortiz Cove, Markmouth, PW\n69940\n\nTransaction ID: 8F88C299\nDate: 2025-02-16 11:25:12\n\n<table>\n  <tr>\n    <th>Item</th>\n    <th>Qty</th>\n    <th>Price</th>\n  </tr>\n  <tr>\n    <td>Strategy Accessory</td>\n    <td>1</td>\n    <td>$ 43.31 $</td>\n  </tr>\n  <tr>\n    <td>Conference Product</td>\n    <td>1</td>\n    <td>$ 48.40 $</td>\n  </tr>\n  <tr>\n    <td>Scientist Item</td>\n    <td>3</td>\n    <td>$ 48.07 $</td>\n  </tr>\n  <tr>\n    <td>Situation Item</td>\n    <td>3</td>\n    <td>$ 23.87 $</td>\n  </tr>\n  <tr>\n\n",
+   "stdout_sha256": "6d560efdbc4e5711aaa5d40b3aa6a6296dde459787c89a76ede666bfb2df1054",
+   "stdout": "Jackson-Washington\n6640 Ortiz Cove, Markmouth, PW\n69940\n\nTransaction ID: 8F88C299\nDate: 2025-02-16 11:25:12\n\n<table>\n  <tr>\n    <th>Item</th>\n    <th>Qty</th>\n    <th>Price</th>\n  </tr>\n  <tr>\n    <td>Strategy Accessory</td>\n    <td>1</td>\n    <td>$ 43.31 $</td>\n  </tr>\n  <tr>\n    <td>Conference Product</td>\n    <td>1</td>\n    <td>$ 48.40 $</td>\n  </tr>\n  <tr>\n    <td>Scientist Item</td>\n    <td>3</td>\n    <td>$ 48.07 $</td>\n  </tr>\n  <tr>\n    <td>Situation Item</td>\n    <td>3</td>\n    <td>$ 23.87 $</td>\n  </tr>\n  <tr>\n\n",
+   "vs_cpu": {
+    "byte_identical": true,
+    "text_exact": true,
+    "char_ratio": 1.0,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    40.233
+   ],
+   "gpu_mem_peak_mib": 1,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "[227] tok=366 (42ms) cached\n  gen[228] tok=1296 (48ms) cached\n  gen[229] tok=29 (42ms) cached\n  gen[230] tok=18 (42ms) cached\n  gen[231] tok=522 (44ms) cached\n  gen[232] tok=1296 (42ms) cached\n  gen[233] tok=397 (41ms) cached\n  gen[234] tok=262 (42ms) cached\n  gen[235] tok=366 (41ms) cached\n  gen[236] tok=1296 (42ms) cached\n  gen[237] tok=23586 (41ms) cached\n  gen[238] tok=220 (42ms) cached\n  gen[239] tok=17 (41ms) cached\n  gen[240] tok=18 (42ms) cached\n  gen[241] tok=13 (42ms) cached\n  gen[242] tok=23 (42ms) cached\n  gen[243] tok=22 (43ms) cached\n  gen[244] tok=400 (50ms) cached\n  gen[245] tok=522 (47ms) cached\n  gen[246] tok=1296 (44ms) cached\n  gen[247] tok=397 (44ms) cached\n  gen[248] tok=220 (43ms) cached\n  gen[249] tok=690 (43ms) cached\n  gen[250] tok=376 (44ms) cached\n  gen[251] tok=397 (52ms) cached\n  gen[252] tok=220 (44ms) cached\n  gen[253] tok=366 (43ms) cached\n  gen[254] tok=376 (45ms) cached\n  gen[255] tok=397 (45ms) cached\nlightonocr: generated: Jackson-Washington\n6640 Ortiz Cove, Markmouth, PW\n69940\n\nTransaction ID: 8F88C299\nDate: 2025-02-16 11:25:12\n\n<table>\n  <tr>\n    <th>Item</th>\n    <th>Qty</th>\n    <th>Price</th>\n  </tr>\n  <tr>\n    <td>Strategy Accessory</td>\n    <td>1</td>\n    <td>$ 43.31 $</td>\n  </tr>\n  <tr>\n    <td>Conference Product</td>\n    <td>1</td>\n    <td>$ 48.40 $</td>\n  </tr>\n  <tr>\n    <td>Scientist Item</td>\n    <td>3</td>\n    <td>$ 48.07 $</td>\n  </tr>\n  <tr>\n    <td>Situation Item</td>\n    <td>3</td>\n    <td>$ 23.87 $</td>\n  </tr>\n  <tr>\n\n",
+   "stdout_sha256": "6d560efdbc4e5711aaa5d40b3aa6a6296dde459787c89a76ede666bfb2df1054",
+   "stdout": "Jackson-Washington\n6640 Ortiz Cove, Markmouth, PW\n69940\n\nTransaction ID: 8F88C299\nDate: 2025-02-16 11:25:12\n\n<table>\n  <tr>\n    <th>Item</th>\n    <th>Qty</th>\n    <th>Price</th>\n  </tr>\n  <tr>\n    <td>Strategy Accessory</td>\n    <td>1</td>\n    <td>$ 43.31 $</td>\n  </tr>\n  <tr>\n    <td>Conference Product</td>\n    <td>1</td>\n    <td>$ 48.40 $</td>\n  </tr>\n  <tr>\n    <td>Scientist Item</td>\n    <td>3</td>\n    <td>$ 48.07 $</td>\n  </tr>\n  <tr>\n    <td>Situation Item</td>\n    <td>3</td>\n    <td>$ 23.87 $</td>\n  </tr>\n  <tr>\n\n"
+  }
+ },
+ "precision": "q4_k",
+ "bar": 0.94,
+ "seconds": 87.7,
+ "id": "lightonocr-default.receipt_example",
+ "commit": "c38304b4283da24cd88141a8b162b8c9be41b833",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}

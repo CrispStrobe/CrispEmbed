@@ -186,6 +186,13 @@ for key, repo, name in [
 # EasyOCR's english_g2 recognizer is not on HF as GGUF: converted on the worker
 # from the upstream release checkpoint (see fetch_easyocr()).
 M["easyocr"] = {"url": None, "file": "easyocr-english-g2-f16.gguf", "convert": "easyocr"}
+# EasyOCR fox line crops (DBNet boxes from run 1, +5 px) and their Python references.
+for _ln, _box, _w in (("line1", (20, 30, 515, 82), 610), ("line2", (20, 100, 480, 155), 540)):
+    M[f"fox-{_ln}"] = {"url": None, "file": f"fox-{_ln}.png", "convert": "crop", "image": f"{IMG}/fox.png",
+                       "box": _box}
+    for _ww in (_w, 200):
+        M[f"easyocr-ref-{_ln}-w{_ww}"] = {"url": None, "file": f"easyocr-ref-{_ln}-w{_ww}.gguf",
+                                          "convert": "easyocr-ref", "crop": f"fox-{_ln}", "width": _ww}
 # The published bge-m3 GGUFs carry no sparse/ColBERT heads ("model does not support sparse
 # retrieval", run 1): convert BAAI/bge-m3 with its sparse_linear/colbert_linear .pt heads.
 M["bge-m3-crisp-f16.gguf"] = {"url": None, "file": "bge-m3-crisp-f16.gguf", "convert": "bert",
@@ -418,7 +425,25 @@ def batch_c():
     return jobs
 
 
-BATCHES = {"a": batch_a, "b": batch_b, "all": lambda: batch_a() + batch_b(), "rest": batch_rest, "c": batch_c}
+def batch_d():
+    """Run 4: Surya relu-contiguity fix on CUDA; EasyOCR recognizer stage diff vs Python on both arms."""
+    jobs = []
+    for img in ("fox", "scan_page_pd"):
+        for k in ("surya-det", "surya-det-q8"):
+            jobs.append(cmd(f"{k}.{img}", ["@M:" + k, f"{IMG}/{img}.png"], binary="test-surya-det"))
+    for ln, w in (("line1", 610), ("line2", 540)):
+        for ww in (w, 200):
+            jobs.append(diff(f"diff-easyocr-{ln}-w{ww}", "test-easyocr-diff",
+                             ["@M:easyocr", f"@M:easyocr-ref-{ln}-w{ww}", f"@M:fox-{ln}", str(ww)],
+                             thresholds={"*": 0.999}))
+        jobs.append(cmd(f"easyocr-pipeline-{ln}", ["-t", "@NT", "--json", "-m", "@M:easyocr", "--ocr-pipeline",
+                                                   f"@M:fox-{ln}", "--ocr-engine", "easyocr", "--ocr-det", "@M:dbnet",
+                                                   "--ocr-rec", "@M:easyocr"],
+                        arms=(CUDA, ("cuda-reccpu", "cuda", {"EASYOCR_FORCE_CPU": "1"}), CPU)))
+    return jobs
+
+
+BATCHES = {"a": batch_a, "b": batch_b, "all": lambda: batch_a() + batch_b(), "rest": batch_rest, "c": batch_c, "d": batch_d}
 
 
 def jobs_for(batch):
@@ -522,6 +547,27 @@ def fetch(key):
                                  *spec.get("extra", [])], 3600)
         err = None if rc == 0 and dest.exists() else f"convert rc={rc}: {(out + e)[-800:]}"
         REPORT.setdefault("conversions", {})[key] = (out + e)[-1500:]
+    elif spec.get("convert") == "crop":  # a fixture crop (EasyOCR line), written as PNG
+        from PIL import Image
+        Image.open(spec["image"]).convert("RGB").crop(tuple(spec["box"])).save(dest)
+        err = None
+    elif spec.get("convert") == "easyocr-ref":  # Python EasyOCR recognizer reference archive
+        _, err = fetch("easyocr")
+        crop, err2 = fetch(spec["crop"])
+        err = err or err2
+        repo = SCRATCH / "EasyOCR"
+        if not err and not repo.exists():
+            rc, _, e = sh_capture(["git", "clone", "-q", "--depth", "1", "https://github.com/JaidedAI/EasyOCR.git",
+                                   str(repo)], 900)
+            err = None if rc == 0 else f"clone rc={rc}: {e[-300:]}"
+        if not err:
+            work = SCRATCH / "easyocr-src"
+            rc, out, e = sh_capture([sys.executable, "tools/dump_easyocr_reference.py", "--easyocr-repo", str(repo),
+                                     "--checkpoint", str(next(work.glob("english_g2.pth"))), "--charset",
+                                     str(work / "english_g2_chars.txt"), "--image", str(crop), "--output", str(dest),
+                                     "--generation", "2", "--width", str(spec["width"])], 1800)
+            err = None if rc == 0 and dest.exists() else f"dump rc={rc}: {(out + e)[-800:]}"
+            REPORT.setdefault("conversions", {})[key] = (out + e)[-1500:]
     elif spec.get("convert") == "quantize":
         src, err = fetch(spec["src"])
         if not err:
@@ -926,12 +972,17 @@ def run_diff(job, build, paths, nthreads):
         arm = run_arm(binary, argv, backend, env, job["timeout"], cli=False, tag=name)
         text = arm["stdout"].decode("utf-8", "replace") + "\n" + arm["stderr_tail"]
         full_err = (SCRATCH / f"{name}.err").read_text(errors="replace")
-        stages = parse_diff_stdout(arm["stdout"].decode("utf-8", "replace") + "\n" + full_err)
+        both = arm["stdout"].decode("utf-8", "replace") + "\n" + full_err
+        stages = parse_diff_stdout(both)
+        for m in re.finditer(r"^easyocr-diff\s+(\S+)\s.*?\scos=([-+0-9.eE]+)", both, re.M):  # EasyOCR's format
+            stages.setdefault(m.group(1), float(m.group(2)))
+        decoded = re.findall(r"^decoded=(.*)$", both, re.M)
         fails, missing = evaluate_stage_thresholds(stages, job["thresholds"]) if stages else ([], [])
         worst = min(stages.items(), key=lambda kv: kv[1]) if stages else None
         rec["arms"][name] = {"rc": arm["rc"], "wall_s": arm["wall_s"], "gpu_mem_peak_mib": arm["gpu_mem_peak_mib"],
                              "cuda_used": arm["cuda_used"], "n_stages": len(stages), "stages": stages,
                              "worst_stage": worst, "threshold_fails": fails, "threshold_missing": missing,
+                             "decoded": decoded,
                              "stdout_tail": text[-3000:]}
     return rec
 

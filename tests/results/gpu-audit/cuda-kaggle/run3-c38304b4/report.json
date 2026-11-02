@@ -1,0 +1,1088 @@
+{
+ "script_version": "cuda-audit-run-v1",
+ "jobs": {
+  "esrgan-default.fox": {
+   "kind": "cmd",
+   "seconds": 66.2,
+   "precision": "f32",
+   "cuda": {
+    "rc": 0,
+    "wall": [
+     4.073,
+     1.618
+    ],
+    "cuda_used": true,
+    "identical": false,
+    "cos": 0.9999999997287369,
+    "char_ratio": null,
+    "ocr": null,
+    "image": {
+     "max_abs": 1.0,
+     "psnr_db": 106.19260334851796
+    },
+    "ref_cos": null
+   },
+   "cuda-gate0": {
+    "rc": 0,
+    "wall": [
+     14.104,
+     13.951
+    ],
+    "cuda_used": false,
+    "identical": true,
+    "cos": 1.0,
+    "char_ratio": null,
+    "ocr": null,
+    "image": {
+     "max_abs": 0.0,
+     "psnr_db": 99.0
+    },
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 0,
+    "wall": [
+     14.053,
+     13.953
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  },
+  "instructir-default.scan_strip": {
+   "kind": "cmd",
+   "seconds": 132.6,
+   "precision": "f16",
+   "cuda": {
+    "rc": 0,
+    "wall": [
+     3.679,
+     3.677
+    ],
+    "cuda_used": true,
+    "identical": false,
+    "cos": 0.9999999992685448,
+    "char_ratio": null,
+    "ocr": null,
+    "image": {
+     "max_abs": 1.0,
+     "psnr_db": 104.21178307193189
+    },
+    "ref_cos": null
+   },
+   "cuda-gate0": {
+    "rc": 0,
+    "wall": [
+     30.604,
+     30.703
+    ],
+    "cuda_used": false,
+    "identical": true,
+    "cos": 0.9999999999999998,
+    "char_ratio": null,
+    "ocr": null,
+    "image": {
+     "max_abs": 0.0,
+     "psnr_db": 99.0
+    },
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 0,
+    "wall": [
+     30.297,
+     30.395
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  },
+  "pan-default.scan_strip": {
+   "kind": "cmd",
+   "seconds": 135.9,
+   "precision": "f16",
+   "cuda": {
+    "rc": 0,
+    "wall": [
+     2.07,
+     2.07
+    ],
+    "cuda_used": true,
+    "identical": false,
+    "cos": 0.9999999987341859,
+    "char_ratio": null,
+    "ocr": null,
+    "image": {
+     "max_abs": 1.0,
+     "psnr_db": 101.78140258506895
+    },
+    "ref_cos": null
+   },
+   "cuda-gate0": {
+    "rc": 0,
+    "wall": [
+     32.304,
+     31.998
+    ],
+    "cuda_used": true,
+    "identical": true,
+    "cos": 1.0,
+    "char_ratio": null,
+    "ocr": null,
+    "image": {
+     "max_abs": 0.0,
+     "psnr_db": 99.0
+    },
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 0,
+    "wall": [
+     32.16,
+     31.602
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  },
+  "restormer-default.fox": {
+   "kind": "cmd",
+   "seconds": 971.0,
+   "precision": "f16",
+   "cuda": {
+    "rc": 0,
+    "wall": [
+     13.444,
+     13.397
+    ],
+    "cuda_used": true,
+    "identical": false,
+    "cos": 0.9999999722746776,
+    "char_ratio": null,
+    "ocr": null,
+    "image": {
+     "max_abs": 1.0,
+     "psnr_db": 86.49223558229241
+    },
+    "ref_cos": null
+   },
+   "cuda-gate0": {
+    "rc": 0,
+    "wall": [
+     235.479,
+     233.745
+    ],
+    "cuda_used": false,
+    "identical": true,
+    "cos": 0.9999999999999998,
+    "char_ratio": null,
+    "ocr": null,
+    "image": {
+     "max_abs": 0.0,
+     "psnr_db": 99.0
+    },
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 0,
+    "wall": [
+     234.749,
+     236.945
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  },
+  "lightonocr-default.fox": {
+   "kind": "cmd",
+   "seconds": 61.9,
+   "precision": "q4_k",
+   "cuda": {
+    "rc": 0,
+    "wall": [
+     1.518
+    ],
+    "cuda_used": true,
+    "identical": true,
+    "cos": null,
+    "char_ratio": 1.0,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cuda-gate0": {
+    "rc": 0,
+    "wall": [
+     16.504
+    ],
+    "cuda_used": false,
+    "identical": true,
+    "cos": null,
+    "char_ratio": 1.0,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 0,
+    "wall": [
+     17.231
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  },
+  "lightonocr-default.receipt_example": {
+   "kind": "cmd",
+   "seconds": 87.7,
+   "precision": "q4_k",
+   "cuda": {
+    "rc": 0,
+    "wall": [
+     3.425
+    ],
+    "cuda_used": true,
+    "identical": true,
+    "cos": null,
+    "char_ratio": 1.0,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cuda-gate0": {
+    "rc": 0,
+    "wall": [
+     40.838
+    ],
+    "cuda_used": false,
+    "identical": true,
+    "cos": null,
+    "char_ratio": 1.0,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 0,
+    "wall": [
+     40.233
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  },
+  "lightonocr-default.scan_strip": {
+   "kind": "cmd",
+   "seconds": 45.2,
+   "precision": "q4_k",
+   "cuda": {
+    "rc": 0,
+    "wall": [
+     2.671
+    ],
+    "cuda_used": true,
+    "identical": false,
+    "cos": null,
+    "char_ratio": 0.9632446134347274,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cuda-gate0": {
+    "rc": 0,
+    "wall": [
+     19.427
+    ],
+    "cuda_used": false,
+    "identical": true,
+    "cos": null,
+    "char_ratio": 1.0,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 0,
+    "wall": [
+     19.627
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  },
+  "dbnet-easyocr-iso.fox": {
+   "kind": "cmd",
+   "seconds": 24.6,
+   "precision": "f16",
+   "cuda": {
+    "rc": 0,
+    "wall": [
+     1.067,
+     1.067
+    ],
+    "cuda_used": true,
+    "identical": false,
+    "cos": 0.9486957565917765,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cuda-detcpu": {
+    "rc": 0,
+    "wall": [
+     1.619,
+     1.568
+    ],
+    "cuda_used": true,
+    "identical": false,
+    "cos": 0.9486957565917765,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cuda-reccpu": {
+    "rc": 0,
+    "wall": [
+     1.118,
+     1.169
+    ],
+    "cuda_used": true,
+    "identical": true,
+    "cos": 1.0,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 0,
+    "wall": [
+     1.268,
+     1.218
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  },
+  "dbnet-easyocr-iso.scan_page_pd": {
+   "kind": "cmd",
+   "seconds": 57.0,
+   "precision": "f16",
+   "cuda": {
+    "rc": 0,
+    "wall": [
+     4.275,
+     4.226
+    ],
+    "cuda_used": true,
+    "identical": false,
+    "cos": 0.999885376405564,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cuda-detcpu": {
+    "rc": 0,
+    "wall": [
+     6.182,
+     5.981
+    ],
+    "cuda_used": true,
+    "identical": false,
+    "cos": 0.999885376405564,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cuda-reccpu": {
+    "rc": 0,
+    "wall": [
+     8.088,
+     8.087
+    ],
+    "cuda_used": true,
+    "identical": true,
+    "cos": 0.9999999999999999,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 0,
+    "wall": [
+     9.544,
+     9.547
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  },
+  "dbnet-easyocr-iso.scan_strip": {
+   "kind": "cmd",
+   "seconds": 21.9,
+   "precision": "f16",
+   "cuda": {
+    "rc": 0,
+    "wall": [
+     1.869,
+     1.92
+    ],
+    "cuda_used": true,
+    "identical": false,
+    "cos": 0.9998794022737758,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cuda-detcpu": {
+    "rc": 0,
+    "wall": [
+     2.374,
+     2.373
+    ],
+    "cuda_used": true,
+    "identical": false,
+    "cos": 0.9998794022737758,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cuda-reccpu": {
+    "rc": 0,
+    "wall": [
+     3.023,
+     3.079
+    ],
+    "cuda_used": true,
+    "identical": true,
+    "cos": 1.0000000000000002,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 0,
+    "wall": [
+     3.124,
+     3.125
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  },
+  "punct-firered-f32.scan_strip": {
+   "kind": "cmd",
+   "seconds": 305.7,
+   "precision": "q8_0",
+   "cuda": {
+    "rc": 0,
+    "wall": [
+     36.471,
+     35.873
+    ],
+    "cuda_used": true,
+    "identical": false,
+    "cos": 1.0,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cuda-punctcpu": {
+    "rc": 0,
+    "wall": [
+     37.172,
+     37.056
+    ],
+    "cuda_used": true,
+    "identical": false,
+    "cos": 1.0,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 0,
+    "wall": [
+     75.386,
+     75.432
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  },
+  "punct-firered-q8.scan_strip": {
+   "kind": "cmd",
+   "seconds": 298.1,
+   "precision": "q8_0",
+   "cuda": {
+    "rc": 0,
+    "wall": [
+     36.122,
+     35.819
+    ],
+    "cuda_used": true,
+    "identical": false,
+    "cos": 1.0,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cuda-punctcpu": {
+    "rc": 0,
+    "wall": [
+     36.07,
+     36.167
+    ],
+    "cuda_used": true,
+    "identical": false,
+    "cos": 1.0,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 0,
+    "wall": [
+     73.877,
+     73.575
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  },
+  "punct-pcs-q8.scan_strip": {
+   "kind": "cmd",
+   "seconds": 309.3,
+   "precision": "q8_0",
+   "cuda": {
+    "rc": 0,
+    "wall": [
+     36.458,
+     36.471
+    ],
+    "cuda_used": true,
+    "identical": false,
+    "cos": 1.0,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cuda-punctcpu": {
+    "rc": 0,
+    "wall": [
+     37.716,
+     37.215
+    ],
+    "cuda_used": true,
+    "identical": false,
+    "cos": 1.0,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 0,
+    "wall": [
+     76.907,
+     76.041
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  },
+  "pipeline-nopunct.scan_strip": {
+   "kind": "cmd",
+   "seconds": 223.1,
+   "precision": "q8_0",
+   "cuda": {
+    "rc": 0,
+    "wall": [
+     35.965,
+     35.955
+    ],
+    "cuda_used": true,
+    "identical": false,
+    "cos": 1.0,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 0,
+    "wall": [
+     73.478,
+     76.043
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  },
+  "embed-bge-m3-crisp-embed": {
+   "kind": "embed",
+   "seconds": 161.2,
+   "bge-m3-crisp-f16.gguf": {
+    "precision": "f16",
+    "bar": 0.98,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9999985649391545,
+    "cos_cuda_vs_cpu": 0.9999985649391545,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      1.969,
+      1.929
+     ],
+     "cpu": [
+      20.321,
+      20.173
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-m3-crisp-q8_0.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9992771676881723,
+    "cos_cuda_vs_cpu": 0.9997702875611643,
+    "cos_cpu_vs_ref": 0.9992012927204361,
+    "wall": {
+     "cuda": [
+      1.368,
+      1.419
+     ],
+     "cpu": [
+      9.49,
+      9.39
+     ]
+    },
+    "cuda_used": true
+   }
+  },
+  "embed-bge-m3-crisp-sparse": {
+   "kind": "embed",
+   "seconds": 82.9,
+   "bge-m3-crisp-f16.gguf": {
+    "precision": "f16",
+    "bar": 0.98,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9999995214291024,
+    "cos_cuda_vs_cpu": 0.9999995214291024,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      1.969,
+      1.92
+     ],
+     "cpu": [
+      20.472,
+      20.074
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-m3-crisp-q8_0.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9998691652157224,
+    "cos_cuda_vs_cpu": 0.999957528360471,
+    "cos_cpu_vs_ref": 0.9998347876199692,
+    "wall": {
+     "cuda": [
+      1.468,
+      1.418
+     ],
+     "cpu": [
+      9.391,
+      9.25
+     ]
+    },
+    "cuda_used": true
+   }
+  },
+  "embed-bge-m3-crisp-colbert": {
+   "kind": "embed",
+   "seconds": 88.2,
+   "bge-m3-crisp-f16.gguf": {
+    "precision": "f16",
+    "bar": 0.98,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9991793834834695,
+    "cos_cuda_vs_cpu": 0.9991793834834695,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      2.221,
+      2.275
+     ],
+     "cpu": [
+      20.347,
+      20.343
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-m3-crisp-q8_0.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": false,
+    "cos_cuda_vs_ref": 0.5928092890167894,
+    "cos_cuda_vs_cpu": 0.6429711219994738,
+    "cos_cpu_vs_ref": 0.5936833350896471,
+    "wall": {
+     "cuda": [
+      1.723,
+      1.723
+     ],
+     "cpu": [
+      9.812,
+      9.752
+     ]
+    },
+    "cuda_used": true
+   }
+  },
+  "surya-det.fox": {
+   "kind": "cmd",
+   "seconds": 43.5,
+   "precision": "f16",
+   "cuda": {
+    "rc": -6,
+    "wall": [
+     1.169,
+     1.168
+    ],
+    "cuda_used": true,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 0,
+    "wall": [
+     18.774,
+     18.724
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  },
+  "surya-det-q8.fox": {
+   "kind": "cmd",
+   "seconds": 44.1,
+   "precision": "q8_0",
+   "cuda": {
+    "rc": -6,
+    "wall": [
+     1.217,
+     1.217
+    ],
+    "cuda_used": true,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 0,
+    "wall": [
+     19.275,
+     19.022
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  },
+  "surya-det.scan_page_pd": {
+   "kind": "cmd",
+   "seconds": 40.1,
+   "precision": "f16",
+   "cuda": {
+    "rc": -6,
+    "wall": [
+     1.167,
+     1.217
+    ],
+    "cuda_used": true,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 0,
+    "wall": [
+     18.571,
+     18.72
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  },
+  "surya-det-q8.scan_page_pd": {
+   "kind": "cmd",
+   "seconds": 41.1,
+   "precision": "q8_0",
+   "cuda": {
+    "rc": -6,
+    "wall": [
+     1.217,
+     1.217
+    ],
+    "cuda_used": true,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 0,
+    "wall": [
+     18.966,
+     19.218
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  },
+  "got-ocr2-q8.fox": {
+   "kind": "cmd",
+   "seconds": 39.4,
+   "precision": "q8_0",
+   "cuda": {
+    "rc": 0,
+    "wall": [
+     2.224
+    ],
+    "cuda_used": true,
+    "identical": true,
+    "cos": null,
+    "char_ratio": 1.0,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 0,
+    "wall": [
+     22.04
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  }
+ },
+ "commit": "c38304b4283da24cd88141a8b162b8c9be41b833",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "batch": "c",
+ "threads": 4,
+ "cpu_model": "Intel(R) Xeon(R) CPU @ 2.00GHz",
+ "date": "2026-11-01",
+ "phase": "done",
+ "updated": "2026-11-02T00:47:28Z",
+ "downloads": {
+  "esrgan": {
+   "seconds": 2.2,
+   "error": null,
+   "bytes": 2488704
+  },
+  "instructir": {
+   "seconds": 2.2,
+   "error": null,
+   "bytes": 31942368
+  },
+  "pan-f16": {
+   "seconds": 1.2,
+   "error": null,
+   "bytes": 556992
+  },
+  "restormer-f16": {
+   "seconds": 2.5,
+   "error": null,
+   "bytes": 52284480
+  },
+  "lighton-q4": {
+   "seconds": 23.3,
+   "error": null,
+   "bytes": 654593120
+  },
+  "easyocr": {
+   "seconds": 12.6,
+   "error": null,
+   "bytes": 7585568
+  },
+  "dbnet": {
+   "seconds": 0.8,
+   "error": null,
+   "bytes": 12960448
+  },
+  "trocr": {
+   "seconds": 2.1,
+   "error": null,
+   "bytes": 67508320
+  },
+  "firered-f32": {
+   "seconds": 4.3,
+   "error": null,
+   "bytes": 203873216
+  },
+  "firered-q8": {
+   "seconds": 4.5,
+   "error": null,
+   "bytes": 108664800
+  },
+  "pcs-q8": {
+   "seconds": 6.5,
+   "error": null,
+   "bytes": 301964352
+  },
+  "bge-m3-crisp-f16.gguf": {
+   "seconds": 71.3,
+   "error": null,
+   "bytes": 1676844960
+  },
+  "bge-m3-crisp-q8_0.gguf": {
+   "seconds": 6.3,
+   "error": null,
+   "bytes": 610915552
+  },
+  "surya-det": {
+   "seconds": 3.1,
+   "error": null,
+   "bytes": 76843744
+  },
+  "surya-det-q8": {
+   "seconds": 2.9,
+   "error": null,
+   "bytes": 42598336
+  },
+  "got-q8": {
+   "seconds": 10.3,
+   "error": null,
+   "bytes": 599632960
+  }
+ },
+ "conversions": {
+  "bge-m3-crisp-f16.gguf": "Loading model: BAAI/bge-m3\n  loaded sparse_linear.pt (['weight', 'bias'])\n  loaded colbert_linear.pt (['weight', 'bias'])\nConfig: hidden=1024 layers=24 heads=16 intermediate=4096 vocab=250002\n  detected: sparse_linear head\n  detected: colbert_linear head\n  position_offset: 2 (RoBERTa/MPNet-style)\n  pooling: CLS (from 1_Pooling/config.json)\n  format: CrispEmbed (model_type=bgem3)\n  tokenizer: SentencePiece (250002 tokens, scores from tokenizer.json)\n  embeddings: ok\n  enc.0: ok\n  enc.1: ok\n  enc.2: ok\n  enc.3: ok\n  enc.4: ok\n  enc.5: ok\n  enc.6: ok\n  enc.7: ok\n  enc.8: ok\n  enc.9: ok\n  enc.10: ok\n  enc.11: ok\n  enc.12: ok\n  enc.13: ok\n  enc.14: ok\n  enc.15: ok\n  enc.16: ok\n  enc.17: ok\n  enc.18: ok\n  enc.19: ok\n  enc.20: ok\n  enc.21: ok\n  enc.22: ok\n  enc.23: ok\n  pooler: ok (act=tanh)\n  sparse_linear: ok\n  colbert_linear: ok\n\nWrote /kaggle/temp/cuda-audit/models/bge-m3-crisp-f16.gguf (1599.2 MB)\nWarning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.\n\nLoading weights:   0%|          | 0/391 [00:00<?, ?it/s]\nLoading weights:  69%|██████▉   | 271/391 [00:00<00:00, 2708.93it/s]\nLoading weights: 100%|██████████| 391/391 [00:00<00:00, 2703.57it/s]\n"
+ }
+}

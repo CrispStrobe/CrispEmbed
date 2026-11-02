@@ -1,0 +1,77 @@
+{
+ "kind": "cmd",
+ "argv": [
+  "-t",
+  "4",
+  "-m",
+  "lightonocr-1b-q4_k.gguf",
+  "--ocr",
+  "fox.png",
+  "--ocr-max-tokens",
+  "256"
+ ],
+ "arms": {
+  "cuda": {
+   "backend": "cuda",
+   "env": {},
+   "wall_s": [
+    1.518
+   ],
+   "gpu_mem_peak_mib": 1067,
+   "cuda_used": true,
+   "rc": 0,
+   "stderr_tail": "nocr: vis=24L/1024d, lm=28L/1024d, vocab=151936\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\nlightonocr: image 800x200 → 58x16 patches (928 total)\nlightonocr: patch_conv done (928 patches × 1024 dim)\nlightonocr: patch[0,:5] = [-0.11928044, 0.04906905, -0.04441357, -0.11049265, 0.03421923]\nlightonocr: vision encoder done\nlightonocr: projection done → 232 image tokens\nlightonocr: prompt = 3 prefix + 232 image + 9 suffix = 244 total\nlightonocr: KV cache: 28 layers, max_seq=2308, 252.4 MB (F16)\nlightonocr: KV cache: OK (F16, 244 tokens cached)\nlightonocr: prefill done, first token=785 (score=24.04)\nlightonocr: logits[0..4] = [7.654, 8.463, 11.125, 10.816, 6.488]\nlightonocr: logits[eos=151645] = -0.603\n  gen[1] tok=3974 (18ms) cached\n  gen[2] tok=13876 (10ms) cached\n  gen[3] tok=38835 (10ms) cached\n  gen[4] tok=34208 (8ms) cached\n  gen[5] tok=2303 (7ms) cached\n  gen[6] tok=1975 (7ms) cached\n  gen[7] tok=279 (7ms) cached\n  gen[8] tok=15678 (7ms) cached\n  gen[9] tok=5562 (7ms) cached\n  gen[10] tok=13 (7ms) cached\n  gen[11] tok=220 (7ms) cached\n  gen[12] tok=16 (9ms) cached\n  gen[13] tok=17 (7ms) cached\n  gen[14] tok=18 (7ms) cached\n  gen[15] tok=19 (7ms) cached\n  gen[16] tok=20 (7ms) cached\nlightonocr: generated: The quick brown fox jumps  \nover the lazy dog. 12345\n",
+   "stdout_sha256": "7681084ee70d441fb6b49f750a00eba5590b0574efbd7a85a7f157f7b42818d6",
+   "stdout": "The quick brown fox jumps  \nover the lazy dog. 12345\n",
+   "vs_cpu": {
+    "byte_identical": true,
+    "text_exact": true,
+    "char_ratio": 1.0,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   }
+  },
+  "cuda-gate0": {
+   "backend": "cuda",
+   "env": {
+    "CRISPEMBED_LIGHTONOCR_GPU": "0"
+   },
+   "wall_s": [
+    16.504
+   ],
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "lightonocr: vis=24L/1024d, lm=28L/1024d, vocab=151936\nlightonocr: image 800x200 → 58x16 patches (928 total)\nlightonocr: patch_conv done (928 patches × 1024 dim)\nlightonocr: patch[0,:5] = [-0.11928051, 0.04906897, -0.04441353, -0.11049271, 0.03421924]\nlightonocr: vision encoder done\nlightonocr: projection done → 232 image tokens\nlightonocr: prompt = 3 prefix + 232 image + 9 suffix = 244 total\nlightonocr: KV cache: 28 layers, max_seq=2308, 252.4 MB (F16)\nlightonocr: KV cache: OK (F16, 244 tokens cached)\nlightonocr: prefill done, first token=785 (score=23.96)\nlightonocr: logits[0..4] = [7.710, 8.484, 11.055, 10.558, 6.383]\nlightonocr: logits[eos=151645] = -0.419\n  gen[1] tok=3974 (35ms) cached\n  gen[2] tok=13876 (35ms) cached\n  gen[3] tok=38835 (36ms) cached\n  gen[4] tok=34208 (36ms) cached\n  gen[5] tok=2303 (35ms) cached\n  gen[6] tok=1975 (35ms) cached\n  gen[7] tok=279 (35ms) cached\n  gen[8] tok=15678 (36ms) cached\n  gen[9] tok=5562 (37ms) cached\n  gen[10] tok=13 (36ms) cached\n  gen[11] tok=220 (36ms) cached\n  gen[12] tok=16 (36ms) cached\n  gen[13] tok=17 (36ms) cached\n  gen[14] tok=18 (37ms) cached\n  gen[15] tok=19 (36ms) cached\n  gen[16] tok=20 (36ms) cached\nlightonocr: generated: The quick brown fox jumps  \nover the lazy dog. 12345\n",
+   "stdout_sha256": "7681084ee70d441fb6b49f750a00eba5590b0574efbd7a85a7f157f7b42818d6",
+   "stdout": "The quick brown fox jumps  \nover the lazy dog. 12345\n",
+   "vs_cpu": {
+    "byte_identical": true,
+    "text_exact": true,
+    "char_ratio": 1.0,
+    "final_cosine": null,
+    "final_metric": "decoded text agreement"
+   }
+  },
+  "cpu": {
+   "backend": "cpu",
+   "env": {},
+   "wall_s": [
+    17.231
+   ],
+   "gpu_mem_peak_mib": 1,
+   "cuda_used": false,
+   "rc": 0,
+   "stderr_tail": "lightonocr: vis=24L/1024d, lm=28L/1024d, vocab=151936\nggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\nlightonocr: image 800x200 → 58x16 patches (928 total)\nlightonocr: patch_conv done (928 patches × 1024 dim)\nlightonocr: patch[0,:5] = [-0.11928051, 0.04906897, -0.04441353, -0.11049271, 0.03421924]\nlightonocr: vision encoder done\nlightonocr: projection done → 232 image tokens\nlightonocr: prompt = 3 prefix + 232 image + 9 suffix = 244 total\nlightonocr: KV cache: 28 layers, max_seq=2308, 252.4 MB (F16)\nlightonocr: KV cache: OK (F16, 244 tokens cached)\nlightonocr: prefill done, first token=785 (score=23.96)\nlightonocr: logits[0..4] = [7.710, 8.484, 11.055, 10.558, 6.383]\nlightonocr: logits[eos=151645] = -0.419\n  gen[1] tok=3974 (36ms) cached\n  gen[2] tok=13876 (36ms) cached\n  gen[3] tok=38835 (36ms) cached\n  gen[4] tok=34208 (36ms) cached\n  gen[5] tok=2303 (35ms) cached\n  gen[6] tok=1975 (36ms) cached\n  gen[7] tok=279 (37ms) cached\n  gen[8] tok=15678 (42ms) cached\n  gen[9] tok=5562 (38ms) cached\n  gen[10] tok=13 (37ms) cached\n  gen[11] tok=220 (38ms) cached\n  gen[12] tok=16 (36ms) cached\n  gen[13] tok=17 (37ms) cached\n  gen[14] tok=18 (37ms) cached\n  gen[15] tok=19 (40ms) cached\n  gen[16] tok=20 (37ms) cached\nlightonocr: generated: The quick brown fox jumps  \nover the lazy dog. 12345\n",
+   "stdout_sha256": "7681084ee70d441fb6b49f750a00eba5590b0574efbd7a85a7f157f7b42818d6",
+   "stdout": "The quick brown fox jumps  \nover the lazy dog. 12345\n"
+  }
+ },
+ "precision": "q4_k",
+ "bar": 0.94,
+ "seconds": 61.9,
+ "id": "lightonocr-default.fox",
+ "commit": "c38304b4283da24cd88141a8b162b8c9be41b833",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-01"
+}
