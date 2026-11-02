@@ -186,7 +186,8 @@ def main():
         "default-perturb": ({"MALLOC_PERTURB_": "165"}, "4"),
         "default-t1": ({}, "1"),
     }
-    if mac:  # macOS runner: Apple CPU and Metal arms; binaries are exported for the M1 run
+    if mac:  # macOS runner: Apple CPU and Metal arms (hosted runners may abort in ggml-metal); binaries
+        # are exported for the run on a real M1
         arms = {k: arms[k] for k in ("default", "legacy", "legacy-poison", "default-poison", "legacy-widthsort")}
     pages = ["fox", "scan_strip", "scan_page_pd"]
     for bname, flags in builds.items():
@@ -210,6 +211,8 @@ def main():
             exp.mkdir(exist_ok=True)
             for f in (bdir / "crispembed", bdir / "test-easyocr-width-shrink", dbnet, rec, *lines):
                 shutil.copy2(f, exp / Path(f).name)
+            for lib in bdir.rglob("*.dylib"):  # ggml is a shared library on macOS; run with DYLD_LIBRARY_PATH
+                shutil.copy2(lib, exp / lib.name, follow_symlinks=True)
         ws = {}
         for arm, env in (("legacy-poison", {**legacy, "CRISPEMBED_EASYOCR_POISON_COMPUTE": "1"}),
                          ("default-poison", {"CRISPEMBED_EASYOCR_POISON_COMPUTE": "1"}),
