@@ -1,3 +1,37 @@
+## 2 November 2026 — MiniCPM-OCR-1.0 speed paths (Kaggle CPU, Xeon 2.2 GHz x4, F16 GGUF)
+
+Kaggle `crispembed-minicpm-ocr-bench-graph` at `68e003b5`, receipt
+[bench-graph.json](tests/results/minicpm-ocr/bench-graph.json). All arms ran the same 5
+reference cases (max 1024 new tokens) on the same host. **Every arm is token-ID and text
+exact on 5/5, CER 0.** Native parity with all three gates on
+([native-parity-graph.json](tests/results/minicpm-ocr/native-parity-graph.json)) is
+5/5 exact under both F32 and F16. Final-layer max-abs is 1e-4 to 2e-3, and first-logit
+max-abs is at most 6.4e-5. All gates stay default-off.
+
+| arm (4 threads) | total s | vision s | prefill s (all cases) | decode ms/token |
+|---|---|---|---|---|
+| before: decoder_cpu, F16 vision | 3264 | 704 | 448 | 4765 |
+| graph decoder, `exact` matmul | 1317 | 680 | 93 | 1175 |
+| graph decoder, `native` (F16 mul_mat) | 1000 | 680 | 202 | 107 |
+| graph decoder, `f32` (F32 copies at init) | 925 | 680 | 88 | 169 |
+| vision F32 | 2738 | 338 | 425 | 4529 |
+| vision F32 + batched slices | 2715 | 288 | 413 | 4510 |
+| graph exact + vision F32 + batch | 829 | 288 | 81 | 1011 |
+| + vision flash attention | **762** | 212 | 81 | 1033 |
+| same as row 7, 2 threads | 921 | 342 | 92 | 1075 |
+| Transformers 5.21.0 F32 | 385 | (vision+prefill 297) | | 205-218 |
+
+- Decode: the graph's `f32` matmul (169 ms/token) and `native` matmul (107 ms/token)
+  are both faster than Transformers' 0.21 s/token, a 28x and 45x speed-up over the old
+  path. The default `exact` mode (row-wise dequant plus F32 dot) is only 4x faster; its
+  custom op is memory/dispatch-bound.
+- Prefill: 448 s down to 81-93 s; the graph uses ggml attention in place of the scalar loops.
+- Vision: F32 copies give 2.1x, batching 1.17x and flash attention 1.36x, for 704 s down
+  to 212 s in total.
+- Not measured yet: `f32` matmul combined with vision F32, batching and flash. Adding the
+  stage times above suggests roughly 400 s, about Transformers parity. Run it next, then
+  A/B on more pages before any default flip.
+
 ## CUDA GPU audit, Kaggle Tesla T4 (1-2 November 2026, `feat/cuda-audit`)
 
 Same-binary CUDA (`--gpu-backend cuda`) vs CPU (`--gpu-backend cpu`,
