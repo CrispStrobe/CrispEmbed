@@ -608,6 +608,10 @@ target_link_libraries(test-easyocr-postprocess PRIVATE crispembed)
 add_executable(test-easyocr-pipeline tests/test_easyocr_pipeline.cpp)
 target_link_libraries(test-easyocr-pipeline PRIVATE crispembed)
 
+add_executable(test-easyocr-width-shrink tests/test_easyocr_width_shrink.cpp)
+target_include_directories(test-easyocr-width-shrink PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
+target_link_libraries(test-easyocr-width-shrink PRIVATE crispembed)
+
 add_executable(test-easyocr-craft-diff tests/test_easyocr_craft_diff.cpp)
 target_include_directories(test-easyocr-craft-diff PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
 target_link_libraries(test-easyocr-craft-diff PRIVATE crispembed)
