@@ -1,0 +1,307 @@
+{
+ "script_version": "cuda-audit-run-v1",
+ "jobs": {
+  "easyocr-fix.fox": {
+   "kind": "cmd",
+   "seconds": 22.9,
+   "precision": "f16",
+   "cuda": {
+    "rc": 0,
+    "wall": [
+     3.723
+    ],
+    "cuda_used": true,
+    "identical": true,
+    "cos": 1.0000000000000002,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cuda-legacy": {
+    "rc": 0,
+    "wall": [
+     0.917
+    ],
+    "cuda_used": true,
+    "identical": true,
+    "cos": 1.0000000000000002,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cuda-poison": {
+    "rc": 0,
+    "wall": [
+     0.866
+    ],
+    "cuda_used": true,
+    "identical": true,
+    "cos": 1.0000000000000002,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu-legacy": {
+    "rc": 0,
+    "wall": [
+     1.218
+    ],
+    "cuda_used": false,
+    "identical": false,
+    "cos": 0.9486957565917765,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 0,
+    "wall": [
+     1.268
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  },
+  "easyocr-fix.scan_strip": {
+   "kind": "cmd",
+   "seconds": 12.0,
+   "precision": "f16",
+   "cuda": {
+    "rc": 0,
+    "wall": [
+     1.819
+    ],
+    "cuda_used": true,
+    "identical": true,
+    "cos": 1.0000000000000002,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cuda-legacy": {
+    "rc": 0,
+    "wall": [
+     1.719
+    ],
+    "cuda_used": true,
+    "identical": true,
+    "cos": 1.0000000000000002,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cuda-poison": {
+    "rc": 0,
+    "wall": [
+     1.721
+    ],
+    "cuda_used": true,
+    "identical": true,
+    "cos": 1.0000000000000002,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu-legacy": {
+    "rc": 0,
+    "wall": [
+     3.125
+    ],
+    "cuda_used": false,
+    "identical": false,
+    "cos": 0.9998794022737758,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 0,
+    "wall": [
+     3.176
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  },
+  "easyocr-fix.scan_page_pd": {
+   "kind": "cmd",
+   "seconds": 31.7,
+   "precision": "f16",
+   "cuda": {
+    "rc": 0,
+    "wall": [
+     4.126
+    ],
+    "cuda_used": true,
+    "identical": true,
+    "cos": 1.0,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cuda-legacy": {
+    "rc": 0,
+    "wall": [
+     3.925
+    ],
+    "cuda_used": true,
+    "identical": true,
+    "cos": 1.0,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cuda-poison": {
+    "rc": 0,
+    "wall": [
+     4.026
+    ],
+    "cuda_used": true,
+    "identical": true,
+    "cos": 1.0,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu-legacy": {
+    "rc": 0,
+    "wall": [
+     9.499
+    ],
+    "cuda_used": false,
+    "identical": false,
+    "cos": 0.999885376405564,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 0,
+    "wall": [
+     9.595
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  },
+  "easyocr-width-shrink-default": {
+   "kind": "cmd",
+   "seconds": 5.1,
+   "precision": "f16",
+   "cuda": {
+    "rc": 0,
+    "wall": [
+     1.568
+    ],
+    "cuda_used": true,
+    "identical": false,
+    "cos": null,
+    "char_ratio": 0.978448275862069,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 0,
+    "wall": [
+     3.174
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  },
+  "easyocr-width-shrink-legacy": {
+   "kind": "cmd",
+   "seconds": 5.0,
+   "precision": "f16",
+   "cuda": {
+    "rc": 1,
+    "wall": [
+     1.618
+    ],
+    "cuda_used": true,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   },
+   "cpu": {
+    "rc": 1,
+    "wall": [
+     3.179
+    ],
+    "cuda_used": false,
+    "identical": null,
+    "cos": null,
+    "char_ratio": null,
+    "ocr": null,
+    "image": null,
+    "ref_cos": null
+   }
+  }
+ },
+ "commit": "43d055729b107320d95094932e83a71e457ab6f2",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "batch": "f",
+ "threads": 4,
+ "cpu_model": "Intel(R) Xeon(R) CPU @ 2.00GHz",
+ "date": "2026-11-02",
+ "phase": "done",
+ "updated": "2026-11-02T04:39:35Z",
+ "downloads": {
+  "easyocr": {
+   "seconds": 12.9,
+   "error": null,
+   "bytes": 7585568
+  },
+  "dbnet": {
+   "seconds": 1.2,
+   "error": null,
+   "bytes": 12960448
+  },
+  "fox-line1": {
+   "seconds": 0.0,
+   "error": null,
+   "bytes": 6787
+  },
+  "fox-line2": {
+   "seconds": 0.0,
+   "error": null,
+   "bytes": 6956
+  }
+ }
+}
