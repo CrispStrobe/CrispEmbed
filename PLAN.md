@@ -41,8 +41,17 @@ Source: `docs/gpu-support-matrix.md` §CUDA audit (branch `feat/cuda-audit`, Kag
   - A CUDA re-run of the new files.
   - The bge-m3 Q8_0 mix has a thin ColBERT margin (0.9726 vs 0.97).
   - A ColBERT-qualifying Q4_K recipe for BGE-M3 (all tried mixes 0.37-0.60).
-  - Re-measure the other XLM-R embedders (e5, arctic-l-v2, …) against HF after the
-    `CRISPEMBED_SPM_COLLAPSE_SPACES` tokenizer fix (A/B'd on bge-m3 only).
+  - Done ([A/B](tests/results/spm-collapse-ab/SUMMARY.md)): `CRISPEMBED_SPM_COLLAPSE_SPACES` checked on all
+    16 SentencePiece-encoder registry models; no regression, and the IDs match SentencePiece 76-77/77.
+  - BGE-M3 Q8_0 mix ColBERT is 0.9667 on CUDA (T4, cuda-audit run 7) vs 0.9718 on the CPU arm. It is below
+    0.97 on CUDA, so a wider F16 block range is needed before it qualifies there.
+- Pre-existing defects that are independent of the tokenizer switch
+  ([A/B notes](tests/results/spm-collapse-ab/SUMMARY.md)):
+  - Inputs over 512 tokens abort (`GGML_ASSERT` in get_rows) instead of truncating. Affected:
+    e5-base/large, granite-107m/278m, bge-reranker-base, xlmr-ner-hrl.
+  - bge-reranker-v2-m3 and bge-reranker-base scores differ from HF by up to 1.9 logits, and the order differs.
+  - The xlmr-ner-hrl GGUF has no Unigram scores (12/76 texts tokenize like HF).
+  - paraphrase-multilingual: native truncates at 512, sentence-transformers at 128.
 - Stage-diff references that fail on both arms: PP-OCRv6 small rec fox ref, PAN, HAT.
 - Not reached on CUDA: PP-LCNet, CRAFT, TexTeller/Pix2TeX, BERT-NER, LFM2.5-VL, LFM2
   encoder, Unlimited/DeepSeek-OCR2, Text-SR, SAFMN, face recognition, BiDirLM audio.
