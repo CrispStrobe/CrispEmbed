@@ -4,8 +4,12 @@ Source: `docs/gpu-support-matrix.md` §CUDA audit (branch `feat/cuda-audit`, Kag
 
 - EasyOCR page lane on **x86 CPU** drops lines that CUDA, Metal and the M1 CPU keep
   (fox 1/2, scan_strip 7/10 regions; empty text after a 704→576 canvas rebuild).
-  Diagnose with `CRISPEMBED_EASYOCR_DEBUG_REGIONS=1` on hosted x86 CPU (run-5 receipts
-  under `tests/results/gpu-audit/cuda-kaggle/`), fix, A/B against Python EasyOCR.
+  Run 5 isolated it: on x86 every region whose canvas is smaller than the previous
+  graph build returns empty text (conf 0), at -t 1 too; `EASYOCR_WIDTH_SORT=1` avoids it.
+  Next: on hosted x86 CPU, check whether an op reads unwritten gallocr memory after a
+  shrinking rebuild (e.g. zero the compute buffer after alloc as an A/B), fix the root cause,
+  then A/B against Python EasyOCR. Do not flip WIDTH_SORT as the fix (a second page still
+  shrinks).
 - Artifacts below their bar against F32 on both arms: republish/requantize
   `f2llm-v2-0.6b-q4_k-imatrix`, `clip-text-base-q4_k`; GOT-OCR2 F16 decodes
   `colorcolor…`; publish a bge-m3 GGUF converted with `--crisp` (sparse/ColBERT heads)

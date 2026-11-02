@@ -1,0 +1,73 @@
+{
+ "kind": "diff",
+ "binary": "test-easyocr-diff",
+ "arms": {
+  "cuda": {
+   "rc": 0,
+   "wall_s": 0.916,
+   "gpu_mem_peak_mib": 139,
+   "cuda_used": true,
+   "n_stages": 6,
+   "stages": {
+    "input_image": 0.9999978,
+    "features": 0.0,
+    "sequence_input": 0.9999925,
+    "bilstm_0": 0.9999904,
+    "bilstm_1": 0.9999939,
+    "logits": 0.9999964
+   },
+   "worst_stage": [
+    "features",
+    0.0
+   ],
+   "threshold_fails": [
+    [
+     "features",
+     0.0,
+     0.999
+    ]
+   ],
+   "threshold_missing": [],
+   "decoded": [
+    "over the lazy dog: 12345"
+   ],
+   "stdout_tail": "decoded=over the lazy dog: 12345\neasyocr-diff input_image      n=36864 max=0.0078432 mean=0.000119996 rms=0.000970126 cos=0.9999978 global=0.9999995 mine=183.741 ref=183.737 PASS\neasyocr-diff features         n=109824 max=0.0798144 mean=0.000581956 rms=0.00288099 cos=0.0000000 global=0.9999990 mine=658.339 ref=658.427 PASS\neasyocr-diff sequence_input   n=36608 max=0.0331736 mean=0.000545014 rms=0.00179576 cos=0.9999925 global=0.9999990 mine=248.449 ref=248.485 PASS\neasyocr-diff bilstm_0         n=36608 max=0.0131958 mean=0.000970282 rms=0.00137695 cos=0.9999904 global=0.9999988 mine=169.314 ref=169.323 PASS\neasyocr-diff bilstm_1         n=36608 max=0.0184156 mean=0.00171262 rms=0.00239878 cos=0.9999939 global=0.9999995 mine=445.003 ref=444.999 PASS\neasyocr-diff logits           n=13871 max=0.0521898 mean=0.00596446 rms=0.00798728 cos=0.9999964 global=0.9999998 mine=1648.85 ref=1648.66 PASS\n\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispembed_diff: loaded 26 tensors from $SCRATCH/models/easyocr-ref-line2-w576.gguf\ncrispembed_diff: loaded 26 tensors from $SCRATCH/models/easyocr-ref-line2-w576.gguf\n"
+  },
+  "cpu": {
+   "rc": 0,
+   "wall_s": 0.466,
+   "gpu_mem_peak_mib": 0,
+   "cuda_used": false,
+   "n_stages": 6,
+   "stages": {
+    "input_image": 0.9999978,
+    "features": 0.0,
+    "sequence_input": 0.9999925,
+    "bilstm_0": 0.9999904,
+    "bilstm_1": 0.9999938,
+    "logits": 0.9999963
+   },
+   "worst_stage": [
+    "features",
+    0.0
+   ],
+   "threshold_fails": [
+    [
+     "features",
+     0.0,
+     0.999
+    ]
+   ],
+   "threshold_missing": [],
+   "decoded": [
+    "over the lazy dog: 12345"
+   ],
+   "stdout_tail": "decoded=over the lazy dog: 12345\neasyocr-diff input_image      n=36864 max=0.0078432 mean=0.000119996 rms=0.000970126 cos=0.9999978 global=0.9999995 mine=183.741 ref=183.737 PASS\neasyocr-diff features         n=109824 max=0.0798156 mean=0.000581956 rms=0.002881 cos=0.0000000 global=0.9999990 mine=658.339 ref=658.427 PASS\neasyocr-diff sequence_input   n=36608 max=0.0331738 mean=0.000545014 rms=0.00179577 cos=0.9999925 global=0.9999990 mine=248.449 ref=248.485 PASS\neasyocr-diff bilstm_0         n=36608 max=0.01327 mean=0.000948138 rms=0.0013521 cos=0.9999904 global=0.9999988 mine=169.316 ref=169.323 PASS\neasyocr-diff bilstm_1         n=36608 max=0.0180168 mean=0.00166685 rms=0.00235196 cos=0.9999938 global=0.9999995 mine=445.004 ref=444.999 PASS\neasyocr-diff logits           n=13871 max=0.0501881 mean=0.00576784 rms=0.00773823 cos=0.9999963 global=0.9999999 mine=1648.82 ref=1648.66 PASS\n\nggml_cuda_init: failed to initialize CUDA: no CUDA-capable device is detected\ncrispembed_diff: loaded 26 tensors from $SCRATCH/models/easyocr-ref-line2-w576.gguf\ncrispembed_diff: loaded 26 tensors from $SCRATCH/models/easyocr-ref-line2-w576.gguf\n"
+  }
+ },
+ "seconds": 25.9,
+ "id": "diff-easyocr-line2-w576",
+ "commit": "ccb532040c6b8610e9c7e9f10c1b5ee525f4cf87",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-02"
+}

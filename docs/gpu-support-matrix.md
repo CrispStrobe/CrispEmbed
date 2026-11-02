@@ -260,8 +260,12 @@ true default arm (no env) ran on the GPU, and `=0` was byte-identical to the CPU
 - **EasyOCR, x86 CPU drops lines.** On the Kaggle x86 CPU arm the page lane
   returns 1/2 regions on fox and 7/10 on scan_strip. CUDA, Metal and an M1 CPU
   build all return the full text. The recognizer itself matches Python on both
-  arms (logits 0.99998-0.99999 at widths 200/540/610, R4). The dropped line comes
-  back as empty text after a width rebuild (canvas 704 → 576); see R5.
+  arms (logits 0.99998-0.99999 at widths 200/540/610, R4). R5 pins it down: on
+  x86 CPU, every region whose canvas is **smaller than the previous build**
+  (704→576, 1024→960, 960→576, 896→640) decodes to empty text with confidence 0,
+  at `-t 4` and `-t 1`; `EASYOCR_WIDTH_SORT=1` (canvas only grows) recovers every
+  region. This is an x86 CPU defect in the EasyOCR shrink-rebuild path, not a CUDA
+  one, and it is left open (PLAN).
 - **GOT-OCR2 F16 artifact** decodes `colorcolor…` on both arms; q4_k/q8_0 are correct.
 - **Artifacts below their bar against F32 on both arms**: f2llm-v2-0.6b-q4_k-imatrix
   (0.78/0.79), clip-text-base-q4_k (0.933/0.925), and the bge-m3 q8_0 we quantized
