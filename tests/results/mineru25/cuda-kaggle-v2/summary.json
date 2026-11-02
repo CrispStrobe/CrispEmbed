@@ -84,8 +84,8 @@
    }
   },
   {
-   "receipt": "q4_k-df16-gpu-forced.json",
-   "precision": "q4_k-df16",
+   "receipt": "q8_0-vision-f16-decoder-gpu-forced.json",
+   "precision": "q8_0-vision-f16-decoder",
    "device": "gpu",
    "label": "forced",
    "extra_env": {},
@@ -108,8 +108,8 @@
    }
   },
   {
-   "receipt": "q4_k-df16-gpu.json",
-   "precision": "q4_k-df16",
+   "receipt": "q8_0-vision-f16-decoder-gpu.json",
+   "precision": "q8_0-vision-f16-decoder",
    "device": "gpu",
    "label": "",
    "extra_env": {},
@@ -144,8 +144,8 @@
    "cosine_reference": "f32-cpu"
   },
   {
-   "receipt": "q4_k-dq8-gpu-forced.json",
-   "precision": "q4_k-dq8",
+   "receipt": "q8_0-all-gpu-forced.json",
+   "precision": "q8_0-all",
    "device": "gpu",
    "label": "forced",
    "extra_env": {},
@@ -168,8 +168,8 @@
    }
   },
   {
-   "receipt": "q4_k-dq8-gpu.json",
-   "precision": "q4_k-dq8",
+   "receipt": "q8_0-all-gpu.json",
+   "precision": "q8_0-all",
    "device": "gpu",
    "label": "",
    "extra_env": {},
@@ -384,5 +384,10 @@
    "cosine_bar_pass": false,
    "cosine_reference": "f32-cpu"
   }
- ]
+ ],
+ "renamed_from": {
+  "q4_k-dq8": "q8_0-all",
+  "q4_k-df16": "q8_0-vision-f16-decoder"
+ },
+ "rename_note": "2026-11-02: these Kaggle/hosted MinerU recipes ('q4_k --tensor-type l.*=q8_0' and 'q4_k --decoder-f16') contain no Q4_K tensor (vision floored at Q8_0, decoder+embeddings Q8_0 or F16), so their labels were renamed; measured values are unchanged. GGUF/scratch file names recorded inside predate the rename."
 }

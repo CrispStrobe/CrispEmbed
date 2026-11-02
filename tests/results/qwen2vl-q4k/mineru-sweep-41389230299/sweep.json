@@ -1,0 +1,161 @@
+{
+ "schema": "crispembed.qwen2vl.q4k-sweep.v1",
+ "model": "mineru",
+ "bar": 0.94,
+ "recipes": [
+  {
+   "recipe": "ak",
+   "file_bytes": 1329567744,
+   "final_cos_min": 0.9970101634919596,
+   "worst_case": "japanese",
+   "complete": true,
+   "per_case": {
+    "arabic": 0.999930825199584,
+    "formula": 0.9995838655967224,
+    "german": 0.9971328162351812,
+    "japanese": 0.9970101634919596,
+    "layout-page": 0.999460442653462,
+    "layout-rot90": 0.9994482998906198,
+    "receipt": 0.9977397335295694,
+    "table": 0.9991004280697704
+   },
+   "worst_stage": {
+    "case": "german",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.275935962390142
+   }
+  },
+  {
+   "recipe": "ao",
+   "file_bytes": 1321310208,
+   "final_cos_min": 0.9970832193829772,
+   "worst_case": "german",
+   "complete": true,
+   "per_case": {
+    "arabic": 0.9998974801236283,
+    "formula": 0.9988221060813716,
+    "german": 0.9970832193829772,
+    "japanese": 0.9977447326116203,
+    "layout-page": 0.9991968985592818,
+    "layout-rot90": 0.9994863314043817,
+    "receipt": 0.9981574138504705,
+    "table": 0.9987122266892003
+   },
+   "worst_stage": {
+    "case": "german",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.27773802782805374
+   }
+  },
+  {
+   "recipe": "aq",
+   "file_bytes": 1321310208,
+   "final_cos_min": 0.9969922291557843,
+   "worst_case": "german",
+   "complete": true,
+   "per_case": {
+    "arabic": 0.9999371384131716,
+    "formula": 0.9985403097907602,
+    "german": 0.9969922291557843,
+    "japanese": 0.9990731090367256,
+    "layout-page": 0.9994410742970917,
+    "layout-rot90": 0.9993787815133959,
+    "receipt": 0.9992651019888923,
+    "table": 0.9989622036595526
+   },
+   "worst_stage": {
+    "case": "german",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.2757782857963003
+   }
+  },
+  {
+   "recipe": "av",
+   "file_bytes": 1329567744,
+   "final_cos_min": 0.9935768119053103,
+   "worst_case": "japanese",
+   "complete": true,
+   "per_case": {
+    "arabic": 0.9996905658369512,
+    "formula": 0.9979747272930052,
+    "german": 0.9964905418551503,
+    "japanese": 0.9935768119053103,
+    "layout-page": 0.9979365250843822,
+    "layout-rot90": 0.9990082942383692,
+    "receipt": 0.9980309677654153,
+    "table": 0.9980844323900616
+   },
+   "worst_stage": {
+    "case": "german",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.28081468882651084
+   }
+  },
+  {
+   "recipe": "fg",
+   "file_bytes": 1278646272,
+   "final_cos_min": 0.990730567212433,
+   "worst_case": "japanese",
+   "complete": true,
+   "per_case": {
+    "arabic": 0.9998627064360088,
+    "formula": 0.9981314986204519,
+    "german": 0.9950674878129372,
+    "japanese": 0.990730567212433,
+    "layout-page": 0.9993810355385185,
+    "layout-rot90": 0.9984392827982372,
+    "receipt": 0.9980724612640708,
+    "table": 0.9987956321852587
+   },
+   "worst_stage": {
+    "case": "german",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.2783930216844569
+   }
+  },
+  {
+   "recipe": "fu",
+   "file_bytes": 1278646272,
+   "final_cos_min": 0.9943954072977201,
+   "worst_case": "japanese",
+   "complete": true,
+   "per_case": {
+    "arabic": 0.9998746411414673,
+    "formula": 0.9984272670297922,
+    "german": 0.9975668718875642,
+    "japanese": 0.9943954072977201,
+    "layout-page": 0.9987529498824987,
+    "layout-rot90": 0.9986175146699089,
+    "receipt": 0.996459673244365,
+    "table": 0.9986737017665601
+   },
+   "worst_stage": {
+    "case": "german",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.2742437871455661
+   }
+  },
+  {
+   "recipe": "q8",
+   "file_bytes": 1330944000,
+   "final_cos_min": 0.9970499206743079,
+   "worst_case": "japanese",
+   "complete": true,
+   "per_case": {
+    "arabic": 0.9999555059799567,
+    "formula": 0.9993603558389587,
+    "german": 0.998718485078261,
+    "japanese": 0.9970499206743079,
+    "layout-page": 0.9997600878114584,
+    "layout-rot90": 0.9995897714963906,
+    "receipt": 0.9992446605165448,
+    "table": 0.9994150559535407
+   },
+   "worst_stage": {
+    "case": "german",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.2759526490164451
+   }
+  }
+ ]
+}

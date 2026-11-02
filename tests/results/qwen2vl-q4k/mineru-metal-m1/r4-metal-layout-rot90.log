@@ -1,0 +1,208 @@
+qwen2vl_ocr: loading /private/tmp/claude-501/-Volumes-backups-code-CrispEmbed-local-20261002/87831b54-c6d5-40a5-92b1-785b2ec5b73d/scratchpad/mexp/heavy-41438207161/mineru-r4.gguf
+  vision: 32 layers, 1280d, 16 heads, patch=14, merge=2
+  llm: 24 layers, 896d, 14/2 heads, inter=4864
+crispasr_metal_pipeline_cache_open: pipeline cache loaded — /Users/christianstrobele/Library/Caches/ggml-metal/Apple_M1.archive
+ggml_metal_device_init: tensor API disabled for pre-M5 and pre-A19 devices
+ggml_metal_library_init: using embedded metal library
+ggml_metal_library_init: loaded in 0.048 sec
+ggml_metal_device_init: GPU name:   MTL0 (Apple M1)
+ggml_metal_device_init: GPU family: MTLGPUFamilyApple7  (1007)
+ggml_metal_device_init: GPU family: MTLGPUFamilyCommon3 (3003)
+ggml_metal_device_init: GPU family: MTLGPUFamilyMetal4  (5002)
+ggml_metal_device_init: simdgroup reduction   = true
+ggml_metal_device_init: simdgroup matrix mul. = true
+ggml_metal_device_init: has unified memory    = true
+ggml_metal_device_init: has bfloat            = true
+ggml_metal_device_init: has tensor            = false
+ggml_metal_device_init: use residency sets    = false
+ggml_metal_device_init: use shared buffers    = true
+ggml_metal_device_init: recommendedMaxWorkingSetSize  = 12713.12 MB
+ggml_metal_init: allocating
+ggml_metal_init: found device: Apple M1
+ggml_metal_init: picking default device: Apple M1
+ggml_metal_init: use fusion         = true
+ggml_metal_init: use concurrency    = true
+ggml_metal_init: use graph optimize = true
+  vision variant: Qwen2-VL (LayerNorm, GELU fc1/fc2)
+qwen2vl_ocr: loaded successfully
+qwen2vl_ocr: loaded BPE tokenizer (151674 tokens, 151387 merges)
+qwen2vl_ocr: detected qwen2vl architecture, using OCR prompt
+qwen2vl_ocr: prompt tokenized to 4 tokens
+qwen2vl_ocr: 1036x1036 → 1036x1036, 5476 patches (74x74)
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_f32_f32_hp', name = 'kernel_mul_mm_f32_f32_hp_bci=1_bco=1_ne12=1_ne13=1_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_f32_f32_hp_bci=1_bco=1_ne12=1_ne13=1_r2=1_r3=1      0x1033de610 | th_max =  576 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_norm_mul_add_f32_4', name = 'kernel_norm_mul_add_f32_4'
+ggml_metal_library_compile_pipeline: loaded kernel_norm_mul_add_f32_4                     0x1033df210 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_q4_K_f32_hp', name = 'kernel_mul_mm_q4_K_f32_hp_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_q4_K_f32_hp_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1      0x1033dfed0 | th_max =  576 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32_4', name = 'kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=0_cb=0'
+ggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=0_cb=0      0x1033e09d0 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_cpy_f32_f32', name = 'kernel_cpy_f32_f32'
+ggml_metal_library_compile_pipeline: loaded kernel_cpy_f32_f32                            0x1033e0cd0 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32_4', name = 'kernel_bin_fuse_f32_f32_f32_4_op=2_nf=1_rb=0_cb=0'
+ggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_4_op=2_nf=1_rb=0_cb=0      0x1033e12d0 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32_4', name = 'kernel_unary_f32_f32_4_op=10_cnt=0'
+ggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_4_op=10_cnt=0            0x1033e18d0 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_concat_f32', name = 'kernel_concat_f32'
+ggml_metal_library_compile_pipeline: loaded kernel_concat_f32                             0x85c95c000 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_pad', name = 'kernel_flash_attn_ext_pad_mask=0_ncpsg=64'
+ggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_pad_mask=0_ncpsg=64      0x85c95c300 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_f32_dk80_dv80', name = 'kernel_flash_attn_ext_f32_dk80_dv80_mask=0_sinks=0_bias=0_scap=0_kvpad=1_bcm=0_ns10=80_ns20=80_nsg=4'
+ggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_f32_dk80_dv80_mask=0_sinks=0_bias=0_scap=0_kvpad=1_bcm=0_ns10=80_ns20=80_nsg=4      0x85c95c600 | th_max =  576 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32_4', name = 'kernel_unary_f32_f32_4_op=102_cnt=0'
+ggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_4_op=102_cnt=0           0x85c95c900 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_f32_f32_hp', name = 'kernel_mul_mm_f32_f32_hp_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_f32_f32_hp_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1      0x85c95cc00 | th_max =  640 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32_4', name = 'kernel_unary_f32_f32_4_op=104_cnt=0'
+ggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_4_op=104_cnt=0           0x85c95cf00 | th_max = 1024 | th_width =   32
+  backend KV cache: 24 layers, max_seq=3442, 80.7 MB
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_get_rows_iq4_nl', name = 'kernel_get_rows_iq4_nl'
+ggml_metal_library_compile_pipeline: loaded kernel_get_rows_iq4_nl                        0x85c95d200 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32', name = 'kernel_bin_fuse_f32_f32_f32_op=2_nf=1_rb=0_cb=1'
+ggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_op=2_nf=1_rb=0_cb=1      0x85c95d500 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_rms_norm_mul_f32_4', name = 'kernel_rms_norm_mul_f32_4'
+ggml_metal_library_compile_pipeline: loaded kernel_rms_norm_mul_f32_4                     0x85c95d800 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_iq4_nl_f32', name = 'kernel_mul_mm_iq4_nl_f32_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_iq4_nl_f32_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1      0x85c95db00 | th_max =  832 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_rope_multi_f32', name = 'kernel_rope_multi_f32_imrope=0_is_back=0'
+ggml_metal_library_compile_pipeline: loaded kernel_rope_multi_f32_imrope=0_is_back=0      0x85c95de00 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_pad', name = 'kernel_flash_attn_ext_pad_mask=1_ncpsg=64'
+ggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_pad_mask=1_ncpsg=64      0x85c95e100 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_blk', name = 'kernel_flash_attn_ext_blk_nqptg=8_ncpsg=64'
+ggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_blk_nqptg=8_ncpsg=64      0x85c95e400 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_f32_dk64_dv64', name = 'kernel_flash_attn_ext_f32_dk64_dv64_mask=1_sinks=0_bias=0_scap=0_kvpad=1_bcm=1_ns10=64_ns20=64_nsg=4'
+ggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_f32_dk64_dv64_mask=1_sinks=0_bias=0_scap=0_kvpad=1_bcm=1_ns10=64_ns20=64_nsg=4      0x85c95e700 | th_max =  640 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32_4', name = 'kernel_unary_f32_f32_4_op=106_cnt=0'
+ggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_4_op=106_cnt=0           0x85c95ea00 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_q8_0_f32_hp', name = 'kernel_mul_mm_q8_0_f32_hp_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_q8_0_f32_hp_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1      0x85c95ed00 | th_max =  576 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mv_iq4_nl_f32', name = 'kernel_mul_mv_iq4_nl_f32_nsg=2_ne12=1_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mv_iq4_nl_f32_nsg=2_ne12=1_r2=1_r3=1      0x85c95f000 | th_max = 1024 | th_width =   32
+  gen[0]: token=151648 score=26.22 (prefill)
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32_4', name = 'kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=1_cb=0'
+ggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=1_cb=0      0x85c95f300 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_pad', name = 'kernel_flash_attn_ext_pad_mask=1_ncpsg=32'
+ggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_pad_mask=1_ncpsg=32      0x85c95f600 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_vec_f32_dk64_dv64', name = 'kernel_flash_attn_ext_vec_f32_dk64_dv64_mask=1_sink=0_bias=0_scap=0_kvpad=1_ns10=128_ns20=128_nsg=2_nwg=32'
+ggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_vec_f32_dk64_dv64_mask=1_sink=0_bias=0_scap=0_kvpad=1_ns10=128_ns20=128_nsg=2_nwg=32      0x85c95f900 | th_max =  448 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_vec_reduce', name = 'kernel_flash_attn_ext_vec_reduce_dv=64_nwg=32'
+ggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_vec_reduce_dv=64_nwg=32      0x85c95fc00 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32_4', name = 'kernel_unary_f32_f32_4_op=106_cnt=1'
+ggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_4_op=106_cnt=1           0x85c988000 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32_4', name = 'kernel_bin_fuse_f32_f32_f32_4_op=2_nf=1_rb=1_cb=0'
+ggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_4_op=2_nf=1_rb=1_cb=0      0x85c988300 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mv_q4_K_f32', name = 'kernel_mul_mv_q4_K_f32_nsg=2_ne12=1_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mv_q4_K_f32_nsg=2_ne12=1_r2=1_r3=1      0x85c988600 | th_max =  768 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mv_q8_0_f32', name = 'kernel_mul_mv_q8_0_f32_nsg=4_ne12=1_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mv_q8_0_f32_nsg=4_ne12=1_r2=1_r3=1      0x85c988900 | th_max = 1024 | th_width =   32
+  gen[1]: token=15 score=17.88 (cached)
+  gen[2]: token=15 score=16.82 (cached)
+  gen[3]: token=15 score=15.90 (cached)
+  gen[4]: token=220 score=29.98 (cached)
+  gen[5]: token=15 score=22.60 (cached)
+  gen[6]: token=21 score=19.01 (cached)
+  gen[7]: token=23 score=17.43 (cached)
+  gen[8]: token=220 score=32.75 (cached)
+  gen[9]: token=24 score=20.85 (cached)
+  gen[10]: token=24 score=22.65 (cached)
+  gen[11]: token=24 score=18.82 (cached)
+  gen[12]: token=220 score=32.30 (cached)
+  gen[13]: token=23 score=19.55 (cached)
+  gen[14]: token=23 score=18.05 (cached)
+  gen[15]: token=16 score=17.33 (cached)
+  gen[16]: token=151649 score=48.99 (cached)
+  gen[17]: token=151657 score=25.95 (cached)
+  gen[18]: token=1805 score=20.71 (cached)
+  gen[19]: token=151658 score=22.14 (cached)
+  gen[20]: token=151671 score=20.40 (cached)
+  gen[21]: token=198 score=20.46 (cached)
+  gen[22]: token=151648 score=32.58 (cached)
+  gen[23]: token=15 score=18.85 (cached)
+  gen[24]: token=19 score=17.62 (cached)
+  gen[25]: token=16 score=17.12 (cached)
+  gen[26]: token=220 score=36.60 (cached)
+  gen[27]: token=22 score=21.18 (cached)
+  gen[28]: token=17 score=23.06 (cached)
+  gen[29]: token=18 score=16.86 (cached)
+  gen[30]: token=220 score=29.77 (cached)
+  gen[31]: token=16 score=25.89 (cached)
+  gen[32]: token=17 score=24.76 (cached)
+  gen[33]: token=21 score=19.24 (cached)
+  gen[34]: token=220 score=28.62 (cached)
+  gen[35]: token=23 score=30.58 (cached)
+  gen[36]: token=18 score=21.89 (cached)
+  gen[37]: token=15 score=19.96 (cached)
+  gen[38]: token=151649 score=38.81 (cached)
+  gen[39]: token=151657 score=25.46 (cached)
+  gen[40]: token=1805 score=17.17 (cached)
+  gen[41]: token=151658 score=21.06 (cached)
+  gen[42]: token=151671 score=22.11 (cached)
+  gen[43]: token=151645 score=18.75 (cached)
+qwen2vl_ocr: prompt tokenized to 4 tokens
+qwen2vl_ocr: 1036x1036 → 1036x1036, 5476 patches (74x74)
+  backend KV cache: 24 layers, max_seq=1438, 33.7 MB
+  gen[0]: token=151648 score=26.22 (prefill)
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_vec_f32_dk64_dv64', name = 'kernel_flash_attn_ext_vec_f32_dk64_dv64_mask=1_sink=0_bias=0_scap=0_kvpad=1_ns10=128_ns20=128_nsg=1_nwg=32'
+ggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_vec_f32_dk64_dv64_mask=1_sink=0_bias=0_scap=0_kvpad=1_ns10=128_ns20=128_nsg=1_nwg=32      0x85c988c00 | th_max =  448 | th_width =   32
+  gen[1]: token=15 score=17.88 (cached)
+  gen[2]: token=15 score=16.82 (cached)
+  gen[3]: token=15 score=15.90 (cached)
+  gen[4]: token=220 score=29.98 (cached)
+  gen[5]: token=15 score=22.60 (cached)
+  gen[6]: token=21 score=19.01 (cached)
+  gen[7]: token=23 score=17.43 (cached)
+  gen[8]: token=220 score=32.75 (cached)
+  gen[9]: token=24 score=20.85 (cached)
+  gen[10]: token=24 score=22.65 (cached)
+  gen[11]: token=24 score=18.82 (cached)
+  gen[12]: token=220 score=32.30 (cached)
+  gen[13]: token=23 score=19.55 (cached)
+  gen[14]: token=23 score=18.05 (cached)
+  gen[15]: token=16 score=17.33 (cached)
+  gen[16]: token=151649 score=48.99 (cached)
+  gen[17]: token=151657 score=25.95 (cached)
+  gen[18]: token=1805 score=20.71 (cached)
+  gen[19]: token=151658 score=22.14 (cached)
+  gen[20]: token=151671 score=20.40 (cached)
+  gen[21]: token=198 score=20.46 (cached)
+  gen[22]: token=151648 score=32.58 (cached)
+  gen[23]: token=15 score=18.85 (cached)
+  gen[24]: token=19 score=17.62 (cached)
+  gen[25]: token=16 score=17.12 (cached)
+  gen[26]: token=220 score=36.60 (cached)
+  gen[27]: token=22 score=21.18 (cached)
+  gen[28]: token=17 score=23.06 (cached)
+  gen[29]: token=18 score=16.86 (cached)
+  gen[30]: token=220 score=29.77 (cached)
+  gen[31]: token=16 score=25.89 (cached)
+  gen[32]: token=17 score=24.76 (cached)
+  gen[33]: token=21 score=19.24 (cached)
+  gen[34]: token=220 score=28.62 (cached)
+  gen[35]: token=23 score=30.58 (cached)
+  gen[36]: token=18 score=21.89 (cached)
+  gen[37]: token=15 score=19.96 (cached)
+  gen[38]: token=151649 score=38.82 (cached)
+  gen[39]: token=151657 score=25.46 (cached)
+  gen[40]: token=1805 score=17.17 (cached)
+  gen[41]: token=151658 score=21.06 (cached)
+  gen[42]: token=151671 score=22.11 (cached)
+  gen[43]: token=151645 score=18.75 (cached)
+ggml_metal_free: deallocating
+       99.75 real         1.30 user         0.73 sys
+          1681260544  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+              138449  page reclaims
+                  10  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                  52  voluntary context switches
+                9876  involuntary context switches
+          6996816950  instructions retired
+          2952314852  cycles elapsed
+          1150177408  peak memory footprint

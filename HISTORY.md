@@ -74,6 +74,27 @@
   registry entries are now described as dense-only.
 - Evidence and negative results: [below-bar summary](tests/results/below-bar/SUMMARY.md).
 
+## 2 November 2026 — TeleOCR / MinerU2.5-Pro Q4_K-class recipes (feat/qwen2vl-q4k-recipes)
+
+- Sensitivity sweep from the Q8_0 baseline (hosted CPU, teacher-forced final-logit
+  cosine, 41 single-group recipes, runs 41389222500-41389234920): TeleOCR's decoder is
+  the sensitive part (ffn_down alone 0.915, layers 4-23 0.906), vision attention
+  cannot take Q4_K/Q5_K (0.911/0.917, table case), vision FFN and embedding can.
+  MinerU tolerates 4-bit nearly everywhere; its old "plain Q4_K" was mostly Q4_0
+  (896-wide rows), 0.910 -> 0.975 with IQ4_NL at the same size.
+- Initial failures retained: all six first lanes (41387288987 ff.) ran with a mangled
+  argument (zsh word splitting) and quantized nothing; one round-2 dispatch ran stale
+  code after a failed push and was cancelled.
+- Imatrix (opt-in collection added to qwen2vl_ocr, six non-test calibration pages)
+  made every passing recipe worse; not used.
+- Winners, named opt-in quantizer policies (`CRISPEMBED_QUANTIZE_QWEN2VL_POLICY`):
+  `teleocr_q4k_v1` 1,140 MiB (Q8_0 2,015; Q4_K_M 1,834), final cos min CPU 0.9677 /
+  Metal 0.9677 / CUDA T4 0.9570, decoded 5/6 (table@35); `mineru_q4k_v1` 734 MiB
+  (Q8_0 1,832), CPU 0.9673 (0.9521 on another runner) / Metal 0.9602 / CUDA 0.9611,
+  decoded 6/8 (german@7, layout-page). Receipts `tests/results/qwen2vl-q4k/`.
+- MinerU "q4_k-dq8"/"q4_k-df16" receipts renamed to `q8_0-all` /
+  `q8_0-vision-f16-decoder`; values unchanged.
+
 ## 2 November 2026 — OCR quality contract: stale source pins recorded and re-pinned (fix/ocr-quality-contract-pins)
 
 - Initial failure retained: the OCR quality contract failed in runs 41416111941 and
@@ -351,7 +372,8 @@ Markdown identical to its CPU receipts. Precision-policy re-score (teacher-
 forced logits at every generated position) on CPU, Metal and CUDA: F16/Q8_0
 pass everywhere; every recipe with Q4_K decoder tensors fails 0.94 on all
 three devices with near-identical scores, so the limit is precision, not
-runtime; MinerU's "q4_k-dq8"/"q4_k-df16" recipes pass but contain no Q4_K
+runtime; MinerU's "q4_k-dq8"/"q4_k-df16" (renamed `q8_0-all` / `q8_0-vision-f16-decoder` on
+2 November) recipes pass but contain no Q4_K
 tensor. MinerU layout-page token 180 is a 0.024-logit near-tie. Initial
 failures kept: Kaggle v1 (no `/usr/bin/time`), Kaggle v2 TeleOCR dump
 collision, a shared-scratch cleanup that removed one TeleOCR Q4_K dump set.

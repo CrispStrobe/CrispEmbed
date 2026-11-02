@@ -1,0 +1,445 @@
+qwen2vl_ocr: loading /private/tmp/claude-501/-Volumes-backups-code-CrispEmbed-local-20261002/87831b54-c6d5-40a5-92b1-785b2ec5b73d/scratchpad/texp/heavy-41440008347/teleocr-r9.gguf
+  vision: 32 layers, 1280d, 16 heads, patch=14, merge=2
+  llm: 28 layers, 1024d, 16/8 heads, inter=3072
+crispasr_metal_pipeline_cache_open: pipeline cache loaded — /Users/christianstrobele/Library/Caches/ggml-metal/Apple_M1.archive
+ggml_metal_device_init: tensor API disabled for pre-M5 and pre-A19 devices
+ggml_metal_library_init: using embedded metal library
+ggml_metal_library_init: loaded in 0.035 sec
+ggml_metal_device_init: GPU name:   MTL0 (Apple M1)
+ggml_metal_device_init: GPU family: MTLGPUFamilyApple7  (1007)
+ggml_metal_device_init: GPU family: MTLGPUFamilyCommon3 (3003)
+ggml_metal_device_init: GPU family: MTLGPUFamilyMetal4  (5002)
+ggml_metal_device_init: simdgroup reduction   = true
+ggml_metal_device_init: simdgroup matrix mul. = true
+ggml_metal_device_init: has unified memory    = true
+ggml_metal_device_init: has bfloat            = true
+ggml_metal_device_init: has tensor            = false
+ggml_metal_device_init: use residency sets    = false
+ggml_metal_device_init: use shared buffers    = true
+ggml_metal_device_init: recommendedMaxWorkingSetSize  = 12713.12 MB
+ggml_metal_init: allocating
+ggml_metal_init: found device: Apple M1
+ggml_metal_init: picking default device: Apple M1
+ggml_metal_init: use fusion         = true
+ggml_metal_init: use concurrency    = true
+ggml_metal_init: use graph optimize = true
+  vision variant: Qwen2.5-VL (RMSNorm, SwiGLU)
+qwen2vl_ocr: loaded successfully
+qwen2vl_ocr: loaded BPE tokenizer (151936 tokens, 151387 merges)
+qwen2vl_ocr: 824x435 → 812x448, 1856 patches (32x58)
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_f16_f32_hp', name = 'kernel_mul_mm_f16_f32_hp_bci=1_bco=0_ne12=1_ne13=1_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_f16_f32_hp_bci=1_bco=0_ne12=1_ne13=1_r2=1_r3=1      0x1054693c0 | th_max =  640 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_get_rows_f32', name = 'kernel_get_rows_f32'
+ggml_metal_library_compile_pipeline: loaded kernel_get_rows_f32                           0x105469bc0 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_rms_norm_mul_f32_4', name = 'kernel_rms_norm_mul_f32_4'
+ggml_metal_library_compile_pipeline: loaded kernel_rms_norm_mul_f32_4                     0x10546b980 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_q6_K_f32_hp', name = 'kernel_mul_mm_q6_K_f32_hp_bci=0_bco=0_ne12=1_ne13=1_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_q6_K_f32_hp_bci=0_bco=0_ne12=1_ne13=1_r2=1_r3=1      0x105436790 | th_max =  640 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32_4', name = 'kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=0_cb=0'
+ggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=0_cb=0      0x105436d90 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_cpy_f32_f32', name = 'kernel_cpy_f32_f32'
+ggml_metal_library_compile_pipeline: loaded kernel_cpy_f32_f32                            0x105437090 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32_4', name = 'kernel_bin_fuse_f32_f32_f32_4_op=2_nf=1_rb=0_cb=0'
+ggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_4_op=2_nf=1_rb=0_cb=0      0x105437690 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32_4', name = 'kernel_unary_f32_f32_4_op=10_cnt=0'
+ggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_4_op=10_cnt=0            0x84498c000 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_concat_f32', name = 'kernel_concat_f32'
+ggml_metal_library_compile_pipeline: loaded kernel_concat_f32                             0x84498c300 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_pad', name = 'kernel_flash_attn_ext_pad_mask=0_ncpsg=64'
+ggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_pad_mask=0_ncpsg=64      0x84498c600 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_f32_dk80_dv80', name = 'kernel_flash_attn_ext_f32_dk80_dv80_mask=0_sinks=0_bias=0_scap=0_kvpad=1_bcm=0_ns10=80_ns20=80_nsg=4'
+ggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_f32_dk80_dv80_mask=0_sinks=0_bias=0_scap=0_kvpad=1_bcm=0_ns10=80_ns20=80_nsg=4      0x84498c900 | th_max =  576 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_f32_dk80_dv80', name = 'kernel_flash_attn_ext_f32_dk80_dv80_mask=0_sinks=0_bias=0_scap=0_kvpad=0_bcm=0_ns10=80_ns20=80_nsg=4'
+ggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_f32_dk80_dv80_mask=0_sinks=0_bias=0_scap=0_kvpad=0_bcm=0_ns10=80_ns20=80_nsg=4      0x84498cc00 | th_max =  576 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_q4_K_f32_hp', name = 'kernel_mul_mm_q4_K_f32_hp_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_q4_K_f32_hp_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1      0x84498cf00 | th_max =  576 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32_4', name = 'kernel_unary_f32_f32_4_op=106_cnt=0'
+ggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_4_op=106_cnt=0           0x84498d200 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_f16_f32_hp', name = 'kernel_mul_mm_f16_f32_hp_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_f16_f32_hp_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1      0x84498d500 | th_max =  640 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32_4', name = 'kernel_unary_f32_f32_4_op=104_cnt=0'
+ggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_4_op=104_cnt=0           0x84498d800 | th_max = 1024 | th_width =   32
+  backend KV cache: 28 layers, max_seq=1524, 333.4 MB
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_get_rows_q4_K', name = 'kernel_get_rows_q4_K'
+ggml_metal_library_compile_pipeline: loaded kernel_get_rows_q4_K                          0x84498db00 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32', name = 'kernel_bin_fuse_f32_f32_f32_op=2_nf=1_rb=0_cb=1'
+ggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_op=2_nf=1_rb=0_cb=1      0x84498de00 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mm_q8_0_f32_hp', name = 'kernel_mul_mm_q8_0_f32_hp_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mm_q8_0_f32_hp_bci=0_bco=1_ne12=1_ne13=1_r2=1_r3=1      0x84498e100 | th_max =  576 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_rope_multi_f32', name = 'kernel_rope_multi_f32_imrope=0_is_back=0'
+ggml_metal_library_compile_pipeline: loaded kernel_rope_multi_f32_imrope=0_is_back=0      0x84498e400 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_pad', name = 'kernel_flash_attn_ext_pad_mask=1_ncpsg=64'
+ggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_pad_mask=1_ncpsg=64      0x84498e700 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_blk', name = 'kernel_flash_attn_ext_blk_nqptg=8_ncpsg=64'
+ggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_blk_nqptg=8_ncpsg=64      0x84498ea00 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_f32_dk128_dv128', name = 'kernel_flash_attn_ext_f32_dk128_dv128_mask=1_sinks=0_bias=0_scap=0_kvpad=1_bcm=1_ns10=128_ns20=128_nsg=4'
+ggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_f32_dk128_dv128_mask=1_sinks=0_bias=0_scap=0_kvpad=1_bcm=1_ns10=128_ns20=128_nsg=4      0x84498ed00 | th_max =  512 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mv_q4_K_f32', name = 'kernel_mul_mv_q4_K_f32_nsg=2_ne12=1_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mv_q4_K_f32_nsg=2_ne12=1_r2=1_r3=1      0x84498f000 | th_max =  768 | th_width =   32
+  gen[0]: token=14085 score=45.06 (prefill)
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_mul_mv_q8_0_f32', name = 'kernel_mul_mv_q8_0_f32_nsg=4_ne12=1_r2=1_r3=1'
+ggml_metal_library_compile_pipeline: loaded kernel_mul_mv_q8_0_f32_nsg=4_ne12=1_r2=1_r3=1      0x84498f300 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_pad', name = 'kernel_flash_attn_ext_pad_mask=1_ncpsg=32'
+ggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_pad_mask=1_ncpsg=32      0x84498f600 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_vec_f32_dk128_dv128', name = 'kernel_flash_attn_ext_vec_f32_dk128_dv128_mask=1_sink=0_bias=0_scap=0_kvpad=1_ns10=1024_ns20=1024_nsg=1_nwg=32'
+ggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_vec_f32_dk128_dv128_mask=1_sink=0_bias=0_scap=0_kvpad=1_ns10=1024_ns20=1024_nsg=1_nwg=32      0x84498f900 | th_max =  448 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_flash_attn_ext_vec_reduce', name = 'kernel_flash_attn_ext_vec_reduce_dv=128_nwg=32'
+ggml_metal_library_compile_pipeline: loaded kernel_flash_attn_ext_vec_reduce_dv=128_nwg=32      0x84498fc00 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32_4', name = 'kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=1_cb=0'
+ggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_4_op=0_nf=1_rb=1_cb=0      0x844a1c000 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_unary_f32_f32_4', name = 'kernel_unary_f32_f32_4_op=106_cnt=1'
+ggml_metal_library_compile_pipeline: loaded kernel_unary_f32_f32_4_op=106_cnt=1           0x844a1c300 | th_max = 1024 | th_width =   32
+ggml_metal_library_compile_pipeline: compiling pipeline: base = 'kernel_bin_fuse_f32_f32_f32_4', name = 'kernel_bin_fuse_f32_f32_f32_4_op=2_nf=1_rb=1_cb=0'
+ggml_metal_library_compile_pipeline: loaded kernel_bin_fuse_f32_f32_f32_4_op=2_nf=1_rb=1_cb=0      0x844a1c600 | th_max = 1024 | th_width =   32
+  gen[1]: token=59 score=36.05 (cached)
+  gen[2]: token=7265 score=36.34 (cached)
+  gen[3]: token=90 score=30.19 (cached)
+  gen[4]: token=1653 score=35.12 (cached)
+  gen[5]: token=15170 score=23.00 (cached)
+  gen[6]: token=81 score=23.17 (cached)
+  gen[7]: token=564 score=21.56 (cached)
+  gen[8]: token=11035 score=33.34 (cached)
+  gen[9]: token=6863 score=26.93 (cached)
+  gen[10]: token=316 score=21.30 (cached)
+  gen[11]: token=35702 score=32.89 (cached)
+  gen[12]: token=7141 score=29.97 (cached)
+  gen[13]: token=15170 score=34.36 (cached)
+  gen[14]: token=77 score=36.26 (cached)
+  gen[15]: token=19732 score=33.69 (cached)
+  gen[16]: token=59 score=36.73 (cached)
+  gen[17]: token=6863 score=31.59 (cached)
+  gen[18]: token=316 score=28.36 (cached)
+  gen[19]: token=35702 score=39.68 (cached)
+  gen[20]: token=7141 score=35.61 (cached)
+  gen[21]: token=12 score=35.56 (cached)
+  gen[22]: token=16 score=32.10 (cached)
+  gen[23]: token=15170 score=36.68 (cached)
+  gen[24]: token=77 score=37.14 (cached)
+  gen[25]: token=24778 score=41.88 (cached)
+  gen[26]: token=25353 score=28.98 (cached)
+  gen[27]: token=59 score=32.34 (cached)
+  gen[28]: token=37018 score=27.98 (cached)
+  gen[29]: token=90 score=32.88 (cached)
+  gen[30]: token=16 score=23.61 (cached)
+  gen[31]: token=15170 score=35.10 (cached)
+  gen[32]: token=77 score=36.91 (cached)
+  gen[33]: token=0 score=30.26 (cached)
+  gen[34]: token=11035 score=36.79 (cached)
+  gen[35]: token=7141 score=38.40 (cached)
+  gen[36]: token=11520 score=41.24 (cached)
+  gen[37]: token=7141 score=38.47 (cached)
+  gen[38]: token=12 score=36.18 (cached)
+  gen[39]: token=16 score=31.09 (cached)
+  gen[40]: token=2376 score=35.30 (cached)
+  gen[41]: token=59 score=44.33 (cached)
+  gen[42]: token=7141 score=41.38 (cached)
+  gen[43]: token=12 score=40.44 (cached)
+  gen[44]: token=17 score=35.83 (cached)
+  gen[45]: token=10699 score=32.68 (cached)
+  gen[46]: token=67816 score=34.93 (cached)
+  gen[47]: token=11520 score=32.39 (cached)
+  gen[48]: token=7141 score=39.07 (cached)
+  gen[49]: token=5279 score=33.91 (cached)
+  gen[50]: token=10 score=42.14 (cached)
+  gen[51]: token=16 score=31.36 (cached)
+  gen[52]: token=8 score=38.05 (cached)
+  gen[53]: token=3422 score=27.49 (cached)
+  gen[54]: token=1009 score=37.23 (cached)
+  gen[55]: token=30529 score=30.96 (cached)
+  gen[56]: token=37018 score=28.90 (cached)
+  gen[57]: token=90 score=33.93 (cached)
+  gen[58]: token=16 score=25.25 (cached)
+  gen[59]: token=15170 score=33.94 (cached)
+  gen[60]: token=77 score=39.11 (cached)
+  gen[61]: token=0 score=29.75 (cached)
+  gen[62]: token=92 score=37.65 (cached)
+  gen[63]: token=11520 score=38.57 (cached)
+  gen[64]: token=7141 score=40.96 (cached)
+  gen[65]: token=12 score=36.45 (cached)
+  gen[66]: token=16 score=31.65 (cached)
+  gen[67]: token=2376 score=35.60 (cached)
+  gen[68]: token=59 score=43.55 (cached)
+  gen[69]: token=7141 score=42.26 (cached)
+  gen[70]: token=12 score=38.88 (cached)
+  gen[71]: token=17 score=32.91 (cached)
+  gen[72]: token=10699 score=32.27 (cached)
+  gen[73]: token=67816 score=32.98 (cached)
+  gen[74]: token=11520 score=37.49 (cached)
+  gen[75]: token=7141 score=40.36 (cached)
+  gen[76]: token=5279 score=34.36 (cached)
+  gen[77]: token=8 score=33.35 (cached)
+  gen[78]: token=3422 score=30.67 (cached)
+  gen[79]: token=14581 score=30.04 (cached)
+  gen[80]: token=5 score=36.09 (cached)
+  gen[81]: token=59 score=39.11 (cached)
+  gen[82]: token=37018 score=39.50 (cached)
+  gen[83]: token=90 score=30.98 (cached)
+  gen[84]: token=16 score=25.69 (cached)
+  gen[85]: token=15170 score=33.20 (cached)
+  gen[86]: token=77 score=38.16 (cached)
+  gen[87]: token=0 score=31.10 (cached)
+  gen[88]: token=92 score=37.68 (cached)
+  gen[89]: token=11520 score=38.68 (cached)
+  gen[90]: token=7141 score=41.26 (cached)
+  gen[91]: token=12 score=36.45 (cached)
+  gen[92]: token=16 score=31.02 (cached)
+  gen[93]: token=2376 score=35.72 (cached)
+  gen[94]: token=59 score=38.92 (cached)
+  gen[95]: token=7141 score=41.64 (cached)
+  gen[96]: token=12 score=36.39 (cached)
+  gen[97]: token=17 score=30.21 (cached)
+  gen[98]: token=10699 score=31.81 (cached)
+  gen[99]: token=67816 score=29.18 (cached)
+  gen[100]: token=11520 score=36.41 (cached)
+  gen[101]: token=7141 score=41.03 (cached)
+  gen[102]: token=5279 score=33.33 (cached)
+  gen[103]: token=10 score=34.61 (cached)
+  gen[104]: token=16 score=31.08 (cached)
+  gen[105]: token=2376 score=35.42 (cached)
+  gen[106]: token=59 score=37.67 (cached)
+  gen[107]: token=7141 score=41.47 (cached)
+  gen[108]: token=8013 score=28.74 (cached)
+  gen[109]: token=59 score=34.75 (cached)
+  gen[110]: token=7141 score=42.11 (cached)
+  gen[111]: token=5279 score=34.08 (cached)
+  gen[112]: token=593 score=31.24 (cached)
+  gen[113]: token=3422 score=29.06 (cached)
+  gen[114]: token=14581 score=30.62 (cached)
+  gen[115]: token=5 score=38.97 (cached)
+  gen[116]: token=59 score=33.32 (cached)
+  gen[117]: token=37018 score=34.47 (cached)
+  gen[118]: token=90 score=31.92 (cached)
+  gen[119]: token=16 score=26.29 (cached)
+  gen[120]: token=15170 score=36.59 (cached)
+  gen[121]: token=7 score=36.75 (cached)
+  gen[122]: token=77 score=36.22 (cached)
+  gen[123]: token=12 score=38.62 (cached)
+  gen[124]: token=16 score=33.05 (cached)
+  gen[125]: token=41295 score=40.67 (cached)
+  gen[126]: token=92 score=35.46 (cached)
+  gen[127]: token=11520 score=37.91 (cached)
+  gen[128]: token=7141 score=41.96 (cached)
+  gen[129]: token=12 score=32.61 (cached)
+  gen[130]: token=16 score=30.47 (cached)
+  gen[131]: token=2376 score=34.66 (cached)
+  gen[132]: token=59 score=40.16 (cached)
+  gen[133]: token=7141 score=42.23 (cached)
+  gen[134]: token=12 score=35.75 (cached)
+  gen[135]: token=17 score=32.51 (cached)
+  gen[136]: token=10699 score=33.06 (cached)
+  gen[137]: token=67816 score=28.39 (cached)
+  gen[138]: token=11520 score=36.54 (cached)
+  gen[139]: token=7141 score=42.57 (cached)
+  gen[140]: token=5279 score=34.03 (cached)
+  gen[141]: token=10 score=38.45 (cached)
+  gen[142]: token=16 score=32.76 (cached)
+  gen[143]: token=8 score=35.49 (cached)
+  gen[144]: token=3422 score=30.73 (cached)
+  gen[145]: token=14581 score=31.27 (cached)
+  gen[146]: token=5 score=39.96 (cached)
+  gen[147]: token=59 score=31.56 (cached)
+  gen[148]: token=6863 score=36.69 (cached)
+  gen[149]: token=316 score=28.28 (cached)
+  gen[150]: token=35702 score=38.13 (cached)
+  gen[151]: token=7141 score=36.52 (cached)
+  gen[152]: token=12 score=33.71 (cached)
+  gen[153]: token=16 score=30.13 (cached)
+  gen[154]: token=15170 score=28.81 (cached)
+  gen[155]: token=77 score=34.95 (cached)
+  gen[156]: token=12 score=33.17 (cached)
+  gen[157]: token=16 score=32.31 (cached)
+  gen[158]: token=92 score=28.44 (cached)
+  gen[159]: token=7110 score=34.73 (cached)
+  gen[160]: token=408 score=38.57 (cached)
+  gen[161]: token=90 score=27.05 (cached)
+  gen[162]: token=1653 score=33.85 (cached)
+  gen[163]: token=92 score=35.29 (cached)
+  gen[164]: token=14085 score=37.74 (cached)
+  gen[165]: token=151645 score=28.79 (cached)
+qwen2vl_ocr: 824x435 → 812x448, 1856 patches (32x58)
+  backend KV cache: 28 layers, max_seq=666, 145.7 MB
+  gen[0]: token=14085 score=45.06 (prefill)
+  gen[1]: token=59 score=36.05 (cached)
+  gen[2]: token=7265 score=36.34 (cached)
+  gen[3]: token=90 score=30.19 (cached)
+  gen[4]: token=1653 score=35.12 (cached)
+  gen[5]: token=15170 score=23.00 (cached)
+  gen[6]: token=81 score=23.17 (cached)
+  gen[7]: token=564 score=21.56 (cached)
+  gen[8]: token=11035 score=33.34 (cached)
+  gen[9]: token=6863 score=26.93 (cached)
+  gen[10]: token=316 score=21.30 (cached)
+  gen[11]: token=35702 score=32.89 (cached)
+  gen[12]: token=7141 score=29.97 (cached)
+  gen[13]: token=15170 score=34.36 (cached)
+  gen[14]: token=77 score=36.26 (cached)
+  gen[15]: token=19732 score=33.69 (cached)
+  gen[16]: token=59 score=36.73 (cached)
+  gen[17]: token=6863 score=31.59 (cached)
+  gen[18]: token=316 score=28.36 (cached)
+  gen[19]: token=35702 score=39.68 (cached)
+  gen[20]: token=7141 score=35.61 (cached)
+  gen[21]: token=12 score=35.56 (cached)
+  gen[22]: token=16 score=32.10 (cached)
+  gen[23]: token=15170 score=36.68 (cached)
+  gen[24]: token=77 score=37.14 (cached)
+  gen[25]: token=24778 score=41.88 (cached)
+  gen[26]: token=25353 score=28.98 (cached)
+  gen[27]: token=59 score=32.34 (cached)
+  gen[28]: token=37018 score=27.98 (cached)
+  gen[29]: token=90 score=32.88 (cached)
+  gen[30]: token=16 score=23.61 (cached)
+  gen[31]: token=15170 score=35.10 (cached)
+  gen[32]: token=77 score=36.91 (cached)
+  gen[33]: token=0 score=30.26 (cached)
+  gen[34]: token=11035 score=36.79 (cached)
+  gen[35]: token=7141 score=38.40 (cached)
+  gen[36]: token=11520 score=41.24 (cached)
+  gen[37]: token=7141 score=38.47 (cached)
+  gen[38]: token=12 score=36.18 (cached)
+  gen[39]: token=16 score=31.09 (cached)
+  gen[40]: token=2376 score=35.30 (cached)
+  gen[41]: token=59 score=44.33 (cached)
+  gen[42]: token=7141 score=41.38 (cached)
+  gen[43]: token=12 score=40.44 (cached)
+  gen[44]: token=17 score=35.83 (cached)
+  gen[45]: token=10699 score=32.68 (cached)
+  gen[46]: token=67816 score=34.93 (cached)
+  gen[47]: token=11520 score=32.39 (cached)
+  gen[48]: token=7141 score=39.07 (cached)
+  gen[49]: token=5279 score=33.91 (cached)
+  gen[50]: token=10 score=42.14 (cached)
+  gen[51]: token=16 score=31.36 (cached)
+  gen[52]: token=8 score=38.05 (cached)
+  gen[53]: token=3422 score=27.49 (cached)
+  gen[54]: token=1009 score=37.23 (cached)
+  gen[55]: token=30529 score=30.96 (cached)
+  gen[56]: token=37018 score=28.90 (cached)
+  gen[57]: token=90 score=33.93 (cached)
+  gen[58]: token=16 score=25.25 (cached)
+  gen[59]: token=15170 score=33.94 (cached)
+  gen[60]: token=77 score=39.11 (cached)
+  gen[61]: token=0 score=29.75 (cached)
+  gen[62]: token=92 score=37.65 (cached)
+  gen[63]: token=11520 score=38.57 (cached)
+  gen[64]: token=7141 score=40.96 (cached)
+  gen[65]: token=12 score=36.45 (cached)
+  gen[66]: token=16 score=31.65 (cached)
+  gen[67]: token=2376 score=35.60 (cached)
+  gen[68]: token=59 score=43.55 (cached)
+  gen[69]: token=7141 score=42.26 (cached)
+  gen[70]: token=12 score=38.88 (cached)
+  gen[71]: token=17 score=32.91 (cached)
+  gen[72]: token=10699 score=32.27 (cached)
+  gen[73]: token=67816 score=32.98 (cached)
+  gen[74]: token=11520 score=37.49 (cached)
+  gen[75]: token=7141 score=40.36 (cached)
+  gen[76]: token=5279 score=34.36 (cached)
+  gen[77]: token=8 score=33.35 (cached)
+  gen[78]: token=3422 score=30.67 (cached)
+  gen[79]: token=14581 score=30.04 (cached)
+  gen[80]: token=5 score=36.09 (cached)
+  gen[81]: token=59 score=39.11 (cached)
+  gen[82]: token=37018 score=39.50 (cached)
+  gen[83]: token=90 score=30.98 (cached)
+  gen[84]: token=16 score=25.69 (cached)
+  gen[85]: token=15170 score=33.20 (cached)
+  gen[86]: token=77 score=38.16 (cached)
+  gen[87]: token=0 score=31.10 (cached)
+  gen[88]: token=92 score=37.68 (cached)
+  gen[89]: token=11520 score=38.68 (cached)
+  gen[90]: token=7141 score=41.26 (cached)
+  gen[91]: token=12 score=36.45 (cached)
+  gen[92]: token=16 score=31.02 (cached)
+  gen[93]: token=2376 score=35.72 (cached)
+  gen[94]: token=59 score=38.92 (cached)
+  gen[95]: token=7141 score=41.64 (cached)
+  gen[96]: token=12 score=36.39 (cached)
+  gen[97]: token=17 score=30.21 (cached)
+  gen[98]: token=10699 score=31.81 (cached)
+  gen[99]: token=67816 score=29.18 (cached)
+  gen[100]: token=11520 score=36.41 (cached)
+  gen[101]: token=7141 score=41.03 (cached)
+  gen[102]: token=5279 score=33.33 (cached)
+  gen[103]: token=10 score=34.61 (cached)
+  gen[104]: token=16 score=31.08 (cached)
+  gen[105]: token=2376 score=35.42 (cached)
+  gen[106]: token=59 score=37.67 (cached)
+  gen[107]: token=7141 score=41.47 (cached)
+  gen[108]: token=8013 score=28.74 (cached)
+  gen[109]: token=59 score=34.75 (cached)
+  gen[110]: token=7141 score=42.11 (cached)
+  gen[111]: token=5279 score=34.08 (cached)
+  gen[112]: token=593 score=31.24 (cached)
+  gen[113]: token=3422 score=29.06 (cached)
+  gen[114]: token=14581 score=30.62 (cached)
+  gen[115]: token=5 score=38.97 (cached)
+  gen[116]: token=59 score=33.32 (cached)
+  gen[117]: token=37018 score=34.47 (cached)
+  gen[118]: token=90 score=31.92 (cached)
+  gen[119]: token=16 score=26.29 (cached)
+  gen[120]: token=15170 score=36.59 (cached)
+  gen[121]: token=7 score=36.75 (cached)
+  gen[122]: token=77 score=36.22 (cached)
+  gen[123]: token=12 score=38.62 (cached)
+  gen[124]: token=16 score=33.05 (cached)
+  gen[125]: token=41295 score=40.67 (cached)
+  gen[126]: token=92 score=35.46 (cached)
+  gen[127]: token=11520 score=37.91 (cached)
+  gen[128]: token=7141 score=41.96 (cached)
+  gen[129]: token=12 score=32.61 (cached)
+  gen[130]: token=16 score=30.47 (cached)
+  gen[131]: token=2376 score=34.66 (cached)
+  gen[132]: token=59 score=40.16 (cached)
+  gen[133]: token=7141 score=42.23 (cached)
+  gen[134]: token=12 score=35.75 (cached)
+  gen[135]: token=17 score=32.51 (cached)
+  gen[136]: token=10699 score=33.06 (cached)
+  gen[137]: token=67816 score=28.39 (cached)
+  gen[138]: token=11520 score=36.54 (cached)
+  gen[139]: token=7141 score=42.57 (cached)
+  gen[140]: token=5279 score=34.03 (cached)
+  gen[141]: token=10 score=38.45 (cached)
+  gen[142]: token=16 score=32.76 (cached)
+  gen[143]: token=8 score=35.49 (cached)
+  gen[144]: token=3422 score=30.73 (cached)
+  gen[145]: token=14581 score=31.27 (cached)
+  gen[146]: token=5 score=39.96 (cached)
+  gen[147]: token=59 score=31.56 (cached)
+  gen[148]: token=6863 score=36.69 (cached)
+  gen[149]: token=316 score=28.28 (cached)
+  gen[150]: token=35702 score=38.13 (cached)
+  gen[151]: token=7141 score=36.52 (cached)
+  gen[152]: token=12 score=33.71 (cached)
+  gen[153]: token=16 score=30.13 (cached)
+  gen[154]: token=15170 score=28.81 (cached)
+  gen[155]: token=77 score=34.95 (cached)
+  gen[156]: token=12 score=33.17 (cached)
+  gen[157]: token=16 score=32.31 (cached)
+  gen[158]: token=92 score=28.44 (cached)
+  gen[159]: token=7110 score=34.73 (cached)
+  gen[160]: token=408 score=38.57 (cached)
+  gen[161]: token=90 score=27.05 (cached)
+  gen[162]: token=1653 score=33.85 (cached)
+  gen[163]: token=92 score=35.29 (cached)
+  gen[164]: token=14085 score=37.74 (cached)
+  gen[165]: token=151645 score=28.79 (cached)
+ggml_metal_free: deallocating
+       22.23 real         1.23 user         1.12 sys
+          1807302656  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+              144681  page reclaims
+               73982  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                 500  voluntary context switches
+               61971  involuntary context switches
+         17351086647  instructions retired
+          6543869963  cycles elapsed
+          1711166656  peak memory footprint

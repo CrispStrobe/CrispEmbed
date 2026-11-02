@@ -1,0 +1,139 @@
+{
+ "schema": "crispembed.qwen2vl.device-summary.v1",
+ "rows": [
+  {
+   "receipt": "f16-cpu-forced.json",
+   "precision": "f16",
+   "device": "cpu",
+   "label": "forced",
+   "extra_env": {},
+   "cases": 6,
+   "exact": 6,
+   "divergences": {},
+   "consistent": true,
+   "warm_ms_sum": 842421.473304,
+   "cold_ms_sum": 842421.473304,
+   "max_rss_mib": 5007.125,
+   "per_case_warm_ms": {
+    "text": 36244.216037,
+    "formula": 80848.318325,
+    "table": 81686.99792,
+    "code": 258777.675529,
+    "layout": 365966.831403,
+    "synthetic": 18897.43409
+   }
+  },
+  {
+   "receipt": "r1-gpu-forced.json",
+   "precision": "r1",
+   "device": "gpu",
+   "label": "forced",
+   "extra_env": {},
+   "cases": 6,
+   "exact": 6,
+   "divergences": {},
+   "consistent": true,
+   "warm_ms_sum": 26464.115599,
+   "cold_ms_sum": 26464.115599,
+   "max_rss_mib": 1514.14453125,
+   "per_case_warm_ms": {
+    "text": 942.676008,
+    "formula": 2037.951418,
+    "table": 2414.32163,
+    "code": 7792.531787,
+    "layout": 12828.170515,
+    "synthetic": 448.464241
+   }
+  },
+  {
+   "receipt": "r1-gpu.json",
+   "precision": "r1",
+   "device": "gpu",
+   "label": "",
+   "extra_env": {},
+   "cases": 6,
+   "exact": 5,
+   "divergences": {
+    "table": 35
+   },
+   "consistent": true,
+   "warm_ms_sum": 26697.587098,
+   "cold_ms_sum": 26697.587098,
+   "max_rss_mib": 1513.91796875,
+   "per_case_warm_ms": {
+    "text": 1107.581971,
+    "formula": 2363.804143,
+    "table": 2944.690831,
+    "code": 7612.047359,
+    "layout": 12186.496537,
+    "synthetic": 482.966257
+   },
+   "min_final_cosine": 0.9639446197385034,
+   "final_output_complete": true,
+   "worst_stage": {
+    "case": "code",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.3476325314565685
+   },
+   "min_state_cosine_incl_rows": 0.3476325314565685,
+   "cosine_bar_pass": false,
+   "cosine_reference": "f16-cpu"
+  },
+  {
+   "receipt": "r9-gpu-forced.json",
+   "precision": "r9",
+   "device": "gpu",
+   "label": "forced",
+   "extra_env": {},
+   "cases": 6,
+   "exact": 6,
+   "divergences": {},
+   "consistent": true,
+   "warm_ms_sum": 24420.725143,
+   "cold_ms_sum": 24420.725143,
+   "max_rss_mib": 1427.5,
+   "per_case_warm_ms": {
+    "text": 964.874719,
+    "formula": 1978.121287,
+    "table": 2359.351309,
+    "code": 7056.234654,
+    "layout": 11620.704493,
+    "synthetic": 441.438681
+   }
+  },
+  {
+   "receipt": "r9-gpu.json",
+   "precision": "r9",
+   "device": "gpu",
+   "label": "",
+   "extra_env": {},
+   "cases": 6,
+   "exact": 5,
+   "divergences": {
+    "table": 35
+   },
+   "consistent": true,
+   "warm_ms_sum": 25845.974483,
+   "cold_ms_sum": 25845.974483,
+   "max_rss_mib": 1427.375,
+   "per_case_warm_ms": {
+    "text": 1096.02787,
+    "formula": 2313.331933,
+    "table": 2874.991601,
+    "code": 7376.193523,
+    "layout": 11708.115545,
+    "synthetic": 477.314011
+   },
+   "min_final_cosine": 0.9569908495732327,
+   "final_output_complete": true,
+   "worst_stage": {
+    "case": "code",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.43522767340045215
+   },
+   "min_state_cosine_incl_rows": 0.43522767340045215,
+   "cosine_bar_pass": false,
+   "cosine_reference": "f16-cpu"
+  }
+ ]
+}

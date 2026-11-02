@@ -115,15 +115,17 @@ See [the inference spec](unlimited-ocr2-inference-spec.md).
 | `CRISPEMBED_MINICPM_OCR_DUMP` | unset | Directory for intermediate dumps. |
 | `CRISPEMBED_MINICPM_OCR_TIMING` | off | Per-stage wall times on stderr. |
 | `CRISPEMBED_MINICPM_OCR_VISION_FLASH` | off | Fused flash attention in the vision tower (performance only). |
-| `CRISPEMBED_MINICPM_OCR_GRAPH` | off | Graph decoder for the qwen35 text decoder (disabled under `CRISPEMBED_QWEN35_IMATRIX`). |
-| `CRISPEMBED_QWEN35_GRAPH_DECODER` | off | PR #109: qwen35 text decoder as a ggml graph with persistent KV and delta-net state. |
-| `CRISPEMBED_QWEN35_GRAPH_MATMUL` | `exact` | PR #109: graph decoder matmul precision, `exact` / `native` / `f32`. |
-| `CRISPEMBED_MINICPM_OCR_VISION_F32` | off | PR #109: copy vision and projector matrices to F32 once at init (about 4.6 GB extra in the recommended set). |
-| `CRISPEMBED_MINICPM_OCR_VISION_BATCH` | off | PR #109: run equally sized slices in one graph. |
+| `CRISPEMBED_MINICPM_OCR_GRAPH` | off | Older stateless graph-decoder candidate (`src/qwen35_graph_decoder.cpp`); disabled under `CRISPEMBED_QWEN35_IMATRIX`; exclusive with `CRISPEMBED_QWEN35_GRAPH_DECODER`. |
+| `CRISPEMBED_QWEN35_GRAPH_DECODER` | off | qwen35 text decoder as one ggml graph with persistent KV and delta-net state (`src/qwen35_graph_kv_decoder.cpp`). |
+| `CRISPEMBED_QWEN35_GRAPH_MATMUL` | `exact` | Matmul precision of that graph decoder: `exact`, `native` or `f32`. |
+| `CRISPEMBED_MINICPM_OCR_VISION_F32` | off | Copy vision and projector matrices to F32 once at init (about 4.6 GB extra in the recommended set). |
+| `CRISPEMBED_MINICPM_OCR_VISION_BATCH` | off | Run equally sized slices in one graph as independent sequences. |
 
-The #109 rows apply once that PR is on main; the generated inventory below
-shows which are present in the current source. See
-[the inference spec](minicpm-ocr-inference-spec.md).
+Recommended speed set (token-ID exact on all five Kaggle cases; default stays off):
+`CRISPEMBED_QWEN35_GRAPH_DECODER=1 CRISPEMBED_QWEN35_GRAPH_MATMUL=f32
+CRISPEMBED_MINICPM_OCR_VISION_F32=1 CRISPEMBED_MINICPM_OCR_VISION_BATCH=1
+CRISPEMBED_MINICPM_OCR_VISION_FLASH=1`. See
+[the inference spec](minicpm-ocr-inference-spec.md) and PERFORMANCE.md.
 
 ### qwen35 decoder (shared by LightOnOCR-3 `qwen35_ocr`, OvisOCR2/3, MiniCPM-OCR, Josev)
 
@@ -161,7 +163,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-394 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (any value incl. `0` enables; unset it to disable), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+398 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (any value incl. `0` enables; unset it to disable), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -622,6 +624,8 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `CRISPEMBED_MINICPM_OCR_DUMP` | value | unset | string | debug | `src/minicpm_ocr.cpp` |  |
 | `CRISPEMBED_MINICPM_OCR_GRAPH` | on | off | bool | default-off experimental / opt-in | `src/minicpm_ocr.cpp`, `src/qwen35_graph_decoder.cpp` | Snapshot once for the entire request. Never silently fall back after a candidate failure, which would mix arithmetic within one decode. |
 | `CRISPEMBED_MINICPM_OCR_TIMING` | on | off | bool | debug | `src/minicpm_ocr.cpp` |  |
+| `CRISPEMBED_MINICPM_OCR_VISION_BATCH` | on | off | bool | default-off experimental / opt-in | `src/minicpm_ocr.cpp`, `src/minicpm_ocr_vision.cpp` | CRISPEMBED_MINICPM_OCR_VISION_BATCH (default off): equally sized consecutive parts (the slices) run as one graph of independent sequences; rows stay in order. |
+| `CRISPEMBED_MINICPM_OCR_VISION_F32` | on | off | bool | default-off experimental / opt-in | `src/minicpm_ocr.cpp`, `src/minicpm_ocr_vision.cpp` |  |
 | `CRISPEMBED_QWEN35_WEIGHT_CACHE` | on | off | bool | default-off experimental / opt-in | `src/minicpm_ocr.cpp`, `src/qwen35_linear.cpp`, `src/qwen35_ocr.cpp` |  |
 
 ### minicpm_ocr_vision
@@ -864,6 +868,13 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_QWEN35_IMATRIX` | on | off | bool | default-off experimental / opt-in | `src/qwen35_graph_decoder.cpp`, `src/qwen35_linear.cpp` |  |
+
+### qwen35_graph_kv_decoder
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_QWEN35_GRAPH_DECODER` | on | off | bool | default-off experimental / opt-in | `src/qwen35_graph_kv_decoder.cpp` |  |
+| `CRISPEMBED_QWEN35_GRAPH_MATMUL` | value | unset | string | tuning / config | `src/qwen35_graph_kv_decoder.cpp` |  |
 
 ### qwen35_image_bounds
 

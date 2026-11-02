@@ -31,7 +31,7 @@ and was not verified here).
 | Named stage constant (C) | **fixed** `src/crispembed.h:1405` | **fixed** `src/crispembed.h:1406` | N/A | N/A |
 | `ocr_orchestrator.cpp` dispatch | wired `src/ocr_orchestrator.cpp:1951` | wired `src/ocr_orchestrator.cpp:1738` | N/A | N/A |
 | VLM cap lists (`is_vlm_engine`, set_max_tokens) | wired (`tests/test_ocr_max_tokens_surfaces.py` passes) | wired (same test) | N/A | N/A |
-| CMake | wired `CMakeLists.txt:376` | wired `CMakeLists.txt:390` | wired `CMakeLists.txt:423` | wired `CMakeLists.txt:355` |
+| CMake | wired `CMakeLists.txt:376` | wired `CMakeLists.txt:390` | wired `CMakeLists.txt:424` | wired `CMakeLists.txt:355` |
 | CLI | **fixed**: `--ocr-engine` accepted only `unlimited_ocr` while help and logs print `unlimited-ocr`; now also `unlimited-ocr`, `unlimited-ocr2`, `unlimited_ocr2` (`examples/cli/main.cpp:1432`), and the `unlimited-ocr2` alias defaults to the v2 registry model instead of v1 (`examples/cli/main.cpp:1588`) | wired `examples/cli/main.cpp:1428` (id 23; explicit `--ocr-rec` required) | wired `examples/cli/main.cpp:10` | wired `examples/cli/main.cpp:115` |
 | HTTP server | **fixed** the same aliases and v2 default (`examples/server/server.cpp:1578`, `:1690`) | wired `examples/server/server.cpp:1586` (id 23, default `minicpm-ocr`) | wired `examples/server/server.cpp:39` | wired `examples/server/server.cpp:6` (`POST /systemone`) |
 | Model registry | wired `examples/cli/model_mgr.cpp:1896` | wired `examples/cli/model_mgr.cpp:1885` | wired `examples/cli/model_mgr.cpp:1641` | wired `examples/cli/model_mgr.cpp:1636` |
@@ -39,7 +39,7 @@ and was not verified here).
 | Python | wired through `CrispOcrModel` / orchestrator stages; **fixed** `OCR_ENGINE_UNLIMITED_OCR` (`python/crispembed/_binding.py:4205`) | wired; **fixed** `OCR_ENGINE_MINICPM_OCR` (`python/crispembed/_binding.py:4206`) | wired `CrispMoEdern` (`python/crispembed/_moedern_text.py:16`) | wired `CrispSystemOne` (`python/crispembed/_systemone.py:7`) |
 | Rust | wired (stage int); **fixed** `OCR_ENGINE_UNLIMITED_OCR` (`crispembed-sys/src/lib.rs:211`, `crispembed/src/lib.rs:2721`) | **fixed** `OCR_ENGINE_MINICPM_OCR` (`crispembed-sys/src/lib.rs:213`, `crispembed/src/lib.rs:2722`) | wired `MoEdern` (`crispembed/src/lib.rs:40`) | wired `SystemOne` (`crispembed/src/lib.rs:29`) |
 | Dart / Flutter | **fixed** `crispOcrEngineUnlimitedOcr` (`flutter/crispembed/lib/src/crispembed.dart:4073`) | **fixed** `crispOcrEngineMinicpmOcr` (`flutter/crispembed/lib/src/crispembed.dart:4076`) | wired `flutter/crispembed/lib/crispembed.dart:9` | wired `flutter/crispembed/lib/crispembed.dart:17` |
-| Env vars documented | wired (this audit) | wired; PR #109 variables listed as pending | wired | wired |
+| Env vars documented | wired (this audit) | wired (incl. PR #109 speed gates) | wired | wired |
 | CrispSorter / CrispCalc catalog | external, not verified | external, not verified | N/A (not OCR) | N/A |
 
 ## Fixes made
@@ -68,9 +68,6 @@ The scoped TODOs are in [PLAN.md](../PLAN.md#wiring-and-environment-variable-aud
   marked `presence` in the inventory, for example `CRISPEMBED_SHARED_GPU_BACKEND`,
   `CRISPEMBED_PPOCRV6_FORCE_CPU` and several `*_DEBUG` switches. They should
   move to `core_env::on`, which changes behaviour only for an explicit `=0`.
-- **PR #109 variables.** `CRISPEMBED_QWEN35_GRAPH_DECODER`, `_GRAPH_MATMUL`,
-  `CRISPEMBED_MINICPM_OCR_VISION_F32` and `_VISION_BATCH` are documented ahead of
-  the merge. After it lands, run `tools/list_env_vars.py --write`.
 - **Unlimited-OCR v1 registry URL** (`unlimited-ocr-q4_k-stacked.gguf`) is pinned
   by hash but resolves `main`, not an immutable revision. This predates the
   engines in this audit.

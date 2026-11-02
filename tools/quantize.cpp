@@ -58,6 +58,38 @@ struct TensorTypeOverride {
 };
 static std::vector<TensorTypeOverride> g_tensor_types;
 
+// Named qwen2vl_ocr Q4_K-class policies (docs/qwen2vl-q4k-recipes.md), opt-in with
+// CRISPEMBED_QUANTIZE_QWEN2VL_POLICY=<name> and the base type q8_0. The rules are
+// placed before any --tensor-type rule (so explicit rules still win) and equal the
+// measured recipes "r9" (TeleOCR) and "r2" (MinerU) in tools/qwen2vl_quant_recipes.json
+// (tests/test_qwen2vl_quant_policy.py keeps the two in step).
+struct Qwen2vlPolicy {
+    const char * name;
+    const char * model; // "teleocr" (general.architecture) or "mineru" (qwen2vl.model_family)
+    std::vector<std::pair<const char *, ggml_type>> rules;
+};
+static const std::vector<Qwen2vlPolicy> & qwen2vl_policies() {
+    static const std::vector<Qwen2vlPolicy> policies = {
+        { "teleocr_q4k_v1",
+          "teleocr",
+          { { "v.*", GGML_TYPE_F16 },
+            { "v.blk.*.attn_*", GGML_TYPE_Q6_K },
+            { "v.blk.*.ffn_gate.weight", GGML_TYPE_Q4_K },
+            { "v.blk.*.ffn_up.weight", GGML_TYPE_Q4_K },
+            { "l.embed_tokens.weight", GGML_TYPE_Q4_K },
+            { "l.blk.*.attn_q.weight", GGML_TYPE_Q4_K },
+            { "l.blk.*.attn_k.weight", GGML_TYPE_Q4_K } } },
+        { "mineru_q4k_v1",
+          "mineru",
+          { { "v.*", GGML_TYPE_Q4_K },
+            { "l.blk.*.*", GGML_TYPE_IQ4_NL },
+            { "l.blk.*.ffn_down.weight", GGML_TYPE_Q4_K },
+            { "l.embed_tokens.weight", GGML_TYPE_IQ4_NL } } },
+    };
+    return policies;
+}
+static const Qwen2vlPolicy * g_qwen2vl_policy = nullptr;
+
 // Portable glob matching for GGUF tensor names (* and ?), including Windows.
 static bool tensor_name_matches(const std::string & pattern, const std::string & name) {
     size_t p = 0, n = 0, star = std::string::npos, retry = 0;
@@ -542,6 +574,23 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
     }
 
     const int n_tensors = gguf_get_n_tensors(ctx_in);
+    if (g_qwen2vl_policy) {
+        // Before the pattern check: a policy measured on one model never applies to another.
+        const int ak = gguf_find_key(ctx_in, "general.architecture");
+        const int fk = gguf_find_key(ctx_in, "qwen2vl.model_family");
+        const bool teleocr = ak >= 0 && std::string(gguf_get_val_str(ctx_in, ak)) == "teleocr";
+        const bool mineru = fk >= 0 && std::string(gguf_get_val_str(ctx_in, fk)) == "mineru2.5-pro-2604";
+        const bool fits = std::string(g_qwen2vl_policy->model) == "teleocr" ? teleocr : mineru;
+        if (!fits || ftype != GGML_FTYPE_MOSTLY_Q8_0) {
+            fprintf(stderr, "CRISPEMBED_QUANTIZE_QWEN2VL_POLICY=%s needs a %s source and the q8_0 base type\n",
+                    g_qwen2vl_policy->name, g_qwen2vl_policy->model);
+            gguf_free(ctx_out);
+            gguf_free(ctx_in);
+            ggml_free(ctx_in_ggml);
+            return false;
+        }
+        gguf_set_val_str(ctx_out, "qwen2vl.quantization.policy", g_qwen2vl_policy->name);
+    }
     // Reject misspelled patterns before opening/truncating the output file.
     for (const auto & rule : g_tensor_types) {
         bool found = false;
@@ -1596,10 +1645,18 @@ int main(int argc, char ** argv) {
                                                              { "f16", GGML_TYPE_F16 },
                                                              { "q8_0", GGML_TYPE_Q8_0 },
                                                              { "q6_k", GGML_TYPE_Q6_K },
-                                                             { "q5_k", GGML_TYPE_Q5_K } };
+                                                             { "q5_k", GGML_TYPE_Q5_K },
+                                                             // 4/5-bit targets for mixed recipes that start
+                                                             // from a Q8_0 or F16 base (docs/qwen2vl-q4k-recipes.md).
+                                                             // K-quants keep the 256-column fallback chain below.
+                                                             { "q4_k", GGML_TYPE_Q4_K },
+                                                             { "q5_0", GGML_TYPE_Q5_0 },
+                                                             { "q4_0", GGML_TYPE_Q4_0 },
+                                                             { "iq4_nl", GGML_TYPE_IQ4_NL } };
             const auto type = types.find(equals == std::string::npos ? "" : spec.substr(equals + 1));
             if (equals == std::string::npos || equals == 0 || type == types.end()) {
-                fprintf(stderr, "Invalid tensor override '%s': use GLOB=f32|f16|q8_0|q6_k|q5_k\n", spec.c_str());
+                fprintf(stderr, "Invalid tensor override '%s': use GLOB=f32|f16|q8_0|q6_k|q5_k|q5_0|q4_k|q4_0|iq4_nl\n",
+                        spec.c_str());
                 return 1;
             }
             g_tensor_types.push_back({ spec.substr(0, equals), type->second });
@@ -1626,7 +1683,8 @@ int main(int argc, char ** argv) {
                 "  --metadata-string KEY=VALUE  replace an existing string profile key; tensor policy unchanged\n");
         fprintf(stderr, "  --imatrix <f> use a CrispEmbed importance matrix (from a calibration run\n");
         fprintf(stderr, "                with CRISPEMBED_IMATRIX_OUT set) to improve k-quant/IQ accuracy\n");
-        fprintf(stderr, "  --tensor-type GLOB=TYPE  override eligible matrix precision (f32/f16/q8_0/q6_k/q5_k)\n");
+        fprintf(stderr, "  --tensor-type GLOB=TYPE  override eligible matrix precision\n"
+                        "                          (f32/f16/q8_0/q6_k/q5_k/q5_0/q4_k/q4_0/iq4_nl)\n");
         fprintf(stderr,
                 "                          * and ? match tensor names; last match wins; norm/conv guards remain\n");
         fprintf(stderr, "                         exact-name =f16 on safe F32 4D patch weights preserves all axes\n");
@@ -1655,6 +1713,19 @@ int main(int argc, char ** argv) {
         return 1;
     }
 
+    if (const char * name = getenv("CRISPEMBED_QUANTIZE_QWEN2VL_POLICY"); name && *name) {
+        for (const auto & p : qwen2vl_policies()) {
+            if (std::string(p.name) == name) g_qwen2vl_policy = &p;
+        }
+        if (!g_qwen2vl_policy) {
+            fprintf(stderr, "unknown CRISPEMBED_QUANTIZE_QWEN2VL_POLICY '%s' (teleocr_q4k_v1|mineru_q4k_v1)\n", name);
+            return 1;
+        }
+        std::vector<TensorTypeOverride> rules;
+        for (const auto & r : g_qwen2vl_policy->rules) rules.push_back({ r.first, r.second });
+        g_tensor_types.insert(g_tensor_types.begin(), rules.begin(), rules.end());
+        fprintf(stderr, "qwen2vl quantization policy %s (%zu rules)\n", g_qwen2vl_policy->name, rules.size());
+    }
     if (!imatrix_path.empty()) {
         load_imatrix(imatrix_path); // non-fatal: falls back to unweighted if empty
         init_qkv_imatrix_mode();

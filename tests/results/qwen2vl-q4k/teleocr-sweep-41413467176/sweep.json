@@ -1,0 +1,87 @@
+{
+ "schema": "crispembed.qwen2vl.q4k-sweep.v1",
+ "model": "teleocr",
+ "bar": 0.94,
+ "recipes": [
+  {
+   "recipe": "r1",
+   "file_bytes": 1286308256,
+   "final_cos_min": 0.9669156470790283,
+   "worst_case": "layout",
+   "complete": true,
+   "per_case": {
+    "code": 0.9810918332871278,
+    "formula": 0.9864146747108636,
+    "layout": 0.9669156470790283,
+    "synthetic": 0.9932322860827538,
+    "table": 0.9758722578326015,
+    "text": 0.9817663885929431
+   },
+   "worst_stage": {
+    "case": "code",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.4447650116125997
+   }
+  },
+  {
+   "recipe": "r1-im",
+   "file_bytes": 1286308256,
+   "final_cos_min": 0.9394835049724577,
+   "worst_case": "table",
+   "complete": true,
+   "per_case": {
+    "code": 0.9699312811720128,
+    "formula": 0.9775277080132405,
+    "layout": 0.9902449141629185,
+    "synthetic": 0.9934619584588902,
+    "table": 0.9394835049724577,
+    "text": 0.9977171931110415
+   },
+   "worst_stage": {
+    "case": "code",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.43183588230237036
+   }
+  },
+  {
+   "recipe": "r2",
+   "file_bytes": 1330348352,
+   "final_cos_min": 0.9725311271923086,
+   "worst_case": "table",
+   "complete": true,
+   "per_case": {
+    "code": 0.9860113844704957,
+    "formula": 0.9908129542753025,
+    "layout": 0.9918591033042272,
+    "synthetic": 0.9922759266337199,
+    "table": 0.9725311271923086,
+    "text": 0.9833079561021673
+   },
+   "worst_stage": {
+    "case": "code",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.4403405264978553
+   }
+  },
+  {
+   "recipe": "r5",
+   "file_bytes": 1260093920,
+   "final_cos_min": 0.6259808490650803,
+   "worst_case": "table",
+   "complete": true,
+   "per_case": {
+    "code": 0.9690841588552905,
+    "formula": 0.9882530890113043,
+    "layout": 0.9355751293956243,
+    "synthetic": 0.9892949963343572,
+    "table": 0.6259808490650803,
+    "text": 0.950214150809836
+   },
+   "worst_stage": {
+    "case": "table",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.2241069475664332
+   }
+  }
+ ]
+}

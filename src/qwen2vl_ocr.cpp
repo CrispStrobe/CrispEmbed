@@ -43,6 +43,7 @@
 #include "gguf.h"
 #include "core/env_gate.h"
 #include "core/quant_f32_matmul.h"
+#include "imatrix.h"
 
 #include <algorithm>
 #include <cctype>
@@ -1522,6 +1523,8 @@ bool load(context & ctx, const char * gguf_path, int n_threads, int verbosity, c
         backends.push_back(ctx.backend_cpu);
     }
     ctx.sched = ggml_backend_sched_new(backends.data(), nullptr, (int)backends.size(), kGraphCapacity, false, false);
+    // Calibration only: no-op unless CRISPEMBED_IMATRIX_OUT is set (docs/qwen2vl-q4k-recipes.md).
+    crispembed_imatrix_install(ctx.sched);
 
     if (!load_tensors(ctx, gguf_path)) {
         fprintf(stderr, "qwen2vl_ocr: failed to load tensors\n");
@@ -1722,6 +1725,9 @@ static bool alloc_kv_cache(context & ctx, int max_seq) {
 }
 
 void free_(context & ctx) {
+    // One-shot hosts exit through core_util::clean_exit (no atexit handlers):
+    // write imatrix statistics here. No-op unless CRISPEMBED_IMATRIX_OUT is set.
+    crispembed_imatrix_flush();
     free_kv_cache(ctx);
     if (ctx.sched) {
         ggml_backend_sched_free(ctx.sched);

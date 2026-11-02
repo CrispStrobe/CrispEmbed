@@ -27,7 +27,8 @@ MODEL = "opendatalab/MinerU2.5-Pro-2604-1.2B"
 REVISION = "d3f5e08d073c21466bbabe21c71bb1e9c2e595da"
 BLUEPRINT_REV = "c9797cde8f54cc48306196fc6aebe73ea31dd4a3"
 VARIANTS = {"f32": None, "f16": None, "q8_0": ["q8_0"], "q4_k": ["q4_k"],
-            "q4_k-dq8": ["q4_k", "--tensor-type", "l.*=q8_0"], "q4_k-df16": ["q4_k", "--decoder-f16"]}
+            # Formerly "q4_k-dq8"/"q4_k-df16": neither holds a Q4_K tensor (vision floored at Q8_0).
+            "q8_0-all": ["q4_k", "--tensor-type", "l.*=q8_0"], "q8_0-vision-f16-decoder": ["q4_k", "--decoder-f16"]}
 MAX_TOKENS = 2048
 THREADS = 4
 SCRATCH = Path("/kaggle/temp/mineru25")
