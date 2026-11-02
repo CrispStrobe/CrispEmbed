@@ -46,7 +46,7 @@ template <class Function> void rejects(Function function, const std::string & de
     check(threw, description);
 }
 
-bool near(float actual, double expected, double tolerance = 2e-6) {
+bool close_to(float actual, double expected, double tolerance = 2e-6) {
     return std::isfinite(actual) && std::abs(double(actual) - expected) <= tolerance;
 }
 
@@ -98,10 +98,10 @@ void schedule_contracts() {
     // Source-derived numerical anchors, not claimed original-Torch captures.
     // Exact alpha-table parity is checked separately by the original replay.
     if (alphas.size() == 1000) {
-        check(near(alphas[0], 0.9991499781608582, 6e-8), "first scaled-linear alpha");
-        check(near(alphas[499], 0.27766942977905273, 6e-8), "alpha before linspace midpoint");
-        check(near(alphas[500], 0.27633246779441833, 6e-8), "alpha after linspace midpoint");
-        check(near(alphas[999], 0.00466009508818388, 2e-9), "terminal scaled-linear alpha");
+        check(close_to(alphas[0], 0.9991499781608582, 6e-8), "first scaled-linear alpha");
+        check(close_to(alphas[499], 0.27766942977905273, 6e-8), "alpha before linspace midpoint");
+        check(close_to(alphas[500], 0.27633246779441833, 6e-8), "alpha after linspace midpoint");
+        check(close_to(alphas[999], 0.00466009508818388, 2e-9), "terminal scaled-linear alpha");
     }
 
     Tensor latent(1, 1, 3), noise(1, 1, 3);
@@ -114,12 +114,12 @@ void schedule_contracts() {
     bool interior = stepped.v.size() == 3;
     for (size_t i = 0; i < 3; ++i) {
         const double original = 2.0 * latent.v[i] - std::sqrt(3.0) * noise.v[i];
-        interior &= near(stepped.v[i], 0.9 * original + std::sqrt(0.19) * noise.v[i]);
+        interior &= close_to(stepped.v[i], 0.9 * original + std::sqrt(0.19) * noise.v[i]);
     }
     check(interior, "DDIM eta=0 agrees with a closed-form epsilon-prediction step");
     const auto terminal = latent_inpaint::detail::ddim_step(latent, noise, 10, -1, simple);
     bool final = true;
-    for (size_t i = 0; i < 3; ++i) final &= near(terminal.v[i], 2.0 * latent.v[i] - std::sqrt(3.0) * noise.v[i]);
+    for (size_t i = 0; i < 3; ++i) final &= close_to(terminal.v[i], 2.0 * latent.v[i] - std::sqrt(3.0) * noise.v[i]);
     check(final && terminal.v[2] > 1, "terminal alpha is one and predicted image is not clipped");
     check(latent.v == std::vector<float>({ 1, -2, 3 }) && noise.v == std::vector<float>({ 0.5f, 1, -1 }),
           "sampler leaves its input tensors unchanged");
@@ -158,7 +158,8 @@ void posterior_contracts() {
     noise.v = { 1, -1, 0.5f, -0.5f, 2, 0, -2, 1 };
     const auto sampled = latent_inpaint::vae_sample(moments, noise);
     bool expected = sampled.c == 4 && sampled.h == 1 && sampled.w == 2;
-    for (size_t i = 0; i < means.size(); ++i) expected &= near(sampled.v[i], (means[i] + noise.v[i]) * 0.13025, 2e-7);
+    for (size_t i = 0; i < means.size(); ++i)
+        expected &= close_to(sampled.v[i], (means[i] + noise.v[i]) * 0.13025, 2e-7);
     check(expected, "VAE posterior uses separate means/logvars, supplied noise, and SDXL scale");
 
     // Clamping both tails is material: unconstrained exp(logvar/2) overflows
@@ -168,7 +169,8 @@ void posterior_contracts() {
     moments.v[8] = -1000;
     moments.v[9] = 1000;
     const auto clamped = latent_inpaint::vae_sample(moments, noise);
-    check(near(clamped.v[0], std::exp(-15.0) * 0.13025, 2e-14) && near(clamped.v[1], std::exp(10.0) * 0.13025, 5e-4),
+    check(close_to(clamped.v[0], std::exp(-15.0) * 0.13025, 2e-14) &&
+              close_to(clamped.v[1], std::exp(10.0) * 0.13025, 5e-4),
           "VAE posterior log variance clamps to [-30,20]");
     for (int size : { 0, 15, 17 }) {
         auto broken = moments;
@@ -199,7 +201,7 @@ void pixel_contracts() {
     check(image.c == 3 && image.h == 512 && image.w == 512 && image.v.size() == rgb.size(),
           "preprocessing produces RGB planar CHW512");
     check(image.v[0] == -1 && image.v[255] == 1 && image.v[pixels] == 1 && image.v[pixels + 255] == -1 &&
-              near(image.v[2 * pixels], 1.0 / 255.0, 1e-9),
+              close_to(image.v[2 * pixels], 1.0 / 255.0, 1e-9),
           "RGB channel order, endpoints and midpoint normalization");
     rejects([&] { latent_inpaint::detail::preprocess_rgb8(nullptr, rgb.size()); }, "null RGB rejected");
     rejects([&] { latent_inpaint::detail::preprocess_rgb8(rgb.data(), rgb.size() - 1); }, "short RGB rejected");
