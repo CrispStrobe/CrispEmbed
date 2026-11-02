@@ -376,12 +376,13 @@ def prepare_source(model, cfg, cli, src_path_hf):
     return out
 
 
-def token_audit(cli, src, hfpath, P):
+def token_audit(cli, src, hfpath, P, env=None):
     """Native token ids (--tokens-raw) against the original tokenizer, per panel text."""
     from transformers import AutoTokenizer
     tok = AutoTokenizer.from_pretrained(hfpath)
     texts = P["docs"] + P["queries"]
-    r, _ = sh([cli, "-m", src, "-t", NT, "--json", "--prefix", "", "--tokens-raw"] + texts)
+    r, _ = sh([cli, "-m", src, "-t", NT, "--json", "--prefix", "", "--tokens-raw"] + texts,
+              env=dict(os.environ, **env) if env else None)
     if r.returncode:
         return {"error": r.stderr[-1500:]}
     j = json.loads(r.stdout)
@@ -597,9 +598,11 @@ def main():
         | {"n_docs": len(P["docs"]), "n_queries": len(P["queries"]), "n_audit_texts": P["n_audit"]}, indent=1))
     if a.model == "bgem3":
         src = prepare_source(a.model, cfg, cli, hfpath)
-        ta = token_audit(cli, src, hfpath, P)
+        ta = {"default": token_audit(cli, src, hfpath, P),
+              "CRISPEMBED_SPM_COLLAPSE_SPACES=0": token_audit(cli, src, hfpath, P, {"CRISPEMBED_SPM_COLLAPSE_SPACES": "0"})}
         (OUT / "token-audit-bgem3.json").write_text(json.dumps(ta, indent=1, ensure_ascii=False))
-        log(f"token audit: {ta.get('mismatched')} of {ta.get('n')} texts differ from the original tokenizer")
+        for k, v in ta.items():
+            log(f"token audit {k}: {v.get('mismatched')} of {v.get('n')} texts differ from the original tokenizer")
     if a.phase == "sweep":
         ev, meta = sweep(a.model, cfg, cli, quant, P, C, ref, hfpath)
     elif a.phase == "recipes":
