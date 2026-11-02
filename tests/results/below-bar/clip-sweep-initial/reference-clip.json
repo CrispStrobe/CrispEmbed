@@ -1,0 +1,9 @@
+{
+ "hf_repo": "openai/clip-vit-base-patch16",
+ "hf_revision": "57c216476eefef5ab752ec549e440a49ae4ae5f3",
+ "impl": "transformers CLIPModel.get_text_features (fp32, truncation 77)",
+ "seconds": 5.601402044296265,
+ "n_docs": 77,
+ "n_queries": 0,
+ "n_audit_texts": 12
+}

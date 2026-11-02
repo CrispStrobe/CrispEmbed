@@ -1,0 +1,247 @@
+{
+ "calibration": {
+  "bytes": 1166592,
+  "sha256": "c11b448e85089467e53c982da94f32fdcea3e2484454efd3869b6b2921d36973",
+  "n_docs": 88,
+  "n_queries": 46
+ },
+ "base": "q4_k+imatrix",
+ "groups": {
+  "classes": [
+   "attn_k.weight",
+   "attn_output.weight",
+   "attn_q.weight",
+   "attn_v.weight",
+   "ffn_down.weight",
+   "ffn_gate.weight",
+   "ffn_up.weight"
+  ],
+  "layers": [
+   "blk.0.*",
+   "blk.1.*",
+   "blk.2.*",
+   "blk.3.*",
+   "blk.4.*",
+   "blk.5.*",
+   "blk.6.*",
+   "blk.7.*",
+   "blk.8.*",
+   "blk.9.*",
+   "blk.10.*",
+   "blk.11.*",
+   "blk.12.*",
+   "blk.13.*",
+   "blk.14.*",
+   "blk.15.*",
+   "blk.16.*",
+   "blk.17.*",
+   "blk.18.*",
+   "blk.19.*",
+   "blk.20.*",
+   "blk.21.*",
+   "blk.22.*",
+   "blk.23.*",
+   "blk.24.*",
+   "blk.25.*",
+   "blk.26.*",
+   "blk.27.*"
+  ],
+  "other": [
+   "token_embd.weight"
+  ]
+ },
+ "gains": [
+  {
+   "group": "layer:blk.27.*",
+   "gain": 0.12001632896446934,
+   "bytes": 427106048
+  },
+  {
+   "group": "class:ffn_down.weight",
+   "gain": 0.09396624231945672,
+   "bytes": 463281920
+  },
+  {
+   "group": "class:attn_v.weight",
+   "gain": 0.0384138863498249,
+   "bytes": 433921792
+  },
+  {
+   "group": "layer:blk.26.*",
+   "gain": 0.02957511723292483,
+   "bytes": 427106048
+  },
+  {
+   "group": "class:ffn_up.weight",
+   "gain": 0.01898287097209639,
+   "bytes": 463281920
+  },
+  {
+   "group": "class:attn_output.weight",
+   "gain": 0.007952024871233698,
+   "bytes": 448601856
+  },
+  {
+   "group": "layer:blk.24.*",
+   "gain": 0.007464532040515226,
+   "bytes": 427106048
+  },
+  {
+   "group": "class:ffn_gate.weight",
+   "gain": 0.00662444625900982,
+   "bytes": 463281920
+  },
+  {
+   "group": "layer:blk.20.*",
+   "gain": 0.0028641743183954738,
+   "bytes": 427106048
+  },
+  {
+   "group": "layer:blk.5.*",
+   "gain": 0.0020678467646616516,
+   "bytes": 427106048
+  },
+  {
+   "group": "class:attn_q.weight",
+   "gain": 0.0016850233536392922,
+   "bytes": 448601856
+  },
+  {
+   "group": "layer:blk.22.*",
+   "gain": 0.0015518389801938426,
+   "bytes": 427106048
+  },
+  {
+   "group": "layer:blk.10.*",
+   "gain": 0.0007998546035119514,
+   "bytes": 427106048
+  },
+  {
+   "group": "layer:blk.14.*",
+   "gain": 0.0005239773139864567,
+   "bytes": 427106048
+  },
+  {
+   "group": "layer:blk.21.*",
+   "gain": 5.8915786197322184e-05,
+   "bytes": 427106048
+  },
+  {
+   "group": "layer:blk.25.*",
+   "gain": -0.00036597342938904376,
+   "bytes": 427106048
+  },
+  {
+   "group": "layer:blk.23.*",
+   "gain": -0.0007302551837968796,
+   "bytes": 427106048
+  },
+  {
+   "group": "layer:blk.19.*",
+   "gain": -0.0008899480740091059,
+   "bytes": 427106048
+  },
+  {
+   "group": "layer:blk.15.*",
+   "gain": -0.00143413146830218,
+   "bytes": 427106048
+  },
+  {
+   "group": "layer:blk.17.*",
+   "gain": -0.0017462415896059014,
+   "bytes": 427106048
+  },
+  {
+   "group": "layer:blk.4.*",
+   "gain": -0.0024936562983852717,
+   "bytes": 427106048
+  },
+  {
+   "group": "layer:blk.18.*",
+   "gain": -0.003077433309519373,
+   "bytes": 427106048
+  },
+  {
+   "group": "layer:blk.16.*",
+   "gain": -0.0031925793631218946,
+   "bytes": 427106048
+  },
+  {
+   "group": "layer:blk.2.*",
+   "gain": -0.0033819856604206944,
+   "bytes": 427106048
+  },
+  {
+   "group": "layer:blk.3.*",
+   "gain": -0.0035597290922720903,
+   "bytes": 427106048
+  },
+  {
+   "group": "class:attn_k.weight",
+   "gain": -0.0036783960637323254,
+   "bytes": 433921792
+  },
+  {
+   "group": "layer:blk.0.*",
+   "gain": -0.003745822112875774,
+   "bytes": 427106048
+  },
+  {
+   "group": "layer:blk.1.*",
+   "gain": -0.004028028385539395,
+   "bytes": 427106048
+  },
+  {
+   "group": "layer:blk.9.*",
+   "gain": -0.005131882058647119,
+   "bytes": 427106048
+  },
+  {
+   "group": "layer:blk.12.*",
+   "gain": -0.005252414966303132,
+   "bytes": 427106048
+  },
+  {
+   "group": "layer:blk.6.*",
+   "gain": -0.005513008689020826,
+   "bytes": 427106048
+  },
+  {
+   "group": "layer:blk.11.*",
+   "gain": -0.007415004567037031,
+   "bytes": 427106048
+  },
+  {
+   "group": "layer:blk.13.*",
+   "gain": -0.00862608065518522,
+   "bytes": 427106048
+  },
+  {
+   "group": "layer:blk.7.*",
+   "gain": -0.009008140106888773,
+   "bytes": 427106048
+  },
+  {
+   "group": "layer:blk.8.*",
+   "gain": -0.01017122264403858,
+   "bytes": 427106048
+  }
+ ],
+ "greedy_cleared_at": 6,
+ "recipe_candidate": {
+  "qtype": "q4_k",
+  "imatrix": true,
+  "overrides": [
+   "blk.27.*=q8_0",
+   "*.ffn_down.weight=q8_0",
+   "*.attn_v.weight=q8_0",
+   "blk.26.*=q8_0",
+   "*.ffn_up.weight=q8_0",
+   "*.attn_output.weight=q8_0"
+  ],
+  "quantize": {
+   "seconds": 20.2,
+   "summary": "197 quantized, 113 kept, 196 with imatrix"
+  }
+ }
+}

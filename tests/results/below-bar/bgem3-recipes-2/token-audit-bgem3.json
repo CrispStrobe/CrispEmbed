@@ -1,0 +1,410 @@
+{
+ "default": {
+  "n": 77,
+  "mismatched": 0,
+  "cases": []
+ },
+ "CRISPEMBED_SPM_COLLAPSE_SPACES=0": {
+  "n": 77,
+  "mismatched": 10,
+  "cases": [
+   {
+    "text": 45,
+    "hf_len": 65,
+    "native_len": 75,
+    "first_diff": 13,
+    "hf": [
+     7,
+     16,
+     10666,
+     158,
+     271,
+     50339,
+     2203,
+     10,
+     634
+    ],
+    "native": [
+     7,
+     16,
+     10666,
+     6,
+     6,
+     158,
+     271,
+     50339,
+     2203
+    ],
+    "hf_pieces": [
+     "s",
+     ")",
+     "▁{",
+     "▁con",
+     "st",
+     "▁results",
+     "▁=",
+     "▁a",
+     "wa"
+    ],
+    "excerpt": "async function fetchAll(urls) {\n  const results = await Promise.all(\n    urls.map((u) => fetch(u).then((r) => r.json()))"
+   },
+   {
+    "text": 46,
+    "hf_len": 59,
+    "native_len": 132,
+    "first_diff": 9,
+    "hf": [
+     100,
+     197956,
+     10666,
+     10644,
+     78426,
+     2203,
+     75,
+     6460,
+     74
+    ],
+    "native": [
+     100,
+     197956,
+     10666,
+     6,
+     6,
+     6,
+     6,
+     10644,
+     78426
+    ],
+    "hf_pieces": [
+     "▁for",
+     "▁Counter",
+     "▁{",
+     "▁type",
+     "▁Item",
+     "▁=",
+     "▁u",
+     "32",
+     ";"
+    ],
+    "excerpt": "impl Iterator for Counter {\n    type Item = u32;\n\n    fn next(&mut self) -> Option<u32> {\n        if self.count < 5 {\n  "
+   },
+   {
+    "text": 47,
+    "hf_len": 93,
+    "native_len": 138,
+    "first_diff": 20,
+    "hf": [
+     438,
+     86,
+     12,
+     2174,
+     44,
+     420,
+     304,
+     1181,
+     39
+    ],
+    "native": [
+     438,
+     86,
+     12,
+     6,
+     6,
+     6,
+     6,
+     2174,
+     44
+    ],
+    "hf_pieces": [
+     "▁No",
+     "ne",
+     ":",
+     "▁if",
+     "▁\"",
+     "f",
+     "2",
+     "ll",
+     "m"
+    ],
+    "excerpt": "def query_prefix(model: str) -> str | None:\n    if \"f2llm-v2\" in model:\n        return (\"Instruct: Given a question, ret"
+   },
+   {
+    "text": 48,
+    "hf_len": 75,
+    "native_len": 84,
+    "first_diff": 8,
+    "hf": [
+     2740,
+     2203,
+     6,
+     58745,
+     10666,
+     3664,
+     12,
+     29568,
+     74
+    ],
+    "native": [
+     2740,
+     2203,
+     6,
+     6,
+     6,
+     58745,
+     10666,
+     3664,
+     12
+    ],
+    "hf_pieces": [
+     ">",
+     "▁=",
+     "▁",
+     "|",
+     "▁{",
+     "▁ok",
+     ":",
+     "▁true",
+     ";"
+    ],
+    "excerpt": "type Result<T> =\n  | { ok: true; value: T }\n  | { ok: false; error: string };\n\nconst unwrap = <T,>(r: Result<T>): T => {"
+   },
+   {
+    "text": 49,
+    "hf_len": 81,
+    "native_len": 93,
+    "first_diff": 38,
+    "hf": [
+     148,
+     16,
+     10666,
+     21917,
+     257,
+     91,
+     2203,
+     89678,
+     420
+    ],
+    "native": [
+     148,
+     16,
+     10666,
+     6,
+     6,
+     6,
+     6,
+     21917,
+     257
+    ],
+    "hf_pieces": [
+     "▁w",
+     ")",
+     "▁{",
+     "▁flo",
+     "at",
+     "▁s",
+     "▁=",
+     "▁0.0",
+     "f"
+    ],
+    "excerpt": "// Kommentar auf Deutsch: berechnet den gleitenden Mittelwert\nfloat moving_average(const float * x, int n, int w) {\n    "
+   },
+   {
+    "text": 50,
+    "hf_len": 49,
+    "native_len": 51,
+    "first_diff": 9,
+    "hf": [
+     165,
+     108059,
+     4,
+     1791,
+     4007,
+     472,
+     112638,
+     13,
+     654
+    ],
+    "native": [
+     165,
+     108059,
+     4,
+     6,
+     1791,
+     4007,
+     472,
+     112638,
+     13
+    ],
+    "hf_pieces": [
+     "▁und",
+     "▁Herren",
+     ",",
+     "▁hier",
+     "mit",
+     "▁k",
+     "ündig",
+     "e",
+     "▁ich"
+    ],
+    "excerpt": "Sehr geehrte Damen und Herren,\n\nhiermit kündige ich meinen Mietvertrag für die Wohnung in der\nBeispielstraße 12, 10115 B"
+   },
+   {
+    "text": 51,
+    "hf_len": 43,
+    "native_len": 45,
+    "first_diff": 5,
+    "hf": [
+     6562,
+     8108,
+     54452,
+     378,
+     425,
+     268,
+     25072,
+     109921,
+     50997
+    ],
+    "native": [
+     6562,
+     8108,
+     54452,
+     6,
+     378,
+     425,
+     268,
+     25072,
+     109921
+    ],
+    "hf_pieces": [
+     "list",
+     "▁before",
+     "▁release",
+     "▁[",
+     "x",
+     "]",
+     "▁unit",
+     "▁tests",
+     "▁green"
+    ],
+    "excerpt": "Checklist before release\n\n[x] unit tests green\n[x] clang-format clean\n[ ] PERFORMANCE.md updated\n[ ] registry pin refres"
+   },
+   {
+    "text": 52,
+    "hf_len": 28,
+    "native_len": 36,
+    "first_diff": 2,
+    "hf": [
+     0,
+     89660,
+     78532,
+     57543,
+     42,
+     101811,
+     1619,
+     3894
+    ],
+    "native": [
+     0,
+     89660,
+     6,
+     78532,
+     6,
+     57543,
+     42,
+     101811
+    ],
+    "hf_pieces": [
+     "<s>",
+     "▁Agenda",
+     "▁09:00",
+     "▁Beg",
+     "r",
+     "üß",
+     "ung",
+     "▁09"
+    ],
+    "excerpt": "Agenda\n\n09:00  Begrüßung\n09:15  Stand der Migration\n10:00  Pause\n10:15  Diskussion: Quantisierung und Qualität\n11:30  Be"
+   },
+   {
+    "text": 53,
+    "hf_len": 51,
+    "native_len": 53,
+    "first_diff": 3,
+    "hf": [
+     0,
+     24241,
+     190,
+     615,
+     17915,
+     2053,
+     35299,
+     186,
+     9433
+    ],
+    "native": [
+     0,
+     24241,
+     190,
+     6,
+     615,
+     17915,
+     2053,
+     35299,
+     186
+    ],
+    "hf_pieces": [
+     "<s>",
+     "▁Article",
+     "▁5",
+     "▁1.",
+     "▁Personal",
+     "▁data",
+     "▁shall",
+     "▁be",
+     "▁process"
+    ],
+    "excerpt": "Article 5\n\n1. Personal data shall be processed lawfully, fairly and transparently.\n2. Data shall be collected for specif"
+   },
+   {
+    "text": 54,
+    "hf_len": 67,
+    "native_len": 138,
+    "first_diff": 8,
+    "hf": [
+     4046,
+     91685,
+     1837,
+     13498,
+     5,
+     175091,
+     35809,
+     60062,
+     39131
+    ],
+    "native": [
+     4046,
+     91685,
+     1837,
+     6,
+     13498,
+     5,
+     6,
+     175091,
+     6
+    ],
+    "hf_pieces": [
+     "26",
+     "-08",
+     "15",
+     "▁Pos",
+     ".",
+     "▁Beschreibung",
+     "▁Menge",
+     "▁Einzel",
+     "preis"
+    ],
+    "excerpt": "Rechnung Nr. 2026-0815\n\nPos.  Beschreibung              Menge   Einzelpreis   Gesamt\n1     Beratungsleistung          8 "
+   }
+  ]
+ }
+}
