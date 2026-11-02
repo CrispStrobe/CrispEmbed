@@ -83,16 +83,15 @@ jobs:
         run: |
           set -euo pipefail
           q=$(find build -type f -name crispembed-quantize -perm -u+x | head -1)
-          f32=/mnt/mcpm/gguf/$(python -c "import json;print(json.load(open('docs/minicpm-ocr-publication-v1.json'))['recipes']['F32']['filename'])")
-          while read -r kind variant name rest; do
+          while read -r kind variant name src rest; do
             case "$kind" in
               convert)
-                python models/convert-minicpm-ocr-to-gguf.py /mnt/mcpm/src "/mnt/mcpm/gguf/$name" $rest
+                python models/convert-minicpm-ocr-to-gguf.py /mnt/mcpm/src "/mnt/mcpm/gguf/$name" $src $rest
                 rm -f "/mnt/mcpm/gguf/$name.manifest.json" ;;
               quantize)
                 rm -rf /mnt/mcpm/src
-                "$q" "$f32" "/mnt/mcpm/gguf/$name" $rest ;;
-              drop-f32) rm -f "$f32" ;;
+                "$q" "/mnt/mcpm/gguf/$src" "/mnt/mcpm/gguf/$name" $rest ;;
+              drop) rm -f "/mnt/mcpm/gguf/$name" ;;
             esac
           done < "$RUNNER_TEMP/plan.txt"
           rm -rf /mnt/mcpm/src
