@@ -53,3 +53,17 @@ buffer name.
 The candidate is not enabled anywhere; no gate or default changes.
 
 ## Attempts
+
+- [41438394031](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41438394031)
+  at `295d7e79` completed and exited 1 on numbers
+  ([receipt](../tests/results/packaging/wasm-layer3-ffn-matmul-v1.json)).
+  Admission, the weight-free selftest (both kernel orders reproduced
+  bit-exactly) and all own-reproduction controls passed. **Kernel order is not
+  the cause.** On identical inputs, WASM and native kernels differ by at most
+  1.43e-6 (fc1) and 9.54e-7 (fc2), and identical inputs give identical Q8
+  bytes. The native kernel fed WASM inputs reproduces the full error (fc1
+  5.73e-4, fc2 0.00331). Inherited input differences of about 1e-6 change one
+  fc1 Q8_0 block scale (one FP16 rounding step) and 38 fc2 Q8_K scales plus 3
+  quantized values. The emulated native-order WASM candidate is bit-exact
+  with native on the same input, but leaves the natural error unchanged, so
+  none is recommended.
