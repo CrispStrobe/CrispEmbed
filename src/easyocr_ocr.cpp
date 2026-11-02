@@ -373,18 +373,13 @@ void easyocr_ocr_free(easyocr_ocr_context * c) {
     delete c;
 }
 
-const char * easyocr_ocr_recognize(easyocr_ocr_context * c, const uint8_t * px, int w, int h, int ch, int * out_len) {
-    if (!c || !px || w <= 0 || h <= 0 || ch <= 0) return nullptr;
-    const auto total_start = std::chrono::steady_clock::now();
-    std::vector<uint8_t> gray((size_t)w * h);
-    for (int y = 0; y < h; ++y)
-        for (int x = 0; x < w; ++x) {
-            const uint8_t * p = px + ((size_t)y * w + x) * ch;
-            gray[(size_t)y * w + x] = ch == 1 ? p[0] : (uint8_t)((299 * p[0] + 587 * p[1] + 114 * p[2] + 500) / 1000);
-        }
-    std::vector<float> resized((size_t)c->height * c->width);
-    const int rw = std::min(c->width, std::max(1, (int)std::ceil((double)c->height * w / h)));
-    resize_easyocr_linear_u8(gray.data(), h, w, resized.data(), c->height, rw);
+// One recognizer pass over a height-64 grey crop of width rw (values 0..255):
+// normalise to [-1, 1], replicate the last column into the canvas padding
+// (NormalizePAD), run the graph and greedy-decode. Writes c->result and
+// c->last_confidence.
+static bool easyocr_predict(easyocr_ocr_context * c, const std::vector<float> & resized, int rw,
+                            std::chrono::steady_clock::time_point * graph_start_out,
+                            std::chrono::steady_clock::time_point * graph_end_out) {
     c->input_host.assign((size_t)c->height * c->width, 0.0f);
     for (int y = 0; y < c->height; ++y)
         for (int x = 0; x < rw; ++x) {
@@ -394,7 +389,6 @@ const char * easyocr_ocr_recognize(easyocr_ocr_context * c, const uint8_t * px, 
     for (int y = 0; y < c->height; ++y)
         for (int x = rw; x < c->width; ++x)
             c->input_host[(size_t)y * c->width + x] = c->input_host[(size_t)y * c->width + rw - 1];
-    const auto preprocess_end = std::chrono::steady_clock::now();
     ggml_backend_tensor_set(c->input, c->input_host.data(), 0, c->input_host.size() * sizeof(float));
     std::vector<float> zero((size_t)c->hidden, 0.0f);
     // Reset the initial state of BOTH BiLSTM layers. Both layers reuse the same
@@ -413,8 +407,10 @@ const char * easyocr_ocr_recognize(easyocr_ocr_context * c, const uint8_t * px, 
             ggml_backend_tensor_set(state, zero.data(), 0, zero.size() * sizeof(float));
     }
     const auto graph_start = std::chrono::steady_clock::now();
-    if (ggml_backend_graph_compute(c->backend, c->graph) != GGML_STATUS_SUCCESS) return nullptr;
+    if (ggml_backend_graph_compute(c->backend, c->graph) != GGML_STATUS_SUCCESS) return false;
     const auto graph_end = std::chrono::steady_clock::now();
+    if (graph_start_out) *graph_start_out = graph_start;
+    if (graph_end_out) *graph_end_out = graph_end;
 
     std::vector<float> logits((size_t)c->classes * c->time_steps);
     ggml_backend_tensor_get(c->logits, logits.data(), 0, logits.size() * sizeof(float));
@@ -447,6 +443,58 @@ const char * easyocr_ocr_recognize(easyocr_ocr_context * c, const uint8_t * px, 
         c->result.clear();
     }
     c->last_confidence = easyocr_postprocess::confidence_custom_mean(nonblank_probabilities);
+    return true;
+}
+
+const char * easyocr_ocr_recognize(easyocr_ocr_context * c, const uint8_t * px, int w, int h, int ch, int * out_len) {
+    if (!c || !px || w <= 0 || h <= 0 || ch <= 0) return nullptr;
+    const auto total_start = std::chrono::steady_clock::now();
+    // Grey conversion. Default: BT.601 integer rounding, identical to
+    // cv2.cvtColor(RGB2GRAY), which is what Python EasyOCR uses when handed an
+    // image array. CRISPEMBED_EASYOCR_LIBPNG_GREY=1 (opt-in) reproduces
+    // cv2.imread(path, IMREAD_GRAYSCALE) on an RGB PNG instead, i.e.
+    // Python's readtext(<png path>); it differs by -1 on ~half the pixels of a
+    // scan and is only meaningful when the pixels came from a PNG file.
+    const bool libpng_grey = core_env::on("CRISPEMBED_EASYOCR_LIBPNG_GREY");
+    std::vector<uint8_t> gray((size_t)w * h);
+    for (int y = 0; y < h; ++y)
+        for (int x = 0; x < w; ++x) {
+            const uint8_t * p = px + ((size_t)y * w + x) * ch;
+            gray[(size_t)y * w + x] = ch == 1       ? p[0]
+                                      : libpng_grey ? easyocr_postprocess::grey_libpng(p[0], p[1], p[2])
+                                                    : (uint8_t)((299 * p[0] + 587 * p[1] + 114 * p[2] + 500) / 1000);
+        }
+    // Resized width. Default: EasyOCR's int(64 * w / h) (truncation).
+    // CRISPEMBED_EASYOCR_FLOOR_WIDTH=0 restores the historical ceil(), which
+    // matched Python on only 1/2, 6/11 and 21/36 page lines (fox, scan_strip,
+    // scan_page_pd) against 2/2, 11/11 and 36/36 with truncation.
+    const bool python_floor = !core_env::explicitly_off("CRISPEMBED_EASYOCR_FLOOR_WIDTH");
+    std::vector<float> resized((size_t)c->height * c->width);
+    const int rw = std::min(c->width, easyocr_postprocess::recognizer_resized_width(w, h, python_floor));
+    resize_easyocr_linear_u8(gray.data(), h, w, resized.data(), c->height, rw);
+    const auto preprocess_end = std::chrono::steady_clock::now();
+    std::chrono::steady_clock::time_point graph_start = preprocess_end, graph_end = preprocess_end;
+    if (!easyocr_predict(c, resized, rw, &graph_start, &graph_end)) return nullptr;
+    // EasyOCR get_text(): a line whose confidence is below contrast_ths (0.1)
+    // is predicted again after adjust_contrast_grey(target=adjust_contrast=0.5)
+    // on the resized crop, and the second result wins unless the first is
+    // strictly more confident. Default on; CRISPEMBED_EASYOCR_CONTRAST_RETRY=0
+    // keeps the single pass.
+    if (c->last_confidence < 0.1f && !core_env::explicitly_off("CRISPEMBED_EASYOCR_CONTRAST_RETRY")) {
+        std::vector<uint8_t> u8((size_t)c->height * rw);
+        for (size_t i = 0; i < u8.size(); ++i) u8[i] = (uint8_t)resized[i];
+        if (easyocr_postprocess::adjust_contrast_grey(u8, 0.5)) {
+            const std::string first_text = c->result;
+            const float first_confidence = c->last_confidence;
+            std::vector<float> adjusted(resized.size());
+            for (size_t i = 0; i < u8.size(); ++i) adjusted[i] = (float)u8[i];
+            if (!easyocr_predict(c, adjusted, rw, nullptr, &graph_end)) return nullptr;
+            if (first_confidence > c->last_confidence) {
+                c->result = first_text;
+                c->last_confidence = first_confidence;
+            }
+        }
+    }
     if (out_len) *out_len = (int)c->result.size();
     const auto total_end = std::chrono::steady_clock::now();
     c->last_timing.preprocess_ms = std::chrono::duration<double, std::milli>(preprocess_end - total_start).count();

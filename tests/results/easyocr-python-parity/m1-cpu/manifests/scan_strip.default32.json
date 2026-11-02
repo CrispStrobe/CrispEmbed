@@ -1,0 +1,21 @@
+{
+  "schema": "crispembed.easyocr.postprocess.v1",
+  "source": "CrispEmbed native easyocr_pipeline",
+  "image": "tests/regression/images/scan_strip.png",
+  "width": 520,
+  "height": 260,
+  "mode": "lines",
+  "records": [
+    {"index": 0, "line": 0, "text": "They are ging to be, encamped near  Brighton =", "confidence": 0.577038, "detector_confidence": 0.645072, "box": [67.8261, 0, 407.002, 24.6562], "crop": [65, 0, 411, 28], "normalized_box": [130, 0, 913, 95], "recognizer_crop": [65, 0, 411, 28]},
+    {"index": 1, "line": 1, "text": "~and I do 8 want papa to take u8 ail there for the sum-", "confidence": 0.572871, "detector_confidence": 0.614663, "box": [21.8476, 15.8476, 462.512, 25.7967], "crop": [19, 13, 466, 29], "normalized_box": [42, 61, 931, 160], "recognizer_crop": [19, 13, 466, 29]},
+    {"index": 2, "line": 2, "text": "mer !   It would be such & delicious scheme,and I dare", "confidence": 0.740513, "detector_confidence": 0.642509, "box": [23.0577, 34.9788, 463.703, 28.9605], "crop": [21, 32, 467, 32], "normalized_box": [44, 135, 936, 246], "recognizer_crop": [21, 32, 467, 32]},
+    {"index": 3, "line": 3, "text": "say would hardly cost anything at all   Mamma would", "confidence": 0.469927, "detector_confidence": 0.643254, "box": [22.7566, 56.631, 463.081, 31.3721], "crop": [20, 54, 467, 35], "normalized_box": [44, 218, 934, 338], "recognizer_crop": [20, 54, 467, 35]},
+    {"index": 4, "line": 4, "text": "like to go too of all things ! \" Only think what", "confidence": 0.459493, "detector_confidence": 0.628433, "box": [22.186, 75.1861, 443.358, 32.7167], "crop": [20, 73, 447, 36], "normalized_box": [43, 289, 895, 415], "recognizer_crop": [20, 73, 447, 36]},
+    {"index": 5, "line": 5, "text": "miserable summer else we shall have ", "confidence": 0.650147, "detector_confidence": 0.617058, "box": [23.1852, 100.934, 305.618, 27.1326], "crop": [21, 98, 309, 31], "normalized_box": [45, 388, 632, 493], "recognizer_crop": [21, 98, 309, 31]},
+    {"index": 6, "line": 6, "text": "ful achene hdcgh; Endabompletdiy' dould be: delisbe", "confidence": 0.0675952, "detector_confidence": 0.616052, "box": [22.6875, 118.027, 464.042, 56.9468], "crop": [20, 116, 468, 60], "normalized_box": [44, 454, 936, 673], "recognizer_crop": [20, 116, 468, 60]},
+    {"index": 7, "line": 7, "text": "Good  Heaven ! ` Brighton; and & whole   campful of", "confidence": 0.349758, "detector_confidence": 0.617765, "box": [24.4955, 162.496, 464.843, 31.4818], "crop": [22, 160, 468, 35], "normalized_box": [47, 625, 941, 746], "recognizer_crop": [22, 160, 468, 35]},
+    {"index": 8, "line": 8, "text": "~soldiers, to u8, who have been  overset already by one", "confidence": 0.500121, "detector_confidence": 0.60884, "box": [22.52, 185.52, 465.538, 29.5377], "crop": [20, 183, 469, 33], "normalized_box": [43, 714, 939, 827], "recognizer_crop": [20, 183, 469, 33]},
+    {"index": 9, "line": 9, "text": "poor   regiment   of militia, and   the   monthly ' bails   of", "confidence": 0.465121, "detector_confidence": 0.644048, "box": [24.5167, 209.275, 465.711, 26.4424], "crop": [22, 207, 469, 30], "normalized_box": [47, 805, 943, 907], "recognizer_crop": [22, 207, 469, 30]},
+    {"index": 10, "line": 10, "text": "Meryton", "confidence": 0.845445, "detector_confidence": 0.671617, "box": [23.9882, 222.988, 78.0235, 33.0235], "crop": [21, 220, 82, 37], "normalized_box": [46, 858, 196, 985], "recognizer_crop": [21, 220, 82, 37]}
+  ]
+}
