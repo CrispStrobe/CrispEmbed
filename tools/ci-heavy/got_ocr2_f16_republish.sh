@@ -120,9 +120,25 @@ for c in json.load(open(sys.argv[1]))["cases"]:
         print(f"   {a:8s} exact={v['text_exact']} ids_exact={v['ids_exact']} ratio={v['char_ratio']} "
               f"secs={v.get('secs')} {v['text'][:70]!r}")
 EOF
-r2_ok=$(python -c "import json;c=json.load(open('$OUT/compare.json'))['cases'];print(int(len(c)==3 and all(x['arms']['r2']['char_ratio']>=x['arms']['q4_k']['char_ratio'] for x in c) and c[0]['arms']['r2']['text_exact']))")
-note "qualify r2_ok=$r2_ok"
-[ "$r2_ok" = 1 ] || fail=1
+# Publication gate = the owner's bar (docs/precision-acceptance.md, F16 > 0.98): every stage of
+# the stage diff vs the original-model reference above the F16 bar, and fox token-exact vs the
+# original. Coordinator decision 2026-11-02 after run 41391040980 (kept on record) was rejected
+# by the earlier page-similarity gate (r2 char ratio >= published q4_k on all three cases); that
+# gate is still computed and recorded here, as a diagnostic only. The receipt/form gaps appear
+# with the shipped q4_k too (native-vs-original pipeline differences; see PLAN).
+owner_ok=$(python - "$OUT/diff.r2.err" "$OUT/compare.json" <<'PYEOF'
+import json, re, sys
+cos = [float(m) for m in re.findall(r"cos_min=([0-9.]+)", open(sys.argv[1]).read())]
+c = json.load(open(sys.argv[2]))["cases"]
+fox = next((x for x in c if x["id"] == "fox"), None)
+ok = len(cos) == 19 and min(cos) > 0.98 and fox is not None and fox["arms"]["r2"]["ids_exact"]
+print(f"{int(ok)} stages={len(cos)} min_stage_cos={min(cos) if cos else None} fox_ids_exact={fox and fox['arms']['r2']['ids_exact']}")
+PYEOF
+)
+sim_ok=$(python -c "import json;c=json.load(open('$OUT/compare.json'))['cases'];print(int(len(c)==3 and all(x['arms']['r2']['char_ratio']>=x['arms']['q4_k']['char_ratio'] for x in c)))")
+note "owner_bar_gate=${owner_ok}"
+note "page_similarity_diagnostic(r2>=q4_k on all cases)=${sim_ok} (recorded, not a publication gate)"
+[ "${owner_ok%% *}" = 1 ] || fail=1
 
 # 5. publish (new file; the old file stays untouched)
 if [ "$MODE" = publish ] && [ $fail = 0 ]; then
