@@ -1382,8 +1382,11 @@ static bool run_cached_step(got_ocr::context & ctx, const int32_t * token_ids, i
 // ---------------------------------------------------------------------------
 // Pipeline-parity gates against the original stepfun-ai/GOT-OCR2_0 chat()
 // (modeling_GOT.py). Each one is a tri-state: "1" forces on, "0" forces off,
-// unset takes the default below. Defaults were chosen by the per-factor A/B in
-// tests/results/got-ocr2-pipeline-parity/ (see PLAN/HISTORY).
+// unset takes the default below. All three default ON (opt out with =0) after
+// the per-factor A/B in tests/results/got-ocr2-pipeline-parity/ (heavy-cpu run
+// 41452383740): with all three, F16 is token-exact against the original on all
+// frozen cases (fox 16/16, receipt_example 220/220, simple_form 52/52 IDs), and
+// each factor's flip improves or keeps every case at F16 and Q4_K.
 //   CRISPEMBED_GOT_OCR_PIL_BICUBIC  torchvision Resize((1024,1024), BICUBIC) on a
 //                                   PIL image = Pillow's fixed-point bicubic with
 //                                   antialias; legacy = nearest neighbour.
@@ -1397,9 +1400,9 @@ static bool run_cached_step(got_ocr::context & ctx, const int32_t * token_ids, i
 //                                   n=3 over the generated tokens only.
 //   CRISPEMBED_GOT_OCR_NO_REPEAT_NGRAM=<n>  diagnostic override of n (0 = off).
 // ---------------------------------------------------------------------------
-static constexpr bool kGotPilBicubicDefault = false;
-static constexpr bool kGotOrigSystemDefault = false;
-static constexpr bool kGotOrigNgramDefault = false;
+static constexpr bool kGotPilBicubicDefault = true;
+static constexpr bool kGotOrigSystemDefault = true;
+static constexpr bool kGotOrigNgramDefault = true;
 
 static bool got_gate(const char * name, bool default_on) {
     return default_on ? !core_env::explicitly_off(name) : core_env::on(name);

@@ -15,7 +15,7 @@
 #   gh workflow run heavy-cpu.yml --ref fix/got-ocr2-pipeline-parity \
 #       -f script=tools/ci-heavy/got_ocr2_pipeline_parity.sh -f isolated_lane=got-parity \
 #       -f pip="torch transformers>=4.49 accelerate pillow numpy safetensors huggingface_hub"
-#   args: [max_new_tokens] [f16 arm list] [q4 arm list]   (arms are RSN bit strings)
+#   args: [max_new_tokens] [f16 arm list] [q4 arm list]   (arms are RSN bit strings, or dft = no env)
 set -uo pipefail
 OUT=${HEAVY_OUT:?}
 S=${HEAVY_SCRATCH:?}
@@ -66,9 +66,11 @@ run_arm() {  # model_tag file arm
         local id=${c%%=*} img=${c#*=}
         local d="$OUT/native/$tag.$arm.$id"; mkdir -p "$d"
         local t0=$EPOCHREALTIME
-        CRISPEMBED_GOT_OCR_PIL_BICUBIC=${arm:0:1} CRISPEMBED_GOT_OCR_ORIG_SYSTEM=${arm:1:1} \
-        CRISPEMBED_GOT_OCR_ORIG_NGRAM=${arm:2:1} CRISPEMBED_GOT_OCR_DUMP_DIR="$d" \
-            "$BIN" -t 4 -m "$f" --ocr "$img" --ocr-max-tokens "$MAXNEW" > "$d/text.txt" 2> "$d/stderr.txt"
+        # arm "dft" sets none of the gates (shipping defaults); otherwise R/S/N forced to 0/1.
+        local -a envs=(CRISPEMBED_GOT_OCR_DUMP_DIR="$d")
+        [ "$arm" = dft ] || envs+=(CRISPEMBED_GOT_OCR_PIL_BICUBIC=${arm:0:1} CRISPEMBED_GOT_OCR_ORIG_SYSTEM=${arm:1:1}
+                                   CRISPEMBED_GOT_OCR_ORIG_NGRAM=${arm:2:1})
+        env "${envs[@]}" "$BIN" -t 4 -m "$f" --ocr "$img" --ocr-max-tokens "$MAXNEW" > "$d/text.txt" 2> "$d/stderr.txt"
         local rc=$?
         python -c "print(round($EPOCHREALTIME-$t0,2))" > "$d/secs.txt"
         [ $rc = 0 ] || { note "native $tag.$arm.$id rc=$rc"; fail=1; }
