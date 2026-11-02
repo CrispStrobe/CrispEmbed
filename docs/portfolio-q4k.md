@@ -32,6 +32,28 @@ Q4_K. Do not concatenate rows or change semantic shapes to hide incompatibility.
 Use the production C quantizer where its shape policy applies, preserving its
 critical guards; any new precision override needs authored type/byte controls.
 
+## Owner precision bars (1 November 2026)
+
+This preparation predates [the precision acceptance policy](precision-acceptance.md).
+Acceptance is now judged by final-output cosine against the original model,
+minimum over every frozen case: F32 > 0.99, F16 > 0.98, Q8_0 > 0.97 and Q4_K
+(including mixed Q4_K recipes) > 0.94. The strict 0.002 absolute / 0.99999
+row-cosine budgets above stay recorded diagnostics, never relaxed or deleted; a
+strict failure alone no longer rejects a variant that clears its bar. Each result
+still reports the worst intermediate stage, decoded agreement (IDs/text/EOS,
+typed responses, retrieval rankings) and timing.
+
+Re-scored status of this branch's Q4_K lanes (no lane is qualified):
+
+| Lane | Measured Q4_K final output | Verdict under the bar |
+| --- | --- | --- |
+| Josev full150-Q4_K (v4) | Final-norm global cosine 0.9367–0.9606 (min row 0.6002); typed responses not exact in all four cases; final-logit cosine not recorded | Not qualified: one case is below 0.94 and decoded output differs |
+| Josev mixed A/B/C | Recipes and authored controls only | Unmeasured |
+| UltraBERT mixed Q4_K | Initial credential/lineage failures and model-free controls only | Unmeasured |
+| MoEdern 1.5M/27M/115M padded Q4_K | Gated runtime/profile controls; 1.5M SciFact panel ran F32 only (`q4_attempted` false) | Unmeasured |
+| Unlimited-OCR-2 mixed Q4_K (v3) | F16 control exact on four cases; conversion stopped at `v.pos_embed` protection, zero Q4 forwards | Unmeasured |
+| MiniCPM-OCR graph Q4_K/Q8 | Q8 arms failed patch loading before inference | Unmeasured |
+
 ## Current branches and executions
 
 - Coordinator: `work/portfolio-closure-q4k-20261028`. It prepares a default-off
