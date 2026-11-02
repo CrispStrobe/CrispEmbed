@@ -853,6 +853,45 @@ MODELS = {
         "desc": "OXR-1.0; registry oxr-1.0-f16, oxr-1.0-q8_0, oxr-1.0-q4_k-head and oxr-1.0-dfine-layout.",
         "publish_files": [],
     },
+    "MI-GAN-512": {  # license lineage only; published by tools/ci-heavy/inpaint_gguf_publish.py
+        "base_model": "Picsart-AI-Research/MI-GAN (migan_512_places2.pt, source 2b793c5e)",
+        "arch": "MI-GAN generator, fixed 512 (image inpainting)",
+        "dim": 0, "layers": 0, "params": "7M", "pooling": "n/a (inpainting)", "tokenizer": "n/a",
+        "license": "mit",
+        "langs": [],
+        "desc": "MI-GAN512 from private cstr/crispembed-migan512-private@e55a0e9d (exact bytes; "
+                "docs/inpaint-publication-v1.json); registry migan512-f32/f16/q8_0/q4_k.",
+        "publish_files": [],
+    },
+    "Moebius-inpaint": {  # license lineage only; published by tools/ci-heavy/inpaint_gguf_publish.py
+        "base_model": "hustvl/Moebius",
+        "arch": "Moebius latent inpainting denoiser (ft_places2) + SDXL VAE",
+        "dim": 0, "layers": 0, "params": "0.2B", "pooling": "n/a (inpainting)", "tokenizer": "n/a",
+        "license": "mit",  # author HF card; the pinned README states Apache-2.0 (both records re-hosted, no dual licence)
+        "langs": [],
+        "desc": "Moebius from private cstr/crispembed-moebius-private@25f3ce9a (exact bytes; q4_k-mix = "
+                "CRISPEMBED_QUANTIZE_INPAINT_MIX=1); registry moebius-f32/f16/q8_0/q4_k-mix.",
+        "publish_files": [],
+    },
+    "PixelHacker": {  # license lineage only; published by tools/ci-heavy/inpaint_gguf_publish.py
+        "base_model": "hustvl/PixelHacker",
+        "arch": "PixelHacker latent inpainting denoiser (ft_places2, gated linear attention) + SDXL VAE",
+        "dim": 0, "layers": 0, "params": "0.9B", "pooling": "n/a (inpainting)", "tokenizer": "n/a",
+        "license": "mit",
+        "langs": [],
+        "desc": "PixelHacker from private cstr/crispembed-pixelhacker-private@fadc6a8c (exact bytes); "
+                "registry pixelhacker-f32/f16/q8_0/q4_k.",
+        "publish_files": [],
+    },
+    "SDXL-VAE-inpaint": {  # license lineage only; published by tools/ci-heavy/inpaint_gguf_publish.py
+        "base_model": "stabilityai/sdxl-vae",
+        "arch": "SDXL VAE (as redistributed in hustvl/PixelHacker vae/)",
+        "dim": 0, "layers": 0, "params": "84M", "pooling": "n/a (VAE)", "tokenizer": "n/a",
+        "license": "mit",
+        "langs": [],
+        "desc": "SDXL VAE companion for Moebius/PixelHacker; registry sdxl-vae-inpaint-f32/f16/q8_0/q4_k.",
+        "publish_files": [],
+    },
     "TeleOCR": {
         "base_model": "Qwen/Qwen2.5-VL-3B-Instruct",
         "arch": "Qwen2.5-VL vision tower (from Qwen2.5-VL-3B) + Qwen3-0.6B-style decoder",

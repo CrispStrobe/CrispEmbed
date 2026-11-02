@@ -11,7 +11,8 @@ namespace {
 constexpr size_t W = 313344, X = 1536 * 12, Y = 384 * 12, D = 1536 * 384;
 bool finite(const float * p, size_t n) {
     if (!p) return false;
-    for (size_t i = 0; i < n; ++i) if (!std::isfinite(p[i])) return false;
+    for (size_t i = 0; i < n; ++i)
+        if (!std::isfinite(p[i])) return false;
     return true;
 }
 struct owner {
@@ -22,17 +23,18 @@ struct owner {
         if (ctx) ggml_free(ctx);
     }
 };
-}
+} // namespace
 
 // mode0: original IQ4_XS weight x F32 input (actual Q8_K conversion).
 // mode1: actual graph cast of unchanged IQ4_XS coefficients to F32, then
 // F32 x F32 matmul. Optional coefficient output only observes that cast.
-extern "C" int crispembed_layer3_f32(int mode, const uint8_t * weight, int weight_bytes,
-                                     const float * input, int input_count, float * output,
-                                     int capacity, float * coefficients, int coefficient_count, int threads) {
-    if ((mode != 0 && mode != 1) || !weight || weight_bytes != int(W) || input_count != int(X) ||
-        !finite(input, X) || !output || capacity != int(Y) || threads < 1 || threads > 2 ||
-        (coefficients ? coefficient_count != int(D) || mode != 1 : coefficient_count != 0)) return -1;
+extern "C" int crispembed_layer3_f32(int mode, const uint8_t * weight, int weight_bytes, const float * input,
+                                     int input_count, float * output, int capacity, float * coefficients,
+                                     int coefficient_count, int threads) {
+    if ((mode != 0 && mode != 1) || !weight || weight_bytes != int(W) || input_count != int(X) || !finite(input, X) ||
+        !output || capacity != int(Y) || threads < 1 || threads > 2 ||
+        (coefficients ? coefficient_count != int(D) || mode != 1 : coefficient_count != 0))
+        return -1;
     for (size_t k = 0; k < W / 136; ++k) {
         uint16_t scale;
         std::memcpy(&scale, weight + k * 136, 2);
@@ -56,7 +58,8 @@ extern "C" int crispembed_layer3_f32(int mode, const uint8_t * weight, int weigh
             // Observer neutrality therefore changes only host readback.
             ggml_set_output(operand);
             if (operand->type != GGML_TYPE_F32 || ggml_nbytes(operand) != D * 4 ||
-                ggml_get_type_traits_cpu(operand->type)->vec_dot_type != GGML_TYPE_F32) return -5;
+                ggml_get_type_traits_cpu(operand->type)->vec_dot_type != GGML_TYPE_F32)
+                return -5;
         }
         auto * y = ggml_mul_mat(o.ctx, operand, x);
         ggml_set_output(y);
@@ -80,5 +83,7 @@ extern "C" int crispembed_layer3_f32(int mode, const uint8_t * weight, int weigh
         if (coefficients) std::copy_n(derived.get(), D, coefficients);
         std::copy_n(pending.get(), Y, output);
         return int(Y);
-    } catch (...) { return -10; }
+    } catch (...) {
+        return -10;
+    }
 }
