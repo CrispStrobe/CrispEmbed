@@ -122,7 +122,7 @@ struct DequantCache {
 // guard-variable check on every call, and this function is called millions of
 // times per page. This is initialised once before main and reads as a plain
 // load, so the branch is perfectly predicted.
-inline const bool g_dot_wide = std::getenv("CRISPEMBED_DOT_WIDE") != nullptr;
+inline const bool g_dot_wide = core_env::on("CRISPEMBED_DOT_WIDE");
 
 static inline float dot_product_wide(const float * a, const float * b, int n) {
     float s = 0.0f;
@@ -890,7 +890,7 @@ static inline void conv2d_cpu(const float * in, float * out, const float * weigh
     // box was useless (contradictory 1.8x-slower / 2x-faster readings at load
     // 40-52); only CPU time was stable. See conv2d_1x1_cpu above.
     if (kh == 1 && kw == 1 && stride == 1 && pad == 0) {
-        static const bool fast_1x1 = std::getenv("CRISPEMBED_CONV1X1_FAST") != nullptr;
+        static const bool fast_1x1 = core_env::on("CRISPEMBED_CONV1X1_FAST");
         if (fast_1x1) {
             conv2d_1x1_cpu(in, out, weight, bias, in_ch, out_ch, out_H, out_W, groups);
             return;
@@ -901,7 +901,7 @@ static inline void conv2d_cpu(const float * in, float * out, const float * weigh
     // See conv2d_depthwise_cpu for why this shape is the generic path's worst
     // case. CRISPEMBED_CONVDW_FAST=1.
     if (groups > 1 && groups == in_ch && groups == out_ch) {
-        static const bool fast_dw = std::getenv("CRISPEMBED_CONVDW_FAST") != nullptr;
+        static const bool fast_dw = core_env::on("CRISPEMBED_CONVDW_FAST");
         if (fast_dw) {
             conv2d_depthwise_cpu(in, out, weight, bias, in_ch, H, W, kh, kw, stride, pad);
             return;

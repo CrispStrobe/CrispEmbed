@@ -32,6 +32,7 @@
 #include <cstring>
 #include <string>
 #include <vector>
+#include "env_gate.h"
 
 namespace core_imgout {
 
@@ -109,8 +110,8 @@ bool c2pa_sign_png(std::string & png, const char * engine);
 // True when both a cert and a key are configured. Split out so the CLI can say
 // why an image is unsigned instead of silently degrading.
 inline bool c2pa_configured() {
-    const char * c = std::getenv("CRISPEMBED_C2PA_CERT");
-    const char * k = std::getenv("CRISPEMBED_C2PA_KEY");
+    const char * c = core_env::value("CRISPEMBED_C2PA_CERT");
+    const char * k = core_env::value("CRISPEMBED_C2PA_KEY");
     return c && *c && k && *k;
 }
 

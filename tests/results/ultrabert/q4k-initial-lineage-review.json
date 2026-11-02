@@ -1,0 +1,10 @@
+{
+  "run": 40724453759,
+  "source": "87eed2035eecc1f5382d779e6fb48590f8bfb87a",
+  "artifact_id": 12835117561,
+  "artifact_bytes": 873,
+  "artifact_sha256": "beda233d5f8e6bfad4f064a8990a9efc64f51e2b5eb97fbde025e902abc7e85c",
+  "producer_json_sha256": "50ee8a66704c5c9e19ee10c9415cb2a8805420043186575f72c4a6216030de3a",
+  "initial_failure": "Parent workflow cancelled after successful frozen original shard/freeze jobs; candidate inference and conversion never started.",
+  "correction": "Authenticate all nine pinned successful original jobs; preserve run source, attempt and all archive/member hashes."
+}

@@ -1,0 +1,147 @@
+{
+ "schema": "crispembed.qwen2vl.q4k-sweep.v1",
+ "model": "teleocr",
+ "bar": 0.94,
+ "recipes": [
+  {
+   "recipe": "v4",
+   "file_bytes": 1409029280,
+   "final_cos_min": 0.6942820075201394,
+   "worst_case": "table",
+   "complete": true,
+   "per_case": {
+    "code": 0.9793255111369689,
+    "formula": 0.9896787628688971,
+    "layout": 0.9661180874963736,
+    "synthetic": 0.9885343155503692,
+    "table": 0.6942820075201394,
+    "text": 0.9041831711633944
+   },
+   "worst_stage": {
+    "case": "table",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.23010847137913074
+   }
+  },
+  {
+   "recipe": "v4attn",
+   "file_bytes": 1811768480,
+   "final_cos_min": 0.9113370767354594,
+   "worst_case": "table",
+   "complete": true,
+   "per_case": {
+    "code": 0.9954322657254943,
+    "formula": 0.9909367901016125,
+    "layout": 0.9842656953238609,
+    "synthetic": 0.9986725936659618,
+    "table": 0.9113370767354594,
+    "text": 0.9688234059383034
+   },
+   "worst_stage": {
+    "case": "code",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.28486463457933214
+   }
+  },
+  {
+   "recipe": "v4e8",
+   "file_bytes": 1263170784,
+   "final_cos_min": 0.6940982143377304,
+   "worst_case": "table",
+   "complete": true,
+   "per_case": {
+    "code": 0.9791103551659108,
+    "formula": 0.9897321838710842,
+    "layout": 0.9661690438847874,
+    "synthetic": 0.9885696081726413,
+    "table": 0.6940982143377304,
+    "text": 0.9044537839059209
+   },
+   "worst_stage": {
+    "case": "table",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.23009942763871738
+   }
+  },
+  {
+   "recipe": "v4ffn",
+   "file_bytes": 1710494880,
+   "final_cos_min": 0.9736771260980036,
+   "worst_case": "table",
+   "complete": true,
+   "per_case": {
+    "code": 0.986012839207097,
+    "formula": 0.9907684888045781,
+    "layout": 0.992319558373415,
+    "synthetic": 0.9928536122097247,
+    "table": 0.9736771260980036,
+    "text": 0.9856811987246638
+   },
+   "worst_stage": {
+    "case": "code",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.4327452676272395
+   }
+  },
+  {
+   "recipe": "v5",
+   "file_bytes": 1470264480,
+   "final_cos_min": 0.9170146159541281,
+   "worst_case": "table",
+   "complete": true,
+   "per_case": {
+    "code": 0.9962587007543104,
+    "formula": 0.9966171843512789,
+    "layout": 0.9982601419900065,
+    "synthetic": 0.9982459274957052,
+    "table": 0.9170146159541281,
+    "text": 0.9991921207267076
+   },
+   "worst_stage": {
+    "case": "code",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.2755936708917972
+   }
+  },
+  {
+   "recipe": "v6",
+   "file_bytes": 1535327392,
+   "final_cos_min": 0.990874268803249,
+   "worst_case": "table",
+   "complete": true,
+   "per_case": {
+    "code": 0.9967477868348227,
+    "formula": 0.9983237804328551,
+    "layout": 0.994307698325708,
+    "synthetic": 0.9995589786178415,
+    "table": 0.990874268803249,
+    "text": 0.9996381379942342
+   },
+   "worst_stage": {
+    "case": "code",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.4945829124099629
+   }
+  },
+  {
+   "recipe": "v8",
+   "file_bytes": 1653970080,
+   "final_cos_min": 0.9908129915310372,
+   "worst_case": "table",
+   "complete": true,
+   "per_case": {
+    "code": 0.9992827421737361,
+    "formula": 0.9995497179399809,
+    "layout": 0.9981523340962134,
+    "synthetic": 0.9998829229223037,
+    "table": 0.9908129915310372,
+    "text": 0.999897032183529
+   },
+   "worst_stage": {
+    "case": "code",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.8909878993779466
+   }
+  }
+ ]
+}

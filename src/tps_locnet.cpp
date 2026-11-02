@@ -188,7 +188,7 @@ tps_locnet * tps_locnet_load(const char * gguf_path) {
     // nothing -- the waste CRISPEMBED_TESSERACT_GPU_LOAD was introduced to
     // remove. TPS_LOCNET_GPU_LOAD=1 restores the old behaviour for bisection.
     const bool force_cpu = (getenv("TPS_LOCNET_FORCE_CPU") && atoi(getenv("TPS_LOCNET_FORCE_CPU")));
-    const bool gpu_load = getenv("TPS_LOCNET_GPU_LOAD") != nullptr && !force_cpu;
+    const bool gpu_load = core_env::on("TPS_LOCNET_GPU_LOAD") && !force_cpu;
     ggml_backend_t backend = gpu_load ? crispasr_init_gpu_backend() : ggml_backend_cpu_init();
     if (!backend) backend = ggml_backend_cpu_init();
 

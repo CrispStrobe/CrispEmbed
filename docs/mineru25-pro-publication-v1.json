@@ -81,6 +81,19 @@
       "precision_receipt": "tests/results/mineru25/precision.json",
       "precision_dtype": "q4_k",
       "note": "decoder mostly Q4_0 (896-wide rows fall back from Q4_K) with ffn_down Q4_K; the quantizer keeps vision and embeddings Q8_0"
+    },
+    "Q4_K_MIX": {
+      "filename": "mineru25-pro-2604-q4_k-mix.gguf",
+      "from": "F32",
+      "type": "q8_0",
+      "quantize_env": {
+        "CRISPEMBED_QUANTIZE_QWEN2VL_POLICY": "mineru_q4k_v1"
+      },
+      "note": "Named policy mineru_q4k_v1 (docs/qwen2vl-q4k-recipes.md): vision tower and decoder ffn_down Q4_K, the 896-wide decoder matrices and the tied embedding IQ4_NL (Q4_K needs 256-column rows; IQ4_NL replaces the old Q4_0 fallback at the same 4.5 bits). 734 MiB vs 1,832 MiB Q8_0. Clears the Q4_K final-logit cosine bar (> 0.94) on all eight cases on CPU, Metal and CUDA; free-running decoding is not token-exact on the German and layout-page cases.",
+      "precision_receipt": "tests/results/qwen2vl-q4k/mineru-q4k-precision.json",
+      "precision_dtype": "mineru_q4k_v1",
+      "precision_tier": "q4_k",
+      "precision_gate": "cosine"
     }
   },
   "receipts": {

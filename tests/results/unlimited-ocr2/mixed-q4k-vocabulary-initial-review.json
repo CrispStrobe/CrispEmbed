@@ -1,0 +1,27 @@
+{
+  "schema": "crispembed-unlimited-q4k-vocabulary-review-v1",
+  "source": "279a8906b92c9219e45cf35567adbe7e9e8811c5",
+  "provider": "Kaggle CPU",
+  "version_label": "v2",
+  "completed": false,
+  "classification": "Harness dimension limit129000 rejected exact129280 vocabulary logits",
+  "actual_logit_shape": [
+    1,
+    1,
+    129280
+  ],
+  "actual_logit_bytes": 517120,
+  "stages_captured": 58,
+  "first_baseline_case": "paragraphs",
+  "first_baseline_three_output_streams_original_ids_and_raw_text_exact": true,
+  "first_baseline_generated_ids": 146,
+  "actual_baseline_ref_executed": false,
+  "q4_candidate_executed": false,
+  "production_math_changed": false,
+  "numerical_budgets_changed": false,
+  "raw_retained_remotely": true,
+  "limits": [
+    "One F16 case completed in ordinary/plain/observed modes before the adapter rejection. The full four-case F16 barrier and Q4 candidates remain pending.",
+    "Retained real-decoder success is separate from whole-model or quantized qualification."
+  ]
+}

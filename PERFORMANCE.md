@@ -1,3 +1,16 @@
+## GOT-OCR2 original-pipeline parity (2 November 2026, `fix/got-ocr2-pipeline-parity`)
+
+Hosted x86 CPU, 4 vCPU, `-t 4`, one-shot runs including load, 1024-token cap, run 41456179762.
+Reference: original stepfun-ai/GOT-OCR2_0, CPU F32 (generation only, model loaded).
+
+| Case | F16 s | Q4_K s | Original s | F16 IDs vs original | Q4_K vs original |
+|---|---:|---:|---:|---|---|
+| fox | 27.5 | 14.8 | 8.0 | 16/16 exact (was exact) | exact |
+| receipt_example | 34.3 | 17.6 | 23.4 | 220/220 exact (was ratio 0.619) | ratio 0.7005 (was 0.6889) |
+| simple_form | 28.4 | 15.2 | 10.7 | 52/52 exact (was 0.481) | ratio 0.8865 (was 0.0753) |
+
+Legacy vs new defaults cost the same (F16 receipt 35.6 vs 35.3 s in run 41452383740).
+M1 Metal F16 receipt: 220/220 exact, 125.6 s wall including 28.4 s Metal library load.
 ## Repaired quantized registry artifacts (2 November 2026, hosted CPU 4 vCPU)
 
 Minimum / mean cosine against the original Python model over the below-bar panel
@@ -11,6 +24,52 @@ Minimum / mean cosine against the original Python model over the below-bar panel
 | bge-m3-heads-f16 | 1599 | 1.0000 / 1.0000 | 1.0000 | 1.0000 / 1.0000 | 37 per head | on par |
 | bge-m3-heads-q8_0-mixed | 718 | 0.9995 / 0.9996 | 0.9991 | 0.9726 / 0.9992 | ~15 per head | on par, thin ColBERT margin |
 | bge-m3 Q8_0 uniform (not published) | 583 | 0.9987 | 0.9983 | 0.6124 / 0.9976 | 14 per head | worse (ColBERT) |
+
+## 2 November 2026 — MiniCPM-OCR-1.0 speed paths (Kaggle CPU, Xeon 2.2 GHz x4, F16 GGUF)
+
+Kaggle `crispembed-minicpm-ocr-bench-graph` at `68e003b5`, receipt
+[bench-graph.json](tests/results/minicpm-ocr/bench-graph.json). All arms ran the same 5
+reference cases (max 1024 new tokens) on the same host. **Every arm is token-ID and text
+exact on 5/5, CER 0.** Native parity with all three gates on
+([native-parity-graph.json](tests/results/minicpm-ocr/native-parity-graph.json)) is
+5/5 exact under both F32 and F16. Final-layer max-abs is 1e-4 to 2e-3, and first-logit
+max-abs is at most 6.4e-5. All gates stay default-off.
+
+| arm (4 threads) | total s | vision s | prefill s (all cases) | decode ms/token |
+|---|---|---|---|---|
+| before: decoder_cpu, F16 vision | 3264 | 704 | 448 | 4765 |
+| graph decoder, `exact` matmul | 1317 | 680 | 93 | 1175 |
+| graph decoder, `native` (F16 mul_mat) | 1000 | 680 | 202 | 107 |
+| graph decoder, `f32` (F32 copies at init) | 925 | 680 | 88 | 169 |
+| vision F32 | 2738 | 338 | 425 | 4529 |
+| vision F32 + batched slices | 2715 | 288 | 413 | 4510 |
+| graph exact + vision F32 + batch | 829 | 288 | 81 | 1011 |
+| + vision flash attention | **762** | 212 | 81 | 1033 |
+| same as row 7, 2 threads | 921 | 342 | 92 | 1075 |
+| Transformers 5.21.0 F32 | 385 | (vision+prefill 297) | | 205-218 |
+
+- Decode: the graph's `f32` matmul (169 ms/token) and `native` matmul (107 ms/token)
+  are both faster than Transformers' 0.21 s/token, a 28x and 45x speed-up over the old
+  path. The default `exact` mode (row-wise dequant plus F32 dot) is only 4x faster; its
+  custom op is memory/dispatch-bound.
+- Prefill: 448 s down to 81-93 s; the graph uses ggml attention in place of the scalar loops.
+- Vision: F32 copies give 2.1x, batching 1.17x and flash attention 1.36x, for 704 s down
+  to 212 s in total.
+- Combined arms, second run (`1992559e`, [receipt](tests/results/minicpm-ocr/bench-graph-v2.json),
+  Transformers rerun on the same host):
+
+  | arm | total s | line | para-en | table | tall | tiny | decode ms/token | exact |
+  |---|---|---|---|---|---|---|---|---|
+  | **recommended**: graph `f32` + vision F32 + batch + flash | **506** | 31.1 | 114.8 | 109.8 | 222.1 | 27.9 | 149-177 | 5/5 |
+  | graph `native` + vision F32 + batch + flash | 603 | 30.1 | 132.6 | 138.5 | 270.8 | 31.3 | 88-119 | 5/5 |
+  | Transformers 5.21.0 F32 | 439 | 18.9 | 92.0 | 89.1 | 220.3 | 18.5 | ~210 | 5/5 |
+
+  The recommended configuration is 6.5x faster than the old path (3264 s) and 1.15x
+  Transformers' time overall, with matching time on `tall`. Recommended env:
+  `CRISPEMBED_QWEN35_GRAPH_DECODER=1 CRISPEMBED_QWEN35_GRAPH_MATMUL=f32
+  CRISPEMBED_MINICPM_OCR_VISION_F32=1 CRISPEMBED_MINICPM_OCR_VISION_BATCH=1
+  CRISPEMBED_MINICPM_OCR_VISION_FLASH=1`. It keeps about 4.6 GB of extra F32 weight copies.
+  All gates stay default-off.
 
 ## Real-scan OCR quality, native vs original (2 November 2026, Kaggle 4 vCPU)
 
@@ -125,6 +184,22 @@ eight frozen fixtures, CPU at 4 threads, machine shared (load 6–27):
 1080p synthetic subtitle frames, Metal F32 batch 1: 14 tiles 10.7 s, 20 tiles
 11.9 s; CPU/F32 in the same processes 17–60 s. Hosted x86 4 vCPU: CPU/F32
 1080p 0.83 tiles/s; delivery-5 CPU kernels 630 ms/tile. Diagnostic only.
+## 2 November 2026 — TeleOCR / MinerU2.5-Pro Q4_K-class policies (size and final-logit cosine)
+
+Final cos min = minimum final-logit cosine over every generated position of every
+frozen case, teacher-forced (bar 0.94). Warm s = sum over cases of the free-running run.
+
+| Model | Recipe | MiB | CPU (hosted) | Metal (M1) | CUDA (T4) | Decoded exact | CUDA warm s |
+|---|---|---|---|---|---|---|---|
+| TeleOCR | `teleocr_q4k_v1` | 1,140 | 0.9677 | 0.9677 | 0.9570 | 5/6 | 25.8 |
+| TeleOCR | Q8_0 (published) | 2,015 | 0.9985 | 0.9985 | 0.9939 | 6/6 | |
+| TeleOCR | Q4_K_M (published) | 1,834 | 0.9047 | 0.9047 | 0.9215 | 6/6 | |
+| MinerU | `mineru_q4k_v1` | 734 | 0.9673 / 0.9521 | 0.9602 | 0.9611 | 6/8 | 30.3 |
+| MinerU | Q8_0 (published, vision F16) | 1,832 | 0.9988 | 0.9998 | 0.9993 | 8/8 | |
+
+Status: on par with the bar on every device (not token-exact). Source:
+`docs/qwen2vl-q4k-recipes.md`.
+
 ## 1 November 2026 — TeleOCR / MinerU2.5-Pro on Apple M1 Metal vs CPU
 
 Warm wall time per recognition, resident context, shared M1 (other agents
@@ -7327,6 +7402,112 @@ gives per-process peaks118.453125MiB released,119.40625MiB candidate unset,
 process. No paired timing/memory improvement, portfolio, mobile-device, final
 integrated-source or successor-release qualification follows from this diagnostic.
 
+## MiniCPM completed scalar benchmark — 28 October 2026
+
+The unchanged [v3 producer](tests/results/minicpm-ocr/bench-v3.json) at `c9718788`
+and [independent source/receipt review](tests/results/minicpm-ocr/bench-review.json)
+retain all five cases per arm. Both Q8 thread arms fail patch-shape loading before
+inference; this is a format failure and gives no Q8 quality or speed result.
+The subsequent quantizer repair and graph replay remain separate.
+
+| Case | F16 vision seconds | F32 vision seconds | F16/F32 vision ratio |
+| --- | ---: | ---: | ---: |
+| line | 27.700 | 14.051 | 1.97 |
+| paragraph | 137.854 | 65.875 | 2.09 |
+| table | 140.186 | 66.850 | 2.10 |
+| tall page | 260.325 | 130.493 | 1.99 |
+| tiny | 29.149 | 14.101 | 2.07 |
+
+Whole CLI totals are2,781.378s F16/no decoder cache and2,309.681s F32 at four
+threads; timing-off F16 totals2,791.370s. These are sequential same-job panels,
+not repeated alternating trials. F32/F16 timed outputs have ten producer-asserted
+exact ID/text flags; actual ID vectors were discarded by that old driver.
+Timing-off has five exact text flags and no observed ID proof. Prefill has no
+broad F32 advantage: the paragraph/tall/tiny F32 times are slightly higher.
+
+This supports a bounded future cache that promotes the *same* F16 vision values
+to F32 once, with explicit memory accounting and decoded/intermediate A/B.
+It does not establish that cache's speed or justify a default change. In the
+separate initial v2 F16 panel, cached decoding is63.4% of aggregate wall time,
+vision21.67% and prefill14.18%; the tiny case's roughly half-time vision share
+must not be generalized to the full panel. The stored-type decoder graph remains
+the first optimization to qualify.
+
+## Full original MoEdern SciFact baselines — 28 October 2026
+
+The new original-first captures use all300 queries/5,183 documents and exact
+float32-dot/float64-sum MaxSim. Source/runtime/weight authentication and13
+ordinary/observer/public-slice controls precede each full corpus. Large arrays
+remain remote and require hosted rehashing before native replay.
+
+| Original model | NDCG@10 | MRR@10 | Recall@100 |
+| --- | ---: | ---: | ---: |
+| [1.5M](tests/results/moedern-colbert/scifact-original-1p5m-review.json) | 0.6973488925 | 0.6663637566 | 0.9110000000 |
+| [27M](tests/results/moedern-colbert/scifact-original-27m-review.json) | 0.7273556949 | 0.6967632275 | 0.9353333333 |
+
+The1.5M aggregates exactly equal the earlier native quality-only measurement;
+this does not establish all-vector/token/ranking parity on the integrated source.
+The115M original and full native/Q4 comparisons remain separate pending work.
+Six author-score checks per completed model differ from the ranking reduction
+by at most4.918e-7. No quantized or cross-client retrieval verdict follows yet.
+
+### Bounded28 October portfolio measurements
+
+WASM F32 same-input operator replay40771950208 passes48/48 comparisons at
+0.002 maximum absolute/0.99999 minimum row cosine, after64 exact own-output
+byte checks.38/48 comparisons are bit exact; worst absolute error1.9073486e-6
+and minimum row cosine0.9999999999999738. Natural layer3 down-projection
+still reaches0.003311038 and the old whole-model candidate remains rejected.
+Do not turn local positive controls into a composed parity or speed claim;
+see [the complete bounded receipt](tests/results/packaging/wasm-f32-operators-v1.json).
+
+Josev's original new20 authored panel scores56/60 fields (English29/30,
+German27/30, NOUL20/20, choice18/20, score18/20), request accuracy0.85.
+All four misses belong to the ordering stratum. These20 correlated requests
+represent10 translated scenario pairs, not60 independent benchmark samples.
+Native/Q4 task parity and broad quality remain pending. Independent scalar
+softmax reconstruction of retained logits differs by at most1.1437108e-7.
+See [the original review](tests/results/josev2b/task-quality-original-review.json).
+
+Josev's first Q4_K four-request replay uses2.94452GB against published F32's
+7.65918GB. Plain child wall113.662s/F32 versus95.741s/Q4 and peak RSS6.09090GB
+versus1.53205GB include fresh context/model load and the same four requests;
+these are bounded diagnostics, not a warm-service benchmark. Quality rejects
+the candidate: five discrete decisions match but ordinal errors0.0472567 and
+0.0110667 exceed0.001, with203 strict stage negatives. See
+[the complete result](tests/results/josev2b/q4k-v4-review.json) before using size
+or latency as a reason to promote it. A/B/C sizes remain predictions until
+actual quantizer readback and task review.
+
+MiniCPM's completed real-scan nativev2 reports median1,209.31s/page and summed
+31,724.57s across20 pages; original comparisons median204.2s. The median paired
+wall ratio5.73764 is descriptive across different CPU models (EPYC7B12 versus
+Xeon) and different residency (fresh native CLI/context per page versus a
+resident original model). It is not a controlled backend speed ratio. Native
+per-child RSS is5,049.1–5,145.4MiB; original RSS is cumulative and cannot support
+a memory-win claim. Native mean CER0.05147 versus original0.051485, with19/20
+ID sequences exact. See [all scopes and limits](tests/results/ocr-real-scans/minicpm-initial-native-v2-review.json).
+A controlled plain graph/scalar benchmark remains pending after the seven-arm
+continuation; exclude dumps/projection-capture overhead and match model hashes,
+threads, hardware and residency before judging production speed.
+
+MoEdern1.5M full source93 corpus replay: all5,483 tokenizations match, but six
+of10,966 matrices fail strict F32 parity (worst absolute0.055745665,
+minimum row cosine0.974025100). NDCG@10=0.697348892463,
+MRR@10=0.666363756614, recall@100=0.911 and top-one agreement1.0 match the frozen
+original. No Q4 execution or publication qualification follows from that quality
+agreement. See [the authenticated rejection](tests/results/moedern-colbert/scifact-native-1p5m-v3-review.json).
+Unlimited mixed-Q4 v3 completes four F16 original ID/full-text controls
+(146/138/306/164 IDs;754 total) and16 native forwards with observed/repeat stage
+and vision identity. First conversion protection rejects before Q4 inference;
+there is no Q4 quality or speed result. The retained first candidate is
+6,481,651,840 bytes. [Exact source and rejection](tests/results/unlimited-ocr2/mixed-q4-v3-review.json).
+
+The targeted Unlimited form has934 exact original IDs/full text, CER0.0202,
+WER0.0025 and word recall1.0. Fresh native CLI wall307.91s/RSS12821MiB is a
+single hosted measurement with different original/native hardware and residency;
+no controlled speed or memory comparison is claimed.
+[Source and scope](tests/results/ocr-real-scans/unlimited-form-native-review.json).
 ## Josev protected-precision development result (29 October)
 
 Actual40787077302 preserves a passing227-stage F32 control. A/B/C sizes are

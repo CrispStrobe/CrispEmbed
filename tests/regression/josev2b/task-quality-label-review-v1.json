@@ -1,0 +1,19 @@
+{
+  "schema": "crispembed-josev-task-quality-label-review-v1",
+  "panel_path": "tests/regression/josev2b/task-quality-v1.json",
+  "panel_sha256": "2b1a3c8d0c20be4a64a7f21695b80da8f5f727dd8b50a4d8fd00523aa20efb18",
+  "panel_bytes": 37379,
+  "review_kind": "independent coordinator source review before model outputs",
+  "reviewed_requests": 20,
+  "reviewed_fields": 60,
+  "semantic_scenarios": 10,
+  "languages": {
+    "en": 10,
+    "de": 10
+  },
+  "all_labels_logically_follow_states": true,
+  "model_outputs_seen": false,
+  "human_adjudication": false,
+  "qualification": false,
+  "limits": "Correlated translated scenario pairs and joint-head fields; bounded owned holdout, not a broad representative benchmark."
+}

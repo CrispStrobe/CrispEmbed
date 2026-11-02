@@ -723,7 +723,7 @@ static void rst_run_blocks(restormer_context * ctx, float * x, int C, int H, int
         snprintf(buf, sizeof(buf), "%s.%d", prefix.c_str(), b);
         std::string p(buf);
 
-        if (ctx->enc_sched && !std::getenv("RESTORMER_SCALAR")) {
+        if (ctx->enc_sched && !core_env::on("RESTORMER_SCALAR")) {
             rst_block_raw bw = {};
             bw.norm1_w = ctx->get_raw(p + ".norm1.weight");
             bw.norm1_b = ctx->has_bias ? ctx->get_raw(p + ".norm1.bias") : nullptr;
@@ -761,7 +761,7 @@ static void rst_run_blocks(restormer_context * ctx, float * x, int C, int H, int
 
 // Debug dump callback (set by test harness via env var)
 static void rst_debug_dump(const char * name, const float * data, int n) {
-    if (!std::getenv("CRISPEMBED_RESTORMER_DEBUG")) return;
+    if (!core_env::on("CRISPEMBED_RESTORMER_DEBUG")) return;
     float mean = 0;
     for (int i = 0; i < n; i++) mean += data[i];
     mean /= n;
@@ -800,7 +800,7 @@ static void rst_forward_tile(restormer_context * ctx, const float * input, int W
                     ctx->has_bias ? ctx->get_raw("patch_embed.bias") : nullptr, C1, 3, 3, 1, 1, x.data());
     rst_debug_dump("patch_embed", x.data(), C1 * cH * cW);
     // Manual check: output[0,0,0] should be sum of 3x3 weighted patches
-    if (std::getenv("CRISPEMBED_RESTORMER_DEBUG")) {
+    if (core_env::on("CRISPEMBED_RESTORMER_DEBUG")) {
         float manual = 0;
         for (int ic = 0; ic < 3; ic++)
             for (int ky = 0; ky < 3; ky++)

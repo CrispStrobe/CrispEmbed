@@ -1,0 +1,5 @@
+cmake_minimum_required(VERSION 3.20)
+project(crispembed_josev_quant_controls LANGUAGES C CXX)
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/../josev-packed" packed)
+add_executable(josev-quant-controls controls.cpp)
+target_link_libraries(josev-quant-controls PRIVATE josev-packed-plain)

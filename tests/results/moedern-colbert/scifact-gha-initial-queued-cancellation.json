@@ -1,0 +1,33 @@
+{
+  "schema": "crispembed-moedern-scifact-gha-preexecution-cancellation-v1",
+  "service": {
+    "run": 40774208339,
+    "service_source": "6a1b7d6f77619dcdd9698c3c077eb7d746054bc1",
+    "path": ".github/workflows/moedern-scifact-gha-adapter-v1.yml",
+    "event": "workflow_dispatch",
+    "attempt": 1,
+    "status": "completed",
+    "conclusion": "cancelled",
+    "created_at": "2026-10-28T21:42:50Z",
+    "updated_at": "2026-10-28T21:50:59Z"
+  },
+  "intended_numerical_source": "fc4d84293fb0ee4115636d4f241d02854b41405d",
+  "checked_out_source": null,
+  "jobs": [
+    {
+      "id": 123119096686,
+      "name": "replay",
+      "conclusion": "cancelled",
+      "executed_steps": 0
+    }
+  ],
+  "payload_accessed": false,
+  "packages_installed": false,
+  "native_compiled": false,
+  "model_execution": false,
+  "numerical_conclusion": null,
+  "original_rerun": false,
+  "qualification": false,
+  "classification": "Queued cancellation before any job step; source superseded by reviewed CPU archive discovery correction.",
+  "limits": "Actions service/source/attempt/job metadata only. Dispatch intent is recorded separately; no checkout ran, so the intended numerical source is not asserted as an observed checkout."
+}

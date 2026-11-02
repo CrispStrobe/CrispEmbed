@@ -55,9 +55,37 @@ struct vision_debug {
     std::vector<float> embeddings, layer0, layer6, layer26, post_ln, merged;
 };
 
+// Optional wall-clock split of one encode() call (CRISPEMBED_MINICPM_OCR_TIMING):
+// host im2col + graph build/alloc/upload, the SigLIP encoder (through post_layernorm)
+// and the 2x2 merger/projector. With timing the encoder and merger run as two
+// graphs (same operators on the same F32 values); without it, one graph as before.
+struct vision_timing {
+    double setup_ms = 0, encoder_ms = 0, projector_ms = 0, readback_ms = 0;
+};
+
 // Runs one image as an independent sequence (no cross-image attention) and
 // appends its projector output ([tokens, out_width] row-major) to `merged`.
 bool encode(const vision_weights & w, ggml_backend_t backend, const image_part & image, int threads,
-            std::vector<float> & merged, vision_debug * debug);
+            std::vector<float> & merged, vision_debug * debug, vision_timing * timing = nullptr);
+
+// Default-off CRISPEMBED_MINICPM_OCR_VISION_BATCH: `count` equally sized parts in one
+// graph, each still an independent sequence (attention is per part; every other
+// op is row-wise). Output rows are part-major, as `count` encode() calls append.
+bool encode_batch(const vision_weights & w, ggml_backend_t backend, const image_part * parts, int count, int threads,
+                  std::vector<float> & merged, vision_debug * debug, vision_timing * timing = nullptr);
+
+// Default-off CRISPEMBED_MINICPM_OCR_VISION_F32: F32 copies of the vision and
+// projector matrices, converted once at init (exact F16 -> F32 values), so every
+// vision product runs F32 x F32 instead of F16 x (F16-rounded activations).
+struct vision_f32_store {
+    ggml_context * ctx = nullptr;
+    ggml_backend_buffer_t buffer = nullptr;
+    vision_f32_store() = default;
+    vision_f32_store(const vision_f32_store &) = delete;
+    vision_f32_store & operator=(const vision_f32_store &) = delete;
+    ~vision_f32_store();
+};
+// Rebinds the matrices of `w` to F32 copies owned by `store` (which must outlive `w`'s use).
+bool upcast_vision_f32(vision_weights & w, ggml_backend_t backend, vision_f32_store & store);
 
 } // namespace minicpm_ocr

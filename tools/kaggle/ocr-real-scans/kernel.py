@@ -16,6 +16,7 @@ import hashlib, json, os, re, subprocess, sys, time, urllib.request
 T_START = time.time()
 COMMIT = '@COMMIT@'
 MODE = '@MODE@'
+PAGE_IDS = ()                 # render an explicit input-only subset for targeted follow-ups
 BUDGET = 10.9 * 3600            # stop starting pages after this
 OUT = '/kaggle/working/ocr-real-scans'; os.makedirs(OUT, exist_ok=True)
 TMP = '/kaggle/temp'
@@ -32,7 +33,11 @@ sys.path.insert(0, 'tools/kaggle/ocr-real-scans')
 NT = str(os.cpu_count())
 MANIFEST = 'docs/ocr-real-scans-v2.json'
 manifest = json.load(open(MANIFEST))
+from receipt import select_pages
+selected_pages = select_pages(manifest, PAGE_IDS)
 report = dict(schema='crispembed-ocr-real-scans-run-v1', mode=MODE, commit=COMMIT, manifest=MANIFEST, failed_pages=[], cpu_count=os.cpu_count(), images=[], runs=[],
+              scope=dict(full_manifest=not PAGE_IDS, selected_page_ids=[p['id']for p in selected_pages],
+                         manifest_sha256=hashlib.sha256(open(MANIFEST,'rb').read()).hexdigest()),
               pages_meta={p['id']: dict(priority=p['priority'], tags=p['tags'], max_tokens=p['max_tokens']) for p in manifest['pages']})
 try:
     report['cpu_model'] = next(l.split(':', 1)[1].strip() for l in open('/proc/cpuinfo') if l.startswith('model name'))
@@ -50,16 +55,25 @@ def fetch(url):
         except Exception as e: err = e; time.sleep(10 * (i + 1))
     raise err
 os.makedirs(TMP + '/img', exist_ok=True)
+from receipt import admit_image
+sys.path.insert(0,'tools/ocr-real-scans')
+from retained_inputs import mounted_image
 parquets = {}
 pages = []
-for p in manifest['pages']:
+os.makedirs(OUT + '/input-images', exist_ok=True)
+for p in selected_pages:
     im = p['image']; rec = dict(id=p['id'], expected_sha256=im['sha256'])
     try:
-        if 'hf_parquet' in im:
+        retained=mounted_image(p,os.environ.get('CRISPEMBED_RETAINED_IMAGE_ROOT','/kaggle/input'))
+        if retained is not None:
+            data,rec['retained_input']=retained
+        elif 'hf_parquet' in im:
             hp = im['hf_parquet']
             if hp['url'] not in parquets:
-                path = TMP + '/cord.parquet'; open(path, 'wb').write(fetch(hp['url'])); parquets[hp['url']] = path
+                path = TMP + '/cord.parquet'; open(path, 'wb').write(fetch(hp['url']))
                 rec['parquet_sha256_ok'] = hashlib.sha256(open(path, 'rb').read()).hexdigest() == hp['sha256']
+                if not rec['parquet_sha256_ok']: raise ValueError('frozen parquet SHA256 differs')
+                parquets[hp['url']] = path
             out = subprocess.run([PY, '-c', 'import sys,pyarrow.parquet as pq;sys.stdout.buffer.write('
                                   'pq.read_table(sys.argv[1],columns=["image"]).slice(int(sys.argv[2]),1).to_pylist()[0]["image"]["bytes"])',
                                   parquets[hp['url']], str(hp['row'])], capture_output=True, check=True).stdout
@@ -77,7 +91,8 @@ for p in manifest['pages']:
         if not rec['sha256_ok'] or rec.get('revision_ok') is False:
             raise RuntimeError(f"PINNED IMAGE MISMATCH for {p['id']}: got sha256 {rec['sha256']}, expected {im['sha256']}"
                                f", revision_ok={rec.get('revision_ok')}; page FAILED, not run")
-        path = f"{TMP}/img/{p['id']}.jpg"; open(path, 'wb').write(data)
+        admit_image(data, im)  # Reject before admitting a page to either inference arm.
+        path = f"{OUT}/input-images/{p['id']}.jpg"; open(path, 'wb').write(data)
         pages.append(dict(id=p['id'], path=path, max_tokens=p['max_tokens'], gt=p['ground_truth'], priority=p['priority']))
     except Exception as e:
         rec['error'] = repr(e)[:500]; report['failed_pages'].append(p['id'])

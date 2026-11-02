@@ -181,7 +181,7 @@ static void print_usage(const char * prog) {
     fprintf(stderr, "       --ocr-engine N  primary engine "
                     "(dbnet_trocr|ppocrv6|easyocr|surya|tesseract|got|glm|qwen2vl|internvl2|lightonocr|qwen35-ocr|"
                     "ovisocr2|ovisocr3|minicpm-ocr|teleocr|mineru25-pro|oxr|qwen3vl|"
-                    "unlimited_ocr|olmocr|lfm2-vl)\n");
+                    "unlimited_ocr|unlimited-ocr2|olmocr|lfm2-vl)\n");
     fprintf(stderr, "       --denoise       NAFNet pre-processor; --punct-model M  post-OCR punctuation/spacing\n");
     fprintf(stderr, "       --lid-model M   text LID for language detection + Tesseract auto-select\n");
     fprintf(stderr, "       --truecase-model M  post-OCR truecasing (BiLSTM)\n");
@@ -1428,7 +1428,8 @@ static int cli_main(int argc, char ** argv) {
             if (n == "minicpm-ocr" || n == "minicpm_ocr") return 23;
             if (n == "teleocr") return 24;
             if (n == "qwen3vl") return 12;
-            if (n == "unlimited_ocr") return 13;
+            if (n == "unlimited_ocr" || n == "unlimited-ocr") return 13;
+            if (n == "unlimited-ocr2" || n == "unlimited_ocr2") return 13;
             if (n == "unified") return 14;
             if (n == "tesseract-fraktur" || n == "tesseract_fraktur") return 15;
             if (n == "ppocrv6") return 16;
@@ -1512,12 +1513,12 @@ static int cli_main(int argc, char ** argv) {
                         "error: mineru25-pro needs --ocr-rec FILE, no custom prompt, and CRISPEMBED_MINERU25_PRO=1\n");
                 return 1;
             }
-            // Experimental MiniCPM-OCR-1.0: no registry default; the decoder reuses
-            // the qwen35 kernels, so both gates are required.
-            if (eid == 23 && (ocr_rec_path.empty() || !core_env::on("CRISPEMBED_MINICPM_OCR") ||
-                              !core_env::on("CRISPEMBED_QWEN35_OCR"))) {
-                fprintf(stderr, "error: experimental minicpm-ocr needs --ocr-rec FILE, CRISPEMBED_MINICPM_OCR=1 "
-                                "and CRISPEMBED_QWEN35_OCR=1\n");
+            // Experimental MiniCPM-OCR-1.0: without --ocr-rec it resolves the published
+            // `minicpm-ocr` registry alias (same default as the HTTP server). The decoder
+            // reuses the qwen35 kernels, so both gates are still required.
+            if (eid == 23 && (!core_env::on("CRISPEMBED_MINICPM_OCR") || !core_env::on("CRISPEMBED_QWEN35_OCR"))) {
+                fprintf(stderr,
+                        "error: experimental minicpm-ocr needs CRISPEMBED_MINICPM_OCR=1 and CRISPEMBED_QWEN35_OCR=1\n");
                 return 1;
             }
             if (eid == 20 && ocr_rec_path.empty()) {
@@ -1581,7 +1582,11 @@ static int cli_main(int argc, char ** argv) {
                                     : (eid == 13) ? "unlimited-ocr"
                                     : (eid == 18) ? "olmocr-2-7b"
                                     : (eid == 19) ? "lfm2-vl"
+                                    : (eid == 23) ? "minicpm-ocr"
                                                   : "qwen2vl-ocr";
+                // Unlimited-OCR-2 shares engine 13; the alias picks the v2 registry default.
+                if (eid == 13 && (pipeline_engine == "unlimited-ocr2" || pipeline_engine == "unlimited_ocr2"))
+                    dflt = "unlimited-ocr2";
                 ma = resolve(!ocr_rec_path.empty() ? ocr_rec_path : dflt);
             } else {
                 // PP-OCRv6 pairs its own detector with its own CTC recognizer;
@@ -1599,9 +1604,10 @@ static int cli_main(int argc, char ** argv) {
                 // it the ppocrv6 stage falls back to its heuristic orientation
                 // check, which is a different (weaker) decision, not a no-op.
                 if (!ocr_cls_path.empty()) mc = resolve(ocr_cls_path);
-                if (eid == 16 && !std::getenv("CRISPEMBED_PPOCRV6_FORCE_CPU") &&
-                    !std::getenv("CRISPEMBED_PPOCRV6_ONESHOT_GPU") && !std::getenv("CRISPEMBED_PPOCRV6_NO_GRAPH") &&
-                    !std::getenv("CRISPEMBED_PPOCRV6_BATCH_GRAPH") && !std::getenv("CRISPEMBED_PPOCRV6_GRAPH_ACCEPT")) {
+                if (eid == 16 && !core_env::on("CRISPEMBED_PPOCRV6_FORCE_CPU") &&
+                    !core_env::on("CRISPEMBED_PPOCRV6_ONESHOT_GPU") && !core_env::on("CRISPEMBED_PPOCRV6_NO_GRAPH") &&
+                    !core_env::on("CRISPEMBED_PPOCRV6_BATCH_GRAPH") &&
+                    !core_env::on("CRISPEMBED_PPOCRV6_GRAPH_ACCEPT")) {
                     // T5: this CLI processes exactly one page per invocation.
                     // Whether the recognizer's ~1.1 s Metal init pays for
                     // itself depends on how many line crops the page yields
@@ -1616,7 +1622,7 @@ static int cli_main(int argc, char ** argv) {
                     // overwrite=0: an explicit CRISPEMBED_PPOCRV6_ONESHOT from
                     // the environment wins. MSVC has no setenv, and _putenv_s
                     // always overwrites, so the presence check carries that.
-                    if (!std::getenv("CRISPEMBED_PPOCRV6_ONESHOT")) {
+                    if (!core_env::on("CRISPEMBED_PPOCRV6_ONESHOT")) {
 #ifdef _WIN32
                         _putenv_s("CRISPEMBED_PPOCRV6_ONESHOT", "1");
 #else

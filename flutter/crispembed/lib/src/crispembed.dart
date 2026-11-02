@@ -4069,6 +4069,12 @@ class CrispTableParse {
 /// vision tower) and supply a local GGUF.
 const int crispOcrEngineTeleocr = 24;
 
+/// Unlimited-OCR / Unlimited-OCR-2 stage (v2 GGUF needs CRISPEMBED_UNLIMITED_OCR2=1).
+const int crispOcrEngineUnlimitedOcr = 13;
+
+/// MiniCPM-OCR stage (CRISPEMBED_MINICPM_OCR=1 and CRISPEMBED_QWEN35_OCR=1, local GGUF).
+const int crispOcrEngineMinicpmOcr = 23;
+
 /// MinerU2.5-Pro native basic page stage (CRISPEMBED_MINERU25_PRO=1, local GGUF).
 const int crispOcrEngineMineru25Pro = 25;
 

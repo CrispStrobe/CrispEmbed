@@ -1,0 +1,90 @@
+{
+ "schema": "crispembed.qwen2vl.device-summary.v1",
+ "rows": [
+  {
+   "receipt": "f32-cpu-forced.json",
+   "precision": "f32",
+   "device": "cpu",
+   "label": "forced",
+   "extra_env": {},
+   "cases": 8,
+   "exact": 8,
+   "divergences": {},
+   "consistent": true,
+   "warm_ms_sum": 279772.012588,
+   "cold_ms_sum": 279772.012588,
+   "max_rss_mib": 8875.3828125,
+   "per_case_warm_ms": {
+    "formula": 3272.169112,
+    "table": 7903.749319,
+    "receipt": 20601.642838,
+    "german": 115911.649364,
+    "japanese": 6615.398722,
+    "arabic": 1945.045732,
+    "layout-page": 65589.320197,
+    "layout-rot90": 57933.037304
+   }
+  },
+  {
+   "receipt": "mineru_q4k_v1-cpu-forced.json",
+   "precision": "mineru_q4k_v1",
+   "device": "cpu",
+   "label": "forced",
+   "extra_env": {},
+   "cases": 8,
+   "exact": 8,
+   "divergences": {},
+   "consistent": true,
+   "warm_ms_sum": 274676.662262,
+   "cold_ms_sum": 274676.662262,
+   "max_rss_mib": 1508.8046875,
+   "per_case_warm_ms": {
+    "formula": 2547.89897,
+    "table": 3847.510368,
+    "receipt": 16869.718971,
+    "german": 115207.034836,
+    "japanese": 6456.886794,
+    "arabic": 2056.561854,
+    "layout-page": 64889.837117,
+    "layout-rot90": 62801.213352
+   }
+  },
+  {
+   "receipt": "mineru_q4k_v1-cpu.json",
+   "precision": "mineru_q4k_v1",
+   "device": "cpu",
+   "label": "",
+   "extra_env": {},
+   "cases": 8,
+   "exact": 6,
+   "divergences": {
+    "german": 7,
+    "layout-page": 52
+   },
+   "consistent": true,
+   "warm_ms_sum": 280793.673055,
+   "cold_ms_sum": 280793.673055,
+   "max_rss_mib": 1508.66015625,
+   "per_case_warm_ms": {
+    "formula": 2761.462322,
+    "table": 4083.084886,
+    "receipt": 17459.834263,
+    "german": 117713.005556,
+    "japanese": 6570.794552,
+    "arabic": 2083.451038,
+    "layout-page": 65613.677065,
+    "layout-rot90": 64508.363373
+   },
+   "min_final_cosine": 0.9672800112532082,
+   "final_output_complete": true,
+   "worst_stage": {
+    "case": "german",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.08207805215494547
+   },
+   "min_state_cosine_incl_rows": 0.08207805215494547,
+   "cosine_bar_pass": false,
+   "cosine_reference": "f32-cpu"
+  }
+ ]
+}

@@ -14,6 +14,7 @@
 #include "ocr_crop.h"
 #include "easyocr_layout.h"
 #include "easyocr_pipeline.h"
+#include "ocr_reading_order.h"
 // Single-shot VLM/document OCR engines (full image → text). C API.
 #include "got_ocr.h"
 #include "glm_ocr.h"
@@ -706,7 +707,8 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         // at ~175 ms/crop CPU-minus-Metal against the 1.1 s init: ~6-8 boxes.
         auto boxes = ppocrv6_det::detect_file(ctx->ppdet, path, std::min(st.params.det_prob_threshold, 0.2f));
         const auto ppocr_detect_done = std::chrono::steady_clock::now();
-        if (!ctx->pprec && std::getenv("CRISPEMBED_PPOCRV6_ONESHOT") && !std::getenv("CRISPEMBED_PPOCRV6_FORCE_CPU")) {
+        if (!ctx->pprec && core_env::on("CRISPEMBED_PPOCRV6_ONESHOT") &&
+            !core_env::on("CRISPEMBED_PPOCRV6_FORCE_CPU")) {
             int cpu_max_regions = 8;
             if (const char * limit = std::getenv("CRISPEMBED_PPOCRV6_ONESHOT_CPU_MAX_REGIONS")) {
                 const int parsed = std::atoi(limit);
@@ -726,7 +728,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
                     ms(ppocr_started, ppocr_det_loaded) + ms(ppocr_detect_done, ppocr_load_done));
         }
         if (boxes.empty()) return {};
-        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_ACCEPT")) {
+        if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_ACCEPT")) {
             int max_graph_regions = 8;
             if (const char * limit = std::getenv("CRISPEMBED_PPOCRV6_GRAPH_MAX_REGIONS")) {
                 const int parsed = std::atoi(limit);
@@ -780,7 +782,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             {
                 int bucket_step = 64;
                 if (const char * be = std::getenv("CRISPEMBED_PPOCRV6_WIDTH_BUCKET")) bucket_step = std::atoi(be);
-                if (!std::getenv("CRISPEMBED_PPOCRV6_FIXED_WIDTH") && bucket_step >= 8)
+                if (!core_env::on("CRISPEMBED_PPOCRV6_FIXED_WIDTH") && bucket_step >= 8)
                     model_width = (model_width + bucket_step - 1) / bucket_step * bucket_step;
             }
             if (std::find(model_widths.begin(), model_widths.end(), model_width) == model_widths.end())
@@ -1285,7 +1287,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         // up on DBNet (`path=dbnet(fallback)`), so the flag had silently
         // stopped forcing anything.
         const bool explicit_classical =
-            st.params.page_segmentation != 0 || std::getenv("CRISPEMBED_TESSERACT_PAGESEG") != nullptr;
+            st.params.page_segmentation != 0 || core_env::on("CRISPEMBED_TESSERACT_PAGESEG");
         bool classical_pageseg = explicit_classical;
         // PLAN.md H9 — segmentation router (CRISPEMBED_TESSERACT_SEG_ROUTER=1).
         //
@@ -1352,8 +1354,8 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             std::vector<uint8_t> seg_gray;
             int sw = 0, sh = 0;
             if (load_gray_exact(path, seg_gray, &sw, &sh)) {
-                if (std::getenv("CRISPEMBED_TESSERACT_PAGESEG_PROJECTION") ||
-                    std::getenv("CRISPEMBED_TESSERACT_COMPONENT_PAGESEG")) {
+                if (core_env::on("CRISPEMBED_TESSERACT_PAGESEG_PROJECTION") ||
+                    core_env::on("CRISPEMBED_TESSERACT_COMPONENT_PAGESEG")) {
                     // segment_gray() owns the projection path and the
                     // explicitly opt-in component prototype.
                     boxes = tesseract_pageseg::segment_gray(seg_gray.data(), sw, sh);
@@ -1362,7 +1364,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
                     // adapter and is separately gated from DBNet.
                     boxes = tesseract_pageseg::segment_gray_components(seg_gray.data(), sw, sh);
                 }
-                if (seg_router || std::getenv("CRISPEMBED_TESSERACT_SEG_COVERAGE")) {
+                if (seg_router || core_env::on("CRISPEMBED_TESSERACT_SEG_COVERAGE")) {
                     router_coverage = pageseg_ink_coverage(seg_gray.data(), sw, sh, boxes);
                     router_columns = pageseg_column_count(seg_gray.data(), sw, sh);
                 }
@@ -1389,7 +1391,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         } else {
             boxes = ocr_detect::detect_file_ex(ctx->tess_det, path, geometry);
         }
-        if (router_coverage >= 0.0 && (seg_router || std::getenv("CRISPEMBED_TESSERACT_SEG_COVERAGE") || ctx->bench)) {
+        if (router_coverage >= 0.0 && (seg_router || core_env::on("CRISPEMBED_TESSERACT_SEG_COVERAGE") || ctx->bench)) {
             fprintf(stderr, "[tesseract-seg-router] columns=%d ink_coverage=%.4f boxes=%zu path=%s\n", router_columns,
                     router_coverage, boxes.size(), router_fell_back ? "dbnet(fallback)" : "classical");
         }
@@ -1453,7 +1455,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
             int cw = 0, chh = 0;
             auto crop = ocr_crop::extract(gray.data(), w, h, 1, (int)b.x, (int)b.y, (int)b.w, (int)b.h, pad, &cw, &chh);
             if (crop.empty()) continue;
-            if (std::getenv("CRISPEMBED_TESSERACT_CROP_TRIM_INK")) {
+            if (core_env::on("CRISPEMBED_TESSERACT_CROP_TRIM_INK")) {
                 int threshold = 128;
                 if (const char * threshold_env = std::getenv("CRISPEMBED_TESSERACT_CROP_TRIM_THRESHOLD"))
                     threshold = std::clamp(std::atoi(threshold_env), 1, 254);
@@ -1519,7 +1521,7 @@ static std::vector<ocr_pipeline::ocr_result> run_engine(context * ctx, const sta
         if (const char * env = std::getenv("CRISPEMBED_TESSERACT_WORKERS")) worker_count = std::max(1, std::atoi(env));
         worker_count = std::min(worker_count, (int)crops.size());
         const int missing_workers = worker_count - 1 - (int)ctx->tess_workers.size();
-        const bool parallel_load = std::getenv("CRISPEMBED_TESSERACT_PARALLEL_LOAD") != nullptr;
+        const bool parallel_load = core_env::on("CRISPEMBED_TESSERACT_PARALLEL_LOAD");
         if (parallel_load && missing_workers > 0) {
             std::vector<std::future<tesseract_lstm_context *>> loads;
             loads.reserve(missing_workers);
@@ -2112,13 +2114,24 @@ static result assemble(std::vector<ocr_pipeline::ocr_result> regions, engine eng
     r.regions = std::move(regions);
     r.reading_order.resize(r.regions.size());
     std::iota(r.reading_order.begin(), r.reading_order.end(), 0);
-    std::stable_sort(r.reading_order.begin(), r.reading_order.end(), [&](int a, int b) {
-        const auto & x = r.regions[(size_t)a].box;
-        const auto & y = r.regions[(size_t)b].box;
-        const float row = std::max(8.0f, std::min(x.h, y.h) * 0.65f);
-        if (std::fabs(x.y - y.y) > row) return x.y < y.y;
-        return x.x < y.x;
-    });
+    if (core_env::explicitly_off("CRISPEMBED_OCR_READING_ORDER_ROWS")) {
+        // Legacy comparator, kept for A/B. It is not a strict weak ordering:
+        // "same row" (|dy| <= 0.65 * min h) is not transitive, so on tightly
+        // spaced lines a < b, b < c, c < a can all hold. std::stable_sort with
+        // such a comparator is undefined, and libc++ (macOS) and libstdc++
+        // (Linux) really do return different orders: scan_page_pd's easyocr
+        // page text differed between the M1 and x86/CUDA in exactly three
+        // swapped lines with byte-identical regions.
+        std::stable_sort(r.reading_order.begin(), r.reading_order.end(), [&](int a, int b) {
+            const auto & x = r.regions[(size_t)a].box;
+            const auto & y = r.regions[(size_t)b].box;
+            const float row = std::max(8.0f, std::min(x.h, y.h) * 0.65f);
+            if (std::fabs(x.y - y.y) > row) return x.y < y.y;
+            return x.x < y.x;
+        });
+    } else {
+        r.reading_order = ocr_reading_order::rows(r.regions);
+    }
     std::string joined;
     for (int index : r.reading_order) {
         auto & reg = r.regions[(size_t)index];
@@ -2557,7 +2570,7 @@ result run_file(context * ctx, const char * image_path) {
             stage_cleanup.enabled = false;
             stage_cleanup.denoise = false;
         }
-        if (s.eng == engine::ppocrv6 && stage_cleanup.enabled && std::getenv("CRISPEMBED_PPOCRV6_CLEANUP") == nullptr) {
+        if (s.eng == engine::ppocrv6 && stage_cleanup.enabled && !core_env::on("CRISPEMBED_PPOCRV6_CLEANUP")) {
             // The official PP-OCR pipeline runs its detector on the raw page;
             // classical cleanup before it is a deviation, and despeckle /
             // blackfilter run even when deskew/crop/whiten are disabled,
@@ -2570,6 +2583,16 @@ result run_file(context * ctx, const char * image_path) {
             // 0.0260 -> 0.0273). CRISPEMBED_PPOCRV6_CLEANUP=1 restores the
             // old behaviour.
             if (verbose) fprintf(stderr, "ocr_orchestrator: ppocrv6 stage skips destructive cleanup\n");
+            stage_cleanup.enabled = false;
+            stage_cleanup.denoise = false;
+        }
+        if (s.eng == engine::easyocr && stage_cleanup.enabled &&
+            core_env::explicitly_off("CRISPEMBED_EASYOCR_CLEANUP")) {
+            // Python EasyOCR runs on the raw page; the scan chain's classical
+            // cleanup (deskew/crop/whiten, binarize on scans) is a native-only
+            // step. CRISPEMBED_EASYOCR_CLEANUP=0 runs the easyocr stage on the
+            // raw page for A/B against Python (default unchanged, see PLAN).
+            if (verbose) fprintf(stderr, "ocr_orchestrator: easyocr stage skips cleanup (EASYOCR_CLEANUP=0)\n");
             stage_cleanup.enabled = false;
             stage_cleanup.denoise = false;
         }

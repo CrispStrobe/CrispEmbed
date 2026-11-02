@@ -1,5 +1,6 @@
 #include "easyocr_postprocess.h"
 
+#include <algorithm>
 #include <cmath>
 #include <unordered_set>
 
@@ -9,6 +10,39 @@ int recognizer_canvas_width(int crop_width, int crop_height) {
     if (crop_width <= 0 || crop_height <= 0) return 0;
     const int resized_width = std::max(1, (int)std::ceil(64.0 * crop_width / crop_height));
     return std::max(64, ((resized_width + 63) / 64) * 64);
+}
+
+int recognizer_resized_width(int crop_width, int crop_height, bool python_floor) {
+    if (crop_width <= 0 || crop_height <= 0) return 0;
+    if (python_floor) {
+        const double ratio = (double)crop_width / (double)crop_height;
+        return std::max(1, (int)(64.0 * ratio));
+    }
+    return std::max(1, (int)std::ceil(64.0 * crop_width / crop_height));
+}
+
+static double numpy_percentile_linear(const std::vector<uint8_t> & sorted, double q) {
+    const double pos = q / 100.0 * (double)(sorted.size() - 1);
+    const size_t lo = (size_t)std::floor(pos);
+    const size_t hi = std::min(lo + 1, sorted.size() - 1);
+    const double frac = pos - (double)lo;
+    return (double)sorted[lo] + ((double)sorted[hi] - (double)sorted[lo]) * frac;
+}
+
+bool adjust_contrast_grey(std::vector<uint8_t> & image, double target) {
+    if (image.empty()) return false;
+    std::vector<uint8_t> sorted(image);
+    std::sort(sorted.begin(), sorted.end());
+    const double high = numpy_percentile_linear(sorted, 90.0);
+    const double low = numpy_percentile_linear(sorted, 10.0);
+    const double contrast = (high - low) / std::max(10.0, high + low);
+    if (!(contrast < target)) return false;
+    const double ratio = 200.0 / std::max(10.0, high - low);
+    for (auto & v : image) {
+        const double value = ((double)v - low + 25.0) * ratio;
+        v = (uint8_t)std::max(0.0, std::min(255.0, value));
+    }
+    return true;
 }
 
 bool ctc_greedy_decode(const std::vector<int> & tokens, const std::vector<std::string> & vocabulary,

@@ -1434,7 +1434,7 @@ static bool run_cached_step(context & ctx, const int32_t * token_ids, int n_toke
     // split_graph). Output-identical. Same trick as got_ocr.
     // Cache DECODE steps only (n_past > 0). Prefill (n_past == 0) has a different
     // graph shape (image splice) and stays on the sched.
-    static const bool use_cache = (std::getenv("INTERNVL2_DECODE_CACHE") != nullptr);
+    static const bool use_cache = core_env::on("INTERNVL2_DECODE_CACHE");
     const bool cache_this = use_cache && n_past > 0;
     if (cache_this && !ctx.decode_galloc) {
         ctx.decode_galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx.backend));

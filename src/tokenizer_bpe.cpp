@@ -15,10 +15,12 @@
 #include <queue>
 #include <string>
 #include <vector>
+#include "core/env_gate.h"
 
 bool BPETokenizer::load(const std::vector<std::string> & vocab, const std::vector<std::string> & merges, int eos_id,
                         int pad_id, int suffix_id, int bos_id, bool spm_style, int max_length, bool spm_dummy_prefix,
                         bool clip_style) {
+    ultrabert_unicode_gpt2_ = false; // A generic reload cannot inherit a prior model's opt-in.
     id_to_token_ = vocab;
     token_to_id_.clear();
     token_to_id_.reserve(vocab.size());
@@ -249,6 +251,64 @@ void BPETokenizer::clip_bpe_word(const std::string & pretoken, std::vector<int32
     }
 }
 
+// UltraBERT-only transcription of the same GPT2 alternation using codepoint
+// L/N/White_Space classes. Existing core_unicode tables are Unicode14; this
+// default-off path must pass the complete frozen corpus before any embeddings.
+std::vector<std::string> BPETokenizer::ultrabert_unicode_gpt2_pretokenize(const std::string & text) const {
+    std::vector<size_t> offsets;
+    std::vector<uint8_t> categories;
+    for (size_t byte = 0; byte < text.size();) {
+        offsets.push_back(byte);
+        categories.push_back(core_unicode::category(core_unicode::utf8_next(text.data(), text.size(), byte)));
+    }
+    offsets.push_back(text.size());
+    const size_t count = categories.size();
+    auto space = [&](size_t i) { return i < count && core_unicode::is_space(categories[i]); };
+    auto ascii_space = [&](size_t i) {
+        return i < count && offsets[i + 1] - offsets[i] == 1 && text[offsets[i]] == ' ';
+    };
+    auto matches = [&](size_t i, int branch) {
+        if (i >= count) return false;
+        if (branch == 0) return core_unicode::is_letter(categories[i]);
+        if (branch == 1) return core_unicode::is_number(categories[i]);
+        return !core_unicode::is_letter(categories[i]) && !core_unicode::is_number(categories[i]) && !space(i);
+    };
+    std::vector<std::string> out;
+    size_t i = 0;
+    while (i < count) {
+        size_t end = i;
+        // Lowercase ASCII contractions are case-sensitive, with no space prefix.
+        if (text[offsets[i]] == '\'') {
+            for (const char * suffix : { "'s", "'t", "'re", "'ve", "'m", "'ll", "'d" }) {
+                const size_t bytes = std::strlen(suffix);
+                if (text.compare(offsets[i], bytes, suffix) == 0) {
+                    end = i + bytes;
+                    break;
+                }
+            }
+        }
+        // Optional prefix is one literal U+0020, not arbitrary Unicode whitespace.
+        for (int branch = 0; branch < 3 && end == i; ++branch) {
+            size_t begin = i + (ascii_space(i) ? 1 : 0);
+            if (!matches(begin, branch)) continue;
+            end = begin + 1;
+            while (matches(end, branch)) ++end;
+        }
+        if (end == i) {
+            // \s+(?!\S) greedily consumes whitespace, then backtracks by ONE
+            // codepoint before a nonspace. If only one remains, fall through to
+            // the last \s+ alternative rather than emit an empty token.
+            end = i;
+            while (space(end)) ++end;
+            if (end < count && end > i + 1) --end;
+            if (end == i) end = i + 1; // Forward progress for any unmatched byte.
+        }
+        out.push_back(text.substr(offsets[i], offsets[end] - offsets[i]));
+        i = end;
+    }
+    return out;
+}
+
 // GPT-2 ByteLevel regex pre-tokenizer (HF ByteLevel, use_regex=true), as used
 // by ModernBERT. Reproduces the reference alternation, tried in order at each
 // position:
@@ -258,6 +318,7 @@ void BPETokenizer::clip_bpe_word(const std::string & pretoken, std::vector<int32
 // the CLIP pre-tokenizer); NFC normalization is not applied (inputs are assumed
 // already-normalized — matches the pragmatic level of clip_pretokenize).
 std::vector<std::string> BPETokenizer::gpt2_pretokenize(const std::string & text) const {
+    if (ultrabert_unicode_gpt2_) return ultrabert_unicode_gpt2_pretokenize(text);
     std::vector<std::string> out;
     const std::string & s = text;
     const size_t n = s.size();
@@ -436,7 +497,7 @@ embed_tokens BPETokenizer::encode(const std::string & text) const {
             // snippet and 0.991 on this family's own "Instruct: …\nQuery: "
             // prompt, while newline-free text is unaffected (1.000000).
             // CRISPEMBED_BPE_LEGACY_WHITESPACE=1 restores the old behavior.
-            static const bool legacy_ws = (std::getenv("CRISPEMBED_BPE_LEGACY_WHITESPACE") != nullptr);
+            static const bool legacy_ws = core_env::on("CRISPEMBED_BPE_LEGACY_WHITESPACE");
             auto tokenize_run = [&](const std::string & t) {
                 return legacy_ws ? core_bpe::tokenize_simple(token_to_id_, merge_rank_, t)
                                  : core_bpe::tokenize_qwen(token_to_id_, merge_rank_, t);

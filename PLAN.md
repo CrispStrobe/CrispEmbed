@@ -1,3 +1,19 @@
+## Wiring and environment-variable audit — 2 November 2026
+
+Reference: [docs/wiring-audit-20261102.md](docs/wiring-audit-20261102.md) and
+[docs/environment-variables.md](docs/environment-variables.md). Mechanical fixes
+(named stage ids 13/23 in every binding, `unlimited-ocr[2]` CLI/server aliases)
+are merged. Open, scoped:
+
+- [x] 131 `presence` env reads → `core_env::on` / `core_env::value`; Lint guard
+      added (`tests/test_env_vars_documented.py`). Defaults unchanged.
+- [x] MiniCPM-OCR CLI default = server default (`minicpm-ocr` alias, gates required).
+- [ ] CrispSorter: merge [PR #19](https://github.com/CrispStrobe/CrispSorter/pull/19)
+      (experimental `unlimited_ocr2`→13, `minicpm_ocr`→23 selectors) once its CI is green.
+      CrispCalc: no engine-id selector; catalog entries only after the app pin moves past
+      0.17.12 (exact TODO in the wiring audit).
+- [x] Unlimited-OCR v1 registry URL pinned to Hub commit `79d6658f` (same sha256).
+
 ## GOT-OCR2 F16 artifact — 2 November 2026 (`fix/got-ocr2-f16`)
 
 Root cause: the published `got-ocr2-f16.gguf` (Hub `5a0b0a1adc`) has an 8 MiB block of zero
@@ -13,14 +29,18 @@ differs from the old file only inside that span. Stage diff is cos 1.000000 on a
   41397551540 as `got-ocr2-f16-r2.gguf`, Hub `c0f1aa7b5b52c15002e911d5d630e6d0dcb3ba8f`, sha256
   `98b431ab…` (local = LFS = empty-cache readback). Registry `got-ocr2-f16`. M1 Metal fox exact.
   DONE except the item below.
-- **GOT pipeline gap against the original, all precisions** (q4_k, q8_0, F16 alike): native
-  output is not token-exact against stepfun-ai/GOT-OCR-2.0-hf on receipt_example and simple_form.
-  The native arms add receipt Qty/Price columns that the original omits, and they drop simple_form
-  fields. Candidates to A/B one at a time, each behind a gate against the original's token IDs:
-  (1) image resize: native nearest-neighbour 1024x1024 vs HF processor interpolation;
-  (2) prompt "OCR" token 93495 (native) vs 80577 (HF processor);
-  (3) native no-repeat-ngram 3 vs the original generation config.
-  Harness: `tools/ci-heavy/got_ocr2_f16_republish.sh` (compare.json) / `got_ocr2_hf_probe.py`.
+- **GOT pipeline gap against the original: fixed on `fix/got-ocr2-pipeline-parity`** (PR open,
+  see HISTORY 2 November). Three causes, all gated and default on: Pillow bicubic resize
+  (`CRISPEMBED_GOT_OCR_PIL_BICUBIC`), the original system string's indentation token 286
+  (`CRISPEMBED_GOT_OCR_ORIG_SYSTEM`), and no-repeat-ngram 20 over prompt+generated
+  (`CRISPEMBED_GOT_OCR_ORIG_NGRAM`). F16 is now token-exact against stepfun-ai/GOT-OCR2_0 on
+  all three frozen cases (x86 CPU and M1 Metal). The "OCR" token was not a cause: 93495 is the
+  original's; 80577 (" OCR") is a leading-space artifact of the HF port's processor, which is not
+  a faithful reference (it also drops the indentation and the ngram rule).
+  Open: Q4_K stays non-exact on receipt_example (ratio 0.7005, first divergence 83) and
+  simple_form (0.8865, divergence 20) — quantization drift, now measurable against the exact
+  F16 pipeline; the earlier HF-port-based page comparisons (got_ocr2_f16_republish.sh) used the
+  HF port as "original" and should be re-pointed at got_ocr2_orig_probe.py if rerun.
 
 
 Source: `docs/gpu-support-matrix.md` §CUDA audit (branch `feat/cuda-audit`, Kaggle T4).
@@ -61,6 +81,21 @@ Source: `docs/gpu-support-matrix.md` §CUDA audit (branch `feat/cuda-audit`, Kag
 - Metal A/B of the new `CRISPEMBED_PAN_GPU` / `CRISPEMBED_RESTORMER_GPU` (CUDA-only
   defaults until measured there).
 
+## TeleOCR / MinerU Q4_K-class recipes — 2 November 2026 (feat/qwen2vl-q4k-recipes)
+
+Source: `docs/qwen2vl-q4k-recipes.md`. Winners clear the Q4_K bar on CPU, Metal and
+CUDA; `Q4_K_MIX` publication recipes are prepared, not published.
+
+- Coordinator: dispatch `Q4_K_MIX` publication for TeleOCR and MinerU (cosine gate),
+  then add registry aliases with the read-back SHA-256.
+- Neither winner is token-exact free-running (TeleOCR table@35, three CJK characters;
+  MinerU German masthead/"Infrafttreten" and a layout box coordinate). A token-exact
+  Q4-class recipe would need more Q8_0 (MinerU `r4` keeps the same two divergences).
+- TeleOCR decoder Q4_K remains out of reach (best whole-decoder 0.870 with imatrix);
+  a larger, in-distribution calibration set for the opt-in imatrix path is untested.
+- Hosted CPU builds use `-march=native`: MinerU's CPU cosine moves by up to 0.015 with
+  the runner ISA on identical bytes; pin `GGML_NATIVE=OFF` for future CPU receipts.
+
 ## Metal GPU audit follow-ups — 1 November 2026
 
 Source: `docs/gpu-support-matrix.md` (branch `feat/metal-audit`).
@@ -84,7 +119,7 @@ Source: `docs/gpu-support-matrix.md` (branch `feat/metal-audit`).
 - No Q4_K-decoder recipe meets the 0.94 final-output bar for either model on
   any device; search recipes (per-layer sensitivity, Q6_K/Q8_0 for the
   weakest matrices) rather than runtime changes. MinerU's passing
-  "q4_k-dq8"/"q4_k-df16" contain no Q4_K tensor and should be renamed if published.
+  "q4_k-dq8"/"q4_k-df16" were renamed `q8_0-all` / `q8_0-vision-f16-decoder` (no Q4_K tensor).
 - CUDA F16/Q8_0 show prompt-row cosine 0.86-0.90 (CUDA half-precision
   activations; Metal fixed the analogous trap): check cuBLAS/MMQ precision.
 - Merge the ggml branch `crispembed/metal-mul-mat-prec-hp` into the fork's
@@ -100,11 +135,8 @@ issue71 branches, without the research-only engine (owner ruling; see
 engine gates stay experimental and default off; main's MI-GAN Metal path and
 the persistent graph both remain gated.
 
-- Open: publication of the qualifying public GGUFs and registry entries (only
-  variants that clear the bars; Moebius Q4_K only as Q4_K-mix). Owner approved
-  2026-11-02; `.github/workflows/inpaint-gguf-publish.yml` (ci/inpaint-gguf-publish)
-  publishes per destination, then a registry PR adds `model_mgr.cpp`/
-  `model_hashes.h`/`upload_to_hf.py` entries from the read-back revisions.
+- Done: publication (Hub e1481f21/1b2d1692/c93816db/ea6a2363) and registry entries
+  (HISTORY 2 November).
 - Open: all CI green (Windows, macOS, Linux, Static guards, sibling-crispasr,
   secret scan). MI-GAN512 Q4_K stays caveated (0.9019 on the DBNet street crop).
 
@@ -404,6 +436,25 @@ handoff take precedence over historical commands.
    reviewed opt-ins and qualify final runtime/assets/consumers. Each new model
    or arithmetic source needs its own reference/quality/consumer evidence.
 
+## MiniCPM-OCR speed (SPEED only; Q8/Q4 lanes stay with their owners) — 2 November 2026
+
+Branch `perf/minicpm-ocr-graph-decoder-20261102`. Default-off gates, F16 GGUF:
+`CRISPEMBED_QWEN35_GRAPH_DECODER` (qwen35 text decoder as a ggml graph with persistent
+KV/delta-net state; `CRISPEMBED_QWEN35_GRAPH_MATMUL=exact|native|f32`),
+`CRISPEMBED_MINICPM_OCR_VISION_F32` (F32 vision matrices made once at init) and
+`CRISPEMBED_MINICPM_OCR_VISION_BATCH` (equal slices in one graph). Only MiniCPM calls
+them; decoder_cpu and OvisOCR/LightOn are unchanged. Kaggle kernels with separate slugs
+(`crispembed-minicpm-ocr-native-graph`, `crispembed-minicpm-ocr-bench-graph`) so the
+shared `crispembed-minicpm-ocr-bench` slug is not disturbed. Gate: all 5 cases token-ID
+exact per arm before any merge; no default flip until A/B on more pages.
+
+Result: all 11 bench arms and native parity (F32+F16) are 5/5 token-exact. The recommended
+configuration (graph `f32` matmul + vision F32 + batch + flash) runs in 506 s against
+Transformers' 439 s and the old path's 3264 s; see PERFORMANCE. **Proposed default flip,
+not applied:** enable these gates by default for MiniCPM-OCR after an A/B of decoded output
+on a larger page set (e.g. the real-scan corpus) and a memory check of the +4.6 GB F32
+copies. Fall back to `native` matmul where RAM is tight; it is also 5/5 exact, at 603 s.
+
 ## Required Q8_0 and Q4_K coverage for new permissive models (29 October)
 
 Use actual `crispembed-quantize`, original Python/ONNX dumps and actual
@@ -607,3 +658,24 @@ outside this lane. Do not infer weight permission from a public repository.
 This anchor is retained for older links. Its dated commands/status snapshots
 are archived in HISTORY. Use [the29 October handoff](docs/handoff-2026-10-29.md)
 for current sources, jobs and exact next actions; do not repeat completed runs.
+
+### Portfolio Q4_K/Q8 branch (PR89) open items
+
+Q8 admission source is being prepared on `feat/portfolio-q8-profiles-20261029`:
+Josev gets an explicitly named `crispembed-josev-packed-mixed-v2` profile;
+header7 requires actual Q8_0 and no Q4_K, while legacy Q4 requires real Q4_K.
+UltraBERT uses the same storage/header consistency. The existing quantization
+gates remain mandatory. A bounded `--metadata-string KEY=VALUE` C-quantizer
+option replaces existing STRING keys before header layout, enabling genuine
+profile stamps without ad hoc byte-length patches. Numeric or unknown metadata
+keys reject before output creation. Actual compiler/metadata fixtures and the
+original-bound Q8 tensor/intermediate/decoded panels still gate qualification.
+
+The default-off MoEdern Q8 runtime and source-bound component caller are
+integrated in the portfolio feature branch. All eight MoEdern runtime/profile
+stdlib controls pass there. The caller's separate frozen whole-SRC assertion
+correctly rejects this combined tree: its immutable1f source differs only in
+UltraBERT's later UINT32 file-type admission check. The reviewed actual fixture
+runs on exactdd592, not the integrated tree; no assertion or source gate was
+weakened to claim combined-source qualification. Final source declarations and
+actual composite/runtime/platform gates remain required.

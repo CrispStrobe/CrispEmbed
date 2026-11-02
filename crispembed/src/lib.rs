@@ -2718,6 +2718,8 @@ impl Default for OcrCleanupSpec {
 /// TeleOCR stage selector. Requires `CRISPEMBED_TELEOCR=1`, `CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1`
 /// (its vision tower is under the non-commercial Qwen Research License) and an explicit local GGUF.
 pub const OCR_ENGINE_TELEOCR: i32 = crispembed_sys::CRISPEMBED_OCR_ENGINE_TELEOCR;
+pub const OCR_ENGINE_UNLIMITED_OCR: i32 = crispembed_sys::CRISPEMBED_OCR_ENGINE_UNLIMITED_OCR;
+pub const OCR_ENGINE_MINICPM_OCR: i32 = crispembed_sys::CRISPEMBED_OCR_ENGINE_MINICPM_OCR;
 pub const OCR_ENGINE_MINERU25_PRO: i32 = crispembed_sys::CRISPEMBED_OCR_ENGINE_MINERU25_PRO;
 pub const OCR_ENGINE_OXR: i32 = crispembed_sys::CRISPEMBED_OCR_ENGINE_OXR;
 

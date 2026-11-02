@@ -1864,7 +1864,7 @@ static std::vector<float> encode_tokens(crispembed_context * ctx, const embed_to
     // caller can see (the returned vector is unit-length by contract), so a
     // uniform scale error is invisible to cosine parity. Print it on request —
     // same lever as CRISPEMBED_DECODER_EMBED_RAW_NORM on the decoder path.
-    if (std::getenv("CRISPEMBED_EMBED_RAW_NORM")) fprintf(stderr, "[crispembed-rawnorm] %.6f\n", norm);
+    if (core_env::on("CRISPEMBED_EMBED_RAW_NORM")) fprintf(stderr, "[crispembed-rawnorm] %.6f\n", norm);
     for (int h = 0; h < dim; h++) pooled[h] /= norm;
     if (bench) {
         double ms_pool = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_pool).count();
@@ -2062,7 +2062,7 @@ static std::vector<float> pool_and_norm(const float * rows, int n, int H, int di
     for (int h = 0; h < dim; h++) norm += pooled[h] * pooled[h];
     norm = sqrtf(std::max(norm, 1e-12f));
     // See encode_tokens: pre-normalization magnitude, on request.
-    if (std::getenv("CRISPEMBED_EMBED_RAW_NORM")) fprintf(stderr, "[crispembed-rawnorm] %.6f\n", norm);
+    if (core_env::on("CRISPEMBED_EMBED_RAW_NORM")) fprintf(stderr, "[crispembed-rawnorm] %.6f\n", norm);
     for (int h = 0; h < dim; h++) pooled[h] /= norm;
     return pooled;
 }
@@ -2416,7 +2416,7 @@ extern "C" crispembed_context * crispembed_init(const char * model_path, int n_t
     auto * ctx = new crispembed_context;
     ctx->n_threads = n_threads > 0 ? n_threads : 1;
     if (model_path) ctx->model_path_for_audio = model_path;
-    ctx->dump_layers = (std::getenv("CRISPEMBED_DUMP_LAYERS") != nullptr);
+    ctx->dump_layers = core_env::on("CRISPEMBED_DUMP_LAYERS");
     ctx->bench = core_env::on("CRISPEMBED_CRISPEMBED_BENCH");
 
     // Detect model type from GGUF metadata.

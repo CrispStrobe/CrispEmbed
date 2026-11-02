@@ -36,6 +36,7 @@ void stbi_image_free(void * retval_from_stbi_load);
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include "core/env_gate.h"
 
 // ---------------------------------------------------------------------------
 // dequant helper (device-safe)
@@ -289,7 +290,7 @@ static ggml_tensor * mha_core(ggml_context * g, ggml_tensor * q, ggml_tensor * k
 // ---------------------------------------------------------------------------
 static ggml_cgraph * build_encoder(smt_ocr_context * ctx, ggml_context * g, int W, int H) {
     ggml_cgraph * gf = ggml_new_graph_custom(g, 8192, false);
-    if (getenv("SMT_OCR_DEBUG")) {
+    if (core_env::on("SMT_OCR_DEBUG")) {
         fprintf(stderr, "[dbg] stem_w=%p stem_b=%p stem_ln_w=%p tok_embed=%p pos1d=%p lm_w=%p lm_b=%p\n",
                 (void *)ctx->stem_w, (void *)ctx->stem_b, (void *)ctx->stem_ln_w, (void *)ctx->tok_embed,
                 (void *)ctx->pos1d, (void *)ctx->lm_w, (void *)ctx->lm_b);
@@ -580,7 +581,7 @@ static bool alloc_smt_kv_cache(smt_ocr_context * ctx, int max_seq, int n_enc) {
     kv.max_seq = max_seq;
     kv.n_enc = n_enc;
     kv.allocated = true;
-    if (getenv("SMT_OCR_DEBUG"))
+    if (core_env::on("SMT_OCR_DEBUG"))
         fprintf(stderr, "smt_ocr: KV cache %d layers max_seq=%d n_enc=%d %.1f MB\n", nl, max_seq, n_enc,
                 (float)ggml_backend_buffer_get_size(kv.buf) / 1024 / 1024);
     return true;
@@ -913,7 +914,7 @@ static void decode_greedy_kv_persist(smt_ocr_context * ctx) {
     // no-realloc fast path and the sched's per-step split_graph is skipped. This
     // is the win for the ~thousands-of-steps full-page decode. Gated so the sched
     // path stays available (SMT_OCR_NO_DECODE_CACHE=1); output-identical.
-    const bool use_cache = !getenv("SMT_OCR_NO_DECODE_CACHE");
+    const bool use_cache = !core_env::on("SMT_OCR_NO_DECODE_CACHE");
     if (use_cache) {
         if (!ctx->decode_galloc)
             ctx->decode_galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx->backend));
@@ -1112,9 +1113,9 @@ const char * smt_ocr_recognize(smt_ocr_context * ctx, const float * pixels, int 
     // Decode paths (A/B-gated): default = persistent device KV cache (fastest);
     // SMT_OCR_HOSTKV=1 = the host-round-trip KV path; SMT_OCR_FULL_DECODE=1 = the
     // no-cache teacher-forced full graph. The three are output-identical.
-    if (getenv("SMT_OCR_FULL_DECODE"))
+    if (core_env::on("SMT_OCR_FULL_DECODE"))
         decode_greedy_full(ctx);
-    else if (getenv("SMT_OCR_HOSTKV"))
+    else if (core_env::on("SMT_OCR_HOSTKV"))
         decode_greedy_kv(ctx);
     else
         decode_greedy_kv_persist(ctx);

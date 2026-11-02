@@ -163,7 +163,7 @@ bool load(context ** out, const char * path, int n_threads) {
 
     core_gguf::free_metadata(g);
 
-    const bool ocr_det_debug = (std::getenv("OCR_DETECT_DEBUG") != nullptr);
+    const bool ocr_det_debug = core_env::on("OCR_DETECT_DEBUG");
     if (ocr_det_debug) {
         fprintf(stderr, "ocr_detect: loading %s\n", path);
         fprintf(stderr, "  prob_thresh=%.2f box_thresh=%.2f unclip=%.2f\n", ctx->prob_thresh, ctx->box_thresh,
@@ -266,8 +266,8 @@ bool load(context ** out, const char * path, int n_threads) {
 
     if (ocr_det_debug) fprintf(stderr, "ocr_detect: loaded %zu tensors\n", ctx->wl.tensors.size());
     ctx->bench = core_env::on("CRISPEMBED_OCR_DETECT_BENCH");
-    ctx->capture_intermediates = (std::getenv("OCR_DETECT_CAPTURE_TAPS") != nullptr);
-    ctx->direct_conv = (std::getenv("OCR_DETECT_DIRECT_CONV") != nullptr);
+    ctx->capture_intermediates = core_env::on("OCR_DETECT_CAPTURE_TAPS");
+    ctx->direct_conv = core_env::on("OCR_DETECT_DIRECT_CONV");
     return true;
 }
 
@@ -843,7 +843,7 @@ static float score_polygon(const float * prob_map, int map_w, int map_h,
     // number of crossings lie strictly to its right, x < crossing_x), so the
     // box output is byte-identical. OCR_DETECT_SCALAR_SCORE=1 restores the old
     // per-pixel path for bisection.
-    static const bool scalar_score = (std::getenv("OCR_DETECT_SCALAR_SCORE") != nullptr);
+    static const bool scalar_score = core_env::on("OCR_DETECT_SCALAR_SCORE");
     if (scalar_score) {
         for (int y = min_y; y <= max_y && y < map_h; y++) {
             for (int x = min_x; x <= max_x && x < map_w; x++) {
@@ -895,7 +895,7 @@ static std::vector<text_box> extract_boxes(const float * prob_map, int map_w, in
                                            float box_threshold, float unclip_ratio, int min_area, float scale_x,
                                            float scale_y, int dilation, int max_candidates, score_mode scoring) {
     std::vector<text_box> results;
-    const bool debug = std::getenv("OCR_DETECT_DEBUG") != nullptr;
+    const bool debug = core_env::on("OCR_DETECT_DEBUG");
     int component_count = 0;
     int area_pass_count = 0;
     int mean_pass_count = 0;

@@ -325,7 +325,7 @@ granite_vision_context * granite_vision_init(const char * model_path, int n_thre
         // engine (weights + ggml graphs) on the ggml CPU backend, bypassing the
         // Metal ggml-alloc buffer-reuse bug that corrupts the vis/LLM graphs.
         ggml_backend_dev_t gdev =
-            std::getenv("CRISPEMBED_GRANITE_CPU") ? nullptr : ggml_backend_dev_by_type(GGML_BACKEND_DEVICE_TYPE_GPU);
+            core_env::on("CRISPEMBED_GRANITE_CPU") ? nullptr : ggml_backend_dev_by_type(GGML_BACKEND_DEVICE_TYPE_GPU);
         ctx->backend = gdev ? ggml_backend_dev_init(gdev, nullptr) : nullptr;
         if (!ctx->backend) ctx->backend = ggml_backend_cpu_init();
     }
@@ -560,7 +560,7 @@ static void gv_run_vit_graph(granite_vision_context * ctx, const float * x_in, i
     // Ensure the full graph is traced (last feature layer may not be the last ViT layer).
     ggml_build_forward_expand(gf, x);
 
-    const bool gv_dbg = std::getenv("CRISPEMBED_GRANITE_VIS_DBG") != nullptr;
+    const bool gv_dbg = core_env::on("CRISPEMBED_GRANITE_VIS_DBG");
     if (gv_dbg) {
         fprintf(stderr, "[vis-dbg] n_nodes=%d cap=%d n_feat=%d x_t->buffer(pre)=%p\n", ggml_graph_n_nodes(gf),
                 kVisGraphCap, n_feat, (void *)x_t->buffer);
@@ -1026,7 +1026,7 @@ static void gv_vision_forward(granite_vision_context * ctx, const float * image,
     // opt out with CRISPEMBED_GRANITE_VIS_SCALAR=1. (The CPU late-layer drift —
     // F16-table gelu + Q8_0-quantized activations in the attn matmuls — is fixed
     // inside gv_run_vit_graph via explicit F32 gelu + CPU F32 weight casts.)
-    const bool use_vis_graph = !std::getenv("CRISPEMBED_GRANITE_VIS_SCALAR");
+    const bool use_vis_graph = !core_env::on("CRISPEMBED_GRANITE_VIS_SCALAR");
     if (ctx->vis_sched && use_vis_graph) {
         gv_run_vit_graph(ctx, x.data(), T, D, layer_outputs);
     }
@@ -1277,7 +1277,7 @@ void granite_vision_dump_llm(granite_vision_context * ctx, const int * tokens, i
     // same reference. Runs all n_tokens as one batched prefill and dumps the
     // last token's per-layer hidden states — the gv_llm_decode_step scalar path
     // does NOT exercise the graph, so this is the only way to diff it.
-    if (std::getenv("CRISPEMBED_GRANITE_LLM_GRAPH") && gv_alloc_kv_cache(ctx, n_tokens + 4)) {
+    if (core_env::on("CRISPEMBED_GRANITE_LLM_GRAPH") && gv_alloc_kv_cache(ctx, n_tokens + 4)) {
         std::vector<float> embeds((size_t)n_tokens * D);
         for (int t = 0; t < n_tokens; t++)
             for (int d = 0; d < D; d++) embeds[(size_t)t * D + d] = embed_w[(size_t)tokens[t] * D + d] * emb_mul;
@@ -1400,7 +1400,7 @@ const char * granite_vision_recognize(granite_vision_context * ctx, const uint8_
     // The scalar decode (gv_llm_decode_step, cos=1.0) is the opt-out / fallback if
     // KV alloc fails. Force with CRISPEMBED_GRANITE_LLM_SCALAR=1.
     bool use_graph = false;
-    if (!std::getenv("CRISPEMBED_GRANITE_LLM_SCALAR")) use_graph = gv_alloc_kv_cache(ctx, max_seq);
+    if (!core_env::on("CRISPEMBED_GRANITE_LLM_SCALAR")) use_graph = gv_alloc_kv_cache(ctx, max_seq);
 
     auto t_prefill = std::chrono::steady_clock::now();
     ctx->n_past = 0;

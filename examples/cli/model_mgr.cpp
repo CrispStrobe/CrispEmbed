@@ -1720,6 +1720,103 @@ static const ModelEntry k_registry[] = {
       "OXR-1.0 D-FINE document layout detector (HGNetv2-B2, f32; OXR License; gated CRISPEMBED_OXR)", "78 MB", "oxr",
       "https://huggingface.co/cstr/OXR-1.0-DFINE-layout-GGUF" },
 
+    // Issue-71 inpainting engines (docs/inpaint-publication-v1.json; owner-approved 2026-11-02,
+    // published by inpaint-gguf-publish runs 41467884047/41467897168/41467910374/41467923288 and
+    // re-read from an empty cache). Experimental and default-off; non-F32 files also need
+    // CRISPEMBED_INPAINT_QUANT=1. Minimum cosine vs the bars is in docs/inpainting-precision.md.
+    // MI-GAN512 q4_k: 0.9019 on the DBNet-mask street crop (below 0.94 there). Moebius ships only the
+    // q4_k-mix recipe (plain q4_k fails on photos). Moebius weights: README says Apache-2.0, the author
+    // HF card says MIT (tag below follows the card); both records are in the re-host, no dual licence.
+    { "migan512-f32", "migan-512-places2-f32.gguf",
+      "https://huggingface.co/cstr/MI-GAN-512-GGUF/resolve/e1481f21784f99ec9d53ee935b978264be36abbb/"
+      "migan-512-places2-f32.gguf",
+      "MI-GAN 512 inpainting, Places2 (f32; MIT; gated CRISPEMBED_MIGAN + CRISPEMBED_MIGAN512)", "30 MB", "mit",
+      "https://huggingface.co/cstr/MI-GAN-512-GGUF" },
+    { "migan512-f16", "migan-512-places2-f16.gguf",
+      "https://huggingface.co/cstr/MI-GAN-512-GGUF/resolve/e1481f21784f99ec9d53ee935b978264be36abbb/"
+      "migan-512-places2-f16.gguf",
+      "MI-GAN 512 inpainting, Places2 (f16; MIT; gated CRISPEMBED_MIGAN + CRISPEMBED_MIGAN512)", "18 MB", "mit",
+      "https://huggingface.co/cstr/MI-GAN-512-GGUF" },
+    { "migan512-q8_0", "migan-512-places2-q8_0.gguf",
+      "https://huggingface.co/cstr/MI-GAN-512-GGUF/resolve/e1481f21784f99ec9d53ee935b978264be36abbb/"
+      "migan-512-places2-q8_0.gguf",
+      "MI-GAN 512 inpainting, Places2 (q8_0; MIT; gated CRISPEMBED_MIGAN + CRISPEMBED_MIGAN512)", "13 MB", "mit",
+      "https://huggingface.co/cstr/MI-GAN-512-GGUF" },
+    { "migan512-q4_k", "migan-512-places2-q4_k.gguf",
+      "https://huggingface.co/cstr/MI-GAN-512-GGUF/resolve/e1481f21784f99ec9d53ee935b978264be36abbb/"
+      "migan-512-places2-q4_k.gguf",
+      "MI-GAN 512 inpainting, Places2 (q4_k; 0.9019 DBNet street crop; MIT; gated CRISPEMBED_MIGAN + "
+      "CRISPEMBED_MIGAN512)",
+      "11 MB", "mit", "https://huggingface.co/cstr/MI-GAN-512-GGUF" },
+    { "moebius-f32", "moebius-f32.gguf",
+      "https://huggingface.co/cstr/Moebius-inpaint-GGUF/resolve/1b2d16923233a71d59b494d4a74b5d12067acfa5/"
+      "moebius-f32.gguf",
+      "Moebius latent inpainting denoiser (f32; pair with sdxl-vae-inpaint-f32; weights MIT per HF card, Apache-2.0 "
+      "per README; gated CRISPEMBED_MOEBIUS)",
+      "905 MB", "mit", "https://huggingface.co/hustvl/Moebius" },
+    { "moebius-f16", "moebius-f16.gguf",
+      "https://huggingface.co/cstr/Moebius-inpaint-GGUF/resolve/1b2d16923233a71d59b494d4a74b5d12067acfa5/"
+      "moebius-f16.gguf",
+      "Moebius latent inpainting denoiser (f16; pair with sdxl-vae-inpaint-f16; weights MIT per HF card, Apache-2.0 "
+      "per README; gated CRISPEMBED_MOEBIUS)",
+      "485 MB", "mit", "https://huggingface.co/hustvl/Moebius" },
+    { "moebius-q8_0", "moebius-q8_0.gguf",
+      "https://huggingface.co/cstr/Moebius-inpaint-GGUF/resolve/1b2d16923233a71d59b494d4a74b5d12067acfa5/"
+      "moebius-q8_0.gguf",
+      "Moebius latent inpainting denoiser (q8_0; pair with sdxl-vae-inpaint-q8_0; weights MIT per HF card, Apache-2.0 "
+      "per README; gated CRISPEMBED_MOEBIUS)",
+      "288 MB", "mit", "https://huggingface.co/hustvl/Moebius" },
+    { "moebius-q4_k-mix", "moebius-q4_k-mix.gguf",
+      "https://huggingface.co/cstr/Moebius-inpaint-GGUF/resolve/1b2d16923233a71d59b494d4a74b5d12067acfa5/"
+      "moebius-q4_k-mix.gguf",
+      "Moebius latent inpainting denoiser (q4_k-mix; pair with sdxl-vae-inpaint-q8_0; weights MIT per HF card, "
+      "Apache-2.0 per README; gated CRISPEMBED_MOEBIUS)",
+      "247 MB", "mit", "https://huggingface.co/hustvl/Moebius" },
+    { "pixelhacker-f32", "pixelhacker-f32.gguf",
+      "https://huggingface.co/cstr/PixelHacker-GGUF/resolve/c93816db102ab6ee037ff7314a4b7be3474baadb/"
+      "pixelhacker-f32.gguf",
+      "PixelHacker latent inpainting denoiser (f32; pair with sdxl-vae-inpaint-f32; MIT weights; gated "
+      "CRISPEMBED_PIXELHACKER)",
+      "3.45 GB", "mit", "https://huggingface.co/hustvl/PixelHacker" },
+    { "pixelhacker-f16", "pixelhacker-f16.gguf",
+      "https://huggingface.co/cstr/PixelHacker-GGUF/resolve/c93816db102ab6ee037ff7314a4b7be3474baadb/"
+      "pixelhacker-f16.gguf",
+      "PixelHacker latent inpainting denoiser (f16; pair with sdxl-vae-inpaint-f16; MIT weights; gated "
+      "CRISPEMBED_PIXELHACKER)",
+      "1.73 GB", "mit", "https://huggingface.co/hustvl/PixelHacker" },
+    { "pixelhacker-q8_0", "pixelhacker-q8_0.gguf",
+      "https://huggingface.co/cstr/PixelHacker-GGUF/resolve/c93816db102ab6ee037ff7314a4b7be3474baadb/"
+      "pixelhacker-q8_0.gguf",
+      "PixelHacker latent inpainting denoiser (q8_0; pair with sdxl-vae-inpaint-q8_0; MIT weights; gated "
+      "CRISPEMBED_PIXELHACKER)",
+      "918 MB", "mit", "https://huggingface.co/hustvl/PixelHacker" },
+    { "pixelhacker-q4_k", "pixelhacker-q4_k.gguf",
+      "https://huggingface.co/cstr/PixelHacker-GGUF/resolve/c93816db102ab6ee037ff7314a4b7be3474baadb/"
+      "pixelhacker-q4_k.gguf",
+      "PixelHacker latent inpainting denoiser (q4_k; pair with sdxl-vae-inpaint-q4_k; MIT weights; gated "
+      "CRISPEMBED_PIXELHACKER)",
+      "487 MB", "mit", "https://huggingface.co/hustvl/PixelHacker" },
+    { "sdxl-vae-inpaint-f32", "sdxl-vae-f32.gguf",
+      "https://huggingface.co/cstr/SDXL-VAE-inpaint-GGUF/resolve/ea6a2363528798c1da19e549f7cdf2b93d9a9525/"
+      "sdxl-vae-f32.gguf",
+      "SDXL VAE for Moebius/PixelHacker inpainting (f32; MIT; used with CRISPEMBED_MOEBIUS/PIXELHACKER)", "335 MB",
+      "mit", "https://huggingface.co/stabilityai/sdxl-vae" },
+    { "sdxl-vae-inpaint-f16", "sdxl-vae-f16.gguf",
+      "https://huggingface.co/cstr/SDXL-VAE-inpaint-GGUF/resolve/ea6a2363528798c1da19e549f7cdf2b93d9a9525/"
+      "sdxl-vae-f16.gguf",
+      "SDXL VAE for Moebius/PixelHacker inpainting (f16; MIT; used with CRISPEMBED_MOEBIUS/PIXELHACKER)", "168 MB",
+      "mit", "https://huggingface.co/stabilityai/sdxl-vae" },
+    { "sdxl-vae-inpaint-q8_0", "sdxl-vae-q8_0.gguf",
+      "https://huggingface.co/cstr/SDXL-VAE-inpaint-GGUF/resolve/ea6a2363528798c1da19e549f7cdf2b93d9a9525/"
+      "sdxl-vae-q8_0.gguf",
+      "SDXL VAE for Moebius/PixelHacker inpainting (q8_0; MIT; used with CRISPEMBED_MOEBIUS/PIXELHACKER)", "89 MB",
+      "mit", "https://huggingface.co/stabilityai/sdxl-vae" },
+    { "sdxl-vae-inpaint-q4_k", "sdxl-vae-q4_k.gguf",
+      "https://huggingface.co/cstr/SDXL-VAE-inpaint-GGUF/resolve/ea6a2363528798c1da19e549f7cdf2b93d9a9525/"
+      "sdxl-vae-q4_k.gguf",
+      "SDXL VAE for Moebius/PixelHacker inpainting (q4_k; MIT; used with CRISPEMBED_MOEBIUS/PIXELHACKER)", "48 MB",
+      "mit", "https://huggingface.co/stabilityai/sdxl-vae" },
+
     // License: GOT-OCR2's decoder is Qwen1.5-0.5B (config + weight lineage), so the Tongyi Qianwen
     // RESEARCH LICENSE applies: non-commercial, and no use of the model or its outputs to improve
     // other LLMs. Engine gate CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE=1.
@@ -1781,7 +1878,8 @@ static const ModelEntry k_registry[] = {
     // layout; the loader falls back to per-expert for older GGUFs. Distinct cache
     // filename so an existing per-expert cache re-downloads the stacked file.
     { "unlimited-ocr", "unlimited-ocr-q4_k-stacked.gguf",
-      "https://huggingface.co/cstr/unlimited-ocr-crispembed-GGUF/resolve/main/unlimited-ocr-q4_k-stacked.gguf",
+      "https://huggingface.co/cstr/unlimited-ocr-crispembed-GGUF/resolve/79d6658f26712df9479a77d0f0a5aaf8f807b6b5/"
+      "unlimited-ocr-q4_k-stacked.gguf",
       "Unlimited-OCR (SAM + CLIP + MoE decoder, 3.3B, full-page OCR; stacked experts)", "2.1 GB", "mit",
       "https://huggingface.co/cstr/unlimited-ocr-crispembed-GGUF" },
 

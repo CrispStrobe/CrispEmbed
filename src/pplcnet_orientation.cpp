@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <string>
 #include <vector>
+#include "core/env_gate.h"
 
 extern "C" {
 unsigned char * stbi_load(const char *, int *, int *, int *, int);
@@ -143,7 +144,7 @@ static bool run_conv_bn(const conv & c, const bn & b, std::vector<float> & x, in
     int oh = 0, ow = 0;
     if (!apply_conv(c, x, h, w, y, oh, ow)) return false;
     static int debug_first_conv = 0;
-    if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG") && debug_first_conv++ == 0)
+    if (core_env::on("PPLCNET_ORIENTATION_GRAPH_DEBUG") && debug_first_conv++ == 0)
         fprintf(stderr, "pplcnet cpu conv %.7g %.7g %.7g %.7g\n", y[0], y[1], y[2], y[3]);
     apply_bn(y, b, c.out);
     h = oh;
@@ -194,7 +195,7 @@ static std::vector<float> preprocess(const uint8_t * px, int width, int height, 
 
 static ggml_tensor * graph_conv(ggml_context * g, ggml_tensor * x, const conv & c) {
     if (!c.w) return nullptr;
-    if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG"))
+    if (core_env::on("PPLCNET_ORIENTATION_GRAPH_DEBUG"))
         fprintf(stderr, "pplcnet graph weight ne=%lld,%lld,%lld,%lld type=%d conv=%d->%d k=%d groups=%d\n",
                 (long long)c.w->ne[0], (long long)c.w->ne[1], (long long)c.w->ne[2], (long long)c.w->ne[3],
                 (int)c.w->type, c.in, c.out, c.k, c.groups);
@@ -211,7 +212,7 @@ static ggml_tensor * graph_conv(ggml_context * g, ggml_tensor * x, const conv & 
 static ggml_tensor * graph_bn(ggml_context * g, ggml_tensor * x, const bn & b, int channels) {
     if (!b.mean || !b.var || !b.scale || !b.bias) return x;
     auto vec = [&](ggml_tensor * t) { return ggml_reshape_3d(g, t, 1, 1, channels); };
-    if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG"))
+    if (core_env::on("PPLCNET_ORIENTATION_GRAPH_DEBUG"))
         fprintf(stderr, "pplcnet bn x=%lld,%lld,%lld,%lld c=%d\n", (long long)x->ne[0], (long long)x->ne[1],
                 (long long)x->ne[2], (long long)x->ne[3], channels);
     ggml_tensor * variance = ggml_scale_bias(g, vec(b.var), 1.0f, 1e-5f);
@@ -282,7 +283,7 @@ static bool build_graph(context * c) {
     ggml_tensor * x = stem_conv ? graph_act(g, graph_bn(g, stem_conv, c->stem_bn, c->stem.out)) : nullptr;
     if (!x) return false;
     c->graph_stem = x;
-    if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG")) {
+    if (core_env::on("PPLCNET_ORIENTATION_GRAPH_DEBUG")) {
         ggml_set_output(c->graph_stem_conv);
         ggml_set_output(c->graph_stem);
     }
@@ -290,7 +291,7 @@ static bool build_graph(context * c) {
         x = graph_block(g, x, b);
         if (!x) return false;
         c->graph_taps.push_back(x);
-        if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG")) ggml_set_output(x);
+        if (core_env::on("PPLCNET_ORIENTATION_GRAPH_DEBUG")) ggml_set_output(x);
     }
     const int spatial = (int)(x->ne[0] * x->ne[1]);
     x = ggml_scale(g, ggml_sum_rows(g, ggml_reshape_2d(g, x, spatial, 512)), 1.0f / float(spatial));
@@ -300,7 +301,7 @@ static bool build_graph(context * c) {
     if (!x) return false;
     x = graph_act(g, x);
     c->graph_head = x;
-    if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG")) {
+    if (core_env::on("PPLCNET_ORIENTATION_GRAPH_DEBUG")) {
         ggml_set_output(c->graph_pooled);
         ggml_set_output(c->graph_head);
     }
@@ -310,7 +311,7 @@ static bool build_graph(context * c) {
     // The converted GGUF tensor is already laid out contiguously for the
     // [in,out] matmul view; reshape the metadata without transposing values.
     c->graph_logits = ggml_add(g, ggml_mul_mat(g, ggml_reshape_2d(g, c->fc_w, 1280, 2), x), c->fc_b);
-    if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG"))
+    if (core_env::on("PPLCNET_ORIENTATION_GRAPH_DEBUG"))
         fprintf(stderr, "pplcnet graph fc ne=%lld,%lld type=%d\n", (long long)c->fc_w->ne[0], (long long)c->fc_w->ne[1],
                 (int)c->fc_w->type);
     ggml_set_name(c->graph_logits, "pplcnet_logits");
@@ -334,9 +335,8 @@ static bool build_graph(context * c) {
 context * init(const char * path, int n_threads) {
     auto * c = new context();
     c->n_threads = std::max(1, n_threads);
-    c->use_graph = std::getenv("PPLCNET_ORIENTATION_GRAPH") != nullptr &&
-                   std::getenv("PPLCNET_ORIENTATION_GRAPH_PIPELINE") != nullptr;
-    const bool graph_cpu = std::getenv("PPLCNET_ORIENTATION_GRAPH_CPU") != nullptr;
+    c->use_graph = core_env::on("PPLCNET_ORIENTATION_GRAPH") && core_env::on("PPLCNET_ORIENTATION_GRAPH_PIPELINE");
+    const bool graph_cpu = core_env::on("PPLCNET_ORIENTATION_GRAPH_CPU");
     c->backend = c->use_graph && !graph_cpu ? crispasr_init_gpu_backend() : ggml_backend_cpu_init();
     // Same ignored-n_threads bug class as ppocrv6_det/_ocr (O13b): the thread
     // parameter was declared anonymously and never applied.
@@ -407,7 +407,7 @@ result classify_raw(context * c, const uint8_t * px, int width, int height, int 
     if (!c || !px || width <= 0 || height <= 0 || channels <= 0) return r;
     if (c->use_graph) {
         auto input = preprocess_graph(px, width, height, channels);
-        if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG"))
+        if (core_env::on("PPLCNET_ORIENTATION_GRAPH_DEBUG"))
             fprintf(stderr, "pplcnet graph input %.7g %.7g %.7g %.7g\n", input[0], input[1], input[2], input[3]);
         ggml_backend_tensor_set(c->graph_input, input.data(), 0, input.size() * sizeof(float));
         // Metal's scheduler on pre-tensor Apple GPUs does not reliably reuse
@@ -417,7 +417,7 @@ result classify_raw(context * c, const uint8_t * px, int width, int height, int 
         if (!ggml_backend_sched_alloc_graph(c->graph_sched, c->graph)) return r;
         if (!c->graph_sched || ggml_backend_sched_graph_compute(c->graph_sched, c->graph) != GGML_STATUS_SUCCESS)
             return r;
-        if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG")) {
+        if (core_env::on("PPLCNET_ORIENTATION_GRAPH_DEBUG")) {
             float tap[4] = {};
             float conv_tap[4] = {};
             ggml_backend_tensor_get(c->graph_stem_conv, conv_tap, 0, sizeof(conv_tap));
@@ -449,7 +449,7 @@ result classify_raw(context * c, const uint8_t * px, int width, int height, int 
         r.angle = r.probabilities[1] > r.probabilities[0] ? 180 : 0;
         r.confidence = std::max(r.probabilities[0], r.probabilities[1]);
         const result graph_result = r;
-        if (std::getenv("PPLCNET_ORIENTATION_GRAPH_ACCEPT")) return graph_result;
+        if (core_env::on("PPLCNET_ORIENTATION_GRAPH_ACCEPT")) return graph_result;
         // The graph is diagnostic-only until its logits agree with the CPU
         // reference. This also makes unsupported/approximate backend kernels
         // harmless to the production pipeline.
@@ -459,23 +459,23 @@ result classify_raw(context * c, const uint8_t * px, int width, int height, int 
         if (!run_conv_bn(c->stem, c->stem_bn, x, h, w)) return {};
         for (size_t bi = 0; bi < c->blocks.size(); ++bi) {
             if (!run_block(c->blocks[bi], x, h, w)) return {};
-            if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG"))
+            if (core_env::on("PPLCNET_ORIENTATION_GRAPH_DEBUG"))
                 fprintf(stderr, "pplcnet cpu block%zu %.7g %.7g %.7g %.7g\n", bi, x[0], x[1], x[2], x[3]);
         }
         std::vector<float> pooled(512, 0.0f);
         for (int ch = 0; ch < 512; ++ch)
             for (int i = 0; i < h * w; ++i) pooled[ch] += x[(size_t)ch * h * w + i] / float(h * w);
-        if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG"))
+        if (core_env::on("PPLCNET_ORIENTATION_GRAPH_DEBUG"))
             fprintf(stderr, "pplcnet cpu pooled %.7g %.7g %.7g %.7g\n", pooled[0], pooled[1], pooled[2], pooled[3]);
         int oh = 0, ow = 0;
         if (!apply_conv(c->head, pooled, 1, 1, y, oh, ow)) return {};
         hardswish(y);
-        if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG"))
+        if (core_env::on("PPLCNET_ORIENTATION_GRAPH_DEBUG"))
             fprintf(stderr, "pplcnet cpu head %.7g %.7g %.7g %.7g\n", y[0], y[1], y[2], y[3]);
         auto fw = to_f32(c->fc_w), fb = to_f32(c->fc_b);
         float cpu_logits[2] = {};
         linear_cpu(y.data(), cpu_logits, 1280, 2, fw.data(), fb.data());
-        if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG"))
+        if (core_env::on("PPLCNET_ORIENTATION_GRAPH_DEBUG"))
             fprintf(stderr, "pplcnet graph diagnostic logits graph=(%.9g,%.9g) cpu=(%.9g,%.9g)\n",
                     graph_result.logits[0], graph_result.logits[1], cpu_logits[0], cpu_logits[1]);
         const float cpu_mx = std::max(cpu_logits[0], cpu_logits[1]);
@@ -489,11 +489,11 @@ result classify_raw(context * c, const uint8_t * px, int width, int height, int 
         return r;
     }
     auto x = preprocess(px, width, height, channels);
-    if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG"))
+    if (core_env::on("PPLCNET_ORIENTATION_GRAPH_DEBUG"))
         fprintf(stderr, "pplcnet cpu input %.7g %.7g %.7g %.7g\n", x[0], x[1], x[2], x[3]);
     int h = 80, w = 160;
     if (!run_conv_bn(c->stem, c->stem_bn, x, h, w)) return r;
-    if (std::getenv("PPLCNET_ORIENTATION_GRAPH_DEBUG"))
+    if (core_env::on("PPLCNET_ORIENTATION_GRAPH_DEBUG"))
         fprintf(stderr, "pplcnet cpu stem %.7g %.7g %.7g %.7g\n", x[0], x[1], x[2], x[3]);
     for (const auto & b : c->blocks)
         if (!run_block(b, x, h, w)) return r;

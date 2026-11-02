@@ -20,6 +20,7 @@
 #include <mutex>
 #include <string>
 #include <vector>
+#include "core/env_gate.h"
 
 namespace {
 
@@ -36,7 +37,7 @@ std::map<std::string, uint64_t> g_count;
 
 bool is_active() {
     if (!g_checked) {
-        const char * p = getenv("CRISPEMBED_IMATRIX_OUT");
+        const char * p = core_env::value("CRISPEMBED_IMATRIX_OUT");
         if (p && p[0]) {
             g_active = true;
             g_path = p;
@@ -54,9 +55,27 @@ const ggml_tensor * underlying(const ggml_tensor * t) {
 
 // eval callback: ask==true  -> return whether we want a post-compute callback
 //                ask==false -> the node's data is ready; collect it
+// The weight behind a matmul's src0: views resolve to their source, and a
+// graph-local F32 cast of a stored weight (ggml_cast, a CPY node: TeleOCR's
+// CPU F16 path) resolves to the weight it reads.
+const ggml_tensor * matmul_weight(const ggml_tensor * src0) {
+    const ggml_tensor * w = underlying(src0);
+    if (w && w->op == GGML_OP_CPY && w->src[0]) w = underlying(w->src[0]);
+    return w;
+}
+
+// core_cpu::quant_f32_matmul (src/core/quant_f32_matmul.h) is a custom op with
+// matmul semantics: dst[ne1(w), ne1(x)] = w x, src0 the stored weight.
+bool is_custom_matmul(const ggml_tensor * t) {
+    const ggml_tensor * w = t->src[0];
+    const ggml_tensor * x = t->src[1];
+    return t->op == GGML_OP_CUSTOM && w && x && t->src[2] == nullptr && w->ne[0] == x->ne[0] && t->ne[0] == w->ne[1] &&
+           t->ne[1] == x->ne[1] && x->type == GGML_TYPE_F32;
+}
+
 bool eval_cb(struct ggml_tensor * t, bool ask, void * /*ud*/) {
-    if (t->op != GGML_OP_MUL_MAT) return false;
-    const ggml_tensor * w = underlying(t->src[0]);
+    if (t->op != GGML_OP_MUL_MAT && !is_custom_matmul(t)) return false;
+    const ggml_tensor * w = matmul_weight(t->src[0]);
     // src0 must be a named leaf weight (activations are computed nodes, op != NONE)
     if (!w || w->op != GGML_OP_NONE || w->name[0] == '\0') return false;
 
