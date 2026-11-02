@@ -4,6 +4,9 @@ on:
   pull_request:
     paths:
       - 'src/inpaint.*'
+      - 'tools/ci-heavy/inpaint_gguf_publish.py'
+      - 'tests/test_inpaint_gguf_publish.py'
+      - 'docs/inpaint-publication-v1.json'
       - 'src/migan.*'
       - 'src/latent_inpaint*'
       - 'src/ocr_detect.*'
@@ -29,6 +32,9 @@ on:
   push:
     paths:
       - 'src/inpaint.*'
+      - 'tools/ci-heavy/inpaint_gguf_publish.py'
+      - 'tests/test_inpaint_gguf_publish.py'
+      - 'docs/inpaint-publication-v1.json'
       - 'src/migan.*'
       - 'src/latent_inpaint*'
       - 'src/ocr_detect.*'
@@ -90,6 +96,7 @@ jobs:
           python tests/test_migan512_contract.py -v
           python tests/test_latent_inpaint_contract.py -v
           python tests/test_latent_inpaint_original_import.py -v
+          python tests/test_inpaint_gguf_publish.py -v
       - name: Configure portable CPU build
         run: >-
           cmake -S . -B build-inpaint -DCMAKE_BUILD_TYPE=Release

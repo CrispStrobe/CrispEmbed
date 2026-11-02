@@ -1,3 +1,24 @@
+## 2 November 2026 — OCR quality contract: stale source pins recorded and re-pinned (fix/ocr-quality-contract-pins)
+
+- Initial failure retained: the OCR quality contract failed in runs 41416111941 and
+  41416124827 (`ValueError: Source bytes changed: src/qwen35_math.h`, two errors in
+  `tests/test_qwen35_quality_audit.py`); last success was 38967869242 on 2026-10-16.
+  The workflow only triggered on its own paths, so later source edits were never
+  checked. The auditor stops at the first mismatch; five pins had drifted:
+  `src/qwen35_math.h`, `src/qwen35_linear.cpp` (#81 weight cache), `src/qwen35_ocr.cpp`
+  (#80/#81 and Ovis gates), `src/qwen35_vision.cpp` (#80, 59603adf interpolation) and
+  the diagnostic `tools/quantize.cpp` (other-family quantizer work).
+- Reviewed each diff: every change is behind a default-off gate
+  (`CRISPEMBED_QWEN35_WEIGHT_CACHE`, `CRISPEMBED_OVISOCR2_/OVISOCR3_*`,
+  `CRISPEMBED_QWEN35_VISION_SOURCE_INTERPOLATION`, Ovis2 large-image gates) or keyed on
+  another architecture; the format-1 LightOn default path keeps its arithmetic.
+- The q8/q8-q6/q4 receipts are unchanged. New `tools/qwen35_source_pins.py` records
+  re-pins (previous hash → new hash/blob, changing commits, reason) in
+  `tests/results/qwen35-ocr/source-pin-amendments.json`; the auditor accepts drift only
+  through that chain, and CI verifies every frozen digest is the blob at its receipt's
+  source commit (15 pins). The workflow now also runs on changes to the pinned sources.
+  No inference repeated; no model, gold, budget or default changed.
+
 ## 2 November 2026 — WASM divergence origin: layer0 Q mul_mat, then flash attention (op-by-op replay)
 
 * 41441512356 (`wasm-layer0-attention-v1` at `8f7ea115`) replayed every production layer0

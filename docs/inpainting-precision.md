@@ -34,9 +34,10 @@ as qualified on the synthetic panel but below the bar for that DBNet crop.
 bar on that crop.** It is not hidden by the per-engine minimum: any listing of
 this variant must carry the caveat.
 
-Publication: prepared, not performed. No owner-approved workflow covers
-inpainting GGUFs yet; `docs/inpaint-publication-v1.json` lists the exact
-qualifying files, licences and caveats for the owner's go-ahead.
+Publication: approved by the owner on 2026-11-02 per
+`docs/inpaint-publication-v1.json`; `.github/workflows/inpaint-gguf-publish.yml`
+copies exactly those files from the private repositories (SHA-256 checked) to
+the public destinations and reads them back from an empty cache.
 
 ## Gates
 
