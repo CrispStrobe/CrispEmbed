@@ -1,0 +1,77 @@
+{
+ "schema": "crispembed-wasm-live-norm-operands-v4",
+ "workflow": ".github/workflows/wasm-live-norm-operands-v4.yml",
+ "scope_unchanged_from_v1": true,
+ "runtime_change": false,
+ "qualification": false,
+ "component_admission": "v2",
+ "observer": "v3",
+ "ref_adapter": {
+  "path": "tools/wasm-live-norm-v4/diff_adapter_v4.py",
+  "frozen": "tools/moedern-native-v2/diff_adapter.py",
+  "frozen_sha256": "695a79e4a9c96f80aeada999c7f76a63c55304b96f1b42a539108adc9523d097",
+  "allowed_shapes": [
+   [
+    2,
+    8
+   ],
+   [
+    12,
+    384
+   ],
+   [
+    12,
+    1536
+   ]
+  ],
+  "budgets": {
+   "max_absolute": 0.002,
+   "minimum_row_cosine": 0.99999
+  }
+ },
+ "expected": {
+  "norm_pairs": 13,
+  "layer3_boundaries": 23,
+  "same_input_comparisons": 208,
+  "natural_comparisons": 196,
+  "old_wasm_stage_hashes": 32
+ },
+ "retained_negatives": [
+  {
+   "run": 40867038915,
+   "source": "ff3b8a0171d2cdb5cfcdd65701fadaa49a99d265",
+   "phase": "component-build"
+  },
+  {
+   "run": 41416683981,
+   "source": "1b93141bc527125a8c626e848727307e9ebe6603",
+   "phase": "component-build"
+  },
+  {
+   "run": 41418312256,
+   "source": "f9693ad8b319c6d9a5476b9b1ecfefa7d79c53e7",
+   "phase": "native"
+  },
+  {
+   "run": 41421952964,
+   "source": "6288db9c9f0a06700aba704688db323b4e2b679f",
+   "phase": "native"
+  },
+  {
+   "run": 41427588368,
+   "source": "701d8cfa131602cd2dea2f9f13ce6b6335134b4e",
+   "phase": "replay",
+   "error": "Bounded exact NumPy shape required ([12,1536] natural pairs)"
+  }
+ ],
+ "v1_profile_sha256": "c46375102543163b0cd2d28b4c6a0c4421bdffbe525643e331996af903d8af1d",
+ "v2_profile_sha256": "ab2869c1d1e84444be335195f4725b1b5ed7be85d6585da2433d8aea07a6672a",
+ "v3_profile_sha256": "bcbcca40c79795287159eef4a473551efc0166ace4cec7712d8696f36b15586a",
+ "owned_sha256": {
+  ".github/workflows/wasm-live-norm-operands-v4.yml": "abfa05f3bcd5a947317c3d08bcd083bc9f8778b38306449e3fa7201c5a68c22e",
+  "docs/wasm-live-norm-operands-v4.md": "5e66ea50c2bb3c792a581f1023342db76c61a3f3b8d5fe3477efd0167c9fb6aa",
+  "tools/ci-heavy/wasm_live_norm_v4.py": "8f75a103969b6e97fb662bef79cb208e21cdb171808416b5b962a21c354d1122",
+  "tools/wasm-live-norm-v4/diff_adapter_v4.py": "05df377df2e59dba18e034f77701eb17439529deafbf8e1523774eda36cf7609",
+  "tests/test_wasm_live_norm_v4.py": "2bb741c8a8c51fb5f2ee796a6282c7f5f53517e03708721b4351085fb0f4e996"
+ }
+}
