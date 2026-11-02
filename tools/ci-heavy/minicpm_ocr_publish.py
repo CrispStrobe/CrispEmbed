@@ -203,7 +203,7 @@ No weights were trained, fine-tuned, merged or otherwise altered.
 2. Converted with `models/convert-minicpm-ocr-to-gguf.py` (`--dtype f32` lossless; `--dtype f16`; norms, biases and
    other 1-D tensors stay F32).
 3. Quantized variants, if any, were produced from the F16 GGUF with CrispEmbed's own `crispembed-quantize`
-   (Q8_0: every matrix to Q8_0, 1-D tensors and the patch-embedding conv weight unchanged).
+   (Q8_0 recipe `q8_0`; 1-D tensors keep their source type; per-tensor types are listed in the GGUF header).
 4. Built and uploaded by CrispEmbed commit `{source_commit}` (workflow `minicpm-ocr-publish.yml`);
    `manifest.json` lists every recipe, input pin, receipt and file hash.
 
