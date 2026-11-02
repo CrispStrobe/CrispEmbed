@@ -22,6 +22,19 @@
   Initial capture attempts 41442616737 (missing `verovio`) and 41451319490 (conversation not
   copied as chat() does) failed before any comparison; retained.
   Receipts: `tests/results/got-ocr2-pipeline-parity/`.
+## 2 November 2026 — Inpainting GGUFs published and registered
+
+- Owner-approved `docs/inpaint-publication-v1.json` published by
+  `inpaint-gguf-publish.yml` from main 4290176e (runs 41467884047, 41467897168,
+  41467910374, 41467923288): exact private bytes, SHA-256 checked before upload,
+  every file re-read anonymously from an empty cache. Hub revisions:
+  cstr/MI-GAN-512-GGUF e1481f21, cstr/Moebius-inpaint-GGUF 1b2d1692,
+  cstr/PixelHacker-GGUF c93816db, cstr/SDXL-VAE-inpaint-GGUF ea6a2363. Private
+  repositories unchanged.
+- Initial PR 107 CI failure: Windows autocrlf rewrote a pinned licence text;
+  `licenses/latent-inpaint` texts are now `-text`.
+- Registry: migan512-*, moebius-* (q4_k-mix only below Q8_0), pixelhacker-*,
+  sdxl-vae-inpaint-*; engines stay experimental and gated.
 ## 2 November 2026: below-bar registry artifacts repaired (fix/below-bar-artifacts)
 
 - **f2llm-v2-0.6b Q4_K.** The published `-q4_k-imatrix` scores 0.769 min / 0.822 mean against the original

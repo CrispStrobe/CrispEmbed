@@ -95,11 +95,8 @@ issue71 branches, without the research-only engine (owner ruling; see
 engine gates stay experimental and default off; main's MI-GAN Metal path and
 the persistent graph both remain gated.
 
-- Open: publication of the qualifying public GGUFs and registry entries (only
-  variants that clear the bars; Moebius Q4_K only as Q4_K-mix). Owner approved
-  2026-11-02; `.github/workflows/inpaint-gguf-publish.yml` (ci/inpaint-gguf-publish)
-  publishes per destination, then a registry PR adds `model_mgr.cpp`/
-  `model_hashes.h`/`upload_to_hf.py` entries from the read-back revisions.
+- Done: publication (Hub e1481f21/1b2d1692/c93816db/ea6a2363) and registry entries
+  (HISTORY 2 November).
 - Open: all CI green (Windows, macOS, Linux, Static guards, sibling-crispasr,
   secret scan). MI-GAN512 Q4_K stays caveated (0.9019 on the DBNet street crop).
 
