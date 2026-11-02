@@ -1,0 +1,27 @@
+04:50:06.2724764Z == got-ocr2-f16.gguf: 290 LLM tensors; worst 12 by cosine
+04:50:06.2735179Z    {"name": "l.embed_tokens.weight", "type": "F32", "cos": 0.9931204100349087, "max_abs_delta": 0.1748046875, "ref_max_abs": 0.369140625, "rel_l2": 0.1170976138620213}
+04:50:06.2737178Z    {"name": "l.blk.6.attn_o.weight", "type": "F16", "cos": 0.9999999999999997, "max_abs_delta": 2.9802322387695312e-08, "ref_max_abs": 0.345703125, "rel_l2": 7.627262944236566e-09}
+04:50:06.2738925Z    {"name": "l.blk.1.post_attention_layernorm.weight", "type": "F32", "cos": 0.9999999999999998, "max_abs_delta": 0.0, "ref_max_abs": 1.2265625, "rel_l2": 0.0}
+04:50:06.2740553Z    {"name": "l.blk.1.attn_q.bias", "type": "F32", "cos": 0.9999999999999998, "max_abs_delta": 0.0, "ref_max_abs": 8.9375, "rel_l2": 0.0}
+04:50:06.2742136Z    {"name": "l.blk.1.attn_k.weight", "type": "F16", "cos": 0.9999999999999998, "max_abs_delta": 2.9802322387695312e-08, "ref_max_abs": 0.42578125, "rel_l2": 5.018858098689784e-09}
+04:50:06.2747748Z    {"name": "l.blk.1.attn_o.weight", "type": "F16", "cos": 0.9999999999999998, "max_abs_delta": 2.9802322387695312e-08, "ref_max_abs": 0.380859375, "rel_l2": 7.580088903014123e-09}
+04:50:06.2749618Z    {"name": "l.blk.4.attn_o.weight", "type": "F16", "cos": 0.9999999999999998, "max_abs_delta": 2.9802322387695312e-08, "ref_max_abs": 0.34375, "rel_l2": 7.402065336060342e-09}
+04:50:06.2751365Z    {"name": "l.blk.4.ffn_up.weight", "type": "F16", "cos": 0.9999999999999998, "max_abs_delta": 2.9802322387695312e-08, "ref_max_abs": 0.392578125, "rel_l2": 6.734324067908282e-09}
+04:50:06.2753130Z    {"name": "l.blk.6.attn_v.weight", "type": "F16", "cos": 0.9999999999999998, "max_abs_delta": 2.9802322387695312e-08, "ref_max_abs": 0.58984375, "rel_l2": 4.9479134671538254e-09}
+04:50:06.2755351Z    {"name": "l.blk.8.ffn_up.weight", "type": "F16", "cos": 0.9999999999999998, "max_abs_delta": 2.9802322387695312e-08, "ref_max_abs": 0.400390625, "rel_l2": 6.477173318398945e-09}
+04:50:06.2757687Z    {"name": "l.blk.11.ffn_down.weight", "type": "F16", "cos": 0.9999999999999998, "max_abs_delta": 2.9802322387695312e-08, "ref_max_abs": 0.79296875, "rel_l2": 6.512687693627881e-09}
+04:50:06.2761930Z    {"name": "l.blk.12.input_layernorm.weight", "type": "F32", "cos": 0.9999999999999998, "max_abs_delta": 0.0, "ref_max_abs": 2.359375, "rel_l2": 0.0}
+04:50:22.8009105Z == got-ocr2-q4_k.gguf: 290 LLM tensors; worst 12 by cosine
+04:50:22.8035157Z    {"name": "l.blk.0.ffn_down.weight", "type": "Q4_K", "cos": 0.9972314970154172, "max_abs_delta": 0.0634918212890625, "ref_max_abs": 1.078125, "rel_l2": 0.07441199094685881}
+04:50:22.8055006Z    {"name": "l.blk.0.attn_q.weight", "type": "Q4_K", "cos": 0.9972350418084998, "max_abs_delta": 0.05779266357421875, "ref_max_abs": 1.5078125, "rel_l2": 0.07436385801296588}
+04:50:22.8084978Z    {"name": "l.blk.11.ffn_down.weight", "type": "Q4_K", "cos": 0.9972939447102541, "max_abs_delta": 0.029178619384765625, "ref_max_abs": 0.79296875, "rel_l2": 0.07356802874633746}
+04:50:22.8104950Z    {"name": "l.blk.14.ffn_down.weight", "type": "Q4_K", "cos": 0.9973016857935829, "max_abs_delta": 0.03570365905761719, "ref_max_abs": 1.0, "rel_l2": 0.0734628347009845}
+04:50:22.8124776Z    {"name": "l.blk.12.ffn_down.weight", "type": "Q4_K", "cos": 0.9973060043987818, "max_abs_delta": 0.03143787384033203, "ref_max_abs": 0.83984375, "rel_l2": 0.07340228975722739}
+04:50:22.8174999Z    {"name": "l.blk.23.ffn_down.weight", "type": "Q4_K", "cos": 0.9973069690214796, "max_abs_delta": 0.08114814758300781, "ref_max_abs": 1.7578125, "rel_l2": 0.07338980316522667}
+04:50:22.8202485Z    {"name": "l.blk.15.ffn_down.weight", "type": "Q4_K", "cos": 0.9973258741184875, "max_abs_delta": 0.04604148864746094, "ref_max_abs": 0.9140625, "rel_l2": 0.07313144345444185}
+04:50:22.8234698Z    {"name": "l.blk.14.ffn_gate.weight", "type": "Q4_K", "cos": 0.9973344690938415, "max_abs_delta": 0.031989097595214844, "ref_max_abs": 0.609375, "rel_l2": 0.07301278197110253}
+04:50:22.8264624Z    {"name": "l.blk.11.ffn_up.weight", "type": "Q4_K", "cos": 0.9973388592187893, "max_abs_delta": 0.02475738525390625, "ref_max_abs": 0.44140625, "rel_l2": 0.07295238262378129}
+04:50:22.8294631Z    {"name": "l.blk.13.ffn_down.weight", "type": "Q4_K", "cos": 0.9973419881420413, "max_abs_delta": 0.03376483917236328, "ref_max_abs": 0.921875, "rel_l2": 0.07290885220413257}
+04:50:22.8324595Z    {"name": "l.blk.16.ffn_down.weight", "type": "Q4_K", "cos": 0.9973430403498983, "max_abs_delta": 0.033977508544921875, "ref_max_abs": 0.99609375, "rel_l2": 0.07289656831306957}
+04:50:22.8354772Z    {"name": "l.blk.10.ffn_down.weight", "type": "Q4_K", "cos": 0.9973456802504279, "max_abs_delta": 0.0409698486328125, "ref_max_abs": 0.6875, "rel_l2": 0.07285844209963131}
+04:50:22.8384361Z original head tensors: {'lm_head.weight': [151860, 1024], 'model.embed_tokens.weight': [151860, 1024]} lm_head==embed: True

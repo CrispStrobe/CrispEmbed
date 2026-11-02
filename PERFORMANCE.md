@@ -1,3 +1,17 @@
+## GOT-OCR2 F16 r2 (2 November 2026, `fix/got-ocr2-f16`)
+
+Hosted x86 CPU, 4 vCPU, `-t 4`, one-shot runs including load; 256-token cap. Text compared with
+the original model (stepfun-ai/GOT-OCR-2.0-hf, F32, CPU). Receipts: `tests/results/got-ocr2-f16/`.
+
+| Case | F16-r2 s | Q4_K s | Original F32 s | F16-r2 vs original | Q4_K vs original |
+|---|---:|---:|---:|---|---|
+| fox | 28.7 | 14.7 | — | token-exact | token-exact |
+| receipt_example | 39.6 | 19.3 | — | ratio 0.530 (adds Qty/Price) | ratio 0.592 |
+| simple_form | 29.7 | 15.1 | — | ratio 0.441 | ratio 0.074 |
+
+Stage diff vs the reference: F16-r2 min cos 1.000000 on 19 stages (llm_layer_0 max_abs 5.1e-5),
+Q4_K worst 0.995157. M1 Metal F16-r2 fox: exact, 17.9 s (11.3 s Metal library load).
+
 ## CUDA GPU audit, Kaggle Tesla T4 (1-2 November 2026, `feat/cuda-audit`)
 
 Same-binary CUDA (`--gpu-backend cuda`) vs CPU (`--gpu-backend cpu`,

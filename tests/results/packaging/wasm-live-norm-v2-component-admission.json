@@ -1,0 +1,20 @@
+{
+ "schema": "crispembed-wasm-live-norm-v2-component-admission-review-v1",
+ "retained_v1_negative": {"run": 40867038915, "source": "ff3b8a0171d2cdb5cfcdd65701fadaa49a99d265", "phase": "component-build", "error": "Actual component rounding flags differ", "cause": "v1 assumed exactly one wasm_native_order_norm.cpp compile entry; live CMake compiles it in frozen-controls/norm-candidate-controls and live-norm-replay"},
+ "runs": [
+  {"run": 41416683981, "source": "1b93141bc527125a8c626e848727307e9ebe6603", "completed": false, "phase": "component-build",
+   "error": "Unrecognised compile output: frozen-controls/CMakeFiles/norm-candidate-controls.dir/controls.cpp.o",
+   "note": "v2 parser defect before any build; the full 30-entry native inventory was saved first and contains exactly the five declared entries with frozen flags. Kept as a regression fixture."},
+  {"run": 41418312256, "source": "f9693ad8b319c6d9a5476b9b1ecfefa7d79c53e7", "completed": false, "phase": "native",
+   "component_admission": {"native": {"admitted": true, "total_entries": 30, "declared_entries": 5, "ggml_backend_entries": 25}, "wasm": {"admitted": true, "total_entries": 29, "declared_entries": 5, "ggml_backend_entries": 24}},
+   "weight_free_controls_passed": ["component build/authored/live-observer controls", "twelve browser byte recoveries", "component-check", "Ref positive/numeric/shape controls"],
+   "model_authenticated": true, "build_full_passed": true,
+   "native_plain_anchors": {"native1": "1bfe9e0a37a5c8887eabd508ddbd0c542e7acc278d8a5a5feeae00f760136554 (two ordinary repeats equal)", "native2": "recorded"},
+   "error": "Command rejected: native1-observed; observer-source/src/crispembed.cpp:1186 GGML_ASSERT(ctx->live_norm.add_norm(input, result)) failed (SIGABRT)",
+   "attribution_reached": false}
+ ],
+ "new_original_forwards": 0,
+ "full_ten_case_retry": false,
+ "qualification": false,
+ "limits": "Component admission is repaired and its controls pass. The one-sentence attribution was not reached: the unchanged v1 observer overlay rejects the first native norm node in the observed native library (src[0]/op/geometry contract in tests/wasm-live-norm/observer.h:add_norm). That is a separate observer/source defect. It needs its own review and versioned repair. Gates and defaults are unchanged."
+}

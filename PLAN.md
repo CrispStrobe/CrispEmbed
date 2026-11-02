@@ -1,18 +1,44 @@
-## CUDA GPU audit follow-ups — 2 November 2026
+## GOT-OCR2 F16 artifact — 2 November 2026 (`fix/got-ocr2-f16`)
+
+Root cause: the published `got-ocr2-f16.gguf` (Hub `5a0b0a1adc`) has an 8 MiB block of zero
+bytes inside `l.embed_tokens.weight` (token rows 43-2091). Artifact defect only: every other
+tensor matches the original, F32 activations never exceed the F16 range (HF max 6990), and the
+runtime is fine. Reconverted `got-ocr2-f16-r2.gguf` (sha256 `98b431ab…`, converter `--verify`)
+differs from the old file only inside that span. Stage diff is cos 1.000000 on all 19 stages
+(llm_layer_0 max_abs 5.1e-5, was 0.9366 / 8.92), and fox is token-exact against the original.
+- Qualification run 41391040980 was REJECTED by its own page-similarity gate (receipt char ratio
+  r2 0.530 < q4_k 0.592; simple_form r2 0.44 vs q4_k 0.07). The receipt is kept on record.
+  Coordinator decision (owner bar, docs/precision-acceptance.md): r2 qualifies as F16 on stage cos
+  1.000000 x19 and fox token-exact. Page similarity stays a recorded diagnostic. Published by run
+  41397551540 as `got-ocr2-f16-r2.gguf`, Hub `c0f1aa7b5b52c15002e911d5d630e6d0dcb3ba8f`, sha256
+  `98b431ab…` (local = LFS = empty-cache readback). Registry `got-ocr2-f16`. M1 Metal fox exact.
+  DONE except the item below.
+- **GOT pipeline gap against the original, all precisions** (q4_k, q8_0, F16 alike): native
+  output is not token-exact against stepfun-ai/GOT-OCR-2.0-hf on receipt_example and simple_form.
+  The native arms add receipt Qty/Price columns that the original omits, and they drop simple_form
+  fields. Candidates to A/B one at a time, each behind a gate against the original's token IDs:
+  (1) image resize: native nearest-neighbour 1024x1024 vs HF processor interpolation;
+  (2) prompt "OCR" token 93495 (native) vs 80577 (HF processor);
+  (3) native no-repeat-ngram 3 vs the original generation config.
+  Harness: `tools/ci-heavy/got_ocr2_f16_republish.sh` (compare.json) / `got_ocr2_hf_probe.py`.
+
 
 Source: `docs/gpu-support-matrix.md` §CUDA audit (branch `feat/cuda-audit`, Kaggle T4).
 
-- EasyOCR page lane on **x86 CPU** drops lines that CUDA, Metal and the M1 CPU keep
-  (fox 1/2, scan_strip 7/10 regions; empty text after a 704→576 canvas rebuild).
-  Run 5 isolated it: on x86 every region whose canvas is smaller than the previous
-  graph build returns empty text (conf 0), at -t 1 too; `EASYOCR_WIDTH_SORT=1` avoids it.
-  Next: on hosted x86 CPU, check whether an op reads unwritten gallocr memory after a
-  shrinking rebuild (e.g. zero the compute buffer after alloc as an A/B), fix the root cause,
-  then A/B against Python EasyOCR. Do not flip WIDTH_SORT as the fix (a second page still
-  shrinks).
+- EasyOCR x86 CPU dropped lines: **fixed in PR #100** (second BiLSTM layer's initial
+  state never reset; see HISTORY 2 November). Still open: native page crops vs Python
+  EasyOCR's own recognizer on the same crops agree on 1/2 (fox), 6/11 (scan_strip),
+  21/36 (scan_page_pd) lines; every difference is punctuation/spacing on a low-confidence
+  line, and the same on CUDA/Metal (pre-existing). Confidences differ too (fox line 2
+  0.60 native vs 0.95 Python), which points at crop/resize preprocessing in
+  `Reader.recognize` (e.g. `int()` vs `ceil()` resized width) rather than the recognizer,
+  which matches Python per stage. Next: dump Python's per-crop recognizer input and diff
+  `input_image` with test-easyocr-diff. Also: scan_page_pd's page output differs between
+  the M1 (b3318ffa) and x86/CUDA (ad8d340b) on both the fixed and legacy paths, so it is
+  not caused by this fix; attribute it (DBNet boxes vs recognizer).
 - Artifacts below their bar against F32 on both arms: republish/requantize
-  `f2llm-v2-0.6b-q4_k-imatrix`, `clip-text-base-q4_k`; GOT-OCR2 F16 decodes
-  `colorcolor…`; publish a bge-m3 GGUF converted with `--crisp` (sparse/ColBERT heads)
+  `f2llm-v2-0.6b-q4_k-imatrix`, `clip-text-base-q4_k`; GOT-OCR2 F16: root cause found
+  (see GOT-OCR2 F16 below); publish a bge-m3 GGUF converted with `--crisp` (sparse/ColBERT heads)
   and find why its q8_0 ColBERT output is 0.59 vs F16.
 - Stage-diff references that fail on both arms: PP-OCRv6 small rec fox ref, PAN, HAT.
 - Not reached on CUDA: PP-LCNet, CRAFT, TexTeller/Pix2TeX, BERT-NER, LFM2.5-VL, LFM2
@@ -330,10 +356,24 @@ handoff take precedence over historical commands.
 1. Inspect the two already queued jobs: Unlimited40868634374 and
    Ultra40871150002. Verify exact source/attempt and collect small reports after
    completion; do not duplicate them. Keep models/raw arrays remote.
-2. Repair the weight-free WASM component-profile guard after40867038915 rejects
-   `Actual component rounding flags differ`. Save/review the actual compile
-   inventory before asserting exact target counts/flags. Preserve ff3 and the
-   full norm negative. No model run until component/browser controls pass.
+2. WASM layer3 divergence (branch `fix/wasm-live-norm-component-inventory-20261102`):
+   attribution is complete through the FFN matmuls. v4 run41432135298: all 208
+   same-input norm replays are bit-exact, and the first budget failure is
+   layer3 fc2_raw (0.00331). Same-input FFN replay run41438394031: kernel
+   accumulation order contributes at most 1.43e-6 (fc1 IQ4_NL: tinyBLAS vs
+   generic) and 9.54e-7 (fc2 IQ4_XS: AVX2 vs generic). Identical inputs give
+   identical Q8 bytes. The error is inherited input (about 1e-6) amplified by
+   activation quantization: one fc1 Q8_0 FP16 scale step, and 38 fc2 Q8_K
+   scales plus 3 values. The emulated native-order WASM kernel is bit-exact on
+   the same input but leaves the natural error unchanged, so no candidate is
+   proposed. Next: apply the same same-input crosswise method to the earliest
+   bit-differing op (norm01 input 1.19e-7, i.e. layer0 attention/FFN) to find
+   where the first bit difference originates. No default, gate or budget change
+   and no ten-case retry. Receipts:
+   [v2](tests/results/packaging/wasm-live-norm-v2-component-admission.json),
+   [v3](tests/results/packaging/wasm-live-norm-v3-observer.json),
+   [v4](tests/results/packaging/wasm-live-norm-v4-attribution.json),
+   [FFN](tests/results/packaging/wasm-layer3-ffn-matmul-v1.json).
 3. Independently review MoE real-router source81fa4e26, then execute its
    component-only replay using exact-v4 attached captures. No whole-model or
    original forward. Require own-byte controls before cross-input conclusions.

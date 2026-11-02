@@ -12,6 +12,111 @@
   `tests/test_latent_inpaint_pipeline.cpp` (`near` is a windef.h macro); helper
   renamed.
 - Publication prepared only (`docs/inpaint-publication-v1.json`); no registry entry.
+## 2 November 2026 — WASM layer3 FFN mul_mat: kernel order ruled out (same-input replay)
+
+* 41438394031 (`wasm-layer3-ffn-matmul-v1` at `295d7e79`) completed and exited1 on numbers.
+  Native (x86 AVX2/FMA, llamafile) and WASM (simd128) probes built with kernel-file
+  arithmetic profiles equal to the production full inventories. Before model access, an
+  authored-weight selftest reproduced both orders bit-exactly through the real ggml graph:
+  fc1 IQ4_NL x Q8_0 = llamafile tinyBLAS natively vs `vec_dot_iq4_nl_q8_0_generic` on WASM;
+  fc2 IQ4_XS x Q8_K = AVX2 `vec_dot_iq4_xs_q8_K` vs generic. Both sides then reproduced
+  their own captured fc1_raw/fc2_raw bytes from run 41432135298.
+* On identical inputs, WASM vs native kernels differ by at most 1.43e-6 (fc1) and 9.54e-7
+  (fc2), and identical inputs quantize to identical Q8 bytes. The native kernel fed the
+  WASM-captured inputs reproduces the full natural error (fc1 5.73e-4, fc2 0.00331, fails
+  0.002). Cause: inherited input differences of about 1e-6 change one fc1 Q8_0 block scale
+  (one FP16 rounding step) and 38 fc2 Q8_K scales plus 3 quantized values.
+* A native-order WASM kernel (exact int lanes, `fmaf`, AVX2 hsum order) was emulated. It is
+  bit-exact with native on the same input but leaves the natural error unchanged, so no
+  default-off candidate is proposed. Receipt:
+  `tests/results/packaging/wasm-layer3-ffn-matmul-v1.json`.
+
+## 2 November 2026 — GOT-OCR2 F16 `colorcolor…` root cause (fix/got-ocr2-f16)
+
+Hosted CPU reproduces the CUDA-audit result: published F16 decodes `colorcolorcolor:,,};…` on fox,
+and Q4_K decodes `The quick brown fox jumps over the lazy dog. 12345`. Bisecting from the same F16
+bytes (LLM→F32, vision→F32, ffn_down→F32, →Q8_0) leaves all four variants broken, so this is data,
+not precision. HF original F32 activations peak at 6990 (no F16 overflow). The per-tensor audit
+against stepfun-ai/GOT-OCR2_0 found 289/290 LLM tensors exact. `l.embed_tokens.weight` had cos 0.9931
+because file bytes 202930256-211318866 (8 MiB) are zero. The earliest stage divergence is llm_layer_0,
+cos 0.936596 / max_abs 8.92 (vision exact). Reconversion with a byte-readback check (`--verify`)
+gives cos 1.000000 everywhere and fox token-exact. Qualification run 41391040980 was rejected by its
+page-similarity gate (receipt char ratio vs the original 0.530 < q4_k 0.592). That gap is shared with
+q4_k; it is kept on record. Under the coordinator's decision applying the owner bar (F16 > 0.98:
+stage min cos 1.000000 x19, fox token-exact), run 41397551540 reconverted byte-identically
+(sha256 98b431ab…) and published `got-ocr2-f16-r2.gguf` at Hub `c0f1aa7b5b52`. Local, LFS and
+empty-cache readback hashes match, and the old file is unchanged. M1 Metal: fox exact, 17.9 s.
+Registry `got-ocr2-f16` was added; `got-ocr2` (q4_k) is unchanged. Receipts: `tests/results/got-ocr2-f16/`.
+
+## 2 November 2026 — WASM live norm: one-sentence attribution complete (v4, numerical negative)
+
+* 41432135298 (v4 at `77ed7122`) completed the full one-sentence attribution and exited1 on
+  numbers, as designed. v4 replaces only the Ref adapter. It runs the SHA-pinned frozen
+  `diff_adapter.py` code with an exact shape allowlist {[12,384],[12,1536],[2,8]} instead of
+  the 512 cap that blocked 41427588368. Full-row metrics and 0.002/0.99999 budgets are
+  unchanged. Tests prove bit-for-bit parity with the frozen adapter on all allowlisted
+  shapes up to 512 wide.
+* All controls before model access pass. There are 12 native anchors, the capture proof
+  (65/65, 32 old WASM stage hashes) and 104/104 replay controls. All 208 same-input norm
+  replays are bit-exact. Natural comparisons: 132/196 pass and 64 fail (40 norm, 24 layer3);
+  C++ Ref and independent metrics agree.
+* Natural error stays at or below 1.9e-6 through layers 0-2 and layer3 attention. It rises
+  about 300x at the layer3 FC1 matmul (`fc1_raw` 5.73e-4) and first fails at `fc2_raw`
+  (0.00331, cosine 0.99999569), then grows to 0.185 at norm12. Results are identical for norm
+  gate 0/1 and threads 1/2. The norm operator is not the source; the earliest
+  budget-relevant divergence is the layer3 FFN matmul path. Receipt:
+  `tests/results/packaging/wasm-live-norm-v4-attribution.json`.
+
+## 2 November 2026 — WASM live norm: component admission (v2) and observer (v3) repaired
+
+* 40867038915 (ff3b8a01) rejected `Actual component rounding flags differ`. v1 assumed one
+  `wasm_native_order_norm.cpp` compile entry, but the live CMake compiles it in both
+  `frozen-controls/norm-candidate-controls` and `live-norm-replay`. v2 (branch
+  `fix/wasm-live-norm-component-inventory-20261102`) saves the full compile commands after
+  configure, then admits exactly five declared (target, source, directory) entries. Each needs
+  `-ffp-contract=off` only, no fast-math/`-Ofast`/`-msimd128`, and the SHA-pinned
+  40852835039 per-entry and GGML backend profiles.
+* 41416683981: a v2 parser defect rejected before build (CMake's `output` field is
+  relative to the top-level build). The saved 30-entry inventory had exactly the five
+  declared entries and became a regression fixture.
+* 41418312256: admission and all weight-free/browser controls passed. The native observed
+  encode then aborted in `add_norm`. Diagnostic 41421952964 logged the real graph:
+  `norm00_input ADD f32 ne=[384,16]`, the unevaluated scheduler-reservation graph at
+  `bucket_seq_len(12)=16`. v3 brackets the three reservation builds so the observer ignores
+  them, keeps every v1 rule for the evaluated graph, and adds 11 weight-free C++ observer
+  controls before model access.
+* 41427588368 (v3): every control, native anchor, capture proof (65/65, 32 old WASM stage
+  hashes) and all 208 same-input comparisons pass, all bit-exact. Replay then stopped at
+  `Bounded exact NumPy shape required`: the frozen Ref adapter caps dimensions at 512, and the
+  layer3 fc1/gelu tensors are [12,1536]. The 196 natural comparisons and the attribution
+  sentence are not reached. No original forward, no ten-case retry, gates/defaults unchanged.
+  All five runs are retained as negatives.
+## 2 November 2026 — EasyOCR x86 CPU dropped lines fixed (fix/easyocr-x86-lines, PR #100)
+
+* Root cause: not a SIMD or ggml-cpu kernel defect. Both BiLSTM layers named their initial
+  states `lstm_{fwd,rev}_{h0,c0}`; the host zeroed them by name and `ggml_graph_get_tensor()`
+  returns only the first match, so layer 1's h0/c0 were never written. They read zero on a
+  fresh allocation (macOS, Metal, CUDA in practice, glibc mmap) and stale data when glibc
+  reused the freed block of a wider graph after a shrinking width rebuild. Proof (hosted x86,
+  41387161875, legacy path): `GLIBC_TUNABLES=glibc.malloc.mmap_threshold=0` (fresh zero pages)
+  recovers every line; the same drop appears in GGML_NATIVE=ON, OFF and SSE-only builds and at
+  `-t 1`; a NaN-poisoned compute buffer (`CRISPEMBED_EASYOCR_POISON_COMPUTE=1`, new, test-only)
+  empties every line on every backend.
+* Fix: the graph records all 8 state tensors and the host resets every one (default on;
+  `CRISPEMBED_EASYOCR_LSTM_STATE_RESET=0` restores the legacy first-match reset for A/B).
+* x86 CPU before → after (regions, empty): fox 1/2 → 2/2, scan_strip 7/10 → 10/10,
+  scan_page_pd 15/34 (19 empty) → 34/34, in all three SIMD builds; e.g. fox now returns
+  `The quick brown fox jumps\nover the lazy dog. 12345` where it returned only the first line.
+  Kaggle T4 batch f: x86 CPU output is now byte-identical to CUDA on all three pages; CUDA
+  output is byte-identical with the fix, the legacy path and the poisoned buffer. M1 CPU and
+  Metal (lock): fixed = legacy byte-identical on all three pages (fox 41a156bf = audit hash).
+* Regression test `test-easyocr-width-shrink` (decreasing canvases 896→640→576, reused vs fresh
+  context, NaN-poisoned by default): passes on x86 (3 builds), CUDA, M1 CPU and Metal; the
+  legacy path fails 5/5 steps on every backend.
+* Python EasyOCR's recognizer on the same native crops: 1/2, 6/11, 21/36 exact lines (legacy
+  x86: 1/2, 2/11, 7/36 with 6 and 16 empty). Remaining differences are punctuation/spacing on
+  low-confidence lines and identical on CUDA/Metal (open in PLAN). Receipts:
+  `tests/results/gpu-audit/easyocr-x86-fix/`.
 ## 2 November 2026 — ggml submodule back on the shared fork line
 
 * CrispEmbed's ggml pointer had drifted onto fork feature branches (`feat/wasm-q8-rounding-candidate-20261026`,
