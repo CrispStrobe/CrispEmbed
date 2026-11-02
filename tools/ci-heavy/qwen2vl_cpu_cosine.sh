@@ -61,6 +61,12 @@ gguf_for() {
     q4_k-vf16) "$Q" "$SRC" "$f" q4_k --tensor-type 'v.*=f16' --tensor-type 'l.embed_tokens.weight=q8_0' \
         > "$OUT/quantize-$1.log" 2>&1 ;;
     q4_k-attn8) "$Q" "$SRC" "$f" q4_k "${PROTECT[@]}" --tensor-type 'l.blk.*.attn_*=q8_0' > "$OUT/quantize-$1.log" 2>&1 ;;
+    *) # named recipe from tools/qwen2vl_quant_recipes.json (docs/qwen2vl-q4k-recipes.md)
+        local qa qe
+        mapfile -t qa < <(python tools/qwen2vl_quant_census.py args "$MODEL" "$1")
+        mapfile -t qe < <(python tools/qwen2vl_quant_census.py env "$MODEL" "$1")
+        env "${qe[@]}" "$Q" "$SRC" "$f" "${qa[@]}" > "$OUT/quantize-$1.log" 2>&1
+        python tools/qwen2vl_quant_census.py census "$f" "$OUT/$1.census.json" ;;
     esac
     echo "$f"
 }
