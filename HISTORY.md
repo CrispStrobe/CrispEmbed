@@ -1,3 +1,27 @@
+## 2 November 2026 — WASM live norm: component admission (v2) and observer (v3) repaired
+
+* 40867038915 (ff3b8a01) rejected `Actual component rounding flags differ`. v1 assumed one
+  `wasm_native_order_norm.cpp` compile entry, but the live CMake compiles it in both
+  `frozen-controls/norm-candidate-controls` and `live-norm-replay`. v2 (branch
+  `fix/wasm-live-norm-component-inventory-20261102`) saves the full compile commands after
+  configure, then admits exactly five declared (target, source, directory) entries. Each needs
+  `-ffp-contract=off` only, no fast-math/`-Ofast`/`-msimd128`, and the SHA-pinned
+  40852835039 per-entry and GGML backend profiles.
+* 41416683981: a v2 parser defect rejected before build (CMake's `output` field is
+  relative to the top-level build). The saved 30-entry inventory had exactly the five
+  declared entries and became a regression fixture.
+* 41418312256: admission and all weight-free/browser controls passed. The native observed
+  encode then aborted in `add_norm`. Diagnostic 41421952964 logged the real graph:
+  `norm00_input ADD f32 ne=[384,16]`, the unevaluated scheduler-reservation graph at
+  `bucket_seq_len(12)=16`. v3 brackets the three reservation builds so the observer ignores
+  them, keeps every v1 rule for the evaluated graph, and adds 11 weight-free C++ observer
+  controls before model access.
+* 41427588368 (v3): every control, native anchor, capture proof (65/65, 32 old WASM stage
+  hashes) and all 208 same-input comparisons pass, all bit-exact. Replay then stopped at
+  `Bounded exact NumPy shape required`: the frozen Ref adapter caps dimensions at 512, and the
+  layer3 fc1/gelu tensors are [12,1536]. The 196 natural comparisons and the attribution
+  sentence are not reached. No original forward, no ten-case retry, gates/defaults unchanged.
+  All five runs are retained as negatives.
 ## 2 November 2026 — EasyOCR x86 CPU dropped lines fixed (fix/easyocr-x86-lines, PR #100)
 
 * Root cause: not a SIMD or ggml-cpu kernel defect. Both BiLSTM layers named their initial

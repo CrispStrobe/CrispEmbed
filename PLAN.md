@@ -290,10 +290,16 @@ handoff take precedence over historical commands.
 1. Inspect the two already queued jobs: Unlimited40868634374 and
    Ultra40871150002. Verify exact source/attempt and collect small reports after
    completion; do not duplicate them. Keep models/raw arrays remote.
-2. Repair the weight-free WASM component-profile guard after40867038915 rejects
-   `Actual component rounding flags differ`. Save/review the actual compile
-   inventory before asserting exact target counts/flags. Preserve ff3 and the
-   full norm negative. No model run until component/browser controls pass.
+2. WASM live norm (branch `fix/wasm-live-norm-component-inventory-20261102`):
+   v2 component admission and v3 observer are repaired. In run41427588368 all
+   weight-free component/browser/observer controls, native anchors, capture
+   (65/65 incl. 32 old stage hashes) and 208/208 same-input comparisons pass,
+   all bit-exact. The 196 natural comparisons are blocked: the frozen Ref
+   adapter caps dimensions at 512, and layer3 fc1_raw/fc1/gelu are [12,1536].
+   Next: a reviewed v4 Ref path that keeps full 1536-row cosine semantics (no
+   reshape), then rerun under the same order. Receipts:
+   [v2](tests/results/packaging/wasm-live-norm-v2-component-admission.json),
+   [v3](tests/results/packaging/wasm-live-norm-v3-observer.json).
 3. Independently review MoE real-router source81fa4e26, then execute its
    component-only replay using exact-v4 attached captures. No whole-model or
    original forward. Require own-byte controls before cross-input conclusions.
