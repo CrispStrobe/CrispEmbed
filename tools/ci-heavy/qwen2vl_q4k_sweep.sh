@@ -14,6 +14,7 @@
 set -uo pipefail
 MODEL=${1:?mineru|teleocr}
 RECIPES=${2:?comma list of recipe names}
+KEEP=${3:-} # comma list of recipes whose GGUF is copied to $HEAVY_OUT (device confirmation elsewhere)
 OUT=${HEAVY_OUT:?}
 S=${HEAVY_SCRATCH:?}
 cmake -S . -B "$S/build" -DCMAKE_BUILD_TYPE=Release > "$OUT/cmake.log" 2>&1 &&
@@ -80,6 +81,7 @@ for n in "${names[@]}"; do
     python tools/qwen2vl_stage_cosine.py --ref "$S/dump/ref" --cand "$S/dump/$n" \
         --ref-receipt "$OUT/$REF-cpu-forced.json" --cand-receipt "$OUT/$n-cpu-forced.json" --width $WIDTH \
         --out "$OUT/$n-cpu.cosine.json" | tail -2
+    case ",$KEEP," in *",$n,"*) mv "$f" "$OUT/$MODEL-$n.gguf" ;; esac
     rm -rf "$S/dump/$n" "$f"
     python tools/qwen2vl_quant_census.py summary "$MODEL" "$OUT" > "$OUT/summary.md"
 done
