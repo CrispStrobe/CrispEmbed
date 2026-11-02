@@ -22,7 +22,11 @@ class Controls(unittest.TestCase):
             name=str(Path(path).relative_to(driver.ROOT))
             if name=='src/qwen35_image.cpp':return '1'*64
             return old.get(name,'2'*64)
-        sources=tuple(name for name in driver.SOURCES if name!='src/qwen35_weight_cache.h')
+        # Later default-off files outside the historical scope: #81's weight cache and the
+        # MiniCPM-only graph decoders (#89 qwen35_graph_decoder.*, #109 qwen35_graph_kv_decoder.*).
+        later={'src/qwen35_weight_cache.h','src/qwen35_graph_decoder.cpp','src/qwen35_graph_decoder.h',
+               'src/qwen35_graph_kv_decoder.cpp','src/qwen35_graph_kv_decoder.h'}
+        sources=tuple(name for name in driver.SOURCES if name not in later)
         with mock.patch.object(driver.audit,'sha',side_effect=historical_sha),mock.patch.object(driver,'SOURCES',sources):
             yield
     def test_frozen_panel_precedes_outputs(self):

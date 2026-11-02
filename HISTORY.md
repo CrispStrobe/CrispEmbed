@@ -19592,3 +19592,40 @@ The same operator audit adds a MinerU-only F32 QuickGELU correction and a linked
 operator control. Those graph controls and full-model replay remain unexecuted.
 No OXR model alias, release, version bump, application pin or GitHub publication
 is created by this source delivery. See [the guide](docs/oxr.md).
+
+## 2 November 2026 — frozen-pin failures after PR #89, recorded re-pins
+
+Merging PR #89 (`2ecd1fbb`) turned two model-free workflows red on main from
+`ded581ee`. Neither failure was a numerical or default-path regression; both
+are frozen source closures that saw new opt-in code. The initial failures are
+kept on record here:
+
+- Model-free controls, run [41504060677](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41504060677):
+  `test_historical_receipts_and_scoped_sources_are_pinned` found
+  `src/ultrabert_embed.cpp` at `1df6b3d7…` instead of pinned `1bc4b044…`
+  (62d62af3, gated UltraBERT Q4_K profile). `src/ultrabert_profile.h` had also
+  drifted (`fc5af20f…` → `7b96f989…`, five #89 commits) behind that first stop.
+- OvisOCR2 metadata/export/frontend/fixture audits, run [41504060892](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41504060892):
+  `test_complete_native_source_closure_and_norm_mutation` raised "Frozen native
+  implementation/comparison source set differs". `src/qwen35*` now also matches
+  #89's `qwen35_graph_decoder.*` and #109's `qwen35_graph_kv_decoder.*`, which
+  are MiniCPM-only translation units. `test_ovisocr2_large_inputs.py` failed the
+  same way behind it ("Unexpected new native source file").
+
+Repair. UltraBERT gets the same recorded-chain mechanism as the qwen35 pins
+(`tools/ultrabert_source_pins.py`,
+[`source-pin-amendments.json`](tests/results/ultrabert/source-pin-amendments.json)):
+frozen digests stay in the driver, and each re-pin records the old and new hashes,
+the frozen commit, the changing commits and the review reason. The SciFact driver
+and its test accept only the newest recorded re-pin, and an undeclared edit still
+fails. Review of both diffs: an F32 file still takes `validate(meta, false)`,
+which is identical to the frozen check (file_type 0, all tensors F32, GPT-2 regex
+pre-tokenizer). The quantized and Unicode branches need `CRISPEMBED_ULTRABERT_QUANT`
+or `CRISPEMBED_ULTRABERT_UNICODE_PRETOKEN`, both default-off. For Ovis, the two
+historical closure tests now list the four graph-decoder files beside the
+existing opt-in exclusions (`qwen35_image_bounds.h`, `qwen35_weight_cache.h`).
+The 27 original Ovis implementation/comparison files still match their frozen
+bytes. The graph decoders are gated by `CRISPEMBED_MINICPM_OCR_GRAPH`+`QWEN35_OCR`
+and `CRISPEMBED_QWEN35_GRAPH_DECODER`. Both workflows now also trigger on their
+pinned sources; the Ovis workflow gains a pull_request trigger that runs only its
+model-free `controls` job.
