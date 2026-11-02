@@ -1,0 +1,95 @@
+{
+ "schema": "crispembed.qwen2vl.q4k-sweep.v1",
+ "model": "mineru",
+ "bar": 0.94,
+ "recipes": [
+  {
+   "recipe": "dec4-im",
+   "file_bytes": 1152030720,
+   "final_cos_min": 0.9727268272696163,
+   "worst_case": "japanese",
+   "complete": true,
+   "per_case": {
+    "arabic": 0.999435132704198,
+    "formula": 0.9943615340396128,
+    "german": 0.9864445669063704,
+    "japanese": 0.9727268272696163,
+    "layout-page": 0.9961629174553979,
+    "layout-rot90": 0.9966925040828315,
+    "receipt": 0.9857170128379353,
+    "table": 0.9959367602521575
+   },
+   "worst_stage": {
+    "case": "german",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.28614232957424307
+   }
+  },
+  {
+   "recipe": "r1-im",
+   "file_bytes": 837457920,
+   "final_cos_min": 0.947147752349361,
+   "worst_case": "japanese",
+   "complete": true,
+   "per_case": {
+    "arabic": 0.9992710740364121,
+    "formula": 0.9922185862970719,
+    "german": 0.9673063341336314,
+    "japanese": 0.947147752349361,
+    "layout-page": 0.9964196595376854,
+    "layout-rot90": 0.9959703599733825,
+    "receipt": 0.9769031607195842,
+    "table": 0.9878006156074469
+   },
+   "worst_stage": {
+    "case": "german",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.10000161410613989
+   }
+  },
+  {
+   "recipe": "r2-im",
+   "file_bytes": 769390592,
+   "final_cos_min": 0.9470232436129923,
+   "worst_case": "japanese",
+   "complete": true,
+   "per_case": {
+    "arabic": 0.998533950889164,
+    "formula": 0.9894873098817777,
+    "german": 0.9588579510116049,
+    "japanese": 0.9470232436129923,
+    "layout-page": 0.9939651632277214,
+    "layout-rot90": 0.9940002086869048,
+    "receipt": 0.9751529943349653,
+    "table": 0.9861393889886372
+   },
+   "worst_stage": {
+    "case": "german",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.10012415513978609
+   }
+  },
+  {
+   "recipe": "r5",
+   "file_bytes": 942315520,
+   "final_cos_min": 0.959469021566773,
+   "worst_case": "japanese",
+   "complete": true,
+   "per_case": {
+    "arabic": 0.9989364731904586,
+    "formula": 0.9838707422493478,
+    "german": 0.9788294720667132,
+    "japanese": 0.959469021566773,
+    "layout-page": 0.995028955019845,
+    "layout-rot90": 0.9918268265583142,
+    "receipt": 0.981033047454552,
+    "table": 0.9899094458664133
+   },
+   "worst_stage": {
+    "case": "german",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.10356537096985537
+   }
+  }
+ ]
+}

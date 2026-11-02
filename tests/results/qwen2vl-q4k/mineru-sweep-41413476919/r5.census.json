@@ -1,0 +1,109 @@
+{
+ "file_bytes": 942315520,
+ "by_type": {
+  "F32": {
+   "tensors": 384,
+   "bytes": 131679232
+  },
+  "Q8_0": {
+   "tensors": 65,
+   "bytes": 367465472
+  },
+  "Q4_K": {
+   "tensors": 88,
+   "bytes": 294764544
+  },
+  "IQ4_NL": {
+   "tensors": 144,
+   "bytes": 142442496
+  }
+ },
+ "by_component": {
+  "vision_host": {
+   "F32": {
+    "tensors": 7,
+    "bytes": 129263104
+   }
+  },
+  "vision": {
+   "F32": {
+    "tensors": 256,
+    "bytes": 2129920
+   },
+   "Q8_0": {
+    "tensors": 64,
+    "bytes": 222822400
+   },
+   "Q4_K": {
+    "tensors": 64,
+    "bytes": 235929600
+   }
+  },
+  "embedding": {
+   "Q8_0": {
+    "tensors": 1,
+    "bytes": 144643072
+   }
+  },
+  "decoder.attn_norm": {
+   "F32": {
+    "tensors": 24,
+    "bytes": 86016
+   }
+  },
+  "decoder.ffn_norm": {
+   "F32": {
+    "tensors": 24,
+    "bytes": 86016
+   }
+  },
+  "decoder.attn_q": {
+   "IQ4_NL": {
+    "tensors": 24,
+    "bytes": 10838016
+   }
+  },
+  "other": {
+   "F32": {
+    "tensors": 73,
+    "bytes": 114176
+   }
+  },
+  "decoder.attn_k": {
+   "IQ4_NL": {
+    "tensors": 24,
+    "bytes": 1548288
+   }
+  },
+  "decoder.attn_v": {
+   "IQ4_NL": {
+    "tensors": 24,
+    "bytes": 1548288
+   }
+  },
+  "decoder.attn_o": {
+   "IQ4_NL": {
+    "tensors": 24,
+    "bytes": 10838016
+   }
+  },
+  "decoder.ffn_gate": {
+   "IQ4_NL": {
+    "tensors": 24,
+    "bytes": 58834944
+   }
+  },
+  "decoder.ffn_up": {
+   "IQ4_NL": {
+    "tensors": 24,
+    "bytes": 58834944
+   }
+  },
+  "decoder.ffn_down": {
+   "Q4_K": {
+    "tensors": 24,
+    "bytes": 58834944
+   }
+  }
+ }
+}

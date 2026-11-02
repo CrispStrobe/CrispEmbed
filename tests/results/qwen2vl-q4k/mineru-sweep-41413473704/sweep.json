@@ -1,0 +1,95 @@
+{
+ "schema": "crispembed.qwen2vl.q4k-sweep.v1",
+ "model": "mineru",
+ "bar": 0.94,
+ "recipes": [
+  {
+   "recipe": "r1",
+   "file_bytes": 837457920,
+   "final_cos_min": 0.9611010035921786,
+   "worst_case": "japanese",
+   "complete": true,
+   "per_case": {
+    "arabic": 0.9985869059773801,
+    "formula": 0.9842686879344452,
+    "german": 0.9688207923651732,
+    "japanese": 0.9611010035921786,
+    "layout-page": 0.9941506214585784,
+    "layout-rot90": 0.9919724891631514,
+    "receipt": 0.986760400128207,
+    "table": 0.9774187266748965
+   },
+   "worst_stage": {
+    "case": "german",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.08319634248206546
+   }
+  },
+  {
+   "recipe": "r2",
+   "file_bytes": 769390592,
+   "final_cos_min": 0.9521094980885932,
+   "worst_case": "japanese",
+   "complete": true,
+   "per_case": {
+    "arabic": 0.9976742853583725,
+    "formula": 0.9807068096138666,
+    "german": 0.9607139952103034,
+    "japanese": 0.9521094980885932,
+    "layout-page": 0.9920685765673436,
+    "layout-rot90": 0.9890327944916025,
+    "receipt": 0.9837192863609703,
+    "table": 0.9745750628651428
+   },
+   "worst_stage": {
+    "case": "german",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.08283182322607628
+   }
+  },
+  {
+   "recipe": "r3",
+   "file_bytes": 859822080,
+   "final_cos_min": 0.9729018190239509,
+   "worst_case": "table",
+   "complete": true,
+   "per_case": {
+    "arabic": 0.9990684537748166,
+    "formula": 0.9921792682229424,
+    "german": 0.9797009345125799,
+    "japanese": 0.9774403756377509,
+    "layout-page": 0.9969207492594617,
+    "layout-rot90": 0.9959579359184016,
+    "receipt": 0.9909463739878371,
+    "table": 0.9729018190239509
+   },
+   "worst_stage": {
+    "case": "german",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.082758178100689
+   }
+  },
+  {
+   "recipe": "r4",
+   "file_bytes": 791754752,
+   "final_cos_min": 0.9701847835758812,
+   "worst_case": "table",
+   "complete": true,
+   "per_case": {
+    "arabic": 0.998104634630064,
+    "formula": 0.9903908490038161,
+    "german": 0.978074529087659,
+    "japanese": 0.9728513342672362,
+    "layout-page": 0.9948809166878938,
+    "layout-rot90": 0.992418922865304,
+    "receipt": 0.9871682133542891,
+    "table": 0.9701847835758812
+   },
+   "worst_stage": {
+    "case": "german",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.08254065359673814
+   }
+  }
+ ]
+}
