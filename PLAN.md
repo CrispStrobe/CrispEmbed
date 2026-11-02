@@ -404,6 +404,13 @@ them; decoder_cpu and OvisOCR/LightOn are unchanged. Kaggle kernels with separat
 shared `crispembed-minicpm-ocr-bench` slug is not disturbed. Gate: all 5 cases token-ID
 exact per arm before any merge; no default flip until A/B on more pages.
 
+Result: all 11 bench arms and native parity (F32+F16) are 5/5 token-exact. The recommended
+configuration (graph `f32` matmul + vision F32 + batch + flash) runs in 506 s against
+Transformers' 439 s and the old path's 3264 s; see PERFORMANCE. **Proposed default flip,
+not applied:** enable these gates by default for MiniCPM-OCR after an A/B of decoded output
+on a larger page set (e.g. the real-scan corpus) and a memory check of the +4.6 GB F32
+copies. Fall back to `native` matmul where RAM is tight; it is also 5/5 exact, at 603 s.
+
 ## Required Q8_0 and Q4_K coverage for new permissive models (29 October)
 
 Use actual `crispembed-quantize`, original Python/ONNX dumps and actual

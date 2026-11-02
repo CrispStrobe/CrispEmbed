@@ -28,9 +28,21 @@ max-abs is at most 6.4e-5. All gates stay default-off.
 - Prefill: 448 s down to 81-93 s; the graph uses ggml attention in place of the scalar loops.
 - Vision: F32 copies give 2.1x, batching 1.17x and flash attention 1.36x, for 704 s down
   to 212 s in total.
-- Not measured yet: `f32` matmul combined with vision F32, batching and flash. Adding the
-  stage times above suggests roughly 400 s, about Transformers parity. Run it next, then
-  A/B on more pages before any default flip.
+- Combined arms, second run (`1992559e`, [receipt](tests/results/minicpm-ocr/bench-graph-v2.json),
+  Transformers rerun on the same host):
+
+  | arm | total s | line | para-en | table | tall | tiny | decode ms/token | exact |
+  |---|---|---|---|---|---|---|---|---|
+  | **recommended**: graph `f32` + vision F32 + batch + flash | **506** | 31.1 | 114.8 | 109.8 | 222.1 | 27.9 | 149-177 | 5/5 |
+  | graph `native` + vision F32 + batch + flash | 603 | 30.1 | 132.6 | 138.5 | 270.8 | 31.3 | 88-119 | 5/5 |
+  | Transformers 5.21.0 F32 | 439 | 18.9 | 92.0 | 89.1 | 220.3 | 18.5 | ~210 | 5/5 |
+
+  The recommended configuration is 6.5x faster than the old path (3264 s) and 1.15x
+  Transformers' time overall, with matching time on `tall`. Recommended env:
+  `CRISPEMBED_QWEN35_GRAPH_DECODER=1 CRISPEMBED_QWEN35_GRAPH_MATMUL=f32
+  CRISPEMBED_MINICPM_OCR_VISION_F32=1 CRISPEMBED_MINICPM_OCR_VISION_BATCH=1
+  CRISPEMBED_MINICPM_OCR_VISION_FLASH=1`. It keeps about 4.6 GB of extra F32 weight copies.
+  All gates stay default-off.
 
 ## Real-scan OCR quality, native vs original (2 November 2026, Kaggle 4 vCPU)
 
