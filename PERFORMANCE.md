@@ -25,6 +25,52 @@ Minimum / mean cosine against the original Python model over the below-bar panel
 | bge-m3-heads-q8_0-mixed | 718 | 0.9995 / 0.9996 | 0.9991 | 0.9726 / 0.9992 | ~15 per head | on par, thin ColBERT margin |
 | bge-m3 Q8_0 uniform (not published) | 583 | 0.9987 | 0.9983 | 0.6124 / 0.9976 | 14 per head | worse (ColBERT) |
 
+## 2 November 2026 — MiniCPM-OCR-1.0 speed paths (Kaggle CPU, Xeon 2.2 GHz x4, F16 GGUF)
+
+Kaggle `crispembed-minicpm-ocr-bench-graph` at `68e003b5`, receipt
+[bench-graph.json](tests/results/minicpm-ocr/bench-graph.json). All arms ran the same 5
+reference cases (max 1024 new tokens) on the same host. **Every arm is token-ID and text
+exact on 5/5, CER 0.** Native parity with all three gates on
+([native-parity-graph.json](tests/results/minicpm-ocr/native-parity-graph.json)) is
+5/5 exact under both F32 and F16. Final-layer max-abs is 1e-4 to 2e-3, and first-logit
+max-abs is at most 6.4e-5. All gates stay default-off.
+
+| arm (4 threads) | total s | vision s | prefill s (all cases) | decode ms/token |
+|---|---|---|---|---|
+| before: decoder_cpu, F16 vision | 3264 | 704 | 448 | 4765 |
+| graph decoder, `exact` matmul | 1317 | 680 | 93 | 1175 |
+| graph decoder, `native` (F16 mul_mat) | 1000 | 680 | 202 | 107 |
+| graph decoder, `f32` (F32 copies at init) | 925 | 680 | 88 | 169 |
+| vision F32 | 2738 | 338 | 425 | 4529 |
+| vision F32 + batched slices | 2715 | 288 | 413 | 4510 |
+| graph exact + vision F32 + batch | 829 | 288 | 81 | 1011 |
+| + vision flash attention | **762** | 212 | 81 | 1033 |
+| same as row 7, 2 threads | 921 | 342 | 92 | 1075 |
+| Transformers 5.21.0 F32 | 385 | (vision+prefill 297) | | 205-218 |
+
+- Decode: the graph's `f32` matmul (169 ms/token) and `native` matmul (107 ms/token)
+  are both faster than Transformers' 0.21 s/token, a 28x and 45x speed-up over the old
+  path. The default `exact` mode (row-wise dequant plus F32 dot) is only 4x faster; its
+  custom op is memory/dispatch-bound.
+- Prefill: 448 s down to 81-93 s; the graph uses ggml attention in place of the scalar loops.
+- Vision: F32 copies give 2.1x, batching 1.17x and flash attention 1.36x, for 704 s down
+  to 212 s in total.
+- Combined arms, second run (`1992559e`, [receipt](tests/results/minicpm-ocr/bench-graph-v2.json),
+  Transformers rerun on the same host):
+
+  | arm | total s | line | para-en | table | tall | tiny | decode ms/token | exact |
+  |---|---|---|---|---|---|---|---|---|
+  | **recommended**: graph `f32` + vision F32 + batch + flash | **506** | 31.1 | 114.8 | 109.8 | 222.1 | 27.9 | 149-177 | 5/5 |
+  | graph `native` + vision F32 + batch + flash | 603 | 30.1 | 132.6 | 138.5 | 270.8 | 31.3 | 88-119 | 5/5 |
+  | Transformers 5.21.0 F32 | 439 | 18.9 | 92.0 | 89.1 | 220.3 | 18.5 | ~210 | 5/5 |
+
+  The recommended configuration is 6.5x faster than the old path (3264 s) and 1.15x
+  Transformers' time overall, with matching time on `tall`. Recommended env:
+  `CRISPEMBED_QWEN35_GRAPH_DECODER=1 CRISPEMBED_QWEN35_GRAPH_MATMUL=f32
+  CRISPEMBED_MINICPM_OCR_VISION_F32=1 CRISPEMBED_MINICPM_OCR_VISION_BATCH=1
+  CRISPEMBED_MINICPM_OCR_VISION_FLASH=1`. It keeps about 4.6 GB of extra F32 weight copies.
+  All gates stay default-off.
+
 ## Real-scan OCR quality, native vs original (2 November 2026, Kaggle 4 vCPU)
 
 Twenty real pages: 15 public-domain book, report and table scans from Wikisource/Commons, plus 5 CORD-v2 receipts

@@ -272,3 +272,17 @@ No `TODO(verify)` items remain; see the decision table.
 3. Finish the converter on a hosted runner and compare tensor names and shapes against meta-init.
 4. Write the tiler and vision encoder, then wire up the qwen35 decoder and run
    the token-ID parity.
+
+## Speed paths (2026-11-02, default-off)
+
+| Gate | Effect |
+| --- | --- |
+| `CRISPEMBED_QWEN35_GRAPH_DECODER=1` | `src/qwen35_graph_kv_decoder.cpp` (class `graph_kv_decoder`; distinct from and exclusive with the stateless `CRISPEMBED_MINICPM_OCR_GRAPH` candidate in `src/qwen35_graph_decoder.cpp`): the qwen35 text decoder as a ggml graph with a persistent KV and delta-net state. `CRISPEMBED_QWEN35_GRAPH_MATMUL` = `exact` (default), `native` or `f32`. |
+| `CRISPEMBED_MINICPM_OCR_VISION_F32=1` | Vision and projector matrices are copied to F32 once at init. |
+| `CRISPEMBED_MINICPM_OCR_VISION_BATCH=1` | Equally sized slices run in one graph as independent sequences. |
+
+Every combination measured on Kaggle is token-ID exact on all five cases
+(`tests/results/minicpm-ocr/bench-graph*.json`, `native-parity-graph.json`). The
+recommended configuration is graph `f32` + vision F32 + batch + `CRISPEMBED_MINICPM_OCR_VISION_FLASH=1`:
+506 s for the five cases, against Transformers' 439 s and the old path's 3264 s.
+Numbers are in PERFORMANCE.md.

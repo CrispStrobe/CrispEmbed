@@ -396,6 +396,25 @@ handoff take precedence over historical commands.
    reviewed opt-ins and qualify final runtime/assets/consumers. Each new model
    or arithmetic source needs its own reference/quality/consumer evidence.
 
+## MiniCPM-OCR speed (SPEED only; Q8/Q4 lanes stay with their owners) — 2 November 2026
+
+Branch `perf/minicpm-ocr-graph-decoder-20261102`. Default-off gates, F16 GGUF:
+`CRISPEMBED_QWEN35_GRAPH_DECODER` (qwen35 text decoder as a ggml graph with persistent
+KV/delta-net state; `CRISPEMBED_QWEN35_GRAPH_MATMUL=exact|native|f32`),
+`CRISPEMBED_MINICPM_OCR_VISION_F32` (F32 vision matrices made once at init) and
+`CRISPEMBED_MINICPM_OCR_VISION_BATCH` (equal slices in one graph). Only MiniCPM calls
+them; decoder_cpu and OvisOCR/LightOn are unchanged. Kaggle kernels with separate slugs
+(`crispembed-minicpm-ocr-native-graph`, `crispembed-minicpm-ocr-bench-graph`) so the
+shared `crispembed-minicpm-ocr-bench` slug is not disturbed. Gate: all 5 cases token-ID
+exact per arm before any merge; no default flip until A/B on more pages.
+
+Result: all 11 bench arms and native parity (F32+F16) are 5/5 token-exact. The recommended
+configuration (graph `f32` matmul + vision F32 + batch + flash) runs in 506 s against
+Transformers' 439 s and the old path's 3264 s; see PERFORMANCE. **Proposed default flip,
+not applied:** enable these gates by default for MiniCPM-OCR after an A/B of decoded output
+on a larger page set (e.g. the real-scan corpus) and a memory check of the +4.6 GB F32
+copies. Fall back to `native` matmul where RAM is tight; it is also 5/5 exact, at 603 s.
+
 ## Required Q8_0 and Q4_K coverage for new permissive models (29 October)
 
 Use actual `crispembed-quantize`, original Python/ONNX dumps and actual

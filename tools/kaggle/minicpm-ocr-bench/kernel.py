@@ -52,10 +52,10 @@ QUANT = next(p for p in glob.glob('/kaggle/temp/b/**/crispembed-quantize', recur
 for dt in ('f32', 'f16'):
     extra = [] if src == ckpt or dt == 'f16' else ['--download']
     sh(PY, 'models/convert-minicpm-ocr-to-gguf.py', src, f'/kaggle/temp/minicpm-{dt}.gguf', '--dtype', dt, *extra, env=env)
-# The 4-D patch-embedding conv weight (14x14x3x1152) must keep a float type: the runtime binds it
-# by its [14,14,3,1152] shape, which a q8_0 block layout does not preserve.
-q8 = subprocess.run([QUANT, '/kaggle/temp/minicpm-f32.gguf', '/kaggle/temp/minicpm-q8_0.gguf', 'q8_0',
-                     '--tensor-type', 'v.emb.patch_embedding.weight=f16'],
+# Quantized from the F16 GGUF: crispembed-quantize flattens every 4-D *F32* tensor to 2-D
+# (tools/quantize.cpp pre-scan), and the runtime binds v.emb.patch_embedding.weight by its
+# [14,14,3,1152] shape. In the F16 GGUF that conv weight is F16 and passes through unchanged.
+q8 = subprocess.run([QUANT, '/kaggle/temp/minicpm-f16.gguf', '/kaggle/temp/minicpm-q8_0.gguf', 'q8_0'],
                     capture_output=True, text=True)
 print(q8.stdout[-3000:], q8.stderr[-3000:], flush=True)
 GGUF = {dt: f'/kaggle/temp/minicpm-{dt}.gguf' for dt in ('f32', 'f16', 'q8_0')}
@@ -145,6 +145,24 @@ ARMS = [
     ('f32-t4', 'f32', 4, {}, True),
     ('q8_0-t2', 'q8_0', 2, dict(CRISPEMBED_QWEN35_QUANT='1'), True),
     ('f16-t4-no-timing', 'f16', 4, {}, False),
+    # Speed paths (default-off gates; each must stay token-ID exact on all cases).
+    ('f16-t4-graph', 'f16', 4, dict(CRISPEMBED_QWEN35_GRAPH_DECODER='1'), True),
+    ('f16-t4-graph-native', 'f16', 4, dict(CRISPEMBED_QWEN35_GRAPH_DECODER='1', CRISPEMBED_QWEN35_GRAPH_MATMUL='native'), True),
+    ('f16-t4-graph-f32w', 'f16', 4, dict(CRISPEMBED_QWEN35_GRAPH_DECODER='1', CRISPEMBED_QWEN35_GRAPH_MATMUL='f32'), True),
+    ('f16-t4-vision-f32', 'f16', 4, dict(CRISPEMBED_MINICPM_OCR_VISION_F32='1'), True),
+    ('f16-t4-vision-f32-batch', 'f16', 4, dict(CRISPEMBED_MINICPM_OCR_VISION_F32='1', CRISPEMBED_MINICPM_OCR_VISION_BATCH='1'), True),
+    ('f16-t4-fast', 'f16', 4, dict(CRISPEMBED_QWEN35_GRAPH_DECODER='1', CRISPEMBED_MINICPM_OCR_VISION_F32='1',
+                                   CRISPEMBED_MINICPM_OCR_VISION_BATCH='1'), True),
+    ('f16-t4-fast-flash', 'f16', 4, dict(CRISPEMBED_QWEN35_GRAPH_DECODER='1', CRISPEMBED_MINICPM_OCR_VISION_F32='1',
+                                         CRISPEMBED_MINICPM_OCR_VISION_BATCH='1', CRISPEMBED_MINICPM_OCR_VISION_FLASH='1'), True),
+    ('f16-t4-fast-f32w-flash', 'f16', 4, dict(CRISPEMBED_QWEN35_GRAPH_DECODER='1', CRISPEMBED_QWEN35_GRAPH_MATMUL='f32',
+                                              CRISPEMBED_MINICPM_OCR_VISION_F32='1', CRISPEMBED_MINICPM_OCR_VISION_BATCH='1',
+                                              CRISPEMBED_MINICPM_OCR_VISION_FLASH='1'), True),
+    ('f16-t4-fast-native-flash', 'f16', 4, dict(CRISPEMBED_QWEN35_GRAPH_DECODER='1', CRISPEMBED_QWEN35_GRAPH_MATMUL='native',
+                                                CRISPEMBED_MINICPM_OCR_VISION_F32='1', CRISPEMBED_MINICPM_OCR_VISION_BATCH='1',
+                                                CRISPEMBED_MINICPM_OCR_VISION_FLASH='1'), True),
+    ('f16-t2-fast','f16', 2, dict(CRISPEMBED_QWEN35_GRAPH_DECODER='1', CRISPEMBED_MINICPM_OCR_VISION_F32='1',
+                                   CRISPEMBED_MINICPM_OCR_VISION_BATCH='1'), True),
 ]
 CASES = ref['cases']
 # Optional subset (comma-separated arm names) for a follow-up run; empty = every arm.
