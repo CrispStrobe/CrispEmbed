@@ -1,3 +1,16 @@
+## GOT-OCR2 original-pipeline parity (2 November 2026, `fix/got-ocr2-pipeline-parity`)
+
+Hosted x86 CPU, 4 vCPU, `-t 4`, one-shot runs including load, 1024-token cap, run 41456179762.
+Reference: original stepfun-ai/GOT-OCR2_0, CPU F32 (generation only, model loaded).
+
+| Case | F16 s | Q4_K s | Original s | F16 IDs vs original | Q4_K vs original |
+|---|---:|---:|---:|---|---|
+| fox | 27.5 | 14.8 | 8.0 | 16/16 exact (was exact) | exact |
+| receipt_example | 34.3 | 17.6 | 23.4 | 220/220 exact (was ratio 0.619) | ratio 0.7005 (was 0.6889) |
+| simple_form | 28.4 | 15.2 | 10.7 | 52/52 exact (was 0.481) | ratio 0.8865 (was 0.0753) |
+
+Legacy vs new defaults cost the same (F16 receipt 35.6 vs 35.3 s in run 41452383740).
+M1 Metal F16 receipt: 220/220 exact, 125.6 s wall including 28.4 s Metal library load.
 ## Repaired quantized registry artifacts (2 November 2026, hosted CPU 4 vCPU)
 
 Minimum / mean cosine against the original Python model over the below-bar panel

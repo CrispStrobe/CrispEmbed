@@ -1,3 +1,27 @@
+## 2 November 2026 — GOT-OCR2 pipeline parity with the original (fix/got-ocr2-pipeline-parity)
+
+- Ground truth is now the original stepfun-ai/GOT-OCR2_0 remote code (rev `979938bf`,
+  transformers 4.37.2, CPU F32; chat() itself runs CUDA bf16), captured by
+  `tools/ci-heavy/got_ocr2_orig_probe.py`: pixel tensor, prompt IDs, generation config, IDs.
+  The earlier reference (GOT-OCR-2.0-hf) is not faithful: its processor writes " OCR" (80577)
+  and drops the system string's indentation, and it has no ngram rule. The original's receipt
+  output does include the Price column the HF port omitted.
+- Root causes (A/B 41452383740, one factor at a time, every factor forced): (1) nearest-neighbour
+  resize vs torchvision `Resize(BICUBIC)` on PIL (= Pillow fixed-point bicubic; native now
+  bit-exact, pixel max |Δ| 0.0); (2) the original MPT system literal keeps 8 spaces of source
+  indentation, i.e. token 286 before " You" (1446) — the "OCR" token 93495 was already right;
+  (3) native no-repeat-ngram 3 over generated tokens vs the original's 20 over the whole sequence
+  (n=3 bans legitimate receipt repeats; the original gives identical IDs with n=20 and n=0).
+- F16 IDs exact vs original: legacy fox/receipt/form = yes/no(div 3)/no(div 0); resize only
+  yes/no(78)/no(37); resize+ngram yes/no(124)/yes; all three yes/yes/yes. No subset suffices.
+  Confirm run 41456179762 (shipping defaults, no env): F16 16/16, 220/220, 52/52.
+  Q4_K defaults: fox exact, receipt ratio 0.6889→0.7005, simple_form 0.0753→0.8865.
+  M1 Metal F16 receipt: 220/220 IDs exact, prompt exact.
+- Gates `CRISPEMBED_GOT_OCR_PIL_BICUBIC`, `_ORIG_SYSTEM`, `_ORIG_NGRAM` default on (=0 restores
+  legacy); `CRISPEMBED_GOT_OCR_NO_REPEAT_NGRAM=<n>` and `CRISPEMBED_GOT_OCR_DUMP_DIR` are diagnostic.
+  Initial capture attempts 41442616737 (missing `verovio`) and 41451319490 (conversation not
+  copied as chat() does) failed before any comparison; retained.
+  Receipts: `tests/results/got-ocr2-pipeline-parity/`.
 ## 2 November 2026 — Inpainting GGUFs published and registered
 
 - Owner-approved `docs/inpaint-publication-v1.json` published by
