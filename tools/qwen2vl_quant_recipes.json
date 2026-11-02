@@ -1,0 +1,388 @@
+{
+ "schema": "crispembed.qwen2vl.quant-recipes.v1",
+ "note": "Recipes for tools/ci-heavy/qwen2vl_q4k_sweep.sh. Each is crispembed-quantize <source> <out> <type> plus --tensor-type rules in order (last match wins; norm/bias/host-side guards remain). Sensitivity entries substitute one tensor class or layer group into the Q8_0 baseline 'q8'.",
+ "teleocr": {
+  "q8": {
+   "source": "f16",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=f16",
+    "l.embed_tokens.weight=f16"
+   ]
+  },
+  "aq": {
+   "source": "f16",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=f16",
+    "l.embed_tokens.weight=f16",
+    "l.blk.*.attn_q.weight=q4_k"
+   ]
+  },
+  "ak": {
+   "source": "f16",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=f16",
+    "l.embed_tokens.weight=f16",
+    "l.blk.*.attn_k.weight=q4_k"
+   ]
+  },
+  "av": {
+   "source": "f16",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=f16",
+    "l.embed_tokens.weight=f16",
+    "l.blk.*.attn_v.weight=q4_k"
+   ]
+  },
+  "ao": {
+   "source": "f16",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=f16",
+    "l.embed_tokens.weight=f16",
+    "l.blk.*.attn_o.weight=q4_k"
+   ]
+  },
+  "fg": {
+   "source": "f16",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=f16",
+    "l.embed_tokens.weight=f16",
+    "l.blk.*.ffn_gate.weight=q4_k"
+   ]
+  },
+  "fu": {
+   "source": "f16",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=f16",
+    "l.embed_tokens.weight=f16",
+    "l.blk.*.ffn_up.weight=q4_k"
+   ]
+  },
+  "fd": {
+   "source": "f16",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=f16",
+    "l.embed_tokens.weight=f16",
+    "l.blk.*.ffn_down.weight=q4_k"
+   ]
+  },
+  "l0-3": {
+   "source": "f16",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=f16",
+    "l.embed_tokens.weight=f16",
+    "l.blk.0.*=q4_k",
+    "l.blk.1.*=q4_k",
+    "l.blk.2.*=q4_k",
+    "l.blk.3.*=q4_k"
+   ]
+  },
+  "l24-27": {
+   "source": "f16",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=f16",
+    "l.embed_tokens.weight=f16",
+    "l.blk.24.*=q4_k",
+    "l.blk.25.*=q4_k",
+    "l.blk.26.*=q4_k",
+    "l.blk.27.*=q4_k"
+   ]
+  },
+  "lmid": {
+   "source": "f16",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=f16",
+    "l.embed_tokens.weight=f16",
+    "l.blk.*=q4_k",
+    "l.blk.0.*=q8_0",
+    "l.blk.1.*=q8_0",
+    "l.blk.2.*=q8_0",
+    "l.blk.3.*=q8_0",
+    "l.blk.24.*=q8_0",
+    "l.blk.25.*=q8_0",
+    "l.blk.26.*=q8_0",
+    "l.blk.27.*=q8_0"
+   ]
+  },
+  "emb4": {
+   "source": "f16",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=f16",
+    "l.embed_tokens.weight=f16",
+    "l.embed_tokens.weight=q4_k"
+   ]
+  },
+  "emb6": {
+   "source": "f16",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=f16",
+    "l.embed_tokens.weight=f16",
+    "l.embed_tokens.weight=q6_k"
+   ]
+  },
+  "emb8": {
+   "source": "f16",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=f16",
+    "l.embed_tokens.weight=f16",
+    "l.embed_tokens.weight=q8_0"
+   ]
+  },
+  "v8": {
+   "source": "f16",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=f16",
+    "l.embed_tokens.weight=f16",
+    "v.*=q8_0"
+   ]
+  },
+  "v6": {
+   "source": "f16",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=f16",
+    "l.embed_tokens.weight=f16",
+    "v.*=q6_k"
+   ]
+  },
+  "v5": {
+   "source": "f16",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=f16",
+    "l.embed_tokens.weight=f16",
+    "v.*=q5_k"
+   ]
+  },
+  "v4": {
+   "source": "f16",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=f16",
+    "l.embed_tokens.weight=f16",
+    "v.*=q4_k"
+   ]
+  },
+  "v4attn": {
+   "source": "f16",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=f16",
+    "l.embed_tokens.weight=f16",
+    "v.blk.*.attn_*=q4_k"
+   ]
+  },
+  "v4ffn": {
+   "source": "f16",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=f16",
+    "l.embed_tokens.weight=f16",
+    "v.blk.*.ffn_*=q4_k"
+   ]
+  },
+  "v4e8": {
+   "source": "f16",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=f16",
+    "l.embed_tokens.weight=f16",
+    "v.*=q4_k",
+    "l.embed_tokens.weight=q8_0"
+   ]
+  }
+ },
+ "mineru": {
+  "q8": {
+   "source": "f32",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=q8_0"
+   ]
+  },
+  "vf16": {
+   "source": "f32",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=q8_0",
+    "v.*=f16"
+   ]
+  },
+  "aq": {
+   "source": "f32",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=q8_0",
+    "l.blk.*.attn_q.weight=iq4_nl"
+   ]
+  },
+  "ak": {
+   "source": "f32",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=q8_0",
+    "l.blk.*.attn_k.weight=iq4_nl"
+   ]
+  },
+  "av": {
+   "source": "f32",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=q8_0",
+    "l.blk.*.attn_v.weight=iq4_nl"
+   ]
+  },
+  "ao": {
+   "source": "f32",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=q8_0",
+    "l.blk.*.attn_o.weight=iq4_nl"
+   ]
+  },
+  "fg": {
+   "source": "f32",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=q8_0",
+    "l.blk.*.ffn_gate.weight=iq4_nl"
+   ]
+  },
+  "fu": {
+   "source": "f32",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=q8_0",
+    "l.blk.*.ffn_up.weight=iq4_nl"
+   ]
+  },
+  "fd": {
+   "source": "f32",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=q8_0",
+    "l.blk.*.ffn_down.weight=q4_k"
+   ]
+  },
+  "l0-2": {
+   "source": "f32",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=q8_0",
+    "l.blk.0.*=iq4_nl",
+    "l.blk.0.ffn_down.weight=q4_k",
+    "l.blk.1.*=iq4_nl",
+    "l.blk.1.ffn_down.weight=q4_k",
+    "l.blk.2.*=iq4_nl",
+    "l.blk.2.ffn_down.weight=q4_k"
+   ]
+  },
+  "l21-23": {
+   "source": "f32",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=q8_0",
+    "l.blk.21.*=iq4_nl",
+    "l.blk.21.ffn_down.weight=q4_k",
+    "l.blk.22.*=iq4_nl",
+    "l.blk.22.ffn_down.weight=q4_k",
+    "l.blk.23.*=iq4_nl",
+    "l.blk.23.ffn_down.weight=q4_k"
+   ]
+  },
+  "lmid": {
+   "source": "f32",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=q8_0",
+    "l.blk.*.*=iq4_nl",
+    "l.blk.*.ffn_down.weight=q4_k",
+    "l.blk.0.*=q8_0",
+    "l.blk.1.*=q8_0",
+    "l.blk.2.*=q8_0",
+    "l.blk.21.*=q8_0",
+    "l.blk.22.*=q8_0",
+    "l.blk.23.*=q8_0"
+   ]
+  },
+  "dec4": {
+   "source": "f32",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=q8_0",
+    "l.blk.*.*=iq4_nl",
+    "l.blk.*.ffn_down.weight=q4_k"
+   ]
+  },
+  "dec4q40": {
+   "source": "f32",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=q8_0",
+    "l.blk.*=q4_k"
+   ]
+  },
+  "emb4": {
+   "source": "f32",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=q8_0",
+    "l.embed_tokens.weight=iq4_nl"
+   ]
+  },
+  "v6": {
+   "source": "f32",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=q8_0",
+    "v.*=q6_k"
+   ]
+  },
+  "v5": {
+   "source": "f32",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=q8_0",
+    "v.*=q5_k"
+   ]
+  },
+  "v4": {
+   "source": "f32",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=q8_0",
+    "v.*=q4_k"
+   ]
+  },
+  "v4attn": {
+   "source": "f32",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=q8_0",
+    "v.blk.*.attn_*=q4_k"
+   ]
+  },
+  "v4ffn": {
+   "source": "f32",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=q8_0",
+    "v.blk.*.ffn_*=q4_k"
+   ]
+  }
+ }
+}

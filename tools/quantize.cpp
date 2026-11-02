@@ -1235,10 +1235,18 @@ int main(int argc, char ** argv) {
                                                              { "f16", GGML_TYPE_F16 },
                                                              { "q8_0", GGML_TYPE_Q8_0 },
                                                              { "q6_k", GGML_TYPE_Q6_K },
-                                                             { "q5_k", GGML_TYPE_Q5_K } };
+                                                             { "q5_k", GGML_TYPE_Q5_K },
+                                                             // 4/5-bit targets for mixed recipes that start
+                                                             // from a Q8_0 or F16 base (docs/qwen2vl-q4k-recipes.md).
+                                                             // K-quants keep the 256-column fallback chain below.
+                                                             { "q4_k", GGML_TYPE_Q4_K },
+                                                             { "q5_0", GGML_TYPE_Q5_0 },
+                                                             { "q4_0", GGML_TYPE_Q4_0 },
+                                                             { "iq4_nl", GGML_TYPE_IQ4_NL } };
             const auto type = types.find(equals == std::string::npos ? "" : spec.substr(equals + 1));
             if (equals == std::string::npos || equals == 0 || type == types.end()) {
-                fprintf(stderr, "Invalid tensor override '%s': use GLOB=f32|f16|q8_0|q6_k|q5_k\n", spec.c_str());
+                fprintf(stderr, "Invalid tensor override '%s': use GLOB=f32|f16|q8_0|q6_k|q5_k|q5_0|q4_k|q4_0|iq4_nl\n",
+                        spec.c_str());
                 return 1;
             }
             g_tensor_types.push_back({ spec.substr(0, equals), type->second });
@@ -1259,7 +1267,8 @@ int main(int argc, char ** argv) {
                 argv[0]);
         fprintf(stderr, "  --imatrix <f> use a CrispEmbed importance matrix (from a calibration run\n");
         fprintf(stderr, "                with CRISPEMBED_IMATRIX_OUT set) to improve k-quant/IQ accuracy\n");
-        fprintf(stderr, "  --tensor-type GLOB=TYPE  override eligible matrix precision (f32/f16/q8_0/q6_k/q5_k)\n");
+        fprintf(stderr, "  --tensor-type GLOB=TYPE  override eligible matrix precision\n"
+                        "                          (f32/f16/q8_0/q6_k/q5_k/q5_0/q4_k/q4_0/iq4_nl)\n");
         fprintf(stderr,
                 "                          * and ? match tensor names; last match wins; norm/conv guards remain\n");
         fprintf(stderr, "  --decoder-f16  keep LLM decoder weights (prefix 'l.') at F16\n");
