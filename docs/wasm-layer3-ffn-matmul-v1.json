@@ -1,0 +1,121 @@
+{
+ "schema": "crispembed-wasm-layer3-ffn-matmul-v1",
+ "workflow": ".github/workflows/wasm-layer3-ffn-matmul-v1.yml",
+ "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+ "runtime_change": false,
+ "qualification": false,
+ "candidate_enabled": false,
+ "budgets": {
+  "max_absolute": 0.002,
+  "minimum_row_cosine": 0.99999
+ },
+ "production_inventories": {
+  "native": "5e05d7291f92716c80474bf00f2b18c4328f8c8612b61356509bc10ae05732c3",
+  "wasm": "e2a7318d71bc7d492ea4da24b181c75ec92303889554baac387bd7d61fb50974",
+  "source_artifact": {
+   "run": 40852835039,
+   "id": 12889873109,
+   "sha256": "540fedcd746f3bebe3b75e04076744ad80d6e01f8fd47467d16c83c748834281",
+   "members": [
+    "review/full-native-compile.json",
+    "review/full-wasm-compile.json"
+   ]
+  }
+ },
+ "captures": {
+  "artifact": {
+   "run": 41432135298,
+   "source": "77ed71226c5d3824aa51858a1606154545f4a79e",
+   "workflow": ".github/workflows/wasm-live-norm-operands-v4.yml",
+   "conclusion": "failure",
+   "name": "wasm-live-norm-operands-v4-raw-41432135298",
+   "id": 13136527687,
+   "bytes": 41256713,
+   "sha256": "1b9ef49b0838041b4810227549d6fe3ae3aca424b6c35641bb3d43af9eb32d60"
+  },
+  "members": {
+   "native/attention_output": {
+    "member": "raw/native1-observed-observed-0/layer3_attention_output.f32",
+    "bytes": 18432,
+    "sha256": "37a664551ae868fb4f79d7494a5b5655a588d2a5f011a37bd80be74029448bfb"
+   },
+   "native/gelu": {
+    "member": "raw/native1-observed-observed-0/layer3_gelu.f32",
+    "bytes": 73728,
+    "sha256": "91987b7a4768f9fe0ff7aeab2fa9ddfc8c5c8957b4db2711e540c76fd6c721ab"
+   },
+   "native/fc1_raw": {
+    "member": "raw/native1-observed-observed-0/layer3_fc1_raw.f32",
+    "bytes": 73728,
+    "sha256": "87e80346598c8573cb4fcb2094432cffc148210bb0ff3cf67bcfa074b04c9e78"
+   },
+   "native/fc2_raw": {
+    "member": "raw/native1-observed-observed-0/layer3_fc2_raw.f32",
+    "bytes": 18432,
+    "sha256": "f8b59f454361095392e330ff22278f7fd68dcedd006cbf5d5ece4d337ff8b3d9"
+   },
+   "wasm0/attention_output": {
+    "member": "browser/arrays/wasm0-observed-0/layer3_attention_output.f32",
+    "bytes": 18432,
+    "sha256": "e86464da8c3254806259b5da31b750d20ccfdcb08932c8785bcb5d01c98f7fb0"
+   },
+   "wasm0/gelu": {
+    "member": "browser/arrays/wasm0-observed-0/layer3_gelu.f32",
+    "bytes": 73728,
+    "sha256": "33f73f0e3d6f2e13562d55f19f22b5113d58fa165440dcc4721a98da245810bf"
+   },
+   "wasm0/fc1_raw": {
+    "member": "browser/arrays/wasm0-observed-0/layer3_fc1_raw.f32",
+    "bytes": 73728,
+    "sha256": "18e7373b597e80d401cc061cc9ea3b6c2afe2bbf95d02f8970a1e3b137610b95"
+   },
+   "wasm0/fc2_raw": {
+    "member": "browser/arrays/wasm0-observed-0/layer3_fc2_raw.f32",
+    "bytes": 18432,
+    "sha256": "7f70ffcc6dee2194907f897935d72b3fe0757b05cad6fe892abad52e44be486b"
+   },
+   "wasm1/attention_output": {
+    "member": "browser/arrays/wasm1-observed-0/layer3_attention_output.f32",
+    "bytes": 18432,
+    "sha256": "75f80e86d22ea5f2d8008eec539d7405de3ac5bf099583042a8affa38b88d24d"
+   },
+   "wasm1/gelu": {
+    "member": "browser/arrays/wasm1-observed-0/layer3_gelu.f32",
+    "bytes": 73728,
+    "sha256": "33f73f0e3d6f2e13562d55f19f22b5113d58fa165440dcc4721a98da245810bf"
+   },
+   "wasm1/fc1_raw": {
+    "member": "browser/arrays/wasm1-observed-0/layer3_fc1_raw.f32",
+    "bytes": 73728,
+    "sha256": "18e7373b597e80d401cc061cc9ea3b6c2afe2bbf95d02f8970a1e3b137610b95"
+   },
+   "wasm1/fc2_raw": {
+    "member": "browser/arrays/wasm1-observed-0/layer3_fc2_raw.f32",
+    "bytes": 18432,
+    "sha256": "7f70ffcc6dee2194907f897935d72b3fe0757b05cad6fe892abad52e44be486b"
+   }
+  }
+ },
+ "model": {
+  "artifact": {
+   "run": 40354251257,
+   "source": "49161f608af811154bfeb816ac38caea34224cae",
+   "name": "successor-minilm-fixture-40354251257",
+   "id": 12671621333,
+   "bytes": 18259261,
+   "sha256": "a67abb8439d2af274c175dad9cefb8ba9606bec9c4ba024cf568a7359f41c8bf",
+   "conclusion": "failure",
+   "workflow": ".github/workflows/ovisocr2-metadata.yml"
+  },
+  "sha256": "77087a5dd455f5eeae6d6d098bac82793610438518a91071c72c253940db18a2"
+ },
+ "owned_sha256": {
+  ".github/workflows/wasm-layer3-ffn-matmul-v1.yml": "b50e4d8f11805420bb62ee41c09b1b3db01eade2c6a5612d5f5880f06c2b79c9",
+  "docs/wasm-layer3-ffn-matmul-v1.md": "52f1ee38f4d35dcd4b41610e34322f7abda0484b2bf2f977e3e9ae28d2236176",
+  "tools/ci-heavy/wasm_layer3_ffn_matmul_v1.py": "090988497faf2a142dd09c53aaa47e1c8459e19aacdaf0eed078ae6481b8a07c",
+  "tools/wasm-layer3-ffn-matmul/analysis.py": "c801d26f9af0c390007450856d85a1f111033d7ded76fd463e42974b99e0ab79",
+  "tests/wasm-layer3-ffn-matmul/probe.cpp": "8a65c2fbc6cfbc1b81e16a5b1cdf9e6a4411b4811c3085a763569a93202d8e3a",
+  "tests/wasm-layer3-ffn-matmul/CMakeLists.txt": "ae25f196bd1a54649c5f4bbc5fcc6e7066314b4d451abce154a853b875cad9ad",
+  "tests/test_wasm_layer3_ffn_matmul_v1.py": "4fbdc395cfc3029f8455243f5dc6b4a269ede73009a0496c9a276283fdfa0961"
+ }
+}
