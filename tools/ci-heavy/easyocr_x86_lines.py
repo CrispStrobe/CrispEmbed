@@ -50,7 +50,8 @@ def sh(cmd, env=None, timeout=3600, cwd=None):
 
 def build(name, flags):
     b = S / f"build-{name}"
-    rc, o, e, _ = sh(["cmake", "-S", ROOT, "-B", b, "-DCMAKE_BUILD_TYPE=Release", "-DGGML_METAL=OFF",
+    metal = "-DGGML_METAL=ON" if "-DGGML_METAL=ON" in flags else "-DGGML_METAL=OFF"
+    rc, o, e, _ = sh(["cmake", "-S", ROOT, "-B", b, "-DCMAKE_BUILD_TYPE=Release", metal,
                       "-DGGML_CUDA=OFF", "-DGGML_VULKAN=OFF", "-DCRISPEMBED_BUILD_SHARED=OFF", *flags])
     (OUT / f"configure-{name}.log").write_text(o + e)
     if rc != 0:
@@ -115,9 +116,11 @@ def region_lines(stderr):
     return out
 
 
-def run_pipeline(bdir, dbnet, rec, img, env, threads="4", tag=""):
+def run_pipeline(bdir, dbnet, rec, img, env, threads="4", backend=None):
     cmd = [bdir / "crispembed", "-t", threads, "--json", "-m", rec, "--ocr-pipeline", img, "--ocr-engine", "easyocr",
            "--ocr-det", dbnet, "--ocr-rec", rec]
+    if backend:
+        cmd[1:1] = ["--gpu-backend", backend]
     rc, o, e, secs = sh(cmd, env={"CRISPEMBED_EASYOCR_DEBUG_REGIONS": "1", **env})
     try:
         j = json.loads(o.strip().splitlines()[-1])
@@ -163,7 +166,8 @@ def main():
     REPORT["cpu"] = sh(["bash", "-c", "lscpu | grep -E 'Model name|Flags' | cut -c1-400"])[1]
     dbnet, rec, ckpt = fetch_models()
     lines = fixtures()
-    builds = {
+    mac = sys.platform == "darwin"
+    builds = {"metal": ["-DGGML_METAL=ON"]} if mac else {
         "native-off": ["-DGGML_NATIVE=OFF", "-DCRISPEMBED_NATIVE=OFF"],
         "native-on": ["-DGGML_NATIVE=ON", "-DCRISPEMBED_NATIVE=ON"],
         "sse-only": ["-DGGML_NATIVE=OFF", "-DCRISPEMBED_NATIVE=OFF", "-DGGML_AVX=OFF", "-DGGML_AVX2=OFF",
@@ -182,17 +186,30 @@ def main():
         "default-perturb": ({"MALLOC_PERTURB_": "165"}, "4"),
         "default-t1": ({}, "1"),
     }
+    if mac:  # macOS runner: Apple CPU and Metal arms; binaries are exported for the M1 run
+        arms = {k: arms[k] for k in ("default", "legacy", "legacy-poison", "default-poison", "legacy-widthsort")}
     pages = ["fox", "scan_strip", "scan_page_pd"]
     for bname, flags in builds.items():
         bdir = build(bname, flags)
         if not bdir:
             continue
         REPORT["pipeline"][bname] = {}
-        names = arms if bname == "native-off" else {k: arms[k] for k in ("default", "legacy", "legacy-poison",
-                                                                          "default-poison")}
+        names = arms if bname in ("native-off", "metal") else {k: arms[k] for k in ("default", "legacy",
+                                                                                     "legacy-poison", "default-poison")}
         for img in pages:
             for arm, (env, t) in names.items():
-                REPORT["pipeline"][bname][f"{img}/{arm}"] = run_pipeline(bdir, dbnet, rec, IMG / f"{img}.png", env, t)
+                if mac:
+                    for be in ("cpu", "metal"):
+                        REPORT["pipeline"][bname][f"{img}/{arm}/{be}"] = run_pipeline(
+                            bdir, dbnet, rec, IMG / f"{img}.png", env, t, backend=be)
+                else:
+                    REPORT["pipeline"][bname][f"{img}/{arm}"] = run_pipeline(bdir, dbnet, rec, IMG / f"{img}.png",
+                                                                             env, t)
+        if mac:
+            exp = OUT / "mac-bin"
+            exp.mkdir(exist_ok=True)
+            for f in (bdir / "crispembed", bdir / "test-easyocr-width-shrink", dbnet, rec, *lines):
+                shutil.copy2(f, exp / Path(f).name)
         ws = {}
         for arm, env in (("legacy-poison", {**legacy, "CRISPEMBED_EASYOCR_POISON_COMPUTE": "1"}),
                          ("default-poison", {"CRISPEMBED_EASYOCR_POISON_COMPUTE": "1"}),
@@ -201,7 +218,7 @@ def main():
             rc, o, e, secs = sh([bdir / "test-easyocr-width-shrink", rec, *lines], env=env)
             ws[arm] = {"rc": rc, "seconds": secs, "stdout": o[-4000:], "stderr_tail": e[-800:] if rc > 1 else ""}
         REPORT["width_shrink"][bname] = ws
-        if bname == "native-off":
+        if bname in ("native-off", "metal"):
             for img in pages:
                 for arm, env in (("default", {}), ("legacy", legacy)):
                     man = manifest(bdir, dbnet, rec, IMG / f"{img}.png", env, OUT / f"manifest-{img}-{arm}.json")
