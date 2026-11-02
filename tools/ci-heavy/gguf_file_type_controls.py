@@ -36,7 +36,7 @@ def main(args):
         for name,tensor,legacy,standard in METHODS:
             a=args.out/(name+'-legacy.gguf');b=args.out/(name+'-standard.gguf')
             command(name+'-legacy',[quantizer,source,a,name,'--legacy-file-type-header'])
-            command(name+'-standard',[quantizer,source,b,name])
+            command(name+'-standard',[quantizer,source,b,name,'--standard-file-type'])
             command(name+'-legacy-check',[fixture,'check',a,str(tensor),str(legacy)])
             command(name+'-standard-check',[fixture,'check',b,str(tensor),str(standard)])
             x,y=parse(a,CONTROL_TYPES),parse(b,CONTROL_TYPES)

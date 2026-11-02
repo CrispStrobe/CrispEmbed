@@ -151,7 +151,7 @@ def quantize(source, output, executable, identity):
     method = 'q8_0' if identity.startswith('q8-') else 'q4_k'
     target = 8 if method == 'q8_0' else 12
     args = [str(executable), str(source), str(output), method,
-            '--metadata-string', 'josev2b.packed.format=' + FORMAT]
+            '--metadata-string', 'josev2b.packed.format=' + FORMAT, '--standard-file-type']
     for name, kind in wanted.items():
         if kind != target:
             args.extend(['--tensor-type', name + '=' + TYPES[kind].lower()])

@@ -69,7 +69,7 @@ def controls(args):
         for method, tensor, legacy, standard in METHODS:
             left, right = args.out / (method + '-legacy.gguf'), args.out / (method + '-standard.gguf')
             command(method + '-legacy', [quantizer, original, left, method, '--legacy-file-type-header'])
-            command(method + '-standard', [quantizer, original, right, method])
+            command(method + '-standard', [quantizer, original, right, method, '--standard-file-type'])
             command(method + '-legacy-readback', [fixture, 'check', left, str(tensor), str(legacy)])
             command(method + '-standard-readback', [fixture, 'check', right, str(tensor), str(standard)])
             a, b = parse(left, CONTROL_TYPES), parse(right, CONTROL_TYPES)

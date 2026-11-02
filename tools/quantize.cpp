@@ -40,7 +40,13 @@ static const std::map<std::string, enum ggml_ftype> FTYPE_MAP = {
 // being quantized. Small decoders (e.g. GOT-OCR2's 0.5B Qwen2) are catastrophically
 // sensitive to q8_0/k-quant weights — llm_layer_0 cos drops to ~0.936 (vs 0.9999 at
 // F16) and the OCR output degenerates. Enable with --decoder-f16. See issue #25.
-static bool g_legacy_file_type_header = false; // Explicit frozen-output reproduction only.
+// general.file_type label. Default: the historical internal ggml_ftype value, so
+// default output stays byte-identical to existing hash-pinned files (MI-GAN512 /
+// Moebius Q4_K, ...). The standardized GGUF/llama.cpp labels (Q4_K 12->14, Q5_K
+// 13->16, Q6_K 14->18, IQ4_NL 19->25, IQ4_XS 22->30; F16/Q8_0 unchanged) are an
+// opt-in: --standard-file-type or CRISPEMBED_QUANTIZE_STANDARD_FTYPE=1.
+static bool g_standard_file_type_header = false;
+static bool g_legacy_file_type_header = false; // Explicit legacy request (the default).
 static std::map<std::string, std::string> g_metadata_strings;
 static bool g_decoder_f16 = false;
 static bool g_decoder_attn_q8 = false;
@@ -502,10 +508,25 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
     struct gguf_context * ctx_out = gguf_init_empty();
     gguf_set_kv(ctx_out, ctx_in);
     gguf_set_val_u32(ctx_out, "general.quantization_version", GGML_QNT_VERSION);
-    const auto file_type = g_legacy_file_type_header ? uint32_t(ftype) : core_gguf_file_type::standard(ftype);
+    const bool standard_header = g_standard_file_type_header || core_env::on("CRISPEMBED_QUANTIZE_STANDARD_FTYPE");
+    if (standard_header && g_legacy_file_type_header) {
+        fprintf(stderr, "--legacy-file-type-header conflicts with the standard file-type opt-in\n");
+        gguf_free(ctx_out);
+        gguf_free(ctx_in);
+        ggml_free(ctx_in_ggml);
+        return false;
+    }
+    const auto file_type = standard_header ? core_gguf_file_type::standard(ftype) : uint32_t(ftype);
+    if (file_type == core_gguf_file_type::unknown) {
+        fprintf(stderr, "no standard GGUF file type for this method\n");
+        gguf_free(ctx_out);
+        gguf_free(ctx_in);
+        ggml_free(ctx_in_ggml);
+        return false;
+    }
     gguf_set_val_u32(ctx_out, "general.file_type", file_type);
-    fprintf(stderr, "GGUF general.file_type=%u (%s header); tensor encoding unchanged\n", file_type,
-            g_legacy_file_type_header ? "legacy internal enum: reproduction only" : "standard");
+    if (standard_header)
+        fprintf(stderr, "GGUF general.file_type=%u (standard header, opt-in); tensor encoding unchanged\n", file_type);
     // Profile stamps may change string lengths. Apply before computing/writing
     // the output header, so GGUF recomputes offsets instead of patching bytes.
     for (const auto & item : g_metadata_strings) {
@@ -1543,6 +1564,8 @@ int main(int argc, char ** argv) {
         std::string a = argv[i];
         if (a == "--legacy-file-type-header")
             g_legacy_file_type_header = true;
+        else if (a == "--standard-file-type")
+            g_standard_file_type_header = true;
         else if (a == "--decoder-f16")
             g_decoder_f16 = true;
         else if (a == "--decoder-attn-q8")
@@ -1594,9 +1617,11 @@ int main(int argc, char ** argv) {
         fprintf(stderr,
                 "usage: %s <input.gguf> <output.gguf> <type> [--decoder-f16] [--decoder-attn-q8] "
                 "[--ppocrv6-q8-head] [--imatrix <file>] [--tensor-type GLOB=TYPE]... [--metadata-string KEY=VALUE]... "
-                "[--legacy-file-type-header]\n\n",
+                "[--standard-file-type | --legacy-file-type-header]\n\n",
                 argv[0]);
-        fprintf(stderr, "  --legacy-file-type-header  reproduce old internal-enum header; not for publication\n");
+        fprintf(stderr, "  --standard-file-type  write the standardized GGUF general.file_type label (opt-in;\n"
+                        "                        also CRISPEMBED_QUANTIZE_STANDARD_FTYPE=1); tensor bytes unchanged\n");
+        fprintf(stderr, "  --legacy-file-type-header  explicit internal-enum header (the default)\n");
         fprintf(stderr,
                 "  --metadata-string KEY=VALUE  replace an existing string profile key; tensor policy unchanged\n");
         fprintf(stderr, "  --imatrix <f> use a CrispEmbed importance matrix (from a calibration run\n");

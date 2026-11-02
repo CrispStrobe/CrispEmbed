@@ -15,9 +15,14 @@ values are pinned to [official llama.h](https://raw.githubusercontent.com/ggml-o
 (90,962 bytes, SHA256 `c0854771d3760a41642c4e59429c5b3b9fc774887c59d37eeadc4527681732cd`).
 The shared constants map every exposed CLI method explicitly: Q4_K12→14,
 Q5_K13→16, Q6_K14→18, IQ4_NL19→25, IQ4_XS22→30; existing F16, Q4_0/1,
-Q5_0/1, Q8_0, Q2_K and Q3_K labels stay unchanged. The default writer now emits
-standard headers. `--legacy-file-type-header` is an explicit reproduction option,
-with a warning; it is not a publication mode. No mixed-M recipe is claimed.
+Q5_0/1, Q8_0, Q2_K and Q3_K labels stay unchanged. Owner decision (2 November):
+the standard labels are an opt-in, `--standard-file-type` or
+`CRISPEMBED_QUANTIZE_STANDARD_FTYPE=1`. The default writer keeps the historical
+internal-enum label, so default output stays byte-identical to existing
+hash-pinned files (MI-GAN512 Q4_K, Moebius Q4_K-mix) and to readers such as
+migan.cpp/latent_inpaint.cpp. `--legacy-file-type-header` names that default
+explicitly and conflicts with the opt-in. The Josev protected recipe and the
+header controls pass the opt-in. No mixed-M recipe is claimed.
 Custom recipes must disclose actual precision counts/roles. In particular,
 Josev recipe C has316 F32,118 F16 and only8 Q4_K tensors; do not advertise it as
 a generally four-bit model. `general.file_type` is optional summary metadata;
