@@ -458,6 +458,13 @@ Transformers' 439 s and the old path's 3264 s; see PERFORMANCE. **Default flip a
 faster, peak RSS 8.4 GB (was 5.1 GB; original 8.5 GB). Each gate `=0` opts out; where RAM is
 tight use `CRISPEMBED_QWEN35_GRAPH_MATMUL=native` (5/5 exact, 603 s) or `CRISPEMBED_MINICPM_OCR_VISION_F32=0`.
 
+## Unlimited-OCR-2 vision speed (2 November 2026)
+
+`CRISPEMBED_UNLIMITED_OCR2_VISION_F32` is 4/4 trial-exact and 1.43-1.44x faster; real scans 13/20 exact vs original
+(default 12/20), 17/19 identical to the default, one page (`de-2col-meyers-b13-103`) new inexact ids. Decide whether to
+flip it on (explicitly_off) given that page; TILE_BATCH stays off (~2%). Remaining time is prefill (38 s) and decode
+(~66 s) on the table page; the global 1024 SAM view is the next vision target.
+
 ## Required Q8_0 and Q4_K coverage for new permissive models (29 October)
 
 Use actual `crispembed-quantize`, original Python/ONNX dumps and actual
