@@ -12,7 +12,9 @@
 #include "core/clean_exit.h"
 #include "core/json.h"
 
+#ifndef _WIN32
 #include <sys/resource.h>
+#endif
 
 #include <chrono>
 #include <cstdio>
@@ -24,12 +26,16 @@ extern "C" unsigned char * stbi_load(const char *, int *, int *, int *, int);
 extern "C" void stbi_image_free(void *);
 
 static double peak_rss_mib() {
+#ifdef _WIN32
+    return 0.0; // diagnostic only; not measured on Windows
+#else
     rusage usage{};
     getrusage(RUSAGE_SELF, &usage);
 #ifdef __APPLE__
     return double(usage.ru_maxrss) / (1024.0 * 1024.0); // bytes
 #else
     return double(usage.ru_maxrss) / 1024.0; // KiB
+#endif
 #endif
 }
 

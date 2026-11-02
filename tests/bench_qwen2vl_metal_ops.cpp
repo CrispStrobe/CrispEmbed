@@ -3,6 +3,7 @@
 // (repeated), for the matmul precision routes and flash attention.
 //
 //   test-bench-qwen2vl-metal-ops [iters=10]
+#include "core/clean_exit.h"
 #include "ggml.h"
 #include "ggml-alloc.h"
 #include "ggml-backend.h"
@@ -78,7 +79,7 @@ ggml_tensor * matmul(ggml_context * g, ggml_type wt, int k, int n, int m, int mo
 }
 } // namespace
 
-int main(int argc, char ** argv) {
+static int crispembed_test_main(int argc, char ** argv) {
     const int iters = argc > 1 ? std::atoi(argv[1]) : 10;
     ggml_backend_t backend = ggml_backend_init_best();
     if (!backend) return 1;
@@ -137,4 +138,8 @@ int main(int argc, char ** argv) {
     }
     ggml_backend_free(backend);
     return 0;
+}
+
+int main(int argc, char ** argv) {
+    core_util::clean_exit(crispembed_test_main(argc, argv));
 }
