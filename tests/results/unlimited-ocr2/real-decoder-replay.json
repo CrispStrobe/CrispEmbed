@@ -1,0 +1,820 @@
+{
+  "schema": "crispembed-unlimited-real-decoder-replay-v1",
+  "completed": true,
+  "model_inference": false,
+  "original_rerun": false,
+  "paired_input_review": {
+    "schema": "crispembed-ocr-real-scans-paired-review-v1",
+    "native_source": "2acee0b1c920fa3d143f05c8d4022994d8b8c763",
+    "original_source": "4daea2037135cb1a19df1eda70ace711f7c69f95",
+    "pages": 20,
+    "eligible_pairs": 19,
+    "exact_ids": 11,
+    "exact_raw_text": 0,
+    "complete_input_proof": false,
+    "model_qualified": false,
+    "rows": [
+      {
+        "page": "en-prose-constitution-13",
+        "input_verified": true,
+        "eligible": true,
+        "ids_exact": true,
+        "raw_text_exact": false,
+        "first_token_difference": null,
+        "native_tokens": 282,
+        "original_tokens": 282,
+        "native_cap_hit": false,
+        "original_cap_hit": false,
+        "native_seconds": 386.05,
+        "original_seconds": 135.7
+      },
+      {
+        "page": "de-fraktur-grimm-319",
+        "input_verified": true,
+        "eligible": true,
+        "ids_exact": true,
+        "raw_text_exact": false,
+        "first_token_difference": null,
+        "native_tokens": 292,
+        "original_tokens": 292,
+        "native_cap_hit": false,
+        "original_cap_hit": false,
+        "native_seconds": 324.0,
+        "original_seconds": 125.3
+      },
+      {
+        "page": "en-table-climatic-26",
+        "input_verified": true,
+        "eligible": true,
+        "ids_exact": true,
+        "raw_text_exact": false,
+        "first_token_difference": null,
+        "native_tokens": 806,
+        "original_tokens": 806,
+        "native_cap_hit": false,
+        "original_cap_hit": false,
+        "native_seconds": 581.51,
+        "original_seconds": 255.3
+      },
+      {
+        "page": "de-antiqua-kafka-schloss-211",
+        "input_verified": true,
+        "eligible": true,
+        "ids_exact": true,
+        "raw_text_exact": false,
+        "first_token_difference": null,
+        "native_tokens": 356,
+        "original_tokens": 356,
+        "native_cap_hit": false,
+        "original_cap_hit": false,
+        "native_seconds": 227.4,
+        "original_seconds": 111.7
+      },
+      {
+        "page": "en-form-economic-journal-67",
+        "input_verified": false,
+        "eligible": false,
+        "rejection": "frozen image hash rejected"
+      },
+      {
+        "page": "de-degraded-freiligrath-46",
+        "input_verified": true,
+        "eligible": true,
+        "ids_exact": true,
+        "raw_text_exact": false,
+        "first_token_difference": null,
+        "native_tokens": 289,
+        "original_tokens": 289,
+        "native_cap_hit": false,
+        "original_cap_hit": false,
+        "native_seconds": 200.32,
+        "original_seconds": 97.8
+      },
+      {
+        "page": "receipt-cord-test-29",
+        "input_verified": true,
+        "eligible": true,
+        "ids_exact": true,
+        "raw_text_exact": false,
+        "first_token_difference": null,
+        "native_tokens": 1024,
+        "original_tokens": 1024,
+        "native_cap_hit": true,
+        "original_cap_hit": true,
+        "native_seconds": 390.71,
+        "original_seconds": 251.8
+      },
+      {
+        "page": "de-2col-meyers-b13-103",
+        "input_verified": true,
+        "eligible": true,
+        "ids_exact": false,
+        "raw_text_exact": false,
+        "first_token_difference": 2419,
+        "native_tokens": 2663,
+        "original_tokens": 2663,
+        "native_cap_hit": false,
+        "original_cap_hit": false,
+        "native_seconds": 1491.7,
+        "original_seconds": 736.4
+      },
+      {
+        "page": "en-2col-eb1911-v04-246",
+        "input_verified": true,
+        "eligible": true,
+        "ids_exact": true,
+        "raw_text_exact": false,
+        "first_token_difference": null,
+        "native_tokens": 1124,
+        "original_tokens": 1124,
+        "native_cap_hit": false,
+        "original_cap_hit": false,
+        "native_seconds": 592.35,
+        "original_seconds": 321.2
+      },
+      {
+        "page": "en-report-amtrak-23",
+        "input_verified": true,
+        "eligible": true,
+        "ids_exact": true,
+        "raw_text_exact": false,
+        "first_token_difference": null,
+        "native_tokens": 763,
+        "original_tokens": 763,
+        "native_cap_hit": false,
+        "original_cap_hit": false,
+        "native_seconds": 465.46,
+        "original_seconds": 245.8
+      },
+      {
+        "page": "de-table-rgbl-1867-403",
+        "input_verified": true,
+        "eligible": true,
+        "ids_exact": false,
+        "raw_text_exact": false,
+        "first_token_difference": 273,
+        "native_tokens": 975,
+        "original_tokens": 975,
+        "native_cap_hit": false,
+        "original_cap_hit": false,
+        "native_seconds": 550.59,
+        "original_seconds": 306.7
+      },
+      {
+        "page": "de-antiqua-kafka-betrachtung-94",
+        "input_verified": true,
+        "eligible": true,
+        "ids_exact": false,
+        "raw_text_exact": false,
+        "first_token_difference": 349,
+        "native_tokens": 667,
+        "original_tokens": 667,
+        "native_cap_hit": false,
+        "original_cap_hit": false,
+        "native_seconds": 431.93,
+        "original_seconds": 213.3
+      },
+      {
+        "page": "receipt-cord-test-4",
+        "input_verified": true,
+        "eligible": true,
+        "ids_exact": false,
+        "raw_text_exact": false,
+        "first_token_difference": 690,
+        "native_tokens": 1024,
+        "original_tokens": 1024,
+        "native_cap_hit": true,
+        "original_cap_hit": true,
+        "native_seconds": 423.79,
+        "original_seconds": 263.6
+      },
+      {
+        "page": "receipt-cord-test-16",
+        "input_verified": true,
+        "eligible": true,
+        "ids_exact": true,
+        "raw_text_exact": false,
+        "first_token_difference": null,
+        "native_tokens": 230,
+        "original_tokens": 230,
+        "native_cap_hit": false,
+        "original_cap_hit": false,
+        "native_seconds": 221.47,
+        "original_seconds": 89.1
+      },
+      {
+        "page": "de-mixed-welzheim-188",
+        "input_verified": true,
+        "eligible": true,
+        "ids_exact": true,
+        "raw_text_exact": false,
+        "first_token_difference": null,
+        "native_tokens": 936,
+        "original_tokens": 936,
+        "native_cap_hit": false,
+        "original_cap_hit": false,
+        "native_seconds": 604.28,
+        "original_seconds": 274.2
+      },
+      {
+        "page": "en-old-statutes-v1-772",
+        "input_verified": true,
+        "eligible": true,
+        "ids_exact": false,
+        "raw_text_exact": false,
+        "first_token_difference": 358,
+        "native_tokens": 917,
+        "original_tokens": 927,
+        "native_cap_hit": false,
+        "original_cap_hit": false,
+        "native_seconds": 601.54,
+        "original_seconds": 293.9
+      },
+      {
+        "page": "en-prose-constitution-81",
+        "input_verified": true,
+        "eligible": true,
+        "ids_exact": false,
+        "raw_text_exact": false,
+        "first_token_difference": 10,
+        "native_tokens": 324,
+        "original_tokens": 324,
+        "native_cap_hit": false,
+        "original_cap_hit": false,
+        "native_seconds": 430.58,
+        "original_seconds": 155.8
+      },
+      {
+        "page": "en-2col-eb1911-v25-5",
+        "input_verified": true,
+        "eligible": true,
+        "ids_exact": false,
+        "raw_text_exact": false,
+        "first_token_difference": 175,
+        "native_tokens": 1308,
+        "original_tokens": 1308,
+        "native_cap_hit": false,
+        "original_cap_hit": false,
+        "native_seconds": 768.0,
+        "original_seconds": 398.4
+      },
+      {
+        "page": "receipt-cord-test-20",
+        "input_verified": true,
+        "eligible": true,
+        "ids_exact": false,
+        "raw_text_exact": false,
+        "first_token_difference": 33,
+        "native_tokens": 484,
+        "original_tokens": 482,
+        "native_cap_hit": false,
+        "original_cap_hit": false,
+        "native_seconds": 271.79,
+        "original_seconds": 141.7
+      },
+      {
+        "page": "receipt-cord-test-14",
+        "input_verified": true,
+        "eligible": true,
+        "ids_exact": true,
+        "raw_text_exact": false,
+        "first_token_difference": null,
+        "native_tokens": 255,
+        "original_tokens": 255,
+        "native_cap_hit": false,
+        "original_cap_hit": false,
+        "native_seconds": 388.02,
+        "original_seconds": 133.8
+      }
+    ]
+  },
+  "rows": [
+    {
+      "page": "en-prose-constitution-13",
+      "origin": "original",
+      "input_eligible": true,
+      "raw_bytes": 1177,
+      "raw_sha256": "8c28b075aeb5244d1c0586b2a9dd60d88f556d21a4f3b2705834bb2cf0b32e01",
+      "clean_sha256": "bf938b71c00655da2aa9bc3582dcfe9cfd75dbf1c63601e19c773662cd8e8c05",
+      "original_raw_exact": true
+    },
+    {
+      "page": "de-fraktur-grimm-319",
+      "origin": "original",
+      "input_eligible": true,
+      "raw_bytes": 985,
+      "raw_sha256": "411a6429dbcf6c7ddd43c7fdfa827ab63aa8b83d9763ebdfc7ea12ec10fc4b1e",
+      "clean_sha256": "d4c17c10f39ae0b14509a565c541cf20bc4c4a48121baaa226202223390d5c1d",
+      "original_raw_exact": true
+    },
+    {
+      "page": "en-table-climatic-26",
+      "origin": "original",
+      "input_eligible": true,
+      "raw_bytes": 3399,
+      "raw_sha256": "27afd087266ec2a9cae39f7eea4c7db90824e8f58aa6d4a1cb3b5269f5c6c139",
+      "clean_sha256": "b094a5c5058eb224c254c7bfd76e799ad43e84050542fb91cbd36af93c90caf5",
+      "original_raw_exact": true
+    },
+    {
+      "page": "de-antiqua-kafka-schloss-211",
+      "origin": "original",
+      "input_eligible": true,
+      "raw_bytes": 1257,
+      "raw_sha256": "fd2017c4dc6d1522c7d784fc81b25f525d74976d732a23e6fbd22e4fc2bc4f05",
+      "clean_sha256": "0741817cfd3d34df6714bd67c6184a99f88e2ac1f211c6488bb6492626cf2b39",
+      "original_raw_exact": true
+    },
+    {
+      "page": "en-form-economic-journal-67",
+      "origin": "original",
+      "input_eligible": false,
+      "raw_bytes": 3516,
+      "raw_sha256": "5dce20b34f2ef2b3cfc53ec5923bcdb7062bfb1171ee7c7e13ab05654e346c8a",
+      "clean_sha256": "f118c30bbe7c16d2a922f5977d6eeba5e666cbc1ae74a13f70c0e651169bb003",
+      "original_raw_exact": true
+    },
+    {
+      "page": "de-degraded-freiligrath-46",
+      "origin": "original",
+      "input_eligible": true,
+      "raw_bytes": 832,
+      "raw_sha256": "5ed12c108097386608277b1b0a0794239b2d057a63e1a67964f630507d2c4315",
+      "clean_sha256": "8352ad0b59b60e31a755f23ddf847428f55e5b8ac2999fff65769be69c7bcafc",
+      "original_raw_exact": true
+    },
+    {
+      "page": "receipt-cord-test-29",
+      "origin": "original",
+      "input_eligible": true,
+      "raw_bytes": 4537,
+      "raw_sha256": "0d4cddb93dda946207e0e6884d5190c9f7ae9a00d543a0dd4fcd09a715de306c",
+      "clean_sha256": "565783f7389e1133a35e32e34daff2420e1fbab8fe3b5b3c5fc827f2b6f77ed7",
+      "original_raw_exact": true
+    },
+    {
+      "page": "de-2col-meyers-b13-103",
+      "origin": "original",
+      "input_eligible": true,
+      "raw_bytes": 7951,
+      "raw_sha256": "7da7950ea346987702acb9075af16424c23acc90c7b0513db532d1629f22443c",
+      "clean_sha256": "2528cf966b3ddbef13674e08b837ebc5db100d834d42f604306dada650d46bcb",
+      "original_raw_exact": true
+    },
+    {
+      "page": "en-2col-eb1911-v04-246",
+      "origin": "original",
+      "input_eligible": true,
+      "raw_bytes": 4535,
+      "raw_sha256": "c1a1ede8f1db4229a889e855313edf9c3d14d0931c7e5b1521ef0e2aff3c9976",
+      "clean_sha256": "539d6fd8f59e446c964cfb6bfdafe2e9caa18cc856e9aaae6dadc7a10fb44d4b",
+      "original_raw_exact": true
+    },
+    {
+      "page": "en-report-amtrak-23",
+      "origin": "original",
+      "input_eligible": true,
+      "raw_bytes": 3662,
+      "raw_sha256": "ed22bf579a67e2f843110dfd5a256c2e42ff7c2a2a22f2e550b4a53e53704a64",
+      "clean_sha256": "5c5beb791c84ed036b3fe730e7210cbe02323959244300e7b85dd59ca6353787",
+      "original_raw_exact": true
+    },
+    {
+      "page": "de-table-rgbl-1867-403",
+      "origin": "original",
+      "input_eligible": true,
+      "raw_bytes": 3739,
+      "raw_sha256": "7d1ac5a659750a07f537626544eec3b15c5b9e15820e088e02848717d1799a19",
+      "clean_sha256": "4af829b8a5003885e75e94af7b419ee6f049c253b8f098ac5ecc9ba39cd2dd81",
+      "original_raw_exact": true
+    },
+    {
+      "page": "de-antiqua-kafka-betrachtung-94",
+      "origin": "original",
+      "input_eligible": true,
+      "raw_bytes": 2214,
+      "raw_sha256": "f418113f8e6c83f20f93682f5c81fa1564a2197dffc1ff5da378bbc4bdefadb0",
+      "clean_sha256": "6e7786191132029d7d2032811f6ea9c830a964eb37613184afb9baf65ddb6eaf",
+      "original_raw_exact": true
+    },
+    {
+      "page": "receipt-cord-test-4",
+      "origin": "original",
+      "input_eligible": true,
+      "raw_bytes": 2486,
+      "raw_sha256": "1f605932e86418005844ac653c69eeccec1508d58c3377b9056c8fe2047e96b1",
+      "clean_sha256": "88e17bd1095d784a09658be918842b0cfbb25245d8caea61ba593b80ea2e068a",
+      "original_raw_exact": true
+    },
+    {
+      "page": "receipt-cord-test-16",
+      "origin": "original",
+      "input_eligible": true,
+      "raw_bytes": 723,
+      "raw_sha256": "1b950bb7c6d826c2b7346e39bbd36e8ee1cd71d3afd7633655aafda72505b8bc",
+      "clean_sha256": "084adc99f4299a7d5fd1cb355906be55328498ffe95fb7e63f56c65895121e6d",
+      "original_raw_exact": true
+    },
+    {
+      "page": "de-mixed-welzheim-188",
+      "origin": "original",
+      "input_eligible": true,
+      "raw_bytes": 2942,
+      "raw_sha256": "18823e8e0caaa82f4b1d7de63e4df9301be892be12f9f12dcd469a56659e4cfb",
+      "clean_sha256": "0bbaec0c61490507b1f18220dd10ee498561a8b57b1667f1bff59da407072cd5",
+      "original_raw_exact": true
+    },
+    {
+      "page": "en-old-statutes-v1-772",
+      "origin": "original",
+      "input_eligible": true,
+      "raw_bytes": 3790,
+      "raw_sha256": "1a3c1bb52b6a4fe75d7791db7b828310d7cf6b9033399af7e8213b47049cc73d",
+      "clean_sha256": "09fa41564871267c16603a4c0f0f4608596f084489f97b42e07ce0163e7ecf3d",
+      "original_raw_exact": true
+    },
+    {
+      "page": "en-prose-constitution-81",
+      "origin": "original",
+      "input_eligible": true,
+      "raw_bytes": 1279,
+      "raw_sha256": "9b29c0fd944085bdc960669b580d289383701987e27792bf230f0dcc1d2437c9",
+      "clean_sha256": "a1b37ebe0f85acaf6d509eb48992f89922eac82773d191adf72f41fd99a8d146",
+      "original_raw_exact": true
+    },
+    {
+      "page": "en-2col-eb1911-v25-5",
+      "origin": "original",
+      "input_eligible": true,
+      "raw_bytes": 4034,
+      "raw_sha256": "08ac40775f1b0bd781784375ef98eda50ce5271c5a6c4ec3a3738e536f60e5ba",
+      "clean_sha256": "cbb94360c6288d6b55167d16d0e5a6198b360a29b5984d68992b3f8c26ae4489",
+      "original_raw_exact": true
+    },
+    {
+      "page": "receipt-cord-test-20",
+      "origin": "original",
+      "input_eligible": true,
+      "raw_bytes": 1445,
+      "raw_sha256": "83a9f2dac201b543b86b8d3d574879c40af943b4a19bba03f0c09de9495efe39",
+      "clean_sha256": "abf16df6cf3c3bdbe182fee9015e63c1622f021c9d5c9ecd5a9241a1529d8d4e",
+      "original_raw_exact": true
+    },
+    {
+      "page": "receipt-cord-test-14",
+      "origin": "original",
+      "input_eligible": true,
+      "raw_bytes": 833,
+      "raw_sha256": "4133fc101b7e7190ffedaab4764deda3888d28ceab4b5ec70f0303d1c5da6166",
+      "clean_sha256": "054eecbca01f04c0f2372e280b7081e02b63177da8a9fb4524aab8022299bbd3",
+      "original_raw_exact": true
+    },
+    {
+      "page": "en-prose-constitution-13",
+      "origin": "initial_native",
+      "input_eligible": true,
+      "raw_bytes": 1177,
+      "raw_sha256": "8c28b075aeb5244d1c0586b2a9dd60d88f556d21a4f3b2705834bb2cf0b32e01",
+      "clean_sha256": "bf938b71c00655da2aa9bc3582dcfe9cfd75dbf1c63601e19c773662cd8e8c05",
+      "original_raw_exact": null
+    },
+    {
+      "page": "de-fraktur-grimm-319",
+      "origin": "initial_native",
+      "input_eligible": true,
+      "raw_bytes": 985,
+      "raw_sha256": "411a6429dbcf6c7ddd43c7fdfa827ab63aa8b83d9763ebdfc7ea12ec10fc4b1e",
+      "clean_sha256": "d4c17c10f39ae0b14509a565c541cf20bc4c4a48121baaa226202223390d5c1d",
+      "original_raw_exact": null
+    },
+    {
+      "page": "en-table-climatic-26",
+      "origin": "initial_native",
+      "input_eligible": true,
+      "raw_bytes": 3399,
+      "raw_sha256": "27afd087266ec2a9cae39f7eea4c7db90824e8f58aa6d4a1cb3b5269f5c6c139",
+      "clean_sha256": "b094a5c5058eb224c254c7bfd76e799ad43e84050542fb91cbd36af93c90caf5",
+      "original_raw_exact": null
+    },
+    {
+      "page": "de-antiqua-kafka-schloss-211",
+      "origin": "initial_native",
+      "input_eligible": true,
+      "raw_bytes": 1257,
+      "raw_sha256": "fd2017c4dc6d1522c7d784fc81b25f525d74976d732a23e6fbd22e4fc2bc4f05",
+      "clean_sha256": "0741817cfd3d34df6714bd67c6184a99f88e2ac1f211c6488bb6492626cf2b39",
+      "original_raw_exact": null
+    },
+    {
+      "page": "en-form-economic-journal-67",
+      "origin": "initial_native",
+      "input_eligible": false,
+      "raw_bytes": 3516,
+      "raw_sha256": "5dce20b34f2ef2b3cfc53ec5923bcdb7062bfb1171ee7c7e13ab05654e346c8a",
+      "clean_sha256": "f118c30bbe7c16d2a922f5977d6eeba5e666cbc1ae74a13f70c0e651169bb003",
+      "original_raw_exact": null
+    },
+    {
+      "page": "de-degraded-freiligrath-46",
+      "origin": "initial_native",
+      "input_eligible": true,
+      "raw_bytes": 832,
+      "raw_sha256": "5ed12c108097386608277b1b0a0794239b2d057a63e1a67964f630507d2c4315",
+      "clean_sha256": "8352ad0b59b60e31a755f23ddf847428f55e5b8ac2999fff65769be69c7bcafc",
+      "original_raw_exact": null
+    },
+    {
+      "page": "receipt-cord-test-29",
+      "origin": "initial_native",
+      "input_eligible": true,
+      "raw_bytes": 4537,
+      "raw_sha256": "0d4cddb93dda946207e0e6884d5190c9f7ae9a00d543a0dd4fcd09a715de306c",
+      "clean_sha256": "565783f7389e1133a35e32e34daff2420e1fbab8fe3b5b3c5fc827f2b6f77ed7",
+      "original_raw_exact": null
+    },
+    {
+      "page": "de-2col-meyers-b13-103",
+      "origin": "initial_native",
+      "input_eligible": true,
+      "raw_bytes": 7951,
+      "raw_sha256": "6c21aeb13020f0c21ce1542eb14451c6ff8837eb39fd9088686cdce47b8d64fe",
+      "clean_sha256": "4bab8d1a1c016f74c2e4918f2d229b847b0a336ad98ca1564c87a7d219a4b986",
+      "original_raw_exact": null
+    },
+    {
+      "page": "en-2col-eb1911-v04-246",
+      "origin": "initial_native",
+      "input_eligible": true,
+      "raw_bytes": 4535,
+      "raw_sha256": "c1a1ede8f1db4229a889e855313edf9c3d14d0931c7e5b1521ef0e2aff3c9976",
+      "clean_sha256": "539d6fd8f59e446c964cfb6bfdafe2e9caa18cc856e9aaae6dadc7a10fb44d4b",
+      "original_raw_exact": null
+    },
+    {
+      "page": "en-report-amtrak-23",
+      "origin": "initial_native",
+      "input_eligible": true,
+      "raw_bytes": 3662,
+      "raw_sha256": "ed22bf579a67e2f843110dfd5a256c2e42ff7c2a2a22f2e550b4a53e53704a64",
+      "clean_sha256": "5c5beb791c84ed036b3fe730e7210cbe02323959244300e7b85dd59ca6353787",
+      "original_raw_exact": null
+    },
+    {
+      "page": "de-table-rgbl-1867-403",
+      "origin": "initial_native",
+      "input_eligible": true,
+      "raw_bytes": 3739,
+      "raw_sha256": "ed5141593af4d72b81ec612fe2d8898bfae524837d766cbb8ba53b59d8f17364",
+      "clean_sha256": "4af829b8a5003885e75e94af7b419ee6f049c253b8f098ac5ecc9ba39cd2dd81",
+      "original_raw_exact": null
+    },
+    {
+      "page": "de-antiqua-kafka-betrachtung-94",
+      "origin": "initial_native",
+      "input_eligible": true,
+      "raw_bytes": 2214,
+      "raw_sha256": "5a7a0aad41c5af27dcffcaf1fff9aa6fc0d15802464c375e9e81c7720985cc77",
+      "clean_sha256": "6e7786191132029d7d2032811f6ea9c830a964eb37613184afb9baf65ddb6eaf",
+      "original_raw_exact": null
+    },
+    {
+      "page": "receipt-cord-test-4",
+      "origin": "initial_native",
+      "input_eligible": true,
+      "raw_bytes": 2480,
+      "raw_sha256": "fe5b6e5445d11497e16ecad8a49f0296fc0d088f43d6785f42c4d7da8afffe08",
+      "clean_sha256": "88e17bd1095d784a09658be918842b0cfbb25245d8caea61ba593b80ea2e068a",
+      "original_raw_exact": null
+    },
+    {
+      "page": "receipt-cord-test-16",
+      "origin": "initial_native",
+      "input_eligible": true,
+      "raw_bytes": 723,
+      "raw_sha256": "1b950bb7c6d826c2b7346e39bbd36e8ee1cd71d3afd7633655aafda72505b8bc",
+      "clean_sha256": "084adc99f4299a7d5fd1cb355906be55328498ffe95fb7e63f56c65895121e6d",
+      "original_raw_exact": null
+    },
+    {
+      "page": "de-mixed-welzheim-188",
+      "origin": "initial_native",
+      "input_eligible": true,
+      "raw_bytes": 2942,
+      "raw_sha256": "18823e8e0caaa82f4b1d7de63e4df9301be892be12f9f12dcd469a56659e4cfb",
+      "clean_sha256": "0bbaec0c61490507b1f18220dd10ee498561a8b57b1667f1bff59da407072cd5",
+      "original_raw_exact": null
+    },
+    {
+      "page": "en-old-statutes-v1-772",
+      "origin": "initial_native",
+      "input_eligible": true,
+      "raw_bytes": 3746,
+      "raw_sha256": "a4c75c0475ed7481ec770e2127ae7913f2f48df4676e5ff4329c30a3e031da39",
+      "clean_sha256": "ca7794af6c79276eb0cff7e6f6c481c27d2327cb6545b74bba1cea6277ac30ce",
+      "original_raw_exact": null
+    },
+    {
+      "page": "en-prose-constitution-81",
+      "origin": "initial_native",
+      "input_eligible": true,
+      "raw_bytes": 1278,
+      "raw_sha256": "410ac0c824ad3df29a531975bdde16c047d63ac00ac4e55fd70cb9d9fb6d570d",
+      "clean_sha256": "5309f8b9a9ebf29119cc0c9291aab1689b55867a6db10756f1792671f2f8cea1",
+      "original_raw_exact": null
+    },
+    {
+      "page": "en-2col-eb1911-v25-5",
+      "origin": "initial_native",
+      "input_eligible": true,
+      "raw_bytes": 4035,
+      "raw_sha256": "83eb1fe5263303d0f06ffc426e66ebea0697e1f50796df4109b5dae96bd25edb",
+      "clean_sha256": "02d6d17df17a65f206e57415ad538e6badb7119121526804b10e85e50c30c585",
+      "original_raw_exact": null
+    },
+    {
+      "page": "receipt-cord-test-20",
+      "origin": "initial_native",
+      "input_eligible": true,
+      "raw_bytes": 1470,
+      "raw_sha256": "0f131636eb9d67f6671f7b3502115f10e77b324bda5df858e5aba5d4a3c8ef71",
+      "clean_sha256": "9bb1639480c0c8770fbfe7d8b6bac3402b3963cf9687ab9bfa76a025113a71df",
+      "original_raw_exact": null
+    },
+    {
+      "page": "receipt-cord-test-14",
+      "origin": "initial_native",
+      "input_eligible": true,
+      "raw_bytes": 833,
+      "raw_sha256": "4133fc101b7e7190ffedaab4764deda3888d28ceab4b5ec70f0303d1c5da6166",
+      "clean_sha256": "054eecbca01f04c0f2372e280b7081e02b63177da8a9fb4524aab8022299bbd3",
+      "original_raw_exact": null
+    }
+  ],
+  "all20_original_raw_strings_exact": true,
+  "all40_independent_clean_exact": true,
+  "all831_added_tokens_exact": true,
+  "published_base_vocabulary_matches_original": true,
+  "model_sha256": "487b887eddaf73e070cd98c3e10d112d21749036ca06b5e7fc103c3fb4def517",
+  "tokenizer_sha256": "c55c165e32c5a67830362a53e1f548c8930dcc8469efa30ff3252a982799c589",
+  "source_sha256": {
+    "tools/unlimited-ocr2/replay_real_decode.py": "9194a7d9206713d6a156474e093cc9b4f7ff84c8c66e3a38375aa76dd14aa7ca",
+    "src/unlimited_ocr2_text.h": "71612c6a1b5b9693f864348bb0fba9f8098562c68f1153180c68d5a534d6b64c",
+    "src/core/bpe.h": "5edbadf3010d765720fa853bbf90fc8e2094a223d51c4bd6f2842bc197ca27c6",
+    "tests/unlimited-real-decode/probe.cpp": "602c1b321081a4836a48dbb7fa6a42e8f6b11af5b27220f7b6bec841b69b90e8",
+    "docs/unlimited-ocr2-source.json": "73b311d5e834a789190e0c5426a2f4431f028cdf8650b9debde0cf8705a0ae59",
+    "docs/ocr-real-scans-v1.json": "0857bffc6f4a3616292db255d7f3f34c0b58a52a7286a2791cb00b77499c7700",
+    "tests/results/ocr-real-scans/source-identities.json": "69bd8cf700492c1a8040cd93caa15d499bde2fb78c1cd8be3bf0686fd987d3a3"
+  },
+  "comparisons": [
+    {
+      "page": "en-prose-constitution-13",
+      "eligible": true,
+      "ids_exact": true,
+      "corrected_raw_exact": true,
+      "corrected_clean_exact": true
+    },
+    {
+      "page": "de-fraktur-grimm-319",
+      "eligible": true,
+      "ids_exact": true,
+      "corrected_raw_exact": true,
+      "corrected_clean_exact": true
+    },
+    {
+      "page": "en-table-climatic-26",
+      "eligible": true,
+      "ids_exact": true,
+      "corrected_raw_exact": true,
+      "corrected_clean_exact": true
+    },
+    {
+      "page": "de-antiqua-kafka-schloss-211",
+      "eligible": true,
+      "ids_exact": true,
+      "corrected_raw_exact": true,
+      "corrected_clean_exact": true
+    },
+    {
+      "page": "en-form-economic-journal-67",
+      "eligible": false,
+      "ids_exact": null,
+      "corrected_raw_exact": true,
+      "corrected_clean_exact": true
+    },
+    {
+      "page": "de-degraded-freiligrath-46",
+      "eligible": true,
+      "ids_exact": true,
+      "corrected_raw_exact": true,
+      "corrected_clean_exact": true
+    },
+    {
+      "page": "receipt-cord-test-29",
+      "eligible": true,
+      "ids_exact": true,
+      "corrected_raw_exact": true,
+      "corrected_clean_exact": true
+    },
+    {
+      "page": "de-2col-meyers-b13-103",
+      "eligible": true,
+      "ids_exact": false,
+      "corrected_raw_exact": false,
+      "corrected_clean_exact": false
+    },
+    {
+      "page": "en-2col-eb1911-v04-246",
+      "eligible": true,
+      "ids_exact": true,
+      "corrected_raw_exact": true,
+      "corrected_clean_exact": true
+    },
+    {
+      "page": "en-report-amtrak-23",
+      "eligible": true,
+      "ids_exact": true,
+      "corrected_raw_exact": true,
+      "corrected_clean_exact": true
+    },
+    {
+      "page": "de-table-rgbl-1867-403",
+      "eligible": true,
+      "ids_exact": false,
+      "corrected_raw_exact": false,
+      "corrected_clean_exact": true
+    },
+    {
+      "page": "de-antiqua-kafka-betrachtung-94",
+      "eligible": true,
+      "ids_exact": false,
+      "corrected_raw_exact": false,
+      "corrected_clean_exact": true
+    },
+    {
+      "page": "receipt-cord-test-4",
+      "eligible": true,
+      "ids_exact": false,
+      "corrected_raw_exact": false,
+      "corrected_clean_exact": true
+    },
+    {
+      "page": "receipt-cord-test-16",
+      "eligible": true,
+      "ids_exact": true,
+      "corrected_raw_exact": true,
+      "corrected_clean_exact": true
+    },
+    {
+      "page": "de-mixed-welzheim-188",
+      "eligible": true,
+      "ids_exact": true,
+      "corrected_raw_exact": true,
+      "corrected_clean_exact": true
+    },
+    {
+      "page": "en-old-statutes-v1-772",
+      "eligible": true,
+      "ids_exact": false,
+      "corrected_raw_exact": false,
+      "corrected_clean_exact": false
+    },
+    {
+      "page": "en-prose-constitution-81",
+      "eligible": true,
+      "ids_exact": false,
+      "corrected_raw_exact": false,
+      "corrected_clean_exact": false
+    },
+    {
+      "page": "en-2col-eb1911-v25-5",
+      "eligible": true,
+      "ids_exact": false,
+      "corrected_raw_exact": false,
+      "corrected_clean_exact": false
+    },
+    {
+      "page": "receipt-cord-test-20",
+      "eligible": true,
+      "ids_exact": false,
+      "corrected_raw_exact": false,
+      "corrected_clean_exact": false
+    },
+    {
+      "page": "receipt-cord-test-14",
+      "eligible": true,
+      "ids_exact": true,
+      "corrected_raw_exact": true,
+      "corrected_clean_exact": true
+    }
+  ],
+  "eligible_pairs": 19,
+  "eligible_exact_id_pairs": 11,
+  "eligible_corrected_raw_exact": 11,
+  "eligible_corrected_clean_exact": 14,
+  "full_model_real_scan_qualified": false,
+  "limits": [
+    "Decoder-only execution on frozen streams; it does not run or qualify repaired whole-model inference.",
+    "One failed encoded-image proof remains excluded, visible and pending.",
+    "Eight meaningful/coordinate token differences require separate model attribution; equal clean strings do not waive raw-ID differences."
+  ]
+}

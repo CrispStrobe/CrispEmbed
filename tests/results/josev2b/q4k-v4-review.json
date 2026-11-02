@@ -1,0 +1,521 @@
+{
+  "schema": "crispembed-josev-q4k-v4-independent-review-v1",
+  "source": "9c475d0dac70264adc123a63b6c1827b4b7280d5",
+  "provider": "Kaggle CPU",
+  "version_label": "v4",
+  "completed": true,
+  "strict_f32_control_passed": true,
+  "q4_structural_passed": true,
+  "q4_strict_numeric_passed": false,
+  "q4_old_task_passed": false,
+  "publication_qualified": false,
+  "authenticated_service": {
+    "status": "COMPLETE",
+    "submitted_script_sha256": "ac58da259a8e9b1149d2e1e6f3e7d2acb2c323ed3f0c4a417b1cc3d254fa6eb4",
+    "explicit_version_on_get_status_and_all_pages": true,
+    "pages": 20
+  },
+  "source_and_payload_checks": {
+    "original251_payloads_authenticated_by_worker": true,
+    "coordinator_raw_payloads_downloaded": false,
+    "all442_semantic_shapes_preserved": true,
+    "physical_rank_changes": [
+      {
+        "name": "head.residual_scorer.3.weight",
+        "semantic_shape": [
+          512,
+          1
+        ],
+        "source_storage_rank": 2,
+        "output_storage_rank": 1
+      }
+    ],
+    "all292_protected_f32_hashes_exact": true,
+    "all150_actual_q4_k_storage_records": true,
+    "ordinary_observer_repeat_raw_equal": true,
+    "all_actual_ref_independent_metrics_agree": true,
+    "production_observer_excluded": true
+  },
+  "model": {
+    "source": {
+      "repo": "cstr/Josev-2B-SystemOne-GGUF",
+      "revision": "bffe62522f826b4c33f2e731d5b870ced5150a17",
+      "filename": "josev2b-systemone-f32.gguf",
+      "bytes": 7659180448,
+      "sha256": "72684e39d0eed526b40c5150c78b2d881d324c39e16af48060b3d741f526ccf2",
+      "download_verified": true
+    },
+    "candidate_bytes": 2944520672,
+    "candidate_sha256": "717f0283d9839d4b277e0591f50c7c3b75bbecad3c1cb7d3ecaeda99213640ef",
+    "q4_k_tensors": 150,
+    "protected_f32_tensors": 292
+  },
+  "metrics": {
+    "f32": {
+      "stages": 227,
+      "strict_passed": 227,
+      "strict_rejected": 0,
+      "max_absolute": 0.0009555816650390625,
+      "cases": [
+        {
+          "id": "mixed-de",
+          "actual_ref": {
+            "exit_code": 0,
+            "status": "passed",
+            "stages": 68,
+            "all_metrics_agree": true
+          },
+          "strict_rejected_stages": 0,
+          "first_failing_stage": null,
+          "final_norm": {
+            "max_absolute": 0.0009555816650390625,
+            "rms": 2.0970816324741356e-05,
+            "min_row_cosine": 0.9999999973224394,
+            "global_cosine_derived_from_reported_moments": 0.9999999999821697,
+            "original_range": [
+              -81.09320831298828,
+              63.28386688232422
+            ],
+            "native_range": [
+              -81.09324645996094,
+              63.2838020324707
+            ]
+          },
+          "complete_typed_response_exact": true
+        },
+        {
+          "id": "null-and-options",
+          "actual_ref": {
+            "exit_code": 0,
+            "status": "passed",
+            "stages": 59,
+            "all_metrics_agree": true
+          },
+          "strict_rejected_stages": 0,
+          "first_failing_stage": null,
+          "final_norm": {
+            "max_absolute": 0.0003726482391357422,
+            "rms": 1.982444203094221e-05,
+            "min_row_cosine": 0.999999999585002,
+            "global_cosine_derived_from_reported_moments": 0.9999999999836359,
+            "original_range": [
+              -81.09320068359375,
+              57.082332611083984
+            ],
+            "native_range": [
+              -81.09324645996094,
+              57.08232498168945
+            ]
+          },
+          "complete_typed_response_exact": true
+        },
+        {
+          "id": "json-unicode",
+          "actual_ref": {
+            "exit_code": 0,
+            "status": "passed",
+            "stages": 50,
+            "all_metrics_agree": true
+          },
+          "strict_rejected_stages": 0,
+          "first_failing_stage": null,
+          "final_norm": {
+            "max_absolute": 0.0004248619079589844,
+            "rms": 1.6928764734582826e-05,
+            "min_row_cosine": 0.9999999999206876,
+            "global_cosine_derived_from_reported_moments": 0.9999999999881762,
+            "original_range": [
+              -81.09323120117188,
+              57.08232498168945
+            ],
+            "native_range": [
+              -81.09324645996094,
+              57.08232498168945
+            ]
+          },
+          "complete_typed_response_exact": true
+        },
+        {
+          "id": "state-only-clip",
+          "actual_ref": {
+            "exit_code": 0,
+            "status": "passed",
+            "stages": 50,
+            "all_metrics_agree": true
+          },
+          "strict_rejected_stages": 0,
+          "first_failing_stage": null,
+          "final_norm": {
+            "max_absolute": 0.0003528594970703125,
+            "rms": 1.0319618741192136e-05,
+            "min_row_cosine": 0.9999999999235741,
+            "global_cosine_derived_from_reported_moments": 0.9999999999957239,
+            "original_range": [
+              -81.09320068359375,
+              57.22168731689453
+            ],
+            "native_range": [
+              -81.09324645996094,
+              57.22169876098633
+            ]
+          },
+          "complete_typed_response_exact": true
+        }
+      ]
+    },
+    "q4k": {
+      "stages": 227,
+      "strict_passed": 24,
+      "strict_rejected": 203,
+      "max_absolute": 30.492124557495117,
+      "cases": [
+        {
+          "id": "mixed-de",
+          "actual_ref": {
+            "exit_code": 1,
+            "status": "numeric_rejection",
+            "stages": 68,
+            "all_metrics_agree": true
+          },
+          "strict_rejected_stages": 58,
+          "first_failing_stage": {
+            "stage": "backbone/layer/0",
+            "occurrence": 0,
+            "shape": [
+              1,
+              319,
+              2048
+            ],
+            "elements": 653312,
+            "max_absolute": 0.11352658271789551,
+            "mean_absolute": 0.004732915131510311,
+            "mean_error": -5.772806419312227e-05,
+            "rms": 0.006275396097639561,
+            "min_row_cosine": 0.9817858695701351,
+            "original_l2": 35.480506801691064,
+            "native_l2": 35.82647797237732,
+            "bit_exact": false,
+            "original_min": -1.9278165102005005,
+            "original_max": 0.40275126695632935,
+            "original_abs_min": 2.60770320892334e-08,
+            "original_abs_max": 1.9278165102005005,
+            "native_min": -1.9340534210205078,
+            "native_max": 0.4024040102958679,
+            "native_abs_min": 6.868503987789154e-09,
+            "native_abs_max": 1.9340534210205078,
+            "passed": false
+          },
+          "final_norm": {
+            "max_absolute": 18.599241495132446,
+            "rms": 1.0985461556388503,
+            "min_row_cosine": 0.6107429578651258,
+            "global_cosine_derived_from_reported_moments": 0.9510625272116867,
+            "original_range": [
+              -81.09320831298828,
+              63.28386688232422
+            ],
+            "native_range": [
+              -71.03978729248047,
+              62.8463020324707
+            ]
+          },
+          "complete_typed_response_exact": false
+        },
+        {
+          "id": "null-and-options",
+          "actual_ref": {
+            "exit_code": 1,
+            "status": "numeric_rejection",
+            "stages": 59,
+            "all_metrics_agree": true
+          },
+          "strict_rejected_stages": 53,
+          "first_failing_stage": {
+            "stage": "backbone/layer/0",
+            "occurrence": 0,
+            "shape": [
+              1,
+              197,
+              2048
+            ],
+            "elements": 403456,
+            "max_absolute": 0.16507887840270996,
+            "mean_absolute": 0.004801983173905599,
+            "mean_error": -4.654490312282697e-05,
+            "rms": 0.00636332395600215,
+            "min_row_cosine": 0.9825869465525214,
+            "original_l2": 27.863440395575594,
+            "native_l2": 28.13177740919527,
+            "bit_exact": false,
+            "original_min": -1.8961217403411865,
+            "original_max": 0.4027511477470398,
+            "original_abs_min": 8.89413058757782e-08,
+            "original_abs_max": 1.8961217403411865,
+            "native_min": -2.012148857116699,
+            "native_max": 0.4024040102958679,
+            "native_abs_min": 3.5390257835388184e-08,
+            "native_abs_max": 2.012148857116699,
+            "passed": false
+          },
+          "final_norm": {
+            "max_absolute": 20.826555252075195,
+            "rms": 1.1506121498837547,
+            "min_row_cosine": 0.6001795054178957,
+            "global_cosine_derived_from_reported_moments": 0.9447415514603973,
+            "original_range": [
+              -81.09320068359375,
+              57.082332611083984
+            ],
+            "native_range": [
+              -71.03978729248047,
+              54.67950439453125
+            ]
+          },
+          "complete_typed_response_exact": false
+        },
+        {
+          "id": "json-unicode",
+          "actual_ref": {
+            "exit_code": 1,
+            "status": "numeric_rejection",
+            "stages": 50,
+            "all_metrics_agree": true
+          },
+          "strict_rejected_stages": 46,
+          "first_failing_stage": {
+            "stage": "backbone/layer/0",
+            "occurrence": 0,
+            "shape": [
+              1,
+              165,
+              2048
+            ],
+            "elements": 337920,
+            "max_absolute": 0.11352694034576416,
+            "mean_absolute": 0.0048083022626936546,
+            "mean_error": -4.1446113526949996e-05,
+            "rms": 0.006370163594361847,
+            "min_row_cosine": 0.9823977423689865,
+            "original_l2": 25.325275871644624,
+            "native_l2": 25.549104612138382,
+            "bit_exact": false,
+            "original_min": -1.8655524253845215,
+            "original_max": 0.4067792594432831,
+            "original_abs_min": 1.0035000741481781e-07,
+            "original_abs_max": 1.8655524253845215,
+            "native_min": -1.913649320602417,
+            "native_max": 0.4269541800022125,
+            "native_abs_min": 3.5390257835388184e-08,
+            "native_abs_max": 1.913649320602417,
+            "passed": false
+          },
+          "final_norm": {
+            "max_absolute": 30.492124557495117,
+            "rms": 1.236484440302784,
+            "min_row_cosine": 0.6107432902691472,
+            "global_cosine_derived_from_reported_moments": 0.936734089353367,
+            "original_range": [
+              -81.09323120117188,
+              57.08232498168945
+            ],
+            "native_range": [
+              -71.03978729248047,
+              54.67950439453125
+            ]
+          },
+          "complete_typed_response_exact": false
+        },
+        {
+          "id": "state-only-clip",
+          "actual_ref": {
+            "exit_code": 1,
+            "status": "numeric_rejection",
+            "stages": 50,
+            "all_metrics_agree": true
+          },
+          "strict_rejected_stages": 46,
+          "first_failing_stage": {
+            "stage": "backbone/layer/0",
+            "occurrence": 0,
+            "shape": [
+              1,
+              512,
+              2048
+            ],
+            "elements": 1048576,
+            "max_absolute": 0.14023280143737793,
+            "mean_absolute": 0.004989229175855606,
+            "mean_error": -0.0001188598224611398,
+            "rms": 0.006663711536327585,
+            "min_row_cosine": 0.9805937238245536,
+            "original_l2": 51.349913386510174,
+            "native_l2": 52.06999807247294,
+            "bit_exact": false,
+            "original_min": -1.8655526638031006,
+            "original_max": 0.40275102853775024,
+            "original_abs_min": 5.21540641784668e-08,
+            "original_abs_max": 1.8655526638031006,
+            "native_min": -1.913649320602417,
+            "native_max": 0.4024040102958679,
+            "native_abs_min": 2.3283064365386963e-08,
+            "native_abs_max": 1.913649320602417,
+            "passed": false
+          },
+          "final_norm": {
+            "max_absolute": 18.59932017326355,
+            "rms": 0.9895138538990591,
+            "min_row_cosine": 0.6107428283303702,
+            "global_cosine_derived_from_reported_moments": 0.9605949683101389,
+            "original_range": [
+              -81.09320068359375,
+              57.22168731689453
+            ],
+            "native_range": [
+              -71.03978729248047,
+              56.4958610534668
+            ]
+          },
+          "complete_typed_response_exact": false
+        }
+      ]
+    }
+  },
+  "typed": {
+    "discrete_argmax_equal": 5,
+    "total_discrete_fields": 5,
+    "ordinal_errors": [
+      {
+        "original": 1.2168480455875397,
+        "native": 1.2641047835350037,
+        "absolute_error": 0.04725673794746399,
+        "budget": 0.001,
+        "passed": false
+      },
+      {
+        "original": 0.8277701437473297,
+        "native": 0.8388368487358093,
+        "absolute_error": 0.011066704988479614,
+        "budget": 0.001,
+        "passed": false
+      }
+    ],
+    "old_ordinal_budget": 0.001
+  },
+  "measurements": {
+    "f32": {
+      "plain": {
+        "exit": 0,
+        "termination_signal": null,
+        "timed_out": false,
+        "seconds": 113.66180188299995,
+        "maximum_rss_kib": 5948140,
+        "maximum_rss_bytes": 6090895360,
+        "resource_accounting": "linux-wait4-per-child",
+        "direct_child_pid": 2137,
+        "reaped": true,
+        "log": "f32-plain.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "observed": {
+        "exit": 0,
+        "termination_signal": null,
+        "timed_out": false,
+        "seconds": 116.04221551800003,
+        "maximum_rss_kib": 5943760,
+        "maximum_rss_bytes": 6086410240,
+        "resource_accounting": "linux-wait4-per-child",
+        "direct_child_pid": 2139,
+        "reaped": true,
+        "log": "f32-observed.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "repeat": {
+        "exit": 0,
+        "termination_signal": null,
+        "timed_out": false,
+        "seconds": 110.86884086099997,
+        "maximum_rss_kib": 5944064,
+        "maximum_rss_bytes": 6086721536,
+        "resource_accounting": "linux-wait4-per-child",
+        "direct_child_pid": 2141,
+        "reaped": true,
+        "log": "f32-repeat.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "q4k": {
+      "plain": {
+        "exit": 0,
+        "termination_signal": null,
+        "timed_out": false,
+        "seconds": 95.74091404299998,
+        "maximum_rss_kib": 1496140,
+        "maximum_rss_bytes": 1532047360,
+        "resource_accounting": "linux-wait4-per-child",
+        "direct_child_pid": 2152,
+        "reaped": true,
+        "log": "q4k-plain.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "observed": {
+        "exit": 0,
+        "termination_signal": null,
+        "timed_out": false,
+        "seconds": 92.91172889600011,
+        "maximum_rss_kib": 1496248,
+        "maximum_rss_bytes": 1532157952,
+        "resource_accounting": "linux-wait4-per-child",
+        "direct_child_pid": 2154,
+        "reaped": true,
+        "log": "q4k-observed.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "repeat": {
+        "exit": 0,
+        "termination_signal": null,
+        "timed_out": false,
+        "seconds": 93.00557825399983,
+        "maximum_rss_kib": 1496172,
+        "maximum_rss_bytes": 1532080128,
+        "resource_accounting": "linux-wait4-per-child",
+        "direct_child_pid": 2156,
+        "reaped": true,
+        "log": "q4k-repeat.log",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    },
+    "scope": "Fresh child processing the same four requests; includes model load/trace work; not a broad warm inference benchmark."
+  },
+  "small_reports": {
+    "hosted.json": {
+      "bytes": 236745,
+      "sha256": "ed499b74081a00bdea0cdc65a11dfae266f59022447b9a9e56daba4fcd02b526"
+    },
+    "conversion.json": {
+      "bytes": 198032,
+      "sha256": "52117b233bf7cc5258c56a9f3f85cc8dc9ecd63c39d7a41745b46271b78968b7"
+    },
+    "f32-panel.json": {
+      "bytes": 374334,
+      "sha256": "01844276e46d5787836e91126b7fb8ade385885101796fb097c22f3080c69ef6"
+    },
+    "q4k-panel.json": {
+      "bytes": 376719,
+      "sha256": "c544d9c30b7fc9ede8c1396db2479a6b25bfa2c9dec227195f13ef33c9f4b164"
+    },
+    "f32-typed.json": {
+      "bytes": 7086,
+      "sha256": "ffc39e2c644a229d29a585e74ab07e2cb03601f51fe045c3110cb57a2e81af93"
+    },
+    "q4k-typed.json": {
+      "bytes": 7096,
+      "sha256": "d4a5e45e6adb2a46f536c94d85335ac3f290441cf2f41e8913fff7e29790d4cd"
+    }
+  },
+  "limits": [
+    "203 strict Q4 stage negatives remain; original budgets unchanged",
+    "Global norm cosines derive from authenticated reported moments, not local raw-array recomputation",
+    "Five unchanged discrete choices do not qualify task quality; both ordinal fields fail",
+    "No NEW20 native outputs/selection/publication; role-based A/B/C frozen separately before holdout"
+  ]
+}

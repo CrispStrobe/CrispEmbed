@@ -1,0 +1,20 @@
+Error in sitecustomize; set PYTHONVERBOSE for traceback:
+ModuleNotFoundError: No module named 'wrapt'
+test_interrupted_parent_wait_still_kills_and_reaps (__main__.Controls.test_interrupted_parent_wait_still_kills_and_reaps) ... ok
+test_nonzero_and_signal_exit (__main__.Controls.test_nonzero_and_signal_exit) ... ok
+test_success_and_actual_per_child_rss_units (__main__.Controls.test_success_and_actual_per_child_rss_units) ... ok
+test_timeout_kills_process_group_and_reaps_child (__main__.Controls.test_timeout_kills_process_group_and_reaps_child) ... ERROR
+test_timeout_validation_and_separate_stdout (__main__.Controls.test_timeout_validation_and_separate_stdout) ... ok
+
+======================================================================
+ERROR: test_timeout_kills_process_group_and_reaps_child (__main__.Controls.test_timeout_kills_process_group_and_reaps_child)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/kaggle/temp/crispembed-josev-q4k/source/tests/test_ci_process.py", line 47, in test_timeout_kills_process_group_and_reaps_child
+    descendant=int((self.root/'timeout.log').read_text().strip().splitlines()[-1])
+ValueError: invalid literal for int() with base 10: "ModuleNotFoundError: No module named 'wrapt'"
+
+----------------------------------------------------------------------
+Ran 5 tests in 1.215s
+
+FAILED (errors=1)

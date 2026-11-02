@@ -598,3 +598,24 @@ outside this lane. Do not infer weight permission from a public repository.
 This anchor is retained for older links. Its dated commands/status snapshots
 are archived in HISTORY. Use [the29 October handoff](docs/handoff-2026-10-29.md)
 for current sources, jobs and exact next actions; do not repeat completed runs.
+
+### Portfolio Q4_K/Q8 branch (PR89) open items
+
+Q8 admission source is being prepared on `feat/portfolio-q8-profiles-20261029`:
+Josev gets an explicitly named `crispembed-josev-packed-mixed-v2` profile;
+header7 requires actual Q8_0 and no Q4_K, while legacy Q4 requires real Q4_K.
+UltraBERT uses the same storage/header consistency. The existing quantization
+gates remain mandatory. A bounded `--metadata-string KEY=VALUE` C-quantizer
+option replaces existing STRING keys before header layout, enabling genuine
+profile stamps without ad hoc byte-length patches. Numeric or unknown metadata
+keys reject before output creation. Actual compiler/metadata fixtures and the
+original-bound Q8 tensor/intermediate/decoded panels still gate qualification.
+
+The default-off MoEdern Q8 runtime and source-bound component caller are
+integrated in the portfolio feature branch. All eight MoEdern runtime/profile
+stdlib controls pass there. The caller's separate frozen whole-SRC assertion
+correctly rejects this combined tree: its immutable1f source differs only in
+UltraBERT's later UINT32 file-type admission check. The reviewed actual fixture
+runs on exactdd592, not the integrated tree; no assertion or source gate was
+weakened to claim combined-source qualification. Final source declarations and
+actual composite/runtime/platform gates remain required.

@@ -1,0 +1,94 @@
+{
+  "schema": "crispembed-ocr-rgb-input-v1",
+  "status": "source-prepared-not-dispatched",
+  "production_source": "492c99c253879338f6f87b1074125767e00e44f4",
+  "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+  "pages": 20,
+  "model_execution": false,
+  "model_qualified": false,
+  "cause_established": false,
+  "normalization_changed": false,
+  "compile_profile": [
+    "-O3",
+    "-DNDEBUG",
+    "-fPIC",
+    "-mavx2",
+    "-mfma",
+    "-mf16c",
+    "-std=gnu++17"
+  ],
+  "compile_profile_basis": {
+    "source": "CMakeLists.txt:148-180 crispembed_apply_arch_flags; pinned ggml CMakeLists.txt:145-171 instruction defaults",
+    "build_type": "Release",
+    "CRISPEMBED_NATIVE": false,
+    "GGML_NATIVE": false,
+    "GGML_AVX2": true,
+    "GGML_FMA": true,
+    "GGML_F16C": true,
+    "GGML_AVX512": false,
+    "CMAKE_POSITION_INDEPENDENT_CODE": true,
+    "historical_compiler_binary_identity_asserted": false
+  },
+  "manifest": {
+    "path": "docs/ocr-real-scans-v1.json",
+    "bytes": 75543,
+    "sha256": "0857bffc6f4a3616292db255d7f3f34c0b58a52a7286a2791cb00b77499c7700"
+  },
+  "stb_header": {
+    "path": "ggml/examples/stb_image.h",
+    "version": "2.28",
+    "bytes": 284733,
+    "sha256": "38e08c1c5ab8869ae8d605ddaefa85ad3fea24a2964fd63a099c0c0f79c70bcc",
+    "git_blob": "5e807a0a6e7cdbfbbf48dff5f5d3f3693c2bc851",
+    "url": "https://github.com/CrispStrobe/ggml/blob/a06fc0bb46b73cc10011fc90ae4054aee8438aeb/examples/stb_image.h"
+  },
+  "production_prefix_sha256": "55c7878f690fe51fb544bddd76110c90cdb8ea49f8fa8593ff7813ce208d47e7",
+  "native_path": {
+    "implementation": "src/image_preprocess.cpp:7-9",
+    "call": "examples/cli/main.cpp:2203",
+    "rgb_channels": 3,
+    "exif_transpose": false,
+    "resize": false
+  },
+  "original_path": {
+    "minicpm": "tools/kaggle/ocr-real-scans/ref_worker.py:67",
+    "unlimited": {
+      "repository": "baidu/Unlimited-OCR-2",
+      "revision": "04647c7a6098d8d58915f003536a741c82eafb40",
+      "path": "modeling_unlimitedocr.py",
+      "bytes": 55724,
+      "git_blob": "2a717b55c0509995978d0a1e78802a997c26660e",
+      "sha256": "f6df813cef23cc28b1daca40fd8cb20740d05a238e7b9dfa2334531fdcf39f1f",
+      "url": "https://huggingface.co/baidu/Unlimited-OCR-2/blob/04647c7a6098d8d58915f003536a741c82eafb40/modeling_unlimitedocr.py#L1070",
+      "scope": "infer path directly uses Image.open(...).convert(RGB); load_image helper with EXIF transpose is not called there."
+    },
+    "pillow": "11.3.0",
+    "historical_wheel_or_libjpeg_identity_asserted": false
+  },
+  "source_sha256": {
+    ".github/workflows/ocr-rgb-input-audit-v1.yml": "534dcd6c652ac55db47b077e8861ab897813465539eeeed064e2d913be2ca7de",
+    ".gitmodules": "7342d895b5441ebc28e387cb3686aa93207dfc23852bb7b2a3ce15add7fa7f45",
+    "CMakeLists.txt": "15c9e7b3c9e7b0871c0f731a3b1957f92dd5c11350d915aab8ab35eba02dd296",
+    "docs/ocr-real-scans-v1.json": "0857bffc6f4a3616292db255d7f3f34c0b58a52a7286a2791cb00b77499c7700",
+    "docs/ocr-rgb-input-v1.md": "73f8ea4be417539eeb6af748982ed78aea98e740c56db086f38dba10f59cb600",
+    "docs/unlimited-ocr2-source.json": "73b311d5e834a789190e0c5426a2f4431f028cdf8650b9debde0cf8705a0ae59",
+    "examples/cli/main.cpp": "6d4e9ab857f038651e1355cb8c6aa507f4e33f8664ffe1e6cf95c20b251484d4",
+    "src/core/clean_exit.h": "2528210865cfc6aa8f2a389526aebae46e836f6bca88c00e4eabaedf6c83fdd6",
+    "src/core/json.h": "7e72a6359897e9397e5bee3edf7563476fc4bd41516bf5245a16df50dc54c589",
+    "src/image_preprocess.cpp": "ee570badb7c3fff550dcc113a3efb4aeb8555acf297ffad80c072aaa8fa1ee38",
+    "src/image_preprocess.h": "2739104748629e824b0dcbdf1fc60eb7d185e7d2b7153f61ae8a7832e3382e61",
+    "src/minicpm_ocr.cpp": "ae0f08f314e245edbf1186a2443b657d59a385ee26a254fe3b4c6622e13067b6",
+    "src/scan_cleanup.h": "f783fa4ad588c1f84495d64ec6336922827b47ab2cc6814ab3c3bac2e9422a1d",
+    "src/unlimited_ocr.cpp": "57df29c381a9438667c9dae87b61ece42e5c4be29001966db6608de7434cdac5",
+    "tests/ocr-rgb-input/CMakeLists.txt": "0adb5b7eaf1bb15be3e20f21c1cd711db29359fabc068161aa5fd01df1a438be",
+    "tests/ocr-rgb-input/probe.cpp": "2f45e5a050e3d5ef19bd9d49c2dcd317f6fa7bc90433339a40cdf156b8070e32",
+    "tests/test_ocr_rgb_input.py": "954d44674999b2abbccf016b1cd25cda70fb8e60d2041183ef1ecec86ed5990a",
+    "tools/ci_process.py": "f482067438e5d5cec00436f4c54c3636e0b8cf886620feaed4ea8e0ab4e6eed9",
+    "tools/kaggle/ocr-real-scans/kernel.py": "69490dd1ff7b0c35b3dd08a34096d2e426e0c1b84ce89bcf6799730aa27e582f",
+    "tools/kaggle/ocr-real-scans/ref_worker.py": "dc6bdf811ab03935dcacbea7a5bb817574760cdfc4ddc5953a6ab6331225f390",
+    "tools/ocr-rgb-input/audit.py": "8ce37ab914e6672c5ca4cf378329d3463d1c75f3494f77d1db80aa5b4b59acd7",
+    "tools/ocr-rgb-input/contract.py": "c10f63467b0dbdf69c6357234fc64e80e3d0b3a631896b6379f1e9edc2bd456c",
+    "tools/ocr-rgb-input/metrics.py": "32ef47d4b351406f9be1b81e0f120bb75b7d44eee67dfef8745b09289c767510",
+    "tools/ocr-rgb-input/requirements.lock": "03af756700d200aca6023e38dc86393b15fb19726bd50d76be46b6924e9d79a4"
+  }
+}
