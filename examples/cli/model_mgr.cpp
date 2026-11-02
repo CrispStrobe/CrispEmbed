@@ -1235,9 +1235,23 @@ static const ModelEntry k_registry[] = {
       "Nomic Embed Vision v1.5 (ViT-B/16, 92M; same space as nomic-embed-text-v1.5)", "188 MB", "apache-2.0",
       "https://huggingface.co/nomic-ai/nomic-embed-vision-v1.5" },
 
-    { "clip-text-base", "clip-text-base-q4_k-imatrix.gguf",
+    // Q4_K+imatrix with attn.v and block 0 at Q8_0: min cosine 0.9878 / mean 0.9953
+    // against CLIPModel.get_text_features over the 78-text below-bar panel
+    // (tests/results/below-bar/). Supersedes clip-text-base-q4_k.gguf (audit 0.933).
+    { "clip-text-base", "clip-text-base-q4_k-mixed.gguf",
+      "https://huggingface.co/cstr/clip-text-base-GGUF/resolve/3d52b12727aaf324445fe22a543f954ee4f0b419/"
+      "clip-text-base-q4_k-mixed.gguf",
+      "CLIP text encoder base (63M, 512d, Q4_K mixed: attn.v + block 0 Q8_0)", "51 MB", "mit",
+      "https://huggingface.co/openai/clip-vit-base-patch16" },
+    { "clip-text-base-q4k", "clip-text-base-q4_k-mixed.gguf",
+      "https://huggingface.co/cstr/clip-text-base-GGUF/resolve/3d52b12727aaf324445fe22a543f954ee4f0b419/"
+      "clip-text-base-q4_k-mixed.gguf",
+      "CLIP text encoder base (Q4_K mixed: attn.v + block 0 Q8_0)", "51 MB", "mit",
+      "https://huggingface.co/openai/clip-vit-base-patch16" },
+    // Previous default, kept pinned: 0.963 vs the original after the EOS truncation fix.
+    { "clip-text-base-q4k-imatrix", "clip-text-base-q4_k-imatrix.gguf",
       "https://huggingface.co/cstr/clip-text-base-GGUF/resolve/main/clip-text-base-q4_k-imatrix.gguf",
-      "CLIP text encoder base (63M, 512d, Q4_K+imatrix)", "50 MB", "mit",
+      "CLIP text encoder base (Q4_K+imatrix, previous default)", "50 MB", "mit",
       "https://huggingface.co/openai/clip-vit-base-patch16" },
     { "clip-text-base-iq4xs", "clip-text-base-iq4_xs.gguf",
       "https://huggingface.co/cstr/clip-text-base-GGUF/resolve/main/clip-text-base-iq4_xs.gguf",

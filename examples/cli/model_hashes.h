@@ -352,6 +352,8 @@ static const ModelHash k_model_hashes[] = {
       "2136aa3932047d4103151283192170acbbc33d8e8325bc06f5497a071704d617" },
     { "https://huggingface.co/cstr/nomic-embed-vision-v1.5-GGUF/resolve/33579f20a5d69eaecebc6f5e56175af6b2594b67/nomic-embed-vision-v1.5-f16.gguf",
       "71cd6bc821b5402dc2d468ec4d45a88a71fef28b51eac640b3ae40cd88fb5d28" },
+    { "https://huggingface.co/cstr/clip-text-base-GGUF/resolve/3d52b12727aaf324445fe22a543f954ee4f0b419/clip-text-base-q4_k-mixed.gguf",
+      "523284f2dc6ef0daf9e3f68f024a6f18b019b58714c77cab87e2d4cb2128f695" },
     { "https://huggingface.co/cstr/clip-text-base-GGUF/resolve/main/clip-text-base-q4_k-imatrix.gguf",
       "a908771c611d96332bbf45281c30f7dd1f41592f1ba361a6af4a54c81b325d2e" },
     { "https://huggingface.co/cstr/clip-text-base-GGUF/resolve/main/clip-text-base-iq4_xs.gguf",

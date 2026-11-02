@@ -746,7 +746,10 @@ MODELS = {
         "desc": "CLIP ViT-B/16 text tower for text-to-image retrieval.",
         # Lineage of the 2026-11-02 below-bar repair (tests/results/below-bar/).
         "revisions": [
-            {"date": "2026-11-02", "file": "clip-text-base-q4_k-mixed.gguf",
+            {"date": "2026-11-02", "commit": "3d52b12727aaf324445fe22a543f954ee4f0b419",
+             "file": "clip-text-base-q4_k-mixed.gguf",
+             "sha256": "523284f2dc6ef0daf9e3f68f024a6f18b019b58714c77cab87e2d4cb2128f695",
+             "min_cos": 0.9878, "mean_cos": 0.9953,
              "recipe": "q4_k+imatrix; attn.v, enc.0 q8_0",
              "supersedes": {"clip-text-base-q4_k.gguf": 0.933}},
         ],
