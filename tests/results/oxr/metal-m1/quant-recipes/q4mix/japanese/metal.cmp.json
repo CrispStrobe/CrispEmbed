@@ -1,0 +1,1 @@
+{"label": "japanese/metal", "ids_exact": true, "first_divergence": null, "reference_tokens": 38, "native_tokens": 38, "text_exact": true, "cer": 0.0, "eos": true, "capped": false, "runs_ms": [7105.288166], "warm_ms_median": 7105.288166, "load_ms": 58178.245875, "runs_identical": true}

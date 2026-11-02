@@ -16,6 +16,30 @@ run 2's bge-m3 had no heads (Ollama format), its Surya job used the DBNet loader
 its punctuation jobs fed whole-page TrOCR text. EasyOCR's CUDA/CPU difference traced
 to the x86 CPU arm dropping lines (CUDA = Metal = M1 CPU = Python per stage).
 
+## 1 November 2026 — OXR-1.0 and D-FINE on Metal (feat/metal-oxr)
+
+* Defects: (1) OXR's PREC_F32 flash-attention nodes were refused by ggml-metal and run on the
+  CPU in every layer; GPU contexts now lower attention to F32 dense GPU products
+  (`CRISPEMBED_OXR_GPU_FLASH`, `_FLASH_CPU` keep the alternatives). (2) ggml-metal's default
+  mul_mm stages both operands as half: D-FINE on Metal failed 4/5 pages (german box 836 px);
+  D-FINE GPU graphs now request PREC_F32 (`CRISPEMBED_OXR_LAYOUT_GPU_PREC_F32=0` restores).
+  (3) PREC_F32 products ran on mat-vec kernels (~90 GFLOP/s on M1); ggml patch
+  `GGML_METAL_PREC_F32_MM` routes them to the F32-tile `_hp` mul_mm (1100-1600 GFLOP/s).
+* OXR F16 Metal: token-exact 5/5, logits within 1.1e-4 of CPU, ~3-10x faster warm; default
+  on Apple for the F16 recipe (CPU stays default elsewhere; `CRISPEMBED_OXR_GPU=0` opts out).
+* D-FINE F32 Metal: region-exact 5/5 with the `_hp` route, closer to PyTorch than CPU, 2.1-2.2x
+  faster than CPU in the same window; now the Apple default (`CRISPEMBED_OXR_LAYOUT_GPU=0` opts out).
+* D-FINE F16: the 147 px "failure" was a positional pairing of two near-tied regions; paired by
+  IoU all regions match, cosine 1.0; PyTorch's own F16 rounding moves boxes <= 0.5 px (probe
+  41327140374). Passes the owner F16 bar; strict budgets still fail (retained).
+* Quantized (owner bars): OXR Q8_0 + Q8_0 large tables + F16 vision 1.93 GB, min logits cos
+  0.9977 (pass); Q4_K head mixes pass (0.9979 / 0.9751); Q4_K LLM layers fail (0.896, 0.915).
+  D-FINE Q8_0 with F16/F32 convs passes; conv-quantized Q8_0 and all Q4_K fail.
+* Follow-up: CPU `CRISPEMBED_OXR_DEQUANT_VISION=1` makes Q8_0-everything token-exact 5/5 (41340880860);
+  CUDA T4 F16 now token-exact 5/5 with the dense GPU attention (German fixed), quantized 4/5;
+  Metal quantized recipes 4/5 with logits cos >= 0.9995; heron GPU default now PREC_F32 + `_hp`
+  (regions equal CPU 5/5; half tiles had added a German region).
+* Kaggle account name scrubbed from HISTORY (secret scan).
 ## 1 November 2026 — Metal GPU audit of every engine (feat/metal-audit)
 
 `docs/gpu-support-matrix.md` inventories backend selection, Metal status, gates and
@@ -32,6 +56,21 @@ tri-state; 4.2x, max 1/255); new default-off gates `CRISPEMBED_INSTRUCTIR_GPU`
 CPU-only controls ran on hosted CPU (run 41327259125). Initial harness failures
 (truncated TrOCR download, flat-OCR CLI needing `-m`, PNG compare bug) are kept in
 `ocr_batch.run1.log`.
+## 1 November 2026 — MI-GAN Metal path (feat/metal-migan)
+
+Gated `CRISPEMBED_MIGAN_GPU` whole-graph execution through
+`crispasr_init_gpu_backend()`, persistent graphs, opt-in tile batching, a Metal
+left-padding rewrite, `PAD_K` (zero-padded contraction routes precise F32 1x1
+convs to `mul_mm_hp`) and the `migan-pointwise-v1` quantizer/loader policy.
+M1 results on the eight frozen fixtures: Metal F32 0/1896 strict failures,
+original composites reproduced (5/8 exact, min 89.9 dB); owner bars pass for
+F32/F16/Q8_0 on CPU and Metal and fail for Q4_K (initial failure retained).
+The first quantized Metal/CPU attempt was rejected by the F32-activation check
+(views of quantized weights); fixed in `e7514050`, initial rc=2 logs retained in
+the session. Hosted CPU lane 41327638027 passes all steps; the local
+test-inpaint FIPS two-block input typo (also red in run 41282563344) is fixed.
+A monolithic queued job waited 7.5 h on the shared GPU lock and was replaced by
+per-variant/per-fixture lock calls plus a hosted CPU lane. GPU default stays off.
 
 ## 1 November 2026 — OXR-1.0 D-FINE layout detector native in layout_detect
 
@@ -48,6 +87,36 @@ equal on 5/5 pages and all arms; earliest stage over the 5e-3 budget
 yardstick favours native on 55-56/56 stages; API contract and heron identity
 pass; F16 rejected (147 px box on receipt); native 2.6x slower than PyTorch CPU.
 Lineage: no bit-equal public tensors; nearest D-FINE-M Objects365 (cosine 0.95/0.93/0.94).
+
+## 1 November 2026 — OXR-1.0 on CUDA (Kaggle T4): German page diverges at every precision
+
+Kernel `${KAGGLE_ACCOUNT}/crispembed-oxr-gpu-variants` v1 at `44533d44` ([report](tests/results/oxr/kaggle-cuda-t4/report.json)),
+CRISPEMBED_OXR_GPU=1 on a Tesla T4, compared with the original model's committed token IDs:
+the published F16 is exact on formula, table, Japanese and receipt but diverges on the German page
+at token 87 (exact on CPU); Q8_0 is exact on four and diverges on German at token 55; Q4_K diverges
+on formula (token 0), table (197) and German (55). F16 being CPU-exact but CUDA-divergent points at
+GPU-kernel precision (accumulation, flash attention or softmax), not weights. CUDA OXR stays
+default-off and unqualified.
+
+## 1 November 2026 — MinerU2.5-Pro on CUDA (Kaggle T4), all eight cases
+
+Kernel v2 at `9f3cfa2c` ([report](tests/results/mineru25/kaggle-cuda-t4-v2/report.json)), Tesla T4:
+F32, F16 and Q8_0 (F16 vision, the published recipe) decode the pinned original's token IDs exactly
+on all eight protocol cases. Plain Q4_K diverges on German (token 3) and Arabic (token 4); Q4_K with
+a Q8_0 decoder (1.33 GB) and Q4_K with an F16 decoder (1.79 GB) are exact on seven of eight and
+diverge only on the layout page at token 180. The earlier v1 kernel's 9 h stall was the runner's
+unread stdout/stderr pipes (fixed in `9f3cfa2c`), not Kaggle or the model.
+
+## 1 November 2026 — MI-GAN inpainting CLI (issue 71) runs the real model on hosted Linux
+
+Hosted [41283805545](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41283805545) at `bba9de64`
+(`tools/ci-heavy/inpaint_smoke.sh`; [receipt](tests/results/migan/inpaint-cli-41283805545/results.txt)):
+Python contracts, build, native image/contract controls, CLI controls, exact reproduction of the
+reviewed 25 MB MI-GAN256 model from its pinned sources and the production CLI's synthetic
+real-model smoke all pass. Initial [41282563344](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41282563344)
+failed one control because the delivered "FIPS two-block" SHA-256 vector was 53 bytes instead of
+56; the implementation matched hashlib at every padding boundary, so only the test changed.
+Smoke only: no subtitle/video quality, seam or flicker claim; CPU/F32 only so far.
 
 ## 1 November 2026 — MinerU2.5-Pro on CUDA (Kaggle T4): every precision token-exact on three cases
 

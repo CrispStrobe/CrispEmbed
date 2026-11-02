@@ -68,12 +68,40 @@
       "precision_dtype": "f16"
     },
     "Q8_0": {
+      "filename": "oxr-1.0-q8_0-llm-only.gguf",
+      "from": "F32",
+      "type": "q8_0",
+      "note": "LLM attention/MLP matrices Q8_0; SigLIP2 vision tower F16; all other tensors F32 (crispembed-quantize OXR policy) \u2014 token-ID gate: German page diverges (receipt q8_0-cpu); not published",
+      "precision_receipt": "tests/results/oxr/precision.json",
+      "precision_dtype": "q8_0"
+    },
+    "Q8_0-LARGE": {
       "filename": "oxr-1.0-q8_0.gguf",
       "from": "F32",
       "type": "q8_0",
-      "note": "LLM attention/MLP matrices Q8_0; SigLIP2 vision tower F16; all other tensors F32 (crispembed-quantize OXR policy) — rejected: German page diverges (receipt q8_0-cpu)",
-      "precision_receipt": "tests/results/oxr/precision.json",
-      "precision_dtype": "q8_0"
+      "quantize_env": {
+        "CRISPEMBED_QUANTIZE_OXR_LARGE": "q8_0",
+        "CRISPEMBED_QUANTIZE_OXR_VISION": "f16"
+      },
+      "note": "LLM matrices plus embeddings, lm_head and visual tables Q8_0; SigLIP2 vision tower F16; norms F32. Clears the Q8_0 final-logit cosine bar (> 0.97) on all five cases; the German page differs late (CER 1.1%).",
+      "precision_receipt": "tests/results/oxr/precision-cosine.json",
+      "precision_dtype": "q8_0-large",
+      "precision_tier": "q8_0",
+      "precision_gate": "cosine"
+    },
+    "Q4_K-HEAD": {
+      "filename": "oxr-1.0-q4_k-head.gguf",
+      "from": "F32",
+      "type": "q8_0",
+      "quantize_env": {
+        "CRISPEMBED_QUANTIZE_OXR_LARGE": "mix",
+        "CRISPEMBED_QUANTIZE_OXR_VISION": "f16"
+      },
+      "note": "Mixed recipe after fusor-rs/oxr-wasm (MIT): visual head Q4_K, LLM matrices/embeddings/lm_head Q8_0, SigLIP2 vision tower F16. Clears the Q4_K bar (> 0.94) on all five cases.",
+      "precision_receipt": "tests/results/oxr/precision-cosine.json",
+      "precision_dtype": "q4_k-head",
+      "precision_tier": "q4_k",
+      "precision_gate": "cosine"
     }
   },
   "receipts": {

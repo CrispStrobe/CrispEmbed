@@ -8,6 +8,7 @@
 #include "core/gguf_loader.h"
 #include "core/gpu_backend_pref.h"
 #include "core/nfc.h"
+#include "core/split_f16_matmul.h"
 #include "core/token_utf8.h"
 #include "ggml-backend.h"
 #include "ggml-cpu.h"
@@ -15,9 +16,11 @@
 #include "gguf.h"
 
 #include <algorithm>
+#include <chrono>
 #include <array>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <memory>
 #include <numeric>
@@ -28,7 +31,12 @@
 #include <utility>
 #include <vector>
 
+// Attention lowering on a GPU backend (CPU contexts always use `none`, i.e.
+// the original flash/dense selection by CRISPEMBED_OXR_FLASH_ATTN).
+enum class gpu_attention_mode { none, dense, flash_half };
+
 struct oxr_ocr_context {
+    gpu_attention_mode gpu_attention = gpu_attention_mode::none, gpu_vision_attention = gpu_attention_mode::none;
     core_gguf::WeightLoad weights;
     ggml_backend_t backend = nullptr, cpu = nullptr;
     ggml_backend_sched_t sched = nullptr;
@@ -65,13 +73,30 @@ struct oxr_ocr_context {
     }
 };
 
+#ifndef OXR_AUTO_METAL
+#if defined(__APPLE__)
+#define OXR_AUTO_METAL 1
+#else
+#define OXR_AUTO_METAL 0
+#endif
+#endif
+
 namespace {
-constexpr int graph_nodes = 8192;
+constexpr int graph_nodes = 16384;
 constexpr int vdim = 1152, vheads = 16, vhead_dim = 72, vlayers = 27;
 constexpr int dim = 1024, layers = 28, heads = 16, kv_heads = 8, head_dim = 128;
 // The converter stores the source prefix "visual_tokenizer.vit.vision_model." as
 // "vit." (GGML_MAX_NAME) and records it in oxr.vision_tensor_prefix.
 constexpr const char * vision = "vit.";
+
+// CRISPEMBED_OXR_TIMING=1 (diagnostic): per-stage wall times on stderr.
+bool timing_on() {
+    static const bool on = core_env::on("CRISPEMBED_OXR_TIMING");
+    return on;
+}
+double now_ms() {
+    return std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now().time_since_epoch()).count();
+}
 
 struct observation {
     std::string name;
@@ -130,9 +155,29 @@ ggml_tensor * weight(oxr_ocr_context & c, const std::string & key) {
     if (it == c.weights.tensors.end()) throw std::runtime_error("OXR missing tensor: " + key);
     return it->second;
 }
+// GPU-only opt-in (CRISPEMBED_OXR_GPU_F16_HALF_ACT=1): leave F16-weight
+// products at the backend default precision. On Metal that is the half-tile
+// mul_mm (activations rounded to F16, F32 accumulation), the same activation
+// rounding as the CPU F16 vec_dot; PREC_F32 (_hp, F32 tiles) stays for every
+// F32/quantized weight. Set per loaded context in load().
+bool g_f16_half_act = false;
+// GPU-only opt-in (CRISPEMBED_OXR_GPU_SPLIT_F16=1): F32/F16 products as hi/lo
+// half-kernel terms (core/split_f16_matmul.h) instead of the slow PREC_F32
+// _hp kernel. Quantized weights keep PREC_F32 (the half kernel would round
+// their dequantized values to F16).
+bool g_split_f16 = false;
+// Opt-in CRISPEMBED_OXR_DEQUANT_VISION=1: quantized SigLIP2 (vit.*) weights are
+// cast to F32 inside the graph before their product, so the CPU backend does not
+// quantize the vision activations to Q8_0/Q8_K blocks (its vec_dot path). Hosted
+// Q8_0-vision runs collapsed vision.layer.26 to cosine 0.55 on the German page
+// while Metal's F32-activation _hp route kept 0.88 row-min and decoded exactly.
+bool g_dequant_vision = false;
 ggml_tensor * mm(ggml_context * g, ggml_tensor * w, ggml_tensor * x) {
+    if (g_dequant_vision && ggml_is_quantized(w->type) && std::strncmp(w->name, "vit.", 4) == 0)
+        w = ggml_cast(g, w, GGML_TYPE_F32); // CPU dup supports quantized -> F32 only
+    if (g_split_f16 && (w->type == GGML_TYPE_F32 || w->type == GGML_TYPE_F16)) return core_split_f16::mul_mat(g, w, x);
     auto * out = ggml_mul_mat(g, w, x);
-    ggml_mul_mat_set_prec(out, GGML_PREC_F32);
+    if (!(g_f16_half_act && w->type == GGML_TYPE_F16)) ggml_mul_mat_set_prec(out, GGML_PREC_F32);
     return out;
 }
 ggml_tensor * linear(graph & g, ggml_tensor * x, const std::string & base, bool bias) {
@@ -159,9 +204,10 @@ std::vector<float> read(ggml_tensor * t) {
     return data;
 }
 
-void validate_tensors(oxr_ocr_context & c, const std::string & recipe) {
+void validate_tensors(oxr_ocr_context & c, const std::string & recipe, bool quantized_large) {
     size_t count = 0;
-    auto check = [&](const std::string & name, std::initializer_list<int64_t> hf_shape, bool sensitive) {
+    auto check = [&](const std::string & name, std::initializer_list<int64_t> hf_shape, bool sensitive,
+                     bool large = false) {
         auto * t = weight(c, name);
         const std::vector<int64_t> shape(hf_shape);
         for (int i = 0; i < 4; ++i) {
@@ -171,16 +217,19 @@ void validate_tensors(oxr_ocr_context & c, const std::string & recipe) {
         const ggml_type expected_type = sensitive || recipe == "f32" ? GGML_TYPE_F32 : GGML_TYPE_F16;
         // crispembed-quantize changes only these attention/MLP matrices (all used
         // through ggml_mul_mat); sensitive tensors must keep their recipe type.
-        const bool quantized_matrix = !sensitive && (ggml_is_quantized(t->type) || t->type == GGML_TYPE_F16);
+        const bool quantized_matrix =
+            (!sensitive || (large && quantized_large)) && (ggml_is_quantized(t->type) || t->type == GGML_TYPE_F16);
         if (t->type != expected_type && !quantized_matrix)
             throw std::runtime_error("OXR incompatible tensor precision: " + name);
         ++count;
     };
-    check("llm.model.embed_tokens.weight", { 151936, 1024 }, true);
-    check("llm.lm_head.weight", { 151936, 1024 }, true);
+    // The four large tables may be quantized only by the explicit opt-in
+    // policy that records oxr.quantize.large (tools/quantize.cpp).
+    check("llm.model.embed_tokens.weight", { 151936, 1024 }, true, true);
+    check("llm.lm_head.weight", { 151936, 1024 }, true, true);
     check("llm.model.norm.weight", { 1024 }, true);
-    check("vte.weight", { 65536, 1024 }, true);
-    check("visual_tokenizer.head.0.weight", { 65532, 4608 }, true);
+    check("vte.weight", { 65536, 1024 }, true, true);
+    check("visual_tokenizer.head.0.weight", { 65532, 4608 }, true, true);
     check("visual_tokenizer.head.1.weight", { 65532 }, true);
     check("visual_tokenizer.head.1.bias", { 65532 }, true);
     check(std::string(vision) + "embeddings.patch_embedding.weight", { 1152, 3, 16, 16 }, true);
@@ -219,6 +268,21 @@ void validate_tensors(oxr_ocr_context & c, const std::string & recipe) {
     }
     if (count != 752 || c.weights.tensors.size() != count)
         throw std::runtime_error("OXR tensor inventory differs from pinned checkpoint");
+}
+
+// One row of the visual embedding table as F32, whatever its storage type.
+void vte_row(oxr_ocr_context & c, int row, float * out) {
+    auto * t = weight(c, "vte.weight");
+    const size_t bytes = ggml_row_size(t->type, dim);
+    if (t->type == GGML_TYPE_F32) {
+        ggml_backend_tensor_get(t, out, size_t(row) * bytes, bytes);
+        return;
+    }
+    std::vector<uint8_t> raw(bytes);
+    ggml_backend_tensor_get(t, raw.data(), size_t(row) * bytes, bytes);
+    const auto * traits = ggml_get_type_traits(t->type);
+    if (!traits || !traits->to_float) throw std::runtime_error("OXR vte storage type has no dequantizer");
+    traits->to_float(raw.data(), out, dim);
 }
 
 void load(oxr_ocr_context & c, const char * path) {
@@ -289,16 +353,64 @@ void load(oxr_ocr_context & c, const char * path) {
         if (!c.merge_rank.emplace(merges[i], int32_t(i)).second) throw std::runtime_error("OXR duplicate merge entry");
     c.flash = !core_env::explicitly_off("CRISPEMBED_OXR_FLASH_ATTN");
     c.reuse_decode = core_env::on("CRISPEMBED_OXR_REUSE_DECODE_GRAPH");
-    c.backend = core_env::on("CRISPEMBED_OXR_GPU") && !core_env::on("CRISPEMBED_OXR_FORCE_CPU")
-                    ? crispasr_init_gpu_backend()
-                    : ggml_backend_cpu_init();
+    // Backend. CRISPEMBED_OXR_GPU=1 forces the GPU, =0 (or CRISPEMBED_OXR_FORCE_CPU=1)
+    // the CPU. Unset = auto: Metal for the qualified F16 recipe (token-exact on the
+    // five reference cases, tests/results/oxr/metal-m1/), CPU otherwise.
+    bool want_gpu = core_env::on("CRISPEMBED_OXR_GPU");
+    bool auto_gpu = false;
+    if (!want_gpu && !core_env::explicitly_off("CRISPEMBED_OXR_GPU") && recipe == "f16-f32-sensitive") {
+        bool quantized = false;
+        for (int64_t i = 0; i < gguf_get_n_tensors(meta.get()); ++i)
+            quantized = quantized || ggml_is_quantized(gguf_get_tensor_type(meta.get(), i));
+        auto_gpu = !quantized && OXR_AUTO_METAL;
+    }
+    if (core_env::on("CRISPEMBED_OXR_FORCE_CPU")) want_gpu = auto_gpu = false;
+    c.backend = want_gpu || auto_gpu ? crispasr_init_gpu_backend() : ggml_backend_cpu_init();
+    if (auto_gpu && c.backend && std::string(ggml_backend_name(c.backend)).find("MTL") == std::string::npos &&
+        std::string(ggml_backend_name(c.backend)).find("Metal") == std::string::npos) {
+        ggml_backend_free(c.backend); // auto mode qualifies Metal only
+        c.backend = ggml_backend_cpu_init();
+    }
+    if (!c.backend && auto_gpu) c.backend = ggml_backend_cpu_init(); // no GPU compiled/available
     if (!c.backend) throw std::runtime_error("OXR backend initialization failed");
+    // ggml-metal PREC_F32 products with >8 rows: the F32-tile _hp mul_mm instead of
+    // mat-vec kernels (ggml patch, GGML_METAL_PREC_F32_MM). Default on for OXR GPU
+    // contexts; CRISPEMBED_OXR_GPU_HP_MM=0 keeps the mat-vec route. Process-wide:
+    // the ggml knob is read once; an explicit GGML_METAL_PREC_F32_MM wins.
+    if (!ggml_backend_is_cpu(c.backend) && !core_env::explicitly_off("CRISPEMBED_OXR_GPU_HP_MM")) {
+#ifdef _WIN32
+        if (!std::getenv("GGML_METAL_PREC_F32_MM")) _putenv_s("GGML_METAL_PREC_F32_MM", "1");
+#else
+        setenv("GGML_METAL_PREC_F32_MM", "1", 0);
+#endif
+    }
+    // GPU attention: F32 dense on the GPU by default. CRISPEMBED_OXR_GPU_FLASH=1
+    // uses the backend's native flash kernel (Metal stages Q as half);
+    // CRISPEMBED_OXR_GPU_FLASH_CPU=1 restores the original PREC_F32 flash node,
+    // which the scheduler runs on the CPU in every layer.
+    if (!ggml_backend_is_cpu(c.backend)) {
+        c.gpu_attention = core_env::on("CRISPEMBED_OXR_GPU_FLASH_CPU") ? gpu_attention_mode::none
+                          : core_env::on("CRISPEMBED_OXR_GPU_FLASH")   ? gpu_attention_mode::flash_half
+                                                                       : gpu_attention_mode::dense;
+        // Non-flash lowering reads an F32 mask; flash_half keeps F16.
+        if (c.gpu_attention == gpu_attention_mode::dense) c.flash = false;
+        // The unmasked vision tower may choose separately:
+        // CRISPEMBED_OXR_GPU_VISION_FLASH=1 native flash, =0 dense F32.
+        c.gpu_vision_attention = core_env::on("CRISPEMBED_OXR_GPU_VISION_FLASH") ? gpu_attention_mode::flash_half
+                                 : core_env::explicitly_off("CRISPEMBED_OXR_GPU_VISION_FLASH")
+                                     ? gpu_attention_mode::dense
+                                     : c.gpu_attention;
+    }
+    g_f16_half_act = !ggml_backend_is_cpu(c.backend) && core_env::on("CRISPEMBED_OXR_GPU_F16_HALF_ACT");
+    g_split_f16 = !ggml_backend_is_cpu(c.backend) && core_env::on("CRISPEMBED_OXR_GPU_SPLIT_F16");
+    g_dequant_vision = core_env::on("CRISPEMBED_OXR_DEQUANT_VISION");
     c.cpu = ggml_backend_is_cpu(c.backend) ? c.backend : ggml_backend_cpu_init();
     if (!c.cpu) throw std::runtime_error("OXR CPU fallback initialization failed");
     ggml_backend_cpu_set_n_threads(c.cpu, c.threads);
     if (!core_gguf::load_weights(path, c.backend, "oxr", c.weights))
         throw std::runtime_error("OXR GGUF weight loading failed");
-    validate_tensors(c, recipe);
+    const std::string large_policy = str("oxr.quantize.large");
+    validate_tensors(c, recipe, large_policy == "q8_0" || large_policy == "mix");
     c.position_table = read(weight(c, std::string(vision) + "embeddings.position_embedding.weight"));
     ggml_backend_t backends[] = { c.backend, c.cpu };
     c.sched = ggml_backend_sched_new(backends, nullptr, c.backend == c.cpu ? 1 : 2, graph_nodes, false, false);
@@ -307,16 +419,38 @@ void load(oxr_ocr_context & c, const char * path) {
     // matrix in GGML order. A merely transposed RHS violates CPU mul_mat's
     // contiguous-element stride contract. Transpose once per resident model,
     // retaining a 256MiB F32 buffer instead of redoing it for every image/chunk.
+    //
+    // A quantized vte.weight (opt-in oxr.quantize.large policy) is dequantized
+    // and transposed on the host. CRISPEMBED_OXR_VTE_Q8=1 (opt-in) stores the
+    // transposed table as Q8_0 (68 MiB instead of 256 MiB), so the probability
+    // mixture runs as one quantized matrix product (fusor-rs/oxr-wasm, MIT).
+    auto * vte = weight(c, "vte.weight");
+    const bool vte_q8 = core_env::on("CRISPEMBED_OXR_VTE_Q8");
     c.vte_ctx = ggml_init({ ggml_tensor_overhead() + 1024, nullptr, true });
     if (!c.vte_ctx) throw std::runtime_error("OXR visual embedding metadata allocation failed");
-    c.vte_transposed = ggml_new_tensor_2d(c.vte_ctx, GGML_TYPE_F32, oxr_profile::visual_vocab, dim);
+    c.vte_transposed =
+        ggml_new_tensor_2d(c.vte_ctx, vte_q8 ? GGML_TYPE_Q8_0 : GGML_TYPE_F32, oxr_profile::visual_vocab, dim);
     c.vte_buffer = ggml_backend_alloc_ctx_tensors(c.vte_ctx, c.backend);
     if (!c.vte_buffer) throw std::runtime_error("OXR visual embedding transpose allocation failed");
-    graph transpose(c);
-    auto * copy = ggml_cpy(transpose.ctx, ggml_transpose(transpose.ctx, weight(c, "vte.weight")), c.vte_transposed);
-    transpose.output(copy);
-    transpose.allocate();
-    transpose.compute();
+    if (vte->type == GGML_TYPE_F32 && !vte_q8) {
+        graph transpose(c);
+        auto * copy = ggml_cpy(transpose.ctx, ggml_transpose(transpose.ctx, vte), c.vte_transposed);
+        transpose.output(copy);
+        transpose.allocate();
+        transpose.compute();
+    } else {
+        const size_t rows = size_t(oxr_profile::visual_vocab);
+        std::vector<float> table(rows * dim), transposed(table.size());
+        for (size_t r = 0; r < rows; ++r) vte_row(c, int(r), table.data() + r * dim);
+        for (size_t r = 0; r < rows; ++r)
+            for (size_t d = 0; d < size_t(dim); ++d) transposed[d * rows + r] = table[r * dim + d];
+        if (vte_q8) {
+            std::vector<uint8_t> q(ggml_nbytes(c.vte_transposed));
+            ggml_quantize_chunk(GGML_TYPE_Q8_0, transposed.data(), q.data(), 0, dim, int64_t(rows), nullptr);
+            set(c.vte_transposed, q.data(), q.size());
+        } else
+            set(c.vte_transposed, transposed.data(), transposed.size() * sizeof(float));
+    }
 }
 
 std::vector<int32_t> tokenize(oxr_ocr_context & c, const std::string & raw) {
@@ -342,9 +476,45 @@ std::vector<int32_t> tokenize(oxr_ocr_context & c, const std::string & raw) {
     return result;
 }
 
+// GPU attention without CPU round-trips. ggml-metal refuses a PREC_F32
+// flash_attn_ext (its tiles stage Q as half), so on a GPU backend the F32 flash
+// node is scheduled onto the CPU in every layer. This path keeps attention on
+// the GPU in F32: scores via PREC_F32 mul_mat (Metal _hp kernel / F32 mul_mv),
+// F32 softmax, and grouped KV heads by mul_mat broadcasting (q head h reads kv
+// head h / (nh / nkv), the HF repeat_kv order) instead of materialized repeats.
+// Long queries are split into blocks so a 3600-patch page never holds a
+// [tk, tq, heads] score matrix at once.
+ggml_tensor * attention_gpu_dense(graph & g, ggml_tensor * q, ggml_tensor * k, ggml_tensor * v, ggml_tensor * mask,
+                                  int hd, int nh, int tq, float scale) {
+    constexpr int block = 1024;
+    auto * vt = ggml_cont(g.ctx, ggml_permute(g.ctx, v, 1, 0, 2, 3)); // [tk, hd, nkv]
+    ggml_tensor * out = nullptr;
+    for (int start = 0; start < tq; start += block) {
+        const int rows = std::min(block, tq - start);
+        auto * qb =
+            tq <= block ? q : ggml_view_3d(g.ctx, q, hd, rows, nh, q->nb[1], q->nb[2], size_t(start) * q->nb[1]);
+        auto * mb = mask;
+        if (mask && tq > block)
+            mb = ggml_view_2d(g.ctx, mask, mask->ne[0], rows, mask->nb[1], size_t(start) * mask->nb[1]);
+        auto * scores = mm(g.ctx, k, qb); // [tk, rows, nh]
+        scores = ggml_soft_max_ext(g.ctx, scores, mb, scale, 0.0f);
+        auto * o = mm(g.ctx, vt, scores); // [hd, rows, nh]
+        out = out ? ggml_concat(g.ctx, out, o, 1) : o;
+    }
+    out = ggml_cont(g.ctx, ggml_permute(g.ctx, out, 0, 2, 1, 3)); // [hd, nh, tq]
+    return ggml_reshape_2d(g.ctx, out, int64_t(hd) * nh, tq);
+}
+
 ggml_tensor * attention(graph & g, ggml_tensor * q, ggml_tensor * k, ggml_tensor * v, ggml_tensor * mask, int hd,
-                        int nh, int nkv, int tq, int tk) {
+                        int nh, int nkv, int tq, int tk, bool vision = false) {
     const float scale = 1.0f / std::sqrt(float(hd));
+    const auto mode = vision ? g.owner.gpu_vision_attention : g.owner.gpu_attention;
+    if (mode == gpu_attention_mode::dense) return attention_gpu_dense(g, q, k, v, mask, hd, nh, tq, scale);
+    if (mode == gpu_attention_mode::flash_half) {
+        // Opt-in: the backend's native flash kernel at its own precision.
+        auto * out = ggml_flash_attn_ext(g.ctx, q, k, v, mask, scale, 0.0f, 0.0f);
+        return ggml_reshape_2d(g.ctx, out, int64_t(hd) * nh, tq);
+    }
     if (g.owner.flash) {
         auto * out = ggml_flash_attn_ext(g.ctx, q, k, v, mask, scale, 0.0f, 0.0f);
         ggml_flash_attn_ext_set_prec(out, GGML_PREC_F32);
@@ -437,7 +607,7 @@ std::vector<float> encode_vision(oxr_ocr_context & c, const oxr_profile::image_i
             k = ggml_cont(g.ctx, ggml_permute(g.ctx, k, 0, 2, 1, 3));
             v = ggml_cont(g.ctx, ggml_permute(g.ctx, v, 0, 2, 1, 3));
             // fullatt_block_indexes=null means FULL attention in every layer.
-            auto * attn = attention(g, q, k, v, nullptr, vhead_dim, vheads, vheads, n, n);
+            auto * attn = attention(g, q, k, v, nullptr, vhead_dim, vheads, vheads, n, n, true);
             x = ggml_add(g.ctx, residual, linear(g, attn, p + "self_attn.out_proj", true));
             residual = x;
             normalized = norm(g, x, p + "layer_norm2", 1e-6f, false);
@@ -679,11 +849,9 @@ void generate(oxr_ocr_context & c, const std::vector<float> & image_embeddings) 
         indices.resize(size_t(visual_count));
         std::iota(indices.begin(), indices.end(), first);
         visual.resize(size_t(visual_count) * dim);
-        ggml_backend_tensor_get(weight(c, "vte.weight"), visual.data(), size_t(65532) * dim * sizeof(float),
-                                dim * sizeof(float));
+        vte_row(c, 65532, visual.data());
         std::copy(image_embeddings.begin(), image_embeddings.end(), visual.begin() + dim);
-        ggml_backend_tensor_get(weight(c, "vte.weight"), visual.data() + size_t(visual_count - 1) * dim,
-                                size_t(65533) * dim * sizeof(float), dim * sizeof(float));
+        vte_row(c, 65533, visual.data() + size_t(visual_count - 1) * dim);
     }
     allocate_cache(c, prompt_length + c.effective_max_tokens);
     std::vector<float> logits;
@@ -694,7 +862,10 @@ void generate(oxr_ocr_context & c, const std::vector<float> & image_embeddings) 
             set(prefill.image_values, visual.data(), visual.size() * sizeof(float));
             set(prefill.image_indices, indices.data(), indices.size() * sizeof(int32_t));
         }
+        const double t0 = now_ms();
         prefill.owner->compute();
+        if (timing_on())
+            std::fprintf(stderr, "[oxr-timing] prefill %.1f ms (%d tokens)\n", now_ms() - t0, prompt_length);
         logits = read(prefill.logits);
     }
     std::vector<int32_t> history;
@@ -703,6 +874,8 @@ void generate(oxr_ocr_context & c, const std::vector<float> & image_embeddings) 
         for (int32_t id : c.prompt_ids) history.push_back(oxr_profile::vllm_penalty_id(id));
     }
     std::unique_ptr<decoder_graph> cached;
+    const double decode_started = now_ms();
+    double build_ms = 0.0, compute_ms = 0.0;
     for (int step = 0; step < c.effective_max_tokens; ++step) {
         oxr_profile::repetition_penalty(logits, history, c.repetition_penalty);
         if (std::any_of(logits.begin(), logits.end(), [](float x) { return !std::isfinite(x); }))
@@ -724,6 +897,7 @@ void generate(oxr_ocr_context & c, const std::vector<float> & image_embeddings) 
         const int past = prompt_length + step;
         const int extent = c.reuse_decode ? std::min(c.cache_capacity, ((past + 1 + 255) / 256) * 256) : past + 1;
         bool fresh = true;
+        const double tb = now_ms();
         if (c.reuse_decode && cached && cached->keys == extent)
             fresh = false;
         else {
@@ -732,9 +906,15 @@ void generate(oxr_ocr_context & c, const std::vector<float> & image_embeddings) 
             cached = std::make_unique<decoder_graph>(build_decoder(c, 1, past, extent, 0, false));
         }
         decoder_inputs(*cached, { id }, past, fresh, c.hf_generation ? &c.prompt_ids : nullptr);
+        const double tc = now_ms();
         cached->owner->compute();
+        build_ms += tc - tb;
+        compute_ms += now_ms() - tc;
         logits = read(cached->logits);
     }
+    if (timing_on() && c.completion_ids.size() > 1)
+        std::fprintf(stderr, "[oxr-timing] decode %.1f ms for %zu tokens (graph build+inputs %.1f, compute %.1f)\n",
+                     now_ms() - decode_started, c.completion_ids.size() - 1, build_ms, compute_ms);
     std::string raw, filtered;
     for (int32_t id : c.completion_ids) {
         // Tokenizers' decoder silently drops the checkpoint's unused output
@@ -864,7 +1044,11 @@ const char * oxr_ocr_recognize_raw(oxr_ocr_context * c, const uint8_t * px, int 
             auto prepared = oxr_profile::preprocess(px, w, h, ch, c->min_pixels, c->max_pixels);
             std::copy(std::begin(prepared.grid), std::end(prepared.grid), std::begin(c->grid));
             prepare_request(*c, prepared.grid[1] * prepared.grid[2] / 4);
+            const double t0 = now_ms();
             visual = encode_vision(*c, prepared);
+            if (timing_on())
+                std::fprintf(stderr, "[oxr-timing] vision+vocabulary %.1f ms (%d merged tokens)\n", now_ms() - t0,
+                             prepared.grid[1] * prepared.grid[2] / 4);
         } else if (w != 0 || h != 0 || ch != 0)
             throw std::invalid_argument("OXR text-only request requires zero image dimensions");
         else

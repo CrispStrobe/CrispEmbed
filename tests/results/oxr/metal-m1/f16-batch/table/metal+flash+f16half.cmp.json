@@ -1,0 +1,1 @@
+{"label": "table/metal+flash+f16half", "ids_exact": true, "first_divergence": null, "reference_tokens": 261, "native_tokens": 261, "text_exact": true, "cer": 0.0, "eos": true, "capped": false, "runs_ms": [15893.926208, 17178.525459], "warm_ms_median": 17178.525459, "load_ms": 214650.050041, "runs_identical": true}

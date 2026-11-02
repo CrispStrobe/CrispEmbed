@@ -65,7 +65,7 @@ struct path_less {
 };
 
 struct options {
-    std::string model, image, mask, output, list, directory, mask_directory, output_directory, text_model;
+    std::string model, image, mask, output, list, directory, mask_directory, output_directory, text_model, gpu_backend;
     int threads = 1;
     int dilation = -1; // 3 for text masks; 0 for supplied masks.
     bool from_text = false;
@@ -141,7 +141,8 @@ bool parse(int argc, char ** argv, options & opt, std::string & error) {
         }
         const std::set<std::string> values{ "--inpaint-model",   "--inpaint",     "--mask",        "--inpaint-output",
                                             "--inpaint-list",    "--inpaint-dir", "--mask-dir",    "--output-dir",
-                                            "--mask-text-model", "--mask-region", "--mask-dilate", "--threads" };
+                                            "--mask-text-model", "--mask-region", "--mask-dilate", "--threads",
+                                            "--gpu-backend" };
         if (values.count(name) == 0) return fail(error, "unsupported inpainting option: " + name);
         if (i + 1 == argc || !*argv[i + 1] || std::strncmp(argv[i + 1], "--", 2) == 0)
             return fail(error, "missing value for " + name);
@@ -164,6 +165,8 @@ bool parse(int argc, char ** argv, options & opt, std::string & error) {
             opt.output_directory = value;
         else if (name == "--mask-text-model")
             opt.text_model = value;
+        else if (name == "--gpu-backend")
+            opt.gpu_backend = value;
         else if (name == "--mask-region") {
             if (!parse_region(value, opt.region)) return fail(error, "--mask-region must be x,y,w,h with positive w,h");
             opt.has_region = true;
@@ -541,8 +544,11 @@ int execute(const options & opt, std::string & error) {
             return 1;
         }
     }
+    if (!opt.gpu_backend.empty()) inpaint::set_gpu_backend(opt.gpu_backend.c_str());
     std::unique_ptr<inpaint::context, context_deleter> ctx(inpaint::init(opt.model.c_str(), opt.threads, error));
     if (!ctx) return 1;
+    std::fprintf(stderr, "inpaint: MI-GAN on %s (%s weights, %d tile(s) per graph)\n", inpaint::backend_name(ctx.get()),
+                 inpaint::weight_precision(ctx.get()), inpaint::max_batch(ctx.get()));
     if (!opt.directory.empty()) fs::create_directories(opt.output_directory);
 
     for (size_t index = 0; index < frames.size(); ++index) {
@@ -576,7 +582,7 @@ bool requested(int argc, char ** argv) {
 }
 
 void print_help(std::FILE * out) {
-    std::fprintf(out, "\nExperimental image inpainting (CRISPEMBED_MIGAN=1; CPU/F32 MI-GAN256):\n"
+    std::fprintf(out, "\nExperimental image inpainting (CRISPEMBED_MIGAN=1; MI-GAN256, CPU or GPU):\n"
                       "  --inpaint-model PATH     Reviewed MI-GAN256 F32 GGUF (see docs/inpainting-cli.md)\n"
                       "  --inpaint FILE           Inpaint one image; PNG goes to stdout by default\n"
                       "  --mask FILE              Same-size grayscale mask; values >=128 mean fill\n"
@@ -594,6 +600,8 @@ void print_help(std::FILE * out) {
                       "  --mask-dilate N          Expand mask by N pixels (0..256; default 3 text / 0 supplied)\n"
                       "  --inpaint-overwrite      Allow existing output files; inputs are always protected\n"
                       "  -t, --threads N          CPU threads (1..64; default 1)\n"
+                      "  --gpu-backend B          GPU backend preference (metal/cuda/vulkan/cpu); see\n"
+                      "                            CRISPEMBED_MIGAN_GPU in docs/migan-metal.md\n"
                       "  --inpaint-help           Show these options\n"
                       "  Images keep their dimensions and unmasked RGB bytes; batch frames are independent.\n");
 }

@@ -1,0 +1,1 @@
+{"label": "japanese/metal+flash+hpmm", "ids_exact": true, "first_divergence": null, "reference_tokens": 38, "native_tokens": 38, "text_exact": true, "cer": 0.0, "eos": true, "capped": false, "runs_ms": [3045.338166, 3070.381208], "warm_ms_median": 3070.381208, "load_ms": 225030.3655, "runs_identical": true}

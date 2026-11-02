@@ -123,8 +123,13 @@ def receipts(cfg, root=ROOT):
             "receipt_sha256": digest(path)}
 
 
+# Owner's acceptance bars (docs/precision-acceptance.md): minimum final-output cosine per tier.
+COSINE_BARS = {"f32": 0.99, "f16": 0.98, "q8_0": 0.97, "q4_k": 0.94}
+
+
 def precision(cfg, variant, root=ROOT):
-    """A recipe with a precision_receipt is publishable only if that receipt shows it token-ID exact."""
+    """A recipe with a precision_receipt is publishable only if that receipt passes its gate: every case token-ID
+    exact (default), or with "precision_gate": "cosine" every case's final_cos_min above the owner's bar."""
     rec = cfg["recipes"][variant]
     if "precision_receipt" not in rec:
         return None
@@ -133,13 +138,29 @@ def precision(cfg, variant, root=ROOT):
     r = json.loads(path.read_text())
     arms = [a for a in r.get("arms", []) if a.get("dtype") == rec["precision_dtype"]]
     require(arms, f"{variant} precision receipt has no {rec['precision_dtype']} arm")
+    gate = rec.get("precision_gate", "ids_exact")
+    require(gate in ("ids_exact", "cosine"), f"{variant} precision_gate must be ids_exact or cosine")
+    bar = COSINE_BARS.get(rec.get("precision_tier", rec["precision_dtype"]))
+    require(gate != "cosine" or bar is not None, f"{variant} has no cosine bar for its precision tier")
+    worst = 1.0
     for a in arms:
         ids = sorted(c["id"] for c in a.get("cases", []))
         require(ids == sorted(cfg["parity_cases"]), f"{variant} precision arm {a.get('name')} misses cases")
-        require(all(c.get("ids_exact") is True for c in a["cases"]),
-                f"{variant} is not token-ID exact in {rec['precision_receipt']} ({a.get('name')})")
-    return {"receipt": rec["precision_receipt"], "receipt_sha256": digest(path), "commit": r.get("commit"),
-            "arms": [a.get("name") for a in arms], "ids_exact": True}
+        if gate == "ids_exact":
+            require(all(c.get("ids_exact") is True for c in a["cases"]),
+                    f"{variant} is not token-ID exact in {rec['precision_receipt']} ({a.get('name')})")
+            continue
+        for c in a["cases"]:
+            cos = c.get("final_cos_min")
+            require(isinstance(cos, (int, float)), f"{variant} case {c['id']} has no final_cos_min")
+            require(cos > bar, f"{variant} case {c['id']} final cosine {cos} is not above the {bar} bar")
+            worst = min(worst, cos)
+    out = {"receipt": rec["precision_receipt"], "receipt_sha256": digest(path), "commit": r.get("commit"),
+           "arms": [a.get("name") for a in arms], "gate": gate,
+           "ids_exact": all(c.get("ids_exact") is True for a in arms for c in a["cases"])}
+    if gate == "cosine":
+        out.update(bar=bar, worst_final_cos=worst)
+    return out
 
 
 def plan(cfg, variants):
@@ -162,8 +183,13 @@ def plan(cfg, variants):
             steps.append(("convert", v, rec["filename"], rec["convert_args"]))
         else:
             tt = [a for o in rec.get("tensor_type", []) for a in ("--tensor-type", o)]
+            # Quantizer policy switches (e.g. CRISPEMBED_QUANTIZE_OXR_LARGE) travel as trailing NAME=value
+            # tokens; the workflow passes them as environment, never as quantizer arguments.
+            env = [f"{k}={val}" for k, val in sorted(rec.get("quantize_env", {}).items())]
+            require(all(re.fullmatch(r"CRISPEMBED_QUANTIZE_[A-Z0-9_]+=[a-z0-9_]+", e) for e in env),
+                    f"{v} quantize_env must be CRISPEMBED_QUANTIZE_* switches with plain values")
             steps.append(("quantize", v, rec["filename"],
-                          [cfg["recipes"][rec["from"]]["filename"], rec["type"], *tt, *rec.get("extra_args", [])]))
+                          [cfg["recipes"][rec["from"]]["filename"], rec["type"], *tt, *rec.get("extra_args", []), *env]))
     steps.sort(key=lambda s: s[0] != "convert")
     drop = [cfg["recipes"][v]["filename"] for v in cfg["recipes"] if v in needed and v not in variants]
     return steps, drop
@@ -195,9 +221,15 @@ def card(cfg, files, parity, prec, source_commit):
     cases = ", ".join(f"`{k}` ({n})" for k, n in parity["cases"].items())
     names = [f["variant"] for f in files]
     exact = [v for v in names if prec.get(v)]
-    reduced = ("" if not exact else "\n- " + "; ".join(
-        f"**{v}** is token-ID exact on the same {len(parity['cases'])} cases (receipt `{prec[v]['receipt']}`)"
-        for v in exact) + ".")
+
+    def claim(v):
+        q = prec[v]
+        if q.get("gate") == "cosine":
+            return (f"**{v}** clears the {q['bar']} final-logit cosine bar on the same {len(parity['cases'])} cases "
+                    f"(worst {q['worst_final_cos']:.4f}; token IDs {'exact' if q['ids_exact'] else 'not all exact'}; "
+                    f"receipt `{q['receipt']}`)")
+        return f"**{v}** is token-ID exact on the same {len(parity['cases'])} cases (receipt `{q['receipt']}`)"
+    reduced = "" if not exact else "\n- " + "; ".join(claim(v) for v in exact) + "."
     quantized = any(cfg["recipes"][v].get("type") for v in names)
     recipes = "\n".join(f"- **{v}**: {cfg['recipes'][v].get('note', 'see manifest.json')}" for v in names)
     first = files[0]["filename"]

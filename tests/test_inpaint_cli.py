@@ -286,7 +286,8 @@ class InpaintCliTests(unittest.TestCase):
 
     def test_manifest_paths_relative_to_manifest(self):
         manifest = self.root / "frames.tsv"
-        manifest.write_text("# Frames\r\nframe.png\tmask.png\tout one.png\r\nframe.png\tmask.png\tout two.png\n", encoding="utf-8")
+        # Exact bytes: text mode on Windows would turn the deliberate CRLF into CR CR LF.
+        manifest.write_bytes(b"# Frames\r\nframe.png\tmask.png\tout one.png\r\nframe.png\tmask.png\tout two.png\n")
         other = self.root / "elsewhere"
         other.mkdir()
         result = self.run_cli(["--inpaint-model", self.model_path, "--inpaint-list", manifest], cwd=other)

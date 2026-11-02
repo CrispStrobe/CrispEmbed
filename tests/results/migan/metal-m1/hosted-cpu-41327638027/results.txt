@@ -1,0 +1,14 @@
+configure=pass
+build=pass
+native-controls=pass
+prepare-model=pass
+quantize-f16=pass
+quantize-q8_0=pass
+quantize-q4_k=pass
+fixtures=pass
+device-ab=pass
+d5-checkout=pass
+d5-configure=pass
+d5-build=pass
+d5-graph-plain=pass
+d5-graph-kernels=pass

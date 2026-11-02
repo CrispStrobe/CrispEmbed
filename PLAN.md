@@ -164,6 +164,31 @@ not offer these models without the acknowledgement; Apache-2.0 replacements for
 GOT's tasks are MinerU2.5-Pro, FireRed-OCR, Uni-MuMER-Qwen3-VL-2B and PaddleOCR-VL.
 
 
+### OXR / D-FINE on Metal and precision recipes (feat/metal-oxr, 1 November 2026)
+
+Done (receipts `tests/results/oxr/metal-m1/`, `tests/results/oxr-dfine/metal-m1/`, hosted
+`tests/results/oxr*/hosted-413*`; details in docs/oxr.md "GPU: Metal" and docs/oxr-dfine.md):
+OXR F16 on Metal token-exact 5/5 and now the Apple default for that recipe; D-FINE F32 on
+Metal region-exact 5/5 (opt-in); ggml patch `GGML_METAL_PREC_F32_MM`; D-FINE F16 re-scored
+(passes the owner bar); OXR Q8_0 with quantized large tables (1.93 GB, F16 vision) passes;
+Q4_K-head mixed recipes pass; plain Q4_K LLM layers fail (table 0.896).
+
+Open, in order:
+
+1. Heron: done; GPU default now PREC_F32 + `_hp` (regions equal CPU 5/5). D-FINE is Metal by
+   default on Apple (region-exact 5/5, 2.1-2.2x CPU).
+2. OXR quantized: CPU `CRISPEMBED_OXR_DEQUANT_VISION=1` makes Q8_0-everything 5/5 token-exact
+   (41340880860); Metal five-case A/B done (Q8_0-large and Q4_K-head: 4/5, logits cos >= 0.9995 vs
+   Metal F16). Remaining German divergence comes from decode-step activation quantization
+   (integer mat-vec on every backend); an opt-in F32-activation decode path is the next A/B.
+   Publication decision for the qualifying recipes is the owner's (none made here).
+3. OXR F32 on Metal (needs a local F32 conversion; volume was below its free-space floor).
+4. CUDA: done on T4 (kernel v2): F16 5/5 token-exact with the new dense attention; Q8_0-large
+   and Q4_K-head 4/5 (German 55/209), logits cos >= 0.998 vs CUDA F16. CUDA quantized products
+   still quantize activations like the CPU; a CUDA analogue of the vision dequant gate is open.
+5. Dense GPU decode copies the whole V cache per layer per token (permute+cont); a
+   transposed-V cache would cut it. Flash is 1.85x faster on German but less close to CPU.
+
 ### OXR-1.0 native integration (31 October 2026)
 
 The isolated `feat/oxr-1.0` worktree retains the earlier MinerU integration and
@@ -204,6 +229,18 @@ Open, in order:
    pipeline on the same pages (JSON/Markdown), once the document-assembly lane lands.
 3. Optional: `class_confidences`, GPU backend qualification, Rust/Dart runtime tests.
 No publication, alias, merge into feat/teleocr, tag or default flip follows.
+
+**Native OXR document route (`feat/oxr-native-doc`, `CRISPEMBED_OXR_NATIVE_DOC=1`, default off).**
+The pinned helper's `process_pages`, minus the layout detector, is translated to C++
+([guide](docs/oxr.md#native-c-document-route-experimental-crispembed_oxr_native_doc1)).
+Local model-free parity on arm64 matches 2,801 helper checks and 60/60 scripted documents.
+The only differences are arm64-wheel `INTER_AREA` pixels
+([receipt](tests/results/oxr/native-doc-local-macos-arm64.json)). Open items:
+hosted x86-64 helpers/replay/native parity on the five original-D-FINE cases
+(`tools/ci-heavy/oxr_native_doc.sh`); Markdown-table output, table-image placeholders
+and `asset_dir` (rejected, not ported); and plugging the native D-FINE provider
+into `from_layout_detect` after `layout_detect::region` carries raw labels. Keep the route
+default-off until hosted parity holds on every case.
 
 The shared-operator audit additionally replaces MinerU-only QuickGELU's F16 LUT
 with explicit F32 math. Its linked operator check and full-model replay remain
@@ -378,6 +415,16 @@ outside this lane. Do not infer weight permission from a public repository.
   the new three-platform workflow and opt-in model smoke are prepared, not
   observed hosted results. This source delivery creates no model alias, runtime release, shared
   C ABI or downstream pin change; temporal/video and LaMa remain separate.
+- `feat/metal-migan` (1 November 2026): gated MI-GAN GPU/Metal path, `migan-pointwise-v1`
+  F16/Q8_0/Q4_K containers ([doc](docs/migan-metal.md)). Metal F32 exact on all eight
+  fixtures (0/1896 strict failures); `PAD_K` 284 ms vs CPU ~650 ms per tile on the M1.
+  Owner bars: F32/F16/Q8_0 pass on CPU and Metal; Q4_K fails (generated 0.9395,
+  masked 0.805). TODO: (1) finish the queued Q4_K sensitive-layer (`CRISPEMBED_QUANTIZE_MIGAN_Q8`)
+  and `DEQUANT_WEIGHTS` probes and rerun the eight-fixture panel for any candidate;
+  (2) run delivery-5's CPU-kernel graph on the M1 CPU; (3) reconcile with
+  `feat/issue71-five-engines-graphs` and only then flip GPU via `explicitly_off`
+  with `PAD_K`; (4) attribute the ~2x per-tile gap of 1080p frames vs isolated
+  calls; (5) CUDA/Vulkan untested.
 - Issue71 MI-GAN: fixed256 CPU/F32 prototype and494/eight-fixture audit are
   complete. Qualify the new CLI separately, then freeze licensed real subtitle/
   scene images and masks with perceptual/seam criteria. C ABI/orchestrator/server/

@@ -1649,6 +1649,23 @@ static const ModelEntry k_registry[] = {
       "MinerU2.5-Pro-2604 document parsing (1.2B, q8_0 decoder, f16 vision; gated CRISPEMBED_MINERU25_PRO, CPU)",
       "1.921 GB", "apache-2.0", "https://huggingface.co/cstr/MinerU2.5-Pro-2604-1.2B-GGUF" },
 
+    // OXR-1.0 (SoMark): OXR License = Apache-2.0 + USD 2M commercial thresholds, SoMark
+    // attribution for online services, no competing hosted API (licenses/oxr-LICENSE).
+    // Downloads need --accept-license oxr; loading needs CRISPEMBED_OXR=1 and
+    // CRISPEMBED_ACCEPT_OXR_LICENSE=1. F16 token-exact on five cases (tests/results/oxr/).
+    { "oxr-1.0-f16", "oxr-1.0-f16.gguf",
+      "https://huggingface.co/cstr/OXR-1.0-GGUF/resolve/f1e262e276349aa2647a85da6fc6326dd6aaf271/oxr-1.0-f16.gguf",
+      "OXR-1.0 document OCR / reading order (SigLIP2 + Qwen3 decoder, 1.4B, f16; OXR License; gated CRISPEMBED_OXR, "
+      "CPU)",
+      "4.441 GB", "oxr", "https://huggingface.co/cstr/OXR-1.0-GGUF" },
+    // OXR's D-FINE layout detector for layout_detect (layout.arch=dfine); same license and
+    // gates. F32 region-exact on five pages (tests/results/oxr-dfine/); F16 not published.
+    { "oxr-1.0-dfine-layout", "oxr-1.0-dfine-layout-f32.gguf",
+      "https://huggingface.co/cstr/OXR-1.0-DFINE-layout-GGUF/resolve/2f71550fab18580c09b2c48084922212343e3ebe/"
+      "oxr-1.0-dfine-layout-f32.gguf",
+      "OXR-1.0 D-FINE document layout detector (HGNetv2-B2, f32; OXR License; gated CRISPEMBED_OXR)", "78 MB", "oxr",
+      "https://huggingface.co/cstr/OXR-1.0-DFINE-layout-GGUF" },
+
     // License: GOT-OCR2's decoder is Qwen1.5-0.5B (config + weight lineage), so the Tongyi Qianwen
     // RESEARCH LICENSE applies: non-commercial, and no use of the model or its outputs to improve
     // other LLMs. Engine gate CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE=1.

@@ -1,0 +1,79 @@
+{
+ "schema": "crispembed.oxr.precision-score.v1",
+ "lane": "heavy-41332645597",
+ "bar": 0.94,
+ "min_final_logits_cos": 0.997975409031,
+ "pass": true,
+ "cases": {
+  "formula": {
+   "final_logits_cos": 0.999071717262,
+   "final_hidden_cos": 0.996322870255,
+   "worst_stage": [
+    "llm.layer.27",
+    0.99228978157
+   ],
+   "first_token_exact": true,
+   "ids_exact": true,
+   "text_exact": true,
+   "cer": 0.0,
+   "wer": 0.0,
+   "eos": true
+  },
+  "german": {
+   "final_logits_cos": 0.999563455582,
+   "final_hidden_cos": 0.989924252033,
+   "worst_stage": [
+    "llm.norm",
+    0.989924252033
+   ],
+   "first_token_exact": true,
+   "ids_exact": false,
+   "text_exact": false,
+   "cer": 0.02330293819655522,
+   "wer": 0.06060606060606061,
+   "eos": true
+  },
+  "japanese": {
+   "final_logits_cos": 0.998400688171,
+   "final_hidden_cos": 0.996135592461,
+   "worst_stage": [
+    "llm.layer.27",
+    0.995709478855
+   ],
+   "first_token_exact": true,
+   "ids_exact": true,
+   "text_exact": true,
+   "cer": 0.0,
+   "wer": 0.0,
+   "eos": true
+  },
+  "receipt": {
+   "final_logits_cos": 0.999728024006,
+   "final_hidden_cos": 0.992034435272,
+   "worst_stage": [
+    "llm.layer.27",
+    0.990596413612
+   ],
+   "first_token_exact": true,
+   "ids_exact": true,
+   "text_exact": true,
+   "cer": 0.0,
+   "wer": 0.0,
+   "eos": true
+  },
+  "table": {
+   "final_logits_cos": 0.997975409031,
+   "final_hidden_cos": 0.995907127857,
+   "worst_stage": [
+    "llm.layer.27",
+    0.995642006397
+   ],
+   "first_token_exact": true,
+   "ids_exact": true,
+   "text_exact": true,
+   "cer": 0.0,
+   "wer": 0.0,
+   "eos": true
+  }
+ }
+}

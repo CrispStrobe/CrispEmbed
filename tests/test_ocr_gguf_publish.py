@@ -142,6 +142,26 @@ class Receipts(unittest.TestCase):
         self.assertIsNone(p.precision(cfg, "F32", root))
 
 
+    def test_cosine_gate_uses_owner_bars(self):
+        cfg = cfg_of("teleocr")
+        rec = cfg["recipes"]["Q8_0"]
+        rec.update(precision_gate="cosine")
+        receipt = precision(cfg, ["q8_0"], broken="q8_0")  # one token flip
+        for c in receipt["arms"][0]["cases"]:
+            c["final_cos_min"] = 0.9988
+        root = fake_root(cfg, parity(cfg), receipt)
+        q = p.precision(cfg, "Q8_0", root)
+        self.assertEqual((q["gate"], q["bar"], q["ids_exact"]), ("cosine", 0.97, False))
+        receipt["arms"][0]["cases"][-1]["final_cos_min"] = 0.96  # below the Q8_0 bar
+        root = fake_root(cfg, parity(cfg), receipt)
+        with self.assertRaises(ValueError):
+            p.precision(cfg, "Q8_0", root)
+        del receipt["arms"][0]["cases"][-1]["final_cos_min"]  # cosine gate needs every case's cosine
+        root = fake_root(cfg, parity(cfg), receipt)
+        with self.assertRaises(ValueError):
+            p.precision(cfg, "Q8_0", root)
+
+
 class Notices(unittest.TestCase):
     def test_hash_mismatch_refuses(self):
         cfg = cfg_of("teleocr")

@@ -120,8 +120,12 @@ class NativeDriverTest(unittest.TestCase):
             root = Path(folder)
             for index, name in enumerate(("../outside", "/outside", "x\\outside", "C:outside")):
                 archive = root / f"bad-{index}.zip"
+                # ZipInfo(name) rewrites os.sep to "/" on Windows; set the raw
+                # member name so the backslash fixture is unsafe on every OS.
+                info = zipfile.ZipInfo("placeholder")
+                info.filename = info.orig_filename = name
                 with zipfile.ZipFile(archive, "w") as stream:
-                    stream.writestr(name, b"no")
+                    stream.writestr(info, b"no")
                 with self.assertRaises(ValueError):
                     native.safe_extract(archive, root / f"out-{index}")
             archive = root / "symlink.zip"

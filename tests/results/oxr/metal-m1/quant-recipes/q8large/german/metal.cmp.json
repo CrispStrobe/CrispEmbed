@@ -1,0 +1,1 @@
+{"label": "german/metal", "ids_exact": false, "first_divergence": 35, "reference_tokens": 401, "native_tokens": 394, "text_exact": false, "cer": 0.04356636271529889, "eos": true, "capped": false, "runs_ms": [72918.473334], "warm_ms_median": 72918.473334, "load_ms": 61832.425625, "runs_identical": true}

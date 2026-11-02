@@ -11,7 +11,8 @@ on:
         description: 'Publication protocol'
         required: true
         type: choice
-        options: [docs/mineru25-pro-publication-v1.json, docs/teleocr-publication-v1.json]
+        options: [docs/mineru25-pro-publication-v1.json, docs/teleocr-publication-v1.json,
+                  docs/oxr-publication-v1.json, docs/oxr-dfine-publication-v1.json]
       source_ref:
         description: 'Exact commit containing the converter, quantizer, protocol and receipts'
         required: true
@@ -91,7 +92,11 @@ jobs:
                 mv "$G/$name.json" "$RUNNER_TEMP/out/$name.conversion.json" 2>/dev/null || true ;;
               quantize)
                 read -ra qa <<< "$rest"
-                "$q" "$G/${qa[0]}" "$G/$name" "${qa[@]:1}" ;;
+                envs=(); args=()
+                for a in "${qa[@]:1}"; do
+                  if [[ "$a" =~ ^CRISPEMBED_QUANTIZE_[A-Z0-9_]+=[a-z0-9_]+$ ]]; then envs+=("$a"); else args+=("$a"); fi
+                done
+                env "${envs[@]}" "$q" "$G/${qa[0]}" "$G/$name" "${args[@]}" ;;
               drop) rm -f "$G/$name" ;;
             esac
           done < "$RUNNER_TEMP/plan.txt"

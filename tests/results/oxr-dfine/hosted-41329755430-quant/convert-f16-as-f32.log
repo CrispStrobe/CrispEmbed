@@ -1,0 +1,2 @@
+authenticated layout_analysis/last.pth (dff78ccf18439955362ca44a69eb28fb0b40222a7d278860589682de0176dc17); 533 output tensors, 19 deploy-discarded
+wrote /mnt/heavy/scratch/d-f16-as-f32.gguf (78118336 bytes)

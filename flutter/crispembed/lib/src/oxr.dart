@@ -69,6 +69,69 @@ class CrispOXR {
     finally { calloc.free(text); }
   }
 
+  /// Native C++ document route (requires CRISPEMBED_OXR_NATIVE_DOC=1): the
+  /// translated pinned OXR document helper over a supplied D-FINE batch
+  /// response. Each page is tightly packed RGB. Returns the upstream-shaped
+  /// document (outputs.json, outputs.markdown, metadata).
+  /// Attach the native OXR D-FINE GGUF as the default layout provider; then
+  /// pass `layoutResponse: null` to [processPagesRgb].
+  void setDocumentLayoutModel(DynamicLibrary lib, String modelPath, {int nThreads = 4}) {
+    final attach = lib.lookupFunction<OxrAttachLayoutNative, OxrAttachLayout>('crispembed_oxr_document_layout_model');
+    final p = modelPath.toNativeUtf8();
+    try {
+      if (attach(_ctx, p, nThreads) != 1) throw StateError(_error(_ctx).toDartString());
+    } finally { calloc.free(p); }
+  }
+
+  Map<String, dynamic> processPagesRgb(DynamicLibrary lib, List<Uint8List> pages, List<int> widths,
+      List<int> heights, Map<String, dynamic>? layoutResponse, {Map<String, dynamic>? options}) {
+    if (_ctx == nullptr) throw StateError('OXR context is disposed');
+    final n = pages.length;
+    if (n == 0 || widths.length != n || heights.length != n) throw ArgumentError('Page lists must match');
+    final process = lib.lookupFunction<OxrProcessPagesNative, OxrProcessPages>('crispembed_oxr_process_pages');
+    final ptrs = calloc<Pointer<Uint8>>(n);
+    final w = calloc<Int32>(n), h = calloc<Int32>(n), c = calloc<Int32>(n);
+    final Pointer<Utf8> layout = layoutResponse == null ? nullptr : jsonEncode(layoutResponse).toNativeUtf8();
+    final opts = jsonEncode(options ?? {}).toNativeUtf8();
+    try {
+      for (var i = 0; i < n; i++) {
+        if (widths[i] <= 0 || heights[i] <= 0 || pages[i].length != widths[i] * heights[i] * 3) {
+          throw ArgumentError('RGB byte length does not match page $i dimensions');
+        }
+        ptrs[i] = calloc<Uint8>(pages[i].length);
+        ptrs[i].asTypedList(pages[i].length).setAll(0, pages[i]);
+        w[i] = widths[i];
+        h[i] = heights[i];
+        c[i] = 3;
+      }
+      return _result(process(_ctx, ptrs, w, h, c, n, nullptr, nullptr, layout, opts));
+    } finally {
+      for (var i = 0; i < n; i++) {
+        if (ptrs[i] != nullptr) calloc.free(ptrs[i]);
+      }
+      calloc.free(ptrs); calloc.free(w); calloc.free(h); calloc.free(c);
+      if (layout != nullptr) calloc.free(layout);
+      calloc.free(opts);
+    }
+  }
+
+  /// Every native request of the last document call.
+  List<dynamic> lastTrace(DynamicLibrary lib) {
+    final trace = lib.lookupFunction<OxrStringNative, OxrString>('crispembed_oxr_last_trace');
+    return jsonDecode(trace(_ctx).toDartString()) as List<dynamic>;
+  }
+
+  /// Render the last native document via the shared document model.
+  String renderDocument(DynamicLibrary lib, String format) {
+    final render = lib.lookupFunction<OxrRenderNative, OxrRender>('crispembed_oxr_render_document');
+    final f = format.toNativeUtf8();
+    try {
+      final r = render(_ctx, f);
+      if (r == nullptr) throw StateError(_error(_ctx).toDartString());
+      return r.toDartString();
+    } finally { calloc.free(f); }
+  }
+
   void dispose() {
     if (_ctx != nullptr) { _free(_ctx); _ctx = nullptr; }
   }

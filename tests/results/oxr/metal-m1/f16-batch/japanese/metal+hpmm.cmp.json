@@ -1,0 +1,1 @@
+{"label": "japanese/metal+hpmm", "ids_exact": true, "first_divergence": null, "reference_tokens": 38, "native_tokens": 38, "text_exact": true, "cer": 0.0, "eos": true, "capped": false, "runs_ms": [3448.547166, 3381.809708], "warm_ms_median": 3381.809708, "load_ms": 221897.152, "runs_identical": true}

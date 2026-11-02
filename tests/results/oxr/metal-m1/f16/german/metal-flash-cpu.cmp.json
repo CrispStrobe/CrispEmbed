@@ -1,0 +1,1 @@
+{"label": "german/metal-flash-cpu", "ids_exact": true, "first_divergence": null, "reference_tokens": 401, "native_tokens": 401, "text_exact": true, "cer": 0.0, "eos": true, "capped": false, "runs_ms": [64645.741334, 62046.190208], "warm_ms_median": 62046.190208, "load_ms": 224802.026916, "runs_identical": true}
