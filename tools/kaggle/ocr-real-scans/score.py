@@ -80,7 +80,7 @@ def summarize(out_md, paths):
     man = json.load(open(paths[0])).get('pages_meta') or {}
     by = {}
     for r in runs: by.setdefault(r['page'], {})[r['arm']] = r
-    arms = ['uocr2-f16-fast-tiled', 'uocr2-original-f32', 'minicpm-f16', 'minicpm-f16-fast', 'minicpm-original-f32']
+    arms = ['uocr2-f16-fast-tiled', 'uocr2-f16-fast-tiled-vf32', 'uocr2-original-f32', 'minicpm-f16', 'minicpm-f16-fast', 'minicpm-original-f32']
     L = ['# OCR on real scans (crispembed-ocr-real-scans)', '', 'Shards: ' + '; '.join(
         f"{m['mode']} @ `{(m['commit'] or '')[:12]}` {m.get('cpu_model')} x{m.get('cpu_count')} {m.get('mem_total_gb')} GB, "
         f"{(m.get('elapsed_seconds') or 0)/3600:.2f} h" for m in meta), '',
@@ -101,7 +101,8 @@ def summarize(out_md, paths):
           'CER native | CER original |', '|---|---|---|---|---|---|---|---|---|']
     agg = {}
     for pid in sorted(by):
-        for eng, na, ra in (('Unlimited-OCR-2', 'uocr2-f16-fast-tiled', 'uocr2-original-f32'), ('MiniCPM-OCR', 'minicpm-f16', 'minicpm-original-f32'),
+        for eng, na, ra in (('Unlimited-OCR-2', 'uocr2-f16-fast-tiled', 'uocr2-original-f32'),
+                             ('Unlimited-OCR-2 vf32', 'uocr2-f16-fast-tiled-vf32', 'uocr2-original-f32'), ('MiniCPM-OCR', 'minicpm-f16', 'minicpm-original-f32'),
                              ('MiniCPM-OCR fast', 'minicpm-f16-fast', 'minicpm-original-f32')):
             n, r = by[pid].get(na), by[pid].get(ra)
             if not n or not r or n.get('cer') is None or r.get('cer') is None: continue
