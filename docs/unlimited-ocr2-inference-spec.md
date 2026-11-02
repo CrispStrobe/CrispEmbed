@@ -516,6 +516,20 @@ default and is the exact reference. The fast path keeps the same semantics:
 - final norm + lm_head as a ggml graph; the page-count guard, first-max argmax and confidence are the
   reference code unchanged.
 
+**CPU profile and exact speedups (2026-10-28, Kaggle 4 vCPU Xeon 2.2 GHz, no AVX-512, F16, receipt
+`tests/results/unlimited-ocr2/verify-v1.json`).** Tiled 1024x768 table page, fast decoder, ~300 s:
+SAM 12 tiles ~135 s (11.2 s/tile) + global SAM 37 s + CLIP 12x2 s + 5 s, prefill S=1509 44 s,
+decode 138 tokens ~29 s, load 13 s. SAM/CLIP run at ~26-30 GFLOP/s, i.e. they are compute-bound
+in ggml's F16 mat-mul; the original fp32 PyTorch takes ~112 s on the same box. The bit-exact
+changes save only overhead: the vision cache (`CRISPEMBED_UNLIMITED_OCR2_VISION_CACHE`, default on:
+memoised dequantised patch/neck/LN/projector weights, SAM/CLIP pos-embed and rel-pos tables per
+grid, projector threaded over tokens; projector 0.42 -> 0.10 s/tile) and the 2048-row prefill chunk.
+The result was 1.03-1.15x per page (table 309 -> 301 s, receipt 445 -> 415 s, paragraphs 357 -> 310 s,
+German 316 -> 303 s). IDs were equal with and without each change, and vision features were
+byte-equal with the cache on and off. A `GGML_NATIVE=ON` build was not faster on this host. Larger wins need numerics-changing work (F32
+vision weights with F32 activations, i.e. no F16 activation rounding; batched tiles), which must be
+re-qualified against the original IDs before any default flip.
+
 **Acceptance:** the fast arm must produce identical generated token IDs to the frozen reference pages
 (and to the exact native arm). Small float drift is allowed only while the IDs stay identical; any ID
 difference rejects the arm. The Kaggle kernel `tools/kaggle/unlimited-ocr2-native/kernel.py` runs each

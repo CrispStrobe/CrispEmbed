@@ -1,0 +1,58 @@
+{
+  "schema": "crispembed-latent-inpaint-original-v1",
+  "model": "pixelhacker",
+  "source_commit": "f5567db2871598aa178fe7a34c520dd478a0b41b",
+  "source_contract_sha256": "b4f632d6939a8f57897c88e253bd96b7155fe3426a60ed77eac64b059d69983d",
+  "versions": {
+    "diffusers": "0.30.2",
+    "torch": "2.6.0+cu124",
+    "flash-linear-attention": "0.3.2",
+    "deviations": {
+      "torch": {
+        "contract": "2.3.0",
+        "actual": "2.6.0+cu124"
+      }
+    },
+    "numpy": "1.26.4",
+    "Pillow": "13.0.0",
+    "timm": "0.9.11",
+    "einops": "0.7.0",
+    "transformers": "4.48.3",
+    "accelerate": "0.34.0"
+  },
+  "python": "3.11.17",
+  "torch_config": "PyTorch built with:\n  - GCC 9.3\n  - C++ Version: 201703\n  - Intel(R) oneAPI Math Kernel Library Version 2024.2-Product Build 20240605 for Intel(R) 64 architecture applications\n  - Intel(R) MKL-DNN v3.5.3 (Git Hash 66f0cb9eb66affd2da3bf5f8d897376f04aae6af)\n  - OpenMP 201511 (a.k.a. OpenMP 4.5)\n  - LAPACK is enabled (usually provided by MKL)\n  - NNPACK is enabled\n  - CPU capability usage: AVX512\n  - CUDA Runtime 12.4\n  - NVCC architecture flags: -gencode;arch=compute_50,code=sm_50;-gencode;arch=compute_60,code=sm_60;-gencode;arch=compute_70,code=sm_70;-gencode;arch=compute_75,code=sm_75;-gencode;arch=compute_80,code=sm_80;-gencode;arch=compute_86,code=sm_86;-gencode;arch=compute_90,code=sm_90\n  - CuDNN 90.1\n  - Magma 2.6.1\n  - Build settings: BLAS_INFO=mkl, BUILD_TYPE=Release, COMMIT_SHA=2236df1770800ffea5697b11b0bb0d910b2e59e1, CUDA_VERSION=12.4, CUDNN_VERSION=9.1.0, CXX_COMPILER=/opt/rh/devtoolset-9/root/usr/bin/c++, CXX_FLAGS= -D_GLIBCXX_USE_CXX11_ABI=0 -fabi-version=11 -fvisibility-inlines-hidden -DUSE_PTHREADPOOL -DNDEBUG -DUSE_KINETO -DLIBKINETO_NOROCTRACER -DLIBKINETO_NOXPUPTI=ON -DUSE_FBGEMM -DUSE_PYTORCH_QNNPACK -DUSE_XNNPACK -DSYMBOLICATE_MOBILE_DEBUG_HANDLE -O2 -fPIC -Wall -Wextra -Werror=return-type -Werror=non-virtual-dtor -Werror=bool-operation -Wnarrowing -Wno-missing-field-initializers -Wno-type-limits -Wno-array-bounds -Wno-unknown-pragmas -Wno-unused-parameter -Wno-strict-overflow -Wno-strict-aliasing -Wno-stringop-overflow -Wsuggest-override -Wno-psabi -Wno-error=old-style-cast -Wno-missing-braces -fdiagnostics-color=always -faligned-new -Wno-unused-but-set-variable -Wno-maybe-uninitialized -fno-math-errno -fno-trapping-math -Werror=format -Wno-stringop-overflow, LAPACK_INFO=mkl, PERF_WITH_AVX=1, PERF_WITH_AVX2=1, TORCH_VERSION=2.6.0, USE_CUDA=ON, USE_CUDNN=ON, USE_CUSPARSELT=1, USE_EXCEPTION_PTR=1, USE_GFLAGS=OFF, USE_GLOG=OFF, USE_GLOO=ON, USE_MKL=ON, USE_MKLDNN=ON, USE_MPI=OFF, USE_NCCL=1, USE_NNPACK=ON, USE_OPENMP=ON, USE_ROCM=OFF, USE_ROCM_KERNEL_ASSERT=OFF, \n",
+  "device": "cuda:0",
+  "threads": 2,
+  "cases": [
+    {
+      "id": "subtitle_bar",
+      "file": "subtitle_bar/reference.json",
+      "sha256": "d0722501b5c37860666242adf6671826595928af8699d4bf3609808af2bd37f5"
+    },
+    {
+      "id": "edge_touch",
+      "file": "edge_touch/reference.json",
+      "sha256": "80b47c691fa7dedd6908806c1f4a71204e10b3aea44b364e9d11627040c61ba0"
+    },
+    {
+      "id": "center",
+      "file": "center/reference.json",
+      "sha256": "d7adb55b1084aafc16340c6662ff96645e111def7cb9a13b726fc0d821a619db"
+    },
+    {
+      "id": "empty",
+      "file": "empty/reference.json",
+      "sha256": "b6fccbaa56676af0233183f3dd0c29ee1733bbb52405c4e0f68d8b7f0b6e4503"
+    }
+  ],
+  "dumper_sha256": "bc6433269af3df8fdb3247a4d722a2a5546f28f2be8c353f055861c306403304",
+  "helper_sha256": "07e83dcabe61131671dd4f68c4a7856d6166d5cbce56b0faa7f0017b4ad2cf10",
+  "producer": {
+    "github_sha": null,
+    "github_run_id": null
+  },
+  "complete": true,
+  "native_qualified": false,
+  "representative_quality_qualified": false
+}

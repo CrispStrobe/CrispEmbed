@@ -7,7 +7,7 @@
     "status": "COMPLETE"
   },
   "producer": {
-    "file": "tests/results/minicpm-ocr/bench.json",
+    "file": "tests/results/minicpm-ocr/bench-v3.json",
     "bytes": 32777,
     "sha256": "366779105c95af852f42775c0d9fc3c4121bd59de42ff4fa59a22b25ad8f7b8c",
     "unchanged": true,

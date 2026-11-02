@@ -1,6 +1,6 @@
 {
  "schema": "crispembed-minicpm-ocr-bench-v1",
- "commit": "c9718788bda1bbdc862dd7c86f16fb6caae8cbee",
+ "commit": "b42e094d1eaa0a10296e80e1f0b187d89aa82958",
  "reference_revision": "6796197bb3a8e224b2f64ae462bfbb3f8a15ac4b",
  "reference_versions": {
   "torch": "2.13.0+cpu",
@@ -9,7 +9,7 @@
  },
  "max_new_tokens": 1024,
  "cpu_count": 4,
- "cpu_model": "Intel(R) Xeon(R) CPU @ 2.20GHz",
+ "cpu_model": "AMD EPYC 7B12",
  "build": {
   "cmake": [
    "-DCMAKE_BUILD_TYPE=Release",
@@ -20,13 +20,13 @@
  "gguf_bytes": {
   "f32": 5211736576,
   "f16": 2612763136,
-  "q8_0": 1806313632
+  "q8_0": 1525926080
  },
  "quantize": {
   "exit": 0,
   "stderr_tail": ""
  },
- "setup_seconds": 430.2,
+ "setup_seconds": 346.8,
  "budget_seconds": 40320.0,
  "arms": [
   {
@@ -40,102 +40,8 @@
    "cases": [
     {
      "id": "line",
-     "exit": 1,
-     "wall_seconds": 2.212,
-     "n_ref_tokens": 19,
-     "ids_exact": null,
-     "first_id_difference": null,
-     "n_tokens": null,
-     "text_exact": false,
-     "cer": 1.0,
-     "timing": {
-      "vision": []
-     },
-     "text": "",
-     "stderr_tail": "minicpm_ocr: vision tensor missing or mis-shaped: v.emb.patch_embedding.weight\nerror: failed to load OCR model\n"
-    },
-    {
-     "id": "para-en",
-     "exit": 1,
-     "wall_seconds": 2.226,
-     "n_ref_tokens": 63,
-     "ids_exact": null,
-     "first_id_difference": null,
-     "n_tokens": null,
-     "text_exact": false,
-     "cer": 1.0,
-     "timing": {
-      "vision": []
-     },
-     "text": "",
-     "stderr_tail": "minicpm_ocr: vision tensor missing or mis-shaped: v.emb.patch_embedding.weight\nerror: failed to load OCR model\n"
-    },
-    {
-     "id": "table",
-     "exit": 1,
-     "wall_seconds": 2.208,
-     "n_ref_tokens": 56,
-     "ids_exact": null,
-     "first_id_difference": null,
-     "n_tokens": null,
-     "text_exact": false,
-     "cer": 1.0,
-     "timing": {
-      "vision": []
-     },
-     "text": "",
-     "stderr_tail": "minicpm_ocr: vision tensor missing or mis-shaped: v.emb.patch_embedding.weight\nerror: failed to load OCR model\n"
-    },
-    {
-     "id": "tall",
-     "exit": 1,
-     "wall_seconds": 2.202,
-     "n_ref_tokens": 279,
-     "ids_exact": null,
-     "first_id_difference": null,
-     "n_tokens": null,
-     "text_exact": false,
-     "cer": 1.0,
-     "timing": {
-      "vision": []
-     },
-     "text": "",
-     "stderr_tail": "minicpm_ocr: vision tensor missing or mis-shaped: v.emb.patch_embedding.weight\nerror: failed to load OCR model\n"
-    },
-    {
-     "id": "tiny",
-     "exit": 1,
-     "wall_seconds": 2.183,
-     "n_ref_tokens": 3,
-     "ids_exact": null,
-     "first_id_difference": null,
-     "n_tokens": null,
-     "text_exact": false,
-     "cer": 1.0,
-     "timing": {
-      "vision": []
-     },
-     "text": "",
-     "stderr_tail": "minicpm_ocr: vision tensor missing or mis-shaped: v.emb.patch_embedding.weight\nerror: failed to load OCR model\n"
-    }
-   ],
-   "all_ids_exact": false,
-   "all_text_exact": false,
-   "total_wall_seconds": 11.031
-  },
-  {
-   "name": "f16-t4-no-cache",
-   "dtype": "f16",
-   "threads": 4,
-   "env": {
-    "CRISPEMBED_QWEN35_WEIGHT_CACHE": "0"
-   },
-   "timing": true,
-   "cases": [
-    {
-     "id": "line",
      "exit": 0,
-     "wall_seconds": 120.155,
+     "wall_seconds": 47.624,
      "n_ref_tokens": 19,
      "ids_exact": true,
      "first_id_difference": null,
@@ -152,683 +58,68 @@
         ],
         "patches": 940,
         "tokens": 235,
-        "total_ms": 27699.959,
-        "setup_ms": 10.695,
-        "encoder_ms": 27368.014,
-        "projector_ms": 313.176,
-        "readback_ms": 1.316
+        "total_ms": 16608.766,
+        "setup_ms": 2.863,
+        "encoder_ms": 16503.397,
+        "projector_ms": 96.961,
+        "readback_ms": 0.156
        }
       ],
-      "init_ms": 2539.845,
-      "preprocess_ms": 18.69,
+      "init_ms": 1006.081,
+      "preprocess_ms": 4.819,
       "preprocess_info": {
        "parts": "1",
        "grid": "0x0"
       },
-      "prompt_ms": 0.228,
+      "prompt_ms": 0.406,
       "prompt_info": {
        "tokens": "256"
       },
-      "embed_ms": 2.629,
+      "embed_ms": 0.332,
       "embed_info": {
        "image_tokens": "235"
       },
-      "prefill_ms": 14585.471,
+      "prefill_ms": 5956.456,
       "prefill_info": {
        "tokens": "256"
       },
       "decode": {
        "steps": 18,
-       "total_ms": 74765.132,
-       "mean_ms": 4153.618,
-       "p50_ms": 4097.015,
-       "max_ms": 4933.012,
-       "first_step_ms": 4438.5,
-       "steady_mean_ms": 4136.859,
+       "total_ms": 23685.133,
+       "mean_ms": 1315.841,
+       "p50_ms": 1283.736,
+       "max_ms": 1557.374,
+       "first_step_ms": 1557.4,
+       "steady_mean_ms": 1301.635,
        "step_ms_sample": [
-        4438.5,
-        4933.0,
-        4029.7,
-        4044.4,
-        4052.7,
-        4052.1,
-        4034.3,
-        4108.9,
+        1557.4,
+        1274.3,
+        1481.0,
+        1270.6,
+        1264.3,
+        1271.5,
+        1278.0,
+        1281.6,
         "...",
-        4140.2,
-        4132.1,
-        4210.5,
-        4097.0
-       ]
-      },
-      "detokenize_ms": 0.336,
-      "detokenize_info": {
-       "generated": "19"
-      },
-      "vision_encoder_ms": 27368.014,
-      "vision_projector_ms": 313.176,
-      "vision_total_ms": 27699.959
-     }
-    },
-    {
-     "id": "para-en",
-     "exit": 0,
-     "wall_seconds": 468.883,
-     "n_ref_tokens": 63,
-     "ids_exact": true,
-     "first_id_difference": null,
-     "n_tokens": 63,
-     "text_exact": true,
-     "cer": 0.0,
-     "timing": {
-      "vision": [
-       {
-        "part": 0,
-        "size": [
-         504,
-         392
-        ],
-        "patches": 1008,
-        "tokens": 252,
-        "total_ms": 27474.912,
-        "setup_ms": 8.316,
-        "encoder_ms": 27120.752,
-        "projector_ms": 339.723,
-        "readback_ms": 0.294
-       },
-       {
-        "part": 1,
-        "size": [
-         504,
-         392
-        ],
-        "patches": 1008,
-        "tokens": 252,
-        "total_ms": 27364.548,
-        "setup_ms": 8.394,
-        "encoder_ms": 27014.378,
-        "projector_ms": 335.748,
-        "readback_ms": 0.455
-       },
-       {
-        "part": 2,
-        "size": [
-         504,
-         392
-        ],
-        "patches": 1008,
-        "tokens": 252,
-        "total_ms": 27557.814,
-        "setup_ms": 5.702,
-        "encoder_ms": 27209.537,
-        "projector_ms": 335.877,
-        "readback_ms": 0.734
-       },
-       {
-        "part": 3,
-        "size": [
-         504,
-         392
-        ],
-        "patches": 1008,
-        "tokens": 252,
-        "total_ms": 27577.968,
-        "setup_ms": 5.602,
-        "encoder_ms": 27230.466,
-        "projector_ms": 335.36,
-        "readback_ms": 0.255
-       },
-       {
-        "part": 4,
-        "size": [
-         504,
-         392
-        ],
-        "patches": 1008,
-        "tokens": 252,
-        "total_ms": 27879.096,
-        "setup_ms": 6.038,
-        "encoder_ms": 27526.889,
-        "projector_ms": 335.607,
-        "readback_ms": 4.125
-       }
-      ],
-      "init_ms": 2489.857,
-      "preprocess_ms": 124.649,
-      "preprocess_info": {
-       "parts": "5",
-       "grid": "2x2"
-      },
-      "prompt_ms": 0.299,
-      "prompt_info": {
-       "tokens": "1290"
-      },
-      "embed_ms": 6.266,
-      "embed_info": {
-       "image_tokens": "1260"
-      },
-      "prefill_ms": 70636.992,
-      "prefill_info": {
-       "tokens": "1290"
-      },
-      "decode": {
-       "steps": 62,
-       "total_ms": 257181.424,
-       "mean_ms": 4148.087,
-       "p50_ms": 4133.877,
-       "max_ms": 4347.559,
-       "first_step_ms": 4216.7,
-       "steady_mean_ms": 4146.966,
-       "step_ms_sample": [
-        4216.7,
-        4225.9,
-        4113.2,
-        4163.0,
-        4347.6,
-        4127.8,
-        4249.1,
-        4184.0,
-        "...",
-        4139.6,
-        4114.0,
-        4137.6,
-        4133.9
-       ]
-      },
-      "detokenize_ms": 0.407,
-      "detokenize_info": {
-       "generated": "63"
-      },
-      "vision_encoder_ms": 136102.022,
-      "vision_projector_ms": 1682.315,
-      "vision_total_ms": 137854.338
-     }
-    },
-    {
-     "id": "table",
-     "exit": 0,
-     "wall_seconds": 443.471,
-     "n_ref_tokens": 56,
-     "ids_exact": true,
-     "first_id_difference": null,
-     "n_tokens": 56,
-     "text_exact": true,
-     "cer": 0.0,
-     "timing": {
-      "vision": [
-       {
-        "part": 0,
-        "size": [
-         504,
-         392
-        ],
-        "patches": 1008,
-        "tokens": 252,
-        "total_ms": 29119.251,
-        "setup_ms": 13.664,
-        "encoder_ms": 28702.757,
-        "projector_ms": 386.616,
-        "readback_ms": 1.581
-       },
-       {
-        "part": 1,
-        "size": [
-         504,
-         392
-        ],
-        "patches": 1008,
-        "tokens": 252,
-        "total_ms": 28393.593,
-        "setup_ms": 22.943,
-        "encoder_ms": 28022.583,
-        "projector_ms": 342.091,
-        "readback_ms": 0.524
-       },
-       {
-        "part": 2,
-        "size": [
-         504,
-         392
-        ],
-        "patches": 1008,
-        "tokens": 252,
-        "total_ms": 27564.609,
-        "setup_ms": 6.602,
-        "encoder_ms": 27216.846,
-        "projector_ms": 333.436,
-        "readback_ms": 0.711
-       },
-       {
-        "part": 3,
-        "size": [
-         504,
-         392
-        ],
-        "patches": 1008,
-        "tokens": 252,
-        "total_ms": 27581.97,
-        "setup_ms": 6.595,
-        "encoder_ms": 27237.14,
-        "projector_ms": 330.971,
-        "readback_ms": 0.292
-       },
-       {
-        "part": 4,
-        "size": [
-         504,
-         392
-        ],
-        "patches": 1008,
-        "tokens": 252,
-        "total_ms": 27526.915,
-        "setup_ms": 6.467,
-        "encoder_ms": 27167.924,
-        "projector_ms": 330.494,
-        "readback_ms": 15.319
-       }
-      ],
-      "init_ms": 2568.165,
-      "preprocess_ms": 124.566,
-      "preprocess_info": {
-       "parts": "5",
-       "grid": "2x2"
-      },
-      "prompt_ms": 0.309,
-      "prompt_info": {
-       "tokens": "1290"
-      },
-      "embed_ms": 6.129,
-      "embed_info": {
-       "image_tokens": "1260"
-      },
-      "prefill_ms": 72376.283,
-      "prefill_info": {
-       "tokens": "1290"
-      },
-      "decode": {
-       "steps": 55,
-       "total_ms": 227463.281,
-       "mean_ms": 4135.696,
-       "p50_ms": 4100.473,
-       "max_ms": 5528.117,
-       "first_step_ms": 4072.0,
-       "steady_mean_ms": 4136.876,
-       "step_ms_sample": [
-        4072.0,
-        4119.9,
-        4050.1,
-        5528.1,
-        4091.7,
-        4078.1,
-        4078.3,
-        4121.4,
-        "...",
-        4128.1,
-        4069.1,
-        4115.2,
-        4161.0
-       ]
-      },
-      "detokenize_ms": 0.575,
-      "detokenize_info": {
-       "generated": "56"
-      },
-      "vision_encoder_ms": 138347.25,
-      "vision_projector_ms": 1723.608,
-      "vision_total_ms": 140186.338
-     }
-    },
-    {
-     "id": "tall",
-     "exit": 0,
-     "wall_seconds": 1690.778,
-     "n_ref_tokens": 279,
-     "ids_exact": true,
-     "first_id_difference": null,
-     "n_tokens": 279,
-     "text_exact": true,
-     "cer": 0.0,
-     "timing": {
-      "vision": [
-       {
-        "part": 0,
-        "size": [
-         252,
-         784
-        ],
-        "patches": 1008,
-        "tokens": 252,
-        "total_ms": 27458.409,
-        "setup_ms": 17.552,
-        "encoder_ms": 27098.08,
-        "projector_ms": 334.599,
-        "readback_ms": 0.288
-       },
-       {
-        "part": 1,
-        "size": [
-         364,
-         560
-        ],
-        "patches": 1040,
-        "tokens": 260,
-        "total_ms": 28594.015,
-        "setup_ms": 10.532,
-        "encoder_ms": 28228.214,
-        "projector_ms": 347.942,
-        "readback_ms": 0.515
-       },
-       {
-        "part": 2,
-        "size": [
-         364,
-         560
-        ],
-        "patches": 1040,
-        "tokens": 260,
-        "total_ms": 28699.328,
-        "setup_ms": 8.574,
-        "encoder_ms": 28338.932,
-        "projector_ms": 344.585,
-        "readback_ms": 0.731
-       },
-       {
-        "part": 3,
-        "size": [
-         364,
-         560
-        ],
-        "patches": 1040,
-        "tokens": 260,
-        "total_ms": 28621.784,
-        "setup_ms": 6.457,
-        "encoder_ms": 28245.703,
-        "projector_ms": 358.981,
-        "readback_ms": 3.839
-       },
-       {
-        "part": 4,
-        "size": [
-         364,
-         560
-        ],
-        "patches": 1040,
-        "tokens": 260,
-        "total_ms": 28560.857,
-        "setup_ms": 6.296,
-        "encoder_ms": 28202.227,
-        "projector_ms": 344.54,
-        "readback_ms": 0.898
-       },
-       {
-        "part": 5,
-        "size": [
-         364,
-         560
-        ],
-        "patches": 1040,
-        "tokens": 260,
-        "total_ms": 28507.731,
-        "setup_ms": 5.92,
-        "encoder_ms": 28145.357,
-        "projector_ms": 342.667,
-        "readback_ms": 5.086
-       },
-       {
-        "part": 6,
-        "size": [
-         364,
-         560
-        ],
-        "patches": 1040,
-        "tokens": 260,
-        "total_ms": 32173.945,
-        "setup_ms": 46.875,
-        "encoder_ms": 31647.153,
-        "projector_ms": 468.627,
-        "readback_ms": 4.753
-       },
-       {
-        "part": 7,
-        "size": [
-         364,
-         560
-        ],
-        "patches": 1040,
-        "tokens": 260,
-        "total_ms": 29070.831,
-        "setup_ms": 6.294,
-        "encoder_ms": 28713.987,
-        "projector_ms": 342.183,
-        "readback_ms": 0.921
-       },
-       {
-        "part": 8,
-        "size": [
-         364,
-         560
-        ],
-        "patches": 1040,
-        "tokens": 260,
-        "total_ms": 28637.886,
-        "setup_ms": 6.435,
-        "encoder_ms": 28279.787,
-        "projector_ms": 343.695,
-        "readback_ms": 0.898
-       }
-      ],
-      "init_ms": 3203.711,
-      "preprocess_ms": 232.063,
-      "preprocess_info": {
-       "parts": "9",
-       "grid": "2x4"
-      },
-      "prompt_ms": 0.395,
-      "prompt_info": {
-       "tokens": "2372"
-      },
-      "embed_ms": 11.965,
-      "embed_info": {
-       "image_tokens": "2332"
-      },
-      "prefill_ms": 217497.166,
-      "prefill_info": {
-       "tokens": "2372"
-      },
-      "decode": {
-       "steps": 278,
-       "total_ms": 1208901.851,
-       "mean_ms": 4348.568,
-       "p50_ms": 4241.245,
-       "max_ms": 8287.17,
-       "first_step_ms": 4877.6,
-       "steady_mean_ms": 4346.657,
-       "step_ms_sample": [
-        4877.6,
-        4364.9,
-        4200.1,
-        4355.9,
-        4315.6,
-        4269.1,
-        4167.4,
-        4164.2,
-        "...",
-        4317.1,
-        4576.7,
-        4243.6,
-        4293.3
-       ]
-      },
-      "detokenize_ms": 1.537,
-      "detokenize_info": {
-       "generated": "279"
-      },
-      "vision_encoder_ms": 256899.44,
-      "vision_projector_ms": 3227.819,
-      "vision_total_ms": 260324.786
-     }
-    },
-    {
-     "id": "tiny",
-     "exit": 0,
-     "wall_seconds": 58.091,
-     "n_ref_tokens": 3,
-     "ids_exact": true,
-     "first_id_difference": null,
-     "n_tokens": 3,
-     "text_exact": true,
-     "cer": 0.0,
-     "timing": {
-      "vision": [
-       {
-        "part": 0,
-        "size": [
-         644,
-         308
-        ],
-        "patches": 1012,
-        "tokens": 253,
-        "total_ms": 29149.422,
-        "setup_ms": 6.095,
-        "encoder_ms": 28799.323,
-        "projector_ms": 337.377,
-        "readback_ms": 0.276
-       }
-      ],
-      "init_ms": 8390.055,
-      "preprocess_ms": 13.522,
-      "preprocess_info": {
-       "parts": "1",
-       "grid": "0x0"
-      },
-      "prompt_ms": 0.357,
-      "prompt_info": {
-       "tokens": "274"
-      },
-      "embed_ms": 1.285,
-      "embed_info": {
-       "image_tokens": "253"
-      },
-      "prefill_ms": 11436.667,
-      "prefill_info": {
-       "tokens": "274"
-      },
-      "decode": {
-       "steps": 2,
-       "total_ms": 8542.009,
-       "mean_ms": 4271.004,
-       "p50_ms": 4334.693,
-       "max_ms": 4334.693,
-       "first_step_ms": 4334.7,
-       "steady_mean_ms": 4207.3,
-       "step_ms_sample": [
-        4334.7,
-        4207.3
+        1257.6,
+        1292.8,
+        1272.2,
+        1304.7
        ]
       },
       "detokenize_ms": 0.098,
       "detokenize_info": {
-       "generated": "3"
-      },
-      "vision_encoder_ms": 28799.323,
-      "vision_projector_ms": 337.377,
-      "vision_total_ms": 29149.422
-     }
-    }
-   ],
-   "all_ids_exact": true,
-   "all_text_exact": true,
-   "total_wall_seconds": 2781.378
-  },
-  {
-   "name": "f32-t4",
-   "dtype": "f32",
-   "threads": 4,
-   "env": {},
-   "timing": true,
-   "cases": [
-    {
-     "id": "line",
-     "exit": 0,
-     "wall_seconds": 113.711,
-     "n_ref_tokens": 19,
-     "ids_exact": true,
-     "first_id_difference": null,
-     "n_tokens": 19,
-     "text_exact": true,
-     "cer": 0.0,
-     "timing": {
-      "vision": [
-       {
-        "part": 0,
-        "size": [
-         1316,
-         140
-        ],
-        "patches": 940,
-        "tokens": 235,
-        "total_ms": 14051.44,
-        "setup_ms": 5.455,
-        "encoder_ms": 13936.622,
-        "projector_ms": 105.266,
-        "readback_ms": 0.256
-       }
-      ],
-      "init_ms": 25423.39,
-      "preprocess_ms": 14.925,
-      "preprocess_info": {
-       "parts": "1",
-       "grid": "0x0"
-      },
-      "prompt_ms": 0.204,
-      "prompt_info": {
-       "tokens": "256"
-      },
-      "embed_ms": 0.568,
-      "embed_info": {
-       "image_tokens": "235"
-      },
-      "prefill_ms": 10924.838,
-      "prefill_info": {
-       "tokens": "256"
-      },
-      "decode": {
-       "steps": 18,
-       "total_ms": 62677.891,
-       "mean_ms": 3482.105,
-       "p50_ms": 3452.252,
-       "max_ms": 3794.145,
-       "first_step_ms": 3787.1,
-       "steady_mean_ms": 3464.176,
-       "step_ms_sample": [
-        3787.1,
-        3490.7,
-        3551.2,
-        3386.5,
-        3758.6,
-        3794.1,
-        3470.5,
-        3431.0,
-        "...",
-        3404.0,
-        3452.3,
-        3493.0,
-        3318.5
-       ]
-      },
-      "detokenize_ms": 0.165,
-      "detokenize_info": {
        "generated": "19"
       },
-      "vision_encoder_ms": 13936.622,
-      "vision_projector_ms": 105.266,
-      "vision_total_ms": 14051.44
+      "vision_encoder_ms": 16503.397,
+      "vision_projector_ms": 96.961,
+      "vision_total_ms": 16608.766
      }
     },
     {
      "id": "para-en",
      "exit": 0,
-     "wall_seconds": 376.74,
+     "wall_seconds": 199.21,
      "n_ref_tokens": 63,
      "ids_exact": true,
      "first_id_difference": null,
@@ -845,11 +136,11 @@
         ],
         "patches": 1008,
         "tokens": 252,
-        "total_ms": 12903.897,
-        "setup_ms": 7.705,
-        "encoder_ms": 12776.47,
-        "projector_ms": 114.83,
-        "readback_ms": 0.286
+        "total_ms": 13676.956,
+        "setup_ms": 4.29,
+        "encoder_ms": 13567.523,
+        "projector_ms": 98.514,
+        "readback_ms": 0.129
        },
        {
         "part": 1,
@@ -859,11 +150,11 @@
         ],
         "patches": 1008,
         "tokens": 252,
-        "total_ms": 12953.58,
-        "setup_ms": 8.085,
-        "encoder_ms": 12825.715,
-        "projector_ms": 113.65,
-        "readback_ms": 0.475
+        "total_ms": 13827.312,
+        "setup_ms": 4.589,
+        "encoder_ms": 13714.526,
+        "projector_ms": 100.101,
+        "readback_ms": 0.252
        },
        {
         "part": 2,
@@ -873,11 +164,11 @@
         ],
         "patches": 1008,
         "tokens": 252,
-        "total_ms": 13412.834,
-        "setup_ms": 5.776,
-        "encoder_ms": 13287.239,
-        "projector_ms": 113.336,
-        "readback_ms": 0.734
+        "total_ms": 13849.348,
+        "setup_ms": 3.288,
+        "encoder_ms": 13739.738,
+        "projector_ms": 98.121,
+        "readback_ms": 0.377
        },
        {
         "part": 3,
@@ -887,11 +178,11 @@
         ],
         "patches": 1008,
         "tokens": 252,
-        "total_ms": 13274.587,
-        "setup_ms": 5.759,
-        "encoder_ms": 13149.85,
-        "projector_ms": 112.728,
-        "readback_ms": 0.245
+        "total_ms": 13907.51,
+        "setup_ms": 3.286,
+        "encoder_ms": 13799.515,
+        "projector_ms": 96.14,
+        "readback_ms": 0.149
        },
        {
         "part": 4,
@@ -901,68 +192,68 @@
         ],
         "patches": 1008,
         "tokens": 252,
-        "total_ms": 13330.398,
-        "setup_ms": 5.633,
-        "encoder_ms": 13204.057,
-        "projector_ms": 110.908,
-        "readback_ms": 3.803
+        "total_ms": 13905.506,
+        "setup_ms": 3.02,
+        "encoder_ms": 13795.372,
+        "projector_ms": 96.806,
+        "readback_ms": 2.098
        }
       ],
-      "init_ms": 5163.241,
-      "preprocess_ms": 124.709,
+      "init_ms": 918.964,
+      "preprocess_ms": 40.901,
       "preprocess_info": {
        "parts": "5",
        "grid": "2x2"
       },
-      "prompt_ms": 0.26,
+      "prompt_ms": 0.145,
       "prompt_info": {
        "tokens": "1290"
       },
-      "embed_ms": 3.056,
+      "embed_ms": 1.377,
       "embed_info": {
        "image_tokens": "1260"
       },
-      "prefill_ms": 73039.566,
+      "prefill_ms": 45955.668,
       "prefill_info": {
        "tokens": "1290"
       },
       "decode": {
        "steps": 62,
-       "total_ms": 231831.514,
-       "mean_ms": 3739.218,
-       "p50_ms": 3506.454,
-       "max_ms": 10040.609,
-       "first_step_ms": 3616.8,
-       "steady_mean_ms": 3741.221,
+       "total_ms": 82822.462,
+       "mean_ms": 1335.846,
+       "p50_ms": 1322.014,
+       "max_ms": 1563.271,
+       "first_step_ms": 1345.6,
+       "steady_mean_ms": 1335.684,
        "step_ms_sample": [
-        3616.8,
-        3996.8,
-        3615.6,
-        3974.6,
-        3900.3,
-        3990.5,
-        3849.2,
-        3747.0,
+        1345.6,
+        1417.7,
+        1320.5,
+        1280.3,
+        1307.8,
+        1283.8,
+        1307.7,
+        1366.1,
         "...",
-        3732.6,
-        3506.5,
-        3801.9,
-        3521.0
+        1289.5,
+        1291.3,
+        1341.3,
+        1302.5
        ]
       },
-      "detokenize_ms": 0.504,
+      "detokenize_ms": 0.2,
       "detokenize_info": {
        "generated": "63"
       },
-      "vision_encoder_ms": 65243.331,
-      "vision_projector_ms": 565.452,
-      "vision_total_ms": 65875.296
+      "vision_encoder_ms": 68616.674,
+      "vision_projector_ms": 489.682,
+      "vision_total_ms": 69166.632
      }
     },
     {
      "id": "table",
      "exit": 0,
-     "wall_seconds": 335.089,
+     "wall_seconds": 191.351,
      "n_ref_tokens": 56,
      "ids_exact": true,
      "first_id_difference": null,
@@ -979,11 +270,11 @@
         ],
         "patches": 1008,
         "tokens": 252,
-        "total_ms": 13186.507,
-        "setup_ms": 8.35,
-        "encoder_ms": 13054.858,
-        "projector_ms": 116.519,
-        "readback_ms": 0.259
+        "total_ms": 13790.341,
+        "setup_ms": 4.564,
+        "encoder_ms": 13678.282,
+        "projector_ms": 98.265,
+        "readback_ms": 0.141
        },
        {
         "part": 1,
@@ -993,11 +284,11 @@
         ],
         "patches": 1008,
         "tokens": 252,
-        "total_ms": 13241.355,
-        "setup_ms": 8.524,
-        "encoder_ms": 13110.28,
-        "projector_ms": 114.276,
-        "readback_ms": 0.487
+        "total_ms": 13858.61,
+        "setup_ms": 4.527,
+        "encoder_ms": 13746.286,
+        "projector_ms": 99.64,
+        "readback_ms": 0.238
        },
        {
         "part": 2,
@@ -1007,11 +298,11 @@
         ],
         "patches": 1008,
         "tokens": 252,
-        "total_ms": 13375.91,
-        "setup_ms": 5.92,
-        "encoder_ms": 13246.3,
-        "projector_ms": 115.357,
-        "readback_ms": 0.766
+        "total_ms": 13841.233,
+        "setup_ms": 3.039,
+        "encoder_ms": 13734.755,
+        "projector_ms": 96.119,
+        "readback_ms": 0.348
        },
        {
         "part": 3,
@@ -1021,11 +312,11 @@
         ],
         "patches": 1008,
         "tokens": 252,
-        "total_ms": 13562.315,
-        "setup_ms": 6.265,
-        "encoder_ms": 13431.594,
-        "projector_ms": 115.484,
-        "readback_ms": 0.285
+        "total_ms": 13845.68,
+        "setup_ms": 3.022,
+        "encoder_ms": 13737.949,
+        "projector_ms": 96.027,
+        "readback_ms": 0.143
        },
        {
         "part": 4,
@@ -1035,68 +326,68 @@
         ],
         "patches": 1008,
         "tokens": 252,
-        "total_ms": 13483.835,
-        "setup_ms": 6.172,
-        "encoder_ms": 13352.834,
-        "projector_ms": 112.69,
-        "readback_ms": 4.085
+        "total_ms": 13954.574,
+        "setup_ms": 3.823,
+        "encoder_ms": 13843.525,
+        "projector_ms": 96.704,
+        "readback_ms": 2.608
        }
       ],
-      "init_ms": 5860.638,
-      "preprocess_ms": 124.294,
+      "init_ms": 966.554,
+      "preprocess_ms": 40.835,
       "preprocess_info": {
        "parts": "5",
        "grid": "2x2"
       },
-      "prompt_ms": 0.204,
+      "prompt_ms": 0.172,
       "prompt_info": {
        "tokens": "1290"
       },
-      "embed_ms": 3.183,
+      "embed_ms": 1.432,
       "embed_info": {
        "image_tokens": "1260"
       },
-      "prefill_ms": 70279.935,
+      "prefill_ms": 46131.463,
       "prefill_info": {
        "tokens": "1290"
       },
       "decode": {
        "steps": 55,
-       "total_ms": 191033.832,
-       "mean_ms": 3473.342,
-       "p50_ms": 3408.238,
-       "max_ms": 3836.783,
-       "first_step_ms": 3435.3,
-       "steady_mean_ms": 3474.043,
+       "total_ms": 74578.394,
+       "mean_ms": 1355.971,
+       "p50_ms": 1338.426,
+       "max_ms": 1574.614,
+       "first_step_ms": 1298.7,
+       "steady_mean_ms": 1357.03,
        "step_ms_sample": [
-        3435.3,
-        3772.7,
-        3671.2,
-        3795.6,
-        3727.8,
-        3737.0,
-        3729.7,
-        3429.5,
+        1298.7,
+        1342.8,
+        1347.3,
+        1309.4,
+        1293.1,
+        1335.6,
+        1299.8,
+        1309.2,
         "...",
-        3390.2,
-        3408.2,
-        3403.1,
-        3390.6
+        1308.7,
+        1485.5,
+        1340.2,
+        1368.5
        ]
       },
-      "detokenize_ms": 0.353,
+      "detokenize_ms": 0.17,
       "detokenize_info": {
        "generated": "56"
       },
-      "vision_encoder_ms": 66195.866,
-      "vision_projector_ms": 574.326,
-      "vision_total_ms": 66849.922
+      "vision_encoder_ms": 68740.797,
+      "vision_projector_ms": 486.755,
+      "vision_total_ms": 69290.438
      }
     },
     {
      "id": "tall",
      "exit": 0,
-     "wall_seconds": 1428.334,
+     "wall_seconds": 682.631,
      "n_ref_tokens": 279,
      "ids_exact": true,
      "first_id_difference": null,
@@ -1113,11 +404,11 @@
         ],
         "patches": 1008,
         "tokens": 252,
-        "total_ms": 12862.757,
-        "setup_ms": 11.451,
-        "encoder_ms": 12731.92,
-        "projector_ms": 114.4,
-        "readback_ms": 0.275
+        "total_ms": 13944.98,
+        "setup_ms": 6.478,
+        "encoder_ms": 13831.226,
+        "projector_ms": 99.139,
+        "readback_ms": 0.24
        },
        {
         "part": 1,
@@ -1127,11 +418,11 @@
         ],
         "patches": 1040,
         "tokens": 260,
-        "total_ms": 13525.838,
-        "setup_ms": 11.986,
-        "encoder_ms": 13373.453,
-        "projector_ms": 132.363,
-        "readback_ms": 0.479
+        "total_ms": 14402.028,
+        "setup_ms": 6.636,
+        "encoder_ms": 14283.552,
+        "projector_ms": 103.079,
+        "readback_ms": 0.465
        },
        {
         "part": 2,
@@ -1141,11 +432,11 @@
         ],
         "patches": 1040,
         "tokens": 260,
-        "total_ms": 13466.439,
-        "setup_ms": 8.486,
-        "encoder_ms": 13333.115,
-        "projector_ms": 116.614,
-        "readback_ms": 0.747
+        "total_ms": 14381.182,
+        "setup_ms": 5.37,
+        "encoder_ms": 14266.781,
+        "projector_ms": 101.214,
+        "readback_ms": 0.445
        },
        {
         "part": 3,
@@ -1155,11 +446,11 @@
         ],
         "patches": 1040,
         "tokens": 260,
-        "total_ms": 13508.224,
-        "setup_ms": 5.875,
-        "encoder_ms": 13372.15,
-        "projector_ms": 119.438,
-        "readback_ms": 3.454
+        "total_ms": 14397.976,
+        "setup_ms": 3.779,
+        "encoder_ms": 14282.298,
+        "projector_ms": 102.019,
+        "readback_ms": 1.948
        },
        {
         "part": 4,
@@ -1169,11 +460,11 @@
         ],
         "patches": 1040,
         "tokens": 260,
-        "total_ms": 13626.845,
-        "setup_ms": 5.915,
-        "encoder_ms": 13496.934,
-        "projector_ms": 115.771,
-        "readback_ms": 0.913
+        "total_ms": 14406.708,
+        "setup_ms": 3.443,
+        "encoder_ms": 14292.867,
+        "projector_ms": 101.639,
+        "readback_ms": 0.598
        },
        {
         "part": 5,
@@ -1183,11 +474,11 @@
         ],
         "patches": 1040,
         "tokens": 260,
-        "total_ms": 21901.207,
-        "setup_ms": 9.65,
-        "encoder_ms": 21740.445,
-        "projector_ms": 117.794,
-        "readback_ms": 23.401
+        "total_ms": 14415.426,
+        "setup_ms": 3.76,
+        "encoder_ms": 14296.827,
+        "projector_ms": 101.401,
+        "readback_ms": 3.205
        },
        {
         "part": 6,
@@ -1197,11 +488,11 @@
         ],
         "patches": 1040,
         "tokens": 260,
-        "total_ms": 13917.909,
-        "setup_ms": 14.94,
-        "encoder_ms": 13763.171,
-        "projector_ms": 127.044,
-        "readback_ms": 3.824
+        "total_ms": 14479.972,
+        "setup_ms": 7.033,
+        "encoder_ms": 14362.271,
+        "projector_ms": 101.619,
+        "readback_ms": 0.532
        },
        {
         "part": 7,
@@ -1211,11 +502,11 @@
         ],
         "patches": 1040,
         "tokens": 260,
-        "total_ms": 13901.479,
-        "setup_ms": 6.852,
-        "encoder_ms": 13764.296,
-        "projector_ms": 119.31,
-        "readback_ms": 1.629
+        "total_ms": 18872.751,
+        "setup_ms": 4.752,
+        "encoder_ms": 18751.677,
+        "projector_ms": 104.86,
+        "readback_ms": 1.201
        },
        {
         "part": 8,
@@ -1225,68 +516,68 @@
         ],
         "patches": 1040,
         "tokens": 260,
-        "total_ms": 13782.461,
-        "setup_ms": 6.657,
-        "encoder_ms": 13647.061,
-        "projector_ms": 117.967,
-        "readback_ms": 0.961
+        "total_ms": 14550.339,
+        "setup_ms": 5.369,
+        "encoder_ms": 14432.664,
+        "projector_ms": 102.036,
+        "readback_ms": 0.537
        }
       ],
-      "init_ms": 5214.876,
-      "preprocess_ms": 230.741,
+      "init_ms": 972.464,
+      "preprocess_ms": 76.77,
       "preprocess_info": {
        "parts": "9",
        "grid": "2x4"
       },
-      "prompt_ms": 0.173,
+      "prompt_ms": 0.181,
       "prompt_info": {
        "tokens": "2372"
       },
-      "embed_ms": 5.702,
+      "embed_ms": 4.578,
       "embed_info": {
        "image_tokens": "2332"
       },
-      "prefill_ms": 220118.028,
+      "prefill_ms": 144947.61,
       "prefill_info": {
        "tokens": "2372"
       },
       "decode": {
        "steps": 278,
-       "total_ms": 1071276.278,
-       "mean_ms": 3853.512,
-       "p50_ms": 3622.239,
-       "max_ms": 10132.04,
-       "first_step_ms": 3683.0,
-       "steady_mean_ms": 3854.128,
+       "total_ms": 402386.95,
+       "mean_ms": 1447.435,
+       "p50_ms": 1400.389,
+       "max_ms": 2449.02,
+       "first_step_ms": 2365.0,
+       "steady_mean_ms": 1444.123,
        "step_ms_sample": [
-        3683.0,
-        3664.6,
-        4623.4,
-        5165.8,
-        3649.1,
-        4017.4,
-        3672.0,
-        3598.4,
+        2365.0,
+        1452.1,
+        1402.0,
+        1389.1,
+        1402.2,
+        1397.3,
+        1411.1,
+        1362.5,
         "...",
-        3558.1,
-        3572.4,
-        3884.4,
-        3877.4
+        1378.0,
+        1403.7,
+        1682.8,
+        1613.8
        ]
       },
-      "detokenize_ms": 1.158,
+      "detokenize_ms": 0.979,
       "detokenize_info": {
        "generated": "279"
       },
-      "vision_encoder_ms": 129222.545,
-      "vision_projector_ms": 1080.701,
-      "vision_total_ms": 130493.159
+      "vision_encoder_ms": 132800.163,
+      "vision_projector_ms": 917.006,
+      "vision_total_ms": 133851.362
      }
     },
     {
      "id": "tiny",
      "exit": 0,
-     "wall_seconds": 55.807,
+     "wall_seconds": 24.857,
      "n_ref_tokens": 3,
      "ids_exact": true,
      "first_id_difference": null,
@@ -1303,57 +594,57 @@
         ],
         "patches": 1012,
         "tokens": 253,
-        "total_ms": 14100.856,
-        "setup_ms": 5.839,
-        "encoder_ms": 13979.348,
-        "projector_ms": 110.736,
-        "readback_ms": 0.318
+        "total_ms": 14472.033,
+        "setup_ms": 2.982,
+        "encoder_ms": 14363.891,
+        "projector_ms": 98.075,
+        "readback_ms": 0.133
        }
       ],
-      "init_ms": 21908.474,
-      "preprocess_ms": 11.85,
+      "init_ms": 1028.06,
+      "preprocess_ms": 4.327,
       "preprocess_info": {
        "parts": "1",
        "grid": "0x0"
       },
-      "prompt_ms": 0.347,
+      "prompt_ms": 0.299,
       "prompt_info": {
        "tokens": "274"
       },
-      "embed_ms": 0.573,
+      "embed_ms": 0.416,
       "embed_info": {
        "image_tokens": "253"
       },
-      "prefill_ms": 11960.601,
+      "prefill_ms": 6377.452,
       "prefill_info": {
        "tokens": "274"
       },
       "decode": {
        "steps": 2,
-       "total_ms": 7079.411,
-       "mean_ms": 3539.706,
-       "p50_ms": 3612.151,
-       "max_ms": 3612.151,
-       "first_step_ms": 3612.2,
-       "steady_mean_ms": 3467.3,
+       "total_ms": 2626.527,
+       "mean_ms": 1313.263,
+       "p50_ms": 1322.473,
+       "max_ms": 1322.473,
+       "first_step_ms": 1304.1,
+       "steady_mean_ms": 1322.5,
        "step_ms_sample": [
-        3612.2,
-        3467.3
+        1304.1,
+        1322.5
        ]
       },
-      "detokenize_ms": 0.113,
+      "detokenize_ms": 0.085,
       "detokenize_info": {
        "generated": "3"
       },
-      "vision_encoder_ms": 13979.348,
-      "vision_projector_ms": 110.736,
-      "vision_total_ms": 14100.856
+      "vision_encoder_ms": 14363.891,
+      "vision_projector_ms": 98.075,
+      "vision_total_ms": 14472.033
      }
     }
    ],
    "all_ids_exact": true,
    "all_text_exact": true,
-   "total_wall_seconds": 2309.681
+   "total_wall_seconds": 1145.673
   },
   {
    "name": "q8_0-t2",
@@ -1366,164 +657,615 @@
    "cases": [
     {
      "id": "line",
-     "exit": 1,
-     "wall_seconds": 8.936,
-     "n_ref_tokens": 19,
-     "ids_exact": null,
-     "first_id_difference": null,
-     "n_tokens": null,
-     "text_exact": false,
-     "cer": 1.0,
-     "timing": {
-      "vision": []
-     },
-     "text": "",
-     "stderr_tail": "minicpm_ocr: vision tensor missing or mis-shaped: v.emb.patch_embedding.weight\nerror: failed to load OCR model\n"
-    },
-    {
-     "id": "para-en",
-     "exit": 1,
-     "wall_seconds": 2.449,
-     "n_ref_tokens": 63,
-     "ids_exact": null,
-     "first_id_difference": null,
-     "n_tokens": null,
-     "text_exact": false,
-     "cer": 1.0,
-     "timing": {
-      "vision": []
-     },
-     "text": "",
-     "stderr_tail": "minicpm_ocr: vision tensor missing or mis-shaped: v.emb.patch_embedding.weight\nerror: failed to load OCR model\n"
-    },
-    {
-     "id": "table",
-     "exit": 1,
-     "wall_seconds": 2.402,
-     "n_ref_tokens": 56,
-     "ids_exact": null,
-     "first_id_difference": null,
-     "n_tokens": null,
-     "text_exact": false,
-     "cer": 1.0,
-     "timing": {
-      "vision": []
-     },
-     "text": "",
-     "stderr_tail": "minicpm_ocr: vision tensor missing or mis-shaped: v.emb.patch_embedding.weight\nerror: failed to load OCR model\n"
-    },
-    {
-     "id": "tall",
-     "exit": 1,
-     "wall_seconds": 2.38,
-     "n_ref_tokens": 279,
-     "ids_exact": null,
-     "first_id_difference": null,
-     "n_tokens": null,
-     "text_exact": false,
-     "cer": 1.0,
-     "timing": {
-      "vision": []
-     },
-     "text": "",
-     "stderr_tail": "minicpm_ocr: vision tensor missing or mis-shaped: v.emb.patch_embedding.weight\nerror: failed to load OCR model\n"
-    },
-    {
-     "id": "tiny",
-     "exit": 1,
-     "wall_seconds": 2.41,
-     "n_ref_tokens": 3,
-     "ids_exact": null,
-     "first_id_difference": null,
-     "n_tokens": null,
-     "text_exact": false,
-     "cer": 1.0,
-     "timing": {
-      "vision": []
-     },
-     "text": "",
-     "stderr_tail": "minicpm_ocr: vision tensor missing or mis-shaped: v.emb.patch_embedding.weight\nerror: failed to load OCR model\n"
-    }
-   ],
-   "all_ids_exact": false,
-   "all_text_exact": false,
-   "total_wall_seconds": 18.577
-  },
-  {
-   "name": "f16-t4-no-timing",
-   "dtype": "f16",
-   "threads": 4,
-   "env": {},
-   "timing": false,
-   "cases": [
-    {
-     "id": "line",
      "exit": 0,
-     "wall_seconds": 116.058,
+     "wall_seconds": 61.275,
      "n_ref_tokens": 19,
-     "ids_exact": null,
+     "ids_exact": true,
      "first_id_difference": null,
-     "n_tokens": null,
+     "n_tokens": 19,
      "text_exact": true,
      "cer": 0.0,
-     "timing": {}
+     "timing": {
+      "vision": [
+       {
+        "part": 0,
+        "size": [
+         1316,
+         140
+        ],
+        "patches": 940,
+        "tokens": 235,
+        "total_ms": 23898.635,
+        "setup_ms": 3.278,
+        "encoder_ms": 23776.431,
+        "projector_ms": 111.927,
+        "readback_ms": 0.274
+       }
+      ],
+      "init_ms": 1024.558,
+      "preprocess_ms": 5.481,
+      "preprocess_info": {
+       "parts": "1",
+       "grid": "0x0"
+      },
+      "prompt_ms": 0.156,
+      "prompt_info": {
+       "tokens": "256"
+      },
+      "embed_ms": 0.431,
+      "embed_info": {
+       "image_tokens": "235"
+      },
+      "prefill_ms": 7898.625,
+      "prefill_info": {
+       "tokens": "256"
+      },
+      "decode": {
+       "steps": 18,
+       "total_ms": 28119.282,
+       "mean_ms": 1562.182,
+       "p50_ms": 1364.881,
+       "max_ms": 2434.75,
+       "first_step_ms": 1984.6,
+       "steady_mean_ms": 1537.341,
+       "step_ms_sample": [
+        1984.6,
+        1364.9,
+        1593.5,
+        1523.4,
+        1335.8,
+        1839.0,
+        1371.8,
+        1363.3,
+        "...",
+        1644.7,
+        1331.9,
+        1334.2,
+        1339.0
+       ]
+      },
+      "detokenize_ms": 0.162,
+      "detokenize_info": {
+       "generated": "19"
+      },
+      "vision_encoder_ms": 23776.431,
+      "vision_projector_ms": 111.927,
+      "vision_total_ms": 23898.635
+     }
     },
     {
      "id": "para-en",
      "exit": 0,
-     "wall_seconds": 477.872,
+     "wall_seconds": 233.102,
      "n_ref_tokens": 63,
-     "ids_exact": null,
+     "ids_exact": true,
      "first_id_difference": null,
-     "n_tokens": null,
+     "n_tokens": 63,
      "text_exact": true,
      "cer": 0.0,
-     "timing": {}
+     "timing": {
+      "vision": [
+       {
+        "part": 0,
+        "size": [
+         504,
+         392
+        ],
+        "patches": 1008,
+        "tokens": 252,
+        "total_ms": 19719.002,
+        "setup_ms": 4.685,
+        "encoder_ms": 19604.744,
+        "projector_ms": 102.526,
+        "readback_ms": 0.14
+       },
+       {
+        "part": 1,
+        "size": [
+         504,
+         392
+        ],
+        "patches": 1008,
+        "tokens": 252,
+        "total_ms": 19584.758,
+        "setup_ms": 4.774,
+        "encoder_ms": 19471.354,
+        "projector_ms": 101.581,
+        "readback_ms": 0.236
+       },
+       {
+        "part": 2,
+        "size": [
+         504,
+         392
+        ],
+        "patches": 1008,
+        "tokens": 252,
+        "total_ms": 19679.507,
+        "setup_ms": 3.811,
+        "encoder_ms": 19564.896,
+        "projector_ms": 102.96,
+        "readback_ms": 0.376
+       },
+       {
+        "part": 3,
+        "size": [
+         504,
+         392
+        ],
+        "patches": 1008,
+        "tokens": 252,
+        "total_ms": 19752.363,
+        "setup_ms": 3.476,
+        "encoder_ms": 19641.275,
+        "projector_ms": 98.605,
+        "readback_ms": 0.173
+       },
+       {
+        "part": 4,
+        "size": [
+         504,
+         392
+        ],
+        "patches": 1008,
+        "tokens": 252,
+        "total_ms": 19797.033,
+        "setup_ms": 3.641,
+        "encoder_ms": 19683.116,
+        "projector_ms": 98.937,
+        "readback_ms": 2.61
+       }
+      ],
+      "init_ms": 977.16,
+      "preprocess_ms": 41.812,
+      "preprocess_info": {
+       "parts": "5",
+       "grid": "2x2"
+      },
+      "prompt_ms": 0.251,
+      "prompt_info": {
+       "tokens": "1290"
+      },
+      "embed_ms": 1.734,
+      "embed_info": {
+       "image_tokens": "1260"
+      },
+      "prefill_ms": 46973.468,
+      "prefill_info": {
+       "tokens": "1290"
+      },
+      "decode": {
+       "steps": 62,
+       "total_ms": 86228.811,
+       "mean_ms": 1390.787,
+       "p50_ms": 1368.446,
+       "max_ms": 1931.69,
+       "first_step_ms": 1372.7,
+       "steady_mean_ms": 1391.082,
+       "step_ms_sample": [
+        1372.7,
+        1379.2,
+        1382.4,
+        1393.0,
+        1931.7,
+        1373.1,
+        1374.9,
+        1381.2,
+        "...",
+        1376.6,
+        1344.3,
+        1364.7,
+        1369.2
+       ]
+      },
+      "detokenize_ms": 0.22,
+      "detokenize_info": {
+       "generated": "63"
+      },
+      "vision_encoder_ms": 97965.385,
+      "vision_projector_ms": 504.609,
+      "vision_total_ms": 98532.663
+     }
     },
     {
      "id": "table",
      "exit": 0,
-     "wall_seconds": 438.025,
+     "wall_seconds": 224.851,
      "n_ref_tokens": 56,
-     "ids_exact": null,
+     "ids_exact": true,
      "first_id_difference": null,
-     "n_tokens": null,
+     "n_tokens": 56,
      "text_exact": true,
      "cer": 0.0,
-     "timing": {}
+     "timing": {
+      "vision": [
+       {
+        "part": 0,
+        "size": [
+         504,
+         392
+        ],
+        "patches": 1008,
+        "tokens": 252,
+        "total_ms": 19597.285,
+        "setup_ms": 4.843,
+        "encoder_ms": 19482.375,
+        "projector_ms": 103.286,
+        "readback_ms": 0.143
+       },
+       {
+        "part": 1,
+        "size": [
+         504,
+         392
+        ],
+        "patches": 1008,
+        "tokens": 252,
+        "total_ms": 19635.947,
+        "setup_ms": 4.978,
+        "encoder_ms": 19521.984,
+        "projector_ms": 101.582,
+        "readback_ms": 0.31
+       },
+       {
+        "part": 2,
+        "size": [
+         504,
+         392
+        ],
+        "patches": 1008,
+        "tokens": 252,
+        "total_ms": 19787.363,
+        "setup_ms": 3.453,
+        "encoder_ms": 19676.675,
+        "projector_ms": 100.072,
+        "readback_ms": 0.376
+       },
+       {
+        "part": 3,
+        "size": [
+         504,
+         392
+        ],
+        "patches": 1008,
+        "tokens": 252,
+        "total_ms": 19943.735,
+        "setup_ms": 3.441,
+        "encoder_ms": 19833.862,
+        "projector_ms": 98.643,
+        "readback_ms": 0.161
+       },
+       {
+        "part": 4,
+        "size": [
+         504,
+         392
+        ],
+        "patches": 1008,
+        "tokens": 252,
+        "total_ms": 19879.785,
+        "setup_ms": 3.561,
+        "encoder_ms": 19764.675,
+        "projector_ms": 99.989,
+        "readback_ms": 2.463
+       }
+      ],
+      "init_ms": 1007.24,
+      "preprocess_ms": 41.035,
+      "preprocess_info": {
+       "parts": "5",
+       "grid": "2x2"
+      },
+      "prompt_ms": 0.19,
+      "prompt_info": {
+       "tokens": "1290"
+      },
+      "embed_ms": 1.779,
+      "embed_info": {
+       "image_tokens": "1260"
+      },
+      "prefill_ms": 47007.37,
+      "prefill_info": {
+       "tokens": "1290"
+      },
+      "decode": {
+       "steps": 55,
+       "total_ms": 77590.017,
+       "mean_ms": 1410.728,
+       "p50_ms": 1387.462,
+       "max_ms": 1804.636,
+       "first_step_ms": 1311.4,
+       "steady_mean_ms": 1412.565,
+       "step_ms_sample": [
+        1311.4,
+        1347.8,
+        1424.0,
+        1378.1,
+        1386.7,
+        1399.7,
+        1377.6,
+        1372.9,
+        "...",
+        1385.3,
+        1394.0,
+        1388.5,
+        1387.5
+       ]
+      },
+      "detokenize_ms": 0.327,
+      "detokenize_info": {
+       "generated": "56"
+      },
+      "vision_encoder_ms": 98279.571,
+      "vision_projector_ms": 503.572,
+      "vision_total_ms": 98844.115
+     }
     },
     {
      "id": "tall",
      "exit": 0,
-     "wall_seconds": 1700.856,
+     "wall_seconds": 755.528,
      "n_ref_tokens": 279,
-     "ids_exact": null,
+     "ids_exact": true,
      "first_id_difference": null,
-     "n_tokens": null,
+     "n_tokens": 279,
      "text_exact": true,
      "cer": 0.0,
-     "timing": {}
+     "timing": {
+      "vision": [
+       {
+        "part": 0,
+        "size": [
+         252,
+         784
+        ],
+        "patches": 1008,
+        "tokens": 252,
+        "total_ms": 19729.348,
+        "setup_ms": 6.49,
+        "encoder_ms": 19613.603,
+        "projector_ms": 101.536,
+        "readback_ms": 0.135
+       },
+       {
+        "part": 1,
+        "size": [
+         364,
+         560
+        ],
+        "patches": 1040,
+        "tokens": 260,
+        "total_ms": 20468.633,
+        "setup_ms": 6.177,
+        "encoder_ms": 20348.091,
+        "projector_ms": 105.909,
+        "readback_ms": 0.284
+       },
+       {
+        "part": 2,
+        "size": [
+         364,
+         560
+        ],
+        "patches": 1040,
+        "tokens": 260,
+        "total_ms": 20691.086,
+        "setup_ms": 6.203,
+        "encoder_ms": 20569.555,
+        "projector_ms": 105.372,
+        "readback_ms": 0.44
+       },
+       {
+        "part": 3,
+        "size": [
+         364,
+         560
+        ],
+        "patches": 1040,
+        "tokens": 260,
+        "total_ms": 20544.126,
+        "setup_ms": 3.759,
+        "encoder_ms": 20424.122,
+        "projector_ms": 104.981,
+        "readback_ms": 2.343
+       },
+       {
+        "part": 4,
+        "size": [
+         364,
+         560
+        ],
+        "patches": 1040,
+        "tokens": 260,
+        "total_ms": 20549.7,
+        "setup_ms": 3.623,
+        "encoder_ms": 20431.59,
+        "projector_ms": 104.503,
+        "readback_ms": 0.614
+       },
+       {
+        "part": 5,
+        "size": [
+         364,
+         560
+        ],
+        "patches": 1040,
+        "tokens": 260,
+        "total_ms": 28515.578,
+        "setup_ms": 3.497,
+        "encoder_ms": 28391.011,
+        "projector_ms": 104.799,
+        "readback_ms": 4.841
+       },
+       {
+        "part": 6,
+        "size": [
+         364,
+         560
+        ],
+        "patches": 1040,
+        "tokens": 260,
+        "total_ms": 20611.932,
+        "setup_ms": 11.972,
+        "encoder_ms": 20478.624,
+        "projector_ms": 109.599,
+        "readback_ms": 2.437
+       },
+       {
+        "part": 7,
+        "size": [
+         364,
+         560
+        ],
+        "patches": 1040,
+        "tokens": 260,
+        "total_ms": 20583.092,
+        "setup_ms": 3.733,
+        "encoder_ms": 20465.602,
+        "projector_ms": 102.313,
+        "readback_ms": 2.202
+       },
+       {
+        "part": 8,
+        "size": [
+         364,
+         560
+        ],
+        "patches": 1040,
+        "tokens": 260,
+        "total_ms": 20712.379,
+        "setup_ms": 3.883,
+        "encoder_ms": 20593.701,
+        "projector_ms": 104.559,
+        "readback_ms": 0.555
+       }
+      ],
+      "init_ms": 1042.164,
+      "preprocess_ms": 77.606,
+      "preprocess_info": {
+       "parts": "9",
+       "grid": "2x4"
+      },
+      "prompt_ms": 0.16,
+      "prompt_info": {
+       "tokens": "2372"
+      },
+      "embed_ms": 3.079,
+      "embed_info": {
+       "image_tokens": "2332"
+      },
+      "prefill_ms": 145885.95,
+      "prefill_info": {
+       "tokens": "2372"
+      },
+      "decode": {
+       "steps": 278,
+       "total_ms": 415740.156,
+       "mean_ms": 1495.468,
+       "p50_ms": 1414.249,
+       "max_ms": 4024.838,
+       "first_step_ms": 1429.9,
+       "steady_mean_ms": 1495.706,
+       "step_ms_sample": [
+        1429.9,
+        1447.6,
+        1419.8,
+        1423.8,
+        2210.0,
+        1499.4,
+        2211.6,
+        2460.1,
+        "...",
+        2579.5,
+        3343.9,
+        2894.0,
+        1711.2
+       ]
+      },
+      "detokenize_ms": 0.73,
+      "detokenize_info": {
+       "generated": "279"
+      },
+      "vision_encoder_ms": 191315.899,
+      "vision_projector_ms": 943.571,
+      "vision_total_ms": 192405.874
+     }
     },
     {
      "id": "tiny",
      "exit": 0,
-     "wall_seconds": 58.559,
+     "wall_seconds": 32.014,
      "n_ref_tokens": 3,
-     "ids_exact": null,
+     "ids_exact": true,
      "first_id_difference": null,
-     "n_tokens": null,
+     "n_tokens": 3,
      "text_exact": true,
      "cer": 0.0,
-     "timing": {}
+     "timing": {
+      "vision": [
+       {
+        "part": 0,
+        "size": [
+         644,
+         308
+        ],
+        "patches": 1012,
+        "tokens": 253,
+        "total_ms": 20736.928,
+        "setup_ms": 6.767,
+        "encoder_ms": 20623.475,
+        "projector_ms": 100.34,
+        "readback_ms": 0.206
+       }
+      ],
+      "init_ms": 1223.238,
+      "preprocess_ms": 3.907,
+      "preprocess_info": {
+       "parts": "1",
+       "grid": "0x0"
+      },
+      "prompt_ms": 0.16,
+      "prompt_info": {
+       "tokens": "274"
+      },
+      "embed_ms": 0.367,
+      "embed_info": {
+       "image_tokens": "253"
+      },
+      "prefill_ms": 6904.886,
+      "prefill_info": {
+       "tokens": "274"
+      },
+      "decode": {
+       "steps": 2,
+       "total_ms": 2774.078,
+       "mean_ms": 1387.039,
+       "p50_ms": 1436.942,
+       "max_ms": 1436.942,
+       "first_step_ms": 1436.9,
+       "steady_mean_ms": 1337.1,
+       "step_ms_sample": [
+        1436.9,
+        1337.1
+       ]
+      },
+      "detokenize_ms": 0.087,
+      "detokenize_info": {
+       "generated": "3"
+      },
+      "vision_encoder_ms": 20623.475,
+      "vision_projector_ms": 100.34,
+      "vision_total_ms": 20736.928
+     }
     }
    ],
-   "all_ids_exact": null,
+   "all_ids_exact": true,
    "all_text_exact": true,
-   "total_wall_seconds": 2791.37
+   "total_wall_seconds": 1306.77
   }
  ],
  "skipped": [],
  "baselines": {},
- "elapsed_seconds": 8342.8,
+ "elapsed_seconds": 2799.6,
  "completed": true
 }

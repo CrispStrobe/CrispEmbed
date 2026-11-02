@@ -1,0 +1,7 @@
+source=2a521e51fb84c4ab0afb75a114a05775f87a8cab model=moebius arms=q4_k-mix-mm-g q4_k-mix-g
+4
+               total        used        free      shared  buff/cache   available
+Mem:              15           0          13           0           1          14
+Swap:              2           0           2
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/root       145G   38G  107G  26% /

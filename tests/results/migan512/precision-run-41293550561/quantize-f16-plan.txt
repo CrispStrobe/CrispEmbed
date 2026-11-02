@@ -1,0 +1,178 @@
+migan inpaint-v1 policy: vectors, depthwise/one-channel kernels, buffers, embeddings and first/last convs F32; other kernels natural-row [IC*KH*KW,OC] / [IN,OUT] storage
+encoder.b128.conv1.conv1.bias                 -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b128.conv1.conv1.weight               -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b128.conv1.conv2.weight               -    f32, (inpaint-v1 f16 rows=256) 0.2 MB -> 0.1 MB
+encoder.b128.conv2.conv1.bias                 -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b128.conv2.conv1.weight               -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b128.conv2.conv2.weight               -    f32, (inpaint-v1 f16 rows=256) 0.5 MB -> 0.2 MB
+encoder.b128.conv2.downsample.filter.weight   -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b16.conv1.conv1.bias                  -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b16.conv1.conv1.weight                -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b16.conv1.conv2.weight                -    f32, (inpaint-v1 f16 rows=512) 1.0 MB -> 0.5 MB
+encoder.b16.conv2.conv1.bias                  -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b16.conv2.conv1.weight                -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b16.conv2.conv2.weight                -    f32, (inpaint-v1 f16 rows=512) 1.0 MB -> 0.5 MB
+encoder.b16.conv2.downsample.filter.weight    -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b256.conv1.conv1.bias                 -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b256.conv1.conv1.weight               -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b256.conv1.conv2.weight               -    f32, (inpaint-v1 f16 rows=128) 0.1 MB -> 0.0 MB
+encoder.b256.conv2.conv1.bias                 -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b256.conv2.conv1.weight               -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b256.conv2.conv2.weight               -    f32, (inpaint-v1 f16 rows=128) 0.1 MB -> 0.1 MB
+encoder.b256.conv2.downsample.filter.weight   -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b32.conv1.conv1.bias                  -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b32.conv1.conv1.weight                -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b32.conv1.conv2.weight                -    f32, (inpaint-v1 f16 rows=512) 1.0 MB -> 0.5 MB
+encoder.b32.conv2.conv1.bias                  -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b32.conv2.conv1.weight                -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b32.conv2.conv2.weight                -    f32, (inpaint-v1 f16 rows=512) 1.0 MB -> 0.5 MB
+encoder.b32.conv2.downsample.filter.weight    -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b4.conv1.conv1.bias                   -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b4.conv1.conv1.weight                 -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b4.conv1.conv2.weight                 -    f32, (inpaint-v1 f16 rows=512) 1.0 MB -> 0.5 MB
+encoder.b4.conv2.conv1.bias                   -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b4.conv2.conv1.weight                 -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b4.conv2.conv2.weight                 -    f32, (inpaint-v1 f16 rows=512) 1.0 MB -> 0.5 MB
+encoder.b512.conv1.conv1.bias                 -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b512.conv1.conv1.weight               -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b512.conv1.conv2.weight               -    f32, (inpaint-v1 f16 rows=64) 0.0 MB -> 0.0 MB
+encoder.b512.conv2.conv1.bias                 -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b512.conv2.conv1.weight               -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b512.conv2.conv2.weight               -    f32, (inpaint-v1 f16 rows=64) 0.0 MB -> 0.0 MB
+encoder.b512.conv2.downsample.filter.weight   -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b512.fromrgb.bias                     -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b512.fromrgb.weight                   -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b64.conv1.conv1.bias                  -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b64.conv1.conv1.weight                -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b64.conv1.conv2.weight                -    f32, (inpaint-v1 f16 rows=512) 1.0 MB -> 0.5 MB
+encoder.b64.conv2.conv1.bias                  -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b64.conv2.conv1.weight                -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b64.conv2.conv2.weight                -    f32, (inpaint-v1 f16 rows=512) 1.0 MB -> 0.5 MB
+encoder.b64.conv2.downsample.filter.weight    -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b8.conv1.conv1.bias                   -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b8.conv1.conv1.weight                 -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b8.conv1.conv2.weight                 -    f32, (inpaint-v1 f16 rows=512) 1.0 MB -> 0.5 MB
+encoder.b8.conv2.conv1.bias                   -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b8.conv2.conv1.weight                 -    f32, (inpaint-v1 F32) copy 0.0 MB
+encoder.b8.conv2.conv2.weight                 -    f32, (inpaint-v1 f16 rows=512) 1.0 MB -> 0.5 MB
+encoder.b8.conv2.downsample.filter.weight     -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b128.conv1.conv1.bias               -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b128.conv1.conv1.weight             -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b128.conv1.conv2.weight             -    f32, (inpaint-v1 f16 rows=512) 0.5 MB -> 0.2 MB
+synthesis.b128.conv1.noise_const              -    f32, (inpaint-v1 F32) copy 0.1 MB
+synthesis.b128.conv1.noise_strength           -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b128.conv1.upsample.filter.weight   -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b128.conv1.upsample.filter_const    -    f32, (inpaint-v1 F32) copy 0.1 MB
+synthesis.b128.conv2.conv1.bias               -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b128.conv2.conv1.weight             -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b128.conv2.conv2.weight             -    f32, (inpaint-v1 f16 rows=256) 0.2 MB -> 0.1 MB
+synthesis.b128.conv2.noise_const              -    f32, (inpaint-v1 F32) copy 0.1 MB
+synthesis.b128.conv2.noise_strength           -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b128.torgb.bias                     -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b128.torgb.weight                   -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b128.upsample.filter.weight         -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b128.upsample.filter_const          -    f32, (inpaint-v1 F32) copy 0.1 MB
+synthesis.b16.conv1.conv1.bias                -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b16.conv1.conv1.weight              -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b16.conv1.conv2.weight              -    f32, (inpaint-v1 f16 rows=512) 1.0 MB -> 0.5 MB
+synthesis.b16.conv1.noise_const               -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b16.conv1.noise_strength            -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b16.conv1.upsample.filter.weight    -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b16.conv1.upsample.filter_const     -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b16.conv2.conv1.bias                -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b16.conv2.conv1.weight              -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b16.conv2.conv2.weight              -    f32, (inpaint-v1 f16 rows=512) 1.0 MB -> 0.5 MB
+synthesis.b16.conv2.noise_const               -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b16.conv2.noise_strength            -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b16.torgb.bias                      -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b16.torgb.weight                    -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b16.upsample.filter.weight          -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b16.upsample.filter_const           -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b256.conv1.conv1.bias               -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b256.conv1.conv1.weight             -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b256.conv1.conv2.weight             -    f32, (inpaint-v1 f16 rows=256) 0.1 MB -> 0.1 MB
+synthesis.b256.conv1.noise_const              -    f32, (inpaint-v1 F32) copy 0.2 MB
+synthesis.b256.conv1.noise_strength           -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b256.conv1.upsample.filter.weight   -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b256.conv1.upsample.filter_const    -    f32, (inpaint-v1 F32) copy 0.2 MB
+synthesis.b256.conv2.conv1.bias               -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b256.conv2.conv1.weight             -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b256.conv2.conv2.weight             -    f32, (inpaint-v1 f16 rows=128) 0.1 MB -> 0.0 MB
+synthesis.b256.conv2.noise_const              -    f32, (inpaint-v1 F32) copy 0.2 MB
+synthesis.b256.conv2.noise_strength           -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b256.torgb.bias                     -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b256.torgb.weight                   -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b256.upsample.filter.weight         -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b256.upsample.filter_const          -    f32, (inpaint-v1 F32) copy 0.2 MB
+synthesis.b32.conv1.conv1.bias                -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b32.conv1.conv1.weight              -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b32.conv1.conv2.weight              -    f32, (inpaint-v1 f16 rows=512) 1.0 MB -> 0.5 MB
+synthesis.b32.conv1.noise_const               -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b32.conv1.noise_strength            -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b32.conv1.upsample.filter.weight    -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b32.conv1.upsample.filter_const     -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b32.conv2.conv1.bias                -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b32.conv2.conv1.weight              -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b32.conv2.conv2.weight              -    f32, (inpaint-v1 f16 rows=512) 1.0 MB -> 0.5 MB
+synthesis.b32.conv2.noise_const               -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b32.conv2.noise_strength            -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b32.torgb.bias                      -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b32.torgb.weight                    -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b32.upsample.filter.weight          -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b32.upsample.filter_const           -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b4.conv1.conv1.bias                 -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b4.conv1.conv1.weight               -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b4.conv1.conv2.weight               -    f32, (inpaint-v1 f16 rows=512) 1.0 MB -> 0.5 MB
+synthesis.b4.conv2.conv1.bias                 -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b4.conv2.conv1.weight               -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b4.conv2.conv2.weight               -    f32, (inpaint-v1 f16 rows=512) 1.0 MB -> 0.5 MB
+synthesis.b4.torgb.bias                       -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b4.torgb.weight                     -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b512.conv1.conv1.bias               -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b512.conv1.conv1.weight             -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b512.conv1.conv2.weight             -    f32, (inpaint-v1 f16 rows=128) 0.0 MB -> 0.0 MB
+synthesis.b512.conv1.noise_const              -    f32, (inpaint-v1 F32) copy 1.0 MB
+synthesis.b512.conv1.noise_strength           -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b512.conv1.upsample.filter.weight   -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b512.conv1.upsample.filter_const    -    f32, (inpaint-v1 F32) copy 1.0 MB
+synthesis.b512.conv2.conv1.bias               -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b512.conv2.conv1.weight             -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b512.conv2.conv2.weight             -    f32, (inpaint-v1 f16 rows=64) 0.0 MB -> 0.0 MB
+synthesis.b512.conv2.noise_const              -    f32, (inpaint-v1 F32) copy 1.0 MB
+synthesis.b512.conv2.noise_strength           -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b512.torgb.bias                     -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b512.torgb.weight                   -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b512.upsample.filter.weight         -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b512.upsample.filter_const          -    f32, (inpaint-v1 F32) copy 1.0 MB
+synthesis.b64.conv1.conv1.bias                -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b64.conv1.conv1.weight              -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b64.conv1.conv2.weight              -    f32, (inpaint-v1 f16 rows=512) 1.0 MB -> 0.5 MB
+synthesis.b64.conv1.noise_const               -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b64.conv1.noise_strength            -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b64.conv1.upsample.filter.weight    -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b64.conv1.upsample.filter_const     -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b64.conv2.conv1.bias                -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b64.conv2.conv1.weight              -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b64.conv2.conv2.weight              -    f32, (inpaint-v1 f16 rows=512) 1.0 MB -> 0.5 MB
+synthesis.b64.conv2.noise_const               -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b64.conv2.noise_strength            -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b64.torgb.bias                      -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b64.torgb.weight                    -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b64.upsample.filter.weight          -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b64.upsample.filter_const           -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b8.conv1.conv1.bias                 -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b8.conv1.conv1.weight               -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b8.conv1.conv2.weight               -    f32, (inpaint-v1 f16 rows=512) 1.0 MB -> 0.5 MB
+synthesis.b8.conv1.noise_const                -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b8.conv1.noise_strength             -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b8.conv1.upsample.filter.weight     -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b8.conv1.upsample.filter_const      -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b8.conv2.conv1.bias                 -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b8.conv2.conv1.weight               -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b8.conv2.conv2.weight               -    f32, (inpaint-v1 f16 rows=512) 1.0 MB -> 0.5 MB
+synthesis.b8.conv2.noise_const                -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b8.conv2.noise_strength             -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b8.torgb.bias                       -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b8.torgb.weight                     -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b8.upsample.filter.weight           -    f32, (inpaint-v1 F32) copy 0.0 MB
+synthesis.b8.upsample.filter_const            -    f32, (inpaint-v1 F32) copy 0.0 MB

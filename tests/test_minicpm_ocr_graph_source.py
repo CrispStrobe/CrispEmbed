@@ -58,7 +58,10 @@ class Controls(unittest.TestCase):
     def test_q8_publisher_preserves_4d_patch(self):
         s = json.loads((ROOT/'docs/minicpm-ocr-publication-v1.json').read_text())
         q = s['recipes']['Q8_0']
-        self.assertEqual(q['tensor_type'], ['v.emb.patch_embedding.weight=f16'])
+        # Main's qualified recipe quantizes from the F16 GGUF, whose 4-D patch
+        # kernel is not flattened (only F32 4-D tensors are), so no override is needed.
+        self.assertEqual(q['from'], 'F16')
+        self.assertEqual(q['tensor_type'], [])
         self.assertEqual(q['precision_receipt'], 'tests/results/minicpm-ocr/bench.json')
         self.assertEqual(s['parity_cases'], ['line', 'para-en', 'table', 'tall', 'tiny'])
 

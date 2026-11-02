@@ -1,0 +1,13 @@
+Model: sdxl_vae
+Source: https://github.com/hustvl/PixelHacker/tree/f5567db2871598aa178fe7a34c520dd478a0b41b
+Checkpoint: https://huggingface.co/hustvl/PixelHacker/resolve/012fd343158936a265b8a0ee38a791a7a2841f45/vae/diffusion_pytorch_model.bin
+Checkpoint SHA-256: a59d7ea697f2942d22002dc3469e8c53db807a6b78f7f5ec03bd4c1f70f98efe
+Author weight model card: https://huggingface.co/hustvl/PixelHacker/raw/012fd343158936a265b8a0ee38a791a7a2841f45/README.md
+Declared weight licence: MIT
+Author-owned weight repository declares MIT; source implementation is separately Apache-2.0.
+Licence evidence:
+https://huggingface.co/stabilityai/sdxl-vae
+https://huggingface.co/hustvl/PixelHacker
+Conversion: floating weights stored as F32; named singleton-depth axes squeezed;
+inference-inert BatchNorm training counters omitted with individual hashes in receipt.
+No inference quality, commercial clearance or native parity result is asserted by conversion.

@@ -152,6 +152,11 @@ CPU-baseline PR76 is merged; successor release assets remain separate. The
 MI-GAN's bounded fixed256 CPU/F32 prototype is integrated throughPR85/`1b74b12a`:
 [corrected40344396533](tests/results/migan/native-parity.json) at`2526fcac`
 passes494 unchanged comparisons and all8 image gates against original40330674649.
+The permissive engines (MI-GAN512, Moebius, PixelHacker, SDXL VAE) are in the
+[engine guide](docs/inpainting-engines.md) and
+[optimization results](docs/inpainting-optimization-results.md); GPU execution,
+original PixelHacker CUDA/FLA parity and the recorded Moebius strict
+intermediate failures remain open; all candidate gates stay default off.
 The initial256 stale observer fields remain preserved; the test-only owner
 retention repair leaves all8 ordinary final hashes unchanged. Public API/registry,
 representative subtitle/perceptual/video quality and publication remain separate;

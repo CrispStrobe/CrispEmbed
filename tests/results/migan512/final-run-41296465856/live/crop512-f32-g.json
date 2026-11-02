@@ -1,0 +1,169 @@
+{
+  "engine": "migan512",
+  "backend": null,
+  "label": "f32-g",
+  "model": "migan-512-places2-f32-experimental.gguf",
+  "vae": null,
+  "crop": 512,
+  "tiles": false,
+  "threads": 4,
+  "env": [
+    "CRISPEMBED_INPAINT_GRAPH=1"
+  ],
+  "reference_run": "/home/runner/work/_temp/out/live-crop512/f32",
+  "cases": [
+    {
+      "photo": "face.png",
+      "size": [
+        512,
+        512
+      ],
+      "resized_before_crop": null,
+      "naive_fill": {
+        "masked_pixels": 20918,
+        "psnr_db": 14.49,
+        "mae": 41.679
+      },
+      "runs": {
+        "exact-mask": {
+          "returncode": 0,
+          "seconds": 2.064,
+          "peak_rss_kib": 384848,
+          "shape_ok": true,
+          "inpainted": {
+            "masked_pixels": 20918,
+            "psnr_db": 24.015,
+            "mae": 9.321
+          },
+          "outside_exact": true,
+          "vs_reference_run": {
+            "psnr_db": Infinity,
+            "mae": 0.0,
+            "max_abs": 0,
+            "rgb_cosine": 1.0
+          }
+        },
+        "dbnet-mask": {
+          "returncode": 0,
+          "seconds": 3.056,
+          "peak_rss_kib": 600752,
+          "shape_ok": true,
+          "inpainted": {
+            "masked_pixels": 20918,
+            "psnr_db": 14.697,
+            "mae": 27.124
+          },
+          "outside_exact": null,
+          "vs_reference_run": {
+            "psnr_db": Infinity,
+            "mae": 0.0,
+            "max_abs": 0,
+            "rgb_cosine": 1.0
+          }
+        }
+      }
+    },
+    {
+      "photo": "landscape.jpg",
+      "size": [
+        512,
+        512
+      ],
+      "resized_before_crop": null,
+      "naive_fill": {
+        "masked_pixels": 20918,
+        "psnr_db": 14.642,
+        "mae": 35.254
+      },
+      "runs": {
+        "exact-mask": {
+          "returncode": 0,
+          "seconds": 2.041,
+          "peak_rss_kib": 385040,
+          "shape_ok": true,
+          "inpainted": {
+            "masked_pixels": 20918,
+            "psnr_db": 16.01,
+            "mae": 21.261
+          },
+          "outside_exact": true,
+          "vs_reference_run": {
+            "psnr_db": Infinity,
+            "mae": 0.0,
+            "max_abs": 0,
+            "rgb_cosine": 1.0
+          }
+        },
+        "dbnet-mask": {
+          "returncode": 0,
+          "seconds": 3.06,
+          "peak_rss_kib": 600692,
+          "shape_ok": true,
+          "inpainted": {
+            "masked_pixels": 20918,
+            "psnr_db": 13.196,
+            "mae": 32.557
+          },
+          "outside_exact": null,
+          "vs_reference_run": {
+            "psnr_db": Infinity,
+            "mae": 0.0,
+            "max_abs": 0,
+            "rgb_cosine": 1.0
+          }
+        }
+      }
+    },
+    {
+      "photo": "street.jpg",
+      "size": [
+        512,
+        512
+      ],
+      "resized_before_crop": null,
+      "naive_fill": {
+        "masked_pixels": 20918,
+        "psnr_db": 12.689,
+        "mae": 47.347
+      },
+      "runs": {
+        "exact-mask": {
+          "returncode": 0,
+          "seconds": 2.036,
+          "peak_rss_kib": 384600,
+          "shape_ok": true,
+          "inpainted": {
+            "masked_pixels": 20918,
+            "psnr_db": 13.205,
+            "mae": 37.596
+          },
+          "outside_exact": true,
+          "vs_reference_run": {
+            "psnr_db": Infinity,
+            "mae": 0.0,
+            "max_abs": 0,
+            "rgb_cosine": 1.0
+          }
+        },
+        "dbnet-mask": {
+          "returncode": 0,
+          "seconds": 3.101,
+          "peak_rss_kib": 600668,
+          "shape_ok": true,
+          "inpainted": {
+            "masked_pixels": 20918,
+            "psnr_db": 10.516,
+            "mae": 57.764
+          },
+          "outside_exact": null,
+          "vs_reference_run": {
+            "psnr_db": Infinity,
+            "mae": 0.0,
+            "max_abs": 0,
+            "rgb_cosine": 1.0
+          }
+        }
+      }
+    }
+  ]
+}

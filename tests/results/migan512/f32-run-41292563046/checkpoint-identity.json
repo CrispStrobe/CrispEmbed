@@ -1,0 +1,3 @@
+{"schema":"crispembed-migan512-checkpoint-first-observation-v1","filename":"migan_512_places2.pt",
+ "bytes":29553256,"declared_bytes":29553256,"sha256":"1d6087eee0aac8923ad2606be5d8caeb4824d3e4de331995e420c74e124a466a","upstream_sha256_declared":false,
+ "source_commit":"2b793c5ece43f4253e32d4afc257120a5deed6f5","github_sha":"d1f315d94943d2b3e7ae1867f8a9a366fc5f417f","github_run_id":"41292563046"}

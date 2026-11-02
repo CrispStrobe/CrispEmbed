@@ -1,0 +1,1 @@
+graph arm q8_0-mm-g predates the graph pin fix; excluded

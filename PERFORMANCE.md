@@ -1,3 +1,17 @@
+## GOT-OCR2 F16 r2 (2 November 2026, `fix/got-ocr2-f16`)
+
+Hosted x86 CPU, 4 vCPU, `-t 4`, one-shot runs including load; 256-token cap. Text compared with
+the original model (stepfun-ai/GOT-OCR-2.0-hf, F32, CPU). Receipts: `tests/results/got-ocr2-f16/`.
+
+| Case | F16-r2 s | Q4_K s | Original F32 s | F16-r2 vs original | Q4_K vs original |
+|---|---:|---:|---:|---|---|
+| fox | 28.7 | 14.7 | — | token-exact | token-exact |
+| receipt_example | 39.6 | 19.3 | — | ratio 0.530 (adds Qty/Price) | ratio 0.592 |
+| simple_form | 29.7 | 15.1 | — | ratio 0.441 | ratio 0.074 |
+
+Stage diff vs the reference: F16-r2 min cos 1.000000 on 19 stages (llm_layer_0 max_abs 5.1e-5),
+Q4_K worst 0.995157. M1 Metal F16-r2 fox: exact, 17.9 s (11.3 s Metal library load).
+
 ## CUDA GPU audit, Kaggle Tesla T4 (1-2 November 2026, `feat/cuda-audit`)
 
 Same-binary CUDA (`--gpu-backend cuda`) vs CPU (`--gpu-backend cpu`,
@@ -97,6 +111,28 @@ A quieter CPU measurement of TeleOCR `text` took 15.6 s warm against 4.5 s on
 Metal. TODO: TeleOCR vision is still ~half of Metal time on large pages; the
 3420-wide FFN-down hits the bounds-checked mul_mm (opt-in
 `CRISPEMBED_QWEN2VL_METAL_SPLIT_K` is implemented but not A/B'd).
+## 1 November 2026 — Issue 71 MI-GAN512 / Moebius / PixelHacker CPU measurements (feat/issue71-latent-qual)
+
+Hosted ubuntu, 4 vCPU, 16 GB, `--threads 4`. Details:
+[inpainting precision guide](docs/inpainting-precision.md).
+
+| Engine / arm | Weights (denoiser + VAE) | One 512 inpaint (CLI) | Peak RSS (CLI) |
+| --- | ---: | ---: | ---: |
+| MI-GAN512 F32 eager / graph | 29.5 MB | 2.2 / 2.1 s | 307 / 375 MB |
+| MI-GAN512 Q8_0 / Q4_K (dequantized) | 12.6 / 11.1 MB | 2.1 / 2.1 s | 308 MB |
+| Moebius F32 eager (19 DDIM steps x CFG 2) | 905 + 335 MB | 510 s | 1.95 GB |
+| Moebius F32 graph (after pin fix) | 905 + 335 MB | 384–422 s | 3.78 GB |
+| Moebius F16 eager (dequantized at load) | 485 + 168 MB | 349 s | 2.00 GB |
+| Moebius Q8_0 stored matmul, eager / graph | 288 + 89 MB | 558 / 181 s | 1.17 / 3.02 GB |
+| Moebius Q4_K stored matmul, eager / graph | 183 + 48 MB | 557 / 192 s | 1.03 / 2.89 GB |
+| PixelHacker F32 eager / graph | 3,449 + 335 MB | 857 / 714 s | 4.49 / 6.30 GB |
+| PixelHacker Q8_0 stored matmul, eager / graph | 918 + 89 MB | 695 / 482 s | 1.80 / 3.69 GB |
+| PixelHacker Q4_K stored matmul, eager / graph | 487 + 48 MB | 660 / 497 s | 1.29 / 3.23 GB |
+
+MI-GAN precision does not change latency or memory (activation-bound). The
+Moebius graph arm before the initializer/parameter pin produced wrong images
+and is a timing datum only. F32 vs F16 eager timings come from different hosted runners (dequantized F16 runs the same F32 arithmetic), so treat ±30% as runner variance. Latent native replay of the four-case panel takes
+23–35 min per arm (eager).
 
 ## 31 October 2026 — Native Marker-style CPU document conversion
 
@@ -158,6 +194,114 @@ though its worst first-logit error is only 0.0000495910644531. Confidence validi
 is not calibration. The [validation record](docs/teleocr-validation.md) retains
 all layer metrics, failure attribution, source/binary hashes and corpus limits.
 No throughput, GPU, maximum-context or representative OCR-quality claim follows.
+
+## 1 November 2026 — Inpainting device graph measurements pending
+
+## 1 November 2026 — Measured CPU inpainting improvements
+
+## 1 November 2026 — Further hashing measurements and completed latent pairs
+
+The current ordinary API pairs use the same 512-square formula photograph,
+eight threads, F32 and stock 20 requested/19 executed timesteps, with one first
+image and three warm images per arm. These are raw observations on one shared
+CPU host in fixed run order; their performance qualification flags remain false.
+Loading includes digest verification and initialization after independent
+pre-run file hashing, so the files may already be cached. It is not cold-storage
+timing. Model loading is outside the image measurements.
+
+| Profile | Load/validation s, one observation | First image s | Three warm samples s | Warm median s |
+| --- | ---: | ---: | --- | ---: |
+| PixelHacker eager | 16.536 | 314.108 | 310.958, 311.827, 306.760 | 310.958 |
+| PixelHacker graph/GEMM/GLA plus SHA | 3.196 | 149.553 | 144.243, 141.174, 145.701 | 144.243 |
+| Moebius existing local/GEMM | 4.973 | 166.949 | 142.796, 139.512, 266.263 | 142.796 |
+| Moebius local/GEMM plus depthwise/SHA | 1.277 | 392.587 | 134.088, 181.397, 195.887 | 181.397 |
+
+PixelHacker's observed median ratio is 2.156. Every repeat within an arm is
+identical; candidate versus eager passes fixed native RGB budgets with maximum
+filled-channel difference 1, mean 0.0000949436, PSNR 88.356 dB and zero known
+channel errors. This does not qualify the unavailable original CUDA/FLA model.
+Process peak RSS is 4,478,836/6,275,732 KiB for eager/candidate. Moebius's eight
+outputs are identical, with process peaks 3,733,784/3,727,376 KiB. Its candidate
+median is 27.03% slower and both series are noisy under competing work; no
+complete-image benefit is qualified. Depthwise stays outside the main preset.
+
+The separate SHA component test alternates three samples per arm over a fixed
+32 MiB memory buffer: scalar median 119.284250 ms, SHA-NI 25.468902 ms,
+**4.6835 times** the throughput with identical digests. The eligible Moebius
+depthwise operator screen has a weighted median ratio of 7.0836, separate from
+image inference. The private 128 MiB workspace screen shows mixed results,
+including variation in its unchanged control, so CPU production remains 32 MiB.
+No resolution, weights, precision, schedule or quality threshold was reduced.
+
+See the [PixelHacker API record](tests/results/inpainting/pixelhacker-api-cpu-2026-11-01.json),
+Moebius API record (receipt retained on the research branch feat/issue71-latent-qual, path tests/results/inpainting/moebius-api-cpu-2026-11-01.json),
+SHA component record (receipt retained on the research branch feat/issue71-latent-qual, path tests/results/inpainting/sha256-cpu-2026-11-01.json) and
+[complete guide](docs/inpainting-optimization-results.md). CUDA/Metal and broader
+image-quality/performance qualification remain separate. Earlier samples and
+failures below are preserved as historical evidence.
+
+## 1 November 2026 — Earlier measured CPU inpainting improvements
+
+Actual Release/native CPU measurements on an AMD EPYC9V74 worker with an
+eight-CPU quota and8GiB memory limit now supersede the earlier source-only
+status below. Timings are ordinary image API calls with preprocessing and
+composition, without stage observers. Model loading/validation and cold calls
+are recorded separately. These measurements do not establish CUDA/Metal
+performance or cross-machine throughput.
+
+| Engine / geometry / threads | Eager warm ms | Portable graph warm ms | Optimized CPU warm ms |
+| --- | ---: | ---: | ---: |
+| MI-GAN256 /256² /4 | 1,072.62 | 1,015.62 | 411.60 |
+| MI-GAN256 /256² /8 | 895.01 | 602.97 | 273.62 |
+| MI-GAN512 /512² /4 | 2,169.13 | 1,927.51 | 697.67 |
+| MI-GAN512 /512² /8, quiet confirmation | 1,604.95 | 1,259.96 | 495.24 |
+
+Each table median uses five warm calls in one context after a cold call.
+MI-GAN's new kernels preserve every captured native stage byte and pass the
+20-case original-model panel at both resolutions.
+The initial contended MI512/eight-thread group is retained as diagnostic evidence and excluded from the
+admitted table; explicit quiet confirmations supply the stated replacements.
+
+See [the complete results](docs/inpainting-optimization-results.md),
+[MI-GAN evidence](tests/results/inpainting/migan-cpu-2026-11-01.json),
+operator evidence (receipt retained on the research branch feat/issue71-latent-qual, path tests/results/inpainting/cpu-components-2026-11-01.json)
+for exact hashes, samples, cold/load timings, memory, gates and limits.
+The complete results also distinguish latent component gains from actual
+image-level speed and numerical qualification. Peak process memory is not
+the same as stored model size or graph arena bytes.
+
+## 1 November 2026 — Earlier inpainting device graph source-only status
+
+The new `CRISPEMBED_INPAINT_GRAPH=1` path removes per-layer host activation
+roundtrips from latent inference and per-call graph allocation from
+MI-GAN. Latent sampling uploads a 320-float timestep embedding and four DDIM
+coefficients per iteration (1,296 bytes), while the sampled/masked latent and
+mask remain on the selected backend. Strict F32 and explicit mixed GPU paths
+are independently gated. CPU graph plans and worker pools are cached.
+
+These are implementation properties, not measured speedups. At this earlier source-only stage, the CPU,
+CUDA and Metal paths had no observed native/model timings or peak-memory
+measurements. The executed CPU results above supersede that status. Use the
+[manual graph qualification](.github/workflows/inpaint-graphs.yml),
+[original replay driver](tools/ci-heavy/inpaint_graph_replay.py) and
+[benchmark contract](docs/inpainting-ggml-graphs.md) to collect evidence.
+Keep compile/load, first-call and steady-state latency separate; retained
+observer graphs are excluded from performance timing. Report actual peak
+RAM/VRAM separately from ggml graph-allocation bytes. No performance default
+is promoted without full-model numerical/image acceptance on the same device.
+
+## 1 November 2026 — Inpainting source profiles, measurements pending
+
+At this earlier stage, the MI-GAN512, Moebius and PixelHacker source
+implementations had no measured native latency or peak process memory.
+The latent original tensor census gives approximately 1.24 GB of F32 payload for
+Moebius plus its VAE, and 3.78 GB for PixelHacker plus VAE; these are stored-weight
+figures, not working-set measurements. The shared CPU implementation bounds
+convolution patch workspaces and reuses mmap when available. Those mechanisms
+do not establish a speed or RAM claim. See the
+[engine/reuse guide](docs/inpainting-engines.md) and the manual original/native
+workflows before collecting a same-host baseline. Existing MI-GAN256 synthetic
+reference results do not qualify these profiles or realistic subtitle removal.
 
 ## Unlimited-OCR-2 and MiniCPM-OCR CPU timings (28 October 2026, Kaggle 4 vCPU)
 
@@ -7150,7 +7294,7 @@ integrated-source or successor-release qualification follows from this diagnosti
 
 ## MiniCPM completed scalar benchmark — 28 October 2026
 
-The unchanged [v3 producer](tests/results/minicpm-ocr/bench.json) at `c9718788`
+The unchanged [v3 producer](tests/results/minicpm-ocr/bench-v3.json) at `c9718788`
 and [independent source/receipt review](tests/results/minicpm-ocr/bench-review.json)
 retain all five cases per arm. Both Q8 thread arms fail patch-shape loading before
 inference; this is a format failure and gives no Q8 quality or speed result.

@@ -1,0 +1,7 @@
+poison=1 lstm_state_reset=0
+step=0 image=mac-bin/fox-line2.png canvas=896 reused="" conf=0.000000 fresh="" conf=0.000000 FAIL
+step=1 image=mac-bin/fox-line1.png canvas=640 reused="" conf=0.000000 fresh="" conf=0.000000 FAIL
+step=2 image=mac-bin/fox-line2.png canvas=576 reused="" conf=0.000000 fresh="" conf=0.000000 FAIL
+step=3 image=mac-bin/fox-line2.png canvas=896 reused="" conf=0.000000 fresh="" conf=0.000000 FAIL
+step=4 image=mac-bin/fox-line2.png canvas=576 reused="" conf=0.000000 fresh="" conf=0.000000 FAIL
+easyocr-width-shrink steps=5 failures=5 FAIL
