@@ -15,6 +15,8 @@ from qwen35_decoded_panel import validate
 from qwen35_page_parity import parse
 from qwen35_receipt import add_confidences, teacher_quality
 from ocr_quality import score
+sys.path.insert(0, str(ROOT / 'tools'))
+from qwen35_source_pins import load as load_pin_amendments, source_matches
 
 DIAGNOSTICS = ('tools/ci-heavy/qwen35_quality_quant.py', 'tools/ci-heavy/qwen35_quality.py',
     'tools/dump_qwen35_ocr_page_reference.py', 'tests/test_qwen35_quant.cpp',
@@ -42,9 +44,12 @@ def verify_frozen(report, repo, expected_source):
         require(report[field] == prior[field], 'Frozen ' + field + ' changed')
     require(report['prior_workflow'] == prior['workflow'], 'Original workflow changed')
     require(set(report['diagnostic_sources']) == set(DIAGNOSTICS), 'Missing/extra diagnostic sources')
+    # Frozen pins stay in the receipt; a later legitimate change is accepted only
+    # through a recorded re-pin chain (tests/results/qwen35-ocr/source-pin-amendments.json).
+    amendments = load_pin_amendments(repo)
     for group in ('runtime_sources', 'diagnostic_sources'):
         for path, digest in report[group].items():
-            require(sha(repo / path) == digest, 'Source bytes changed: ' + path)
+            require(source_matches(repo, path, digest, amendments), 'Source bytes changed: ' + path)
     old = next(c for c in prior['cases'] if c['id'] == report['case']['id'])
     require(report['case'] == {k: old[k] for k in ('id', 'specification', 'prepared', 'gold')},
         'Frozen input/gold/specification changed')

@@ -1,0 +1,14 @@
+fetch-capture rc=0 seconds=77
+verify-capture rc=0 seconds=8
+sources rc=0 seconds=4
+checkpoints rc=0 seconds=36
+convert-denoiser rc=0 seconds=104
+convert-vae rc=0 seconds=12
+configure rc=0 seconds=1
+build rc=0 seconds=287
+quantize-denoiser-f16 rc=0 seconds=3
+quantize-vae-f16 rc=0 seconds=0
+native-f16 rc=1 seconds=3394
+cli-f16 rc=0 seconds=845
+native-f16-g rc=1 seconds=2881
+cli-f16-g rc=0 seconds=713

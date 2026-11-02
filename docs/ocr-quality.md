@@ -218,6 +218,17 @@ runtime/diagnostic source and frozen report/recipe hash; changed sources or miss
 records fail the audit. Raw artifact JSON and the retained augmented JSON are both
 accepted. The output includes the exact input-report, log and auditor hashes.
 
+The receipts themselves are never rewritten. When a pinned source later changes
+legitimately, review the diff, confirm the default path keeps the frozen numerics,
+and record a re-pin per file with
+`python tools/qwen35_source_pins.py --amend PATH --reason "..."`. That appends the
+previous hash, new hash/blob, the changing commits and the reason to
+[`source-pin-amendments.json`](../tests/results/qwen35-ocr/source-pin-amendments.json);
+undeclared drift still fails with `Source bytes changed`. `--check --verify-git`
+also proves each frozen digest is the blob at its receipt's own source commit. The
+OCR quality workflow runs whenever a pinned source changes, so drift is caught in
+the PR that causes it.
+
 Exit0 and `evidence_verified=true` mean the saved evidence verifies. The output
 also retains every numerical, output and incomplete-document failure. For example,
 mixed inventory still reports75 prefill/248 score failures even when its evidence

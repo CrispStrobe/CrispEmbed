@@ -21,13 +21,14 @@ struct context;
 // CRISPEMBED_MIGAN=1. Only the reviewed fixed256 F32 GGUF is accepted, unless
 // CRISPEMBED_MIGAN_QUANT=1 admits a policy-validated F16/Q8_0/Q4_K derivative.
 context * init(const char * path, int n_threads, std::string & error);
+// Experimental512 adds CRISPEMBED_MIGAN512=1 and independently supplied
+// checkpoint/GGUF hashes. No unchecked model auto-detection or download occurs.
+// For256, both hashes must match the already-reviewed constants above.
+context * init_variant(const char * path, const char * expected_checkpoint_sha256, const char * expected_gguf_sha256,
+                       int resolution, int n_threads, std::string & error);
+int image_resolution(const context * ctx);
 void free(context * ctx);
 
-// Contiguous RGB8 HWC and a same-size binary mask: 0=keep, 255=fill. Output
-// dimensions never change. Known pixels are byte-exact. Native256 tiles use
-// 64-pixel overlap; small dimensions edge-replicate RGB/mask, without resizing.
-// Output is unchanged on failure and may alias the input. Empty masks perform
-// no model calls. One context must not be used concurrently.
 // Process-wide GPU backend preference (metal/cuda/vulkan/cpu), as --gpu-backend.
 void set_gpu_backend(const char * name);
 
@@ -36,6 +37,11 @@ const char * backend_name(const context * ctx);
 const char * weight_precision(const context * ctx);
 int max_batch(const context * ctx);
 
+// Contiguous RGB8 HWC and a same-size binary mask: 0=keep, 255=fill. Output
+// dimensions never change. Known pixels are byte-exact. Native tiles use a
+// quarter-tile overlap; small dimensions edge-replicate RGB/mask, without resizing.
+// Output is unchanged on failure and may alias the input. Empty masks perform
+// no model calls. One context must not be used concurrently.
 bool process_rgb8(context * ctx, const uint8_t * rgb, size_t rgb_bytes, const uint8_t * fill_mask, size_t mask_bytes,
                   int width, int height, uint8_t * output_rgb, size_t output_bytes, std::string & error);
 
@@ -49,6 +55,9 @@ using tile_processor = bool (*)(void * opaque, const uint8_t * rgb, const uint8_
 bool process_tiles_rgb8(tile_processor process_tile, void * opaque, const uint8_t * rgb, size_t rgb_bytes,
                         const uint8_t * fill_mask, size_t mask_bytes, int width, int height, uint8_t * output_rgb,
                         size_t output_bytes, std::string & error);
+bool process_tiles_rgb8_variant(int resolution, tile_processor process_tile, void * opaque, const uint8_t * rgb,
+                                size_t rgb_bytes, const uint8_t * fill_mask, size_t mask_bytes, int width, int height,
+                                uint8_t * output_rgb, size_t output_bytes, std::string & error);
 
 // Same geometry/composition with up to max_batch tiles of one band row per
 // callback (contiguous exact256 RGB/mask/output tiles). Batching never changes
@@ -58,6 +67,10 @@ using tile_batch_processor = bool (*)(void * opaque, size_t count, const uint8_t
 bool process_tiles_rgb8_batched(tile_batch_processor process_tiles, void * opaque, size_t max_batch,
                                 const uint8_t * rgb, size_t rgb_bytes, const uint8_t * fill_mask, size_t mask_bytes,
                                 int width, int height, uint8_t * output_rgb, size_t output_bytes, std::string & error);
+bool process_tiles_rgb8_variant_batched(int resolution, tile_batch_processor process_tiles, void * opaque,
+                                        size_t max_batch, const uint8_t * rgb, size_t rgb_bytes,
+                                        const uint8_t * fill_mask, size_t mask_bytes, int width, int height,
+                                        uint8_t * output_rgb, size_t output_bytes, std::string & error);
 
 } // namespace detail
 } // namespace inpaint

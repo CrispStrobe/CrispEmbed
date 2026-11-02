@@ -68,12 +68,19 @@ class Protocol(unittest.TestCase):
     def test_plan(self):
         steps, drop = p.plan(self.cfg, ["F16"])
         self.assertEqual([(s[0], s[1], s[3]) for s in steps], [("convert", "F16", ["--dtype", "f16"])])
-        self.assertFalse(drop)
-        steps, drop = p.plan(self.cfg, ["Q8_0", "F16"])
+        self.assertEqual(drop, [])
+        steps, drop = p.plan(self.cfg, ["Q8_0"])
+        self.assertEqual([(s[0], s[1]) for s in steps], [("convert", "F16"), ("quantize", "Q8_0")])
+        self.assertEqual(steps[1][3], ["minicpm-ocr-1.0-f16.gguf", "q8_0"])
+        self.assertEqual(drop, ["minicpm-ocr-1.0-f16.gguf"])
+        steps, drop = p.plan(self.cfg, ["Q8_0", "F16", "F32"])
         self.assertEqual([(s[0], s[1]) for s in steps], [("convert", "F32"), ("convert", "F16"), ("quantize", "Q8_0")])
-        self.assertEqual(steps[0][3], ["--dtype", "f32"])
-        self.assertEqual(steps[2][3], ["q8_0"])
-        self.assertTrue(drop)
+        self.assertEqual(drop, [])
+
+    def test_committed_q8_receipt(self):
+        r = p.precision(self.cfg, "Q8_0")
+        self.assertTrue(r["ids_exact"])
+        self.assertEqual(sorted(r["arms"]), ["q8_0-t2", "q8_0-t4"])
 
     def test_parity_receipt(self):
         r = p.receipts(self.cfg)

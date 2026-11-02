@@ -1,0 +1,8 @@
+/home/runner/work/_temp/out/native-f32-o.log:	Elapsed (wall clock) time (h:mm:ss or m:ss): 26:13.33
+/home/runner/work/_temp/out/native-f32-o.log:	Maximum resident set size (kbytes): 7289436
+/home/runner/work/_temp/out/cli-f32-o.log:	Elapsed (wall clock) time (h:mm:ss or m:ss): 6:25.68
+/home/runner/work/_temp/out/cli-f32-o.log:	Maximum resident set size (kbytes): 6291104
+/home/runner/work/_temp/out/native-q8_0-mm-o.log:	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:36.93
+/home/runner/work/_temp/out/native-q8_0-mm-o.log:	Maximum resident set size (kbytes): 1837248
+/home/runner/work/_temp/out/cli-q8_0-mm-o.log:	Elapsed (wall clock) time (h:mm:ss or m:ss): 0:03.34
+/home/runner/work/_temp/out/cli-q8_0-mm-o.log:	Maximum resident set size (kbytes): 1802544

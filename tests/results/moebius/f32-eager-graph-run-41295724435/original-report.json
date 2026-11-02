@@ -1,0 +1,52 @@
+{
+  "schema": "crispembed-latent-inpaint-original-v1",
+  "model": "moebius",
+  "source_commit": "b88d462bacb9af6e7128a3b4cc4a07418bedfd61",
+  "source_contract_sha256": "b4f632d6939a8f57897c88e253bd96b7155fe3426a60ed77eac64b059d69983d",
+  "versions": {
+    "diffusers": "0.38.0",
+    "torch": "2.7.1+cu126",
+    "flash-linear-attention": "0.3.2",
+    "numpy": "2.4.6",
+    "Pillow": "13.0.0",
+    "timm": "1.0.30",
+    "einops": "0.8.2",
+    "transformers": "5.22.1",
+    "accelerate": "1.14.0"
+  },
+  "python": "3.11.17",
+  "torch_config": "PyTorch built with:\n  - GCC 11.2\n  - C++ Version: 201703\n  - Intel(R) oneAPI Math Kernel Library Version 2024.2-Product Build 20240605 for Intel(R) 64 architecture applications\n  - Intel(R) MKL-DNN v3.7.1 (Git Hash 8d263e693366ef8db40acc569cc7d8edf644556d)\n  - OpenMP 201511 (a.k.a. OpenMP 4.5)\n  - LAPACK is enabled (usually provided by MKL)\n  - NNPACK is enabled\n  - CPU capability usage: AVX512\n  - CUDA Runtime 12.6\n  - NVCC architecture flags: -gencode;arch=compute_50,code=sm_50;-gencode;arch=compute_60,code=sm_60;-gencode;arch=compute_70,code=sm_70;-gencode;arch=compute_75,code=sm_75;-gencode;arch=compute_80,code=sm_80;-gencode;arch=compute_86,code=sm_86;-gencode;arch=compute_90,code=sm_90\n  - CuDNN 90.5.1\n  - Magma 2.6.1\n  - Build settings: BLAS_INFO=mkl, BUILD_TYPE=Release, COMMIT_SHA=e2d141dbde55c2a4370fac5165b0561b6af4798b, CUDA_VERSION=12.6, CUDNN_VERSION=9.5.1, CXX_COMPILER=/opt/rh/gcc-toolset-11/root/usr/bin/c++, CXX_FLAGS= -D_GLIBCXX_USE_CXX11_ABI=1 -fvisibility-inlines-hidden -DUSE_PTHREADPOOL -DNDEBUG -DUSE_KINETO -DLIBKINETO_NOROCTRACER -DLIBKINETO_NOXPUPTI=ON -DUSE_FBGEMM -DUSE_PYTORCH_QNNPACK -DUSE_XNNPACK -DSYMBOLICATE_MOBILE_DEBUG_HANDLE -O2 -fPIC -Wall -Wextra -Werror=return-type -Werror=non-virtual-dtor -Werror=range-loop-construct -Werror=bool-operation -Wnarrowing -Wno-missing-field-initializers -Wno-unknown-pragmas -Wno-unused-parameter -Wno-strict-overflow -Wno-strict-aliasing -Wno-stringop-overflow -Wsuggest-override -Wno-psabi -Wno-error=old-style-cast -fdiagnostics-color=always -faligned-new -Wno-maybe-uninitialized -fno-math-errno -fno-trapping-math -Werror=format -Wno-stringop-overflow, LAPACK_INFO=mkl, PERF_WITH_AVX=1, PERF_WITH_AVX2=1, TORCH_VERSION=2.7.1, USE_CUDA=ON, USE_CUDNN=ON, USE_CUSPARSELT=1, USE_GFLAGS=OFF, USE_GLOG=OFF, USE_GLOO=ON, USE_MKL=ON, USE_MKLDNN=ON, USE_MPI=OFF, USE_NCCL=1, USE_NNPACK=ON, USE_OPENMP=ON, USE_ROCM=OFF, USE_ROCM_KERNEL_ASSERT=OFF, \n",
+  "device": "cuda:0",
+  "threads": 2,
+  "cases": [
+    {
+      "id": "subtitle_bar",
+      "file": "subtitle_bar/reference.json",
+      "sha256": "f1b9edc36c01104bcffd1d29491cb6a963fcf02076bfcaade2e8796c33d08881"
+    },
+    {
+      "id": "edge_touch",
+      "file": "edge_touch/reference.json",
+      "sha256": "b4f24a9c6a35da91e60df669aa6e1159883e25164dbbff8b768ef4dda5c28a22"
+    },
+    {
+      "id": "center",
+      "file": "center/reference.json",
+      "sha256": "eabfdfada1feaed0d9a90cf98770c6ed4a2be9dbd4314436beac7c833a8402e0"
+    },
+    {
+      "id": "empty",
+      "file": "empty/reference.json",
+      "sha256": "9289d2c1f3b291c541070dd91f949bd5d2a086cba654e01b8c97ca82b05284f2"
+    }
+  ],
+  "dumper_sha256": "1ee806658dc517464522d652704d9e715be854a55752889d4b49df41159c4f9f",
+  "helper_sha256": "07e83dcabe61131671dd4f68c4a7856d6166d5cbce56b0faa7f0017b4ad2cf10",
+  "producer": {
+    "github_sha": null,
+    "github_run_id": null
+  },
+  "complete": true,
+  "native_qualified": false,
+  "representative_quality_qualified": false
+}

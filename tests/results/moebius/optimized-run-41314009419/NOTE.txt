@@ -1,0 +1,2 @@
+quantized -o arms failed: GEMM-layout put stored weights in src1 (fixed afterwards); retained as initial failure
+inpaint: error: frame 1 (/mnt/heavy/scratch/cli/input.png): inpainting graph: CPU does not support node 5307 MUL_MAT 'node_5307'; graph was not executed

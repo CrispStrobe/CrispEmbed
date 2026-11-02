@@ -1,0 +1,158 @@
+{
+  "schema": "crispembed-unlimited-ocr2-text-verification-review-v1",
+  "completed": true,
+  "producer": {
+    "kernel_slug": "crispembed-unlimited-ocr2-verify",
+    "version_number": 2,
+    "version_label": "v2",
+    "source_commit": "8ca9d3de2a8160e6f5235156d3550c9719583744",
+    "submitted_script_sha256": "9fd2cb815b86c68053ca1525226723706ceae9261656cdbc5afc99abb9c44258",
+    "status": "COMPLETE",
+    "small_files": [
+      {
+        "member": "verify/summary.md",
+        "bytes": 3979,
+        "sha256": "e27ae405b344a16052a009a2b771c0c26a364050fa60b98ac909c65518373217"
+      },
+      {
+        "member": "verify/verify.json",
+        "bytes": 67920,
+        "sha256": "681a1b7ca03def1d6b676f9fce7a460183dcce45822fa41c3fd604fb0f54c66e"
+      }
+    ],
+    "models_or_raw_arrays_downloaded": false
+  },
+  "independent_cases": [
+    {
+      "tag": "after",
+      "alias": "unlimited-ocr2",
+      "page": "table",
+      "id_diff": [],
+      "text_bytes_equal": true,
+      "text_sha256": "a1b98c3ac750a2f82d26144b10d35827ef448c596dd97215f36bac0aeb34d1f0",
+      "bytes": 485,
+      "seconds": 281.11,
+      "rss_mb": 12820.9
+    },
+    {
+      "tag": "after",
+      "alias": "unlimited-ocr2",
+      "page": "receipt",
+      "id_diff": [],
+      "text_bytes_equal": true,
+      "text_sha256": "70771cee90b915a8f9efb041d94d16c0e424e8badd34c78830568543ef7bcfa0",
+      "bytes": 699,
+      "seconds": 389.79,
+      "rss_mb": 12820.4
+    },
+    {
+      "tag": "after",
+      "alias": "unlimited-ocr2",
+      "page": "paragraphs",
+      "id_diff": [],
+      "text_bytes_equal": true,
+      "text_sha256": "8a2fecf9d968caf8cb52b80c0ca76a5649ca7bb4aa8970967f1f085a08c69bbf",
+      "bytes": 586,
+      "seconds": 291.01,
+      "rss_mb": 12820.4
+    },
+    {
+      "tag": "after",
+      "alias": "unlimited-ocr2",
+      "page": "german",
+      "id_diff": [],
+      "text_bytes_equal": true,
+      "text_sha256": "2a889005979fb402d7688f9ba737bae635a6000b987aee7dcdeb17eee820e28e",
+      "bytes": 492,
+      "seconds": 278.28,
+      "rss_mb": 12820.2
+    },
+    {
+      "tag": "after",
+      "alias": "unlimited-ocr2-q8",
+      "page": "table",
+      "id_diff": [
+        7
+      ],
+      "text_bytes_equal": false,
+      "text_sha256": "b20808b3397a521c5dc2ad62b43548f151962b78e71058c7078cca827b30507c",
+      "bytes": 486,
+      "seconds": 179.62,
+      "rss_mb": 6868.2
+    },
+    {
+      "tag": "after",
+      "alias": "unlimited-ocr2-q8",
+      "page": "receipt",
+      "id_diff": [
+        131,
+        258
+      ],
+      "text_bytes_equal": false,
+      "text_sha256": "c9b60bd78edc17790487e5a7f3997729a02b587de14b4424b49225b07507a103",
+      "bytes": 699,
+      "seconds": 236.25,
+      "rss_mb": 6868.0
+    },
+    {
+      "tag": "after",
+      "alias": "unlimited-ocr2-q8",
+      "page": "paragraphs",
+      "id_diff": [],
+      "text_bytes_equal": true,
+      "text_sha256": "8a2fecf9d968caf8cb52b80c0ca76a5649ca7bb4aa8970967f1f085a08c69bbf",
+      "bytes": 586,
+      "seconds": 159.74,
+      "rss_mb": 6868.2
+    },
+    {
+      "tag": "after",
+      "alias": "unlimited-ocr2-q8",
+      "page": "german",
+      "id_diff": [],
+      "text_bytes_equal": true,
+      "text_sha256": "2a889005979fb402d7688f9ba737bae635a6000b987aee7dcdeb17eee820e28e",
+      "bytes": 492,
+      "seconds": 176.61,
+      "rss_mb": 6868.0
+    },
+    {
+      "tag": "clean",
+      "alias": "unlimited-ocr2",
+      "page": "table",
+      "id_diff": [],
+      "text_bytes_equal": false,
+      "text_sha256": "ec3c1deba0f7a25b18462bdad2015da8e1f786b93f5534244f072585b0de7555",
+      "bytes": 443,
+      "seconds": 281.79,
+      "rss_mb": 12820.4
+    },
+    {
+      "tag": "legacy-text",
+      "alias": "unlimited-ocr2",
+      "page": "table",
+      "id_diff": [],
+      "text_bytes_equal": false,
+      "text_sha256": "8ab928d94a2af8c5378667b01392f8a42f9f8cd79bd2ab0a07861abd22196b79",
+      "bytes": 196,
+      "seconds": 282.02,
+      "rss_mb": 12820.2
+    }
+  ],
+  "checks": {
+    "f16_default_ids_and_raw_text_exact_all4": true,
+    "fixture_sha_exact_all7": true,
+    "compiled_text_and_tiles_controls": true,
+    "fresh_alias_cache_hashes": true,
+    "clean_table_equals_independent_python_and_keeps_html": true,
+    "legacy_rendering_kept_distinct": true,
+    "q8_clean_body_exact_all4": true
+  },
+  "limits": [
+    "Four owned synthetic pages; no representative scan-quality claim.",
+    "Text-only verification does not rerun the initial before/after, ablation, exact-decoder, native-build or vision-cache arms. Empty/missing arm fields are unexecuted, not new numerical failures.",
+    "Q8 table and receipt raw coordinates differ; no raw-text equality claim for those two pages.",
+    "Existing published weights still use the pinned runtime added-token fallback; converter metadata source fix has not produced new published weights.",
+    "No new Q4_K qualification."
+  ]
+}

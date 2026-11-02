@@ -51,8 +51,14 @@ def is_norm_or_bias(name):
         "pos_embed", "rel_pos",
     ])
 
+# name -> sha256 of the exact bytes handed to the writer (--verify readback).
+WRITTEN_SHA = {}
+
+
 def add_tensor(writer, name, data, wt_func):
     if isinstance(data, np.ndarray):
+        import hashlib
+        WRITTEN_SHA[name] = (hashlib.sha256(np.ascontiguousarray(data).tobytes()).hexdigest(), data.nbytes)
         if data.dtype == np.float16:
             writer.add_tensor(name, data, raw_dtype=gguf.GGMLQuantizationType.F16)
         elif data.dtype == np.uint16:
@@ -73,6 +79,10 @@ def main():
     parser.add_argument("--llm-only", action="store_true")
     parser.add_argument("--max-vis-layers", type=int, default=None)
     parser.add_argument("--max-llm-layers", type=int, default=None)
+    parser.add_argument("--verify", action="store_true",
+                        help="re-read the written GGUF and require every tensor's bytes to match what was "
+                             "written (the published got-ocr2-f16.gguf carried an 8 MiB zeroed block inside "
+                             "l.embed_tokens.weight; this catches such write/storage corruption)")
     args = parser.parse_args()
 
     import torch
@@ -435,6 +445,23 @@ def main():
     import os
     size_mb = os.path.getsize(args.output) / 1024 / 1024
     print(f"Done: {size_mb:.0f} MB")
+
+    if args.verify:
+        import hashlib
+        reader = gguf.GGUFReader(str(args.output))
+        seen, bad = set(), []
+        for t in reader.tensors:
+            raw = np.asarray(t.data).tobytes()
+            exp = WRITTEN_SHA.get(t.name)
+            seen.add(t.name)
+            if exp is None or hashlib.sha256(raw).hexdigest() != exp[0] or len(raw) != exp[1]:
+                bad.append(t.name)
+        missing = sorted(set(WRITTEN_SHA) - seen)
+        if bad or missing:
+            print(f"VERIFY FAILED: {len(bad)} tensors differ from written bytes {bad[:8]}, "
+                  f"{len(missing)} missing {missing[:8]}", file=sys.stderr)
+            sys.exit(2)
+        print(f"Verified: all {len(seen)} tensors read back byte-identical")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,169 @@
+name: Manual inpainting device graph qualification
+
+# No push/PR/schedule trigger. GPU work requires an operator-admitted native
+# runner. The Metal label means an actual Apple GPU, not a hosted VM assumed
+# to provide Metal. No paid larger-runner label or model download is selected.
+on:
+  workflow_dispatch:
+    inputs:
+      backend:
+        description: 'Select the explicit backend; unavailable devices fail without CPU fallback'
+        type: choice
+        options: [cpu, metal, cuda, all]
+        default: cpu
+      gpu_admitted:
+        description: 'The selected native GPU runner is provisioned and this bounded run is authorized'
+        type: boolean
+        default: false
+      profile:
+        description: 'Fast is a separate diagnostic; model parity remains independently gated'
+        type: choice
+        options: [strict-f32, fast-diagnostic]
+        default: strict-f32
+      migan_model:
+        description: 'Optional absolute local GGUF on the CUDA self-hosted runner; no download occurs'
+        type: string
+        default: ''
+      migan_model_sha256:
+        description: 'Independent GGUF SHA-256 pin, required with a local model'
+        type: string
+        default: ''
+      migan_checkpoint_sha256:
+        description: 'Independent original checkpoint SHA-256 pin, required with a local model'
+        type: string
+        default: ''
+      migan_size:
+        description: 'Fixed model profile for the optional cold/warm benchmark'
+        type: choice
+        options: ['256', '512']
+        default: '256'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: inpaint-graphs-${{ github.ref }}-${{ inputs.backend }}-${{ inputs.profile }}
+  cancel-in-progress: false
+
+jobs:
+  admission:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Validate explicit scope before queueing native GPU jobs
+        env:
+          BACKEND: ${{ inputs.backend }}
+          GPU_ADMITTED: ${{ inputs.gpu_admitted }}
+          MIGAN_MODEL: ${{ inputs.migan_model }}
+          MODEL_SHA: ${{ inputs.migan_model_sha256 }}
+          CHECKPOINT_SHA: ${{ inputs.migan_checkpoint_sha256 }}
+        run: |
+          python - <<'PY'
+          import os, re
+          backend = os.environ['BACKEND']
+          if backend != 'cpu' and os.environ['GPU_ADMITTED'] != 'true':
+              raise SystemExit('Native Metal/CUDA jobs require explicit runner admission.')
+          pins = [os.environ[name] for name in ('MIGAN_MODEL', 'MODEL_SHA', 'CHECKPOINT_SHA')]
+          if any(pins):
+              if not all(pins) or backend not in ('cuda', 'all'):
+                  raise SystemExit('Local full-model work needs CUDA/all plus the model path and both SHA pins.')
+              if any(not re.fullmatch('[0-9a-f]{64}', pin) for pin in pins[1:]):
+                  raise SystemExit('Model and original checkpoint pins must be lowercase SHA-256.')
+          PY
+
+  cpu:
+    needs: admission
+    if: inputs.backend == 'cpu' || inputs.backend == 'all'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build portable optimized CPU graphs and run model-free controls
+        run: >-
+          python tools/ci-heavy/inpaint_graphs.py --backend cpu
+          --output "$RUNNER_TEMP/inpaint-graphs-cpu" --scratch "$RUNNER_TEMP/inpaint-graphs-cpu-build"
+          --deadline-minutes 50 --threads 2 --parallel 2 --warm-runs 3
+      - name: Preserve sources, binaries, structured receipts and partial logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: inpaint-graphs-cpu-${{ github.sha }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/inpaint-graphs-cpu
+          if-no-files-found: warn
+          retention-days: 30
+
+  metal:
+    needs: admission
+    if: (inputs.backend == 'metal' || inputs.backend == 'all') && inputs.gpu_admitted
+    runs-on: [self-hosted, macOS, ARM64, inpaint-graph-metal]
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Execute actual Apple GPU graphs with fail-closed device selection
+        env:
+          PROFILE: ${{ inputs.profile }}
+        run: |
+          args=()
+          if [ "$PROFILE" = fast-diagnostic ]; then args+=(--fast); fi
+          python tools/ci-heavy/inpaint_graphs.py --backend metal --gpu-admitted "${args[@]}" \
+            --output "$RUNNER_TEMP/inpaint-graphs-metal" --scratch "$RUNNER_TEMP/inpaint-graphs-metal-build" \
+            --deadline-minutes 65 --threads 2 --parallel 2 --warm-runs 3
+      - name: Preserve native Metal evidence and partial failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: inpaint-graphs-metal-${{ inputs.profile }}-${{ github.sha }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/inpaint-graphs-metal
+          if-no-files-found: warn
+          retention-days: 30
+
+  cuda:
+    needs: admission
+    if: (inputs.backend == 'cuda' || inputs.backend == 'all') && inputs.gpu_admitted
+    runs-on: [self-hosted, linux, x64, latent-inpaint-gpu]
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build native CUDA graphs and optionally benchmark the pinned local MI-GAN
+        env:
+          PROFILE: ${{ inputs.profile }}
+          MIGAN_MODEL: ${{ inputs.migan_model }}
+          MODEL_SHA: ${{ inputs.migan_model_sha256 }}
+          CHECKPOINT_SHA: ${{ inputs.migan_checkpoint_sha256 }}
+          MIGAN_SIZE: ${{ inputs.migan_size }}
+        run: |
+          args=()
+          if [ "$PROFILE" = fast-diagnostic ]; then args+=(--fast); fi
+          if [ -n "$MIGAN_MODEL" ]; then
+            args+=(--migan-model "$MIGAN_MODEL" --migan-model-sha256 "$MODEL_SHA")
+            args+=(--migan-checkpoint-sha256 "$CHECKPOINT_SHA" --migan-size "$MIGAN_SIZE")
+          fi
+          python tools/ci-heavy/inpaint_graphs.py --backend cuda --gpu-admitted "${args[@]}" \
+            --output "$RUNNER_TEMP/inpaint-graphs-cuda" --scratch "$RUNNER_TEMP/inpaint-graphs-cuda-build" \
+            --deadline-minutes 110 --threads 2 --parallel 2 --warm-runs 3
+      - name: Preserve CUDA build/model-free and optional full-model receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: inpaint-graphs-cuda-${{ inputs.profile }}-${{ github.sha }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/inpaint-graphs-cuda
+          if-no-files-found: warn
+          retention-days: 30

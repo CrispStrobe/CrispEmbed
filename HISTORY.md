@@ -1,3 +1,191 @@
+## 2 November 2026 — OCR quality contract: stale source pins recorded and re-pinned (fix/ocr-quality-contract-pins)
+
+- Initial failure retained: the OCR quality contract failed in runs 41416111941 and
+  41416124827 (`ValueError: Source bytes changed: src/qwen35_math.h`, two errors in
+  `tests/test_qwen35_quality_audit.py`); last success was 38967869242 on 2026-10-16.
+  The workflow only triggered on its own paths, so later source edits were never
+  checked. The auditor stops at the first mismatch; five pins had drifted:
+  `src/qwen35_math.h`, `src/qwen35_linear.cpp` (#81 weight cache), `src/qwen35_ocr.cpp`
+  (#80/#81 and Ovis gates), `src/qwen35_vision.cpp` (#80, 59603adf interpolation) and
+  the diagnostic `tools/quantize.cpp` (other-family quantizer work).
+- Reviewed each diff: every change is behind a default-off gate
+  (`CRISPEMBED_QWEN35_WEIGHT_CACHE`, `CRISPEMBED_OVISOCR2_/OVISOCR3_*`,
+  `CRISPEMBED_QWEN35_VISION_SOURCE_INTERPOLATION`, Ovis2 large-image gates) or keyed on
+  another architecture; the format-1 LightOn default path keeps its arithmetic.
+- The q8/q8-q6/q4 receipts are unchanged. New `tools/qwen35_source_pins.py` records
+  re-pins (previous hash → new hash/blob, changing commits, reason) in
+  `tests/results/qwen35-ocr/source-pin-amendments.json`; the auditor accepts drift only
+  through that chain, and CI verifies every frozen digest is the blob at its receipt's
+  source commit (15 pins). The workflow now also runs on changes to the pinned sources.
+  No inference repeated; no model, gold, budget or default changed.
+
+## 2 November 2026 — WASM divergence origin: layer0 Q mul_mat, then flash attention (op-by-op replay)
+
+* 41441512356 (`wasm-layer0-attention-v1` at `8f7ea115`) replayed every production layer0
+  attention op on native and WASM. It started from the captured norm00 output, which is
+  bit-identical on both. Production kernel profiles were admitted, and weight-free
+  determinism/op-isolation controls passed before model access. Both chains reproduce their
+  captured norm01 input bit-exactly.
+* On identical inputs, all elementwise ops (LN scale/bias, bias adds, residual) are
+  bit-exact. The first differing op is `q_raw` (IQ4_NL x Q8_0 mul_mat, 9.54e-7). `k_raw`,
+  `v_raw` and `o_raw` (same kernel: native llamafile tinyBLAS order vs WASM generic scalar)
+  and `flash_attn_ext` one_chunk (8.94e-7: `ggml_vec_dot_f32`/`ggml_vec_mad_f32` FMA and
+  lane width, scalar `expf`) differ independently. The propagated norm01 difference is
+  1.19e-7.
+* With the FFN replay (IQ4_XS order differs too, and activation quantization amplifies any
+  ~1e-7 difference into the layer3 fc2 failure), no single deterministic op explains the
+  divergence, so no candidate is proposed. Receipt:
+  `tests/results/packaging/wasm-layer0-attention-v1.json`.
+
+## 2 November 2026: Unlimited-OCR-2 trial fixes confirmed on real scans; real-scan manifest v2
+
+- **Trial fixes (merged to main as `8e4fe4a8`, runtime `8ca9d3de`).** The default output is now the original raw decode
+  (`skip_special_tokens=False`). The published GGUFs lack the 831 added pieces, including `<tr>/<td>` and layout markup,
+  so the runtime supplies them as a fallback, and the converter writes them for future conversions. Default tiling follows
+  the original (tiles above 640 px). Bit-exact vision-cache and prefill-chunk changes give 1.03-1.15x. F16 IDs and raw
+  text bytes equal the original on all 4 trial pages
+  ([verify-text-v2](tests/results/unlimited-ocr2/verify-text-v2.json)). Q8_0 differs by 1-3 in one box coordinate on
+  2/4 tiled pages.
+- **Real scans, native re-run** ([native-uocr2-v2](tests/results/ocr-real-scans/native-uocr2-v2.json), Kaggle CPU,
+  `c077c719`). Token IDs are identical to the v1 run, and normalised text equal to the original rose from 10/19 to 14/19
+  pages. Receipt word recall went from 0.233 to 0.533 (original 0.533); receipt-14 from 0.13 to 0.98 and receipt-16 from
+  0.30 to 0.95. Scan mean CER is 0.0594 (original 0.0589). See [summary](tests/results/ocr-real-scans/summary.md).
+- **Manifest v2** ([ocr-real-scans-v2.json](docs/ocr-real-scans-v2.json), `tools/ocr-real-scans/pin_v2.py`). Each
+  Wikimedia image is pinned to its Commons file revision (timestamp and sha1, checked against the API at run time) and
+  fetched from a revision-qualified URL. The kernel fails a page loudly on sha256 mismatch and does not score it. The
+  first v2 run showed that this does not stabilise the census-form thumbnail: Kaggle still received the other rendering of
+  the same revision, and the page was correctly failed. Open: host the exact bytes or render from the pinned DjVu.
+- **Model card** for `cstr/Unlimited-OCR-2-GGUF`: card-only refresh with the real-scan result. The Hub commit is
+  recorded in [publication](tests/results/unlimited-ocr2/publication.json) under `card_update`, and weights are unchanged.
+
+## 2 November 2026 — Permissive inpainting engines to main (feat/inpaint-permissive)
+
+- MI-GAN512, Moebius, PixelHacker, SDXL VAE and the delivery 4–6 graph/CPU/
+  SHA-NI infrastructure moved to main as one squashed commit without the
+  research-only engine; main's MI-GAN Metal/quant path and the persistent graph
+  were merged and both stay gated.
+- Built-in `CRISPEMBED_QUANTIZE_INPAINT_MIX=1` (Moebius Q4_K-mix) reproduces the
+  qualified private file byte for byte (run 41390172098; also the VAE Q8_0, plain
+  Moebius Q4_K and MI-GAN512 F16/Q8_0/Q4_K). Initial run 41388773676 compared
+  nothing yet printed PASS (log-filter SIGPIPE); retained, lane fixed.
+- Initial PR CI failure: Windows `contracts` could not compile
+  `tests/test_latent_inpaint_pipeline.cpp` (`near` is a windef.h macro); helper
+  renamed.
+- Publication prepared only (`docs/inpaint-publication-v1.json`); no registry entry.
+## 2 November 2026 — WASM layer3 FFN mul_mat: kernel order ruled out (same-input replay)
+
+* 41438394031 (`wasm-layer3-ffn-matmul-v1` at `295d7e79`) completed and exited1 on numbers.
+  Native (x86 AVX2/FMA, llamafile) and WASM (simd128) probes built with kernel-file
+  arithmetic profiles equal to the production full inventories. Before model access, an
+  authored-weight selftest reproduced both orders bit-exactly through the real ggml graph:
+  fc1 IQ4_NL x Q8_0 = llamafile tinyBLAS natively vs `vec_dot_iq4_nl_q8_0_generic` on WASM;
+  fc2 IQ4_XS x Q8_K = AVX2 `vec_dot_iq4_xs_q8_K` vs generic. Both sides then reproduced
+  their own captured fc1_raw/fc2_raw bytes from run 41432135298.
+* On identical inputs, WASM vs native kernels differ by at most 1.43e-6 (fc1) and 9.54e-7
+  (fc2), and identical inputs quantize to identical Q8 bytes. The native kernel fed the
+  WASM-captured inputs reproduces the full natural error (fc1 5.73e-4, fc2 0.00331, fails
+  0.002). Cause: inherited input differences of about 1e-6 change one fc1 Q8_0 block scale
+  (one FP16 rounding step) and 38 fc2 Q8_K scales plus 3 quantized values.
+* A native-order WASM kernel (exact int lanes, `fmaf`, AVX2 hsum order) was emulated. It is
+  bit-exact with native on the same input but leaves the natural error unchanged, so no
+  default-off candidate is proposed. Receipt:
+  `tests/results/packaging/wasm-layer3-ffn-matmul-v1.json`.
+
+## 2 November 2026 — GOT-OCR2 F16 `colorcolor…` root cause (fix/got-ocr2-f16)
+
+Hosted CPU reproduces the CUDA-audit result: published F16 decodes `colorcolorcolor:,,};…` on fox,
+and Q4_K decodes `The quick brown fox jumps over the lazy dog. 12345`. Bisecting from the same F16
+bytes (LLM→F32, vision→F32, ffn_down→F32, →Q8_0) leaves all four variants broken, so this is data,
+not precision. HF original F32 activations peak at 6990 (no F16 overflow). The per-tensor audit
+against stepfun-ai/GOT-OCR2_0 found 289/290 LLM tensors exact. `l.embed_tokens.weight` had cos 0.9931
+because file bytes 202930256-211318866 (8 MiB) are zero. The earliest stage divergence is llm_layer_0,
+cos 0.936596 / max_abs 8.92 (vision exact). Reconversion with a byte-readback check (`--verify`)
+gives cos 1.000000 everywhere and fox token-exact. Qualification run 41391040980 was rejected by its
+page-similarity gate (receipt char ratio vs the original 0.530 < q4_k 0.592). That gap is shared with
+q4_k; it is kept on record. Under the coordinator's decision applying the owner bar (F16 > 0.98:
+stage min cos 1.000000 x19, fox token-exact), run 41397551540 reconverted byte-identically
+(sha256 98b431ab…) and published `got-ocr2-f16-r2.gguf` at Hub `c0f1aa7b5b52`. Local, LFS and
+empty-cache readback hashes match, and the old file is unchanged. M1 Metal: fox exact, 17.9 s.
+Registry `got-ocr2-f16` was added; `got-ocr2` (q4_k) is unchanged. Receipts: `tests/results/got-ocr2-f16/`.
+
+## 2 November 2026 — WASM live norm: one-sentence attribution complete (v4, numerical negative)
+
+* 41432135298 (v4 at `77ed7122`) completed the full one-sentence attribution and exited1 on
+  numbers, as designed. v4 replaces only the Ref adapter. It runs the SHA-pinned frozen
+  `diff_adapter.py` code with an exact shape allowlist {[12,384],[12,1536],[2,8]} instead of
+  the 512 cap that blocked 41427588368. Full-row metrics and 0.002/0.99999 budgets are
+  unchanged. Tests prove bit-for-bit parity with the frozen adapter on all allowlisted
+  shapes up to 512 wide.
+* All controls before model access pass. There are 12 native anchors, the capture proof
+  (65/65, 32 old WASM stage hashes) and 104/104 replay controls. All 208 same-input norm
+  replays are bit-exact. Natural comparisons: 132/196 pass and 64 fail (40 norm, 24 layer3);
+  C++ Ref and independent metrics agree.
+* Natural error stays at or below 1.9e-6 through layers 0-2 and layer3 attention. It rises
+  about 300x at the layer3 FC1 matmul (`fc1_raw` 5.73e-4) and first fails at `fc2_raw`
+  (0.00331, cosine 0.99999569), then grows to 0.185 at norm12. Results are identical for norm
+  gate 0/1 and threads 1/2. The norm operator is not the source; the earliest
+  budget-relevant divergence is the layer3 FFN matmul path. Receipt:
+  `tests/results/packaging/wasm-live-norm-v4-attribution.json`.
+
+## 2 November 2026 — WASM live norm: component admission (v2) and observer (v3) repaired
+
+* 40867038915 (ff3b8a01) rejected `Actual component rounding flags differ`. v1 assumed one
+  `wasm_native_order_norm.cpp` compile entry, but the live CMake compiles it in both
+  `frozen-controls/norm-candidate-controls` and `live-norm-replay`. v2 (branch
+  `fix/wasm-live-norm-component-inventory-20261102`) saves the full compile commands after
+  configure, then admits exactly five declared (target, source, directory) entries. Each needs
+  `-ffp-contract=off` only, no fast-math/`-Ofast`/`-msimd128`, and the SHA-pinned
+  40852835039 per-entry and GGML backend profiles.
+* 41416683981: a v2 parser defect rejected before build (CMake's `output` field is
+  relative to the top-level build). The saved 30-entry inventory had exactly the five
+  declared entries and became a regression fixture.
+* 41418312256: admission and all weight-free/browser controls passed. The native observed
+  encode then aborted in `add_norm`. Diagnostic 41421952964 logged the real graph:
+  `norm00_input ADD f32 ne=[384,16]`, the unevaluated scheduler-reservation graph at
+  `bucket_seq_len(12)=16`. v3 brackets the three reservation builds so the observer ignores
+  them, keeps every v1 rule for the evaluated graph, and adds 11 weight-free C++ observer
+  controls before model access.
+* 41427588368 (v3): every control, native anchor, capture proof (65/65, 32 old WASM stage
+  hashes) and all 208 same-input comparisons pass, all bit-exact. Replay then stopped at
+  `Bounded exact NumPy shape required`: the frozen Ref adapter caps dimensions at 512, and the
+  layer3 fc1/gelu tensors are [12,1536]. The 196 natural comparisons and the attribution
+  sentence are not reached. No original forward, no ten-case retry, gates/defaults unchanged.
+  All five runs are retained as negatives.
+## 2 November 2026 — EasyOCR x86 CPU dropped lines fixed (fix/easyocr-x86-lines, PR #100)
+
+* Root cause: not a SIMD or ggml-cpu kernel defect. Both BiLSTM layers named their initial
+  states `lstm_{fwd,rev}_{h0,c0}`; the host zeroed them by name and `ggml_graph_get_tensor()`
+  returns only the first match, so layer 1's h0/c0 were never written. They read zero on a
+  fresh allocation (macOS, Metal, CUDA in practice, glibc mmap) and stale data when glibc
+  reused the freed block of a wider graph after a shrinking width rebuild. Proof (hosted x86,
+  41387161875, legacy path): `GLIBC_TUNABLES=glibc.malloc.mmap_threshold=0` (fresh zero pages)
+  recovers every line; the same drop appears in GGML_NATIVE=ON, OFF and SSE-only builds and at
+  `-t 1`; a NaN-poisoned compute buffer (`CRISPEMBED_EASYOCR_POISON_COMPUTE=1`, new, test-only)
+  empties every line on every backend.
+* Fix: the graph records all 8 state tensors and the host resets every one (default on;
+  `CRISPEMBED_EASYOCR_LSTM_STATE_RESET=0` restores the legacy first-match reset for A/B).
+* x86 CPU before → after (regions, empty): fox 1/2 → 2/2, scan_strip 7/10 → 10/10,
+  scan_page_pd 15/34 (19 empty) → 34/34, in all three SIMD builds; e.g. fox now returns
+  `The quick brown fox jumps\nover the lazy dog. 12345` where it returned only the first line.
+  Kaggle T4 batch f: x86 CPU output is now byte-identical to CUDA on all three pages; CUDA
+  output is byte-identical with the fix, the legacy path and the poisoned buffer. M1 CPU and
+  Metal (lock): fixed = legacy byte-identical on all three pages (fox 41a156bf = audit hash).
+* Regression test `test-easyocr-width-shrink` (decreasing canvases 896→640→576, reused vs fresh
+  context, NaN-poisoned by default): passes on x86 (3 builds), CUDA, M1 CPU and Metal; the
+  legacy path fails 5/5 steps on every backend.
+* Python EasyOCR's recognizer on the same native crops: 1/2, 6/11, 21/36 exact lines (legacy
+  x86: 1/2, 2/11, 7/36 with 6 and 16 empty). Remaining differences are punctuation/spacing on
+  low-confidence lines and identical on CUDA/Metal (open in PLAN). Receipts:
+  `tests/results/gpu-audit/easyocr-x86-fix/`.
+## 2 November 2026 — ggml submodule back on the shared fork line
+
+* CrispEmbed's ggml pointer had drifted onto fork feature branches (`feat/wasm-q8-rounding-candidate-20261026`,
+  then `crispembed/metal-combined` 2672d26c from PR #96) while `.gitmodules` still named `sync/upstream-v0.17`.
+  The six CrispEmbed-only commits (WASM rounding test entry, `GGML_METAL_PREC_F32_MM`, the PREC_F32_HP marker and
+  their merge) are now merged into `sync/upstream-v0.17` as `3a27b6c6`, which also brings that branch's two
+  newer fixes (NVFP4 UE4M3 LUT initialised on first use; Metal reports missing TQ1_0/TQ2_0 matmul kernels).
+  The submodule pins `3a27b6c6`; CrispASR pins its own commit and is unaffected until it bumps.
+
 ## 2 November 2026 — CUDA GPU audit on Kaggle (feat/cuda-audit)
 
 Five runs of `${KAGGLE_ACCOUNT}/crispembed-cuda-audit` on a Tesla T4 (sm_75), harness
@@ -91,6 +279,66 @@ runtime; MinerU's "q4_k-dq8"/"q4_k-df16" recipes pass but contain no Q4_K
 tensor. MinerU layout-page token 180 is a 0.024-logit near-tie. Initial
 failures kept: Kaggle v1 (no `/usr/bin/time`), Kaggle v2 TeleOCR dump
 collision, a shared-scratch cleanup that removed one TeleOCR Q4_K dump set.
+## 1 November 2026 — Issue 71 latent/MI-GAN512 qualification lane (feat/issue71-latent-qual)
+
+Branch `feat/issue71-latent-qual` (from `feat/issue71-five-engines` c4bb1f93,
+merged with delivery 4 `feat/issue71-five-engines-graphs` 06d75fb8).
+Details: [precision and live results](docs/inpainting-precision.md),
+receipts `tests/results/migan512/`, `tests/results/moebius/`,
+`tests/results/pixelhacker/`.
+
+- **MI-GAN512 qualified at F32 on both paths.** README-linked checkpoint first
+  observed at `1d6087ee…466a` (29,553,256 bytes, hosted run 41292563046).
+  Unchanged original `Generator(resolution=512)` capture, lossless F32 GGUF
+  `4bec681e…1739`. Native eager and native graph each pass all 8 fixtures under
+  the frozen gates (273/273 full-stage comparisons, observer bit-exact, RGB max
+  diff 1, PSNR 90–96 dB; run 41296465856).
+- **Precision variants (inpaint-v1).** F16/Q8_0/Q4_K on eager, eager
+  stored-matmul, graph and graph stored-matmul all exceed the owner gate (min
+  cosine vs original/F32 0.999998 / 0.9965 / 0.9770). Retained initial failure:
+  all-Q4_K reached only 0.790 on the full-mask fixture (run 41294631042), which
+  is why sub-Q8 MI-GAN keeps synthesis at Q8_0. The frozen F32 gates are
+  unchanged; quantized arms fail them as expected (F16 3/8, Q8_0/Q4_K 0/8).
+- **Defects found and fixed.** (1) 924 Moebius/PixelHacker state names exceed
+  the 63-byte GGUF limit, so the F32 denoiser GGUFs were unreadable (first
+  hosted replay 41294839864: "cannot open model metadata" / "GGUF
+  metadata/tensor count differs"). Fixed with a deterministic abbreviation
+  rule mirrored in C++/Python and applied at every loader. (2) Windows
+  checkouts rewrote SHA-pinned contracts (autocrlf): `.gitattributes -text`.
+  (3) The Windows ZIP-guard test fixture lost its backslash. (4) A Kaggle account
+  name committed in HISTORY failed the secret scan. (5) `inpaint_weights`
+  natural row for linears (MI-GAN has none; caught by the Moebius Q8_0 lane
+  41295726228).
+- **Original-environment findings (retained).** PixelHacker's upstream pins are
+  not co-installable: FLA 0.3.2 lives in `fla-core`; torch 2.3.0 with triton
+  3.2.0 fails at FLA import (inductor `AttrsDescriptor`); transformers 4.40.0
+  lacks `utils.deprecation`. The CUDA capture (Kaggle T4, 288 s) uses torch
+  2.6.0 (triton 3.2.0's release) as an explicit recorded deviation
+  (`--allow-dependency`; the contract is unchanged) and transformers 4.48.3.
+  Moebius used the exact contract pins (T4, 88 s).
+- **Delivery-4 graph replay defect, fixed.** gallocr recycled one-time
+  initializers and uploaded-once parameters after their last use, so only a
+  graph's first execution was correct. Evidence: the transpose oracle error was
+  0.02047 against a 4e-5 budget on unmodified 06d75fb8 (41299505593); GLA replay
+  failed 10/92; the Moebius graph image was correct only on the first stepper
+  run (decoded cosine 0.12–0.16 afterwards). Pinning both as OUTPUT fixes all
+  three (controls 41302790327; Moebius graph 41302077937). Delivery 5
+  (67406abe) made the same pin and the 64-byte name fix independently; after the
+  merge, this branch uses its `sha256-56-v1` name encoding.
+- **Latent results.** Eager and graph F32 reproduce the CUDA originals of both
+  latent engines (final RGB within 1 level, known pixels exact). The strict
+  component budget fails on 85–163 stages per engine, with max abs <= 0.038,
+  cosine >= 0.9999995 and rel L2 <= 1e-3, first at the VAE moments; budgets are
+  unchanged. F16/Q8_0/Q4_K pass the owner gate on eager and graph, both
+  dequantized and stored-matmul (min decoded cosine vs original: Moebius
+  1.0/0.9992/0.9768, PixelHacker 1.0/0.9993/0.9902). On real photos, however,
+  Moebius Q4_K falls below the gate (masked cosine vs F32 0.918/0.859 on the street
+  crop, run 41305480287), so plain Q4_K is not qualified. The Q4_K-mix recipe (attention blocks and VAE at
+  Q8_0, run 41328479130) qualifies: 0.9931 synthetic, min masked 0.9449 on photos
+  (street 0.9656/0.9504). PixelHacker Q4_K stays above the bar (min 0.9425).
+  All GGUFs are preserved in the three private repos (anonymous access 401). Live photos recorded for all three engines.
+- HF private storage for the account is full: only MI-GAN512 Q8_0/Q4_K are
+  preserved (`cstr/crispembed-migan512-private`, private).
 
 ## 1 November 2026 — OXR-1.0 D-FINE layout detector native in layout_detect
 
@@ -295,6 +543,118 @@ F32 warm 0.70–0.93× Python; F16 1.27–1.59× and Q8_0 1.11–1.43× fail the
 Strict stage budgets fail first at vision layers 29–31 (rel_rms 1.2e-5 against the post-hoc
 1e-5 v2 cap, cos_min 1.000000; F32 final logits rel_rms ≤ 2.7e-6) — the documented large-grid
 numerical limit, not a new divergence. The initial failure verdict is retained; no budget changes.
+
+## 1 November 2026 — Further inpainting CPU optimization and latent API completion
+
+Added optional hardware SHA-256 verification to the MI-GAN and latent
+loaders. It reuses the existing digest state, padding and scalar implementation,
+with runtime feature selection and observed complete/accelerated block counts.
+Every model byte and trusted digest is still checked. The native SHA controls
+pass 6,985 normal and 6,988 forced-fallback assertions. The bounded alternating
+memory-hashing benchmark improves median throughput by 4.6835 times; file-load
+observations and image timings remain separate.
+
+Integrated the default-off CPU depthwise specialization using the existing
+MI-GAN interior-loop design. All four Moebius original-reference cases retain
+the prior generated/composited RGB bytes, 608 metric records and 35 strict
+stage failures. The completed ordinary API pair also preserves all eight
+outputs exactly. Its noisy warm median is worse, 142.796 to 181.397 seconds;
+depthwise remains outside the recommended Moebius preset. A private 128 MiB
+convolution workspace experiment is mixed and not integrated; production CPU
+workspace remains 32 MiB.
+
+Completed the previously unfinished PixelHacker ordinary API comparison in
+fresh, separately recorded runs on one binary. Both arms complete a cold image
+and three warm images at F32, 512 square, eight threads and stock 20 requested/
+19 actual steps. Native agreement passes unchanged RGB budgets: maximum
+filled-channel difference 1, mean 0.0000949436, PSNR 88.356 dB and exact known
+pixels. Warm medians are 310.958/144.243 seconds; that observed ratio is scoped
+to this fixed-order single-fixture panel, with timing qualification flags false.
+Original CUDA/FLA parity remains unexecuted. Earlier interrupted and revalidated
+evidence is retained unchanged.
+
+The benchmark now preserves a completed first image before warm sampling,
+using new protected output paths and an out-of-timer checkpoint write. The
+actual cancellation control proves preservation without claiming completion.
+Final frozen-source checks pass 244 Python/CLI tests and 20 native
+configurations, plus 21 private API-controller controls. Production symbol
+audits exclude test-only observers. See the [complete results](docs/inpainting-optimization-results.md)
+for raw evidence, the current CLI status and remaining GPU/quality limits.
+
+The final production CLI panel completes 12 invocations and 16 PNGs on one
+binary across MI-GAN256, MI-GAN512, Moebius, PixelHacker and the research-only
+engine of that build. Filled
+outputs match their pinned ordinary APIs, known pixels and empty outputs are
+exact, and both latent profiles pass filled/empty/filled batch reuse with
+actual 2/38/2 graph calls. Required SHA-NI checks bind every complete model
+digest and input-block count. These functional results remain separate from
+throughput and original-model qualification; historical CLI panels retain
+their own identities and are excluded from the new counts. See the
+final CLI record (receipt retained on the research branch feat/issue71-latent-qual, path tests/results/inpainting/inpaint-cli-final-2026-11-01.json).
+
+## 1 November 2026 — Earlier executed CPU inpainting optimization and live checks
+
+The issue71 CPU paths have now been built and exercised with converted model
+weights. Added default-off MI-GAN fused/vectorized CPU kernels, convolution
+GEMM layout, cached reflection gathers, a cached CPU FFT callback, rectangular
+CPU recurrent GLA, and bounded Moebius lambda contractions. The original
+implementations remain available. Corrected persistent-graph input lifetimes
+and latent GGUF names beyond ggml's fixed name limit; all2,080 latent payload
+hashes are unchanged by the naming adapter.
+
+MI-GAN256/512 each pass the declared original-model panel on the baseline and
+optimized paths:20 cases/1,070 stage comparisons per implementation, with
+identical corresponding native stage hashes. Ordinary API medians improve
+2.61–3.27× over the existing eager path in the admitted measurements, including
+a separately retained quiet512/eight-thread confirmation. The initial
+contended timing arms remain excluded and preserved.
+
+Actual production CLI checks now include both MI-GAN sizes, exact ordinary-API output comparisons, empty masks and proven
+same-context batch reuse. The unchanged MI256 tile/boundary smoke also passes.
+The [complete optimization report](docs/inpainting-optimization-results.md)
+records the latent results, validation inventory, implementation flags and
+remaining limits, with links to raw execution evidence. CPU measurements do
+not qualify CUDA/Metal, representative perceptual/video quality, quantization
+or a release. All candidate gates and application pins remain unchanged.
+
+## 1 November 2026 — Earlier persistent inpainting graph source implementation
+
+Added default-off native CPU/CUDA/Metal graphs for the inpainting CLI
+profiles. MI-GAN retains a complete graph across calls. Moebius and PixelHacker use complete
+denoiser graphs, batched CFG/VAE encoding and device-resident DDIM state.
+Dense convolution patch memory is bounded; CPU plans and worker pools are
+reused. An explicit mixed GPU profile converts dense/matrix weights at load
+and permits accelerated attention/matrix precision.
+
+Independent source review caught and corrected the pinned Metal group-norm
+batch limitation, disconnected retained moment tensors and test/production
+Builder layout differences. Model-free scalar controls, unchanged original
+comparators, manual hardware qualification and structured build/replay receipts
+are supplied. The pinned ggml revision and original model contracts are intact.
+Syntax/source checks are not native execution evidence: new hardware runs,
+full-model parity, steady-state speed and peak-memory measurements remain
+pending. See [the graph guide](docs/inpainting-ggml-graphs.md). No default or
+runtime release changed.
+
+## 1 November 2026 — Additional image inpainting source profiles
+
+Issue71 source preparation now includes MI-GAN512, Moebius and
+PixelHacker behind explicit default-off gates. The CLI shares existing file,
+mask, DBNet, protected-output, provenance and persistent-batch behavior. MI-GAN512
+extends the existing graph; the latent
+models share a native SDXL VAE, DDIM sampler and bounded tensor operations while
+keeping their original lambda/GLA denoisers. The
+[reuse audit](docs/latent-inpaint-reuse.md) and
+[engine guide](docs/inpainting-engines.md) identify sources and limitations.
+
+The delivery adds pinned checkpoint/source censuses, strict conversion and
+readback receipts, independent original-framework capture, native comparison
+programs and hosted workflows. Executed validation is limited to bounded
+standard-library tests, C++17 syntax, Python/YAML syntax and source guards.
+No native build, full checkpoint conversion, full-model inference, performance
+benchmark or hosted parity run was executed for these additions. All previously
+frozen MI-GAN256 reference receipts remain unchanged. This source addition does
+not publish models, alter the shared C ABI, bump a release, or close issue71.
 
 ## 28 October 2026 — Unlimited-OCR-2 tiled exact + published; MiniCPM-OCR-1.0 native exact + published
 

@@ -1,0 +1,17 @@
+{
+ "model": "got-ocr2-f16-r2.gguf",
+ "hub_revision": "c0f1aa7b5b52c15002e911d5d630e6d0dcb3ba8f",
+ "sha256": "98b431abc3e6b5715363e7296f7fc665a2eca829127ccb8693511926c4784a7f",
+ "device": "Apple M1 (MTL0)",
+ "cmd": "crispembed -t 4 --gpu-backend metal -m got-ocr2-f16-r2.gguf --ocr tests/regression/images/fox.png --ocr-max-tokens 128",
+ "env": {
+  "CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE": "1"
+ },
+ "lock": "m1-gpu-lock.sh, one run",
+ "wall_s": 17.93,
+ "metal_library_load_s": 11.311,
+ "stdout": "The quick brown fox jumps over the lazy dog. 12345\n",
+ "original_text": "The quick brown fox jumps over the lazy dog. 12345",
+ "text_exact_vs_original": true,
+ "date": "2026-11-02"
+}

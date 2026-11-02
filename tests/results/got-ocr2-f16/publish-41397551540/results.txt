@@ -1,0 +1,65 @@
+convert ok: Verified: all 471 tensors read back byte-identical
+98b431abc3e6b5715363e7296f7fc665a2eca829127ccb8693511926c4784a7f  got-ocr2-f16-r2.gguf
+aeaf1b44925eeb449584d716f181fc486cdd6becf596ec896276c5d633e996bb  got-ocr2-f16.gguf
+ba276f2e246273af7d1bcd58f35ac7bae09c30340b923ed4440effe82d5e7613  got-ocr2-q4_k.gguf
+27de920f22b7b44c65d4fb32087e51f35b7bc38c9e45d438b2251df05849ffe5  got-ocr2-ref-full.gguf
+   got-ocr2-f16-r2.gguf: 290/290 tensors at cos > 0.999999
+== got-ocr2-f16-r2.gguf: 290 LLM tensors; worst 12 by cosine
+   got-ocr2-f16.gguf: 289/290 tensors at cos > 0.999999
+== got-ocr2-f16.gguf: 290 LLM tensors; worst 12 by cosine
+bytemap sizes new=1441830112 old=1441830112
+bytemap differing bytes=4185150 first=202930258 last=211318863 span=8388606 old_span_all_zero=True
+diff.r2   vis_layer_0: cos_min=1.000000 max_abs=0.007324 PASS
+diff.r2   vis_layer_1: cos_min=1.000000 max_abs=0.005903 PASS
+diff.r2   vis_layer_2: cos_min=1.000000 max_abs=0.006287 PASS
+diff.r2   vis_layer_3: cos_min=1.000000 max_abs=0.008230 PASS
+diff.r2   vis_layer_4: cos_min=1.000000 max_abs=0.020668 PASS
+diff.r2   vis_layer_5: cos_min=1.000000 max_abs=0.028408 PASS
+diff.r2   vis_layer_6: cos_min=1.000000 max_abs=0.033058 PASS
+diff.r2   vis_layer_7: cos_min=1.000000 max_abs=0.036263 PASS
+diff.r2   vis_layer_8: cos_min=1.000000 max_abs=0.023361 PASS
+diff.r2   vis_layer_9: cos_min=1.000000 max_abs=0.022247 PASS
+diff.r2   vis_layer_10: cos_min=1.000000 max_abs=0.022358 PASS
+diff.r2   vis_layer_11: cos_min=1.000000 max_abs=0.039688 PASS
+diff.r2   vis_proj_output: cos_min=1.000000 max_abs=0.003761 PASS
+diff.r2   llm_layer_0: cos_min=1.000000 max_abs=0.000051 PASS
+diff.r2   llm_layer_1: cos_min=1.000000 max_abs=0.000088 PASS
+diff.r2   llm_layer_2: cos_min=1.000000 max_abs=0.000095 PASS
+diff.r2   llm_layer_3: cos_min=1.000000 max_abs=0.000095 PASS
+diff.r2   llm_layer_4: cos_min=1.000000 max_abs=0.000916 PASS
+diff.r2   llm_layer_5: cos_min=1.000000 max_abs=0.010254 PASS
+diff.q4_k   vis_layer_0: cos_min=0.999213 max_abs=0.765869 PASS
+diff.q4_k   vis_layer_1: cos_min=0.999659 max_abs=0.358232 PASS
+diff.q4_k   vis_layer_2: cos_min=0.999203 max_abs=0.470629 PASS
+diff.q4_k   vis_layer_3: cos_min=0.998467 max_abs=0.563236 FAIL
+diff.q4_k   vis_layer_4: cos_min=0.997851 max_abs=1.651596 FAIL
+diff.q4_k   vis_layer_5: cos_min=0.997745 max_abs=2.301914 FAIL
+diff.q4_k   vis_layer_6: cos_min=0.998214 max_abs=1.985054 FAIL
+diff.q4_k   vis_layer_7: cos_min=0.998088 max_abs=2.265572 FAIL
+diff.q4_k   vis_layer_8: cos_min=0.998451 max_abs=1.314079 FAIL
+diff.q4_k   vis_layer_9: cos_min=0.998306 max_abs=1.378524 FAIL
+diff.q4_k   vis_layer_10: cos_min=0.998340 max_abs=1.513252 FAIL
+diff.q4_k   vis_layer_11: cos_min=0.998014 max_abs=3.624020 FAIL
+diff.q4_k   vis_proj_output: cos_min=0.999013 max_abs=0.420015 PASS
+diff.q4_k   llm_layer_0: cos_min=0.995236 max_abs=0.900103 FAIL
+diff.q4_k   llm_layer_1: cos_min=0.997244 max_abs=1.615433 FAIL
+diff.q4_k   llm_layer_2: cos_min=0.996799 max_abs=2.790386 FAIL
+diff.q4_k   llm_layer_3: cos_min=0.995157 max_abs=3.765446 FAIL
+diff.q4_k   llm_layer_4: cos_min=0.998004 max_abs=38.642395 FAIL
+diff.q4_k   llm_layer_5: cos_min=0.998764 max_abs=197.183838 FAIL
+case fox: ref 'The quick brown fox jumps over the lazy dog. 12345'
+   r2       exact=True ids_exact=True ratio=1.0 secs=28.72 'The quick brown fox jumps over the lazy dog. 12345'
+   q4_k     exact=True ids_exact=True ratio=1.0 secs=14.73 'The quick brown fox jumps over the lazy dog. 12345'
+   old_f16  exact=False ids_exact=False ratio=0.1579 secs=28.75 'colorcolorcolor:,,};\n\ncolorcolor westcolorcolor-,};\n\n westcolor:'
+case receipt_example: ref 'Jackson-Washington\n6640 Ortiz Cove, Markmouth, PW\n69940\nTransaction ID'
+   r2       exact=False ids_exact=False ratio=0.5304 secs=39.6 'Jackson-Washington\n6640 Ortiz Cove, Markmouth, PW\n69940\nTransaction ID'
+   q4_k     exact=False ids_exact=False ratio=0.5924 secs=19.33 'Jackson-Washington\n6640 Ortiz Cove, Markmouth, PW\n69940\nTransaction ID'
+   old_f16  exact=False ids_exact=False ratio=0.0335 secs=32.04 'colorcolorcolor:,,,};\n\ncolor .....colorcolor westcolorcolor-};\n\ncolorc'
+case simple_form: ref 'Input TEXT AREA Text e Text e Humber Date Password a label ANOTHER LAB'
+   r2       exact=False ids_exact=False ratio=0.4406 secs=29.74 'TEXT AREA Teat le Date Password ANOTHER LABEL Yot another label F Find'
+   q4_k     exact=False ids_exact=False ratio=0.0741 secs=15.1 'TEXT AREA'
+   old_f16  exact=False ids_exact=False ratio=0.0062 secs=29.68 'colorcolorcolor:};\n\ncolorcolor westcolorcolor-,\u3000colorcolor(,\u3000ilescolor'
+owner_bar_gate=1 stages=19 min_stage_cos=1.0 fox_ids_exact=True
+page_similarity_diagnostic(r2>=q4_k on all cases)=0 (recorded, not a publication gate)
+published revision=c0f1aa7b5b52c15002e911d5d630e6d0dcb3ba8f file=got-ocr2-f16-r2.gguf local_sha256=98b431abc3e6b5715363e7296f7fc665a2eca829127ccb8693511926c4784a7f lfs_sha256=98b431abc3e6b5715363e7296f7fc665a2eca829127ccb8693511926c4784a7f readback_sha256=98b431abc3e6b5715363e7296f7fc665a2eca829127ccb8693511926c4784a7f size=1441830112
+publish_verified=true

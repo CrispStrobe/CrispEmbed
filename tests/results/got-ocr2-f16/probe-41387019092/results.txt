@@ -1,0 +1,146 @@
+ocr.f16 rc=0 secs=27.61 text=colorcolorcolor:,,};  colorcolor westcolorcolor-,};   westcolor: 
+ocr.q4_k rc=0 secs=15.2 text=The quick brown fox jumps over the lazy dog. 12345 
+diff.f16 rc=0
+  diff.f16   vis_layer_0: cos_min=1.000000 max_abs=0.007324 PASS
+  diff.f16   vis_layer_1: cos_min=1.000000 max_abs=0.005903 PASS
+  diff.f16   vis_layer_2: cos_min=1.000000 max_abs=0.006287 PASS
+  diff.f16   vis_layer_3: cos_min=1.000000 max_abs=0.008230 PASS
+  diff.f16   vis_layer_4: cos_min=1.000000 max_abs=0.020668 PASS
+  diff.f16   vis_layer_5: cos_min=1.000000 max_abs=0.028408 PASS
+  diff.f16   vis_layer_6: cos_min=1.000000 max_abs=0.033058 PASS
+  diff.f16   vis_layer_7: cos_min=1.000000 max_abs=0.036263 PASS
+  diff.f16   vis_layer_8: cos_min=1.000000 max_abs=0.023361 PASS
+  diff.f16   vis_layer_9: cos_min=1.000000 max_abs=0.022247 PASS
+  diff.f16   vis_layer_10: cos_min=1.000000 max_abs=0.022358 PASS
+  diff.f16   vis_layer_11: cos_min=1.000000 max_abs=0.039688 PASS
+  diff.f16   vis_proj_output: cos_min=1.000000 max_abs=0.003761 PASS
+  diff.f16   llm_layer_0: cos_min=0.936596 max_abs=8.924198 FAIL
+  diff.f16   llm_layer_1: cos_min=0.966886 max_abs=27.440136 FAIL
+  diff.f16   llm_layer_2: cos_min=0.977252 max_abs=37.662823 FAIL
+  diff.f16   llm_layer_3: cos_min=0.956131 max_abs=43.087292 FAIL
+  diff.f16   llm_layer_4: cos_min=0.990125 max_abs=165.992584 FAIL
+  diff.f16   llm_layer_5: cos_min=0.999415 max_abs=180.491211 PASS
+diff.q4_k rc=0
+  diff.q4_k   vis_layer_0: cos_min=0.999213 max_abs=0.765869 PASS
+  diff.q4_k   vis_layer_1: cos_min=0.999659 max_abs=0.358232 PASS
+  diff.q4_k   vis_layer_2: cos_min=0.999203 max_abs=0.470629 PASS
+  diff.q4_k   vis_layer_3: cos_min=0.998467 max_abs=0.563236 FAIL
+  diff.q4_k   vis_layer_4: cos_min=0.997851 max_abs=1.651596 FAIL
+  diff.q4_k   vis_layer_5: cos_min=0.997745 max_abs=2.301914 FAIL
+  diff.q4_k   vis_layer_6: cos_min=0.998214 max_abs=1.985054 FAIL
+  diff.q4_k   vis_layer_7: cos_min=0.998088 max_abs=2.265572 FAIL
+  diff.q4_k   vis_layer_8: cos_min=0.998451 max_abs=1.314079 FAIL
+  diff.q4_k   vis_layer_9: cos_min=0.998306 max_abs=1.378524 FAIL
+  diff.q4_k   vis_layer_10: cos_min=0.998340 max_abs=1.513252 FAIL
+  diff.q4_k   vis_layer_11: cos_min=0.998014 max_abs=3.624020 FAIL
+  diff.q4_k   vis_proj_output: cos_min=0.999013 max_abs=0.420015 PASS
+  diff.q4_k   llm_layer_0: cos_min=0.995236 max_abs=0.900103 FAIL
+  diff.q4_k   llm_layer_1: cos_min=0.997244 max_abs=1.615433 FAIL
+  diff.q4_k   llm_layer_2: cos_min=0.996799 max_abs=2.790386 FAIL
+  diff.q4_k   llm_layer_3: cos_min=0.995157 max_abs=3.765446 FAIL
+  diff.q4_k   llm_layer_4: cos_min=0.998004 max_abs=38.642395 FAIL
+  diff.q4_k   llm_layer_5: cos_min=0.998764 max_abs=197.183838 FAIL
+ocr.q8_0-from-f16 rc=0 secs=15.35 text=colorcolorcolor:,,};  colorcolor westcolorcolor-};  colorilescolorcolor(};  color={(colorcolor,colorcolor= 
+diff.q8_0-from-f16 rc=0
+  diff.q8_0-from-f16   vis_layer_0: cos_min=0.999213 max_abs=0.765869 PASS
+  diff.q8_0-from-f16   vis_layer_1: cos_min=0.999659 max_abs=0.358232 PASS
+  diff.q8_0-from-f16   vis_layer_2: cos_min=0.999203 max_abs=0.470629 PASS
+  diff.q8_0-from-f16   vis_layer_3: cos_min=0.998467 max_abs=0.563236 FAIL
+  diff.q8_0-from-f16   vis_layer_4: cos_min=0.997851 max_abs=1.651596 FAIL
+  diff.q8_0-from-f16   vis_layer_5: cos_min=0.997745 max_abs=2.301914 FAIL
+  diff.q8_0-from-f16   vis_layer_6: cos_min=0.998214 max_abs=1.985054 FAIL
+  diff.q8_0-from-f16   vis_layer_7: cos_min=0.998088 max_abs=2.265572 FAIL
+  diff.q8_0-from-f16   vis_layer_8: cos_min=0.998451 max_abs=1.314079 FAIL
+  diff.q8_0-from-f16   vis_layer_9: cos_min=0.998306 max_abs=1.378524 FAIL
+  diff.q8_0-from-f16   vis_layer_10: cos_min=0.998340 max_abs=1.513252 FAIL
+  diff.q8_0-from-f16   vis_layer_11: cos_min=0.998014 max_abs=3.624020 FAIL
+  diff.q8_0-from-f16   vis_proj_output: cos_min=0.999013 max_abs=0.420015 PASS
+  diff.q8_0-from-f16   llm_layer_0: cos_min=0.936402 max_abs=8.514759 FAIL
+  diff.q8_0-from-f16   llm_layer_1: cos_min=0.966898 max_abs=27.214596 FAIL
+  diff.q8_0-from-f16   llm_layer_2: cos_min=0.977199 max_abs=37.411106 FAIL
+  diff.q8_0-from-f16   llm_layer_3: cos_min=0.956293 max_abs=42.837757 FAIL
+  diff.q8_0-from-f16   llm_layer_4: cos_min=0.990143 max_abs=166.156830 FAIL
+  diff.q8_0-from-f16   llm_layer_5: cos_min=0.999411 max_abs=184.667480 PASS
+ocr.llm-f32 rc=0 secs=25.95 text=colorcolorcolor:,,};  colorcolor westcolorcolor-,};   westcolor: 
+diff.llm-f32 rc=0
+  diff.llm-f32   vis_layer_0: cos_min=1.000000 max_abs=0.007324 PASS
+  diff.llm-f32   vis_layer_1: cos_min=1.000000 max_abs=0.005903 PASS
+  diff.llm-f32   vis_layer_2: cos_min=1.000000 max_abs=0.006283 PASS
+  diff.llm-f32   vis_layer_3: cos_min=1.000000 max_abs=0.008231 PASS
+  diff.llm-f32   vis_layer_4: cos_min=1.000000 max_abs=0.020813 PASS
+  diff.llm-f32   vis_layer_5: cos_min=1.000000 max_abs=0.030075 PASS
+  diff.llm-f32   vis_layer_6: cos_min=1.000000 max_abs=0.033524 PASS
+  diff.llm-f32   vis_layer_7: cos_min=1.000000 max_abs=0.035755 PASS
+  diff.llm-f32   vis_layer_8: cos_min=1.000000 max_abs=0.022263 PASS
+  diff.llm-f32   vis_layer_9: cos_min=1.000000 max_abs=0.020659 PASS
+  diff.llm-f32   vis_layer_10: cos_min=1.000000 max_abs=0.021572 PASS
+  diff.llm-f32   vis_layer_11: cos_min=1.000000 max_abs=0.034836 PASS
+  diff.llm-f32   vis_proj_output: cos_min=1.000000 max_abs=0.003746 PASS
+  diff.llm-f32   llm_layer_0: cos_min=0.936596 max_abs=8.924194 FAIL
+  diff.llm-f32   llm_layer_1: cos_min=0.966886 max_abs=27.440136 FAIL
+  diff.llm-f32   llm_layer_2: cos_min=0.977252 max_abs=37.662830 FAIL
+  diff.llm-f32   llm_layer_3: cos_min=0.956132 max_abs=43.087299 FAIL
+  diff.llm-f32   llm_layer_4: cos_min=0.990125 max_abs=165.992432 FAIL
+  diff.llm-f32   llm_layer_5: cos_min=0.999415 max_abs=180.490967 PASS
+ocr.vis-f32 rc=0 secs=18.77 text=colorcolorcolor:,,};  colorcolor westcolorcolor-,};   westcolor: 
+diff.vis-f32 rc=0
+  diff.vis-f32   vis_layer_0: cos_min=1.000000 max_abs=0.007339 PASS
+  diff.vis-f32   vis_layer_1: cos_min=1.000000 max_abs=0.005878 PASS
+  diff.vis-f32   vis_layer_2: cos_min=1.000000 max_abs=0.006226 PASS
+  diff.vis-f32   vis_layer_3: cos_min=1.000000 max_abs=0.008926 PASS
+  diff.vis-f32   vis_layer_4: cos_min=1.000000 max_abs=0.020206 PASS
+  diff.vis-f32   vis_layer_5: cos_min=1.000000 max_abs=0.030579 PASS
+  diff.vis-f32   vis_layer_6: cos_min=1.000000 max_abs=0.036079 PASS
+  diff.vis-f32   vis_layer_7: cos_min=1.000000 max_abs=0.037941 PASS
+  diff.vis-f32   vis_layer_8: cos_min=1.000000 max_abs=0.023300 PASS
+  diff.vis-f32   vis_layer_9: cos_min=1.000000 max_abs=0.021790 PASS
+  diff.vis-f32   vis_layer_10: cos_min=1.000000 max_abs=0.023556 PASS
+  diff.vis-f32   vis_layer_11: cos_min=1.000000 max_abs=0.043137 PASS
+  diff.vis-f32   vis_proj_output: cos_min=1.000000 max_abs=0.004099 PASS
+  diff.vis-f32   llm_layer_0: cos_min=0.936596 max_abs=8.924198 FAIL
+  diff.vis-f32   llm_layer_1: cos_min=0.966886 max_abs=27.440136 FAIL
+  diff.vis-f32   llm_layer_2: cos_min=0.977252 max_abs=37.662823 FAIL
+  diff.vis-f32   llm_layer_3: cos_min=0.956131 max_abs=43.087292 FAIL
+  diff.vis-f32   llm_layer_4: cos_min=0.990125 max_abs=165.992584 FAIL
+  diff.vis-f32   llm_layer_5: cos_min=0.999415 max_abs=180.491211 PASS
+ocr.ffn-down-f32 rc=0 secs=27.79 text=colorcolorcolor:,,};  colorcolor westcolorcolor-,};   westcolor: 
+diff.ffn-down-f32 rc=0
+  diff.ffn-down-f32   vis_layer_0: cos_min=1.000000 max_abs=0.007324 PASS
+  diff.ffn-down-f32   vis_layer_1: cos_min=1.000000 max_abs=0.005903 PASS
+  diff.ffn-down-f32   vis_layer_2: cos_min=1.000000 max_abs=0.006283 PASS
+  diff.ffn-down-f32   vis_layer_3: cos_min=1.000000 max_abs=0.008231 PASS
+  diff.ffn-down-f32   vis_layer_4: cos_min=1.000000 max_abs=0.020813 PASS
+  diff.ffn-down-f32   vis_layer_5: cos_min=1.000000 max_abs=0.030075 PASS
+  diff.ffn-down-f32   vis_layer_6: cos_min=1.000000 max_abs=0.033524 PASS
+  diff.ffn-down-f32   vis_layer_7: cos_min=1.000000 max_abs=0.035755 PASS
+  diff.ffn-down-f32   vis_layer_8: cos_min=1.000000 max_abs=0.022263 PASS
+  diff.ffn-down-f32   vis_layer_9: cos_min=1.000000 max_abs=0.020659 PASS
+  diff.ffn-down-f32   vis_layer_10: cos_min=1.000000 max_abs=0.021572 PASS
+  diff.ffn-down-f32   vis_layer_11: cos_min=1.000000 max_abs=0.034836 PASS
+  diff.ffn-down-f32   vis_proj_output: cos_min=1.000000 max_abs=0.003746 PASS
+  diff.ffn-down-f32   llm_layer_0: cos_min=0.936596 max_abs=8.924198 FAIL
+  diff.ffn-down-f32   llm_layer_1: cos_min=0.966886 max_abs=27.440144 FAIL
+  diff.ffn-down-f32   llm_layer_2: cos_min=0.977252 max_abs=37.662830 FAIL
+  diff.ffn-down-f32   llm_layer_3: cos_min=0.956132 max_abs=43.087299 FAIL
+  diff.ffn-down-f32   llm_layer_4: cos_min=0.990125 max_abs=165.992676 FAIL
+  diff.ffn-down-f32   llm_layer_5: cos_min=0.999415 max_abs=180.491211 PASS
+hf-probe rc=0
+  hf Loading weights:   0%|          | 0/471 [00:00<?, ?it/s]Loading weights:   0%|          | 1/471 [00:00<01:19,  5.92it/s]Loading weights:  68%|██████▊   | 320/471 [00:00<00:00, 1433.09it/s]Loading weights: 100%|██████████| 471/471 [00:00<00:00, 1447.90it/s]
+  hf [transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer TokenizersBackend. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+  hf text: 'The quick brown fox jumps over the lazy dog. 12345'
+  hf 0 modules exceed F16 range:
+  hf   top model.language_model.layers.22: in_max=5782.6 out_max=6990.2
+  hf   top model.language_model.layers.23: in_max=6990.2 out_max=6755.6
+  hf   top model.language_model.layers.21: in_max=5717.2 out_max=5782.6
+  hf   top model.language_model.layers.20: in_max=5641.1 out_max=5717.2
+  hf   top model.language_model.layers.19: in_max=5586.5 out_max=5641.1
+  hf   top model.language_model.layers.18: in_max=5477.2 out_max=5586.5
+  hf   top model.language_model.layers.17: in_max=5367.1 out_max=5477.2
+  hf   top model.language_model.layers.16: in_max=5195.8 out_max=5367.1
+  hf   top model.language_model.layers.15: in_max=5029.7 out_max=5195.8
+  hf   top model.language_model.layers.14: in_max=4788.3 out_max=5029.7
+  hf   top model.language_model.layers.22.mlp.down_proj: in_max=3144.8 out_max=4968.6
+  hf   top model.language_model.layers.13: in_max=4620.8 out_max=4788.3
+  hf   top model.language_model.layers.12: in_max=4485.7 out_max=4620.8
+  hf   top model.language_model.layers.11: in_max=4379.0 out_max=4485.7
+  hf   top model.language_model.layers.10: in_max=4278.7 out_max=4379.0
