@@ -55,7 +55,7 @@ complete rankings/errors in the output JSON.
 groups: valid synthetic vectors, a real vector/ranking error, identical but
 poor-quality retrieval, wrong pooling/prefix/order/coverage and invalid values.
 Synthetic control vectors are never model results. The lightweight
-`ultrabert-retrieval.yml` workflow registers these controls; actual original
+`controls.yml` workflow (formerly `ultrabert-retrieval.yml`) registers these controls; actual original
 SentenceTransformer/native task execution passed39950831201; results below.
 
 ## Original-first model producer

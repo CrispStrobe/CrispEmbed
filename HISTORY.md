@@ -1,3 +1,22 @@
+## 2 November 2026 — CI queue reduction (ci/queue-reduction)
+
+- Branch protection on `main` has no required checks (API 404), so path filters cannot
+  leave a merge-blocking check pending. `origin/ci/cancel-superseded-runs` held no workflow
+  changes (only a stale merge of main); most push/PR workflows already used the main-safe
+  `run_id` concurrency group.
+- Main-safe superseded-run cancel added to `ocr-quality.yml` (had none) and switched on for
+  `inpaint-cli.yml` (3-OS matrix, was never-cancel), `ovisocr2-metadata.yml` (55 jobs, was
+  never-cancel) and `posformer-runtime-validation.yml` (was cancelling on main despite
+  uploading artifacts). Release/publication/dispatch-only evidence workflows unchanged.
+- `build.yml`/`build-wasm.yml`: `paths-ignore` for markdown, `docs/**`, `tests/results/**`
+  now also on pull_request (Build push also ignores `tests/results/**`).
+- `ultrabert-contract.yml`, `ultrabert-scifact-controls.yml`, `ultrabert-retrieval.yml`
+  merged into one-job `controls.yml` with identical commands/Python 3.12 and the union of
+  their paths; no test or protocol pinned those filenames (two doc links updated).
+- Pre-existing, unrelated: `tests/test_ultrabert_scifact.py` fails its `src/ultrabert_embed.cpp`
+  hash pin on current main, so `controls.yml` will be red until that pin is re-reviewed.
+  Policy: docs/contributing.md, "CI queue policy".
+
 ## 2 November 2026 — GOT-OCR2 pipeline parity with the original (fix/got-ocr2-pipeline-parity)
 
 - Ground truth is now the original stepfun-ai/GOT-OCR2_0 remote code (rev `979938bf`,
