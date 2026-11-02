@@ -37,3 +37,16 @@ for Q·K, scalar `expf` online softmax, and `ggml_vec_scale_f32`/`ggml_vec_mad_f
 No candidate is enabled; no gate or default changes.
 
 ## Attempts
+
+- First dispatch attempt: no run was created. The first registered workflow
+  had invalid YAML (an unquoted colon in a step name), so dispatch returned 422.
+  Fixed at `8f7ea115`.
+- [41441512356](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41441512356)
+  at `8f7ea115` completed ([receipt](../tests/results/packaging/wasm-layer0-attention-v1.json)).
+  All controls pass, and both chains reproduce their captured norm01 input
+  bit-exactly. On identical inputs every elementwise op is bit-exact. The
+  **first differing op is `q_raw`** (IQ4_NL x Q8_0 mul_mat, 9.54e-7: tinyBLAS
+  vs generic scalar order). `k_raw`, `v_raw` and `o_raw` (same kernel) and
+  `flash_attn_ext` (8.94e-7: `vec_dot_f32`/`vec_mad_f32` FMA and lane width,
+  `expf`) differ independently. Two op kinds are involved, so no single-op
+  candidate is proposed.
