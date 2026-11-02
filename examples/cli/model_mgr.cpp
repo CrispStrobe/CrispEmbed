@@ -1658,6 +1658,18 @@ static const ModelEntry k_registry[] = {
       "OXR-1.0 document OCR / reading order (SigLIP2 + Qwen3 decoder, 1.4B, f16; OXR License; gated CRISPEMBED_OXR, "
       "CPU)",
       "4.441 GB", "oxr", "https://huggingface.co/cstr/OXR-1.0-GGUF" },
+    // Quantized OXR recipes (docs/oxr-publication-v1.json), same license and gates. Both keep the
+    // SigLIP2 tower F16 and clear the owner's final-logit cosine bars on all five cases
+    // (tests/results/oxr/precision-cosine.json; worst 0.9977 / 0.9980); the German page differs late.
+    { "oxr-1.0-q8_0", "oxr-1.0-q8_0.gguf",
+      "https://huggingface.co/cstr/OXR-1.0-GGUF/resolve/1fb6277433f0be816b2be1c165e23e0ac2ce3491/oxr-1.0-q8_0.gguf",
+      "OXR-1.0 document OCR (q8_0, vision f16; OXR License; gated CRISPEMBED_OXR)", "2.03 GB", "oxr",
+      "https://huggingface.co/cstr/OXR-1.0-GGUF" },
+    { "oxr-1.0-q4_k-head", "oxr-1.0-q4_k-head.gguf",
+      "https://huggingface.co/cstr/OXR-1.0-GGUF/resolve/1fb6277433f0be816b2be1c165e23e0ac2ce3491/"
+      "oxr-1.0-q4_k-head.gguf",
+      "OXR-1.0 document OCR (q4_k visual head, q8_0 rest, vision f16; OXR License; gated CRISPEMBED_OXR)", "1.88 GB",
+      "oxr", "https://huggingface.co/cstr/OXR-1.0-GGUF" },
     // OXR's D-FINE layout detector for layout_detect (layout.arch=dfine); same license and
     // gates. F32 region-exact on five pages (tests/results/oxr-dfine/); F16 not published.
     { "oxr-1.0-dfine-layout", "oxr-1.0-dfine-layout-f32.gguf",

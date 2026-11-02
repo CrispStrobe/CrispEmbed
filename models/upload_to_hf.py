@@ -801,7 +801,7 @@ MODELS = {
         "dim": 1024, "layers": 28, "params": "1.4B", "pooling": "n/a (OCR)", "tokenizer": "Qwen2 BPE",
         "license": "oxr",
         "langs": [],
-        "desc": "OXR-1.0; registry oxr-1.0-f16 and oxr-1.0-dfine-layout.",
+        "desc": "OXR-1.0; registry oxr-1.0-f16, oxr-1.0-q8_0, oxr-1.0-q4_k-head and oxr-1.0-dfine-layout.",
         "publish_files": [],
     },
     "TeleOCR": {
