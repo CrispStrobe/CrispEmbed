@@ -205,7 +205,10 @@ def native(cli, gguf, P, mode, prefix_q, env=None):
         wall += dt
         if r.returncode:
             raise RuntimeError(f"{mode} rc={r.returncode}: {r.stderr[-1500:]}")
-        j = json.loads(r.stdout)
+        try:
+            j = json.loads(r.stdout)
+        except json.JSONDecodeError:  # some engines (CLIP text) print one JSON object per line
+            j = [json.loads(l.rstrip().rstrip(",")) for l in r.stdout.splitlines() if l.strip().startswith("{")]
         if len(j) != len(texts):
             raise RuntimeError(f"{mode}: {len(j)} outputs for {len(texts)} texts")
         if mode == "embed":
