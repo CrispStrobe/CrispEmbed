@@ -17,6 +17,7 @@
 #include "ggml-cpu.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstring>
 #include <memory>
@@ -170,7 +171,15 @@ bool preprocess(const uint8_t * rgb, int width, int height, const minicpm_ocr_ti
 }
 
 bool encode(const vision_weights & w, ggml_backend_t backend, const image_part & image, int threads,
-            std::vector<float> & merged, vision_debug * debug) {
+            std::vector<float> & merged, vision_debug * debug, vision_timing * timing) {
+    using clock = std::chrono::steady_clock;
+    auto mark = clock::now();
+    auto lap = [&](double vision_timing::*slot) {
+        if (!timing) return;
+        const auto now = clock::now();
+        timing->*slot += std::chrono::duration<double, std::milli>(now - mark).count();
+        mark = now;
+    };
     const int P = w.patch, D = w.width, H = w.heads, hd = D / H, S = w.merge;
     if (!backend || image.width % (P * S) || image.height % (P * S) ||
         image.chw.size() != size_t(3) * image.width * image.height)
@@ -254,29 +263,68 @@ bool encode(const vision_weights & w, ggml_backend_t backend, const image_part &
     // 2x2 merge (MiniCPMOcrMerger, modeling_minicpm_ocr.py:540-546):
     // view(mh, 2, mw, 2, D).permute(0, 2, 1, 3, 4) -> per merged cell the
     // order is (dy, dx) row-major: [(0,0),(0,1),(1,0),(1,1)] x D; cells row-major.
-    ggml_tensor * m = ggml_reshape_4d(g, x, D * S, pw / S, S, ph / S);
-    m = ggml_cont(g, ggml_permute(g, m, 0, 2, 1, 3)); // [2D, 2(dy), pw/2, ph/2]
-    m = ggml_reshape_2d(g, m, D * S * S, (pw / S) * (ph / S));
-    m = layer_norm(g, m, w.mln_w, w.mln_b, w.merger_eps);
-    m = linear(g, m, w.m1_w, w.m1_b);
-    m = ggml_gelu_erf(g, m); // nn.GELU() default approximate="none" (erf), modeling_minicpm_ocr.py:502
-    m = linear(g, m, w.m2_w, w.m2_b);
-    ggml_set_name(m, "merged");
-    ggml_set_output(m);
-
+    auto merger = [&](ggml_context * mg, ggml_tensor * enc) {
+        ggml_tensor * m = ggml_reshape_4d(mg, enc, D * S, pw / S, S, ph / S);
+        m = ggml_cont(mg, ggml_permute(mg, m, 0, 2, 1, 3)); // [2D, 2(dy), pw/2, ph/2]
+        m = ggml_reshape_2d(mg, m, D * S * S, (pw / S) * (ph / S));
+        m = layer_norm(mg, m, w.mln_w, w.mln_b, w.merger_eps);
+        m = linear(mg, m, w.m1_w, w.m1_b);
+        m = ggml_gelu_erf(mg, m); // nn.GELU() default approximate="none" (erf), modeling_minicpm_ocr.py:502
+        m = linear(mg, m, w.m2_w, w.m2_b);
+        ggml_set_name(m, "merged");
+        ggml_set_output(m);
+        return m;
+    };
+    auto compute = [&](ggml_cgraph * gf) {
+        if (ggml_backend_is_cpu(backend)) ggml_backend_cpu_set_n_threads(backend, threads);
+        return ggml_backend_graph_compute(backend, gf) == GGML_STATUS_SUCCESS;
+    };
+    const auto buft = ggml_backend_get_default_buffer_type(backend);
     ggml_cgraph * gf = ggml_new_graph_custom(g, kMaxNodes, false);
     for (auto * t : taps) ggml_build_forward_expand(gf, t);
-    ggml_build_forward_expand(gf, m);
-    std::unique_ptr<ggml_gallocr, gallocr_deleter> alloc(
-        ggml_gallocr_new(ggml_backend_get_default_buffer_type(backend)));
+    ggml_tensor * m = nullptr;
+    // Timing only (CRISPEMBED_MINICPM_OCR_TIMING): the encoder and the merger run as two
+    // graphs with the post_layernorm rows handed over as an F32 input, so each gets its
+    // own wall time. Same operators on the same F32 values; the default is one graph.
+    std::unique_ptr<ggml_context, graph_deleter> pctx;
+    std::unique_ptr<ggml_gallocr, gallocr_deleter> palloc;
+    if (timing) {
+        ggml_set_output(x);
+        ggml_build_forward_expand(gf, x);
+    } else {
+        m = merger(g, x);
+        ggml_build_forward_expand(gf, m);
+    }
+    std::unique_ptr<ggml_gallocr, gallocr_deleter> alloc(ggml_gallocr_new(buft));
     if (!alloc || !ggml_gallocr_alloc_graph(alloc.get(), gf)) return false;
     ggml_backend_tensor_set(in, cols.data(), 0, cols.size() * sizeof(float));
     ggml_backend_tensor_set(ids, pos_ids.data(), 0, pos_ids.size() * sizeof(int32_t));
-    if (ggml_backend_is_cpu(backend)) ggml_backend_cpu_set_n_threads(backend, threads);
-    if (ggml_backend_graph_compute(backend, gf) != GGML_STATUS_SUCCESS) return false;
+    lap(&vision_timing::setup_ms);
+    if (!compute(gf)) return false;
+    lap(&vision_timing::encoder_ms);
+    if (timing) {
+        std::vector<float> rows;
+        read_rows(x, rows);
+        const size_t pmeta = ggml_tensor_overhead() * 64 + ggml_graph_overhead_custom(64, false);
+        ggml_init_params pp = { pmeta, nullptr, true };
+        pctx.reset(ggml_init(pp));
+        if (!pctx) return false;
+        ggml_tensor * enc = ggml_new_tensor_2d(pctx.get(), GGML_TYPE_F32, D, T);
+        ggml_set_input(enc);
+        m = merger(pctx.get(), enc);
+        ggml_cgraph * pf = ggml_new_graph_custom(pctx.get(), 64, false);
+        ggml_build_forward_expand(pf, m);
+        palloc.reset(ggml_gallocr_new(buft));
+        if (!palloc || !ggml_gallocr_alloc_graph(palloc.get(), pf)) return false;
+        ggml_backend_tensor_set(enc, rows.data(), 0, rows.size() * sizeof(float));
+        lap(&vision_timing::setup_ms);
+        if (!compute(pf)) return false;
+        lap(&vision_timing::projector_ms);
+    }
 
     const size_t before = merged.size();
     read_rows(m, merged);
+    lap(&vision_timing::readback_ms);
     if (merged.size() - before != size_t(image.tokens) * w.out_width) return false;
     if (!std::all_of(merged.begin() + before, merged.end(), [](float f) { return std::isfinite(f); })) return false;
     if (dbg && taps.size() == 5) {

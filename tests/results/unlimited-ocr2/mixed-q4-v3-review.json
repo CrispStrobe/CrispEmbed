@@ -1,0 +1,173 @@
+{
+  "schema": "crispembed-unlimited-q4-v3-independent-review-v1",
+  "source": "410541f9c2587d345fb0d575a3315ce3c032a02a",
+  "provider": "Kaggle CPU",
+  "version_label": "v3",
+  "status": "ERROR",
+  "submitted_script_sha256": "dd11f6e7b530489fa3bcf09b858051b47230cd3f77871b7c7beafe74ec396b6e",
+  "explicit_version_get_status_all_pages": true,
+  "pages": 7,
+  "completed": false,
+  "publication_qualified": false,
+  "original_rerun": false,
+  "original_intermediate_gold": false,
+  "f16_all_four_strict_control_passed": true,
+  "f16_forward_calls": 16,
+  "cases": [
+    {
+      "id": "paragraphs",
+      "tokens": 146,
+      "four_modes_original_ids_text_exact": true,
+      "raw_repeat_stages": 58,
+      "raw_repeat_vision_exact": true
+    },
+    {
+      "id": "table",
+      "tokens": 138,
+      "four_modes_original_ids_text_exact": true,
+      "raw_repeat_stages": 58,
+      "raw_repeat_vision_exact": true
+    },
+    {
+      "id": "receipt",
+      "tokens": 306,
+      "four_modes_original_ids_text_exact": true,
+      "raw_repeat_stages": 58,
+      "raw_repeat_vision_exact": true
+    },
+    {
+      "id": "german",
+      "tokens": 164,
+      "four_modes_original_ids_text_exact": true,
+      "raw_repeat_stages": 58,
+      "raw_repeat_vision_exact": true
+    }
+  ],
+  "q4_forward_calls": 0,
+  "retained_first_candidate": {
+    "bytes": 6481651840,
+    "sha256": "8b9d8f28e225a229107da1c2dd043452d5c30a3f568337eff1741181a5da4f37"
+  },
+  "actual_quantizer_exit": 0,
+  "actual_quantizer_seconds": 48.7477062880007,
+  "first_rejection": "Protected source type/shape/payload differs: v.pos_embed",
+  "source_position_embedding": {
+    "type": 1,
+    "shape": [
+      3145728,
+      1
+    ],
+    "bytes": 6291456,
+    "sha256": "4ad5e4c34b03ad0d976bcc744c20efa797bfc64f40971590f280016b09b6b706"
+  },
+  "retained_files": 540,
+  "retained_bytes": 7901314457,
+  "small_reports": {
+    "unlimited-q4k/command-0.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "unlimited-q4k/command-1.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "unlimited-q4k/command-10.log": {
+      "bytes": 257223,
+      "sha256": "f1b62510ba4179ad124f5c75074c0edd247c752756c3736aa9a1512595ec47e5"
+    },
+    "unlimited-q4k/command-11.log": {
+      "bytes": 149,
+      "sha256": "6c232e26a1c3eb20dc2a16faad9aa83e12e1be56a550c938d36b8c1b4bfaa009"
+    },
+    "unlimited-q4k/command-12.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "unlimited-q4k/command-13.log": {
+      "bytes": 1808,
+      "sha256": "6f8035b3600c64f269c26229c39bdf298f754aeb7c24e97dd2ecc15a85f9d787"
+    },
+    "unlimited-q4k/command-14.log": {
+      "bytes": 247150,
+      "sha256": "49ecf0044978012eb08c0f88e82f97d6304c9da628ec9e64b11466108952e582"
+    },
+    "unlimited-q4k/command-15.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "unlimited-q4k/command-16.log": {
+      "bytes": 809,
+      "sha256": "0062a14ea153170fa2904426d2b310ee8a5102b790d9d8728e3404f2a586a279"
+    },
+    "unlimited-q4k/command-17.log": {
+      "bytes": 4742,
+      "sha256": "f7a5c6c4b7f98e14a86c33bcaf68456f162e58345fb1f1c496bf0a346486e797"
+    },
+    "unlimited-q4k/command-18.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "unlimited-q4k/command-19.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "unlimited-q4k/command-2.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "unlimited-q4k/command-3.log": {
+      "bytes": 113,
+      "sha256": "396af5334290bf15c28390ddafc8fb5495957abcf756f54845da8f098e67d4ab"
+    },
+    "unlimited-q4k/command-4.log": {
+      "bytes": 101,
+      "sha256": "3a315533b81287472852b81ae89b89d0f42abf74b1503c45c2c62712388d3eb1"
+    },
+    "unlimited-q4k/command-5.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "unlimited-q4k/command-6.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "unlimited-q4k/command-7.log": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "unlimited-q4k/command-8.log": {
+      "bytes": 68,
+      "sha256": "ead38e0a37c20823fe58dd4b2ba3dce8fdd5a67deec0826b6b5a8f3d8b04e9a2"
+    },
+    "unlimited-q4k/command-9.log": {
+      "bytes": 1747,
+      "sha256": "69baaa6d632c361cb325bb2e9a5f4971a72cc5cb89b0336858f4462dc2c86a20"
+    },
+    "unlimited-q4k/panel/panel.json": {
+      "bytes": 514832,
+      "sha256": "9c0aae284ef9af732c51bf3ccfe5996b71cb5d8b448dc1bf5f6802468cf53ba9"
+    },
+    "unlimited-q4k/panel/quantize-last1/command.json": {
+      "bytes": 38967,
+      "sha256": "2bc0fc4cd546e9179de2bc0be13f59fd813f178f46b62069effa73ef57cb13cf"
+    },
+    "unlimited-q4k/panel/quantize-last1/stderr": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "unlimited-q4k/panel/quantize-last1/stdout": {
+      "bytes": 61161,
+      "sha256": "8d7816671599edcf66415ff7d86f19ee86f8bbb382184562d582404506fb2356"
+    },
+    "unlimited-q4k/setup.json": {
+      "bytes": 41504,
+      "sha256": "c278a70f4dd7ac2ca0863d8330dc59d932b5e3f0d9f28704b8d8eb5a92fed47e"
+    }
+  },
+  "limits": [
+    "First Q4 conversion completed; protection rejected before candidate insertion/inference.",
+    "Trailing-unit physical-rank canonicalization is a hypothesis until the retained candidate full inventory/type/payload audit completes.",
+    "Coordinator checked producer-declared IDs/text/stage hashes and actual command receipt, not raw tensor payloads; hosted read-only audit authenticates all540 files.",
+    "No Q4 numerical/decoded/operator results, original intermediate capture, tolerance waiver or publication follows from strict F16 controls."
+  ]
+}

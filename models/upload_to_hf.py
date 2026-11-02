@@ -356,6 +356,19 @@ MODELS = {
             "q5_k": 0.9031,
             "q4_k": 0.6999,
         },
+        # Revision lineage (tools/ci-heavy/below_bar_recipes.py, tests/results/below-bar/):
+        # min cosine vs codefuse-ai/F2LLM-v2-0.6B (sentence-transformers fp32) over the
+        # 78-text below-bar panel. Superseded files stay in the repo unchanged.
+        "revisions": [
+            {"date": "2026-11-02", "commit": "c29299b73fe0e2135707e89c43badf3077cd38df",
+             "file": "f2llm-v2-0.6b-q4_k-mixed.gguf",
+             "sha256": "f600b43edc5b3e3e03b3bfa6704adac0e759e8790a0275825b86cc17c6054385",
+             "recipe": "q4_k+imatrix; ffn_down q6_k; attn_v, blk.25-27 q8_0",
+             "min_cos": 0.9644, "mean_cos": 0.9762,
+             "supersedes": {"f2llm-v2-0.6b-q4_k-imatrix.gguf": 0.7694,
+                            "f2llm-v2-0.6b-q4_k-imatrix-c2.gguf": 0.7637,
+                            "f2llm-v2-0.6b-q4_k.gguf": 0.5874}},
+        ],
     },
     "jina-v5-nano": {
         "base_model": "jinaai/jina-embeddings-v5-text-nano",
@@ -610,6 +623,17 @@ MODELS = {
         "license": "mit",
         "langs": ["multilingual"],
         "desc": "BGE-M3. Dense + sparse + ColBERT multi-vector retrieval in one model. 100+ languages, 8192 context.",
+        # Lineage: files before 2026-11-02 are Ollama-layout (dense only, no heads).
+        "revisions": [
+            {"date": "2026-11-02", "commit": "6016c35502f2d8419a593d545f91bc303bc5b261",
+             "files": {"bge-m3-heads-f16.gguf": "ffef924ba5d161bdd1084f713d22e579eb2c8c1ca649b63055f50f6d5685ea8d",
+                       "bge-m3-heads-q8_0-mixed.gguf": "b8ecf56f5ab3d8c8aaaaa947348e5cd2881f2ecf7436684787dcbf5174fd37e2"},
+             "recipe": {"bge-m3-heads-f16.gguf": "convert --crisp --dtype f16 (heads F32)",
+                        "bge-m3-heads-q8_0-mixed.gguf": "q8_0; enc.0-11 f16"},
+             "min_cos_dense_sparse_colbert": {"bge-m3-heads-f16.gguf": [1.0, 1.0, 1.0],
+                                              "bge-m3-heads-q8_0-mixed.gguf": [0.99945, 0.99913, 0.97255]},
+             "not_published": {"q8_0 uniform": "ColBERT 0.612", "q4_k+imatrix (+mixes)": "ColBERT 0.37-0.60"}},
+        ],
     },
     # --- Reranker models ---
     "bge-reranker-base": {
@@ -719,6 +743,27 @@ MODELS = {
             "q5_k": 0.9884,
             "q4_k": 0.9662,
         },
+    },
+    "clip-text-base": {
+        "base_model": "openai/clip-vit-base-patch16",
+        "arch": "CLIP text encoder (causal, EOS pooling + text_projection)",
+        "dim": 512,
+        "layers": 12,
+        "params": "63M",
+        "pooling": "EOS token + projection",
+        "tokenizer": "CLIP byte-level BPE",
+        "license": "mit",
+        "langs": ["en"],
+        "desc": "CLIP ViT-B/16 text tower for text-to-image retrieval.",
+        # Lineage of the 2026-11-02 below-bar repair (tests/results/below-bar/).
+        "revisions": [
+            {"date": "2026-11-02", "commit": "3d52b12727aaf324445fe22a543f954ee4f0b419",
+             "file": "clip-text-base-q4_k-mixed.gguf",
+             "sha256": "523284f2dc6ef0daf9e3f68f024a6f18b019b58714c77cab87e2d4cb2128f695",
+             "min_cos": 0.9878, "mean_cos": 0.9953,
+             "recipe": "q4_k+imatrix; attn.v, enc.0 q8_0",
+             "supersedes": {"clip-text-base-q4_k.gguf": 0.933}},
+        ],
     },
     "nomic-embed-vision-v1.5": {
         "base_model": "nomic-ai/nomic-embed-vision-v1.5",
@@ -1427,6 +1472,32 @@ def upload_model(model_name, gguf_dir, dry_run=False, readme_only=False):
             print(f"  ERROR uploading {fname}: {e}")
 
     return True
+
+
+def publish_revision(model_name, files, note, token=None):
+    """Add new files to an existing cstr/<model>-GGUF repo as ONE immutable commit.
+
+    Nothing already in the repo is overwritten or deleted: every target name must be
+    new, and README.md keeps its current text with `note` appended (a dated
+    "superseded by" record for the files this revision replaces). Returns the commit
+    oid, which callers pin as /resolve/<oid>/<file> in the registry.
+    files: [(path_in_repo, local_path)].
+    """
+    from huggingface_hub import CommitOperationAdd, hf_hub_download
+
+    api = HfApi(token=token or os.environ.get("HF_TOKEN"))
+    repo_id = f"cstr/{model_name}-GGUF"
+    existing = set(api.list_repo_files(repo_id))
+    clash = [f for f, _ in files if f in existing]
+    if clash:
+        raise SystemExit(f"{repo_id}: refusing to overwrite existing files {clash}")
+    readme = Path(hf_hub_download(repo_id, "README.md", token=api.token)).read_text(encoding="utf-8")
+    readme = readme.rstrip() + "\n\n" + note.strip() + "\n"
+    ops = [CommitOperationAdd(path_in_repo=f, path_or_fileobj=str(p)) for f, p in files]
+    ops.append(CommitOperationAdd(path_in_repo="README.md", path_or_fileobj=readme.encode("utf-8")))
+    commit = api.create_commit(repo_id=repo_id, operations=ops,
+                               commit_message=f"Add {', '.join(f for f, _ in files)} (supersedes below-bar files)")
+    return commit.oid
 
 
 def main():

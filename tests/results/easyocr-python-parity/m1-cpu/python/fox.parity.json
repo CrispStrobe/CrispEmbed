@@ -1,0 +1,162 @@
+{
+ "easyocr": "1.7.2",
+ "torch": "2.7.1",
+ "cv2": "4.12.0",
+ "image": "fox.png",
+ "crops": [
+  {
+   "index": 0,
+   "crop": [
+    24,
+    32,
+    486,
+    48
+   ],
+   "native": {
+    "text": "The quick brown fox jumps",
+    "confidence": 0.99669
+   },
+   "python_path": {
+    "text": "The quick brown fox jumps",
+    "confidence": 0.99669
+   },
+   "python_rgb_array": {
+    "text": "The quick brown fox jumps",
+    "confidence": 0.99669
+   },
+   "v_libpng_int_retry": {
+    "text": "The quick brown fox jumps",
+    "confidence": 0.99669,
+    "resized_width": 648,
+    "canvas": 704,
+    "retried": false
+   },
+   "v_libpng_int_noretry": {
+    "text": "The quick brown fox jumps",
+    "confidence": 0.99669,
+    "resized_width": 648,
+    "canvas": 704,
+    "retried": false
+   },
+   "v_libpng_ceil_retry": {
+    "text": "The quick brown fox jumps",
+    "confidence": 0.99669,
+    "resized_width": 648,
+    "canvas": 704,
+    "retried": false
+   },
+   "v_libpng_ceil_noretry": {
+    "text": "The quick brown fox jumps",
+    "confidence": 0.99669,
+    "resized_width": 648,
+    "canvas": 704,
+    "retried": false
+   },
+   "v_bt601_int_retry": {
+    "text": "The quick brown fox jumps",
+    "confidence": 0.99669,
+    "resized_width": 648,
+    "canvas": 704,
+    "retried": false
+   },
+   "v_bt601_int_noretry": {
+    "text": "The quick brown fox jumps",
+    "confidence": 0.99669,
+    "resized_width": 648,
+    "canvas": 704,
+    "retried": false
+   },
+   "v_bt601_ceil_retry": {
+    "text": "The quick brown fox jumps",
+    "confidence": 0.99669,
+    "resized_width": 648,
+    "canvas": 704,
+    "retried": false
+   },
+   "v_bt601_ceil_noretry": {
+    "text": "The quick brown fox jumps",
+    "confidence": 0.99669,
+    "resized_width": 648,
+    "canvas": 704,
+    "retried": false
+   }
+  },
+  {
+   "index": 1,
+   "crop": [
+    22,
+    102,
+    451,
+    51
+   ],
+   "native": {
+    "text": "over the lazy dog. 12345",
+    "confidence": 0.602173
+   },
+   "python_path": {
+    "text": "over the lazy dog: 12345",
+    "confidence": 0.94811
+   },
+   "python_rgb_array": {
+    "text": "over the lazy dog: 12345",
+    "confidence": 0.94811
+   },
+   "v_libpng_int_retry": {
+    "text": "over the lazy dog: 12345",
+    "confidence": 0.94811,
+    "resized_width": 565,
+    "canvas": 576,
+    "retried": false
+   },
+   "v_libpng_int_noretry": {
+    "text": "over the lazy dog: 12345",
+    "confidence": 0.94811,
+    "resized_width": 565,
+    "canvas": 576,
+    "retried": false
+   },
+   "v_libpng_ceil_retry": {
+    "text": "over the lazy dog. 12345",
+    "confidence": 0.59767,
+    "resized_width": 566,
+    "canvas": 576,
+    "retried": false
+   },
+   "v_libpng_ceil_noretry": {
+    "text": "over the lazy dog. 12345",
+    "confidence": 0.59767,
+    "resized_width": 566,
+    "canvas": 576,
+    "retried": false
+   },
+   "v_bt601_int_retry": {
+    "text": "over the lazy dog: 12345",
+    "confidence": 0.94811,
+    "resized_width": 565,
+    "canvas": 576,
+    "retried": false
+   },
+   "v_bt601_int_noretry": {
+    "text": "over the lazy dog: 12345",
+    "confidence": 0.94811,
+    "resized_width": 565,
+    "canvas": 576,
+    "retried": false
+   },
+   "v_bt601_ceil_retry": {
+    "text": "over the lazy dog. 12345",
+    "confidence": 0.59767,
+    "resized_width": 566,
+    "canvas": 576,
+    "retried": false
+   },
+   "v_bt601_ceil_noretry": {
+    "text": "over the lazy dog. 12345",
+    "confidence": 0.59767,
+    "resized_width": 566,
+    "canvas": 576,
+    "retried": false
+   }
+  }
+ ]
+}

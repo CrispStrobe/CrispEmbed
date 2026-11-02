@@ -1150,13 +1150,21 @@ def development_imatrix(build, f16, cases, scratch, out, report, selection):
     return path
 
 
-def native_cases(binary, model, cases, cleaner, filter_fn, out, report, save, arm, selection):
+def native_case_timeout(case_id, document_timeout=1800):
+    # Hosted audit resource budget only. Token caps and quality gates are fixed.
+    if type(document_timeout) is not int or document_timeout not in (1800, 3600):
+        raise ValueError('Native document audit timeout must be1800 or3600 seconds')
+    return document_timeout if case_id in ('historical-receipt', 'two-column-page', 'inventory-table') else 1800
+
+
+def native_cases(binary, model, cases, cleaner, filter_fn, out, report, save, arm, selection,
+                 document_timeout=1800):
     outputs = {}
     env = native_environment('q4' if arm == 'q4-attention-f16' else arm, selection)
     for case in cases:
         label = arm + '-' + case['id']
         log = command(label, [binary, model, case['path'], case['cap'], 2],
-                      out, report, timeout=1800, env=env)
+                      out, report, timeout=native_case_timeout(case['id'], document_timeout), env=env)
         lines = [line.removeprefix('OVIS_QUALITY_RESULT ') for line in log.read_text().splitlines()
                  if line.startswith('OVIS_QUALITY_RESULT ')]
         if len(lines) != 1:
@@ -1444,7 +1452,10 @@ def download_original(report, save, checkpoint=True):
 
 
 def run_main(phase, preflight=False, documents=False, original_run=None,
-             f16_host_control='full'):
+             f16_host_control='full', native_document_timeout=1800):
+    native_case_timeout('historical-receipt', native_document_timeout)
+    if native_document_timeout != 1800 and phase != 'f16':
+        raise ValueError('Extended document resource budget is declared only for full F16 audit')
     if f16_host_control not in F16_HOST_CONTROLS:
         raise ValueError('Unknown F16 host control mode')
     effective_control = f16_host_control if phase in QUANT_PHASES else 'full'
@@ -1455,6 +1466,7 @@ def run_main(phase, preflight=False, documents=False, original_run=None,
     report = {'status': 'started', 'phase': 'preflight', 'requested_phase': phase,
               'requested_f16_host_control': f16_host_control,
               'effective_f16_host_control': effective_control,
+              'native_audit_timeout_seconds': {'synthetic': 1800, 'documents': native_document_timeout},
               'source_commit': os.environ.get('GITHUB_SHA'), 'commands': {},
               'source_sha256': {name: sha(ROOT / name) for name in (
                   'tools/ci-heavy/ovisocr2_quality_run.py',
@@ -1670,7 +1682,7 @@ def run_main(phase, preflight=False, documents=False, original_run=None,
         save()
         f16_cases = cases if effective_control == 'full' else [cases[0]]
         f16_results = native_cases(runner, f16, f16_cases, cleaner, filter_fn, out, report, save,
-                                   'f16', selection)
+                                   'f16', selection, document_timeout=native_document_timeout)
         if effective_control == 'full':
             if phase == 'q4-attention-f16':
                 report['full_f16_frozen_control'] = validate_full_f16_host_control(
@@ -1787,8 +1799,10 @@ if __name__ == '__main__':
     parser.add_argument('--prepare-documents', action='store_true')
     parser.add_argument('--original-run', type=int)
     parser.add_argument('--f16-host-control', choices=F16_HOST_CONTROLS, default='full')
+    parser.add_argument('--native-document-timeout', type=int, choices=(1800, 3600), default=1800,
+                        help='Hosted F16 document resource budget only; quality/token gates unchanged')
     args = parser.parse_args()
     if args.preflight and args.prepare_documents:
         parser.error('Choose one preparation mode')
     run_main(args.phase, args.preflight, args.prepare_documents, args.original_run,
-             args.f16_host_control)
+             args.f16_host_control, args.native_document_timeout)

@@ -1,0 +1,9 @@
+{
+ "hf_repo": "BAAI/bge-m3",
+ "hf_revision": "5617a9f61b028005a4858fdac845db406aefb181",
+ "impl": "FlagEmbedding.BGEM3FlagModel (fp32, batch 1, max_length 8192)",
+ "seconds": 29.782161235809326,
+ "n_docs": 77,
+ "n_queries": 0,
+ "n_audit_texts": 12
+}

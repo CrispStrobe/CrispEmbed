@@ -305,6 +305,18 @@ std::vector<float> encode(context * ctx, const char * text) {
     int T = (int)toks.ids.size();
     if (T == 0) return {};
     if (T > ctx->max_pos) T = ctx->max_pos;
+    // CLIP pools the EOS position. The shared BPE tokenizer truncates the wrapped
+    // sequence to max_pos by keeping its FIRST max_pos ids, which drops the closing
+    // <|endoftext|> of any input longer than 75 content tokens, so pooling fell back
+    // to the last content token. transformers' CLIPTokenizer (truncation=True)
+    // instead truncates the content and keeps EOS last. Measured on the 78-text
+    // below-bar panel (tools/ci-heavy/below_bar_recipes.py): F32 GGUF vs
+    // CLIPModel.get_text_features min cosine 0.568 on the long audit text before
+    // this fix. Default on; CRISPEMBED_CLIP_TEXT_KEEP_EOS=0 restores the old path.
+    if (ctx->causal && !ctx->use_sp && T == ctx->max_pos && T > 0 && toks.ids[T - 1] != ctx->eos_id &&
+        !core_env::explicitly_off("CRISPEMBED_CLIP_TEXT_KEEP_EOS")) {
+        toks.ids[T - 1] = ctx->eos_id;
+    }
 
 
     // Find EOS position for CLIP (last occurrence of eos_id)

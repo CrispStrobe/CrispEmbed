@@ -1,0 +1,12 @@
+{
+  "schema": "crispembed.easyocr.postprocess.v1",
+  "source": "CrispEmbed native easyocr_pipeline",
+  "image": "tests/regression/images/fox.png",
+  "width": 800,
+  "height": 200,
+  "mode": "lines",
+  "records": [
+    {"index": 0, "line": 0, "text": "The quick brown fox jumps", "confidence": 0.996685, "detector_confidence": 0.778743, "box": [26.8929, 34.8929, 482.074, 44.4102], "crop": [24, 32, 486, 48], "normalized_box": [34, 174, 636, 397], "recognizer_crop": [24, 32, 486, 48]},
+    {"index": 1, "line": 1, "text": "over the lazy dog. 12345", "confidence": 0.602105, "detector_confidence": 0.778, "box": [24.6339, 104.702, 447.664, 47.587], "crop": [22, 102, 451, 51], "normalized_box": [31, 524, 590, 761], "recognizer_crop": [22, 102, 451, 51]}
+  ]
+}

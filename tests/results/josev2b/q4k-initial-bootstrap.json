@@ -1,0 +1,80 @@
+{
+  "schema": "crispembed-josev-q4k-bootstrap-v1",
+  "source": "5234e69c75dc000b9ae1eb0f5f47c79abd50af6a",
+  "completed": false,
+  "commands": [
+    {
+      "name": "clone",
+      "exit": 0,
+      "seconds": 3.7825038240000026,
+      "log": "clone.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "checkout",
+      "exit": 0,
+      "seconds": 4.02739289699997,
+      "log": "checkout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "fetch-original-source",
+      "exit": 0,
+      "seconds": 0.26520163599997204,
+      "log": "fetch-original-source.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "source-closure",
+      "exit": 0,
+      "seconds": 2.170776408999984,
+      "log": "source-closure.log",
+      "sha256": "8d00c39ee64a09bbd2448356853a262485855eea2fb37112122f5acd6b83656b"
+    },
+    {
+      "name": "submodule",
+      "exit": 0,
+      "seconds": 6.08613897500004,
+      "log": "submodule.log",
+      "sha256": "3061e1e0952c06e3eef2ba9c2ce2a55164679ab4a327cc8de47cb2be32a81f29"
+    },
+    {
+      "name": "install-locked-tools",
+      "exit": 0,
+      "seconds": 5.883298721000017,
+      "log": "install-locked-tools.log",
+      "sha256": "05b0c669fce3fd590457f38cacbe6672074566fe83f6a4baedf49c506c33001a"
+    },
+    {
+      "name": "pip-check",
+      "exit": 0,
+      "seconds": 0.3153266799999983,
+      "log": "pip-check.log",
+      "sha256": "87ea3f7013f01cc4669b2b0eb0f7040353493edc7ad7e48541117a721efad13f"
+    },
+    {
+      "name": "stdlib-controls",
+      "exit": 0,
+      "seconds": 0.5159943959999964,
+      "log": "stdlib-controls.log",
+      "sha256": "b2ea0c96ab9373c10d71382779a10c0070ed8e45ea39ac1bc319e2401777a8e5"
+    },
+    {
+      "name": "actual-model-panel",
+      "exit": 1,
+      "seconds": 2.221269315000029,
+      "log": "actual-model-panel.log",
+      "sha256": "22623e4072cd0fed5565d99033dcccbdf29a75c53b077d0f7e25524f88266608"
+    }
+  ],
+  "execution": "CPU2 actual F32/Q4_K model comparison",
+  "gpu_execution": false,
+  "publication_qualified": false,
+  "executed_script_sha256": "f45af157c6ce6bcf1a6468ccfabd706e874a62dd44a4cb1715d371a7affd3cb1",
+  "resources": {
+    "available_ram_bytes": 32663097344,
+    "free_disk_bytes": 1126151974912,
+    "cpu_count": 4
+  },
+  "error": "RuntimeError: setup/model task rejected in actual-model-panel"
+}

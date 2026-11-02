@@ -1,7 +1,9 @@
 #pragma once
 #include "core/env_gate.h"
+#include "core/gguf_file_type.h"
 #include "core/gguf_loader.h"
 #include "tokenizer.h"
+#include "ultrabert_tokenizer_mode.h"
 #include <algorithm>
 #include <map>
 #include <stdexcept>
@@ -32,7 +34,7 @@ inline std::map<std::string, std::pair<int64_t, int64_t>> schema() {
     }
     return result;
 }
-inline void validate(gguf_context * g) {
+inline void validate(gguf_context * g, bool quantized = false) {
     require(g != nullptr, "missing metadata");
     auto str = [&](const char * key) { return core_gguf::kv_str(g, key, ""); };
     auto u = [&](const char * key, uint32_t value) {
@@ -43,7 +45,14 @@ inline void validate(gguf_context * g) {
                 str("ultrabert.source.weight_sha256") ==
                     "da8be29564b69e4f90fc8f2683e1f369c3d3575e75f7fe798643e28de02e2b9c",
             "unsupported source profile");
-    u("general.file_type", 0);
+    const auto file_type = core_gguf::kv_u32(g, "general.file_type", UINT32_MAX);
+    if (quantized) {
+        const auto key = gguf_find_key(g, "general.file_type");
+        require(key >= 0 && gguf_get_kv_type(g, key) == GGUF_TYPE_UINT32, "quantized general.file_type must be UINT32");
+        require(core_gguf_file_type::known_q4_k(file_type) || file_type == core_gguf_file_type::q8_0,
+                "unsupported quantized general.file_type");
+    } else
+        u("general.file_type", GGML_FTYPE_ALL_F32);
     u("ultrabert.context_length", 32768);
     u("ultrabert.embedding_length", 768);
     u("ultrabert.block_count", 24);
@@ -83,9 +92,22 @@ inline void validate(gguf_context * g) {
         const auto index = gguf_find_tensor(g, item.first.c_str());
         require(index >= 0, "missing tensor: " + item.first);
         const auto * ne = gguf_get_tensor_ne(g, index);
-        require(gguf_get_tensor_type(g, index) == GGML_TYPE_F32 && ne[0] == item.second.first &&
-                    ne[1] == item.second.second && ne[2] == 1 && ne[3] == 1,
+        const auto type = gguf_get_tensor_type(g, index);
+        const bool critical = item.first == "token_embd.weight" || item.first.find("norm.weight") != std::string::npos;
+        const bool allowed =
+            type == GGML_TYPE_F32 ||
+            (quantized && !critical && (type == GGML_TYPE_F16 || type == GGML_TYPE_Q8_0 || type == GGML_TYPE_Q4_K));
+        require(allowed && ne[0] == item.second.first && ne[1] == item.second.second && ne[2] == 1 && ne[3] == 1,
                 "unsupported tensor shape/precision: " + item.first);
+    }
+    if (quantized) {
+        uint64_t actual_q8 = 0, actual_q4 = 0;
+        for (int64_t i = 0; i < gguf_get_n_tensors(g); ++i) {
+            actual_q8 += gguf_get_tensor_type(g, i) == GGML_TYPE_Q8_0;
+            actual_q4 += gguf_get_tensor_type(g, i) == GGML_TYPE_Q4_K;
+        }
+        require(core_gguf_file_type::matches_quantized_payload(file_type, actual_q8, actual_q4, true),
+                "Quantized header requires matching actual Q8_0/Q4_K tensors");
     }
 }
 inline bool load_tokenizer(gguf_context * g, BPETokenizer & raw, std::vector<std::string> & vocab) {
@@ -95,7 +117,7 @@ inline bool load_tokenizer(gguf_context * g, BPETokenizer & raw, std::vector<std
         vocab[16] != "<|mask|>")
         return false;
     if (!raw.load(vocab, merges, -1, 0, -1, -1, false, 1048576)) return false;
-    raw.set_gpt2_regex_pretok(true);
+    configure_tokenizer_mode(raw);
     return true;
 }
 inline bool tokenize(const BPETokenizer & raw, const std::string & text, std::vector<int32_t> & ids) {

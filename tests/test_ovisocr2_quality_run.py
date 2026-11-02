@@ -22,6 +22,18 @@ spec.loader.exec_module(driver)
 
 
 class QualityDriverControls(unittest.TestCase):
+    def test_document_resource_budget_preserves_synthetic_default_and_rejects_invalid(self):
+        for case in ('historical-receipt', 'two-column-page', 'inventory-table'):
+            self.assertEqual(driver.native_case_timeout(case), 1800)
+            self.assertEqual(driver.native_case_timeout(case, 3600), 3600)
+        self.assertEqual(driver.native_case_timeout('hold-code', 3600), 1800)
+        for value in (True, 0, 1801, 7200, '3600'):
+            with self.assertRaises(ValueError):
+                driver.native_case_timeout('historical-receipt', value)
+        # Reject undeclared precision experiments before environment/model access.
+        with self.assertRaisesRegex(ValueError, 'only for full F16'):
+            driver.run_main('q8', native_document_timeout=3600)
+
     def test_first_linear_local_parser_requires_every_observed_operation(self):
         expected = driver.parse_first_linear_diagnostic('', 1)['local_expected_stages']
         def line(stage):

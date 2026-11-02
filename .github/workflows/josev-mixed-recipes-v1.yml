@@ -35,6 +35,8 @@ jobs:
           python -m venv --without-pip "$RUNNER_TEMP/mixed-venv"
           python -m pip --python "$RUNNER_TEMP/mixed-venv/bin/python" install --no-deps --only-binary=:all: --require-hashes -r tools/kaggle/josev-q4k/requirements.lock
           "$RUNNER_TEMP/mixed-venv/bin/python" -I -m pip check
+      - name: Actual bounded integer-vector oracle controls
+        run: '"$RUNNER_TEMP/mixed-venv/bin/python" -I tests/test_josev_mixed_recipes.py --vector-controls -v'
       - name: Authenticate retained original arrays without original forwards
         run: |
           "$RUNNER_TEMP/mixed-venv/bin/python" -I tools/ci-heavy/josev2b_mixed_recipes.py --fetch-reference "$RUNNER_TEMP/mixed-reference"

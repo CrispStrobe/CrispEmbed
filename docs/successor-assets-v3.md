@@ -17,10 +17,17 @@ tolerance, not a parity claim.
   files added later, such as new receipts, are allowed.
 - Producers, final base `8245fd47`, ggml `a06fc0bb` and the runtime-closure
   producer check are identical to v2.
-- The consumer matrix, browser consumer and review are **derived** from the
-  frozen v1 files by `DERIVATIONS` in `tools/successor_assets_v3.py`. Exactly
-  three workflow lines, two browser-consumer lines and four review lines
-  differ. The controls regenerate them and reject any other difference.
+- The consumer matrix, browser consumer, review and Rust/Dart bindings consumer
+  are **derived** from the frozen v1 files by `DERIVATIONS` in
+  `tools/successor_assets_v3.py`. Exactly these lines differ:
+  - consumer workflow: four (name, bindings call, browser step, review step);
+  - browser consumer: two;
+  - review: four;
+  - bindings workflow: three (name, script paths);
+  - bindings script: one, adding `successor-assets-v3.yml` to the accepted
+    caller workflows. This is an identity allowlist, not a numeric gate.
+
+  The controls regenerate all of them and reject any other difference.
   Desktop, binding, mobile, Apple and cross-platform gates therefore stay the
   strict v1 gates (max-abs ≤ 0.002, cosine ≥ 0.99999), byte for byte.
 - The browser consumer's numeric decision moves to
@@ -82,3 +89,15 @@ order, IQ4_XS AVX2 order, flash `vec_dot_f32`/`vec_mad_f32` with `fmaf` and
 the AVX lane order, and a matching `expf`. It is recorded, not scheduled.
 
 ## Runs
+
+- [41452489743](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41452489743)
+  at `9339f232` (adopted producers 40724938611/40725005968): the controls,
+  producer verification, all desktop and mobile-link consumers and the **WASM
+  consumer pass under the v3 tolerance**. Two jobs failed on identity guards:
+  - bindings rejected the new caller workflow, which is not in the frozen
+    allowlist (fixed by the derived bindings consumer);
+  - apple-released rejected corpus proof 40386968045 because its
+    `tools/probe_posformer_release.py` blob differs. The v2 run used corpus
+    proof 40629090339 at `b345f6ab`.
+
+  The review was skipped and the run is not green. This failure is retained.

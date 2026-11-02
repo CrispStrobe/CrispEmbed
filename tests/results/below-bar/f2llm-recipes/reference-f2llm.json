@@ -1,0 +1,9 @@
+{
+ "hf_repo": "codefuse-ai/F2LLM-v2-0.6B",
+ "hf_revision": "8786315a8711c242ee03ec67c74dd9ad0a61e2cf",
+ "impl": "sentence_transformers.SentenceTransformer (fp32, batch 1)",
+ "seconds": 23.119507551193237,
+ "n_docs": 55,
+ "n_queries": 22,
+ "n_audit_texts": 12
+}

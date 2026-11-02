@@ -135,6 +135,21 @@
             "58fe52aacc66cb80e18da87d370be0081e86bb37 Add experimental TeleOCR profile on the Qwen2-VL GGML path"
           ],
           "reason": "Quantizer changes for other families only (TeleOCR, MinerU2.5, OXR, D-FINE, MI-GAN/Moebius/PixelHacker/SDXL VAE inpaint, 2026-10-31..11-02). Every new branch is keyed on another general.architecture / layout.arch / qwen2vl.model_family value or an opt-in env var; the qwen35_ocr tensor policy, 4D-flatten condition for non-OXR models and log format are unchanged. Quantized receipt files are verified by GGUF/tensor hashes, not re-quantized."
+        },
+        {
+          "from_sha256": "032c36bc3aab0875cca693c975169abe75670cbbc5a7f26b9bfeb8b8913ea980",
+          "to_sha256": "6519688caf42914483604fba7903c1739dd5e7d7e3dfa97ae79f838a40300f7c",
+          "to_blob": "b1b276a4f7511dc8e1bedafcb0c52a0ace0e21c6",
+          "recorded_at_commit": "757dccdfc95a88709daadc9b85af93b5a9bef3f2",
+          "recorded": "2026-11-02",
+          "changed_by": [
+            "2f50aa61800b890b165e7573775f789b5a0fe9cb Merge origin/main into work/portfolio-closure-q4k-20261028",
+            "e5a02d1e079c523ecbae85e1c077b3a8ba16c229 Merge origin/main into work/portfolio-closure-q4k-20261028",
+            "7d886594d2f487cdaa9420712a8df39eda89e744 Prepare gated Q8 profile admission and quantizer string profile stamps",
+            "0023fe16632805c5da5de2e40e5df29114ebe20e Correct standard GGUF headers and prepare authenticated metadata bridge",
+            "715c5860169d3949677b183ccf5feff9a7ab1990 quantize: honor literal F16 4D patch casts and preserve actual MiniCPM rejection"
+          ],
+          "reason": "PR89: new opt-in paths only, default output byte-identical. Adds --standard-file-type / CRISPEMBED_QUANTIZE_STANDARD_FTYPE=1 (standard GGUF general.file_type label; default keeps the legacy internal-enum label), an exact-name --tensor-type <patch_embed>=f16 cast that keeps 4D axes, and --metadata-string. Verified 2026-11-02: main vs PR quantizer on one F32 GGUF give byte-identical q4_k/q5_k/q6_k/q8_0/f16 output by default and with a glob override; the opt-in changes only the one header byte for K quants."
         }
       ]
     }

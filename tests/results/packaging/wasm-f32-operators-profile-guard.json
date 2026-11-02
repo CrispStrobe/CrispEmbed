@@ -1,0 +1,5 @@
+{
+  "phase": "build",
+  "error": "Exact old/new WASM SIMD/pthread profiles differ",
+  "qualification": false
+}
