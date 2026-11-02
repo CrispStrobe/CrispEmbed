@@ -22,6 +22,13 @@ on:
       - '.clang-format'
       - 'tools/format.sh'
       - '.github/workflows/lint.yml'
+      - 'docs/environment-variables.md'
+      - 'tools/list_env_vars.py'
+      - 'tests/test_env_vars_documented.py'
+      - 'python/**'
+      - 'crispembed/**'
+      - 'crispembed-sys/**'
+      - 'flutter/**'
   pull_request:
     branches: [main, master]
     paths:
@@ -32,6 +39,13 @@ on:
       - '.clang-format'
       - 'tools/format.sh'
       - '.github/workflows/lint.yml'
+      - 'docs/environment-variables.md'
+      - 'tools/list_env_vars.py'
+      - 'tests/test_env_vars_documented.py'
+      - 'python/**'
+      - 'crispembed/**'
+      - 'crispembed-sys/**'
+      - 'flutter/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -67,3 +81,14 @@ jobs:
         # Single source of truth for scope + version pinning. Exits non-zero and
         # prints file:line locations if any in-scope file would be reformatted.
         run: ./tools/format.sh --check
+
+  env-vars-documented:
+    # Every CRISPEMBED_* variable read by code must be in
+    # docs/environment-variables.md and its generated inventory must be fresh.
+    # Fix locally with: python tools/list_env_vars.py --write
+    name: environment variables documented
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tests/test_env_vars_documented.py

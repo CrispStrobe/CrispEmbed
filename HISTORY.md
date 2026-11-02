@@ -17,6 +17,19 @@
   hash pin on current main, so `controls.yml` will be red until that pin is re-reviewed.
   Policy: docs/contributing.md, "CI queue policy".
 
+## 2 November 2026 — environment-variable reference and wiring audit
+
+- `docs/environment-variables.md` is the single reference for runtime variables:
+  curated sections (core/backends, embeddings, MoEdern, Josev, Unlimited-OCR-2,
+  MiniCPM-OCR, qwen35 decoder, WASM rounding, inpainting) plus a generated
+  inventory of 394 `CRISPEMBED_*` and the legacy non-prefixed variables
+  (`tools/list_env_vars.py`). `tests/test_env_vars_documented.py` runs in Lint.
+- [Wiring audit](docs/wiring-audit-20261102.md) of Unlimited-OCR-2, MiniCPM-OCR,
+  MoEdern and Josev SystemOne. Added named stage ids 13/23 to C/Rust/Python/Dart.
+  The CLI and server now accept `unlimited-ocr`, `unlimited-ocr2` and
+  `unlimited_ocr2`; before this, the hyphenated name they printed was rejected
+  and fell back to engine 0. Remaining gaps are in PLAN.
+
 ## 2 November 2026 — GOT-OCR2 pipeline parity with the original (fix/got-ocr2-pipeline-parity)
 
 - Ground truth is now the original stepfun-ai/GOT-OCR2_0 remote code (rev `979938bf`,

@@ -286,3 +286,8 @@ Every combination measured on Kaggle is token-ID exact on all five cases
 recommended configuration is graph `f32` + vision F32 + batch + `CRISPEMBED_MINICPM_OCR_VISION_FLASH=1`:
 506 s for the five cases, against Transformers' 439 s and the old path's 3264 s.
 Numbers are in PERFORMANCE.md.
+
+## Runtime environment variables
+
+The gates, speed-up toggles and debug dumps for this engine are documented in
+[environment-variables.md](environment-variables.md).
