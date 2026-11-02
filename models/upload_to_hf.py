@@ -1386,6 +1386,32 @@ def upload_model(model_name, gguf_dir, dry_run=False, readme_only=False):
     return True
 
 
+def publish_revision(model_name, files, note, token=None):
+    """Add new files to an existing cstr/<model>-GGUF repo as ONE immutable commit.
+
+    Nothing already in the repo is overwritten or deleted: every target name must be
+    new, and README.md keeps its current text with `note` appended (a dated
+    "superseded by" record for the files this revision replaces). Returns the commit
+    oid, which callers pin as /resolve/<oid>/<file> in the registry.
+    files: [(path_in_repo, local_path)].
+    """
+    from huggingface_hub import CommitOperationAdd, hf_hub_download
+
+    api = HfApi(token=token or os.environ.get("HF_TOKEN"))
+    repo_id = f"cstr/{model_name}-GGUF"
+    existing = set(api.list_repo_files(repo_id))
+    clash = [f for f, _ in files if f in existing]
+    if clash:
+        raise SystemExit(f"{repo_id}: refusing to overwrite existing files {clash}")
+    readme = Path(hf_hub_download(repo_id, "README.md", token=api.token)).read_text(encoding="utf-8")
+    readme = readme.rstrip() + "\n\n" + note.strip() + "\n"
+    ops = [CommitOperationAdd(path_in_repo=f, path_or_fileobj=str(p)) for f, p in files]
+    ops.append(CommitOperationAdd(path_in_repo="README.md", path_or_fileobj=readme.encode("utf-8")))
+    commit = api.create_commit(repo_id=repo_id, operations=ops,
+                               commit_message=f"Add {', '.join(f for f, _ in files)} (supersedes below-bar files)")
+    return commit.oid
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", action="append", default=[],
