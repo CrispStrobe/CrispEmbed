@@ -1,3 +1,22 @@
+## 3 November 2026: SentencePiece whitespace A/B across the registry; CUDA re-run of repaired files
+
+- **`CRISPEMBED_SPM_COLLAPSE_SPACES`** was checked against the original HF tokenizers and models for all 16
+  SentencePiece-encoder registry models (e5 ×3, paraphrase-multilingual, granite ×2, pixie-rune, arctic-l/m-v2,
+  nomic-v2-moe, bge-m3, five rerankers), plus xlmr-ner-hrl for IDs. The models were found by scanning the GGUF
+  headers of all 161 registry repos.
+  - With the switch on, IDs equal the models' SentencePiece tokenizer on every text, versus 66-67/77 with `=0`.
+  - The embedding minimum cosine is equal or better for every model (e.g. nomic-v2-moe 0.918 → 0.998,
+    arctic-l-v2 0.962 → 0.994).
+  - Reranker deviation is equal or lower.
+  - The transformers-4 fast tokenizer additionally keeps a lone trailing `▁` on 5 whitespace-ending texts.
+    SentencePiece and transformers 5 do not.
+  - The default stays global. [Summary](tests/results/spm-collapse-ab/SUMMARY.md).
+- **CUDA (T4, cuda-audit run 7, `b4e09b7b`)**, against each file's own F32/F16 base on the audit panel:
+  - f2llm q4_k-mixed 0.9706 (CPU arm 0.9693), clip q4_k-mixed 0.9878 (CPU 0.9878).
+  - bge-m3 heads F16: dense, sparse and ColBERT all ≥ 0.9992.
+  - bge-m3 heads Q8_0 mix: dense 0.9995, sparse 0.9999, but ColBERT **0.9667 on CUDA** (CPU 0.9718). Below
+    the 0.97 bar on CUDA only; open in PLAN.
+
 ## 2 November 2026 — env presence reads, MiniCPM default, Unlimited-OCR v1 pin
 
 - All 131 raw presence env reads (`getenv(X)` truth tests, where `X=0` meant on) were
