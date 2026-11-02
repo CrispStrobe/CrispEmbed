@@ -204,6 +204,109 @@
     "v.*=q4_k",
     "l.embed_tokens.weight=q8_0"
    ]
+  },
+  "r1": {
+   "source": "f16",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=f16",
+    "l.embed_tokens.weight=f16",
+    "v.blk.*.attn_*=q8_0",
+    "v.blk.*.ffn_gate.weight=q4_k",
+    "v.blk.*.ffn_up.weight=q4_k",
+    "l.embed_tokens.weight=q6_k",
+    "l.blk.*.attn_q.weight=q4_k",
+    "l.blk.*.attn_k.weight=q4_k"
+   ]
+  },
+  "r2": {
+   "source": "f16",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=f16",
+    "l.embed_tokens.weight=f16",
+    "v.blk.*.attn_*=q8_0",
+    "v.blk.*.ffn_gate.weight=q4_k",
+    "v.blk.*.ffn_up.weight=q4_k",
+    "l.embed_tokens.weight=q6_k"
+   ]
+  },
+  "r1-im": {
+   "source": "f16",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=f16",
+    "l.embed_tokens.weight=f16",
+    "v.blk.*.attn_*=q8_0",
+    "v.blk.*.ffn_gate.weight=q4_k",
+    "v.blk.*.ffn_up.weight=q4_k",
+    "l.embed_tokens.weight=q6_k",
+    "l.blk.*.attn_q.weight=q4_k",
+    "l.blk.*.attn_k.weight=q4_k"
+   ],
+   "imatrix": true
+  },
+  "r5": {
+   "source": "f16",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=f16",
+    "l.embed_tokens.weight=f16",
+    "v.blk.*.attn_*=q8_0",
+    "v.blk.*.ffn_gate.weight=q4_k",
+    "v.blk.*.ffn_up.weight=q4_k",
+    "l.embed_tokens.weight=q6_k",
+    "l.blk.*.attn_q.weight=q4_k",
+    "l.blk.*.attn_k.weight=q4_k",
+    "v.blk.*.attn_proj.weight=q4_k"
+   ]
+  },
+  "dec4-im": {
+   "source": "f16",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=f16",
+    "l.embed_tokens.weight=f16",
+    "l.blk.*=q4_k"
+   ],
+   "imatrix": true
+  },
+  "v4ffn-im": {
+   "source": "f16",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=f16",
+    "l.embed_tokens.weight=f16",
+    "v.blk.*.ffn_*=q4_k"
+   ],
+   "imatrix": true
+  },
+  "v4-im": {
+   "source": "f16",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=f16",
+    "l.embed_tokens.weight=f16",
+    "v.*=q4_k"
+   ],
+   "imatrix": true
+  },
+  "r6-im": {
+   "source": "f16",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=f16",
+    "l.embed_tokens.weight=f16",
+    "v.blk.*.attn_*=q8_0",
+    "v.blk.*.ffn_gate.weight=q4_k",
+    "v.blk.*.ffn_up.weight=q4_k",
+    "l.embed_tokens.weight=q6_k",
+    "l.blk.*.attn_q.weight=q4_k",
+    "l.blk.*.attn_k.weight=q4_k",
+    "l.blk.*.attn_v.weight=q4_k",
+    "l.blk.*.attn_o.weight=q4_k"
+   ],
+   "imatrix": true
   }
  },
  "mineru": {
@@ -383,6 +486,97 @@
     "v.*=q8_0",
     "v.blk.*.ffn_*=q4_k"
    ]
+  },
+  "r1": {
+   "source": "f32",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=q8_0",
+    "v.*=q4_k",
+    "l.blk.*.*=iq4_nl",
+    "l.blk.*.ffn_down.weight=q4_k"
+   ]
+  },
+  "r2": {
+   "source": "f32",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=q8_0",
+    "v.*=q4_k",
+    "l.blk.*.*=iq4_nl",
+    "l.blk.*.ffn_down.weight=q4_k",
+    "l.embed_tokens.weight=iq4_nl"
+   ]
+  },
+  "r3": {
+   "source": "f32",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=q8_0",
+    "v.*=q4_k",
+    "l.blk.*.*=iq4_nl",
+    "l.blk.*.ffn_down.weight=q4_k",
+    "l.blk.21.*=q8_0",
+    "l.blk.22.*=q8_0",
+    "l.blk.23.*=q8_0"
+   ]
+  },
+  "r4": {
+   "source": "f32",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=q8_0",
+    "v.*=q4_k",
+    "l.blk.*.*=iq4_nl",
+    "l.blk.*.ffn_down.weight=q4_k",
+    "l.blk.21.*=q8_0",
+    "l.blk.22.*=q8_0",
+    "l.blk.23.*=q8_0",
+    "l.embed_tokens.weight=iq4_nl"
+   ]
+  },
+  "r1-im": {
+   "source": "f32",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=q8_0",
+    "v.*=q4_k",
+    "l.blk.*.*=iq4_nl",
+    "l.blk.*.ffn_down.weight=q4_k"
+   ],
+   "imatrix": true
+  },
+  "r2-im": {
+   "source": "f32",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=q8_0",
+    "v.*=q4_k",
+    "l.blk.*.*=iq4_nl",
+    "l.blk.*.ffn_down.weight=q4_k",
+    "l.embed_tokens.weight=iq4_nl"
+   ],
+   "imatrix": true
+  },
+  "r5": {
+   "source": "f32",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=q8_0",
+    "v.blk.*.ffn_*=q4_k",
+    "l.blk.*.*=iq4_nl",
+    "l.blk.*.ffn_down.weight=q4_k"
+   ]
+  },
+  "dec4-im": {
+   "source": "f32",
+   "type": "q8_0",
+   "tensor_type": [
+    "v.*=q8_0",
+    "l.blk.*.*=iq4_nl",
+    "l.blk.*.ffn_down.weight=q4_k"
+   ],
+   "imatrix": true
   }
  }
 }
