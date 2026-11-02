@@ -1,0 +1,62 @@
+{
+ "f2llm": {
+  "imatrix_name": "q4_k-mixed.imatrix",
+  "files": [
+   {
+    "file": "f2llm-v2-0.6b-q4_k-mixed.gguf",
+    "qtype": "q4_k",
+    "imatrix": true,
+    "overrides": [
+     "*.ffn_down.weight=q6_k",
+     "*.attn_v.weight=q8_0",
+     "blk.25.*=q8_0",
+     "blk.26.*=q8_0",
+     "blk.27.*=q8_0"
+    ]
+   }
+  ],
+  "card_note": "## Revision 2026-11-02: `f2llm-v2-0.6b-q4_k-mixed.gguf` supersedes the Q4_K files\n\nThe CUDA/CPU audit measured `f2llm-v2-0.6b-q4_k-imatrix.gguf` at cosine 0.78 against the F32 file, below the Q4_K acceptance bar of 0.94 (`-q4_k-imatrix-c2` 0.76, plain `-q4_k` 0.59). They remain here unchanged for reproducibility but are **superseded**. The replacement keeps Q4_K+imatrix (134-text calibration corpus) for most matrices, with `ffn_down` at Q6_K, `attn_v` and the last three blocks (25-27) at Q8_0, and token embeddings at Q8_0. On a 78-text panel (13 audit texts plus 65 held-out German/English/code/query texts), minimum cosine against `codefuse-ai/F2LLM-v2-0.6B` (sentence-transformers, FP32) is about 0.96, versus 0.77 for the superseded file. The imatrix used is `f2llm-v2-0.6b-q4_k-mixed.imatrix`. Evidence: CrispEmbed `tests/results/below-bar/`."
+ },
+ "clip": {
+  "imatrix_name": "q4_k-mixed.imatrix",
+  "files": [
+   {
+    "file": "clip-text-base-q4_k-mixed.gguf",
+    "qtype": "q4_k",
+    "imatrix": true,
+    "overrides": [
+     "*.attn.v.weight=q8_0",
+     "enc.0.*=q8_0"
+    ]
+   }
+  ],
+  "card_note": "## Revision 2026-11-02: `clip-text-base-q4_k-mixed.gguf` supersedes `clip-text-base-q4_k.gguf`\n\nThe CUDA/CPU audit measured `clip-text-base-q4_k.gguf` at cosine 0.933 against the F32 file, below the Q4_K bar of 0.94. Part of that gap was a CrispEmbed runtime defect, not the weights: inputs longer than 75 tokens lost their closing EOS on truncation, so pooling read a content token. That is fixed in CrispEmbed (`CRISPEMBED_CLIP_TEXT_KEEP_EOS`, default on). The replacement uses Q4_K+imatrix, with `attn.v` and encoder block 0 at Q8_0 and token embeddings at Q8_0. On a 78-text panel its minimum cosine against `openai/clip-vit-base-patch16` `get_text_features` (CLIPTokenizerFast, FP32) is about 0.988. Older files remain unchanged for reproducibility; `clip-text-base-q4_k.gguf` is superseded. Evidence: CrispEmbed `tests/results/below-bar/`."
+ },
+ "bgem3": {
+  "files": [
+   {
+    "file": "bge-m3-heads-f16.gguf",
+    "converter": "--dtype f16 --crisp"
+   },
+   {
+    "file": "bge-m3-heads-q8_0-mixed.gguf",
+    "qtype": "q8_0",
+    "overrides": [
+     "enc.0.*=f16",
+     "enc.1.*=f16",
+     "enc.2.*=f16",
+     "enc.3.*=f16",
+     "enc.4.*=f16",
+     "enc.5.*=f16",
+     "enc.6.*=f16",
+     "enc.7.*=f16",
+     "enc.8.*=f16",
+     "enc.9.*=f16",
+     "enc.10.*=f16",
+     "enc.11.*=f16"
+    ]
+   }
+  ],
+  "card_note": "## Revision 2026-11-02: GGUFs with the sparse and ColBERT heads\n\nThe earlier files in this repo (`bge-m3.gguf`, `-q8_0`, `-q4_k*`, `-iq4_xs`) were converted in the default (Ollama) layout, which drops BGE-M3's `sparse_linear` and `colbert_linear` heads, so they support dense retrieval only. They remain unchanged. The new files are converted with `--crisp` and keep both heads:\n\n- `bge-m3-heads-f16.gguf`: F16 encoder with the heads in F32.\n- `bge-m3-heads-q8_0-mixed.gguf`: Q8_0, with encoder blocks 0-11 in F16.\n\nUniform Q8_0 keeps dense and sparse output above the bar but flips a few ColBERT token vectors (per-token minimum cosine 0.61). That error comes from the weights; it does not depend on colbert_linear's precision. Keeping the first 12 blocks in F16 brings it back to 0.973. A Q4_K variant with heads did not clear the bar (ColBERT minimum 0.37-0.60) and is not published. The checks used FlagEmbedding `BGEM3FlagModel` (FP32) on a 77-text panel, comparing dense vectors, lexical weights and every ColBERT token. They need CrispEmbed with the matching tokenizer and sparse fixes (`CRISPEMBED_SPM_COLLAPSE_SPACES` and `CRISPEMBED_SPARSE_KEEP_SPECIAL`, both default-correct). Evidence: CrispEmbed `tests/results/below-bar/`."
+ }
+}

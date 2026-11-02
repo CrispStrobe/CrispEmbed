@@ -1,3 +1,17 @@
+## Repaired quantized registry artifacts (2 November 2026, hosted CPU 4 vCPU)
+
+Minimum / mean cosine against the original Python model over the below-bar panel
+([summary](tests/results/below-bar/SUMMARY.md)). Wall time is a whole-panel CLI run, model load included.
+
+| artifact | MB | dense min / mean | sparse min | ColBERT token min / mean | panel wall s | status |
+|---|---:|---|---:|---|---:|---|
+| f2llm-v2-0.6b-q4_k-mixed | 454 | 0.9644 / 0.9762 | - | - | see receipt | on par (clears Q4_K 0.94) |
+| f2llm-v2-0.6b-q4_k-imatrix (superseded) | 400 | 0.7694 / 0.8220 | - | - | | worse, superseded |
+| clip-text-base-q4_k-mixed | 51 | 0.9878 / 0.9953 | - | - | 1.2 | on par |
+| bge-m3-heads-f16 | 1599 | 1.0000 / 1.0000 | 1.0000 | 1.0000 / 1.0000 | 37 per head | on par |
+| bge-m3-heads-q8_0-mixed | 718 | 0.9995 / 0.9996 | 0.9991 | 0.9726 / 0.9992 | ~15 per head | on par, thin ColBERT margin |
+| bge-m3 Q8_0 uniform (not published) | 583 | 0.9987 | 0.9983 | 0.6124 / 0.9976 | 14 per head | worse (ColBERT) |
+
 ## Real-scan OCR quality, native vs original (2 November 2026, Kaggle 4 vCPU)
 
 Twenty real pages: 15 public-domain book, report and table scans from Wikisource/Commons, plus 5 CORD-v2 receipts

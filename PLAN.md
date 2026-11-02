@@ -36,10 +36,13 @@ Source: `docs/gpu-support-matrix.md` §CUDA audit (branch `feat/cuda-audit`, Kag
   `input_image` with test-easyocr-diff. Also: scan_page_pd's page output differs between
   the M1 (b3318ffa) and x86/CUDA (ad8d340b) on both the fixed and legacy paths, so it is
   not caused by this fix; attribute it (DBNet boxes vs recognizer).
-- Artifacts below their bar against F32 on both arms: republish/requantize
-  `f2llm-v2-0.6b-q4_k-imatrix`, `clip-text-base-q4_k`; GOT-OCR2 F16: root cause found
-  (see GOT-OCR2 F16 below); publish a bge-m3 GGUF converted with `--crisp` (sparse/ColBERT heads)
-  and find why its q8_0 ColBERT output is 0.59 vs F16.
+- Below-bar artifacts: f2llm/CLIP/BGE-M3 heads repaired and republished (fix/below-bar-artifacts,
+  [summary](tests/results/below-bar/SUMMARY.md)). GOT-OCR2 F16: root cause found (see below). Still open:
+  - A CUDA re-run of the new files.
+  - The bge-m3 Q8_0 mix has a thin ColBERT margin (0.9726 vs 0.97).
+  - A ColBERT-qualifying Q4_K recipe for BGE-M3 (all tried mixes 0.37-0.60).
+  - Re-measure the other XLM-R embedders (e5, arctic-l-v2, …) against HF after the
+    `CRISPEMBED_SPM_COLLAPSE_SPACES` tokenizer fix (A/B'd on bge-m3 only).
 - Stage-diff references that fail on both arms: PP-OCRv6 small rec fox ref, PAN, HAT.
 - Not reached on CUDA: PP-LCNet, CRAFT, TexTeller/Pix2TeX, BERT-NER, LFM2.5-VL, LFM2
   encoder, Unlimited/DeepSeek-OCR2, Text-SR, SAFMN, face recognition, BiDirLM audio.

@@ -66,7 +66,29 @@ bool SentencePieceTokenizer::load(const std::vector<std::string> & vocab, const 
 std::string SentencePieceTokenizer::hf_normalize_text(const std::string & text) const {
     static const bool env_off = core_env::explicitly_off("CRISPEMBED_SPM_HF_NORM");
     if (!hf_normalize_ || env_off) return text;
-    return siglip_normalize_ ? core_spm::siglip_normalize(text) : core_spm::normalize(text);
+    if (siglip_normalize_) return core_spm::siglip_normalize(text);
+    std::string out = core_spm::normalize(text);
+    // XLM-R tokenizer.json declares `Sequence[Precompiled, Replace(" {2,}" -> " ")]`;
+    // the native path applied only the charsmap, so every run of spaces (tables,
+    // aligned code, invoices) produced extra lone "▁" tokens the original never
+    // sees. Those positions shifted every later ColBERT vector and gave near-empty
+    // vectors whose direction quantization flips (BGE-M3 Q8_0 ColBERT 0.45-0.59).
+    // Default on; CRISPEMBED_SPM_COLLAPSE_SPACES=0 restores the old ids.
+    static const bool collapse = !core_env::explicitly_off("CRISPEMBED_SPM_COLLAPSE_SPACES");
+    if (collapse) {
+        std::string c;
+        c.reserve(out.size());
+        for (char ch : out) {
+            if (ch == ' ' && !c.empty() && c.back() == ' ') continue;
+            c += ch;
+        }
+        // The original also emits no lone trailing "▁" for text ending in whitespace
+        // ("…Ende\n": HF ends "▁Ende </s>", the native path added id 6 before </s>;
+        // 5 of 77 panel texts, tests/results/below-bar/token-audit-bgem3.json).
+        while (!c.empty() && c.back() == ' ') c.pop_back();
+        out.swap(c);
+    }
+    return out;
 }
 
 // Viterbi dynamic programming: find optimal segmentation of text

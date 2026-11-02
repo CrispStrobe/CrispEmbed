@@ -1,0 +1,136 @@
+{
+ "calibration": {
+  "bytes": 230432,
+  "sha256": "1220da96a647e5bf9758f2ddc1281ff902cfb07083b908e8b7f74a6c79330689",
+  "n_docs": 134,
+  "n_queries": 0
+ },
+ "base": "q4_k+imatrix",
+ "groups": {
+  "classes": [
+   "attn.k.weight",
+   "attn.o.weight",
+   "attn.q.weight",
+   "attn.v.weight",
+   "ffn.fc1.weight",
+   "ffn.fc2.weight"
+  ],
+  "layers": [
+   "enc.0.*",
+   "enc.1.*",
+   "enc.2.*",
+   "enc.3.*",
+   "enc.4.*",
+   "enc.5.*",
+   "enc.6.*",
+   "enc.7.*",
+   "enc.8.*",
+   "enc.9.*",
+   "enc.10.*",
+   "enc.11.*"
+  ],
+  "other": [
+   "token_embd.weight",
+   "position_embd.weight",
+   "text_proj.weight"
+  ]
+ },
+ "gains": [
+  {
+   "group": "layer:enc.9.*",
+   "gain": 0.003330043149180839,
+   "bytes": 52097056
+  },
+  {
+   "group": "layer:enc.8.*",
+   "gain": -0.00029728092401959394,
+   "bytes": 52097056
+  },
+  {
+   "group": "layer:enc.10.*",
+   "gain": -0.0037868254803751222,
+   "bytes": 52097056
+  },
+  {
+   "group": "layer:enc.5.*",
+   "gain": -0.005263934577607654,
+   "bytes": 52097056
+  },
+  {
+   "group": "layer:enc.11.*",
+   "gain": -0.005892119639766102,
+   "bytes": 52097056
+  },
+  {
+   "group": "class:ffn.fc2.weight",
+   "gain": -0.006952401367243177,
+   "bytes": 56815648
+  },
+  {
+   "group": "tensor:text_proj.weight",
+   "gain": -0.007926300787566398,
+   "bytes": 50655264
+  },
+  {
+   "group": "layer:enc.7.*",
+   "gain": -0.009783003074252061,
+   "bytes": 52097056
+  },
+  {
+   "group": "class:attn.o.weight",
+   "gain": -0.009962175038687793,
+   "bytes": 52097056
+  },
+  {
+   "group": "layer:enc.3.*",
+   "gain": -0.011067244840136325,
+   "bytes": 52097056
+  },
+  {
+   "group": "class:ffn.fc1.weight",
+   "gain": -0.013699751539467675,
+   "bytes": 56815648
+  },
+  {
+   "group": "layer:enc.6.*",
+   "gain": -0.016425204108078684,
+   "bytes": 52097056
+  },
+  {
+   "group": "class:attn.k.weight",
+   "gain": -0.022647120320046565,
+   "bytes": 52097056
+  },
+  {
+   "group": "layer:enc.0.*",
+   "gain": -0.023535059313127382,
+   "bytes": 52097056
+  },
+  {
+   "group": "layer:enc.1.*",
+   "gain": -0.024374547895082754,
+   "bytes": 52097056
+  },
+  {
+   "group": "layer:enc.2.*",
+   "gain": -0.027153076648027685,
+   "bytes": 52097056
+  },
+  {
+   "group": "layer:enc.4.*",
+   "gain": -0.032490828594899934,
+   "bytes": 52097056
+  },
+  {
+   "group": "class:attn.v.weight",
+   "gain": -0.042906004574505,
+   "bytes": 52097056
+  },
+  {
+   "group": "class:attn.q.weight",
+   "gain": -0.04841093244644645,
+   "bytes": 52097056
+  }
+ ],
+ "recipe_candidate": null
+}
