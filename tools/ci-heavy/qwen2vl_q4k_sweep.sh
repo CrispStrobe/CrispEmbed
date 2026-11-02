@@ -37,6 +37,31 @@ fi
 sha256sum "$S/$REF.gguf" > "$OUT/source-sha256.txt"
 python tools/qwen2vl_device_ab.py --model "$MODEL" --gguf "$S/$REF.gguf" --precision "$REF" --device cpu \
     --build "$B" --out "$OUT" --repeat 1 --force-reference --label forced --dump "$S/dump/ref"
+# Importance matrix (recipes with "imatrix": true): activation statistics of the
+# unquantized source on calibration images that are NOT frozen evaluation cases.
+calibrate() {
+    local I=tests/regression/images C=$S/imatrix.gguf
+    [ -f "$C" ] && return 0
+    if [ "$MODEL" = mineru ]; then
+        for c in "$I/cc0/commons_test_ocr_document.jpg text" "$I/cc0/simple_form.png text" \
+            "$I/cc0/receipt_historical.png text" "$I/cc0/public_domain_formula_photo.jpg formula" \
+            "$I/page_transcoda.png layout" "$I/mixtex_pow.png formula"; do
+            set -- $c
+            CRISPEMBED_MINERU25_PRO=1 QWEN2VL_OCR_FORCE_CPU=1 CRISPEMBED_IMATRIX_OUT=$C "$B/test-mineru25-run" \
+                --model "$S/$REF.gguf" --image "$1" --task "$2" --max-tokens 256 --threads 4 --repeat 1 \
+                >> "$OUT/imatrix-calibration.log" 2>&1
+        done
+    else
+        local t="Please output the text content from the image."
+        for c in "$I/cc0/commons_test_ocr_document.jpg|$t" "$I/cc0/simple_form.png|$t" "$I/cc0/receipt_historical.png|$t" \
+            "$I/cc0/public_domain_formula_photo.jpg|Please write out the expression of the formula in the image using LaTeX format." \
+            "$I/page_transcoda.png|Analyze the image layout." "$I/mixtex_pow.png|Please write out the expression of the formula in the image using LaTeX format."; do
+            CRISPEMBED_TELEOCR=1 CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1 QWEN2VL_OCR_FORCE_CPU=1 CRISPEMBED_IMATRIX_OUT=$C \
+                "$B/test-teleocr-run" "$S/$REF.gguf" "${c%%|*}" "${c#*|}" 256 4 1 >> "$OUT/imatrix-calibration.log" 2>&1
+        done
+    fi
+    [ -f "$C" ] && cp "$C" "$OUT/imatrix.gguf"
+}
 fail=0
 IFS=, read -ra names <<< "$RECIPES"
 for n in "${names[@]}"; do
@@ -44,6 +69,9 @@ for n in "${names[@]}"; do
     mapfile -t qenv < <(python tools/qwen2vl_quant_census.py env "$MODEL" "$n")
     src=$(python -c "import json,sys;print(json.load(open('tools/qwen2vl_quant_recipes.json'))[sys.argv[1]][sys.argv[2]]['source'])" "$MODEL" "$n")
     f=$S/$n.gguf
+    if python -c "import json,sys;sys.exit(0 if json.load(open('tools/qwen2vl_quant_recipes.json'))[sys.argv[1]][sys.argv[2]].get('imatrix') else 1)" "$MODEL" "$n"; then
+        calibrate && qargs+=(--imatrix "$S/imatrix.gguf") || { echo "$n: calibration failed"; fail=1; continue; }
+    fi
     env "${qenv[@]}" "$Q" "$S/$src.gguf" "$f" "${qargs[@]}" > "$OUT/quantize-$n.log" 2>&1 ||
         { echo "$n: quantize failed"; tail -5 "$OUT/quantize-$n.log"; fail=1; continue; }
     python tools/qwen2vl_quant_census.py census "$f" "$OUT/$n.census.json"
