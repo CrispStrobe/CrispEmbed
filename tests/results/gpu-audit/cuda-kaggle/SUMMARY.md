@@ -54,18 +54,22 @@
 | qwen3-embed-0.6b-embed | qwen3-embed-0.6b.gguf (f32) | 0.99 | 1.00000 | — | 1.00000 | 2.22 | 10.00 | True | **qualifies** |
 | qwen3-embed-0.6b-embed | qwen3-embed-0.6b-q8_0.gguf (q8_0) | 0.97 | 0.99889 | 0.99862 | 0.99937 | 1.42 | 10.85 | True | **qualifies** |
 | qwen3-embed-0.6b-embed | qwen3-embed-0.6b-q4_k-imatrix.gguf (q4_k) | 0.94 | 0.95299 | 0.95623 | 0.99225 | 1.37 | 14.01 | True | **qualifies** |
-| bge-m3-heads-colbert | bge-m3-heads-f16.gguf (f16) | 0.98 | — | — | — | 1.42 | 1.77 | True | no result (rc=1) |
-| bge-m3-heads-colbert | bge-m3-heads-q8_0.gguf (q8_0) | 0.97 | — | — | — | 1.12 | 0.87 | True | no result (rc=1) |
-| bge-m3-heads-embed | bge-m3-heads-f16.gguf (f16) | 0.98 | 1.00000 | — | 1.00000 | 1.92 | 20.73 | True | **qualifies** |
-| bge-m3-heads-embed | bge-m3-heads-q8_0.gguf (q8_0) | 0.97 | 0.99928 | 0.99920 | 0.99977 | 1.42 | 9.85 | True | **qualifies** |
-| bge-m3-heads-sparse | bge-m3-heads-f16.gguf (f16) | 0.98 | — | — | — | 1.42 | 1.77 | True | no result (rc=1) |
-| bge-m3-heads-sparse | bge-m3-heads-q8_0.gguf (q8_0) | 0.97 | — | — | — | 1.17 | 0.92 | True | no result (rc=1) |
+| bge-m3-heads-colbert | bge-m3-heads-f16.gguf (f16) | 0.98 | 0.99918 | — | 0.99918 | 2.33 | 22.10 | True | **qualifies** |
+| bge-m3-heads-colbert | bge-m3-heads-q8_0-mixed.gguf (q8_0) | 0.97 | 0.96671 | 0.97175 | 0.99247 | 2.02 | 15.88 | True | **below bar (CUDA only)** |
+| bge-m3-heads-embed | bge-m3-heads-f16.gguf (f16) | 0.98 | 1.00000 | — | 1.00000 | 2.02 | 22.70 | True | **qualifies** |
+| bge-m3-heads-embed | bge-m3-heads-q8_0-mixed.gguf (q8_0) | 0.97 | 0.99949 | 0.99948 | 0.99985 | 1.67 | 15.67 | True | **qualifies** |
+| bge-m3-heads-sparse | bge-m3-heads-f16.gguf (f16) | 0.98 | 1.00000 | — | 1.00000 | 2.07 | 21.89 | True | **qualifies** |
+| bge-m3-heads-sparse | bge-m3-heads-q8_0-mixed.gguf (q8_0) | 0.97 | 0.99988 | 0.99993 | 0.99995 | 1.67 | 15.67 | True | **qualifies** |
 | bge-m3-crisp-colbert | bge-m3-crisp-f16.gguf (f16) | 0.98 | 0.99918 | — | 0.99918 | 2.22 | 20.34 | True | **qualifies** |
 | bge-m3-crisp-colbert | bge-m3-crisp-q8_0.gguf (q8_0) | 0.97 | 0.59281 | 0.59368 | 0.64297 | 1.72 | 9.75 | True | below bar, both arms |
 | bge-m3-crisp-embed | bge-m3-crisp-f16.gguf (f16) | 0.98 | 1.00000 | — | 1.00000 | 1.93 | 20.17 | True | **qualifies** |
 | bge-m3-crisp-embed | bge-m3-crisp-q8_0.gguf (q8_0) | 0.97 | 0.99928 | 0.99920 | 0.99977 | 1.37 | 9.39 | True | **qualifies** |
 | bge-m3-crisp-sparse | bge-m3-crisp-f16.gguf (f16) | 0.98 | 1.00000 | — | 1.00000 | 1.92 | 20.07 | True | **qualifies** |
 | bge-m3-crisp-sparse | bge-m3-crisp-q8_0.gguf (q8_0) | 0.97 | 0.99987 | 0.99983 | 0.99996 | 1.42 | 9.25 | True | **qualifies** |
+| clip-text-base-repaired-embed | clip-text-base.gguf (f32) | 0.99 | 1.00000 | — | 1.00000 | 1.07 | 0.77 | True | **qualifies** |
+| clip-text-base-repaired-embed | clip-text-base-q4_k-mixed.gguf (q4_k) | 0.94 | 0.98777 | 0.98783 | 0.99902 | 0.87 | 0.82 | True | **qualifies** |
+| f2llm-v2-0.6b-repaired-embed | f2llm-v2-0.6b.gguf (f32) | 0.99 | 1.00000 | — | 1.00000 | 2.32 | 11.96 | True | **qualifies** |
+| f2llm-v2-0.6b-repaired-embed | f2llm-v2-0.6b-q4_k-mixed.gguf (q4_k) | 0.94 | 0.97055 | 0.96927 | 0.99256 | 1.52 | 14.86 | True | **qualifies** |
 
 ## CLI engines (OCR, VLM, SR, NER, segmentation)
 

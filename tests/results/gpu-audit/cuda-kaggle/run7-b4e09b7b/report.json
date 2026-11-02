@@ -1,0 +1,255 @@
+{
+ "script_version": "cuda-audit-run-v1",
+ "jobs": {
+  "embed-f2llm-v2-0.6b-repaired-embed": {
+   "kind": "embed",
+   "seconds": 108.2,
+   "f2llm-v2-0.6b.gguf": {
+    "precision": "f32",
+    "bar": 0.99,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.999998204734741,
+    "cos_cuda_vs_cpu": 0.999998204734741,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      5.078,
+      2.322
+     ],
+     "cpu": [
+      11.962,
+      13.203
+     ]
+    },
+    "cuda_used": true
+   },
+   "f2llm-v2-0.6b-q4_k-mixed.gguf": {
+    "precision": "q4_k",
+    "bar": 0.94,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9705501924421133,
+    "cos_cuda_vs_cpu": 0.992555976735208,
+    "cos_cpu_vs_ref": 0.9692707973562666,
+    "wall": {
+     "cuda": [
+      1.519,
+      1.57
+     ],
+     "cpu": [
+      14.86,
+      15.014
+     ]
+    },
+    "cuda_used": true
+   }
+  },
+  "embed-clip-text-base-repaired-embed": {
+   "kind": "embed",
+   "seconds": 17.5,
+   "clip-text-base.gguf": {
+    "precision": "f32",
+    "bar": 0.99,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9999998441224758,
+    "cos_cuda_vs_cpu": 0.9999998441224758,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      1.067,
+      1.067
+     ],
+     "cpu": [
+      0.769,
+      0.769
+     ]
+    },
+    "cuda_used": true
+   },
+   "clip-text-base-q4_k-mixed.gguf": {
+    "precision": "q4_k",
+    "bar": 0.94,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9877675806396303,
+    "cos_cuda_vs_cpu": 0.9990169888156676,
+    "cos_cpu_vs_ref": 0.987831889549947,
+    "wall": {
+     "cuda": [
+      0.917,
+      0.867
+     ],
+     "cpu": [
+      0.817,
+      0.817
+     ]
+    },
+    "cuda_used": true
+   }
+  },
+  "embed-bge-m3-heads-embed": {
+   "kind": "embed",
+   "seconds": 120.7,
+   "bge-m3-heads-f16.gguf": {
+    "precision": "f16",
+    "bar": 0.98,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9999985649391545,
+    "cos_cuda_vs_cpu": 0.9999985649391545,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      2.121,
+      2.02
+     ],
+     "cpu": [
+      22.698,
+      22.948
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-m3-heads-q8_0-mixed.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9994934830961186,
+    "cos_cuda_vs_cpu": 0.9998533714317508,
+    "cos_cpu_vs_ref": 0.9994836278175967,
+    "wall": {
+     "cuda": [
+      1.719,
+      1.67
+     ],
+     "cpu": [
+      15.766,
+      15.671
+     ]
+    },
+    "cuda_used": true
+   }
+  },
+  "embed-bge-m3-heads-sparse": {
+   "kind": "embed",
+   "seconds": 100.9,
+   "bge-m3-heads-f16.gguf": {
+    "precision": "f16",
+    "bar": 0.98,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9999995044673907,
+    "cos_cuda_vs_cpu": 0.9999995044673907,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      2.122,
+      2.071
+     ],
+     "cpu": [
+      22.087,
+      21.889
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-m3-heads-q8_0-mixed.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9998808415629197,
+    "cos_cuda_vs_cpu": 0.9999500169475636,
+    "cos_cpu_vs_ref": 0.9999276311453772,
+    "wall": {
+     "cuda": [
+      1.669,
+      1.669
+     ],
+     "cpu": [
+      16.052,
+      15.667
+     ]
+    },
+    "cuda_used": true
+   }
+  },
+  "embed-bge-m3-heads-colbert": {
+   "kind": "embed",
+   "seconds": 106.4,
+   "bge-m3-heads-f16.gguf": {
+    "precision": "f16",
+    "bar": 0.98,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9991793834834695,
+    "cos_cuda_vs_cpu": 0.9991793834834695,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      2.425,
+      2.325
+     ],
+     "cpu": [
+      22.342,
+      22.102
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-m3-heads-q8_0-mixed.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": false,
+    "cos_cuda_vs_ref": 0.9667069911048174,
+    "cos_cuda_vs_cpu": 0.9924719419959256,
+    "cos_cpu_vs_ref": 0.9717545378270857,
+    "wall": {
+     "cuda": [
+      2.037,
+      2.025
+     ],
+     "cpu": [
+      15.878,
+      16.023
+     ]
+    },
+    "cuda_used": true
+   }
+  }
+ },
+ "commit": "b4e09b7b6c30d0a713805a88d377c163d2b7a645",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "batch": "g",
+ "threads": 4,
+ "cpu_model": "Intel(R) Xeon(R) CPU @ 2.00GHz",
+ "date": "2026-11-02",
+ "phase": "done",
+ "updated": "2026-11-02T18:12:12Z",
+ "downloads": {
+  "f2llm-v2-0.6b.gguf": {
+   "seconds": 19.2,
+   "error": null,
+   "bytes": 2390146752
+  },
+  "f2llm-v2-0.6b-q4_k-mixed.gguf": {
+   "seconds": 3.9,
+   "error": null,
+   "bytes": 476217088
+  },
+  "clip-text-base.gguf": {
+   "seconds": 2.7,
+   "error": null,
+   "bytes": 255611936
+  },
+  "clip-text-base-q4_k-mixed.gguf": {
+   "seconds": 1.7,
+   "error": null,
+   "bytes": 53538848
+  },
+  "bge-m3-heads-f16.gguf": {
+   "seconds": 11.6,
+   "error": null,
+   "bytes": 1676844960
+  },
+  "bge-m3-heads-q8_0-mixed.gguf": {
+   "seconds": 6.2,
+   "error": null,
+   "bytes": 752473312
+  }
+ }
+}
