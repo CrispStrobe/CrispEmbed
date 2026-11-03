@@ -707,6 +707,59 @@ node tests/test_wasm_ocr_live.js
 - `build-wasm.yml` — builds on push, uploads artifacts (30-day retention)
 - `release-wasm.yml` — attaches WASM bundles to GitHub releases
 
+## CI: what runs when
+
+The account shares a small runner pool with other repositories, so CI runs only
+what a change needs. Nothing is deleted: every check still exists and runs when
+its inputs change, on every `main` push with compiled changes, on
+`workflow_dispatch`, and in `release.yml` on tags.
+
+**Triggers.** `push` fires only for `main` (and tags where a workflow releases);
+PRs are covered by `pull_request`, so a PR update no longer runs the same
+workflow twice. `workflow_dispatch` is kept everywhere. Path-filtered
+contract workflows (`controls`, `ocr-quality`, `qwen35-decoded-audit`,
+`regression`, `lfm2-arithmetic`, `lint`, ...) keep their own path lists.
+Experiment workflows run by dispatch; finished lane branches no longer appear
+in `push` triggers (the active `perf/q4k-josev-*` request trigger remains).
+
+**Ordinary builds** (`build.yml`, `build-wasm.yml`, `build-wasm-embed.yml`,
+`rust-crates.yml`, `inpaint-cli.yml`) share one workflow-level path filter and
+the [selector](ci-selection.md) (`tools/ci_selection.py`):
+
+| Change (PR) | Runner jobs started |
+| --- | --- |
+| Markdown, `docs/**`, `tests/results/**`, other workflows, `tools/ci-heavy/**`, `tools/kaggle/**`, `models/**` | none (no run; consumed receipts/contracts are re-included) |
+| Other Python tooling (`tools/*.py`, `tests/*.py`) | selector + result only |
+| Engine/CLI/test C++ (`src/` outside `src/core/`, `examples/`, `tests/*.cpp`) | Linux build + model-free tests, Windows MSVC build; macOS too if the file has `__APPLE__`/Metal compile markers |
+| Inpaint Python/native, WASM wrappers, Rust crates | their own lanes only (unchanged) |
+| `CMakeLists.txt`, `cmake/`, `ggml`, `src/core/`, `src/crispembed.{h,cpp}` (C ABI), selector code, unknown paths | everything: 3 desktops, sibling-crispasr, Android x3, iOS, Flutter bundle, both WASM, Rust, inpaint x3 |
+| Push to `main` with any compiled change | everything (merged-source proof before a tag) |
+| Push to `main` with docs/evidence/tooling only | nothing beyond the PR rules above |
+| `workflow_dispatch` | everything in the dispatched workflow |
+
+Want the full matrix on a PR? Dispatch the workflow on the branch:
+`gh workflow run build.yml --ref <branch>`. Preview routing locally with
+`python3 tools/ci_selection.py classify <paths...>`.
+
+**Safety nets.** `tests/test_ci_selection.py` (run by every selector job)
+recomputes the import/read closure of every Python script the ordinary lanes
+run and fails if a dependency would route away from its lane, and checks that
+every tracked file the workflow filter drops selects no lane. Unknown paths
+still fail closed to full CI.
+
+**Required checks.** `main` has no branch protection today. The workflow-level
+filter means a docs-only PR shows no `Build result` check at all. If you make
+`Build result`/`OCR WASM result`/... required, drop those five `paths:` blocks
+first (the jobs then still skip and the result jobs report success), or
+docs-only PRs wait forever for a check that never starts.
+
+**Concurrency.** Every PR-triggered workflow cancels its superseded PR runs;
+`main` and dispatch runs are unique per run (see the queue policy below).
+
+**Releases are unaffected.** `release.yml`, `release-wasm.yml`,
+`python-wheels.yml`, `publish-crispembed.yml` and `publish-crates.yml` trigger
+only on tags/dispatch and build every platform in full.
+
 ## CI queue policy
 
 The repository has well over a hundred workflows; keep the Actions queue short.
@@ -729,7 +782,7 @@ The repository has well over a hundred workflows; keep the Actions queue short.
   `workflow_dispatch`-only evidence workflows never get `cancel-in-progress: true`.
 - **Select work from actual dependencies.** Ordinary Build, WASM, Rust and
   inpainting workflows use the shared [CI selector](ci-selection.md), with
-  always-run result checks and job-level filtering. Markdown-only changes
+  result checks and job-level filtering (see "CI: what runs when"). Markdown-only changes
   need no native build. Reviewed Python-only contracts skip submodules and
   native build steps while retaining platform coverage. Do not blanket-ignore
   `docs/**` or receipts: several JSON contracts and the MI-GAN original-reference

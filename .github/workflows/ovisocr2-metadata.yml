@@ -48,7 +48,8 @@ on:
         description: 'Publication only: reviewed selected-precision quality run ID'
         default: '0'
   push:
-    branches: [main, test/ovisocr2-metadata, feat/ovisocr2-export-profile, feat/ovisocr2-frontend, test/ovisocr2-native-parity]
+    # Former lane branches (all merged 2026-10) removed; PRs use pull_request.
+    branches: [main]
     paths:
       - '.github/workflows/ovisocr2-metadata.yml'
       - '.github/workflows/ovisocr2-native-replay.yml'

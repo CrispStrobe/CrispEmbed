@@ -1,8 +1,6 @@
 name: UltraBERT owned retrieval model smoke
+# The audit/ultrabert-retrieval-producer lane push trigger was retired after it merged.
 on:
-  push:
-    branches: ['audit/ultrabert-retrieval-producer']
-    paths: ['.github/workflows/ultrabert-retrieval-model.yml']
   workflow_dispatch:
     inputs:
       api_run:

@@ -2,6 +2,7 @@ name: Qwen3.5 decoded audit controls
 
 on:
   push:
+    branches: [main]
     paths:
       - '.github/workflows/qwen35-decoded-audit.yml'
       - 'tools/ci-heavy/qwen35_decoded_panel.py'

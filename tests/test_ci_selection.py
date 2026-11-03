@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Model-free regression tests for CI routing and its required result checks."""
 
+import ast
 import importlib.util
 import contextlib
 import io
@@ -43,10 +44,74 @@ class RoutingTests(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(self.lanes(path), {"inpaint_python"})
 
-    def test_unknown_docs_json_and_fixtures_fail_closed(self):
-        for path in ("docs/new-contract.json", "tests/fixtures/new.json", "tests/results/new/receipt.json"):
+    def test_unknown_fixtures_fail_closed(self):
+        for path in ("tests/fixtures/new.json", "tests/regression/new.json", "flutter/crispembed/lib/x.dart", "python/crispembed/__init__.py"):
             with self.subTest(path=path):
                 self.assertEqual(self.lanes(path), set(ci.LANES))
+
+    def test_evidence_workflows_and_python_tooling_build_nothing(self):
+        # Their consumers are path-filtered evidence workflows. The closure test
+        # below proves that no ordinary-lane entry point reads them.
+        for path in (
+            "docs/new-contract.json", "tests/results/new/receipt.json", "tests/results/g1/metal/fox.png.txt",
+            ".github/workflows/ocr-quality.yml", ".github/workflows/new-audit-v1.yml",
+            ".github/actions/scifact-setup/action.yml", "tools/ci-heavy/new_audit.py",
+            "tools/ci-heavy/got_ocr2_f16_republish.sh", "tools/kaggle/new-kernel/kernel-metadata.json",
+            "tools/new_dump_reference.py", "models/convert-new-to-gguf.py", "tests/test_new_contract.py",
+            "PLAN.md", "HISTORY.md", "PERFORMANCE.md",
+        ):
+            for event_name in ("pull_request", "push"):
+                with self.subTest(path=path, event=event_name):
+                    report = ci.selection([path], event_name=event_name)
+                    self.assertFalse(any(report["lanes"].values()))
+                    self.assertFalse(report["full"])
+
+    def test_compiled_engine_source_pr_gets_linux_tests_and_msvc(self):
+        expected = {"native", "native_windows", "native_tests"}
+        for path in ("src/glm_ocr.cpp", "src/new-engine.cpp", "examples/cli/model_mgr.h", "tests/test_new.cpp", "tools/quantize.cpp", "bench_compare.cpp"):
+            with self.subTest(path=path):
+                self.assertEqual(self.lanes(path), expected)
+
+    def test_apple_specific_source_adds_macos(self):
+        for path in ("src/marker_backend.cpp", "tools/metal/mm_bench.cpp", "src/new_bridge.mm"):
+            with self.subTest(path=path):
+                self.assertEqual(self.lanes(path), {"native", "native_windows", "native_macos", "native_tests"})
+
+    def test_compiled_source_on_main_push_runs_everything(self):
+        for path in ("src/glm_ocr.cpp", "examples/cli/model_mgr.cpp", "tests/test_new.cpp"):
+            with self.subTest(path=path):
+                report = ci.selection([path], event_name="push")
+                self.assertTrue(report["full"])
+                self.assertTrue(all(report["lanes"].values()))
+
+    def test_public_c_abi_runs_everything(self):
+        for path in ("src/crispembed.h", "src/crispembed.cpp"):
+            with self.subTest(path=path):
+                self.assertEqual(self.lanes(path), set(ci.LANES))
+
+    def test_vendored_only_sources_select_only_the_crate(self):
+        for path in ("tests/results/teleocr/public-f16/source-snapshot/src/crispembed.cpp", "tools/kaggle/moedern-vago-compare/bench_ours.c"):
+            for event_name in ("pull_request", "push"):
+                with self.subTest(path=path, event=event_name):
+                    self.assertEqual({k for k, v in ci.selection([path], event_name=event_name)["lanes"].items() if v}, {"rust"})
+
+    def test_linux_python_consumers_need_only_linux_native(self):
+        for path in ("tests/test_ultrabert_api_log.py", "tools/ci-heavy/ultrabert_api.py", "tests/results/ultrabert/source-audit.json", "kaggle_harness.py", "tools/kaggle/ocr-gpu-bench/kaggle_harness.py"):
+            with self.subTest(path=path):
+                self.assertEqual(self.lanes(path), {"native", "native_tests"})
+
+    def test_desktop_legs_follow_lanes_and_imply_linux(self):
+        report = ci.selection(["src/glm_ocr.cpp"])
+        self.assertEqual(ci.desktop_platforms(report["lanes"]), ["linux-x86_64", "windows-x86_64"])
+        report = ci.selection(["scripts/check-cpu-baseline.py"])
+        self.assertEqual(ci.desktop_platforms(report["lanes"]), ["linux-x86_64", "macos-arm64", "windows-x86_64"])
+        self.assertEqual(ci.desktop_platforms(ci.selection(["README.md"])["lanes"]), [])
+        for paths in (["CMakeLists.txt"], [".github/workflows/build.yml"]):
+            with self.subTest(paths=paths):
+                lanes = ci.selection(paths)["lanes"]
+                self.assertEqual(len(ci.desktop_platforms(lanes)), 3)
+                self.assertTrue(lanes["bundle"])
+        self.assertFalse(ci.selection(["src/marker_backend.cpp"])["lanes"]["bundle"])
 
     def test_temporal_source_gap_is_covered(self):
         expected = {"native", "inpaint_python", "inpaint_native"}
@@ -63,7 +128,7 @@ class RoutingTests(unittest.TestCase):
         for path in (
             "CMakeLists.txt", "cmake/FindThreads.cmake", "ggml", "ggml/src/ggml.c",
             ".gitmodules", "VERSION", "src/core/image_out.cpp", "src/crispembed.cpp",
-            "src/new-engine.cpp", "tests/test_unknown.py", "unrecognized-file",
+            "unrecognized-file", "scripts/new.sh",
         ):
             with self.subTest(path=path):
                 self.assertEqual(self.lanes(path), set(ci.LANES))
@@ -74,7 +139,7 @@ class RoutingTests(unittest.TestCase):
                 self.assertEqual(self.lanes(path), set(ci.LANES))
 
     def test_own_workflow_changes_trigger_their_complete_proof(self):
-        self.assertEqual(self.lanes(".github/workflows/build.yml"), {"native", "native_tests", "mobile", "sibling", "bundle"})
+        self.assertEqual(self.lanes(".github/workflows/build.yml"), {"native", "native_windows", "native_macos", "native_tests", "mobile", "sibling", "bundle"})
         self.assertEqual(self.lanes(".github/workflows/inpaint-cli.yml"), {"inpaint_python", "inpaint_native"})
         self.assertEqual(self.lanes(".github/workflows/rust-crates.yml"), {"rust"})
         self.assertEqual(self.lanes(".github/workflows/build-wasm.yml"), {"wasm_ocr"})
@@ -129,7 +194,8 @@ class RoutingTests(unittest.TestCase):
             with patch.dict(os.environ, {"GITHUB_OUTPUT": str(output), "GITHUB_STEP_SUMMARY": str(summary)}), contextlib.redirect_stdout(io.StringIO()):
                 ci.emit(ci.selection(["README.md"]))
             fields = dict(line.split("=", 1) for line in output.read_text().splitlines())
-            self.assertEqual(set(fields), set(ci.LANES) | {"full"})
+            self.assertEqual(set(fields), set(ci.LANES) | {"full", "desktop"})
+            self.assertEqual(fields.pop("desktop"), "[]")
             self.assertEqual(set(fields.values()), {"false"})
             self.assertIn("CI selection", summary.read_text())
 
@@ -259,6 +325,173 @@ class NativeCacheTests(unittest.TestCase):
                 self.assertIsNone(self.cpu.cpu_signature(invalid))
         with patch.object(self.cpu.Path, "read_text", side_effect=OSError("unavailable")):
             self.assertEqual(self.cpu.main(), 1)
+
+
+# Python entry points the ordinary lanes run (outside the always-run selector
+# job), and the lanes that must be selected when they or anything they import
+# or read changes.
+CONSUMERS = {
+    **{f"tests/{name}.py": ("inpaint_python",) for name in (
+        "test_prepare_migan_inpaint", "test_inpaint_png", "test_inpaint_engine_live_controls",
+        "test_migan_reference_contract", "test_migan_native_driver", "test_migan512_contract",
+        "test_latent_inpaint_contract", "test_latent_inpaint_original_import",
+        "test_inpaint_gguf_publish", "test_inpaint_video_quality")},
+    "tests/test_inpaint_cli.py": ("inpaint_native",),
+    "tests/inpaint_video_quality.py": ("inpaint_native",),
+    "tests/test_inpaint_model.py": ("inpaint_native",),
+    "tools/prepare_migan_inpaint.py": ("inpaint_python",),
+    "tests/test_ultrabert_api_log.py": ("native", "native_tests"),
+    "tests/test_vendored_kaggle_harness.py": ("native", "native_tests"),
+    "tools/wasm_size_report.py": ("wasm_ocr",),
+    "scripts/check-cpu-baseline.py": ("native", "native_windows", "native_macos"),
+}
+ALWAYS_RUN = {
+    "tests/test_ci_selection.py", "tools/ci_selection.py", "tests/test_lfm2_performance_process.py",
+    "tests/test_pubdev_release_gate.py", "tests/test_unlimited_ocr2_quant_policy.py",
+}
+ORDINARY = ("build.yml", "build-wasm.yml", "build-wasm-embed.yml", "rust-crates.yml", "inpaint-cli.yml")
+LITERAL = re.compile(r"^(?:tools|tests|docs|models|scripts|examples|src|wasm)/[\w./+-]+$")
+
+
+def python_closure(entry: str) -> set:
+    """Over-approximate repo files an entry point imports or names literally."""
+    search = [ROOT / "tools", ROOT / "tests", ROOT / "tools/ci-heavy", ROOT]
+    seen, queue = set(), [ROOT / entry]
+    while queue:
+        path = queue.pop()
+        if path in seen or not path.is_file():
+            continue
+        seen.add(path)
+        if path.suffix != ".py":
+            continue
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+            names = []
+            if isinstance(node, ast.Import):
+                names = [alias.name for alias in node.names]
+            elif isinstance(node, ast.ImportFrom) and node.module and not node.level:
+                names = [node.module]
+            for name in names:
+                for folder in [path.parent, *search]:
+                    candidate = folder / (name.split(".")[0] + ".py")
+                    if candidate.is_file():
+                        queue.append(candidate)
+                        break
+            if isinstance(node, ast.Constant) and isinstance(node.value, str) and LITERAL.match(node.value):
+                queue.append(ROOT / node.value)
+    return {str(p.relative_to(ROOT)) for p in seen}
+
+
+class DependencyClosureTests(unittest.TestCase):
+    def test_every_ordinary_python_entry_point_is_mapped(self):
+        invoked = set()
+        for filename in ORDINARY:
+            text = (ROOT / ".github/workflows" / filename).read_text()
+            invoked |= set(re.findall(r"python3?\s+((?:tests|tools|scripts)/[\w./-]+\.py)", text))
+            invoked |= set(re.findall(r"\}\}\s+((?:tests|tools|scripts)/[\w./-]+\.py)", text))
+        self.assertTrue(invoked)
+        self.assertEqual(invoked - ALWAYS_RUN - set(CONSUMERS), set(), "map new entry points in CONSUMERS")
+
+    def test_consumer_dependencies_select_their_lanes(self):
+        for entry, required in CONSUMERS.items():
+            for dependency in sorted(python_closure(entry)):
+                for event_name in ("pull_request", "push"):
+                    lanes = ci.selection([dependency], event_name=event_name)["lanes"]
+                    with self.subTest(entry=entry, dependency=dependency, event=event_name):
+                        self.assertTrue(all(lanes[lane] for lane in required), f"{dependency} must select {required}")
+
+    def test_vendored_kaggle_harness_copies_select_linux_tests(self):
+        copies = subprocess.run(["git", "-C", str(ROOT), "ls-files", "*kaggle_harness.py"], check=True, capture_output=True, text=True).stdout.split()
+        self.assertTrue(copies)
+        for path in copies:
+            with self.subTest(path=path):
+                self.assertTrue(ci.selection([path])["lanes"]["native_tests"])
+
+
+def github_glob(pattern: str):
+    """GitHub Actions path glob: * stops at /, ** crosses it, ? is one char."""
+    out, i = "", 0
+    while i < len(pattern):
+        if pattern.startswith("**/", i):
+            out, i = out + "(?:.*/)?", i + 3
+        elif pattern.startswith("**", i):
+            out, i = out + ".*", i + 2
+        elif pattern[i] == "*":
+            out, i = out + "[^/]*", i + 1
+        elif pattern[i] == "?":
+            out, i = out + "[^/]", i + 1
+        else:
+            out, i = out + re.escape(pattern[i]), i + 1
+    return re.compile(out + r"\Z")
+
+
+def workflow_filter_includes(patterns: list, path: str) -> bool:
+    """paths: with ! negation; the last matching pattern decides."""
+    included = False
+    for pattern in patterns:
+        negated = pattern.startswith("!")
+        if github_glob(pattern[1:] if negated else pattern).match(path):
+            included = not negated
+    return included
+
+
+def workflow_paths(filename: str) -> dict:
+    """Extract the push/pull_request paths lists without a YAML dependency."""
+    text = (ROOT / ".github/workflows" / filename).read_text()
+    on_block = text.split("\non:\n", 1)[1].split("\n\n", 1)[0]
+    result, event, collecting = {}, None, False
+    for line in on_block.splitlines():
+        if re.fullmatch(r"  [a-z_]+:.*", line):
+            event, collecting = line.strip().rstrip(":"), False
+        elif line == "    paths:":
+            collecting = True
+            result[event] = []
+        elif collecting and line.startswith("      - "):
+            result[event].append(line.split("- ", 1)[1].strip().strip("'\""))
+        elif not line.strip().startswith("#"):
+            collecting = False
+    return result
+
+
+class WorkflowFilterTests(unittest.TestCase):
+    def test_ordinary_workflows_share_one_filter_for_push_and_pr(self):
+        reference = workflow_paths("build.yml")["push"]
+        self.assertEqual(reference[0], "**")
+        for filename in ORDINARY:
+            filters = workflow_paths(filename)
+            with self.subTest(workflow=filename):
+                self.assertEqual(set(filters), {"push", "pull_request"})
+                self.assertEqual(filters["push"], reference)
+                self.assertEqual(filters["pull_request"], reference)
+                self.assertTrue(workflow_filter_includes(reference, ".github/workflows/" + filename))
+
+    def test_every_tracked_file_the_filter_excludes_selects_nothing(self):
+        patterns = workflow_paths("build.yml")["push"]
+        tracked = subprocess.run(["git", "-C", str(ROOT), "ls-files", "-z"], check=True, capture_output=True).stdout.decode().split("\0")
+        samples = [p for p in tracked if p] + [
+            "docs/new.json", "tests/results/new/snapshot/src/x.cpp", "tests/results/migan/new.json",
+            "docs/inpaint-new-contract.json", ".github/workflows/new.yml",
+        ]
+        excluded = 0
+        for path in samples:
+            if workflow_filter_includes(patterns, path):
+                continue
+            excluded += 1
+            for event_name in ("pull_request", "push"):
+                report = ci.selection([path], event_name=event_name)
+                if report["full"] or any(report["lanes"].values()):
+                    self.fail(f"{path} is filtered out of the ordinary workflows but selects {report['reason']}")
+        self.assertGreater(excluded, 100)
+
+    def test_filter_keeps_code_and_consumed_receipts(self):
+        patterns = workflow_paths("build.yml")["push"]
+        for path in ("src/glm_ocr.cpp", "CMakeLists.txt", "ggml", "tools/new_tool.py", "docs/inpaint-publication-v1.json",
+                     "docs/teleocr-publication-v1.json", "tests/results/migan/original-reference.json",
+                     "tests/results/ultrabert/source-audit.json", "tests/results/x/src/y.cpp", ".github/workflows/rust-crates.yml"):
+            with self.subTest(path=path):
+                self.assertTrue(workflow_filter_includes(patterns, path))
+        for path in ("README.md", "docs/a/b.md", "PLAN.md", "docs/x.json", "tests/results/x/RUN.txt", ".github/workflows/ocr-quality.yml", "tools/ci-heavy/x.py", "tools/kaggle/k/run.sh", "models/convert-x-to-gguf.py"):
+            with self.subTest(path=path):
+                self.assertFalse(workflow_filter_includes(patterns, path))
 
 
 class WorkflowInvariantTests(unittest.TestCase):

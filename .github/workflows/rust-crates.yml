@@ -13,8 +13,94 @@ name: Rust crates
 on:
   push:
     branches: [main]
+    # Pure documentation/evidence changes start no run at all. Everything
+    # else reaches the selector job, which routes it (tools/ci_selection.py);
+    # tests/test_ci_selection.py proves every file excluded here selects no
+    # lane. Identical in all five ordinary workflows, for push and PR.
+    paths:
+      - '**'
+      - '!**.md'
+      - '!docs/**'
+      - '!tests/results/**'
+      - '!handover-prompts/**'
+      - '!hf_readmes/**'
+      - '!.github/workflows/**'
+      - '!tools/ci-heavy/**'
+      - '!tools/kaggle/**'
+      - '!tools/colab/**'
+      - '!models/**'
+      - 'docs/*inpaint*'
+      - 'docs/migan*'
+      - 'docs/teleocr-publication-v1.json'
+      - 'tests/results/migan/**'
+      - 'tests/results/ultrabert/**'
+      - 'tools/ci-heavy/*ultrabert*'
+      - 'tools/ci-heavy/migan_native.py'
+      - 'tools/ci-heavy/inpaint_gguf_publish.py'
+      - 'tools/kaggle/*/kaggle_harness.py'
+      - 'models/convert-migan-to-gguf.py'
+      - 'models/convert-latent-inpaint-to-gguf.py'
+      - 'models/convert-ultrabert-to-gguf.py'
+      - 'tests/results/**.c'
+      - 'tests/results/**.cc'
+      - 'tests/results/**.cpp'
+      - 'tests/results/**.h'
+      - 'tests/results/**.hpp'
+      - 'tools/**.c'
+      - 'tools/**.cc'
+      - 'tools/**.cpp'
+      - 'tools/**.h'
+      - 'tools/**.hpp'
+      - '.github/workflows/build.yml'
+      - '.github/workflows/build-wasm.yml'
+      - '.github/workflows/build-wasm-embed.yml'
+      - '.github/workflows/rust-crates.yml'
+      - '.github/workflows/inpaint-cli.yml'
   pull_request:
     branches: [main]
+    # Pure documentation/evidence changes start no run at all. Everything
+    # else reaches the selector job, which routes it (tools/ci_selection.py);
+    # tests/test_ci_selection.py proves every file excluded here selects no
+    # lane. Identical in all five ordinary workflows, for push and PR.
+    paths:
+      - '**'
+      - '!**.md'
+      - '!docs/**'
+      - '!tests/results/**'
+      - '!handover-prompts/**'
+      - '!hf_readmes/**'
+      - '!.github/workflows/**'
+      - '!tools/ci-heavy/**'
+      - '!tools/kaggle/**'
+      - '!tools/colab/**'
+      - '!models/**'
+      - 'docs/*inpaint*'
+      - 'docs/migan*'
+      - 'docs/teleocr-publication-v1.json'
+      - 'tests/results/migan/**'
+      - 'tests/results/ultrabert/**'
+      - 'tools/ci-heavy/*ultrabert*'
+      - 'tools/ci-heavy/migan_native.py'
+      - 'tools/ci-heavy/inpaint_gguf_publish.py'
+      - 'tools/kaggle/*/kaggle_harness.py'
+      - 'models/convert-migan-to-gguf.py'
+      - 'models/convert-latent-inpaint-to-gguf.py'
+      - 'models/convert-ultrabert-to-gguf.py'
+      - 'tests/results/**.c'
+      - 'tests/results/**.cc'
+      - 'tests/results/**.cpp'
+      - 'tests/results/**.h'
+      - 'tests/results/**.hpp'
+      - 'tools/**.c'
+      - 'tools/**.cc'
+      - 'tools/**.cpp'
+      - 'tools/**.h'
+      - 'tools/**.hpp'
+      - '.github/workflows/build.yml'
+      - '.github/workflows/build-wasm.yml'
+      - '.github/workflows/build-wasm-embed.yml'
+      - '.github/workflows/rust-crates.yml'
+      - '.github/workflows/inpaint-cli.yml'
   workflow_dispatch:
 
 permissions:
@@ -33,6 +119,8 @@ jobs:
     timeout-minutes: 10
     outputs:
       native: ${{ steps.select.outputs.native }}
+      native_windows: ${{ steps.select.outputs.native_windows }}
+      native_macos: ${{ steps.select.outputs.native_macos }}
       native_tests: ${{ steps.select.outputs.native_tests }}
       mobile: ${{ steps.select.outputs.mobile }}
       sibling: ${{ steps.select.outputs.sibling }}
@@ -42,6 +130,7 @@ jobs:
       inpaint_python: ${{ steps.select.outputs.inpaint_python }}
       inpaint_native: ${{ steps.select.outputs.inpaint_native }}
       bundle: ${{ steps.select.outputs.bundle }}
+      desktop: ${{ steps.select.outputs.desktop }}
       full: ${{ steps.select.outputs.full }}
     steps:
       - uses: actions/checkout@v4

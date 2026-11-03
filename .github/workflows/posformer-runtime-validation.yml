@@ -1,7 +1,8 @@
 name: PosFormer runtime validation
 on:
   push:
-    branches: ['main', 'fix/posformer-main-backport', 'fix/posformer-released-default']
+    # Former fix branches (merged 2026-10) removed.
+    branches: ['main']
     paths: ['src/posformer_ocr.cpp', 'tools/*posformer*', 'tests/test_posformer_release_compat.py', 'tests/results/posformer/released-compatibility.json', '.github/workflows/posformer-runtime-validation.yml']
   workflow_dispatch:
     inputs:
