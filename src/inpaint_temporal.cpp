@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cstring>
 #include <deque>
+#include <limits>
 #include <vector>
 
 namespace inpaint_temporal {
@@ -15,7 +16,7 @@ constexpr int flat_radius = 6;  // known pixels that decide the flat fill
 constexpr int cell = 8;         // static test cell size
 constexpr int strip = 64;       // flat decision per strip of the hole's width
 constexpr float flat_low = 4.0f, flat_high = 8.0f;
-constexpr double harmonic_budget = 2e7; // SOR pixel updates per frame (bounds the flat fill's cost)
+constexpr double harmonic_budget = 2e7; // SOR pixel updates per frame (bounds iterative work)
 
 struct box {
     int x0 = 0, y0 = 0, x1 = 0, y1 = 0;
@@ -52,6 +53,8 @@ struct stream::state {
     std::string error;
     output prev_out; // output of frame next - 1 (shared with `ready`, not copied)
     std::deque<output> ready;
+    frame reuse_anchor; // input at the last fresh fill, never advanced by reuse
+    bool has_anchor = false;
     stats st;
 
     // Per-frame scratch (region-local except mask255/engine_out).
@@ -99,7 +102,7 @@ struct stream::state {
         const int W = region.width();
         for (int cy = region.y0; cy < region.y1; cy += cell)
             for (int cx = region.x0; cx < region.x1; cx += cell) {
-                int n = 0, sa[3] = { 0, 0, 0 }, sb[3] = { 0, 0, 0 };
+                int n = 0, sa[3] = { 0, 0, 0 }, sb[3] = { 0, 0, 0 }, residual = 0;
                 for (int y = cy; y < std::min(region.y1, cy + cell); y++)
                     for (int x = cx; x < std::min(region.x1, cx + cell); x++) {
                         if (!ring[size_t(y - region.y0) * W + x - region.x0] || b.masked(x, y)) continue;
@@ -107,12 +110,17 @@ struct stream::state {
                         for (int c = 0; c < 3; c++) {
                             sa[c] += a.rgb[i + c];
                             sb[c] += b.rgb[i + c];
+                            residual += std::abs(int(a.rgb[i + c]) - int(b.rgb[i + c]));
                         }
                         n++;
                     }
-                if (n >= 8)
-                    diffs.push_back(float(std::abs(sa[0] - sb[0]) + std::abs(sa[1] - sb[1]) + std::abs(sa[2] - sb[2])) /
-                                    (3.0f * n));
+                if (n >= 8) {
+                    const float mean =
+                        float(std::abs(sa[0] - sb[0]) + std::abs(sa[1] - sb[1]) + std::abs(sa[2] - sb[2])) / (3.0f * n);
+                    // A translated fine texture can keep every cell mean unchanged.
+                    // Allow small pixel noise, but retain half its absolute residual.
+                    diffs.push_back(std::max(mean, float(residual) / (6.0f * n)));
+                }
             }
         mean = p90 = -1;
         if (diffs.size() < 8) return false;
@@ -124,8 +132,8 @@ struct stream::state {
         return mean <= opt.static_threshold && p90 <= 2.0 * opt.static_threshold;
     }
 
-    // Flat-fill weight per strip of the mask's width: 1 at trimmed (10..90 %) luma
-    // std <= flat_low of the near pixels, 0 from flat_high. Returns the largest.
+    // Flat-fill weight per strip: 1 when every trimmed (10..90 %) luma/R/G/B
+    // std is <= flat_low, 0 from flat_high. Equal-luma colour texture is not flat.
     float strip_weights(const frame & f) {
         const box & b = f.bounds;
         const int n = (b.width() + strip - 1) / strip, W = region.width();
@@ -134,20 +142,26 @@ struct stream::state {
         for (int s = 0; s < n; s++) {
             const int xa = std::max(region.x0, b.x0 + s * strip - flat_radius);
             const int xb = std::min(region.x1, b.x0 + (s + 1) * strip + flat_radius);
-            values.clear();
-            for (int y = region.y0; y < region.y1; y++)
-                for (int x = xa; x < xb; x++)
-                    if (near[size_t(y - region.y0) * W + x - region.x0])
-                        values.push_back(luma(&f.rgb[(size_t(y) * w + x) * 3]));
+            float sd = 0;
+            for (int channel = -1; channel < 3; channel++) {
+                values.clear();
+                for (int y = region.y0; y < region.y1; y++)
+                    for (int x = xa; x < xb; x++)
+                        if (near[size_t(y - region.y0) * W + x - region.x0]) {
+                            const uint8_t * p = &f.rgb[(size_t(y) * w + x) * 3];
+                            values.push_back(channel < 0 ? luma(p) : float(p[channel]));
+                        }
+                if (values.size() < 32) break;
+                const size_t lo = values.size() / 10, hi = values.size() * 9 / 10;
+                std::nth_element(values.begin(), values.begin() + long(lo), values.end());
+                std::nth_element(values.begin() + long(lo), values.begin() + long(hi), values.end());
+                double mean = 0, var = 0;
+                for (size_t i = lo; i < hi; i++) mean += values[i];
+                mean /= double(hi - lo);
+                for (size_t i = lo; i < hi; i++) var += (values[i] - mean) * (values[i] - mean);
+                sd = std::max(sd, float(std::sqrt(var / double(hi - lo))));
+            }
             if (values.size() < 32) continue;
-            const size_t lo = values.size() / 10, hi = values.size() * 9 / 10;
-            std::nth_element(values.begin(), values.begin() + long(lo), values.end());
-            std::nth_element(values.begin() + long(lo), values.begin() + long(hi), values.end());
-            double mean = 0, var = 0;
-            for (size_t i = lo; i < hi; i++) mean += values[i];
-            mean /= double(hi - lo);
-            for (size_t i = lo; i < hi; i++) var += (values[i] - mean) * (values[i] - mean);
-            const float sd = float(std::sqrt(var / double(hi - lo)));
             strip_weight[size_t(s)] = std::clamp((flat_high - sd) / (flat_high - flat_low), 0.0f, 1.0f);
             best = std::max(best, strip_weight[size_t(s)]);
         }
@@ -212,8 +226,9 @@ struct stream::state {
         for (int y = 0; y < H; y++) interpolate(y * W, 1, W, false);
         for (int x = 0; x < W; x++) interpolate(x, W, H, true);
         constexpr float omega = 1.8f;
-        const int sweeps = unknown.empty() ? 0 : int(std::clamp(harmonic_budget / double(unknown.size()), 20.0, 500.0));
+        const int sweeps = unknown.empty() ? 0 : int(std::min(harmonic_budget / double(unknown.size()), 500.0));
         for (int iteration = 0; iteration < sweeps; iteration++) {
+            st.harmonic_updates += int64_t(unknown.size());
             float change = 0;
             for (int i : unknown) {
                 const int x = i % W, y = i / W;
@@ -289,6 +304,7 @@ struct stream::state {
     bool process(int64_t t) {
         const frame & f = *get(t);
         std::vector<uint8_t> img = f.rgb;
+        bool reused = false;
         st.frames++;
         if (!f.bounds.empty()) {
             const box & b = f.bounds;
@@ -324,14 +340,41 @@ struct stream::state {
             const frame * prev = opt.window > 0 && prev_out ? get(t - 1) : nullptr;
             const bool same = prev && prev->bounds == b && prev->mask == f.mask;
             double ring_mean = -1, ring_p90 = -1;
-            if (open && same && ring_static(f, *prev, ring_mean, ring_p90)) {
-                copy_from(*prev_out);
-                st.px_reused += open;
-                open = 0;
+            if (open && same) {
+                const bool adjacent_static = ring_static(f, *prev, ring_mean, ring_p90);
+                double anchor_mean = -1, anchor_p90 = -1;
+                const bool anchor_static = has_anchor && reuse_anchor.bounds == b && reuse_anchor.mask == f.mask &&
+                                           ring_static(f, reuse_anchor, anchor_mean, anchor_p90);
+                // The previous output may have been reused many times. Test its
+                // original input too, so slow fades/motion cannot accumulate forever.
+                if (ring_mean >= 0 && anchor_mean >= 0) {
+                    ring_mean = std::max(ring_mean, anchor_mean);
+                    ring_p90 = std::max(ring_p90, anchor_p90);
+                } else {
+                    ring_mean = ring_p90 = -1;
+                }
+                if (adjacent_static && anchor_static) {
+                    copy_from(*prev_out);
+                    st.px_reused += open;
+                    open = 0;
+                    reused = true;
+                }
             }
 
             // 3-4. Flat fill and the engine, with everything filled so far as context.
             if (open && !fill_rest(f, img, same, ring_mean, ring_p90)) return false;
+        }
+        if (opt.window > 0 && !reused) {
+            has_anchor = !f.bounds.empty();
+            if (has_anchor) {
+                // Reserve the fixed maximum once; changing mask bounds must not
+                // transiently retain both an old and a larger replacement allocation.
+                reuse_anchor.rgb.reserve(size_t(w) * h * 3);
+                reuse_anchor.mask.reserve(size_t(w) * h);
+                reuse_anchor.rgb.assign(f.rgb.begin(), f.rgb.end());
+                reuse_anchor.mask.assign(f.mask.begin(), f.mask.end());
+                reuse_anchor.bounds = f.bounds;
+            }
         }
         prev_out = std::make_shared<const std::vector<uint8_t>>(std::move(img));
         ready.push_back(prev_out);
@@ -342,8 +385,8 @@ struct stream::state {
         while (error.empty() && next < pushed && (finished || pushed - 1 >= next + opt.window)) {
             if (!process(next)) return false;
             next++;
-            // Keep `window` frames behind (at least 1 for the static-span test).
-            while (!buf.empty() && base < next - std::max(1, opt.window)) {
+            // Window zero never reuses a previous input frame.
+            while (!buf.empty() && base < next - opt.window) {
                 buf.pop_front();
                 base++;
             }
@@ -353,14 +396,26 @@ struct stream::state {
 };
 
 stream::stream(int width, int height, const settings & options, fill_fn fill) : s_(new state) {
-    s_->w = std::max(1, width);
-    s_->h = std::max(1, height);
     s_->opt = options;
-    // 2 * window + 1 buffered frames must fit the memory budget.
-    const size_t frame_bytes = size_t(s_->w) * s_->h * 3;
-    const size_t fit = std::max<size_t>(1, options.max_buffer_bytes / frame_bytes);
-    s_->opt.window = int(std::min<size_t>(size_t(std::max(0, options.window)), (fit - 1) / 2));
     s_->fill = std::move(fill);
+    if (width <= 0 || height <= 0 || size_t(width) > std::numeric_limits<size_t>::max() / size_t(height)) {
+        s_->error = "invalid stream dimensions";
+        return;
+    }
+    s_->w = width;
+    s_->h = height;
+    // Payload budget: (2N+1) inputs at 4 bytes/pixel (RGB + worst-case mask),
+    // previous/current outputs at 6, engine RGB/mask at 4, and anchor at 4.
+    // Ready outputs replace inputs during finish; push backpressure prevents
+    // them accumulating during input. Region scratch/model/caller buffers and
+    // allocator overhead are deliberately outside this frame-payload budget.
+    const size_t pixels = size_t(width) * height;
+    const size_t units = options.max_buffer_bytes / pixels;
+    if (units < 18 || pixels > std::numeric_limits<size_t>::max() / 18) {
+        s_->error = "frame buffer budget too small for one frame";
+        return;
+    }
+    s_->opt.window = int(std::min<size_t>(size_t(std::max(0, options.window)), (units - 18) / 8));
 }
 
 stream::~stream() = default;
@@ -371,8 +426,17 @@ int stream::window() const {
 
 bool stream::push(const uint8_t * rgb, const uint8_t * mask, std::string & error) {
     state & s = *s_;
+    error.clear();
     if (!s.error.empty() || s.finished) {
         error = s.error.empty() ? "stream already finished" : s.error;
+        return false;
+    }
+    if (!s.ready.empty()) {
+        error = "drain ready output before pushing another frame";
+        return false; // recoverable backpressure: this input has not been consumed
+    }
+    if (!rgb) {
+        error = "null stream RGB frame";
         return false;
     }
     const int W = s.w, H = s.h;
@@ -406,6 +470,7 @@ bool stream::push(const uint8_t * rgb, const uint8_t * mask, std::string & error
 }
 
 bool stream::finish(std::string & error) {
+    error.clear();
     s_->finished = true;
     if (!s_->advance()) {
         error = s_->error;

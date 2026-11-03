@@ -669,27 +669,50 @@ int run_stream(const options & opt, const inpaint_temporal::fill_fn & fill, std:
         std::fprintf(stderr, "inpaint: --inpaint-temporal reduced to %d to fit the frame buffer in memory\n",
                      frames.window());
     std::vector<uint8_t> record(pixels * 4), out(pixels * 3);
+    int64_t records_read = 0, frames_written = 0;
     auto drain = [&] {
-        while (frames.pop(out.data()))
-            if (std::fwrite(out.data(), 1, out.size(), stdout) != out.size()) return fail(error, "cannot write stdout");
+        while (frames.pop(out.data())) {
+            if (std::fwrite(out.data(), 1, out.size(), stdout) != out.size())
+                return fail(error, "frame " + std::to_string(frames_written + 1) + ": cannot write stdout");
+            ++frames_written;
+        }
         return true;
     };
+    // A later engine failure must not discard the complete outputs already
+    // queued by finish(). Drain those before reporting the failing frame.
+    auto complete = [&](bool processed, const std::string & processing_error) {
+        if (!drain()) return false;
+        if (!processed) return fail(error, "frame " + std::to_string(frames_written + 1) + ": " + processing_error);
+        return true;
+    };
+    std::string input_error;
     for (;;) {
         const size_t got = std::fread(record.data(), 1, record.size(), stdin);
         if (std::ferror(stdin)) {
-            fail(error, std::string("cannot read stdin: ") + std::strerror(errno));
-            return 1;
+            input_error = "frame " + std::to_string(records_read + 1) + ": cannot read stdin: " + std::strerror(errno);
+            break;
         }
         if (got == 0) break;
         if (got != record.size()) {
-            fail(error, "truncated frame record on stdin");
-            return 1;
+            input_error = "frame " + std::to_string(records_read + 1) + ": truncated frame record on stdin";
+            break;
         }
-        if (!frames.push(record.data(), record.data() + pixels * 3, error) || !drain()) return 1;
+        ++records_read;
+        std::string processing_error;
+        const bool processed = frames.push(record.data(), record.data() + pixels * 3, processing_error);
+        if (!complete(processed, processing_error)) return 1;
     }
-    if (!frames.finish(error) || !drain()) return 1;
+    // A read error/truncated final record ends input, but every preceding full
+    // record is still valid and must be flushed. Never ingest the partial record.
+    std::string processing_error;
+    const bool processed = frames.finish(processing_error);
+    if (!complete(processed, processing_error)) return 1;
     if (std::fflush(stdout) != 0) {
-        fail(error, "cannot write stdout");
+        fail(error, "frame " + std::to_string(frames_written) + ": cannot write stdout");
+        return 1;
+    }
+    if (!input_error.empty()) {
+        error = input_error;
         return 1;
     }
     const inpaint_temporal::stats & st = frames.counters();
@@ -734,7 +757,7 @@ int execute(const options & opt, std::string & error) {
         fail(error, "--inpaint-stream requires CRISPEMBED_INPAINT_STREAM=1");
         return 2;
     }
-    if (core_imgout::want_ppm()) {
+    if (!opt.stream_width && core_imgout::want_ppm()) {
         fail(error, "inpainting emits PNG; unset CRISPEMBED_IMAGE_FORMAT or set it to png");
         return 2;
     }

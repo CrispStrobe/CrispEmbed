@@ -162,6 +162,19 @@ class InpaintCliTests(unittest.TestCase):
             output[3 * i:3 * i + 3] = FILL
         return bytes(output)
 
+    def stream(self, records=b"", extra=(), env=None, **kwargs):
+        return self.run_cli(["--inpaint-model", self.model_path,
+                             "--inpaint-stream", f"{self.width}x{self.height}", *extra],
+                            stdin=records, env={**STREAM_GATE, **(env or {})}, **kwargs)
+
+    @staticmethod
+    def expected_stream_frame(rgb, mask):
+        output = bytearray(rgb)
+        for i, value in enumerate(mask):
+            if value >= 128:
+                output[3 * i:3 * i + 3] = FILL
+        return bytes(output)
+
     def assert_success_png(self, result, expected):
         self.assertEqual(result.returncode, 0, result.stderr.decode(errors="replace"))
         w, h, rgb, metadata = decode_png(result.stdout)
@@ -326,25 +339,118 @@ class InpaintCliTests(unittest.TestCase):
                 self.assertEqual(result.stdout, b"")
 
     def test_stream_raw_frames_in_order(self):
-        record = self.rgb + bytes(255 if value >= 128 else 0 for value in self.mask)
-        size = f"{self.width}x{self.height}"
-        expected = self.expected(i for i, value in enumerate(self.mask) if value >= 128)
+        # Distinct inputs detect reordering. Preserve 127/128 in the wire mask
+        # so this also checks the stream's threshold rather than pre-binarizing it.
+        rgbs = [bytes((value + shift) % 233 for value in self.rgb) for shift in (0, 31, 67)]
+        records = b"".join(rgb + self.mask for rgb in rgbs)
+        expected = b"".join(self.expected_stream_frame(rgb, self.mask) for rgb in rgbs)
         for extra in ([], ["--inpaint-temporal", "2"]):
             with self.subTest(extra=extra):
-                result = self.run_cli(["--inpaint-model", self.model_path, "--inpaint-stream", size, *extra],
-                                      stdin=record * 3, env=STREAM_GATE)
+                result = self.stream(records, extra)
                 self.assertEqual(result.returncode, 0, result.stderr.decode(errors="replace"))
-                self.assertEqual(result.stdout, expected * 3)
+                self.assertEqual(result.stdout, expected)
                 self.assertIn(b"inpaint: 3 frames, 3 masked", result.stderr)
-        truncated = self.run_cli(["--inpaint-model", self.model_path, "--inpaint-stream", size],
-                                 stdin=record + record[:5], env=STREAM_GATE)
-        self.assertEqual(truncated.returncode, 1)
-        self.assertIn(b"truncated frame record", truncated.stderr)
-        self.assertEqual(truncated.stdout, expected)
-        ungated = self.run_cli(["--inpaint-model", self.model_path, "--inpaint-stream", size], stdin=record)
-        self.assertEqual(ungated.returncode, 2)
-        self.assertIn(b"CRISPEMBED_INPAINT_STREAM=1", ungated.stderr)
-        self.assertNotIn(b"INPAINT_TEST_LOAD", ungated.stderr)
+
+    def test_stream_gate_unset_empty_zero_and_one(self):
+        for value in (None, "", "0", "1"):
+            with self.subTest(value=value):
+                result = self.stream(self.rgb + self.mask, env={"CRISPEMBED_INPAINT_STREAM": value})
+                self.assertEqual(result.returncode, 0 if value == "1" else 2, result.stderr)
+                if value != "1":
+                    self.assertIn(b"CRISPEMBED_INPAINT_STREAM=1", result.stderr)
+                    self.assertNotIn(b"INPAINT_TEST_LOAD", result.stderr)
+                    self.assertEqual(result.stdout, b"")
+
+    def test_stream_empty_one_and_short_clip_flush_exactly(self):
+        record = self.rgb + self.mask
+        expected = self.expected_stream_frame(self.rgb, self.mask)
+        for count in (0, 1, 2):
+            for window in (0, 5):
+                with self.subTest(count=count, window=window):
+                    result = self.stream(record * count, ["--inpaint-temporal", str(window)])
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertEqual(result.stdout, expected * count)
+                    self.assertIn(f"inpaint: {count} frames".encode(), result.stderr)
+
+    def test_stream_binary_bytes_and_image_format_are_unchanged(self):
+        rgb = bytes((0, 10, 13, 26, 255)[i % 5] for i in range(len(self.rgb)))
+        result = self.stream(rgb + bytes(len(self.mask)), env={"CRISPEMBED_IMAGE_FORMAT": "ppm"})
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(result.stdout, rgb)
+        self.assertIn(b"1 frames, 0 masked, 0 engine", result.stderr)
+
+    def test_stream_mask_changes_have_no_stale_engine_pixels(self):
+        masks = [bytes(len(self.mask)), bytes(self.mask), bytes([255]) * len(self.mask),
+                 bytes([128]) + bytes(len(self.mask) - 1), bytes(len(self.mask))]
+        for window in (0, 2):
+            with self.subTest(window=window):
+                result = self.stream(b"".join(self.rgb + mask for mask in masks),
+                                     ["--inpaint-temporal", str(window)])
+                self.assertEqual(result.returncode, 0, result.stderr)
+                expected = b"".join(self.expected_stream_frame(self.rgb, mask) for mask in masks)
+                self.assertEqual(result.stdout, expected)
+
+    def test_stream_truncated_record_flushes_complete_prefix(self):
+        record = self.rgb + self.mask
+        expected = self.expected_stream_frame(self.rgb, self.mask)
+        # One truncation is inside RGB, the other inside the mask. Window 5
+        # leaves both valid frames buffered until the malformed EOF is observed.
+        for length in (5, len(self.rgb) + 3):
+            for window in (0, 5):
+                with self.subTest(length=length, window=window):
+                    result = self.stream(record * 2 + record[:length], ["--inpaint-temporal", str(window)])
+                    self.assertEqual(result.returncode, 1, result.stderr)
+                    self.assertIn(b"frame 3: truncated frame record", result.stderr)
+                    self.assertEqual(result.stdout, expected * 2)
+
+    def test_stream_engine_failure_retains_prefix_during_push_and_eof(self):
+        # A full mask forces the engine and avoids propagation/reuse/flat fill.
+        mask = bytes([255]) * len(self.mask)
+        record = self.rgb + mask
+        expected = FILL * len(mask)
+        for window, count in ((0, 3), (2, 5), (5, 2)):
+            with self.subTest(window=window, count=count):
+                result = self.stream(record * count, ["--inpaint-temporal", str(window)],
+                                     env={"INPAINT_TEST_FAIL_AT": "2"})
+                self.assertEqual(result.returncode, 1, result.stderr)
+                self.assertIn(b"frame 2: test inference failure", result.stderr)
+                self.assertEqual(result.stdout, expected)
+
+    def test_stream_prefix_engine_failure_precedes_later_truncation(self):
+        record = self.rgb + bytes([255]) * len(self.mask)
+        result = self.stream(record * 2 + record[:5], ["--inpaint-temporal", "5"],
+                             env={"INPAINT_TEST_FAIL_AT": "2"})
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn(b"frame 2: test inference failure", result.stderr)
+        self.assertEqual(result.stdout, FILL * len(self.mask))
+
+    def test_stream_all_engine_dispatch_and_latent_geometry(self):
+        expected = self.expected_stream_frame(self.rgb, self.mask)
+        for engine in ("migan512", "moebius", "pixelhacker"):
+            with self.subTest(engine=engine):
+                if engine == "migan512":
+                    extra = ["--inpaint-engine", engine, "--inpaint-model-sha256", "a" * 64,
+                             "--inpaint-checkpoint-sha256", "b" * 64]
+                    env = {"CRISPEMBED_MIGAN512": "1"}
+                else:
+                    extra = self.latent_args(engine, tiled=False)
+                    env = {"CRISPEMBED_" + engine.upper(): "1"}
+                    rejected = self.stream(self.rgb + self.mask, extra, env=env)
+                    self.assertEqual(rejected.returncode, 2, rejected.stderr)
+                    self.assertIn(b"512x512", rejected.stderr)
+                    self.assertNotIn(b"INPAINT_TEST_LOAD", rejected.stderr)
+                    square = self.run_cli(["--inpaint-model", self.model_path,
+                        "--inpaint-stream", "512x512", *extra],
+                        stdin=bytes(512 * 512 * 4), env={**STREAM_GATE, **env})
+                    self.assertEqual(square.returncode, 0, square.stderr)
+                    self.assertEqual(square.stdout, bytes(512 * 512 * 3))
+                    extra.append("--inpaint-tiles")
+                result = self.stream(self.rgb + self.mask, extra, env=env)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual(result.stdout, expected)
+                marker = (b"INPAINT_TEST_VARIANT resolution=512" if engine == "migan512" else
+                          ("INPAINT_TEST_LATENT model=" + engine).encode())
+                self.assertIn(marker, result.stderr)
 
     def test_stream_temporal_reuses_a_static_span(self):
         # 64x48 checkerboard with a bar: identical frames reuse the first engine fill.
@@ -536,6 +642,17 @@ class InpaintCliTests(unittest.TestCase):
         self.assertEqual(help_result.returncode, 0, help_result.stderr)
         self.assertIn(b"--inpaint-list", help_result.stdout)
         result = self.single(binary=REAL_BINARY)
+        self.assertEqual(result.returncode, 1, result.stderr)
+        self.assertIn(b"SHA-256 mismatch", result.stderr)
+        self.assertEqual(result.stdout, b"")
+
+    def test_real_binary_stream_gate_and_model_rejection(self):
+        if REAL_BINARY is None:
+            self.skipTest("--real-binary not supplied")
+        rejected = self.stream(binary=REAL_BINARY, env={"CRISPEMBED_INPAINT_STREAM": "0"})
+        self.assertEqual(rejected.returncode, 2, rejected.stderr)
+        self.assertIn(b"CRISPEMBED_INPAINT_STREAM=1", rejected.stderr)
+        result = self.stream(binary=REAL_BINARY)
         self.assertEqual(result.returncode, 1, result.stderr)
         self.assertIn(b"SHA-256 mismatch", result.stderr)
         self.assertEqual(result.stdout, b"")
