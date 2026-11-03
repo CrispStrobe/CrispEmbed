@@ -1,0 +1,1553 @@
+{
+  "schema": "crispembed-josev-q4k-sweep-v1",
+  "source": "c2b72a58ef848bdcd4adf18bab6cd76a8284a3c8",
+  "build": {
+    "mode": "portable",
+    "cmake": "tests/josev-q4k forces GGML_NATIVE=OFF, GGML_LLAMAFILE=ON",
+    "lscpu": {
+      "Architecture": "x86_64",
+      "CPU(s)": "4",
+      "Model name": "AMD EPYC 9V74 80-Core Processor",
+      "Flags": "fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology tsc_reliable nonstop_tsc cpuid extd_apicid aperfmperf tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 movbe popcnt aes xsave avx f16c rdrand hypervisor lahf_lm cmp_legacy svm cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw topoext vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves user_shstk avx512_bf16 clzero xsaveerptr rdpru arat npt nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold v_vmsave_vmload avx512vbmi umip avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg avx512_vpopcntdq rdpid fsrm"
+    },
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+    "ggml_native": "OFF"
+  },
+  "bars": {
+    "q8_0": 0.97,
+    "q4_k": 0.94,
+    "metric": "min over 4 frozen cases of concatenated head-logit cosine; final-norm global cosine reported as the stricter diagnostic"
+  },
+  "original_rerun": false,
+  "publication_qualified": false,
+  "recipes": {
+    "q8-all": {
+      "phase": "complete",
+      "conversion": {
+        "identity": "q8-all",
+        "counts": {
+          "F32": 292,
+          "F16": 0,
+          "Q8_0": 150,
+          "Q4_K": 0
+        },
+        "method": "q8_0",
+        "quantize_seconds": 7.92464200400002,
+        "output_sha256": "fc1663bbd050938ff0bdb1b20ca52bd9ff7579dca63c0f7f9a15b3c3b7e36b85",
+        "output_mib": 3462.1,
+        "recipe": "q8-q8-all",
+        "parameters": 1912297796,
+        "output_bytes": 3630289376,
+        "general_file_type": 7,
+        "critical292_f32_byte_exact": true,
+        "independent_f16_rounding_exact": true,
+        "finite_source_and_packed_scales": true,
+        "semantic_shapes_unchanged": true,
+        "profile_stamped_by_c_quantizer": true,
+        "publication_qualified": false,
+        "file_type_labels": {
+          "source": null,
+          "output": 7
+        }
+      },
+      "cases": [
+        {
+          "id": "mixed-de",
+          "logits_cos": 0.9999912678047824,
+          "logits_max_abs": 0.025863170623779297,
+          "probabilities_cos": 0.9999890891070377,
+          "probabilities_max_abs": 0.0058747828006744385,
+          "final_norm_cos": 0.9994414401011729,
+          "final_norm_min_row_cos": 0.9363126179523916,
+          "worst_stage": {
+            "stage": "head/hidden_norm",
+            "min_row_cosine": 0.9363010182717781
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "null-and-options",
+          "logits_cos": 0.999988433513442,
+          "logits_max_abs": 0.03380477428436279,
+          "probabilities_cos": 0.9999997668004595,
+          "probabilities_max_abs": 0.0007323026657104492,
+          "final_norm_cos": 0.9996003096544069,
+          "final_norm_min_row_cos": 0.9956283567383812,
+          "worst_stage": {
+            "stage": "backbone/final_norm",
+            "min_row_cosine": 0.9956283567383812
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "json-unicode",
+          "logits_cos": 0.9999467750007115,
+          "logits_max_abs": 0.039328813552856445,
+          "probabilities_cos": 0.9999874119867989,
+          "probabilities_max_abs": 0.00340849906206131,
+          "final_norm_cos": 0.9995640152046265,
+          "final_norm_min_row_cos": 0.9956282790860228,
+          "worst_stage": {
+            "stage": "backbone/final_norm",
+            "min_row_cosine": 0.9956282790860228
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "state-only-clip",
+          "logits_cos": 0.999990762103746,
+          "logits_max_abs": 0.01754075288772583,
+          "probabilities_cos": 0.9999999999694321,
+          "probabilities_max_abs": 7.71600753068924e-06,
+          "final_norm_cos": 0.9997690449758708,
+          "final_norm_min_row_cos": 0.9956285832720784,
+          "worst_stage": {
+            "stage": "backbone/final_norm",
+            "min_row_cosine": 0.9956285832720784
+          },
+          "typed_json_exact": true,
+          "argmax_exact": true
+        }
+      ],
+      "summary": {
+        "logits_cos": 0.9999467750007115,
+        "probabilities_cos": 0.9999874119867989,
+        "final_norm_cos": 0.9994414401011729,
+        "probabilities_max_abs": 0.0058747828006744385,
+        "typed_json_exact": 1,
+        "argmax_exact": 4
+      },
+      "timing": {
+        "plain_seconds": 44.167226135999954,
+        "observed_seconds": 44.17489779499999,
+        "repeat_seconds": 44.424243399000034
+      },
+      "strict_stage_failures": 200,
+      "bar": 0.97,
+      "passes_logits_bar": true,
+      "passes_final_norm_bar": true
+    },
+    "attn-q4": {
+      "phase": "complete",
+      "conversion": {
+        "identity": "attn-q4",
+        "counts": {
+          "F32": 292,
+          "F16": 0,
+          "Q8_0": 72,
+          "Q4_K": 78
+        },
+        "method": "q4_k",
+        "quantize_seconds": 35.702810796999984,
+        "output_sha256": "ac9bac36bd74065f1c4dfb19d785e4a89a903788993da4a236fd131567940467",
+        "output_mib": 3240.1,
+        "recipe": "sweep-attn-q4",
+        "parameters": 1912297796,
+        "output_bytes": 3397505504,
+        "general_file_type": 14,
+        "critical292_f32_byte_exact": true,
+        "independent_f16_rounding_exact": true,
+        "finite_source_and_packed_scales": true,
+        "semantic_shapes_unchanged": true,
+        "profile_stamped_by_c_quantizer": true,
+        "publication_qualified": false,
+        "file_type_labels": {
+          "source": null,
+          "output": 14
+        }
+      },
+      "cases": [
+        {
+          "id": "mixed-de",
+          "logits_cos": 0.9996546610917284,
+          "logits_max_abs": 0.15881919860839844,
+          "probabilities_cos": 0.9998918350076974,
+          "probabilities_max_abs": 0.016904368996620178,
+          "final_norm_cos": 0.9696396777176683,
+          "final_norm_min_row_cos": 0.6753192397735114,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.6746910267787197
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "null-and-options",
+          "logits_cos": 0.9995311566195872,
+          "logits_max_abs": 0.11494970321655273,
+          "probabilities_cos": 0.999986561810673,
+          "probabilities_max_abs": 0.005589369684457779,
+          "final_norm_cos": 0.9708926481556113,
+          "final_norm_min_row_cos": 0.6133532535709467,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.5692932805179309
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "json-unicode",
+          "logits_cos": 0.9990918118680886,
+          "logits_max_abs": 0.15744221210479736,
+          "probabilities_cos": 0.9967486408196794,
+          "probabilities_max_abs": 0.0499492883682251,
+          "final_norm_cos": 0.9662238913458046,
+          "final_norm_min_row_cos": 0.6906296395089929,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.6870789234569826
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "state-only-clip",
+          "logits_cos": 0.9980092396837347,
+          "logits_max_abs": 0.29594023525714874,
+          "probabilities_cos": 0.9999906274644459,
+          "probabilities_max_abs": 0.004254341125488281,
+          "final_norm_cos": 0.9776379617124443,
+          "final_norm_min_row_cos": 0.6906288708699161,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.6870782167487516
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        }
+      ],
+      "summary": {
+        "logits_cos": 0.9980092396837347,
+        "probabilities_cos": 0.9967486408196794,
+        "final_norm_cos": 0.9662238913458046,
+        "probabilities_max_abs": 0.0499492883682251,
+        "typed_json_exact": 0,
+        "argmax_exact": 4
+      },
+      "timing": {
+        "plain_seconds": 44.218430218999856,
+        "observed_seconds": 43.91663061999998,
+        "repeat_seconds": 44.264649856999995
+      },
+      "strict_stage_failures": 202,
+      "bar": 0.94,
+      "passes_logits_bar": true,
+      "passes_final_norm_bar": true
+    },
+    "gate-up-q4": {
+      "phase": "complete",
+      "conversion": {
+        "identity": "gate-up-q4",
+        "counts": {
+          "F32": 292,
+          "F16": 0,
+          "Q8_0": 102,
+          "Q4_K": 48
+        },
+        "method": "q4_k",
+        "quantize_seconds": 44.11649022500001,
+        "output_sha256": "7098214f285237453e5e3c4eb3a6ac0e8249081bb9332369bd8df988dc1d5348",
+        "output_mib": 3174.1,
+        "recipe": "sweep-gate-up-q4",
+        "parameters": 1912297796,
+        "output_bytes": 3328299488,
+        "general_file_type": 14,
+        "critical292_f32_byte_exact": true,
+        "independent_f16_rounding_exact": true,
+        "finite_source_and_packed_scales": true,
+        "semantic_shapes_unchanged": true,
+        "profile_stamped_by_c_quantizer": true,
+        "publication_qualified": false,
+        "file_type_labels": {
+          "source": null,
+          "output": 14
+        }
+      },
+      "cases": [
+        {
+          "id": "mixed-de",
+          "logits_cos": 0.9993013097425721,
+          "logits_max_abs": 0.24425697326660156,
+          "probabilities_cos": 0.9999303219623055,
+          "probabilities_max_abs": 0.01302957534790039,
+          "final_norm_cos": 0.9853809448575066,
+          "final_norm_min_row_cos": 0.7619723334077927,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.7609085016336198
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "null-and-options",
+          "logits_cos": 0.9992728037256721,
+          "logits_max_abs": 0.2471998929977417,
+          "probabilities_cos": 0.999979296945831,
+          "probabilities_max_abs": 0.0065400004386901855,
+          "final_norm_cos": 0.9849077366826982,
+          "final_norm_min_row_cos": 0.8453749875909913,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.8440285629221379
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "json-unicode",
+          "logits_cos": 0.999975540392346,
+          "logits_max_abs": 0.11987686157226562,
+          "probabilities_cos": 0.9999622143204867,
+          "probabilities_max_abs": 0.006085336208343506,
+          "final_norm_cos": 0.9796911619392722,
+          "final_norm_min_row_cos": 0.845375337297088,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.8440289245953344
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "state-only-clip",
+          "logits_cos": 0.9997204554072785,
+          "logits_max_abs": 0.10961014032363892,
+          "probabilities_cos": 0.9999995258679382,
+          "probabilities_max_abs": 0.0009600520133972168,
+          "final_norm_cos": 0.9904153599017149,
+          "final_norm_min_row_cos": 0.8453761160694633,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.8440297162697472
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        }
+      ],
+      "summary": {
+        "logits_cos": 0.9992728037256721,
+        "probabilities_cos": 0.9999303219623055,
+        "final_norm_cos": 0.9796911619392722,
+        "probabilities_max_abs": 0.01302957534790039,
+        "typed_json_exact": 0,
+        "argmax_exact": 4
+      },
+      "timing": {
+        "plain_seconds": 44.32065940999996,
+        "observed_seconds": 43.669746583999995,
+        "repeat_seconds": 43.77042297999992
+      },
+      "strict_stage_failures": 202,
+      "bar": 0.94,
+      "passes_logits_bar": true,
+      "passes_final_norm_bar": true
+    },
+    "down-q4": {
+      "phase": "complete",
+      "conversion": {
+        "identity": "down-q4",
+        "counts": {
+          "F32": 292,
+          "F16": 0,
+          "Q8_0": 126,
+          "Q4_K": 24
+        },
+        "method": "q4_k",
+        "quantize_seconds": 25.87343066099993,
+        "output_sha256": "61ef0c639fffe82f5ebf272931568d15ab1ecf679380e70fa85bd535aa43c59c",
+        "output_mib": 3318.1,
+        "recipe": "sweep-down-q4",
+        "parameters": 1912297796,
+        "output_bytes": 3479294432,
+        "general_file_type": 14,
+        "critical292_f32_byte_exact": true,
+        "independent_f16_rounding_exact": true,
+        "finite_source_and_packed_scales": true,
+        "semantic_shapes_unchanged": true,
+        "profile_stamped_by_c_quantizer": true,
+        "publication_qualified": false,
+        "file_type_labels": {
+          "source": null,
+          "output": 14
+        }
+      },
+      "cases": [
+        {
+          "id": "mixed-de",
+          "logits_cos": 0.9995748778915541,
+          "logits_max_abs": 0.2054603099822998,
+          "probabilities_cos": 0.9995091107454069,
+          "probabilities_max_abs": 0.03432205319404602,
+          "final_norm_cos": 0.9891332879202297,
+          "final_norm_min_row_cos": 0.7163015931734749,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.7143940191426172
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "null-and-options",
+          "logits_cos": 0.99908230927161,
+          "logits_max_abs": 0.20128214359283447,
+          "probabilities_cos": 0.9999713158672605,
+          "probabilities_max_abs": 0.007557213306427002,
+          "final_norm_cos": 0.9891776656095941,
+          "final_norm_min_row_cos": 0.9312851535742911,
+          "worst_stage": {
+            "stage": "backbone/final_norm",
+            "min_row_cosine": 0.9312851535742911
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "json-unicode",
+          "logits_cos": 0.9994258451711919,
+          "logits_max_abs": 0.1662081480026245,
+          "probabilities_cos": 0.9972575337037949,
+          "probabilities_max_abs": 0.042743802070617676,
+          "final_norm_cos": 0.9880861453160785,
+          "final_norm_min_row_cos": 0.9312854600845216,
+          "worst_stage": {
+            "stage": "backbone/final_norm",
+            "min_row_cosine": 0.9312854600845216
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "state-only-clip",
+          "logits_cos": 0.9990966139555442,
+          "logits_max_abs": 0.19659918546676636,
+          "probabilities_cos": 0.9999981212011694,
+          "probabilities_max_abs": 0.0019092559814453125,
+          "final_norm_cos": 0.9918860439171747,
+          "final_norm_min_row_cos": 0.9312856327747887,
+          "worst_stage": {
+            "stage": "backbone/final_norm",
+            "min_row_cosine": 0.9312856327747887
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        }
+      ],
+      "summary": {
+        "logits_cos": 0.99908230927161,
+        "probabilities_cos": 0.9972575337037949,
+        "final_norm_cos": 0.9880861453160785,
+        "probabilities_max_abs": 0.042743802070617676,
+        "typed_json_exact": 0,
+        "argmax_exact": 4
+      },
+      "timing": {
+        "plain_seconds": 44.37332834500012,
+        "observed_seconds": 44.36678278999989,
+        "repeat_seconds": 44.72345256300014
+      },
+      "strict_stage_failures": 202,
+      "bar": 0.94,
+      "passes_logits_bar": true,
+      "passes_final_norm_bar": true
+    },
+    "mlp-q4": {
+      "phase": "complete",
+      "conversion": {
+        "identity": "mlp-q4",
+        "counts": {
+          "F32": 292,
+          "F16": 0,
+          "Q8_0": 78,
+          "Q4_K": 72
+        },
+        "method": "q4_k",
+        "quantize_seconds": 62.57668290699985,
+        "output_sha256": "8e65bcfd021003d96d65ce7a3b0ba38f237201370c70247b7c5d0ad68ba56c69",
+        "output_mib": 3030.1,
+        "recipe": "sweep-mlp-q4",
+        "parameters": 1912297796,
+        "output_bytes": 3177304544,
+        "general_file_type": 14,
+        "critical292_f32_byte_exact": true,
+        "independent_f16_rounding_exact": true,
+        "finite_source_and_packed_scales": true,
+        "semantic_shapes_unchanged": true,
+        "profile_stamped_by_c_quantizer": true,
+        "publication_qualified": false,
+        "file_type_labels": {
+          "source": null,
+          "output": 14
+        }
+      },
+      "cases": [
+        {
+          "id": "mixed-de",
+          "logits_cos": 0.9986300012018228,
+          "logits_max_abs": 0.3856618404388428,
+          "probabilities_cos": 0.9999940954273717,
+          "probabilities_max_abs": 0.004248335957527161,
+          "final_norm_cos": 0.9758579441862913,
+          "final_norm_min_row_cos": 0.6906414308094702,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.6892248192368448
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "null-and-options",
+          "logits_cos": 0.9970485167196321,
+          "logits_max_abs": 0.42947202920913696,
+          "probabilities_cos": 0.9998844469481267,
+          "probabilities_max_abs": 0.014562129974365234,
+          "final_norm_cos": 0.9734027600981148,
+          "final_norm_min_row_cos": 0.7951673419326087,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.7947421095246474
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "json-unicode",
+          "logits_cos": 0.9997732368294598,
+          "logits_max_abs": 0.18033409118652344,
+          "probabilities_cos": 0.9994658705630539,
+          "probabilities_max_abs": 0.019055277109146118,
+          "final_norm_cos": 0.9699189649248481,
+          "final_norm_min_row_cos": 0.7951679058970778,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.7947426643193373
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "state-only-clip",
+          "logits_cos": 0.9979928817554155,
+          "logits_max_abs": 0.28869734704494476,
+          "probabilities_cos": 0.9999964219223824,
+          "probabilities_max_abs": 0.00263291597366333,
+          "final_norm_cos": 0.9815444173951331,
+          "final_norm_min_row_cos": 0.7951683090060866,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.7947430869979261
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        }
+      ],
+      "summary": {
+        "logits_cos": 0.9970485167196321,
+        "probabilities_cos": 0.9994658705630539,
+        "final_norm_cos": 0.9699189649248481,
+        "probabilities_max_abs": 0.019055277109146118,
+        "typed_json_exact": 0,
+        "argmax_exact": 4
+      },
+      "timing": {
+        "plain_seconds": 44.37163171800012,
+        "observed_seconds": 44.36924940100016,
+        "repeat_seconds": 44.6226746010002
+      },
+      "strict_stage_failures": 203,
+      "bar": 0.94,
+      "passes_logits_bar": true,
+      "passes_final_norm_bar": true,
+      "policy": {
+        "name": "josev_q4k_mlp_v1",
+        "output_sha256": "8e65bcfd021003d96d65ce7a3b0ba38f237201370c70247b7c5d0ad68ba56c69",
+        "byte_identical": true
+      }
+    },
+    "l00-05-q4": {
+      "phase": "complete",
+      "conversion": {
+        "identity": "l00-05-q4",
+        "counts": {
+          "F32": 292,
+          "F16": 0,
+          "Q8_0": 113,
+          "Q4_K": 37
+        },
+        "method": "q4_k",
+        "quantize_seconds": 28.535074261000318,
+        "output_sha256": "ef5b4d2bd9867fb9ce7179b6668c2bc1efb98f3a97e68b3444a9e6e16487093a",
+        "output_mib": 3297.1,
+        "recipe": "sweep-l00-05-q4",
+        "parameters": 1912297796,
+        "output_bytes": 3457274336,
+        "general_file_type": 14,
+        "critical292_f32_byte_exact": true,
+        "independent_f16_rounding_exact": true,
+        "finite_source_and_packed_scales": true,
+        "semantic_shapes_unchanged": true,
+        "profile_stamped_by_c_quantizer": true,
+        "publication_qualified": false,
+        "file_type_labels": {
+          "source": null,
+          "output": 14
+        }
+      },
+      "cases": [
+        {
+          "id": "mixed-de",
+          "logits_cos": 0.9991543790252976,
+          "logits_max_abs": 0.37021923065185547,
+          "probabilities_cos": 0.9971813512437647,
+          "probabilities_max_abs": 0.09415918588638306,
+          "final_norm_cos": 0.9772772735080698,
+          "final_norm_min_row_cos": 0.629072634488623,
+          "worst_stage": {
+            "stage": "backbone/layer/14",
+            "min_row_cosine": 0.595785043924238
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "null-and-options",
+          "logits_cos": 0.9927230305515105,
+          "logits_max_abs": 0.4985816478729248,
+          "probabilities_cos": 0.9995039407528792,
+          "probabilities_max_abs": 0.02945752441883087,
+          "final_norm_cos": 0.9688352735985337,
+          "final_norm_min_row_cos": 0.6608018352643079,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.6044954420908164
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "json-unicode",
+          "logits_cos": 0.9975887844691282,
+          "logits_max_abs": 0.42208218574523926,
+          "probabilities_cos": 0.9876911401212294,
+          "probabilities_max_abs": 0.08449172973632812,
+          "final_norm_cos": 0.9624965532869915,
+          "final_norm_min_row_cos": 0.6876804326897642,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.6856817212370843
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "state-only-clip",
+          "logits_cos": 0.9996965022478098,
+          "logits_max_abs": 0.11733025312423706,
+          "probabilities_cos": 0.99999914235564,
+          "probabilities_max_abs": 0.0012907981872558594,
+          "final_norm_cos": 0.9872795572469528,
+          "final_norm_min_row_cos": 0.6876801400441566,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.6856815173478779
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        }
+      ],
+      "summary": {
+        "logits_cos": 0.9927230305515105,
+        "probabilities_cos": 0.9876911401212294,
+        "final_norm_cos": 0.9624965532869915,
+        "probabilities_max_abs": 0.09415918588638306,
+        "typed_json_exact": 0,
+        "argmax_exact": 4
+      },
+      "timing": {
+        "plain_seconds": 44.3180524899999,
+        "observed_seconds": 43.86937436800008,
+        "repeat_seconds": 44.42261636600006
+      },
+      "strict_stage_failures": 202,
+      "bar": 0.94,
+      "passes_logits_bar": true,
+      "passes_final_norm_bar": true
+    },
+    "l06-11-q4": {
+      "phase": "complete",
+      "conversion": {
+        "identity": "l06-11-q4",
+        "counts": {
+          "F32": 292,
+          "F16": 0,
+          "Q8_0": 112,
+          "Q4_K": 38
+        },
+        "method": "q4_k",
+        "quantize_seconds": 28.233935935999853,
+        "output_sha256": "4e9003d5c554475d06e424fccfafd723e356c74d283429ff85088dd251ecb8ba",
+        "output_mib": 3300.1,
+        "recipe": "sweep-l06-11-q4",
+        "parameters": 1912297796,
+        "output_bytes": 3460420064,
+        "general_file_type": 14,
+        "critical292_f32_byte_exact": true,
+        "independent_f16_rounding_exact": true,
+        "finite_source_and_packed_scales": true,
+        "semantic_shapes_unchanged": true,
+        "profile_stamped_by_c_quantizer": true,
+        "publication_qualified": false,
+        "file_type_labels": {
+          "source": null,
+          "output": 14
+        }
+      },
+      "cases": [
+        {
+          "id": "mixed-de",
+          "logits_cos": 0.9985098693008423,
+          "logits_max_abs": 0.3601398468017578,
+          "probabilities_cos": 0.9983612229176265,
+          "probabilities_max_abs": 0.06773726642131805,
+          "final_norm_cos": 0.9873836606719957,
+          "final_norm_min_row_cos": 0.8784770029023677,
+          "worst_stage": {
+            "stage": "backbone/final_norm",
+            "min_row_cosine": 0.8784770029023677
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "null-and-options",
+          "logits_cos": 0.9997111341185131,
+          "logits_max_abs": 0.10420417785644531,
+          "probabilities_cos": 0.9999458200862025,
+          "probabilities_max_abs": 0.009562313556671143,
+          "final_norm_cos": 0.9893363052784803,
+          "final_norm_min_row_cos": 0.8784763549350757,
+          "worst_stage": {
+            "stage": "backbone/final_norm",
+            "min_row_cosine": 0.8784763549350757
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "json-unicode",
+          "logits_cos": 0.9986874117886149,
+          "logits_max_abs": 0.23955702781677246,
+          "probabilities_cos": 0.9970756819303027,
+          "probabilities_max_abs": 0.04702483117580414,
+          "final_norm_cos": 0.9851554063103959,
+          "final_norm_min_row_cos": 0.8784765084419383,
+          "worst_stage": {
+            "stage": "backbone/final_norm",
+            "min_row_cosine": 0.8784765084419383
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "state-only-clip",
+          "logits_cos": 0.9944314648552608,
+          "logits_max_abs": 0.4777632914483547,
+          "probabilities_cos": 0.9999792481049798,
+          "probabilities_max_abs": 0.006317317485809326,
+          "final_norm_cos": 0.9924990481886331,
+          "final_norm_min_row_cos": 0.8784771595258136,
+          "worst_stage": {
+            "stage": "head/residual_scorer",
+            "min_row_cosine": -1.0
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        }
+      ],
+      "summary": {
+        "logits_cos": 0.9944314648552608,
+        "probabilities_cos": 0.9970756819303027,
+        "final_norm_cos": 0.9851554063103959,
+        "probabilities_max_abs": 0.06773726642131805,
+        "typed_json_exact": 0,
+        "argmax_exact": 4
+      },
+      "timing": {
+        "plain_seconds": 44.371221703000174,
+        "observed_seconds": 43.8660709830001,
+        "repeat_seconds": 44.6692076559998
+      },
+      "strict_stage_failures": 203,
+      "bar": 0.94,
+      "passes_logits_bar": true,
+      "passes_final_norm_bar": true
+    },
+    "l12-17-q4": {
+      "phase": "complete",
+      "conversion": {
+        "identity": "l12-17-q4",
+        "counts": {
+          "F32": 292,
+          "F16": 0,
+          "Q8_0": 113,
+          "Q4_K": 37
+        },
+        "method": "q4_k",
+        "quantize_seconds": 28.730944164999983,
+        "output_sha256": "ef73a9ed3483c2b381250e9566168ef436e91987f1c990e26ecd7e2e4155f887",
+        "output_mib": 3297.1,
+        "recipe": "sweep-l12-17-q4",
+        "parameters": 1912297796,
+        "output_bytes": 3457274336,
+        "general_file_type": 14,
+        "critical292_f32_byte_exact": true,
+        "independent_f16_rounding_exact": true,
+        "finite_source_and_packed_scales": true,
+        "semantic_shapes_unchanged": true,
+        "profile_stamped_by_c_quantizer": true,
+        "publication_qualified": false,
+        "file_type_labels": {
+          "source": null,
+          "output": 14
+        }
+      },
+      "cases": [
+        {
+          "id": "mixed-de",
+          "logits_cos": 0.9997431371505817,
+          "logits_max_abs": 0.14133429527282715,
+          "probabilities_cos": 0.9999637354590938,
+          "probabilities_max_abs": 0.009868592023849487,
+          "final_norm_cos": 0.9907370923383464,
+          "final_norm_min_row_cos": 0.9157049019643162,
+          "worst_stage": {
+            "stage": "backbone/layer/22",
+            "min_row_cosine": 0.902139043716812
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "null-and-options",
+          "logits_cos": 0.9999073735083541,
+          "logits_max_abs": 0.10734081268310547,
+          "probabilities_cos": 0.9999322930376072,
+          "probabilities_max_abs": 0.012018218636512756,
+          "final_norm_cos": 0.9909516851946659,
+          "final_norm_min_row_cos": 0.9157044503153334,
+          "worst_stage": {
+            "stage": "backbone/layer/22",
+            "min_row_cosine": 0.9021399608661679
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "json-unicode",
+          "logits_cos": 0.9993632616685832,
+          "logits_max_abs": 0.19387006759643555,
+          "probabilities_cos": 0.9995982962819071,
+          "probabilities_max_abs": 0.016946643590927124,
+          "final_norm_cos": 0.9896973456518052,
+          "final_norm_min_row_cos": 0.9157052538094993,
+          "worst_stage": {
+            "stage": "backbone/layer/22",
+            "min_row_cosine": 0.9021401275024385
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "state-only-clip",
+          "logits_cos": 0.9999924965781077,
+          "logits_max_abs": 0.016872525215148926,
+          "probabilities_cos": 0.9999999974839673,
+          "probabilities_max_abs": 7.003545761108398e-05,
+          "final_norm_cos": 0.9927381241169929,
+          "final_norm_min_row_cos": 0.9157048871021556,
+          "worst_stage": {
+            "stage": "backbone/layer/22",
+            "min_row_cosine": 0.9021400616710902
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        }
+      ],
+      "summary": {
+        "logits_cos": 0.9993632616685832,
+        "probabilities_cos": 0.9995982962819071,
+        "final_norm_cos": 0.9896973456518052,
+        "probabilities_max_abs": 0.016946643590927124,
+        "typed_json_exact": 0,
+        "argmax_exact": 4
+      },
+      "timing": {
+        "plain_seconds": 44.422322671000074,
+        "observed_seconds": 43.768847505999474,
+        "repeat_seconds": 44.468211735000295
+      },
+      "strict_stage_failures": 202,
+      "bar": 0.94,
+      "passes_logits_bar": true,
+      "passes_final_norm_bar": true
+    },
+    "l18-23-q4": {
+      "phase": "complete",
+      "conversion": {
+        "identity": "l18-23-q4",
+        "counts": {
+          "F32": 292,
+          "F16": 0,
+          "Q8_0": 112,
+          "Q4_K": 38
+        },
+        "method": "q4_k",
+        "quantize_seconds": 28.233783796999887,
+        "output_sha256": "0d02f9b20321a5a5b736823abab53c0c53c6788a8e599a6b53bc2ce0ee849704",
+        "output_mib": 3300.1,
+        "recipe": "sweep-l18-23-q4",
+        "parameters": 1912297796,
+        "output_bytes": 3460420064,
+        "general_file_type": 14,
+        "critical292_f32_byte_exact": true,
+        "independent_f16_rounding_exact": true,
+        "finite_source_and_packed_scales": true,
+        "semantic_shapes_unchanged": true,
+        "profile_stamped_by_c_quantizer": true,
+        "publication_qualified": false,
+        "file_type_labels": {
+          "source": null,
+          "output": 14
+        }
+      },
+      "cases": [
+        {
+          "id": "mixed-de",
+          "logits_cos": 0.9999909985453492,
+          "logits_max_abs": 0.036083221435546875,
+          "probabilities_cos": 0.9999931557552604,
+          "probabilities_max_abs": 0.004577755928039551,
+          "final_norm_cos": 0.9888140825375801,
+          "final_norm_min_row_cos": 0.9210718958814619,
+          "worst_stage": {
+            "stage": "head/hidden_norm",
+            "min_row_cosine": 0.92107034681933
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "null-and-options",
+          "logits_cos": 0.9999797898062349,
+          "logits_max_abs": 0.032965898513793945,
+          "probabilities_cos": 0.9999985017434797,
+          "probabilities_max_abs": 0.0014680027961730957,
+          "final_norm_cos": 0.9895833660070288,
+          "final_norm_min_row_cos": 0.9605575769505239,
+          "worst_stage": {
+            "stage": "backbone/final_norm",
+            "min_row_cosine": 0.9605575769505239
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "json-unicode",
+          "logits_cos": 0.9999641048253742,
+          "logits_max_abs": 0.04051518440246582,
+          "probabilities_cos": 0.9999921088869358,
+          "probabilities_max_abs": 0.0026662349700927734,
+          "final_norm_cos": 0.9887823622022172,
+          "final_norm_min_row_cos": 0.9605574877225792,
+          "worst_stage": {
+            "stage": "backbone/final_norm",
+            "min_row_cosine": 0.9605574877225792
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "state-only-clip",
+          "logits_cos": 0.9998679875114149,
+          "logits_max_abs": 0.07122546434402466,
+          "probabilities_cos": 0.9999999451822817,
+          "probabilities_max_abs": 0.00032685045152902603,
+          "final_norm_cos": 0.9882841033234737,
+          "final_norm_min_row_cos": 0.9605578434787668,
+          "worst_stage": {
+            "stage": "backbone/final_norm",
+            "min_row_cosine": 0.9605578434787668
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        }
+      ],
+      "summary": {
+        "logits_cos": 0.9998679875114149,
+        "probabilities_cos": 0.9999921088869358,
+        "final_norm_cos": 0.9882841033234737,
+        "probabilities_max_abs": 0.004577755928039551,
+        "typed_json_exact": 0,
+        "argmax_exact": 4
+      },
+      "timing": {
+        "plain_seconds": 44.21723703400039,
+        "observed_seconds": 43.71557585800019,
+        "repeat_seconds": 44.367918347999876
+      },
+      "strict_stage_failures": 200,
+      "bar": 0.94,
+      "passes_logits_bar": true,
+      "passes_final_norm_bar": true
+    },
+    "all-q4": {
+      "phase": "complete",
+      "conversion": {
+        "identity": "all-q4",
+        "counts": {
+          "F32": 292,
+          "F16": 0,
+          "Q8_0": 0,
+          "Q4_K": 150
+        },
+        "method": "q4_k",
+        "quantize_seconds": 90.48208379900007,
+        "output_sha256": "3a07bcaa521be013dcddf8019f96cfe36b2bed049df92b7858e5af62aa564687",
+        "output_mib": 2808.1,
+        "recipe": "sweep-all-q4",
+        "parameters": 1912297796,
+        "output_bytes": 2944520672,
+        "general_file_type": 14,
+        "critical292_f32_byte_exact": true,
+        "independent_f16_rounding_exact": true,
+        "finite_source_and_packed_scales": true,
+        "semantic_shapes_unchanged": true,
+        "profile_stamped_by_c_quantizer": true,
+        "publication_qualified": false,
+        "file_type_labels": {
+          "source": null,
+          "output": 14
+        }
+      },
+      "cases": [
+        {
+          "id": "mixed-de",
+          "logits_cos": 0.9982381584403479,
+          "logits_max_abs": 0.4665975570678711,
+          "probabilities_cos": 0.9995199110881015,
+          "probabilities_max_abs": 0.037822186946868896,
+          "final_norm_cos": 0.9510625272116867,
+          "final_norm_min_row_cos": 0.6107429578651258,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.6106934285190402
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "null-and-options",
+          "logits_cos": 0.9941345135496816,
+          "logits_max_abs": 0.5306308269500732,
+          "probabilities_cos": 0.9995851455390907,
+          "probabilities_max_abs": 0.02522370219230652,
+          "final_norm_cos": 0.9447415514603975,
+          "final_norm_min_row_cos": 0.6001795054178957,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.5402131309118163
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "json-unicode",
+          "logits_cos": 0.9990089595932353,
+          "logits_max_abs": 0.24427473545074463,
+          "probabilities_cos": 0.9997736322514603,
+          "probabilities_max_abs": 0.014318346977233887,
+          "final_norm_cos": 0.936734089353367,
+          "final_norm_min_row_cos": 0.6107432902691472,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.6106937187862218
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "state-only-clip",
+          "logits_cos": 0.9929990570926396,
+          "logits_max_abs": 0.5325612053275108,
+          "probabilities_cos": 0.9999649932158519,
+          "probabilities_max_abs": 0.008189618587493896,
+          "final_norm_cos": 0.9605949683101389,
+          "final_norm_min_row_cos": 0.6107428283303702,
+          "worst_stage": {
+            "stage": "head/residual_scorer",
+            "min_row_cosine": -1.0
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        }
+      ],
+      "summary": {
+        "logits_cos": 0.9929990570926396,
+        "probabilities_cos": 0.9995199110881015,
+        "final_norm_cos": 0.936734089353367,
+        "probabilities_max_abs": 0.037822186946868896,
+        "typed_json_exact": 0,
+        "argmax_exact": 4
+      },
+      "timing": {
+        "plain_seconds": 44.21673095599999,
+        "observed_seconds": 44.22143615500045,
+        "repeat_seconds": 44.21969214599994
+      },
+      "strict_stage_failures": 203,
+      "bar": 0.94,
+      "passes_logits_bar": true,
+      "passes_final_norm_bar": false
+    },
+    "all-q4-down-q8": {
+      "phase": "complete",
+      "conversion": {
+        "identity": "all-q4-down-q8",
+        "counts": {
+          "F32": 292,
+          "F16": 0,
+          "Q8_0": 24,
+          "Q4_K": 126
+        },
+        "method": "q4_k",
+        "quantize_seconds": 72.53335703799985,
+        "output_sha256": "adc7fa473febfef3fac10eac6fa0bebb6f68932675d1613e24706a3b74d5e582",
+        "output_mib": 2952.1,
+        "recipe": "sweep-all-q4-down-q8",
+        "parameters": 1912297796,
+        "output_bytes": 3095515616,
+        "general_file_type": 14,
+        "critical292_f32_byte_exact": true,
+        "independent_f16_rounding_exact": true,
+        "finite_source_and_packed_scales": true,
+        "semantic_shapes_unchanged": true,
+        "profile_stamped_by_c_quantizer": true,
+        "publication_qualified": false,
+        "file_type_labels": {
+          "source": null,
+          "output": 14
+        }
+      },
+      "cases": [
+        {
+          "id": "mixed-de",
+          "logits_cos": 0.9990390438689425,
+          "logits_max_abs": 0.44865846633911133,
+          "probabilities_cos": 0.9999806923408189,
+          "probabilities_max_abs": 0.0078078508377075195,
+          "final_norm_cos": 0.9587531311534928,
+          "final_norm_min_row_cos": 0.6343965318857908,
+          "worst_stage": {
+            "stage": "backbone/final_norm",
+            "min_row_cosine": 0.6343965318857908
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "null-and-options",
+          "logits_cos": 0.9979414128038473,
+          "logits_max_abs": 0.3707892894744873,
+          "probabilities_cos": 0.9998601043169204,
+          "probabilities_max_abs": 0.015524942427873611,
+          "final_norm_cos": 0.9572808178347662,
+          "final_norm_min_row_cos": 0.6098626791358683,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.5567661299598102
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "json-unicode",
+          "logits_cos": 0.9993275493995994,
+          "logits_max_abs": 0.14869451522827148,
+          "probabilities_cos": 0.9982592585015934,
+          "probabilities_max_abs": 0.0358424186706543,
+          "final_norm_cos": 0.9491092304303442,
+          "final_norm_min_row_cos": 0.6343970288090067,
+          "worst_stage": {
+            "stage": "backbone/final_norm",
+            "min_row_cosine": 0.6343970288090067
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "state-only-clip",
+          "logits_cos": 0.9973891795079161,
+          "logits_max_abs": 0.3382731080055237,
+          "probabilities_cos": 0.9999842702686266,
+          "probabilities_max_abs": 0.005504488945007324,
+          "final_norm_cos": 0.9690501890708872,
+          "final_norm_min_row_cos": 0.6343966699576031,
+          "worst_stage": {
+            "stage": "backbone/final_norm",
+            "min_row_cosine": 0.6343966699576031
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        }
+      ],
+      "summary": {
+        "logits_cos": 0.9973891795079161,
+        "probabilities_cos": 0.9982592585015934,
+        "final_norm_cos": 0.9491092304303442,
+        "probabilities_max_abs": 0.0358424186706543,
+        "typed_json_exact": 0,
+        "argmax_exact": 4
+      },
+      "timing": {
+        "plain_seconds": 44.62532043600004,
+        "observed_seconds": 43.97085318000063,
+        "repeat_seconds": 44.02368123999986
+      },
+      "strict_stage_failures": 203,
+      "bar": 0.94,
+      "passes_logits_bar": true,
+      "passes_final_norm_bar": true
+    },
+    "all-q4-l20-23-q8": {
+      "phase": "complete",
+      "conversion": {
+        "identity": "all-q4-l20-23-q8",
+        "counts": {
+          "F32": 292,
+          "F16": 0,
+          "Q8_0": 25,
+          "Q4_K": 125
+        },
+        "method": "q4_k",
+        "quantize_seconds": 76.83350753600007,
+        "output_sha256": "ccc38d0e3784d5eae338b42eafe650e1c5016733cce535079e886307be52aa0a",
+        "output_mib": 2917.1,
+        "recipe": "sweep-all-q4-l20-23-q8",
+        "parameters": 1912297796,
+        "output_bytes": 3058815456,
+        "general_file_type": 14,
+        "critical292_f32_byte_exact": true,
+        "independent_f16_rounding_exact": true,
+        "finite_source_and_packed_scales": true,
+        "semantic_shapes_unchanged": true,
+        "profile_stamped_by_c_quantizer": true,
+        "publication_qualified": false,
+        "file_type_labels": {
+          "source": null,
+          "output": 14
+        }
+      },
+      "cases": [
+        {
+          "id": "mixed-de",
+          "logits_cos": 0.9982593100307682,
+          "logits_max_abs": 0.47139883041381836,
+          "probabilities_cos": 0.9995193064127319,
+          "probabilities_max_abs": 0.03802204132080078,
+          "final_norm_cos": 0.9571849319118171,
+          "final_norm_min_row_cos": 0.6183279571446977,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.6177524463847137
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "null-and-options",
+          "logits_cos": 0.9938759261110309,
+          "logits_max_abs": 0.5442731380462646,
+          "probabilities_cos": 0.9995519040456815,
+          "probabilities_max_abs": 0.026753373444080353,
+          "final_norm_cos": 0.9509148603805663,
+          "final_norm_min_row_cos": 0.6046157394440596,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.545499133802971
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "json-unicode",
+          "logits_cos": 0.9989714166123419,
+          "logits_max_abs": 0.2361593246459961,
+          "probabilities_cos": 0.999786568907153,
+          "probabilities_max_abs": 0.013366766273975372,
+          "final_norm_cos": 0.9434928694427774,
+          "final_norm_min_row_cos": 0.6183282861855437,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.6177527260450605
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "state-only-clip",
+          "logits_cos": 0.9923289809636268,
+          "logits_max_abs": 0.5557593703269958,
+          "probabilities_cos": 0.9999600832146308,
+          "probabilities_max_abs": 0.00874030590057373,
+          "final_norm_cos": 0.968382759076631,
+          "final_norm_min_row_cos": 0.618327816110169,
+          "worst_stage": {
+            "stage": "head/residual_scorer",
+            "min_row_cosine": -1.0
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        }
+      ],
+      "summary": {
+        "logits_cos": 0.9923289809636268,
+        "probabilities_cos": 0.9995193064127319,
+        "final_norm_cos": 0.9434928694427774,
+        "probabilities_max_abs": 0.03802204132080078,
+        "typed_json_exact": 0,
+        "argmax_exact": 4
+      },
+      "timing": {
+        "plain_seconds": 43.96478590700008,
+        "observed_seconds": 44.41672991099949,
+        "repeat_seconds": 43.815422157000285
+      },
+      "strict_stage_failures": 203,
+      "bar": 0.94,
+      "passes_logits_bar": true,
+      "passes_final_norm_bar": true
+    },
+    "all-q4-l23-q8": {
+      "phase": "complete",
+      "conversion": {
+        "identity": "all-q4-l23-q8",
+        "counts": {
+          "F32": 292,
+          "F16": 0,
+          "Q8_0": 7,
+          "Q4_K": 143
+        },
+        "method": "q4_k",
+        "quantize_seconds": 87.34001904700017,
+        "output_sha256": "0456fadb68360af8094b4b39bf332b60b6b11dcf2aca1c4221d9ec5cbe456a21",
+        "output_mib": 2833.1,
+        "recipe": "sweep-all-q4-l23-q8",
+        "parameters": 1912297796,
+        "output_bytes": 2970735072,
+        "general_file_type": 14,
+        "critical292_f32_byte_exact": true,
+        "independent_f16_rounding_exact": true,
+        "finite_source_and_packed_scales": true,
+        "semantic_shapes_unchanged": true,
+        "profile_stamped_by_c_quantizer": true,
+        "publication_qualified": false,
+        "file_type_labels": {
+          "source": null,
+          "output": 14
+        }
+      },
+      "cases": [
+        {
+          "id": "mixed-de",
+          "logits_cos": 0.9981447235622388,
+          "logits_max_abs": 0.47804784774780273,
+          "probabilities_cos": 0.9995364363659173,
+          "probabilities_max_abs": 0.03701061010360718,
+          "final_norm_cos": 0.9542427951744724,
+          "final_norm_min_row_cos": 0.6136623630542573,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.6125696272558204
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "null-and-options",
+          "logits_cos": 0.9944351316516692,
+          "logits_max_abs": 0.5185170769691467,
+          "probabilities_cos": 0.9995775104168955,
+          "probabilities_max_abs": 0.025650210678577423,
+          "final_norm_cos": 0.9478197338583546,
+          "final_norm_min_row_cos": 0.601626012772184,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.5411553026609305
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "json-unicode",
+          "logits_cos": 0.9989515263042782,
+          "logits_max_abs": 0.24843645095825195,
+          "probabilities_cos": 0.999755554629327,
+          "probabilities_max_abs": 0.014773368835449219,
+          "final_norm_cos": 0.9399854108945803,
+          "final_norm_min_row_cos": 0.6136627032391212,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.6125699145993617
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "state-only-clip",
+          "logits_cos": 0.9929403859261651,
+          "logits_max_abs": 0.5346361622214317,
+          "probabilities_cos": 0.9999642012782832,
+          "probabilities_max_abs": 0.00828099250793457,
+          "final_norm_cos": 0.9645686470955811,
+          "final_norm_min_row_cos": 0.6136622371193384,
+          "worst_stage": {
+            "stage": "head/residual_scorer",
+            "min_row_cosine": -1.0
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        }
+      ],
+      "summary": {
+        "logits_cos": 0.9929403859261651,
+        "probabilities_cos": 0.9995364363659173,
+        "final_norm_cos": 0.9399854108945803,
+        "probabilities_max_abs": 0.03701061010360718,
+        "typed_json_exact": 0,
+        "argmax_exact": 4
+      },
+      "timing": {
+        "plain_seconds": 44.11735825799951,
+        "observed_seconds": 43.6646789159995,
+        "repeat_seconds": 43.66693182200015
+      },
+      "strict_stage_failures": 203,
+      "bar": 0.94,
+      "passes_logits_bar": true,
+      "passes_final_norm_bar": false
+    }
+  },
+  "reference_artifact": {
+    "id": 12702553413,
+    "name": "josev-head-original-and-component-40429513945",
+    "size_in_bytes": 317814519,
+    "digest": "sha256:eff25c8ec207646602cb885abc6d17f7fc646cd2b0d7e5f7ab9b27650e175708",
+    "expires_at": "2027-01-25T00:56:13Z"
+  },
+  "original": {
+    "version_label": "v5",
+    "reference_sha256": "51a2e16b2ee1163b4cf08215263135c0ceb760a4525b1bb89c66f9bd8436a090",
+    "freeze_sha256": "9c85fae56186517b5721be547bc74e8f92bd8e7cdb45d38afb4340e029161fe7",
+    "source": "b2edf8c83c9aca1f8a9210198d47798ac13828b8",
+    "arrays": 251,
+    "array_bytes": 279119988,
+    "tensor_payload_bytes": 279087860,
+    "npy_header_bytes": 32128,
+    "original_rerun": false,
+    "original_payload_identity_verified": true
+  },
+  "model": {
+    "repo": "cstr/Josev-2B-SystemOne-GGUF",
+    "revision": "bffe62522f826b4c33f2e731d5b870ced5150a17",
+    "filename": "josev2b-systemone-f32.gguf",
+    "bytes": 7659180448,
+    "sha256": "72684e39d0eed526b40c5150c78b2d881d324c39e16af48060b3d741f526ccf2",
+    "download_verified": true
+  },
+  "f32_control": {
+    "cases": [
+      {
+        "id": "mixed-de",
+        "logits_cos": 0.9999999999998059,
+        "logits_max_abs": 5.0067901611328125e-06,
+        "probabilities_cos": 0.9999999999993117,
+        "probabilities_max_abs": 1.430511474609375e-06,
+        "final_norm_cos": 0.9999999999821697,
+        "final_norm_min_row_cos": 0.9999999973224394,
+        "worst_stage": {
+          "stage": "backbone/final_norm",
+          "min_row_cosine": 0.9999999973224394
+        },
+        "typed_json_exact": true,
+        "argmax_exact": true
+      },
+      {
+        "id": "null-and-options",
+        "logits_cos": 0.9999999999998787,
+        "logits_max_abs": 5.245208740234375e-06,
+        "probabilities_cos": 0.9999999999997978,
+        "probabilities_max_abs": 6.556510925292969e-07,
+        "final_norm_cos": 0.9999999999836359,
+        "final_norm_min_row_cos": 0.999999999585002,
+        "worst_stage": {
+          "stage": "backbone/layer/14",
+          "min_row_cosine": 0.9999999989373676
+        },
+        "typed_json_exact": true,
+        "argmax_exact": true
+      },
+      {
+        "id": "json-unicode",
+        "logits_cos": 0.9999999999970808,
+        "logits_max_abs": 1.633167266845703e-05,
+        "probabilities_cos": 0.9999999999937901,
+        "probabilities_max_abs": 2.086162567138672e-06,
+        "final_norm_cos": 0.9999999999881762,
+        "final_norm_min_row_cos": 0.9999999999206876,
+        "worst_stage": {
+          "stage": "head/hidden_norm",
+          "min_row_cosine": 0.9999999999203918
+        },
+        "typed_json_exact": true,
+        "argmax_exact": true
+      },
+      {
+        "id": "state-only-clip",
+        "logits_cos": 0.9999999999993441,
+        "logits_max_abs": 5.4836273193359375e-06,
+        "probabilities_cos": 0.9999999999999986,
+        "probabilities_max_abs": 5.4016709327697754e-08,
+        "final_norm_cos": 0.9999999999957239,
+        "final_norm_min_row_cos": 0.9999999999235741,
+        "worst_stage": {
+          "stage": "head/hidden_norm",
+          "min_row_cosine": 0.9999999999235382
+        },
+        "typed_json_exact": true,
+        "argmax_exact": true
+      }
+    ],
+    "summary": {
+      "logits_cos": 0.9999999999970808,
+      "probabilities_cos": 0.9999999999937901,
+      "final_norm_cos": 0.9999999999821697,
+      "probabilities_max_abs": 2.086162567138672e-06,
+      "typed_json_exact": 4,
+      "argmax_exact": 4
+    },
+    "timing": {
+      "plain_seconds": 55.79557588199998,
+      "observed_seconds": 55.95138760100002,
+      "repeat_seconds": 55.956325924
+    },
+    "strict_stage_failures": 0
+  },
+  "completed": true
+}

@@ -47,8 +47,9 @@ Re-scored status of this branch's Q4_K lanes (no lane is qualified):
 
 | Lane | Measured Q4_K final output | Verdict under the bar |
 | --- | --- | --- |
-| Josev full150-Q4_K (v4) | Final-norm global cosine 0.9367–0.9606 (min row 0.6002); typed responses not exact in all four cases; final-logit cosine not recorded | Not qualified: one case is below 0.94 and decoded output differs |
-| Josev mixed A/B/C | Recipes and authored controls only | Unmeasured |
+| Josev full150-Q4_K (v4) | Head-logit cosine min 0.99300; final-norm global cosine 0.9367–0.9606 (min row 0.6002); typed JSON 0/4 exact, option argmax 4/4 ([sweep](josev2b-q4k-sweep.md)) | Clears the bar on the judged head-logit output; fails it on the stricter final-norm diagnostic; not token exact |
+| Josev mixed A/B/C | Rescored from 40787077302: head-logit 0.99680/0.99917/0.99999, final-norm 0.97015/0.98000/0.99830; 3,446–5,126 MiB (F16 non-Q4 projections, not smaller than Q8_0) | Clear the bar; superseded by the Q8_0-based sweep |
+| Josev Q8_0-based sweep (41615751516, portable CPU) | `josev_q4k_down8_v1` 2,952 MiB (Q8_0 3,462): head-logit 0.99739, final-norm 0.94911; Q8_0 0.99995/0.99944; typed JSON 0/4, argmax 4/4 | Q4_K mix and Q8_0 clear their bars on both metrics; no CUDA path exists for Josev |
 | UltraBERT mixed Q4_K | Initial credential/lineage failures and model-free controls only | Unmeasured |
 | MoEdern 1.5M/27M/115M padded Q4_K | Gated runtime/profile controls; 1.5M SciFact panel ran F32 only (`q4_attempted` false) | Unmeasured |
 | Unlimited-OCR-2 mixed Q4_K (v3) | F16 control exact on four cases; conversion stopped at `v.pos_embed` protection, zero Q4 forwards | Unmeasured |

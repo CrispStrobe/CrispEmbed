@@ -20,6 +20,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'tools/unlimited-ocr2-q4k'))
 import contract
 import overlay
+
+FROZEN_UNLIMITED = '12401f4af0516d7692ad824496ee10a3ad3e0baa'
 import adapter
 import panel
 import build_profile
@@ -121,9 +123,16 @@ class Q4Contract(unittest.TestCase):
             contract.selected({}, 'last1')
 
     def test_overlay_source_authentication_and_retained_connections(self):
-        original = (ROOT / 'src/unlimited_ocr.cpp').read_bytes()
+        # Historical guard: the overlay patches the frozen source of 12401f4a
+        # (SHA-256 overlay.SOURCE_SHA). Later runtime edits (e.g. de7efac0 F32 vision
+        # default) legitimately change the working tree, so authenticate against the
+        # frozen commit's blob; never re-pin SOURCE_SHA to the new tree.
+        original = subprocess.check_output(['git', 'show', FROZEN_UNLIMITED + ':src/unlimited_ocr.cpp'], cwd=ROOT)
         patched = overlay.transform(original)
-        self.assertEqual(original, (ROOT / 'src/unlimited_ocr.cpp').read_bytes())
+        current = (ROOT / 'src/unlimited_ocr.cpp').read_bytes()
+        if current != original:  # the guard still rejects any other tree
+            with self.assertRaisesRegex(ValueError, 'SHA differs'):
+                overlay.transform(current)
         self.assertTrue(patched.startswith(b'#include <stdexcept>\n'))
         self.assertIn(b'for (ggml_tensor * retained', patched)
         self.assertIn(b'ggml_set_output(retained)', patched)

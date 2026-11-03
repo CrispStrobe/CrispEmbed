@@ -195,6 +195,19 @@ Source: `docs/gpu-support-matrix.md` §CUDA audit (branch `feat/cuda-audit`, Kag
 - Metal A/B of the new `CRISPEMBED_PAN_GPU` / `CRISPEMBED_RESTORMER_GPU` (CUDA-only
   defaults until measured there).
 
+## Josev Q4_K sweep — 3 November 2026 (perf/q4k-josev-20261103)
+
+Source: `docs/josev2b-q4k-sweep.md`. Portable hosted CPU, frozen original reference.
+`josev_q4k_down8_v1` (2,952 MiB vs Q8_0 3,462) clears the Q4_K bar on head logits
+(0.99739) and final norm (0.94911); Q8_0 clears 0.97 (0.99995/0.99944).
+
+- Coordinator: Josev Q8_0/Q4_K_MIX publication needs a quantized branch in
+  `tools/ci-heavy/josev_publish.py` first (`docs/josev2b-q4k-publication-v1.json`
+  is prepared, `dispatch_ready` false). Not published.
+- No Q4_K recipe is typed-JSON exact (0/4; argmax 4/4). Strict 0.002/0.99999 stage
+  budgets stay failed diagnostics.
+- CUDA: Josev's packed/composed runtime is CPU-only; a CUDA arm needs a backend path.
+
 ## TeleOCR / MinerU Q4_K-class recipes — 2 November 2026 (feat/qwen2vl-q4k-recipes)
 
 Source: `docs/qwen2vl-q4k-recipes.md`. Winners clear the Q4_K bar on CPU, Metal and
@@ -535,9 +548,24 @@ handoff take precedence over historical commands.
      cosine>=0.999866 (measured 0.0025544/0.99988863 plus 20%). This one is
      accepted **without attribution**. The scope is narrower than an
      arm64-vs-x86 rule because Linux arm64 vs x86 passes strict at 1.2e-4.
+     **Attributed** by run41638730050
+     ([receipt](tests/results/packaging/macos-desktop-drift-attribution-v1.json)):
+     the whole drift is the Metal GPU backend that the desktop consumer selects
+     (paravirtual device). With `CRISPEMBED_FORCE_CPU=1`, the same macOS package
+     matches Linux arm64 within 5.14e-7 on macos-14 and macos-15. CPU compile
+     differences (AppleClang, Accelerate, llamafile, -march) contribute at most
+     5.14e-7, so no build-config fix applies and release builds stay unchanged.
+     **Owner decision (3 Nov 2026): keep the v4 macOS tolerance; the v5 proposal
+     below is declined and not scheduled.** Recorded for reference only:
+     a v5 protocol could run the
+     macOS desktop parity review with `CRISPEMBED_FORCE_CPU=1`
+     (measured A/B vs Linux x86_64: 0.0025544/0.99988863 -> 1.20e-4/0.9999997,
+     strict pass) and drop the v4 macOS tolerance. A separate Metal-labelled
+     arm would then keep the GPU path covered. Before that, measure which
+     backend is closer to an F32 reference. The Metal IQ4_XS mul_mv
+     F32-activation hypothesis is unverified.
 
-   Optional follow-ups, not scheduled: (a) attribute the macOS arm64 drift with
-   the same-input op-by-op method; (b) a parked multi-kernel native-order WASM
+   Optional follow-ups, not scheduled: (a) macOS attribution: done, see above; (b) a parked multi-kernel native-order WASM
    build (IQ4_NL tinyBLAS order, IQ4_XS AVX2 order, flash
    `vec_dot_f32`/`vec_mad_f32` with fmaf and AVX lane order, matching expf).
    Nothing is qualified, there is no release alias and the app stays on 0.17.12.

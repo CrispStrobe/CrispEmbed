@@ -10,6 +10,29 @@ on two runner CPUs); mixed `minicpm_q4k_v1` (mix2) 0.9671 at 971 MiB and `minicp
 kaggle CLI before model access; the F32 arm failed graph-decoder init. Details:
 `docs/minicpm-ocr-q4k.md`, receipts `tests/results/minicpm-ocr/q4k-sweep/`.
 
+## 3 November 2026 — macOS arm64 desktop drift attributed to the Metal backend
+
+* The producer configs (40724938611) differ a lot. macOS uses AppleClang with Metal, Accelerate
+  BLAS and the default llamafile setting. Linux arm64 uses GCC with BLAS and llamafile off and
+  armv8.2+fp16+dotprod. The v4 macOS consumer log shows `using MTL0 backend` (Apple Paravirtual device).
+* Run 41638730050 used branch `audit/macos-desktop-drift-v1` at the v4 source, the exact v4
+  producer package and the stored v4 vectors of 41587063385. On macos-14 and macos-15, the
+  default (Metal) arm reproduces the stored macOS vector within 5e-7. With
+  `CRISPEMBED_FORCE_CPU=1`, macOS matches Linux arm64 within 5.14e-7 and Linux x86_64 at
+  1.20e-4/0.9999997 (strict). The Linux arm64 control is unchanged and every repeat is identical.
+* The drift is therefore the GPU backend, not a CPU build difference, and no build fix applies.
+  The v5 CPU-review proposal is in PLAN. Gates, defaults and release builds are unchanged.
+  Receipt: `tests/results/packaging/macos-desktop-drift-attribution-v1.json`.
+
+## 3 November 2026 — Josev Q4_K final-output cosine and sensitivity sweep
+
+Earlier Josev quantized panels (v4, mixed A/B/C 40787077302, protected Q8 40838785499,
+last-projection 40853720400) were rescored with final-output cosines from their retained
+comparator moments (`tests/results/josev2b/q4k-final-output-rescore.json`). A 13-recipe
+Q8_0-based sweep ran on portable hosted CPU (41615751516; initial rejections
+41588071746 file-type check and 41590988284 key clash retained). v4 storage reproduces to
+all printed digits. Winner `josev_q4k_down8_v1`: 2,952 MiB, head-logit 0.99739,
+final-norm 0.94911, argmax 4/4, typed JSON 0/4. Details: `docs/josev2b-q4k-sweep.md`.
 ## 3 November 2026 — Successor assets v4: macOS arm64 desktop tolerance; whole run green
 
 * Owner decision: accept the measured native desktop drift without attribution. The stored

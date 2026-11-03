@@ -1,0 +1,236 @@
+{
+  "cases": [
+    {
+      "id": "mixed-de",
+      "native_response_text": "{\"model\":\"mayflowergmbh/Josev-2B\",\"answers\":{\"bezahlt\":{\"type\":\"noul\",\"noul\":0.9997},\"status\":{\"type\":\"choice\",\"choice\":\"a_bezahlt\",\"confidence\":0.9992,\"probabilities\":{\"z_offen\":0.0008,\"a_bezahlt\":0.9992}},\"sicherheit\":{\"type\":\"score\",\"score\":1.2641,\"confidence\":0.524,\"legend\":{\"0\":\"unwahrscheinlich\",\"1\":\"unklar\",\"2\":\"wahrscheinlich\"},\"probabilities\":{\"0\":0.2599,\"1\":0.2162,\"2\":0.524}}},\"usage\":{\"input_tokens\":319,\"output_tokens\":0}}",
+      "original_response": {
+        "model": "mayflowergmbh/Josev-2B",
+        "answers": {
+          "bezahlt": {
+            "type": "noul",
+            "noul": 0.9997
+          },
+          "status": {
+            "type": "choice",
+            "choice": "a_bezahlt",
+            "confidence": 0.9992,
+            "probabilities": {
+              "z_offen": 0.0008,
+              "a_bezahlt": 0.9992
+            }
+          },
+          "sicherheit": {
+            "type": "score",
+            "score": 1.2168,
+            "confidence": 0.4861,
+            "legend": {
+              "0": "unwahrscheinlich",
+              "1": "unklar",
+              "2": "wahrscheinlich"
+            },
+            "probabilities": {
+              "0": 0.2693,
+              "1": 0.2446,
+              "2": 0.4861
+            }
+          }
+        },
+        "usage": {
+          "input_tokens": 319,
+          "output_tokens": 0
+        }
+      },
+      "complete_typed_json_exact": false,
+      "original_canonical_json_bytes_exact": false,
+      "fields": [
+        {
+          "id": "bezahlt",
+          "type": 0,
+          "ordered_option_ids": [
+            "true",
+            "false"
+          ],
+          "original_argmax": 0,
+          "native_argmax": 0,
+          "discrete_argmax_exact": true,
+          "ordinal_expectation": null
+        },
+        {
+          "id": "status",
+          "type": 1,
+          "ordered_option_ids": [
+            "a_bezahlt",
+            "z_offen"
+          ],
+          "original_argmax": 0,
+          "native_argmax": 0,
+          "discrete_argmax_exact": true,
+          "ordinal_expectation": null
+        },
+        {
+          "id": "sicherheit",
+          "type": 2,
+          "ordered_option_ids": [
+            "0",
+            "1",
+            "2"
+          ],
+          "original_argmax": 2,
+          "native_argmax": 2,
+          "discrete_argmax_exact": null,
+          "ordinal_expectation": {
+            "original": 1.2168480455875397,
+            "native": 1.2641047835350037,
+            "absolute_error": 0.04725673794746399,
+            "budget": 0.001,
+            "passed": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "null-and-options",
+      "native_response_text": "{\"model\":\"mayflowergmbh/Josev-2B\",\"answers\":{\"Leerstand\":{\"type\":\"choice\",\"choice\":\"a\",\"confidence\":0.8888,\"probabilities\":{\"β\":0.1112,\"a\":0.8888}},\"bestätigt\":{\"type\":\"noul\",\"noul\":0.0295}},\"usage\":{\"input_tokens\":197,\"output_tokens\":0}}",
+      "original_response": {
+        "model": "mayflowergmbh/Josev-2B",
+        "answers": {
+          "Leerstand": {
+            "type": "choice",
+            "choice": "a",
+            "confidence": 0.8636,
+            "probabilities": {
+              "β": 0.1364,
+              "a": 0.8636
+            }
+          },
+          "bestätigt": {
+            "type": "noul",
+            "noul": 0.053
+          }
+        },
+        "usage": {
+          "input_tokens": 197,
+          "output_tokens": 0
+        }
+      },
+      "complete_typed_json_exact": false,
+      "original_canonical_json_bytes_exact": false,
+      "fields": [
+        {
+          "id": "Leerstand",
+          "type": 1,
+          "ordered_option_ids": [
+            "a",
+            "β"
+          ],
+          "original_argmax": 0,
+          "native_argmax": 0,
+          "discrete_argmax_exact": true,
+          "ordinal_expectation": null
+        },
+        {
+          "id": "bestätigt",
+          "type": 0,
+          "ordered_option_ids": [
+            "true",
+            "false"
+          ],
+          "original_argmax": 1,
+          "native_argmax": 1,
+          "discrete_argmax_exact": true,
+          "ordinal_expectation": null
+        }
+      ]
+    },
+    {
+      "id": "json-unicode",
+      "native_response_text": "{\"model\":\"mayflowergmbh/Josev-2B\",\"answers\":{\"Stufe\":{\"type\":\"score\",\"score\":0.8388,\"confidence\":0.6697,\"legend\":{\"0\":null,\"1\":\"wenig\",\"2\":\"viel\"},\"probabilities\":{\"0\":0.2457,\"1\":0.6697,\"2\":0.0846}}},\"usage\":{\"input_tokens\":165,\"output_tokens\":0}}",
+      "original_response": {
+        "model": "mayflowergmbh/Josev-2B",
+        "answers": {
+          "Stufe": {
+            "type": "score",
+            "score": 0.8278,
+            "confidence": 0.684,
+            "legend": {
+              "0": null,
+              "1": "wenig",
+              "2": "viel"
+            },
+            "probabilities": {
+              "0": 0.2441,
+              "1": 0.684,
+              "2": 0.0719
+            }
+          }
+        },
+        "usage": {
+          "input_tokens": 165,
+          "output_tokens": 0
+        }
+      },
+      "complete_typed_json_exact": false,
+      "original_canonical_json_bytes_exact": false,
+      "fields": [
+        {
+          "id": "Stufe",
+          "type": 2,
+          "ordered_option_ids": [
+            "0",
+            "1",
+            "2"
+          ],
+          "original_argmax": 1,
+          "native_argmax": 1,
+          "discrete_argmax_exact": null,
+          "ordinal_expectation": {
+            "original": 0.8277701437473297,
+            "native": 0.8388368487358093,
+            "absolute_error": 0.011066704988479614,
+            "budget": 0.001,
+            "passed": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "state-only-clip",
+      "native_response_text": "{\"model\":\"mayflowergmbh/Josev-2B\",\"answers\":{\"Bestellung\":{\"type\":\"noul\",\"noul\":0.9852}},\"usage\":{\"input_tokens\":512,\"output_tokens\":0}}",
+      "original_response": {
+        "model": "mayflowergmbh/Josev-2B",
+        "answers": {
+          "Bestellung": {
+            "type": "noul",
+            "noul": 0.9934
+          }
+        },
+        "usage": {
+          "input_tokens": 512,
+          "output_tokens": 0
+        }
+      },
+      "complete_typed_json_exact": false,
+      "original_canonical_json_bytes_exact": false,
+      "fields": [
+        {
+          "id": "Bestellung",
+          "type": 0,
+          "ordered_option_ids": [
+            "true",
+            "false"
+          ],
+          "original_argmax": 0,
+          "native_argmax": 0,
+          "discrete_argmax_exact": true,
+          "ordinal_expectation": null
+        }
+      ]
+    }
+  ],
+  "complete_typed_json_exact": false,
+  "ordered_discrete_option_argmax_exact": true,
+  "ordinal_expectation_within_original_0_001": false,
+  "passed": false,
+  "independent_task_quality": false,
+  "publication_qualified": false
+}

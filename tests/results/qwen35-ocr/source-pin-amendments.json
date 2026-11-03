@@ -166,12 +166,13 @@
         },
         {
           "from_sha256": "c348d502f476a1c6edf2befe758ae6bd5d4ad28257b1928561db1c8e815c952f",
-          "to_sha256": "6c1c3fa8702e213aace4f44a0f56c5118199666bc15733b02610f974b5003685",
-          "to_blob": "07e89fa91ed60c1bb7c07a97bf8154bc8ce72c6b",
-          "recorded_at_commit": "71e97f0ec13405075c87124e5f15d6e29cc82ba8",
+          "to_sha256": "642daedb65eaa2465afde262876efe86e7d842842902362e2d66a12242725739",
+          "to_blob": "2d1648ada7a59f7aeb40eba8aedd31ef6a728096",
+          "recorded_at_commit": "958d05933fa7085901abca87332022712812a1e4",
           "recorded": "2026-11-03",
           "changed_by": [
-            "f5484251abe0dab1543053bf7a7335c7ff1c760d MiniCPM-OCR: named Q4_K policies minicpm_q4k_v1/minicpm_q4k_min_v1, cosine-gated Q4_K_MIX publication recipe",
+            "b967c28a11bbcdc34f469aaaa69f3c2f46d92ce4 Josev Q4_K sweep 41615751516 receipts; josev_q4k_down8_v1 policy; confirmation run",
+            "bf5a1611d00e6c0d661b0b65ef37adfb598f7cc0 quantize: opt-in CRISPEMBED_QUANTIZE_JOSEV_POLICY named mixed Q4_K policies + recipe-equivalence test",
             "b0988c58dcb7f7bb93ebb33c7c99195f38669110 Merge PR #112 (feat/qwen2vl-q4k-recipes) into fold",
             "304871c9e5f4c01127a19946651e1f05b31547a3 quantize: make standard GGUF file-type labels opt-in; keep legacy default",
             "2f50aa61800b890b165e7573775f789b5a0fe9cb Merge origin/main into work/portfolio-closure-q4k-20261028",
@@ -180,7 +181,18 @@
             "0023fe16632805c5da5de2e40e5df29114ebe20e Correct standard GGUF headers and prepare authenticated metadata bridge",
             "715c5860169d3949677b183ccf5feff9a7ab1990 quantize: honor literal F16 4D patch casts and preserve actual MiniCPM rejection"
           ],
-          "reason": "perf/q4k-minicpm-ocr-20261103: opt-in named policies (CRISPEMBED_QUANTIZE_MINICPM_POLICY=minicpm_q4k_v1|minicpm_q4k_min_v1) guarded to minicpm_ocr sources and the q8_0 base type. Without the env var every existing quantization decision is unchanged."
+          "reason": "Opt-in CRISPEMBED_QUANTIZE_JOSEV_POLICY rule tables (josev_q4k_mlp_v1, josev_q4k_down8_v1); no change to qwen35 or default quantizer behaviour"
+        },
+        {
+          "from_sha256": "642daedb65eaa2465afde262876efe86e7d842842902362e2d66a12242725739",
+          "to_sha256": "67ed51bf27f03984308aef24be24d1fcb43f97e0e6252fc60fd4b19d16e98d93",
+          "to_blob": "86d9ef60a53f82ee63f330915a79a5c5d5cb9433",
+          "recorded_at_commit": "ab3977c79f05ef898d699a7f06631b310429ccdc",
+          "recorded": "2026-11-03",
+          "changed_by": [
+            "f5484251abe0dab1543053bf7a7335c7ff1c760d MiniCPM-OCR: named Q4_K policies minicpm_q4k_v1/minicpm_q4k_min_v1, cosine-gated Q4_K_MIX publication recipe"
+          ],
+          "reason": "perf/q4k-minicpm-ocr-20261103: opt-in named policies (CRISPEMBED_QUANTIZE_MINICPM_POLICY=minicpm_q4k_v1|minicpm_q4k_min_v1) guarded to minicpm_ocr sources and the q8_0 base type, merged with the Josev policies. Without the env var every existing quantization decision is unchanged."
         }
       ]
     }
