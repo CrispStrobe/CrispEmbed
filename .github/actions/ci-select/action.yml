@@ -2,8 +2,14 @@ name: Select ordinary CI lanes
 description: Compare the complete PR or push and conservatively route build jobs
 outputs:
   native:
-    description: Desktop native builds
+    description: Linux desktop native build (implied by either other desktop leg)
     value: ${{ steps.select.outputs.native }}
+  native_windows:
+    description: Windows desktop native build
+    value: ${{ steps.select.outputs.native_windows }}
+  native_macos:
+    description: macOS desktop native build
+    value: ${{ steps.select.outputs.native_macos }}
   native_tests:
     description: General native model-free test suite
     value: ${{ steps.select.outputs.native_tests }}
@@ -31,6 +37,9 @@ outputs:
   bundle:
     description: All-platform Flutter native bundle
     value: ${{ steps.select.outputs.bundle }}
+  desktop:
+    description: JSON list of selected desktop matrix legs (build.yml)
+    value: ${{ steps.select.outputs.desktop }}
   full:
     description: Full fallback was necessary
     value: ${{ steps.select.outputs.full }}

@@ -1,8 +1,6 @@
 name: UltraBERT F32 public text API
+# The feat/ultrabert-f32-api lane push trigger was retired after PR74/75 merged.
 on:
-  push:
-    branches: ['feat/ultrabert-f32-api']
-    paths: ['.github/workflows/ultrabert-api.yml']
   workflow_dispatch:
     inputs:
       bindings_only:

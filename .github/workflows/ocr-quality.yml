@@ -2,6 +2,7 @@ name: OCR quality contract
 on:
   workflow_dispatch:
   push:
+    branches: [main]
     paths:
       - '.github/workflows/ocr-quality.yml'
       - 'tools/ocr_quality.py'

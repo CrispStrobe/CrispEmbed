@@ -1,12 +1,100 @@
 name: Build
 
-# Always start the cheap guards/selector, including docs-only PRs. Expensive
-# jobs are conditional; the stable Build result check is never path-filtered.
+# Push and PR use the same dependency map (tools/ci_selection.py). Pure
+# docs/evidence changes start no run (the paths filter below; main has no
+# required checks). Every other change runs the cheap selector, the jobs it
+# selects, and an always-run result check that rejects unexpected skips.
 on:
   push:
     branches: [main]
+    # Pure documentation/evidence changes start no run at all. Everything
+    # else reaches the selector job, which routes it (tools/ci_selection.py);
+    # tests/test_ci_selection.py proves every file excluded here selects no
+    # lane. Identical in all five ordinary workflows, for push and PR.
+    paths:
+      - '**'
+      - '!**.md'
+      - '!docs/**'
+      - '!tests/results/**'
+      - '!handover-prompts/**'
+      - '!hf_readmes/**'
+      - '!.github/workflows/**'
+      - '!tools/ci-heavy/**'
+      - '!tools/kaggle/**'
+      - '!tools/colab/**'
+      - '!models/**'
+      - 'docs/*inpaint*'
+      - 'docs/migan*'
+      - 'docs/teleocr-publication-v1.json'
+      - 'tests/results/migan/**'
+      - 'tests/results/ultrabert/**'
+      - 'tools/ci-heavy/*ultrabert*'
+      - 'tools/ci-heavy/migan_native.py'
+      - 'tools/ci-heavy/inpaint_gguf_publish.py'
+      - 'tools/kaggle/*/kaggle_harness.py'
+      - 'models/convert-migan-to-gguf.py'
+      - 'models/convert-latent-inpaint-to-gguf.py'
+      - 'models/convert-ultrabert-to-gguf.py'
+      - 'tests/results/**.c'
+      - 'tests/results/**.cc'
+      - 'tests/results/**.cpp'
+      - 'tests/results/**.h'
+      - 'tests/results/**.hpp'
+      - 'tools/**.c'
+      - 'tools/**.cc'
+      - 'tools/**.cpp'
+      - 'tools/**.h'
+      - 'tools/**.hpp'
+      - '.github/workflows/build.yml'
+      - '.github/workflows/build-wasm.yml'
+      - '.github/workflows/build-wasm-embed.yml'
+      - '.github/workflows/rust-crates.yml'
+      - '.github/workflows/inpaint-cli.yml'
   pull_request:
     branches: [main]
+    # Pure documentation/evidence changes start no run at all. Everything
+    # else reaches the selector job, which routes it (tools/ci_selection.py);
+    # tests/test_ci_selection.py proves every file excluded here selects no
+    # lane. Identical in all five ordinary workflows, for push and PR.
+    paths:
+      - '**'
+      - '!**.md'
+      - '!docs/**'
+      - '!tests/results/**'
+      - '!handover-prompts/**'
+      - '!hf_readmes/**'
+      - '!.github/workflows/**'
+      - '!tools/ci-heavy/**'
+      - '!tools/kaggle/**'
+      - '!tools/colab/**'
+      - '!models/**'
+      - 'docs/*inpaint*'
+      - 'docs/migan*'
+      - 'docs/teleocr-publication-v1.json'
+      - 'tests/results/migan/**'
+      - 'tests/results/ultrabert/**'
+      - 'tools/ci-heavy/*ultrabert*'
+      - 'tools/ci-heavy/migan_native.py'
+      - 'tools/ci-heavy/inpaint_gguf_publish.py'
+      - 'tools/kaggle/*/kaggle_harness.py'
+      - 'models/convert-migan-to-gguf.py'
+      - 'models/convert-latent-inpaint-to-gguf.py'
+      - 'models/convert-ultrabert-to-gguf.py'
+      - 'tests/results/**.c'
+      - 'tests/results/**.cc'
+      - 'tests/results/**.cpp'
+      - 'tests/results/**.h'
+      - 'tests/results/**.hpp'
+      - 'tools/**.c'
+      - 'tools/**.cc'
+      - 'tools/**.cpp'
+      - 'tools/**.h'
+      - 'tools/**.hpp'
+      - '.github/workflows/build.yml'
+      - '.github/workflows/build-wasm.yml'
+      - '.github/workflows/build-wasm-embed.yml'
+      - '.github/workflows/rust-crates.yml'
+      - '.github/workflows/inpaint-cli.yml'
   workflow_dispatch:
 
 permissions:
@@ -25,6 +113,8 @@ jobs:
     timeout-minutes: 10
     outputs:
       native: ${{ steps.select.outputs.native }}
+      native_windows: ${{ steps.select.outputs.native_windows }}
+      native_macos: ${{ steps.select.outputs.native_macos }}
       native_tests: ${{ steps.select.outputs.native_tests }}
       mobile: ${{ steps.select.outputs.mobile }}
       sibling: ${{ steps.select.outputs.sibling }}
@@ -34,13 +124,46 @@ jobs:
       inpaint_python: ${{ steps.select.outputs.inpaint_python }}
       inpaint_native: ${{ steps.select.outputs.inpaint_native }}
       bundle: ${{ steps.select.outputs.bundle }}
+      desktop: ${{ steps.select.outputs.desktop }}
       full: ${{ steps.select.outputs.full }}
+      desktop_matrix: ${{ steps.desktop.outputs.matrix }}
     steps:
       - uses: actions/checkout@v4
       - name: CI selection and aggregate-gate controls
         run: python3 tests/test_ci_selection.py -v
       - id: select
         uses: ./.github/actions/ci-select
+      # Desktop legs: Linux for every compiled change; Windows (MSVC) for PR
+      # source edits; macOS for Apple/Metal-specific sources. Main pushes with
+      # compiled changes, shared core/CMake/ggml and manual runs select all
+      # three (tools/ci_selection.py). The platform table lives here.
+      - id: desktop
+        name: Desktop matrix for the selected legs
+        shell: python
+        env:
+          SELECTED: ${{ steps.select.outputs.desktop }}
+        run: |
+          import json, os
+          platforms = [
+              {"name": "linux-x86_64", "os": "ubuntu-latest",
+               "cmake_args": "-DGGML_NATIVE=OFF -DGGML_BLAS=OFF -DGGML_LLAMAFILE=ON",
+               "lib_name": "libcrispembed.so"},
+              {"name": "macos-arm64", "os": "macos-latest",
+               "cmake_args": "-DGGML_NATIVE=OFF -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0 -DCMAKE_OSX_ARCHITECTURES=arm64 -DGGML_METAL=ON -DGGML_METAL_EMBED_LIBRARY=ON -DGGML_BLAS=ON -DGGML_BLAS_VENDOR=Apple",
+               "lib_name": "libcrispembed.dylib"},
+              {"name": "windows-x86_64", "os": "windows-latest",
+               "cmake_args": "-DGGML_NATIVE=OFF -DGGML_BLAS=OFF",
+               "lib_name": "crispembed.dll"},
+          ]
+          selected = json.loads(os.environ["SELECTED"])
+          known = {p["name"] for p in platforms}
+          if not isinstance(selected, list) or not set(selected) <= known:
+              raise SystemExit("invalid desktop selection: %r" % (selected,))
+          # Never an empty matrix: the build job is skipped when native is false.
+          include = [p for p in platforms if p["name"] in selected] or platforms[:1]
+          print("Desktop legs:", ", ".join(p["name"] for p in include))
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as out:
+              out.write("matrix=" + json.dumps(include) + "\n")
       - name: Test mains route through clean_exit
         run: bash tools/check_test_clean_exit.sh
       - name: Workflow toolchains are version-pinned
@@ -64,19 +187,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - name: linux-x86_64
-            os: ubuntu-latest
-            cmake_args: -DGGML_NATIVE=OFF -DGGML_BLAS=OFF -DGGML_LLAMAFILE=ON
-            lib_name: libcrispembed.so
-          - name: macos-arm64
-            os: macos-latest
-            cmake_args: -DGGML_NATIVE=OFF -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0 -DCMAKE_OSX_ARCHITECTURES=arm64 -DGGML_METAL=ON -DGGML_METAL_EMBED_LIBRARY=ON -DGGML_BLAS=ON -DGGML_BLAS_VENDOR=Apple
-            lib_name: libcrispembed.dylib
-          - name: windows-x86_64
-            os: windows-latest
-            cmake_args: -DGGML_NATIVE=OFF -DGGML_BLAS=OFF
-            lib_name: crispembed.dll
+        include: ${{ fromJSON(needs.guards.outputs.desktop_matrix) }}
 
     steps:
       - uses: actions/checkout@v4

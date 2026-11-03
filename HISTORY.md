@@ -1,3 +1,24 @@
+## 3 November 2026 — CI runs only the jobs a change needs
+
+The shared runner pool was starved (about 4 concurrent jobs, 130+ queued runs). Building on
+#125's selector, `ci/run-only-needed` reduces when checks run without deleting any:
+- Push triggers of `secret-scan`, `controls`, `ocr-quality` and `qwen35-decoded-audit` are
+  limited to `main`, so a PR update no longer runs them twice. Merged lane-branch push triggers
+  were retired (`ultrabert-api`, `ultrabert-retrieval-model`, `macos-desktop-backend-ab-v1`,
+  four `ovisocr2-metadata` branches, two `posformer` fix branches); `josev-q4k-sweep` stays.
+- The selector classifies evidence receipts, other workflows, heavy/Kaggle/converter tooling
+  and Python tooling as "not built" (previously full CI), behind a dependency-closure test of
+  every Python entry point the ordinary lanes run. A shared workflow-level `paths:` filter
+  starts no run for pure docs/evidence changes (no branch protection exists).
+- `build.yml` desktop legs are a selector-driven matrix: PR source edits get Linux + model-free
+  tests + Windows MSVC (+ macOS for Apple/Metal compile markers); a `main` push with compiled
+  changes still runs every lane. Release/tag workflows are untouched.
+- Dry run on recent changesets (heavy runner jobs + selector/result jobs, PR): docs-only 0+10 →
+  0+0; evidence-only #123 16+10 → 0+0; evidence workflow #133 16+10 → 0+0; registry
+  `bba7bf8b` 16+10 → 3+10; one engine #130 16+10 → 2+10; CMake #119 and Flutter #132 unchanged
+  (full). `main` pushes with compiled changes unchanged (16+10). Details: docs/contributing.md
+  "CI: what runs when", docs/ci-selection.md.
+
 ## 3 November 2026 — Merge ledger for 2–3 November (PR folds) and PLAN close-out
 
 Every PR below is merged to `main` (state checked with `gh pr view`); details are in the dated

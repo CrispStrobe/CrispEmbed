@@ -13,29 +13,50 @@ acceptance rules remain in those workflows.
 
 ## What runs
 
+A shared workflow-level `paths:` filter (identical in all five workflows, for
+push and PR) starts no run at all for pure documentation/evidence changes:
+Markdown, `docs/**`, `tests/results/**`, other workflow files, `tools/ci-heavy/**`,
+`tools/kaggle/**`, `tools/colab/**` and `models/**`, with the receipts,
+contracts, converters and harness copies the lanes consume re-included. A
+guard test checks every tracked file that the filter drops selects no lane.
+
 | Changes | Selected expensive work |
 | --- | --- |
-| Markdown only | None; cheap guards, selection and result checks complete |
+| Markdown, evidence receipts, other workflows, heavy/Kaggle/converter tooling | No run |
+| Other Python tooling and tests not run by these lanes | Selector and result checks only |
 | Reviewed inpaint Python helpers, controls or JSON contracts | Python contracts on Linux, macOS and Windows; no submodules, CMake or native build |
-| `src/inpaint*`, `src/migan.*`, `src/latent_inpaint*`, inpaint CLI source | Three desktop native builds plus three-platform inpaint native/CLI contracts; no mobile, sibling, WASM or Rust package builds |
+| `src/inpaint*`, `src/migan.*`, `src/latent_inpaint*`, inpaint CLI source | Linux desktop build plus three-platform inpaint native/CLI contracts; no mobile, sibling, WASM or Rust package builds |
 | Inpaint native/CLI tests or the synthetic video harness | Three-platform inpaint native/CLI contracts |
-| OCR WASM wrapper, build script or browser tests | OCR WASM build, Node tests and real browser smoke |
+| UltraBERT API-log/Kaggle-harness Python run after the Linux build | Linux desktop build and model-free suite |
+| Other compiled sources on a PR (`src/` outside core, `examples/`, C/C++ under `tests/`/`tools/`) | Linux desktop build, model-free suite and the Windows MSVC leg; macOS when the file carries Apple/Metal compile-time markers |
+| The same compiled sources pushed to `main` | All ordinary lanes |
+| C/C++ files inside evidence/Kaggle folders (vendored into the crate only) | Rust crates |
+| OCR WASM wrapper, build script, size report or browser tests | OCR WASM build, Node tests and real browser smoke |
 | Embedding WASM wrapper or build script | Embedding WASM build |
 | Rust crates, workspace manifests or vendoring script | ARM64 C ABI type check, Rust source build and independently verified packaged crate |
-| Root CMake, `cmake/`, `src/core/`, `ggml` gitlink or its contents, `.gitmodules`, version or license | All ordinary lanes |
+| `scripts/check-cpu-baseline.py` | All three desktop legs |
+| Root CMake, `cmake/`, `src/core/`, `ggml` gitlink or its contents, `.gitmodules`, version, license, public C ABI (`src/crispembed.{h,cpp}`) | All ordinary lanes |
 | Selector/cache implementation or selector tests | All ordinary lanes |
 | An ordinary workflow itself | All of that workflow's jobs |
 | An unknown path or incomplete change detection | All ordinary lanes |
 | Manual dispatch | All lanes of the dispatched workflow |
 
 The rules form a union: a change to an inpaint source and an OCR WASM wrapper
-runs both relevant groups. The allow-list is deliberately small. An unfamiliar
-source, fixture, workflow or machine-readable document gets full validation
-until its dependencies are reviewed. In particular, `docs/**` is **not** an
-ignore rule. `docs/inpaint-publication-v1.json`, the latent and MI-GAN512
-contracts, and `tests/results/migan/original-reference.json` are executable
-inputs to the Python contracts and select those contracts. Other unclassified
-receipts also fall back to full CI.
+runs both relevant groups. An unfamiliar source, fixture, script, Flutter or
+Python-package file still gets full validation until its dependencies are
+reviewed. `docs/**`, receipts and Python tooling are skipped only after the
+consumed exceptions are matched: `docs/inpaint-publication-v1.json`,
+`docs/teleocr-publication-v1.json`, the latent/MI-GAN contracts,
+`tests/results/migan/original-reference.json` and the UltraBERT receipts read
+by `tests/test_ultrabert_api_log.py` select their lanes. The dependency-closure
+test recomputes what each Python entry point of these lanes imports or names
+and fails when a new dependency would be skipped.
+
+PRs are routed for speed, `main` for completeness: a compiled source on a PR
+gets Linux, the model-free suite and MSVC (the recurring cross-platform break),
+while the same file pushed to `main` selects every lane, so mobile, sibling,
+WASM, Rust package and macOS proof exists before the next tag. To get the full
+matrix on a PR, dispatch the workflow on its branch.
 
 The CLI-only exception follows the current CMake graph: these inpaint libraries
 are linked into the CLI and their tests, not `crispembed-shared` or either WASM
@@ -81,7 +102,9 @@ the selector does not infer safety from individual changed CMake lines.
 
 ## Stable result checks and cancellation
 
-These result names are suitable for required status checks:
+These result names are stable. They are suitable for required status checks
+only after the workflow-level `paths:` filter is removed; with it, a docs-only
+PR starts no run and a required check would never report:
 
 - `Build result`
 - `OCR WASM result`
@@ -89,7 +112,7 @@ These result names are suitable for required status checks:
 - `Rust crates result`
 - `Inpainting result`
 
-Their workflows have no top-level path exclusions. Each result job uses
+Each result job uses
 `if: always()` and verifies the selector plus all its conditional dependencies.
 A failed/cancelled selector, missing output, selected job that was skipped,
 failed/cancelled job, or unchecked dependency fails the result. This avoids

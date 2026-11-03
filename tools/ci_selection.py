@@ -18,10 +18,13 @@ import subprocess
 import sys
 
 
+# "native" is the Linux desktop build. "native_windows"/"native_macos" add the
+# other two desktop legs to the same matrix job and always imply "native".
 LANES = (
-    "native", "native_tests", "mobile", "sibling", "wasm_ocr", "wasm_embed", "rust",
-    "inpaint_python", "inpaint_native", "bundle",
+    "native", "native_windows", "native_macos", "native_tests", "mobile", "sibling",
+    "wasm_ocr", "wasm_embed", "rust", "inpaint_python", "inpaint_native", "bundle",
 )
+DESKTOP = (("native", "linux-x86_64"), ("native_macos", "macos-arm64"), ("native_windows", "windows-x86_64"))
 SHA = re.compile(r"[0-9a-fA-F]{40}\Z")
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -39,18 +42,62 @@ INPAINT_PYTHON = (
     "tests/test_migan512_contract.py", "tests/test_latent_inpaint_contract.py",
     "tests/test_latent_inpaint_original_import.py", "tests/test_inpaint_gguf_publish.py",
     "tests/test_inpaint_video_quality.py",
+    # Imported or read by the contracts above (see the dependency-closure test).
+    "tools/dump_migan_reference.py", "tools/dump_migan512_reference.py",
+    "tools/inpaint_hash_evidence.py", "tools/latent_inpaint_original_import.py",
+    "docs/migan-reference-contract.json", "docs/teleocr-publication-v1.json",
     "docs/*inpaint*contract*.json", "docs/migan512-reference-contract.json",
     "docs/inpaint-publication-v1.json", "tests/results/migan/original-reference.json",
 )
 INPAINT_NATIVE = (
     "src/inpaint.*", "src/inpaint_*.cpp", "src/inpaint_*.h", "src/migan.*",
     "src/latent_inpaint*", "examples/cli/inpaint_cli.*",
-    "tests/*inpaint*.cpp", "tests/*migan*.cpp", "tests/inpaint_cli_driver.cpp",
+    "tests/*inpaint*.cpp", "tests/*migan*.cpp", "tests/*migan*.h", "tests/inpaint_cli_driver.cpp",
     "tests/test_inpaint_cli.py", "tests/inpaint_video_quality.py",
     "tests/test_inpaint_model.py",
 )
+# Python entry points the Linux desktop job runs after its native build, plus
+# what they import or read. Linux only: they are not run on Windows/macOS.
+NATIVE_PYTHON = (
+    "tests/test_ultrabert_api_log.py", "tests/test_vendored_kaggle_harness.py",
+    "kaggle_harness.py", "tools/kaggle/*/kaggle_harness.py",
+    "tests/test_ultrabert_*.py", "tools/ultrabert*.py", "tools/dump_ultrabert*.py", "tools/ci-heavy/*ultrabert*.py",
+    "models/convert-ultrabert-to-gguf.py", "tests/results/ultrabert/*.json",
+)
+# Paths that no ordinary build lane compiles, packages or reads once the
+# consumed exceptions above have been matched: evidence receipts, other
+# workflows and their private actions, machine-readable docs, and Python
+# tooling. Each has its own path-filtered workflow where one exists. A guard
+# test recomputes the import/read closure of every Python entry point the
+# ordinary lanes run, so a new dependency cannot silently fall in here.
+NOT_BUILT = (
+    "tests/results/*", "docs/*", "handover-prompts/*", "hf_readmes/*",
+    ".github/workflows/*", ".github/actions/scifact-setup/*",
+    "tools/ci-heavy/*", "tools/kaggle/*", "tools/colab/*", "tools/*.sh",
+    "tools/*.py", "models/*", "tests/*.py",
+)
+# scripts/vendor_rust_sources.sh packages every C/C++ file under tests/ and
+# tools/ into the Rust crate. Inside the folders above CMake compiles none of
+# them (snapshots, Kaggle benches), so they select only the crate package.
+COMPILED_EXTENSIONS = (".c", ".cc", ".cpp", ".h", ".hpp")
+# Compiled sources outside the shared core. A PR gets the Linux build, the
+# model-free suite and the MSVC leg (POSIX-only headers are the recurring
+# cross-platform break); macOS joins when the file is Apple/Metal-specific. A
+# push to main gets every lane. The public C ABI and its implementation keep
+# the full fallback because Rust, Flutter and both WASM wrappers bind to them.
+CXX_SOURCE = (
+    "src/*", "examples/*", "tests/*.cpp", "tests/*.h", "tests/*.hpp", "tests/*.c",
+    "tools/*.cpp", "tools/*.h", "tools/*.c",
+)
+# Compiled sources that an inpaint Python contract also names (source-identity
+# lists); they keep their native lanes and add the Python contracts.
+CXX_READ_BY_INPAINT_PYTHON = ("src/crispembed_diff.h",)
+FULL_ABI = ("src/crispembed.h", "src/crispembed.cpp")
+# Compile-time Apple/Metal markers. Comments that merely mention Metal do not
+# change what the macOS compiler sees.
+APPLE_MARKERS = ("__APPLE__", "__MACH__", "TARGET_OS_", "GGML_USE_METAL", "GGML_METAL", "ggml-metal", "ggml_backend_metal")
 WORKFLOW_LANES = {
-    ".github/workflows/build.yml": ("native", "native_tests", "mobile", "sibling"),
+    ".github/workflows/build.yml": ("native", "native_windows", "native_macos", "native_tests", "mobile", "sibling"),
     ".github/workflows/build-wasm.yml": ("wasm_ocr",),
     ".github/workflows/build-wasm-embed.yml": ("wasm_embed",),
     ".github/workflows/rust-crates.yml": ("rust",),
@@ -62,7 +109,17 @@ def matches(path: str, patterns: tuple[str, ...]) -> bool:
     return any(fnmatch.fnmatchcase(path, pattern) for pattern in patterns)
 
 
-def selection(paths: list[str], *, force_full: str | None = None) -> dict:
+def apple_specific(path: str, root: Path = ROOT) -> bool:
+    if path.endswith((".m", ".mm", ".metal")) or "metal" in path.lower() or "apple" in path.lower():
+        return True
+    try:
+        text = (root / path).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return False  # deleted/renamed away: the main push still runs everything
+    return any(marker in text for marker in APPLE_MARKERS)
+
+
+def selection(paths: list[str], *, force_full: str | None = None, event_name: str = "pull_request") -> dict:
     """Return the union of all changed paths; deletions/renames are inputs too."""
     lanes = dict.fromkeys(LANES, False)
     reason = force_full
@@ -80,6 +137,9 @@ def selection(paths: list[str], *, force_full: str | None = None) -> dict:
         if path in ("tools/ci_selection.py", "tools/ci_cpu_signature.py", "tests/test_ci_selection.py") or path.startswith((".github/actions/ci-select/", ".github/actions/compiler-cache/")):
             reason = "CI selection or compiler-cache implementation changed"
             break
+        if path in FULL_ABI:
+            reason = "public C ABI changed"
+            break
         if path in WORKFLOW_LANES:
             for lane in WORKFLOW_LANES[path]:
                 lanes[lane] = True
@@ -87,8 +147,8 @@ def selection(paths: list[str], *, force_full: str | None = None) -> dict:
             lanes["inpaint_python"] = True
         elif matches(path, INPAINT_NATIVE):
             lanes["inpaint_python"] = lanes["inpaint_native"] = True
-            # Source edits also receive the ordinary desktop backend build.
-            # Tests alone use the three-platform, real-CLI inpaint job.
+            # Source edits also receive the Linux desktop backend build; the
+            # inpaint workflow itself compiles them on all three platforms.
             if path.startswith(("src/", "examples/")):
                 lanes["native"] = True
         elif path == "examples/cli/main.cpp":
@@ -98,18 +158,42 @@ def selection(paths: list[str], *, force_full: str | None = None) -> dict:
             lanes["rust"] = True
         elif path == "build-embed-wasm.sh" or path == "wasm/embed_wrapper.c":
             lanes["wasm_embed"] = True
-        elif path in ("build-wasm.sh", "wasm/ocr_wrapper.c", "wasm/crispembed-ocr.js") or path.startswith(("examples/wasm-ocr/", "tests/wasm-browser/")) or matches(path, ("tests/test_wasm_ocr*.js",)):
+        elif path in ("build-wasm.sh", "wasm/ocr_wrapper.c", "wasm/crispembed-ocr.js", "tools/wasm_size_report.py") or path.startswith(("examples/wasm-ocr/", "tests/wasm-browser/")) or matches(path, ("tests/test_wasm_ocr*.js",)):
             lanes["wasm_ocr"] = True
+        elif path == "scripts/check-cpu-baseline.py":
+            lanes["native"] = lanes["native_windows"] = lanes["native_macos"] = True
+        elif matches(path, NATIVE_PYTHON):
+            lanes["native"] = lanes["native_tests"] = True
+        elif matches(path, NOT_BUILT):
+            if path.endswith(COMPILED_EXTENSIONS) and path.startswith(("tests/", "tools/")):
+                lanes["rust"] = True
+        elif matches(path, CXX_SOURCE) or ("/" not in path and path.endswith(".cpp")):
+            if event_name == "push":
+                # Main gets complete merged-source proof for every code change
+                # (mobile, sibling, WASM, Rust package, all desktops).
+                reason = "compiled source changed on main; full CI required"
+                break
+            lanes["native"] = lanes["native_tests"] = lanes["native_windows"] = True
+            if path in CXX_READ_BY_INPAINT_PYTHON:
+                lanes["inpaint_python"] = True
+            if apple_specific(path):
+                lanes["native_macos"] = True
         else:
-            # This includes unreviewed src/, test fixtures, docs/*.json and
-            # workflow files. New functionality cannot silently miss CI.
+            # Unreviewed paths (fixtures, scripts, flutter, python package,
+            # wrappers, ...). New functionality cannot silently miss CI.
             reason = "unclassified change; full CI required"
             break
     if reason:
         lanes = dict.fromkeys(LANES, True)
     lanes["inpaint_python"] |= lanes["inpaint_native"]
-    lanes["bundle"] = lanes["native"] and lanes["mobile"]
+    lanes["native"] |= lanes["native_windows"] or lanes["native_macos"]
+    lanes["bundle"] = lanes["native"] and lanes["native_windows"] and lanes["native_macos"] and lanes["mobile"]
     return {"lanes": lanes, "full": bool(reason), "reason": reason or "reviewed dependency map", "paths": sorted(set(paths))}
+
+
+def desktop_platforms(lanes: dict) -> list[str]:
+    """Desktop matrix legs for build.yml, in a fixed order."""
+    return [name for lane, name in DESKTOP if lanes[lane]]
 
 
 def git(repo: Path, *args: str) -> bytes:
@@ -181,7 +265,7 @@ def select_event(event_name: str, event: dict, repo: Path = ROOT) -> dict:
     if event_name in ("workflow_dispatch", "merge_group"):
         return selection([], force_full="manual or merge-queue validation requests full CI")
     try:
-        return selection(changed_paths(event_name, event, repo))
+        return selection(changed_paths(event_name, event, repo), event_name=event_name)
     except (KeyError, TypeError, ValueError, OSError, subprocess.SubprocessError):
         # A missing object, API/event mismatch, encoding failure or shallow
         # history is never evidence that no work is necessary.
@@ -220,6 +304,7 @@ def emit(report: dict) -> None:
         with open(output, "a", encoding="utf-8") as handle:
             for name, value in {**report["lanes"], "full": report["full"]}.items():
                 handle.write(f"{name}={str(value).lower()}\n")
+            handle.write("desktop=" + json.dumps(desktop_platforms(report["lanes"])) + "\n")
     summary = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary:
         with open(summary, "a", encoding="utf-8") as handle:
