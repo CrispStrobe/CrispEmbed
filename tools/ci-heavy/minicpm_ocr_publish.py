@@ -178,7 +178,13 @@ def plan(cfg, variants):
         rec = cfg["recipes"][v]
         if rec["from"] != "convert":
             tt = [a for o in rec.get("tensor_type", []) for a in ("--tensor-type", o)]
-            steps.append(("quantize", v, rec["filename"], [cfg["recipes"][rec["from"]]["filename"], rec["type"], *tt]))
+            # Quantizer policy switches (CRISPEMBED_QUANTIZE_MINICPM_POLICY) travel as trailing NAME=value
+            # tokens; the workflow passes them as environment, never as quantizer arguments.
+            env = [f"{k}={val}" for k, val in sorted(rec.get("quantize_env", {}).items())]
+            require(all(re.fullmatch(r"CRISPEMBED_QUANTIZE_[A-Z0-9_]+=[a-z0-9_]+", e) for e in env),
+                    f"{v} quantize_env must be CRISPEMBED_QUANTIZE_* switches with plain values")
+            steps.append(("quantize", v, rec["filename"],
+                          [cfg["recipes"][rec["from"]]["filename"], rec["type"], *tt, *env]))
     drop = [cfg["recipes"][v]["filename"] for v in need if v not in variants]
     return steps, drop
 

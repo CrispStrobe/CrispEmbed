@@ -180,6 +180,40 @@
         "v.vmerge.linear_1.weight=q4_k"
       ],
       "note": "mix2 with the embedding Q6_K"
+    },
+    "pol-v1": {
+      "source": "f16",
+      "type": "q8_0",
+      "tensor_type": [],
+      "env": {
+        "CRISPEMBED_QUANTIZE_MINICPM_POLICY": "minicpm_q4k_v1"
+      },
+      "equivalent_to": "mix2",
+      "policy_rules": [
+        "l.layers.*=q4_k",
+        "m.*=q4_k",
+        "l.embed_tokens.weight=q4_k",
+        "v.blk.*.mlp.*=iq4_nl",
+        "v.vmerge.*=iq4_nl",
+        "v.vmerge.linear_1.weight=q4_k"
+      ]
+    },
+    "pol-min": {
+      "source": "f16",
+      "type": "q8_0",
+      "tensor_type": [],
+      "env": {
+        "CRISPEMBED_QUANTIZE_MINICPM_POLICY": "minicpm_q4k_min_v1"
+      },
+      "equivalent_to": "mix1",
+      "policy_rules": [
+        "l.layers.*=q4_k",
+        "m.*=q4_k",
+        "l.embed_tokens.weight=q4_k",
+        "v.blk.*=iq4_nl",
+        "v.vmerge.*=iq4_nl",
+        "v.vmerge.linear_1.weight=q4_k"
+      ]
     }
   }
 }

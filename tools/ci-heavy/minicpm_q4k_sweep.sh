@@ -64,7 +64,8 @@ gguf_for() { # recipe -> path of its GGUF
     local argv; argv=$(python $H argv "$REC" "$name")
     if [ -z "$argv" ]; then echo "$S/$src.gguf"; return 0; fi
     # shellcheck disable=SC2086
-    "$Q" "$S/$src.gguf" "$S/arm-$name.gguf" $argv > "$OUT/arms/$name/quantize.log" 2>&1 || return 1
+    env $(python $H env "$REC" "$name") "$Q" "$S/$src.gguf" "$S/arm-$name.gguf" $argv > "$OUT/arms/$name/quantize.log" 2>&1 ||
+        return 1
     echo "$S/arm-$name.gguf"
 }
 

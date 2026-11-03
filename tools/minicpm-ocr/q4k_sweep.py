@@ -13,6 +13,7 @@ Subcommands (driven by tools/ci-heavy/minicpm_q4k_sweep.sh):
                        pixel_values bit-equal to the frozen capture, row 0 against the frozen
                        first-step lm_head and the argmax at every position against the frozen IDs.
   argv RECIPES NAME    print the crispembed-quantize argv tail for a named recipe
+  env RECIPES NAME     print the recipe's quantizer environment (named policies)
   census GGUF          stored-type census (tensor count/bytes per type, file bytes)
   score REF ORIG ARM DIR
                        per-position cosine of the native arm's teacher-forced logits
@@ -30,7 +31,6 @@ import hashlib
 import json
 import os
 from pathlib import Path
-import re
 import subprocess
 import sys
 
@@ -172,7 +172,10 @@ def census(path):
              'merger' if n.startswith('m.') else 'vision_other')
         e = groups.setdefault(g, {})
         e[t.tensor_type.name] = e.get(t.tensor_type.name, 0) + int(t.n_bytes)
-    return dict(file_bytes=os.path.getsize(path), file_mib=round(os.path.getsize(path)/2**20, 1), types=by,
+    h = hashlib.sha256()  # tensor payloads only: a policy stamp changes metadata, not tensor data
+    for t in rd.tensors:
+        h.update(t.name.encode()); h.update(t.tensor_type.name.encode()); h.update(bytes(t.data))
+    return dict(file_bytes=os.path.getsize(path), tensor_data_sha256=h.hexdigest(), file_mib=round(os.path.getsize(path)/2**20, 1), types=by,
                 group_bytes=groups,
                 patch_embedding=next((dict(type=t.tensor_type.name, shape=[int(x) for x in t.shape])
                                       for t in rd.tensors if t.name == 'v.emb.patch_embedding.weight'), None))
@@ -237,6 +240,28 @@ def stages(ref_path, frozen_base, native):
     return dict(stages=out, worst=min(ok, key=lambda s: s['min_row_cosine']) if ok else None)
 
 
+def receipt(score_path, dtype, commit, build_mode_txt, stages_path=''):
+    """Publication precision receipt (schema read by tools/ci-heavy/minicpm_ocr_publish.py)."""
+    r = json.loads(Path(score_path).read_text())
+    bm = dict(line.split('=', 1) for line in Path(build_mode_txt).read_text().splitlines() if '=' in line)
+    worst = json.loads(Path(stages_path).read_text())['worst'] if stages_path else None
+    cases = [dict(id=c['id'], final_cos_min=c['cos_min'], final_cos_mean=c['cos_mean'], positions=c['positions'],
+                  ids_exact=c['first_divergence'] is None and c.get('free_ids_exact', True),
+                  first_divergence=c['first_divergence'], free_text=c.get('free_text'),
+                  forced_seconds=c['forced_seconds']) for c in r['cases']]
+    return dict(schema='crispembed.minicpm.q4k-precision.v1', model='openbmb/MiniCPM-OCR-1.0',
+                reference_revision='6796197bb3a8e224b2f64ae462bfbb3f8a15ac4b',
+                metric='minimum final-logit cosine over every generated position, teacher-forced on the frozen original '
+                       'IDs, against the original Transformers 5.21.0 F32 logits recomputed from the frozen inputs',
+                reference='original model (frozen report sha256 ' + REPORT_SHA256 + ')', bar=0.94, commit=commit,
+                worst_final_cos=min(c['final_cos_min'] for c in cases),
+                arms=[dict(name='cpu-hosted-portable', dtype=dtype, device='cpu', build_mode='portable',
+                           cpu=bm.get('cpu'), gguf_sha256=r.get('gguf_sha256'),
+                           file_mib=r.get('census', {}).get('file_mib'),
+                           tensor_data_sha256=r.get('census', {}).get('tensor_data_sha256'),
+                           worst_stage=worst, cases=cases)])
+
+
 def table(paths):
     rows = ['| Arm | MiB | Final cos min (worst case) | Decoded exact | First divergence |', '|---|---|---|---|---|']
     for p in paths:
@@ -257,6 +282,9 @@ def main():
         original(*args)
     elif cmd == 'argv':
         print(recipe_argv(*args))
+    elif cmd == 'env':
+        r = json.loads(Path(args[0]).read_text())['recipes'][args[1]]
+        print(' '.join(f'{k}={v}' for k, v in sorted(r.get('env', {}).items())))
     elif cmd == 'census':
         print(json.dumps(census(*args)))
     elif cmd == 'score':
@@ -266,6 +294,8 @@ def main():
             k, v = extra.split('=', 1)
             res[k] = json.loads(Path(v).read_text()) if v.endswith('.json') else v
         print(json.dumps(res, indent=2))
+    elif cmd == 'receipt':
+        print(json.dumps(receipt(*args), indent=2))
     elif cmd == 'stages':
         print(json.dumps(stages(*args), indent=2))
     elif cmd == 'table':
