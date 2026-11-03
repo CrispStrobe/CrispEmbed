@@ -13,6 +13,7 @@
 #include "minicpm_ocr.h"
 
 #include "core/env_gate.h"
+#include "core/low_memory.h"
 #include "ggml-cpu.h"
 #include "minicpm_ocr_tiles.h"
 #include "minicpm_ocr_vision.h"
@@ -25,6 +26,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <cstdint>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -442,21 +444,34 @@ extern "C" minicpm_ocr_context * minicpm_ocr_init(const char * path, int threads
             std::fprintf(stderr, "minicpm_ocr: %s\n", error.c_str());
             return nullptr;
         }
-        if (!core_env::explicitly_off("CRISPEMBED_MINICPM_OCR_VISION_F32")) {
+        // Graph decoder default on for MiniCPM since 2026-11-02 (=0 opts out); it yields to
+        // the exclusive stateless CRISPEMBED_MINICPM_OCR_GRAPH candidate unless forced with =1.
+        const bool graph_kv_on = core_env::on("CRISPEMBED_QWEN35_GRAPH_DECODER") ||
+                                 (!core_env::explicitly_off("CRISPEMBED_QWEN35_GRAPH_DECODER") &&
+                                  !core_env::on("CRISPEMBED_MINICPM_OCR_GRAPH"));
+        // Low-memory fallback (core/low_memory.h): the default F32 copies (vision matrices and the
+        // graph decoder's "f32" matmul) add several GB. When the host cannot hold them, skip the
+        // copies: F16 vision products and the "exact" decoder matmul, both token-identical on the
+        // measured panels. CRISPEMBED_MINICPM_OCR_LOW_MEMORY=1 forces this, =0 disables the check.
+        bool vision_f32 = !core_env::explicitly_off("CRISPEMBED_MINICPM_OCR_VISION_F32");
+        bool decoder_f32 = graph_kv_on;
+        {
+            uint64_t extra = 0;
+            if (vision_f32) extra += minicpm_ocr::vision_f32_bytes(c->vision);
+            if (decoder_f32) extra += qwen35_ocr::graph_kv_decoder::f32_copy_bytes(c->decoder);
+            if (extra && core_lowmem::skip_f32_copies("minicpm_ocr", "CRISPEMBED_MINICPM_OCR_LOW_MEMORY", extra))
+                vision_f32 = decoder_f32 = false;
+        }
+        if (vision_f32) {
             c->vision_f32 = std::make_unique<minicpm_ocr::vision_f32_store>();
             if (!minicpm_ocr::upcast_vision_f32(c->vision, c->backend, *c->vision_f32)) {
                 std::fprintf(stderr, "minicpm_ocr: F32 vision weight copy failed\n");
                 return nullptr;
             }
         }
-        // Graph decoder default on for MiniCPM since 2026-11-02 (=0 opts out); it yields to
-        // the exclusive stateless CRISPEMBED_MINICPM_OCR_GRAPH candidate unless forced with =1.
-        const bool graph_kv_on = core_env::on("CRISPEMBED_QWEN35_GRAPH_DECODER") ||
-                                 (!core_env::explicitly_off("CRISPEMBED_QWEN35_GRAPH_DECODER") &&
-                                  !core_env::on("CRISPEMBED_MINICPM_OCR_GRAPH"));
         if (graph_kv_on) {
             c->graph_kv = std::make_unique<qwen35_ocr::graph_kv_decoder>();
-            if (!c->graph_kv->init(c->decoder, c->attention, c->backend, kMaxContext)) {
+            if (!c->graph_kv->init(c->decoder, c->attention, c->backend, kMaxContext, decoder_f32)) {
                 std::fprintf(stderr, "minicpm_ocr: graph decoder initialization failed\n");
                 return nullptr;
             }

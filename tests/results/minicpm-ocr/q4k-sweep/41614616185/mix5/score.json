@@ -1,0 +1,141 @@
+{
+  "arm": "mix5",
+  "cases": [
+    {
+      "id": "line",
+      "positions": 19,
+      "cos_min": 0.9933984886175541,
+      "cos_mean": 0.998467203580394,
+      "cos_argmin": 6,
+      "max_abs": 7.084761619567871,
+      "argmax_agree": 19,
+      "first_divergence": null,
+      "forced_seconds": 15.927,
+      "decoded_exact_by_forced_argmax": true
+    },
+    {
+      "id": "para-en",
+      "positions": 63,
+      "cos_min": 0.9705561060350026,
+      "cos_mean": 0.9967034236205822,
+      "cos_argmin": 43,
+      "max_abs": 5.911489486694336,
+      "argmax_agree": 62,
+      "first_divergence": 54,
+      "forced_seconds": 62.331,
+      "free_ids_exact": false,
+      "free_text_exact": false,
+      "free_eos": true,
+      "free_generated": 66,
+      "free_text": "MiniCPM-OCR reference page.\nThe quick brown fox jumps over the lazy dog.\nInvoice 2026-10-27: total 1,234.56 EUR\nZeile mit Umlauten: Gr\u00d7e, Stra\u00d7e, \u00d7pfel.",
+      "free_seconds": 63.181
+    },
+    {
+      "id": "table",
+      "positions": 56,
+      "cos_min": 0.989679745023883,
+      "cos_mean": 0.9984817065186454,
+      "cos_argmin": 0,
+      "max_abs": 7.205322980880737,
+      "argmax_agree": 56,
+      "first_divergence": null,
+      "forced_seconds": 62.696,
+      "decoded_exact_by_forced_argmax": true
+    },
+    {
+      "id": "tall",
+      "positions": 279,
+      "cos_min": 0.9959673412173351,
+      "cos_mean": 0.9990179570312082,
+      "cos_argmin": 7,
+      "max_abs": 5.075384140014648,
+      "argmax_agree": 279,
+      "first_divergence": null,
+      "forced_seconds": 132.174,
+      "decoded_exact_by_forced_argmax": true
+    },
+    {
+      "id": "tiny",
+      "positions": 3,
+      "cos_min": 0.9995204884540775,
+      "cos_mean": 0.9996016724583452,
+      "cos_argmin": 2,
+      "max_abs": 4.125624418258667,
+      "argmax_agree": 3,
+      "first_divergence": null,
+      "forced_seconds": 15.153,
+      "decoded_exact_by_forced_argmax": true
+    }
+  ],
+  "cos_min": 0.9705561060350026,
+  "worst_case": "para-en",
+  "decoded_exact_cases": 4,
+  "census": {
+    "file_bytes": 1083441632,
+    "file_mib": 1033.3,
+    "types": {
+      "Q6_K": {
+        "tensors": 1,
+        "bytes": 208404000
+      },
+      "F32": {
+        "tensors": 420,
+        "bytes": 3789760
+      },
+      "Q4_K": {
+        "tensors": 189,
+        "bytes": 339130368
+      },
+      "F16": {
+        "tensors": 29,
+        "bytes": 280387584
+      },
+      "IQ4_NL": {
+        "tensors": 32,
+        "bytes": 89444736
+      },
+      "Q8_0": {
+        "tensors": 108,
+        "bytes": 152285184
+      }
+    },
+    "group_bytes": {
+      "embedding": {
+        "Q6_K": 208404000
+      },
+      "decoder": {
+        "F32": 1993984,
+        "Q4_K": 279908352
+      },
+      "merger": {
+        "F32": 59392,
+        "Q4_K": 14598144
+      },
+      "vision_other": {
+        "F32": 13824,
+        "F16": 12644352
+      },
+      "vision_blocks": {
+        "F32": 1584576,
+        "IQ4_NL": 75302784,
+        "F16": 267743232,
+        "Q8_0": 152285184
+      },
+      "vit_merger": {
+        "F32": 137984,
+        "Q4_K": 44623872,
+        "IQ4_NL": 14141952
+      }
+    },
+    "patch_embedding": {
+      "type": "F16",
+      "shape": [
+        14,
+        14,
+        3,
+        1152
+      ]
+    }
+  },
+  "gguf_sha256": "01e9bcc928f6d024b43956a7252b9f72af981087d5e078c72b7e0dabdd1cf1ae"
+}

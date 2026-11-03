@@ -1,0 +1,52 @@
+{
+  "schema": "crispembed-ultrabert-q4k-mixed-v1",
+  "method": "docs/qwen2vl-q4k-recipes.md: Q8_0 baseline, single-class sensitivity (run 41588176842), safe classes combined. token_embd and norms stay F32 (runtime critical profile).",
+  "recipes": {
+    "mix-attn-qko-ffngate": {
+      "type": "q4_k",
+      "rules": [
+        "blk.*.attn_q.weight=q8_0",
+        "blk.*.attn_k.weight=q8_0",
+        "blk.*.attn_v.weight=q8_0",
+        "blk.*.attn_output.weight=q8_0",
+        "blk.*.ffn_gate.weight=q8_0",
+        "blk.*.ffn_up.weight=q8_0",
+        "blk.*.ffn_down.weight=q8_0",
+        "blk.*.attn_q.weight=q4_k",
+        "blk.*.attn_k.weight=q4_k",
+        "blk.*.attn_output.weight=q4_k",
+        "blk.*.ffn_gate.weight=q4_k"
+      ],
+      "q4_k_classes": [
+        "attn_q",
+        "attn_k",
+        "attn_output",
+        "ffn_gate"
+      ]
+    },
+    "mix-attn-qko-ffngate-up": {
+      "type": "q4_k",
+      "rules": [
+        "blk.*.attn_q.weight=q8_0",
+        "blk.*.attn_k.weight=q8_0",
+        "blk.*.attn_v.weight=q8_0",
+        "blk.*.attn_output.weight=q8_0",
+        "blk.*.ffn_gate.weight=q8_0",
+        "blk.*.ffn_up.weight=q8_0",
+        "blk.*.ffn_down.weight=q8_0",
+        "blk.*.attn_q.weight=q4_k",
+        "blk.*.attn_k.weight=q4_k",
+        "blk.*.attn_output.weight=q4_k",
+        "blk.*.ffn_gate.weight=q4_k",
+        "blk.*.ffn_up.weight=q4_k"
+      ],
+      "q4_k_classes": [
+        "attn_q",
+        "attn_k",
+        "attn_output",
+        "ffn_gate",
+        "ffn_up"
+      ]
+    }
+  }
+}

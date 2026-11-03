@@ -291,7 +291,10 @@ Numbers are in PERFORMANCE.md.
 `CRISPEMBED_MINICPM_OCR_VISION_BATCH` and `CRISPEMBED_MINICPM_OCR_VISION_FLASH` are read with
 `core_env::explicitly_off` for MiniCPM (`=0` restores the old path; the stateless `CRISPEMBED_MINICPM_OCR_GRAPH=1`
 candidate disables the graph decoder unless it is forced with `=1`). `CRISPEMBED_QWEN35_GRAPH_MATMUL` defaults to `f32`;
-`exact` and `native` stay selectable. Frozen panels (`tools/minicpm-ocr/graph_panel.py`, `tools/minicpm-retained-v3`)
+`exact` and `native` stay selectable. Low-memory fallback (2026-11-03, `src/core/low_memory.h`): when available
+physical memory is below the F32 copies (vision + decoder) + 1 GiB, init skips them with one stderr notice and runs
+F16 vision products and the `exact` decoder matmul, both token-exact on the measured panels;
+`CRISPEMBED_MINICPM_OCR_LOW_MEMORY=1` forces it, `=0` disables the check. Frozen panels (`tools/minicpm-ocr/graph_panel.py`, `tools/minicpm-retained-v3`)
 pin all four to `0`.
 
 Default flip A/B (2026-11-02, `crispembed-ocr-real-scans-minicpm-fast` at `dded1384`, Kaggle Xeon 2.2 GHz x4,

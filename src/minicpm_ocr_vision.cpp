@@ -371,8 +371,9 @@ vision_f32_store::~vision_f32_store() {
     if (ctx) ggml_free(ctx);
 }
 
-bool upcast_vision_f32(vision_weights & w, ggml_backend_t backend, vision_f32_store & store) {
-    if (core_env::explicitly_off("CRISPEMBED_MINICPM_OCR_VISION_F32") || !backend || store.ctx) return false;
+namespace {
+// The matrices upcast_vision_f32 copies.
+std::vector<ggml_tensor **> vision_f32_slots(vision_weights & w) {
     std::vector<ggml_tensor **> slots = { &w.patch_w, &w.m1_w, &w.m2_w };
     for (auto & l : w.layers) {
         slots.push_back(&l.q_w);
@@ -382,6 +383,20 @@ bool upcast_vision_f32(vision_weights & w, ggml_backend_t backend, vision_f32_st
         slots.push_back(&l.fc1_w);
         slots.push_back(&l.fc2_w);
     }
+    return slots;
+}
+} // namespace
+
+uint64_t vision_f32_bytes(const vision_weights & w) {
+    uint64_t bytes = 0;
+    for (auto ** slot : vision_f32_slots(const_cast<vision_weights &>(w)))
+        if (*slot && (*slot)->type != GGML_TYPE_F32) bytes += uint64_t(ggml_nelements(*slot)) * sizeof(float);
+    return bytes;
+}
+
+bool upcast_vision_f32(vision_weights & w, ggml_backend_t backend, vision_f32_store & store) {
+    if (core_env::explicitly_off("CRISPEMBED_MINICPM_OCR_VISION_F32") || !backend || store.ctx) return false;
+    std::vector<ggml_tensor **> slots = vision_f32_slots(w);
     store.ctx = ggml_init({ (slots.size() + 1) * ggml_tensor_overhead(), nullptr, true });
     if (!store.ctx) return false;
     std::vector<std::pair<ggml_tensor **, ggml_tensor *>> todo;

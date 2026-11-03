@@ -52,7 +52,7 @@ Re-scored status of this branch's Q4_K lanes (no lane is qualified):
 | UltraBERT mixed Q4_K | Initial credential/lineage failures and model-free controls only | Unmeasured |
 | MoEdern 1.5M/27M/115M padded Q4_K | Gated runtime/profile controls; 1.5M SciFact panel ran F32 only (`q4_attempted` false) | Unmeasured |
 | Unlimited-OCR-2 mixed Q4_K (v3) | F16 control exact on four cases; conversion stopped at `v.pos_embed` protection, zero Q4 forwards | Unmeasured |
-| MiniCPM-OCR graph Q4_K/Q8 | Q8 arms failed patch loading before inference | Unmeasured |
+| MiniCPM-OCR Q8_0 / Q4_K ([recipes](minicpm-ocr-q4k.md)) | Hosted CPU (portable), final-logit cosine against the original at every position of the five frozen cases: Q8_0 0.9998 (5/5 exact, 1,455 MiB); plain `q4_k` 0.9724 (1,206 MiB); policy `minicpm_q4k_v1` 0.9671 (971 MiB, 67% of Q8_0); smallest above the bar `minicpm_q4k_min_v1` 0.9489 (902 MiB). The 4-bit arms decode 4/5 token-exact; `para-en` diverges at 54 on box glyphs. CPU-only runtime, so no CUDA arm | Q8_0 and both Q4_K policies clear their bars; `Q4_K_MIX` publication recipe prepared, not published |
 
 ## Current branches and executions
 

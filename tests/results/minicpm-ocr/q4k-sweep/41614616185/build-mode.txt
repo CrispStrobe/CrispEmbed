@@ -1,0 +1,7 @@
+build_mode=portable (explicit -DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF)
+heavy_cpu_build_mode=unset
+commit=fbf6772f0d7611c9fc36b370bdf38f9e4cdeebfe
+cpu=AMD EPYC 7763 64-Core Processor
+threads=4
+CRISPEMBED_NATIVE:BOOL=OFF
+GGML_NATIVE:BOOL=OFF

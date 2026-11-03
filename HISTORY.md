@@ -1,3 +1,35 @@
+## 3 November 2026 — MiniCPM-OCR Q8_0/Q4_K measured against the original
+
+Hosted CPU sweeps (portable build) 41591527932, 41591531001, 41591534780, 41614616185,
+41614620614 score 21 arms against original Transformers logits recomputed from the frozen
+capture (input_ids/pixel_values bit-equal, first step cosine >= 0.9999999999995 vs the frozen
+lm_head, 420/420 argmax = frozen IDs). Q8_0 0.9998 5/5; plain `q4_k` 0.9724 4/5 (bit-identical
+on two runner CPUs); mixed `minicpm_q4k_v1` (mix2) 0.9671 at 971 MiB and `minicpm_q4k_min_v1`
+(mix1) 0.9489 at 902 MiB. Restoring the full-attention layers to Q8_0 lowered both mixes
+(0.9075/0.9357), recorded as is. Initial lane 41588540106 failed on a missing `six` for the
+kaggle CLI before model access; the F32 arm failed graph-decoder init. Details:
+`docs/minicpm-ocr-q4k.md`, receipts `tests/results/minicpm-ocr/q4k-sweep/`.
+
+## 3 November 2026 — Unlimited-OCR-2 F32 vision on by default; low-memory fallback for F32 weight copies
+
+`CRISPEMBED_UNLIMITED_OCR2_VISION_F32` is now read with `core_env::explicitly_off` (default on; `=0` restores the
+F16 SAM/CLIP products). Evidence: trial pages `tests/results/unlimited-ocr2/vision-speed.{json,md}` (4/4 ids and text
+exact vs the original, 1.44x) and real scans `tests/results/ocr-real-scans/native-uocr2-vf32.json` (1.43x on paired
+pages, 17/19 pages ids-identical to the old default, no page from exact to inexact, original-exact 12 -> 13/20; the one
+new inexact page `de-2col-meyers-b13-103` was already inexact and its CER improves 0.0369 -> 0.0368). `TILE_BATCH` stays
+default off. Kernels that measure the F16 path now pin `=0`. If the default copy fails to allocate, init now falls back
+to the F16 path with a notice instead of failing.
+
+New `src/core/low_memory.h`: after loading weights, MiniCPM-OCR and Unlimited-OCR-2 estimate the bytes of their default
+F32 weight copies and, when available physical memory (Linux `MemAvailable`, falling back to `sysconf(_SC_AVPHYS_PAGES)`;
+macOS `host_statistics64` free+inactive+purgeable; Windows `GlobalMemoryStatusEx`; unknown keeps the configured
+behavior) is below that + 1 GiB, skip them with one stderr notice. MiniCPM then runs F16 vision products and the graph
+decoder's `exact` matmul (row-wise dequant + F32 dot), both measured token-exact on the 5-case bench and the old-default
+path 20/20 identical on real scans; Unlimited-OCR-2 runs its previous-default F16 vision path.
+`CRISPEMBED_MINICPM_OCR_LOW_MEMORY` / `CRISPEMBED_UNLIMITED_OCR2_LOW_MEMORY`: `=1` forces the low-memory path, `=0`
+disables the check (keeping the copies whatever the memory). Decision logic is unit-tested header-only by `test-low-memory` (Build workflow). No inference was run for this
+change; the fallback paths are the existing measured ones.
+
 ## 3 November 2026 — Encoder truncation and the XLM-R cross-encoder pair layout
 
 Branch `fix/rerank-pair-and-truncation`. Hosted run 41588538331 at `0fb9e738` (portable build, 77-text panel, raw
@@ -100,6 +132,47 @@ proxy-to-pthread 2,973,004, WebGPU 4,803,802 and WebGPU compat 6,332,726 bytes (
 Text-embedding WASM still builds at 1.5 MB (run 41587317791). Build WASM now prints a size report
 (`tools/wasm_size_report.py` over the emcc symbol map). Largest remaining code: `ggml_graph_compute_thread`
 301 KB, `ocr_orchestrator::run_file` 131 KB, layout detection 138 KB, stb_image 104 KB.
+
+## 3 November 2026 — PR 118 audit fixes, focused regressions and selective CI
+
+Maintainer continuation of PR118 at `60f0b6cf`, preserving the contributor's
+history and experimental gates. Static reuse now checks its originating fill
+input, so gradual fades refresh; a pixel-residual guard rejects fine moving
+texture that has unchanged cell means. Flatness checks RGB channels as well as
+luma. Harmonic iteration work has a real 20-million-update ceiling. Frame-payload
+sizing includes masks, output, engine scratch and a reserved reuse anchor;
+backpressure prevents undrained output growth. The CLI drains complete output
+before reporting later EOF/inference failures. The missing clean_exit wrapper
+is repaired; the original failing guard is retained in the
+[audit record](docs/inpaint-stream-audit.md).
+
+Expanded model-free temporal and CLI regression source covers drift, noise,
+donors, mask changes, binary ordering, known-byte preservation, memory/lifecycle
+boundaries and error-prefix behavior. The new [owned video panel](docs/inpaint-video-quality.md)
+compares five deterministic six-frame clips against clean ground truth using
+independent and temporal execution, with identities, image/temporal errors,
+engine calls, timing, memory and failure evidence. Its bounded reviewed-model
+hosted run is a diagnostic; it does not promote a gate or qualify film/GPU use.
+
+Ordinary Build, inpainting, WASM and Rust jobs use a tested cumulative Git-diff
+selector with broad fallback for shared dependencies or incomplete/unknown
+changes. Always-run result checks reject unexpected skips or failed selected
+jobs. Pure Python controls avoid native compilation, isolated CLI changes avoid
+unrelated mobile/WASM/package builds, and compiler caches preserve actual
+configure/link/test and standalone crate verification. Main and manual runs
+cannot be cancelled by later metadata-only changes. See [CI selection](docs/ci-selection.md).
+Focused local controls pass; native/platform/model validation is pending hosted
+CI. No measured cache speedup or runtime quality improvement is asserted here.
+
+## 3 November 2026 — Issue 71 inpainting video stream (`--inpaint-stream`, `--inpaint-temporal`)
+
+Raw frame pipe for burned-in subtitle removal on top of the main inpainting engines (no new engine or model), gated
+by `CRISPEMBED_INPAINT_STREAM` in addition to each engine's own gates. `src/inpaint_temporal` is engine-agnostic (a
+fill callback) and fills each masked frame by propagation from the nearest unmasked frame on a static ring, reuse of
+the previous output over a static span, a harmonic fill for flat surroundings, and the engine (blended with the
+previous output on moderate change). Buffered frames are kept within 2 GiB (the window is reduced for large frames).
+Model-free contracts: `test-inpaint-temporal` (44 checks) and CLI driver stream tests. Measured output is on par with
+the research prototype; numbers in PERFORMANCE.md ("Issue 71 video stream with temporal consistency").
 
 ## 2 November 2026 — Unlimited-OCR-2 F32 vision / tile batch gates (default off)
 

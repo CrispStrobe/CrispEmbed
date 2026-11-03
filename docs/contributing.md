@@ -722,15 +722,22 @@ The repository has well over a hundred workflows; keep the Actions queue short.
     cancel-in-progress: true
   ```
 
-  Pure build/lint gates (`build.yml`, `build-wasm*.yml`, `lint.yml`, `regression.yml`)
-  may cancel on `main` too. Tag/release, publication, card-refresh and
+  Always-started, change-aware Build/WASM gates must preserve main runs too:
+  a later docs-only push selects no build and must not cancel the previous
+  code-bearing run. Lint/regression gates may cancel on `main`.
+  Tag/release, publication, card-refresh and
   `workflow_dispatch`-only evidence workflows never get `cancel-in-progress: true`.
-- **Skip docs/receipt-only changes.** Heavy workflows use an allow-list `paths:`
-  filter or, for Build and Build WASM, `paths-ignore` for `*.md`, `**.md`, `docs/**`
-  and `tests/results/**`. `main` has no required status checks; if one is ever
-  added, replace that workflow's PR filter with an always-run lightweight job so the
-  check cannot stay pending.
+- **Select work from actual dependencies.** Ordinary Build, WASM, Rust and
+  inpainting workflows use the shared [CI selector](ci-selection.md), with
+  always-run result checks and job-level filtering. Markdown-only changes
+  need no native build. Reviewed Python-only contracts skip submodules and
+  native build steps while retaining platform coverage. Do not blanket-ignore
+  `docs/**` or receipts: several JSON contracts and the MI-GAN original-reference
+  receipt are executable test inputs. Unknown paths, shared CMake/core/ggml
+  changes and incomplete detection select full validation. Source-pinned model
+  evidence workflows keep their own filters and protocols.
 - **Batch tiny controls.** Seconds-long stdlib-python control/contract checks go as a
   step in `controls.yml` (union of path filters, one runner slot) instead of a new
   workflow file. Do not move a workflow whose path or blob is pinned by a protocol,
-  receipt or guard test. Docs-only pushes to `main` start no Build or Build WASM run.
+  receipt or guard test. Docs-only pushes start cheap selection/result checks;
+  their expensive Build and WASM jobs remain skipped.

@@ -591,6 +591,13 @@ add_executable(test-server-json-input tests/test_server_json_input.cpp)
 target_include_directories(test-server-json-input PRIVATE ${CMAKE_SOURCE_DIR}/examples/server
                                                           ${CMAKE_SOURCE_DIR}/src)
 
+# Host-only: server admission/metrics and the OpenAI-shaped OCR request parser.
+add_executable(test-server-load-control tests/test_server_load_control.cpp)
+target_include_directories(test-server-load-control PRIVATE ${CMAKE_SOURCE_DIR}/examples/server
+                                                            ${CMAKE_SOURCE_DIR}/src)
+find_package(Threads REQUIRED)
+target_link_libraries(test-server-load-control PRIVATE Threads::Threads)
+
 # Host-only: the "never stack punctuation on punctuation" predicate (#300).
 add_executable(test-punct-marks tests/test_punct_marks.cpp)
 target_include_directories(test-punct-marks PRIVATE src)
@@ -861,6 +868,11 @@ target_include_directories(test-no-repeat-ngram PRIVATE src)
 # presence-based inversion where `FOO=0` ENABLED the gate.
 add_executable(test-env-gate tests/test_env_gate.cpp)
 target_include_directories(test-env-gate PRIVATE src)
+
+# Hermetic: core/low_memory.h — automatic skip of optional F32 weight copies
+# (MiniCPM-OCR, Unlimited-OCR-2) when available memory is short.
+add_executable(test-low-memory tests/test_low_memory.cpp)
+target_include_directories(test-low-memory PRIVATE src)
 
 add_executable(test-litemla-attn tests/test_litemla_attn.cpp)
 target_link_libraries(test-litemla-attn PRIVATE crispembed)
@@ -1169,6 +1181,14 @@ crispembed_apply_arch_flags(crispembed-inpaint)
 target_link_libraries(crispembed-inpaint PUBLIC crispembed-migan)
 target_link_libraries(crispembed-cli PRIVATE crispembed-inpaint)
 
+# Temporal consistency for --inpaint-stream (engine-agnostic, no model code).
+add_library(crispembed-inpaint-temporal STATIC EXCLUDE_FROM_ALL src/inpaint_temporal.cpp)
+target_include_directories(crispembed-inpaint-temporal PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+crispembed_apply_arch_flags(crispembed-inpaint-temporal)
+target_link_libraries(crispembed-cli PRIVATE crispembed-inpaint-temporal)
+add_executable(test-inpaint-temporal EXCLUDE_FROM_ALL tests/test_inpaint_temporal.cpp)
+target_link_libraries(test-inpaint-temporal PRIVATE crispembed-inpaint-temporal)
+
 # Model-free contracts use the real tile/composition/hash implementation.
 add_executable(test-inpaint EXCLUDE_FROM_ALL tests/test_inpaint.cpp)
 target_link_libraries(test-inpaint PRIVATE crispembed-inpaint)
@@ -1178,7 +1198,7 @@ target_link_libraries(test-inpaint PRIVATE crispembed-inpaint)
 add_executable(test-inpaint-cli-driver EXCLUDE_FROM_ALL
     tests/inpaint_cli_driver.cpp examples/cli/inpaint_cli.cpp)
 target_include_directories(test-inpaint-cli-driver PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/examples/cli)
-target_link_libraries(test-inpaint-cli-driver PRIVATE crispembed-core)
+target_link_libraries(test-inpaint-cli-driver PRIVATE crispembed-core crispembed-inpaint-temporal)
 
 # Observer code is compiled solely into this separate validation archive.
 add_library(crispembed-migan-test STATIC EXCLUDE_FROM_ALL src/migan.cpp)

@@ -194,7 +194,9 @@ def main(args):
         report['binaries'] = {key: dict(sha256=digest(value), bytes=Path(value).stat().st_size)
                               for key, value in vars(args).items() if key in ['cli', 'observed', 'diff', 'projection', 'quantizer']}
         env = {k: v for k, v in os.environ.items() if not k.startswith(('CRISPEMBED_', 'UOCR'))}
+        # F16 vision path pinned (F32 vision is the default since 2026-11-03)
         env.update(CRISPEMBED_UNLIMITED_OCR2='1', CRISPEMBED_UNLIMITED_OCR2_FAST='1',
+                   CRISPEMBED_UNLIMITED_OCR2_VISION_F32='0',
                    UOCR_DBG='1', UOCR2_FAST_CHUNK='2048', OMP_NUM_THREADS=str(args.threads),
                    HF_HUB_OFFLINE='1')
 

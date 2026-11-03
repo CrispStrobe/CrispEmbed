@@ -12,9 +12,28 @@ Qwen3.5-OCR 79 KB, Granite-Vision 56 KB, MiniCPM 46 KB, GLM 38 KB, GOT 36 KB, OX
 1.3 MB saving is orchestrator/dispatcher code that inlined them and their string data (data section
 479,841 -> 281,418). Numerics are unchanged: same flags, browser e2e passes.
 
+## Issue 71 video stream with temporal consistency (3 November 2026, Apple M1 Metal, `feat/inpaint-video-stream`)
+
+`--inpaint-stream WxH --inpaint-temporal 15`, registry MI-GAN512 F16 (`cstr/MI-GAN-512-GGUF`), Metal,
+`CRISPEMBED_INPAINT_GRAPH=1 CRISPEMBED_INPAINT_FAST=1`. Synthetic 720p subtitle clips with ground truth
+(subtitle text burned onto clean frames); PSNR inside the exact text mask, flicker = mean temporal-difference
+error inside the mask. Wall time includes PNG decode/encode in the harness.
+
+| Clip | Frames | Engine frames | PSNR in mask | Flicker | s/frame |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Moving shot | 180 | 47 | 28.86 dB | 3.28 | 0.216 |
+| Static shot | 100 | 0 | 34.57 dB | 3.19 | 0.046 |
+| Real film clip (no ground truth) | 241 | 168 | - | - | 0.34 |
+
+Moving shot pixels: 22.9% propagated, 32.4% reused, 1.9% flat fill, 42.9% engine (14.9% blended). Same clip
+without `CRISPEMBED_INPAINT_FAST`: 0.275 s/frame (graph) and 0.287 s/frame (`CRISPEMBED_MIGAN_GPU=1`), quality
+identical; `CRISPEMBED_MIGAN_BATCH=3` was slower (0.316 s/frame). On the real clip the flat fill skips the engine on
+21 of 189 frames that previously needed it. Output is on par with the earlier per-window research prototype (moving
+28.88 dB / flicker 3.31 at 0.24 s/frame).
+
 ## Unlimited-OCR-2 vision speed gates (2 November 2026, Kaggle 4 vCPU)
 
-**Vision speed gates (2026-11-02, default off).** `CRISPEMBED_UNLIMITED_OCR2_VISION_F32` (F32 SAM/CLIP block
+**Vision speed gates (2026-11-02; VISION_F32 default on since 2026-11-03).** `CRISPEMBED_UNLIMITED_OCR2_VISION_F32` (F32 SAM/CLIP block
 matrices made once at init) and `CRISPEMBED_UNLIMITED_OCR2_TILE_BATCH` (`_TILE_BATCH_MAX`, default 16: tiles through SAM
 layers/CLIP as one graph per layer). Trial pages (`crispembed-unlimited-ocr2-vision-speed` at `866d4dbb`, Kaggle Xeon
 2.2 GHz x4, receipts `tests/results/unlimited-ocr2/vision-speed.{json,md}`): every arm gives ids and output text
@@ -28,8 +47,14 @@ Real scans (`crispembed-ocr-real-scans-uocr2-vf32` at `7857ebf5`, receipt
 (1.43x on paired pages), RSS unchanged. Ids vs the original 13/20 exact (default `native-uocr2.json`: 12/20). Against
 the default: 17/19 pages identical; `receipt-cord-test-4` becomes exact vs the original; `de-2col-meyers-b13-103`
 differs from both the default and the original (it was already inexact; CER 0.0368 vs default 0.0369 vs original
-0.0371). **Not flipped**: it is not ids-identical to the default everywhere and not exact everywhere. Proposed default
-flip pending a decision on that one page (no page regresses from exact; mean CER unchanged or better).
+0.0371). **Default since 2026-11-03** (owner decision on that page: no page goes from exact to inexact,
+original-exact 12 -> 13/20, mean CER unchanged or better). Read with `core_env::explicitly_off`;
+`CRISPEMBED_UNLIMITED_OCR2_VISION_F32=0` restores the F16 vision products. `TILE_BATCH` stays default off.
+Frozen/verification kernels that measure the F16 path pin `=0` (`unlimited-ocr2-verify` `after`/`batch` arms,
+`ocr-real-scans` `native-uocr2`, `unlimited-ocr2-trial`, `unlimited-ocr2-precision`, `unlimited-ocr2-q4k` panel).
+Low-memory fallback: when available physical memory is below the copies' size + 1 GiB, init skips the copies,
+prints one stderr notice and runs the F16 path (the previous default; `CRISPEMBED_UNLIMITED_OCR2_LOW_MEMORY=1`
+forces it, `=0` disables the check; see `src/core/low_memory.h`).
 
 ## GOT-OCR2 original-pipeline parity (2 November 2026, `fix/got-ocr2-pipeline-parity`)
 
@@ -103,6 +128,8 @@ max-abs is at most 6.4e-5. All gates stay default-off.
   `CRISPEMBED_QWEN35_GRAPH_DECODER=1 CRISPEMBED_QWEN35_GRAPH_MATMUL=f32
   CRISPEMBED_MINICPM_OCR_VISION_F32=1 CRISPEMBED_MINICPM_OCR_VISION_BATCH=1
   CRISPEMBED_MINICPM_OCR_VISION_FLASH=1`. It keeps about 4.6 GB of extra F32 weight copies.
+  Since 2026-11-03 init skips the copies when available RAM is below their size + 1 GiB (F16 vision + `exact`
+  decoder matmul; `CRISPEMBED_MINICPM_OCR_LOW_MEMORY=1` forces, `=0` disables the check).
   **Default since 2026-11-02** (each gate `=0` opts out; `CRISPEMBED_QWEN35_GRAPH_MATMUL=exact|native`).
 
   Default flip A/B (2026-11-02, `crispembed-ocr-real-scans-minicpm-fast` at `dded1384`, Kaggle Xeon 2.2 GHz x4,
