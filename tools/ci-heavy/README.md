@@ -46,6 +46,7 @@ retrieve only the reports/images needed for review.
 - **`$HEAVY_OUT`**: write results here. The whole directory becomes the run's artifact, kept for 14 days.
 - **`$HEAVY_SCRATCH`**: large scratch space for models, builds and caches. Not uploaded. `HF_HOME` points inside it.
 - **`$HF_TOKEN`**: the repository secret (fine-grained, CI-scoped); may be empty.
+- **`$CRISPEMBED_BUILD_MODE`**: `portable` (default) or `native`, from the `build_mode` input. CMakeLists.txt reads it at the first configure: `portable` means `GGML_NATIVE=OFF` and `CRISPEMBED_NATIVE=OFF`, so the compiled kernels do not depend on the runner's CPU (MinerU Q4_K scored 0.952 and 0.967 on byte-identical files on two `-march=native` runners). Qualification and precision runs must use `portable`; `native` is for speed runs. An explicit `-DGGML_NATIVE=...` in a script wins. The workflow writes the mode and CPU to `$HEAVY_OUT/build-mode.txt`.
 - **`$HEAVY_OUT/summary.md`**: if present, appended to the run's summary page.
 - **Exit code**: non-zero when the check fails, so the run shows red. A readout that prints the same thing whether it passed or failed isn't a check.
 - **Paths**: the workflow only accepts `.py` / `.sh` files under `tools/ci-heavy/`.

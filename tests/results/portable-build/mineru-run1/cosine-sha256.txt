@@ -1,0 +1,2 @@
+3fff20ba955ed56c0293a654c40325f676ad381dbc4de1e1e3c29c675bec217e  r2-cpu.cosine.json
+9f4330abd4f6f9f243dff1f2104a285e25cf2f3c71c3573f2433d2391f5a0e67  r4-cpu.cosine.json

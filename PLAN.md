@@ -8,8 +8,8 @@ are merged. Open, scoped:
 - [x] 131 `presence` env reads → `core_env::on` / `core_env::value`; Lint guard
       added (`tests/test_env_vars_documented.py`). Defaults unchanged.
 - [x] MiniCPM-OCR CLI default = server default (`minicpm-ocr` alias, gates required).
-- [ ] CrispSorter: merge [PR #19](https://github.com/CrispStrobe/CrispSorter/pull/19)
-      (experimental `unlimited_ocr2`→13, `minicpm_ocr`→23 selectors) once its CI is green.
+- [x] CrispSorter: [PR #19](https://github.com/CrispStrobe/CrispSorter/pull/19) merged (`2d45977a`)
+      after all of its CI jobs passed (experimental `unlimited_ocr2`→13, `minicpm_ocr`→23 selectors).
       CrispCalc: no engine-id selector; catalog entries only after the app pin moves past
       0.17.12 (exact TODO in the wiring audit).
 - [ ] Optional, cross-repo: make `core_env::on`/`explicitly_off` treat `false`/`off`/`no`
@@ -42,8 +42,14 @@ differs from the old file only inside that span. Stage diff is cos 1.000000 on a
   a faithful reference (it also drops the indentation and the ngram rule).
   Open: Q4_K stays non-exact on receipt_example (ratio 0.7005, first divergence 83) and
   simple_form (0.8865, divergence 20) — quantization drift, now measurable against the exact
-  F16 pipeline; the earlier HF-port-based page comparisons (got_ocr2_f16_republish.sh) used the
-  HF port as "original" and should be re-pointed at got_ocr2_orig_probe.py if rerun.
+  F16 pipeline. The earlier page comparisons in got_ocr2_f16_republish.sh used the HF port as the
+  "original" (run 41391040980, kept on record). Done on `fix/got-republish-orig-ref`: the script now
+  runs got_ocr2_orig_probe.py (the original stepfun-ai/GOT-OCR2_0 chat() pipeline, transformers
+  4.37.2 venv) and compares generated IDs (`CRISPEMBED_GOT_OCR_DUMP_DIR`) and text against it.
+  Rerun 41588457181 (qualify, 256 tokens): F16-r2 is token-exact against the original on all
+  three cases (fox, receipt_example, simple_form); 19/19 stages cos 1.000000. Published Q4_K stays
+  non-exact (receipt divergence 83, ratio 0.8041; form divergence 20, ratio 0.9679). The old F16
+  file still gives `colorcolor...`. Receipt: `tests/results/got-ocr2-f16/qualify-41588457181-orig-ref/`.
 
 
 Source: `docs/gpu-support-matrix.md` §CUDA audit (branch `feat/cuda-audit`, Kaggle T4).
@@ -62,12 +68,17 @@ Source: `docs/gpu-support-matrix.md` §CUDA audit (branch `feat/cuda-audit`, Kag
 - Below-bar artifacts: f2llm/CLIP/BGE-M3 heads repaired and republished (fix/below-bar-artifacts,
   [summary](tests/results/below-bar/SUMMARY.md)). GOT-OCR2 F16: root cause found (see below). Still open:
   - A CUDA re-run of the new files.
-  - The bge-m3 Q8_0 mix has a thin ColBERT margin (0.9726 vs 0.97).
+  - [x] The bge-m3 Q8_0 mix has a thin ColBERT margin (0.9726 vs 0.97). Superseded on 3 November by
+    `bge-m3-heads-q8_0-enc0-15-f16` (CPU 0.9911, CUDA 0.9922; see below).
   - A ColBERT-qualifying Q4_K recipe for BGE-M3 (all tried mixes 0.37-0.60).
   - Done ([A/B](tests/results/spm-collapse-ab/SUMMARY.md)): `CRISPEMBED_SPM_COLLAPSE_SPACES` checked on all
     16 SentencePiece-encoder registry models; no regression, and the IDs match SentencePiece 76-77/77.
-  - BGE-M3 Q8_0 mix ColBERT is 0.9667 on CUDA (T4, cuda-audit run 7) vs 0.9718 on the CPU arm. It is below
-    0.97 on CUDA, so a wider F16 block range is needed before it qualifies there.
+  - [x] BGE-M3 Q8_0 mix ColBERT is 0.9667 on CUDA (T4, cuda-audit run 7) vs 0.9718 on the CPU arm. Done
+    (`fix/bge-m3-q8-mix-cuda`): blocks 0-15 F16 clears on both backends (CPU vs FlagEmbedding 0.9911, CUDA
+    0.9922, 763 MiB). Published as `cstr/bge-m3-GGUF@283645d8` and the `bge-m3-heads` alias now points to it.
+    The old file stays as `bge-m3-heads-q8-enc0-11` (CPU-only, superseded). Open: Metal A/B of the new file;
+    0-13 and 0-17 each flip one ColBERT token, so the margin depends on which blocks are F16, not only on
+    how many ([summary](tests/results/below-bar/SUMMARY.md)).
 - Pre-existing defects that are independent of the tokenizer switch
   ([A/B notes](tests/results/spm-collapse-ab/SUMMARY.md)):
   - Inputs over 512 tokens abort (`GGML_ASSERT` in get_rows) instead of truncating. Affected:
@@ -96,8 +107,14 @@ CUDA; `Q4_K_MIX` publication recipes are prepared, not published.
   Q4-class recipe would need more Q8_0 (MinerU `r4` keeps the same two divergences).
 - TeleOCR decoder Q4_K remains out of reach (best whole-decoder 0.870 with imatrix);
   a larger, in-distribution calibration set for the opt-in imatrix path is untested.
-- Hosted CPU builds use `-march=native`: MinerU's CPU cosine moves by up to 0.015 with
-  the runner ISA on identical bytes; pin `GGML_NATIVE=OFF` for future CPU receipts.
+- [x] Hosted CPU builds used `-march=native`: MinerU's CPU cosine moved by up to 0.015 with
+  the runner ISA on identical bytes. Fixed on `fix/portable-qual-build`: heavy-cpu.yml
+  `build_mode` (default `portable`) exports `CRISPEMBED_BUILD_MODE`, CMakeLists.txt maps
+  `portable` to `GGML_NATIVE=OFF`/`CRISPEMBED_NATIVE=OFF`, and every run writes
+  `build-mode.txt`. Receipts state the mode (docs/precision-acceptance.md). MinerU r2/r4 re-measured portable
+  three times: 0.952109 / 0.970185, byte-identical cosine reports
+  ([receipt](tests/results/portable-build/SUMMARY.md)). Open: TeleOCR winner in portable mode
+  before its `Q4_K_MIX` publication; an Intel-runner portable run (all three landed on EPYC 9V45).
 
 ## Metal GPU audit follow-ups — 1 November 2026
 

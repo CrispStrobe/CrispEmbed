@@ -1,0 +1,538 @@
+{
+ "script_version": "cuda-audit-run-v1",
+ "jobs": {
+  "embed-bge-m3-heads-mix-embed": {
+   "kind": "embed",
+   "seconds": 551.0,
+   "bge-m3-heads-f16.gguf": {
+    "precision": "f16",
+    "bar": 0.98,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9999985646720667,
+    "cos_cuda_vs_cpu": 0.9999985646720667,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      9.436,
+      2.07
+     ],
+     "cpu": [
+      20.518,
+      19.874
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-m3-heads-q8_0-mixed.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9994934799439376,
+    "cos_cuda_vs_cpu": 0.999866414739388,
+    "cos_cpu_vs_ref": 0.9994839488915482,
+    "wall": {
+     "cuda": [
+      4.375,
+      1.619
+     ],
+     "cpu": [
+      15.459,
+      15.663
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-m3-heads-q8_0-enc0-11-f16.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9994934799439376,
+    "cos_cuda_vs_cpu": 0.999866414739388,
+    "cos_cpu_vs_ref": 0.9994839488915482,
+    "wall": {
+     "cuda": [
+      1.619,
+      1.623
+     ],
+     "cpu": [
+      15.87,
+      16.064
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-m3-heads-q8_0-enc0-13-f16.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.999588241550283,
+    "cos_cuda_vs_cpu": 0.9998881925522652,
+    "cos_cpu_vs_ref": 0.9995816273268786,
+    "wall": {
+     "cuda": [
+      1.619,
+      1.719
+     ],
+     "cpu": [
+      17.012,
+      16.616
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-m3-heads-q8_0-enc0-15-f16.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9996320767175509,
+    "cos_cuda_vs_cpu": 0.9998855795257998,
+    "cos_cpu_vs_ref": 0.9996276928051012,
+    "wall": {
+     "cuda": [
+      1.619,
+      1.668
+     ],
+     "cpu": [
+      17.01,
+      16.965
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-m3-heads-q8_0-enc0-17-f16.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9996946285026156,
+    "cos_cuda_vs_cpu": 0.9999119254612117,
+    "cos_cpu_vs_ref": 0.999702281541767,
+    "wall": {
+     "cuda": [
+      1.619,
+      1.669
+     ],
+     "cpu": [
+      18.017,
+      17.867
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-m3-heads-q8_0-enc0-19-f16.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9997518578467016,
+    "cos_cuda_vs_cpu": 0.999940125057312,
+    "cos_cpu_vs_ref": 0.9997509795903453,
+    "wall": {
+     "cuda": [
+      1.72,
+      1.721
+     ],
+     "cpu": [
+      18.924,
+      18.872
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-m3-heads-q8_0-enc0-23-f16.gguf": {
+    "precision": "f16",
+    "bar": 0.98,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9999937337608608,
+    "cos_cuda_vs_cpu": 0.9999985409370195,
+    "cos_cpu_vs_ref": 0.9999941832438638,
+    "wall": {
+     "cuda": [
+      1.719,
+      1.719
+     ],
+     "cpu": [
+      20.269,
+      20.016
+     ]
+    },
+    "cuda_used": true
+   }
+  },
+  "embed-bge-m3-heads-mix-sparse": {
+   "kind": "embed",
+   "seconds": 376.2,
+   "bge-m3-heads-f16.gguf": {
+    "precision": "f16",
+    "bar": 0.98,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9999995044135026,
+    "cos_cuda_vs_cpu": 0.9999995044135026,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      2.07,
+      2.019
+     ],
+     "cpu": [
+      20.52,
+      20.773
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-m3-heads-q8_0-mixed.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9998808391494561,
+    "cos_cuda_vs_cpu": 0.999971500504745,
+    "cos_cpu_vs_ref": 0.9999076883373503,
+    "wall": {
+     "cuda": [
+      1.669,
+      1.669
+     ],
+     "cpu": [
+      15.306,
+      15.458
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-m3-heads-q8_0-enc0-11-f16.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9998808391494561,
+    "cos_cuda_vs_cpu": 0.999971500504745,
+    "cos_cpu_vs_ref": 0.9999076883373503,
+    "wall": {
+     "cuda": [
+      1.569,
+      1.618
+     ],
+     "cpu": [
+      15.309,
+      15.157
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-m3-heads-q8_0-enc0-13-f16.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9999276770943277,
+    "cos_cuda_vs_cpu": 0.999969433134665,
+    "cos_cpu_vs_ref": 0.9999320168703564,
+    "wall": {
+     "cuda": [
+      1.619,
+      1.619
+     ],
+     "cpu": [
+      15.911,
+      16.111
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-m3-heads-q8_0-enc0-15-f16.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9999327818440663,
+    "cos_cuda_vs_cpu": 0.9999774617434217,
+    "cos_cpu_vs_ref": 0.9999545847399084,
+    "wall": {
+     "cuda": [
+      1.619,
+      1.62
+     ],
+     "cpu": [
+      17.01,
+      17.016
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-m3-heads-q8_0-enc0-17-f16.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9999705769341841,
+    "cos_cuda_vs_cpu": 0.9999872202475366,
+    "cos_cpu_vs_ref": 0.9999684448579864,
+    "wall": {
+     "cuda": [
+      1.669,
+      1.669
+     ],
+     "cpu": [
+      17.662,
+      17.661
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-m3-heads-q8_0-enc0-19-f16.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9999768236104633,
+    "cos_cuda_vs_cpu": 0.9999899548962613,
+    "cos_cpu_vs_ref": 0.9999738141534057,
+    "wall": {
+     "cuda": [
+      1.669,
+      1.668
+     ],
+     "cpu": [
+      18.465,
+      18.27
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-m3-heads-q8_0-enc0-23-f16.gguf": {
+    "precision": "f16",
+    "bar": 0.98,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9999995247147399,
+    "cos_cuda_vs_cpu": 0.9999997048354101,
+    "cos_cpu_vs_ref": 0.9999987883303229,
+    "wall": {
+     "cuda": [
+      1.719,
+      1.669
+     ],
+     "cpu": [
+      19.918,
+      19.817
+     ]
+    },
+    "cuda_used": true
+   }
+  },
+  "embed-bge-m3-heads-mix-colbert": {
+   "kind": "embed",
+   "seconds": 398.1,
+   "bge-m3-heads-f16.gguf": {
+    "precision": "f16",
+    "bar": 0.98,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.999179262731933,
+    "cos_cuda_vs_cpu": 0.999179262731933,
+    "cos_cpu_vs_ref": null,
+    "wall": {
+     "cuda": [
+      2.373,
+      2.274
+     ],
+     "cpu": [
+      21.181,
+      21.089
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-m3-heads-q8_0-mixed.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": false,
+    "cos_cuda_vs_ref": 0.9667083464495176,
+    "cos_cuda_vs_cpu": 0.9760693356037518,
+    "cos_cpu_vs_ref": 0.973272038679994,
+    "wall": {
+     "cuda": [
+      1.973,
+      1.973
+     ],
+     "cpu": [
+      15.624,
+      15.625
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-m3-heads-q8_0-enc0-11-f16.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": false,
+    "cos_cuda_vs_ref": 0.9667083464495176,
+    "cos_cuda_vs_cpu": 0.9760693356037518,
+    "cos_cpu_vs_ref": 0.973272038679994,
+    "wall": {
+     "cuda": [
+      1.923,
+      1.873
+     ],
+     "cpu": [
+      15.377,
+      15.47
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-m3-heads-q8_0-enc0-13-f16.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9842838574396948,
+    "cos_cuda_vs_cpu": 0.9620536080462473,
+    "cos_cpu_vs_ref": 0.9488095935663948,
+    "wall": {
+     "cuda": [
+      1.874,
+      1.923
+     ],
+     "cpu": [
+      16.315,
+      16.28
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-m3-heads-q8_0-enc0-15-f16.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9921546993839513,
+    "cos_cuda_vs_cpu": 0.9929388022513592,
+    "cos_cpu_vs_ref": 0.9910944897149899,
+    "wall": {
+     "cuda": [
+      1.923,
+      1.974
+     ],
+     "cpu": [
+      17.076,
+      16.827
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-m3-heads-q8_0-enc0-17-f16.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": false,
+    "cos_cuda_vs_ref": 0.9514734220168252,
+    "cos_cuda_vs_cpu": 0.9922219044983954,
+    "cos_cpu_vs_ref": 0.9724785845215483,
+    "wall": {
+     "cuda": [
+      1.923,
+      1.973
+     ],
+     "cpu": [
+      17.627,
+      17.818
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-m3-heads-q8_0-enc0-19-f16.gguf": {
+    "precision": "q8_0",
+    "bar": 0.97,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9947648212888236,
+    "cos_cuda_vs_cpu": 0.9944621004961048,
+    "cos_cpu_vs_ref": 0.9922276785063838,
+    "wall": {
+     "cuda": [
+      1.974,
+      1.973
+     ],
+     "cpu": [
+      18.567,
+      18.521
+     ]
+    },
+    "cuda_used": true
+   },
+   "bge-m3-heads-q8_0-enc0-23-f16.gguf": {
+    "precision": "f16",
+    "bar": 0.98,
+    "qualifies": true,
+    "cos_cuda_vs_ref": 0.9954703718197713,
+    "cos_cuda_vs_cpu": 0.994668181677865,
+    "cos_cpu_vs_ref": 0.9926952837979595,
+    "wall": {
+     "cuda": [
+      2.024,
+      2.024
+     ],
+     "cpu": [
+      20.082,
+      20.284
+     ]
+    },
+    "cuda_used": true
+   }
+  }
+ },
+ "commit": "66a5eba08fd8ac0887e389c8609de3aabba502a1",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "batch": "h",
+ "threads": 4,
+ "cpu_model": "Intel(R) Xeon(R) CPU @ 2.00GHz",
+ "date": "2026-11-03",
+ "phase": "done",
+ "updated": "2026-11-03T07:01:27Z",
+ "downloads": {
+  "bge-m3-heads-f16.gguf": {
+   "seconds": 11.6,
+   "error": null,
+   "bytes": 1676844960
+  },
+  "bge-m3-heads-q8_0-mixed.gguf": {
+   "seconds": 5.5,
+   "error": null,
+   "bytes": 752473312
+  },
+  "bge-m3-heads-f32.gguf": {
+   "seconds": 91.9,
+   "error": null,
+   "bytes": 2280824736,
+   "sha256": "fd9fb3eb2ca7decf6a95674278642d11d70ece724b38c0604a2143a06fb17b17"
+  },
+  "bge-m3-heads-q8_0-enc0-11-f16.gguf": {
+   "seconds": 102.3,
+   "error": null,
+   "bytes": 752473312,
+   "sha256": "b8ecf56f5ab3d8c8aaaaa947348e5cd2881f2ecf7436684787dcbf5174fd37e2"
+  },
+  "bge-m3-heads-q8_0-enc0-13-f16.gguf": {
+   "seconds": 4.6,
+   "error": null,
+   "bytes": 776066272,
+   "sha256": "c8a89fb20fea8bb8e6f95b95d45214809a04c29cd2aee0475f516f86ecf0a17e"
+  },
+  "bge-m3-heads-q8_0-enc0-15-f16.gguf": {
+   "seconds": 4.6,
+   "error": null,
+   "bytes": 799659232,
+   "sha256": "3379a2167b4fc63861561959be0d3bed70b3b8706698bec5532a7f0e1321ee0c"
+  },
+  "bge-m3-heads-q8_0-enc0-17-f16.gguf": {
+   "seconds": 4.5,
+   "error": null,
+   "bytes": 823252192,
+   "sha256": "baf3a17ca3756fb7d2fba0c4d497c1cb834a3b3c930eb487120eb6b07ba72ee3"
+  },
+  "bge-m3-heads-q8_0-enc0-19-f16.gguf": {
+   "seconds": 8.9,
+   "error": null,
+   "bytes": 846845152,
+   "sha256": "cfa6eb9f70d3ce4d6923f0feec13518165b229c659f34d709775d2f762e8b9c5"
+  },
+  "bge-m3-heads-q8_0-enc0-23-f16.gguf": {
+   "seconds": 4.4,
+   "error": null,
+   "bytes": 894031072,
+   "sha256": "99d3e72b7d2cadddb2fc6e34b4f6f9a7f9c077d38197e52c569bd2d56403b08a"
+  }
+ },
+ "conversions": {
+  "bge-m3-heads-f32.gguf": "Loading model: BAAI/bge-m3\n  loaded sparse_linear.pt (['weight', 'bias'])\n  loaded colbert_linear.pt (['weight', 'bias'])\nConfig: hidden=1024 layers=24 heads=16 intermediate=4096 vocab=250002\n  detected: sparse_linear head\n  detected: colbert_linear head\n  position_offset: 2 (RoBERTa/MPNet-style)\n  pooling: CLS (from 1_Pooling/config.json)\n  format: CrispEmbed (model_type=bgem3)\n  tokenizer: SentencePiece (250002 tokens, scores from tokenizer.json)\n  embeddings: ok\n  enc.0: ok\n  enc.1: ok\n  enc.2: ok\n  enc.3: ok\n  enc.4: ok\n  enc.5: ok\n  enc.6: ok\n  enc.7: ok\n  enc.8: ok\n  enc.9: ok\n  enc.10: ok\n  enc.11: ok\n  enc.12: ok\n  enc.13: ok\n  enc.14: ok\n  enc.15: ok\n  enc.16: ok\n  enc.17: ok\n  enc.18: ok\n  enc.19: ok\n  enc.20: ok\n  enc.21: ok\n  enc.22: ok\n  enc.23: ok\n  pooler: ok (act=tanh)\n  sparse_linear: ok\n  colbert_linear: ok\n\nWrote /kaggle/temp/cuda-audit/models/bge-m3-heads-f32.gguf (2175.2 MB)\nWarning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.\n\nLoading weights:   0%|          | 0/391 [00:00<?, ?it/s]\nLoading weights:  73%|███████▎  | 287/391 [00:00<00:00, 2862.71it/s]\nLoading weights: 100%|██████████| 391/391 [00:00<00:00, 2858.91it/s]\n"
+ }
+}
