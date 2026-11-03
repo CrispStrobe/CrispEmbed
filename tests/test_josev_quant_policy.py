@@ -47,6 +47,20 @@ def main():
                     got = TYPES[kind]
             assert got == want, (name, tensor, got, want)
         print(f'{name} == {recipe}: {len(measured)} tensors')
+    pub = json.loads((ROOT / 'docs/josev2b-q4k-publication-v1.json').read_text())
+    assert pub['published'] is False
+    mix = pub['recipes']['Q4_K_MIX']
+    assert mix['quantize_env']['CRISPEMBED_QUANTIZE_JOSEV_POLICY'] in policies and mix['precision_gate'] == 'cosine'
+    q8 = pub['recipes']['Q8_0']
+    measured = sweep.plan(rows, q8['precision_dtype'])
+    for tensor, want in measured.items():
+        got = 8
+        for rule in q8['tensor_type']:
+            pattern, _, kind = rule.rpartition('=')
+            if fnmatchcase(tensor, pattern):
+                got = TYPES[kind.upper()]
+        assert got == want, ('Q8_0 publication', tensor, got, want)
+    print('publication Q8_0 rules == q8-all')
 
 
 if __name__ == '__main__':
