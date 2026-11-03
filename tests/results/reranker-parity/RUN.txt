@@ -1,0 +1,1 @@
+https://github.com/CrispStrobe/CrispEmbed/actions/runs/41588538331 (source 0fb9e738, build_mode=portable)

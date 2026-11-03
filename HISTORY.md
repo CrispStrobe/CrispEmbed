@@ -1,3 +1,19 @@
+## 3 November 2026 — Encoder truncation and the XLM-R cross-encoder pair layout
+
+Branch `fix/rerank-pair-and-truncation`. Hosted run 41588538331 at `0fb9e738` (portable build, 77-text panel, raw
+logit of HF `AutoModelForSequenceClassification` fp32). Receipts: `tests/results/reranker-parity/`.
+- **Pair layout** (`CRISPEMBED_PAIR_ROBERTA_SEP`, default on, `=0` is the old layout). The HF XLM-R/RoBERTa
+  tokenizers build `<s> a </s></s> b </s>`; we built a single separator. Max/mean |native - HF| on the published
+  Q8_0 GGUFs: bge-reranker-v2-m3 1.860/0.056 -> 0.229/0.008, bge-reranker-base 1.602/0.104 -> 0.176/0.008,
+  jina-reranker-v2 0.137/0.021 -> 0.026/0.006. The DeBERTa/BERT rerankers keep one separator, as HF does, and
+  are unchanged: mxbai-xsmall 0.065, mxbai-base 0.079, ms-marco-MiniLM-L-6 0.048.
+- **Over-length input** (`CRISPEMBED_POS_EMBD_TRUNCATE`, default on). XLM-R position tables start at offset 2,
+  so 514 rows hold 512 tokens. e5-base/large, granite-107m/278m, bge-reranker-base and xlmr-ner-hrl went from an
+  abort (rc -6) to 512 tokens with the special tokens kept; ids equal HF on all except xlmr-ner-hrl, whose GGUF
+  has no tokenizer scores. Cosine against sentence-transformers on the truncated input: e5-base 0.9990,
+  e5-large 1.0000, granite-107m 0.9907, granite-278m 0.9946. e5-small and all-MiniLM-L6 were already fine.
+  LiLT rejects over-length caller ids instead of aborting. Regression test: `test-pair-truncation`.
+
 ## 3 November 2026 — Flutter macOS: dylibs shipped and identified by unversioned names
 
 * Bug (reported from the CometBeat app): a fresh `flutter build macos --debug` produced an app

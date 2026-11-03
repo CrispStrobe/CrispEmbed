@@ -81,9 +81,21 @@ Source: `docs/gpu-support-matrix.md` §CUDA audit (branch `feat/cuda-audit`, Kag
     how many ([summary](tests/results/below-bar/SUMMARY.md)).
 - Pre-existing defects that are independent of the tokenizer switch
   ([A/B notes](tests/results/spm-collapse-ab/SUMMARY.md)):
-  - Inputs over 512 tokens abort (`GGML_ASSERT` in get_rows) instead of truncating. Affected:
-    e5-base/large, granite-107m/278m, bge-reranker-base, xlmr-ner-hrl.
-  - bge-reranker-v2-m3 and bge-reranker-base scores differ from HF by up to 1.9 logits, and the order differs.
+  - [x] Inputs over 512 tokens aborted (`GGML_ASSERT` in get_rows) instead of truncating. Fixed on
+    `fix/rerank-pair-and-truncation` (`CRISPEMBED_POS_EMBD_TRUNCATE`, default on): truncation to
+    `rows - position_offset` (512). e5-base/large, granite-107m/278m, bge-reranker-base, xlmr-ner-hrl:
+    rc -6 -> 0, 512 tokens, ids = HF ([receipt](tests/results/reranker-parity/summary.md)).
+  - [x] bge-reranker-v2-m3/-base scores differed from HF by up to 1.9 logits. Root cause: pair layout
+    `<s> a </s> b </s>` instead of HF's `<s> a </s></s> b </s>`. Fixed (`CRISPEMBED_PAIR_ROBERTA_SEP`,
+    default on): max |Δ| 1.860 -> 0.229 (v2-m3), 1.602 -> 0.176 (base), jina-v2 0.137 -> 0.026.
+    Open:
+    - Attribute the remaining ~0.2 (Q8_0 files vs fp32 HF; expected quantization, unproven). The
+      harness's per-layer stage diff came back empty for every model (`stage_diff_worst` None), so it needs a
+      fix and a rerun, ideally also on the F16/F32 GGUFs.
+    - The harness's ranking-order check (`order_equal`, exact argsort over 77 scores) is False for every
+      model in both arms, including ms-marco. It is too strict to read; replace it with Spearman/top-k.
+    - ettin-reranker-17m was not checked: its tokenizer needs transformers 5 (the harness error made run
+      41588538331 red).
   - The xlmr-ner-hrl GGUF has no Unigram scores (12/76 texts tokenize like HF).
   - paraphrase-multilingual: native truncates at 512, sentence-transformers at 128.
 - Stage-diff references that fail on both arms: PP-OCRv6 small rec fox ref, PAN, HAT.
