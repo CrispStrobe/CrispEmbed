@@ -1,3 +1,18 @@
+## 3 November 2026 — MoEdern Q4_K lane: 115M plain and 27M mixed clear the Q4_K bar
+
+Source `perf/q4k-moedern-20261103`, [doc](docs/moedern-q4k-mixed.md). Hosted CPU, portable build
+(`GGML_NATIVE=OFF`), x86 EPYC 7763 and ARM Neoverse-N2; reference = frozen original token vectors
+(pinned report SHAs). Metric = minimum row cosine over every token vector of the ten cases.
+115M: plain padded Q4_K (`moedern115m_q4k_v1`) 0.9793 / 0.9789, 85.3 MiB vs Q8_0 134.6 MiB (0.63x).
+27M: plain Q4_K 0.9250 / 0.9219 fails; `moedern27m_q4k_v1` (Q8_0 base, routed-expert up/down Q4_K)
+0.9683 / 0.9681, 30.8 MiB vs 35.7 MiB; `q8+exps+attn_q+attn_k` (27.9 MiB) passed x86 by 0.0005 and
+failed ARM (0.9390), rejected. 1.5M: no recipe clears 0.94 (Q4_K 0.804, Q8_0 0.875) and Q4_K cannot
+be smaller than Q8_0 (128-wide rows pad to 256). Named Q8_0 fails 0.97 on 27M/115M (0.9315/0.9670)
+through single-token top-2 routing flips; token IDs/masks exact in every arm. New default-off
+`CRISPEMBED_MOEDERN_Q4_K_MIXED` profile; plain padded and named Q8_0 profiles unchanged. Initial
+`moedern-q4k-padded.yml` 27M/115M attempts failed in Kaggle input preparation and are retained
+(`tests/results/moedern-colbert/q4k-padded-panel-initial.json`). No publication.
+
 ## 3 November 2026 — Encoder truncation and the XLM-R cross-encoder pair layout
 
 Branch `fix/rerank-pair-and-truncation`. Hosted run 41588538331 at `0fb9e738` (portable build, 77-text panel, raw

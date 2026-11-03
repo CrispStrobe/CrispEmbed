@@ -77,6 +77,29 @@ class Controls(unittest.TestCase):
         self.assertRegex(engine, r'const bool mixed = padded_q4k && core_env::on\("CRISPEMBED_MOEDERN_Q4_K_MIXED"\)')
         self.assertIn('Mixed: critical tensor must stay F32', engine)
 
+    def test_publication_recipes_clear_the_cosine_bar_in_every_run(self):
+        import json
+        cfg = json.loads((ROOT / 'docs/moedern-q4k-publication-v1.json').read_text())
+        self.assertEqual(cfg['status'], 'prepared, not published')
+        for variant, recipes in cfg['recipes'].items():
+            for name, rec in recipes.items():
+                self.assertEqual((rec['precision_gate'], rec['precision_tier']), ('cosine', 'q4_k'))
+                self.assertEqual(m.POLICIES[rec['policy']]['variant'], variant)
+                receipt = json.loads((ROOT / rec['precision_receipt']).read_text())
+                self.assertEqual(receipt['variant'], variant)
+                arms = [r['arms'][rec['precision_dtype']] for r in receipt['runs'] if rec['precision_dtype'] in r['arms']]
+                self.assertTrue(arms, name)
+                for arm in arms:
+                    self.assertTrue(arm['ids_exact'])
+                    self.assertEqual(len(arm['cases']), 10)
+                    for case in arm['cases'].values():
+                        for kind in ('all', 'selected'):
+                            self.assertGreater(case[kind]['min_row_cosine'], 0.94)
+                runs = [r for r in receipt['runs'] if rec['policy'] in r['arms'] or
+                        m.POLICIES[rec['policy']]['recipe'] in r['arms']]
+                self.assertTrue({'portable' in r['build']['mode'] for r in runs} == {True})
+                self.assertGreaterEqual(len({r['build']['cpu'] for r in runs}), 2, 'two CPU ISAs required')
+
     def test_driver_is_hosted_only_and_records_build_mode(self):
         text = (ROOT / 'tools/ci-heavy/moedern_q4k_lanes.py').read_text()
         self.assertIn("os.environ.get('GITHUB_ACTIONS') == 'true'", text)
