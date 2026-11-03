@@ -489,6 +489,14 @@ std::vector<token_result> classify(context * ctx, const int32_t * input_ids,
                                    int T) {
     std::vector<token_result> results;
     if (!ctx || !input_ids || !bbox || T <= 0) return results;
+    // Positions start at 2 (RoBERTa), so the table holds max_pos - 2 tokens. A
+    // longer caller-supplied sequence used to abort in get_rows; HF's LiLT
+    // processor truncates before the model, so reject it here instead.
+    if (T > ctx->model.max_pos - 2) {
+        fprintf(stderr, "lilt_kie: %d tokens exceed the %d-token position table; truncate the input\n", T,
+                ctx->model.max_pos - 2);
+        return results;
+    }
 
     const bool bench = ctx->bench;
     auto t_total = std::chrono::steady_clock::now();
@@ -620,7 +628,7 @@ std::vector<token_result> classify(context * ctx, const int32_t * input_ids,
 
 std::vector<dump_tensor> classify_dump(context * ctx, const int32_t * input_ids, const int32_t * bbox, int T) {
     std::vector<dump_tensor> dumps;
-    if (!ctx || !input_ids || !bbox || T <= 0) return dumps;
+    if (!ctx || !input_ids || !bbox || T <= 0 || T > ctx->model.max_pos - 2) return dumps;
 
     auto & m = ctx->model;
 

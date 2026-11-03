@@ -314,8 +314,8 @@ embed_tokens SentencePieceTokenizer::encode_pair(const std::string & text_a, con
     auto ids_a = tokenize_text(to_marked(text_a));
     auto ids_b = tokenize_text(to_marked(text_b));
 
-    // <s> a </s> b </s> = n_a + n_b + 3 tokens
-    int budget = max_length_ - 3;
+    // <s> a </s> b </s> = n_a + n_b + 3 tokens (+1 with the XLM-R double separator)
+    int budget = max_length_ - (pair_double_sep_ ? 4 : 3);
     while ((int)(ids_a.size() + ids_b.size()) > budget) {
         if (ids_a.size() >= ids_b.size())
             ids_a.pop_back();
@@ -327,6 +327,7 @@ embed_tokens SentencePieceTokenizer::encode_pair(const std::string & text_a, con
     ids.push_back(bos_id_);
     for (int id : ids_a) ids.push_back(id);
     ids.push_back(eos_id_);
+    if (pair_double_sep_) ids.push_back(eos_id_);
     for (int id : ids_b) ids.push_back(id);
     ids.push_back(eos_id_);
 
