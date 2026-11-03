@@ -1,0 +1,37 @@
+{
+ "schema": "crispembed-moedern-q4k-padded-panel-initial-v1",
+ "workflow": ".github/workflows/moedern-q4k-padded.yml",
+ "source": "83eac856cc684808e417ebfed7db7c2f677dc09f",
+ "runs": {
+  "1.5M": {
+   "run": 41587636658,
+   "conclusion": "success",
+   "status": "numeric_rejection",
+   "f32_min_row_cosine": 0.9999999999972204,
+   "q4k_min_row_cosine": 0.8040291970482855,
+   "q4k_maxsim_abs": [
+    0.7984180536987306,
+    0.3267269320556636,
+    0.057159447192383084
+   ],
+   "q4k_bytes": 4213024,
+   "q4k_sha256": "fdf65812f87d9ae631e73b0119b529dfc159a68c575409db8ed2bc89f97cc504",
+   "build_ggml_native": "OFF (asserted in CMakeCache)"
+  },
+  "27M": {
+   "run": 41587639310,
+   "conclusion": "failure",
+   "stage": "authenticated Kaggle input preparation",
+   "error_type": "ModuleNotFoundError",
+   "model_accessed": false
+  },
+  "115M": {
+   "run": 41587641989,
+   "conclusion": "failure",
+   "stage": "authenticated Kaggle input preparation",
+   "error_type": "ModuleNotFoundError",
+   "model_accessed": false
+  }
+ },
+ "note": "Initial attempts retained. The 27M/115M original inputs were then taken from the same pinned reports via the fixture dataset by tools/ci-heavy/moedern_q4k_lanes.py."
+}

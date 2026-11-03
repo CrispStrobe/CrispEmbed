@@ -20,6 +20,7 @@
 // diagnostic speed arm and are not held to the F32 parity gate.
 #include "moedern_family_engine.h"
 #include "moedern_q4k_profile.h"
+#include "moedern_q4k_mixed.h"
 #include "moedern_q8_profile.h"
 #include "core/env_gate.h"
 #include "core/gguf_loader.h"
@@ -122,7 +123,8 @@ uint32_t u32(gguf_context * g, const std::string & key) {
     require(at >= 0 && gguf_get_kv_type(g, at) == GGUF_TYPE_UINT32, "Missing metadata: " + key);
     return gguf_get_val_u32(g, at);
 }
-profile read_profile(gguf_context * g, bool allow_quant, bool padded_q4k = false, bool named_q8 = false) {
+profile read_profile(gguf_context * g, bool allow_quant, bool padded_q4k = false, bool named_q8 = false,
+                     bool mixed = false) {
     const int arch = gguf_find_key(g, "general.architecture");
     require(arch >= 0 && std::string(gguf_get_val_str(g, arch)) == ARCH, "Only explicit MoEdern architecture accepted");
     const int rev = gguf_find_key(g, (std::string(ARCH) + ".source_revision").c_str());
@@ -168,6 +170,22 @@ profile read_profile(gguf_context * g, bool allow_quant, bool padded_q4k = false
             require(type == (selected ? GGML_TYPE_Q8_0 : GGML_TYPE_F32) && (!selected || storage[0] % 32 == 0),
                     "Named Q8_0/F32 critical role differs: " + name);
             actual_q8 += selected;
+        } else if (padded_q4k && mixed) {
+            // CRISPEMBED_MOEDERN_Q4_K_MIXED: declared matmul weights are real padded
+            // Q4_K, other matmul weights Q8_0 (32-aligned) or F32, all else F32.
+            const auto declared = declarations.find(name);
+            if (declared != declarations.end()) {
+                require(quantizable(name) && moedern_q4k::compresses(storage[0]) && type == GGML_TYPE_Q4_K &&
+                            declared->second.logical == storage[0] &&
+                            declared->second.stored == moedern_q4k::storage_columns(storage[0]),
+                        "Mixed: real Q4_K/semantic columns required: " + name);
+                storage[0] = declared->second.stored;
+                ++actual_q4k;
+            } else if (type == GGML_TYPE_Q8_0) {
+                require(quantizable(name) && storage[0] % 32 == 0, "Mixed: Q8_0 only for 32-aligned matmul: " + name);
+                ++actual_q8;
+            } else
+                require(type == GGML_TYPE_F32, "Mixed: critical tensor must stay F32: " + name);
         } else if (padded_q4k) {
             const bool selected = quantizable(name) && moedern_q4k::compresses(storage[0]);
             if (selected) {
@@ -245,7 +263,7 @@ struct context {
     ggml_backend_t backend = nullptr;
     ggml_gallocr_t galloc = nullptr; // fast path only: persistent graph allocator
     std::vector<uint8_t> meta;       // fast path only: graph/tensor metadata arena
-    bool fast = false, padded_q4k = false, named_q8 = false;
+    bool fast = false, padded_q4k = false, named_q8 = false, mixed = false;
     std::map<std::string, moedern_q4k::columns> columns;
     core_gguf::WeightLoad weights;
     profile p;
@@ -264,6 +282,8 @@ static context * init_impl(const char * path, int threads, std::string & failure
                            bool named_q8 = false) {
     failure.clear();
     try {
+        // Default-off mixed recipe variant of the padded Q4_K profile.
+        const bool mixed = padded_q4k && core_env::on("CRISPEMBED_MOEDERN_Q4_K_MIXED");
         require(core_env::on("CRISPEMBED_MOEDERN_FAMILY") && core_env::on("CRISPEMBED_MOEDERN_COLBERT"),
                 "MoEdern family gates are OFF");
         require(path && *path && threads >= 1 && threads <= 64, "Invalid path/thread count");
@@ -276,6 +296,9 @@ static context * init_impl(const char * path, int threads, std::string & failure
                 "Named Q8_0 requires Q8_0/QUANT/FAST gates and Q4_K_PADDED OFF");
         if (named_q8) {
             const bool bounded = moedern_q8::file_bounds(path, failure);
+            require(bounded, failure);
+        } else if (mixed) {
+            const bool bounded = moedern_q4k_mixed::file_bounds(path, failure);
             require(bounded, failure);
         } else if (padded_q4k) {
             const bool bounded = moedern_q4k::file_bounds(path, failure);
@@ -294,12 +317,17 @@ static context * init_impl(const char * path, int threads, std::string & failure
                 "Named Q8_0 profile requires explicit Q8_0 initializer");
         if (named_q8) {
             require(moedern_q8::metadata(meta.get(), failure), failure);
+        } else if (mixed) {
+            const auto * pin = moedern_q4k_mixed::metadata(meta.get(), failure);
+            require(pin, failure);
+            c->columns = moedern_q4k::declarations(meta.get());
         } else if (padded_q4k) {
             const auto * pin = moedern_q4k::metadata(meta.get(), failure);
             require(pin, failure);
             c->columns = moedern_q4k::declarations(meta.get());
         }
-        c->p = read_profile(meta.get(), quant, padded_q4k, named_q8);
+        c->p = read_profile(meta.get(), quant, padded_q4k, named_q8, mixed);
+        c->mixed = mixed;
         c->padded_q4k = padded_q4k;
         c->named_q8 = named_q8;
         c->threads = threads;
@@ -310,9 +338,10 @@ static context * init_impl(const char * path, int threads, std::string & failure
             auto * t = c->get(row.first);
             auto storage = row.second;
             if (padded_q4k && c->columns.count(row.first)) storage[0] = c->columns.at(row.first).stored;
-            const auto expected_type = padded_q4k && c->columns.count(row.first) ? GGML_TYPE_Q4_K
-                                       : named_q8 && quantizable(row.first)      ? GGML_TYPE_Q8_0
-                                                                                 : GGML_TYPE_F32;
+            const auto expected_type = padded_q4k && c->columns.count(row.first)                      ? GGML_TYPE_Q4_K
+                                       : mixed && quantizable(row.first) && t->type == GGML_TYPE_Q8_0 ? GGML_TYPE_Q8_0
+                                       : named_q8 && quantizable(row.first)                           ? GGML_TYPE_Q8_0
+                                                                                                      : GGML_TYPE_F32;
             require(((padded_q4k || named_q8) ? t->type == expected_type
                                               : weight_type_ok(row.first, t->type, t->ne[0], quant)) &&
                         ggml_is_contiguous(t) && std::equal(storage.begin(), storage.end(), t->ne),
@@ -525,6 +554,7 @@ bool encode_tokens(context * ctx, const int32_t * ids, const uint8_t * supplied,
                     (core_env::on("CRISPEMBED_MOEDERN_Q4_K_PADDED") && core_env::on("CRISPEMBED_MOEDERN_QUANT") &&
                      core_env::on("CRISPEMBED_MOEDERN_FAST")),
                 "Padded Q4_K gates are OFF");
+        require(!ctx->mixed || core_env::on("CRISPEMBED_MOEDERN_Q4_K_MIXED"), "Mixed Q4_K gate is OFF");
         require(!ctx->named_q8 ||
                     (core_env::on("CRISPEMBED_MOEDERN_Q8_0") && core_env::on("CRISPEMBED_MOEDERN_QUANT") &&
                      core_env::on("CRISPEMBED_MOEDERN_FAST") && !core_env::on("CRISPEMBED_MOEDERN_Q4_K_PADDED")),

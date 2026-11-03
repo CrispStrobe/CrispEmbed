@@ -187,6 +187,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
+414 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 415 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
@@ -690,6 +691,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_MOEDERN_FAMILY` | on | off | bool | default-off experimental / opt-in | `src/moedern_family_engine.cpp`, `src/moedern_text.cpp`, `src/moedern_text_frontend.cpp` | else |
 | `CRISPEMBED_MOEDERN_FAST` | on | off | bool | default-off experimental / opt-in | `src/moedern_family_engine.cpp`, `src/moedern_text.cpp`, `src/moedern_text_frontend.cpp` | CRISPEMBED_MOEDERN_FAST lifts the one/two-thread bound for the family fast path only. |
+| `CRISPEMBED_MOEDERN_Q4_K_MIXED` | on | off | bool | default-off experimental / opt-in | `src/moedern_family_engine.cpp`, `src/moedern_text_frontend.cpp` | Default-off mixed recipe variant of the padded Q4_K profile. |
 | `CRISPEMBED_MOEDERN_Q4_K_PADDED` | on | off | bool | default-off experimental / opt-in | `src/moedern_family_engine.cpp`, `src/moedern_text.cpp`, `src/moedern_text_frontend.cpp` |  |
 | `CRISPEMBED_MOEDERN_Q8_0` | on | off | bool | default-off experimental / opt-in | `src/moedern_family_engine.cpp`, `src/moedern_text.cpp`, `src/moedern_text_frontend.cpp` |  |
 | `CRISPEMBED_MOEDERN_QUANT` | on | off | bool | default-off experimental / opt-in | `src/moedern_family_engine.cpp`, `src/moedern_text_frontend.cpp` | Quantized weights are opt-in and only for the fast graph path. |

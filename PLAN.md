@@ -826,6 +826,13 @@ for current sources, jobs and exact next actions; do not repeat completed runs.
 
 ### Portfolio Q4_K/Q8 branch (PR89) open items
 
+MoEdern Q4_K lane (3 November, [doc](docs/moedern-q4k-mixed.md)): 115M `moedern115m_q4k_v1` and 27M
+`moedern27m_q4k_v1` clear the Q4_K token-vector bar on x86/ARM; 1.5M has no Q4_K recipe. Open:
+(1) SciFact retrieval/ranking and public-client panels for both packages before any publication
+dispatch (`docs/moedern-q4k-publication-v1.json`, cosine gate prepared); (2) Q8_0 misses 0.97 on
+27M/115M through single-token routing flips; a flip-robust Q8 recipe or a ranking-level judgement
+is undecided.
+
 Q8 admission source is being prepared on `feat/portfolio-q8-profiles-20261029`:
 Josev gets an explicitly named `crispembed-josev-packed-mixed-v2` profile;
 header7 requires actual Q8_0 and no Q4_K, while legacy Q4 requires real Q4_K.
