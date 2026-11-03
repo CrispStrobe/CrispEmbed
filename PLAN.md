@@ -96,8 +96,12 @@ CUDA; `Q4_K_MIX` publication recipes are prepared, not published.
   Q4-class recipe would need more Q8_0 (MinerU `r4` keeps the same two divergences).
 - TeleOCR decoder Q4_K remains out of reach (best whole-decoder 0.870 with imatrix);
   a larger, in-distribution calibration set for the opt-in imatrix path is untested.
-- Hosted CPU builds use `-march=native`: MinerU's CPU cosine moves by up to 0.015 with
-  the runner ISA on identical bytes; pin `GGML_NATIVE=OFF` for future CPU receipts.
+- [x] Hosted CPU builds used `-march=native`: MinerU's CPU cosine moved by up to 0.015 with
+  the runner ISA on identical bytes. Fixed on `fix/portable-qual-build`: heavy-cpu.yml
+  `build_mode` (default `portable`) exports `CRISPEMBED_BUILD_MODE`, CMakeLists.txt maps
+  `portable` to `GGML_NATIVE=OFF`/`CRISPEMBED_NATIVE=OFF`, and every run writes
+  `build-mode.txt`. Receipts state the mode (docs/precision-acceptance.md). Open: re-measure the
+  MinerU/TeleOCR Q4_K winners in portable mode before their `Q4_K_MIX` publication.
 
 ## Metal GPU audit follow-ups — 1 November 2026
 
