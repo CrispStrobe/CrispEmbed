@@ -22,6 +22,48 @@
   (libcrispembed, libggml, -base, -cpu, -metal, -blas `.dylib`), all signatures verify, and the
   app loads libcrispembed and resolves `crispembed_init` with no manual fixes.
 
+## 3 November 2026 — BGE-M3 Q8_0 mix that qualifies on CUDA
+
+`bge-m3-heads-q8_0-mixed.gguf` (Q8_0, encoder blocks 0-11 F16) scored ColBERT 0.9667 on a Kaggle T4
+(cuda-audit run 7), below the 0.97 Q8_0 bar. Candidates with blocks 0-13/15/17/19/23 in F16 were
+measured with the portable build (hosted CPU run 41588222873, against FlagEmbedding, 77 texts) and on
+CUDA (cuda-audit batch h, run 8, against the CPU F16 arm). ColBERT minima, CPU / CUDA: 0-11
+0.9726/0.9667, 0-13 0.9488/0.9843, **0-15 0.9911/0.9922**, 0-17 0.9725/0.9515, 0-19 0.9922/0.9948,
+0-23 0.9927/0.9955. Dense and sparse stay at or above 0.9991 everywhere. Published as
+`bge-m3-heads-q8_0-enc0-15-f16.gguf` (763 MiB, F16 file 1599 MiB), `cstr/bge-m3-GGUF@283645d8`,
+sha256 `3379a216…` (run 41596007262, empty-cache readback re-scored 0.99109). The registry alias
+`bge-m3-heads` now points to it. The old file stays on the Hub and in the registry as
+`bge-m3-heads-q8-enc0-11` (superseded, CPU-only). Each candidate has the same SHA-256 on the EPYC
+runner and on the Kaggle Xeon, and the rebuilt 0-11 is byte-identical to the published file. The
+cuda-audit kernel now builds its CPU arm portable. Evidence: `tests/results/below-bar/bgem3-cuda-margin*/`,
+`tests/results/gpu-audit/cuda-kaggle/run8-66a5eba0/`.
+## 3 November 2026 — GOT-OCR2 F16 republish script re-pointed at the original pipeline
+
+`tools/ci-heavy/got_ocr2_f16_republish.sh` compared native decodes with the HF port
+(stepfun-ai/GOT-OCR-2.0-hf). The port is not a faithful reference: its processor adds a
+leading-space " OCR" token and drops the system indentation and the no-repeat-ngram rule. That is
+why qualification run 41391040980 was rejected on page similarity; the receipt is kept. The script
+now runs `got_ocr2_orig_probe.py` (stepfun-ai/GOT-OCR2_0 remote code at `979938bf`, transformers
+4.37.2, CPU F32, ngram 20) and compares generated IDs from `CRISPEMBED_GOT_OCR_DUMP_DIR`.
+Rerun 41588457181 (portable build, 256 new tokens):
+
+| case | F16-r2 vs original | published Q4_K vs original | old F16 |
+|---|---|---|---|
+| fox | IDs exact | IDs exact | `colorcolor...` |
+| receipt_example | IDs exact | first divergence 83, char ratio 0.8041 | `colorcolor...` |
+| simple_form | IDs exact | first divergence 20, char ratio 0.9679 | `colorcolor...` |
+
+Stage diff F16-r2: 19/19 stages at cos 1.000000. The page-similarity diagnostic (r2 >= Q4_K on all
+cases) now passes too. Receipt: `tests/results/got-ocr2-f16/qualify-41588457181-orig-ref/`.
+## 3 November 2026 — Portable build mode for hosted qualification receipts
+
+`heavy-cpu.yml` `build_mode` (default `portable`) exports `CRISPEMBED_BUILD_MODE`. At the first configure,
+CMakeLists.txt maps `portable` to `GGML_NATIVE=OFF`/`CRISPEMBED_NATIVE=OFF`, and every run writes
+`build-mode.txt`. MinerU2.5 r2/r4 Q4_K, run three times portable at `33ecd1d6` (runs 41587614152, 41587618648,
+41587621427, all on AMD EPYC 9V45): r2 0.952109 (japanese), r4 0.970185 (table), with byte-identical cosine
+reports. Native builds of the same bytes had scored 0.9673/0.9732 on an EPYC 9V45 and 0.9521/0.9702 on another
+runner, so the spread came from the AVX-512 kernels of `-march=native`. Receipts:
+`tests/results/portable-build/`. Policy: docs/precision-acceptance.md §Build mode.
 ## 3 November 2026 — OCR WASM back under 4 MiB: large VLM/document engines left out of the Emscripten build
 
 Build WASM had failed on main since `922d06bd`: `crispembed_ocr.wasm` was 4,203,804 bytes against the

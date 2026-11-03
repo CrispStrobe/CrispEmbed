@@ -81,6 +81,24 @@ option(CRISPEMBED_BUILD_SHARED "Build shared library for Python" ON)
 # `-DGGML_NATIVE=OFF` once and the WHOLE tree — ggml and CrispEmbed alike —
 # compiles to a fixed, portable baseline. Setting only one of the two leaves
 # half the binary tuned for the builder's CPU, which is how this bug ships.
+#
+# CRISPEMBED_BUILD_MODE (environment, read at first configure) selects the same
+# thing for builds that cannot easily pass -D flags, e.g. the many hosted
+# qualification scripts under tools/ci-heavy/:
+#   portable → GGML_NATIVE=OFF and CRISPEMBED_NATIVE=OFF (fixed AVX2/FMA/F16C
+#              baseline on x86): the same compiled kernels on every runner, so a
+#              precision receipt does not depend on which CPU the job landed on.
+#   native   → -march=native (fastest; for timing runs only).
+# Unset keeps the historical default (native unless cross-compiling). An explicit
+# -DGGML_NATIVE / -DCRISPEMBED_NATIVE always wins over the environment.
+set(CRISPEMBED_BUILD_MODE_ENV "$ENV{CRISPEMBED_BUILD_MODE}")
+if(CRISPEMBED_BUILD_MODE_ENV STREQUAL "portable")
+    if(NOT DEFINED GGML_NATIVE)
+        set(GGML_NATIVE OFF CACHE BOOL "ggml: optimize the build for the current system")
+    endif()
+elseif(NOT CRISPEMBED_BUILD_MODE_ENV STREQUAL "" AND NOT CRISPEMBED_BUILD_MODE_ENV STREQUAL "native")
+    message(FATAL_ERROR "CRISPEMBED_BUILD_MODE must be 'portable' or 'native' (got '${CRISPEMBED_BUILD_MODE_ENV}')")
+endif()
 if(DEFINED GGML_NATIVE)
     set(CRISPEMBED_NATIVE_DEFAULT ${GGML_NATIVE})
 elseif(CMAKE_CROSSCOMPILING)
@@ -91,6 +109,12 @@ else()
     set(CRISPEMBED_NATIVE_DEFAULT ON)
 endif()
 option(CRISPEMBED_NATIVE       "Use -march=native for CPU SIMD (AVX2/NEON)" ${CRISPEMBED_NATIVE_DEFAULT})
+if(GGML_NATIVE OR (NOT DEFINED GGML_NATIVE AND NOT CMAKE_CROSSCOMPILING) OR CRISPEMBED_NATIVE)
+    set(CRISPEMBED_BUILD_MODE_EFFECTIVE "native")
+else()
+    set(CRISPEMBED_BUILD_MODE_EFFECTIVE "portable")
+endif()
+message(STATUS "CrispEmbed CPU build mode: ${CRISPEMBED_BUILD_MODE_EFFECTIVE} (GGML_NATIVE=${GGML_NATIVE}, CRISPEMBED_NATIVE=${CRISPEMBED_NATIVE}, env CRISPEMBED_BUILD_MODE='${CRISPEMBED_BUILD_MODE_ENV}')")
 
 # BLAS vendor: Generic, OpenBLAS, Intel10_64lp (MKL), Apple, etc.
 if(NOT DEFINED GGML_BLAS_VENDOR)

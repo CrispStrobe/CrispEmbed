@@ -1,0 +1,1 @@
+https://github.com/CrispStrobe/CrispEmbed/actions/runs/41588222873 (heavy-cpu, build_mode=portable)

@@ -414,9 +414,9 @@ def token_audit(cli, src, hfpath, P, env=None):
     return {"n": len(texts), "mismatched": len(bad), "cases": bad}
 
 
-def run_recipes(model, cfg, cli, quant, P, C, ref, hfpath):
-    """Evaluate explicit candidate recipes (tests/results/below-bar/candidates.json)."""
-    cands = json.loads((ROOT / "tests/results/below-bar/candidates.json").read_text())[model]
+def run_recipes(model, cfg, cli, quant, P, C, ref, hfpath, key=None):
+    """Evaluate explicit candidate recipes (tests/results/below-bar/candidates.json[key or model])."""
+    cands = json.loads((ROOT / "tests/results/below-bar/candidates.json").read_text())[key or model]
     ev = Evaluator(model, cfg, cli, quant, P, ref)
     src = prepare_source(model, cfg, cli, hfpath)
     _, ev.f32 = ev.run("source-f32", src, keep=True)
@@ -554,10 +554,10 @@ def sweep(model, cfg, cli, quant, P, C, ref, hfpath):
 
 
 # ───────────────────────────── publish ─────────────────────────────
-def publish(model, cfg, cli, quant, P, C, ref, hfpath):
+def publish(model, cfg, cli, quant, P, C, ref, hfpath, key=None):
     sys.path.insert(0, str(ROOT / "models"))
     import upload_to_hf
-    recipes = json.loads((ROOT / "tests/results/below-bar/recipes.json").read_text())[model]
+    recipes = json.loads((ROOT / "tests/results/below-bar/recipes.json").read_text())[key or model]
     ev = Evaluator(model, cfg, cli, quant, P, ref)
     src = prepare_source(model, cfg, cli, hfpath)
     _, ev.f32 = ev.run("source-f32", src, keep=True)
@@ -610,6 +610,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("phase", choices=["sweep", "recipes", "publish"])
     ap.add_argument("model", choices=sorted(CFG))
+    ap.add_argument("--set", default=None,
+                    help="key in candidates.json / recipes.json (default: the model name)")
     a = ap.parse_args()
     cfg = CFG[a.model]
     cli, quant = build()
@@ -628,9 +630,9 @@ def main():
     if a.phase == "sweep":
         ev, meta = sweep(a.model, cfg, cli, quant, P, C, ref, hfpath)
     elif a.phase == "recipes":
-        ev = run_recipes(a.model, cfg, cli, quant, P, C, ref, hfpath)
+        ev = run_recipes(a.model, cfg, cli, quant, P, C, ref, hfpath, a.set)
     else:
-        ev = publish(a.model, cfg, cli, quant, P, C, ref, hfpath)
+        ev = publish(a.model, cfg, cli, quant, P, C, ref, hfpath, a.set)
     lines = [f"### below-bar {a.phase} {a.model} ({os.environ.get('GITHUB_SHA', '')[:8]})", "",
              "| arm | MB | dominant | bar | score | " + " | ".join(f"{m} orig min/mean" for m in cfg["modes"]) + " |",
              "|---|---:|---|---:|---:|" + "---|" * len(cfg["modes"])]
