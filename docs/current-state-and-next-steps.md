@@ -39,13 +39,17 @@ The app remains immutable0.17.12. No new runtime release or quantized qualificat
   50 fail; F32/F16 each50/60, Q4_K25/30, Q8_0 5/30.96 later crop parts lack
   original tensors. Same-input F32 attribution precedes further precision
   recipes; no original recapture or qualification from high cosine/exact text.
-- **WASM:** attribution is complete, and the drift is accepted as a documented
-  WASM-only platform tolerance in [successor assets v3](successor-assets-v3.md):
-  packaged browser final vector max_abs<=0.0101, cosine>=0.99837; native gates
-  are unchanged. Run 41471904133 passes the WASM consumer, but the strict review
-  fails macOS arm64 vs Linux x86_64 desktop parity (0.00255 > 0.002), so the run
-  is not green. That native gate is not relaxed; it needs an owner decision.
-  All rounding/norm defaults remain unchanged.
+- **Successor assets:** v4 run41587063385 is **green** (all 16 jobs), with
+  producers 40724938611/40725005968 at `11f2ef7c`. Two measured, narrowly
+  scoped, owner-accepted tolerances apply:
+  - [WASM browser final vector](successor-assets-v3.md) (<=0.0101/>=0.99837,
+    attributed);
+  - [macOS arm64 vs Linux x86_64 desktop final vector](successor-assets-v4.md)
+    (<=0.00307/>=0.999866, unattributed).
+
+  Every other gate stays strict. Nothing is qualified, there is no release
+  alias and the app stays on 0.17.12. All rounding/norm defaults remain
+  unchanged.
 - **LFM/typed Gemma:** [source/evidence audit](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/encoder-precision-evidence-20261029.md)
   distinguishes existing masked230M LFM Q8/Q4 failures from other models;
   mixed330 precision improves but one masked prediction remains wrong.
