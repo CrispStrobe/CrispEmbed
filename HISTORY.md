@@ -41,6 +41,14 @@ entries further down.
   attribution chain (v2/v3/v4 live norm, layer0 attention, layer3 FFN); env-var reference,
   wiring audit and the 131 presence-read conversion; CI queue policy; inpainting publication.
 
+## 3 November 2026 — PLAN index triage
+
+Every PLAN index lane now states state/next/done-when; lanes found only in section bodies
+(OXR quantized/native doc/D-FINE, MinerU full doc, Marker/TeleOCR, licences in apps, Ovis 2048)
+got index rows. Closed by decision: the MiniCPM-OCR Q4_K sweep's F32 arm (stop fixed in
+`8c8c8be6`, F32 GGUF parity 5/5; an F32 cosine row does not affect the Q4_K publication gate).
+Decisions that only the owner can make are listed in the 3 November handoff.
+
 ## 3 November 2026 — Late-October runs 40868634374 (Unlimited) and 40871150002 (UltraBERT) reviewed
 
 Both completed with failure on 29 October and had no receipt; reviewed from logs and the small

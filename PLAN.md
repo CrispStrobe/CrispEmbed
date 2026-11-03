@@ -11,7 +11,7 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 | Q4_K_MIX publications (MiniCPM-OCR, Unlimited-OCR-2, TeleOCR, MinerU, MoEdern 27M/115M, Josev, UltraBERT) | Recipes and receipts on main; nothing published | Coordinator dispatches the cosine-gated publication per model (sections below); Josev needs a quantized branch in `josev_publish.py`, MoEdern needs SciFact/client panels first | Hub upload, empty-cache readback, registry alias with SHA-256 |
 | Unlimited-OCR-2 post-flip real-scan run | Kernel mode `native-uocr2-default` added (`48182333`) | Run it on Kaggle | `native-uocr2-default.json` committed, ids == `native-uocr2-vf32.json` |
 | Unlimited-OCR-2 Q8_0 on CUDA | 0.9555 < 0.97 (CPU 0.9739) | Search a CUDA-qualifying Q8_0 mix (F16 shared experts/attention) | ≥ 0.97 on CPU and CUDA |
-| GOT-OCR2 Q4_K drift | F16-r2 exact vs original; Q4_K diverges at 83/20 | Mixed Q4_K search against the exact F16 pipeline | 3/3 token-exact or owner accepts |
+| GOT-OCR2 Q4_K drift | F16-r2 exact vs original; Q4_K diverges at 83/20; no final-logit cosine measured, so the 1 November precision policy cannot yet be applied | Teacher-forced final-logit cosine of the published Q4_K vs the F16-r2 pipeline (as for Unlimited/MiniCPM), then a mixed search only if < 0.94. Owner: the model is research-licensed (Tongyi), so whether a Q4_K is worth more compute is an owner call (handoff "Owner decisions") | Cosine > 0.94 recorded, or 3/3 token-exact, or owner accepts/declines |
 | PR118 stream follow-ups | Merged (PR118/125) | Hosted MI-GAN256 CPU/F32 panel | Receipt with run ID |
 | Server load control (PR124) | Merged, gates default-off | Live A/B with a real GGUF; concurrent latency; chat-route parity | Receipts per item in the section below |
 | Reranker residual (~0.2 logits) | Pair layout/truncation fixed (PR122) | Fix the stage-diff harness, Spearman/top-k instead of exact argsort | Attributed or accepted |
@@ -19,6 +19,12 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 | Ovis, Josev, MoEdern, UltraBERT, LFM2.5, EmbeddingGemma precision | See the 29 October table below | One bounded protocol at a time | Per-row gates in that table |
 | Issue 71 inpainting | Engines published (default-off); stream merged | Representative subtitle/video quality, MI-GAN512 Q4_K caveat (0.9019) | Owner-reviewed quality panel |
 | Releases / pub.dev / app pin | VERSION 0.17.14 dev, app on 0.17.12 | Qualified assets and fresh consumers first | Release procedure in the pub.dev section |
+| OXR-1.0 quantized + GPU | Q8_0-large / Q4_K-head pass the owner bar (cos ≥ 0.998 vs F16, CPU/Metal/CUDA); German diverges 1 token from decode-step activation quantization | Opt-in F32-activation decode A/B; owner publication decision (handoff "Owner decisions") | A/B receipt; recipe published or explicitly declined |
+| OXR native document route / D-FINE | Hosted helpers/replay/native pass (41249898971), `dfine` stage failed there; D-FINE regions match original 5/5 but 2.6x slower | Re-run `oxr_native_doc.sh` `dfine native` stages on main; encoder per-op profile | Hosted parity on all five cases; profile receipt |
+| MinerU2.5-Pro full native doc route | 8/8 model-backed cases identical (41251475795); default-off | Owner: default-on or not (handoff "Owner decisions"); image-bearing-table fixture | Decision recorded; fixture receipt |
+| Marker-style pipeline / TeleOCR | Implemented and bounded-validated, default-off; TeleOCR strict numerics false at every precision | Representative licensed multilingual/layout gold corpus (needs owner-provided licensed annotations) | Corpus frozen; CER/WER/order receipts |
+| Model-weight licences in apps | Registry/cards/gates corrected (31 October) | CrispSorter/CrispCalc must require the Qwen/Tongyi acknowledgement before offering those models | Downstream PRs merged |
+| Ovis 2048 / final-integrated source | 1024 default; 2048 has six composed final-norm numeric failures with exact text | Same-input attribution (section "Ovis 2048-patch") | Attributed; or 2048 stays unqualified |
 
 ## MiniCPM-OCR Q8_0 / Q4_K — 3 November 2026 (`perf/q4k-minicpm-ocr-20261103`)
 
@@ -30,9 +36,9 @@ Q8_0 0.9998; `minicpm_q4k_v1` 0.9671 (971 MiB); `minicpm_q4k_min_v1` 0.9489 (902
   (PR131); dispatch the `Q4_K_MIX` publication (cosine gate). Done when the file is on the Hub,
   read back from an empty cache and registered with its SHA-256. (Q8_0 is already published as
   `minicpm-ocr-q8`.)
-- The sweep's F32 arm stopped with `graph decoder initialization failed`; the cause (empty
-  F32-copy context) is fixed in `8c8c8be6` and hosted parity is 5/5 on the F32 GGUF. Re-run
-  only the F32 arm of the sweep if an F32 row is wanted in the receipt.
+- F32 arm: closed by decision (3 November). Its stop was fixed in `8c8c8be6` and hosted
+  parity is 5/5 on the F32 GGUF; an F32 cosine row adds nothing to the Q4_K publication gate,
+  so the arm is not re-run (HISTORY 3 November).
 - `para-en` diverges at token 54 in every 4-bit arm (box glyphs read as `×`
   instead of the original `x`/dropped). Representative real-page quality is still open.
 
