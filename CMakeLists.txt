@@ -806,6 +806,11 @@ target_include_directories(test-bert-pretokenize PRIVATE src)
 add_executable(test-bert-norm tests/test_bert_norm.cpp src/tokenizer.cpp)
 target_include_directories(test-bert-norm PRIVATE src)
 
+# Hermetic: position-table truncation limit and the RoBERTa cross-encoder pair
+# layout (<s> a </s></s> b </s>) — the 512-token abort and reranker score fixes.
+add_executable(test-pair-truncation tests/test_pair_truncation.cpp src/tokenizer.cpp src/tokenizer_spm.cpp)
+target_include_directories(test-pair-truncation PRIVATE src)
+
 # Hermetic: core/spm_norm.h — the SentencePiece Precompiled (nmt_nfkc
 # charsmap) normalizer for XLM-R-family Unigram models. Goldens from HF's own
 # Precompiled component; pins the printable-ASCII invariant and the \t/control
