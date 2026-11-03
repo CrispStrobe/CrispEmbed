@@ -26,6 +26,7 @@ TRIAL = ROOT / 'tests/results/unlimited-ocr2/trial.json'
 RECIPES = ROOT / 'tools/unlimited_ocr2_quant_recipes.json'
 CASES = ['paragraphs', 'table', 'receipt', 'german']
 VOCAB = 129280
+BOX = re.compile(r'\[(\d+, \d+, \d+, \d+)\]')
 # Tensors that must keep their source floating type and payload in every recipe.
 PROTECTED = ['v.pos_embed', 'v.patch_embed.weight', 'c.patch_embed.weight', 'v.image_newline',
              'v.view_separator', 'c.cls_token', 'l.output_norm.weight']
@@ -182,8 +183,8 @@ def cmd_free(log, case, out):
 
 def cmd_summary(outdir):
     outdir = Path(outdir)
-    lines = ['| recipe | MiB | final cos min (case) | per case | top1 agree min | free-run IDs exact | wall s |',
-             '|---|---|---|---|---|---|---|']
+    lines = ['| recipe | MiB | final cos min (case) | per case | top1 agree min | free-run IDs exact | '
+             'text = F16 (boxes stripped) | max box delta | wall s |', '|---|---|---|---|---|---|---|---|---|']
     names = sorted({Path(p).name.split('.')[0] for p in glob.glob(str(outdir / '*.census.json'))})
     names = ['f16'] + [n for n in names if n != 'f16']
     for n in names:
@@ -202,11 +203,24 @@ def cmd_summary(outdir):
             f = outdir / f'{n}.{c}.free.json'
             if f.exists():
                 free.append(c if json.loads(f.read_text())['ids_exact'] else f'{c}x')
+        same_text, box = [], 0
+        for c in CASES:
+            a, b = outdir / f'f16.{c}.free.txt', outdir / f'{n}.{c}.free.txt'
+            if a.exists() and b.exists():
+                ta, tb = a.read_text(), b.read_text()
+                same_text.append(BOX.sub('[]', ta) == BOX.sub('[]', tb))
+                ba, bb = BOX.findall(ta), BOX.findall(tb)
+                if len(ba) == len(bb):
+                    box = max([box] + [abs(int(x) - int(y)) for p, q in zip(ba, bb)
+                                       for x, y in zip(p.split(','), q.split(','))])
+                else:
+                    box = None if box == 0 else box
         wall = outdir / f'{n}.wall'
         lines.append(f"| {n} | {mib} | {f'{worst[0]:.4f} ({worst[1]})' if worst else '-'} | "
                      f"{' '.join(f'{c}:{v:.4f}' for v, c in sorted(mins, key=lambda x: CASES.index(x[1])))} | "
                      f"{f'{top:.4f}' if top is not None else '-'} | "
                      f"{sum(not x.endswith('x') for x in free)}/{len(free) if free else '-'} | "
+                     f"{f'{sum(same_text)}/{len(same_text)}' if same_text else '-'} | {box if same_text else '-'} | "
                      f"{wall.read_text().strip() if wall.exists() else '-'} |")
     print('\n'.join(lines))
     return 0

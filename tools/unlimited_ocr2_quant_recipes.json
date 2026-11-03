@@ -1,5 +1,5 @@
 {
-  "_doc": "Unlimited-OCR-2 Q4_K-class recipes (docs/unlimited-ocr2-q4k-recipes.md). Source: the published F16 GGUF. 'type' is the crispembed-quantize base type, 'rules' are --tensor-type overrides (last match wins, after the built-in guards). Expert ffn_down rows are 896 wide: Q4_K cannot hold them (Q4_0 fallback), so 4-bit rules use IQ4_NL there. Every q8_0-based recipe keeps the CLIP position table c.pos_embed at F16 (the SAM table v.pos_embed is 1-D and always copied at source precision); 'q4k' is the unmodified production q4_k quantizer for reference.",
+  "_doc": "Unlimited-OCR-2 Q4_K-class recipes (docs/unlimited-ocr2-q4k-recipes.md). Source: the published F16 GGUF. 'type' is the crispembed-quantize base type, 'rules' are --tensor-type overrides (last match wins, after the built-in guards). Expert ffn_down rows are 896 wide: Q4_K cannot hold them (Q4_0 fallback), so 4-bit rules use IQ4_NL there. Every q8_0-based recipe keeps the CLIP position table c.pos_embed at F16 (the SAM table v.pos_embed is 1-D and always copied at source precision); 'q4k' is the unmodified production q4_k quantizer for reference. Round 2 ('q4kn*'): the production q4_k base with every Q4_0 fallback replaced by IQ4_NL (expert ffn_down and the 6848-wide dense layer-0 ffn_down), so the file holds no legacy Q4_0.",
   "q8": {"type": "q8_0", "rules": ["c.pos_embed=f16"]},
   "q4k": {"type": "q4_k", "rules": []},
   "egu": {"type": "q8_0", "rules": ["c.pos_embed=f16", "l.blk.*.ffn_gate_exps.weight=q4_k", "l.blk.*.ffn_up_exps.weight=q4_k"]},
@@ -11,5 +11,9 @@
   "emb": {"type": "q8_0", "rules": ["c.pos_embed=f16", "l.embed_tokens.weight=q4_k"]},
   "clip": {"type": "q8_0", "rules": ["c.pos_embed=f16", "c.blk.*.weight=q4_k"]},
   "sam": {"type": "q8_0", "rules": ["c.pos_embed=f16", "v.blk.*.weight=q4_k"]},
-  "exp4": {"type": "q8_0", "rules": ["c.pos_embed=f16", "l.blk.*.ffn_gate_exps.weight=q4_k", "l.blk.*.ffn_up_exps.weight=q4_k", "l.blk.*.ffn_down_exps.weight=iq4_nl"]}
+  "exp4": {"type": "q8_0", "rules": ["c.pos_embed=f16", "l.blk.*.ffn_gate_exps.weight=q4_k", "l.blk.*.ffn_up_exps.weight=q4_k", "l.blk.*.ffn_down_exps.weight=iq4_nl"]},
+  "q4kn": {"type": "q4_k", "rules": ["c.pos_embed=f16", "l.blk.*.ffn_down_exps.weight=iq4_nl", "l.blk.0.ffn_down.weight=iq4_nl"]},
+  "q4kne": {"type": "q4_k", "rules": ["c.pos_embed=f16", "l.blk.*.ffn_down_exps.weight=iq4_nl", "l.blk.0.ffn_down.weight=iq4_nl", "l.embed_tokens.weight=q4_k"]},
+  "q4kns": {"type": "q4_k", "rules": ["c.pos_embed=f16", "l.blk.*.ffn_down_exps.weight=iq4_nl", "l.blk.0.ffn_down.weight=iq4_nl", "l.blk.*.shared_exp.*=q8_0"]},
+  "q4kna": {"type": "q4_k", "rules": ["c.pos_embed=f16", "l.blk.*.ffn_down_exps.weight=iq4_nl", "l.blk.0.ffn_down.weight=iq4_nl", "l.blk.*.attn_q.weight=q8_0", "l.blk.*.attn_k.weight=q8_0", "l.blk.*.attn_v.weight=q8_0", "l.blk.*.attn_o.weight=q8_0"]}
 }

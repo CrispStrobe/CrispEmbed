@@ -27,7 +27,7 @@ CASES="paragraphs table receipt german"
     echo "commit: $(git rev-parse HEAD)"
     lscpu 2>/dev/null
 } > "$OUT/cpu.txt"
-echo "portable GGML_NATIVE=OFF" > "$OUT/build-mode.txt"
+echo "script_build_flags=-DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF (portable)" >> "$OUT/build-mode.txt"
 
 python $H render "$S/pages" > "$OUT/render.log" 2>&1 ||
     { tail -20 "$OUT/render.log"; exit 2; }
