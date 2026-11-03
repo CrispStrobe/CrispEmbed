@@ -114,6 +114,16 @@ static const std::vector<JosevPolicy> & josev_policies() {
             { "l.layers.*.mlp.gate_proj.weight", GGML_TYPE_Q4_K },
             { "l.layers.*.mlp.up_proj.weight", GGML_TYPE_Q4_K },
             { "l.layers.*.mlp.down_proj.weight", GGML_TYPE_Q4_K } } },
+        { "josev_q4k_down8_v1",
+          "all-q4-down-q8",
+          { { "*", GGML_TYPE_F32 },
+            { "l.layers.*.self_attn.?_proj.weight", GGML_TYPE_Q4_K },
+            { "l.layers.*.linear_attn.in_proj_qkv.weight", GGML_TYPE_Q4_K },
+            { "l.layers.*.linear_attn.in_proj_z.weight", GGML_TYPE_Q4_K },
+            { "l.layers.*.linear_attn.out_proj.weight", GGML_TYPE_Q4_K },
+            { "l.layers.*.mlp.gate_proj.weight", GGML_TYPE_Q4_K },
+            { "l.layers.*.mlp.up_proj.weight", GGML_TYPE_Q4_K },
+            { "l.layers.*.mlp.down_proj.weight", GGML_TYPE_Q8_0 } } },
     };
     return policies;
 }
@@ -1773,7 +1783,8 @@ int main(int argc, char ** argv) {
             if (std::string(p.name) == name) g_josev_policy = &p;
         }
         if (!g_josev_policy) {
-            fprintf(stderr, "unknown CRISPEMBED_QUANTIZE_JOSEV_POLICY '%s' (josev_q4k_mlp_v1)\n", name);
+            fprintf(stderr, "unknown CRISPEMBED_QUANTIZE_JOSEV_POLICY '%s' (josev_q4k_down8_v1|josev_q4k_mlp_v1)\n",
+                    name);
             return 1;
         }
         std::vector<TensorTypeOverride> rules;

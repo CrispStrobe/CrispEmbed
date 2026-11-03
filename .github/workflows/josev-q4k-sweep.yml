@@ -44,6 +44,7 @@ jobs:
           df -h / /mnt || true
       - name: Locked metric environment
         run: |
+          python tests/test_josev_quant_policy.py
           git fetch origin b2edf8c83c9aca1f8a9210198d47798ac13828b8 || true
           python -m venv --without-pip "$RUNNER_TEMP/venv"
           python -m pip --python "$RUNNER_TEMP/venv/bin/python" install --no-deps --only-binary=:all: --require-hashes -r tools/kaggle/josev-q4k/requirements.lock

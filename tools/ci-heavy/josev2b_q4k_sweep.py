@@ -43,7 +43,7 @@ old = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(old)
 require = contract.require
 RECIPES = json.loads((ROOT / 'tools/josev2b_q4k_recipes.json').read_text())['recipes']
-POLICIES = {'mlp-q4': 'josev_q4k_mlp_v1'}  # named CRISPEMBED_QUANTIZE_JOSEV_POLICY twins
+POLICIES = {'mlp-q4': 'josev_q4k_mlp_v1', 'all-q4-down-q8': 'josev_q4k_down8_v1'}  # named CRISPEMBED_QUANTIZE_JOSEV_POLICY twins
 TYPE_ID = {'f32': 0, 'f16': 1, 'q8_0': 8, 'q4_k': 12}
 ROLE_SUFFIX = {
     'attn': ('.self_attn.q_proj.weight', '.self_attn.k_proj.weight', '.self_attn.v_proj.weight',
