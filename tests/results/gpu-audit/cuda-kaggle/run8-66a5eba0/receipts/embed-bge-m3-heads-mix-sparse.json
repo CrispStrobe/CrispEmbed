@@ -1,0 +1,375 @@
+{
+ "kind": "embed",
+ "mode": "sparse",
+ "base": "bge-m3-heads-f16.gguf",
+ "files": {
+  "bge-m3-heads-f16.gguf": {
+   "precision": "f16",
+   "type_hist": {
+    "f32": 266489856,
+    "f16": 301989888
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      2.07,
+      2.019
+     ],
+     "gpu_mem_peak_mib": 1759,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispembed: using CUDA0 backend with CPU fallback\ncrispembed: sparse head loaded\ncrispembed: colbert head loaded (dim=1024)\ncrispembed: loaded 24 layers, 1024 dims, 250002 vocab\n"
+    },
+    "cpu": {
+     "wall_s": [
+      20.52,
+      20.773
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ncrispembed: using CPU backend (4 threads)\ncrispembed: sparse head loaded\ncrispembed: colbert head loaded (dim=1024)\ncrispembed: loaded 24 layers, 1024 dims, 250002 vocab\n"
+    }
+   },
+   "cuda_vs_cpu_same_artifact": {
+    "cos_min": 0.9999995044135026,
+    "max_abs": 0.000336999999999997,
+    "same_terms": true
+   },
+   "cuda_vs_cpu_reference": {
+    "cos_min": 0.9999995044135026,
+    "max_abs": 0.000336999999999997,
+    "same_terms": true
+   },
+   "bar": 0.98,
+   "qualifies": true
+  },
+  "bge-m3-heads-q8_0-mixed.gguf": {
+   "precision": "q8_0",
+   "type_hist": {
+    "q8_0": 417484800,
+    "f16": 150994944
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      1.669,
+      1.669
+     ],
+     "gpu_mem_peak_mib": 879,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispembed: using CUDA0 backend with CPU fallback\ncrispembed: sparse head loaded\ncrispembed: colbert head loaded (dim=1024)\ncrispembed: loaded 24 layers, 1024 dims, 250002 vocab\n"
+    },
+    "cpu": {
+     "wall_s": [
+      15.306,
+      15.458
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ncrispembed: using CPU backend (4 threads)\ncrispembed: sparse head loaded\ncrispembed: colbert head loaded (dim=1024)\ncrispembed: loaded 24 layers, 1024 dims, 250002 vocab\n"
+    }
+   },
+   "cuda_vs_cpu_same_artifact": {
+    "cos_min": 0.999971500504745,
+    "max_abs": 0.003806999999999991,
+    "same_terms": true
+   },
+   "cuda_vs_cpu_reference": {
+    "cos_min": 0.9998808391494561,
+    "max_abs": 0.006421,
+    "same_terms": true
+   },
+   "cpu_vs_cpu_reference": {
+    "cos_min": 0.9999076883373503,
+    "max_abs": 0.006700999999999985,
+    "same_terms": true
+   },
+   "bar": 0.97,
+   "qualifies": true
+  },
+  "bge-m3-heads-q8_0-enc0-11-f16.gguf": {
+   "precision": "q8_0",
+   "type_hist": {
+    "q8_0": 417484800,
+    "f16": 150994944
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      1.569,
+      1.618
+     ],
+     "gpu_mem_peak_mib": 879,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispembed: using CUDA0 backend with CPU fallback\ncrispembed: sparse head loaded\ncrispembed: colbert head loaded (dim=1024)\ncrispembed: loaded 24 layers, 1024 dims, 250002 vocab\n"
+    },
+    "cpu": {
+     "wall_s": [
+      15.309,
+      15.157
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ncrispembed: using CPU backend (4 threads)\ncrispembed: sparse head loaded\ncrispembed: colbert head loaded (dim=1024)\ncrispembed: loaded 24 layers, 1024 dims, 250002 vocab\n"
+    }
+   },
+   "cuda_vs_cpu_same_artifact": {
+    "cos_min": 0.999971500504745,
+    "max_abs": 0.003806999999999991,
+    "same_terms": true
+   },
+   "cuda_vs_cpu_reference": {
+    "cos_min": 0.9998808391494561,
+    "max_abs": 0.006421,
+    "same_terms": true
+   },
+   "cpu_vs_cpu_reference": {
+    "cos_min": 0.9999076883373503,
+    "max_abs": 0.006700999999999985,
+    "same_terms": true
+   },
+   "bar": 0.97,
+   "qualifies": true
+  },
+  "bge-m3-heads-q8_0-enc0-13-f16.gguf": {
+   "precision": "q8_0",
+   "type_hist": {
+    "q8_0": 392318976,
+    "f16": 176160768
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      1.619,
+      1.619
+     ],
+     "gpu_mem_peak_mib": 901,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispembed: using CUDA0 backend with CPU fallback\ncrispembed: sparse head loaded\ncrispembed: colbert head loaded (dim=1024)\ncrispembed: loaded 24 layers, 1024 dims, 250002 vocab\n"
+    },
+    "cpu": {
+     "wall_s": [
+      15.911,
+      16.111
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ncrispembed: using CPU backend (4 threads)\ncrispembed: sparse head loaded\ncrispembed: colbert head loaded (dim=1024)\ncrispembed: loaded 24 layers, 1024 dims, 250002 vocab\n"
+    }
+   },
+   "cuda_vs_cpu_same_artifact": {
+    "cos_min": 0.999969433134665,
+    "max_abs": 0.0045499999999999985,
+    "same_terms": true
+   },
+   "cuda_vs_cpu_reference": {
+    "cos_min": 0.9999276770943277,
+    "max_abs": 0.005499,
+    "same_terms": true
+   },
+   "cpu_vs_cpu_reference": {
+    "cos_min": 0.9999320168703564,
+    "max_abs": 0.006193000000000004,
+    "same_terms": true
+   },
+   "bar": 0.97,
+   "qualifies": true
+  },
+  "bge-m3-heads-q8_0-enc0-15-f16.gguf": {
+   "precision": "q8_0",
+   "type_hist": {
+    "q8_0": 367153152,
+    "f16": 201326592
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      1.619,
+      1.62
+     ],
+     "gpu_mem_peak_mib": 923,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispembed: using CUDA0 backend with CPU fallback\ncrispembed: sparse head loaded\ncrispembed: colbert head loaded (dim=1024)\ncrispembed: loaded 24 layers, 1024 dims, 250002 vocab\n"
+    },
+    "cpu": {
+     "wall_s": [
+      17.01,
+      17.016
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ncrispembed: using CPU backend (4 threads)\ncrispembed: sparse head loaded\ncrispembed: colbert head loaded (dim=1024)\ncrispembed: loaded 24 layers, 1024 dims, 250002 vocab\n"
+    }
+   },
+   "cuda_vs_cpu_same_artifact": {
+    "cos_min": 0.9999774617434217,
+    "max_abs": 0.002135999999999999,
+    "same_terms": true
+   },
+   "cuda_vs_cpu_reference": {
+    "cos_min": 0.9999327818440663,
+    "max_abs": 0.005993999999999999,
+    "same_terms": true
+   },
+   "cpu_vs_cpu_reference": {
+    "cos_min": 0.9999545847399084,
+    "max_abs": 0.005162,
+    "same_terms": true
+   },
+   "bar": 0.97,
+   "qualifies": true
+  },
+  "bge-m3-heads-q8_0-enc0-17-f16.gguf": {
+   "precision": "q8_0",
+   "type_hist": {
+    "q8_0": 341987328,
+    "f16": 226492416
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      1.669,
+      1.669
+     ],
+     "gpu_mem_peak_mib": 945,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispembed: using CUDA0 backend with CPU fallback\ncrispembed: sparse head loaded\ncrispembed: colbert head loaded (dim=1024)\ncrispembed: loaded 24 layers, 1024 dims, 250002 vocab\n"
+    },
+    "cpu": {
+     "wall_s": [
+      17.662,
+      17.661
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ncrispembed: using CPU backend (4 threads)\ncrispembed: sparse head loaded\ncrispembed: colbert head loaded (dim=1024)\ncrispembed: loaded 24 layers, 1024 dims, 250002 vocab\n"
+    }
+   },
+   "cuda_vs_cpu_same_artifact": {
+    "cos_min": 0.9999872202475366,
+    "max_abs": 0.001938000000000023,
+    "same_terms": true
+   },
+   "cuda_vs_cpu_reference": {
+    "cos_min": 0.9999705769341841,
+    "max_abs": 0.003818000000000002,
+    "same_terms": true
+   },
+   "cpu_vs_cpu_reference": {
+    "cos_min": 0.9999684448579864,
+    "max_abs": 0.0041120000000000045,
+    "same_terms": true
+   },
+   "bar": 0.97,
+   "qualifies": true
+  },
+  "bge-m3-heads-q8_0-enc0-19-f16.gguf": {
+   "precision": "q8_0",
+   "type_hist": {
+    "q8_0": 316821504,
+    "f16": 251658240
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      1.669,
+      1.668
+     ],
+     "gpu_mem_peak_mib": 969,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispembed: using CUDA0 backend with CPU fallback\ncrispembed: sparse head loaded\ncrispembed: colbert head loaded (dim=1024)\ncrispembed: loaded 24 layers, 1024 dims, 250002 vocab\n"
+    },
+    "cpu": {
+     "wall_s": [
+      18.465,
+      18.27
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ncrispembed: using CPU backend (4 threads)\ncrispembed: sparse head loaded\ncrispembed: colbert head loaded (dim=1024)\ncrispembed: loaded 24 layers, 1024 dims, 250002 vocab\n"
+    }
+   },
+   "cuda_vs_cpu_same_artifact": {
+    "cos_min": 0.9999899548962613,
+    "max_abs": 0.001903999999999989,
+    "same_terms": true
+   },
+   "cuda_vs_cpu_reference": {
+    "cos_min": 0.9999768236104633,
+    "max_abs": 0.002607000000000012,
+    "same_terms": true
+   },
+   "cpu_vs_cpu_reference": {
+    "cos_min": 0.9999738141534057,
+    "max_abs": 0.003851000000000007,
+    "same_terms": true
+   },
+   "bar": 0.97,
+   "qualifies": true
+  },
+  "bge-m3-heads-q8_0-enc0-23-f16.gguf": {
+   "precision": "f16",
+   "type_hist": {
+    "q8_0": 266489856,
+    "f16": 301989888
+   },
+   "arms": {
+    "cuda": {
+     "wall_s": [
+      1.719,
+      1.669
+     ],
+     "gpu_mem_peak_mib": 1013,
+     "cuda_used": true,
+     "rc": 0,
+     "stderr_tail": "crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\nggml_cuda_init: found 2 CUDA devices (Total VRAM: 29823 MiB):\n  Device 0: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\n  Device 1: Tesla T4, compute capability 7.5, VMM: no, VRAM: 14911 MiB\ncrispasr_init_gpu_backend: using preferred GPU backend: CUDA0\ncrispembed: using CUDA0 backend with CPU fallback\ncrispembed: sparse head loaded\ncrispembed: colbert head loaded (dim=1024)\ncrispembed: loaded 24 layers, 1024 dims, 250002 vocab\n"
+    },
+    "cpu": {
+     "wall_s": [
+      19.918,
+      19.817
+     ],
+     "gpu_mem_peak_mib": 0,
+     "cuda_used": false,
+     "rc": 0,
+     "stderr_tail": "crispembed: using SentencePiece tokenizer (250002 tokens, 250002 scores)\ncrispasr_init_gpu_backend: --gpu-backend cpu — using the CPU backend, no GPU device initialised\ncrispembed: using CPU backend (4 threads)\ncrispembed: sparse head loaded\ncrispembed: colbert head loaded (dim=1024)\ncrispembed: loaded 24 layers, 1024 dims, 250002 vocab\n"
+    }
+   },
+   "cuda_vs_cpu_same_artifact": {
+    "cos_min": 0.9999997048354101,
+    "max_abs": 0.00024099999999999816,
+    "same_terms": true
+   },
+   "cuda_vs_cpu_reference": {
+    "cos_min": 0.9999995247147399,
+    "max_abs": 0.0003589999999999982,
+    "same_terms": true
+   },
+   "cpu_vs_cpu_reference": {
+    "cos_min": 0.9999987883303229,
+    "max_abs": 0.0005010000000000014,
+    "same_terms": true
+   },
+   "bar": 0.98,
+   "qualifies": true
+  }
+ },
+ "seconds": 376.2,
+ "id": "embed-bge-m3-heads-mix-sparse",
+ "commit": "66a5eba08fd8ac0887e389c8609de3aabba502a1",
+ "gpu": "Tesla T4, 7.5, 15360 MiB\nTesla T4, 7.5, 15360 MiB",
+ "date": "2026-11-03"
+}
