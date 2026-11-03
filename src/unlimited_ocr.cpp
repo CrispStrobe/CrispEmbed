@@ -2870,6 +2870,32 @@ static bool run_llm_decoder_v2_fast(uocr_ctx & ctx, const float * prompt_embeds,
         return false;
     }
     const bool dbg = core_env::on("UOCR_DBG");
+    // Diagnostic teacher forcing (default off; docs/unlimited-ocr2-q4k-recipes.md).
+    // CRISPEMBED_UNLIMITED_OCR2_FORCE_IDS=<file of whitespace-separated IDs> feeds those IDs
+    // instead of the argmax and stops after the step that follows the last one (the position
+    // that should predict EOS). CRISPEMBED_UNLIMITED_OCR2_LOGITS_OUT=<file> writes each step's
+    // raw lm_head logits (F32, V per step, before the page-count guard). Both unset: unchanged.
+    std::vector<int32_t> forced;
+    bool forcing = false;
+    if (const char * fp = getenv("CRISPEMBED_UNLIMITED_OCR2_FORCE_IDS"); fp && *fp) {
+        FILE * f = fopen(fp, "r");
+        if (!f) {
+            fprintf(stderr, "unlimited_ocr2: cannot read forced IDs %s\n", fp);
+            return false;
+        }
+        long v;
+        while (fscanf(f, " %ld", &v) == 1) {
+            if (v < 0 || v >= V) {
+                fclose(f);
+                fprintf(stderr, "unlimited_ocr2: forced ID %ld outside vocabulary\n", v);
+                return false;
+            }
+            forced.push_back((int32_t)v);
+        }
+        fclose(f);
+        forcing = true;
+        max_new = (int)forced.size() + 1;
+    }
     uocr2::coords co = uocr2::prefill_coords(prompt_ids);
     if (!co.page_mode) {
         fprintf(stderr, "unlimited_ocr2: prompt without <PAGE>/image (1D YaRN fallback) is not implemented\n");
@@ -3072,6 +3098,20 @@ static bool run_llm_decoder_v2_fast(uocr_ctx & ctx, const float * prompt_embeds,
     int marker_cum = 0, page_len = 0;
     out_ids.clear();
     out_confs.clear();
+    FILE * logits_out = nullptr;
+    if (const char * lp = getenv("CRISPEMBED_UNLIMITED_OCR2_LOGITS_OUT"); lp && *lp) {
+        logits_out = fopen(lp, "wb");
+        if (!logits_out) {
+            fprintf(stderr, "unlimited_ocr2: cannot write logits %s\n", lp);
+            return false;
+        }
+    }
+    struct file_closer {
+        FILE *& f;
+        ~file_closer() {
+            if (f) fclose(f);
+        }
+    } logits_closer_{ logits_out };
     for (int step = 0; step < max_new; step++) {
         { // final norm + lm_head on native weight type
             graph G(16);
@@ -3086,6 +3126,11 @@ static bool run_llm_decoder_v2_fast(uocr_ctx & ctx, const float * prompt_embeds,
             if (!uocr2_fast::run(ctx, G.gf)) return false;
             ggml_backend_tensor_get(lg, logits.data(), 0, (size_t)V * sizeof(float));
         }
+        if (logits_out && fwrite(logits.data(), sizeof(float), (size_t)V, logits_out) != (size_t)V) {
+            fprintf(stderr, "unlimited_ocr2: logits write failed\n");
+            return false;
+        }
+        if (forcing && step == (int)forced.size()) break;
         // Page-count guard, argmax (first max wins) and confidence: identical to run_llm_decoder_v2.
         const int eos = lhp.eos_token_id;
         if (marker_cum > expected_pages) {
@@ -3098,13 +3143,14 @@ static bool run_llm_decoder_v2_fast(uocr_ctx & ctx, const float * prompt_embeds,
         } else if (marker_cum < expected_pages) {
             logits[eos] = NEG;
         }
-        const int nxt = int(std::max_element(logits.begin(), logits.end()) - logits.begin());
-        float mx = logits[nxt], se = 0;
+        const int arg = int(std::max_element(logits.begin(), logits.end()) - logits.begin());
+        const int nxt = forcing ? forced[step] : arg;
+        float mx = logits[arg], se = 0;
         for (float l : logits)
             if (std::isfinite(l)) se += std::exp(l - mx);
         if (nxt == eos) break;
         out_ids.push_back(nxt);
-        out_confs.push_back(1.0f / se);
+        out_confs.push_back(std::isfinite(logits[nxt]) ? std::exp(logits[nxt] - mx) / se : 0.0f);
         if (nxt == uocr2::PAGE) {
             marker_cum++;
             page_len = 0;

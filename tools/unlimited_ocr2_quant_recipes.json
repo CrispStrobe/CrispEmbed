@@ -1,0 +1,15 @@
+{
+  "_doc": "Unlimited-OCR-2 Q4_K-class recipes (docs/unlimited-ocr2-q4k-recipes.md). Source: the published F16 GGUF. 'type' is the crispembed-quantize base type, 'rules' are --tensor-type overrides (last match wins, after the built-in guards). Expert ffn_down rows are 896 wide: Q4_K cannot hold them (Q4_0 fallback), so 4-bit rules use IQ4_NL there. Every q8_0-based recipe keeps the CLIP position table c.pos_embed at F16 (the SAM table v.pos_embed is 1-D and always copied at source precision); 'q4k' is the unmodified production q4_k quantizer for reference.",
+  "q8": {"type": "q8_0", "rules": ["c.pos_embed=f16"]},
+  "q4k": {"type": "q4_k", "rules": []},
+  "egu": {"type": "q8_0", "rules": ["c.pos_embed=f16", "l.blk.*.ffn_gate_exps.weight=q4_k", "l.blk.*.ffn_up_exps.weight=q4_k"]},
+  "edn": {"type": "q8_0", "rules": ["c.pos_embed=f16", "l.blk.*.ffn_down_exps.weight=iq4_nl"]},
+  "edq40": {"type": "q8_0", "rules": ["c.pos_embed=f16", "l.blk.*.ffn_down_exps.weight=q4_0"]},
+  "shx": {"type": "q8_0", "rules": ["c.pos_embed=f16", "l.blk.*.shared_exp.*=q4_k"]},
+  "att": {"type": "q8_0", "rules": ["c.pos_embed=f16", "l.blk.*.attn_q.weight=q4_k", "l.blk.*.attn_k.weight=q4_k", "l.blk.*.attn_v.weight=q4_k", "l.blk.*.attn_o.weight=q4_k"]},
+  "head": {"type": "q8_0", "rules": ["c.pos_embed=f16", "l.lm_head.weight=q4_k"]},
+  "emb": {"type": "q8_0", "rules": ["c.pos_embed=f16", "l.embed_tokens.weight=q4_k"]},
+  "clip": {"type": "q8_0", "rules": ["c.pos_embed=f16", "c.blk.*.weight=q4_k"]},
+  "sam": {"type": "q8_0", "rules": ["c.pos_embed=f16", "v.blk.*.weight=q4_k"]},
+  "exp4": {"type": "q8_0", "rules": ["c.pos_embed=f16", "l.blk.*.ffn_gate_exps.weight=q4_k", "l.blk.*.ffn_up_exps.weight=q4_k", "l.blk.*.ffn_down_exps.weight=iq4_nl"]}
+}
