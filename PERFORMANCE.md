@@ -74,7 +74,8 @@ Minimum / mean cosine against the original Python model over the below-bar panel
 | f2llm-v2-0.6b-q4_k-imatrix (superseded) | 400 | 0.7694 / 0.8220 | - | - | | worse, superseded |
 | clip-text-base-q4_k-mixed | 51 | 0.9878 / 0.9953 | - | - | 1.2 | on par |
 | bge-m3-heads-f16 | 1599 | 1.0000 / 1.0000 | 1.0000 | 1.0000 / 1.0000 | 37 per head | on par |
-| bge-m3-heads-q8_0-mixed | 718 | 0.9995 / 0.9996 | 0.9991 | 0.9726 / 0.9992 | ~15 per head | on par, thin ColBERT margin |
+| bge-m3-heads-q8_0-mixed (superseded 3 Nov, CPU-only) | 718 | 0.9995 / 0.9996 | 0.9991 | 0.9726 / 0.9992 | ~15 per head | on par on CPU; worse on CUDA (ColBERT 0.9667) |
+| bge-m3-heads-q8_0-enc0-15-f16 (3 Nov, portable build) | 763 | 0.9996 / 0.9997 | 0.9998 | 0.9911 / 0.9994 | ~30 per head (portable) | on par on CPU and CUDA T4 (ColBERT 0.9922) |
 | bge-m3 Q8_0 uniform (not published) | 583 | 0.9987 | 0.9983 | 0.6124 / 0.9976 | 14 per head | worse (ColBERT) |
 
 ## 2 November 2026 — MiniCPM-OCR-1.0 speed paths (Kaggle CPU, Xeon 2.2 GHz x4, F16 GGUF)
