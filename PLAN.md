@@ -100,8 +100,10 @@ CUDA; `Q4_K_MIX` publication recipes are prepared, not published.
   the runner ISA on identical bytes. Fixed on `fix/portable-qual-build`: heavy-cpu.yml
   `build_mode` (default `portable`) exports `CRISPEMBED_BUILD_MODE`, CMakeLists.txt maps
   `portable` to `GGML_NATIVE=OFF`/`CRISPEMBED_NATIVE=OFF`, and every run writes
-  `build-mode.txt`. Receipts state the mode (docs/precision-acceptance.md). Open: re-measure the
-  MinerU/TeleOCR Q4_K winners in portable mode before their `Q4_K_MIX` publication.
+  `build-mode.txt`. Receipts state the mode (docs/precision-acceptance.md). MinerU r2/r4 re-measured portable
+  three times: 0.952109 / 0.970185, byte-identical cosine reports
+  ([receipt](tests/results/portable-build/SUMMARY.md)). Open: TeleOCR winner in portable mode
+  before its `Q4_K_MIX` publication; an Intel-runner portable run (all three landed on EPYC 9V45).
 
 ## Metal GPU audit follow-ups — 1 November 2026
 
