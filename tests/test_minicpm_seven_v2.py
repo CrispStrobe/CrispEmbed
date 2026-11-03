@@ -4,6 +4,8 @@ import ast,copy,hashlib,importlib.util,json,subprocess,sys,tempfile,unittest
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'tools/minicpm-seven-v2'))
 import seven_contract as c
+SEVEN_V2_FROZEN='db4c1bb25a342c3ee70a1610e8c3476600d0bccc'  # last commit of the frozen seven-arm v2 producer
+sys.path.insert(0,str(ROOT/'tests'));import frozen_checkout
 s=importlib.util.spec_from_file_location('seven_owner',ROOT/'tools/minicpm-seven-v2/run.py');m=importlib.util.module_from_spec(s);s.loader.exec_module(m)
 class Controls(unittest.TestCase):
  def fixture(self):
@@ -40,9 +42,16 @@ class Controls(unittest.TestCase):
    with self.assertRaises(ValueError):m.finish(dict(old_seven_completed=True,new_vision=rows),path)
    self.assertFalse(json.loads(path.read_text())['completed'])
  def test_actual_old_runtime_helpers_guards_byte_exact(self):
+  # Historical audit: the seven-arm v2 producer runs at its own frozen source (workflow input source_ref).
+  # At that tree (HEAD:src == OLD_SOURCE:src) check the working tree byte-exactly as before. On a later
+  # tree (main after src/ and continue.py moved on, e.g. 48fcd6f5) check the frozen producer commit's
+  # blobs instead; the guard stays strict and its expected sources are never rewritten.
+  git=lambda *a:subprocess.check_output(['git',*a],cwd=ROOT)
+  frozen=git('rev-parse','HEAD:src')==git('rev-parse',c.old.OLD_SOURCE+':src')
+  read=(lambda p:(ROOT/p).read_bytes())if frozen else(lambda p:git('show',SEVEN_V2_FROZEN+':'+p))
   for p in ['tools/minicpm-retained-v3/common.py','tools/minicpm-retained-v3/continue.py','tools/minicpm-retained-v3/build.py','tools/minicpm-retained-v3/fetch.py','docs/minicpm-graph-seven-arm-v1.json']:
-   self.assertEqual((ROOT/p).read_bytes(),subprocess.check_output(['git','show','19c3f7bdf6d452614721946adefb95f6d3cf0180:'+p],cwd=ROOT))
-  self.assertEqual(subprocess.check_output(['git','rev-parse','HEAD:src'],cwd=ROOT),subprocess.check_output(['git','rev-parse',c.old.OLD_SOURCE+':src'],cwd=ROOT))
+   self.assertEqual(read(p),git('show','19c3f7bdf6d452614721946adefb95f6d3cf0180:'+p))
+  self.assertEqual(git('rev-parse',('HEAD'if frozen else SEVEN_V2_FROZEN)+':src'),git('rev-parse',c.old.OLD_SOURCE+':src'))
  def test_no_guard_monkeypatch_or_second_forward(self):
   code=(ROOT/'tools/minicpm-seven-v2/run.py').read_text();vision=(ROOT/'tools/minicpm-seven-v2/vision.py').read_text()
   self.assertNotIn('run_case(',code+vision);self.assertNotIn('source_guard =',code+vision);self.assertNotIn('source_guard=',code+vision)
@@ -62,7 +71,14 @@ class Controls(unittest.TestCase):
   code=(ROOT/'tools/minicpm-seven-v2/run.py').read_text()
   for key in ["c.sha(diff)==build['binary_sha256']['diff']","old['carried_rows']==json.loads(panel.read_text())['cases']","all_omitted_adapter_bytes_reconstructed_and_sha_verified","files_manifest_sha256","case_report_sha256"]:self.assertIn(key,code)
  def test_closed_source_and_exact_actual_dependency(self):
-  value=c.source_guard(subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip());self.assertFalse(value['runtime_math_changes'])
+  # Historical producer guard: it requires HEAD == the reviewed frozen commit, so on a later tree run it
+  # unchanged inside a clean checkout of SEVEN_V2_FROZEN (tests/frozen_checkout.py) instead of here.
+  if frozen_checkout.head_is(SEVEN_V2_FROZEN):
+   value=c.source_guard(SEVEN_V2_FROZEN);self.assertFalse(value['runtime_math_changes'])
+  else:
+   r=frozen_checkout.run_guard(SEVEN_V2_FROZEN,"import sys,subprocess;sys.path.insert(0,'tools/minicpm-seven-v2');import seven_contract as c;"
+    "v=c.source_guard(subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip());assert v['runtime_math_changes'] is False;print('guard ok')")
+   self.assertEqual((r.returncode,r.stdout.strip()),(0,'guard ok'),r.stderr[-2000:])
   cfg=c.declaration();self.assertEqual(cfg['completed_analysis_service']['id'],40831080193);self.assertEqual(cfg['completed_analysis_report']['sha256'],'9f84356c5c31b0aec4f3182b1b84acb780ef5a9ddfaabffcd233917b97df3442')
  def test_real_isolated_help_and_frozen_view_import_need_no_packages(self):
   result=subprocess.run([sys.executable,'-I',str(ROOT/'tools/minicpm-seven-v2/run.py'),'--help'],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
