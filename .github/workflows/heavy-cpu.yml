@@ -17,6 +17,11 @@
 #
 # Run: Actions -> Heavy CPU job -> Run workflow, or
 #   gh workflow run heavy-cpu.yml -f script=tools/ci-heavy/<name>.py [-f args=...]
+#
+# Build mode: CMake builds default to `portable` (GGML_NATIVE=OFF and
+# CRISPEMBED_NATIVE=OFF via $CRISPEMBED_BUILD_MODE), so precision receipts do not
+# depend on the runner's CPU. Pass `-f build_mode=native` only for speed runs.
+# The mode and CPU are written to $HEAVY_OUT/build-mode.txt.
 
 name: Heavy CPU job
 
@@ -53,6 +58,12 @@ on:
         required: false
         default: '300'
         type: string
+      build_mode:
+        description: 'CPU build mode for CMake builds the script makes: portable (GGML_NATIVE=OFF, runner-independent; required for qualification/precision receipts) or native (-march=native; speed runs only)'
+        required: false
+        default: 'portable'
+        type: choice
+        options: [portable, native]
 
 permissions:
   contents: read
@@ -72,6 +83,8 @@ jobs:
       ARGS: ${{ inputs.args }}
       PIP_EXTRA: ${{ inputs.pip }}
       TIMEOUT_MIN: ${{ inputs.timeout_minutes }}
+      # Read by CMakeLists.txt at configure time (explicit -DGGML_NATIVE wins).
+      CRISPEMBED_BUILD_MODE: ${{ inputs.build_mode || 'portable' }}
       HF_TOKEN: ${{ secrets.HF_TOKEN }}
       # Kaggle kernel outputs (e.g. original CUDA captures) for hosted CPU replays.
       KAGGLE_API_TOKEN: ${{ secrets.KAGGLE_TOKEN }}
@@ -139,7 +152,19 @@ jobs:
       - name: Run ${{ inputs.script }}
         run: |
           read -ra argv <<< "$ARGS"
-          echo "runner: $RUNNER_OS/$RUNNER_ARCH  cpus: $(nproc 2>/dev/null || sysctl -n hw.ncpu)  commit: ${GITHUB_SHA::8}"
+          echo "runner: $RUNNER_OS/$RUNNER_ARCH  cpus: $(nproc 2>/dev/null || sysctl -n hw.ncpu)  commit: ${GITHUB_SHA::8}  build_mode: $CRISPEMBED_BUILD_MODE"
+          # Every receipt states its build mode and the CPU it ran on.
+          {
+            echo "build_mode=$CRISPEMBED_BUILD_MODE"
+            echo "commit=$GITHUB_SHA"
+            echo "runner=$RUNNER_OS/$RUNNER_ARCH"
+            if [ -r /proc/cpuinfo ]; then
+              echo "cpu=$(grep -m1 -E 'model name|^Model' /proc/cpuinfo | cut -d: -f2 | sed 's/^ //')"
+              echo "cpu_avx512f=$(grep -m1 -qw avx512f /proc/cpuinfo && echo yes || echo no)"
+            else
+              echo "cpu=$(sysctl -n machdep.cpu.brand_string 2>/dev/null)"
+            fi
+          } > "$HEAVY_OUT/build-mode.txt"
           case "$SCRIPT" in
             *.py) cmd=(python -u "$SCRIPT" "${argv[@]}") ;;
             *.sh) cmd=(bash "$SCRIPT" "${argv[@]}") ;;

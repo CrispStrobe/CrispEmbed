@@ -16,6 +16,15 @@ Rerun 41588457181 (portable build, 256 new tokens):
 
 Stage diff F16-r2: 19/19 stages at cos 1.000000. The page-similarity diagnostic (r2 >= Q4_K on all
 cases) now passes too. Receipt: `tests/results/got-ocr2-f16/qualify-41588457181-orig-ref/`.
+## 3 November 2026 — Portable build mode for hosted qualification receipts
+
+`heavy-cpu.yml` `build_mode` (default `portable`) exports `CRISPEMBED_BUILD_MODE`. At the first configure,
+CMakeLists.txt maps `portable` to `GGML_NATIVE=OFF`/`CRISPEMBED_NATIVE=OFF`, and every run writes
+`build-mode.txt`. MinerU2.5 r2/r4 Q4_K, run three times portable at `33ecd1d6` (runs 41587614152, 41587618648,
+41587621427, all on AMD EPYC 9V45): r2 0.952109 (japanese), r4 0.970185 (table), with byte-identical cosine
+reports. Native builds of the same bytes had scored 0.9673/0.9732 on an EPYC 9V45 and 0.9521/0.9702 on another
+runner, so the spread came from the AVX-512 kernels of `-march=native`. Receipts:
+`tests/results/portable-build/`. Policy: docs/precision-acceptance.md §Build mode.
 ## 3 November 2026 — OCR WASM back under 4 MiB: large VLM/document engines left out of the Emscripten build
 
 Build WASM had failed on main since `922d06bd`: `crispembed_ocr.wasm` was 4,203,804 bytes against the
