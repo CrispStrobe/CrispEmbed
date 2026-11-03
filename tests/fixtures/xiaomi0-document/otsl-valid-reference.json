@@ -1,0 +1,74 @@
+{
+  "schema": "xiaomi0-otsl-valid-reference/v1",
+  "source": {
+    "repository": "SeerRay-Lab/Xiaomi-OCR-0",
+    "revision": "b1a9bb4c07060c453785e9151715ccda6b96f0b1",
+    "path": "postprocess/otsl.py",
+    "sha256": "db46f5a05d9742a7bcfd3931428bdd9e8de845892b66fa4cf09bd21f83cf2b14",
+    "git_blob": "1acbe769397246f9d26ee21b1122e2136d240c1f",
+    "license": "Apache-2.0"
+  },
+  "scope": "actual upstream pure-Python conversions of authored valid tables; no OCR inference",
+  "cases": [
+    {
+      "id": "one-cell",
+      "otsl": "<fcel>Title<nl>",
+      "html": "<table><tr><td>Title</td></tr></table>"
+    },
+    {
+      "id": "two-by-two",
+      "otsl": "<fcel>A<fcel>B<nl><fcel>1<fcel>2<nl>",
+      "html": "<table><tr><td>A</td><td>B</td></tr><tr><td>1</td><td>2</td></tr></table>"
+    },
+    {
+      "id": "empty-cell",
+      "otsl": "<fcel>A<ecel><nl><ecel><fcel>B<nl>",
+      "html": "<table><tr><td>A</td><td></td></tr><tr><td></td><td>B</td></tr></table>"
+    },
+    {
+      "id": "colspan",
+      "otsl": "<fcel>Header<lcel><nl><fcel>A<fcel>B<nl>",
+      "html": "<table><tr><td colspan=\"2\">Header</td></tr><tr><td>A</td><td>B</td></tr></table>"
+    },
+    {
+      "id": "rowspan",
+      "otsl": "<fcel>Header<fcel>A<nl><ucel><fcel>B<nl>",
+      "html": "<table><tr><td rowspan=\"2\">Header</td><td>A</td></tr><tr><td>B</td></tr></table>"
+    },
+    {
+      "id": "rectangle",
+      "otsl": "<fcel>Wide and tall<lcel><fcel>C<nl><ucel><xcel><fcel>D<nl>",
+      "html": "<table><tr><td rowspan=\"2\" colspan=\"2\">Wide and tall</td><td>C</td></tr><tr><td>D</td></tr></table>"
+    },
+    {
+      "id": "all-columns-span",
+      "otsl": "<fcel>All<lcel><nl><ucel><xcel><nl>",
+      "html": "<table><tr><td rowspan=\"2\" colspan=\"2\">All</td></tr><tr></tr></table>"
+    },
+    {
+      "id": "three-rows",
+      "otsl": "<fcel>Left<fcel>A<nl><ucel><fcel>B<nl><ucel><fcel>C<nl>",
+      "html": "<table><tr><td rowspan=\"3\">Left</td><td>A</td></tr><tr><td>B</td></tr><tr><td>C</td></tr></table>"
+    },
+    {
+      "id": "empty-span",
+      "otsl": "<ecel><lcel><fcel>C<nl><ucel><xcel><fcel>D<nl>",
+      "html": "<table><tr><td rowspan=\"2\" colspan=\"2\"></td><td>C</td></tr><tr><td>D</td></tr></table>"
+    },
+    {
+      "id": "unicode",
+      "otsl": "<fcel>合計<fcel>١٢٣<nl><fcel>किरण<fcel>é<nl>",
+      "html": "<table><tr><td>合計</td><td>١٢٣</td></tr><tr><td>किरण</td><td>é</td></tr></table>"
+    },
+    {
+      "id": "whitespace",
+      "otsl": "\n <fcel> A \n B <fcel> C <nl> \n",
+      "html": "<table><tr><td>A \n B</td><td>C</td></tr></table>"
+    },
+    {
+      "id": "no-final-nl",
+      "otsl": "<fcel>A<fcel>B",
+      "html": "<table><tr><td>A</td><td>B</td></tr></table>"
+    }
+  ]
+}

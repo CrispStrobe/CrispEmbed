@@ -20,3 +20,6 @@ tests/results/migan/** -text
 # Licence texts published byte for byte (docs/inpaint-publication-v1.json pins their SHA-256).
 licenses/latent-inpaint/*.txt -text
 licenses/latent-inpaint/NOTICE.md -text
+# OvisOCR3 source audit retains the original CRLF license and Markdown bytes.
+tests/fixtures/ovisocr3-document-source/** -text -whitespace
+docs/ovisocr3-document-protocol.json -text

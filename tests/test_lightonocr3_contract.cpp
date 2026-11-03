@@ -38,6 +38,26 @@ static int crispembed_test_main() {
     check(std::abs(normalized[0] - 1.9303362f) < 1e-6f, "white/red normalization drift");
     check(std::abs(normalized[784] - 2.0748837f) < 1e-6f, "white/green normalization drift");
     check(std::abs(normalized[1568] - 2.145897f) < 1e-6f, "white/blue normalization drift");
+    std::vector<int32_t> prefix{ 151644, 8948, 151645, 198, 151644, 872, 198 };
+    const std::vector<int32_t> suffix{ 151645, 198, 151644, 77091, 198 };
+    const std::vector<int32_t> grounding{ 1951, 287, 198, 151645, 198, 151644, 77091, 198 };
+    const std::vector<int32_t> stops{ 151645, 151643 };
+    std::vector<int32_t> special;
+    for (int id = 151643; id <= 151656; ++id) special.push_back(id);
+    const char * model = "lightonai/LightOnOCR-3-1B";
+    const char * revision = "23d544085c886bbdace647bcfab91203299417e2";
+    check(lightonocr3::token_contract_matches(model, revision, prefix, suffix, prefix, grounding, stops, special),
+          "pinned token contract rejected");
+    check(!lightonocr3::token_contract_matches("different/repo", revision, prefix, suffix, prefix, grounding, stops,
+                                               special),
+          "substituted model repo accepted");
+    auto changed = prefix;
+    changed[1] += 1;
+    check(!lightonocr3::token_contract_matches(model, revision, changed, suffix, prefix, grounding, stops, special),
+          "in-range but substituted prompt accepted");
+    special.pop_back();
+    check(!lightonocr3::token_contract_matches(model, revision, prefix, suffix, prefix, grounding, stops, special),
+          "incomplete special-ID set accepted");
     return failures ? 1 : 0;
 }
 int main() {

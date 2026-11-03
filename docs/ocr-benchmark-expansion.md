@@ -9,18 +9,20 @@ score below is a CrispEmbed measurement.
 
 | Priority | Model | Work in this expansion | Remaining evidence |
 |---|---|---|---|
-| 1 | MinerU2.5-Pro-2605-1.2B | Exact source/converter/runtime profile, separate default-off gate, original-first final-logit and document-helper runner; 2604 stays available | Hosted native compile, all selected F32/F16/Q8/Q4 positions, original 2.0.7 helper comparison, full panel and immutable publication |
+| 1 | MinerU2.5-Pro-2605-1.2B | Exact source/converter/runtime profile, separate default-off gate, original-first final-logit and document-helper runner; 2604 stays available | All selected F32/F16/Q8/Q4 positions, original 2.0.7 helper comparison, full panel and immutable publication |
 | 2 | LightOnOCR-3-1B | Exact Pixtral/Qwen3 checkpoint profile and grounding/transcription work through the existing LightOn engine | Processor/template/patch parity, all-stage original/native output, table/box fidelity and publication |
-| 3 | Xiaomi-OCR-0 | Exact Qwen3.5-0.8B profile/frontend reuse | Original-first native parity plus the separately pinned PPDocLayoutV3 two-stage pipeline; full-page OCR alone cannot inherit the vendor's two-stage score |
-| 4 | LightOnOCR-3-0.8B | [Retained full-logit policy review](lighton08-precision-next.md) is complete; F16/Q8 clear current numerical bars on the old three-page panel, Q4 does not | Fresh current-source portable F16/Q8 replay, preserved text differences and consumer evidence |
-| 4 | OvisOCR3 | Existing native/plain-OCR interface evidence remains; document Markdown is a separate task protocol | Original task-specific references and native task admission. The old capped two-column plain-OCR failure still blocks its old qualification/publication decision |
+| 3 | Xiaomi-OCR-0 | Exact Qwen3.5-0.8B profile/frontend reuse, public API task controls, pinned external PPDocLayoutV3 producer and bounded document assembly | Hosted original-first native and two-stage execution; full-page OCR alone cannot inherit the vendor's two-stage score |
+| 4 | LightOnOCR-3-0.8B | [Retained full-logit policy review](lighton08-precision-next.md) is complete; F16/Q8 clear current numerical bars on the old three-page panel, Q4 does not | Prepared separate current-source portable F16/Q8 job; hosted execution on all three cases, preserved text differences and consumer evidence |
+| 4 | OvisOCR3 | [Separate source-pinned Markdown task audit](ovisocr3-document-task.md) with raw/presentation output and completion controls | Independent licensed input/gold, original task-specific captures and native task admission. The old capped two-column plain-OCR failure still blocks its old qualification/publication decision |
 | 5 | Nemotron 3.5 Parse | [Exact source and 510-tensor census](nemotron-parse.md); bounded native input-geometry/patch frontend work | New C-RADIO/causal mBART graph, full original/native vectors and decoded structured output, then precision/public API/publication |
 | Conditional | dots.mocr | Model/base/architecture and actual supplemental terms reviewed | Project license-policy decision before implementation/distribution; then custom vision/processor work and Qwen2 decoder reuse |
 | Later | LightOnOCR-3-4B | Dense Qwen3.5 source candidate | Separate 4B profile, memory/long-page/GPU protocol after small-model parity |
 | Later | Infinity-Parser2-Flash / Pro | Dense Flash and larger MoE Pro tracked separately | Flash can follow dense Qwen3.5 work; Pro needs a 40-layer/256-expert Qwen3.5 MoE implementation and total-weight storage planning |
 | Optional restricted | Chandra-OCR-2 / Surya 2.5 | Separate licensed product options | Explicit terms/eligibility review, isolated distribution and new integration; existing `surya-det` is not full Surya OCR |
 
-The MinerU lane is documented in [its exact protocol](mineru25-pro-2605.md).
+The implemented lanes have separate protocols: [MinerU 2605](mineru25-pro-2605.md),
+[LightOn3-1B](lightonocr3-1b.md), [Xiaomi-OCR-0](xiaomi-ocr0.md), and
+[Nemotron frontend](nemotron-parse.md).
 Every profile retains its existing family behavior and has a separate source
 identity. A shape-compatible checkpoint is not automatically admitted as another
 model, and a community GGUF is not proof of CrispEmbed parity.
@@ -83,3 +85,23 @@ to quantized artifact upload, empty-cache readback, SHA-pinned registry entry an
 consumer validation. Source implementation does not upgrade the immutable app
 runtime or imply browser/WASM support for large VLMs. Release/tag/default work
 stays in its existing lanes.
+
+## Hosted execution queue
+
+All commands below use the existing manual `heavy-cpu.yml` workflow and the
+reviewable `feat/ocr-benchmark-integration` branch. Start with the declared
+bounded input, retain unsuccessful evidence, then complete the frozen panel.
+No command publishes models or changes runtime defaults.
+
+| Lane | Script | Initial arguments | Scope |
+|---|---|---|---|
+| MinerU 2605 | `tools/ci-heavy/mineru2605_qualify.sh` | `receipt f32,f16,q8_0,q4_k 2048 3 1` | One frozen request, complete final logits at all four precisions, symmetric original/native helper traces; repeat as separate jobs for the remaining seven cases |
+| LightOn3-1B | `tools/ci-heavy/lightonocr3_1b.sh` | `--formats f32,f16` | Three frozen images, transcription/grounding, full-vocabulary original/native comparisons and actual GGUF census |
+| Xiaomi OCR0 | `tools/ci-heavy/xiaomi0_reference.py` | `--inference` after the metadata-only run without arguments | Two owned source/native controls. The external detector and document adapter need their separate frozen document experiment; no vendor benchmark claim |
+| LightOn3-0.8B | `tools/ci-heavy/lighton08_portable.sh` | `inventory-table` | New current-source portable F16/Q8 replay; then `historical-receipt` and `two-column-page` at the same source commit |
+| Nemotron frontend | `tools/ci-heavy/nemotron_parse_frontend.sh` | None | Eleven original-processor size/packing cases plus negative controls; no weights or neural inference |
+
+Use `build_mode=portable` and a distinct `isolated_lane` per immutable input.
+The scripts keep weights/builds in scratch and raw references/comparisons in
+hosted artifacts. Their preflights declare RAM/disk requirements; an insufficient
+runner must stop before model work, not reduce the protocol's input or cap.

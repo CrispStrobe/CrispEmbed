@@ -175,6 +175,17 @@ Unset, empty or `0` keeps the new profile disabled. The runtime also verifies th
 exact checkpoint repository/revision metadata; neither gate selects weights or
 qualifies the new document helpers. See [the 2605 protocol](mineru25-pro-2605.md).
 
+### Benchmark candidate profiles
+
+`CRISPEMBED_LIGHTONOCR3=1` admits the exact 1B LightOn3 profile; grounding also
+requires `CRISPEMBED_LIGHTONOCR3_GROUNDING=1`. Xiaomi format 4 requires
+`CRISPEMBED_QWEN35_OCR=1`, `CRISPEMBED_XIAOMI_OCR0_FRONTEND=1`, and
+`CRISPEMBED_XIAOMI_OCR0_INFERENCE=1`. Each candidate gate is default-off.
+`CRISPEMBED_NEMOTRON_PARSE_GEOMETRY=1` enables only the bounded processor
+geometry/patch prototype; it is a default-off Boolean even though the inventory
+scanner sees its constant declaration as a value. It does not select an OCR
+engine. Unset, empty and `0` leave these candidate paths disabled.
+
 ### Other OCR engines
 
 Per-engine gates follow the same pattern: `CRISPEMBED_<ENGINE>` enables an

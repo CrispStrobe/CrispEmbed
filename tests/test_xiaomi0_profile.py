@@ -24,6 +24,23 @@ converter = load("xiaomi0_converter_test", ROOT / "models/convert-qwen35-ocr-to-
 
 
 class XiaomiSourceTest(unittest.TestCase):
+    def test_every_meta_parameter_shape_is_checked_not_only_the_count(self):
+        source = json.loads(policy.MAIN_SCHEMA.read_text())
+        actual = source["tensors"]
+        actual["lm_head.weight"] = actual["model.language_model.embed_tokens.weight"]
+        self.assertEqual(len(actual), 474)
+        self.assertEqual(policy.validate_main_schema(actual), policy.MAIN_SCHEMA_SHA256)
+        changed = {name: list(shape) for name, shape in actual.items()}
+        name = next(iter(changed))
+        changed[name][-1] += 1
+        with self.assertRaises(ValueError):
+            policy.validate_main_schema(changed)
+        changed = dict(actual)
+        changed["not_a_parameter"] = changed.pop(name)
+        self.assertEqual(len(changed), 474)
+        with self.assertRaises(ValueError):
+            policy.validate_main_schema(changed)
+
     def test_audit_attribution_and_unqualified_scope(self):
         report = policy.evidence()
         self.assertEqual(report["license"]["base_model"], "Qwen/Qwen3.5-0.8B-Base")

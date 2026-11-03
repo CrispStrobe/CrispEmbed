@@ -23,9 +23,11 @@ class Controls(unittest.TestCase):
             if name=='src/qwen35_image.cpp':return '1'*64
             return old.get(name,'2'*64)
         # Later default-off files outside the historical scope: #81's weight cache and the
+        # Later opt-in profiles do not belong to this historical fixture. The
+        # real source_contract still rejects newly added runtime sources.
         # MiniCPM-only graph decoders (#89 qwen35_graph_decoder.*, #109 qwen35_graph_kv_decoder.*).
         later={'src/qwen35_weight_cache.h','src/qwen35_graph_decoder.cpp','src/qwen35_graph_decoder.h',
-               'src/qwen35_graph_kv_decoder.cpp','src/qwen35_graph_kv_decoder.h'}
+               'src/qwen35_graph_kv_decoder.cpp','src/qwen35_graph_kv_decoder.h','src/qwen35_xiaomi0.h'}
         sources=tuple(name for name in driver.SOURCES if name not in later)
         with mock.patch.object(driver.audit,'sha',side_effect=historical_sha),mock.patch.object(driver,'SOURCES',sources):
             yield

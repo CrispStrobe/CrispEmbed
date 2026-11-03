@@ -21,6 +21,74 @@ import mineru2605_validate as protocol
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def compare_requests(official_trace, native_document):
+    """Compare the ordered layout/crop requests, retaining incomplete-arm failures."""
+    errors = []
+    if not isinstance(official_trace, list) or not official_trace:
+        errors.append("official trace must contain its layout request")
+        official_trace = []
+    if not isinstance(native_document, dict):
+        errors.append("native document must be an object")
+        native_document = {}
+    recognitions = native_document.get("recognitions")
+    if not isinstance(recognitions, list):
+        errors.append("native recognitions must be a list")
+        recognitions = []
+    native_requests = [native_document.get("layout")] + [
+        row.get("prediction") if isinstance(row, dict) else None for row in recognitions]
+
+    def request(row, official):
+        if not isinstance(row, dict):
+            return None
+        prediction = row.get("result") if official else row
+        if not isinstance(prediction, dict):
+            return None
+        width, height = (row.get("width"), row.get("height")) if official else (
+            row.get("image_width"), row.get("image_height"))
+        ids = prediction.get("token_ids")
+        if (not isinstance(row.get("prompt"), str) or not row["prompt"] or
+                type(width) is not int or width <= 0 or type(height) is not int or height <= 0 or
+                not isinstance(ids, list) or not ids or
+                any(type(value) is not int or not 0 <= value < 151936 for value in ids) or
+                not isinstance(prediction.get("text"), str) or
+                type(prediction.get("eos")) is not bool or type(prediction.get("capped")) is not bool or
+                prediction["eos"] != (ids[-1] in protocol.EOS)):
+            return None
+        return {"prompt": row["prompt"], "crop_dimensions": [width, height],
+                **{key: prediction[key] for key in ("token_ids", "text", "eos", "capped")}}
+
+    official = [request(row, True) for row in official_trace]
+    native = [request(row, False) for row in native_requests]
+    comparisons = []
+    for index in range(max(len(official), len(native))):
+        left = official[index] if index < len(official) else None
+        right = native[index] if index < len(native) else None
+        valid = left is not None and right is not None
+        comparisons.append({"index": index, "official_valid": left is not None,
+            "native_valid": right is not None, "exact": valid and left == right,
+            "different_fields": [key for key in ("prompt", "crop_dimensions", "token_ids", "text", "eos", "capped")
+                                 if not valid or left[key] != right[key]]})
+    official_complete = bool(official) and all(row is not None and row["eos"] and not row["capped"]
+                                               for row in official)
+    native_complete = (bool(native) and native_document.get("capped") is False and
+                       all(row is not None and row["eos"] and not row["capped"] for row in native))
+    return {"official_requests": len(official), "native_requests": len(native),
+            "official_complete": official_complete, "native_complete": native_complete,
+            "requests_exact": not errors and len(official) == len(native) and bool(comparisons) and
+                              all(row["exact"] for row in comparisons),
+            "comparisons": comparisons, "errors": errors}
+
+
+def helper_result(official_trace, native_document, official_json, native_json, official_md, native_md):
+    requests = compare_requests(official_trace, native_document)
+    return {"requests": requests, "json_exact": native_json == official_json,
+            "markdown_exact": native_md == official_md,
+            "reference_reached_eos": requests["official_complete"],
+            "native_reached_eos": requests["native_complete"],
+            "helper_parity_pass": requests["requests_exact"] and requests["official_complete"] and
+                                  requests["native_complete"] and native_json == official_json and native_md == official_md}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--blueprint", type=Path, required=True)
@@ -84,17 +152,15 @@ def main():
         (args.out / "native.md").write_text(native_md)
         protocol.write_json(args.out / "official207-requests.json", trace)
         protocol.write_json(args.out / "native-document.json", native)
-        complete = all(t["result"].get("eos") and not t["result"].get("capped") for t in trace)
         report = {
             "schema": "crispembed.mineru2605.document-helpers.v1", "model": protocol.MODEL_ID,
             "revision": protocol.MODEL_REVISION, "official_helper": protocol.BLUEPRINT_REVISION,
             "native_helper_blueprint": "c9797cde8f54cc48306196fc6aebe73ea31dd4a3",
             "scope": "single page; both helper arms use the same native neural inference",
-            "json_exact": native_json == official_json, "markdown_exact": native_md == official_md,
+            **helper_result(trace, native, official_json, native_json, official_md, native_md),
             "text_metrics": protocol.text_metrics(official_md, native_md),
             "official_blocks": len(official), "native_blocks": len(native.get("blocks", [])),
-            "official_requests": len(trace), "reference_reached_eos": complete,
-            "helper_parity_pass": complete and native_json == official_json and native_md == official_md,
+            "official_requests": len(trace),
             "original_python_neural_parity": "separate per-request qualification required",
             "cross_page_table_merge_qualified": False, "benchmark_qualified": False,
             "image_sha256": protocol.sha256(args.image), "gguf_sha256": gguf_sha256,

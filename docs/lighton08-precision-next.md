@@ -59,3 +59,42 @@ or independently annotated document quality.
 The preserved book-vision operator attribution remains useful diagnostic work.
 Its old absolute errors are not, by themselves, a reason to spend another broad
 vision sweep before checking the current final-output acceptance policy.
+
+## Prepared current-source portable job
+
+`tools/ci-heavy/lighton08_portable.sh` now implements a separate replay. Its
+versioned protocol is `tests/fixtures/lighton08-portable/protocol.json`.
+Each dispatch admits exactly one of the existing three cases and reconstructs
+the historical F16/F32-vision GGUF with the original frozen converter. It checks
+the full baseline and Q8 model hashes, all protected tensor bytes, the immutable
+prepared PNG archive, unchanged gold/scorer/prompt/cap, and the full/compact
+original capture before native execution. Original outputs and CPU controls
+must reproduce the retained reference except for measured generation time.
+
+```sh
+gh workflow run heavy-cpu.yml --ref feat/ocr-benchmark-integration \
+  -f script=tools/ci-heavy/lighton08_portable.sh \
+  -f args=inventory-table -f build_mode=portable \
+  -f isolated_lane=lighton08-portable-inventory
+```
+
+The other two dispatch arguments are `historical-receipt` and `two-column-page`,
+with separate lane names. Collect all three at the same source commit before
+making a panel-level precision decision. The job builds with both native-CPU
+flags off, records every current Qwen source hash and native binary hash,
+compares all 77 prefill stages and every 248,320-wide generated score vector,
+and retains native IDs, text, confidence, timing, EOS/cap and old quality scores.
+The original arrays and comparison logs remain in the hosted artifact; weights,
+package environments and builds stay in scratch. It requires at least 10 GiB
+available RAM, 15 GiB free scratch and 8 GiB free output capacity before
+installing dependencies. When scratch and output share a filesystem, the job
+requires their combined 23 GiB budget.
+
+The unchanged native test harness enables the quantized-weight gate during
+both numerical arms and separately verifies literal `0` admission behavior;
+the report records that override explicitly. Strict intermediate/text failures
+stay visible even when the current numerical bar is met. A successful one-case
+job neither completes the three-case panel nor qualifies publication.
+The eight new lightweight controls and the preflight have run locally. They
+reject tokens after EOS without changing the frozen historical helper. The actual
+original/native replay remains pending hosted dispatch.

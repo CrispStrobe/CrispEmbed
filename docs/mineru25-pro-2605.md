@@ -80,12 +80,21 @@ gh workflow run heavy-cpu.yml --ref <branch> \
   -f build_mode=portable -f isolated_lane=mineru2605-receipt
 ```
 
-Arguments are case IDs (or `all`), precision tiers, token budget, repeat count,
+Arguments are one case ID, precision tiers, token budget, repeat count,
 and whether to run the document-helper comparison. The frozen
 [protocol](mineru25-pro-2605-protocol.json) covers formula, table, receipt, German,
 Japanese, Arabic, full-page layout and rotated layout. It verifies source image
 hashes and decodes each image once into a shared RGB PNG. This is an internal
 parity panel, not OmniDocBench or OmniParseBench evaluation.
+
+Dispatch each of the eight frozen cases as its own isolated lane. `all` and
+comma-separated case lists are rejected before downloads or builds. A disk and
+available-memory preflight records conservative bounds for the chosen unchanged
+token limit; scratch and artifact-output requirements are added when they share
+a filesystem. Use a hosted Linux runner with at least 12 GiB of available RAM.
+The runner retains one F32 GGUF and at most one additional candidate GGUF at a
+time. Conversion/quantizer logs, exact model hashes and tensor censuses remain
+in the artifact when each temporary candidate file is removed.
 
 The script builds with `GGML_NATIVE=OFF` and `CRISPEMBED_NATIVE=OFF`, records the
 CMake cache, source commit, package freeze, image/model hashes, actual tensor
@@ -97,7 +106,8 @@ as a substitute for the original Python model.
 `mineru2605_qualify.py` applies the current precision policy: minimum final-logit
 cosine >0.99 F32, >0.98 F16, >0.97 Q8_0, >0.94 Q4_K. Missing positions, altered
 original sources, incomplete stage diagnostics or nonportable builds fail
-closed. It records all 64 prefill stages, their original strict 0.002/0.99999
+closed. Every required stage name must appear exactly once, with one observation
+and a nonempty finite array. It records all 64 prefill stages, their original strict 0.002/0.99999
 budgets, worst intermediate cosine, and magnitude-aware diagnostics. A strict
 stage failure or decoded-token disagreement remains visible but is not silently
 substituted for the final-output precision decision.
@@ -106,9 +116,20 @@ A separate free-running arm records input/token IDs, EOS/caps, text, CER/WER
 against the original text, resident repeat stability, cold/warm timings and
 machine comparability. The document probe compares verified 2.0.7 helpers with
 the existing native route using the same native neural inference in both arms;
-it records full JSON/Markdown, crops/requests and cap flags. This isolates helper
+it compares ordered request counts, prompts, crop dimensions, token IDs, text,
+EOS and cap flags, as well as full JSON/Markdown. Both arms must reach EOS on
+every request and the native aggregate cap flag must be false. Equal rendered
+output cannot hide an incomplete or different request. This isolates helper
 semantics and does not independently establish original neural parity. Its
 ordered first/second timings are explicitly not a warm speed comparison.
+
+The shared RGB PNG, original stage archive, every original logit row and every
+native dump are written directly into the uploaded output, including partial
+or failed captures. At 2048 tokens and four precision tiers, the five complete
+logit streams have a 6,223,298,560-byte upper bound for one case; stage arrays,
+dependencies and scratch model/build files are budgeted separately. These are
+capacity bounds, not observed model performance. Do not download the large
+artifact locally; review its small receipts and selected fields remotely.
 
 Artifacts retain failures. `summary.json` distinguishes selected cases from the
 complete eight-case panel and never grants an alias, publication, full benchmark

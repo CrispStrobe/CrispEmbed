@@ -82,6 +82,9 @@ fails conversion. The profile uses the same `general.architecture=lightonocr`
 tensor layout, with `lightonocr.profile=lightonocr3-1b` and a versioned processor,
 prompt, stop, special-token and provenance contract. A converted candidate stays
 unqualified. No permissive alias or floating download is added.
+The native loader also requires the exact source repository, revision, both
+prompt ID arrays and the complete special-token set; merely in-range IDs do not
+satisfy this profile.
 
 ## Hosted qualification
 
@@ -101,31 +104,50 @@ The trace target compiles a separate backend translation unit. Observer hooks an
 reference-token forcing are absent from production archives. The ordinary arm
 selects its own tokens; the forced-prefix arm compares vocabulary logits under
 the original prefix at every position, even after greedy choices diverge. A
-third arm with observation disabled must return identical text.
+third arm with observation disabled must return identical text and token IDs.
 
-Run with a portable build (`GGML_NATIVE=OFF`, `CRISPEMBED_NATIVE=OFF`) containing
-those targets:
+Dispatch the shell entrypoint through the existing workflow at the reviewed
+source ref:
 
 ```bash
-CRISPEMBED_BUILD_MODE=portable python tools/ci-heavy/lightonocr3_1b.py \
-  --build build-portable --output artifacts/lightonocr3-1b-candidate
+gh workflow run heavy-cpu.yml --ref "$REVIEWED_REF" \
+  -f script=tools/ci-heavy/lightonocr3_1b.sh -f build_mode=portable
 ```
 
-The driver requires hosted GitHub Actions, records load/RAM/disk and build mode,
-and refuses less than 12 GiB available RAM or 30 GiB disk. Its frozen manifest
+`lightonocr3_1b.sh` installs the pinned requirements in a fresh virtual environment,
+verifies the actual installed original source and package versions, configures
+`GGML_NATIVE=OFF` and `CRISPEMBED_NATIVE=OFF`, builds the two targets, and runs the
+native/Python controls before calling the Python driver. A receipt binds the
+source commit, binary and CMake cache; a mismatching prebuilt executable is rejected.
+Bootstrap logs and failures are retained in `HEAVY_OUT/lightonocr3-1b-bootstrap`.
+
+The driver requires hosted Linux, records load/RAM/disk and build mode, and
+requires 12 GiB available RAM. Pre-build storage checks reserve 16 GiB for
+models/builds/packages and 8 GiB for retained evidence (24 GiB when sharing one
+filesystem); the driver rechecks remaining capacity after the build. Its frozen manifest
 contains fox, receipt and form images, both prompt modes, and 128 new tokens.
 Default arms are F32 and F16. Optional Q8_0/Q4_K arms require explicit candidate
 GGUF paths via `--formats`/`--model-format`; no mixed recipe is assumed to qualify.
-It never uploads/publishes. Each subprocess is bounded to one hour, with four CPU
-threads. Preserve all logs/traces/comparisons on failure. Output directories must
-be empty, protecting existing receipts.
+The actual tensor-type census must match the declared precision before a cosine
+bar is assigned. GGUFs, HF cache, packages and builds stay in `HEAVY_SCRATCH`;
+`--scratch` is also required for direct driver use outside the wrapper. The
+workflow retains raw original/native arrays, tensor censuses, digests, logs and
+comparisons under `HEAVY_OUT/lightonocr3-1b`. No model publication occurs. Each
+inference subprocess is bounded to one hour with four CPU threads and per-child
+RSS/time/exit/timeout receipts. Failures update the summary immediately. Output
+directories must be empty, protecting existing receipts.
 
 The original producer calls actual pinned Transformers modules with F32, eager
 attention, cache enabled and deterministic greedy generation. It observes input
 pixels/prompt IDs, patch convolution, pre-vision norm, all 24 vision layers,
 projector, decoder input, all 28 prefill text layers, final norm and full
 vocabulary logits at every generated position. Token IDs include stops; decoded
-text, grounding, generation cap and time are retained. This is a deterministic
+text, grounding, generation cap and time are retained. Source identity, installed
+package versions, image digest, shape, prompt and all 151,936 vocabulary entries
+are checked; shortened logits cannot masquerade as full-vocabulary evidence.
+Decoded and forced-ID files are also hashed. Every native arm records its actual
+applied and argmax IDs, image hash, mode, cap and observation setting, alongside
+the runner's binary/model/process receipt. This is a deterministic
 precision reference; the model card's sampled quality recipe is a separate task.
 
 `tools/compare_lightonocr3.py` enforces complete finite captures and the owner
@@ -133,6 +155,9 @@ policy in `docs/precision-acceptance.md`: minimum decisive-logit cosine strictly
 above 0.99 F32, 0.98 F16, 0.97 Q8_0 or 0.94 Q4_K. Strict 0.002 absolute/0.99999
 cosine failures remain diagnostics alongside magnitudes, RMS, argmax, decoded
 IDs/text, stops and cap status. Missing layers/logits and observer changes fail.
+Prepared-pixel differences remain reported diagnostics under the same owner
+policy; the original/native source-image hash and prompt-prefix contract must
+match before logits are compared.
 A capped page is a capped page; a passing bounded precision receipt cannot claim
 complete document extraction, structured quality, or an OmniParseBench score.
 
@@ -146,8 +171,10 @@ python tools/list_env_vars.py --check
 
 The Python controls cover source/fixture pins, incompatible architectures,
 processor substitutions, dual stops, prompts, grounding edge cases, numerical
-nonfinites and missing-layer/logit rejection. The native control covers official
-resize dimensions, odd grids, invalid geometry and normalization. The coordinator
+nonfinites, missing/short logits, source/input/provenance substitutions, forcing,
+observer token changes and actual GGUF precision-label mismatches. The native
+control covers official resize dimensions, odd grids, invalid geometry,
+normalization and rejected repository/prompt/special-ID substitutions. The coordinator
 adds them to the existing model-free controls workflow.
 
 Outstanding evidence: hosted build/link and original/native F32/F16 results;

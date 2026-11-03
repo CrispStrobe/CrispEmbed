@@ -9,6 +9,8 @@ This tool creates evidence only: no registry, alias, default or publication edit
 from __future__ import annotations
 
 import argparse
+from collections import Counter
+import importlib.util
 import json
 import math
 import os
@@ -20,11 +22,47 @@ import mineru2605_validate as protocol
 
 ROOT = Path(__file__).resolve().parents[1]
 BARS = {"f32": .99, "f16": .98, "q8_0": .97, "q4_k": .94}
+REQUIRED_STAGES = ("input_patches", "vis_patch_embed", *(f"vis_layer_{i}" for i in range(32)),
+                   "vis_merger_output", "input_ids", "mrope_positions", "llm_embed",
+                   *(f"llm_layer_{i}" for i in range(24)), "llm_final_norm", "llm_logits_last")
 
 
 def require(value, message):
     if not value:
         raise ValueError(message)
+
+
+def candidate_contract(parsed, precision):
+    """Bind the precision label to actual checkpoint identity and stored tensors."""
+    require(precision in BARS, "unknown precision tier")
+    manifest = json.loads((ROOT / "models/mineru25-pro-2605-source.json").read_text())
+    metadata = parsed["metadata"]
+    expected = {"general.architecture": "qwen2vl", "qwen2vl.model_family": "mineru2.5-pro-2605",
+                "qwen2vl.source.repository": manifest["repository"], "qwen2vl.source.revision": manifest["revision"],
+                "qwen2vl.source.expected_revision": manifest["revision"],
+                "qwen2vl.blueprint.revision": "mineru-vl-utils==2.0.7",
+                "qwen2vl.blueprint.artifact_sha256": manifest["blueprint"]["wheel_sha256"]}
+    require(all(metadata.get(key, {}).get("value") == value for key, value in expected.items()),
+            "candidate GGUF is not the exact 2605 source profile")
+    hashes = json.loads(metadata.get("qwen2vl.source.file_sha256", {}).get("value", "null"))
+    require(hashes == {name: row["sha256"] for name, row in manifest["files"].items()},
+            "candidate checkpoint-file provenance differs")
+    spec = importlib.util.spec_from_file_location("mineru2605_candidate_converter", ROOT / "models/convert-mineru25-pro-to-gguf.py")
+    converter = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = converter
+    spec.loader.exec_module(converter)
+    expected_shapes = {row.target: list(reversed((1280, 1176) if row.flatten_patch else row.shape))
+                       for row in converter.tensor_specs()}
+    tensors = parsed["tensors"]
+    require(set(tensors) == set(expected_shapes) and
+            all(row["stored_shape"] == expected_shapes[name] for name, row in tensors.items()),
+            "candidate tensor inventory/shape differs")
+    counts = Counter(row["type"] for row in tensors.values())
+    allowed, required = {"f32": ({0}, 0), "f16": ({0, 1}, 1), "q8_0": ({0, 1, 8}, 8),
+                         "q4_k": ({0, 1, 8, 12}, 12)}[precision]
+    require(set(counts) <= allowed and required in counts, "declared precision differs from actual tensor storage")
+    return {"source": expected, "source_file_sha256": hashes, "tensor_count": len(tensors),
+            "stored_type_counts": dict(counts), "precision": precision, "file_bytes": parsed["bytes"]}
 
 
 def validate_reference(reference):
@@ -65,9 +103,15 @@ def precision_result(reference, forced, rows, stage_report, precision, build_mod
         type(row.get("cosine")) in (float, int) and math.isfinite(row["cosine"])
         for index, row in enumerate(rows))
     stages = stage_report.get("stages", [])
-    observed = [row for row in stages if row.get("observed") and row.get("finite") and
+    require(isinstance(stages, list) and len(stages) == len(REQUIRED_STAGES) and
+            all(isinstance(row, dict) and isinstance(row.get("name"), str) for row in stages) and
+            {row["name"] for row in stages} == set(REQUIRED_STAGES),
+            "intermediate stage diagnostics must cover every required name exactly once")
+    observed = [row for row in stages if row.get("observed") is True and row.get("finite") is True and
+                type(row.get("visits")) is int and row["visits"] == 1 and
+                type(row.get("elements")) is int and row["elements"] > 0 and
                 type(row.get("cos_min")) in (float, int) and math.isfinite(row["cos_min"])]
-    require(len(stages) == 64 and len(observed) == 64, "intermediate stage diagnostics are incomplete")
+    require(len(observed) == len(REQUIRED_STAGES), "intermediate stage diagnostics are incomplete")
     worst_stage = min(observed, key=lambda row: row["cos_min"])
     minimum = min((row["cosine"] for row in rows), default=None) if complete else None
     return {
@@ -134,6 +178,9 @@ def main():
     args = parser.parse_args()
     args.out.mkdir(parents=True, exist_ok=True)
     portable_cache(args.cmake_cache)
+    from gguf_file_type_canonicalize import parse as parse_gguf
+    candidate = candidate_contract(parse_gguf(args.gguf), args.precision)
+    protocol.write_json(args.out / "candidate.json", candidate)
     ref = json.loads(args.reference.read_text())
     validate_reference(ref)
     require(protocol.sha256(args.image) == ref["image_sha256"], "candidate image differs from reference")
@@ -179,6 +226,7 @@ def main():
                   image_sha256=ref["image_sha256"], native_executable_sha256=protocol.sha256(args.native),
                   diff_executable_sha256=protocol.sha256(args.diff), cmake_cache_sha256=protocol.sha256(args.cmake_cache),
                   packages=protocol.packages(), threads=ref["threads"], decoded=decoded,
+                  candidate=candidate,
                   model=protocol.MODEL_ID, revision=protocol.MODEL_REVISION,
                   blueprint=protocol.BLUEPRINT_REVISION)
     protocol.write_json(args.out / "precision.json", report)

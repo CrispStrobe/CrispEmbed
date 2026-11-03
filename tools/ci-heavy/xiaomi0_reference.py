@@ -10,12 +10,27 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import platform
+import re
+import shutil
+import signal
 import subprocess
 import sys
+import time
+import venv
 
 ROOT = Path(__file__).resolve().parents[2]
 PROTOCOL = ROOT / "tests/fixtures/xiaomi0-bounded/protocol.json"
 PROTOCOL_SHA256 = "4fa314d26c4c2372f929fc7ada8b8aa0188bbc9148ec82a50b509d9eabb56c30"
+CPU_REQUIREMENTS = ("torch==2.14.0", "torchvision==0.29.0")
+PYTHON_REQUIREMENTS = ("transformers==5.17.0", "tokenizers==0.23.3", "numpy==2.2.6",
+                       "pillow==12.1.0", "huggingface-hub==1.33.0", "gguf==0.19.0",
+                       "safetensors==0.8.0", "jinja2==3.1.6")
+WORKER_SECONDS = 7200
+STAGES = (["vision.embedded"] + [f"vision.layer.{i}" for i in range(12)]
+          + ["vision.merger", "decoder.input"] + [f"decoder.layer.{i}" for i in range(24)]
+          + ["decoder.norm"])
+ACTIVE_CHILDREN = []
 
 
 def module(name, path):
@@ -50,14 +65,169 @@ def native_env():
     return env
 
 
-def run(command, path, *, env=None):
-    result = subprocess.run(list(map(str, command)), cwd=ROOT, env=env, text=True,
-                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    path.write_text(result.stdout)
+def run(command, path, *, env=None, timeout=1200):
+    """Bound subprocess groups and retain their actual output on failure."""
+    command = list(map(str, command))
+    with path.open("w") as log:
+        child = subprocess.Popen(command, cwd=ROOT, env=env, text=True,
+                                 stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
+        ACTIVE_CHILDREN.append(child)
+        try:
+            code = child.wait(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            os.killpg(child.pid, signal.SIGTERM)
+            try:
+                child.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                os.killpg(child.pid, signal.SIGKILL)
+                child.wait()
+            raise ValueError("Bounded Xiaomi command timed out: " + path.name)
+        finally:
+            ACTIVE_CHILDREN.remove(child)
+    return subprocess.CompletedProcess(command, code, stdout=path.read_text(errors="replace"))
+
+
+def directories(output=None, scratch=None):
+    if output is None:
+        if not os.environ.get("HEAVY_OUT"):
+            raise ValueError("Provide --output or the heavy-cpu HEAVY_OUT directory")
+        output = Path(os.environ["HEAVY_OUT"]) / "xiaomi0"
+    if scratch is None:
+        if not os.environ.get("HEAVY_SCRATCH"):
+            raise ValueError("Provide --scratch or the heavy-cpu HEAVY_SCRATCH directory")
+        scratch = Path(os.environ["HEAVY_SCRATCH"]) / "xiaomi0"
+    output, scratch = Path(output).resolve(), Path(scratch).resolve()
+    if output == scratch or output in scratch.parents or scratch in output.parents:
+        raise ValueError("Uploaded output and model/build scratch must be disjoint")
+    return output, scratch
+
+
+def resource_snapshot(out, scratch):
+    memory = {}
+    for line in Path("/proc/meminfo").read_text().splitlines():
+        key, value = line.split(":", 1)
+        if key in {"MemTotal", "MemAvailable", "SwapTotal", "SwapFree"}:
+            memory[key] = int(value.split()[0]) * 1024
+    return {"platform": platform.platform(), "machine": platform.machine(),
+            "python": platform.python_version(), "cpus": os.cpu_count(),
+            "load": list(os.getloadavg()), "memory_bytes": memory,
+            "scratch_free_bytes": shutil.disk_usage(scratch).free,
+            "output_free_bytes": shutil.disk_usage(out).free,
+            "same_filesystem": out.stat().st_dev == scratch.stat().st_dev}
+
+
+def require_resources(snapshot, inference):
+    required_memory = (9 if inference else 3) * 2**30
+    required_disk = (12 if inference else 8) * 2**30
+    required_output = 2 * 2**30
+    if snapshot.get("same_filesystem") is not False:
+        # Scratch and retained tensors often share the runner's root volume.
+        # Independent checks would count the same free bytes twice.
+        required_disk += required_output
+        required_output = required_disk
+    if (snapshot["memory_bytes"].get("MemAvailable", 0) < required_memory
+            or snapshot["scratch_free_bytes"] < required_disk
+            or snapshot["output_free_bytes"] < required_output):
+        raise ValueError("Insufficient hosted Xiaomi RAM/scratch/output capacity")
+
+
+def job_env(scratch):
+    env = native_env()
+    for key in ("PYTHONPATH", "PYTHONHOME", "CFLAGS", "CXXFLAGS", "CPPFLAGS", "LDFLAGS"):
+        env.pop(key, None)
+    env.update({"HF_HOME": str(scratch / "hf"), "TOKENIZERS_PARALLELISM": "false",
+                "OMP_NUM_THREADS": "2", "MKL_NUM_THREADS": "2"})
+    return env
+
+
+def interrupted(signum, _frame):
+    for child in tuple(ACTIVE_CHILDREN):
+        if child.poll() is None:
+            try:
+                os.killpg(child.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+    raise ValueError("Hosted Xiaomi interrupted by signal " + str(signum))
+
+
+def build_receipt(build, targets, revision):
+    cache = (build / "CMakeCache.txt").read_text()
+    for name in ("GGML_NATIVE", "CRISPEMBED_NATIVE"):
+        if re.findall(r"^" + name + r":(?:BOOL|UNINITIALIZED)=(.*)$", cache, re.MULTILINE) != ["OFF"]:
+            raise ValueError("Actual native build cache is not portable: " + name)
+    return {"schema": "xiaomi0-native-build/v1", "runtime_revision": revision,
+            "build_mode": "portable", "ggml_native": False, "crispembed_native": False,
+            "binaries": {name: {"sha256": policy.file_sha256(build / name),
+                                "bytes": (build / name).stat().st_size} for name in targets}}
+
+
+def installed_versions():
+    from importlib.metadata import version
+    result = {}
+    for requirement in CPU_REQUIREMENTS + PYTHON_REQUIREMENTS:
+        name, expected = requirement.split("==")
+        actual = version(name)
+        if actual.split("+")[0] != expected:
+            raise ValueError("Xiaomi installed dependency differs: " + name)
+        result[name] = actual
     return result
 
 
-def metadata(directory, out):
+def bootstrap(args, out, scratch):
+    """A direct heavy-cpu dispatch installs pinned direct dependencies first."""
+    if out.exists() or scratch.exists():
+        raise ValueError("Fresh task-owned Xiaomi output and scratch directories required")
+    out.mkdir(parents=True)
+    scratch.mkdir(parents=True)
+    state = {"schema": "xiaomi0-hosted-bootstrap/v1", "phase": "resources",
+             "direct_dependency_pins": list(CPU_REQUIREMENTS + PYTHON_REQUIREMENTS),
+             "inference_requested": args.inference, "worker_seconds": WORKER_SECONDS}
+
+    def save():
+        (out / "bootstrap.json").write_text(json.dumps(state, indent=2, allow_nan=False) + "\n")
+
+    try:
+        state["resources"] = resource_snapshot(out, scratch)
+        save()
+        require_resources(state["resources"], args.inference)
+        state["phase"] = "isolated-dependencies"
+        save()
+        environment = scratch / "venv"
+        venv.EnvBuilder(with_pip=True, clear=False).create(environment)
+        python = environment / "bin/python"
+        env = job_env(scratch)
+        commands = [
+            ([python, "-m", "pip", "install", "--disable-pip-version-check", "--no-cache-dir",
+              "--index-url", "https://download.pytorch.org/whl/cpu", *CPU_REQUIREMENTS], "install-torch.log"),
+            ([python, "-m", "pip", "install", "--disable-pip-version-check", "--no-cache-dir",
+              *PYTHON_REQUIREMENTS], "install-python.log"),
+            ([python, "-m", "pip", "check"], "pip-check.log"),
+            ([python, "-m", "pip", "list", "--format=json"], "installed-packages.json"),
+        ]
+        for command, name in commands:
+            if run(command, out / name, env=env, timeout=900 if name.startswith("install-") else 60).returncode:
+                raise ValueError("Xiaomi dependency installation failed: " + name)
+        state["phase"] = "worker"
+        save()
+        command = [python, Path(__file__).resolve(), "--prepared-environment",
+                   "--output", out, "--scratch", scratch]
+        if args.model_dir:
+            command += ["--model-dir", args.model_dir.resolve()]
+        if args.inference:
+            command.append("--inference")
+        result = run(command, out / "worker.log", env=env, timeout=WORKER_SECONDS)
+        state["worker_returncode"] = result.returncode
+        state["phase"] = "complete" if result.returncode == 0 else "failed"
+        save()
+        if result.returncode:
+            raise ValueError("Xiaomi hosted worker failed; retained worker.log and result JSON")
+    except Exception as error:
+        state["failure"] = str(error)
+        save()
+        raise
+
+
+def metadata(directory, out, scratch):
     import gguf
     import numpy as np
     import torch
@@ -71,10 +241,10 @@ def metadata(directory, out):
         model = Qwen3_5ForConditionalGeneration(config)
     expected = {name: list(value.shape) for name, value in model.state_dict().items()}
     del model
-    if len(expected) != 474 or any(name.startswith("mtp.") for name in expected):
-        raise ValueError("Xiaomi HF ordinary-generation meta schema differs")
+    schema_pin = policy.validate_main_schema(expected)
+    (out / "original-meta-schema.json").write_text(json.dumps(expected, indent=2, sort_keys=True) + "\n")
     processor = AutoProcessor.from_pretrained(directory, local_files_only=True, trust_remote_code=False)
-    writer = gguf.GGUFWriter(str(out / "frontend.gguf"), "qwen35_ocr")
+    writer = gguf.GGUFWriter(str(scratch / "frontend.gguf"), "qwen35_ocr")
     writer.add_string("general.source.huggingface.repository", policy.MODEL)
     writer.add_string("general.source.huggingface.revision", policy.REVISION)
     writer.add_uint32("qwen35_ocr.format_version", 4)
@@ -82,11 +252,14 @@ def metadata(directory, out):
         Path(directory), 248320, pinned["generation"]))
     converter.write_xiaomi0_metadata(writer, pinned)
 
+    frontend_arrays = {}
+
     def save(name, values):
         value = np.asarray(values)
         if not value.size or not np.isfinite(value).all():
             raise ValueError("Empty/nonfinite frontend reference: " + name)
-        writer.add_tensor(name, np.ascontiguousarray(value, dtype=np.float32))
+        frontend_arrays[name] = np.ascontiguousarray(value, dtype=np.float32)
+        writer.add_tensor(name, frontend_arrays[name])
 
     def text(name, value):
         save(name, list(value.encode("utf-8")))
@@ -136,8 +309,11 @@ def metadata(directory, out):
     writer.write_kv_data_to_file()
     writer.write_tensors_to_file()
     writer.close()
+    np.savez_compressed(out / "frontend-reference.npz", **frontend_arrays)
     return {"runtime": runtime, "meta_tensor_count": len(expected),
             "meta_schema_sha256": hashlib.sha256(json.dumps(expected, sort_keys=True).encode()).hexdigest(),
+            "checkpoint_main_schema_sha256": schema_pin,
+            "frontend_gguf_sha256": policy.file_sha256(scratch / "frontend.gguf"),
             "source_payload_verified": False, "model_forward_executed": False}
 
 
@@ -191,7 +367,7 @@ def original_reference(directory, case, output, model, processor):
             handle.remove()
     ids = generated.sequences[0, inputs["input_ids"].shape[1]:].tolist()
     logits = np.stack([tensor[0].detach().float().cpu().numpy() for tensor in generated.logits])
-    if logits.shape != (len(ids), 248320) or len(arrays) != 40 or not np.isfinite(logits).all():
+    if logits.shape != (len(ids), 248320) or set(arrays) != set(STAGES) or not np.isfinite(logits).all():
         raise ValueError("Incomplete Xiaomi actual logits or prefill stages")
     arrays["generated.logits"] = logits
     for name, value in arrays.items():
@@ -233,9 +409,11 @@ def compare_native(log, logits_path, original_path, reference, dtype):
         raise ValueError("Missing unique actual Xiaomi generation result")
     row = rows[0]
     stage_rows = [json.loads(line.removeprefix("XIAOMI0_STAGE ")) for line in log.splitlines() if line.startswith("XIAOMI0_STAGE ")]
-    if len(stage_rows) != 40 or len({x["name"] for x in stage_rows}) != 40:
+    if len(stage_rows) != len(STAGES) or {x["name"] for x in stage_rows} != set(STAGES):
         raise ValueError("Incomplete native stage capture")
     with np.load(original_path) as arrays:
+        if set(arrays) != set(STAGES) | {"generated.logits"}:
+            raise ValueError("Original stage/logit coverage differs")
         raw = np.fromfile(str(logits_path) + ".stages", dtype=np.float32)
         stages = {}
         offset = 0
@@ -261,6 +439,8 @@ def compare_native(log, logits_path, original_path, reference, dtype):
     worst = min(stages, key=lambda name: stages[name]["cosine_min"])
     return {"native": row, "ids_equal": ids_equal, "text_equal": native_text == reference["text"],
             "stop_equal": stop_equal, "prefixes_equal": ids_equal, "final_logits": final,
+            "comparison_kind": "actual-free-generation; divergent prefixes are not teacher-forced",
+            "logit_rows": native_logits.shape[0], "vocabulary": 248320,
             "owner_bar": 0.99 if dtype == "f32" else 0.98,
             "owner_final_logit_bar_pass": final is not None and final["cosine_min"] > (0.99 if dtype == "f32" else 0.98),
             "stage_metrics": stages, "worst_intermediate_stage": worst,
@@ -269,17 +449,28 @@ def compare_native(log, logits_path, original_path, reference, dtype):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--output", type=Path, help="Defaults to HEAVY_OUT/xiaomi0")
+    parser.add_argument("--scratch", type=Path, help="Defaults to HEAVY_SCRATCH/xiaomi0; never uploaded")
     parser.add_argument("--model-dir", type=Path)
     parser.add_argument("--inference", action="store_true", help="Run exactly two frozen original cases and four native arms on hosted CI")
+    parser.add_argument("--prepared-environment", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
     protocol = preflight()
     if os.environ.get("GITHUB_ACTIONS") != "true":
         parser.error("This recipe builds/captures only on hosted CI; lightweight source tests run locally")
     if os.environ.get("CRISPEMBED_BUILD_MODE", "portable") != "portable":
         parser.error("Xiaomi precision evidence requires the portable CPU build")
-    out = args.output.resolve()
-    out.mkdir(parents=True, exist_ok=True)
+    if platform.system() != "Linux" or platform.machine() != "x86_64" or sys.version_info[:2] != (3, 12):
+        parser.error("The initial Xiaomi recipe requires hosted Linux x86_64 and Python 3.12")
+    signal.signal(signal.SIGTERM, interrupted)
+    signal.signal(signal.SIGINT, interrupted)
+    out, scratch = directories(args.output, args.scratch)
+    if not args.prepared_environment:
+        bootstrap(args, out, scratch)
+        return
+    if Path(sys.prefix).resolve() != (scratch / "venv").resolve() or not (out / "bootstrap.json").is_file():
+        parser.error("Prepared worker must use its task-owned isolated environment")
+    started = time.monotonic()
     report = {"schema": "xiaomi0-hosted-result/v1", "phase": "metadata", "protocol_sha256": PROTOCOL_SHA256,
               "source_commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
               "source_audit_sha256": policy.AUDIT_SHA256, "build_mode": "portable", "original": {}, "native": {},
@@ -290,6 +481,10 @@ def main():
 
     save()
     try:
+        report["installed_direct_dependencies"] = installed_versions()
+        report["resources_before_metadata"] = resource_snapshot(out, scratch)
+        require_resources(report["resources_before_metadata"], args.inference)
+        save()
         from huggingface_hub import snapshot_download
         import torch
         import torchvision
@@ -299,24 +494,32 @@ def main():
         torch.manual_seed(0)
         directory = args.model_dir or Path(snapshot_download(policy.MODEL, revision=policy.REVISION,
                                                              allow_patterns=list(policy.metadata_files())))
-        report["metadata"] = metadata(directory, out)
-        build = out / "build"
-        env = native_env()
+        report["metadata"] = metadata(directory, out, scratch)
+        build = scratch / "build"
+        env = job_env(scratch)
         result = run(["cmake", "-S", ROOT, "-B", build, "-DCMAKE_BUILD_TYPE=Release", "-DGGML_NATIVE=OFF",
                       "-DCRISPEMBED_NATIVE=OFF", "-DGGML_BLAS=OFF", "-DGGML_METAL=OFF", "-DCRISPEMBED_BUILD_SHARED=OFF"],
                      out / "configure.log", env=env)
         if result.returncode:
             raise ValueError("Native configure failed")
-        result = run(["cmake", "--build", build, "--target", "test-xiaomi0-frontend", "test-xiaomi0-run", "-j", "2"],
+        targets = ["test-xiaomi0-frontend"]
+        if args.inference:
+            targets += ["test-xiaomi0-run", "test-xiaomi0-public"]
+        result = run(["cmake", "--build", build, "--target", *targets, "-j", "2"],
                      out / "build.log", env=env)
         if result.returncode:
             raise ValueError("Native build failed")
-        result = run([build / "test-xiaomi0-frontend", out / "frontend.gguf"], out / "frontend.log", env=env)
+        receipt = build_receipt(build, targets, report["source_commit"])
+        (out / "native-build.json").write_text(json.dumps(receipt, indent=2) + "\n")
+        result = run([build / "test-xiaomi0-frontend", scratch / "frontend.gguf"], out / "frontend.log", env=env)
         report["frontend_pass"] = result.returncode == 0
         save()
         if result.returncode:
             raise ValueError("Original/native Xiaomi frontend mismatch")
         if args.inference:
+            report["resources_before_checkpoint"] = resource_snapshot(out, scratch)
+            require_resources(report["resources_before_checkpoint"], True)
+            save()
             from transformers import AutoProcessor, Qwen3_5ForConditionalGeneration
             if args.model_dir is None:
                 directory = Path(snapshot_download(policy.MODEL, revision=policy.REVISION,
@@ -335,8 +538,18 @@ def main():
             gc.collect()
             report["phase"] = "native"; save()
             for dtype in protocol["dtype_arms"]:
-                output = out / ("xiaomi0-" + dtype + ".gguf")
+                output = scratch / ("xiaomi0-" + dtype + ".gguf")
                 converter.convert(directory, output, policy.MODEL, policy.REVISION, dtype=dtype, profile="xiaomi-ocr-0")
+                manifest = output.with_suffix(output.suffix + ".manifest.json")
+                shutil.copyfile(manifest, out / manifest.name)
+                report.setdefault("exports", {})[dtype] = {
+                    "sha256": policy.file_sha256(output), "bytes": output.stat().st_size,
+                    "weights_uploaded": False, "manifest": manifest.name}
+                if dtype == "f16":
+                    public = run([build / "test-xiaomi0-public", output], out / "public-admission.log", env=env)
+                    report["public_admission_pass"] = public.returncode == 0
+                    if public.returncode:
+                        raise ValueError("Xiaomi generic public admission/state check failed")
                 for case in protocol["cases"]:
                     key = dtype + "-" + case["id"]
                     prompt = out / (case["id"] + ".prompt.txt")
@@ -349,9 +562,12 @@ def main():
                     report["native"][key] = compare_native(result.stdout, logits,
                         out / (case["id"] + "-original.npz"), report["original"][case["id"]], dtype)
                     save()
+                output.unlink()
             report["bounded_final_logit_bars_pass"] = all(x["owner_final_logit_bar_pass"] for x in report["native"].values())
         report["phase"] = "complete"
         report["scope"] = protocol["scope"]
+        report["elapsed_seconds"] = time.monotonic() - started
+        report["artifact_policy"] = "reports and actual reference/native tensors only; all GGUF/build/cache files in scratch"
         save()
         if args.inference and not report["bounded_final_logit_bars_pass"]:
             raise ValueError("Bounded final-logit precision bars failed; actual artifacts retained")

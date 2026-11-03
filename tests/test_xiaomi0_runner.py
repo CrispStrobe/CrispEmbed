@@ -4,6 +4,7 @@ import importlib.util
 import json
 from pathlib import Path
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -22,6 +23,70 @@ layout = load("xiaomi0_layout_test", ROOT / "tools/xiaomi0_layout_contract.py")
 
 
 class XiaomiRunnerTest(unittest.TestCase):
+    def test_direct_dispatch_paths_are_disjoint_and_use_workflow_contract(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with patch.dict(runner.os.environ, {"HEAVY_OUT": str(root / "out"), "HEAVY_SCRATCH": str(root / "scratch")}):
+                self.assertEqual(runner.directories(), (root / "out/xiaomi0", root / "scratch/xiaomi0"))
+            for out, scratch in ((root, root), (root, root / "nested"), (root / "nested", root)):
+                with self.assertRaises(ValueError):
+                    runner.directories(out, scratch)
+
+    def test_resources_stop_before_dependency_installation(self):
+        good = {"memory_bytes": {"MemAvailable": 12 * 2**30}, "scratch_free_bytes": 20 * 2**30,
+                "output_free_bytes": 4 * 2**30, "same_filesystem": False}
+        runner.require_resources(good, True)
+        for key in ("memory_bytes", "scratch_free_bytes", "output_free_bytes"):
+            bad = copy.deepcopy(good)
+            bad[key] = {"MemAvailable": 1} if key == "memory_bytes" else 1
+            with self.assertRaises(ValueError):
+                runner.require_resources(bad, True)
+        with tempfile.TemporaryDirectory() as directory, patch.object(runner, "resource_snapshot", return_value=bad), \
+                patch.object(runner.venv, "EnvBuilder") as builder:
+            with self.assertRaises(ValueError):
+                runner.bootstrap(SimpleNamespace(inference=True, model_dir=None),
+                                 Path(directory) / "out", Path(directory) / "scratch")
+            builder.assert_not_called()
+
+    def test_shared_volume_reserves_scratch_and_retained_outputs_together(self):
+        resources = {"memory_bytes": {"MemAvailable": 12 * 2**30},
+                     "scratch_free_bytes": 13 * 2**30, "output_free_bytes": 13 * 2**30,
+                     "same_filesystem": True}
+        with self.assertRaises(ValueError):
+            runner.require_resources(resources, True)
+        resources.update(scratch_free_bytes=14 * 2**30, output_free_bytes=14 * 2**30)
+        runner.require_resources(resources, True)
+
+    def test_bootstrap_pins_dependencies_before_metadata_worker(self):
+        good = {"memory_bytes": {"MemAvailable": 12 * 2**30}, "scratch_free_bytes": 20 * 2**30,
+                "output_free_bytes": 4 * 2**30, "same_filesystem": False}
+        with tempfile.TemporaryDirectory() as directory, patch.object(runner, "resource_snapshot", return_value=good), \
+                patch.object(runner.venv, "EnvBuilder"), \
+                patch.object(runner, "run", return_value=SimpleNamespace(returncode=0)) as execute:
+            root = Path(directory)
+            runner.bootstrap(SimpleNamespace(inference=False, model_dir=None), root / "out", root / "scratch")
+            commands = [list(map(str, call.args[0])) for call in execute.call_args_list]
+            self.assertEqual(len(commands), 5)
+            self.assertIn("torch==2.14.0", commands[0])
+            self.assertIn("https://download.pytorch.org/whl/cpu", commands[0])
+            self.assertIn("transformers==5.17.0", commands[1])
+            self.assertIn("--prepared-environment", commands[-1])
+            self.assertNotIn("--inference", commands[-1])
+            self.assertEqual(commands[-1][0], str(root / "scratch/venv/bin/python"))
+
+    def test_build_receipt_reads_actual_portable_flags_and_binary_bytes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "test-xiaomi0-run").write_bytes(b"authored binary identity control, never executed")
+            cache = root / "CMakeCache.txt"
+            cache.write_text("GGML_NATIVE:BOOL=OFF\nCRISPEMBED_NATIVE:BOOL=OFF\n")
+            receipt = runner.build_receipt(root, ["test-xiaomi0-run"], "1" * 40)
+            self.assertEqual(receipt["binaries"]["test-xiaomi0-run"]["sha256"],
+                             runner.policy.file_sha256(root / "test-xiaomi0-run"))
+            cache.write_text("GGML_NATIVE:BOOL=ON\nCRISPEMBED_NATIVE:BOOL=OFF\n")
+            with self.assertRaises(ValueError):
+                runner.build_receipt(root, ["test-xiaomi0-run"], "1" * 40)
+
     def test_frozen_budget_and_no_unrelated_gates(self):
         protocol = runner.preflight()
         self.assertEqual([c["task"] for c in protocol["cases"]], ["text", "table"])

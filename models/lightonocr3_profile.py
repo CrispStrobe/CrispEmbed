@@ -7,16 +7,68 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from pathlib import Path
 
 MANIFEST = Path(__file__).with_name("lightonocr3-1b-source.json")
 PROFILE = "lightonocr3-1b"
+MODEL_ID = "lightonai/LightOnOCR-3-1B"
+REVISION = "23d544085c886bbdace647bcfab91203299417e2"
+VOCAB_SIZE = 151936
+TOKENIZER_VOCAB_SIZE = 151669
+STOP_IDS = (151645, 151643)
+SPECIAL_IDS = tuple(range(151643, 151657))
+REFERENCE_PACKAGES = {"torch": "2.13.0+cpu", "torchvision": "0.28.0+cpu", "numpy": "2.3.5",
+                      "pillow": "12.0.0", "gguf": "0.19.0", "safetensors": "0.8.0",
+                      "huggingface-hub": "2.4.0", "tokenizers": "0.23.1", "jinja2": "3.1.6"}
+PROMPT_IDS = {
+    "transcription": ([151644, 8948, 151645, 198, 151644, 872, 198], [151645, 198, 151644, 77091, 198]),
+    "grounding": ([151644, 8948, 151645, 198, 151644, 872, 198], [1951, 287, 198, 151645, 198, 151644, 77091, 198]),
+}
 TRANSCRIPTION = "<|im_start|>system<|im_end|>\n<|im_start|>user\n<|image_pad|><|im_end|>\n<|im_start|>assistant\n"
 GROUNDING = "<|im_start|>system<|im_end|>\n<|im_start|>user\n<|image_pad|>grounding\n<|im_end|>\n<|im_start|>assistant\n"
 
 
 def manifest():
-    return json.loads(MANIFEST.read_text())
+    pins = json.loads(MANIFEST.read_text())
+    if pins.get("model_id") != MODEL_ID or pins.get("revision") != REVISION or pins.get("profile") != PROFILE:
+        raise ValueError("Source manifest is not the reviewed LightOnOCR-3-1B checkpoint")
+    return pins
+
+
+def trace_shapes(image_size, mode, steps):
+    """Expected shapes for the actual one-image, batch-one original capture."""
+    if (not isinstance(image_size, list) or len(image_size) != 2
+            or any(type(v) is not int or not 0 < v <= 2**31 - 1 for v in image_size)
+            or mode not in PROMPT_IDS or type(steps) is not int or not 1 <= steps <= 256):
+        raise ValueError("Invalid bounded trace image/mode/token count")
+    width, height = image_size
+    ratio = max(height / 1540, width / 1540)
+    if ratio > 1:
+        height, width = math.floor(height / ratio), math.floor(width / ratio)
+    height, width = ((height - 1) // 14 + 1) * 14, ((width - 1) // 14 + 1) * 14
+    if height < 28 or width < 28:
+        raise ValueError("Image has no 2x2 patch merge")
+    patches, merged = (height // 14) * (width // 14), (height // 28) * (width // 28)
+    prefix, suffix = PROMPT_IDS[mode]
+    tokens = len(prefix) + merged + len(suffix)
+    shapes = {"pixel_values": (1, 3, height, width), "prompt_ids": (tokens,),
+              "patch_conv": (patches, 1024), "vis_ln_pre": (1, patches, 1024),
+              "proj_out": (merged, 1024), "decoder_embed": (1, tokens, 1024),
+              "llm_final_norm": (1, tokens, 1024), "generated_ids": (steps,)}
+    shapes.update({f"vis_layer_{i}": (1, patches, 1024) for i in range(24)})
+    shapes.update({f"llm_layer_{i}": (1, tokens, 1024) for i in range(28)})
+    shapes.update({f"logits_step{i}": (1, VOCAB_SIZE) for i in range(steps)})
+    return shapes, prefix + [151655] * merged + suffix
+
+
+def validate_generation_ids(ids, cap):
+    if (type(cap) is not int or not 1 <= cap <= 256 or not isinstance(ids, list)
+            or not 1 <= len(ids) <= cap
+            or any(type(v) is not int or not 0 <= v < VOCAB_SIZE for v in ids)
+            or any(v in STOP_IDS for v in ids[:-1])
+            or (ids[-1] not in STOP_IDS and len(ids) != cap)):
+        raise ValueError("Invalid generated IDs or termination evidence")
 
 
 def sha256(path):
@@ -121,6 +173,8 @@ def prompt_ids(tokenizer, template):
             raise ValueError("Prompt must contain exactly one image placeholder")
         pos = ids.index(151655)
         result[mode] = (ids[:pos], ids[pos + 1:])
+        if result[mode] != PROMPT_IDS[mode]:
+            raise ValueError(f"Unexpected {mode} token IDs")
     return result
 
 
@@ -132,6 +186,8 @@ def add_metadata(writer, directory, tokenizer):
     gen = json.loads((directory / "generation_config.json").read_text())
     validate_config(cfg, proc, gen)
     prompts = prompt_ids(tokenizer, (directory / "chat_template.jinja").read_text())
+    if len(tokenizer) != TOKENIZER_VOCAB_SIZE or tuple(sorted(tokenizer.all_special_ids)) != SPECIAL_IDS:
+        raise ValueError("Tokenizer vocabulary/special IDs differ from the reviewed source")
     writer.add_string("lightonocr.profile", PROFILE)
     writer.add_uint32("lightonocr.profile_version", 1)
     writer.add_string("general.name", "LightOnOCR-3-1B (unqualified candidate)")

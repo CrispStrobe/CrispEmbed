@@ -5,42 +5,33 @@
 #   -f script=tools/ci-heavy/mineru2605_qualify.sh \
 #   -f args="receipt f32,f16,q8_0,q4_k 2048 3 1" \
 #   -f build_mode=portable -f isolated_lane=mineru2605-receipt
-# Args: CASE_IDS (or all), TIERS, MAX_TOKENS, REPEAT, DOCUMENT_HELPERS(0/1).
+# Args: ONE_CASE_ID, TIERS, MAX_TOKENS, REPEAT, DOCUMENT_HELPERS(0/1).
+# Raw reference/native arrays go to HEAVY_OUT even on failure; one case per
+# isolated hosted lane bounds retained data. GGUF candidates are regenerated
+# sequentially from the pinned source; hashes/censuses/recipes stay in HEAVY_OUT.
 set -euo pipefail
-CASE_IDS=${1:?comma-separated frozen case IDs or all}
+CASE_IDS=${1:?one frozen case ID}
 TIERS=${2:-f32,f16,q8_0,q4_k}
 MAX_TOKENS=${3:-2048}
 REPEAT=${4:-3}
 DOCUMENT_HELPERS=${5:-1}
 OUT=${HEAVY_OUT:?}
 S=${HEAVY_SCRATCH:?}
-ROOT=$(pwd)
 export CRISPEMBED_BUILD_MODE=portable
 export CRISPEMBED_MINERU25_PRO=1 CRISPEMBED_MINERU25_PRO_2605=1 QWEN2VL_OCR_FORCE_CPU=1
 export OMP_NUM_THREADS=4 MKL_NUM_THREADS=4
 mkdir -p "$OUT" "$S/mineru2605"
 S=$S/mineru2605
-python - "$CASE_IDS" "$TIERS" "$MAX_TOKENS" "$REPEAT" "$DOCUMENT_HELPERS" "$OUT" <<'PY'
-import hashlib,json,pathlib,sys
-protocol=json.load(open('docs/mineru25-pro-2605-protocol.json'))
-ids=list(protocol['cases']) if sys.argv[1]=='all' else sys.argv[1].split(',')
-tiers=sys.argv[2].split(',')
-assert ids and len(set(ids))==len(ids) and set(ids)<=protocol['cases'].keys(), 'unknown/duplicate case'
-assert tiers and len(set(tiers))==len(tiers) and set(tiers)<=protocol['precision_bars_exclusive'].keys(), 'unknown/duplicate precision'
-assert 0<=int(sys.argv[3])<=8192 and 2<=int(sys.argv[4])<=100 and sys.argv[5] in ('0','1')
-for cid in ids:
- row=protocol['cases'][cid];assert hashlib.sha256(pathlib.Path(row['image']).read_bytes()).hexdigest()==row['sha256']
-pathlib.Path(sys.argv[6],'selected-cases.tsv').write_text(''.join(f"{cid}\t{protocol['cases'][cid]['image']}\t{protocol['cases'][cid]['task']}\n" for cid in ids))
-pathlib.Path(sys.argv[6],'protocol.json').write_text(json.dumps(protocol,indent=2)+'\n')
-PY
+python tools/mineru2605_resources.py --case "$CASE_IDS" --tiers "$TIERS" --max-tokens "$MAX_TOKENS" \
+    --repeat "$REPEAT" --document-helpers "$DOCUMENT_HELPERS" --scratch "$S" --out "$OUT"
 {
     git rev-parse HEAD
     git submodule status
     printf 'mode=portable threads=4 cases=%s tiers=%s max_tokens=%s repeat=%s\n' "$CASE_IDS" "$TIERS" "$MAX_TOKENS" "$REPEAT"
     lscpu
 } > "$OUT/provenance.txt"
-python -m pip install -q torch==2.9.0 torchvision==0.24.0 --index-url https://download.pytorch.org/whl/cpu
-python -m pip install -q -r tools/mineru2605-reference-requirements.txt
+python -m pip install -q --no-cache-dir torch==2.9.0 torchvision==0.24.0 --index-url https://download.pytorch.org/whl/cpu
+python -m pip install -q --no-cache-dir -r tools/mineru2605-reference-requirements.txt
 python -m pip freeze > "$OUT/packages.txt"
 # Download and check the small helper artifact BEFORE importing its sources.
 python - "$S" <<'PY'
@@ -71,22 +62,12 @@ mkdir -p "$S/gguf"
 python models/convert-mineru25-pro-to-gguf.py --checkpoint 2605 --model "$S/checkpoint" --dtype f32 --output "$S/gguf/f32.gguf" > "$OUT/conversion-f32.log" 2>&1
 cp "$S/gguf/f32.gguf.json" "$OUT/conversion-f32.json"
 IFS=, read -ra VARIANTS <<< "$TIERS"
-for tier in "${VARIANTS[@]}"; do
-    case "$tier" in
-        f32) ;;
-        f16)
-            python models/convert-mineru25-pro-to-gguf.py --checkpoint 2605 --model "$S/checkpoint" --dtype f16 --output "$S/gguf/f16.gguf" > "$OUT/conversion-f16.log" 2>&1
-            cp "$S/gguf/f16.gguf.json" "$OUT/conversion-f16.json" ;;
-        q8_0|q4_k) "$QUANT" "$S/gguf/f32.gguf" "$S/gguf/$tier.gguf" "$tier" > "$OUT/quantize-$tier.log" 2>&1 ;;
-    esac
-    python tools/qwen2vl_quant_census.py census "$S/gguf/$tier.gguf" "$OUT/$tier-tensor-census.json"
-done
 status=0
 while IFS=$'\t' read -r cid source task; do
     c=$OUT/$cid
-    mkdir -p "$c" "$S/$cid"
+    mkdir -p "$c/evidence"
     # Decode once. Both arms consume the exact same lossless RGB page bytes.
-    python - "$source" "$S/$cid/page.png" "$c/image.json" <<'PY'
+    python - "$source" "$c/evidence/page.png" "$c/image.json" <<'PY'
 from PIL import Image
 import hashlib,json,sys
 Image.open(sys.argv[1]).convert('RGB').save(sys.argv[2])
@@ -95,22 +76,41 @@ json.dump({'source_sha256':hashlib.sha256(open(sys.argv[1],'rb').read()).hexdige
            'policy':'both engines consume the same Pillow-decoded RGB PNG'},open(sys.argv[3],'w'),indent=2)
 PY
     if ! python tools/mineru2605_validate.py reference --model "$S/checkpoint" --blueprint "$S/blueprint" \
-        --image "$S/$cid/page.png" --task "$task" --threads 4 --max-tokens "$MAX_TOKENS" --repeat "$REPEAT" \
-        --dtype f32 --output "$c/original.json" --dump-reference "$S/$cid/stages.gguf" --logits-dir "$S/$cid/original-logits" > "$c/original.log" 2>&1; then
+        --image "$c/evidence/page.png" --task "$task" --threads 4 --max-tokens "$MAX_TOKENS" --repeat "$REPEAT" \
+        --dtype f32 --output "$c/original.json" --dump-reference "$c/evidence/stages.gguf" --logits-dir "$c/evidence/original-logits" > "$c/original.log" 2>&1; then
         status=1
         continue
     fi
     for tier in "${VARIANTS[@]}"; do
-        if ! python tools/mineru2605_qualify.py --reference "$c/original.json" --reference-stages "$S/$cid/stages.gguf" \
-            --reference-logits "$S/$cid/original-logits" --native "$RUN" --diff "$DIFF" --gguf "$S/gguf/$tier.gguf" \
-            --image "$S/$cid/page.png" --precision "$tier" --cmake-cache "$S/build/CMakeCache.txt" \
-            --native-logits "$S/$cid/$tier-logits" --out "$c/$tier" > "$c/$tier.log" 2>&1; then
+        case "$tier" in
+            f32) ;;
+            f16)
+                python models/convert-mineru25-pro-to-gguf.py --checkpoint 2605 --model "$S/checkpoint" --dtype f16 --output "$S/gguf/f16.gguf" > "$OUT/conversion-f16.log" 2>&1
+                cp "$S/gguf/f16.gguf.json" "$OUT/conversion-f16.json" ;;
+            q8_0|q4_k) "$QUANT" "$S/gguf/f32.gguf" "$S/gguf/$tier.gguf" "$tier" > "$OUT/quantize-$tier.log" 2>&1 ;;
+        esac
+        python tools/qwen2vl_quant_census.py census "$S/gguf/$tier.gguf" "$OUT/$tier-tensor-census.json"
+        python - "$S/gguf/$tier.gguf" "$OUT/$tier-model.json" "$tier" <<'PY'
+import hashlib,json,pathlib,sys
+path=pathlib.Path(sys.argv[1]);digest=hashlib.sha256()
+with path.open('rb') as stream:
+ for chunk in iter(lambda:stream.read(8*1024*1024),b''):digest.update(chunk)
+json.dump({'precision':sys.argv[3],'bytes':path.stat().st_size,'sha256':digest.hexdigest(),
+           'retention':'reproducible GGUF scratch; pinned conversion/quantizer and tensor census retained'},open(sys.argv[2],'w'),indent=2)
+PY
+        if ! python tools/mineru2605_qualify.py --reference "$c/original.json" --reference-stages "$c/evidence/stages.gguf" \
+            --reference-logits "$c/evidence/original-logits" --native "$RUN" --diff "$DIFF" --gguf "$S/gguf/$tier.gguf" \
+            --image "$c/evidence/page.png" --precision "$tier" --cmake-cache "$S/build/CMakeCache.txt" \
+            --native-logits "$c/$tier/raw-logits" --out "$c/$tier" > "$c/$tier.log" 2>&1; then
             status=1
         fi
+        # Only task-owned temporary models are removed. Even failed raw arrays,
+        # IDs, stderr, stage diagnostics and comparison receipts remain uploaded.
+        if [[ "$tier" != f32 ]]; then rm -f "$S/gguf/$tier.gguf" "$S/gguf/$tier.gguf.json"; fi
     done
     if [[ "$DOCUMENT_HELPERS" = 1 ]]; then
         if ! python tools/mineru2605_document.py --blueprint "$S/blueprint" --gguf "$S/gguf/f32.gguf" --lib "$LIB" \
-            --image "$S/$cid/page.png" --threads 4 --max-tokens "$MAX_TOKENS" --out "$c/document" > "$c/document.log" 2>&1; then
+            --image "$c/evidence/page.png" --threads 4 --max-tokens "$MAX_TOKENS" --out "$c/document" > "$c/document.log" 2>&1; then
             status=1
         fi
     fi

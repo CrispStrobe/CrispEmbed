@@ -38,24 +38,25 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 
 ## Active work in flight — benchmark OCR expansion, 3 November 2026
 
-Owner-authorized follow-up to the OmniParseBench / OmniDocBench review. Four
-isolated lanes start from current main; each preserves existing negative evidence
+Owner-authorized follow-up to the OmniParseBench / OmniDocBench review. Isolated
+implementation lanes start from current main; each preserves existing negative evidence
 and model defaults. New registry aliases require qualified immutable artifacts.
 
 | Lane / branch | Scope | Completion gate |
 |---|---|---|
 | `feat/ocr-mineru2605` | Exact 2605 converter/runtime profile and original-first hosted runner implemented; 11 new/17 existing controls pass locally | Hosted compile and full-position final-logit/document-helper comparison; no new alias yet |
-| `feat/ocr-lighton3-1b` | Exact LightOnOCR-3-1B profile and transcription/grounding support using the LightOn backend | Processor/tokenizer/prompt/output controls and original/native evidence; old checkpoint behavior preserved |
-| `feat/ocr-xiaomi0` | Exact Xiaomi-OCR-0 source/profile and Qwen3.5 reuse, with its two-stage document contract | Pinned blueprint, frontend/native controls and declared layout dependency; no inherited benchmark score |
+| `feat/ocr-lighton3-1b` | Exact LightOnOCR-3-1B profile, transcription/grounding and original-first trace lane integrated into PR138 | Full-vocabulary/stage identity controls, hosted native compile and original/native execution; old checkpoint behavior preserved |
+| `feat/ocr-xiaomi0` | Exact Xiaomi-OCR-0 format-4 profile and Qwen3.5 reuse integrated into PR138; original PP-DocLayoutV3 producer pinned separately | Hosted native parity, strict OTSL/document assembly and public file-loading checks; detector graph remains external |
 | `feat/ocr-benchmark-integration` | Reproducible document-evaluation records, candidate/license matrix, remaining qualification and Nemotron/dots feasibility | Typed blocks/boxes/tables/formulas, completion/provenance checks; bounded hosted protocols, no fabricated qualification |
+| `feat/ocr-nemotron-geometry` | Gated size/padding/normalized-patch prototype and actual original-processor comparator integrated into PR138; 510-tensor source census verified | Hosted native compile and 11-case processor comparison; native resize and full neural backend remain separate |
 
-| `feat/ocr-nemotron-geometry` | Bounded native input geometry/packed-RGB prototype against pinned Nemotron 3.5 Parse processor; source census already verified | Original-processor positive/negative geometry controls; full neural backend remains separate |
-
-Checkpoint: [evaluation PR #138](https://github.com/CrispStrobe/CrispEmbed/pull/138) has hosted model-free controls green at `faaf2db6`. New retained LightOn 0.8B logit review, Nemotron source/census controls and the model-specific lanes are being integrated.
+Checkpoint: [integration PR #138](https://github.com/CrispStrobe/CrispEmbed/pull/138) contains all four implementation checkpoints at `fc2f450b`; hosted builds/controls have started. The earlier evaluator-only head `faaf2db6` passed its hosted controls. The document evaluator now has 32 local controls. Model execution/qualification is still pending; bounded heavy-CPU runners remain manual dispatches.
 
 This work does not adopt restricted terms or change the immutable app runtime.
-OvisOCR3's frozen capped-page failure and LightOnOCR-3-0.8B's numerical/quantization
-failures remain binding. Their next protocols must be separately declared.
+OvisOCR3's frozen capped-page failure and all old strict LightOnOCR-3-0.8B verdicts
+remain recorded. A separate review of complete retained logits finds F16/Q8 clear
+the current owner numerical bars; Q4 does not. Fresh current-source portable
+qualification is still required. See PR138's `docs/lighton08-precision-next.md`.
 
 ## Release v0.17.14 — 3 November 2026
 
@@ -667,24 +668,32 @@ reference; gated native math with earliest-stage/final-output comparison; C ABI,
 orchestrator, CLI/server, Python/Rust/Dart; actual Q8/Q4_K task qualification;
 immutable upload/readback, registry hashes and real consumers.
 
-Proceed smallest applicable backend first after the current closure:
+The owner-authorized benchmark expansion is tracked in PR138 and its
+`docs/ocr-benchmark-expansion.md`. Prioritize exact supported-family upgrades
+before the larger new backends:
 
-1. Xiaomi-OCR-0: source/base audit and exact Qwen3.5-0.8B frontend/native reuse;
-   community GGUF quality is unverified.
-2. LightOnOCR-3-1B: verify exact official preprocessing, tokenizer, transcription
-   and grounding against the existing LightOn backend.
-3. TeleOCR: the gated CPU implementation and bounded panel are complete;
-   continue its numerical/representative-quality and provenance limits in
-   the TeleOCR lane above before publication or platform promotion.
-4. LightOnOCR-3-4B and Qwen3.5-9B: separate long-page/memory/GPU reference and
-   task protocols after small dense-model parity.
-5. Qwen3.6-27B: dense64-layer config and resource-qualified long-context port.
-6. Infinity-Parser2-Pro: MoE40-layer/256-expert implementation and total-parameter
-   storage; active parameters do not determine GGUF size.
+1. MinerU2.5-Pro-2605-1.2B: Apache-2.0 checkpoint and separately pinned helper;
+   exact 2605 profile and original-first qualification, preserving 2604.
+2. LightOnOCR-3-1B and Xiaomi-OCR-0: exact profile/frontend/native reuse,
+   grounding and explicit document-stage dependencies. Community GGUFs are not
+   native qualification.
+3. LightOnOCR-3-0.8B F16/Q8 portable replay and OvisOCR3's separately declared
+   document task protocol; preserve existing strict and capped-page evidence.
+4. Nemotron 3.5 Parse: pinned OpenMDW-1.1 source, bounded frontend, then its
+   new C-RADIO/causal-mBART composition.
+5. LightOnOCR-3-4B, Infinity-Parser2-Flash and Qwen3.5-9B: separate memory,
+   long-page and backend protocols after small dense-model parity.
+6. Qwen3.6-27B and Infinity-Parser2-Pro: separate larger dense/MoE ports.
+   Pro has 40 layers and 256 experts; active parameters do not determine GGUF size.
 
-Indra is public-code-analysis-only under the selected scope. Chandra-OCR-2,
-MinerU2.5-Pro, Hunyuan-OCR, dots.ocr and other restricted candidates remain
-outside this lane. Do not infer weight permission from a public repository.
+TeleOCR remains in its existing `qwen-research` acknowledgement/qualification
+lane, not this permissive queue. Indra remains public-code-analysis-only.
+dots.mocr is a distinct candidate from the removed dots.ocr entry: its MIT tag
+has supplemental terms and needs a policy decision before adoption.
+Chandra-OCR-2, Surya2.5, Hunyuan-OCR and other restricted candidates retain
+separate explicit eligibility decisions. Do not infer weight permission from
+a public repository or apply a full application's license to a separate model
+without reading the exact materials.
 
 ## Issue71, packaging and downstream delivery
 

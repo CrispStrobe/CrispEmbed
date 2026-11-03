@@ -75,6 +75,16 @@ read-only actual Xiaomi logits and prefill stages. They default to null and
 cannot be attached to another profile; no reference tensor is passed into the
 production inference path.
 
+The generic C API already dispatches this architecture to the exact-profile
+loader, so a locally converted file is accessible through
+`crispembed_ocr_model_init`, Python `CrispOcrModel` / `CrispMathOcr`, and
+`crispembed -m FILE --ocr IMAGE` with the three gates. Resetting the generic token
+cap selects Xiaomi's 4096 default; its prompt setter accepts only the four exact
+tasks. Named orchestrator `qwen35-ocr` remains the format-1 selector and rejects
+format 4. There is no Xiaomi model alias. Generic text/confidence access does not
+expose native token IDs or stop reasons; the diagnostic runner supplies those
+fields for the separately declared evidence protocols.
+
 ## The two-stage document dependency
 
 The original document pipeline uses **PP-DocLayoutV3**, region crops, task-specific
@@ -98,7 +108,7 @@ The upstream vLLM region request places text before the image and defaults to
 16384 output tokens. The HF profile here places the image first and has the
 native limits above. The contracts record that difference. Neither a successful
 region run nor this external layout producer reproduces the upstream end-to-end
-benchmark. Native layout, polygon/PaddleX variants, page assembly, full-document
+benchmark. Native layout, polygon/PaddleX variants, upstream page assembly, full-document
 scoring, and vLLM parity remain separate work.
 
 ## Hosted verification recipe
@@ -106,12 +116,29 @@ scoring, and vLLM parity remain separate work.
 The original README pins Transformers 5.17.0, torch 2.14.0, and torchvision
 0.29.0. The hosted recipe additionally requires `huggingface_hub`, `safetensors`,
 `gguf`, `numpy`, `pillow`, and the repository's build dependencies. Layout reference
-production additionally needs the pinned upstream Python dependencies.
+production additionally needs the pinned upstream Python dependencies. The
+runner creates its own isolated environment and installs exact direct dependency
+pins before metadata work. Resolved transitive packages are retained in its
+package inventory. The initial recipe requires Linux x86_64 / Python 3.12.
 
 ```bash
-python tools/ci-heavy/xiaomi0_reference.py --output "$RUNNER_TEMP/xiaomi0-metadata"
-python tools/ci-heavy/xiaomi0_reference.py --output "$RUNNER_TEMP/xiaomi0-parity" --inference
+gh workflow run heavy-cpu.yml --ref feat/ocr-benchmark-integration \
+  -f script=tools/ci-heavy/xiaomi0_reference.py -f build_mode=portable \
+  -f isolated_lane=xiaomi0-metadata
+gh workflow run heavy-cpu.yml --ref feat/ocr-benchmark-integration \
+  -f script=tools/ci-heavy/xiaomi0_reference.py \
+  -f args=--inference -f build_mode=portable -f timeout_minutes=180 \
+  -f isolated_lane=xiaomi0-inference
 ```
+
+No extra workflow pip input is needed. Results use `HEAVY_OUT/xiaomi0`;
+models, all GGUF files, caches, and builds use the disjoint
+`HEAVY_SCRATCH/xiaomi0`. Explicit `--output` / `--scratch` overrides require fresh
+directories. RAM, swap, load, and free disk are recorded before dependency/model
+work; metadata requires at least 3 GiB available RAM / 8 GiB scratch, and inference
+requires 9 GiB / 12 GiB, with 2 GiB output space. A shared scratch/output volume
+must have their combined reserve (10 GiB for metadata or 14 GiB for inference).
+Commands have time limits and child process cleanup. Model files are not uploaded.
 
 Both commands require hosted CI. They first verify source files, loaded framework
 sources, actual generation defaults, prompts, tokenizer, meta tensor schema, and
@@ -121,6 +148,12 @@ original F32 cases and the same two native cases in F32 and F16, each capped at
 16 generated tokens. It uses portable CPU builds with both native compiler flags
 disabled. No quantization is attempted.
 
+Every one of the original model's 474 parameter shapes, including the tied head,
+is compared with the audited checkpoint header. The recipe also emits a native
+build receipt with actual portable CMake flags and executable hashes. Its
+generic public-admission probe checks gates, task setters, and cap resets without
+adding model forwards to the frozen generation budget.
+
 The result retains every generated logit row, 40 prefill stage captures, IDs,
 text, confidence, stop reason, cap, source and image hashes. It reports the
 owner's F32 `>0.99` / F16 `>0.98` final-logit bars beside strict `0.99999` / `0.002`
@@ -128,6 +161,37 @@ stage diagnostics and decoded agreement. Different generation prefixes are
 recorded explicitly. The small protocol remains an integration experiment even
 if every measured comparison passes. It does not change old failure evidence or
 establish benchmark, full-document, or publication qualification.
+
+## Strict tables and bounded region assembly
+
+`tools/xiaomi0_document.py` implements the six original OTSL tags against the
+pinned upstream `postprocess/otsl.py` blueprint. Twelve valid-table fixtures were
+produced by executing that original pure-Python converter. The strict adapter
+rejects missing origins, conflicting/nonrectangular spans, ragged rows, text on
+continuation tags, and over-budget input. It escapes literal cell content and
+emits real HTML tables with row/column spans. It does not infer table headers,
+repair malformed spans, or convert Markdown pipes into tables.
+
+Its model-free `assemble` mode consumes the original layout receipt, a frozen
+`xiaomi0-region-protocol/v1`, and actual native region captures. The protocol
+records the canonical layout digest, rendered input hash/dimensions/recipe, three
+task caps, total budget, precision, native runtime revision, GGUF hash, and runner
+hash. Initial bounds are 16 regions, 256 tokens per call, and 2048 tokens in total;
+larger cases need a separately declared experiment.
+
+The hosted `recognize` mode additionally takes the page image, local GGUF,
+`test-xiaomi0-run` executable, and its `native-build.json` receipt. It validates
+artifact hashes and the exact export profile, preserves original crops, and
+records every actual ID/cap/EOS/confidence. Failed or malformed tables leave the
+raw captures intact and fail assembly. It uses the diagnostic runner because the
+generic OCR C API has no token/stop introspection.
+
+Output follows `crispembed-ocr-document-v1`: ordered normalized blocks, HTML
+tables, literal formulas, and every expected generation call. All detected
+regions retain their order, including explicitly skipped visuals. This bounded
+assembly does not implement the upstream page-assembly heuristics, its vLLM
+request order, or a native PP-DocLayoutV3 graph. It remains unqualified until a
+separate frozen original/native document experiment is actually executed.
 
 Local checks use no framework, model weights, native build, or inference:
 

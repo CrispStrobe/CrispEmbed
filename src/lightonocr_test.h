@@ -8,4 +8,6 @@
 using lightonocr_test_callback = void (*)(const char *, const float *, size_t, void *);
 void lightonocr_test_set_observer(lightonocr_context *, lightonocr_test_callback, void *);
 void lightonocr_test_force_tokens(lightonocr_context *, const int32_t *, size_t);
+bool lightonocr_test_is_profile3(const lightonocr_context *);
+const int32_t * lightonocr_test_generated_ids(const lightonocr_context *, size_t *, bool argmax);
 #endif

@@ -1,0 +1,40 @@
+{
+  "schema": "crispembed.lighton08.current-portable.v1",
+  "model": "lightonai/LightOnOCR-3-0.8B",
+  "revision": "36d8636925327c671bd8e479c517a004f7566bd9",
+  "case_order": [
+    "historical-receipt",
+    "two-column-page",
+    "inventory-table"
+  ],
+  "prompt": "",
+  "max_new_tokens": 1024,
+  "precision_bars_exclusive": {
+    "f16": 0.98,
+    "q8": 0.97
+  },
+  "gguf_sha256": "41409fc871e76a6bc13e9988d0efd2706e06d0c7c77e2ffb8746c28348ba7bd4",
+  "q8_sha256": "6d5a9e94ded5207ed551704c09d87940e6e6d1f02b9a2db3571371baf5d3929a",
+  "frozen_files_sha256": {
+    "tests/results/qwen35-ocr/quality.json": "fad6669a452c0cbfd93db8d393c062e806337c5793e8cf7f664270a2bc83a4e3",
+    "tests/results/qwen35-ocr/page-parity.json": "dfcf1750e21d0248f5069ba7d2af8fe8985c112640912c6bb5c28cd70b6dc105",
+    "tests/results/qwen35-ocr/receipt.json": "f23d7fabc74437e2a006439b6b69bfd16c146574cafc60209789fab78decbc8a",
+    "tests/results/ocr-quality-prepared.json": "5b770c6e2f8a3ba307ff92b7e9d3c2c064cf478d90b4506211663d9d831d8d25",
+    "tests/results/qwen35-ocr/ovisocr2-quality-prepared-preservation.json": "6cf0c8750202b0c11480ac7a22970ed2e9d1dd40121c7ba185cc46b916aef46f",
+    "tests/regression/ocr-quality/panel.json": "b7bd7e4b3d84266367d4f96d95aa7be572172a8d883d0e53398d29bc0a761803",
+    "tools/ocr_quality.py": "de93f01d26759e052e4c99c224b3184a39bdf3bbd11f768318c672ccad7fa0c5",
+    "tools/dump_qwen35_ocr_reference.py": "66dfd47906d4648b1b6141460d204770d844cbbb0bb6eb2b7482f65e22022267",
+    "tools/dump_qwen35_ocr_page_reference.py": "5ddf86046bcc9bf7bbe008c02f3eda0ccdd10341ed5af976c012d06149d586e1",
+    "tools/qwen35_decode_reference.py": "6457ce7475dfff392449e12bf3a531ac256d59b264574c16858d673007598e92",
+    "tools/ci-heavy/ovisocr2_lighton_converter_frozen.py": "b98979524c65a15a95634d1832c0deb66ffaad5585c17f29c76307f0008fbfd3",
+    "tools/ci-heavy/ovisocr2_lighton_fixture.py": "526426a5daca761ee176649412bcdd6a845bcffe653e99ae10b85297e103e314",
+    "tools/ci-heavy/qwen35_quality.py": "0f6618e97ccf9185982f85c20a47dfd3eb2cc0ec02395d0549cdcaa2050816bc",
+    "tools/ci-heavy/qwen35_quality_quant.py": "984dafaef7c20f42ed7da421e9fd315731b1e2a730c5f0a180bdb26a1107f0b1",
+    "tools/ci-heavy/ovisocr3_quality_run.py": "b06ae3040604c093e2364ab66aa249d7fc410a3a3c2a4f5a9869462f168dc93f",
+    "tests/test_qwen35_quant.cpp": "b1d7d5c49c4195d15c0690487f7cb7fee2cdf300d9c0a09f59fd3086e2da9c4d",
+    "tests/qwen35_parity.h": "b003edf078884107df753a95c957e260d3e3a63c0356b5eb57ec2092a4b746bf"
+  },
+  "scope": "One frozen document per hosted job; exact old inputs/weights/original controls, new current-source portable native evidence.",
+  "historical_verdicts_changed": false,
+  "publication_qualified": false
+}

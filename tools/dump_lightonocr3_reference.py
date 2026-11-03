@@ -9,6 +9,7 @@ retained. Model/card/processor/tokenizer/library sources are hash checked first.
 from __future__ import annotations
 import argparse
 import importlib
+import importlib.metadata
 import json
 import platform
 import sys
@@ -16,7 +17,8 @@ import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "models"))
-from lightonocr3_profile import manifest, prompt_ids, sha256, verify_source, validate_config
+from lightonocr3_profile import (manifest, prompt_ids, sha256, verify_source, validate_config,
+                                trace_shapes, validate_generation_ids, STOP_IDS, REFERENCE_PACKAGES)
 from lightonocr3_output import parse_grounding
 
 
@@ -26,6 +28,14 @@ def verify_transformers():
         imported = importlib.import_module(module)
         if sha256(imported.__file__) != expected:
             raise ValueError(f"Unpinned original implementation: {module}")
+
+
+def verify_environment():
+    versions = {name: importlib.metadata.version(name) for name in REFERENCE_PACKAGES}
+    if versions != REFERENCE_PACKAGES:
+        raise ValueError(f"Original package versions differ from the frozen recipe: {versions}")
+    verify_transformers()
+    return versions
 
 
 def main():
@@ -50,7 +60,7 @@ def main():
     import torchvision
     from PIL import Image
     from transformers import LightOnOcrForConditionalGeneration, LightOnOcrProcessor
-    verify_transformers()
+    versions = verify_environment()
     torch.set_num_threads(4)
     torch.manual_seed(0)
     torch.use_deterministic_algorithms(True)
@@ -124,34 +134,40 @@ def main():
         generated = model.generate(
             **inputs, do_sample=False, num_beams=1, use_cache=True,
             max_new_tokens=args.max_new_tokens, eos_token_id=[151645, 151643], pad_token_id=151643,
+            forced_eos_token_id=None, forced_bos_token_id=None,
             return_dict_in_generate=True, output_logits=True, logits_to_keep=1,
         )
     seconds = time.perf_counter() - start
     for hook in hooks:
         hook.remove()
     output_ids = generated.sequences[0, len(ids):].tolist()
-    for index, logits in enumerate(generated.logits):
-        put(f"logits_step{index}", logits)
+    validate_generation_ids(output_ids, args.max_new_tokens)
     if len(generated.logits) != len(output_ids):
         raise ValueError("Original generate did not return every decisive logit")
+    for index, logits in enumerate(generated.logits):
+        if logits.shape != (1, 151936) or int(logits.argmax(dim=-1)[0]) != output_ids[index]:
+            raise ValueError("Original IDs do not match full-vocabulary greedy raw logits")
+        put(f"logits_step{index}", logits)
     put("generated_ids", output_ids)
-    required = {"pixel_values", "prompt_ids", "patch_conv", "vis_ln_pre", "proj_out", "decoder_embed", "llm_final_norm", "generated_ids"}
-    required |= {f"vis_layer_{i}" for i in range(24)} | {f"llm_layer_{i}" for i in range(28)}
-    required |= {f"logits_step{i}" for i in range(len(output_ids))}
-    if set(arrays) != required:
-        raise ValueError(f"Incomplete original capture: missing {sorted(required - set(arrays))}")
+    shapes, expected_prompt = trace_shapes(list(image.size), args.mode, len(output_ids))
+    if set(arrays) != set(shapes) or ids != expected_prompt:
+        raise ValueError("Incomplete original capture or unexpected processor prompt")
+    for name, shape in shapes.items():
+        if arrays[name]["shape"] != list(shape):
+            raise ValueError(f"Unexpected original stage shape: {name}")
     text = processor.decode(output_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)
-    (args.output / "decoded.txt").write_text(text)
-    (args.output / "forced-ids.txt").write_text(" ".join(map(str, output_ids)) + "\n")
+    (args.output / "decoded.txt").write_text(text, encoding="utf-8")
+    (args.output / "forced-ids.txt").write_text(" ".join(map(str, output_ids)) + "\n", encoding="utf-8")
     metadata = {
-        "schema_version": 1, "model_id": pins["model_id"], "revision": pins["revision"],
+        "schema_version": 2, "model_id": pins["model_id"], "revision": pins["revision"],
         "source_manifest_sha256": sha256(Path(__file__).resolve().parents[1] / "models/lightonocr3-1b-source.json"),
         "mode": args.mode, "image_sha256": sha256(args.image), "image_size": list(image.size),
         "dtype": "float32", "device": "cpu", "attention": "eager", "do_sample": False,
         "use_cache": True, "max_new_tokens": args.max_new_tokens, "token_ids": output_ids,
-        "stop_ids": [151645, 151643], "hit_cap": not output_ids or output_ids[-1] not in (151645, 151643),
-        "seconds": seconds, "versions": {"torch": torch.__version__, "torchvision": torchvision.__version__,
-        "transformers": transformers.__version__, "python": platform.python_version()},
+        "stop_ids": list(STOP_IDS), "forced_eos_token_ids": [], "hit_cap": output_ids[-1] not in STOP_IDS,
+        "decoded_sha256": sha256(args.output / "decoded.txt"), "forced_ids_sha256": sha256(args.output / "forced-ids.txt"),
+        "seconds": seconds, "versions": {**versions, "transformers": transformers.__version__,
+        "python": platform.python_version()},
         "arrays": arrays, "grounding": parse_grounding(text) if args.mode == "grounding" else None,
         "qualification": "reference only; not a benchmark score",
     }

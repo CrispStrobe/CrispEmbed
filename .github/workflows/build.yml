@@ -242,7 +242,7 @@ jobs:
                      test-bert-norm test-spm-norm test-pair-truncation test-imatrix-alias test-no-repeat-ngram test-env-gate test-low-memory \
                      test-lfm2-tiling test-pil-resize test-server-json-input test-server-load-control test-punct-marks test-qwen35-profile test-qwen35-materialize test-ultrabert-profile \
                      test-marker-document test-marker-api test-marker-backend test-marker-save \
-                     test-mineru25-profile test-lightonocr3-contract lightonocr3-trace test-xiaomi0-frontend test-xiaomi0-run test-nemotron-parse-geometry
+                     test-mineru25-profile test-lightonocr3-contract lightonocr3-trace test-xiaomi0-frontend test-xiaomi0-run test-xiaomi0-public test-nemotron-parse-geometry
           ./build/test-image-provenance
           ./build/test-provenance-marking
           ./build/test-msac-tiling
@@ -269,7 +269,8 @@ jobs:
           ./build/test-ultrabert-profile
           ./build/test-mineru25-profile
           ./build/test-lightonocr3-contract
-          ./build/test-xiaomi0-frontend
+          # Xiaomi frontend needs its original-processor GGUF fixture; compiled
+          # here, executed by the separately dispatched metadata/reference lane.
           ./build/test-nemotron-parse-geometry self
           ./build/test-marker-document
           ./build/test-marker-api

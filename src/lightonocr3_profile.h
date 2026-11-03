@@ -1,13 +1,33 @@
 // LightOnOCR-3-1B input contract. The legacy LightOnOCR-2 path does not call this.
 #pragma once
 #include "core/torch_bicubic_u8.h"
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <stdexcept>
+#include <string_view>
 #include <utility>
 #include <vector>
 
 namespace lightonocr3 {
+template <size_t N> inline bool same_ids(const std::vector<int32_t> & actual, const std::array<int32_t, N> & expected) {
+    return actual.size() == N && std::equal(actual.begin(), actual.end(), expected.begin());
+}
+
+inline bool token_contract_matches(std::string_view model, std::string_view revision,
+                                   const std::vector<int32_t> & prefix, const std::vector<int32_t> & suffix,
+                                   const std::vector<int32_t> & grounding_prefix,
+                                   const std::vector<int32_t> & grounding_suffix, const std::vector<int32_t> & stops,
+                                   const std::vector<int32_t> & special) {
+    return model == "lightonai/LightOnOCR-3-1B" && revision == "23d544085c886bbdace647bcfab91203299417e2" &&
+           same_ids(prefix, std::array<int32_t, 7>{ 151644, 8948, 151645, 198, 151644, 872, 198 }) &&
+           same_ids(suffix, std::array<int32_t, 5>{ 151645, 198, 151644, 77091, 198 }) && grounding_prefix == prefix &&
+           same_ids(grounding_suffix, std::array<int32_t, 8>{ 1951, 287, 198, 151645, 198, 151644, 77091, 198 }) &&
+           same_ids(stops, std::array<int32_t, 2>{ 151645, 151643 }) &&
+           same_ids(special, std::array<int32_t, 14>{ 151643, 151644, 151645, 151646, 151647, 151648, 151649, 151650,
+                                                      151651, 151652, 151653, 151654, 151655, 151656 });
+}
+
 // Pinned PixtralImageProcessor: floor downscale, ceil to 14, no upscale except
 // patch alignment. An odd patch grid is valid; unfold drops the unmatched edge.
 inline std::pair<int, int> image_size(int height, int width) {

@@ -205,6 +205,8 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
         official = Qwen3_5ForConditionalGeneration(hf_config)
     expected = {name: list(tensor.shape) for name, tensor in official.state_dict().items()}
     del official
+    if profile == "xiaomi-ocr-0":
+        policy.validate_main_schema(expected)
 
     index = root / "model.safetensors.index.json"
     if index.exists():
@@ -367,6 +369,7 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
     if profile == "xiaomi-ocr-0":
         manifest["excluded_non_speculative_mtp_tensors"] = excluded_tensors
         manifest["runtime_metadata"] = runtime_metadata
+        manifest["main_schema_sha256"] = policy.MAIN_SCHEMA_SHA256
     if pinned:
         manifest["profile"]={k:v for k,v in pinned.items() if k!="proof_marker"}
     output.with_suffix(output.suffix + ".manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")

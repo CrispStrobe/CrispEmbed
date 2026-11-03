@@ -11,6 +11,8 @@ CHECKPOINT_SHA256 = "d4551e9f6127ac9e35cff7b4f7a72a90410e03e6c8676a36f0e2b7eaeb5
 CHECKPOINT_BYTES = 1746937856
 REPORT = Path(__file__).resolve().parents[1] / "tests/results/qwen35-ocr/xiaomi0-source-contract.json"
 MISSING_FILES = ["generation_config.json", "preprocessor_config.json"]
+MAIN_SCHEMA_SHA256 = "589578cf5234bba4a1ee2f1c20c1d660bdaf214403a3f54c50fa504348cac71f"
+MAIN_SCHEMA = REPORT.parents[2] / "fixtures/xiaomi0-source/main-tensor-schema.json"
 
 
 def file_sha256(path):
@@ -92,6 +94,23 @@ def verify_checkpoint(path, profile):
     if Path(path).stat().st_size != CHECKPOINT_BYTES or file_sha256(path) != CHECKPOINT_SHA256:
         raise ValueError("Xiaomi checkpoint payload differs")
     return CHECKPOINT_SHA256
+
+
+def validate_main_schema(actual):
+    """Compare every original-model parameter shape, including its tied head."""
+    if file_sha256(MAIN_SCHEMA) != MAIN_SCHEMA_SHA256:
+        raise ValueError("Xiaomi original checkpoint tensor-schema bytes changed")
+    record = json.loads(MAIN_SCHEMA.read_text())
+    if (record["model"] != MODEL or record["revision"] != REVISION
+            or record["checkpoint_sha256"] != CHECKPOINT_SHA256
+            or record["header_sha256"] != evidence()["checkpoint"]["header_sha256"]
+            or len(record["tensors"]) != 473):
+        raise ValueError("Xiaomi original checkpoint tensor-schema identity differs")
+    expected = dict(record["tensors"])
+    expected["lm_head.weight"] = expected["model.language_model.embed_tokens.weight"]
+    if actual != expected:
+        raise ValueError("Xiaomi full original-model tensor schema differs")
+    return MAIN_SCHEMA_SHA256
 
 
 def non_speculative_tensors(actual, profile):

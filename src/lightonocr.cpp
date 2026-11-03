@@ -152,7 +152,7 @@ struct context {
 #ifdef CRISPEMBED_LIGHTONOCR3_TESTING
     lightonocr_test_callback observer = nullptr;
     void * observer_data = nullptr;
-    std::vector<int32_t> forced_tokens, observed_ids;
+    std::vector<int32_t> forced_tokens, observed_ids, applied_ids;
 #endif
 };
 
@@ -179,7 +179,9 @@ static void test_read(context & ctx, ggml_cgraph * gf, const std::string & name)
 static int test_choice(context & ctx, int best, int step, const std::vector<float> & logits) {
     test_emit(ctx, ("logits_step" + std::to_string(step)).c_str(), logits);
     ctx.observed_ids.push_back(best);
-    return step < int(ctx.forced_tokens.size()) ? ctx.forced_tokens[step] : best;
+    const int selected = step < int(ctx.forced_tokens.size()) ? ctx.forced_tokens[step] : best;
+    ctx.applied_ids.push_back(selected);
+    return selected;
 }
 #else
 #define test_emit(...) ((void)0)
@@ -306,9 +308,6 @@ bool load(context & ctx, const char * gguf_path, int n_threads) {
         m.special_ids = core_gguf::kv_i32_array(gctx, "lightonocr.special_token_ids");
         m.max_positions = core_gguf::kv_u32(gctx, "lightonocr.text.max_position_embeddings", 0);
         m.actual_vocab_size = core_gguf::kv_u32(gctx, "lightonocr.tokenizer.actual_vocab_size", 0);
-        const auto valid_ids = [&](const auto & v) {
-            return !v.empty() && std::all_of(v.begin(), v.end(), [&](int id) { return id >= 0 && id < m.vocab_size; });
-        };
         if (core_gguf::kv_u32(gctx, "lightonocr.profile_version", 0) != 1 ||
             core_gguf::kv_str(gctx, "lightonocr.processor.resize", "") != "torch-bicubic-u8-antialias" ||
             core_gguf::kv_u32(gctx, "lightonocr.processor.patch_grid", 0) != 14 || m.patch_size != 14 ||
@@ -318,10 +317,10 @@ bool load(context & ctx, const char * gguf_path, int n_threads) {
             m.lm_inter != 3072 || m.vocab_size != 151936 || m.actual_vocab_size != 151669 || !m.use_qk_norm ||
             m.lm_rms_eps != 1e-6f || m.vis_rope_theta != 10000.0f || m.lm_rope_theta != 1000000.0f ||
             m.image_token_id != 151655 || m.eos_token_id != 151645 || m.pad_token_id != 151643 ||
-            core_gguf::kv_str(gctx, "lightonocr.source.revision", "") != "23d544085c886bbdace647bcfab91203299417e2" ||
-            m.stop_ids != std::vector<int>({ 151645, 151643 }) || !valid_ids(m.special_ids) ||
-            !valid_ids(m.prompt_prefix) || !valid_ids(m.prompt_suffix) || !valid_ids(m.grounding_prefix) ||
-            !valid_ids(m.grounding_suffix)) {
+            !lightonocr3::token_contract_matches(core_gguf::kv_str(gctx, "lightonocr.source.model", ""),
+                                                 core_gguf::kv_str(gctx, "lightonocr.source.revision", ""),
+                                                 m.prompt_prefix, m.prompt_suffix, m.grounding_prefix,
+                                                 m.grounding_suffix, m.stop_ids, m.special_ids)) {
             fprintf(stderr, "lightonocr: incomplete or unsupported LightOnOCR-3-1B contract\n");
             core_gguf::free_metadata(gctx);
             return false;
@@ -1004,6 +1003,7 @@ static bool run_decoder_prefill(context & ctx, const std::vector<float> & image_
     };
 #ifdef CRISPEMBED_LIGHTONOCR3_TESTING
     ctx.observed_ids.clear();
+    ctx.applied_ids.clear();
 #endif
     int n_prefix = (int)prefix_ids.size();
     int n_suffix = (int)suffix_ids.size();
@@ -1747,6 +1747,15 @@ void lightonocr_test_set_observer(lightonocr_context * ctx, lightonocr_test_call
     ctx->ctx.observer_data = data;
 }
 void lightonocr_test_force_tokens(lightonocr_context * ctx, const int32_t * tokens, size_t count) {
-    ctx->ctx.forced_tokens.assign(tokens, tokens + count);
+    ctx->ctx.forced_tokens.clear();
+    if (count) ctx->ctx.forced_tokens.assign(tokens, tokens + count);
+}
+bool lightonocr_test_is_profile3(const lightonocr_context * ctx) {
+    return ctx->ctx.m.profile3;
+}
+const int32_t * lightonocr_test_generated_ids(const lightonocr_context * ctx, size_t * count, bool argmax) {
+    const auto & ids = argmax ? ctx->ctx.observed_ids : ctx->ctx.applied_ids;
+    *count = ids.size();
+    return ids.data();
 }
 #endif
