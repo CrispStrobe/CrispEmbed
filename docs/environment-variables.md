@@ -126,6 +126,8 @@ alias in both the CLI and the HTTP server; both gates below are still required.
 | `CRISPEMBED_MINICPM_OCR` | off | **Required** engine gate. |
 | `CRISPEMBED_QWEN35_OCR` | off | **Required**: the decoder is the shared qwen35 implementation. |
 | `CRISPEMBED_MINICPM_OCR_DUMP` | unset | Directory for intermediate dumps. |
+| `CRISPEMBED_MINICPM_OCR_FORCE_IDS` | unset | Test-only teacher forcing: file of token IDs that replace the greedy choice step by step (quantization A/B, docs/minicpm-ocr-q4k.md). |
+| `CRISPEMBED_MINICPM_OCR_LOGITS_OUT` | unset | Test-only: append each step's raw F32 vocabulary scores to this file. |
 | `CRISPEMBED_MINICPM_OCR_TIMING` | off | Per-stage wall times on stderr. |
 | `CRISPEMBED_MINICPM_OCR_VISION_FLASH` | on | Fused flash attention in the vision tower (performance only). `=0` opts out. |
 | `CRISPEMBED_MINICPM_OCR_GRAPH` | off | Older stateless graph-decoder candidate (`src/qwen35_graph_decoder.cpp`); disabled under `CRISPEMBED_QWEN35_IMATRIX`; exclusive with `CRISPEMBED_QWEN35_GRAPH_DECODER` (setting it to 1 turns the default graph decoder off unless that is forced with `=1`). |
@@ -175,7 +177,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-402 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+404 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -635,7 +637,9 @@ Regenerate with `python tools/list_env_vars.py --write`.
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_MINICPM_OCR` | on | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp`, `examples/server/server.cpp`, `src/minicpm_ocr.cpp` +1 | 'minicpm-ocr' registry alias (same default as the HTTP server). The decoder reuses the qwen35 kernels, so both gates are still required. |
 | `CRISPEMBED_MINICPM_OCR_DUMP` | value | unset | string | debug | `src/minicpm_ocr.cpp` |  |
+| `CRISPEMBED_MINICPM_OCR_FORCE_IDS` | value | unset | string | tuning / config | `src/minicpm_ocr.cpp` |  |
 | `CRISPEMBED_MINICPM_OCR_GRAPH` | on | off | bool | default-off experimental / opt-in | `src/minicpm_ocr.cpp`, `src/qwen35_graph_decoder.cpp` | Snapshot once for the entire request. Never silently fall back after a candidate failure, which would mix arithmetic within one decode. |
+| `CRISPEMBED_MINICPM_OCR_LOGITS_OUT` | value | unset | path | tuning / config | `src/minicpm_ocr.cpp` |  |
 | `CRISPEMBED_MINICPM_OCR_TIMING` | on | off | bool | debug | `src/minicpm_ocr.cpp` |  |
 | `CRISPEMBED_MINICPM_OCR_VISION_BATCH` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/minicpm_ocr.cpp`, `src/minicpm_ocr_vision.cpp` | CRISPEMBED_MINICPM_OCR_VISION_BATCH (default on since 2026-11-02, =0 opts out): equally sized consecutive parts (the slices) run as one graph of independent ... |
 | `CRISPEMBED_MINICPM_OCR_VISION_F32` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/minicpm_ocr.cpp`, `src/minicpm_ocr_vision.cpp` |  |

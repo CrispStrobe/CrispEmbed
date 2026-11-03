@@ -26,6 +26,7 @@
 #include <chrono>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <memory>
 #include <string>
@@ -310,18 +311,50 @@ const char * recognize(minicpm_ocr_context & c, const uint8_t * pixels, int w, i
         dump_f32(dump, "lm_head", current.logits, current.logits.size());
     }
     const size_t vocab = size_t(c.decoder.head->ne[1]);
+    // Diagnostic teacher forcing for quantization A/B (default off, test-only):
+    // CRISPEMBED_MINICPM_OCR_FORCE_IDS names a file of whitespace-separated token IDs
+    // that replace the greedy choice step by step, so every generated position is
+    // conditioned on the reference prefix; generation stops where the list ends.
+    // CRISPEMBED_MINICPM_OCR_LOGITS_OUT appends each step's raw F32 vocabulary
+    // scores (vocab floats per step) to a file. Unset, empty or "0" disables either.
+    std::vector<int> forced;
+    if (const char * fp = std::getenv("CRISPEMBED_MINICPM_OCR_FORCE_IDS"); fp && *fp && std::strcmp(fp, "0") != 0) {
+        FILE * f = std::fopen(fp, "r");
+        if (!f) return c.fail("CRISPEMBED_MINICPM_OCR_FORCE_IDS file unreadable");
+        int v = 0;
+        while (std::fscanf(f, "%d", &v) == 1) forced.push_back(v);
+        std::fclose(f);
+        if (forced.empty() || int(forced.size()) > c.max_tokens)
+            return c.fail("forced ID list empty or above the token cap");
+        for (int id : forced)
+            if (id < 0 || size_t(id) >= vocab) return c.fail("forced ID outside the vocabulary");
+    }
+    FILE * logits_out = nullptr;
+    if (const char * lp = std::getenv("CRISPEMBED_MINICPM_OCR_LOGITS_OUT"); lp && *lp && std::strcmp(lp, "0") != 0) {
+        logits_out = std::fopen(lp, "wb");
+        if (!logits_out) return c.fail("CRISPEMBED_MINICPM_OCR_LOGITS_OUT not writable");
+    }
+    struct file_closer {
+        FILE *& f;
+        ~file_closer() {
+            if (f) std::fclose(f);
+        }
+    } close_logits{ logits_out };
     std::vector<double> step_ms;
     for (int step = 0; step < c.max_tokens; ++step) {
         if (current.logits.size() != vocab ||
             !std::all_of(current.logits.begin(), current.logits.end(), [](float x) { return std::isfinite(x); }))
             return c.fail("nonfinite or missing vocabulary scores");
+        if (logits_out && std::fwrite(current.logits.data(), sizeof(float), vocab, logits_out) != vocab)
+            return c.fail("logits output write failed");
         const auto best = std::max_element(current.logits.begin(), current.logits.end());
-        const int id = int(best - current.logits.begin());
+        const int id = forced.empty() ? int(best - current.logits.begin()) : forced[size_t(step)];
         double total = 0;
         for (float x : current.logits) total += std::exp(double(x) - *best);
         c.ids.push_back(id);
-        c.confidences.push_back(float(1.0 / total));
+        c.confidences.push_back(float(std::exp(double(current.logits[size_t(id)]) - *best) / total));
         if (c.tok.is_stop(id)) break; // generation_config eos_token_id [248044, 248046]
+        if (!forced.empty() && size_t(step) + 1 == forced.size()) break;
         if (step + 1 == c.max_tokens || current.cache.tokens >= kMaxContext) break;
         auto cache = std::move(current.cache);
         if (!qwen35_ocr::embed_cpu(c.decoder.embedding, { id }, hidden)) return c.fail("embedding failed");
