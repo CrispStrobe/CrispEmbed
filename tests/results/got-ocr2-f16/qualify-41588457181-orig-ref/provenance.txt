@@ -1,0 +1,7 @@
+source=f405ac9adc98a1014b592b52a377c14ed6f3a5e3
+numpy==1.26.4
+pillow==13.0.0
+tiktoken==0.14.0
+torch==2.4.1+cpu
+torchvision==0.19.1+cpu
+transformers==4.37.2

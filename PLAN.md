@@ -42,8 +42,14 @@ differs from the old file only inside that span. Stage diff is cos 1.000000 on a
   a faithful reference (it also drops the indentation and the ngram rule).
   Open: Q4_K stays non-exact on receipt_example (ratio 0.7005, first divergence 83) and
   simple_form (0.8865, divergence 20) — quantization drift, now measurable against the exact
-  F16 pipeline; the earlier HF-port-based page comparisons (got_ocr2_f16_republish.sh) used the
-  HF port as "original" and should be re-pointed at got_ocr2_orig_probe.py if rerun.
+  F16 pipeline. The earlier page comparisons in got_ocr2_f16_republish.sh used the HF port as the
+  "original" (run 41391040980, kept on record). Done on `fix/got-republish-orig-ref`: the script now
+  runs got_ocr2_orig_probe.py (the original stepfun-ai/GOT-OCR2_0 chat() pipeline, transformers
+  4.37.2 venv) and compares generated IDs (`CRISPEMBED_GOT_OCR_DUMP_DIR`) and text against it.
+  Rerun 41588457181 (qualify, 256 tokens): F16-r2 is token-exact against the original on all
+  three cases (fox, receipt_example, simple_form); 19/19 stages cos 1.000000. Published Q4_K stays
+  non-exact (receipt divergence 83, ratio 0.8041; form divergence 20, ratio 0.9679). The old F16
+  file still gives `colorcolor...`. Receipt: `tests/results/got-ocr2-f16/qualify-41588457181-orig-ref/`.
 
 
 Source: `docs/gpu-support-matrix.md` §CUDA audit (branch `feat/cuda-audit`, Kaggle T4).
