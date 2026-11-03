@@ -534,9 +534,22 @@ handoff take precedence over historical commands.
      cosine>=0.999866 (measured 0.0025544/0.99988863 plus 20%). This one is
      accepted **without attribution**. The scope is narrower than an
      arm64-vs-x86 rule because Linux arm64 vs x86 passes strict at 1.2e-4.
+     **Attributed** by run41638730050
+     ([receipt](tests/results/packaging/macos-desktop-drift-attribution-v1.json)):
+     the whole drift is the Metal GPU backend that the desktop consumer selects
+     (paravirtual device). With `CRISPEMBED_FORCE_CPU=1`, the same macOS package
+     matches Linux arm64 within 5.14e-7 on macos-14 and macos-15. CPU compile
+     differences (AppleClang, Accelerate, llamafile, -march) contribute at most
+     5.14e-7, so no build-config fix applies and release builds stay unchanged.
+     **Proposal (not applied, owner decision):** a v5 protocol could run the
+     macOS desktop parity review with `CRISPEMBED_FORCE_CPU=1`
+     (measured A/B vs Linux x86_64: 0.0025544/0.99988863 -> 1.20e-4/0.9999997,
+     strict pass) and drop the v4 macOS tolerance. A separate Metal-labelled
+     arm would then keep the GPU path covered. Before that, measure which
+     backend is closer to an F32 reference. The Metal IQ4_XS mul_mv
+     F32-activation hypothesis is unverified.
 
-   Optional follow-ups, not scheduled: (a) attribute the macOS arm64 drift with
-   the same-input op-by-op method; (b) a parked multi-kernel native-order WASM
+   Optional follow-ups, not scheduled: (a) macOS attribution: done, see above; (b) a parked multi-kernel native-order WASM
    build (IQ4_NL tinyBLAS order, IQ4_XS AVX2 order, flash
    `vec_dot_f32`/`vec_mad_f32` with fmaf and AVX lane order, matching expf).
    Nothing is qualified, there is no release alias and the app stays on 0.17.12.
