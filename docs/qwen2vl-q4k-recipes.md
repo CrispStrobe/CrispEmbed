@@ -126,6 +126,8 @@ scored 0.9521/0.9702 on one hosted runner and 0.9673/0.9732 on another: the
 hosted builds use `-march=native`, and MinerU's CPU matmuls quantize the
 activations in ISA-specific kernels, so its CPU score moves by up to 0.015 with
 the runner. Both stay above the bar; the scripts now record `lscpu`.
+Portable re-measure (3 November 2026, `build_mode=portable`, three runs, byte-identical):
+r2 0.952109, r4 0.970185. These are the qualification values (docs/precision-acceptance.md §Build mode).
 
 ### Importance matrix
 

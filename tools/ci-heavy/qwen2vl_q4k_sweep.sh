@@ -17,7 +17,7 @@ RECIPES=${2:?comma list of recipe names}
 KEEP=${3:-} # comma list of recipes whose GGUF is copied to $HEAVY_OUT (device confirmation elsewhere)
 OUT=${HEAVY_OUT:?}
 S=${HEAVY_SCRATCH:?}
-(lscpu 2>/dev/null || sysctl -a 2>/dev/null | grep -i brand) > "$OUT/cpu.txt" # -march=native: kernels follow the runner ISA
+(lscpu 2>/dev/null || sysctl -a 2>/dev/null | grep -i brand) > "$OUT/cpu.txt" # build mode: $CRISPEMBED_BUILD_MODE (portable by default in heavy-cpu.yml; native follows the runner ISA)
 cmake -S . -B "$S/build" -DCMAKE_BUILD_TYPE=Release > "$OUT/cmake.log" 2>&1 &&
     cmake --build "$S/build" --target test-mineru25-run test-teleocr-run crispembed-quantize -j"$(nproc)" \
         > "$OUT/build.log" 2>&1 || { tail -40 "$OUT/build.log"; exit 2; }
