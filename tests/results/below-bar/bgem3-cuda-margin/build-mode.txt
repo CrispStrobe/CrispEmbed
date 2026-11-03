@@ -1,0 +1,5 @@
+build_mode=portable
+commit=9787b9534603ec1685ca519a7ae4e09443f1f360
+runner=Linux/X64
+cpu=AMD EPYC 7763 64-Core Processor
+cpu_avx512f=no

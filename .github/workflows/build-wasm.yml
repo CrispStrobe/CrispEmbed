@@ -13,6 +13,7 @@ on:
       - 'tests/test_wasm_ocr_wrapper.js'
       - 'CMakeLists.txt'
       - 'build-wasm.sh'
+      - 'tools/wasm_size_report.py'
       - 'cmake/FindThreads.cmake'
       - '.github/workflows/build-wasm.yml'
   pull_request:
@@ -49,6 +50,11 @@ jobs:
 
       - name: Build WASM
         run: ./build-wasm.sh --clean
+
+      - name: Size report (largest sections, owners and functions)
+        run: |
+          python3 tools/wasm_size_report.py build-wasm/crispembed_ocr.wasm \
+            build-wasm/crispembed_ocr.js.symbols --top=80
 
       - name: Verify output
         run: |

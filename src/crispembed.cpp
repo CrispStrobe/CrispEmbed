@@ -1022,6 +1022,51 @@ static bool load_model(crispembed_context * ctx, const char * path, gguf_context
         }
     }
 
+    // Learned absolute position table: the tokenizers truncate at
+    // hp.n_max_tokens (= max_position_embeddings), but RoBERTa/XLM-R tables
+    // start at position_offset (padding_idx + 1 = 2), so a 514-row table holds
+    // only 512 token positions. A 513- or 514-token input then indexed past the
+    // table and aborted in get_rows (GGML_ASSERT i01 < ne01) on e5-base/large,
+    // granite-107m/278m, bge-reranker-base. HF truncates to model_max_length =
+    // max_position_embeddings - 2 and keeps the special tokens; so do we now.
+    // CRISPEMBED_POS_EMBD_TRUNCATE=0 restores the old (aborting) limit.
+    if (m.pos_embd && !core_env::explicitly_off("CRISPEMBED_POS_EMBD_TRUNCATE")) {
+        const int rows = (int)m.pos_embd->ne[1];
+        auto clamp = [&](int cur, const char * name, auto set) {
+            const int limit = position_table_token_limit(rows, ctx->pos_offset, cur);
+            if (limit != cur) {
+                set(limit);
+                fprintf(stderr, "crispembed: %s truncation %d -> %d (position table %d rows, offset %d)\n", name, cur,
+                        limit, rows, ctx->pos_offset);
+            }
+        };
+        if (ctx->use_sentencepiece)
+            clamp(ctx->sp_tokenizer.max_length(), "SentencePiece", [&](int n) { ctx->sp_tokenizer.set_max_length(n); });
+        else if (ctx->use_bpe)
+            clamp(ctx->bpe_tokenizer.max_length(), "BPE", [&](int n) { ctx->bpe_tokenizer.set_max_length(n); });
+        else
+            clamp(ctx->wp_tokenizer.max_length(), "WordPiece", [&](int n) { ctx->wp_tokenizer.set_max_length(n); });
+    }
+    // Cross-encoder pair layout. HF XLMRobertaTokenizer/RobertaTokenizer build
+    // `<s> a </s></s> b </s>`; we built `<s> a </s> b </s>`, which shifted every
+    // position of the second segment and moved bge-reranker-v2-m3/-base scores
+    // by up to 1.9 logits. Selected when the wrap tokens are literally <s>/</s>
+    // (RoBERTa family; DeBERTa-v3 [CLS]/[SEP] and BERT keep one separator).
+    // CRISPEMBED_PAIR_ROBERTA_SEP=0 restores the single separator.
+    if (!core_env::explicitly_off("CRISPEMBED_PAIR_ROBERTA_SEP")) {
+        if (ctx->use_sentencepiece && !ctx->special_ids.empty()) {
+            const bool roberta = ctx->sp_tokenizer.token_str(ctx->special_ids[0]) == "<s>" &&
+                                 ctx->sp_tokenizer.token_str(ctx->special_ids[1]) == "</s>";
+            ctx->sp_tokenizer.set_pair_double_sep(roberta);
+        } else if (ctx->use_bpe) {
+            const auto & v = ctx->bpe_tokenizer.get_vocab();
+            const int b = ctx->bpe_tokenizer.bos_id(), e = ctx->bpe_tokenizer.eos_id();
+            const bool roberta =
+                b >= 0 && e >= 0 && b < (int)v.size() && e < (int)v.size() && v[b] == "<s>" && v[e] == "</s>";
+            ctx->bpe_tokenizer.set_pair_double_sep(roberta);
+        }
+    }
+
     fprintf(stderr, "crispembed: loaded %d layers, %d dims, %d vocab\n",
             // Temp debug: will be removed
             hp.n_layer, hp.n_embd, hp.n_vocab);

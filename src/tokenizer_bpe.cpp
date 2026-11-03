@@ -566,7 +566,7 @@ embed_tokens BPETokenizer::encode_pair(const std::string & text_a, const std::st
     auto ids_b = tokenize_raw(text_b);
 
     // Truncate longest-first to fit: [CLS] a [SEP] b [SEP] = n_a + n_b + 3 tokens
-    int budget = max_length_ - 3;
+    int budget = max_length_ - (pair_double_sep_ ? 4 : 3);
     while ((int)(ids_a.size() + ids_b.size()) > budget) {
         if (ids_a.size() >= ids_b.size())
             ids_a.pop_back();
@@ -584,12 +584,18 @@ embed_tokens BPETokenizer::encode_pair(const std::string & text_a, const std::st
     }
     ids.push_back(eos_id_); // [SEP]
     types.push_back(0);
+    if (pair_double_sep_) { // RoBERTa: <s> a </s></s> b </s>
+        ids.push_back(eos_id_);
+        types.push_back(0);
+    }
+    // RoBERTa-family models have a single token type (HF returns all zeros).
+    const int type_b = pair_double_sep_ ? 0 : 1;
     for (int id : ids_b) {
         ids.push_back(id);
-        types.push_back(1);
+        types.push_back(type_b);
     }
     ids.push_back(eos_id_); // [SEP]
-    types.push_back(1);
+    types.push_back(type_b);
 
     embed_tokens result;
     int seq_len = (int)ids.size();
