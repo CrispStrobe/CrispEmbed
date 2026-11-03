@@ -65,7 +65,8 @@ MLP merger (4608 -> 1024).
 | seven-arm v3 Q4 (decoder Q4_K, rest F16) | 1,809.5 | 0.9690 (para-en) | 5/5 | 41591527932 |
 
 The F32 arm stopped before inference with `graph decoder initialization failed` on
-the F32 GGUF. That receipt is kept (`41591527932/f32/initial-graph-init-failure.log`).
+the F32 GGUF, most likely the decoder's F32 weight copies on a 16 GB runner. main has
+since added a low-memory fallback for those copies. That receipt is kept (`41591527932/f32/initial-graph-init-failure.log`).
 F16 serves as the unquantized control.
 
 ## Sensitivity (Q8_0 baseline with one group lowered)
@@ -129,6 +130,16 @@ attention-sink rows, and they do not bring the logits below the bar.
 | MiniCPM-OCR-1.0 | `minicpm_q4k_v1` (= mix2, recommended) | 970.8 | 66.7% | 0.9671 |
 | MiniCPM-OCR-1.0 | `minicpm_q4k_min_v1` (= mix1, smallest measured above 0.94) | 902.4 | 62.0% | 0.9489 |
 
+Policy confirmation run 41628919702 (portable, heavy-cpu `build_mode=portable`, EPYC 7763)
+built both files through `CRISPEMBED_QUANTIZE_MINICPM_POLICY`. `minicpm_q4k_v1` has the
+same tensor data as the hand-written mix2 (`tensor_data_sha256` `27e0e75a...`) and
+scores 0.9671 again. The difference from the earlier mix2 run on an EPYC 9V45 is at most
+3.4e-8 per case, all of it from the recomputed original logits. Decoded free-running on
+every case: `line`, `table`, `tall` and `tiny` are token- and text-exact. `para-en`
+diverges at 54 and still ends with EOS. Both policies hit EOS on all five cases, and
+none reaches the token cap. Receipts: `tests/results/minicpm-ocr/q4k-precision.json`
+(`minicpm_q4k_v1`, publication) and `q4k-min-precision.json` (`minicpm_q4k_min_v1`).
+
 Both policies are rule tables in `tools/quantize.cpp`, kept equal to the measured
 recipes by `tests/test_minicpm_quant_policy.py`. The quantizer refuses them unless
 the source is a `minicpm_ocr` GGUF and the base type is `q8_0`, and it stamps
@@ -146,7 +157,7 @@ CRISPEMBED_QUANTIZE_MINICPM_POLICY=minicpm_q4k_v1 crispembed-quantize minicpm-oc
 `type` q8_0, `quantize_env` `CRISPEMBED_QUANTIZE_MINICPM_POLICY=minicpm_q4k_v1`,
 `precision_gate` cosine and `precision_tier` q4_k. Its receipt is
 `tests/results/minicpm-ocr/q4k-precision.json`, built from the policy confirmation
-run. `tools/ci-heavy/minicpm_ocr_publish.py` now accepts a cosine-gated receipt:
+run 41628919702 (worst 0.9671; `minicpm_ocr_publish.py` accepts it). `tools/ci-heavy/minicpm_ocr_publish.py` now accepts a cosine-gated receipt:
 every case must be above the tier's bar, the build must be portable and the receipt
 must name the GGUF hash. Policy switches travel to the workflow as environment. The
 recipe is not published and not in `default_variants`. Apache-2.0 licence handling
