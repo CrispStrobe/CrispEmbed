@@ -10,6 +10,11 @@ from unittest import mock
 
 ROOT=Path(__file__).resolve().parents[1]
 BASE='20e58588f2c357b8156f94f61b38d8158b906e10'
+# Frozen reviewed commit of the Mac-only diagnostic (7d561149). The source controls compare that
+# commit's blobs against BASE, never the moving working tree: later main commits legitimately
+# change src/ and the metadata workflow (frozen-guard policy, see tests/frozen_checkout.py).
+# The guard's intent -- the diagnostic changed no production input -- is unchanged.
+FROZEN='7d5611490fd6dfc3fb3349b361d52c3188ec8ed7'
 WORKFLOW=ROOT/'.github/workflows/successor-apple-only.yml'
 
 
@@ -41,7 +46,7 @@ class AppleOnlyControls(unittest.TestCase):
  def test_metadata_only_adds_choice_and_scoped_forwarder_with_ten_inputs(self):
   path='.github/workflows/ovisocr2-metadata.yml'
   before=subprocess.check_output(['git','show',BASE+':'+path],cwd=ROOT,text=True)
-  after=(ROOT/path).read_text()
+  after=subprocess.check_output(['git','show',FROZEN+':'+path],cwd=ROOT,text=True)
   dispatch=after.split('  workflow_dispatch:\n',1)[1].split('  push:\n',1)[0]
   self.assertEqual(len(re.findall(r'^      [\w-]+:$',dispatch,re.M)),10)
   scoped=job(after,'successor-apple-only')
@@ -77,7 +82,7 @@ class AppleOnlyControls(unittest.TestCase):
    '.gitattributes','.github/workflows/release.yml','.github/workflows/release-wasm.yml','README.md','LICENSE',
    '.github/workflows/successor-assets.yml','tools/ci-heavy/successor_assets.py','tools/ci-heavy/successor_posformer.py',
    'tools/ci-heavy/successor_posformer_corpus.py','tools/probe_posformer_release.py')
-  changed=subprocess.check_output(['git','diff',BASE,'--name-only','--',*paths],cwd=ROOT,text=True)
+  changed=subprocess.check_output(['git','diff',BASE,FROZEN,'--name-only','--',*paths],cwd=ROOT,text=True)
   self.assertEqual(changed,'')
  def test_failure_artifact_remains_always_and_contains_all_probe_reports(self):
   text=job(WORKFLOW.read_text(),'apple-only');upload=text.split('      - uses: actions/upload-artifact@v4\n',1)[1]
