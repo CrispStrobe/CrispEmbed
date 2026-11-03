@@ -43,6 +43,7 @@ old = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(old)
 require = contract.require
 RECIPES = json.loads((ROOT / 'tools/josev2b_q4k_recipes.json').read_text())['recipes']
+POLICIES = {'mlp-q4': 'josev_q4k_mlp_v1'}  # named CRISPEMBED_QUANTIZE_JOSEV_POLICY twins
 TYPE_ID = {'f32': 0, 'f16': 1, 'q8_0': 8, 'q4_k': 12}
 ROLE_SUFFIX = {
     'attn': ('.self_attn.q_proj.weight', '.self_attn.k_proj.weight', '.self_attn.v_proj.weight',
@@ -117,6 +118,7 @@ def quantize(source, output, executable, identity, rows):
     finally:
         prot.scalar = strict
     verified.pop('tensors')
+    verified.pop('counts')
     from gguf_file_type_values import q4_k_file_type
     out_type = seen[-1]
     require(out_type == 7 if counts[12] == 0 else q4_k_file_type(out_type), 'output file type label %r' % (out_type,))
@@ -265,6 +267,17 @@ def main(a):
             entry['passes_logits_bar'] = s['logits_cos'] > bar
             entry['passes_final_norm_bar'] = s['final_norm_cos'] > bar
             entry['phase'] = 'complete'
+            if identity in POLICIES:
+                # The named quantizer policy must reproduce this recipe byte for byte.
+                twin = raw / ('josev2b-' + identity + '-policy.gguf')
+                penv = {k: v for k, v in os.environ.items() if not k.startswith('CRISPEMBED_')}
+                penv['CRISPEMBED_QUANTIZE_JOSEV_POLICY'] = POLICIES[identity]
+                from ci_process import run
+                proc = run([str(build / 'josev-q4k-quantize'), str(model), str(twin), 'q4_k'],
+                           review / (identity + '-policy-quantize.log'), env=penv, timeout=2400)
+                require(proc['exit'] == 0, 'policy quantize failed')
+                entry['policy'] = dict(name=POLICIES[identity], output_sha256=prot.digest(twin),
+                                       byte_identical=prot.digest(twin) == entry['conversion']['output_sha256'])
         except Exception as e:
             entry.update(phase='rejected', error=type(e).__name__ + ': ' + str(e))
         finally:

@@ -1,0 +1,604 @@
+{
+  "schema": "crispembed-josev-q4k-final-output-rescore-v1",
+  "method": "Final-output cosines derived from each run's retained actual-comparator per-stage moments (original/native L2, RMS of difference): cos=(|a|^2+|b|^2-n*rms^2)/(2|a||b|). Judged metric: per case, cosine of the concatenated per-field head logits (the vector whose softmax gives the typed probabilities); final-norm global cosine is the stricter representation diagnostic. No new inference. Typed exactness comes from each panel (complete_response_exact).",
+  "build": "tests/josev-q4k forces GGML_NATIVE=OFF (portable) in all runs listed",
+  "runs": {
+    "q4k-v4 (150 Q4_K)": {
+      "run": "Kaggle CPU v4 (tests/results/josev2b/q4k-v4-review.json)",
+      "bytes": 2944520672,
+      "mib": 2808.1,
+      "counts": {
+        "Q4_K": 150,
+        "F32": 292
+      },
+      "summary": {
+        "logits_cos": 0.9929990570926396,
+        "probabilities_cos": 0.9995199110881015,
+        "final_norm_cos": 0.936734089353367,
+        "probabilities_max_abs": 0.037822186946868896,
+        "typed_json_exact": 0
+      },
+      "cases": [
+        {
+          "id": "mixed-de",
+          "logits_cos": 0.9982381584403479,
+          "logits_max_abs": 0.4665975570678711,
+          "probabilities_cos": 0.9995199110881015,
+          "probabilities_max_abs": 0.037822186946868896,
+          "final_norm_cos": 0.9510625272116867,
+          "final_norm_min_row_cos": 0.6107429578651258,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.6106934285190402
+          },
+          "typed_json_exact": false
+        },
+        {
+          "id": "null-and-options",
+          "logits_cos": 0.9941345135496816,
+          "logits_max_abs": 0.5306308269500732,
+          "probabilities_cos": 0.9995851455390907,
+          "probabilities_max_abs": 0.02522370219230652,
+          "final_norm_cos": 0.9447415514603975,
+          "final_norm_min_row_cos": 0.6001795054178957,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.5402131309118163
+          },
+          "typed_json_exact": false
+        },
+        {
+          "id": "json-unicode",
+          "logits_cos": 0.9990089595932353,
+          "logits_max_abs": 0.24427473545074463,
+          "probabilities_cos": 0.9997736322514603,
+          "probabilities_max_abs": 0.014318346977233887,
+          "final_norm_cos": 0.936734089353367,
+          "final_norm_min_row_cos": 0.6107432902691472,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.6106937187862218
+          },
+          "typed_json_exact": false
+        },
+        {
+          "id": "state-only-clip",
+          "logits_cos": 0.9929990570926396,
+          "logits_max_abs": 0.5325612053275108,
+          "probabilities_cos": 0.9999649932158519,
+          "probabilities_max_abs": 0.008189618587493896,
+          "final_norm_cos": 0.9605949683101389,
+          "final_norm_min_row_cos": 0.6107428283303702,
+          "worst_stage": {
+            "stage": "head/residual_scorer",
+            "min_row_cosine": -1.0
+          },
+          "typed_json_exact": false
+        }
+      ]
+    },
+    "mixed recipe-A (72 MLP Q4_K, 78 attn F16)": {
+      "run": "40787077302",
+      "bytes": 3613774304,
+      "mib": 3446.4,
+      "counts": {
+        "Q4_K": 72,
+        "F16": 78,
+        "F32": 292
+      },
+      "summary": {
+        "logits_cos": 0.9967995622280769,
+        "probabilities_cos": 0.9992917538280373,
+        "final_norm_cos": 0.9701486353566027,
+        "probabilities_max_abs": 0.022339582443237305,
+        "typed_json_exact": 0
+      },
+      "cases": [
+        {
+          "id": "mixed-de",
+          "logits_cos": 0.9986833179914009,
+          "logits_max_abs": 0.3845529556274414,
+          "probabilities_cos": 0.9999940773035401,
+          "probabilities_max_abs": 0.003990396857261658,
+          "final_norm_cos": 0.9761009302564132,
+          "final_norm_min_row_cos": 0.6943029876915571,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.6930816089614221
+          },
+          "typed_json_exact": false
+        },
+        {
+          "id": "null-and-options",
+          "logits_cos": 0.9967995622280769,
+          "logits_max_abs": 0.4639754891395569,
+          "probabilities_cos": 0.9998962143731422,
+          "probabilities_max_abs": 0.014658339321613312,
+          "final_norm_cos": 0.9738018229399451,
+          "final_norm_min_row_cos": 0.7941763188148976,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.7937030780428243
+          },
+          "typed_json_exact": false
+        },
+        {
+          "id": "json-unicode",
+          "logits_cos": 0.99975050677171,
+          "logits_max_abs": 0.1816997528076172,
+          "probabilities_cos": 0.9992917538280373,
+          "probabilities_max_abs": 0.022339582443237305,
+          "final_norm_cos": 0.9701486353566027,
+          "final_norm_min_row_cos": 0.7941768658138106,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.7937036074104923
+          },
+          "typed_json_exact": false
+        },
+        {
+          "id": "state-only-clip",
+          "logits_cos": 0.9979118462268305,
+          "logits_max_abs": 0.2953629493713379,
+          "probabilities_cos": 0.999995721698455,
+          "probabilities_max_abs": 0.0028783082962036133,
+          "final_norm_cos": 0.9817711030919609,
+          "final_norm_min_row_cos": 0.7941771869707426,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.793703957140195
+          },
+          "typed_json_exact": false
+        }
+      ]
+    },
+    "mixed recipe-B (48 gate/up Q4_K, down F32, attn F16)": {
+      "run": "40787077302",
+      "bytes": 4651864544,
+      "mib": 4436.4,
+      "counts": {
+        "Q4_K": 48,
+        "F16": 78,
+        "F32": 316
+      },
+      "summary": {
+        "logits_cos": 0.9991705353341372,
+        "probabilities_cos": 0.9999217932465352,
+        "final_norm_cos": 0.9800044543562698,
+        "probabilities_max_abs": 0.015322357416152954,
+        "typed_json_exact": 0
+      },
+      "cases": [
+        {
+          "id": "mixed-de",
+          "logits_cos": 0.9993632547625858,
+          "logits_max_abs": 0.237532377243042,
+          "probabilities_cos": 0.9999217932465352,
+          "probabilities_max_abs": 0.015322357416152954,
+          "final_norm_cos": 0.9856638401276522,
+          "final_norm_min_row_cos": 0.7733696612944371,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.7724320829363024
+          },
+          "typed_json_exact": false
+        },
+        {
+          "id": "null-and-options",
+          "logits_cos": 0.9991705353341372,
+          "logits_max_abs": 0.27064287662506104,
+          "probabilities_cos": 0.9999834457663415,
+          "probabilities_max_abs": 0.006220221519470215,
+          "final_norm_cos": 0.9850079037353986,
+          "final_norm_min_row_cos": 0.8472648798485329,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.8459415320225797
+          },
+          "typed_json_exact": false
+        },
+        {
+          "id": "json-unicode",
+          "logits_cos": 0.999989867405888,
+          "logits_max_abs": 0.1264328956604004,
+          "probabilities_cos": 0.9999736819876803,
+          "probabilities_max_abs": 0.004688620567321777,
+          "final_norm_cos": 0.9800044543562698,
+          "final_norm_min_row_cos": 0.8472652918388694,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.8459419452088163
+          },
+          "typed_json_exact": false
+        },
+        {
+          "id": "state-only-clip",
+          "logits_cos": 0.9997189092531841,
+          "logits_max_abs": 0.11087402701377869,
+          "probabilities_cos": 0.9999994345795429,
+          "probabilities_max_abs": 0.0010483264923095703,
+          "final_norm_cos": 0.9905179684289916,
+          "final_norm_min_row_cos": 0.8472659029304882,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.8459425831509122
+          },
+          "typed_json_exact": false
+        }
+      ]
+    },
+    "mixed recipe-C (8 gate/up L20-23 Q4_K)": {
+      "run": "40787077302",
+      "bytes": 5375381984,
+      "mib": 5126.4,
+      "counts": {
+        "Q4_K": 8,
+        "F16": 118,
+        "F32": 316
+      },
+      "summary": {
+        "logits_cos": 0.9999932822751711,
+        "probabilities_cos": 0.9999961423693604,
+        "final_norm_cos": 0.9982999790906927,
+        "probabilities_max_abs": 0.001905977725982666,
+        "typed_json_exact": 1
+      },
+      "cases": [
+        {
+          "id": "mixed-de",
+          "logits_cos": 0.9999934435835007,
+          "logits_max_abs": 0.020247459411621094,
+          "probabilities_cos": 0.9999997365798239,
+          "probabilities_max_abs": 0.0008184909820556641,
+          "final_norm_cos": 0.9984637199192441,
+          "final_norm_min_row_cos": 0.9925985436826412,
+          "worst_stage": {
+            "stage": "backbone/final_norm",
+            "min_row_cosine": 0.9925985436826412
+          },
+          "typed_json_exact": false
+        },
+        {
+          "id": "null-and-options",
+          "logits_cos": 0.9999959853331565,
+          "logits_max_abs": 0.01701986789703369,
+          "probabilities_cos": 0.9999995705863358,
+          "probabilities_max_abs": 0.0009449124336242676,
+          "final_norm_cos": 0.9984044360493275,
+          "final_norm_min_row_cos": 0.9925984894232117,
+          "worst_stage": {
+            "stage": "backbone/final_norm",
+            "min_row_cosine": 0.9925984894232117
+          },
+          "typed_json_exact": false
+        },
+        {
+          "id": "json-unicode",
+          "logits_cos": 0.9999932822751711,
+          "logits_max_abs": 0.02530491352081299,
+          "probabilities_cos": 0.9999961423693604,
+          "probabilities_max_abs": 0.001905977725982666,
+          "final_norm_cos": 0.9982999790906927,
+          "final_norm_min_row_cos": 0.9925984542077312,
+          "worst_stage": {
+            "stage": "backbone/final_norm",
+            "min_row_cosine": 0.9925984542077312
+          },
+          "typed_json_exact": false
+        },
+        {
+          "id": "state-only-clip",
+          "logits_cos": 0.9999988830569818,
+          "logits_max_abs": 0.008148670196533203,
+          "probabilities_cos": 0.9999999998814791,
+          "probabilities_max_abs": 1.5193596482276917e-05,
+          "final_norm_cos": 0.9983361432028586,
+          "final_norm_min_row_cos": 0.9925986176442424,
+          "worst_stage": {
+            "stage": "backbone/final_norm",
+            "min_row_cosine": 0.9925986176442424
+          },
+          "typed_json_exact": true
+        }
+      ]
+    },
+    "protected q8-all (150 Q8_0)": {
+      "run": "40838785499",
+      "bytes": 3630289376,
+      "mib": 3462.1,
+      "counts": {
+        "Q8_0": 150,
+        "F32": 292
+      },
+      "summary": {
+        "logits_cos": 0.9999467750007115,
+        "probabilities_cos": 0.9999874119867989,
+        "final_norm_cos": 0.9994414401011729,
+        "probabilities_max_abs": 0.0058747828006744385,
+        "typed_json_exact": 1
+      },
+      "cases": [
+        {
+          "id": "mixed-de",
+          "logits_cos": 0.9999912678047824,
+          "logits_max_abs": 0.025863170623779297,
+          "probabilities_cos": 0.9999890891070377,
+          "probabilities_max_abs": 0.0058747828006744385,
+          "final_norm_cos": 0.9994414401011729,
+          "final_norm_min_row_cos": 0.9363126179523916,
+          "worst_stage": {
+            "stage": "head/hidden_norm",
+            "min_row_cosine": 0.9363010182717781
+          },
+          "typed_json_exact": false
+        },
+        {
+          "id": "null-and-options",
+          "logits_cos": 0.999988433513442,
+          "logits_max_abs": 0.03380477428436279,
+          "probabilities_cos": 0.9999997668004595,
+          "probabilities_max_abs": 0.0007323026657104492,
+          "final_norm_cos": 0.9996003096544069,
+          "final_norm_min_row_cos": 0.9956283567383812,
+          "worst_stage": {
+            "stage": "backbone/final_norm",
+            "min_row_cosine": 0.9956283567383812
+          },
+          "typed_json_exact": false
+        },
+        {
+          "id": "json-unicode",
+          "logits_cos": 0.9999467750007115,
+          "logits_max_abs": 0.039328813552856445,
+          "probabilities_cos": 0.9999874119867989,
+          "probabilities_max_abs": 0.00340849906206131,
+          "final_norm_cos": 0.9995640152046265,
+          "final_norm_min_row_cos": 0.9956282790860228,
+          "worst_stage": {
+            "stage": "backbone/final_norm",
+            "min_row_cosine": 0.9956282790860228
+          },
+          "typed_json_exact": false
+        },
+        {
+          "id": "state-only-clip",
+          "logits_cos": 0.999990762103746,
+          "logits_max_abs": 0.01754075288772583,
+          "probabilities_cos": 0.9999999999694321,
+          "probabilities_max_abs": 7.71600753068924e-06,
+          "final_norm_cos": 0.9997690449758708,
+          "final_norm_min_row_cos": 0.9956285832720784,
+          "worst_stage": {
+            "stage": "backbone/final_norm",
+            "min_row_cosine": 0.9956285832720784
+          },
+          "typed_json_exact": true
+        }
+      ]
+    },
+    "protected q8-f32-down": {
+      "run": "40838785499",
+      "bytes": 4517384672,
+      "mib": 4308.1,
+      "counts": {
+        "Q8_0": 126,
+        "F32": 316
+      },
+      "summary": {
+        "logits_cos": 0.9999206645335944,
+        "probabilities_cos": 0.9999480343833553,
+        "final_norm_cos": 0.9995942028973545,
+        "probabilities_max_abs": 0.007484078407287598,
+        "typed_json_exact": 1
+      },
+      "cases": [
+        {
+          "id": "mixed-de",
+          "logits_cos": 0.9999909402277186,
+          "logits_max_abs": 0.029656648635864258,
+          "probabilities_cos": 0.999995284099562,
+          "probabilities_max_abs": 0.003847956657409668,
+          "final_norm_cos": 0.9996091506115411,
+          "final_norm_min_row_cos": 0.9669175422351322,
+          "worst_stage": {
+            "stage": "head/hidden_norm",
+            "min_row_cosine": 0.9669145385615753
+          },
+          "typed_json_exact": false
+        },
+        {
+          "id": "null-and-options",
+          "logits_cos": 0.9999907896503423,
+          "logits_max_abs": 0.03350424766540527,
+          "probabilities_cos": 0.9999997761115225,
+          "probabilities_max_abs": 0.0005096644163131714,
+          "final_norm_cos": 0.999658898667574,
+          "final_norm_min_row_cos": 0.9967135294395462,
+          "worst_stage": {
+            "stage": "head/hidden_norm",
+            "min_row_cosine": 0.9967134521465981
+          },
+          "typed_json_exact": false
+        },
+        {
+          "id": "json-unicode",
+          "logits_cos": 0.9999206645335944,
+          "logits_max_abs": 0.06324827671051025,
+          "probabilities_cos": 0.9999480343833553,
+          "probabilities_max_abs": 0.007484078407287598,
+          "final_norm_cos": 0.9995942028973545,
+          "final_norm_min_row_cos": 0.9967135525038658,
+          "worst_stage": {
+            "stage": "head/hidden_norm",
+            "min_row_cosine": 0.9967134746862258
+          },
+          "typed_json_exact": false
+        },
+        {
+          "id": "state-only-clip",
+          "logits_cos": 0.9999898907083561,
+          "logits_max_abs": 0.01891481876373291,
+          "probabilities_cos": 0.999999999078176,
+          "probabilities_max_abs": 4.237331449985504e-05,
+          "final_norm_cos": 0.9998126972223417,
+          "final_norm_min_row_cos": 0.9967137400901677,
+          "worst_stage": {
+            "stage": "head/hidden_norm",
+            "min_row_cosine": 0.9967136625779442
+          },
+          "typed_json_exact": true
+        }
+      ]
+    },
+    "protected q4-last-f16-down": {
+      "run": "40838785499",
+      "bytes": 4879929824,
+      "mib": 4653.9,
+      "counts": {
+        "Q4_K": 2,
+        "F16": 148,
+        "F32": 292
+      },
+      "summary": {
+        "logits_cos": 0.9999982974592239,
+        "probabilities_cos": 0.9999999503613156,
+        "final_norm_cos": 0.999448989357764,
+        "probabilities_max_abs": 0.00017920136451721191,
+        "typed_json_exact": 1
+      },
+      "cases": [
+        {
+          "id": "mixed-de",
+          "logits_cos": 0.9999984793301047,
+          "logits_max_abs": 0.010473489761352539,
+          "probabilities_cos": 0.9999999916616862,
+          "probabilities_max_abs": 0.00014570355415344238,
+          "final_norm_cos": 0.9995171965113548,
+          "final_norm_min_row_cos": 0.9986379493051902,
+          "worst_stage": {
+            "stage": "backbone/final_norm",
+            "min_row_cosine": 0.9986379493051902
+          },
+          "typed_json_exact": false
+        },
+        {
+          "id": "null-and-options",
+          "logits_cos": 0.9999991692525725,
+          "logits_max_abs": 0.008066892623901367,
+          "probabilities_cos": 0.99999999728189,
+          "probabilities_max_abs": 6.723403930664062e-05,
+          "final_norm_cos": 0.999494698263883,
+          "final_norm_min_row_cos": 0.9986365289129234,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.9984846888654095
+          },
+          "typed_json_exact": true
+        },
+        {
+          "id": "json-unicode",
+          "logits_cos": 0.9999991102411846,
+          "logits_max_abs": 0.010119915008544922,
+          "probabilities_cos": 0.9999999503613156,
+          "probabilities_max_abs": 0.00017920136451721191,
+          "final_norm_cos": 0.999483040270238,
+          "final_norm_min_row_cos": 0.9986597261463939,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.9986577732867477
+          },
+          "typed_json_exact": false
+        },
+        {
+          "id": "state-only-clip",
+          "logits_cos": 0.9999982974592239,
+          "logits_max_abs": 0.00768280029296875,
+          "probabilities_cos": 0.9999999999392399,
+          "probabilities_max_abs": 1.0907649993896484e-05,
+          "final_norm_cos": 0.999448989357764,
+          "final_norm_min_row_cos": 0.9986597187638222,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.9986577647025967
+          },
+          "typed_json_exact": false
+        }
+      ]
+    },
+    "last-projection q8-last-pair": {
+      "run": "40853720400",
+      "bytes": 4892512736,
+      "mib": 4665.9,
+      "counts": {
+        "Q8_0": 2,
+        "F16": 148,
+        "F32": 292
+      },
+      "summary": {
+        "logits_cos": 0.9999999827236942,
+        "probabilities_cos": 0.9999999988262973,
+        "final_norm_cos": 0.999996579743262,
+        "probabilities_max_abs": 4.3392181396484375e-05,
+        "typed_json_exact": 2
+      },
+      "cases": [
+        {
+          "id": "mixed-de",
+          "logits_cos": 0.9999999937416141,
+          "logits_max_abs": 0.0010869503021240234,
+          "probabilities_cos": 0.9999999997408925,
+          "probabilities_max_abs": 2.8461217880249023e-05,
+          "final_norm_cos": 0.9999968309623983,
+          "final_norm_min_row_cos": 0.9999905145496388,
+          "worst_stage": {
+            "stage": "head/hidden_norm",
+            "min_row_cosine": 0.9999905036370376
+          },
+          "typed_json_exact": false
+        },
+        {
+          "id": "null-and-options",
+          "logits_cos": 0.9999999927926869,
+          "logits_max_abs": 0.0006473064422607422,
+          "probabilities_cos": 0.9999999988262973,
+          "probabilities_max_abs": 4.3392181396484375e-05,
+          "final_norm_cos": 0.9999967509018199,
+          "final_norm_min_row_cos": 0.999990515600311,
+          "worst_stage": {
+            "stage": "head/hidden_norm",
+            "min_row_cosine": 0.9999905046707275
+          },
+          "typed_json_exact": false
+        },
+        {
+          "id": "json-unicode",
+          "logits_cos": 0.9999999992347346,
+          "logits_max_abs": 0.00028192996978759766,
+          "probabilities_cos": 0.9999999989244747,
+          "probabilities_max_abs": 2.86102294921875e-05,
+          "final_norm_cos": 0.999996579743262,
+          "final_norm_min_row_cos": 0.9999905144277151,
+          "worst_stage": {
+            "stage": "head/hidden_norm",
+            "min_row_cosine": 0.9999905035343651
+          },
+          "typed_json_exact": true
+        },
+        {
+          "id": "state-only-clip",
+          "logits_cos": 0.9999999827236942,
+          "logits_max_abs": 0.0008751749992370605,
+          "probabilities_cos": 0.9999999999711996,
+          "probabilities_max_abs": 7.489696145057678e-06,
+          "final_norm_cos": 0.9999965841273174,
+          "final_norm_min_row_cos": 0.999990514492729,
+          "worst_stage": {
+            "stage": "head/hidden_norm",
+            "min_row_cosine": 0.9999905035374768
+          },
+          "typed_json_exact": true
+        }
+      ]
+    }
+  }
+}

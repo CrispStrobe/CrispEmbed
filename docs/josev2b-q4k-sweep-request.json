@@ -1,5 +1,5 @@
 {
   "note": "Edit and push on a perf/q4k-josev-* branch to run .github/workflows/josev-q4k-sweep.yml (hosted CPU, portable build).",
   "recipes": "q8-all,attn-q4,gate-up-q4,down-q4,mlp-q4,l00-05-q4,l06-11-q4,l12-17-q4,l18-23-q4,all-q4,all-q4-down-q8,all-q4-l20-23-q8,all-q4-l23-q8",
-  "skip_f32": true
+  "skip_f32": false
 }
