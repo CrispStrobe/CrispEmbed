@@ -1,0 +1,95 @@
+{
+  "schema": "crispembed-moedern-scifact-native-q4k-bootstrap-v1",
+  "source": "8d9beb29317cb946202b4e9044e0cdb3fb27d298",
+  "completed": false,
+  "commands": [
+    {
+      "name": "clone",
+      "exit": 0,
+      "seconds": 2.1246627959999955,
+      "log": "clone.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "checkout",
+      "exit": 0,
+      "seconds": 4.833407259000012,
+      "log": "checkout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "fetch-original-source",
+      "exit": 0,
+      "seconds": 0.4657976299999973,
+      "log": "fetch-original-source.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "source-closure",
+      "exit": 0,
+      "seconds": 2.6211086280000018,
+      "log": "source-closure.log",
+      "sha256": "ef2a702e3b6cb4dc403c11d81d4892e508ff0cc8e1ef2a43dbbd36903a8ca8a2"
+    },
+    {
+      "name": "submodule",
+      "exit": 0,
+      "seconds": 4.128161410000018,
+      "log": "submodule.log",
+      "sha256": "4a7900ed038dca0a9ed9d2228212f9a23b4e405409bb07833dbd4048cf0d9e67"
+    },
+    {
+      "name": "install-locked-tools",
+      "exit": 0,
+      "seconds": 6.585558300999992,
+      "log": "install-locked-tools.log",
+      "sha256": "df9b9404b8ca7e63936ad9c3ae6a15fde7406802471ccb141b8e702adb2541fa"
+    },
+    {
+      "name": "pip-check",
+      "exit": 0,
+      "seconds": 0.3654434290000381,
+      "log": "pip-check.log",
+      "sha256": "87ea3f7013f01cc4669b2b0eb0f7040353493edc7ad7e48541117a721efad13f"
+    },
+    {
+      "name": "stdlib-controls",
+      "exit": 0,
+      "seconds": 0.2149343300000055,
+      "log": "stdlib-controls.log",
+      "sha256": "43898cdf86165dc9661e6de4ad2a3b387c3dc3234da2f73461b331071e390485"
+    },
+    {
+      "name": "child-accounting-controls",
+      "exit": 0,
+      "seconds": 1.4193199599999957,
+      "log": "child-accounting-controls.log",
+      "sha256": "5a832383c10e81108a6ff1d9c8950796240df1dd130a8964ba5b8cdbc52e432f"
+    },
+    {
+      "name": "client-bit-controls",
+      "exit": 0,
+      "seconds": 0.21512625700000854,
+      "log": "client-bit-controls.log",
+      "sha256": "547b44ebaf8b2cfafb2b6b149cdd1e7ebc321e1e2497cbc45bbdd8a91711c2fc"
+    },
+    {
+      "name": "actual-model-panel",
+      "exit": 1,
+      "seconds": 0.1648256049999759,
+      "log": "actual-model-panel.log",
+      "sha256": "edf9d6dd42ad509056cf58ce3e39f2c4817b4e8ec82812ae7e01e03326b577b8"
+    }
+  ],
+  "variant": "27M",
+  "execution": "CPU2 all5483 native F32/Q4_K SciFact replay",
+  "gpu_execution": false,
+  "publication_qualified": false,
+  "executed_script_sha256": "111489ef47893df8186daabef79ee3ca9cfac551a1236f51ff6525a284582b9b",
+  "resources": {
+    "available_ram_bytes": 32687894528,
+    "free_disk_bytes": 1126151974912,
+    "cpu_count": 4
+  },
+  "error": "RuntimeError: setup/model task rejected in actual-model-panel"
+}

@@ -8,7 +8,8 @@
 # case_inputs (or "all"); build, environment, checkpoint and conversions happen
 # once per lane and each case writes $HEAVY_OUT/<id>/ (gold, if any, at the
 # image's <stem>.gt.txt). VARIANTS defaults to f32,f16,q8_0,q4_k,q4_k-dq8
-# (decoder q8_0); q4_k-df16 (decoder f16) is available. The F32 arm is the gate:
+# (all Q8_0, alias q8_0-all); q4_k-df16 (vision Q8_0, decoder F16, alias
+# q8_0-vision-f16-decoder) is available. Neither alias holds a Q4_K tensor. The F32 arm is the gate:
 # preprocessing, all 64 stages (v2 magnitude-aware budget; strict v1 recorded
 # beside it), and exact IDs/text/EOS
 # plus warm speed versus the pinned original Python, for both the ordinary and the
@@ -93,8 +94,8 @@ for v in "${VARS[@]}"; do
         *)
             # Mixed recipes: the 896-wide Qwen2 decoder (l.*) is the precision-sensitive part.
             case "$v" in
-                q4_k-dq8) qargs=(q4_k --tensor-type 'l.*=q8_0') ;;
-                q4_k-df16) qargs=(q4_k --decoder-f16) ;;
+                q4_k-dq8 | q8_0-all) qargs=(q4_k --tensor-type 'l.*=q8_0') ;;
+                q4_k-df16 | q8_0-vision-f16-decoder) qargs=(q4_k --decoder-f16) ;;
                 *) qargs=("$v") ;;
             esac
             "$QUANT" "$S/gguf/mineru25-f32.gguf" "$S/gguf/mineru25-$v.gguf" "${qargs[@]}" > "$TOP/quantize-$v.log" 2>&1 ||

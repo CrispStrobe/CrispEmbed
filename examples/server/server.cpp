@@ -1629,7 +1629,8 @@ int main(int argc, char ** argv) {
             if (n == "ovisocr2") return 21;
             if (n == "ovisocr3") return 22;
             if (n == "qwen3vl") return 12;
-            if (n == "unlimited_ocr") return 13;
+            if (n == "unlimited_ocr" || n == "unlimited-ocr") return 13;
+            if (n == "unlimited-ocr2" || n == "unlimited_ocr2") return 13;
             if (n == "unified") return 14;
             if (n == "tesseract-fraktur" || n == "tesseract_fraktur") return 15;
             if (n == "ppocrv6") return 16;
@@ -1739,6 +1740,9 @@ int main(int argc, char ** argv) {
                                 : (eid == 18) ? "olmocr-2-7b"
                                 : (eid == 23) ? "minicpm-ocr"
                                               : "qwen2vl-ocr";
+            // Unlimited-OCR-2 shares engine 13; the alias picks the v2 registry default.
+            if (eid == 13 && (ocr_engine_name == "unlimited-ocr2" || ocr_engine_name == "unlimited_ocr2"))
+                dflt = "unlimited-ocr2";
             ma = resolve(!ocr_rec_model_path.empty() ? ocr_rec_model_path : dflt);
         } else {
             // PP-OCRv6 pairs its own detector with its own CTC recognizer
@@ -2583,13 +2587,15 @@ int main(int argc, char ** argv) {
                                           std::chrono::system_clock::now().time_since_epoch())
                                           .count();
             std::ostringstream js;
-            js << "{\"id\": \"chatcmpl-crispembed-" << created << "-" << seq
-               << "\", \"object\": \"chat.completion\", \"created\": " << created << ", \"model\": \""
-               << json_escape(cr.model.empty() ? ocr_model_id : cr.model)
-               << "\", \"choices\": [{\"index\": 0, \"message\": {\"role\": \"assistant\", \"content\": \""
-               << json_escape(content) << "\"}, \"finish_reason\": \"" << finish << "\"}], \"usage\": "
-               << "{\"prompt_tokens\": 0, \"completion_tokens\": " << n_steps << ", \"total_tokens\": " << n_steps
-               << "}, \"crispembed\": {\"confidence\": " << std::fixed << std::setprecision(4) << mean_conf;
+            const std::string model_out = cr.model.empty() ? ocr_model_id : cr.model;
+            js << "{\"id\": \"chatcmpl-crispembed-" << created << "-" << seq << "\"";
+            js << ", \"object\": \"chat.completion\", \"created\": " << created;
+            js << ", \"model\": \"" << json_escape(model_out) << "\"";
+            js << ", \"choices\": [{\"index\": 0, \"message\": {\"role\": \"assistant\", \"content\": \"";
+            js << json_escape(content) << "\"}, \"finish_reason\": \"" << finish << "\"}]";
+            js << ", \"usage\": {\"prompt_tokens\": 0, \"completion_tokens\": " << n_steps;
+            js << ", \"total_tokens\": " << n_steps << "}";
+            js << ", \"crispembed\": {\"confidence\": " << std::fixed << std::setprecision(4) << mean_conf;
             if (prompt_applied >= 0) js << ", \"prompt_applied\": " << (prompt_applied ? "true" : "false");
             js << ", \"ms\": " << std::setprecision(1) << ms << "}}";
             fprintf(stderr, "crispembed-server: /v1/chat/completions in %.1f ms (%d steps, %s)\n", ms, n_steps, finish);

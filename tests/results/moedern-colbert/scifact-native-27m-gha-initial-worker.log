@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/home/runner/work/CrispEmbed/CrispEmbed/tools/moedern-scifact/worker_gha_v1.py", line 222, in <module>
+    main(args)
+    ~~~~^^^^^^
+  File "/home/runner/work/CrispEmbed/CrispEmbed/tools/moedern-scifact/worker_gha_v1.py", line 174, in main
+    control,native_rows=authored.evaluate(model,oldreport,oldarrays,tests,raw/'authored-f32',command,env)
+                        ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/CrispEmbed/CrispEmbed/tools/moedern-scifact/authored_v1.py", line 58, in evaluate
+    return dict(process=process,typed_cases=10,vectors=measurements,scores=scores,**actual,
+           ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                strict_numeric_passed=all(v['passed']for v in measurements.values())and all(s['passed']for s in scores)),rows
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: dict() got multiple values for keyword argument 'process'

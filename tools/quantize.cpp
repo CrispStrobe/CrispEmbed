@@ -13,6 +13,7 @@
 #include "gguf.h"
 
 #include "../src/core/imatrix_alias.h"
+#include "../src/core/gguf_file_type.h"
 #include "../src/core/json.h"
 #include "../src/core/sha256.h"
 #include "../src/core/env_gate.h"
@@ -24,6 +25,8 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <array>
+#include <cmath>
 
 static const std::map<std::string, enum ggml_ftype> FTYPE_MAP = {
     { "f16", GGML_FTYPE_MOSTLY_F16 },       { "q4_0", GGML_FTYPE_MOSTLY_Q4_0 }, { "q4_1", GGML_FTYPE_MOSTLY_Q4_1 },
@@ -37,6 +40,14 @@ static const std::map<std::string, enum ggml_ftype> FTYPE_MAP = {
 // being quantized. Small decoders (e.g. GOT-OCR2's 0.5B Qwen2) are catastrophically
 // sensitive to q8_0/k-quant weights — llm_layer_0 cos drops to ~0.936 (vs 0.9999 at
 // F16) and the OCR output degenerates. Enable with --decoder-f16. See issue #25.
+// general.file_type label. Default: the historical internal ggml_ftype value, so
+// default output stays byte-identical to existing hash-pinned files (MI-GAN512 /
+// Moebius Q4_K, ...). The standardized GGUF/llama.cpp labels (Q4_K 12->14, Q5_K
+// 13->16, Q6_K 14->18, IQ4_NL 19->25, IQ4_XS 22->30; F16/Q8_0 unchanged) are an
+// opt-in: --standard-file-type or CRISPEMBED_QUANTIZE_STANDARD_FTYPE=1.
+static bool g_standard_file_type_header = false;
+static bool g_legacy_file_type_header = false; // Explicit legacy request (the default).
+static std::map<std::string, std::string> g_metadata_strings;
 static bool g_decoder_f16 = false;
 static bool g_decoder_attn_q8 = false;
 static bool g_ppocrv6_q8_head = false;
@@ -46,6 +57,38 @@ struct TensorTypeOverride {
     ggml_type type;
 };
 static std::vector<TensorTypeOverride> g_tensor_types;
+
+// Named qwen2vl_ocr Q4_K-class policies (docs/qwen2vl-q4k-recipes.md), opt-in with
+// CRISPEMBED_QUANTIZE_QWEN2VL_POLICY=<name> and the base type q8_0. The rules are
+// placed before any --tensor-type rule (so explicit rules still win) and equal the
+// measured recipes "r9" (TeleOCR) and "r2" (MinerU) in tools/qwen2vl_quant_recipes.json
+// (tests/test_qwen2vl_quant_policy.py keeps the two in step).
+struct Qwen2vlPolicy {
+    const char * name;
+    const char * model; // "teleocr" (general.architecture) or "mineru" (qwen2vl.model_family)
+    std::vector<std::pair<const char *, ggml_type>> rules;
+};
+static const std::vector<Qwen2vlPolicy> & qwen2vl_policies() {
+    static const std::vector<Qwen2vlPolicy> policies = {
+        { "teleocr_q4k_v1",
+          "teleocr",
+          { { "v.*", GGML_TYPE_F16 },
+            { "v.blk.*.attn_*", GGML_TYPE_Q6_K },
+            { "v.blk.*.ffn_gate.weight", GGML_TYPE_Q4_K },
+            { "v.blk.*.ffn_up.weight", GGML_TYPE_Q4_K },
+            { "l.embed_tokens.weight", GGML_TYPE_Q4_K },
+            { "l.blk.*.attn_q.weight", GGML_TYPE_Q4_K },
+            { "l.blk.*.attn_k.weight", GGML_TYPE_Q4_K } } },
+        { "mineru_q4k_v1",
+          "mineru",
+          { { "v.*", GGML_TYPE_Q4_K },
+            { "l.blk.*.*", GGML_TYPE_IQ4_NL },
+            { "l.blk.*.ffn_down.weight", GGML_TYPE_Q4_K },
+            { "l.embed_tokens.weight", GGML_TYPE_IQ4_NL } } },
+    };
+    return policies;
+}
+static const Qwen2vlPolicy * g_qwen2vl_policy = nullptr;
 
 // Portable glob matching for GGUF tensor names (* and ?), including Windows.
 static bool tensor_name_matches(const std::string & pattern, const std::string & name) {
@@ -66,6 +109,23 @@ static bool tensor_name_matches(const std::string & pattern, const std::string &
     }
     while (p < pattern.size() && pattern[p] == '*') ++p;
     return p == pattern.size();
+}
+
+// A literal F16 request may preserve a floating patch kernel's four axes.
+// Wildcards and block-quant requests retain the existing protected-conv policy.
+// This narrow exception does not alter norms/biases/LoRA/host-only kernels.
+static bool exact_f16_patch_cast(const ggml_tensor * tensor, const std::string & name) {
+    if (!tensor || tensor->type != GGML_TYPE_F32 || ggml_n_dims(tensor) != 4 ||
+        name.find("patch_embed") == std::string::npos || name.size() < 7 ||
+        name.compare(name.size() - 7, 7, ".weight") != 0)
+        return false;
+    for (const char * protected_name : { "norm", "bias", "lora.", "downsample", "downsampling", "dwconv", "enc.bb",
+                                         "enc.proj", "enc.embed.patch", ".ds.conv", ".dw.", "positional", "merger" })
+        if (name.find(protected_name) != std::string::npos) return false;
+    bool selected = false;
+    for (const auto & rule : g_tensor_types)
+        if (tensor_name_matches(rule.pattern, name)) selected = rule.pattern == name && rule.type == GGML_TYPE_F16;
+    return selected;
 }
 
 // Per-tensor importance vectors loaded from a CrispEmbed imatrix file
@@ -480,9 +540,57 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
     struct gguf_context * ctx_out = gguf_init_empty();
     gguf_set_kv(ctx_out, ctx_in);
     gguf_set_val_u32(ctx_out, "general.quantization_version", GGML_QNT_VERSION);
-    gguf_set_val_u32(ctx_out, "general.file_type", ftype);
+    const bool standard_header = g_standard_file_type_header || core_env::on("CRISPEMBED_QUANTIZE_STANDARD_FTYPE");
+    if (standard_header && g_legacy_file_type_header) {
+        fprintf(stderr, "--legacy-file-type-header conflicts with the standard file-type opt-in\n");
+        gguf_free(ctx_out);
+        gguf_free(ctx_in);
+        ggml_free(ctx_in_ggml);
+        return false;
+    }
+    const auto file_type = standard_header ? core_gguf_file_type::standard(ftype) : uint32_t(ftype);
+    if (file_type == core_gguf_file_type::unknown) {
+        fprintf(stderr, "no standard GGUF file type for this method\n");
+        gguf_free(ctx_out);
+        gguf_free(ctx_in);
+        ggml_free(ctx_in_ggml);
+        return false;
+    }
+    gguf_set_val_u32(ctx_out, "general.file_type", file_type);
+    if (standard_header)
+        fprintf(stderr, "GGUF general.file_type=%u (standard header, opt-in); tensor encoding unchanged\n", file_type);
+    // Profile stamps may change string lengths. Apply before computing/writing
+    // the output header, so GGUF recomputes offsets instead of patching bytes.
+    for (const auto & item : g_metadata_strings) {
+        const auto key = gguf_find_key(ctx_in, item.first.c_str());
+        if (key < 0 || gguf_get_kv_type(ctx_in, key) != GGUF_TYPE_STRING) {
+            fprintf(stderr, "--metadata-string requires an existing string key: %s\n", item.first.c_str());
+            gguf_free(ctx_out);
+            gguf_free(ctx_in);
+            ggml_free(ctx_in_ggml);
+            return false;
+        }
+        gguf_set_val_str(ctx_out, item.first.c_str(), item.second.c_str());
+    }
 
     const int n_tensors = gguf_get_n_tensors(ctx_in);
+    if (g_qwen2vl_policy) {
+        // Before the pattern check: a policy measured on one model never applies to another.
+        const int ak = gguf_find_key(ctx_in, "general.architecture");
+        const int fk = gguf_find_key(ctx_in, "qwen2vl.model_family");
+        const bool teleocr = ak >= 0 && std::string(gguf_get_val_str(ctx_in, ak)) == "teleocr";
+        const bool mineru = fk >= 0 && std::string(gguf_get_val_str(ctx_in, fk)) == "mineru2.5-pro-2604";
+        const bool fits = std::string(g_qwen2vl_policy->model) == "teleocr" ? teleocr : mineru;
+        if (!fits || ftype != GGML_FTYPE_MOSTLY_Q8_0) {
+            fprintf(stderr, "CRISPEMBED_QUANTIZE_QWEN2VL_POLICY=%s needs a %s source and the q8_0 base type\n",
+                    g_qwen2vl_policy->name, g_qwen2vl_policy->model);
+            gguf_free(ctx_out);
+            gguf_free(ctx_in);
+            ggml_free(ctx_in_ggml);
+            return false;
+        }
+        gguf_set_val_str(ctx_out, "qwen2vl.quantization.policy", g_qwen2vl_policy->name);
+    }
     // Reject misspelled patterns before opening/truncating the output file.
     for (const auto & rule : g_tensor_types) {
         bool found = false;
@@ -669,11 +777,14 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
     }
 
     // Pre-scan: flatten 4D conv weights to 2D [OC, IC*KH*KW] in the tensor
-    // metadata so the output header has correct shapes. Data is transposed
+    // metadata so the output header has correct shapes. The explicitly selected
+    // floating patch exception keeps its original axes. Data is transposed
     // during the per-tensor write loop below.
+    std::vector<bool> patch_f16(n_tensors, false);
     for (int i = 0; i < n_tensors; i++) {
         const char * name = gguf_get_tensor_name(ctx_in, i);
         struct ggml_tensor * t = ggml_get_tensor(ctx_in_ggml, name);
+        patch_f16[i] = !is_inpaint && !is_ppocrv6 && !is_tesseract_lstm && exact_f16_patch_cast(t, name);
         // OXR's loader validates its 4D patch-embedding shape and reshapes it
         // itself, so its conv kernel keeps the source metadata.
         if (is_inpaint) {
@@ -689,7 +800,7 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
                 t->nb[2] = t->nb[1] * t->ne[1];
                 t->nb[3] = t->nb[2];
             }
-        } else if (ggml_n_dims(t) == 4 && t->type == GGML_TYPE_F32 && !is_oxr) {
+        } else if (ggml_n_dims(t) == 4 && t->type == GGML_TYPE_F32 && !patch_f16[i] && !is_oxr) {
             // OXR D-FINE layout: record the original conv shape so the loader
             // can restore it after dequantizing (src/layout_detect.cpp).
             if (is_dfine_layout) {
@@ -795,7 +906,56 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
         // - Token/position/type embeddings: only Q8_0/F16, skip aggressive quants
         std::string sname(name);
 
-        // Guard 1: patch_embed tensors — always copy as-is (they are conv2d kernels)
+        if (patch_f16[i]) {
+            // The pre-scan deliberately retained all four original axes.
+            // Cast only this explicit safe patch request; stream fixed chunks
+            // rather than materializing a whole convolution weight twice.
+#ifdef _WIN32
+            _fseeki64(fin, (int64_t)offset, SEEK_SET);
+#else
+            fseeko(fin, (off_t)offset, SEEK_SET);
+#endif
+            std::array<float, 16384> input;
+            std::array<ggml_fp16_t, 16384> output;
+            const size_t elements = size_t(ggml_nelements(t));
+            size_t remaining = elements;
+            while (remaining) {
+                const size_t count = remaining < input.size() ? remaining : input.size();
+                if (fread(input.data(), sizeof(float), count, fin) != count) {
+                    fprintf(stderr, "failed to read explicit F16 patch tensor\n");
+                    fclose(fin);
+                    fclose(fout);
+                    return false;
+                }
+                for (size_t j = 0; j < count; ++j) {
+                    output[j] = ggml_fp32_to_fp16(input[j]);
+                    if (!std::isfinite(input[j]) || !std::isfinite(ggml_fp16_to_fp32(output[j]))) {
+                        fprintf(stderr, "explicit F16 patch tensor is nonfinite or overflows F16\n");
+                        fclose(fin);
+                        fclose(fout);
+                        return false;
+                    }
+                }
+                if (fwrite(output.data(), sizeof(ggml_fp16_t), count, fout) != count) {
+                    fprintf(stderr, "failed to write explicit F16 patch tensor\n");
+                    fclose(fin);
+                    fclose(fout);
+                    return false;
+                }
+                remaining -= count;
+            }
+            const size_t bytes = elements * sizeof(ggml_fp16_t);
+            gguf_set_tensor_type(ctx_out, name, GGML_TYPE_F16);
+            for (size_t j = bytes; j < GGML_PAD(bytes, GGUF_DEFAULT_ALIGNMENT); ++j) fputc(0, fout);
+            total_orig += size;
+            total_new += bytes;
+            ++n_kept;
+            printf("explicit F16 patch cast, original 4D axes retained\n");
+            continue;
+        }
+
+        // Guard 1: default patch policy copies as-is (conv2d kernels); the
+        // exact-name floating 4D exception has already returned above.
         // patch_embed, downsample, merger — used in host-side computation,
         // must stay F32 (ggml_backend_tensor_get reads as float).
         // SMT ConvNext: dwconv/downsampling are conv2d kernels; smt.positional_1d
@@ -1451,13 +1611,30 @@ int main(int argc, char ** argv) {
     std::string imatrix_path;
     for (int i = 1; i < argc; i++) {
         std::string a = argv[i];
-        if (a == "--decoder-f16")
+        if (a == "--legacy-file-type-header")
+            g_legacy_file_type_header = true;
+        else if (a == "--standard-file-type")
+            g_standard_file_type_header = true;
+        else if (a == "--decoder-f16")
             g_decoder_f16 = true;
         else if (a == "--decoder-attn-q8")
             g_decoder_attn_q8 = true;
         else if (a == "--ppocrv6-q8-head")
             g_ppocrv6_q8_head = true;
-        else if (a == "--tensor-type") {
+        else if (a == "--metadata-string") {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "--metadata-string requires KEY=VALUE\n");
+                return 1;
+            }
+            const std::string spec = argv[++i];
+            const auto equals = spec.find('=');
+            if (equals == std::string::npos || equals == 0 || equals > 256 || equals + 1 == spec.size() ||
+                spec.size() - equals - 1 > 4096 ||
+                !g_metadata_strings.emplace(spec.substr(0, equals), spec.substr(equals + 1)).second) {
+                fprintf(stderr, "Invalid or duplicate --metadata-string KEY=VALUE\n");
+                return 1;
+            }
+        } else if (a == "--tensor-type") {
             if (i + 1 >= argc) {
                 fprintf(stderr, "--tensor-type requires GLOB=TYPE\n");
                 return 1;
@@ -1468,10 +1645,18 @@ int main(int argc, char ** argv) {
                                                              { "f16", GGML_TYPE_F16 },
                                                              { "q8_0", GGML_TYPE_Q8_0 },
                                                              { "q6_k", GGML_TYPE_Q6_K },
-                                                             { "q5_k", GGML_TYPE_Q5_K } };
+                                                             { "q5_k", GGML_TYPE_Q5_K },
+                                                             // 4/5-bit targets for mixed recipes that start
+                                                             // from a Q8_0 or F16 base (docs/qwen2vl-q4k-recipes.md).
+                                                             // K-quants keep the 256-column fallback chain below.
+                                                             { "q4_k", GGML_TYPE_Q4_K },
+                                                             { "q5_0", GGML_TYPE_Q5_0 },
+                                                             { "q4_0", GGML_TYPE_Q4_0 },
+                                                             { "iq4_nl", GGML_TYPE_IQ4_NL } };
             const auto type = types.find(equals == std::string::npos ? "" : spec.substr(equals + 1));
             if (equals == std::string::npos || equals == 0 || type == types.end()) {
-                fprintf(stderr, "Invalid tensor override '%s': use GLOB=f32|f16|q8_0|q6_k|q5_k\n", spec.c_str());
+                fprintf(stderr, "Invalid tensor override '%s': use GLOB=f32|f16|q8_0|q6_k|q5_k|q5_0|q4_k|q4_0|iq4_nl\n",
+                        spec.c_str());
                 return 1;
             }
             g_tensor_types.push_back({ spec.substr(0, equals), type->second });
@@ -1488,13 +1673,21 @@ int main(int argc, char ** argv) {
     if (pos.size() != 3) {
         fprintf(stderr,
                 "usage: %s <input.gguf> <output.gguf> <type> [--decoder-f16] [--decoder-attn-q8] "
-                "[--ppocrv6-q8-head] [--imatrix <file>] [--tensor-type GLOB=TYPE]...\n\n",
+                "[--ppocrv6-q8-head] [--imatrix <file>] [--tensor-type GLOB=TYPE]... [--metadata-string KEY=VALUE]... "
+                "[--standard-file-type | --legacy-file-type-header]\n\n",
                 argv[0]);
+        fprintf(stderr, "  --standard-file-type  write the standardized GGUF general.file_type label (opt-in;\n"
+                        "                        also CRISPEMBED_QUANTIZE_STANDARD_FTYPE=1); tensor bytes unchanged\n");
+        fprintf(stderr, "  --legacy-file-type-header  explicit internal-enum header (the default)\n");
+        fprintf(stderr,
+                "  --metadata-string KEY=VALUE  replace an existing string profile key; tensor policy unchanged\n");
         fprintf(stderr, "  --imatrix <f> use a CrispEmbed importance matrix (from a calibration run\n");
         fprintf(stderr, "                with CRISPEMBED_IMATRIX_OUT set) to improve k-quant/IQ accuracy\n");
-        fprintf(stderr, "  --tensor-type GLOB=TYPE  override eligible matrix precision (f32/f16/q8_0/q6_k/q5_k)\n");
+        fprintf(stderr, "  --tensor-type GLOB=TYPE  override eligible matrix precision\n"
+                        "                          (f32/f16/q8_0/q6_k/q5_k/q5_0/q4_k/q4_0/iq4_nl)\n");
         fprintf(stderr,
                 "                          * and ? match tensor names; last match wins; norm/conv guards remain\n");
+        fprintf(stderr, "                         exact-name =f16 on safe F32 4D patch weights preserves all axes\n");
         fprintf(stderr, "  --decoder-f16  keep LLM decoder weights (prefix 'l.') at F16\n");
         fprintf(stderr, "                 (optional; NOT required for correctness — small decoders\n");
         fprintf(stderr, "                  like GOT-OCR2's 0.5B quantize cleanly to q4_k/q8_0.\n");
@@ -1520,6 +1713,19 @@ int main(int argc, char ** argv) {
         return 1;
     }
 
+    if (const char * name = getenv("CRISPEMBED_QUANTIZE_QWEN2VL_POLICY"); name && *name) {
+        for (const auto & p : qwen2vl_policies()) {
+            if (std::string(p.name) == name) g_qwen2vl_policy = &p;
+        }
+        if (!g_qwen2vl_policy) {
+            fprintf(stderr, "unknown CRISPEMBED_QUANTIZE_QWEN2VL_POLICY '%s' (teleocr_q4k_v1|mineru_q4k_v1)\n", name);
+            return 1;
+        }
+        std::vector<TensorTypeOverride> rules;
+        for (const auto & r : g_qwen2vl_policy->rules) rules.push_back({ r.first, r.second });
+        g_tensor_types.insert(g_tensor_types.begin(), rules.begin(), rules.end());
+        fprintf(stderr, "qwen2vl quantization policy %s (%zu rules)\n", g_qwen2vl_policy->name, rules.size());
+    }
     if (!imatrix_path.empty()) {
         load_imatrix(imatrix_path); // non-fatal: falls back to unweighted if empty
         init_qkv_imatrix_mode();

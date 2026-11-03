@@ -272,7 +272,7 @@ static ggml_tensor * find(const std::unordered_map<std::string, ggml_tensor *> &
 mixtex_ocr_context * mixtex_ocr_init(const char * model_path, int n_threads) {
     auto * ctx = new mixtex_ocr_context{};
     ctx->n_threads = n_threads > 0 ? n_threads : 1;
-    ctx->dump = (getenv("MIXTEX_DUMP") != nullptr);
+    ctx->dump = core_env::on("MIXTEX_DUMP");
 
     // Pass 1: metadata
     gguf_context * gctx = core_gguf::open_metadata(model_path);
@@ -755,7 +755,7 @@ static std::vector<float> run_swin_encoder(mixtex_ocr_context * ctx, const float
                             v_b.data(), out_w.data(), out_b.data(), rpb_t.empty() ? nullptr : rpb_t.data(),
                             rpb_i.empty() ? nullptr : rpb_i.data(), rpb_len, win_mask);
             };
-            static const bool wmsa_scalar = (std::getenv("MIXTEX_WMSA_SCALAR") != nullptr);
+            static const bool wmsa_scalar = core_env::on("MIXTEX_WMSA_SCALAR");
             int n_thr = wmsa_scalar ? 1 : std::min(ctx->n_threads, n_windows);
             if (ctx->bench) {
                 static bool printed = false;
@@ -1085,7 +1085,7 @@ static std::string run_decoder(mixtex_ocr_context * ctx, const float * enc_outpu
         }
 
         // Decoder layers
-        static const bool dq_per_step = (std::getenv("MIXTEX_DEC_DEQUANT_PER_STEP") != nullptr);
+        static const bool dq_per_step = core_env::on("MIXTEX_DEC_DEQUANT_PER_STEP");
         for (int li = 0; li < n_layers; li++) {
             auto & l = ctx->dec_layers[li];
             if (dq_per_step) {
@@ -1135,7 +1135,7 @@ static std::string run_decoder(mixtex_ocr_context * ctx, const float * enc_outpu
             hidden = std::move(ln);
 
             // Diff: after self-attention (step 0, layer 0)
-            if (has_dec_diff && step == 0 && li == 0 && std::getenv("CRISPEMBED_MIXTEX_DEBUG")) {
+            if (has_dec_diff && step == 0 && li == 0 && core_env::on("CRISPEMBED_MIXTEX_DEBUG")) {
                 fprintf(stderr, "[mixtex-diff] Q[:4]: %.4f %.4f %.4f %.4f\n", q[0], q[1], q[2], q[3]);
                 fprintf(stderr, "[mixtex-diff] V[:4]: %.4f %.4f %.4f %.4f\n", attn_out[0], attn_out[1], attn_out[2],
                         attn_out[3]);
@@ -1188,7 +1188,7 @@ static std::string run_decoder(mixtex_ocr_context * ctx, const float * enc_outpu
 
             // Diff: after cross-attention (step 0, layer 0)
             if (has_dec_diff && step == 0 && li == 0) {
-                if (std::getenv("CRISPEMBED_MIXTEX_DEBUG"))
+                if (core_env::on("CRISPEMBED_MIXTEX_DEBUG"))
                     fprintf(stderr, "[mixtex-diff] after_xattn[:4]: %.6f %.6f %.6f %.6f\n", hidden[0], hidden[1],
                             hidden[2], hidden[3]);
                 auto r = dec_diff.compare("L0_after_cross_attn", hidden.data(), D);
@@ -1210,7 +1210,7 @@ static std::string run_decoder(mixtex_ocr_context * ctx, const float * enc_outpu
 
             // Diff: compare layer output (step 0 only)
             if (has_dec_diff && step == 0) {
-                if (std::getenv("CRISPEMBED_MIXTEX_DEBUG"))
+                if (core_env::on("CRISPEMBED_MIXTEX_DEBUG"))
                     fprintf(stderr, "[mixtex-diff] after_ffn[:4]: %.6f %.6f %.6f %.6f\n", hidden[0], hidden[1],
                             hidden[2], hidden[3]);
                 char name[32];
@@ -1259,7 +1259,7 @@ static std::string run_decoder(mixtex_ocr_context * ctx, const float * enc_outpu
         for (int v = 1; v < vocab; v++)
             if (logits[v] > logits[best]) best = v;
 
-        if (std::getenv("CRISPEMBED_MIXTEX_TRACE"))
+        if (core_env::on("CRISPEMBED_MIXTEX_TRACE"))
             fprintf(stderr, "[mixtex-trace] step=%d in=%d -> best=%d (%.3f)\n", step, token_id, best, logits[best]);
 
         if (best == hp.eos_token) break;
@@ -1313,7 +1313,7 @@ static std::vector<float> preprocess_mixtex(const uint8_t * pixels, int w, int h
     // Legacy bilinear path — kept behind an env gate for A/B bisection. HF's
     // ViTImageProcessor uses bicubic (resample=3), so this diverges from HF at
     // borderline greedy steps; the default below matches HF.
-    if (std::getenv("MIXTEX_BILINEAR")) {
+    if (core_env::on("MIXTEX_BILINEAR")) {
         for (int c = 0; c < 3; c++) {
             for (int oy = 0; oy < target_h; oy++) {
                 float fy = (float)oy * h / target_h;

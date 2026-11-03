@@ -1,0 +1,37 @@
+{
+  "schema": "crispembed-josev-q4k-setup-review-v2",
+  "source": "9888d06cccc0a7be29b0d0668e88e53cf09006d6",
+  "version_label": "v2",
+  "completed": false,
+  "model_accessed": false,
+  "native_compiled": false,
+  "inference_executed": false,
+  "classification": "test log parsing rejected provider stderr after the descendant PID",
+  "initial_setup": {
+    "bytes": 2513,
+    "sha256": "01e7239b1b5313a0d50cb5776acb57ae5432bb93a771440cabe23a3b38caf653"
+  },
+  "initial_failed_control": {
+    "bytes": 1409,
+    "sha256": "37251dead7b5c781c83e264d1d177a7f0b2638f4babf0960c2afc5711e6f2108"
+  },
+  "successful_prior_commands": [
+    "clone",
+    "checkout",
+    "fetch-original-source",
+    "source-closure",
+    "submodule",
+    "install-locked-tools",
+    "pip-check",
+    "stdlib-controls"
+  ],
+  "unchanged": [
+    "Linux wait4 accounting helper",
+    "model math",
+    "reference inputs and outputs",
+    "quantization recipe",
+    "all numerical and task budgets"
+  ],
+  "correction": "Parse one explicit DESCENDANT_PID marker rather than the last merged-output line; retain an actual noisy child stderr regression.",
+  "publication_qualified": false
+}

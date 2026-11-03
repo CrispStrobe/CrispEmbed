@@ -165,7 +165,7 @@ static conv make_conv(const core_gguf::tensor_map & m, const std::string & n, in
 namespace detprof {
 
 static bool enabled() {
-    static const bool on = std::getenv("CRISPEMBED_PPOCRV6_DET_PROFILE") != nullptr;
+    static const bool on = core_env::on("CRISPEMBED_PPOCRV6_DET_PROFILE");
     return on;
 }
 
@@ -451,14 +451,14 @@ static ggml_tensor * graph_conv(context * c, ggml_context * g, ggml_tensor * x, 
     // Metal/CUDA convolution kernels are substantially more efficient with
     // resident half weights. Keep CPU graph parity in F32 and provide an
     // explicit F32 override for backend-diff debugging.
-    const bool force_f32 = std::getenv("CRISPEMBED_PPOCRV6_DET_F32_WEIGHTS") != nullptr;
+    const bool force_f32 = core_env::on("CRISPEMBED_PPOCRV6_DET_F32_WEIGHTS");
     const ggml_type weight_type = force_f32 || ggml_backend_is_cpu(c->graph.backend) ? GGML_TYPE_F32 : GGML_TYPE_F16;
     ggml_tensor * w = graph_resident(c, p.w, weight_type, p.kw, p.kh, icg, p.oc);
     if (!w) return nullptr;
     // Direct-convolution A/B (no materialized im2col; native Metal kernel in
     // this ggml revision): CRISPEMBED_PPOCRV6_CONV_DIRECT=1, non-CPU only.
     static const bool conv_direct =
-        std::getenv("CRISPEMBED_PPOCRV6_CONV_DIRECT") != nullptr && !ggml_backend_is_cpu(c->graph.backend);
+        core_env::on("CRISPEMBED_PPOCRV6_CONV_DIRECT") && !ggml_backend_is_cpu(c->graph.backend);
     ggml_tensor * y = dw ? ggml_conv_2d_dw(g, w, x, p.sw, p.sh, p.pw, p.ph, 1, 1)
                          : (conv_direct ? ggml_conv_2d_direct(g, w, x, p.sw, p.sh, p.pw, p.ph, 1, 1)
                                         : ggml_conv_2d(g, w, x, p.sw, p.sh, p.pw, p.ph, 1, 1));
@@ -520,7 +520,7 @@ static bool graph_build(context * c, int h, int w) {
     // 41.4 s -> 8.7 s detector time on synth_00_clean / german_official_print
     // (the CPU-scalar medium detector was why the medium tier timed out in
     // every benchmark). German CER graph 0.04856 vs scalar 0.04955.
-    if (std::getenv("CRISPEMBED_PPOCRV6_DET_SCALAR")) return false;
+    if (core_env::on("CRISPEMBED_PPOCRV6_DET_SCALAR")) return false;
     c->graph.backend = c->backend;
     if (!c->graph.backend) return false;
     if (ggml_backend_is_cpu(c->graph.backend)) {
@@ -710,7 +710,7 @@ static bool graph_build(context * c, int h, int w) {
     c->graph.probability_output = true;
     c->graph.output = x;
     c->graph.taps = stage_out;
-    if (std::getenv("CRISPEMBED_PPOCRV6_DET_GRAPH_COMPARE")) {
+    if (core_env::on("CRISPEMBED_PPOCRV6_DET_GRAPH_COMPARE")) {
         for (ggml_tensor * tap : c->graph.taps) ggml_set_output(tap);
         for (const auto & tap : c->graph.named_taps) ggml_set_output(tap.second);
     }
@@ -734,7 +734,7 @@ static bool graph_run(context * c, const std::vector<float> & input, int h, int 
     if (ggml_backend_sched_graph_compute(c->graph.sched, c->graph.graph) != GGML_STATUS_SUCCESS) return false;
     out.resize(ggml_nelements(c->graph.output));
     ggml_backend_tensor_get(c->graph.output, out.data(), 0, out.size() * sizeof(float));
-    if (std::getenv("CRISPEMBED_PPOCRV6_DET_GRAPH_COMPARE")) {
+    if (core_env::on("CRISPEMBED_PPOCRV6_DET_GRAPH_COMPARE")) {
         for (size_t i = 0; i < c->graph.taps.size(); ++i) {
             std::vector<float> tap(ggml_nelements(c->graph.taps[i]));
             ggml_backend_tensor_get(c->graph.taps[i], tap.data(), 0, tap.size() * sizeof(float));
@@ -958,7 +958,7 @@ context * init(const char * path, int n_threads) {
     // several concurrent agent builds and wall clock swung 10x between runs
     // while user+sys stayed stable. An earlier cross-run wall comparison
     // reported the opposite result.)
-    const bool force_cpu = std::getenv("CRISPEMBED_PPOCRV6_FORCE_CPU") != nullptr;
+    const bool force_cpu = core_env::on("CRISPEMBED_PPOCRV6_FORCE_CPU");
     // The detector graph defaults to the CPU backend ON METAL: Metal ran the
     // same graph 9x slower (1693 ms vs 187 ms on synth_00_clean) — conv at
     // these spatial sizes does not pay for the Metal dispatch. DET_GPU_LOAD is
@@ -982,7 +982,7 @@ context * init(const char * path, int n_threads) {
         }
         return false;
     };
-    bool want_gpu = std::getenv("CRISPEMBED_PPOCRV6_DET_GPU_LOAD") != nullptr;
+    bool want_gpu = core_env::on("CRISPEMBED_PPOCRV6_DET_GPU_LOAD");
     if (const char * det_gpu = std::getenv("CRISPEMBED_PPOCRV6_DET_GPU"); det_gpu && det_gpu[0]) {
         want_gpu = det_gpu[0] != '0';
     } else if (!want_gpu) {
@@ -1150,7 +1150,7 @@ std::vector<box> detect_raw(context * c, const uint8_t * px, int w, int h, int c
     const auto preprocessed = std::chrono::steady_clock::now();
     bool graph_done = graph_run(c, input, h, w, x, H, W);
     const auto graph_finished = std::chrono::steady_clock::now();
-    const bool compare_graph = std::getenv("CRISPEMBED_PPOCRV6_DET_GRAPH_COMPARE") != nullptr;
+    const bool compare_graph = core_env::on("CRISPEMBED_PPOCRV6_DET_GRAPH_COMPARE");
     if (graph_done && c->graph.probability_output && compare_graph) {
         graph_probability = x;
         graph_done = false;

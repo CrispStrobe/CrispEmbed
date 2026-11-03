@@ -1,0 +1,28 @@
+{
+ "schema": "crispembed-successor-assets-v3-run-review-v1",
+ "protocol": "docs/successor-assets-v3.json",
+ "runs": [
+  {"run": 41452489743, "source": "9339f232117cb8cbb16646366f821c7fed1e5c0b", "conclusion": "failure",
+   "inputs": {"native_run": 40724938611, "wasm_run": 40725005968, "corpus_run": 40386968045},
+   "wasm_consumer": "pass (within v3 tolerance)",
+   "failures": {"bindings": "frozen caller-workflow allowlist rejected successor-assets-v3.yml (fixed by the derived bindings consumer)",
+                "apple-released": "corpus proof 40386968045 pins a different tools/probe_posformer_release.py blob; the v2 run used corpus proof 40629090339"},
+   "review": "skipped"},
+  {"run": 41471904133, "source": "9b471c752da4be6f035845124e81d903e7057cac", "conclusion": "failure",
+   "inputs": {"native_run": 40724938611, "wasm_run": 40725005968, "corpus_run": 40629090339},
+   "producer_source": "11f2ef7c06101ae4bff32c38d33fe6fd0b538661",
+   "jobs_passed": ["controls", "producers", "producer-identity", "desktop linux-x86_64", "desktop linux-arm64", "desktop macos-arm64", "desktop windows-x86_64",
+                   "mobile-link android-arm64-v8a", "mobile-link android-armeabi-v7a", "mobile-link ios-arm64", "apple-released", "bindings", "wasm"],
+   "wasm_gate": {"passed": true, "max_abs": 0.00837269052863121, "cosine": 0.9986498388732883, "bound": {"max_abs": 0.0101, "min_cosine": 0.99837},
+                 "strict_native_gate_passed": false, "basis": "wasm-platform-tolerance-v3"},
+   "review": {"passed": false, "gate": "unchanged strict v1 cross-platform desktop vector parity (max_abs<=0.002, cosine>=0.99999)",
+              "error": "Cross-platform desktop vector parity failed: macos-arm64 vs reference linux-x86_64",
+              "measured": {"max_abs": 0.0025543533265590668, "mean_abs": 0.0005933497845551824, "rms": 0.0007616167646060011, "cosine": 0.999888628462796},
+              "note": "This non-WASM strict gate had never executed for these producers: in v2 run 40710490021 the review was skipped after the WASM job failed. It is a native cross-platform (macOS arm64 vs Linux x86_64) negative, outside the WASM-only tolerance, and stays failing by design."},
+   "whole_run_green": false}
+ ],
+ "wasm_tolerance_outcome": "browser/WASM consumer passes under the v3 bound at the deterministic measured drift",
+ "blocking": "strict native cross-platform desktop parity macos-arm64 vs linux-x86_64 (0.00255 > 0.002); not relaxed",
+ "qualification": false,
+ "gates_defaults_changed": false
+}

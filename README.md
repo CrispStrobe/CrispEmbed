@@ -352,6 +352,15 @@ external file — so their raw output is the backbone mean-pool. Bake the Dense
 head in with `models/add-st-dense-to-gguf.py` for HF-compatible embeddings
 (cos 0.984 vs HF), or just pull the ready-made `embeddinggemma-300m-qat`.
 
+### MoEdernColBERT and Josev SystemOne (experimental, default-off)
+
+| Model | Registry alias | What | Gates | License |
+|---|---|---|---|---|
+| SauerkrautLM-MoEdernColBERT 1.5M / 27M / 115M | `moedern-1.5m`, `moedern-27m`, `moedern-115m` | Raw-text query/document multivectors and MaxSim scores (`CrispMoEdern`, `crispembed_moedern_*`) | `CRISPEMBED_MOEDERN_*` (27M/115M also `_FAMILY`) | Apache-2.0 |
+| Josev-2B SystemOne | `josev2b-systemone` | Joint-schema text decisions (`--systemone`, `POST /systemone`, `CrispSystemOne`) | `CRISPEMBED_JOSEV_*` + `CRISPEMBED_QWEN35_OCR` | Apache-2.0 |
+
+Gate details: [environment variables](docs/environment-variables.md).
+
 ### Sparse, ColBERT & reranking (BGE-M3)
 
 ```python
@@ -429,6 +438,8 @@ unified `crispembed_ocr_model_*` C API. Available through CLI (`--ocr`), server
 | **Qwen2.5-VL / Qwen3-VL** | ViT (+DeepStack) + Qwen LLM | 2.4–3.6B | General/multilingual VLM OCR | Apache-2.0 |
 | **[TeleOCR (experimental CPU)](docs/teleocr.md)** | Windowed ViT + QK-normalized Qwen decoder | 1.26B | Default-off; explicit local GGUF; CPU execution tested | Apache-2.0; see [provenance](docs/teleocr-license.md) |
 | **DeepSeek-OCR-2 / Unlimited-OCR** | dual ViT + DeepSeek-V2 MoE | 3–3.3B | Full-page doc OCR + layout grounding | Apache-2.0 / MIT |
+| **Unlimited-OCR-2 (experimental)** | SAM + CLIP + DeepSeek-V2 MoE, page-2D RoPE + DASH attention | 3B-class | Default-off (`CRISPEMBED_UNLIMITED_OCR2=1`); registry `unlimited-ocr2` / `unlimited-ocr2-q8`; [spec](docs/unlimited-ocr2-inference-spec.md) | MIT |
+| **MiniCPM-OCR 1.0 (experimental)** | SigLIP + MiniCPM resampler + Qwen3.5 decoder | 1.3B | Default-off (`CRISPEMBED_MINICPM_OCR=1` + `CRISPEMBED_QWEN35_OCR=1`); registry `minicpm-ocr` / `minicpm-ocr-q8`; engine 23; [spec](docs/minicpm-ocr-inference-spec.md) | Apache-2.0 |
 | **jina-ocr-v1** | SAM + CLIP-L + DeepSeek-V2 MoE (Unlimited-OCR engine) | 3.4B (570M active) | Doc OCR → Markdown; text exact vs transformers | CC BY-NC 4.0 |
 | **Qari-OCR** | Qwen2-VL-2B + LoRA | 2B | Arabic OCR with diacritics | Apache-2.0 |
 | **LFM2.5-VL** | SigLIP2 NaFlex 400M + LFM2 hybrid conv/attn 3B | 3.4B | Doc OCR (VLM); needs `CRISPEMBED_ACCEPT_LFM_LICENSE=1` | LFM-1.0 (revenue-capped) |
@@ -774,7 +785,8 @@ Model type is auto-detected from GGUF metadata at load:
 The HTTP server exposes four embedding dialects (native, OpenAI, Ollama batch &
 legacy) plus face, ViT/CLIP, OCR, NER, LID, KIE, document-OCR, and preprocessing
 endpoints. See [PLAN.md](PLAN.md) (roadmap), [HISTORY.md](HISTORY.md) (milestones),
-and [LEARNINGS.md](LEARNINGS.md) (deep dives) for detail.
+and [LEARNINGS.md](LEARNINGS.md) (deep dives) for detail. Every runtime
+`CRISPEMBED_*` switch is listed in [docs/environment-variables.md](docs/environment-variables.md).
 
 ---
 

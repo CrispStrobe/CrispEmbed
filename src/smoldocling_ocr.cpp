@@ -427,7 +427,7 @@ static void sd_vision_forward(smoldocling_context * ctx, const float * image, in
         }
 
     std::vector<float> patch_embed(T * D);
-    static const bool scalar_patch = (std::getenv("CRISPEMBED_SMOLDOCLING_SCALAR_PATCH") != nullptr);
+    static const bool scalar_patch = core_env::on("CRISPEMBED_SMOLDOCLING_SCALAR_PATCH");
     if (scalar_patch) {
         std::vector<float> pe_buf, pb_buf;
         const float * pe_w = sd_to_f32(pe_t, pe_buf);

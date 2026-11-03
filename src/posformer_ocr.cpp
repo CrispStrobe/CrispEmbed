@@ -1121,7 +1121,7 @@ const char * posformer_ocr_recognize(posformer_ocr_context * ctx, const float * 
                 std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
 
     t0 = std::chrono::steady_clock::now();
-    if (ctx->enc_sched && !std::getenv("POSFORMER_SCALAR_ENCODER"))
+    if (ctx->enc_sched && !core_env::on("POSFORMER_SCALAR_ENCODER"))
         run_encoder_ggml(ctx, input, w, h);
     else
         run_encoder(ctx, input, w, h);

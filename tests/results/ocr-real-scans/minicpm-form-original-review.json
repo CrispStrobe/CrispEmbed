@@ -1,0 +1,31 @@
+{
+  "schema": "crispembed-real-form-original-review-v1",
+  "source": "d6f435c78abb650a2b57e9012923940fbb54a0ef",
+  "provider": "Kaggle CPU",
+  "version_label": "v1",
+  "producer": {
+    "bytes": 14277,
+    "sha256": "09d381d00064fb52f00ffeb4276957076d0233aa8da7157518a207874e08d8e9"
+  },
+  "scope": "one missing original input case; no valid original page repeated",
+  "page": "en-form-economic-journal-67",
+  "image_sha256": "4d6e0d71fe7efdbce4947ccadc4dac2b15743026ea3bac9d84a45ef959a7051a",
+  "manifest_sha256": "0857bffc6f4a3616292db255d7f3f34c0b58a52a7286a2791cb00b77499c7700",
+  "original_revision": "6796197bb3a8e224b2f64ae462bfbb3f8a15ac4b",
+  "versions": {
+    "torch": "2.13.0+cpu",
+    "transformers": "5.21.0"
+  },
+  "input_verified": true,
+  "completed": true,
+  "generated_ids": 627,
+  "eos_id": 248046,
+  "cap_hit": false,
+  "cer": 0.0174,
+  "word_recall": 1.0,
+  "native_parity_verified": false,
+  "limits": [
+    "Earlier invalid-image producer remains unchanged and ineligible.",
+    "This is original-only quality on one frozen form, not full-panel native or quantized qualification."
+  ]
+}

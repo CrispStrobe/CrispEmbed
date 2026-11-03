@@ -1,0 +1,39 @@
+{
+  "schema": "crispembed-moedern-q8-model-free-controls-v1",
+  "runtime_source": "1f35731372cc5c9a60cd2431d58353f4742e25fb",
+  "model_payloads": false,
+  "corpus_access": false,
+  "model_qualified": false,
+  "dispatch_authorized": false,
+  "authored_fixture": {
+    "actual_q8_tensors": 2,
+    "critical_f32_tensors": 7,
+    "models": 0
+  },
+  "typed_profile_counts": {
+    "1.5M": 20,
+    "27M": 20,
+    "115M": 52
+  },
+  "authored_graphs": 6,
+  "protected_git_objects": {
+    "src": "ad58b0cfe46b14f65f663790b6eb0882fa19932a",
+    "CMakeLists.txt": "1da19a8737ca79f8bd99e2844a4bea5d160a0b6c",
+    "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+    "cmake": "9a76ffe127104d815de41d1da09335d2937ba50b",
+    "tests/moedern-q8": "25e0396e387823b38a2ce884ff6485b168f9aad4",
+    "tests/test_moedern_q8_profile.py": "aca8a64a8777310f774c9f37555e16cf3586f5d4",
+    "tools/moedern-colbert": "2e42caa06ceb28388d18e86f57d96d536b6114a0",
+    "docs/moedern-q8-f32-critical-v1.json": "cc1e8b7cec28a18b0568a18c167b4da0ad580da6",
+    "tools/quantize.cpp": "b9c94cc06760408f2acc4240f9732f492bc3484b",
+    "tools/gguf_file_type_canonicalize.py": "57f0220f1139de6d63799664ca2efb7e428b17f4",
+    "tools/gguf_file_type_values.py": "36f11fb35406fef421514bd950d1f13e78a3b379",
+    "tools/ci_process.py": "983a72fb3e8f7f212dd3be04d1560f157c7a57e4"
+  },
+  "owned_sha256": {
+    "tools/ci-heavy/moedern_q8_controls_v1.py": "bf45b2e920ac480124067b180fa95f16540f6d10a1bd3706e7b6cefbf7c288ef",
+    ".github/workflows/moedern-q8-controls-v1.yml": "04591b3446269c6d0942fd0be68d41340b96a95246165cf9bf7a58953f047574",
+    "tests/test_moedern_q8_controls_v1.py": "fd4e18e2582417d3ecc5fb8bd23c07d1238fd4a3ee15f1234d62ab69033aecd9",
+    "docs/moedern-q8-controls-v1.md": "e95116958d94a35c1044a3cb941fed3ca8c530d1bdbe76febb05cc834ab059d5"
+  }
+}

@@ -564,12 +564,11 @@ void benchmark_relative(Device & device, int iterations, int threads) {
             << "{\"schema\":\"crispembed-latent-graph-component-benchmark-v1\",\"component\":\"moebius-relative\","
             << "\"backend\":" << std::quoted(device.name)
             << ",\"precision\":" << std::quoted(device.fast ? "mixed-f16-diagnostic" : "strict-f32")
-            << ",\"fixture_weight_type\":\"f32\""
-            << ",\"threads\":" << threads << ",\"width\":" << side << ",\"height\":" << side << ",\"dk\":" << feature
-            << ",\"dv\":" << feature << ",\"heads\":8,\"tokens\":10,\"batch\":2"
-            << ",\"warmups\":1,\"iterations\":" << iterations << ",\"baseline_median_ms\":" << baseline_ms
-            << ",\"reassociated_median_ms\":" << candidate_ms << ",\"speedup\":" << baseline_ms / candidate_ms
-            << ",\"baseline_allocation_bytes\":" << baseline_bytes
+            << ",\"fixture_weight_type\":\"f32\"" << ",\"threads\":" << threads << ",\"width\":" << side
+            << ",\"height\":" << side << ",\"dk\":" << feature << ",\"dv\":" << feature
+            << ",\"heads\":8,\"tokens\":10,\"batch\":2" << ",\"warmups\":1,\"iterations\":" << iterations
+            << ",\"baseline_median_ms\":" << baseline_ms << ",\"reassociated_median_ms\":" << candidate_ms
+            << ",\"speedup\":" << baseline_ms / candidate_ms << ",\"baseline_allocation_bytes\":" << baseline_bytes
             << ",\"reassociated_allocation_bytes\":" << candidate_bytes
             << ",\"max_absolute_difference\":" << max_absolute
             << ",\"relative_l2_difference\":" << std::sqrt(difference2 / std::max(reference2, 1e-300))

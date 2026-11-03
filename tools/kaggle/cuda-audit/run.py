@@ -491,7 +491,27 @@ def batch_f():
     return jobs
 
 
-BATCHES = {"a": batch_a, "b": batch_b, "all": lambda: batch_a() + batch_b(), "rest": batch_rest, "c": batch_c, "d": batch_d, "e": batch_e, "f": batch_f}
+# Run 7 (fix/below-bar-artifacts follow-up): the three republished files on CUDA, each against its own
+# higher-precision base from the same Hub repo, at the immutable commits the registry pins.
+REPAIRED = [  # (family, repo, base file, base rev, quant file, quant rev, modes)
+    ("f2llm-v2-0.6b-repaired", "cstr/f2llm-v2-0.6b-GGUF", "f2llm-v2-0.6b.gguf", "main",
+     "f2llm-v2-0.6b-q4_k-mixed.gguf", "c29299b73fe0e2135707e89c43badf3077cd38df", ["embed"]),
+    ("clip-text-base-repaired", "cstr/clip-text-base-GGUF", "clip-text-base.gguf", "main",
+     "clip-text-base-q4_k-mixed.gguf", "3d52b12727aaf324445fe22a543f954ee4f0b419", ["embed"]),
+    ("bge-m3-heads", "cstr/bge-m3-GGUF", "bge-m3-heads-f16.gguf", "6016c35502f2d8419a593d545f91bc303bc5b261",
+     "bge-m3-heads-q8_0-mixed.gguf", "6016c35502f2d8419a593d545f91bc303bc5b261", ["embed", "sparse", "colbert"]),
+]
+for _fam, _repo, _b, _br, _q, _qr, _m in REPAIRED:
+    add(_b, _repo, _b, _br)
+    add(_q, _repo, _q, _qr)
+
+
+def batch_g():
+    return [{"id": f"embed-{fam}-{mode}", "kind": "embed", "mode": mode, "base": b, "files": [b, q], "repeat": 2,
+             "timeout": 2400} for fam, _r, b, _br, q, _qr, modes in REPAIRED for mode in modes]
+
+
+BATCHES = {"g": batch_g, "a": batch_a, "b": batch_b, "all": lambda: batch_a() + batch_b(), "rest": batch_rest, "c": batch_c, "d": batch_d, "e": batch_e, "f": batch_f}
 
 
 def jobs_for(batch):

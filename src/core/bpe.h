@@ -32,6 +32,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include "env_gate.h"
 
 namespace core_bpe {
 
@@ -327,7 +328,7 @@ inline std::vector<int32_t> tokenize_simple(const std::unordered_map<std::string
 // Covered sites: src/tokenizer_bpe.cpp (Qwen-family embedders, T19-E1),
 // src/lfm2_embed.cpp, src/deepseek_ocr2.cpp (x2), src/unlimited_ocr.cpp.
 inline bool legacy_whitespace() {
-    static const bool v = (std::getenv("CRISPEMBED_BPE_LEGACY_WHITESPACE") != nullptr);
+    static const bool v = core_env::on("CRISPEMBED_BPE_LEGACY_WHITESPACE");
     return v;
 }
 

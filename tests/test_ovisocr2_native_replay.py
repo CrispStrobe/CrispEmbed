@@ -33,8 +33,14 @@ class ReplayControls(unittest.TestCase):
         # The historical replay deliberately closes over its original 29-file
         # scope. New opt-in image/profile files use a versioned current-runtime
         # audit; they must not silently expand the historical proof.
-        paths = [p for p in sorted((ROOT / 'src').glob('qwen35*'))
-                 if p.name not in ('qwen35_image_bounds.h', 'qwen35_weight_cache.h')]
+        # Later opt-in files outside that scope, each default-off:
+        #   qwen35_image_bounds.h (large-image audit), qwen35_weight_cache.h (#81),
+        #   qwen35_graph_decoder.* (#89, CRISPEMBED_MINICPM_OCR_GRAPH + QWEN35_OCR),
+        #   qwen35_graph_kv_decoder.* (#109, CRISPEMBED_QWEN35_GRAPH_DECODER).
+        # The graph decoders are MiniCPM-only translation units; no Ovis file includes them.
+        opt_in = ('qwen35_image_bounds.h', 'qwen35_weight_cache.h', 'qwen35_graph_decoder.cpp',
+                  'qwen35_graph_decoder.h', 'qwen35_graph_kv_decoder.cpp', 'qwen35_graph_kv_decoder.h')
+        paths = [p for p in sorted((ROOT / 'src').glob('qwen35*')) if p.name not in opt_in]
         paths += [ROOT / name for name in (
             'src/crispembed_diff.h', 'tests/qwen35_parity.h',
             'tests/test_qwen35_decoder.cpp', 'tests/test_qwen35_vision.cpp',

@@ -329,7 +329,7 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
 
     // DAWG payloads are opt-in. Existing GGUFs do not contain them, and
     // loading them must not alter the default recognition path.
-    if (std::getenv("CRISPEMBED_TESSERACT_DAWG_LOAD") != nullptr) {
+    if (core_env::on("CRISPEMBED_TESSERACT_DAWG_LOAD")) {
         const auto dawg_names = core_gguf::kv_str_array(meta, "tesseract_lstm.dawg_names");
         for (const auto & name : dawg_names) {
             const std::string key = "tesseract_lstm.dawg." + name;
@@ -360,8 +360,8 @@ static bool load_model(tesseract_lstm_context * ctx, const char * path) {
     // CPU backend, i.e. ~85% of a one-shot CLI invocation spent initialising a
     // device this engine never uses. CRISPEMBED_TESSERACT_GPU_LOAD restores the
     // old behaviour for bisection.
-    const bool gpu_load = std::getenv("CRISPEMBED_TESSERACT_GPU_LOAD") != nullptr &&
-                          std::getenv("CRISPEMBED_TESSERACT_FORCE_CPU") == nullptr;
+    const bool gpu_load =
+        core_env::on("CRISPEMBED_TESSERACT_GPU_LOAD") && !core_env::on("CRISPEMBED_TESSERACT_FORCE_CPU");
     ggml_backend_t backend = gpu_load ? crispasr_init_gpu_backend() : ggml_backend_cpu_init();
     if (!backend) backend = ggml_backend_cpu_init();
     if (!core_gguf::load_weights(path, backend, "tesseract_lstm", ctx->wl)) {
@@ -1002,9 +1002,8 @@ static void forward(tesseract_lstm_context * ctx,
     const int beam_width = beam_env ? std::max(1, atoi(beam_env)) : 1;
     const char * recode_env = std::getenv("CRISPEMBED_TESSERACT_RECODE_BEAM_WIDTH");
     const int recode_width = recode_env ? std::max(1, atoi(recode_env)) : 1;
-    const bool dawg_score =
-        recode_width > 1 && std::getenv("CRISPEMBED_TESSERACT_DAWG_SCORE") != nullptr && !ctx->dawgs.empty();
-    const bool dawg_prefix_score = dawg_score && std::getenv("CRISPEMBED_TESSERACT_DAWG_PREFIX_SCORE") != nullptr;
+    const bool dawg_score = recode_width > 1 && core_env::on("CRISPEMBED_TESSERACT_DAWG_SCORE") && !ctx->dawgs.empty();
+    const bool dawg_prefix_score = dawg_score && core_env::on("CRISPEMBED_TESSERACT_DAWG_PREFIX_SCORE");
     bool beam_decoded = false;
     float beam_log_score = -INFINITY;
     std::vector<float> greedy_label_confs;
@@ -1136,8 +1135,8 @@ tesseract_lstm_context * tesseract_lstm_init(const char * model_path, int n_thre
         return nullptr;
     }
     ctx->bench = core_env::on("CRISPEMBED_TESSERACT_BENCH");
-    ctx->cache_int = (std::getenv("CRISPEMBED_TESSERACT_DISABLE_INT_CACHE") == nullptr);
-    ctx->reuse_scratch = (std::getenv("CRISPEMBED_TESSERACT_REUSE_SCRATCH") != nullptr);
+    ctx->cache_int = (!core_env::on("CRISPEMBED_TESSERACT_DISABLE_INT_CACHE"));
+    ctx->reuse_scratch = core_env::on("CRISPEMBED_TESSERACT_REUSE_SCRATCH");
     return ctx;
 }
 
@@ -1196,7 +1195,7 @@ const char * tesseract_lstm_recognize(tesseract_lstm_context * ctx, const uint8_
         H = dh;
     }
 
-    if (std::getenv("TESSERACT_DIFF_DEBUG")) {
+    if (core_env::on("TESSERACT_DIFF_DEBUG")) {
         uint8_t lo = src[0], hi = src[0];
         int lo_i = 0;
         for (int i = 1; i < W * H; ++i) {

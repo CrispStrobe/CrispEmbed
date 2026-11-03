@@ -1,0 +1,111 @@
+{
+  "schema": "crispembed-moedern-scifact-native-setup-rejection-v1",
+  "source": "8d9beb29317cb946202b4e9044e0cdb3fb27d298",
+  "variant": "27M",
+  "provider": "Kaggle CPU",
+  "version_label": "v1",
+  "completed": false,
+  "terminal_status": "ERROR",
+  "submitted_script_sha256": "111489ef47893df8186daabef79ee3ca9cfac551a1236f51ff6525a284582b9b",
+  "phase": "worker stdlib imports before main",
+  "failure": {
+    "error_type": "ModuleNotFoundError",
+    "missing_module": "contract_v2",
+    "import_chain": [
+      "worker_v1.py",
+      "authored_v1.py",
+      "tools/moedern-native-v2/replay.py"
+    ]
+  },
+  "bootstrap": {
+    "file": "scifact-native-27m-initial-bootstrap.json",
+    "bytes": 3003,
+    "sha256": "1cc0a5e6bf8afe2b626aa5065177da4a5b8795c9f735df5ae01ea016f263d4ee"
+  },
+  "small_files": [
+    {
+      "member": "inline-version-bound-kernel.log",
+      "bytes": 2517,
+      "sha256": "028a489b9a378c5ba6b6bfe8ef2af576ad0d29d2a3a56f2a98aab0ceec4a0e18"
+    },
+    {
+      "member": "moedern-scifact-native-q4k/actual-model-panel.log",
+      "bytes": 1148,
+      "sha256": "edf9d6dd42ad509056cf58ce3e39f2c4817b4e8ec82812ae7e01e03326b577b8"
+    },
+    {
+      "member": "moedern-scifact-native-q4k/checkout.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "member": "moedern-scifact-native-q4k/child-accounting-controls.log",
+      "bytes": 769,
+      "sha256": "5a832383c10e81108a6ff1d9c8950796240df1dd130a8964ba5b8cdbc52e432f"
+    },
+    {
+      "member": "moedern-scifact-native-q4k/client-bit-controls.log",
+      "bytes": 644,
+      "sha256": "547b44ebaf8b2cfafb2b6b149cdd1e7ebc321e1e2497cbc45bbdd8a91711c2fc"
+    },
+    {
+      "member": "moedern-scifact-native-q4k/clone.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "member": "moedern-scifact-native-q4k/fetch-original-source.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "member": "moedern-scifact-native-q4k/install-locked-tools.log",
+      "bytes": 2596,
+      "sha256": "df9b9404b8ca7e63936ad9c3ae6a15fde7406802471ccb141b8e702adb2541fa"
+    },
+    {
+      "member": "moedern-scifact-native-q4k/pip-check.log",
+      "bytes": 132,
+      "sha256": "87ea3f7013f01cc4669b2b0eb0f7040353493edc7ad7e48541117a721efad13f"
+    },
+    {
+      "member": "moedern-scifact-native-q4k/setup.json",
+      "bytes": 3003,
+      "sha256": "1cc0a5e6bf8afe2b626aa5065177da4a5b8795c9f735df5ae01ea016f263d4ee"
+    },
+    {
+      "member": "moedern-scifact-native-q4k/source-closure.log",
+      "bytes": 48180,
+      "sha256": "ef2a702e3b6cb4dc403c11d81d4892e508ff0cc8e1ef2a43dbbd36903a8ca8a2"
+    },
+    {
+      "member": "moedern-scifact-native-q4k/stdlib-controls.log",
+      "bytes": 1501,
+      "sha256": "43898cdf86165dc9661e6de4ad2a3b387c3dc3234da2f73461b331071e390485"
+    },
+    {
+      "member": "moedern-scifact-native-q4k/submodule.log",
+      "bytes": 362,
+      "sha256": "4a7900ed038dca0a9ed9d2228212f9a23b4e405409bb07833dbd4048cf0d9e67"
+    }
+  ],
+  "setup_controls": {
+    "source_closure_passed": true,
+    "submodule_passed": true,
+    "five_locked_wheels_installed": true,
+    "pip_check_passed": true,
+    "replay_stdlib": 12,
+    "child_accounting_stdlib": 5,
+    "client_bit_stdlib": 4
+  },
+  "native_report_created": false,
+  "original_array_authentication_started": false,
+  "model_payload_accessed": false,
+  "compile_started": false,
+  "inference_started": false,
+  "numeric_conclusion": null,
+  "original_rerun": false,
+  "source_only_correction": "Declare pinned helper sibling-import directory and add isolated CLI-import smoke before wheel/model access.",
+  "nonterminal_warning": "sitecustomize wrapt warning precedes execution but is not the terminal error; no unlocked dependency added.",
+  "limits": "Exact source/script and version-bound small logs only; no original arrays, model, tokenizer, binary or corpus payload downloaded for this review."
+}

@@ -4,6 +4,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include "core/env_gate.h"
 
 namespace tesseract_pageseg {
 
@@ -121,7 +122,7 @@ static std::vector<ocr_detect::text_box> segment_components(const uint8_t * gray
     }
     rows.swap(reassociated);
     std::sort(rows.begin(), rows.end(), [](const row & a, const row & b) { return a.y0 < b.y0; });
-    if (std::getenv("CRISPEMBED_TESSERACT_COMPONENT_DEBUG")) {
+    if (core_env::on("CRISPEMBED_TESSERACT_COMPONENT_DEBUG")) {
         for (const auto & r : rows) {
             std::fprintf(stderr, "component row x=%d..%d y=%d..%d count=%d base=%.1f\n", r.x0, r.x1, r.y0, r.y1,
                          r.count, r.baseline);
@@ -170,7 +171,7 @@ static std::vector<ocr_detect::text_box> segment_components(const uint8_t * gray
 // restores the unfiltered rows (regression lever).
 static void reject_separator_rows(std::vector<ocr_detect::text_box> & out, const uint8_t * gray, int width, int height,
                                   int threshold) {
-    if (std::getenv("CRISPEMBED_TESSERACT_PAGESEG_KEEP_RULES")) return;
+    if (core_env::on("CRISPEMBED_TESSERACT_PAGESEG_KEEP_RULES")) return;
     if (out.size() < 3) return;
     std::vector<float> heights;
     heights.reserve(out.size());
@@ -199,7 +200,7 @@ static void reject_separator_rows(std::vector<ocr_detect::text_box> & out, const
             separator = covered >= (bw * 9) / 10;
         }
         if (separator) {
-            if (std::getenv("CRISPEMBED_TESSERACT_PAGESEG_DEBUG"))
+            if (core_env::on("CRISPEMBED_TESSERACT_PAGESEG_DEBUG"))
                 std::fprintf(stderr, "tesseract_pageseg: separator dropped x=%d..%d y=%d..%d (%dx%d)\n", bx0, bx1, by0,
                              by1, bw, bh);
             continue;
@@ -225,11 +226,11 @@ std::vector<ocr_detect::text_box> segment_gray(const uint8_t * gray, int width, 
     // bridging adjacent printed lines.
     const int threshold = std::clamp(mean - 90, 30, 120);
     const int min_row_ink = std::max(4, width / 130);
-    if (std::getenv("CRISPEMBED_TESSERACT_PAGESEG_DEBUG")) {
+    if (core_env::on("CRISPEMBED_TESSERACT_PAGESEG_DEBUG")) {
         std::fprintf(stderr, "tesseract_pageseg: size=%dx%d mean=%d threshold=%d min_row_ink=%d\n", width, height, mean,
                      threshold, min_row_ink);
     }
-    if (std::getenv("CRISPEMBED_TESSERACT_COMPONENT_PAGESEG")) {
+    if (core_env::on("CRISPEMBED_TESSERACT_COMPONENT_PAGESEG")) {
         const auto component_rows = segment_components(gray, width, height, threshold);
         if (component_rows.size() >= 2) return component_rows;
     }
@@ -479,7 +480,7 @@ static std::vector<ocr_detect::text_box> segment_gray_components_legacy(const ui
             }
         }
         if (start >= 0) bands.push_back({ start, height - 1 - gap });
-        const bool band_debug = std::getenv("CRISPEMBED_TESSERACT_LEGACY_ROW_DEBUG") != nullptr;
+        const bool band_debug = core_env::on("CRISPEMBED_TESSERACT_LEGACY_ROW_DEBUG");
         if (band_debug) {
             for (const auto & bd : bands)
                 std::fprintf(stderr, "  band-pass1 y=%d..%d h=%d\n", bd.y0, bd.y1, bd.y1 - bd.y0 + 1);
@@ -549,7 +550,7 @@ static std::vector<ocr_detect::text_box> segment_gray_components_legacy(const ui
                     if (band_debug && h >= 2 * min_part) {
                         std::fprintf(stderr, "  band-split? y=%d..%d h=%d -> %s (cut=%d mass=%.1f flank=%.1f)\n", bd.y0,
                                      bd.y1, h, cut >= 0 ? "cut" : "keep", cut, cut_mass, best_flank);
-                        if (std::getenv("CRISPEMBED_TESSERACT_LEGACY_BAND_PROFILE")) {
+                        if (core_env::on("CRISPEMBED_TESSERACT_LEGACY_BAND_PROFILE")) {
                             std::fprintf(stderr, "  band-profile y=%d:", bd.y0);
                             for (int yy = bd.y0; yy <= bd.y1; ++yy)
                                 std::fprintf(stderr, " %d", (int)std::lround(smooth[(size_t)yy]));
@@ -689,7 +690,7 @@ static std::vector<ocr_detect::text_box> segment_gray_components_legacy(const ui
                 // patch measured at most 0.40 flat), so it cannot rise; take
                 // either signature.
                 const bool ok = permissive >= 0.20f && (permissive >= 1.5f * near_floor || near_floor >= 0.5f);
-                if (std::getenv("CRISPEMBED_TESSERACT_LEGACY_ROW_DEBUG"))
+                if (core_env::on("CRISPEMBED_TESSERACT_LEGACY_ROW_DEBUG"))
                     std::fprintf(stderr, "  widen? row y=%d..%d x=%d..%d d20=%.2f d60=%.2f -> %s\n", r.y0, r.y1, lo, hi,
                                  near_floor, permissive, ok ? "accept" : "reject");
                 return ok;
@@ -707,7 +708,7 @@ static std::vector<ocr_detect::text_box> segment_gray_components_legacy(const ui
         out.push_back(box);
         emitted[i] = 1;
     }
-    if (std::getenv("CRISPEMBED_TESSERACT_LEGACY_ROW_DEBUG")) {
+    if (core_env::on("CRISPEMBED_TESSERACT_LEGACY_ROW_DEBUG")) {
         std::fprintf(stderr, "legacy pageseg: threshold=%d blobs=%zu median_h=%d max_row_gap=%d rows=%zu\n", threshold,
                      blobs.size(), median_h, max_row_gap, rows.size());
         for (size_t i = 0; i < rows.size(); ++i) {
@@ -727,7 +728,7 @@ static std::vector<ocr_detect::text_box> segment_gray_components_legacy(const ui
 }
 
 std::vector<ocr_detect::text_box> segment_gray_components(const uint8_t * gray, int width, int height) {
-    const bool baseline_override = std::getenv("CRISPEMBED_TESSERACT_COMPONENT_BASELINE") != nullptr;
+    const bool baseline_override = core_env::on("CRISPEMBED_TESSERACT_COMPONENT_BASELINE");
     const bool use_fallback = !baseline_override;
     if (use_fallback) {
         auto legacy = segment_gray_components_legacy(gray, width, height);
@@ -808,7 +809,7 @@ std::vector<ocr_detect::text_box> segment_gray_components(const uint8_t * gray, 
         // this pixel gap is the portable approximation for scanned pages.
         max_row_gap = std::clamp(std::atoi(gap_env), 0, std::max(3, height / 20));
     }
-    if (std::getenv("CRISPEMBED_TESSERACT_PAGESEG_DEBUG"))
+    if (core_env::on("CRISPEMBED_TESSERACT_PAGESEG_DEBUG"))
         std::fprintf(stderr, "tesseract_pageseg: components=%zu median_h=%d row_gap=%d\n", blobs.size(), median_h,
                      max_row_gap);
     // Assign by fitted baseline, not by transitive y-range overlap. A tall
@@ -852,7 +853,7 @@ std::vector<ocr_detect::text_box> segment_gray_components(const uint8_t * gray, 
         }
     }
     std::sort(rows.begin(), rows.end(), [](const row & a, const row & b) { return a.y0 < b.y0; });
-    if (std::getenv("CRISPEMBED_TESSERACT_PAGESEG_DEBUG")) {
+    if (core_env::on("CRISPEMBED_TESSERACT_PAGESEG_DEBUG")) {
         for (const auto & r : rows) {
             std::fprintf(stderr, "component-row x=%d..%d y=%d..%d count=%d base=%.1f\n", r.x0, r.x1, r.y0, r.y1,
                          r.count, r.baseline);
@@ -907,7 +908,7 @@ std::vector<ocr_detect::text_box> segment_gray_components(const uint8_t * gray, 
                 tight_x1 = loose_x1 = best_run_x1;
             }
         }
-        if (std::getenv("CRISPEMBED_TESSERACT_PAGESEG_DEBUG") && r.count < 20) {
+        if (core_env::on("CRISPEMBED_TESSERACT_PAGESEG_DEBUG") && r.count < 20) {
             std::fprintf(stderr, "component-row-tight x=%d..%d loose=%d..%d y=%d..%d\n", tight_x0, tight_x1, loose_x0,
                          loose_x1, crop_y0, crop_y1);
         }
@@ -916,7 +917,7 @@ std::vector<ocr_detect::text_box> segment_gray_components(const uint8_t * gray, 
             tight_x0 = loose_x0;
             tight_x1 = loose_x1;
         }
-        if (std::getenv("CRISPEMBED_TESSERACT_PAGESEG_ROW_BLOB_BOUNDS")) {
+        if (core_env::on("CRISPEMBED_TESSERACT_PAGESEG_ROW_BLOB_BOUNDS")) {
             // The vertical scan can see ink from an adjacent overlapping row
             // and widen the crop beyond the blobs actually assigned here.
             // Keep this A/B opt-in until it is validated across page fixtures.

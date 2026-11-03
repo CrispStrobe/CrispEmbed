@@ -1,0 +1,276 @@
+{
+ "schema": "crispembed-successor-assets-v4",
+ "protocol_version": 4,
+ "supersedes_nothing": "v1, v2 and v3 successor-asset files, guards and receipts stay unchanged and authoritative for their runs",
+ "owner_decision": "2026-11-03: accept the measured macOS arm64 desktop drift as a cross-platform tolerance without attribution",
+ "final_base": "8245fd47de222733934d3e2783ec5aeb695d3cb0",
+ "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+ "final_declaration": "docs/ovisocr2-final-integrated-v2.json",
+ "final_source_validation": {
+  "status": "pending",
+  "run": null,
+  "note": "tools/ovisocr2_final_integrated_v2.py validation run not yet reviewed; v2 producers may run but no result qualifies until it is positive"
+ },
+ "producers": {
+  "native": {
+   "workflow": ".github/workflows/release.yml",
+   "inputs": {
+    "cpu_only": "true"
+   },
+   "archives": [
+    {
+     "archive": "crispembed-android-arm64-v8a.tar.gz"
+    },
+    {
+     "archive": "crispembed-android-armeabi-v7a.tar.gz"
+    },
+    {
+     "archive": "crispembed-ios-arm64.tar.gz"
+    },
+    {
+     "archive": "crispembed-linux-arm64.tar.gz"
+    },
+    {
+     "archive": "crispembed-linux-x86_64.tar.gz"
+    },
+    {
+     "archive": "crispembed-macos-arm64.tar.gz"
+    },
+    {
+     "archive": "crispembed-windows-x86_64.zip"
+    }
+   ]
+  },
+  "wasm": {
+   "workflow": ".github/workflows/release-wasm.yml",
+   "inputs": {
+    "tag": ""
+   },
+   "archives": [
+    {
+     "archive": "crispembed-embed-wasm.tar.gz"
+    },
+    {
+     "archive": "crispembed-ocr-wasm.tar.gz"
+    }
+   ]
+  },
+  "identity": "both runs successful workflow_dispatch at one head_sha whose runtime closure (v1 RUNTIME_PATHS) equals final_base"
+ },
+ "strict_gates": {
+  "max_abs": 0.002,
+  "min_cosine": 0.99999,
+  "applies_to": "every non-WASM consumer and cross-platform comparison, unchanged from v1"
+ },
+ "wasm_tolerance": {
+  "applies_to": {
+   "consumer": "packaged browser crispembed-embed-wasm",
+   "output": "final pooled 384-d vector",
+   "platform": "wasm"
+  },
+  "model_sha256": "77087a5dd455f5eeae6d6d098bac82793610438518a91071c72c253940db18a2",
+  "text": "A small reproducible embedding consumer.",
+  "margin": 0.2,
+  "rule": "bound = measured deterministic drift with a 20% margin, rounded outward to 3 significant digits (max_abs up, cosine deficit up)",
+  "max_abs": 0.0101,
+  "min_cosine": 0.99837,
+  "measured": [
+   {
+    "run": 40354251257,
+    "consumer": "successor-assets.yml browser",
+    "max_abs": 0.00837269052863121,
+    "cosine": 0.9986498388732901,
+    "note": "initial asset consumer; value recorded in CLAUDE.md as 0.00837269/0.99864984"
+   },
+   {
+    "run": 40710490021,
+    "consumer": "successor-assets-v2 -> v1 wasm job",
+    "producers": {
+     "native": 40724938611,
+     "wasm": 40725005968
+    },
+    "source": "11f2ef7c06101ae4bff32c38d33fe6fd0b538661",
+    "artifact": {
+     "id": 12855835877,
+     "name": "successor-wasm-consumer-40710490021"
+    },
+    "max_abs": 0.00837269052863121,
+    "cosine": 0.9986498388732901
+   }
+  ],
+  "task_level": "The packaged browser consumer exposes no tokens/text for embeddings; its classical OCR cleanup output stays exact (authored blob cleared, RGB-exact) and page errors must be empty.",
+  "attribution_receipts": [
+   "tests/results/packaging/wasm-live-norm-v4-attribution.json",
+   "tests/results/packaging/wasm-layer3-ffn-matmul-v1.json",
+   "tests/results/packaging/wasm-layer0-attention-v1.json"
+  ],
+  "attribution": "Same-input replays: kernel accumulation order differs by <=1.4e-6 per op (IQ4_NL tinyBLAS vs generic, IQ4_XS AVX2 vs generic, flash_attn vec_dot_f32/vec_mad_f32 FMA and lane width, expf); activation quantization (Q8_0 FP16 scale steps, Q8_K scales) amplifies these into the observed final drift. No single-op fix exists."
+ },
+ "expectations": {
+  "c": {
+   "expected": "pass",
+   "reason": "Linux/macOS desktop C ABI passed before; Windows compiled ABI never reached in the initial run"
+  },
+  "python": {
+   "expected": "pass",
+   "reason": "desktop Python vectors; Windows still unproven"
+  },
+  "cli": {
+   "expected": "pass",
+   "reason": "fresh/offline CLI passed on all desktops in the initial run"
+  },
+  "cache": {
+   "expected": "pass",
+   "reason": "fresh-cache and offline reuse passed in the initial run"
+  },
+  "rust": {
+   "expected": "unproven",
+   "reason": "Linux prebuilt only; no final-source receipt yet"
+  },
+  "dart": {
+   "expected": "unproven",
+   "reason": "Linux prebuilt only; no final-source receipt yet"
+  },
+  "windows-utf8-path": {
+   "expected": "unproven",
+   "reason": "consumer UTF-8 reader and cl /utf-8 repair (5702b1ae) is in final base; native src has no wide-path (_wfopen/MultiByteToWideChar) conversion and v1 consumers do not exercise non-ASCII paths, so only the header-decoding failure is expected fixed"
+  },
+  "apple-png-mac50": {
+   "expected": "pass",
+   "reason": "Mac-only 40399358753 positive for compatibility with released 0.17.12; 7/50 quality unchanged and not a quality claim"
+  },
+  "mobile-cross-link": {
+   "expected": "unproven",
+   "reason": "Android/iOS link repairs need a fresh final-source receipt"
+  },
+  "browser": {
+   "expected": "pass-within-wasm-tolerance",
+   "may_claim": "wasm-tolerance-only"
+  }
+ },
+ "qualification": false,
+ "release_alias_allowed": false,
+ "app_upgrade_allowed": false,
+ "consumers": {
+  "workflow": ".github/workflows/successor-assets-consumers-v4.yml",
+  "derived_from": ".github/workflows/successor-assets.yml",
+  "derivations": "tools/successor_assets_v4.py DERIVATIONS"
+ },
+ "desktop_tolerance": {
+  "platform": "macos-arm64",
+  "reference_platform": "linux-x86_64",
+  "output": "final pooled 384-d vector",
+  "model_sha256": "77087a5dd455f5eeae6d6d098bac82793610438518a91071c72c253940db18a2",
+  "text": "A small reproducible embedding consumer.",
+  "margin": 0.2,
+  "rule": "bound = measured deterministic drift with a 20% margin, rounded outward to 3 significant digits",
+  "max_abs": 0.00307,
+  "min_cosine": 0.999866,
+  "measured": [
+   {
+    "run": 40710490021,
+    "source": "11f2ef7c06101ae4bff32c38d33fe6fd0b538661",
+    "library_sha256_prefix": {
+     "macos": "1a8af0dee9",
+     "linux_x86_64": "66f6a2cd7f"
+    },
+    "max_abs": 0.0025543533265590668,
+    "cosine": 0.9998886284627958,
+    "note": "desktop consumer receipts; review skipped in that run"
+   },
+   {
+    "run": 41471904133,
+    "source": "11f2ef7c06101ae4bff32c38d33fe6fd0b538661",
+    "max_abs": 0.0025543533265590668,
+    "cosine": 0.9998886284627958,
+    "note": "same producer libraries; identical vectors; v3 review rejected this pair"
+   }
+  ],
+  "scope_note": "Owner asked for an arm64-vs-x86_64 scope; measured evidence shows linux-arm64 vs linux-x86_64 passes strict while macos-arm64 differs from both linux-x86_64 and linux-arm64, so the bound is narrowed to macos-arm64 vs the linux-x86_64 reference. All other pairs stay strict.",
+  "other_pairs_measured_strict": [
+   {
+    "pair": "linux-arm64 vs linux-x86_64",
+    "max_abs": 0.000119589,
+    "cosine": 0.999999697765
+   },
+   {
+    "pair": "windows-x86_64 vs linux-x86_64",
+    "max_abs": 2.23517e-08,
+    "cosine": 1.0
+   }
+  ],
+  "macos_vs_linux_arm64": {
+   "max_abs": 0.00260015,
+   "cosine": 0.999887735187,
+   "checked_by_review": false
+  },
+  "same_platform": "macos-arm64 CLI/offline/Python/compiled-C vs C ABI comparisons stay strict (measured <=5e-7)",
+  "task_level": "Desktop consumers compare vectors of the same model and fixture text; no token/text output exists for embeddings.",
+  "attribution": "none (accepted without attribution)",
+  "likely_mechanism": "By analogy with the WASM attribution: different SIMD summation order in the macOS arm64 build (Apple clang/CPU features) amplified by activation quantization; unverified."
+ },
+ "dispatch": "gh workflow run successor-assets-v4.yml --ref <branch at 11f2ef7c + v3/v4 files> -f native_run=40724938611 -f wasm_run=40725005968 -f corpus_run=40629090339",
+ "optional_follow_up": "attribute the macOS arm64 desktop drift with the same same-input op-by-op method",
+ "read_only_blobs": {
+  ".github/workflows/successor-apple-only.yml": "e4c174c9f2d294496a8cb8e4c13766956d83f7b4",
+  ".github/workflows/successor-assets-consumers-v3.yml": "4a1664f926df9390ea176416b7b0ecb7a99a80c6",
+  ".github/workflows/successor-assets-v2.yml": "8129bff6d1c7b67d1177a95e9d2221b3d14e64d1",
+  ".github/workflows/successor-assets-v3.yml": "cd8cb9392de98d95f7e4cb9249214e6e6ff00cc1",
+  ".github/workflows/successor-assets.yml": "e7ccd5c6d35e1b410caec2fe01231bf18bba47fc",
+  ".github/workflows/successor-bindings-v3.yml": "172244bd3b2b0c7ecbf9fa8ec7ea677e8f6f8f21",
+  ".github/workflows/successor-bindings.yml": "242255a8fde66925841713268aa70f28e276447a",
+  ".github/workflows/successor-posformer-corpus.yml": "d2376f283f75c4a4bb6d003080e53e804c5df712",
+  ".github/workflows/successor-wasm-rounding-controls.yml": "a2fd45c090e536d76ae44e861a4f1e5decaa5d9d",
+  ".github/workflows/successor-wasm-trace.yml": "65fa4513cbf2f02b9b79c0716edf05d8aa67dc0f",
+  "docs/successor-apple-only.md": "3ed8d3cdbe9840d56ec25a152c6c59fc93f23cc3",
+  "docs/successor-asset-qualification.md": "f0b7a3bf40fe05f35b05726263016df578c6eac7",
+  "docs/successor-assets-v2.json": "ba1752c5ffad5f5461ea0dfe30c4257f1c3dd444",
+  "docs/successor-assets-v2.md": "b435d2fdf396b354dbaecba46cc6585f85b531da",
+  "docs/successor-assets-v3.json": "614b063f3c3f4f0823beba98bf353fba38c4fcb4",
+  "docs/successor-assets-v3.md": "444982a01798cbfbbd0aa6c15e3b0bc45af0a2ec",
+  "docs/successor-wasm-trace.md": "91070a073d440d02bc32a25d766e6b4d459fe13c",
+  "tests/results/packaging/development-cpu-baseline.json": "1e7869393a5b3a6498f9159029ec3005a815a48b",
+  "tests/results/packaging/posformer-corpus-initial-rejection.json": "42a9e53cdcef3d7127833ab84164902a360e46d1",
+  "tests/results/packaging/posformer-corpus-proof.json": "80abda7ec3bafbac2a8199c1e37ad9db05b750e8",
+  "tests/results/packaging/successor-apple-initial.json": "2db619dac8c15e563ac1c9690834efb908b6d5b3",
+  "tests/results/packaging/successor-desktop-vector-review-repair.json": "0946ea94f2703ab5a7547de4465c39d5914d47ec",
+  "tests/results/packaging/successor-mac-only.json": "a750141a9b41edace2229e699206d90284353d0d",
+  "tests/results/packaging/successor-wasm-initial.json": "2634cfb09f286a0165ad36ed2b3b8a11439dff86",
+  "tests/results/packaging/successor-wasm-source-trace.json": "446c6b1db9e0d4a07b5df85662a0050df72200b8",
+  "tests/results/packaging/successor-windows-reader-initial.json": "ed7089895fb18d91a4f64e9887420b400f936094",
+  "tests/results/packaging/wasm-layer3-attribution-v1.json": "8f4ae0233e1927d1d0f1bb6e7e9346d74db2251f",
+  "tests/results/packaging/wasm-layer3-initial-observer-rejection.json": "5835e934a276e14de5c72bbf8dfb4c5d43281e6a",
+  "tests/results/packaging/wasm-rounding-ab-v1.json": "2f9e6849096f78947df7728fc5103ec547e47d01",
+  "tests/results/packaging/wasm-rounding-initial-controls-rejection.json": "a1a3c116b8afe2ec7045894f5f37f72e1581fd4f",
+  "tests/results/packaging/wasm-rounding-operators.json": "d5e9531b7856c3ff254bd76231f3d926c2ccb337",
+  "tests/results/packaging/wheel-matrix.json": "0fe551a5afe7c3d63faa366aa52c502e3300d845",
+  "tests/results/packaging/wheel-target-initial.json": "3f7f5dc0ea99939d3d8d2b9b1de62b4bead67806",
+  "tests/successor_bindings.dart": "23346bf3c18978730db379d7c871ca16d68f3cd0",
+  "tests/successor_bindings.rs": "1feb9a6d4e3f489307b3f71659d2aa2561e9fbba",
+  "tests/successor_capi_consumer.c": "585300ed7c0d03363c24dbcac87c293fbb4fce35",
+  "tests/test_successor_apple_only.py": "0b082bafbc7301a174ef4d837486c9d2d5a4dc93",
+  "tests/test_successor_asset_manifest.py": "9864db1644b7e6693b0c9e451939d4be8bb0aa47",
+  "tests/test_successor_assets_v2.py": "6af39a788b19cfbd04b5c2cb686202e2ccc18203",
+  "tests/test_successor_assets_v3.py": "cb1505f9946773c19e909e72ed350d176de3c82d",
+  "tests/test_successor_posformer_corpus.py": "adebf3ca27d3cd89d44a040bd087706758ef5d63",
+  "tests/test_successor_review.py": "475bb4efea15a6957d7dc0cdc6b49fcbdc981b3a",
+  "tests/test_successor_wasm.cjs": "54e1fde512264b8367ce0dc4b16ef4ba38107eca",
+  "tests/test_successor_wasm_trace.cjs": "390d83bc9a9b2d829e0f33762a5d5122644b6b8a",
+  "tests/test_successor_wasm_trace_contract.py": "57bdc0d2101e2e72443b273a17e98ddae05fa897",
+  "tests/test_successor_wasm_trace_diff.cpp": "7471283dac9f0859ddac3e5fce9aa017f5d05d92",
+  "tests/test_successor_wasm_v3.cjs": "d3daef49706410771af816f4e3a8cd639f634ecc",
+  "tools/ci-heavy/successor_assets.py": "18da2ee1fc754a00ca985a4a4ec019ee0d57254c",
+  "tools/ci-heavy/successor_bindings.py": "bc23db2dad88b23a3c22347267f49fb2e8a4f746",
+  "tools/ci-heavy/successor_bindings_v3.py": "e109c2b50d6b5b4babfcfe8156a45c9537924fde",
+  "tools/ci-heavy/successor_mobile.py": "87a9379145d76e7d5c681bd76e51479a51fb56b9",
+  "tools/ci-heavy/successor_posformer.py": "49ee260f0fbf885a257dbe62ac098b13a8170600",
+  "tools/ci-heavy/successor_posformer_corpus.py": "a241de556b38c4d20ab8fa077276620776f605a6",
+  "tools/ci-heavy/successor_review.py": "49c8774983c3d5ae2f8850a8385b88df61800e8e",
+  "tools/ci-heavy/successor_review_v3.py": "5ec7b1cc659fd43234975c2a75bb8aa196ad2673",
+  "tools/ci-heavy/successor_wasm_trace.py": "b2d9261a93ab64a5b35bf3cbb59824283c9d8e8a",
+  "tools/successor_asset_manifest.py": "d5fc37cb406c5ae8fd10e3557f795ddee97c9609",
+  "tools/successor_assets_v2.py": "a603dcf32f3fee0f75401bfedd9cfaac4eae7fe3",
+  "tools/successor_assets_v3.py": "d135d092c8f60f4eff7bc68ba937d9e67b59f384",
+  "tools/successor_wasm_trace_contract.py": "a16cbc3763d6d473fd2225ef9ceac570aeb23ed3"
+ }
+}

@@ -73,12 +73,55 @@ on:
       - 'tests/test_ovisocr2_context.cpp'
       - 'src/qwen35_ocr.cpp'
       - 'src/qwen35_ocr.h'
+      - 'src/qwen35*'
+      - 'src/crispembed_diff.h'
+      - 'tests/qwen35_parity.h'
+      - 'tests/test_qwen35_*.cpp'
+      - 'tests/ovisocr2_quality_run.cpp'
+      - 'tools/ci-heavy/ovisocr2_large_inputs.py'
+      - 'tests/test_ovisocr2_large_inputs.py'
+  # Model-free controls only (every other job is dispatch-gated): run them when a
+  # frozen native source pinned by the replay/large-input closures changes.
+  pull_request:
+    paths:
+      - '.github/workflows/ovisocr2-metadata.yml'
+      - '.github/workflows/ovisocr2-native-replay.yml'
+      - 'tools/ci-heavy/ovisocr2_native_replay.py'
+      - 'tests/test_ovisocr2_native_replay.py'
+      - 'tools/ci-heavy/ovisocr2_metadata.py'
+      - 'tests/test_ovisocr2_metadata.py'
+      - 'models/convert-qwen35-ocr-to-gguf.py'
+      - 'models/qwen35_ovis_profile.py'
+      - 'tests/test_ovisocr2_export_profile.py'
+      - 'tools/ci-heavy/ovisocr2_export.py'
+      - 'tests/results/qwen35-ocr/ovisocr2-metadata.json'
+      - 'tools/ci-heavy/ovisocr2_frontend.py'
+      - 'src/qwen35_frontend.h'
+      - 'src/qwen35_tokenizer.cpp'
+      - 'tests/test_ovisocr2_frontend.cpp'
+      - 'tests/test_ovisocr2_frontend_driver.py'
+      - 'tools/dump_ovisocr2_reference.py'
+      - 'tools/ci-heavy/ovisocr2_model_audit.py'
+      - 'tests/test_ovisocr2_reference_adapter.py'
+      - 'tests/test_ovisocr2_model_audit.py'
+      - 'tests/test_ovisocr2_context.cpp'
+      - 'src/qwen35_ocr.cpp'
+      - 'src/qwen35_ocr.h'
+      - 'src/qwen35*'
+      - 'src/crispembed_diff.h'
+      - 'tests/qwen35_parity.h'
+      - 'tests/test_qwen35_*.cpp'
+      - 'tests/ovisocr2_quality_run.cpp'
+      - 'tools/ci-heavy/ovisocr2_large_inputs.py'
+      - 'tests/test_ovisocr2_large_inputs.py'
 permissions:
   contents: read
   actions: read
+# Superseded pushes/PR updates on a branch cancel its older runs. Main pushes and
+# manual dispatches get one group per run, so they are never cancelled or dropped.
 concurrency:
-  group: ovisocr2-metadata-${{ github.ref }}
-  cancel-in-progress: false
+  group: ovisocr2-metadata-${{ (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main') && github.run_id || github.ref }}
+  cancel-in-progress: true
 jobs:
   vision:
     if: github.event_name == 'workflow_dispatch' && inputs.phase == 'vision'

@@ -1,0 +1,147 @@
+{
+ "schema": "crispembed.qwen2vl.q4k-sweep.v1",
+ "model": "teleocr",
+ "bar": 0.94,
+ "recipes": [
+  {
+   "recipe": "emb4",
+   "file_bytes": 1889584320,
+   "final_cos_min": 0.9863581541649017,
+   "worst_case": "table",
+   "complete": true,
+   "per_case": {
+    "code": 0.9895289941717411,
+    "formula": 0.9896477322695028,
+    "layout": 0.9897099810044975,
+    "synthetic": 0.9915500445253218,
+    "table": 0.9863581541649017,
+    "text": 0.9932655583018182
+   },
+   "worst_stage": {
+    "case": "code",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.9909375282482848
+   }
+  },
+  {
+   "recipe": "emb6",
+   "file_bytes": 1929695424,
+   "final_cos_min": 0.9978754667480957,
+   "worst_case": "layout",
+   "complete": true,
+   "per_case": {
+    "code": 0.9988330660568636,
+    "formula": 0.9987312600659757,
+    "layout": 0.9978754667480957,
+    "synthetic": 0.9993702219228694,
+    "table": 0.9987908006224431,
+    "text": 0.9994218729833906
+   },
+   "worst_stage": {
+    "case": "code",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.9909650649083468
+   }
+  },
+  {
+   "recipe": "emb8",
+   "file_bytes": 1967375552,
+   "final_cos_min": 0.9983539622144111,
+   "worst_case": "layout",
+   "complete": true,
+   "per_case": {
+    "code": 0.9992303983334184,
+    "formula": 0.9996080132871427,
+    "layout": 0.9983539622144111,
+    "synthetic": 0.9998506350921285,
+    "table": 0.9995615340689722,
+    "text": 0.9998591011329777
+   },
+   "worst_stage": {
+    "case": "code",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.9909596580807519
+   }
+  },
+  {
+   "recipe": "fd",
+   "file_bytes": 2069193920,
+   "final_cos_min": 0.9150393947823194,
+   "worst_case": "formula",
+   "complete": true,
+   "per_case": {
+    "code": 0.967620623914847,
+    "formula": 0.9150393947823194,
+    "layout": 0.9487191958276385,
+    "synthetic": 0.9879480565035034,
+    "table": 0.97885125776164,
+    "text": 0.9831363948176598
+   },
+   "worst_stage": {
+    "case": "code",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.5561131834908264
+   }
+  },
+  {
+   "recipe": "l0-3",
+   "file_bytes": 2081776928,
+   "final_cos_min": 0.9688110582033088,
+   "worst_case": "formula",
+   "complete": true,
+   "per_case": {
+    "code": 0.9773166139556984,
+    "formula": 0.9688110582033088,
+    "layout": 0.9873177518120755,
+    "synthetic": 0.9922727170602431,
+    "table": 0.9925315779234027,
+    "text": 0.9886626671834439
+   },
+   "worst_stage": {
+    "case": "code",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.5553906232944875
+   }
+  },
+  {
+   "recipe": "l24-27",
+   "file_bytes": 2081776928,
+   "final_cos_min": 0.9500374219249966,
+   "worst_case": "formula",
+   "complete": true,
+   "per_case": {
+    "code": 0.9580146652754759,
+    "formula": 0.9500374219249966,
+    "layout": 0.9577656977464245,
+    "synthetic": 0.9851751084399308,
+    "table": 0.9879688724557458,
+    "text": 0.9866619979622193
+   },
+   "worst_stage": {
+    "case": "code",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.9314472059137204
+   }
+  },
+  {
+   "recipe": "lmid",
+   "file_bytes": 1955948000,
+   "final_cos_min": 0.9063042495154637,
+   "worst_case": "formula",
+   "complete": true,
+   "per_case": {
+    "code": 0.9618184034600562,
+    "formula": 0.9063042495154637,
+    "layout": 0.9483321421481803,
+    "synthetic": 0.9942127862461164,
+    "table": 0.9759526769968626,
+    "text": 0.9973658511898618
+   },
+   "worst_stage": {
+    "case": "code",
+    "stage": "prefill_final_norm(row)",
+    "cosine": 0.9395624741694925
+   }
+  }
+ ]
+}

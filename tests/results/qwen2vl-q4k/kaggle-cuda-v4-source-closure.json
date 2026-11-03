@@ -1,0 +1,9 @@
+{
+  "script_version": "qwen2vl-cuda-cosine-v1",
+  "commit": "0424f6650dd9f4876e79b84585a229463a7e5317",
+  "script_sha256": "3123ef800aa10f3bc68f6bd21fbe8aecddc8f20bfc310776f71e74084ec97dc7",
+  "files_sha256": {
+    "kernel.py": "4eaa16067d49c366c88cf8953f1cf21f9b2d9dee69dd88707818793a601e279c",
+    "kernel-metadata.json": "2807fd15c36771b533d0d7a44a7c311c7ca14bc87d258e40fc56ce84c359e7bf"
+  }
+}

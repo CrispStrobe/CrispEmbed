@@ -14,7 +14,7 @@ struct Fixture {
         s("general.architecture", "ultrabert");
         s("ultrabert.source.revision", "367d5343b5a0164d57b810cedf5de4b8983d5984");
         s("ultrabert.source.weight_sha256", "da8be29564b69e4f90fc8f2683e1f369c3d3575e75f7fe798643e28de02e2b9c");
-        u("general.file_type", 0);
+        u("general.file_type", tensor_variant >= 4 ? GGML_FTYPE_MOSTLY_Q4_K : GGML_FTYPE_ALL_F32);
         u("ultrabert.context_length", 32768);
         u("ultrabert.embedding_length", 768);
         u("ultrabert.block_count", 24);
@@ -53,8 +53,14 @@ struct Fixture {
         u("tokenizer.ggml.mask_token_id", 16);
         for (const auto & item : ultrabert_profile::schema()) {
             if (tensor_variant == 1 && item.first == "output_norm.weight") continue;
-            auto * t = ggml_new_tensor_2d(tensors, tensor_variant == 2 ? GGML_TYPE_F16 : GGML_TYPE_F32,
-                                          item.second.first + (tensor_variant == 3 ? 1 : 0), item.second.second);
+            auto type = tensor_variant == 2 ? GGML_TYPE_F16 : GGML_TYPE_F32;
+            const bool critical =
+                item.first == "token_embd.weight" || item.first.find("norm.weight") != std::string::npos;
+            if (tensor_variant >= 4 && !critical) type = GGML_TYPE_Q4_K;
+            if (tensor_variant == 5 && item.first == "output_norm.weight") type = GGML_TYPE_Q4_K;
+            if (tensor_variant == 6 && item.first == "token_embd.weight") type = GGML_TYPE_Q8_0;
+            auto * t = ggml_new_tensor_2d(tensors, type, item.second.first + (tensor_variant == 3 ? 1 : 0),
+                                          item.second.second);
             ggml_set_name(t, item.first.c_str());
             gguf_add_tensor(meta, t);
         }
@@ -97,6 +103,35 @@ int run() {
     reject([](auto *) {}, 1);
     reject([](auto *) {}, 2);
     reject([](auto *) {}, 3);
+    Fixture q4(4);
+    ultrabert_profile::validate(q4.meta, true);
+    bool old_rejected = false;
+    try {
+        ultrabert_profile::validate(q4.meta);
+    } catch (const std::exception &) {
+        old_rejected = true;
+    }
+    ultrabert_profile::require(old_rejected, "legacy F32 validator accepted Q4_K");
+    for (int variant : { 5, 6 }) {
+        Fixture bad(variant);
+        bool failed = false;
+        try {
+            ultrabert_profile::validate(bad.meta, true);
+        } catch (const std::exception &) {
+            failed = true;
+        }
+        ultrabert_profile::require(failed, "quantized critical tensor accepted");
+        ++controls;
+    }
+    Fixture mislabeled;
+    gguf_set_val_u32(mislabeled.meta, "general.file_type", GGML_FTYPE_MOSTLY_Q4_K);
+    bool no_q4_rejected = false;
+    try {
+        ultrabert_profile::validate(mislabeled.meta, true);
+    } catch (const std::exception &) {
+        no_q4_rejected = true;
+    }
+    ultrabert_profile::require(no_q4_rejected, "mislabeled Q4_K without Q4_K tensors accepted");
     std::vector<int32_t> ids;
     BPETokenizer unused;
     ultrabert_profile::require(!ultrabert_profile::tokenize(unused, "<|mask|>", ids), "reserved text accepted");

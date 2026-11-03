@@ -1,0 +1,855 @@
+{
+ "easyocr": "1.7.2",
+ "torch": "2.7.1",
+ "cv2": "4.12.0",
+ "image": "scan_strip.png",
+ "crops": [
+  {
+   "index": 0,
+   "crop": [
+    65,
+    0,
+    411,
+    28
+   ],
+   "native": {
+    "text": "They are going to be, encamped near   Brighton =",
+    "confidence": 0.458656
+   },
+   "python_path": {
+    "text": "They are going to be, encamped near  Brighton =",
+    "confidence": 0.5794
+   },
+   "python_rgb_array": {
+    "text": "They are going to be, encamped near  Brighton =",
+    "confidence": 0.67555
+   },
+   "v_libpng_int_retry": {
+    "text": "They are going to be, encamped near  Brighton =",
+    "confidence": 0.5794,
+    "resized_width": 939,
+    "canvas": 960,
+    "retried": false
+   },
+   "v_libpng_int_noretry": {
+    "text": "They are going to be, encamped near  Brighton =",
+    "confidence": 0.5794,
+    "resized_width": 939,
+    "canvas": 960,
+    "retried": false
+   },
+   "v_libpng_ceil_retry": {
+    "text": "They are going to be, encamped near   Brighton =",
+    "confidence": 0.46089,
+    "resized_width": 940,
+    "canvas": 960,
+    "retried": false
+   },
+   "v_libpng_ceil_noretry": {
+    "text": "They are going to be, encamped near   Brighton =",
+    "confidence": 0.46089,
+    "resized_width": 940,
+    "canvas": 960,
+    "retried": false
+   },
+   "v_bt601_int_retry": {
+    "text": "They are going to be, encamped near  Brighton =",
+    "confidence": 0.67555,
+    "resized_width": 939,
+    "canvas": 960,
+    "retried": false
+   },
+   "v_bt601_int_noretry": {
+    "text": "They are going to be, encamped near  Brighton =",
+    "confidence": 0.67555,
+    "resized_width": 939,
+    "canvas": 960,
+    "retried": false
+   },
+   "v_bt601_ceil_retry": {
+    "text": "They are going to be, encamped near   Brighton =",
+    "confidence": 0.46245,
+    "resized_width": 940,
+    "canvas": 960,
+    "retried": false
+   },
+   "v_bt601_ceil_noretry": {
+    "text": "They are going to be, encamped near   Brighton =",
+    "confidence": 0.46245,
+    "resized_width": 940,
+    "canvas": 960,
+    "retried": false
+   }
+  },
+  {
+   "index": 1,
+   "crop": [
+    19,
+    13,
+    466,
+    29
+   ],
+   "native": {
+    "text": "~and I do 8 want papa to take u8 ail there for the sum-",
+    "confidence": 0.53222
+   },
+   "python_path": {
+    "text": "~and I do 8 want papa to take u8 ail there for the sum-",
+    "confidence": 0.47453
+   },
+   "python_rgb_array": {
+    "text": "~and I do 8 want papa to take u8 ail there for the sum-",
+    "confidence": 0.57614
+   },
+   "v_libpng_int_retry": {
+    "text": "~and I do 8 want papa to take u8 ail there for the sum-",
+    "confidence": 0.47453,
+    "resized_width": 1028,
+    "canvas": 1088,
+    "retried": false
+   },
+   "v_libpng_int_noretry": {
+    "text": "~and I do 8 want papa to take u8 ail there for the sum-",
+    "confidence": 0.47453,
+    "resized_width": 1028,
+    "canvas": 1088,
+    "retried": false
+   },
+   "v_libpng_ceil_retry": {
+    "text": "~and I do 8 want papa to take u8 ail there for the sum-",
+    "confidence": 0.53537,
+    "resized_width": 1029,
+    "canvas": 1088,
+    "retried": false
+   },
+   "v_libpng_ceil_noretry": {
+    "text": "~and I do 8 want papa to take u8 ail there for the sum-",
+    "confidence": 0.53537,
+    "resized_width": 1029,
+    "canvas": 1088,
+    "retried": false
+   },
+   "v_bt601_int_retry": {
+    "text": "~and I do 8 want papa to take u8 ail there for the sum-",
+    "confidence": 0.57614,
+    "resized_width": 1028,
+    "canvas": 1088,
+    "retried": false
+   },
+   "v_bt601_int_noretry": {
+    "text": "~and I do 8 want papa to take u8 ail there for the sum-",
+    "confidence": 0.57614,
+    "resized_width": 1028,
+    "canvas": 1088,
+    "retried": false
+   },
+   "v_bt601_ceil_retry": {
+    "text": "~and I do 8 want papa to take u8 ail there for the sum-",
+    "confidence": 0.53249,
+    "resized_width": 1029,
+    "canvas": 1088,
+    "retried": false
+   },
+   "v_bt601_ceil_noretry": {
+    "text": "~and I do 8 want papa to take u8 ail there for the sum-",
+    "confidence": 0.53249,
+    "resized_width": 1029,
+    "canvas": 1088,
+    "retried": false
+   }
+  },
+  {
+   "index": 2,
+   "crop": [
+    21,
+    32,
+    467,
+    32
+   ],
+   "native": {
+    "text": "mer !   It would be such & delicious scheme,and I dare",
+    "confidence": 0.74003
+   },
+   "python_path": {
+    "text": "mer !   It would be such & delicious scheme,and I dare",
+    "confidence": 0.69643
+   },
+   "python_rgb_array": {
+    "text": "mer !   It would be such & delicious scheme,and I dare",
+    "confidence": 0.75765
+   },
+   "v_libpng_int_retry": {
+    "text": "mer !   It would be such & delicious scheme,and I dare",
+    "confidence": 0.69643,
+    "resized_width": 934,
+    "canvas": 960,
+    "retried": false
+   },
+   "v_libpng_int_noretry": {
+    "text": "mer !   It would be such & delicious scheme,and I dare",
+    "confidence": 0.69643,
+    "resized_width": 934,
+    "canvas": 960,
+    "retried": false
+   },
+   "v_libpng_ceil_retry": {
+    "text": "mer !   It would be such & delicious scheme,and I dare",
+    "confidence": 0.69643,
+    "resized_width": 934,
+    "canvas": 960,
+    "retried": false
+   },
+   "v_libpng_ceil_noretry": {
+    "text": "mer !   It would be such & delicious scheme,and I dare",
+    "confidence": 0.69643,
+    "resized_width": 934,
+    "canvas": 960,
+    "retried": false
+   },
+   "v_bt601_int_retry": {
+    "text": "mer !   It would be such & delicious scheme,and I dare",
+    "confidence": 0.75765,
+    "resized_width": 934,
+    "canvas": 960,
+    "retried": false
+   },
+   "v_bt601_int_noretry": {
+    "text": "mer !   It would be such & delicious scheme,and I dare",
+    "confidence": 0.75765,
+    "resized_width": 934,
+    "canvas": 960,
+    "retried": false
+   },
+   "v_bt601_ceil_retry": {
+    "text": "mer !   It would be such & delicious scheme,and I dare",
+    "confidence": 0.75765,
+    "resized_width": 934,
+    "canvas": 960,
+    "retried": false
+   },
+   "v_bt601_ceil_noretry": {
+    "text": "mer !   It would be such & delicious scheme,and I dare",
+    "confidence": 0.75765,
+    "resized_width": 934,
+    "canvas": 960,
+    "retried": false
+   }
+  },
+  {
+   "index": 3,
+   "crop": [
+    20,
+    54,
+    467,
+    35
+   ],
+   "native": {
+    "text": "say would hardly cost anything at all; , Mamma would",
+    "confidence": 0.479875
+   },
+   "python_path": {
+    "text": "say would hardly cost anything at all   Mamma would",
+    "confidence": 0.49085
+   },
+   "python_rgb_array": {
+    "text": "say would hardly cost anything at all   Mamma would",
+    "confidence": 0.47561
+   },
+   "v_libpng_int_retry": {
+    "text": "say would hardly cost anything at all   Mamma would",
+    "confidence": 0.49085,
+    "resized_width": 853,
+    "canvas": 896,
+    "retried": false
+   },
+   "v_libpng_int_noretry": {
+    "text": "say would hardly cost anything at all   Mamma would",
+    "confidence": 0.49085,
+    "resized_width": 853,
+    "canvas": 896,
+    "retried": false
+   },
+   "v_libpng_ceil_retry": {
+    "text": "say would hardly cost anything at all; , Mamma would",
+    "confidence": 0.47714,
+    "resized_width": 854,
+    "canvas": 896,
+    "retried": false
+   },
+   "v_libpng_ceil_noretry": {
+    "text": "say would hardly cost anything at all; , Mamma would",
+    "confidence": 0.47714,
+    "resized_width": 854,
+    "canvas": 896,
+    "retried": false
+   },
+   "v_bt601_int_retry": {
+    "text": "say would hardly cost anything at all   Mamma would",
+    "confidence": 0.47561,
+    "resized_width": 853,
+    "canvas": 896,
+    "retried": false
+   },
+   "v_bt601_int_noretry": {
+    "text": "say would hardly cost anything at all   Mamma would",
+    "confidence": 0.47561,
+    "resized_width": 853,
+    "canvas": 896,
+    "retried": false
+   },
+   "v_bt601_ceil_retry": {
+    "text": "say would hardly cost anything at all; , Mamma would",
+    "confidence": 0.4808,
+    "resized_width": 854,
+    "canvas": 896,
+    "retried": false
+   },
+   "v_bt601_ceil_noretry": {
+    "text": "say would hardly cost anything at all; , Mamma would",
+    "confidence": 0.4808,
+    "resized_width": 854,
+    "canvas": 896,
+    "retried": false
+   }
+  },
+  {
+   "index": 4,
+   "crop": [
+    20,
+    73,
+    447,
+    36
+   ],
+   "native": {
+    "text": "like to go too of all things ! \" Only think what",
+    "confidence": 0.426169
+   },
+   "python_path": {
+    "text": "like to go too of all things ! \" Only think what",
+    "confidence": 0.46142
+   },
+   "python_rgb_array": {
+    "text": "like to go too of all things ! \" Only think what",
+    "confidence": 0.45533
+   },
+   "v_libpng_int_retry": {
+    "text": "like to go too of all things ! \" Only think what",
+    "confidence": 0.46142,
+    "resized_width": 794,
+    "canvas": 832,
+    "retried": false
+   },
+   "v_libpng_int_noretry": {
+    "text": "like to go too of all things ! \" Only think what",
+    "confidence": 0.46142,
+    "resized_width": 794,
+    "canvas": 832,
+    "retried": false
+   },
+   "v_libpng_ceil_retry": {
+    "text": "like to go too of all things ! \" Only think what",
+    "confidence": 0.44005,
+    "resized_width": 795,
+    "canvas": 832,
+    "retried": false
+   },
+   "v_libpng_ceil_noretry": {
+    "text": "like to go too of all things ! \" Only think what",
+    "confidence": 0.44005,
+    "resized_width": 795,
+    "canvas": 832,
+    "retried": false
+   },
+   "v_bt601_int_retry": {
+    "text": "like to go too of all things ! \" Only think what",
+    "confidence": 0.45533,
+    "resized_width": 794,
+    "canvas": 832,
+    "retried": false
+   },
+   "v_bt601_int_noretry": {
+    "text": "like to go too of all things ! \" Only think what",
+    "confidence": 0.45533,
+    "resized_width": 794,
+    "canvas": 832,
+    "retried": false
+   },
+   "v_bt601_ceil_retry": {
+    "text": "like to go too of all things ! \" Only think what",
+    "confidence": 0.36418,
+    "resized_width": 795,
+    "canvas": 832,
+    "retried": false
+   },
+   "v_bt601_ceil_noretry": {
+    "text": "like to go too of all things ! \" Only think what",
+    "confidence": 0.36418,
+    "resized_width": 795,
+    "canvas": 832,
+    "retried": false
+   }
+  },
+  {
+   "index": 5,
+   "crop": [
+    21,
+    98,
+    309,
+    31
+   ],
+   "native": {
+    "text": "miserable summer else we shall have ",
+    "confidence": 0.78069
+   },
+   "python_path": {
+    "text": "miserable summer else we shall have ",
+    "confidence": 0.8125
+   },
+   "python_rgb_array": {
+    "text": "miserable summer else we shall have ",
+    "confidence": 0.65009
+   },
+   "v_libpng_int_retry": {
+    "text": "miserable summer else we shall have ",
+    "confidence": 0.8125,
+    "resized_width": 637,
+    "canvas": 640,
+    "retried": false
+   },
+   "v_libpng_int_noretry": {
+    "text": "miserable summer else we shall have ",
+    "confidence": 0.8125,
+    "resized_width": 637,
+    "canvas": 640,
+    "retried": false
+   },
+   "v_libpng_ceil_retry": {
+    "text": "miserable summer else we shall have ",
+    "confidence": 0.78215,
+    "resized_width": 638,
+    "canvas": 640,
+    "retried": false
+   },
+   "v_libpng_ceil_noretry": {
+    "text": "miserable summer else we shall have ",
+    "confidence": 0.78215,
+    "resized_width": 638,
+    "canvas": 640,
+    "retried": false
+   },
+   "v_bt601_int_retry": {
+    "text": "miserable summer else we shall have ",
+    "confidence": 0.65009,
+    "resized_width": 637,
+    "canvas": 640,
+    "retried": false
+   },
+   "v_bt601_int_noretry": {
+    "text": "miserable summer else we shall have ",
+    "confidence": 0.65009,
+    "resized_width": 637,
+    "canvas": 640,
+    "retried": false
+   },
+   "v_bt601_ceil_retry": {
+    "text": "miserable summer else we shall have ",
+    "confidence": 0.78476,
+    "resized_width": 638,
+    "canvas": 640,
+    "retried": false
+   },
+   "v_bt601_ceil_noretry": {
+    "text": "miserable summer else we shall have ",
+    "confidence": 0.78476,
+    "resized_width": 638,
+    "canvas": 640,
+    "retried": false
+   }
+  },
+  {
+   "index": 6,
+   "crop": [
+    20,
+    116,
+    468,
+    60
+   ],
+   "native": {
+    "text": "ful achene idceht Eldabompletehy' doulat bez deliabe",
+    "confidence": 0.0393653
+   },
+   "python_path": {
+    "text": "ful achene hdcgh; Endabompletdiy' dould be: delisbe",
+    "confidence": 0.06428
+   },
+   "python_rgb_array": {
+    "text": "ful achene hdcgh; Endabompletdiy' dould be: delisbe",
+    "confidence": 0.06524
+   },
+   "v_libpng_int_retry": {
+    "text": "ful achene hdcgh; Endabompletdiy' dould be: delisbe",
+    "confidence": 0.06428,
+    "resized_width": 499,
+    "canvas": 512,
+    "retried": true
+   },
+   "v_libpng_int_noretry": {
+    "text": "ful achene hdcgh; Endabompletdiy' dould be: delisbe",
+    "confidence": 0.06428,
+    "resized_width": 499,
+    "canvas": 512,
+    "retried": false
+   },
+   "v_libpng_ceil_retry": {
+    "text": "ful achene idceht Eldabompletehy' doulat bez deliabe",
+    "confidence": 0.04047,
+    "resized_width": 500,
+    "canvas": 512,
+    "retried": true
+   },
+   "v_libpng_ceil_noretry": {
+    "text": "ful achene idceht Eldabompletehy' doulat bez deliabe",
+    "confidence": 0.04047,
+    "resized_width": 500,
+    "canvas": 512,
+    "retried": false
+   },
+   "v_bt601_int_retry": {
+    "text": "ful achene hdcgh; Endabompletdiy' dould be: delisbe",
+    "confidence": 0.06524,
+    "resized_width": 499,
+    "canvas": 512,
+    "retried": true
+   },
+   "v_bt601_int_noretry": {
+    "text": "ful achene hdcgh; Endabompletdiy' dould be: delisbe",
+    "confidence": 0.06524,
+    "resized_width": 499,
+    "canvas": 512,
+    "retried": false
+   },
+   "v_bt601_ceil_retry": {
+    "text": "ful achene idceht Eldabompletehy' doulat bez deliabe",
+    "confidence": 0.03931,
+    "resized_width": 500,
+    "canvas": 512,
+    "retried": true
+   },
+   "v_bt601_ceil_noretry": {
+    "text": "ful achene idceht Eldabompletehy' doulat bez deliabe",
+    "confidence": 0.03931,
+    "resized_width": 500,
+    "canvas": 512,
+    "retried": false
+   }
+  },
+  {
+   "index": 7,
+   "crop": [
+    22,
+    160,
+    468,
+    35
+   ],
+   "native": {
+    "text": "Good  Heaven ! ` Brighton; and &  whole   campful of",
+    "confidence": 0.230852
+   },
+   "python_path": {
+    "text": "Good  Heaven ! ` Brighton; and &  whole   campful of",
+    "confidence": 0.29856
+   },
+   "python_rgb_array": {
+    "text": "Good  Heaven ! ` Brighton; and & whole   campful of",
+    "confidence": 0.34803
+   },
+   "v_libpng_int_retry": {
+    "text": "Good  Heaven ! ` Brighton; and &  whole   campful of",
+    "confidence": 0.29856,
+    "resized_width": 855,
+    "canvas": 896,
+    "retried": false
+   },
+   "v_libpng_int_noretry": {
+    "text": "Good  Heaven ! ` Brighton; and &  whole   campful of",
+    "confidence": 0.29856,
+    "resized_width": 855,
+    "canvas": 896,
+    "retried": false
+   },
+   "v_libpng_ceil_retry": {
+    "text": "Good  Heaven ! ` Brighton; and &  whole   campful of",
+    "confidence": 0.27319,
+    "resized_width": 856,
+    "canvas": 896,
+    "retried": false
+   },
+   "v_libpng_ceil_noretry": {
+    "text": "Good  Heaven ! ` Brighton; and &  whole   campful of",
+    "confidence": 0.27319,
+    "resized_width": 856,
+    "canvas": 896,
+    "retried": false
+   },
+   "v_bt601_int_retry": {
+    "text": "Good  Heaven ! ` Brighton; and & whole   campful of",
+    "confidence": 0.34803,
+    "resized_width": 855,
+    "canvas": 896,
+    "retried": false
+   },
+   "v_bt601_int_noretry": {
+    "text": "Good  Heaven ! ` Brighton; and & whole   campful of",
+    "confidence": 0.34803,
+    "resized_width": 855,
+    "canvas": 896,
+    "retried": false
+   },
+   "v_bt601_ceil_retry": {
+    "text": "Good  Heaven ! ` Brighton; and &  whole   campful of",
+    "confidence": 0.2789,
+    "resized_width": 856,
+    "canvas": 896,
+    "retried": false
+   },
+   "v_bt601_ceil_noretry": {
+    "text": "Good  Heaven ! ` Brighton; and &  whole   campful of",
+    "confidence": 0.2789,
+    "resized_width": 856,
+    "canvas": 896,
+    "retried": false
+   }
+  },
+  {
+   "index": 8,
+   "crop": [
+    20,
+    183,
+    469,
+    33
+   ],
+   "native": {
+    "text": "~soldiers, to u8, who have been  overset already by one",
+    "confidence": 0.356455
+   },
+   "python_path": {
+    "text": "~soldiers, to u8, who have been   overset already by one",
+    "confidence": 0.33122
+   },
+   "python_rgb_array": {
+    "text": "~soldiers, to u8, who have been  overset already by one",
+    "confidence": 0.45882
+   },
+   "v_libpng_int_retry": {
+    "text": "~soldiers, to u8, who have been   overset already by one",
+    "confidence": 0.33122,
+    "resized_width": 909,
+    "canvas": 960,
+    "retried": false
+   },
+   "v_libpng_int_noretry": {
+    "text": "~soldiers, to u8, who have been   overset already by one",
+    "confidence": 0.33122,
+    "resized_width": 909,
+    "canvas": 960,
+    "retried": false
+   },
+   "v_libpng_ceil_retry": {
+    "text": "~soldiers, to u8, who have been  overset already by one",
+    "confidence": 0.34447,
+    "resized_width": 910,
+    "canvas": 960,
+    "retried": false
+   },
+   "v_libpng_ceil_noretry": {
+    "text": "~soldiers, to u8, who have been  overset already by one",
+    "confidence": 0.34447,
+    "resized_width": 910,
+    "canvas": 960,
+    "retried": false
+   },
+   "v_bt601_int_retry": {
+    "text": "~soldiers, to u8, who have been  overset already by one",
+    "confidence": 0.45882,
+    "resized_width": 909,
+    "canvas": 960,
+    "retried": false
+   },
+   "v_bt601_int_noretry": {
+    "text": "~soldiers, to u8, who have been  overset already by one",
+    "confidence": 0.45882,
+    "resized_width": 909,
+    "canvas": 960,
+    "retried": false
+   },
+   "v_bt601_ceil_retry": {
+    "text": "~soldiers, to u8, who have been  overset already by one",
+    "confidence": 0.35109,
+    "resized_width": 910,
+    "canvas": 960,
+    "retried": false
+   },
+   "v_bt601_ceil_noretry": {
+    "text": "~soldiers, to u8, who have been  overset already by one",
+    "confidence": 0.35109,
+    "resized_width": 910,
+    "canvas": 960,
+    "retried": false
+   }
+  },
+  {
+   "index": 9,
+   "crop": [
+    22,
+    207,
+    469,
+    30
+   ],
+   "native": {
+    "text": "poor   regiment   of  militia, and  the  monthly ' bails   of",
+    "confidence": 0.698766
+   },
+   "python_path": {
+    "text": "poor   regiment   of  militia, and   the   monthly ' bails   of",
+    "confidence": 0.37271
+   },
+   "python_rgb_array": {
+    "text": "poor   regiment   of militia, and   the   monthly ' bails   of",
+    "confidence": 0.44981
+   },
+   "v_libpng_int_retry": {
+    "text": "poor   regiment   of  militia, and   the   monthly ' bails   of",
+    "confidence": 0.37271,
+    "resized_width": 1000,
+    "canvas": 1024,
+    "retried": false
+   },
+   "v_libpng_int_noretry": {
+    "text": "poor   regiment   of  militia, and   the   monthly ' bails   of",
+    "confidence": 0.37271,
+    "resized_width": 1000,
+    "canvas": 1024,
+    "retried": false
+   },
+   "v_libpng_ceil_retry": {
+    "text": "poor   regiment   of  militia, and  the  monthly ' bails   of",
+    "confidence": 0.58477,
+    "resized_width": 1001,
+    "canvas": 1024,
+    "retried": false
+   },
+   "v_libpng_ceil_noretry": {
+    "text": "poor   regiment   of  militia, and  the  monthly ' bails   of",
+    "confidence": 0.58477,
+    "resized_width": 1001,
+    "canvas": 1024,
+    "retried": false
+   },
+   "v_bt601_int_retry": {
+    "text": "poor   regiment   of militia, and   the   monthly ' bails   of",
+    "confidence": 0.44981,
+    "resized_width": 1000,
+    "canvas": 1024,
+    "retried": false
+   },
+   "v_bt601_int_noretry": {
+    "text": "poor   regiment   of militia, and   the   monthly ' bails   of",
+    "confidence": 0.44981,
+    "resized_width": 1000,
+    "canvas": 1024,
+    "retried": false
+   },
+   "v_bt601_ceil_retry": {
+    "text": "poor   regiment   of  militia, and  the  monthly ' bails   of",
+    "confidence": 0.69624,
+    "resized_width": 1001,
+    "canvas": 1024,
+    "retried": false
+   },
+   "v_bt601_ceil_noretry": {
+    "text": "poor   regiment   of  militia, and  the  monthly ' bails   of",
+    "confidence": 0.69624,
+    "resized_width": 1001,
+    "canvas": 1024,
+    "retried": false
+   }
+  },
+  {
+   "index": 10,
+   "crop": [
+    21,
+    220,
+    82,
+    37
+   ],
+   "native": {
+    "text": "Meryton",
+    "confidence": 0.723288
+   },
+   "python_path": {
+    "text": "Meryton",
+    "confidence": 0.8248
+   },
+   "python_rgb_array": {
+    "text": "Meryton",
+    "confidence": 0.83962
+   },
+   "v_libpng_int_retry": {
+    "text": "Meryton",
+    "confidence": 0.8248,
+    "resized_width": 141,
+    "canvas": 192,
+    "retried": false
+   },
+   "v_libpng_int_noretry": {
+    "text": "Meryton",
+    "confidence": 0.8248,
+    "resized_width": 141,
+    "canvas": 192,
+    "retried": false
+   },
+   "v_libpng_ceil_retry": {
+    "text": "Meryton",
+    "confidence": 0.99549,
+    "resized_width": 142,
+    "canvas": 192,
+    "retried": false
+   },
+   "v_libpng_ceil_noretry": {
+    "text": "Meryton",
+    "confidence": 0.99549,
+    "resized_width": 142,
+    "canvas": 192,
+    "retried": false
+   },
+   "v_bt601_int_retry": {
+    "text": "Meryton",
+    "confidence": 0.83962,
+    "resized_width": 141,
+    "canvas": 192,
+    "retried": false
+   },
+   "v_bt601_int_noretry": {
+    "text": "Meryton",
+    "confidence": 0.83962,
+    "resized_width": 141,
+    "canvas": 192,
+    "retried": false
+   },
+   "v_bt601_ceil_retry": {
+    "text": "Meryton",
+    "confidence": 0.80362,
+    "resized_width": 142,
+    "canvas": 192,
+    "retried": false
+   },
+   "v_bt601_ceil_noretry": {
+    "text": "Meryton",
+    "confidence": 0.80362,
+    "resized_width": 142,
+    "canvas": 192,
+    "retried": false
+   }
+  }
+ ]
+}

@@ -39,11 +39,12 @@ void stbi_image_free(void * retval_from_stbi_load);
 #include <string>
 #include <thread>
 #include <vector>
+#include "core/env_value.h"
 
 // Debug logging gated on LAYOUT_DEBUG env var
 static bool layout_debug() {
     static int val = -1;
-    if (val < 0) val = (getenv("LAYOUT_DEBUG") != nullptr) ? 1 : 0;
+    if (val < 0) val = core_env::on("LAYOUT_DEBUG") ? 1 : 0;
     return val != 0;
 }
 #define LDBG(...)                                                                                                      \
@@ -526,7 +527,7 @@ static ggml_tensor * lmm(ggml_context * g, ggml_tensor * a, ggml_tensor * b) {
 }
 
 static ggml_tensor * layout_attn(ggml_context * g, ggml_tensor * Q, ggml_tensor * K, ggml_tensor * V, float scale) {
-    static const bool use_flash = (std::getenv("LAYOUT_DETECT_FLASH") != nullptr);
+    static const bool use_flash = core_env::on("LAYOUT_DETECT_FLASH");
     if (use_flash) {
         return ggml_flash_attn_ext(g, Q, K, V, nullptr, scale, 0.0f, 0.0f);
     }
@@ -564,7 +565,7 @@ static ggml_tensor * prep_conv(ggml_context * g, ggml_tensor * w, int IC, int KH
 // LAYOUT_CONV_DIRECT=1 restores the old direct path (regression fallback).
 static bool layout_conv_direct() {
     static int v = -1;
-    if (v < 0) v = (getenv("LAYOUT_CONV_DIRECT") != nullptr) ? 1 : 0;
+    if (v < 0) v = core_env::on("LAYOUT_CONV_DIRECT") ? 1 : 0;
     return v == 1;
 }
 // LAYOUT_CONV_F16=1 (opt-in): run the conv GEMMs in F16. The fork's
@@ -1215,7 +1216,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
 
     // Backbone
     // Verify stem weight is the folded version
-    if (std::getenv("CRISPEMBED_LAYOUT_DEBUG")) {
+    if (core_env::on("CRISPEMBED_LAYOUT_DEBUG")) {
         auto * t = ctx->backbone.stem[0].w;
         std::vector<uint8_t> raw(ggml_nbytes(t));
         ggml_backend_tensor_get(t, raw.data(), 0, raw.size());
@@ -1318,7 +1319,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
         }
     }
     // Dump encoder intermediates for diff comparison (ggml raw byte order)
-    if (getenv("LAYOUT_DEBUG")) {
+    if (core_env::on("LAYOUT_DEBUG")) {
         auto dump_ggml_tensor = [&](const char * name) {
             ggml_tensor * t = ggml_graph_get_tensor(gf, name);
             if (!t) return;
@@ -1367,7 +1368,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
     }
 
     // Dump s3/s4/s5 for diff comparison
-    if (getenv("LAYOUT_DEBUG")) {
+    if (core_env::on("LAYOUT_DEBUG")) {
         for (int i = 0; i < 3; i++) {
             char fname[128];
             snprintf(fname, sizeof(fname), "/tmp/cpp_s%d.bin", i + 3);
@@ -1565,7 +1566,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
         for (int n = 0; n < total_tokens; n++)
             if (mask[n] == 0.0f)
                 for (int d = 0; d < D; d++) memory[d * total_tokens + n] = 0.0f;
-        if (getenv("LAYOUT_DEBUG")) {
+        if (core_env::on("LAYOUT_DEBUG")) {
             int n_valid = 0;
             for (auto v : mask)
                 if (v > 0) n_valid++;
@@ -1591,8 +1592,8 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
     cpu_layernorm(enc_proj.data(), D, total_tokens, ctx->decoder.enc_norm_w, ctx->decoder.enc_norm_b);
 
     // Debug: inject HF reference enc_output for decoder parity testing
-    if (getenv("LAYOUT_INJECT_REF")) {
-        FILE * rfp = fopen(getenv("LAYOUT_INJECT_REF"), "rb");
+    if (core_env::value("LAYOUT_INJECT_REF")) {
+        FILE * rfp = fopen(core_env::value("LAYOUT_INJECT_REF"), "rb");
         if (rfp) {
             // Reference is [N_total, D] row-major → convert to [D, N_total] col-major
             std::vector<float> ref_row(D * total_tokens);
@@ -1600,12 +1601,12 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
             fclose(rfp);
             for (int n = 0; n < total_tokens; n++)
                 for (int d = 0; d < D; d++) enc_proj[d * total_tokens + n] = ref_row[n * D + d];
-            LDBG("  INJECTED HF enc_output from %s\n", getenv("LAYOUT_INJECT_REF"));
+            LDBG("  INJECTED HF enc_output from %s\n", core_env::value("LAYOUT_INJECT_REF"));
         }
     }
     // Debug: also inject HF reference memory (raw encoder features for cross-attn)
-    if (getenv("LAYOUT_INJECT_MEMORY")) {
-        FILE * rfp = fopen(getenv("LAYOUT_INJECT_MEMORY"), "rb");
+    if (core_env::value("LAYOUT_INJECT_MEMORY")) {
+        FILE * rfp = fopen(core_env::value("LAYOUT_INJECT_MEMORY"), "rb");
         if (rfp) {
             // Reference stored as [N_total, D] row-major → [D, N_total] col-major
             std::vector<float> ref_row(D * total_tokens);
@@ -1613,12 +1614,12 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
             fclose(rfp);
             for (int n = 0; n < total_tokens; n++)
                 for (int d = 0; d < D; d++) memory[d * total_tokens + n] = ref_row[n * D + d];
-            LDBG("  INJECTED HF memory from %s\n", getenv("LAYOUT_INJECT_MEMORY"));
+            LDBG("  INJECTED HF memory from %s\n", core_env::value("LAYOUT_INJECT_MEMORY"));
         }
     }
 
     // Debug: dump raw memory for parity comparison
-    if (getenv("LAYOUT_DEBUG")) {
+    if (core_env::on("LAYOUT_DEBUG")) {
         // Dump memory as [N_total, D] row-major
         std::vector<float> mem_row(D * total_tokens);
         for (int n = 0; n < total_tokens; n++)
@@ -1647,7 +1648,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
     }
 
     // Debug: dump enc_proj for parity comparison
-    if (getenv("LAYOUT_DEBUG")) {
+    if (core_env::on("LAYOUT_DEBUG")) {
         // Convert from [D, N_total] col-major to [N_total, D] row-major for comparison
         std::vector<float> enc_proj_row(D * total_tokens);
         for (int n = 0; n < total_tokens; n++)
@@ -1686,7 +1687,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
     }
 
     // Debug: dump initial queries and top-K indices
-    if (getenv("LAYOUT_DEBUG")) {
+    if (core_env::on("LAYOUT_DEBUG")) {
         LDBG("  top-K indices first 5: %d %d %d %d %d\n", token_scores[0].second, token_scores[1].second,
              token_scores[2].second, token_scores[3].second, token_scores[4].second);
         // Dump queries as [N, D] row-major
@@ -1761,7 +1762,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
     std::vector<float> pos_enc(D * N_queries, 0.0f);
 
     // Debug: dump ref_points
-    if (getenv("LAYOUT_DEBUG")) {
+    if (core_env::on("LAYOUT_DEBUG")) {
         FILE * fp = fopen("/tmp/cpp_ref_points.bin", "wb");
         if (fp) {
             fwrite(ref_points.data(), sizeof(float), N_queries * 4, fp);
@@ -1773,7 +1774,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
 
     // Compute initial pos_enc and dump for comparison
     compute_pos_enc(ref_points.data(), pos_enc.data());
-    if (getenv("LAYOUT_DEBUG")) {
+    if (core_env::on("LAYOUT_DEBUG")) {
         std::vector<float> pe_row(D * N_queries);
         for (int q = 0; q < N_queries; q++)
             for (int d = 0; d < D; d++) pe_row[q * D + d] = pos_enc[d * N_queries + q];
@@ -2102,7 +2103,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
         }
 
         // Debug: dump cross_out for parity comparison
-        if (li == 0 && getenv("LAYOUT_DEBUG")) {
+        if (li == 0 && core_env::on("LAYOUT_DEBUG")) {
             std::vector<float> cross_row(D * N_queries);
             for (int d = 0; d < D; d++)
                 for (int q = 0; q < N_queries; q++) cross_row[q * D + d] = cross_out[d * N_queries + q];
@@ -2133,7 +2134,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
         std::vector<float> ca_out(D * N_queries);
         cpu_linear(cross_out.data(), ca_out.data(), D, D, N_queries, layer.cross_out_w, layer.cross_out_b);
 
-        if (li == 0 && getenv("LAYOUT_DEBUG")) {
+        if (li == 0 && core_env::on("LAYOUT_DEBUG")) {
             float mn = 1e9, mx = -1e9;
             for (auto v : ca_out) {
                 mn = std::min(mn, v);
@@ -2221,7 +2222,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
         }
 
         // Dump decoder layer output for diff comparison
-        if (getenv("LAYOUT_DEBUG")) {
+        if (core_env::on("LAYOUT_DEBUG")) {
             char fname[128];
             snprintf(fname, sizeof(fname), "/tmp/cpp_dec_%d.bin", li);
             // Convert from [D, N] col-major to [N, D] row-major
@@ -2269,7 +2270,7 @@ std::vector<region> detect(context * ctx, const float * pixels, int orig_h, int 
         LDBG("  decoder layer %d done\n", li);
 
         // Debug: dump decoder layer 0 output
-        if (li == 0 && getenv("LAYOUT_DEBUG")) {
+        if (li == 0 && core_env::on("LAYOUT_DEBUG")) {
             float qmin = 1e9, qmax = -1e9;
             std::vector<float> q_row(D * N_queries);
             for (int q = 0; q < N_queries; q++)

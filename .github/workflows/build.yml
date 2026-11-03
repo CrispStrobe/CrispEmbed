@@ -20,8 +20,12 @@ on:
     # provenance tests assert that a string the CODE emits mentions
     # POLICY.md, they never read the file.
     #
-    # Deliberately not applied to `pull_request`: a required check that does
-    # not run can block a merge, and PR runs do not feed the badge anyway.
+    # Also applied to `pull_request` (2026-11-02): main has no branch
+    # protection / required checks, so a skipped PR run cannot block a merge.
+    # If Build ever becomes a required check, replace the PR filter with an
+    # always-run lightweight job instead (see docs/contributing.md, CI).
+    # `tests/results/**` holds committed receipts/evidence JSON that no build
+    # step or model-free test below reads.
     #
     # Both markdown globs on purpose. GitHub matches these against the full
     # path from the repo root, where `*` does not cross `/` and `**` does, so
@@ -33,8 +37,14 @@ on:
       - '*.md'
       - '**.md'
       - 'docs/**'
+      - 'tests/results/**'
   pull_request:
     branches: [main]
+    paths-ignore:
+      - '*.md'
+      - '**.md'
+      - 'docs/**'
+      - 'tests/results/**'
 
 concurrency:
   group: build-${{ github.ref }}

@@ -1,0 +1,35 @@
+fox ngram=20 n=17 14.4s 'The quick brown fox jumps over the lazy dog. 12345'
+fox ngram=0 n=17 14.3s 'The quick brown fox jumps over the lazy dog. 12345'
+receipt_example ngram=20 n=221 36.4s 'Jackson-Washington \n6640 Ortiz Cove, Markmouth, PW \n69940 \nTransaction ID: 8F88C'
+receipt_example ngram=0 n=221 36.2s 'Jackson-Washington \n6640 Ortiz Cove, Markmouth, PW \n69940 \nTransaction ID: 8F88C'
+simple_form ngram=20 n=53 18.5s 'Input TEXT AREA Text e Text e Humber Date Password a label ANOTHER LABEL Yet ano'
+simple_form ngram=0 n=53 18.2s 'Input TEXT AREA Text e Text e Humber Date Password a label ANOTHER LABEL Yet ano'
+model  arm      case             prompt pix_max   ids_exact first_div n/ref   ratio  vsHF
+f16    000      fox              False  3.6619   True      None      16/16    1.0000 1.0
+f16    000      receipt_example  False  3.7519   False     3         222/220   0.6194 0.5304
+f16    000      simple_form      False  2.6414   False     0         27/52    0.4809 0.4406
+f16    dft      fox              True   0.0000   True      None      16/16    1.0000 1.0
+f16    dft      receipt_example  True   0.0000   True      None      220/220   1.0000 0.8268
+f16    dft      simple_form      True   0.0000   True      None      52/52    1.0000 0.9914
+q4k    001      fox              False  3.6619   True      None      16/16    1.0000 1.0
+q4k    001      receipt_example  False  3.7519   False     3         215/220   0.6913 0.5948
+q4k    001      simple_form      False  2.6414   False     0         2/52    0.0753 0.0741
+q4k    010      fox              True   3.6619   True      None      16/16    1.0000 1.0
+q4k    010      receipt_example  True   3.7519   False     3         213/220   0.6889 0.5924
+q4k    010      simple_form      True   2.6414   False     0         2/52    0.0753 0.0741
+q4k    011      fox              True   3.6619   True      None      16/16    1.0000 1.0
+q4k    011      receipt_example  True   3.7519   False     3         215/220   0.6913 0.5948
+q4k    011      simple_form      True   2.6414   False     0         2/52    0.0753 0.0741
+q4k    100      fox              False  0.0000   True      None      16/16    1.0000 1.0
+q4k    100      receipt_example  False  0.0000   False     78        212/220   0.7100 0.8172
+q4k    100      simple_form      False  0.0000   False     20        55/52    0.8827 0.9175
+q4k    101      fox              False  0.0000   True      None      16/16    1.0000 1.0
+q4k    101      receipt_example  False  0.0000   False     83        216/220   0.7005 0.8042
+q4k    101      simple_form      False  0.0000   False     20        54/52    0.8865 0.9214
+q4k    110      fox              True   0.0000   True      None      16/16    1.0000 1.0
+q4k    110      receipt_example  True   0.0000   False     78        220/220   0.7012 0.8053
+q4k    110      simple_form      True   0.0000   False     20        55/52    0.8827 0.9175
+q4k    dft      fox              True   0.0000   True      None      16/16    1.0000 1.0
+q4k    dft      receipt_example  True   0.0000   False     83        216/220   0.7005 0.8042
+q4k    dft      simple_form      True   0.0000   False     20        54/52    0.8865 0.9214
+original controls: {"fox.ngram0": {"ids_exact_vs_ngram20": true, "char_ratio_vs_ngram20": 1.0}, "fox.hf_port_default_pixels_vs_orig": {"max_abs": 0.0, "mean_abs": 0.0}, "fox.hf_port_slow_pixels_vs_orig": {"max_abs": 0.0, "mean_abs": 0.0}, "fox.orig_vs_hf_port_text": 1.0, "receipt_example.ngram0": {"ids_exact_vs_ngram20": true, "char_ratio_vs_ngram20": 1.0}, "receipt_example.hf_port_default_pixels_vs_orig": {"max_abs": 0.0, "mean_abs": 0.0}, "receipt_example.hf_port_slow_pixels_vs_orig": {"max_abs": 0.0, "mean_abs": 0.0}, "receipt_example.orig_vs_hf_port_text": 0.8268, "simple_form.ngram0": {"ids_exact_vs_ngram20": true, "char_ratio_vs_ngram20": 1.0}, "simple_form.hf_port_default_pixels_vs_orig": {"max_abs": 0.0, "mean_abs": 0.0}, "simple_form.hf_port_slow_pixels_vs_orig": {"max_abs": 0.0, "mean_abs": 0.0}, "simple_form.orig_vs_hf_port_text": 0.9914}

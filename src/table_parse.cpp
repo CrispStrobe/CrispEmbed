@@ -137,7 +137,7 @@ static Grid detect_grid(const uint8_t * gray, int w, int h) {
     auto v_proj = v_projection(v_lines, w, h, wpl);
     auto col_lines = find_line_positions(v_proj, h, 0.15f);
 
-    if (getenv("CRISPEMBED_TABLE_DEBUG")) {
+    if (core_env::on("CRISPEMBED_TABLE_DEBUG")) {
         fprintf(stderr, "table_parse: otsu=%d, bin=%d, h_se=%d, v_se=%d\n", otsu_t, bin_thresh, h_se_w, v_se_h);
         fprintf(stderr, "table_parse: h_proj peaks (>%d):", (int)(w * 0.15f));
         for (int y = 0; y < h; y++)

@@ -1,0 +1,110 @@
+name: Model-free controls
+# Consolidates tiny stdlib-python control/contract workflows that each ran for
+# seconds but cost a full runner queue slot (2026-11-02). Former files:
+#   ultrabert-contract.yml          -> step "UltraBERT source contract"
+#   ultrabert-scifact-controls.yml  -> step "UltraBERT SciFact protocol controls"
+#   ultrabert-retrieval.yml         -> step "UltraBERT retrieval smoke scorer controls"
+# Triggers are the union of the former path filters; every control runs on any
+# trigger (they take seconds), so no control is skipped that used to run.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/controls.yml'
+      # UltraBERT source contract
+      - 'tools/ultrabert_contract.py'
+      - 'tools/dump_ultrabert_reference.py'
+      - 'tools/dump_ultrabert_linear_reference.py'
+      - 'tests/test_ultrabert_linear_capture.py'
+      - '.github/workflows/ultrabert-native.yml'
+      - 'tools/ci-heavy/ultrabert_reference.py'
+      - 'tools/ci-heavy/ultrabert_native.py'
+      - 'tests/test_ultrabert_diff.cpp'
+      - 'tests/test_ultrabert_native_log.py'
+      - 'models/convert-ultrabert-to-gguf.py'
+      - 'tests/test_ultrabert_contract.py'
+      - 'tests/results/ultrabert/**'
+      # UltraBERT SciFact protocol controls
+      - 'tools/ultrabert_scifact.py'
+      - 'tools/ci-heavy/ultrabert_scifact.py'
+      - 'tests/test_ultrabert_scifact.py'
+      - 'tests/regression/ultrabert/scifact-protocol-v1.json'
+      - '.github/workflows/ultrabert-scifact*.yml'
+      - '.github/actions/scifact-setup/action.yml'
+      # UltraBERT retrieval smoke scorer controls
+      - 'tools/ultrabert_retrieval.py'
+      - 'tools/ci-heavy/ultrabert_retrieval.py'
+      - 'tests/test_ultrabert_retrieval_producer.py'
+      - '.github/workflows/ultrabert-retrieval-model.yml'
+      - 'tests/test_ultrabert_retrieval.py'
+      - 'tests/regression/ultrabert/retrieval-smoke-v1.json'
+      # Sources frozen in ultrabert_scifact.py PINS and their re-pin record
+      - 'src/ultrabert_embed.cpp'
+      - 'src/ultrabert_profile.h'
+      - 'tools/ultrabert_source_pins.py'
+      - 'tools/qwen35_source_pins.py'
+  pull_request:
+    paths:
+      - '.github/workflows/controls.yml'
+      # UltraBERT source contract
+      - 'tools/ultrabert_contract.py'
+      - 'tools/dump_ultrabert_reference.py'
+      - 'tools/dump_ultrabert_linear_reference.py'
+      - 'tests/test_ultrabert_linear_capture.py'
+      - '.github/workflows/ultrabert-native.yml'
+      - 'tools/ci-heavy/ultrabert_reference.py'
+      - 'tools/ci-heavy/ultrabert_native.py'
+      - 'tests/test_ultrabert_diff.cpp'
+      - 'tests/test_ultrabert_native_log.py'
+      - 'models/convert-ultrabert-to-gguf.py'
+      - 'tests/test_ultrabert_contract.py'
+      - 'tests/results/ultrabert/**'
+      # UltraBERT SciFact protocol controls
+      - 'tools/ultrabert_scifact.py'
+      - 'tools/ci-heavy/ultrabert_scifact.py'
+      - 'tests/test_ultrabert_scifact.py'
+      - 'tests/regression/ultrabert/scifact-protocol-v1.json'
+      - '.github/workflows/ultrabert-scifact*.yml'
+      - '.github/actions/scifact-setup/action.yml'
+      # UltraBERT retrieval smoke scorer controls
+      - 'tools/ultrabert_retrieval.py'
+      - 'tools/ci-heavy/ultrabert_retrieval.py'
+      - 'tests/test_ultrabert_retrieval_producer.py'
+      - '.github/workflows/ultrabert-retrieval-model.yml'
+      - 'tests/test_ultrabert_retrieval.py'
+      - 'tests/regression/ultrabert/retrieval-smoke-v1.json'
+      # Sources frozen in ultrabert_scifact.py PINS and their re-pin record
+      - 'src/ultrabert_embed.cpp'
+      - 'src/ultrabert_profile.h'
+      - 'tools/ultrabert_source_pins.py'
+      - 'tools/qwen35_source_pins.py'
+permissions:
+  contents: read
+# Superseded pushes/PR updates on a branch cancel its older runs. Main pushes and
+# manual dispatches get one group per run, so they are never cancelled or dropped.
+concurrency:
+  group: controls-${{ (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main') && github.run_id || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  controls:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: UltraBERT source contract
+        if: ${{ !cancelled() }}
+        run: |
+          python tests/test_ultrabert_contract.py -v
+          python tests/test_ultrabert_native_log.py -v
+      - name: UltraBERT SciFact protocol controls
+        if: ${{ !cancelled() }}
+        run: python tests/test_ultrabert_scifact.py -v
+      - name: UltraBERT retrieval smoke scorer controls
+        if: ${{ !cancelled() }}
+        run: |
+          python tests/test_ultrabert_retrieval.py -v
+          python tests/test_ultrabert_retrieval_producer.py -v

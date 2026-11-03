@@ -17,6 +17,8 @@
 
 #include <fstream>
 #include <sstream>
+#include "env_gate.h"
+#include "env_value.h"
 
 namespace core_imgout {
 
@@ -96,8 +98,8 @@ bool c2pa_sign_png(std::string & png, const char * engine) {
     return false;
 #else
     if (!c2pa_configured()) return false;
-    const std::string cert = read_file(std::getenv("CRISPEMBED_C2PA_CERT"));
-    const std::string key = read_file(std::getenv("CRISPEMBED_C2PA_KEY"));
+    const std::string cert = read_file(core_env::value("CRISPEMBED_C2PA_CERT"));
+    const std::string key = read_file(core_env::value("CRISPEMBED_C2PA_KEY"));
     if (cert.empty() || key.empty()) {
         std::fprintf(stderr, "crispembed: C2PA cert/key unreadable — emitting unsigned (still marked)\n");
         return false;

@@ -1,0 +1,25 @@
+{
+  "schema": "crispembed-unlimited-real-decoder-review-v1",
+  "source": "279a8906b92c9219e45cf35567adbe7e9e8811c5",
+  "provider": "Kaggle CPU",
+  "version_label": "v2",
+  "completed": true,
+  "producer": {
+    "bytes": 27791,
+    "sha256": "54958901c738d0a049759cc4e38a3098554142b22305e460aee59a53d3e398af"
+  },
+  "source_hashes_independently_checked": true,
+  "all20_original_raw_strings_exact": true,
+  "all40_independent_clean_exact": true,
+  "all831_added_tokens_exact": true,
+  "eligible_pairs": 19,
+  "exact_id_pairs_with_exact_repaired_raw_strings": 11,
+  "eligible_clean_strings_equal": 14,
+  "original_forward_repeated": false,
+  "full_model_qualified": false,
+  "limits": [
+    "Decoder-only execution on frozen streams; it does not run or qualify repaired whole-model inference.",
+    "One failed encoded-image proof remains excluded, visible and pending.",
+    "Eight meaningful/coordinate token differences require separate model attribution; equal clean strings do not waive raw-ID differences."
+  ]
+}

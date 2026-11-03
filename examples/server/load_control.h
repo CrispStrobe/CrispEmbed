@@ -29,6 +29,7 @@
 #pragma once
 
 #include "core/env_gate.h"
+#include "core/env_value.h"
 
 #include <atomic>
 #include <cerrno>
@@ -93,8 +94,8 @@ private:
 // Parse a non-negative integer env knob; anything else (unset, empty, junk,
 // negative, overflow) is `fallback`.
 inline int64_t env_int(const char * name, int64_t fallback) {
-    const char * e = std::getenv(name);
-    if (!e || !*e) return fallback;
+    const char * e = core_env::value(name); // empty == unset
+    if (!e) return fallback;
     errno = 0;
     char * end = nullptr;
     const long long v = std::strtoll(e, &end, 10);

@@ -387,7 +387,7 @@ static vision_graph build_vision_graph(context & ctx, int n_patches) {
     const bool use_vision_rope = !(rope_env && atoi(rope_env) == 0);
     // Explicit F32 attention by default (flash-attn's F16 K/V loses precision on
     // this ViT's massive activations); GLM_OCR_VISION_FLASH=1 to A/B the flash path.
-    const bool use_flash_attn = (std::getenv("GLM_OCR_VISION_FLASH") != nullptr);
+    const bool use_flash_attn = core_env::on("GLM_OCR_VISION_FLASH");
 
     ggml_cgraph * gf = ggml_new_graph_custom(g, 16384, false);
 
@@ -421,7 +421,7 @@ static vision_graph build_vision_graph(context & ctx, int n_patches) {
     // (max_abs ~1900 in late layers); the F16 round-trip destroys them and the
     // cosine collapses. Cast quantized/F16 weights to F32 so matmuls stay F32.
     // GLM_OCR_VISION_F16MM=1 restores the old (lossy) behavior for A/B testing.
-    const bool f32_matmul = !(std::getenv("GLM_OCR_VISION_F16MM"));
+    const bool f32_matmul = !core_env::on("GLM_OCR_VISION_F16MM");
     auto mm = [&](ggml_tensor * w, ggml_tensor * x) -> ggml_tensor * {
         if (f32_matmul && w->type != GGML_TYPE_F32) w = ggml_cast(g, w, GGML_TYPE_F32);
         return ggml_mul_mat(g, w, x);
@@ -753,11 +753,11 @@ bool encode_vision(context & ctx, const float * pixels, int H, int W, vision_res
     // 2D vision RoPE (opt-in, off by default — glm_ocr_vision is a plain ViT).
     if (vg.cos_in && vg.sin_in) {
         const int hd_v = D / (int)vhp.num_heads;
-        const bool rope_merge_order = (std::getenv("GLM_OCR_ROPE_MERGE_ORDER") != nullptr);
+        const bool rope_merge_order = core_env::on("GLM_OCR_ROPE_MERGE_ORDER");
         std::vector<float> rope_cos, rope_sin;
         compute_glm_vision_rope(rope_cos, rope_sin, n_ph, n_pw, hd_v, (int)vhp.spatial_merge_size, rope_merge_order,
                                 10000.0f);
-        if (std::getenv("GLM_OCR_ROPE_DEBUG")) {
+        if (core_env::on("GLM_OCR_ROPE_DEBUG")) {
             fprintf(stderr, "[rope] hd_v=%d n_ph=%d n_pw=%d size=%zu\n", hd_v, n_ph, n_pw, rope_cos.size());
             fprintf(stderr, "[rope] tok0: cos[0,1,16,17]=%.4f %.4f %.4f %.4f\n", rope_cos[0], rope_cos[1], rope_cos[16],
                     rope_cos[17]);
@@ -771,7 +771,7 @@ bool encode_vision(context & ctx, const float * pixels, int H, int W, vision_res
     }
     ggml_backend_sched_graph_compute(ctx.sched, vg.gf);
 
-    if (std::getenv("GLM_OCR_ROPE_DEBUG") && vg.dbg_q_rope0) {
+    if (core_env::on("GLM_OCR_ROPE_DEBUG") && vg.dbg_q_rope0) {
         std::vector<float> qd(64 * 16 * n_patches);
         ggml_backend_tensor_get(vg.dbg_q_rope0, qd.data(), 0, qd.size() * sizeof(float));
         FILE * f = fopen("/tmp/glm_cpp_q_rope0.bin", "wb");
@@ -812,7 +812,7 @@ bool encode_vision(context & ctx, const float * pixels, int H, int W, vision_res
     // Read only the final output (vis_output)
     std::vector<float> layer_data(vis_D * n_patches);
     ggml_backend_tensor_get(vg.output, layer_data.data(), 0, vis_D * n_patches * sizeof(float));
-    if (std::getenv("GLM_OCR_ROPE_DEBUG")) {
+    if (core_env::on("GLM_OCR_ROPE_DEBUG")) {
         FILE * f = fopen("/tmp/glm_cpp_postnorm.bin", "wb");
         if (f) {
             fwrite(layer_data.data(), sizeof(float), layer_data.size(), f);
@@ -862,7 +862,7 @@ bool encode_vision(context & ctx, const float * pixels, int H, int W, vision_res
     const int n_merged = out_h * out_w;         // 144
 
     std::vector<float> merger_out(out_D * n_merged);
-    static const bool scalar_merger = (std::getenv("CRISPEMBED_GLM_OCR_SCALAR_MERGER") != nullptr);
+    static const bool scalar_merger = core_env::on("CRISPEMBED_GLM_OCR_SCALAR_MERGER");
 
     if (scalar_merger) {
         // ── Scalar CPU fallback (original code) ──
@@ -1474,7 +1474,7 @@ static bool run_cached_step(context & ctx, const int32_t * token_ids, int n_toke
     // Output-identical. Same trick as got_ocr.
     // Cache DECODE steps only (n_past > 0). Prefill (n_past == 0) has a different
     // graph shape (image splice, full-sequence mRoPE) and stays on the sched.
-    static const bool use_cache = (std::getenv("GLM_OCR_DECODE_CACHE") != nullptr);
+    static const bool use_cache = core_env::on("GLM_OCR_DECODE_CACHE");
     const bool cache_this = use_cache && n_past > 0;
     if (cache_this && !ctx.decode_galloc) {
         ctx.decode_galloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(ctx.backend));
@@ -1994,7 +1994,7 @@ const char * glm_ocr_recognize_raw(glm_ocr_context * ctx, const uint8_t * px, in
         return "";
     }
 
-    if (std::getenv("GLM_OCR_DUMP_EMBEDS")) {
+    if (core_env::on("GLM_OCR_DUMP_EMBEDS")) {
         FILE * f = fopen("/tmp/glm_cpp_embeds.bin", "wb");
         if (f) {
             fwrite(vr.hidden, sizeof(float), (size_t)vr.n_tokens * vr.hidden_dim, f);

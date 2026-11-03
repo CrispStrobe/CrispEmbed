@@ -7,6 +7,7 @@
 // `=0` case below is the one that fails against presence semantics; the rest
 // pin the contract so a future "simplification" back to truthiness is caught.
 #include "core/env_gate.h"
+#include "core/env_value.h"
 #include "core/clean_exit.h"
 
 #include <cstdio>
@@ -67,6 +68,16 @@ static int crispembed_test_main() {
     expect(core_env::on(V), true, "\"00\" => on (only exactly \"0\" is off)");
     set_var("0 ");
     expect(core_env::on(V), true, "\"0 \" => on (only exactly \"0\" is off)");
+
+    // value(): empty folds into unset; any non-empty value (even "0") is returned.
+    set_var(nullptr);
+    expect(core_env::value(V) != nullptr, false, "value: unset => nullptr");
+    set_var("0");
+    expect(core_env::value(V) != nullptr, true, "value: \"0\" is a value");
+#ifndef _WIN32
+    set_var("");
+    expect(core_env::value(V) != nullptr, false, "value: \"\" => nullptr");
+#endif
 
     // A null name is never on (defensive: callers pass string literals).
     expect(core_env::on(nullptr), false, "nullptr name => off");

@@ -144,7 +144,7 @@ bool text_frontend::load_file(const char * path, bool packed, std::string & erro
     try {
         require(!packed || core_env::on("CRISPEMBED_JOSEV_PACKED"), "Josev packed gate is off");
         require(path, "null tokenizer path");
-        if (packed && !josev2b_packed::file_bounds(path, error)) return false;
+        if (packed && !josev2b_packed::file_bounds(path, error, core_env::on("CRISPEMBED_JOSEV_QUANT"))) return false;
         std::ifstream file(path, std::ios::binary | std::ios::ate);
         require(file && file.tellg() > 0 &&
                     uint64_t(file.tellg()) <= (packed ? uint64_t(8) * 1024 * 1024 * 1024 : uint64_t(64) * 1024 * 1024),
@@ -153,7 +153,7 @@ bool text_frontend::load_file(const char * path, bool packed, std::string & erro
         std::unique_ptr<gguf_context, decltype(&gguf_free)> g(gguf_init_from_file(path, params), gguf_free);
         require(bool(g), "cannot open tokenizer GGUF metadata");
         if (packed) {
-            if (!josev2b_packed::metadata_valid(g.get(), error)) return false;
+            if (!josev2b_packed::metadata_valid(g.get(), error, core_env::on("CRISPEMBED_JOSEV_QUANT"))) return false;
         } else
             require(gguf_get_n_tensors(g.get()) == 0, "expected metadata-only tokenizer GGUF");
         require(str(g.get(), "general.architecture") == (packed ? josev2b_packed::architecture : "josev2b_tokenizer") &&

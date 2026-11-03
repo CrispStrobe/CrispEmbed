@@ -587,7 +587,7 @@ std::vector<float> decoder_encode_tokens(const dec_model & m, ggml_backend_t bac
     // Diagnostic: skip DeepStack injection while keeping the image-embed
     // splice + 3D MRoPE. If parity improves with DEEPSTACK_OFF=1, the bug is
     // in the deepstack hook; otherwise look at splice / MRoPE.
-    const bool skip_deepstack = std::getenv("CRISPEMBED_SKIP_DEEPSTACK") != nullptr;
+    const bool skip_deepstack = core_env::on("CRISPEMBED_SKIP_DEEPSTACK");
     const int n_ds = (has_image && !skip_deepstack) ? std::min(img->n_deepstack, m.n_layer) : 0;
 
     // Graph context: no_alloc=true when using scheduler, false otherwise
@@ -625,7 +625,7 @@ std::vector<float> decoder_encode_tokens(const dec_model & m, ggml_backend_t bac
         cur = ggml_scale(gctx, cur, m.embed_scale);
     }
 
-    const bool dump_layers = std::getenv("CRISPEMBED_DUMP_LAYERS") != nullptr;
+    const bool dump_layers = core_env::on("CRISPEMBED_DUMP_LAYERS");
     if (dump_layers) {
         ggml_set_name(cur, "post_embed");
         ggml_set_output(cur);
@@ -1100,7 +1100,7 @@ std::vector<float> decoder_encode_tokens(const dec_model & m, ggml_backend_t bac
     // Diagnostic: the pre-normalization magnitude is the only scale signal a
     // caller can see (the returned vector is unit-length by contract), so a
     // uniform scale error is invisible to cosine parity. Print it on request.
-    if (std::getenv("CRISPEMBED_DECODER_EMBED_RAW_NORM")) fprintf(stderr, "[decoder_embed-rawnorm] %.6f\n", norm);
+    if (core_env::on("CRISPEMBED_DECODER_EMBED_RAW_NORM")) fprintf(stderr, "[decoder_embed-rawnorm] %.6f\n", norm);
     for (int i = 0; i < (int)pooled.size(); i++) pooled[i] /= norm;
 
     if (bench) {
@@ -1751,7 +1751,7 @@ std::vector<std::vector<float>> decoder_encode_tokens_batch(const dec_model & m,
         for (int i = 0; i < (int)pooled.size(); i++) norm += pooled[i] * pooled[i];
         norm = sqrtf(std::max(norm, 1e-12f));
         // See the single-text path: pre-normalization magnitude, on request.
-        if (std::getenv("CRISPEMBED_DECODER_EMBED_RAW_NORM")) fprintf(stderr, "[decoder_embed-rawnorm] %.6f\n", norm);
+        if (core_env::on("CRISPEMBED_DECODER_EMBED_RAW_NORM")) fprintf(stderr, "[decoder_embed-rawnorm] %.6f\n", norm);
         for (int i = 0; i < (int)pooled.size(); i++) pooled[i] /= norm;
 
         results[b] = std::move(pooled);
@@ -2189,7 +2189,7 @@ static std::vector<float> dec_encode_suffix(const dec_model & m, ggml_backend_t 
     ggml_backend_tensor_get(ot, suf_hidden.data(), 0, (size_t)H * S * sizeof(float));
     ggml_gallocr_free(ga);
     ggml_free(g);
-    if (std::getenv("CRISPEMBED_DECODER_PREFIX_DEBUG")) {
+    if (core_env::on("CRISPEMBED_DECODER_PREFIX_DEBUG")) {
         double s0 = 0, sl = 0;
         for (int i = 0; i < H; i++)
             sl += (double)suf_hidden[(size_t)(S - 1) * H + i] * suf_hidden[(size_t)(S - 1) * H + i];
@@ -2273,7 +2273,7 @@ std::vector<float> decoder_encode_tokens_cached(const dec_model & m, ggml_backen
                                                 std::vector<int32_t> & prev_tokens) {
     const int T = (int)tokens.ids.size();
     const int MIN_PREFIX = 4;
-    const bool debug = (std::getenv("CRISPEMBED_DECODER_PREFIX_DEBUG") != nullptr);
+    const bool debug = core_env::on("CRISPEMBED_DECODER_PREFIX_DEBUG");
 
     // Ineligible: bidirectional models (no causal prefix independence).
     if (m.is_bidirectional || T < MIN_PREFIX + 1) {

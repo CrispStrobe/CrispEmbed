@@ -16,8 +16,11 @@ Output: /kaggle/working/verify/{verify.json,summary.md}.
 import hashlib, json, os, re, subprocess, sys, time
 T_START = time.time()
 COMMIT = '@COMMIT@'
-# @SCOPE@: 'full' = everything below; 'text' = unit tests + default text/ids (F16+Q8) + renderings.
-FULL = '@SCOPE@' != 'text'
+# @SCOPE@: 'full' = everything below; 'text' = unit tests + default text/ids (F16+Q8) + renderings;
+# 'speed' = F16 default vs the default-off vision speed gates (VISION_F32, TILE_BATCH) on the 4 pages,
+# ids/text vs the original, per-stage [time] lines, and vision-feature bytes batch vs unbatched.
+SPEED = '@SCOPE@' == 'speed'
+FULL = '@SCOPE@' not in ('text', 'speed')
 BUDGET = 10.5 * 3600
 OUT = '/kaggle/working/verify'; os.makedirs(OUT, exist_ok=True)
 def el(): return time.time() - T_START
@@ -80,14 +83,15 @@ def env_of(**kw):
              OMP_NUM_THREADS=NT)
     for k in ('CRISPEMBED_ALLOW_UNPINNED_MODEL', 'HF_HUB_OFFLINE', 'CRISPEMBED_UNLIMITED_OCR2_TILES',
               'CRISPEMBED_UNLIMITED_OCR2_OUTPUT', 'CRISPEMBED_UNLIMITED_OCR2_VISION_CACHE', 'UOCR2_FAST_CHUNK',
-              'CRISPEMBED_UNLIMITED_OCR2_FAST'):
+              'CRISPEMBED_UNLIMITED_OCR2_FAST', 'CRISPEMBED_UNLIMITED_OCR2_VISION_F32',
+              'CRISPEMBED_UNLIMITED_OCR2_TILE_BATCH', 'CRISPEMBED_UNLIMITED_OCR2_TILE_BATCH_MAX'):
         e.pop(k, None)
     e.update({k: v for k, v in kw.items() if v is not None}); return e
 
 
 # ---- resolve aliases (download + pinned hash) ----
 MODELS = {}
-for alias in ('unlimited-ocr2', 'unlimited-ocr2-q8'):
+for alias in (('unlimited-ocr2',) if SPEED else ('unlimited-ocr2', 'unlimited-ocr2-q8')):
     code, out, err, wall, rss = run([CLI, '-m', alias, '--ocr', pages['receipt']['path'], '--ocr-max-tokens', '2', '-t', NT],
                                     env_of(CRISPEMBED_UNLIMITED_OCR2_FAST='1'))
     m = re.search(r'(/kaggle/temp/cache/\S+\.gguf)', err)
@@ -130,6 +134,51 @@ def ocr(tag, alias, page, cli=None, max_tokens='1024', **kw):
 
 
 P4 = ['table', 'receipt', 'paragraphs', 'german']
+if SPEED:
+    F = dict(CRISPEMBED_UNLIMITED_OCR2_FAST='1')
+    ARMS = [('after', {}), ('vf32', dict(CRISPEMBED_UNLIMITED_OCR2_VISION_F32='1')),
+            ('batch', dict(CRISPEMBED_UNLIMITED_OCR2_TILE_BATCH='1')),
+            ('vf32-batch', dict(CRISPEMBED_UNLIMITED_OCR2_VISION_F32='1', CRISPEMBED_UNLIMITED_OCR2_TILE_BATCH='1')),
+            ('vf32-batch4', dict(CRISPEMBED_UNLIMITED_OCR2_VISION_F32='1', CRISPEMBED_UNLIMITED_OCR2_TILE_BATCH='1',
+                                 CRISPEMBED_UNLIMITED_OCR2_TILE_BATCH_MAX='4'))]
+    for pid in P4:
+        for tag, kw in ARMS:
+            ocr(tag, 'unlimited-ocr2', pid, **F, **kw)
+    # Vision features (global + tiles, pre-decoder) bytes: batch must equal unbatched per precision.
+    for tag, kw in ARMS:
+        dump = f'/kaggle/temp/vis_{tag}.f32'
+        ocr(f'vision-dump-{tag}', 'unlimited-ocr2', 'table', max_tokens='1', UOCR2_DUMP_VISION=dump, **F, **kw)
+        report['vision_bytes'].append(dict(arm=tag, sha256=hashlib.sha256(open(dump, 'rb').read()).hexdigest()
+                                           if os.path.exists(dump) else None))
+        save()
+    report['elapsed_seconds'] = round(el(), 1)
+    R = [r for r in report['runs'] if 'skipped' not in r]
+    vb = {v['arm']: v['sha256'] for v in report['vision_bytes']}
+    ck = report['checks']
+    ck['unit_tests_pass'] = all(v['exit'] == 0 for v in report['tests'].values())
+    for tag, _ in ARMS:
+        rr = [r for r in R if r['tag'] == tag]
+        ck[f'{tag}_ids_equal_original_all4'] = len(rr) == 4 and all(r.get('ids_equal_original') for r in rr)
+        ck[f'{tag}_text_bytes_equal_original_all4'] = len(rr) == 4 and all(r.get('text_bytes_equal_original') for r in rr)
+        ck[f'{tag}_wall_seconds_sum'] = round(sum(r['wall_seconds'] for r in rr), 1)
+        ck[f'{tag}_peak_rss_mb_max'] = max((r['peak_rss_mb'] for r in rr), default=None)
+    ck['vision_bytes_batch_eq_unbatched_f16'] = vb.get('batch') is not None and vb.get('batch') == vb.get('after')
+    ck['vision_bytes_batch_eq_unbatched_f32'] = vb.get('vf32-batch') is not None and vb.get('vf32-batch') == vb.get('vf32') == vb.get('vf32-batch4')
+    save()
+    L = ['# Unlimited-OCR-2 vision speed gates', '', f'Commit `{COMMIT}`, {report.get("cpu_model", "?")} x{os.cpu_count()} '
+         f'(avx512f={report.get("cpu_flags_avx512f")}). Pages sha256 == trial: {report["page_sha_matches_trial"]}.', '', '## Checks', '']
+    L += [f'- **{k}**: {v}' for k, v in ck.items()]
+    L += ['', '| arm | page | exit | wall s | RSS MB | ids | ids==orig | first diff | text==orig |', '|---|---|---|---|---|---|---|---|---|']
+    for r in R:
+        L.append(f"| {r['tag']} | {r['page']} | {r['exit']} | {r['wall_seconds']} | {r['peak_rss_mb']} | {r['n_ids']} | "
+                 f"{r.get('ids_equal_original')} | {r.get('first_difference')} | {r.get('text_bytes_equal_original')} |")
+    for tag, _ in ARMS:
+        for r in R:
+            if r['tag'] == tag and r['page'] == 'table':
+                L += ['', f'### {tag} (table) stage timing', '```'] + r['timing'] + ['```']
+    open(OUT + '/summary.md', 'w').write('\n'.join(L) + '\n')
+    print('\n'.join(L), flush=True)
+    raise SystemExit(0)
 # 1+2: defaults (after), fast decoder, both precisions
 for pid in P4:
     ocr('after', 'unlimited-ocr2', pid, CRISPEMBED_UNLIMITED_OCR2_FAST='1')

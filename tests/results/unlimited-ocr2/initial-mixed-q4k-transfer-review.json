@@ -1,0 +1,254 @@
+{
+  "schema": "crispembed-unlimited-ocr2-initial-mixed-q4k-transfer-failure-v1",
+  "status": "rejected-before-model-verification",
+  "source": "6a2be093b9415cfb61a3731804e649db3a6834f0",
+  "runtime_base": "83eac856cc684808e417ebfed7db7c2f677dc09f",
+  "service": {
+    "kind": "kaggle-cpu-kernel",
+    "kernel_slug": "crispembed-unlimited-ocr2-q4k",
+    "version_label": "v1",
+    "status": "ERROR"
+  },
+  "producer": {
+    "file": "tests/results/unlimited-ocr2/initial-mixed-q4k-transfer-producer.json",
+    "bytes": 39745,
+    "sha256": "84cdea9119e65931227ba0b0207d07af58d94c86da300d3ee75f3e79b41888a4"
+  },
+  "retained_logs": {
+    "curl_log": {
+      "file": "tests/results/unlimited-ocr2/initial-mixed-q4k-transfer-curl.log",
+      "bytes": 13585,
+      "sha256": "a97c2d915f875a123fa0c7b53692c68f878f5696349f65a0d3aef65fbdcc816b"
+    },
+    "job_log": {
+      "file": "tests/results/unlimited-ocr2/initial-mixed-q4k-transfer-job.json",
+      "bytes": 1658,
+      "sha256": "6fd3e92c7d6dbd9738057c233e7461346aa1bf56d151832ba120fbb2f6d362d3"
+    }
+  },
+  "earliest_failure": {
+    "command_index": 17,
+    "exit_code": 92,
+    "timed_out": false,
+    "phase": "published-F16 HTTP transfer",
+    "message": "HTTP/2 stream 1 was not closed cleanly: INTERNAL_ERROR (err 2)",
+    "observed_progress": "66% (curl progress diagnostic; no independent partial-file size proof)"
+  },
+  "independent_review": {
+    "producer_unchanged": true,
+    "source_hashes_rederived_from_immutable_git": 346,
+    "all18_command_log_sha256_rehashed": true,
+    "successful_commands": 17,
+    "actual_root_and_observed_builds_passed": true,
+    "actual_compile_profiles_exact": true,
+    "ordinary_observer_symbol_controls_passed": true,
+    "actual_cpp_ref_controls": [
+      0,
+      1,
+      2
+    ],
+    "all4_frozen_png_sha_passed_hosted": true,
+    "original_pngs_not_downloaded_locally": true,
+    "small_files_downloaded": 35,
+    "small_bytes_downloaded": 582726,
+    "small_manifest": [
+      {
+        "name": "job.log.json",
+        "bytes": 1658,
+        "sha256": "6fd3e92c7d6dbd9738057c233e7461346aa1bf56d151832ba120fbb2f6d362d3"
+      },
+      {
+        "name": "unlimited-q4k/build-profile.json",
+        "bytes": 7458,
+        "sha256": "a8eba424b59c4553f6e0ac1065c64336f84b9068b6c91a1d2ee726df0c9aee9e"
+      },
+      {
+        "name": "unlimited-q4k/command-0.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "unlimited-q4k/command-1.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "unlimited-q4k/command-10.log",
+        "bytes": 257223,
+        "sha256": "22d89d6b3d747634b45700c1271716a3b68f0cd16c28ccbbc2a2e777a3320a25"
+      },
+      {
+        "name": "unlimited-q4k/command-11.log",
+        "bytes": 147,
+        "sha256": "935efd01f093b5038c8c1ee40a754bb2e3c5fd0b8f67d666b5bac28e1eed613a"
+      },
+      {
+        "name": "unlimited-q4k/command-12.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "unlimited-q4k/command-13.log",
+        "bytes": 1808,
+        "sha256": "6b8223f9ea8476a0236d3b0c77821acc2c72fc942c3848a37f7868740b2dfaf4"
+      },
+      {
+        "name": "unlimited-q4k/command-14.log",
+        "bytes": 247150,
+        "sha256": "49ecf0044978012eb08c0f88e82f97d6304c9da628ec9e64b11466108952e582"
+      },
+      {
+        "name": "unlimited-q4k/command-15.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "unlimited-q4k/command-16.log",
+        "bytes": 809,
+        "sha256": "0062a14ea153170fa2904426d2b310ee8a5102b790d9d8728e3404f2a586a279"
+      },
+      {
+        "name": "unlimited-q4k/command-17.log",
+        "bytes": 13585,
+        "sha256": "a97c2d915f875a123fa0c7b53692c68f878f5696349f65a0d3aef65fbdcc816b"
+      },
+      {
+        "name": "unlimited-q4k/command-2.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "unlimited-q4k/command-3.log",
+        "bytes": 110,
+        "sha256": "08b3cad696a35c99eb5d4fcf04d5b257f2520d2b7d42499d4430a8b2bb191684"
+      },
+      {
+        "name": "unlimited-q4k/command-4.log",
+        "bytes": 101,
+        "sha256": "79897d011a1aaa76145e639592b1207fa563cb1187e00ac85c3ee31c86a0b15f"
+      },
+      {
+        "name": "unlimited-q4k/command-5.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "unlimited-q4k/command-6.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "unlimited-q4k/command-7.log",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "unlimited-q4k/command-8.log",
+        "bytes": 68,
+        "sha256": "ead38e0a37c20823fe58dd4b2ba3dce8fdd5a67deec0826b6b5a8f3d8b04e9a2"
+      },
+      {
+        "name": "unlimited-q4k/command-9.log",
+        "bytes": 1747,
+        "sha256": "b6793df7843552612e98435858cb6f00dce5e4cffa099a25d0abe12d1588d653"
+      },
+      {
+        "name": "unlimited-q4k/pages/pages.json",
+        "bytes": 6135,
+        "sha256": "83116168296135ebbe73d74dc27b7a490558a9624f86c1badcb9115ef92b3f22"
+      },
+      {
+        "name": "unlimited-q4k/ref-controls/controls.json",
+        "bytes": 1529,
+        "sha256": "a7908ef5d23b24a51a23cee304b162e4b9a1e1ede2bdb6d8bfd016d380c2ffab"
+      },
+      {
+        "name": "unlimited-q4k/ref-controls/negative/command.json",
+        "bytes": 478,
+        "sha256": "5b3eace1ee0890c0ba71529362c91acb05715c0dc194ec081d0cdd430a275aab"
+      },
+      {
+        "name": "unlimited-q4k/ref-controls/negative/stderr",
+        "bytes": 180,
+        "sha256": "1a32c957c6c7f628ccdcf409fb6500d31244fc1e75b9c8a181255c70040c8b23"
+      },
+      {
+        "name": "unlimited-q4k/ref-controls/negative/stdout",
+        "bytes": 133,
+        "sha256": "34660c9ca09a21644ecffb5fb67d4872564a39ed43de4593ad8a92e833ad52e8"
+      },
+      {
+        "name": "unlimited-q4k/ref-controls/negative.json",
+        "bytes": 611,
+        "sha256": "9613d1735cebec6ad38c10e2cb52d6ae626a80e5d379cf355dc308e8e325d2a3"
+      },
+      {
+        "name": "unlimited-q4k/ref-controls/positive/command.json",
+        "bytes": 476,
+        "sha256": "1089114e67395427a8ce62ceeb393c52e340cd32f3d17dadf18ee0326029f01c"
+      },
+      {
+        "name": "unlimited-q4k/ref-controls/positive/stderr",
+        "bytes": 178,
+        "sha256": "0d0fe94ca23f0b38d89b121a1d700b8a12b7a56858af140ad3f7b7d14366e084"
+      },
+      {
+        "name": "unlimited-q4k/ref-controls/positive/stdout",
+        "bytes": 87,
+        "sha256": "ed69ecf4b9d125152c229985cad751d014c43af7c1139e026b99fd3254f73578"
+      },
+      {
+        "name": "unlimited-q4k/ref-controls/positive.json",
+        "bytes": 504,
+        "sha256": "4169bcdd00b4404a2a3412b1233c110bd9a486f5447ef03c0c2261718851acff"
+      },
+      {
+        "name": "unlimited-q4k/ref-controls/shape/command.json",
+        "bytes": 476,
+        "sha256": "49f72d7b527f2e684de94c1c74a273de6179ac47c9e97f375440b17c0185f13c"
+      },
+      {
+        "name": "unlimited-q4k/ref-controls/shape/stderr",
+        "bytes": 247,
+        "sha256": "570fb027a55b7ef2d4b03003f9d24994c70eaeebe53572aad63c42149c1399ff"
+      },
+      {
+        "name": "unlimited-q4k/ref-controls/shape/stdout",
+        "bytes": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "unlimited-q4k/ref-controls/shape.json",
+        "bytes": 83,
+        "sha256": "6b6cf8ec8efcbf0a44fef7ee0d40add7002e4479a265900d0ba4b6ff6e63425f"
+      },
+      {
+        "name": "unlimited-q4k/setup.json",
+        "bytes": 39745,
+        "sha256": "84cdea9119e65931227ba0b0207d07af58d94c86da300d3ee75f3e79b41888a4"
+      }
+    ]
+  },
+  "model_verification_completed": false,
+  "retained_real_id_decode_executed": false,
+  "model_panel_forward_executed": false,
+  "numerical_qualification": false,
+  "publication_authorized": false,
+  "correction": {
+    "transport_only": true,
+    "http_version": "1.1",
+    "maximum_retries": 2,
+    "retry_all_errors": true,
+    "retry_window_seconds": 1200,
+    "per_attempt_timeout_seconds": 600,
+    "connect_timeout_seconds": 30,
+    "final_expected_bytes": 6692677696,
+    "final_expected_sha256": "487b887eddaf73e070cd98c3e10d112d21749036ca06b5e7fc103c3fb4def517",
+    "original_data_math_budgets_unchanged": true
+  },
+  "limits": [
+    "Initial failure is transport-only; it supplies no new decoder/model numeric or decoded-quality result.",
+    "The published F16 verification, retained real-ID decoder proof and all graduated Q4 case arms remain pending actual corrected execution.",
+    "Only small text/JSON/log outputs were downloaded for this audit; no model, PNG, raw-array or executable payload was downloaded."
+  ]
+}

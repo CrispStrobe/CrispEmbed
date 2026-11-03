@@ -1,0 +1,8 @@
+source=8f779864ae50fe1a64a606cdf874474a49ed7410 max_new=1024 f16_arms=dft,000 q4_arms=100,010,001,110,101,011,dft
+numpy==1.26.4
+pillow==13.0.0
+tiktoken==0.14.0
+torch==2.4.1+cpu
+torchvision==0.19.1+cpu
+transformers==4.37.2
+hf-port env transformers 5.22.1

@@ -1405,7 +1405,12 @@ CRISPEMBED_API int crispembed_scan_cleanup_process_simple(void * ctx, const uint
 // (not by the other crispembed_ocr_pipeline_* decls) because crispembed_ocr_stage
 // embeds crispembed_scan_cleanup_params, defined just above.
 
-// Explicit TeleOCR stage selector (append-only public ABI).
+// Named stage selectors (append-only public ABI; values match map_engine()).
+// Unlimited-OCR (v1) and Unlimited-OCR-2 share id 13; a variant-2 GGUF needs
+// CRISPEMBED_UNLIMITED_OCR2=1. MiniCPM-OCR needs CRISPEMBED_MINICPM_OCR=1 and
+// CRISPEMBED_QWEN35_OCR=1.
+#define CRISPEMBED_OCR_ENGINE_UNLIMITED_OCR 13
+#define CRISPEMBED_OCR_ENGINE_MINICPM_OCR 23
 #define CRISPEMBED_OCR_ENGINE_TELEOCR 24
 #define CRISPEMBED_OCR_ENGINE_MINERU25_PRO 25
 #define CRISPEMBED_OCR_ENGINE_OXR 26

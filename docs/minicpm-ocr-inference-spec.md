@@ -258,7 +258,7 @@ Transformers is the parity target. llama.cpp was read only to learn its behavior
 | Slicing, grid, token count, bucketed positions | `src/minicpm_ocr_tiles.h`, `tests/test_minicpm_ocr_tiles.cpp` | Header-only. Expected values come from the Python algorithm, not from the reference capture. |
 | Preprocessing, SigLIP tower, 4x projector | `src/minicpm_ocr_vision.cpp` | Each image runs as its own sequence. Resampling is the shared torch uint8 AA bicubic (`src/core/torch_bicubic_u8.h`). `CRISPEMBED_MINICPM_OCR_VISION_FLASH=1` (default off) is a performance-only fused-attention gate, pending A/B. |
 | Prompt, injection, qwen35 decoder, greedy decode | `src/minicpm_ocr.cpp` | Positions are 1-D, written as equal axes. Stops are 248044/248046. Tokenizer and decoder mapping are the shared `qwen35_ocr::frontend_tokenizer::load_minicpm_ocr` and `map_small_decoder(..., 248100)`. |
-| Unified OCR C API and CLI | `src/crispembed.cpp`, `src/ocr_orchestrator.cpp`, `examples/cli/main.cpp` | `--ocr` dispatches on arch `minicpm_ocr`. `--ocr-pipeline` uses `--ocr-engine minicpm-ocr` (id 23), which needs `--ocr-rec`. |
+| Unified OCR C API and CLI | `src/crispembed.cpp`, `src/ocr_orchestrator.cpp`, `examples/cli/main.cpp` | `--ocr` dispatches on arch `minicpm_ocr`. `--ocr-pipeline` uses `--ocr-engine minicpm-ocr` (id 23); without `--ocr-rec` the CLI and the server both resolve the `minicpm-ocr` registry alias. Both gates are still required. |
 | Debug dump | `CRISPEMBED_MINICPM_OCR_DUMP=<dir>` | Writes `.npy` files named like the reference arrays, plus `native_pixels_<i>.npy` and `native_meta.json`. |
 
 No `TODO(verify)` items remain; see the decision table.
@@ -272,3 +272,36 @@ No `TODO(verify)` items remain; see the decision table.
 3. Finish the converter on a hosted runner and compare tensor names and shapes against meta-init.
 4. Write the tiler and vision encoder, then wire up the qwen35 decoder and run
    the token-ID parity.
+
+## Speed paths (2026-11-02, default on since the real-scan A/B)
+
+| Gate | Effect |
+| --- | --- |
+| `CRISPEMBED_QWEN35_GRAPH_DECODER=1` | `src/qwen35_graph_kv_decoder.cpp` (class `graph_kv_decoder`; distinct from and exclusive with the stateless `CRISPEMBED_MINICPM_OCR_GRAPH` candidate in `src/qwen35_graph_decoder.cpp`): the qwen35 text decoder as a ggml graph with a persistent KV and delta-net state. `CRISPEMBED_QWEN35_GRAPH_MATMUL` = `exact` (default), `native` or `f32`. |
+| `CRISPEMBED_MINICPM_OCR_VISION_F32=1` | Vision and projector matrices are copied to F32 once at init. |
+| `CRISPEMBED_MINICPM_OCR_VISION_BATCH=1` | Equally sized slices run in one graph as independent sequences. |
+
+Every combination measured on Kaggle is token-ID exact on all five cases
+(`tests/results/minicpm-ocr/bench-graph*.json`, `native-parity-graph.json`). The
+recommended configuration is graph `f32` + vision F32 + batch + `CRISPEMBED_MINICPM_OCR_VISION_FLASH=1`:
+506 s for the five cases, against Transformers' 439 s and the old path's 3264 s.
+Numbers are in PERFORMANCE.md.
+
+**This configuration is the default.** `CRISPEMBED_QWEN35_GRAPH_DECODER`, `CRISPEMBED_MINICPM_OCR_VISION_F32`,
+`CRISPEMBED_MINICPM_OCR_VISION_BATCH` and `CRISPEMBED_MINICPM_OCR_VISION_FLASH` are read with
+`core_env::explicitly_off` for MiniCPM (`=0` restores the old path; the stateless `CRISPEMBED_MINICPM_OCR_GRAPH=1`
+candidate disables the graph decoder unless it is forced with `=1`). `CRISPEMBED_QWEN35_GRAPH_MATMUL` defaults to `f32`;
+`exact` and `native` stay selectable. Frozen panels (`tools/minicpm-ocr/graph_panel.py`, `tools/minicpm-retained-v3`)
+pin all four to `0`.
+
+Default flip A/B (2026-11-02, `crispembed-ocr-real-scans-minicpm-fast` at `dded1384`, Kaggle Xeon 2.2 GHz x4,
+receipt `tests/results/ocr-real-scans/native-minicpm-fast.json`): all 20 real-scan pages produce token IDs
+**identical to the previous default** (`native-minicpm.json`), so CER is unchanged (mean 0.0515 vs original 0.0515).
+Against the original Transformers IDs 18/20 are exact; the same two pages (`en-form-economic-journal-67`,
+`en-2col-eb1911-v04-246`) differ as they already did on the old path. Wall time 5,094 s vs 31,725 s for the old
+default (6.2x; original 5,161 s). Peak RSS 7.7-8.4 GB vs 5.0-5.1 GB (original 8.1-8.5 GB).
+
+## Runtime environment variables
+
+The gates, speed-up toggles and debug dumps for this engine are documented in
+[environment-variables.md](environment-variables.md).

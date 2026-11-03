@@ -43,6 +43,7 @@ void stbi_image_free(void * retval_from_stbi_load);
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include "core/env_gate.h"
 
 // ---------------------------------------------------------------------------
 struct tc_enc_layer {
@@ -1119,9 +1120,9 @@ const char * transcoda_ocr_recognize_raw(transcoda_ocr_context * ctx, const uint
         }
     }
     if (!run_encoder(ctx, px.data(), W, H, nullptr, nullptr)) return nullptr;
-    if (getenv("TRANSCODA_OCR_FULL_DECODE"))
+    if (core_env::on("TRANSCODA_OCR_FULL_DECODE"))
         decode_greedy_full(ctx); // O(L²) reference (no KV cache)
-    else if (getenv("TRANSCODA_OCR_HOST_KV"))
+    else if (core_env::on("TRANSCODA_OCR_HOST_KV"))
         decode_greedy_kv(ctx); // host-shuttled KV cache (A/B reference)
     else
         decode_greedy_persistent(ctx); // device-resident KV cache (default, fast)

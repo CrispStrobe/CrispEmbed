@@ -6,7 +6,9 @@ and not run), then runs one MODE (@MODE@; the same file is pushed once per mode 
 sessions):
   native-uocr2   published alias `unlimited-ocr2` (F16), fast decoder, gundam tiles (the original default)
   native-minicpm published alias `minicpm-ocr` (F16), prompt "Text Recognition:"
+  native-uocr2-vf32  as native-uocr2 with CRISPEMBED_UNLIMITED_OCR2_VISION_F32=1
   ref-uocr2      original PyTorch Unlimited-OCR-2 (tools/unlimited-ocr2/reference.py contract), F32 CPU
+  native-minicpm-fast  as native-minicpm with the graph-decoder/F32-vision/batch/flash gates on
   ref-minicpm    original Transformers MiniCPM-OCR-1.0 (tools/minicpm-ocr/reference.py contract), F32 CPU
 Pages run in manifest priority order until the time budget. Per page: text, token IDs, CER/WER/word recall
 (tools/kaggle/ocr-real-scans/score.py), wall time, peak RSS. Output: /kaggle/working/ocr-real-scans/.
@@ -16,6 +18,7 @@ import hashlib, json, os, re, subprocess, sys, time, urllib.request
 T_START = time.time()
 COMMIT = '@COMMIT@'
 MODE = '@MODE@'
+PAGE_IDS = ()                 # render an explicit input-only subset for targeted follow-ups
 BUDGET = 10.9 * 3600            # stop starting pages after this
 OUT = '/kaggle/working/ocr-real-scans'; os.makedirs(OUT, exist_ok=True)
 TMP = '/kaggle/temp'
@@ -32,7 +35,11 @@ sys.path.insert(0, 'tools/kaggle/ocr-real-scans')
 NT = str(os.cpu_count())
 MANIFEST = 'docs/ocr-real-scans-v2.json'
 manifest = json.load(open(MANIFEST))
+from receipt import select_pages
+selected_pages = select_pages(manifest, PAGE_IDS)
 report = dict(schema='crispembed-ocr-real-scans-run-v1', mode=MODE, commit=COMMIT, manifest=MANIFEST, failed_pages=[], cpu_count=os.cpu_count(), images=[], runs=[],
+              scope=dict(full_manifest=not PAGE_IDS, selected_page_ids=[p['id']for p in selected_pages],
+                         manifest_sha256=hashlib.sha256(open(MANIFEST,'rb').read()).hexdigest()),
               pages_meta={p['id']: dict(priority=p['priority'], tags=p['tags'], max_tokens=p['max_tokens']) for p in manifest['pages']})
 try:
     report['cpu_model'] = next(l.split(':', 1)[1].strip() for l in open('/proc/cpuinfo') if l.startswith('model name'))
@@ -50,16 +57,25 @@ def fetch(url):
         except Exception as e: err = e; time.sleep(10 * (i + 1))
     raise err
 os.makedirs(TMP + '/img', exist_ok=True)
+from receipt import admit_image
+sys.path.insert(0,'tools/ocr-real-scans')
+from retained_inputs import mounted_image
 parquets = {}
 pages = []
-for p in manifest['pages']:
+os.makedirs(OUT + '/input-images', exist_ok=True)
+for p in selected_pages:
     im = p['image']; rec = dict(id=p['id'], expected_sha256=im['sha256'])
     try:
-        if 'hf_parquet' in im:
+        retained=mounted_image(p,os.environ.get('CRISPEMBED_RETAINED_IMAGE_ROOT','/kaggle/input'))
+        if retained is not None:
+            data,rec['retained_input']=retained
+        elif 'hf_parquet' in im:
             hp = im['hf_parquet']
             if hp['url'] not in parquets:
-                path = TMP + '/cord.parquet'; open(path, 'wb').write(fetch(hp['url'])); parquets[hp['url']] = path
+                path = TMP + '/cord.parquet'; open(path, 'wb').write(fetch(hp['url']))
                 rec['parquet_sha256_ok'] = hashlib.sha256(open(path, 'rb').read()).hexdigest() == hp['sha256']
+                if not rec['parquet_sha256_ok']: raise ValueError('frozen parquet SHA256 differs')
+                parquets[hp['url']] = path
             out = subprocess.run([PY, '-c', 'import sys,pyarrow.parquet as pq;sys.stdout.buffer.write('
                                   'pq.read_table(sys.argv[1],columns=["image"]).slice(int(sys.argv[2]),1).to_pylist()[0]["image"]["bytes"])',
                                   parquets[hp['url']], str(hp['row'])], capture_output=True, check=True).stdout
@@ -77,7 +93,8 @@ for p in manifest['pages']:
         if not rec['sha256_ok'] or rec.get('revision_ok') is False:
             raise RuntimeError(f"PINNED IMAGE MISMATCH for {p['id']}: got sha256 {rec['sha256']}, expected {im['sha256']}"
                                f", revision_ok={rec.get('revision_ok')}; page FAILED, not run")
-        path = f"{TMP}/img/{p['id']}.jpg"; open(path, 'wb').write(data)
+        admit_image(data, im)  # Reject before admitting a page to either inference arm.
+        path = f"{OUT}/input-images/{p['id']}.jpg"; open(path, 'wb').write(data)
         pages.append(dict(id=p['id'], path=path, max_tokens=p['max_tokens'], gt=p['ground_truth'], priority=p['priority']))
     except Exception as e:
         rec['error'] = repr(e)[:500]; report['failed_pages'].append(p['id'])
@@ -154,9 +171,21 @@ try:
     if MODE == 'native-uocr2':
         native('unlimited-ocr2', 'uocr2-f16-fast-tiled', dict(CRISPEMBED_UNLIMITED_OCR2='1', CRISPEMBED_UNLIMITED_OCR2_FAST='1',
                                                              CRISPEMBED_UNLIMITED_OCR2_TILES='1', UOCR_DBG='1'), [])
+    elif MODE == 'native-uocr2-vf32':
+        # Default-flip A/B arm: F32 SAM/CLIP block matrices made once at init.
+        native('unlimited-ocr2', 'uocr2-f16-fast-tiled-vf32', dict(CRISPEMBED_UNLIMITED_OCR2='1', CRISPEMBED_UNLIMITED_OCR2_FAST='1',
+                                                                  CRISPEMBED_UNLIMITED_OCR2_TILES='1', UOCR_DBG='1',
+                                                                  CRISPEMBED_UNLIMITED_OCR2_VISION_F32='1'), [])
     elif MODE == 'native-minicpm':
         native('minicpm-ocr', 'minicpm-f16', dict(CRISPEMBED_MINICPM_OCR='1', CRISPEMBED_QWEN35_OCR='1',
                                                   CRISPEMBED_QWEN35_WEIGHT_CACHE='1'), ['--ocr-prompt', 'Text Recognition:'])
+    elif MODE == 'native-minicpm-fast':
+        # Default-flip A/B arm: graph decoder (f32 matmul) + F32 vision + batched slices + vision flash.
+        native('minicpm-ocr', 'minicpm-f16-fast', dict(CRISPEMBED_MINICPM_OCR='1', CRISPEMBED_QWEN35_OCR='1',
+                                                       CRISPEMBED_QWEN35_WEIGHT_CACHE='1', CRISPEMBED_QWEN35_GRAPH_DECODER='1',
+                                                       CRISPEMBED_QWEN35_GRAPH_MATMUL='f32', CRISPEMBED_MINICPM_OCR_VISION_F32='1',
+                                                       CRISPEMBED_MINICPM_OCR_VISION_BATCH='1', CRISPEMBED_MINICPM_OCR_VISION_FLASH='1'),
+               ['--ocr-prompt', 'Text Recognition:'])
     elif MODE == 'ref-uocr2':
         reference('uocr2', 'uocr2-original-f32', ['transformers==4.52.1', 'huggingface-hub==0.36.0', 'tokenizers==0.21.4',
                                                   'addict==2.4.0', 'einops==0.8.2', 'easydict==1.13'])

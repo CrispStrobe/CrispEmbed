@@ -36,6 +36,7 @@
 #include <string>
 #include <chrono>
 #include <vector>
+#include "core/env_value.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -1041,7 +1042,7 @@ static void mlp_2layer(const float * input, // (N, in_dim)
 // ============================================================================
 
 void * gliner_ner_init(const char * model_path, int n_threads) {
-    g_debug = (std::getenv("GLINER_DEBUG") != nullptr);
+    g_debug = core_env::on("GLINER_DEBUG");
 
     auto * ctx = new gliner_context();
     ctx->n_threads = n_threads;
@@ -1064,7 +1065,7 @@ void * gliner_ner_init(const char * model_path, int n_threads) {
 
     // When calibrating an imatrix, build a scheduler so the collector can hook the
     // per-node eval callback (the fast gallocr path below has no such hook).
-    ctx->imatrix_active = (std::getenv("CRISPEMBED_IMATRIX_OUT") != nullptr);
+    ctx->imatrix_active = (core_env::value("CRISPEMBED_IMATRIX_OUT") != nullptr);
     if (ctx->imatrix_active) {
         std::vector<ggml_backend_t> bes;
         bes.push_back(ctx->backend);

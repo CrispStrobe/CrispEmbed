@@ -17,6 +17,11 @@ on:
       - '.github/workflows/build-wasm.yml'
   pull_request:
     branches: [main]
+    paths-ignore:
+      - '*.md'
+      - '**.md'
+      - 'docs/**'
+      - 'tests/results/**'
   workflow_dispatch:
 
 concurrency:

@@ -40,7 +40,7 @@
       "bytes": 1152030720,
       "log_tail": "to q4_0... 16.6 MB -> 2.3 MB\n[668/681] l.blk.22.ffn_down.weight                      -    f32, quantizing to q4_K... 16.6 MB -> 2.3 MB\n[669/681] l.blk.23.attn_norm.weight                     -    f32, copy 0.0 MB\n[670/681] l.blk.23.ffn_norm.weight                      -    f32, copy 0.0 MB\n[671/681] l.blk.23.attn_q.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB\n[672/681] l.blk.23.attn_q.bias                          -    f32, copy 0.0 MB\n[673/681] l.blk.23.attn_k.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB\n[674/681] l.blk.23.attn_k.bias                          -    f32, copy 0.0 MB\n[675/681] l.blk.23.attn_v.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 0.4 MB -> 0.1 MB\n[676/681] l.blk.23.attn_v.bias                          -    f32, copy 0.0 MB\n[677/681] l.blk.23.attn_o.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 3.1 MB -> 0.4 MB\n[678/681] l.blk.23.ffn_gate.weight                      -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB\n[679/681] l.blk.23.ffn_up.weight                        -    f32, (fallback q4_0) quantizing to q4_0... 16.6 MB -> 2.3 MB\n[680/681] l.blk.23.ffn_down.weight                      -    f32, quantizing to q4_K... 16.6 MB -> 2.3 MB\n[681/681] l.output_norm.weight                          -    f32, copy 0.0 MB\n\n297 quantized, 384 kept\n4410 MB -> 1093 MB (4.0x compression)\n"
     },
-    "q4_k-dq8": {
+    "q8_0-all": {
       "returncode": 0,
       "recipe": [
         "q4_k",
@@ -50,7 +50,7 @@
       "bytes": 1330944000,
       "log_tail": " 16.6 MB -> 4.4 MB\n[667/681] l.blk.22.ffn_up.weight                        -    f32, quantizing to q8_0... 16.6 MB -> 4.4 MB\n[668/681] l.blk.22.ffn_down.weight                      -    f32, quantizing to q8_0... 16.6 MB -> 4.4 MB\n[669/681] l.blk.23.attn_norm.weight                     -    f32, copy 0.0 MB\n[670/681] l.blk.23.ffn_norm.weight                      -    f32, copy 0.0 MB\n[671/681] l.blk.23.attn_q.weight                        -    f32, quantizing to q8_0... 3.1 MB -> 0.8 MB\n[672/681] l.blk.23.attn_q.bias                          -    f32, copy 0.0 MB\n[673/681] l.blk.23.attn_k.weight                        -    f32, quantizing to q8_0... 0.4 MB -> 0.1 MB\n[674/681] l.blk.23.attn_k.bias                          -    f32, copy 0.0 MB\n[675/681] l.blk.23.attn_v.weight                        -    f32, quantizing to q8_0... 0.4 MB -> 0.1 MB\n[676/681] l.blk.23.attn_v.bias                          -    f32, copy 0.0 MB\n[677/681] l.blk.23.attn_o.weight                        -    f32, quantizing to q8_0... 3.1 MB -> 0.8 MB\n[678/681] l.blk.23.ffn_gate.weight                      -    f32, quantizing to q8_0... 16.6 MB -> 4.4 MB\n[679/681] l.blk.23.ffn_up.weight                        -    f32, quantizing to q8_0... 16.6 MB -> 4.4 MB\n[680/681] l.blk.23.ffn_down.weight                      -    f32, quantizing to q8_0... 16.6 MB -> 4.4 MB\n[681/681] l.output_norm.weight                          -    f32, copy 0.0 MB\n\n297 quantized, 384 kept\n4410 MB -> 1264 MB (3.5x compression)\n"
     },
-    "q4_k-df16": {
+    "q8_0-vision-f16-decoder": {
       "returncode": 0,
       "recipe": [
         "q4_k",
@@ -123,7 +123,7 @@
           ],
           "first_divergence": null
         },
-        "q4_k-dq8": {
+        "q8_0-all": {
           "returncode": 0,
           "gpu_peak_mib": 1464,
           "device": "auto",
@@ -137,7 +137,7 @@
           ],
           "first_divergence": null
         },
-        "q4_k-df16": {
+        "q8_0-vision-f16-decoder": {
           "returncode": 0,
           "gpu_peak_mib": 1972,
           "device": "auto",
@@ -219,7 +219,7 @@
           ],
           "first_divergence": null
         },
-        "q4_k-dq8": {
+        "q8_0-all": {
           "returncode": 0,
           "gpu_peak_mib": 1506,
           "device": "auto",
@@ -233,7 +233,7 @@
           ],
           "first_divergence": null
         },
-        "q4_k-df16": {
+        "q8_0-vision-f16-decoder": {
           "returncode": 0,
           "gpu_peak_mib": 1966,
           "device": "auto",
@@ -315,7 +315,7 @@
           ],
           "first_divergence": null
         },
-        "q4_k-dq8": {
+        "q8_0-all": {
           "returncode": 0,
           "gpu_peak_mib": 1596,
           "device": "auto",
@@ -329,7 +329,7 @@
           ],
           "first_divergence": null
         },
-        "q4_k-df16": {
+        "q8_0-vision-f16-decoder": {
           "returncode": 0,
           "gpu_peak_mib": 2056,
           "device": "auto",
@@ -412,7 +412,7 @@
           "first_divergence": 3,
           "text": "Reichs = Gesetzblatt.\n№ 1.\nInhalt. Verordnung, betreffend das Infrafttreten der Militärstrafgerichtsordnung vom 1. Dezember 1898.\nS. 1. — Verordnung, betreffend die Uebertragung der Befugnisse des preußischen General-\nAuditoriats auf das Reichsmilitärgericht. S. 2.\n(Nr. 2642.) Verordnung, betreffend das Infrafttreten der Militärstrafgerichtsordnung vom\n1. Dezember 1898. Vom 28. Dezember 1899.\nWir Wilhelm, von Gottes Gnaden Deutscher Kaiser, König\nvon Preußen x.\nverordnen unter Zustimmung des Bundesraths auf Grund des §. 1 des Einführungs-\ngeseßes zur Militärstrafgerichtsordnung vom 1. Dezember 1898, was folgt:\nEinziger Paragraph.\nDie Militärstrafgerichtsordnung vom 1. Dezember 1898 (Reichs-Geseßbl.\nS. 1189 ff.) tritt am 1. Oktober 1900 in Kraft.\nUrkundlich unter Unserer Höchsteigenhändigen Unterschrift und beigedrucktem\nKaiserlichen Infigel.\nGegeben Neues Palais, den 28. Dezember 1899.\n(L. S.) Wilhelm.\nFürst zu Hohenlohe.\nReichs-Geseßbl. 1900.\nAusgegeben zu Berlin den 6. Januar 1900.\n1"
         },
-        "q4_k-dq8": {
+        "q8_0-all": {
           "returncode": 0,
           "gpu_peak_mib": 1982,
           "device": "auto",
@@ -426,7 +426,7 @@
           ],
           "first_divergence": null
         },
-        "q4_k-df16": {
+        "q8_0-vision-f16-decoder": {
           "returncode": 0,
           "gpu_peak_mib": 2424,
           "device": "auto",
@@ -508,7 +508,7 @@
           ],
           "first_divergence": null
         },
-        "q4_k-dq8": {
+        "q8_0-all": {
           "returncode": 0,
           "gpu_peak_mib": 1538,
           "device": "auto",
@@ -522,7 +522,7 @@
           ],
           "first_divergence": null
         },
-        "q4_k-df16": {
+        "q8_0-vision-f16-decoder": {
           "returncode": 0,
           "gpu_peak_mib": 1998,
           "device": "auto",
@@ -604,7 +604,7 @@
           ],
           "first_divergence": 4
         },
-        "q4_k-dq8": {
+        "q8_0-all": {
           "returncode": 0,
           "gpu_peak_mib": 1458,
           "device": "auto",
@@ -618,7 +618,7 @@
           ],
           "first_divergence": null
         },
-        "q4_k-df16": {
+        "q8_0-vision-f16-decoder": {
           "returncode": 0,
           "gpu_peak_mib": 1836,
           "device": "auto",
@@ -700,7 +700,7 @@
           ],
           "first_divergence": null
         },
-        "q4_k-dq8": {
+        "q8_0-all": {
           "returncode": 0,
           "gpu_peak_mib": 1816,
           "device": "auto",
@@ -715,7 +715,7 @@
           "first_divergence": 180,
           "text": "<|box_start|>141 039 179 059<|box_end|><|ref_start|>page_number<|ref_end|><|rotate_up|>\n<|box_start|>339 037 685 057<|box_end|><|ref_start|>header<|ref_end|><|rotate_up|>\n<|box_start|>134 079 893 166<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>135 167 895 254<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>135 253 897 404<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>135 404 897 554<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>139 554 895 596<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>135 596 897 724<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>\n<|box_start|>138 725 903 858<|box_end|><|ref_start|>text<|ref_end|><|rotate_up|>"
         },
-        "q4_k-df16": {
+        "q8_0-vision-f16-decoder": {
           "returncode": 0,
           "gpu_peak_mib": 2258,
           "device": "auto",
@@ -798,7 +798,7 @@
           ],
           "first_divergence": null
         },
-        "q4_k-dq8": {
+        "q8_0-all": {
           "returncode": 0,
           "gpu_peak_mib": 1816,
           "device": "auto",
@@ -812,7 +812,7 @@
           ],
           "first_divergence": null
         },
-        "q4_k-df16": {
+        "q8_0-vision-f16-decoder": {
           "returncode": 0,
           "gpu_peak_mib": 2258,
           "device": "auto",

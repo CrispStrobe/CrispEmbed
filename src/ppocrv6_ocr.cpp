@@ -577,7 +577,7 @@ static ggml_tensor * pp_graph_resident_conv(ppocrv6_ocr_context * c, const pp_co
     } else {
         ggml_backend_tensor_set(dst, data.data(), 0, ggml_nbytes(dst));
     }
-    if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
+    if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
         fprintf(stderr, "[ppocrv6-graph-weight] conv=%dx%dx%dx%d src0=%.7g dst0=%.7g\n", p.kw, p.kh, icg, p.out_ch,
                 src[0], data[0]);
     c->graph.resident[p.w] = dst;
@@ -588,7 +588,7 @@ static ggml_tensor * pp_graph_resident_conv(ppocrv6_ocr_context * c, const pp_co
 
 static ggml_tensor * pp_graph_conv(ppocrv6_ocr_context * c, ggml_context * g, ggml_tensor * x, const pp_conv & p) {
     if (!p.w) {
-        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
+        if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
             fprintf(stderr, "ppocrv6 graph unsupported conv weights=%d\n", p.w ? 1 : 0);
         return nullptr;
     }
@@ -604,10 +604,10 @@ static ggml_tensor * pp_graph_conv(ppocrv6_ocr_context * c, ggml_context * g, gg
     const bool cpu_graph = ggml_backend_is_cpu(c->graph.backend);
     const ggml_type graph_type =
         cpu_graph ? GGML_TYPE_F32
-                  : ((dw || std::getenv("CRISPEMBED_PPOCRV6_GRAPH_F16")) ? GGML_TYPE_F16 : GGML_TYPE_F32);
+                  : ((dw || core_env::on("CRISPEMBED_PPOCRV6_GRAPH_F16")) ? GGML_TYPE_F16 : GGML_TYPE_F32);
     ggml_tensor * w = pp_graph_resident_conv(c, p, graph_type);
     if (!w) {
-        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
+        if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
             fprintf(stderr, "ppocrv6 graph resident conv allocation failed\n");
         return nullptr;
     }
@@ -623,7 +623,7 @@ static ggml_tensor * pp_graph_conv(ppocrv6_ocr_context * c, ggml_context * g, gg
     // bandwidth-bound on. Opt-in A/B via CRISPEMBED_PPOCRV6_CONV_DIRECT=1;
     // requires F32 input and contiguous F16/F32 kernel (both true here).
     static const bool conv_direct =
-        std::getenv("CRISPEMBED_PPOCRV6_CONV_DIRECT") != nullptr && !ggml_backend_is_cpu(c->graph.backend);
+        core_env::on("CRISPEMBED_PPOCRV6_CONV_DIRECT") && !ggml_backend_is_cpu(c->graph.backend);
     ggml_tensor * y = dw ? ggml_conv_2d_dw(g, w, x, p.stride_w, p.stride_h, p.pad_w, p.pad_h, 1, 1)
                          : (conv_direct ? ggml_conv_2d_direct(g, w, x, p.stride_w, p.stride_h, p.pad_w, p.pad_h, 1, 1)
                                         : ggml_conv_2d(g, w, x, p.stride_w, p.stride_h, p.pad_w, p.pad_h, 1, 1));
@@ -686,7 +686,7 @@ static ggml_tensor * pp_graph_layernorm(ppocrv6_ocr_context * c, ggml_context * 
 static ggml_tensor * pp_graph_linear(ppocrv6_ocr_context * c, ggml_context * g, ggml_tensor * x, ggml_tensor * wt,
                                      ggml_tensor * bias) {
     if (!wt || ggml_n_dims(wt) < 2) {
-        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph missing linear weights\n");
+        if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph missing linear weights\n");
         return nullptr;
     }
     // Residents stay F32 by default: an interleaved A/B measured F16 conv
@@ -698,10 +698,10 @@ static ggml_tensor * pp_graph_linear(ppocrv6_ocr_context * c, ggml_context * g, 
     // head weight is the single biggest read in the graph.
     // CRISPEMBED_PPOCRV6_GRAPH_DEQUANT=1 restores the old upcast-everything.
     const bool native_quant = !ggml_backend_is_cpu(c->graph.backend) && ggml_is_quantized(wt->type) &&
-                              !std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEQUANT");
+                              !core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEQUANT");
     ggml_tensor * w = pp_graph_resident(c, wt, native_quant ? wt->type : GGML_TYPE_F32, wt->ne[0], wt->ne[1], 1, 1);
     if (!w) return nullptr;
-    if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
+    if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
         fprintf(stderr, "ppocrv6 graph linear wt=%lldx%lld x=%lldx%lld\n", (long long)wt->ne[0], (long long)wt->ne[1],
                 (long long)x->ne[0], (long long)x->ne[1]);
     ggml_tensor * y = ggml_mul_mat(g, w, x);
@@ -729,9 +729,9 @@ static bool pp_graph_enabled() {
     // FORCE_CPU normally means the scalar reference. Permit the explicit
     // batch-graph probe to select the CPU backend while still exercising the
     // GGML graph; ordinary FORCE_CPU runs remain graph-free.
-    static const bool off = std::getenv("CRISPEMBED_PPOCRV6_NO_GRAPH") != nullptr ||
-                            (std::getenv("CRISPEMBED_PPOCRV6_FORCE_CPU") != nullptr &&
-                             std::getenv("CRISPEMBED_PPOCRV6_BATCH_GRAPH") == nullptr);
+    static const bool off =
+        core_env::on("CRISPEMBED_PPOCRV6_NO_GRAPH") ||
+        (core_env::on("CRISPEMBED_PPOCRV6_FORCE_CPU") && !core_env::on("CRISPEMBED_PPOCRV6_BATCH_GRAPH"));
     return !off;
 }
 
@@ -782,7 +782,8 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width, int batch = 1) {
         c->graph.sched = ggml_backend_sched_new(backends, nullptr, 2, 4096, false, false);
     }
     if (!c->graph.sched) {
-        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph scheduler creation failed\n");
+        if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
+            fprintf(stderr, "ppocrv6 graph scheduler creation failed\n");
         return false;
     }
     constexpr int H = 48;
@@ -791,7 +792,7 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width, int batch = 1) {
     ggml_init_params ip = { meta_size, c->graph.graph_meta.data(), true };
     c->graph.graph_ctx = ggml_init(ip);
     if (!c->graph.graph_ctx) {
-        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph context creation failed\n");
+        if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph context creation failed\n");
         return false;
     }
     c->graph.graph = ggml_new_graph_custom(c->graph.graph_ctx, 4096, false);
@@ -804,7 +805,7 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width, int batch = 1) {
         // right/bottom padding before valid convolution, then concatenate
         // with ceil-mode max-pool output along the channel axis.
         auto large_tap = [&](const char * name, ggml_tensor * value) {
-            if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
+            if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
                 c->graph.debug_taps.push_back({ name, value });
                 ggml_set_output(value);
             }
@@ -839,10 +840,10 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width, int batch = 1) {
             const pp_conv & p = c->stem[stem_idx];
             x = pp_graph_conv(c, c->graph.graph_ctx, x, p);
             if (!x) {
-                if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph stem failed\n");
+                if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph stem failed\n");
                 return false;
             }
-            if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
+            if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
                 const char * pre_name = stem_idx == 0 ? "stem1_pre" : "stem2_pre";
                 c->graph.debug_taps.push_back({ pre_name, x });
                 ggml_set_output(x);
@@ -850,7 +851,7 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width, int batch = 1) {
             // PP-OCRv6 applies GELU after the first stem convolution only; the
             // second stem feeds the first backbone block directly.
             if (stem_idx == 0) x = ggml_gelu(c->graph.graph_ctx, x);
-            if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
+            if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
                 const char * name = stem_idx == 0 ? "stem1" : "stem2";
                 c->graph.debug_taps.push_back({ name, x });
                 ggml_set_output(x);
@@ -882,7 +883,7 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width, int batch = 1) {
         for (const pp_block & b : stage) {
             x = pp_graph_block(c, c->graph.graph_ctx, x, b);
             if (!x) {
-                if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph block failed\n");
+                if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph block failed\n");
                 return false;
             }
         }
@@ -890,7 +891,7 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width, int batch = 1) {
             static const char * names[] = { "stage1", "stage2", "stage3", "stage4" };
             if (stage_idx < sizeof(names) / sizeof(names[0])) {
                 if (stage_stop(names[stage_idx], x)) return true;
-                if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
+                if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
                     c->graph.debug_taps.push_back({ names[stage_idx], x });
                     ggml_set_output(x);
                 }
@@ -962,7 +963,7 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width, int batch = 1) {
     // per batch-8 group while the neck/decoder's ~130 tiny-tensor nodes
     // (attention over [120,320]) take ~250 ms of GPU-serial kernel launches —
     // that arithmetic is microseconds of NEON work per item.
-    const bool batch_cpu_decoder = batch > 1 && std::getenv("CRISPEMBED_PPOCRV6_BATCH_CPU_DECODER") != nullptr;
+    const bool batch_cpu_decoder = batch > 1 && core_env::on("CRISPEMBED_PPOCRV6_BATCH_CPU_DECODER");
     if (c->large_stem && c->graph.svtr_prefix_output && batch_cpu_decoder) {
         // Flatten [hidden, tokens, items] to [hidden, tokens*items] so the
         // caller's h = ne[1]/batch contract yields the per-item token count.
@@ -1054,18 +1055,18 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width, int batch = 1) {
     // logits as the graph output also avoids copying the backbone feature map
     // back to CPU merely to run two small projection layers.
     if (!c->large_stem) {
-        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
+        if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
             c->graph.debug_taps.push_back({ "backbone", x });
             ggml_set_output(x);
         }
         // ggml addresses image dimensions as [W,H], while the reference
         // recognizer pools [H,W] with a 3x2 kernel and 3x2 stride. Swap the
         // arguments here so graph pooling matches the CPU sequence contract.
-        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
+        if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
             fprintf(stderr, "ppocrv6 tiny pre-pool shape: %lld x %lld x %lld x %lld\n", (long long)x->ne[0],
                     (long long)x->ne[1], (long long)x->ne[2], (long long)x->ne[3]);
         x = ggml_pool_2d(c->graph.graph_ctx, x, GGML_OP_POOL_AVG, 2, 3, 2, 3, 0, 0);
-        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
+        if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
             c->graph.debug_taps.push_back({ "pool", x });
             ggml_set_output(x);
         }
@@ -1076,30 +1077,30 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width, int batch = 1) {
         graph_head_dw.pad_w = 2;
         x = pp_graph_conv(c, c->graph.graph_ctx, x, graph_head_dw);
         if (!x) {
-            if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph head failed\n");
+            if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph head failed\n");
             return false;
         }
-        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
+        if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
             c->graph.debug_taps.push_back({ "head_conv1", x });
             ggml_set_output(x);
         }
         x = pp_graph_bn(c, c->graph.graph_ctx, x, c->norm1_w, c->norm1_b, c->norm1_mean, c->norm1_var,
                         c->head_dw.out_ch);
         x = ggml_hardswish(c->graph.graph_ctx, x);
-        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
+        if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
             c->graph.debug_taps.push_back({ "head_act1", x });
             ggml_set_output(x);
         }
         x = pp_graph_conv(c, c->graph.graph_ctx, x, c->head_pw);
         if (!x) return false;
-        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
+        if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
             c->graph.debug_taps.push_back({ "head_conv2", x });
             ggml_set_output(x);
         }
         x = pp_graph_bn(c, c->graph.graph_ctx, x, c->norm2_w, c->norm2_b, c->norm2_mean, c->norm2_var,
                         c->head_pw.out_ch);
         x = ggml_hardswish(c->graph.graph_ctx, x);
-        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
+        if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
             c->graph.debug_taps.push_back({ "head_act2", x });
             ggml_set_output(x);
         }
@@ -1122,7 +1123,7 @@ static bool pp_graph_build(ppocrv6_ocr_context * c, int width, int batch = 1) {
     ggml_build_forward_expand(c->graph.graph, x);
     ggml_backend_sched_reset(c->graph.sched);
     if (!ggml_backend_sched_alloc_graph(c->graph.sched, c->graph.graph)) {
-        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph allocation failed\n");
+        if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) fprintf(stderr, "ppocrv6 graph allocation failed\n");
         return false;
     }
     c->graph.allocated = true;
@@ -1156,7 +1157,7 @@ static bool pp_graph_run_batch(ppocrv6_ocr_context * c, const std::vector<float>
     // than the graph tensor holds, straight off the end of its backend buffer.
     // Falling back to the CPU reference is always safe.
     if ((size_t)ggml_nelements(c->graph.input) != input.size()) {
-        if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
+        if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
             fprintf(stderr, "[ppocrv6-graph] input %zu floats != graph shape %lld; using CPU reference\n", input.size(),
                     (long long)ggml_nelements(c->graph.input));
         return false;
@@ -1165,7 +1166,7 @@ static bool pp_graph_run_batch(ppocrv6_ocr_context * c, const std::vector<float>
     std::vector<float> graph_input = input;
     ggml_backend_tensor_set(c->graph.input, graph_input.data(), 0, graph_input.size() * sizeof(float));
     const auto t_stage1 = std::chrono::steady_clock::now();
-    if (c->diff && std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
+    if (c->diff && core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
         std::vector<float> staged(graph_input.size());
         ggml_backend_tensor_get(c->graph.input, staged.data(), 0, staged.size() * sizeof(float));
         const auto report = c->diff->compare("ppocrv6.input", staged.data(), staged.size(), -1);
@@ -1199,7 +1200,7 @@ static bool pp_graph_run_batch(ppocrv6_ocr_context * c, const std::vector<float>
                                 c->graph.svtr_skip_host.size() * sizeof(float));
     }
     const auto t_readback1 = std::chrono::steady_clock::now();
-    if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
+    if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
         for (const auto & tap : c->graph.debug_taps) {
             std::vector<float> values(ggml_nelements(tap.second));
             ggml_backend_tensor_get(tap.second, values.data(), 0, values.size() * sizeof(float));
@@ -1292,7 +1293,7 @@ static bool pp_graph_run(ppocrv6_ocr_context * c, const std::vector<float> & inp
 // restores the old cap for bisection.
 static int resize_normalize(const uint8_t * px, int w, int h, int ch, std::vector<float> & out) {
     constexpr int H = 48, W_MIN = 320;
-    const bool fixed = std::getenv("CRISPEMBED_PPOCRV6_FIXED_WIDTH") != nullptr;
+    const bool fixed = core_env::on("CRISPEMBED_PPOCRV6_FIXED_WIDTH");
     const float ratio = w / float(std::max(1, h));
     int W = fixed ? W_MIN : std::max(W_MIN, int(H * std::max(W_MIN / float(H), ratio)));
     // Opt-in narrow-crop experiment (T4): PaddleOCR pads every crop to >=320
@@ -1332,7 +1333,7 @@ static int resize_normalize(const uint8_t * px, int w, int h, int ch, std::vecto
     // the contract used by our official-source gold archives), but expose an
     // explicit diagnostic switch so the two source formats can be compared
     // without rebuilding the runtime.
-    const bool rgb = std::getenv("CRISPEMBED_PPOCRV6_RGB") != nullptr;
+    const bool rgb = core_env::on("CRISPEMBED_PPOCRV6_RGB");
     const int rw = std::max(1, std::min(W, int(std::round(w * (H / float(std::max(1, h)))))));
     for (int y = 0; y < H; ++y)
         for (int x = 0; x < rw; ++x) {
@@ -1413,7 +1414,7 @@ static const char * recognize_svtr(ppocrv6_ocr_context * c, std::vector<float> &
                 skip_tokens[(size_t)t * c->hidden + cc] = residual[(size_t)cc * oh * ow + t];
             }
     }
-    if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
+    if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
         fprintf(stderr, "[ppocrv6-svtr-prefix] mode=%s tokens=%d hidden=%d first=%.7g %.7g %.7g %.7g\n",
                 prefix_encoded ? "graph" : "cpu", ow, c->hidden, tok.size() > 0 ? tok[0] : 0.0f,
                 tok.size() > 1 ? tok[1] : 0.0f, tok.size() > 2 ? tok[2] : 0.0f, tok.size() > 3 ? tok[3] : 0.0f);
@@ -1508,7 +1509,7 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
     std::vector<float> graph_out;
     const bool graph_allowed = c->graph_accept_override < 0 || c->graph_accept_override != 0;
     bool graph_done = graph_allowed && pp_graph_run(c, input, graph_out, h, w);
-    if (graph_done && c->graph.logits_output && std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
+    if (graph_done && c->graph.logits_output && core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG")) {
         const int tokens = h;
         const int classes = w;
         fprintf(stderr, "[ppocrv6-graph-decode] tokens=%d classes=%d vocab=%zu\n", tokens, classes, c->vocab.size());
@@ -1518,8 +1519,8 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
             fprintf(stderr, "[ppocrv6-graph-decode] t=%d best=%d value=%.7g blank=%.7g\n", t, best, row[best], row[0]);
         }
     }
-    const bool graph_accept = c->graph_accept_override >= 0 ? c->graph_accept_override != 0
-                                                            : std::getenv("CRISPEMBED_PPOCRV6_GRAPH_ACCEPT") != nullptr;
+    const bool graph_accept =
+        c->graph_accept_override >= 0 ? c->graph_accept_override != 0 : core_env::on("CRISPEMBED_PPOCRV6_GRAPH_ACCEPT");
     if (graph_done && c->graph.logits_output && !graph_accept) {
         fprintf(stderr, "ppocrv6: recognizer graph is diagnostic-only; using CPU reference\n");
         graph_done = false;
@@ -1657,7 +1658,7 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
         }
     if (c->large_stem)
         return recognize_svtr(c, x, h, w, out_len, c->graph.svtr_prefix_output, c->graph.svtr_decoder_output);
-    if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
+    if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
         fprintf(stderr, "[ppocrv6-cpu-tap] backbone shape=%dx%d first=%.7g %.7g %.7g %.7g\n", h, w,
                 x.size() > 0 ? x[0] : 0.0f, x.size() > 1 ? x[1] : 0.0f, x.size() > 2 ? x[2] : 0.0f,
                 x.size() > 3 ? x[3] : 0.0f);
@@ -1674,7 +1675,7 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
     x.swap(pooled);
     h = pooled_h;
     w = pooled_w;
-    if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
+    if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
         fprintf(stderr, "[ppocrv6-cpu-tap] pool shape=%dx%d first=%.7g %.7g %.7g %.7g\n", h, w,
                 x.size() > 0 ? x[0] : 0.0f, x.size() > 1 ? x[1] : 0.0f, x.size() > 2 ? x[2] : 0.0f,
                 x.size() > 3 ? x[3] : 0.0f);
@@ -1690,7 +1691,7 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
     x.swap(y);
     h = oh;
     w = ow;
-    if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
+    if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
         fprintf(stderr, "[ppocrv6-cpu-tap] head_act1 shape=%dx%d first=%.7g %.7g %.7g %.7g\n", h, w,
                 x.size() > 0 ? x[0] : 0.0f, x.size() > 1 ? x[1] : 0.0f, x.size() > 2 ? x[2] : 0.0f,
                 x.size() > 3 ? x[3] : 0.0f);
@@ -1715,7 +1716,7 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
     x.swap(y);
     h = oh;
     w = ow;
-    if (std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
+    if (core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG"))
         fprintf(stderr, "[ppocrv6-cpu-tap] head_act2 shape=%dx%d first=%.7g %.7g %.7g %.7g\n", h, w,
                 x.size() > 0 ? x[0] : 0.0f, x.size() > 1 ? x[1] : 0.0f, x.size() > 2 ? x[2] : 0.0f,
                 x.size() > 3 ? x[3] : 0.0f);
@@ -1742,7 +1743,7 @@ static const char * recognize_nchw(ppocrv6_ocr_context * c, const std::vector<fl
         if (best > 0 && best != last && best - 1 < (int)c->vocab.size()) c->result += c->vocab[best - 1];
         last = best;
     }
-    if (!graph_out.empty() && c->graph.logits_output && std::getenv("CRISPEMBED_PPOCRV6_GRAPH_DEBUG") &&
+    if (!graph_out.empty() && c->graph.logits_output && core_env::on("CRISPEMBED_PPOCRV6_GRAPH_DEBUG") &&
         graph_out.size() == all_logits.size()) {
         double dot = 0.0, gn = 0.0, cn = 0.0;
         float max_abs = 0.0f;
@@ -1778,7 +1779,7 @@ extern "C" ppocrv6_ocr_context * ppocrv6_ocr_init(const char * path, int n_threa
     // passed. Threading partitions rows without changing any element's
     // reduction order, so output is unchanged.
     c->n_threads = std::max(1, n_threads);
-    const bool force_cpu = std::getenv("CRISPEMBED_PPOCRV6_FORCE_CPU") != nullptr;
+    const bool force_cpu = core_env::on("CRISPEMBED_PPOCRV6_FORCE_CPU");
     c->backend = force_cpu ? ggml_backend_cpu_init() : crispasr_init_gpu_backend_shared();
     if (!c->backend) c->backend = ggml_backend_cpu_init();
     if (c->backend && ggml_backend_is_cpu(c->backend)) ggml_backend_cpu_set_n_threads(c->backend, c->n_threads);
@@ -1908,10 +1909,10 @@ extern "C" int ppocrv6_ocr_recognize_raw_batch(ppocrv6_ocr_context * c, const ui
     // reference) also disables the fused lane.
     const char * batch_graph_env = std::getenv("CRISPEMBED_PPOCRV6_BATCH_GRAPH");
     const bool batch_graph_enabled = (batch_graph_env ? std::strcmp(batch_graph_env, "0") != 0
-                                                      : std::getenv("CRISPEMBED_PPOCRV6_NO_BATCH_GRAPH") == nullptr) &&
+                                                      : !core_env::on("CRISPEMBED_PPOCRV6_NO_BATCH_GRAPH")) &&
                                      c->graph_accept_override != 0;
     const bool batch_backend_ok =
-        c->backend && (ggml_backend_is_cpu(c->backend) || !std::getenv("CRISPEMBED_PPOCRV6_BATCH_GRAPH_CPU_ONLY"));
+        c->backend && (ggml_backend_is_cpu(c->backend) || !core_env::on("CRISPEMBED_PPOCRV6_BATCH_GRAPH_CPU_ONLY"));
     if (batch_graph_enabled && !batch_backend_ok && core_env::on("CRISPEMBED_PPOCRV6_BENCH"))
         fprintf(stderr, "[ppocrv6-batch-graph] backend=%s action=scalar-fallback reason=cpu-only-gate\n",
                 c->backend ? ggml_backend_name(c->backend) : "none");

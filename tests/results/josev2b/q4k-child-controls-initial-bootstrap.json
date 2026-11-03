@@ -1,0 +1,80 @@
+{
+  "schema": "crispembed-josev-q4k-bootstrap-v1",
+  "source": "9888d06cccc0a7be29b0d0668e88e53cf09006d6",
+  "completed": false,
+  "commands": [
+    {
+      "name": "clone",
+      "exit": 0,
+      "seconds": 1.523035378000003,
+      "log": "clone.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "checkout",
+      "exit": 0,
+      "seconds": 4.880855390999983,
+      "log": "checkout.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "fetch-original-source",
+      "exit": 0,
+      "seconds": 0.4659894189999818,
+      "log": "fetch-original-source.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "source-closure",
+      "exit": 0,
+      "seconds": 2.1711834079999903,
+      "log": "source-closure.log",
+      "sha256": "5b5e536b8a31ee9b2312aef781590b6d10ded6e0c6f7e7d109a33ddf8b0e7f4c"
+    },
+    {
+      "name": "submodule",
+      "exit": 0,
+      "seconds": 4.479927967999998,
+      "log": "submodule.log",
+      "sha256": "3061e1e0952c06e3eef2ba9c2ce2a55164679ab4a327cc8de47cb2be32a81f29"
+    },
+    {
+      "name": "install-locked-tools",
+      "exit": 0,
+      "seconds": 5.783124086000015,
+      "log": "install-locked-tools.log",
+      "sha256": "4e3a1f752e91436b0e63750b05b6ab28a9c90e0fda02c81614dbe3c131081314"
+    },
+    {
+      "name": "pip-check",
+      "exit": 0,
+      "seconds": 0.3655809019999765,
+      "log": "pip-check.log",
+      "sha256": "87ea3f7013f01cc4669b2b0eb0f7040353493edc7ad7e48541117a721efad13f"
+    },
+    {
+      "name": "stdlib-controls",
+      "exit": 0,
+      "seconds": 0.5159549880000043,
+      "log": "stdlib-controls.log",
+      "sha256": "027efcc4222894f3303caeaae66d3aa3e3adb7c6ebfae4a9974c762ac01f3ea0"
+    },
+    {
+      "name": "child-accounting-controls",
+      "exit": 1,
+      "seconds": 1.3683728780000024,
+      "log": "child-accounting-controls.log",
+      "sha256": "37251dead7b5c781c83e264d1d177a7f0b2638f4babf0960c2afc5711e6f2108"
+    }
+  ],
+  "execution": "CPU2 actual F32/Q4_K model comparison",
+  "gpu_execution": false,
+  "publication_qualified": false,
+  "executed_script_sha256": "e86f05c72311079c8f5bb1d94d27bfe869c1c25da3831038c16fb613dd32c39c",
+  "resources": {
+    "available_ram_bytes": 32709390336,
+    "free_disk_bytes": 1126151970816,
+    "cpu_count": 4
+  },
+  "error": "RuntimeError: setup/model task rejected in child-accounting-controls"
+}

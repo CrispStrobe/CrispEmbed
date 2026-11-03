@@ -1,0 +1,533 @@
+{
+  "schema": "crispembed-minicpm-graph-python-source-audit-v1",
+  "status": "source-review-complete-model-gates-pending",
+  "source_only": true,
+  "reviewed_native_source": "83eac856cc684808e417ebfed7db7c2f677dc09f",
+  "documentation_base": "b237132ee7fc3b318db04be306880fb5e2224298",
+  "ggml": "a06fc0bb46b73cc10011fc90ae4054aee8438aeb",
+  "default_enabled": false,
+  "production_candidate_qualified": false,
+  "concrete_structural_blockers_found": [],
+  "runtime_files": {
+    "src/qwen35_graph_decoder.cpp": {
+      "bytes": 23100,
+      "sha256": "81d04cb9a60a874ad84160d344a2e2d8b6792a7dbe941189cf52b06cd3212f80",
+      "git_blob": "aed4c3f1780a590cabecd36dc0349d259ffb0445",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/blob/83eac856cc684808e417ebfed7db7c2f677dc09f/src/qwen35_graph_decoder.cpp"
+    },
+    "src/qwen35_graph_decoder.h": {
+      "bytes": 1470,
+      "sha256": "1fc634a71df09f4552d268544ff1922442fb4e40dcbc45efc39d7b885d3a06af",
+      "git_blob": "49f094a952c069fa659d09ee4608a16c9470ecea",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/blob/83eac856cc684808e417ebfed7db7c2f677dc09f/src/qwen35_graph_decoder.h"
+    },
+    "src/minicpm_ocr.cpp": {
+      "bytes": 21300,
+      "sha256": "ae0f08f314e245edbf1186a2443b657d59a385ee26a254fe3b4c6622e13067b6",
+      "git_blob": "51726f5810d631fa970cbd6532b88049a972e634",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/blob/83eac856cc684808e417ebfed7db7c2f677dc09f/src/minicpm_ocr.cpp"
+    },
+    "src/qwen35_decoder.cpp": {
+      "bytes": 11918,
+      "sha256": "d5e8e41a0cdf17294c264b86547c533cbc3077154d60b78debf9ec924356638e",
+      "git_blob": "2b0687930c66715d730ad90bba45d7ecee1ee300",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/blob/83eac856cc684808e417ebfed7db7c2f677dc09f/src/qwen35_decoder.cpp"
+    },
+    "src/qwen35_attention.cpp": {
+      "bytes": 7605,
+      "sha256": "58287bdf61483bbd4ab8681f3c71f74d6a264c5c372609de665125909f22e619",
+      "git_blob": "7ae9b0364136397b5df028aa599dc0ce9d74309a",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/blob/83eac856cc684808e417ebfed7db7c2f677dc09f/src/qwen35_attention.cpp"
+    },
+    "src/qwen35_linear.cpp": {
+      "bytes": 13228,
+      "sha256": "de90487fc6d9ce016428935129e4b839c8c53e09fd4c0a39d33702cffaed4a55",
+      "git_blob": "b00bd6f03339fb520345bbf976bc9ac719fa0b52",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/blob/83eac856cc684808e417ebfed7db7c2f677dc09f/src/qwen35_linear.cpp"
+    },
+    "src/qwen35_delta.cpp": {
+      "bytes": 8314,
+      "sha256": "3bbbe6407528dcc30f8a2c722c94324962073176c9fa24e8f655781db7f5df55",
+      "git_blob": "e7e00e072b2f77e641676796c26975b6e6a19b75",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/blob/83eac856cc684808e417ebfed7db7c2f677dc09f/src/qwen35_delta.cpp"
+    },
+    "src/qwen35_math.h": {
+      "bytes": 1747,
+      "sha256": "0696f1781ce2cb49fc639dcc405262ffc1beb63bd1549aa571391f6b30e06d96",
+      "git_blob": "6e4cb02f0b10efce404ff41b455a55039a1c5037",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/blob/83eac856cc684808e417ebfed7db7c2f677dc09f/src/qwen35_math.h"
+    },
+    "tools/minicpm-ocr/reference.py": {
+      "bytes": 7086,
+      "sha256": "845638b2104a806f2cd56059ae0a1ee51575bda9b12b9a32ff239fb2fe4d6628",
+      "git_blob": "06bdc39f6c342c97cc019ad63840e49b8749cc9a",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/blob/83eac856cc684808e417ebfed7db7c2f677dc09f/tools/minicpm-ocr/reference.py"
+    }
+  },
+  "python_sources": {
+    "package": "transformers==5.21.0",
+    "publisher_provenance": {
+      "schema": "crispembed-source-only-wheel-range-review-v1",
+      "publisher_metadata": "https://pypi.org/pypi/transformers/5.21.0/json",
+      "metadata_bytes": 30963,
+      "metadata_sha256": "376d3767530775d73126f349dfec1eb9281359b4ad8537e4e665e85c58a3bb54",
+      "wheel": {
+        "filename": "transformers-5.21.0-py3-none-any.whl",
+        "url": "https://files.pythonhosted.org/packages/73/fa/fb638d54bffff44700c8d487608c1f2872823e606fbd043b3c29c93236cf/transformers-5.21.0-py3-none-any.whl",
+        "publisher_bytes": 12978463,
+        "publisher_sha256": "8803a8712932aa3441c1e8bb340e66d5e3eca079fe65d9b717ede2f3ead01c79",
+        "whole_wheel_downloaded": false,
+        "whole_wheel_payload_hash_independently_checked": false
+      },
+      "source_files": [
+        {
+          "member": "transformers/models/qwen3_5/modeling_qwen3_5.py",
+          "bytes": 87748,
+          "sha256": "af05d0acfe79fff8aea1c75f93516a6a72bc80f6f901329a73e66a3866fe1e7c",
+          "crc32": 1217625313
+        },
+        {
+          "member": "transformers/models/minicpm_ocr/modeling_minicpm_ocr.py",
+          "bytes": 37602,
+          "sha256": "45d60914094cdc51fab67dc8edcf85a36a4db61a770eaca891cc820675fcf352",
+          "crc32": 2975781327
+        }
+      ],
+      "range_transfers": [
+        {
+          "label": "EOCD tail",
+          "offset": 12912906,
+          "bytes": 65557,
+          "sha256": "92d30877945cec78257c13da82acf256306701b55789f6c16491f9c66db960f9"
+        },
+        {
+          "label": "ZIP central directory",
+          "offset": 12708616,
+          "bytes": 269825,
+          "sha256": "1f732a40bda352043e217b2ccb9ef2dcfaac131e8601ad0eb7b385f9d8d9b7de"
+        },
+        {
+          "label": "transformers/models/qwen3_5/modeling_qwen3_5.py local header",
+          "offset": 9252422,
+          "bytes": 30,
+          "sha256": "7d4bbc1bc580634b02c4c54747df6f75e27e003f4b17399e8f8ba7aa5494b7a3"
+        },
+        {
+          "label": "transformers/models/qwen3_5/modeling_qwen3_5.py sole compressed source entry",
+          "offset": 9252452,
+          "bytes": 18741,
+          "sha256": "d1ba1dc4e049dd442844acee3cbf5f715cd69e1f2adb959c6fb0c0642700a0d0"
+        },
+        {
+          "label": "transformers/models/minicpm_ocr/modeling_minicpm_ocr.py local header",
+          "offset": 6903011,
+          "bytes": 30,
+          "sha256": "77a066cc53379ee0f9ef3e1f8a7abd4805fa3f31ebbd1e675b919a2e01a1e333"
+        },
+        {
+          "label": "transformers/models/minicpm_ocr/modeling_minicpm_ocr.py sole compressed source entry",
+          "offset": 6903041,
+          "bytes": 8146,
+          "sha256": "ca0b15a66d5e1bfe74f69027be0c546b222793797a517a49917cd025a8444826"
+        }
+      ],
+      "bytes_transferred": 362329,
+      "installed": false,
+      "imported_package": false
+    },
+    "direct_github_tag_used": false,
+    "direct_tag_note": "The GitHub v5.21.0 raw source URL returned404; no alternative version was substituted. Two exact module entries were recovered from the official publisher wheel using strict HTTP206 byte ranges."
+  },
+  "checks": [
+    {
+      "id": "mini-profile",
+      "python": [
+        {
+          "member": "minicpm_ocr",
+          "lines": [
+            779,
+            787
+          ]
+        }
+      ],
+      "native": [
+        {
+          "path": "src/qwen35_graph_decoder.cpp",
+          "lines": [
+            390,
+            410
+          ],
+          "url": "https://github.com/CrispStrobe/CrispEmbed/blob/83eac856cc684808e417ebfed7db7c2f677dc09f/src/qwen35_graph_decoder.cpp#L390"
+        }
+      ],
+      "finding": "The graph is explicitly bounded to batch1, 1024 hidden dimensions, 248100 tied vocabulary rows, 24 layers, and full attention every fourth layer. Other engines retain the scalar route."
+    },
+    {
+      "id": "q-gate-and-attention",
+      "python": [
+        {
+          "member": "qwen3_5",
+          "lines": [
+            736,
+            810
+          ]
+        }
+      ],
+      "native": [
+        {
+          "path": "src/qwen35_graph_decoder.cpp",
+          "lines": [
+            124,
+            227
+          ],
+          "url": "https://github.com/CrispStrobe/CrispEmbed/blob/83eac856cc684808e417ebfed7db7c2f677dc09f/src/qwen35_graph_decoder.cpp#L124"
+        },
+        {
+          "path": "src/qwen35_attention.cpp",
+          "lines": [
+            40,
+            152
+          ],
+          "url": "https://github.com/CrispStrobe/CrispEmbed/blob/83eac856cc684808e417ebfed7db7c2f677dc09f/src/qwen35_attention.cpp#L40"
+        }
+      ],
+      "finding": "Per-head query/gate splitting, separate K/V heads, per-head normalization, grouped KV selection, causal attention, sigmoid output gate and output projection have the same layouts and ordering as the scalar path and Python blueprint."
+    },
+    {
+      "id": "rope-and-cache",
+      "python": [
+        {
+          "member": "qwen3_5",
+          "lines": [
+            155,
+            201
+          ]
+        },
+        {
+          "member": "qwen3_5",
+          "lines": [
+            1247,
+            1262
+          ]
+        }
+      ],
+      "native": [
+        {
+          "path": "src/qwen35_graph_decoder.cpp",
+          "lines": [
+            110,
+            122
+          ],
+          "url": "https://github.com/CrispStrobe/CrispEmbed/blob/83eac856cc684808e417ebfed7db7c2f677dc09f/src/qwen35_graph_decoder.cpp#L110"
+        },
+        {
+          "path": "src/qwen35_graph_decoder.cpp",
+          "lines": [
+            175,
+            199
+          ],
+          "url": "https://github.com/CrispStrobe/CrispEmbed/blob/83eac856cc684808e417ebfed7db7c2f677dc09f/src/qwen35_graph_decoder.cpp#L175"
+        },
+        {
+          "path": "src/minicpm_ocr.cpp",
+          "lines": [
+            254,
+            300
+          ],
+          "url": "https://github.com/CrispStrobe/CrispEmbed/blob/83eac856cc684808e417ebfed7db7c2f677dc09f/src/minicpm_ocr.cpp#L254"
+        }
+      ],
+      "finding": "Mini passes no explicit image-grid position IDs: equal axes and past-token offsets reduce the partial 64-dimensional, theta1e7 interleave to ordinary one-dimensional RoPE. Cached keys/values append at the correct per-head token offset. The caller moves previous cache out before clearing/publishing the next output."
+    },
+    {
+      "id": "linear-projections-and-convolution",
+      "python": [
+        {
+          "member": "qwen3_5",
+          "lines": [
+            490,
+            651
+          ]
+        },
+        {
+          "member": "qwen3_5",
+          "lines": [
+            232,
+            276
+          ]
+        }
+      ],
+      "native": [
+        {
+          "path": "src/qwen35_graph_decoder.cpp",
+          "lines": [
+            229,
+            273
+          ],
+          "url": "https://github.com/CrispStrobe/CrispEmbed/blob/83eac856cc684808e417ebfed7db7c2f677dc09f/src/qwen35_graph_decoder.cpp#L229"
+        },
+        {
+          "path": "src/qwen35_delta.cpp",
+          "lines": [
+            19,
+            92
+          ],
+          "url": "https://github.com/CrispStrobe/CrispEmbed/blob/83eac856cc684808e417ebfed7db7c2f677dc09f/src/qwen35_delta.cpp#L19"
+        }
+      ],
+      "finding": "QKV, z, a and b projections, causal convolution history shift, beta sigmoid and negative exponential/softplus decay preserve the scalar arithmetic interfaces. The narrowed profile uses matching key/value head dimensions; broader GQA linear profiles are not asserted."
+    },
+    {
+      "id": "delta-state-layout",
+      "python": [
+        {
+          "member": "qwen3_5",
+          "lines": [
+            280,
+            285
+          ]
+        },
+        {
+          "member": "qwen3_5",
+          "lines": [
+            424,
+            485
+          ]
+        }
+      ],
+      "native": [
+        {
+          "path": "src/qwen35_delta.cpp",
+          "lines": [
+            94,
+            158
+          ],
+          "url": "https://github.com/CrispStrobe/CrispEmbed/blob/83eac856cc684808e417ebfed7db7c2f677dc09f/src/qwen35_delta.cpp#L94"
+        }
+      ],
+      "finding": "Q/K normalization uses sum-of-squares plus1e-6; key/value state axes transpose only at the GGML boundary and transpose back on return. Query head-dimension scaling occurs once, in the pinned GGML kernel. The last kernel parameter requests one final state slot, not an extra scale."
+    },
+    {
+      "id": "normalizations-and-residuals",
+      "python": [
+        {
+          "member": "qwen3_5",
+          "lines": [
+            204,
+            220
+          ]
+        },
+        {
+          "member": "qwen3_5",
+          "lines": [
+            812,
+            901
+          ]
+        }
+      ],
+      "native": [
+        {
+          "path": "src/qwen35_graph_decoder.cpp",
+          "lines": [
+            89,
+            108
+          ],
+          "url": "https://github.com/CrispStrobe/CrispEmbed/blob/83eac856cc684808e417ebfed7db7c2f677dc09f/src/qwen35_graph_decoder.cpp#L89"
+        },
+        {
+          "path": "src/qwen35_graph_decoder.cpp",
+          "lines": [
+            275,
+            359
+          ],
+          "url": "https://github.com/CrispStrobe/CrispEmbed/blob/83eac856cc684808e417ebfed7db7c2f677dc09f/src/qwen35_graph_decoder.cpp#L275"
+        },
+        {
+          "path": "src/qwen35_delta.cpp",
+          "lines": [
+            73,
+            92
+          ],
+          "url": "https://github.com/CrispStrobe/CrispEmbed/blob/83eac856cc684808e417ebfed7db7c2f677dc09f/src/qwen35_delta.cpp#L73"
+        }
+      ],
+      "finding": "Transformer/head norms use zero-centered weights; linear gated RMS uses direct multiplicative weights and SiLU gating. Attention residual, post-attention norm, SwiGLU gate/up product, down projection and second residual retain the original sequence."
+    },
+    {
+      "id": "stored-type-projections",
+      "python": [],
+      "native": [
+        {
+          "path": "src/qwen35_graph_decoder.cpp",
+          "lines": [
+            34,
+            84
+          ],
+          "url": "https://github.com/CrispStrobe/CrispEmbed/blob/83eac856cc684808e417ebfed7db7c2f677dc09f/src/qwen35_graph_decoder.cpp#L34"
+        },
+        {
+          "path": "src/qwen35_linear.cpp",
+          "lines": [
+            34,
+            49
+          ],
+          "url": "https://github.com/CrispStrobe/CrispEmbed/blob/83eac856cc684808e417ebfed7db7c2f677dc09f/src/qwen35_linear.cpp#L34"
+        }
+      ],
+      "ggml": [
+        {
+          "path": "src/ggml-cpu/ggml-cpu.c",
+          "lines": [
+            220,
+            231
+          ],
+          "url": "https://github.com/CrispStrobe/ggml/blob/a06fc0bb46b73cc10011fc90ae4054aee8438aeb/src/ggml-cpu/ggml-cpu.c#L220"
+        },
+        {
+          "path": "src/ggml-cpu/ggml-cpu.c",
+          "lines": [
+            278,
+            281
+          ],
+          "url": "https://github.com/CrispStrobe/ggml/blob/a06fc0bb46b73cc10011fc90ae4054aee8438aeb/src/ggml-cpu/ggml-cpu.c#L278"
+        },
+        {
+          "path": "src/ggml-cpu/ggml-cpu.c",
+          "lines": [
+            317,
+            320
+          ],
+          "url": "https://github.com/CrispStrobe/ggml/blob/a06fc0bb46b73cc10011fc90ae4054aee8438aeb/src/ggml-cpu/ggml-cpu.c#L317"
+        }
+      ],
+      "finding": "The graph passes original contiguous host weight tensors into GGML, sets F32 precision and uses F32 input/output buffers. The pinned fork has an F16-weight/F32-activation dot trait. Q8_0 and Q4_K use Q8_0 and Q8_K activation-dot paths respectively; those are explicit candidate arithmetic and are not claimed numerically equivalent to dequantized F32 controls."
+    },
+    {
+      "id": "vocabulary-boundary",
+      "python": [
+        {
+          "member": "minicpm_ocr",
+          "lines": [
+            779,
+            787
+          ]
+        },
+        {
+          "member": "minicpm_ocr",
+          "lines": [
+            833,
+            838
+          ]
+        }
+      ],
+      "native": [
+        {
+          "path": "src/qwen35_graph_decoder.cpp",
+          "lines": [
+            349,
+            360
+          ],
+          "url": "https://github.com/CrispStrobe/CrispEmbed/blob/83eac856cc684808e417ebfed7db7c2f677dc09f/src/qwen35_graph_decoder.cpp#L349"
+        },
+        {
+          "path": "tools/minicpm-ocr/reference.py",
+          "lines": [
+            118,
+            129
+          ],
+          "url": "https://github.com/CrispStrobe/CrispEmbed/blob/83eac856cc684808e417ebfed7db7c2f677dc09f/tools/minicpm-ocr/reference.py#L118"
+        }
+      ],
+      "finding": "The tied vocabulary head consumes the last normalized token for generation. The frozen original capture explicitly retains that same last-token head slice; no original tensor is reshaped to fit the candidate."
+    },
+    {
+      "id": "ownership-and-probe-isolation",
+      "python": [],
+      "native": [
+        {
+          "path": "src/qwen35_graph_decoder.cpp",
+          "lines": [
+            34,
+            84
+          ],
+          "url": "https://github.com/CrispStrobe/CrispEmbed/blob/83eac856cc684808e417ebfed7db7c2f677dc09f/src/qwen35_graph_decoder.cpp#L34"
+        },
+        {
+          "path": "src/qwen35_graph_decoder.cpp",
+          "lines": [
+            363,
+            424
+          ],
+          "url": "https://github.com/CrispStrobe/CrispEmbed/blob/83eac856cc684808e417ebfed7db7c2f677dc09f/src/qwen35_graph_decoder.cpp#L363"
+        },
+        {
+          "path": "src/qwen35_graph_decoder.h",
+          "lines": [
+            7,
+            33
+          ],
+          "url": "https://github.com/CrispStrobe/CrispEmbed/blob/83eac856cc684808e417ebfed7db7c2f677dc09f/src/qwen35_graph_decoder.h#L7"
+        }
+      ],
+      "finding": "Model tensors outlive synchronous graph computation; per-call allocators own scratch/input/output only, outputs are copied before teardown, and caller-owned request KV/convolution/recurrent vectors are returned only after successful finite checks. Observer registration/invocation remains conditional on the test-only macro. No process-global weight or request-state cache is added."
+    }
+  ],
+  "known_floating_point_limit": {
+    "python_source": {
+      "member": "qwen3_5",
+      "lines": [
+        287,
+        419
+      ],
+      "prefill_chunk_size": 64
+    },
+    "native_source": {
+      "path": "src/qwen35_delta.cpp",
+      "lines": [
+        94,
+        158
+      ]
+    },
+    "difference": "Python prefill uses a chunk64 triangular algorithm, whereas the retained native kernel scans recurrent state. Floating reductions, query-scaling placement and rounding can differ. The graph reuses this scalar recurrence; source equivalence of formulas is not bitwise or numerical evidence.",
+    "cause_established": false,
+    "gate_waiver": false
+  },
+  "execution": {
+    "local_compilation": false,
+    "package_install": false,
+    "framework_or_model_import": false,
+    "model_or_tokenizer_or_array_download": false,
+    "whole_wheel_download": false,
+    "numerical_comparison_executed": false,
+    "projected_stage_comparison_executed": false,
+    "decoded_panel_executed": false,
+    "performance_measurement_executed": false
+  },
+  "pending_acceptance": {
+    "original_rerun_required": false,
+    "full_prefill_stages_per_case": 26,
+    "same_input_projection_calls_per_case": 187,
+    "projection_scope": "first16 plus last16 token rows only; full prefill outputs remain separately required",
+    "cases": [
+      "line",
+      "para-en",
+      "table",
+      "tall",
+      "tiny"
+    ],
+    "arms": [
+      "F32 scalar/graph",
+      "F16 scalar/graph",
+      "Q8_0 graph",
+      "protected Q4_K graph"
+    ],
+    "max_absolute": 0.002,
+    "min_row_cosine": 0.99999,
+    "actual_ref_required": true,
+    "independent_metrics_required": true,
+    "ordinary_observer_repeat_neutrality_required": true,
+    "all_generated_ids_text_eos_cap_exact_required": true,
+    "publication": false
+  },
+  "upstream_code_committed": false
+}
