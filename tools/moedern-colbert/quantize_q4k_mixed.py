@@ -50,6 +50,10 @@ POLICIES = {
     # conv kernels/dense head F32. Same tensor payloads as the plain padded profile;
     # measured final cos min 0.9793 (hosted CPU, portable) vs Q8_0 0.9670.
     'moedern115m_q4k_v1': {'variant': '115M', 'recipe': 'q4'},
+    # 27M: Q8_0 base, routed-expert up/down projections Q4_K (padded 640->768);
+    # gate experts, shared experts and attention Q8_0; criticals F32. Final cos min
+    # 0.9683 (x86) / 0.9681 (ARM) where plain Q4_K gives 0.9250 / 0.9219.
+    'moedern27m_q4k_v1': {'variant': '27M', 'recipe': 'q8+exps_up+exps_down'},
 }
 
 
