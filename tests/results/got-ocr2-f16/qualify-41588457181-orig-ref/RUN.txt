@@ -1,0 +1,1 @@
+https://github.com/CrispStrobe/CrispEmbed/actions/runs/41588457181 (heavy-cpu, ubuntu-latest, qualify 256, script passes -DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF: portable build)

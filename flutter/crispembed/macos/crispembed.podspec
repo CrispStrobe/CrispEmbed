@@ -38,27 +38,17 @@ Pod::Spec.new do |s|
       find "$tmp" -name '*.dylib' -exec cp -P {} Libs/ \\;
       rm -rf "$tmp"
     fi
-    # Collapse each library to ONE real file named by its SONAME
-    # (@rpath/libX.N.dylib). The prebuilt tarball ships versioned files
-    # (libX.N.m.p.dylib) with libX.N.dylib only as a symlink, but CocoaPods
-    # DEREFERENCES that symlink when it embeds the vendored libs — so the
-    # @rpath/libX.N.dylib name every binary's LC_LOAD/LC_ID references would be
-    # ABSENT from the app bundle (dyld "Library not loaded: @rpath/libX.N.dylib"
-    # → SIGABRT at launch). Renaming the real file to its own install-name makes
-    # the embedded filename match the load command, and removing the alias
-    # symlinks drops the duplicate file references that also produced the
-    # "malformed project / member of multiple groups" warnings. Idempotent.
-    ( cd Libs
-      for f in *.dylib; do
-        [ -L "$f" ] && continue
-        soname=$(basename "$(otool -D "$f" 2>/dev/null | tail -1)")
-        case "$soname" in lib*.dylib) ;; *) continue ;; esac
-        [ "$f" = "$soname" ] && continue
-        rm -f "$soname"
-        mv -f "$f" "$soname"
-      done
-      find . -type l -name '*.dylib' -delete
-    )
+    # One real file per library, named AND identified by its unversioned name
+    # (@rpath/libX.dylib), with every cross-reference rewritten to match — see
+    # flatten_dylibs.sh. CMake's SOVERSION gives the libs install names
+    # @rpath/libX.0.dylib and ships the other names as symlinks; CocoaPods
+    # dereferences or drops symlinks when it embeds vendored_libraries, so the
+    # app bundle never held both the libcrispembed.dylib the Dart side dlopen()s
+    # and the libX.0.dylib names the load commands ask for (dyld "Library not
+    # loaded" at launch). The release tarball is already flat; this also covers
+    # local drops of a CMake build/install tree. Idempotent; fails the install
+    # if any @rpath reference would be left unresolved.
+    sh flatten_dylibs.sh Libs
   CMD
 
   s.vendored_libraries = 'Libs/*.dylib'

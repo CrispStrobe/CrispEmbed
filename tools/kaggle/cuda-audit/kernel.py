@@ -64,10 +64,12 @@ def main():
     sys.path.insert(0, f"{REPO_DIR}/tools/kaggle/cuda-audit")
     import run as audit  # noqa: E402  (from the pinned checkout)
     targets = audit.build_targets(BATCH)
-    note("configure", arch=arch, targets=targets)
+    note("configure", arch=arch, targets=targets, build_mode="portable")
     os.makedirs(OUT, exist_ok=True)
-    sh("cmake", "-S", ".", "-B", BUILD, "-DCMAKE_BUILD_TYPE=Release", "-DCRISPEMBED_NATIVE=ON",
-       "-DGGML_NATIVE=ON", "-DGGML_CUDA=ON", f"-DCMAKE_CUDA_ARCHITECTURES={arch}",
+    # Portable CPU code (docs/precision-acceptance.md "Build mode"): the CPU arm is the reference, so it
+    # must not depend on the worker's ISA. Runs 1-7 used -march=native (GGML_NATIVE=ON).
+    sh("cmake", "-S", ".", "-B", BUILD, "-DCMAKE_BUILD_TYPE=Release", "-DCRISPEMBED_NATIVE=OFF",
+       "-DGGML_NATIVE=OFF", "-DGGML_CUDA=ON", f"-DCMAKE_CUDA_ARCHITECTURES={arch}",
        "-DCRISPEMBED_BUILD_SHARED=OFF", log=f"{OUT}/configure.log")
     t0 = time.time()
     sh("cmake", "--build", BUILD, "--parallel", str(max(2, os.cpu_count() or 4)), "--target", *targets,

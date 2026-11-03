@@ -11,18 +11,27 @@
 #   2. Tensor audit of the new file against the original checkpoint.
 #   3. Byte map of new vs old file (expected: only the zeroed span differs).
 #   4. Stage diff vs got-ocr2-ref-full.gguf; native CPU decode of the frozen
-#      cases (F16-r2, published Q4_K) vs the original model (HF port, F32).
+#      cases (F16-r2, published Q4_K, old F16) vs the ORIGINAL stepfun-ai/GOT-OCR2_0
+#      chat() pipeline (got_ocr2_orig_probe.py in a transformers==4.37.2 venv, CPU
+#      F32, no_repeat_ngram 20), on generated token IDs (CRISPEMBED_GOT_OCR_DUMP_DIR)
+#      and text. Until 3 November 2026 this step compared against the HF port
+#      (stepfun-ai/GOT-OCR-2.0-hf via got_ocr2_hf_probe.py), which is not a faithful
+#      reference: its processor adds a leading-space " OCR" token and drops the
+#      system string's indentation and the ngram rule. The page ratios in run
+#      41391040980 used the HF port.
 #   5. With "publish": upload as NEW file got-ocr2-f16-r2.gguf (the old file is
 #      kept), then verify the Hub LFS sha256 and an empty-cache readback hash.
 #
 #   gh workflow run heavy-cpu.yml --ref fix/got-ocr2-f16 \
 #       -f script=tools/ci-heavy/got_ocr2_f16_republish.sh -f isolated_lane=got-f16 [-f args=publish] \
 #       -f pip="torch transformers>=4.49 accelerate pillow gguf numpy safetensors huggingface_hub"
+#   args: [qualify|publish] [max_new_tokens, default 256]
 set -uo pipefail
 OUT=${HEAVY_OUT:?}
 S=${HEAVY_SCRATCH:?}
 export CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE=1
 MODE=${1:-qualify}
+MAXNEW=${2:-256}
 NEW=got-ocr2-f16-r2.gguf
 REPO=cstr/got-ocr2-crispembed-GGUF
 OLDREV=5a0b0a1adc
@@ -74,58 +83,80 @@ for tag in r2:"$M/$NEW" q4_k:"$M/got-ocr2-q4_k.gguf"; do
     "$DIFF" "$f" "$M/got-ocr2-ref-full.gguf" > "$OUT/diff.$t.out" 2> "$OUT/diff.$t.err"
     grep -E "cos_min" "$OUT/diff.$t.err" | sed "s/^/diff.$t /" >> "$OUT/results.txt"
 done
-CASES="fox:$I/fox.png receipt_example:$I/cc0/receipt_example.png simple_form:$I/cc0/simple_form.png"
-for c in $CASES; do
-    id=${c%%:*}; img=${c#*:}
-    python -I tools/ci-heavy/got_ocr2_hf_probe.py "$img" "$OUT/hf.$id.json" 256 > "$OUT/hf.$id.log" 2>&1 \
-        || { note "hf.$id FAILED"; fail=1; }
+CASES=(fox=$I/fox.png receipt_example=$I/cc0/receipt_example.png simple_form=$I/cc0/simple_form.png)
+# The reference is the original pipeline. Same venv recipe as got_ocr2_pipeline_parity.sh: the
+# remote code pins transformers 4.37.2.
+python -m venv "$S/venv-orig"
+VP="$S/venv-orig/bin/python"
+"$VP" -m pip install -q --upgrade pip
+"$VP" -m pip install -q torch==2.4.1 torchvision==0.19.1 --index-url https://download.pytorch.org/whl/cpu
+"$VP" -m pip install -q "transformers==4.37.2" "tokenizers<0.16" tiktoken verovio requests accelerate pillow "numpy<2" safetensors \
+    > "$OUT/venv-orig.log" 2>&1 || { note "venv-orig install FAILED"; tail -20 "$OUT/venv-orig.log"; exit 1; }
+"$VP" -m pip freeze | grep -i -E "^(torch|torchvision|transformers|tiktoken|pillow|numpy)=" >> "$OUT/provenance.txt"
+"$VP" -I tools/ci-heavy/got_ocr2_orig_probe.py "$OUT" "$MAXNEW" 20 "${CASES[@]}" > "$OUT/orig.log" 2>&1 \
+    || { note "original probe FAILED"; tail -40 "$OUT/orig.log"; exit 1; }
+rm -f "$OUT"/orig.*.pixels.npy  # 12 MiB each; the probe keeps their sha256 in orig.json
+for c in "${CASES[@]}"; do
+    id=${c%%=*}; img=${c#*=}
     for tag in r2:"$M/$NEW" q4_k:"$M/got-ocr2-q4_k.gguf" old_f16:"$M/got-ocr2-f16.gguf"; do
         t=${tag%%:*}; f=${tag#*:}
+        d="$OUT/native/$t.$id"; mkdir -p "$d"
         t0=$EPOCHREALTIME
-        "$BIN" -t 4 -m "$f" --ocr "$img" --ocr-max-tokens 256 > "$OUT/ocr.$t.$id.txt" 2> "$OUT/ocr.$t.$id.err"
+        CRISPEMBED_GOT_OCR_DUMP_DIR="$d" "$BIN" -t 4 -m "$f" --ocr "$img" --ocr-max-tokens "$MAXNEW" \
+            > "$OUT/ocr.$t.$id.txt" 2> "$OUT/ocr.$t.$id.err"
         echo "$id $t rc=$? secs=$(python -c "print(round($EPOCHREALTIME-$t0,2))")" >> "$OUT/timing.txt"
+        rm -f "$d/pixels.f32"
     done
 done
 python - "$OUT" > "$OUT/compare.json" <<'EOF'
-import json, sys, difflib, os
-from transformers import AutoTokenizer
+import difflib, json, os, sys
 out = sys.argv[1]
-tok = AutoTokenizer.from_pretrained("stepfun-ai/GOT-OCR-2.0-hf")
+STOPS = (151643, 151645)
+orig = json.load(open(os.path.join(out, "orig.json")))
 timing = {}
 for line in open(os.path.join(out, "timing.txt")):
     p = line.split(); timing[(p[0], p[1])] = {"rc": p[2], "secs": float(p[3].split("=")[1])}
-rec = {"cases": []}
+def ids_of(path):
+    return [int(x) for x in open(path).read().split()] if os.path.exists(path) else None
+rec = {"reference": "stepfun-ai/GOT-OCR2_0 chat() (original remote code, CPU F32, no_repeat_ngram 20)",
+       "revision": orig["revision"], "versions": orig.get("versions"), "cases": []}
 for cid in ("fox", "receipt_example", "simple_form"):
-    hp = os.path.join(out, f"hf.{cid}.json")
-    if not os.path.exists(hp):
+    oc = orig["cases"].get(cid)
+    if oc is None:
         continue
-    hf = json.load(open(hp))
-    ref_ids = [i for i in hf["token_ids"] if i not in (151643, 151645)]
-    case = {"id": cid, "reference_text": hf["text"], "reference_ids": ref_ids, "reference_secs": hf["seconds"],
-            "arms": {}}
+    ref = oc["runs"]["20"]
+    ref_ids = [i for i in ref["token_ids"] if i not in STOPS]
+    case = {"id": cid, "reference_text": ref["text"], "reference_ids": ref_ids, "reference_secs": ref["seconds"],
+            "reference_hit_cap": ref["hit_cap"], "arms": {}}
     for arm in ("r2", "q4_k", "old_f16"):
         txt = open(os.path.join(out, f"ocr.{arm}.{cid}.txt"), errors="replace").read().strip()
-        ids = tok(txt, add_special_tokens=False)["input_ids"]
-        case["arms"][arm] = {"text": txt, "text_exact": txt == hf["text"].strip(), "ids_exact": ids == ref_ids,
-                             "char_ratio": round(difflib.SequenceMatcher(None, txt, hf["text"].strip()).ratio(), 4),
-                             "n_ids": len(ids), **timing.get((cid, arm), {})}
+        ids = ids_of(os.path.join(out, "native", f"{arm}.{cid}", "gen_ids.txt"))
+        ids = [i for i in ids if i not in STOPS] if ids is not None else None
+        div = None
+        if ids is not None and ids != ref_ids:
+            div = next((k for k, (x, y) in enumerate(zip(ids, ref_ids)) if x != y), min(len(ids), len(ref_ids)))
+        case["arms"][arm] = {"text": txt, "text_exact": txt == ref["text"].strip(), "ids_exact": ids == ref_ids,
+                             "first_divergence": div,
+                             "char_ratio": round(difflib.SequenceMatcher(None, txt, ref["text"].strip(),
+                                                                         autojunk=False).ratio(), 4),
+                             "n_ids": None if ids is None else len(ids), **timing.get((cid, arm), {})}
     rec["cases"].append(case)
 print(json.dumps(rec, indent=1))
 EOF
 python - "$OUT/compare.json" <<'EOF' | tee -a "$OUT/results.txt"
 import json, sys
 for c in json.load(open(sys.argv[1]))["cases"]:
-    print(f"case {c['id']}: ref {c['reference_text'][:70]!r}")
+    print(f"case {c['id']}: original {c['reference_text'][:70]!r}")
     for a, v in c["arms"].items():
-        print(f"   {a:8s} exact={v['text_exact']} ids_exact={v['ids_exact']} ratio={v['char_ratio']} "
-              f"secs={v.get('secs')} {v['text'][:70]!r}")
+        print(f"   {a:8s} exact={v['text_exact']} ids_exact={v['ids_exact']} div={v['first_divergence']} "
+              f"ratio={v['char_ratio']} secs={v.get('secs')} {v['text'][:70]!r}")
 EOF
 # Publication gate = the owner's bar (docs/precision-acceptance.md, F16 > 0.98): every stage of
 # the stage diff vs the original-model reference above the F16 bar, and fox token-exact vs the
 # original. Coordinator decision 2026-11-02 after run 41391040980 (kept on record) was rejected
 # by the earlier page-similarity gate (r2 char ratio >= published q4_k on all three cases); that
 # gate is still computed and recorded here, as a diagnostic only. The receipt/form gaps appear
-# with the shipped q4_k too (native-vs-original pipeline differences; see PLAN).
+# with the shipped q4_k too. Since 3 November 2026 both are measured against the original pipeline.
 owner_ok=$(python - "$OUT/diff.r2.err" "$OUT/compare.json" <<'PYEOF'
 import json, re, sys
 cos = [float(m) for m in re.findall(r"cos_min=([0-9.]+)", open(sys.argv[1]).read())]
