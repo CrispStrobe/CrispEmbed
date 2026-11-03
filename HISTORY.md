@@ -1,3 +1,12 @@
+## 3 November 2026 — Josev Q4_K final-output cosine and sensitivity sweep
+
+Earlier Josev quantized panels (v4, mixed A/B/C 40787077302, protected Q8 40838785499,
+last-projection 40853720400) were rescored with final-output cosines from their retained
+comparator moments (`tests/results/josev2b/q4k-final-output-rescore.json`). A 13-recipe
+Q8_0-based sweep ran on portable hosted CPU (41615751516; initial rejections
+41588071746 file-type check and 41590988284 key clash retained). v4 storage reproduces to
+all printed digits. Winner `josev_q4k_down8_v1`: 2,952 MiB, head-logit 0.99739,
+final-norm 0.94911, argmax 4/4, typed JSON 0/4. Details: `docs/josev2b-q4k-sweep.md`.
 ## 3 November 2026 — Successor assets v4: macOS arm64 desktop tolerance; whole run green
 
 * Owner decision: accept the measured native desktop drift without attribution. The stored

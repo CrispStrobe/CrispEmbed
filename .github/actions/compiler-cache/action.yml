@@ -50,6 +50,16 @@ runs:
           echo "CMAKE_GENERATOR=Ninja Multi-Config" >> "$GITHUB_ENV"
           echo "CC=cl" >> "$GITHUB_ENV"
           echo "CXX=cl" >> "$GITHUB_ENV"
+          # sccache cannot cache MSVC /Zi (a separate PDB written by cl) and fails
+          # the call. CMake's compiler checks (try_compile) build the Debug config
+          # by default, whose flags carry /Zi, so configure itself failed. Build
+          # the checks as Release (no debug info) and make any CMP0141-NEW project
+          # embed debug info (/Z7) instead of writing a PDB. Read via the
+          # CMAKE_TOOLCHAIN_FILE environment variable (CMake >= 3.21).
+          toolchain="$(cygpath -m "$RUNNER_TEMP")/crispembed-sccache-msvc.cmake"
+          printf '%s\n' 'set(CMAKE_TRY_COMPILE_CONFIGURATION Release)' \
+            'set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)' > "$toolchain"
+          echo "CMAKE_TOOLCHAIN_FILE=$toolchain" >> "$GITHUB_ENV"
         fi
     - uses: mozilla-actions/sccache-action@v0.0.11
       if: steps.configure.outputs.enabled == 'true'
