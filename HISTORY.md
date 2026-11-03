@@ -1,3 +1,14 @@
+## 3 November 2026 — Unlimited-OCR-2 post-flip real-scan confirmation
+
+Kaggle `crispembed-ocr-real-scans-uocr2-default` (mode `native-uocr2-default`, no `VISION_F32` env, commit
+`48182333`, manifest v2, 4-CPU AMD EPYC): token ids identical to `tests/results/ocr-real-scans/native-uocr2-vf32.json`
+on all 20 pages (receipt `tests/results/ocr-real-scans/native-uocr2-default.json`, 19 pages). The 20th page
+`en-form-economic-journal-67` failed loudly in that run: Wikimedia served drifted bytes (`b09f8c1c…`, the drift recorded
+in `docs/ocr-rgb-form-v1.md`) from both URLs while the Commons revision was unchanged, so it was not run. A one-page
+follow-up at the same commit (`crispembed-ocr-real-scans-uocr2-default-form`, receipt
+`native-uocr2-default-form.json`) fetched the pinned bytes and matched. Page wall time 6,633 + 258 s vs 6,889 s for the
+vf32 receipt (different hosts; diagnostic only). The shipped default reproduces the A/B arm it was flipped on.
+
 ## 3 November 2026 — CI runs only the jobs a change needs
 
 The shared runner pool was starved (about 4 concurrent jobs, 130+ queued runs). Building on

@@ -9,7 +9,6 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 | Lane | State | Next action | Done when |
 |---|---|---|---|
 | Q4_K_MIX publications (MiniCPM-OCR, Unlimited-OCR-2, TeleOCR, MinerU, MoEdern 27M/115M, Josev, UltraBERT) | Recipes and receipts on main; nothing published | Coordinator dispatches the cosine-gated publication per model (sections below); Josev needs a quantized branch in `josev_publish.py`, MoEdern needs SciFact/client panels first | Hub upload, empty-cache readback, registry alias with SHA-256 |
-| Unlimited-OCR-2 post-flip real-scan run | Kernel mode `native-uocr2-default` added (`48182333`) | Run it on Kaggle | `native-uocr2-default.json` committed, ids == `native-uocr2-vf32.json` |
 | Unlimited-OCR-2 Q8_0 on CUDA | 0.9555 < 0.97 (CPU 0.9739) | Search a CUDA-qualifying Q8_0 mix (F16 shared experts/attention) | ≥ 0.97 on CPU and CUDA |
 | GOT-OCR2 Q4_K drift | F16-r2 exact vs original; Q4_K diverges at 83/20; no final-logit cosine measured, so the 1 November precision policy cannot yet be applied | Teacher-forced final-logit cosine of the published Q4_K vs the F16-r2 pipeline (as for Unlimited/MiniCPM), then a mixed search only if < 0.94. Owner: the model is research-licensed (Tongyi), so whether a Q4_K is worth more compute is an owner call (handoff "Owner decisions") | Cosine > 0.94 recorded, or 3/3 token-exact, or owner accepts/declines |
 | Server load control (PR124) | Merged, gates default-off | Live A/B with a real GGUF; concurrent latency; chat-route parity | Receipts per item in the section below |
@@ -505,14 +504,9 @@ handoff take precedence over historical commands.
    reviewed opt-ins and qualify final runtime/assets/consumers. Each new model
    or arithmetic source needs its own reference/quality/consumer evidence.
 
-## Unlimited-OCR-2 post-flip real-scan confirmation — 3 November 2026
+## Unlimited-OCR-2 vision speed — 3 November 2026
 
-The F32-vision default, low-memory fallback and hosted trial-page check are done (HISTORY
-2–3 November). Open:
-- One real-scan run at the flipped default: Kaggle kernel `tools/kaggle/ocr-real-scans/kernel.py` mode
-  `native-uocr2-default` (added in `48182333`, no `VISION_F32` env). Expect ids equal to
-  `tests/results/ocr-real-scans/native-uocr2-vf32.json`. Done when
-  `tests/results/ocr-real-scans/native-uocr2-default.json` is committed and compared.
+The F32-vision default and its post-flip real-scan confirmation are done (HISTORY 3 November). Open:
 - Speed: remaining time is prefill (38 s) and decode (~66 s) on the table page; the global
   1024 SAM view is the next vision target. `TILE_BATCH` stays off (~2%).
 
