@@ -12,6 +12,9 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/controls.yml'
+      # Versioned document diagnostics (stdlib; no model execution)
+      - 'tools/ocr_document_eval.py'
+      - 'tests/test_ocr_document_eval.py'
       # UltraBERT source contract
       - 'tools/ultrabert_contract.py'
       - 'tools/dump_ultrabert_reference.py'
@@ -47,6 +50,9 @@ on:
   pull_request:
     paths:
       - '.github/workflows/controls.yml'
+      # Versioned document diagnostics (stdlib; no model execution)
+      - 'tools/ocr_document_eval.py'
+      - 'tests/test_ocr_document_eval.py'
       # UltraBERT source contract
       - 'tools/ultrabert_contract.py'
       - 'tools/dump_ultrabert_reference.py'
@@ -109,3 +115,7 @@ jobs:
         run: |
           python tests/test_ultrabert_retrieval.py -v
           python tests/test_ultrabert_retrieval_producer.py -v
+
+      - name: OCR document structure and provenance controls
+        if: ${{ !cancelled() }}
+        run: python tests/test_ocr_document_eval.py -v
