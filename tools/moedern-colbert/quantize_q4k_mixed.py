@@ -10,8 +10,8 @@ every output type, shape, byte extent and F32 payload is read back.
 
 Loading needs CRISPEMBED_MOEDERN_Q4_K_MIXED=1 plus the padded Q4_K gates
 (Q4_K_PADDED, QUANT, FAST, FAMILY, ...). Recipes are named policies below or an
-ad-hoc grammar `q8[+group...][-group...]` used by the sensitivity sweep, where
-`+group` lowers a group to Q4_K and `-group` raises it to F32. `q4` lowers all.
+ad-hoc grammar `q8|q4` followed by `+group` (Q4_K), `~group` (Q8_0) or `-group`
+(F32) terms applied left to right, used by the sensitivity sweep. `q4` lowers all.
 
   quantize_q4k_mixed.py --input F32.gguf --output OUT.gguf --variant 115M \
       --recipe moedern115m_q4k_v1 --quantizer crispembed-quantize --report r.json
@@ -45,7 +45,12 @@ SUFFIX_GROUPS = {
 }
 # Named opt-in policies = measured winners (docs/moedern-q4k-mixed.md). Each is a
 # recipe string in the sweep grammar, frozen per variant; never a default.
-POLICIES = {}
+POLICIES = {
+    # 115M: every engine-quantizable matmul Q4_K (padded), embeddings/router/norms/
+    # conv kernels/dense head F32. Same tensor payloads as the plain padded profile;
+    # measured final cos min 0.9793 (hosted CPU, portable) vs Q8_0 0.9670.
+    'moedern115m_q4k_v1': {'variant': '115M', 'recipe': 'q4'},
+}
 
 
 def require(ok, why):
@@ -73,14 +78,14 @@ def resolve(recipe, variant):
 def assign(recipe, names, variant):
     """Return {name: 'Q4_K'|'Q8_0'|'F32'} for the engine-quantizable weights."""
     _, spec = resolve(recipe, variant)
-    require(re.fullmatch(r'(q8|q4)([+-][A-Za-z0-9_]+(-\d+)?)*', spec) is not None, 'invalid recipe: ' + spec)
+    require(re.fullmatch(r'(q8|q4)([+~-][A-Za-z0-9_]+(-\d+)?)*', spec) is not None, 'invalid recipe: ' + spec)
     base = 'Q4_K' if spec.startswith('q4') else 'Q8_0'
     types = {n: base for n in names if quantizable(n)}
-    for sign, group in re.findall(r'([+-])([A-Za-z0-9_]+(?:-\d+)?)', spec[2:]):
+    for sign, group in re.findall(r'([+~-])([A-Za-z0-9_]+(?:-\d+)?)', spec[2:]):
         hit = [n for n in types if group_members(group, n)]
         require(hit, 'recipe group selects nothing: ' + group)
         for n in hit:
-            types[n] = 'Q4_K' if sign == '+' else 'F32'
+            types[n] = {'+': 'Q4_K', '~': 'Q8_0', '-': 'F32'}[sign]
     require(any(t == 'Q4_K' for t in types.values()), 'mixed recipe needs at least one Q4_K tensor')
     return types
 
