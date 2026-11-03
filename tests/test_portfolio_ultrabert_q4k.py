@@ -53,6 +53,21 @@ class Controls(unittest.TestCase):
         for key in ['q4k-ffn','q4k-last-four-ffn']:
             for kind in ['q','k','v','output']:self.assertIn('blk.*.attn_'+kind+'.weight=f32',recipes[key])
         self.assertNotIn('blk.20.ffn_gate.weight=f32',recipes['q4k-last-four-ffn'])
+    def test_q8_baseline_and_sensitivity_arms(self):
+        arms=w.sensitivity_recipes()
+        self.assertEqual(arms['q8_0'],('q8_0',['--tensor-type','token_embd.weight=f32']))
+        self.assertEqual(len(arms),1+7+3)
+        for name,(qtype,flags)in arms.items():
+            self.assertEqual(flags[:2],['--tensor-type','token_embd.weight=f32'])
+            self.assertFalse(any('norm'in f for f in flags))
+            if name!='q8_0':
+                self.assertEqual(qtype,'q4_k')
+                rules=flags[1::2];lowered=[r for r in rules if r.endswith('=q4_k')]
+                self.assertTrue(lowered);self.assertEqual(rules[-len(lowered):],lowered)
+                self.assertEqual(len([r for r in rules if r.endswith('=q8_0')]),7)
+        self.assertEqual(len(arms['q8-lower-layers-16-23'][1][1::2]),1+7+8*7)
+        legacy=w.recipes()
+        for name,flags in legacy.items():self.assertEqual(w.all_recipes()[name],('q4_k',flags))
     def test_actual_abi_signatures_and_id_count(self):
         s=(ROOT/'tools/portfolio/ultrabert_q4k.py').read_text()
         self.assertIn('lib.crispembed_last_token_ids.argtypes=[ctypes.c_void_p];',s)
@@ -61,7 +76,8 @@ class Controls(unittest.TestCase):
         self.assertIn("count.value==len(expected[row['id']]['ids'])",s)
     def test_f32_control_before_quantized_and_unchanged_ranking(self):
         s=(ROOT/'tools/portfolio/ultrabert_q4k.py').read_text()
-        self.assertIn("[('f32',None),*recipes().items()]",s)
+        self.assertIn("require('f32'not in selected or selected[0]=='f32','F32 control must run first')",s)
+        self.assertIn("p.add_argument('--arms',default='f32,q4k-all-matrices,q4k-ffn,q4k-last-four-ffn')",s)
         self.assertIn("require(record['qualified'],'F32 control fails",s)
         self.assertIn('quality(before,rr)',s)
         self.assertIn('Ref/independent metric disagreement',s)
