@@ -1,3 +1,33 @@
+## 2 November 2026 — Unlimited-OCR-2 F32 vision / tile batch gates (default off)
+
+**Vision speed gates (2026-11-02, default off).** `CRISPEMBED_UNLIMITED_OCR2_VISION_F32` (F32 SAM/CLIP block
+matrices made once at init) and `CRISPEMBED_UNLIMITED_OCR2_TILE_BATCH` (`_TILE_BATCH_MAX`, default 16: tiles through SAM
+layers/CLIP as one graph per layer). Trial pages (`crispembed-unlimited-ocr2-vision-speed` at `866d4dbb`, Kaggle Xeon
+2.2 GHz x4, receipts `tests/results/unlimited-ocr2/vision-speed.{json,md}`): every arm gives ids and output text
+byte-exact vs the original on all 4 pages; batched vision features are byte-identical to unbatched (F16 and F32).
+Sum of 4 pages: default 1,162 s; VISION_F32 805 s (1.44x); TILE_BATCH 1,191 s; both 786 s; both with max 4 800 s.
+Table page per stage, default -> VISION_F32: SAM 9.9 -> 4.6 s/tile, CLIP 1.7 -> 0.66 s/tile, projector 0.10 s/tile,
+prefill 38 s (unchanged), decode 66 -> 70 s (noise), page 259 -> 174 s (163 s with TILE_BATCH). Peak RSS 12.82 GB in
+every arm (peak is set by the decoder). Batching buys about 2% only; left off.
+Real scans (`crispembed-ocr-real-scans-uocr2-vf32` at `7857ebf5`, receipt
+`tests/results/ocr-real-scans/native-uocr2-vf32.json`): 20 pages, 6,889 s vs 9,847 s for the default on its 19 pages
+(1.43x on paired pages), RSS unchanged. Ids vs the original 13/20 exact (default `native-uocr2.json`: 12/20). Against
+the default: 17/19 pages identical; `receipt-cord-test-4` becomes exact vs the original; `de-2col-meyers-b13-103`
+differs from both the default and the original (it was already inexact; CER 0.0368 vs default 0.0369 vs original
+0.0371). **Not flipped**: it is not ids-identical to the default everywhere and not exact everywhere. Proposed default
+flip pending a decision on that one page (no page regresses from exact; mean CER unchanged or better).
+
+## 2 November 2026 — MiniCPM-OCR speed paths become the default
+
+- Default flip A/B (2026-11-02, `crispembed-ocr-real-scans-minicpm-fast` at `dded1384`, Kaggle Xeon 2.2 GHz x4,
+  receipt `tests/results/ocr-real-scans/native-minicpm-fast.json`): all 20 real-scan pages produce token IDs
+  **identical to the previous default** (`native-minicpm.json`), so CER is unchanged (mean 0.0515 vs original 0.0515).
+  Against the original Transformers IDs 18/20 are exact; the same two pages (`en-form-economic-journal-67`,
+  `en-2col-eb1911-v04-246`) differ as they already did on the old path. Wall time 5,094 s vs 31,725 s for the old
+  default (6.2x; original 5,161 s). Peak RSS 7.7-8.4 GB vs 5.0-5.1 GB (original 8.1-8.5 GB).
+- Flipped via `core_env::explicitly_off`: graph KV decoder (matmul default `f32`), F32 vision copies, batched
+  slices, vision flash attention. All old paths remain behind `=0`; 5 parity cases were already 5/5 exact
+  (`tests/results/minicpm-ocr/bench-graph-v2.json`).
 ## 2 November 2026 — Successor assets v3: WASM-only platform tolerance; WASM consumer passes, native cross-platform review fails
 
 * Owner decision: accept the attributed WASM-vs-native drift of the quantized MiniLM as a
@@ -19632,3 +19662,40 @@ The same operator audit adds a MinerU-only F32 QuickGELU correction and a linked
 operator control. Those graph controls and full-model replay remain unexecuted.
 No OXR model alias, release, version bump, application pin or GitHub publication
 is created by this source delivery. See [the guide](docs/oxr.md).
+
+## 2 November 2026 — frozen-pin failures after PR #89, recorded re-pins
+
+Merging PR #89 (`2ecd1fbb`) turned two model-free workflows red on main from
+`ded581ee`. Neither failure was a numerical or default-path regression; both
+are frozen source closures that saw new opt-in code. The initial failures are
+kept on record here:
+
+- Model-free controls, run [41504060677](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41504060677):
+  `test_historical_receipts_and_scoped_sources_are_pinned` found
+  `src/ultrabert_embed.cpp` at `1df6b3d7…` instead of pinned `1bc4b044…`
+  (62d62af3, gated UltraBERT Q4_K profile). `src/ultrabert_profile.h` had also
+  drifted (`fc5af20f…` → `7b96f989…`, five #89 commits) behind that first stop.
+- OvisOCR2 metadata/export/frontend/fixture audits, run [41504060892](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41504060892):
+  `test_complete_native_source_closure_and_norm_mutation` raised "Frozen native
+  implementation/comparison source set differs". `src/qwen35*` now also matches
+  #89's `qwen35_graph_decoder.*` and #109's `qwen35_graph_kv_decoder.*`, which
+  are MiniCPM-only translation units. `test_ovisocr2_large_inputs.py` failed the
+  same way behind it ("Unexpected new native source file").
+
+Repair. UltraBERT gets the same recorded-chain mechanism as the qwen35 pins
+(`tools/ultrabert_source_pins.py`,
+[`source-pin-amendments.json`](tests/results/ultrabert/source-pin-amendments.json)):
+frozen digests stay in the driver, and each re-pin records the old and new hashes,
+the frozen commit, the changing commits and the review reason. The SciFact driver
+and its test accept only the newest recorded re-pin, and an undeclared edit still
+fails. Review of both diffs: an F32 file still takes `validate(meta, false)`,
+which is identical to the frozen check (file_type 0, all tensors F32, GPT-2 regex
+pre-tokenizer). The quantized and Unicode branches need `CRISPEMBED_ULTRABERT_QUANT`
+or `CRISPEMBED_ULTRABERT_UNICODE_PRETOKEN`, both default-off. For Ovis, the two
+historical closure tests now list the four graph-decoder files beside the
+existing opt-in exclusions (`qwen35_image_bounds.h`, `qwen35_weight_cache.h`).
+The 27 original Ovis implementation/comparison files still match their frozen
+bytes. The graph decoders are gated by `CRISPEMBED_MINICPM_OCR_GRAPH`+`QWEN35_OCR`
+and `CRISPEMBED_QWEN35_GRAPH_DECODER`. Both workflows now also trigger on their
+pinned sources; the Ovis workflow gains a pull_request trigger that runs only its
+model-free `controls` job.

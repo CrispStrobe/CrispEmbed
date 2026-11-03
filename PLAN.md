@@ -451,10 +451,17 @@ exact per arm before any merge; no default flip until A/B on more pages.
 
 Result: all 11 bench arms and native parity (F32+F16) are 5/5 token-exact. The recommended
 configuration (graph `f32` matmul + vision F32 + batch + flash) runs in 506 s against
-Transformers' 439 s and the old path's 3264 s; see PERFORMANCE. **Proposed default flip,
-not applied:** enable these gates by default for MiniCPM-OCR after an A/B of decoded output
-on a larger page set (e.g. the real-scan corpus) and a memory check of the +4.6 GB F32
-copies. Fall back to `native` matmul where RAM is tight; it is also 5/5 exact, at 603 s.
+Transformers' 439 s and the old path's 3264 s; see PERFORMANCE. **Default flip applied
+(2026-11-02)** after the real-scan A/B: 20/20 pages with IDs identical to the old default, 6.2x
+faster, peak RSS 8.4 GB (was 5.1 GB; original 8.5 GB). Each gate `=0` opts out; where RAM is
+tight use `CRISPEMBED_QWEN35_GRAPH_MATMUL=native` (5/5 exact, 603 s) or `CRISPEMBED_MINICPM_OCR_VISION_F32=0`.
+
+## Unlimited-OCR-2 vision speed (2 November 2026)
+
+`CRISPEMBED_UNLIMITED_OCR2_VISION_F32` is 4/4 trial-exact and 1.43-1.44x faster; real scans 13/20 exact vs original
+(default 12/20), 17/19 identical to the default, one page (`de-2col-meyers-b13-103`) new inexact ids. Decide whether to
+flip it on (explicitly_off) given that page; TILE_BATCH stays off (~2%). Remaining time is prefill (38 s) and decode
+(~66 s) on the table page; the global 1024 SAM view is the next vision target.
 
 ## Required Q8_0 and Q4_K coverage for new permissive models (29 October)
 

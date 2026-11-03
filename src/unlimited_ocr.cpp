@@ -222,6 +222,17 @@ struct uocr_ctx {
     bool vision_cache = false;
     std::map<const ggml_tensor *, std::vector<float>> f32_cache;
     std::map<std::string, std::vector<float>> derived_cache;
+    // Default-off CRISPEMBED_UNLIMITED_OCR2_VISION_F32 (variant 2 only): F32 copies of the
+    // SAM/CLIP block matrices made once at init (exact F16 -> F32 values), so the vision
+    // products run F32 x F32 instead of F16 x F16-rounded activations (closer to the
+    // original's fp32 vision tower). The original F16 tensors stay loaded and untouched.
+    ggml_context * vision_f32_ctx{};
+    ggml_backend_buffer_t vision_f32_buf{};
+    // Default-off CRISPEMBED_UNLIMITED_OCR2_TILE_BATCH: gundam tiles go through SAM's
+    // transformer layers and CLIP as one batched graph per layer (windows/sequences stay
+    // independent); CRISPEMBED_UNLIMITED_OCR2_TILE_BATCH_MAX caps tiles per graph (default 16).
+    bool tile_batch = false;
+    int tile_batch_max = 16;
 };
 
 // ---------------------------------------------------------------------------
@@ -519,6 +530,41 @@ static ggml_tensor * g_linear(ggml_context * g, ggml_tensor * x, ggml_tensor * w
     x = ggml_mul_mat(g, w, x);
     if (b) x = ggml_add(g, x, ensure_f32(g, b));
     return x;
+}
+
+// CRISPEMBED_UNLIMITED_OCR2_VISION_F32: rebind the SAM/CLIP block matrices to F32 copies
+// (same values; only the matmul precision changes). Returns false on allocation failure,
+// leaving every slot that was not yet rebound on its original tensor.
+static bool upcast_vision_f32(uocr_ctx & ctx) {
+    std::vector<ggml_tensor **> slots;
+    for (auto & b : ctx.m.sam_blocks)
+        for (ggml_tensor ** t : { &b.qkv_w, &b.proj_w, &b.ffn_up_w, &b.ffn_down_w }) slots.push_back(t);
+    for (auto & b : ctx.m.clip_blocks)
+        for (ggml_tensor ** t : { &b.qkv_w, &b.proj_w, &b.ffn_up_w, &b.ffn_down_w }) slots.push_back(t);
+    ctx.vision_f32_ctx = ggml_init({ (slots.size() + 1) * ggml_tensor_overhead(), nullptr, true });
+    if (!ctx.vision_f32_ctx) return false;
+    std::vector<std::pair<ggml_tensor **, ggml_tensor *>> todo;
+    for (auto ** slot : slots) {
+        ggml_tensor * src = *slot;
+        if (!src || src->type == GGML_TYPE_F32) continue;
+        if (!ggml_is_contiguous(src) || !ggml_get_type_traits(src->type)->to_float) return false;
+        todo.emplace_back(slot, ggml_new_tensor(ctx.vision_f32_ctx, GGML_TYPE_F32, GGML_MAX_DIMS, src->ne));
+    }
+    if (todo.empty()) return true;
+    ctx.vision_f32_buf = ggml_backend_alloc_ctx_tensors(ctx.vision_f32_ctx, ctx.backend);
+    if (!ctx.vision_f32_buf) return false;
+    std::vector<uint8_t> raw;
+    std::vector<float> values;
+    for (auto & item : todo) {
+        ggml_tensor * src = *item.first;
+        raw.resize(ggml_nbytes(src));
+        values.resize((size_t)ggml_nelements(src));
+        ggml_backend_tensor_get(src, raw.data(), 0, raw.size());
+        ggml_get_type_traits(src->type)->to_float(raw.data(), values.data(), (int64_t)values.size());
+        ggml_backend_tensor_set(item.second, values.data(), 0, values.size() * sizeof(float));
+        *item.first = item.second;
+    }
+    return true;
 }
 
 // ---------------------------------------------------------------------------
@@ -1224,8 +1270,13 @@ static void interpolate_pos_embed_2d_aa_bicubic(const float * grid_in, float * g
         }
 }
 
-static bool encode_sam(uocr_ctx & ctx, const float * pixels, int sam_img_size, std::vector<float> & out_features,
-                       int & out_n_tokens, int & out_dim) {
+// `count` images of the same size; outs[i] receives image i's features. count == 1 is the
+// original single-image path (same graphs). count > 1 (CRISPEMBED_UNLIMITED_OCR2_TILE_BATCH)
+// stacks the images' attention windows (or whole grids for global blocks) into one graph per
+// layer; attention never mixes images and every other op is row-wise.
+static bool encode_sam_multi(uocr_ctx & ctx, const float * const * pixels_v, int count, int sam_img_size,
+                             std::vector<float> * outs, int & out_n_tokens, int & out_dim) {
+    if (count < 1) return false;
     auto & s = ctx.m.shp;
     int C = s.hidden, PS = s.patch_size;
     int nP_orig = s.image_size / PS;
@@ -1258,67 +1309,71 @@ static bool encode_sam(uocr_ctx & ctx, const float * pixels, int sam_img_size, s
         return p;
     });
     int patch_dim = 3 * PS * PS;
-    std::vector<float> hidden(N * C);
-
-    if (!core_env::on("UOCR_SAM_CONV_CPU")) {
-        size_t meta_sz = 8 * 1024 * 1024;
-        std::vector<uint8_t> mb(meta_sz);
-        ggml_init_params ip = { meta_sz, mb.data(), true };
-        ggml_context * gc = ggml_init(ip);
-        ggml_cgraph * gf = build_sam_patch_graph(gc, sam_img_size, PS, C, nP);
-        ggml_backend_sched_reset(ctx.sched);
-        ggml_backend_sched_alloc_graph(ctx.sched, gf);
-        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "px"), pixels, 0,
-                                (size_t)3 * sam_img_size * sam_img_size * sizeof(float));
-        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "w_patch"), pe_w.data(), 0, pe_w.size() * sizeof(float));
-        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pe_b"), pe_b.data(), 0, pe_b.size() * sizeof(float));
-        ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pos"), pos.data(), 0, pos.size() * sizeof(float));
-        ggml_backend_sched_graph_compute(ctx.sched, gf);
-        ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "patch_out"), hidden.data(), 0,
-                                (size_t)N * C * sizeof(float));
-        ggml_free(gc);
-    } else {
-        auto patch_rows = [&](int py0, int py1) {
-            std::vector<float> patch(patch_dim);
-            for (int py = py0; py < py1; py++)
-                for (int px = 0; px < nP; px++) {
-                    int tok = py * nP + px;
-                    for (int c = 0; c < 3; c++)
-                        for (int ky = 0; ky < PS; ky++)
-                            for (int kx = 0; kx < PS; kx++)
-                                patch[c * PS * PS + ky * PS + kx] =
-                                    pixels[c * s.image_size * s.image_size + (py * PS + ky) * s.image_size +
-                                           (px * PS + kx)];
-                    if (tok == 1000 && core_env::on("UOCR_DBG")) {
-                        fprintf(stderr, "  [dbg] tok1000 patch[0..3]: %.6f %.6f %.6f %.6f\n", patch[0], patch[1],
-                                patch[2], patch[3]);
-                        fprintf(stderr, "  [dbg] tok1000 pixel[240,640]: %.6f\n",
-                                pixels[0 * s.image_size * s.image_size + 240 * s.image_size + 640]);
+    std::vector<std::vector<float>> hiddens((size_t)count, std::vector<float>((size_t)N * C));
+    for (int bi = 0; bi < count; bi++) {
+        const float * pixels = pixels_v[bi];
+        std::vector<float> & hidden = hiddens[(size_t)bi];
+        if (!core_env::on("UOCR_SAM_CONV_CPU")) {
+            size_t meta_sz = 8 * 1024 * 1024;
+            std::vector<uint8_t> mb(meta_sz);
+            ggml_init_params ip = { meta_sz, mb.data(), true };
+            ggml_context * gc = ggml_init(ip);
+            ggml_cgraph * gf = build_sam_patch_graph(gc, sam_img_size, PS, C, nP);
+            ggml_backend_sched_reset(ctx.sched);
+            ggml_backend_sched_alloc_graph(ctx.sched, gf);
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "px"), pixels, 0,
+                                    (size_t)3 * sam_img_size * sam_img_size * sizeof(float));
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "w_patch"), pe_w.data(), 0, pe_w.size() * sizeof(float));
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pe_b"), pe_b.data(), 0, pe_b.size() * sizeof(float));
+            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "pos"), pos.data(), 0, pos.size() * sizeof(float));
+            ggml_backend_sched_graph_compute(ctx.sched, gf);
+            ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "patch_out"), hidden.data(), 0,
+                                    (size_t)N * C * sizeof(float));
+            ggml_free(gc);
+        } else {
+            auto patch_rows = [&](int py0, int py1) {
+                std::vector<float> patch(patch_dim);
+                for (int py = py0; py < py1; py++)
+                    for (int px = 0; px < nP; px++) {
+                        int tok = py * nP + px;
+                        for (int c = 0; c < 3; c++)
+                            for (int ky = 0; ky < PS; ky++)
+                                for (int kx = 0; kx < PS; kx++)
+                                    patch[c * PS * PS + ky * PS + kx] =
+                                        pixels[c * s.image_size * s.image_size + (py * PS + ky) * s.image_size +
+                                               (px * PS + kx)];
+                        if (tok == 1000 && core_env::on("UOCR_DBG")) {
+                            fprintf(stderr, "  [dbg] tok1000 patch[0..3]: %.6f %.6f %.6f %.6f\n", patch[0], patch[1],
+                                    patch[2], patch[3]);
+                            fprintf(stderr, "  [dbg] tok1000 pixel[240,640]: %.6f\n",
+                                    pixels[0 * s.image_size * s.image_size + 240 * s.image_size + 640]);
+                        }
+                        if (tok == 0 && core_env::on("UOCR_DBG")) {
+                            fprintf(stderr, "  [dbg] tok0 patch[0..3]: %.6f %.6f %.6f %.6f\n", patch[0], patch[1],
+                                    patch[2], patch[3]);
+                        }
+                        for (int o = 0; o < C; o++) {
+                            float sv = pe_b.empty() ? 0.0f : pe_b[o];
+                            for (int i = 0; i < patch_dim; i++) sv += pe_w[o * patch_dim + i] * patch[i];
+                            hidden[tok * C + o] = sv + (pos.empty() ? 0.0f : pos[tok * C + o]);
+                        }
                     }
-                    if (tok == 0 && core_env::on("UOCR_DBG")) {
-                        fprintf(stderr, "  [dbg] tok0 patch[0..3]: %.6f %.6f %.6f %.6f\n", patch[0], patch[1], patch[2],
-                                patch[3]);
-                    }
-                    for (int o = 0; o < C; o++) {
-                        float sv = pe_b.empty() ? 0.0f : pe_b[o];
-                        for (int i = 0; i < patch_dim; i++) sv += pe_w[o * patch_dim + i] * patch[i];
-                        hidden[tok * C + o] = sv + (pos.empty() ? 0.0f : pos[tok * C + o]);
-                    }
+            };
+            int nt = std::max(1, std::min(ctx.n_threads, nP));
+            if (nt <= 1)
+                patch_rows(0, nP);
+            else {
+                std::vector<std::thread> pool;
+                int chunk = (nP + nt - 1) / nt;
+                for (int t = 0; t < nt; t++) {
+                    int y0 = t * chunk, y1 = std::min(nP, y0 + chunk);
+                    if (y0 < y1) pool.emplace_back(patch_rows, y0, y1);
                 }
-        };
-        int nt = std::max(1, std::min(ctx.n_threads, nP));
-        if (nt <= 1)
-            patch_rows(0, nP);
-        else {
-            std::vector<std::thread> pool;
-            int chunk = (nP + nt - 1) / nt;
-            for (int t = 0; t < nt; t++) {
-                int y0 = t * chunk, y1 = std::min(nP, y0 + chunk);
-                if (y0 < y1) pool.emplace_back(patch_rows, y0, y1);
+                for (auto & th : pool) th.join();
             }
-            for (auto & th : pool) th.join();
         }
     }
+    std::vector<float> & hidden = hiddens[0]; // diagnostics below describe the first image
 
     sam_mark("patch_embed");
 
@@ -1364,6 +1419,7 @@ static bool encode_sam(uocr_ctx & ctx, const float * pixels, int sam_img_size, s
         bool is_global = blk.is_global;
         int aH = is_global ? nP : ws, aW = aH, wN = aH * aW;
         int nW, T;
+        int nW1 = 1, T1 = N; // per image
         if (is_global) {
             nW = 1;
             T = N;
@@ -1371,31 +1427,36 @@ static bool encode_sam(uocr_ctx & ctx, const float * pixels, int sam_img_size, s
             int ph = (ws - nP % ws) % ws, pw = (ws - nP % ws) % ws;
             nW = ((nP + ph) / ws) * ((nP + pw) / ws);
             T = wN * nW;
+            nW1 = nW;
+            T1 = T;
         }
+        nW = nW1 * count;
+        T = T1 * count;
 
         // UOCR_OPT_GRAPH_LN: do LN inside the ggml graph (no CPU LN + separate residual)
         bool graph_ln = core_env::on("UOCR_OPT_GRAPH_LN");
         bool skip_ln1 = !is_global && !graph_ln;
         std::vector<float> ln1_hidden;
-        if (skip_ln1) {
-            ln1_hidden.resize(N * C);
-            for (int n = 0; n < N; n++)
-                layernorm_cpu(hidden.data() + n * C, ln1_hidden.data() + n * C, C, ln1_ws[li]->data(),
-                              ln1_bs[li]->data(), 1e-6f);
-        }
-
-        std::vector<float> graph_input, residual_input;
-        if (is_global)
-            graph_input.assign(hidden.begin(), hidden.end());
-        else if (skip_ln1) {
-            graph_input.resize(T * C, 0.0f);
-            window_partition(ln1_hidden.data(), graph_input.data(), nP, ws, C);
-            residual_input.resize(T * C, 0.0f);
-            window_partition(hidden.data(), residual_input.data(), nP, ws, C);
-        } else {
-            // graph_ln path: partition raw data, graph does LN internally
-            graph_input.resize(T * C, 0.0f);
-            window_partition(hidden.data(), graph_input.data(), nP, ws, C);
+        std::vector<float> graph_input((size_t)T * C, 0.0f), residual_input;
+        if (skip_ln1) residual_input.resize((size_t)T * C, 0.0f);
+        for (int bi = 0; bi < count; bi++) {
+            const std::vector<float> & hb = hiddens[(size_t)bi];
+            float * gin = graph_input.data() + (size_t)bi * T1 * C;
+            if (skip_ln1) {
+                ln1_hidden.resize((size_t)N * C);
+                for (int n = 0; n < N; n++)
+                    layernorm_cpu(hb.data() + n * C, ln1_hidden.data() + n * C, C, ln1_ws[li]->data(),
+                                  ln1_bs[li]->data(), 1e-6f);
+            }
+            if (is_global)
+                memcpy(gin, hb.data(), (size_t)N * C * sizeof(float));
+            else if (skip_ln1) {
+                window_partition(ln1_hidden.data(), gin, nP, ws, C);
+                window_partition(hb.data(), residual_input.data() + (size_t)bi * T1 * C, nP, ws, C);
+            } else {
+                // graph_ln path: partition raw data, graph does LN internally
+                window_partition(hb.data(), gin, nP, ws, C);
+            }
         }
 
         if (core_env::on("UOCR_DBG"))
@@ -1453,15 +1514,18 @@ static bool encode_sam(uocr_ctx & ctx, const float * pixels, int sam_img_size, s
 
         ggml_backend_sched_graph_compute(ctx.sched, gf);
 
-        std::vector<float> graph_output(T * C);
+        std::vector<float> graph_output((size_t)T * C);
         ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "layer_output"), graph_output.data(), 0,
                                 (size_t)T * C * sizeof(float));
         ggml_free(gc);
 
-        if (is_global)
-            memcpy(hidden.data(), graph_output.data(), N * C * sizeof(float));
-        else
-            window_unpartition(graph_output.data(), hidden.data(), nP, ws, C);
+        for (int bi = 0; bi < count; bi++) {
+            const float * gout = graph_output.data() + (size_t)bi * T1 * C;
+            if (is_global)
+                memcpy(hiddens[(size_t)bi].data(), gout, (size_t)N * C * sizeof(float));
+            else
+                window_unpartition(gout, hiddens[(size_t)bi].data(), nP, ws, C);
+        }
 
         // Per-layer SAM diff check
         if (!ctx.diff_ref_path.empty()) {
@@ -1489,126 +1553,132 @@ static bool encode_sam(uocr_ctx & ctx, const float * pixels, int sam_img_size, s
     }
 
     sam_mark("layers");
-    // Neck: Conv(768->256,1x1) -> LN2d -> Conv(256->256,3x3,p1) -> LN2d
-    int nC = s.neck_out;
-    std::vector<float> chw(C * nP * nP);
-    for (int tok = 0; tok < N; tok++) {
-        int y = tok / nP, x = tok % nP;
-        for (int c = 0; c < C; c++) chw[c * nP * nP + y * nP + x] = hidden[tok * C + c];
-    }
-
-    // Derive downsample channels from weights
-    int ds1_ch = (int)ctx.m.net_2_w->ne[1];
-    int ds2_ch = (int)ctx.m.net_3_w->ne[1];
-    int ds1_H = (nP + 2 - 3) / 2 + 1;
-    int ds2_H = (ds1_H + 2 - 3) / 2 + 1, ds2_W = ds2_H;
-    int n_vis = ds2_H * ds2_W, vis_D = ds2_ch;
-    out_features.resize((size_t)n_vis * vis_D);
-
-    if (!core_env::on("UOCR_SAM_CONV_CPU")) {
-        std::vector<float> tmp[8];
-        const auto & nc1 = f32_cached(ctx, ctx.m.neck_conv1_w, tmp[0]);
-        const auto & nc2 = f32_cached(ctx, ctx.m.neck_conv2_w, tmp[1]);
-        const auto & n2 = f32_cached(ctx, ctx.m.net_2_w, tmp[2]);
-        const auto & n3 = f32_cached(ctx, ctx.m.net_3_w, tmp[3]);
-        const auto & l1w = f32_cached(ctx, ctx.m.neck_ln1_w, tmp[4]);
-        const auto & l1b = f32_cached(ctx, ctx.m.neck_ln1_b, tmp[5]);
-        const auto & l2w = f32_cached(ctx, ctx.m.neck_ln2_w, tmp[6]);
-        const auto & l2b = f32_cached(ctx, ctx.m.neck_ln2_b, tmp[7]);
-        size_t meta_sz = 16 * 1024 * 1024;
-        std::vector<uint8_t> mb(meta_sz);
-        ggml_init_params ip = { meta_sz, mb.data(), true };
-        ggml_context * gc = ggml_init(ip);
-        ggml_cgraph * gf = build_sam_neck_graph(gc, nP, C, nC, ds1_ch, ds2_ch);
-        ggml_backend_sched_reset(ctx.sched);
-        ggml_backend_sched_alloc_graph(ctx.sched, gf);
-        auto setn = [&](const char * nm, const std::vector<float> & v) {
-            ggml_backend_tensor_set(ggml_graph_get_tensor(gf, nm), v.data(), 0, v.size() * sizeof(float));
-        };
-        setn("chw", chw);
-        setn("w_nc1", nc1);
-        setn("w_nc2", nc2);
-        setn("w_n2", n2);
-        setn("w_n3", n3);
-        setn("ln1w", l1w);
-        setn("ln1b", l1b);
-        setn("ln2w", l2w);
-        setn("ln2b", l2b);
-        ggml_backend_sched_graph_compute(ctx.sched, gf);
-        ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "neck_out"), out_features.data(), 0,
-                                (size_t)n_vis * vis_D * sizeof(float));
-        ggml_free(gc);
-    } else {
-        auto nc1_w = to_f32(ctx.m.neck_conv1_w);
-        std::vector<float> neck1(nC * nP * nP);
-        conv2d_cpu(chw.data(), neck1.data(), nc1_w.data(), nullptr, C, nC, nP, nP, 1, 1, 1, 0, ctx.n_threads);
-        auto nln1_w = to_f32(ctx.m.neck_ln1_w), nln1_b = to_f32(ctx.m.neck_ln1_b);
-        std::vector<float> neck1_ln(nC * nP * nP);
-        layernorm2d_cpu(neck1.data(), neck1_ln.data(), nC, nP, nP, nln1_w.data(), nln1_b.data());
-        auto nc2_w = to_f32(ctx.m.neck_conv2_w);
-        std::vector<float> neck2(nC * nP * nP);
-        conv2d_cpu(neck1_ln.data(), neck2.data(), nc2_w.data(), nullptr, nC, nC, nP, nP, 3, 3, 1, 1, ctx.n_threads);
-        auto nln2_w = to_f32(ctx.m.neck_ln2_w), nln2_b = to_f32(ctx.m.neck_ln2_b);
-        std::vector<float> neck2_ln(nC * nP * nP);
-        layernorm2d_cpu(neck2.data(), neck2_ln.data(), nC, nP, nP, nln2_w.data(), nln2_b.data());
-        auto n2_w = to_f32(ctx.m.net_2_w);
-        std::vector<float> ds1((size_t)ds1_ch * ds1_H * ds1_H);
-        conv2d_cpu(neck2_ln.data(), ds1.data(), n2_w.data(), nullptr, nC, ds1_ch, nP, nP, 3, 3, 2, 1, ctx.n_threads);
-        auto n3_w = to_f32(ctx.m.net_3_w);
-        std::vector<float> ds2((size_t)ds2_ch * ds2_H * ds2_W);
-        conv2d_cpu(ds1.data(), ds2.data(), n3_w.data(), nullptr, ds1_ch, ds2_ch, ds1_H, ds1_H, 3, 3, 2, 1,
-                   ctx.n_threads);
-        for (int tok = 0; tok < n_vis; tok++) {
-            int y = tok / ds2_W, x = tok % ds2_W;
-            for (int c = 0; c < vis_D; c++) out_features[tok * vis_D + c] = ds2[c * ds2_H * ds2_W + y * ds2_W + x];
+    for (int bi = 0; bi < count; bi++) {
+        const std::vector<float> & hidden_b = hiddens[(size_t)bi];
+        std::vector<float> & out_features = outs[bi];
+        // Neck: Conv(768->256,1x1) -> LN2d -> Conv(256->256,3x3,p1) -> LN2d
+        int nC = s.neck_out;
+        std::vector<float> chw(C * nP * nP);
+        for (int tok = 0; tok < N; tok++) {
+            int y = tok / nP, x = tok % nP;
+            for (int c = 0; c < C; c++) chw[c * nP * nP + y * nP + x] = hidden_b[tok * C + c];
         }
-    }
 
-    sam_mark("neck_downsample");
+        // Derive downsample channels from weights
+        int ds1_ch = (int)ctx.m.net_2_w->ne[1];
+        int ds2_ch = (int)ctx.m.net_3_w->ne[1];
+        int ds1_H = (nP + 2 - 3) / 2 + 1;
+        int ds2_H = (ds1_H + 2 - 3) / 2 + 1, ds2_W = ds2_H;
+        int n_vis = ds2_H * ds2_W, vis_D = ds2_ch;
+        out_features.resize((size_t)n_vis * vis_D);
 
-    // SAM reduced res: upsample from reduced spatial grid to match 1024 output
-    // At 1024: ds2_H=16, n_vis=256. At 512: ds2_H=8, n_vis=64.
-    // CLIP expects 256 tokens. Bilinear upsample 8×8 → 16×16.
-    int target_nvis = (s.image_size / s.patch_size / 2 / 2); // = 16 for 1024
-    target_nvis = target_nvis * target_nvis;                 // = 256
-    if (uocr2_tiles::sam_upsample_to_base(n_vis, target_nvis, nP, nP_orig, ctx.sam_native_tile_grid)) {
-        int src_h = ds2_H, src_w = ds2_W;
-        int dst_h = s.image_size / s.patch_size / 2 / 2;
-        int dst_w = dst_h;
-        int dst_n = dst_h * dst_w;
-        std::vector<float> upsampled((size_t)dst_n * vis_D);
-        float scale_y = (float)src_h / dst_h;
-        float scale_x = (float)src_w / dst_w;
-        for (int dy = 0; dy < dst_h; dy++) {
-            float sy = (dy + 0.5f) * scale_y - 0.5f;
-            int iy = (int)floorf(sy);
-            float fy = sy - iy;
-            int iy0 = std::max(0, std::min(iy, src_h - 1));
-            int iy1 = std::max(0, std::min(iy + 1, src_h - 1));
-            for (int dx = 0; dx < dst_w; dx++) {
-                float sx = (dx + 0.5f) * scale_x - 0.5f;
-                int ix = (int)floorf(sx);
-                float fx = sx - ix;
-                int ix0 = std::max(0, std::min(ix, src_w - 1));
-                int ix1 = std::max(0, std::min(ix + 1, src_w - 1));
-                float w00 = (1 - fy) * (1 - fx), w01 = (1 - fy) * fx, w10 = fy * (1 - fx), w11 = fy * fx;
-                int di = (dy * dst_w + dx) * vis_D;
-                int s00 = (iy0 * src_w + ix0) * vis_D, s01 = (iy0 * src_w + ix1) * vis_D;
-                int s10 = (iy1 * src_w + ix0) * vis_D, s11 = (iy1 * src_w + ix1) * vis_D;
-                for (int c = 0; c < vis_D; c++)
-                    upsampled[di + c] = w00 * out_features[s00 + c] + w01 * out_features[s01 + c] +
-                                        w10 * out_features[s10 + c] + w11 * out_features[s11 + c];
+        if (!core_env::on("UOCR_SAM_CONV_CPU")) {
+            std::vector<float> tmp[8];
+            const auto & nc1 = f32_cached(ctx, ctx.m.neck_conv1_w, tmp[0]);
+            const auto & nc2 = f32_cached(ctx, ctx.m.neck_conv2_w, tmp[1]);
+            const auto & n2 = f32_cached(ctx, ctx.m.net_2_w, tmp[2]);
+            const auto & n3 = f32_cached(ctx, ctx.m.net_3_w, tmp[3]);
+            const auto & l1w = f32_cached(ctx, ctx.m.neck_ln1_w, tmp[4]);
+            const auto & l1b = f32_cached(ctx, ctx.m.neck_ln1_b, tmp[5]);
+            const auto & l2w = f32_cached(ctx, ctx.m.neck_ln2_w, tmp[6]);
+            const auto & l2b = f32_cached(ctx, ctx.m.neck_ln2_b, tmp[7]);
+            size_t meta_sz = 16 * 1024 * 1024;
+            std::vector<uint8_t> mb(meta_sz);
+            ggml_init_params ip = { meta_sz, mb.data(), true };
+            ggml_context * gc = ggml_init(ip);
+            ggml_cgraph * gf = build_sam_neck_graph(gc, nP, C, nC, ds1_ch, ds2_ch);
+            ggml_backend_sched_reset(ctx.sched);
+            ggml_backend_sched_alloc_graph(ctx.sched, gf);
+            auto setn = [&](const char * nm, const std::vector<float> & v) {
+                ggml_backend_tensor_set(ggml_graph_get_tensor(gf, nm), v.data(), 0, v.size() * sizeof(float));
+            };
+            setn("chw", chw);
+            setn("w_nc1", nc1);
+            setn("w_nc2", nc2);
+            setn("w_n2", n2);
+            setn("w_n3", n3);
+            setn("ln1w", l1w);
+            setn("ln1b", l1b);
+            setn("ln2w", l2w);
+            setn("ln2b", l2b);
+            ggml_backend_sched_graph_compute(ctx.sched, gf);
+            ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "neck_out"), out_features.data(), 0,
+                                    (size_t)n_vis * vis_D * sizeof(float));
+            ggml_free(gc);
+        } else {
+            auto nc1_w = to_f32(ctx.m.neck_conv1_w);
+            std::vector<float> neck1(nC * nP * nP);
+            conv2d_cpu(chw.data(), neck1.data(), nc1_w.data(), nullptr, C, nC, nP, nP, 1, 1, 1, 0, ctx.n_threads);
+            auto nln1_w = to_f32(ctx.m.neck_ln1_w), nln1_b = to_f32(ctx.m.neck_ln1_b);
+            std::vector<float> neck1_ln(nC * nP * nP);
+            layernorm2d_cpu(neck1.data(), neck1_ln.data(), nC, nP, nP, nln1_w.data(), nln1_b.data());
+            auto nc2_w = to_f32(ctx.m.neck_conv2_w);
+            std::vector<float> neck2(nC * nP * nP);
+            conv2d_cpu(neck1_ln.data(), neck2.data(), nc2_w.data(), nullptr, nC, nC, nP, nP, 3, 3, 1, 1, ctx.n_threads);
+            auto nln2_w = to_f32(ctx.m.neck_ln2_w), nln2_b = to_f32(ctx.m.neck_ln2_b);
+            std::vector<float> neck2_ln(nC * nP * nP);
+            layernorm2d_cpu(neck2.data(), neck2_ln.data(), nC, nP, nP, nln2_w.data(), nln2_b.data());
+            auto n2_w = to_f32(ctx.m.net_2_w);
+            std::vector<float> ds1((size_t)ds1_ch * ds1_H * ds1_H);
+            conv2d_cpu(neck2_ln.data(), ds1.data(), n2_w.data(), nullptr, nC, ds1_ch, nP, nP, 3, 3, 2, 1,
+                       ctx.n_threads);
+            auto n3_w = to_f32(ctx.m.net_3_w);
+            std::vector<float> ds2((size_t)ds2_ch * ds2_H * ds2_W);
+            conv2d_cpu(ds1.data(), ds2.data(), n3_w.data(), nullptr, ds1_ch, ds2_ch, ds1_H, ds1_H, 3, 3, 2, 1,
+                       ctx.n_threads);
+            for (int tok = 0; tok < n_vis; tok++) {
+                int y = tok / ds2_W, x = tok % ds2_W;
+                for (int c = 0; c < vis_D; c++) out_features[tok * vis_D + c] = ds2[c * ds2_H * ds2_W + y * ds2_W + x];
             }
         }
-        out_features = std::move(upsampled);
-        n_vis = dst_n;
-        if (core_env::on("UOCR_DBG"))
-            fprintf(stderr, "  [opt] SAM reduced res: upsampled %dx%d → %dx%d (%d tokens)\n", src_h, src_w, dst_h,
-                    dst_w, dst_n);
-    }
 
-    out_n_tokens = n_vis;
-    out_dim = vis_D;
+        sam_mark("neck_downsample");
+
+        // SAM reduced res: upsample from reduced spatial grid to match 1024 output
+        // At 1024: ds2_H=16, n_vis=256. At 512: ds2_H=8, n_vis=64.
+        // CLIP expects 256 tokens. Bilinear upsample 8×8 → 16×16.
+        int target_nvis = (s.image_size / s.patch_size / 2 / 2); // = 16 for 1024
+        target_nvis = target_nvis * target_nvis;                 // = 256
+        if (uocr2_tiles::sam_upsample_to_base(n_vis, target_nvis, nP, nP_orig, ctx.sam_native_tile_grid)) {
+            int src_h = ds2_H, src_w = ds2_W;
+            int dst_h = s.image_size / s.patch_size / 2 / 2;
+            int dst_w = dst_h;
+            int dst_n = dst_h * dst_w;
+            std::vector<float> upsampled((size_t)dst_n * vis_D);
+            float scale_y = (float)src_h / dst_h;
+            float scale_x = (float)src_w / dst_w;
+            for (int dy = 0; dy < dst_h; dy++) {
+                float sy = (dy + 0.5f) * scale_y - 0.5f;
+                int iy = (int)floorf(sy);
+                float fy = sy - iy;
+                int iy0 = std::max(0, std::min(iy, src_h - 1));
+                int iy1 = std::max(0, std::min(iy + 1, src_h - 1));
+                for (int dx = 0; dx < dst_w; dx++) {
+                    float sx = (dx + 0.5f) * scale_x - 0.5f;
+                    int ix = (int)floorf(sx);
+                    float fx = sx - ix;
+                    int ix0 = std::max(0, std::min(ix, src_w - 1));
+                    int ix1 = std::max(0, std::min(ix + 1, src_w - 1));
+                    float w00 = (1 - fy) * (1 - fx), w01 = (1 - fy) * fx, w10 = fy * (1 - fx), w11 = fy * fx;
+                    int di = (dy * dst_w + dx) * vis_D;
+                    int s00 = (iy0 * src_w + ix0) * vis_D, s01 = (iy0 * src_w + ix1) * vis_D;
+                    int s10 = (iy1 * src_w + ix0) * vis_D, s11 = (iy1 * src_w + ix1) * vis_D;
+                    for (int c = 0; c < vis_D; c++)
+                        upsampled[di + c] = w00 * out_features[s00 + c] + w01 * out_features[s01 + c] +
+                                            w10 * out_features[s10 + c] + w11 * out_features[s11 + c];
+                }
+            }
+            out_features = std::move(upsampled);
+            n_vis = dst_n;
+            if (core_env::on("UOCR_DBG"))
+                fprintf(stderr, "  [opt] SAM reduced res: upsampled %dx%d → %dx%d (%d tokens)\n", src_h, src_w, dst_h,
+                        dst_w, dst_n);
+        }
+
+        out_n_tokens = n_vis;
+        out_dim = vis_D;
+    }
+    const std::vector<float> & out_features = outs[0];
 
     // Diff: final SAM output
     if (!ctx.diff_ref_path.empty()) {
@@ -1622,6 +1692,11 @@ static bool encode_sam(uocr_ctx & ctx, const float * pixels, int sam_img_size, s
     return true;
 }
 
+static bool encode_sam(uocr_ctx & ctx, const float * pixels, int sam_img_size, std::vector<float> & out_features,
+                       int & out_n_tokens, int & out_dim) {
+    return encode_sam_multi(ctx, &pixels, 1, sam_img_size, &out_features, out_n_tokens, out_dim);
+}
+
 // ---------------------------------------------------------------------------
 // CLIP-L/14 encoder (ggml graph, all 24 layers in one graph)
 // ---------------------------------------------------------------------------
@@ -1631,7 +1706,10 @@ static bool encode_sam(uocr_ctx & ctx, const float * pixels, int sam_img_size, s
 // conv patch embedding. CLS token + position embeddings + pre-LayerNorm
 // are applied first, then 24 pre-LN ViT layers with quick_gelu FFN.
 // Output: (257, 1024) including CLS; caller skips CLS to get (256, 1024).
-static ggml_cgraph * build_clip_enc_full_graph(ggml_context * g, uocr_ctx * ctx, int T) {
+// B > 1 (tile batch): B independent sequences of T tokens, stacked as [D, T*B]; attention is
+// per sequence (flash_attn_ext batch dim), every other op is row-wise. B == 1 builds the same
+// ops/shapes as before.
+static ggml_cgraph * build_clip_enc_full_graph(ggml_context * g, uocr_ctx * ctx, int T, int B = 1) {
     // T = 257 (CLS + 256 patches)
     auto & chp = ctx->m.chp;
     int D = chp.hidden, nh = chp.heads;
@@ -1643,7 +1721,7 @@ static ggml_cgraph * build_clip_enc_full_graph(ggml_context * g, uocr_ctx * ctx,
 
     // Input: [D, T] — CLS prepended + pos embed + pre_layernorm already done by caller?
     // No — we do it in-graph for performance.
-    ggml_tensor * x = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, T);
+    ggml_tensor * x = ggml_new_tensor_2d(g, GGML_TYPE_F32, D, T * B);
     ggml_set_name(x, "clip_input");
     ggml_set_input(x);
 
@@ -1666,23 +1744,29 @@ static ggml_cgraph * build_clip_enc_full_graph(ggml_context * g, uocr_ctx * ctx,
         ggml_tensor * qkv = g_linear(g, h, blk.qkv_w, blk.qkv_b);
 
         // Split into Q, K, V each [D, T]
-        ggml_tensor * Q = ggml_cont(g, ggml_view_2d(g, qkv, D, T, qkv->nb[1], 0));
-        ggml_tensor * K = ggml_cont(g, ggml_view_2d(g, qkv, D, T, qkv->nb[1], (size_t)D * sizeof(float)));
-        ggml_tensor * V = ggml_cont(g, ggml_view_2d(g, qkv, D, T, qkv->nb[1], (size_t)2 * D * sizeof(float)));
+        ggml_tensor * Q = ggml_cont(g, ggml_view_2d(g, qkv, D, T * B, qkv->nb[1], 0));
+        ggml_tensor * K = ggml_cont(g, ggml_view_2d(g, qkv, D, T * B, qkv->nb[1], (size_t)D * sizeof(float)));
+        ggml_tensor * V = ggml_cont(g, ggml_view_2d(g, qkv, D, T * B, qkv->nb[1], (size_t)2 * D * sizeof(float)));
 
-        // Reshape to multi-head [hd, nh, T] → permute to [hd, T, nh]
+        // Reshape to multi-head [hd, nh, T(, B)] → permute to [hd, T, nh(, B)]
         // Do NOT ggml_cont() — flash_attn_ext uses strides natively.
-        Q = ggml_reshape_3d(g, Q, hd, nh, T);
+        if (B == 1) {
+            Q = ggml_reshape_3d(g, Q, hd, nh, T);
+            K = ggml_reshape_3d(g, K, hd, nh, T);
+            V = ggml_reshape_3d(g, V, hd, nh, T);
+        } else {
+            Q = ggml_reshape_4d(g, Q, hd, nh, T, B);
+            K = ggml_reshape_4d(g, K, hd, nh, T, B);
+            V = ggml_reshape_4d(g, V, hd, nh, T, B);
+        }
         Q = ggml_permute(g, Q, 0, 2, 1, 3); // [hd, T, nh] (non-contiguous view)
-        K = ggml_reshape_3d(g, K, hd, nh, T);
         K = ggml_permute(g, K, 0, 2, 1, 3);
-        V = ggml_reshape_3d(g, V, hd, nh, T);
         V = ggml_permute(g, V, 0, 2, 1, 3);
 
         // SDPA — bidirectional, no mask (same pattern as vit_embed.cpp)
         ggml_tensor * attn = ggml_flash_attn_ext(g, Q, K, V, nullptr, 1.0f / sqrtf((float)hd), 0.0f, 0.0f);
-        // flash_attn_ext output: [hd, nh, T] — reshape directly to [D, T]
-        attn = ggml_reshape_2d(g, attn, D, T);
+        // flash_attn_ext output: [hd, nh, T(, B)] — reshape directly to [D, T*B]
+        attn = ggml_reshape_2d(g, attn, D, T * B);
 
         // Output projection
         attn = g_linear(g, attn, blk.proj_w, blk.proj_b);
@@ -1715,8 +1799,11 @@ static ggml_cgraph * build_clip_enc_full_graph(ggml_context * g, uocr_ctx * ctx,
 // Input: sam_features_chw in CHW format (ds2_ch, ds2_H, ds2_W) — typically (1024, 16, 16).
 // The SAM output is already in row-major [n_vis, vis_D] = [256, 1024] layout from encode_sam.
 // Output: clip_out [256, 1024] (CLS skipped).
-static bool encode_clip(uocr_ctx & ctx, const float * sam_features, int n_vis, int sam_dim,
-                        std::vector<float> & clip_out) {
+// `count` images' SAM features (same n_vis); clip_outs[i] receives image i's output. count == 1
+// is the original single-graph path; count > 1 is the tile batch (one graph, B = count).
+static bool encode_clip_multi(uocr_ctx & ctx, const float * const * sam_features_v, int count, int n_vis, int sam_dim,
+                              std::vector<float> * clip_outs) {
+    if (count < 1) return false;
     auto & chp = ctx.m.chp;
     int D = chp.hidden; // 1024
 
@@ -1750,47 +1837,53 @@ static bool encode_clip(uocr_ctx & ctx, const float * sam_features, int n_vis, i
     });
     if (pos.empty()) return false;
 
-    std::vector<float> input(T * D);
-    // Position 0: CLS token
-    for (int d = 0; d < D; d++) input[0 * D + d] = cls[d];
-    // Positions 1..256: SAM features as patch embeddings
-    if (sam_dim == D) {
-        memcpy(input.data() + D, sam_features, (size_t)n_patches * D * sizeof(float));
-    } else {
-        for (int t = 0; t < n_patches; t++)
-            for (int d = 0; d < D; d++) input[(1 + t) * D + d] = (d < sam_dim) ? sam_features[t * sam_dim + d] : 0.0f;
-    }
+    std::vector<float> inputs((size_t)T * D * count);
+    for (int bi = 0; bi < count; bi++) {
+        float * input = inputs.data() + (size_t)bi * T * D;
+        const float * sam_features = sam_features_v[bi];
+        // Position 0: CLS token
+        for (int d = 0; d < D; d++) input[0 * D + d] = cls[d];
+        // Positions 1..256: SAM features as patch embeddings
+        if (sam_dim == D) {
+            memcpy(input + D, sam_features, (size_t)n_patches * D * sizeof(float));
+        } else {
+            for (int t = 0; t < n_patches; t++)
+                for (int d = 0; d < D; d++)
+                    input[(1 + t) * D + d] = (d < sam_dim) ? sam_features[t * sam_dim + d] : 0.0f;
+        }
 
-    if (core_env::on("UOCR_CLIP_DBG")) {
-        fprintf(stderr, "  [dbg] clip input (before pos) tok0[0:4]: %.6f %.6f %.6f %.6f\n", input[0], input[1],
-                input[2], input[3]);
-        fprintf(stderr, "  [dbg] clip input (before pos) tok1[0:4]: %.6f %.6f %.6f %.6f\n", input[D], input[D + 1],
-                input[D + 2], input[D + 3]);
-        fprintf(stderr, "  [dbg] sam_features[0:4]: %.6f %.6f %.6f %.6f\n", sam_features[0], sam_features[1],
-                sam_features[2], sam_features[3]);
-        fprintf(stderr, "  [dbg] pos_embed tok1[0:4]: %.6f %.6f %.6f %.6f\n", pos[D], pos[D + 1], pos[D + 2],
-                pos[D + 3]);
-    }
+        if (core_env::on("UOCR_CLIP_DBG")) {
+            fprintf(stderr, "  [dbg] clip input (before pos) tok0[0:4]: %.6f %.6f %.6f %.6f\n", input[0], input[1],
+                    input[2], input[3]);
+            fprintf(stderr, "  [dbg] clip input (before pos) tok1[0:4]: %.6f %.6f %.6f %.6f\n", input[D], input[D + 1],
+                    input[D + 2], input[D + 3]);
+            fprintf(stderr, "  [dbg] sam_features[0:4]: %.6f %.6f %.6f %.6f\n", sam_features[0], sam_features[1],
+                    sam_features[2], sam_features[3]);
+            fprintf(stderr, "  [dbg] pos_embed tok1[0:4]: %.6f %.6f %.6f %.6f\n", pos[D], pos[D + 1], pos[D + 2],
+                    pos[D + 3]);
+        }
 
-    // Add position embeddings
-    for (int t = 0; t < T; t++)
-        for (int d = 0; d < D; d++) input[t * D + d] += pos[t * D + d];
+        // Add position embeddings
+        for (int t = 0; t < T; t++)
+            for (int d = 0; d < D; d++) input[t * D + d] += pos[t * D + d];
+    }
 
     // Build and run the CLIP encoder graph (all 24 layers in one graph)
     size_t meta_sz = 32 * 1024 * 1024;
     std::vector<uint8_t> mb(meta_sz);
     ggml_init_params ip = { meta_sz, mb.data(), true };
     ggml_context * gc = ggml_init(ip);
-    ggml_cgraph * gf = build_clip_enc_full_graph(gc, &ctx, T);
+    ggml_cgraph * gf = build_clip_enc_full_graph(gc, &ctx, T, count);
     ggml_backend_sched_reset(ctx.sched);
     ggml_backend_sched_alloc_graph(ctx.sched, gf);
-    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "clip_input"), input.data(), 0, (size_t)T * D * sizeof(float));
+    ggml_backend_tensor_set(ggml_graph_get_tensor(gf, "clip_input"), inputs.data(), 0, inputs.size() * sizeof(float));
     ggml_backend_sched_graph_compute(ctx.sched, gf);
 
-    // Read full output [257, 1024] for diff comparison
-    std::vector<float> full_output(T * D);
-    ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "clip_output"), full_output.data(), 0,
-                            (size_t)T * D * sizeof(float));
+    // Read full output [257, 1024] (per image) for diff comparison
+    std::vector<float> full_outputs((size_t)T * D * count);
+    ggml_backend_tensor_get(ggml_graph_get_tensor(gf, "clip_output"), full_outputs.data(), 0,
+                            full_outputs.size() * sizeof(float));
+    const float * full_output = full_outputs.data();
 
     // Pre-LN output check
     if (core_env::on("UOCR_CLIP_DBG")) {
@@ -1841,17 +1934,24 @@ static bool encode_clip(uocr_ctx & ctx, const float * sam_features, int n_vis, i
     if (!ctx.diff_ref_path.empty()) {
         crispembed_diff::Ref ref;
         if (ref.load(ctx.diff_ref_path.c_str()) && ref.has("clip_output")) {
-            auto r = ref.compare("clip_output", full_output.data(), (size_t)T * D);
+            auto r = ref.compare("clip_output", full_output, (size_t)T * D);
             fprintf(stderr, "  clip_output: cos_min=%.6f cos_mean=%.6f max_abs=%.6f %s\n", r.cos_min, r.cos_mean,
                     r.max_abs, r.is_pass() ? "PASS" : "FAIL");
         }
     }
 
     // Skip CLS → output (256, 1024)
-    clip_out.resize((size_t)n_patches * D);
-    memcpy(clip_out.data(), full_output.data() + D, (size_t)n_patches * D * sizeof(float));
+    for (int bi = 0; bi < count; bi++) {
+        clip_outs[bi].resize((size_t)n_patches * D);
+        memcpy(clip_outs[bi].data(), full_output + (size_t)bi * T * D + D, (size_t)n_patches * D * sizeof(float));
+    }
 
     return true;
+}
+
+static bool encode_clip(uocr_ctx & ctx, const float * sam_features, int n_vis, int sam_dim,
+                        std::vector<float> & clip_out) {
+    return encode_clip_multi(ctx, &sam_features, 1, n_vis, sam_dim, &clip_out);
 }
 
 // ---------------------------------------------------------------------------
@@ -3849,6 +3949,18 @@ unlimited_ocr_context * unlimited_ocr_init(const char * model_path, int n_thread
 
     precompute_rpe_tables(ctx);
 
+    if (ctx.m.lhp.variant == 2 && core_env::on("CRISPEMBED_UNLIMITED_OCR2_VISION_F32")) {
+        if (!upcast_vision_f32(ctx)) {
+            fprintf(stderr, "unlimited_ocr: F32 vision upcast failed\n");
+            unlimited_ocr_free(c);
+            return nullptr;
+        }
+        init_ms("vision_f32");
+    }
+    ctx.tile_batch = ctx.m.lhp.variant == 2 && core_env::on("CRISPEMBED_UNLIMITED_OCR2_TILE_BATCH");
+    if (const char * tb = getenv("CRISPEMBED_UNLIMITED_OCR2_TILE_BATCH_MAX"))
+        if (*tb) ctx.tile_batch_max = std::max(1, std::min(64, atoi(tb)));
+
     // A prestacked GGUF (converter) already loaded gate_exps/up_exps/down_exps directly,
     // so skip the runtime copy — the graph path is ready as-is.
     if (!core_env::on("UOCR_MOE_CPU")) {
@@ -3887,6 +3999,8 @@ void unlimited_ocr_free(unlimited_ocr_context * ctx) {
     if (c.moe_buf) ggml_backend_buffer_free(c.moe_buf);
     if (c.moe_ctx) ggml_free(c.moe_ctx);
     if (c.moe_view_ctx) ggml_free(c.moe_view_ctx);
+    if (c.vision_f32_buf) ggml_backend_buffer_free(c.vision_f32_buf);
+    if (c.vision_f32_ctx) ggml_free(c.vision_f32_ctx);
     c.model_buf = nullptr;
     c.model_ctx = nullptr;
     core_gguf::free_weights(c.model_wl);
@@ -4002,7 +4116,54 @@ static bool uocr2_encode_local_tiles(uocr_ctx & ctx, const uint8_t * px, int w, 
     FILE * tile_px_dump = nullptr; // diagnostics: [wt*ht, 3, 640, 640] f32, row-major tiles
     if (const char * dv = getenv("UOCR2_DUMP_VISION"))
         if (*dv) tile_px_dump = fopen((std::string(dv) + ".tiles.f32").c_str(), "wb");
-    for (int ty = 0; ty < ht && ok; ty++)
+    if (ctx.tile_batch) {
+        // CRISPEMBED_UNLIMITED_OCR2_TILE_BATCH: same per-tile pixels, then SAM/CLIP over chunks of
+        // up to tile_batch_max tiles per graph; projector and assembly unchanged.
+        const int n_tiles = wt * ht;
+        std::vector<std::vector<float>> tile_px((size_t)n_tiles, std::vector<float>((size_t)3 * T * T));
+        for (int ti = 0; ti < n_tiles; ti++) {
+            const int ty = ti / wt, tx = ti % wt;
+            float * pixels = tile_px[(size_t)ti].data();
+            for (int c = 0; c < 3; c++)
+                for (int y = 0; y < T; y++)
+                    for (int x = 0; x < T; x++) {
+                        float v = big[((size_t)(ty * T + y) * BW + tx * T + x) * 3 + c] / 255.0f;
+                        float nv = (v - s.image_mean[c]) / s.image_std[c];
+                        pixels[(size_t)c * T * T + (size_t)y * T + x] = bf16_px ? uocr2_bf16_round(nv) : nv;
+                    }
+            if (tile_px_dump) fwrite(pixels, sizeof(float), (size_t)3 * T * T, tile_px_dump);
+        }
+        for (int t0i = 0; t0i < n_tiles && ok; t0i += ctx.tile_batch_max) {
+            const int cnt = std::min(ctx.tile_batch_max, n_tiles - t0i);
+            std::vector<const float *> pin((size_t)cnt), sfeat((size_t)cnt);
+            std::vector<std::vector<float>> sam_f((size_t)cnt), clip_f((size_t)cnt);
+            for (int i = 0; i < cnt; i++) pin[(size_t)i] = tile_px[(size_t)(t0i + i)].data();
+            int n_tok = 0, sam_dim = 0;
+            auto t0 = std::chrono::steady_clock::now();
+            ok = encode_sam_multi(ctx, pin.data(), cnt, T, sam_f.data(), n_tok, sam_dim);
+            auto t1 = std::chrono::steady_clock::now();
+            for (int i = 0; i < cnt; i++) sfeat[(size_t)i] = sam_f[(size_t)i].data();
+            ok = ok && encode_clip_multi(ctx, sfeat.data(), cnt, n_tok, sam_dim, clip_f.data());
+            auto t2 = std::chrono::steady_clock::now();
+            for (int i = 0; i < cnt && ok; i++) {
+                std::vector<float> proj;
+                ok = fuse_and_project(ctx, clip_f[(size_t)i].data(), sam_f[(size_t)i].data(), n_tok, ctx.m.chp.hidden,
+                                      sam_dim, proj);
+                int side = (int)lroundf(sqrtf((float)n_tok));
+                if (ok && (side * side != n_tok || (nq && side != nq))) ok = false;
+                nq = side;
+                tile_proj[(size_t)(t0i + i)] = std::move(proj);
+            }
+            if (core_env::on("UOCR_DBG")) {
+                auto ms = [](std::chrono::steady_clock::time_point a, std::chrono::steady_clock::time_point b) {
+                    return (long long)std::chrono::duration_cast<std::chrono::milliseconds>(b - a).count();
+                };
+                fprintf(stderr, "  [time] tile batch %d+%d sam %lldms clip %lldms proj %lldms\n", t0i, cnt, ms(t0, t1),
+                        ms(t1, t2), ms(t2, std::chrono::steady_clock::now()));
+            }
+        }
+    }
+    for (int ty = 0; ty < ht && ok && !ctx.tile_batch; ty++)
         for (int tx = 0; tx < wt && ok; tx++) {
             std::vector<float> pixels((size_t)3 * T * T);
             for (int c = 0; c < 3; c++)

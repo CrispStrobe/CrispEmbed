@@ -6,7 +6,9 @@ and not run), then runs one MODE (@MODE@; the same file is pushed once per mode 
 sessions):
   native-uocr2   published alias `unlimited-ocr2` (F16), fast decoder, gundam tiles (the original default)
   native-minicpm published alias `minicpm-ocr` (F16), prompt "Text Recognition:"
+  native-uocr2-vf32  as native-uocr2 with CRISPEMBED_UNLIMITED_OCR2_VISION_F32=1
   ref-uocr2      original PyTorch Unlimited-OCR-2 (tools/unlimited-ocr2/reference.py contract), F32 CPU
+  native-minicpm-fast  as native-minicpm with the graph-decoder/F32-vision/batch/flash gates on
   ref-minicpm    original Transformers MiniCPM-OCR-1.0 (tools/minicpm-ocr/reference.py contract), F32 CPU
 Pages run in manifest priority order until the time budget. Per page: text, token IDs, CER/WER/word recall
 (tools/kaggle/ocr-real-scans/score.py), wall time, peak RSS. Output: /kaggle/working/ocr-real-scans/.
@@ -169,9 +171,21 @@ try:
     if MODE == 'native-uocr2':
         native('unlimited-ocr2', 'uocr2-f16-fast-tiled', dict(CRISPEMBED_UNLIMITED_OCR2='1', CRISPEMBED_UNLIMITED_OCR2_FAST='1',
                                                              CRISPEMBED_UNLIMITED_OCR2_TILES='1', UOCR_DBG='1'), [])
+    elif MODE == 'native-uocr2-vf32':
+        # Default-flip A/B arm: F32 SAM/CLIP block matrices made once at init.
+        native('unlimited-ocr2', 'uocr2-f16-fast-tiled-vf32', dict(CRISPEMBED_UNLIMITED_OCR2='1', CRISPEMBED_UNLIMITED_OCR2_FAST='1',
+                                                                  CRISPEMBED_UNLIMITED_OCR2_TILES='1', UOCR_DBG='1',
+                                                                  CRISPEMBED_UNLIMITED_OCR2_VISION_F32='1'), [])
     elif MODE == 'native-minicpm':
         native('minicpm-ocr', 'minicpm-f16', dict(CRISPEMBED_MINICPM_OCR='1', CRISPEMBED_QWEN35_OCR='1',
                                                   CRISPEMBED_QWEN35_WEIGHT_CACHE='1'), ['--ocr-prompt', 'Text Recognition:'])
+    elif MODE == 'native-minicpm-fast':
+        # Default-flip A/B arm: graph decoder (f32 matmul) + F32 vision + batched slices + vision flash.
+        native('minicpm-ocr', 'minicpm-f16-fast', dict(CRISPEMBED_MINICPM_OCR='1', CRISPEMBED_QWEN35_OCR='1',
+                                                       CRISPEMBED_QWEN35_WEIGHT_CACHE='1', CRISPEMBED_QWEN35_GRAPH_DECODER='1',
+                                                       CRISPEMBED_QWEN35_GRAPH_MATMUL='f32', CRISPEMBED_MINICPM_OCR_VISION_F32='1',
+                                                       CRISPEMBED_MINICPM_OCR_VISION_BATCH='1', CRISPEMBED_MINICPM_OCR_VISION_FLASH='1'),
+               ['--ocr-prompt', 'Text Recognition:'])
     elif MODE == 'ref-uocr2':
         reference('uocr2', 'uocr2-original-f32', ['transformers==4.52.1', 'huggingface-hub==0.36.0', 'tokenizers==0.21.4',
                                                   'addict==2.4.0', 'einops==0.8.2', 'easydict==1.13'])

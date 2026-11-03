@@ -7,20 +7,20 @@
 //   * prefill: all prompt rows in one graph; decode: one row per graph;
 //   * matrices are read in their stored type; no per-step whole-matrix
 //     conversion. Matmul precision is selected by CRISPEMBED_QWEN35_GRAPH_MATMUL:
-//       unset/"exact"  F32 activations everywhere. Decode rows (<= 8 tokens)
+//       "exact"        F32 activations everywhere. Decode rows (<= 8 tokens)
 //                      dequantize one weight row at a time and use the F32 dot;
 //                      prefill casts each matrix to F32 inside the graph (once per
 //                      prompt) and runs the F32 GEMM, as decoder_cpu does.
 //       "native"       ggml_mul_mat on the stored type (F16 activations for F16
 //                      weights). Fastest; separately A/B'd for token exactness.
-//       "f32"          F32 copies of every matrix made once at init (memory x2).
+//       unset/"f32"    F32 copies of every matrix made once at init (memory x2).
 //   * delta-net softplus/sigmoid and the gated RMSNorm use the reference scalar
 //     formulas (custom ops) and ggml_gated_delta_net, as linear_core_cpu does;
 //   * RoPE uses host cos/sin tables computed with the reference formula.
 // Only 1-D sequential positions (equal t/h/w axes, as MiniCPM-OCR) are supported.
 //
-// Gate: CRISPEMBED_QWEN35_GRAPH_DECODER (core_env::on, default off). Only callers
-// that opt in use it; decoder_cpu and every existing engine are unchanged.
+// Gate: enabled() unless CRISPEMBED_QWEN35_GRAPH_DECODER=0 (core_env::explicitly_off). MiniCPM-OCR, the only
+// caller, turns it on by default (=0 opts out); decoder_cpu and every other engine are unchanged.
 #pragma once
 
 #include "qwen35_decoder.h"

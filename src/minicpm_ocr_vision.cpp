@@ -235,9 +235,10 @@ bool encode_parts(const vision_weights & w, ggml_backend_t backend, const image_
     };
     tap(x);
     const float scale = 1.0f / std::sqrt(float(hd));
-    // Default-off performance gate (not a semantics switch): fused flash attention
-    // instead of the explicit softmax(QK^T)V. Promote only after A/B on the capture.
-    const bool flash = core_env::on("CRISPEMBED_MINICPM_OCR_VISION_FLASH");
+    // Performance gate (not a semantics switch): fused flash attention instead of the
+    // explicit softmax(QK^T)V. Default on since the 2026-11-02 A/B (5 parity cases + 20
+    // real scans, IDs identical); CRISPEMBED_MINICPM_OCR_VISION_FLASH=0 opts out.
+    const bool flash = !core_env::explicitly_off("CRISPEMBED_MINICPM_OCR_VISION_FLASH");
     for (size_t li = 0; li < w.layers.size(); ++li) {
         const auto & l = w.layers[li];
         ggml_tensor * h = layer_norm(g, x, l.ln1_w, l.ln1_b, w.eps);
@@ -361,7 +362,7 @@ bool encode(const vision_weights & w, ggml_backend_t backend, const image_part &
 
 bool encode_batch(const vision_weights & w, ggml_backend_t backend, const image_part * parts, int count, int threads,
                   std::vector<float> & merged, vision_debug * debug, vision_timing * timing) {
-    if (!core_env::on("CRISPEMBED_MINICPM_OCR_VISION_BATCH")) return false;
+    if (core_env::explicitly_off("CRISPEMBED_MINICPM_OCR_VISION_BATCH")) return false;
     return encode_parts(w, backend, parts, count, threads, merged, debug, timing);
 }
 
@@ -371,7 +372,7 @@ vision_f32_store::~vision_f32_store() {
 }
 
 bool upcast_vision_f32(vision_weights & w, ggml_backend_t backend, vision_f32_store & store) {
-    if (!core_env::on("CRISPEMBED_MINICPM_OCR_VISION_F32") || !backend || store.ctx) return false;
+    if (core_env::explicitly_off("CRISPEMBED_MINICPM_OCR_VISION_F32") || !backend || store.ctx) return false;
     std::vector<ggml_tensor **> slots = { &w.patch_w, &w.m1_w, &w.m2_w };
     for (auto & l : w.layers) {
         slots.push_back(&l.q_w);

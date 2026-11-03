@@ -107,6 +107,9 @@ qwen35 decoder kernels. All default off.
 | `CRISPEMBED_UNLIMITED_OCR2_TILES` | on | Follows the original >640 px tiling (images wider or taller than 640 px are tiled). `=0` forces the untiled path. |
 | `CRISPEMBED_UNLIMITED_OCR2_TILES_LEGACY_PREP`, `..._TILES_LEGACY_UPSAMPLE` | off | Restore the earlier tile preprocessing / SAM tile-grid upsampling. |
 | `CRISPEMBED_UNLIMITED_OCR2_VISION_CACHE` | on | Speed-up: vision cache and row-parallel projection for variant 2. `=0` disables. |
+| `CRISPEMBED_UNLIMITED_OCR2_VISION_F32` | off | Speed-up: F32 copies of the SAM/CLIP block matrices made once at init (variant 2 only); F32 x F32 vision products. 4/4 trial pages ids/text exact vs the original, 1.44x end to end. |
+| `CRISPEMBED_UNLIMITED_OCR2_TILE_BATCH` | off | Gundam tiles run through SAM's layers and CLIP as one graph per layer (vision bytes identical to unbatched). About 2% faster only. |
+| `CRISPEMBED_UNLIMITED_OCR2_TILE_BATCH_MAX` | 16 | Tiles per batched graph (1-64) when `..._TILE_BATCH=1`. |
 | `CRISPEMBED_UNLIMITED_OCR2_OUTPUT` | raw | `clean` (alias `markdown`) strips layout markup; `legacy` reproduces the earlier post-processing; anything else is raw model text. |
 | `CRISPEMBED_UNLIMITED_OCR_BENCH` | off | Stage timings on stderr. |
 | `UOCR_MAX_NEW`, `UOCR2_DUMP_VISION`, `UOCR_DUMP_PIXELS` | unset | Token cap override and debug dumps. |
@@ -124,17 +127,16 @@ alias in both the CLI and the HTTP server; both gates below are still required.
 | `CRISPEMBED_QWEN35_OCR` | off | **Required**: the decoder is the shared qwen35 implementation. |
 | `CRISPEMBED_MINICPM_OCR_DUMP` | unset | Directory for intermediate dumps. |
 | `CRISPEMBED_MINICPM_OCR_TIMING` | off | Per-stage wall times on stderr. |
-| `CRISPEMBED_MINICPM_OCR_VISION_FLASH` | off | Fused flash attention in the vision tower (performance only). |
-| `CRISPEMBED_MINICPM_OCR_GRAPH` | off | Older stateless graph-decoder candidate (`src/qwen35_graph_decoder.cpp`); disabled under `CRISPEMBED_QWEN35_IMATRIX`; exclusive with `CRISPEMBED_QWEN35_GRAPH_DECODER`. |
-| `CRISPEMBED_QWEN35_GRAPH_DECODER` | off | qwen35 text decoder as one ggml graph with persistent KV and delta-net state (`src/qwen35_graph_kv_decoder.cpp`). |
-| `CRISPEMBED_QWEN35_GRAPH_MATMUL` | `exact` | Matmul precision of that graph decoder: `exact`, `native` or `f32`. |
-| `CRISPEMBED_MINICPM_OCR_VISION_F32` | off | Copy vision and projector matrices to F32 once at init (about 4.6 GB extra in the recommended set). |
-| `CRISPEMBED_MINICPM_OCR_VISION_BATCH` | off | Run equally sized slices in one graph as independent sequences. |
+| `CRISPEMBED_MINICPM_OCR_VISION_FLASH` | on | Fused flash attention in the vision tower (performance only). `=0` opts out. |
+| `CRISPEMBED_MINICPM_OCR_GRAPH` | off | Older stateless graph-decoder candidate (`src/qwen35_graph_decoder.cpp`); disabled under `CRISPEMBED_QWEN35_IMATRIX`; exclusive with `CRISPEMBED_QWEN35_GRAPH_DECODER` (setting it to 1 turns the default graph decoder off unless that is forced with `=1`). |
+| `CRISPEMBED_QWEN35_GRAPH_DECODER` | on | qwen35 text decoder as one ggml graph with persistent KV and delta-net state (`src/qwen35_graph_kv_decoder.cpp`; MiniCPM is the only caller). `=0` restores the CPU reference decoder. |
+| `CRISPEMBED_QWEN35_GRAPH_MATMUL` | `f32` | Matmul precision of that graph decoder: `f32`, `exact` or `native` (`native` saves the F32 copies' RAM; also 5/5 exact). |
+| `CRISPEMBED_MINICPM_OCR_VISION_F32` | on | Copy vision and projector matrices to F32 once at init (part of the ~3.3 GB higher peak RSS). `=0` opts out. |
+| `CRISPEMBED_MINICPM_OCR_VISION_BATCH` | on | Run equally sized slices in one graph as independent sequences. `=0` opts out. |
 
-Recommended speed set (token-ID exact on all five Kaggle cases; default stays off):
-`CRISPEMBED_QWEN35_GRAPH_DECODER=1 CRISPEMBED_QWEN35_GRAPH_MATMUL=f32
-CRISPEMBED_MINICPM_OCR_VISION_F32=1 CRISPEMBED_MINICPM_OCR_VISION_BATCH=1
-CRISPEMBED_MINICPM_OCR_VISION_FLASH=1`. See
+The speed set (graph decoder `f32` + vision F32 + batch + flash) is the default since 2026-11-02:
+token-ID exact on all five Kaggle cases and IDs identical to the old default on all 20 real-scan pages,
+6.2x faster, peak RSS 8.4 GB (was 5.1 GB). Setting all four gates to `0` restores the old path. See
 [the inference spec](minicpm-ocr-inference-spec.md) and PERFORMANCE.md.
 
 ### qwen35 decoder (shared by LightOnOCR-3 `qwen35_ocr`, OvisOCR2/3, MiniCPM-OCR, Josev)
@@ -173,7 +175,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-399 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+402 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -635,15 +637,16 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `CRISPEMBED_MINICPM_OCR_DUMP` | value | unset | string | debug | `src/minicpm_ocr.cpp` |  |
 | `CRISPEMBED_MINICPM_OCR_GRAPH` | on | off | bool | default-off experimental / opt-in | `src/minicpm_ocr.cpp`, `src/qwen35_graph_decoder.cpp` | Snapshot once for the entire request. Never silently fall back after a candidate failure, which would mix arithmetic within one decode. |
 | `CRISPEMBED_MINICPM_OCR_TIMING` | on | off | bool | debug | `src/minicpm_ocr.cpp` |  |
-| `CRISPEMBED_MINICPM_OCR_VISION_BATCH` | on | off | bool | default-off experimental / opt-in | `src/minicpm_ocr.cpp`, `src/minicpm_ocr_vision.cpp` | CRISPEMBED_MINICPM_OCR_VISION_BATCH (default off): equally sized consecutive parts (the slices) run as one graph of independent sequences; rows stay in order. |
-| `CRISPEMBED_MINICPM_OCR_VISION_F32` | on | off | bool | default-off experimental / opt-in | `src/minicpm_ocr.cpp`, `src/minicpm_ocr_vision.cpp` |  |
+| `CRISPEMBED_MINICPM_OCR_VISION_BATCH` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/minicpm_ocr.cpp`, `src/minicpm_ocr_vision.cpp` | CRISPEMBED_MINICPM_OCR_VISION_BATCH (default on since 2026-11-02, =0 opts out): equally sized consecutive parts (the slices) run as one graph of independent ... |
+| `CRISPEMBED_MINICPM_OCR_VISION_F32` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/minicpm_ocr.cpp`, `src/minicpm_ocr_vision.cpp` |  |
+| `CRISPEMBED_QWEN35_GRAPH_DECODER` | off/on | mixed (see code) | bool | default-off experimental / opt-in | `src/minicpm_ocr.cpp`, `src/qwen35_graph_kv_decoder.cpp` | Graph decoder default on for MiniCPM since 2026-11-02 (=0 opts out); it yields to the exclusive stateless CRISPEMBED_MINICPM_OCR_GRAPH candidate unless force... |
 | `CRISPEMBED_QWEN35_WEIGHT_CACHE` | on | off | bool | default-off experimental / opt-in | `src/minicpm_ocr.cpp`, `src/qwen35_linear.cpp`, `src/qwen35_ocr.cpp` |  |
 
 ### minicpm_ocr_vision
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_MINICPM_OCR_VISION_FLASH` | on | off | bool | default-off experimental / opt-in | `src/minicpm_ocr_vision.cpp` | Default-off performance gate (not a semantics switch): fused flash attention instead of the explicit softmax(QK^T)V. Promote only after A/B on the capture. |
+| `CRISPEMBED_MINICPM_OCR_VISION_FLASH` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/minicpm_ocr_vision.cpp` | explicit softmax(QK^T)V. Default on since the 2026-11-02 A/B (5 parity cases + 20 real scans, IDs identical); CRISPEMBED_MINICPM_OCR_VISION_FLASH=0 opts out. |
 
 ### mixtex_ocr
 
@@ -884,8 +887,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_QWEN35_GRAPH_DECODER` | on | off | bool | default-off experimental / opt-in | `src/qwen35_graph_kv_decoder.cpp` |  |
-| `CRISPEMBED_QWEN35_GRAPH_MATMUL` | value | unset | string | tuning / config | `src/qwen35_graph_kv_decoder.cpp` |  |
+| `CRISPEMBED_QWEN35_GRAPH_MATMUL` | value | unset | value | tuning / config | `src/qwen35_graph_kv_decoder.cpp` |  |
 
 ### qwen35_image_bounds
 
@@ -1080,7 +1082,10 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `CRISPEMBED_UNLIMITED_OCR2_TILES` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/unlimited_ocr.cpp` |  |
 | `CRISPEMBED_UNLIMITED_OCR2_TILES_LEGACY_PREP` | on | off | bool | default-off experimental / opt-in | `src/unlimited_ocr.cpp` |  |
 | `CRISPEMBED_UNLIMITED_OCR2_TILES_LEGACY_UPSAMPLE` | on | off | bool | default-off experimental / opt-in | `src/unlimited_ocr.cpp` |  |
+| `CRISPEMBED_UNLIMITED_OCR2_TILE_BATCH` | on | off | bool | default-off experimental / opt-in | `src/unlimited_ocr.cpp` |  |
+| `CRISPEMBED_UNLIMITED_OCR2_TILE_BATCH_MAX` | value | unset | int | tuning / config | `src/unlimited_ocr.cpp` |  |
 | `CRISPEMBED_UNLIMITED_OCR2_VISION_CACHE` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/unlimited_ocr.cpp` | Only the separately measured second-generation path opts into this cache and row-parallel projector. Keep the first-generation route intact. |
+| `CRISPEMBED_UNLIMITED_OCR2_VISION_F32` | on | off | bool | default-off experimental / opt-in | `src/unlimited_ocr.cpp` |  |
 | `CRISPEMBED_UNLIMITED_OCR_BENCH` | on | off | bool | debug | `src/unlimited_ocr.cpp` |  |
 
 ### vit_embed

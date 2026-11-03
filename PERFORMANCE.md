@@ -1,3 +1,22 @@
+## Unlimited-OCR-2 vision speed gates (2 November 2026, Kaggle 4 vCPU)
+
+**Vision speed gates (2026-11-02, default off).** `CRISPEMBED_UNLIMITED_OCR2_VISION_F32` (F32 SAM/CLIP block
+matrices made once at init) and `CRISPEMBED_UNLIMITED_OCR2_TILE_BATCH` (`_TILE_BATCH_MAX`, default 16: tiles through SAM
+layers/CLIP as one graph per layer). Trial pages (`crispembed-unlimited-ocr2-vision-speed` at `866d4dbb`, Kaggle Xeon
+2.2 GHz x4, receipts `tests/results/unlimited-ocr2/vision-speed.{json,md}`): every arm gives ids and output text
+byte-exact vs the original on all 4 pages; batched vision features are byte-identical to unbatched (F16 and F32).
+Sum of 4 pages: default 1,162 s; VISION_F32 805 s (1.44x); TILE_BATCH 1,191 s; both 786 s; both with max 4 800 s.
+Table page per stage, default -> VISION_F32: SAM 9.9 -> 4.6 s/tile, CLIP 1.7 -> 0.66 s/tile, projector 0.10 s/tile,
+prefill 38 s (unchanged), decode 66 -> 70 s (noise), page 259 -> 174 s (163 s with TILE_BATCH). Peak RSS 12.82 GB in
+every arm (peak is set by the decoder). Batching buys about 2% only; left off.
+Real scans (`crispembed-ocr-real-scans-uocr2-vf32` at `7857ebf5`, receipt
+`tests/results/ocr-real-scans/native-uocr2-vf32.json`): 20 pages, 6,889 s vs 9,847 s for the default on its 19 pages
+(1.43x on paired pages), RSS unchanged. Ids vs the original 13/20 exact (default `native-uocr2.json`: 12/20). Against
+the default: 17/19 pages identical; `receipt-cord-test-4` becomes exact vs the original; `de-2col-meyers-b13-103`
+differs from both the default and the original (it was already inexact; CER 0.0368 vs default 0.0369 vs original
+0.0371). **Not flipped**: it is not ids-identical to the default everywhere and not exact everywhere. Proposed default
+flip pending a decision on that one page (no page regresses from exact; mean CER unchanged or better).
+
 ## GOT-OCR2 original-pipeline parity (2 November 2026, `fix/got-ocr2-pipeline-parity`)
 
 Hosted x86 CPU, 4 vCPU, `-t 4`, one-shot runs including load, 1024-token cap, run 41456179762.
@@ -69,7 +88,14 @@ max-abs is at most 6.4e-5. All gates stay default-off.
   `CRISPEMBED_QWEN35_GRAPH_DECODER=1 CRISPEMBED_QWEN35_GRAPH_MATMUL=f32
   CRISPEMBED_MINICPM_OCR_VISION_F32=1 CRISPEMBED_MINICPM_OCR_VISION_BATCH=1
   CRISPEMBED_MINICPM_OCR_VISION_FLASH=1`. It keeps about 4.6 GB of extra F32 weight copies.
-  All gates stay default-off.
+  **Default since 2026-11-02** (each gate `=0` opts out; `CRISPEMBED_QWEN35_GRAPH_MATMUL=exact|native`).
+
+  Default flip A/B (2026-11-02, `crispembed-ocr-real-scans-minicpm-fast` at `dded1384`, Kaggle Xeon 2.2 GHz x4,
+  receipt `tests/results/ocr-real-scans/native-minicpm-fast.json`): all 20 real-scan pages produce token IDs
+  **identical to the previous default** (`native-minicpm.json`), so CER is unchanged (mean 0.0515 vs original 0.0515).
+  Against the original Transformers IDs 18/20 are exact; the same two pages (`en-form-economic-journal-67`,
+  `en-2col-eb1911-v04-246`) differ as they already did on the old path. Wall time 5,094 s vs 31,725 s for the old
+  default (6.2x; original 5,161 s). Peak RSS 7.7-8.4 GB vs 5.0-5.1 GB (original 8.1-8.5 GB).
 
 ## Real-scan OCR quality, native vs original (2 November 2026, Kaggle 4 vCPU)
 
