@@ -1,0 +1,5 @@
+build_mode=portable
+commit=33ecd1d6855cd09b26542005d04766c9034c55b6
+runner=Linux/X64
+cpu=AMD EPYC 9V45 96-Core Processor
+cpu_avx512f=yes

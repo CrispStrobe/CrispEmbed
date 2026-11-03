@@ -63,11 +63,10 @@ and was not verified here).
   `CRISPEMBED_QWEN35_OCR=1` are still required, and the orchestrator and engine
   enforce them too. `tests/test_cli_engine_names.py` fails if the two surfaces
   diverge again.
-- **CrispSorter: PR open.** [CrispSorter PR #19](https://github.com/CrispStrobe/CrispSorter/pull/19)
+- **CrispSorter: merged** (`2d45977a`; all of its CI jobs passed). [CrispSorter PR #19](https://github.com/CrispStrobe/CrispSorter/pull/19)
   adds the `unlimited_ocr2` (→ 13, alias `unlimited-ocr2`) and `minicpm_ocr`
   (→ 23, alias `minicpm-ocr`) stage selectors and exposes the existing `unlimited_ocr`.
   Neither is a default. CrispEmbed refuses to initialise them without their gates.
-  CrispSorter's CI must pass before merge.
 - **CrispCalc: N/A, with a TODO.** CrispCalc has no orchestrator engine-id selector. Its
   `lib/engine/ocr_model_catalog.dart` is a download catalog of formula, layout,
   detection and VLM GGUFs, and the app is pinned to the immutable CrispEmbed 0.17.12

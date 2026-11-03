@@ -1,0 +1,1 @@
+source=66a5eba08fd8ac0887e389c8609de3aabba502a1 batch=h kernel=crispembed-cuda-audit v8 (Tesla T4), build portable (GGML_NATIVE=OFF, CRISPEMBED_NATIVE=OFF)
