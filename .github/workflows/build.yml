@@ -187,6 +187,24 @@ jobs:
       - name: Install (bundle native libs)
         run: cmake --install build --config Release --prefix dist
 
+      # The macOS bundle feeds the Flutter plugin's macos/Libs (bundle-flutter
+      # below). upload-artifact turns the install tree's SOVERSION symlinks
+      # into separate copies and CocoaPods drops or dereferences them, so the
+      # app never held every name the load commands ask for. Flatten to one
+      # real file per library under its unversioned install name (the same
+      # script release.yml and the podspec use), then fail if any @rpath
+      # reference (otool -L) of a dylib or of the installed CLI is not a
+      # regular file in the set, and dlopen it from there.
+      - name: Flatten and verify macOS dylib set
+        if: runner.os == 'macOS'
+        run: |
+          bins=$(find dist/bin -maxdepth 1 -type f -perm -u+x 2>/dev/null || true)
+          sh flutter/crispembed/macos/flatten_dylibs.sh dist/lib $bins
+          sh flutter/crispembed/macos/flatten_dylibs.sh --check dist/lib $bins
+          for f in dist/lib/*.dylib; do codesign --verify "$f"; done
+          python3 -c "import ctypes,sys; ctypes.CDLL(sys.argv[1]).crispembed_init; print('dlopen OK')" \
+              "$PWD/dist/lib/libcrispembed.dylib"
+
       - name: Upload shared library bundle
         uses: actions/upload-artifact@v4
         with:
