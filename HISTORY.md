@@ -1,3 +1,22 @@
+## 3 November 2026 — GOT-OCR2 F16 republish script re-pointed at the original pipeline
+
+`tools/ci-heavy/got_ocr2_f16_republish.sh` compared native decodes with the HF port
+(stepfun-ai/GOT-OCR-2.0-hf). The port is not a faithful reference: its processor adds a
+leading-space " OCR" token and drops the system indentation and the no-repeat-ngram rule. That is
+why qualification run 41391040980 was rejected on page similarity; the receipt is kept. The script
+now runs `got_ocr2_orig_probe.py` (stepfun-ai/GOT-OCR2_0 remote code at `979938bf`, transformers
+4.37.2, CPU F32, ngram 20) and compares generated IDs from `CRISPEMBED_GOT_OCR_DUMP_DIR`.
+Rerun 41588457181 (portable build, 256 new tokens):
+
+| case | F16-r2 vs original | published Q4_K vs original | old F16 |
+|---|---|---|---|
+| fox | IDs exact | IDs exact | `colorcolor...` |
+| receipt_example | IDs exact | first divergence 83, char ratio 0.8041 | `colorcolor...` |
+| simple_form | IDs exact | first divergence 20, char ratio 0.9679 | `colorcolor...` |
+
+Stage diff F16-r2: 19/19 stages at cos 1.000000. The page-similarity diagnostic (r2 >= Q4_K on all
+cases) now passes too. Receipt: `tests/results/got-ocr2-f16/qualify-41588457181-orig-ref/`.
+
 ## 2 November 2026 — Unlimited-OCR-2 F32 vision / tile batch gates (default off)
 
 **Vision speed gates (2026-11-02, default off).** `CRISPEMBED_UNLIMITED_OCR2_VISION_F32` (F32 SAM/CLIP block

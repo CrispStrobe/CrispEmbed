@@ -46,6 +46,10 @@ differs from the old file only inside that span. Stage diff is cos 1.000000 on a
   "original" (run 41391040980, kept on record). Done on `fix/got-republish-orig-ref`: the script now
   runs got_ocr2_orig_probe.py (the original stepfun-ai/GOT-OCR2_0 chat() pipeline, transformers
   4.37.2 venv) and compares generated IDs (`CRISPEMBED_GOT_OCR_DUMP_DIR`) and text against it.
+  Rerun 41588457181 (qualify, 256 tokens): F16-r2 is token-exact against the original on all
+  three cases (fox, receipt_example, simple_form); 19/19 stages cos 1.000000. Published Q4_K stays
+  non-exact (receipt divergence 83, ratio 0.8041; form divergence 20, ratio 0.9679). The old F16
+  file still gives `colorcolor...`. Receipt: `tests/results/got-ocr2-f16/qualify-41588457181-orig-ref/`.
 
 
 Source: `docs/gpu-support-matrix.md` §CUDA audit (branch `feat/cuda-audit`, Kaggle T4).
