@@ -511,7 +511,30 @@ def batch_g():
              "timeout": 2400} for fam, _r, b, _br, q, _qr, modes in REPAIRED for mode in modes]
 
 
-BATCHES = {"g": batch_g, "a": batch_a, "b": batch_b, "all": lambda: batch_a() + batch_b(), "rest": batch_rest, "c": batch_c, "d": batch_d, "e": batch_e, "f": batch_f}
+# Run 8 (fix/bge-m3-q8-mix-cuda): BGE-M3 Q8_0 mixes with more early encoder blocks in F16, because the
+# published enc.0-11 mix scored ColBERT 0.9667 on CUDA in run 7 (CPU arm 0.9718). Every candidate is
+# made on the worker from a fresh F32 `--crisp` conversion with the same quantizer overrides as the
+# hosted-CPU candidates (tests/results/below-bar/candidates.json "bgem3-cuda-margin"), and its SHA-256
+# is recorded so the bytes can be matched against the hosted-CPU arm. The base and the published mix
+# are the immutable Hub files that run 7 measured.
+M["bge-m3-heads-f32.gguf"] = {"url": None, "file": "bge-m3-heads-f32.gguf", "convert": "bert",
+                              "hf_model": "BAAI/bge-m3", "dtype": "f32", "extra": ["--crisp"], "sha256": True}
+BGEM3_MIX = []
+for _n in (12, 14, 16, 18, 20, 24):
+    _f = f"bge-m3-heads-q8_0-enc0-{_n - 1}-f16.gguf"
+    M[_f] = {"url": None, "file": _f, "convert": "quantize", "src": "bge-m3-heads-f32.gguf", "qtype": "q8_0",
+             "overrides": [f"enc.{i}.*=f16" for i in range(_n)], "sha256": True}
+    BGEM3_MIX.append(_f)
+
+
+def batch_h():
+    base, pub = "bge-m3-heads-f16.gguf", "bge-m3-heads-q8_0-mixed.gguf"
+    return [{"id": f"embed-bge-m3-heads-mix-{mode}", "kind": "embed", "mode": mode, "base": base,
+             "files": [base, pub, *BGEM3_MIX], "repeat": 2, "timeout": 2400}
+            for mode in ("embed", "sparse", "colbert")]
+
+
+BATCHES = {"h": batch_h, "g": batch_g, "a": batch_a, "b": batch_b, "all": lambda: batch_a() + batch_b(), "rest": batch_rest, "c": batch_c, "d": batch_d, "e": batch_e, "f": batch_f}
 
 
 def jobs_for(batch):
@@ -639,13 +662,20 @@ def fetch(key):
     elif spec.get("convert") == "quantize":
         src, err = fetch(spec["src"])
         if not err:
-            rc, out, e = sh_capture([str(QUANTIZE[0]), str(src), str(dest), spec["qtype"]], 3600)
+            ov = [x for o in spec.get("overrides", ()) for x in ("--tensor-type", o)]
+            rc, out, e = sh_capture([str(QUANTIZE[0]), str(src), str(dest), spec["qtype"], *ov], 3600)
             err = None if rc == 0 and dest.exists() else f"quantize rc={rc}: {(out + e)[-800:]}"
     else:
         rc, _, e = sh_capture(["curl", "-sfL", "--retry", "3", "-o", str(dest), spec["url"]], 3600)
         err = None if rc == 0 and dest.exists() and dest.stat().st_size > 0 else f"curl rc={rc} {e[-300:]}"
     REPORT.setdefault("downloads", {})[key] = {"seconds": round(time.time() - t0, 1), "error": err,
                                                "bytes": dest.stat().st_size if dest.exists() else 0}
+    if not err and spec.get("sha256"):  # converted/quantized here: record the bytes for cross-host comparison
+        h = hashlib.sha256()
+        with open(dest, "rb") as fh:
+            for blk in iter(lambda: fh.read(8 << 20), b""):
+                h.update(blk)
+        REPORT["downloads"][key]["sha256"] = h.hexdigest()
     if err:
         dest.unlink(missing_ok=True)
         return None, err

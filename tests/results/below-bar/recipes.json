@@ -58,5 +58,32 @@
    }
   ],
   "card_note": "## Revision 2026-11-02: GGUFs with the sparse and ColBERT heads\n\nThe earlier files in this repo (`bge-m3.gguf`, `-q8_0`, `-q4_k*`, `-iq4_xs`) were converted in the default (Ollama) layout, which drops BGE-M3's `sparse_linear` and `colbert_linear` heads, so they support dense retrieval only. They remain unchanged. The new files are converted with `--crisp` and keep both heads:\n\n- `bge-m3-heads-f16.gguf`: F16 encoder with the heads in F32.\n- `bge-m3-heads-q8_0-mixed.gguf`: Q8_0, with encoder blocks 0-11 in F16.\n\nUniform Q8_0 keeps dense and sparse output above the bar but flips a few ColBERT token vectors (per-token minimum cosine 0.61). That error comes from the weights; it does not depend on colbert_linear's precision. Keeping the first 12 blocks in F16 brings it back to 0.973. A Q4_K variant with heads did not clear the bar (ColBERT minimum 0.37-0.60) and is not published. The checks used FlagEmbedding `BGEM3FlagModel` (FP32) on a 77-text panel, comparing dense vectors, lexical weights and every ColBERT token. They need CrispEmbed with the matching tokenizer and sparse fixes (`CRISPEMBED_SPM_COLLAPSE_SPACES` and `CRISPEMBED_SPARSE_KEEP_SPECIAL`, both default-correct). Evidence: CrispEmbed `tests/results/below-bar/`."
+ },
+ "bgem3-cuda-margin": {
+  "files": [
+   {
+    "file": "bge-m3-heads-q8_0-enc0-15-f16.gguf",
+    "qtype": "q8_0",
+    "overrides": [
+     "enc.0.*=f16",
+     "enc.1.*=f16",
+     "enc.2.*=f16",
+     "enc.3.*=f16",
+     "enc.4.*=f16",
+     "enc.5.*=f16",
+     "enc.6.*=f16",
+     "enc.7.*=f16",
+     "enc.8.*=f16",
+     "enc.9.*=f16",
+     "enc.10.*=f16",
+     "enc.11.*=f16",
+     "enc.12.*=f16",
+     "enc.13.*=f16",
+     "enc.14.*=f16",
+     "enc.15.*=f16"
+    ]
+   }
+  ],
+  "card_note": "## Revision 2026-11-03: `bge-m3-heads-q8_0-enc0-15-f16.gguf` supersedes `bge-m3-heads-q8_0-mixed.gguf`\n\n`bge-m3-heads-q8_0-mixed.gguf` (Q8_0, encoder blocks 0-11 in F16) clears the Q8_0 bar on CPU (ColBERT minimum token cosine 0.9726 against FlagEmbedding) but not on CUDA: on a Tesla T4 its ColBERT minimum against the CPU F16 reference is 0.9667. It is kept unchanged and marked superseded. The new file keeps encoder blocks 0-15 in F16 (the rest Q8_0, heads F32): ColBERT minimum 0.9911 against FlagEmbedding BGEM3FlagModel (FP32, 77-text panel, portable CPU build) and 0.9922 on CUDA (T4); dense and sparse stay above 0.9995. 763 MiB, against 1599 MiB for `bge-m3-heads-f16.gguf`. Built with crispembed-quantize `q8_0 --tensor-type 'enc.N.*=f16'` for N = 0..15 from a fresh `--crisp` F32 conversion; the bytes reproduce identically on two different hosts. Evidence: CrispEmbed `tests/results/below-bar/`."
  }
 }
