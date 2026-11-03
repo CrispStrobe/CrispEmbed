@@ -46,7 +46,7 @@ def cpp_policies():
 def main():
     recipes = json.loads((ROOT / "tools/unlimited_ocr2_quant_recipes.json").read_text())
     cpp = cpp_policies()
-    assert set(cpp) == {"unlimited_ocr2_q4k_v1"}, cpp
+    assert set(cpp) == {"unlimited_ocr2_q4k_v1", "unlimited_ocr2_q4k_experts_v1"}, cpp
     for name, (base, rules) in cpp.items():
         entry = recipes[name]
         assert entry["env"] == {"CRISPEMBED_QUANTIZE_UNLIMITED_OCR2_POLICY": name}, entry

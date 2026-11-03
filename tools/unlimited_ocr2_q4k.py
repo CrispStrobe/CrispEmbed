@@ -12,6 +12,9 @@ Subcommands (all used by tools/ci-heavy/unlimited_ocr2_q4k_sweep.sh):
                                   per-position cosine of teacher-forced logits (V = 129280)
   free <stderr-log> <case> <out.json>   free-running gen_ids vs the original IDs
   summary <out-dir>               markdown table over every recipe receipt in <out-dir>
+  receipt <out.json> <dtype> <label> <arm>=<device>:<dir> ...
+                                  publication precision receipt (ocr_gguf_publish schema) for one
+                                  recipe label from committed sweep directories
 """
 import glob
 import hashlib
@@ -227,8 +230,43 @@ def cmd_summary(outdir):
     return 0
 
 
+def cmd_receipt(out, dtype, label, *arms):
+    rec = dict(schema='crispembed.unlimited-ocr2.q4k-precision.v1', model='unlimited-ocr2', dtype=dtype,
+               recipe=label, bar=0.94,
+               metric='minimum final-logit cosine over every forced position (plus the EOS position), '
+                      'teacher-forced on the original-Python IDs of the four frozen cases '
+                      '(docs/unlimited-ocr2-q4k-recipes.md)',
+               reference='native F16 on the CPU (portable build), free-running ID-exact against the original '
+                         'on all four cases', arms=[])
+    for arm in arms:
+        name, _, rest = arm.partition('=')
+        device, _, d = rest.partition(':')
+        d = Path(d)
+        census = json.loads((d / f'{label}.census.json').read_text())
+        cases = []
+        for c in CASES:
+            cos = json.loads((d / f'{label}.{c}.cosine.json').read_text())
+            free = json.loads((d / f'{label}.{c}.free.json').read_text())
+            a, b = (d / f'f16.{c}.free.txt').read_text(), (d / f'{label}.{c}.free.txt').read_text()
+            cases.append(dict(id=c, ids_exact=free['ids_exact'], first_divergence=free['first_difference'],
+                              final_cos_min=cos['final_cos_min'], final_cos_mean=cos['final_cos_mean'],
+                              positions=cos['positions'], worst_position=cos['worst_position'],
+                              top1_agreement=cos['top1_agreement'],
+                              text_equal_f16_boxes_stripped=BOX.sub('[]', a) == BOX.sub('[]', b)))
+        mode = (d / 'build-mode.txt').read_text().split('\n')
+        rec['arms'].append(dict(name=name, dtype=dtype, device=device, directory=str(d.relative_to(ROOT)),
+                                file_mib=census['file_mib'], type_counts=census['type_counts'],
+                                protected_ok=census['protected_ok'], build_mode=[m for m in mode if m],
+                                final_output_complete=all(c['positions'] > 0 for c in cases), cases=cases,
+                                worst_final_cos=min(c['final_cos_min'] for c in cases)))
+    rec['worst_final_cos'] = min(a['worst_final_cos'] for a in rec['arms'])
+    Path(out).write_text(json.dumps(rec, indent=1) + '\n')
+    print(out, rec['worst_final_cos'])
+    return 0
+
+
 if __name__ == '__main__':
     c, a = sys.argv[1], sys.argv[2:]
     fn = {'render': cmd_render, 'cases': cmd_cases, 'args': cmd_args, 'census': cmd_census, 'cosine': cmd_cosine, 'free': cmd_free,
-          'summary': cmd_summary}[c]
+          'summary': cmd_summary, 'receipt': cmd_receipt}[c]
     sys.exit(fn(*a))

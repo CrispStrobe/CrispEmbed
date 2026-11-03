@@ -1,0 +1,13 @@
+<PAGE><BLOCK>title<LEVEL1>[53, 44, 392, 72]<FORK>CORNER BAKERY
+<BLOCK>text[50, 109, 799, 139]<FORK>Hauptstrasse 12, 10115 Berlin
+<BLOCK>text[51, 173, 517, 202]<FORK>Receipt No. 004817
+<BLOCK>text[51, 238, 467, 265]<FORK>2026-10-28 08:42
+<BLOCK>text[51, 302, 672, 330]<FORK>2x Croissant 3.80
+<BLOCK>text[53, 366, 672, 395]<FORK>1x Rye Bread 4.20
+<BLOCK>text[53, 431, 672, 460]<FORK>1x Cappuccino 3.10
+<BLOCK>text[53, 496, 672, 525]<FORK>1x Orange Juice 2.90
+<BLOCK>text[51, 560, 672, 588]<FORK>Subtotal 14.00
+<BLOCK>text[51, 625, 672, 653]<FORK>VAT 7% 0.98
+<BLOCK>text[51, 690, 672, 718]<FORK>TOTAL 14.98
+<BLOCK>text[51, 754, 365, 784]<FORK>Paid by card
+<BLOCK>text[51, 818, 306, 848]<FORK>Thank you!
