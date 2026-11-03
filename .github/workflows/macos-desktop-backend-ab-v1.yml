@@ -1,6 +1,9 @@
 name: macOS desktop drift attribution v1 (audit only)
 on:
   workflow_dispatch:
+  push:
+    branches: [audit/macos-desktop-drift-v1]
+    paths: [.github/workflows/macos-desktop-backend-ab-v1.yml, tools/ci-heavy/macos_desktop_backend_ab_v1.py]
 permissions:
   contents: read
   actions: read
