@@ -163,6 +163,24 @@
             "8d843fdfef038a40e60afde4dd8adb1a997ef5b2 qwen2vl: Q4_K recipe sweep harness; quantizer accepts 4/5-bit tensor overrides"
           ],
           "reason": "feat/qwen2vl-q4k-recipes: --tensor-type also accepts q4_k/q5_0/q4_0/iq4_nl, and opt-in named policies (CRISPEMBED_QUANTIZE_QWEN2VL_POLICY=teleocr_q4k_v1|mineru_q4k_v1) guarded to the TeleOCR/MinerU qwen2vl_ocr families. Without the env var and without explicit rules every existing qwen35_ocr quantization decision and its default policy are unchanged."
+        },
+        {
+          "from_sha256": "c348d502f476a1c6edf2befe758ae6bd5d4ad28257b1928561db1c8e815c952f",
+          "to_sha256": "6c1c3fa8702e213aace4f44a0f56c5118199666bc15733b02610f974b5003685",
+          "to_blob": "07e89fa91ed60c1bb7c07a97bf8154bc8ce72c6b",
+          "recorded_at_commit": "71e97f0ec13405075c87124e5f15d6e29cc82ba8",
+          "recorded": "2026-11-03",
+          "changed_by": [
+            "f5484251abe0dab1543053bf7a7335c7ff1c760d MiniCPM-OCR: named Q4_K policies minicpm_q4k_v1/minicpm_q4k_min_v1, cosine-gated Q4_K_MIX publication recipe",
+            "b0988c58dcb7f7bb93ebb33c7c99195f38669110 Merge PR #112 (feat/qwen2vl-q4k-recipes) into fold",
+            "304871c9e5f4c01127a19946651e1f05b31547a3 quantize: make standard GGUF file-type labels opt-in; keep legacy default",
+            "2f50aa61800b890b165e7573775f789b5a0fe9cb Merge origin/main into work/portfolio-closure-q4k-20261028",
+            "e5a02d1e079c523ecbae85e1c077b3a8ba16c229 Merge origin/main into work/portfolio-closure-q4k-20261028",
+            "7d886594d2f487cdaa9420712a8df39eda89e744 Prepare gated Q8 profile admission and quantizer string profile stamps",
+            "0023fe16632805c5da5de2e40e5df29114ebe20e Correct standard GGUF headers and prepare authenticated metadata bridge",
+            "715c5860169d3949677b183ccf5feff9a7ab1990 quantize: honor literal F16 4D patch casts and preserve actual MiniCPM rejection"
+          ],
+          "reason": "perf/q4k-minicpm-ocr-20261103: opt-in named policies (CRISPEMBED_QUANTIZE_MINICPM_POLICY=minicpm_q4k_v1|minicpm_q4k_min_v1) guarded to minicpm_ocr sources and the q8_0 base type. Without the env var every existing quantization decision is unchanged."
         }
       ]
     }
