@@ -13,6 +13,53 @@ sha256 `3379a216…` (run 41596007262, empty-cache readback re-scored 0.99109). 
 runner and on the Kaggle Xeon, and the rebuilt 0-11 is byte-identical to the published file. The
 cuda-audit kernel now builds its CPU arm portable. Evidence: `tests/results/below-bar/bgem3-cuda-margin*/`,
 `tests/results/gpu-audit/cuda-kaggle/run8-66a5eba0/`.
+## 3 November 2026 — GOT-OCR2 F16 republish script re-pointed at the original pipeline
+
+`tools/ci-heavy/got_ocr2_f16_republish.sh` compared native decodes with the HF port
+(stepfun-ai/GOT-OCR-2.0-hf). The port is not a faithful reference: its processor adds a
+leading-space " OCR" token and drops the system indentation and the no-repeat-ngram rule. That is
+why qualification run 41391040980 was rejected on page similarity; the receipt is kept. The script
+now runs `got_ocr2_orig_probe.py` (stepfun-ai/GOT-OCR2_0 remote code at `979938bf`, transformers
+4.37.2, CPU F32, ngram 20) and compares generated IDs from `CRISPEMBED_GOT_OCR_DUMP_DIR`.
+Rerun 41588457181 (portable build, 256 new tokens):
+
+| case | F16-r2 vs original | published Q4_K vs original | old F16 |
+|---|---|---|---|
+| fox | IDs exact | IDs exact | `colorcolor...` |
+| receipt_example | IDs exact | first divergence 83, char ratio 0.8041 | `colorcolor...` |
+| simple_form | IDs exact | first divergence 20, char ratio 0.9679 | `colorcolor...` |
+
+Stage diff F16-r2: 19/19 stages at cos 1.000000. The page-similarity diagnostic (r2 >= Q4_K on all
+cases) now passes too. Receipt: `tests/results/got-ocr2-f16/qualify-41588457181-orig-ref/`.
+## 3 November 2026 — Portable build mode for hosted qualification receipts
+
+`heavy-cpu.yml` `build_mode` (default `portable`) exports `CRISPEMBED_BUILD_MODE`. At the first configure,
+CMakeLists.txt maps `portable` to `GGML_NATIVE=OFF`/`CRISPEMBED_NATIVE=OFF`, and every run writes
+`build-mode.txt`. MinerU2.5 r2/r4 Q4_K, run three times portable at `33ecd1d6` (runs 41587614152, 41587618648,
+41587621427, all on AMD EPYC 9V45): r2 0.952109 (japanese), r4 0.970185 (table), with byte-identical cosine
+reports. Native builds of the same bytes had scored 0.9673/0.9732 on an EPYC 9V45 and 0.9521/0.9702 on another
+runner, so the spread came from the AVX-512 kernels of `-march=native`. Receipts:
+`tests/results/portable-build/`. Policy: docs/precision-acceptance.md §Build mode.
+## 3 November 2026 — OCR WASM back under 4 MiB: large VLM/document engines left out of the Emscripten build
+
+Build WASM had failed on main since `922d06bd`: `crispembed_ocr.wasm` was 4,203,804 bytes against the
+unchanged 4 MiB (4,194,304) check (run 41541105221; 4,191,714 at `59ecb0b9`, 4,195,797 at `0847bdd0`).
+The unified OCR dispatcher and the orchestrator reference every engine, so the static link pulled in all of
+them. The Emscripten build now removes the large VLM/document engines from `crispembed` (CMake
+`CRISPEMBED_WASM_EXCLUDED_SOURCES`): TeleOCR/Qwen2-VL, MinerU, OXR, Marker, Qwen3.5-OCR/Ovis, MiniCPM-OCR,
+Unlimited-OCR(-2), GOT-OCR2, GLM-OCR, InternVL2, Granite-Vision, LightOnOCR, DeepSeek-OCR2, SmolDocling,
+LFM2-VL and Pix2Struct. `src/wasm_excluded_engines.cpp` supplies their entry points; each `*_init` (and
+`crispembed_mineru_init`) prints "not available in the WASM build" and returns NULL. Native builds are
+unchanged. No optimisation or float flags changed (still Release `-O3`, wasm-opt, no LTO; `-fno-exceptions`
+is not possible with the code's 369 try/throw sites).
+
+Measured on PR #119 (run 41590661760): **2,888,766 bytes** (-1,315,038, -31.3%; 1,305,538 bytes under the
+limit; code 2,602,968, data 281,418), JS 67,196 bytes. Node smoke 54/54, wrapper 170/170 and browser e2e
+(headless Chromium, pix2tex-mfr Q4_K) 13/13 pass. The Deploy WASM demo variants all build: threads 2,972,596,
+proxy-to-pthread 2,973,004, WebGPU 4,803,802 and WebGPU compat 6,332,726 bytes (those have no size check).
+Text-embedding WASM still builds at 1.5 MB (run 41587317791). Build WASM now prints a size report
+(`tools/wasm_size_report.py` over the emcc symbol map). Largest remaining code: `ggml_graph_compute_thread`
+301 KB, `ocr_orchestrator::run_file` 131 KB, layout detection 138 KB, stb_image 104 KB.
 
 ## 2 November 2026 — Unlimited-OCR-2 F32 vision / tile batch gates (default off)
 

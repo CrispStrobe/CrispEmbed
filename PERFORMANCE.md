@@ -1,3 +1,17 @@
+## OCR WASM size (3 November 2026, Build WASM, emsdk 6.0.2, Release -O3)
+
+| Build | `crispembed_ocr.wasm` bytes | vs 4 MiB check |
+|---|---:|---|
+| main `922d06bd` (all engines) | 4,203,804 | fails (+9,500) |
+| PR #119, large VLM/document engines excluded | 2,888,766 | passes (-1,305,538) |
+| PR #119 threads / proxy-to-pthread | 2,972,596 / 2,973,004 | no check |
+| PR #119 WebGPU / WebGPU compat | 4,803,802 / 6,332,726 | no check |
+
+Before the trim, the excluded engines' named code was about 0.7 MB (qwen2vl 105 KB, Unlimited-OCR 61 KB,
+Qwen3.5-OCR 79 KB, Granite-Vision 56 KB, MiniCPM 46 KB, GLM 38 KB, GOT 36 KB, OXR 35 KB, ...); the rest of the
+1.3 MB saving is orchestrator/dispatcher code that inlined them and their string data (data section
+479,841 -> 281,418). Numerics are unchanged: same flags, browser e2e passes.
+
 ## Unlimited-OCR-2 vision speed gates (2 November 2026, Kaggle 4 vCPU)
 
 **Vision speed gates (2026-11-02, default off).** `CRISPEMBED_UNLIMITED_OCR2_VISION_F32` (F32 SAM/CLIP block

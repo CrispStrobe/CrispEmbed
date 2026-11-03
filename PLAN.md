@@ -8,8 +8,8 @@ are merged. Open, scoped:
 - [x] 131 `presence` env reads → `core_env::on` / `core_env::value`; Lint guard
       added (`tests/test_env_vars_documented.py`). Defaults unchanged.
 - [x] MiniCPM-OCR CLI default = server default (`minicpm-ocr` alias, gates required).
-- [ ] CrispSorter: merge [PR #19](https://github.com/CrispStrobe/CrispSorter/pull/19)
-      (experimental `unlimited_ocr2`→13, `minicpm_ocr`→23 selectors) once its CI is green.
+- [x] CrispSorter: [PR #19](https://github.com/CrispStrobe/CrispSorter/pull/19) merged (`2d45977a`)
+      after all of its CI jobs passed (experimental `unlimited_ocr2`→13, `minicpm_ocr`→23 selectors).
       CrispCalc: no engine-id selector; catalog entries only after the app pin moves past
       0.17.12 (exact TODO in the wiring audit).
 - [ ] Optional, cross-repo: make `core_env::on`/`explicitly_off` treat `false`/`off`/`no`
@@ -42,8 +42,14 @@ differs from the old file only inside that span. Stage diff is cos 1.000000 on a
   a faithful reference (it also drops the indentation and the ngram rule).
   Open: Q4_K stays non-exact on receipt_example (ratio 0.7005, first divergence 83) and
   simple_form (0.8865, divergence 20) — quantization drift, now measurable against the exact
-  F16 pipeline; the earlier HF-port-based page comparisons (got_ocr2_f16_republish.sh) used the
-  HF port as "original" and should be re-pointed at got_ocr2_orig_probe.py if rerun.
+  F16 pipeline. The earlier page comparisons in got_ocr2_f16_republish.sh used the HF port as the
+  "original" (run 41391040980, kept on record). Done on `fix/got-republish-orig-ref`: the script now
+  runs got_ocr2_orig_probe.py (the original stepfun-ai/GOT-OCR2_0 chat() pipeline, transformers
+  4.37.2 venv) and compares generated IDs (`CRISPEMBED_GOT_OCR_DUMP_DIR`) and text against it.
+  Rerun 41588457181 (qualify, 256 tokens): F16-r2 is token-exact against the original on all
+  three cases (fox, receipt_example, simple_form); 19/19 stages cos 1.000000. Published Q4_K stays
+  non-exact (receipt divergence 83, ratio 0.8041; form divergence 20, ratio 0.9679). The old F16
+  file still gives `colorcolor...`. Receipt: `tests/results/got-ocr2-f16/qualify-41588457181-orig-ref/`.
 
 
 Source: `docs/gpu-support-matrix.md` §CUDA audit (branch `feat/cuda-audit`, Kaggle T4).
@@ -105,8 +111,10 @@ CUDA; `Q4_K_MIX` publication recipes are prepared, not published.
   the runner ISA on identical bytes. Fixed on `fix/portable-qual-build`: heavy-cpu.yml
   `build_mode` (default `portable`) exports `CRISPEMBED_BUILD_MODE`, CMakeLists.txt maps
   `portable` to `GGML_NATIVE=OFF`/`CRISPEMBED_NATIVE=OFF`, and every run writes
-  `build-mode.txt`. Receipts state the mode (docs/precision-acceptance.md). Open: re-measure the
-  MinerU/TeleOCR Q4_K winners in portable mode before their `Q4_K_MIX` publication.
+  `build-mode.txt`. Receipts state the mode (docs/precision-acceptance.md). MinerU r2/r4 re-measured portable
+  three times: 0.952109 / 0.970185, byte-identical cosine reports
+  ([receipt](tests/results/portable-build/SUMMARY.md)). Open: TeleOCR winner in portable mode
+  before its `Q4_K_MIX` publication; an Intel-runner portable run (all three landed on EPYC 9V45).
 
 ## Metal GPU audit follow-ups — 1 November 2026
 
