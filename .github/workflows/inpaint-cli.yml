@@ -1,56 +1,12 @@
 name: Inpainting CLI and image contracts
 
+# Use the same complete diff on PRs and main pushes. Ordinary feature pushes
+# are validated by their PR, avoiding a second copy of each platform matrix.
 on:
   pull_request:
-    paths:
-      - 'src/inpaint.*'
-      - 'tools/ci-heavy/inpaint_gguf_publish.py'
-      - 'tests/test_inpaint_gguf_publish.py'
-      - 'docs/inpaint-publication-v1.json'
-      - 'src/migan.*'
-      - 'src/latent_inpaint*'
-      - 'src/ocr_detect.*'
-      - 'src/core/sha256.h'
-      - 'src/core/image_out.*'
-      - 'examples/cli/inpaint_cli.*'
-      - 'examples/cli/main.cpp'
-      - 'tests/*inpaint*'
-      - 'tests/*migan512*'
-      - 'tools/prepare_migan_inpaint.py'
-      - 'tools/migan_reference_contract.py'
-      - 'tools/migan512_reference_contract.py'
-      - 'tools/dump_migan_photo_reference.py'
-      - 'tools/latent_inpaint_contract.py'
-      - 'tools/dump_latent_inpaint_reference.py'
-      - 'models/convert-latent-inpaint-to-gguf.py'
-      - 'models/convert-migan-to-gguf.py'
-      - 'docs/*inpaint*contract*'
-      - 'docs/migan512-reference-contract.json'
-      - 'CMakeLists.txt'
-      - 'ggml'
-      - '.github/workflows/inpaint-cli.yml'
+    branches: [main]
   push:
-    paths:
-      - 'src/inpaint.*'
-      - 'tools/ci-heavy/inpaint_gguf_publish.py'
-      - 'tests/test_inpaint_gguf_publish.py'
-      - 'docs/inpaint-publication-v1.json'
-      - 'src/migan.*'
-      - 'src/latent_inpaint*'
-      - 'src/ocr_detect.*'
-      - 'src/core/sha256.h'
-      - 'examples/cli/inpaint_cli.*'
-      - 'tests/*inpaint*'
-      - 'tests/*migan512*'
-      - 'tools/prepare_migan_inpaint.py'
-      - 'tools/*inpaint*'
-      - 'tools/dump_latent_inpaint_reference.py'
-      - 'tools/migan512_reference_contract.py'
-      - 'tools/dump_migan_photo_reference.py'
-      - 'models/convert-latent-inpaint-to-gguf.py'
-      - 'models/convert-migan-to-gguf.py'
-      - 'CMakeLists.txt'
-      - '.github/workflows/inpaint-cli.yml'
+    branches: [main]
   workflow_dispatch:
     inputs:
       model_smoke:
@@ -68,7 +24,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Select necessary CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      native: ${{ steps.select.outputs.native }}
+      native_tests: ${{ steps.select.outputs.native_tests }}
+      mobile: ${{ steps.select.outputs.mobile }}
+      sibling: ${{ steps.select.outputs.sibling }}
+      wasm_ocr: ${{ steps.select.outputs.wasm_ocr }}
+      wasm_embed: ${{ steps.select.outputs.wasm_embed }}
+      rust: ${{ steps.select.outputs.rust }}
+      inpaint_python: ${{ steps.select.outputs.inpaint_python }}
+      inpaint_native: ${{ steps.select.outputs.inpaint_native }}
+      bundle: ${{ steps.select.outputs.bundle }}
+      full: ${{ steps.select.outputs.full }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Selection and aggregate-gate controls
+        run: python3 tests/test_ci_selection.py -v
+      - id: select
+        uses: ./.github/actions/ci-select
+
   contracts:
+    needs: changes
+    if: needs.changes.outputs.inpaint_python == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -83,8 +64,6 @@ jobs:
       OPENBLAS_NUM_THREADS: '2'
     steps:
       - uses: actions/checkout@v4
-        with:
-          submodules: recursive
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -99,19 +78,56 @@ jobs:
           python tests/test_latent_inpaint_contract.py -v
           python tests/test_latent_inpaint_original_import.py -v
           python tests/test_inpaint_gguf_publish.py -v
+          python tests/test_inpaint_video_quality.py -v
+      - name: Fetch native dependencies only for native changes
+        if: needs.changes.outputs.inpaint_native == 'true'
+        run: git submodule update --init --recursive
+      - uses: ./.github/actions/compiler-cache
+        if: needs.changes.outputs.inpaint_native == 'true'
+        with:
+          namespace: inpaint-release-portable-cpu
       - name: Configure portable CPU build
+        if: needs.changes.outputs.inpaint_native == 'true'
         run: >-
           cmake -S . -B build-inpaint -DCMAKE_BUILD_TYPE=Release
           -DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF -DBUILD_SHARED_LIBS=OFF
           -DGGML_BLAS=OFF -DGGML_METAL=OFF -DGGML_CUDA=OFF -DGGML_VULKAN=OFF
           -DGGML_OPENMP=OFF -DGGML_LLAMAFILE=OFF -DCRISPEMBED_BUILD_SHARED=OFF
-      - name: Build CLI, image contracts and isolated test driver
+      - name: Build the small temporal and CLI driver targets first
+        if: needs.changes.outputs.inpaint_native == 'true'
         run: >-
           cmake --build build-inpaint --config Release --parallel 2
-          --target crispembed-cli test-inpaint test-inpaint-temporal test-inpaint-cli-driver test-migan-diff test-migan512-diff
+          --target test-inpaint-temporal test-inpaint-cli-driver
+      - name: Fast temporal, stream and synthetic video controls
+        if: needs.changes.outputs.inpaint_native == 'true'
+        run: |
+          bin=build-inpaint
+          suffix=
+          if [ -f build-inpaint/Release/test-inpaint-temporal.exe ]; then
+            bin=build-inpaint/Release
+            suffix=.exe
+          fi
+          "$bin/test-inpaint-temporal$suffix"
+          python tests/test_inpaint_cli.py --binary "$bin/test-inpaint-cli-driver$suffix" -v
+          python tests/inpaint_video_quality.py --binary "$bin/test-inpaint-cli-driver$suffix" \
+            --fake-engine --output-dir "$RUNNER_TEMP/inpaint-video-synthetic"
+      - name: Retain synthetic video regression reports
+        if: always() && needs.changes.outputs.inpaint_native == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: inpaint-video-synthetic-${{ matrix.os }}-${{ github.run_id }}
+          path: ${{ runner.temp }}/inpaint-video-synthetic/
+          if-no-files-found: warn
+          retention-days: 30
+      - name: Build production CLI and remaining image contracts
+        if: needs.changes.outputs.inpaint_native == 'true'
+        run: >-
+          cmake --build build-inpaint --config Release --parallel 2
+          --target crispembed-cli test-inpaint test-migan-diff test-migan512-diff
           test-latent-inpaint-attention test-latent-inpaint-pipeline test-latent-inpaint
           test-latent-inpaint-ops
-      - name: Native and actual CLI model-free controls
+      - name: Native contracts and production CLI routing
+        if: needs.changes.outputs.inpaint_native == 'true'
         run: |
           bin=build-inpaint
           suffix=
@@ -120,7 +136,6 @@ jobs:
             suffix=.exe
           fi
           "$bin/test-inpaint$suffix"
-          "$bin/test-inpaint-temporal$suffix"
           "$bin/test-migan-diff$suffix" --contracts
           "$bin/test-migan-diff$suffix" --gate-controls
           "$bin/test-migan-diff$suffix" --observer-retention
@@ -132,7 +147,7 @@ jobs:
           "$bin/test-latent-inpaint-ops$suffix"
           "$bin/test-latent-inpaint$suffix" --contracts
           python tests/test_inpaint_cli.py --binary "$bin/test-inpaint-cli-driver$suffix" \
-            --real-binary "$bin/crispembed$suffix" -v
+            --real-binary "$bin/crispembed$suffix" -k test_real_binary -v
       - name: Reproduce the reviewed model without framework dependencies
         if: github.event_name == 'workflow_dispatch' && inputs.model_smoke && matrix.os == 'ubuntu-24.04'
         run: python tools/prepare_migan_inpaint.py --download --output-dir "$RUNNER_TEMP/migan-inpaint-model"
@@ -153,3 +168,18 @@ jobs:
             ${{ runner.temp }}/migan-inpaint-model/licenses/
           if-no-files-found: warn
           retention-days: 30
+
+  result:
+    name: Inpainting result
+    if: always()
+    needs: [changes, contracts]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require selected jobs and reject unexpected skips
+        env:
+          CI_NEEDS: ${{ toJSON(needs) }}
+        run: >-
+          python3 tools/ci_selection.py check --selector changes
+          contracts=inpaint_python

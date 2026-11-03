@@ -1,35 +1,50 @@
 name: Build WASM
 
+# Push and PR use the same dependency map. Jobs are filtered, not the workflow,
+# so a required result check also completes for documentation-only changes.
 on:
   push:
     branches: [main]
-    paths:
-      - 'src/**'
-      - 'ggml/**'
-      - 'wasm/**'
-      - 'examples/wasm-ocr/**'
-      - 'tests/wasm-browser/**'
-      - 'tests/test_wasm_ocr_live.js'
-      - 'tests/test_wasm_ocr_wrapper.js'
-      - 'CMakeLists.txt'
-      - 'build-wasm.sh'
-      - 'cmake/FindThreads.cmake'
-      - '.github/workflows/build-wasm.yml'
   pull_request:
     branches: [main]
-    paths-ignore:
-      - '*.md'
-      - '**.md'
-      - 'docs/**'
-      - 'tests/results/**'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+# A docs-only main push selects no build and must not cancel the previous
+# code-bearing push. PR diffs are cumulative, so superseded PR runs can cancel.
 concurrency:
-  group: build-wasm-${{ github.ref }}
+  group: build-wasm-${{ (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main') && github.run_id || github.ref }}
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Select necessary CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      native: ${{ steps.select.outputs.native }}
+      native_tests: ${{ steps.select.outputs.native_tests }}
+      mobile: ${{ steps.select.outputs.mobile }}
+      sibling: ${{ steps.select.outputs.sibling }}
+      wasm_ocr: ${{ steps.select.outputs.wasm_ocr }}
+      wasm_embed: ${{ steps.select.outputs.wasm_embed }}
+      rust: ${{ steps.select.outputs.rust }}
+      inpaint_python: ${{ steps.select.outputs.inpaint_python }}
+      inpaint_native: ${{ steps.select.outputs.inpaint_native }}
+      bundle: ${{ steps.select.outputs.bundle }}
+      full: ${{ steps.select.outputs.full }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Selection and aggregate-gate controls
+        run: python3 tests/test_ci_selection.py -v
+      - id: select
+        uses: ./.github/actions/ci-select
+
   build-wasm:
+    needs: changes
+    if: needs.changes.outputs.wasm_ocr == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -82,3 +97,18 @@ jobs:
             build-wasm/crispembed_ocr.wasm
             wasm/crispembed-ocr.js
           retention-days: 30
+
+  result:
+    name: OCR WASM result
+    if: always()
+    needs: [changes, build-wasm]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require selected jobs and reject unexpected skips
+        env:
+          CI_NEEDS: ${{ toJSON(needs) }}
+        run: >-
+          python3 tools/ci_selection.py check --selector changes
+          build-wasm=wasm_ocr

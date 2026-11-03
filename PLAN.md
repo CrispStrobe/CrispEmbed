@@ -1,3 +1,27 @@
+## PR 118 stream hardening and selective CI — 3 November 2026
+
+Bounded maintainer continuation of [PR118](https://github.com/CrispStrobe/CrispEmbed/pull/118),
+audited at `60f0b6cf4657cb118049b98770e63736719049a8`; branch `fix/inpaint-stream-audit`.
+Preserve the contributor's commits and the default-off stream/engine gates. No runtime
+release, model publication or application-pin change follows from this work.
+
+- [x] Repair the failing test-main guard, cumulative reuse drift, moving-texture alias,
+      mask-inclusive payload accounting and completed-output retention on EOF errors.
+- [x] Extend model-free temporal/CLI test source, including mask thresholds, ordering, short
+      clips, boundaries, lifecycle, failures, chromatic texture and pixel preservation.
+- [x] Add an owned, deterministic five-case video panel with paired independent/temporal
+      metrics, hashes and retained failures. Fake-engine results validate the harness,
+      not model quality.
+- [ ] Run the bounded reviewed MI-GAN256 CPU/F32 panel on hosted CI and retain its report.
+- [x] Route ordinary CI by reviewed dependencies, retain broad coverage for shared build
+      changes/unknown inputs, test routing and aggregate failure handling, and persist
+      compiler caches without bypassing configuration/linking/tests or crate verification.
+- [ ] Review final-source hosted platform, inpainting, quality, style, security and
+      packaging results before integration. Record exact runs and remaining limitations.
+
+Initial audit evidence and acceptance scope: [stream audit](docs/inpaint-stream-audit.md).
+The original failing guard and source-derived counterexamples remain part of the record.
+
 ## Wiring and environment-variable audit — 2 November 2026
 
 Reference: [docs/wiring-audit-20261102.md](docs/wiring-audit-20261102.md) and

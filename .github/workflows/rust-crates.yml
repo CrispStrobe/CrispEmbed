@@ -13,18 +13,12 @@ name: Rust crates
 on:
   push:
     branches: [main]
-    paths:
-      - 'crispembed-sys/**'
-      - 'crispembed/**'
-      - 'scripts/vendor_rust_sources.sh'
-      - 'CMakeLists.txt'
-      - '.github/workflows/rust-crates.yml'
   pull_request:
-    paths:
-      - 'crispembed-sys/**'
-      - 'crispembed/**'
-      - 'scripts/vendor_rust_sources.sh'
-      - 'CMakeLists.txt'
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 # Superseded pushes/PR updates on a branch cancel its older runs. Main pushes and
 # manual dispatches get one group per run, so they are never cancelled or dropped.
@@ -33,7 +27,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Select necessary CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      native: ${{ steps.select.outputs.native }}
+      native_tests: ${{ steps.select.outputs.native_tests }}
+      mobile: ${{ steps.select.outputs.mobile }}
+      sibling: ${{ steps.select.outputs.sibling }}
+      wasm_ocr: ${{ steps.select.outputs.wasm_ocr }}
+      wasm_embed: ${{ steps.select.outputs.wasm_embed }}
+      rust: ${{ steps.select.outputs.rust }}
+      inpaint_python: ${{ steps.select.outputs.inpaint_python }}
+      inpaint_native: ${{ steps.select.outputs.inpaint_native }}
+      bundle: ${{ steps.select.outputs.bundle }}
+      full: ${{ steps.select.outputs.full }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Selection and aggregate-gate controls
+        run: python3 tests/test_ci_selection.py -v
+      - id: select
+        uses: ./.github/actions/ci-select
+
   arm-types:
+    needs: changes
+    if: needs.changes.outputs.rust == 'true'
     name: ARM64 wrapper C ABI types
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 10
@@ -53,8 +72,12 @@ jobs:
           CRISPEMBED_SYS_LIB_DIR="$RUNNER_TEMP/typecheck-lib" cargo check --workspace
 
   package:
+    needs: changes
+    if: needs.changes.outputs.rust == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 90   # compiles ggml + crispembed from the vendored sources
+    env:
+      CMAKE_BUILD_PARALLEL_LEVEL: '4'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -63,6 +86,14 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: 1.95.0
+
+      # Cache compiler objects, not target/ or a previously verified package.
+      # Both fresh source configurations and the standalone link still happen.
+      - uses: ./.github/actions/compiler-cache
+        with:
+          namespace: rust-source-release-cpu
+          rust: 'true'
+          native_cpu: 'true'
 
       # Nothing in CI compiled the Rust wrapper before this job, which is how
       # `main` came to have a crispembed/src/lib.rs that did not build at all
@@ -113,3 +144,18 @@ jobs:
       - name: Verify the packaged crate builds standalone
         working-directory: crispembed-sys
         run: cargo package --allow-dirty
+
+  result:
+    name: Rust crates result
+    if: always()
+    needs: [changes, arm-types, package]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require selected jobs and reject unexpected skips
+        env:
+          CI_NEEDS: ${{ toJSON(needs) }}
+        run: >-
+          python3 tools/ci_selection.py check --selector changes
+          arm-types=rust package=rust
