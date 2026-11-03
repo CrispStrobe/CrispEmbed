@@ -546,12 +546,18 @@ Transformers' 439 s and the old path's 3264 s; see PERFORMANCE. **Default flip a
 (2026-11-02)** after the real-scan A/B: 20/20 pages with IDs identical to the old default, 6.2x
 faster, peak RSS 8.4 GB (was 5.1 GB; original 8.5 GB). Each gate `=0` opts out; where RAM is
 tight use `CRISPEMBED_QWEN35_GRAPH_MATMUL=native` (5/5 exact, 603 s) or `CRISPEMBED_MINICPM_OCR_VISION_F32=0`.
+Since 2026-11-03 init does this automatically when available RAM is short (`CRISPEMBED_MINICPM_OCR_LOW_MEMORY`:
+`=1` forces, `=0` disables; F16 vision + `exact` decoder matmul, no F32 copies).
 
 ## Unlimited-OCR-2 vision speed (2 November 2026)
 
 `CRISPEMBED_UNLIMITED_OCR2_VISION_F32` is 4/4 trial-exact and 1.43-1.44x faster; real scans 13/20 exact vs original
-(default 12/20), 17/19 identical to the default, one page (`de-2col-meyers-b13-103`) new inexact ids. Decide whether to
-flip it on (explicitly_off) given that page; TILE_BATCH stays off (~2%). Remaining time is prefill (38 s) and decode
+(default 12/20), 17/19 identical to the default, one page (`de-2col-meyers-b13-103`) new inexact ids.
+- [x] Flipped on 2026-11-03 (`explicitly_off`; `=0` restores F16); F16-path kernels pin `=0`. TILE_BATCH stays off (~2%).
+- [x] Low-memory fallback (`src/core/low_memory.h`, `CRISPEMBED_UNLIMITED_OCR2_LOW_MEMORY`,
+      `CRISPEMBED_MINICPM_OCR_LOW_MEMORY`): skip the F32 copies when available RAM < copies + 1 GiB.
+- [ ] Hosted confirmation: one real-scan run at the flipped default (expect `native-uocr2-vf32.json` ids), and one
+      MiniCPM + Unlimited-OCR-2 run with `..._LOW_MEMORY=1` confirming ids identical to the respective non-copy arms. Remaining time is prefill (38 s) and decode
 (~66 s) on the table page; the global 1024 SAM view is the next vision target.
 
 ## Required Q8_0 and Q4_K coverage for new permissive models (29 October)

@@ -25,6 +25,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <map>
 #include <string>
@@ -33,6 +34,33 @@ namespace qwen35_ocr {
 namespace {
 
 enum class matmul_mode { exact, native, f32 };
+
+// Matrices the "f32" mode copies once at init (non-F32 only).
+std::vector<ggml_tensor *> f32_copy_sources(const decoder_weights & weights) {
+    std::vector<ggml_tensor *> sources;
+    auto add = [&](ggml_tensor * t) {
+        if (t && t->type != GGML_TYPE_F32) sources.push_back(t);
+    };
+    for (const auto & l : weights.layers) {
+        add(l.gate);
+        add(l.up);
+        add(l.down);
+        if (l.full_attention) {
+            add(l.attention.q);
+            add(l.attention.k);
+            add(l.attention.v);
+            add(l.attention.out);
+        } else {
+            add(l.linear.qkv);
+            add(l.linear.z);
+            add(l.linear.a);
+            add(l.linear.b);
+            add(l.linear.out);
+        }
+    }
+    add(weights.head);
+    return sources;
+}
 
 matmul_mode mode_from_env() {
     const char * v = std::getenv("CRISPEMBED_QWEN35_GRAPH_MATMUL");
@@ -278,6 +306,13 @@ bool graph_kv_decoder::enabled() {
     return !core_env::explicitly_off("CRISPEMBED_QWEN35_GRAPH_DECODER");
 }
 
+uint64_t graph_kv_decoder::f32_copy_bytes(const decoder_weights & weights) {
+    if (mode_from_env() != matmul_mode::f32) return 0;
+    uint64_t bytes = 0;
+    for (const auto * t : f32_copy_sources(weights)) bytes += uint64_t(ggml_nelements(t)) * sizeof(float);
+    return bytes;
+}
+
 const char * graph_kv_decoder::mode() const {
     switch (p_->mode) {
     case matmul_mode::native:
@@ -299,7 +334,7 @@ void graph_kv_decoder::reset() {
 }
 
 bool graph_kv_decoder::init(const decoder_weights & weights, const attention_config & config, ggml_backend_t backend,
-                            int capacity) {
+                            int capacity, bool allow_f32_copies) {
     if (!enabled() || !backend || !ggml_backend_is_cpu(backend) || !weights.embedding || !weights.head ||
         !weights.norm || weights.layers.empty() || weights.layers.size() > 64 || capacity < 1 || capacity > 32768)
         return false;
@@ -310,6 +345,7 @@ bool graph_kv_decoder::init(const decoder_weights & weights, const attention_con
     p.backend = backend;
     p.capacity = capacity;
     p.mode = mode_from_env();
+    if (p.mode == matmul_mode::f32 && !allow_f32_copies) p.mode = matmul_mode::exact;
     p.width = int(weights.embedding->ne[0]);
     const auto & c = config;
     const int d = c.head_dim, qh = c.query_heads, kh = c.kv_heads, width = p.width;
@@ -396,28 +432,7 @@ bool graph_kv_decoder::init(const decoder_weights & weights, const attention_con
         ggml_backend_tensor_set(p.states[i].conv_weight, conv.data(), 0, conv.size() * sizeof(float));
     }
     if (p.mode == matmul_mode::f32) {
-        std::vector<ggml_tensor *> sources;
-        auto add = [&](ggml_tensor * t) {
-            if (t && t->type != GGML_TYPE_F32) sources.push_back(t);
-        };
-        for (const auto & l : weights.layers) {
-            add(l.gate);
-            add(l.up);
-            add(l.down);
-            if (l.full_attention) {
-                add(l.attention.q);
-                add(l.attention.k);
-                add(l.attention.v);
-                add(l.attention.out);
-            } else {
-                add(l.linear.qkv);
-                add(l.linear.z);
-                add(l.linear.a);
-                add(l.linear.b);
-                add(l.linear.out);
-            }
-        }
-        add(weights.head);
+        const std::vector<ggml_tensor *> sources = f32_copy_sources(weights);
         p.f32_ctx = ggml_init({ (sources.size() + 1) * ggml_tensor_overhead(), nullptr, true });
         if (!p.f32_ctx) return false;
         for (auto * t : sources) p.f32_copy[t] = ggml_new_tensor_2d(p.f32_ctx, GGML_TYPE_F32, t->ne[0], t->ne[1]);

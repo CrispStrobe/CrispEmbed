@@ -1,3 +1,23 @@
+## 3 November 2026 — Unlimited-OCR-2 F32 vision on by default; low-memory fallback for F32 weight copies
+
+`CRISPEMBED_UNLIMITED_OCR2_VISION_F32` is now read with `core_env::explicitly_off` (default on; `=0` restores the
+F16 SAM/CLIP products). Evidence: trial pages `tests/results/unlimited-ocr2/vision-speed.{json,md}` (4/4 ids and text
+exact vs the original, 1.44x) and real scans `tests/results/ocr-real-scans/native-uocr2-vf32.json` (1.43x on paired
+pages, 17/19 pages ids-identical to the old default, no page from exact to inexact, original-exact 12 -> 13/20; the one
+new inexact page `de-2col-meyers-b13-103` was already inexact and its CER improves 0.0369 -> 0.0368). `TILE_BATCH` stays
+default off. Kernels that measure the F16 path now pin `=0`. If the default copy fails to allocate, init now falls back
+to the F16 path with a notice instead of failing.
+
+New `src/core/low_memory.h`: after loading weights, MiniCPM-OCR and Unlimited-OCR-2 estimate the bytes of their default
+F32 weight copies and, when available physical memory (Linux `MemAvailable`, falling back to `sysconf(_SC_AVPHYS_PAGES)`;
+macOS `host_statistics64` free+inactive+purgeable; Windows `GlobalMemoryStatusEx`; unknown keeps the configured
+behavior) is below that + 1 GiB, skip them with one stderr notice. MiniCPM then runs F16 vision products and the graph
+decoder's `exact` matmul (row-wise dequant + F32 dot), both measured token-exact on the 5-case bench and the old-default
+path 20/20 identical on real scans; Unlimited-OCR-2 runs its previous-default F16 vision path.
+`CRISPEMBED_MINICPM_OCR_LOW_MEMORY` / `CRISPEMBED_UNLIMITED_OCR2_LOW_MEMORY`: `=1` forces the low-memory path, `=0`
+disables the check (keeping the copies whatever the memory). Decision logic is unit-tested header-only by `test-low-memory` (Build workflow). No inference was run for this
+change; the fallback paths are the existing measured ones.
+
 ## 3 November 2026 — GOT-OCR2 F16 republish script re-pointed at the original pipeline
 
 `tools/ci-heavy/got_ocr2_f16_republish.sh` compared native decodes with the HF port

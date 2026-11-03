@@ -869,6 +869,11 @@ target_include_directories(test-no-repeat-ngram PRIVATE src)
 add_executable(test-env-gate tests/test_env_gate.cpp)
 target_include_directories(test-env-gate PRIVATE src)
 
+# Hermetic: core/low_memory.h — automatic skip of optional F32 weight copies
+# (MiniCPM-OCR, Unlimited-OCR-2) when available memory is short.
+add_executable(test-low-memory tests/test_low_memory.cpp)
+target_include_directories(test-low-memory PRIVATE src)
+
 add_executable(test-litemla-attn tests/test_litemla_attn.cpp)
 target_link_libraries(test-litemla-attn PRIVATE crispembed)
 
