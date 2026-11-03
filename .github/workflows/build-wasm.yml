@@ -88,3 +88,20 @@ jobs:
             build-wasm/crispembed_ocr.wasm
             wasm/crispembed-ocr.js
           retention-days: 30
+
+  # TEMPORARY (PR #119 only): the Deploy WASM demo variants, built but not deployed.
+  demo-variants:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: ['--threads', '--proxy-to-pthread', '--webgpu', '--webgpu-compat']
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: '6.0.2'
+      - run: ./build-wasm.sh --clean ${{ matrix.variant }}
+      - run: ls -l build-wasm*/crispembed_ocr.wasm
