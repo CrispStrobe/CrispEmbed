@@ -215,7 +215,9 @@ def main():
                 entry["cases"].append(dict(id=cs["id"], skipped="time budget"))
                 continue
             tiled = cs["id"] != "small-untiled"
-            env = dict(os.environ, CRISPEMBED_UNLIMITED_OCR2="1", UOCR_DBG="1", OMP_NUM_THREADS=str(os.cpu_count()))
+            # F16 vision path pinned (F32 vision is the default since 2026-11-03)
+            env = dict(os.environ, CRISPEMBED_UNLIMITED_OCR2="1", UOCR_DBG="1", OMP_NUM_THREADS=str(os.cpu_count()),
+                       CRISPEMBED_UNLIMITED_OCR2_VISION_F32="0")
             if tiled:
                 env["CRISPEMBED_UNLIMITED_OCR2_TILES"] = "1"
             img = os.path.join(base, cs["id"] + ".png")

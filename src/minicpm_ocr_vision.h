@@ -87,5 +87,7 @@ struct vision_f32_store {
 };
 // Rebinds the matrices of `w` to F32 copies owned by `store` (which must outlive `w`'s use).
 bool upcast_vision_f32(vision_weights & w, ggml_backend_t backend, vision_f32_store & store);
+// Bytes upcast_vision_f32 would allocate (non-F32 slots only).
+uint64_t vision_f32_bytes(const vision_weights & w);
 
 } // namespace minicpm_ocr

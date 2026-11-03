@@ -138,14 +138,47 @@ def recipes():
             late+=['--tensor-type',f'blk.{i}.ffn_{kind}.weight=f32']
     return {'q4k-all-matrices':base,'q4k-ffn':base+attention,'q4k-last-four-ffn':base+attention+late}
 
-def native(lib,model,rows,expected):
+MATRICES=['attn_q','attn_k','attn_v','attn_output','ffn_gate','ffn_up','ffn_down']
+def sensitivity_recipes():
+    # Q8_0 baseline plus one tensor class/layer group lowered to Q4_K at a time
+    # (docs/qwen2vl-q4k-recipes.md). Lowered arms use the Q4_K base type so the
+    # legacy header12 matches real Q4_K payloads; every other matrix is pinned
+    # to Q8_0 explicitly (last match wins). Vocabulary and norms stay F32.
+    base=['--tensor-type','token_embd.weight=f32']
+    pin=[]
+    for kind in MATRICES:pin+=['--tensor-type',f'blk.*.{kind}.weight=q8_0']
+    def lower(names):
+        return ('q4_k',base+pin+[x for n in names for x in ('--tensor-type',n+'=q4_k')])
+    arms={'q8_0':('q8_0',base)}
+    for kind in MATRICES:arms['q8-lower-'+kind]=lower([f'blk.*.{kind}.weight'])
+    for lo,hi in [(0,8),(8,16),(16,24)]:
+        arms[f'q8-lower-layers-{lo}-{hi-1}']=lower([f'blk.{i}.{k}.weight'for i in range(lo,hi)for k in MATRICES])
+    return arms
+def mixed_recipes():
+    # Combined recipes assembled from the sensitivity table. Base Q4_K with the
+    # sensitive groups pinned back to Q8_0 (named policies in tools/quantize.cpp).
+    import json as _json
+    path=ROOT/'tools/portfolio/ultrabert_q4k_mixed.json'
+    if not path.exists():return {}
+    out={}
+    for name,spec in _json.loads(path.read_text())['recipes'].items():
+        flags=['--tensor-type','token_embd.weight=f32']
+        for rule in spec['rules']:flags+=['--tensor-type',rule]
+        out[name]=(spec['type'],flags)
+    return out
+def all_recipes():
+    arms={name:('q4_k',flags)for name,flags in recipes().items()}
+    arms.update(sensitivity_recipes());arms.update(mixed_recipes())
+    return arms
+
+def native(lib,model,rows,expected,threads=2):
     import numpy as np
     lib.crispembed_init.argtypes=[ctypes.c_char_p,ctypes.c_int];lib.crispembed_init.restype=ctypes.c_void_p
     lib.crispembed_free.argtypes=[ctypes.c_void_p];lib.crispembed_free.restype=None
     lib.crispembed_encode.argtypes=[ctypes.c_void_p,ctypes.c_char_p,ctypes.POINTER(ctypes.c_int)];lib.crispembed_encode.restype=ctypes.POINTER(ctypes.c_float)
     lib.crispembed_encode_tokens_raw.argtypes=[ctypes.c_void_p,ctypes.c_char_p,ctypes.POINTER(ctypes.c_int),ctypes.POINTER(ctypes.c_int)];lib.crispembed_encode_tokens_raw.restype=ctypes.POINTER(ctypes.c_float)
     lib.crispembed_last_token_ids.argtypes=[ctypes.c_void_p];lib.crispembed_last_token_ids.restype=ctypes.POINTER(ctypes.c_int32)
-    ctx=lib.crispembed_init(str(model).encode(),2);require(ctx,'native model rejected')
+    ctx=lib.crispembed_init(str(model).encode(),threads);require(ctx,'native model rejected')
     raw=np.empty((len(rows),768),dtype='<f4');norm=np.empty_like(raw);start=time.monotonic()
     try:
         for i,row in enumerate(rows):
@@ -180,7 +213,12 @@ def run(args):
     from huggingface_hub import snapshot_download
     from gguf import GGUFReader
     out=args.output;scratch=args.scratch;out.mkdir();scratch.mkdir()
-    report=dict(schema='crispembed-ultrabert-q4k-v1',source=source,provider=provider,environment=dict(system=platform.system(),machine=platform.machine(),python=platform.python_version(),cpu_count=os.cpu_count()),completed=False,original_rerun=False,arms={},qualified=[],release_qualified=False)
+    cpu=''
+    try:cpu=next((l.split(':',1)[1].strip()for l in subprocess.check_output(['lscpu'],text=True).splitlines()if l.startswith('Model name')),'')
+    except Exception:
+        try:cpu=subprocess.check_output(['sysctl','-n','machdep.cpu.brand_string'],text=True).strip()
+        except Exception:cpu=''
+    report=dict(schema='crispembed-ultrabert-q4k-v1',source=source,provider=provider,environment=dict(system=platform.system(),machine=platform.machine(),cpu_model=cpu,build_mode=os.environ.get('CRISPEMBED_BUILD_MODE','unrecorded'),threads=args.threads,python=platform.python_version(),cpu_count=os.cpu_count()),completed=False,original_rerun=False,arms={},qualified=[],release_qualified=False)
     save=lambda:write(out/'review.json',report);save()
     try:
         require(shutil.disk_usage(scratch).free>=6*1024**3,'hosted6GiB free scratch required');report['environment']['scratch_free_bytes']=shutil.disk_usage(scratch).free
@@ -210,11 +248,16 @@ def run(args):
         env={k:v for k,v in os.environ.items()if not k.startswith('CRISPEMBED_')};env.update(CRISPEMBED_ULTRABERT='1',CRISPEMBED_ULTRABERT_UNICODE_PRETOKEN='1',CRISPEMBED_ULTRABERT_TRUNCATE='1',OMP_NUM_THREADS='2',OPENBLAS_NUM_THREADS='2',MKL_NUM_THREADS='2')
         os.environ.clear();os.environ.update(env)
         lib=ctypes.CDLL(str(args.library.resolve()))
-        for name,rules in [('f32',None),*recipes().items()]:
+        known=all_recipes();selected=[a for a in args.arms.split(',')if a]
+        require(selected and len(set(selected))==len(selected) and all(a=='f32'or a in known for a in selected),'unknown or duplicate arm')
+        require('f32'not in selected or selected[0]=='f32','F32 control must run first')
+        report['arms_requested']=selected;report['f32_control_in_job']='f32'in selected
+        for name in selected:
+            qtype,rules=known[name]if name!='f32'else(None,None)
             model=f32
             if rules is not None:
                 model=scratch/(name+'.gguf')
-                with (out/(name+'-quantizer.log')).open('w')as log:subprocess.run([str(args.quantizer.resolve()),str(f32),str(model),'q4_k',*rules],stdout=log,stderr=subprocess.STDOUT,check=True,timeout=600)
+                with (out/(name+'-quantizer.log')).open('w')as log:subprocess.run([str(args.quantizer.resolve()),str(f32),str(model),qtype,*rules],stdout=log,stderr=subprocess.STDOUT,check=True,timeout=600)
                 os.environ['CRISPEMBED_ULTRABERT_QUANT']='0';require(not lib.crispembed_init(str(model).encode(),2),'quantized model accepted without quant gate')
                 os.environ['CRISPEMBED_ULTRABERT_QUANT']='1'
             else:os.environ.pop('CRISPEMBED_ULTRABERT_QUANT',None)
@@ -226,9 +269,10 @@ def run(args):
                 if t.tensor_type.name=='F32':
                     checksum=hashlib.sha256(t.data.tobytes()).hexdigest();require(checksum==base_inventory[t.name]['sha256'],'protected F32 tensor payload changed: '+t.name);protected[t.name]=checksum
                 if t.name=='token_embd.weight'or 'norm' in t.name:require(t.tensor_type.name=='F32','critical vocabulary/norm precision changed')
-            require(rules is None or types.get('Q4_K',0)>0,'mislabeled quantized model');del reader
-            raw,norm,seconds=native(lib,model,rows,expected);rr=rankings(data,norm);q=quality(before,rr)
-            record=dict(model_bytes=model.stat().st_size,sha256=sha256(model),stored_types=types,protected_f32_payload_sha256=protected,protected_f32_payloads_bit_exact=True,raw=metrics(original_raw,raw),normalized=metrics(original_norm,norm),quality=q,elapsed_seconds=seconds,all_ids_exact=True,actual_ref=[])
+            require(rules is None or types.get('Q4_K' if qtype=='q4_k' else 'Q8_0',0)>0,'mislabeled quantized model')
+            require(qtype!='q8_0' or types.get('Q4_K',0)==0,'Q8_0 baseline contains Q4_K');del reader
+            raw,norm,seconds=native(lib,model,rows,expected,args.threads);rr=rankings(data,norm);q=quality(before,rr)
+            record=dict(quant_type=qtype,quantizer_rules=rules,model_bytes=model.stat().st_size,sha256=sha256(model),stored_types=types,protected_f32_payload_sha256=protected,protected_f32_payloads_bit_exact=True,raw=metrics(original_raw,raw),normalized=metrics(original_norm,norm),quality=q,elapsed_seconds=seconds,all_ids_exact=True,actual_ref=[])
             for i in range(8):
                 folder=out/name/str(i);folder.mkdir(parents=True)
                 indices=list(range(i,5483,8));left=[];right=[]
@@ -247,15 +291,27 @@ def run(args):
                         a,b=stage[field],independent[stage['name']][field]
                         require(abs(a-b)<=2e-7*max(1.,abs(a),abs(b)),'Ref/independent metric disagreement '+field)
                 record['actual_ref'].append(dict(shard=i,exit=call.returncode,result=result,independent=independent))
+            record['ranking_gates_passed']=bool(q['passed'])
             record['qualified']=bool(q['passed'] and (rules is not None or (record['raw']['f32_gate_passed'] and record['normalized']['f32_gate_passed'] and all(r['exit']==0 for r in record['actual_ref']))))
             report['arms'][name]=record;save()
             if rules is None:require(record['qualified'],'F32 control fails frozen gates before quantized qualification')
+            if rules is not None:
+                # Owner bar (docs/precision-acceptance.md): minimum final-output
+                # cosine over every frozen row; recorded beside the ranking gates.
+                bar=.94 if qtype=='q4_k' else .97
+                record['cosine_bar']=dict(tier=qtype,threshold=bar,min_row_cosine=record['normalized']['min_row_cosine'],passed=bool(record['normalized']['min_row_cosine']>bar))
+                save()
             if rules is not None and record['qualified']:
-                report['qualified'].append(name);(out/'assets').mkdir(exist_ok=True);shutil.copyfile(model,out/'assets'/model.name);save()
-        report['completed']=True;save();return int(not report['qualified'])
+                report['qualified'].append(name);save()
+                if args.keep_assets:(out/'assets').mkdir(exist_ok=True);shutil.copyfile(model,out/'assets'/model.name)
+            if rules is not None and not args.keep_assets:model.unlink()
+        report['completed']=True;save();return 0
     except Exception as e:report['error']=str(e);save();raise
 
 if __name__=='__main__':
     p=argparse.ArgumentParser()
     for name in ['output','scratch','library','quantizer','diff']:p.add_argument('--'+name,type=Path,required=True)
+    p.add_argument('--arms',default='f32,q4k-all-matrices,q4k-ffn,q4k-last-four-ffn')
+    p.add_argument('--threads',type=int,default=2)
+    p.add_argument('--keep-assets',action='store_true')
     raise SystemExit(run(p.parse_args()))

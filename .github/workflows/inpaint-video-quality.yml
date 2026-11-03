@@ -1,0 +1,102 @@
+name: Inpainting video quality panel
+
+# Bounded authored synthetic clips, independent versus temporal output from the
+# actual reviewed CPU/F32 model. Runtime-only changes keep this opt-in; native
+# model-free stream regressions remain automatic in inpaint-cli.yml.
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'tests/inpaint_video_quality.py'
+      - 'tests/test_inpaint_video_quality.py'
+      - 'tests/fixtures/inpaint-video/**'
+      - '.github/workflows/inpaint-video-quality.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tests/inpaint_video_quality.py'
+      - 'tests/test_inpaint_video_quality.py'
+      - 'tests/fixtures/inpaint-video/**'
+      - '.github/workflows/inpaint-video-quality.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: inpaint-video-quality-${{ (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main') && github.run_id || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Reviewed MI-GAN256 CPU video panel
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      OMP_NUM_THREADS: '2'
+      OPENBLAS_NUM_THREADS: '2'
+      CRISPEMBED_MIGAN: '1'
+      CRISPEMBED_INPAINT_STREAM: '1'
+      CRISPEMBED_INPAINT_GRAPH: '0'
+      CRISPEMBED_INPAINT_FAST: '0'
+      CRISPEMBED_MIGAN_GPU: '0'
+      CRISPEMBED_MIGAN_CPU_KERNELS: '0'
+      CRISPEMBED_MIGAN_FAST_MATMUL: '0'
+      # Numeric capacity, not a boolean gate: batch_default accepts 1..16.
+      CRISPEMBED_MIGAN_BATCH: '1'
+      CRISPEMBED_MIGAN_DEQUANT_WEIGHTS: '0'
+      CRISPEMBED_MIGAN_QUANT: '0'
+      CRISPEMBED_INPAINT_SHA256_ACCEL: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Retain source identity even if setup, build or model preparation fails
+        run: |
+          mkdir -p "$RUNNER_TEMP/video-quality-logs"
+          git rev-parse HEAD > "$RUNNER_TEMP/video-quality-logs/source-sha.txt"
+          git submodule status ggml > "$RUNNER_TEMP/video-quality-logs/submodule.txt"
+          sha256sum tests/inpaint_video_quality.py tools/prepare_migan_inpaint.py \
+            > "$RUNNER_TEMP/video-quality-logs/helpers.sha256"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate the quality oracle before downloading or building
+        run: python tests/test_inpaint_video_quality.py -v
+      - name: Fetch native dependencies
+        run: git submodule update --init --recursive
+      - uses: ./.github/actions/compiler-cache
+        with:
+          namespace: inpaint-release-portable-cpu
+      - name: Configure portable CPU build
+        run: >-
+          cmake -S . -B build-inpaint -DCMAKE_BUILD_TYPE=Release
+          -DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF -DBUILD_SHARED_LIBS=OFF
+          -DGGML_BLAS=OFF -DGGML_METAL=OFF -DGGML_CUDA=OFF -DGGML_VULKAN=OFF
+          -DGGML_OPENMP=OFF -DGGML_LLAMAFILE=OFF -DCRISPEMBED_BUILD_SHARED=OFF
+      - name: Build the production CLI
+        run: cmake --build build-inpaint --config Release --parallel 2 --target crispembed-cli
+      - name: Reproduce the reviewed 25 MB F32 model
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/prepare_migan_inpaint.py --download --output-dir "$RUNNER_TEMP/video-model" \
+            2>&1 | tee "$RUNNER_TEMP/video-quality-logs/prepare.log"
+      - name: Compare independent and temporal output against clean authored frames
+        timeout-minutes: 12
+        run: >-
+          python tests/inpaint_video_quality.py --binary build-inpaint/crispembed
+          --model "$RUNNER_TEMP/video-model/migan-256-places2-f32-experimental.gguf"
+          --expected-model-sha256 b8fcefc3de7e04f96867b9d15bd84a2cf7e0c444d2925644a7e8b15081809c8b
+          --source-sha "$(git rev-parse HEAD)" --threads 2 --timeout 120
+          --output-dir "$RUNNER_TEMP/inpaint-video-quality"
+      - name: Retain reports, raw frames, timings and failed-case logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: inpaint-video-quality-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/inpaint-video-quality/
+            ${{ runner.temp }}/video-quality-logs/
+            ${{ runner.temp }}/video-model/replication.json
+            ${{ runner.temp }}/video-model/licenses/
+          if-no-files-found: warn
+          retention-days: 30

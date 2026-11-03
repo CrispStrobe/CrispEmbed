@@ -124,8 +124,10 @@ $env:CRISPEMBED_MIGAN = "1"
 
 The common PNG writer includes CrispEmbed's existing provenance metadata and
 optional configured signing. Diagnostic and progress messages go to stderr.
-The inpainting command rejects the legacy PPM output override, so stdout cannot
-silently contain a different format. `--inpaint-help` needs no model or gate.
+Image-file inpainting rejects the legacy PPM output override, so stdout cannot
+silently contain a different format. The raw stream has its own fixed RGB8
+protocol and ignores this image-format override. `--inpaint-help` needs no model
+or gate.
 
 ## Text masks and subtitle regions
 
@@ -197,7 +199,68 @@ the entire batch before model loading or output creation. It then decodes one
 frame at a time. A later decoding or inference failure stops at that frame and
 retains earlier completed outputs. The error names the frame number and path.
 This reduces repeated model loading; it does not provide temporal propagation,
-motion estimation or blending across frames.
+motion estimation or blending across frames. For video, use the stream below.
+
+## Video: a raw frame stream with temporal consistency
+
+`--inpaint-stream WxH` (gated by `CRISPEMBED_INPAINT_STREAM=1`, in addition to
+the engine's own gates) reads records of `W*H*3` RGB8 bytes followed by a `W*H`
+mask (values >= 128 fill) from stdin and writes `W*H*3` RGB8 frames to stdout
+in the same order, so a decoder and an encoder can be piped around it without
+frames touching the disk:
+
+```sh
+ffmpeg -i in.mp4 -f rawvideo -pix_fmt rgb24 - | add-masks |
+CRISPEMBED_MIGAN=1 CRISPEMBED_INPAINT_STREAM=1 ./build-inpaint/crispembed \
+  --inpaint-model "$INPAINT_MODEL" --inpaint-stream 1280x720 --inpaint-temporal 15 |
+ffmpeg -f rawvideo -pix_fmt rgb24 -s 1280x720 -r 25 -i - -c:v libx264 out.mp4
+```
+
+`--inpaint-temporal N` (0..120) keeps N frames of look-ahead and look-behind
+and fills each masked frame in this order ([`src/inpaint_temporal.h`](../src/inpaint_temporal.h)):
+
+1. **Propagation**: the real background from the nearest frame within N that has
+   no mask, when the ring of known pixels around the mask is static between the
+   two frames.
+2. **Static-span reuse**: the previous output, for the same mask when the ring is
+   static relative to both the previous input and the input that produced the
+   last fresh fill. This allows still shots to reuse a fill while gradual fades
+   eventually require a refresh.
+3. **Flat fill**: a harmonic interpolation of the surroundings where the known
+   pixels near the hole are flat; engines drift on flat tinted areas.
+4. **The engine** for the rest, blended with the previous output when the mask
+   is unchanged and the ring moved only a little (less shimmer).
+
+The static test combines 8×8 cell means with a pixel-residual guard, so fine
+moving texture cannot cancel out within each cell. Flat fill requires low
+variation in each RGB channel as well as luma; equal-luma color texture is not
+treated as flat. Harmonic relaxation is capped at 20 million pixel updates per
+frame, excluding initialization and other analysis work.
+
+The default **frame-payload budget** is 2 GiB. The conservative reservation is
+`(8*N + 18) * W * H` bytes: buffered RGB and worst-case masks, previous/current
+output, the reuse anchor, and engine RGB/mask scratch. Large frames reduce N
+and print the effective window. For example, a requested N=120 becomes N=30
+at 3840×2160. This is not a process-RSS limit: region/harmonic analysis scratch,
+the model, caller I/O buffers, and allocator overhead are additional memory.
+Internal callers must drain ready output before another `push()`; backpressure
+rejects without consuming input, so popping and retrying is safe.
+
+Output frames lag input by up to the effective N. EOF flushes all complete
+records. If a later record is truncated or inference fails, already completed
+frames remain in stdout and the command returns a nonzero status with the
+failed frame index. A downstream encoder can therefore receive a valid prefix;
+check the inpainting process's exit status when interpreting the result. On
+successful EOF, the number of output frames equals the number of input records.
+
+Without `--inpaint-temporal`, or with N=0, every masked frame goes to the engine
+independently. The stream works with every engine and its gates; latent engines
+need 512×512 frames or `--inpaint-tiles`. Filled-pixel counts and engine calls go
+to stderr. The contributor's original 720p MI-GAN512 F16/Metal measurements are
+recorded in [PERFORMANCE.md](../PERFORMANCE.md); they predate the audit fixes
+and do not qualify the updated implementation. The new
+[owned video panel](inpaint-video-quality.md) compares independent and temporal
+output against clean authored frames with exact inputs and retained evidence.
 
 ## Image geometry and file behavior
 
@@ -236,6 +299,11 @@ macOS and Windows CPU builds. It runs:
   test-only deterministic model/detector driver. That driver is not installed.
 - Production CLI help/routing and rejection of a model with the wrong hash.
 - Standard-library model-replication, PNG and existing reference-driver tests.
+- Temporal donor selection, static/noisy reuse, cumulative drift, fine moving
+  texture, color-aware flatness, mask changes, known-byte identity, bounded
+  harmonic work, buffer backpressure, and failure-prefix retention.
+- Raw-stream CLI ordering, threshold/binary-I/O behavior, short clips, all
+  engine dispatch routes, and truncation/inference errors.
 
 Manual workflow dispatch can also enable `model_smoke`. On Linux this reproduces
 the exact checkpoint and runs the production CLI on authored empty/subtitle/
