@@ -17,6 +17,7 @@ import zlib
 
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 FILL = bytes((241, 31, 151))
+STREAM_GATE = {"CRISPEMBED_INPAINT_STREAM": "1"}
 BINARY = None
 REAL_BINARY = None
 
@@ -138,7 +139,7 @@ class InpaintCliTests(unittest.TestCase):
             if key.startswith("INPAINT_TEST_") or key in (
                     "CRISPEMBED_IMAGE_FORMAT", "CRISPEMBED_C2PA_CERT", "CRISPEMBED_C2PA_KEY",
                     "CRISPEMBED_INPAINT_GRAPH", "CRISPEMBED_INPAINT_FAST", "CRISPEMBED_INPAINT_BACKEND",
-                    "CRISPEMBED_INPAINT_PROFILE",
+                    "CRISPEMBED_INPAINT_PROFILE", "CRISPEMBED_INPAINT_STREAM",
                     "CRISPEMBED_MIGAN512", "CRISPEMBED_MIGAN_GPU", "CRISPEMBED_MOEBIUS", "CRISPEMBED_PIXELHACKER"):
                 environment.pop(key, None)
         environment["CRISPEMBED_MIGAN"] = "1"
@@ -331,15 +332,31 @@ class InpaintCliTests(unittest.TestCase):
         for extra in ([], ["--inpaint-temporal", "2"]):
             with self.subTest(extra=extra):
                 result = self.run_cli(["--inpaint-model", self.model_path, "--inpaint-stream", size, *extra],
-                                      stdin=record * 3)
+                                      stdin=record * 3, env=STREAM_GATE)
                 self.assertEqual(result.returncode, 0, result.stderr.decode(errors="replace"))
                 self.assertEqual(result.stdout, expected * 3)
                 self.assertIn(b"inpaint: 3 frames, 3 masked", result.stderr)
         truncated = self.run_cli(["--inpaint-model", self.model_path, "--inpaint-stream", size],
-                                 stdin=record + record[:5])
+                                 stdin=record + record[:5], env=STREAM_GATE)
         self.assertEqual(truncated.returncode, 1)
         self.assertIn(b"truncated frame record", truncated.stderr)
         self.assertEqual(truncated.stdout, expected)
+        ungated = self.run_cli(["--inpaint-model", self.model_path, "--inpaint-stream", size], stdin=record)
+        self.assertEqual(ungated.returncode, 2)
+        self.assertIn(b"CRISPEMBED_INPAINT_STREAM=1", ungated.stderr)
+        self.assertNotIn(b"INPAINT_TEST_LOAD", ungated.stderr)
+
+    def test_stream_temporal_reuses_a_static_span(self):
+        # 64x48 checkerboard with a bar: identical frames reuse the first engine fill.
+        width, height = 64, 48
+        rgb = bytes(((x // 8 + y // 8) % 2 * 120 + 60) for y in range(height) for x in range(width) for _ in range(3))
+        mask = bytes(255 if 30 <= y < 38 and 8 <= x < 56 else 0 for y in range(height) for x in range(width))
+        result = self.run_cli(["--inpaint-model", self.model_path, "--inpaint-stream", f"{width}x{height}",
+                               "--inpaint-temporal", "2"], stdin=(rgb + mask) * 4, env=STREAM_GATE)
+        self.assertEqual(result.returncode, 0, result.stderr.decode(errors="replace"))
+        self.assertEqual(len(result.stdout), width * height * 3 * 4)
+        self.assertIn(b"4 frames, 4 masked, 1 engine", result.stderr)
+        self.assertIn(b"75.0% reused", result.stderr)
 
     def test_stream_options_reject_before_model_load(self):
         size = f"{self.width}x{self.height}"
@@ -351,7 +368,7 @@ class InpaintCliTests(unittest.TestCase):
         ]
         for extra in cases:
             with self.subTest(extra=extra):
-                result = self.run_cli(["--inpaint-model", self.model_path, *extra])
+                result = self.run_cli(["--inpaint-model", self.model_path, *extra], env=STREAM_GATE)
                 self.assertEqual(result.returncode, 2, result.stderr)
                 self.assertNotIn(b"INPAINT_TEST_LOAD", result.stderr)
                 self.assertEqual(result.stdout, b"")

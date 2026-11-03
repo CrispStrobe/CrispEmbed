@@ -201,14 +201,15 @@ motion estimation or blending across frames. For video, use the stream below.
 
 ## Video: a raw frame stream with temporal consistency
 
-`--inpaint-stream WxH` reads records of `W*H*3` RGB8 bytes followed by a `W*H`
+`--inpaint-stream WxH` (gated by `CRISPEMBED_INPAINT_STREAM=1`, in addition to
+the engine's own gates) reads records of `W*H*3` RGB8 bytes followed by a `W*H`
 mask (values >= 128 fill) from stdin and writes `W*H*3` RGB8 frames to stdout
 in the same order, so a decoder and an encoder can be piped around it without
 frames touching the disk:
 
 ```sh
 ffmpeg -i in.mp4 -f rawvideo -pix_fmt rgb24 - | add-masks |
-CRISPEMBED_MIGAN=1 ./build-inpaint/crispembed \
+CRISPEMBED_MIGAN=1 CRISPEMBED_INPAINT_STREAM=1 ./build-inpaint/crispembed \
   --inpaint-model "$INPAINT_MODEL" --inpaint-stream 1280x720 --inpaint-temporal 15 |
 ffmpeg -f rawvideo -pix_fmt rgb24 -s 1280x720 -r 25 -i - -c:v libx264 out.mp4
 ```
@@ -226,7 +227,8 @@ and fills each masked frame in this order ([`src/inpaint_temporal.h`](../src/inp
 4. **The engine** for the rest, blended with the previous output when the mask
    is unchanged and the ring moved only a little (less shimmer).
 
-Output frames lag the input by up to N frames; all buffered frames are written
+The 2N+1 buffered frames are kept within 2 GiB: for large frames N is reduced
+(and a note printed). Output frames lag the input by up to N frames; all buffered frames are written
 at the end of input. Without `--inpaint-temporal` every frame goes to the
 engine on its own. The stream works with every engine and its gates;
 latent engines need 512x512 frames or `--inpaint-tiles`. A summary of the

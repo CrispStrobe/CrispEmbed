@@ -665,6 +665,9 @@ int run_stream(const options & opt, const inpaint_temporal::fill_fn & fill, std:
     settings.window = opt.temporal;
     settings.flat_fill = opt.temporal > 0; // without temporal mode: exactly the engine, frame by frame
     inpaint_temporal::stream frames(opt.stream_width, opt.stream_height, settings, fill);
+    if (frames.window() < opt.temporal)
+        std::fprintf(stderr, "inpaint: --inpaint-temporal reduced to %d to fit the frame buffer in memory\n",
+                     frames.window());
     std::vector<uint8_t> record(pixels * 4), out(pixels * 3);
     auto drain = [&] {
         while (frames.pop(out.data()))
@@ -673,7 +676,11 @@ int run_stream(const options & opt, const inpaint_temporal::fill_fn & fill, std:
     };
     for (;;) {
         const size_t got = std::fread(record.data(), 1, record.size(), stdin);
-        if (got == 0 && std::feof(stdin)) break;
+        if (std::ferror(stdin)) {
+            fail(error, std::string("cannot read stdin: ") + std::strerror(errno));
+            return 1;
+        }
+        if (got == 0) break;
         if (got != record.size()) {
             fail(error, "truncated frame record on stdin");
             return 1;
@@ -721,6 +728,10 @@ int execute(const options & opt, std::string & error) {
     if (!core_env::on(gate) || (opt.engine == "migan512" && !core_env::on("CRISPEMBED_MIGAN512"))) {
         fail(error, std::string("experimental inpainting requires ") + gate + "=1" +
                         (opt.engine == "migan512" ? " and CRISPEMBED_MIGAN512=1" : ""));
+        return 2;
+    }
+    if (opt.stream_width && !core_env::on("CRISPEMBED_INPAINT_STREAM")) {
+        fail(error, "--inpaint-stream requires CRISPEMBED_INPAINT_STREAM=1");
         return 2;
     }
     if (core_imgout::want_ppm()) {
@@ -779,17 +790,22 @@ int execute(const options & opt, std::string & error) {
                      inpaint::backend_name(ctx.get()), inpaint::weight_precision(ctx.get()),
                      inpaint::max_batch(ctx.get()));
     }
-    const int width = opt.stream_width;
-    const int height = opt.stream_height;
-    const inpaint_temporal::fill_fn fill = [&](const uint8_t * rgb, const uint8_t * mask, uint8_t * out,
-                                               std::string & message) {
-        return latent ? latent_inpaint::process_rgb8(latent.get(), rgb, size_t(width) * height * 3, mask,
-                                                     size_t(width) * height, width, height, out,
-                                                     size_t(width) * height * 3, message)
-                      : inpaint::process_rgb8(ctx.get(), rgb, size_t(width) * height * 3, mask, size_t(width) * height,
-                                              width, height, out, size_t(width) * height * 3, message);
+    // One engine call for every mode: same-size RGB8 in/out and a 0/255 mask.
+    auto engine = [&](const uint8_t * rgb, const uint8_t * mask, int width, int height, uint8_t * out,
+                      std::string & message) {
+        const size_t pixels = size_t(width) * height;
+        return latent ? latent_inpaint::process_rgb8(latent.get(), rgb, pixels * 3, mask, pixels, width, height, out,
+                                                     pixels * 3, message)
+                      : inpaint::process_rgb8(ctx.get(), rgb, pixels * 3, mask, pixels, width, height, out, pixels * 3,
+                                              message);
     };
-    if (opt.stream_width) return run_stream(opt, fill, error);
+    if (opt.stream_width)
+        return run_stream(
+            opt,
+            [&](const uint8_t * rgb, const uint8_t * mask, uint8_t * out, std::string & message) {
+                return engine(rgb, mask, opt.stream_width, opt.stream_height, out, message);
+            },
+            error);
     if (!opt.directory.empty()) fs::create_directories(opt.output_directory);
 
     for (size_t index = 0; index < frames.size(); ++index) {
@@ -802,11 +818,7 @@ int execute(const options & opt, std::string & error) {
             error = "frame " + std::to_string(index + 1) + " (" + item.image.string() + "): " + error;
             return 1;
         }
-        const bool processed =
-            latent ? latent_inpaint::process_rgb8(latent.get(), rgb.get(), rgb_bytes, mask.data(), mask.size(),
-                                                  item.width, item.height, output.data(), output.size(), error)
-                   : inpaint::process_rgb8(ctx.get(), rgb.get(), rgb_bytes, mask.data(), mask.size(), item.width,
-                                           item.height, output.data(), output.size(), error);
+        const bool processed = engine(rgb.get(), mask.data(), item.width, item.height, output.data(), error);
         if (!processed || !write_output(opt, item, output, error)) {
             error = "frame " + std::to_string(index + 1) + " (" + item.image.string() + "): " + error;
             return 1;
@@ -853,12 +865,12 @@ void print_help(std::FILE * out) {
                       "  --mask-dir DIR           Same filenames as --inpaint-dir\n"
                       "  --output-dir DIR         Directory for processed PNGs; created if needed\n"
                       "  --inpaint-list FILE|-    TSV: image<TAB>mask<TAB>output, one frame per line\n"
-                      "  --inpaint-stream WxH     Raw video pipe: stdin records of W*H*3 RGB8 + W*H mask\n"
-                      "                            (>=128 fill), stdout W*H*3 RGB8 frames in the same order\n"
-                      "  --inpaint-temporal N     Stream with temporal consistency, N frames of look-ahead\n"
-                      "                            (0..120; 15 suits subtitles; see docs/inpainting-cli.md)\n"
                       "                            Relative paths are relative to the list file (stdin: cwd)\n"
                       "                            Output parent directories must already exist\n"
+                      "  --inpaint-stream WxH     Raw video pipe (CRISPEMBED_INPAINT_STREAM=1): stdin records of\n"
+                      "                            W*H*3 RGB8 + W*H mask (>=128 fill), stdout W*H*3 RGB8 frames\n"
+                      "  --inpaint-temporal N     Stream with temporal consistency, N frames of look-ahead\n"
+                      "                            (0..120; 15 suits subtitles; see docs/inpainting-cli.md)\n"
                       "  --mask-from-text         Build a mask from detected text quadrilaterals\n"
                       "  --mask-text-model PATH   DBNet GGUF required with --mask-from-text\n"
                       "                            Text-mask list rows use '-' in the mask column\n"

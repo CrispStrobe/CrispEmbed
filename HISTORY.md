@@ -1,3 +1,13 @@
+## 3 November 2026 — Issue 71 inpainting video stream (`--inpaint-stream`, `--inpaint-temporal`)
+
+Raw frame pipe for burned-in subtitle removal on top of the main inpainting engines (no new engine or model), gated
+by `CRISPEMBED_INPAINT_STREAM` in addition to each engine's own gates. `src/inpaint_temporal` is engine-agnostic (a
+fill callback) and fills each masked frame by propagation from the nearest unmasked frame on a static ring, reuse of
+the previous output over a static span, a harmonic fill for flat surroundings, and the engine (blended with the
+previous output on moderate change). Buffered frames are kept within 2 GiB (the window is reduced for large frames).
+Model-free contracts: `test-inpaint-temporal` (44 checks) and CLI driver stream tests. Measured output is on par with
+the research prototype; numbers in PERFORMANCE.md ("Issue 71 video stream with temporal consistency").
+
 ## 2 November 2026 — Unlimited-OCR-2 F32 vision / tile batch gates (default off)
 
 **Vision speed gates (2026-11-02, default off).** `CRISPEMBED_UNLIMITED_OCR2_VISION_F32` (F32 SAM/CLIP block

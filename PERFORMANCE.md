@@ -1,3 +1,22 @@
+## Issue 71 video stream with temporal consistency (3 November 2026, Apple M1 Metal, `feat/inpaint-video-stream`)
+
+`--inpaint-stream WxH --inpaint-temporal 15`, registry MI-GAN512 F16 (`cstr/MI-GAN-512-GGUF`), Metal,
+`CRISPEMBED_INPAINT_GRAPH=1 CRISPEMBED_INPAINT_FAST=1`. Synthetic 720p subtitle clips with ground truth
+(subtitle text burned onto clean frames); PSNR inside the exact text mask, flicker = mean temporal-difference
+error inside the mask. Wall time includes PNG decode/encode in the harness.
+
+| Clip | Frames | Engine frames | PSNR in mask | Flicker | s/frame |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Moving shot | 180 | 47 | 28.86 dB | 3.28 | 0.216 |
+| Static shot | 100 | 0 | 34.57 dB | 3.19 | 0.046 |
+| Real film clip (no ground truth) | 241 | 168 | - | - | 0.34 |
+
+Moving shot pixels: 22.9% propagated, 32.4% reused, 1.9% flat fill, 42.9% engine (14.9% blended). Same clip
+without `CRISPEMBED_INPAINT_FAST`: 0.275 s/frame (graph) and 0.287 s/frame (`CRISPEMBED_MIGAN_GPU=1`), quality
+identical; `CRISPEMBED_MIGAN_BATCH=3` was slower (0.316 s/frame). On the real clip the flat fill skips the engine on
+21 of 189 frames that previously needed it. Output is on par with the earlier per-window research prototype (moving
+28.88 dB / flicker 3.31 at 0.24 s/frame).
+
 ## Unlimited-OCR-2 vision speed gates (2 November 2026, Kaggle 4 vCPU)
 
 **Vision speed gates (2026-11-02, default off).** `CRISPEMBED_UNLIMITED_OCR2_VISION_F32` (F32 SAM/CLIP block

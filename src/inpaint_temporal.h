@@ -20,6 +20,7 @@
 // the mask's bounding box plus that ring. window = 0 disables 1 and 2.
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -36,6 +37,8 @@ struct settings {
     float static_threshold = 3.0f; // ring cell mean difference (levels)
     float blend_threshold = 12.0f; // blend engine fills up to this change (0 = off)
     bool flat_fill = true;
+    // The window is reduced so that the 2 * window + 1 buffered frames fit this.
+    size_t max_buffer_bytes = size_t(2) << 30;
 };
 
 struct stats {
@@ -58,6 +61,8 @@ public:
     // Writes the next finished frame (W*H*3) and returns true, or false if none is ready.
     bool pop(uint8_t * out);
     const stats & counters() const;
+    // The window in use (settings.window, reduced to fit max_buffer_bytes).
+    int window() const;
 
 private:
     struct state;

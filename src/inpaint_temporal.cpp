@@ -15,17 +15,26 @@ constexpr int flat_radius = 6;  // known pixels that decide the flat fill
 constexpr int cell = 8;         // static test cell size
 constexpr int strip = 64;       // flat decision per strip of the hole's width
 constexpr float flat_low = 4.0f, flat_high = 8.0f;
+constexpr double harmonic_budget = 2e7; // SOR pixel updates per frame (bounds the flat fill's cost)
 
 struct box {
     int x0 = 0, y0 = 0, x1 = 0, y1 = 0;
     bool empty() const { return x1 <= x0; }
+    int width() const { return x1 - x0; }
     bool operator==(const box & o) const { return x0 == o.x0 && y0 == o.y0 && x1 == o.x1 && y1 == o.y1; }
 };
 
 struct frame {
-    std::vector<uint8_t> rgb, mask; // mask 0/1
-    box bounds;                     // of the mask; empty = nothing to fill
+    std::vector<uint8_t> rgb;
+    std::vector<uint8_t> mask; // 0/1, bounds-sized (empty without a mask)
+    box bounds;
+    bool masked(int x, int y) const {
+        return x >= bounds.x0 && x < bounds.x1 && y >= bounds.y0 && y < bounds.y1 &&
+               mask[size_t(y - bounds.y0) * bounds.width() + x - bounds.x0];
+    }
 };
+
+using output = std::shared_ptr<const std::vector<uint8_t>>;
 
 float luma(const uint8_t * p) {
     return 0.299f * p[0] + 0.587f * p[1] + 0.114f * p[2];
@@ -41,32 +50,29 @@ struct stream::state {
     int64_t base = 0, pushed = 0, next = 0;
     bool finished = false;
     std::string error;
-    std::vector<uint8_t> prev_out; // output of frame next - 1
-    bool have_prev = false;
-    std::deque<std::vector<uint8_t>> ready;
+    output prev_out; // output of frame next - 1 (shared with `ready`, not copied)
+    std::deque<output> ready;
     stats st;
 
-    // Per-frame scratch, region-local (see process) except mask255/engine_out.
+    // Per-frame scratch (region-local except mask255/engine_out).
     box region, region_harm;
-    std::vector<int> integral;
+    std::vector<int> integral, unknown, span;
     std::vector<uint8_t> ring, near, mask255, engine_out;
     std::vector<float> diffs, values, strip_weight, harm;
 
     const frame * get(int64_t i) const {
         return i < base || i >= base + int64_t(buf.size()) ? nullptr : &buf[size_t(i - base)];
     }
-    int rw() const { return region.x1 - region.x0; }
 
     // ring / near: unmasked pixels of the region within ring_radius / flat_radius
     // of a masked pixel (box sums of an integral image; no mask lies outside).
     void make_rings(const frame & f) {
-        const int W = rw(), H = region.y1 - region.y0;
+        const int W = region.width(), H = region.y1 - region.y0;
         integral.assign(size_t(W + 1) * (H + 1), 0);
         for (int y = 0; y < H; y++) {
             int row = 0;
-            const uint8_t * m = &f.mask[size_t(y + region.y0) * w + region.x0];
             for (int x = 0; x < W; x++) {
-                row += m[x];
+                row += f.masked(x + region.x0, y + region.y0);
                 integral[size_t(y + 1) * (W + 1) + x + 1] = integral[size_t(y) * (W + 1) + x + 1] + row;
             }
         }
@@ -80,7 +86,7 @@ struct stream::state {
         near.assign(size_t(W) * H, 0);
         for (int y = 0; y < H; y++)
             for (int x = 0; x < W; x++) {
-                if (f.mask[size_t(y + region.y0) * w + x + region.x0] || !sum(x, y, ring_radius)) continue;
+                if (f.masked(x + region.x0, y + region.y0) || !sum(x, y, ring_radius)) continue;
                 ring[size_t(y) * W + x] = 1;
                 near[size_t(y) * W + x] = sum(x, y, flat_radius) > 0;
             }
@@ -90,17 +96,17 @@ struct stream::state {
     // when there are too few usable cells to judge.
     bool ring_static(const frame & a, const frame & b, double & mean, double & p90) {
         diffs.clear();
-        const int W = rw();
+        const int W = region.width();
         for (int cy = region.y0; cy < region.y1; cy += cell)
             for (int cx = region.x0; cx < region.x1; cx += cell) {
                 int n = 0, sa[3] = { 0, 0, 0 }, sb[3] = { 0, 0, 0 };
                 for (int y = cy; y < std::min(region.y1, cy + cell); y++)
                     for (int x = cx; x < std::min(region.x1, cx + cell); x++) {
-                        const size_t i = size_t(y) * w + x;
-                        if (!ring[size_t(y - region.y0) * W + x - region.x0] || a.mask[i] || b.mask[i]) continue;
+                        if (!ring[size_t(y - region.y0) * W + x - region.x0] || b.masked(x, y)) continue;
+                        const size_t i = (size_t(y) * w + x) * 3;
                         for (int c = 0; c < 3; c++) {
-                            sa[c] += a.rgb[i * 3 + c];
-                            sb[c] += b.rgb[i * 3 + c];
+                            sa[c] += a.rgb[i + c];
+                            sb[c] += b.rgb[i + c];
                         }
                         n++;
                     }
@@ -122,7 +128,7 @@ struct stream::state {
     // std <= flat_low of the near pixels, 0 from flat_high. Returns the largest.
     float strip_weights(const frame & f) {
         const box & b = f.bounds;
-        const int n = (b.x1 - b.x0 + strip - 1) / strip, W = rw();
+        const int n = (b.width() + strip - 1) / strip, W = region.width();
         strip_weight.assign(size_t(n), 0.0f);
         float best = 0;
         for (int s = 0; s < n; s++) {
@@ -134,8 +140,9 @@ struct stream::state {
                     if (near[size_t(y - region.y0) * W + x - region.x0])
                         values.push_back(luma(&f.rgb[(size_t(y) * w + x) * 3]));
             if (values.size() < 32) continue;
-            std::sort(values.begin(), values.end());
             const size_t lo = values.size() / 10, hi = values.size() * 9 / 10;
+            std::nth_element(values.begin(), values.begin() + long(lo), values.end());
+            std::nth_element(values.begin() + long(lo), values.begin() + long(hi), values.end());
             double mean = 0, var = 0;
             for (size_t i = lo; i < hi; i++) mean += values[i];
             mean /= double(hi - lo);
@@ -156,35 +163,57 @@ struct stream::state {
         return strip_weight[size_t(i)] * (1 - t) + strip_weight[size_t(j)] * t;
     }
 
-    // Harmonic (Laplace) fill of the mask from img, over the mask's bounds plus a
-    // 1 px border: row-wise linear start, then SOR until it settles.
+    // Harmonic (Laplace) fill of the mask from img over the mask's bounds plus a 1 px
+    // border. The start is the row and column linear interpolations, weighted towards
+    // the shorter span (close to harmonic for subtitle-shaped holes); SOR then settles
+    // it within a fixed per-frame work budget.
     void harmonic(const frame & f, const std::vector<uint8_t> & img) {
         const box e{ std::max(0, f.bounds.x0 - 1), std::max(0, f.bounds.y0 - 1), std::min(w, f.bounds.x1 + 1),
                      std::min(h, f.bounds.y1 + 1) };
-        const int W = e.x1 - e.x0, H = e.y1 - e.y0;
+        const int W = e.width(), H = e.y1 - e.y0;
+        region_harm = e;
         harm.resize(size_t(W) * H * 3);
-        std::vector<int> unknown;
-        for (int y = 0; y < H; y++) {
-            int last = -1; // last known column in this row
-            for (int x = 0; x <= W; x++) {
-                const bool known = x == W || !f.mask[size_t(y + e.y0) * w + x + e.x0];
-                if (!known) continue;
-                for (int c = 0; c < 3 && x < W; c++)
-                    harm[(size_t(y) * W + x) * 3 + c] = img[(size_t(y + e.y0) * w + x + e.x0) * 3 + c];
-                for (int u = last + 1; u < x; u++) {
-                    unknown.push_back(y * W + u);
+        span.assign(size_t(W) * H, 0);
+        unknown.clear();
+        auto known = [&](int x, int y) { return !f.masked(x + e.x0, y + e.y0); };
+        for (int y = 0; y < H; y++)
+            for (int x = 0; x < W; x++)
+                if (known(x, y))
+                    for (int c = 0; c < 3; c++)
+                        harm[(size_t(y) * W + x) * 3 + c] = img[(size_t(y + e.y0) * w + x + e.x0) * 3 + c];
+        // Linear interpolation of the unknown runs along a line of n pixels (start
+        // `first`, `step` apart). The vertical pass blends into the horizontal one.
+        auto interpolate = [&](int first, int step, int n, bool vertical) {
+            int last = -1;
+            for (int k = 0; k <= n; k++) {
+                const int i = first + k * step;
+                const bool is_known = k == n || known(i % W, i / W);
+                if (!is_known) continue;
+                const int len = k - last - 1;
+                for (int u = last + 1; u < k; u++) {
+                    const int p = first + u * step;
+                    const float t = float(u - last) / float(k - last);
                     for (int c = 0; c < 3; c++) {
-                        const float l = last >= 0 ? harm[(size_t(y) * W + last) * 3 + c] : -1;
-                        const float r = x < W ? harm[(size_t(y) * W + x) * 3 + c] : -1;
-                        const float t = float(u - last) / float(x - last);
-                        harm[(size_t(y) * W + u) * 3 + c] = l < 0 ? std::max(r, 0.0f) : r < 0 ? l : l + (r - l) * t;
+                        const float l = last >= 0 ? harm[size_t(first + last * step) * 3 + c] : -1;
+                        const float r = k < n ? harm[size_t(i) * 3 + c] : -1;
+                        const float v = l < 0 ? std::max(r, 0.0f) : r < 0 ? l : l + (r - l) * t;
+                        float & out = harm[size_t(p) * 3 + c];
+                        // Weight each direction by the other's span: shorter span wins.
+                        out = vertical ? (out * len + v * span[size_t(p)]) / float(len + span[size_t(p)]) : v;
+                    }
+                    if (!vertical) {
+                        span[size_t(p)] = len;
+                        unknown.push_back(p);
                     }
                 }
-                last = x;
+                last = k;
             }
-        }
+        };
+        for (int y = 0; y < H; y++) interpolate(y * W, 1, W, false);
+        for (int x = 0; x < W; x++) interpolate(x, W, H, true);
         constexpr float omega = 1.8f;
-        for (int iteration = 0; iteration < 500; iteration++) {
+        const int sweeps = unknown.empty() ? 0 : int(std::clamp(harmonic_budget / double(unknown.size()), 20.0, 500.0));
+        for (int iteration = 0; iteration < sweeps; iteration++) {
             float change = 0;
             for (int i : unknown) {
                 const int x = i % W, y = i / W;
@@ -201,7 +230,6 @@ struct stream::state {
             }
             if (change < 0.05f) break;
         }
-        region_harm = e;
     }
 
     // Steps 3 and 4 for the pixels of f's mask that are still open in img.
@@ -217,9 +245,9 @@ struct stream::state {
             mask255.resize(size_t(w) * h);
             engine_out.resize(img.size());
             for (int y = b.y0; y < b.y1; y++)
-                for (int x = b.x0; x < b.x1; x++) mask255[size_t(y) * w + x] = f.mask[size_t(y) * w + x] ? 255 : 0;
+                for (int x = b.x0; x < b.x1; x++) mask255[size_t(y) * w + x] = f.masked(x, y) ? 255 : 0;
             const bool ok = fill(img.data(), mask255.data(), engine_out.data(), error);
-            for (int y = b.y0; y < b.y1; y++) std::memset(&mask255[size_t(y) * w + b.x0], 0, size_t(b.x1 - b.x0));
+            for (int y = b.y0; y < b.y1; y++) std::memset(&mask255[size_t(y) * w + b.x0], 0, size_t(b.width()));
             if (!ok) {
                 if (error.empty()) error = "inpainting engine failed";
                 return false;
@@ -234,17 +262,18 @@ struct stream::state {
                 std::max(0.0, (ring_mean - opt.static_threshold) / (opt.blend_threshold - opt.static_threshold));
             blend = float(0.6 * (1.0 - t));
         }
-        const int hw = region_harm.x1 - region_harm.x0;
         for (int y = b.y0; y < b.y1; y++)
             for (int x = b.x0; x < b.x1; x++) {
+                if (!f.masked(x, y)) continue;
                 const size_t i = size_t(y) * w + x;
-                if (!f.mask[i]) continue;
                 const float wf = flat ? flat_weight(f, x) : 0.0f;
-                const size_t k = (size_t(y - region_harm.y0) * hw + x - region_harm.x0) * 3;
                 for (int c = 0; c < 3; c++) {
                     float v = engine ? engine_out[i * 3 + c] : 0.0f;
-                    if (wf > 0) v = wf * harm[k + c] + (1 - wf) * v;
-                    if (blend > 0 && wf < 1) v = v * (1 - blend) + prev_out[i * 3 + c] * blend;
+                    if (wf > 0) {
+                        const size_t k = (size_t(y - region_harm.y0) * region_harm.width() + x - region_harm.x0) * 3;
+                        v = wf * harm[k + c] + (1 - wf) * v;
+                    }
+                    if (blend > 0 && wf < 1) v = v * (1 - blend) + (*prev_out)[i * 3 + c] * blend;
                     img[i * 3 + c] = uint8_t(std::clamp(v + 0.5f, 0.0f, 255.0f));
                 }
                 if (wf >= 1)
@@ -268,13 +297,12 @@ struct stream::state {
                        std::min(w, b.x1 + ring_radius), std::min(h, b.y1 + ring_radius) };
             make_rings(f);
             int64_t open = 0;
-            for (int y = b.y0; y < b.y1; y++)
-                for (int x = b.x0; x < b.x1; x++) open += f.mask[size_t(y) * w + x];
+            for (uint8_t v : f.mask) open += v;
             st.px_masked += open;
             auto copy_from = [&](const std::vector<uint8_t> & source) {
                 for (int y = b.y0; y < b.y1; y++)
                     for (int x = b.x0; x < b.x1; x++)
-                        if (f.mask[size_t(y) * w + x])
+                        if (f.masked(x, y))
                             std::memcpy(&img[(size_t(y) * w + x) * 3], &source[(size_t(y) * w + x) * 3], 3);
             };
 
@@ -293,14 +321,11 @@ struct stream::state {
                 }
 
             // 2. The same subtitle as the previous frame on a static ring: reuse its output.
-            const frame * prev = opt.window > 0 && have_prev ? get(t - 1) : nullptr;
-            bool same = prev && prev->bounds == b;
-            for (int y = b.y0; y < b.y1 && same; y++)
-                same =
-                    !std::memcmp(&prev->mask[size_t(y) * w + b.x0], &f.mask[size_t(y) * w + b.x0], size_t(b.x1 - b.x0));
+            const frame * prev = opt.window > 0 && prev_out ? get(t - 1) : nullptr;
+            const bool same = prev && prev->bounds == b && prev->mask == f.mask;
             double ring_mean = -1, ring_p90 = -1;
             if (open && same && ring_static(f, *prev, ring_mean, ring_p90)) {
-                copy_from(prev_out);
+                copy_from(*prev_out);
                 st.px_reused += open;
                 open = 0;
             }
@@ -308,9 +333,8 @@ struct stream::state {
             // 3-4. Flat fill and the engine, with everything filled so far as context.
             if (open && !fill_rest(f, img, same, ring_mean, ring_p90)) return false;
         }
-        prev_out = img;
-        have_prev = true;
-        ready.push_back(std::move(img));
+        prev_out = std::make_shared<const std::vector<uint8_t>>(std::move(img));
+        ready.push_back(prev_out);
         return true;
     }
 
@@ -332,11 +356,18 @@ stream::stream(int width, int height, const settings & options, fill_fn fill) : 
     s_->w = std::max(1, width);
     s_->h = std::max(1, height);
     s_->opt = options;
-    s_->opt.window = std::max(0, options.window);
+    // 2 * window + 1 buffered frames must fit the memory budget.
+    const size_t frame_bytes = size_t(s_->w) * s_->h * 3;
+    const size_t fit = std::max<size_t>(1, options.max_buffer_bytes / frame_bytes);
+    s_->opt.window = int(std::min<size_t>(size_t(std::max(0, options.window)), (fit - 1) / 2));
     s_->fill = std::move(fill);
 }
 
 stream::~stream() = default;
+
+int stream::window() const {
+    return s_->opt.window;
+}
 
 bool stream::push(const uint8_t * rgb, const uint8_t * mask, std::string & error) {
     state & s = *s_;
@@ -347,16 +378,24 @@ bool stream::push(const uint8_t * rgb, const uint8_t * mask, std::string & error
     const int W = s.w, H = s.h;
     frame f;
     f.rgb.assign(rgb, rgb + size_t(W) * H * 3);
-    f.mask.assign(size_t(W) * H, 0);
-    box b{ W, H, 0, 0 };
-    if (mask)
-        for (int y = 0; y < H; y++)
-            for (int x = 0; x < W; x++)
-                if (mask[size_t(y) * W + x] >= 128) {
-                    f.mask[size_t(y) * W + x] = 1;
-                    b = { std::min(b.x0, x), std::min(b.y0, y), std::max(b.x1, x + 1), std::max(b.y1, y + 1) };
-                }
-    if (!b.empty()) f.bounds = b;
+    if (mask) {
+        box b{ W, H, 0, 0 };
+        for (int y = 0; y < H; y++) {
+            const uint8_t * row = mask + size_t(y) * W;
+            int first = 0, last = W - 1;
+            while (first < W && row[first] < 128) first++;
+            if (first == W) continue;
+            while (row[last] < 128) last--;
+            b = { std::min(b.x0, first), std::min(b.y0, y), std::max(b.x1, last + 1), std::max(b.y1, y + 1) };
+        }
+        if (!b.empty()) {
+            f.bounds = b;
+            f.mask.resize(size_t(b.width()) * (b.y1 - b.y0));
+            for (int y = b.y0; y < b.y1; y++)
+                for (int x = b.x0; x < b.x1; x++)
+                    f.mask[size_t(y - b.y0) * b.width() + x - b.x0] = mask[size_t(y) * W + x] >= 128;
+        }
+    }
     s.buf.push_back(std::move(f));
     s.pushed++;
     if (!s.advance()) {
@@ -377,7 +416,7 @@ bool stream::finish(std::string & error) {
 
 bool stream::pop(uint8_t * out) {
     if (s_->ready.empty()) return false;
-    std::memcpy(out, s_->ready.front().data(), s_->ready.front().size());
+    std::memcpy(out, s_->ready.front()->data(), s_->ready.front()->size());
     s_->ready.pop_front();
     return true;
 }
