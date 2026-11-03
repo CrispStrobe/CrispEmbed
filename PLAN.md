@@ -597,8 +597,13 @@ Since 2026-11-03 init does this automatically when available RAM is short (`CRIS
 - [x] Flipped on 2026-11-03 (`explicitly_off`; `=0` restores F16); F16-path kernels pin `=0`. TILE_BATCH stays off (~2%).
 - [x] Low-memory fallback (`src/core/low_memory.h`, `CRISPEMBED_UNLIMITED_OCR2_LOW_MEMORY`,
       `CRISPEMBED_MINICPM_OCR_LOW_MEMORY`): skip the F32 copies when available RAM < copies + 1 GiB.
-- [ ] Hosted confirmation: one real-scan run at the flipped default (expect `native-uocr2-vf32.json` ids), and one
-      MiniCPM + Unlimited-OCR-2 run with `..._LOW_MEMORY=1` confirming ids identical to the respective non-copy arms. Remaining time is prefill (38 s) and decode
+- [x] Hosted confirmation at the new defaults (2026-11-03, no env vs `..._LOW_MEMORY=1`): MiniCPM-OCR 5/5 parity cases
+      token-ID and text exact in both arms, F32 and F16 GGUF (`tests/results/minicpm-ocr/native-parity-default.json`,
+      `native-parity-low-memory.json`, at `8c8c8be6`); Unlimited-OCR-2 4/4 trial pages ids + text byte-exact vs original,
+      default == `vf32` receipt, LOW_MEMORY == F16 `after` receipt (`tests/results/unlimited-ocr2/default-and-low-memory.json`).
+      The first MiniCPM run (`0d3974ab`) found F32 GGUFs could not load at the default (empty F32-copy set); fixed in
+      `8c8c8be6`, initial receipts retained (`*-initial-f32-load-failure.json`). `test-low-memory` 21/21 on Kaggle.
+      Still open: one real-scan run at the flipped Unlimited default (expect `native-uocr2-vf32.json` ids). Remaining time is prefill (38 s) and decode
 (~66 s) on the table page; the global 1024 SAM view is the next vision target.
 
 ## Required Q8_0 and Q4_K coverage for new permissive models (29 October)

@@ -1,3 +1,13 @@
+## 3 November 2026 — Hosted check of the MiniCPM-OCR / Unlimited-OCR-2 defaults and low-memory fallback
+
+Kaggle CPU, no env vs `..._LOW_MEMORY=1`. Unlimited-OCR-2 (`0d3974ab`): 4/4 trial pages ids and text byte-exact vs the
+original in both arms; default ids == the `vf32` receipt, low-memory == the F16 `after` receipt; unit tests pass.
+MiniCPM-OCR initial run (`0d3974ab`): F16 5/5 exact in both arms, but every F32-GGUF case failed to load — the default
+`f32` graph-decoder matmul allocated an empty copy context (nothing to copy in an F32 model) and init failed. Fixed in
+`8c8c8be6` (skip the copy step when there is nothing to copy); rerun: 5/5 token- and text-exact in all four arms
+(F32/F16 x default/low-memory). Initial receipts retained as `*-initial-f32-load-failure.json`. `test-low-memory` ran
+for the first time: 21 checks, 0 failures.
+
 ## 3 November 2026 — macOS arm64 desktop drift attributed to the Metal backend
 
 * The producer configs (40724938611) differ a lot. macOS uses AppleClang with Metal, Accelerate
