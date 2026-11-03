@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <cstdio>
 
+#include "crispembed.h"
 #include "deepseek_ocr2.h"
 #include "glm_ocr.h"
 #include "got_ocr.h"
@@ -773,4 +774,48 @@ extern "C" int smoldocling_get_max_tokens(const smoldocling_context * ctx) {
 extern "C" int unlimited_ocr_get_max_tokens(const unlimited_ocr_context * ctx) {
     (void)ctx;
     return 0;
+}
+
+// MinerU2.5-Pro public C API (the orchestrator's mineru route calls it).
+crispembed_mineru_context * crispembed_mineru_init(const char * model_path, int n_threads) {
+    (void)n_threads;
+    return (crispembed_mineru_context *)wasm_unavailable("mineru25_pro", model_path);
+}
+
+void crispembed_mineru_free(crispembed_mineru_context * ctx) {
+    (void)ctx;
+}
+
+const char * crispembed_mineru_predict(crispembed_mineru_context * ctx, const uint8_t * pixels, int width, int height,
+                                       int channels, const char * prompt, int max_new_tokens) {
+    (void)ctx, (void)pixels, (void)width, (void)height, (void)channels, (void)prompt, (void)max_new_tokens;
+    return nullptr;
+}
+
+const char * crispembed_mineru_extract(crispembed_mineru_context * ctx, const uint8_t * pixels, int width, int height,
+                                       int channels, int image_analysis, int max_new_tokens) {
+    (void)ctx, (void)pixels, (void)width, (void)height, (void)channels, (void)image_analysis, (void)max_new_tokens;
+    return nullptr;
+}
+
+const char * crispembed_mineru_extract_document(crispembed_mineru_context * ctx, const uint8_t * pixels, int width,
+                                                int height, int channels, const char * options_json,
+                                                int max_new_tokens) {
+    (void)ctx, (void)pixels, (void)width, (void)height, (void)channels, (void)options_json, (void)max_new_tokens;
+    return nullptr;
+}
+
+const char * crispembed_mineru_last_document(crispembed_mineru_context * ctx, const char * format) {
+    (void)ctx, (void)format;
+    return nullptr;
+}
+
+const char * crispembed_mineru_last_markdown(const crispembed_mineru_context * ctx) {
+    (void)ctx;
+    return nullptr;
+}
+
+const char * crispembed_mineru_last_error(const crispembed_mineru_context * ctx) {
+    (void)ctx;
+    return k_unavailable;
 }
