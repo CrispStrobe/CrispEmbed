@@ -112,6 +112,8 @@ qwen35 decoder kernels. All default off.
 |---|---|---|
 | `CRISPEMBED_UNLIMITED_OCR2` | off | **Required.** A variant-2 GGUF refuses to decode without it (never falls back to v1 attention). |
 | `CRISPEMBED_UNLIMITED_OCR2_FAST` | off | Opt-in ggml decoder; the exact CPU/F32 reference decoder stays the default. |
+| `CRISPEMBED_UNLIMITED_OCR2_FORCE_IDS` | unset | Diagnostic teacher forcing for the fast decoder: a file of whitespace-separated token IDs fed instead of the argmax (docs/unlimited-ocr2-q4k-recipes.md). |
+| `CRISPEMBED_UNLIMITED_OCR2_LOGITS_OUT` | unset | Diagnostic: write each fast-decoder step's raw lm_head logits (F32) to this file. |
 | `CRISPEMBED_UNLIMITED_OCR2_TILES` | on | Follows the original >640 px tiling (images wider or taller than 640 px are tiled). `=0` forces the untiled path. |
 | `CRISPEMBED_UNLIMITED_OCR2_TILES_LEGACY_PREP`, `..._TILES_LEGACY_UPSAMPLE` | off | Restore the earlier tile preprocessing / SAM tile-grid upsampling. |
 | `CRISPEMBED_UNLIMITED_OCR2_VISION_CACHE` | on | Speed-up: vision cache and row-parallel projection for variant 2. `=0` disables. |
@@ -185,7 +187,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-413 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+415 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -1098,6 +1100,8 @@ Regenerate with `python tools/list_env_vars.py --write`.
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_UNLIMITED_OCR2` | on | off | bool | default-off experimental / opt-in | `src/unlimited_ocr.cpp` | Unlimited-OCR-2 must not silently run v1 attention: its own gate is required. |
 | `CRISPEMBED_UNLIMITED_OCR2_FAST` | on | off | bool | default-off experimental / opt-in | `src/unlimited_ocr.cpp` |  |
+| `CRISPEMBED_UNLIMITED_OCR2_FORCE_IDS` | value | unset | value | tuning / config | `src/unlimited_ocr.cpp` |  |
+| `CRISPEMBED_UNLIMITED_OCR2_LOGITS_OUT` | value | unset | path | tuning / config | `src/unlimited_ocr.cpp` |  |
 | `CRISPEMBED_UNLIMITED_OCR2_LOW_MEMORY` | value | unset | value | tuning / config | `src/unlimited_ocr.cpp` |  |
 | `CRISPEMBED_UNLIMITED_OCR2_OUTPUT` | value | unset | value | tuning / config | `src/unlimited_ocr.cpp` |  |
 | `CRISPEMBED_UNLIMITED_OCR2_TILES` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/unlimited_ocr.cpp` |  |

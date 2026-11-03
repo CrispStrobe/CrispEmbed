@@ -1,3 +1,18 @@
+<<<<<<< HEAD
+## 3 November 2026 — Unlimited-OCR-2 Q4_K recipes (perf/q4k-unlimited-ocr2-20261103)
+
+The v3 mixed-Q4 panel's stop at `v.pos_embed` was the audit comparing raw stored shapes: the
+quantizer kept the tensor F16 and byte-identical; ggml's GGUF writer stores `[3145728,1]` as
+`[3145728]`. Protection kept (type/payload/semantic shape checked for every recipe). New
+default-off teacher forcing (`CRISPEMBED_UNLIMITED_OCR2_FORCE_IDS`/`_LOGITS_OUT`) scores
+final-logit cosine on the four frozen cases against native F16, which reproduces the original
+IDs 4/4 (portable build). Hosted CPU runs 41589463950, 41589467110, 41589470353, 41616154269
+(cancelled first attempt 41614573821 retained as a run ID only); Kaggle T4 kernel v1/v2.
+Q8_0 0.9739 CPU / 0.9555 CUDA; production q4_k 0.9567 CPU (12 Q4_0 fallbacks); SAM Q4_K
+0.7989; `unlimited_ocr2_q4k_v1` 2,074 MiB 0.9512/0.9443; `unlimited_ocr2_q4k_shared8_v1`
+2,189 MiB 0.9634/0.9540, text = F16 4/4. Every ID divergence is a box coordinate or one
+layout label. Receipts: `tests/results/unlimited-ocr2/q4k-sweep/`, `q4k-precision-*.json`.
+=======
 ## 3 November 2026 — Hosted check of the MiniCPM-OCR / Unlimited-OCR-2 defaults and low-memory fallback
 
 Kaggle CPU, no env vs `..._LOW_MEMORY=1`. Unlimited-OCR-2 (`0d3974ab`): 4/4 trial pages ids and text byte-exact vs the
@@ -106,6 +121,7 @@ logit of HF `AutoModelForSequenceClassification` fp32). Receipts: `tests/results
   tarball flattened as release.yml now does both embed exactly six real files
   (libcrispembed, libggml, -base, -cpu, -metal, -blas `.dylib`), all signatures verify, and the
   app loads libcrispembed and resolves `crispembed_init` with no manual fixes.
+>>>>>>> origin/main
 
 ## 3 November 2026 — BGE-M3 Q8_0 mix that qualifies on CUDA
 

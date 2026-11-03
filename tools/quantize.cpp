@@ -90,6 +90,37 @@ static const std::vector<Qwen2vlPolicy> & qwen2vl_policies() {
 }
 static const Qwen2vlPolicy * g_qwen2vl_policy = nullptr;
 
+// Named Unlimited-OCR-2 Q4_K-class policy (docs/unlimited-ocr2-q4k-recipes.md), opt-in
+// with CRISPEMBED_QUANTIZE_UNLIMITED_OCR2_POLICY=<name>, the published F16 source
+// (general.architecture unlimited_ocr, unlimited_ocr.variant 2) and the policy's base
+// type. Rules go before any --tensor-type rule, like the qwen2vl policies, and equal
+// the measured recipe in tools/unlimited_ocr2_quant_recipes.json
+// (tests/test_unlimited_ocr2_quant_policy.py keeps the two in step).
+struct UnlimitedOcr2Policy {
+    const char * name;
+    ggml_ftype base;
+    std::vector<std::pair<const char *, ggml_type>> rules;
+};
+static const std::vector<UnlimitedOcr2Policy> & unlimited_ocr2_policies() {
+    static const std::vector<UnlimitedOcr2Policy> policies = {
+        // = recipe "q4kne": the smallest measured recipe above the bar on CPU and CUDA.
+        { "unlimited_ocr2_q4k_v1",
+          GGML_FTYPE_MOSTLY_Q4_K,
+          { { "c.pos_embed", GGML_TYPE_F16 },
+            { "l.blk.*.ffn_down_exps.weight", GGML_TYPE_IQ4_NL },
+            { "l.blk.0.ffn_down.weight", GGML_TYPE_IQ4_NL },
+            { "l.embed_tokens.weight", GGML_TYPE_Q4_K } } },
+        // = recipe "q4kns": shared experts Q8_0, more margin and box-stripped text equal to F16 on all cases.
+        { "unlimited_ocr2_q4k_shared8_v1",
+          GGML_FTYPE_MOSTLY_Q4_K,
+          { { "c.pos_embed", GGML_TYPE_F16 },
+            { "l.blk.*.ffn_down_exps.weight", GGML_TYPE_IQ4_NL },
+            { "l.blk.0.ffn_down.weight", GGML_TYPE_IQ4_NL },
+            { "l.blk.*.shared_exp.*", GGML_TYPE_Q8_0 } } },
+    };
+    return policies;
+}
+static const UnlimitedOcr2Policy * g_unlimited_ocr2_policy = nullptr;
 // Named Josev (josev2b_systemone packed GGUF) mixed Q4_K policies
 // (docs/josev2b-q4k-sweep.md), opt-in with CRISPEMBED_QUANTIZE_JOSEV_POLICY=<name>
 // and the base type q4_k. They equal the measured sweep recipes in
@@ -642,6 +673,22 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             return false;
         }
         gguf_set_val_str(ctx_out, "qwen2vl.quantization.policy", g_qwen2vl_policy->name);
+    }
+    if (g_unlimited_ocr2_policy) {
+        const int ak = gguf_find_key(ctx_in, "general.architecture");
+        const int vk = gguf_find_key(ctx_in, "unlimited_ocr.variant");
+        const bool fits = ak >= 0 && std::string(gguf_get_val_str(ctx_in, ak)) == "unlimited_ocr" && vk >= 0 &&
+                          gguf_get_kv_type(ctx_in, vk) == GGUF_TYPE_UINT32 && gguf_get_val_u32(ctx_in, vk) == 2;
+        if (!fits || ftype != g_unlimited_ocr2_policy->base) {
+            fprintf(stderr,
+                    "CRISPEMBED_QUANTIZE_UNLIMITED_OCR2_POLICY=%s needs an Unlimited-OCR-2 source and its base type\n",
+                    g_unlimited_ocr2_policy->name);
+            gguf_free(ctx_out);
+            gguf_free(ctx_in);
+            ggml_free(ctx_in_ggml);
+            return false;
+        }
+        gguf_set_val_str(ctx_out, "unlimited_ocr.quantization.policy", g_unlimited_ocr2_policy->name);
     }
     // Reject misspelled patterns before opening/truncating the output file.
     for (const auto & rule : g_tensor_types) {
@@ -1777,6 +1824,23 @@ int main(int argc, char ** argv) {
         for (const auto & r : g_qwen2vl_policy->rules) rules.push_back({ r.first, r.second });
         g_tensor_types.insert(g_tensor_types.begin(), rules.begin(), rules.end());
         fprintf(stderr, "qwen2vl quantization policy %s (%zu rules)\n", g_qwen2vl_policy->name, rules.size());
+    }
+    if (const char * name = getenv("CRISPEMBED_QUANTIZE_UNLIMITED_OCR2_POLICY"); name && *name) {
+        for (const auto & p : unlimited_ocr2_policies()) {
+            if (std::string(p.name) == name) g_unlimited_ocr2_policy = &p;
+        }
+        if (!g_unlimited_ocr2_policy) {
+            fprintf(stderr,
+                    "unknown CRISPEMBED_QUANTIZE_UNLIMITED_OCR2_POLICY '%s' "
+                    "(unlimited_ocr2_q4k_v1|unlimited_ocr2_q4k_shared8_v1)\n",
+                    name);
+            return 1;
+        }
+        std::vector<TensorTypeOverride> rules;
+        for (const auto & r : g_unlimited_ocr2_policy->rules) rules.push_back({ r.first, r.second });
+        g_tensor_types.insert(g_tensor_types.begin(), rules.begin(), rules.end());
+        fprintf(stderr, "unlimited-ocr2 quantization policy %s (%zu rules)\n", g_unlimited_ocr2_policy->name,
+                rules.size());
     }
     if (const char * name = getenv("CRISPEMBED_QUANTIZE_JOSEV_POLICY"); name && *name) {
         for (const auto & p : josev_policies()) {

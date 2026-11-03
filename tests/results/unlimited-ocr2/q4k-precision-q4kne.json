@@ -1,0 +1,146 @@
+{
+ "schema": "crispembed.unlimited-ocr2.q4k-precision.v1",
+ "model": "unlimited-ocr2",
+ "dtype": "unlimited_ocr2_q4k_v1",
+ "recipe": "q4kne",
+ "bar": 0.94,
+ "metric": "minimum final-logit cosine over every forced position (plus the EOS position), teacher-forced on the original-Python IDs of the four frozen cases (docs/unlimited-ocr2-q4k-recipes.md)",
+ "reference": "native F16 on the CPU (portable build), free-running ID-exact against the original on all four cases",
+ "arms": [
+  {
+   "name": "cpu-hosted-epyc",
+   "dtype": "unlimited_ocr2_q4k_v1",
+   "device": "cpu",
+   "directory": "tests/results/unlimited-ocr2/q4k-sweep/41616154269",
+   "file_mib": 2073.6,
+   "type_counts": {
+    "Q8_0": 185,
+    "Q4_K": 154,
+    "F16": 388,
+    "IQ4_NL": 12
+   },
+   "protected_ok": true,
+   "build_mode": [
+    "script_build_flags=-DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF (portable) device=cpu extra=",
+    "CRISPEMBED_NATIVE:BOOL=OFF",
+    "GGML_NATIVE:BOOL=OFF"
+   ],
+   "final_output_complete": true,
+   "cases": [
+    {
+     "id": "paragraphs",
+     "ids_exact": false,
+     "first_divergence": 30,
+     "final_cos_min": 0.9545254551642723,
+     "final_cos_mean": 0.9941795666137249,
+     "positions": 147,
+     "worst_position": 81,
+     "top1_agreement": 0.9863945578231292,
+     "text_equal_f16_boxes_stripped": true
+    },
+    {
+     "id": "table",
+     "ids_exact": false,
+     "first_divergence": 10,
+     "final_cos_min": 0.960939249280908,
+     "final_cos_mean": 0.9952363732794325,
+     "positions": 139,
+     "worst_position": 9,
+     "top1_agreement": 0.9928057553956835,
+     "text_equal_f16_boxes_stripped": true
+    },
+    {
+     "id": "receipt",
+     "ids_exact": false,
+     "first_divergence": 2,
+     "final_cos_min": 0.9532741180563276,
+     "final_cos_mean": 0.9946192657889152,
+     "positions": 307,
+     "worst_position": 156,
+     "top1_agreement": 0.9706840390879479,
+     "text_equal_f16_boxes_stripped": false
+    },
+    {
+     "id": "german",
+     "ids_exact": false,
+     "first_divergence": 4,
+     "final_cos_min": 0.9512187425022915,
+     "final_cos_mean": 0.9940620405095928,
+     "positions": 165,
+     "worst_position": 81,
+     "top1_agreement": 0.9818181818181818,
+     "text_equal_f16_boxes_stripped": true
+    }
+   ],
+   "worst_final_cos": 0.9512187425022915
+  },
+  {
+   "name": "cuda-kaggle-t4",
+   "dtype": "unlimited_ocr2_q4k_v1",
+   "device": "cuda",
+   "directory": "tests/results/unlimited-ocr2/q4k-sweep/kaggle-cuda-v2",
+   "file_mib": 2073.6,
+   "type_counts": {
+    "Q8_0": 185,
+    "Q4_K": 154,
+    "F16": 388,
+    "IQ4_NL": 12
+   },
+   "protected_ok": true,
+   "build_mode": [
+    "script_build_flags=-DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF (portable) device=gpu extra=-DGGML_CUDA=ON -DCMAKE_CUDA_ARCHITECTURES=75",
+    "CRISPEMBED_NATIVE:BOOL=OFF",
+    "GGML_NATIVE:BOOL=OFF"
+   ],
+   "final_output_complete": true,
+   "cases": [
+    {
+     "id": "paragraphs",
+     "ids_exact": false,
+     "first_divergence": 30,
+     "final_cos_min": 0.965499434739406,
+     "final_cos_mean": 0.994319124034062,
+     "positions": 147,
+     "worst_position": 83,
+     "top1_agreement": 0.9863945578231292,
+     "text_equal_f16_boxes_stripped": true
+    },
+    {
+     "id": "table",
+     "ids_exact": false,
+     "first_divergence": 10,
+     "final_cos_min": 0.9660230416911308,
+     "final_cos_mean": 0.9951015640689094,
+     "positions": 139,
+     "worst_position": 9,
+     "top1_agreement": 0.9928057553956835,
+     "text_equal_f16_boxes_stripped": true
+    },
+    {
+     "id": "receipt",
+     "ids_exact": false,
+     "first_divergence": 2,
+     "final_cos_min": 0.9442538724547133,
+     "final_cos_mean": 0.9948817891025702,
+     "positions": 307,
+     "worst_position": 156,
+     "top1_agreement": 0.9674267100977199,
+     "text_equal_f16_boxes_stripped": false
+    },
+    {
+     "id": "german",
+     "ids_exact": false,
+     "first_divergence": 4,
+     "final_cos_min": 0.9552501903932653,
+     "final_cos_mean": 0.994309849474078,
+     "positions": 165,
+     "worst_position": 128,
+     "top1_agreement": 0.9818181818181818,
+     "text_equal_f16_boxes_stripped": true
+    }
+   ],
+   "worst_final_cos": 0.9442538724547133
+  }
+ ],
+ "worst_final_cos": 0.9442538724547133
+}

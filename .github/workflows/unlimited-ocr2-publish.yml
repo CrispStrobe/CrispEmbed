@@ -86,7 +86,13 @@ jobs:
                   --output "/mnt/uocr2/gguf/$name" --name unlimited-ocr-2 $rest ;;
               quantize)
                 rm -rf /mnt/uocr2/src
-                "$q" "$f32" "/mnt/uocr2/gguf/$name" $rest ;;
+                # rest = source filename, type, --tensor-type rules, CRISPEMBED_QUANTIZE_* switches (as env)
+                read -ra words <<< "$rest"
+                envs=(); args=()
+                for w in "${words[@]:1}"; do
+                  case "$w" in CRISPEMBED_QUANTIZE_*=*) envs+=("$w") ;; *) args+=("$w") ;; esac
+                done
+                env "${envs[@]}" "$q" "/mnt/uocr2/gguf/${words[0]}" "/mnt/uocr2/gguf/$name" "${args[@]}" ;;
               drop-f32) rm -f "$f32" ;;
             esac
           done < "$RUNNER_TEMP/plan.txt"

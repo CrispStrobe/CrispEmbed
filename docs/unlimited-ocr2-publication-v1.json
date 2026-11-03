@@ -31,8 +31,10 @@
     "F16": {"filename": "unlimited-ocr-2-f16.gguf", "from": "convert", "convert_args": ["--fp16"]},
     "Q8_0": {"filename": "unlimited-ocr-2-q8_0.gguf", "from": "F32", "type": "q8_0", "tensor_type": []},
     "Q5_K": {"filename": "unlimited-ocr-2-q5_k.gguf", "from": "F32", "type": "q5_k", "tensor_type": []},
-    "Q4_K": {"filename": "unlimited-ocr-2-q4_k.gguf", "from": "F32", "type": "q4_k", "tensor_type": []}
+    "Q4_K": {"filename": "unlimited-ocr-2-q4_k.gguf", "from": "F32", "type": "q4_k", "tensor_type": []},
+    "Q4_K_MIX": {"filename": "unlimited-ocr-2-q4_k-mix.gguf", "from": "F16", "type": "q4_k", "quantize_env": {"CRISPEMBED_QUANTIZE_UNLIMITED_OCR2_POLICY": "unlimited_ocr2_q4k_shared8_v1"}, "note": "Named policy unlimited_ocr2_q4k_shared8_v1 (docs/unlimited-ocr2-q4k-recipes.md): routed experts and decoder attention Q4_K, expert ffn_down IQ4_NL (896-wide, no Q4_0), shared experts Q8_0, SAM/CLIP vision, embedding and lm_head Q8_0, c.pos_embed and v.pos_embed F16. 2,189 MiB vs 3,397 MiB Q8_0. Final-logit cosine min 0.9634 (hosted CPU, portable) / 0.9540 (CUDA T4) on all four frozen cases; free-running decoding differs from the original only in box coordinates (max 2 px), text with boxes stripped equal on 4/4, every case reaches EOS.", "precision_receipt": "tests/results/unlimited-ocr2/q4k-precision-q4kns.json", "precision_dtype": "unlimited_ocr2_q4k_shared8_v1", "precision_tier": "q4_k", "precision_gate": "cosine"}
   },
+  "parity_cases": ["paragraphs", "table", "receipt", "german"],
   "receipts": {
     "original": "tests/results/unlimited-ocr2/original-reference.json",
     "untiled": "tests/results/unlimited-ocr2/native-untiled.json",
