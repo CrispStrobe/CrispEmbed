@@ -1,61 +1,46 @@
 name: Build
 
+# Always start the cheap guards/selector, including docs-only PRs. Expensive
+# jobs are conditional; the stable Build result check is never path-filtered.
 on:
   push:
     branches: [main]
-    # Documentation-only pushes must not start a build. Together with the
-    # cancel-in-progress group below, they did more than waste runners: a
-    # docs commit landing while a real build was in flight KILLED that build,
-    # and because GitHub's workflow badge reports the newest *completed* run
-    # and renders anything that is not `success` as "failing", a run of
-    # PLAN/HISTORY edits left the repo showing a red "Build failing" badge
-    # with nothing broken. (2026-08-06: six docs pushes in 30 minutes, three
-    # cancellations, while the last build that actually finished was green on
-    # all nine platform jobs.)
-    #
-    # An ignore-list, not an allow-list: this is the full cross-platform
-    # build and it must run for any code change, so listing what is safe to
-    # skip is the side that fails closed. Verified before adding: no .md is
-    # an input to the build or to the model-free tests below — the
-    # provenance tests assert that a string the CODE emits mentions
-    # POLICY.md, they never read the file.
-    #
-    # Also applied to `pull_request` (2026-11-02): main has no branch
-    # protection / required checks, so a skipped PR run cannot block a merge.
-    # If Build ever becomes a required check, replace the PR filter with an
-    # always-run lightweight job instead (see docs/contributing.md, CI).
-    # `tests/results/**` holds committed receipts/evidence JSON that no build
-    # step or model-free test below reads.
-    #
-    # Both markdown globs on purpose. GitHub matches these against the full
-    # path from the repo root, where `*` does not cross `/` and `**` does, so
-    # `'**.md'` should already cover root-level PLAN.md — "should" being a
-    # reading of the pattern spec, not something observed. `'*.md'` matches
-    # root-level markdown unambiguously, so listing both makes the filter
-    # correct either way instead of resting on the subtlety.
-    paths-ignore:
-      - '*.md'
-      - '**.md'
-      - 'docs/**'
-      - 'tests/results/**'
   pull_request:
     branches: [main]
-    paths-ignore:
-      - '*.md'
-      - '**.md'
-      - 'docs/**'
-      - 'tests/results/**'
+  workflow_dispatch:
 
+permissions:
+  contents: read
+
+# A docs-only main push selects no build and must not cancel the previous
+# code-bearing push. PR diffs are cumulative, so superseded PR runs can cancel.
 concurrency:
-  group: build-${{ github.ref }}
+  group: build-${{ (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main') && github.run_id || github.ref }}
   cancel-in-progress: true
 
 jobs:
   guards:
     name: Static guards
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      native: ${{ steps.select.outputs.native }}
+      native_tests: ${{ steps.select.outputs.native_tests }}
+      mobile: ${{ steps.select.outputs.mobile }}
+      sibling: ${{ steps.select.outputs.sibling }}
+      wasm_ocr: ${{ steps.select.outputs.wasm_ocr }}
+      wasm_embed: ${{ steps.select.outputs.wasm_embed }}
+      rust: ${{ steps.select.outputs.rust }}
+      inpaint_python: ${{ steps.select.outputs.inpaint_python }}
+      inpaint_native: ${{ steps.select.outputs.inpaint_native }}
+      bundle: ${{ steps.select.outputs.bundle }}
+      full: ${{ steps.select.outputs.full }}
     steps:
       - uses: actions/checkout@v4
+      - name: CI selection and aggregate-gate controls
+        run: python3 tests/test_ci_selection.py -v
+      - id: select
+        uses: ./.github/actions/ci-select
       - name: Test mains route through clean_exit
         run: bash tools/check_test_clean_exit.sh
       - name: Workflow toolchains are version-pinned
@@ -68,6 +53,8 @@ jobs:
         run: python3 tests/test_pubdev_release_gate.py -v
 
   build:
+    needs: guards
+    if: needs.guards.outputs.native == 'true'
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -92,6 +79,10 @@ jobs:
         with:
           submodules: recursive
 
+      - uses: ./.github/actions/compiler-cache
+        with:
+          namespace: desktop-${{ matrix.name }}-release-portable
+
       - name: Configure
         run: >
           cmake -S . -B build
@@ -105,8 +96,16 @@ jobs:
       - name: Verify portable CPU baseline
         run: ${{ runner.os == 'Windows' && 'python' || 'python3' }} scripts/check-cpu-baseline.py build
 
-      - name: Build
+      - name: Build all native targets
+        if: needs.guards.outputs.native_tests == 'true'
         run: cmake --build build --config Release -j4
+
+      - name: Build delivered native targets for isolated CLI changes
+        if: needs.guards.outputs.native_tests != 'true'
+        run: >-
+          cmake --build build --config Release -j4
+          --target crispembed-cli crispembed-marker crispembed-server
+          crispembed-quantize crispembed-shared test-backend-smoke
 
       - name: Smoke test (Unix)
         if: runner.os != 'Windows'
@@ -120,7 +119,7 @@ jobs:
       # that every emitted image is marked, that the marking is a structurally
       # valid PNG chunk, and that we never assert wholly-synthetic media.
       - name: Model-free tests (Unix)
-        if: runner.os != 'Windows'
+        if: runner.os != 'Windows' && needs.guards.outputs.native_tests == 'true'
         run: |
           cmake --build build --config Release -j4 \
             --target test-image-provenance test-provenance-marking test-msac-tiling test-temp-file test-render-provenance \
@@ -197,6 +196,8 @@ jobs:
           if-no-files-found: warn
 
   sibling-crispasr:
+    needs: guards
+    if: needs.guards.outputs.sibling == 'true'
     name: sibling-crispasr (shared libs)
     runs-on: ubuntu-latest
     # Issue #50. CrispEmbed's CMakeLists defaults CRISP_AUDIO_DIR /
@@ -216,6 +217,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+
+      - uses: ./.github/actions/compiler-cache
+        with:
+          namespace: sibling-release
+          native_cpu: 'true'
 
       - name: Clone CrispASR as a sibling
         run: git clone --depth 1 https://github.com/CrispStrobe/CrispASR.git ../CrispASR
@@ -253,6 +259,8 @@ jobs:
         shell: bash
 
   build-android:
+    needs: guards
+    if: needs.guards.outputs.mobile == 'true'
     name: android-${{ matrix.abi }}
     runs-on: ubuntu-latest
     strategy:
@@ -264,6 +272,10 @@ jobs:
         with:
           submodules: recursive
 
+      - uses: ./.github/actions/compiler-cache
+        with:
+          namespace: android-${{ matrix.abi }}-release
+
       - name: Build
         run: |
           cmake -S . -B build \
@@ -273,7 +285,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCRISPEMBED_BUILD_SHARED=ON \
             -DGGML_LLAMAFILE=OFF
-          cmake --build build -j4
+          cmake --build build -j4 --target crispembed-shared
 
       - name: Upload
         uses: actions/upload-artifact@v4
@@ -283,12 +295,18 @@ jobs:
           if-no-files-found: warn
 
   build-ios:
+    needs: guards
+    if: needs.guards.outputs.mobile == 'true'
     name: ios-arm64
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
+
+      - uses: ./.github/actions/compiler-cache
+        with:
+          namespace: ios-arm64-release-metal
 
       - name: Build
         run: |
@@ -320,7 +338,8 @@ jobs:
   bundle-flutter:
     name: Bundle Flutter plugin
     runs-on: ubuntu-latest
-    needs: [build, build-android, build-ios]
+    needs: [guards, build, build-android, build-ios]
+    if: needs.guards.outputs.bundle == 'true'
     steps:
       - uses: actions/checkout@v4
 
@@ -368,3 +387,19 @@ jobs:
         with:
           name: flutter-plugin-bundled
           path: flutter/crispembed/
+
+  result:
+    name: Build result
+    if: always()
+    needs: [guards, build, sibling-crispasr, build-android, build-ios, bundle-flutter]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require every selected build and reject unexpected skips
+        env:
+          CI_NEEDS: ${{ toJSON(needs) }}
+        run: >-
+          python3 tools/ci_selection.py check --selector guards
+          build=native sibling-crispasr=sibling build-android=mobile
+          build-ios=mobile bundle-flutter=bundle

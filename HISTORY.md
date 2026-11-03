@@ -46,6 +46,47 @@ Text-embedding WASM still builds at 1.5 MB (run 41587317791). Build WASM now pri
 (`tools/wasm_size_report.py` over the emcc symbol map). Largest remaining code: `ggml_graph_compute_thread`
 301 KB, `ocr_orchestrator::run_file` 131 KB, layout detection 138 KB, stb_image 104 KB.
 
+## 3 November 2026 — PR 118 audit fixes, focused regressions and selective CI
+
+Maintainer continuation of PR118 at `60f0b6cf`, preserving the contributor's
+history and experimental gates. Static reuse now checks its originating fill
+input, so gradual fades refresh; a pixel-residual guard rejects fine moving
+texture that has unchanged cell means. Flatness checks RGB channels as well as
+luma. Harmonic iteration work has a real 20-million-update ceiling. Frame-payload
+sizing includes masks, output, engine scratch and a reserved reuse anchor;
+backpressure prevents undrained output growth. The CLI drains complete output
+before reporting later EOF/inference failures. The missing clean_exit wrapper
+is repaired; the original failing guard is retained in the
+[audit record](docs/inpaint-stream-audit.md).
+
+Expanded model-free temporal and CLI regression source covers drift, noise,
+donors, mask changes, binary ordering, known-byte preservation, memory/lifecycle
+boundaries and error-prefix behavior. The new [owned video panel](docs/inpaint-video-quality.md)
+compares five deterministic six-frame clips against clean ground truth using
+independent and temporal execution, with identities, image/temporal errors,
+engine calls, timing, memory and failure evidence. Its bounded reviewed-model
+hosted run is a diagnostic; it does not promote a gate or qualify film/GPU use.
+
+Ordinary Build, inpainting, WASM and Rust jobs use a tested cumulative Git-diff
+selector with broad fallback for shared dependencies or incomplete/unknown
+changes. Always-run result checks reject unexpected skips or failed selected
+jobs. Pure Python controls avoid native compilation, isolated CLI changes avoid
+unrelated mobile/WASM/package builds, and compiler caches preserve actual
+configure/link/test and standalone crate verification. Main and manual runs
+cannot be cancelled by later metadata-only changes. See [CI selection](docs/ci-selection.md).
+Focused local controls pass; native/platform/model validation is pending hosted
+CI. No measured cache speedup or runtime quality improvement is asserted here.
+
+## 3 November 2026 — Issue 71 inpainting video stream (`--inpaint-stream`, `--inpaint-temporal`)
+
+Raw frame pipe for burned-in subtitle removal on top of the main inpainting engines (no new engine or model), gated
+by `CRISPEMBED_INPAINT_STREAM` in addition to each engine's own gates. `src/inpaint_temporal` is engine-agnostic (a
+fill callback) and fills each masked frame by propagation from the nearest unmasked frame on a static ring, reuse of
+the previous output over a static span, a harmonic fill for flat surroundings, and the engine (blended with the
+previous output on moderate change). Buffered frames are kept within 2 GiB (the window is reduced for large frames).
+Model-free contracts: `test-inpaint-temporal` (44 checks) and CLI driver stream tests. Measured output is on par with
+the research prototype; numbers in PERFORMANCE.md ("Issue 71 video stream with temporal consistency").
+
 ## 2 November 2026 — Unlimited-OCR-2 F32 vision / tile batch gates (default off)
 
 **Vision speed gates (2026-11-02, default off).** `CRISPEMBED_UNLIMITED_OCR2_VISION_F32` (F32 SAM/CLIP block
