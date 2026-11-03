@@ -185,7 +185,8 @@ def cmd_summary(outdir):
     outdir = Path(outdir)
     lines = ['| recipe | MiB | final cos min (case) | per case | top1 agree min | free-run IDs exact | '
              'text = F16 (boxes stripped) | max box delta | wall s |', '|---|---|---|---|---|---|---|---|---|']
-    names = sorted({Path(p).name.split('.')[0] for p in glob.glob(str(outdir / '*.census.json'))})
+    names = sorted({Path(p).name.split('.')[0] for p in glob.glob(str(outdir / '*.census.json')) +
+                    glob.glob(str(outdir / '*.cosine.json'))})
     names = ['f16'] + [n for n in names if n != 'f16']
     for n in names:
         cen = outdir / f'{n}.census.json'

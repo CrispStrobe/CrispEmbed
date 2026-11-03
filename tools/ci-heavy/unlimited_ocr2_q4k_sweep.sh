@@ -20,6 +20,10 @@ KEEP=${3:-}  # comma list of recipes whose GGUF is copied to $HEAVY_OUT
 OUT=${HEAVY_OUT:?}
 S=${HEAVY_SCRATCH:?}
 T=$(nproc)
+# DEVICE=gpu (Kaggle CUDA confirmation, tools/kaggle/unlimited-ocr2-q4k-cuda): the F16
+# reference stays on the CPU; every candidate, plus an F16 control "f16cuda", runs on CUDA.
+DEVICE=${DEVICE:-cpu}
+CMAKE_EXTRA=${CMAKE_EXTRA:-}
 H=tools/unlimited_ocr2_q4k.py
 CASES="paragraphs table receipt german"
 {
@@ -27,7 +31,7 @@ CASES="paragraphs table receipt german"
     echo "commit: $(git rev-parse HEAD)"
     lscpu 2>/dev/null
 } > "$OUT/cpu.txt"
-echo "script_build_flags=-DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF (portable)" >> "$OUT/build-mode.txt"
+echo "script_build_flags=-DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF (portable) device=$DEVICE extra=$CMAKE_EXTRA" >> "$OUT/build-mode.txt"
 
 python $H render "$S/pages" > "$OUT/render.log" 2>&1 ||
     { tail -20 "$OUT/render.log"; exit 2; }
@@ -36,7 +40,7 @@ cp "$S/pages"/*.png "$OUT/" 2>/dev/null
 [ "$RECIPES" = render ] && { cat "$OUT/cases.json"; exit 0; }
 
 cmake -S . -B "$S/build" -DCMAKE_BUILD_TYPE=Release -DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF \
-    -DGGML_CUDA=OFF -DGGML_METAL=OFF -DGGML_VULKAN=OFF > "$OUT/cmake.log" 2>&1 &&
+    -DGGML_METAL=OFF -DGGML_VULKAN=OFF ${CMAKE_EXTRA:--DGGML_CUDA=OFF} > "$OUT/cmake.log" 2>&1 &&
     cmake --build "$S/build" --target crispembed-cli crispembed-quantize -j"$T" > "$OUT/build.log" 2>&1 ||
     { tail -40 "$OUT/build.log"; exit 2; }
 CLI=$(find "$S/build" -name crispembed -type f -perm -u+x | head -1)
@@ -57,6 +61,7 @@ run() {
         UOCR_DBG=1 OMP_NUM_THREADS="$T")
     [ "$4" = forced ] && env+=(CRISPEMBED_UNLIMITED_OCR2_FORCE_IDS="$S/ids/$3.ids"
         CRISPEMBED_UNLIMITED_OCR2_LOGITS_OUT="$S/logits/$1.$3.f32")
+    [ "$DEVICE" = gpu ] && [ "$1" = f16 ] && env+=(CUDA_VISIBLE_DEVICES=)
     env "${env[@]}" "$CLI" -m "$2" --ocr "$S/pages/$3.png" --ocr-max-tokens 1024 -t "$T" \
         > "$OUT/$1.$3.$4.txt" 2> "$S/$1.$3.$4.err"
     local rc=$?
@@ -83,6 +88,7 @@ panel() {
 }
 
 panel f16 "$F16"
+[ "$DEVICE" = gpu ] && panel f16cuda "$F16"
 fail=0
 IFS=, read -ra names <<< "$RECIPES"
 for n in "${names[@]}"; do

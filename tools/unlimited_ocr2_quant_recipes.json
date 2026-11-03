@@ -15,5 +15,6 @@
   "q4kn": {"type": "q4_k", "rules": ["c.pos_embed=f16", "l.blk.*.ffn_down_exps.weight=iq4_nl", "l.blk.0.ffn_down.weight=iq4_nl"]},
   "q4kne": {"type": "q4_k", "rules": ["c.pos_embed=f16", "l.blk.*.ffn_down_exps.weight=iq4_nl", "l.blk.0.ffn_down.weight=iq4_nl", "l.embed_tokens.weight=q4_k"]},
   "q4kns": {"type": "q4_k", "rules": ["c.pos_embed=f16", "l.blk.*.ffn_down_exps.weight=iq4_nl", "l.blk.0.ffn_down.weight=iq4_nl", "l.blk.*.shared_exp.*=q8_0"]},
-  "q4kna": {"type": "q4_k", "rules": ["c.pos_embed=f16", "l.blk.*.ffn_down_exps.weight=iq4_nl", "l.blk.0.ffn_down.weight=iq4_nl", "l.blk.*.attn_q.weight=q8_0", "l.blk.*.attn_k.weight=q8_0", "l.blk.*.attn_v.weight=q8_0", "l.blk.*.attn_o.weight=q8_0"]}
+  "q4kna": {"type": "q4_k", "rules": ["c.pos_embed=f16", "l.blk.*.ffn_down_exps.weight=iq4_nl", "l.blk.0.ffn_down.weight=iq4_nl", "l.blk.*.attn_q.weight=q8_0", "l.blk.*.attn_k.weight=q8_0", "l.blk.*.attn_v.weight=q8_0", "l.blk.*.attn_o.weight=q8_0"]},
+  "unlimited_ocr2_q4k_v1": {"type": "q4_k", "rules": ["c.pos_embed=f16", "l.blk.*.ffn_down_exps.weight=iq4_nl", "l.blk.0.ffn_down.weight=iq4_nl"], "env": {"CRISPEMBED_QUANTIZE_UNLIMITED_OCR2_POLICY": "unlimited_ocr2_q4k_v1"}, "equivalent_to": "q4kn"}
 }

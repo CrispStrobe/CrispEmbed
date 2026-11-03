@@ -66,6 +66,10 @@ jobs:
         run: python3 tests/test_lfm2_performance_process.py -v
       - name: pub.dev release preflight contracts (model-free)
         run: python3 tests/test_pubdev_release_gate.py -v
+      - name: Unlimited-OCR-2 quantizer policy equals its measured recipe (model-free)
+        run: |
+          python3 -m pip install -q numpy==2.2.6
+          python3 tests/test_unlimited_ocr2_quant_policy.py
 
   build:
     name: ${{ matrix.name }}
