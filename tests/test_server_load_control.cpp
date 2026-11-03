@@ -7,6 +7,7 @@
 // and the chat request contract (one image, last user message, explicit
 // rejections instead of silent drops).
 
+#include "core/clean_exit.h"
 #include "load_control.h"
 #include "openai_compat.h"
 
@@ -293,7 +294,7 @@ static void test_chat() {
               r, err));
 }
 
-int main() {
+static int crispembed_test_main() {
     test_admission();
     test_counted_mutex();
     test_env();
@@ -302,4 +303,9 @@ int main() {
     test_chat();
     std::printf("%s (%d failure%s)\n", g_failures ? "FAILED" : "OK", g_failures, g_failures == 1 ? "" : "s");
     return g_failures ? 1 : 0;
+}
+
+// Route through core_util::clean_exit per the tools/check_test_clean_exit.sh guard.
+int main() {
+    core_util::clean_exit(crispembed_test_main());
 }
