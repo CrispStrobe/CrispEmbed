@@ -1,3 +1,77 @@
+## PR 118 stream hardening and selective CI — 3 November 2026
+
+Bounded maintainer continuation of [PR118](https://github.com/CrispStrobe/CrispEmbed/pull/118),
+audited at `60f0b6cf4657cb118049b98770e63736719049a8`; branch `fix/inpaint-stream-audit`.
+Preserve the contributor's commits and the default-off stream/engine gates. No runtime
+release, model publication or application-pin change follows from this work.
+
+- [x] Repair the failing test-main guard, cumulative reuse drift, moving-texture alias,
+      mask-inclusive payload accounting and completed-output retention on EOF errors.
+- [x] Extend model-free temporal/CLI test source, including mask thresholds, ordering, short
+      clips, boundaries, lifecycle, failures, chromatic texture and pixel preservation.
+- [x] Add an owned, deterministic five-case video panel with paired independent/temporal
+      metrics, hashes and retained failures. Fake-engine results validate the harness,
+      not model quality.
+- [ ] Run the bounded reviewed MI-GAN256 CPU/F32 panel on hosted CI and retain its report.
+- [x] Route ordinary CI by reviewed dependencies, retain broad coverage for shared build
+      changes/unknown inputs, test routing and aggregate failure handling, and persist
+      compiler caches without bypassing configuration/linking/tests or crate verification.
+- [ ] Review final-source hosted platform, inpainting, quality, style, security and
+      packaging results before integration. Record exact runs and remaining limitations.
+
+Initial audit evidence and acceptance scope: [stream audit](docs/inpaint-stream-audit.md).
+The original failing guard and source-derived counterexamples remain part of the record.
+
+## Server usage, load control and OpenAI-shaped OCR — 2 November 2026
+
+Branch `ccr-f3759017-mjj5re`. These are general server improvements. Every new
+surface is default-off, except the accounting fix, which has an explicit
+opt-out:
+
+- `crispembed_last_prompt_tokens()` C API, plus observed `usage.prompt_tokens`
+  on `/v1/embeddings` and `/api/embed` `prompt_eval_count`. These used to be
+  hard-coded `0` and text count. `CRISPEMBED_SERVER_USAGE_TOKENS=0` restores
+  the old values. LFM2/decision/UltraBERT report "not observed" (-1 → 0).
+- `CRISPEMBED_SERVER_METRICS=1` → `GET /metrics` (Prometheus, crispembed_*
+  series). "Running" means holding a model lock, counted by `counted_mutex`.
+- `CRISPEMBED_SERVER_MAX_INFLIGHT=N` → 429 admission on POST instead of
+  invisible queueing behind the model lock. `CRISPEMBED_SERVER_RETRY_AFTER`
+  is optional.
+- `CRISPEMBED_SERVER_OPENAI_CHAT=1` → `POST /v1/chat/completions` and
+  `GET /v1/models` for the `--ocr` model. Each request takes one base64
+  data-URL image, and anything the OCR model can't honour is rejected.
+- Host test `test-server-load-control`, added to the Unix model-free CI step.
+
+Local evidence. This used a synthetic random-weight 2-layer BERT GGUF, which
+tests plumbing only and says nothing about quality:
+
+- `prompt_tokens` 9 equals the `/tokens` id counts 4 + 5.
+- `CRISPEMBED_SERVER_USAGE_TOKENS=0` gives 0, and the vectors are identical
+  with the gate on and off.
+- `MAX_INFLIGHT=2` with 24 concurrent clients: 2× 200, 22× 429, and the
+  in-flight count scraped from `/metrics` peaks at 2.
+- `RETRY_AFTER=2` sends the header.
+- With the gates off: `/metrics` and `/v1/chat/completions` return 404, and
+  12/12 requests return 200.
+- The chat route was checked only for its 503 without `--ocr` and by host
+  parser tests. No OCR model was available here.
+- httplib caps `application/x-www-form-urlencoded` bodies at 8 KiB, and that is
+  curl `-d`'s default content type. This predates the branch and is documented
+  in the README.
+
+Open, with no quality or throughput claim made yet:
+
+- [ ] Live A/B with a real embedding GGUF: identical vectors with the gates on
+      and off, and `prompt_tokens` equal to the `/tokens` id count.
+- [ ] Measured latency/throughput under concurrent load, with and without
+      `MAX_INFLIGHT` (p50/p95, 429 rate). Use hosted CI, not a shared host.
+- [ ] `/v1/chat/completions` decoded-text parity with `/ocr/model` on the same
+      image, prompt and cap, for one prompt-following VLM. OvisOCR2 is served
+      through the orchestrator selector and is not reachable from this route.
+- [ ] Prompt-token count for OCR. This needs an ABI accessor, and until it
+      exists the route reports 0 instead of an estimate.
+- [ ] Rust/Dart wrappers for `crispembed_last_prompt_tokens()`.
+
 ## Wiring and environment-variable audit — 2 November 2026
 
 Reference: [docs/wiring-audit-20261102.md](docs/wiring-audit-20261102.md) and
@@ -81,9 +155,21 @@ Source: `docs/gpu-support-matrix.md` §CUDA audit (branch `feat/cuda-audit`, Kag
     how many ([summary](tests/results/below-bar/SUMMARY.md)).
 - Pre-existing defects that are independent of the tokenizer switch
   ([A/B notes](tests/results/spm-collapse-ab/SUMMARY.md)):
-  - Inputs over 512 tokens abort (`GGML_ASSERT` in get_rows) instead of truncating. Affected:
-    e5-base/large, granite-107m/278m, bge-reranker-base, xlmr-ner-hrl.
-  - bge-reranker-v2-m3 and bge-reranker-base scores differ from HF by up to 1.9 logits, and the order differs.
+  - [x] Inputs over 512 tokens aborted (`GGML_ASSERT` in get_rows) instead of truncating. Fixed on
+    `fix/rerank-pair-and-truncation` (`CRISPEMBED_POS_EMBD_TRUNCATE`, default on): truncation to
+    `rows - position_offset` (512). e5-base/large, granite-107m/278m, bge-reranker-base, xlmr-ner-hrl:
+    rc -6 -> 0, 512 tokens, ids = HF ([receipt](tests/results/reranker-parity/summary.md)).
+  - [x] bge-reranker-v2-m3/-base scores differed from HF by up to 1.9 logits. Root cause: pair layout
+    `<s> a </s> b </s>` instead of HF's `<s> a </s></s> b </s>`. Fixed (`CRISPEMBED_PAIR_ROBERTA_SEP`,
+    default on): max |Δ| 1.860 -> 0.229 (v2-m3), 1.602 -> 0.176 (base), jina-v2 0.137 -> 0.026.
+    Open:
+    - Attribute the remaining ~0.2 (Q8_0 files vs fp32 HF; expected quantization, unproven). The
+      harness's per-layer stage diff came back empty for every model (`stage_diff_worst` None), so it needs a
+      fix and a rerun, ideally also on the F16/F32 GGUFs.
+    - The harness's ranking-order check (`order_equal`, exact argsort over 77 scores) is False for every
+      model in both arms, including ms-marco. It is too strict to read; replace it with Spearman/top-k.
+    - ettin-reranker-17m was not checked: its tokenizer needs transformers 5 (the harness error made run
+      41588538331 red).
   - The xlmr-ner-hrl GGUF has no Unigram scores (12/76 texts tokenize like HF).
   - paraphrase-multilingual: native truncates at 512, sentence-transformers at 128.
 - Stage-diff references that fail on both arms: PP-OCRv6 small rec fox ref, PAN, HAT.
@@ -95,6 +181,7 @@ Source: `docs/gpu-support-matrix.md` §CUDA audit (branch `feat/cuda-audit`, Kag
 - Metal A/B of the new `CRISPEMBED_PAN_GPU` / `CRISPEMBED_RESTORMER_GPU` (CUDA-only
   defaults until measured there).
 
+<<<<<<< HEAD
 ## Unlimited-OCR-2 Q4_K recipes — 3 November 2026 (perf/q4k-unlimited-ocr2-20261103)
 
 Source: `docs/unlimited-ocr2-q4k-recipes.md`. Both named policies clear the Q4_K bar on
@@ -106,6 +193,20 @@ prepared in the publication protocol, not published.
 - TODO: Q8_0 is 0.9555 on CUDA (< 0.97; CPU 0.9739). Find a CUDA-qualifying Q8_0 recipe
   (F16 shared experts / attention) and re-score the published F32-sourced Q8_0.
 - Metal arm not measured.
+=======
+## Josev Q4_K sweep — 3 November 2026 (perf/q4k-josev-20261103)
+
+Source: `docs/josev2b-q4k-sweep.md`. Portable hosted CPU, frozen original reference.
+`josev_q4k_down8_v1` (2,952 MiB vs Q8_0 3,462) clears the Q4_K bar on head logits
+(0.99739) and final norm (0.94911); Q8_0 clears 0.97 (0.99995/0.99944).
+
+- Coordinator: Josev Q8_0/Q4_K_MIX publication needs a quantized branch in
+  `tools/ci-heavy/josev_publish.py` first (`docs/josev2b-q4k-publication-v1.json`
+  is prepared, `dispatch_ready` false). Not published.
+- No Q4_K recipe is typed-JSON exact (0/4; argmax 4/4). Strict 0.002/0.99999 stage
+  budgets stay failed diagnostics.
+- CUDA: Josev's packed/composed runtime is CPU-only; a CUDA arm needs a backend path.
+>>>>>>> origin/main
 
 ## TeleOCR / MinerU Q4_K-class recipes — 2 November 2026 (feat/qwen2vl-q4k-recipes)
 
@@ -432,26 +533,42 @@ handoff take precedence over historical commands.
 1. Inspect the two already queued jobs: Unlimited40868634374 and
    Ultra40871150002. Verify exact source/attempt and collect small reports after
    completion; do not duplicate them. Keep models/raw arrays remote.
-2. WASM drift lane: **closed with a documented platform tolerance** (owner
-   decision, 2 Nov 2026). Attribution is complete: the
-   [v4](tests/results/packaging/wasm-live-norm-v4-attribution.json),
-   [FFN](tests/results/packaging/wasm-layer3-ffn-matmul-v1.json) and
-   [layer0](tests/results/packaging/wasm-layer0-attention-v1.json) receipts show
-   kernel accumulation order (IQ4_NL, IQ4_XS, flash_attn F32), amplified by
-   activation quantization; no single-op fix. [Successor assets v3](docs/successor-assets-v3.md)
-   adds a WASM-only bound for the quantized MiniLM's packaged browser final
-   vector: max_abs<=0.0101 and cosine>=0.99837 (measured deterministic
-   0.00837269/0.99864984 plus 20%). Native gates stay strict and byte-identical.
-   Run 41471904133: the WASM consumer passes under the bound and every other
-   consumer job passes. The run is **not green**: the unchanged strict review
-   rejects cross-platform desktop parity, macOS arm64 vs Linux x86_64
-   (max_abs 0.00255 > 0.002, cosine 0.99989). This native gate never ran
-   before for these producers. Next (owner): decide whether that native
-   cross-platform drift also needs its own attribution and decision. It is not
-   relaxed here. Parked optional future experiment: a multi-kernel native-order
-   WASM build (IQ4_NL tinyBLAS order, IQ4_XS AVX2 order, flash
+2. Successor-asset drift lane: **closed; whole run green** (run41587063385,
+   [receipt](tests/results/packaging/successor-assets-v4-run.json)). There are two
+   owner-accepted, measured, narrowly scoped tolerances; every other gate stays
+   strict (0.002/0.99999):
+   - **WASM** ([v3](docs/successor-assets-v3.md)): packaged browser final vector
+     max_abs<=0.0101, cosine>=0.99837. It is attributed by the
+     [v4](tests/results/packaging/wasm-live-norm-v4-attribution.json),
+     [FFN](tests/results/packaging/wasm-layer3-ffn-matmul-v1.json) and
+     [layer0](tests/results/packaging/wasm-layer0-attention-v1.json) receipts:
+     kernel order, amplified by activation quantization.
+   - **macOS arm64 desktop** ([v4](docs/successor-assets-v4.md)): only the review's
+     macos-arm64 vs linux-x86_64 final vector, max_abs<=0.00307 and
+     cosine>=0.999866 (measured 0.0025544/0.99988863 plus 20%). This one is
+     accepted **without attribution**. The scope is narrower than an
+     arm64-vs-x86 rule because Linux arm64 vs x86 passes strict at 1.2e-4.
+     **Attributed** by run41638730050
+     ([receipt](tests/results/packaging/macos-desktop-drift-attribution-v1.json)):
+     the whole drift is the Metal GPU backend that the desktop consumer selects
+     (paravirtual device). With `CRISPEMBED_FORCE_CPU=1`, the same macOS package
+     matches Linux arm64 within 5.14e-7 on macos-14 and macos-15. CPU compile
+     differences (AppleClang, Accelerate, llamafile, -march) contribute at most
+     5.14e-7, so no build-config fix applies and release builds stay unchanged.
+     **Owner decision (3 Nov 2026): keep the v4 macOS tolerance; the v5 proposal
+     below is declined and not scheduled.** Recorded for reference only:
+     a v5 protocol could run the
+     macOS desktop parity review with `CRISPEMBED_FORCE_CPU=1`
+     (measured A/B vs Linux x86_64: 0.0025544/0.99988863 -> 1.20e-4/0.9999997,
+     strict pass) and drop the v4 macOS tolerance. A separate Metal-labelled
+     arm would then keep the GPU path covered. Before that, measure which
+     backend is closer to an F32 reference. The Metal IQ4_XS mul_mv
+     F32-activation hypothesis is unverified.
+
+   Optional follow-ups, not scheduled: (a) macOS attribution: done, see above; (b) a parked multi-kernel native-order WASM
+   build (IQ4_NL tinyBLAS order, IQ4_XS AVX2 order, flash
    `vec_dot_f32`/`vec_mad_f32` with fmaf and AVX lane order, matching expf).
-   [Run receipt](tests/results/packaging/successor-assets-v3-run.json).
+   Nothing is qualified, there is no release alias and the app stays on 0.17.12.
 3. Independently review MoE real-router source81fa4e26, then execute its
    component-only replay using exact-v4 attached captures. No whole-model or
    original forward. Require own-byte controls before cross-input conclusions.
@@ -484,12 +601,23 @@ Transformers' 439 s and the old path's 3264 s; see PERFORMANCE. **Default flip a
 (2026-11-02)** after the real-scan A/B: 20/20 pages with IDs identical to the old default, 6.2x
 faster, peak RSS 8.4 GB (was 5.1 GB; original 8.5 GB). Each gate `=0` opts out; where RAM is
 tight use `CRISPEMBED_QWEN35_GRAPH_MATMUL=native` (5/5 exact, 603 s) or `CRISPEMBED_MINICPM_OCR_VISION_F32=0`.
+Since 2026-11-03 init does this automatically when available RAM is short (`CRISPEMBED_MINICPM_OCR_LOW_MEMORY`:
+`=1` forces, `=0` disables; F16 vision + `exact` decoder matmul, no F32 copies).
 
 ## Unlimited-OCR-2 vision speed (2 November 2026)
 
 `CRISPEMBED_UNLIMITED_OCR2_VISION_F32` is 4/4 trial-exact and 1.43-1.44x faster; real scans 13/20 exact vs original
-(default 12/20), 17/19 identical to the default, one page (`de-2col-meyers-b13-103`) new inexact ids. Decide whether to
-flip it on (explicitly_off) given that page; TILE_BATCH stays off (~2%). Remaining time is prefill (38 s) and decode
+(default 12/20), 17/19 identical to the default, one page (`de-2col-meyers-b13-103`) new inexact ids.
+- [x] Flipped on 2026-11-03 (`explicitly_off`; `=0` restores F16); F16-path kernels pin `=0`. TILE_BATCH stays off (~2%).
+- [x] Low-memory fallback (`src/core/low_memory.h`, `CRISPEMBED_UNLIMITED_OCR2_LOW_MEMORY`,
+      `CRISPEMBED_MINICPM_OCR_LOW_MEMORY`): skip the F32 copies when available RAM < copies + 1 GiB.
+- [x] Hosted confirmation at the new defaults (2026-11-03, no env vs `..._LOW_MEMORY=1`): MiniCPM-OCR 5/5 parity cases
+      token-ID and text exact in both arms, F32 and F16 GGUF (`tests/results/minicpm-ocr/native-parity-default.json`,
+      `native-parity-low-memory.json`, at `8c8c8be6`); Unlimited-OCR-2 4/4 trial pages ids + text byte-exact vs original,
+      default == `vf32` receipt, LOW_MEMORY == F16 `after` receipt (`tests/results/unlimited-ocr2/default-and-low-memory.json`).
+      The first MiniCPM run (`0d3974ab`) found F32 GGUFs could not load at the default (empty F32-copy set); fixed in
+      `8c8c8be6`, initial receipts retained (`*-initial-f32-load-failure.json`). `test-low-memory` 21/21 on Kaggle.
+      Still open: one real-scan run at the flipped Unlimited default (expect `native-uocr2-vf32.json` ids). Remaining time is prefill (38 s) and decode
 (~66 s) on the table page; the global 1024 SAM view is the next vision target.
 
 ## Required Q8_0 and Q4_K coverage for new permissive models (29 October)

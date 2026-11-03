@@ -51,7 +51,11 @@ CLI, offline CLI, Python and compiled C against the C ABI (measured at most
   bound. Tests accept the measured values and the exact bound, and reject
   0.00308 and a cosine of 0.999865. The same drift on any other platform is
   rejected, and every other gate stays strict.
-- **Unattributed:** the likely mechanism, by analogy with the WASM attribution,
+- **Attributed afterwards** (run 41638730050,
+  [receipt](../tests/results/packaging/macos-desktop-drift-attribution-v1.json)):
+  the drift is the Metal GPU backend. With `CRISPEMBED_FORCE_CPU=1`, macOS matches
+  Linux arm64 within 5.14e-7. The v4 bound is unchanged.
+- **Original note (superseded):** the likely mechanism, by analogy with the WASM attribution,
   is a different SIMD summation order in the macOS arm64 build amplified by
   activation quantization. That is unverified. Attribution with the same-input
   op-by-op method is an optional follow-up in PLAN.
@@ -59,3 +63,9 @@ CLI, offline CLI, Python and compiled C against the C ABI (measured at most
 Nothing is qualified, no release alias is created and the app stays on 0.17.12.
 
 ## Runs
+- [41587063385](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41587063385)
+  at `8079a971` (producers 40724938611/40725005968, corpus proof 40629090339):
+  **green**, all 16 jobs succeed. In the review, macOS arm64 passes on the v4
+  basis (0.0025544/0.99988863), the browser on the v3 basis, and Linux arm64,
+  Windows and every same-platform and binding comparison pass strict
+  ([receipt](../tests/results/packaging/successor-assets-v4-run.json)).

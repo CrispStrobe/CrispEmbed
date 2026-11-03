@@ -94,7 +94,9 @@ BANNED_FLAGS_X86 = [
 ]
 
 # Where CMake records the actual compile lines, per generator.
-FLAG_FILE_GLOBS = ("build.ninja", "**/*.vcxproj", "**/flags.make")
+# Ninja Multi-Config keeps its real compiler flags in CMakeFiles/impl-*.ninja;
+# the top-level build.ninja only includes those files. Scan both generators.
+FLAG_FILE_GLOBS = ("**/*.ninja", "**/*.vcxproj", "**/flags.make")
 
 
 def read_cache(cache_path: Path) -> dict[str, str]:

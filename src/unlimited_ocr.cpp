@@ -20,6 +20,7 @@
 #include "ggml-cpu.h"
 #include "core/gpu_backend_pref.h"
 #include "core/env_gate.h"
+#include "core/low_memory.h"
 
 #include <algorithm>
 #include <array>
@@ -222,7 +223,8 @@ struct uocr_ctx {
     bool vision_cache = false;
     std::map<const ggml_tensor *, std::vector<float>> f32_cache;
     std::map<std::string, std::vector<float>> derived_cache;
-    // Default-off CRISPEMBED_UNLIMITED_OCR2_VISION_F32 (variant 2 only): F32 copies of the
+    // CRISPEMBED_UNLIMITED_OCR2_VISION_F32 (variant 2 only; default on since 2026-11-03, =0 opts
+    // out, low-memory fallback in core/low_memory.h): F32 copies of the
     // SAM/CLIP block matrices made once at init (exact F16 -> F32 values), so the vision
     // products run F32 x F32 instead of F16 x F16-rounded activations (closer to the
     // original's fp32 vision tower). The original F16 tensors stay loaded and untouched.
@@ -532,15 +534,29 @@ static ggml_tensor * g_linear(ggml_context * g, ggml_tensor * x, ggml_tensor * w
     return x;
 }
 
-// CRISPEMBED_UNLIMITED_OCR2_VISION_F32: rebind the SAM/CLIP block matrices to F32 copies
-// (same values; only the matmul precision changes). Returns false on allocation failure,
-// leaving every slot that was not yet rebound on its original tensor.
-static bool upcast_vision_f32(uocr_ctx & ctx) {
+// The SAM/CLIP block matrices that CRISPEMBED_UNLIMITED_OCR2_VISION_F32 copies to F32.
+static std::vector<ggml_tensor **> vision_f32_slots(uocr_ctx & ctx) {
     std::vector<ggml_tensor **> slots;
     for (auto & b : ctx.m.sam_blocks)
         for (ggml_tensor ** t : { &b.qkv_w, &b.proj_w, &b.ffn_up_w, &b.ffn_down_w }) slots.push_back(t);
     for (auto & b : ctx.m.clip_blocks)
         for (ggml_tensor ** t : { &b.qkv_w, &b.proj_w, &b.ffn_up_w, &b.ffn_down_w }) slots.push_back(t);
+    return slots;
+}
+
+// Extra bytes the F32 copies would allocate (input of the low-memory check).
+static uint64_t vision_f32_extra_bytes(uocr_ctx & ctx) {
+    uint64_t bytes = 0;
+    for (auto ** slot : vision_f32_slots(ctx))
+        if (*slot && (*slot)->type != GGML_TYPE_F32) bytes += uint64_t(ggml_nelements(*slot)) * sizeof(float);
+    return bytes;
+}
+
+// CRISPEMBED_UNLIMITED_OCR2_VISION_F32: rebind the SAM/CLIP block matrices to F32 copies
+// (same values; only the matmul precision changes). Returns false on allocation failure,
+// leaving every slot that was not yet rebound on its original tensor.
+static bool upcast_vision_f32(uocr_ctx & ctx) {
+    std::vector<ggml_tensor **> slots = vision_f32_slots(ctx);
     ctx.vision_f32_ctx = ggml_init({ (slots.size() + 1) * ggml_tensor_overhead(), nullptr, true });
     if (!ctx.vision_f32_ctx) return false;
     std::vector<std::pair<ggml_tensor **, ggml_tensor *>> todo;
@@ -3995,11 +4011,17 @@ unlimited_ocr_context * unlimited_ocr_init(const char * model_path, int n_thread
 
     precompute_rpe_tables(ctx);
 
-    if (ctx.m.lhp.variant == 2 && core_env::on("CRISPEMBED_UNLIMITED_OCR2_VISION_F32")) {
+    // F32 vision default on since 2026-11-03 (=0 restores the F16 products). On a host without
+    // room for the copies (core/low_memory.h; CRISPEMBED_UNLIMITED_OCR2_LOW_MEMORY=1 forces,
+    // =0 disables the check) the F16 path runs instead.
+    bool vision_f32 = ctx.m.lhp.variant == 2 && !core_env::explicitly_off("CRISPEMBED_UNLIMITED_OCR2_VISION_F32");
+    if (vision_f32)
+        vision_f32 = !core_lowmem::skip_f32_copies("unlimited_ocr", "CRISPEMBED_UNLIMITED_OCR2_LOW_MEMORY",
+                                                   vision_f32_extra_bytes(ctx));
+    if (vision_f32) {
         if (!upcast_vision_f32(ctx)) {
-            fprintf(stderr, "unlimited_ocr: F32 vision upcast failed\n");
-            unlimited_ocr_free(c);
-            return nullptr;
+            // upcast_vision_f32 fails before rebinding any slot, so the F16 path stays intact.
+            fprintf(stderr, "unlimited_ocr: F32 vision upcast failed; using the F16 vision path\n");
         }
         init_ms("vision_f32");
     }

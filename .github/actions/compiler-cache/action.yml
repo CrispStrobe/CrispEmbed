@@ -1,0 +1,67 @@
+name: Native compiler cache
+description: Persistent compiler-object cache; configure, link and tests still run
+inputs:
+  namespace:
+    description: Build target, compiler/backend configuration and cache revision
+    required: true
+  rust:
+    description: Also cache Rust compiler invocations
+    default: 'false'
+  native_cpu:
+    description: Isolate Linux host-native code by a complete CPU feature signature
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    # CMake's Visual Studio generator ignores compiler launchers. Ninja
+    # Multi-Config uses the same MSVC compiler and preserves Release/ paths.
+    - uses: ilammy/msvc-dev-cmd@v1
+      if: runner.os == 'Windows'
+      with:
+        arch: x64
+    - name: Configure cache isolation and compiler launchers
+      id: configure
+      shell: bash
+      env:
+        CACHE_NAMESPACE: ${{ inputs.namespace }}
+        CACHE_RUST: ${{ inputs.rust }}
+        CACHE_NATIVE_CPU: ${{ inputs.native_cpu }}
+      run: |
+        if [ "$CACHE_NATIVE_CPU" = true ]; then
+          if [ "$RUNNER_OS" != Linux ] || ! cache_cpu=$(python3 tools/ci_cpu_signature.py); then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::No reliable native CPU signature; compiler caching is disabled for this build."
+            exit 0
+          fi
+          CACHE_NAMESPACE="${CACHE_NAMESPACE}-${cache_cpu}"
+        fi
+        echo "enabled=true" >> "$GITHUB_OUTPUT"
+        echo "SCCACHE_GHA_ENABLED=true" >> "$GITHUB_ENV"
+        echo "SCCACHE_GHA_VERSION=crispembed-v1-${RUNNER_OS}-${RUNNER_ARCH}-${CACHE_NAMESPACE}" >> "$GITHUB_ENV"
+        echo "SCCACHE_C_CUSTOM_CACHE_BUSTER=${RUNNER_OS}-${RUNNER_ARCH}-${CACHE_NAMESPACE}" >> "$GITHUB_ENV"
+        echo "SCCACHE_IGNORE_SERVER_IO_ERROR=1" >> "$GITHUB_ENV"
+        echo "CMAKE_C_COMPILER_LAUNCHER=sccache" >> "$GITHUB_ENV"
+        echo "CMAKE_CXX_COMPILER_LAUNCHER=sccache" >> "$GITHUB_ENV"
+        if [ "$CACHE_RUST" = true ]; then
+          echo "RUSTC_WRAPPER=sccache" >> "$GITHUB_ENV"
+          echo "CARGO_INCREMENTAL=0" >> "$GITHUB_ENV"
+        fi
+        if [ "$RUNNER_OS" = Windows ]; then
+          echo "CMAKE_GENERATOR=Ninja Multi-Config" >> "$GITHUB_ENV"
+          echo "CC=cl" >> "$GITHUB_ENV"
+          echo "CXX=cl" >> "$GITHUB_ENV"
+          # sccache cannot cache MSVC /Zi (a separate PDB written by cl) and fails
+          # the call. CMake's compiler checks (try_compile) build the Debug config
+          # by default, whose flags carry /Zi, so configure itself failed. Build
+          # the checks as Release (no debug info) and make any CMP0141-NEW project
+          # embed debug info (/Z7) instead of writing a PDB. Read via the
+          # CMAKE_TOOLCHAIN_FILE environment variable (CMake >= 3.21).
+          toolchain="$(cygpath -m "$RUNNER_TEMP")/crispembed-sccache-msvc.cmake"
+          printf '%s\n' 'set(CMAKE_TRY_COMPILE_CONFIGURATION Release)' \
+            'set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT Embedded)' > "$toolchain"
+          echo "CMAKE_TOOLCHAIN_FILE=$toolchain" >> "$GITHUB_ENV"
+        fi
+    - uses: mozilla-actions/sccache-action@v0.0.11
+      if: steps.configure.outputs.enabled == 'true'
+      with:
+        version: v0.16.0

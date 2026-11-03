@@ -59,6 +59,7 @@ def base_env(**kw):
     e = dict(os.environ, CRISPEMBED_CACHE_DIR='/kaggle/temp/cache', CRISPEMBED_UNLIMITED_OCR2='1', UOCR_DBG='1',
              OMP_NUM_THREADS=NT)
     e.pop('CRISPEMBED_ALLOW_UNPINNED_MODEL', None); e.pop('HF_HUB_OFFLINE', None)
+    e['CRISPEMBED_UNLIMITED_OCR2_VISION_F32'] = '0'  # F16 vision path pinned (F32 vision is the default since 2026-11-03)
     e.update(kw); return e
 
 

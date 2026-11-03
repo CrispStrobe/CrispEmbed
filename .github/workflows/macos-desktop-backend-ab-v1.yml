@@ -1,0 +1,43 @@
+name: macOS desktop drift attribution v1 (audit only)
+on:
+  workflow_dispatch:
+  push:
+    branches: [audit/macos-desktop-drift-v1]
+    paths: [.github/workflows/macos-desktop-backend-ab-v1.yml, tools/ci-heavy/macos_desktop_backend_ab_v1.py]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  ab:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-15
+            artifact: macos-arm64
+          - os: macos-14
+            artifact: macos-arm64
+          - os: ubuntu-24.04-arm
+            artifact: linux-arm64
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OMP_NUM_THREADS: '2'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Fresh exact v4 producer package (run 40724938611)
+        run: python tools/ci-heavy/successor_assets.py --run 40724938611 --kind native --artifact "${{ matrix.artifact }}" --output "$RUNNER_TEMP/ab"
+      - name: Default vs CRISPEMBED_FORCE_CPU=1 against stored v4 vectors
+        run: python tools/ci-heavy/macos_desktop_backend_ab_v1.py --output "$RUNNER_TEMP/ab" --label "${{ matrix.os }}-${{ matrix.artifact }}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macos-drift-ab-v1-${{ matrix.os }}-${{ matrix.artifact }}
+          path: |
+            ${{ runner.temp }}/ab/ab.json
+            ${{ runner.temp }}/ab/*.log
+          retention-days: 90

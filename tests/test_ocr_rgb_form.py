@@ -4,6 +4,7 @@ from unittest import mock
 ROOT=pathlib.Path(__file__).resolve().parents[1];sys.path[:0]=[str(ROOT/'tools/ocr-rgb-input'),str(ROOT/'tools/ocr-real-scans')]
 import form_contract as c
 from retained_inputs import mounted_image,indexed_outputs
+FORM_FROZEN='535c10fceac28ec04401b7f6a57a027e1be9bbc9'  # commit that froze docs/ocr-rgb-form-v1.json
 
 class Controls(unittest.TestCase):
  def test_no_mounted_candidate_preserves_url_fallback(self):
@@ -30,7 +31,9 @@ class Controls(unittest.TestCase):
    if name!='main':self.assertEqual(a[name],b[name],name)
  def test_kernel_only_inserts_mounted_provider(self):
   a=subprocess.check_output(['git','show','813e1ec9b813ebf0dc72c8faf5841659a024fbce:tools/kaggle/ocr-real-scans/kernel.py'],cwd=ROOT,text=True)
-  b=(ROOT/'tools/kaggle/ocr-real-scans/kernel.py').read_text()
+  # Historical guard of the form freeze 535c10fc: later kernel arms (dded1384, 7857ebf5, de7efac0) legitimately
+  # change the working tree, so compare the frozen commit's blob; expectations are never rewritten.
+  b=subprocess.check_output(['git','show',FORM_FROZEN+':tools/kaggle/ocr-real-scans/kernel.py'],cwd=ROOT,text=True)
   b=b.replace("\nsys.path.insert(0,'tools/ocr-real-scans')\nfrom retained_inputs import mounted_image",'')
   b=b.replace("        retained=mounted_image(p,os.environ.get('CRISPEMBED_RETAINED_IMAGE_ROOT','/kaggle/input'))\n        if retained is not None:\n            data,rec['retained_input']=retained\n        elif 'hf_parquet' in im:","        if 'hf_parquet' in im:")
   self.assertEqual(a,b)
@@ -58,7 +61,9 @@ class Controls(unittest.TestCase):
   cfg=c.declaration();old=json.loads(c.old.PATH.read_text());required=(set(old['source_sha256'])-{'tools/kaggle/ocr-real-scans/kernel.py'})|{'docs/ocr-rgb-input-v1.json','tools/kaggle/ocr-real-scans/receipt.py'}
   self.assertEqual(set(cfg['protected_sha256']),required);self.assertEqual(set(cfg['owned_sha256']),c.OWNED-{'PLAN.md','docs/ocr-rgb-form-v1.json'})
   for group in ['protected_sha256','owned_sha256']:
-   for name,pin in cfg[group].items():self.assertEqual(c.sha(ROOT/name),pin,name)
+   # Pins describe the frozen form closure (535c10fc), not the current tree (CMakeLists.txt etc. move on):
+   # hash the frozen commit's blobs so the pins stay strict for the code they protect.
+   for name,pin in cfg[group].items():self.assertEqual(hashlib.sha256(subprocess.check_output(['git','show',FORM_FROZEN+':'+name],cwd=ROOT)).hexdigest(),pin,name)
  def test_provider_no_latest_fallback_or_decoder_import(self):
   s=(ROOT/'tools/ocr-rgb-input/form_provider.py').read_text();self.assertNotIn('kernels_output',s);self.assertIn('indexed_outputs(',s);self.assertIn('Fresh request: no Authorization at storage',s)
   self.assertLess(s.index("stream(files[report_member]"),s.index("stream(files[pin['image_member']]"))

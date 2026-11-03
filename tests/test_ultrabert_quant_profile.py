@@ -5,9 +5,19 @@ import unittest
 ROOT=Path(__file__).resolve().parents[1]
 PROVEN='02402a0d086a7335280d907392c4f4667e27ce28'
 class Controls(unittest.TestCase):
+    # Reviewed default-preserving amendment (commit 59ecb0b9, repo-wide core_env
+    # audit): only these exact byte substitutions are admitted; any other drift
+    # from the proven tokenizer source still fails. CRISPEMBED_BPE_LEGACY_WHITESPACE
+    # is unset in every UltraBERT run, so both forms select the same path.
+    AMENDMENTS={'src/tokenizer_bpe.cpp':[
+        (b'#include <vector>\n\nbool BPETokenizer::load(',b'#include <vector>\n#include "core/env_gate.h"\n\nbool BPETokenizer::load('),
+        (b'static const bool legacy_ws = (std::getenv("CRISPEMBED_BPE_LEGACY_WHITESPACE") != nullptr);',
+         b'static const bool legacy_ws = core_env::on("CRISPEMBED_BPE_LEGACY_WHITESPACE");')]}
     def test_exact_already_proven_tokenizer_sources(self):
         for name in ['src/tokenizer.h','src/tokenizer_bpe.cpp','src/ultrabert_tokenizer_mode.h']:
             expected=subprocess.check_output(['git','show',PROVEN+':'+name],cwd=ROOT)
+            for old,new in self.AMENDMENTS.get(name,[]):
+                self.assertEqual(expected.count(old),1,name);expected=expected.replace(old,new)
             self.assertEqual((ROOT/name).read_bytes(),expected,name)
     def test_truncation_body_retained(self):
         old=subprocess.check_output(['git','show',PROVEN+':src/ultrabert_profile.h'],cwd=ROOT,text=True)

@@ -1,0 +1,5150 @@
+{
+ "schema": "crispembed-minicpm-ocr-native-v1",
+ "commit": "8c8c8be6a4e254e6273ea19928941f980c227ea7",
+ "extra_env": {},
+ "reference_revision": "6796197bb3a8e224b2f64ae462bfbb3f8a15ac4b",
+ "reference_versions": {
+  "torch": "2.13.0+cpu",
+  "transformers": "5.21.0",
+  "numpy": "2.2.6"
+ },
+ "max_new_tokens": 1024,
+ "cases": [
+  {
+   "id": "line",
+   "task": "Text Recognition:",
+   "size": [
+    560,
+    64
+   ],
+   "reference_ids": [
+    52390,
+    6901,
+    44,
+    12,
+    90274,
+    5604,
+    1500,
+    220,
+    17,
+    15,
+    17,
+    21,
+    12,
+    16,
+    15,
+    12,
+    17,
+    23,
+    248046
+   ],
+   "reference_text": "MiniCPM-OCR reference line 2026-10-28",
+   "reference_eos": true,
+   "reference_cap_hit": false,
+   "arms": {
+    "f32": {
+     "dtype": "f32",
+     "exit": 0,
+     "wall_seconds": 40.796,
+     "text": "MiniCPM-OCR reference line 2026-10-28",
+     "stderr_tail": "minicpm_ocr gen_ids (19): 52390 6901 44 12 90274 5604 1500 220 17 15 17 21 12 16 15 12 17 23 248046\n",
+     "stages": {
+      "pixel_values": {
+       "chw_list": {
+        "match": true,
+        "max_abs": 2.0,
+        "mean_abs": 0.24355887042446878,
+        "ref_max_abs": 1.0,
+        "cosine": 0.7980729341503694,
+        "argmax_abs": 5310
+       },
+       "by_patch": {
+        "match": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "ref_max_abs": 1.0,
+        "cosine": 1.0,
+        "argmax_abs": 0
+       }
+      },
+      "model.vision_tower.embeddings": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 5.7220458984375e-06,
+       "mean_abs": 3.7076811936598156e-08,
+       "ref_max_abs": 56.74433517456055,
+       "cosine": 0.9999999999999809,
+       "argmax_abs": 521020
+      },
+      "model.vision_tower.encoder.layers.0": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 6.67572021484375e-06,
+       "mean_abs": 1.4578548479894338e-07,
+       "ref_max_abs": 28.787111282348633,
+       "cosine": 0.9999999999999434,
+       "argmax_abs": 216873
+      },
+      "model.vision_tower.encoder.layers.6": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 1.4781951904296875e-05,
+       "mean_abs": 3.1925360578775293e-07,
+       "ref_max_abs": 13.257116317749023,
+       "cosine": 0.9999999999994951,
+       "argmax_abs": 219556
+      },
+      "model.vision_tower.encoder.layers.26": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 0.02392578125,
+       "mean_abs": 6.947653137039268e-06,
+       "ref_max_abs": 1933.9638671875,
+       "cosine": 0.9999999999985059,
+       "argmax_abs": 914050
+      },
+      "model.vision_tower.post_layernorm": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 8.487701416015625e-05,
+       "mean_abs": 3.5812180303310555e-07,
+       "ref_max_abs": 24.2280330657959,
+       "cosine": 0.9999999999995711,
+       "argmax_abs": 941011
+      },
+      "model.merger": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 1.430511474609375e-05,
+       "mean_abs": 3.296347803094985e-07,
+       "ref_max_abs": 11.679397583007812,
+       "cosine": 0.9999999999988586,
+       "argmax_abs": 86016
+      },
+      "decoder.layer.0": {
+       "match": true,
+       "max_abs": 2.002716064453125e-05,
+       "mean_abs": 3.1801241018314386e-07,
+       "ref_max_abs": 14.00318717956543,
+       "cosine": 0.9999999999991451,
+       "argmax_abs": 220160
+      },
+      "decoder.layer.1": {
+       "match": true,
+       "max_abs": 3.719329833984375e-05,
+       "mean_abs": 3.4212808541767004e-07,
+       "ref_max_abs": 14.838850975036621,
+       "cosine": 0.9999999999990499,
+       "argmax_abs": 220160
+      },
+      "decoder.layer.2": {
+       "match": true,
+       "max_abs": 2.47955322265625e-05,
+       "mean_abs": 3.658520753013761e-07,
+       "ref_max_abs": 13.004254341125488,
+       "cosine": 0.9999999999987845,
+       "argmax_abs": 93184
+      },
+      "decoder.layer.3": {
+       "match": true,
+       "max_abs": 2.7179718017578125e-05,
+       "mean_abs": 3.849259915256198e-07,
+       "ref_max_abs": 14.682567596435547,
+       "cosine": 0.9999999999988555,
+       "argmax_abs": 93184
+      },
+      "decoder.layer.4": {
+       "match": true,
+       "max_abs": 2.8133392333984375e-05,
+       "mean_abs": 3.974144273666269e-07,
+       "ref_max_abs": 15.302041053771973,
+       "cosine": 0.9999999999987692,
+       "argmax_abs": 232448
+      },
+      "decoder.layer.5": {
+       "match": true,
+       "max_abs": 2.002716064453125e-05,
+       "mean_abs": 4.1332411582217787e-07,
+       "ref_max_abs": 14.664705276489258,
+       "cosine": 0.9999999999986645,
+       "argmax_abs": 93184
+      },
+      "decoder.layer.6": {
+       "match": true,
+       "max_abs": 1.5735626220703125e-05,
+       "mean_abs": 4.5970319906274426e-07,
+       "ref_max_abs": 27.376970291137695,
+       "cosine": 0.9999999999986077,
+       "argmax_abs": 93184
+      },
+      "decoder.layer.7": {
+       "match": true,
+       "max_abs": 2.1457672119140625e-05,
+       "mean_abs": 4.816687420028387e-07,
+       "ref_max_abs": 24.936426162719727,
+       "cosine": 0.9999999999985428,
+       "argmax_abs": 93184
+      },
+      "decoder.layer.8": {
+       "match": true,
+       "max_abs": 2.0503997802734375e-05,
+       "mean_abs": 4.991590669689572e-07,
+       "ref_max_abs": 24.443531036376953,
+       "cosine": 0.9999999999984562,
+       "argmax_abs": 93184
+      },
+      "decoder.layer.9": {
+       "match": true,
+       "max_abs": 1.71661376953125e-05,
+       "mean_abs": 5.367169957359863e-07,
+       "ref_max_abs": 24.62454605102539,
+       "cosine": 0.9999999999983327,
+       "argmax_abs": 93184
+      },
+      "decoder.layer.10": {
+       "match": true,
+       "max_abs": 3.0040740966796875e-05,
+       "mean_abs": 5.833610310368442e-07,
+       "ref_max_abs": 25.197059631347656,
+       "cosine": 0.9999999999981116,
+       "argmax_abs": 225280
+      },
+      "decoder.layer.11": {
+       "match": true,
+       "max_abs": 2.384185791015625e-05,
+       "mean_abs": 6.335005324764609e-07,
+       "ref_max_abs": 26.794225692749023,
+       "cosine": 0.9999999999981366,
+       "argmax_abs": 225280
+      },
+      "decoder.layer.12": {
+       "match": true,
+       "max_abs": 3.147125244140625e-05,
+       "mean_abs": 6.748534131517658e-07,
+       "ref_max_abs": 27.296415328979492,
+       "cosine": 0.9999999999979727,
+       "argmax_abs": 223232
+      },
+      "decoder.layer.13": {
+       "match": true,
+       "max_abs": 2.86102294921875e-05,
+       "mean_abs": 7.366638046235607e-07,
+       "ref_max_abs": 28.47304344177246,
+       "cosine": 0.999999999997756,
+       "argmax_abs": 223232
+      },
+      "decoder.layer.14": {
+       "match": true,
+       "max_abs": 8.678436279296875e-05,
+       "mean_abs": 8.371404849327746e-07,
+       "ref_max_abs": 48.233985900878906,
+       "cosine": 0.9999999999974818,
+       "argmax_abs": 201728
+      },
+      "decoder.layer.15": {
+       "match": true,
+       "max_abs": 6.103515625e-05,
+       "mean_abs": 9.94704816292824e-07,
+       "ref_max_abs": 52.056060791015625,
+       "cosine": 0.999999999997369,
+       "argmax_abs": 201728
+      },
+      "decoder.layer.16": {
+       "match": true,
+       "max_abs": 7.724761962890625e-05,
+       "mean_abs": 1.130748234601242e-06,
+       "ref_max_abs": 52.64344787597656,
+       "cosine": 0.9999999999970862,
+       "argmax_abs": 28672
+      },
+      "decoder.layer.17": {
+       "match": true,
+       "max_abs": 7.2479248046875e-05,
+       "mean_abs": 1.2464301026859914e-06,
+       "ref_max_abs": 53.227989196777344,
+       "cosine": 0.9999999999969672,
+       "argmax_abs": 28672
+      },
+      "decoder.layer.18": {
+       "match": true,
+       "max_abs": 0.000125885009765625,
+       "mean_abs": 1.3928867863555183e-06,
+       "ref_max_abs": 67.10787200927734,
+       "cosine": 0.999999999996259,
+       "argmax_abs": 201728
+      },
+      "decoder.layer.19": {
+       "match": true,
+       "max_abs": 0.0001087188720703125,
+       "mean_abs": 1.8755401454129128e-06,
+       "ref_max_abs": 66.5258560180664,
+       "cosine": 0.9999999999954016,
+       "argmax_abs": 239616
+      },
+      "decoder.layer.20": {
+       "match": true,
+       "max_abs": 0.00014495849609375,
+       "mean_abs": 2.0152110611348917e-06,
+       "ref_max_abs": 67.39151000976562,
+       "cosine": 0.9999999999955822,
+       "argmax_abs": 219136
+      },
+      "decoder.layer.21": {
+       "match": true,
+       "max_abs": 0.000141143798828125,
+       "mean_abs": 2.2256958160937756e-06,
+       "ref_max_abs": 69.62477111816406,
+       "cosine": 0.9999999999955104,
+       "argmax_abs": 219136
+      },
+      "decoder.layer.22": {
+       "match": true,
+       "max_abs": 0.000179290771484375,
+       "mean_abs": 2.53189002297205e-06,
+       "ref_max_abs": 83.29464721679688,
+       "cosine": 0.9999999999931908,
+       "argmax_abs": 219136
+      },
+      "decoder.layer.23": {
+       "match": true,
+       "max_abs": 0.0004940032958984375,
+       "mean_abs": 3.215724509786355e-06,
+       "ref_max_abs": 211.663818359375,
+       "cosine": 0.9999999999901762,
+       "argmax_abs": 225280
+      },
+      "model.language_model.norm": {
+       "match": true,
+       "max_abs": 0.0006709098815917969,
+       "mean_abs": 1.194164919295429e-05,
+       "ref_max_abs": 45.250762939453125,
+       "cosine": 0.9999999999834556,
+       "argmax_abs": 202472
+      },
+      "lm_head": {
+       "match": true,
+       "max_abs": 2.7894973754882812e-05,
+       "mean_abs": 5.512307268514454e-06,
+       "ref_max_abs": 34.32796096801758,
+       "cosine": 0.9999999999993356,
+       "argmax_abs": 28203
+      }
+     },
+     "native_meta": {
+      "grid": [
+       0,
+       0
+      ],
+      "parts": [
+       {
+        "w": 1316,
+        "h": 140,
+        "tokens": 235,
+        "overview": true,
+        "row": 0,
+        "col": 0
+       }
+      ]
+     },
+     "input_ids_exact": true,
+     "input_ids_first_difference": null,
+     "input_ids_len": [
+      256,
+      256
+     ],
+     "first_logit_argmax": [
+      52390,
+      52390
+     ],
+     "ids": [
+      52390,
+      6901,
+      44,
+      12,
+      90274,
+      5604,
+      1500,
+      220,
+      17,
+      15,
+      17,
+      21,
+      12,
+      16,
+      15,
+      12,
+      17,
+      23,
+      248046
+     ],
+     "ids_exact": true,
+     "first_id_difference": null,
+     "text_exact": true,
+     "eos": true,
+     "worst_stage": [
+      "model.vision_tower.encoder.layers.26",
+      0.02392578125
+     ],
+     "stage_order": [
+      "pixel_values",
+      "model.vision_tower.embeddings",
+      "model.vision_tower.encoder.layers.0",
+      "model.vision_tower.encoder.layers.6",
+      "model.vision_tower.encoder.layers.26",
+      "model.vision_tower.post_layernorm",
+      "model.merger",
+      "decoder.layer.0",
+      "decoder.layer.1",
+      "decoder.layer.2",
+      "decoder.layer.3",
+      "decoder.layer.4",
+      "decoder.layer.5",
+      "decoder.layer.6",
+      "decoder.layer.7",
+      "decoder.layer.8",
+      "decoder.layer.9",
+      "decoder.layer.10",
+      "decoder.layer.11",
+      "decoder.layer.12",
+      "decoder.layer.13",
+      "decoder.layer.14",
+      "decoder.layer.15",
+      "decoder.layer.16",
+      "decoder.layer.17",
+      "decoder.layer.18",
+      "decoder.layer.19",
+      "decoder.layer.20",
+      "decoder.layer.21",
+      "decoder.layer.22",
+      "decoder.layer.23"
+     ]
+    },
+    "f16": {
+     "dtype": "f16",
+     "exit": 0,
+     "wall_seconds": 32.278,
+     "text": "MiniCPM-OCR reference line 2026-10-28",
+     "stderr_tail": "minicpm_ocr gen_ids (19): 52390 6901 44 12 90274 5604 1500 220 17 15 17 21 12 16 15 12 17 23 248046\n",
+     "stages": {
+      "pixel_values": {
+       "chw_list": {
+        "match": true,
+        "max_abs": 2.0,
+        "mean_abs": 0.24355887042446878,
+        "ref_max_abs": 1.0,
+        "cosine": 0.7980729341503694,
+        "argmax_abs": 5310
+       },
+       "by_patch": {
+        "match": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "ref_max_abs": 1.0,
+        "cosine": 1.0,
+        "argmax_abs": 0
+       }
+      },
+      "model.vision_tower.embeddings": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 5.7220458984375e-06,
+       "mean_abs": 3.817769270501905e-08,
+       "ref_max_abs": 56.74433517456055,
+       "cosine": 0.9999999999999831,
+       "argmax_abs": 521020
+      },
+      "model.vision_tower.encoder.layers.0": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 6.67572021484375e-06,
+       "mean_abs": 1.4578629667884735e-07,
+       "ref_max_abs": 28.787111282348633,
+       "cosine": 0.9999999999999432,
+       "argmax_abs": 216873
+      },
+      "model.vision_tower.encoder.layers.6": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 1.621246337890625e-05,
+       "mean_abs": 3.1978768214766965e-07,
+       "ref_max_abs": 13.257116317749023,
+       "cosine": 0.9999999999994922,
+       "argmax_abs": 219556
+      },
+      "model.vision_tower.encoder.layers.26": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 0.015869140625,
+       "mean_abs": 6.829599107869672e-06,
+       "ref_max_abs": 1933.9638671875,
+       "cosine": 0.9999999999987026,
+       "argmax_abs": 914050
+      },
+      "model.vision_tower.post_layernorm": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 9.059906005859375e-05,
+       "mean_abs": 3.467025718218438e-07,
+       "ref_max_abs": 24.2280330657959,
+       "cosine": 0.9999999999996095,
+       "argmax_abs": 941011
+      },
+      "model.merger": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 1.2874603271484375e-05,
+       "mean_abs": 3.195148109930511e-07,
+       "ref_max_abs": 11.679397583007812,
+       "cosine": 0.9999999999990099,
+       "argmax_abs": 225280
+      },
+      "decoder.layer.0": {
+       "match": true,
+       "max_abs": 1.52587890625e-05,
+       "mean_abs": 3.091212130712506e-07,
+       "ref_max_abs": 14.00318717956543,
+       "cosine": 0.9999999999992548,
+       "argmax_abs": 93184
+      },
+      "decoder.layer.1": {
+       "match": true,
+       "max_abs": 2.5272369384765625e-05,
+       "mean_abs": 3.33228872495539e-07,
+       "ref_max_abs": 14.838850975036621,
+       "cosine": 0.9999999999991768,
+       "argmax_abs": 220160
+      },
+      "decoder.layer.2": {
+       "match": true,
+       "max_abs": 1.9550323486328125e-05,
+       "mean_abs": 3.581507441730025e-07,
+       "ref_max_abs": 13.004254341125488,
+       "cosine": 0.9999999999989058,
+       "argmax_abs": 13312
+      },
+      "decoder.layer.3": {
+       "match": true,
+       "max_abs": 2.7179718017578125e-05,
+       "mean_abs": 3.7710588918216104e-07,
+       "ref_max_abs": 14.682567596435547,
+       "cosine": 0.999999999998963,
+       "argmax_abs": 232448
+      },
+      "decoder.layer.4": {
+       "match": true,
+       "max_abs": 2.765655517578125e-05,
+       "mean_abs": 3.918251467727174e-07,
+       "ref_max_abs": 15.302041053771973,
+       "cosine": 0.9999999999988534,
+       "argmax_abs": 232448
+      },
+      "decoder.layer.5": {
+       "match": true,
+       "max_abs": 1.9073486328125e-05,
+       "mean_abs": 4.0722645211488384e-07,
+       "ref_max_abs": 14.664705276489258,
+       "cosine": 0.9999999999987566,
+       "argmax_abs": 232448
+      },
+      "decoder.layer.6": {
+       "match": true,
+       "max_abs": 1.3828277587890625e-05,
+       "mean_abs": 4.5406403170744625e-07,
+       "ref_max_abs": 27.376970291137695,
+       "cosine": 0.9999999999986708,
+       "argmax_abs": 100352
+      },
+      "decoder.layer.7": {
+       "match": true,
+       "max_abs": 1.4781951904296875e-05,
+       "mean_abs": 4.7375976275354503e-07,
+       "ref_max_abs": 24.936426162719727,
+       "cosine": 0.999999999998636,
+       "argmax_abs": 93184
+      },
+      "decoder.layer.8": {
+       "match": true,
+       "max_abs": 1.5854835510253906e-05,
+       "mean_abs": 4.89572223649759e-07,
+       "ref_max_abs": 24.443531036376953,
+       "cosine": 0.9999999999985553,
+       "argmax_abs": 151128
+      },
+      "decoder.layer.9": {
+       "match": true,
+       "max_abs": 1.800060272216797e-05,
+       "mean_abs": 5.248289984827181e-07,
+       "ref_max_abs": 24.62454605102539,
+       "cosine": 0.999999999998445,
+       "argmax_abs": 217688
+      },
+      "decoder.layer.10": {
+       "match": true,
+       "max_abs": 1.811981201171875e-05,
+       "mean_abs": 5.709297119516066e-07,
+       "ref_max_abs": 25.197059631347656,
+       "cosine": 0.9999999999982133,
+       "argmax_abs": 220160
+      },
+      "decoder.layer.11": {
+       "match": true,
+       "max_abs": 2.765655517578125e-05,
+       "mean_abs": 6.240398060519681e-07,
+       "ref_max_abs": 26.794225692749023,
+       "cosine": 0.9999999999981558,
+       "argmax_abs": 217088
+      },
+      "decoder.layer.12": {
+       "match": true,
+       "max_abs": 3.1948089599609375e-05,
+       "mean_abs": 6.644118872856097e-07,
+       "ref_max_abs": 27.296415328979492,
+       "cosine": 0.9999999999979773,
+       "argmax_abs": 217088
+      },
+      "decoder.layer.13": {
+       "match": true,
+       "max_abs": 2.777576446533203e-05,
+       "mean_abs": 7.258702501289349e-07,
+       "ref_max_abs": 28.47304344177246,
+       "cosine": 0.9999999999977428,
+       "argmax_abs": 217688
+      },
+      "decoder.layer.14": {
+       "match": true,
+       "max_abs": 7.2479248046875e-05,
+       "mean_abs": 8.245054505806593e-07,
+       "ref_max_abs": 48.233985900878906,
+       "cosine": 0.9999999999975584,
+       "argmax_abs": 201728
+      },
+      "decoder.layer.15": {
+       "match": true,
+       "max_abs": 6.580352783203125e-05,
+       "mean_abs": 9.792360948779333e-07,
+       "ref_max_abs": 52.056060791015625,
+       "cosine": 0.9999999999974395,
+       "argmax_abs": 217088
+      },
+      "decoder.layer.16": {
+       "match": true,
+       "max_abs": 0.0001220703125,
+       "mean_abs": 1.1120530629682435e-06,
+       "ref_max_abs": 52.64344787597656,
+       "cosine": 0.9999999999971644,
+       "argmax_abs": 217088
+      },
+      "decoder.layer.17": {
+       "match": true,
+       "max_abs": 0.0001087188720703125,
+       "mean_abs": 1.226388900210651e-06,
+       "ref_max_abs": 53.227989196777344,
+       "cosine": 0.9999999999970604,
+       "argmax_abs": 217088
+      },
+      "decoder.layer.18": {
+       "match": true,
+       "max_abs": 9.72747802734375e-05,
+       "mean_abs": 1.3713065838416583e-06,
+       "ref_max_abs": 67.10787200927734,
+       "cosine": 0.9999999999964235,
+       "argmax_abs": 201728
+      },
+      "decoder.layer.19": {
+       "match": true,
+       "max_abs": 8.0108642578125e-05,
+       "mean_abs": 1.7950764634733218e-06,
+       "ref_max_abs": 66.5258560180664,
+       "cosine": 0.9999999999965008,
+       "argmax_abs": 232448
+      },
+      "decoder.layer.20": {
+       "match": true,
+       "max_abs": 0.0001049041748046875,
+       "mean_abs": 1.929294404234838e-06,
+       "ref_max_abs": 67.39151000976562,
+       "cosine": 0.9999999999966394,
+       "argmax_abs": 232448
+      },
+      "decoder.layer.21": {
+       "match": true,
+       "max_abs": 0.000102996826171875,
+       "mean_abs": 2.135318108997808e-06,
+       "ref_max_abs": 69.62477111816406,
+       "cosine": 0.9999999999965566,
+       "argmax_abs": 232448
+      },
+      "decoder.layer.22": {
+       "match": true,
+       "max_abs": 0.000148773193359375,
+       "mean_abs": 2.4337033197596725e-06,
+       "ref_max_abs": 83.29464721679688,
+       "cosine": 0.9999999999946085,
+       "argmax_abs": 241664
+      },
+      "decoder.layer.23": {
+       "match": true,
+       "max_abs": 0.0003528594970703125,
+       "mean_abs": 3.101743436317861e-06,
+       "ref_max_abs": 211.663818359375,
+       "cosine": 0.9999999999923015,
+       "argmax_abs": 201728
+      },
+      "model.language_model.norm": {
+       "match": true,
+       "max_abs": 0.0007781982421875,
+       "mean_abs": 1.1440347482821744e-05,
+       "ref_max_abs": 45.250762939453125,
+       "cosine": 0.9999999999879776,
+       "argmax_abs": 217240
+      },
+      "lm_head": {
+       "match": true,
+       "max_abs": 2.288818359375e-05,
+       "mean_abs": 2.957177275235448e-06,
+       "ref_max_abs": 34.32796096801758,
+       "cosine": 0.9999999999997345,
+       "argmax_abs": 3277
+      }
+     },
+     "native_meta": {
+      "grid": [
+       0,
+       0
+      ],
+      "parts": [
+       {
+        "w": 1316,
+        "h": 140,
+        "tokens": 235,
+        "overview": true,
+        "row": 0,
+        "col": 0
+       }
+      ]
+     },
+     "input_ids_exact": true,
+     "input_ids_first_difference": null,
+     "input_ids_len": [
+      256,
+      256
+     ],
+     "first_logit_argmax": [
+      52390,
+      52390
+     ],
+     "ids": [
+      52390,
+      6901,
+      44,
+      12,
+      90274,
+      5604,
+      1500,
+      220,
+      17,
+      15,
+      17,
+      21,
+      12,
+      16,
+      15,
+      12,
+      17,
+      23,
+      248046
+     ],
+     "ids_exact": true,
+     "first_id_difference": null,
+     "text_exact": true,
+     "eos": true,
+     "worst_stage": [
+      "model.vision_tower.encoder.layers.26",
+      0.015869140625
+     ],
+     "stage_order": [
+      "pixel_values",
+      "model.vision_tower.embeddings",
+      "model.vision_tower.encoder.layers.0",
+      "model.vision_tower.encoder.layers.6",
+      "model.vision_tower.encoder.layers.26",
+      "model.vision_tower.post_layernorm",
+      "model.merger",
+      "decoder.layer.0",
+      "decoder.layer.1",
+      "decoder.layer.2",
+      "decoder.layer.3",
+      "decoder.layer.4",
+      "decoder.layer.5",
+      "decoder.layer.6",
+      "decoder.layer.7",
+      "decoder.layer.8",
+      "decoder.layer.9",
+      "decoder.layer.10",
+      "decoder.layer.11",
+      "decoder.layer.12",
+      "decoder.layer.13",
+      "decoder.layer.14",
+      "decoder.layer.15",
+      "decoder.layer.16",
+      "decoder.layer.17",
+      "decoder.layer.18",
+      "decoder.layer.19",
+      "decoder.layer.20",
+      "decoder.layer.21",
+      "decoder.layer.22",
+      "decoder.layer.23"
+     ]
+    }
+   }
+  },
+  {
+   "id": "para-en",
+   "task": "Text Recognition:",
+   "size": [
+    1024,
+    768
+   ],
+   "reference_ids": [
+    52390,
+    6901,
+    44,
+    12,
+    90274,
+    5604,
+    2081,
+    13,
+    198,
+    760,
+    3841,
+    13477,
+    37550,
+    33075,
+    888,
+    279,
+    15217,
+    5388,
+    13,
+    198,
+    33526,
+    220,
+    17,
+    15,
+    17,
+    21,
+    12,
+    16,
+    15,
+    12,
+    17,
+    22,
+    25,
+    2702,
+    220,
+    16,
+    11,
+    17,
+    18,
+    19,
+    13,
+    20,
+    21,
+    35858,
+    198,
+    57455,
+    448,
+    5280,
+    533,
+    980,
+    2630,
+    268,
+    25,
+    2734,
+    8112,
+    11,
+    25795,
+    8112,
+    11,
+    280,
+    56307,
+    13,
+    248046
+   ],
+   "reference_text": "MiniCPM-OCR reference page.\nThe quick brown fox jumps over the lazy dog.\nInvoice 2026-10-27: total 1,234.56 EUR\nZeile mit Umlauten: Grxe, Straxe, pfel.",
+   "reference_eos": true,
+   "reference_cap_hit": false,
+   "arms": {
+    "f32": {
+     "dtype": "f32",
+     "exit": 0,
+     "wall_seconds": 101.983,
+     "text": "MiniCPM-OCR reference page.\nThe quick brown fox jumps over the lazy dog.\nInvoice 2026-10-27: total 1,234.56 EUR\nZeile mit Umlauten: Grxe, Straxe, pfel.",
+     "stderr_tail": "minicpm_ocr gen_ids (63): 52390 6901 44 12 90274 5604 2081 13 198 760 3841 13477 37550 33075 888 279 15217 5388 13 198 33526 220 17 15 17 21 12 16 15 12 17 22 25 2702 220 16 11 17 18 19 13 20 21 35858 198 57455 448 5280 533 980 2630 268 25 2734 8112 11 25795 8112 11 280 56307 13 248046\n",
+     "stages": {
+      "pixel_values": {
+       "chw_list": {
+        "match": true,
+        "max_abs": 2.0,
+        "mean_abs": 0.048150000739422674,
+        "ref_max_abs": 1.0,
+        "cosine": 0.9631028265727277,
+        "argmax_abs": 6058
+       },
+       "by_patch": {
+        "match": true,
+        "max_abs": 2.0,
+        "mean_abs": 0.04529667422822191,
+        "ref_max_abs": 1.0,
+        "cosine": 0.9654403132146704,
+        "argmax_abs": 15139
+       }
+      },
+      "model.vision_tower.embeddings": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 5.245208740234375e-06,
+       "mean_abs": 1.1607309416900387e-08,
+       "ref_max_abs": 46.99433517456055,
+       "cosine": 0.9999999999999852,
+       "argmax_abs": 1961358
+      },
+      "model.vision_tower.encoder.layers.0": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 1.9073486328125e-05,
+       "mean_abs": 1.2344598590294237e-07,
+       "ref_max_abs": 25.914134979248047,
+       "cosine": 0.9999999999999194,
+       "argmax_abs": 53664
+      },
+      "model.vision_tower.encoder.layers.6": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 2.1457672119140625e-05,
+       "mean_abs": 3.2721188797331e-07,
+       "ref_max_abs": 18.107858657836914,
+       "cosine": 0.9999999999993539,
+       "argmax_abs": 3518884
+      },
+      "model.vision_tower.encoder.layers.26": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 0.03173828125,
+       "mean_abs": 9.9267898678183e-06,
+       "ref_max_abs": 2037.9144287109375,
+       "cosine": 0.9999999999986713,
+       "argmax_abs": 767746
+      },
+      "model.vision_tower.post_layernorm": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 0.00048542022705078125,
+       "mean_abs": 3.9472739087682225e-07,
+       "ref_max_abs": 24.604406356811523,
+       "cosine": 0.9999999999984265,
+       "argmax_abs": 1008964
+      },
+      "model.merger": {
+       "layout": "unaligned ref[252, 1024] native[1260, 1024]"
+      },
+      "decoder.layer.0": {
+       "match": true,
+       "max_abs": 0.0002040863037109375,
+       "mean_abs": 5.116551754559454e-07,
+       "ref_max_abs": 18.20549201965332,
+       "cosine": 0.9999999999964073,
+       "argmax_abs": 132096
+      },
+      "decoder.layer.1": {
+       "match": true,
+       "max_abs": 0.00021648406982421875,
+       "mean_abs": 5.321382678461263e-07,
+       "ref_max_abs": 17.882593154907227,
+       "cosine": 0.9999999999954876,
+       "argmax_abs": 132096
+      },
+      "decoder.layer.2": {
+       "match": true,
+       "max_abs": 0.000152587890625,
+       "mean_abs": 7.025529506537104e-07,
+       "ref_max_abs": 16.775588989257812,
+       "cosine": 0.9999999999931425,
+       "argmax_abs": 132096
+      },
+      "decoder.layer.3": {
+       "match": true,
+       "max_abs": 0.0001811981201171875,
+       "mean_abs": 8.58102901892655e-07,
+       "ref_max_abs": 18.930496215820312,
+       "cosine": 0.9999999999924475,
+       "argmax_abs": 95232
+      },
+      "decoder.layer.4": {
+       "match": true,
+       "max_abs": 0.00018405914306640625,
+       "mean_abs": 9.318193623454671e-07,
+       "ref_max_abs": 17.528770446777344,
+       "cosine": 0.9999999999907456,
+       "argmax_abs": 95232
+      },
+      "decoder.layer.5": {
+       "match": true,
+       "max_abs": 0.00015163421630859375,
+       "mean_abs": 1.0375257699773687e-06,
+       "ref_max_abs": 17.405534744262695,
+       "cosine": 0.9999999999890132,
+       "argmax_abs": 95232
+      },
+      "decoder.layer.6": {
+       "match": true,
+       "max_abs": 8.20159912109375e-05,
+       "mean_abs": 1.1791244337773112e-06,
+       "ref_max_abs": 27.376972198486328,
+       "cosine": 0.9999999999865468,
+       "argmax_abs": 95232
+      },
+      "decoder.layer.7": {
+       "match": true,
+       "max_abs": 0.0001010894775390625,
+       "mean_abs": 1.3592873489760535e-06,
+       "ref_max_abs": 24.93642807006836,
+       "cosine": 0.9999999999842497,
+       "argmax_abs": 95232
+      },
+      "decoder.layer.8": {
+       "match": true,
+       "max_abs": 0.00011920928955078125,
+       "mean_abs": 1.4507867176504543e-06,
+       "ref_max_abs": 24.443532943725586,
+       "cosine": 0.9999999999815895,
+       "argmax_abs": 95232
+      },
+      "decoder.layer.9": {
+       "match": true,
+       "max_abs": 8.296966552734375e-05,
+       "mean_abs": 1.6238972353559887e-06,
+       "ref_max_abs": 24.624547958374023,
+       "cosine": 0.9999999999783424,
+       "argmax_abs": 95232
+      },
+      "decoder.layer.10": {
+       "match": true,
+       "max_abs": 9.5367431640625e-05,
+       "mean_abs": 1.796537085873956e-06,
+       "ref_max_abs": 25.19706153869629,
+       "cosine": 0.9999999999730632,
+       "argmax_abs": 541696
+      },
+      "decoder.layer.11": {
+       "match": true,
+       "max_abs": 0.000148773193359375,
+       "mean_abs": 2.1336465369917587e-06,
+       "ref_max_abs": 26.794227600097656,
+       "cosine": 0.9999999999692033,
+       "argmax_abs": 95232
+      },
+      "decoder.layer.12": {
+       "match": true,
+       "max_abs": 0.00015163421630859375,
+       "mean_abs": 2.407397055797679e-06,
+       "ref_max_abs": 27.296417236328125,
+       "cosine": 0.9999999999629146,
+       "argmax_abs": 95232
+      },
+      "decoder.layer.13": {
+       "match": true,
+       "max_abs": 0.00015354156494140625,
+       "mean_abs": 2.6881800037748928e-06,
+       "ref_max_abs": 28.473045349121094,
+       "cosine": 0.9999999999563751,
+       "argmax_abs": 95232
+      },
+      "decoder.layer.14": {
+       "match": true,
+       "max_abs": 0.00025177001953125,
+       "mean_abs": 2.9682903428770505e-06,
+       "ref_max_abs": 48.233985900878906,
+       "cosine": 0.9999999999433219,
+       "argmax_abs": 649216
+      },
+      "decoder.layer.15": {
+       "match": true,
+       "max_abs": 0.00029969215393066406,
+       "mean_abs": 3.6625756931328416e-06,
+       "ref_max_abs": 52.056060791015625,
+       "cosine": 0.9999999999402228,
+       "argmax_abs": 870502
+      },
+      "decoder.layer.16": {
+       "match": true,
+       "max_abs": 0.00040912628173828125,
+       "mean_abs": 4.207593345679135e-06,
+       "ref_max_abs": 52.64344787597656,
+       "cosine": 0.9999999999321482,
+       "argmax_abs": 758784
+      },
+      "decoder.layer.17": {
+       "match": true,
+       "max_abs": 0.00047969818115234375,
+       "mean_abs": 4.7087704061585435e-06,
+       "ref_max_abs": 53.227989196777344,
+       "cosine": 0.9999999999253624,
+       "argmax_abs": 870699
+      },
+      "decoder.layer.18": {
+       "match": true,
+       "max_abs": 0.0009355545043945312,
+       "mean_abs": 5.30743190063012e-06,
+       "ref_max_abs": 67.10787200927734,
+       "cosine": 0.9999999998927783,
+       "argmax_abs": 870400
+      },
+      "decoder.layer.19": {
+       "match": true,
+       "max_abs": 0.00133514404296875,
+       "mean_abs": 6.732946573540471e-06,
+       "ref_max_abs": 66.5258560180664,
+       "cosine": 0.9999999999175957,
+       "argmax_abs": 541696
+      },
+      "decoder.layer.20": {
+       "match": true,
+       "max_abs": 0.0011959075927734375,
+       "mean_abs": 7.31549137649099e-06,
+       "ref_max_abs": 67.39151000976562,
+       "cosine": 0.9999999999183634,
+       "argmax_abs": 541696
+      },
+      "decoder.layer.21": {
+       "match": true,
+       "max_abs": 0.0011272430419921875,
+       "mean_abs": 8.004282901571806e-06,
+       "ref_max_abs": 69.62477111816406,
+       "cosine": 0.9999999999133763,
+       "argmax_abs": 541696
+      },
+      "decoder.layer.22": {
+       "match": true,
+       "max_abs": 0.0015850067138671875,
+       "mean_abs": 9.10212351381367e-06,
+       "ref_max_abs": 83.29464721679688,
+       "cosine": 0.9999999998407164,
+       "argmax_abs": 541696
+      },
+      "decoder.layer.23": {
+       "match": true,
+       "max_abs": 0.0015764236450195312,
+       "mean_abs": 1.1196360841065264e-05,
+       "ref_max_abs": 211.66375732421875,
+       "cosine": 0.9999999997944068,
+       "argmax_abs": 870445
+      },
+      "model.language_model.norm": {
+       "match": true,
+       "max_abs": 0.005574703216552734,
+       "mean_abs": 4.458012724932431e-05,
+       "ref_max_abs": 55.7193489074707,
+       "cosine": 0.9999999997375764,
+       "argmax_abs": 870895
+      },
+      "lm_head": {
+       "match": true,
+       "max_abs": 3.62396240234375e-05,
+       "mean_abs": 6.988824071893404e-06,
+       "ref_max_abs": 32.44926452636719,
+       "cosine": 0.9999999999993552,
+       "argmax_abs": 27639
+      }
+     },
+     "native_meta": {
+      "grid": [
+       2,
+       2
+      ],
+      "parts": [
+       {
+        "w": 504,
+        "h": 392,
+        "tokens": 252,
+        "overview": true,
+        "row": 0,
+        "col": 0
+       },
+       {
+        "w": 504,
+        "h": 392,
+        "tokens": 252,
+        "overview": false,
+        "row": 0,
+        "col": 0
+       },
+       {
+        "w": 504,
+        "h": 392,
+        "tokens": 252,
+        "overview": false,
+        "row": 0,
+        "col": 1
+       },
+       {
+        "w": 504,
+        "h": 392,
+        "tokens": 252,
+        "overview": false,
+        "row": 1,
+        "col": 0
+       },
+       {
+        "w": 504,
+        "h": 392,
+        "tokens": 252,
+        "overview": false,
+        "row": 1,
+        "col": 1
+       }
+      ]
+     },
+     "input_ids_exact": true,
+     "input_ids_first_difference": null,
+     "input_ids_len": [
+      1290,
+      1290
+     ],
+     "first_logit_argmax": [
+      52390,
+      52390
+     ],
+     "ids": [
+      52390,
+      6901,
+      44,
+      12,
+      90274,
+      5604,
+      2081,
+      13,
+      198,
+      760,
+      3841,
+      13477,
+      37550,
+      33075,
+      888,
+      279,
+      15217,
+      5388,
+      13,
+      198,
+      33526,
+      220,
+      17,
+      15,
+      17,
+      21,
+      12,
+      16,
+      15,
+      12,
+      17,
+      22,
+      25,
+      2702,
+      220,
+      16,
+      11,
+      17,
+      18,
+      19,
+      13,
+      20,
+      21,
+      35858,
+      198,
+      57455,
+      448,
+      5280,
+      533,
+      980,
+      2630,
+      268,
+      25,
+      2734,
+      8112,
+      11,
+      25795,
+      8112,
+      11,
+      280,
+      56307,
+      13,
+      248046
+     ],
+     "ids_exact": true,
+     "first_id_difference": null,
+     "text_exact": true,
+     "eos": true,
+     "worst_stage": [
+      "model.vision_tower.encoder.layers.26",
+      0.03173828125
+     ],
+     "stage_order": [
+      "pixel_values",
+      "model.vision_tower.embeddings",
+      "model.vision_tower.encoder.layers.0",
+      "model.vision_tower.encoder.layers.6",
+      "model.vision_tower.encoder.layers.26",
+      "model.vision_tower.post_layernorm",
+      "model.merger",
+      "decoder.layer.0",
+      "decoder.layer.1",
+      "decoder.layer.2",
+      "decoder.layer.3",
+      "decoder.layer.4",
+      "decoder.layer.5",
+      "decoder.layer.6",
+      "decoder.layer.7",
+      "decoder.layer.8",
+      "decoder.layer.9",
+      "decoder.layer.10",
+      "decoder.layer.11",
+      "decoder.layer.12",
+      "decoder.layer.13",
+      "decoder.layer.14",
+      "decoder.layer.15",
+      "decoder.layer.16",
+      "decoder.layer.17",
+      "decoder.layer.18",
+      "decoder.layer.19",
+      "decoder.layer.20",
+      "decoder.layer.21",
+      "decoder.layer.22",
+      "decoder.layer.23"
+     ]
+    },
+    "f16": {
+     "dtype": "f16",
+     "exit": 0,
+     "wall_seconds": 103.337,
+     "text": "MiniCPM-OCR reference page.\nThe quick brown fox jumps over the lazy dog.\nInvoice 2026-10-27: total 1,234.56 EUR\nZeile mit Umlauten: Grxe, Straxe, pfel.",
+     "stderr_tail": "minicpm_ocr gen_ids (63): 52390 6901 44 12 90274 5604 2081 13 198 760 3841 13477 37550 33075 888 279 15217 5388 13 198 33526 220 17 15 17 21 12 16 15 12 17 22 25 2702 220 16 11 17 18 19 13 20 21 35858 198 57455 448 5280 533 980 2630 268 25 2734 8112 11 25795 8112 11 280 56307 13 248046\n",
+     "stages": {
+      "pixel_values": {
+       "chw_list": {
+        "match": true,
+        "max_abs": 2.0,
+        "mean_abs": 0.048150000739422674,
+        "ref_max_abs": 1.0,
+        "cosine": 0.9631028265727277,
+        "argmax_abs": 6058
+       },
+       "by_patch": {
+        "match": true,
+        "max_abs": 2.0,
+        "mean_abs": 0.04529667422822191,
+        "ref_max_abs": 1.0,
+        "cosine": 0.9654403132146704,
+        "argmax_abs": 15139
+       }
+      },
+      "model.vision_tower.embeddings": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 5.245208740234375e-06,
+       "mean_abs": 1.290879761837512e-08,
+       "ref_max_abs": 46.99433517456055,
+       "cosine": 0.9999999999999852,
+       "argmax_abs": 1961358
+      },
+      "model.vision_tower.encoder.layers.0": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 2.002716064453125e-05,
+       "mean_abs": 1.2422423983752946e-07,
+       "ref_max_abs": 25.914134979248047,
+       "cosine": 0.9999999999999194,
+       "argmax_abs": 53664
+      },
+      "model.vision_tower.encoder.layers.6": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 2.3365020751953125e-05,
+       "mean_abs": 3.274880387558959e-07,
+       "ref_max_abs": 18.107858657836914,
+       "cosine": 0.9999999999993517,
+       "argmax_abs": 3518884
+      },
+      "model.vision_tower.encoder.layers.26": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 0.0323486328125,
+       "mean_abs": 9.84028050842822e-06,
+       "ref_max_abs": 2037.9144287109375,
+       "cosine": 0.9999999999985918,
+       "argmax_abs": 473986
+      },
+      "model.vision_tower.post_layernorm": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 0.00033676624298095703,
+       "mean_abs": 3.8396530831750314e-07,
+       "ref_max_abs": 24.604406356811523,
+       "cosine": 0.9999999999985714,
+       "argmax_abs": 365698
+      },
+      "model.merger": {
+       "layout": "unaligned ref[252, 1024] native[1260, 1024]"
+      },
+      "decoder.layer.0": {
+       "match": true,
+       "max_abs": 0.00017642974853515625,
+       "mean_abs": 4.945508984493181e-07,
+       "ref_max_abs": 18.20549201965332,
+       "cosine": 0.9999999999962529,
+       "argmax_abs": 95232
+      },
+      "decoder.layer.1": {
+       "match": true,
+       "max_abs": 0.000240325927734375,
+       "mean_abs": 5.132367435589561e-07,
+       "ref_max_abs": 17.882593154907227,
+       "cosine": 0.9999999999952691,
+       "argmax_abs": 95232
+      },
+      "decoder.layer.2": {
+       "match": true,
+       "max_abs": 0.00019168853759765625,
+       "mean_abs": 6.752348806123139e-07,
+       "ref_max_abs": 16.775588989257812,
+       "cosine": 0.9999999999931911,
+       "argmax_abs": 95232
+      },
+      "decoder.layer.3": {
+       "match": true,
+       "max_abs": 0.00030231475830078125,
+       "mean_abs": 8.235369629938907e-07,
+       "ref_max_abs": 18.930496215820312,
+       "cosine": 0.9999999999926982,
+       "argmax_abs": 95232
+      },
+      "decoder.layer.4": {
+       "match": true,
+       "max_abs": 0.0003070831298828125,
+       "mean_abs": 8.952577504203859e-07,
+       "ref_max_abs": 17.528770446777344,
+       "cosine": 0.9999999999911188,
+       "argmax_abs": 95232
+      },
+      "decoder.layer.5": {
+       "match": true,
+       "max_abs": 0.00025463104248046875,
+       "mean_abs": 1.0004160458706335e-06,
+       "ref_max_abs": 17.405534744262695,
+       "cosine": 0.99999999998944,
+       "argmax_abs": 95232
+      },
+      "decoder.layer.6": {
+       "match": true,
+       "max_abs": 0.00013637542724609375,
+       "mean_abs": 1.1393501332550777e-06,
+       "ref_max_abs": 27.376972198486328,
+       "cosine": 0.9999999999871214,
+       "argmax_abs": 95232
+      },
+      "decoder.layer.7": {
+       "match": true,
+       "max_abs": 0.0001697540283203125,
+       "mean_abs": 1.3154596194291758e-06,
+       "ref_max_abs": 24.93642807006836,
+       "cosine": 0.9999999999846317,
+       "argmax_abs": 95232
+      },
+      "decoder.layer.8": {
+       "match": true,
+       "max_abs": 0.00020122528076171875,
+       "mean_abs": 1.4047758059999161e-06,
+       "ref_max_abs": 24.443532943725586,
+       "cosine": 0.9999999999819797,
+       "argmax_abs": 95232
+      },
+      "decoder.layer.9": {
+       "match": true,
+       "max_abs": 0.00014019012451171875,
+       "mean_abs": 1.576824263911335e-06,
+       "ref_max_abs": 24.624547958374023,
+       "cosine": 0.9999999999786758,
+       "argmax_abs": 95232
+      },
+      "decoder.layer.10": {
+       "match": true,
+       "max_abs": 0.00015735626220703125,
+       "mean_abs": 1.7482964640628976e-06,
+       "ref_max_abs": 25.19706153869629,
+       "cosine": 0.9999999999730053,
+       "argmax_abs": 95232
+      },
+      "decoder.layer.11": {
+       "match": true,
+       "max_abs": 0.00025081634521484375,
+       "mean_abs": 2.089298317110844e-06,
+       "ref_max_abs": 26.794227600097656,
+       "cosine": 0.9999999999687585,
+       "argmax_abs": 95232
+      },
+      "decoder.layer.12": {
+       "match": true,
+       "max_abs": 0.00025463104248046875,
+       "mean_abs": 2.3630724188852447e-06,
+       "ref_max_abs": 27.296417236328125,
+       "cosine": 0.9999999999620371,
+       "argmax_abs": 95232
+      },
+      "decoder.layer.13": {
+       "match": true,
+       "max_abs": 0.0002593994140625,
+       "mean_abs": 2.6409938525886916e-06,
+       "ref_max_abs": 28.473045349121094,
+       "cosine": 0.9999999999551464,
+       "argmax_abs": 95232
+      },
+      "decoder.layer.14": {
+       "match": true,
+       "max_abs": 0.00038814544677734375,
+       "mean_abs": 2.9165656712407783e-06,
+       "ref_max_abs": 48.233985900878906,
+       "cosine": 0.9999999999423784,
+       "argmax_abs": 1171456
+      },
+      "decoder.layer.15": {
+       "match": true,
+       "max_abs": 0.0003337860107421875,
+       "mean_abs": 3.605895938196135e-06,
+       "ref_max_abs": 52.056060791015625,
+       "cosine": 0.9999999999385963,
+       "argmax_abs": 1171456
+      },
+      "decoder.layer.16": {
+       "match": true,
+       "max_abs": 0.0006361007690429688,
+       "mean_abs": 4.143374951317403e-06,
+       "ref_max_abs": 52.64344787597656,
+       "cosine": 0.999999999930413,
+       "argmax_abs": 1171456
+      },
+      "decoder.layer.17": {
+       "match": true,
+       "max_abs": 0.00078582763671875,
+       "mean_abs": 4.629699371704657e-06,
+       "ref_max_abs": 53.227989196777344,
+       "cosine": 0.999999999924,
+       "argmax_abs": 1171456
+      },
+      "decoder.layer.18": {
+       "match": true,
+       "max_abs": 0.0009479522705078125,
+       "mean_abs": 5.2201317740660005e-06,
+       "ref_max_abs": 67.10787200927734,
+       "cosine": 0.9999999998907887,
+       "argmax_abs": 870400
+      },
+      "decoder.layer.19": {
+       "match": true,
+       "max_abs": 0.001399993896484375,
+       "mean_abs": 6.566324339195306e-06,
+       "ref_max_abs": 66.5258560180664,
+       "cosine": 0.9999999999182124,
+       "argmax_abs": 1171456
+      },
+      "decoder.layer.20": {
+       "match": true,
+       "max_abs": 0.0010223388671875,
+       "mean_abs": 7.1398335519954925e-06,
+       "ref_max_abs": 67.39151000976562,
+       "cosine": 0.9999999999185969,
+       "argmax_abs": 1171456
+      },
+      "decoder.layer.21": {
+       "match": true,
+       "max_abs": 0.0009613037109375,
+       "mean_abs": 7.812983676029585e-06,
+       "ref_max_abs": 69.62477111816406,
+       "cosine": 0.9999999999137921,
+       "argmax_abs": 871070
+      },
+      "decoder.layer.22": {
+       "match": true,
+       "max_abs": 0.0012445449829101562,
+       "mean_abs": 8.896259729656657e-06,
+       "ref_max_abs": 83.29464721679688,
+       "cosine": 0.9999999998406793,
+       "argmax_abs": 541696
+      },
+      "decoder.layer.23": {
+       "match": true,
+       "max_abs": 0.001636505126953125,
+       "mean_abs": 1.0949213708059236e-05,
+       "ref_max_abs": 211.66375732421875,
+       "cosine": 0.9999999997942515,
+       "argmax_abs": 870445
+      },
+      "model.language_model.norm": {
+       "match": true,
+       "max_abs": 0.0055925846099853516,
+       "mean_abs": 4.352858944729304e-05,
+       "ref_max_abs": 55.7193489074707,
+       "cosine": 0.9999999997389338,
+       "argmax_abs": 870895
+      },
+      "lm_head": {
+       "match": true,
+       "max_abs": 3.3855438232421875e-05,
+       "mean_abs": 8.362993541301642e-06,
+       "ref_max_abs": 32.44926452636719,
+       "cosine": 0.9999999999991476,
+       "argmax_abs": 15653
+      }
+     },
+     "native_meta": {
+      "grid": [
+       2,
+       2
+      ],
+      "parts": [
+       {
+        "w": 504,
+        "h": 392,
+        "tokens": 252,
+        "overview": true,
+        "row": 0,
+        "col": 0
+       },
+       {
+        "w": 504,
+        "h": 392,
+        "tokens": 252,
+        "overview": false,
+        "row": 0,
+        "col": 0
+       },
+       {
+        "w": 504,
+        "h": 392,
+        "tokens": 252,
+        "overview": false,
+        "row": 0,
+        "col": 1
+       },
+       {
+        "w": 504,
+        "h": 392,
+        "tokens": 252,
+        "overview": false,
+        "row": 1,
+        "col": 0
+       },
+       {
+        "w": 504,
+        "h": 392,
+        "tokens": 252,
+        "overview": false,
+        "row": 1,
+        "col": 1
+       }
+      ]
+     },
+     "input_ids_exact": true,
+     "input_ids_first_difference": null,
+     "input_ids_len": [
+      1290,
+      1290
+     ],
+     "first_logit_argmax": [
+      52390,
+      52390
+     ],
+     "ids": [
+      52390,
+      6901,
+      44,
+      12,
+      90274,
+      5604,
+      2081,
+      13,
+      198,
+      760,
+      3841,
+      13477,
+      37550,
+      33075,
+      888,
+      279,
+      15217,
+      5388,
+      13,
+      198,
+      33526,
+      220,
+      17,
+      15,
+      17,
+      21,
+      12,
+      16,
+      15,
+      12,
+      17,
+      22,
+      25,
+      2702,
+      220,
+      16,
+      11,
+      17,
+      18,
+      19,
+      13,
+      20,
+      21,
+      35858,
+      198,
+      57455,
+      448,
+      5280,
+      533,
+      980,
+      2630,
+      268,
+      25,
+      2734,
+      8112,
+      11,
+      25795,
+      8112,
+      11,
+      280,
+      56307,
+      13,
+      248046
+     ],
+     "ids_exact": true,
+     "first_id_difference": null,
+     "text_exact": true,
+     "eos": true,
+     "worst_stage": [
+      "model.vision_tower.encoder.layers.26",
+      0.0323486328125
+     ],
+     "stage_order": [
+      "pixel_values",
+      "model.vision_tower.embeddings",
+      "model.vision_tower.encoder.layers.0",
+      "model.vision_tower.encoder.layers.6",
+      "model.vision_tower.encoder.layers.26",
+      "model.vision_tower.post_layernorm",
+      "model.merger",
+      "decoder.layer.0",
+      "decoder.layer.1",
+      "decoder.layer.2",
+      "decoder.layer.3",
+      "decoder.layer.4",
+      "decoder.layer.5",
+      "decoder.layer.6",
+      "decoder.layer.7",
+      "decoder.layer.8",
+      "decoder.layer.9",
+      "decoder.layer.10",
+      "decoder.layer.11",
+      "decoder.layer.12",
+      "decoder.layer.13",
+      "decoder.layer.14",
+      "decoder.layer.15",
+      "decoder.layer.16",
+      "decoder.layer.17",
+      "decoder.layer.18",
+      "decoder.layer.19",
+      "decoder.layer.20",
+      "decoder.layer.21",
+      "decoder.layer.22",
+      "decoder.layer.23"
+     ]
+    }
+   }
+  },
+  {
+   "id": "table",
+   "task": "Table Recognition:",
+   "size": [
+    1024,
+    768
+   ],
+   "reference_ids": [
+    27,
+    2333,
+    75,
+    29,
+    248095,
+    1192,
+    735,
+    1167,
+    1816,
+    735,
+    8223,
+    248099,
+    248095,
+    25719,
+    735,
+    220,
+    18,
+    735,
+    220,
+    16,
+    13,
+    17,
+    15,
+    248099,
+    248095,
+    87905,
+    735,
+    220,
+    16,
+    17,
+    735,
+    220,
+    15,
+    13,
+    23,
+    20,
+    248099,
+    248095,
+    7354,
+    735,
+    220,
+    16,
+    20,
+    735,
+    220,
+    16,
+    18,
+    13,
+    23,
+    15,
+    248099,
+    510,
+    2333,
+    75,
+    29,
+    248046
+   ],
+   "reference_text": "<otsl><fcel>Item | Qty | Price<nl><fcel>Apple | 3 | 1.20<nl><fcel>Pear | 12 | 0.85<nl><fcel>Total | 15 | 13.80<nl></otsl>",
+   "reference_eos": true,
+   "reference_cap_hit": false,
+   "arms": {
+    "f32": {
+     "dtype": "f32",
+     "exit": 0,
+     "wall_seconds": 100.687,
+     "text": "<otsl><fcel>Item | Qty | Price<nl><fcel>Apple | 3 | 1.20<nl><fcel>Pear | 12 | 0.85<nl><fcel>Total | 15 | 13.80<nl></otsl>",
+     "stderr_tail": "minicpm_ocr gen_ids (56): 27 2333 75 29 248095 1192 735 1167 1816 735 8223 248099 248095 25719 735 220 18 735 220 16 13 17 15 248099 248095 87905 735 220 16 17 735 220 15 13 23 20 248099 248095 7354 735 220 16 20 735 220 16 18 13 23 15 248099 510 2333 75 29 248046\n",
+     "stages": {
+      "pixel_values": {
+       "chw_list": {
+        "match": true,
+        "max_abs": 2.0,
+        "mean_abs": 0.01794776640787208,
+        "ref_max_abs": 1.0,
+        "cosine": 0.9863169288726905,
+        "argmax_abs": 585
+       },
+       "by_patch": {
+        "match": true,
+        "max_abs": 2.0,
+        "mean_abs": 0.01668772800186289,
+        "ref_max_abs": 1.0,
+        "cosine": 0.9873440716365538,
+        "argmax_abs": 15139
+       }
+      },
+      "model.vision_tower.embeddings": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 3.814697265625e-06,
+       "mean_abs": 6.866312057436468e-09,
+       "ref_max_abs": 46.99433517456055,
+       "cosine": 0.9999999999999859,
+       "argmax_abs": 250997
+      },
+      "model.vision_tower.encoder.layers.0": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 1.71661376953125e-05,
+       "mean_abs": 1.1435408901083646e-07,
+       "ref_max_abs": 25.914134979248047,
+       "cosine": 0.9999999999999287,
+       "argmax_abs": 45600
+      },
+      "model.vision_tower.encoder.layers.6": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 2.1457672119140625e-05,
+       "mean_abs": 3.340258605706045e-07,
+       "ref_max_abs": 17.7152099609375,
+       "cosine": 0.9999999999992938,
+       "argmax_abs": 2357668
+      },
+      "model.vision_tower.encoder.layers.26": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 0.052001953125,
+       "mean_abs": 1.0042201156337711e-05,
+       "ref_max_abs": 2029.2841796875,
+       "cosine": 0.9999999999981826,
+       "argmax_abs": 814978
+      },
+      "model.vision_tower.post_layernorm": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 0.00018405914306640625,
+       "mean_abs": 4.020948452256703e-07,
+       "ref_max_abs": 24.26221466064453,
+       "cosine": 0.9999999999988571,
+       "argmax_abs": 1522756
+      },
+      "model.merger": {
+       "layout": "unaligned ref[252, 1024] native[1260, 1024]"
+      },
+      "decoder.layer.0": {
+       "match": true,
+       "max_abs": 4.38690185546875e-05,
+       "mean_abs": 4.877922392349439e-07,
+       "ref_max_abs": 17.323577880859375,
+       "cosine": 0.9999999999977953,
+       "argmax_abs": 145408
+      },
+      "decoder.layer.1": {
+       "match": true,
+       "max_abs": 5.7220458984375e-05,
+       "mean_abs": 5.001699879241726e-07,
+       "ref_max_abs": 17.84139633178711,
+       "cosine": 0.9999999999972886,
+       "argmax_abs": 231424
+      },
+      "decoder.layer.2": {
+       "match": true,
+       "max_abs": 6.437301635742188e-05,
+       "mean_abs": 6.649980318868547e-07,
+       "ref_max_abs": 16.153207778930664,
+       "cosine": 0.9999999999944711,
+       "argmax_abs": 1212416
+      },
+      "decoder.layer.3": {
+       "match": true,
+       "max_abs": 7.2479248046875e-05,
+       "mean_abs": 7.402260967034826e-07,
+       "ref_max_abs": 18.090850830078125,
+       "cosine": 0.9999999999944212,
+       "argmax_abs": 686080
+      },
+      "decoder.layer.4": {
+       "match": true,
+       "max_abs": 5.9604644775390625e-05,
+       "mean_abs": 7.796481626403755e-07,
+       "ref_max_abs": 16.77352523803711,
+       "cosine": 0.9999999999933855,
+       "argmax_abs": 686080
+      },
+      "decoder.layer.5": {
+       "match": true,
+       "max_abs": 6.580352783203125e-05,
+       "mean_abs": 8.994216259214566e-07,
+       "ref_max_abs": 16.363176345825195,
+       "cosine": 0.9999999999914571,
+       "argmax_abs": 407552
+      },
+      "decoder.layer.6": {
+       "match": true,
+       "max_abs": 5.9604644775390625e-05,
+       "mean_abs": 1.0355077212222193e-06,
+       "ref_max_abs": 27.376972198486328,
+       "cosine": 0.9999999999890379,
+       "argmax_abs": 126976
+      },
+      "decoder.layer.7": {
+       "match": true,
+       "max_abs": 6.020069122314453e-05,
+       "mean_abs": 1.208251873905713e-06,
+       "ref_max_abs": 24.93642807006836,
+       "cosine": 0.9999999999864988,
+       "argmax_abs": 127689
+      },
+      "decoder.layer.8": {
+       "match": true,
+       "max_abs": 6.860494613647461e-05,
+       "mean_abs": 1.3214448263487463e-06,
+       "ref_max_abs": 24.443532943725586,
+       "cosine": 0.9999999999834444,
+       "argmax_abs": 145433
+      },
+      "decoder.layer.9": {
+       "match": true,
+       "max_abs": 0.0001068115234375,
+       "mean_abs": 1.5381426531933731e-06,
+       "ref_max_abs": 24.624547958374023,
+       "cosine": 0.9999999999795144,
+       "argmax_abs": 871424
+      },
+      "decoder.layer.10": {
+       "match": true,
+       "max_abs": 0.0001220703125,
+       "mean_abs": 1.7715213854543005e-06,
+       "ref_max_abs": 25.19706153869629,
+       "cosine": 0.9999999999718624,
+       "argmax_abs": 889856
+      },
+      "decoder.layer.11": {
+       "match": true,
+       "max_abs": 0.000152587890625,
+       "mean_abs": 2.13579178593975e-06,
+       "ref_max_abs": 26.794227600097656,
+       "cosine": 0.9999999999658596,
+       "argmax_abs": 1070080
+      },
+      "decoder.layer.12": {
+       "match": true,
+       "max_abs": 0.00018548965454101562,
+       "mean_abs": 2.4280770245318556e-06,
+       "ref_max_abs": 27.296417236328125,
+       "cosine": 0.9999999999568279,
+       "argmax_abs": 1070080
+      },
+      "decoder.layer.13": {
+       "match": true,
+       "max_abs": 0.00022077560424804688,
+       "mean_abs": 2.7084882676867645e-06,
+       "ref_max_abs": 28.473045349121094,
+       "cosine": 0.999999999949707,
+       "argmax_abs": 1070080
+      },
+      "decoder.layer.14": {
+       "match": true,
+       "max_abs": 0.0002918243408203125,
+       "mean_abs": 3.0607908267401323e-06,
+       "ref_max_abs": 48.233985900878906,
+       "cosine": 0.9999999999326867,
+       "argmax_abs": 1070080
+      },
+      "decoder.layer.15": {
+       "match": true,
+       "max_abs": 0.00042057037353515625,
+       "mean_abs": 3.773720292580644e-06,
+       "ref_max_abs": 52.056060791015625,
+       "cosine": 0.9999999999393702,
+       "argmax_abs": 1070080
+      },
+      "decoder.layer.16": {
+       "match": true,
+       "max_abs": 0.0006504058837890625,
+       "mean_abs": 4.305337980729591e-06,
+       "ref_max_abs": 52.64344787597656,
+       "cosine": 0.9999999999324276,
+       "argmax_abs": 145408
+      },
+      "decoder.layer.17": {
+       "match": true,
+       "max_abs": 0.0007390975952148438,
+       "mean_abs": 4.738651023922279e-06,
+       "ref_max_abs": 53.227989196777344,
+       "cosine": 0.9999999999293087,
+       "argmax_abs": 145408
+      },
+      "decoder.layer.18": {
+       "match": true,
+       "max_abs": 0.0013227462768554688,
+       "mean_abs": 5.236272857318415e-06,
+       "ref_max_abs": 67.10787200927734,
+       "cosine": 0.9999999999050442,
+       "argmax_abs": 145408
+      },
+      "decoder.layer.19": {
+       "match": true,
+       "max_abs": 0.0012836456298828125,
+       "mean_abs": 6.4751303514555705e-06,
+       "ref_max_abs": 66.5258560180664,
+       "cosine": 0.9999999999408,
+       "argmax_abs": 871424
+      },
+      "decoder.layer.20": {
+       "match": true,
+       "max_abs": 0.0013103485107421875,
+       "mean_abs": 6.865482608141734e-06,
+       "ref_max_abs": 67.39151000976562,
+       "cosine": 0.9999999999447432,
+       "argmax_abs": 871424
+      },
+      "decoder.layer.21": {
+       "match": true,
+       "max_abs": 0.001308441162109375,
+       "mean_abs": 7.466834733716587e-06,
+       "ref_max_abs": 69.62477111816406,
+       "cosine": 0.9999999999414383,
+       "argmax_abs": 871424
+      },
+      "decoder.layer.22": {
+       "match": true,
+       "max_abs": 0.0005340576171875,
+       "mean_abs": 8.377365611170173e-06,
+       "ref_max_abs": 83.29464721679688,
+       "cosine": 0.9999999998916983,
+       "argmax_abs": 1057792
+      },
+      "decoder.layer.23": {
+       "match": true,
+       "max_abs": 0.0020599365234375,
+       "mean_abs": 9.90074727234278e-06,
+       "ref_max_abs": 211.66375732421875,
+       "cosine": 0.999999999859035,
+       "argmax_abs": 141312
+      },
+      "model.language_model.norm": {
+       "match": true,
+       "max_abs": 0.0022673606872558594,
+       "mean_abs": 4.2956636869450264e-05,
+       "ref_max_abs": 36.06464767456055,
+       "cosine": 0.9999999998193105,
+       "argmax_abs": 1162294
+      },
+      "lm_head": {
+       "match": true,
+       "max_abs": 5.91278076171875e-05,
+       "mean_abs": 1.601172309310289e-05,
+       "ref_max_abs": 39.562992095947266,
+       "cosine": 0.9999999999988541,
+       "argmax_abs": 28608
+      }
+     },
+     "native_meta": {
+      "grid": [
+       2,
+       2
+      ],
+      "parts": [
+       {
+        "w": 504,
+        "h": 392,
+        "tokens": 252,
+        "overview": true,
+        "row": 0,
+        "col": 0
+       },
+       {
+        "w": 504,
+        "h": 392,
+        "tokens": 252,
+        "overview": false,
+        "row": 0,
+        "col": 0
+       },
+       {
+        "w": 504,
+        "h": 392,
+        "tokens": 252,
+        "overview": false,
+        "row": 0,
+        "col": 1
+       },
+       {
+        "w": 504,
+        "h": 392,
+        "tokens": 252,
+        "overview": false,
+        "row": 1,
+        "col": 0
+       },
+       {
+        "w": 504,
+        "h": 392,
+        "tokens": 252,
+        "overview": false,
+        "row": 1,
+        "col": 1
+       }
+      ]
+     },
+     "input_ids_exact": true,
+     "input_ids_first_difference": null,
+     "input_ids_len": [
+      1290,
+      1290
+     ],
+     "first_logit_argmax": [
+      27,
+      27
+     ],
+     "ids": [
+      27,
+      2333,
+      75,
+      29,
+      248095,
+      1192,
+      735,
+      1167,
+      1816,
+      735,
+      8223,
+      248099,
+      248095,
+      25719,
+      735,
+      220,
+      18,
+      735,
+      220,
+      16,
+      13,
+      17,
+      15,
+      248099,
+      248095,
+      87905,
+      735,
+      220,
+      16,
+      17,
+      735,
+      220,
+      15,
+      13,
+      23,
+      20,
+      248099,
+      248095,
+      7354,
+      735,
+      220,
+      16,
+      20,
+      735,
+      220,
+      16,
+      18,
+      13,
+      23,
+      15,
+      248099,
+      510,
+      2333,
+      75,
+      29,
+      248046
+     ],
+     "ids_exact": true,
+     "first_id_difference": null,
+     "text_exact": true,
+     "eos": true,
+     "worst_stage": [
+      "model.vision_tower.encoder.layers.26",
+      0.052001953125
+     ],
+     "stage_order": [
+      "pixel_values",
+      "model.vision_tower.embeddings",
+      "model.vision_tower.encoder.layers.0",
+      "model.vision_tower.encoder.layers.6",
+      "model.vision_tower.encoder.layers.26",
+      "model.vision_tower.post_layernorm",
+      "model.merger",
+      "decoder.layer.0",
+      "decoder.layer.1",
+      "decoder.layer.2",
+      "decoder.layer.3",
+      "decoder.layer.4",
+      "decoder.layer.5",
+      "decoder.layer.6",
+      "decoder.layer.7",
+      "decoder.layer.8",
+      "decoder.layer.9",
+      "decoder.layer.10",
+      "decoder.layer.11",
+      "decoder.layer.12",
+      "decoder.layer.13",
+      "decoder.layer.14",
+      "decoder.layer.15",
+      "decoder.layer.16",
+      "decoder.layer.17",
+      "decoder.layer.18",
+      "decoder.layer.19",
+      "decoder.layer.20",
+      "decoder.layer.21",
+      "decoder.layer.22",
+      "decoder.layer.23"
+     ]
+    },
+    "f16": {
+     "dtype": "f16",
+     "exit": 0,
+     "wall_seconds": 101.475,
+     "text": "<otsl><fcel>Item | Qty | Price<nl><fcel>Apple | 3 | 1.20<nl><fcel>Pear | 12 | 0.85<nl><fcel>Total | 15 | 13.80<nl></otsl>",
+     "stderr_tail": "minicpm_ocr gen_ids (56): 27 2333 75 29 248095 1192 735 1167 1816 735 8223 248099 248095 25719 735 220 18 735 220 16 13 17 15 248099 248095 87905 735 220 16 17 735 220 15 13 23 20 248099 248095 7354 735 220 16 20 735 220 16 18 13 23 15 248099 510 2333 75 29 248046\n",
+     "stages": {
+      "pixel_values": {
+       "chw_list": {
+        "match": true,
+        "max_abs": 2.0,
+        "mean_abs": 0.01794776640787208,
+        "ref_max_abs": 1.0,
+        "cosine": 0.9863169288726905,
+        "argmax_abs": 585
+       },
+       "by_patch": {
+        "match": true,
+        "max_abs": 2.0,
+        "mean_abs": 0.01668772800186289,
+        "ref_max_abs": 1.0,
+        "cosine": 0.9873440716365538,
+        "argmax_abs": 15139
+       }
+      },
+      "model.vision_tower.embeddings": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 3.814697265625e-06,
+       "mean_abs": 8.207699967923162e-09,
+       "ref_max_abs": 46.99433517456055,
+       "cosine": 0.9999999999999907,
+       "argmax_abs": 250997
+      },
+      "model.vision_tower.encoder.layers.0": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 1.71661376953125e-05,
+       "mean_abs": 1.1502114019518201e-07,
+       "ref_max_abs": 25.914134979248047,
+       "cosine": 0.9999999999999288,
+       "argmax_abs": 45600
+      },
+      "model.vision_tower.encoder.layers.6": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 2.3365020751953125e-05,
+       "mean_abs": 3.349618042043892e-07,
+       "ref_max_abs": 17.7152099609375,
+       "cosine": 0.9999999999992889,
+       "argmax_abs": 2357668
+      },
+      "model.vision_tower.encoder.layers.26": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 0.0240478515625,
+       "mean_abs": 9.929210562314652e-06,
+       "ref_max_abs": 2029.2841796875,
+       "cosine": 0.9999999999984432,
+       "argmax_abs": 814978
+      },
+      "model.vision_tower.post_layernorm": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 0.0001811981201171875,
+       "mean_abs": 3.9818181506866764e-07,
+       "ref_max_abs": 24.26221466064453,
+       "cosine": 0.9999999999988841,
+       "argmax_abs": 1522756
+      },
+      "model.merger": {
+       "layout": "unaligned ref[252, 1024] native[1260, 1024]"
+      },
+      "decoder.layer.0": {
+       "match": true,
+       "max_abs": 5.245208740234375e-05,
+       "mean_abs": 4.803553536717576e-07,
+       "ref_max_abs": 17.323577880859375,
+       "cosine": 0.9999999999977487,
+       "argmax_abs": 231424
+      },
+      "decoder.layer.1": {
+       "match": true,
+       "max_abs": 6.67572021484375e-05,
+       "mean_abs": 4.92036787929549e-07,
+       "ref_max_abs": 17.84139633178711,
+       "cosine": 0.9999999999971947,
+       "argmax_abs": 231424
+      },
+      "decoder.layer.2": {
+       "match": true,
+       "max_abs": 7.343292236328125e-05,
+       "mean_abs": 6.480236458818856e-07,
+       "ref_max_abs": 16.153207778930664,
+       "cosine": 0.9999999999945545,
+       "argmax_abs": 231424
+      },
+      "decoder.layer.3": {
+       "match": true,
+       "max_abs": 8.726119995117188e-05,
+       "mean_abs": 7.229508048611433e-07,
+       "ref_max_abs": 18.090850830078125,
+       "cosine": 0.999999999994462,
+       "argmax_abs": 407552
+      },
+      "decoder.layer.4": {
+       "match": true,
+       "max_abs": 0.00012540817260742188,
+       "mean_abs": 7.605508446780478e-07,
+       "ref_max_abs": 16.77352523803711,
+       "cosine": 0.9999999999933252,
+       "argmax_abs": 407552
+      },
+      "decoder.layer.5": {
+       "match": true,
+       "max_abs": 0.00015020370483398438,
+       "mean_abs": 8.733990401332653e-07,
+       "ref_max_abs": 16.363176345825195,
+       "cosine": 0.9999999999914455,
+       "argmax_abs": 407552
+      },
+      "decoder.layer.6": {
+       "match": true,
+       "max_abs": 0.00010561943054199219,
+       "mean_abs": 1.005804232002186e-06,
+       "ref_max_abs": 27.376972198486328,
+       "cosine": 0.9999999999889517,
+       "argmax_abs": 482904
+      },
+      "decoder.layer.7": {
+       "match": true,
+       "max_abs": 0.00010979175567626953,
+       "mean_abs": 1.1733062262567185e-06,
+       "ref_max_abs": 24.93642807006836,
+       "cosine": 0.9999999999867547,
+       "argmax_abs": 482904
+      },
+      "decoder.layer.8": {
+       "match": true,
+       "max_abs": 0.0001214742660522461,
+       "mean_abs": 1.2819542396142042e-06,
+       "ref_max_abs": 24.443532943725586,
+       "cosine": 0.9999999999839082,
+       "argmax_abs": 482904
+      },
+      "decoder.layer.9": {
+       "match": true,
+       "max_abs": 0.00013065338134765625,
+       "mean_abs": 1.4883368942881403e-06,
+       "ref_max_abs": 24.624547958374023,
+       "cosine": 0.9999999999804414,
+       "argmax_abs": 482904
+      },
+      "decoder.layer.10": {
+       "match": true,
+       "max_abs": 0.00012350082397460938,
+       "mean_abs": 1.7093767378937204e-06,
+       "ref_max_abs": 25.19706153869629,
+       "cosine": 0.9999999999727849,
+       "argmax_abs": 482904
+      },
+      "decoder.layer.11": {
+       "match": true,
+       "max_abs": 0.0001595616340637207,
+       "mean_abs": 2.058665142318529e-06,
+       "ref_max_abs": 26.794227600097656,
+       "cosine": 0.9999999999668132,
+       "argmax_abs": 482370
+      },
+      "decoder.layer.12": {
+       "match": true,
+       "max_abs": 0.0001881122589111328,
+       "mean_abs": 2.339868749177115e-06,
+       "ref_max_abs": 27.296417236328125,
+       "cosine": 0.9999999999579388,
+       "argmax_abs": 482370
+      },
+      "decoder.layer.13": {
+       "match": true,
+       "max_abs": 0.00022268295288085938,
+       "mean_abs": 2.6071205149462053e-06,
+       "ref_max_abs": 28.473045349121094,
+       "cosine": 0.9999999999512365,
+       "argmax_abs": 1070080
+      },
+      "decoder.layer.14": {
+       "match": true,
+       "max_abs": 0.000293731689453125,
+       "mean_abs": 2.959240405117313e-06,
+       "ref_max_abs": 48.233985900878906,
+       "cosine": 0.9999999999341342,
+       "argmax_abs": 1070080
+      },
+      "decoder.layer.15": {
+       "match": true,
+       "max_abs": 0.0004367828369140625,
+       "mean_abs": 3.6758409356310908e-06,
+       "ref_max_abs": 52.056060791015625,
+       "cosine": 0.9999999999372607,
+       "argmax_abs": 1070080
+      },
+      "decoder.layer.16": {
+       "match": true,
+       "max_abs": 0.0006933212280273438,
+       "mean_abs": 4.195519238427826e-06,
+       "ref_max_abs": 52.64344787597656,
+       "cosine": 0.9999999999302369,
+       "argmax_abs": 145408
+      },
+      "decoder.layer.17": {
+       "match": true,
+       "max_abs": 0.00079345703125,
+       "mean_abs": 4.610557992998301e-06,
+       "ref_max_abs": 53.227989196777344,
+       "cosine": 0.9999999999275283,
+       "argmax_abs": 145408
+      },
+      "decoder.layer.18": {
+       "match": true,
+       "max_abs": 0.00146484375,
+       "mean_abs": 5.083621359454112e-06,
+       "ref_max_abs": 67.10787200927734,
+       "cosine": 0.9999999999036632,
+       "argmax_abs": 145408
+      },
+      "decoder.layer.19": {
+       "match": true,
+       "max_abs": 0.00130462646484375,
+       "mean_abs": 6.318198014670025e-06,
+       "ref_max_abs": 66.5258560180664,
+       "cosine": 0.9999999999381403,
+       "argmax_abs": 145408
+      },
+      "decoder.layer.20": {
+       "match": true,
+       "max_abs": 0.0009021759033203125,
+       "mean_abs": 6.704319533254907e-06,
+       "ref_max_abs": 67.39151000976562,
+       "cosine": 0.9999999999417676,
+       "argmax_abs": 145408
+      },
+      "decoder.layer.21": {
+       "match": true,
+       "max_abs": 0.0008831024169921875,
+       "mean_abs": 7.30713563737573e-06,
+       "ref_max_abs": 69.62477111816406,
+       "cosine": 0.9999999999379933,
+       "argmax_abs": 871424
+      },
+      "decoder.layer.22": {
+       "match": true,
+       "max_abs": 0.0007231235504150391,
+       "mean_abs": 8.274486715665205e-06,
+       "ref_max_abs": 83.29464721679688,
+       "cosine": 0.9999999998826913,
+       "argmax_abs": 482455
+      },
+      "decoder.layer.23": {
+       "match": true,
+       "max_abs": 0.001956939697265625,
+       "mean_abs": 9.77866925812884e-06,
+       "ref_max_abs": 211.66375732421875,
+       "cosine": 0.9999999998486452,
+       "argmax_abs": 141312
+      },
+      "model.language_model.norm": {
+       "match": true,
+       "max_abs": 0.003143310546875,
+       "mean_abs": 4.2131607823750364e-05,
+       "ref_max_abs": 36.06464767456055,
+       "cosine": 0.999999999816357,
+       "argmax_abs": 482553
+      },
+      "lm_head": {
+       "match": true,
+       "max_abs": 5.53131103515625e-05,
+       "mean_abs": 9.352673920219053e-06,
+       "ref_max_abs": 39.562992095947266,
+       "cosine": 0.9999999999992205,
+       "argmax_abs": 26482
+      }
+     },
+     "native_meta": {
+      "grid": [
+       2,
+       2
+      ],
+      "parts": [
+       {
+        "w": 504,
+        "h": 392,
+        "tokens": 252,
+        "overview": true,
+        "row": 0,
+        "col": 0
+       },
+       {
+        "w": 504,
+        "h": 392,
+        "tokens": 252,
+        "overview": false,
+        "row": 0,
+        "col": 0
+       },
+       {
+        "w": 504,
+        "h": 392,
+        "tokens": 252,
+        "overview": false,
+        "row": 0,
+        "col": 1
+       },
+       {
+        "w": 504,
+        "h": 392,
+        "tokens": 252,
+        "overview": false,
+        "row": 1,
+        "col": 0
+       },
+       {
+        "w": 504,
+        "h": 392,
+        "tokens": 252,
+        "overview": false,
+        "row": 1,
+        "col": 1
+       }
+      ]
+     },
+     "input_ids_exact": true,
+     "input_ids_first_difference": null,
+     "input_ids_len": [
+      1290,
+      1290
+     ],
+     "first_logit_argmax": [
+      27,
+      27
+     ],
+     "ids": [
+      27,
+      2333,
+      75,
+      29,
+      248095,
+      1192,
+      735,
+      1167,
+      1816,
+      735,
+      8223,
+      248099,
+      248095,
+      25719,
+      735,
+      220,
+      18,
+      735,
+      220,
+      16,
+      13,
+      17,
+      15,
+      248099,
+      248095,
+      87905,
+      735,
+      220,
+      16,
+      17,
+      735,
+      220,
+      15,
+      13,
+      23,
+      20,
+      248099,
+      248095,
+      7354,
+      735,
+      220,
+      16,
+      20,
+      735,
+      220,
+      16,
+      18,
+      13,
+      23,
+      15,
+      248099,
+      510,
+      2333,
+      75,
+      29,
+      248046
+     ],
+     "ids_exact": true,
+     "first_id_difference": null,
+     "text_exact": true,
+     "eos": true,
+     "worst_stage": [
+      "model.vision_tower.encoder.layers.26",
+      0.0240478515625
+     ],
+     "stage_order": [
+      "pixel_values",
+      "model.vision_tower.embeddings",
+      "model.vision_tower.encoder.layers.0",
+      "model.vision_tower.encoder.layers.6",
+      "model.vision_tower.encoder.layers.26",
+      "model.vision_tower.post_layernorm",
+      "model.merger",
+      "decoder.layer.0",
+      "decoder.layer.1",
+      "decoder.layer.2",
+      "decoder.layer.3",
+      "decoder.layer.4",
+      "decoder.layer.5",
+      "decoder.layer.6",
+      "decoder.layer.7",
+      "decoder.layer.8",
+      "decoder.layer.9",
+      "decoder.layer.10",
+      "decoder.layer.11",
+      "decoder.layer.12",
+      "decoder.layer.13",
+      "decoder.layer.14",
+      "decoder.layer.15",
+      "decoder.layer.16",
+      "decoder.layer.17",
+      "decoder.layer.18",
+      "decoder.layer.19",
+      "decoder.layer.20",
+      "decoder.layer.21",
+      "decoder.layer.22",
+      "decoder.layer.23"
+     ]
+    }
+   }
+  },
+  {
+   "id": "tall",
+   "task": "Text Recognition:",
+   "size": [
+    700,
+    2100
+   ],
+   "reference_ids": [
+    51,
+    528,
+    2081,
+    1500,
+    220,
+    16,
+    25,
+    81987,
+    1716,
+    13,
+    198,
+    51,
+    528,
+    2081,
+    1500,
+    220,
+    17,
+    25,
+    81987,
+    1716,
+    13,
+    198,
+    51,
+    528,
+    2081,
+    1500,
+    220,
+    18,
+    25,
+    81987,
+    1716,
+    13,
+    198,
+    51,
+    528,
+    2081,
+    1500,
+    220,
+    19,
+    25,
+    81987,
+    1716,
+    13,
+    198,
+    51,
+    528,
+    2081,
+    1500,
+    220,
+    20,
+    25,
+    81987,
+    1716,
+    13,
+    198,
+    51,
+    528,
+    2081,
+    1500,
+    220,
+    21,
+    25,
+    81987,
+    1716,
+    13,
+    198,
+    51,
+    528,
+    2081,
+    1500,
+    220,
+    22,
+    25,
+    81987,
+    1716,
+    13,
+    198,
+    51,
+    528,
+    2081,
+    1500,
+    220,
+    23,
+    25,
+    81987,
+    1716,
+    13,
+    198,
+    51,
+    528,
+    2081,
+    1500,
+    220,
+    24,
+    25,
+    81987,
+    1716,
+    13,
+    198,
+    51,
+    528,
+    2081,
+    1500,
+    220,
+    16,
+    15,
+    25,
+    81987,
+    1716,
+    13,
+    198,
+    51,
+    528,
+    2081,
+    1500,
+    220,
+    16,
+    16,
+    25,
+    81987,
+    1716,
+    13,
+    198,
+    51,
+    528,
+    2081,
+    1500,
+    220,
+    16,
+    17,
+    25,
+    81987,
+    1716,
+    13,
+    198,
+    51,
+    528,
+    2081,
+    1500,
+    220,
+    16,
+    18,
+    25,
+    81987,
+    1716,
+    13,
+    198,
+    51,
+    528,
+    2081,
+    1500,
+    220,
+    16,
+    19,
+    25,
+    81987,
+    1716,
+    13,
+    198,
+    51,
+    528,
+    2081,
+    1500,
+    220,
+    16,
+    20,
+    25,
+    81987,
+    1716,
+    13,
+    198,
+    51,
+    528,
+    2081,
+    1500,
+    220,
+    16,
+    21,
+    25,
+    81987,
+    1716,
+    13,
+    198,
+    51,
+    528,
+    2081,
+    1500,
+    220,
+    16,
+    22,
+    25,
+    81987,
+    1716,
+    13,
+    198,
+    51,
+    528,
+    2081,
+    1500,
+    220,
+    16,
+    23,
+    25,
+    81987,
+    1716,
+    13,
+    198,
+    51,
+    528,
+    2081,
+    1500,
+    220,
+    16,
+    24,
+    25,
+    81987,
+    1716,
+    13,
+    198,
+    51,
+    528,
+    2081,
+    1500,
+    220,
+    17,
+    15,
+    25,
+    81987,
+    1716,
+    13,
+    198,
+    51,
+    528,
+    2081,
+    1500,
+    220,
+    17,
+    16,
+    25,
+    81987,
+    1716,
+    13,
+    198,
+    51,
+    528,
+    2081,
+    1500,
+    220,
+    17,
+    17,
+    25,
+    81987,
+    1716,
+    13,
+    198,
+    51,
+    528,
+    2081,
+    1500,
+    220,
+    17,
+    18,
+    25,
+    81987,
+    1716,
+    13,
+    198,
+    51,
+    528,
+    2081,
+    1500,
+    220,
+    17,
+    19,
+    25,
+    81987,
+    1716,
+    13,
+    248046
+   ],
+   "reference_text": "Tall page line 1: slicing check.\nTall page line 2: slicing check.\nTall page line 3: slicing check.\nTall page line 4: slicing check.\nTall page line 5: slicing check.\nTall page line 6: slicing check.\nTall page line 7: slicing check.\nTall page line 8: slicing check.\nTall page line 9: slicing check.\nTall page line 10: slicing check.\nTall page line 11: slicing check.\nTall page line 12: slicing check.\nTall page line 13: slicing check.\nTall page line 14: slicing check.\nTall page line 15: slicing check.\nTall page line 16: slicing check.\nTall page line 17: slicing check.\nTall page line 18: slicing check.\nTall page line 19: slicing check.\nTall page line 20: slicing check.\nTall page line 21: slicing check.\nTall page line 22: slicing check.\nTall page line 23: slicing check.\nTall page line 24: slicing check.",
+   "reference_eos": true,
+   "reference_cap_hit": false,
+   "arms": {
+    "f32": {
+     "dtype": "f32",
+     "exit": 0,
+     "wall_seconds": 213.04,
+     "text": "Tall page line 1: slicing check.\nTall page line 2: slicing check.\nTall page line 3: slicing check.\nTall page line 4: slicing check.\nTall page line 5: slicing check.\nTall page line 6: slicing check.\nTall page line 7: slicing check.\nTall page line 8: slicing check.\nTall page line 9: slicing check.\nTall page line 10: slicing check.\nTall page line 11: slicing check.\nTall page line 12: slicing check.\nTall page line 13: slicing check.\nTall page line 14: slicing check.\nTall page line 15: slicing check.\nTall page line 16: slicing check.\nTall page line 17: slicing check.\nTall page line 18: slicing check.\nTall page line 19: slicing check.\nTall page line 20: slicing check.\nTall page line 21: slicing check.\nTall page line 22: slicing check.\nTall page line 23: slicing check.\nTall page line 24: slicing check.",
+     "stderr_tail": "minicpm_ocr gen_ids (279): 51 528 2081 1500 220 16 25 81987 1716 13 198 51 528 2081 1500 220 17 25 81987 1716 13 198 51 528 2081 1500 220 18 25 81987 1716 13 198 51 528 2081 1500 220 19 25 81987 1716 13 198 51 528 2081 1500 220 20 25 81987 1716 13 198 51 528 2081 1500 220 21 25 81987 1716 13 198 51 528 2081 1500 220 22 25 81987 1716 13 198 51 528 2081 1500 220 23 25 81987 1716 13 198 51 528 2081 1500 220 24 25 81987 1716 13 198 51 528 2081 1500 220 16 15 25 81987 1716 13 198 51 528 2081 1500 220 16 16 25 81987 1716 13 198 51 528 2081 1500 220 16 17 25 81987 1716 13 198 51 528 2081 1500 220 16 18 25 81987 1716 13 198 51 528 2081 1500 220 16 19 25 81987 1716 13 198 51 528 2081 1500 220 16 20 25 81987 1716 13 198 51 528 2081 1500 220 16 21 25 81987 1716 13 198 51 528 2081 1500 220 16 22 25 81987 1716 13 198 51 528 2081 1500 220 16 23 25 81987 1716 13 198 51 528 2081 1500 220 16 24 25 81987 1716 13 198 51 528 2081 1500 220 17 15 25 81987 1716 13 198 51 528 2081 1500 220 17 16 25 81987 1716 13 198 51 528 2081 1500 220 17 17 25 81987 1716 13 198 51 528 2081 1500 220 17 18 25 81987 1716 13 198 51 528 2081 1500 220 17 19 25 81987 1716 13 248046\n",
+     "stages": {
+      "pixel_values": {
+       "chw_list": {
+        "match": true,
+        "max_abs": 2.0,
+        "mean_abs": 0.11906024838815317,
+        "ref_max_abs": 1.0,
+        "cosine": 0.9065897778778451,
+        "argmax_abs": 14865
+       },
+       "by_patch": {
+        "match": true,
+        "max_abs": 2.0,
+        "mean_abs": 0.11915906721673243,
+        "ref_max_abs": 1.0,
+        "cosine": 0.9063656144624858,
+        "argmax_abs": 14865
+       }
+      },
+      "model.vision_tower.embeddings": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 5.245208740234375e-06,
+       "mean_abs": 2.3542218290904803e-08,
+       "ref_max_abs": 42.24433517456055,
+       "cosine": 1.0000000000000189,
+       "argmax_abs": 4075836
+      },
+      "model.vision_tower.encoder.layers.0": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 1.621246337890625e-05,
+       "mean_abs": 1.426038491202334e-07,
+       "ref_max_abs": 22.028657913208008,
+       "cosine": 0.9999999999998893,
+       "argmax_abs": 6201888
+      },
+      "model.vision_tower.encoder.layers.6": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 1.33514404296875e-05,
+       "mean_abs": 3.1477700585007343e-07,
+       "ref_max_abs": 19.23991584777832,
+       "cosine": 0.9999999999994293,
+       "argmax_abs": 249508
+      },
+      "model.vision_tower.encoder.layers.26": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 0.058837890625,
+       "mean_abs": 8.61904311960876e-06,
+       "ref_max_abs": 1947.673095703125,
+       "cosine": 0.9999999999981835,
+       "argmax_abs": 759682
+      },
+      "model.vision_tower.post_layernorm": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 0.00038433074951171875,
+       "mean_abs": 3.2598419601652454e-07,
+       "ref_max_abs": 24.754562377929688,
+       "cosine": 0.9999999999992071,
+       "argmax_abs": 5342803
+      },
+      "model.merger": {
+       "layout": "unaligned ref[252, 1024] native[2332, 1024]"
+      },
+      "decoder.layer.0": {
+       "match": true,
+       "max_abs": 0.000156402587890625,
+       "mean_abs": 3.443630559377351e-07,
+       "ref_max_abs": 17.329410552978516,
+       "cosine": 0.9999999999980842,
+       "argmax_abs": 196608
+      },
+      "decoder.layer.1": {
+       "match": true,
+       "max_abs": 0.0002307891845703125,
+       "mean_abs": 3.6141031567947176e-07,
+       "ref_max_abs": 18.022945404052734,
+       "cosine": 0.9999999999979733,
+       "argmax_abs": 196608
+      },
+      "decoder.layer.2": {
+       "match": true,
+       "max_abs": 0.00012969970703125,
+       "mean_abs": 4.16453559265928e-07,
+       "ref_max_abs": 15.178322792053223,
+       "cosine": 0.9999999999969841,
+       "argmax_abs": 196608
+      },
+      "decoder.layer.3": {
+       "match": true,
+       "max_abs": 0.00011348724365234375,
+       "mean_abs": 4.5993469342923463e-07,
+       "ref_max_abs": 19.002532958984375,
+       "cosine": 0.9999999999974921,
+       "argmax_abs": 303104
+      },
+      "decoder.layer.4": {
+       "match": true,
+       "max_abs": 0.00011396408081054688,
+       "mean_abs": 4.6743444796295654e-07,
+       "ref_max_abs": 17.202054977416992,
+       "cosine": 0.9999999999972606,
+       "argmax_abs": 303104
+      },
+      "decoder.layer.5": {
+       "match": true,
+       "max_abs": 0.00012540817260742188,
+       "mean_abs": 4.908803058529289e-07,
+       "ref_max_abs": 15.433929443359375,
+       "cosine": 0.9999999999970395,
+       "argmax_abs": 303104
+      },
+      "decoder.layer.6": {
+       "match": true,
+       "max_abs": 0.00012922286987304688,
+       "mean_abs": 5.489584067514408e-07,
+       "ref_max_abs": 27.376970291137695,
+       "cosine": 0.999999999996237,
+       "argmax_abs": 303104
+      },
+      "decoder.layer.7": {
+       "match": true,
+       "max_abs": 0.00010488927364349365,
+       "mean_abs": 6.25617930503397e-07,
+       "ref_max_abs": 24.936426162719727,
+       "cosine": 0.9999999999960556,
+       "argmax_abs": 196978
+      },
+      "decoder.layer.8": {
+       "match": true,
+       "max_abs": 0.0001087188720703125,
+       "mean_abs": 6.542833847055909e-07,
+       "ref_max_abs": 24.443531036376953,
+       "cosine": 0.9999999999957225,
+       "argmax_abs": 303104
+      },
+      "decoder.layer.9": {
+       "match": true,
+       "max_abs": 0.00010696053504943848,
+       "mean_abs": 7.040868158527582e-07,
+       "ref_max_abs": 24.62454605102539,
+       "cosine": 0.9999999999954403,
+       "argmax_abs": 197027
+      },
+      "decoder.layer.10": {
+       "match": true,
+       "max_abs": 0.000133514404296875,
+       "mean_abs": 7.805775787912589e-07,
+       "ref_max_abs": 25.197059631347656,
+       "cosine": 0.9999999999942333,
+       "argmax_abs": 2357248
+      },
+      "decoder.layer.11": {
+       "match": true,
+       "max_abs": 0.00012874603271484375,
+       "mean_abs": 8.900124525754794e-07,
+       "ref_max_abs": 26.794227600097656,
+       "cosine": 0.9999999999945873,
+       "argmax_abs": 2357248
+      },
+      "decoder.layer.12": {
+       "match": true,
+       "max_abs": 0.00010986626148223877,
+       "mean_abs": 9.403453504535513e-07,
+       "ref_max_abs": 27.296417236328125,
+       "cosine": 0.9999999999940552,
+       "argmax_abs": 196978
+      },
+      "decoder.layer.13": {
+       "match": true,
+       "max_abs": 0.00011730194091796875,
+       "mean_abs": 1.0104807731694446e-06,
+       "ref_max_abs": 28.473045349121094,
+       "cosine": 0.9999999999933904,
+       "argmax_abs": 611328
+      },
+      "decoder.layer.14": {
+       "match": true,
+       "max_abs": 0.00022172927856445312,
+       "mean_abs": 1.1416100644374035e-06,
+       "ref_max_abs": 48.23398208618164,
+       "cosine": 0.9999999999900526,
+       "argmax_abs": 611328
+      },
+      "decoder.layer.15": {
+       "match": true,
+       "max_abs": 0.000244140625,
+       "mean_abs": 1.3801112371463924e-06,
+       "ref_max_abs": 52.05605697631836,
+       "cosine": 0.999999999991975,
+       "argmax_abs": 2357248
+      },
+      "decoder.layer.16": {
+       "match": true,
+       "max_abs": 0.00022125244140625,
+       "mean_abs": 1.5053440285563605e-06,
+       "ref_max_abs": 52.6434440612793,
+       "cosine": 0.999999999992045,
+       "argmax_abs": 218112
+      },
+      "decoder.layer.17": {
+       "match": true,
+       "max_abs": 0.0002231597900390625,
+       "mean_abs": 1.5948464918004162e-06,
+       "ref_max_abs": 53.22798538208008,
+       "cosine": 0.9999999999922737,
+       "argmax_abs": 218112
+      },
+      "decoder.layer.18": {
+       "match": true,
+       "max_abs": 0.00044918060302734375,
+       "mean_abs": 1.7114369817269754e-06,
+       "ref_max_abs": 67.10787200927734,
+       "cosine": 0.9999999999878365,
+       "argmax_abs": 196608
+      },
+      "decoder.layer.19": {
+       "match": true,
+       "max_abs": 0.00035858154296875,
+       "mean_abs": 2.3157130871167748e-06,
+       "ref_max_abs": 66.5258560180664,
+       "cosine": 0.9999999999922986,
+       "argmax_abs": 303104
+      },
+      "decoder.layer.20": {
+       "match": true,
+       "max_abs": 0.000396728515625,
+       "mean_abs": 2.4503373857606166e-06,
+       "ref_max_abs": 67.39151000976562,
+       "cosine": 0.9999999999927096,
+       "argmax_abs": 303104
+      },
+      "decoder.layer.21": {
+       "match": true,
+       "max_abs": 0.000423431396484375,
+       "mean_abs": 2.6490718653061606e-06,
+       "ref_max_abs": 69.62477111816406,
+       "cosine": 0.9999999999923278,
+       "argmax_abs": 303104
+      },
+      "decoder.layer.22": {
+       "match": true,
+       "max_abs": 0.0007915496826171875,
+       "mean_abs": 3.0114843084608826e-06,
+       "ref_max_abs": 83.29464721679688,
+       "cosine": 0.9999999999828371,
+       "argmax_abs": 303104
+      },
+      "decoder.layer.23": {
+       "match": true,
+       "max_abs": 0.000827789306640625,
+       "mean_abs": 3.93100291512076e-06,
+       "ref_max_abs": 211.66380310058594,
+       "cosine": 0.9999999999747998,
+       "argmax_abs": 196608
+      },
+      "model.language_model.norm": {
+       "match": true,
+       "max_abs": 0.0017480850219726562,
+       "mean_abs": 1.692583170731051e-05,
+       "ref_max_abs": 38.53790283203125,
+       "cosine": 0.9999999999683241,
+       "argmax_abs": 197388
+      },
+      "lm_head": {
+       "match": true,
+       "max_abs": 3.4332275390625e-05,
+       "mean_abs": 3.3549313478138794e-06,
+       "ref_max_abs": 37.01756286621094,
+       "cosine": 0.9999999999998843,
+       "argmax_abs": 239456
+      }
+     },
+     "native_meta": {
+      "grid": [
+       2,
+       4
+      ],
+      "parts": [
+       {
+        "w": 252,
+        "h": 784,
+        "tokens": 252,
+        "overview": true,
+        "row": 0,
+        "col": 0
+       },
+       {
+        "w": 364,
+        "h": 560,
+        "tokens": 260,
+        "overview": false,
+        "row": 0,
+        "col": 0
+       },
+       {
+        "w": 364,
+        "h": 560,
+        "tokens": 260,
+        "overview": false,
+        "row": 0,
+        "col": 1
+       },
+       {
+        "w": 364,
+        "h": 560,
+        "tokens": 260,
+        "overview": false,
+        "row": 1,
+        "col": 0
+       },
+       {
+        "w": 364,
+        "h": 560,
+        "tokens": 260,
+        "overview": false,
+        "row": 1,
+        "col": 1
+       },
+       {
+        "w": 364,
+        "h": 560,
+        "tokens": 260,
+        "overview": false,
+        "row": 2,
+        "col": 0
+       },
+       {
+        "w": 364,
+        "h": 560,
+        "tokens": 260,
+        "overview": false,
+        "row": 2,
+        "col": 1
+       },
+       {
+        "w": 364,
+        "h": 560,
+        "tokens": 260,
+        "overview": false,
+        "row": 3,
+        "col": 0
+       },
+       {
+        "w": 364,
+        "h": 560,
+        "tokens": 260,
+        "overview": false,
+        "row": 3,
+        "col": 1
+       }
+      ]
+     },
+     "input_ids_exact": true,
+     "input_ids_first_difference": null,
+     "input_ids_len": [
+      2372,
+      2372
+     ],
+     "first_logit_argmax": [
+      51,
+      51
+     ],
+     "ids": [
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      16,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      17,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      18,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      19,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      20,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      21,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      22,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      23,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      24,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      16,
+      15,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      16,
+      16,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      16,
+      17,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      16,
+      18,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      16,
+      19,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      16,
+      20,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      16,
+      21,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      16,
+      22,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      16,
+      23,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      16,
+      24,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      17,
+      15,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      17,
+      16,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      17,
+      17,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      17,
+      18,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      17,
+      19,
+      25,
+      81987,
+      1716,
+      13,
+      248046
+     ],
+     "ids_exact": true,
+     "first_id_difference": null,
+     "text_exact": true,
+     "eos": true,
+     "worst_stage": [
+      "model.vision_tower.encoder.layers.26",
+      0.058837890625
+     ],
+     "stage_order": [
+      "pixel_values",
+      "model.vision_tower.embeddings",
+      "model.vision_tower.encoder.layers.0",
+      "model.vision_tower.encoder.layers.6",
+      "model.vision_tower.encoder.layers.26",
+      "model.vision_tower.post_layernorm",
+      "model.merger",
+      "decoder.layer.0",
+      "decoder.layer.1",
+      "decoder.layer.2",
+      "decoder.layer.3",
+      "decoder.layer.4",
+      "decoder.layer.5",
+      "decoder.layer.6",
+      "decoder.layer.7",
+      "decoder.layer.8",
+      "decoder.layer.9",
+      "decoder.layer.10",
+      "decoder.layer.11",
+      "decoder.layer.12",
+      "decoder.layer.13",
+      "decoder.layer.14",
+      "decoder.layer.15",
+      "decoder.layer.16",
+      "decoder.layer.17",
+      "decoder.layer.18",
+      "decoder.layer.19",
+      "decoder.layer.20",
+      "decoder.layer.21",
+      "decoder.layer.22",
+      "decoder.layer.23"
+     ]
+    },
+    "f16": {
+     "dtype": "f16",
+     "exit": 0,
+     "wall_seconds": 227.373,
+     "text": "Tall page line 1: slicing check.\nTall page line 2: slicing check.\nTall page line 3: slicing check.\nTall page line 4: slicing check.\nTall page line 5: slicing check.\nTall page line 6: slicing check.\nTall page line 7: slicing check.\nTall page line 8: slicing check.\nTall page line 9: slicing check.\nTall page line 10: slicing check.\nTall page line 11: slicing check.\nTall page line 12: slicing check.\nTall page line 13: slicing check.\nTall page line 14: slicing check.\nTall page line 15: slicing check.\nTall page line 16: slicing check.\nTall page line 17: slicing check.\nTall page line 18: slicing check.\nTall page line 19: slicing check.\nTall page line 20: slicing check.\nTall page line 21: slicing check.\nTall page line 22: slicing check.\nTall page line 23: slicing check.\nTall page line 24: slicing check.",
+     "stderr_tail": "minicpm_ocr gen_ids (279): 51 528 2081 1500 220 16 25 81987 1716 13 198 51 528 2081 1500 220 17 25 81987 1716 13 198 51 528 2081 1500 220 18 25 81987 1716 13 198 51 528 2081 1500 220 19 25 81987 1716 13 198 51 528 2081 1500 220 20 25 81987 1716 13 198 51 528 2081 1500 220 21 25 81987 1716 13 198 51 528 2081 1500 220 22 25 81987 1716 13 198 51 528 2081 1500 220 23 25 81987 1716 13 198 51 528 2081 1500 220 24 25 81987 1716 13 198 51 528 2081 1500 220 16 15 25 81987 1716 13 198 51 528 2081 1500 220 16 16 25 81987 1716 13 198 51 528 2081 1500 220 16 17 25 81987 1716 13 198 51 528 2081 1500 220 16 18 25 81987 1716 13 198 51 528 2081 1500 220 16 19 25 81987 1716 13 198 51 528 2081 1500 220 16 20 25 81987 1716 13 198 51 528 2081 1500 220 16 21 25 81987 1716 13 198 51 528 2081 1500 220 16 22 25 81987 1716 13 198 51 528 2081 1500 220 16 23 25 81987 1716 13 198 51 528 2081 1500 220 16 24 25 81987 1716 13 198 51 528 2081 1500 220 17 15 25 81987 1716 13 198 51 528 2081 1500 220 17 16 25 81987 1716 13 198 51 528 2081 1500 220 17 17 25 81987 1716 13 198 51 528 2081 1500 220 17 18 25 81987 1716 13 198 51 528 2081 1500 220 17 19 25 81987 1716 13 248046\n",
+     "stages": {
+      "pixel_values": {
+       "chw_list": {
+        "match": true,
+        "max_abs": 2.0,
+        "mean_abs": 0.11906024838815317,
+        "ref_max_abs": 1.0,
+        "cosine": 0.9065897778778451,
+        "argmax_abs": 14865
+       },
+       "by_patch": {
+        "match": true,
+        "max_abs": 2.0,
+        "mean_abs": 0.11915906721673243,
+        "ref_max_abs": 1.0,
+        "cosine": 0.9063656144624858,
+        "argmax_abs": 14865
+       }
+      },
+      "model.vision_tower.embeddings": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 5.245208740234375e-06,
+       "mean_abs": 2.4745079613215094e-08,
+       "ref_max_abs": 42.24433517456055,
+       "cosine": 0.9999999999999653,
+       "argmax_abs": 4075836
+      },
+      "model.vision_tower.encoder.layers.0": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 1.621246337890625e-05,
+       "mean_abs": 1.432470482215658e-07,
+       "ref_max_abs": 22.028657913208008,
+       "cosine": 0.9999999999998869,
+       "argmax_abs": 6201229
+      },
+      "model.vision_tower.encoder.layers.6": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 2.5272369384765625e-05,
+       "mean_abs": 3.153315030604768e-07,
+       "ref_max_abs": 19.23991584777832,
+       "cosine": 0.9999999999994289,
+       "argmax_abs": 249508
+      },
+      "model.vision_tower.encoder.layers.26": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 0.0426025390625,
+       "mean_abs": 8.654246562040986e-06,
+       "ref_max_abs": 1947.673095703125,
+       "cosine": 0.9999999999982366,
+       "argmax_abs": 759682
+      },
+      "model.vision_tower.post_layernorm": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 0.000225067138671875,
+       "mean_abs": 3.304097792375086e-07,
+       "ref_max_abs": 24.754562377929688,
+       "cosine": 0.9999999999991578,
+       "argmax_abs": 7162963
+      },
+      "model.merger": {
+       "layout": "unaligned ref[252, 1024] native[2332, 1024]"
+      },
+      "decoder.layer.0": {
+       "match": true,
+       "max_abs": 0.00018787384033203125,
+       "mean_abs": 3.493461084154088e-07,
+       "ref_max_abs": 17.329410552978516,
+       "cosine": 0.9999999999975581,
+       "argmax_abs": 196608
+      },
+      "decoder.layer.1": {
+       "match": true,
+       "max_abs": 0.0002803802490234375,
+       "mean_abs": 3.670729072173559e-07,
+       "ref_max_abs": 18.022945404052734,
+       "cosine": 0.9999999999974151,
+       "argmax_abs": 196608
+      },
+      "decoder.layer.2": {
+       "match": true,
+       "max_abs": 0.00015354156494140625,
+       "mean_abs": 4.208570512465749e-07,
+       "ref_max_abs": 15.178322792053223,
+       "cosine": 0.9999999999962782,
+       "argmax_abs": 196608
+      },
+      "decoder.layer.3": {
+       "match": true,
+       "max_abs": 0.00015926361083984375,
+       "mean_abs": 4.691734268694925e-07,
+       "ref_max_abs": 19.002532958984375,
+       "cosine": 0.9999999999969704,
+       "argmax_abs": 69632
+      },
+      "decoder.layer.4": {
+       "match": true,
+       "max_abs": 0.00016117095947265625,
+       "mean_abs": 4.754536195711415e-07,
+       "ref_max_abs": 17.202054977416992,
+       "cosine": 0.9999999999967899,
+       "argmax_abs": 69632
+      },
+      "decoder.layer.5": {
+       "match": true,
+       "max_abs": 0.00011444091796875,
+       "mean_abs": 4.983847375851332e-07,
+       "ref_max_abs": 15.433929443359375,
+       "cosine": 0.9999999999966142,
+       "argmax_abs": 69632
+      },
+      "decoder.layer.6": {
+       "match": true,
+       "max_abs": 0.0001259446144104004,
+       "mean_abs": 5.563848931677136e-07,
+       "ref_max_abs": 27.376970291137695,
+       "cosine": 0.9999999999956813,
+       "argmax_abs": 197027
+      },
+      "decoder.layer.7": {
+       "match": true,
+       "max_abs": 0.00013306736946105957,
+       "mean_abs": 6.415122549269976e-07,
+       "ref_max_abs": 24.936426162719727,
+       "cosine": 0.9999999999952869,
+       "argmax_abs": 196978
+      },
+      "decoder.layer.8": {
+       "match": true,
+       "max_abs": 0.00013796985149383545,
+       "mean_abs": 6.705689029017139e-07,
+       "ref_max_abs": 24.443531036376953,
+       "cosine": 0.9999999999950018,
+       "argmax_abs": 197027
+      },
+      "decoder.layer.9": {
+       "match": true,
+       "max_abs": 0.00013872981071472168,
+       "mean_abs": 7.211949787645793e-07,
+       "ref_max_abs": 24.62454605102539,
+       "cosine": 0.9999999999947707,
+       "argmax_abs": 197027
+      },
+      "decoder.layer.10": {
+       "match": true,
+       "max_abs": 0.00013777613639831543,
+       "mean_abs": 7.965028210501367e-07,
+       "ref_max_abs": 25.197059631347656,
+       "cosine": 0.9999999999935429,
+       "argmax_abs": 196844
+      },
+      "decoder.layer.11": {
+       "match": true,
+       "max_abs": 0.00014290213584899902,
+       "mean_abs": 9.05424714707927e-07,
+       "ref_max_abs": 26.794227600097656,
+       "cosine": 0.9999999999941329,
+       "argmax_abs": 196978
+      },
+      "decoder.layer.12": {
+       "match": true,
+       "max_abs": 0.00013969838619232178,
+       "mean_abs": 9.54511751074984e-07,
+       "ref_max_abs": 27.296417236328125,
+       "cosine": 0.9999999999936693,
+       "argmax_abs": 196978
+      },
+      "decoder.layer.13": {
+       "match": true,
+       "max_abs": 0.0001360774040222168,
+       "mean_abs": 1.0232422033327466e-06,
+       "ref_max_abs": 28.473045349121094,
+       "cosine": 0.9999999999930987,
+       "argmax_abs": 196978
+      },
+      "decoder.layer.14": {
+       "match": true,
+       "max_abs": 0.00021839141845703125,
+       "mean_abs": 1.155295895889966e-06,
+       "ref_max_abs": 48.23398208618164,
+       "cosine": 0.9999999999895725,
+       "argmax_abs": 611328
+      },
+      "decoder.layer.15": {
+       "match": true,
+       "max_abs": 0.0002129673957824707,
+       "mean_abs": 1.396399838834381e-06,
+       "ref_max_abs": 52.05605697631836,
+       "cosine": 0.9999999999916916,
+       "argmax_abs": 196992
+      },
+      "decoder.layer.16": {
+       "match": true,
+       "max_abs": 0.00021266937255859375,
+       "mean_abs": 1.5201188230916433e-06,
+       "ref_max_abs": 52.6434440612793,
+       "cosine": 0.9999999999918395,
+       "argmax_abs": 218112
+      },
+      "decoder.layer.17": {
+       "match": true,
+       "max_abs": 0.00027751922607421875,
+       "mean_abs": 1.6088719084254023e-06,
+       "ref_max_abs": 53.22798538208008,
+       "cosine": 0.9999999999921361,
+       "argmax_abs": 1169408
+      },
+      "decoder.layer.18": {
+       "match": true,
+       "max_abs": 0.0005865097045898438,
+       "mean_abs": 1.7241590417357736e-06,
+       "ref_max_abs": 67.10787200927734,
+       "cosine": 0.9999999999876449,
+       "argmax_abs": 196608
+      },
+      "decoder.layer.19": {
+       "match": true,
+       "max_abs": 0.0003871917724609375,
+       "mean_abs": 2.324991533126035e-06,
+       "ref_max_abs": 66.5258560180664,
+       "cosine": 0.9999999999924167,
+       "argmax_abs": 2235392
+      },
+      "decoder.layer.20": {
+       "match": true,
+       "max_abs": 0.0003833770751953125,
+       "mean_abs": 2.45766892588585e-06,
+       "ref_max_abs": 67.39151000976562,
+       "cosine": 0.9999999999928525,
+       "argmax_abs": 2235392
+      },
+      "decoder.layer.21": {
+       "match": true,
+       "max_abs": 0.0003910064697265625,
+       "mean_abs": 2.6561694455879523e-06,
+       "ref_max_abs": 69.62477111816406,
+       "cosine": 0.9999999999925016,
+       "argmax_abs": 2235392
+      },
+      "decoder.layer.22": {
+       "match": true,
+       "max_abs": 0.0006160736083984375,
+       "mean_abs": 3.0170400440768666e-06,
+       "ref_max_abs": 83.29464721679688,
+       "cosine": 0.9999999999833981,
+       "argmax_abs": 303104
+      },
+      "decoder.layer.23": {
+       "match": true,
+       "max_abs": 0.0010023117065429688,
+       "mean_abs": 3.930340740478865e-06,
+       "ref_max_abs": 211.66380310058594,
+       "cosine": 0.9999999999754068,
+       "argmax_abs": 196608
+      },
+      "model.language_model.norm": {
+       "match": true,
+       "max_abs": 0.0022430419921875,
+       "mean_abs": 1.684034456723101e-05,
+       "ref_max_abs": 38.53790283203125,
+       "cosine": 0.9999999999695862,
+       "argmax_abs": 197388
+      },
+      "lm_head": {
+       "match": true,
+       "max_abs": 3.0517578125e-05,
+       "mean_abs": 4.238561084828084e-06,
+       "ref_max_abs": 37.01756286621094,
+       "cosine": 0.999999999999898,
+       "argmax_abs": 16100
+      }
+     },
+     "native_meta": {
+      "grid": [
+       2,
+       4
+      ],
+      "parts": [
+       {
+        "w": 252,
+        "h": 784,
+        "tokens": 252,
+        "overview": true,
+        "row": 0,
+        "col": 0
+       },
+       {
+        "w": 364,
+        "h": 560,
+        "tokens": 260,
+        "overview": false,
+        "row": 0,
+        "col": 0
+       },
+       {
+        "w": 364,
+        "h": 560,
+        "tokens": 260,
+        "overview": false,
+        "row": 0,
+        "col": 1
+       },
+       {
+        "w": 364,
+        "h": 560,
+        "tokens": 260,
+        "overview": false,
+        "row": 1,
+        "col": 0
+       },
+       {
+        "w": 364,
+        "h": 560,
+        "tokens": 260,
+        "overview": false,
+        "row": 1,
+        "col": 1
+       },
+       {
+        "w": 364,
+        "h": 560,
+        "tokens": 260,
+        "overview": false,
+        "row": 2,
+        "col": 0
+       },
+       {
+        "w": 364,
+        "h": 560,
+        "tokens": 260,
+        "overview": false,
+        "row": 2,
+        "col": 1
+       },
+       {
+        "w": 364,
+        "h": 560,
+        "tokens": 260,
+        "overview": false,
+        "row": 3,
+        "col": 0
+       },
+       {
+        "w": 364,
+        "h": 560,
+        "tokens": 260,
+        "overview": false,
+        "row": 3,
+        "col": 1
+       }
+      ]
+     },
+     "input_ids_exact": true,
+     "input_ids_first_difference": null,
+     "input_ids_len": [
+      2372,
+      2372
+     ],
+     "first_logit_argmax": [
+      51,
+      51
+     ],
+     "ids": [
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      16,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      17,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      18,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      19,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      20,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      21,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      22,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      23,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      24,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      16,
+      15,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      16,
+      16,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      16,
+      17,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      16,
+      18,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      16,
+      19,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      16,
+      20,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      16,
+      21,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      16,
+      22,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      16,
+      23,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      16,
+      24,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      17,
+      15,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      17,
+      16,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      17,
+      17,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      17,
+      18,
+      25,
+      81987,
+      1716,
+      13,
+      198,
+      51,
+      528,
+      2081,
+      1500,
+      220,
+      17,
+      19,
+      25,
+      81987,
+      1716,
+      13,
+      248046
+     ],
+     "ids_exact": true,
+     "first_id_difference": null,
+     "text_exact": true,
+     "eos": true,
+     "worst_stage": [
+      "model.vision_tower.encoder.layers.26",
+      0.0426025390625
+     ],
+     "stage_order": [
+      "pixel_values",
+      "model.vision_tower.embeddings",
+      "model.vision_tower.encoder.layers.0",
+      "model.vision_tower.encoder.layers.6",
+      "model.vision_tower.encoder.layers.26",
+      "model.vision_tower.post_layernorm",
+      "model.merger",
+      "decoder.layer.0",
+      "decoder.layer.1",
+      "decoder.layer.2",
+      "decoder.layer.3",
+      "decoder.layer.4",
+      "decoder.layer.5",
+      "decoder.layer.6",
+      "decoder.layer.7",
+      "decoder.layer.8",
+      "decoder.layer.9",
+      "decoder.layer.10",
+      "decoder.layer.11",
+      "decoder.layer.12",
+      "decoder.layer.13",
+      "decoder.layer.14",
+      "decoder.layer.15",
+      "decoder.layer.16",
+      "decoder.layer.17",
+      "decoder.layer.18",
+      "decoder.layer.19",
+      "decoder.layer.20",
+      "decoder.layer.21",
+      "decoder.layer.22",
+      "decoder.layer.23"
+     ]
+    }
+   }
+  },
+  {
+   "id": "tiny",
+   "task": "Text Recognition:",
+   "size": [
+    60,
+    30
+   ],
+   "reference_ids": [
+    19,
+    17,
+    248046
+   ],
+   "reference_text": "42",
+   "reference_eos": true,
+   "reference_cap_hit": false,
+   "arms": {
+    "f32": {
+     "dtype": "f32",
+     "exit": 0,
+     "wall_seconds": 27.284,
+     "text": "42",
+     "stderr_tail": "minicpm_ocr gen_ids (3): 19 17 248046\n",
+     "stages": {
+      "pixel_values": {
+       "chw_list": {
+        "match": true,
+        "max_abs": 2.0,
+        "mean_abs": 0.12823793554727558,
+        "ref_max_abs": 1.0,
+        "cosine": 0.8968364076066435,
+        "argmax_abs": 11225
+       },
+       "by_patch": {
+        "match": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "ref_max_abs": 1.0,
+        "cosine": 1.0,
+        "argmax_abs": 0
+       }
+      },
+      "model.vision_tower.embeddings": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 5.0067901611328125e-06,
+       "mean_abs": 1.4314850012131654e-08,
+       "ref_max_abs": 46.99433517456055,
+       "cosine": 0.9999999999999925,
+       "argmax_abs": 991017
+      },
+      "model.vision_tower.encoder.layers.0": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 7.62939453125e-06,
+       "mean_abs": 1.1405213217945181e-07,
+       "ref_max_abs": 24.732585906982422,
+       "cosine": 0.9999999999999553,
+       "argmax_abs": 317804
+      },
+      "model.vision_tower.encoder.layers.6": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 1.1444091796875e-05,
+       "mean_abs": 3.0951393112217586e-07,
+       "ref_max_abs": 14.180532455444336,
+       "cosine": 0.9999999999994527,
+       "argmax_abs": 317804
+      },
+      "model.vision_tower.encoder.layers.26": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 0.021240234375,
+       "mean_abs": 6.958099592221808e-06,
+       "ref_max_abs": 1629.571533203125,
+       "cosine": 0.9999999999970223,
+       "argmax_abs": 381826
+      },
+      "model.vision_tower.post_layernorm": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 0.00026035308837890625,
+       "mean_abs": 4.450386314171434e-07,
+       "ref_max_abs": 22.583253860473633,
+       "cosine": 0.9999999999989275,
+       "argmax_abs": 537811
+      },
+      "model.merger": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 2.193450927734375e-05,
+       "mean_abs": 3.7704544645887084e-07,
+       "ref_max_abs": 13.46117115020752,
+       "cosine": 0.9999999999985101,
+       "argmax_abs": 114688
+      },
+      "decoder.layer.0": {
+       "match": true,
+       "max_abs": 2.86102294921875e-05,
+       "mean_abs": 3.649483249129817e-07,
+       "ref_max_abs": 17.04241180419922,
+       "cosine": 0.9999999999989273,
+       "argmax_abs": 88064
+      },
+      "decoder.layer.1": {
+       "match": true,
+       "max_abs": 3.4332275390625e-05,
+       "mean_abs": 3.870525663088786e-07,
+       "ref_max_abs": 17.5794734954834,
+       "cosine": 0.9999999999987788,
+       "argmax_abs": 88064
+      },
+      "decoder.layer.2": {
+       "match": true,
+       "max_abs": 2.86102294921875e-05,
+       "mean_abs": 4.441129658350763e-07,
+       "ref_max_abs": 13.742823600769043,
+       "cosine": 0.9999999999984115,
+       "argmax_abs": 73728
+      },
+      "decoder.layer.3": {
+       "match": true,
+       "max_abs": 2.288818359375e-05,
+       "mean_abs": 4.4863825381396657e-07,
+       "ref_max_abs": 16.90711212158203,
+       "cosine": 0.9999999999987654,
+       "argmax_abs": 95232
+      },
+      "decoder.layer.4": {
+       "match": true,
+       "max_abs": 1.811981201171875e-05,
+       "mean_abs": 4.409825780126383e-07,
+       "ref_max_abs": 15.808713912963867,
+       "cosine": 0.9999999999987419,
+       "argmax_abs": 95232
+      },
+      "decoder.layer.5": {
+       "match": true,
+       "max_abs": 1.71661376953125e-05,
+       "mean_abs": 4.4571972991938986e-07,
+       "ref_max_abs": 14.664705276489258,
+       "cosine": 0.9999999999986713,
+       "argmax_abs": 144384
+      },
+      "decoder.layer.6": {
+       "match": true,
+       "max_abs": 2.1457672119140625e-05,
+       "mean_abs": 4.7597517158154694e-07,
+       "ref_max_abs": 27.376970291137695,
+       "cosine": 0.9999999999985376,
+       "argmax_abs": 73728
+      },
+      "decoder.layer.7": {
+       "match": true,
+       "max_abs": 1.9073486328125e-05,
+       "mean_abs": 4.908753582945579e-07,
+       "ref_max_abs": 24.936426162719727,
+       "cosine": 0.9999999999985031,
+       "argmax_abs": 73728
+      },
+      "decoder.layer.8": {
+       "match": true,
+       "max_abs": 1.811981201171875e-05,
+       "mean_abs": 4.961186396462338e-07,
+       "ref_max_abs": 24.443531036376953,
+       "cosine": 0.9999999999983774,
+       "argmax_abs": 144384
+      },
+      "decoder.layer.9": {
+       "match": true,
+       "max_abs": 1.621246337890625e-05,
+       "mean_abs": 5.194462211218135e-07,
+       "ref_max_abs": 24.62454605102539,
+       "cosine": 0.9999999999983283,
+       "argmax_abs": 144384
+      },
+      "decoder.layer.10": {
+       "match": true,
+       "max_abs": 1.5288591384887695e-05,
+       "mean_abs": 5.439250762172205e-07,
+       "ref_max_abs": 25.197059631347656,
+       "cosine": 0.9999999999982123,
+       "argmax_abs": 98347
+      },
+      "decoder.layer.11": {
+       "match": true,
+       "max_abs": 2.6702880859375e-05,
+       "mean_abs": 5.651125894825656e-07,
+       "ref_max_abs": 26.794225692749023,
+       "cosine": 0.9999999999984083,
+       "argmax_abs": 144384
+      },
+      "decoder.layer.12": {
+       "match": true,
+       "max_abs": 2.09808349609375e-05,
+       "mean_abs": 5.771081839694708e-07,
+       "ref_max_abs": 27.296415328979492,
+       "cosine": 0.9999999999983626,
+       "argmax_abs": 144384
+      },
+      "decoder.layer.13": {
+       "match": true,
+       "max_abs": 2.574920654296875e-05,
+       "mean_abs": 6.100736152430946e-07,
+       "ref_max_abs": 28.47304344177246,
+       "cosine": 0.9999999999983331,
+       "argmax_abs": 144384
+      },
+      "decoder.layer.14": {
+       "match": true,
+       "max_abs": 4.38690185546875e-05,
+       "mean_abs": 7.012043159319261e-07,
+       "ref_max_abs": 48.233985900878906,
+       "cosine": 0.9999999999979421,
+       "argmax_abs": 98304
+      },
+      "decoder.layer.15": {
+       "match": true,
+       "max_abs": 4.100799560546875e-05,
+       "mean_abs": 8.061984219544471e-07,
+       "ref_max_abs": 52.056060791015625,
+       "cosine": 0.9999999999982314,
+       "argmax_abs": 144384
+      },
+      "decoder.layer.16": {
+       "match": true,
+       "max_abs": 5.53131103515625e-05,
+       "mean_abs": 9.207165560897642e-07,
+       "ref_max_abs": 52.64344787597656,
+       "cosine": 0.999999999998012,
+       "argmax_abs": 144384
+      },
+      "decoder.layer.17": {
+       "match": true,
+       "max_abs": 6.29425048828125e-05,
+       "mean_abs": 1.0367893096007302e-06,
+       "ref_max_abs": 53.227989196777344,
+       "cosine": 0.9999999999978196,
+       "argmax_abs": 144384
+      },
+      "decoder.layer.18": {
+       "match": true,
+       "max_abs": 6.4849853515625e-05,
+       "mean_abs": 1.1518421216470768e-06,
+       "ref_max_abs": 67.10787200927734,
+       "cosine": 0.999999999997375,
+       "argmax_abs": 104448
+      },
+      "decoder.layer.19": {
+       "match": true,
+       "max_abs": 0.000110626220703125,
+       "mean_abs": 1.2913935339934904e-06,
+       "ref_max_abs": 66.5258560180664,
+       "cosine": 0.9999999999982719,
+       "argmax_abs": 152576
+      },
+      "decoder.layer.20": {
+       "match": true,
+       "max_abs": 9.1552734375e-05,
+       "mean_abs": 1.394257832976441e-06,
+       "ref_max_abs": 67.39151000976562,
+       "cosine": 0.99999999999827,
+       "argmax_abs": 152576
+      },
+      "decoder.layer.21": {
+       "match": true,
+       "max_abs": 7.62939453125e-05,
+       "mean_abs": 1.5514979736508394e-06,
+       "ref_max_abs": 69.62477111816406,
+       "cosine": 0.9999999999981143,
+       "argmax_abs": 152576
+      },
+      "decoder.layer.22": {
+       "match": true,
+       "max_abs": 7.62939453125e-05,
+       "mean_abs": 1.8373823904036799e-06,
+       "ref_max_abs": 83.29464721679688,
+       "cosine": 0.9999999999967437,
+       "argmax_abs": 169984
+      },
+      "decoder.layer.23": {
+       "match": true,
+       "max_abs": 0.00016689300537109375,
+       "mean_abs": 2.2712660871800263e-06,
+       "ref_max_abs": 211.663818359375,
+       "cosine": 0.9999999999958928,
+       "argmax_abs": 191488
+      },
+      "model.language_model.norm": {
+       "match": true,
+       "max_abs": 0.0002530813217163086,
+       "mean_abs": 1.0290613646614449e-05,
+       "ref_max_abs": 34.09849166870117,
+       "cosine": 0.9999999999934869,
+       "argmax_abs": 99215
+      },
+      "lm_head": {
+       "match": true,
+       "max_abs": 3.4332275390625e-05,
+       "mean_abs": 4.684934088512084e-06,
+       "ref_max_abs": 38.956626892089844,
+       "cosine": 0.9999999999999664,
+       "argmax_abs": 2530
+      }
+     },
+     "native_meta": {
+      "grid": [
+       0,
+       0
+      ],
+      "parts": [
+       {
+        "w": 644,
+        "h": 308,
+        "tokens": 253,
+        "overview": true,
+        "row": 0,
+        "col": 0
+       }
+      ]
+     },
+     "input_ids_exact": true,
+     "input_ids_first_difference": null,
+     "input_ids_len": [
+      274,
+      274
+     ],
+     "first_logit_argmax": [
+      19,
+      19
+     ],
+     "ids": [
+      19,
+      17,
+      248046
+     ],
+     "ids_exact": true,
+     "first_id_difference": null,
+     "text_exact": true,
+     "eos": true,
+     "worst_stage": [
+      "model.vision_tower.encoder.layers.26",
+      0.021240234375
+     ],
+     "stage_order": [
+      "pixel_values",
+      "model.vision_tower.embeddings",
+      "model.vision_tower.encoder.layers.0",
+      "model.vision_tower.encoder.layers.6",
+      "model.vision_tower.encoder.layers.26",
+      "model.vision_tower.post_layernorm",
+      "model.merger",
+      "decoder.layer.0",
+      "decoder.layer.1",
+      "decoder.layer.2",
+      "decoder.layer.3",
+      "decoder.layer.4",
+      "decoder.layer.5",
+      "decoder.layer.6",
+      "decoder.layer.7",
+      "decoder.layer.8",
+      "decoder.layer.9",
+      "decoder.layer.10",
+      "decoder.layer.11",
+      "decoder.layer.12",
+      "decoder.layer.13",
+      "decoder.layer.14",
+      "decoder.layer.15",
+      "decoder.layer.16",
+      "decoder.layer.17",
+      "decoder.layer.18",
+      "decoder.layer.19",
+      "decoder.layer.20",
+      "decoder.layer.21",
+      "decoder.layer.22",
+      "decoder.layer.23"
+     ]
+    },
+    "f16": {
+     "dtype": "f16",
+     "exit": 0,
+     "wall_seconds": 38.668,
+     "text": "42",
+     "stderr_tail": "minicpm_ocr gen_ids (3): 19 17 248046\n",
+     "stages": {
+      "pixel_values": {
+       "chw_list": {
+        "match": true,
+        "max_abs": 2.0,
+        "mean_abs": 0.12823793554727558,
+        "ref_max_abs": 1.0,
+        "cosine": 0.8968364076066435,
+        "argmax_abs": 11225
+       },
+       "by_patch": {
+        "match": true,
+        "max_abs": 0.0,
+        "mean_abs": 0.0,
+        "ref_max_abs": 1.0,
+        "cosine": 1.0,
+        "argmax_abs": 0
+       }
+      },
+      "model.vision_tower.embeddings": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 5.0067901611328125e-06,
+       "mean_abs": 1.558128603508339e-08,
+       "ref_max_abs": 46.99433517456055,
+       "cosine": 0.9999999999999928,
+       "argmax_abs": 991017
+      },
+      "model.vision_tower.encoder.layers.0": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 6.67572021484375e-06,
+       "mean_abs": 1.1480911156976281e-07,
+       "ref_max_abs": 24.732585906982422,
+       "cosine": 0.9999999999999547,
+       "argmax_abs": 265964
+      },
+      "model.vision_tower.encoder.layers.6": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 1.0967254638671875e-05,
+       "mean_abs": 3.0843361278487517e-07,
+       "ref_max_abs": 14.180532455444336,
+       "cosine": 0.9999999999994572,
+       "argmax_abs": 266788
+      },
+      "model.vision_tower.encoder.layers.26": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 0.01544189453125,
+       "mean_abs": 6.916568106618652e-06,
+       "ref_max_abs": 1629.571533203125,
+       "cosine": 0.9999999999974577,
+       "argmax_abs": 381826
+      },
+      "model.vision_tower.post_layernorm": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 0.00015735626220703125,
+       "mean_abs": 4.4557263865561094e-07,
+       "ref_max_abs": 22.583253860473633,
+       "cosine": 0.9999999999990038,
+       "argmax_abs": 537811
+      },
+      "model.merger": {
+       "layout": "flat",
+       "match": true,
+       "max_abs": 2.956390380859375e-05,
+       "mean_abs": 3.755368819988707e-07,
+       "ref_max_abs": 13.46117115020752,
+       "cosine": 0.999999999998475,
+       "argmax_abs": 114688
+      },
+      "decoder.layer.0": {
+       "match": true,
+       "max_abs": 3.528594970703125e-05,
+       "mean_abs": 3.640642914987883e-07,
+       "ref_max_abs": 17.04241180419922,
+       "cosine": 0.9999999999989054,
+       "argmax_abs": 88064
+      },
+      "decoder.layer.1": {
+       "match": true,
+       "max_abs": 4.38690185546875e-05,
+       "mean_abs": 3.8642610826690857e-07,
+       "ref_max_abs": 17.5794734954834,
+       "cosine": 0.999999999998757,
+       "argmax_abs": 88064
+      },
+      "decoder.layer.2": {
+       "match": true,
+       "max_abs": 4.1961669921875e-05,
+       "mean_abs": 4.423355658981942e-07,
+       "ref_max_abs": 13.742823600769043,
+       "cosine": 0.9999999999983702,
+       "argmax_abs": 73728
+      },
+      "decoder.layer.3": {
+       "match": true,
+       "max_abs": 2.765655517578125e-05,
+       "mean_abs": 4.460743135648848e-07,
+       "ref_max_abs": 16.90711212158203,
+       "cosine": 0.9999999999987506,
+       "argmax_abs": 73728
+      },
+      "decoder.layer.4": {
+       "match": true,
+       "max_abs": 1.71661376953125e-05,
+       "mean_abs": 4.3738115076862047e-07,
+       "ref_max_abs": 15.808713912963867,
+       "cosine": 0.999999999998729,
+       "argmax_abs": 73728
+      },
+      "decoder.layer.5": {
+       "match": true,
+       "max_abs": 1.52587890625e-05,
+       "mean_abs": 4.421323898852783e-07,
+       "ref_max_abs": 14.664705276489258,
+       "cosine": 0.9999999999986587,
+       "argmax_abs": 121856
+      },
+      "decoder.layer.6": {
+       "match": true,
+       "max_abs": 2.47955322265625e-05,
+       "mean_abs": 4.7158778158765833e-07,
+       "ref_max_abs": 27.376970291137695,
+       "cosine": 0.9999999999985341,
+       "argmax_abs": 73728
+      },
+      "decoder.layer.7": {
+       "match": true,
+       "max_abs": 2.288818359375e-05,
+       "mean_abs": 4.87021554984023e-07,
+       "ref_max_abs": 24.936426162719727,
+       "cosine": 0.999999999998494,
+       "argmax_abs": 73728
+      },
+      "decoder.layer.8": {
+       "match": true,
+       "max_abs": 1.621246337890625e-05,
+       "mean_abs": 4.932546026581279e-07,
+       "ref_max_abs": 24.443531036376953,
+       "cosine": 0.9999999999983644,
+       "argmax_abs": 73728
+      },
+      "decoder.layer.9": {
+       "match": true,
+       "max_abs": 1.68532133102417e-05,
+       "mean_abs": 5.166026095922747e-07,
+       "ref_max_abs": 24.62454605102539,
+       "cosine": 0.9999999999983187,
+       "argmax_abs": 98347
+      },
+      "decoder.layer.10": {
+       "match": true,
+       "max_abs": 1.7598271369934082e-05,
+       "mean_abs": 5.414458600466621e-07,
+       "ref_max_abs": 25.197059631347656,
+       "cosine": 0.9999999999981919,
+       "argmax_abs": 98347
+      },
+      "decoder.layer.11": {
+       "match": true,
+       "max_abs": 1.640990376472473e-05,
+       "mean_abs": 5.616780387495353e-07,
+       "ref_max_abs": 26.794225692749023,
+       "cosine": 0.9999999999984066,
+       "argmax_abs": 98347
+      },
+      "decoder.layer.12": {
+       "match": true,
+       "max_abs": 1.9073486328125e-05,
+       "mean_abs": 5.733643295232229e-07,
+       "ref_max_abs": 27.296415328979492,
+       "cosine": 0.9999999999983575,
+       "argmax_abs": 104448
+      },
+      "decoder.layer.13": {
+       "match": true,
+       "max_abs": 2.288818359375e-05,
+       "mean_abs": 6.057954733212709e-07,
+       "ref_max_abs": 28.47304344177246,
+       "cosine": 0.999999999998331,
+       "argmax_abs": 104448
+      },
+      "decoder.layer.14": {
+       "match": true,
+       "max_abs": 4.9591064453125e-05,
+       "mean_abs": 6.94216970196664e-07,
+       "ref_max_abs": 48.233985900878906,
+       "cosine": 0.9999999999979532,
+       "argmax_abs": 98304
+      },
+      "decoder.layer.15": {
+       "match": true,
+       "max_abs": 4.482269287109375e-05,
+       "mean_abs": 7.961606392877479e-07,
+       "ref_max_abs": 52.056060791015625,
+       "cosine": 0.9999999999982642,
+       "argmax_abs": 104448
+      },
+      "decoder.layer.16": {
+       "match": true,
+       "max_abs": 6.103515625e-05,
+       "mean_abs": 9.059339379042538e-07,
+       "ref_max_abs": 52.64344787597656,
+       "cosine": 0.9999999999980624,
+       "argmax_abs": 104448
+      },
+      "decoder.layer.17": {
+       "match": true,
+       "max_abs": 6.103515625e-05,
+       "mean_abs": 1.0173918439329637e-06,
+       "ref_max_abs": 53.227989196777344,
+       "cosine": 0.9999999999978904,
+       "argmax_abs": 104448
+      },
+      "decoder.layer.18": {
+       "match": true,
+       "max_abs": 8.392333984375e-05,
+       "mean_abs": 1.1321835330798515e-06,
+       "ref_max_abs": 67.10787200927734,
+       "cosine": 0.9999999999974408,
+       "argmax_abs": 104448
+      },
+      "decoder.layer.19": {
+       "match": true,
+       "max_abs": 0.0001125335693359375,
+       "mean_abs": 1.2745738816883316e-06,
+       "ref_max_abs": 66.5258560180664,
+       "cosine": 0.99999999999832,
+       "argmax_abs": 104448
+      },
+      "decoder.layer.20": {
+       "match": true,
+       "max_abs": 9.34600830078125e-05,
+       "mean_abs": 1.3782917480875435e-06,
+       "ref_max_abs": 67.39151000976562,
+       "cosine": 0.999999999998305,
+       "argmax_abs": 104448
+      },
+      "decoder.layer.21": {
+       "match": true,
+       "max_abs": 7.05718994140625e-05,
+       "mean_abs": 1.5336795949237603e-06,
+       "ref_max_abs": 69.62477111816406,
+       "cosine": 0.9999999999981342,
+       "argmax_abs": 104448
+      },
+      "decoder.layer.22": {
+       "match": true,
+       "max_abs": 7.05718994140625e-05,
+       "mean_abs": 1.8202230468063945e-06,
+       "ref_max_abs": 83.29464721679688,
+       "cosine": 0.9999999999967399,
+       "argmax_abs": 73728
+      },
+      "decoder.layer.23": {
+       "match": true,
+       "max_abs": 0.00016021728515625,
+       "mean_abs": 2.263040922474975e-06,
+       "ref_max_abs": 211.663818359375,
+       "cosine": 0.9999999999958499,
+       "argmax_abs": 151552
+      },
+      "model.language_model.norm": {
+       "match": true,
+       "max_abs": 0.00029528141021728516,
+       "mean_abs": 1.0252061158528496e-05,
+       "ref_max_abs": 34.09849166870117,
+       "cosine": 0.9999999999933682,
+       "argmax_abs": 99215
+      },
+      "lm_head": {
+       "match": true,
+       "max_abs": 2.86102294921875e-05,
+       "mean_abs": 7.801825050767608e-06,
+       "ref_max_abs": 38.956626892089844,
+       "cosine": 0.9999999999999686,
+       "argmax_abs": 6476
+      }
+     },
+     "native_meta": {
+      "grid": [
+       0,
+       0
+      ],
+      "parts": [
+       {
+        "w": 644,
+        "h": 308,
+        "tokens": 253,
+        "overview": true,
+        "row": 0,
+        "col": 0
+       }
+      ]
+     },
+     "input_ids_exact": true,
+     "input_ids_first_difference": null,
+     "input_ids_len": [
+      274,
+      274
+     ],
+     "first_logit_argmax": [
+      19,
+      19
+     ],
+     "ids": [
+      19,
+      17,
+      248046
+     ],
+     "ids_exact": true,
+     "first_id_difference": null,
+     "text_exact": true,
+     "eos": true,
+     "worst_stage": [
+      "model.vision_tower.encoder.layers.26",
+      0.01544189453125
+     ],
+     "stage_order": [
+      "pixel_values",
+      "model.vision_tower.embeddings",
+      "model.vision_tower.encoder.layers.0",
+      "model.vision_tower.encoder.layers.6",
+      "model.vision_tower.encoder.layers.26",
+      "model.vision_tower.post_layernorm",
+      "model.merger",
+      "decoder.layer.0",
+      "decoder.layer.1",
+      "decoder.layer.2",
+      "decoder.layer.3",
+      "decoder.layer.4",
+      "decoder.layer.5",
+      "decoder.layer.6",
+      "decoder.layer.7",
+      "decoder.layer.8",
+      "decoder.layer.9",
+      "decoder.layer.10",
+      "decoder.layer.11",
+      "decoder.layer.12",
+      "decoder.layer.13",
+      "decoder.layer.14",
+      "decoder.layer.15",
+      "decoder.layer.16",
+      "decoder.layer.17",
+      "decoder.layer.18",
+      "decoder.layer.19",
+      "decoder.layer.20",
+      "decoder.layer.21",
+      "decoder.layer.22",
+      "decoder.layer.23"
+     ]
+    }
+   }
+  }
+ ],
+ "completed": true
+}

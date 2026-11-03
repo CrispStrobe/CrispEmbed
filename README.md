@@ -157,6 +157,43 @@ DeepSeek-OCR2, …) run the task prompt they were trained on and warn that the
 option is ignored. Unknown command-line options now warn instead of being
 silently swallowed as input text.
 
+**Token usage, load control and OpenAI-shaped OCR.**
+
+- `/v1/embeddings` `usage.prompt_tokens` (and `/api/embed`'s
+  `prompt_eval_count`) report the tokenizer ids the model actually saw,
+  specials included and padding excluded. The C API exposes the same count as
+  `crispembed_last_prompt_tokens()`. Families whose tokenizer count isn't
+  observed (LFM2, typed decision, UltraBERT) report 0.
+  `CRISPEMBED_SERVER_USAGE_TOKENS=0` restores the old zeros.
+- `CRISPEMBED_SERVER_METRICS=1` adds `GET /metrics` (Prometheus text):
+  `crispembed_requests_running` (holding a model lock), `_waiting`, `_inflight`,
+  admitted/rejected/completed counters, request seconds and reported tokens.
+- `CRISPEMBED_SERVER_MAX_INFLIGHT=N` answers POSTs beyond N in flight with
+  `429` before any model is touched, instead of queueing them invisibly behind
+  the model lock. GET probes are never capped. `CRISPEMBED_SERVER_RETRY_AFTER=S`
+  adds a `Retry-After` header to those 429s.
+- `CRISPEMBED_SERVER_OPENAI_CHAT=1` adds `POST /v1/chat/completions` and
+  `GET /v1/models` for the `--ocr` model. Each request needs the last user
+  message to carry exactly one `image_url` as a base64 data URL; its text
+  parts become the per-request prompt. Remote/file URLs, streaming, `n>1` and
+  tools are rejected rather than ignored. `usage.completion_tokens` is the
+  observed decode steps, and `prompt_tokens` is 0 because the OCR ABI doesn't
+  expose it. `finish_reason` is `length` only when the decode used the whole
+  active cap. Decoded images are limited to `CRISPEMBED_SERVER_MAX_IMAGE_BYTES`
+  (default 64 MiB).
+- Send `Content-Type: application/json`. Without it, curl's `-d` default
+  (`application/x-www-form-urlencoded`) is capped at 8 KiB and returns 413,
+  which a page image or a large batch will hit.
+
+```bash
+CRISPEMBED_SERVER_OPENAI_CHAT=1 CRISPEMBED_SERVER_METRICS=1 CRISPEMBED_SERVER_MAX_INFLIGHT=4 \
+  crispembed-server --ocr qwen2-vl-ocr.gguf   # any --ocr model
+curl http://localhost:8080/v1/chat/completions -H 'Content-Type: application/json' -d '{
+  "max_tokens": 1024, "messages": [{"role": "user", "content": [
+    {"type": "text", "text": "Read the page."},
+    {"type": "image_url", "image_url": {"url": "data:image/png;base64,'"$(base64 -w0 page.png)"'"}}]}]}'
+```
+
 ---
 
 ## Install & build

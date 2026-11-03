@@ -22,7 +22,10 @@ Pod::Spec.new do |s|
     set -e
     if [ ! -f Libs/libcrispembed-static.a ]; then
       mkdir -p Libs
-      url="https://github.com/CrispStrobe/CrispEmbed/releases/download/v#{s.version}/crispembed-ios-arm64.tar.gz"
+      # CRISPEMBED_PREBUILT_VERSION (opt-in) fetches the libs of another published release
+      # tag, e.g. when this checkout's pubspec version has no release yet; unset = pod version.
+      ver="${CRISPEMBED_PREBUILT_VERSION:-#{s.version}}"
+      url="https://github.com/CrispStrobe/CrispEmbed/releases/download/v$ver/crispembed-ios-arm64.tar.gz"
       echo "crispembed: fetching prebuilt iOS lib -> $url"
       tmp=$(mktemp -d)
       curl -fsSL "$url" -o "$tmp/lib.tgz"

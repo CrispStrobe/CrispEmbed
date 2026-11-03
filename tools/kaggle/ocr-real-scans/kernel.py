@@ -169,8 +169,10 @@ def reference(kind, arm, pins):
 
 try:
     if MODE == 'native-uocr2':
+        # F16 vision arm (pinned: F32 vision is the default since 2026-11-03).
         native('unlimited-ocr2', 'uocr2-f16-fast-tiled', dict(CRISPEMBED_UNLIMITED_OCR2='1', CRISPEMBED_UNLIMITED_OCR2_FAST='1',
-                                                             CRISPEMBED_UNLIMITED_OCR2_TILES='1', UOCR_DBG='1'), [])
+                                                             CRISPEMBED_UNLIMITED_OCR2_TILES='1', UOCR_DBG='1',
+                                                             CRISPEMBED_UNLIMITED_OCR2_VISION_F32='0'), [])
     elif MODE == 'native-uocr2-vf32':
         # Default-flip A/B arm: F32 SAM/CLIP block matrices made once at init.
         native('unlimited-ocr2', 'uocr2-f16-fast-tiled-vf32', dict(CRISPEMBED_UNLIMITED_OCR2='1', CRISPEMBED_UNLIMITED_OCR2_FAST='1',

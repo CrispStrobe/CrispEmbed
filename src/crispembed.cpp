@@ -303,7 +303,11 @@ struct crispembed_context {
     std::string colbert_doc_prefix;
     std::string colbert_similarity_fn;
     int colbert_query_length = 0;
-    std::vector<float> last_output;          // reused buffer (dense encode)
+    std::vector<float> last_output; // reused buffer (dense encode)
+    // Observed tokenizer output of the last crispembed_encode_batch call
+    // (sum of attention-active ids, specials included); -1 = not observed
+    // (paths that tokenize internally). Accounting only, never inference input.
+    int64_t last_batch_prompt_tokens = -1;
     std::vector<uint8_t> compute_meta;       // graph metadata buffer (no_alloc=true)
     ggml_context * qkv_ctx = nullptr;        // pre-merged QKV tensor metadata
     ggml_backend_buffer_t qkv_buf = nullptr; // backend buffer for merged QKV
@@ -1019,6 +1023,51 @@ static bool load_model(crispembed_context * ctx, const char * path, gguf_context
             ctx->bpe_tokenizer.load(ctx->bpe_tokenizer.get_vocab(), merges, sep_id, pad_id, -1, cls_id, is_spm_bpe,
                                     hp.n_max_tokens);
             fprintf(stderr, "crispembed: loaded %zu BPE merges from %s\n", merges.size(), src);
+        }
+    }
+
+    // Learned absolute position table: the tokenizers truncate at
+    // hp.n_max_tokens (= max_position_embeddings), but RoBERTa/XLM-R tables
+    // start at position_offset (padding_idx + 1 = 2), so a 514-row table holds
+    // only 512 token positions. A 513- or 514-token input then indexed past the
+    // table and aborted in get_rows (GGML_ASSERT i01 < ne01) on e5-base/large,
+    // granite-107m/278m, bge-reranker-base. HF truncates to model_max_length =
+    // max_position_embeddings - 2 and keeps the special tokens; so do we now.
+    // CRISPEMBED_POS_EMBD_TRUNCATE=0 restores the old (aborting) limit.
+    if (m.pos_embd && !core_env::explicitly_off("CRISPEMBED_POS_EMBD_TRUNCATE")) {
+        const int rows = (int)m.pos_embd->ne[1];
+        auto clamp = [&](int cur, const char * name, auto set) {
+            const int limit = position_table_token_limit(rows, ctx->pos_offset, cur);
+            if (limit != cur) {
+                set(limit);
+                fprintf(stderr, "crispembed: %s truncation %d -> %d (position table %d rows, offset %d)\n", name, cur,
+                        limit, rows, ctx->pos_offset);
+            }
+        };
+        if (ctx->use_sentencepiece)
+            clamp(ctx->sp_tokenizer.max_length(), "SentencePiece", [&](int n) { ctx->sp_tokenizer.set_max_length(n); });
+        else if (ctx->use_bpe)
+            clamp(ctx->bpe_tokenizer.max_length(), "BPE", [&](int n) { ctx->bpe_tokenizer.set_max_length(n); });
+        else
+            clamp(ctx->wp_tokenizer.max_length(), "WordPiece", [&](int n) { ctx->wp_tokenizer.set_max_length(n); });
+    }
+    // Cross-encoder pair layout. HF XLMRobertaTokenizer/RobertaTokenizer build
+    // `<s> a </s></s> b </s>`; we built `<s> a </s> b </s>`, which shifted every
+    // position of the second segment and moved bge-reranker-v2-m3/-base scores
+    // by up to 1.9 logits. Selected when the wrap tokens are literally <s>/</s>
+    // (RoBERTa family; DeBERTa-v3 [CLS]/[SEP] and BERT keep one separator).
+    // CRISPEMBED_PAIR_ROBERTA_SEP=0 restores the single separator.
+    if (!core_env::explicitly_off("CRISPEMBED_PAIR_ROBERTA_SEP")) {
+        if (ctx->use_sentencepiece && !ctx->special_ids.empty()) {
+            const bool roberta = ctx->sp_tokenizer.token_str(ctx->special_ids[0]) == "<s>" &&
+                                 ctx->sp_tokenizer.token_str(ctx->special_ids[1]) == "</s>";
+            ctx->sp_tokenizer.set_pair_double_sep(roberta);
+        } else if (ctx->use_bpe) {
+            const auto & v = ctx->bpe_tokenizer.get_vocab();
+            const int b = ctx->bpe_tokenizer.bos_id(), e = ctx->bpe_tokenizer.eos_id();
+            const bool roberta =
+                b >= 0 && e >= 0 && b < (int)v.size() && e < (int)v.size() && v[b] == "<s>" && v[e] == "</s>";
+            ctx->bpe_tokenizer.set_pair_double_sep(roberta);
         }
     }
 
@@ -2935,6 +2984,7 @@ extern "C" const float * crispembed_encode_batch(crispembed_context * ctx, const
                                                  int * out_n_dim) {
     if (ctx && (ctx->decision_ctx || ctx->ultrabert_ctx)) {
         if (out_n_dim) *out_n_dim = 0;
+        ctx->last_batch_prompt_tokens = -1;
         if (!texts || n_texts <= 0) return nullptr;
         std::vector<float> batch;
         int dim = 0;
@@ -2949,6 +2999,7 @@ extern "C" const float * crispembed_encode_batch(crispembed_context * ctx, const
     }
 
     if (!ctx || !texts || n_texts <= 0) return nullptr;
+    ctx->last_batch_prompt_tokens = -1;
     auto t_batch_start = std::chrono::steady_clock::now();
 
     if (ctx->is_lfm2 && ctx->lfm2_ctx) {
@@ -3050,6 +3101,10 @@ extern "C" const float * crispembed_encode_batch(crispembed_context * ctx, const
         }
     }
 
+    int64_t observed_prompt_tokens = 0;
+    for (const auto & t : all_tokens)
+        for (int32_t m : t.attn_mask) observed_prompt_tokens += m ? 1 : 0;
+
     // For encoder models: true batched inference (one graph, all texts)
     std::vector<std::vector<float>> batch_results;
 
@@ -3091,8 +3146,13 @@ extern "C" const float * crispembed_encode_batch(crispembed_context * ctx, const
         double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t_batch_start).count();
         fprintf(stderr, "[crispembed-bench] crispembed_encode_batch total (%d texts): %.1f ms\n", n_texts, ms);
     }
+    ctx->last_batch_prompt_tokens = observed_prompt_tokens;
     if (out_n_dim) *out_n_dim = out_dim;
     return ctx->last_output.data();
+}
+
+extern "C" int64_t crispembed_last_prompt_tokens(const crispembed_context * ctx) {
+    return ctx ? ctx->last_batch_prompt_tokens : -1;
 }
 
 // ---------------------------------------------------------------------------

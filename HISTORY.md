@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ## 3 November 2026 — Unlimited-OCR-2 Q4_K recipes (perf/q4k-unlimited-ocr2-20261103)
 
 The v3 mixed-Q4 panel's stop at `v.pos_embed` was the audit comparing raw stored shapes: the
@@ -11,6 +12,116 @@ Q8_0 0.9739 CPU / 0.9555 CUDA; production q4_k 0.9567 CPU (12 Q4_0 fallbacks); S
 0.7989; `unlimited_ocr2_q4k_v1` 2,074 MiB 0.9512/0.9443; `unlimited_ocr2_q4k_shared8_v1`
 2,189 MiB 0.9634/0.9540, text = F16 4/4. Every ID divergence is a box coordinate or one
 layout label. Receipts: `tests/results/unlimited-ocr2/q4k-sweep/`, `q4k-precision-*.json`.
+=======
+## 3 November 2026 — Hosted check of the MiniCPM-OCR / Unlimited-OCR-2 defaults and low-memory fallback
+
+Kaggle CPU, no env vs `..._LOW_MEMORY=1`. Unlimited-OCR-2 (`0d3974ab`): 4/4 trial pages ids and text byte-exact vs the
+original in both arms; default ids == the `vf32` receipt, low-memory == the F16 `after` receipt; unit tests pass.
+MiniCPM-OCR initial run (`0d3974ab`): F16 5/5 exact in both arms, but every F32-GGUF case failed to load — the default
+`f32` graph-decoder matmul allocated an empty copy context (nothing to copy in an F32 model) and init failed. Fixed in
+`8c8c8be6` (skip the copy step when there is nothing to copy); rerun: 5/5 token- and text-exact in all four arms
+(F32/F16 x default/low-memory). Initial receipts retained as `*-initial-f32-load-failure.json`. `test-low-memory` ran
+for the first time: 21 checks, 0 failures.
+
+## 3 November 2026 — macOS arm64 desktop drift attributed to the Metal backend
+
+* The producer configs (40724938611) differ a lot. macOS uses AppleClang with Metal, Accelerate
+  BLAS and the default llamafile setting. Linux arm64 uses GCC with BLAS and llamafile off and
+  armv8.2+fp16+dotprod. The v4 macOS consumer log shows `using MTL0 backend` (Apple Paravirtual device).
+* Run 41638730050 used branch `audit/macos-desktop-drift-v1` at the v4 source, the exact v4
+  producer package and the stored v4 vectors of 41587063385. On macos-14 and macos-15, the
+  default (Metal) arm reproduces the stored macOS vector within 5e-7. With
+  `CRISPEMBED_FORCE_CPU=1`, macOS matches Linux arm64 within 5.14e-7 and Linux x86_64 at
+  1.20e-4/0.9999997 (strict). The Linux arm64 control is unchanged and every repeat is identical.
+* The drift is therefore the GPU backend, not a CPU build difference, and no build fix applies.
+  The v5 CPU-review proposal is in PLAN. Gates, defaults and release builds are unchanged.
+  Receipt: `tests/results/packaging/macos-desktop-drift-attribution-v1.json`.
+
+## 3 November 2026 — Josev Q4_K final-output cosine and sensitivity sweep
+
+Earlier Josev quantized panels (v4, mixed A/B/C 40787077302, protected Q8 40838785499,
+last-projection 40853720400) were rescored with final-output cosines from their retained
+comparator moments (`tests/results/josev2b/q4k-final-output-rescore.json`). A 13-recipe
+Q8_0-based sweep ran on portable hosted CPU (41615751516; initial rejections
+41588071746 file-type check and 41590988284 key clash retained). v4 storage reproduces to
+all printed digits. Winner `josev_q4k_down8_v1`: 2,952 MiB, head-logit 0.99739,
+final-norm 0.94911, argmax 4/4, typed JSON 0/4. Details: `docs/josev2b-q4k-sweep.md`.
+## 3 November 2026 — Successor assets v4: macOS arm64 desktop tolerance; whole run green
+
+* Owner decision: accept the measured native desktop drift without attribution. The stored
+  vectors of runs 40710490021 and 41471904133 (identical) show it is specific to the macOS arm64
+  build: Linux arm64 vs Linux x86_64 passes strict at 1.2e-4, while macOS arm64 differs from both
+  Linux x86_64 (0.0025544) and Linux arm64 (0.0026). `docs/successor-assets-v4.{md,json}` and
+  `tools/successor_assets_v4.py` therefore bound only the review's macos-arm64 vs linux-x86_64
+  final vector: max_abs<=0.00307 and cosine>=0.999866 (measured plus 20%, rounded outward).
+  v1/v2/v3 files are pinned (60). The review, consumers and bindings are derived from v1 with
+  exact declared replacements. Same-platform, binding, Linux arm64 and Windows comparisons stay
+  strict.
+* Run 41587063385 (producers 40724938611/40725005968 at `11f2ef7c`, corpus proof 40629090339)
+  is **green**: all 16 jobs succeed. In the review, macOS arm64 passes on the v4 basis, the
+  browser on the v3 basis (0.00837269/0.99864984), and everything else strict. Receipt:
+  `tests/results/packaging/successor-assets-v4-run.json`. No qualification, alias or app change.
+
+## 3 November 2026 — Unlimited-OCR-2 F32 vision on by default; low-memory fallback for F32 weight copies
+
+`CRISPEMBED_UNLIMITED_OCR2_VISION_F32` is now read with `core_env::explicitly_off` (default on; `=0` restores the
+F16 SAM/CLIP products). Evidence: trial pages `tests/results/unlimited-ocr2/vision-speed.{json,md}` (4/4 ids and text
+exact vs the original, 1.44x) and real scans `tests/results/ocr-real-scans/native-uocr2-vf32.json` (1.43x on paired
+pages, 17/19 pages ids-identical to the old default, no page from exact to inexact, original-exact 12 -> 13/20; the one
+new inexact page `de-2col-meyers-b13-103` was already inexact and its CER improves 0.0369 -> 0.0368). `TILE_BATCH` stays
+default off. Kernels that measure the F16 path now pin `=0`. If the default copy fails to allocate, init now falls back
+to the F16 path with a notice instead of failing.
+
+New `src/core/low_memory.h`: after loading weights, MiniCPM-OCR and Unlimited-OCR-2 estimate the bytes of their default
+F32 weight copies and, when available physical memory (Linux `MemAvailable`, falling back to `sysconf(_SC_AVPHYS_PAGES)`;
+macOS `host_statistics64` free+inactive+purgeable; Windows `GlobalMemoryStatusEx`; unknown keeps the configured
+behavior) is below that + 1 GiB, skip them with one stderr notice. MiniCPM then runs F16 vision products and the graph
+decoder's `exact` matmul (row-wise dequant + F32 dot), both measured token-exact on the 5-case bench and the old-default
+path 20/20 identical on real scans; Unlimited-OCR-2 runs its previous-default F16 vision path.
+`CRISPEMBED_MINICPM_OCR_LOW_MEMORY` / `CRISPEMBED_UNLIMITED_OCR2_LOW_MEMORY`: `=1` forces the low-memory path, `=0`
+disables the check (keeping the copies whatever the memory). Decision logic is unit-tested header-only by `test-low-memory` (Build workflow). No inference was run for this
+change; the fallback paths are the existing measured ones.
+
+## 3 November 2026 — Encoder truncation and the XLM-R cross-encoder pair layout
+
+Branch `fix/rerank-pair-and-truncation`. Hosted run 41588538331 at `0fb9e738` (portable build, 77-text panel, raw
+logit of HF `AutoModelForSequenceClassification` fp32). Receipts: `tests/results/reranker-parity/`.
+- **Pair layout** (`CRISPEMBED_PAIR_ROBERTA_SEP`, default on, `=0` is the old layout). The HF XLM-R/RoBERTa
+  tokenizers build `<s> a </s></s> b </s>`; we built a single separator. Max/mean |native - HF| on the published
+  Q8_0 GGUFs: bge-reranker-v2-m3 1.860/0.056 -> 0.229/0.008, bge-reranker-base 1.602/0.104 -> 0.176/0.008,
+  jina-reranker-v2 0.137/0.021 -> 0.026/0.006. The DeBERTa/BERT rerankers keep one separator, as HF does, and
+  are unchanged: mxbai-xsmall 0.065, mxbai-base 0.079, ms-marco-MiniLM-L-6 0.048.
+- **Over-length input** (`CRISPEMBED_POS_EMBD_TRUNCATE`, default on). XLM-R position tables start at offset 2,
+  so 514 rows hold 512 tokens. e5-base/large, granite-107m/278m, bge-reranker-base and xlmr-ner-hrl went from an
+  abort (rc -6) to 512 tokens with the special tokens kept; ids equal HF on all except xlmr-ner-hrl, whose GGUF
+  has no tokenizer scores. Cosine against sentence-transformers on the truncated input: e5-base 0.9990,
+  e5-large 1.0000, granite-107m 0.9907, granite-278m 0.9946. e5-small and all-MiniLM-L6 were already fine.
+  LiLT rejects over-length caller ids instead of aborting. Regression test: `test-pair-truncation`.
+
+## 3 November 2026 — Flutter macOS: dylibs shipped and identified by unversioned names
+
+* Bug (reported from the CometBeat app): a fresh `flutter build macos --debug` produced an app
+  that could not load CrispEmbed. Root cause: CMake's SOVERSION gives every dylib the install
+  name `@rpath/libX.0.dylib` and ships the other names (`libX.dylib`, `libX.0.<m>.<p>.dylib`)
+  as symlinks, but CocoaPods dereferences or drops symlinks when it embeds
+  `vendored_libraries`. The app bundle therefore never held both the `libcrispembed.dylib` the
+  Dart side `dlopen()`s and the `libX.0.dylib` names the load commands ask for. Reproduced on
+  the M1 with a minimal Flutter app against main: the podspec's SONAME collapse embedded only
+  `lib*.0.dylib`, and `DynamicLibrary.open('libcrispembed.dylib')` failed.
+* Fix: `flutter/crispembed/macos/flatten_dylibs.sh` leaves one real file per library named
+  `libX.dylib`, sets its install name to `@rpath/libX.dylib`, rewrites every inter-library and
+  CLI `@rpath` reference to match, re-signs ad hoc, and fails if any `@rpath` reference is not
+  a regular file in the set (`--check` mode only verifies). release.yml (build-macos) runs it on
+  the tarball and verifies the extracted archive (otool check, codesign, dlopen, CLI load);
+  build.yml's macOS job flattens and checks the bundle that feeds the Flutter plugin; the
+  podspec runs it on fetched libs and local drops. CMake's install layout is unchanged
+  (Linux keeps its `.so.0` SONAME symlinks); iOS (static), Linux, Windows and Android
+  packaging are untouched.
+* Verified on the M1 from a clean build/: a symlink-chain local drop and the v0.17.12 macOS
+  tarball flattened as release.yml now does both embed exactly six real files
+  (libcrispembed, libggml, -base, -cpu, -metal, -blas `.dylib`), all signatures verify, and the
+  app loads libcrispembed and resolves `crispembed_init` with no manual fixes.
+>>>>>>> origin/main
 
 ## 3 November 2026 — BGE-M3 Q8_0 mix that qualifies on CUDA
 
@@ -74,6 +185,47 @@ proxy-to-pthread 2,973,004, WebGPU 4,803,802 and WebGPU compat 6,332,726 bytes (
 Text-embedding WASM still builds at 1.5 MB (run 41587317791). Build WASM now prints a size report
 (`tools/wasm_size_report.py` over the emcc symbol map). Largest remaining code: `ggml_graph_compute_thread`
 301 KB, `ocr_orchestrator::run_file` 131 KB, layout detection 138 KB, stb_image 104 KB.
+
+## 3 November 2026 — PR 118 audit fixes, focused regressions and selective CI
+
+Maintainer continuation of PR118 at `60f0b6cf`, preserving the contributor's
+history and experimental gates. Static reuse now checks its originating fill
+input, so gradual fades refresh; a pixel-residual guard rejects fine moving
+texture that has unchanged cell means. Flatness checks RGB channels as well as
+luma. Harmonic iteration work has a real 20-million-update ceiling. Frame-payload
+sizing includes masks, output, engine scratch and a reserved reuse anchor;
+backpressure prevents undrained output growth. The CLI drains complete output
+before reporting later EOF/inference failures. The missing clean_exit wrapper
+is repaired; the original failing guard is retained in the
+[audit record](docs/inpaint-stream-audit.md).
+
+Expanded model-free temporal and CLI regression source covers drift, noise,
+donors, mask changes, binary ordering, known-byte preservation, memory/lifecycle
+boundaries and error-prefix behavior. The new [owned video panel](docs/inpaint-video-quality.md)
+compares five deterministic six-frame clips against clean ground truth using
+independent and temporal execution, with identities, image/temporal errors,
+engine calls, timing, memory and failure evidence. Its bounded reviewed-model
+hosted run is a diagnostic; it does not promote a gate or qualify film/GPU use.
+
+Ordinary Build, inpainting, WASM and Rust jobs use a tested cumulative Git-diff
+selector with broad fallback for shared dependencies or incomplete/unknown
+changes. Always-run result checks reject unexpected skips or failed selected
+jobs. Pure Python controls avoid native compilation, isolated CLI changes avoid
+unrelated mobile/WASM/package builds, and compiler caches preserve actual
+configure/link/test and standalone crate verification. Main and manual runs
+cannot be cancelled by later metadata-only changes. See [CI selection](docs/ci-selection.md).
+Focused local controls pass; native/platform/model validation is pending hosted
+CI. No measured cache speedup or runtime quality improvement is asserted here.
+
+## 3 November 2026 — Issue 71 inpainting video stream (`--inpaint-stream`, `--inpaint-temporal`)
+
+Raw frame pipe for burned-in subtitle removal on top of the main inpainting engines (no new engine or model), gated
+by `CRISPEMBED_INPAINT_STREAM` in addition to each engine's own gates. `src/inpaint_temporal` is engine-agnostic (a
+fill callback) and fills each masked frame by propagation from the nearest unmasked frame on a static ring, reuse of
+the previous output over a static span, a harmonic fill for flat surroundings, and the engine (blended with the
+previous output on moderate change). Buffered frames are kept within 2 GiB (the window is reduced for large frames).
+Model-free contracts: `test-inpaint-temporal` (44 checks) and CLI driver stream tests. Measured output is on par with
+the research prototype; numbers in PERFORMANCE.md ("Issue 71 video stream with temporal consistency").
 
 ## 2 November 2026 — Unlimited-OCR-2 F32 vision / tile batch gates (default off)
 

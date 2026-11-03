@@ -51,6 +51,16 @@ inline int resolve_tokenizer_family(bool type_key_present, int declared_type, co
     return family;
 }
 
+// Token budget a learned absolute position table allows: positions run from
+// `offset` (2 for RoBERTa/XLM-R, padding_idx + 1) to rows - 1, so at most
+// rows - offset tokens fit, special tokens included. Returns `current` when it
+// already fits (or when the table is unknown), otherwise the lower limit.
+inline int position_table_token_limit(int rows, int offset, int current) {
+    if (rows <= 0 || offset < 0) return current;
+    const int limit = rows - offset;
+    return (limit > 0 && current > limit) ? limit : current;
+}
+
 class WordPieceTokenizer {
 public:
     // Load vocab from a list of tokens (index = token id).
@@ -75,6 +85,11 @@ public:
 
     int vocab_size() const { return (int)id_to_token_.size(); }
     int max_length() const { return max_length_; }
+    // Lower the truncation length after load (e.g. to the rows of a learned
+    // position table, see crispembed.cpp CRISPEMBED_POS_EMBD_TRUNCATE).
+    void set_max_length(int n) {
+        if (n > 0) max_length_ = n;
+    }
     // Look up the surface form of a token by id. Returns an empty string
     // (with a stable address valid for the tokenizer's lifetime) for
     // out-of-range ids. WordPiece subword continuations are prefixed with
@@ -127,7 +142,10 @@ public:
     embed_tokens encode(const std::string & text) const;
 
     // Tokenize a sentence pair: <s> text_a </s> text_b </s>, type_ids all 0.
+    // With set_pair_double_sep(true): <s> text_a </s></s> text_b </s>, the
+    // XLM-R/RoBERTa layout (HF XLMRobertaTokenizer build_inputs_with_special_tokens).
     embed_tokens encode_pair(const std::string & text_a, const std::string & text_b) const;
+    void set_pair_double_sep(bool on) { pair_double_sep_ = on; }
 
     // C2 behavior flags (tokenizer.ggml.add_bos_token / add_eos_token):
     // gate the <s>/</s> wrap in encode(). encode_pair() keeps the canonical
@@ -177,6 +195,9 @@ private:
 public:
     int vocab_size() const { return (int)id_to_token_.size(); }
     int max_length() const { return max_length_; }
+    void set_max_length(int n) {
+        if (n > 0) max_length_ = n;
+    }
     // Look up the surface form of a token by id. Returns an empty string
     // (with a stable address valid for the tokenizer's lifetime) for
     // out-of-range ids. SentencePiece word-start tokens are prefixed with
@@ -204,6 +225,7 @@ private:
     bool add_space_prefix_ = true;  // prepend leading ▁ dummy prefix (XLM-R)
     bool hf_normalize_ = false;     // HF Precompiled/nmt_nfkc charsmap (opt-in per consumer)
     bool siglip_normalize_ = false; // ...wrapped in SigLIP's Lowercase/Strip sequence
+    bool pair_double_sep_ = false;  // encode_pair: </s></s> between segments (XLM-R)
 
     std::vector<int> tokenize_text(const std::string & text) const; // Unigram / Viterbi
     std::vector<int> tokenize_bpe(const std::string & text) const;  // SentencePiece-BPE merge
@@ -229,6 +251,12 @@ public:
 
     embed_tokens encode(const std::string & text) const;
     embed_tokens encode_pair(const std::string & text_a, const std::string & text_b) const;
+    // RoBERTa pair layout <s> a </s></s> b </s> (see SentencePieceTokenizer).
+    void set_pair_double_sep(bool on) { pair_double_sep_ = on; }
+    int max_length() const { return max_length_; }
+    void set_max_length(int n) {
+        if (n > 0) max_length_ = n;
+    }
 
     // Enable the GPT-2 ByteLevel regex pre-tokenizer for the GPT-2 byte-level
     // path (ModernBERT, tokenizer.ggml.pre = "modern-bert"). Off by default the
@@ -283,6 +311,7 @@ private:
     bool ministral_regex_pretok_ = false; // Ministral3/Tekken case-aware ByteLevel split
     bool ignore_merges_ = true;           // o200k: a whole-pre-token vocab hit skips the merges
     int max_length_ = 8192;
+    bool pair_double_sep_ = false; // encode_pair: </s></s> between segments (RoBERTa)
 
     // SentencePiece BPE: merge-based tokenization on ▁-prefixed text
     std::vector<int32_t> bpe_merge(const std::string & text) const;

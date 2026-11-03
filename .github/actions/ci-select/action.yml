@@ -1,0 +1,42 @@
+name: Select ordinary CI lanes
+description: Compare the complete PR or push and conservatively route build jobs
+outputs:
+  native:
+    description: Desktop native builds
+    value: ${{ steps.select.outputs.native }}
+  native_tests:
+    description: General native model-free test suite
+    value: ${{ steps.select.outputs.native_tests }}
+  mobile:
+    description: Android and iOS library builds
+    value: ${{ steps.select.outputs.mobile }}
+  sibling:
+    description: CrispASR shared-core compatibility
+    value: ${{ steps.select.outputs.sibling }}
+  wasm_ocr:
+    description: OCR WASM build and browser checks
+    value: ${{ steps.select.outputs.wasm_ocr }}
+  wasm_embed:
+    description: Embedding WASM build
+    value: ${{ steps.select.outputs.wasm_embed }}
+  rust:
+    description: Rust wrapper and standalone package build
+    value: ${{ steps.select.outputs.rust }}
+  inpaint_python:
+    description: Inpaint Python contracts
+    value: ${{ steps.select.outputs.inpaint_python }}
+  inpaint_native:
+    description: Inpaint native and real CLI contracts
+    value: ${{ steps.select.outputs.inpaint_native }}
+  bundle:
+    description: All-platform Flutter native bundle
+    value: ${{ steps.select.outputs.bundle }}
+  full:
+    description: Full fallback was necessary
+    value: ${{ steps.select.outputs.full }}
+runs:
+  using: composite
+  steps:
+    - id: select
+      shell: bash
+      run: python3 tools/ci_selection.py select

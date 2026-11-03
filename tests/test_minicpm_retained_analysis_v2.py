@@ -4,10 +4,20 @@ import copy,hashlib,importlib.util,json,pathlib,sys,tempfile,unittest
 ROOT=pathlib.Path(__file__).resolve().parents[1];sys.path.insert(0,str(ROOT/'tools/minicpm-retained-analysis-v2'))
 import analysis_contract as c
 import prior
+ANALYSIS_V2_FROZEN='cec1faebd39582a6103774dd9598b3e26d6533f1'  # frozen retained-analysis v2 producer commit
+sys.path.insert(0,str(ROOT/'tests'));import frozen_checkout
 spec=importlib.util.spec_from_file_location('scope_v2',ROOT/'tools/minicpm-retained-analysis-v2/analyze.py');a=importlib.util.module_from_spec(spec);spec.loader.exec_module(a)
 class Controls(unittest.TestCase):
  def test_complete_new_source_and_runtime83(self):
-  d=c.source_guard(c.inherited.git('rev-parse','HEAD').decode().strip());self.assertFalse(d['runtime_math_changes']);self.assertEqual(d['inherited_guard']['old_source'],c.inherited.OLD_SOURCE)
+  # Historical producer guard: it requires HEAD == the reviewed frozen commit (cec1faeb) and a v2-only diff,
+  # so later trees (main) run it unchanged inside a clean checkout of that commit (tests/frozen_checkout.py).
+  if frozen_checkout.head_is(ANALYSIS_V2_FROZEN):
+   d=c.source_guard(ANALYSIS_V2_FROZEN);self.assertFalse(d['runtime_math_changes']);self.assertEqual(d['inherited_guard']['old_source'],c.inherited.OLD_SOURCE)
+  else:
+   r=frozen_checkout.run_guard(ANALYSIS_V2_FROZEN,"import sys;sys.path.insert(0,'tools/minicpm-retained-analysis-v2');import analysis_contract as c;"
+    "d=c.source_guard(c.inherited.git('rev-parse','HEAD').decode().strip());assert d['runtime_math_changes'] is False;"
+    "assert d['inherited_guard']['old_source']==c.inherited.OLD_SOURCE;print('guard ok')")
+   self.assertEqual((r.returncode,r.stdout.strip()),(0,'guard ok'),r.stderr[-2000:])
  def test_line_full_overview_only(self):
   p=a.view_plan([235,1024],[235,1024],[940],[235],1024,True);self.assertEqual(p['native_rows'],[0,235]);self.assertEqual(p['unmapped'],[])
  def test_paragraph_and_tall_only_first_list_tensor(self):

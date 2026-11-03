@@ -1,0 +1,220 @@
+{
+ "schema": "crispembed.macos-desktop-drift-attribution.v1",
+ "protocol": "macOS desktop drift attribution v1 (audit only, hosted CI)",
+ "run": 41638730050,
+ "run_source_branch": "audit/macos-desktop-drift-v1",
+ "run_source_base": "8079a971 (v4 run source; runtime closure equal to producer 11f2ef7c)",
+ "producer_run": 40724938611,
+ "producer_source": "11f2ef7c06101ae4bff32c38d33fe6fd0b538661",
+ "stored_v4_run": 41587063385,
+ "model": "all-MiniLM-L6-v2-iq4_xs",
+ "model_sha256": "77087a5dd455f5eeae6d6d098bac82793610438518a91071c72c253940db18a2",
+ "text": "A small reproducible embedding consumer.",
+ "output": "final pooled 384-d vector, packaged CLI",
+ "producer_config_diff": {
+  "macos-arm64": "AppleClang 21; GGML_METAL=ON, GGML_METAL_EMBED_LIBRARY=ON, GGML_BLAS=ON (Accelerate), GGML_LLAMAFILE default, no -march (Apple default)",
+  "linux-arm64": "GCC 14.2.1; GGML_BLAS=OFF, GGML_LLAMAFILE=OFF, -march=armv8.2-a+fp16+dotprod",
+  "linux-x86_64": "GCC 14.2.1; GGML_BLAS=OFF, GGML_LLAMAFILE=ON, AVX2/FMA/F16C variant"
+ },
+ "v4_consumer_backend": "macOS desktop consumer of 41587063385 logs \"using MTL0 backend with CPU fallback\" on \"Apple Paravirtual device\" (simdgroup reduction/matrix mul = false)",
+ "results": {
+  "macos-14-macos-arm64": {
+   "runner": {
+    "system": "Darwin",
+    "machine": "arm64",
+    "release": "23.6.0",
+    "image": "macos14",
+    "image_version": "20260831.0302.1"
+   },
+   "arms": {
+    "default": {
+     "backend": [
+      "crispembed: using MTL0 backend with CPU fallback"
+     ],
+     "repeat_identical": true,
+     "vs_stored_v4": {
+      "linux-x86_64": {
+       "max_abs": 0.002554646657466887,
+       "cosine": 0.9998886262459291,
+       "strict_pass": false
+      },
+      "linux-arm64": {
+       "max_abs": 0.0026004416511058795,
+       "cosine": 0.9998877330682365,
+       "strict_pass": false
+      },
+      "macos-arm64": {
+       "max_abs": 4.995210170777309e-07,
+       "cosine": 0.9999999999844644,
+       "strict_pass": true
+      }
+     }
+    },
+    "force_cpu": {
+     "backend": [
+      "crispembed: forcing CPU backend via CRISPEMBED_FORCE_CPU",
+      "crispembed: using CPU backend (2 threads)"
+     ],
+     "repeat_identical": true,
+     "vs_stored_v4": {
+      "linux-x86_64": {
+       "max_abs": 0.00011972341203689632,
+       "cosine": 0.9999996977102524,
+       "strict_pass": true
+      },
+      "linux-arm64": {
+       "max_abs": 5.144028663583988e-07,
+       "cosine": 0.9999999999838232,
+       "strict_pass": true
+      },
+      "macos-arm64": {
+       "max_abs": 0.0025997066690921777,
+       "cosine": 0.999887733323935,
+       "strict_pass": false
+      }
+     },
+     "vs_default": {
+      "max_abs": 0.002599999999999998,
+      "cosine": 0.9998877312049248
+     }
+    }
+   }
+  },
+  "macos-15-macos-arm64": {
+   "runner": {
+    "system": "Darwin",
+    "machine": "arm64",
+    "release": "24.6.0",
+    "image": "macos15",
+    "image_version": "20261028.0489.1"
+   },
+   "arms": {
+    "default": {
+     "backend": [
+      "crispembed: using MTL0 backend with CPU fallback"
+     ],
+     "repeat_identical": true,
+     "vs_stored_v4": {
+      "linux-x86_64": {
+       "max_abs": 0.002554646657466887,
+       "cosine": 0.9998886262459291,
+       "strict_pass": false
+      },
+      "linux-arm64": {
+       "max_abs": 0.0026004416511058795,
+       "cosine": 0.9998877330682365,
+       "strict_pass": false
+      },
+      "macos-arm64": {
+       "max_abs": 4.995210170777309e-07,
+       "cosine": 0.9999999999844644,
+       "strict_pass": true
+      }
+     }
+    },
+    "force_cpu": {
+     "backend": [
+      "crispembed: forcing CPU backend via CRISPEMBED_FORCE_CPU",
+      "crispembed: using CPU backend (2 threads)"
+     ],
+     "repeat_identical": true,
+     "vs_stored_v4": {
+      "linux-x86_64": {
+       "max_abs": 0.00011972341203689632,
+       "cosine": 0.9999996977102524,
+       "strict_pass": true
+      },
+      "linux-arm64": {
+       "max_abs": 5.144028663583988e-07,
+       "cosine": 0.9999999999838232,
+       "strict_pass": true
+      },
+      "macos-arm64": {
+       "max_abs": 0.0025997066690921777,
+       "cosine": 0.999887733323935,
+       "strict_pass": false
+      }
+     },
+     "vs_default": {
+      "max_abs": 0.002599999999999998,
+      "cosine": 0.9998877312049248
+     }
+    }
+   }
+  },
+  "ubuntu-24.04-arm-linux-arm64": {
+   "runner": {
+    "system": "Linux",
+    "machine": "aarch64",
+    "release": "7.0.0-1017-azure",
+    "image": "ubuntu24-arm64",
+    "image_version": "20261026.166.1"
+   },
+   "arms": {
+    "default": {
+     "backend": [
+      "crispembed: using CPU backend (2 threads)"
+     ],
+     "repeat_identical": true,
+     "vs_stored_v4": {
+      "linux-x86_64": {
+       "max_abs": 0.00011972341203689632,
+       "cosine": 0.999999697719688,
+       "strict_pass": true
+      },
+      "linux-arm64": {
+       "max_abs": 4.999924898135832e-07,
+       "cosine": 0.9999999999838471,
+       "strict_pass": true
+      },
+      "macos-arm64": {
+       "max_abs": 0.0025997066690921777,
+       "cosine": 0.9998877320175417,
+       "strict_pass": false
+      }
+     }
+    },
+    "force_cpu": {
+     "backend": [
+      "crispembed: forcing CPU backend via CRISPEMBED_FORCE_CPU",
+      "crispembed: using CPU backend (2 threads)"
+     ],
+     "repeat_identical": true,
+     "vs_stored_v4": {
+      "linux-x86_64": {
+       "max_abs": 0.00011972341203689632,
+       "cosine": 0.999999697719688,
+       "strict_pass": true
+      },
+      "linux-arm64": {
+       "max_abs": 4.999924898135832e-07,
+       "cosine": 0.9999999999838471,
+       "strict_pass": true
+      },
+      "macos-arm64": {
+       "max_abs": 0.0025997066690921777,
+       "cosine": 0.9998877320175417,
+       "strict_pass": false
+      }
+     },
+     "vs_default": {
+      "max_abs": 0.0,
+      "cosine": 1.0
+     }
+    }
+   }
+  }
+ },
+ "finding": "The macOS arm64 drift is entirely the Metal GPU backend. With CRISPEMBED_FORCE_CPU=1, the same macOS package matches Linux arm64 within 5.14e-7 and Linux x86_64 at 1.20e-4/0.9999996977 (strict pass) on macos-14 and macos-15. With default selection, it reproduces the stored v4 macOS vector within 5e-7. CPU compile differences (AppleClang, Accelerate, llamafile, -march, fp-contract) contribute at most 5.14e-7.",
+ "source_level_cause": "Not op-replayed: backend selection, not CPU code, causes the drift. Unverified hypothesis: Metal IQ4_XS mul_mv keeps F32 activations, while the CPU path quantizes activations to Q8_K.",
+ "build_fix": "None applies: no CPU build-config alignment changes the vector by more than 5.14e-7. Release builds are unchanged.",
+ "limits": [
+  "Hosted paravirtual Metal device only; physical Apple GPUs may use different kernels (simdgroup paths).",
+  "Single model and fixture text.",
+  "Which backend is closer to an F32 reference is not measured."
+ ],
+ "gates_changed": false,
+ "defaults_changed": false,
+ "release_builds_changed": false,
+ "qualification": false
+}
