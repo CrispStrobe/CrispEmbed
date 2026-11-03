@@ -8,8 +8,8 @@ are merged. Open, scoped:
 - [x] 131 `presence` env reads → `core_env::on` / `core_env::value`; Lint guard
       added (`tests/test_env_vars_documented.py`). Defaults unchanged.
 - [x] MiniCPM-OCR CLI default = server default (`minicpm-ocr` alias, gates required).
-- [ ] CrispSorter: merge [PR #19](https://github.com/CrispStrobe/CrispSorter/pull/19)
-      (experimental `unlimited_ocr2`→13, `minicpm_ocr`→23 selectors) once its CI is green.
+- [x] CrispSorter: [PR #19](https://github.com/CrispStrobe/CrispSorter/pull/19) merged (`2d45977a`)
+      after all of its CI jobs passed (experimental `unlimited_ocr2`→13, `minicpm_ocr`→23 selectors).
       CrispCalc: no engine-id selector; catalog entries only after the app pin moves past
       0.17.12 (exact TODO in the wiring audit).
 - [ ] Optional, cross-repo: make `core_env::on`/`explicitly_off` treat `false`/`off`/`no`
