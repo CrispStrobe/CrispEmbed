@@ -44,13 +44,24 @@ and model defaults. New registry aliases require qualified immutable artifacts.
 
 | Lane / branch | Scope | Completion gate |
 |---|---|---|
-| `feat/ocr-mineru2605` | Exact 2605 converter/runtime profile and original-first hosted runner implemented; 11 new/17 existing controls pass locally | Hosted compile and full-position final-logit/document-helper comparison; no new alias yet |
-| `feat/ocr-lighton3-1b` | Exact LightOnOCR-3-1B profile, transcription/grounding and original-first trace lane integrated into PR138 | Full-vocabulary/stage identity controls, hosted native compile and original/native execution; old checkpoint behavior preserved |
-| `feat/ocr-xiaomi0` | Exact Xiaomi-OCR-0 format-4 profile and Qwen3.5 reuse integrated into PR138; original PP-DocLayoutV3 producer pinned separately | Hosted native parity, strict OTSL/document assembly and public file-loading checks; detector graph remains external |
-| `feat/ocr-benchmark-integration` | Reproducible document-evaluation records, candidate/license matrix, remaining qualification and Nemotron/dots feasibility | Typed blocks/boxes/tables/formulas, completion/provenance checks; bounded hosted protocols, no fabricated qualification |
-| `feat/ocr-nemotron-geometry` | Gated size/padding/normalized-patch prototype and actual original-processor comparator integrated into PR138; 510-tensor source census verified | Hosted native compile and 11-case processor comparison; native resize and full neural backend remain separate |
+| `feat/ocr-mineru2605` | Exact 2605 profile and original-first portable job integrated into PR138; 21 new/17 preserved conversion controls pass | Full-position F32/F16/Q8/Q4 comparisons and symmetric complete 2.0.7/native helper traces across the frozen eight cases |
+| `feat/ocr-lighton3-1b` | Exact transcription/grounding profile, actual GGUF/source census and portable original-first trace job; 19 controls pass | Hosted original/native pixels, stages, full-vocabulary logits, free generation and structured output; old profile behavior preserved |
+| `feat/ocr-xiaomi0` | Format-4 profile, public task/cap admission, original external PP-DocLayoutV3 producer, strict OTSL and bounded document assembly; 26 controls pass | Hosted metadata/frontend and two-case F32/F16 execution, then a separately frozen document experiment; detector remains external |
+| `feat/ocr-benchmark-integration` | Shared document evaluation and candidate/license matrix; 32 document controls pass | Hosted source checks, original-first qualification and representative licensed document quality before alias/publication work |
+| LightOn3-0.8B portable replay | Separate current-source F16/Q8 job preserves the old three cases, prompt, 1024 cap, recipes and receipts; 8 portable/6 retained-review controls pass | All three one-case jobs at one reviewed commit; complete final-logit coverage, completion, text differences and explicit precision decision |
+| `feat/ocr-ovis3-task-audit` | Separate pinned Markdown task/source and cleanup audit; 14 controls pass and the old plain-OCR failure is preserved | Independent licensed input/gold, actual original Markdown captures, then distinct native task admission; no old gate is changed |
+| `feat/ocr-nemotron-geometry` | Gated geometry/patch prototype and original-processor comparator; 510-tensor census, 7 source/12 frontend controls pass | Hosted 11-case processor comparison; native resize and the complete neural backend remain separate |
 
-Checkpoint: [integration PR #138](https://github.com/CrispStrobe/CrispEmbed/pull/138) contains all four implementation checkpoints at `fc2f450b`; hosted builds/controls have started. The earlier evaluator-only head `faaf2db6` passed its hosted controls. The document evaluator now has 32 local controls. Model execution/qualification is still pending; bounded heavy-CPU runners remain manual dispatches.
+Checkpoint: [integration PR #138](https://github.com/CrispStrobe/CrispEmbed/pull/138)
+contains the reviewed source at `7ac5b594e63a34b53a753d9520fccff4ceb888d0`.
+All 162 focused OCR controls pass locally and the
+[shared hosted controls](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41735520715)
+pass. All15 workflows are green, including all11 native-build jobs and both WASM
+workflows. [The CI record](https://github.com/CrispStrobe/CrispEmbed/blob/docs/ocr-benchmark-validation/tests/results/ocr-benchmark-expansion/source-ci-7ac5b594.json)
+preserves the source identities and earlier invocation/setup/WASM-link failures
+with their corrections. The source PR remains draft pending model execution.
+Model inference/qualification is still pending; the concrete queue is in
+[PR138's expansion guide](https://github.com/CrispStrobe/CrispEmbed/blob/docs/ocr-benchmark-validation/docs/ocr-benchmark-expansion.md).
 
 This work does not adopt restricted terms or change the immutable app runtime.
 OvisOCR3's frozen capped-page failure and all old strict LightOnOCR-3-0.8B verdicts

@@ -5,6 +5,19 @@ OmniParseBench / OmniDocBench model review. Source support, port fidelity,
 document accuracy and published consumer support are separate states. No upstream
 score below is a CrispEmbed measurement.
 
+## Verified source checkpoint
+
+All15 hosted workflows pass on
+[`7ac5b594`](https://github.com/CrispStrobe/CrispEmbed/commit/7ac5b594e63a34b53a753d9520fccff4ceb888d0),
+including the full native desktop/mobile build, both WASM builds and existing
+browser smoke checks, Rust, and the expanded model-free controls. The
+[CI record](../tests/results/ocr-benchmark-expansion/source-ci-7ac5b594.json)
+retains exact run/source identities and earlier failures. All162 focused OCR
+Python controls pass. The new checkpoint profiles have not yet run their
+original/native model qualifications; ordinary CI does not substitute for those
+manual jobs. The implemented code and prepared jobs are in
+[draft PR138](https://github.com/CrispStrobe/CrispEmbed/pull/138).
+
 ## Priority and implementation lanes
 
 | Priority | Model | Work in this expansion | Remaining evidence |
