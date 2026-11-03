@@ -1,3 +1,19 @@
+## 3 November 2026 — BGE-M3 Q8_0 mix that qualifies on CUDA
+
+`bge-m3-heads-q8_0-mixed.gguf` (Q8_0, encoder blocks 0-11 F16) scored ColBERT 0.9667 on a Kaggle T4
+(cuda-audit run 7), below the 0.97 Q8_0 bar. Candidates with blocks 0-13/15/17/19/23 in F16 were
+measured with the portable build (hosted CPU run 41588222873, against FlagEmbedding, 77 texts) and on
+CUDA (cuda-audit batch h, run 8, against the CPU F16 arm). ColBERT minima, CPU / CUDA: 0-11
+0.9726/0.9667, 0-13 0.9488/0.9843, **0-15 0.9911/0.9922**, 0-17 0.9725/0.9515, 0-19 0.9922/0.9948,
+0-23 0.9927/0.9955. Dense and sparse stay at or above 0.9991 everywhere. Published as
+`bge-m3-heads-q8_0-enc0-15-f16.gguf` (763 MiB, F16 file 1599 MiB), `cstr/bge-m3-GGUF@283645d8`,
+sha256 `3379a216…` (run 41596007262, empty-cache readback re-scored 0.99109). The registry alias
+`bge-m3-heads` now points to it. The old file stays on the Hub and in the registry as
+`bge-m3-heads-q8-enc0-11` (superseded, CPU-only). Each candidate has the same SHA-256 on the EPYC
+runner and on the Kaggle Xeon, and the rebuilt 0-11 is byte-identical to the published file. The
+cuda-audit kernel now builds its CPU arm portable. Evidence: `tests/results/below-bar/bgem3-cuda-margin*/`,
+`tests/results/gpu-audit/cuda-kaggle/run8-66a5eba0/`.
+
 ## 2 November 2026 — Unlimited-OCR-2 F32 vision / tile batch gates (default off)
 
 **Vision speed gates (2026-11-02, default off).** `CRISPEMBED_UNLIMITED_OCR2_VISION_F32` (F32 SAM/CLIP block

@@ -1,0 +1,5 @@
+build_mode=portable
+commit=c3c2fa0ae48a26410ce2b49044169669214e62ed
+runner=Linux/X64
+cpu=Intel(R) Xeon(R) Platinum 8370C CPU @ 2.80GHz
+cpu_avx512f=yes

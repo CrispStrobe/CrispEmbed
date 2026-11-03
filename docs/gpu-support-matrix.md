@@ -278,6 +278,7 @@ true default arm (no env) ran on the GPU, and `=0` was byte-identical to the CPU
   (0.78/0.79), clip-text-base-q4_k (0.933/0.925), and the bge-m3 q8_0 we quantized
   here (ColBERT 0.59 on both arms; dense/sparse fine).
   *Follow-up (fix/below-bar-artifacts, [summary](../tests/results/below-bar/SUMMARY.md)):* repaired and republished as `f2llm-v2-0.6b-q4_k-mixed` (0.9644 vs the original), `clip-text-base-q4_k-mixed` (0.9878; plus an EOS-truncation runtime fix) and `bge-m3-heads-{f16,q8_0-mixed}` (ColBERT 0.59 traced to an XLM-R whitespace tokenizer defect plus early-block weight sensitivity; Q8_0 mix 0.9726). Not yet re-run on CUDA.
+  *CUDA follow-up (3 November, cuda-audit run 8, `fix/bge-m3-q8-mix-cuda`):* the blocks 0-11 BGE-M3 mix confirms ColBERT 0.9667 on CUDA (below 0.97) and is superseded by `bge-m3-heads-q8_0-enc0-15-f16` (Hub `283645d8`): ColBERT 0.9922 on CUDA and 0.9911 vs FlagEmbedding on CPU. Run 8 builds the CPU arm portable (`GGML_NATIVE=OFF`).
 - The published bge-m3 GGUFs carry **no sparse/ColBERT heads**: the converter's
   default Ollama format drops them, and `--crisp` keeps them.
 - Stage diffs that fail identically on both arms (reference fixture or harness

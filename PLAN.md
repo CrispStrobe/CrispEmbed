@@ -62,12 +62,17 @@ Source: `docs/gpu-support-matrix.md` §CUDA audit (branch `feat/cuda-audit`, Kag
 - Below-bar artifacts: f2llm/CLIP/BGE-M3 heads repaired and republished (fix/below-bar-artifacts,
   [summary](tests/results/below-bar/SUMMARY.md)). GOT-OCR2 F16: root cause found (see below). Still open:
   - A CUDA re-run of the new files.
-  - The bge-m3 Q8_0 mix has a thin ColBERT margin (0.9726 vs 0.97).
+  - [x] The bge-m3 Q8_0 mix has a thin ColBERT margin (0.9726 vs 0.97). Superseded on 3 November by
+    `bge-m3-heads-q8_0-enc0-15-f16` (CPU 0.9911, CUDA 0.9922; see below).
   - A ColBERT-qualifying Q4_K recipe for BGE-M3 (all tried mixes 0.37-0.60).
   - Done ([A/B](tests/results/spm-collapse-ab/SUMMARY.md)): `CRISPEMBED_SPM_COLLAPSE_SPACES` checked on all
     16 SentencePiece-encoder registry models; no regression, and the IDs match SentencePiece 76-77/77.
-  - BGE-M3 Q8_0 mix ColBERT is 0.9667 on CUDA (T4, cuda-audit run 7) vs 0.9718 on the CPU arm. It is below
-    0.97 on CUDA, so a wider F16 block range is needed before it qualifies there.
+  - [x] BGE-M3 Q8_0 mix ColBERT is 0.9667 on CUDA (T4, cuda-audit run 7) vs 0.9718 on the CPU arm. Done
+    (`fix/bge-m3-q8-mix-cuda`): blocks 0-15 F16 clears on both backends (CPU vs FlagEmbedding 0.9911, CUDA
+    0.9922, 763 MiB). Published as `cstr/bge-m3-GGUF@283645d8` and the `bge-m3-heads` alias now points to it.
+    The old file stays as `bge-m3-heads-q8-enc0-11` (CPU-only, superseded). Open: Metal A/B of the new file;
+    0-13 and 0-17 each flip one ColBERT token, so the margin depends on which blocks are F16, not only on
+    how many ([summary](tests/results/below-bar/SUMMARY.md)).
 - Pre-existing defects that are independent of the tokenizer switch
   ([A/B notes](tests/results/spm-collapse-ab/SUMMARY.md)):
   - Inputs over 512 tokens abort (`GGML_ASSERT` in get_rows) instead of truncating. Affected:
