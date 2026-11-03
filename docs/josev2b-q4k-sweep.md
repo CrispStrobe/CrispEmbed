@@ -117,7 +117,12 @@ The policy refuses any other architecture or base type, selects the
 before any `--tensor-type`. `tests/test_josev_quant_policy.py` checks that
 each rule table resolves all 442 tensors to the measured recipe; the sweep
 re-quantizes with the policy and compares bytes (`mlp-q4`: byte identical,
-sha256 `8e65bcfd…`).
+sha256 `8e65bcfd…`; `josev_q4k_down8_v1`: byte identical, sha256 `adc7fa47…`).
+
+Confirmation run 41635417771 (AMD EPYC 9V45, portable,
+[receipt](../tests/results/josev2b/q4k-sweep-41635417771-down8-confirm.json))
+rebuilt and re-quantized `all-q4-down-q8` on a different CPU model: same GGUF
+sha256 and identical cosines to every digit (0.9973891795 / 0.9491092304).
 
 ```sh
 CRISPEMBED_QUANTIZE_JOSEV_POLICY=josev_q4k_down8_v1 \

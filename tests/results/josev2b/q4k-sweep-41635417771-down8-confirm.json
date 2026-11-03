@@ -1,0 +1,245 @@
+{
+  "schema": "crispembed-josev-q4k-sweep-v1",
+  "source": "b967c28a11bbcdc34f469aaaa69f3c2f46d92ce4",
+  "build": {
+    "mode": "portable",
+    "cmake": "tests/josev-q4k forces GGML_NATIVE=OFF, GGML_LLAMAFILE=ON",
+    "lscpu": {
+      "Architecture": "x86_64",
+      "CPU(s)": "4",
+      "Model name": "AMD EPYC 9V45 96-Core Processor",
+      "Flags": "fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ht syscall nx mmxext fxsr_opt pdpe1gb rdtscp lm constant_tsc rep_good nopl xtopology tsc_reliable nonstop_tsc cpuid extd_apicid aperfmperf tsc_known_freq pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcnt aes xsave avx f16c rdrand hypervisor lahf_lm cmp_legacy svm cr8_legacy abm sse4a misalignsse 3dnowprefetch osvw topoext vmmcall fsgsbase bmi1 avx2 smep bmi2 erms invpcid avx512f avx512dq rdseed adx smap avx512ifma clflushopt clwb avx512cd sha_ni avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves user_shstk avx_vnni avx512_bf16 clzero xsaveerptr rdpru arat npt nrip_save tsc_scale vmcb_clean flushbyasid decodeassists pausefilter pfthreshold v_vmsave_vmload avx512vbmi umip avx512_vbmi2 gfni vaes vpclmulqdq avx512_vnni avx512_bitalg avx512_vpopcntdq rdpid fsrm avx512_vp2intersect"
+    },
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+    "ggml_native": "OFF"
+  },
+  "bars": {
+    "q8_0": 0.97,
+    "q4_k": 0.94,
+    "metric": "min over 4 frozen cases of concatenated head-logit cosine; final-norm global cosine reported as the stricter diagnostic"
+  },
+  "original_rerun": false,
+  "publication_qualified": false,
+  "recipes": {
+    "all-q4-down-q8": {
+      "phase": "complete",
+      "conversion": {
+        "identity": "all-q4-down-q8",
+        "counts": {
+          "F32": 292,
+          "F16": 0,
+          "Q8_0": 24,
+          "Q4_K": 126
+        },
+        "method": "q4_k",
+        "quantize_seconds": 54.05527655700001,
+        "output_sha256": "adc7fa473febfef3fac10eac6fa0bebb6f68932675d1613e24706a3b74d5e582",
+        "output_mib": 2952.1,
+        "recipe": "sweep-all-q4-down-q8",
+        "parameters": 1912297796,
+        "output_bytes": 3095515616,
+        "general_file_type": 14,
+        "critical292_f32_byte_exact": true,
+        "independent_f16_rounding_exact": true,
+        "finite_source_and_packed_scales": true,
+        "semantic_shapes_unchanged": true,
+        "profile_stamped_by_c_quantizer": true,
+        "publication_qualified": false,
+        "file_type_labels": {
+          "source": null,
+          "output": 14
+        }
+      },
+      "cases": [
+        {
+          "id": "mixed-de",
+          "logits_cos": 0.9990390438689425,
+          "logits_max_abs": 0.44865846633911133,
+          "probabilities_cos": 0.9999806923408189,
+          "probabilities_max_abs": 0.0078078508377075195,
+          "final_norm_cos": 0.9587531311534928,
+          "final_norm_min_row_cos": 0.6343965318857908,
+          "worst_stage": {
+            "stage": "backbone/final_norm",
+            "min_row_cosine": 0.6343965318857908
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "null-and-options",
+          "logits_cos": 0.9979414128038473,
+          "logits_max_abs": 0.3707892894744873,
+          "probabilities_cos": 0.9998601043169204,
+          "probabilities_max_abs": 0.015524942427873611,
+          "final_norm_cos": 0.9572808178347662,
+          "final_norm_min_row_cos": 0.6098626791358683,
+          "worst_stage": {
+            "stage": "backbone/layer/23",
+            "min_row_cosine": 0.5567661299598102
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "json-unicode",
+          "logits_cos": 0.9993275493995994,
+          "logits_max_abs": 0.14869451522827148,
+          "probabilities_cos": 0.9982592585015934,
+          "probabilities_max_abs": 0.0358424186706543,
+          "final_norm_cos": 0.9491092304303442,
+          "final_norm_min_row_cos": 0.6343970288090067,
+          "worst_stage": {
+            "stage": "backbone/final_norm",
+            "min_row_cosine": 0.6343970288090067
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        },
+        {
+          "id": "state-only-clip",
+          "logits_cos": 0.9973891795079161,
+          "logits_max_abs": 0.3382731080055237,
+          "probabilities_cos": 0.9999842702686266,
+          "probabilities_max_abs": 0.005504488945007324,
+          "final_norm_cos": 0.9690501890708872,
+          "final_norm_min_row_cos": 0.6343966699576031,
+          "worst_stage": {
+            "stage": "backbone/final_norm",
+            "min_row_cosine": 0.6343966699576031
+          },
+          "typed_json_exact": false,
+          "argmax_exact": true
+        }
+      ],
+      "summary": {
+        "logits_cos": 0.9973891795079161,
+        "probabilities_cos": 0.9982592585015934,
+        "final_norm_cos": 0.9491092304303442,
+        "probabilities_max_abs": 0.0358424186706543,
+        "typed_json_exact": 0,
+        "argmax_exact": 4
+      },
+      "timing": {
+        "plain_seconds": 33.38072189999991,
+        "observed_seconds": 33.27947845699998,
+        "repeat_seconds": 32.832326309999985
+      },
+      "strict_stage_failures": 203,
+      "bar": 0.94,
+      "passes_logits_bar": true,
+      "passes_final_norm_bar": true,
+      "policy": {
+        "name": "josev_q4k_down8_v1",
+        "output_sha256": "adc7fa473febfef3fac10eac6fa0bebb6f68932675d1613e24706a3b74d5e582",
+        "byte_identical": true
+      }
+    }
+  },
+  "reference_artifact": {
+    "id": 12702553413,
+    "name": "josev-head-original-and-component-40429513945",
+    "size_in_bytes": 317814519,
+    "digest": "sha256:eff25c8ec207646602cb885abc6d17f7fc646cd2b0d7e5f7ab9b27650e175708",
+    "expires_at": "2027-01-25T00:56:13Z"
+  },
+  "original": {
+    "version_label": "v5",
+    "reference_sha256": "51a2e16b2ee1163b4cf08215263135c0ceb760a4525b1bb89c66f9bd8436a090",
+    "freeze_sha256": "9c85fae56186517b5721be547bc74e8f92bd8e7cdb45d38afb4340e029161fe7",
+    "source": "b2edf8c83c9aca1f8a9210198d47798ac13828b8",
+    "arrays": 251,
+    "array_bytes": 279119988,
+    "tensor_payload_bytes": 279087860,
+    "npy_header_bytes": 32128,
+    "original_rerun": false,
+    "original_payload_identity_verified": true
+  },
+  "model": {
+    "repo": "cstr/Josev-2B-SystemOne-GGUF",
+    "revision": "bffe62522f826b4c33f2e731d5b870ced5150a17",
+    "filename": "josev2b-systemone-f32.gguf",
+    "bytes": 7659180448,
+    "sha256": "72684e39d0eed526b40c5150c78b2d881d324c39e16af48060b3d741f526ccf2",
+    "download_verified": true
+  },
+  "f32_control": {
+    "cases": [
+      {
+        "id": "mixed-de",
+        "logits_cos": 0.9999999999998059,
+        "logits_max_abs": 5.0067901611328125e-06,
+        "probabilities_cos": 0.9999999999993117,
+        "probabilities_max_abs": 1.430511474609375e-06,
+        "final_norm_cos": 0.9999999999821697,
+        "final_norm_min_row_cos": 0.9999999973224394,
+        "worst_stage": {
+          "stage": "backbone/final_norm",
+          "min_row_cosine": 0.9999999973224394
+        },
+        "typed_json_exact": true,
+        "argmax_exact": true
+      },
+      {
+        "id": "null-and-options",
+        "logits_cos": 0.9999999999998787,
+        "logits_max_abs": 5.245208740234375e-06,
+        "probabilities_cos": 0.9999999999997978,
+        "probabilities_max_abs": 6.556510925292969e-07,
+        "final_norm_cos": 0.9999999999836359,
+        "final_norm_min_row_cos": 0.999999999585002,
+        "worst_stage": {
+          "stage": "backbone/layer/14",
+          "min_row_cosine": 0.9999999989373676
+        },
+        "typed_json_exact": true,
+        "argmax_exact": true
+      },
+      {
+        "id": "json-unicode",
+        "logits_cos": 0.9999999999970808,
+        "logits_max_abs": 1.633167266845703e-05,
+        "probabilities_cos": 0.9999999999937901,
+        "probabilities_max_abs": 2.086162567138672e-06,
+        "final_norm_cos": 0.9999999999881762,
+        "final_norm_min_row_cos": 0.9999999999206876,
+        "worst_stage": {
+          "stage": "head/hidden_norm",
+          "min_row_cosine": 0.9999999999203918
+        },
+        "typed_json_exact": true,
+        "argmax_exact": true
+      },
+      {
+        "id": "state-only-clip",
+        "logits_cos": 0.9999999999993441,
+        "logits_max_abs": 5.4836273193359375e-06,
+        "probabilities_cos": 0.9999999999999986,
+        "probabilities_max_abs": 5.4016709327697754e-08,
+        "final_norm_cos": 0.9999999999957239,
+        "final_norm_min_row_cos": 0.9999999999235741,
+        "worst_stage": {
+          "stage": "head/hidden_norm",
+          "min_row_cosine": 0.9999999999235382
+        },
+        "typed_json_exact": true,
+        "argmax_exact": true
+      }
+    ],
+    "summary": {
+      "logits_cos": 0.9999999999970808,
+      "probabilities_cos": 0.9999999999937901,
+      "final_norm_cos": 0.9999999999821697,
+      "probabilities_max_abs": 2.086162567138672e-06,
+      "typed_json_exact": 4,
+      "argmax_exact": 4
+    },
+    "timing": {
+      "plain_seconds": 43.60850166900002,
+      "observed_seconds": 42.70228944899998,
+      "repeat_seconds": 42.34855251100004
+    },
+    "strict_stage_failures": 0
+  },
+  "completed": true
+}
