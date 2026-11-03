@@ -38,7 +38,13 @@ class Controls(unittest.TestCase):
 
     def test_only_minicpm_routes_and_request_snapshot(self):
         s = (ROOT/'src/minicpm_ocr.cpp').read_text()
-        self.assertEqual(s.count('CRISPEMBED_MINICPM_OCR_GRAPH'), 1)
+        # Current-tree contract (not a frozen guard). Since the 2026-11-02 default flip
+        # (48fcd6f5) the stateless gate is read twice: once to route, once so the
+        # default-on CRISPEMBED_QWEN35_GRAPH_DECODER yields to it (exclusive gates).
+        # Still only these two env reads, both in this file.
+        self.assertEqual(s.count('core_env::on("CRISPEMBED_MINICPM_OCR_GRAPH")'), 2)
+        self.assertEqual(s.count('getenv("CRISPEMBED_MINICPM_OCR_GRAPH")'), 0)
+        self.assertIn('are exclusive', s)
         self.assertIn('if (graph) return c.graph_decoder.run', s)
         self.assertIn('return qwen35_ocr::decoder_cpu(', s)
         self.assertLess(s.index('graph_decoder.clear();'), s.index('core_gguf::free_weights(loaded)'))
