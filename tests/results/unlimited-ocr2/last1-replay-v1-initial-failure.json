@@ -1,0 +1,35 @@
+{
+  "schema": "crispembed-run-failure-receipt-v1",
+  "run": 40868634374,
+  "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/40868634374",
+  "workflow": "Unlimited retained last1 numerical and decoded panel v1",
+  "branch": "fix/unlimited-ref-control-import-20261029",
+  "source": "388c510a042be954fd69031e3bc55a1234309ef1",
+  "created": "2026-10-29T11:51:40Z",
+  "conclusion": "failure",
+  "failed_step": "Matched old-profile F16 barriers then reused last1 only, fixed source and gates",
+  "error": "ValueError: paired panel structurally incomplete; partial evidence retained (tools/unlimited-reused-q4-v1/run.py:62)",
+  "reviewed": "2026-11-03, from the job log and the small review artifact only (raw 2.1 GB artifact not downloaded)",
+  "artifacts": {
+    "review": {"id": 12904525141, "bytes": 438535, "digest": "sha256:6140b99e2eb9e79758afb4fca9a01bfe8d4fab72e763cd7ab5eb5e5f183f4d2f", "expires_at": "2027-01-27T11:51:41Z"},
+    "binaries": {"id": 12904581157, "bytes": 9261883, "digest": "sha256:1f53c50060991cab52956beeea30f89886ae336544a83f16e4ae5a935b8268a2", "expires_at": "2027-01-27T11:51:41Z"},
+    "raw": {"id": 12904490394, "bytes": 2114885239, "digest": "sha256:7525febc2d5b12c697a4ca064ae3857b5d0896dac2b59b9246972a7e9b9e4dfa", "expires_at": "2027-01-27T11:51:41Z"}
+  },
+  "observed": {
+    "f16_all_four_strict_retained_barrier_passed": true,
+    "planned_counts": {"f16_forwards": 16, "q4_forwards": 12, "projection_executions": 16},
+    "actual_calls": {"f16_commands_completed": 16, "q4_commands_completed": 3, "projection_commands_completed": 4},
+    "recipe": "last1 (Q4_K on l.blk.11.ffn_gate_exps/ffn_up_exps only; 737 protected tensors byte-exact)",
+    "cases": {
+      "paragraphs": {"completed": true, "ids_exact": true, "raw_text_exact": true, "cer": 0.0, "task_quality_passed": true, "numeric_passed": false, "numeric_status": "numeric_rejection (natural F16->Q4 stages and same-input projection of the Q4_K gate/up experts exceed the protocol budgets)"},
+      "table": {"completed": false, "error": "ValueError: 14GiB RAM/two CPUs and predeclared disk reserve required"},
+      "receipt": {"completed": false, "error": "ValueError: 14GiB RAM/two CPUs and predeclared disk reserve required"},
+      "german": {"completed": false, "error": "ValueError: 14GiB RAM/two CPUs and predeclared disk reserve required"}
+    }
+  },
+  "cause": "Resource preflight, not a runtime defect: after the 16 F16 barrier forwards and the first Q4 case, the retained raw traces (about 2 GB) left the hosted runner below the protocol's predeclared disk reserve, so the per-case preflight refused the remaining three Q4 cases. The one completed case is decode-exact but numerically rejected.",
+  "decision": "superseded",
+  "superseded_by": "The 3 November Unlimited-OCR-2 Q4_K recipe lane (docs/unlimited-ocr2-q4k-recipes.md; tests/results/unlimited-ocr2/q4k-sweep/), which uses teacher-forced final-logit cosine over all four frozen cases and replaces the per-stage last1 panel protocol. Re-dispatching this protocol unchanged would fail the same disk preflight; a last1-only Q4 is in any case not a publication candidate.",
+  "publication_qualified": false,
+  "production_qualified": false
+}

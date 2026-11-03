@@ -1,0 +1,53 @@
+{
+  "schema": "crispembed-run-failure-receipt-v1",
+  "run": 40871150002,
+  "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/40871150002",
+  "workflow": "UltraBERT remaining seven immutable Q4 shards v1",
+  "branch": "audit/ultrabert-q4-remaining-shards-20261029",
+  "source": "ef7153156aba352bffdef60bd44d4155a51f2ddc",
+  "runtime_source": "018cf85b7bb6ee2ac98011738aaa289d63b896ac",
+  "created": "2026-10-29T12:10:50Z",
+  "conclusion": "failure",
+  "failed_step": "Import shard0; seven sequential shards with durable paired-call journals; all300 rankings",
+  "reviewed": "2026-11-03, from the job log and the small review artifact (aggregate.json)",
+  "artifacts": {
+    "review": {"id": 12906174783, "bytes": 194734, "digest": "sha256:e8e3da09ab67c1e16ab9be66aaf1ec640927d9679084824d21c13042f857f7b7", "expires_at": "2027-01-27T12:10:51Z"},
+    "binaries": {"id": 12906444496, "bytes": 15501066, "digest": "sha256:8e489ca250e1f3111f608b7ee78c65dc95f7a2dc95e2a36e8a2ae4e5c3bb19d1", "expires_at": "2027-01-27T12:10:51Z"},
+    "payload": {"id": 12907157670, "bytes": 158175771, "digest": "sha256:5e47898f353572f3b72f41dbc1d12c6eec3a691eaac0a3dc5b72e544ea2ddef8", "expires_at": "2027-01-27T12:10:51Z"}
+  },
+  "aggregate": {
+    "schema": "crispembed-ultrabert-remaining-q4-result-v1",
+    "completed": true,
+    "phase": "complete",
+    "recipe": "q4k-last-four-ffn",
+    "model": {"bytes": 576997440, "sha256": "087c9be0fa50ba57db74e650889521c985d306863c94aabf731764538eb4533c"},
+    "rows": 5483,
+    "queries": 300,
+    "public_calls": {"new": 9594, "imported_shard0": 1372, "aggregate": 10966},
+    "raw": {"max_absolute": 3.114565372467041, "min_row_cosine": 0.977924139697833, "f32_gate_passed": false},
+    "normalized": {"max_absolute": 0.028228338342159986, "min_row_cosine": 0.9779241396491173, "f32_gate_passed": false},
+    "quality": {
+      "original": {"ndcg_at_10": 0.7667047800710401, "mrr_at_10": 0.7290066137566137, "recall_at_100": 0.975},
+      "native": {"ndcg_at_10": 0.7649169483553663, "mrr_at_10": 0.7279074074074074, "recall_at_100": 0.9766666666666667},
+      "top1_agreement": 0.9733333333333334,
+      "passed": false
+    },
+    "passed": false,
+    "quantized_task_qualified": false,
+    "publication_qualified": false,
+    "release_qualified": false
+  },
+  "cause": "Not an infrastructure failure: all eight shards and all 300 rankings completed (aggregate completed=true); the step exits 1 because the protocol's gates fail. Strict F32 vector gates fail (min row cosine 0.9779) and the task-quality gate fails on top-1 agreement 0.973 even though nDCG@10 drops only 0.0018 and Recall@100 rises 0.0017. The repeated 'UltraBERT quantized profile requires CRISPEMBED_ULTRABERT_QUANT=1' lines are the protocol's negative profile controls, not the cause.",
+  "decision": "completed; negative under its own v1 strict gates; no re-dispatch",
+  "build_mode": "portable (review CMakeCache: GGML_NATIVE=OFF, CRISPEMBED_NATIVE=OFF, Release); hosted CPU, 2 threads",
+  "rescored_under_precision_policy": {
+    "policy": "docs/precision-acceptance.md (owner, 1 November 2026): Q4_K bar is final-output cosine > 0.94; strict budgets stay recorded diagnostics",
+    "final_output": "embedding (raw and L2-normalized), 5483 rows, against the frozen original F32 reference",
+    "min_cosine": 0.977924139697833,
+    "clears_q4k_bar": true,
+    "retrieval": "SciFact 300 queries: nDCG@10 0.7667 -> 0.7649 (-0.0018), MRR@10 -0.0011, Recall@100 +0.0017, top-1 agreement 0.973",
+    "strict_flags_retained": "f32_gate_passed=false and the v1 .001/.99 task gates stay recorded unchanged"
+  },
+  "next": "Under the owner's precision policy this candidate (q4k-last-four-ffn, 576997440 bytes, sha256 087c9be0...) clears the Q4_K bar on a portable build. It joins the Q4_K_MIX publication queue (coordinator dispatch: Hub upload, empty-cache readback, registry alias with SHA-256). The v1 strict verdict is not rewritten.",
+  "publication_qualified": false
+}

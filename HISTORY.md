@@ -41,6 +41,25 @@ entries further down.
   attribution chain (v2/v3/v4 live norm, layer0 attention, layer3 FFN); env-var reference,
   wiring audit and the 131 presence-read conversion; CI queue policy; inpainting publication.
 
+## 3 November 2026 — Late-October runs 40868634374 (Unlimited) and 40871150002 (UltraBERT) reviewed
+
+Both completed with failure on 29 October and had no receipt; reviewed from logs and the small
+review artifacts only.
+- [Unlimited last1 panel 40868634374](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40868634374)
+  at `388c510a`: all 16 F16 barrier forwards pass; the first Q4 case (paragraphs) is
+  ID/text-exact (CER 0) but numerically rejected; the other three Q4 cases were refused by the
+  per-case preflight ("14GiB RAM/two CPUs and predeclared disk reserve required") after the
+  retained raw traces used the disk reserve. Resource stop, not a runtime defect. **Superseded**
+  by the 3 November final-logit Q4_K recipe lane; not re-dispatched. Receipt:
+  `tests/results/unlimited-ocr2/last1-replay-v1-initial-failure.json`.
+- [UltraBERT remaining Q4 shards 40871150002](https://github.com/CrispStrobe/CrispEmbed/actions/runs/40871150002)
+  at `ef715315` (runtime `018cf85b`, portable build): the aggregate **completed** (8 shards,
+  5483 rows, 300 queries); exit 1 is its v1 gates failing — strict F32 vector gate (min row
+  cosine 0.9779) and top-1 agreement 0.973 < 0.99, with nDCG@10 0.7667→0.7649. Re-scored under
+  the owner precision policy (Q4_K > 0.94) the `q4k-last-four-ffn` candidate clears the bar; it
+  joins the Q4_K_MIX publication queue. The v1 verdict is retained unchanged. Receipt:
+  `tests/results/ultrabert/remaining-q4-shards-v1-review.json`.
+
 ## 3 November 2026 — MiniCPM-OCR Q8_0/Q4_K measured against the original
 
 Hosted CPU sweeps (portable build) 41591527932, 41591531001, 41591534780, 41614616185,
