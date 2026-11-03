@@ -8,6 +8,7 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 
 | Lane | State | Next action | Done when |
 |---|---|---|---|
+| Q4_K_MIX publications (MiniCPM-OCR, Unlimited-OCR-2, MoEdern 27M/115M, Josev, UltraBERT) | Recipes and receipts on main. TeleOCR and MinerU Q4_K_MIX are already published and registered (`teleocr-q4_k-mix`, `mineru25-pro-q4_k-mix`, PR #116); the rest are not | Coordinator dispatches the cosine-gated publication per model (sections below); Josev needs a quantized branch in `josev_publish.py`, MoEdern needs SciFact/client panels first | Hub upload, empty-cache readback, registry alias with SHA-256 |
 | Main CI green at head | Build/Lint queued for hours on recent main; Windows compiler-cache fix `93209b32` and `sibling-crispasr` unconfirmed | Handoff 3 Nov lane A | Build+Lint+WASM green on one main commit |
 | `env_gate.h` false/off/no lockstep | CrispASR #572 open (46 checks pass); CrispEmbed side not written | Handoff 3 Nov lane B | Identical header in both repos, tests in CI, sibling sync green |
 | OXR native-doc parity | Rerun 41664201815 failed again (`native=fail`, not the trace-key bug) | Handoff 3 Nov lane C | Five-case parity receipt or scoped runtime bug |
@@ -20,12 +21,55 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 | Ovis, Josev, MoEdern, UltraBERT, LFM2.5, EmbeddingGemma precision | See the 29 October table below | One bounded protocol at a time | Per-row gates in that table |
 | Issue 71 inpainting | Engines published (default-off); stream merged | Representative subtitle/video quality, MI-GAN512 Q4_K caveat (0.9019) | Owner-reviewed quality panel |
 | Releases / pub.dev / app pin | VERSION 0.17.14 dev, app on 0.17.12 | Qualified assets and fresh consumers first | Release procedure in the pub.dev section |
-| OXR-1.0 quantized + GPU | Q8_0-large / Q4_K-head pass the owner bar (cos ≥ 0.998 vs F16, CPU/Metal/CUDA); German diverges 1 token from decode-step activation quantization | Opt-in F32-activation decode A/B; owner publication decision (handoff "Owner decisions") | A/B receipt; recipe published or explicitly declined |
+| OXR-1.0 quantized + GPU | Q8_0-large / Q4_K-head pass the owner bar (cos ≥ 0.998 vs F16, CPU/Metal/CUDA); German diverges 1 token from decode-step activation quantization | Opt-in F32-activation decode A/B (the recipes are already published and registered as `oxr-1.0-q8_0` / `oxr-1.0-q4_k-head`, PR #97) | A/B receipt; German page token-exact or the divergence attributed |
 | OXR native document route / D-FINE | Hosted helpers/replay/native pass (41249898971), `dfine` stage failed there; D-FINE regions match original 5/5 but 2.6x slower | Re-run `oxr_native_doc.sh` `dfine native` stages on main; encoder per-op profile | Hosted parity on all five cases; profile receipt |
 | MinerU2.5-Pro full native doc route | 8/8 model-backed cases identical (41251475795); default-off | Owner: default-on or not (handoff "Owner decisions"); image-bearing-table fixture | Decision recorded; fixture receipt |
 | Marker-style pipeline / TeleOCR | Implemented and bounded-validated, default-off; TeleOCR strict numerics false at every precision | Representative licensed multilingual/layout gold corpus (needs owner-provided licensed annotations) | Corpus frozen; CER/WER/order receipts |
 | Model-weight licences in apps | Registry/cards/gates corrected (31 October) | CrispSorter/CrispCalc must require the Qwen/Tongyi acknowledgement before offering those models | Downstream PRs merged |
+| **Release v0.17.14** (owner: release once every PR is resolved and main is green) | No open PRs; VERSION/pubspec 0.17.14; latest release v0.17.12. Downstream apps currently pin prebuilt libs to 0.17.12 via `CRISPEMBED_PREBUILT_VERSION` (PR #132) | Section "Release v0.17.14" below: dispatch the full build on the main head, confirm green, run the pub.dev preflight, tag | Release assets for every platform published; downstream told to drop the override |
+| CI selection after PR #134 | Merged; docs/evidence-only pushes run nothing, so the main head may have no Build run | Before tagging: `gh workflow run build.yml --ref main` (and build-wasm, build-wasm-embed, rust-crates, inpaint-cli); confirm the dynamic desktop matrix in build.yml evaluates on hosted runners | One full green Build on the main head |
+| Failing main workflows owned by the integration session | `MoEdern real padded Q4_K diagnostic` and `Layer0 attention op-by-op same-input replay v1` (both manual experiments) | Owner of those lanes fixes or records them as non-blocking diagnostics in HISTORY | Green, or explicitly marked non-release-blocking |
+| Embedder/tokenizer residuals (CUDA audit, PR #115/#122) | Fixed: SPM space collapse, XLM-R pair layout, 512 truncation | `xlmr-ner-hrl` GGUF has no Unigram scores (reconvert with scores); `paraphrase-multilingual` native truncates at 512, original at 128 (honour `max_seq_length`); Ettin reranker unchecked (tokenizer needs transformers 5) | Each matches the original on the 77-text panel |
+| EasyOCR residuals (PR #100/#110) | x86 line drops fixed; Python-parity work merged | `scan_page_pd` page output differs between Apple arm64 and x86/CUDA (first diverging region/stage); remaining punctuation/spacing differences vs Python EasyOCR on low-confidence lines | Attributed and fixed, or documented as a float-order tie |
+| MI-GAN256 Metal/Q4_K | Metal F32/F16/Q8_0 pass; Q4_K fails (masked 0.81); GPU default off | Q4_K probes with sensitive layers at Q8_0 (`CRISPEMBED_QUANTIZE_MIGAN_Q8`); flip to the padded-K Metal path only after measuring delivery-5 CPU kernels on Apple CPU | Q4_K ≥ 0.94 masked or declined; A/B before any default flip |
+| Big-LaMa (research only) | Weights' rights unclear; kept on `feat/issue71-lama-research`, private Hub copy only | Nothing until the owner clarifies the weight licence | Licence clarified (then publish) or lane closed |
 | Ovis 2048 / final-integrated source | 1024 default; 2048 has six composed final-norm numeric failures with exact text | Same-input attribution (section "Ovis 2048-patch") | Attributed; or 2048 stays unqualified |
+
+
+## Release v0.17.14 — 3 November 2026
+
+Owner decision: cut the next release once every PR is resolved and main is green. Nothing is
+tagged until then.
+
+1. **Gate.** `gh pr list --state open` is empty (or the owner excludes the rest). On the current
+   main head, dispatch the full set because docs-only pushes no longer start Build (PR #134):
+   `gh workflow run build.yml --ref main`, and likewise `build-wasm.yml`, `build-wasm-embed.yml`,
+   `rust-crates.yml`, `inpaint-cli.yml`. All must be green. The two integration-session
+   diagnostics in the index above must be green or recorded as non-blocking.
+2. **Preflight.** VERSION, `flutter/crispembed/pubspec.yaml`, crate/package versions and
+   `flutter/crispembed/CHANGELOG.md` agree on 0.17.14; run `python tests/test_pubdev_release_gate.py`
+   (PR #91). Write `RELEASE_NOTES_v0.17.14.md` like the earlier release-notes files; it and the
+   changelog entry must list the default changes since 0.17.12 (EasyOCR LSTM state reset,
+   GOT-OCR2 pipeline parity, SPM space collapse, XLM-R pair layout, position-table truncation,
+   CLIP EOS keep, CUDA defaults for ESRGAN/InstructIR/PAN/Restormer/LightOnOCR, Metal defaults
+   for TeleOCR/MinerU/OXR/D-FINE/heron, MiniCPM/Unlimited-OCR-2 speed defaults), each with its
+   `=0` opt-out from `docs/environment-variables.md`.
+3. **Tag** `v0.17.14` on the verified main head and push the tag; `release.yml` builds every
+   platform. Check the "Verify bundled dylib set (macOS)" step (PR #128) and that the release
+   carries `crispembed-macos-arm64.tar.gz`, `crispembed-ios-arm64.tar.gz` and the Android/Linux/
+   Windows assets. The pub.dev publisher job stays disabled (PR #91 follow-ups).
+4. **After.** Tell downstream apps to drop `CRISPEMBED_PREBUILT_VERSION`; Android builds from
+   main fetch matching libraries again. App pin updates are separate owner decisions.
+
+## Quantizer changes and the OCR quality contract
+
+Since PR #108, any change to `tools/quantize.cpp` or the pinned Qwen3.5 sources fails the OCR
+quality contract until it is recorded: run
+`python tools/qwen35_source_pins.py --amend <file> --reason "<why the qwen35_ocr default output is unchanged>"`,
+commit `tests/results/qwen35-ocr/source-pin-amendments.json`, and confirm with
+`python tools/qwen35_source_pins.py --check`. Amend only with a true reason; if a default path
+changed, report it instead. The repo pre-commit formatter rewrites files on commit, so run
+`--check` again after committing.
 
 ## MiniCPM-OCR Q8_0 / Q4_K — 3 November 2026 (`perf/q4k-minicpm-ocr-20261103`)
 
