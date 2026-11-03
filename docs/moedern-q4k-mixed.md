@@ -69,8 +69,8 @@ uniformly (per-case mean row cosine 0.993-0.998).
 |---|---|---|---|---|---|
 | Q8_0 (named) | 35.67 | 1.000 | **0.9315** / 0.9315 (q-de) | 0.9959 | 0.070 |
 | plain padded Q4_K | 26.59 | 0.745 | 0.9250 / 0.9219 | 0.9848 | 0.369 |
-| q8 + exps_up + exps_down = `moedern27m_q4k_v1` | **30.83** | **0.864** | **0.9683** / 0.9681 | 0.9955 | 0.204 |
-| q8 + exps_up + exps_down + attn_q | 30.53 | 0.856 | see receipt / 0.9688 | 0.9953 | 0.177 |
+| q8 + exps_up + exps_down + attn_q = `moedern27m_q4k_v1` | **30.53** | **0.856** | **0.9685** / 0.9688 | 0.9953 | 0.183 |
+| q8 + exps_up + exps_down (earlier policy draft, same bytes as its named arm) | 30.83 | 0.864 | 0.9683 / 0.9681 | 0.9955 | 0.204 |
 | q8 + all experts + attn_q/k | 27.95 | 0.784 | 0.9405 / **0.9390** | 0.9944 | 0.193 |
 | q8 + all experts | 28.41 | 0.796 | 0.9233 | 0.9946 | 0.251 |
 | q4 with attn_o/shexp Q8_0 | 27.80 | 0.779 | 0.9390 | 0.9927 | 0.196 |
@@ -80,8 +80,9 @@ Single-group sweep (x86): attn_q 0.9680, attn_k 0.9684, attn_v 0.9515, attn_o
 0.9230, exps_up 0.9680, exps_gate 0.9301, exps_down 0.9679, shexp 0.9278.
 `q8+exps+attn_q+attn_k` passes on x86 by 0.0005 and fails on ARM, so it is
 rejected as fragile. The smallest recipe that clears 0.94 on both ISAs is
-`moedern27m_q4k_v1` (routed-expert up/down Q4_K padded 640->768, everything else
-as the Q8_0 package).
+`moedern27m_q4k_v1` (routed-expert up/down and attn_q Q4_K padded 640->768,
+everything else as the Q8_0 package). A named-policy arm and its recipe string
+produce identical vectors (run 41618191791).
 
 ### 1.5M (Q8_0 3.96 MiB, F32 6.71 MiB)
 
@@ -107,7 +108,7 @@ every token a little (mean 0.993-0.998) without a flip below 0.979. Consequences
 
 - A 27M recipe that clears 0.94 does so partly because it does not trip that
   token; `moedern27m_q4k_v1` was therefore confirmed on a second ISA and its
-  worst token (q-empty, 0.968) is the same one the Q8_0 package has at 0.968.
+  worst token (q-empty, 0.9685) is the same one the Q8_0 package has at 0.968.
 - Q8_0 is **not** qualified under its bar for 27M or 115M on this metric, and
   neither size's Q8_0 has a mixed fix in this lane (the router is already F32).
 - All IDs/masks are exact in every arm; MaxSim errors up to 0.54 (115M) are
@@ -116,7 +117,7 @@ every token a little (mean 0.993-0.998) without a flip below 0.979. Consequences
 ## Named policies and publication
 
 `POLICIES` in `quantize_q4k_mixed.py`: `moedern115m_q4k_v1` (`q4`) and
-`moedern27m_q4k_v1` (`q8+exps_up+exps_down`), bound to their variant and
+`moedern27m_q4k_v1` (`q8+exps_up+exps_down+attn_q`), bound to their variant and
 refused for any other. The 115M policy writes the same tensor payloads as the
 plain padded converter (identical vectors in the receipt), stamped as the mixed
 recipe. [moedern-q4k-publication-v1.json](moedern-q4k-publication-v1.json)

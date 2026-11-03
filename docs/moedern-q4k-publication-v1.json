@@ -16,9 +16,9 @@
         "filename": "moedern-27m-text-q4_k-mix.gguf",
         "from": "tests/results/moedern-colbert/publication-27m.json",
         "policy": "moedern27m_q4k_v1",
-        "note": "Q8_0 base; routed-expert up/down projections Q4_K (zero-padded 640->768 columns); gate experts, shared experts and attention Q8_0; embeddings, router, norms and dense head F32. 30.83 MiB vs 35.67 MiB Q8_0.",
+        "note": "Q8_0 base; routed-expert up/down projections and attn_q Q4_K (zero-padded 640->768 columns); gate experts, shared experts and attn_k/v/o Q8_0; embeddings, router, norms and dense head F32. 30.53 MiB vs 35.67 MiB Q8_0.",
         "precision_receipt": "tests/results/moedern-colbert/q4k-lane-27m.json",
-        "precision_dtype": "moedern27m_q4k_v1",
+        "precision_dtype": "q8+exps_up+exps_down+attn_q",
         "precision_tier": "q4_k",
         "precision_gate": "cosine"
       }
