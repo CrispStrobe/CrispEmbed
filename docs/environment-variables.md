@@ -53,6 +53,12 @@ inventory: *production default (opt-out)*, *default-off experimental / opt-in*,
 | `CRISPEMBED_ACCEPT_LICENSE`, `CRISPEMBED_ACCEPT_*_LICENSE`, `CRISPEMBED_ACCEPT_BIOMETRIC` | unset | Explicit licence / biometric acknowledgements required by specific models. |
 | `CRISPEMBED_STRICT_HPARAMS`, `CRISPEMBED_ARCH_HPARAMS`, `CRISPEMBED_GGUF_REPARSE` | unset | GGUF metadata strictness and re-parse controls. |
 | `CRISPEMBED_SERVER_RERANK_RAW_SCORES` | off | `/v1/rerank` emits raw logits instead of `sigmoid(logit)`. |
+| `CRISPEMBED_SERVER_USAGE_TOKENS` | on | `=0` restores the historical `0` / text-count token usage on `/v1/embeddings` and `/api/embed`; the default reports the observed tokenizer ids. |
+| `CRISPEMBED_SERVER_METRICS` | off | `GET /metrics` (Prometheus): running/waiting/in-flight requests, admitted/rejected/completed, request seconds, reported tokens. |
+| `CRISPEMBED_SERVER_MAX_INFLIGHT` | unset (uncapped) | POST requests beyond N in flight get `429` before touching a model; `0`, empty or junk = uncapped. |
+| `CRISPEMBED_SERVER_RETRY_AFTER` | unset | Seconds to send as `Retry-After` on those 429s; unset = no header. |
+| `CRISPEMBED_SERVER_OPENAI_CHAT` | off | `POST /v1/chat/completions` + `GET /v1/models` for the `--ocr` model (one base64 data-URL image per request). |
+| `CRISPEMBED_SERVER_MAX_IMAGE_BYTES` | 64 MiB | Decoded image size limit for `/v1/chat/completions`. |
 | `CRISPEMBED_SERVER_LEGACY_JSON` | unset | Legacy server JSON shape. |
 | `CRISPEMBED_LIB` (Python/examples), `CRISPEMBED_SYS_LIB_DIR` (Rust build) | unset | Location of the native library. |
 
@@ -177,7 +183,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-405 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+411 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -194,7 +200,13 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `CRISPEMBED_OFFLINE` | on | off | bool | default-off experimental / opt-in | `examples/cli/model_mgr.cpp` |  |
 | `CRISPEMBED_ONESHOT_CPU` | value | unset | string | tuning / config | `examples/cli/main.cpp` | coordinator's — a default flip should come with a size/thread rule, not a blanket switch. |
 | `CRISPEMBED_PPOCRV6_ONESHOT_GPU` | on | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp` |  |
+| `CRISPEMBED_SERVER_MAX_IMAGE_BYTES` | value | unset | int | tuning / config | `examples/server/server.cpp` |  |
+| `CRISPEMBED_SERVER_MAX_INFLIGHT` | value | unset | int | tuning / config | `examples/server/load_control.h` |  |
+| `CRISPEMBED_SERVER_METRICS` | on | off | bool | default-off experimental / opt-in | `examples/server/load_control.h` |  |
+| `CRISPEMBED_SERVER_OPENAI_CHAT` | on | off | bool | default-off experimental / opt-in | `examples/server/server.cpp` | the same crispembed_ocr_model_recognize call /ocr/model makes, with the same per-request prompt / max_tokens save-and-restore. |
 | `CRISPEMBED_SERVER_RERANK_RAW_SCORES` | on | off | bool | default-off experimental / opt-in | `examples/server/server.cpp` | Read once: a per-request getenv in a served path is pointless work. |
+| `CRISPEMBED_SERVER_RETRY_AFTER` | value | unset | int | tuning / config | `examples/server/load_control.h` |  |
+| `CRISPEMBED_SERVER_USAGE_TOKENS` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `examples/server/server.cpp` | API usage reports observed tokenizer counts; CRISPEMBED_SERVER_USAGE_TOKENS=0 restores the historical zeros. |
 
 ### Rust bindings
 
