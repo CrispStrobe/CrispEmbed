@@ -181,6 +181,19 @@ Source: `docs/gpu-support-matrix.md` §CUDA audit (branch `feat/cuda-audit`, Kag
 - Metal A/B of the new `CRISPEMBED_PAN_GPU` / `CRISPEMBED_RESTORMER_GPU` (CUDA-only
   defaults until measured there).
 
+## Josev Q4_K sweep — 3 November 2026 (perf/q4k-josev-20261103)
+
+Source: `docs/josev2b-q4k-sweep.md`. Portable hosted CPU, frozen original reference.
+`josev_q4k_down8_v1` (2,952 MiB vs Q8_0 3,462) clears the Q4_K bar on head logits
+(0.99739) and final norm (0.94911); Q8_0 clears 0.97 (0.99995/0.99944).
+
+- Coordinator: Josev Q8_0/Q4_K_MIX publication needs a quantized branch in
+  `tools/ci-heavy/josev_publish.py` first (`docs/josev2b-q4k-publication-v1.json`
+  is prepared, `dispatch_ready` false). Not published.
+- No Q4_K recipe is typed-JSON exact (0/4; argmax 4/4). Strict 0.002/0.99999 stage
+  budgets stay failed diagnostics.
+- CUDA: Josev's packed/composed runtime is CPU-only; a CUDA arm needs a backend path.
+
 ## TeleOCR / MinerU Q4_K-class recipes — 2 November 2026 (feat/qwen2vl-q4k-recipes)
 
 Source: `docs/qwen2vl-q4k-recipes.md`. Winners clear the Q4_K bar on CPU, Metal and

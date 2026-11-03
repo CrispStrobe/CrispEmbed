@@ -1,0 +1,19 @@
+{
+  "schema": "crispembed-josev-q4k-sweep-recipes-v1",
+  "note": "Josev Q4_K sensitivity sweep (docs/josev2b-q4k-sweep.md). Every recipe keeps the 292 critical tensors F32 (embedding, norms, head, non-projection tensors). Projections default to Q8_0; each selector lowers its role/layer group to the given type (later selectors win). Roles: attn = 6 full-attention q/k/v/o + 18 linear-attention in_proj_qkv/in_proj_z/out_proj (78), gate/up/down = MLP (24 each).",
+  "recipes": {
+    "q8-all": [],
+    "attn-q4": [{"roles": ["attn"], "type": "q4_k"}],
+    "gate-up-q4": [{"roles": ["gate", "up"], "type": "q4_k"}],
+    "down-q4": [{"roles": ["down"], "type": "q4_k"}],
+    "mlp-q4": [{"roles": ["gate", "up", "down"], "type": "q4_k"}],
+    "l00-05-q4": [{"roles": ["attn", "gate", "up", "down"], "layers": [0, 5], "type": "q4_k"}],
+    "l06-11-q4": [{"roles": ["attn", "gate", "up", "down"], "layers": [6, 11], "type": "q4_k"}],
+    "l12-17-q4": [{"roles": ["attn", "gate", "up", "down"], "layers": [12, 17], "type": "q4_k"}],
+    "l18-23-q4": [{"roles": ["attn", "gate", "up", "down"], "layers": [18, 23], "type": "q4_k"}],
+    "all-q4": [{"roles": ["attn", "gate", "up", "down"], "type": "q4_k"}],
+    "all-q4-down-q8": [{"roles": ["attn", "gate", "up"], "type": "q4_k"}],
+    "all-q4-l20-23-q8": [{"roles": ["attn", "gate", "up", "down"], "layers": [0, 19], "type": "q4_k"}],
+    "all-q4-l23-q8": [{"roles": ["attn", "gate", "up", "down"], "layers": [0, 22], "type": "q4_k"}]
+  }
+}

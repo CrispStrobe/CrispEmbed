@@ -163,6 +163,25 @@
             "8d843fdfef038a40e60afde4dd8adb1a997ef5b2 qwen2vl: Q4_K recipe sweep harness; quantizer accepts 4/5-bit tensor overrides"
           ],
           "reason": "feat/qwen2vl-q4k-recipes: --tensor-type also accepts q4_k/q5_0/q4_0/iq4_nl, and opt-in named policies (CRISPEMBED_QUANTIZE_QWEN2VL_POLICY=teleocr_q4k_v1|mineru_q4k_v1) guarded to the TeleOCR/MinerU qwen2vl_ocr families. Without the env var and without explicit rules every existing qwen35_ocr quantization decision and its default policy are unchanged."
+        },
+        {
+          "from_sha256": "c348d502f476a1c6edf2befe758ae6bd5d4ad28257b1928561db1c8e815c952f",
+          "to_sha256": "642daedb65eaa2465afde262876efe86e7d842842902362e2d66a12242725739",
+          "to_blob": "2d1648ada7a59f7aeb40eba8aedd31ef6a728096",
+          "recorded_at_commit": "958d05933fa7085901abca87332022712812a1e4",
+          "recorded": "2026-11-03",
+          "changed_by": [
+            "b967c28a11bbcdc34f469aaaa69f3c2f46d92ce4 Josev Q4_K sweep 41615751516 receipts; josev_q4k_down8_v1 policy; confirmation run",
+            "bf5a1611d00e6c0d661b0b65ef37adfb598f7cc0 quantize: opt-in CRISPEMBED_QUANTIZE_JOSEV_POLICY named mixed Q4_K policies + recipe-equivalence test",
+            "b0988c58dcb7f7bb93ebb33c7c99195f38669110 Merge PR #112 (feat/qwen2vl-q4k-recipes) into fold",
+            "304871c9e5f4c01127a19946651e1f05b31547a3 quantize: make standard GGUF file-type labels opt-in; keep legacy default",
+            "2f50aa61800b890b165e7573775f789b5a0fe9cb Merge origin/main into work/portfolio-closure-q4k-20261028",
+            "e5a02d1e079c523ecbae85e1c077b3a8ba16c229 Merge origin/main into work/portfolio-closure-q4k-20261028",
+            "7d886594d2f487cdaa9420712a8df39eda89e744 Prepare gated Q8 profile admission and quantizer string profile stamps",
+            "0023fe16632805c5da5de2e40e5df29114ebe20e Correct standard GGUF headers and prepare authenticated metadata bridge",
+            "715c5860169d3949677b183ccf5feff9a7ab1990 quantize: honor literal F16 4D patch casts and preserve actual MiniCPM rejection"
+          ],
+          "reason": "Opt-in CRISPEMBED_QUANTIZE_JOSEV_POLICY rule tables (josev_q4k_mlp_v1, josev_q4k_down8_v1); no change to qwen35 or default quantizer behaviour"
         }
       ]
     }

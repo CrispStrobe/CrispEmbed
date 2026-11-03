@@ -1,0 +1,5 @@
+{
+  "note": "Edit and push on a perf/q4k-josev-* branch to run .github/workflows/josev-q4k-sweep.yml (hosted CPU, portable build). Run 41615751516: full 13-recipe sweep. Next: josev_q4k_down8_v1 policy twin and same-recipe reproduction.",
+  "recipes": "all-q4-down-q8",
+  "skip_f32": false
+}
