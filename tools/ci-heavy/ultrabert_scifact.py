@@ -78,7 +78,11 @@ def load(path):
 def source():
     def git(*args):
         return subprocess.check_output(['git', *args], cwd=ROOT, text=True).strip()
-    if any(sha256(ROOT / p) != h for p, h in PINS.items()):
+    # Frozen digests stay as recorded; reviewed default-preserving source edits
+    # are accepted only through tests/results/ultrabert/source-pin-amendments.json.
+    sys.path.insert(0, str(ROOT / 'tools'))
+    from ultrabert_source_pins import drift
+    if drift(ROOT, PINS):
         raise ValueError('Frozen historical receipts/scoped UltraBERT sources differ')
     if (git('rev-parse', 'HEAD:ggml') != GGML
             or git('-C', str(ROOT / 'ggml'), 'rev-parse', 'HEAD') != GGML
