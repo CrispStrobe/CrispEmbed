@@ -1,0 +1,78 @@
+{
+  "schema": "crispembed-minicpm-ocr-teacher-forced-original-v1",
+  "report_sha256": "aeb1756dcbcfb72d72c13cf5a8d8131bb90e8d8884cf07c70723cc1fe4a64c32",
+  "versions": {
+    "torch": "2.13.0+cpu",
+    "transformers": "5.21.0",
+    "numpy": "2.2.6"
+  },
+  "frozen_versions": {
+    "torch": "2.13.0+cpu",
+    "transformers": "5.21.0",
+    "numpy": "2.2.6"
+  },
+  "cases": [
+    {
+      "id": "line",
+      "prompt_tokens": 256,
+      "generated": 19,
+      "input_ids_exact": true,
+      "pixel_values_exact": true,
+      "first_step_cosine_vs_frozen": 0.9999999999998771,
+      "first_step_max_abs_vs_frozen": 1.811981201171875e-05,
+      "argmax_matches_frozen_ids": 19,
+      "first_argmax_mismatch": null,
+      "sha256": "f9146abc033a2ff1b58c43e0e75508e70db421526d10f569e21c1b7bdb270797"
+    },
+    {
+      "id": "para-en",
+      "prompt_tokens": 1290,
+      "generated": 63,
+      "input_ids_exact": true,
+      "pixel_values_exact": true,
+      "first_step_cosine_vs_frozen": 0.9999999999998077,
+      "first_step_max_abs_vs_frozen": 2.09808349609375e-05,
+      "argmax_matches_frozen_ids": 63,
+      "first_argmax_mismatch": null,
+      "sha256": "db4ff135301245092b66df2e241ca924df88f466a366b7f90d99742ec665b2cd"
+    },
+    {
+      "id": "table",
+      "prompt_tokens": 1290,
+      "generated": 56,
+      "input_ids_exact": true,
+      "pixel_values_exact": true,
+      "first_step_cosine_vs_frozen": 0.9999999999995312,
+      "first_step_max_abs_vs_frozen": 5.340576171875e-05,
+      "argmax_matches_frozen_ids": 56,
+      "first_argmax_mismatch": null,
+      "sha256": "03d5f6cb0b9bcbcd978c0f5412bbca371c4e6ad88aa4372fe3435c15461ee13d"
+    },
+    {
+      "id": "tall",
+      "prompt_tokens": 2372,
+      "generated": 279,
+      "input_ids_exact": true,
+      "pixel_values_exact": true,
+      "first_step_cosine_vs_frozen": 0.9999999999999416,
+      "first_step_max_abs_vs_frozen": 2.288818359375e-05,
+      "argmax_matches_frozen_ids": 279,
+      "first_argmax_mismatch": null,
+      "sha256": "f18f02284b4699aa8baf8667da5b8dd7dcbb2ad2ad9448f542abf50d21f7ba89"
+    },
+    {
+      "id": "tiny",
+      "prompt_tokens": 274,
+      "generated": 3,
+      "input_ids_exact": true,
+      "pixel_values_exact": true,
+      "first_step_cosine_vs_frozen": 0.99999999999997,
+      "first_step_max_abs_vs_frozen": 2.47955322265625e-05,
+      "argmax_matches_frozen_ids": 3,
+      "first_argmax_mismatch": null,
+      "sha256": "bb687cac22e4c2896e5b610c195365c4a97e12b2c216063b07228df4d16fd218"
+    }
+  ],
+  "all_argmax_exact": true,
+  "min_first_step_cosine": 0.9999999999995312
+}

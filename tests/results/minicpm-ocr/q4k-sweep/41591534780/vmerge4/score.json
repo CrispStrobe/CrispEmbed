@@ -1,0 +1,131 @@
+{
+  "arm": "vmerge4",
+  "cases": [
+    {
+      "id": "line",
+      "positions": 19,
+      "cos_min": 0.9999289145738169,
+      "cos_mean": 0.9999848383013109,
+      "cos_argmin": 0,
+      "max_abs": 0.5155611038208008,
+      "argmax_agree": 19,
+      "first_divergence": null,
+      "forced_seconds": 10.416,
+      "decoded_exact_by_forced_argmax": true
+    },
+    {
+      "id": "para-en",
+      "positions": 63,
+      "cos_min": 0.9998353575112683,
+      "cos_mean": 0.9999719408052425,
+      "cos_argmin": 59,
+      "max_abs": 0.722620964050293,
+      "argmax_agree": 63,
+      "first_divergence": null,
+      "forced_seconds": 41.02,
+      "decoded_exact_by_forced_argmax": true
+    },
+    {
+      "id": "table",
+      "positions": 56,
+      "cos_min": 0.9999048894388008,
+      "cos_mean": 0.9999864358118093,
+      "cos_argmin": 52,
+      "max_abs": 0.6471843719482422,
+      "argmax_agree": 56,
+      "first_divergence": null,
+      "forced_seconds": 39.813,
+      "decoded_exact_by_forced_argmax": true
+    },
+    {
+      "id": "tall",
+      "positions": 279,
+      "cos_min": 0.9999271990455187,
+      "cos_mean": 0.9999901595212853,
+      "cos_argmin": 1,
+      "max_abs": 0.5037899017333984,
+      "argmax_agree": 279,
+      "first_divergence": null,
+      "forced_seconds": 87.233,
+      "decoded_exact_by_forced_argmax": true
+    },
+    {
+      "id": "tiny",
+      "positions": 3,
+      "cos_min": 0.9999954789357203,
+      "cos_mean": 0.9999961869092767,
+      "cos_argmin": 2,
+      "max_abs": 0.4343070983886719,
+      "argmax_agree": 3,
+      "first_divergence": null,
+      "forced_seconds": 10.052,
+      "decoded_exact_by_forced_argmax": true
+    }
+  ],
+  "cos_min": 0.9998353575112683,
+  "worst_case": "para-en",
+  "decoded_exact_cases": 5,
+  "census": {
+    "file_bytes": 1473689792,
+    "file_mib": 1405.4,
+    "types": {
+      "Q8_0": {
+        "tensors": 324,
+        "bytes": 1120746624
+      },
+      "F32": {
+        "tensors": 420,
+        "bytes": 3789760
+      },
+      "F16": {
+        "tensors": 29,
+        "bytes": 280387584
+      },
+      "Q4_K": {
+        "tensors": 1,
+        "bytes": 44623872
+      },
+      "IQ4_NL": {
+        "tensors": 5,
+        "bytes": 14141952
+      }
+    },
+    "group_bytes": {
+      "embedding": {
+        "Q8_0": 269932800
+      },
+      "decoder": {
+        "F32": 1993984,
+        "Q8_0": 528715776
+      },
+      "merger": {
+        "F32": 59392,
+        "Q8_0": 27574272
+      },
+      "vision_other": {
+        "F32": 13824,
+        "F16": 12644352
+      },
+      "vision_blocks": {
+        "F32": 1584576,
+        "Q8_0": 294523776,
+        "F16": 267743232
+      },
+      "vit_merger": {
+        "F32": 137984,
+        "Q4_K": 44623872,
+        "IQ4_NL": 14141952
+      }
+    },
+    "patch_embedding": {
+      "type": "F16",
+      "shape": [
+        14,
+        14,
+        3,
+        1152
+      ]
+    }
+  },
+  "gguf_sha256": "bad1079012830fe06fdd6acef393cc101d6fbbe041861facc9ff7925d9ac34bb"
+}

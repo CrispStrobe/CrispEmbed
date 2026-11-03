@@ -1,0 +1,122 @@
+{
+  "arm": "q8",
+  "cases": [
+    {
+      "id": "line",
+      "positions": 19,
+      "cos_min": 0.9999289145738169,
+      "cos_mean": 0.9999848383013109,
+      "cos_argmin": 0,
+      "max_abs": 0.5155611038208008,
+      "argmax_agree": 19,
+      "first_divergence": null,
+      "forced_seconds": 12.8,
+      "decoded_exact_by_forced_argmax": true
+    },
+    {
+      "id": "para-en",
+      "positions": 63,
+      "cos_min": 0.9998353575112683,
+      "cos_mean": 0.9999719408052425,
+      "cos_argmin": 59,
+      "max_abs": 0.722620964050293,
+      "argmax_agree": 63,
+      "first_divergence": null,
+      "forced_seconds": 51.848,
+      "decoded_exact_by_forced_argmax": true
+    },
+    {
+      "id": "table",
+      "positions": 56,
+      "cos_min": 0.9999048894388008,
+      "cos_mean": 0.9999864358118093,
+      "cos_argmin": 52,
+      "max_abs": 0.6471843719482422,
+      "argmax_agree": 56,
+      "first_divergence": null,
+      "forced_seconds": 51.82,
+      "decoded_exact_by_forced_argmax": true
+    },
+    {
+      "id": "tall",
+      "positions": 279,
+      "cos_min": 0.9999271990455187,
+      "cos_mean": 0.9999901595212853,
+      "cos_argmin": 1,
+      "max_abs": 0.5037899017333984,
+      "argmax_agree": 279,
+      "first_divergence": null,
+      "forced_seconds": 111.003,
+      "decoded_exact_by_forced_argmax": true
+    },
+    {
+      "id": "tiny",
+      "positions": 3,
+      "cos_min": 0.9999954789357203,
+      "cos_mean": 0.9999961869092767,
+      "cos_argmin": 2,
+      "max_abs": 0.4343070983886719,
+      "argmax_agree": 3,
+      "first_divergence": null,
+      "forced_seconds": 12.076,
+      "decoded_exact_by_forced_argmax": true
+    }
+  ],
+  "cos_min": 0.9998353575112683,
+  "worst_case": "para-en",
+  "decoded_exact_cases": 5,
+  "census": {
+    "file_bytes": 1525926080,
+    "file_mib": 1455.2,
+    "types": {
+      "Q8_0": {
+        "tensors": 330,
+        "bytes": 1231748736
+      },
+      "F32": {
+        "tensors": 420,
+        "bytes": 3789760
+      },
+      "F16": {
+        "tensors": 29,
+        "bytes": 280387584
+      }
+    },
+    "group_bytes": {
+      "embedding": {
+        "Q8_0": 269932800
+      },
+      "decoder": {
+        "F32": 1993984,
+        "Q8_0": 528715776
+      },
+      "merger": {
+        "F32": 59392,
+        "Q8_0": 27574272
+      },
+      "vision_other": {
+        "F32": 13824,
+        "F16": 12644352
+      },
+      "vision_blocks": {
+        "F32": 1584576,
+        "Q8_0": 294523776,
+        "F16": 267743232
+      },
+      "vit_merger": {
+        "F32": 137984,
+        "Q8_0": 111002112
+      }
+    },
+    "patch_embedding": {
+      "type": "F16",
+      "shape": [
+        14,
+        14,
+        3,
+        1152
+      ]
+    }
+  },
+  "gguf_sha256": "381065950c5cc5fa5579e7dcde2b0ba9091386732941ad555673e30064e4d412"
+}

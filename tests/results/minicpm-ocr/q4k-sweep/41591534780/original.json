@@ -1,0 +1,78 @@
+{
+  "schema": "crispembed-minicpm-ocr-teacher-forced-original-v1",
+  "report_sha256": "aeb1756dcbcfb72d72c13cf5a8d8131bb90e8d8884cf07c70723cc1fe4a64c32",
+  "versions": {
+    "torch": "2.13.0+cpu",
+    "transformers": "5.21.0",
+    "numpy": "2.2.6"
+  },
+  "frozen_versions": {
+    "torch": "2.13.0+cpu",
+    "transformers": "5.21.0",
+    "numpy": "2.2.6"
+  },
+  "cases": [
+    {
+      "id": "line",
+      "prompt_tokens": 256,
+      "generated": 19,
+      "input_ids_exact": true,
+      "pixel_values_exact": true,
+      "first_step_cosine_vs_frozen": 0.9999999999998468,
+      "first_step_max_abs_vs_frozen": 1.621246337890625e-05,
+      "argmax_matches_frozen_ids": 19,
+      "first_argmax_mismatch": null,
+      "sha256": "889aa466aca706b2a3dc2b8df7f10138b3c51342bfae94b68643a1f6c8c4cda2"
+    },
+    {
+      "id": "para-en",
+      "prompt_tokens": 1290,
+      "generated": 63,
+      "input_ids_exact": true,
+      "pixel_values_exact": true,
+      "first_step_cosine_vs_frozen": 0.9999999999997692,
+      "first_step_max_abs_vs_frozen": 2.09808349609375e-05,
+      "argmax_matches_frozen_ids": 63,
+      "first_argmax_mismatch": null,
+      "sha256": "32acd036006beead98ba25a59e4a1a53dfa350f81762899d81a700398f8ba5af"
+    },
+    {
+      "id": "table",
+      "prompt_tokens": 1290,
+      "generated": 56,
+      "input_ids_exact": true,
+      "pixel_values_exact": true,
+      "first_step_cosine_vs_frozen": 0.9999999999995677,
+      "first_step_max_abs_vs_frozen": 4.00543212890625e-05,
+      "argmax_matches_frozen_ids": 56,
+      "first_argmax_mismatch": null,
+      "sha256": "40504597fead2dda9d8d18fdd1f721472659fea14eba89c2f3f594f386c7b8e7"
+    },
+    {
+      "id": "tall",
+      "prompt_tokens": 2372,
+      "generated": 279,
+      "input_ids_exact": true,
+      "pixel_values_exact": true,
+      "first_step_cosine_vs_frozen": 0.9999999999999367,
+      "first_step_max_abs_vs_frozen": 2.288818359375e-05,
+      "argmax_matches_frozen_ids": 279,
+      "first_argmax_mismatch": null,
+      "sha256": "b00db44ab702a52ef857636e2ce7cd8d8035fce2eadd471e3df605c6f0331ac8"
+    },
+    {
+      "id": "tiny",
+      "prompt_tokens": 274,
+      "generated": 3,
+      "input_ids_exact": true,
+      "pixel_values_exact": true,
+      "first_step_cosine_vs_frozen": 0.9999999999999736,
+      "first_step_max_abs_vs_frozen": 2.09808349609375e-05,
+      "argmax_matches_frozen_ids": 3,
+      "first_argmax_mismatch": null,
+      "sha256": "f5f20ea73e7bfa68229884a01b2206d79e162dffc7c61da97aa309e26c534f8f"
+    }
+  ],
+  "all_argmax_exact": true,
+  "min_first_step_cosine": 0.9999999999995677
+}
