@@ -567,7 +567,10 @@ def run_native(binary, lib, gguf, cases, workdir, threads, live, layout_gguf=Non
                 py = {"value": model.process_pages([page], layout_response=layout, file_name=options["file_name"])}
             except Exception as e:  # noqa: BLE001
                 py = {"error": f"{type(e).__name__}: {e}"}
-            trace = model.last_trace
+            # The Python helper route records `max_new_tokens`; the C++ replay and the native
+            # route's trace use `max_tokens`. Normalize once so replay keys and the live
+            # request-set comparison see the same field.
+            trace = [dict(t, max_tokens=t.get("max_tokens", t.get("max_new_tokens"))) for t in model.last_trace]
             Path(workdir, name + "-python.json").write_text(json.dumps({"python": py, "trace": trace},
                                                                         ensure_ascii=False, indent=1))
             arr = np.ascontiguousarray(np.asarray(page), dtype=np.uint8)
@@ -579,6 +582,8 @@ def run_native(binary, lib, gguf, cases, workdir, threads, live, layout_gguf=Non
             case_path = Path(workdir, name + "-replay-case.json")
             case_path.write_text(json.dumps(case, ensure_ascii=False))
             out = subprocess.run([binary, "--replay", str(case_path)], capture_output=True, text=True, encoding="utf-8")
+            if out.returncode != 0 or not out.stdout.strip():
+                raise RuntimeError(f"{name}: replay binary exit {out.returncode}, no JSON; stderr: {out.stderr[-2000:]}")
             replay = json.loads(out.stdout)
             same, where = compare_documents(py, replay)
             entry.update(replay_identical=same and ("error" in replay or replay.get("native_requests") == len(trace)),
@@ -592,6 +597,8 @@ def run_native(binary, lib, gguf, cases, workdir, threads, live, layout_gguf=Non
                 nl_path = Path(workdir, name + "-replay-native-layout.json")
                 nl_path.write_text(json.dumps(case_nl, ensure_ascii=False))
                 out = subprocess.run([binary, "--replay", str(nl_path)], capture_output=True, text=True, encoding="utf-8")
+                if out.returncode != 0 or not out.stdout.strip():
+                    raise RuntimeError(f"{name}: native-layout replay exit {out.returncode}, no JSON; stderr: {out.stderr[-2000:]}")
                 nl = json.loads(out.stdout)
                 same, where = compare_documents(py, nl)
                 entry.update(native_layout_replay_identical=same, native_layout_replay_first_difference=where,

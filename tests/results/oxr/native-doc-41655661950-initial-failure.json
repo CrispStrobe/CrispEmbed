@@ -1,0 +1,14 @@
+{
+  "schema": "crispembed-run-failure-receipt-v1",
+  "run": 41655661950,
+  "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41655661950",
+  "workflow": "heavy-cpu.yml, script tools/ci-heavy/oxr_native_doc.sh, args 'dfine native', build_mode portable",
+  "source": "a03da3deb2c62d48517520922ff29355a9b1a54e",
+  "dispatched_by": "this 3 November gap-closing session (OXR native-doc lane, PLAN index); no other session owns the lane (last harness commits 526f3631/d2837609, 1 November)",
+  "artifact": {"id": 13242447512, "name": "heavy-41655661950", "bytes": 73711},
+  "results": {"self_checks": "pass", "dfine": "pass (five original D-FINE layout fixtures frozen)", "native": "fail"},
+  "observed": "Python helper route on the real F32 OXR model produced the formula page (1 request, exact expected LaTeX); the C++ `test-oxr-document --replay` call then printed nothing and the harness crashed with JSONDecodeError on empty stdout.",
+  "cause": "Harness bug, not a native regression. The Python helper route (python/crispembed/_oxr.py, since 3e694a95) records each trace entry with `max_new_tokens`, while the C++ replay (tests/test_oxr_document.cpp run_replay) and the native route's trace key on `max_tokens`. `need(t, \"max_tokens\")` throws while building the replay table, outside the replay's try block, so the process terminates with empty stdout; tools/oxr_doc_parity.py parsed stdout without checking the exit code.",
+  "fix": "tools/oxr_doc_parity.py normalizes the Python trace to carry `max_tokens` (also needed by the live request-set comparison) and raises with the binary's exit code and stderr when a replay prints no JSON. No runtime, model or gate change.",
+  "next": "Re-dispatch the same stages on main after the fix lands; record native/replay/live parity on all five cases."
+}
