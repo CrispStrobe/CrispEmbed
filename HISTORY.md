@@ -1,3 +1,25 @@
+## 3 November 2026 — Merge ledger for 2–3 November (PR folds) and PLAN close-out
+
+Every PR below is merged to `main` (state checked with `gh pr view`); details are in the dated
+entries further down.
+- Fold of 2 November: #109 MiniCPM-OCR graph decoder / F32 vision / batched slices (`ac2271b4`),
+  #112 TeleOCR/MinerU Q4_K-class recipes (`b0988c58`); #111 GOT-OCR2 original-pipeline parity
+  merged directly (`c725aaba`).
+- Fold `fold/open-prs-20261103` (3 November, `fca05688` and siblings): #118 `--inpaint-stream`,
+  #121 UltraBERT Q4_K lane, #124 server usage/metrics/429/OpenAI-shaped OCR, #125 PR118 stream
+  fixes and selective CI. Direct merges: #122 encoder truncation + XLM-R pair layout (`bf287cc4`),
+  #126 BGE-M3 Q8_0 enc0-15 mix (`87be5d10`), #127 Josev Q4_K sweep (`c5ae8b39`), #129/#130/#131
+  Unlimited-OCR-2 / MoEdern / MiniCPM-OCR Q4_K lanes, #132 podspec prebuilt version, #133 macOS
+  drift attribution.
+- Cross-repo: CrispSorter PR #19 (experimental `unlimited_ocr2`→13, `minicpm_ocr`→23 selectors)
+  merged as `2d45977a`.
+- Closed out of PLAN in this pass (already recorded below): GOT-OCR2 F16 r2 republish and
+  original-reference rerun 41588457181; MiniCPM-OCR speed lane and default flip; Unlimited-OCR-2
+  F32 vision default, low-memory fallback and hosted default check; successor-assets v3/v4
+  (green run 41587063385) with the macOS Metal attribution (owner kept v4, v5 declined); WASM
+  attribution chain (v2/v3/v4 live norm, layer0 attention, layer3 FFN); env-var reference,
+  wiring audit and the 131 presence-read conversion; CI queue policy; inpainting publication.
+
 ## 3 November 2026 — MiniCPM-OCR Q8_0/Q4_K measured against the original
 
 Hosted CPU sweeps (portable build) 41591527932, 41591531001, 41591534780, 41614616185,
@@ -9,6 +31,7 @@ on two runner CPUs); mixed `minicpm_q4k_v1` (mix2) 0.9671 at 971 MiB and `minicp
 (0.9075/0.9357), recorded as is. Initial lane 41588540106 failed on a missing `six` for the
 kaggle CLI before model access; the F32 arm failed graph-decoder init. Details:
 `docs/minicpm-ocr-q4k.md`, receipts `tests/results/minicpm-ocr/q4k-sweep/`.
+
 ## 3 November 2026 — Unlimited-OCR-2 Q4_K recipes (perf/q4k-unlimited-ocr2-20261103)
 
 The v3 mixed-Q4 panel's stop at `v.pos_embed` was the audit comparing raw stored shapes: the
@@ -22,6 +45,7 @@ Q8_0 0.9739 CPU / 0.9555 CUDA; production q4_k 0.9567 CPU (12 Q4_0 fallbacks); S
 0.7989; `unlimited_ocr2_q4k_v1` 2,074 MiB 0.9512/0.9443; `unlimited_ocr2_q4k_shared8_v1`
 2,189 MiB 0.9634/0.9540, text = F16 4/4. Every ID divergence is a box coordinate or one
 layout label. Receipts: `tests/results/unlimited-ocr2/q4k-sweep/`, `q4k-precision-*.json`.
+
 ## 3 November 2026 — Hosted check of the MiniCPM-OCR / Unlimited-OCR-2 defaults and low-memory fallback
 
 Kaggle CPU, no env vs `..._LOW_MEMORY=1`. Unlimited-OCR-2 (`0d3974ab`): 4/4 trial pages ids and text byte-exact vs the
@@ -43,7 +67,7 @@ for the first time: 21 checks, 0 failures.
   `CRISPEMBED_FORCE_CPU=1`, macOS matches Linux arm64 within 5.14e-7 and Linux x86_64 at
   1.20e-4/0.9999997 (strict). The Linux arm64 control is unchanged and every repeat is identical.
 * The drift is therefore the GPU backend, not a CPU build difference, and no build fix applies.
-  The v5 CPU-review proposal is in PLAN. Gates, defaults and release builds are unchanged.
+  A v5 CPU-review proposal was written up; the owner declined it on 3 November and kept the v4 tolerance. Gates, defaults and release builds are unchanged.
   Receipt: `tests/results/packaging/macos-desktop-drift-attribution-v1.json`.
 
 ## 3 November 2026 — Josev Q4_K final-output cosine and sensitivity sweep
@@ -55,6 +79,7 @@ Q8_0-based sweep ran on portable hosted CPU (41615751516; initial rejections
 41588071746 file-type check and 41590988284 key clash retained). v4 storage reproduces to
 all printed digits. Winner `josev_q4k_down8_v1`: 2,952 MiB, head-logit 0.99739,
 final-norm 0.94911, argmax 4/4, typed JSON 0/4. Details: `docs/josev2b-q4k-sweep.md`.
+
 ## 3 November 2026 — Successor assets v4: macOS arm64 desktop tolerance; whole run green
 
 * Owner decision: accept the measured native desktop drift without attribution. The stored
@@ -161,6 +186,7 @@ sha256 `3379a216…` (run 41596007262, empty-cache readback re-scored 0.99109). 
 runner and on the Kaggle Xeon, and the rebuilt 0-11 is byte-identical to the published file. The
 cuda-audit kernel now builds its CPU arm portable. Evidence: `tests/results/below-bar/bgem3-cuda-margin*/`,
 `tests/results/gpu-audit/cuda-kaggle/run8-66a5eba0/`.
+
 ## 3 November 2026 — GOT-OCR2 F16 republish script re-pointed at the original pipeline
 
 `tools/ci-heavy/got_ocr2_f16_republish.sh` compared native decodes with the HF port
@@ -179,6 +205,7 @@ Rerun 41588457181 (portable build, 256 new tokens):
 
 Stage diff F16-r2: 19/19 stages at cos 1.000000. The page-similarity diagnostic (r2 >= Q4_K on all
 cases) now passes too. Receipt: `tests/results/got-ocr2-f16/qualify-41588457181-orig-ref/`.
+
 ## 3 November 2026 — Portable build mode for hosted qualification receipts
 
 `heavy-cpu.yml` `build_mode` (default `portable`) exports `CRISPEMBED_BUILD_MODE`. At the first configure,
@@ -188,6 +215,7 @@ CMakeLists.txt maps `portable` to `GGML_NATIVE=OFF`/`CRISPEMBED_NATIVE=OFF`, and
 reports. Native builds of the same bytes had scored 0.9673/0.9732 on an EPYC 9V45 and 0.9521/0.9702 on another
 runner, so the spread came from the AVX-512 kernels of `-march=native`. Receipts:
 `tests/results/portable-build/`. Policy: docs/precision-acceptance.md §Build mode.
+
 ## 3 November 2026 — OCR WASM back under 4 MiB: large VLM/document engines left out of the Emscripten build
 
 Build WASM had failed on main since `922d06bd`: `crispembed_ocr.wasm` was 4,203,804 bytes against the
@@ -250,6 +278,25 @@ previous output on moderate change). Buffered frames are kept within 2 GiB (the 
 Model-free contracts: `test-inpaint-temporal` (44 checks) and CLI driver stream tests. Measured output is on par with
 the research prototype; numbers in PERFORMANCE.md ("Issue 71 video stream with temporal consistency").
 
+## 3 November 2026: SentencePiece whitespace A/B across the registry; CUDA re-run of repaired files
+
+- **`CRISPEMBED_SPM_COLLAPSE_SPACES`** was checked against the original HF tokenizers and models for all 16
+  SentencePiece-encoder registry models (e5 ×3, paraphrase-multilingual, granite ×2, pixie-rune, arctic-l/m-v2,
+  nomic-v2-moe, bge-m3, five rerankers), plus xlmr-ner-hrl for IDs. The models were found by scanning the GGUF
+  headers of all 161 registry repos.
+  - With the switch on, IDs equal the models' SentencePiece tokenizer on every text, versus 66-67/77 with `=0`.
+  - The embedding minimum cosine is equal or better for every model (e.g. nomic-v2-moe 0.918 → 0.998,
+    arctic-l-v2 0.962 → 0.994).
+  - Reranker deviation is equal or lower.
+  - The transformers-4 fast tokenizer additionally keeps a lone trailing `▁` on 5 whitespace-ending texts.
+    SentencePiece and transformers 5 do not.
+  - The default stays global. [Summary](tests/results/spm-collapse-ab/SUMMARY.md).
+- **CUDA (T4, cuda-audit run 7, `b4e09b7b`)**, against each file's own F32/F16 base on the audit panel:
+  - f2llm q4_k-mixed 0.9706 (CPU arm 0.9693), clip q4_k-mixed 0.9878 (CPU 0.9878).
+  - bge-m3 heads F16: dense, sparse and ColBERT all ≥ 0.9992.
+  - bge-m3 heads Q8_0 mix: dense 0.9995, sparse 0.9999, but ColBERT **0.9667 on CUDA** (CPU 0.9718). Below
+    the 0.97 bar on CUDA only; open in PLAN.
+
 ## 2 November 2026 — Unlimited-OCR-2 F32 vision / tile batch gates (default off)
 
 **Vision speed gates (2026-11-02, default off).** `CRISPEMBED_UNLIMITED_OCR2_VISION_F32` (F32 SAM/CLIP block
@@ -280,6 +327,7 @@ flip pending a decision on that one page (no page regresses from exact; mean CER
 - Flipped via `core_env::explicitly_off`: graph KV decoder (matmul default `f32`), F32 vision copies, batched
   slices, vision flash attention. All old paths remain behind `=0`; 5 parity cases were already 5/5 exact
   (`tests/results/minicpm-ocr/bench-graph-v2.json`).
+
 ## 2 November 2026 — Successor assets v3: WASM-only platform tolerance; WASM consumer passes, native cross-platform review fails
 
 * Owner decision: accept the attributed WASM-vs-native drift of the quantized MiniLM as a
@@ -301,25 +349,6 @@ flip pending a decision on that one page (no page regresses from exact; mean CER
   these producers. It is a native negative and stays failing; the run is not green.
   Receipt: `tests/results/packaging/successor-assets-v3-run.json`.
 
-## 3 November 2026: SentencePiece whitespace A/B across the registry; CUDA re-run of repaired files
-
-- **`CRISPEMBED_SPM_COLLAPSE_SPACES`** was checked against the original HF tokenizers and models for all 16
-  SentencePiece-encoder registry models (e5 ×3, paraphrase-multilingual, granite ×2, pixie-rune, arctic-l/m-v2,
-  nomic-v2-moe, bge-m3, five rerankers), plus xlmr-ner-hrl for IDs. The models were found by scanning the GGUF
-  headers of all 161 registry repos.
-  - With the switch on, IDs equal the models' SentencePiece tokenizer on every text, versus 66-67/77 with `=0`.
-  - The embedding minimum cosine is equal or better for every model (e.g. nomic-v2-moe 0.918 → 0.998,
-    arctic-l-v2 0.962 → 0.994).
-  - Reranker deviation is equal or lower.
-  - The transformers-4 fast tokenizer additionally keeps a lone trailing `▁` on 5 whitespace-ending texts.
-    SentencePiece and transformers 5 do not.
-  - The default stays global. [Summary](tests/results/spm-collapse-ab/SUMMARY.md).
-- **CUDA (T4, cuda-audit run 7, `b4e09b7b`)**, against each file's own F32/F16 base on the audit panel:
-  - f2llm q4_k-mixed 0.9706 (CPU arm 0.9693), clip q4_k-mixed 0.9878 (CPU 0.9878).
-  - bge-m3 heads F16: dense, sparse and ColBERT all ≥ 0.9992.
-  - bge-m3 heads Q8_0 mix: dense 0.9995, sparse 0.9999, but ColBERT **0.9667 on CUDA** (CPU 0.9718). Below
-    the 0.97 bar on CUDA only; open in PLAN.
-
 ## 2 November 2026 — env presence reads, MiniCPM default, Unlimited-OCR v1 pin
 
 - All 131 raw presence env reads (`getenv(X)` truth tests, where `X=0` meant on) were
@@ -331,7 +360,7 @@ flip pending a decision on that one page (no page regresses from exact; mean CER
 - The CLI `--ocr-engine minicpm-ocr` now defaults to the `minicpm-ocr` alias, the same
   as the server. The gates are still required.
 - The Unlimited-OCR v1 registry URL is pinned to Hub commit `79d6658f` with the same sha256.
-- The CrispSorter selectors for ids 13-v2 and 23 are in PR #19. CrispCalc is N/A until
+- The CrispSorter selectors for ids 13-v2 and 23 are in CrispSorter PR #19 (merged as `2d45977a` after all its CI jobs passed). CrispCalc is N/A until
   its app pin moves. Details are in `docs/wiring-audit-20261102.md`.
 
 ## 2 November 2026 — CI queue reduction (ci/queue-reduction)
@@ -390,6 +419,7 @@ flip pending a decision on that one page (no page regresses from exact; mean CER
   Initial capture attempts 41442616737 (missing `verovio`) and 41451319490 (conversation not
   copied as chat() does) failed before any comparison; retained.
   Receipts: `tests/results/got-ocr2-pipeline-parity/`.
+
 ## 2 November 2026 — Inpainting GGUFs published and registered
 
 - Owner-approved `docs/inpaint-publication-v1.json` published by
@@ -403,6 +433,7 @@ flip pending a decision on that one page (no page regresses from exact; mean CER
   `licenses/latent-inpaint` texts are now `-text`.
 - Registry: migan512-*, moebius-* (q4_k-mix only below Q8_0), pixelhacker-*,
   sdxl-vae-inpaint-*; engines stay experimental and gated.
+
 ## 2 November 2026: below-bar registry artifacts repaired (fix/below-bar-artifacts)
 
 - **f2llm-v2-0.6b Q4_K.** The published `-q4_k-imatrix` scores 0.769 min / 0.822 mean against the original
@@ -524,6 +555,7 @@ flip pending a decision on that one page (no page regresses from exact; mean CER
   `tests/test_latent_inpaint_pipeline.cpp` (`near` is a windef.h macro); helper
   renamed.
 - Publication prepared only (`docs/inpaint-publication-v1.json`); no registry entry.
+
 ## 2 November 2026 — WASM layer3 FFN mul_mat: kernel order ruled out (same-input replay)
 
 * 41438394031 (`wasm-layer3-ffn-matmul-v1` at `295d7e79`) completed and exited1 on numbers.
@@ -603,6 +635,7 @@ Registry `got-ocr2-f16` was added; `got-ocr2` (q4_k) is unchanged. Receipts: `te
   layer3 fc1/gelu tensors are [12,1536]. The 196 natural comparisons and the attribution
   sentence are not reached. No original forward, no ten-case retry, gates/defaults unchanged.
   All five runs are retained as negatives.
+
 ## 2 November 2026 — EasyOCR x86 CPU dropped lines fixed (fix/easyocr-x86-lines, PR #100)
 
 * Root cause: not a SIMD or ggml-cpu kernel defect. Both BiLSTM layers named their initial
@@ -629,6 +662,7 @@ Registry `got-ocr2-f16` was added; `got-ocr2` (q4_k) is unchanged. Receipts: `te
   x86: 1/2, 2/11, 7/36 with 6 and 16 empty). Remaining differences are punctuation/spacing on
   low-confidence lines and identical on CUDA/Metal (open in PLAN). Receipts:
   `tests/results/gpu-audit/easyocr-x86-fix/`.
+
 ## 2 November 2026 — ggml submodule back on the shared fork line
 
 * CrispEmbed's ggml pointer had drifted onto fork feature branches (`feat/wasm-q8-rounding-candidate-20261026`,
@@ -680,6 +714,7 @@ to the x86 CPU arm dropping lines (CUDA = Metal = M1 CPU = Python per stage).
   Metal quantized recipes 4/5 with logits cos >= 0.9995; heron GPU default now PREC_F32 + `_hp`
   (regions equal CPU 5/5; half tiles had added a German region).
 * Kaggle account name scrubbed from HISTORY (secret scan).
+
 ## 1 November 2026 — Metal GPU audit of every engine (feat/metal-audit)
 
 `docs/gpu-support-matrix.md` inventories backend selection, Metal status, gates and
@@ -696,6 +731,7 @@ tri-state; 4.2x, max 1/255); new default-off gates `CRISPEMBED_INSTRUCTIR_GPU`
 CPU-only controls ran on hosted CPU (run 41327259125). Initial harness failures
 (truncated TrOCR download, flat-OCR CLI needing `-m`, PNG compare bug) are kept in
 `ocr_batch.run1.log`.
+
 ## 1 November 2026 — MI-GAN Metal path (feat/metal-migan)
 
 Gated `CRISPEMBED_MIGAN_GPU` whole-graph execution through
@@ -711,6 +747,7 @@ the session. Hosted CPU lane 41327638027 passes all steps; the local
 test-inpaint FIPS two-block input typo (also red in run 41282563344) is fixed.
 A monolithic queued job waited 7.5 h on the shared GPU lock and was replaced by
 per-variant/per-fixture lock calls plus a hosted CPU lane. GPU default stays off.
+
 ## 1 November 2026 — TeleOCR and MinerU2.5-Pro on ggml-Metal (Apple M1)
 
 `feat/metal-qwen2vl` ([guide](docs/qwen2vl-metal.md)). Defects fixed: every
@@ -732,6 +769,7 @@ runtime; MinerU's "q4_k-dq8"/"q4_k-df16" (renamed `q8_0-all` / `q8_0-vision-f16-
 tensor. MinerU layout-page token 180 is a 0.024-logit near-tie. Initial
 failures kept: Kaggle v1 (no `/usr/bin/time`), Kaggle v2 TeleOCR dump
 collision, a shared-scratch cleanup that removed one TeleOCR Q4_K dump set.
+
 ## 1 November 2026 — Issue 71 latent/MI-GAN512 qualification lane (feat/issue71-latent-qual)
 
 Branch `feat/issue71-latent-qual` (from `feat/issue71-five-engines` c4bb1f93,
@@ -863,6 +901,7 @@ budgets unchanged). Retained initial failures: the reference's config-class iden
 uninitialised non-persistent buffers under Transformers 5.13.1, native GGUF names over
 GGML_MAX_NAME (vision prefix now `vit.`), and an observer reading a reused buffer. Same-source
 timing differs by runner (1.005-1.67x on 41249502630).
+
 ## 1 November 2026 — MinerU2.5-Pro complete native document route (feat/mineru-native-doc)
 
 Translated every mineru-vl-utils `c9797cde` document branch to C++ and composed
@@ -883,6 +922,118 @@ cross-page table merge not ported. Model-backed lane
 weight-free gates on CPython 3.12 but 404ed on a wrong GGUF filename; run
 41251475795 is 8/8 byte-identical (JSON, Markdown, 50 requests: 8 layout + 42 regions) and
 8/8 on recorded replay.
+
+## 1 November 2026 — Further inpainting CPU optimization and latent API completion
+
+Added optional hardware SHA-256 verification to the MI-GAN and latent
+loaders. It reuses the existing digest state, padding and scalar implementation,
+with runtime feature selection and observed complete/accelerated block counts.
+Every model byte and trusted digest is still checked. The native SHA controls
+pass 6,985 normal and 6,988 forced-fallback assertions. The bounded alternating
+memory-hashing benchmark improves median throughput by 4.6835 times; file-load
+observations and image timings remain separate.
+
+Integrated the default-off CPU depthwise specialization using the existing
+MI-GAN interior-loop design. All four Moebius original-reference cases retain
+the prior generated/composited RGB bytes, 608 metric records and 35 strict
+stage failures. The completed ordinary API pair also preserves all eight
+outputs exactly. Its noisy warm median is worse, 142.796 to 181.397 seconds;
+depthwise remains outside the recommended Moebius preset. A private 128 MiB
+convolution workspace experiment is mixed and not integrated; production CPU
+workspace remains 32 MiB.
+
+Completed the previously unfinished PixelHacker ordinary API comparison in
+fresh, separately recorded runs on one binary. Both arms complete a cold image
+and three warm images at F32, 512 square, eight threads and stock 20 requested/
+19 actual steps. Native agreement passes unchanged RGB budgets: maximum
+filled-channel difference 1, mean 0.0000949436, PSNR 88.356 dB and exact known
+pixels. Warm medians are 310.958/144.243 seconds; that observed ratio is scoped
+to this fixed-order single-fixture panel, with timing qualification flags false.
+Original CUDA/FLA parity remains unexecuted. Earlier interrupted and revalidated
+evidence is retained unchanged.
+
+The benchmark now preserves a completed first image before warm sampling,
+using new protected output paths and an out-of-timer checkpoint write. The
+actual cancellation control proves preservation without claiming completion.
+Final frozen-source checks pass 244 Python/CLI tests and 20 native
+configurations, plus 21 private API-controller controls. Production symbol
+audits exclude test-only observers. See the [complete results](docs/inpainting-optimization-results.md)
+for raw evidence, the current CLI status and remaining GPU/quality limits.
+
+The final production CLI panel completes 12 invocations and 16 PNGs on one
+binary across MI-GAN256, MI-GAN512, Moebius, PixelHacker and the research-only
+engine of that build. Filled
+outputs match their pinned ordinary APIs, known pixels and empty outputs are
+exact, and both latent profiles pass filled/empty/filled batch reuse with
+actual 2/38/2 graph calls. Required SHA-NI checks bind every complete model
+digest and input-block count. These functional results remain separate from
+throughput and original-model qualification; historical CLI panels retain
+their own identities and are excluded from the new counts. See the
+final CLI record (receipt retained on the research branch feat/issue71-latent-qual, path tests/results/inpainting/inpaint-cli-final-2026-11-01.json).
+
+## 1 November 2026 — Earlier executed CPU inpainting optimization and live checks
+
+The issue71 CPU paths have now been built and exercised with converted model
+weights. Added default-off MI-GAN fused/vectorized CPU kernels, convolution
+GEMM layout, cached reflection gathers, a cached CPU FFT callback, rectangular
+CPU recurrent GLA, and bounded Moebius lambda contractions. The original
+implementations remain available. Corrected persistent-graph input lifetimes
+and latent GGUF names beyond ggml's fixed name limit; all2,080 latent payload
+hashes are unchanged by the naming adapter.
+
+MI-GAN256/512 each pass the declared original-model panel on the baseline and
+optimized paths:20 cases/1,070 stage comparisons per implementation, with
+identical corresponding native stage hashes. Ordinary API medians improve
+2.61–3.27× over the existing eager path in the admitted measurements, including
+a separately retained quiet512/eight-thread confirmation. The initial
+contended timing arms remain excluded and preserved.
+
+Actual production CLI checks now include both MI-GAN sizes, exact ordinary-API output comparisons, empty masks and proven
+same-context batch reuse. The unchanged MI256 tile/boundary smoke also passes.
+The [complete optimization report](docs/inpainting-optimization-results.md)
+records the latent results, validation inventory, implementation flags and
+remaining limits, with links to raw execution evidence. CPU measurements do
+not qualify CUDA/Metal, representative perceptual/video quality, quantization
+or a release. All candidate gates and application pins remain unchanged.
+
+## 1 November 2026 — Earlier persistent inpainting graph source implementation
+
+Added default-off native CPU/CUDA/Metal graphs for the inpainting CLI
+profiles. MI-GAN retains a complete graph across calls. Moebius and PixelHacker use complete
+denoiser graphs, batched CFG/VAE encoding and device-resident DDIM state.
+Dense convolution patch memory is bounded; CPU plans and worker pools are
+reused. An explicit mixed GPU profile converts dense/matrix weights at load
+and permits accelerated attention/matrix precision.
+
+Independent source review caught and corrected the pinned Metal group-norm
+batch limitation, disconnected retained moment tensors and test/production
+Builder layout differences. Model-free scalar controls, unchanged original
+comparators, manual hardware qualification and structured build/replay receipts
+are supplied. The pinned ggml revision and original model contracts are intact.
+Syntax/source checks are not native execution evidence: new hardware runs,
+full-model parity, steady-state speed and peak-memory measurements remain
+pending. See [the graph guide](docs/inpainting-ggml-graphs.md). No default or
+runtime release changed.
+
+## 1 November 2026 — Additional image inpainting source profiles
+
+Issue71 source preparation now includes MI-GAN512, Moebius and
+PixelHacker behind explicit default-off gates. The CLI shares existing file,
+mask, DBNet, protected-output, provenance and persistent-batch behavior. MI-GAN512
+extends the existing graph; the latent
+models share a native SDXL VAE, DDIM sampler and bounded tensor operations while
+keeping their original lambda/GLA denoisers. The
+[reuse audit](docs/latent-inpaint-reuse.md) and
+[engine guide](docs/inpainting-engines.md) identify sources and limitations.
+
+The delivery adds pinned checkpoint/source censuses, strict conversion and
+readback receipts, independent original-framework capture, native comparison
+programs and hosted workflows. Executed validation is limited to bounded
+standard-library tests, C++17 syntax, Python/YAML syntax and source guards.
+No native build, full checkpoint conversion, full-model inference, performance
+benchmark or hosted parity run was executed for these additions. All previously
+frozen MI-GAN256 reference receipts remain unchanged. This source addition does
+not publish models, alter the shared C ABI, bump a release, or close issue71.
 
 ## 31 October 2026 — Native Marker-style document processing with TeleOCR
 
@@ -996,118 +1147,6 @@ F32 warm 0.70–0.93× Python; F16 1.27–1.59× and Q8_0 1.11–1.43× fail the
 Strict stage budgets fail first at vision layers 29–31 (rel_rms 1.2e-5 against the post-hoc
 1e-5 v2 cap, cos_min 1.000000; F32 final logits rel_rms ≤ 2.7e-6) — the documented large-grid
 numerical limit, not a new divergence. The initial failure verdict is retained; no budget changes.
-
-## 1 November 2026 — Further inpainting CPU optimization and latent API completion
-
-Added optional hardware SHA-256 verification to the MI-GAN and latent
-loaders. It reuses the existing digest state, padding and scalar implementation,
-with runtime feature selection and observed complete/accelerated block counts.
-Every model byte and trusted digest is still checked. The native SHA controls
-pass 6,985 normal and 6,988 forced-fallback assertions. The bounded alternating
-memory-hashing benchmark improves median throughput by 4.6835 times; file-load
-observations and image timings remain separate.
-
-Integrated the default-off CPU depthwise specialization using the existing
-MI-GAN interior-loop design. All four Moebius original-reference cases retain
-the prior generated/composited RGB bytes, 608 metric records and 35 strict
-stage failures. The completed ordinary API pair also preserves all eight
-outputs exactly. Its noisy warm median is worse, 142.796 to 181.397 seconds;
-depthwise remains outside the recommended Moebius preset. A private 128 MiB
-convolution workspace experiment is mixed and not integrated; production CPU
-workspace remains 32 MiB.
-
-Completed the previously unfinished PixelHacker ordinary API comparison in
-fresh, separately recorded runs on one binary. Both arms complete a cold image
-and three warm images at F32, 512 square, eight threads and stock 20 requested/
-19 actual steps. Native agreement passes unchanged RGB budgets: maximum
-filled-channel difference 1, mean 0.0000949436, PSNR 88.356 dB and exact known
-pixels. Warm medians are 310.958/144.243 seconds; that observed ratio is scoped
-to this fixed-order single-fixture panel, with timing qualification flags false.
-Original CUDA/FLA parity remains unexecuted. Earlier interrupted and revalidated
-evidence is retained unchanged.
-
-The benchmark now preserves a completed first image before warm sampling,
-using new protected output paths and an out-of-timer checkpoint write. The
-actual cancellation control proves preservation without claiming completion.
-Final frozen-source checks pass 244 Python/CLI tests and 20 native
-configurations, plus 21 private API-controller controls. Production symbol
-audits exclude test-only observers. See the [complete results](docs/inpainting-optimization-results.md)
-for raw evidence, the current CLI status and remaining GPU/quality limits.
-
-The final production CLI panel completes 12 invocations and 16 PNGs on one
-binary across MI-GAN256, MI-GAN512, Moebius, PixelHacker and the research-only
-engine of that build. Filled
-outputs match their pinned ordinary APIs, known pixels and empty outputs are
-exact, and both latent profiles pass filled/empty/filled batch reuse with
-actual 2/38/2 graph calls. Required SHA-NI checks bind every complete model
-digest and input-block count. These functional results remain separate from
-throughput and original-model qualification; historical CLI panels retain
-their own identities and are excluded from the new counts. See the
-final CLI record (receipt retained on the research branch feat/issue71-latent-qual, path tests/results/inpainting/inpaint-cli-final-2026-11-01.json).
-
-## 1 November 2026 — Earlier executed CPU inpainting optimization and live checks
-
-The issue71 CPU paths have now been built and exercised with converted model
-weights. Added default-off MI-GAN fused/vectorized CPU kernels, convolution
-GEMM layout, cached reflection gathers, a cached CPU FFT callback, rectangular
-CPU recurrent GLA, and bounded Moebius lambda contractions. The original
-implementations remain available. Corrected persistent-graph input lifetimes
-and latent GGUF names beyond ggml's fixed name limit; all2,080 latent payload
-hashes are unchanged by the naming adapter.
-
-MI-GAN256/512 each pass the declared original-model panel on the baseline and
-optimized paths:20 cases/1,070 stage comparisons per implementation, with
-identical corresponding native stage hashes. Ordinary API medians improve
-2.61–3.27× over the existing eager path in the admitted measurements, including
-a separately retained quiet512/eight-thread confirmation. The initial
-contended timing arms remain excluded and preserved.
-
-Actual production CLI checks now include both MI-GAN sizes, exact ordinary-API output comparisons, empty masks and proven
-same-context batch reuse. The unchanged MI256 tile/boundary smoke also passes.
-The [complete optimization report](docs/inpainting-optimization-results.md)
-records the latent results, validation inventory, implementation flags and
-remaining limits, with links to raw execution evidence. CPU measurements do
-not qualify CUDA/Metal, representative perceptual/video quality, quantization
-or a release. All candidate gates and application pins remain unchanged.
-
-## 1 November 2026 — Earlier persistent inpainting graph source implementation
-
-Added default-off native CPU/CUDA/Metal graphs for the inpainting CLI
-profiles. MI-GAN retains a complete graph across calls. Moebius and PixelHacker use complete
-denoiser graphs, batched CFG/VAE encoding and device-resident DDIM state.
-Dense convolution patch memory is bounded; CPU plans and worker pools are
-reused. An explicit mixed GPU profile converts dense/matrix weights at load
-and permits accelerated attention/matrix precision.
-
-Independent source review caught and corrected the pinned Metal group-norm
-batch limitation, disconnected retained moment tensors and test/production
-Builder layout differences. Model-free scalar controls, unchanged original
-comparators, manual hardware qualification and structured build/replay receipts
-are supplied. The pinned ggml revision and original model contracts are intact.
-Syntax/source checks are not native execution evidence: new hardware runs,
-full-model parity, steady-state speed and peak-memory measurements remain
-pending. See [the graph guide](docs/inpainting-ggml-graphs.md). No default or
-runtime release changed.
-
-## 1 November 2026 — Additional image inpainting source profiles
-
-Issue71 source preparation now includes MI-GAN512, Moebius and
-PixelHacker behind explicit default-off gates. The CLI shares existing file,
-mask, DBNet, protected-output, provenance and persistent-batch behavior. MI-GAN512
-extends the existing graph; the latent
-models share a native SDXL VAE, DDIM sampler and bounded tensor operations while
-keeping their original lambda/GLA denoisers. The
-[reuse audit](docs/latent-inpaint-reuse.md) and
-[engine guide](docs/inpainting-engines.md) identify sources and limitations.
-
-The delivery adds pinned checkpoint/source censuses, strict conversion and
-readback receipts, independent original-framework capture, native comparison
-programs and hosted workflows. Executed validation is limited to bounded
-standard-library tests, C++17 syntax, Python/YAML syntax and source guards.
-No native build, full checkpoint conversion, full-model inference, performance
-benchmark or hosted parity run was executed for these additions. All previously
-frozen MI-GAN256 reference receipts remain unchanged. This source addition does
-not publish models, alter the shared C ABI, bump a release, or close issue71.
 
 ## 28 October 2026 — Unlimited-OCR-2 tiled exact + published; MiniCPM-OCR-1.0 native exact + published
 

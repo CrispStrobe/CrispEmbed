@@ -1,5 +1,33 @@
 # CrispMath and CrispEmbed: current state and executable lanes
 
+## State on 3 November 2026
+
+Start with [the 3 November handoff](handoff-2026-11-03.md) and the index table at the top of
+[PLAN](../PLAN.md). The sections below this one are dated snapshots: re-check any job they
+call "queued" before acting on it. For example, Unlimited 40868634374 and Ultra 40871150002
+both completed with failure on 29 October.
+
+- **Merged 2–3 November:** the MiniCPM-OCR speed path (now default) and the Unlimited-OCR-2
+  F32 vision default, both with a low-memory fallback. GOT-OCR2 F16-r2 is token-exact against
+  the original pipeline. Also: the TeleOCR/MinerU, MiniCPM, Unlimited-OCR-2, MoEdern and Josev
+  Q4_K recipe lanes (receipts only, nothing published), and the BGE-M3 enc0-15 Q8_0 mix
+  (published). Also: the reranker pair layout and truncation fixes, server
+  usage/metrics/429/chat routes (gated), inpainting publication and the `--inpaint-stream`
+  video mode. Also: env-var reference, wiring audit, presence-read conversion and the CI
+  queue policy. See the merge ledger in [HISTORY](../HISTORY.md).
+- **Successor assets:** v4 run 41587063385 is green. The WASM tolerance is attributed to
+  kernel order, and the macOS desktop tolerance to the Metal backend. The owner kept v4 and
+  declined v5. No release; the app stays on immutable 0.17.12, and development VERSION is
+  0.17.14.
+- **Next:**
+  1. The Unlimited-OCR-2 real-scan run at the flipped default.
+  2. Q4_K_MIX publication dispatches.
+  3. The Josev publish branch.
+  4. MoEdern SciFact/client panels.
+  5. Unlimited-OCR-2 CUDA Q8_0.
+  6. GOT-OCR2 Q4_K drift.
+  7. Live evidence for the server gates.
+
 <!-- BEGIN CURRENT VENDOR EXECUTION -->
 ## Vendor execution —29 October2026,11:48 UTC
 

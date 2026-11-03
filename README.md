@@ -1,18 +1,5 @@
 # CrispEmbed
 
-**Experimental OXR-1.0 integration:** dedicated SigLIP2-NaViT / visual-tokenizer /
-Qwen3 GGML inference, F32 and mixed-F16 conversion, C/Python/Rust/Dart APIs, and
-the pinned official document helper with supplied regions or an explicit layout
-service. Enable `CRISPEMBED_OXR=1`. Full-model quality and speed are unverified;
-OXR has additional license terms. See [the implementation and validation guide](docs/oxr.md).
-
-**Experimental MinerU2.5-Pro-2604 integration:** native Qwen2-VL GGML inference,
-authenticated F32/F16 conversion, a complete Python document-helper adapter,
-and native basic page extraction are available behind
-`CRISPEMBED_MINERU25_PRO=1`. See [the implementation and qualification guide](docs/mineru25-pro.md).
-Full-model quality and speed parity remain unverified; this source addition
-does not create a published model alias or change existing defaults.
-
 [![Build](https://github.com/CrispStrobe/CrispEmbed/actions/workflows/build.yml/badge.svg)](https://github.com/CrispStrobe/CrispEmbed/actions/workflows/build.yml)
 
 **A single C++/ggml binary for retrieval and document understanding — no Python
@@ -30,6 +17,12 @@ Android, and in the browser.
 > **Live demos:** [WASM OCR (client-side)](https://crispstrobe.github.io/CrispEmbed/)
 > · [HuggingFace Space](https://huggingface.co/spaces/cstr/CrispEmbed) (embeddings + math OCR)
 
+> **Experimental, default-off engines.** The newer document VLMs (Unlimited-OCR-2,
+> MiniCPM-OCR, TeleOCR, MinerU2.5-Pro, OXR-1.0, OvisOCR2), MoEdernColBERT, Josev-2B
+> SystemOne and the inpainting engines each need an environment gate (and some a
+> license acknowledgement). They are listed in the tables below; every gate is in
+> [docs/environment-variables.md](docs/environment-variables.md).
+
 ---
 
 ## Capabilities at a glance
@@ -44,6 +37,7 @@ Android, and in the browser.
 | **NER / KIE / LID** | Extract structured info | Zero-shot (GLiNER) + fixed-label (BERT/XLM-R) NER, receipt/form KIE, CLD3/GlotLID language ID |
 | **Vision & face** | Cross-modal + biometrics | CLIP/SigLIP text-image search, YuNet/SCRFD detect, ArcFace/SFace/AuraFace recognize |
 | **Preprocessing** | Clean & upscale before OCR | Classical deskew/binarize/dewarp, NAFNet denoise, TPS dewarp, 8 super-resolution engines, PDF-DPI auto-tuning |
+| **Inpainting** (experimental) | Remove masked regions, e.g. burned-in subtitles | MI-GAN256/512, Moebius and PixelHacker (+ SDXL VAE), DBNet text masks, `--inpaint-stream` video mode; default-off |
 
 Everything ships in one library with a unified C ABI. Over **100 models** (200+
 GGUF variants) are in the auto-download registry — run `crispembed --list-models`
@@ -76,6 +70,13 @@ cmake -S . -B build && cmake --build build -j        # macOS: ./build-macos.sh (
 ./build/crispembed -m transcoda       --ocr page.png          # full-page score → **kern
 ./build/crispembed -m qwen3vl-2b      --ocr document.png      # VLM document OCR
 ./build/crispembed -m qwen3vl-2b      --ocr ui.png --ocr-prompt "Extract only the menu text."
+
+# Experimental document VLMs (gated; the alias auto-downloads when --ocr-rec is omitted)
+CRISPEMBED_UNLIMITED_OCR2=1 ./build/crispembed --ocr-pipeline page.png --ocr-engine unlimited-ocr2
+CRISPEMBED_MINICPM_OCR=1 CRISPEMBED_QWEN35_OCR=1 \
+  ./build/crispembed --ocr-pipeline page.png --ocr-engine minicpm-ocr
+CRISPEMBED_MINERU25_PRO=1 \
+  ./build/crispembed --ocr-pipeline page.png --ocr-engine mineru25-pro --ocr-rec mineru25-pro-f16
 
 # Cross-modal & face
 ./build/crispembed -m clip-vit-base-patch16 --image photo.jpg
@@ -300,12 +301,15 @@ container and keep the higher floor.
 ./build-wasm.sh             # client-side OCR (SIMD / multithreaded / WebGPU tiers)
 ```
 
-The WASM build runs the full DBNet+TrOCR pipeline, scan-cleanup, and every
-auto-detected single-model OCR engine — math → LaTeX, scene text, and **music
-(OMR: SMT / TrOMR / Flova / Transcoda)** — entirely client-side (no server, no API key). Three
+The WASM build runs the full DBNet+TrOCR pipeline, scan-cleanup, and the
+auto-detected small OCR engines — math → LaTeX, scene text, and **music
+(OMR: SMT / TrOMR / Flova / Transcoda)** — entirely client-side (no server, no API key).
+The large VLM/document engines (TeleOCR, MinerU, OXR, Marker, Ovis, MiniCPM-OCR,
+Unlimited-OCR, GOT-OCR2, GLM-OCR, InternVL2, LightOnOCR, DeepSeek-OCR2, …) are left out
+of the browser build to keep it under 4 MiB; their init returns NULL there. Three
 tiers: SIMD CPU, multithreaded (COOP/COEP service worker, works on GitHub Pages),
 and experimental **WebGPU** (~2.8× on ViT recognition, ~60× on DBNet detection vs
-WASM CPU). The whole engine set is one 2.3 MB `.wasm`. See `examples/wasm-ocr/README.md`.
+WASM CPU), in one `.wasm` under 4 MiB. See `examples/wasm-ocr/README.md`.
 
 ### As a system library
 
@@ -432,14 +436,17 @@ unified `crispembed_ocr_model_*` C API. Available through CLI (`--ocr`), server
 | **Polyphonic-TrOMR** | ResNetV2+ViT + 4-head decoder | ~22M | Printed music photos → symbolic | Apache-2.0 |
 | **Flova/omr_transformer** | DonutSwin + mBART-4L | 143M | Handwritten/whiteboard music → LilyPond | Apache-2.0 |
 | **Transcoda-59M** | ConvNeXt-V2 + 8L RoPE cross-attn | 59M | Zero-shot full-page score → Humdrum `**kern` (real-scan SOTA) | CC-BY-4.0 |
-| **GOT-OCR2** | SAM ViT-B + Qwen2-0.5B | 0.7B | Doc OCR (text+LaTeX+tables) | Apache-2.0 |
+| **GOT-OCR2** | SAM ViT-B + Qwen1.5-0.5B | 0.7B | Doc OCR (text+LaTeX+tables); `got-ocr2` (Q4_K) / `got-ocr2-f16` (token-exact vs the original pipeline); needs `CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE=1` | Tongyi Qianwen Research (non-commercial) |
 | **GLM-OCR** | CogViT + GLM-0.5B | 0.9B | Doc OCR (OmniDocBench #1, 8 langs) | MIT |
 | **InternVL2 / 2.5** | InternViT + Qwen2/InternLM2.5 | 0.9–2.1B | Edge/WASM & EN+DE VLM OCR | MIT |
 | **Qwen2.5-VL / Qwen3-VL** | ViT (+DeepStack) + Qwen LLM | 2.4–3.6B | General/multilingual VLM OCR | Apache-2.0 |
-| **[TeleOCR (experimental CPU)](docs/teleocr.md)** | Windowed ViT + QK-normalized Qwen decoder | 1.26B | Default-off; explicit local GGUF; CPU execution tested | Apache-2.0; see [provenance](docs/teleocr-license.md) |
+| **[TeleOCR (experimental CPU)](docs/teleocr.md)** | Windowed ViT + QK-normalized Qwen decoder | 1.26B | Default-off (`CRISPEMBED_TELEOCR=1` + `CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1`); `teleocr-f16` / `-q8_0` / `-q4_k-m` / `-q4_k-mix` | Qwen Research (non-commercial, vision tower lineage); see [provenance](docs/teleocr-license.md) |
+| **[MinerU2.5-Pro-2604 (experimental)](docs/mineru25-pro.md)** | Qwen2-VL graph | 1.2B | Document parsing; `CRISPEMBED_MINERU25_PRO=1`; `mineru25-pro-f16` / `-q8_0` / `-q4_k-mix`; token-exact vs the original on the 8-case protocol | Apache-2.0 |
+| **[OXR-1.0 (experimental)](docs/oxr.md)** | SigLIP2-NaViT + Qwen3 | — | Document OCR + native D-FINE layout; `CRISPEMBED_OXR=1` + `CRISPEMBED_ACCEPT_OXR_LICENSE=1`, download with `--accept-license oxr`; `oxr-1.0-f16` / `-q8_0` / `-q4_k-head`, `oxr-1.0-dfine-layout` | OXR License (extra terms) |
+| **[OvisOCR2 (experimental)](docs/ovisocr2.md)** | Qwen3.5-OCR format 2 | 853M | CPU, ≤1024 patches, three gates; `ovisocr2-f16` (quantized candidates rejected) | Apache-2.0 |
 | **DeepSeek-OCR-2 / Unlimited-OCR** | dual ViT + DeepSeek-V2 MoE | 3–3.3B | Full-page doc OCR + layout grounding | Apache-2.0 / MIT |
-| **Unlimited-OCR-2 (experimental)** | SAM + CLIP + DeepSeek-V2 MoE, page-2D RoPE + DASH attention | 3B-class | Default-off (`CRISPEMBED_UNLIMITED_OCR2=1`); registry `unlimited-ocr2` / `unlimited-ocr2-q8`; [spec](docs/unlimited-ocr2-inference-spec.md) | MIT |
-| **MiniCPM-OCR 1.0 (experimental)** | SigLIP + MiniCPM resampler + Qwen3.5 decoder | 1.3B | Default-off (`CRISPEMBED_MINICPM_OCR=1` + `CRISPEMBED_QWEN35_OCR=1`); registry `minicpm-ocr` / `minicpm-ocr-q8`; engine 23; [spec](docs/minicpm-ocr-inference-spec.md) | Apache-2.0 |
+| **Unlimited-OCR-2 (experimental)** | SAM + CLIP + DeepSeek-V2 MoE, page-2D RoPE + DASH attention | 3B-class | Default-off (`CRISPEMBED_UNLIMITED_OCR2=1`); registry `unlimited-ocr2` (F16) / `unlimited-ocr2-q8`; F32 vision products by default, automatic F16 fallback when RAM is short (`CRISPEMBED_UNLIMITED_OCR2_LOW_MEMORY`); [spec](docs/unlimited-ocr2-inference-spec.md) | MIT |
+| **MiniCPM-OCR 1.0 (experimental)** | SigLIP + MiniCPM resampler + Qwen3.5 decoder | 1.3B | Default-off (`CRISPEMBED_MINICPM_OCR=1` + `CRISPEMBED_QWEN35_OCR=1`); registry `minicpm-ocr` (F16) / `minicpm-ocr-q8` (Q8_0); engine 23; graph decoder + F32 vision by default (6.2x the old path, token-identical on 20 real pages), low-memory fallback `CRISPEMBED_MINICPM_OCR_LOW_MEMORY`; [spec](docs/minicpm-ocr-inference-spec.md) | Apache-2.0 |
 | **jina-ocr-v1** | SAM + CLIP-L + DeepSeek-V2 MoE (Unlimited-OCR engine) | 3.4B (570M active) | Doc OCR → Markdown; text exact vs transformers | CC BY-NC 4.0 |
 | **Qari-OCR** | Qwen2-VL-2B + LoRA | 2B | Arabic OCR with diacritics | Apache-2.0 |
 | **LFM2.5-VL** | SigLIP2 NaFlex 400M + LFM2 hybrid conv/attn 3B | 3.4B | Doc OCR (VLM); needs `CRISPEMBED_ACCEPT_LFM_LICENSE=1` | LFM-1.0 (revenue-capped) |
@@ -518,10 +525,13 @@ Three permissively-licensed engines, all auto-detected via `--ocr`:
   native-resolution tiles, optional DBNet text masks and a persistent-model
   directory/TSV batch mode. Opt in with `CRISPEMBED_MIGAN=1`; see the
   [inpainting guide](docs/inpainting-cli.md) for model preparation, commands and
-  validation limits. Temporal processing and LaMa are not implemented.
-  Separately gated MI-GAN512, Moebius and PixelHacker profiles (shared SDXL
-  VAE) are described in the [engine guide](docs/inpainting-engines.md); their
-  full-model hosted parity remains pending.
+  validation limits. Separately gated MI-GAN512, Moebius and PixelHacker
+  profiles (shared SDXL VAE) are described in the [engine guide](docs/inpainting-engines.md)
+  and published as `migan512-*`, `moebius-*`, `pixelhacker-*`, `sdxl-vae-inpaint-*`
+  (non-F32 files also need `CRISPEMBED_INPAINT_QUANT=1`; MI-GAN512 Q4_K is below the
+  0.94 bar on one street crop). Video: `--inpaint-stream` with temporal consistency
+  (`CRISPEMBED_INPAINT_STREAM=1`). Representative subtitle/video quality is not yet
+  qualified; LaMa is not implemented.
 - **PDF DPI profiling** — zero-dependency PDF parser computes effective page DPI
   to auto-select OCR resolution (downsample high-DPI, super-resolve low-DPI).
 - **Output formats** — plain text, hOCR, ALTO 3.1 XML, searchable PDF, with
@@ -626,6 +636,13 @@ void *ctx = crispembed_ocr_model_init("ppformulanet-l-q8_0.gguf", 4);
 const char *latex = crispembed_ocr_model_recognize(ctx, pixels, w, h, ch, &len);
 ```
 
+The experimental engines have their own Python wrappers (`CrispMinerU`, `CrispOXR`,
+`CrispOXRLayout`, `CrispMarker`, `CrispMoEdern`, `CrispSystemOne`). Their gates apply
+to every binding. The C API `crispembed_last_prompt_tokens()` does not have Rust/Dart
+wrappers yet. The HTTP server's routes are covered above: embeddings in four dialects,
+`/rerank` and `/v1/rerank`, `/ocr/model`, the OCR pipeline, `/systemone`, and the gated
+`/metrics` and `/v1/chat/completions`.
+
 Per-language parity scripts (`tests/feature_parity.py`, the Rust/Dart
 `feature_parity` examples) verify the wrappers against the CLI. All 45+ registry
 models also export as **Ollama-compatible** GGUFs (`--ollama` converter flag).
@@ -719,6 +736,14 @@ Apple M1, Metal, all-MiniLM-L6-v2:
 Full multi-model and Ollama Q8_0/Q4_K numbers in [PERFORMANCE.md](PERFORMANCE.md).
 Benchmark with `./benchmark.sh [--multi]`.
 
+Recent OCR highlights (details and hosts in PERFORMANCE.md):
+
+- MiniCPM-OCR default path: 506 s for the five-case bench vs 3264 s for the old path and 439 s
+  for Transformers; token-identical on 20 real pages.
+- Unlimited-OCR-2 F32 vision: about 1.44x faster, IDs and text exact vs the original on the
+  trial pages.
+- PP-OCRv6 native: CER 0.0031 on the synthetic corpus (table above).
+
 ### One-shot CLI startup
 
 Those are *warm* numbers. A one-shot `crispembed -m model.gguf --json "text"`
@@ -752,6 +777,26 @@ previously matched no GPU device, warned, and fell back to Metal anyway.
 Delete the archive to reclaim the disk — nothing depends on it.
 
 ---
+
+## Platform and backend status
+
+| Backend | Status | Caveats |
+|---|---|---|
+| CPU (x86-64, arm64) | Reference path for every engine | Hosted qualification receipts use the portable build (`GGML_NATIVE=OFF`); `-march=native` can move cosines by ~1e-2 on some VLMs |
+| CUDA | Encoders and many OCR/VLM graphs; audited on a T4 | Several engines are CPU-only graphs (UltraBERT, MoEdern, Josev, Ovis/MiniCPM decoders, PP-FormulaNet, …); some quantized VLM recipes qualify on CPU but not CUDA (e.g. Unlimited-OCR-2 Q8_0). See [GPU support matrix](docs/gpu-support-matrix.md) |
+| Metal | Encoders, OXR/D-FINE, TeleOCR/MinerU, MI-GAN and others audited on M1 | macOS desktop vectors differ from Linux by up to 2.6e-3 because the Metal backend is selected; `CRISPEMBED_FORCE_CPU=1` matches Linux arm64 within 5e-7 |
+| Vulkan | Builds; Android uses it | Few engines measured |
+| WASM | Small OCR engines, SIMD / threads / WebGPU tiers | Large VLM engines excluded; packaged embedding vectors differ from native within a documented tolerance (max_abs ≤ 0.0101) |
+
+## Documentation
+
+- [Current state and next steps](docs/current-state-and-next-steps.md) and the latest
+  [handoff](docs/handoff-2026-11-03.md); open work in [PLAN.md](PLAN.md), completed work in
+  [HISTORY.md](HISTORY.md), numbers in [PERFORMANCE.md](PERFORMANCE.md).
+- [Environment variables](docs/environment-variables.md) — every `CRISPEMBED_*` gate.
+- [Wiring audit](docs/wiring-audit-20261102.md) — which engine is reachable from which surface.
+- [Contributing](docs/contributing.md) — how a model is added and qualified.
+- [Precision acceptance](docs/precision-acceptance.md) — the Q8_0/Q4_K bars.
 
 ## Where CrispEmbed fits
 
@@ -802,6 +847,7 @@ is governed by its **upstream** license. Check the **License** column in
 | **CC BY-NC 4.0** (non-commercial) | `jina-v5-*`, `jina-reranker-v2`, `jina-ocr-v1`, PosFormer (ours) | research/eval only; commercial needs a vendor license |
 | **LFM Open License v1.0** | `lfm2-embed*`, `lfm2-colbert`, `gliner-lfm` | free under $10M annual revenue |
 | **Gemma Terms** | `embeddinggemma-300m` | commercial OK, subject to Google's Prohibited Use Policy |
+| **Research-only** | `got-ocr2*`, `teleocr-*`, `nanonets-ocr-s`, `qwen2vl-3b` (see the table below) | non-commercial; engine gates require an explicit acknowledgement |
 | **Other restricted** | Surya weights (modified OpenRAIL-M; revenue/funding and use restrictions), Texo (AGPL) | see the model card and [current Marker/Surya audit](docs/marker-license.md) |
 
 Restricted entries are flagged with `*` in `--list-models` and require explicit
@@ -827,7 +873,10 @@ The VLM OCR engines' upstream licences, all verified against the base chain:
 |---|---|---|---|
 | `german-ocr-3.1` | keyvan-ai/german-ocr-3.1 | Qwen2-VL-2B-Instruct | Apache-2.0 |
 | `nanonets-ocr2-1.5b` | nanonets/Nanonets-OCR2-1.5B-exp | Qwen2-VL-2B-Instruct | Apache-2.0 |
-| `nanonets-ocr-s` | nanonets/Nanonets-OCR-s | Qwen2.5-VL-**7B** | Apache-2.0 |
+| `nanonets-ocr-s` | nanonets/Nanonets-OCR-s | Qwen2.5-VL-**3B** | Qwen Research (non-commercial) |
+| `qwen2vl-3b`, `uni-mumer-qwen2.5-vl-3b`, `teleocr-*` | — | Qwen2.5-VL-3B (vision) | Qwen Research (non-commercial); engine gate `CRISPEMBED_ACCEPT_QWEN_RESEARCH_LICENSE=1` |
+| `got-ocr2`, `got-ocr2-f16` | stepfun-ai/GOT-OCR2_0 | Qwen1.5-0.5B (decoder) | Tongyi Qianwen Research (non-commercial, no use to improve other LLMs); gate `CRISPEMBED_ACCEPT_TONGYI_QIANWEN_LICENSE=1` |
+| `oxr-1.0-*` | OXR-1.0 | — | OXR License (attribution for online services, no competing hosted API); `--accept-license oxr` |
 | `h2ovl-mississippi-800m` | h2oai/h2ovl-mississippi-800m | Danube3-500m + InternViT-300M | Apache-2.0 (+ MIT) |
 | `h2ovl-mississippi-2b` | h2oai/h2ovl-mississippi-2b | Danube2-1.8b + InternViT-300M | Apache-2.0 (+ MIT) |
 

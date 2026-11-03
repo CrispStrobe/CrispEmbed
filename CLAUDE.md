@@ -1,9 +1,9 @@
 # Agent handoff notes
 
-Start with [the current execution handoff](docs/handoff-2026-10-29.md). It lists
-exact active jobs/branches, completed evidence and remaining acceptance gates.
-PLAN now contains only active work; dated claims/snapshots are archived in HISTORY.
-This main update documents experimental branches; it does not merge their runtime.
+Start with [the current execution handoff](docs/handoff-2026-11-03.md) (supersedes
+2026-10-29). It lists the state of main, the open tasks in order and when each is done.
+PLAN contains only open work (index table at the top); completed work and receipts are
+in HISTORY, newest first.
 
 ## Read first: public task handoff
 
@@ -88,7 +88,7 @@ Two runtime requirements apply to every new path:
 
 ## Next actions
 
-Use [the executable next-agent handoff](docs/next-agent-handoff.md) and
+Use [the 3 November handoff](docs/handoff-2026-11-03.md) and
 [PLAN](PLAN.md). Completed runs and initial failures belong in HISTORY, measured
 limits in PERFORMANCE. Do not repeat dated historical commands as current tasks.
 
