@@ -95,6 +95,7 @@ def build(out, build_dir):
     except Exception:
         cpu = platform.processor()
     return dict(mode='portable (GGML_NATIVE=OFF, GGML_LLAMAFILE=ON, -ffp-contract=off)', cpu=cpu,
+                heavy_cpu_build_mode=os.environ.get('CRISPEMBED_BUILD_MODE', 'unset (pre-#120 workflow; -DGGML_NATIVE=OFF passed explicitly)'),
                 nproc=os.cpu_count(), source=subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT,
                                                                        text=True).strip())
 
