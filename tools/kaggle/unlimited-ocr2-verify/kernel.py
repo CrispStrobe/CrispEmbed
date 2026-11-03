@@ -136,8 +136,10 @@ def ocr(tag, alias, page, cli=None, max_tokens='1024', **kw):
 P4 = ['table', 'receipt', 'paragraphs', 'german']
 if SPEED:
     F = dict(CRISPEMBED_UNLIMITED_OCR2_FAST='1')
-    ARMS = [('after', {}), ('vf32', dict(CRISPEMBED_UNLIMITED_OCR2_VISION_F32='1')),
-            ('batch', dict(CRISPEMBED_UNLIMITED_OCR2_TILE_BATCH='1')),
+    # 'after'/'batch' are the F16 vision arms; F32 vision is the default since 2026-11-03.
+    ARMS = [('after', dict(CRISPEMBED_UNLIMITED_OCR2_VISION_F32='0')),
+            ('vf32', dict(CRISPEMBED_UNLIMITED_OCR2_VISION_F32='1')),
+            ('batch', dict(CRISPEMBED_UNLIMITED_OCR2_VISION_F32='0', CRISPEMBED_UNLIMITED_OCR2_TILE_BATCH='1')),
             ('vf32-batch', dict(CRISPEMBED_UNLIMITED_OCR2_VISION_F32='1', CRISPEMBED_UNLIMITED_OCR2_TILE_BATCH='1')),
             ('vf32-batch4', dict(CRISPEMBED_UNLIMITED_OCR2_VISION_F32='1', CRISPEMBED_UNLIMITED_OCR2_TILE_BATCH='1',
                                  CRISPEMBED_UNLIMITED_OCR2_TILE_BATCH_MAX='4'))]

@@ -1,6 +1,22 @@
 name: UltraBERT protected Q4_K frozen-original retrieval
 on:
   workflow_dispatch:
+    inputs:
+      arm_groups:
+        description: 'JSON list; each entry is a comma list of arms run in one job (f32 first when present)'
+        required: false
+        default: '["f32,q4k-all-matrices,q4k-ffn,q4k-last-four-ffn"]'
+        type: string
+      runner:
+        description: 'Hosted runner (portable GGML_NATIVE=OFF build either way)'
+        required: false
+        default: 'macos-latest'
+        type: string
+      threads:
+        description: 'Native threads per row'
+        required: false
+        default: '2'
+        type: string
   workflow_call:
 permissions:
   contents: read
@@ -10,13 +26,20 @@ concurrency:
   cancel-in-progress: false
 jobs:
   frozen-retrieval:
-    runs-on: macos-latest
-    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        arms: ${{ fromJSON(inputs.arm_groups || '["f32,q4k-all-matrices,q4k-ffn,q4k-last-four-ffn"]') }}
+    runs-on: ${{ inputs.runner || 'macos-latest' }}
+    timeout-minutes: 350
     env:
       GH_TOKEN: ${{ github.token }}
-      OMP_NUM_THREADS: '2'
-      OPENBLAS_NUM_THREADS: '2'
-      MKL_NUM_THREADS: '2'
+      OMP_NUM_THREADS: ${{ inputs.threads || '2' }}
+      OPENBLAS_NUM_THREADS: ${{ inputs.threads || '2' }}
+      MKL_NUM_THREADS: ${{ inputs.threads || '2' }}
+      # Portable build (PR120 mode; explicit -DGGML_NATIVE=OFF below): CPU scores must not depend on the runner.
+      CRISPEMBED_BUILD_MODE: portable
     steps:
       - uses: actions/checkout@v4
         with:
@@ -34,15 +57,17 @@ jobs:
       - name: Build actual production library, quantizer and native profile controls
         run: |
           cmake -S . -B "$RUNNER_TEMP/q4k-build" -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF -DCRISPEMBED_BUILD_SHARED=ON -DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF -DGGML_CUDA=OFF -DGGML_METAL=OFF
-          cmake --build "$RUNNER_TEMP/q4k-build" --target crispembed-shared crispembed-quantize test-ultrabert-profile --parallel 2
+          cmake --build "$RUNNER_TEMP/q4k-build" --target crispembed-shared crispembed-quantize test-ultrabert-profile --parallel 4
           "$RUNNER_TEMP/q4k-build/test-ultrabert-profile"
           c++ -std=c++17 -O2 -ffp-contract=off -I src tests/moedern-native-v2/diff.cpp -o "$RUNNER_TEMP/portfolio-vector-diff"
       - name: Frozen 5483 rows, actual IDs/Ref/magnitudes and unchanged ranking gates
-        run: python tools/portfolio/ultrabert_q4k.py --output "$RUNNER_TEMP/ultrabert-q4k" --scratch "$RUNNER_TEMP/ultrabert-q4k-scratch" --library "$RUNNER_TEMP/q4k-build/libcrispembed.dylib" --quantizer "$RUNNER_TEMP/q4k-build/crispembed-quantize" --diff "$RUNNER_TEMP/portfolio-vector-diff"
+        run: |
+          lib="$RUNNER_TEMP/q4k-build/libcrispembed.dylib"; [ -f "$lib" ] || lib="$(ls "$RUNNER_TEMP"/q4k-build/libcrispembed.so* | head -1)"
+          python tools/portfolio/ultrabert_q4k.py --arms "${{ matrix.arms }}" --threads "${{ inputs.threads || '2' }}" --output "$RUNNER_TEMP/ultrabert-q4k" --scratch "$RUNNER_TEMP/ultrabert-q4k-scratch" --library "$lib" --quantizer "$RUNNER_TEMP/q4k-build/crispembed-quantize" --diff "$RUNNER_TEMP/portfolio-vector-diff"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: ultrabert-q4k-review-${{ github.run_id }}
+          name: ultrabert-q4k-review-${{ github.run_id }}-${{ strategy.job-index }}
           path: |
             ${{ runner.temp }}/ultrabert-q4k/review.json
             ${{ runner.temp }}/ultrabert-q4k/*-quantizer.log
@@ -51,7 +76,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: ultrabert-q4k-qualified-assets-${{ github.run_id }}
+          name: ultrabert-q4k-qualified-assets-${{ github.run_id }}-${{ strategy.job-index }}
           path: ${{ runner.temp }}/ultrabert-q4k/assets/
           compression-level: 1
           retention-days: 90
@@ -59,10 +84,9 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: ultrabert-q4k-vector-comparisons-${{ github.run_id }}
+          name: ultrabert-q4k-vector-comparisons-${{ github.run_id }}-${{ strategy.job-index }}
           path: |
-            ${{ runner.temp }}/ultrabert-q4k/q4k-*/
-            ${{ runner.temp }}/ultrabert-q4k/f32/
+            ${{ runner.temp }}/ultrabert-q4k/*/*/diff.json
           compression-level: 1
           retention-days: 90
           if-no-files-found: warn

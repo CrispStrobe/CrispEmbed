@@ -6,14 +6,14 @@ name: Lint
 # drift. Scope is defined ONCE in tools/format.sh (src + examples + tests, never
 # the vendored ggml/ submodule or bundled single-header libs); CI just calls it.
 #
-# Runs on every branch push and every PR so a feature branch is checked before
-# it merges. (clang-tidy / cppcheck like CrispASR's fuller lint can be added
+# Runs on main/master pushes and PRs; a feature branch with an open PR
+# receives one validation instead of duplicate push and PR jobs. (clang-tidy / cppcheck like CrispASR's fuller lint can be added
 # later — they need a CMake tidy preset and are noisy on the not-yet-fully-clean
 # tree; this starts with the format gate.)
 
 on:
   push:
-    branches: ['**']
+    branches: [main, master]
     paths:
       - '**.cpp'
       - '**.h'

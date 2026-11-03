@@ -540,7 +540,7 @@ case with the gate off and on and records IDs and wall time for both. Not yet me
 The gates, speed-up toggles and debug dumps for this engine are documented in
 [environment-variables.md](environment-variables.md).
 
-**Vision speed gates (2026-11-02, default off).** `CRISPEMBED_UNLIMITED_OCR2_VISION_F32` (F32 SAM/CLIP block
+**Vision speed gates (2026-11-02; VISION_F32 default on since 2026-11-03).** `CRISPEMBED_UNLIMITED_OCR2_VISION_F32` (F32 SAM/CLIP block
 matrices made once at init) and `CRISPEMBED_UNLIMITED_OCR2_TILE_BATCH` (`_TILE_BATCH_MAX`, default 16: tiles through SAM
 layers/CLIP as one graph per layer). Trial pages (`crispembed-unlimited-ocr2-vision-speed` at `866d4dbb`, Kaggle Xeon
 2.2 GHz x4, receipts `tests/results/unlimited-ocr2/vision-speed.{json,md}`): every arm gives ids and output text
@@ -554,5 +554,11 @@ Real scans (`crispembed-ocr-real-scans-uocr2-vf32` at `7857ebf5`, receipt
 (1.43x on paired pages), RSS unchanged. Ids vs the original 13/20 exact (default `native-uocr2.json`: 12/20). Against
 the default: 17/19 pages identical; `receipt-cord-test-4` becomes exact vs the original; `de-2col-meyers-b13-103`
 differs from both the default and the original (it was already inexact; CER 0.0368 vs default 0.0369 vs original
-0.0371). **Not flipped**: it is not ids-identical to the default everywhere and not exact everywhere. Proposed default
-flip pending a decision on that one page (no page regresses from exact; mean CER unchanged or better).
+0.0371). **Default since 2026-11-03** (owner decision on that page: no page goes from exact to inexact,
+original-exact 12 -> 13/20, mean CER unchanged or better). Read with `core_env::explicitly_off`;
+`CRISPEMBED_UNLIMITED_OCR2_VISION_F32=0` restores the F16 vision products. `TILE_BATCH` stays default off.
+Frozen/verification kernels that measure the F16 path pin `=0` (`unlimited-ocr2-verify` `after`/`batch` arms,
+`ocr-real-scans` `native-uocr2`, `unlimited-ocr2-trial`, `unlimited-ocr2-precision`, `unlimited-ocr2-q4k` panel).
+Low-memory fallback: when available physical memory is below the copies' size + 1 GiB, init skips the copies,
+prints one stderr notice and runs the F16 path (the previous default; `CRISPEMBED_UNLIMITED_OCR2_LOW_MEMORY=1`
+forces it, `=0` disables the check; see `src/core/low_memory.h`).

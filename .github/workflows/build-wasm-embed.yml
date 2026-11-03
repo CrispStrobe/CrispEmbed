@@ -3,26 +3,51 @@ name: Build WASM (text embeddings)
 # Builds the CrispEmbed text-embedding WASM module and uploads as artifact.
 # Triggered on changes to the WASM-relevant sources.
 
+# Push and PR use the same dependency map. Jobs are filtered, not the workflow,
+# so a required result check also completes for documentation-only changes.
 on:
   push:
     branches: [main]
-    paths:
-      - 'wasm/embed_wrapper.c'
-      - 'build-embed-wasm.sh'
-      - 'src/crispembed.cpp'
-      - 'src/crispembed.h'
-      - 'src/tokenizer*.cpp'
-      - 'src/core/**'
-      - 'ggml/**'
-      - 'CMakeLists.txt'
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
+# A docs-only main push selects no build and must not cancel the previous
+# code-bearing push. PR diffs are cumulative, so superseded PR runs can cancel.
 concurrency:
-  group: build-wasm-embed-${{ github.ref }}
+  group: build-wasm-embed-${{ (github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main') && github.run_id || github.ref }}
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Select necessary CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      native: ${{ steps.select.outputs.native }}
+      native_tests: ${{ steps.select.outputs.native_tests }}
+      mobile: ${{ steps.select.outputs.mobile }}
+      sibling: ${{ steps.select.outputs.sibling }}
+      wasm_ocr: ${{ steps.select.outputs.wasm_ocr }}
+      wasm_embed: ${{ steps.select.outputs.wasm_embed }}
+      rust: ${{ steps.select.outputs.rust }}
+      inpaint_python: ${{ steps.select.outputs.inpaint_python }}
+      inpaint_native: ${{ steps.select.outputs.inpaint_native }}
+      bundle: ${{ steps.select.outputs.bundle }}
+      full: ${{ steps.select.outputs.full }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Selection and aggregate-gate controls
+        run: python3 tests/test_ci_selection.py -v
+      - id: select
+        uses: ./.github/actions/ci-select
+
   build:
+    needs: changes
+    if: needs.changes.outputs.wasm_embed == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -47,3 +72,18 @@ jobs:
             build-embed-wasm/crispembed_embed.js
             build-embed-wasm/crispembed_embed.wasm
           retention-days: 30
+
+  result:
+    name: Embedding WASM result
+    if: always()
+    needs: [changes, build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require selected jobs and reject unexpected skips
+        env:
+          CI_NEEDS: ${{ toJSON(needs) }}
+        run: >-
+          python3 tools/ci_selection.py check --selector changes
+          build=wasm_embed

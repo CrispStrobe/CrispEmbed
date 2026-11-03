@@ -7,6 +7,41 @@ Q8_0-based sweep ran on portable hosted CPU (41615751516; initial rejections
 41588071746 file-type check and 41590988284 key clash retained). v4 storage reproduces to
 all printed digits. Winner `josev_q4k_down8_v1`: 2,952 MiB, head-logit 0.99739,
 final-norm 0.94911, argmax 4/4, typed JSON 0/4. Details: `docs/josev2b-q4k-sweep.md`.
+## 3 November 2026 — Successor assets v4: macOS arm64 desktop tolerance; whole run green
+
+* Owner decision: accept the measured native desktop drift without attribution. The stored
+  vectors of runs 40710490021 and 41471904133 (identical) show it is specific to the macOS arm64
+  build: Linux arm64 vs Linux x86_64 passes strict at 1.2e-4, while macOS arm64 differs from both
+  Linux x86_64 (0.0025544) and Linux arm64 (0.0026). `docs/successor-assets-v4.{md,json}` and
+  `tools/successor_assets_v4.py` therefore bound only the review's macos-arm64 vs linux-x86_64
+  final vector: max_abs<=0.00307 and cosine>=0.999866 (measured plus 20%, rounded outward).
+  v1/v2/v3 files are pinned (60). The review, consumers and bindings are derived from v1 with
+  exact declared replacements. Same-platform, binding, Linux arm64 and Windows comparisons stay
+  strict.
+* Run 41587063385 (producers 40724938611/40725005968 at `11f2ef7c`, corpus proof 40629090339)
+  is **green**: all 16 jobs succeed. In the review, macOS arm64 passes on the v4 basis, the
+  browser on the v3 basis (0.00837269/0.99864984), and everything else strict. Receipt:
+  `tests/results/packaging/successor-assets-v4-run.json`. No qualification, alias or app change.
+
+## 3 November 2026 — Unlimited-OCR-2 F32 vision on by default; low-memory fallback for F32 weight copies
+
+`CRISPEMBED_UNLIMITED_OCR2_VISION_F32` is now read with `core_env::explicitly_off` (default on; `=0` restores the
+F16 SAM/CLIP products). Evidence: trial pages `tests/results/unlimited-ocr2/vision-speed.{json,md}` (4/4 ids and text
+exact vs the original, 1.44x) and real scans `tests/results/ocr-real-scans/native-uocr2-vf32.json` (1.43x on paired
+pages, 17/19 pages ids-identical to the old default, no page from exact to inexact, original-exact 12 -> 13/20; the one
+new inexact page `de-2col-meyers-b13-103` was already inexact and its CER improves 0.0369 -> 0.0368). `TILE_BATCH` stays
+default off. Kernels that measure the F16 path now pin `=0`. If the default copy fails to allocate, init now falls back
+to the F16 path with a notice instead of failing.
+
+New `src/core/low_memory.h`: after loading weights, MiniCPM-OCR and Unlimited-OCR-2 estimate the bytes of their default
+F32 weight copies and, when available physical memory (Linux `MemAvailable`, falling back to `sysconf(_SC_AVPHYS_PAGES)`;
+macOS `host_statistics64` free+inactive+purgeable; Windows `GlobalMemoryStatusEx`; unknown keeps the configured
+behavior) is below that + 1 GiB, skip them with one stderr notice. MiniCPM then runs F16 vision products and the graph
+decoder's `exact` matmul (row-wise dequant + F32 dot), both measured token-exact on the 5-case bench and the old-default
+path 20/20 identical on real scans; Unlimited-OCR-2 runs its previous-default F16 vision path.
+`CRISPEMBED_MINICPM_OCR_LOW_MEMORY` / `CRISPEMBED_UNLIMITED_OCR2_LOW_MEMORY`: `=1` forces the low-memory path, `=0`
+disables the check (keeping the copies whatever the memory). Decision logic is unit-tested header-only by `test-low-memory` (Build workflow). No inference was run for this
+change; the fallback paths are the existing measured ones.
 
 ## 3 November 2026 — Encoder truncation and the XLM-R cross-encoder pair layout
 
@@ -110,6 +145,47 @@ proxy-to-pthread 2,973,004, WebGPU 4,803,802 and WebGPU compat 6,332,726 bytes (
 Text-embedding WASM still builds at 1.5 MB (run 41587317791). Build WASM now prints a size report
 (`tools/wasm_size_report.py` over the emcc symbol map). Largest remaining code: `ggml_graph_compute_thread`
 301 KB, `ocr_orchestrator::run_file` 131 KB, layout detection 138 KB, stb_image 104 KB.
+
+## 3 November 2026 — PR 118 audit fixes, focused regressions and selective CI
+
+Maintainer continuation of PR118 at `60f0b6cf`, preserving the contributor's
+history and experimental gates. Static reuse now checks its originating fill
+input, so gradual fades refresh; a pixel-residual guard rejects fine moving
+texture that has unchanged cell means. Flatness checks RGB channels as well as
+luma. Harmonic iteration work has a real 20-million-update ceiling. Frame-payload
+sizing includes masks, output, engine scratch and a reserved reuse anchor;
+backpressure prevents undrained output growth. The CLI drains complete output
+before reporting later EOF/inference failures. The missing clean_exit wrapper
+is repaired; the original failing guard is retained in the
+[audit record](docs/inpaint-stream-audit.md).
+
+Expanded model-free temporal and CLI regression source covers drift, noise,
+donors, mask changes, binary ordering, known-byte preservation, memory/lifecycle
+boundaries and error-prefix behavior. The new [owned video panel](docs/inpaint-video-quality.md)
+compares five deterministic six-frame clips against clean ground truth using
+independent and temporal execution, with identities, image/temporal errors,
+engine calls, timing, memory and failure evidence. Its bounded reviewed-model
+hosted run is a diagnostic; it does not promote a gate or qualify film/GPU use.
+
+Ordinary Build, inpainting, WASM and Rust jobs use a tested cumulative Git-diff
+selector with broad fallback for shared dependencies or incomplete/unknown
+changes. Always-run result checks reject unexpected skips or failed selected
+jobs. Pure Python controls avoid native compilation, isolated CLI changes avoid
+unrelated mobile/WASM/package builds, and compiler caches preserve actual
+configure/link/test and standalone crate verification. Main and manual runs
+cannot be cancelled by later metadata-only changes. See [CI selection](docs/ci-selection.md).
+Focused local controls pass; native/platform/model validation is pending hosted
+CI. No measured cache speedup or runtime quality improvement is asserted here.
+
+## 3 November 2026 — Issue 71 inpainting video stream (`--inpaint-stream`, `--inpaint-temporal`)
+
+Raw frame pipe for burned-in subtitle removal on top of the main inpainting engines (no new engine or model), gated
+by `CRISPEMBED_INPAINT_STREAM` in addition to each engine's own gates. `src/inpaint_temporal` is engine-agnostic (a
+fill callback) and fills each masked frame by propagation from the nearest unmasked frame on a static ring, reuse of
+the previous output over a static span, a harmonic fill for flat surroundings, and the engine (blended with the
+previous output on moderate change). Buffered frames are kept within 2 GiB (the window is reduced for large frames).
+Model-free contracts: `test-inpaint-temporal` (44 checks) and CLI driver stream tests. Measured output is on par with
+the research prototype; numbers in PERFORMANCE.md ("Issue 71 video stream with temporal consistency").
 
 ## 2 November 2026 — Unlimited-OCR-2 F32 vision / tile batch gates (default off)
 

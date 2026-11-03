@@ -5,6 +5,7 @@
 #include "core/gpu_backend_pref.h"
 #include "core/image_out.h"
 #include "inpaint.h"
+#include "inpaint_temporal.h"
 #include "latent_inpaint.h"
 #include "ocr_detect.h"
 
@@ -76,7 +77,9 @@ struct options {
     float guidance = 2.0f, noise_offset = 0.0357f;
     uint64_t seed = 0;
     bool tiled = false;
-    int dilation = -1; // 3 for text masks; 0 for supplied masks.
+    int dilation = -1;                       // 3 for text masks; 0 for supplied masks.
+    int stream_width = 0, stream_height = 0; // --inpaint-stream WxH
+    int temporal = 0;                        // --inpaint-temporal N (frames of look-ahead)
     bool from_text = false;
     bool overwrite = false;
     bool has_region = false;
@@ -192,7 +195,9 @@ bool parse(int argc, char ** argv, options & opt, std::string & error) {
                                             "--inpaint-steps",
                                             "--inpaint-guidance",
                                             "--inpaint-noise-offset",
-                                            "--inpaint-seed" };
+                                            "--inpaint-seed",
+                                            "--inpaint-stream",
+                                            "--inpaint-temporal" };
         if (values.count(name) == 0) return fail(error, "unsupported inpainting option: " + name);
         if (i + 1 == argc || !*argv[i + 1] || std::strncmp(argv[i + 1], "--", 2) == 0)
             return fail(error, "missing value for " + name);
@@ -247,12 +252,28 @@ bool parse(int argc, char ** argv, options & opt, std::string & error) {
         } else if (name == "--mask-dilate") {
             if (!integer(value, 0, 256, opt.dilation))
                 return fail(error, "--mask-dilate must be an integer from 0 to 256");
+        } else if (name == "--inpaint-stream") {
+            const size_t x = value.find('x');
+            if (x == std::string::npos || !integer(value.substr(0, x), 1, inpaint::max_dimension, opt.stream_width) ||
+                !integer(value.substr(x + 1), 1, inpaint::max_dimension, opt.stream_height) ||
+                size_t(opt.stream_width) > inpaint::max_pixels / size_t(opt.stream_height))
+                return fail(error, "--inpaint-stream must be WxH within the inpainting size limit");
+        } else if (name == "--inpaint-temporal") {
+            if (!integer(value, 0, 120, opt.temporal))
+                return fail(error, "--inpaint-temporal must be an integer from 0 to 120");
         } else if (name == "--threads") {
             if (!integer(value, 1, 64, opt.threads)) return fail(error, "--threads must be an integer from 1 to 64");
         }
     }
-    const int modes = !opt.image.empty() + !opt.list.empty() + !opt.directory.empty();
-    if (modes != 1) return fail(error, "choose exactly one of --inpaint, --inpaint-list, or --inpaint-dir");
+    const bool stream = opt.stream_width > 0;
+    const int modes = !opt.image.empty() + !opt.list.empty() + !opt.directory.empty() + stream;
+    if (modes != 1)
+        return fail(error, "choose exactly one of --inpaint, --inpaint-list, --inpaint-dir, or --inpaint-stream");
+    if (seen.count("--inpaint-temporal") && !stream) return fail(error, "--inpaint-temporal requires --inpaint-stream");
+    if (stream && (opt.from_text || !opt.mask.empty() || !opt.output.empty() || !opt.mask_directory.empty() ||
+                   !opt.output_directory.empty() || opt.has_region || seen.count("--mask-dilate") || opt.overwrite))
+        return fail(error, "--inpaint-stream reads frames and masks from stdin and writes frames to stdout; mask, "
+                           "output and text-detection options do not apply");
     if (opt.model.empty()) return fail(error, "--inpaint-model is required (reviewed F32 GGUF)");
     if (opt.engine != "migan256" && opt.engine != "migan512" && !latent_engine(opt))
         return fail(error, "--inpaint-engine must be migan256, migan512, moebius or pixelhacker");
@@ -280,7 +301,10 @@ bool parse(int argc, char ** argv, options & opt, std::string & error) {
         return fail(error, "--mask-from-text and --mask-text-model must be used together");
     if (opt.from_text && (!opt.mask.empty() || !opt.mask_directory.empty()))
         return fail(error, "--mask-from-text cannot be combined with --mask or --mask-dir");
-    if (!opt.image.empty()) {
+    if (stream) {
+        if (latent_engine(opt) && !opt.tiled && (opt.stream_width != 512 || opt.stream_height != 512))
+            return fail(error, "latent models require 512x512; use --inpaint-tiles for other stream sizes");
+    } else if (!opt.image.empty()) {
         if (!opt.from_text && opt.mask.empty()) return fail(error, "--inpaint requires --mask or --mask-from-text");
         if (!opt.mask_directory.empty() || !opt.output_directory.empty())
             return fail(error, "--mask-dir and --output-dir require --inpaint-dir");
@@ -625,6 +649,83 @@ bool write_output(const options & opt, const frame & item, const std::vector<uin
     return true;
 }
 
+// --inpaint-stream: raw records of W*H*3 RGB8 + W*H mask (>= 128 = fill) on stdin,
+// W*H*3 RGB8 frames in the same order on stdout. With --inpaint-temporal N the
+// frames are filled with temporal consistency (src/inpaint_temporal.h) and come
+// out up to N frames later; without it every frame is independent.
+int run_stream(const options & opt, const inpaint_temporal::fill_fn & fill, std::string & error) {
+#ifdef _WIN32
+    if (_setmode(_fileno(stdin), _O_BINARY) == -1 || _setmode(_fileno(stdout), _O_BINARY) == -1) {
+        fail(error, "cannot set stdin/stdout to binary mode");
+        return 1;
+    }
+#endif
+    const size_t pixels = size_t(opt.stream_width) * opt.stream_height;
+    inpaint_temporal::settings settings;
+    settings.window = opt.temporal;
+    settings.flat_fill = opt.temporal > 0; // without temporal mode: exactly the engine, frame by frame
+    inpaint_temporal::stream frames(opt.stream_width, opt.stream_height, settings, fill);
+    if (frames.window() < opt.temporal)
+        std::fprintf(stderr, "inpaint: --inpaint-temporal reduced to %d to fit the frame buffer in memory\n",
+                     frames.window());
+    std::vector<uint8_t> record(pixels * 4), out(pixels * 3);
+    int64_t records_read = 0, frames_written = 0;
+    auto drain = [&] {
+        while (frames.pop(out.data())) {
+            if (std::fwrite(out.data(), 1, out.size(), stdout) != out.size())
+                return fail(error, "frame " + std::to_string(frames_written + 1) + ": cannot write stdout");
+            ++frames_written;
+        }
+        return true;
+    };
+    // A later engine failure must not discard the complete outputs already
+    // queued by finish(). Drain those before reporting the failing frame.
+    auto complete = [&](bool processed, const std::string & processing_error) {
+        if (!drain()) return false;
+        if (!processed) return fail(error, "frame " + std::to_string(frames_written + 1) + ": " + processing_error);
+        return true;
+    };
+    std::string input_error;
+    for (;;) {
+        const size_t got = std::fread(record.data(), 1, record.size(), stdin);
+        if (std::ferror(stdin)) {
+            input_error = "frame " + std::to_string(records_read + 1) + ": cannot read stdin: " + std::strerror(errno);
+            break;
+        }
+        if (got == 0) break;
+        if (got != record.size()) {
+            input_error = "frame " + std::to_string(records_read + 1) + ": truncated frame record on stdin";
+            break;
+        }
+        ++records_read;
+        std::string processing_error;
+        const bool processed = frames.push(record.data(), record.data() + pixels * 3, processing_error);
+        if (!complete(processed, processing_error)) return 1;
+    }
+    // A read error/truncated final record ends input, but every preceding full
+    // record is still valid and must be flushed. Never ingest the partial record.
+    std::string processing_error;
+    const bool processed = frames.finish(processing_error);
+    if (!complete(processed, processing_error)) return 1;
+    if (std::fflush(stdout) != 0) {
+        fail(error, "frame " + std::to_string(frames_written) + ": cannot write stdout");
+        return 1;
+    }
+    if (!input_error.empty()) {
+        error = input_error;
+        return 1;
+    }
+    const inpaint_temporal::stats & st = frames.counters();
+    const double masked = double(std::max<int64_t>(1, st.px_masked));
+    std::fprintf(stderr,
+                 "inpaint: %lld frames, %lld masked, %lld engine; masked pixels %.1f%% propagated, %.1f%% reused, "
+                 "%.1f%% flat, %.1f%% engine (%.1f%% blended)\n",
+                 (long long)st.frames, (long long)st.frames_masked, (long long)st.frames_engine,
+                 100.0 * st.px_propagated / masked, 100.0 * st.px_reused / masked, 100.0 * st.px_flat / masked,
+                 100.0 * st.px_engine / masked, 100.0 * st.px_blended / masked);
+    return 0;
+}
+
 int execute(const options & opt, std::string & error) {
     // The gated MI-GAN GPU path (CRISPEMBED_MIGAN_GPU, docs/migan-metal.md)
     // honours --gpu-backend without the persistent graph.
@@ -652,12 +753,18 @@ int execute(const options & opt, std::string & error) {
                         (opt.engine == "migan512" ? " and CRISPEMBED_MIGAN512=1" : ""));
         return 2;
     }
-    if (core_imgout::want_ppm()) {
+    if (opt.stream_width && !core_env::on("CRISPEMBED_INPAINT_STREAM")) {
+        fail(error, "--inpaint-stream requires CRISPEMBED_INPAINT_STREAM=1");
+        return 2;
+    }
+    if (!opt.stream_width && core_imgout::want_ppm()) {
         fail(error, "inpainting emits PNG; unset CRISPEMBED_IMAGE_FORMAT or set it to png");
         return 2;
     }
     std::vector<frame> frames;
-    if (!collect_frames(opt, frames, error) || !preflight(opt, frames, error)) return 2;
+    if (opt.stream_width ? !regular_file(opt.model, error) || (!opt.vae.empty() && !regular_file(opt.vae, error))
+                         : !collect_frames(opt, frames, error) || !preflight(opt, frames, error))
+        return 2;
 
     std::unique_ptr<ocr_detect::context, detector_deleter> detector;
     if (opt.from_text) {
@@ -706,6 +813,22 @@ int execute(const options & opt, std::string & error) {
                      inpaint::backend_name(ctx.get()), inpaint::weight_precision(ctx.get()),
                      inpaint::max_batch(ctx.get()));
     }
+    // One engine call for every mode: same-size RGB8 in/out and a 0/255 mask.
+    auto engine = [&](const uint8_t * rgb, const uint8_t * mask, int width, int height, uint8_t * out,
+                      std::string & message) {
+        const size_t pixels = size_t(width) * height;
+        return latent ? latent_inpaint::process_rgb8(latent.get(), rgb, pixels * 3, mask, pixels, width, height, out,
+                                                     pixels * 3, message)
+                      : inpaint::process_rgb8(ctx.get(), rgb, pixels * 3, mask, pixels, width, height, out, pixels * 3,
+                                              message);
+    };
+    if (opt.stream_width)
+        return run_stream(
+            opt,
+            [&](const uint8_t * rgb, const uint8_t * mask, uint8_t * out, std::string & message) {
+                return engine(rgb, mask, opt.stream_width, opt.stream_height, out, message);
+            },
+            error);
     if (!opt.directory.empty()) fs::create_directories(opt.output_directory);
 
     for (size_t index = 0; index < frames.size(); ++index) {
@@ -718,11 +841,7 @@ int execute(const options & opt, std::string & error) {
             error = "frame " + std::to_string(index + 1) + " (" + item.image.string() + "): " + error;
             return 1;
         }
-        const bool processed =
-            latent ? latent_inpaint::process_rgb8(latent.get(), rgb.get(), rgb_bytes, mask.data(), mask.size(),
-                                                  item.width, item.height, output.data(), output.size(), error)
-                   : inpaint::process_rgb8(ctx.get(), rgb.get(), rgb_bytes, mask.data(), mask.size(), item.width,
-                                           item.height, output.data(), output.size(), error);
+        const bool processed = engine(rgb.get(), mask.data(), item.width, item.height, output.data(), error);
         if (!processed || !write_output(opt, item, output, error)) {
             error = "frame " + std::to_string(index + 1) + " (" + item.image.string() + "): " + error;
             return 1;
@@ -771,6 +890,10 @@ void print_help(std::FILE * out) {
                       "  --inpaint-list FILE|-    TSV: image<TAB>mask<TAB>output, one frame per line\n"
                       "                            Relative paths are relative to the list file (stdin: cwd)\n"
                       "                            Output parent directories must already exist\n"
+                      "  --inpaint-stream WxH     Raw video pipe (CRISPEMBED_INPAINT_STREAM=1): stdin records of\n"
+                      "                            W*H*3 RGB8 + W*H mask (>=128 fill), stdout W*H*3 RGB8 frames\n"
+                      "  --inpaint-temporal N     Stream with temporal consistency, N frames of look-ahead\n"
+                      "                            (0..120; 15 suits subtitles; see docs/inpainting-cli.md)\n"
                       "  --mask-from-text         Build a mask from detected text quadrilaterals\n"
                       "  --mask-text-model PATH   DBNet GGUF required with --mask-from-text\n"
                       "                            Text-mask list rows use '-' in the mask column\n"
