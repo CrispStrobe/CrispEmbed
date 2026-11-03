@@ -242,6 +242,7 @@ emcmake cmake -S . -B "$BUILD_DIR" $GENERATOR \
 -sFILESYSTEM=1 \
 -sWASM_BIGINT=1 \
 -sNO_EXIT_RUNTIME=1 \
+--emit-symbol-map \
 $THREAD_LINK_FLAGS \
 $WEBGPU_LINK_FLAGS \
 $SIMD_FLAGS \

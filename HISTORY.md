@@ -7,6 +7,26 @@ CMakeLists.txt maps `portable` to `GGML_NATIVE=OFF`/`CRISPEMBED_NATIVE=OFF`, and
 reports. Native builds of the same bytes had scored 0.9673/0.9732 on an EPYC 9V45 and 0.9521/0.9702 on another
 runner, so the spread came from the AVX-512 kernels of `-march=native`. Receipts:
 `tests/results/portable-build/`. Policy: docs/precision-acceptance.md §Build mode.
+## 3 November 2026 — OCR WASM back under 4 MiB: large VLM/document engines left out of the Emscripten build
+
+Build WASM had failed on main since `922d06bd`: `crispembed_ocr.wasm` was 4,203,804 bytes against the
+unchanged 4 MiB (4,194,304) check (run 41541105221; 4,191,714 at `59ecb0b9`, 4,195,797 at `0847bdd0`).
+The unified OCR dispatcher and the orchestrator reference every engine, so the static link pulled in all of
+them. The Emscripten build now removes the large VLM/document engines from `crispembed` (CMake
+`CRISPEMBED_WASM_EXCLUDED_SOURCES`): TeleOCR/Qwen2-VL, MinerU, OXR, Marker, Qwen3.5-OCR/Ovis, MiniCPM-OCR,
+Unlimited-OCR(-2), GOT-OCR2, GLM-OCR, InternVL2, Granite-Vision, LightOnOCR, DeepSeek-OCR2, SmolDocling,
+LFM2-VL and Pix2Struct. `src/wasm_excluded_engines.cpp` supplies their entry points; each `*_init` (and
+`crispembed_mineru_init`) prints "not available in the WASM build" and returns NULL. Native builds are
+unchanged. No optimisation or float flags changed (still Release `-O3`, wasm-opt, no LTO; `-fno-exceptions`
+is not possible with the code's 369 try/throw sites).
+
+Measured on PR #119 (run 41590661760): **2,888,766 bytes** (-1,315,038, -31.3%; 1,305,538 bytes under the
+limit; code 2,602,968, data 281,418), JS 67,196 bytes. Node smoke 54/54, wrapper 170/170 and browser e2e
+(headless Chromium, pix2tex-mfr Q4_K) 13/13 pass. The Deploy WASM demo variants all build: threads 2,972,596,
+proxy-to-pthread 2,973,004, WebGPU 4,803,802 and WebGPU compat 6,332,726 bytes (those have no size check).
+Text-embedding WASM still builds at 1.5 MB (run 41587317791). Build WASM now prints a size report
+(`tools/wasm_size_report.py` over the emcc symbol map). Largest remaining code: `ggml_graph_compute_thread`
+301 KB, `ocr_orchestrator::run_file` 131 KB, layout detection 138 KB, stb_image 104 KB.
 
 ## 2 November 2026 — Unlimited-OCR-2 F32 vision / tile batch gates (default off)
 

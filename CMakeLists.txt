@@ -453,6 +453,31 @@ endif()
 # 27M/115M dispatch (runtime gate CRISPEMBED_MOEDERN_FAMILY, default off).
 set_source_files_properties(src/moedern_text.cpp PROPERTIES COMPILE_DEFINITIONS CRISPEMBED_MOEDERN_FAMILY_ENGINE)
 
+# Emscripten (browser) builds: leave out the large VLM/document engines. A
+# browser cannot load their multi-GB weights, and their code pushed
+# crispembed_ocr.wasm past its 4 MiB budget. src/wasm_excluded_engines.cpp
+# supplies the entry points the unified OCR dispatcher and the orchestrator
+# still name: each *_init reports "not available in the WASM build" and returns
+# NULL. Native builds are unchanged. The shared Qwen3.5 decoder helpers stay
+# (Josev uses them); the linker drops whatever no kept engine reaches.
+if(EMSCRIPTEN)
+    set(CRISPEMBED_WASM_EXCLUDED_SOURCES
+        src/qwen2vl_ocr.cpp                       # TeleOCR / Qwen2-VL / Qwen3-VL
+        src/mineru_ocr.cpp src/mineru_document.cpp src/mineru_postprocess.cpp src/mineru_table_image.cpp
+        src/oxr_ocr.cpp src/oxr_api.cpp src/oxr_layout_api.cpp
+        src/oxr_document.cpp src/oxr_document_text.cpp src/oxr_document_api.cpp
+        src/marker.cpp src/marker_document.cpp src/marker_backend.cpp
+        src/qwen35_ocr.cpp src/qwen35_vision.cpp src/qwen35_image.cpp src/qwen35_tokenizer.cpp  # Ovis/Qwen3.5-OCR
+        src/minicpm_ocr_vision.cpp src/minicpm_ocr.cpp src/qwen35_graph_decoder.cpp src/qwen35_graph_kv_decoder.cpp
+        src/unlimited_ocr.cpp src/unlimited_ocr2_dash.cpp
+        src/got_ocr.cpp src/glm_ocr.cpp src/internvl2_ocr.cpp src/granite_vision_ocr.cpp
+        src/lightonocr.cpp src/deepseek_ocr2.cpp src/smoldocling_ocr.cpp src/lfm2_vl_ocr.cpp
+        src/pix2struct.cpp
+    )
+    list(REMOVE_ITEM CRISPEMBED_SOURCES ${CRISPEMBED_WASM_EXCLUDED_SOURCES})
+    list(APPEND CRISPEMBED_SOURCES src/wasm_excluded_engines.cpp)
+endif()
+
 add_library(crispembed STATIC ${CRISPEMBED_SOURCES})
 # Version string for output provenance (hOCR ocr-system, ALTO
 # softwareVersion, PDF XMP). An archived document should be traceable to a
