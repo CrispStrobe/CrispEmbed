@@ -1115,6 +1115,14 @@ crispembed_apply_arch_flags(crispembed-inpaint)
 target_link_libraries(crispembed-inpaint PUBLIC crispembed-migan)
 target_link_libraries(crispembed-cli PRIVATE crispembed-inpaint)
 
+# Temporal consistency for --inpaint-stream (engine-agnostic, no model code).
+add_library(crispembed-inpaint-temporal STATIC EXCLUDE_FROM_ALL src/inpaint_temporal.cpp)
+target_include_directories(crispembed-inpaint-temporal PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src)
+crispembed_apply_arch_flags(crispembed-inpaint-temporal)
+target_link_libraries(crispembed-cli PRIVATE crispembed-inpaint-temporal)
+add_executable(test-inpaint-temporal EXCLUDE_FROM_ALL tests/test_inpaint_temporal.cpp)
+target_link_libraries(test-inpaint-temporal PRIVATE crispembed-inpaint-temporal)
+
 # Model-free contracts use the real tile/composition/hash implementation.
 add_executable(test-inpaint EXCLUDE_FROM_ALL tests/test_inpaint.cpp)
 target_link_libraries(test-inpaint PRIVATE crispembed-inpaint)
@@ -1124,7 +1132,7 @@ target_link_libraries(test-inpaint PRIVATE crispembed-inpaint)
 add_executable(test-inpaint-cli-driver EXCLUDE_FROM_ALL
     tests/inpaint_cli_driver.cpp examples/cli/inpaint_cli.cpp)
 target_include_directories(test-inpaint-cli-driver PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/examples/cli)
-target_link_libraries(test-inpaint-cli-driver PRIVATE crispembed-core)
+target_link_libraries(test-inpaint-cli-driver PRIVATE crispembed-core crispembed-inpaint-temporal)
 
 # Observer code is compiled solely into this separate validation archive.
 add_library(crispembed-migan-test STATIC EXCLUDE_FROM_ALL src/migan.cpp)

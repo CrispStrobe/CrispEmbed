@@ -108,7 +108,7 @@ jobs:
       - name: Build CLI, image contracts and isolated test driver
         run: >-
           cmake --build build-inpaint --config Release --parallel 2
-          --target crispembed-cli test-inpaint test-inpaint-cli-driver test-migan-diff test-migan512-diff
+          --target crispembed-cli test-inpaint test-inpaint-temporal test-inpaint-cli-driver test-migan-diff test-migan512-diff
           test-latent-inpaint-attention test-latent-inpaint-pipeline test-latent-inpaint
           test-latent-inpaint-ops
       - name: Native and actual CLI model-free controls
@@ -120,6 +120,7 @@ jobs:
             suffix=.exe
           fi
           "$bin/test-inpaint$suffix"
+          "$bin/test-inpaint-temporal$suffix"
           "$bin/test-migan-diff$suffix" --contracts
           "$bin/test-migan-diff$suffix" --gate-controls
           "$bin/test-migan-diff$suffix" --observer-retention

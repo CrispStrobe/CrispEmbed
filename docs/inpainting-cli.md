@@ -197,7 +197,44 @@ the entire batch before model loading or output creation. It then decodes one
 frame at a time. A later decoding or inference failure stops at that frame and
 retains earlier completed outputs. The error names the frame number and path.
 This reduces repeated model loading; it does not provide temporal propagation,
-motion estimation or blending across frames.
+motion estimation or blending across frames. For video, use the stream below.
+
+## Video: a raw frame stream with temporal consistency
+
+`--inpaint-stream WxH` reads records of `W*H*3` RGB8 bytes followed by a `W*H`
+mask (values >= 128 fill) from stdin and writes `W*H*3` RGB8 frames to stdout
+in the same order, so a decoder and an encoder can be piped around it without
+frames touching the disk:
+
+```sh
+ffmpeg -i in.mp4 -f rawvideo -pix_fmt rgb24 - | add-masks |
+CRISPEMBED_MIGAN=1 ./build-inpaint/crispembed \
+  --inpaint-model "$INPAINT_MODEL" --inpaint-stream 1280x720 --inpaint-temporal 15 |
+ffmpeg -f rawvideo -pix_fmt rgb24 -s 1280x720 -r 25 -i - -c:v libx264 out.mp4
+```
+
+`--inpaint-temporal N` (0..120) keeps N frames of look-ahead and look-behind
+and fills each masked frame in this order ([`src/inpaint_temporal.h`](../src/inpaint_temporal.h)):
+
+1. **Propagation**: the real background from the nearest frame within N that has
+   no mask, when the ring of known pixels around the mask is static between the
+   two frames.
+2. **Static-span reuse**: the previous output, for the same mask on a static ring
+   (a subtitle shown over a still shot costs one engine call, not one per frame).
+3. **Flat fill**: a harmonic interpolation of the surroundings where the known
+   pixels near the hole are flat; engines drift on flat tinted areas.
+4. **The engine** for the rest, blended with the previous output when the mask
+   is unchanged and the ring moved only a little (less shimmer).
+
+Output frames lag the input by up to N frames; all buffered frames are written
+at the end of input. Without `--inpaint-temporal` every frame goes to the
+engine on its own. The stream works with every engine and its gates;
+latent engines need 512x512 frames or `--inpaint-tiles`. A summary of the
+filled pixels per step goes to stderr. On synthetic subtitle clips with ground
+truth (720p, MI-GAN512 F16, Metal, `CRISPEMBED_INPAINT_GRAPH=1
+CRISPEMBED_INPAINT_FAST=1`), a moving shot keeps 28.9 dB inside the mask at
+0.22 s per frame (47 of 180 frames need the engine) and a static shot needs no
+engine call at all.
 
 ## Image geometry and file behavior
 

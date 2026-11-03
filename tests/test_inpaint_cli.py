@@ -324,6 +324,38 @@ class InpaintCliTests(unittest.TestCase):
                 self.assertNotIn(b"INPAINT_TEST_LOAD", result.stderr)
                 self.assertEqual(result.stdout, b"")
 
+    def test_stream_raw_frames_in_order(self):
+        record = self.rgb + bytes(255 if value >= 128 else 0 for value in self.mask)
+        size = f"{self.width}x{self.height}"
+        expected = self.expected(i for i, value in enumerate(self.mask) if value >= 128)
+        for extra in ([], ["--inpaint-temporal", "2"]):
+            with self.subTest(extra=extra):
+                result = self.run_cli(["--inpaint-model", self.model_path, "--inpaint-stream", size, *extra],
+                                      stdin=record * 3)
+                self.assertEqual(result.returncode, 0, result.stderr.decode(errors="replace"))
+                self.assertEqual(result.stdout, expected * 3)
+                self.assertIn(b"inpaint: 3 frames, 3 masked", result.stderr)
+        truncated = self.run_cli(["--inpaint-model", self.model_path, "--inpaint-stream", size],
+                                 stdin=record + record[:5])
+        self.assertEqual(truncated.returncode, 1)
+        self.assertIn(b"truncated frame record", truncated.stderr)
+        self.assertEqual(truncated.stdout, expected)
+
+    def test_stream_options_reject_before_model_load(self):
+        size = f"{self.width}x{self.height}"
+        cases = [
+            ["--inpaint-stream", "0x4"], ["--inpaint-stream", "4"], ["--inpaint-stream", "4x4junk"],
+            ["--inpaint-stream", size, "--mask", self.mask_path], ["--inpaint-stream", size, "--mask-dilate", "1"],
+            ["--inpaint-stream", size, "--inpaint-temporal", "121"], ["--inpaint-temporal", "2"],
+            ["--inpaint-stream", size, "--inpaint", self.image_path],
+        ]
+        for extra in cases:
+            with self.subTest(extra=extra):
+                result = self.run_cli(["--inpaint-model", self.model_path, *extra])
+                self.assertEqual(result.returncode, 2, result.stderr)
+                self.assertNotIn(b"INPAINT_TEST_LOAD", result.stderr)
+                self.assertEqual(result.stdout, b"")
+
     def test_mask_dimensions_preflight(self):
         self.mask_path.write_bytes(png_bytes(2, 2, bytes(4), 1))
         result = self.single()
