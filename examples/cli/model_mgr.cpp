@@ -922,14 +922,21 @@ static const ModelEntry k_registry[] = {
       "XLM-R 1024d dense-only multilingual (568M, Q8_0)", "610 MB", "mit", "https://huggingface.co/BAAI/bge-m3" },
 
     // --crisp conversions with the sparse_linear/colbert_linear heads. Against FlagEmbedding
-    // BGEM3FlagModel (fp32) on the 77-text below-bar panel: F16 dense/sparse/ColBERT
-    // min cosine 1.0000/1.0000/1.0000; the Q8_0 mix (blocks 0-11 F16) 0.9995/0.9991/0.9726.
+    // BGEM3FlagModel (fp32) on the 77-text below-bar panel, portable CPU build: F16
+    // dense/sparse/ColBERT min cosine 1.0000/1.0000/1.0000; the Q8_0 mix with blocks 0-15 F16
+    // 0.9996/0.9998/0.9911, and 0.9996/0.9999/0.9922 on CUDA (T4, vs CPU F16).
+    // The older blocks 0-11 mix (0.9726 on CPU) is superseded: its ColBERT is 0.9667 on CUDA.
     // Uniform Q8_0 flips a few ColBERT token vectors (0.61) and is not published.
-    { "bge-m3-heads", "bge-m3-heads-q8_0-mixed.gguf",
+    { "bge-m3-heads", "bge-m3-heads-q8_0-enc0-15-f16.gguf",
+      "https://huggingface.co/cstr/bge-m3-GGUF/resolve/283645d875308013cd80be7d30029715f5366752/"
+      "bge-m3-heads-q8_0-enc0-15-f16.gguf",
+      "XLM-R 1024d dense+sparse+ColBERT multilingual (568M, Q8_0, blocks 0-15 F16)", "763 MB", "mit",
+      "https://huggingface.co/BAAI/bge-m3" },
+    { "bge-m3-heads-q8-enc0-11", "bge-m3-heads-q8_0-mixed.gguf",
       "https://huggingface.co/cstr/bge-m3-GGUF/resolve/6016c35502f2d8419a593d545f91bc303bc5b261/"
       "bge-m3-heads-q8_0-mixed.gguf",
-      "XLM-R 1024d dense+sparse+ColBERT multilingual (568M, Q8_0, blocks 0-11 F16)", "718 MB", "mit",
-      "https://huggingface.co/BAAI/bge-m3" },
+      "XLM-R 1024d dense+sparse+ColBERT (Q8_0, blocks 0-11 F16; superseded, CPU-only: ColBERT 0.9667 on CUDA)",
+      "718 MB", "mit", "https://huggingface.co/BAAI/bge-m3" },
     { "bge-m3-heads-f16", "bge-m3-heads-f16.gguf",
       "https://huggingface.co/cstr/bge-m3-GGUF/resolve/6016c35502f2d8419a593d545f91bc303bc5b261/"
       "bge-m3-heads-f16.gguf",

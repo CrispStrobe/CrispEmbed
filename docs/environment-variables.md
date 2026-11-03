@@ -65,6 +65,8 @@ inventory: *production default (opt-out)*, *default-off experimental / opt-in*,
 | `CRISPEMBED_EMBED_RAW_NORM`, `CRISPEMBED_DECODER_EMBED_RAW_NORM` | unset | Print the pre-normalisation norm (debug). |
 | `CRISPEMBED_SPARSE_KEEP_SPECIAL` | off | Keep special tokens in SPLADE/BGE-M3 sparse output. |
 | `CRISPEMBED_RERANK_POOLER_GELU_ERF` | unset | Exact-erf GELU in the reranker pooler. |
+| `CRISPEMBED_PAIR_ROBERTA_SEP` | on | Cross-encoder pairs for `<s>`/`</s>` (XLM-R/RoBERTa) vocabularies use HF's `<s> a </s></s> b </s>`; `=0` restores the single separator. |
+| `CRISPEMBED_POS_EMBD_TRUNCATE` | on | Truncate encoder input to the learned position table (`rows - position_offset`, 512 for XLM-R) instead of aborting; `=0` restores the old limit. |
 | `CRISPEMBED_WORDPIECE_HF_*`, `CRISPEMBED_SPM_*`, `CRISPEMBED_BPE_LEGACY_WHITESPACE`, `CRISPEMBED_WARN_UNK` (default on) | — | Tokenizer normalisation compatibility switches. |
 | `CRISPEMBED_ULTRABERT`, `_QUANT`, `_TRUNCATE`, `_UNICODE_PRETOKEN` | off | Default-off UltraBERT CPU/F32 text API and its options. |
 | `CRISPEMBED_LFM2_ENCODER`, `CRISPEMBED_LFM2_F32_DOT`, `CRISPEMBED_LFM2_F32_MATMUL` | off | LFM2 encoder gate and precision options. |
@@ -175,7 +177,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-403 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+405 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -285,6 +287,8 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `CRISPEMBED_METAL_RESIDENCY` | on | off | bool | default-off experimental / opt-in | `src/core/gguf_loader.cpp` |  |
 | `CRISPEMBED_MOE_NO_REPEAT` | value | unset | value | tuning / config | `src/crispembed.cpp` |  |
 | `CRISPEMBED_OCR_POOL_SIZE` | value | unset | value | tuning / config | `src/crispembed.cpp` |  |
+| `CRISPEMBED_PAIR_ROBERTA_SEP` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/crispembed.cpp` | (RoBERTa family; DeBERTa-v3 [CLS]/[SEP] and BERT keep one separator). CRISPEMBED_PAIR_ROBERTA_SEP=0 restores the single separator. |
+| `CRISPEMBED_POS_EMBD_TRUNCATE` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/crispembed.cpp` | max_position_embeddings - 2 and keeps the special tokens; so do we now. CRISPEMBED_POS_EMBD_TRUNCATE=0 restores the old (aborting) limit. |
 | `CRISPEMBED_RAM_GUARD` | value | unset | value | tuning / config | `src/core/ram_guard.h` |  |
 | `CRISPEMBED_RAM_GUARD_AVAILABLE_MB` | value | unset | int | tuning / config | `src/core/ram_guard.h` |  |
 | `CRISPEMBED_RERANK_POOLER_GELU_ERF` | value | unset | string | tuning / config | `src/crispembed.cpp` |  |

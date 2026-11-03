@@ -240,6 +240,8 @@ static const ModelHash k_model_hashes[] = {
       "942c339565cec14b975364cd26bc5d8a1b1ae8968313276a84dc417a26a94b73" },
     { "https://huggingface.co/cstr/bge-m3-GGUF/resolve/main/bge-m3-q8_0.gguf",
       "777b9a12bd606063d0af16decb6857681871a7ec4a8126fab6cec7ed4fc426a8" },
+    { "https://huggingface.co/cstr/bge-m3-GGUF/resolve/283645d875308013cd80be7d30029715f5366752/bge-m3-heads-q8_0-enc0-15-f16.gguf",
+      "3379a2167b4fc63861561959be0d3bed70b3b8706698bec5532a7f0e1321ee0c" },
     { "https://huggingface.co/cstr/bge-m3-GGUF/resolve/6016c35502f2d8419a593d545f91bc303bc5b261/bge-m3-heads-q8_0-mixed.gguf",
       "b8ecf56f5ab3d8c8aaaaa947348e5cd2881f2ecf7436684787dcbf5174fd37e2" },
     { "https://huggingface.co/cstr/bge-m3-GGUF/resolve/6016c35502f2d8419a593d545f91bc303bc5b261/bge-m3-heads-f16.gguf",
