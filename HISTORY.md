@@ -1,3 +1,27 @@
+## 3 November 2026 — Flutter macOS: dylibs shipped and identified by unversioned names
+
+* Bug (reported from the CometBeat app): a fresh `flutter build macos --debug` produced an app
+  that could not load CrispEmbed. Root cause: CMake's SOVERSION gives every dylib the install
+  name `@rpath/libX.0.dylib` and ships the other names (`libX.dylib`, `libX.0.<m>.<p>.dylib`)
+  as symlinks, but CocoaPods dereferences or drops symlinks when it embeds
+  `vendored_libraries`. The app bundle therefore never held both the `libcrispembed.dylib` the
+  Dart side `dlopen()`s and the `libX.0.dylib` names the load commands ask for. Reproduced on
+  the M1 with a minimal Flutter app against main: the podspec's SONAME collapse embedded only
+  `lib*.0.dylib`, and `DynamicLibrary.open('libcrispembed.dylib')` failed.
+* Fix: `flutter/crispembed/macos/flatten_dylibs.sh` leaves one real file per library named
+  `libX.dylib`, sets its install name to `@rpath/libX.dylib`, rewrites every inter-library and
+  CLI `@rpath` reference to match, re-signs ad hoc, and fails if any `@rpath` reference is not
+  a regular file in the set (`--check` mode only verifies). release.yml (build-macos) runs it on
+  the tarball and verifies the extracted archive (otool check, codesign, dlopen, CLI load);
+  build.yml's macOS job flattens and checks the bundle that feeds the Flutter plugin; the
+  podspec runs it on fetched libs and local drops. CMake's install layout is unchanged
+  (Linux keeps its `.so.0` SONAME symlinks); iOS (static), Linux, Windows and Android
+  packaging are untouched.
+* Verified on the M1 from a clean build/: a symlink-chain local drop and the v0.17.12 macOS
+  tarball flattened as release.yml now does both embed exactly six real files
+  (libcrispembed, libggml, -base, -cpu, -metal, -blas `.dylib`), all signatures verify, and the
+  app loads libcrispembed and resolves `crispembed_init` with no manual fixes.
+
 ## 2 November 2026 — Unlimited-OCR-2 F32 vision / tile batch gates (default off)
 
 **Vision speed gates (2026-11-02, default off).** `CRISPEMBED_UNLIMITED_OCR2_VISION_F32` (F32 SAM/CLIP block
