@@ -1,3 +1,18 @@
+## Josev quantized storage timing (3 November 2026, hosted CPU AMD EPYC 9V74, portable, 2 threads)
+
+Four frozen cases (319/…-token requests), one process each run, including model load.
+Run 41615751516; receipt `tests/results/josev2b/q4k-sweep-41615751516.json`.
+
+| Storage | MiB | Four cases (s) | Quantize (s) |
+|---|---|---|---|
+| F32 | 7,304 | 55.8 | — |
+| Q8_0 (150 projections) | 3,462 | 44.2 | 7.9 |
+| `josev_q4k_down8_v1` | 2,952 | 44.6 | 72.5 |
+| all Q4_K | 2,808 | 44.2 | 90.5 |
+
+Quantized storage is ~20% faster than F32 and the Q8_0/Q4_K arms are equal: this
+path dequantizes the projections to F32 rows, so it saves memory/disk, not compute.
+
 ## OCR WASM size (3 November 2026, Build WASM, emsdk 6.0.2, Release -O3)
 
 | Build | `crispembed_ocr.wasm` bytes | vs 4 MiB check |
