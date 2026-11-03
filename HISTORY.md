@@ -17999,7 +17999,7 @@ do not rerun an old capture recipe or treat its initial failures as current.
 
 ### Concrete private GPU bootstrap
 
-The [single-script bootstrap](../tools/kaggle/josev2b-original/bootstrap.py)
+The [single-script bootstrap](tools/kaggle/josev2b-original/bootstrap.py)
 pins its original worker commit and contract digest explicitly. The current
 prepared worker profile is `cuda-f32-python313-v3-locked`; its arithmetic, source files,
 tokenizer, four owned requests and acceptance gates are unchanged. Its own script
@@ -18069,7 +18069,7 @@ and bootstrap, preventing a standalone worker from reaching payloads on Volta.
 
 The [complete lock](https://github.com/CrispStrobe/CrispEmbed/blob/c18f7453/docs/josev2b-environment-lock.json) fixes57 distribution versions,
 exact wheel URLs, published byte counts and SHA256 values. The
-[requirements file](../tools/kaggle/josev2b-original/requirements.lock) installs
+[requirements file](tools/kaggle/josev2b-original/requirements.lock) installs
 that closure with `--no-deps --require-hashes --only-binary=:all:`; the GPU setup
 must not run an unchecked dependency resolver. It includes all CUDA-toolkit
 extras selected by Torch, with2,790,174,915 published wheel bytes in total.
