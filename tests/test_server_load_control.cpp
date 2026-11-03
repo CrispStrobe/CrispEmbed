@@ -305,7 +305,6 @@ static int crispembed_test_main() {
     return g_failures ? 1 : 0;
 }
 
-// Route through core_util::clean_exit per the tools/check_test_clean_exit.sh guard.
 int main() {
     core_util::clean_exit(crispembed_test_main());
 }
