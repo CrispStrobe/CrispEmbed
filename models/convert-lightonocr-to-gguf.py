@@ -40,7 +40,16 @@ def main():
     parser.add_argument("--output", required=True, help="Output .gguf path")
     parser.add_argument("--dtype", choices=["f16", "f32"], default="f16",
                         help="Weight dtype for large matrices (default: f16)")
+    parser.add_argument("--profile", choices=["legacy", "lightonocr3-1b"], default="legacy",
+                        help="Explicit opt-in candidate profile; legacy LightOnOCR-2 behavior is unchanged")
+    parser.add_argument("--revision", help="Pinned HF revision (required pin enforced for LightOnOCR-3)")
+    parser.add_argument("--cache-dir", help="HF cache directory; defaults to standard HF configuration")
     args = parser.parse_args()
+    if args.profile == "legacy" and "LightOnOCR-3" in args.model:
+        parser.error("LightOnOCR-3-1B requires --profile lightonocr3-1b; other LightOnOCR-3 sizes use a different engine")
+    if args.profile == "lightonocr3-1b":
+        from lightonocr3_profile import source_directory
+        args.model = str(source_directory(args.model, args.revision, args.cache_dir))
 
     wt = f16 if args.dtype == "f16" else f32
 
@@ -58,12 +67,21 @@ def main():
         sf_path = str(model_path / "model.safetensors")
     else:
         cfg_path = hf_hub_download(args.model, "config.json",
-            cache_dir='/mnt/akademie_storage/huggingface/hub/')
+            cache_dir=args.cache_dir, revision=args.revision)
         with open(cfg_path) as f:
             config = json.load(f)
         sf_path = hf_hub_download(args.model, "model.safetensors",
-            cache_dir='/mnt/akademie_storage/huggingface/hub/')
+            cache_dir=args.cache_dir, revision=args.revision)
 
+    if args.profile == "legacy":
+        from lightonocr3_profile import manifest, sha256
+        config_path = model_path / "config.json" if model_path.is_dir() else Path(cfg_path)
+        if sha256(config_path) == manifest()["files"]["config.json"]:
+            parser.error("This pinned LightOnOCR-3-1B snapshot requires --profile lightonocr3-1b")
+    if args.profile == "lightonocr3-1b":
+        from lightonocr3_profile import validate_config
+        validate_config(config, json.loads((model_path / "processor_config.json").read_text()),
+                        json.loads((model_path / "generation_config.json").read_text()))
     vc = config["vision_config"]
     tc = config["text_config"]
 
@@ -150,7 +168,11 @@ def main():
     # ── Tokenizer ──
     try:
         from transformers import AutoTokenizer
-        tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
+        tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=args.profile == "legacy",
+                                                  revision=args.revision, cache_dir=args.cache_dir)
+        if args.profile == "lightonocr3-1b":
+            from lightonocr3_profile import add_metadata
+            add_metadata(writer, model_path, tokenizer)
         vocab = [tokenizer.convert_ids_to_tokens(i) or f"<tok_{i}>" for i in range(tc["vocab_size"])]
         writer.add_token_list(vocab)
         writer.add_uint32("tokenizer.ggml.bos_token_id", tokenizer.bos_token_id or 0)
@@ -158,6 +180,8 @@ def main():
         writer.add_uint32("tokenizer.ggml.padding_token_id", config.get("pad_token_id", 151643))
         print(f"  Tokenizer: {len(vocab)} tokens")
     except Exception as e:
+        if args.profile == "lightonocr3-1b":
+            raise  # A candidate without its verified tokenizer/prompt is unusable.
         print(f"  WARNING: tokenizer failed: {e}")
 
     # Write

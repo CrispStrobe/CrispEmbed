@@ -31,6 +31,10 @@ struct qwen35_ocr_context {
     std::vector<int> ids;
     std::vector<float> confidences;
     qwen35_ocr_stop stop = QWEN35_OCR_NONE;
+    qwen35_ocr_logit_observer logit_observer = nullptr;
+    void * logit_observer_user = nullptr;
+    qwen35_ocr_stage_observer stage_observer = nullptr;
+    void * stage_observer_user = nullptr;
     ~qwen35_ocr_context() {
         weights_cache.clear();
         core_gguf::free_weights(loaded);
@@ -55,6 +59,9 @@ struct qwen35_ocr_context {
 };
 namespace {
 bool inference_enabled(const qwen35_ocr_context & c) {
+    if (c.tokenizer.is_xiaomi0())
+        return core_env::on("CRISPEMBED_QWEN35_OCR") && core_env::on("CRISPEMBED_XIAOMI_OCR0_FRONTEND") &&
+               core_env::on("CRISPEMBED_XIAOMI_OCR0_INFERENCE");
     if (c.tokenizer.is_ovisocr3())
         return core_env::on("CRISPEMBED_QWEN35_OCR") && core_env::on("CRISPEMBED_OVISOCR3_FRONTEND") &&
                core_env::on("CRISPEMBED_OVISOCR3_INFERENCE");
@@ -68,6 +75,9 @@ bool shape(ggml_tensor * t, int x, int y = 1, int z = 1) {
             (y > 1 && z == 1 && qwen35_ocr::matrix_type_supported(t)));
 }
 bool valid_weights(const qwen35_ocr_context & c) {
+    if (c.tokenizer.is_xiaomi0())
+        for (const auto & item : c.loaded.tensors)
+            if (item.second->type != GGML_TYPE_F32 && item.second->type != GGML_TYPE_F16) return false;
     const auto & d = c.decoder;
     const auto & v = c.vision;
     if (c.loaded.tensors.size() != 473 || d.layers.size() != 24 || v.layers.size() != 12 ||
@@ -161,11 +171,25 @@ const char * recognize(qwen35_ocr_context & c, const uint8_t * pixels, int w, in
     if (!qwen35_ocr::decoder_cpu(c.decoder, {}, hidden.data(), pos.axes.data(), 1, int(ids.size()), c.threads, nullptr,
                                  current, weights_cache))
         return c.fail("decoder prefill failed");
+    if (c.stage_observer) {
+        const auto emit = [&](const std::string & name, const std::vector<float> & values) {
+            c.stage_observer(c.stage_observer_user, name.c_str(), values.data(), int(values.size()));
+        };
+        emit("vision.embedded", visual.embedded);
+        for (size_t i = 0; i < visual.hidden.size(); ++i) emit("vision.layer." + std::to_string(i), visual.hidden[i]);
+        emit("vision.merger", visual.merged);
+        emit("decoder.input", hidden);
+        for (size_t i = 0; i < current.hidden.size(); ++i)
+            emit("decoder.layer." + std::to_string(i), current.hidden[i]);
+        emit("decoder.norm", current.norm);
+    }
     for (int step = 0; step < c.max_tokens; ++step) {
         stage.next(profile_event::selection, profile_phase::other);
         if (current.logits.size() != 248320 ||
             !std::all_of(current.logits.begin(), current.logits.end(), [](float x) { return std::isfinite(x); }))
             return c.fail("nonfinite or missing vocabulary scores");
+        if (c.logit_observer)
+            c.logit_observer(c.logit_observer_user, step, current.logits.data(), int(current.logits.size()));
         const auto best = std::max_element(current.logits.begin(), current.logits.end());
         const int id = int(best - current.logits.begin());
         double total = 0;
@@ -214,12 +238,15 @@ extern "C" qwen35_ocr_context * qwen35_ocr_init(const char * path, int threads) 
                                     (format == 2 && core_env::on("CRISPEMBED_OVISOCR2_INFERENCE") &&
                                      core_env::on("CRISPEMBED_OVISOCR2_FRONTEND")) ||
                                     (format == 3 && core_env::on("CRISPEMBED_OVISOCR3_INFERENCE") &&
-                                     core_env::on("CRISPEMBED_OVISOCR3_FRONTEND"));
+                                     core_env::on("CRISPEMBED_OVISOCR3_FRONTEND")) ||
+                                    (format == 4 && core_env::on("CRISPEMBED_XIAOMI_OCR0_INFERENCE") &&
+                                     core_env::on("CRISPEMBED_XIAOMI_OCR0_FRONTEND"));
         const bool ready = allowed_format && core_gguf::kv_str(meta, "general.architecture", "") == "qwen35_ocr" &&
                            core_gguf::kv_bool(meta, "qwen35_ocr.tie_word_embeddings", false) &&
                            core_gguf::kv_bool(meta, "qwen35_ocr.zero_centered_text_norm", false) &&
                            c->tokenizer.load(meta) && ((format == 2) == c->tokenizer.is_ovisocr2()) &&
-                           ((format == 3) == c->tokenizer.is_ovisocr3());
+                           ((format == 3) == c->tokenizer.is_ovisocr3()) &&
+                           ((format == 4) == c->tokenizer.is_xiaomi0());
         metadata.reset();
         if (!ready) return nullptr;
         c->backend = ggml_backend_cpu_init();
@@ -227,6 +254,7 @@ extern "C" qwen35_ocr_context * qwen35_ocr_init(const char * path, int threads) 
             !qwen35_ocr::map_small_decoder(c->loaded.tensors, c->decoder) ||
             !qwen35_ocr::map_small_vision(c->loaded.tensors, c->vision) || !valid_weights(*c))
             return nullptr;
+        if (c->tokenizer.is_xiaomi0()) c->max_tokens = 4096;
         return c.release();
     } catch (...) {
         return nullptr;
@@ -246,6 +274,25 @@ extern "C" int qwen35_ocr_is_ovisocr2(const qwen35_ocr_context * c) {
 extern "C" int qwen35_ocr_is_ovisocr3(const qwen35_ocr_context * c) {
     return c && c->tokenizer.is_ovisocr3();
 }
+extern "C" int qwen35_ocr_is_xiaomi0(const qwen35_ocr_context * c) {
+    return c && c->tokenizer.is_xiaomi0();
+}
+extern "C" int qwen35_ocr_set_xiaomi0_logit_observer(qwen35_ocr_context * c, qwen35_ocr_logit_observer observer,
+                                                     void * user) {
+    if (!c || !c->tokenizer.is_xiaomi0() || !inference_enabled(*c)) return 0;
+    c->logit_observer = observer;
+    c->logit_observer_user = user;
+    return 1;
+}
+extern "C" int qwen35_ocr_set_xiaomi0_stage_observer(qwen35_ocr_context * c, qwen35_ocr_stage_observer observer,
+                                                     void * user) {
+    if (!c || !c->tokenizer.is_xiaomi0() || !inference_enabled(*c)) return 0;
+    c->stage_observer = observer;
+    c->stage_observer_user = user;
+    return 1;
+}
+
+
 extern "C" int qwen35_ocr_get_max_tokens(const qwen35_ocr_context * c) {
     return c ? c->max_tokens : 0;
 }

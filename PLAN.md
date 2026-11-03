@@ -44,10 +44,14 @@ and model defaults. New registry aliases require qualified immutable artifacts.
 
 | Lane / branch | Scope | Completion gate |
 |---|---|---|
-| `feat/ocr-mineru2605` | Pin and support MinerU2.5-Pro-2605 through the existing converter/native document route; retain 2604 compatibility | Source/config/tensor checks, original/native document comparison, explicit unqualified status until hosted results |
+| `feat/ocr-mineru2605` | Exact 2605 converter/runtime profile and original-first hosted runner implemented; 11 new/17 existing controls pass locally | Hosted compile and full-position final-logit/document-helper comparison; no new alias yet |
 | `feat/ocr-lighton3-1b` | Exact LightOnOCR-3-1B profile and transcription/grounding support using the LightOn backend | Processor/tokenizer/prompt/output controls and original/native evidence; old checkpoint behavior preserved |
 | `feat/ocr-xiaomi0` | Exact Xiaomi-OCR-0 source/profile and Qwen3.5 reuse, with its two-stage document contract | Pinned blueprint, frontend/native controls and declared layout dependency; no inherited benchmark score |
 | `feat/ocr-benchmark-integration` | Reproducible document-evaluation records, candidate/license matrix, remaining qualification and Nemotron/dots feasibility | Typed blocks/boxes/tables/formulas, completion/provenance checks; bounded hosted protocols, no fabricated qualification |
+
+| `feat/ocr-nemotron-geometry` | Bounded native input geometry/packed-RGB prototype against pinned Nemotron 3.5 Parse processor; source census already verified | Original-processor positive/negative geometry controls; full neural backend remains separate |
+
+Checkpoint: [evaluation PR #138](https://github.com/CrispStrobe/CrispEmbed/pull/138) has hosted model-free controls green at `faaf2db6`. New retained LightOn 0.8B logit review, Nemotron source/census controls and the model-specific lanes are being integrated.
 
 This work does not adopt restricted terms or change the immutable app runtime.
 OvisOCR3's frozen capped-page failure and LightOnOCR-3-0.8B's numerical/quantization

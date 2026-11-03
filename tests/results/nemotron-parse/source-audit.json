@@ -1,0 +1,87 @@
+{
+  "schema": "crispembed-nemotron-parse-source-audit-v1",
+  "observed_date": "2026-11-03",
+  "source_repo": "nvidia/Nemotron-3.5-Parse",
+  "source_revision": "4035ffb1d8f8bafcdb867dfaf6f7514f101464f9",
+  "source_files": {
+    "config.json": {
+      "sha256": "bff3460ae530573ad2e276627be86cab1b6859754b76e8b196410f17e7f0b7d5",
+      "bytes": 5735
+    },
+    "preprocessor_config.json": {
+      "sha256": "16d54d73fc265b31f3771caf39770dc85213cae7594823ba7a6ac3f085315ada",
+      "bytes": 950
+    },
+    "processor_config.json": {
+      "sha256": "b3e2ff2cc94f3d9412f179acf06d8bc5543305ec27966617977b3bd47fee9e5e",
+      "bytes": 287
+    },
+    "generation_config.json": {
+      "sha256": "0ec0669b5d3df6c4f2fcbf41334c3d64f44fdee1d1e5f158a33b112edf1646c3",
+      "bytes": 284
+    },
+    "hf_nemotron_parse_config.py": {
+      "sha256": "5f4d2530457e41dc100df1fa614485aec8c94715f25cd69ba6e6ebdaf4611899",
+      "bytes": 5016
+    },
+    "hf_nemotron_parse_modeling.py": {
+      "sha256": "ec43d337be2797e2ad137326a68578af67694763eac304fd85b604b6775b93cc",
+      "bytes": 12773
+    },
+    "hf_nemotron_parse_processor.py": {
+      "sha256": "983fa8aeb0d872da01296035b30d60c84fd857879a37c939c5c7203bad3c8b81",
+      "bytes": 21061
+    },
+    "hf_prefix_geometry.py": {
+      "sha256": "41406f33399fd39bd0601fd2acd320f87fec5f9865f13fbcb4e4577d94b97048",
+      "bytes": 6402
+    },
+    "run_transformers_inference.py": {
+      "sha256": "fc3568bb3e9cf48dbcb8ce0cd4e25ee7360cec9fa9da331141497ecee5dcea41",
+      "bytes": 3333
+    },
+    "LICENSE": {
+      "sha256": "3375384ee1050a54d69c98c74d6499841166cd7db823ed90358f430df8c39856",
+      "bytes": 3051
+    },
+    "THIRD_PARTY_NOTICES.md": {
+      "sha256": "3ffde205eb8d5d6458dcd1b6bc3d59b2b92d650b95e1e56f75dbed2bbed78b64",
+      "bytes": 730187
+    },
+    "TOKENIZER_ATTRIBUTION.md": {
+      "sha256": "9a1cb165c21860d78a05a8b4aacb24de025719e2c3ed33ee86d1722ccaec442a",
+      "bytes": 1963
+    },
+    "README.md": {
+      "sha256": "a97942afdd486e6e413afd66b5f7d955a995ad78b8eaf4a73cd010ac829813ef",
+      "bytes": 26414
+    }
+  },
+  "tensor_count": 510,
+  "stored_elements_by_family": {
+    "encoder": 438978680,
+    "decoder": 191821824
+  },
+  "stored_elements": 630800504,
+  "parameter_elements": 630800496,
+  "nonparameter_elements": 8,
+  "optional_mtp_parameter_elements": 2099200,
+  "inference_parameters_without_mtp": 628701296,
+  "stored_dtypes": [
+    "F32",
+    "I64"
+  ],
+  "weights": {
+    "file": "model.safetensors",
+    "bytes": 2523266640,
+    "upstream_lfs_sha256": "81dd7609c589f3694ce75520c25af5010953231358de6aec4d03e8c6aac787e9",
+    "header_raw_sha256": "17dd3e3fccb2672756b703c6d124bd833e2eeeebf17e6fc04ff0c7b502ae0dc1",
+    "header_canonical_sha256": "14d71254f8a2e6bd433b9e7b0f4691226b173e4f2df490316dc0e174e10c5613",
+    "header_bytes": 64608
+  },
+  "inspection": "Pinned source files and bounded HTTP 206 safetensors header; no tensor payload downloaded",
+  "full_weight_hash_verified": false,
+  "model_execution": false,
+  "model_qualified": false,
+  "publication_qualified": false
+}

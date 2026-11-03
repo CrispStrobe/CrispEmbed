@@ -167,6 +167,14 @@ token-ID exact on all five Kaggle cases and IDs identical to the old default on 
 | `CRISPEMBED_QWEN35_TOKENIZER_MARKS`, `CRISPEMBED_QWEN35_PROFILE` | off | Tokenizer mark handling; profiling output. |
 | `CRISPEMBED_OVISOCR2_FRONTEND`, `_INFERENCE`, `_LARGE_IMAGES`, `CRISPEMBED_OVISOCR3_FRONTEND`, `_INFERENCE` | off | OvisOCR2/3 gates. |
 
+### MinerU 2605 checkpoint
+
+`CRISPEMBED_MINERU25_PRO_2605=1` is an additional **default-off** admission gate
+for the exact 2605 checkpoint profile. `CRISPEMBED_MINERU25_PRO=1` is also required.
+Unset, empty or `0` keeps the new profile disabled. The runtime also verifies the
+exact checkpoint repository/revision metadata; neither gate selects weights or
+qualifies the new document helpers. See [the 2605 protocol](mineru25-pro-2605.md).
+
 ### Other OCR engines
 
 Per-engine gates follow the same pattern: `CRISPEMBED_<ENGINE>` enables an
@@ -189,7 +197,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-418 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+424 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -596,6 +604,8 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
+| `CRISPEMBED_LIGHTONOCR3` | on | off | bool | default-off experimental / opt-in | `src/lightonocr.cpp` |  |
+| `CRISPEMBED_LIGHTONOCR3_GROUNDING` | on | off | bool | default-off experimental / opt-in | `src/lightonocr.cpp` |  |
 | `CRISPEMBED_LIGHTONOCR_BENCH` | on | off | bool | debug | `src/lightonocr.cpp` |  |
 | `CRISPEMBED_LIGHTONOCR_DEBUG` | on | off | bool | debug | `src/lightonocr.cpp` |  |
 | `CRISPEMBED_LIGHTONOCR_FORCE_CPU` | on | off | bool | default-off experimental / opt-in | `src/lightonocr.cpp` | --gpu-backend); CRISPEMBED_LIGHTONOCR_FORCE_CPU=1 overrides it, matching the *_FORCE_CPU convention of every sibling engine. |
@@ -645,6 +655,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_MINERU25_PRO` | on/value | off | value | default-off experimental / opt-in | `examples/cli/main.cpp`, `examples/server/server.cpp`, `src/mineru_model_profile.h` +1 |  |
+| `CRISPEMBED_MINERU25_PRO_2605` | value | unset | value | tuning / config | `src/mineru_model_profile.h` |  |
 
 ### mineru_ocr
 
@@ -724,6 +735,12 @@ Regenerate with `python tools/list_env_vars.py --write`.
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_NAFNET_BENCH` | on | off | bool | debug | `src/nafnet_denoise.cpp` |  |
 | `CRISPEMBED_NAFNET_TILE` | value | unset | int | tuning / config | `src/nafnet_denoise.cpp` |  |
+
+### nemotron_parse_geometry
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_NEMOTRON_PARSE_GEOMETRY` | value | unset | value | tuning / config | `src/nemotron_parse_geometry.h` |  |
 
 ### ocr_detect
 
@@ -934,6 +951,13 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_QWEN35_PRECISE_RMS` | on | off | bool | default-off experimental / opt-in | `src/qwen35_math.h` |  |
+
+### qwen35_ocr
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_XIAOMI_OCR0_FRONTEND` | on | off | bool | default-off experimental / opt-in | `src/qwen35_ocr.cpp`, `src/qwen35_tokenizer.cpp` |  |
+| `CRISPEMBED_XIAOMI_OCR0_INFERENCE` | on | off | bool | default-off experimental / opt-in | `src/qwen35_ocr.cpp` |  |
 
 ### qwen35_profile
 

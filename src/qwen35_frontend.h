@@ -24,6 +24,7 @@ class frontend_tokenizer {
     int eos_ = -1;
     bool ovis_ = false;
     bool ovis3_ = false;
+    bool xiaomi0_ = false;
     std::string image_template_;
     std::vector<int> stops_;
     bool enabled() const;
@@ -43,6 +44,7 @@ public:
     int eos() const { return eos_; }
     bool is_ovisocr2() const { return ovis_; }
     bool is_ovisocr3() const { return ovis3_; }
+    bool is_xiaomi0() const { return xiaomi0_; }
     bool is_stop(int id) const;
     image_config image_limits() const {
         return (ovis_ || ovis3_) ? image_config{ 448 * 448, 2880 * 2880 } : image_config{};

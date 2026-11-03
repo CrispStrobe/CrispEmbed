@@ -43,6 +43,14 @@ def _ovis3_hf_profile():
     return module
 
 
+@lru_cache(maxsize=1)
+def _xiaomi0_profile():
+    spec = importlib.util.spec_from_file_location("qwen35_xiaomi0_profile", Path(__file__).with_name("qwen35_xiaomi0_profile.py"))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def precision_recipe(name):
     if name == "original-f16":
         return []
@@ -120,7 +128,9 @@ def validate_config(config, profile=None):
     }:
         raise ValueError("Invalid or unsupported decoder layer schedule")
     if profile is not None:
-        if profile.get("qualification_kind") == "hf5.16.1-original-reference":
+        if profile.get("name") == "xiaomi-ocr-0":
+            _xiaomi0_profile().validate_config(config, profile)
+        elif profile.get("qualification_kind") == "hf5.16.1-original-reference":
             _ovis3_hf_profile().validate_config(config,profile)
         elif profile.get("name") == "ovisocr3":
             _ovis3_profile().validate_config(config,profile)
@@ -158,9 +168,10 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
     output = Path(output)
     if not re.fullmatch(r"[0-9a-f]{40}", source_revision):
         raise ValueError("An immutable 40-hex source revision is required")
-    if profile not in (None,"ovisocr2","ovisocr3","ovisocr3-hf-reference"):
+    if profile not in (None,"ovisocr2","ovisocr3","ovisocr3-hf-reference","xiaomi-ocr-0"):
         raise ValueError("Unknown export profile")
-    policy=(_ovis3_hf_profile() if profile=="ovisocr3-hf-reference" else
+    policy=(_xiaomi0_profile() if profile=="xiaomi-ocr-0" else
+            _ovis3_hf_profile() if profile=="ovisocr3-hf-reference" else
             _ovis3_profile() if profile=="ovisocr3" else _ovis_profiles())
     pinned=policy.load_profile(root,source_model,source_revision) if profile else None
     config = json.loads((root / "config.json").read_text())
@@ -169,7 +180,7 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
         raise ValueError("Establish full-precision parity before adding quantized exports")
     if pinned:
         if (root/"model.safetensors.index.json").exists():
-            raise ValueError("Pinned Ovis checkpoint is a single file; unexpected shard index")
+            raise ValueError("Pinned checkpoint is a single file; unexpected shard index")
         policy.verify_checkpoint(root/"model.safetensors",pinned)
 
     import gguf
@@ -183,7 +194,9 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
         implementation=Path(inspect.getfile(Qwen3_5ForConditionalGeneration)).read_bytes().replace(b'\r\n',b'\n')
         if (transformers.__version__!=expected['transformers_version']
                 or hashlib.sha256(implementation).hexdigest()!=expected['loaded_source_sha256']['model']):
-            raise ValueError("Ovis meta-model implementation differs from qualification")
+            raise ValueError("Pinned meta-model implementation differs from source profile")
+
+    runtime_metadata = policy.validate_runtime_metadata(root) if profile == "xiaomi-ocr-0" else None
 
     # Official implementation supplies the independent expected parameter schema.
     hf_config = AutoConfig.from_pretrained(root, local_files_only=True, trust_remote_code=False)
@@ -214,6 +227,12 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
                 actual[name] = (shard, list(handle.get_slice(name).get_shape()))
     if mapping is not None and set(actual) != set(mapping):
         raise ValueError("Checkpoint index has missing or extra tensors")
+    checkpoint_tensor_count = len(actual)
+    excluded_tensors = []
+    if profile == "xiaomi-ocr-0":
+        selected = policy.non_speculative_tensors(actual, pinned)
+        excluded_tensors = sorted(set(actual) - set(selected))
+        actual = selected
     tied = bool(config.get("tie_word_embeddings", text.get("tie_word_embeddings", False)))
     missing = set(expected) - set(actual)
     if tied and missing == {"lm_head.weight"}:
@@ -258,7 +277,9 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
         writer.add_string(f"{ARCH}.{filename.removesuffix('.json')}", (root / filename).read_text())
     writer.add_string("tokenizer.chat_template", (root / "chat_template.jinja").read_text())
     write_tokenizer_metadata(writer, tokenizer_data)
-    if profile=="ovisocr2":
+    if profile == "xiaomi-ocr-0":
+        write_xiaomi0_metadata(writer, pinned)
+    elif profile=="ovisocr2":
         writer.add_string(f"{ARCH}.profile",pinned['name'])
         writer.add_string(f"{ARCH}.profile.rendered_prompt",pinned['rendered_prompt'])
         writer.add_key_value(f"{ARCH}.stop_token_ids",pinned['stop_ids'],gguf.GGUFValueType.ARRAY,gguf.GGUFValueType.INT32)
@@ -310,6 +331,8 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
         for shard in shards:
             with safe_open(root / shard, framework="pt", device="cpu") as handle:
                 for source in sorted(handle.keys()):
+                    if source in excluded_tensors:
+                        continue  # Exact 15-name MTP allowlist; original HF ordinary generation ignores these.
                     if tied and source == "lm_head.weight":
                         continue  # Native head must alias the exported embedding.
                     name = tensor_name(source)
@@ -339,12 +362,41 @@ def convert(model_dir, output, source_model, source_revision, dtype="f16", keep_
     pending.replace(output)
     manifest = {"source_model": source_model, "source_revision": source_revision,
                 "architecture": ARCH, "dtype": dtype, "keep_f32": sorted(keep_f32), "tie_word_embeddings": tied,
-                "checkpoint_tensor_count": len(actual), "export_tensor_count": len(records),
+                "checkpoint_tensor_count": checkpoint_tensor_count, "export_tensor_count": len(records),
                 "records": records, "bytes": output.stat().st_size}
+    if profile == "xiaomi-ocr-0":
+        manifest["excluded_non_speculative_mtp_tensors"] = excluded_tensors
+        manifest["runtime_metadata"] = runtime_metadata
     if pinned:
         manifest["profile"]={k:v for k,v in pinned.items() if k!="proof_marker"}
     output.with_suffix(output.suffix + ".manifest.json").write_text(json.dumps(manifest, indent=2) + "\n")
     return manifest
+
+
+
+def write_xiaomi0_metadata(writer, pinned):
+    """Shared with hosted metadata controls; every qualification stays explicitly false."""
+    import gguf
+    _xiaomi0_profile().check_profile(pinned)
+    writer.add_string(f"{ARCH}.profile", pinned["name"])
+    writer.add_string(f"{ARCH}.source_audit_sha256", pinned["source_audit_sha256"])
+    writer.add_string(f"{ARCH}.checkpoint_sha256", pinned["checkpoint_sha256"])
+    writer.add_string(f"{ARCH}.profile.prompt_order", "image-first")
+    writer.add_string(f"{ARCH}.profile.default_task", "document")
+    for task, prompt in pinned["prompts"].items():
+        writer.add_string(f"{ARCH}.profile.prompt.{task}", prompt)
+    writer.add_array(f"{ARCH}.missing_source_files", pinned["missing_source_files"])
+    writer.add_key_value(f"{ARCH}.stop_token_ids", pinned["stop_ids"],
+                         gguf.GGUFValueType.ARRAY, gguf.GGUFValueType.INT32)
+    writer.add_uint32(f"{ARCH}.primary_eos_id", pinned["primary_eos"])
+    writer.add_uint32(f"{ARCH}.image_min_pixels", pinned["image_min_pixels"])
+    writer.add_uint32(f"{ARCH}.image_max_pixels", pinned["image_max_pixels"])
+    writer.add_uint32(f"{ARCH}.native_patch_limit", pinned["native_patch_limit"])
+    writer.add_string(f"{ARCH}.mtp_policy", "exact15-excluded-nonspeculative")
+    writer.add_string(f"{ARCH}.layout_dependency", "PP-DocLayoutV3")
+    writer.add_string(f"{ARCH}.resolved_generation_config", json.dumps(pinned["generation"], sort_keys=True))
+    for key in ("native_alias_qualified", "image_max_qualified", "full_document_qualified"):
+        writer.add_bool(f"{ARCH}.{key}", False)
 
 
 def main():
@@ -352,8 +404,8 @@ def main():
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", default=LIGHTON_MODEL)
-    parser.add_argument("--profile",choices=["ovisocr2","ovisocr3","ovisocr3-hf-reference"],
-                        help="Pinned experimental Ovis export-only profile; not a native alias")
+    parser.add_argument("--profile",choices=["ovisocr2","ovisocr3","ovisocr3-hf-reference","xiaomi-ocr-0"],
+                        help="Pinned experimental checkpoint profile; not a published model alias")
     parser.add_argument("--revision", required=True)
     parser.add_argument("--output", required=True)
     parser.add_argument("--dtype", choices=["f32", "f16"], default="f16")
@@ -364,7 +416,14 @@ def main():
     args = parser.parse_args()
     if not re.fullmatch(r"[0-9a-f]{40}", args.revision):
         parser.error("--revision must be an immutable 40-hex commit")
-    if args.profile or args.model in ("ATH-MaaS/OvisOCR2", "ATH-MaaS/OvisOCR3"):
+    if args.profile == "xiaomi-ocr-0" or args.model == _xiaomi0_profile().MODEL:
+        policy = _xiaomi0_profile()
+        if args.profile != "xiaomi-ocr-0" or args.model != policy.MODEL or args.revision != policy.REVISION:
+            parser.error("Xiaomi export requires its exact source/revision and --profile xiaomi-ocr-0")
+        metadata = snapshot_download(args.model, revision=args.revision, allow_patterns=list(policy.metadata_files()))
+        policy.load_profile(metadata, args.model, args.revision)
+        policy.validate_runtime_metadata(metadata)  # Before any checkpoint download.
+    elif args.profile or args.model in ("ATH-MaaS/OvisOCR2", "ATH-MaaS/OvisOCR3"):
         policy=(_ovis3_hf_profile() if args.profile=="ovisocr3-hf-reference" else
                 _ovis3_profile() if args.profile=="ovisocr3" else _ovis_profiles())
         if args.profile not in ("ovisocr2","ovisocr3","ovisocr3-hf-reference") or args.model!=policy.MODEL or args.revision!=policy.REVISION:
@@ -373,7 +432,9 @@ def main():
                                   allow_patterns=list(policy.metadata_files()))
         policy.load_profile(metadata,args.model,args.revision)  # Before any weight download.
     directory = snapshot_download(args.model, revision=args.revision,
-                                  allow_patterns=(list(_ovis3_profile().metadata_files())+["*.safetensors"]
+                                  allow_patterns=(list(_xiaomi0_profile().metadata_files()) + ["model.safetensors"]
+                                                  if args.profile == "xiaomi-ocr-0" else
+                                                  list(_ovis3_profile().metadata_files())+["*.safetensors"]
                                                   if args.profile in ("ovisocr3","ovisocr3-hf-reference") else
                                                   ["*.json", "*.jinja", "*.safetensors", "LICENSE*"]))
     retained = sorted(set(precision_recipe(args.precision_recipe) + args.keep_f32))

@@ -765,6 +765,15 @@ target_link_libraries(test-bert-ner PRIVATE crispembed)
 add_executable(test-lightonocr tests/test_lightonocr.cpp)
 target_link_libraries(test-lightonocr PRIVATE crispembed)
 
+# Candidate profile controls and a separately compiled observer backend. The
+# trace hooks are absent from the ordinary production library.
+add_executable(test-lightonocr3-contract tests/test_lightonocr3_contract.cpp)
+target_link_libraries(test-lightonocr3-contract PRIVATE crispembed)
+add_executable(lightonocr3-trace tests/lightonocr3_trace.cpp src/lightonocr.cpp)
+target_compile_definitions(lightonocr3-trace PRIVATE CRISPEMBED_LIGHTONOCR3_TESTING=1)
+crispembed_apply_arch_flags(lightonocr3-trace)
+target_link_libraries(lightonocr3-trace PRIVATE crispembed)
+
 add_executable(test-lilt-kie tests/test_lilt_kie.cpp)
 target_link_libraries(test-lilt-kie PRIVATE crispembed)
 
@@ -896,6 +905,10 @@ add_executable(test-qwen35-public tests/test_qwen35_public.cpp)
 target_link_libraries(test-qwen35-public PRIVATE crispembed crispembed-core)
 add_executable(test-qwen35-context tests/test_qwen35_context.cpp tests/qwen35_context_header.c)
 target_link_libraries(test-qwen35-context PRIVATE crispembed-qwen35-delta crispembed-core)
+add_executable(test-xiaomi0-run tests/xiaomi0_native_run.cpp)
+target_link_libraries(test-xiaomi0-run PRIVATE crispembed-qwen35-delta crispembed-core)
+add_executable(test-xiaomi0-frontend tests/test_xiaomi0_frontend.cpp)
+target_link_libraries(test-xiaomi0-frontend PRIVATE crispembed-qwen35-delta crispembed-core)
 add_executable(test-qwen35-quant tests/test_qwen35_quant.cpp)
 target_link_libraries(test-qwen35-quant PRIVATE crispembed-qwen35-delta crispembed-core)
 add_executable(test-qwen35-materialize tests/test_qwen35_materialize.cpp)
@@ -966,6 +979,9 @@ target_link_libraries(test-mineru25-preprocess PRIVATE crispembed)
 target_include_directories(test-mineru25-preprocess PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/ggml/examples)
 add_executable(test-mineru25-decode-graph tests/test_mineru25_decode_graph.cpp)
 target_link_libraries(test-mineru25-decode-graph PRIVATE crispembed)
+add_executable(test-nemotron-parse-geometry tests/nemotron_parse_geometry.cpp)
+target_include_directories(test-nemotron-parse-geometry PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+
 add_executable(test-mineru25-profile tests/test_mineru25_profile.cpp)
 target_include_directories(test-mineru25-profile PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 

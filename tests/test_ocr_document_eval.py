@@ -3,6 +3,7 @@
 import copy
 import importlib.util
 import json
+import math
 from pathlib import Path
 import tempfile
 import unittest
@@ -34,7 +35,7 @@ def records():
                                          "weights_sha256": "6" * 64, "processor_sha256": "7" * 64,
                                          "tokenizer_sha256": "8" * 64}]}
     prediction["generation"] = [{"id": "page", "status": "eos", "prompt": "", "max_new_tokens": 4,
-                                  "generated_ids": [1, 2, 3], "eos_token_ids": [3]}]
+                                  "generated_ids": [1, 2, 3], "eos_token_ids": [3], "forced_eos_token_ids": []}]
     prediction["performance"] = {"elapsed_ms": None, "peak_rss_bytes": None, "span": "not measured"}
     return gold, prediction
 
@@ -79,7 +80,7 @@ class DocumentControls(unittest.TestCase):
         gold, pred = records()
         pred["run"]["expected_calls"].append("crop")
         pred["generation"].append({"id": "crop", "status": "error", "prompt": "table", "max_new_tokens": 4,
-                                   "generated_ids": None, "eos_token_ids": [3]})
+                                   "generated_ids": None, "eos_token_ids": [3], "forced_eos_token_ids": []})
         self.assertFalse(ev.score(gold, pred)["exact_complete_document"])
 
     def test_omitted_generation_call_rejected(self):
@@ -92,6 +93,24 @@ class DocumentControls(unittest.TestCase):
         gold, pred = records()
         pred["generation"][0].update(status="unknown", generated_ids=None)
         self.assertFalse(ev.score(gold, pred)["exact_complete_document"])
+
+    def test_forced_eos_cannot_masquerade_as_completion(self):
+        _, pred = records()
+        pred["generation"][0].update(generated_ids=[1, 2, 4, 3], forced_eos_token_ids=[3])
+        with self.assertRaisesRegex(ValueError, "forced EOS"):
+            ev.validate_record(pred)
+
+    def test_forced_eos_is_explicitly_incomplete(self):
+        gold, pred = records()
+        pred["generation"][0].update(status="forced_eos", generated_ids=[1, 2, 4, 3], forced_eos_token_ids=[3])
+        result = ev.score(gold, pred)
+        self.assertEqual(result["completion"]["forced_eos"], 1)
+        self.assertFalse(result["exact_complete_document"])
+
+    def test_natural_eos_before_cap_is_complete_with_forcing_configured(self):
+        gold, pred = records()
+        pred["generation"][0]["forced_eos_token_ids"] = [3]
+        self.assertTrue(ev.score(gold, pred)["exact_complete_document"])
 
     def test_missing_gold_not_empty_gold(self):
         gold, pred = records()
@@ -111,6 +130,15 @@ class DocumentControls(unittest.TestCase):
         result = ev.score(gold, pred)
         self.assertIsNone(result["blocks"]["items"][0]["position_indexed_iou"])
         self.assertIsNone(result["exact_complete_document"])
+
+    def test_rounded_iou_does_not_imply_exact_coordinates(self):
+        gold, pred = records()
+        pred["document"]["blocks"][0]["bbox"][0] = math.nextafter(0.1, math.inf)
+        result = ev.score(gold, pred)
+        block = result["blocks"]["items"][0]
+        self.assertEqual(block["position_indexed_iou"], 1.0)
+        self.assertFalse(block["bbox_exact"])
+        self.assertFalse(result["exact_complete_document"])
 
     def test_reading_order_is_preserved(self):
         gold, pred = records()
@@ -153,6 +181,31 @@ class DocumentControls(unittest.TestCase):
         result = ev.score(gold, pred)
         self.assertIn("prediction_error", result["tables"]["items"][0])
         self.assertFalse(result["exact_complete_document"])
+
+    def test_parser_cannot_repair_malformed_end_tag(self):
+        for malformed in ('<table><tr><td>x</td garbage></tr></table>',
+                          '<table><tr><td>x</td></tr></table></td',
+                          '<table><tr><td>x</td / ></tr></table>'):
+            with self.subTest(source=malformed), self.assertRaisesRegex(ValueError, "closing tag"):
+                ev.Table().parse(malformed)
+
+    def test_bad_annotation_is_rejected_as_input_error(self):
+        for value in (None, [], "authored"):
+            gold, _ = records()
+            gold["annotation"] = value
+            with self.subTest(value=value), self.assertRaisesRegex(ValueError, "annotation"):
+                ev.validate_record(gold, gold=True)
+
+    def test_nonrepresentable_areas_and_huge_integers_rejected(self):
+        for box in ([0, 0, 1e-200, 1e-200], [0, 0, 10**1000, 1]):
+            _, pred = records()
+            pred["document"]["blocks"][0]["bbox"] = box
+            with self.subTest(box=box), self.assertRaisesRegex(ValueError, "bbox"):
+                ev.validate_record(pred)
+        _, pred = records()
+        pred["performance"]["elapsed_ms"] = 10**1000
+        with self.assertRaisesRegex(ValueError, "elapsed_ms"):
+            ev.validate_record(pred)
 
     def test_formula_exactness_is_literal(self):
         gold, pred = records()

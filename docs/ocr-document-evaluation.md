@@ -59,7 +59,8 @@ long-edge recipe in `settings`; do not silently resize to make a page pass.
 Block labels use the pinned OmniParseBench vocabulary: `text`, `heading`,
 `page_furniture`, `list`, `caption`, `footnote`, `equation`, `code`, `table`,
 `form`, `figure`. Each model adapter needs a reviewed mapping. Unknown labels,
-nonfinite/inverted/zero-area/out-of-range boxes fail validation; the interchange
+nonfinite/inverted/zero-area/out-of-range boxes, or areas that underflow the
+numeric representation, fail validation; the interchange
 does not silently clamp, sort, infer boxes or drop blocks.
 
 Gold adds `annotation: {source, license, method}`. This states provenance; the
@@ -81,9 +82,12 @@ Predictions add:
   including layout, crops and retries. This must equal the generation record
   IDs. A runner must derive it from its trace, not its successful calls alone.
 - `generation`: every call's `id`, exact `prompt`, `max_new_tokens`,
-  `generated_ids`, `eos_token_ids` and `status`. `eos` requires actual final EOS
+  `generated_ids`, `eos_token_ids`, `forced_eos_token_ids` and `status`. `eos` requires actual final EOS
   ID evidence; `cap` requires exactly the declared cap without EOS. `error` and
-  `unknown` are incomplete. `generated_ids: null` is allowed only when completion
+  `unknown` are incomplete. An upstream forced EOS at the cap is `forced_eos`,
+  also incomplete; the validator rejects presenting it as natural completion.
+  Use `forced_eos_token_ids: []` when the actual generation configuration has no
+  forced-EOS processor. `generated_ids: null` is allowed only when completion
   is not asserted. EOS-looking text is not evidence. A multi-crop page completes
   only when every declared call completes.
 - `performance`: `elapsed_ms`, `peak_rss_bytes`, and a named `span`. Use explicit

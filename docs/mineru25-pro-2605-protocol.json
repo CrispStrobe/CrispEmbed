@@ -1,0 +1,60 @@
+{
+  "schema": "crispembed.mineru2605.protocol.v1",
+  "model": "opendatalab/MinerU2.5-Pro-2605-1.2B",
+  "revision": "08aaea840498d49ce16247b6263196cf02814885",
+  "blueprint": "mineru-vl-utils==2.0.7",
+  "scope": "bounded internal request/helper parity panel, not an OmniDocBench or OmniParseBench score",
+  "qualification": "pending hosted measurements",
+  "cases": {
+    "formula": {
+      "image": "tests/regression/images/formula_quadratic.png",
+      "task": "formula",
+      "sha256": "fc17ba10f6a558c4d5d49791a481d393e8e670c6be906721b7cf0d13de69d901"
+    },
+    "table": {
+      "image": "tests/regression/images/cc0/simple_table.jpg",
+      "task": "table",
+      "sha256": "c3ade02d88e72d88b8c4c37271e906e3b02380732b138efd0ff9bba8a41e4ed8"
+    },
+    "receipt": {
+      "image": "tests/regression/images/cc0/receipt_example.png",
+      "task": "text",
+      "sha256": "0b9d3b590e617f331d17cf4a622f2088693ad58ac4654a9e297afc0d8881840f"
+    },
+    "german": {
+      "image": "tests/regression/images/cc0/german_official_print.jpg",
+      "task": "text",
+      "sha256": "cc3392810b29cf5a2d0b1831cff95d07a2cbf9e00a3e91e785779a96c0a12a2e"
+    },
+    "japanese": {
+      "image": "tests/regression/images/japanese_print.png",
+      "task": "text",
+      "sha256": "1bfa958341f2372405f691f7d221d075f01976c50d0223b6fff6d1c91de91991"
+    },
+    "arabic": {
+      "image": "tests/regression/images/cc0/arabic_printed_line.png",
+      "task": "text",
+      "sha256": "8ff2bc281693c5fda35298e962be2c525cd564aff206e546c15585f7f4da0789"
+    },
+    "layout-page": {
+      "image": "tests/regression/images/scan_page_pd.png",
+      "task": "layout",
+      "sha256": "6d205bd7fb8beb9aa154c6fec65094fc90cfe955d6428ff7d71c519902120ef1"
+    },
+    "layout-rot90": {
+      "image": "tests/regression/images/derived/german_official_document__rot90.png",
+      "task": "layout",
+      "sha256": "61db6780b6035dd9102ac961bb5e24de01dc988ba07c88b85c43113fad63672b"
+    }
+  },
+  "precision_bars_exclusive": {
+    "f32": 0.99,
+    "f16": 0.98,
+    "q8_0": 0.97,
+    "q4_k": 0.94
+  },
+  "build_mode": "portable",
+  "threads": 4,
+  "cross_page_table_merge_qualified": false,
+  "registry_alias": null
+}

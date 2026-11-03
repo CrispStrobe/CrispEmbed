@@ -8,6 +8,9 @@ extern "C" {
 // CRISPEMBED_OVISOCR2_FRONTEND=1 and CRISPEMBED_OVISOCR2_INFERENCE=1.
 // Experimental OvisOCR3 format3 requires the separate OVISOCR3 frontend/inference
 // gates and a reviewed native profile; source-only exports are rejected.
+// Experimental Xiaomi-OCR-0 format4 requires XIAOMI_OCR0_FRONTEND and
+// XIAOMI_OCR0_INFERENCE. HF image-first prompts, F32/F16 only; PP-DocLayoutV3
+// and full-document qualification are separate. Native limit: 1024 patches.
 // Q8_0/Q4_K/Q6_K matrices additionally
 // require CRISPEMBED_QWEN35_QUANT=1; small vectors/convolutions remain F32/F16.
 // One context is not reentrant; independent contexts own independent state.
@@ -24,6 +27,15 @@ void qwen35_ocr_free(qwen35_ocr_context * ctx);
 // Immutable loaded-profile query; null contexts return zero.
 int qwen35_ocr_is_ovisocr2(const qwen35_ocr_context * ctx);
 int qwen35_ocr_is_ovisocr3(const qwen35_ocr_context * ctx);
+int qwen35_ocr_is_xiaomi0(const qwen35_ocr_context * ctx);
+// Test/diagnostic observer for the experimental Xiaomi path only. Receives
+// read-only actual logits before each greedy selection; no reference inputs.
+// Null detaches. The callback and user data must outlive recognition.
+typedef void (*qwen35_ocr_logit_observer)(void * user, int step, const float * logits, int count);
+int qwen35_ocr_set_xiaomi0_logit_observer(qwen35_ocr_context * ctx, qwen35_ocr_logit_observer observer, void * user);
+typedef void (*qwen35_ocr_stage_observer)(void * user, const char * stage, const float * values, int count);
+int qwen35_ocr_set_xiaomi0_stage_observer(qwen35_ocr_context * ctx, qwen35_ocr_stage_observer observer, void * user);
+
 // Invalid settings reject without changing the current setting.
 int qwen35_ocr_set_max_tokens(qwen35_ocr_context * ctx, int max_tokens);
 int qwen35_ocr_get_max_tokens(const qwen35_ocr_context * ctx);

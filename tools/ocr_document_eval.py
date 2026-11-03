@@ -34,7 +34,10 @@ def digest(value):
 
 
 def finite(value):
-    return type(value) in (int, float) and math.isfinite(value)
+    try:
+        return type(value) in (int, float) and math.isfinite(value)
+    except OverflowError:
+        return False
 
 
 def distance(a, b):
@@ -151,6 +154,12 @@ class Table(HTMLParser):
         raise ValueError("declaration outside table grammar")
 
     def parse(self, source):
+        # HTMLParser tolerates junk in an end tag before invoking our callback.
+        # Reject that repair explicitly so malformed markup cannot score exact.
+        closing_tags = re.findall(r"</[^>]*>", source)
+        require(all(re.fullmatch(r"</[A-Za-z][A-Za-z0-9]*\s*>", tag)
+                    for tag in closing_tags), "malformed closing tag")
+        require("</" not in re.sub(r"</[^>]*>", "", source), "unterminated closing tag")
         self.feed(source)
         self.close()
         require(self.finished and not self.stack and bool(self.cells), "incomplete/empty table")
@@ -178,7 +187,8 @@ def validate_document(doc):
         box = block.get("bbox")
         require("bbox" in block and (box is None or isinstance(box, list) and len(box) == 4
                 and all(finite(x) and 0 <= x <= 1 for x in box)
-                and box[0] < box[2] and box[1] < box[3]), "invalid normalized bbox")
+                and box[0] < box[2] and box[1] < box[3]
+                and (box[2] - box[0]) * (box[3] - box[1]) > 0), "invalid normalized bbox")
 
 
 def completion(calls):
@@ -190,7 +200,7 @@ def completion(calls):
         name, status = call.get("id"), call.get("status")
         require(isinstance(name, str) and name and name not in seen, "duplicate/missing call id")
         seen.add(name)
-        require(status in {"eos", "cap", "error", "unknown"}, "invalid generation status")
+        require(status in {"eos", "cap", "forced_eos", "error", "unknown"}, "invalid generation status")
         require(isinstance(call.get("prompt"), str), "exact per-call prompt required")
         cap, ids, ends = call.get("max_new_tokens"), call.get("generated_ids"), call.get("eos_token_ids")
         require(type(cap) is int and cap > 0, "positive generation cap required")
@@ -198,17 +208,25 @@ def completion(calls):
                 "invalid generated token IDs")
         require(isinstance(ends, list) and all(type(x) is int and x >= 0 for x in ends),
                 "EOS token IDs required")
+        forced = call.get("forced_eos_token_ids")
+        require(isinstance(forced, list) and all(type(x) is int and x >= 0 for x in forced),
+                "explicit forced-EOS configuration required")
         if ids is not None:
             require(len(ids) <= cap, "generation exceeds declared cap")
             require(not any(x in ends for x in ids[:-1]), "tokens after EOS")
         if status == "eos":
             require(bool(ids) and ids[-1] in ends, "EOS lacks generated-ID evidence")
+            require(not (len(ids) == cap and ids[-1] in forced), "forced EOS at cap is incomplete")
         if status == "cap":
             require(ids is not None and len(ids) == cap and ids[-1] not in ends,
                     "cap lacks generated-ID evidence")
+        if status == "forced_eos":
+            require(ids is not None and len(ids) == cap and ids[-1] in forced,
+                    "forced EOS lacks cap/config/ID evidence")
         states.append(status)
     return {"complete": all(x == "eos" for x in states), "calls": len(states),
             "eos": states.count("eos"), "capped": states.count("cap"),
+            "forced_eos": states.count("forced_eos"),
             "errors": states.count("error"), "unknown": states.count("unknown")}
 
 
@@ -229,6 +247,7 @@ def validate_record(record, *, gold=False):
     validate_document(record.get("document"))
     if gold:
         annotation = record.get("annotation", {})
+        require(isinstance(annotation, dict), "annotation must be an object")
         require(all(isinstance(annotation.get(k), str) and annotation[k]
                     for k in ("source", "license", "method")), "annotation provenance required")
         return
@@ -309,7 +328,8 @@ def block_compare(expected, actual):
     return {"label_exact": expected["label"] == actual["label"],
             "text": text_errors(expected["text"], actual["text"]),
             "position_indexed_iou": iou,
-            "exact": False if not content_exact else None if iou is None else iou == 1}
+            "bbox_exact": None if iou is None else expected["bbox"] == actual["bbox"],
+            "exact": False if not content_exact else None if iou is None else expected["bbox"] == actual["bbox"]}
 
 
 def score(gold, prediction):

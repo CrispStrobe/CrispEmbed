@@ -9,6 +9,8 @@
 // EOS, and warm speed; a passing stage receipt alone is not OCR qualification.
 
 #include "qwen2vl_ocr.h"
+#include "mineru_model_profile.h"
+#include "gguf.h"
 #include "crispembed_diff.h"
 #include "core/clean_exit.h"
 
@@ -144,8 +146,12 @@ int execute(int argc, char ** argv) {
     }
     crispembed_diff::Ref ref;
     if (!ref.load(argv[2])) return 2;
-    if (ref.meta("mineru25.model") != "opendatalab/MinerU2.5-Pro-2604-1.2B" ||
-        ref.meta("mineru25.blueprint_revision") != "c9797cde8f54cc48306196fc6aebe73ea31dd4a3") {
+    const bool is_2604_ref = ref.meta("mineru25.model") == "opendatalab/MinerU2.5-Pro-2604-1.2B" &&
+                             ref.meta("mineru25.blueprint_revision") == "c9797cde8f54cc48306196fc6aebe73ea31dd4a3";
+    const bool is_2605_ref = ref.meta("mineru25.model") == mineru25_profile::repository_2605 &&
+                             ref.meta("mineru25.model_revision") == mineru25_profile::revision_2605 &&
+                             ref.meta("mineru25.blueprint_revision") == "mineru-vl-utils==2.0.7";
+    if (!is_2604_ref && !is_2605_ref) {
         std::fprintf(stderr, "Reference source identity does not match this protocol\n");
         return 2;
     }
@@ -184,6 +190,24 @@ int execute(int argc, char ** argv) {
         return 2;
     }
 
+    if (is_2605_ref) {
+        gguf_init_params params = { true, nullptr };
+        gguf_context * meta = gguf_init_from_file(argv[1], params);
+        if (!meta) return 2;
+        auto string_meta = [&](const char * key) -> std::string {
+            const int64_t index = gguf_find_key(meta, key);
+            return index >= 0 && gguf_get_kv_type(meta, index) == GGUF_TYPE_STRING ? gguf_get_val_str(meta, index) : "";
+        };
+        const bool exact_source = string_meta("qwen2vl.model_family") == mineru25_profile::family_2605 &&
+                                  mineru25_profile::valid_2605_source(string_meta("qwen2vl.source.repository"),
+                                                                      string_meta("qwen2vl.source.revision"),
+                                                                      string_meta("qwen2vl.source.expected_revision"));
+        gguf_free(meta);
+        if (!exact_source) {
+            std::fprintf(stderr, "2605 reference requires a byte-verified 2605 candidate conversion\n");
+            return 2;
+        }
+    }
     qwen2vl_ocr::context ctx;
     if (!qwen2vl_ocr::load(ctx, argv[1], threads, 0)) return 2;
     if (!ctx.is_mineru25_pro) {

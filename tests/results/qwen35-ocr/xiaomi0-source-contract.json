@@ -1,0 +1,299 @@
+{
+  "schema": "xiaomi-ocr0-source-contract/v1",
+  "audited_date": "2026-11-03",
+  "scope": "metadata and bounded tensor header only; no original/native inference, numerical acceptance, document benchmark or publication",
+  "model": "xiaomi-research/Xiaomi-OCR-0",
+  "revision": "bbd8cf8d21f256b3644b44cb860f3a7cecb93c30",
+  "source_files": {
+    "README.md": {
+      "sha256": "54f2dbecfe9aa354da5a568ec555f2ca5c2d9b06ec2c8cd54b882af516625d46",
+      "bytes": 24683
+    },
+    "config.json": {
+      "sha256": "2eb95982069a24336fe66b3a0869ea5a711aba7566787d4a599654907ecc070c",
+      "bytes": 2747
+    },
+    "processor_config.json": {
+      "sha256": "d89ef49ce9cd37fbf510158e13c1ef063d9286411c1ec9049932dbe0487143b1",
+      "bytes": 1191
+    },
+    "tokenizer_config.json": {
+      "sha256": "792fa3f0cb88b111e54ef3134c873531008c4df471d108da17903426e308aa7b",
+      "bytes": 1165
+    },
+    "chat_template.jinja": {
+      "sha256": "273d8e0e683b885071fb17e08d71e5f2a5ddfb5309756181681de4f5a1822d80",
+      "bytes": 7755
+    },
+    "tokenizer.json": {
+      "sha256": "06b9509352d2af50381ab2247e083b80d32d5c0aba91c272ca9ff729b6a0e523",
+      "bytes": 19989325
+    }
+  },
+  "missing_source_files": [
+    "generation_config.json",
+    "preprocessor_config.json"
+  ],
+  "checkpoint": {
+    "sha256": "d4551e9f6127ac9e35cff7b4f7a72a90410e03e6c8676a36f0e2b7eaeb5d5348",
+    "bytes": 1746937856,
+    "header_sha256": "99645ba0c4df778968c3cfc9c1f9415389c6d5a91f3bd86a3cfb8cc9eebddc42",
+    "tensor_count": 488,
+    "main_tensor_count": 473,
+    "mtp_exclusions": {
+      "mtp.fc.weight": {
+        "dtype": "BF16",
+        "shape": [
+          1024,
+          2048
+        ]
+      },
+      "mtp.layers.0.input_layernorm.weight": {
+        "dtype": "BF16",
+        "shape": [
+          1024
+        ]
+      },
+      "mtp.layers.0.mlp.down_proj.weight": {
+        "dtype": "BF16",
+        "shape": [
+          1024,
+          3584
+        ]
+      },
+      "mtp.layers.0.mlp.gate_proj.weight": {
+        "dtype": "BF16",
+        "shape": [
+          3584,
+          1024
+        ]
+      },
+      "mtp.layers.0.mlp.up_proj.weight": {
+        "dtype": "BF16",
+        "shape": [
+          3584,
+          1024
+        ]
+      },
+      "mtp.layers.0.post_attention_layernorm.weight": {
+        "dtype": "BF16",
+        "shape": [
+          1024
+        ]
+      },
+      "mtp.layers.0.self_attn.k_norm.weight": {
+        "dtype": "BF16",
+        "shape": [
+          256
+        ]
+      },
+      "mtp.layers.0.self_attn.k_proj.weight": {
+        "dtype": "BF16",
+        "shape": [
+          512,
+          1024
+        ]
+      },
+      "mtp.layers.0.self_attn.o_proj.weight": {
+        "dtype": "BF16",
+        "shape": [
+          1024,
+          2048
+        ]
+      },
+      "mtp.layers.0.self_attn.q_norm.weight": {
+        "dtype": "BF16",
+        "shape": [
+          256
+        ]
+      },
+      "mtp.layers.0.self_attn.q_proj.weight": {
+        "dtype": "BF16",
+        "shape": [
+          4096,
+          1024
+        ]
+      },
+      "mtp.layers.0.self_attn.v_proj.weight": {
+        "dtype": "BF16",
+        "shape": [
+          512,
+          1024
+        ]
+      },
+      "mtp.norm.weight": {
+        "dtype": "BF16",
+        "shape": [
+          1024
+        ]
+      },
+      "mtp.pre_fc_norm_embedding.weight": {
+        "dtype": "BF16",
+        "shape": [
+          1024
+        ]
+      },
+      "mtp.pre_fc_norm_hidden.weight": {
+        "dtype": "BF16",
+        "shape": [
+          1024
+        ]
+      }
+    },
+    "payload_verified": false
+  },
+  "license": {
+    "model_card": "apache-2.0",
+    "model_license_file_present": false,
+    "upstream_repository_license": "Apache-2.0",
+    "base_model": "Qwen/Qwen3.5-0.8B-Base",
+    "base_revision": "dc7cdfe2ee4154fa7e30f5b51ca41bfa40174e68",
+    "base_card_license": "apache-2.0",
+    "base_source_files": {
+      "README.md": "3cff39d2674e28b95e2df75cdb2d7a687ec391931065b05df83dbae12b447b11",
+      "LICENSE": "50cbab8a892c5f2993b8c7351a99182507472def3b1374558308605d99b86b32",
+      "config.json": "b90b86f35c8e6925ef74ee04d0e758f0a845c83a42089ad82bbaa948de9b4204"
+    }
+  },
+  "upstream": {
+    "repository": "SeerRay-Lab/Xiaomi-OCR-0",
+    "revision": "b1a9bb4c07060c453785e9151715ccda6b96f0b1",
+    "files": {
+      "LICENSE": "d80a818703c6914967aaa71eb6238e78d7a97f689ed59cc3285edaef5814a204",
+      "evaluation_pipeline/cropping.py": "09f613b89e9d1a6c0f234c33d73af37e8c1bfee566a0231d960ef7c39c974778",
+      "evaluation_pipeline/e2e_img2md.py": "e86d16a704fb6d9d39c3187a41e2d716fa38a4d2faae1248191096f1ee41fea8",
+      "evaluation_pipeline/layout_detect_paddlex.py": "60358b12c5e2ccd2791fe4b515bdddcf3fce92068e98c9c41d17729d3d46a9d2",
+      "evaluation_pipeline/twostage_img2md.py": "c9bc5b2a6ae4a64fbf5c1bf6395bb6dc217398e4e3b23c104fe84adc62b49d3f",
+      "postprocess/assemble_markdown.py": "83779f07327ff45a0d9f6f6ba183d2e0b95d58cecf1d8aef028c57b12a10ed6e",
+      "postprocess/region.py": "365dd7aaf514bdddffa5c5ba2c373b99d77ebce78f8fe86504ff150d06bc464f",
+      "requirements.txt": "435a77def369e9a086cd7fa98f5d00ddc707b0e1692a6be34c35cfc791967578"
+    }
+  },
+  "framework": {
+    "transformers": "5.17.0",
+    "torch": "2.14.0",
+    "torchvision": "0.29.0",
+    "source_files": {
+      "generation/configuration_utils.py": "605b86a07d08dc6e3ba932e8a90b8afca867eaa29881625b04869c4a1f1f23f8",
+      "models/qwen2/tokenization_qwen2.py": "fac4e6576bfe2369731be147a4e530f262bdf32f2ac50436f96f0d8bdd2fc628",
+      "models/qwen2_vl/image_processing_qwen2_vl.py": "4e1da45f9e7e157ca08aa88243fcc1495ea6a333e40e0c5035ef17ef2747a97d",
+      "models/qwen3_5/configuration_qwen3_5.py": "19966c3200cee92cc4bccaef5f94550c56d731dbf03858a9bd2ed6aebcc3f7da",
+      "models/qwen3_5/modeling_qwen3_5.py": "762feb6c7426a7f15b5bf830df54c07438bf9e7c27b8cdb23179045920412c3b",
+      "models/qwen3_vl/processing_qwen3_vl.py": "8ce525e56e0ddade5a665a70f0727b5576f6f51610d068ddfaf4cc60333415f0",
+      "tokenization_utils_tokenizers.py": "154c32bd9bbe224504c4b4a3c10c02adccb4698752d022bfa0f6957e4e97a97d"
+    },
+    "mtp_policy": "Qwen3_5PreTrainedModel._keys_to_ignore_on_load_unexpected=[r\"^mtp.*\"]; ordinary HF generation has no MTP module",
+    "runtime_verified": false
+  },
+  "generation": {
+    "profile": "hf-image-first-nonthinking",
+    "eos_token_id": 248046,
+    "pad_token_id": 248044,
+    "do_sample": false,
+    "readme_max_new_tokens": 4096,
+    "native_context_limit": 4096,
+    "resolution": "GenerationConfig.from_model_config preserves non-default top-level eos248046 over nested text eos248044; must be verified by hosted producer"
+  },
+  "tokenizer": {
+    "serialized_regex": "(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+",
+    "config_regex": "(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?[\\p{L}\\p{M}]+|\\p{N}| ?[^\\s\\p{L}\\p{M}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+",
+    "note": "tokenizer.json and Qwen2Tokenizer class use the plain-letter regex; tokenizer_config declares combining marks. Hosted runtime must prove effective regex; never silently rewrite it."
+  },
+  "prompts": {
+    "text": "Extract the text in the image.",
+    "table": "Parse the table in the image into OTSL.",
+    "formula": "Identify the formula in the image and represent it using LATEX format.",
+    "document": "Extract all information from the main body of the document image and represent it in markdown format, ignoring headers and footers. Tables should be expressed in OTSL format, formulas in the document should be represented using LATEX format, and the parsing should be organized according to the reading order."
+  },
+  "layout": {
+    "required_for_two_stage": true,
+    "model": "PaddlePaddle/PP-DocLayoutV3_safetensors",
+    "revision": "e4f489dc536556fc1be02b973ba06756e0d4a2ac",
+    "license": "apache-2.0",
+    "metadata_files": {
+      "config.json": "3cf834b91d23a756b1519bce4db42c09e852f3e35c35092dd5a3e253a50c071a",
+      "preprocessor_config.json": "519fe0187a43a1ca429e3ad8317bab8700f0d5e8fb3a6e3a0a413ffac078ba42"
+    },
+    "checkpoint_files": {
+      "model.safetensors": {
+        "bytes": 133270468,
+        "sha256": "5ea422c6cc5fe759a47e1357c35639b58173508e025a3131cbe4b6ac59e2b85e"
+      }
+    },
+    "id2label": {
+      "0": "abstract",
+      "1": "algorithm",
+      "2": "aside_text",
+      "3": "chart",
+      "4": "content",
+      "5": "display_formula",
+      "6": "doc_title",
+      "7": "figure_title",
+      "8": "footer",
+      "9": "footer_image",
+      "10": "footnote",
+      "11": "formula_number",
+      "12": "header",
+      "13": "header_image",
+      "14": "image",
+      "15": "inline_formula",
+      "16": "number",
+      "17": "paragraph_title",
+      "18": "reference",
+      "19": "reference_content",
+      "20": "seal",
+      "21": "table",
+      "22": "text",
+      "23": "vertical_text",
+      "24": "vision_footnote"
+    },
+    "label_task_mapping": {
+      "text": [
+        "abstract",
+        "algorithm",
+        "content",
+        "doc_title",
+        "figure_title",
+        "paragraph_title",
+        "reference_content",
+        "text",
+        "vertical_text",
+        "vision_footnote",
+        "seal",
+        "formula_number",
+        "header",
+        "footer",
+        "number",
+        "footnote",
+        "aside_text",
+        "reference"
+      ],
+      "table": [
+        "table"
+      ],
+      "formula": [
+        "display_formula",
+        "inline_formula"
+      ],
+      "skip": [
+        "chart",
+        "image",
+        "footer_image",
+        "header_image"
+      ],
+      "abandon": []
+    },
+    "transformers_threshold": 0.3,
+    "paddlex_threshold": 0.25,
+    "coordinates": "upstream normalized [0,1000] with polygon crop and detector reading order",
+    "upstream_vllm_prompt_order": "text-before-image",
+    "native_graph_implemented": false,
+    "two_stage_benchmark_qualified": false
+  },
+  "qualification": {
+    "native_alias": false,
+    "precision": false,
+    "full_document": false,
+    "vllm": false
+  }
+}

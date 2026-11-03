@@ -78,6 +78,17 @@
             "14fd9d5d5a4ca55556ec1413174a1d5ab3b372e1 feat: prepare gated Ovis native inference and full-layer parity controls"
           ],
           "reason": "Ovis follow-ups (14fd9d5d, 3c70883e, #80 a8912d73) and PR #81 (5197e86d). GGUF format 2/3 load only behind CRISPEMBED_OVISOCR2_/OVISOCR3_ FRONTEND+INFERENCE gates; for the format-1 LightOn model inference_enabled() reduces to the existing CRISPEMBED_QWEN35_OCR gate, image_limits() returns the previous default {}, and is_stop() uses stops {248046} == eos(). The weight cache pointer is nullptr unless CRISPEMBED_QWEN35_WEIGHT_CACHE is on. Default LightOn path unchanged."
+        },
+        {
+          "from_sha256": "01e67496cefb5b1063c1c601f9a77fb3945e8400f396bf800f0fd84faaa8484f",
+          "to_sha256": "d0e2029bee753a17f1b2f748dfa2ce378783b0ae72774815185096d99c56690e",
+          "to_blob": "f8026bcaf5b39b119129c8069f2cfa9b5337dc5f",
+          "recorded_at_commit": "68521f3a592f12862ebea199a337dc4b9956bad1",
+          "recorded": "2026-11-03",
+          "changed_by": [
+            "c6a9cbc44ef42954a835eb9bf45076b6cbdd1159 Merge pull request #137 from CrispStrobe/docs/handoff-dedupe"
+          ],
+          "reason": "Add exact Xiaomi-OCR-0 format-4 identity admission behind both new default-off Xiaomi gates and the existing Qwen35 gate; permit only F32/F16 for this profile and apply its 4096 generation cap only after Xiaomi identity is loaded. Add read-only actual-logit and prefill-stage callbacks that are null by default and can only attach to Xiaomi contexts. Existing LightOn/Ovis profile predicates, tensor math, prompt/stop policy, context bound and numerical defaults are unchanged. This source audit and lightweight controls do not claim native bit equivalence or new precision qualification; frozen LightOn/Ovis failure receipts are retained without rewriting. The new Xiaomi hosted bounded original/native experiment is still pending."
         }
       ]
     },
