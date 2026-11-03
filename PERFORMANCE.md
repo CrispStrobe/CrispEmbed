@@ -70,6 +70,9 @@ Frozen/verification kernels that measure the F16 path pin `=0` (`unlimited-ocr2-
 Low-memory fallback: when available physical memory is below the copies' size + 1 GiB, init skips the copies,
 prints one stderr notice and runs the F16 path (the previous default; `CRISPEMBED_UNLIMITED_OCR2_LOW_MEMORY=1`
 forces it, `=0` disables the check; see `src/core/low_memory.h`).
+Hosted check (2026-11-03, `0d3974ab`, Kaggle CPU x4, 4 trial pages, fast decoder): default 799 s (== `vf32`, 805 s),
+`CRISPEMBED_UNLIMITED_OCR2_LOW_MEMORY=1` 1,287 s (== F16 `after`, 1,162 s); ids/text original-exact 4/4 in both
+(`tests/results/unlimited-ocr2/default-and-low-memory.json`).
 
 ## GOT-OCR2 original-pipeline parity (2 November 2026, `fix/got-ocr2-pipeline-parity`)
 
@@ -145,6 +148,8 @@ max-abs is at most 6.4e-5. All gates stay default-off.
   CRISPEMBED_MINICPM_OCR_VISION_FLASH=1`. It keeps about 4.6 GB of extra F32 weight copies.
   Since 2026-11-03 init skips the copies when available RAM is below their size + 1 GiB (F16 vision + `exact`
   decoder matmul; `CRISPEMBED_MINICPM_OCR_LOW_MEMORY=1` forces, `=0` disables the check).
+  Hosted parity at the defaults (2026-11-03, `8c8c8be6`, 5 cases, sum of walls): F16 503 s / F32 484 s; with
+  `LOW_MEMORY=1` F16 1,132 s / F32 470 s (F32 GGUF has no copies to skip). 5/5 token-exact in all four arms.
   **Default since 2026-11-02** (each gate `=0` opts out; `CRISPEMBED_QWEN35_GRAPH_MATMUL=exact|native`).
 
   Default flip A/B (2026-11-02, `crispembed-ocr-real-scans-minicpm-fast` at `dded1384`, Kaggle Xeon 2.2 GHz x4,

@@ -3,6 +3,7 @@
 #include "moedern_text_frontend.h"
 #include "moedern_packed_profile.h"
 #include "moedern_q4k_profile.h"
+#include "moedern_q4k_mixed.h"
 #include "moedern_q8_profile.h"
 #include "core/env_gate.h"
 #include "core/unicode_categ.h"
@@ -112,6 +113,8 @@ bool text_frontend::load_file(const char * path, bool packed, std::string & erro
         }
         if (named_q8) {
             if (!moedern_q8::file_bounds(path, error)) return false;
+        } else if (padded_q4k && core_env::on("CRISPEMBED_MOEDERN_Q4_K_MIXED")) {
+            if (!moedern_q4k_mixed::file_bounds(path, error)) return false;
         } else if (padded_q4k) {
             if (!moedern_q4k::file_bounds(path, error)) return false;
         } else if (packed && !family && !moedern_packed::file_bounds(path, error))
@@ -131,7 +134,9 @@ bool text_frontend::load_file(const char * path, bool packed, std::string & erro
             q8_pin = moedern_q8::metadata(meta.get(), error);
             if (!q8_pin) return false;
         } else if (padded_q4k) {
-            quantized_pin = moedern_q4k::metadata(meta.get(), error);
+            quantized_pin = core_env::on("CRISPEMBED_MOEDERN_Q4_K_MIXED")
+                                ? moedern_q4k_mixed::metadata(meta.get(), error)
+                                : moedern_q4k::metadata(meta.get(), error);
             if (!quantized_pin) return false;
             (void)moedern_q4k::declarations(meta.get());
         } else if (family) {

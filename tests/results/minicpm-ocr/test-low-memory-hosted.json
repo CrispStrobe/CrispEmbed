@@ -1,0 +1,6 @@
+{
+ "commit": "8c8c8be6a4e254e6273ea19928941f980c227ea7",
+ "exit": 0,
+ "stdout": "test_low_memory: 21 checks, 0 failures\n",
+ "stderr": "test: ~2048 MiB of memory available, F32 weight copies need ~3072 MiB + 1024 MiB margin; using the low-memory path (same weights, slower). CRISPEMBED_TEST_LOW_MEMORY=0 disables this check.\ntest: CRISPEMBED_TEST_LOW_MEMORY=1, skipping 0 MiB of F32 weight copies (low-memory path)\n"
+}

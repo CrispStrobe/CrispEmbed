@@ -28,6 +28,8 @@ import urllib.request
 ROOT = Path(__file__).resolve().parents[2]
 PROTOCOL = "docs/unlimited-ocr2-publication-v1.json"
 SCHEMA = "crispembed-unlimited-ocr2-publication-v1"
+# Owner's acceptance bars (docs/precision-acceptance.md): minimum final-output cosine per tier.
+COSINE_BARS = {"f32": 0.99, "f16": 0.98, "q8_0": 0.97, "q4_k": 0.94}
 DESTINATION = "cstr/Unlimited-OCR-2-GGUF"
 FIXED_FILES = ("README.md", "LICENSE", "UPSTREAM_README.md", "manifest.json", ".gitattributes")
 
@@ -92,7 +94,12 @@ def receipts(cfg, root=ROOT):
 
 
 def plan(cfg, variants):
-    """Ordered build steps: F32 is converted whenever any variant quantizes from it."""
+    """Ordered build steps: F32 is converted whenever any variant quantizes from it.
+
+    A quantize step's args are [source filename, type, --tensor-type rules..., CRISPEMBED_QUANTIZE_*=value...];
+    the workflow passes the trailing switches as environment, never as quantizer arguments. A recipe that
+    quantizes from F16 needs F16 in the same run, and a recipe with a precision receipt must pass its gate.
+    """
     need_f32 = "F32" in variants or any(cfg["recipes"][v]["from"] == "F32" for v in variants)
     steps = []
     if need_f32:
@@ -104,11 +111,45 @@ def plan(cfg, variants):
         if rec["from"] == "convert":
             steps.append(("convert", v, rec["filename"], rec["convert_args"]))
         else:
+            require(rec["from"] in ("F32", "F16"), f"{v} must quantize from F32 or F16")
+            require(rec["from"] == "F32" or "F16" in variants, f"{v} quantizes from F16: publish F16 in the same run")
+            precision(cfg, v)
             tt = [a for o in rec.get("tensor_type", []) for a in ("--tensor-type", o)]
-            steps.append(("quantize", v, rec["filename"], [rec["type"], *tt]))
+            env = [f"{k}={val}" for k, val in sorted(rec.get("quantize_env", {}).items())]
+            require(all(re.fullmatch(r"CRISPEMBED_QUANTIZE_[A-Z0-9_]+=[a-z0-9_]+", e) for e in env),
+                    f"{v} quantize_env must be CRISPEMBED_QUANTIZE_* switches with plain values")
+            steps.append(("quantize", v, rec["filename"],
+                          [cfg["recipes"][rec["from"]]["filename"], rec["type"], *tt, *env]))
     # Every conversion before the first quantization: the workflow frees the source shards then.
     steps.sort(key=lambda s: s[0] != "convert")
     return steps, need_f32 and "F32" not in variants
+
+
+def precision(cfg, variant, root=ROOT):
+    """A recipe with a precision_receipt publishes only if every arm clears its gate (docs/precision-acceptance.md):
+    precision_gate "cosine" = every frozen case's final_cos_min above the tier's bar on every arm."""
+    rec = cfg["recipes"][variant]
+    if "precision_receipt" not in rec:
+        return None
+    require(rec.get("precision_gate") == "cosine", f"{variant} precision_gate must be cosine")
+    bar = COSINE_BARS.get(rec.get("precision_tier"))
+    require(bar is not None, f"{variant} has no cosine bar for its precision tier")
+    path = root / rec["precision_receipt"]
+    require(path.is_file(), f"{variant} has no precision receipt yet ({rec['precision_receipt']})")
+    r = json.loads(path.read_text())
+    arms = [a for a in r.get("arms", []) if a.get("dtype") == rec["precision_dtype"]]
+    require(arms, f"{variant} precision receipt has no {rec['precision_dtype']} arm")
+    worst = 1.0
+    for a in arms:
+        require(sorted(c["id"] for c in a.get("cases", [])) == sorted(cfg["parity_cases"]),
+                f"{variant} precision arm {a.get('name')} misses cases")
+        for c in a["cases"]:
+            cos = c.get("final_cos_min")
+            require(isinstance(cos, (int, float)) and cos > bar,
+                    f"{variant} case {c['id']} final cosine {cos} is not above the {bar} bar ({a.get('name')})")
+            worst = min(worst, cos)
+    return {"receipt": rec["precision_receipt"], "receipt_sha256": digest(path), "arms": [a["name"] for a in arms],
+            "gate": "cosine", "bar": bar, "worst_final_cos": worst}
 
 
 def fetch(url, expected, opener=urllib.request.urlopen):

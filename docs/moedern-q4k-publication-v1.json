@@ -1,0 +1,45 @@
+{
+  "schema": "crispembed-moedern-q4k-publication-recipes-v1",
+  "status": "prepared, not published",
+  "doc": "docs/moedern-q4k-mixed.md",
+  "quantizer": "tools/moedern-colbert/quantize_q4k_mixed.py --input <published F32> --output <file> --variant <V> --recipe <policy> --quantizer <crispembed-quantize> --report <report.json>",
+  "runtime_gates": [
+    "CRISPEMBED_MOEDERN_PUBLIC_TEXT", "CRISPEMBED_MOEDERN_PACKED", "CRISPEMBED_MOEDERN_TEXT_COMPOSED",
+    "CRISPEMBED_MOEDERN_TEXT_FRONTEND", "CRISPEMBED_MOEDERN_COLBERT", "CRISPEMBED_MOEDERN_FAMILY",
+    "CRISPEMBED_MOEDERN_FAST", "CRISPEMBED_MOEDERN_QUANT", "CRISPEMBED_MOEDERN_Q4_K_PADDED",
+    "CRISPEMBED_MOEDERN_Q4_K_MIXED"
+  ],
+  "recipes": {
+    "27M": {
+      "Q4_K_MIX": {
+        "repo": "cstr/SauerkrautLM-MoEdernColBERT-27M-CrispEmbed-GGUF",
+        "filename": "moedern-27m-text-q4_k-mix.gguf",
+        "from": "tests/results/moedern-colbert/publication-27m.json",
+        "policy": "moedern27m_q4k_v1",
+        "note": "Q8_0 base; routed-expert up/down projections and attn_q Q4_K (zero-padded 640->768 columns); gate experts, shared experts and attn_k/v/o Q8_0; embeddings, router, norms and dense head F32. 30.53 MiB vs 35.67 MiB Q8_0.",
+        "precision_receipt": "tests/results/moedern-colbert/q4k-lane-27m.json",
+        "precision_dtype": "q8+exps_up+exps_down+attn_q",
+        "precision_tier": "q4_k",
+        "precision_gate": "cosine"
+      }
+    },
+    "115M": {
+      "Q4_K_MIX": {
+        "repo": "cstr/SauerkrautLM-MoEdernColBERT-115M-CrispEmbed-GGUF",
+        "filename": "moedern-115m-text-q4_k-mix.gguf",
+        "from": "tests/results/moedern-colbert/publication-115m.json",
+        "policy": "moedern115m_q4k_v1",
+        "note": "All 52 engine-quantizable matmul weights Q4_K (640-wide rows zero-padded to 768); embeddings, router, norms, depthwise conv kernels and dense head F32. 85.34 MiB vs 134.55 MiB Q8_0.",
+        "precision_receipt": "tests/results/moedern-colbert/q4k-lane-115m.json",
+        "precision_dtype": "moedern115m_q4k_v1",
+        "precision_tier": "q4_k",
+        "precision_gate": "cosine"
+      }
+    }
+  },
+  "not_qualified": {
+    "1.5M": "no Q4_K recipe clears 0.94 and Q4_K cannot be smaller than Q8_0 (128-wide rows)",
+    "Q8_0": "named Q8_0 fails the 0.97 bar on 27M (0.9315) and 115M (0.9670) through single-token routing flips"
+  },
+  "open": "Retrieval (SciFact NDCG/MRR/Recall, top-1 agreement) and public-client panels for a quantized package are not run; publication needs the owner's dispatch."
+}

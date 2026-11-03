@@ -39,7 +39,7 @@ class Protocol(unittest.TestCase):
         steps, drop = p.plan(self.cfg, ["Q8_0", "F16"])
         self.assertEqual([(s[0], s[1]) for s in steps], [("convert", "F32"), ("convert", "F16"), ("quantize", "Q8_0")])
         self.assertEqual(steps[1][3], ["--fp16"])
-        self.assertEqual(steps[2][3], ["q8_0"])
+        self.assertEqual(steps[2][3], ["unlimited-ocr-2-f32.gguf", "q8_0"])
         self.assertTrue(drop)
         steps, drop = p.plan(self.cfg, ["F16"])
         self.assertEqual([s[1] for s in steps], ["F16"])
