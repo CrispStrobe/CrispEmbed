@@ -12,7 +12,6 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 | Unlimited-OCR-2 post-flip real-scan run | Kernel mode `native-uocr2-default` added (`48182333`) | Run it on Kaggle | `native-uocr2-default.json` committed, ids == `native-uocr2-vf32.json` |
 | Unlimited-OCR-2 Q8_0 on CUDA | 0.9555 < 0.97 (CPU 0.9739) | Search a CUDA-qualifying Q8_0 mix (F16 shared experts/attention) | ≥ 0.97 on CPU and CUDA |
 | GOT-OCR2 Q4_K drift | F16-r2 exact vs original; Q4_K diverges at 83/20; no final-logit cosine measured, so the 1 November precision policy cannot yet be applied | Teacher-forced final-logit cosine of the published Q4_K vs the F16-r2 pipeline (as for Unlimited/MiniCPM), then a mixed search only if < 0.94. Owner: the model is research-licensed (Tongyi), so whether a Q4_K is worth more compute is an owner call (handoff "Owner decisions") | Cosine > 0.94 recorded, or 3/3 token-exact, or owner accepts/declines |
-| PR118 stream follow-ups | Merged (PR118/125) | Hosted MI-GAN256 CPU/F32 panel | Receipt with run ID |
 | Server load control (PR124) | Merged, gates default-off | Live A/B with a real GGUF; concurrent latency; chat-route parity | Receipts per item in the section below |
 | Reranker residual (~0.2 logits) | Pair layout/truncation fixed (PR122) | Fix the stage-diff harness, Spearman/top-k instead of exact argsort | Attributed or accepted |
 | CUDA / Metal audit follow-ups | Matrices in `docs/gpu-support-matrix.md` | One gated GPU path or A/B at a time | Measured A/B before any default flip |
@@ -41,22 +40,6 @@ Q8_0 0.9998; `minicpm_q4k_v1` 0.9671 (971 MiB); `minicpm_q4k_min_v1` 0.9489 (902
   so the arm is not re-run (HISTORY 3 November).
 - `para-en` diverges at token 54 in every 4-bit arm (box glyphs read as `×`
   instead of the original `x`/dropped). Representative real-page quality is still open.
-
-## PR 118 stream hardening and selective CI — 3 November 2026
-
-Bounded maintainer continuation of [PR118](https://github.com/CrispStrobe/CrispEmbed/pull/118),
-audited at `60f0b6cf4657cb118049b98770e63736719049a8`; branch `fix/inpaint-stream-audit`.
-Preserve the contributor's commits and the default-off stream/engine gates. No runtime
-release, model publication or application-pin change follows from this work.
-
-State: PR118 and its fix PR125 are merged (HISTORY 3 November). Open:
-
-- [ ] Run the bounded reviewed MI-GAN256 CPU/F32 panel on hosted CI and retain its report.
-- [ ] Record the post-merge hosted platform/inpainting/quality results for `main` and the
-      remaining limitations. Done when both boxes have run IDs and a receipt.
-
-Initial audit evidence and acceptance scope: [stream audit](docs/inpaint-stream-audit.md).
-The original failing guard and source-derived counterexamples remain part of the record.
 
 ## Server usage, load control and OpenAI-shaped OCR — 2 November 2026
 

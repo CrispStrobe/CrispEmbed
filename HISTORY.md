@@ -41,6 +41,19 @@ entries further down.
   attribution chain (v2/v3/v4 live norm, layer0 attention, layer3 FFN); env-var reference,
   wiring audit and the 131 presence-read conversion; CI queue policy; inpainting publication.
 
+## 3 November 2026 — PR118/PR125 post-merge review and MI-GAN256 video panel
+
+Merged diff re-read against its gates: `--inpaint-stream` still requires
+`CRISPEMBED_INPAINT_STREAM=1`, engine gates unchanged, no default or publication change; no
+runtime regression found. The reviewed MI-GAN256 CPU/F32 video panel passes on the fold merge
+(41618653168, `445115d0`) and on main (41655415825, `a03da3de`) with all ten arm outputs
+byte-identical across the two runs: known pixels RGB-exact everywhere, zero declared-bound
+violations; temporal reuse makes static/subtitle-change exact (0 engine frames) and correctly
+refuses reuse on moving texture; fade regresses within bounds (+21.6 masked MSE). The
+post-merge Inpainting CLI failure (41618652973) was a Windows sccache PDB error, fixed after the
+merge by `93209b32`. Receipt: `tests/results/inpainting/pr118-post-merge-review.json`.
+Synthetic clips only; issue 71's representative panel stays open.
+
 ## 3 November 2026 — PLAN index triage
 
 Every PLAN index lane now states state/next/done-when; lanes found only in section bodies
