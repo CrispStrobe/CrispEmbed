@@ -21,6 +21,7 @@
   tarball flattened as release.yml now does both embed exactly six real files
   (libcrispembed, libggml, -base, -cpu, -metal, -blas `.dylib`), all signatures verify, and the
   app loads libcrispembed and resolves `crispembed_init` with no manual fixes.
+
 ## 3 November 2026 — OCR WASM back under 4 MiB: large VLM/document engines left out of the Emscripten build
 
 Build WASM had failed on main since `922d06bd`: `crispembed_ocr.wasm` was 4,203,804 bytes against the
