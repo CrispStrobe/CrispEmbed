@@ -51,7 +51,7 @@ Re-scored status of this branch's Q4_K lanes (no lane is qualified):
 | Josev mixed A/B/C | Recipes and authored controls only | Unmeasured |
 | UltraBERT mixed Q4_K | Initial credential/lineage failures and model-free controls only | Unmeasured |
 | MoEdern 1.5M/27M/115M padded Q4_K | Gated runtime/profile controls; 1.5M SciFact panel ran F32 only (`q4_attempted` false) | Unmeasured |
-| Unlimited-OCR-2 mixed Q4_K (v3) | F16 control exact on four cases; conversion stopped at `v.pos_embed` protection, zero Q4 forwards | Unmeasured |
+| Unlimited-OCR-2 Q4_K (v3 stop fixed; [recipes](unlimited-ocr2-q4k-recipes.md)) | `v.pos_embed` stop was a raw stored-shape compare (tensor kept F16, byte-exact). Teacher-forced vs native F16 (= original IDs 4/4): `unlimited_ocr2_q4k_shared8_v1` 2,189 MiB 0.9634 CPU / 0.9540 CUDA, text = F16 4/4; smallest `unlimited_ocr2_q4k_v1` 2,074 MiB 0.9512 / 0.9443, one label changes. Q8_0 0.9739 CPU but 0.9555 CUDA | Q4_K qualified (cosine), not token-exact (box coordinates); Q8_0 fails 0.97 on CUDA |
 | MiniCPM-OCR graph Q4_K/Q8 | Q8 arms failed patch loading before inference | Unmeasured |
 
 ## Current branches and executions

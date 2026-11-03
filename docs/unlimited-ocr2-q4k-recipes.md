@@ -73,12 +73,69 @@ token costs more than the bytes suggest. The SAM encoder is the one hard no for 
 
 ### Round 2 (base production q4_k, Q4_0 fallbacks replaced)
 
-ROUND2
+Run 41616154269. `q4kn` = production `q4_k` with the 12 Q4_0 fallbacks (expert
+`ffn_down`, 896 wide, and the 6848-wide dense layer-0 `ffn_down`) stored IQ4_NL and
+`c.pos_embed` F16, so the file holds no legacy Q4_0. The repeated `q4k` arm reproduced run
+41589463950 to every printed digit (portable build, different runner).
 
-## Winner
+| Recipe | Contents | MiB | Final cos min (case) | Free-run IDs exact | Text = F16 (boxes stripped) |
+|---|---|---|---|---|---|
+| q4kne | q4kn + embedding Q4_K | 2074 | 0.9512 (german) | 0/4 | 3/4 |
+| q4kn | q4_k, no Q4_0 | 2153 | 0.9523 (german) | 0/4 | 3/4 |
+| q4kns | q4kn + shared experts Q8_0 | 2189 | 0.9634 (receipt) | 0/4 | 4/4 |
+| q4kna | q4kn + decoder attention Q8_0 | 2190 | **0.9237** (paragraphs) | 0/4 | 4/4 |
 
-WINNER
+The one text change in `q4kn`/`q4kne` is the receipt's first layout label
+(`title<LEVEL1>` read as `text`). Raising attention to Q8_0 lowered the minimum
+(`q4kna`): with the shared experts at 4 bits it moves a different router decision. The
+shared experts are the sensitive part of the decoder (cf. `shx` alone).
 
-## Device confirmation
+## Winners
 
-CUDA
+| Policy (`CRISPEMBED_QUANTIZE_UNLIMITED_OCR2_POLICY`) | Recipe | MiB | vs Q8_0 | CPU final cos min | CUDA T4 final cos min | Text = F16 (boxes stripped) |
+|---|---|---|---|---|---|---|
+| `unlimited_ocr2_q4k_v1` (smallest above the bar) | q4kne | 2,074 | 3,397 (-39%) | 0.9512 (german) | 0.9443 (receipt) | 3/4 |
+| `unlimited_ocr2_q4k_shared8_v1` (recommended) | q4kns | 2,189 | 3,397 (-36%) | 0.9634 (receipt) | 0.9540 (paragraphs) | 4/4 |
+
+Both: base `q4_k` from the published F16; routed expert gate/up, decoder attention and
+the small DASH/index projections Q4_K; expert `ffn_down` and the dense layer-0 `ffn_down`
+IQ4_NL (no Q4_0); the production guards keep SAM/CLIP vision, projector, embedding and
+lm_head at Q8_0; norms, `v.pos_embed` and
+`c.pos_embed` F16. `v1` adds `l.embed_tokens.weight=q4_k`; `shared8_v1` keeps the
+shared experts Q8_0. The quantizer refuses either policy for another model or base type
+and stamps `unlimited_ocr.quantization.policy`; `tests/test_unlimited_ocr2_quant_policy.py`
+keeps the C++ tables equal to the measured recipes.
+
+`v1` is the smallest recipe that clears 0.94 on both devices, by 0.004 on CUDA, and changes
+one layout label (receipt `title` -> `text`). `shared8_v1` costs 115 MiB more, clears with
+0.014 margin on CUDA and keeps the text; it is the `Q4_K_MIX` publication recipe
+(`docs/unlimited-ocr2-publication-v1.json`, `precision_gate` cosine, receipt
+`tests/results/unlimited-ocr2/q4k-precision-q4kns.json`). Not published. The publisher now
+quantizes a recipe from its declared source (F16 here) and passes `quantize_env` as
+environment; the publication run converts F16 afresh and must match the published F16
+SHA-256 (`487b887e...`) the receipts were measured on, or be re-scored.
+
+No recipe is token-exact against the original: every free-running divergence, Q8_0
+included, is a box coordinate (max 2-3 px) or, for `q4kn`/`v1`, that one label; every case
+reaches EOS before the 1,024-token cap.
+
+## Device confirmation (Kaggle Tesla T4, portable host build, CUDA arch 75)
+
+Reference: the same CPU F16 teacher-forced run on the Kaggle CPU (Intel Xeon 2.0 GHz; it
+reproduces the original IDs on 4/4 there too). Kernel `crispembed-unlimited-ocr2-q4k-cuda`
+v1 (commit `a65b3b3c`) and v2 (`a44590b7`); receipts `q4k-sweep/kaggle-cuda-v1`, `-v2`.
+
+| Arm | MiB | CUDA final cos min (case) | Free-run IDs exact | Text = F16 (boxes stripped) |
+|---|---|---|---|---|
+| F16 on CUDA | 6383 | 0.9789 (german) | 4/4 | 4/4 |
+| q8 (Q8_0) | 3397 | **0.9555** (paragraphs) | 1/4 | 4/4 |
+| exp4 | 2242 | 0.9658 (receipt) | 0/4 | 4/4 |
+| q4kns = `shared8_v1` | 2189 | 0.9540 (paragraphs) | 0/4 | 4/4 |
+| q4kn | 2153 | 0.9497 (german) | 0/4 | 3/4 |
+| q4kne = `v1` | 2074 | 0.9443 (receipt) | 0/4 | 3/4 |
+
+The CUDA backend alone costs about 0.02 (F16 on CUDA 0.9789 against CPU F16). Q8_0 on CUDA
+is **below the 0.97 Q8_0 bar** (0.9555; CPU 0.9739): TODO, a Q8_0 recipe for CUDA (e.g.
+shared experts / attention F16) before the published Q8_0 is claimed qualified on CUDA.
+(`q8` is quantized from the published F16 with `c.pos_embed` F16, so it is not
+byte-identical to the published F32-sourced Q8_0; the published file was not re-scored.)

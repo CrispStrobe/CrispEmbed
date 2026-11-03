@@ -1,0 +1,29 @@
+{
+ "cases": {
+  "paragraphs": {
+   "png_sha256": "4dfefb802c818060bb37a6d9d9e9e70d67c131c1312b46cc14396bfad22cabd0",
+   "frozen_png_sha256": "4dfefb802c818060bb37a6d9d9e9e70d67c131c1312b46cc14396bfad22cabd0",
+   "match": true,
+   "original_ids": 146
+  },
+  "table": {
+   "png_sha256": "07c4115531d1652af6e32f81379620a0b3169693742eba33622526eabcb037c9",
+   "frozen_png_sha256": "07c4115531d1652af6e32f81379620a0b3169693742eba33622526eabcb037c9",
+   "match": true,
+   "original_ids": 138
+  },
+  "receipt": {
+   "png_sha256": "bd72bbb873194db9485928d5b743575a4d91dc1b395b111e2521ca8507338f58",
+   "frozen_png_sha256": "bd72bbb873194db9485928d5b743575a4d91dc1b395b111e2521ca8507338f58",
+   "match": true,
+   "original_ids": 306
+  },
+  "german": {
+   "png_sha256": "99eb1891309bc146fa873e642cc9ffee77fedc626145856db7150e2b7e862ddd",
+   "frozen_png_sha256": "99eb1891309bc146fa873e642cc9ffee77fedc626145856db7150e2b7e862ddd",
+   "match": true,
+   "original_ids": 164
+  }
+ },
+ "all_match": true
+}

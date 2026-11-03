@@ -95,6 +95,18 @@ Source: `docs/gpu-support-matrix.md` §CUDA audit (branch `feat/cuda-audit`, Kag
 - Metal A/B of the new `CRISPEMBED_PAN_GPU` / `CRISPEMBED_RESTORMER_GPU` (CUDA-only
   defaults until measured there).
 
+## Unlimited-OCR-2 Q4_K recipes — 3 November 2026 (perf/q4k-unlimited-ocr2-20261103)
+
+Source: `docs/unlimited-ocr2-q4k-recipes.md`. Both named policies clear the Q4_K bar on
+hosted CPU (portable) and Kaggle T4; `Q4_K_MIX` (`unlimited_ocr2_q4k_shared8_v1`) is
+prepared in the publication protocol, not published.
+
+- Coordinator: dispatch `Q4_K_MIX` publication (cosine gate); the fresh F16 conversion must
+  equal the measured published F16 SHA `487b887e...` or the receipt is re-scored.
+- TODO: Q8_0 is 0.9555 on CUDA (< 0.97; CPU 0.9739). Find a CUDA-qualifying Q8_0 recipe
+  (F16 shared experts / attention) and re-score the published F32-sourced Q8_0.
+- Metal arm not measured.
+
 ## TeleOCR / MinerU Q4_K-class recipes — 2 November 2026 (feat/qwen2vl-q4k-recipes)
 
 Source: `docs/qwen2vl-q4k-recipes.md`. Winners clear the Q4_K bar on CPU, Metal and

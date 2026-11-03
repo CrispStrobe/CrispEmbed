@@ -103,17 +103,20 @@ struct UnlimitedOcr2Policy {
 };
 static const std::vector<UnlimitedOcr2Policy> & unlimited_ocr2_policies() {
     static const std::vector<UnlimitedOcr2Policy> policies = {
+        // = recipe "q4kne": the smallest measured recipe above the bar on CPU and CUDA.
         { "unlimited_ocr2_q4k_v1",
           GGML_FTYPE_MOSTLY_Q4_K,
           { { "c.pos_embed", GGML_TYPE_F16 },
             { "l.blk.*.ffn_down_exps.weight", GGML_TYPE_IQ4_NL },
-            { "l.blk.0.ffn_down.weight", GGML_TYPE_IQ4_NL } } },
-        { "unlimited_ocr2_q4k_experts_v1",
-          GGML_FTYPE_MOSTLY_Q8_0,
+            { "l.blk.0.ffn_down.weight", GGML_TYPE_IQ4_NL },
+            { "l.embed_tokens.weight", GGML_TYPE_Q4_K } } },
+        // = recipe "q4kns": shared experts Q8_0, more margin and box-stripped text equal to F16 on all cases.
+        { "unlimited_ocr2_q4k_shared8_v1",
+          GGML_FTYPE_MOSTLY_Q4_K,
           { { "c.pos_embed", GGML_TYPE_F16 },
-            { "l.blk.*.ffn_gate_exps.weight", GGML_TYPE_Q4_K },
-            { "l.blk.*.ffn_up_exps.weight", GGML_TYPE_Q4_K },
-            { "l.blk.*.ffn_down_exps.weight", GGML_TYPE_IQ4_NL } } },
+            { "l.blk.*.ffn_down_exps.weight", GGML_TYPE_IQ4_NL },
+            { "l.blk.0.ffn_down.weight", GGML_TYPE_IQ4_NL },
+            { "l.blk.*.shared_exp.*", GGML_TYPE_Q8_0 } } },
     };
     return policies;
 }
@@ -1778,7 +1781,7 @@ int main(int argc, char ** argv) {
         if (!g_unlimited_ocr2_policy) {
             fprintf(stderr,
                     "unknown CRISPEMBED_QUANTIZE_UNLIMITED_OCR2_POLICY '%s' "
-                    "(unlimited_ocr2_q4k_v1|unlimited_ocr2_q4k_experts_v1)\n",
+                    "(unlimited_ocr2_q4k_v1|unlimited_ocr2_q4k_shared8_v1)\n",
                     name);
             return 1;
         }
