@@ -92,7 +92,7 @@ inline int64_t available_physical_bytes() {
     if (host_page_size(host, &page) != KERN_SUCCESS || page == 0) return -1;
     vm_statistics64_data_t vs;
     mach_msg_type_number_t count = HOST_VM_INFO64_COUNT;
-    if (host_statistics64(host, HOST_VM_INFO64, (host_info64_t)&vs, &count) != KERN_SUCCESS) return -1;
+    if (host_statistics64(host, HOST_VM_INFO64, (host_info64_t) &vs, &count) != KERN_SUCCESS) return -1;
     const uint64_t pages = uint64_t(vs.free_count) + vs.inactive_count + vs.purgeable_count;
     return int64_t(pages * uint64_t(page));
 #else
@@ -127,8 +127,8 @@ inline bool skip_f32_copies(const char * engine, const char * env_name, uint64_t
                             uint64_t margin_bytes = kDefaultMarginBytes) {
     const mode m = parse_mode(env_name ? std::getenv(env_name) : nullptr);
     if (m == mode::forced_on) {
-        std::fprintf(stderr, "%s: %s=1, skipping %.0f MiB of F32 weight copies (low-memory path)\n", engine, env_name,
-                     double(extra_bytes) / 1048576.0);
+        std::fprintf(stderr, "%s: %s=1, skipping %.0f MiB of F32 weight copies (low-memory path)\n", engine,
+                     env_name, double(extra_bytes) / 1048576.0);
         return true;
     }
     if (m == mode::disabled || extra_bytes == 0) return false;
@@ -137,8 +137,8 @@ inline bool skip_f32_copies(const char * engine, const char * env_name, uint64_t
     std::fprintf(stderr,
                  "%s: ~%.0f MiB of memory available, F32 weight copies need ~%.0f MiB + %.0f MiB margin; "
                  "using the low-memory path (same weights, slower). %s=0 disables this check.\n",
-                 engine, double(avail) / 1048576.0, double(extra_bytes) / 1048576.0, double(margin_bytes) / 1048576.0,
-                 env_name);
+                 engine, double(avail) / 1048576.0, double(extra_bytes) / 1048576.0,
+                 double(margin_bytes) / 1048576.0, env_name);
     return true;
 }
 

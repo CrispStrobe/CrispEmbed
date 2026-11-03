@@ -49,7 +49,8 @@ static int crispembed_test_main() {
     expect(decide(mode::automatic, 3 * GiB, int64_t(64 * GiB)) == decision::keep_copies, "plenty keeps copies");
     expect(decide(mode::automatic, 3 * GiB, int64_t(4 * GiB)) == decision::keep_copies,
            "exactly extra + margin keeps copies");
-    expect(decide(mode::automatic, 3 * GiB, int64_t(4 * GiB) - 1) == decision::skip_low_memory, "one byte short skips");
+    expect(decide(mode::automatic, 3 * GiB, int64_t(4 * GiB) - 1) == decision::skip_low_memory,
+           "one byte short skips");
     expect(decide(mode::automatic, 3 * GiB, int64_t(2 * GiB)) == decision::skip_low_memory, "low memory skips");
     expect(decide(mode::automatic, 3 * GiB, int64_t(3 * GiB), 0) == decision::keep_copies, "zero margin");
 
