@@ -423,6 +423,13 @@ STRICTER_THAN_UPSTREAM = {
     "transcoda": "encoder fine-tuned from ConvNeXt V2 ImageNet weights (CC-BY-NC-4.0); "
                  "upstream card says apache-2.0 (e83faac6, docs/licensing lineage)",
 }
+# Moebius: the author README grants Apache-2.0, the author HF card says MIT. The
+# rehost card reproduces both records (license: other / moebius-upstream-records,
+# tools/ci-heavy/inpaint_gguf_publish.py; docs/latent-inpaint-reuse.md) rather than
+# electing one, so it never claims more than either record grants.
+for _n in ("moebius-f32", "moebius-f16", "moebius-q8_0", "moebius-q4_k-mix"):
+    STRICTER_THAN_UPSTREAM[_n] = ("conflicting upstream records (README Apache-2.0, HF card MIT); "
+                                  "rehost reproduces both verbatim, no election")
 
 
 def _deliberately_stricter(r: Dict[str, str], ours: str) -> bool:
