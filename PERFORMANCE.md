@@ -1,3 +1,18 @@
+## Josev quantized storage timing (3 November 2026, hosted CPU AMD EPYC 9V74, portable, 2 threads)
+
+Four frozen cases (319/…-token requests), one process each run, including model load.
+Run 41615751516; receipt `tests/results/josev2b/q4k-sweep-41615751516.json`.
+
+| Storage | MiB | Four cases (s) | Quantize (s) |
+|---|---|---|---|
+| F32 | 7,304 | 55.8 | — |
+| Q8_0 (150 projections) | 3,462 | 44.2 | 7.9 |
+| `josev_q4k_down8_v1` | 2,952 | 44.6 | 72.5 |
+| all Q4_K | 2,808 | 44.2 | 90.5 |
+
+Quantized storage is ~20% faster than F32 and the Q8_0/Q4_K arms are equal: this
+path dequantizes the projections to F32 rows, so it saves memory/disk, not compute.
+
 ## OCR WASM size (3 November 2026, Build WASM, emsdk 6.0.2, Release -O3)
 
 | Build | `crispembed_ocr.wasm` bytes | vs 4 MiB check |
@@ -55,6 +70,9 @@ Frozen/verification kernels that measure the F16 path pin `=0` (`unlimited-ocr2-
 Low-memory fallback: when available physical memory is below the copies' size + 1 GiB, init skips the copies,
 prints one stderr notice and runs the F16 path (the previous default; `CRISPEMBED_UNLIMITED_OCR2_LOW_MEMORY=1`
 forces it, `=0` disables the check; see `src/core/low_memory.h`).
+Hosted check (2026-11-03, `0d3974ab`, Kaggle CPU x4, 4 trial pages, fast decoder): default 799 s (== `vf32`, 805 s),
+`CRISPEMBED_UNLIMITED_OCR2_LOW_MEMORY=1` 1,287 s (== F16 `after`, 1,162 s); ids/text original-exact 4/4 in both
+(`tests/results/unlimited-ocr2/default-and-low-memory.json`).
 
 ## GOT-OCR2 original-pipeline parity (2 November 2026, `fix/got-ocr2-pipeline-parity`)
 
@@ -130,6 +148,8 @@ max-abs is at most 6.4e-5. All gates stay default-off.
   CRISPEMBED_MINICPM_OCR_VISION_FLASH=1`. It keeps about 4.6 GB of extra F32 weight copies.
   Since 2026-11-03 init skips the copies when available RAM is below their size + 1 GiB (F16 vision + `exact`
   decoder matmul; `CRISPEMBED_MINICPM_OCR_LOW_MEMORY=1` forces, `=0` disables the check).
+  Hosted parity at the defaults (2026-11-03, `8c8c8be6`, 5 cases, sum of walls): F16 503 s / F32 484 s; with
+  `LOW_MEMORY=1` F16 1,132 s / F32 470 s (F32 GGUF has no copies to skip). 5/5 token-exact in all four arms.
   **Default since 2026-11-02** (each gate `=0` opts out; `CRISPEMBED_QWEN35_GRAPH_MATMUL=exact|native`).
 
   Default flip A/B (2026-11-02, `crispembed-ocr-real-scans-minicpm-fast` at `dded1384`, Kaggle Xeon 2.2 GHz x4,

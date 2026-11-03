@@ -1,0 +1,47 @@
+{
+  "schema": "crispembed-josev-q4k-publication-recipe-v1",
+  "published": false,
+  "dispatch_ready": false,
+  "note": "Prepared, not published. tools/ci-heavy/josev_publish.py uploads only the F32 file; it needs a quantized branch (quantize with the policy below, re-run the frozen four-case cosine gate, upload under a new immutable revision) before this recipe can be dispatched.",
+  "destination": "cstr/Josev-2B-SystemOne-GGUF",
+  "source": {
+    "filename": "josev2b-systemone-f32.gguf",
+    "revision": "bffe62522f826b4c33f2e731d5b870ced5150a17",
+    "sha256": "72684e39d0eed526b40c5150c78b2d881d324c39e16af48060b3d741f526ccf2"
+  },
+  "recipes": {
+    "Q8_0": {
+      "filename": "josev2b-systemone-q8_0.gguf",
+      "type": "q8_0",
+      "tensor_type": [
+        "*=f32",
+        "l.layers.*.self_attn.?_proj.weight=q8_0",
+        "l.layers.*.linear_attn.in_proj_qkv.weight=q8_0",
+        "l.layers.*.linear_attn.in_proj_z.weight=q8_0",
+        "l.layers.*.linear_attn.out_proj.weight=q8_0",
+        "l.layers.*.mlp.*_proj.weight=q8_0"
+      ],
+      "metadata_string": [
+        "josev2b.packed.format=crispembed-josev-packed-mixed-v2"
+      ],
+      "standard_file_type": true,
+      "note": "150 projections Q8_0, 292 critical tensors F32; 3,462 MiB. Head-logit cosine min 0.99995, final-norm 0.99944 (four frozen cases, portable hosted CPU).",
+      "precision_receipt": "tests/results/josev2b/q4k-sweep-41615751516.json",
+      "precision_dtype": "q8-all",
+      "precision_tier": "q8_0",
+      "precision_gate": "cosine"
+    },
+    "Q4_K_MIX": {
+      "filename": "josev2b-systemone-q4_k-down8.gguf",
+      "type": "q4_k",
+      "quantize_env": {
+        "CRISPEMBED_QUANTIZE_JOSEV_POLICY": "josev_q4k_down8_v1"
+      },
+      "note": "Named policy josev_q4k_down8_v1 (docs/josev2b-q4k-sweep.md): all decoder projections Q4_K except the 24 MLP down_proj at Q8_0; embedding, norms, head and other non-projection tensors F32. 2,952 MiB vs 3,462 MiB Q8_0. Head-logit cosine min 0.99739, final-norm 0.94911; option argmax 4/4, complete typed JSON 0/4 (rounded probabilities move).",
+      "precision_receipt": "tests/results/josev2b/q4k-sweep-41615751516.json",
+      "precision_dtype": "all-q4-down-q8",
+      "precision_tier": "q4_k",
+      "precision_gate": "cosine"
+    }
+  }
+}

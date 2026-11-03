@@ -181,6 +181,33 @@ Source: `docs/gpu-support-matrix.md` §CUDA audit (branch `feat/cuda-audit`, Kag
 - Metal A/B of the new `CRISPEMBED_PAN_GPU` / `CRISPEMBED_RESTORMER_GPU` (CUDA-only
   defaults until measured there).
 
+<<<<<<< HEAD
+## Unlimited-OCR-2 Q4_K recipes — 3 November 2026 (perf/q4k-unlimited-ocr2-20261103)
+
+Source: `docs/unlimited-ocr2-q4k-recipes.md`. Both named policies clear the Q4_K bar on
+hosted CPU (portable) and Kaggle T4; `Q4_K_MIX` (`unlimited_ocr2_q4k_shared8_v1`) is
+prepared in the publication protocol, not published.
+
+- Coordinator: dispatch `Q4_K_MIX` publication (cosine gate); the fresh F16 conversion must
+  equal the measured published F16 SHA `487b887e...` or the receipt is re-scored.
+- TODO: Q8_0 is 0.9555 on CUDA (< 0.97; CPU 0.9739). Find a CUDA-qualifying Q8_0 recipe
+  (F16 shared experts / attention) and re-score the published F32-sourced Q8_0.
+- Metal arm not measured.
+=======
+## Josev Q4_K sweep — 3 November 2026 (perf/q4k-josev-20261103)
+
+Source: `docs/josev2b-q4k-sweep.md`. Portable hosted CPU, frozen original reference.
+`josev_q4k_down8_v1` (2,952 MiB vs Q8_0 3,462) clears the Q4_K bar on head logits
+(0.99739) and final norm (0.94911); Q8_0 clears 0.97 (0.99995/0.99944).
+
+- Coordinator: Josev Q8_0/Q4_K_MIX publication needs a quantized branch in
+  `tools/ci-heavy/josev_publish.py` first (`docs/josev2b-q4k-publication-v1.json`
+  is prepared, `dispatch_ready` false). Not published.
+- No Q4_K recipe is typed-JSON exact (0/4; argmax 4/4). Strict 0.002/0.99999 stage
+  budgets stay failed diagnostics.
+- CUDA: Josev's packed/composed runtime is CPU-only; a CUDA arm needs a backend path.
+>>>>>>> origin/main
+
 ## TeleOCR / MinerU Q4_K-class recipes — 2 November 2026 (feat/qwen2vl-q4k-recipes)
 
 Source: `docs/qwen2vl-q4k-recipes.md`. Winners clear the Q4_K bar on CPU, Metal and
@@ -506,26 +533,42 @@ handoff take precedence over historical commands.
 1. Inspect the two already queued jobs: Unlimited40868634374 and
    Ultra40871150002. Verify exact source/attempt and collect small reports after
    completion; do not duplicate them. Keep models/raw arrays remote.
-2. WASM drift lane: **closed with a documented platform tolerance** (owner
-   decision, 2 Nov 2026). Attribution is complete: the
-   [v4](tests/results/packaging/wasm-live-norm-v4-attribution.json),
-   [FFN](tests/results/packaging/wasm-layer3-ffn-matmul-v1.json) and
-   [layer0](tests/results/packaging/wasm-layer0-attention-v1.json) receipts show
-   kernel accumulation order (IQ4_NL, IQ4_XS, flash_attn F32), amplified by
-   activation quantization; no single-op fix. [Successor assets v3](docs/successor-assets-v3.md)
-   adds a WASM-only bound for the quantized MiniLM's packaged browser final
-   vector: max_abs<=0.0101 and cosine>=0.99837 (measured deterministic
-   0.00837269/0.99864984 plus 20%). Native gates stay strict and byte-identical.
-   Run 41471904133: the WASM consumer passes under the bound and every other
-   consumer job passes. The run is **not green**: the unchanged strict review
-   rejects cross-platform desktop parity, macOS arm64 vs Linux x86_64
-   (max_abs 0.00255 > 0.002, cosine 0.99989). This native gate never ran
-   before for these producers. Next (owner): decide whether that native
-   cross-platform drift also needs its own attribution and decision. It is not
-   relaxed here. Parked optional future experiment: a multi-kernel native-order
-   WASM build (IQ4_NL tinyBLAS order, IQ4_XS AVX2 order, flash
+2. Successor-asset drift lane: **closed; whole run green** (run41587063385,
+   [receipt](tests/results/packaging/successor-assets-v4-run.json)). There are two
+   owner-accepted, measured, narrowly scoped tolerances; every other gate stays
+   strict (0.002/0.99999):
+   - **WASM** ([v3](docs/successor-assets-v3.md)): packaged browser final vector
+     max_abs<=0.0101, cosine>=0.99837. It is attributed by the
+     [v4](tests/results/packaging/wasm-live-norm-v4-attribution.json),
+     [FFN](tests/results/packaging/wasm-layer3-ffn-matmul-v1.json) and
+     [layer0](tests/results/packaging/wasm-layer0-attention-v1.json) receipts:
+     kernel order, amplified by activation quantization.
+   - **macOS arm64 desktop** ([v4](docs/successor-assets-v4.md)): only the review's
+     macos-arm64 vs linux-x86_64 final vector, max_abs<=0.00307 and
+     cosine>=0.999866 (measured 0.0025544/0.99988863 plus 20%). This one is
+     accepted **without attribution**. The scope is narrower than an
+     arm64-vs-x86 rule because Linux arm64 vs x86 passes strict at 1.2e-4.
+     **Attributed** by run41638730050
+     ([receipt](tests/results/packaging/macos-desktop-drift-attribution-v1.json)):
+     the whole drift is the Metal GPU backend that the desktop consumer selects
+     (paravirtual device). With `CRISPEMBED_FORCE_CPU=1`, the same macOS package
+     matches Linux arm64 within 5.14e-7 on macos-14 and macos-15. CPU compile
+     differences (AppleClang, Accelerate, llamafile, -march) contribute at most
+     5.14e-7, so no build-config fix applies and release builds stay unchanged.
+     **Owner decision (3 Nov 2026): keep the v4 macOS tolerance; the v5 proposal
+     below is declined and not scheduled.** Recorded for reference only:
+     a v5 protocol could run the
+     macOS desktop parity review with `CRISPEMBED_FORCE_CPU=1`
+     (measured A/B vs Linux x86_64: 0.0025544/0.99988863 -> 1.20e-4/0.9999997,
+     strict pass) and drop the v4 macOS tolerance. A separate Metal-labelled
+     arm would then keep the GPU path covered. Before that, measure which
+     backend is closer to an F32 reference. The Metal IQ4_XS mul_mv
+     F32-activation hypothesis is unverified.
+
+   Optional follow-ups, not scheduled: (a) macOS attribution: done, see above; (b) a parked multi-kernel native-order WASM
+   build (IQ4_NL tinyBLAS order, IQ4_XS AVX2 order, flash
    `vec_dot_f32`/`vec_mad_f32` with fmaf and AVX lane order, matching expf).
-   [Run receipt](tests/results/packaging/successor-assets-v3-run.json).
+   Nothing is qualified, there is no release alias and the app stays on 0.17.12.
 3. Independently review MoE real-router source81fa4e26, then execute its
    component-only replay using exact-v4 attached captures. No whole-model or
    original forward. Require own-byte controls before cross-input conclusions.
@@ -568,8 +611,13 @@ Since 2026-11-03 init does this automatically when available RAM is short (`CRIS
 - [x] Flipped on 2026-11-03 (`explicitly_off`; `=0` restores F16); F16-path kernels pin `=0`. TILE_BATCH stays off (~2%).
 - [x] Low-memory fallback (`src/core/low_memory.h`, `CRISPEMBED_UNLIMITED_OCR2_LOW_MEMORY`,
       `CRISPEMBED_MINICPM_OCR_LOW_MEMORY`): skip the F32 copies when available RAM < copies + 1 GiB.
-- [ ] Hosted confirmation: one real-scan run at the flipped default (expect `native-uocr2-vf32.json` ids), and one
-      MiniCPM + Unlimited-OCR-2 run with `..._LOW_MEMORY=1` confirming ids identical to the respective non-copy arms. Remaining time is prefill (38 s) and decode
+- [x] Hosted confirmation at the new defaults (2026-11-03, no env vs `..._LOW_MEMORY=1`): MiniCPM-OCR 5/5 parity cases
+      token-ID and text exact in both arms, F32 and F16 GGUF (`tests/results/minicpm-ocr/native-parity-default.json`,
+      `native-parity-low-memory.json`, at `8c8c8be6`); Unlimited-OCR-2 4/4 trial pages ids + text byte-exact vs original,
+      default == `vf32` receipt, LOW_MEMORY == F16 `after` receipt (`tests/results/unlimited-ocr2/default-and-low-memory.json`).
+      The first MiniCPM run (`0d3974ab`) found F32 GGUFs could not load at the default (empty F32-copy set); fixed in
+      `8c8c8be6`, initial receipts retained (`*-initial-f32-load-failure.json`). `test-low-memory` 21/21 on Kaggle.
+      Still open: one real-scan run at the flipped Unlimited default (expect `native-uocr2-vf32.json` ids). Remaining time is prefill (38 s) and decode
 (~66 s) on the table page; the global 1024 SAM view is the next vision target.
 
 ## Required Q8_0 and Q4_K coverage for new permissive models (29 October)

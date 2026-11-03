@@ -1,0 +1,65 @@
+# Josev Q4_K sensitivity sweep against the frozen original reference
+# (docs/josev2b-q4k-sweep.md). Hosted CPU, portable build (GGML_NATIVE=OFF).
+# Needs an Actions token to read the frozen original-reference artifact, which
+# heavy-cpu.yml does not provide. Runs on push of the request file on a lane
+# branch, or by dispatch.
+name: Josev Q4_K sweep
+on:
+  workflow_dispatch:
+    inputs:
+      recipes:
+        description: 'Comma-separated recipe names from tools/josev2b_q4k_recipes.json (empty: request file)'
+        required: false
+        default: ''
+  push:
+    branches: ['perf/q4k-josev-*']
+    paths: ['docs/josev2b-q4k-sweep-request.json']
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: josev-q4k-sweep-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  sweep:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    env:
+      GH_TOKEN: ${{ github.token }}
+      PYTHONNOUSERSITE: '1'
+      PIP_CONFIG_FILE: /dev/null
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Free disk and scratch
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL || true
+          if sudo mkdir -p /mnt/josev && sudo chown "$USER" /mnt/josev; then S=/mnt/josev; else S="$RUNNER_TEMP/josev"; fi
+          echo "SWEEP_SCRATCH=$S/scratch" >> "$GITHUB_ENV"
+          df -h / /mnt || true
+      - name: Locked metric environment
+        run: |
+          python tests/test_josev_quant_policy.py
+          git fetch origin b2edf8c83c9aca1f8a9210198d47798ac13828b8 || true
+          python -m venv --without-pip "$RUNNER_TEMP/venv"
+          python -m pip --python "$RUNNER_TEMP/venv/bin/python" install --no-deps --only-binary=:all: --require-hashes -r tools/kaggle/josev-q4k/requirements.lock
+      - name: Sweep
+        run: |
+          R="${{ inputs.recipes }}"; [ -n "$R" ] || R=$(python -c "import json;print(json.load(open('docs/josev2b-q4k-sweep-request.json'))['recipes'])")
+          SKIP=$(python -c "import json;print('--skip-f32' if json.load(open('docs/josev2b-q4k-sweep-request.json')).get('skip_f32') else '')")
+          "$RUNNER_TEMP/venv/bin/python" -u tools/ci-heavy/josev2b_q4k_sweep.py --recipes "$R" $SKIP --scratch "$SWEEP_SCRATCH" --out "$RUNNER_TEMP/out"
+      - name: Summary
+        if: always()
+        run: cat "$RUNNER_TEMP/out/summary.md" >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: josev-q4k-sweep-${{ github.run_id }}
+          path: ${{ runner.temp }}/out/
+          if-no-files-found: warn
+          retention-days: 90

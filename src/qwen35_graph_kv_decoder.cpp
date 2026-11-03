@@ -431,8 +431,12 @@ bool graph_kv_decoder::init(const decoder_weights & weights, const attention_con
         if (!floats(weights.layers[i].linear.conv, conv)) return false;
         ggml_backend_tensor_set(p.states[i].conv_weight, conv.data(), 0, conv.size() * sizeof(float));
     }
-    if (p.mode == matmul_mode::f32) {
-        const std::vector<ggml_tensor *> sources = f32_copy_sources(weights);
+    // An all-F32 GGUF has nothing to copy: matrix() then returns the stored F32 tensor, the
+    // same product the copies would give. Allocating an empty context returns no buffer, which
+    // made init fail for F32 models at the default "f32" mode (hosted MiniCPM parity, 2026-11-03).
+    const std::vector<ggml_tensor *> sources =
+        p.mode == matmul_mode::f32 ? f32_copy_sources(weights) : std::vector<ggml_tensor *>();
+    if (!sources.empty()) {
         p.f32_ctx = ggml_init({ (sources.size() + 1) * ggml_tensor_overhead(), nullptr, true });
         if (!p.f32_ctx) return false;
         for (auto * t : sources) p.f32_copy[t] = ggml_new_tensor_2d(p.f32_ctx, GGML_TYPE_F32, t->ne[0], t->ne[1]);

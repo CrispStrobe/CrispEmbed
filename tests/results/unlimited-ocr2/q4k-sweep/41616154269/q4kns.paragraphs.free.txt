@@ -1,0 +1,3 @@
+<PAGE><BLOCK>title<LEVEL1>[48, 78, 388, 117]<FORK>Quarterly Operations Report
+<BLOCK>text[48, 170, 959, 303]<FORK>The warehouse in Leipzig completed its move to the new conveyor system in September. Throughput rose from 1,840 to 2,315 parcels per hour, while the error rate on outgoing labels fell below 0.4 percent for the first time.
+<BLOCK>text[48, 356, 936, 493]<FORK>Two issues remain open. The cold storage unit on level 2 still reports temperature spikes during the night shift, and the loading dock scanner needs a firmware update before the holiday season begins on 1 December.

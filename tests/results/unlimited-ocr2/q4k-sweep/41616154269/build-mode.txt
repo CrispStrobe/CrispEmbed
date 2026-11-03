@@ -1,0 +1,3 @@
+script_build_flags=-DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF (portable) device=cpu extra=
+CRISPEMBED_NATIVE:BOOL=OFF
+GGML_NATIVE:BOOL=OFF

@@ -1,0 +1,26 @@
+{
+ "schema": "crispembed-successor-assets-v4-run-review-v1",
+ "protocol": "docs/successor-assets-v4.json",
+ "run": 41587063385,
+ "source": "8079a971654df69f068bba18c4dd4d2bd85f4d79",
+ "conclusion": "success",
+ "whole_run_green": true,
+ "inputs": {"native_run": 40724938611, "wasm_run": 40725005968, "corpus_run": 40629090339},
+ "producer_source": "11f2ef7c06101ae4bff32c38d33fe6fd0b538661",
+ "jobs": {"passed": 16, "failed": 0,
+          "names": ["controls", "producers", "producer-identity", "desktop linux-x86_64", "desktop linux-arm64", "desktop macos-arm64", "desktop windows-x86_64",
+                    "mobile-link android-arm64-v8a", "mobile-link android-armeabi-v7a", "mobile-link ios-arm64", "apple-released", "bindings", "wasm", "review", "expectations"]},
+ "review_schema": "crispembed-successor-bounded-consumer-review-v4",
+ "desktop_vs_linux_x86_64": {
+  "linux-x86_64": {"max_abs": 0.0, "cosine": 1.0000000000000002, "basis": "strict"},
+  "linux-arm64": {"max_abs": 0.00011958926916122437, "cosine": 0.9999996977649903, "basis": "strict"},
+  "macos-arm64": {"max_abs": 0.0025543533265590668, "cosine": 0.999888628462796, "basis": "desktop-cross-platform-tolerance-v4", "bound": {"max_abs": 0.00307, "min_cosine": 0.999866}},
+  "windows-x86_64": {"max_abs": 2.2351741790771484e-08, "cosine": 0.9999999999999966, "basis": "strict"}},
+ "browser": {"passed": true, "max_abs": 0.00837269052863121, "cosine": 0.9986498388732883, "basis": "wasm-platform-tolerance-v3", "bound": {"max_abs": 0.0101, "min_cosine": 0.99837}},
+ "strict_elsewhere": "Same-platform CLI/offline/Python/compiled-C vs C ABI, all 12 Rust/Dart binding comparisons, Linux arm64 and Windows desktop comparisons, mobile cross-links and Apple 50-case compatibility passed the unchanged strict v1 checks.",
+ "unattributed": "macos-arm64 desktop drift accepted without attribution; attribution is an optional follow-up",
+ "qualification": false,
+ "release_alias_created": false,
+ "app_pin_changed": false,
+ "gates_defaults_changed": false
+}

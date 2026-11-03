@@ -1,3 +1,67 @@
+<<<<<<< HEAD
+## 3 November 2026 — Unlimited-OCR-2 Q4_K recipes (perf/q4k-unlimited-ocr2-20261103)
+
+The v3 mixed-Q4 panel's stop at `v.pos_embed` was the audit comparing raw stored shapes: the
+quantizer kept the tensor F16 and byte-identical; ggml's GGUF writer stores `[3145728,1]` as
+`[3145728]`. Protection kept (type/payload/semantic shape checked for every recipe). New
+default-off teacher forcing (`CRISPEMBED_UNLIMITED_OCR2_FORCE_IDS`/`_LOGITS_OUT`) scores
+final-logit cosine on the four frozen cases against native F16, which reproduces the original
+IDs 4/4 (portable build). Hosted CPU runs 41589463950, 41589467110, 41589470353, 41616154269
+(cancelled first attempt 41614573821 retained as a run ID only); Kaggle T4 kernel v1/v2.
+Q8_0 0.9739 CPU / 0.9555 CUDA; production q4_k 0.9567 CPU (12 Q4_0 fallbacks); SAM Q4_K
+0.7989; `unlimited_ocr2_q4k_v1` 2,074 MiB 0.9512/0.9443; `unlimited_ocr2_q4k_shared8_v1`
+2,189 MiB 0.9634/0.9540, text = F16 4/4. Every ID divergence is a box coordinate or one
+layout label. Receipts: `tests/results/unlimited-ocr2/q4k-sweep/`, `q4k-precision-*.json`.
+=======
+## 3 November 2026 — Hosted check of the MiniCPM-OCR / Unlimited-OCR-2 defaults and low-memory fallback
+
+Kaggle CPU, no env vs `..._LOW_MEMORY=1`. Unlimited-OCR-2 (`0d3974ab`): 4/4 trial pages ids and text byte-exact vs the
+original in both arms; default ids == the `vf32` receipt, low-memory == the F16 `after` receipt; unit tests pass.
+MiniCPM-OCR initial run (`0d3974ab`): F16 5/5 exact in both arms, but every F32-GGUF case failed to load — the default
+`f32` graph-decoder matmul allocated an empty copy context (nothing to copy in an F32 model) and init failed. Fixed in
+`8c8c8be6` (skip the copy step when there is nothing to copy); rerun: 5/5 token- and text-exact in all four arms
+(F32/F16 x default/low-memory). Initial receipts retained as `*-initial-f32-load-failure.json`. `test-low-memory` ran
+for the first time: 21 checks, 0 failures.
+
+## 3 November 2026 — macOS arm64 desktop drift attributed to the Metal backend
+
+* The producer configs (40724938611) differ a lot. macOS uses AppleClang with Metal, Accelerate
+  BLAS and the default llamafile setting. Linux arm64 uses GCC with BLAS and llamafile off and
+  armv8.2+fp16+dotprod. The v4 macOS consumer log shows `using MTL0 backend` (Apple Paravirtual device).
+* Run 41638730050 used branch `audit/macos-desktop-drift-v1` at the v4 source, the exact v4
+  producer package and the stored v4 vectors of 41587063385. On macos-14 and macos-15, the
+  default (Metal) arm reproduces the stored macOS vector within 5e-7. With
+  `CRISPEMBED_FORCE_CPU=1`, macOS matches Linux arm64 within 5.14e-7 and Linux x86_64 at
+  1.20e-4/0.9999997 (strict). The Linux arm64 control is unchanged and every repeat is identical.
+* The drift is therefore the GPU backend, not a CPU build difference, and no build fix applies.
+  The v5 CPU-review proposal is in PLAN. Gates, defaults and release builds are unchanged.
+  Receipt: `tests/results/packaging/macos-desktop-drift-attribution-v1.json`.
+
+## 3 November 2026 — Josev Q4_K final-output cosine and sensitivity sweep
+
+Earlier Josev quantized panels (v4, mixed A/B/C 40787077302, protected Q8 40838785499,
+last-projection 40853720400) were rescored with final-output cosines from their retained
+comparator moments (`tests/results/josev2b/q4k-final-output-rescore.json`). A 13-recipe
+Q8_0-based sweep ran on portable hosted CPU (41615751516; initial rejections
+41588071746 file-type check and 41590988284 key clash retained). v4 storage reproduces to
+all printed digits. Winner `josev_q4k_down8_v1`: 2,952 MiB, head-logit 0.99739,
+final-norm 0.94911, argmax 4/4, typed JSON 0/4. Details: `docs/josev2b-q4k-sweep.md`.
+## 3 November 2026 — Successor assets v4: macOS arm64 desktop tolerance; whole run green
+
+* Owner decision: accept the measured native desktop drift without attribution. The stored
+  vectors of runs 40710490021 and 41471904133 (identical) show it is specific to the macOS arm64
+  build: Linux arm64 vs Linux x86_64 passes strict at 1.2e-4, while macOS arm64 differs from both
+  Linux x86_64 (0.0025544) and Linux arm64 (0.0026). `docs/successor-assets-v4.{md,json}` and
+  `tools/successor_assets_v4.py` therefore bound only the review's macos-arm64 vs linux-x86_64
+  final vector: max_abs<=0.00307 and cosine>=0.999866 (measured plus 20%, rounded outward).
+  v1/v2/v3 files are pinned (60). The review, consumers and bindings are derived from v1 with
+  exact declared replacements. Same-platform, binding, Linux arm64 and Windows comparisons stay
+  strict.
+* Run 41587063385 (producers 40724938611/40725005968 at `11f2ef7c`, corpus proof 40629090339)
+  is **green**: all 16 jobs succeed. In the review, macOS arm64 passes on the v4 basis, the
+  browser on the v3 basis (0.00837269/0.99864984), and everything else strict. Receipt:
+  `tests/results/packaging/successor-assets-v4-run.json`. No qualification, alias or app change.
+
 ## 3 November 2026 — Unlimited-OCR-2 F32 vision on by default; low-memory fallback for F32 weight copies
 
 `CRISPEMBED_UNLIMITED_OCR2_VISION_F32` is now read with `core_env::explicitly_off` (default on; `=0` restores the
@@ -72,6 +136,7 @@ logit of HF `AutoModelForSequenceClassification` fp32). Receipts: `tests/results
   tarball flattened as release.yml now does both embed exactly six real files
   (libcrispembed, libggml, -base, -cpu, -metal, -blas `.dylib`), all signatures verify, and the
   app loads libcrispembed and resolves `crispembed_init` with no manual fixes.
+>>>>>>> origin/main
 
 ## 3 November 2026 — BGE-M3 Q8_0 mix that qualifies on CUDA
 

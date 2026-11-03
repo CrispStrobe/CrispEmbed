@@ -1,0 +1,6 @@
+<PAGE><BLOCK>text[48, 92, 644, 127]<FORK>Mitteilung an alle Mitarbeiterinnen und Mitarbeiter
+<BLOCK>text[48, 185, 878, 362]<FORK>Ab Montag gelten neue Öffnungszeiten für die Kantine im Erdgeschoß.
+Frühstück gibt es von 7:30 bis 9:00 Uhr, Mittagessen ab 11:45 Uhr.
+Bitte beachten Sie: Übergrößen bei Arbeitsschuhen müssen bis Freitag
+bestellt werden. Für Rückfragen wenden Sie sich an Frau Müller.
+<BLOCK>text[48, 421, 557, 457]<FORK>Grüße aus der Geschäftsführung, Jörg Weiß
