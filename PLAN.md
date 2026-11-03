@@ -506,26 +506,27 @@ handoff take precedence over historical commands.
 1. Inspect the two already queued jobs: Unlimited40868634374 and
    Ultra40871150002. Verify exact source/attempt and collect small reports after
    completion; do not duplicate them. Keep models/raw arrays remote.
-2. WASM drift lane: **closed with a documented platform tolerance** (owner
-   decision, 2 Nov 2026). Attribution is complete: the
-   [v4](tests/results/packaging/wasm-live-norm-v4-attribution.json),
-   [FFN](tests/results/packaging/wasm-layer3-ffn-matmul-v1.json) and
-   [layer0](tests/results/packaging/wasm-layer0-attention-v1.json) receipts show
-   kernel accumulation order (IQ4_NL, IQ4_XS, flash_attn F32), amplified by
-   activation quantization; no single-op fix. [Successor assets v3](docs/successor-assets-v3.md)
-   adds a WASM-only bound for the quantized MiniLM's packaged browser final
-   vector: max_abs<=0.0101 and cosine>=0.99837 (measured deterministic
-   0.00837269/0.99864984 plus 20%). Native gates stay strict and byte-identical.
-   Run 41471904133: the WASM consumer passes under the bound and every other
-   consumer job passes. The run is **not green**: the unchanged strict review
-   rejects cross-platform desktop parity, macOS arm64 vs Linux x86_64
-   (max_abs 0.00255 > 0.002, cosine 0.99989). This native gate never ran
-   before for these producers. Next (owner): decide whether that native
-   cross-platform drift also needs its own attribution and decision. It is not
-   relaxed here. Parked optional future experiment: a multi-kernel native-order
-   WASM build (IQ4_NL tinyBLAS order, IQ4_XS AVX2 order, flash
+2. Successor-asset drift lane: **closed; whole run green** (run41587063385,
+   [receipt](tests/results/packaging/successor-assets-v4-run.json)). There are two
+   owner-accepted, measured, narrowly scoped tolerances; every other gate stays
+   strict (0.002/0.99999):
+   - **WASM** ([v3](docs/successor-assets-v3.md)): packaged browser final vector
+     max_abs<=0.0101, cosine>=0.99837. It is attributed by the
+     [v4](tests/results/packaging/wasm-live-norm-v4-attribution.json),
+     [FFN](tests/results/packaging/wasm-layer3-ffn-matmul-v1.json) and
+     [layer0](tests/results/packaging/wasm-layer0-attention-v1.json) receipts:
+     kernel order, amplified by activation quantization.
+   - **macOS arm64 desktop** ([v4](docs/successor-assets-v4.md)): only the review's
+     macos-arm64 vs linux-x86_64 final vector, max_abs<=0.00307 and
+     cosine>=0.999866 (measured 0.0025544/0.99988863 plus 20%). This one is
+     accepted **without attribution**. The scope is narrower than an
+     arm64-vs-x86 rule because Linux arm64 vs x86 passes strict at 1.2e-4.
+
+   Optional follow-ups, not scheduled: (a) attribute the macOS arm64 drift with
+   the same-input op-by-op method; (b) a parked multi-kernel native-order WASM
+   build (IQ4_NL tinyBLAS order, IQ4_XS AVX2 order, flash
    `vec_dot_f32`/`vec_mad_f32` with fmaf and AVX lane order, matching expf).
-   [Run receipt](tests/results/packaging/successor-assets-v3-run.json).
+   Nothing is qualified, there is no release alias and the app stays on 0.17.12.
 3. Independently review MoE real-router source81fa4e26, then execute its
    component-only replay using exact-v4 attached captures. No whole-model or
    original forward. Require own-byte controls before cross-input conclusions.

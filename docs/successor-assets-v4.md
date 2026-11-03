@@ -59,3 +59,9 @@ CLI, offline CLI, Python and compiled C against the C ABI (measured at most
 Nothing is qualified, no release alias is created and the app stays on 0.17.12.
 
 ## Runs
+- [41587063385](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41587063385)
+  at `8079a971` (producers 40724938611/40725005968, corpus proof 40629090339):
+  **green**, all 16 jobs succeed. In the review, macOS arm64 passes on the v4
+  basis (0.0025544/0.99988863), the browser on the v3 basis, and Linux arm64,
+  Windows and every same-platform and binding comparison pass strict
+  ([receipt](../tests/results/packaging/successor-assets-v4-run.json)).

@@ -1,3 +1,19 @@
+## 3 November 2026 — Successor assets v4: macOS arm64 desktop tolerance; whole run green
+
+* Owner decision: accept the measured native desktop drift without attribution. The stored
+  vectors of runs 40710490021 and 41471904133 (identical) show it is specific to the macOS arm64
+  build: Linux arm64 vs Linux x86_64 passes strict at 1.2e-4, while macOS arm64 differs from both
+  Linux x86_64 (0.0025544) and Linux arm64 (0.0026). `docs/successor-assets-v4.{md,json}` and
+  `tools/successor_assets_v4.py` therefore bound only the review's macos-arm64 vs linux-x86_64
+  final vector: max_abs<=0.00307 and cosine>=0.999866 (measured plus 20%, rounded outward).
+  v1/v2/v3 files are pinned (60). The review, consumers and bindings are derived from v1 with
+  exact declared replacements. Same-platform, binding, Linux arm64 and Windows comparisons stay
+  strict.
+* Run 41587063385 (producers 40724938611/40725005968 at `11f2ef7c`, corpus proof 40629090339)
+  is **green**: all 16 jobs succeed. In the review, macOS arm64 passes on the v4 basis, the
+  browser on the v3 basis (0.00837269/0.99864984), and everything else strict. Receipt:
+  `tests/results/packaging/successor-assets-v4-run.json`. No qualification, alias or app change.
+
 ## 3 November 2026 — Unlimited-OCR-2 F32 vision on by default; low-memory fallback for F32 weight copies
 
 `CRISPEMBED_UNLIMITED_OCR2_VISION_F32` is now read with `core_env::explicitly_off` (default on; `=0` restores the
