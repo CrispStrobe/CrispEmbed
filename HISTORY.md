@@ -1,3 +1,26 @@
+## 3 November 2026 — Main-health outcomes retain their evidence limits
+
+The CI audit found [Main health 41654954696](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41654954696)
+reporting five cancelled checks at `7e5028e34` as green. PR134 left that probe unchanged.
+The bounded follow-up on `fix/main-health-status`, based on
+`dd465a44290dca2cdefd45caf8831d7be55d5b4c`, replaces it with a standard-library reporter:
+
+- The five existing watched workflows and repository identity are explicit. Only owned-main
+  push/manual/scheduled sources count; PR heads named `main` cannot supply validation.
+- Latest means creation time and run ID, never when an old queued/rerun job starts.
+  A timestamp seed bounds a fully paginated newer-run query; missing, truncated,
+  malformed or inaccessible results fail as unverified instead of becoming empty success.
+- Pending/cancelled/skipped outcomes fail as unverified. Explicit failures remain failed,
+  even if historical lookup fails. Older successes retain their exact validation SHA;
+  they do not claim coverage of every change at current main or demand redundant builds.
+- Exact helper/test/workflow changes run offline controls. Live status and model metadata
+  checks remain scheduled/manual; the existing selector sends these paths to no native lane.
+
+Validation: 18 focused offline tests pass, including the observed five-cancelled-run case,
+old reruns, fork sources, pagination, API/schema failures, exit status and workflow routing.
+No native build, model inference or live reporter execution was performed locally. Hosted
+controls and the first scheduled/manual report remain pending review; no runtime release.
+
 ## 3 November 2026 — CI runs only the jobs a change needs
 
 The shared runner pool was starved (about 4 concurrent jobs, 130+ queued runs). Building on
