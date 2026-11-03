@@ -28,6 +28,7 @@ jobs:
   frozen-retrieval:
     strategy:
       fail-fast: false
+      max-parallel: 4
       matrix:
         arms: ${{ fromJSON(inputs.arm_groups || '["f32,q4k-all-matrices,q4k-ffn,q4k-last-four-ffn"]') }}
     runs-on: ${{ inputs.runner || 'macos-latest' }}
@@ -37,8 +38,8 @@ jobs:
       OMP_NUM_THREADS: ${{ inputs.threads || '2' }}
       OPENBLAS_NUM_THREADS: ${{ inputs.threads || '2' }}
       MKL_NUM_THREADS: ${{ inputs.threads || '2' }}
-      # Portable build: CPU scores must not depend on the runner's ISA extensions.
-      CRISPEMBED_BUILD_MODE: portable-GGML_NATIVE=OFF
+      # Portable build (PR120 mode; explicit -DGGML_NATIVE=OFF below): CPU scores must not depend on the runner.
+      CRISPEMBED_BUILD_MODE: portable
     steps:
       - uses: actions/checkout@v4
         with:
