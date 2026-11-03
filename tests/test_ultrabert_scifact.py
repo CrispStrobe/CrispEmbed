@@ -184,8 +184,19 @@ class Contract(unittest.TestCase):
 
     def test_historical_receipts_and_scoped_sources_are_pinned(self):
         self.assertGreaterEqual(len(driver.PINS), 14)
+        sys.path.insert(0, str(ROOT / 'tools'))
+        import ultrabert_source_pins as pins
+        # Frozen digests or their newest recorded, reviewed re-pin (never a silent overwrite).
+        self.assertEqual(pins.drift(ROOT, driver.PINS), [])
+        amended = {path for path, _ in pins.load(ROOT)}
         for name, expected in driver.PINS.items():
-            self.assertEqual(hashlib.sha256((ROOT / name).read_bytes()).hexdigest(), expected, name)
+            if name not in amended:
+                self.assertEqual(hashlib.sha256((ROOT / name).read_bytes()).hexdigest(), expected, name)
+        with tempfile.TemporaryDirectory() as tmp:  # an undeclared change still fails
+            name = 'src/ultrabert_embed.cpp'
+            (Path(tmp) / 'src').mkdir()
+            (Path(tmp) / name).write_bytes((ROOT / name).read_bytes() + b'\n')
+            self.assertEqual([p for p, _ in pins.drift(tmp, {name: driver.PINS[name]})], [name])
 
     def test_member_inventory_fails_on_changed_or_extra_bytes(self):
         with tempfile.TemporaryDirectory() as tmp:

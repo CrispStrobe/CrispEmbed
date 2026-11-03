@@ -38,6 +38,11 @@ on:
       - '.github/workflows/ultrabert-retrieval-model.yml'
       - 'tests/test_ultrabert_retrieval.py'
       - 'tests/regression/ultrabert/retrieval-smoke-v1.json'
+      # Sources frozen in ultrabert_scifact.py PINS and their re-pin record
+      - 'src/ultrabert_embed.cpp'
+      - 'src/ultrabert_profile.h'
+      - 'tools/ultrabert_source_pins.py'
+      - 'tools/qwen35_source_pins.py'
   pull_request:
     paths:
       - '.github/workflows/controls.yml'
@@ -68,6 +73,11 @@ on:
       - '.github/workflows/ultrabert-retrieval-model.yml'
       - 'tests/test_ultrabert_retrieval.py'
       - 'tests/regression/ultrabert/retrieval-smoke-v1.json'
+      # Sources frozen in ultrabert_scifact.py PINS and their re-pin record
+      - 'src/ultrabert_embed.cpp'
+      - 'src/ultrabert_profile.h'
+      - 'tools/ultrabert_source_pins.py'
+      - 'tools/qwen35_source_pins.py'
 permissions:
   contents: read
 # Superseded pushes/PR updates on a branch cancel its older runs. Main pushes and
