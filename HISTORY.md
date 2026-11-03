@@ -1,3 +1,17 @@
+## 3 November 2026 — macOS arm64 desktop drift attributed to the Metal backend
+
+* The producer configs (40724938611) differ a lot. macOS uses AppleClang with Metal, Accelerate
+  BLAS and the default llamafile setting. Linux arm64 uses GCC with BLAS and llamafile off and
+  armv8.2+fp16+dotprod. The v4 macOS consumer log shows `using MTL0 backend` (Apple Paravirtual device).
+* Run 41638730050 used branch `audit/macos-desktop-drift-v1` at the v4 source, the exact v4
+  producer package and the stored v4 vectors of 41587063385. On macos-14 and macos-15, the
+  default (Metal) arm reproduces the stored macOS vector within 5e-7. With
+  `CRISPEMBED_FORCE_CPU=1`, macOS matches Linux arm64 within 5.14e-7 and Linux x86_64 at
+  1.20e-4/0.9999997 (strict). The Linux arm64 control is unchanged and every repeat is identical.
+* The drift is therefore the GPU backend, not a CPU build difference, and no build fix applies.
+  The v5 CPU-review proposal is in PLAN. Gates, defaults and release builds are unchanged.
+  Receipt: `tests/results/packaging/macos-desktop-drift-attribution-v1.json`.
+
 ## 3 November 2026 — Josev Q4_K final-output cosine and sensitivity sweep
 
 Earlier Josev quantized panels (v4, mixed A/B/C 40787077302, protected Q8 40838785499,

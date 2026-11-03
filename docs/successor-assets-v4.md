@@ -51,7 +51,11 @@ CLI, offline CLI, Python and compiled C against the C ABI (measured at most
   bound. Tests accept the measured values and the exact bound, and reject
   0.00308 and a cosine of 0.999865. The same drift on any other platform is
   rejected, and every other gate stays strict.
-- **Unattributed:** the likely mechanism, by analogy with the WASM attribution,
+- **Attributed afterwards** (run 41638730050,
+  [receipt](../tests/results/packaging/macos-desktop-drift-attribution-v1.json)):
+  the drift is the Metal GPU backend. With `CRISPEMBED_FORCE_CPU=1`, macOS matches
+  Linux arm64 within 5.14e-7. The v4 bound is unchanged.
+- **Original note (superseded):** the likely mechanism, by analogy with the WASM attribution,
   is a different SIMD summation order in the macOS arm64 build amplified by
   activation quantization. That is unverified. Attribution with the same-input
   op-by-op method is an optional follow-up in PLAN.
