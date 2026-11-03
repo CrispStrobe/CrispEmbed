@@ -14,7 +14,7 @@
 #
 #   gh workflow run heavy-cpu.yml --ref <branch> -f script=tools/ci-heavy/minicpm_q4k_sweep.sh \
 #     -f args="q8,q4k [stage-arms] [free-arms|all]" -f isolated_lane=q4k-minicpm-ocr-a \
-#     -f pip="torch==2.13.0 torchvision transformers==5.21.0 pillow==11.3.0 numpy==2.2.6 gguf==0.17.1 kaggle==2.2.5"
+#     -f pip="torch==2.13.0 torchvision transformers==5.21.0 pillow==11.3.0 numpy==2.2.6 gguf==0.17.1 kaggle==2.2.5 six"
 set -uo pipefail
 ARMS=${1:?comma list of recipe names}
 STAGES=${2:-}   # arms whose prefill decoder stages are compared with the frozen original arrays
