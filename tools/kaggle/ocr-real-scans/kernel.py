@@ -7,6 +7,7 @@ sessions):
   native-uocr2   published alias `unlimited-ocr2` (F16), fast decoder, gundam tiles (the original default)
   native-minicpm published alias `minicpm-ocr` (F16), prompt "Text Recognition:"
   native-uocr2-vf32  as native-uocr2 with CRISPEMBED_UNLIMITED_OCR2_VISION_F32=1
+  native-uocr2-default  as native-uocr2 with no VISION_F32 env (the flipped default; expect vf32 IDs)
   ref-uocr2      original PyTorch Unlimited-OCR-2 (tools/unlimited-ocr2/reference.py contract), F32 CPU
   native-minicpm-fast  as native-minicpm with the graph-decoder/F32-vision/batch/flash gates on
   ref-minicpm    original Transformers MiniCPM-OCR-1.0 (tools/minicpm-ocr/reference.py contract), F32 CPU
@@ -178,6 +179,11 @@ try:
         native('unlimited-ocr2', 'uocr2-f16-fast-tiled-vf32', dict(CRISPEMBED_UNLIMITED_OCR2='1', CRISPEMBED_UNLIMITED_OCR2_FAST='1',
                                                                   CRISPEMBED_UNLIMITED_OCR2_TILES='1', UOCR_DBG='1',
                                                                   CRISPEMBED_UNLIMITED_OCR2_VISION_F32='1'), [])
+    elif MODE == 'native-uocr2-default':
+        # Post-flip confirm arm: no VISION_F32 env at all, so the shipped default decides.
+        env = dict(CRISPEMBED_UNLIMITED_OCR2='1', CRISPEMBED_UNLIMITED_OCR2_FAST='1', CRISPEMBED_UNLIMITED_OCR2_TILES='1', UOCR_DBG='1')
+        os.environ.pop('CRISPEMBED_UNLIMITED_OCR2_VISION_F32', None)
+        native('unlimited-ocr2', 'uocr2-f16-fast-tiled-default', env, [])
     elif MODE == 'native-minicpm':
         native('minicpm-ocr', 'minicpm-f16', dict(CRISPEMBED_MINICPM_OCR='1', CRISPEMBED_QWEN35_OCR='1',
                                                   CRISPEMBED_QWEN35_WEIGHT_CACHE='1'), ['--ocr-prompt', 'Text Recognition:'])
