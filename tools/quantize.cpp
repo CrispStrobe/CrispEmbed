@@ -90,6 +90,40 @@ static const std::vector<Qwen2vlPolicy> & qwen2vl_policies() {
 }
 static const Qwen2vlPolicy * g_qwen2vl_policy = nullptr;
 
+// Named MiniCPM-OCR-1.0 Q4_K-class policies (docs/minicpm-ocr-q4k.md), opt-in with
+// CRISPEMBED_QUANTIZE_MINICPM_POLICY=<name>, the q8_0 base type and a minicpm_ocr
+// source (the F16 GGUF, which keeps the 4-D patch embedding F16). Rules go before
+// any --tensor-type rule and equal the measured recipes in
+// tools/minicpm_quant_recipes.json (tests/test_minicpm_quant_policy.py):
+//   minicpm_q4k_v1    = "mix2": decoder/merger/embedding Q4_K, vision FFN IQ4_NL,
+//                       vision attention Q8_0, ViT merger 4-bit (970.8 MiB, cos 0.9671)
+//   minicpm_q4k_min_v1 = "mix1": mix2 with vision attention IQ4_NL too
+//                       (902.4 MiB, cos 0.9489; the smallest measured recipe above 0.94)
+struct MinicpmPolicy {
+    const char * name;
+    std::vector<std::pair<const char *, ggml_type>> rules;
+};
+static const std::vector<MinicpmPolicy> & minicpm_policies() {
+    static const std::vector<MinicpmPolicy> policies = {
+        { "minicpm_q4k_v1",
+          { { "l.layers.*", GGML_TYPE_Q4_K },
+            { "m.*", GGML_TYPE_Q4_K },
+            { "l.embed_tokens.weight", GGML_TYPE_Q4_K },
+            { "v.blk.*.mlp.*", GGML_TYPE_IQ4_NL },
+            { "v.vmerge.*", GGML_TYPE_IQ4_NL },
+            { "v.vmerge.linear_1.weight", GGML_TYPE_Q4_K } } },
+        { "minicpm_q4k_min_v1",
+          { { "l.layers.*", GGML_TYPE_Q4_K },
+            { "m.*", GGML_TYPE_Q4_K },
+            { "l.embed_tokens.weight", GGML_TYPE_Q4_K },
+            { "v.blk.*", GGML_TYPE_IQ4_NL },
+            { "v.vmerge.*", GGML_TYPE_IQ4_NL },
+            { "v.vmerge.linear_1.weight", GGML_TYPE_Q4_K } } },
+    };
+    return policies;
+}
+static const MinicpmPolicy * g_minicpm_policy = nullptr;
+
 // Named Unlimited-OCR-2 Q4_K-class policy (docs/unlimited-ocr2-q4k-recipes.md), opt-in
 // with CRISPEMBED_QUANTIZE_UNLIMITED_OCR2_POLICY=<name>, the published F16 source
 // (general.architecture unlimited_ocr, unlimited_ocr.variant 2) and the policy's base
@@ -673,6 +707,19 @@ static bool quantize_model(const std::string & fname_inp, const std::string & fn
             return false;
         }
         gguf_set_val_str(ctx_out, "qwen2vl.quantization.policy", g_qwen2vl_policy->name);
+    }
+    if (g_minicpm_policy) {
+        // A policy measured on MiniCPM-OCR-1.0 never applies to another model or base type.
+        const int ak = gguf_find_key(ctx_in, "general.architecture");
+        if (ak < 0 || std::string(gguf_get_val_str(ctx_in, ak)) != "minicpm_ocr" || ftype != GGML_FTYPE_MOSTLY_Q8_0) {
+            fprintf(stderr, "CRISPEMBED_QUANTIZE_MINICPM_POLICY=%s needs a minicpm_ocr source and the q8_0 base type\n",
+                    g_minicpm_policy->name);
+            gguf_free(ctx_out);
+            gguf_free(ctx_in);
+            ggml_free(ctx_in_ggml);
+            return false;
+        }
+        gguf_set_val_str(ctx_out, "minicpm_ocr.quantization.policy", g_minicpm_policy->name);
     }
     if (g_unlimited_ocr2_policy) {
         const int ak = gguf_find_key(ctx_in, "general.architecture");
@@ -1824,6 +1871,22 @@ int main(int argc, char ** argv) {
         for (const auto & r : g_qwen2vl_policy->rules) rules.push_back({ r.first, r.second });
         g_tensor_types.insert(g_tensor_types.begin(), rules.begin(), rules.end());
         fprintf(stderr, "qwen2vl quantization policy %s (%zu rules)\n", g_qwen2vl_policy->name, rules.size());
+    }
+    if (const char * name = getenv("CRISPEMBED_QUANTIZE_MINICPM_POLICY"); name && *name) {
+        for (const auto & p : minicpm_policies()) {
+            if (std::string(p.name) == name) g_minicpm_policy = &p;
+        }
+        if (!g_minicpm_policy || g_qwen2vl_policy) {
+            fprintf(
+                stderr,
+                "unknown or conflicting CRISPEMBED_QUANTIZE_MINICPM_POLICY '%s' (minicpm_q4k_v1|minicpm_q4k_min_v1)\n",
+                name);
+            return 1;
+        }
+        std::vector<TensorTypeOverride> rules;
+        for (const auto & r : g_minicpm_policy->rules) rules.push_back({ r.first, r.second });
+        g_tensor_types.insert(g_tensor_types.begin(), rules.begin(), rules.end());
+        fprintf(stderr, "minicpm quantization policy %s (%zu rules)\n", g_minicpm_policy->name, rules.size());
     }
     if (const char * name = getenv("CRISPEMBED_QUANTIZE_UNLIMITED_OCR2_POLICY"); name && *name) {
         for (const auto & p : unlimited_ocr2_policies()) {

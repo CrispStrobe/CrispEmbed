@@ -1,0 +1,7 @@
+build_mode=portable (explicit -DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF)
+heavy_cpu_build_mode=unset
+commit=828aa38ab8176036a31824291ed8cfc4537159ac
+cpu=AMD EPYC 9V74 80-Core Processor
+threads=4
+CRISPEMBED_NATIVE:BOOL=OFF
+GGML_NATIVE:BOOL=OFF

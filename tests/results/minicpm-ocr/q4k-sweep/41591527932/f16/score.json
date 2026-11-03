@@ -1,0 +1,117 @@
+{
+  "arm": "f16",
+  "cases": [
+    {
+      "id": "line",
+      "positions": 19,
+      "cos_min": 0.9999999999989805,
+      "cos_mean": 0.9999999999998792,
+      "cos_argmin": 1,
+      "max_abs": 4.9591064453125e-05,
+      "argmax_agree": 19,
+      "first_divergence": null,
+      "forced_seconds": 14.496,
+      "decoded_exact_by_forced_argmax": true
+    },
+    {
+      "id": "para-en",
+      "positions": 63,
+      "cos_min": 0.9999999999948092,
+      "cos_mean": 0.9999999999997263,
+      "cos_argmin": 59,
+      "max_abs": 7.2479248046875e-05,
+      "argmax_agree": 63,
+      "first_divergence": null,
+      "forced_seconds": 53.62,
+      "decoded_exact_by_forced_argmax": true
+    },
+    {
+      "id": "table",
+      "positions": 56,
+      "cos_min": 0.9999999999989156,
+      "cos_mean": 0.9999999999998804,
+      "cos_argmin": 52,
+      "max_abs": 6.103515625e-05,
+      "argmax_agree": 56,
+      "first_divergence": null,
+      "forced_seconds": 53.399,
+      "decoded_exact_by_forced_argmax": true
+    },
+    {
+      "id": "tall",
+      "positions": 279,
+      "cos_min": 0.9999999999993946,
+      "cos_mean": 0.9999999999999246,
+      "cos_argmin": 112,
+      "max_abs": 7.05718994140625e-05,
+      "argmax_agree": 279,
+      "first_divergence": null,
+      "forced_seconds": 113.169,
+      "decoded_exact_by_forced_argmax": true
+    },
+    {
+      "id": "tiny",
+      "positions": 3,
+      "cos_min": 0.9999999999999566,
+      "cos_mean": 0.9999999999999675,
+      "cos_argmin": 2,
+      "max_abs": 4.76837158203125e-05,
+      "argmax_agree": 3,
+      "first_divergence": null,
+      "forced_seconds": 14.309,
+      "decoded_exact_by_forced_argmax": true
+    }
+  ],
+  "cos_min": 0.9999999999948092,
+  "worst_case": "para-en",
+  "decoded_exact_cases": 5,
+  "census": {
+    "file_bytes": 2612763136,
+    "file_mib": 2491.7,
+    "types": {
+      "F16": {
+        "tensors": 359,
+        "bytes": 2598973440
+      },
+      "F32": {
+        "tensors": 420,
+        "bytes": 3789760
+      }
+    },
+    "group_bytes": {
+      "embedding": {
+        "F16": 508108800
+      },
+      "decoder": {
+        "F32": 1993984,
+        "F16": 995229696
+      },
+      "merger": {
+        "F32": 59392,
+        "F16": 51904512
+      },
+      "vision_other": {
+        "F32": 13824,
+        "F16": 12644352
+      },
+      "vision_blocks": {
+        "F32": 1584576,
+        "F16": 822140928
+      },
+      "vit_merger": {
+        "F32": 137984,
+        "F16": 208945152
+      }
+    },
+    "patch_embedding": {
+      "type": "F16",
+      "shape": [
+        14,
+        14,
+        3,
+        1152
+      ]
+    }
+  },
+  "gguf_sha256": "e024db8b1312116f68be6318b42203a1f99db6ddcb60fb1fce672f5e8f1f0362"
+}

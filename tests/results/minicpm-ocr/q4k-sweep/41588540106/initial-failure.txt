@@ -1,0 +1,1 @@
+Initial lane A run 41588540106 failed before any model access: the kaggle 2.2.5 CLI on the hosted runner lacked its 'six' dependency (ModuleNotFoundError). Fixed by adding six to the pip list; lanes B/C of that dispatch (41588542793, 41588545804) were cancelled while queued and redispatched as 41591531001/41591534780.

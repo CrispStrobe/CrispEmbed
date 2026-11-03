@@ -37,7 +37,12 @@
     "Q8_0": {"filename": "minicpm-ocr-1.0-q8_0.gguf", "from": "F16", "type": "q8_0", "tensor_type": [],
              "from_note": "Quantized from the F16 GGUF exactly as qualified in the precision receipt: crispembed-quantize flattens 4-D F32 tensors, which the runtime rejects for v.emb.patch_embedding.weight.",
              "precision_receipt": "tests/results/minicpm-ocr/bench.json", "precision_dtype": "q8_0",
-             "precision_required_arms": ["q8_0-t4", "q8_0-t2"]}
+             "precision_required_arms": ["q8_0-t4", "q8_0-t2"]},
+    "Q4_K_MIX": {"filename": "minicpm-ocr-1.0-q4_k-mix.gguf", "from": "F16", "type": "q8_0", "tensor_type": [],
+                 "quantize_env": {"CRISPEMBED_QUANTIZE_MINICPM_POLICY": "minicpm_q4k_v1"},
+                 "from_note": "Named policy minicpm_q4k_v1 (docs/minicpm-ocr-q4k.md): decoder, merger and tied embedding Q4_K, vision FFN IQ4_NL, vision attention Q8_0, ViT merger 4-bit; patch embedding and the 4304-wide vision fc2 F16.",
+                 "precision_receipt": "tests/results/minicpm-ocr/q4k-precision.json", "precision_dtype": "minicpm_q4k_v1",
+                 "precision_gate": "cosine", "precision_tier": "q4_k"}
   },
   "receipts": {
     "parity": "tests/results/minicpm-ocr/native-parity.json"

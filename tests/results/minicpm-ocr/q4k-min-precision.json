@@ -1,0 +1,82 @@
+{
+  "schema": "crispembed.minicpm.q4k-precision.v1",
+  "model": "openbmb/MiniCPM-OCR-1.0",
+  "reference_revision": "6796197bb3a8e224b2f64ae462bfbb3f8a15ac4b",
+  "metric": "minimum final-logit cosine over every generated position, teacher-forced on the frozen original IDs, against the original Transformers 5.21.0 F32 logits recomputed from the frozen inputs",
+  "reference": "original model (frozen report sha256 aeb1756dcbcfb72d72c13cf5a8d8131bb90e8d8884cf07c70723cc1fe4a64c32)",
+  "bar": 0.94,
+  "commit": "f5484251abe0dab1543053bf7a7335c7ff1c760d",
+  "worst_final_cos": 0.9488589884358044,
+  "arms": [
+    {
+      "name": "cpu-hosted-portable",
+      "dtype": "minicpm_q4k_min_v1",
+      "device": "cpu",
+      "build_mode": "portable",
+      "cpu": "AMD EPYC 7763 64-Core Processor",
+      "gguf_sha256": "7ee02fcaccea04802226fd8e2f701801c2ed471fab4d29f87334dac4c66c5bd6",
+      "file_mib": 902.4,
+      "tensor_data_sha256": "8389585fbdec597a1fb0902698b1f591329de76a217fdde1da8ce7d1ae29a875",
+      "worst_stage": {
+        "case": "para-en",
+        "stage": "model.language_model.layers.23",
+        "min_row_cosine": 0.10040637130391736,
+        "global_cosine": 0.8543046208243661,
+        "max_abs": 28.185236930847168,
+        "original_abs_max": 211.66375732421875
+      },
+      "cases": [
+        {
+          "id": "line",
+          "final_cos_min": 0.9912607166431862,
+          "final_cos_mean": 0.9979719167833251,
+          "positions": 19,
+          "ids_exact": true,
+          "first_divergence": null,
+          "free_text": null,
+          "forced_seconds": 15.495
+        },
+        {
+          "id": "para-en",
+          "final_cos_min": 0.9488589884358044,
+          "final_cos_mean": 0.9950676310093465,
+          "positions": 63,
+          "ids_exact": false,
+          "first_divergence": 54,
+          "free_text": "MiniCPM-OCR reference page.\nThe quick brown fox jumps over the lazy dog.\nInvoice 2026-10-27: total 1,234.56 EUR\nZeile mit Umlauten: Gr\u00d7e, Stra\u00d7e, \u00d7pfel.",
+          "forced_seconds": 61.283
+        },
+        {
+          "id": "table",
+          "final_cos_min": 0.9880881598903964,
+          "final_cos_mean": 0.9980435554729722,
+          "positions": 56,
+          "ids_exact": true,
+          "first_divergence": null,
+          "free_text": null,
+          "forced_seconds": 61.163
+        },
+        {
+          "id": "tall",
+          "final_cos_min": 0.9935863876213181,
+          "final_cos_mean": 0.9986174043430444,
+          "positions": 279,
+          "ids_exact": true,
+          "first_divergence": null,
+          "free_text": null,
+          "forced_seconds": 129.952
+        },
+        {
+          "id": "tiny",
+          "final_cos_min": 0.9992463559588189,
+          "final_cos_mean": 0.9993494723813979,
+          "positions": 3,
+          "ids_exact": true,
+          "first_divergence": null,
+          "free_text": null,
+          "forced_seconds": 14.642
+        }
+      ]
+    }
+  ]
+}

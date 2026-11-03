@@ -1,4 +1,14 @@
-<<<<<<< HEAD
+## 3 November 2026 — MiniCPM-OCR Q8_0/Q4_K measured against the original
+
+Hosted CPU sweeps (portable build) 41591527932, 41591531001, 41591534780, 41614616185,
+41614620614 score 21 arms against original Transformers logits recomputed from the frozen
+capture (input_ids/pixel_values bit-equal, first step cosine >= 0.9999999999995 vs the frozen
+lm_head, 420/420 argmax = frozen IDs). Q8_0 0.9998 5/5; plain `q4_k` 0.9724 4/5 (bit-identical
+on two runner CPUs); mixed `minicpm_q4k_v1` (mix2) 0.9671 at 971 MiB and `minicpm_q4k_min_v1`
+(mix1) 0.9489 at 902 MiB. Restoring the full-attention layers to Q8_0 lowered both mixes
+(0.9075/0.9357), recorded as is. Initial lane 41588540106 failed on a missing `six` for the
+kaggle CLI before model access; the F32 arm failed graph-decoder init. Details:
+`docs/minicpm-ocr-q4k.md`, receipts `tests/results/minicpm-ocr/q4k-sweep/`.
 ## 3 November 2026 — Unlimited-OCR-2 Q4_K recipes (perf/q4k-unlimited-ocr2-20261103)
 
 The v3 mixed-Q4 panel's stop at `v.pos_embed` was the audit comparing raw stored shapes: the
@@ -12,7 +22,6 @@ Q8_0 0.9739 CPU / 0.9555 CUDA; production q4_k 0.9567 CPU (12 Q4_0 fallbacks); S
 0.7989; `unlimited_ocr2_q4k_v1` 2,074 MiB 0.9512/0.9443; `unlimited_ocr2_q4k_shared8_v1`
 2,189 MiB 0.9634/0.9540, text = F16 4/4. Every ID divergence is a box coordinate or one
 layout label. Receipts: `tests/results/unlimited-ocr2/q4k-sweep/`, `q4k-precision-*.json`.
-=======
 ## 3 November 2026 — Hosted check of the MiniCPM-OCR / Unlimited-OCR-2 defaults and low-memory fallback
 
 Kaggle CPU, no env vs `..._LOW_MEMORY=1`. Unlimited-OCR-2 (`0d3974ab`): 4/4 trial pages ids and text byte-exact vs the
@@ -136,7 +145,6 @@ logit of HF `AutoModelForSequenceClassification` fp32). Receipts: `tests/results
   tarball flattened as release.yml now does both embed exactly six real files
   (libcrispembed, libggml, -base, -cpu, -metal, -blas `.dylib`), all signatures verify, and the
   app loads libcrispembed and resolves `crispembed_init` with no manual fixes.
->>>>>>> origin/main
 
 ## 3 November 2026 — BGE-M3 Q8_0 mix that qualifies on CUDA
 

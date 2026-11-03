@@ -1,0 +1,153 @@
+{
+  "arm": "pol-min",
+  "cases": [
+    {
+      "id": "line",
+      "positions": 19,
+      "cos_min": 0.9912607166431862,
+      "cos_mean": 0.9979719167833251,
+      "cos_argmin": 0,
+      "max_abs": 6.797517776489258,
+      "argmax_agree": 19,
+      "first_divergence": null,
+      "forced_seconds": 15.495,
+      "free_ids_exact": true,
+      "free_text_exact": true,
+      "free_eos": true,
+      "free_generated": 19,
+      "free_text": null,
+      "free_seconds": 15.473
+    },
+    {
+      "id": "para-en",
+      "positions": 63,
+      "cos_min": 0.9488589884358044,
+      "cos_mean": 0.9950676310093465,
+      "cos_argmin": 59,
+      "max_abs": 6.622230529785156,
+      "argmax_agree": 62,
+      "first_divergence": 54,
+      "forced_seconds": 61.283,
+      "free_ids_exact": false,
+      "free_text_exact": false,
+      "free_eos": true,
+      "free_generated": 66,
+      "free_text": "MiniCPM-OCR reference page.\nThe quick brown fox jumps over the lazy dog.\nInvoice 2026-10-27: total 1,234.56 EUR\nZeile mit Umlauten: Gr\u00d7e, Stra\u00d7e, \u00d7pfel.",
+      "free_seconds": 61.612
+    },
+    {
+      "id": "table",
+      "positions": 56,
+      "cos_min": 0.9880881598903964,
+      "cos_mean": 0.9980435554729722,
+      "cos_argmin": 0,
+      "max_abs": 8.818199157714844,
+      "argmax_agree": 56,
+      "first_divergence": null,
+      "forced_seconds": 61.163,
+      "free_ids_exact": true,
+      "free_text_exact": true,
+      "free_eos": true,
+      "free_generated": 56,
+      "free_text": null,
+      "free_seconds": 61.146
+    },
+    {
+      "id": "tall",
+      "positions": 279,
+      "cos_min": 0.9935863876213181,
+      "cos_mean": 0.9986174043430444,
+      "cos_argmin": 7,
+      "max_abs": 6.444000244140625,
+      "argmax_agree": 279,
+      "first_divergence": null,
+      "forced_seconds": 129.952,
+      "free_ids_exact": true,
+      "free_text_exact": true,
+      "free_eos": true,
+      "free_generated": 279,
+      "free_text": null,
+      "free_seconds": 129.093
+    },
+    {
+      "id": "tiny",
+      "positions": 3,
+      "cos_min": 0.9992463559588189,
+      "cos_mean": 0.9993494723813979,
+      "cos_argmin": 0,
+      "max_abs": 4.846383810043335,
+      "argmax_agree": 3,
+      "first_divergence": null,
+      "forced_seconds": 14.642,
+      "free_ids_exact": true,
+      "free_text_exact": true,
+      "free_eos": true,
+      "free_generated": 3,
+      "free_text": null,
+      "free_seconds": 14.535
+    }
+  ],
+  "cos_min": 0.9488589884358044,
+  "worst_case": "para-en",
+  "decoded_exact_cases": 4,
+  "census": {
+    "file_bytes": 946279680,
+    "tensor_data_sha256": "8389585fbdec597a1fb0902698b1f591329de76a217fdde1da8ce7d1ae29a875",
+    "file_mib": 902.4,
+    "types": {
+      "Q4_K": {
+        "tensors": 190,
+        "bytes": 482035968
+      },
+      "F32": {
+        "tensors": 420,
+        "bytes": 3789760
+      },
+      "F16": {
+        "tensors": 29,
+        "bytes": 280387584
+      },
+      "IQ4_NL": {
+        "tensors": 140,
+        "bytes": 170066304
+      }
+    },
+    "group_bytes": {
+      "embedding": {
+        "Q4_K": 142905600
+      },
+      "decoder": {
+        "F32": 1993984,
+        "Q4_K": 279908352
+      },
+      "merger": {
+        "F32": 59392,
+        "Q4_K": 14598144
+      },
+      "vision_other": {
+        "F32": 13824,
+        "F16": 12644352
+      },
+      "vision_blocks": {
+        "F32": 1584576,
+        "IQ4_NL": 155924352,
+        "F16": 267743232
+      },
+      "vit_merger": {
+        "F32": 137984,
+        "Q4_K": 44623872,
+        "IQ4_NL": 14141952
+      }
+    },
+    "patch_embedding": {
+      "type": "F16",
+      "shape": [
+        14,
+        14,
+        3,
+        1152
+      ]
+    }
+  },
+  "gguf_sha256": "7ee02fcaccea04802226fd8e2f701801c2ed471fab4d29f87334dac4c66c5bd6"
+}

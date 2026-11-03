@@ -1,3 +1,17 @@
+## MiniCPM-OCR Q8_0 / Q4_K — 3 November 2026 (`perf/q4k-minicpm-ocr-20261103`)
+
+Source: `docs/minicpm-ocr-q4k.md`. Final-logit cosine against the original model
+(teacher-forced on the frozen IDs, every position, five cases, hosted CPU portable):
+Q8_0 0.9998; `minicpm_q4k_v1` 0.9671 (971 MiB); `minicpm_q4k_min_v1` 0.9489 (902 MiB).
+
+- Coordinator: dispatch the `Q4_K_MIX` publication (cosine gate) once the policy
+  receipt `tests/results/minicpm-ocr/q4k-precision.json` is committed; Q8_0 can move to
+  the same gate (0.9998).
+- The F32 arm stopped with `graph decoder initialization failed` on the F32 GGUF
+  (receipt kept). Recheck after main's low-memory fallback (`CRISPEMBED_MINICPM_OCR_LOW_MEMORY`).
+- `para-en` diverges at token 54 in every 4-bit arm (box glyphs read as `×`
+  instead of the original `x`/dropped). Representative real-page quality is still open.
+
 ## PR 118 stream hardening and selective CI — 3 November 2026
 
 Bounded maintainer continuation of [PR118](https://github.com/CrispStrobe/CrispEmbed/pull/118),

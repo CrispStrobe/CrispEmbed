@@ -1,0 +1,219 @@
+{
+  "schema": "crispembed-minicpm-quant-recipes-v1",
+  "doc": "docs/minicpm-ocr-q4k.md",
+  "note": "Named MiniCPM-OCR-1.0 quantization arms for tools/ci-heavy/minicpm_q4k_sweep.sh. 'source' is the converted GGUF the arm starts from (f32/f16 are themselves unquantized arms); 'type' is the crispembed-quantize base type and 'tensor_type' the ordered --tensor-type overrides (last match wins; built-in guards and the K-quant row-width fallback still apply). Quantized arms start from the F16 GGUF, which keeps the 4-D patch embedding F16 with its original axes and the 4304-wide vision fc2 (no 32-column block fits) at F16.",
+  "recipes": {
+    "f32": {
+      "source": "f32"
+    },
+    "f16": {
+      "source": "f16"
+    },
+    "q8": {
+      "source": "f16",
+      "type": "q8_0",
+      "tensor_type": []
+    },
+    "q4k": {
+      "source": "f16",
+      "type": "q4_k",
+      "tensor_type": []
+    },
+    "q4k-old": {
+      "source": "f16",
+      "type": "q4_k",
+      "tensor_type": [
+        "v.*=f16",
+        "m.*=f16",
+        "l.embed_tokens.weight=f16"
+      ],
+      "note": "seven-arm v3 recipe: decoder projections Q4_K, vision/merger/embedding F16"
+    },
+    "dec4": {
+      "source": "f16",
+      "type": "q8_0",
+      "tensor_type": [
+        "l.layers.*=q4_k"
+      ]
+    },
+    "dec4-ffn": {
+      "source": "f16",
+      "type": "q8_0",
+      "tensor_type": [
+        "l.layers.*.mlp.*=q4_k"
+      ]
+    },
+    "dec4-ffndown": {
+      "source": "f16",
+      "type": "q8_0",
+      "tensor_type": [
+        "l.layers.*.mlp.down_proj.weight=q4_k"
+      ]
+    },
+    "dec4-lin": {
+      "source": "f16",
+      "type": "q8_0",
+      "tensor_type": [
+        "l.layers.*.linear_attn.*=q4_k"
+      ]
+    },
+    "dec4-full": {
+      "source": "f16",
+      "type": "q8_0",
+      "tensor_type": [
+        "l.layers.*.self_attn.*=q4_k"
+      ]
+    },
+    "emb4": {
+      "source": "f16",
+      "type": "q8_0",
+      "tensor_type": [
+        "l.embed_tokens.weight=q4_k"
+      ]
+    },
+    "emb6": {
+      "source": "f16",
+      "type": "q8_0",
+      "tensor_type": [
+        "l.embed_tokens.weight=q6_k"
+      ]
+    },
+    "vis4": {
+      "source": "f16",
+      "type": "q8_0",
+      "tensor_type": [
+        "v.blk.*=iq4_nl"
+      ]
+    },
+    "vis4-ffn": {
+      "source": "f16",
+      "type": "q8_0",
+      "tensor_type": [
+        "v.blk.*.mlp.*=iq4_nl"
+      ]
+    },
+    "vis4-attn": {
+      "source": "f16",
+      "type": "q8_0",
+      "tensor_type": [
+        "v.blk.*.self_attn.*=iq4_nl"
+      ]
+    },
+    "vmerge4": {
+      "source": "f16",
+      "type": "q8_0",
+      "tensor_type": [
+        "v.vmerge.*=iq4_nl",
+        "v.vmerge.linear_1.weight=q4_k"
+      ]
+    },
+    "merger4": {
+      "source": "f16",
+      "type": "q8_0",
+      "tensor_type": [
+        "m.*=q4_k"
+      ]
+    },
+    "mix1": {
+      "source": "f16",
+      "type": "q8_0",
+      "tensor_type": [
+        "l.layers.*=q4_k",
+        "m.*=q4_k",
+        "l.embed_tokens.weight=q4_k",
+        "v.blk.*=iq4_nl",
+        "v.vmerge.*=iq4_nl",
+        "v.vmerge.linear_1.weight=q4_k"
+      ],
+      "note": "every group's 4-bit sensitivity arm combined"
+    },
+    "mix2": {
+      "source": "f16",
+      "type": "q8_0",
+      "tensor_type": [
+        "l.layers.*=q4_k",
+        "m.*=q4_k",
+        "l.embed_tokens.weight=q4_k",
+        "v.blk.*.mlp.*=iq4_nl",
+        "v.vmerge.*=iq4_nl",
+        "v.vmerge.linear_1.weight=q4_k"
+      ],
+      "note": "mix1 with vision attention Q8_0"
+    },
+    "mix3": {
+      "source": "f16",
+      "type": "q8_0",
+      "tensor_type": [
+        "l.layers.*=q4_k",
+        "l.layers.*.self_attn.*=q8_0",
+        "m.*=q4_k",
+        "l.embed_tokens.weight=q4_k",
+        "v.blk.*=iq4_nl",
+        "v.vmerge.*=iq4_nl",
+        "v.vmerge.linear_1.weight=q4_k"
+      ],
+      "note": "mix1 with decoder full-attention projections Q8_0"
+    },
+    "mix4": {
+      "source": "f16",
+      "type": "q8_0",
+      "tensor_type": [
+        "l.layers.*=q4_k",
+        "l.layers.*.self_attn.*=q8_0",
+        "m.*=q4_k",
+        "l.embed_tokens.weight=q4_k",
+        "v.blk.*.mlp.*=iq4_nl",
+        "v.vmerge.*=iq4_nl",
+        "v.vmerge.linear_1.weight=q4_k"
+      ],
+      "note": "mix2 and mix3 combined"
+    },
+    "mix5": {
+      "source": "f16",
+      "type": "q8_0",
+      "tensor_type": [
+        "l.layers.*=q4_k",
+        "m.*=q4_k",
+        "l.embed_tokens.weight=q6_k",
+        "v.blk.*.mlp.*=iq4_nl",
+        "v.vmerge.*=iq4_nl",
+        "v.vmerge.linear_1.weight=q4_k"
+      ],
+      "note": "mix2 with the embedding Q6_K"
+    },
+    "pol-v1": {
+      "source": "f16",
+      "type": "q8_0",
+      "tensor_type": [],
+      "env": {
+        "CRISPEMBED_QUANTIZE_MINICPM_POLICY": "minicpm_q4k_v1"
+      },
+      "equivalent_to": "mix2",
+      "policy_rules": [
+        "l.layers.*=q4_k",
+        "m.*=q4_k",
+        "l.embed_tokens.weight=q4_k",
+        "v.blk.*.mlp.*=iq4_nl",
+        "v.vmerge.*=iq4_nl",
+        "v.vmerge.linear_1.weight=q4_k"
+      ]
+    },
+    "pol-min": {
+      "source": "f16",
+      "type": "q8_0",
+      "tensor_type": [],
+      "env": {
+        "CRISPEMBED_QUANTIZE_MINICPM_POLICY": "minicpm_q4k_min_v1"
+      },
+      "equivalent_to": "mix1",
+      "policy_rules": [
+        "l.layers.*=q4_k",
+        "m.*=q4_k",
+        "l.embed_tokens.weight=q4_k",
+        "v.blk.*=iq4_nl",
+        "v.vmerge.*=iq4_nl",
+        "v.vmerge.linear_1.weight=q4_k"
+      ]
+    }
+  }
+}

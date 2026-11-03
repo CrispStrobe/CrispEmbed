@@ -33,7 +33,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Publish-script controls (no network)
-        run: python tests/test_minicpm_ocr_publish.py -v
+        run: python tests/test_minicpm_ocr_publish.py -v && python tests/test_minicpm_quant_policy.py -v
       - name: Protocol, receipts and build plan before any download or credential
         env:
           VARIANTS: ${{ inputs.variants }}
@@ -90,7 +90,11 @@ jobs:
                 rm -f "/mnt/mcpm/gguf/$name.manifest.json" ;;
               quantize)
                 rm -rf /mnt/mcpm/src
-                "$q" "/mnt/mcpm/gguf/$src" "/mnt/mcpm/gguf/$name" $rest ;;
+                envs=(); args=()
+                for a in $rest; do
+                  if [[ "$a" =~ ^CRISPEMBED_QUANTIZE_[A-Z0-9_]+=[a-z0-9_]+$ ]]; then envs+=("$a"); else args+=("$a"); fi
+                done
+                env "${envs[@]}" "$q" "/mnt/mcpm/gguf/$src" "/mnt/mcpm/gguf/$name" "${args[@]}" ;;
               drop) rm -f "/mnt/mcpm/gguf/$name" ;;
             esac
           done < "$RUNNER_TEMP/plan.txt"

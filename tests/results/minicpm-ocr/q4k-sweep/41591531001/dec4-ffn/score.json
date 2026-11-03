@@ -1,0 +1,132 @@
+{
+  "arm": "dec4-ffn",
+  "cases": [
+    {
+      "id": "line",
+      "positions": 19,
+      "cos_min": 0.9961630976265456,
+      "cos_mean": 0.9992813423848702,
+      "cos_argmin": 0,
+      "max_abs": 3.604278564453125,
+      "argmax_agree": 19,
+      "first_divergence": null,
+      "forced_seconds": 15.397,
+      "decoded_exact_by_forced_argmax": true
+    },
+    {
+      "id": "para-en",
+      "positions": 63,
+      "cos_min": 0.9790474248382561,
+      "cos_mean": 0.9982027636761065,
+      "cos_argmin": 59,
+      "max_abs": 4.32830810546875,
+      "argmax_agree": 62,
+      "first_divergence": 60,
+      "forced_seconds": 62.593,
+      "free_ids_exact": false,
+      "free_text_exact": true,
+      "free_eos": true,
+      "free_generated": 64,
+      "free_text": null,
+      "free_seconds": 62.654
+    },
+    {
+      "id": "table",
+      "positions": 56,
+      "cos_min": 0.993497809772557,
+      "cos_mean": 0.9992140799205791,
+      "cos_argmin": 0,
+      "max_abs": 6.104081153869629,
+      "argmax_agree": 56,
+      "first_divergence": null,
+      "forced_seconds": 62.581,
+      "decoded_exact_by_forced_argmax": true
+    },
+    {
+      "id": "tall",
+      "positions": 279,
+      "cos_min": 0.9967100975450107,
+      "cos_mean": 0.999515034036953,
+      "cos_argmin": 7,
+      "max_abs": 4.099763870239258,
+      "argmax_agree": 279,
+      "first_divergence": null,
+      "forced_seconds": 131.73,
+      "decoded_exact_by_forced_argmax": true
+    },
+    {
+      "id": "tiny",
+      "positions": 3,
+      "cos_min": 0.9997404515044909,
+      "cos_mean": 0.9997776020133183,
+      "cos_argmin": 0,
+      "max_abs": 3.0925493240356445,
+      "argmax_agree": 3,
+      "first_divergence": null,
+      "forced_seconds": 14.797,
+      "decoded_exact_by_forced_argmax": true
+    }
+  ],
+  "cos_min": 0.9790474248382561,
+  "worst_case": "para-en",
+  "decoded_exact_cases": 4,
+  "census": {
+    "file_bytes": 1393805504,
+    "file_mib": 1329.2,
+    "types": {
+      "Q8_0": {
+        "tensors": 258,
+        "bytes": 950992512
+      },
+      "F32": {
+        "tensors": 420,
+        "bytes": 3789760
+      },
+      "Q4_K": {
+        "tensors": 72,
+        "bytes": 148635648
+      },
+      "F16": {
+        "tensors": 29,
+        "bytes": 280387584
+      }
+    },
+    "group_bytes": {
+      "embedding": {
+        "Q8_0": 269932800
+      },
+      "decoder": {
+        "F32": 1993984,
+        "Q8_0": 247959552,
+        "Q4_K": 148635648
+      },
+      "merger": {
+        "F32": 59392,
+        "Q8_0": 27574272
+      },
+      "vision_other": {
+        "F32": 13824,
+        "F16": 12644352
+      },
+      "vision_blocks": {
+        "F32": 1584576,
+        "Q8_0": 294523776,
+        "F16": 267743232
+      },
+      "vit_merger": {
+        "F32": 137984,
+        "Q8_0": 111002112
+      }
+    },
+    "patch_embedding": {
+      "type": "F16",
+      "shape": [
+        14,
+        14,
+        3,
+        1152
+      ]
+    }
+  },
+  "gguf_sha256": "43a44c22c9b90cf76c3f996a9e287341d293ff10ae47750ce30e5bea0500d9f8"
+}

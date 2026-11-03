@@ -182,6 +182,30 @@
             "715c5860169d3949677b183ccf5feff9a7ab1990 quantize: honor literal F16 4D patch casts and preserve actual MiniCPM rejection"
           ],
           "reason": "Opt-in CRISPEMBED_QUANTIZE_JOSEV_POLICY rule tables (josev_q4k_mlp_v1, josev_q4k_down8_v1); no change to qwen35 or default quantizer behaviour"
+        },
+        {
+          "from_sha256": "642daedb65eaa2465afde262876efe86e7d842842902362e2d66a12242725739",
+          "to_sha256": "67ed51bf27f03984308aef24be24d1fcb43f97e0e6252fc60fd4b19d16e98d93",
+          "to_blob": "86d9ef60a53f82ee63f330915a79a5c5d5cb9433",
+          "recorded_at_commit": "ab3977c79f05ef898d699a7f06631b310429ccdc",
+          "recorded": "2026-11-03",
+          "changed_by": [
+            "f5484251abe0dab1543053bf7a7335c7ff1c760d MiniCPM-OCR: named Q4_K policies minicpm_q4k_v1/minicpm_q4k_min_v1, cosine-gated Q4_K_MIX publication recipe"
+          ],
+          "reason": "perf/q4k-minicpm-ocr-20261103: opt-in named policies (CRISPEMBED_QUANTIZE_MINICPM_POLICY=minicpm_q4k_v1|minicpm_q4k_min_v1) guarded to minicpm_ocr sources and the q8_0 base type, merged with the Josev policies. Without the env var every existing quantization decision is unchanged."
+        },
+        {
+          "from_sha256": "67ed51bf27f03984308aef24be24d1fcb43f97e0e6252fc60fd4b19d16e98d93",
+          "to_sha256": "329fe07257325720652b5a8ed395fa21d281d6045a8fa8acfbe823d69e35f5e9",
+          "to_blob": "f1959dbbd08b93d46b15cbebc3f8e4021e879dcd",
+          "recorded_at_commit": "7b4106defdc7ce6196c1d7dc87060b42fb5902f9",
+          "recorded": "2026-11-03",
+          "changed_by": [
+            "7b4106defdc7ce6196c1d7dc87060b42fb5902f9 Merge origin/main: keep MiniCPM and Josev quantizer policies; re-pin tools/quantize.cpp; HISTORY union",
+            "b967c28a11bbcdc34f469aaaa69f3c2f46d92ce4 Josev Q4_K sweep 41615751516 receipts; josev_q4k_down8_v1 policy; confirmation run",
+            "bf5a1611d00e6c0d661b0b65ef37adfb598f7cc0 quantize: opt-in CRISPEMBED_QUANTIZE_JOSEV_POLICY named mixed Q4_K policies + recipe-equivalence test"
+          ],
+          "reason": "PR #131 merged with main: adds the opt-in MiniCPM-OCR policy table (CRISPEMBED_QUANTIZE_MINICPM_POLICY, minicpm_ocr sources and q8_0 base only) next to the Unlimited-OCR-2/Josev/qwen2vl policies; no rule applies to qwen35_ocr and default quantizer output is unchanged"
         }
       ]
     }
