@@ -54,11 +54,14 @@ def require(ok, why):
         raise SystemExit('minicpm q4k sweep: ' + why)
 
 
-def fetch(out):
+def fetch(out, layers=''):
     out = Path(out)
     account = os.environ.get('KAGGLE_ACCOUNT', '')
     require(account and os.environ.get('KAGGLE_API_TOKEN'), 'KAGGLE_ACCOUNT/KAGGLE_API_TOKEN required')
-    pattern = r'(reference\.json|\.png|lm_head\.npy|inputs_pixel_values\.npy)$'
+    pattern = r'(reference\.json|\.png|lm_head\.npy|inputs_pixel_values\.npy'
+    if layers:  # prefill decoder layers and final norm, for the worst-stage comparison
+        pattern += r'|model_language_model_(layers_\d+|norm)\.npy'
+    pattern += ')$'
     subprocess.run(['kaggle', 'kernels', 'output', f'{account}/{KERNEL}', '-p', str(out), '--file-pattern', pattern],
                    check=True, stdout=subprocess.DEVNULL)
     base = out/'minicpm-ocr'
@@ -66,7 +69,10 @@ def fetch(out):
     ref = json.loads((base/'reference.json').read_text())
     for c in ref['cases']:
         require(sha(base/(c['id']+'.png')) == c['image_sha256'], 'frozen image differs: '+c['id'])
-        for name in ('lm_head', 'inputs.pixel_values'):
+        names = ['lm_head', 'inputs.pixel_values']
+        if layers:
+            names += [n for n in c['arrays'] if n.startswith('model.language_model.')]
+        for name in names:
             a = c['arrays'][name]
             require(sha(base/a['path']) == a['sha256'], f'frozen array differs: {c["id"]}/{name}')
     print('frozen original verified:', base)

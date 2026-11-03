@@ -94,11 +94,48 @@ def receipts(cfg, root=ROOT):
             "receipt_sha256": digest(path)}
 
 
+# Owner's acceptance bars (docs/precision-acceptance.md): minimum final-output cosine per tier.
+COSINE_BARS = {"f32": 0.99, "f16": 0.98, "q8_0": 0.97, "q4_k": 0.94}
+COSINE_SCHEMA = "crispembed.minicpm.q4k-precision.v1"
+
+
+def cosine_precision(cfg, variant, rec, path, root=ROOT):
+    """precision_gate "cosine": every frozen case's final-logit cosine against the original model
+    (teacher-forced, minimum over all generated positions) above the owner's bar for the tier."""
+    r = json.loads(path.read_text())
+    require(r.get("schema") == COSINE_SCHEMA and r.get("reference_revision") == cfg["upstream"]["revision"],
+            f"{variant} cosine receipt schema/original revision differs")
+    require(re.fullmatch("[0-9a-f]{40}", r.get("commit", "")), "cosine receipt commit malformed")
+    bar = COSINE_BARS.get(rec.get("precision_tier", ""))
+    require(bar is not None and r.get("bar") == bar, f"{variant} has no matching cosine bar for its precision tier")
+    arms = [a for a in r.get("arms", []) if a.get("dtype") == rec["precision_dtype"]]
+    require(arms, f"{variant} cosine receipt has no {rec['precision_dtype']} arm")
+    worst = 1.0
+    for a in arms:
+        require(sorted(c["id"] for c in a.get("cases", [])) == sorted(cfg["parity_cases"]),
+                f"{variant} cosine arm {a.get('name')} misses cases")
+        require(a.get("gguf_sha256") and a.get("build_mode") == "portable", f"{variant} arm lacks GGUF hash/portable build")
+        for c in a["cases"]:
+            cos = c.get("final_cos_min")
+            require(isinstance(cos, (int, float)) and cos > bar,
+                    f"{variant} case {c['id']} final cosine {cos} is not above the {bar} bar")
+            worst = min(worst, cos)
+    return {"receipt": rec["precision_receipt"], "receipt_sha256": digest(path), "commit": r["commit"],
+            "arms": [a.get("name") for a in arms], "gate": "cosine", "bar": bar, "worst_final_cos": worst,
+            "ids_exact": all(c.get("ids_exact") is True for a in arms for c in a["cases"])}
+
+
 def precision(cfg, variant, root=ROOT):
-    """A recipe with a precision_receipt is publishable only if that receipt shows it token-ID exact."""
+    """A recipe with a precision_receipt is publishable only if that receipt shows it token-ID exact
+    (default), or with "precision_gate": "cosine" every case's final_cos_min above the owner's bar."""
     rec = cfg["recipes"][variant]
     if "precision_receipt" not in rec:
         return None
+    if rec.get("precision_gate", "ids_exact") == "cosine":
+        path = root / rec["precision_receipt"]
+        require(path.is_file(), f"{variant} has no precision receipt yet ({rec['precision_receipt']}); publish F16 only")
+        return cosine_precision(cfg, variant, rec, path, root)
+    require(rec.get("precision_gate", "ids_exact") == "ids_exact", f"{variant} precision_gate must be ids_exact or cosine")
     path = root / rec["precision_receipt"]
     require(path.is_file(), f"{variant} has no precision receipt yet ({rec['precision_receipt']}); publish F16 only")
     r = json.loads(path.read_text())
@@ -170,8 +207,13 @@ def card(cfg, files, parity, prec, source_commit):
     cases = ", ".join(f"`{k}` ({n})" for k, n in parity["cases"].items())
     names = [f["variant"] for f in files]
     quant = ("" if not any(prec.get(v) for v in names) else
-             "\n- " + "; ".join(f"**{v}** is token-ID exact on the same five cases (receipt `{prec[v]['receipt']}`)"
-                                 for v in names if prec.get(v)) + ".")
+             "\n- " + "; ".join(
+                 (f"**{v}** has final-logit cosine above {prec[v]['bar']} against the original model on every position "
+                  f"of the same five cases (worst {prec[v]['worst_final_cos']:.4f}; token-ID exact: "
+                  f"{'yes' if prec[v]['ids_exact'] else 'no, see receipt'}; receipt `{prec[v]['receipt']}`)"
+                  if prec[v].get("gate") == "cosine" else
+                  f"**{v}** is token-ID exact on the same five cases (receipt `{prec[v]['receipt']}`)")
+                 for v in names if prec.get(v)) + ".")
     only_f16 = "" if any(prec.get(v) for v in names) else (
         "\n- Only unquantized precisions are published: no quantized variant has a token-ID-exact precision receipt yet.")
     return f"""---

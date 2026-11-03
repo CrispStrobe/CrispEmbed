@@ -42,7 +42,7 @@ CLI=$(find "$S/build" -name crispembed -type f -perm -u+x | head -1)
 Q=$(find "$S/build" -name crispembed-quantize -type f | head -1)
 grep -E "GGML_NATIVE|CRISPEMBED_NATIVE" "$S/build/CMakeCache.txt" >> "$OUT/build-mode.txt"
 
-python $H fetch "$S/frozen" || exit 2
+python $H fetch "$S/frozen" ${STAGES:+layers} || exit 2
 REF=$S/frozen/minicpm-ocr/reference.json
 python $H original "$REF" "$S/ckpt" "$S/orig" > "$OUT/original.log" 2>&1 || { tail -30 "$OUT/original.log"; exit 2; }
 cp "$S/orig/original.json" "$OUT/"
