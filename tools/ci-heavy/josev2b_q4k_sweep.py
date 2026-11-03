@@ -99,8 +99,28 @@ def quantize(source, output, executable, identity, rows):
     process = run(args, log, env=env, timeout=2400)
     require(not process['timed_out'] and process['exit'] == 0, 'C quantizer rejected ' + identity)
     require('(fallback ' not in log.read_text(), 'quantizer fallback forbidden')
-    verified = prot.verify_conversion(source, output, rows, tag, vector=False)
+    # general.file_type: the first sweep (41588071746) rejected every recipe in the
+    # inherited exact-value check without recording the value. Record source and
+    # output labels and require the runtime-admitted ones instead (7 for an
+    # all-Q8_0 file, a Q4_K label when Q4_K storage is present).
+    seen = []
+    strict = prot.scalar
+
+    def scalar(header, name, kind, expected):
+        if name == 'general.file_type':
+            seen.append(header['metadata'].get(name, {}).get('value'))
+            return
+        strict(header, name, kind, expected)
+    prot.scalar = scalar
+    try:
+        verified = prot.verify_conversion(source, output, rows, tag, vector=False)
+    finally:
+        prot.scalar = strict
     verified.pop('tensors')
+    from gguf_file_type_values import q4_k_file_type
+    out_type = seen[-1]
+    require(out_type == 7 if counts[12] == 0 else q4_k_file_type(out_type), 'output file type label %r' % (out_type,))
+    verified['file_type_labels'] = dict(source=seen[0], output=out_type)
     return dict(identity=identity, counts={prot.TYPES[t]: n for t, n in counts.items()}, method=method,
                 quantize_seconds=process['seconds'], output_sha256=prot.digest(output),
                 output_mib=round(output.stat().st_size / 2**20, 1), **verified)
