@@ -298,30 +298,49 @@ jobs:
                   done
                   install_name_tool -add_rpath '@loader_path' "$bin" 2>/dev/null || true
               done
-              # Make each dylib's SONAME a REAL file. cmake emits
-              # libX.<M>.<m>.<p>.dylib (real) + libX.<M>.dylib + libX.dylib
-              # (symlinks), but every install-name is @rpath/libX.<M>.dylib.
-              # CocoaPods DEREFERENCES symlinks when it embeds vendored_libraries
-              # (Flutter macOS), so a symlink-only SONAME is dropped and the app
-              # aborts at launch with "Library not loaded: @rpath/libX.<M>.dylib".
-              # Promote the real file to its SONAME so it survives embedding, and
-              # keep libX.dylib as a symlink for build-time `-l` linkers (Rust
-              # crispembed-sys). The fully-versioned filename is retired.
-              for f in pkg/libcrispembed.*.dylib pkg/libggml*.dylib; do
-                  [ -e "$f" ] || continue
-                  [ -L "$f" ] && continue                       # real files only
-                  soname=$(basename "$(otool -D "$f" 2>/dev/null | tail -1)")
-                  case "$soname" in lib*.dylib) ;; *) continue ;; esac
-                  [ "$(basename "$f")" = "$soname" ] && continue  # already SONAME
-                  stem=${soname%.*}; stem=${stem%.*}            # libX
-                  rm -f "pkg/$soname"
-                  mv -f "$f" "pkg/$soname"
-                  ln -sf "$soname" "pkg/$stem.dylib"
-              done
+              # One real file per library under its UNVERSIONED name, with
+              # install name @rpath/libX.dylib and every cross-reference (and
+              # the CLI binaries' references) rewritten to match. CMake emits
+              # libX.<M>.<m>.<p>.dylib plus libX.<M>.dylib / libX.dylib
+              # symlinks with install names @rpath/libX.<M>.dylib; symlinks do
+              # not survive CocoaPods' embedding of vendored_libraries (Flutter
+              # macOS), so the app bundle ended up without either the
+              # libcrispembed.dylib the Dart side dlopen()s or the libX.0.dylib
+              # names the load commands ask for. Unversioned names leave one
+              # name per library, so any copy keeps the set loadable. Downstream
+              # consumers (crispembed-sys, Python, Flutter) all open
+              # libcrispembed.dylib. The script is shipped with the Flutter
+              # plugin, whose podspec runs it on local drops too.
+              sh flutter/crispembed/macos/flatten_dylibs.sh pkg \
+                  pkg/crispembed pkg/crispembed-server pkg/crispembed-quantize
               echo "macOS tarball dylib layout:"; ls -l pkg/*.dylib || true
           fi
 
           tar -czf ${{ matrix.archive }} -C pkg .
+
+      # The shipped tarball, not the staging dir: extract it and require every
+      # dylib to be a regular file identified as @rpath/<its own name>, and
+      # every @rpath reference of every dylib and CLI binary (otool -L) to name
+      # a file that is in the archive. Then dlopen the library and run the CLI
+      # from the extracted copy, so a missing sibling fails here rather than in
+      # an app at launch.
+      - name: Verify bundled dylib set (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          rm -rf verify-macos && mkdir verify-macos
+          tar -xzf ${{ matrix.archive }} -C verify-macos
+          sh flutter/crispembed/macos/flatten_dylibs.sh --check verify-macos \
+              verify-macos/crispembed verify-macos/crispembed-server verify-macos/crispembed-quantize
+          for f in verify-macos/*.dylib; do codesign --verify "$f"; done
+          python3 -c "import ctypes,sys; ctypes.CDLL(sys.argv[1]).crispembed_init; print('dlopen OK')" \
+              "$PWD/verify-macos/libcrispembed.dylib"
+          if [ -x verify-macos/crispembed ]; then
+            # dyld aborts (SIGABRT, 134) when a load command cannot be resolved;
+            # any other exit status means the binary got as far as main().
+            rc=0; verify-macos/crispembed --help >/dev/null 2>&1 || rc=$?
+            if [ "$rc" -eq 134 ]; then echo "crispembed CLI failed to load"; exit 1; fi
+          fi
+          rm -rf verify-macos
 
       # Every DT_NEEDED entry must be either bundled in pkg/ or part of a base
       # glibc system. An unbundled one makes the loader fail before main(), so

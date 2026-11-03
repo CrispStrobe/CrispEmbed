@@ -18,6 +18,61 @@ path 20/20 identical on real scans; Unlimited-OCR-2 runs its previous-default F1
 disables the check (keeping the copies whatever the memory). Decision logic is unit-tested header-only by `test-low-memory` (Build workflow). No inference was run for this
 change; the fallback paths are the existing measured ones.
 
+## 3 November 2026 — Encoder truncation and the XLM-R cross-encoder pair layout
+
+Branch `fix/rerank-pair-and-truncation`. Hosted run 41588538331 at `0fb9e738` (portable build, 77-text panel, raw
+logit of HF `AutoModelForSequenceClassification` fp32). Receipts: `tests/results/reranker-parity/`.
+- **Pair layout** (`CRISPEMBED_PAIR_ROBERTA_SEP`, default on, `=0` is the old layout). The HF XLM-R/RoBERTa
+  tokenizers build `<s> a </s></s> b </s>`; we built a single separator. Max/mean |native - HF| on the published
+  Q8_0 GGUFs: bge-reranker-v2-m3 1.860/0.056 -> 0.229/0.008, bge-reranker-base 1.602/0.104 -> 0.176/0.008,
+  jina-reranker-v2 0.137/0.021 -> 0.026/0.006. The DeBERTa/BERT rerankers keep one separator, as HF does, and
+  are unchanged: mxbai-xsmall 0.065, mxbai-base 0.079, ms-marco-MiniLM-L-6 0.048.
+- **Over-length input** (`CRISPEMBED_POS_EMBD_TRUNCATE`, default on). XLM-R position tables start at offset 2,
+  so 514 rows hold 512 tokens. e5-base/large, granite-107m/278m, bge-reranker-base and xlmr-ner-hrl went from an
+  abort (rc -6) to 512 tokens with the special tokens kept; ids equal HF on all except xlmr-ner-hrl, whose GGUF
+  has no tokenizer scores. Cosine against sentence-transformers on the truncated input: e5-base 0.9990,
+  e5-large 1.0000, granite-107m 0.9907, granite-278m 0.9946. e5-small and all-MiniLM-L6 were already fine.
+  LiLT rejects over-length caller ids instead of aborting. Regression test: `test-pair-truncation`.
+
+## 3 November 2026 — Flutter macOS: dylibs shipped and identified by unversioned names
+
+* Bug (reported from the CometBeat app): a fresh `flutter build macos --debug` produced an app
+  that could not load CrispEmbed. Root cause: CMake's SOVERSION gives every dylib the install
+  name `@rpath/libX.0.dylib` and ships the other names (`libX.dylib`, `libX.0.<m>.<p>.dylib`)
+  as symlinks, but CocoaPods dereferences or drops symlinks when it embeds
+  `vendored_libraries`. The app bundle therefore never held both the `libcrispembed.dylib` the
+  Dart side `dlopen()`s and the `libX.0.dylib` names the load commands ask for. Reproduced on
+  the M1 with a minimal Flutter app against main: the podspec's SONAME collapse embedded only
+  `lib*.0.dylib`, and `DynamicLibrary.open('libcrispembed.dylib')` failed.
+* Fix: `flutter/crispembed/macos/flatten_dylibs.sh` leaves one real file per library named
+  `libX.dylib`, sets its install name to `@rpath/libX.dylib`, rewrites every inter-library and
+  CLI `@rpath` reference to match, re-signs ad hoc, and fails if any `@rpath` reference is not
+  a regular file in the set (`--check` mode only verifies). release.yml (build-macos) runs it on
+  the tarball and verifies the extracted archive (otool check, codesign, dlopen, CLI load);
+  build.yml's macOS job flattens and checks the bundle that feeds the Flutter plugin; the
+  podspec runs it on fetched libs and local drops. CMake's install layout is unchanged
+  (Linux keeps its `.so.0` SONAME symlinks); iOS (static), Linux, Windows and Android
+  packaging are untouched.
+* Verified on the M1 from a clean build/: a symlink-chain local drop and the v0.17.12 macOS
+  tarball flattened as release.yml now does both embed exactly six real files
+  (libcrispembed, libggml, -base, -cpu, -metal, -blas `.dylib`), all signatures verify, and the
+  app loads libcrispembed and resolves `crispembed_init` with no manual fixes.
+
+## 3 November 2026 — BGE-M3 Q8_0 mix that qualifies on CUDA
+
+`bge-m3-heads-q8_0-mixed.gguf` (Q8_0, encoder blocks 0-11 F16) scored ColBERT 0.9667 on a Kaggle T4
+(cuda-audit run 7), below the 0.97 Q8_0 bar. Candidates with blocks 0-13/15/17/19/23 in F16 were
+measured with the portable build (hosted CPU run 41588222873, against FlagEmbedding, 77 texts) and on
+CUDA (cuda-audit batch h, run 8, against the CPU F16 arm). ColBERT minima, CPU / CUDA: 0-11
+0.9726/0.9667, 0-13 0.9488/0.9843, **0-15 0.9911/0.9922**, 0-17 0.9725/0.9515, 0-19 0.9922/0.9948,
+0-23 0.9927/0.9955. Dense and sparse stay at or above 0.9991 everywhere. Published as
+`bge-m3-heads-q8_0-enc0-15-f16.gguf` (763 MiB, F16 file 1599 MiB), `cstr/bge-m3-GGUF@283645d8`,
+sha256 `3379a216…` (run 41596007262, empty-cache readback re-scored 0.99109). The registry alias
+`bge-m3-heads` now points to it. The old file stays on the Hub and in the registry as
+`bge-m3-heads-q8-enc0-11` (superseded, CPU-only). Each candidate has the same SHA-256 on the EPYC
+runner and on the Kaggle Xeon, and the rebuilt 0-11 is byte-identical to the published file. The
+cuda-audit kernel now builds its CPU arm portable. Evidence: `tests/results/below-bar/bgem3-cuda-margin*/`,
+`tests/results/gpu-audit/cuda-kaggle/run8-66a5eba0/`.
 ## 3 November 2026 — GOT-OCR2 F16 republish script re-pointed at the original pipeline
 
 `tools/ci-heavy/got_ocr2_f16_republish.sh` compared native decodes with the HF port
@@ -106,22 +161,6 @@ the previous output over a static span, a harmonic fill for flat surroundings, a
 previous output on moderate change). Buffered frames are kept within 2 GiB (the window is reduced for large frames).
 Model-free contracts: `test-inpaint-temporal` (44 checks) and CLI driver stream tests. Measured output is on par with
 the research prototype; numbers in PERFORMANCE.md ("Issue 71 video stream with temporal consistency").
-
-## 3 November 2026 — BGE-M3 Q8_0 mix that qualifies on CUDA
-
-`bge-m3-heads-q8_0-mixed.gguf` (Q8_0, encoder blocks 0-11 F16) scored ColBERT 0.9667 on a Kaggle T4
-(cuda-audit run 7), below the 0.97 Q8_0 bar. Candidates with blocks 0-13/15/17/19/23 in F16 were
-measured with the portable build (hosted CPU run 41588222873, against FlagEmbedding, 77 texts) and on
-CUDA (cuda-audit batch h, run 8, against the CPU F16 arm). ColBERT minima, CPU / CUDA: 0-11
-0.9726/0.9667, 0-13 0.9488/0.9843, **0-15 0.9911/0.9922**, 0-17 0.9725/0.9515, 0-19 0.9922/0.9948,
-0-23 0.9927/0.9955. Dense and sparse stay at or above 0.9991 everywhere. Published as
-`bge-m3-heads-q8_0-enc0-15-f16.gguf` (763 MiB, F16 file 1599 MiB), `cstr/bge-m3-GGUF@283645d8`,
-sha256 `3379a216…` (run 41596007262, empty-cache readback re-scored 0.99109). The registry alias
-`bge-m3-heads` now points to it. The old file stays on the Hub and in the registry as
-`bge-m3-heads-q8-enc0-11` (superseded, CPU-only). Each candidate has the same SHA-256 on the EPYC
-runner and on the Kaggle Xeon, and the rebuilt 0-11 is byte-identical to the published file. The
-cuda-audit kernel now builds its CPU arm portable. Evidence: `tests/results/below-bar/bgem3-cuda-margin*/`,
-`tests/results/gpu-audit/cuda-kaggle/run8-66a5eba0/`.
 
 ## 2 November 2026 — Unlimited-OCR-2 F32 vision / tile batch gates (default off)
 
