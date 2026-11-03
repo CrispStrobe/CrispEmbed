@@ -541,7 +541,9 @@ handoff take precedence over historical commands.
      matches Linux arm64 within 5.14e-7 on macos-14 and macos-15. CPU compile
      differences (AppleClang, Accelerate, llamafile, -march) contribute at most
      5.14e-7, so no build-config fix applies and release builds stay unchanged.
-     **Proposal (not applied, owner decision):** a v5 protocol could run the
+     **Owner decision (3 Nov 2026): keep the v4 macOS tolerance; the v5 proposal
+     below is declined and not scheduled.** Recorded for reference only:
+     a v5 protocol could run the
      macOS desktop parity review with `CRISPEMBED_FORCE_CPU=1`
      (measured A/B vs Linux x86_64: 0.0025544/0.99988863 -> 1.20e-4/0.9999997,
      strict pass) and drop the v4 macOS tolerance. A separate Metal-labelled
