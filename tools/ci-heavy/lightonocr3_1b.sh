@@ -66,7 +66,10 @@ stage() {
 }
 stage venv python -m venv "$LANE_SCRATCH/venv"
 LANE_PYTHON=$LANE_SCRATCH/venv/bin/python
-stage requirements "$LANE_PYTHON" -m pip install -r models/requirements-lightonocr3-reference.txt
+stage requirements "$LANE_PYTHON" -m pip install --report "$BOOT_OUT/dependency-resolution.json" \
+    -r models/requirements-lightonocr3-reference.txt
+stage environment-freeze "$LANE_PYTHON" -m pip freeze --all
+stage dependency-check "$LANE_PYTHON" -m pip check
 stage source-audit env PYTHONPATH=tools "$LANE_PYTHON" -c 'from dump_lightonocr3_reference import verify_environment; print(verify_environment())'
 stage configure cmake -S . -B "$LANE_SCRATCH/build" -DCMAKE_BUILD_TYPE=Release \
     -DGGML_NATIVE=OFF -DCRISPEMBED_NATIVE=OFF -DGGML_CUDA=OFF -DGGML_METAL=OFF \

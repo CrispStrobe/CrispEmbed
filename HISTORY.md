@@ -1,3 +1,47 @@
+## 4 November 2026 — first OCR hosted qualification batch reviewed
+
+The five prepared jobs ran on merge source
+`2f1bbdb11c3612acf7399e31b33ac715027f3184`, all with the portable build input.
+The [initial-run receipt](tests/results/ocr-benchmark-expansion/initial-hosted-20261104.json)
+retains exact runs, sources, archive identities/digests and the 18 November
+artifact expiry. The original run outcomes remain unchanged:
+
+- [MinerU2605 41810161887](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41810161887)
+  fails; its 745,003,580-byte artifact retains the detailed reports. The precise
+  failed stage and any completed precision arms remain unreviewed until extraction.
+- [LightOn3-1B 41810166994](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41810166994)
+  stops in dependency resolution: pinned Hub2.4.0 conflicts with tokenizers0.23.1's
+  Hub<2.0 requirement. No original/native inference ran.
+- [Xiaomi0 41810171225](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41810171225)
+  passes bootstrap/pip-check, then fails the image-processor metadata guard.
+  This was the metadata-only job; both inference result objects remain empty.
+- [LightOn0.8 41810175624](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41810175624)
+  completes original anchor/document captures, then fails exact frozen-original
+  reproduction before native execution. The 3,459,070,891-byte archive must be
+  inspected for the exact differing field; no anchor, prompt, cap or gate changes.
+- [Nemotron frontend 41810180035](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41810180035)
+  passes all11 geometry/packing cases: 16,665,600 values, zero changed values and
+  max absolute error0 in every case. All9 negative controls pass. The preserved
+  [comparison](tests/results/nemotron-parse/frontend-parity-41810180035.json)
+  hashes the original receipt; that receipt hash was independently verified.
+  CMake records both native CPU flags OFF. Raw arrays stay in the hosted artifact.
+
+Nemotron evidence covers the size decision and normalized patch packing of
+**original-resized** RGB/grayscale bytes. Native resize, learned positions,
+neural inference, model qualification and publication remain false. None of the
+five jobs creates an alias, changes a default or reproduces a benchmark score.
+
+The `fix/ocr-qualification-nov4` follow-up corrects LightOn1B's incompatible
+dependency pin with Hub1.31.0, records pip's resolver/freeze/check evidence,
+and corrects Xiaomi's list/tuple metadata comparison without changing any
+numeric processor setting. The source diagnosis is separately retained in
+[the Xiaomi standardizer proof](tests/results/ocr-benchmark-expansion/xiaomi0-standardizer-proof.json).
+The dedicated, read-only report-extraction job validates the two original ZIPs
+and emits bounded text plus an exact LightOn frozen-reference difference report.
+All75 focused controls pass: LightOn20, Xiaomi29, extraction26. Source-pin and
+whitespace checks pass. These are source repairs and diagnostics; the corrected
+hosted jobs have not yet executed.
+
 ## 4 November 2026 — v0.17.14 release gate closed; OCR integration merged
 
 The open queue is empty. `#135` (honest main-health reporting) merged as `58f303a3`;
@@ -18,9 +62,10 @@ retains its public-pin rejection receipt rather than reducing its protocol, and 
 attention op-by-op same-input replay v1` is an owner-run experiment with no `main` run. Neither
 is a regression of a shipped default.
 
-No inference has been run for the new OCR profiles: their hosted qualification jobs remain
-prepared-not-executed, so no alias, publication, default flip or quality claim follows from this
-release. Model qualification is still the next substantive step.
+At the release-gate snapshot, the new OCR qualification jobs were prepared but had
+not run. The later first-batch review above supersedes that execution status;
+model qualification remains open and no alias, publication, default flip or
+quality claim follows from this release.
 
 ## 3 November 2026 — Main-health outcomes retain their evidence limits
 

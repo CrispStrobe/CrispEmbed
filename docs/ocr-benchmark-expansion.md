@@ -1,4 +1,4 @@
-# OCR benchmark expansion — 3 November 2026
+# OCR benchmark expansion — 4 November 2026
 
 This is the owner-authorized implementation follow-up to the current
 OmniParseBench / OmniDocBench model review. Source support, port fidelity,
@@ -13,10 +13,24 @@ including the full native desktop/mobile build, both WASM builds and existing
 browser smoke checks, Rust, and the expanded model-free controls. The
 [CI record](../tests/results/ocr-benchmark-expansion/source-ci-7ac5b594.json)
 retains exact run/source identities and earlier failures. All162 focused OCR
-Python controls pass. The new checkpoint profiles have not yet run their
-original/native model qualifications; ordinary CI does not substitute for those
-manual jobs. The implemented code and prepared jobs are in
-[draft PR138](https://github.com/CrispStrobe/CrispEmbed/pull/138).
+Python controls pass. The implementation was merged through
+[PR138](https://github.com/CrispStrobe/CrispEmbed/pull/138) as `2f1bbdb1`.
+The first five manual jobs have run; ordinary CI does not substitute for those
+model-specific checks, and no new model is qualified yet.
+
+## First hosted results
+
+The [initial-run receipt](../tests/results/ocr-benchmark-expansion/initial-hosted-20261104.json)
+records the five jobs at the same merge source, their immutable artifact
+identities and the original failures. Artifacts expire on18 November2026.
+
+| Lane | Observed result | Next action |
+|---|---|---|
+| MinerU2605 | Run41810161887 failed; detailed reports remain in its745MB archive | Extract the small reports and identify the exact failed stage before another model run |
+| LightOn3-1B | Run41810166994 failed dependency resolution before inference | Correct the incompatible Hub/tokenizers pins; rerun the same F32/F16 protocol |
+| Xiaomi0 | Run41810171225 passed package checks, failed processor metadata validation | Correct list/tuple representation handling while preserving exact numeric settings; rerun metadata before inference |
+| LightOn3-0.8B | Run41810175624 completed the original capture, failed frozen-original reproduction before native execution | Compare retained current/old reference fields; preserve the guard and original anchors |
+| Nemotron frontend | Run41810180035 passed11/11 exact geometry/packing cases and9/9 negative controls | Completed bounded milestone; native resize, positions and the neural backend remain separate |
 
 ## Priority and implementation lanes
 
@@ -102,9 +116,38 @@ stays in its existing lanes.
 ## Hosted execution queue
 
 All commands below use the existing manual `heavy-cpu.yml` workflow and the
-reviewable `feat/ocr-benchmark-integration` branch. Start with the declared
-bounded input, retain unsuccessful evidence, then complete the frozen panel.
+reviewed correction source on `fix/ocr-qualification-nov4`. The original batch
+already ran; dispatch only the corrected lanes after reviewing the retained
+failure evidence. Start with the declared bounded input, retain unsuccessful
+evidence, then complete the frozen panel.
 No command publishes models or changes runtime defaults.
+
+The correction source fixes LightOn1B's dependency intersection with exact
+Hub1.31.0 and adds resolver/freeze/pip-check evidence. Xiaomi's image processor
+now compares exact channel values across the original list-to-tuple
+normalization, records actual container types and checks the pinned base-class
+source. Twenty LightOn controls,29 Xiaomi controls and26 archive/diagnostic
+controls pass. Actual hosted retry results remain pending.
+
+Dispatch these three bounded jobs first, with `build_mode=portable`,
+`runner=ubuntu-latest`, empty extra `pip`, and the correction branch selected:
+
+| Order | Script | Arguments | Completion needed |
+|---|---|---|---|
+| 1 | `tools/ci-heavy/extract_ocr_nov4_evidence.py` | Empty | Both frozen ZIPs verified and small reports copied; review MinerU's failure and LightOn0.8's exact changed fields |
+| 2 | `tools/ci-heavy/lightonocr3_1b.sh` | `--formats f32,f16` | Dependency check, original/native full panel and explicit precision results |
+| 3 | `tools/ci-heavy/xiaomi0_reference.py` | Empty | Actual metadata and native frontend success before the separate `--inference` job |
+
+The extraction selector enters a dedicated Actions-read job, with no model
+secrets, package installation, model execution or native build. It accepts only
+the two recorded producer runs/artifacts, checks full archive size/SHA-256 and
+retains bounded text members in `ocr-nov4-retained-text-<run_id>` for90 days.
+Its LightOn diagnostic uses the existing exact equality and sole
+`generation_seconds` exclusion; it cannot change the frozen guard or verdict.
+MinerU and LightOn0.8 should not be rerun until these reports justify the next
+experiment. Nemotron's completed processor job needs no duplicate execution.
+
+The model protocols below define the remaining panel inputs after those gates:
 
 | Lane | Script | Initial arguments | Scope |
 |---|---|---|---|

@@ -1,0 +1,523 @@
+{
+  "schema": "crispembed.nemotron-parse.frontend-comparison.v1",
+  "repo": "nvidia/Nemotron-3.5-Parse",
+  "revision": "4035ffb1d8f8bafcdb867dfaf6f7514f101464f9",
+  "reference_sha256": "9dd8aa38d63347e5aabf4a5cfbf8234e84d3db652c784de869ce47abeb0b1ad2",
+  "source_sha256": {
+    "hf_nemotron_parse_processor.py": "983fa8aeb0d872da01296035b30d60c84fd857879a37c939c5c7203bad3c8b81",
+    "preprocessor_config.json": "16d54d73fc265b31f3771caf39770dc85213cae7594823ba7a6ac3f085315ada",
+    "LICENSE": "3375384ee1050a54d69c98c74d6499841166cd7db823ed90358f430df8c39856"
+  },
+  "native_executable_sha256": "a38584b3f215111e2ace7998cbaeccc39868033e901b473aedb233f645c11978",
+  "reference_packages": {
+    "torch": "2.11.0+cpu",
+    "torchvision": "0.26.0+cpu",
+    "transformers": "5.14.1",
+    "numpy": "2.2.6",
+    "Pillow": "12.3.0"
+  },
+  "scope": "original size decision and normalized packing of ORIGINAL-resized RGB/grayscale uint8 pixels",
+  "max_abs_budget": 1e-06,
+  "min_cosine_budget": 0.999999999,
+  "negative_controls": [
+    {
+      "kind": "gate_off",
+      "value": null,
+      "pass": true
+    },
+    {
+      "kind": "gate_off",
+      "value": "",
+      "pass": true
+    },
+    {
+      "kind": "gate_off",
+      "value": "0",
+      "pass": true
+    },
+    {
+      "kind": "zero_width_after_resize",
+      "pass": true
+    },
+    {
+      "kind": "zero_height_after_resize",
+      "pass": true
+    },
+    {
+      "kind": "invalid_native_dimensions",
+      "pass": true
+    },
+    {
+      "kind": "invalid_native_dimensions",
+      "pass": true
+    },
+    {
+      "kind": "invalid_native_dimensions",
+      "pass": true
+    },
+    {
+      "kind": "invalid_native_dimensions",
+      "pass": true
+    }
+  ],
+  "cases": [
+    {
+      "id": "portrait_rgb",
+      "geometry_match": true,
+      "elements": 193536,
+      "finite": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "rms_error": 0.0,
+      "reference_max_abs": 2.1458969116210938,
+      "reference_norm": 524.664630541335,
+      "native_norm": 524.664630541335,
+      "cosine": 1.0000000000000002,
+      "changed_values": 0,
+      "first_changed_index": null,
+      "first_changed_reference": null,
+      "first_changed_native": null,
+      "packing_match": true,
+      "input_sha256": "c9c4225ae73abc76a9789015c56803d49c4df1e8eca52e68f4e42b05dd1ec4f0",
+      "reference_sha256": "d78dbbed4251285266d691f6024f1e9308785c95fb50c0662c35d804d10f0b50",
+      "native_sha256": "d78dbbed4251285266d691f6024f1e9308785c95fb50c0662c35d804d10f0b50",
+      "native_metadata": {
+        "ok": true,
+        "content_sizes": [
+          321,
+          187
+        ],
+        "image_sizes": [
+          336,
+          192
+        ],
+        "patch_grid": [
+          21,
+          12
+        ],
+        "patch_count": 252,
+        "resized": false,
+        "elements": 193536,
+        "resize_implemented": false,
+        "model_execution": false
+      }
+    },
+    {
+      "id": "landscape_rgb",
+      "geometry_match": true,
+      "elements": 196608,
+      "finite": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "rms_error": 0.0,
+      "reference_max_abs": 2.1458969116210938,
+      "reference_norm": 559.2822695290056,
+      "native_norm": 559.2822695290056,
+      "cosine": 0.9999999999999998,
+      "changed_values": 0,
+      "first_changed_index": null,
+      "first_changed_reference": null,
+      "first_changed_native": null,
+      "packing_match": true,
+      "input_sha256": "fadafa65c9085028ce6aabb36d3561095685bdcd81baeb784c9df635599a7383",
+      "reference_sha256": "96be2e96536045dbaae16ac0ec9cae4833c7fe17f7eef52f8874cd960d734559",
+      "native_sha256": "96be2e96536045dbaae16ac0ec9cae4833c7fe17f7eef52f8874cd960d734559",
+      "native_metadata": {
+        "ok": true,
+        "content_sizes": [
+          127,
+          451
+        ],
+        "image_sizes": [
+          128,
+          512
+        ],
+        "patch_grid": [
+          8,
+          32
+        ],
+        "patch_count": 256,
+        "resized": false,
+        "elements": 196608,
+        "resize_implemented": false,
+        "model_execution": false
+      }
+    },
+    {
+      "id": "nonmultiple_rgb",
+      "geometry_match": true,
+      "elements": 12288,
+      "finite": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "rms_error": 0.0,
+      "reference_max_abs": 2.1458969116210938,
+      "reference_norm": 204.44401816682577,
+      "native_norm": 204.44401816682577,
+      "cosine": 1.0000000000000002,
+      "changed_values": 0,
+      "first_changed_index": null,
+      "first_changed_reference": null,
+      "first_changed_native": null,
+      "packing_match": true,
+      "input_sha256": "a7c315044df25f9d601c4a03d9a24e2d13faab93fcf5487f0b4fdcf958812bbf",
+      "reference_sha256": "c62d0adf2a8095418cad708db1f2677044bd114f13debd33a69434a90cb6b3c3",
+      "native_sha256": "c62d0adf2a8095418cad708db1f2677044bd114f13debd33a69434a90cb6b3c3",
+      "native_metadata": {
+        "ok": true,
+        "content_sizes": [
+          17,
+          65
+        ],
+        "image_sizes": [
+          32,
+          128
+        ],
+        "patch_grid": [
+          2,
+          8
+        ],
+        "patch_count": 16,
+        "resized": false,
+        "elements": 12288,
+        "resize_implemented": false,
+        "model_execution": false
+      }
+    },
+    {
+      "id": "narrow_rgb",
+      "geometry_match": true,
+      "elements": 15360,
+      "finite": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "rms_error": 0.0,
+      "reference_max_abs": 2.1458969116210938,
+      "reference_norm": 253.20517374543667,
+      "native_norm": 253.20517374543667,
+      "cosine": 1.0,
+      "changed_values": 0,
+      "first_changed_index": null,
+      "first_changed_reference": null,
+      "first_changed_native": null,
+      "packing_match": true,
+      "input_sha256": "c8acf12fbf57ceb4749db1a9dd62b90efcedcff20efa41d221b14a23dca17fcf",
+      "reference_sha256": "d05b48fd6fcea500f5995bdf2d0996771188ea32de932eb392adb70f749f64cb",
+      "native_sha256": "d05b48fd6fcea500f5995bdf2d0996771188ea32de932eb392adb70f749f64cb",
+      "native_metadata": {
+        "ok": true,
+        "content_sizes": [
+          65,
+          1
+        ],
+        "image_sizes": [
+          80,
+          64
+        ],
+        "patch_grid": [
+          5,
+          4
+        ],
+        "patch_count": 20,
+        "resized": false,
+        "elements": 15360,
+        "resize_implemented": false,
+        "model_execution": false
+      }
+    },
+    {
+      "id": "narrow_gray",
+      "geometry_match": true,
+      "elements": 6144,
+      "finite": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "rms_error": 0.0,
+      "reference_max_abs": 2.1458969116210938,
+      "reference_norm": 158.9280553811002,
+      "native_norm": 158.9280553811002,
+      "cosine": 0.9999999999999999,
+      "changed_values": 0,
+      "first_changed_index": null,
+      "first_changed_reference": null,
+      "first_changed_native": null,
+      "packing_match": true,
+      "input_sha256": "1ee23b0fbcaecc1aff4a9e8f1645f35ab2c8e13609cd73b68df8b5e3f63ce073",
+      "reference_sha256": "320353dee830a71c6b1e8e9884add5fafd11d2bed39a69688d48d536e71802b4",
+      "native_sha256": "320353dee830a71c6b1e8e9884add5fafd11d2bed39a69688d48d536e71802b4",
+      "native_metadata": {
+        "ok": true,
+        "content_sizes": [
+          1,
+          65
+        ],
+        "image_sizes": [
+          16,
+          128
+        ],
+        "patch_grid": [
+          1,
+          8
+        ],
+        "patch_count": 8,
+        "resized": false,
+        "elements": 6144,
+        "resize_implemented": false,
+        "model_execution": false
+      }
+    },
+    {
+      "id": "gray_nonmultiple",
+      "geometry_match": true,
+      "elements": 12288,
+      "finite": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "rms_error": 0.0,
+      "reference_max_abs": 2.1458969116210938,
+      "reference_norm": 173.9237032605908,
+      "native_norm": 173.9237032605908,
+      "cosine": 1.0000000000000002,
+      "changed_values": 0,
+      "first_changed_index": null,
+      "first_changed_reference": null,
+      "first_changed_native": null,
+      "packing_match": true,
+      "input_sha256": "bc6d1932f06650d0d3ef325f398a08954c78c977df9e91a07e3e2a52cde6d92e",
+      "reference_sha256": "c964e59b74bef47ad08766884408854d09fdc28fdfa87b07cdc1100246326729",
+      "native_sha256": "c964e59b74bef47ad08766884408854d09fdc28fdfa87b07cdc1100246326729",
+      "native_metadata": {
+        "ok": true,
+        "content_sizes": [
+          31,
+          77
+        ],
+        "image_sizes": [
+          32,
+          128
+        ],
+        "patch_grid": [
+          2,
+          8
+        ],
+        "patch_count": 16,
+        "resized": false,
+        "elements": 12288,
+        "resize_implemented": false,
+        "model_execution": false
+      }
+    },
+    {
+      "id": "single_pixel_gray",
+      "geometry_match": true,
+      "elements": 3072,
+      "finite": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "rms_error": 0.0,
+      "reference_max_abs": 2.1458969116210938,
+      "reference_norm": 113.7335458798231,
+      "native_norm": 113.7335458798231,
+      "cosine": 1.0,
+      "changed_values": 0,
+      "first_changed_index": null,
+      "first_changed_reference": null,
+      "first_changed_native": null,
+      "packing_match": true,
+      "input_sha256": "6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d",
+      "reference_sha256": "2d8edfe781a5d01d5c97e18efb221900425f7d4b25174e1c43ff4dfdcf096b67",
+      "native_sha256": "2d8edfe781a5d01d5c97e18efb221900425f7d4b25174e1c43ff4dfdcf096b67",
+      "native_metadata": {
+        "ok": true,
+        "content_sizes": [
+          1,
+          1
+        ],
+        "image_sizes": [
+          16,
+          64
+        ],
+        "patch_grid": [
+          1,
+          4
+        ],
+        "patch_count": 4,
+        "resized": false,
+        "elements": 3072,
+        "resize_implemented": false,
+        "model_execution": false
+      }
+    },
+    {
+      "id": "already_aligned_rgb",
+      "geometry_match": true,
+      "elements": 12288,
+      "finite": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "rms_error": 0.0,
+      "reference_max_abs": 2.1458969116210938,
+      "reference_norm": 121.99269442344168,
+      "native_norm": 121.99269442344168,
+      "cosine": 1.0000000000000002,
+      "changed_values": 0,
+      "first_changed_index": null,
+      "first_changed_reference": null,
+      "first_changed_native": null,
+      "packing_match": true,
+      "input_sha256": "1e907aebf3b9dcd6dcc11218e584f3780244707cb38ee85822a22b057abf0e40",
+      "reference_sha256": "b2a988cdcaca010f3555aebd4c976255c241144b418bc54efa6f6d019bb67577",
+      "native_sha256": "b2a988cdcaca010f3555aebd4c976255c241144b418bc54efa6f6d019bb67577",
+      "native_metadata": {
+        "ok": true,
+        "content_sizes": [
+          32,
+          128
+        ],
+        "image_sizes": [
+          32,
+          128
+        ],
+        "patch_grid": [
+          2,
+          8
+        ],
+        "patch_count": 16,
+        "resized": false,
+        "elements": 12288,
+        "resize_implemented": false,
+        "model_execution": false
+      }
+    },
+    {
+      "id": "downscale_portrait_rgb",
+      "geometry_match": true,
+      "elements": 5111808,
+      "finite": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "rms_error": 0.0,
+      "reference_max_abs": 2.1458969116210938,
+      "reference_norm": 1700.0468466155546,
+      "native_norm": 1700.0468466155546,
+      "cosine": 1.0000000000000002,
+      "changed_values": 0,
+      "first_changed_index": null,
+      "first_changed_reference": null,
+      "first_changed_native": null,
+      "packing_match": true,
+      "input_sha256": "e8e073b76aaeccfb2db56d002464b84e6ded3760b4779c85906e525bfe58750c",
+      "reference_sha256": "0b9759c33031add87f11bf4196964d99f02b8894432184bb38761a72a063a442",
+      "native_sha256": "0b9759c33031add87f11bf4196964d99f02b8894432184bb38761a72a063a442",
+      "native_metadata": {
+        "ok": true,
+        "content_sizes": [
+          2048,
+          831
+        ],
+        "image_sizes": [
+          2048,
+          832
+        ],
+        "patch_grid": [
+          128,
+          52
+        ],
+        "patch_count": 6656,
+        "resized": true,
+        "elements": 5111808,
+        "resize_implemented": false,
+        "model_execution": false
+      }
+    },
+    {
+      "id": "downscale_landscape_gray",
+      "geometry_match": true,
+      "elements": 2316288,
+      "finite": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "rms_error": 0.0,
+      "reference_max_abs": 2.1458969116210938,
+      "reference_norm": 1140.3630669883694,
+      "native_norm": 1140.3630669883694,
+      "cosine": 1.0,
+      "changed_values": 0,
+      "first_changed_index": null,
+      "first_changed_reference": null,
+      "first_changed_native": null,
+      "packing_match": true,
+      "input_sha256": "00d6fe43b3b68250b9385c26bd4a09bface89c18b875dcf48fa26369702e7d1d",
+      "reference_sha256": "db73e877d6aa54496372c9b6477d55cd6d511787f49c9d69111132257a2b00df",
+      "native_sha256": "db73e877d6aa54496372c9b6477d55cd6d511787f49c9d69111132257a2b00df",
+      "native_metadata": {
+        "ok": true,
+        "content_sizes": [
+          449,
+          1664
+        ],
+        "image_sizes": [
+          464,
+          1664
+        ],
+        "patch_grid": [
+          29,
+          104
+        ],
+        "patch_count": 3016,
+        "resized": true,
+        "elements": 2316288,
+        "resize_implemented": false,
+        "model_execution": false
+      }
+    },
+    {
+      "id": "downscale_both_rgb",
+      "geometry_match": true,
+      "elements": 8785920,
+      "finite": true,
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "rms_error": 0.0,
+      "reference_max_abs": 2.1458969116210938,
+      "reference_norm": 1802.9236541374812,
+      "native_norm": 1802.9236541374812,
+      "cosine": 1.0,
+      "changed_values": 0,
+      "first_changed_index": null,
+      "first_changed_reference": null,
+      "first_changed_native": null,
+      "packing_match": true,
+      "input_sha256": "13169bc70a0eabf4dcba4c833b6639624f8db2f53270849d752e3aaa64fcdb5b",
+      "reference_sha256": "a70de7174ac1bc8f6b1f41cdea4530956723a79b6cb8da4f647037b74fd18adb",
+      "native_sha256": "a70de7174ac1bc8f6b1f41cdea4530956723a79b6cb8da4f647037b74fd18adb",
+      "native_metadata": {
+        "ok": true,
+        "content_sizes": [
+          1747,
+          1664
+        ],
+        "image_sizes": [
+          1760,
+          1664
+        ],
+        "patch_grid": [
+          110,
+          104
+        ],
+        "patch_count": 11440,
+        "resized": true,
+        "elements": 8785920,
+        "resize_implemented": false,
+        "model_execution": false
+      }
+    }
+  ],
+  "complete": true,
+  "frontend_parity_pass": true,
+  "native_resize_qualified": false,
+  "position_interpolation_qualified": false,
+  "model_execution": false,
+  "model_qualified": false,
+  "publication_qualified": false
+}

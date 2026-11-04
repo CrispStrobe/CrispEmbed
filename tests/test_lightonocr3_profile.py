@@ -32,6 +32,20 @@ class ProfileTests(unittest.TestCase):
                 self.assertEqual(sha256(path), pins["files"][path.name], path.name)
         validate_config(self.config, self.processor, self.generation)
 
+    def test_reference_recipe_satisfies_pinned_hub_dependencies(self):
+        requirements = (ROOT / "models/requirements-lightonocr3-reference.txt").read_text().splitlines()
+        declared = dict(line.split("==", 1) for line in requirements if "==" in line and not line.startswith("#"))
+        self.assertEqual(declared, REFERENCE_PACKAGES)
+        self.assertIn("transformers @ git+https://github.com/huggingface/transformers.git@"
+                      + manifest()["transformers_revision"], requirements)
+        # Upstream setup.py at 3568df44 requires hub>=1.31.0,<3.0;
+        # tokenizers v0.23.1 bindings/python/pyproject.toml requires >=0.16.4,<2.0.
+        # The initial hosted job selected hub2.4.0 and failed before inference.
+        self.assertEqual(declared["tokenizers"], "0.23.1")
+        hub = tuple(map(int, declared["huggingface-hub"].split(".")))
+        self.assertGreaterEqual(hub, (1, 31, 0))
+        self.assertLess(hub, (2, 0, 0))
+
     def test_incompatible_backbones_rejected(self):
         for mutate in (
             lambda c: c["text_config"].update(model_type="qwen3_5"),

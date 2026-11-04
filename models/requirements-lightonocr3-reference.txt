@@ -7,6 +7,7 @@ numpy==2.3.5
 pillow==12.0.0
 gguf==0.19.0
 safetensors==0.8.0
-huggingface-hub==2.4.0
+# Transformers at the pinned commit needs >=1.31.0; tokenizers 0.23.1 needs <2.0.
+huggingface-hub==1.31.0
 tokenizers==0.23.1
 jinja2==3.1.6

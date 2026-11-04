@@ -20,7 +20,7 @@ STOP_IDS = (151645, 151643)
 SPECIAL_IDS = tuple(range(151643, 151657))
 REFERENCE_PACKAGES = {"torch": "2.13.0+cpu", "torchvision": "0.28.0+cpu", "numpy": "2.3.5",
                       "pillow": "12.0.0", "gguf": "0.19.0", "safetensors": "0.8.0",
-                      "huggingface-hub": "2.4.0", "tokenizers": "0.23.1", "jinja2": "3.1.6"}
+                      "huggingface-hub": "1.31.0", "tokenizers": "0.23.1", "jinja2": "3.1.6"}
 PROMPT_IDS = {
     "transcription": ([151644, 8948, 151645, 198, 151644, 872, 198], [151645, 198, 151644, 77091, 198]),
     "grounding": ([151644, 8948, 151645, 198, 151644, 872, 198], [1951, 287, 198, 151645, 198, 151644, 77091, 198]),

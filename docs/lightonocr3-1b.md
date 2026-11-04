@@ -24,6 +24,21 @@ error. Package versions are in
 [`models/requirements-lightonocr3-reference.txt`](../models/requirements-lightonocr3-reference.txt),
 and each run retains its environment freeze.
 
+The first hosted job,
+[`41810166994`](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41810166994),
+failed during dependency resolution, before any native build or model inference.
+Its original Hub `2.4.0` pin conflicts with tokenizers `0.23.1`, which requires
+`huggingface-hub>=0.16.4,<2.0` in its
+[`pyproject.toml`](https://github.com/huggingface/tokenizers/blob/v0.23.1/bindings/python/pyproject.toml).
+The frozen Transformers commit requires `huggingface-hub>=1.31.0,<3.0` in
+[`setup.py`](https://github.com/huggingface/transformers/blob/3568df44fff52979f1f9cecc7f729713e940d277/setup.py).
+The corrected recipe therefore pins the verified release
+[`huggingface-hub==1.31.0`](https://github.com/huggingface/huggingface_hub/blob/v1.31.0/src/huggingface_hub/__init__.py)
+in both installation requirements and the reference-version contract. The initial
+failure remains evidence; a corrected hosted run must still establish original/native
+parity. Checkpoint, original implementation, processor, prompts and acceptance bars
+are unchanged.
+
 | Boundary | Pinned original behavior | Candidate implementation |
 |---|---|---|
 | Architecture | Pixtral 24 layers, width 1024, patch 14; Qwen3 28 layers, width 1024, 16 query/8 KV heads, QK norm, tied embeddings | Existing `lightonocr` graph and tensor mapping |
@@ -115,7 +130,8 @@ gh workflow run heavy-cpu.yml --ref "$REVIEWED_REF" \
 ```
 
 `lightonocr3_1b.sh` installs the pinned requirements in a fresh virtual environment,
-verifies the actual installed original source and package versions, configures
+retains pip's resolution report and complete installed-package freeze, runs
+`pip check`, verifies the actual installed original source and package versions, configures
 `GGML_NATIVE=OFF` and `CRISPEMBED_NATIVE=OFF`, builds the two targets, and runs the
 native/Python controls before calling the Python driver. A receipt binds the
 source commit, binary and CMake cache; a mismatching prebuilt executable is rejected.
