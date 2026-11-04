@@ -40,5 +40,5 @@ has no mode input: dispatch selects the full matrix. Its actual
 [Linux job](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41927088394/job/126914390596)
 compiles the target and runs it successfully, printing `PASS LightOn4B vision
 ownership, 297 tensors and per-tensor malformed controls`. This proves the
-metadata-only ownership controls, not model inference. Other platform outcomes
-remain separately reviewable in the same run.
+metadata-only ownership controls, not model inference. The full dispatch also passes Windows/macOS, iOS, all3 Android legs, sibling,
+Flutter bundle and the aggregate Build result.
