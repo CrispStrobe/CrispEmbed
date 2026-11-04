@@ -72,7 +72,9 @@ removes the whole-head F32 materialization requirement without changing the exis
 projector or admitting format5. The 635,699,200-element tied head exceeds the old
 536,870,912-element limit. New hosted controls cover F32/F16 tiles, independent dots,
 legacy agreement, gates and atomic late failure. Local builds/suites were not run;
-actual hosted compilation/controls and full-size original/native logits remain open.
+[final-source hosted Build41924115399](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41924115399)
+passes all seven platforms and the actual Linux projection controls at45043bcfe.
+Full-size original/native logits remain open.
 Keep PR143's grouped-head/export lane and all frozen source closures unchanged.
 Development0.17.15 remains unreleased; no model/default/alias/app promotion follows.
 

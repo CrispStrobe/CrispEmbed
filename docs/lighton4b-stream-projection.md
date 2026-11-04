@@ -32,7 +32,15 @@ and the original projector at four tile sizes, partial final tiles, token-major
 layout, unset/empty/zero and OCR gates, late nonfinite failure, and observer
 restoration. No builds or suites were run on the shared host. `git diff --check`
 and environment-inventory generation are the only local verification so far.
-Hosted compilation/execution, actual full-size checkpoint/backend readback,
+[Hosted Build41924115399](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41924115399)
+passes at exact runtime source `45043bcfe`: static guards, all seven platform
+builds, sibling shared-library checks and Flutter bundle. Linux actually runs the
+new control and reports `STREAM_PROJECTION_CONTROLS pass=1` for F32/F16, seams,
+independent dots, legacy agreement, gates, atomic failure and observer handling.
+Earlier41923876329 is preserved separately; superseded41923837804 was cancelled
+before this final source. An unallocated-backend guard, callback exception
+containment and32-bit source-span bound are included in the final source.
+Actual full-size checkpoint/backend readback,
 complete original/native logits and decoded/EOS quality remain required.
 Historical frozen source hashes must retain their original closure; this runtime
 delta requires a separately reviewed source closure before model qualification.
