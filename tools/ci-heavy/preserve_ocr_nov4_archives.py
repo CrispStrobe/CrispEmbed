@@ -37,8 +37,22 @@ TARGETS = tuple(dict(label=label, run_id=run, artifact_id=artifact_id, bytes=siz
     dict(label="mineru2605-receipt-initial-failure",run_id=41810161887,artifact_id=13313715962,bytes=745003580,
          sha256="36fc4d014373c8b116d48afd1105f3e3a55f9869c4bea8e8af2785c8b3f52c16",
          source="2f1bbdb11c3612acf7399e31b33ac715027f3184",branch="main",conclusion="failure"))
+GERMAN = dict(label="mineru2605-german", run_id=41877132652, artifact_id=13355531707, bytes=2543809676,
+              sha256="3ad000ba9da8bbb7155a6770e231d00d25357ab2d4eba8e374a1f3d867f4fd3f",
+              source=SOURCE, branch=BRANCH, conclusion="success")
+TARGETS = TARGETS + (GERMAN,)
 TOTAL = sum(t["bytes"] for t in TARGETS)
 require = archive.require
+
+
+def select_targets(german_only):
+    require(type(german_only) is bool, "batch selector must be boolean")
+    return (GERMAN,) if german_only else TARGETS
+
+
+def validate_batch_args(env, german_only):
+    require(env.get("PRESERVE_SELECTED_ARGS", "") == ("--german-only" if german_only else ""),
+            "closed preservation batch args differ")
 
 
 def expiry(item):
@@ -120,7 +134,10 @@ def transfer(target, destination, token):
 def main():
     parser=argparse.ArgumentParser(__doc__)
     parser.add_argument("--verify-artifact",type=int)
+    parser.add_argument("--german-only",action="store_true")
     args=parser.parse_args()
+    targets=select_targets(args.german_only)
+    total=sum(target["bytes"] for target in targets)
     out=Path(os.environ["PRESERVE_OUT"]); review=out/"review"; review.mkdir(parents=True,exist_ok=True)
     captured = None
     if args.verify_artifact and (review/"receipt.json").exists():
@@ -142,17 +159,18 @@ def main():
         env=os.environ
         for key,value in dict(GITHUB_ACTIONS="true",GITHUB_REPOSITORY=archive.REPOSITORY,RUNNER_OS="Linux",
                               PRESERVE_SELECTED_SCRIPT=SELECTOR,PRESERVE_SELECTED_RUNNER="ubuntu-latest",
-                              PRESERVE_SELECTED_MODE="portable",PRESERVE_SELECTED_PIP="",PRESERVE_SELECTED_ARGS="").items():
+                              PRESERVE_SELECTED_MODE="portable",PRESERVE_SELECTED_PIP="").items():
             require(env.get(key,"")==value,"closed dispatch differs: "+key)
+        validate_batch_args(env,args.german_only)
         source=subprocess.check_output(["git","rev-parse","HEAD"],cwd=ROOT,text=True).strip()
         require(source==env["GITHUB_SHA"] and not subprocess.check_output(["git","status","--porcelain","--untracked-files=no"],cwd=ROOT),"source dirty/different")
-        receipt["source"]=source; receipt["targets"]=TARGETS
+        receipt["source"]=source; receipt["targets"]=targets; receipt["german_only"]=args.german_only; receipt["total_original_zip_bytes"]=total
         if args.verify_artifact:
             require(isinstance(captured,dict) and captured.get("mode")=="capture" and
                     captured.get("completed") is True and captured.get("source")==source and
-                    captured.get("targets")==list(TARGETS),"completed same-source capture receipt required")
-            require(len(captured.get("originals",[]))==len(TARGETS),"capture provenance incomplete")
-            for target,row in zip(TARGETS,captured["originals"]):
+                    captured.get("targets")==list(targets) and captured.get("german_only") is args.german_only,"completed same-source capture receipt required")
+            require(len(captured.get("originals",[]))==len(targets),"capture provenance incomplete")
+            for target,row in zip(targets,captured["originals"]):
                 require(row.get("target")==target and row.get("complete") is True,"capture row differs")
                 validate_metadata(target,row["run"],row["artifact"])
                 require(row.get("archive")==dict(bytes=target["bytes"],sha256=target["sha256"]),"capture archive differs")
@@ -164,7 +182,7 @@ def main():
         memory=int(next(x.split()[1] for x in Path('/proc/meminfo').read_text().splitlines() if x.startswith('MemAvailable:')))*1024
         require(memory>=2*2**30,"need 2GiB available RAM")
         require(out.stat().st_dev==scratch.stat().st_dev,"scratch/output must share admitted disk")
-        required= (TOTAL+2*2**30 if args.verify_artifact else 2*TOTAL+2*2**30)
+        required= (total+2*2**30 if args.verify_artifact else 2*total+2*2**30)
         require(shutil.disk_usage(out).free>=required,"insufficient two-copy preservation storage")
         token=env["GH_TOKEN"]
         if args.verify_artifact:
@@ -174,18 +192,18 @@ def main():
             producer(run,source,env["GITHUB_REF_NAME"],run_id,completed=False)
             item=archive.fetch_metadata('/actions/artifacts/'+str(args.verify_artifact),token)
             artifact_identity(item,args.verify_artifact,run_id,source,env["GITHUB_REF_NAME"],"ocr-nov4-original-zips-"+str(run_id))
-            require(item["size_in_bytes"]<=TOTAL+2**20,"outer ZIP exceeds cap")
+            require(item["size_in_bytes"]<=total+2**20,"outer ZIP exceeds cap")
             receipt['uploaded_artifact']=item; save()
             target=dict(artifact_id=args.verify_artifact,bytes=item['size_in_bytes'],sha256=item['digest'].removeprefix('sha256:'))
             path=scratch/'uploaded-originals.zip'
             receipt['stage']='outer-archive-transfer'; save()
             receipt['outer_archive']=transfer(target,path,token); save()
             receipt['stage']='inner-archive-readback'; save()
-            receipt['readback']=readback(path)
+            receipt['readback']=readback(path,targets)
             receipt['complete_readback']=True
         else:
             raw=out/'raw'; require(not raw.exists(),"fresh raw directory required"); raw.mkdir()
-            for target in TARGETS:
+            for target in targets:
                 receipt['stage']='original-'+target['label']; save()
                 run=archive.fetch_metadata('/actions/runs/'+str(target['run_id']),token)
                 item=archive.fetch_metadata('/actions/artifacts/'+str(target['artifact_id']),token)

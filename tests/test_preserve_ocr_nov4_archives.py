@@ -33,14 +33,28 @@ def metadata(target):
 
 class Controls(unittest.TestCase):
     def test_frozen_targets_include_failed_original(self):
-        self.assertEqual(len(worker.TARGETS),9)
-        self.assertFalse(any('german' in t['label'] for t in worker.TARGETS))
+        self.assertEqual(len(worker.TARGETS),10)
+        self.assertEqual(sum('german' in t['label'] for t in worker.TARGETS),1)
         for target in worker.TARGETS:
             worker.validate_metadata(target,*metadata(target))
-        self.assertEqual(worker.TARGETS[-1]['conclusion'],'failure')
+        self.assertEqual(next(t for t in worker.TARGETS if t['label']=='lighton08-inventory-table')['conclusion'],'failure')
+
+    def test_exact_batches_and_arguments(self):
+        self.assertEqual(worker.select_targets(False),worker.TARGETS)
+        self.assertEqual(worker.select_targets(True),(worker.GERMAN,))
+        self.assertEqual(sum(t['bytes'] for t in worker.select_targets(True)),2543809676)
+        self.assertEqual(sum(t['bytes'] for t in worker.select_targets(False)),worker.TOTAL)
+        self.assertEqual(worker.GERMAN['source'],'1bb0ddb1d9ac12ded51eb5bd0edd89be0a8259e6')
+        worker.validate_metadata(worker.GERMAN,*metadata(worker.GERMAN))
+        for flag,value in ((False,''),(True,'--german-only')):
+            worker.validate_batch_args({'PRESERVE_SELECTED_ARGS':value},flag)
+        for flag,value in ((False,'--german-only'),(True,''),(True,'--german-only extra'),(False,' ')):
+            with self.subTest(flag=flag,value=value),self.assertRaises(ValueError):
+                worker.validate_batch_args({'PRESERVE_SELECTED_ARGS':value},flag)
+        with self.assertRaises(ValueError):worker.select_targets(1)
 
     def test_producer_mutations(self):
-        target=worker.TARGETS[-1]
+        target=next(t for t in worker.TARGETS if t['label']=='lighton08-inventory-table')
         for key,value in dict(head_sha='a'*40,head_branch='other',event='push',path='other',
                               run_attempt=2,status='in_progress',conclusion='success',id=1).items():
             run,item=metadata(target);run[key]=value

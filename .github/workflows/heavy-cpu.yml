@@ -367,7 +367,9 @@ jobs:
         id: capture
         env:
           GH_TOKEN: ${{ github.token }}
-        run: python -u tools/ci-heavy/preserve_ocr_nov4_archives.py
+        run: |
+          read -ra batch_arguments <<< "$PRESERVE_SELECTED_ARGS"
+          python -u tools/ci-heavy/preserve_ocr_nov4_archives.py "${batch_arguments[@]}"
       - uses: actions/upload-artifact@v4
         if: always()
         id: originals
@@ -381,7 +383,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           PRESERVE_ARTIFACT: ${{ steps.originals.outputs.artifact-id }}
-        run: python -u tools/ci-heavy/preserve_ocr_nov4_archives.py --verify-artifact "$PRESERVE_ARTIFACT"
+        run: |
+          read -ra batch_arguments <<< "$PRESERVE_SELECTED_ARGS"
+          python -u tools/ci-heavy/preserve_ocr_nov4_archives.py "${batch_arguments[@]}" --verify-artifact "$PRESERVE_ARTIFACT"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
