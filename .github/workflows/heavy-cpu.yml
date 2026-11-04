@@ -78,7 +78,7 @@ concurrency:
 
 jobs:
   run:
-    if: inputs.script != 'tools/ci-heavy/extract_ocr_nov4_evidence.py' && inputs.script != 'tools/ci-heavy/extract_ocr_followup_evidence.py' && inputs.script != 'tools/ci-heavy/lighton3_pixtral_eps_ab.py' && inputs.script != 'tools/ci-heavy/preserve_ocr_nov4_archives.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_f32_ab.py'
+    if: inputs.script != 'tools/ci-heavy/extract_ocr_nov4_evidence.py' && inputs.script != 'tools/ci-heavy/extract_ocr_followup_evidence.py' && inputs.script != 'tools/ci-heavy/lighton3_pixtral_eps_ab.py' && inputs.script != 'tools/ci-heavy/preserve_ocr_nov4_archives.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_f32_ab.py' && inputs.script != 'tools/ci-heavy/lighton3_kv_complete_first.py'
     runs-on: ${{ inputs.runner }}
     timeout-minutes: 350
     env:
@@ -440,6 +440,64 @@ jobs:
         if: always()
         with:
           name: lighton3-kv-raw-${{ github.run_id }}
+          path: ${{ runner.temp }}/lighton3-kv-out/raw/
+          retention-days: 90
+          if-no-files-found: warn
+
+  lighton_kv_completion:
+    if: inputs.script == 'tools/ci-heavy/lighton3_kv_complete_first.py'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      actions: read
+    env:
+      COMPLETE_SELECTED_SCRIPT: ${{ inputs.script }}
+      COMPLETE_SELECTED_RUNNER: ${{ inputs.runner }}
+      COMPLETE_SELECTED_MODE: ${{ inputs.build_mode }}
+      COMPLETE_SELECTED_PIP: ${{ inputs.pip }}
+      COMPLETE_SELECTED_ARGS: ${{ inputs.args }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Operator/native source, exact retained failure and prefill classification controls
+        run: python tests/test_lighton3_kv_complete_first.py -v
+      - name: Preserve the committed operator and check out the original native source
+        run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test -z "$(git status --porcelain --untracked-files=no)"
+          mkdir "$RUNNER_TEMP/lighton3-kv-completion"
+          cp tools/ci-heavy/lighton3_kv_complete_first.py "$RUNNER_TEMP/lighton3-kv-completion/driver.py"
+          cp docs/lighton3-kv-complete-first-v1.json "$RUNNER_TEMP/lighton3-kv-completion/protocol.json"
+          git fetch --no-tags --depth=1 origin 3e82a12058cfca8869f4aa8ead250acf2b708934
+          git checkout --detach 3e82a12058cfca8869f4aa8ead250acf2b708934
+      - name: Prepare disposable hosted scratch with the original build path
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          echo "KV_OUT=$RUNNER_TEMP/lighton3-kv-out" >> "$GITHUB_ENV"
+          echo "KV_SCRATCH=$RUNNER_TEMP/lighton3-kv-scratch" >> "$GITHUB_ENV"
+          echo "COMPLETE_PROTOCOL=$RUNNER_TEMP/lighton3-kv-completion/protocol.json" >> "$GITHUB_ENV"
+          python -m venv "$RUNNER_TEMP/lighton3-kv-python"
+      - name: Reuse ten native results; reproduce exact binary; run only two missing calls
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: '"$RUNNER_TEMP/lighton3-kv-python/bin/python" -u "$RUNNER_TEMP/lighton3-kv-completion/driver.py"'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighton3-kv-completion-review-${{ github.run_id }}
+          path: ${{ runner.temp }}/lighton3-kv-out/review/
+          retention-days: 90
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighton3-kv-completion-raw-${{ github.run_id }}
           path: ${{ runner.temp }}/lighton3-kv-out/raw/
           retention-days: 90
           if-no-files-found: warn

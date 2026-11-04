@@ -30,6 +30,9 @@ on:
       - 'tests/test_lighton3_pixtral_eps_ab.py'
       - 'tests/test_validate_lighton3_eps_first.py'
       - 'tests/test_lighton3_kv_f32_ab.py'
+      - 'tests/test_lighton3_kv_complete_first.py'
+      - 'tools/ci-heavy/lighton3_kv_complete_first.py'
+      - 'docs/lighton3-kv-complete-first-v1.json'
       - 'tools/ci-heavy/lighton3_kv_f32_ab.py'
       - 'docs/lighton3-kv-f32-ab-v1.json'
       - 'tools/ci-heavy/validate_lighton3_eps_first.py'
@@ -128,6 +131,9 @@ on:
       - 'tests/test_lighton3_pixtral_eps_ab.py'
       - 'tests/test_validate_lighton3_eps_first.py'
       - 'tests/test_lighton3_kv_f32_ab.py'
+      - 'tests/test_lighton3_kv_complete_first.py'
+      - 'tools/ci-heavy/lighton3_kv_complete_first.py'
+      - 'docs/lighton3-kv-complete-first-v1.json'
       - 'tools/ci-heavy/lighton3_kv_f32_ab.py'
       - 'docs/lighton3-kv-f32-ab-v1.json'
       - 'tools/ci-heavy/validate_lighton3_eps_first.py'
@@ -291,6 +297,7 @@ jobs:
           # Current native ownership is checked by the separate KV protocol.
           python tests/test_lighton3_pixtral_eps_ab.py Controls.test_only_elapsed_time_can_differ_in_gate0_trace Controls.test_tensor_byte_inventory_and_decoded_changes_rejected -v
           python tests/test_lighton3_kv_f32_ab.py -v
+          python tests/test_lighton3_kv_complete_first.py -v
           python tests/test_validate_lighton3_eps_first.py -v
 
       - name: Xiaomi OCR0 exact source, task and layout controls
