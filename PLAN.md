@@ -1,4 +1,4 @@
-# CrispEmbed plan — open work (updated 3 November 2026)
+# CrispEmbed plan — open work (updated 4 November 2026)
 
 Only open or active work lives here; completed runs move to [HISTORY](HISTORY.md) with their
 receipts, measured numbers go to [PERFORMANCE](PERFORMANCE.md). Start with
@@ -8,6 +8,7 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 
 | Lane | State | Next action | Done when |
 |---|---|---|---|
+| OCR model gaps / LightOnOCR-3-4B (`feat/ocr-next-models-20261104`) | Owner-authorized 4 Nov recheck; current coverage, exact checkpoint rights and new-model priorities are in [the expansion guide](docs/ocr-benchmark-expansion.md). Source audit/bootstrap is the active bounded lane; PR141 owns existing model qualification | Pin 4B metadata/tensor schema and implement a model-free preflight. Then address hard-coded small-model shapes, unequal linear-attention head groups, vocabulary projection memory and the 12-layer precision recipe under a separate native protocol | Immutable source/tensor inventory and hosted positive/negative controls first; native support remains false until complete original/native F32/F16 and document evidence, then separate precision/publication gates |
 | Q4_K_MIX publications (MiniCPM-OCR, Unlimited-OCR-2, MoEdern 27M/115M, Josev, UltraBERT) | Recipes and receipts on main. TeleOCR and MinerU Q4_K_MIX are already published and registered (`teleocr-q4_k-mix`, `mineru25-pro-q4_k-mix`, PR #116); the rest are not | Coordinator dispatches the cosine-gated publication per model (sections below); Josev needs a quantized branch in `josev_publish.py`, MoEdern needs SciFact/client panels first | Hub upload, empty-cache readback, registry alias with SHA-256 |
 | Main CI green at head | Build/Lint queued for hours on recent main; Windows compiler-cache fix `93209b32` and `sibling-crispasr` unconfirmed | Handoff 3 Nov lane A | Build+Lint+WASM green on one main commit |
 | `env_gate.h` false/off/no lockstep | CrispASR #572 open (46 checks pass); CrispEmbed side not written | Handoff 3 Nov lane B | Identical header in both repos, tests in CI, sibling sync green |
@@ -47,7 +48,7 @@ Next: review the exact-path hosted controls and first scheduled/manual report.
 Done when both have run IDs and the report preserves these evidence limits.
 No additional native build or model qualification is required for this reporting change.
 
-## Active work in flight — benchmark OCR expansion, 3 November 2026
+## Active work in flight — benchmark OCR expansion, 4 November 2026
 
 Owner-authorized follow-up to the OmniParseBench / OmniDocBench review. Isolated
 implementation lanes start from current main; each preserves existing negative evidence
@@ -55,24 +56,20 @@ and model defaults. New registry aliases require qualified immutable artifacts.
 
 | Lane / branch | Scope | Completion gate |
 |---|---|---|
-| `feat/ocr-mineru2605` | Exact 2605 profile and original-first portable job integrated into PR138; 21 new/17 preserved conversion controls pass | Full-position F32/F16/Q8/Q4 comparisons and symmetric complete 2.0.7/native helper traces across the frozen eight cases |
-| `feat/ocr-lighton3-1b` | Exact transcription/grounding profile, actual GGUF/source census and portable original-first trace job; 19 controls pass | Hosted original/native pixels, stages, full-vocabulary logits, free generation and structured output; old profile behavior preserved |
-| `feat/ocr-xiaomi0` | Format-4 profile, public task/cap admission, original external PP-DocLayoutV3 producer, strict OTSL and bounded document assembly; 26 controls pass | Hosted metadata/frontend and two-case F32/F16 execution, then a separately frozen document experiment; detector remains external |
-| `feat/ocr-benchmark-integration` | Shared document evaluation and candidate/license matrix; 32 document controls pass | Hosted source checks, original-first qualification and representative licensed document quality before alias/publication work |
-| LightOn3-0.8B portable replay | Separate current-source F16/Q8 job preserves the old three cases, prompt, 1024 cap, recipes and receipts; 8 portable/6 retained-review controls pass | All three one-case jobs at one reviewed commit; complete final-logit coverage, completion, text differences and explicit precision decision |
-| `feat/ocr-ovis3-task-audit` | Separate pinned Markdown task/source and cleanup audit; 14 controls pass and the old plain-OCR failure is preserved | Independent licensed input/gold, actual original Markdown captures, then distinct native task admission; no old gate is changed |
-| `feat/ocr-nemotron-geometry` | Gated geometry/patch prototype and original-processor comparator; 510-tensor census, 7 source/12 frontend controls pass | Hosted 11-case processor comparison; native resize and the complete neural backend remain separate |
+| `feat/ocr-next-models-20261104` | Refresh current model coverage and priorities; begin the separate LightOnOCR-3-4B source/config/tensor preflight. Existing Qwen3.5 code hard-codes the small model and cannot run 4B by adding an alias | Exact provenance and fail-closed source controls; native admission, conversion qualification, full document quality and publication remain separate |
+| `fix/ocr-qualification-nov4` / PR141 | Existing MinerU2605, LightOn3-1B/0.8B and Xiaomi qualification. Follow its [4 Nov continuation](https://github.com/CrispStrobe/CrispEmbed/blob/ea2edb5bff53629c31804437af2f0e21796fd040/docs/ocr-qualification-2026-11-04.md), not the superseded first-run queue | Resolve retained numerical/decoded/layout failures, completion caps and precision-specific publication gates; coordinate with this lane before changing its probes or runtime |
+| OvisOCR3 document task | Separate pinned Markdown task/source and cleanup audit exists; the old plain-OCR capped-page failure is preserved | Independent licensed input/gold, actual original task captures and distinct native task admission; upstream two-call Markdown/layout scores are not plain-OCR evidence |
+| Nemotron 3.5 Parse | Source census and bounded geometry/packing frontend exist; full OCR engine is absent | Native resize/positions, C-RADIO/compression/causal mBART, full original/native evidence and public surfaces before publication |
 
-Checkpoint: [integration PR #138](https://github.com/CrispStrobe/CrispEmbed/pull/138)
-contains the reviewed source at `7ac5b594e63a34b53a753d9520fccff4ceb888d0`.
-All 162 focused OCR controls pass locally and the
-[shared hosted controls](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41735520715)
-pass. All15 workflows are green, including all11 native-build jobs and both WASM
-workflows. [The CI record](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/ocr-benchmark-expansion/source-ci-7ac5b594.json)
-preserves the source identities and earlier invocation/setup/WASM-link failures
-with their corrections. The source PR merged on 4 November 2026; model execution
-remains pending. Model inference/qualification is still pending; the concrete queue is in
-[PR138's expansion guide](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/ocr-benchmark-expansion.md).
+The PR138 source implementation is merged; its [historical source-CI record](tests/results/ocr-benchmark-expansion/source-ci-7ac5b594.json)
+remains valid for that commit. The later PR141 evidence has completed the MinerU
+eight-case panel: F32/F16 match 8/8 decodes, Q8 and mixed Q4/Q8 match 6/8, all EOS;
+quantized layout differences remain. Xiaomi's bounded neural checks pass but all
+outputs hit the 16-token cap. LightOn1B's normalization correction still has an
+F16 language-change failure, and LightOn0.8's exact replay guard remains failed.
+These are remaining qualification tasks, not absent implementations. Retain
+the exact linked reviews and their negative results; do not repeat completed
+panels merely because the older guide said execution was pending.
 
 This work does not adopt restricted terms or change the immutable app runtime.
 OvisOCR3's frozen capped-page failure and all old strict LightOnOCR-3-0.8B verdicts
@@ -711,32 +708,46 @@ reference; gated native math with earliest-stage/final-output comparison; C ABI,
 orchestrator, CLI/server, Python/Rust/Dart; actual Q8/Q4_K task qualification;
 immutable upload/readback, registry hashes and real consumers.
 
-The owner-authorized benchmark expansion is tracked in PR138 and its
-`docs/ocr-benchmark-expansion.md`. Prioritize exact supported-family upgrades
-before the larger new backends:
+The [4 November model-gap review and expansion guide](docs/ocr-benchmark-expansion.md)
+supersedes the initial candidate order. Current main already registers
+PaddleOCR-VL-1.6, GLM-OCR, olmOCR2, FireRed, Nanonets-OCR2-1.5B, DeepSeek-OCR2,
+MiniCPM-OCR, Unlimited-OCR2, SmolDocling and earlier LightOn/MinerU/Ovis versions.
+Keep exact checkpoint versions separate from generic family coverage.
 
-1. MinerU2.5-Pro-2605-1.2B: Apache-2.0 checkpoint and separately pinned helper;
-   exact 2605 profile and original-first qualification, preserving 2604.
-2. LightOnOCR-3-1B and Xiaomi-OCR-0: exact profile/frontend/native reuse,
-   grounding and explicit document-stage dependencies. Community GGUFs are not
-   native qualification.
-3. LightOnOCR-3-0.8B F16/Q8 portable replay and OvisOCR3's separately declared
-   document task protocol; preserve existing strict and capped-page evidence.
-4. Nemotron 3.5 Parse: pinned OpenMDW-1.1 source, bounded frontend, then its
-   new C-RADIO/causal-mBART composition.
-5. LightOnOCR-3-4B, Infinity-Parser2-Flash and Qwen3.5-9B: separate memory,
-   long-page and backend protocols after small dense-model parity.
-6. Qwen3.6-27B and Infinity-Parser2-Pro: separate larger dense/MoE ports.
-   Pro has 40 layers and 256 experts; active parameters do not determine GGUF size.
+1. Finish existing MinerU2605, LightOn3-1B/0.8B, Xiaomi and Ovis3 qualification
+   under their already declared protocols. PR141 owns the active norm/cache work.
+2. **LightOnOCR-3-4B (active source/bootstrap lane):** Apache-2.0 difficult-text,
+   handwriting/math/degraded-page candidate. Pin its source and complete tensor
+   inventory first. Current native 1024-wide/24-layer admission, equal linear
+   key/value heads, vocabulary projection allocation and 12-layer vision precision
+   recipe need separate changes; generic Qwen3.5 support is insufficient.
+3. **Qianfan-OCR:** Apache-2.0 document-understanding/KIE candidate. Audit exact
+   vision/projector mappings, Qwen3 decoder and actual processor defaults before
+   native work; configuration/template names alone do not prove tiling behavior.
+4. **Logics-Parsing-V3 (conditional):** prioritize compact multi-page hierarchy
+   and continuation support once the publisher's weight grant is explicit. Its
+   Apache-2.0 code can support a separate model-independent document-state/DSL
+   contract. Do not transfer Logics v2's score or third-party GGUF license labels.
+5. **Nemotron 3.5 Parse / OpenDoc-0.1B:** footprint-driven feasibility work after
+   existing quality closure. Nemotron needs its full C-RADIO/causal-mBART graph;
+   OpenDoc includes a layout model plus enhanced UniRec, not a standalone 0.1B
+   complete page model. Measure total memory/latency and full pipeline quality.
+6. **Infinity-Parser2-Flash:** later dense-family extension for a demonstrated
+   specialty. **Infinity-Parser2-Pro / Qwen3.6-27B:** separate server-size ports;
+   Pro's 35.1B total MoE weights, 40 layers and 256 experts require storage and
+   backend planning. General Qwen3.5-9B OCR is lower priority than the named tasks.
 
 TeleOCR remains in its existing `qwen-research` acknowledgement/qualification
 lane, not this permissive queue. Indra remains public-code-analysis-only.
-dots.mocr is a distinct candidate from the removed dots.ocr entry: its MIT tag
-has supplemental terms and needs a policy decision before adoption.
-Chandra-OCR-2, Surya2.5, Hunyuan-OCR and other restricted candidates retain
-separate explicit eligibility decisions. Do not infer weight permission from
-a public repository or apply a full application's license to a separate model
-without reading the exact materials.
+**dots.mocr** is the leading conditional new quality/multilingual candidate;
+its Qwen2 decoder has a custom Dots vision tower. Its MIT label includes
+supplemental terms requiring a policy decision before adoption. OCRVerse and
+ABot-OCR remain conditional on explicit weight rights; OCRVerse is a specialist
+visual/code reconstruction option. Dolphin1.5 (MIT) is a possible compact fallback,
+whereas Dolphin-v2 has Qwen Research weight terms. Chandra2/Surya2.5 require
+separate commercial/competition eligibility decisions; Youtu and Hunyuan have
+territorial limitations. Existing `surya-det` is not Surya2.5 OCR. Read exact
+checkpoint/code/base terms independently; benchmark rank is not permission.
 
 ## Issue71, packaging and downstream delivery
 
@@ -861,3 +872,4 @@ UltraBERT's later UINT32 file-type admission check. The reviewed actual fixture
 runs on exactdd592, not the integrated tree; no assertion or source gate was
 weakened to claim combined-source qualification. Final source declarations and
 actual composite/runtime/platform gates remain required.
+
