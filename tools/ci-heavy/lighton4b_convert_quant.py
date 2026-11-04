@@ -18,6 +18,7 @@ import shutil
 import subprocess
 import sys
 import time
+import tempfile
 import urllib.request
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -147,6 +148,8 @@ def main():
     os.environ['HF_HUB_CACHE'] = str(args.output.resolve()/'cache/hub')
     os.environ['TMPDIR'] = str(args.output.resolve()/'tmp')
     Path(os.environ['TMPDIR']).mkdir()
+    tempfile.tempdir = None
+    require(Path(tempfile.gettempdir()).resolve() == Path(os.environ['TMPDIR']), 'temporary filesystem isolation failed')
     report = {'schema': 'lighton4b-convert-quant/v1', 'status': 'failed', 'source_sha': actual,
               'runner_sha256': digest(__file__), 'quantizer_sha256': digest(args.quantizer),
               'native_supported': False, 'quality_qualified': False, 'artifacts': {}}
@@ -168,6 +171,13 @@ def main():
         require(shutil.disk_usage(args.output).free >= needed, 'insufficient disk before checkpoint acquisition')
         available = int(next(line.split()[1] for line in Path('/proc/meminfo').read_text().splitlines()
                              if line.startswith('MemAvailable:')))*1024
+        # Container limits can be smaller than the host reported by /proc.
+        for limit_name, used_name in (('/sys/fs/cgroup/memory.max','/sys/fs/cgroup/memory.current'),
+                ('/sys/fs/cgroup/memory/memory.limit_in_bytes','/sys/fs/cgroup/memory/memory.usage_in_bytes')):
+            if Path(limit_name).is_file() and Path(used_name).is_file():
+                limit = Path(limit_name).read_text().strip()
+                if limit != 'max':
+                    available = min(available, max(0,int(limit)-int(Path(used_name).read_text())))
         report['available_memory_bytes'] = available
         require(available >= payload+8*2**30, 'insufficient memory before checkpoint acquisition')
         url = f'https://huggingface.co/{policy.MODEL}/resolve/{policy.REVISION}/config.json'
