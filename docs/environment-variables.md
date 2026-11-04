@@ -177,6 +177,13 @@ qualifies the new document helpers. See [the 2605 protocol](mineru25-pro-2605.md
 
 ### Benchmark candidate profiles
 
+`CRISPEMBED_LIGHTONOCR3_KV_F32=1` opts the admitted LightOn3-1B CPU path
+into F32 persistent key/value storage; unset/empty/0, legacy profiles and GPU
+backends retain F16. This doubles the cache allocation for the same token
+capacity, without changing GGUF weight bytes. The first-only retained-original
+cache A/B holds the corrected Pixtral epsilon gate at1. It is an experiment,
+not a new default or completed model/publication qualification.
+
 `CRISPEMBED_LIGHTONOCR3_PIXTRAL_EPS=1` opts the admitted LightOn3-1B profile
 into the pinned Pixtral vision RMSNorm epsilon (1e-5 at ln_pre and both block
 norms). Unset, empty or `0` preserves historical 1e-6. The gate never changes
@@ -214,7 +221,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-425 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+426 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -636,6 +643,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
+| `CRISPEMBED_LIGHTONOCR3_KV_F32` | on | off | bool | default-off experimental / opt-in | `src/lightonocr3_profile.h` |  |
 | `CRISPEMBED_LIGHTONOCR3_PIXTRAL_EPS` | on | off | bool | default-off experimental / opt-in | `src/lightonocr3_profile.h` | Pinned Pixtral uses 1e-5 for ln_pre and both norms in every vision block. Preserve the historical path and every legacy profile unless opted in. |
 
 ### lilt_kie

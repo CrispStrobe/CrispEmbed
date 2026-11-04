@@ -116,7 +116,7 @@ struct model {
 struct kv_cache_state {
     ggml_context * ctx = nullptr;
     ggml_backend_buffer_t buf = nullptr;
-    ggml_tensor * k = nullptr; // (head_dim, max_seq, n_kv_heads, n_layers) F16
+    ggml_tensor * k = nullptr; // (head_dim, max_seq, n_kv_heads, n_layers), selected cache type
     ggml_tensor * v = nullptr; // same shape
     int max_seq = 0;
     int n_past = 0;
@@ -140,7 +140,7 @@ struct context {
     bool bench = false;
     std::string last_text;
 
-    // Persistent F16 KV cache (internvl2 pattern)
+    // Persistent KV cache (internvl2 pattern)
     kv_cache_state kvc;
 
     // Tokenizer
@@ -212,8 +212,10 @@ static bool alloc_kv_cache(context & ctx, int max_seq) {
     ggml_init_params ip{ ctx_size, nullptr, true };
     ctx.kvc.ctx = ggml_init(ip);
 
-    ctx.kvc.k = ggml_new_tensor_4d(ctx.kvc.ctx, GGML_TYPE_F16, hd, max_seq, nkv, nl);
-    ctx.kvc.v = ggml_new_tensor_4d(ctx.kvc.ctx, GGML_TYPE_F16, hd, max_seq, nkv, nl);
+    const ggml_type cache_type =
+        lightonocr3::kv_f32_enabled(m.profile3, ggml_backend_is_cpu(ctx.backend)) ? GGML_TYPE_F32 : GGML_TYPE_F16;
+    ctx.kvc.k = ggml_new_tensor_4d(ctx.kvc.ctx, cache_type, hd, max_seq, nkv, nl);
+    ctx.kvc.v = ggml_new_tensor_4d(ctx.kvc.ctx, cache_type, hd, max_seq, nkv, nl);
     ggml_set_name(ctx.kvc.k, "kv_k");
     ggml_set_name(ctx.kvc.v, "kv_v");
 
@@ -231,8 +233,8 @@ static bool alloc_kv_cache(context & ctx, int max_seq) {
     ctx.kvc.allocated = true;
 
     size_t kv_bytes = ggml_backend_buffer_get_size(ctx.kvc.buf);
-    fprintf(stderr, "lightonocr: KV cache: %d layers, max_seq=%d, %.1f MB (F16)\n", nl, max_seq,
-            (float)kv_bytes / 1024 / 1024);
+    fprintf(stderr, "lightonocr: KV cache: %d layers, max_seq=%d, %.1f MB (%s)\n", nl, max_seq,
+            (float)kv_bytes / 1024 / 1024, ggml_type_name(ctx.kvc.k->type));
     return true;
 }
 
@@ -1060,7 +1062,7 @@ static bool run_decoder_prefill(context & ctx, const std::vector<float> & image_
     fprintf(stderr, "lightonocr: prompt = %d prefix + %d image + %d suffix = %d total\n", n_prefix, n_image_tokens,
             n_suffix, n_prompt);
 
-    // Allocate persistent F16 KV cache
+    // Allocate persistent KV cache
     int max_seq = n_prompt + ctx.max_tokens + 16;
     free_kv_cache(ctx);
     if (!alloc_kv_cache(ctx, max_seq)) {
@@ -1132,8 +1134,8 @@ static bool run_decoder_prefill(context & ctx, const std::vector<float> & image_
         K = ggml_rope_ext(g, K, pos_ids, nullptr, head_dim, GGML_ROPE_TYPE_NEOX, 0, rope_theta, 1.0f, 0.0f, 1.0f, 0.0f,
                           0.0f);
 
-        // Write post-RoPE K/V into persistent F16 cache via ggml_cpy.
-        // K/V are (head_dim, n_kv_heads, n_prompt) F32 → cache is (head_dim, max_seq, n_kv_heads, n_layers) F16.
+        // Write post-RoPE K/V into persistent cache via ggml_cpy.
+        // K/V are (head_dim, n_kv_heads, n_prompt) F32 → cache is (head_dim, max_seq, n_kv_heads, n_layers) in the selected cache type.
         // We permute to (head_dim, n_prompt, n_kv_heads) then cpy into a view at layer il, offset 0.
         {
             ggml_tensor * K_perm = ggml_cont(g, ggml_permute(g, K, 0, 2, 1, 3)); // (hd, T, nkv)
@@ -1259,11 +1261,12 @@ static bool run_decoder_prefill(context & ctx, const std::vector<float> & image_
     for (int il = 0; il < m.lm_layers; ++il) test_read(ctx, gf, "llm_layer_" + std::to_string(il));
     test_read(ctx, gf, "llm_final_norm");
 
-    // KV cache was written directly into persistent F16 tensors by ggml_cpy
+    // KV cache was written directly into persistent tensors by ggml_cpy
     ggml_free(g);
     ctx.kvc.n_past = n_prompt;
     bool kv_ok = ctx.kvc.allocated && !LOCR_NO_KV;
-    fprintf(stderr, "lightonocr: KV cache: %s (F16, %d tokens cached)\n", kv_ok ? "OK" : "DISABLED", n_prompt);
+    fprintf(stderr, "lightonocr: KV cache: %s (%s, %d tokens cached)\n", kv_ok ? "OK" : "DISABLED",
+            ggml_type_name(ctx.kvc.k->type), n_prompt);
 
     ctx.char_confidences.clear();
     std::vector<int32_t> generated;
@@ -1301,7 +1304,7 @@ static bool run_decoder_prefill(context & ctx, const std::vector<float> & image_
         return true;
     }
 
-    // KV-cached decode: persistent F16 cache, graph rebuilt per step with ggml_view
+    // KV-cached decode: persistent cache, graph rebuilt per step with ggml_view
     long long decode_total_ms = 0;
     int decode_steps = 0;
     int kv_repeat = n_heads / n_kv_heads;

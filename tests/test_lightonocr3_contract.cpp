@@ -52,6 +52,81 @@ static int crispembed_test_main() {
               "Pixtral epsilon differs from source RMSNorm");
     ggml_free(gg);
     set_gate(nullptr);
+    gate = "CRISPEMBED_LIGHTONOCR3_KV_F32";
+    for (const char * value : { static_cast<const char *>(nullptr), "", "0", "1" }) {
+        set_gate(value);
+        const bool enabled = value && std::strcmp(value, "1") == 0;
+        check(lightonocr3::kv_f32_enabled(true, true) == enabled, "KV F32 gate parsing changed");
+        check(!lightonocr3::kv_f32_enabled(false, true), "KV F32 gate affects legacy CPU model");
+        check(!lightonocr3::kv_f32_enabled(true, false), "KV F32 gate affects GPU backend");
+        check(!lightonocr3::kv_f32_enabled(false, false), "KV F32 gate affects legacy GPU model");
+    }
+    set_gate(nullptr);
+    // Exercise the real cache layout and ggml_cpy conversions, independently of
+    // a model: prefill writes two positions, then decode appends a third. Each
+    // layer/head/value differs so a wrong byte stride cannot pass by coincidence.
+    for (ggml_type cache_type : { GGML_TYPE_F16, GGML_TYPE_F32 }) {
+        auto * cache_gg = ggml_init({ 8 * 1024 * 1024, nullptr, false });
+        if (!cache_gg) return 2;
+        constexpr int hd = 4, max_seq = 5, heads = 2, layers = 2;
+        ggml_tensor * caches[] = { ggml_new_tensor_4d(cache_gg, cache_type, hd, max_seq, heads, layers),
+                                   ggml_new_tensor_4d(cache_gg, cache_type, hd, max_seq, heads, layers) };
+        for (int kind = 0; kind < 2; ++kind) {
+            auto * cache = caches[kind];
+            std::memset(ggml_get_data(cache), 0, ggml_nbytes(cache));
+            check(cache->nb[1] == hd * ggml_type_size(cache_type) && cache->nb[2] == max_seq * cache->nb[1] &&
+                      cache->nb[3] == heads * cache->nb[2],
+                  "KV cache layout strides differ");
+            auto authored = [=](int layer, int position, int head, int channel) {
+                return 1.0001f + kind * 8.0f + layer * 2.0f + head * 0.25f + position * 0.03125f +
+                       channel * 0.00390625f;
+            };
+            for (int layer = 0; layer < layers; ++layer) {
+                for (int start : { 0, 2 }) {
+                    const int count = start == 0 ? 2 : 1;
+                    auto * source = ggml_new_tensor_3d(cache_gg, GGML_TYPE_F32, hd, count, heads);
+                    auto * data = static_cast<float *>(ggml_get_data(source));
+                    for (int head = 0; head < heads; ++head)
+                        for (int pos = 0; pos < count; ++pos)
+                            for (int channel = 0; channel < hd; ++channel)
+                                data[channel + hd * (pos + count * head)] = authored(layer, start + pos, head, channel);
+                    auto * view = ggml_view_4d(cache_gg, cache, hd, count, heads, 1, cache->nb[1], cache->nb[2],
+                                               cache->nb[3], layer * cache->nb[3] + start * cache->nb[1]);
+                    auto * writes = ggml_new_graph(cache_gg);
+                    ggml_build_forward_expand(writes, ggml_cpy(cache_gg, source, view));
+                    check(ggml_graph_compute_with_ctx(cache_gg, writes, 1) == GGML_STATUS_SUCCESS,
+                          "KV cache write failed");
+                }
+            }
+            for (int layer = 0; layer < layers; ++layer) {
+                auto * view =
+                    ggml_view_3d(cache_gg, cache, hd, max_seq, heads, cache->nb[1], cache->nb[2], layer * cache->nb[3]);
+                auto * restored = ggml_new_tensor_3d(cache_gg, GGML_TYPE_F32, hd, max_seq, heads);
+                auto * reads = ggml_new_graph(cache_gg);
+                ggml_build_forward_expand(reads, ggml_cpy(cache_gg, view, restored));
+                check(ggml_graph_compute_with_ctx(cache_gg, reads, 1) == GGML_STATUS_SUCCESS, "KV cache read failed");
+                const auto * data = static_cast<const float *>(ggml_get_data(restored));
+                for (int head = 0; head < heads; ++head)
+                    for (int pos = 0; pos < max_seq; ++pos)
+                        for (int channel = 0; channel < hd; ++channel) {
+                            const float value = data[channel + hd * (pos + max_seq * head)];
+                            if (pos >= 3) {
+                                check(value == 0.0f, "KV write changed an unused position");
+                            } else {
+                                const float expected = authored(layer, pos, head, channel);
+                                if (cache_type == GGML_TYPE_F32) {
+                                    check(value == expected, "F32 cache lost authored precision or stride");
+                                } else {
+                                    check(value == ggml_fp16_to_fp32(ggml_fp32_to_fp16(expected)),
+                                          "F16 cache conversion or stride differs");
+                                    check(value != expected, "F16 control unexpectedly preserved authored F32 value");
+                                }
+                            }
+                        }
+            }
+        }
+        ggml_free(cache_gg);
+    }
     // Official floor/ceil policy: odd patch grids must not become even grids.
     check(lightonocr3::image_size(317, 452) == std::make_pair(322, 462), "odd patch grid changed");
     check(lightonocr3::image_size(3080, 1540) == std::make_pair(1540, 770), "aspect downscale changed");
