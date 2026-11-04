@@ -8,10 +8,6 @@ name: Model-free controls
 # trigger (they take seconds), so no control is skipped that used to run.
 on:
   workflow_dispatch:
-    inputs:
-      review_only:
-        type: boolean
-        default: false
   merge_group:
   push:
     branches: [main]
@@ -280,7 +276,6 @@ concurrency:
 
 jobs:
   controls:
-    if: ${{ !inputs.review_only }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     outputs:
@@ -438,30 +433,3 @@ jobs:
           if-no-files-found: error
           retention-days: 90
           compression-level: 6
-
-
-  retained-report-review:
-    if: ${{ inputs.review_only }}
-    runs-on: ubuntu-24.04
-    permissions:
-      actions: read
-      contents: read
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: lighton4b-components-41923599391
-          run-id: 41923599391
-          github-token: ${{ github.token }}
-          path: retained
-      - run: |
-          mkdir review
-          cp retained/gdn/component-report.json review/
-          cp retained/meta/export-meta.json review/
-          cp retained/environment/{pip-check.txt,installed.txt,resolution.json} review/
-          sha256sum review/* > review/sha256.txt
-      - uses: actions/upload-artifact@v4
-        with:
-          name: lighton4b-small-report-review
-          path: review/
-          if-no-files-found: error
-          retention-days: 90

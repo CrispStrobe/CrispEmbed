@@ -17,8 +17,16 @@ Initial repair [41923465295](https://github.com/CrispStrobe/CrispEmbed/actions/r
 failed its model-free control because the runtime version guard still named 0.23.0;
 no reference job ran. Both pins now agree at `52275dd1f` and the independently
 dispatched [41923599391](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41923599391)
-must be reviewed before claiming any original component result. Conversion,
-GGUF readback, native full-model inference and decoded quality remain open.
+passed meta construction and pip check but failed all four synthetic cases: 6/208
+stages failed, first at `full_prefix.delta.output` in each case; all named native
+controls passed. Maximum absolute errors there were 0.00025432, 0.00334059,
+0.00379243 and 0.00447881, against original maxima 0.0132631, 0.0190049,
+0.00751887 and 0.00889725 respectively. Two final-state comparisons also fail
+(maximum errors 0.02074295 and 0.03019165). Small-report extraction
+[41924176587](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41924176587)
+retains the reviewed reports; the large original artifact remains remote. Diagnose
+the full-prefix recurrence and frozen inputs before changing thresholds or gates.
+Conversion, GGUF readback, native full-model inference and decoded quality remain open.
 
 | Lane | State | Next action | Done when |
 |---|---|---|---|
