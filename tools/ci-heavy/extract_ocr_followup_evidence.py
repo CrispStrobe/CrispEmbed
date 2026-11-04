@@ -13,16 +13,33 @@ import extract_ocr_nov4_evidence as archive
 SELECTOR = "tools/ci-heavy/extract_ocr_followup_evidence.py"
 HELPER_SHA256 = "5b52a1b14eb8658c3371fff920fade76c2df1346c0659b2d372322144bab84e6"
 TARGETS = (
-    {"label": "lightonocr3-1b-fixed", "run_id": 41873656972, "artifact_id": 13347781304,
-     "bytes": 5627376432, "sha256": "020a1c21f434702366ca895f1e3b358644f2c1e5dde5948e49e1a9edb33d48e7",
-     "source": "4476be6eb21ecacc3c001ed4e02928d0a98be0ea", "conclusion": "success"},
+    {"label": "mineru2605-formula", "run_id": 41877117676, "artifact_id": 13347927913,
+     "bytes": 136053962, "sha256": "7a052a5a73b47d90431c9fabdcea9af10ada9239a105ecd642d21d98a8d0705e",
+     "source": "1bb0ddb1d9ac12ded51eb5bd0edd89be0a8259e6",
+     "branch": "audit/mineru2605-aligned-q4-20261104", "conclusion": "success"},
+    {"label": "mineru2605-japanese", "run_id": 41877121416, "artifact_id": 13348396823,
+     "bytes": 249816387, "sha256": "8919d773dc544e30084d3b3da14519fdd884297548bdf5e91d08d993688a868d",
+     "source": "1bb0ddb1d9ac12ded51eb5bd0edd89be0a8259e6",
+     "branch": "audit/mineru2605-aligned-q4-20261104", "conclusion": "success"},
+    {"label": "mineru2605-arabic", "run_id": 41877125216, "artifact_id": 13348311566,
+     "bytes": 68835208, "sha256": "fad1d207c52c1b37e0c6f65c10ac10a701e31b4cec84c0392f85792d42a3ae95",
+     "source": "1bb0ddb1d9ac12ded51eb5bd0edd89be0a8259e6",
+     "branch": "audit/mineru2605-aligned-q4-20261104", "conclusion": "success"},
+    {"label": "mineru2605-table", "run_id": 41877129385, "artifact_id": 13347724003,
+     "bytes": 386986678, "sha256": "1efd735469a8956aa6364e6fbd9587acf9f93958a48c39ad6a51393edf1164b5",
+     "source": "1bb0ddb1d9ac12ded51eb5bd0edd89be0a8259e6",
+     "branch": "audit/mineru2605-aligned-q4-20261104", "conclusion": "success"},
+    {"label": "mineru2605-layout-page", "run_id": 41877137082, "artifact_id": 13350809558,
+     "bytes": 1549053766, "sha256": "701decb5245cc0bdf5e1993370eec2da95fa66e96e94043ac594c3947989aba4",
+     "source": "1bb0ddb1d9ac12ded51eb5bd0edd89be0a8259e6",
+     "branch": "audit/mineru2605-aligned-q4-20261104", "conclusion": "success"},
 )
 
 
 def validate_metadata(target, run, artifact):
     archive.require(target in TARGETS, "archive outside the reviewed follow-up list")
     expected = {"id": target["run_id"], "head_sha": target["source"],
-                "head_branch": "fix/ocr-qualification-nov4", "event": "workflow_dispatch",
+                "head_branch": target["branch"], "event": "workflow_dispatch",
                 "path": ".github/workflows/heavy-cpu.yml", "status": "completed",
                 "conclusion": target["conclusion"], "run_attempt": 1}
     for key, value in expected.items():
@@ -37,7 +54,7 @@ def validate_metadata(target, run, artifact):
         archive.require(artifact.get(key) == value, "follow-up artifact identity differs: " + key)
     producer = artifact.get("workflow_run", {})
     for key, value in (("id", target["run_id"]), ("head_sha", target["source"]),
-                       ("head_branch", "fix/ocr-qualification-nov4"),
+                       ("head_branch", target["branch"]),
                        ("repository_id", 1210669686), ("head_repository_id", 1210669686)):
         archive.require(producer.get(key) == value, "artifact producer differs: " + key)
 
