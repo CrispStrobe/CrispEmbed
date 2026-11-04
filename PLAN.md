@@ -17,6 +17,23 @@ receipts, measured numbers go to [PERFORMANCE](PERFORMANCE.md). Start with
 [current state](docs/current-state-and-next-steps.md). Branches named below are merged
 into `main` unless the row says otherwise; start new work from `origin/main`.
 
+LightOn4B conversion continuation: the portable quantizer built on hosted CI
+[41926516321](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41926516321)
+is recorded in [its build receipt](tests/results/qwen35-ocr/lightonocr3-4b-quantizer-build.json).
+The audited conversion runner is `94ad7bda378ac285f03fda28dcb97d29cb496418`;
+its source differs from the build only in the conversion runner. The first Kaggle
+CPU attempt failed before model download because a GitHub credential was absent
+from the mounted input. The second embedded the independently verified public
+quantizer, passed network/source/quantizer checks, and failed creating a Python
+venv before model download. Preserve both negative outputs. A third CPU attempt
+uses `venv --without-pip` and the worker's pip targeting that interpreter; its
+uploaded script SHA-256 is
+`537c57badbe9f11a12225f09ab97d64a76a42e05cca49149281b03d739fe1767`.
+Re-query its exact status and review its receipt and actual tensor audits; a
+submitted job is not a conversion result. Model upload and independent Hub
+readback occur only after the full baseline and both candidate audits pass.
+No 4B native inference or decoded quality has been established.
+
 | Lane | State | Next action | Done when |
 |---|---|---|---|
 | OCR model gaps / LightOnOCR-3-4B (`feat/ocr-next-models-20261104`, [PR143](https://github.com/CrispStrobe/CrispEmbed/pull/143)) | Main `17c96639`/PR141 evidence is integrated; all seven workflows pass at `91b24764`. Explicit converter has 16 passing export controls at `aa661568` (333 total); its inline workflow-contract regression is repaired. [Default-off grouped-head APIs and pinned original/meta protocols](docs/lightonocr3-4b.md#default-off-grouped-head-component-and-hosted-reference) are implemented | Review hosted meta construction, 208 original/native component stages and cache controls, plus combined regression CI. Then add bounded vocabulary projection and explicit larger-model ownership | Native support remains false until complete original/native F32/F16 and document evidence, followed by separate precision/publication gates |
