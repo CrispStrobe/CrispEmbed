@@ -78,7 +78,7 @@ concurrency:
 
 jobs:
   run:
-    if: inputs.script != 'tools/ci-heavy/extract_ocr_nov4_evidence.py'
+    if: inputs.script != 'tools/ci-heavy/extract_ocr_nov4_evidence.py' && inputs.script != 'tools/ci-heavy/extract_ocr_followup_evidence.py'
     runs-on: ${{ inputs.runner }}
     timeout-minutes: 350
     env:
@@ -233,6 +233,51 @@ jobs:
         with:
           name: ocr-nov4-retained-text-${{ github.run_id }}
           path: ${{ runner.temp }}/ocr-nov4-text/
+          compression-level: 6
+          retention-days: 90
+          if-no-files-found: warn
+
+  ocr_followup_evidence:
+    if: inputs.script == 'tools/ci-heavy/extract_ocr_followup_evidence.py'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          submodules: false
+      - name: Set evidence directories on the allocated runner
+        run: |
+          echo "OCR_EVIDENCE_OUT=$RUNNER_TEMP/ocr-followup-text" >> "$GITHUB_ENV"
+          echo "OCR_EVIDENCE_SCRATCH=$RUNNER_TEMP/ocr-followup-archive" >> "$GITHUB_ENV"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Closed source, archive security and original diagnostic controls
+        run: python tests/test_extract_ocr_followup_evidence.py -v
+      - name: Verify pinned follow-up archives and retain only bounded text
+        env:
+          GH_TOKEN: ${{ github.token }}
+          OCR_EVIDENCE_SCRIPT: ${{ inputs.script }}
+          OCR_EVIDENCE_ARGS: ${{ inputs.args }}
+          OCR_EVIDENCE_PIP: ${{ inputs.pip }}
+          OCR_EVIDENCE_RUNNER: ${{ inputs.runner }}
+          OCR_EVIDENCE_BUILD_MODE: ${{ inputs.build_mode }}
+        run: python tools/ci-heavy/extract_ocr_followup_evidence.py
+      - name: Extraction summary
+        if: always()
+        run: |
+          if [ -f "$OCR_EVIDENCE_OUT/summary.md" ]; then
+            cat "$OCR_EVIDENCE_OUT/summary.md" >> "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ocr-followup-retained-text-${{ github.run_id }}
+          path: ${{ runner.temp }}/ocr-followup-text/
           compression-level: 6
           retention-days: 90
           if-no-files-found: warn

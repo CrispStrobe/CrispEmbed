@@ -15,6 +15,8 @@ on:
       - '.github/workflows/heavy-cpu.yml'
       - '.github/workflows/heavy-cpu.yml'
       - 'tools/ci-heavy/extract_ocr_nov4_evidence.py'
+      - 'tools/ci-heavy/extract_ocr_followup_evidence.py'
+      - 'tests/test_extract_ocr_followup_evidence.py'
       - 'tests/test_extract_ocr_nov4_evidence.py'
       # Versioned document diagnostics (stdlib; no model execution)
       - 'tools/ocr_document_eval.py'
@@ -100,6 +102,8 @@ on:
       - '.github/workflows/heavy-cpu.yml'
       - '.github/workflows/heavy-cpu.yml'
       - 'tools/ci-heavy/extract_ocr_nov4_evidence.py'
+      - 'tools/ci-heavy/extract_ocr_followup_evidence.py'
+      - 'tests/test_extract_ocr_followup_evidence.py'
       - 'tests/test_extract_ocr_nov4_evidence.py'
       # Versioned document diagnostics (stdlib; no model execution)
       - 'tools/ocr_document_eval.py'
@@ -225,7 +229,9 @@ jobs:
 
       - name: Retained OCR report extraction controls
         if: ${{ !cancelled() }}
-        run: python tests/test_extract_ocr_nov4_evidence.py -v
+        run: |
+          python tests/test_extract_ocr_nov4_evidence.py -v
+          python tests/test_extract_ocr_followup_evidence.py -v
 
       - name: Nemotron Parse source and tensor census controls
         if: ${{ !cancelled() }}

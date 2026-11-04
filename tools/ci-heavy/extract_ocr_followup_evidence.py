@@ -1,0 +1,94 @@
+#!/usr/bin/env python3
+"""Hosted read-only extraction of the explicitly pinned corrected OCR archives."""
+from __future__ import annotations
+
+import os
+from pathlib import Path
+import shutil
+import time
+import urllib.request
+
+import extract_ocr_nov4_evidence as archive
+
+SELECTOR = "tools/ci-heavy/extract_ocr_followup_evidence.py"
+HELPER_SHA256 = "5b52a1b14eb8658c3371fff920fade76c2df1346c0659b2d372322144bab84e6"
+TARGETS = (
+    {"label": "xiaomi0-inference", "run_id": 41871383235, "artifact_id": 13345371804,
+     "bytes": 224953251, "sha256": "453cd50bbdfc5b2e0a2732670886dff19c886d801b50d80ca4912ee29e49b3ca",
+     "source": "3a5a9a1dc519a624db58a09078060e388b61e43d", "conclusion": "success"},
+)
+
+
+def validate_metadata(target, run, artifact):
+    archive.require(target in TARGETS, "archive outside the reviewed follow-up list")
+    expected = {"id": target["run_id"], "head_sha": target["source"],
+                "head_branch": "fix/ocr-qualification-nov4", "event": "workflow_dispatch",
+                "path": ".github/workflows/heavy-cpu.yml", "status": "completed",
+                "conclusion": target["conclusion"], "run_attempt": 1}
+    for key, value in expected.items():
+        archive.require(run.get(key) == value, "follow-up producer identity differs: " + key)
+    for key in ("repository", "head_repository"):
+        archive.require(run.get(key, {}).get("full_name") == archive.REPOSITORY, "producer repository differs")
+    expected = {"id": target["artifact_id"], "name": "heavy-" + str(target["run_id"]),
+                "size_in_bytes": target["bytes"], "digest": "sha256:" + target["sha256"], "expired": False,
+                "url": archive.API + "/actions/artifacts/" + str(target["artifact_id"]),
+                "archive_download_url": archive.API + "/actions/artifacts/" + str(target["artifact_id"]) + "/zip"}
+    for key, value in expected.items():
+        archive.require(artifact.get(key) == value, "follow-up artifact identity differs: " + key)
+    producer = artifact.get("workflow_run", {})
+    for key, value in (("id", target["run_id"]), ("head_sha", target["source"]),
+                       ("head_branch", "fix/ocr-qualification-nov4"),
+                       ("repository_id", 1210669686), ("head_repository_id", 1210669686)):
+        archive.require(producer.get(key) == value, "artifact producer differs: " + key)
+
+
+def main():
+    # Reuse the exact authenticated archive/security implementation, not a more
+    # permissive reader. Its original two targets/diagnostic guards stay frozen.
+    archive.require(archive.sha256(Path(archive.__file__).read_bytes()) == HELPER_SHA256,
+                    "reviewed extraction helper changed")
+    env = os.environ
+    for key, value in {"GITHUB_ACTIONS": "true", "GITHUB_REPOSITORY": archive.REPOSITORY,
+                       "RUNNER_OS": "Linux", "OCR_EVIDENCE_SCRIPT": SELECTOR,
+                       "OCR_EVIDENCE_ARGS": "", "OCR_EVIDENCE_PIP": "",
+                       "OCR_EVIDENCE_RUNNER": "ubuntu-latest", "OCR_EVIDENCE_BUILD_MODE": "portable"}.items():
+        archive.require(env.get(key, "") == value, "closed follow-up dispatch differs: " + key)
+    token = env["GH_TOKEN"]
+    archive.require(bool(token), "Actions read token required")
+    out, scratch = Path(env["OCR_EVIDENCE_OUT"]), Path(env["OCR_EVIDENCE_SCRATCH"])
+    archive.require(not out.exists() and not scratch.exists(), "fresh extraction destinations required")
+    out.mkdir(parents=True); scratch.mkdir(parents=True)
+    deadline = time.monotonic() + archive.DEADLINE_SECONDS
+    report = {"schema": "crispembed.ocr-followup.retained-text.v1", "source": env["GITHUB_SHA"],
+              "model_execution": False, "model_qualified": False, "targets": [], "complete": False}
+    try:
+        for target in TARGETS:
+            record = dict(target, complete=False); report["targets"].append(record)
+            archive.require(shutil.disk_usage(scratch).free >= target["bytes"] + 512 * archive.CHUNK,
+                            "insufficient archive scratch")
+            run = archive.fetch_metadata("/actions/runs/" + str(target["run_id"]), token)
+            artifact = archive.fetch_metadata("/actions/artifacts/" + str(target["artifact_id"]), token)
+            validate_metadata(target, run, artifact)
+            destination = out / target["label"]; destination.mkdir()
+            archive.write_json(destination / "run-metadata.json", run)
+            archive.write_json(destination / "artifact-metadata.json", artifact)
+            local_zip = scratch / (str(target["artifact_id"]) + ".zip")
+            try:
+                with urllib.request.build_opener(archive.NoRedirect).open(
+                        archive.archive_location(target, token), timeout=60) as response:
+                    record["verified_archive"] = archive.copy_verified(
+                        response, local_zip, target["bytes"], target["sha256"], deadline)
+                directory, members = archive.extract_text(local_zip, destination / "text")
+                archive.write_json(destination / "archive-directory.json", directory)
+                archive.write_json(destination / "selected-text-sha256.json", members)
+                record.update(complete=True, text_members=len(members), text_bytes=sum(row["bytes"] for row in members))
+            finally:
+                local_zip.unlink(missing_ok=True)
+        report["complete"] = True
+    finally:
+        archive.write_json(out / "extraction.json", report)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
