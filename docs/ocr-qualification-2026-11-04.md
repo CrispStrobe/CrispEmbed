@@ -11,7 +11,11 @@ Main was fast-forwarded to `2f748825ff3b56b8f2b89d156986b94218ae28c3`.
 Published v0.17.14 native/WASM assets, scheduled OCR run41823109685 and main-health
 41848426718 pass their bounded checks. On PR141 source `f27223fc2`, hosted native,
 mobile, WASM, Rust, inpainting, formatting, environment and model-free controls
-pass; check the remaining macOS Build leg before integration. These are actual
+pass except the Apple capacity barrier: run41885714691 macOS job126770570677
+never acquired a runner, and Build correctly failed its aggregate. The API
+annotation explicitly identifies hosted runner capacity. Latest macOS/iOS/style
+checks are still queued; [M1 build-only fallback](handover-m1-lighton3-epsilon.md)
+is prepared. Check actual final-head platform outcomes before integration. These are actual
 build/control results, not an exhaustive all-model regression guarantee.
 
 The historical MoEdern Q8 source-closure test rejects the changed family engine
@@ -73,15 +77,21 @@ application upgrade, publication or default flip follows from this experiment.
 
 First run41885090925 stopped before build/acquisition/inference because shallow
 checkout lacked the baseline object. The fixed-fetch retry **41885702781** at
-`f27223fc276674c4621f32b709aa03ef0d035f09` is executing. Check it first.
+`f27223fc276674c4621f32b709aa03ef0d035f09` **passes**.
+[Its authenticated review](../tests/results/lightonocr3-1b/epsilon-ab-v1/first-review-41885702781.json)
+confirms old tensor-byte/trace replay and restores original free IDs/text at
+both corrected precisions. First-norm max falls7.33e-5→2.94e-6; corrected
+minimum final cosine is0.9999982037 F32/0.9999984228 F16. Strict failures and
+the128-token cap remain. The authenticated remaining phase **41889499814**
+is executing at0473dd5e8; check it before another dispatch.
 It uses zero original forwards and twelve independent native request processes:
 form-grounding × F32/F16 × gates0/1 × forced/observed-free/plain-free.
 Gate0 must replay every retained tensor byte and non-timing decoded trace field;
 gate1 must improve first-norm error, pass unchanged final bars and match original
 free IDs/text. No budget, gold, prompt, cap or original equation may be changed.
 
-After independent positive first-artifact review, launch the full command in
-the protocol document with the exact first run, small-artifact ID and ZIP SHA.
+The independent positive first-artifact review has unlocked the full command
+with the exact first run, small-artifact ID and ZIP SHA; it is already launched.
 The remaining five cases require60 new native requests,24 combined gate/precision
 rows and72 requests across both stages. Keep all strict failures and cap statuses.
 If either stage is negative, preserve it and attribute the earliest differing
@@ -97,17 +107,26 @@ All use the unchanged producer `1bb0ddb1d9ac12ded51eb5bd0edd89be0a8259e6`, branc
 
 | Case | Run | Last reviewed execution state |
 |---|---|---|
-| formula |41877117676| success; small-report extraction/review pending |
-| japanese |41877121416| success; small-report extraction/review pending |
-| arabic |41877125216| success; small-report extraction/review pending |
-| table |41877129385| success; small-report extraction/review pending |
+| formula |41877117676| reviewed: all4 bars and decoded outputs exact |
+| japanese |41877121416| reviewed: all4 bars and decoded outputs exact |
+| arabic |41877125216| reviewed: all4 bars and decoded outputs exact |
+| table |41877129385| reviewed: all4 bars and decoded outputs exact |
 | german |41877132652| in progress |
-| layout-page |41877137082| success; small-report extraction/review pending |
+| layout-page |41877137082| reviewed: all4 bars pass; Q8/Q4 each change one coordinate digit |
 | layout-rot90 |41877141270| in progress |
 
+[Five-case review](../tests/results/mineru2605/aligned-panel-20261104/five-case-review.json)
+authenticates all400 selected text members after full remote archive checks in
+extraction41889185669. All20 final bars pass;18 decodes match. Layout Q8 position52
+changes ID24→23 (`079`→`078`), Q4 position192 changes23→22 (`858`→`857`). Both
+remain EOS-ended. Keep these exact-output negatives despite numerical acceptance;
+do not fit the recipe on this held-out case. Together with the receipt,24
+numerical arms pass and22 decodes match.
+
 The [machine-readable panel ledger](../tests/results/ocr-benchmark-expansion/mineru2605-aligned-panel-20261104.json)
-records all eight run IDs. Add exact finished artifact IDs/sizes/digests and each
-producer's exact branch to the closed follow-up extraction list, retain the
+records all eight run IDs. For the remaining German/rotated cases, add exact finished artifact IDs/sizes/digests
+and producer branches to the closed follow-up extraction list (replace the
+already-reviewed five targets, avoiding their duplicate download), retain the
 existing archive/security helper unchanged, run hosted extraction once, then
 verify every small-file hash. Do not download large original archives locally.
 Review all32 arms: all original positions/full vocabulary, precision bars,
@@ -126,7 +145,8 @@ retain it without fitting the frozen recipe on held-out failures.
    the successful16-token panel separately. Add forced-prefix all-vocabulary
    dumps when quantized free IDs diverge. External PPDocLayoutV3 detector
    composition needs its own original/native document experiment and annotations.
-3. **LightOn0.8 retained continuation:** authenticate all905 old arrays, source,
+3. **LightOn0.8 retained continuation:** follow [the exact retained-native implementation scope](lighton08-retained-native-continuation.md),
+   authenticate all905 old arrays, source,
    image, prompt, cap, token IDs and score coverage; run native only against
    retained references with the historical guard failure explicit. Keep all
    three original cases distinct. Original CPU reproduction is a separate

@@ -1,0 +1,94 @@
+{
+  "schema": "crispembed.ocr-followup.retained-text.v1",
+  "source": "0473dd5e813fdf48d2bafbd16811271cf6c42599",
+  "model_execution": false,
+  "model_qualified": false,
+  "targets": [
+    {
+      "label": "mineru2605-formula",
+      "run_id": 41877117676,
+      "artifact_id": 13347927913,
+      "bytes": 136053962,
+      "sha256": "7a052a5a73b47d90431c9fabdcea9af10ada9239a105ecd642d21d98a8d0705e",
+      "source": "1bb0ddb1d9ac12ded51eb5bd0edd89be0a8259e6",
+      "branch": "audit/mineru2605-aligned-q4-20261104",
+      "conclusion": "success",
+      "complete": true,
+      "verified_archive": {
+        "bytes": 136053962,
+        "sha256": "7a052a5a73b47d90431c9fabdcea9af10ada9239a105ecd642d21d98a8d0705e"
+      },
+      "text_members": 80,
+      "text_bytes": 1610199
+    },
+    {
+      "label": "mineru2605-japanese",
+      "run_id": 41877121416,
+      "artifact_id": 13348396823,
+      "bytes": 249816387,
+      "sha256": "8919d773dc544e30084d3b3da14519fdd884297548bdf5e91d08d993688a868d",
+      "source": "1bb0ddb1d9ac12ded51eb5bd0edd89be0a8259e6",
+      "branch": "audit/mineru2605-aligned-q4-20261104",
+      "conclusion": "success",
+      "complete": true,
+      "verified_archive": {
+        "bytes": 249816387,
+        "sha256": "8919d773dc544e30084d3b3da14519fdd884297548bdf5e91d08d993688a868d"
+      },
+      "text_members": 80,
+      "text_bytes": 1730441
+    },
+    {
+      "label": "mineru2605-arabic",
+      "run_id": 41877125216,
+      "artifact_id": 13348311566,
+      "bytes": 68835208,
+      "sha256": "fad1d207c52c1b37e0c6f65c10ac10a701e31b4cec84c0392f85792d42a3ae95",
+      "source": "1bb0ddb1d9ac12ded51eb5bd0edd89be0a8259e6",
+      "branch": "audit/mineru2605-aligned-q4-20261104",
+      "conclusion": "success",
+      "complete": true,
+      "verified_archive": {
+        "bytes": 68835208,
+        "sha256": "fad1d207c52c1b37e0c6f65c10ac10a701e31b4cec84c0392f85792d42a3ae95"
+      },
+      "text_members": 80,
+      "text_bytes": 1491662
+    },
+    {
+      "label": "mineru2605-table",
+      "run_id": 41877129385,
+      "artifact_id": 13347724003,
+      "bytes": 386986678,
+      "sha256": "1efd735469a8956aa6364e6fbd9587acf9f93958a48c39ad6a51393edf1164b5",
+      "source": "1bb0ddb1d9ac12ded51eb5bd0edd89be0a8259e6",
+      "branch": "audit/mineru2605-aligned-q4-20261104",
+      "conclusion": "success",
+      "complete": true,
+      "verified_archive": {
+        "bytes": 386986678,
+        "sha256": "1efd735469a8956aa6364e6fbd9587acf9f93958a48c39ad6a51393edf1164b5"
+      },
+      "text_members": 80,
+      "text_bytes": 2174610
+    },
+    {
+      "label": "mineru2605-layout-page",
+      "run_id": 41877137082,
+      "artifact_id": 13350809558,
+      "bytes": 1549053766,
+      "sha256": "701decb5245cc0bdf5e1993370eec2da95fa66e96e94043ac594c3947989aba4",
+      "source": "1bb0ddb1d9ac12ded51eb5bd0edd89be0a8259e6",
+      "branch": "audit/mineru2605-aligned-q4-20261104",
+      "conclusion": "success",
+      "complete": true,
+      "verified_archive": {
+        "bytes": 1549053766,
+        "sha256": "701decb5245cc0bdf5e1993370eec2da95fa66e96e94043ac594c3947989aba4"
+      },
+      "text_members": 80,
+      "text_bytes": 3155745
+    }
+  ],
+  "complete": true
+}

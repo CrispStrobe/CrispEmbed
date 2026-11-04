@@ -1,3 +1,18 @@
+## LightOn3 corrected vision epsilon, first case —4 November2026
+
+[First retained-reference A/B41885702781](tests/results/lightonocr3-1b/epsilon-ab-v1/first-review-41885702781.json)
+passes exact old-path tensor/decoded replay and restores original form-grounding
+F32/F16 free outputs. First-norm max7.3313713e-5→2.9355288e-6;
+vision-layer23 max4898.416/4901.8125→6.53125/5.42578125. Final minimum cosine
+0.9999982037/0.9999984228;155/165 strict failures and capped128-token outputs
+remain. The other five cases run separately; gate stays default-off.
+
+[Five more MinerU cases](tests/results/mineru2605/aligned-panel-20261104/five-case-review.json)
+pass all20 numerical bars;18 free outputs match. Layout-page Q8/Q4 each change
+one box digit by0.001 on the normalized grid; original/native all reach EOS.
+Component/final cosine does not hide these exact-output failures. Combined
+with the receipt,24 numerical arms and22 decoded arms pass across six cases.
+
 ## LightOn3 actual initial panel and MinerU aligned receipt —4 November2026
 
 LightOn3-1B run41873656972 passes12 full-vocabulary final-logit arms, worst cosine

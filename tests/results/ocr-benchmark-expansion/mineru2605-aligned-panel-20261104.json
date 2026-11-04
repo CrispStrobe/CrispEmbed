@@ -16,25 +16,25 @@
       "case": "formula",
       "run": 41877117676,
       "args": "formula f32,f16,q8_0,q4_k 2048 3 1",
-      "state_at_checkpoint": "execution-success-unreviewed"
+      "state_at_checkpoint": "reviewed-numerical-and-decoded-positive"
     },
     {
       "case": "japanese",
       "run": 41877121416,
       "args": "japanese f32,f16,q8_0,q4_k 2048 3 1",
-      "state_at_checkpoint": "execution-success-unreviewed"
+      "state_at_checkpoint": "reviewed-numerical-and-decoded-positive"
     },
     {
       "case": "arabic",
       "run": 41877125216,
       "args": "arabic f32,f16,q8_0,q4_k 2048 3 1",
-      "state_at_checkpoint": "execution-success-unreviewed"
+      "state_at_checkpoint": "reviewed-numerical-and-decoded-positive"
     },
     {
       "case": "table",
       "run": 41877129385,
       "args": "table f32,f16,q8_0,q4_k 2048 3 1",
-      "state_at_checkpoint": "execution-success-unreviewed"
+      "state_at_checkpoint": "reviewed-numerical-and-decoded-positive"
     },
     {
       "case": "german",
@@ -46,7 +46,7 @@
       "case": "layout-page",
       "run": 41877137082,
       "args": "layout-page f32,f16,q8_0,q4_k 2048 3 1",
-      "state_at_checkpoint": "execution-success-unreviewed"
+      "state_at_checkpoint": "reviewed-numerical-positive-q8-q4-coordinate-differences"
     },
     {
       "case": "layout-rot90",

@@ -57,6 +57,12 @@ or weaken the frozen guard. The base13 MoEdern controls,51 UltraBERT controls,
 13 Josev controls (one additional test skipped) and18 main-health controls pass.
 These checks and green ordinary CI do not establish all-model numerical parity.
 
+PR141's final Apple build/style checks remain unverified because GitHub cannot
+acquire macOS arm64 runners (Build41885714691: no runner/steps, aggregate failure).
+Do not call this a compiler regression or a green full-platform result. Check
+current checks before any retry; [the M1 build-only fallback](docs/handover-m1-lighton3-epsilon.md)
+provides independent controls without repeating inference.
+
 ### Current bounded OCR execution and completion gates
 
 See the [reviewed reports and repairs](docs/ocr-benchmark-expansion.md#reviewed-retained-reports-and-further-repairs)
@@ -64,10 +70,10 @@ for exact source commits, artifacts, initial failures and error magnitudes.
 
 | Lane | Current evidence / job | Exact next action and completion gate |
 |---|---|---|
-| MinerU2605 full panel | Aligned receipt41871894063 passes all208 positions and exact EOS outputs at F32/F16/Q8/Q4-mix; seven remaining cases already launched at frozen1bb0ddb1d | Re-query all7 IDs in the [panel ledger](tests/results/ocr-benchmark-expansion/mineru2605-aligned-panel-20261104.json); hosted-authenticate/extract final small reports and review32 arms, all positions/decodes/EOS/helper/census/hashes. No duplicate jobs or publication from one case |
-| LightOn3-1B vision norm A/B | Actual41873656972 loads exactly and passes12 final bars, but only10 decodes match; form-grounding differs,8 arms capped. Pinned vision RMSNorm1e-5 versus native1e-6 is diagnosed | Check first retained-reference retry41885702781 before any duplicate. Follow [frozen A/B protocol](docs/lighton3-pixtral-epsilon-ab-v1.md): gate0 byte replay, gate1 improved first norm + exact decoded outputs; positive authenticated first proof unlocks60 remaining native requests. Keep default-off and all strict/cap negatives |
+| MinerU2605 full panel | Aligned receipt41871894063 passes all208 positions and exact EOS outputs at F32/F16/Q8/Q4-mix; seven remaining cases already launched at frozen1bb0ddb1d | Six cases reviewed:24 numerical arms pass,22 decodes exact; layout Q8/Q4 each change one coordinate digit. German/rotated remain running in the [panel ledger](tests/results/ocr-benchmark-expansion/mineru2605-aligned-panel-20261104.json). Authenticate/extract those2, aggregate32 arms with decoded negatives and all EOS/helper/census/hashes. No duplicate jobs or premature publication |
+| LightOn3-1B vision norm A/B | Actual41873656972 loads exactly and passes12 final bars, but only10 decodes match; form-grounding differs,8 arms capped. Pinned vision RMSNorm1e-5 versus native1e-6 is diagnosed | First retry41885702781 passes exact gate0 replay and corrected free IDs/text with first-norm max2.94e-6; [full A/B41889499814](docs/lighton3-pixtral-epsilon-ab-v1.md) now executes60 remaining native requests. Review24 combined rows/72 requests, preserve all strict/cap negatives, keep default-off pending separate decision |
 | Xiaomi0 | Metadata/frontend41870593556 passes exact pixels/patches; inference41871383235 at3a5a9a1dc passes all4 arms and exact IDs/text at the16-token cap | Bounded two-case integration complete. Preserve6 strict stage failures and capped outputs; freeze separate EOS/document and Q8/Q4 protocols before expanded precision/publication. External detector composition remains a separate experiment |
-| LightOn3-0.8B | Extraction diagnoses1759 float-metric/probability differences; IDs/text/all other original fields exact; no native calls | Preserve the old guard failure. Implement/review a separate retained-capture native continuation authenticating all905 arrays and old source/input/score identities; no blind original rerun or ignored-field broadening. Keep the first source result and all three-case requirements distinct |
+| LightOn3-0.8B | Extraction diagnoses1759 float-metric/probability differences; IDs/text/all other original fields exact; no native calls | Preserve the old guard failure. Implement/review the [exact retained-capture continuation](docs/lighton08-retained-native-continuation.md), authenticating all905 arrays and old source/input/score identities; no blind original rerun or ignored-field broadening. Keep the first source result and all three-case requirements distinct |
 | Nemotron frontend | Actual11/11 geometry/packing and9/9 negatives pass | Bounded milestone complete. Native resize/positions and neural backend remain separate work in the model document |
 
 ## Active work in flight — benchmark OCR expansion, 4 November 2026

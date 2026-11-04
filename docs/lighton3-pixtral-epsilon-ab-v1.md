@@ -1,5 +1,31 @@
 # LightOn3 Pixtral epsilon: retained-reference A/B
 
+## Reviewed first-stage result and current run
+
+[First retry41885702781](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41885702781)
+**passes**, at exact sourcef27223fc276674c4621f32b709aa03ef0d035f09.
+The [reviewed receipt](../tests/results/lightonocr3-1b/epsilon-ab-v1/first-review-41885702781.json)
+retains all four comparisons and exact gate0 tensor inventories:188 forced and188
+observed-free tensors per precision, with independent plain decoded controls.
+All old tensor bytes/non-timing traces reproduce. Gate1 restores original free
+IDs/text at both precisions, including the old changed form box/text.
+
+First-norm maximum error falls7.3313713e-5→2.9355288e-6. Vision-layer23 max falls
+4898.416→6.53125 F32 and4901.8125→5.42578125 F16; final minimum cosine improves
+0.9999600606→0.9999982037 and0.9999598968→0.9999984228. Strict failures remain155
+and165 and the original/native output is still capped at128. These are bounded
+arithmetic/decoded improvements, not document-quality or strict all-stage parity.
+
+Small artifact13352053898 is387474 bytes, SHA256
+`81e01a2df42d800cc3e7c4a0bb4389a660a516acbefe41dc41f1aac35ada44a9`;
+its ZIP digest and receipt source/coverage were independently checked. Raw
+artifact13353235590 is1459280989 bytes, SHA256
+`3f6087476bdc9d18ad9d58bbfad926a1f78d3f2d2fa4f98e41e0af0804adaba0`.
+The remaining phase [41889499814](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41889499814)
+is executing at0473dd5e8, bound to that exact positive first proof. Re-query it;
+do not repeat the first stage or modify the owned driver/native/protocol closure.
+Default remains off.
+
 The first complete [F32/F16 panel](../tests/results/lightonocr3-1b/native-initial-41873656972/review.json)
 passes the owner final-logit bars on all 12 arms. Ten decodes match; form grounding
 changes coordinates and text at both precisions. Eight arms hit the unchanged
@@ -39,7 +65,7 @@ mode, `ubuntu-latest`, no extra pip. It stopped before acquisition/build/inferen
 because shallow checkout lacked the baseline4476be6eb. Repairf27223fc2 fetches
 that exact baseline without weakening the source guard. Retry
 [41885702781](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41885702781)
-is executing; check it before any retry. The initial preflight failure is
+completed successfully as reviewed above. The initial preflight failure is
 [retained separately](../tests/results/ocr-benchmark-expansion/lighton3-eps-preflight-41885090925.json).
 
 Source/operator/build controls run before archive/model acquisition. Actual
@@ -72,7 +98,7 @@ Example after independent review:
 ```sh
 gh workflow run heavy-cpu.yml --ref fix/ocr-qualification-nov4 \
   -f script=tools/ci-heavy/lighton3_pixtral_eps_ab.py \
-  -f 'args=--phase full --first-run REVIEWED_RUN --first-artifact REVIEWED_SMALL_ARTIFACT --first-sha REVIEWED_ZIP_SHA256' \
+  -f 'args=--phase full --first-run 41885702781 --first-artifact 13352053898 --first-sha 81e01a2df42d800cc3e7c4a0bb4389a660a516acbefe41dc41f1aac35ada44a9' \
   -f runner=ubuntu-latest -f build_mode=portable -f pip=
 ```
 

@@ -28,6 +28,25 @@ recorded-status/metadata controls. Their coverage is bounded; old MoEdern Q8 sou
 closure still rejects current main as recorded in PLAN. No all-model regression
 claim follows from green CI.
 
+## 4 November 2026 — first LightOn epsilon A/B positive; five more MinerU cases reviewed
+
+[LightOn first-stage41885702781](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41885702781)
+passes all12 native requests with zero new original forwards. Gate0 reproduces all
+188 forced/188 observed-free tensors per precision and decoded traces. Corrected
+F32/F16 free IDs/text now match the original form-grounding capture. First-norm
+max7.33e-5→2.94e-6, layer23 max4898.416/4901.8125→6.53125/5.42578125;
+minimum final cosine improves to0.9999982037/0.9999984228. Strict155/165 failures
+and128-token caps remain. The authenticated remaining phase41889499814 is running;
+default remains off. [Full first-stage receipt](tests/results/lightonocr3-1b/epsilon-ab-v1/first-review-41885702781.json).
+
+MinerU extraction41889185669 verifies five original archives remotely and all400
+small members independently. Formula/Japanese/Arabic/table outputs are exact at
+all four precisions. Layout-page F32/F16 are exact; Q8 and Q4 each change one
+coordinate digit by0.001 on the normalized grid. All20 numerical bars pass, but
+only18 exact decoded controls pass. [All20 full precision reports and review](tests/results/mineru2605/aligned-panel-20261104/five-case-review.json)
+retain both coordinate differences, strict failures and artifact/candidate hashes.
+German/rotated cases remain pending; no full-panel or publication claim.
+
 ## 4 November 2026 — aligned MinerU receipt; actual LightOn full-panel defect diagnosed
 
 [Aligned MinerU41871894063](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41871894063)

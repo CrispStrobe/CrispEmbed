@@ -1,0 +1,63 @@
+{
+  "schema": "crispembed.mineru2605.document-helpers.v1",
+  "model": "opendatalab/MinerU2.5-Pro-2605-1.2B",
+  "revision": "08aaea840498d49ce16247b6263196cf02814885",
+  "official_helper": "mineru-vl-utils==2.0.7",
+  "native_helper_blueprint": "c9797cde8f54cc48306196fc6aebe73ea31dd4a3",
+  "scope": "single page; both helper arms use the same native neural inference",
+  "requests": {
+    "official_requests": 2,
+    "native_requests": 2,
+    "official_complete": true,
+    "native_complete": true,
+    "requests_exact": true,
+    "comparisons": [
+      {
+        "index": 0,
+        "official_valid": true,
+        "native_valid": true,
+        "exact": true,
+        "different_fields": []
+      },
+      {
+        "index": 1,
+        "official_valid": true,
+        "native_valid": true,
+        "exact": true,
+        "different_fields": []
+      }
+    ],
+    "errors": []
+  },
+  "json_exact": true,
+  "markdown_exact": true,
+  "reference_reached_eos": true,
+  "native_reached_eos": true,
+  "helper_parity_pass": true,
+  "text_metrics": {
+    "exact": true,
+    "reference_chars": 12,
+    "native_chars": 12,
+    "reference_lines": 1,
+    "native_lines": 1,
+    "character_errors": 0,
+    "word_errors": 0,
+    "cer": 0.0,
+    "wer": 0.0
+  },
+  "official_blocks": 1,
+  "native_blocks": 1,
+  "official_requests": 2,
+  "original_python_neural_parity": "separate per-request qualification required",
+  "cross_page_table_merge_qualified": false,
+  "benchmark_qualified": false,
+  "image_sha256": "b132a9516f83949f1a31058f24ce6292b84d5e0f44cf099f97888e4934e01a3b",
+  "gguf_sha256": "2e0c196e059714acbe451182a205b1401d8d5f2ad0c1dfd907c98736e5c54794",
+  "threads": 4,
+  "table_token_seed": 2605,
+  "timing_s": {
+    "official_helper_first": 114.12374727299994,
+    "native_helper_second": 114.00038241300001,
+    "comparable_warm_speed": false
+  }
+}
