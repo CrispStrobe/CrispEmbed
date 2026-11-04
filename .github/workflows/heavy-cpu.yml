@@ -78,7 +78,7 @@ concurrency:
 
 jobs:
   run:
-    if: inputs.script != 'tools/ci-heavy/extract_ocr_nov4_evidence.py' && inputs.script != 'tools/ci-heavy/extract_ocr_followup_evidence.py'
+    if: inputs.script != 'tools/ci-heavy/extract_ocr_nov4_evidence.py' && inputs.script != 'tools/ci-heavy/extract_ocr_followup_evidence.py' && inputs.script != 'tools/ci-heavy/lighton3_pixtral_eps_ab.py'
     runs-on: ${{ inputs.runner }}
     timeout-minutes: 350
     env:
@@ -281,3 +281,52 @@ jobs:
           compression-level: 6
           retention-days: 90
           if-no-files-found: warn
+
+  lighton_eps_ab:
+    if: inputs.script == 'tools/ci-heavy/lighton3_pixtral_eps_ab.py'
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    permissions:
+      contents: read
+      actions: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Bounded A/B source and archive controls
+        run: |
+          python tests/test_extract_ocr_nov4_evidence.py
+          python tests/test_lighton3_pixtral_eps_ab.py
+      - name: Prepare disposable hosted scratch and isolated Python
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          echo "EPS_OUT=$RUNNER_TEMP/lighton3-eps-out" >> "$GITHUB_ENV"
+          echo "EPS_SCRATCH=$RUNNER_TEMP/lighton3-eps-scratch" >> "$GITHUB_ENV"
+          python -m venv "$RUNNER_TEMP/lighton3-eps-python"
+      - name: Retained original, exact legacy replay, source epsilon A/B
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EPS_SELECTED_SCRIPT: ${{ inputs.script }}
+          EPS_SELECTED_RUNNER: ${{ inputs.runner }}
+          EPS_SELECTED_MODE: ${{ inputs.build_mode }}
+          EPS_SELECTED_PIP: ${{ inputs.pip }}
+          EPS_ARGUMENTS: ${{ inputs.args }}
+        run: |
+          read -ra arguments <<< "$EPS_ARGUMENTS"
+          "$RUNNER_TEMP/lighton3-eps-python/bin/python" -u tools/ci-heavy/lighton3_pixtral_eps_ab.py "${arguments[@]}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighton3-eps-review-${{ github.run_id }}
+          path: ${{ runner.temp }}/lighton3-eps-out/review/
+          retention-days: 90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighton3-eps-raw-${{ github.run_id }}
+          path: ${{ runner.temp }}/lighton3-eps-out/raw/
+          retention-days: 90

@@ -26,6 +26,9 @@ on:
       - 'tools/*lightonocr3*.py'
       - 'tools/ci-heavy/lightonocr3_1b.*'
       - 'tests/test_lightonocr3_profile.py'
+      - 'tests/test_lighton3_pixtral_eps_ab.py'
+      - 'tools/ci-heavy/lighton3_pixtral_eps_ab.py'
+      - 'docs/lighton3-pixtral-epsilon-ab-v1.json'
       - 'tests/fixtures/lightonocr3/**'
       - 'models/qwen35_xiaomi0_profile.py'
       - 'models/convert-qwen35-ocr-to-gguf.py'
@@ -115,6 +118,9 @@ on:
       - 'tools/*lightonocr3*.py'
       - 'tools/ci-heavy/lightonocr3_1b.*'
       - 'tests/test_lightonocr3_profile.py'
+      - 'tests/test_lighton3_pixtral_eps_ab.py'
+      - 'tools/ci-heavy/lighton3_pixtral_eps_ab.py'
+      - 'docs/lighton3-pixtral-epsilon-ab-v1.json'
       - 'tests/fixtures/lightonocr3/**'
       - 'models/qwen35_xiaomi0_profile.py'
       - 'models/convert-qwen35-ocr-to-gguf.py'
@@ -266,7 +272,9 @@ jobs:
 
       - name: LightOnOCR-3-1B profile and grounding controls
         if: ${{ !cancelled() }}
-        run: python tests/test_lightonocr3_profile.py -v
+        run: |
+          python tests/test_lightonocr3_profile.py -v
+          python tests/test_lighton3_pixtral_eps_ab.py -v
 
       - name: Xiaomi OCR0 exact source, task and layout controls
         if: ${{ !cancelled() }}
