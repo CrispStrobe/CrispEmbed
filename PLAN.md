@@ -1,5 +1,16 @@
 # CrispEmbed plan — open work (updated 4 November 2026)
 
+Bounded LightOn4B conversion preparation adds the hosted portable quantizer builder
+`tools/ci-heavy/lighton4b_quantizer_build.sh` and source-pinned
+`tools/ci-heavy/lighton4b_convert_quant.py`. The latter retains 723-tensor
+reader/finite/hash/type and protected-vision checks separately from the converter's
+historical false roundtrip flag. Initial source is `295fc0ec9`; original model
+revision remains `b71010f095dc3735de7ee6b9969bff8f8f50b39a`.
+Pending: actual hosted build, worker input/capacity admission, conversion/Q8/Q4,
+experimental upload and independent empty-cache readback. Original/native decoded
+and intermediate comparisons remain blocked by unsupported format-5 inference;
+this preparation establishes no native quality, model alias or runtime release.
+
 Only open or active work lives here; completed runs move to [HISTORY](HISTORY.md) with their
 receipts, measured numbers go to [PERFORMANCE](PERFORMANCE.md). Start with
 [the 3 November handoff](docs/handoff-2026-11-03.md) and
