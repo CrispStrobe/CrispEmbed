@@ -199,14 +199,15 @@ jobs:
     permissions:
       contents: read
       actions: read
-    env:
-      OCR_EVIDENCE_OUT: ${{ runner.temp }}/ocr-nov4-text
-      OCR_EVIDENCE_SCRATCH: ${{ runner.temp }}/ocr-nov4-archive
     steps:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
           submodules: false
+      - name: Set evidence directories on the allocated runner
+        run: |
+          echo "OCR_EVIDENCE_OUT=$RUNNER_TEMP/ocr-nov4-text" >> "$GITHUB_ENV"
+          echo "OCR_EVIDENCE_SCRATCH=$RUNNER_TEMP/ocr-nov4-archive" >> "$GITHUB_ENV"
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
