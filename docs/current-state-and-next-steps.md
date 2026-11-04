@@ -1,47 +1,54 @@
 # CrispMath and CrispEmbed: current state and executable lanes
 
-## Current execution —4 November2026
+## State on 4 November 2026 — reviewed OCR execution
 
-Start with [the current qualification receipt and executable continuation](ocr-qualification-2026-11-04.md).
-It supersedes older running/queued states below: Xiaomi passes its capped panel;
-MinerU aligned Q4 receipt passes and seven-case review is in flight; LightOn1B
-now has actual full-panel evidence and a gated vision-norm repair under A/B.
-Candidate development is0.17.15, unreleased; published assets remain0.17.14 and
-the app remains0.17.12. No new model alias or broad qualification.
+Main includes release-record PR142 at `2f748825f`. Published native/WASM assets
+remain0.17.14 and the application still pins0.17.12; pub.dev remains unqualified.
+PR141 carries further source/workflow repairs and a default-off LightOn3 vision
+norm correction, with0.17.15 development versions, **unreleased**.
 
-## State on 4 November 2026 — release and OCR qualification review
+Read [the current executable continuation](ocr-qualification-2026-11-04.md),
+[PLAN](../PLAN.md) and [completed receipts](../HISTORY.md) first. Re-query every
+exact live run before dispatching; old queued/running snapshots below are historical.
 
-Main includes release-record PR142 at `2f748825f`. v0.17.14 native and WASM assets
-are published; the application still pins0.17.12 and pub.dev remains unqualified.
-Scheduled [OCR regression41823109685](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41823109685)
-and [main health41848426718](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41848426718)
-pass their bounded checks. This does not establish all-model numerical parity.
+- **Xiaomi0:** exact metadata/frontend; all4 F32/F16 final-logit/decoded arms pass,
+  but all outputs hit16 tokens and6 strict intermediate comparisons fail. No
+  EOS/document, Q8/Q4 or publication qualification.
+- **MinerU2605:** all8 cases reviewed,32 numerical arms pass,28 decodes exact;
+  F32/F16 match8/8 each. Q8/Q4 match6/8 each, with layout differences; rotated Q4
+  changes5 labels/geometry despite cosine0.99347. The frozen request/helper panel
+  is complete. Quantized layout quality, public consumers and artifact publication
+  remain open.
+- **LightOn3-1B:** actual initial panel passes12 final bars but only10 decodes.
+  Pinned Pixtral vision epsilon1e-5 versus native1e-6 is diagnosed. First
+  retained-reference A/B41885702781 passes exact old tensor/decoded replay and
+  corrected F32/F16 outputs, first-norm max7.33e-5→2.94e-6. Full
+  phase41889499814 is negative: F32 matches6/6, F16 matches5/6; form-transcription
+  changes English→French at token6. Separate default-off CPU F32 cache A/B
+  41897136488 at3e82a1205 is running against retained originals. Strict/cap
+  negatives remain; no alias/publication or default flip.
+- **LightOn0.8:** historical exact guard remains failed (1759 CPU/probability
+  differences, all other fields exact). The [native-only continuation](lighton08-retained-native-continuation.md)
+  scopes the retained first case and905-array barrier. Old other-case producers
+  expose no raw artifacts; a separate current-CPU capture protocol is pending.
+- **Nemotron:**11/11 geometry/packing and9/9 negative controls pass; native
+  resize/positions and the neural backend remain separate work.
 
-The active [PR141 qualification continuation](ocr-benchmark-expansion.md#reviewed-retained-reports-and-further-repairs)
-records exact sources, original failures, current jobs and acceptance gates:
+Hosted model-free controls pass267 tests. Native/mobile/WASM/Rust and scheduled
+OCR/main-health checks provide bounded regression evidence, not all-model parity.
+Apple capacity prevents a final full-platform result: macOS job126770570677 never
+acquired a runner, so Build41885714691 correctly failed its aggregate; latest
+macOS/iOS/style checks are capacity-cancelled. The [M1 fallback](handover-m1-lighton3-epsilon.md)
+also stops on preflight swap/memory pressure, without a build/style/model call.
+Use a sufficiently provisioned Apple host when available; source hashes alone
+do not establish compilation. CrispSorter PR20 at0af4c34 separately reports its
+successful0.17.12 Metal-feature cargo check and backfill; it remains open.
 
-- Xiaomi's repaired metadata/frontend is exact, and its two-image F32/F16 panel
-  passes all4 final-logit bars with exact IDs/text. All outputs hit the declared
-  16-token cap;6 strict intermediate failures remain. Full-document/Q8/Q4,
-  detector composition and publication remain separate work.
-- MinerU's retained receipt already passes F32/F16/Q8 final-logit bars and decoded
-  request parity. Plain Q4's unaligned rows became undeclared Q4_0. An explicit
-  aligned Q4_K/Q8 recipe is running as41871894063 at1bb0ddb1d.
-- LightOn1B's dependency setup is repaired. A further diagnosed saved-key namespace
-  mismatch is corrected in the reference loader and converter; full retry41873656972
-  runs at4476be6eb. No successful model qualification is claimed before review.
-- LightOn0.8's extracted reports identify1759 CPU-metric/probability differences,
-  with unchanged IDs/text/other original fields. Its exact guard remains failed;
-  a separately authenticated retained-capture continuation is scoped in PLAN.
-- Nemotron's bounded geometry/packing milestone passes; native resizing, learned
-  positions and the neural backend remain pending.
-
-The workflow parse defect is repaired and checksum-pinned actionlint now runs in
-hosted controls. The historical MoEdern Q8 source closure rejects current main
-following later mixed-Q4 runtime edits; keep it frozen and declare a separately
-reviewed current-source closure before reusing that harness. No inference
-regression is inferred from that source mismatch. Start with the current PLAN
-and the linked continuation, not historical queued-job commands below.
+The old MoEdern Q8 source closure rejects the later mixed-Q4 engine change (7/8
+controls); preserve that frozen experiment and declare a separate current-source
+closure before reuse. This is a qualification gap, not a demonstrated numerical
+regression. No expensive shared-host work, new model publication, tag, default
+flip or app upgrade follows from these bounded reports.
 
 ## State on 3 November 2026
 

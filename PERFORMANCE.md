@@ -1,3 +1,32 @@
+## Complete MinerU and LightOn epsilon verdicts —4 November2026
+
+MinerU's [8-case panel](tests/results/mineru2605/aligned-panel-20261104/eight-case-review.json)
+passes all32 numerical arms/6192 full-vocabulary positions. Per-format worst
+cosines F32/F16/Q8/Q4-mix are0.9999999999678552/0.9999999999673693/
+0.9985343305283868/0.9902117584412018. F32/F16 free outputs match8/8; Q8/Q4 match6/8.
+All requests reach EOS without cap; strict errors and quantized layout-label/
+geometry changes remain. These are bounded original comparisons, not annotated
+benchmark or cross-host speed claims.
+
+The [complete epsilon A/B](tests/results/lightonocr3-1b/epsilon-ab-v1/full-review-41889499814.json)
+is negative despite12 numerical-bar passes and6/6 F32 output matches. F16
+form-transcription first changes at token6, ID2918→3377, switching description
+language. At that forced prefix maximum error is0.0129647 F32/0.0133957 F16,
+with F16 cosine0.9999998276; other11 corrected free outputs match. First-norm
+improvements do not override this decoded result. Persistent F16 K/V is a
+separately gated attribution experiment, still pending; no default flip.
+
+## MinerU rotated layout —4 November2026
+
+[Rotated550-position panel](tests/results/mineru2605/aligned-panel-20261104/rotated-case-review.json)
+passes F32/F16/Q8/Q4 final-logit bars. F32/F16 decodes are exact. Q8 minimum
+cosine0.9991275124 changes two coordinates (max ordinal delta0.015). Q4 minimum
+0.9934669563 changes5 labels/14 of25 ordinal regions (max delta0.172), with
+65 character/25 word edits, despite all outputs reaching EOS. These are original
+comparison metrics, not annotated layout scores. Preserve this negative
+structured-output evidence; a new critical-tensor recipe needs separate
+calibration/held-out evaluation.
+
 ## LightOn3 corrected vision epsilon, first case —4 November2026
 
 [First retained-reference A/B41885702781](tests/results/lightonocr3-1b/epsilon-ab-v1/first-review-41885702781.json)

@@ -1,5 +1,12 @@
 # M1 fallback: LightOn3 epsilon build and controls
 
+**Preflight reported blocked:** no contract/library/style/inference ran. Swapouts
+rose8180 pages under active workloads, with about16GB swap in use. The operator
+reports4 owned hashes/11 protected objects match0473dd5e8. Keep this result as a
+source-preflight receipt, not Apple build evidence; do not continue on that host
+without sufficient headroom. Current cache-experiment source3e82a1205 also needs
+its own Apple compile/components when capacity becomes available.
+
 This is a build-only fallback for GitHub's macOS arm64 capacity failure, not a
 request to repeat model inference. Build41885714691's Apple job126770570677 never
 acquired a runner; its annotation says "The job was not acquired by Runner of

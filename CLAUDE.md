@@ -1,16 +1,16 @@
 # Agent handoff notes
 
-Start with [the current execution handoff](docs/handoff-2026-11-03.md) (supersedes
-2026-10-29). It lists the state of main, the open tasks in order and when each is done.
-PLAN contains only open work (index table at the top); completed work and receipts are
-in HISTORY, newest first.
+Start with [the current executable OCR qualification continuation](docs/ocr-qualification-2026-11-04.md),
+[current state](docs/current-state-and-next-steps.md) and PLAN's bounded-execution
+table. PR141's actual source repairs, completed/capped/negative evidence, live
+jobs and acceptance gates supersede older queued-language snapshots.
+Candidate development0.17.15 is unreleased; published assets remain0.17.14,
+application0.17.12. No new model alias or broad quality qualification.
 
-For the current4 November OCR work, first read [the executable qualification continuation](docs/ocr-qualification-2026-11-04.md), then the
-[actual qualification continuation](docs/ocr-benchmark-expansion.md#reviewed-retained-reports-and-further-repairs)
-and PLAN's current bounded-execution table first. PR141 contains further diagnosed
-workflow/loader/converter/test repairs and exact hosted jobs. The old source
-handoff is historical where it conflicts with those reviewed results. v0.17.14
-assets are published; model qualification and application upgrades remain separate.
+[The 3 November handoff](docs/handoff-2026-11-03.md) remains the entry for the
+broader roadmap. PLAN contains open work; completed evidence belongs in HISTORY,
+measured limits in PERFORMANCE. Re-query exact jobs before dispatching; preserve
+old source guards and retained originals rather than silently repinning them.
 
 ## Read first: public task handoff
 

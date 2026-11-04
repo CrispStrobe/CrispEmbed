@@ -1,5 +1,27 @@
 # LightOn3 Pixtral epsilon: retained-reference A/B
 
+## Final bounded verdict — completed negative
+
+[Full run41889499814](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41889499814)
+completes all24 rows/72 native processes across both phases, zero original
+forwards. All old tensor/decoded replay controls and all12 corrected final-logit
+bars pass; corrected F32 outputs match6/6, F16 outputs5/6. Form-transcription F16
+first differs at token6 (2918→3377), switching its description English→French.
+The [full reviewed receipt](../tests/results/lightonocr3-1b/epsilon-ab-v1/full-review-41889499814.json)
+retains the negative verdict, every comparison, errors, caps and source identities.
+Default remains off. No first-case success overrides this complete-panel result.
+
+Raw artifact13355422898 is8831289731 bytes, SHA256
+`b57f2b906da12f20fc1ef5462c4800b801a5349ed38eee790b3ecdbf1b057078`,
+retained90d with all six original reference arrays. Small artifact13355715186 is
+1117948 bytes, SHA256
+`350b309d2390ceea4c6295c7b6318bca21a1040a88d1b9c3db6da2615943d6cb`.
+The small ZIP,24 unique rows, first-proof import and all gate0 inventories were
+independently checked. Preserve this v1 source0473dd5e8 and original protocol.
+A [separate first-only cache experiment](lighton3-kv-f32-ab-v1.md) now tests the
+native F16 persistent K/V versus the float32 original at fixed corrected epsilon.
+It changes neither weights nor this v1 experiment's gold, budgets or verdict.
+
 ## Reviewed first-stage result and current run
 
 [First retry41885702781](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41885702781)
@@ -22,7 +44,8 @@ its ZIP digest and receipt source/coverage were independently checked. Raw
 artifact13353235590 is1459280989 bytes, SHA256
 `3f6087476bdc9d18ad9d58bbfad926a1f78d3f2d2fa4f98e41e0af0804adaba0`.
 The remaining phase [41889499814](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41889499814)
-is executing at0473dd5e8, bound to that exact positive first proof. Re-query it;
+completed at0473dd5e8 with the negative final verdict above, bound to that exact
+positive first proof. Do not repeat it;
 do not repeat the first stage or modify the owned driver/native/protocol closure.
 Default remains off.
 
@@ -119,3 +142,17 @@ expires18 November2026; preserve still-needed uncopied inputs before that deadli
 Final model qualification/public consumers, EOS-completed document protocols,
 Q8/Q4 and publication remain separate gates; no alias or application upgrade
 follows merely from a successful epsilon experiment.
+
+## Subsequent default decision is separate
+
+After positive full-panel and Apple build evidence, review adoption for the
+admitted LightOn3-1B profile only. A default change must keep explicit0 as the
+old1e-6 alternative and legacy profiles unchanged, use the shared value-parsed
+gate helper, update env documentation and test unset/empty/0/1 behavior. Declare
+a separate source closure/current-source control protocol; preserve this v1
+closure and its exact producer branch instead of repinning its owned hashes.
+Verify default-unset native forced/free output against the retained corrected
+explicit1 results, covering all six case/modes and both precisions without new
+original forwards. Retain exact bytes, full logits, decoded IDs/text and cap/EOS
+status. Do not promote an alias or claim EOS-completed documents from the existing
+128-token capped cases. Q8/Q4 and public consumers keep their separate gates.

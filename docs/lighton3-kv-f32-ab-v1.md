@@ -62,7 +62,8 @@ Heavy work stays hosted; children do not inherit Actions/Hub/Kaggle tokens.
 Use `heavy-cpu.yml`, selector `tools/ci-heavy/lighton3_kv_f32_ab.py`, empty args/pip,
 `ubuntu-latest`, `portable`. The dedicated job has repository/Actions-read only;
 review and raw artifacts `lighton3-kv-review-RUN` / `lighton3-kv-raw-RUN` retain90d.
-Record the actual source/run after dispatch and re-query it before any retry.
+First run [41897136488](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41897136488)
+is executing at3e82a1205. Re-query it before any retry.
 
 ## Stopping rule and remaining work
 
@@ -81,7 +82,9 @@ The old epsilon v1 protocol/driver/owned-source test remain immutable historical
 controls for their source. Current CI runs its pure replay controls plus the new
 KV closure, rather than asserting the old native hash on intentionally changed
 source. Actual old-path replay remains a required runtime gate in this experiment.
-M1 source0473dd5e8 proves the prior norm baseline only; a new-source incremental
-Apple build/component report is still needed for the cache experiment. Defaults,
+The M1 preflight at0473dd5e8 stopped on memory pressure before compilation;
+its reported hash checks supply source-preflight evidence only. Actual Apple
+build/component/style evidence for the current cache source remains outstanding.
+Do not run more work on that machine under its current pressure. Defaults,
 Q8/Q4, EOS-completed document quality, public consumers, aliases and release
 remain separate gates. Development0.17.15 stays unreleased.

@@ -1,0 +1,26 @@
+{
+  "schema": "crispembed.ocr-followup.retained-text.v1",
+  "source": "cc0d30ed07205348f9046a51860382b28b4d4866",
+  "model_execution": false,
+  "model_qualified": false,
+  "targets": [
+    {
+      "label": "mineru2605-layout-rot90",
+      "run_id": 41877141270,
+      "artifact_id": 13353650933,
+      "bytes": 2466702003,
+      "sha256": "4474b74df3b369e2d0f3c4f6f204d88f6de2ac7612605cbaa7f846444e3aa212",
+      "source": "1bb0ddb1d9ac12ded51eb5bd0edd89be0a8259e6",
+      "branch": "audit/mineru2605-aligned-q4-20261104",
+      "conclusion": "success",
+      "complete": true,
+      "verified_archive": {
+        "bytes": 2466702003,
+        "sha256": "4474b74df3b369e2d0f3c4f6f204d88f6de2ac7612605cbaa7f846444e3aa212"
+      },
+      "text_members": 80,
+      "text_bytes": 5310286
+    }
+  ],
+  "complete": true
+}

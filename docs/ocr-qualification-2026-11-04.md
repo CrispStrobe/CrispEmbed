@@ -59,104 +59,123 @@ the bounded review. Existing strict numerical debts remain open.
   16,665,600 values with no changed values, and9 negative controls. It covers
   original-processor resized pixels, not native resizing or neural inference.
 
-## Execute next: source-correct LightOn3 vision norm
+## Current LightOn result and cache experiment
 
-Pinned Pixtral uses1e-5 in its three vision RMSNorm call sites; native used1e-6.
-Exact pixels precede patch-conv max9.06e-6, first norm max7.33e-5 and vision
-layer23 max4898.416 at reference RMS2834.331. Form-grounding diverges at generated
-position9, ID24 versus23: box `999` becomes `899`. This is why a high final cosine
-is insufficient. Fix math before searching quantization recipes.
+The [complete epsilon review](../tests/results/lightonocr3-1b/epsilon-ab-v1/full-review-41889499814.json)
+is a negative acceptance result, not an executing job. Run41889499814 at0473dd5e8
+completes24 rows/72 native processes across both phases, with zero new original
+forwards. Every cache-old gate0 tensor/decoded trace reproduces exactly. Corrected
+epsilon improves first norm and passes all12 final numerical bars; F32 matches
+all6 original free outputs, F16 matches5. Form-transcription F16 changes at
+position6, ID2918→3377, and the generated description switches English→French.
+Strict failures and8 capped outputs remain. The epsilon correction stays default-off.
 
-[The frozen A/B protocol](lighton3-pixtral-epsilon-ab-v1.md) and
-[JSON source ownership](lighton3-pixtral-epsilon-ab-v1.json) define the exact
-retained original archive, model hashes, first-stage barrier and full continuation.
-Only the new LightOn3-1B profile can opt into
-`CRISPEMBED_LIGHTONOCR3_PIXTRAL_EPS=1`; default/0 and legacy LightOn stay unchanged.
-All version surfaces now identify0.17.15 development, unreleased. No tag,
-application upgrade, publication or default flip follows from this experiment.
+Native always stores persistent K/V in F16, including when the model weights are
+F32; the pinned original uses float32 with caching. A separate
+[CPU cache-precision first-case protocol](lighton3-kv-f32-ab-v1.md) tests that
+precision difference before any tensor recipe. Source3e82a1205/run**41897136488**
+is executing: fixed corrected epsilon1, unchanged F32/F16 GGUFs, form-transcription
+only, cache0/1 × forced/observed-free/plain-free,12 native requests. Cache0 must
+reproduce the retained negative, cache1 must keep prefill bytes exact, improve
+step6 errors and match original free IDs/text. It records full-vector hashes and
+original/native top2 margins; component probes are not quality qualification.
+No new original forwards, default or publication follows. A positive first result
+would require a separately reviewed remaining5-case/60-request continuation.
 
-First run41885090925 stopped before build/acquisition/inference because shallow
-checkout lacked the baseline object. The fixed-fetch retry **41885702781** at
-`f27223fc276674c4621f32b709aa03ef0d035f09` **passes**.
-[Its authenticated review](../tests/results/lightonocr3-1b/epsilon-ab-v1/first-review-41885702781.json)
-confirms old tensor-byte/trace replay and restores original free IDs/text at
-both corrected precisions. First-norm max falls7.33e-5→2.94e-6; corrected
-minimum final cosine is0.9999982037 F32/0.9999984228 F16. Strict failures and
-the128-token cap remain. The authenticated remaining phase **41889499814**
-is executing at0473dd5e8; check it before another dispatch.
-It uses zero original forwards and twelve independent native request processes:
-form-grounding × F32/F16 × gates0/1 × forced/observed-free/plain-free.
-Gate0 must replay every retained tensor byte and non-timing decoded trace field;
-gate1 must improve first-norm error, pass unchanged final bars and match original
-free IDs/text. No budget, gold, prompt, cap or original equation may be changed.
+## Completed MinerU eight-case panel
 
-The independent positive first-artifact review has unlocked the full command
-with the exact first run, small-artifact ID and ZIP SHA; it is already launched.
-The remaining five cases require60 new native requests,24 combined gate/precision
-rows and72 requests across both stages. Keep all strict failures and cap statuses.
-If either stage is negative, preserve it and attribute the earliest differing
-operator; do not weaken replay or decoded checks. Full default/public-consumer
-qualification is a separate decision after this bounded experiment.
+[Complete independent review](../tests/results/mineru2605/aligned-panel-20261104/eight-case-review.json)
+aggregates all8 frozen cases at1bb0ddb1d:32 numerical arms pass,6192 full151936-wide
+native logit positions cover1548 original positions. Every request reaches EOS
+without its2048-token cap; all8 same-native-backend helper JSON/Markdown pairs
+match. This helper proof is separate from original per-request neural parity.
 
-## Execute next: MinerU seven remaining cases
+| Format | Minimum final-logit cosine | Exact decoded cases | Actual GGUF bytes |
+|---|---:|---:|---:|
+| F32 |0.9999999999678552|8/8|4630070400|
+| F16 |0.9999999999673693|8/8|2591511712|
+| Q8_0 |0.9985343305283868|6/8|1330944224|
+| aligned Q4_K/Q8 |0.9902117584412018|6/8|1278646496|
 
-All use the unchanged producer `1bb0ddb1d9ac12ded51eb5bd0edd89be0a8259e6`, branch
-`audit/mineru2605-aligned-q4-20261104`, script
-`tools/ci-heavy/mineru2605_qualify.sh`, arguments
-`CASE f32,f16,q8_0,q4_k 2048 3 1`, portable, ubuntu-latest, distinct isolated lanes.
+All candidate hashes match across cases, and actual Q4 census remains
+384F32/273Q8/24Q4_K with no Q4_0 fallback. All strict intermediate failures remain.
+Layout-page Q8/Q4 each change a coordinate digit. Rotated-layout Q8 changes two
+coordinates (maximum ordinal delta0.015); Q4 changes14/25 ordinal regions,
+including5 labels (max delta0.172), with551 versus550 tokens and65 character edits.
+These are retained-original comparisons, not annotated layout scores. Numerical
+acceptance does not hide those structured-output negatives.
 
-| Case | Run | Last reviewed execution state |
+| Case | Producer run | Review/extraction |
 |---|---|---|
-| formula |41877117676| reviewed: all4 bars and decoded outputs exact |
-| japanese |41877121416| reviewed: all4 bars and decoded outputs exact |
-| arabic |41877125216| reviewed: all4 bars and decoded outputs exact |
-| table |41877129385| reviewed: all4 bars and decoded outputs exact |
-| german |41877132652| in progress |
-| layout-page |41877137082| reviewed: all4 bars pass; Q8/Q4 each change one coordinate digit |
-| layout-rot90 |41877141270| in progress |
+| receipt |41871894063|41876269745, all4 numerical/decoded pass |
+| formula |41877117676|41889185669, all4 numerical/decoded pass |
+| japanese |41877121416|41889185669, all4 numerical/decoded pass |
+| arabic |41877125216|41889185669, all4 numerical/decoded pass |
+| table |41877129385|41889185669, all4 numerical/decoded pass |
+| german |41877132652|41895937896, all4 numerical/decoded pass |
+| layout-page |41877137082|41889185669, all4 numerical bars; Q8/Q4 decoded differences |
+| layout-rot90 |41877141270|41891577778, all4 numerical bars; Q8/Q4 decoded differences |
 
-[Five-case review](../tests/results/mineru2605/aligned-panel-20261104/five-case-review.json)
-authenticates all400 selected text members after full remote archive checks in
-extraction41889185669. All20 final bars pass;18 decodes match. Layout Q8 position52
-changes ID24→23 (`079`→`078`), Q4 position192 changes23→22 (`858`→`857`). Both
-remain EOS-ended. Keep these exact-output negatives despite numerical acceptance;
-do not fit the recipe on this held-out case. Together with the receipt,24
-numerical arms pass and22 decodes match.
+The [execution ledger](../tests/results/ocr-benchmark-expansion/mineru2605-aligned-panel-20261104.json)
+and per-case reports retain full rows, artifact identities, strict errors,
+complete token/text differences and tensor census. All selected-member ZIP hashes
+and400+80+80 text members were verified in addition to the first receipt's80.
+Do not repeat the original panel or fit a new recipe on these frozen negatives.
 
-The [machine-readable panel ledger](../tests/results/ocr-benchmark-expansion/mineru2605-aligned-panel-20261104.json)
-records all eight run IDs. For the remaining German/rotated cases, add exact finished artifact IDs/sizes/digests
-and producer branches to the closed follow-up extraction list (replace the
-already-reviewed five targets, avoiding their duplicate download), retain the
-existing archive/security helper unchanged, run hosted extraction once, then
-verify every small-file hash. Do not download large original archives locally.
-Review all32 arms: all original positions/full vocabulary, precision bars,
-free IDs/text/EOS/caps, repeats, helper outputs, actual tensor census and matching
-candidate hashes. Green job status alone is not qualification. If a case fails,
-retain it without fitting the frozen recipe on held-out failures.
+## Independent Apple and downstream evidence
+
+GitHub's latest Apple jobs never acquired runners; Build41889197876 fails its
+aggregate for macOS/iOS cancellation, with explicit capacity annotations. The M1
+fallback also stops before any build: reported preflight swapouts rise8180 pages
+with other active workloads, about16GB swap in use. The operator reports all4
+owned SHA256s/11 protected objects match0473dd5e8; that is source-preflight evidence,
+with no contract/library/style/model execution. Do not schedule additional work
+there until headroom is available. A sufficiently provisioned Apple host still
+needs actual current-source build/component/style evidence. Neither an unsafe
+M1 build nor a Linux Kaggle worker can supply it.
+
+[CrispSorter PR20](https://github.com/CrispStrobe/CrispSorter/pull/20) is open at
+0af4c342f0cef8e4fda1b629d5b9fdfc82ed15b4. Its
+[reported feature check](https://github.com/CrispStrobe/CrispSorter/pull/20#issuecomment-6639976078)
+completes `cargo check -p crispsorter --lib --features crispembed-metal` against
+the actual immutable0.17.12 pin, exit0 in27m53s. The prior wrong-sibling API errors
+are retracted; image-indexing backfill is on that branch. This is useful stable
+consumer/type-check evidence. Current0.17.15 experimental backend compilation,
+production linking/loading and live OCR are separate. PR20 still needs integration;
+its Windows helpers/live-model checks remain unexecuted, and related consent PR18
+is draft. No downstream source or pin was changed by this OCR session.
 
 ## Remaining tasks and completion gates
 
-1. **LightOn3-1B Q8/Q4:** after the epsilon experiment, freeze the chosen math/source
+1. **LightOn3-1B Q8/Q4:** after cache attribution and its complete panel, freeze the chosen math/source
    and add a real `crispembed-quantize` branch. The current converter `--dtype`
    accepts F32/F16 only; do not pass quantized names to it. Preserve critical
    tensor bytes at declared precision, record actual role census and compare
    original full-position logits, earliest-stage errors and free outputs.
-2. **Xiaomi EOS/document + Q8/Q4:** declare a new cap/EOS/corpus protocol; retain
+2. **MinerU quantized layout:** preserve the frozen panel, including rotated
+   Q4's5 changed labels/14 changed ordinal regions and max0.172 coordinate delta.
+   Declare separate licensed calibration and held-out data before a new mixed
+   recipe. Compare same-input Python/native stages and Q8-versus-Q4 added error
+   with the dumper/diff harness; retain precisely identified sensitive down
+   projections/vision roles at higher precision with payload hashes. Freeze
+   actual C-quantizer output/census and qualify full logits plus free structured
+   output on held-out data. Do not tune on or overwrite these old negative cases.
+3. **Xiaomi EOS/document + Q8/Q4:** declare a new cap/EOS/corpus protocol; retain
    the successful16-token panel separately. Add forced-prefix all-vocabulary
    dumps when quantized free IDs diverge. External PPDocLayoutV3 detector
    composition needs its own original/native document experiment and annotations.
-3. **LightOn0.8 retained continuation:** follow [the exact retained-native implementation scope](lighton08-retained-native-continuation.md),
+4. **LightOn0.8 retained continuation:** follow [the exact retained-native implementation scope](lighton08-retained-native-continuation.md),
    authenticate all905 old arrays, source,
    image, prompt, cap, token IDs and score coverage; run native only against
    retained references with the historical guard failure explicit. Keep all
    three original cases distinct. Original CPU reproduction is a separate
    attribution experiment, never a blind original rerun or ignored-field waiver.
-4. **Model publication:** only after required task/public-interface evidence,
+5. **Model publication:** only after required task/public-interface evidence,
    export standard GGUF metadata (`--standard-file-type` where applicable), prove
    per-tensor payload preservation, run metadata/parser/readback checks, upload
    immutable Hub assets, empty-cache readback, SHA-pinned registry aliases and
    Python/Rust/Dart/CLI consumers. Current scratch GGUF hashes are not public aliases.
-5. **Other bounded work:** native Nemotron resize/learned positions/neural backend,
+6. **Other bounded work:** native Nemotron resize/learned positions/neural backend,
    legacy LightOn epsilon attribution against its own pinned original, and the
    MoEdern current-source Q8 closure remain separately scoped in PLAN. Existing
    broader model, release and downstream work remains intact.
@@ -173,7 +192,16 @@ Kaggle model batch was launched while GitHub's seven cases were active.
 not-yet-implemented Darwin provider adapter; no M1 run is claimed.
 
 Original failure archives expire18 November2026. Small extraction receipts have
-90-day retention, but text does not preserve original arrays. The epsilon raw
+90-day retention, but text does not preserve original arrays. Hosted preservation
+41894992782 at3dcb87b57 copies the7 finished MinerU cases plus both initial failed
+MinerU/LightOn0.8 ZIPs, then downloads its own uploaded artifact and hashes every
+inner original ZIP. Raw artifact13355747765 is9919709356 bytes, SHA256
+`43f955f22569f20557075612943ba6f9f6fa1c1427b3ee7f860b7b762cb77ab0`;
+readback remains in progress. German-only supplement41897911047 atce51dbabb (same selector, exact arguments
+`--german-only`, portable/ubuntu, no extra pip) is queued/pending and must preserve that final original without copying the other9
+again. Both jobs have zero model/build calls and90-day raw/review retention.
+Check completed receipts before claiming successful preservation.
+ The epsilon raw
 artifacts copy the reference arrays selected by each phase; preserve all still
 needed uncopied references remotely before expiry. Never include weights,
 credentials, private machine locations or operator identities in public Git.

@@ -40,7 +40,13 @@
       "case": "german",
       "run": 41877132652,
       "args": "german f32,f16,q8_0,q4_k 2048 3 1",
-      "state_at_checkpoint": "in_progress"
+      "state_at_checkpoint": "reviewed-numerical-and-decoded-positive",
+      "raw_artifact": {
+        "id": 13355531707,
+        "bytes": 2543809676,
+        "sha256": "3ad000ba9da8bbb7155a6770e231d00d25357ab2d4eba8e374a1f3d867f4fd3f"
+      },
+      "extractor_run": 41895937896
     },
     {
       "case": "layout-page",
@@ -52,10 +58,21 @@
       "case": "layout-rot90",
       "run": 41877141270,
       "args": "layout-rot90 f32,f16,q8_0,q4_k 2048 3 1",
-      "state_at_checkpoint": "in_progress"
+      "state_at_checkpoint": "reviewed-numerical-positive-q8-coordinates-q4-label-and-geometry-differences",
+      "raw_artifact": {
+        "id": 13353650933,
+        "bytes": 2466702003,
+        "sha256": "4474b74df3b369e2d0f3c4f6f204d88f6de2ac7612605cbaa7f846444e3aa212"
+      },
+      "extractor_run": 41891577778
     }
   ],
   "full_panel_qualified": false,
   "query_live_status_before_dispatch": true,
-  "original_protocol": "docs/mineru25-pro-2605-protocol.json"
+  "original_protocol": "docs/mineru25-pro-2605-protocol.json",
+  "all_eight_cases_reviewed": true,
+  "numerical_bar_pass_arms": 32,
+  "decoded_exact_arms": 28,
+  "all_original_and_native_requests_eos_completed": true,
+  "review": "tests/results/mineru2605/aligned-panel-20261104/eight-case-review.json"
 }

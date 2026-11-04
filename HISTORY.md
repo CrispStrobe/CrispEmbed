@@ -28,6 +28,60 @@ recorded-status/metadata controls. Their coverage is bounded; old MoEdern Q8 sou
 closure still rejects current main as recorded in PLAN. No all-model regression
 claim follows from green CI.
 
+## 4 November 2026 — MinerU panel complete; epsilon full verdict negative; cache precision isolated
+
+[All8 MinerU cases](tests/results/mineru2605/aligned-panel-20261104/eight-case-review.json)
+at1bb0ddb1d complete32 numerical arms/6192 full151936-wide native logit positions,
+covering1548 original positions. All original/native requests reach EOS uncapped;
+all8 same-native helper JSON/Markdown pairs match. F32/F16 are decoded-exact8/8;
+Q8/Q4 are6/8, preserving both layout negatives. Worst cosines are
+0.9999999999678552/0.9999999999673693/0.9985343305283868/0.9902117584412018.
+German41877132652 completes392 positions, all4 decodes exact. Final extraction
+41895937896 and all80 members are independently verified; large arrays stayed
+remote. This completes the frozen request/helper numerical panel, not annotated
+layout quality, publication or all public consumers.
+
+[Full LightOn epsilon41889499814](tests/results/lightonocr3-1b/epsilon-ab-v1/full-review-41889499814.json)
+completes24 rows/72 native requests including its first phase, zero original
+forwards. All legacy tensor/decoded replay controls, all12 corrected numerical
+bars and all first-norm improvements pass. Corrected F32 decodes match6/6, F16
+5/6: form-transcription differs at token6 (2918→3377), generating French instead
+of English. This negative acceptance result supersedes the positive first case;
+no epsilon default flip follows. Complete strict/capped/decoded failures remain.
+
+Source inspection identifies persistent native F16 K/V versus the original
+float32 cached decode. A separate default-off CPU/new-profile-only F32 cache
+path and real GGML cache-stride/copy controls are implemented; cache0, legacy and
+GPU behavior remain F16. [First-only causal A/B](docs/lighton3-kv-f32-ab-v1.md)
+41897136488 at3e82a1205 is executing, with unchanged GGUFs, fixed corrected
+epsilon and no new original calls. Its outcome is not yet claimed. Existing
+v1 source closures remain immutable; current-source controls use the KV protocol.
+
+The M1 preflight reports a stop before all builds/style/inference on memory
+pressure (8180 new swapout pages, about16GB swap in use); only the4 owned hashes/
+11 protected objects at0473dd5e8 are reported exact. Current Apple compilation
+remains unverified. [CrispSorter20](https://github.com/CrispStrobe/CrispSorter/pull/20#issuecomment-6639976078)
+at0af4c34 separately reports a successful27m53s Metal-feature `cargo check`
+against the real0.17.12 pin, fixes the old wrong-sibling API diagnosis, and adds
+image-indexing backfill. The PR remains open with Windows/live-OCR limitations;
+this is bounded consumer type-check evidence, not new0.17.15 native qualification.
+
+## 4 November 2026 — rotated MinerU case exposes quantized layout limits
+
+Run41877141270 completes550 original positions at all four precisions. Remote
+extraction41891577778 and all80 small members are independently verified.
+F32/F16 free outputs match exactly. Q8 minimum cosine0.9991275124 changes two
+box coordinates (three digits), largest ordinal coordinate delta0.015.
+Q4 minimum0.9934669563 passes its numerical bar but changes14 of25 ordinal
+regions, including5 labels; largest ordinal coordinate delta0.172. It produces
+551 versus550 tokens,65 character/25 word edits. Every output reaches EOS.
+These comparisons are to original outputs by ordinal, not annotated quality or
+optimal region matching. [Full report](tests/results/mineru2605/aligned-panel-20261104/rotated-case-review.json)
+retains strict stages, model/array hashes, complete comparisons and decoded
+strings. Across seven cases28 numerical arms pass,24 free decodes match; German
+is still executing. No new mixed recipe, artifact publication or layout-quality
+claim follows. A separate calibration/held-out precision lane is scoped in PLAN.
+
 ## 4 November 2026 — first LightOn epsilon A/B positive; five more MinerU cases reviewed
 
 [LightOn first-stage41885702781](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41885702781)

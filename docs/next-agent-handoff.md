@@ -1,28 +1,21 @@
-# Current entry —29 October2026 wrap-up
+# Executable next-agent handoff
 
-## Current execution —4 November2026
+## Current entry —4 November2026
 
-Start with [the current qualification receipt and executable continuation](ocr-qualification-2026-11-04.md).
-It supersedes older running/queued states below: Xiaomi passes its capped panel;
-MinerU aligned Q4 receipt passes and seven-case review is in flight; LightOn1B
-now has actual full-panel evidence and a gated vision-norm repair under A/B.
-Candidate development is0.17.15, unreleased; published assets remain0.17.14 and
-the app remains0.17.12. No new model alias or broad qualification.
+Start with [the reviewed qualification continuation](ocr-qualification-2026-11-04.md),
+[PLAN](../PLAN.md) and [current state](current-state-and-next-steps.md).
+They give exact sources, live run IDs, artifact hashes, preserved failures and
+acceptance gates. MinerU's8-case panel is complete (32 numerical/28 exact decoded arms). Full LightOn
+epsilon A/B is negative (12 numerical/11 exact arms); re-query its separate first
+CPU-cache A/B41897136488 before any dispatch. Raw-preservation/readback jobs
+41894992782/41897911047 are active. Apple CI lacks capacity and the M1 stops on
+preflight memory pressure; actual Apple compilation remains open. Exact
+LightOn0.8 retained-native implementation and missing-old-array options are linked.
 
-For4 November execution, begin with [the current OCR qualification continuation](ocr-benchmark-expansion.md#reviewed-retained-reports-and-further-repairs)
-and [PLAN](../PLAN.md). They record the exact running MinerU/LightOn sources,
-completed Xiaomi panel, retained LightOn0.8 guard failure and release status.
-Re-query those run IDs before dispatching anything. Older queued-job language below
-is historical; no new original capture or guard waiver follows from this handoff.
-
-Start with [the executable wrap-up handoff](handoff-2026-10-29.md),
-[active PLAN](../PLAN.md) and [current state](current-state-and-next-steps.md).
-They distinguish completed evidence, two queued jobs, executable source-only
-checkpoints and Gemma's design-only repair. Exact next steps/acceptance gates
-are written there; the earlier conversation is unnecessary.
-
-Older sections below are retained source-specific history. Do not repeat their
-preparation commands or infer current status from a dated queued snapshot.
+Candidate0.17.15 is unreleased; published assets0.17.14/app0.17.12 stay unchanged.
+Read [the 3 November handoff](handoff-2026-11-03.md) for the broader non-OCR queue.
+Older sections below are source-specific history; do not replay their old
+preparation commands or infer current status from dated queued-job language.
 
 # Executable handoff — updated 27 October 2026
 
