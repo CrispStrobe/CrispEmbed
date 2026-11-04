@@ -20,7 +20,18 @@ call sites; clang-format18 fixes whitespace only, without altering the frozen
 original reports, real protocol or any source-hash guard. The larger-input
 historical test fixture likewise explicitly excludes the new owner header; its
 real strict source contract stays unchanged. Fresh hosted component/protocol
-checks remain required for the corrected source. No initial failure is relabeled.
+checks are now positive: [41930138239](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930138239)
+at `522ed4aa6` passes all3498 owner controls,17 GDN controls,6 historical
+replay controls and13 historical larger-input controls. Independent readback
+verifies all426 unique rows and every recorded current source digest; subsequent
+GDN test formatting is whitespace-only and outside the owner executable.
+[The repair receipt](tests/results/qwen35-ocr/lightonocr3-4b-text-owner-pr-repair.json)
+retains exact source/artifact/log identities. At `f58d961cc`, actual
+[style41930419067](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930419067),
+Static guards in [Build41930419071](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930419071),
+and [Ovis controls41930419488](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930419488)
+pass. The overall selected platform build aggregate remains separate. No initial
+failure is relabeled.
 
 ## 4 November 2026 — LightOn4B exact text ownership component
 

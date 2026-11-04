@@ -11,6 +11,10 @@ reject per-tensor shape/type/contiguity/missing/alias drift, with no payload
 allocation. Actual [hosted41929343665](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41929343665)
 at `291b0a171` passes all3,498 controls; independent review verifies426 unique
 original rows,249 matrices/177 protected tensors and the exact control census.
+The [repaired hosted41930138239](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930138239)
+also passes3498 owner and36 Python protocol/closure controls after clean-exit,
+formatting and synthetic historical-fixture corrections; original source guards
+remain unchanged and every initial PR failure is retained in HISTORY.
 This is metadata ownership only. Vision mapping, actual composed
 decoder dispatch/cache behavior, bounded full-vocabulary projection, original
 intermediates/decoded outputs, tokenizer and public inference remain separate
