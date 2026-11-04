@@ -26,6 +26,7 @@ def execute():
             'source_sha256':{p:sha(ROOT/p) for p in ('src/qwen35_lighton4b_text.h',
                 'tests/test_lighton4b_text_owner.cpp','tools/ci-heavy/lighton4b_text_owner.py','CMakeLists.txt',
                 'tests/test_lighton4b_gdn_reference.py','tests/test_ovisocr2_native_replay.py',
+                'tests/test_ovisocr2_large_inputs.py',
                 'tools/ci-heavy/ovisocr2_native_replay.py','tools/ci-heavy/lighton4b_gdn_reference.py')}}
     def command(label,argv):
         with (out/(label+'.log')).open('w') as stream:
@@ -33,6 +34,7 @@ def execute():
     try:
         command('gdn-protocol-controls',[sys.executable,ROOT/'tests/test_lighton4b_gdn_reference.py','-v'])
         command('ovis-frozen-closure-controls',[sys.executable,ROOT/'tests/test_ovisocr2_native_replay.py','-v'])
+        command('ovis-frozen-large-input-controls',[sys.executable,ROOT/'tests/test_ovisocr2_large_inputs.py','-v'])
         sys.path.insert(0,str(ROOT/'models'))
         spec=importlib.util.spec_from_file_location('original_exporter',ROOT/'models/convert-qwen35-ocr-to-gguf.py')
         converter=importlib.util.module_from_spec(spec);spec.loader.exec_module(converter)
