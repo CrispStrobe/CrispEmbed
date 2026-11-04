@@ -22,3 +22,7 @@ coverage, time-budget skips and per-page quality before summarizing. Follow with
 an independently annotated layout/reading-order and table panel through the
 full document API; use model-backed EOS and token traces before any completion
 or Q4 qualification claim. No weights or large build outputs belong in Git.
+
+Hosted CPU [run 41904226761](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41904226761)
+uses source `bacfccecc68524ece48f8f3689f4fc2a5ecd416b`, portable build mode
+and a four-hour page-start budget. Dispatched; results and coverage await review.

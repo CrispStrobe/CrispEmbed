@@ -39,7 +39,7 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 
 The bounded [hosted runner](docs/mineru-q4-real-scans.md) adds the published Q4_K_MIX
 whole-image text-recognition mode to the frozen real-scan harness. Source-only
-preparation: no hosted model run or new quality result yet. The CLI does not expose
+preparation: [hosted run 41904226761](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41904226761) dispatched at `bacfccecc68524ece48f8f3689f4fc2a5ecd416b`; no reviewed quality result yet. The CLI does not expose
 MinerU EOS/IDs; do not interpret null completion fields as a pass. Hosted execution,
 independent result review, and a separate annotated full-document layout/table panel
 remain open. Preserve all prior negative and capped results.
