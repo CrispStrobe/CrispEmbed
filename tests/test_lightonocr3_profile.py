@@ -19,6 +19,20 @@ from lightonocr3_output import parse_grounding
 
 
 class ProfileTests(unittest.TestCase):
+    def test_checkpoint_loading_requires_native_keys_and_only_the_declared_tie(self):
+        from dump_lightonocr3_reference import checkpoint_key_contract
+        embedding = "model.language_model.embed_tokens.weight"
+        layer = "model.language_model.layers.0.self_attn.q_proj.weight"
+        expected = {embedding, layer, "lm_head.weight"}
+        self.assertEqual(checkpoint_key_contract(expected, expected)["omitted_tied_keys"], [])
+        self.assertEqual(checkpoint_key_contract({embedding, layer}, expected)["omitted_tied_keys"], ["lm_head.weight"])
+        for actual in ({embedding}, {layer}, {embedding, layer, "extra.weight"},
+                       {embedding, layer.replace("language_model.", "language_model.model.")}):
+            with self.subTest(actual=actual), self.assertRaises(ValueError):
+                checkpoint_key_contract(actual, expected)
+        with self.assertRaises(ValueError):
+            checkpoint_key_contract(set(), set())
+
     def setUp(self):
         self.fixture = ROOT / "tests/fixtures/lightonocr3"
         self.config, self.processor, self.generation = [json.loads((self.fixture / n).read_text()) for n in

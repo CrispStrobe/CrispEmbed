@@ -38,6 +38,47 @@ def verify_environment():
     return versions
 
 
+def checkpoint_key_contract(checkpoint_keys, expected_keys):
+    """Require exact native names; only the declared tied LM head may be absent."""
+    actual, expected = set(checkpoint_keys), set(expected_keys)
+    embedding = "model.language_model.embed_tokens.weight"
+    if not {embedding, "lm_head.weight"} <= expected or embedding not in actual:
+        raise ValueError("LightOn original checkpoint embedding/head inventory differs")
+    tied_head = {"lm_head.weight"} if embedding in actual else set()
+    if actual - expected or expected - actual not in (set(), tied_head):
+        raise ValueError("LightOn original checkpoint key inventory differs")
+    return {"checkpoint_keys": len(actual), "model_keys": len(expected),
+            "omitted_tied_keys": sorted(expected - actual)}
+
+
+def prepare_checkpoint_loading(directory):
+    """Avoid the unrelated Mistral3/LLaVA migration on already native LightOn keys."""
+    import torch
+    from safetensors import safe_open
+    from transformers import LightOnOcrConfig, LightOnOcrForConditionalGeneration
+    from transformers.conversion_mapping import (get_model_conversion_mapping,
+                                                register_checkpoint_conversion_mapping)
+
+    # The checkpoint config says mistral3, which the pinned loader aliases to
+    # llava. Class-specific empty migrations use the framework's registration
+    # API and preserve the actual LightOn model and strict loading checks.
+    classes = ("LightOnOcrForConditionalGeneration", "LightOnOcrModel")
+    for name in classes:
+        register_checkpoint_conversion_mapping(name, [], overwrite=False)
+    config = LightOnOcrConfig.from_pretrained(directory, local_files_only=True)
+    if not config.text_config.tie_word_embeddings:
+        raise ValueError("LightOn original requires its declared tied head")
+    with torch.device("meta"):
+        model = LightOnOcrForConditionalGeneration(config)
+    if get_model_conversion_mapping(model, add_legacy=False):
+        raise ValueError("Unexpected LightOn checkpoint migration remains active")
+    with safe_open(directory / "model.safetensors", framework="pt") as archive:
+        record = checkpoint_key_contract(archive.keys(), model.state_dict().keys())
+    record.update({"class_specific_identity_migrations": list(classes),
+                   "nonlegacy_transform_count": 0, "checkpoint_values_modified": False})
+    return record
+
+
 def main():
     parser = argparse.ArgumentParser(__doc__)
     parser.add_argument("--model-dir", type=Path, required=True)
@@ -81,6 +122,8 @@ def main():
         np.save(args.output / f"{name}.npy", a, allow_pickle=False)
         arrays[name] = {"shape": list(a.shape), "sha256": sha256(args.output / f"{name}.npy")}
 
+    loading_contract = prepare_checkpoint_loading(args.model_dir)
+    (args.output / "loading-contract.json").write_text(json.dumps(loading_contract, indent=2) + "\n")
     model, loading = LightOnOcrForConditionalGeneration.from_pretrained(
         args.model_dir, dtype=torch.float32, attn_implementation="eager",
         local_files_only=True, trust_remote_code=False, output_loading_info=True,
@@ -170,6 +213,7 @@ def main():
         "python": platform.python_version()},
         "arrays": arrays, "grounding": parse_grounding(text) if args.mode == "grounding" else None,
         "qualification": "reference only; not a benchmark score",
+        "loading_contract": loading_contract,
     }
     (args.output / "reference.json").write_text(json.dumps(metadata, indent=2) + "\n")
 
