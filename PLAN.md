@@ -871,3 +871,5 @@ actual composite/runtime/platform gates remain required.
 ## Bounded LightOn4B vision ownership — 4 November 2026
 
 Active branch `feat/lighton4b-vision-owner-20261104`, based on current main `17c96639a`. Adds an explicit default-off component mapping all 297 vision tensors and returning the 24-layer, width1024/head16/output2560 configuration. PR143 and the separate streamed projection work stay intact. The component validates names, shapes and F32/F16 types without reading payloads; malformed and missing tensors clear ownership. Hosted model-free and platform checks are required. Format5 production admission remains closed. Full 723-tensor ownership, original/native stage/logit/decoded parity, tokenizer and publication remain open; no release or support claim.
+
+Initial hosted Build [41926266003](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41926266003) exposes an audit-copy duplicate symbol and iOS standalone-target placement error. Both are corrected separately; retain the initial failure. Full Build dispatch has no mode input and selects the complete matrix, including the explicit model-free ownership binary.

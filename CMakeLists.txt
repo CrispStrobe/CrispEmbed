@@ -1571,6 +1571,9 @@ target_link_libraries(test-ovisocr2-ffn PRIVATE crispembed-qwen35-delta crispemb
 add_executable(test-qwen35-decoder tests/test_qwen35_decoder.cpp)
 target_link_libraries(test-qwen35-decoder PRIVATE crispembed-qwen35-delta crispembed-core)
 
+add_executable(test-lighton4b-vision-owner tests/test_lighton4b_vision_owner.cpp)
+target_link_libraries(test-lighton4b-vision-owner PRIVATE crispembed-qwen35-delta crispembed-core)
+
 add_executable(test-qwen35-vision tests/test_qwen35_vision.cpp)
 target_link_libraries(test-qwen35-vision PRIVATE crispembed-qwen35-delta crispembed-core)
 add_executable(test-qwen35-norm-statistics tests/test_qwen35_norm_statistics.cpp)
@@ -1632,6 +1635,3 @@ option(CRISPEMBED_SYSTEMONE_AUDIT "Build test-only SystemOne root-profile observ
 if(CRISPEMBED_SYSTEMONE_AUDIT)
     add_subdirectory(tests/systemone)
 endif()
-
-add_executable(test-lighton4b-vision-owner tests/test_lighton4b_vision_owner.cpp)
-target_link_libraries(test-lighton4b-vision-owner PRIVATE crispembed-qwen35-delta crispembed-core)
