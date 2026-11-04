@@ -6,6 +6,20 @@ receipts, measured numbers go to [PERFORMANCE](PERFORMANCE.md). Start with
 [current state](docs/current-state-and-next-steps.md). Branches named below are merged
 into `main` unless the row says otherwise; start new work from `origin/main`.
 
+LightOn4B reference dependency repair is isolated on
+`fix/lighton4b-reference-dependencies-20261104`, based on PR143 head
+`52caee899795a724b9e7e1e59a3e0d641af65586`. Original
+[41920791609](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41920791609)
+failed during installation because `tokenizers==0.23.0` was unavailable, before
+meta construction or inference. Transformers 5.5.4 declares `tokenizers>=0.22.0,<=0.23.0`;
+the separate repair pins available 0.22.2 and retains pip resolution and check evidence.
+Initial repair [41923465295](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41923465295)
+failed its model-free control because the runtime version guard still named 0.23.0;
+no reference job ran. Both pins now agree at `52275dd1f` and the independently
+dispatched [41923599391](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41923599391)
+must be reviewed before claiming any original component result. Conversion,
+GGUF readback, native full-model inference and decoded quality remain open.
+
 | Lane | State | Next action | Done when |
 |---|---|---|---|
 | OCR model gaps / LightOnOCR-3-4B (`feat/ocr-next-models-20261104`, [PR143](https://github.com/CrispStrobe/CrispEmbed/pull/143)) | Main `17c96639`/PR141 evidence is integrated; all seven workflows pass at `91b24764`. Explicit converter has 16 passing export controls at `aa661568` (333 total); its inline workflow-contract regression is repaired. [Default-off grouped-head APIs and pinned original/meta protocols](docs/lightonocr3-4b.md#default-off-grouped-head-component-and-hosted-reference) are implemented | Review hosted meta construction, 208 original/native component stages and cache controls, plus combined regression CI. Then add bounded vocabulary projection and explicit larger-model ownership | Native support remains false until complete original/native F32/F16 and document evidence, followed by separate precision/publication gates |

@@ -399,6 +399,7 @@ jobs:
           python-version: '3.12'
       - name: Prepare isolated pinned CPU reference environment
         run: |
+          set -o pipefail
           mkdir -p "$RUNNER_TEMP/lighton4b-reference/environment"
           python -m venv "$RUNNER_TEMP/lighton4b-reference-venv"
           "$RUNNER_TEMP/lighton4b-reference-venv/bin/python" -m pip install \
