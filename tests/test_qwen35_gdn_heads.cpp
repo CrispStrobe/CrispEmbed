@@ -335,21 +335,21 @@ static int crispembed_test_main(int argc, char ** argv) {
         auto raw = input.core;
         raw.conv_history = optional_data(previous_core.conv_history);
         raw.state = optional_data(previous_core.state);
-        const bool projected_ok =
-            qwen35_ocr::linear_grouped_cpu(weights, keys, input.hidden, input.batch, input.tokens, threads,
-                                           optional_data(previous.core.conv_history), optional_data(previous.core.state), current);
+        const bool projected_ok = qwen35_ocr::linear_grouped_cpu(weights, keys, input.hidden, input.batch, input.tokens,
+                                                                 threads, optional_data(previous.core.conv_history),
+                                                                 optional_data(previous.core.state), current);
         const bool raw_ok = qwen35_ocr::linear_grouped_core_cpu(raw, keys, current_core);
         const bool delta_ok =
-            qwen35_ocr::delta_cpu(input.q, input.k, input.v, input.g, input.beta, optional_data(previous_delta), input.batch,
-                                  input.tokens, heads, width, threads, delta_output, delta_state);
+            qwen35_ocr::delta_cpu(input.q, input.k, input.v, input.g, input.beta, optional_data(previous_delta),
+                                  input.batch, input.tokens, heads, width, threads, delta_output, delta_state);
         if (!control("execute_" + input.name, projected_ok && raw_ok && delta_ok)) return 1;
         if (keys == heads) {
             environment gate(grouped_gate, "0");
             qwen35_ocr::projected_linear_outputs legacy;
             qwen35_ocr::linear_outputs legacy_core;
-            const bool legacy_ok =
-                qwen35_ocr::linear_cpu(weights, input.hidden, input.batch, input.tokens, threads,
-                                       optional_data(previous.core.conv_history), optional_data(previous.core.state), legacy);
+            const bool legacy_ok = qwen35_ocr::linear_cpu(weights, input.hidden, input.batch, input.tokens, threads,
+                                                          optional_data(previous.core.conv_history),
+                                                          optional_data(previous.core.state), legacy);
             const bool legacy_core_ok = qwen35_ocr::linear_core_cpu(raw, legacy_core);
             ok &= control("equal_projected_" + input.name, legacy_ok && same(current, legacy));
             ok &= control("equal_core_" + input.name, legacy_core_ok && same(current_core, legacy_core));

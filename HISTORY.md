@@ -14,8 +14,13 @@ unchanged. [Controls41929695342](https://github.com/CrispStrobe/CrispEmbed/actio
 rejected a synthetic historical Ovis fixture that inadvertently included the
 new opt-in header. The fixture excludes that metadata-only file, matching its
 existing explicit opt-in exclusions; the real 29-file frozen guard and actual
-current-tree rejection stay unchanged. Fresh hosted component/protocol checks
-remain required for the corrected source. No initial failure is relabeled.
+current-tree rejection stay unchanged. A subsequent [style41930124505](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41930124505)
+then isolated9 inherited wrapping violations in the GDN test-only optional-cache
+call sites; clang-format18 fixes whitespace only, without altering the frozen
+original reports, real protocol or any source-hash guard. The larger-input
+historical test fixture likewise explicitly excludes the new owner header; its
+real strict source contract stays unchanged. Fresh hosted component/protocol
+checks remain required for the corrected source. No initial failure is relabeled.
 
 ## 4 November 2026 — LightOn4B exact text ownership component
 
