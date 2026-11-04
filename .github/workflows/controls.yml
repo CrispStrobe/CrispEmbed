@@ -13,6 +13,7 @@ on:
     paths:
       - '.github/workflows/controls.yml'
       - '.github/workflows/heavy-cpu.yml'
+      - '.github/workflows/heavy-cpu.yml'
       - 'tools/ci-heavy/extract_ocr_nov4_evidence.py'
       - 'tests/test_extract_ocr_nov4_evidence.py'
       # Versioned document diagnostics (stdlib; no model execution)
@@ -96,6 +97,7 @@ on:
   pull_request:
     paths:
       - '.github/workflows/controls.yml'
+      - '.github/workflows/heavy-cpu.yml'
       - '.github/workflows/heavy-cpu.yml'
       - 'tools/ci-heavy/extract_ocr_nov4_evidence.py'
       - 'tests/test_extract_ocr_nov4_evidence.py'
@@ -194,6 +196,15 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Validate manual OCR workflow contexts and routing
+        run: |
+          archive="$RUNNER_TEMP/actionlint_1.7.7_linux_amd64.tar.gz"
+          curl --fail --silent --show-error --location --retry 2 \
+            https://github.com/rhysd/actionlint/releases/download/v1.7.7/actionlint_1.7.7_linux_amd64.tar.gz \
+            --output "$archive"
+          echo "023070a287cd8cccd71515fedc843f1985bf96c436b7effaecce67290e7e0757  $archive" | sha256sum --check --strict
+          tar -xzf "$archive" -C "$RUNNER_TEMP" actionlint
+          "$RUNNER_TEMP/actionlint" .github/workflows/heavy-cpu.yml .github/workflows/controls.yml
       - name: UltraBERT source contract
         if: ${{ !cancelled() }}
         run: |
