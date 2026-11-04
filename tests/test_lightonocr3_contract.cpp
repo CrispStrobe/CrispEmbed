@@ -1,8 +1,11 @@
 #include "lightonocr3_profile.h"
 #include "core/clean_exit.h"
 #include "core/env_gate.h"
+#include "ggml-cpu.h"
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <vector>
 
 static int crispembed_test_main() {
@@ -13,6 +16,42 @@ static int crispembed_test_main() {
             fprintf(stderr, "%s\n", message);
         }
     };
+    const char * gate = "CRISPEMBED_LIGHTONOCR3_PIXTRAL_EPS";
+    auto set_gate = [&](const char * value) {
+#ifdef _WIN32
+        _putenv_s(gate, value ? value : "");
+#else
+        if (value)
+            setenv(gate, value, 1);
+        else
+            unsetenv(gate);
+#endif
+    };
+    for (const char * value : { static_cast<const char *>(nullptr), "", "0" }) {
+        set_gate(value);
+        check(lightonocr3::vision_rms_epsilon(true) == 1e-6f, "legacy epsilon/default changed");
+    }
+    set_gate("1");
+    check(lightonocr3::vision_rms_epsilon(false) == 1e-6f, "legacy model affected by LightOn3 gate");
+    // Actual GGML RMSNorm on a low-variance input makes the epsilon difference
+    // observable; compare the opt-in result to the independent scalar formula.
+    auto * gg = ggml_init({ 2 * 1024 * 1024, nullptr, false });
+    if (!gg) return 2;
+    const float values[] = { 0.001f, -0.002f, 0.003f, -0.004f };
+    auto * input = ggml_new_tensor_1d(gg, GGML_TYPE_F32, 4);
+    std::memcpy(ggml_get_data(input), values, sizeof(values));
+    auto * norm = ggml_rms_norm(gg, input, lightonocr3::vision_rms_epsilon(true));
+    auto * graph = ggml_new_graph(gg);
+    ggml_build_forward_expand(graph, norm);
+    check(ggml_graph_compute_with_ctx(gg, graph, 1) == GGML_STATUS_SUCCESS, "norm component execution failed");
+    const auto * actual = static_cast<const float *>(ggml_get_data(norm));
+    double mean_square = 0;
+    for (float value : values) mean_square += double(value) * value / 4;
+    for (int i = 0; i < 4; ++i)
+        check(std::abs(actual[i] - values[i] / std::sqrt(mean_square + 1e-5)) < 1e-6,
+              "Pixtral epsilon differs from source RMSNorm");
+    ggml_free(gg);
+    set_gate(nullptr);
     // Official floor/ceil policy: odd patch grids must not become even grids.
     check(lightonocr3::image_size(317, 452) == std::make_pair(322, 462), "odd patch grid changed");
     check(lightonocr3::image_size(3080, 1540) == std::make_pair(1540, 770), "aspect downscale changed");

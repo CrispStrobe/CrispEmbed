@@ -660,6 +660,7 @@ static bool run_vision_encoder(context & ctx, const std::vector<float> & patch_e
     const int NH = m.vis_heads;
     const int HD = m.vis_head_dim;
     const float attn_scale = 1.0f / sqrtf((float)HD);
+    const float vision_rms_eps = lightonocr3::vision_rms_epsilon(m.profile3);
 
     ggml_init_params ip{ ctx.compute_meta.size(), ctx.compute_meta.data(), true };
     ggml_context * g = ggml_init(ip);
@@ -680,7 +681,7 @@ static bool run_vision_encoder(context & ctx, const std::vector<float> & patch_e
 
     // ln_pre (RMSNorm before transformer blocks)
     if (m.ln_pre_w) {
-        x = ggml_rms_norm(g, x, 1e-6f);
+        x = ggml_rms_norm(g, x, vision_rms_eps);
         x = ggml_mul(g, x, m.ln_pre_w);
     }
 
@@ -712,7 +713,7 @@ static bool run_vision_encoder(context & ctx, const std::vector<float> & patch_e
         ggml_tensor * residual = x;
 
         // Pre-attn RMSNorm
-        ggml_tensor * y = ggml_rms_norm(g, x, 1e-6f);
+        ggml_tensor * y = ggml_rms_norm(g, x, vision_rms_eps);
         y = ggml_mul(g, y, L.attn_norm_w);
 
         // Separate Q/K/V projections
@@ -769,7 +770,7 @@ static bool run_vision_encoder(context & ctx, const std::vector<float> & patch_e
 
         // Pre-FFN RMSNorm
         residual = x;
-        y = ggml_rms_norm(g, x, 1e-6f);
+        y = ggml_rms_norm(g, x, vision_rms_eps);
         y = ggml_mul(g, y, L.ffn_norm_w);
 
         // SiLU FFN (SwiGLU): gate * silu(up) → down
