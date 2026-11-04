@@ -1,3 +1,20 @@
+## LightOn3 actual initial panel and MinerU aligned receipt —4 November2026
+
+LightOn3-1B run41873656972 passes12 full-vocabulary final-logit arms, worst cosine
+0.999959896795152. Only10 free decodes match; form-grounding differs at both
+precisions, and8 arms hit128 tokens. A vision RMSNorm epsilon mismatch is
+identified; [gated A/B](docs/lighton3-pixtral-epsilon-ab-v1.md) remains pending.
+High component/final cosine does not establish decoded or document-quality parity.
+
+Aligned MinerU receipt41871894063 passes208 positions at all four precisions,
+minimum cosines F32/F16/Q8/Q4-mix0.9999999999966631/0.9999999999964981/
+0.9993957644539981/0.9916272908500863. All request outputs are exact and EOS-ended;
+helper JSON/Markdown agree. Q4-mix size1,278,646,496 bytes,384 F32/273 Q8/24 Q4_K.
+Same-run native/original warm ratios are0.5822/0.9733/0.3906/0.3910 respectively;
+these are one-case measurements, not cross-host or corpus speed claims. Strict
+intermediate failures remain, worst cosine0.399606049. Full eight-case review and
+standard-metadata publication/readback remain open. [Receipt](tests/results/ocr-benchmark-expansion/mineru2605-aligned-review-41871894063.json).
+
 ## Xiaomi bounded F32/F16 neural comparison — 4 November 2026
 
 [Reviewed41871383235](tests/results/ocr-benchmark-expansion/xiaomi0-inference-review-41871383235.json)

@@ -1,5 +1,14 @@
 # Current entry —29 October2026 wrap-up
 
+## Current execution —4 November2026
+
+Start with [the current qualification receipt and executable continuation](ocr-qualification-2026-11-04.md).
+It supersedes older running/queued states below: Xiaomi passes its capped panel;
+MinerU aligned Q4 receipt passes and seven-case review is in flight; LightOn1B
+now has actual full-panel evidence and a gated vision-norm repair under A/B.
+Candidate development is0.17.15, unreleased; published assets remain0.17.14 and
+the app remains0.17.12. No new model alias or broad qualification.
+
 For4 November execution, begin with [the current OCR qualification continuation](ocr-benchmark-expansion.md#reviewed-retained-reports-and-further-repairs)
 and [PLAN](../PLAN.md). They record the exact running MinerU/LightOn sources,
 completed Xiaomi panel, retained LightOn0.8 guard failure and release status.

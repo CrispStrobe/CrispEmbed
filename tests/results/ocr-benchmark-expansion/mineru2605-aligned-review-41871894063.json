@@ -1,0 +1,74 @@
+{
+  "schema": "crispembed.mineru2605.aligned-q4.review.v1",
+  "run": 41871894063,
+  "source": "1bb0ddb1d9ac12ded51eb5bd0edd89be0a8259e6",
+  "raw_artifact": {
+    "id": 13345908772,
+    "bytes": 858185387,
+    "sha256": "4a8053631886ae78df4bbc131785d702c08b306b62d19e9b930480f85bfdb403"
+  },
+  "extractor_run": 41876269745,
+  "small_artifact": {
+    "id": 13346523479,
+    "bytes": 435959,
+    "sha256": "f481b7f4f123a1cc861734895a75c29d2a925e7bce51c34abda4a91a6fcb98b9"
+  },
+  "small_zip_and_all_80_text_members_verified": true,
+  "raw_arrays_downloaded_locally": false,
+  "arms": [
+    {
+      "precision": "f32",
+      "final_output_min_cosine": 0.9999999999966631,
+      "final_output_complete": true,
+      "final_output_positions": 208,
+      "precision_pass": true,
+      "first_failed_stage": "vis_layer_23",
+      "strict_stage_pass": false,
+      "gguf_sha256": "2e0c196e059714acbe451182a205b1401d8d5f2ad0c1dfd907c98736e5c54794"
+    },
+    {
+      "precision": "f16",
+      "final_output_min_cosine": 0.9999999999964981,
+      "final_output_complete": true,
+      "final_output_positions": 208,
+      "precision_pass": true,
+      "first_failed_stage": "vis_layer_23",
+      "strict_stage_pass": false,
+      "gguf_sha256": "6cb95c713d5111efd7f18172343c25295e035dd4980c28ec7a354de4155f8192"
+    },
+    {
+      "precision": "q8_0",
+      "final_output_min_cosine": 0.9993957644539981,
+      "final_output_complete": true,
+      "final_output_positions": 208,
+      "precision_pass": true,
+      "first_failed_stage": "vis_layer_0",
+      "strict_stage_pass": false,
+      "gguf_sha256": "bd78c95b1e170764ccc38230cd2b22aab6fa97d27eb9df17725abbe4d0b9ae89"
+    },
+    {
+      "precision": "q4_k",
+      "final_output_min_cosine": 0.9916272908500863,
+      "final_output_complete": true,
+      "final_output_positions": 208,
+      "precision_pass": true,
+      "first_failed_stage": "vis_layer_0",
+      "strict_stage_pass": false,
+      "gguf_sha256": "90d7684fa3350351eae8f37be4a055a7d5763ed9c5a18c307171a22d237232cd"
+    }
+  ],
+  "all_208_positions_per_arm": true,
+  "all_native_decodes_exact": true,
+  "all_original_and_native_eos_completed": true,
+  "helper_json_markdown_exact": true,
+  "tensor_counts_q4_mix": {
+    "F32": 384,
+    "Q8_0": 273,
+    "Q4_K": 24
+  },
+  "q4_mix_bytes": 1278646496,
+  "q4_mix_sha256": "90d7684fa3350351eae8f37be4a055a7d5763ed9c5a18c307171a22d237232cd",
+  "worst_intermediate_cosine": 0.399606049,
+  "full_eight_case_qualification": false,
+  "publication": false
+}

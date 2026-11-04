@@ -35,11 +35,11 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 
 ## Regression review and OCR continuation — 4 November 2026
 
-The current OCR manual runs and their acceptance gates are listed in the
-[expansion continuation](docs/ocr-benchmark-expansion.md#corrected-dispatch-continuation--4-november-2026).
-Use the three exact run IDs there before dispatching anything else. PR141's
-workflow-context correction is `15c48029d`; all75 focused OCR controls pass,
-including the actual20+29+26 tests. Heavy execution stays hosted.
+The [current executable qualification continuation](docs/ocr-qualification-2026-11-04.md)
+records reviewed evidence, exact live run IDs, preservation and remaining acceptance
+gates. It supersedes historical queued/dispatch language. Heavy execution stays
+hosted. PR141 includes a source-correct, default-off LightOn3 vision epsilon
+experiment; development0.17.15 is unreleased, published assets remain0.17.14.
 
 A bounded review against main `9c790c81a` found that
 `tests/test_moedern_q8_profile.py` passes7/8 controls and rejects its old source
@@ -64,8 +64,8 @@ for exact source commits, artifacts, initial failures and error magnitudes.
 
 | Lane | Current evidence / job | Exact next action and completion gate |
 |---|---|---|
-| MinerU2605 receipt | Original F32/F16/Q8 final-logit bars and helper comparison pass; Q4_0 fallback rejected. Aligned recipe retry41871894063 at1bb0ddb1d | Review all208 positions, role census384F32/273Q8/24Q4_K, actual decoded output and helper records; then dispatch the other7 protocol cases separately at the same reviewed executable source and aggregate all8. No alias/publication from one case |
-| LightOn3-1B | Dependency repair works; unrelated LLaVA loading migration exposed and corrected. Identity-only retry41871466965 rejected the saved prefix. Exact namespace retry41873656972 at4476be6eb | Require zero unexpected/missing/mismatched loaded weights after the declared tied-head handling, then all frozen images/modes, all stages/full logits and decoded/grounding outputs. Investigate the earliest actual divergence before further precision recipes |
+| MinerU2605 full panel | Aligned receipt41871894063 passes all208 positions and exact EOS outputs at F32/F16/Q8/Q4-mix; seven remaining cases already launched at frozen1bb0ddb1d | Re-query all7 IDs in the [panel ledger](tests/results/ocr-benchmark-expansion/mineru2605-aligned-panel-20261104.json); hosted-authenticate/extract final small reports and review32 arms, all positions/decodes/EOS/helper/census/hashes. No duplicate jobs or publication from one case |
+| LightOn3-1B vision norm A/B | Actual41873656972 loads exactly and passes12 final bars, but only10 decodes match; form-grounding differs,8 arms capped. Pinned vision RMSNorm1e-5 versus native1e-6 is diagnosed | Check first retained-reference retry41885702781 before any duplicate. Follow [frozen A/B protocol](docs/lighton3-pixtral-epsilon-ab-v1.md): gate0 byte replay, gate1 improved first norm + exact decoded outputs; positive authenticated first proof unlocks60 remaining native requests. Keep default-off and all strict/cap negatives |
 | Xiaomi0 | Metadata/frontend41870593556 passes exact pixels/patches; inference41871383235 at3a5a9a1dc passes all4 arms and exact IDs/text at the16-token cap | Bounded two-case integration complete. Preserve6 strict stage failures and capped outputs; freeze separate EOS/document and Q8/Q4 protocols before expanded precision/publication. External detector composition remains a separate experiment |
 | LightOn3-0.8B | Extraction diagnoses1759 float-metric/probability differences; IDs/text/all other original fields exact; no native calls | Preserve the old guard failure. Implement/review a separate retained-capture native continuation authenticating all905 arrays and old source/input/score identities; no blind original rerun or ignored-field broadening. Keep the first source result and all three-case requirements distinct |
 | Nemotron frontend | Actual11/11 geometry/packing and9/9 negatives pass | Bounded milestone complete. Native resize/positions and neural backend remain separate work in the model document |

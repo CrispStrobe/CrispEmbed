@@ -28,6 +28,34 @@ recorded-status/metadata controls. Their coverage is bounded; old MoEdern Q8 sou
 closure still rejects current main as recorded in PLAN. No all-model regression
 claim follows from green CI.
 
+## 4 November 2026 — aligned MinerU receipt; actual LightOn full-panel defect diagnosed
+
+[Aligned MinerU41871894063](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41871894063)
+at1bb0ddb1d passes all208 positions at F32/F16/Q8/Q4-mix, exact EOS-ended request
+outputs and helper JSON/Markdown. Minimum final cosines are
+0.9999999999966631/0.9999999999964981/0.9993957644539981/0.9916272908500863.
+The1,278,646,496-byte mix has384 F32/273 Q8/24 Q4_K tensors; undeclared Q4_0 stays
+rejected. Strict vision failures remain, worst row cosine0.399606049. The other
+seven immutable cases were dispatched separately at the same executable source;
+review remains active in [the current continuation](docs/ocr-qualification-2026-11-04.md).
+
+[LightOn41873656972](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41873656972)
+at4476be6eb completes all12 F32/F16 arms and all final-logit bars. Ten decodes
+match; both form-grounding decodes differ, and8 arms are capped at128 tokens.
+The pinned Pixtral vision norms use1e-5 while native uses1e-6. Pixel equality,
+first-norm error7.33e-5 and vision-layer23 max4898.416 precede the changed box/text.
+A source-correct new-profile-only path is implemented behind a default-off gate,
+with actual GGML/scalar norm controls and a retained-reference byte/decoded A/B.
+The first shallow-checkout failure had zero original/native model calls; corrected
+first-stage run41885702781 is pending review. No default flip or model promotion.
+Runtime candidate versions are0.17.15 development, unreleased; published0.17.14
+and app0.17.12 remain unchanged. [Evidence and exact next gates](docs/lighton3-pixtral-epsilon-ab-v1.md).
+
+A CPU-only Kaggle capacity probe verified network and separate scratch/output
+filesystems for that worker, with zero model/build work. The optional MinerU CPU
+adapter conservatively reserves all four GGUFs. No duplicate model batch was
+launched while hosted GitHub cases were active; the M1 fallback remains scoped.
+
 ## 4 November 2026 — Retained OCR failures diagnosed; Xiaomi frontend exact
 
 [Hosted extraction41869721715](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41869721715)

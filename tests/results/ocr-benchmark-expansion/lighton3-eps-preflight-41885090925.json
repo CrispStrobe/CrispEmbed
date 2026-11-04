@@ -1,0 +1,14 @@
+{
+  "schema": "crispembed.lighton3.eps-preflight-failure.v1",
+  "run": 41885090925,
+  "source": "5a2237514",
+  "conclusion": "failure",
+  "failure_stage": "source delta validation before output/build/model/archive acquisition",
+  "reason": "shallow checkout omitted exact baseline4476be6eb21ecacc3c001ed4e02928d0a98be0ea",
+  "native_requests": 0,
+  "original_forward_calls": 0,
+  "repair_source": "f27223fc2",
+  "repair": "fetch the exact baseline commit at depth1; preserve the source-delta guard",
+  "retry_run": 41885702781,
+  "thresholds_changed": false
+}

@@ -5,7 +5,7 @@ Start with [the current execution handoff](docs/handoff-2026-11-03.md) (supersed
 PLAN contains only open work (index table at the top); completed work and receipts are
 in HISTORY, newest first.
 
-For the current4 November OCR work, read the
+For the current4 November OCR work, first read [the executable qualification continuation](docs/ocr-qualification-2026-11-04.md), then the
 [actual qualification continuation](docs/ocr-benchmark-expansion.md#reviewed-retained-reports-and-further-repairs)
 and PLAN's current bounded-execution table first. PR141 contains further diagnosed
 workflow/loader/converter/test repairs and exact hosted jobs. The old source

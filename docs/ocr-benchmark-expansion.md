@@ -1,5 +1,9 @@
 # OCR benchmark expansion — 4 November 2026
 
+The [current4 November qualification continuation](ocr-qualification-2026-11-04.md)
+supersedes historical queued/running states and dispatch tables below. It records
+actual completed panels, the Pixtral epsilon bug, current A/B and pending gates.
+
 This is the owner-authorized implementation follow-up to the current
 OmniParseBench / OmniDocBench model review. Source support, port fidelity,
 document accuracy and published consumer support are separate states. No upstream

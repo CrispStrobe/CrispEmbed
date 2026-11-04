@@ -27,6 +27,8 @@ on:
       - 'tools/ci-heavy/lightonocr3_1b.*'
       - 'tests/test_lightonocr3_profile.py'
       - 'tests/test_lighton3_pixtral_eps_ab.py'
+      - 'tests/test_validate_lighton3_eps_first.py'
+      - 'tools/ci-heavy/validate_lighton3_eps_first.py'
       - 'tools/ci-heavy/lighton3_pixtral_eps_ab.py'
       - 'docs/lighton3-pixtral-epsilon-ab-v1.json'
       - 'tests/fixtures/lightonocr3/**'
@@ -119,6 +121,8 @@ on:
       - 'tools/ci-heavy/lightonocr3_1b.*'
       - 'tests/test_lightonocr3_profile.py'
       - 'tests/test_lighton3_pixtral_eps_ab.py'
+      - 'tests/test_validate_lighton3_eps_first.py'
+      - 'tools/ci-heavy/validate_lighton3_eps_first.py'
       - 'tools/ci-heavy/lighton3_pixtral_eps_ab.py'
       - 'docs/lighton3-pixtral-epsilon-ab-v1.json'
       - 'tests/fixtures/lightonocr3/**'
@@ -275,6 +279,7 @@ jobs:
         run: |
           python tests/test_lightonocr3_profile.py -v
           python tests/test_lighton3_pixtral_eps_ab.py -v
+          python tests/test_validate_lighton3_eps_first.py -v
 
       - name: Xiaomi OCR0 exact source, task and layout controls
         if: ${{ !cancelled() }}

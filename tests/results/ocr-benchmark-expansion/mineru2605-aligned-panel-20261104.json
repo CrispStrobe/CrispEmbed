@@ -1,0 +1,61 @@
+{
+  "schema": "crispembed.mineru2605.aligned-panel.execution.v1",
+  "source": "1bb0ddb1d9ac12ded51eb5bd0edd89be0a8259e6",
+  "frozen_branch": "audit/mineru2605-aligned-q4-20261104",
+  "script": "tools/ci-heavy/mineru2605_qualify.sh",
+  "runner": "ubuntu-latest",
+  "build_mode": "portable",
+  "cases": [
+    {
+      "case": "receipt",
+      "run": 41871894063,
+      "args": "receipt f32,f16,q8_0,q4_k 2048 3 1",
+      "state_at_checkpoint": "reviewed-positive"
+    },
+    {
+      "case": "formula",
+      "run": 41877117676,
+      "args": "formula f32,f16,q8_0,q4_k 2048 3 1",
+      "state_at_checkpoint": "execution-success-unreviewed"
+    },
+    {
+      "case": "japanese",
+      "run": 41877121416,
+      "args": "japanese f32,f16,q8_0,q4_k 2048 3 1",
+      "state_at_checkpoint": "execution-success-unreviewed"
+    },
+    {
+      "case": "arabic",
+      "run": 41877125216,
+      "args": "arabic f32,f16,q8_0,q4_k 2048 3 1",
+      "state_at_checkpoint": "execution-success-unreviewed"
+    },
+    {
+      "case": "table",
+      "run": 41877129385,
+      "args": "table f32,f16,q8_0,q4_k 2048 3 1",
+      "state_at_checkpoint": "execution-success-unreviewed"
+    },
+    {
+      "case": "german",
+      "run": 41877132652,
+      "args": "german f32,f16,q8_0,q4_k 2048 3 1",
+      "state_at_checkpoint": "in_progress"
+    },
+    {
+      "case": "layout-page",
+      "run": 41877137082,
+      "args": "layout-page f32,f16,q8_0,q4_k 2048 3 1",
+      "state_at_checkpoint": "execution-success-unreviewed"
+    },
+    {
+      "case": "layout-rot90",
+      "run": 41877141270,
+      "args": "layout-rot90 f32,f16,q8_0,q4_k 2048 3 1",
+      "state_at_checkpoint": "in_progress"
+    }
+  ],
+  "full_panel_qualified": false,
+  "query_live_status_before_dispatch": true,
+  "original_protocol": "docs/mineru25-pro-2605-protocol.json"
+}

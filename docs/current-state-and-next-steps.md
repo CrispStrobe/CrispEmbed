@@ -1,5 +1,14 @@
 # CrispMath and CrispEmbed: current state and executable lanes
 
+## Current execution —4 November2026
+
+Start with [the current qualification receipt and executable continuation](ocr-qualification-2026-11-04.md).
+It supersedes older running/queued states below: Xiaomi passes its capped panel;
+MinerU aligned Q4 receipt passes and seven-case review is in flight; LightOn1B
+now has actual full-panel evidence and a gated vision-norm repair under A/B.
+Candidate development is0.17.15, unreleased; published assets remain0.17.14 and
+the app remains0.17.12. No new model alias or broad qualification.
+
 ## State on 4 November 2026 — release and OCR qualification review
 
 Main includes release-record PR142 at `2f748825f`. v0.17.14 native and WASM assets
