@@ -4,6 +4,7 @@
 #include "qwen35_weight_cache.h"
 #include "core/env_gate.h"
 #include "ggml-backend.h"
+#include "ggml-alloc.h"
 #include "ggml-cpu.h"
 #include "ggml.h"
 
@@ -226,6 +227,73 @@ bool project_cpu(const std::vector<ggml_tensor *> & matrices, const float * hidd
         ctx.reset();
     }
     return true;
+}
+
+
+// Experimental row streaming keeps the original projection path and its limit
+// intact. Each tile uses the same F32 matmul, with contiguous source rows read
+// through the backend API (including non-host-backed weights).
+bool project_rows_cpu(ggml_tensor * matrix, const float * hidden, int width, int tokens, int threads,
+                      int tile_rows, std::vector<float> & output) {
+    output.clear();
+    if (!core_env::on("CRISPEMBED_QWEN35_OCR") ||
+        !core_env::on("CRISPEMBED_QWEN35_STREAM_PROJECTION") || !matrix || !hidden ||
+        width < 1 || width > 32768 || tokens < 1 || tokens > 16 || threads < 1 || threads > 256 ||
+        tile_rows < 1 || tile_rows > 1024 || size_t(width) * tile_rows > 1048576 ||
+        matrix->ne[0] != width || matrix->ne[1] < 1 || matrix->ne[1] > 300000 ||
+        matrix->ne[2] != 1 || matrix->ne[3] != 1 || !ggml_is_contiguous(matrix) ||
+        (matrix->type != GGML_TYPE_F32 && matrix->type != GGML_TYPE_F16))
+        return false;
+    if (!std::all_of(hidden, hidden + size_t(width) * tokens, [](float x) { return std::isfinite(x); }))
+        return false;
+    // Preserve calibration identity: observe the original named matrix once,
+    // then suppress tile callbacks while retaining all old-path behavior.
+    if (observer && core_env::on("CRISPEMBED_QWEN35_IMATRIX") &&
+        !observer(ggml_get_name(matrix), hidden, width, tokens, observer_user))
+        return false;
+    struct observer_restore {
+        projection_observer saved = observer;
+        observer_restore() { observer = nullptr; }
+        ~observer_restore() { observer = saved; }
+    } restore;
+    try {
+        const size_t rows = size_t(matrix->ne[1]);
+        const size_t row_bytes = ggml_row_size(matrix->type, width);
+        std::vector<float> complete(rows * tokens);
+        std::vector<uint8_t> raw(row_bytes * size_t(tile_rows));
+        // Only one bounded tile lives in this context. project_cpu owns a
+        // separate bounded graph and never sees the full vocabulary matrix.
+        const size_t memory = 1024 * 1024;
+        std::unique_ptr<ggml_context, decltype(&ggml_free)> context(ggml_init({ memory, nullptr, true }), ggml_free);
+        if (!context) return false;
+        auto * tile = ggml_new_tensor_2d(context.get(), GGML_TYPE_F32, width, tile_rows);
+        std::unique_ptr<ggml_backend, decltype(&ggml_backend_free)> backend(ggml_backend_cpu_init(), ggml_backend_free);
+        if (!backend) return false;
+        std::unique_ptr<ggml_backend_buffer, decltype(&ggml_backend_buffer_free)> buffer(
+            ggml_backend_alloc_ctx_tensors(context.get(), backend.get()), ggml_backend_buffer_free);
+        if (!buffer) return false;
+        std::vector<std::vector<float>> projected;
+        for (size_t begin = 0; begin < rows; begin += size_t(tile_rows)) {
+            const size_t count = std::min(size_t(tile_rows), rows - begin);
+            ggml_backend_tensor_get(matrix, raw.data(), begin * row_bytes, count * row_bytes);
+            auto * values = static_cast<float *>(tile->data);
+            if (matrix->type == GGML_TYPE_F32)
+                std::memcpy(values, raw.data(), count * size_t(width) * sizeof(float));
+            else
+                ggml_get_type_traits(matrix->type)->to_float(raw.data(), values, int64_t(count * width));
+            tile->ne[1] = int64_t(count);
+            tile->nb[2] = tile->nb[1] * count;
+            tile->nb[3] = tile->nb[2];
+            if (!project_cpu({ tile }, hidden, width, tokens, threads, projected)) return false;
+            for (int token = 0; token < tokens; ++token)
+                std::copy_n(projected[0].data() + size_t(token) * count, count,
+                            complete.data() + size_t(token) * rows + begin);
+        }
+        output = std::move(complete);
+        return true;
+    } catch (const std::exception &) {
+        return false;
+    }
 }
 
 bool linear_cpu(const linear_weights & weights, const float * hidden, int batch, int tokens, int threads,

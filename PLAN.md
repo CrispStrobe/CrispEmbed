@@ -65,6 +65,17 @@ Earlier Apple capacity cancellations and the M1 pressure stop remain in HISTORY;
 no further M1 work is needed for compilation. This is bounded regression evidence,
 not every-model/Apple-inference quality or a runtime release.
 
+### LightOn4B streamed projection component — 4 November 2026
+
+A separate default-off [bounded output projection component](docs/lighton4b-stream-projection.md)
+removes the whole-head F32 materialization requirement without changing the existing
+projector or admitting format5. The 635,699,200-element tied head exceeds the old
+536,870,912-element limit. New hosted controls cover F32/F16 tiles, independent dots,
+legacy agreement, gates and atomic late failure. Local builds/suites were not run;
+actual hosted compilation/controls and full-size original/native logits remain open.
+Keep PR143's grouped-head/export lane and all frozen source closures unchanged.
+Development0.17.15 remains unreleased; no model/default/alias/app promotion follows.
+
 ### Current bounded OCR execution and completion gates
 
 See the [reviewed reports and repairs](docs/ocr-benchmark-expansion.md#reviewed-retained-reports-and-further-repairs)

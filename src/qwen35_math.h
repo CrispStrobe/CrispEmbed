@@ -30,4 +30,10 @@ int f16_conversion_workers(std::size_t elements, int threads);
 bool tensor_floats(ggml_tensor * source, float * target, int threads = 1);
 bool project_cpu(const std::vector<ggml_tensor *> & matrices, const float * hidden, int width, int tokens, int threads,
                  std::vector<std::vector<float>> & output, converted_weight_cache * weights_cache = nullptr);
+// Default-off full-vocabulary projection without whole-matrix F32 conversion.
+// F32/F16 only; token-major complete output, <=16 tokens, <=300000 rows.
+// tile_rows <=1024 and tile_rows*width <=1048576; no converted-weight cache.
+// Failure clears output. This component does not admit a model/profile.
+bool project_rows_cpu(ggml_tensor * matrix, const float * hidden, int width, int tokens, int threads,
+                      int tile_rows, std::vector<float> & output);
 } // namespace qwen35_ocr

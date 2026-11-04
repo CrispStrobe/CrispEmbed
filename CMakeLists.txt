@@ -925,6 +925,8 @@ add_executable(test-qwen35-imatrix tests/test_qwen35_imatrix.cpp)
 target_link_libraries(test-qwen35-imatrix PRIVATE crispembed-qwen35-delta crispembed-core)
 add_executable(test-qwen35-delta tests/test_qwen35_delta.cpp)
 target_link_libraries(test-qwen35-delta PRIVATE crispembed-qwen35-delta)
+add_executable(test-qwen35-stream-projection tests/test_qwen35_stream_projection.cpp)
+target_link_libraries(test-qwen35-stream-projection PRIVATE crispembed-qwen35-delta crispembed-core)
 add_executable(test-qwen35-linear tests/test_qwen35_linear.cpp)
 target_link_libraries(test-qwen35-linear PRIVATE crispembed-qwen35-delta crispembed-core)
 
