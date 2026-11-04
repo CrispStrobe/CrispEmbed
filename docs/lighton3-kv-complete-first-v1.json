@@ -1,0 +1,63 @@
+{
+  "schema": "crispembed.lighton3.kv-complete-first.v1",
+  "native_source": "3e82a12058cfca8869f4aa8ead250acf2b708934",
+  "owned_native_sha256": {
+    "src/lightonocr.cpp": "f1099cac986d24b4befc390dd89ee3b97f2562285071cdb5b907b27d5f5435b1",
+    "src/lightonocr3_profile.h": "e5fe7d98faf15c471c12083f225484d7560248ba53f6fd5e5350da522c68395e",
+    "tests/test_lightonocr3_contract.cpp": "0e60180a5698e1f8ed90ad5999cef74cdd7aefb6c2d49509a8e041c55937318a"
+  },
+  "protected_git_objects": {
+    "ggml": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+    "CMakeLists.txt": "d7bfbb7e53f532c748b9b84e0cfea115cf154c61",
+    "tests/lightonocr3_trace.cpp": "ea704747943f331e0cac5e3ff99921e2f47a2654",
+    "tools/compare_lightonocr3.py": "4c63b15ae4a497c44c59e835b8ff7f21e9d77fb6",
+    "models/convert-lightonocr-to-gguf.py": "f030bc1093fa846b0ac568d66b8b27991a2fcd6e",
+    "models/lightonocr3_profile.py": "2e87fb9359fb6a83cd7a84f4f43dbd4edd4390dd",
+    "models/lightonocr3-1b-source.json": "b7fd5fe27c22674d94964b96a71f9a214262b9ce",
+    "models/requirements-lightonocr3-reference.txt": "6b2d478fd34686da4b0445678836aafc812ccb73",
+    "tests/fixtures/lightonocr3/qualification.json": "4d4dcf76568117d6187705176507692268f6f547",
+    "tools/ci-heavy/extract_ocr_nov4_evidence.py": "030011254c8a216e820552352b9eb889bcd73133",
+    "tools/ci_process.py": "983a72fb3e8f7f212dd3be04d1560f157c7a57e4",
+    "tools/ci-heavy/lighton3_pixtral_eps_ab.py": "c250fc164be1407afdada65c4d3b8456cf106fe0",
+    "tests/test_lighton3_pixtral_eps_ab.py": "426ea45a800855083453f63b63d0e9e87ada8e58",
+    "docs/lighton3-pixtral-epsilon-ab-v1.json": "97a6d3177ccce326272c5f7059854bfc31b0e234",
+    "tools/ci-heavy/lighton3_kv_f32_ab.py": "1ab19b9ed380db4407733f8d5578cb9c2f41dd22",
+    "tests/test_lighton3_kv_f32_ab.py": "abf5c79d91f786cadebe8955a30837083d3e7f7d",
+    "docs/lighton3-kv-f32-ab-v1.json": "99f5b39fce773871b7fc2fcb23e93166e2e529c5"
+  },
+  "preserved": {
+    "run_id": 41897136488,
+    "source": "3e82a12058cfca8869f4aa8ead250acf2b708934",
+    "branch": "audit/lighton3-kv-f32-first-20261104",
+    "conclusion": "failure",
+    "raw": {
+      "artifact_id": 13355853749,
+      "bytes": 1300045675,
+      "sha256": "4a5453695794b1a8a920d7e9b8ad6a218a80f52b7407c50d13fd5f1c3820999f"
+    },
+    "review": {
+      "artifact_id": 13355723878,
+      "bytes": 398550,
+      "sha256": "89f1fdf2b705ca57c46bb92ae3d7c64a014d3387f62dc423bafc09f7a8476a5c"
+    }
+  },
+  "models": {
+    "f32": {
+      "bytes": 4025219872,
+      "sha256": "2d628ad47bd31ab78c654501d52fe996ffe7834d11644d69f715ba7b567af83c"
+    },
+    "f16": {
+      "bytes": 2326526752,
+      "sha256": "6d51c59f2c5a74100cba608759e18328059650070051cf27e58fedb86628589c"
+    }
+  },
+  "original_forward_calls": 0,
+  "reused_native_request_processes": 10,
+  "new_native_request_processes": 2,
+  "total_native_request_processes": 12,
+  "prefill_excludes_postdecode_generated_ids": true,
+  "byte_identical_rebuilt_binary_required_before_native_calls": true,
+  "compiled_and_operator_sources_recorded_separately": true,
+  "default_off": true,
+  "publication_qualified": false
+}

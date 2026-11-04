@@ -1,0 +1,2229 @@
+{
+  "schema": "xiaomi0-hosted-result/v1",
+  "phase": "complete",
+  "protocol_sha256": "4fa314d26c4c2372f929fc7ada8b8aa0188bbc9148ec82a50b509d9eabb56c30",
+  "source_commit": "3a5a9a1dc519a624db58a09078060e388b61e43d",
+  "source_audit_sha256": "10956c0dfc2244b6a082ee0acaeb40de7b885d46ddfa67a5bca973556d32855f",
+  "build_mode": "portable",
+  "original": {
+    "text": {
+      "ids": [
+        8702,
+        53643,
+        77796,
+        220,
+        19,
+        17,
+        271,
+        33526,
+        2702,
+        25,
+        220,
+        16,
+        22,
+        13,
+        20,
+        15
+      ],
+      "text": "CRISP OCR 42\n\nInvoice total: 17.50",
+      "stop": "max_tokens",
+      "cap": 16,
+      "image_sha256": "c911c10b7b15e12e4b4cfa0b849f56060bc3524dee329c52a4210fe17c4adc6f",
+      "input_ids": [
+        248045,
+        846,
+        198,
+        248053,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248054,
+        28014,
+        279,
+        1414,
+        303,
+        279,
+        2099,
+        13,
+        248046,
+        198,
+        248045,
+        74455,
+        198,
+        248068,
+        271,
+        248069,
+        271
+      ],
+      "grid": [
+        [
+          1,
+          16,
+          24
+        ]
+      ],
+      "stage_shapes": {
+        "vision.embedded": [
+          384,
+          768
+        ],
+        "vision.layer.0": [
+          384,
+          768
+        ],
+        "vision.layer.1": [
+          384,
+          768
+        ],
+        "vision.layer.2": [
+          384,
+          768
+        ],
+        "vision.layer.3": [
+          384,
+          768
+        ],
+        "vision.layer.4": [
+          384,
+          768
+        ],
+        "vision.layer.5": [
+          384,
+          768
+        ],
+        "vision.layer.6": [
+          384,
+          768
+        ],
+        "vision.layer.7": [
+          384,
+          768
+        ],
+        "vision.layer.8": [
+          384,
+          768
+        ],
+        "vision.layer.9": [
+          384,
+          768
+        ],
+        "vision.layer.10": [
+          384,
+          768
+        ],
+        "vision.layer.11": [
+          384,
+          768
+        ],
+        "vision.merger": [
+          96,
+          1024
+        ],
+        "decoder.input": [
+          1,
+          117,
+          1024
+        ],
+        "decoder.layer.0": [
+          1,
+          117,
+          1024
+        ],
+        "decoder.layer.1": [
+          1,
+          117,
+          1024
+        ],
+        "decoder.layer.2": [
+          1,
+          117,
+          1024
+        ],
+        "decoder.layer.3": [
+          1,
+          117,
+          1024
+        ],
+        "decoder.layer.4": [
+          1,
+          117,
+          1024
+        ],
+        "decoder.layer.5": [
+          1,
+          117,
+          1024
+        ],
+        "decoder.layer.6": [
+          1,
+          117,
+          1024
+        ],
+        "decoder.layer.7": [
+          1,
+          117,
+          1024
+        ],
+        "decoder.layer.8": [
+          1,
+          117,
+          1024
+        ],
+        "decoder.layer.9": [
+          1,
+          117,
+          1024
+        ],
+        "decoder.layer.10": [
+          1,
+          117,
+          1024
+        ],
+        "decoder.layer.11": [
+          1,
+          117,
+          1024
+        ],
+        "decoder.layer.12": [
+          1,
+          117,
+          1024
+        ],
+        "decoder.layer.13": [
+          1,
+          117,
+          1024
+        ],
+        "decoder.layer.14": [
+          1,
+          117,
+          1024
+        ],
+        "decoder.layer.15": [
+          1,
+          117,
+          1024
+        ],
+        "decoder.layer.16": [
+          1,
+          117,
+          1024
+        ],
+        "decoder.layer.17": [
+          1,
+          117,
+          1024
+        ],
+        "decoder.layer.18": [
+          1,
+          117,
+          1024
+        ],
+        "decoder.layer.19": [
+          1,
+          117,
+          1024
+        ],
+        "decoder.layer.20": [
+          1,
+          117,
+          1024
+        ],
+        "decoder.layer.21": [
+          1,
+          117,
+          1024
+        ],
+        "decoder.layer.22": [
+          1,
+          117,
+          1024
+        ],
+        "decoder.layer.23": [
+          1,
+          117,
+          1024
+        ],
+        "decoder.norm": [
+          1,
+          117,
+          1024
+        ],
+        "generated.logits": [
+          16,
+          248320
+        ]
+      }
+    },
+    "table": {
+      "ids": [
+        61738,
+        3546,
+        29,
+        1192,
+        61738,
+        3546,
+        29,
+        39322,
+        27,
+        15184,
+        1721,
+        69,
+        3546,
+        28517,
+        704,
+        61738
+      ],
+      "text": "<fcel>Item<fcel>Qty<nl><fcel>Pens<f",
+      "stop": "max_tokens",
+      "cap": 16,
+      "image_sha256": "57e2cb3522c6969039373e4c04c3a855fd4f8ac5db6c88a19dfe0c15e2549f5e",
+      "input_ids": [
+        248045,
+        846,
+        198,
+        248053,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248056,
+        248054,
+        14048,
+        279,
+        1898,
+        303,
+        279,
+        2099,
+        1083,
+        8342,
+        7733,
+        13,
+        248046,
+        198,
+        248045,
+        74455,
+        198,
+        248068,
+        271,
+        248069,
+        271
+      ],
+      "grid": [
+        [
+          1,
+          16,
+          24
+        ]
+      ],
+      "stage_shapes": {
+        "vision.embedded": [
+          384,
+          768
+        ],
+        "vision.layer.0": [
+          384,
+          768
+        ],
+        "vision.layer.1": [
+          384,
+          768
+        ],
+        "vision.layer.2": [
+          384,
+          768
+        ],
+        "vision.layer.3": [
+          384,
+          768
+        ],
+        "vision.layer.4": [
+          384,
+          768
+        ],
+        "vision.layer.5": [
+          384,
+          768
+        ],
+        "vision.layer.6": [
+          384,
+          768
+        ],
+        "vision.layer.7": [
+          384,
+          768
+        ],
+        "vision.layer.8": [
+          384,
+          768
+        ],
+        "vision.layer.9": [
+          384,
+          768
+        ],
+        "vision.layer.10": [
+          384,
+          768
+        ],
+        "vision.layer.11": [
+          384,
+          768
+        ],
+        "vision.merger": [
+          96,
+          1024
+        ],
+        "decoder.input": [
+          1,
+          120,
+          1024
+        ],
+        "decoder.layer.0": [
+          1,
+          120,
+          1024
+        ],
+        "decoder.layer.1": [
+          1,
+          120,
+          1024
+        ],
+        "decoder.layer.2": [
+          1,
+          120,
+          1024
+        ],
+        "decoder.layer.3": [
+          1,
+          120,
+          1024
+        ],
+        "decoder.layer.4": [
+          1,
+          120,
+          1024
+        ],
+        "decoder.layer.5": [
+          1,
+          120,
+          1024
+        ],
+        "decoder.layer.6": [
+          1,
+          120,
+          1024
+        ],
+        "decoder.layer.7": [
+          1,
+          120,
+          1024
+        ],
+        "decoder.layer.8": [
+          1,
+          120,
+          1024
+        ],
+        "decoder.layer.9": [
+          1,
+          120,
+          1024
+        ],
+        "decoder.layer.10": [
+          1,
+          120,
+          1024
+        ],
+        "decoder.layer.11": [
+          1,
+          120,
+          1024
+        ],
+        "decoder.layer.12": [
+          1,
+          120,
+          1024
+        ],
+        "decoder.layer.13": [
+          1,
+          120,
+          1024
+        ],
+        "decoder.layer.14": [
+          1,
+          120,
+          1024
+        ],
+        "decoder.layer.15": [
+          1,
+          120,
+          1024
+        ],
+        "decoder.layer.16": [
+          1,
+          120,
+          1024
+        ],
+        "decoder.layer.17": [
+          1,
+          120,
+          1024
+        ],
+        "decoder.layer.18": [
+          1,
+          120,
+          1024
+        ],
+        "decoder.layer.19": [
+          1,
+          120,
+          1024
+        ],
+        "decoder.layer.20": [
+          1,
+          120,
+          1024
+        ],
+        "decoder.layer.21": [
+          1,
+          120,
+          1024
+        ],
+        "decoder.layer.22": [
+          1,
+          120,
+          1024
+        ],
+        "decoder.layer.23": [
+          1,
+          120,
+          1024
+        ],
+        "decoder.norm": [
+          1,
+          120,
+          1024
+        ],
+        "generated.logits": [
+          16,
+          248320
+        ]
+      }
+    }
+  },
+  "native": {
+    "f32-text": {
+      "native": {
+        "raw_text_utf8_hex": "4352495350204f43522034320a0a496e766f69636520746f74616c3a2031372e3530",
+        "token_ids": [
+          8702,
+          53643,
+          77796,
+          220,
+          19,
+          17,
+          271,
+          33526,
+          2702,
+          25,
+          220,
+          16,
+          22,
+          13,
+          20,
+          15
+        ],
+        "confidences": [
+          0.995430291,
+          0.999413908,
+          0.995291293,
+          0.998951554,
+          0.998542428,
+          0.999213278,
+          0.467065632,
+          0.998789847,
+          0.998357892,
+          0.998694181,
+          0.999530494,
+          0.998282254,
+          0.998582006,
+          0.998621166,
+          0.998608947,
+          0.998491526
+        ],
+        "mean_confidence": 0.96511668,
+        "stop_kind": 2,
+        "stop_id": null,
+        "cap": 16,
+        "wall_seconds": 44.7900258,
+        "init_seconds": 2.08764969
+      },
+      "ids_equal": true,
+      "text_equal": true,
+      "stop_equal": true,
+      "prefixes_equal": true,
+      "final_logits": {
+        "cosine_min": 0.9999999999994335,
+        "max_abs": 0.000621795654296875,
+        "rms_actual": 63.068738997299455,
+        "rms_original": 63.068707415925445,
+        "strict_pass": true
+      },
+      "comparison_kind": "actual-free-generation; divergent prefixes are not teacher-forced",
+      "logit_rows": 16,
+      "vocabulary": 248320,
+      "owner_bar": 0.99,
+      "owner_final_logit_bar_pass": true,
+      "stage_metrics": {
+        "vision.embedded": {
+          "cosine_min": 0.9999999999998994,
+          "max_abs": 3.337860107421875e-06,
+          "rms_actual": 0.35885620460341344,
+          "rms_original": 0.3588562057990114,
+          "strict_pass": true
+        },
+        "vision.layer.0": {
+          "cosine_min": 0.9999999999973269,
+          "max_abs": 9.894371032714844e-06,
+          "rms_actual": 0.324519537296533,
+          "rms_original": 0.3245195448139787,
+          "strict_pass": true
+        },
+        "vision.layer.1": {
+          "cosine_min": 0.9999999999957688,
+          "max_abs": 9.059906005859375e-06,
+          "rms_actual": 0.2639162364589773,
+          "rms_original": 0.2639162276726557,
+          "strict_pass": true
+        },
+        "vision.layer.2": {
+          "cosine_min": 0.9999999999931007,
+          "max_abs": 7.152557373046875e-06,
+          "rms_actual": 0.24937577143442272,
+          "rms_original": 0.2493757584980389,
+          "strict_pass": true
+        },
+        "vision.layer.3": {
+          "cosine_min": 0.99999999999177,
+          "max_abs": 6.198883056640625e-06,
+          "rms_actual": 0.2461065656295509,
+          "rms_original": 0.24610655536033002,
+          "strict_pass": true
+        },
+        "vision.layer.4": {
+          "cosine_min": 0.9999999999898864,
+          "max_abs": 6.4373016357421875e-06,
+          "rms_actual": 0.24032110936451118,
+          "rms_original": 0.2403211002036204,
+          "strict_pass": true
+        },
+        "vision.layer.5": {
+          "cosine_min": 0.999999999983237,
+          "max_abs": 0.0002956390380859375,
+          "rms_actual": 0.3794347264603146,
+          "rms_original": 0.37943484039851333,
+          "strict_pass": true
+        },
+        "vision.layer.6": {
+          "cosine_min": 0.999999999913524,
+          "max_abs": 0.00028228759765625,
+          "rms_actual": 0.40997874456934014,
+          "rms_original": 0.4099788647716329,
+          "strict_pass": true
+        },
+        "vision.layer.7": {
+          "cosine_min": 0.9999999998503305,
+          "max_abs": 0.00028228759765625,
+          "rms_actual": 0.43783415558108424,
+          "rms_original": 0.4378342689376028,
+          "strict_pass": true
+        },
+        "vision.layer.8": {
+          "cosine_min": 0.999999999570153,
+          "max_abs": 0.000278472900390625,
+          "rms_actual": 0.4921719322153886,
+          "rms_original": 0.4921720251003524,
+          "strict_pass": true
+        },
+        "vision.layer.9": {
+          "cosine_min": 0.9999999994571392,
+          "max_abs": 0.000278472900390625,
+          "rms_actual": 0.6010337316839467,
+          "rms_original": 0.601033791153641,
+          "strict_pass": true
+        },
+        "vision.layer.10": {
+          "cosine_min": 0.9999999993653411,
+          "max_abs": 0.000274658203125,
+          "rms_actual": 0.7340014998254114,
+          "rms_original": 0.7340015018439561,
+          "strict_pass": true
+        },
+        "vision.layer.11": {
+          "cosine_min": 0.9999999996980342,
+          "max_abs": 0.04296875,
+          "rms_actual": 41.7935232226318,
+          "rms_original": 41.793492223996445,
+          "strict_pass": false
+        },
+        "vision.merger": {
+          "cosine_min": 0.9999999997775701,
+          "max_abs": 3.4332275390625e-05,
+          "rms_actual": 0.09514577799350607,
+          "rms_original": 0.09514575274324023,
+          "strict_pass": true
+        },
+        "decoder.input": {
+          "cosine_min": 0.9999999997775701,
+          "max_abs": 3.4332275390625e-05,
+          "rms_actual": 0.08668826543038434,
+          "rms_original": 0.0866882426909041,
+          "strict_pass": true
+        },
+        "decoder.layer.0": {
+          "cosine_min": 0.9999999997615501,
+          "max_abs": 4.38690185546875e-05,
+          "rms_actual": 0.07455713864633658,
+          "rms_original": 0.0745571074070446,
+          "strict_pass": true
+        },
+        "decoder.layer.1": {
+          "cosine_min": 0.9999999997914881,
+          "max_abs": 6.008148193359375e-05,
+          "rms_actual": 0.08125390479542037,
+          "rms_original": 0.08125386436750771,
+          "strict_pass": true
+        },
+        "decoder.layer.2": {
+          "cosine_min": 0.9999999996490174,
+          "max_abs": 4.982948303222656e-05,
+          "rms_actual": 0.08639821501531594,
+          "rms_original": 0.08639818474383167,
+          "strict_pass": true
+        },
+        "decoder.layer.3": {
+          "cosine_min": 0.9999999997042436,
+          "max_abs": 4.076957702636719e-05,
+          "rms_actual": 0.09629001568251289,
+          "rms_original": 0.09628998090678274,
+          "strict_pass": true
+        },
+        "decoder.layer.4": {
+          "cosine_min": 0.999999999396563,
+          "max_abs": 2.86102294921875e-05,
+          "rms_actual": 0.09736652733298932,
+          "rms_original": 0.09736649771484442,
+          "strict_pass": true
+        },
+        "decoder.layer.5": {
+          "cosine_min": 0.9999999993477473,
+          "max_abs": 2.193450927734375e-05,
+          "rms_actual": 0.1002804156820792,
+          "rms_original": 0.10028039333263011,
+          "strict_pass": true
+        },
+        "decoder.layer.6": {
+          "cosine_min": 0.999999999302202,
+          "max_abs": 2.1338462829589844e-05,
+          "rms_actual": 0.12580608594342055,
+          "rms_original": 0.1258060864855384,
+          "strict_pass": true
+        },
+        "decoder.layer.7": {
+          "cosine_min": 0.9999999988835394,
+          "max_abs": 1.58846378326416e-05,
+          "rms_actual": 0.12092824004167663,
+          "rms_original": 0.1209282437976492,
+          "strict_pass": true
+        },
+        "decoder.layer.8": {
+          "cosine_min": 0.9999999983524782,
+          "max_abs": 2.0265579223632812e-05,
+          "rms_actual": 0.12163422776497186,
+          "rms_original": 0.12163422477584943,
+          "strict_pass": true
+        },
+        "decoder.layer.9": {
+          "cosine_min": 0.9999999972540509,
+          "max_abs": 2.849102020263672e-05,
+          "rms_actual": 0.12630615093094005,
+          "rms_original": 0.12630614779472654,
+          "strict_pass": true
+        },
+        "decoder.layer.10": {
+          "cosine_min": 0.9999999965286782,
+          "max_abs": 3.0025839805603027e-05,
+          "rms_actual": 0.13303748539133228,
+          "rms_original": 0.13303748226871417,
+          "strict_pass": true
+        },
+        "decoder.layer.11": {
+          "cosine_min": 0.9999999958531144,
+          "max_abs": 3.711879253387451e-05,
+          "rms_actual": 0.1335850329675217,
+          "rms_original": 0.13358502971918132,
+          "strict_pass": true
+        },
+        "decoder.layer.12": {
+          "cosine_min": 0.9999999958541359,
+          "max_abs": 4.1961669921875e-05,
+          "rms_actual": 0.1361673140305566,
+          "rms_original": 0.13616731434783147,
+          "strict_pass": true
+        },
+        "decoder.layer.13": {
+          "cosine_min": 0.9999999952703821,
+          "max_abs": 4.2438507080078125e-05,
+          "rms_actual": 0.14237029429224526,
+          "rms_original": 0.14237029087412179,
+          "strict_pass": true
+        },
+        "decoder.layer.14": {
+          "cosine_min": 0.9999999944042832,
+          "max_abs": 5.170702934265137e-05,
+          "rms_actual": 0.17236541557869917,
+          "rms_original": 0.17236537794506002,
+          "strict_pass": true
+        },
+        "decoder.layer.15": {
+          "cosine_min": 0.9999999927346168,
+          "max_abs": 6.924569606781006e-05,
+          "rms_actual": 0.18286311320273194,
+          "rms_original": 0.18286310755431237,
+          "strict_pass": true
+        },
+        "decoder.layer.16": {
+          "cosine_min": 0.9999999905587198,
+          "max_abs": 0.00011241436004638672,
+          "rms_actual": 0.20018262033029097,
+          "rms_original": 0.20018257466919928,
+          "strict_pass": true
+        },
+        "decoder.layer.17": {
+          "cosine_min": 0.9999999887227765,
+          "max_abs": 0.00013265013694763184,
+          "rms_actual": 0.21565313177333037,
+          "rms_original": 0.2156530536717058,
+          "strict_pass": true
+        },
+        "decoder.layer.18": {
+          "cosine_min": 0.9999999803643435,
+          "max_abs": 0.0002853870391845703,
+          "rms_actual": 0.24828594441043314,
+          "rms_original": 0.24828591168829584,
+          "strict_pass": true
+        },
+        "decoder.layer.19": {
+          "cosine_min": 0.9999999503849619,
+          "max_abs": 0.0008912086486816406,
+          "rms_actual": 0.298650016373563,
+          "rms_original": 0.2986500104663622,
+          "strict_pass": true
+        },
+        "decoder.layer.20": {
+          "cosine_min": 0.9999999494646993,
+          "max_abs": 0.000972747802734375,
+          "rms_actual": 0.3233962924458659,
+          "rms_original": 0.32339635544530554,
+          "strict_pass": true
+        },
+        "decoder.layer.21": {
+          "cosine_min": 0.9999999496429701,
+          "max_abs": 0.0008745193481445312,
+          "rms_actual": 0.3601299803841448,
+          "rms_original": 0.36012998798761414,
+          "strict_pass": true
+        },
+        "decoder.layer.22": {
+          "cosine_min": 0.999999934173924,
+          "max_abs": 0.0008983612060546875,
+          "rms_actual": 0.40978798135694855,
+          "rms_original": 0.4097878764609071,
+          "strict_pass": true
+        },
+        "decoder.layer.23": {
+          "cosine_min": 0.9999998200329829,
+          "max_abs": 0.0018074512481689453,
+          "rms_actual": 1.0021316811270802,
+          "rms_original": 1.0021312635615784,
+          "strict_pass": true
+        },
+        "decoder.norm": {
+          "cosine_min": 0.9999998133039184,
+          "max_abs": 0.013525962829589844,
+          "rms_actual": 5.728827705595131,
+          "rms_original": 5.728823420354824,
+          "strict_pass": false
+        }
+      },
+      "worst_intermediate_stage": "decoder.norm",
+      "precision_qualified": false,
+      "full_document_qualified": false
+    },
+    "f32-table": {
+      "native": {
+        "raw_text_utf8_hex": "3c6663656c3e4974656d3c6663656c3e5174793c6e6c3e3c6663656c3e50656e733c66",
+        "token_ids": [
+          61738,
+          3546,
+          29,
+          1192,
+          61738,
+          3546,
+          29,
+          39322,
+          27,
+          15184,
+          1721,
+          69,
+          3546,
+          28517,
+          704,
+          61738
+        ],
+        "confidences": [
+          0.994024217,
+          0.999093592,
+          0.998678386,
+          0.998312473,
+          0.998894095,
+          0.999766648,
+          0.998432815,
+          0.990035117,
+          0.99884367,
+          0.998849809,
+          0.996514022,
+          0.998452246,
+          0.999705732,
+          0.998272598,
+          0.999300778,
+          0.998695314
+        ],
+        "mean_confidence": 0.997866988,
+        "stop_kind": 2,
+        "stop_id": null,
+        "cap": 16,
+        "wall_seconds": 44.6582464,
+        "init_seconds": 2.05472599
+      },
+      "ids_equal": true,
+      "text_equal": true,
+      "stop_equal": true,
+      "prefixes_equal": true,
+      "final_logits": {
+        "cosine_min": 0.9999999999999927,
+        "max_abs": 7.62939453125e-05,
+        "rms_actual": 69.28122096862758,
+        "rms_original": 69.28121670601938,
+        "strict_pass": true
+      },
+      "comparison_kind": "actual-free-generation; divergent prefixes are not teacher-forced",
+      "logit_rows": 16,
+      "vocabulary": 248320,
+      "owner_bar": 0.99,
+      "owner_final_logit_bar_pass": true,
+      "stage_metrics": {
+        "vision.embedded": {
+          "cosine_min": 0.9999999999998994,
+          "max_abs": 1.9073486328125e-06,
+          "rms_actual": 0.4319238466892812,
+          "rms_original": 0.43192384729346595,
+          "strict_pass": true
+        },
+        "vision.layer.0": {
+          "cosine_min": 0.9999999999977304,
+          "max_abs": 8.344650268554688e-06,
+          "rms_actual": 0.35478124976776587,
+          "rms_original": 0.35478126990675535,
+          "strict_pass": true
+        },
+        "vision.layer.1": {
+          "cosine_min": 0.9999999999960394,
+          "max_abs": 2.09808349609375e-05,
+          "rms_actual": 0.2656043427466717,
+          "rms_original": 0.2656043375357785,
+          "strict_pass": true
+        },
+        "vision.layer.2": {
+          "cosine_min": 0.9999999999937631,
+          "max_abs": 1.811981201171875e-05,
+          "rms_actual": 0.24008420050395293,
+          "rms_original": 0.24008419101544892,
+          "strict_pass": true
+        },
+        "vision.layer.3": {
+          "cosine_min": 0.9999999999936178,
+          "max_abs": 1.3828277587890625e-05,
+          "rms_actual": 0.2334706049674585,
+          "rms_original": 0.2334705918978622,
+          "strict_pass": true
+        },
+        "vision.layer.4": {
+          "cosine_min": 0.9999999999910614,
+          "max_abs": 6.496906280517578e-06,
+          "rms_actual": 0.22552691758463916,
+          "rms_original": 0.2255269042419885,
+          "strict_pass": true
+        },
+        "vision.layer.5": {
+          "cosine_min": 0.9999999999774274,
+          "max_abs": 7.62939453125e-05,
+          "rms_actual": 0.37127596740216917,
+          "rms_original": 0.3712759333216233,
+          "strict_pass": true
+        },
+        "vision.layer.6": {
+          "cosine_min": 0.9999999999379484,
+          "max_abs": 8.392333984375e-05,
+          "rms_actual": 0.4055752348181687,
+          "rms_original": 0.4055752053843764,
+          "strict_pass": true
+        },
+        "vision.layer.7": {
+          "cosine_min": 0.9999999999069088,
+          "max_abs": 8.392333984375e-05,
+          "rms_actual": 0.4345906134614665,
+          "rms_original": 0.4345905837637131,
+          "strict_pass": true
+        },
+        "vision.layer.8": {
+          "cosine_min": 0.9999999998648272,
+          "max_abs": 8.392333984375e-05,
+          "rms_actual": 0.49186998824975864,
+          "rms_original": 0.4918699593692607,
+          "strict_pass": true
+        },
+        "vision.layer.9": {
+          "cosine_min": 0.9999999998465434,
+          "max_abs": 8.392333984375e-05,
+          "rms_actual": 0.5900535513564236,
+          "rms_original": 0.5900535258608091,
+          "strict_pass": true
+        },
+        "vision.layer.10": {
+          "cosine_min": 0.9999999998819021,
+          "max_abs": 8.392333984375e-05,
+          "rms_actual": 0.7040096986231861,
+          "rms_original": 0.7040096995854519,
+          "strict_pass": true
+        },
+        "vision.layer.11": {
+          "cosine_min": 0.9999999998840556,
+          "max_abs": 0.03857421875,
+          "rms_actual": 43.096452818607446,
+          "rms_original": 43.096487825378105,
+          "strict_pass": false
+        },
+        "vision.merger": {
+          "cosine_min": 0.99999999993973,
+          "max_abs": 1.3589859008789062e-05,
+          "rms_actual": 0.0994594950095228,
+          "rms_original": 0.09945946900745507,
+          "strict_pass": true
+        },
+        "decoder.input": {
+          "cosine_min": 0.99999999993973,
+          "max_abs": 1.3589859008789062e-05,
+          "rms_actual": 0.08946620065692812,
+          "rms_original": 0.08946617753174786,
+          "strict_pass": true
+        },
+        "decoder.layer.0": {
+          "cosine_min": 0.9999999999172412,
+          "max_abs": 9.059906005859375e-06,
+          "rms_actual": 0.07809185984605811,
+          "rms_original": 0.07809183886218889,
+          "strict_pass": true
+        },
+        "decoder.layer.1": {
+          "cosine_min": 0.9999999999071604,
+          "max_abs": 9.775161743164062e-06,
+          "rms_actual": 0.08477168556969707,
+          "rms_original": 0.08477166400487209,
+          "strict_pass": true
+        },
+        "decoder.layer.2": {
+          "cosine_min": 0.9999999998685474,
+          "max_abs": 9.298324584960938e-06,
+          "rms_actual": 0.08637196727803349,
+          "rms_original": 0.08637194416107649,
+          "strict_pass": true
+        },
+        "decoder.layer.3": {
+          "cosine_min": 0.9999999998929722,
+          "max_abs": 1.1801719665527344e-05,
+          "rms_actual": 0.09546160723674733,
+          "rms_original": 0.09546158152676654,
+          "strict_pass": true
+        },
+        "decoder.layer.4": {
+          "cosine_min": 0.9999999998661407,
+          "max_abs": 1.2278556823730469e-05,
+          "rms_actual": 0.0962682423172866,
+          "rms_original": 0.09626821816042762,
+          "strict_pass": true
+        },
+        "decoder.layer.5": {
+          "cosine_min": 0.9999999998366114,
+          "max_abs": 1.0281801223754883e-05,
+          "rms_actual": 0.09941852062200125,
+          "rms_original": 0.09941849870598475,
+          "strict_pass": true
+        },
+        "decoder.layer.6": {
+          "cosine_min": 0.9999999997838732,
+          "max_abs": 1.0848045349121094e-05,
+          "rms_actual": 0.12721267335348563,
+          "rms_original": 0.1272126700138763,
+          "strict_pass": true
+        },
+        "decoder.layer.7": {
+          "cosine_min": 0.9999999995981209,
+          "max_abs": 1.0609626770019531e-05,
+          "rms_actual": 0.12148500035157246,
+          "rms_original": 0.12148500027164168,
+          "strict_pass": true
+        },
+        "decoder.layer.8": {
+          "cosine_min": 0.9999999995846179,
+          "max_abs": 1.0848045349121094e-05,
+          "rms_actual": 0.1217517787634646,
+          "rms_original": 0.12175178161361074,
+          "strict_pass": true
+        },
+        "decoder.layer.9": {
+          "cosine_min": 0.999999999567212,
+          "max_abs": 1.0833144187927246e-05,
+          "rms_actual": 0.12608080112761694,
+          "rms_original": 0.1260808070222217,
+          "strict_pass": true
+        },
+        "decoder.layer.10": {
+          "cosine_min": 0.9999999995967189,
+          "max_abs": 1.239776611328125e-05,
+          "rms_actual": 0.13397000990558347,
+          "rms_original": 0.13397002030946745,
+          "strict_pass": true
+        },
+        "decoder.layer.11": {
+          "cosine_min": 0.9999999996291985,
+          "max_abs": 1.1801719665527344e-05,
+          "rms_actual": 0.1334525883715156,
+          "rms_original": 0.1334525979413484,
+          "strict_pass": true
+        },
+        "decoder.layer.12": {
+          "cosine_min": 0.9999999995879806,
+          "max_abs": 1.6868114471435547e-05,
+          "rms_actual": 0.13618516516978474,
+          "rms_original": 0.13618517892365628,
+          "strict_pass": true
+        },
+        "decoder.layer.13": {
+          "cosine_min": 0.9999999996314909,
+          "max_abs": 1.9550323486328125e-05,
+          "rms_actual": 0.1428586645661265,
+          "rms_original": 0.14285867864535423,
+          "strict_pass": true
+        },
+        "decoder.layer.14": {
+          "cosine_min": 0.9999999995406773,
+          "max_abs": 2.849102020263672e-05,
+          "rms_actual": 0.17227318303767403,
+          "rms_original": 0.17227317876585094,
+          "strict_pass": true
+        },
+        "decoder.layer.15": {
+          "cosine_min": 0.9999999993764161,
+          "max_abs": 3.504753112792969e-05,
+          "rms_actual": 0.18119186544385663,
+          "rms_original": 0.18119186001626567,
+          "strict_pass": true
+        },
+        "decoder.layer.16": {
+          "cosine_min": 0.9999999991949174,
+          "max_abs": 4.00543212890625e-05,
+          "rms_actual": 0.19754764705800093,
+          "rms_original": 0.19754764960215998,
+          "strict_pass": true
+        },
+        "decoder.layer.17": {
+          "cosine_min": 0.9999999992251175,
+          "max_abs": 4.220008850097656e-05,
+          "rms_actual": 0.21123957800741666,
+          "rms_original": 0.21123958569564807,
+          "strict_pass": true
+        },
+        "decoder.layer.18": {
+          "cosine_min": 0.9999999991906008,
+          "max_abs": 4.029273986816406e-05,
+          "rms_actual": 0.2478314474181455,
+          "rms_original": 0.24783145444957355,
+          "strict_pass": true
+        },
+        "decoder.layer.19": {
+          "cosine_min": 0.9999999995063381,
+          "max_abs": 8.96453857421875e-05,
+          "rms_actual": 0.29671876095761457,
+          "rms_original": 0.29671871566679875,
+          "strict_pass": true
+        },
+        "decoder.layer.20": {
+          "cosine_min": 0.9999999995138167,
+          "max_abs": 7.724761962890625e-05,
+          "rms_actual": 0.31944581803568933,
+          "rms_original": 0.31944577938053353,
+          "strict_pass": true
+        },
+        "decoder.layer.21": {
+          "cosine_min": 0.9999999994788769,
+          "max_abs": 9.894371032714844e-05,
+          "rms_actual": 0.3543413744189461,
+          "rms_original": 0.35434132580512756,
+          "strict_pass": true
+        },
+        "decoder.layer.22": {
+          "cosine_min": 0.9999999994610552,
+          "max_abs": 0.00010395050048828125,
+          "rms_actual": 0.3984943340150678,
+          "rms_original": 0.3984942998990806,
+          "strict_pass": true
+        },
+        "decoder.layer.23": {
+          "cosine_min": 0.9999999992897587,
+          "max_abs": 0.000125885009765625,
+          "rms_actual": 0.9668934842324196,
+          "rms_original": 0.9668929009287972,
+          "strict_pass": true
+        },
+        "decoder.norm": {
+          "cosine_min": 0.9999999992473734,
+          "max_abs": 0.00099945068359375,
+          "rms_actual": 5.851463569596452,
+          "rms_original": 5.851463623540813,
+          "strict_pass": true
+        }
+      },
+      "worst_intermediate_stage": "decoder.layer.18",
+      "precision_qualified": false,
+      "full_document_qualified": false
+    },
+    "f16-text": {
+      "native": {
+        "raw_text_utf8_hex": "4352495350204f43522034320a0a496e766f69636520746f74616c3a2031372e3530",
+        "token_ids": [
+          8702,
+          53643,
+          77796,
+          220,
+          19,
+          17,
+          271,
+          33526,
+          2702,
+          25,
+          220,
+          16,
+          22,
+          13,
+          20,
+          15
+        ],
+        "confidences": [
+          0.99543035,
+          0.999413908,
+          0.995291293,
+          0.998951554,
+          0.998542488,
+          0.999213278,
+          0.467064738,
+          0.998789847,
+          0.998357892,
+          0.998694181,
+          0.999530494,
+          0.998282254,
+          0.998582006,
+          0.998621166,
+          0.998608947,
+          0.998491526
+        ],
+        "mean_confidence": 0.96511662,
+        "stop_kind": 2,
+        "stop_id": null,
+        "cap": 16,
+        "wall_seconds": 43.7607429,
+        "init_seconds": 1.17818366
+      },
+      "ids_equal": true,
+      "text_equal": true,
+      "stop_equal": true,
+      "prefixes_equal": true,
+      "final_logits": {
+        "cosine_min": 0.9999999999999366,
+        "max_abs": 0.000743865966796875,
+        "rms_actual": 63.06874670401917,
+        "rms_original": 63.068707415925445,
+        "strict_pass": true
+      },
+      "comparison_kind": "actual-free-generation; divergent prefixes are not teacher-forced",
+      "logit_rows": 16,
+      "vocabulary": 248320,
+      "owner_bar": 0.98,
+      "owner_final_logit_bar_pass": true,
+      "stage_metrics": {
+        "vision.embedded": {
+          "cosine_min": 0.9999999999998976,
+          "max_abs": 3.337860107421875e-06,
+          "rms_actual": 0.35885620279088387,
+          "rms_original": 0.3588562057990114,
+          "strict_pass": true
+        },
+        "vision.layer.0": {
+          "cosine_min": 0.9999999999969457,
+          "max_abs": 9.5367431640625e-06,
+          "rms_actual": 0.3245195344625633,
+          "rms_original": 0.3245195448139787,
+          "strict_pass": true
+        },
+        "vision.layer.1": {
+          "cosine_min": 0.9999999999957182,
+          "max_abs": 1.1444091796875e-05,
+          "rms_actual": 0.2639162379174,
+          "rms_original": 0.2639162276726557,
+          "strict_pass": true
+        },
+        "vision.layer.2": {
+          "cosine_min": 0.9999999999932111,
+          "max_abs": 1.0967254638671875e-05,
+          "rms_actual": 0.2493757707125172,
+          "rms_original": 0.2493757584980389,
+          "strict_pass": true
+        },
+        "vision.layer.3": {
+          "cosine_min": 0.9999999999915252,
+          "max_abs": 9.5367431640625e-06,
+          "rms_actual": 0.2461065687902437,
+          "rms_original": 0.24610655536033002,
+          "strict_pass": true
+        },
+        "vision.layer.4": {
+          "cosine_min": 0.9999999999904863,
+          "max_abs": 6.9141387939453125e-06,
+          "rms_actual": 0.2403211099486026,
+          "rms_original": 0.2403211002036204,
+          "strict_pass": true
+        },
+        "vision.layer.5": {
+          "cosine_min": 0.9999999999829018,
+          "max_abs": 0.0003070831298828125,
+          "rms_actual": 0.3794347159578483,
+          "rms_original": 0.37943484039851333,
+          "strict_pass": true
+        },
+        "vision.layer.6": {
+          "cosine_min": 0.9999999999234054,
+          "max_abs": 0.000293731689453125,
+          "rms_actual": 0.40997873585964323,
+          "rms_original": 0.4099788647716329,
+          "strict_pass": true
+        },
+        "vision.layer.7": {
+          "cosine_min": 0.9999999998316408,
+          "max_abs": 0.000293731689453125,
+          "rms_actual": 0.43783414900652606,
+          "rms_original": 0.4378342689376028,
+          "strict_pass": true
+        },
+        "vision.layer.8": {
+          "cosine_min": 0.9999999996915451,
+          "max_abs": 0.0002899169921875,
+          "rms_actual": 0.49217193010151755,
+          "rms_original": 0.4921720251003524,
+          "strict_pass": true
+        },
+        "vision.layer.9": {
+          "cosine_min": 0.999999999627254,
+          "max_abs": 0.0002899169921875,
+          "rms_actual": 0.6010337278919969,
+          "rms_original": 0.601033791153641,
+          "strict_pass": true
+        },
+        "vision.layer.10": {
+          "cosine_min": 0.9999999995703152,
+          "max_abs": 0.0002899169921875,
+          "rms_actual": 0.7340014917900974,
+          "rms_original": 0.7340015018439561,
+          "strict_pass": true
+        },
+        "vision.layer.11": {
+          "cosine_min": 0.9999999998881354,
+          "max_abs": 0.0518798828125,
+          "rms_actual": 41.793514578753744,
+          "rms_original": 41.793492223996445,
+          "strict_pass": false
+        },
+        "vision.merger": {
+          "cosine_min": 0.9999999999136445,
+          "max_abs": 2.0503997802734375e-05,
+          "rms_actual": 0.09514578070358358,
+          "rms_original": 0.09514575274324023,
+          "strict_pass": true
+        },
+        "decoder.input": {
+          "cosine_min": 0.9999999999136445,
+          "max_abs": 2.0503997802734375e-05,
+          "rms_actual": 0.08668826787098254,
+          "rms_original": 0.0866882426909041,
+          "strict_pass": true
+        },
+        "decoder.layer.0": {
+          "cosine_min": 0.9999999998815817,
+          "max_abs": 2.6464462280273438e-05,
+          "rms_actual": 0.07455713944775524,
+          "rms_original": 0.0745571074070446,
+          "strict_pass": true
+        },
+        "decoder.layer.1": {
+          "cosine_min": 0.9999999998042283,
+          "max_abs": 3.719329833984375e-05,
+          "rms_actual": 0.08125390367383442,
+          "rms_original": 0.08125386436750771,
+          "strict_pass": true
+        },
+        "decoder.layer.2": {
+          "cosine_min": 0.9999999996901422,
+          "max_abs": 3.123283386230469e-05,
+          "rms_actual": 0.08639821490658031,
+          "rms_original": 0.08639818474383167,
+          "strict_pass": true
+        },
+        "decoder.layer.3": {
+          "cosine_min": 0.9999999998013483,
+          "max_abs": 2.5987625122070312e-05,
+          "rms_actual": 0.09629001523615742,
+          "rms_original": 0.09628998090678274,
+          "strict_pass": true
+        },
+        "decoder.layer.4": {
+          "cosine_min": 0.9999999997498413,
+          "max_abs": 1.8835067749023438e-05,
+          "rms_actual": 0.09736652957195135,
+          "rms_original": 0.09736649771484442,
+          "strict_pass": true
+        },
+        "decoder.layer.5": {
+          "cosine_min": 0.9999999997377881,
+          "max_abs": 1.33514404296875e-05,
+          "rms_actual": 0.1002804200827661,
+          "rms_original": 0.10028039333263011,
+          "strict_pass": true
+        },
+        "decoder.layer.6": {
+          "cosine_min": 0.9999999996511001,
+          "max_abs": 1.33514404296875e-05,
+          "rms_actual": 0.12580608506572213,
+          "rms_original": 0.1258060864855384,
+          "strict_pass": true
+        },
+        "decoder.layer.7": {
+          "cosine_min": 0.9999999991859848,
+          "max_abs": 1.0881572961807251e-05,
+          "rms_actual": 0.1209282431193994,
+          "rms_original": 0.1209282437976492,
+          "strict_pass": true
+        },
+        "decoder.layer.8": {
+          "cosine_min": 0.9999999988330803,
+          "max_abs": 1.7642974853515625e-05,
+          "rms_actual": 0.12163422797203313,
+          "rms_original": 0.12163422477584943,
+          "strict_pass": true
+        },
+        "decoder.layer.9": {
+          "cosine_min": 0.9999999981728304,
+          "max_abs": 2.110004425048828e-05,
+          "rms_actual": 0.12630615200961104,
+          "rms_original": 0.12630614779472654,
+          "strict_pass": true
+        },
+        "decoder.layer.10": {
+          "cosine_min": 0.9999999977195362,
+          "max_abs": 2.4139881134033203e-05,
+          "rms_actual": 0.13303748771274043,
+          "rms_original": 0.13303748226871417,
+          "strict_pass": true
+        },
+        "decoder.layer.11": {
+          "cosine_min": 0.9999999972538413,
+          "max_abs": 3.018975257873535e-05,
+          "rms_actual": 0.13358503642953415,
+          "rms_original": 0.13358502971918132,
+          "strict_pass": true
+        },
+        "decoder.layer.12": {
+          "cosine_min": 0.9999999972688138,
+          "max_abs": 3.277882933616638e-05,
+          "rms_actual": 0.13616731840296975,
+          "rms_original": 0.13616731434783147,
+          "strict_pass": true
+        },
+        "decoder.layer.13": {
+          "cosine_min": 0.9999999968838347,
+          "max_abs": 3.4615397453308105e-05,
+          "rms_actual": 0.14237029894415384,
+          "rms_original": 0.14237029087412179,
+          "strict_pass": true
+        },
+        "decoder.layer.14": {
+          "cosine_min": 0.9999999962983371,
+          "max_abs": 4.1700899600982666e-05,
+          "rms_actual": 0.17236540931482086,
+          "rms_original": 0.17236537794506002,
+          "strict_pass": true
+        },
+        "decoder.layer.15": {
+          "cosine_min": 0.9999999951529129,
+          "max_abs": 5.689263343811035e-05,
+          "rms_actual": 0.1828631038419769,
+          "rms_original": 0.18286310755431237,
+          "strict_pass": true
+        },
+        "decoder.layer.16": {
+          "cosine_min": 0.999999993698633,
+          "max_abs": 0.00010251998901367188,
+          "rms_actual": 0.20018261522818967,
+          "rms_original": 0.20018257466919928,
+          "strict_pass": true
+        },
+        "decoder.layer.17": {
+          "cosine_min": 0.9999999924847105,
+          "max_abs": 0.00013005733489990234,
+          "rms_actual": 0.21565313090304772,
+          "rms_original": 0.2156530536717058,
+          "strict_pass": true
+        },
+        "decoder.layer.18": {
+          "cosine_min": 0.9999999913827992,
+          "max_abs": 0.00018453598022460938,
+          "rms_actual": 0.24828595314599589,
+          "rms_original": 0.24828591168829584,
+          "strict_pass": true
+        },
+        "decoder.layer.19": {
+          "cosine_min": 0.9999999803608154,
+          "max_abs": 0.0005636215209960938,
+          "rms_actual": 0.2986499836019599,
+          "rms_original": 0.2986500104663622,
+          "strict_pass": true
+        },
+        "decoder.layer.20": {
+          "cosine_min": 0.9999999799738597,
+          "max_abs": 0.0006160736083984375,
+          "rms_actual": 0.32339628191681613,
+          "rms_original": 0.32339635544530554,
+          "strict_pass": true
+        },
+        "decoder.layer.21": {
+          "cosine_min": 0.9999999800738864,
+          "max_abs": 0.0005526542663574219,
+          "rms_actual": 0.36012999103595483,
+          "rms_original": 0.36012998798761414,
+          "strict_pass": true
+        },
+        "decoder.layer.22": {
+          "cosine_min": 0.9999999739984662,
+          "max_abs": 0.0005660057067871094,
+          "rms_actual": 0.40978795762340353,
+          "rms_original": 0.4097878764609071,
+          "strict_pass": true
+        },
+        "decoder.layer.23": {
+          "cosine_min": 0.9999999288628862,
+          "max_abs": 0.0011441707611083984,
+          "rms_actual": 1.0021313527825584,
+          "rms_original": 1.0021312635615784,
+          "strict_pass": true
+        },
+        "decoder.norm": {
+          "cosine_min": 0.9999999263318591,
+          "max_abs": 0.0084686279296875,
+          "rms_actual": 5.728825702829117,
+          "rms_original": 5.728823420354824,
+          "strict_pass": false
+        }
+      },
+      "worst_intermediate_stage": "decoder.norm",
+      "precision_qualified": false,
+      "full_document_qualified": false
+    },
+    "f16-table": {
+      "native": {
+        "raw_text_utf8_hex": "3c6663656c3e4974656d3c6663656c3e5174793c6e6c3e3c6663656c3e50656e733c66",
+        "token_ids": [
+          61738,
+          3546,
+          29,
+          1192,
+          61738,
+          3546,
+          29,
+          39322,
+          27,
+          15184,
+          1721,
+          69,
+          3546,
+          28517,
+          704,
+          61738
+        ],
+        "confidences": [
+          0.994024336,
+          0.999093592,
+          0.998678386,
+          0.998312473,
+          0.998894095,
+          0.999766648,
+          0.998432815,
+          0.990035176,
+          0.99884367,
+          0.998849809,
+          0.996514022,
+          0.998452246,
+          0.999705732,
+          0.998272598,
+          0.999300778,
+          0.998695314
+        ],
+        "mean_confidence": 0.997866988,
+        "stop_kind": 2,
+        "stop_id": null,
+        "cap": 16,
+        "wall_seconds": 43.6758491,
+        "init_seconds": 1.18051264
+      },
+      "ids_equal": true,
+      "text_equal": true,
+      "stop_equal": true,
+      "prefixes_equal": true,
+      "final_logits": {
+        "cosine_min": 0.9999999999999754,
+        "max_abs": 6.866455078125e-05,
+        "rms_actual": 69.28122268095981,
+        "rms_original": 69.28121670601938,
+        "strict_pass": true
+      },
+      "comparison_kind": "actual-free-generation; divergent prefixes are not teacher-forced",
+      "logit_rows": 16,
+      "vocabulary": 248320,
+      "owner_bar": 0.98,
+      "owner_final_logit_bar_pass": true,
+      "stage_metrics": {
+        "vision.embedded": {
+          "cosine_min": 0.9999999999998976,
+          "max_abs": 1.9073486328125e-06,
+          "rms_actual": 0.4319238450802757,
+          "rms_original": 0.43192384729346595,
+          "strict_pass": true
+        },
+        "vision.layer.0": {
+          "cosine_min": 0.999999999997596,
+          "max_abs": 8.225440979003906e-06,
+          "rms_actual": 0.35478124891965546,
+          "rms_original": 0.35478126990675535,
+          "strict_pass": true
+        },
+        "vision.layer.1": {
+          "cosine_min": 0.999999999995531,
+          "max_abs": 2.193450927734375e-05,
+          "rms_actual": 0.2656043444114375,
+          "rms_original": 0.2656043375357785,
+          "strict_pass": true
+        },
+        "vision.layer.2": {
+          "cosine_min": 0.9999999999934106,
+          "max_abs": 1.8596649169921875e-05,
+          "rms_actual": 0.2400842011606616,
+          "rms_original": 0.24008419101544892,
+          "strict_pass": true
+        },
+        "vision.layer.3": {
+          "cosine_min": 0.9999999999932584,
+          "max_abs": 1.4781951904296875e-05,
+          "rms_actual": 0.2334706060399061,
+          "rms_original": 0.2334705918978622,
+          "strict_pass": true
+        },
+        "vision.layer.4": {
+          "cosine_min": 0.9999999999919,
+          "max_abs": 6.854534149169922e-06,
+          "rms_actual": 0.22552691809538236,
+          "rms_original": 0.2255269042419885,
+          "strict_pass": true
+        },
+        "vision.layer.5": {
+          "cosine_min": 0.9999999999798997,
+          "max_abs": 8.392333984375e-05,
+          "rms_actual": 0.371276023331263,
+          "rms_original": 0.3712759333216233,
+          "strict_pass": true
+        },
+        "vision.layer.6": {
+          "cosine_min": 0.9999999999468736,
+          "max_abs": 8.392333984375e-05,
+          "rms_actual": 0.4055752887888225,
+          "rms_original": 0.4055752053843764,
+          "strict_pass": true
+        },
+        "vision.layer.7": {
+          "cosine_min": 0.9999999999214794,
+          "max_abs": 8.392333984375e-05,
+          "rms_actual": 0.43459066359246534,
+          "rms_original": 0.4345905837637131,
+          "strict_pass": true
+        },
+        "vision.layer.8": {
+          "cosine_min": 0.9999999998847691,
+          "max_abs": 8.392333984375e-05,
+          "rms_actual": 0.4918700334109633,
+          "rms_original": 0.4918699593692607,
+          "strict_pass": true
+        },
+        "vision.layer.9": {
+          "cosine_min": 0.9999999998702558,
+          "max_abs": 8.392333984375e-05,
+          "rms_actual": 0.5900535965900705,
+          "rms_original": 0.5900535258608091,
+          "strict_pass": true
+        },
+        "vision.layer.10": {
+          "cosine_min": 0.999999999821622,
+          "max_abs": 8.392333984375e-05,
+          "rms_actual": 0.7040097474189247,
+          "rms_original": 0.7040096995854519,
+          "strict_pass": true
+        },
+        "vision.layer.11": {
+          "cosine_min": 0.9999999999283496,
+          "max_abs": 0.03125,
+          "rms_actual": 43.096467777541335,
+          "rms_original": 43.096487825378105,
+          "strict_pass": false
+        },
+        "vision.merger": {
+          "cosine_min": 0.9999999999314456,
+          "max_abs": 1.4781951904296875e-05,
+          "rms_actual": 0.09945949496629952,
+          "rms_original": 0.09945946900745507,
+          "strict_pass": true
+        },
+        "decoder.input": {
+          "cosine_min": 0.9999999999314456,
+          "max_abs": 1.4781951904296875e-05,
+          "rms_actual": 0.08946620061848705,
+          "rms_original": 0.08946617753174786,
+          "strict_pass": true
+        },
+        "decoder.layer.0": {
+          "cosine_min": 0.9999999999055689,
+          "max_abs": 1.2636184692382812e-05,
+          "rms_actual": 0.07809186256616593,
+          "rms_original": 0.07809183886218889,
+          "strict_pass": true
+        },
+        "decoder.layer.1": {
+          "cosine_min": 0.9999999998954722,
+          "max_abs": 1.0728836059570312e-05,
+          "rms_actual": 0.08477168856625382,
+          "rms_original": 0.08477166400487209,
+          "strict_pass": true
+        },
+        "decoder.layer.2": {
+          "cosine_min": 0.9999999998871915,
+          "max_abs": 1.5139579772949219e-05,
+          "rms_actual": 0.08637196922172095,
+          "rms_original": 0.08637194416107649,
+          "strict_pass": true
+        },
+        "decoder.layer.3": {
+          "cosine_min": 0.9999999998825008,
+          "max_abs": 1.9550323486328125e-05,
+          "rms_actual": 0.09546161160916619,
+          "rms_original": 0.09546158152676654,
+          "strict_pass": true
+        },
+        "decoder.layer.4": {
+          "cosine_min": 0.9999999998750698,
+          "max_abs": 2.0503997802734375e-05,
+          "rms_actual": 0.09626824640784933,
+          "rms_original": 0.09626821816042762,
+          "strict_pass": true
+        },
+        "decoder.layer.5": {
+          "cosine_min": 0.9999999998452604,
+          "max_abs": 1.2636184692382812e-05,
+          "rms_actual": 0.0994185246559908,
+          "rms_original": 0.09941849870598475,
+          "strict_pass": true
+        },
+        "decoder.layer.6": {
+          "cosine_min": 0.9999999998033491,
+          "max_abs": 1.0967254638671875e-05,
+          "rms_actual": 0.12721267791208327,
+          "rms_original": 0.1272126700138763,
+          "strict_pass": true
+        },
+        "decoder.layer.7": {
+          "cosine_min": 0.9999999997412328,
+          "max_abs": 1.5497207641601562e-05,
+          "rms_actual": 0.12148500210031409,
+          "rms_original": 0.12148500027164168,
+          "strict_pass": true
+        },
+        "decoder.layer.8": {
+          "cosine_min": 0.9999999996972037,
+          "max_abs": 1.3083219528198242e-05,
+          "rms_actual": 0.12175178164384685,
+          "rms_original": 0.12175178161361074,
+          "strict_pass": true
+        },
+        "decoder.layer.9": {
+          "cosine_min": 0.9999999996666444,
+          "max_abs": 1.4379620552062988e-05,
+          "rms_actual": 0.12608080544899747,
+          "rms_original": 0.1260808070222217,
+          "strict_pass": true
+        },
+        "decoder.layer.10": {
+          "cosine_min": 0.9999999996617276,
+          "max_abs": 1.3053417205810547e-05,
+          "rms_actual": 0.13397001626453267,
+          "rms_original": 0.13397002030946745,
+          "strict_pass": true
+        },
+        "decoder.layer.11": {
+          "cosine_min": 0.9999999996066069,
+          "max_abs": 1.2531876564025879e-05,
+          "rms_actual": 0.13345259623291686,
+          "rms_original": 0.1334525979413484,
+          "strict_pass": true
+        },
+        "decoder.layer.12": {
+          "cosine_min": 0.9999999996052752,
+          "max_abs": 1.823902130126953e-05,
+          "rms_actual": 0.1361851748736002,
+          "rms_original": 0.13618517892365628,
+          "strict_pass": true
+        },
+        "decoder.layer.13": {
+          "cosine_min": 0.9999999995843327,
+          "max_abs": 2.6464462280273438e-05,
+          "rms_actual": 0.14285867335032043,
+          "rms_original": 0.14285867864535423,
+          "strict_pass": true
+        },
+        "decoder.layer.14": {
+          "cosine_min": 0.9999999995132739,
+          "max_abs": 4.482269287109375e-05,
+          "rms_actual": 0.1722731875119482,
+          "rms_original": 0.17227317876585094,
+          "strict_pass": true
+        },
+        "decoder.layer.15": {
+          "cosine_min": 0.9999999993922748,
+          "max_abs": 5.53131103515625e-05,
+          "rms_actual": 0.1811918719839422,
+          "rms_original": 0.18119186001626567,
+          "strict_pass": true
+        },
+        "decoder.layer.16": {
+          "cosine_min": 0.9999999993456806,
+          "max_abs": 6.35385513305664e-05,
+          "rms_actual": 0.19754765508565478,
+          "rms_original": 0.19754764960215998,
+          "strict_pass": true
+        },
+        "decoder.layer.17": {
+          "cosine_min": 0.9999999993817944,
+          "max_abs": 6.723403930664062e-05,
+          "rms_actual": 0.2112395882872506,
+          "rms_original": 0.21123958569564807,
+          "strict_pass": true
+        },
+        "decoder.layer.18": {
+          "cosine_min": 0.9999999993696563,
+          "max_abs": 5.125999450683594e-05,
+          "rms_actual": 0.24783144714160535,
+          "rms_original": 0.24783145444957355,
+          "strict_pass": true
+        },
+        "decoder.layer.19": {
+          "cosine_min": 0.9999999992950582,
+          "max_abs": 0.00011038780212402344,
+          "rms_actual": 0.29671876362503935,
+          "rms_original": 0.29671871566679875,
+          "strict_pass": true
+        },
+        "decoder.layer.20": {
+          "cosine_min": 0.999999999316263,
+          "max_abs": 9.393692016601562e-05,
+          "rms_actual": 0.31944582271962624,
+          "rms_original": 0.31944577938053353,
+          "strict_pass": true
+        },
+        "decoder.layer.21": {
+          "cosine_min": 0.9999999993188183,
+          "max_abs": 0.00011944770812988281,
+          "rms_actual": 0.3543413833279709,
+          "rms_original": 0.35434132580512756,
+          "strict_pass": true
+        },
+        "decoder.layer.22": {
+          "cosine_min": 0.9999999991851752,
+          "max_abs": 0.00012421607971191406,
+          "rms_actual": 0.3984943551489722,
+          "rms_original": 0.3984942998990806,
+          "strict_pass": true
+        },
+        "decoder.layer.23": {
+          "cosine_min": 0.9999999985218203,
+          "max_abs": 0.000133514404296875,
+          "rms_actual": 0.9668935472157526,
+          "rms_original": 0.9668929009287972,
+          "strict_pass": true
+        },
+        "decoder.norm": {
+          "cosine_min": 0.9999999983381677,
+          "max_abs": 0.0014350414276123047,
+          "rms_actual": 5.851463671090224,
+          "rms_original": 5.851463623540813,
+          "strict_pass": true
+        }
+      },
+      "worst_intermediate_stage": "decoder.norm",
+      "precision_qualified": false,
+      "full_document_qualified": false
+    }
+  },
+  "full_document_qualified": false,
+  "publication_qualified": false,
+  "installed_direct_dependencies": {
+    "torch": "2.14.0+cpu",
+    "torchvision": "0.29.0+cpu",
+    "transformers": "5.17.0",
+    "tokenizers": "0.23.3",
+    "numpy": "2.2.6",
+    "pillow": "12.1.0",
+    "huggingface-hub": "1.33.0",
+    "gguf": "0.19.0",
+    "safetensors": "0.8.0",
+    "jinja2": "3.1.6"
+  },
+  "resources_before_metadata": {
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+    "machine": "x86_64",
+    "python": "3.12.15",
+    "cpus": 4,
+    "load": [
+      1.46435546875,
+      0.76611328125,
+      0.3076171875
+    ],
+    "memory_bytes": {
+      "MemTotal": 16759308288,
+      "MemAvailable": 15635820544,
+      "SwapTotal": 3221221376,
+      "SwapFree": 3221221376
+    },
+    "scratch_free_bytes": 113599389696,
+    "output_free_bytes": 113599389696,
+    "same_filesystem": true
+  },
+  "metadata": {
+    "runtime": {
+      "transformers": "5.17.0",
+      "effective_regex": "(?i:'s|'t|'re|'ve|'m|'ll|'d)|[^\\r\\n\\p{L}\\p{N}]?\\p{L}+|\\p{N}| ?[^\\s\\p{L}\\p{N}]+[\\r\\n]*|\\s*[\\r\\n]+|\\s+(?!\\S)|\\s+",
+      "eos_token_id": 248046,
+      "pad_token_id": 248044,
+      "loaded_source_sha256": {
+        "models/qwen3_5/modeling_qwen3_5.py": "762feb6c7426a7f15b5bf830df54c07438bf9e7c27b8cdb23179045920412c3b",
+        "models/qwen3_vl/processing_qwen3_vl.py": "8ce525e56e0ddade5a665a70f0727b5576f6f51610d068ddfaf4cc60333415f0",
+        "models/qwen2_vl/image_processing_qwen2_vl.py": "4e1da45f9e7e157ca08aa88243fcc1495ea6a333e40e0c5035ef17ef2747a97d",
+        "models/qwen2/tokenization_qwen2.py": "fac4e6576bfe2369731be147a4e530f262bdf32f2ac50436f96f0d8bdd2fc628",
+        "tokenization_utils_tokenizers.py": "154c32bd9bbe224504c4b4a3c10c02adccb4698752d022bfa0f6957e4e97a97d",
+        "generation/configuration_utils.py": "605b86a07d08dc6e3ba932e8a90b8afca867eaa29881625b04869c4a1f1f23f8",
+        "image_processing_utils.py": "3328a0e2b38e272e824cad64a50d3e84206dab13d31b96104afa6459e149f7c1"
+      },
+      "image_processor": {
+        "parameters": {
+          "size": {
+            "longest_edge": 16777216,
+            "shortest_edge": 65536
+          },
+          "patch_size": 16,
+          "temporal_patch_size": 2,
+          "merge_size": 2,
+          "image_mean": [
+            0.5,
+            0.5,
+            0.5
+          ],
+          "image_std": [
+            0.5,
+            0.5,
+            0.5
+          ],
+          "do_resize": true,
+          "do_rescale": true,
+          "do_normalize": true,
+          "do_convert_rgb": true,
+          "resample": 3,
+          "rescale_factor": 0.00392156862745098
+        },
+        "runtime_types": {
+          "size": "SizeDict",
+          "image_mean": "tuple",
+          "image_std": "tuple"
+        }
+      },
+      "rendered_prompts": {
+        "text": "<|im_start|>user\n<|vision_start|><|image_pad|><|vision_end|>Extract the text in the image.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+        "table": "<|im_start|>user\n<|vision_start|><|image_pad|><|vision_end|>Parse the table in the image into OTSL.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+        "formula": "<|im_start|>user\n<|vision_start|><|image_pad|><|vision_end|>Identify the formula in the image and represent it using LATEX format.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n",
+        "document": "<|im_start|>user\n<|vision_start|><|image_pad|><|vision_end|>Extract all information from the main body of the document image and represent it in markdown format, ignoring headers and footers. Tables should be expressed in OTSL format, formulas in the document should be represented using LATEX format, and the parsing should be organized according to the reading order.<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n"
+      },
+      "mtp_policy": "exact15-excluded-nonspeculative",
+      "numerical_qualification": false,
+      "document_qualification": false
+    },
+    "meta_tensor_count": 474,
+    "meta_schema_sha256": "ab657df5734248332789c05ef95cfd8b98731a298320f4066c89f03f222007fa",
+    "checkpoint_main_schema_sha256": "589578cf5234bba4a1ee2f1c20c1d660bdaf214403a3f54c50fa504348cac71f",
+    "frontend_gguf_sha256": "0b104f6c4be4335b304293a0bda8eb01fb621145d32df35c5d82b360c5f9d215",
+    "source_payload_verified": false,
+    "model_forward_executed": false
+  },
+  "frontend_pass": true,
+  "resources_before_checkpoint": {
+    "platform": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+    "machine": "x86_64",
+    "python": "3.12.15",
+    "cpus": 4,
+    "load": [
+      2.17529296875,
+      1.54296875,
+      0.7431640625
+    ],
+    "memory_bytes": {
+      "MemTotal": 16759308288,
+      "MemAvailable": 14952112128,
+      "SwapTotal": 3221221376,
+      "SwapFree": 3221221376
+    },
+    "scratch_free_bytes": 113486360576,
+    "output_free_bytes": 113486360576,
+    "same_filesystem": true
+  },
+  "exports": {
+    "f32": {
+      "sha256": "10145459c06c4c3caa64117a09360a78e476363f14af9fcab6ee88181bf11479",
+      "bytes": 3421929504,
+      "weights_uploaded": false,
+      "manifest": "xiaomi0-f32.gguf.manifest.json"
+    },
+    "f16": {
+      "sha256": "d5360f8f788613e0e9e13bd14bad32034c1c0e7678285cd4b1d9570ac57c55a9",
+      "bytes": 1717207072,
+      "weights_uploaded": false,
+      "manifest": "xiaomi0-f16.gguf.manifest.json"
+    }
+  },
+  "public_admission_pass": true,
+  "bounded_final_logit_bars_pass": true,
+  "scope": "two owned synthetic images for initial native integration; not a benchmark or full-document qualification",
+  "elapsed_seconds": 498.70013991199994,
+  "artifact_policy": "reports and actual reference/native tensors only; all GGUF/build/cache files in scratch"
+}

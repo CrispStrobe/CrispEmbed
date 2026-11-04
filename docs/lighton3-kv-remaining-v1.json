@@ -1,0 +1,112 @@
+{
+  "schema": "crispembed.lighton3.kv-remaining.v1",
+  "native_source": "3e82a12058cfca8869f4aa8ead250acf2b708934",
+  "owned_native_sha256": {
+    "src/lightonocr.cpp": "f1099cac986d24b4befc390dd89ee3b97f2562285071cdb5b907b27d5f5435b1",
+    "src/lightonocr3_profile.h": "e5fe7d98faf15c471c12083f225484d7560248ba53f6fd5e5350da522c68395e",
+    "tests/test_lightonocr3_contract.cpp": "0e60180a5698e1f8ed90ad5999cef74cdd7aefb6c2d49509a8e041c55937318a"
+  },
+  "protected_git_objects": {
+    "ggml": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+    "CMakeLists.txt": "d7bfbb7e53f532c748b9b84e0cfea115cf154c61",
+    "tests/lightonocr3_trace.cpp": "ea704747943f331e0cac5e3ff99921e2f47a2654",
+    "tools/compare_lightonocr3.py": "4c63b15ae4a497c44c59e835b8ff7f21e9d77fb6",
+    "models/convert-lightonocr-to-gguf.py": "f030bc1093fa846b0ac568d66b8b27991a2fcd6e",
+    "models/lightonocr3_profile.py": "2e87fb9359fb6a83cd7a84f4f43dbd4edd4390dd",
+    "models/lightonocr3-1b-source.json": "b7fd5fe27c22674d94964b96a71f9a214262b9ce",
+    "models/requirements-lightonocr3-reference.txt": "6b2d478fd34686da4b0445678836aafc812ccb73",
+    "tests/fixtures/lightonocr3/qualification.json": "4d4dcf76568117d6187705176507692268f6f547",
+    "tools/ci-heavy/extract_ocr_nov4_evidence.py": "030011254c8a216e820552352b9eb889bcd73133",
+    "tools/ci_process.py": "983a72fb3e8f7f212dd3be04d1560f157c7a57e4",
+    "tools/ci-heavy/lighton3_pixtral_eps_ab.py": "c250fc164be1407afdada65c4d3b8456cf106fe0",
+    "tests/test_lighton3_pixtral_eps_ab.py": "426ea45a800855083453f63b63d0e9e87ada8e58",
+    "docs/lighton3-pixtral-epsilon-ab-v1.json": "97a6d3177ccce326272c5f7059854bfc31b0e234",
+    "tools/ci-heavy/lighton3_kv_f32_ab.py": "1ab19b9ed380db4407733f8d5578cb9c2f41dd22",
+    "tests/test_lighton3_kv_f32_ab.py": "abf5c79d91f786cadebe8955a30837083d3e7f7d",
+    "docs/lighton3-kv-f32-ab-v1.json": "99f5b39fce773871b7fc2fcb23e93166e2e529c5"
+  },
+  "models": {
+    "f32": {
+      "bytes": 4025219872,
+      "sha256": "2d628ad47bd31ab78c654501d52fe996ffe7834d11644d69f715ba7b567af83c"
+    },
+    "f16": {
+      "bytes": 2326526752,
+      "sha256": "6d51c59f2c5a74100cba608759e18328059650070051cf27e58fedb86628589c"
+    }
+  },
+  "first_proof": {
+    "run_id": 41901879295,
+    "source": "fc8ce8d2de1d9bc89790c0e6892a52fd51a2c1cf",
+    "branch": "audit/lighton3-kv-complete-first-20261104",
+    "conclusion": "success",
+    "artifact_id": 13359865825,
+    "bytes": 503653,
+    "sha256": "e194a312cb84c17cf7a702cd585e2d202fbca45eb451ff80198a168140f1d6fb",
+    "protocol_sha256": "b8d3955c0066474630de20111128f6ffa1c01d42f265aa9445a631fa0bec2c5b",
+    "binary_sha256": "7d4b027feb14b51261b36efbb3efc6cea73b20ee81aa8bd3bbf85976fea4dfdd"
+  },
+  "baselines": {
+    "full_eps": {
+      "run_id": 41889499814,
+      "source": "0473dd5e813fdf48d2bafbd16811271cf6c42599",
+      "branch": "fix/ocr-qualification-nov4",
+      "conclusion": "failure",
+      "artifact_id": 13355422898,
+      "bytes": 8831289731,
+      "sha256": "b57f2b906da12f20fc1ef5462c4800b801a5349ed38eee790b3ecdbf1b057078"
+    },
+    "first_eps": {
+      "run_id": 41885702781,
+      "source": "f27223fc276674c4621f32b709aa03ef0d035f09",
+      "branch": "fix/ocr-qualification-nov4",
+      "conclusion": "success",
+      "artifact_id": 13353235590,
+      "bytes": 1459280989,
+      "sha256": "3f6087476bdc9d18ad9d58bbfad926a1f78d3f2d2fa4f98e41e0af0804adaba0"
+    }
+  },
+  "cases": [
+    "fox-transcription",
+    "fox-grounding",
+    "receipt-transcription",
+    "receipt-grounding",
+    "form-grounding"
+  ],
+  "fixture_cases": [
+    {
+      "id": "fox",
+      "image": "tests/regression/images/fox.png",
+      "sha256": "d139a96e514217e63970cea943e93b82a02521108ce2a2367069a14d57c87f39",
+      "modes": [
+        "transcription",
+        "grounding"
+      ]
+    },
+    {
+      "id": "receipt",
+      "image": "tests/regression/images/cc0/receipt_example.png",
+      "sha256": "0b9d3b590e617f331d17cf4a622f2088693ad58ac4654a9e297afc0d8881840f",
+      "modes": [
+        "transcription",
+        "grounding"
+      ]
+    },
+    {
+      "id": "form",
+      "image": "tests/regression/images/cc0/simple_form.png",
+      "sha256": "3d986ec0d131e4e429127627929e12fd4845313f43849c26bb3d1231c3b038dc",
+      "modes": [
+        "transcription",
+        "grounding"
+      ]
+    }
+  ],
+  "original_forward_calls": 0,
+  "new_native_request_processes": 60,
+  "imported_native_request_processes": 12,
+  "total_native_request_processes": 72,
+  "default_off": true,
+  "strict_budgets_unchanged": true,
+  "publication_qualified": false
+}

@@ -1,9 +1,19 @@
 # Agent handoff notes
 
-Start with [the current execution handoff](docs/handoff-2026-11-03.md) (supersedes
-2026-10-29). It lists the state of main, the open tasks in order and when each is done.
-PLAN contains only open work (index table at the top); completed work and receipts are
-in HISTORY, newest first.
+Start with [the current executable OCR qualification continuation](docs/ocr-qualification-2026-11-04.md),
+[current state](docs/current-state-and-next-steps.md) and PLAN's bounded-execution
+table. PR141 is merged (a50d976fc); the complete LightOn cache+epsilon panel
+passes all12 corrected decoded arms, and294 model-free controls/actual Apple
+builds pass. Completed/capped/negative evidence and remaining acceptance gates
+supersede older queued-language snapshots. Both correction gates stay default-off;
+next is separately closed paired CPU-default replay, then EOS and quantization.
+Candidate development0.17.15 is unreleased; published assets remain0.17.14,
+application0.17.12. No new model alias or broad quality qualification.
+
+[The 3 November handoff](docs/handoff-2026-11-03.md) remains the entry for the
+broader roadmap. PLAN contains open work; completed evidence belongs in HISTORY,
+measured limits in PERFORMANCE. Re-query exact jobs before dispatching; preserve
+old source guards and retained originals rather than silently repinning them.
 
 ## Read first: public task handoff
 

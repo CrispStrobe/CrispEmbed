@@ -1,0 +1,90 @@
+{
+  "schema": "crispembed.lighton3.pixtral-epsilon-ab.v1",
+  "baseline_source": "4476be6eb21ecacc3c001ed4e02928d0a98be0ea",
+  "original_artifact": {
+    "run_id": 41873656972,
+    "artifact_id": 13347781304,
+    "bytes": 5627376432,
+    "sha256": "020a1c21f434702366ca895f1e3b358644f2c1e5dde5948e49e1a9edb33d48e7"
+  },
+  "owned_sha256": {
+    "src/lightonocr.cpp": "9f983c3884abda3976fdca13ec601f8b9f18458db5c37bbd7b9d506b01a7c97e",
+    "src/lightonocr3_profile.h": "24b96bf95ada840cf97476f170f03dda84131f1e3c366353997e2049dc35d1ef",
+    "tests/test_lightonocr3_contract.cpp": "741a023a727b0be055b4ae04f8ea6df35c0a6e4c08375e6432445cc233d63136",
+    "tools/ci-heavy/lighton3_pixtral_eps_ab.py": "e20111327226c482dcf266ef360b68068e3601c985ac5823fa5d8000734906a2"
+  },
+  "protected_git_objects": {
+    "ggml": "3a27b6c665b191cb230be367db5c52d81dd3e2ac",
+    "CMakeLists.txt": "d7bfbb7e53f532c748b9b84e0cfea115cf154c61",
+    "tests/lightonocr3_trace.cpp": "ea704747943f331e0cac5e3ff99921e2f47a2654",
+    "tools/compare_lightonocr3.py": "4c63b15ae4a497c44c59e835b8ff7f21e9d77fb6",
+    "models/convert-lightonocr-to-gguf.py": "f030bc1093fa846b0ac568d66b8b27991a2fcd6e",
+    "models/lightonocr3_profile.py": "2e87fb9359fb6a83cd7a84f4f43dbd4edd4390dd",
+    "models/lightonocr3-1b-source.json": "b7fd5fe27c22674d94964b96a71f9a214262b9ce",
+    "models/requirements-lightonocr3-reference.txt": "6b2d478fd34686da4b0445678836aafc812ccb73",
+    "tests/fixtures/lightonocr3/qualification.json": "4d4dcf76568117d6187705176507692268f6f547",
+    "tools/ci-heavy/extract_ocr_nov4_evidence.py": "030011254c8a216e820552352b9eb889bcd73133",
+    "tools/ci_process.py": "983a72fb3e8f7f212dd3be04d1560f157c7a57e4"
+  },
+  "cases": [
+    "fox-transcription",
+    "fox-grounding",
+    "receipt-transcription",
+    "receipt-grounding",
+    "form-transcription",
+    "form-grounding"
+  ],
+  "fixture_cases": [
+    {
+      "id": "fox",
+      "image": "tests/regression/images/fox.png",
+      "sha256": "d139a96e514217e63970cea943e93b82a02521108ce2a2367069a14d57c87f39",
+      "modes": [
+        "transcription",
+        "grounding"
+      ]
+    },
+    {
+      "id": "receipt",
+      "image": "tests/regression/images/cc0/receipt_example.png",
+      "sha256": "0b9d3b590e617f331d17cf4a622f2088693ad58ac4654a9e297afc0d8881840f",
+      "modes": [
+        "transcription",
+        "grounding"
+      ]
+    },
+    {
+      "id": "form",
+      "image": "tests/regression/images/cc0/simple_form.png",
+      "sha256": "3d986ec0d131e4e429127627929e12fd4845313f43849c26bb3d1231c3b038dc",
+      "modes": [
+        "transcription",
+        "grounding"
+      ]
+    }
+  ],
+  "models": {
+    "f32": {
+      "bytes": 4025219872,
+      "sha256": "2d628ad47bd31ab78c654501d52fe996ffe7834d11644d69f715ba7b567af83c"
+    },
+    "f16": {
+      "bytes": 2326526752,
+      "sha256": "6d51c59f2c5a74100cba608759e18328059650070051cf27e58fedb86628589c"
+    }
+  },
+  "max_new_tokens": 128,
+  "gate": "CRISPEMBED_LIGHTONOCR3_PIXTRAL_EPS",
+  "gate0_epsilon": 1e-06,
+  "gate1_epsilon": 1e-05,
+  "first_phase_cases": [
+    "form-grounding"
+  ],
+  "first_phase_native_requests": 12,
+  "remaining_phase_new_native_requests": 60,
+  "original_forward_calls": 0,
+  "full_phase_requires_positive_first_artifact": true,
+  "strict_budgets_unchanged": true,
+  "default_off": true,
+  "publication_qualified": false
+}

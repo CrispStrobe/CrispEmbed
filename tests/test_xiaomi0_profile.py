@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import shutil
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
@@ -24,6 +25,57 @@ converter = load("xiaomi0_converter_test", ROOT / "models/convert-qwen35-ocr-to-
 
 
 class XiaomiSourceTest(unittest.TestCase):
+    def image_processor(self):
+        # Original pinned checkpoint JSON, with the exact 5.17.0 runtime
+        # standardization in BaseImageProcessor._standardize_kwargs.
+        settings = json.loads((FIXTURE / "processor_config.json").read_text())["image_processor"]
+        settings["image_mean"] = tuple(settings["image_mean"])
+        settings["image_std"] = tuple(settings["image_std"])
+        return SimpleNamespace(**settings)
+
+    def test_original_processor_tuple_normalization_preserves_exact_values(self):
+        image = self.image_processor()
+        self.assertNotEqual(image.image_mean, [0.5] * 3)  # Initial hosted guard defect.
+        result = policy.validate_image_processor(image)
+        expected = json.loads((FIXTURE / "processor_config.json").read_text())["image_processor"]
+        expected.pop("image_processor_type")
+        self.assertEqual(result["parameters"], expected)
+        self.assertEqual(result["runtime_types"]["image_mean"], "tuple")
+        self.assertEqual(result["runtime_types"]["image_std"], "tuple")
+        # Validation never rewrites the original processor's runtime state.
+        self.assertIsInstance(image.image_mean, tuple)
+        image.image_mean = list(image.image_mean)
+        image.image_std = list(image.image_std)
+        self.assertEqual(policy.validate_image_processor(image)["parameters"], expected)
+
+    def test_processor_guard_rejects_numeric_geometry_and_flag_drift(self):
+        changes = (
+            ("image_mean", (0.5, 0.5, 0.5000000001)),
+            ("image_std", (0.5, 0.5)), ("image_mean", "0.5,0.5,0.5"),
+            ("size", {"shortest_edge": 65537, "longest_edge": 16777216}),
+            ("size", {"shortest_edge": 65536, "longest_edge": 16777216, "height": 32}),
+            ("size", None), ("patch_size", 14), ("temporal_patch_size", 1), ("merge_size", 1),
+            ("resample", 2), ("resample", 3.5), ("rescale_factor", 1 / 256),
+            ("do_resize", False), ("do_rescale", False), ("do_normalize", False),
+            ("do_convert_rgb", False), ("do_resize", "true"), ("do_resize", 1),
+        )
+        for name, value in changes:
+            image = self.image_processor()
+            setattr(image, name, value)
+            with self.subTest(field=name, value=value), self.assertRaisesRegex(ValueError, name):
+                policy.validate_image_processor(image)
+
+    def test_processor_failure_retains_exact_fields_and_runtime_containers(self):
+        image = self.image_processor()
+        image.image_std = (0.5, 0.5, 0.25)
+        with self.assertRaises(ValueError) as error:
+            policy.validate_image_processor(image)
+        details = json.loads(str(error.exception).split(": ", 1)[1])
+        self.assertEqual(details["fields"], ["image_std"])
+        self.assertEqual(details["parameters"]["image_std"], [0.5, 0.5, 0.25])
+        self.assertEqual(details["expected"]["image_std"], [0.5] * 3)
+        self.assertEqual(details["runtime_types"]["image_std"], "tuple")
+
     def test_every_meta_parameter_shape_is_checked_not_only_the_count(self):
         source = json.loads(policy.MAIN_SCHEMA.read_text())
         actual = source["tensors"]

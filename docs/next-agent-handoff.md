@@ -1,13 +1,40 @@
-# Current entry —29 October2026 wrap-up
+# Executable next-agent handoff
 
-Start with [the executable wrap-up handoff](handoff-2026-10-29.md),
-[active PLAN](../PLAN.md) and [current state](current-state-and-next-steps.md).
-They distinguish completed evidence, two queued jobs, executable source-only
-checkpoints and Gemma's design-only repair. Exact next steps/acceptance gates
-are written there; the earlier conversation is unnecessary.
+## Current entry —4 November2026
 
-Older sections below are retained source-specific history. Do not repeat their
-preparation commands or infer current status from a dated queued snapshot.
+Start with [the reviewed qualification continuation](ocr-qualification-2026-11-04.md),
+[PLAN](../PLAN.md) and [current state](current-state-and-next-steps.md).
+They give exact sources, reviewed run IDs, artifact hashes, preserved failures and
+acceptance gates. MinerU's8-case panel is complete (32 numerical/28 exact decoded
+arms). The complete LightOn cache+epsilon41905258340 passes24 rows/72 native calls:
+all12 corrected outputs exact, minimum cosine0.999999999771;432 strict failures
+and8 caps remain. The epsilon-only panel stays negative; both gates default-off.
+**Next bounded lane:** paired CPU-default replay per the linked scope, preserving
+explicit0, legacy/default GPU behavior and every old closure; then declare an EOS
+protocol respecting the current256-token harness ceiling before Q8/Q4 work.
+Do not repeat the closed panel or any originals for a default-only replay.
+
+All10 ordinary workflows at ddb666997 pass, including actual Apple/native builds
+and294 model-free controls; do not retry the pressured M1 for compilation. Raw
+preservation41894992782/41897911047 is complete with verified readback through
+2 February2027. Exact LightOn0.8 retained-native implementation, nested preserved
+transport and the905-array admission barrier are linked; missing-other-case raw
+arrays require a separate current-CPU capture protocol, not a blind old rerun.
+
+[PR143](https://github.com/CrispStrobe/CrispEmbed/pull/143) continues after all
+seven selected workflows passed at `19531b88`. The feature branch now integrates
+main `17c96639`, preserving 294 existing controls plus 23 new profile controls,
+selector coverage and completed OCR status. Combined hosted checks remain the
+integration gate. Its next bounded slice owns the original GDN component
+reference, default-off unequal-head native primitives and explicit 4B conversion
+contract. Preserve existing equal-head callers, old source guards and precision
+recipes; source/component success does not qualify native4B. The exact boundaries
+and next acceptance gates are in PLAN and [the 4B handoff](lightonocr3-4b.md).
+
+Candidate0.17.15 is unreleased; published assets0.17.14/app0.17.12 stay unchanged.
+Read [the 3 November handoff](handoff-2026-11-03.md) for the broader non-OCR queue.
+Older sections below are source-specific history; do not replay their old
+preparation commands or infer current status from dated queued-job language.
 
 # Executable handoff — updated 27 October 2026
 

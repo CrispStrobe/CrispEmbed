@@ -1,0 +1,53 @@
+{
+  "scope": "Pinned upstream pure-Python standardizer and SizeDict only; no framework import, model or native execution",
+  "source_tag": "v5.17.0",
+  "source_sha256": {
+    "image_processing_utils.py": "3328a0e2b38e272e824cad64a50d3e84206dab13d31b96104afa6459e149f7c1",
+    "image_utils.py": "24e1b8f65481a87f2d294473b238fe7ac3a5dbdf8fe64c4efac72a3616c66437",
+    "image_processing_qwen2_vl.py": "4e1da45f9e7e157ca08aa88243fcc1495ea6a333e40e0c5035ef17ef2747a97d"
+  },
+  "source_blob_sha": {
+    "image_processing_utils.py": "2dd9cab5309fe248f627315690975cc1470a95cf",
+    "image_utils.py": "cb1bd3d8fd1092b35a908263b48f28fc580cf93c",
+    "image_processing_qwen2_vl.py": "a67527f14bb435f3930aee4d858667a8ce4988e9"
+  },
+  "original_checkpoint_processor_sha256": "d89ef49ce9cd37fbf510158e13c1ef063d9286411c1ec9049932dbe0487143b1",
+  "old_mean_list_guard": false,
+  "old_std_list_guard": false,
+  "old_size_guard": true,
+  "corrected_guard": {
+    "parameters": {
+      "size": {
+        "longest_edge": 16777216,
+        "shortest_edge": 65536
+      },
+      "patch_size": 16,
+      "temporal_patch_size": 2,
+      "merge_size": 2,
+      "image_mean": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "image_std": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "do_resize": true,
+      "do_rescale": true,
+      "do_normalize": true,
+      "do_convert_rgb": true,
+      "resample": 3,
+      "rescale_factor": 0.00392156862745098
+    },
+    "runtime_types": {
+      "size": "SizeDict",
+      "image_mean": "tuple",
+      "image_std": "tuple"
+    }
+  },
+  "hosted_metadata_verified": false,
+  "native_frontend_verified": false,
+  "model_qualified": false
+}

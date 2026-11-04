@@ -1,5 +1,6 @@
 // LightOnOCR-3-1B input contract. The legacy LightOnOCR-2 path does not call this.
 #pragma once
+#include "core/env_gate.h"
 #include "core/torch_bicubic_u8.h"
 #include <array>
 #include <cmath>
@@ -10,6 +11,16 @@
 #include <vector>
 
 namespace lightonocr3 {
+inline bool kv_f32_enabled(bool profile3, bool cpu_backend) {
+    return profile3 && cpu_backend && core_env::on("CRISPEMBED_LIGHTONOCR3_KV_F32");
+}
+
+inline float vision_rms_epsilon(bool profile3) {
+    // Pinned Pixtral uses 1e-5 for ln_pre and both norms in every vision block.
+    // Preserve the historical path and every legacy profile unless opted in.
+    return profile3 && core_env::on("CRISPEMBED_LIGHTONOCR3_PIXTRAL_EPS") ? 1e-5f : 1e-6f;
+}
+
 template <size_t N> inline bool same_ids(const std::vector<int32_t> & actual, const std::array<int32_t, N> & expected) {
     return actual.size() == N && std::equal(actual.begin(), actual.end(), expected.begin());
 }

@@ -1,5 +1,67 @@
 # CrispMath and CrispEmbed: current state and executable lanes
 
+## State on 4 November 2026 — reviewed OCR execution
+
+PR141 merged as `a50d976fcaa8f5a99987209d70735ebb59895a41`, after release-record
+PR142. Published native/WASM assets
+remain0.17.14 and the application still pins0.17.12; pub.dev remains unqualified.
+Main now includes the source/workflow repairs and default-off LightOn3 vision
+norm/CPU-cache corrections, with0.17.15 development versions, **unreleased**.
+
+Read [the current executable continuation](ocr-qualification-2026-11-04.md),
+[PLAN](../PLAN.md) and [completed receipts](../HISTORY.md) first. Re-query every
+exact live run before dispatching; old queued/running snapshots below are historical.
+
+- **Xiaomi0:** exact metadata/frontend; all4 F32/F16 final-logit/decoded arms pass,
+  but all outputs hit16 tokens and6 strict intermediate comparisons fail. No
+  EOS/document, Q8/Q4 or publication qualification.
+- **MinerU2605:** all8 cases reviewed,32 numerical arms pass,28 decodes exact;
+  F32/F16 match8/8 each. Q8/Q4 match6/8 each, with layout differences; rotated Q4
+  changes5 labels/geometry despite cosine0.99347. The frozen request/helper panel
+  is complete. Quantized layout quality, public consumers and artifact publication
+  remain open.
+- **LightOn3-1B:** complete cache+epsilon panel41905258340 passes24 rows/72 native
+  calls with zero new originals. Corrected F32/F16 each match6/6 free outputs;
+  minimum cosines0.999999999771/0.999999999824. All old-path/prefill byte controls
+  pass. Strict432/1842 failures and8 capped outputs remain. The epsilon-only
+  panel stays negative and both corrections default-off. Next: separately closed
+  paired CPU-default replay, then EOS and Q8/Q4. No aliases/publication.
+- **LightOn0.8:** historical exact guard remains failed (1759 CPU/probability
+  differences, all other fields exact). The [native-only continuation](lighton08-retained-native-continuation.md)
+  scopes the retained first case and905-array barrier. Old other-case producers
+  expose no raw artifacts; a separate current-CPU capture protocol is pending.
+- **Nemotron:**11/11 geometry/packing and9/9 negative controls pass; native
+  resize/positions and the neural backend remain separate work.
+
+All10 ordinary workflows at**ddb666997** pass:35 selected checks,3 declared
+skips,294 model-free controls and actual macOS/iOS/native/mobile/WASM/Rust builds.
+Scheduled OCR/main-health checks add bounded regression evidence, not all-model
+parity. Earlier Apple cancellations/M1 pressure stop stay historical; no more
+M1 work is needed for compilation. CrispSorter PR20 at0af4c34 separately reports its successful0.17.12 Metal-feature
+cargo check and backfill; it remains open. Native compilation does not establish
+model-inference parity on every platform.
+
+All8 MinerU original ZIPs plus both initial failure archives now have verified
+90-day remote copy/readback through2 February2027. The current
+[executable continuation](ocr-qualification-2026-11-04.md) binds their artifacts,
+inner hashes and pending transport adaptations; large files stay remote.
+
+The old MoEdern Q8 source closure rejects the later mixed-Q4 engine change (7/8
+controls); preserve that frozen experiment and declare a separate current-source
+closure before reuse. This is a qualification gap, not a demonstrated numerical
+regression. No expensive shared-host work, new model publication, tag, default
+flip or app upgrade follows from these bounded reports.
+
+[PR143](https://github.com/CrispStrobe/CrispEmbed/pull/143) adds the 723-tensor
+LightOn3-4B source preflight and 23 profile controls. All seven selected workflows
+pass at `19531b88` on the earlier base. Its continuation now integrates main
+`17c96639`, preserving the complete PR141 evidence and every existing controls
+step; combined hosted CI is the next integration gate. The active implementation
+slice is a pinned original-component reference, default-off unequal-head native
+primitives and a separate 4B conversion/24-layer precision contract. Component
+evidence and export admission do not qualify a native model. See PLAN and the
+[4B technical handoff](lightonocr3-4b.md) for ownership and remaining gates.
+
 ## State on 3 November 2026
 
 Start with [the 3 November handoff](handoff-2026-11-03.md) and the index table at the top of
