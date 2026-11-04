@@ -221,7 +221,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-426 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+427 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -1006,6 +1006,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
+| `CRISPEMBED_LIGHTON4B_VISION_OWNER` | on | off | bool | default-off experimental / opt-in | `src/qwen35_vision.cpp` |  |
 | `CRISPEMBED_QWEN35_VISION_CASCADE_NORM` | on | off | bool | default-off experimental / opt-in | `src/qwen35_vision.cpp` |  |
 | `CRISPEMBED_QWEN35_VISION_PRECISE_ATTN` | on | off | bool | default-off experimental / opt-in | `src/qwen35_vision.cpp` |  |
 | `CRISPEMBED_QWEN35_VISION_PRECISE_NORM` | on | off | bool | default-off experimental / opt-in | `src/qwen35_vision.cpp` |  |

@@ -1632,3 +1632,6 @@ option(CRISPEMBED_SYSTEMONE_AUDIT "Build test-only SystemOne root-profile observ
 if(CRISPEMBED_SYSTEMONE_AUDIT)
     add_subdirectory(tests/systemone)
 endif()
+
+add_executable(test-lighton4b-vision-owner tests/test_lighton4b_vision_owner.cpp)
+target_link_libraries(test-lighton4b-vision-owner PRIVATE crispembed-qwen35-delta crispembed-core)

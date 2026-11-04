@@ -867,3 +867,7 @@ UltraBERT's later UINT32 file-type admission check. The reviewed actual fixture
 runs on exactdd592, not the integrated tree; no assertion or source gate was
 weakened to claim combined-source qualification. Final source declarations and
 actual composite/runtime/platform gates remain required.
+
+## Bounded LightOn4B vision ownership — 4 November 2026
+
+Active branch `feat/lighton4b-vision-owner-20261104`, based on current main `17c96639a`. Adds an explicit default-off component mapping all 297 vision tensors and returning the 24-layer, width1024/head16/output2560 configuration. PR143 and the separate streamed projection work stay intact. The component validates names, shapes and F32/F16 types without reading payloads; malformed and missing tensors clear ownership. Hosted model-free and platform checks are required. Format5 production admission remains closed. Full 723-tensor ownership, original/native stage/logit/decoded parity, tokenizer and publication remain open; no release or support claim.
