@@ -53,6 +53,15 @@
             "5197e86d2ee8dea30f566e1c01cad3d409be8d5d Add bounded decoder weight reuse behind an explicit opt-in (#81)"
           ],
           "reason": "PR #81 (5197e86d) adds the bounded converted-weight cache. converted_weight_cache::get returns nullptr unless core_env::on(CRISPEMBED_QWEN35_WEIGHT_CACHE) (default off); with a null cache project_cpu keeps scratch_elements == elements and the original tensor_floats materialization, so default numerics are unchanged. Cache on/off was byte exact on all 1,662 OvisOCR2 vector pairs (tests/results/qwen35-ocr/ovisocr2-weight-cache.json)."
+        },
+        {
+          "from_sha256": "de90487fc6d9ce016428935129e4b839c8c53e09fd4c0a39d33702cffaed4a55",
+          "to_sha256": "5a11b9f0ff8b8a823b198460706c9c414c6c80216f50c23605362317b01ed63a",
+          "to_blob": "50d515b375c5428cb31b33aae8fa51af1a45c0bb",
+          "recorded_at_commit": "aa661568a13e83c0f71fb3845c0c86b664bce150",
+          "recorded": "2026-11-04",
+          "changed_by": [],
+          "reason": "Add the separate linear_grouped_cpu component API for LightOnOCR-3-4B compact unequal key/value heads. Both CRISPEMBED_QWEN35_OCR and CRISPEMBED_QWEN35_GDN_GROUPED_HEADS must be enabled through core_env::on; unset, empty and literal 0 disable the new entry. Existing project_cpu, linear_cpu and their default callers are byte-identical to main 17c96639; equal-head calls delegate unchanged. F32/F16 admission only, no decoder/context/model admission. Native original-module synthetic comparison is a separate pending hosted component protocol; historical model/quantization receipts and their qualification remain unchanged."
         }
       ]
     },

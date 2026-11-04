@@ -25,9 +25,12 @@ arrays require a separate current-CPU capture protocol, not a blind old rerun.
 seven selected workflows passed at integrated `91b24764`, preserving main
 `17c96639` and completed PR141 evidence; all 317 controls in 27 suites pass.
 The explicit 4B converter and 24-layer precision recipe are implemented with
-unqualified format 5. Hosted export controls and original meta-schema proof
-remain; the next native slice owns the original GDN component reference and
-default-off unequal-head primitives. Preserve existing equal-head callers, old source guards and precision
+unqualified format 5. All 16 export controls pass at `aa661568` (333 total).
+The shared workflow assertion is repaired by restoring its original inline source
+step; five ordinary workflows had stopped before compilation. Separate default-off
+grouped-head APIs and the selected original/meta hosted job are implemented.
+Review actual meta construction and the four-case/208-stage component receipt,
+then bounded vocabulary projection. Preserve existing equal-head callers, old source guards and precision
 recipes; source/component success does not qualify native4B. The exact boundaries
 and next acceptance gates are in PLAN and [the 4B handoff](lightonocr3-4b.md).
 

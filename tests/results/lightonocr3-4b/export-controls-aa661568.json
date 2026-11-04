@@ -1,0 +1,115 @@
+{
+  "schema": 1,
+  "subject": "LightOnOCR-3-4B explicit export contract controls",
+  "head_commit": "aa661568a13e83c0f71fb3845c0c86b664bce150",
+  "observed_utc": "2026-11-04",
+  "controls": {
+    "run_id": 41919572206,
+    "job_id": 126888195519,
+    "checkout_commit": "0d1853d3637fb58331044a7a8d8a683f83a5998d",
+    "suites": 28,
+    "tests": 333,
+    "suite_counts": [
+      14,
+      11,
+      15,
+      4,
+      7,
+      32,
+      26,
+      4,
+      7,
+      7,
+      6,
+      8,
+      14,
+      22,
+      6,
+      17,
+      22,
+      2,
+      6,
+      8,
+      7,
+      8,
+      23,
+      16,
+      10,
+      10,
+      9,
+      12
+    ],
+    "new_export_controls": 16,
+    "conclusion": "success"
+  },
+  "workflows": [
+    {
+      "id": 41919572206,
+      "name": "Model-free controls",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41919572206"
+    },
+    {
+      "id": 41919571779,
+      "name": "Build",
+      "status": "completed",
+      "conclusion": "failure",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41919571779"
+    },
+    {
+      "id": 41919571775,
+      "name": "Build WASM (text embeddings)",
+      "status": "completed",
+      "conclusion": "failure",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41919571775"
+    },
+    {
+      "id": 41919571861,
+      "name": "Build WASM",
+      "status": "completed",
+      "conclusion": "failure",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41919571861"
+    },
+    {
+      "id": 41919571797,
+      "name": "Inpainting CLI and image contracts",
+      "status": "completed",
+      "conclusion": "failure",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41919571797"
+    },
+    {
+      "id": 41919571780,
+      "name": "Rust crates",
+      "status": "completed",
+      "conclusion": "failure",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41919571780"
+    },
+    {
+      "id": 41919572041,
+      "name": "OvisOCR2 metadata, export, frontend and fixture audits",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41919572041"
+    },
+    {
+      "id": 41919571890,
+      "name": "Secret scan",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41919571890"
+    }
+  ],
+  "retained_failure": {
+    "job_id": 126888194463,
+    "run_id": 41919571779,
+    "test": "WorkflowFilterTests.test_controls_executes_lightonocr3_4b_source_preflight",
+    "cause": "Frozen workflow guard expected standalone inline run command; converter checkpoint grouped it with export controls in run: |. All five ordinary selectors stopped before build execution.",
+    "repair": "Restore the original inline source-preflight step; execute added export/component controls in a separate step. Preserve the frozen test unchanged.",
+    "runtime_failure_observed": false
+  },
+  "scope": "Model-free contracts only; no checkpoint conversion, framework meta construction or native component execution.",
+  "native_qualified": false,
+  "export_qualified": false,
+  "full_document_qualified": false
+}

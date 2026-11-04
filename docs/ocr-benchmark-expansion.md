@@ -253,8 +253,11 @@ pass at `c41469b2`: 23 new cases, 236 tests in the full controls job and 51 CI
 selection tests. After integrating main `17c96639`, all seven workflows pass at
 `91b24764`, including 317 controls in 27 suites. The explicit format-5 converter
 and separate 24-layer vision precision recipe are now implemented; actual export
-execution/readback remain unqualified. Hosted original meta-schema and grouped-head
-component checks are the next gates; see the [4B technical guide](lightonocr3-4b.md).
+execution/readback remain unqualified. Its 16 export controls pass at `aa661568`
+(333 total). The inline source-preflight workflow assertion is preserved by
+restoring its standalone step. Default-off grouped-head APIs and the original
+meta-schema/four-case component job are now implemented; actual hosted evidence
+is next. See the [4B technical guide](lightonocr3-4b.md).
 
 The current [Qwen3.5 runtime](../src/qwen35_ocr.cpp) assumes 473 tensors,
 24 decoder / 12 vision layers and 1024-wide text features. 4B needs 32 decoder /

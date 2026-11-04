@@ -927,6 +927,8 @@ add_executable(test-qwen35-delta tests/test_qwen35_delta.cpp)
 target_link_libraries(test-qwen35-delta PRIVATE crispembed-qwen35-delta)
 add_executable(test-qwen35-linear tests/test_qwen35_linear.cpp)
 target_link_libraries(test-qwen35-linear PRIVATE crispembed-qwen35-delta crispembed-core)
+add_executable(test-qwen35-gdn-heads tests/test_qwen35_gdn_heads.cpp)
+target_link_libraries(test-qwen35-gdn-heads PRIVATE crispembed-qwen35-delta crispembed-core)
 
 add_executable(test-lfm2-tiling tests/test_lfm2_tiling.cpp)
 target_link_libraries(test-lfm2-tiling PRIVATE crispembed)

@@ -57,8 +57,11 @@ LightOn3-4B source preflight and 23 profile controls. Main `17c96639` is integra
 at `91b24764`; all seven selected workflows pass, including 317 controls in
 27 suites. The explicit 4B converter and separate 24-layer precision recipe now
 require exact source/payload/schema proof and emit unqualified format 5.
-Hosted export controls/meta-schema proof and the original-component comparison
-for default-off unequal-head native primitives are next. Component evidence and
+All 16 export controls pass at `aa661568` (333 overall); a shared inline-command
+workflow assertion stopped five ordinary workflows before compilation and is
+repaired by restoring the original source-preflight step. Default-off grouped-head
+APIs and hosted original/meta protocols are implemented. Actual meta construction,
+208 component stages/cache controls and combined regression CI are next. Component evidence and
 export admission do not qualify a native model. See PLAN and the
 [4B technical handoff](lightonocr3-4b.md) for ownership and remaining gates.
 

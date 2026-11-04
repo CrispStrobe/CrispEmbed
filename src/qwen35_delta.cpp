@@ -88,6 +88,105 @@ bool linear_core_cpu(const linear_inputs & in, linear_outputs & out) {
     return true;
 }
 
+bool linear_grouped_core_cpu(const linear_inputs & in, int key_heads, linear_outputs & out) {
+    out = {};
+    if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !core_env::on("CRISPEMBED_QWEN35_GDN_GROUPED_HEADS") ||
+        key_heads < 1 || key_heads > 128 || in.heads < key_heads || in.heads > 128 || in.heads % key_heads)
+        return false;
+    if (key_heads == in.heads) {
+        if (linear_core_cpu(in, out)) return true;
+        out = {};
+        return false;
+    }
+    if (!in.qkv || !in.z || !in.a || !in.b || !in.conv_weights || !in.a_log || !in.dt_bias || !in.norm_weights ||
+        in.batch < 1 || in.batch > 4 || in.tokens < 1 || in.tokens > 4096 || in.width < 1 || in.width > 256 ||
+        in.conv_kernel < 1 || in.conv_kernel > 16 || in.threads < 1 || in.threads > 256 ||
+        !std::isfinite(in.norm_eps) || in.norm_eps <= 0)
+        return false;
+    const size_t heads = size_t(in.heads), width = size_t(in.width), keys = size_t(key_heads);
+    const size_t key_group = keys * width, value_group = heads * width, channels = 2 * key_group + value_group;
+    const size_t rows = size_t(in.batch) * in.tokens * heads, elements = rows * width;
+    const size_t states = size_t(in.batch) * heads * width * width;
+    const size_t history_elements = size_t(in.batch) * channels * in.conv_kernel;
+    if (elements > 16 * 1024 * 1024 || states > 16 * 1024 * 1024 || history_elements > 16 * 1024 * 1024) return false;
+    const auto finite = [](const float * values, size_t count) {
+        return std::all_of(values, values + count, [](float value) { return std::isfinite(value); });
+    };
+    if (!finite(in.qkv, size_t(in.batch) * in.tokens * channels) || !finite(in.z, elements) || !finite(in.a, rows) ||
+        !finite(in.b, rows) || !finite(in.conv_weights, channels * in.conv_kernel) || !finite(in.a_log, heads) ||
+        !finite(in.dt_bias, heads) || !finite(in.norm_weights, width) ||
+        (in.conv_history && !finite(in.conv_history, history_elements)) || (in.state && !finite(in.state, states)))
+        return false;
+    std::vector<float> q(elements), k(elements), v(elements), g(rows), beta(rows), delta;
+    out.conv_history.resize(history_elements);
+    auto history = [&](int batch, size_t channel, int token) {
+        if (token >= 0) return in.qkv[(size_t(batch) * in.tokens + token) * channels + channel];
+        return in.conv_history
+                   ? in.conv_history[(size_t(batch) * channels + channel) * in.conv_kernel + in.conv_kernel + token]
+                   : 0.0f;
+    };
+    const size_t repeats = heads / keys;
+    for (int batch = 0; batch < in.batch; ++batch) {
+        for (int token = 0; token < in.tokens; ++token) {
+            const size_t row = (size_t(batch) * in.tokens + token) * value_group;
+            for (size_t channel = 0; channel < channels; ++channel) {
+                float sum = 0;
+                for (int tap = 0; tap < in.conv_kernel; ++tap)
+                    sum += history(batch, channel, token - in.conv_kernel + 1 + tap) *
+                           in.conv_weights[channel * in.conv_kernel + tap];
+                const float value = sum * sigmoid(sum);
+                if (channel < 2 * key_group) {
+                    // HF repeats each complete Q/K head, not individual lanes
+                    // or the entire head array. Compact conv state stays intact.
+                    const size_t compact = channel % key_group;
+                    const size_t head = compact / width, lane = compact % width;
+                    auto & destination = channel < key_group ? q : k;
+                    for (size_t repeat = 0; repeat < repeats; ++repeat)
+                        destination[row + (head * repeats + repeat) * width + lane] = value;
+                } else {
+                    v[row + channel - 2 * key_group] = value;
+                }
+            }
+            for (size_t head = 0; head < heads; ++head) {
+                const size_t index = (size_t(batch) * in.tokens + token) * heads + head;
+                const float time = in.a[index] + in.dt_bias[head];
+                const float softplus = time > 20.0f ? time : std::log1p(std::exp(time));
+                g[index] = -std::exp(in.a_log[head]) * softplus;
+                beta[index] = sigmoid(in.b[index]);
+            }
+        }
+        for (size_t channel = 0; channel < channels; ++channel)
+            for (int tap = 0; tap < in.conv_kernel; ++tap)
+                out.conv_history[(size_t(batch) * channels + channel) * in.conv_kernel + tap] =
+                    history(batch, channel, in.tokens - in.conv_kernel + tap);
+    }
+    if (!finite(q.data(), q.size()) || !finite(k.data(), k.size()) || !finite(v.data(), v.size()) ||
+        !finite(g.data(), g.size()) ||
+        !delta_cpu(q.data(), k.data(), v.data(), g.data(), beta.data(), in.state, in.batch, in.tokens, in.heads,
+                   in.width, in.threads, delta, out.state)) {
+        out = {};
+        return false;
+    }
+    out.values.resize(elements);
+    for (size_t row = 0; row < rows; ++row) {
+        double square = 0;
+        for (size_t column = 0; column < width; ++column) {
+            const float value = delta[row * width + column];
+            square += double(value) * value;
+        }
+        const float scale = 1.0f / std::sqrt(float(square / width) + in.norm_eps);
+        for (size_t column = 0; column < width; ++column) {
+            const size_t index = row * width + column;
+            out.values[index] = delta[index] * scale * in.norm_weights[column] * in.z[index] * sigmoid(in.z[index]);
+            if (!std::isfinite(out.values[index])) {
+                out = {};
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
 bool delta_cpu(const float * q, const float * k, const float * v, const float * g, const float * beta,
                const float * initial_state, int batch, int tokens, int heads, int width, int threads,
                std::vector<float> & output, std::vector<float> & final_state) {

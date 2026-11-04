@@ -274,4 +274,65 @@ bool linear_cpu(const linear_weights & weights, const float * hidden, int batch,
     output.attention = std::move(projections[0]);
     return true;
 }
+bool linear_grouped_cpu(const linear_weights & weights, int key_heads, const float * hidden, int batch, int tokens,
+                        int threads, const float * conv_history, const float * state, projected_linear_outputs & output,
+                        converted_weight_cache * weights_cache) {
+    output = {};
+    if (!core_env::on("CRISPEMBED_QWEN35_OCR") || !core_env::on("CRISPEMBED_QWEN35_GDN_GROUPED_HEADS") || !hidden ||
+        key_heads < 1 || key_heads > 128 || batch < 1 || batch > 4 || tokens < 1 || tokens > 4096 || threads < 1 ||
+        threads > 256)
+        return false;
+    for (auto * tensor : { weights.qkv, weights.z, weights.a, weights.b, weights.out, weights.conv, weights.a_log,
+                           weights.dt_bias, weights.norm })
+        if (!tensor || (tensor->type != GGML_TYPE_F32 && tensor->type != GGML_TYPE_F16) || !ggml_is_contiguous(tensor))
+            return false;
+    const int64_t heads = weights.a_log->ne[0], width = weights.norm->ne[0], hidden_width = weights.qkv->ne[0];
+    const int64_t kernel = weights.conv->ne[0];
+    if (heads < key_heads || heads > 128 || heads % key_heads || width < 1 || width > 256 || hidden_width < 1 ||
+        hidden_width > 8192 || kernel < 1 || kernel > 16)
+        return false;
+    if (heads == key_heads) {
+        if (linear_cpu(weights, hidden, batch, tokens, threads, conv_history, state, output, weights_cache))
+            return true;
+        output = {};
+        return false;
+    }
+    const int64_t group = heads * width, channels = (2 * int64_t(key_heads) + heads) * width;
+    if (!shape(weights.a_log, heads, 1) || !shape(weights.dt_bias, heads, 1) || !shape(weights.norm, width, 1) ||
+        !shape(weights.qkv, hidden_width, channels) || !shape(weights.z, hidden_width, group) ||
+        !shape(weights.a, hidden_width, heads) || !shape(weights.b, hidden_width, heads) ||
+        !shape(weights.out, group, hidden_width) || weights.conv->ne[1] != 1 || weights.conv->ne[2] != channels ||
+        weights.conv->ne[3] != 1)
+        return false;
+    const auto fail = [&]() {
+        output = {};
+        return false;
+    };
+    std::vector<std::vector<float>> projections;
+    if (!project_cpu({ weights.qkv, weights.z, weights.a, weights.b }, hidden, int(hidden_width), batch * tokens,
+                     threads, projections, weights_cache))
+        return fail();
+    output.qkv = std::move(projections[0]);
+    output.z = std::move(projections[1]);
+    output.a = std::move(projections[2]);
+    output.b = std::move(projections[3]);
+    std::vector<float> conv(size_t(channels * kernel)), a_log(size_t(heads), 0.0f), dt_bias(size_t(heads), 0.0f),
+        norm(size_t(width), 0.0f);
+    if (!tensor_floats(weights.conv, conv.data()) || !tensor_floats(weights.a_log, a_log.data()) ||
+        !tensor_floats(weights.dt_bias, dt_bias.data()) || !tensor_floats(weights.norm, norm.data()))
+        return fail();
+    const linear_inputs input{
+        batch,           tokens,      int(heads),        int(width),      int(kernel),
+        threads,         1e-6f,       output.qkv.data(), output.z.data(), output.a.data(),
+        output.b.data(), conv.data(), a_log.data(),      dt_bias.data(),  norm.data(),
+        conv_history,    state,
+    };
+    if (!linear_grouped_core_cpu(input, key_heads, output.core)) return fail();
+    projections.clear();
+    if (!project_cpu({ weights.out }, output.core.values.data(), int(group), batch * tokens, threads, projections,
+                     weights_cache))
+        return fail();
+    output.attention = std::move(projections[0]);
+    return true;
+}
 } // namespace qwen35_ocr

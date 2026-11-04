@@ -158,6 +158,7 @@ token-ID exact on all five Kaggle cases and IDs identical to the old default on 
 | Variable | Default | Meaning |
 |---|---|---|
 | `CRISPEMBED_QWEN35_OCR` | off | Master gate for every qwen35 kernel. |
+| `CRISPEMBED_QWEN35_GDN_GROUPED_HEADS` | off | Separate experimental linear-attention APIs for compact unequal key/value head counts; also requires `CRISPEMBED_QWEN35_OCR=1`. Unset, empty or `0` disables them. Existing equal-head callers are unchanged; this component gate does not admit a 4B model. |
 | `CRISPEMBED_QWEN35_QUANT` | off | Quantized linear weights. |
 | `CRISPEMBED_QWEN35_PARALLEL_F16` | off | Thread-parallel F16 conversion of large matrices. |
 | `CRISPEMBED_QWEN35_WEIGHT_CACHE` | off | Per-context converted-weight cache (measured 2.7% cold / 0.8% warm gain with more RSS; kept off). |
@@ -221,7 +222,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 <!-- BEGIN GENERATED: tools/list_env_vars.py -->
 
-426 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
+427 `CRISPEMBED_*` variables and 223 non-prefixed variables. Kind: `on` = `core_env::on` (default off), `off` = `core_env::explicitly_off` (default on, `=0` opts out), `presence` = raw `getenv(X)` truth test (forbidden: `tests/test_env_vars_documented.py` fails on one), `value` = value read via getenv/os.environ, `set` = written by the CLI/orchestrator. Hint = nearest source comment (may be empty).
 
 ### CLI / server / examples
 
@@ -951,6 +952,12 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | `CRISPEMBED_TELEOCR_GPU` | off/on | mixed (see code) | bool | default-off experimental / opt-in | `src/qwen2vl_ocr.cpp` |  |
 | `CRISPEMBED_TELEOCR_METAL_F32_MATMUL` | off | ON (opt-out `=0`) | bool | production default (opt-out) | `src/qwen2vl_ocr.cpp` |  |
 | `CRISPEMBED_TELEOCR_REUSE_DECODE_GRAPH` | on | off | bool | default-off experimental / opt-in | `src/qwen2vl_ocr.cpp` |  |
+
+### qwen35_delta
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_QWEN35_GDN_GROUPED_HEADS` | on | off | bool | default-off experimental / opt-in | `src/qwen35_delta.cpp`, `src/qwen35_linear.cpp` |  |
 
 ### qwen35_graph_decoder
 

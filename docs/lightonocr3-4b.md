@@ -3,12 +3,14 @@
 Updated 4 November 2026. Implementation lane:
 [`feat/ocr-next-models-20261104` / PR143](https://github.com/CrispStrobe/CrispEmbed/pull/143).
 
-**Status: source preflight and integration CI pass; the explicit converter is implemented but has not produced a qualified export.**
+**Status: explicit conversion and grouped-head component APIs are implemented; full 4B inference and export remain unqualified.**
 The source preflight verifies the original metadata, actual safetensors header
 and bounded tokenizer-prefix evidence without loading weights. A separate,
 explicit converter now requires the full pinned tokenizer and checkpoint bytes
 plus the original meta-model schema before writing format 5. Its execution,
-GGUF readback, native inference and document quality remain open. PR141's
+GGUF readback, native inference and document quality remain open. The additive
+default-off grouped-head component and original/meta hosted protocols are now
+registered, with actual numerical results still pending. PR141's
 LightOn1B/0.8B evidence is merged and preserved.
 
 This is the next new checkpoint in the [OCR expansion roadmap](ocr-benchmark-expansion.md).
@@ -204,22 +206,95 @@ vision dimensions and both EOS declarations. Every native/export/document/
 alias qualification flag remains false, and `gguf_roundtrip_verified` remains
 false until a separate actual serialization/readback run proves it.
 
-Sixteen stdlib export controls are registered in the existing controls workflow.
-They check source identity, metadata/schema rejection, precision membership,
+Sixteen stdlib export controls pass in
+[hosted run 41919572206](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41919572206)
+at `aa661568`, with 333 controls across 28 suites. The separate Ovis export audit
+also passes. Ordinary Build/WASM/Rust/image jobs at that checkpoint stopped on an
+existing workflow-contract assertion requiring the source-preflight command on
+its own inline `run:` line. The original step is restored; the new controls run
+in a separate block without changing that historical assertion.
+
+The export controls check source identity, metadata/schema rejection, precision membership,
 dispatch ordering and explicit unqualified flags. Full-tokenizer admission is
 mocked only where a test needs to reach later metadata logic; those controls do
-not claim payload or framework execution. The next bounded hosted probe will
-instantiate the pinned original model on the meta device without downloading
-checkpoint weights, then validate the actual schema and tied identity.
+not claim payload or framework execution. The new
+[`lighton4b_export_meta.py`](../tools/ci-heavy/lighton4b_export_meta.py) hosted probe
+instantiates the pinned original model on the meta device without downloading
+checkpoint weights, then validates the actual 724-key schema, 723 unique tensors
+and tied parameter identity. Fourteen stdlib probe controls accompany it; actual
+meta construction is a separate hosted result.
+
+## Default-off grouped-head component and hosted reference
+
+`linear_grouped_core_cpu` and `linear_grouped_cpu` are separate entry points in
+the Qwen3.5 component library. Both require `CRISPEMBED_QWEN35_OCR=1` and
+`CRISPEMBED_QWEN35_GDN_GROUPED_HEADS=1`; unset, empty and literal `0` disable the
+new path. Existing `linear_core_cpu`, `linear_cpu`, `project_cpu`, `delta_cpu`
+and their default callers retain their old implementation. Equal-head input to
+the new entry delegates to the old API. The old source-pin receipts are unchanged;
+the reviewed additive change is recorded in the separate amendment chain.
+
+The grouped path keeps compact `(2*key_heads + value_heads)*width` convolution
+channels and cache history. It repeats complete Q/K heads **after** causal
+convolution and SiLU, then reuses the existing recurrence and gated norm. Key
+and value widths must match; the projected entry accepts only F32/F16 tensors.
+This component has no owning model context, tokenizer, image frontend or public
+model admission. Its F16 storage acceptance is not F16 numerical qualification.
+
+The independent [`lighton4b_gdn_reference.py`](../tools/ci-heavy/lighton4b_gdn_reference.py)
+protocol executes the unmodified Transformers **5.5.4** constructor, forward,
+chunk/recurrent functions and `DynamicCache`, pinned to release commit
+[`75d3bdcd`](https://github.com/huggingface/transformers/tree/75d3bdcd4b3ba70cee21287218d9764f33da41f0).
+It verifies three whole source modules and six function hashes before using the
+original Torch fallback. Package versions are fixed in the dedicated requirements
+file; execution uses CPU/F32, two threads and deterministic operations.
+
+| Synthetic case | Key/value heads | Batch | Prefill tokens | Covered boundary |
+|---|---|---:|---:|---|
+| `equal16-t65` | 16/16 | 1 | 65 | Unchanged equal-head behavior and chunk boundary |
+| `grouped16-32-t65` | 16/32 | 1 | 65 | Actual 4B head geometry and chunk boundary |
+| `grouped16-32-t1` | 16/32 | 1 | 1 | Short-prefill convolution padding |
+| `grouped2-4-t3-b2` | 2/4 | 2 | 3 | Independent batch state and short history |
+
+All four cases use head width 128, convolution width four, **synthetic hidden
+width 16 and synthetic weights**. Each runs prefill, two cached tokens and a
+fresh-cache full-prefix pass. Original observation-neutrality and incremental/
+full-prefix controls run before native compilation. Original arrays and hashes
+are frozen first; primary native cache state is never replaced with reference
+state. Separate original-input raw-core and delta lanes attribute errors while
+maintaining their own native caches.
+
+The native runner produces 52 named comparisons per case (208 total) and
+31 controls for the equal-head case or 25 for each grouped case. Comparisons
+report full element coverage, finite values, magnitudes, max/mean absolute error,
+RMS error and minimum row cosine. Acceptance remains max absolute error
+`0.002` and minimum row cosine `0.99999`; corruption, missing stages, repeated
+controls or changed frozen sources fail. The 17 stdlib protocol controls verify
+these contracts without invoking a framework.
+
+The existing controls workflow selects this bounded reference job from the full
+PR merge-base or entire push diff, including renames. Unknown events or incomplete
+diff evidence select it; a proven unrelated diff may skip it. Twenty selector
+controls cover those decisions. The job uses a clean Python 3.12 environment,
+recursive submodules, readonly repository permissions and a 25-minute limit.
+Checkpoint acquisition is disabled. Reports, original/native raw arrays and
+negative results are uploaded together for 90 days, within a 768 MiB protocol
+bound. `gdn/component-report.json` and `meta/export-meta.json` are the small review
+entry points; raw arrays stay in the hosted artifact.
+
+Even a passing component result would establish only this synthetic CPU/F32
+scope. Full-width checkpoint F32/F16 parity, actual GGUF serialization/readback,
+decoder/vision ownership, preprocessing/tokenizer behavior, complete document
+outputs, quantization and public aliases remain independent gates.
 
 ## Native implementation sequence and acceptance gates
 
 | Order | Concrete missing work | Required evidence before advancement |
 |---|---|---|
 | 1 | Freeze the actual loaded original framework, full tokenizer, image/rendering and generation recipe. Capture the original first | Immutable runtime/package/input/weight hashes; exact prompts, preprocessing arrays, token IDs, complete outputs and EOS/cap status |
-| 2 | Generalize linear attention to 16 key / 32 value heads, including Q/K expansion, convolution cache and recurrent state | Independent original comparison for the earliest affected stages, with absolute error and magnitude; keep the existing equal-head path intact |
+| 2 | Additive default-off 16-key/32-value-head component and hosted reference are implemented | Run the registered original/native comparison and retain earliest-stage absolute error/magnitude plus all cache controls; then extend evidence to full-width checkpoint F32/F16 |
 | 3 | Replace small-model ownership/mapping assumptions with an explicit pinned 4B path | All 723 tensors validated; 32-layer text and 24-layer vision parameters actually passed through recognition and caches; no generic family-wide admission |
-| 4 | Implement bounded full-vocabulary projection and a separate 24-layer precision recipe | Complete logits, bounded peak memory and unchanged old recipes; the historical 12-layer `vision-f32` recipe must retain its exact meaning |
+| 4 | Implement bounded full-vocabulary projection; the distinct 24-layer precision recipe is implemented and unqualified | Complete logits, bounded peak memory, actual F32/F16 serialization/readback and unchanged historical 12-layer `vision-f32` behavior |
 | 5 | Add a default-off native path using `core_env` helpers and documented gates | Same-input original/native F32/F16 stage and full-logit comparisons, then actual free-generation text/blocks, EOS and long-page evidence |
 | 6 | Evaluate useful document tasks and deployment tiers, then quantization/publication separately | Licensed text/table/formula/layout/handwriting/degraded/multilingual inputs; quality, latency/RSS, F16 and per-precision gates; immutable upload/readback and public-consumer checks before an alias |
 

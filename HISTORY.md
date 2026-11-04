@@ -1,3 +1,34 @@
+## 4 November 2026 — LightOn4B grouped-head component and original-reference CI
+
+The additive `linear_grouped_core_cpu`/`linear_grouped_cpu` APIs keep compact
+Q/K/V convolution channels, repeat complete Q/K heads after convolution/SiLU,
+and preserve separate native recurrent/cache state. Both the OCR master gate
+and new `CRISPEMBED_QWEN35_GDN_GROUPED_HEADS` gate use default-off `core_env::on`;
+literal0 disables the new entry. Existing equal-head and projection bodies are
+byte-preserved against main17c, equal-head calls delegate unchanged, and the
+reviewed addition has a separate source-pin amendment. No owning model admission.
+
+The hosted original protocol executes pinned Transformers5.5.4 on four synthetic
+cases, including actual16K/32V head geometry with synthetic hidden16/F32 weights.
+It freezes original arrays before native build, checks observation neutrality,
+prefill/two cached steps/full-prefix consistency, and compares 208 native stages
+plus106 controls across independently carried native cache lanes. Magnitudes,
+absolute errors and row cosine retain the0.002/0.99999 budgets. Actual execution
+is pending. A separate original meta-device probe verifies the full723+1 tensor
+schema and tied parameter identity without checkpoint acquisition. The existing
+controls workflow now contains the selected reference job,51 new stdlib protocol/
+selector controls and90-day raw evidence retention; no new standalone workflow.
+
+At converter `aa661568`, all16 export controls and333 total controls pass in
+[41919572206](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41919572206),
+and the Ovis export audit passes. Five ordinary workflows stopped before build
+execution on the same1/51 selector failure: the frozen test required the source
+preflight command on its own inline `run:` line. The original step is restored
+and added controls use a separate block; the old test is unchanged. The
+[retained receipt](tests/results/lightonocr3-4b/export-controls-aa661568.json)
+records successful controls and every failed workflow. Full model/export/
+document/publication qualification remains false.
+
 ## 4 November 2026 — LightOn4B explicit conversion contract; integrated CI passes
 
 All seven selected workflows on integrated `91b24764c2b6a89fcbc1d95d0ebed578f414c95d`
