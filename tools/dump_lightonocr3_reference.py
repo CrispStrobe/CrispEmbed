@@ -18,7 +18,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "models"))
 from lightonocr3_profile import (manifest, prompt_ids, sha256, verify_source, validate_config,
-                                trace_shapes, validate_generation_ids, STOP_IDS, REFERENCE_PACKAGES)
+                                trace_shapes, validate_generation_ids, STOP_IDS, REFERENCE_PACKAGES,
+                                canonical_checkpoint_name)
 from lightonocr3_output import parse_grounding
 
 
@@ -40,7 +41,11 @@ def verify_environment():
 
 def checkpoint_key_contract(checkpoint_keys, expected_keys):
     """Require exact native names; only the declared tied LM head may be absent."""
-    actual, expected = set(checkpoint_keys), set(expected_keys)
+    raw = list(checkpoint_keys)
+    mapped = [canonical_checkpoint_name(name) for name in raw]
+    if len(set(mapped)) != len(raw):
+        raise ValueError("LightOn original checkpoint key collision")
+    actual, expected = set(mapped), set(expected_keys)
     embedding = "model.language_model.embed_tokens.weight"
     if not {embedding, "lm_head.weight"} <= expected or embedding not in actual:
         raise ValueError("LightOn original checkpoint embedding/head inventory differs")
@@ -48,34 +53,37 @@ def checkpoint_key_contract(checkpoint_keys, expected_keys):
     if actual - expected or expected - actual not in (set(), tied_head):
         raise ValueError("LightOn original checkpoint key inventory differs")
     return {"checkpoint_keys": len(actual), "model_keys": len(expected),
+            "renamed_keys": sum(a != b for a, b in zip(raw, mapped)),
             "omitted_tied_keys": sorted(expected - actual)}
 
 
 def prepare_checkpoint_loading(directory):
-    """Avoid the unrelated Mistral3/LLaVA migration on already native LightOn keys."""
+    """Map the exact saved LightOn text prefix, avoiding the LLaVA alias."""
     import torch
     from safetensors import safe_open
     from transformers import LightOnOcrConfig, LightOnOcrForConditionalGeneration
     from transformers.conversion_mapping import (get_model_conversion_mapping,
-                                                register_checkpoint_conversion_mapping)
+                                                register_checkpoint_conversion_mapping, WeightRenaming)
 
     # The checkpoint config says mistral3, which the pinned loader aliases to
     # llava. Class-specific empty migrations use the framework's registration
     # API and preserve the actual LightOn model and strict loading checks.
     classes = ("LightOnOcrForConditionalGeneration", "LightOnOcrModel")
-    for name in classes:
-        register_checkpoint_conversion_mapping(name, [], overwrite=False)
+    register_checkpoint_conversion_mapping(classes[0], [WeightRenaming(
+        source_patterns=r"^language_model\.model\.", target_patterns="model.language_model.")], overwrite=False)
+    register_checkpoint_conversion_mapping(classes[1], [], overwrite=False)
     config = LightOnOcrConfig.from_pretrained(directory, local_files_only=True)
     if not config.text_config.tie_word_embeddings:
         raise ValueError("LightOn original requires its declared tied head")
     with torch.device("meta"):
         model = LightOnOcrForConditionalGeneration(config)
-    if get_model_conversion_mapping(model, add_legacy=False):
-        raise ValueError("Unexpected LightOn checkpoint migration remains active")
+    if len(get_model_conversion_mapping(model, add_legacy=False)) != 1:
+        raise ValueError("Unexpected LightOn checkpoint migration inventory")
     with safe_open(directory / "model.safetensors", framework="pt") as archive:
         record = checkpoint_key_contract(archive.keys(), model.state_dict().keys())
-    record.update({"class_specific_identity_migrations": list(classes),
-                   "nonlegacy_transform_count": 0, "checkpoint_values_modified": False})
+    record.update({"class_specific_migrations": list(classes),
+                   "text_prefix_from": "language_model.model.", "text_prefix_to": "model.language_model.",
+                   "nonlegacy_transform_count": 1, "checkpoint_values_modified": False})
     return record
 
 

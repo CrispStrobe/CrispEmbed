@@ -36,6 +36,16 @@ def manifest():
     return pins
 
 
+def canonical_checkpoint_name(name):
+    """The 1B snapshot retains its pre-migration Qwen text prefix."""
+    prefix = "language_model.model."
+    if name.startswith(prefix):
+        return "model.language_model." + name[len(prefix):]
+    if name == "lm_head.weight" or name.startswith(("model.vision_encoder.", "model.vision_projection.")):
+        return name
+    raise ValueError("Unexpected LightOn3 checkpoint namespace: " + name)
+
+
 def trace_shapes(image_size, mode, steps):
     """Expected shapes for the actual one-image, batch-one original capture."""
     if (not isinstance(image_size, list) or len(image_size) != 2
