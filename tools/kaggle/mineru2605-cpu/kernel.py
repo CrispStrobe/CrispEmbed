@@ -50,6 +50,21 @@ def validate_provider(case_id, env, *, working, inputs, machine, system, cpus, n
     require(not nvidia, "this CPU task must not occupy a GPU worker")
 
 
+def storage_guard(plan, f32_plan, *, scratch_free, output_free, shared, memory):
+    # The frozen shell retains all four GGUFs until exit, despite its planner's
+    # one-temporary-candidate comment. Reserve two additional upper-bound GGUFs
+    # here without changing the frozen producer, numerical work or output cap.
+    one_gguf_upper = plan["scratch_bytes_required"] - f32_plan["scratch_bytes_required"]
+    require(one_gguf_upper > 0, "expected frozen four-tier resource plan")
+    scratch_required = plan["scratch_bytes_required"] + 2 * one_gguf_upper
+    output_required = plan["output_bytes_required"]
+    require(memory >= plan["available_memory_bytes_required"], "insufficient genuine CPU RAM")
+    require((min(scratch_free, output_free) >= scratch_required + output_required) if shared else
+            (scratch_free >= scratch_required and output_free >= output_required), "insufficient actual provider disk")
+    return {"scratch_required_bytes": scratch_required, "output_required_bytes": output_required,
+            "shared_filesystem": shared, "all_four_candidate_files_reserved": True}
+
+
 def main():
     validate_provider(CASE_ID, os.environ, working=Path("/kaggle/working").is_dir(),
                       inputs=Path("/kaggle/input").is_dir(), machine=platform.machine(),
@@ -115,6 +130,16 @@ def main():
         python = scratch / "venv/bin/python"
         env["PATH"] = str(python.parent) + os.pathsep + env.get("PATH", "")
         command("python-version", [python, "-c", "import sys; assert sys.version_info[:2] == (3,12); print(sys.version)"])
+        spec = importlib.util.spec_from_file_location("frozen_resources", repo / "tools/mineru2605_resources.py")
+        resources = importlib.util.module_from_spec(spec); spec.loader.exec_module(resources)
+        plan = resources.resource_plan(["f32", "f16", "q8_0", "q4_k"], 2048)
+        f32_plan = resources.resource_plan(["f32"], 2048)
+        memory = int(next(line.split()[1] for line in Path("/proc/meminfo").read_text().splitlines()
+                          if line.startswith("MemAvailable:"))) * 1024
+        report["resource_guard"] = storage_guard(plan, f32_plan, scratch_free=shutil.disk_usage(scratch).free,
+                                                output_free=shutil.disk_usage(out).free,
+                                                shared=scratch.stat().st_dev == out.stat().st_dev, memory=memory)
+        save()
         # Use the exact existing resource planner, separately checking /tmp and
         # the output mount. This is not a reduced-memory/cap/precision contract.
         args = [CASE_ID, "f32,f16,q8_0,q4_k", "2048", "3", "1"]

@@ -10,6 +10,25 @@ worker = importlib.util.module_from_spec(spec); spec.loader.exec_module(worker)
 
 
 class Provider(unittest.TestCase):
+    def test_actual_four_file_retention_and_shared_space_are_counted(self):
+        plan = dict(scratch_bytes_required=10, output_bytes_required=8, available_memory_bytes_required=12)
+        f32_plan = dict(scratch_bytes_required=7)
+        # Four stored candidates need 16 scratch units, not the old 10.
+        with self.assertRaises(ValueError):
+            worker.storage_guard(plan, f32_plan, scratch_free=15, output_free=20, shared=False, memory=12)
+        with self.assertRaises(ValueError):
+            worker.storage_guard(plan, f32_plan, scratch_free=23, output_free=23, shared=True, memory=12)
+        self.assertEqual(worker.storage_guard(plan, f32_plan, scratch_free=24, output_free=24,
+                                             shared=True, memory=12)["scratch_required_bytes"], 16)
+        worker.storage_guard(plan, f32_plan, scratch_free=16, output_free=8, shared=False, memory=12)
+
+    def test_ram_and_output_shortfall_fail_before_any_model(self):
+        plan = dict(scratch_bytes_required=10, output_bytes_required=8, available_memory_bytes_required=12)
+        for memory, output in ((11, 8), (12, 7)):
+            with self.assertRaises(ValueError):
+                worker.storage_guard(plan, {"scratch_bytes_required": 7}, scratch_free=100,
+                                     output_free=output, shared=False, memory=memory)
+
     def valid(self):
         return dict(working=True, inputs=True, machine="x86_64", system="linux", cpus=4, nvidia=False)
 
