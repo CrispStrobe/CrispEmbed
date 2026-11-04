@@ -71,6 +71,19 @@ or weaken the frozen guard. The base13 MoEdern controls,51 UltraBERT controls,
 13 Josev controls (one additional test skipped) and18 main-health controls pass.
 These checks and green ordinary CI do not establish all-model numerical parity.
 
+### Current bounded OCR execution and completion gates
+
+See the [reviewed reports and repairs](docs/ocr-benchmark-expansion.md#reviewed-retained-reports-and-further-repairs)
+for exact source commits, artifacts, initial failures and error magnitudes.
+
+| Lane | Current evidence / job | Exact next action and completion gate |
+|---|---|---|
+| MinerU2605 receipt | Original F32/F16/Q8 final-logit bars and helper comparison pass; Q4_0 fallback rejected. Aligned recipe retry41871894063 at1bb0ddb1d | Review all208 positions, role census384F32/273Q8/24Q4_K, actual decoded output and helper records; then dispatch the other7 protocol cases separately at the same reviewed executable source and aggregate all8. No alias/publication from one case |
+| LightOn3-1B | Dependency repair works; unrelated LLaVA loading migration exposed and corrected. Retry41871466965 at5297c4cc8 | Require zero unexpected/missing/mismatched loaded weights after the declared tied-head handling, then all frozen images/modes, all stages/full logits and decoded/grounding outputs. Investigate the earliest actual divergence before further precision recipes |
+| Xiaomi0 | Metadata/frontend41870593556 passes exact pixels/patches; inference41871383235 at3a5a9a1dc | Review two originals and four native F32/F16 arms, full stage/logit coverage, exact input/task/stop evidence and decoded output. Document/detector composition remains a separate frozen experiment |
+| LightOn3-0.8B | Extraction diagnoses1759 float-metric/probability differences; IDs/text/all other original fields exact; no native calls | Preserve the old guard failure. Implement/review a separate retained-capture native continuation authenticating all905 arrays and old source/input/score identities; no blind original rerun or ignored-field broadening. Keep the first source result and all three-case requirements distinct |
+| Nemotron frontend | Actual11/11 geometry/packing and9/9 negatives pass | Bounded milestone complete. Native resize/positions and neural backend remain separate work in the model document |
+
 ## Active work in flight — benchmark OCR expansion, 4 November 2026
 
 Owner-authorized follow-up to the OmniParseBench / OmniDocBench review. Isolated

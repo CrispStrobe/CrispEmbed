@@ -1,3 +1,23 @@
+## OCR qualification review — 4 November 2026
+
+The [retained MinerU2605 receipt review](tests/results/ocr-benchmark-expansion/retained-review-20261104.json)
+covers one page/208 original generated positions, not a full document benchmark.
+F32/F16/Q8 minimum final-logit cosine is0.9999999999961997/0.9999999999974624/
+0.9993957618183006, with matching decoded requests. F32/F16 first strict failure
+is `vis_layer_31`, max0.135742188/0.1875 at reference norm84826.1953; Q8 first
+strict failure is `vis_layer_0`, max0.169651985, and worst stage row cosine is
+0.399607867 at `vis_layer_30`. Preserve these diagnostics beside the current
+owner acceptance bars. Warm native/original latency ratios are0.7481 F32,
+1.3313 F16 and0.5815 Q8 on the original paired run. These are bounded same-run
+measurements; no general speedup or full-panel qualification follows.
+
+Xiaomi's [corrected metadata/frontend41870593556](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41870593556)
+compares270336 original resized values and540672 patches with zero errors, plus
+four exact task streams. This is weight-free frontend evidence, not neural parity.
+LightOn0.8's old exact-original replay still fails with maximum selected-probability
+delta1.72895655e-6 and unchanged IDs/text; no native timing or precision verdict
+was produced by that failed run. Initial failures remain retained.
+
 ## Josev quantized storage timing (3 November 2026, hosted CPU AMD EPYC 9V74, portable, 2 threads)
 
 Four frozen cases (319/…-token requests), one process each run, including model load.

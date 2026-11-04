@@ -1,0 +1,56 @@
+{
+  "schema": "crispembed.ocr-nov4.retained-text.v1",
+  "extractor_source": "15c48029d342392d5d346f5f274b5e8a0905c695",
+  "producer_source": "2f1bbdb11c3612acf7399e31b33ac715027f3184",
+  "model_execution": false,
+  "originals_modified": false,
+  "model_qualified": false,
+  "publication_qualified": false,
+  "targets": [
+    {
+      "label": "mineru2605-receipt",
+      "run_id": 41810161887,
+      "artifact_id": 13313715962,
+      "bytes": 745003580,
+      "sha256": "36fc4d014373c8b116d48afd1105f3e3a55f9869c4bea8e8af2785c8b3f52c16",
+      "complete": true,
+      "verified_archive": {
+        "bytes": 745003580,
+        "sha256": "36fc4d014373c8b116d48afd1105f3e3a55f9869c4bea8e8af2785c8b3f52c16"
+      },
+      "text_members": 70,
+      "text_bytes": 2348732
+    },
+    {
+      "label": "lighton08-inventory-table",
+      "run_id": 41810175624,
+      "artifact_id": 13312356863,
+      "bytes": 3459070891,
+      "sha256": "7517525e72d29d1e535257458cc11942d3df360a6fb7b1ab0182ce8fff2138da",
+      "complete": true,
+      "verified_archive": {
+        "bytes": 3459070891,
+        "sha256": "7517525e72d29d1e535257458cc11942d3df360a6fb7b1ab0182ce8fff2138da"
+      },
+      "text_members": 14,
+      "text_bytes": 623965,
+      "original_guard_result_exact": false,
+      "original_difference_count": 1759
+    }
+  ],
+  "frozen_diagnostic_sources": {
+    "tests/results/qwen35-ocr/quality.json": {
+      "bytes": 1345519,
+      "sha256": "fad6669a452c0cbfd93db8d393c062e806337c5793e8cf7f664270a2bc83a4e3"
+    },
+    "tools/ci-heavy/qwen35_quality_quant.py": {
+      "bytes": 11473,
+      "sha256": "984dafaef7c20f42ed7da421e9fd315731b1e2a730c5f0a180bdb26a1107f0b1"
+    },
+    "tests/fixtures/lighton08-portable/protocol.json": {
+      "bytes": 2703,
+      "sha256": "d4771d104d6b592642dacb9596aceefa0470ad4b94a0b63b1ff43e7b7f90c402"
+    }
+  },
+  "complete": true
+}

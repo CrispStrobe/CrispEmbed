@@ -1,3 +1,43 @@
+## 4 November 2026 — Retained OCR failures diagnosed; Xiaomi frontend exact
+
+[Hosted extraction41869721715](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41869721715)
+authenticates both original archives and preserves84 small text members. The
+small artifact SHA and every selected member were independently verified;
+all1759 LightOn0.8 exact differences were independently recomputed. Public
+[review](tests/results/ocr-benchmark-expansion/retained-review-20261104.json),
+[extraction receipt](tests/results/ocr-benchmark-expansion/retained-extraction-41869721715.json)
+and [complete original differences](tests/results/ocr-benchmark-expansion/lighton08-original-diff-41810175624.json)
+retain the evidence without copying large arrays to Git.
+
+MinerU2605's receipt already passes208/208 final-logit positions at F32/F16/Q8
+(minimum0.9999999999961997/0.9999999999974624/0.9993957618183006) and decoded
+request parity. Strict vision failures remain, including Q8 row cosine0.399607867;
+F16 latency is1.331x original on that run. Same-neural helper JSON/Markdown agree
+on8 blocks/9 requests, separately from original neural parity. Q4 never ran:
+144 unaligned matrices silently became Q4_0, rejected by the declared storage
+contract. The aligned Q4_K/Q8 successor preserves that rejection and explicitly
+checks every matrix role; actual retry41871894063 remains pending review.
+
+LightOn0.8 differs only in1510 CPU-control fields,248 selected probabilities
+and mean confidence. All other original fields, including IDs/text/inputs/stops,
+are exact. Maximum selected-probability difference is1.72895655e-6. The old exact
+guard remains failed and no native forward is claimed.
+
+Xiaomi metadata passes its list/tuple repair, then exposes reversed height/width
+in the frontend test caller. Production preprocessing already uses the correct
+order. Corrected [41870593556](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41870593556)
+passes all4 task streams and exact270336 resized pixels/540672 patches, both
+maximum errors0. The subsequent two-image F32/F16 inference41871383235 is distinct.
+
+LightOn1B dependency/source/build controls pass; original loading rejects311
+missing/310 unexpected keys before inference. Its config's `mistral3` label selects
+an unrelated LLaVA migration in the pinned framework. The class-specific identity
+registration in5297c4cc8 preserves actual model equations/checkpoint values and
+requires exact native checkpoint names, declared tied-head handling and complete
+loading. Loader sources are additionally pinned;21 source controls pass. Actual
+retry41871466965 remains pending review. Checksum-pinned actionlint1.7.7 is now
+part of hosted controls, including triggers on manual-workflow changes.
+
 ## 4 November 2026 — OCR workflow dispatch repaired
 
 PR141's hosted controls were green, but its manual workflow could not parse:

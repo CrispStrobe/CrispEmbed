@@ -26,11 +26,71 @@ identities and the original failures. Artifacts expire on18 November2026.
 
 | Lane | Observed result | Next action |
 |---|---|---|
-| MinerU2605 | Run41810161887 failed; detailed reports remain in its745MB archive | Extract the small reports and identify the exact failed stage before another model run |
+| MinerU2605 | Run41810161887 failed; detailed reports remain in its745MB archive | Extraction41869721715 authenticates the reports: receipt F32/F16/Q8 pass their final-logit bars; Q4 rejects144 undeclared Q4_0 fallbacks. Aligned Q4_K/Q8 retry41871894063 is running |
 | LightOn3-1B | Run41810166994 failed dependency resolution before inference | Correct the incompatible Hub/tokenizers pins; rerun the same F32/F16 protocol |
 | Xiaomi0 | Run41810171225 passed package checks, failed processor metadata validation | Correct list/tuple representation handling while preserving exact numeric settings; rerun metadata before inference |
-| LightOn3-0.8B | Run41810175624 completed the original capture, failed frozen-original reproduction before native execution | Compare retained current/old reference fields; preserve the guard and original anchors |
+| LightOn3-0.8B | Run41810175624 completed the original capture, failed frozen-original reproduction before native execution | Extraction41869721715 finds1759 exact differences:1510 CPU-control fields,248 selected probabilities and the mean. IDs/text/other fields match. Preserve the negative guard; scope a retained-capture continuation before more inference |
 | Nemotron frontend | Run41810180035 passed11/11 exact geometry/packing cases and9/9 negative controls | Completed bounded milestone; native resize, positions and the neural backend remain separate |
+
+## Reviewed retained reports and further repairs
+
+[Extraction41869721715](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41869721715)
+completed successfully at `15c48029d`. Both original ZIPs were authenticated on
+hosted CI; all84 selected text members were independently rehashed during review.
+The690,326-byte small artifact13344312377 is SHA256
+`583828f2a02c14757af2598997b81d718deddaafb07901e26202a82cb475ed6e`.
+The [extraction receipt](../tests/results/ocr-benchmark-expansion/retained-extraction-41869721715.json),
+[independent numerical review](../tests/results/ocr-benchmark-expansion/retained-review-20261104.json)
+and [all1759 LightOn differences](../tests/results/ocr-benchmark-expansion/lighton08-original-diff-41810175624.json)
+are retained publicly. No original inference was repeated by extraction.
+
+- MinerU's receipt covers208 complete original generated positions. F32 minimum
+  final-logit cosine is0.9999999999961997, F16 is0.9999999999974624 and Q8 is
+  0.9993957618183006; all three native decodes match the request. Strict failures
+  remain: first F32/F16 `vis_layer_31` max0.135742188/0.1875 and first Q8
+  `vis_layer_0` max0.169651985; worst Q8 stage cosine0.399607867. F16's measured
+  warm latency is1.331x original on this run. Same-neural-backend helper comparison
+  passes exact JSON/Markdown for8 blocks/9 requests; it is separate from original
+  Python neural parity. Q4 stops before its native execution: the C quantizer
+  emits144 Q4_0 fallbacks for896-wide rows, correctly rejected by the declared
+  parser. Correction `1bb0ddb1d` explicitly uses Q8 for those matrices, retaining24
+  genuine Q4_K down projections,273 Q8 and384 F32 tensors. Every role is checked;
+  the parser still rejects Q4_0. The same bounded receipt retry is
+  [41871894063](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41871894063).
+  Review it before dispatching the other seven frozen cases.
+- LightOn0.8's original exact guard remains negative. All reference fields other
+  than CPU-control metrics and selected/mean probabilities match. Maximum selected
+  probability delta is0.0000017289565493738834; mean delta is about1.034e-8.
+  Native never ran. Do not add ignored fields or repeat the original blindly.
+  Next design a separate native-only continuation against the retained905 arrays,
+  authenticating archive, source, image, prompts, caps, IDs and full score coverage.
+  It must record the failed historical exact guard and keep existing original/gold
+  records immutable. If old-original numerical reproduction itself is required,
+  scope CPU/backend attribution with retained values before any new reference run.
+- Xiaomi's processor correction passes on actual installed packages. The first
+  retry [41869734698](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41869734698)
+  exposes reversed dimensions in the test caller, not production preprocessing.
+  Correction `f505b242a` (format-only successor `3a5a9a1dc`) passes actual
+  [metadata/frontend41870593556](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41870593556):
+  all4 task streams,270336 resized values and540672 patch values match exactly,
+  with zero image errors at the unchanged1.2e-7 patch budget. Separate two-image
+  F32/F16 [inference41871383235](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41871383235)
+  is executing; no neural parity or document qualification follows yet.
+- LightOn1B [41869728304](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41869728304)
+  passes dependency checks and builds but rejects loading before any forward:
+ 311 missing/310 unexpected keys. The pinned framework aliases config type
+  `mistral3` to LLaVA and inserts an unwanted language-model namespace. Correction
+  `5297c4cc8` uses its class-specific identity-registration API for the two actual
+  LightOn classes, checks exact checkpoint/model key inventories, allows only the
+  declared tied-head omission, and retains strict complete-loading checks. Both
+  loader source files are additionally SHA-pinned. No checkpoint or model equations
+  change. The actual F32/F16 retry is
+  [41871466965](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41871466965).
+
+These are bounded case results and executing jobs, not new registry aliases or
+publication. Query each exact run before retrying it; preserve every initial
+negative report. Large original archives still require preservation before
+18 November2026 if the raw capture is needed beyond that deadline.
 
 ## Priority and implementation lanes
 
