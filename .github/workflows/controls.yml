@@ -39,6 +39,8 @@ on:
       - 'tools/mineru2605_*.py'
       - 'tools/ci-heavy/mineru2605_qualify.sh'
       - 'tests/test_mineru2605_contract.py'
+      - 'tests/test_mineru2605_cpu_provider.py'
+      - 'tools/kaggle/mineru2605-cpu/**'
       - 'tests/test_mineru25_conversion.py'
       - 'tests/fixtures/mineru2605/**'
       - 'docs/mineru25-pro-2605-protocol.json'
@@ -126,6 +128,8 @@ on:
       - 'tools/mineru2605_*.py'
       - 'tools/ci-heavy/mineru2605_qualify.sh'
       - 'tests/test_mineru2605_contract.py'
+      - 'tests/test_mineru2605_cpu_provider.py'
+      - 'tools/kaggle/mineru2605-cpu/**'
       - 'tests/test_mineru25_conversion.py'
       - 'tests/fixtures/mineru2605/**'
       - 'docs/mineru25-pro-2605-protocol.json'
@@ -257,6 +261,7 @@ jobs:
         if: ${{ !cancelled() }}
         run: |
           python tests/test_mineru2605_contract.py -v
+          python tests/test_mineru2605_cpu_provider.py -v
           python tests/test_mineru25_conversion.py -v
 
       - name: LightOnOCR-3-1B profile and grounding controls
