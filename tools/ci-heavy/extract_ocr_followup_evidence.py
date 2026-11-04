@@ -13,8 +13,8 @@ import extract_ocr_nov4_evidence as archive
 SELECTOR = "tools/ci-heavy/extract_ocr_followup_evidence.py"
 HELPER_SHA256 = "5b52a1b14eb8658c3371fff920fade76c2df1346c0659b2d372322144bab84e6"
 TARGETS = (
-    {"label": "mineru2605-layout-rot90", "run_id": 41877141270, "artifact_id": 13353650933,
-     "bytes": 2466702003, "sha256": "4474b74df3b369e2d0f3c4f6f204d88f6de2ac7612605cbaa7f846444e3aa212",
+    {"label": "mineru2605-german", "run_id": 41877132652, "artifact_id": 13355531707,
+     "bytes": 2543809676, "sha256": "3ad000ba9da8bbb7155a6770e231d00d25357ab2d4eba8e374a1f3d867f4fd3f",
      "source": "1bb0ddb1d9ac12ded51eb5bd0edd89be0a8259e6",
      "branch": "audit/mineru2605-aligned-q4-20261104", "conclusion": "success"},
 )
