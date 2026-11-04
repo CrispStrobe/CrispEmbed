@@ -247,6 +247,7 @@ bool project_rows_cpu(ggml_tensor * matrix, const float * hidden, int width, int
         return false;
     if (!std::all_of(hidden, hidden + size_t(width) * tokens, [](float x) { return std::isfinite(x); }))
         return false;
+    try {
     // Preserve calibration identity: observe the original named matrix once,
     // then suppress tile callbacks while retaining all old-path behavior.
     if (observer && core_env::on("CRISPEMBED_QWEN35_IMATRIX") &&
@@ -257,7 +258,6 @@ bool project_rows_cpu(ggml_tensor * matrix, const float * hidden, int width, int
         observer_restore() { observer = nullptr; }
         ~observer_restore() { observer = saved; }
     } restore;
-    try {
         const size_t rows = size_t(matrix->ne[1]);
         const size_t row_bytes = ggml_row_size(matrix->type, width);
         std::vector<float> complete(rows * tokens);
