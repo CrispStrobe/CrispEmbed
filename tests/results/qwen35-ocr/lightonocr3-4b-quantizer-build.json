@@ -1,0 +1,45 @@
+{
+  "schema": "lighton4b-portable-quantizer-build/v1",
+  "source_sha": "0c0ebb322cf20167eba63ac881cc25b5d057c32e",
+  "submodules": [
+    " 3a27b6c665b191cb230be367db5c52d81dd3e2ac ggml (3a27b6c)"
+  ],
+  "compiler": "c++ (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "run_id": "41926516321",
+  "files": {
+    "build.log": {
+      "bytes": 2488,
+      "sha256": "27a4971c3e4c950e790783e28d2f2a30242949fc984b8cabc4259311e9198064"
+    },
+    "configure.log": {
+      "bytes": 1987,
+      "sha256": "d3bcbd35f64ffa1e8212293d2fe6629ae2bef75c17bfa44cab28b46e0ee39d4b"
+    },
+    "build-mode.txt": {
+      "bytes": 136,
+      "sha256": "560767cad0065b5ac647d6353fe5fababd4753c0b9527fd68536c6e6175dcbcd"
+    },
+    "crispembed-quantize": {
+      "bytes": 907856,
+      "sha256": "a09dd36ebc5a28d757a2950624c4b517363f3353b1dddf22dbf6519a65f9ae0f"
+    },
+    "ldd.txt": {
+      "bytes": 374,
+      "sha256": "8a7a49bb57622c7b4a22ac8ed1396a8f8400df3a53f953563c3bc3c5ff8f8d26"
+    },
+    "usage.txt": {
+      "bytes": 1769,
+      "sha256": "d16593d0d7e44bfec46c4bfd363c8ac663bcfc1b7c1418d7b5fe9e9d921f9416"
+    }
+  },
+  "model_accessed": false,
+  "artifact": {
+    "id": 13368628164,
+    "name": "heavy-41926516321",
+    "archive_sha256": "b47fbc7b306af2cb06afc73999277c4db6e78f812c0bf4f6c26cef192e1fe174",
+    "bytes": 380728
+  },
+  "independent_small_artifact_readback_verified": true,
+  "native_quality_qualified": false,
+  "conversion_executed": false
+}

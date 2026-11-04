@@ -1,3 +1,18 @@
+## 4 November 2026 — Hosted LightOn4B quantizer build
+
+[41926516321](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41926516321)
+built the portable CPU quantizer from `0c0ebb322cf20167eba63ac881cc25b5d057c32e`
+with ggml `3a27b6c665b191cb230be367db5c52d81dd3e2ac`. The independently
+read-back 907,856-byte executable hashes to
+`a09dd36ebc5a28d757a2950624c4b517363f3353b1dddf22dbf6519a65f9ae0f`;
+[the receipt](tests/results/qwen35-ocr/lightonocr3-4b-quantizer-build.json)
+retains source/compiler/artifact identities. Static ggml has no external libggml
+dependency. No model conversion, inference, publication or quality check ran in
+this build. Small independent reader controls passed all 723 synthetic tensors
+and rejected a corrupted manifest; actual runner-sized Q8/Q4 dequant scans
+accepted finite blocks and rejected infinite scales. The Python library does not
+implement Q4 quantization; actual candidate packing uses the hosted C++ binary.
+
 ## 4 November 2026 — LightOn4B grouped-head component and original-reference CI
 
 The additive `linear_grouped_core_cpu`/`linear_grouped_cpu` APIs keep compact
