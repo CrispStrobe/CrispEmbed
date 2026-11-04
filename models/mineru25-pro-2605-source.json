@@ -1,0 +1,57 @@
+{
+  "files": {
+    "chat_template.jinja": {
+      "size": 1017,
+      "sha256": "a0bc6f6fc7a29a80017a433e8f03a1cc1236e838a944a2d034295a60c4f2fddb"
+    },
+    "config.json": {
+      "size": 2871,
+      "sha256": "f91cad3c52a3d8f1d420b51459455b27d792db28bf5d1d08097ae96bf1c44730"
+    },
+    "generation_config.json": {
+      "size": 215,
+      "sha256": "405a603af8aed51b82ef71a5e16e7c053d11576fdc2db3c168d32bac2fd75f0d"
+    },
+    "model.safetensors": {
+      "size": 2312126640,
+      "sha256": "abf8681ca63b8dec7b67de257af47b821f179442f72998d0696ae2ed9232a5f0"
+    },
+    "preprocessor_config.json": {
+      "size": 316,
+      "sha256": "7070ae84a684ce2eb8d239c2cb38ff848085075784b213ea28a5ef5b3cdb445f"
+    },
+    "tokenizer.json": {
+      "size": 11423550,
+      "sha256": "dceac5fc54a795ee7570d17902b47bd05412dc2afa62bdf325c3f97fcb5b87fe"
+    },
+    "tokenizer_config.json": {
+      "size": 6596,
+      "sha256": "d762430b9c668b5c3ad95e26626e3982d5b2a59c18ff214d621d1de4318ff376"
+    }
+  },
+  "repository": "opendatalab/MinerU2.5-Pro-2605-1.2B",
+  "revision": "08aaea840498d49ce16247b6263196cf02814885",
+  "family": "mineru2.5-pro-2605",
+  "license": "apache-2.0",
+  "blueprint": {
+    "distribution": "mineru-vl-utils",
+    "version": "2.0.7",
+    "wheel_name": "mineru_vl_utils-2.0.7-py3-none-any.whl",
+    "wheel_url": "https://files.pythonhosted.org/packages/ac/93/a86270621f43d9357600f9a4634652c6a70f93f56ce7a8f30646866440e8/mineru_vl_utils-2.0.7-py3-none-any.whl",
+    "wheel_size": 112947,
+    "wheel_sha256": "3bf184c359d69e78d0509f58324c58ad323037cf97bd4086cacb9caf53db0db7",
+    "python_source_sha256": "7c157733e1de9295ac41b0f38735ac91e7401e1270c93b6c6d4f67a68cd3d98a",
+    "python_source_files": 41,
+    "license": "Apache-2.0",
+    "transformers_reference_version": "5.10.1"
+  },
+  "audit": {
+    "metadata_url": "https://huggingface.co/api/models/opendatalab/MinerU2.5-Pro-2605-1.2B/revision/08aaea840498d49ce16247b6263196cf02814885?blobs=true",
+    "header_bytes": 73384,
+    "header_sha256": "fef207e0f91ec3d54f82c6c0ff673b1c462c22615523a8c372e086808c30166b",
+    "tensor_count": 681,
+    "header_inventory_equal_to_2604": true,
+    "tensor_weights_equal_to_2604": false,
+    "qualification": "pending hosted original/native comparison; no registry alias"
+  }
+}

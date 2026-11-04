@@ -1,4 +1,5 @@
 #include "qwen35_frontend.h"
+#include "qwen35_xiaomi0.h"
 #include "core/bpe.h"
 #include "core/nfc.h"
 #include "core/env_gate.h"
@@ -78,7 +79,8 @@ std::string replace_invalid_utf8(const std::string & input) {
 
 bool frontend_tokenizer::enabled() const {
     return core_env::on("CRISPEMBED_QWEN35_OCR") && (!ovis_ || core_env::on("CRISPEMBED_OVISOCR2_FRONTEND")) &&
-           (!ovis3_ || core_env::on("CRISPEMBED_OVISOCR3_FRONTEND"));
+           (!ovis3_ || core_env::on("CRISPEMBED_OVISOCR3_FRONTEND")) &&
+           (!xiaomi0_ || core_env::on("CRISPEMBED_XIAOMI_OCR0_FRONTEND"));
 }
 bool frontend_tokenizer::is_stop(int id) const {
     return enabled() && std::find(stops_.begin(), stops_.end(), id) != stops_.end();
@@ -94,7 +96,9 @@ bool frontend_tokenizer::load(gguf_context * meta) {
         source == "lightonai/LightOnOCR-3-0.8B" && revision == "36d8636925327c671bd8e479c517a004f7566bd9";
     const bool ovis = source == "ATH-MaaS/OvisOCR2" && revision == "cbdede82e048659b83310476ff807da825f8fe78";
     const bool ovis3 = source == "ATH-MaaS/OvisOCR3" && revision == "5f6ce6932efee9ec10c30746db55bd780214b7fd";
-    if (!lighton && !ovis && !ovis3) return false;
+    const bool xiaomi0 = source == xiaomi0_profile::model && revision == xiaomi0_profile::revision;
+    if (!lighton && !ovis && !ovis3 && !xiaomi0) return false;
+    if (xiaomi0 && (!core_env::on("CRISPEMBED_XIAOMI_OCR0_FRONTEND") || !xiaomi0_profile::metadata(meta))) return false;
     if (ovis && (!core_env::on("CRISPEMBED_OVISOCR2_FRONTEND") ||
                  core_gguf::kv_u32(meta, "qwen35_ocr.format_version", 0) != 2 ||
                  core_gguf::kv_str(meta, "qwen35_ocr.profile", "") != "ovisocr2" ||
@@ -151,6 +155,7 @@ bool frontend_tokenizer::load(gguf_context * meta) {
     frontend_tokenizer result;
     result.ovis_ = ovis;
     result.ovis3_ = ovis3;
+    result.xiaomi0_ = xiaomi0;
     if (ovis || ovis3) result.image_template_ = ovis ? ovis_template : ovis3_rendered_template;
     result.vocab_ = core_gguf::kv_str_array(meta, "tokenizer.ggml.tokens");
     result.added_ = core_gguf::kv_i32_array(meta, "qwen35_ocr.added_token_ids");
@@ -268,8 +273,9 @@ bool frontend_tokenizer::encode(const std::string & text, std::vector<int> & ids
         }
         const auto ordinary = core_bpe::tokenize_pretokenized(
             tokens_, merges_,
-            core_bpe::bytelevel_pretokenize(core_nfc::normalize(replace_invalid_utf8(text.substr(start, next - start))),
-                                            1, ovis_ || ovis3_ || core_env::on("CRISPEMBED_QWEN35_TOKENIZER_MARKS")));
+            core_bpe::bytelevel_pretokenize(
+                core_nfc::normalize(replace_invalid_utf8(text.substr(start, next - start))), 1,
+                ovis_ || ovis3_ || (!xiaomi0_ && core_env::on("CRISPEMBED_QWEN35_TOKENIZER_MARKS"))));
         ids.insert(ids.end(), ordinary.begin(), ordinary.end());
         if (added < 0) break;
         ids.push_back(added);
@@ -301,8 +307,10 @@ bool frontend_tokenizer::image_prompt(const std::string & prompt, int image_toke
     modalities.clear();
     rendered.clear();
     if (!enabled() || image_tokens < 1 || image_tokens > 1024 || ((ovis_ || ovis3_) && !prompt.empty())) return false;
+    std::string effective_prompt = prompt;
+    if (xiaomi0_ && !xiaomi0_profile::task_prompt(prompt, effective_prompt)) return false;
     rendered = (ovis_ || ovis3_) ? image_template_
-                                 : "<|im_start|>user\n<|vision_start|><|image_pad|><|vision_end|>" + prompt +
+                                 : "<|im_start|>user\n<|vision_start|><|image_pad|><|vision_end|>" + effective_prompt +
                                        "<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n";
     std::vector<int> initial;
     if (!encode(rendered, initial) || std::count(initial.begin(), initial.end(), 248056) != 1 ||

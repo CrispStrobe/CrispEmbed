@@ -9,6 +9,11 @@
 static int crispembed_test_main() {
     using namespace mineru25_profile;
     bool ok = round_factor_even(70) == 56 && round_factor_even(98) == 112;
+    ok = ok && supports_family(family) && supports_family(family_2605) && !supports_family("mineru2.5-pro-2606");
+    ok = ok && valid_2605_source(repository_2605, revision_2605, revision_2605);
+    ok = ok && !valid_2605_source(repository_2605, "local-unverified", revision_2605);
+    ok = ok && !valid_2605_source("opendatalab/MinerU2.5-Pro-2604-1.2B", revision_2605, revision_2605);
+    ok = ok && !valid_2605_source(repository_2605, revision_2605, "");
     int h = 0, w = 0;
     ok = ok && smart_resize(70, 784, 50176, 1605632, h, w) && h == 84 && w == 756;
     ok = ok && !smart_resize(1, 201, 50176, 1605632, h, w);

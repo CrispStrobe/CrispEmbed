@@ -261,13 +261,24 @@ bool load_hparams(context & ctx, const char * path) {
         }
     }
     const std::string family = core_gguf::kv_str(g, "qwen2vl.model_family", "");
-    ctx.is_mineru25_pro = family == mineru25_profile::family;
+    ctx.is_mineru25_pro = mineru25_profile::supports_family(family);
     std::string model_name = core_gguf::kv_str(g, "general.name", "");
     std::transform(model_name.begin(), model_name.end(), model_name.begin(),
                    [](unsigned char c) { return char(std::tolower(c)); });
     if ((family.find("mineru") != std::string::npos || model_name.find("mineru") != std::string::npos) &&
         !ctx.is_mineru25_pro) {
-        fprintf(stderr, "qwen2vl_ocr: MinerU requires the explicit mineru2.5-pro-2604 conversion profile\n");
+        fprintf(
+            stderr,
+            "qwen2vl_ocr: MinerU requires an explicit mineru2.5-pro-2604 or mineru2.5-pro-2605 conversion profile\n");
+        core_gguf::free_metadata(g);
+        return false;
+    }
+    if (family == mineru25_profile::family_2605 &&
+        (!core_env::on(mineru25_profile::gate_2605) ||
+         !mineru25_profile::valid_2605_source(core_gguf::kv_str(g, "qwen2vl.source.repository", ""),
+                                              core_gguf::kv_str(g, "qwen2vl.source.revision", ""),
+                                              core_gguf::kv_str(g, "qwen2vl.source.expected_revision", "")))) {
+        fprintf(stderr, "qwen2vl_ocr: MinerU 2605 requires CRISPEMBED_MINERU25_PRO_2605=1 and exact source metadata\n");
         core_gguf::free_metadata(g);
         return false;
     }

@@ -644,6 +644,11 @@ int qwen35_ocr_is_ovisocr3(const qwen35_ocr_context * ctx) {
     return 0;
 }
 
+int qwen35_ocr_is_xiaomi0(const qwen35_ocr_context * ctx) {
+    (void)ctx;
+    return 0;
+}
+
 float qwen35_ocr_mean_confidence(const qwen35_ocr_context * ctx) {
     (void)ctx;
     return 0.0f;

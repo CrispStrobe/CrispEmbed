@@ -1,0 +1,157 @@
+{
+  "schema": "crispembed.ovisocr3.document-markdown.protocol.v1",
+  "status": "source task contract audited; original Markdown execution and independent input/gold freeze pending",
+  "model": "ATH-MaaS/OvisOCR3",
+  "revision": "5f6ce6932efee9ec10c30746db55bd780214b7fd",
+  "checkpoint": {
+    "file": "model.safetensors",
+    "bytes": 1706030528,
+    "sha256": "aa2311c6b22b07cf3afe9aac6e8bcb02a2b19dd8671b2a91d0b144071577e600",
+    "tensor_count": 473,
+    "mtp_hidden_layers": 0
+  },
+  "source_files": {
+    "README.md": {
+      "bytes": 26990,
+      "sha256": "71668558db69ac7fcd29a30ccecb4effa9df48efd2757b750742c6e22229bfc6"
+    },
+    "LICENSE": {
+      "bytes": 11544,
+      "sha256": "bbedc3fda3305820b977265f01b8619d87570a6739de3a5582c3464840f1e57a"
+    },
+    "chat_template.jinja": {
+      "bytes": 7755,
+      "sha256": "273d8e0e683b885071fb17e08d71e5f2a5ddfb5309756181681de4f5a1822d80"
+    },
+    "preprocessor_config.json": {
+      "bytes": 390,
+      "sha256": "27225450ac9c6529872ee1924fcb0962ff5634834f817040f444118116f4e516"
+    },
+    "generation_config.json": {
+      "bytes": 147,
+      "sha256": "c3ff3171724248f377efaf37197cce6f7bf1f4918a1ed3f31ef2ce53be91ecc1"
+    },
+    "prompts/document_markdown.txt": {
+      "bytes": 512,
+      "sha256": "dbf31d5899a86047ce0cd4d0d12cdc5616df1bea5d9a600b823098442c32997c"
+    }
+  },
+  "task": {
+    "name": "document_markdown",
+    "prompt_file": "prompts/document_markdown.txt",
+    "prompt_bytes": 512,
+    "prompt_sha256": "dbf31d5899a86047ce0cd4d0d12cdc5616df1bea5d9a600b823098442c32997c",
+    "images_per_request": 1,
+    "message_order": [
+      "image",
+      "task_text"
+    ],
+    "add_generation_prompt": true,
+    "enable_thinking": false,
+    "rendered_prompt_sha256": null
+  },
+  "generation": {
+    "max_new_tokens": 16384,
+    "temperature": 0.0,
+    "do_sample": false,
+    "source_eos_ids": [
+      248044,
+      248046
+    ],
+    "custom_stop_strings": [],
+    "actual_markdown_stop_contract_captured": false,
+    "budget_origin": "unchanged upstream README example; separate task, not an old-panel cap change"
+  },
+  "processor": {
+    "rgb": true,
+    "kwargs_path": "mm_processor_kwargs.images_kwargs",
+    "min_pixels": 200704,
+    "max_pixels": 8294400,
+    "saved_processor_class": "Qwen3VLProcessor",
+    "saved_image_class": "Qwen2VLImageProcessorFast",
+    "installed_markdown_processor_captured": false,
+    "native_existing_patch_bound": 1024,
+    "full_upstream_geometry_qualified": false
+  },
+  "upstream_runtime": {
+    "implementation": "vllm",
+    "version": "0.22.1",
+    "source_commit": "0decac0d96c42b49572498019f0a0e3600f50398",
+    "tensor_parallel_size": 1,
+    "gpu_memory_utilization": 0.8,
+    "gdn_prefill_backend": "triton",
+    "limit_mm_per_prompt_images": 2
+  },
+  "postprocess": {
+    "source": "README.md",
+    "ordered_steps": [
+      "strip",
+      "optional_image_tag_block_filter",
+      "_clean_truncated_repeats"
+    ],
+    "upstream_filter_imgtags_default": true,
+    "retain_raw_and_both_filter_variants": true,
+    "applies_regardless_of_finish_reason": true,
+    "cleanup_can_establish_completion": false,
+    "cleanup_defaults": {
+      "min_text_len": 8000,
+      "max_period": 200,
+      "min_period": 1,
+      "min_repeat_chars": 100,
+      "min_repeat_times": 5
+    }
+  },
+  "evaluation": {
+    "frozen_input_gold_manifest": null,
+    "outputs_observed": false,
+    "required_before_outputs": [
+      "case IDs and image/RGB SHA-256",
+      "licensed or authored images and provenance",
+      "independent Markdown/text/table/formula/image-reference annotations",
+      "case split and output schema",
+      "task prompt, token cap, processor settings and scorer version"
+    ],
+    "minimum_case_families": [
+      "multicolumn reading order",
+      "headings and lists",
+      "HTML table cells and spans",
+      "LaTeX formulas",
+      "visual region references",
+      "multilingual document text"
+    ],
+    "required_capture": [
+      "raw token IDs, terminal EOS/finish reason and explicit forced-EOS evidence",
+      "raw Markdown before any cleanup",
+      "upstream default and image-preserving processed variants",
+      "rendered prompt, input IDs, packed pixels, attention masks and image grids",
+      "every generated-position full-vocabulary raw logit row on the original prefix",
+      "original module stages/cache and cold/warm timings"
+    ],
+    "completion_rule": "raw terminal EOS plus non-length finish and no forced EOS or post-EOS tokens; cleanup cannot repair completion",
+    "quality_rule": "evaluate content, reading order, tables, formulas and image references separately; no invented text-region boxes",
+    "benchmark_score_claim": false
+  },
+  "preserved_plain_ocr": {
+    "task": "plain_ocr",
+    "prompt_sha256": "e037cf0013a757e19eae6d4d701f3b90848449fbebe44d1f8fa7d8ca4a5af9a7",
+    "two_column_cap": 1024,
+    "source_quality_qualified": false,
+    "superseded": false,
+    "files_sha256": {
+      "tests/results/qwen35-ocr/ovisocr3-quality-panel.json": "cfdce3132f21a0188a034c015b3b0ce46d62e0fde6ad84697972bab517b86897",
+      "tests/results/qwen35-ocr/ovisocr3-original-quality.json": "10a11d6aa9b8389bcb2c69417290109e2fa3c8f16a236fa7325a076d6da17c7e",
+      "tests/results/qwen35-ocr/ovisocr3-f16-quality.json": "fc110bc5fca6aa6eb324527897a8a2db032cbca9c524e6e8c9b05dd61a87839b"
+    }
+  },
+  "qualification": {
+    "original_metadata": false,
+    "original_neural": false,
+    "native_profile": false,
+    "native_numerical": false,
+    "source_quality": false,
+    "benchmark": false,
+    "alias": false,
+    "publication": false
+  },
+  "native_next_step": "A new task-specific profile and original-first evidence are required; existing format-3 plain OCR custom-prompt rejection remains intact."
+}

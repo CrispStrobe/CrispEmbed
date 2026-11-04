@@ -1,0 +1,24 @@
+Nemotron 3.5 Parse frontend prototype
+
+Portions of src/nemotron_parse_geometry.h are adapted from:
+  NVIDIA Nemotron 3.5 Parse
+  https://huggingface.co/nvidia/Nemotron-3.5-Parse
+  revision 4035ffb1d8f8bafcdb867dfaf6f7514f101464f9
+  hf_nemotron_parse_processor.py
+  source SHA256 983fa8aeb0d872da01296035b30d60c84fd857879a37c939c5c7203bad3c8b81
+
+Original notice:
+  Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+  SPDX-License-Identifier: OpenMDW-1.1
+
+The applicable upstream license text is preserved in nemotron-parse-LICENSE.
+
+CrispEmbed modifications (2026): C++ size planning and packing of externally
+resized, tightly packed RGB8/grayscale8 pixels; bounded input validation,
+default-off admission, and independent frontend comparison probes.
+
+No tokenizer, model weights, neural model implementation, learned positional
+interpolation or third-party runtime source is included in this adaptation.
+The original processor used by the reference tool is downloaded separately at
+the exact revision and hash checked before import. Its dependencies retain
+their own licenses and notices.

@@ -1,0 +1,10 @@
+These six unmodified small source files are from ATH-MaaS/OvisOCR3 at
+5f6ce6932efee9ec10c30746db55bd780214b7fd:
+README.md, LICENSE, chat_template.jinja, preprocessor_config.json,
+generation_config.json and prompts/document_markdown.txt.
+
+Source: https://huggingface.co/ATH-MaaS/OvisOCR3/tree/5f6ce6932efee9ec10c30746db55bd780214b7fd
+The upstream Apache-2.0 license is preserved as LICENSE. Original notices in
+the source files are unchanged. CrispEmbed uses these files only to audit the
+separate document-Markdown task contract and its reference cleanup. No weights
+or model outputs are included, and this fixture does not qualify a runtime.

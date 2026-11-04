@@ -1,0 +1,8 @@
+# Processor-only reference. Original model card pins Transformers/torchvision.
+# CPU torch wheels may be installed first from the PyTorch CPU wheel index.
+# No model, tokenizer, timm model implementation, or weight payload is loaded.
+torch==2.11.0
+torchvision==0.26.0
+transformers==5.14.1
+numpy==2.2.6
+Pillow==12.3.0

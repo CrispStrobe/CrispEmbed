@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Convert the pinned MinerU2.5-Pro-2604-1.2B checkpoint to native CrispEmbed GGUF.
+"""Convert a pinned MinerU2.5-Pro-2604/2605-1.2B checkpoint to native CrispEmbed GGUF.
 
 No Transformers model or remote Python code is executed. Safetensors are read one
 tensor at a time; BF16 is expanded exactly to F32 before optional F16 storage.
@@ -27,6 +27,35 @@ MODEL_ID = "opendatalab/MinerU2.5-Pro-2604-1.2B"
 MODEL_REVISION = "d3f5e08d073c21466bbabe21c71bb1e9c2e595da"
 BLUEPRINT_REVISION = "c9797cde8f54cc48306196fc6aebe73ea31dd4a3"
 FAMILY = "mineru2.5-pro-2604"
+@dataclass(frozen=True)
+class CheckpointProfile:
+    checkpoint: str
+    repository: str
+    revision: str
+    family: str
+    blueprint: str
+    manifest: str
+
+
+# An explicit selection is required for 2605; the published 2604 default and
+# constants remain unchanged. A matching tensor layout is not source identity.
+PROFILES = {
+    "2604": CheckpointProfile("2604", MODEL_ID, MODEL_REVISION, FAMILY,
+                              BLUEPRINT_REVISION, "mineru25-pro-source.json"),
+    "2605": CheckpointProfile("2605", "opendatalab/MinerU2.5-Pro-2605-1.2B",
+                              "08aaea840498d49ce16247b6263196cf02814885",
+                              "mineru2.5-pro-2605", "mineru-vl-utils==2.0.7",
+                              "mineru25-pro-2605-source.json"),
+}
+
+
+def source_manifest(profile=PROFILES["2604"]):
+    manifest = json.loads(Path(__file__).with_name(profile.manifest).read_text(encoding="utf-8"))
+    require_equal(manifest["repository"], profile.repository, "manifest repository")
+    require_equal(manifest["revision"], profile.revision, "manifest revision")
+    return manifest
+
+
 VOCAB_SIZE = 151936
 TOKENIZER_SIZE = 151674
 SPECIAL_TOKENS = dict(enumerate([
@@ -248,16 +277,24 @@ def tokenizer_payload(tokenizer: dict, config: dict):
     return tokens, types, merges
 
 
-def write_metadata(writer, config, pp, tokens, token_types, merges, source, hashes, dtype):
-    writer.add_string("general.name", "MinerU2.5-Pro-2604-1.2B")
+def write_metadata(writer, config, pp, tokens, token_types, merges, source, hashes, dtype,
+                   profile=PROFILES["2604"]):
+    if profile.checkpoint == "2605":
+        require_equal(source, profile.revision, "2605 source revision")
+    writer.add_string("general.name", profile.repository.rsplit("/", 1)[1])
     writer.add_string("general.license", "apache-2.0")
-    writer.add_string("qwen2vl.model_family", FAMILY)
+    writer.add_string("qwen2vl.model_family", profile.family)
     writer.add_string("qwen2vl.mineru.processor", "qwen2vl-fast")
-    writer.add_string("qwen2vl.source.repository", MODEL_ID)
+    writer.add_string("qwen2vl.source.repository", profile.repository)
     writer.add_string("qwen2vl.source.revision", source)
-    writer.add_string("qwen2vl.source.expected_revision", MODEL_REVISION)
+    writer.add_string("qwen2vl.source.expected_revision", profile.revision)
     writer.add_string("qwen2vl.source.file_sha256", json.dumps(hashes, sort_keys=True))
-    writer.add_string("qwen2vl.blueprint.revision", BLUEPRINT_REVISION)
+    writer.add_string("qwen2vl.blueprint.revision", profile.blueprint)
+    if profile.checkpoint == "2605":
+        writer.add_string("qwen2vl.blueprint.artifact_sha256", source_manifest(profile)["blueprint"]["wheel_sha256"])
+        # Native document helpers remain the independently qualified 2604 port.
+        # The 2.0.7 comparison is a new qualification, not inherited evidence.
+        writer.add_string("qwen2vl.mineru.native_document_blueprint_revision", BLUEPRINT_REVISION)
     writer.add_string("qwen2vl.conversion.recipe", "f32" if dtype == "f32" else "f16-f32-norm-bias-embedding")
     tc = config["text_config"]
     for key in ["vocab_size", "hidden_size", "intermediate_size", "num_hidden_layers",
@@ -313,28 +350,31 @@ def read_tensor(path: Path, entry: dict, shape, dtype):
     return np.ascontiguousarray(data)
 
 
-def resolve_model(model: str) -> tuple[Path, str]:
+def resolve_model(model: str, profile=PROFILES["2604"]) -> tuple[Path, str]:
     local = Path(model)
     if local.is_dir():
         # A directory label does not prove provenance. Hash every input file.
         return local, "local-unverified"
-    require_equal(model, MODEL_ID, "model repository")
+    require_equal(model, profile.repository, "model repository")
     from huggingface_hub import snapshot_download
-    path = snapshot_download(MODEL_ID, revision=MODEL_REVISION, allow_patterns=[
+    path = snapshot_download(profile.repository, revision=profile.revision, allow_patterns=[
         "config.json", "preprocessor_config.json", "generation_config.json",
         "tokenizer.json", "tokenizer_config.json", "chat_template.jinja", "model.safetensors",
     ])
-    return Path(path), MODEL_REVISION
+    return Path(path), profile.revision
 
 
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--model", default=MODEL_ID)
+    parser.add_argument("--checkpoint", choices=list(PROFILES), default="2604",
+                        help="frozen checkpoint profile; 2604 remains the default")
+    parser.add_argument("--model", help="selected repository or a local snapshot whose bytes must match")
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--dtype", choices=["f32", "f16"], default="f32")
     parser.add_argument("--check-only", action="store_true", help="verify source inventory/config/tokenizer without writing weights")
     args = parser.parse_args(argv)
-    model_dir, source = resolve_model(args.model)
+    profile = PROFILES[args.checkpoint]
+    model_dir, source = resolve_model(args.model or profile.repository, profile)
     required = ["config.json", "preprocessor_config.json", "generation_config.json", "tokenizer.json", "tokenizer_config.json"]
     payload = {name: json.loads((model_dir / name).read_text(encoding="utf-8")) for name in required}
     config, pp = payload["config.json"], payload["preprocessor_config.json"]
@@ -345,20 +385,22 @@ def main(argv=None):
     specs = validate_tensors(entries)
     print(f"Validated {len(specs)} tensors and {len(tokens)} tokenizer entries", file=sys.stderr)
     if args.check_only:
+        if profile.checkpoint == "2605":
+            verify_source_files(model_dir, source_manifest(profile))
         return 0
     import gguf
     import numpy as np
     if args.output.exists():
         raise FileExistsError(f"refusing to replace {args.output}; choose a new output")
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    hashes = verify_source_files(model_dir)
-    source = MODEL_REVISION
+    hashes = verify_source_files(model_dir, source_manifest(profile))
+    source = profile.revision
     temp = args.output.with_name(args.output.name + ".partial")
     if temp.exists():
         raise FileExistsError(f"refusing to overwrite prior partial output {temp}")
     writer = gguf.GGUFWriter(str(temp), "qwen2vl")
     try:
-        write_metadata(writer, config, pp, tokens, token_types, merges, source, hashes, args.dtype)
+        write_metadata(writer, config, pp, tokens, token_types, merges, source, hashes, args.dtype, profile)
         for spec in specs:
             shape = (1280, 1176) if spec.flatten_patch else spec.shape
             dtype = np.dtype(storage_dtype(spec, args.dtype))
@@ -383,7 +425,7 @@ def main(argv=None):
             temp.unlink()
         raise
     receipt = {
-        "model": MODEL_ID, "expected_revision": MODEL_REVISION, "source_revision": source,
+        "model": profile.repository, "expected_revision": profile.revision, "source_revision": source,
         "source_sha256": hashes, "recipe": args.dtype, "tensor_count": len(specs),
         "tokenizer_size": len(tokens), "embedding_rows": VOCAB_SIZE,
         "gguf_sha256": sha256(args.output), "gguf_size_bytes": args.output.stat().st_size,

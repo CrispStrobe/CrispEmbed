@@ -1,0 +1,381 @@
+{
+  "schema": "crispembed-ocr-expansion-source-ci/v1",
+  "repository": "CrispStrobe/CrispEmbed",
+  "pull_request": "https://github.com/CrispStrobe/CrispEmbed/pull/138",
+  "source_commit": "7ac5b594e63a34b53a753d9520fccff4ceb888d0",
+  "source_tree": "1e6d5dffb8d01733d85762b4354473889be7c88e",
+  "scope": "Source compilation, model-free contracts and existing compatibility checks; no inference for the new candidate profiles.",
+  "workflows": [
+    {
+      "id": 41735520788,
+      "name": "OvisOCR2 metadata, export, frontend and fixture audits",
+      "path": ".github/workflows/ovisocr2-metadata.yml",
+      "event": "pull_request",
+      "head_sha": "7ac5b594e63a34b53a753d9520fccff4ceb888d0",
+      "head_branch": "feat/ocr-benchmark-integration",
+      "status": "completed",
+      "conclusion": "success",
+      "run_attempt": 1,
+      "created_at": "2026-11-03T22:59:54Z",
+      "run_started_at": "2026-11-03T22:59:54Z",
+      "updated_at": "2026-11-03T23:03:20Z",
+      "html_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41735520788"
+    },
+    {
+      "id": 41735520653,
+      "name": "Qwen3.5 decoded audit controls",
+      "path": ".github/workflows/qwen35-decoded-audit.yml",
+      "event": "pull_request",
+      "head_sha": "7ac5b594e63a34b53a753d9520fccff4ceb888d0",
+      "head_branch": "feat/ocr-benchmark-integration",
+      "status": "completed",
+      "conclusion": "success",
+      "run_attempt": 1,
+      "created_at": "2026-11-03T22:59:54Z",
+      "run_started_at": "2026-11-03T22:59:54Z",
+      "updated_at": "2026-11-03T23:03:39Z",
+      "html_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41735520653"
+    },
+    {
+      "id": 41735520543,
+      "name": "Secret scan",
+      "path": ".github/workflows/secret-scan.yml",
+      "event": "pull_request",
+      "head_sha": "7ac5b594e63a34b53a753d9520fccff4ceb888d0",
+      "head_branch": "feat/ocr-benchmark-integration",
+      "status": "completed",
+      "conclusion": "success",
+      "run_attempt": 1,
+      "created_at": "2026-11-03T22:59:54Z",
+      "run_started_at": "2026-11-03T22:59:54Z",
+      "updated_at": "2026-11-03T23:00:29Z",
+      "html_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41735520543"
+    },
+    {
+      "id": 41735520659,
+      "name": "OCR quality contract",
+      "path": ".github/workflows/ocr-quality.yml",
+      "event": "pull_request",
+      "head_sha": "7ac5b594e63a34b53a753d9520fccff4ceb888d0",
+      "head_branch": "feat/ocr-benchmark-integration",
+      "status": "completed",
+      "conclusion": "success",
+      "run_attempt": 1,
+      "created_at": "2026-11-03T22:59:54Z",
+      "run_started_at": "2026-11-03T22:59:54Z",
+      "updated_at": "2026-11-03T23:00:50Z",
+      "html_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41735520659"
+    },
+    {
+      "id": 41735520525,
+      "name": "Quantizer precision overrides",
+      "path": ".github/workflows/quantize-overrides.yml",
+      "event": "pull_request",
+      "head_sha": "7ac5b594e63a34b53a753d9520fccff4ceb888d0",
+      "head_branch": "feat/ocr-benchmark-integration",
+      "status": "completed",
+      "conclusion": "success",
+      "run_attempt": 1,
+      "created_at": "2026-11-03T22:59:54Z",
+      "run_started_at": "2026-11-03T22:59:54Z",
+      "updated_at": "2026-11-03T23:00:59Z",
+      "html_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41735520525"
+    },
+    {
+      "id": 41735520652,
+      "name": "Lint",
+      "path": ".github/workflows/lint.yml",
+      "event": "pull_request",
+      "head_sha": "7ac5b594e63a34b53a753d9520fccff4ceb888d0",
+      "head_branch": "feat/ocr-benchmark-integration",
+      "status": "completed",
+      "conclusion": "success",
+      "run_attempt": 1,
+      "created_at": "2026-11-03T22:59:54Z",
+      "run_started_at": "2026-11-03T22:59:54Z",
+      "updated_at": "2026-11-03T23:01:58Z",
+      "html_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41735520652"
+    },
+    {
+      "id": 41735520640,
+      "name": "LFM2 precise arithmetic fixture",
+      "path": ".github/workflows/lfm2-arithmetic.yml",
+      "event": "pull_request",
+      "head_sha": "7ac5b594e63a34b53a753d9520fccff4ceb888d0",
+      "head_branch": "feat/ocr-benchmark-integration",
+      "status": "completed",
+      "conclusion": "success",
+      "run_attempt": 1,
+      "created_at": "2026-11-03T22:59:54Z",
+      "run_started_at": "2026-11-03T22:59:54Z",
+      "updated_at": "2026-11-03T23:02:37Z",
+      "html_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41735520640"
+    },
+    {
+      "id": 41735520715,
+      "name": "Model-free controls",
+      "path": ".github/workflows/controls.yml",
+      "event": "pull_request",
+      "head_sha": "7ac5b594e63a34b53a753d9520fccff4ceb888d0",
+      "head_branch": "feat/ocr-benchmark-integration",
+      "status": "completed",
+      "conclusion": "success",
+      "run_attempt": 1,
+      "created_at": "2026-11-03T22:59:54Z",
+      "run_started_at": "2026-11-03T22:59:54Z",
+      "updated_at": "2026-11-03T23:02:57Z",
+      "html_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41735520715"
+    },
+    {
+      "id": 41735520539,
+      "name": "Rust crates",
+      "path": ".github/workflows/rust-crates.yml",
+      "event": "pull_request",
+      "head_sha": "7ac5b594e63a34b53a753d9520fccff4ceb888d0",
+      "head_branch": "feat/ocr-benchmark-integration",
+      "status": "completed",
+      "conclusion": "success",
+      "run_attempt": 1,
+      "created_at": "2026-11-03T22:59:54Z",
+      "run_started_at": "2026-11-03T22:59:54Z",
+      "updated_at": "2026-11-03T23:04:07Z",
+      "html_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41735520539"
+    },
+    {
+      "id": 41735520647,
+      "name": "MinerU2.5-Pro qualification",
+      "path": ".github/workflows/mineru25-pro.yml",
+      "event": "pull_request",
+      "head_sha": "7ac5b594e63a34b53a753d9520fccff4ceb888d0",
+      "head_branch": "feat/ocr-benchmark-integration",
+      "status": "completed",
+      "conclusion": "success",
+      "run_attempt": 1,
+      "created_at": "2026-11-03T22:59:54Z",
+      "run_started_at": "2026-11-03T22:59:54Z",
+      "updated_at": "2026-11-03T23:06:43Z",
+      "html_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41735520647"
+    },
+    {
+      "id": 41735520683,
+      "name": "Inpainting CLI and image contracts",
+      "path": ".github/workflows/inpaint-cli.yml",
+      "event": "pull_request",
+      "head_sha": "7ac5b594e63a34b53a753d9520fccff4ceb888d0",
+      "head_branch": "feat/ocr-benchmark-integration",
+      "status": "completed",
+      "conclusion": "success",
+      "run_attempt": 1,
+      "created_at": "2026-11-03T22:59:54Z",
+      "run_started_at": "2026-11-03T22:59:54Z",
+      "updated_at": "2026-11-03T23:06:24Z",
+      "html_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41735520683"
+    },
+    {
+      "id": 41735520573,
+      "name": "Build",
+      "path": ".github/workflows/build.yml",
+      "event": "pull_request",
+      "head_sha": "7ac5b594e63a34b53a753d9520fccff4ceb888d0",
+      "head_branch": "feat/ocr-benchmark-integration",
+      "status": "completed",
+      "conclusion": "success",
+      "run_attempt": 1,
+      "created_at": "2026-11-03T22:59:54Z",
+      "run_started_at": "2026-11-03T22:59:54Z",
+      "updated_at": "2026-11-03T23:06:36Z",
+      "html_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41735520573"
+    },
+    {
+      "id": 41735520669,
+      "name": "Build WASM",
+      "path": ".github/workflows/build-wasm.yml",
+      "event": "pull_request",
+      "head_sha": "7ac5b594e63a34b53a753d9520fccff4ceb888d0",
+      "head_branch": "feat/ocr-benchmark-integration",
+      "status": "completed",
+      "conclusion": "success",
+      "run_attempt": 1,
+      "created_at": "2026-11-03T22:59:54Z",
+      "run_started_at": "2026-11-03T22:59:54Z",
+      "updated_at": "2026-11-03T23:16:11Z",
+      "html_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41735520669"
+    },
+    {
+      "id": 41735520523,
+      "name": "Build WASM (text embeddings)",
+      "path": ".github/workflows/build-wasm-embed.yml",
+      "event": "pull_request",
+      "head_sha": "7ac5b594e63a34b53a753d9520fccff4ceb888d0",
+      "head_branch": "feat/ocr-benchmark-integration",
+      "status": "completed",
+      "conclusion": "success",
+      "run_attempt": 1,
+      "created_at": "2026-11-03T22:59:54Z",
+      "run_started_at": "2026-11-03T22:59:54Z",
+      "updated_at": "2026-11-03T23:07:37Z",
+      "html_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41735520523"
+    },
+    {
+      "id": 41735520531,
+      "name": "OCR regression",
+      "path": ".github/workflows/regression.yml",
+      "event": "pull_request",
+      "head_sha": "7ac5b594e63a34b53a753d9520fccff4ceb888d0",
+      "head_branch": "feat/ocr-benchmark-integration",
+      "status": "completed",
+      "conclusion": "success",
+      "run_attempt": 1,
+      "created_at": "2026-11-03T22:59:54Z",
+      "run_started_at": "2026-11-03T22:59:54Z",
+      "updated_at": "2026-11-03T23:08:30Z",
+      "html_url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41735520531"
+    }
+  ],
+  "native_build_jobs": [
+    {
+      "id": 126263620768,
+      "name": "Static guards",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 126263822853,
+      "name": "sibling-crispasr (shared libs)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 126263822856,
+      "name": "ios-arm64",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 126263822858,
+      "name": "windows-x86_64",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 126263822941,
+      "name": "android-arm64-v8a",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 126263822956,
+      "name": "linux-x86_64",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 126263823011,
+      "name": "android-x86_64",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 126263823064,
+      "name": "macos-arm64",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 126263823083,
+      "name": "android-armeabi-v7a",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 126266409972,
+      "name": "Bundle Flutter plugin",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 126266740094,
+      "name": "Build result",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "focused_ocr_python_controls": {
+    "total": 162,
+    "counts": {
+      "document_evaluator": 32,
+      "mineru2605_contract": 21,
+      "mineru2604_preserved_conversion": 17,
+      "lightonocr3_1b": 19,
+      "lighton08_portable": 8,
+      "lighton08_retained_review": 6,
+      "nemotron_source": 7,
+      "nemotron_frontend": 12,
+      "xiaomi_profile_runner_document": 26,
+      "ovisocr3_markdown_contract": 14
+    },
+    "hosted_workflow_run": 41735520715
+  },
+  "ordinary_mineru_workflow_jobs": [
+    {
+      "id": 126263621079,
+      "name": "components",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "id": 126266914285,
+      "name": "model-smoke",
+      "status": "completed",
+      "conclusion": "skipped"
+    }
+  ],
+  "qualification": {
+    "new_candidate_model_inference_executed": false,
+    "new_candidate_processor_reference_executed": false,
+    "new_model_qualified": false,
+    "model_publication": false,
+    "new_registry_aliases": [],
+    "runtime_defaults_changed": false,
+    "release_performed": false
+  },
+  "preserved_failed_attempts": [
+    {
+      "source_commit": "fc2f450b7db74f05d17532f13a279dbe372968a7",
+      "run": 41729837686,
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41729837686",
+      "failure": "Fixture-dependent Xiaomi frontend executable invoked without its original metadata GGUF.",
+      "correction": "Regular CI compiles this target; hosted metadata runner supplies the real fixture before execution.",
+      "resolved_in": "e55070412382bb77b7f1477ca7b88d449aa419c8"
+    },
+    {
+      "source_commit": "fc2f450b7db74f05d17532f13a279dbe372968a7",
+      "run": 41729837345,
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41729837345",
+      "failure": "Existing MinerU BF16 conversion control ran before NumPy was installed.",
+      "correction": "Install the small numerical dependency before the MinerU controls.",
+      "resolved_in": "e55070412382bb77b7f1477ca7b88d449aa419c8"
+    },
+    {
+      "source_commit": "fc2f450b7db74f05d17532f13a279dbe372968a7",
+      "run": 41729837701,
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41729837701",
+      "failure": "Historical Ovis source fixture included the newly added opt-in Xiaomi header.",
+      "correction": "Keep the original test fixture source set, including the equivalent larger-input fixture; actual frozen runtime guards are unchanged.",
+      "resolved_in": "e55070412382bb77b7f1477ca7b88d449aa419c8"
+    },
+    {
+      "source_commit": "e55070412382bb77b7f1477ca7b88d449aa419c8",
+      "run": 41733553120,
+      "job": 126258920626,
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41733553120",
+      "failure": "OCR WASM final link: undefined symbol qwen35_ocr_is_xiaomi0 from the new generic API setters.",
+      "correction": "Add the matching false-returning profile-query stub beside the existing excluded Qwen3.5 engines.",
+      "resolved_in": "7ac5b594e63a34b53a753d9520fccff4ceb888d0"
+    }
+  ],
+  "next_execution": "Run the original-first manual hosted jobs described in docs/ocr-benchmark-expansion.md; retain failures and complete each declared panel before model or publication decisions.",
+  "all_workflows_completed": true,
+  "all_workflows_passed": true,
+  "recorded_at": "2026-11-03 23:18:20 UTC"
+}

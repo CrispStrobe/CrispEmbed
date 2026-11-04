@@ -4,6 +4,10 @@
 // Single GGUF, CPU-only via ggml_backend_sched.
 
 #include "lightonocr.h"
+#include "lightonocr3_profile.h"
+#ifdef CRISPEMBED_LIGHTONOCR3_TESTING
+#include "lightonocr_test.h"
+#endif
 #include "core/bpe.h"
 #include "core/gguf_loader.h"
 #include "ggml.h"
@@ -86,6 +90,11 @@ struct model {
     // General
     int spatial_merge_size;
     int image_token_id, eos_token_id, pad_token_id;
+    bool profile3 = false;
+    int max_positions = 16384;
+    int actual_vocab_size = 0;
+    std::vector<int> stop_ids, special_ids;
+    std::vector<int32_t> prompt_prefix, prompt_suffix, grounding_prefix, grounding_suffix;
 
     // Vision weights
     ggml_tensor * patch_conv_w; // [1024, 3, 14, 14]
@@ -140,7 +149,46 @@ struct context {
 
     // Per-token confidence
     std::vector<float> char_confidences;
+#ifdef CRISPEMBED_LIGHTONOCR3_TESTING
+    lightonocr_test_callback observer = nullptr;
+    void * observer_data = nullptr;
+    std::vector<int32_t> forced_tokens, observed_ids, applied_ids;
+#endif
 };
+
+#ifdef CRISPEMBED_LIGHTONOCR3_TESTING
+static void test_emit(context & ctx, const char * name, const std::vector<float> & values) {
+    if (ctx.observer) ctx.observer(name, values.data(), values.size(), ctx.observer_data);
+}
+static void test_mark(context & ctx, ggml_context * g, ggml_cgraph * gf, ggml_tensor * value,
+                      const std::string & name) {
+    if (!ctx.observer) return;
+    auto * copy = ggml_dup(g, value);
+    ggml_set_name(copy, name.c_str());
+    ggml_set_output(copy);
+    ggml_build_forward_expand(gf, copy);
+}
+static void test_read(context & ctx, ggml_cgraph * gf, const std::string & name) {
+    if (!ctx.observer) return;
+    auto * t = ggml_graph_get_tensor(gf, name.c_str());
+    if (!t) return;
+    std::vector<float> values(ggml_nelements(t));
+    ggml_backend_tensor_get(t, values.data(), 0, values.size() * sizeof(float));
+    test_emit(ctx, name.c_str(), values);
+}
+static int test_choice(context & ctx, int best, int step, const std::vector<float> & logits) {
+    test_emit(ctx, ("logits_step" + std::to_string(step)).c_str(), logits);
+    ctx.observed_ids.push_back(best);
+    const int selected = step < int(ctx.forced_tokens.size()) ? ctx.forced_tokens[step] : best;
+    ctx.applied_ids.push_back(selected);
+    return selected;
+}
+#else
+#define test_emit(...) ((void)0)
+#define test_mark(...) ((void)0)
+#define test_read(...) ((void)0)
+#define test_choice(ctx, best, step, logits) (best)
+#endif
 
 // ggml_backend_cpu_set_n_threads asserts a CPU backend, so under
 // CRISPEMBED_LIGHTONOCR_GPU=1 the thread count applies to the sched's CPU
@@ -238,11 +286,56 @@ bool load(context & ctx, const char * gguf_path, int n_threads) {
     m.eos_token_id = core_gguf::kv_u32(gctx, "lightonocr.eos_token_id", 151645);
     m.pad_token_id = core_gguf::kv_u32(gctx, "lightonocr.pad_token_id", 151643);
 
+    const std::string profile = core_gguf::kv_str(gctx, "lightonocr.profile", "");
+    m.profile3 = profile == "lightonocr3-1b";
+    if ((!profile.empty() && !m.profile3) || (m.profile3 && !core_env::on("CRISPEMBED_LIGHTONOCR3"))) {
+        fprintf(stderr,
+                "lightonocr: unsupported/disabled profile '%s'; LightOnOCR-3-1B requires CRISPEMBED_LIGHTONOCR3=1\n",
+                profile.c_str());
+        core_gguf::free_metadata(gctx);
+        return false;
+    }
+    if (m.profile3) {
+        auto ids = [&](const char * key) {
+            auto values = core_gguf::kv_i32_array(gctx, key);
+            return std::vector<int32_t>(values.begin(), values.end());
+        };
+        m.prompt_prefix = ids("lightonocr.prompt.transcription.prefix");
+        m.prompt_suffix = ids("lightonocr.prompt.transcription.suffix");
+        m.grounding_prefix = ids("lightonocr.prompt.grounding.prefix");
+        m.grounding_suffix = ids("lightonocr.prompt.grounding.suffix");
+        m.stop_ids = core_gguf::kv_i32_array(gctx, "lightonocr.stop_token_ids");
+        m.special_ids = core_gguf::kv_i32_array(gctx, "lightonocr.special_token_ids");
+        m.max_positions = core_gguf::kv_u32(gctx, "lightonocr.text.max_position_embeddings", 0);
+        m.actual_vocab_size = core_gguf::kv_u32(gctx, "lightonocr.tokenizer.actual_vocab_size", 0);
+        if (core_gguf::kv_u32(gctx, "lightonocr.profile_version", 0) != 1 ||
+            core_gguf::kv_str(gctx, "lightonocr.processor.resize", "") != "torch-bicubic-u8-antialias" ||
+            core_gguf::kv_u32(gctx, "lightonocr.processor.patch_grid", 0) != 14 || m.patch_size != 14 ||
+            m.spatial_merge_size != 2 || m.image_size != 1540 || m.max_positions != 16384 || m.vis_layers != 24 ||
+            m.vis_dim != 1024 || m.vis_heads != 16 || m.vis_head_dim != 64 || m.vis_inter != 4096 ||
+            m.lm_layers != 28 || m.lm_dim != 1024 || m.lm_heads != 16 || m.lm_kv_heads != 8 || m.lm_head_dim != 128 ||
+            m.lm_inter != 3072 || m.vocab_size != 151936 || m.actual_vocab_size != 151669 || !m.use_qk_norm ||
+            m.lm_rms_eps != 1e-6f || m.vis_rope_theta != 10000.0f || m.lm_rope_theta != 1000000.0f ||
+            m.image_token_id != 151655 || m.eos_token_id != 151645 || m.pad_token_id != 151643 ||
+            !lightonocr3::token_contract_matches(core_gguf::kv_str(gctx, "lightonocr.source.model", ""),
+                                                 core_gguf::kv_str(gctx, "lightonocr.source.revision", ""),
+                                                 m.prompt_prefix, m.prompt_suffix, m.grounding_prefix,
+                                                 m.grounding_suffix, m.stop_ids, m.special_ids)) {
+            fprintf(stderr, "lightonocr: incomplete or unsupported LightOnOCR-3-1B contract\n");
+            core_gguf::free_metadata(gctx);
+            return false;
+        }
+    }
+
     // Read tokenizer vocab
     ctx.vocab = core_gguf::kv_str_array(gctx, "tokenizer.ggml.tokens");
     for (int i = 0; i < (int)ctx.vocab.size(); i++) ctx.token_to_id[ctx.vocab[i]] = i;
 
     core_gguf::free_metadata(gctx);
+    if (m.profile3 && ctx.vocab.size() != size_t(m.vocab_size)) {
+        fprintf(stderr, "lightonocr: LightOnOCR-3-1B requires a complete tokenizer vocabulary\n");
+        return false;
+    }
 
     fprintf(stderr, "lightonocr: vis=%dL/%dd, lm=%dL/%dd, vocab=%d\n", m.vis_layers, m.vis_dim, m.lm_layers, m.lm_dim,
             m.vocab_size);
@@ -591,6 +684,7 @@ static bool run_vision_encoder(context & ctx, const std::vector<float> & patch_e
         x = ggml_mul(g, x, m.ln_pre_w);
     }
 
+    test_mark(ctx, g, gf, x, "vis_ln_pre");
     bool debug = LOCR_DEBUG;
     std::vector<ggml_tensor *> dbg_outputs; // side outputs to expand into graph
 
@@ -687,6 +781,7 @@ static bool run_vision_encoder(context & ctx, const std::vector<float> & patch_e
         x = ggml_add(g, residual, ffn);
 
         // Debug: skip remaining layers after first 1 for fast parity testing
+        test_mark(ctx, g, gf, x, "vis_layer_" + std::to_string(il));
         if (debug && il == 0) {
             fprintf(stderr, "lightonocr: DEBUG — stopping vision encoder at layer %d\n", il);
             break;
@@ -725,6 +820,9 @@ static bool run_vision_encoder(context & ctx, const std::vector<float> & patch_e
     ggml_tensor * t_out = ggml_graph_get_tensor(gf, "vis_out");
     out.resize(D * n_patches);
     ggml_backend_tensor_get(t_out, out.data(), 0, out.size() * sizeof(float));
+
+    test_read(ctx, gf, "vis_ln_pre");
+    for (int il = 0; il < m.vis_layers; ++il) test_read(ctx, gf, "vis_layer_" + std::to_string(il));
 
     // Debug: read named debug tensors for parity comparison
     if (LOCR_DEBUG) {
@@ -895,9 +993,35 @@ static bool run_decoder_prefill(context & ctx, const std::vector<float> & image_
         151644, 77091, 198       // <|im_start|> assistant \n
     };
 
+    if (m.profile3) {
+        const bool grounding = core_env::on("CRISPEMBED_LIGHTONOCR3_GROUNDING");
+        prefix_ids = grounding ? m.grounding_prefix : m.prompt_prefix;
+        suffix_ids = grounding ? m.grounding_suffix : m.prompt_suffix;
+    }
+    const auto is_stop = [&](int id) {
+        return m.profile3 ? std::find(m.stop_ids.begin(), m.stop_ids.end(), id) != m.stop_ids.end() : id == eos_id;
+    };
+#ifdef CRISPEMBED_LIGHTONOCR3_TESTING
+    ctx.observed_ids.clear();
+    ctx.applied_ids.clear();
+#endif
     int n_prefix = (int)prefix_ids.size();
     int n_suffix = (int)suffix_ids.size();
     int n_prompt = n_prefix + n_image_tokens + n_suffix;
+    if (m.profile3 && (max_new_tokens <= 0 || n_prompt > m.max_positions - max_new_tokens)) {
+        fprintf(stderr, "lightonocr: candidate prompt/generation exceeds its 16384-position contract\n");
+        return false;
+    }
+#ifdef CRISPEMBED_LIGHTONOCR3_TESTING
+    if (!ctx.forced_tokens.empty() &&
+        (ctx.forced_tokens.size() != size_t(max_new_tokens) ||
+         std::any_of(ctx.forced_tokens.begin(), ctx.forced_tokens.end(), [&](int id) { return id < 0 || id >= V; })))
+        return false;
+    std::vector<float> prompt_ids(prefix_ids.begin(), prefix_ids.end());
+    prompt_ids.insert(prompt_ids.end(), n_image_tokens, float(m.image_token_id));
+    prompt_ids.insert(prompt_ids.end(), suffix_ids.begin(), suffix_ids.end());
+    test_emit(ctx, "prompt_ids", prompt_ids);
+#endif
 
     // Embed tokens via direct weight read — avoids ggml graph overhead per call.
     // embed_tokens is stored as [D, vocab] in ggml (row-major: row i = token i).
@@ -931,6 +1055,7 @@ static bool run_decoder_prefill(context & ctx, const std::vector<float> & image_
     memcpy(full_emb.data() + D * n_prefix, image_embeds.data(), D * n_image_tokens * sizeof(float));
     memcpy(full_emb.data() + D * (n_prefix + n_image_tokens), suffix_emb.data(), D * n_suffix * sizeof(float));
 
+    test_emit(ctx, "decoder_embed", full_emb);
     fprintf(stderr, "lightonocr: prompt = %d prefix + %d image + %d suffix = %d total\n", n_prefix, n_image_tokens,
             n_suffix, n_prompt);
 
@@ -1066,10 +1191,12 @@ static bool run_decoder_prefill(context & ctx, const std::vector<float> & image_
         ffn = ggml_mul_mat(g, L.down_w, ffn);
 
         x = ggml_add(g, residual, ffn);
+        test_mark(ctx, g, gf, x, "llm_layer_" + std::to_string(il));
     }
 
     // Final RMSNorm
     x = rmsnorm(g, x, m.lm_norm_w);
+    test_mark(ctx, g, gf, x, "llm_final_norm");
 
     // LM head: tied weights (embed_tokens transposed)
     // Only decode last token to save memory
@@ -1128,6 +1255,9 @@ static bool run_decoder_prefill(context & ctx, const std::vector<float> & image_
     ggml_tensor * t_logits = ggml_graph_get_tensor(gf, "last_logits");
     ggml_backend_tensor_get(t_logits, logits_data.data(), 0, V * sizeof(float));
 
+    for (int il = 0; il < m.lm_layers; ++il) test_read(ctx, gf, "llm_layer_" + std::to_string(il));
+    test_read(ctx, gf, "llm_final_norm");
+
     // KV cache was written directly into persistent F16 tensors by ggml_cpy
     ggml_free(g);
     ctx.kvc.n_past = n_prompt;
@@ -1143,6 +1273,7 @@ static bool run_decoder_prefill(context & ctx, const std::vector<float> & image_
             best_score = logits_data[v];
             best = v;
         }
+    best = test_choice(ctx, best, 0, logits_data);
     generated.push_back(best);
     {
         float se = 0;
@@ -1161,7 +1292,10 @@ static bool run_decoder_prefill(context & ctx, const std::vector<float> & image_
             logits_data[2], logits_data[3], logits_data[4]);
     fprintf(stderr, "lightonocr: logits[eos=%d] = %.3f\n", eos_id, logits_data[eos_id]);
 
-    if (best == eos_id) {
+    if (is_stop(best)) {
+#ifdef CRISPEMBED_LIGHTONOCR3_TESTING
+        test_emit(ctx, "generated_ids", std::vector<float>(ctx.observed_ids.begin(), ctx.observed_ids.end()));
+#endif
         out_text = "";
         return true;
     }
@@ -1304,7 +1438,7 @@ static bool run_decoder_prefill(context & ctx, const std::vector<float> & image_
         }
     }
 
-    for (int step = 1; step < max_new_tokens && best != eos_id; step++) {
+    for (int step = 1; step < max_new_tokens && !is_stop(best); step++) {
         if (!kv_ok) break;
 
         auto t_step_start = std::chrono::steady_clock::now();
@@ -1356,7 +1490,8 @@ static bool run_decoder_prefill(context & ctx, const std::vector<float> & image_
                 best_score = logits_data[v];
                 best = v;
             }
-        if (best == eos_id) break;
+        best = test_choice(ctx, best, step, logits_data);
+        if (is_stop(best)) break;
         generated.push_back(best);
         {
             float se = 0;
@@ -1384,10 +1519,16 @@ static bool run_decoder_prefill(context & ctx, const std::vector<float> & image_
     // all other bytes — the old code only stripped a single leading "Ġ").
     out_text = "";
     for (int id : generated) {
-        if (id == eos_id) break;
+        if (is_stop(id)) break;
+        if (m.profile3 && (id >= m.actual_vocab_size ||
+                           std::find(m.special_ids.begin(), m.special_ids.end(), id) != m.special_ids.end()))
+            continue;
         if (id >= 0 && id < (int)ctx.vocab.size()) core_bpe::unicode_to_bytes(ctx.vocab[id], out_text);
     }
 
+#ifdef CRISPEMBED_LIGHTONOCR3_TESTING
+    test_emit(ctx, "generated_ids", std::vector<float>(ctx.observed_ids.begin(), ctx.observed_ids.end()));
+#endif
     return true;
 }
 
@@ -1396,6 +1537,8 @@ static bool run_decoder_prefill(context & ctx, const std::vector<float> & image_
 // ---------------------------------------------------------------------------
 
 std::string recognize_raw(context & ctx, const uint8_t * pixels, int width, int height, int channels, int max_tokens) {
+    if (ctx.m.profile3 && (!pixels || width <= 0 || height <= 0 || (channels != 1 && channels != 3 && channels != 4)))
+        return "";
     const bool bench = ctx.bench;
     auto t_total = std::chrono::steady_clock::now();
     // Convert to RGB
@@ -1416,7 +1559,25 @@ std::string recognize_raw(context & ctx, const uint8_t * pixels, int width, int 
     }
 
     int ph = 0, pw = 0;
-    auto img = preprocess_image(rgb_data, width, height, ctx.m.patch_size, ctx.m.image_size, &ph, &pw);
+    std::vector<float> img;
+    if (ctx.m.profile3) {
+        // A max-pixel override would change the pinned processor and is rejected
+        // for this bounded qualification lane rather than silently approximated.
+        const char * max_pixels_override = std::getenv("CRISPEMBED_MAX_PIXELS");
+        if (max_pixels_override && *max_pixels_override) {
+            fprintf(stderr, "lightonocr: unset CRISPEMBED_MAX_PIXELS for the pinned LightOnOCR-3 profile\n");
+            return "";
+        }
+        try {
+            img = lightonocr3::preprocess(rgb_data, height, width, ph, pw);
+        } catch (const std::exception & e) {
+            fprintf(stderr, "lightonocr: %s\n", e.what());
+            return "";
+        }
+    } else {
+        img = preprocess_image(rgb_data, width, height, ctx.m.patch_size, ctx.m.image_size, &ph, &pw);
+    }
+    test_emit(ctx, "pixel_values", img);
     int n_patches = ph * pw;
     fprintf(stderr, "lightonocr: image %dx%d → %dx%d patches (%d total)\n", width, height, pw, ph, n_patches);
 
@@ -1429,6 +1590,8 @@ std::string recognize_raw(context & ctx, const uint8_t * pixels, int width, int 
     fprintf(stderr, "lightonocr: patch[0,:5] = [%.8f, %.8f, %.8f, %.8f, %.8f]\n", patch_embeds[0], patch_embeds[1],
             patch_embeds[2], patch_embeds[3], patch_embeds[4]);
     // (patch[7] debug removed — was used for image resize parity debugging)
+
+    test_emit(ctx, "patch_conv", patch_embeds);
 
     // Step 2: 2D RoPE
     std::vector<float> rope_cos, rope_sin;
@@ -1463,6 +1626,7 @@ std::string recognize_raw(context & ctx, const uint8_t * pixels, int width, int 
     if (!run_projection(ctx, vis_out, ph, pw, proj_out)) {
         return "";
     }
+    test_emit(ctx, "proj_out", proj_out);
     int n_image_tokens = (ph / ctx.m.spatial_merge_size) * (pw / ctx.m.spatial_merge_size);
     if (bench) {
         auto ms =
@@ -1576,3 +1740,22 @@ extern "C" float lightonocr_mean_confidence(const lightonocr_context * c) {
     for (float v : c->ctx.char_confidences) s += v;
     return (float)(s / c->ctx.char_confidences.size());
 }
+
+#ifdef CRISPEMBED_LIGHTONOCR3_TESTING
+void lightonocr_test_set_observer(lightonocr_context * ctx, lightonocr_test_callback callback, void * data) {
+    ctx->ctx.observer = callback;
+    ctx->ctx.observer_data = data;
+}
+void lightonocr_test_force_tokens(lightonocr_context * ctx, const int32_t * tokens, size_t count) {
+    ctx->ctx.forced_tokens.clear();
+    if (count) ctx->ctx.forced_tokens.assign(tokens, tokens + count);
+}
+bool lightonocr_test_is_profile3(const lightonocr_context * ctx) {
+    return ctx->ctx.m.profile3;
+}
+const int32_t * lightonocr_test_generated_ids(const lightonocr_context * ctx, size_t * count, bool argmax) {
+    const auto & ids = argmax ? ctx->ctx.observed_ids : ctx->ctx.applied_ids;
+    *count = ids.size();
+    return ids.data();
+}
+#endif

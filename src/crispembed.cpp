@@ -4618,6 +4618,7 @@ extern "C" int crispembed_colbert_score_batch(const float * query_vecs, int n_qu
 #include "granite_vision_ocr.h"
 #include "lightonocr.h"
 #include "qwen35_ocr.h"
+#include "qwen35_xiaomi0.h"
 #include "minicpm_ocr.h"
 #include "deepseek_ocr2.h"
 #include "smoldocling_ocr.h"
@@ -5188,9 +5189,11 @@ extern "C" void crispembed_ocr_model_set_max_tokens(void * ctx, int max_tokens) 
     case OCR_MODEL_GRANITE_VISION:
         granite_vision_set_max_tokens((granite_vision_context *)u->ctx, max_tokens);
         break;
-    case OCR_MODEL_QWEN35_OCR:
-        qwen35_ocr_set_max_tokens((qwen35_ocr_context *)u->ctx, max_tokens > 0 ? max_tokens : 2048);
+    case OCR_MODEL_QWEN35_OCR: {
+        auto * c = (qwen35_ocr_context *)u->ctx;
+        qwen35_ocr_set_max_tokens(c, max_tokens > 0 ? max_tokens : (qwen35_ocr_is_xiaomi0(c) ? 4096 : 2048));
         break;
+    }
     case OCR_MODEL_MINICPM_OCR:
         minicpm_ocr_set_max_tokens((minicpm_ocr_context *)u->ctx, max_tokens > 0 ? max_tokens : 1024);
         break;
@@ -5326,6 +5329,10 @@ extern "C" int crispembed_ocr_model_set_prompt(void * ctx, const char * prompt) 
                        qwen35_ocr_is_ovisocr3((const qwen35_ocr_context *)u->ctx)))
             return 0;
         if (!reset && strlen(prompt) > 65536) return 0;
+        if (!reset && qwen35_ocr_is_xiaomi0((const qwen35_ocr_context *)u->ctx)) {
+            std::string checked;
+            if (!qwen35_ocr::xiaomi0_profile::task_prompt(prompt, checked)) return 0;
+        }
         u->prompt = reset ? std::string() : std::string(prompt);
         return 1;
     case OCR_MODEL_GRANITE_VISION:

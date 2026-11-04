@@ -1,0 +1,13 @@
+{
+  "_from_model_config": true,
+  "bos_token_id": 0,
+  "decoder_start_token_id": 2,
+  "eos_token_id": 2,
+  "forced_eos_token_id": 2,
+  "pad_token_id": 1,
+  "transformers_version": "5.6.1",
+  "max_new_tokens": 9000,
+  "do_sample": false,
+  "num_beams": 1,
+  "repetition_penalty": 1.1
+}

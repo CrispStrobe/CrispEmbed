@@ -1,4 +1,4 @@
-// MinerU2.5-Pro-2604 frontend contract. The inference gate is checked by the
+// MinerU2.5-Pro-2604/2605 frontend contract. The inference gate is checked by the
 // owning qwen2vl context; these pure helpers are also used by weight-free QA.
 #pragma once
 
@@ -17,6 +17,19 @@ namespace mineru25_profile {
 
 constexpr const char * family = "mineru2.5-pro-2604";
 constexpr const char * gate = "CRISPEMBED_MINERU25_PRO";
+constexpr const char * family_2605 = "mineru2.5-pro-2605";
+constexpr const char * gate_2605 = "CRISPEMBED_MINERU25_PRO_2605";
+constexpr const char * repository_2605 = "opendatalab/MinerU2.5-Pro-2605-1.2B";
+constexpr const char * revision_2605 = "08aaea840498d49ce16247b6263196cf02814885";
+
+inline bool supports_family(const std::string & value) {
+    return value == family || value == family_2605;
+}
+
+inline bool valid_2605_source(const std::string & repository, const std::string & revision,
+                              const std::string & expected_revision) {
+    return repository == repository_2605 && revision == revision_2605 && expected_revision == revision_2605;
+}
 constexpr int context_length = 8192;
 constexpr int no_repeat_ngram = 100;
 

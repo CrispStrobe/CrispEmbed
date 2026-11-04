@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "scope": "bounded greedy precision qualification; not OmniParseBench",
+  "max_new_tokens": 128,
+  "cases": [
+    {
+      "id": "fox",
+      "image": "tests/regression/images/fox.png",
+      "sha256": "d139a96e514217e63970cea943e93b82a02521108ce2a2367069a14d57c87f39",
+      "modes": [
+        "transcription",
+        "grounding"
+      ]
+    },
+    {
+      "id": "receipt",
+      "image": "tests/regression/images/cc0/receipt_example.png",
+      "sha256": "0b9d3b590e617f331d17cf4a622f2088693ad58ac4654a9e297afc0d8881840f",
+      "modes": [
+        "transcription",
+        "grounding"
+      ]
+    },
+    {
+      "id": "form",
+      "image": "tests/regression/images/cc0/simple_form.png",
+      "sha256": "3d986ec0d131e4e429127627929e12fd4845313f43849c26bb3d1231c3b038dc",
+      "modes": [
+        "transcription",
+        "grounding"
+      ]
+    }
+  ]
+}

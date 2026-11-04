@@ -1,0 +1,51 @@
+{
+  "schema": "xiaomi0-bounded-original-native/v1",
+  "scope": "two owned synthetic images for initial native integration; not a benchmark or full-document qualification",
+  "cases": [
+    {
+      "id": "text",
+      "task": "text",
+      "image": "tests/fixtures/xiaomi0-bounded/text.png",
+      "image_sha256": "c911c10b7b15e12e4b4cfa0b849f56060bc3524dee329c52a4210fe17c4adc6f",
+      "rgb_sha256": "2365524a82df1244aa221443a06228f4bd5781ec77c98e84167752235e4a0871",
+      "size": [
+        384,
+        256
+      ],
+      "max_new_tokens": 16
+    },
+    {
+      "id": "table",
+      "task": "table",
+      "image": "tests/fixtures/xiaomi0-bounded/table.png",
+      "image_sha256": "57e2cb3522c6969039373e4c04c3a855fd4f8ac5db6c88a19dfe0c15e2549f5e",
+      "rgb_sha256": "84ff5b8f1722745bf15b31216a762b42ea954573e277005c2fecd9de6c88eaff",
+      "size": [
+        384,
+        256
+      ],
+      "max_new_tokens": 16
+    }
+  ],
+  "metadata_tasks": [
+    "text",
+    "table",
+    "formula",
+    "document"
+  ],
+  "dtype_arms": [
+    "f32",
+    "f16"
+  ],
+  "threads": 2,
+  "build_mode": "portable",
+  "strict_cosine": 0.99999,
+  "strict_max_abs": 0.002,
+  "owner_final_logit_bars": {
+    "f32": 0.99,
+    "f16": 0.98
+  },
+  "layout_required_for_document_benchmark": "PP-DocLayoutV3",
+  "full_document_qualification": false,
+  "vllm_qualification": false
+}

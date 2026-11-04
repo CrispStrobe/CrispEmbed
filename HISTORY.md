@@ -21,6 +21,63 @@ old reruns, fork sources, pagination, API/schema failures, exit status and workf
 No native build, model inference or live reporter execution was performed locally. Hosted
 controls and the first scheduled/manual report remain pending review; no runtime release.
 
+## 3 November 2026 — Benchmark OCR source profiles and qualification preparation (PR138)
+
+[PR138](https://github.com/CrispStrobe/CrispEmbed/pull/138), source checkpoint
+`7ac5b594e63a34b53a753d9520fccff4ceb888d0`, adds separate default-off MinerU2605,
+LightOnOCR-3-1B transcription/grounding and Xiaomi-OCR-0 profiles. It includes
+portable original-first jobs, actual source/tensor/precision checks, a shared
+document record/evaluator, strict Xiaomi OTSL plus bounded external-layout/native
+recognition assembly, and a Nemotron geometry/patch prototype. The latter has
+no complete neural backend or native image resize. The
+[expansion guide](docs/ocr-benchmark-expansion.md) records exact priorities,
+sources, license distinctions and five hosted job families.
+
+All 162 focused OCR Python controls pass locally and in the
+[hosted shared controls](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41735520715):
+document32, MinerU21+17 preserved conversion, LightOn1B19, LightOn0.8 portable8
+and retained-review6, Nemotron7+12, Xiaomi26, and OvisMarkdown14. Source pins,
+424-variable environment documentation, 248 one-shot clean exits, changed-file
+clang-format18 and whitespace checks pass.
+All15 hosted workflows pass on that exact source. The
+[retained CI record](tests/results/ocr-benchmark-expansion/source-ci-7ac5b594.json)
+lists every run, source SHA, conclusion and all11 successful native-build jobs.
+[Build41735520573](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41735520573)
+covers desktop/mobile platforms, sibling ASR, Flutter bundle and aggregate gate.
+[OCR WASM41735520669](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41735520669)
+passes linking, real-module Node checks, the existing browser end-to-end test,
+artifact upload and its aggregate gate;
+[text WASM41735520523](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41735520523)
+also passes. Ordinary MinerU CI ran components; its manual model-smoke job was
+skipped. This is source/compatibility evidence, not new model qualification.
+
+The first integrated checkpoint `fc2f450b` compiled native targets on Linux,
+macOS, Windows, Android and iOS. Its
+[Build41729837686](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41729837686)
+failed when a fixture-dependent Xiaomi executable was invoked without arguments;
+regular CI now builds it and the hosted metadata job supplies its real fixture.
+[Controls41729837345](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41729837345)
+exposed NumPy installation ordering, and
+[Ovis41729837701](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41729837701)
+exposed a historical test fixture that included a later opt-in header. Both
+historical native-replay/large-input test fixtures now explicitly model their
+original source set; the real frozen runtime guards remain unchanged. The
+failed jobs and old numerical/quality receipts are preserved. The `e5507041`
+retry passed the complete native build but
+[OCR WASM41733553120](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41733553120)
+failed final linking because Xiaomi's new public setters called a profile query
+missing from the excluded-engine stubs. The matching false-returning stub in
+`7ac5b594` resolves that failure; the corrected WASM checks above pass.
+
+The separate [LightOn0.8 retained-logit review](docs/lighton08-precision-next.md)
+finds F16/Q8 above the current numerical bars and Q4 below, retaining decoded
+differences and historical verdicts. Its new portable replay still needs all
+three unchanged cases. The [OvisOCR3 Markdown audit](docs/ovisocr3-document-task.md)
+is a distinct source/task contract; the old plain-OCR 1024-cap/no-EOS failure
+still stands. Independent Markdown inputs/gold and actual original captures
+remain open. No inference for these new profiles, precision qualification, alias, publication,
+release, app runtime upgrade or default flip follows from this source work.
+
 ## 3 November 2026 — Unlimited-OCR-2 post-flip real-scan confirmation
 
 Kaggle `crispembed-ocr-real-scans-uocr2-default` (mode `native-uocr2-default`, no `VISION_F32` env, commit

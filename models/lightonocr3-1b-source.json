@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "profile": "lightonocr3-1b",
+  "model_id": "lightonai/LightOnOCR-3-1B",
+  "revision": "23d544085c886bbdace647bcfab91203299417e2",
+  "license": "Apache-2.0",
+  "files": {
+    "config.json": "43b62f9ec0a7207f67fd032f7ef9719fa8b6b44d7b3cf20fbc2346329493ff3a",
+    "generation_config.json": "7d2566b271454af41e9ebc28851888e1ec7ca33a53fe644dac207856df952981",
+    "processor_config.json": "5292a61a089835ec6884836e3896bba1fc571c60df872e3ca9eb45bd3288910d",
+    "special_tokens_map.json": "76862e765266b85aa9459767e33cbaf13970f327a0e88d1c65846c2ddd3a1ecd",
+    "tokenizer_config.json": "76d82c8010d0e0d5431aa5e3658c69e11a2a7250e789799d2be4ab75dc3fafed",
+    "chat_template.jinja": "0942a43ee0ba48a608814e0b40ac9cb70bcc29ea72f19c84b1bf2597f05aa2bd",
+    "tokenizer.json": "f54b55fa0c3aba0c91ce09ea79ae4e62da24e2a1a630f96c4bae34aba25e234a",
+    "README.md": "739f34999e8fd672b56ed73d966d6afeee77ff8a0cea641501b6d3133e02e834",
+    "model.safetensors": "32879861d5cdc3b2c3909d3f9a47dc8f7338685d13113c8c98c144f68b358dbb"
+  },
+  "weights_bytes": 2011367464,
+  "transformers_revision": "3568df44fff52979f1f9cecc7f729713e940d277",
+  "transformers_modules": {
+    "transformers.models.lighton_ocr.modeling_lighton_ocr": "b7419e43defa022b3edf1a17e121e561678043f8f86ecebcb765a7e1e1ddb8e2",
+    "transformers.models.lighton_ocr.processing_lighton_ocr": "3bd0e19f778809931abe45ee1bc66460b77d9651d532364768ca2c12305662a0",
+    "transformers.models.lighton_ocr.configuration_lighton_ocr": "54d5c0ae3816653015cec91f756233741424efcb06d21d9e487d28312f6b30d7",
+    "transformers.models.pixtral.image_processing_pixtral": "9e7804a295421d91e61c81d501e4d2b0cfead88cbee6a092afc1f1fff23888f8",
+    "transformers.models.pixtral.modeling_pixtral": "5d8fab64081871e385cacbcf38da52062e8f73edf9a0a5613a14f3f9ecbb8d8f",
+    "transformers.models.qwen3.modeling_qwen3": "64fec98db8cd0edaa740baf026be6adb1d5011e38bfa050ccdf6693b1da9f95d",
+    "transformers.image_processing_backends": "08ab5a408a11b96bc9401a5dc6254b4d4ecdec4f5502a44f452d16814eb46a49"
+  },
+  "qualification": "unqualified: original/native hosted comparison required",
+  "grounding_reference": {
+    "repository": "https://github.com/lightonai/LightOnOCR",
+    "revision": "36755d461be079737860a5f03ae0c803501269e9",
+    "files": {
+      "lightonocr/grounding.py": "93b5a810bb5358622c9f40439c0d029a619f7bc839c2eb853c824f1e07f9ae19",
+      "benchmarks/ocr_bench/providers/loocr_grounding.py": "c88fa397d5cb3bcc22a9e5a3a1a4939a07bfbf6d0e052257890ac250410d81b3"
+    }
+  }
+}

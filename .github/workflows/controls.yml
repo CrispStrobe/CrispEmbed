@@ -12,6 +12,52 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/controls.yml'
+      # Versioned document diagnostics (stdlib; no model execution)
+      - 'tools/ocr_document_eval.py'
+      - 'tests/test_ocr_document_eval.py'
+      - 'models/convert-lightonocr-to-gguf.py'
+      - 'models/lightonocr3*'
+      - 'tools/*lightonocr3*.py'
+      - 'tools/ci-heavy/lightonocr3_1b.*'
+      - 'tests/test_lightonocr3_profile.py'
+      - 'tests/fixtures/lightonocr3/**'
+      - 'models/qwen35_xiaomi0_profile.py'
+      - 'models/convert-qwen35-ocr-to-gguf.py'
+      - 'tools/xiaomi0*.py'
+      - 'tools/ci-heavy/xiaomi0*'
+      - 'tests/test_xiaomi0*.py'
+      - 'tests/fixtures/xiaomi0-*/**'
+      - 'tests/results/qwen35-ocr/xiaomi0-source-contract.json'
+      - 'models/convert-mineru25-pro-to-gguf.py'
+      - 'models/mineru25-pro-2605-source.json'
+      - 'tools/mineru2605_*.py'
+      - 'tools/ci-heavy/mineru2605_qualify.sh'
+      - 'tests/test_mineru2605_contract.py'
+      - 'tests/test_mineru25_conversion.py'
+      - 'tests/fixtures/mineru2605/**'
+      - 'docs/mineru25-pro-2605-protocol.json'
+      - 'tools/lighton08_precision_review.py'
+      - 'tests/test_lighton08_precision_review.py'
+      - 'tools/ci-heavy/lighton08_portable.*'
+      - 'tests/test_lighton08_portable.py'
+      - 'tests/fixtures/lighton08-portable/**'
+      - 'tools/ovisocr3_document_contract.py'
+      - 'tests/test_ovisocr3_document_contract.py'
+      - 'tests/fixtures/ovisocr3-document-source/**'
+      - 'docs/ovisocr3-document-protocol.json'
+      - 'tests/results/qwen35-ocr/ovisocr3-source-contract.json'
+      - 'tests/results/qwen35-ocr/ovisocr3-quality-panel.json'
+      - 'tests/results/qwen35-ocr/ovisocr3-original-quality.json'
+      - 'tests/results/qwen35-ocr/ovisocr3-f16-quality.json'
+      - 'tests/results/qwen35-ocr/quality.json'
+      - 'tests/results/qwen35-ocr/quality-quant-*.json'
+      - 'models/nemotron-parse-source.json'
+      - 'tools/nemotron_parse_contract.py'
+      - 'tests/test_nemotron_parse_contract.py'
+      - 'tools/nemotron_parse_frontend*'
+      - 'tools/ci-heavy/nemotron_parse_frontend.sh'
+      - 'tests/test_nemotron_parse_frontend.py'
+      - 'tests/regression/nemotron-parse/**'
       # UltraBERT source contract
       - 'tools/ultrabert_contract.py'
       - 'tools/dump_ultrabert_reference.py'
@@ -47,6 +93,52 @@ on:
   pull_request:
     paths:
       - '.github/workflows/controls.yml'
+      # Versioned document diagnostics (stdlib; no model execution)
+      - 'tools/ocr_document_eval.py'
+      - 'tests/test_ocr_document_eval.py'
+      - 'models/convert-lightonocr-to-gguf.py'
+      - 'models/lightonocr3*'
+      - 'tools/*lightonocr3*.py'
+      - 'tools/ci-heavy/lightonocr3_1b.*'
+      - 'tests/test_lightonocr3_profile.py'
+      - 'tests/fixtures/lightonocr3/**'
+      - 'models/qwen35_xiaomi0_profile.py'
+      - 'models/convert-qwen35-ocr-to-gguf.py'
+      - 'tools/xiaomi0*.py'
+      - 'tools/ci-heavy/xiaomi0*'
+      - 'tests/test_xiaomi0*.py'
+      - 'tests/fixtures/xiaomi0-*/**'
+      - 'tests/results/qwen35-ocr/xiaomi0-source-contract.json'
+      - 'models/convert-mineru25-pro-to-gguf.py'
+      - 'models/mineru25-pro-2605-source.json'
+      - 'tools/mineru2605_*.py'
+      - 'tools/ci-heavy/mineru2605_qualify.sh'
+      - 'tests/test_mineru2605_contract.py'
+      - 'tests/test_mineru25_conversion.py'
+      - 'tests/fixtures/mineru2605/**'
+      - 'docs/mineru25-pro-2605-protocol.json'
+      - 'tools/lighton08_precision_review.py'
+      - 'tests/test_lighton08_precision_review.py'
+      - 'tools/ci-heavy/lighton08_portable.*'
+      - 'tests/test_lighton08_portable.py'
+      - 'tests/fixtures/lighton08-portable/**'
+      - 'tools/ovisocr3_document_contract.py'
+      - 'tests/test_ovisocr3_document_contract.py'
+      - 'tests/fixtures/ovisocr3-document-source/**'
+      - 'docs/ovisocr3-document-protocol.json'
+      - 'tests/results/qwen35-ocr/ovisocr3-source-contract.json'
+      - 'tests/results/qwen35-ocr/ovisocr3-quality-panel.json'
+      - 'tests/results/qwen35-ocr/ovisocr3-original-quality.json'
+      - 'tests/results/qwen35-ocr/ovisocr3-f16-quality.json'
+      - 'tests/results/qwen35-ocr/quality.json'
+      - 'tests/results/qwen35-ocr/quality-quant-*.json'
+      - 'models/nemotron-parse-source.json'
+      - 'tools/nemotron_parse_contract.py'
+      - 'tests/test_nemotron_parse_contract.py'
+      - 'tools/nemotron_parse_frontend*'
+      - 'tools/ci-heavy/nemotron_parse_frontend.sh'
+      - 'tests/test_nemotron_parse_frontend.py'
+      - 'tests/regression/nemotron-parse/**'
       # UltraBERT source contract
       - 'tools/ultrabert_contract.py'
       - 'tools/dump_ultrabert_reference.py'
@@ -109,3 +201,48 @@ jobs:
         run: |
           python tests/test_ultrabert_retrieval.py -v
           python tests/test_ultrabert_retrieval_producer.py -v
+
+      - name: OCR document structure and provenance controls
+        if: ${{ !cancelled() }}
+        run: python tests/test_ocr_document_eval.py -v
+
+      - name: Nemotron Parse source and tensor census controls
+        if: ${{ !cancelled() }}
+        run: python tests/test_nemotron_parse_contract.py -v
+
+      - name: LightOn 0.8B retained final-logit coverage controls
+        if: ${{ !cancelled() }}
+        run: |
+          python tests/test_lighton08_precision_review.py -v
+          python tests/test_lighton08_portable.py -v
+
+      - name: Install small numerical-control dependency
+        if: ${{ !cancelled() }}
+        run: python -m pip install numpy==2.3.5
+
+      - name: OvisOCR3 separate document task and preserved plain OCR failure
+        if: ${{ !cancelled() }}
+        run: |
+          python tools/ovisocr3_document_contract.py
+          python tests/test_ovisocr3_document_contract.py -v
+
+      - name: MinerU 2605 and preserved 2604 source controls
+        if: ${{ !cancelled() }}
+        run: |
+          python tests/test_mineru2605_contract.py -v
+          python tests/test_mineru25_conversion.py -v
+
+      - name: LightOnOCR-3-1B profile and grounding controls
+        if: ${{ !cancelled() }}
+        run: python tests/test_lightonocr3_profile.py -v
+
+      - name: Xiaomi OCR0 exact source, task and layout controls
+        if: ${{ !cancelled() }}
+        run: |
+          python tests/test_xiaomi0_profile.py -v
+          python tests/test_xiaomi0_runner.py -v
+          python tests/test_xiaomi0_document.py -v
+
+      - name: Nemotron processor-reference receipt controls
+        if: ${{ !cancelled() }}
+        run: python tests/test_nemotron_parse_frontend.py -v

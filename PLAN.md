@@ -68,11 +68,11 @@ contains the reviewed source at `7ac5b594e63a34b53a753d9520fccff4ceb888d0`.
 All 162 focused OCR controls pass locally and the
 [shared hosted controls](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41735520715)
 pass. All15 workflows are green, including all11 native-build jobs and both WASM
-workflows. [The CI record](https://github.com/CrispStrobe/CrispEmbed/blob/docs/ocr-benchmark-validation/tests/results/ocr-benchmark-expansion/source-ci-7ac5b594.json)
+workflows. [The CI record](https://github.com/CrispStrobe/CrispEmbed/blob/main/tests/results/ocr-benchmark-expansion/source-ci-7ac5b594.json)
 preserves the source identities and earlier invocation/setup/WASM-link failures
-with their corrections. The source PR remains draft pending model execution.
-Model inference/qualification is still pending; the concrete queue is in
-[PR138's expansion guide](https://github.com/CrispStrobe/CrispEmbed/blob/docs/ocr-benchmark-validation/docs/ocr-benchmark-expansion.md).
+with their corrections. The source PR merged on 4 November 2026; model execution
+remains pending. Model inference/qualification is still pending; the concrete queue is in
+[PR138's expansion guide](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/ocr-benchmark-expansion.md).
 
 This work does not adopt restricted terms or change the immutable app runtime.
 OvisOCR3's frozen capped-page failure and all old strict LightOnOCR-3-0.8B verdicts
