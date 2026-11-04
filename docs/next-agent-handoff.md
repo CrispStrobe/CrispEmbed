@@ -4,15 +4,22 @@
 
 Start with [the reviewed qualification continuation](ocr-qualification-2026-11-04.md),
 [PLAN](../PLAN.md) and [current state](current-state-and-next-steps.md).
-They give exact sources, live run IDs, artifact hashes, preserved failures and
-acceptance gates. MinerU's8-case panel is complete (32 numerical/28 exact decoded arms). Full LightOn
-epsilon A/B is negative (12 numerical/11 exact arms); re-query its separate first
-CPU-cache remaining panel41905258340 before any dispatch: its first41901879295
-passes by retaining10 calls and running only2 missing ones. Raw preservation
-41894992782/41897911047 is complete with verified readback. Actual Apple/native
-compilation and279 model-free controls pass at ea2edb5bf; do not retry the
-pressured M1. Exact LightOn0.8 retained-native implementation, preserved first
-archive and missing-other-array options are linked.
+They give exact sources, reviewed run IDs, artifact hashes, preserved failures and
+acceptance gates. MinerU's8-case panel is complete (32 numerical/28 exact decoded
+arms). The complete LightOn cache+epsilon41905258340 passes24 rows/72 native calls:
+all12 corrected outputs exact, minimum cosine0.999999999771;432 strict failures
+and8 caps remain. The epsilon-only panel stays negative; both gates default-off.
+**Next bounded lane:** paired CPU-default replay per the linked scope, preserving
+explicit0, legacy/default GPU behavior and every old closure; then declare an EOS
+protocol respecting the current256-token harness ceiling before Q8/Q4 work.
+Do not repeat the closed panel or any originals for a default-only replay.
+
+All10 ordinary workflows at ddb666997 pass, including actual Apple/native builds
+and294 model-free controls; do not retry the pressured M1 for compilation. Raw
+preservation41894992782/41897911047 is complete with verified readback through
+2 February2027. Exact LightOn0.8 retained-native implementation, nested preserved
+transport and the905-array admission barrier are linked; missing-other-case raw
+arrays require a separate current-CPU capture protocol, not a blind old rerun.
 
 Candidate0.17.15 is unreleased; published assets0.17.14/app0.17.12 stay unchanged.
 Read [the 3 November handoff](handoff-2026-11-03.md) for the broader non-OCR queue.

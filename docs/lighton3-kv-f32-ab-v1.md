@@ -4,7 +4,8 @@
 classification defect; it does not establish a complete negative model result.
 The [separate two-call completion](lighton3-kv-complete-first-v1.md) passes,
 retaining all10 old executions and proving the same binary. Remaining panel
-41905258340 is running. Do not repeat this first12-call selector.
+[41905258340](lighton3-kv-remaining-v1.md) passes the complete24-row/72-call panel.
+Do not repeat either closed selector.
 
 The complete [epsilon experiment](lighton3-pixtral-epsilon-ab-v1.md) is a retained
 **negative** acceptance result: all12 corrected numerical arms pass and all6

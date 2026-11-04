@@ -1,0 +1,288 @@
+{
+  "schema": "crispembed.ocr.source-ci-review.v1",
+  "source": "ddb666997730e720a5817cd3fed53137f945839e",
+  "pr": 141,
+  "ordinary_workflows": [
+    {
+      "conclusion": "success",
+      "databaseId": 41909926942,
+      "headSha": "ddb666997730e720a5817cd3fed53137f945839e",
+      "name": "Secret scan",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909926942"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41909927004,
+      "headSha": "ddb666997730e720a5817cd3fed53137f945839e",
+      "name": "Model-free controls",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909927004"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41909926920,
+      "headSha": "ddb666997730e720a5817cd3fed53137f945839e",
+      "name": "Lint",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909926920"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41909927118,
+      "headSha": "ddb666997730e720a5817cd3fed53137f945839e",
+      "name": "Inpainting CLI and image contracts",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909927118"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41909927027,
+      "headSha": "ddb666997730e720a5817cd3fed53137f945839e",
+      "name": "OCR regression",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909927027"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41909926943,
+      "headSha": "ddb666997730e720a5817cd3fed53137f945839e",
+      "name": "Rust crates",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909926943"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41909927302,
+      "headSha": "ddb666997730e720a5817cd3fed53137f945839e",
+      "name": "Build",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909927302"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41909926923,
+      "headSha": "ddb666997730e720a5817cd3fed53137f945839e",
+      "name": "Build WASM",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909926923"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41909926921,
+      "headSha": "ddb666997730e720a5817cd3fed53137f945839e",
+      "name": "MinerU2.5-Pro qualification",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909926921"
+    },
+    {
+      "conclusion": "success",
+      "databaseId": 41909926948,
+      "headSha": "ddb666997730e720a5817cd3fed53137f945839e",
+      "name": "Build WASM (text embeddings)",
+      "status": "completed",
+      "url": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909926948"
+    }
+  ],
+  "checks": [
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909926921/job/126857066326",
+      "name": "model-smoke",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909926948/job/126857010508",
+      "name": "Embedding WASM result",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909927302/job/126856802397",
+      "name": "Build result",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909926923/job/126856653121",
+      "name": "OCR WASM result",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909927302/job/126856536971",
+      "name": "Bundle Flutter plugin",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909927118/job/126855736205",
+      "name": "Inpainting result",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909926943/job/126855650892",
+      "name": "Rust crates result",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909927302/job/126854732510",
+      "name": "macos-arm64",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909927302/job/126854732607",
+      "name": "android-x86_64",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909927302/job/126854732572",
+      "name": "windows-x86_64",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909927302/job/126854732282",
+      "name": "ios-arm64",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909927027/job/126855058857",
+      "name": "full-cpu",
+      "state": "SKIPPED"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909927302/job/126854732109",
+      "name": "sibling-crispasr (shared libs)",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909927302/job/126854732042",
+      "name": "android-arm64-v8a",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909927302/job/126854732095",
+      "name": "android-armeabi-v7a",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909927302/job/126854732175",
+      "name": "linux-x86_64",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909926923/job/126854643428",
+      "name": "build-wasm",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909926948/job/126854669255",
+      "name": "build",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909926943/job/126854632131",
+      "name": "ARM64 wrapper C ABI types",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909926943/job/126854632016",
+      "name": "package",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909927118/job/126854622156",
+      "name": "contracts (windows-2022)",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909927027/job/126854623920",
+      "name": "scan-cleanup-noharm",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909927118/job/126854622131",
+      "name": "contracts (macos-14)",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909927027/job/126854624127",
+      "name": "preflight",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909927118/job/126854622212",
+      "name": "contracts (ubuntu-24.04)",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909926921/job/126854462834",
+      "name": "components",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909926920/job/126854462894",
+      "name": "environment variables documented",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909927027/job/126854462040",
+      "name": "smoke",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909926920/job/126854463473",
+      "name": "clang-format (style)",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909927118/job/126854463897",
+      "name": "Select necessary CI",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909926923/job/126854462669",
+      "name": "Select necessary CI",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909926948/job/126854463517",
+      "name": "Select necessary CI",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909926942/job/126854462474",
+      "name": "scan",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909927302/job/126854463675",
+      "name": "Static guards",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909926943/job/126854462277",
+      "name": "Select necessary CI",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909927027/job/126854462708",
+      "name": "mmproj-interop",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909927004/job/126854462760",
+      "name": "controls",
+      "state": "SUCCESS"
+    },
+    {
+      "link": "https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909927027/job/126854464664",
+      "name": "punct-parity",
+      "state": "SKIPPED"
+    }
+  ],
+  "model_free_controls": {
+    "run_id": 41909927004,
+    "suites": 26,
+    "tests": 294,
+    "all_pass": true
+  },
+  "native_source_unchanged_from": "3e82a12058cfca8869f4aa8ead250acf2b708934",
+  "scope": "Ordinary hosted regression/build controls, including actual macOS/iOS. Bounded coverage; not all-model parity, model publication or Apple model inference.",
+  "m1_preflight": "Stopped before builds/style/inference because of memory pressure; hosted Apple compilation subsequently passed."
+}

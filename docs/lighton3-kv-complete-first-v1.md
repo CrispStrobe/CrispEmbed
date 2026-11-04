@@ -68,11 +68,12 @@ prefill controls and corrected decoded outputs were independently reviewed.
 `tools/ci-heavy/lighton3_kv_remaining.py` require this exact positive first proof
 before acquisition or native calls. Actual
 [41905258340](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41905258340)
-at558825720 is running. It imports these4 rows/12 calls and executes60 new
+at558825720 **passes**. It imports these4 rows/12 calls and executes60 new
 processes for the other5 cases. No first-case repetition or new original capture.
 
 This first-only completion selector is `tools/ci-heavy/lighton3_kv_complete_first.py`,
 empty args/pip, ubuntu-latest/portable. It must not be rerun without a justified
-new concern. Query the remaining run instead. Its final24-row/72-call result,
+new concern. Read [the complete reviewed panel](lighton3-kv-remaining-v1.md) instead.
+Its final24-row/72-call result,
 all strict/cap/decoded flags and exact old-path byte controls are required before
 any subsequent default decision. Both correction gates remain default-off.

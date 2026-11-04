@@ -2,8 +2,11 @@
 
 Start with [the current executable OCR qualification continuation](docs/ocr-qualification-2026-11-04.md),
 [current state](docs/current-state-and-next-steps.md) and PLAN's bounded-execution
-table. PR141's actual source repairs, completed/capped/negative evidence, live
-jobs and acceptance gates supersede older queued-language snapshots.
+table. PR141 is merged (a50d976fc); the complete LightOn cache+epsilon panel
+passes all12 corrected decoded arms, and294 model-free controls/actual Apple
+builds pass. Completed/capped/negative evidence and remaining acceptance gates
+supersede older queued-language snapshots. Both correction gates stay default-off;
+next is separately closed paired CPU-default replay, then EOS and quantization.
 Candidate development0.17.15 is unreleased; published assets remain0.17.14,
 application0.17.12. No new model alias or broad quality qualification.
 

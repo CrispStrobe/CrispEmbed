@@ -2,10 +2,11 @@
 
 ## State on 4 November 2026 — reviewed OCR execution
 
-Main includes release-record PR142 at `2f748825f`. Published native/WASM assets
+PR141 merged as `a50d976fcaa8f5a99987209d70735ebb59895a41`, after release-record
+PR142. Published native/WASM assets
 remain0.17.14 and the application still pins0.17.12; pub.dev remains unqualified.
-PR141 carries further source/workflow repairs and a default-off LightOn3 vision
-norm correction, with0.17.15 development versions, **unreleased**.
+Main now includes the source/workflow repairs and default-off LightOn3 vision
+norm/CPU-cache corrections, with0.17.15 development versions, **unreleased**.
 
 Read [the current executable continuation](ocr-qualification-2026-11-04.md),
 [PLAN](../PLAN.md) and [completed receipts](../HISTORY.md) first. Re-query every
@@ -19,15 +20,12 @@ exact live run before dispatching; old queued/running snapshots below are histor
   changes5 labels/geometry despite cosine0.99347. The frozen request/helper panel
   is complete. Quantized layout quality, public consumers and artifact publication
   remain open.
-- **LightOn3-1B:** actual initial panel passes12 final bars but only10 decodes.
-  Pinned Pixtral vision epsilon1e-5 versus native1e-6 is diagnosed. First
-  retained-reference A/B41885702781 passes exact old tensor/decoded replay and
-  corrected F32/F16 outputs, first-norm max7.33e-5→2.94e-6. Full
-  phase41889499814 is negative: F32 matches6/6, F16 matches5/6; form-transcription
-  changes English→French at token6. Separate default-off CPU F32 cache
-  first completion41901879295 passes with10 retained+2 new calls, minimum cosine
-  above0.99999999992 and exact corrected outputs. Remaining5-case/60-call
-  41905258340 is running; no new originals, alias/publication or default flip.
+- **LightOn3-1B:** complete cache+epsilon panel41905258340 passes24 rows/72 native
+  calls with zero new originals. Corrected F32/F16 each match6/6 free outputs;
+  minimum cosines0.999999999771/0.999999999824. All old-path/prefill byte controls
+  pass. Strict432/1842 failures and8 capped outputs remain. The epsilon-only
+  panel stays negative and both corrections default-off. Next: separately closed
+  paired CPU-default replay, then EOS and Q8/Q4. No aliases/publication.
 - **LightOn0.8:** historical exact guard remains failed (1759 CPU/probability
   differences, all other fields exact). The [native-only continuation](lighton08-retained-native-continuation.md)
   scopes the retained first case and905-array barrier. Old other-case producers
@@ -35,12 +33,11 @@ exact live run before dispatching; old queued/running snapshots below are histor
 - **Nemotron:**11/11 geometry/packing and9/9 negative controls pass; native
   resize/positions and the neural backend remain separate work.
 
-Hosted model-free controls pass267 tests. Native/mobile/WASM/Rust and scheduled
-OCR/main-health checks provide bounded regression evidence, not all-model parity.
-Earlier Apple capacity cancellations and the M1 preflight pressure stop remain
-historical evidence. Actual Build41899765931 at**ea2edb5bf** and all ordinary
-checks now pass, including macOS/iOS; no more M1 work is needed for compilation.
-CrispSorter PR20 at0af4c34 separately reports its successful0.17.12 Metal-feature
+All10 ordinary workflows at**ddb666997** pass:35 selected checks,3 declared
+skips,294 model-free controls and actual macOS/iOS/native/mobile/WASM/Rust builds.
+Scheduled OCR/main-health checks add bounded regression evidence, not all-model
+parity. Earlier Apple cancellations/M1 pressure stop stay historical; no more
+M1 work is needed for compilation. CrispSorter PR20 at0af4c34 separately reports its successful0.17.12 Metal-feature
 cargo check and backfill; it remains open. Native compilation does not establish
 model-inference parity on every platform.
 

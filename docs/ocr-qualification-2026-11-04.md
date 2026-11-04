@@ -1,6 +1,7 @@
 # OCR qualification continuation — 4 November 2026
 
-This is the current executable entry for [PR141](https://github.com/CrispStrobe/CrispEmbed/pull/141).
+This is the current executable entry for [merged PR141](https://github.com/CrispStrobe/CrispEmbed/pull/141),
+integrated as `a50d976fcaa8f5a99987209d70735ebb59895a41`.
 Read it before the historical dispatch tables in [the expansion record](ocr-benchmark-expansion.md).
 Re-query exact run IDs before dispatching; do not duplicate a running case. Large
 archives, conversions, builds and inference stay hosted. Keep all negative results.
@@ -9,13 +10,14 @@ archives, conversions, builds and inference stay hosted. Keep all negative resul
 
 Main was fast-forwarded to `2f748825ff3b56b8f2b89d156986b94218ae28c3`.
 Published v0.17.14 native/WASM assets, scheduled OCR run41823109685 and main-health
-41848426718 pass their bounded checks. On PR141 source `f27223fc2`, hosted native,
-mobile, WASM, Rust, inpainting, formatting, environment and model-free controls
-pass. Hosted [Build41899765931](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41899765931)
-at sourceea2edb5bf now passes every selected job, including macOS/iOS. The earlier
-Apple capacity failures remain historical evidence; the M1 preflight correctly
-stopped under pressure without builds/inference. No additional M1 work is needed
-for this build milestone. These are actual
+41848426718 pass their bounded checks. All10 ordinary workflows at PR141 source `ddb666997730e720a5817cd3fed53137f945839e`
+pass:35 selected checks plus3 declared skips, including actual macOS/iOS,
+Linux/Windows/Android, WASM, Rust, inpainting and294 model-free controls in26 suites.
+[Build41909927302](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41909927302)
+and the [source-CI receipt](../tests/results/ocr-benchmark-expansion/source-ci-ddb666997.json)
+retain exact identities. Earlier Apple capacity failures remain historical;
+the M1 preflight correctly stopped under pressure without builds/inference.
+No additional M1 work is needed for this build milestone. These are actual
 build/control results, not an exhaustive all-model regression guarantee.
 
 The historical MoEdern Q8 source-closure test rejects the changed family engine
@@ -70,23 +72,34 @@ all6 original free outputs, F16 matches5. Form-transcription F16 changes at
 position6, ID2918→3377, and the generated description switches English→French.
 Strict failures and8 capped outputs remain. The epsilon correction stays default-off.
 
-Native always stores persistent K/V in F16, including when the model weights are
-F32; the pinned original uses float32 with caching. A separate
-[CPU cache-precision first-case protocol](lighton3-kv-f32-ab-v1.md) tests that
-precision difference before any tensor recipe. Source3e82a1205/run**41897136488**
-retains10 calls before its prefill check incorrectly includes postdecode IDs.
-The [two-call completion41901879295](lighton3-kv-complete-first-v1.md) passes,
-with an exactly reproduced executable and unchanged old receipts. Corrected
-F32/F16 free IDs/text now match; minimum cosines0.99999999994/0.99999999992,
-step6 max errors0.000143/0.000101. The separate5-case remainder **41905258340**
-at558825720 is running, imports4 first rows and schedules60 new native calls.
-No first-case repetition or new originals. The fixed experiment uses: fixed corrected epsilon1, unchanged F32/F16 GGUFs, form-transcription
-only, cache0/1 × forced/observed-free/plain-free,12 native requests. Cache0 must
-reproduce the retained negative, cache1 must keep prefill bytes exact, improve
-step6 errors and match original free IDs/text. It records full-vector hashes and
-original/native top2 margins; component probes are not quality qualification.
-No new original forwards, default or publication follows. The positive first result opens only the actual remaining continuation above.
-Review its24 combined rows/72 native calls before any default decision.
+The old native path always stores persistent K/V in F16, including with F32
+weights; the pinned original caches in float32. Source3e82a1205 adds a separate
+default-off CPU F32-cache gate. Its first harness incorrectly classifies
+postdecode IDs as prefill after10 successful calls; the
+[two-call completion41901879295](lighton3-kv-complete-first-v1.md) authenticates
+those calls and reproduces the exact native executable. Both corrected first
+outputs match, restoring the original token margin and language.
+
+The [complete cache panel41905258340](lighton3-kv-remaining-v1.md) at operator
+558825720 now **passes**:24 unique rows/72 native requests, including12 first-proof
+calls and60 new calls; zero new original forwards. All old-path byte controls and
+all true prefill byte controls pass. Corrected F32/F16 each match all6 original
+free IDs/text and their independent plain outputs. All567 original positions
+are covered at both precisions (1134 corrected full151936-wide rows).
+
+| Corrected CPU path | Worst final-logit cosine | Largest final-logit absolute error | Exact free outputs |
+|---|---:|---:|---:|
+| F32 weights/F32 cache |0.9999999997710214|0.0004940032958984375|6/6|
+| F16 weights/F32 cache |0.9999999998239979|0.0004277229309082031|6/6|
+
+All432 strict intermediate failures among1842 comparisons remain (206 F32,
+226 F16). Four outputs per precision hit128 tokens; only the two fox modes per
+precision end before cap. These are bounded retained-original parity results,
+not full-document/EOS or annotated benchmark qualification. Both correction gates
+remain default-off, and the negative epsilon-only experiment is unchanged.
+The [complete independent review](../tests/results/lightonocr3-1b/cache-ab-v1/full-review-41905258340.json)
+retains all24 rows, source/binary and artifact proofs. The paired CPU-default
+replay is a separate next lane; no model alias/publication or release follows.
 
 ## Completed MinerU eight-case panel
 
@@ -136,11 +149,11 @@ failed its aggregate. M1 preflight then reported8180 new swapout pages and about
 Only4 owned/11 protected source checks at0473dd5e8 were reported exact. Those
 facts remain preserved; no work was forced onto the pressured machine.
 
-Hosted capacity subsequently returned. Build41899765931 at**ea2edb5bf** and all
-ordinary checks are green, including actual macOS/iOS libraries and279 model-free
-controls. The current runtime source files are unchanged from that tested head.
+Hosted capacity subsequently returned. Build41909927302 at**ddb666997** and all
+ordinary checks are green, including actual macOS/iOS libraries and294 model-free
+controls. Runtime files remain identical to the authenticated native3e82a1205.
 This closes the native compilation milestone, not Apple model-inference parity.
-The completion's8 additional focused controls also passed on its hosted runner.
+Completion/remaining controllers pass their8/7 focused controls as part of294.
 
 [CrispSorter PR20](https://github.com/CrispStrobe/CrispSorter/pull/20) is open at
 0af4c342f0cef8e4fda1b629d5b9fdfc82ed15b4. Its
@@ -154,6 +167,12 @@ its Windows helpers/live-model checks remain unexecuted, and related consent PR1
 is draft. No downstream source or pin was changed by this OCR session.
 
 ## Remaining tasks and completion gates
+
+With the complete cache panel reviewed, the next bounded implementation lane
+is the [paired CPU-default replay](lighton3-pixtral-epsilon-ab-v1.md#subsequent-default-decision-is-separate),
+then a separately frozen EOS/document experiment. Freeze that chosen source/math
+before LightOn quantization. Each later row below is a separate lane; do not start
+several model jobs or treat these gates as a new all-model release.
 
 1. **LightOn3-1B Q8/Q4:** after cache attribution and its complete panel, freeze the chosen math/source
    and add a real `crispembed-quantize` branch. The current converter `--dtype`

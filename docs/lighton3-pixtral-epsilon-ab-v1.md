@@ -145,14 +145,18 @@ follows merely from a successful epsilon experiment.
 
 ## Subsequent default decision is separate
 
-After positive full-panel and Apple build evidence, review adoption for the
-admitted LightOn3-1B profile only. A default change must keep explicit0 as the
-old1e-6 alternative and legacy profiles unchanged, use the shared value-parsed
+After positive **complete cache+epsilon** panel and Apple build evidence, review
+paired adoption for the admitted LightOn3-1B **CPU** profile only. The epsilon-only
+full panel remains negative: do not flip epsilon while leaving the old F16 cache
+as the CPU default. Cover both controls and their interaction, preserving
+explicit0 as the old alternative for each. Legacy profiles and default GPU math/
+cache stay unchanged until separate GPU evidence; Apple compilation does not
+qualify Metal inference. Use the shared value-parsed
 gate helper, update env documentation and test unset/empty/0/1 behavior. Declare
 a separate source closure/current-source control protocol; preserve this v1
 closure and its exact producer branch instead of repinning its owned hashes.
-Verify default-unset native forced/free output against the retained corrected
-explicit1 results, covering all six case/modes and both precisions without new
+Verify default-unset native forced/free output against retained corrected
+EPS=1/KV=1 results, covering all six case/modes and both precisions without new
 original forwards. Retain exact bytes, full logits, decoded IDs/text and cap/EOS
 status. Do not promote an alias or claim EOS-completed documents from the existing
 128-token capped cases. Q8/Q4 and public consumers keep their separate gates.

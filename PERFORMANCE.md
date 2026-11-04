@@ -1,3 +1,16 @@
+## LightOn3 complete CPU cache+epsilon panel —4 November2026
+
+[All6 cases×2 precisions](tests/results/lightonocr3-1b/cache-ab-v1/full-review-41905258340.json)
+pass original full-position and independent decoded parity. Corrected F32/F16
+minimum final cosines0.9999999997710214/0.9999999998239979; largest max errors
+0.0004940032958984375/0.0004277229309082031. All1134 full151936-wide corrected rows
+are finite/complete, all12 free outputs exact. Cache0 old-path and cache1 prefill
+bytes replay exactly. The complete protocol uses72 native calls (12 imported,
+60 new), zero new original forwards, unchanged model bytes/cap128 and unchanged
+strict budgets. Strict432/1842 failures and8 capped outputs remain. Both gates
+stay default-off; no speed, annotated benchmark, all-document/EOS or publication
+claim follows. Earlier epsilon-only decoded failure remains preserved.
+
 ## LightOn3 cache precision, complete first case —4 November2026
 
 [Reused10 +new2 native calls](tests/results/lightonocr3-1b/cache-ab-v1/completed-first-review-41901879295.json)
