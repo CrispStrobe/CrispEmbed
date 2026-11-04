@@ -28,6 +28,36 @@ recorded-status/metadata controls. Their coverage is bounded; old MoEdern Q8 sou
 closure still rejects current main as recorded in PLAN. No all-model regression
 claim follows from green CI.
 
+## 4 November 2026 — cache causality confirmed on first case; preservation and Apple build complete
+
+[Two-call completion41901879295](tests/results/lightonocr3-1b/cache-ab-v1/completed-first-review-41901879295.json)
+reproduces the original native executable byte-for-byte (SHA7d4b027f…), retains
+ten old native executions and runs only the two missing F16 free calls. Original
+forwards remain0. Corrected F32/F16 free IDs/text now match the retained English
+original, minimum full-position cosines0.999999999939971/0.9999999999249204.
+Step6 maximum errors fall0.0129647→0.000143051 and0.0133957→0.000100613;
+original token margin0.00243759 is restored to0.00246811 by F16/F32-cache.
+Strict28/38 failures and128-token caps remain. The first classification failure
+is preserved: postdecode generated IDs were incorrectly included in prefill.
+The new controller fixes that phase classification while retaining all decoded,
+byte, full-vocabulary and source/binary gates. No old execution is relabelled.
+The authenticated remaining5-case/60-call panel41905258340 is running; no full
+cache-model/default/publication claim yet.
+
+Both [nine-ZIP preservation41894992782](tests/results/ocr-benchmark-expansion/raw-preservation-41894992782.json)
+and [German-only41897911047](tests/results/ocr-benchmark-expansion/raw-preservation-41897911047.json)
+complete remote readback of every original ZIP. All8 MinerU captures and both
+initial failed MinerU/LightOn0.8 archives keep identical bytes through2 February2027,
+without new model/build calls. Small receipt ZIPs and producer/inner-hash chains
+were independently reviewed; large files stayed remote.
+
+Hosted Apple capacity returns: Build41899765931 at**ea2edb5bf** and all ordinary
+checks pass, including macOS/iOS/WASM/Rust/native/mobile and279 model-free
+controls. Current native code is unchanged from that tested source. The M1
+preflight stop remains correctly recorded without any build; it is no longer
+a compilation blocker. Model-inference/platform/task qualification remains
+separate, and published0.17.14/application0.17.12 remain unchanged.
+
 ## 4 November 2026 — MinerU panel complete; epsilon full verdict negative; cache precision isolated
 
 [All8 MinerU cases](tests/results/mineru2605/aligned-panel-20261104/eight-case-review.json)

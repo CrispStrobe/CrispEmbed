@@ -23,8 +23,23 @@ digest and expiry through the Actions API before transfer; stream and hash the
 whole ZIP before extraction. Use `extract_ocr_nov4_evidence`'s redirect handling,
 verified streaming and safe-member checks; reject duplicate names, traversal,
 symlinks, unexpected files and decompression budgets before opening GGUFs.
-The observed expiry was 18 November 2026; preserve the original archive remotely
-before expiry, with identical size/hash and an immutable preservation receipt.
+The original expiry was 18 November 2026. **Preservation is complete**, not an
+outstanding transfer. [Run41894992782](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41894992782)
+retains the byte-identical original as `lighton08-inventory-table.zip` inside
+artifact13355747765 (9919709356 bytes, outer SHA256
+`43f955f22569f20557075612943ba6f9f6fa1c1427b3ee7f860b7b762cb77ab0`),
+expiring2 February2027. The [preservation receipt](../tests/results/ocr-benchmark-expansion/raw-preservation-41894992782.json)
+records exact producer/source association and successful whole-inner-ZIP readback.
+
+The new continuation must explicitly support this nested transport: authenticate
+that preservation run/source/artifact and full outer digest first; extract only
+the named ZIP using safe-member checks; verify its original3459070891-byte size
+and7517525e… digest above, then validate original inner members. Record both
+original producer and preservation identities. Do not falsely require the old
+artifact to remain live once expired, or accept preservation as proof of the
+actual905 numerical arrays. Budget the simultaneous outer, inner and extracted
+files before transfer (or stream the authenticated member with bounded storage).
+Keep this transport adapter separate from the frozen historical producer guard.
 
 The small extraction is independently pinned by
 [retained-review-20261104.json](../tests/results/ocr-benchmark-expansion/retained-review-20261104.json):

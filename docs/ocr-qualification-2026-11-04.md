@@ -11,11 +11,11 @@ Main was fast-forwarded to `2f748825ff3b56b8f2b89d156986b94218ae28c3`.
 Published v0.17.14 native/WASM assets, scheduled OCR run41823109685 and main-health
 41848426718 pass their bounded checks. On PR141 source `f27223fc2`, hosted native,
 mobile, WASM, Rust, inpainting, formatting, environment and model-free controls
-pass except the Apple capacity barrier: run41885714691 macOS job126770570677
-never acquired a runner, and Build correctly failed its aggregate. The API
-annotation explicitly identifies hosted runner capacity. Latest macOS/iOS/style
-checks are still queued; [M1 build-only fallback](handover-m1-lighton3-epsilon.md)
-is prepared. Check actual final-head platform outcomes before integration. These are actual
+pass. Hosted [Build41899765931](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41899765931)
+at sourceea2edb5bf now passes every selected job, including macOS/iOS. The earlier
+Apple capacity failures remain historical evidence; the M1 preflight correctly
+stopped under pressure without builds/inference. No additional M1 work is needed
+for this build milestone. These are actual
 build/control results, not an exhaustive all-model regression guarantee.
 
 The historical MoEdern Q8 source-closure test rejects the changed family engine
@@ -74,13 +74,19 @@ Native always stores persistent K/V in F16, including when the model weights are
 F32; the pinned original uses float32 with caching. A separate
 [CPU cache-precision first-case protocol](lighton3-kv-f32-ab-v1.md) tests that
 precision difference before any tensor recipe. Source3e82a1205/run**41897136488**
-is executing: fixed corrected epsilon1, unchanged F32/F16 GGUFs, form-transcription
+retains10 calls before its prefill check incorrectly includes postdecode IDs.
+The [two-call completion41901879295](lighton3-kv-complete-first-v1.md) passes,
+with an exactly reproduced executable and unchanged old receipts. Corrected
+F32/F16 free IDs/text now match; minimum cosines0.99999999994/0.99999999992,
+step6 max errors0.000143/0.000101. The separate5-case remainder **41905258340**
+at558825720 is running, imports4 first rows and schedules60 new native calls.
+No first-case repetition or new originals. The fixed experiment uses: fixed corrected epsilon1, unchanged F32/F16 GGUFs, form-transcription
 only, cache0/1 × forced/observed-free/plain-free,12 native requests. Cache0 must
 reproduce the retained negative, cache1 must keep prefill bytes exact, improve
 step6 errors and match original free IDs/text. It records full-vector hashes and
 original/native top2 margins; component probes are not quality qualification.
-No new original forwards, default or publication follows. A positive first result
-would require a separately reviewed remaining5-case/60-request continuation.
+No new original forwards, default or publication follows. The positive first result opens only the actual remaining continuation above.
+Review its24 combined rows/72 native calls before any default decision.
 
 ## Completed MinerU eight-case panel
 
@@ -124,15 +130,17 @@ Do not repeat the original panel or fit a new recipe on these frozen negatives.
 
 ## Independent Apple and downstream evidence
 
-GitHub's latest Apple jobs never acquired runners; Build41889197876 fails its
-aggregate for macOS/iOS cancellation, with explicit capacity annotations. The M1
-fallback also stops before any build: reported preflight swapouts rise8180 pages
-with other active workloads, about16GB swap in use. The operator reports all4
-owned SHA256s/11 protected objects match0473dd5e8; that is source-preflight evidence,
-with no contract/library/style/model execution. Do not schedule additional work
-there until headroom is available. A sufficiently provisioned Apple host still
-needs actual current-source build/component/style evidence. Neither an unsafe
-M1 build nor a Linux Kaggle worker can supply it.
+Earlier GitHub Apple jobs never acquired runners; Build41889197876 correctly
+failed its aggregate. M1 preflight then reported8180 new swapout pages and about
+16GB swap in use, stopping before any contract/library/style/inference call.
+Only4 owned/11 protected source checks at0473dd5e8 were reported exact. Those
+facts remain preserved; no work was forced onto the pressured machine.
+
+Hosted capacity subsequently returned. Build41899765931 at**ea2edb5bf** and all
+ordinary checks are green, including actual macOS/iOS libraries and279 model-free
+controls. The current runtime source files are unchanged from that tested head.
+This closes the native compilation milestone, not Apple model-inference parity.
+The completion's8 additional focused controls also passed on its hosted runner.
 
 [CrispSorter PR20](https://github.com/CrispStrobe/CrispSorter/pull/20) is open at
 0af4c342f0cef8e4fda1b629d5b9fdfc82ed15b4. Its
@@ -191,17 +199,22 @@ Kaggle model batch was launched while GitHub's seven cases were active.
 [The M1 fallback](handover-m1-mineru2605.md) separates build-only checks and the
 not-yet-implemented Darwin provider adapter; no M1 run is claimed.
 
-Original failure archives expire18 November2026. Small extraction receipts have
-90-day retention, but text does not preserve original arrays. Hosted preservation
-41894992782 at3dcb87b57 copies the7 finished MinerU cases plus both initial failed
-MinerU/LightOn0.8 ZIPs, then downloads its own uploaded artifact and hashes every
-inner original ZIP. Raw artifact13355747765 is9919709356 bytes, SHA256
-`43f955f22569f20557075612943ba6f9f6fa1c1427b3ee7f860b7b762cb77ab0`;
-readback remains in progress. German-only supplement41897911047 atce51dbabb (same selector, exact arguments
-`--german-only`, portable/ubuntu, no extra pip) is queued/pending and must preserve that final original without copying the other9
-again. Both jobs have zero model/build calls and90-day raw/review retention.
-Check completed receipts before claiming successful preservation.
- The epsilon raw
-artifacts copy the reference arrays selected by each phase; preserve all still
-needed uncopied references remotely before expiry. Never include weights,
-credentials, private machine locations or operator identities in public Git.
+The original18 November expiry no longer threatens these ten ZIPs: both
+[raw preservation41894992782](../tests/results/ocr-benchmark-expansion/raw-preservation-41894992782.json)
+and [German supplement41897911047](../tests/results/ocr-benchmark-expansion/raw-preservation-41897911047.json)
+complete authenticated byte-copy and full remote readback, zero model/build calls.
+All8 MinerU captures and both initial MinerU/LightOn0.8 failure archives retain
+unchanged ZIP bytes through**2 February2027**. The two small receipts were
+independently checksummed and reviewed; large archives never reached the shared
+host. Raw artifacts are13355747765 (9919709356 bytes, SHA256
+`43f955f22569f20557075612943ba6f9f6fa1c1427b3ee7f860b7b762cb77ab0`)
+and13357368062 (2543809832 bytes, SHA256
+`36f78190bb14412005f47b5dffefc2ff712d6b1e596c540003542a2c95bba77a`).
+They contain original ZIPs as members; do not confuse them with text-only reports.
+A later native continuation must explicitly authenticate this preserved transport
+and each inner original hash, without weakening historical model/source guards.
+
+The new LightOn epsilon/cache raw artifacts preserve reference arrays for90d;
+the current remaining panel must retain its copied references and results too.
+Keep weights, credentials, private machine locations and operator identities
+outside public Git. No new release/model publication follows from preservation.

@@ -7,10 +7,12 @@ Start with [the reviewed qualification continuation](ocr-qualification-2026-11-0
 They give exact sources, live run IDs, artifact hashes, preserved failures and
 acceptance gates. MinerU's8-case panel is complete (32 numerical/28 exact decoded arms). Full LightOn
 epsilon A/B is negative (12 numerical/11 exact arms); re-query its separate first
-CPU-cache A/B41897136488 before any dispatch. Raw-preservation/readback jobs
-41894992782/41897911047 are active. Apple CI lacks capacity and the M1 stops on
-preflight memory pressure; actual Apple compilation remains open. Exact
-LightOn0.8 retained-native implementation and missing-old-array options are linked.
+CPU-cache remaining panel41905258340 before any dispatch: its first41901879295
+passes by retaining10 calls and running only2 missing ones. Raw preservation
+41894992782/41897911047 is complete with verified readback. Actual Apple/native
+compilation and279 model-free controls pass at ea2edb5bf; do not retry the
+pressured M1. Exact LightOn0.8 retained-native implementation, preserved first
+archive and missing-other-array options are linked.
 
 Candidate0.17.15 is unreleased; published assets0.17.14/app0.17.12 stay unchanged.
 Read [the 3 November handoff](handoff-2026-11-03.md) for the broader non-OCR queue.

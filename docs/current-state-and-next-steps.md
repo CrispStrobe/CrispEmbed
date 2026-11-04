@@ -24,9 +24,10 @@ exact live run before dispatching; old queued/running snapshots below are histor
   retained-reference A/B41885702781 passes exact old tensor/decoded replay and
   corrected F32/F16 outputs, first-norm max7.33e-5→2.94e-6. Full
   phase41889499814 is negative: F32 matches6/6, F16 matches5/6; form-transcription
-  changes English→French at token6. Separate default-off CPU F32 cache A/B
-  41897136488 at3e82a1205 is running against retained originals. Strict/cap
-  negatives remain; no alias/publication or default flip.
+  changes English→French at token6. Separate default-off CPU F32 cache
+  first completion41901879295 passes with10 retained+2 new calls, minimum cosine
+  above0.99999999992 and exact corrected outputs. Remaining5-case/60-call
+  41905258340 is running; no new originals, alias/publication or default flip.
 - **LightOn0.8:** historical exact guard remains failed (1759 CPU/probability
   differences, all other fields exact). The [native-only continuation](lighton08-retained-native-continuation.md)
   scopes the retained first case and905-array barrier. Old other-case producers
@@ -36,13 +37,17 @@ exact live run before dispatching; old queued/running snapshots below are histor
 
 Hosted model-free controls pass267 tests. Native/mobile/WASM/Rust and scheduled
 OCR/main-health checks provide bounded regression evidence, not all-model parity.
-Apple capacity prevents a final full-platform result: macOS job126770570677 never
-acquired a runner, so Build41885714691 correctly failed its aggregate; latest
-macOS/iOS/style checks are capacity-cancelled. The [M1 fallback](handover-m1-lighton3-epsilon.md)
-also stops on preflight swap/memory pressure, without a build/style/model call.
-Use a sufficiently provisioned Apple host when available; source hashes alone
-do not establish compilation. CrispSorter PR20 at0af4c34 separately reports its
-successful0.17.12 Metal-feature cargo check and backfill; it remains open.
+Earlier Apple capacity cancellations and the M1 preflight pressure stop remain
+historical evidence. Actual Build41899765931 at**ea2edb5bf** and all ordinary
+checks now pass, including macOS/iOS; no more M1 work is needed for compilation.
+CrispSorter PR20 at0af4c34 separately reports its successful0.17.12 Metal-feature
+cargo check and backfill; it remains open. Native compilation does not establish
+model-inference parity on every platform.
+
+All8 MinerU original ZIPs plus both initial failure archives now have verified
+90-day remote copy/readback through2 February2027. The current
+[executable continuation](ocr-qualification-2026-11-04.md) binds their artifacts,
+inner hashes and pending transport adaptations; large files stay remote.
 
 The old MoEdern Q8 source closure rejects the later mixed-Q4 engine change (7/8
 controls); preserve that frozen experiment and declare a separate current-source

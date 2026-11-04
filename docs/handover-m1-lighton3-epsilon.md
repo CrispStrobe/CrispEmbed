@@ -4,8 +4,13 @@
 rose8180 pages under active workloads, with about16GB swap in use. The operator
 reports4 owned hashes/11 protected objects match0473dd5e8. Keep this result as a
 source-preflight receipt, not Apple build evidence; do not continue on that host
-without sufficient headroom. Current cache-experiment source3e82a1205 also needs
-its own Apple compile/components when capacity becomes available.
+without sufficient headroom.
+
+**Compilation fallback is now closed:** hosted [Build41899765931](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41899765931)
+at ea2edb5bf passes actual macOS/iOS builds and the ordinary control matrix.
+Its runtime source includes the current cache correction. Do not execute this
+historical M1 handoff again for that milestone. Apple model inference remains
+separate from compilation; no model-quality claim follows from either receipt.
 
 This is a build-only fallback for GitHub's macOS arm64 capacity failure, not a
 request to repeat model inference. Build41885714691's Apple job126770570677 never

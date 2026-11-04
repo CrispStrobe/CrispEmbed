@@ -1,5 +1,11 @@
 # LightOn3 CPU cache-precision A/B — first case
 
+**Current:** first-run41897136488 stops after10 native calls on a prefill
+classification defect; it does not establish a complete negative model result.
+The [separate two-call completion](lighton3-kv-complete-first-v1.md) passes,
+retaining all10 old executions and proving the same binary. Remaining panel
+41905258340 is running. Do not repeat this first12-call selector.
+
 The complete [epsilon experiment](lighton3-pixtral-epsilon-ab-v1.md) is a retained
 **negative** acceptance result: all12 corrected numerical arms pass and all6
 F32 decodes match, but F16 form-transcription changes at token6 (original2918,
@@ -63,7 +69,8 @@ Use `heavy-cpu.yml`, selector `tools/ci-heavy/lighton3_kv_f32_ab.py`, empty args
 `ubuntu-latest`, `portable`. The dedicated job has repository/Actions-read only;
 review and raw artifacts `lighton3-kv-review-RUN` / `lighton3-kv-raw-RUN` retain90d.
 First run [41897136488](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41897136488)
-is executing at3e82a1205. Re-query it before any retry.
+completed with the retained classification failure at3e82a1205. Use the
+two-call completion/remaining panel above instead of retrying it.
 
 ## Stopping rule and remaining work
 

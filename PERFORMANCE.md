@@ -1,3 +1,15 @@
+## LightOn3 cache precision, complete first case —4 November2026
+
+[Reused10 +new2 native calls](tests/results/lightonocr3-1b/cache-ab-v1/completed-first-review-41901879295.json)
+prove the same binary/source and retain every original receipt. F32 cache restores
+both F32/F16 form-transcription free outputs, including the prior language change.
+Minimum cosines0.999999999939971/0.9999999999249204; step6 max errors
+0.0129647255→0.0001430511 and0.0133957267→0.0001006126. Original2918-minus3377
+margin0.0024375916 had reversed to-0.0006361008 at old-cache F16; the corrected
+path gives0.0024681091. No weight bytes changed. Strict28/38 failures and the
+original128-token cap remain. The other5 cases run separately; no full-panel,
+default, annotated-quality or speed claim follows from this first result.
+
 ## Complete MinerU and LightOn epsilon verdicts —4 November2026
 
 MinerU's [8-case panel](tests/results/mineru2605/aligned-panel-20261104/eight-case-review.json)
