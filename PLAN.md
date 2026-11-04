@@ -35,6 +35,15 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 | Big-LaMa (research only) | Weights' rights unclear; kept on `feat/issue71-lama-research`, private Hub copy only | Nothing until the owner clarifies the weight licence | Licence clarified (then publish) or lane closed |
 | Ovis 2048 / final-integrated source | 1024 default; 2048 has six composed final-norm numeric failures with exact text | Same-input attribution (section "Ovis 2048-patch") | Attributed; or 2048 stays unqualified |
 
+## MinerU 2604 Q4 real-scan text experiment — 4 November 2026
+
+The bounded [hosted runner](docs/mineru-q4-real-scans.md) adds the published Q4_K_MIX
+whole-image text-recognition mode to the frozen real-scan harness. Source-only
+preparation: no hosted model run or new quality result yet. The CLI does not expose
+MinerU EOS/IDs; do not interpret null completion fields as a pass. Hosted execution,
+independent result review, and a separate annotated full-document layout/table panel
+remain open. Preserve all prior negative and capped results.
+
 ## Main-health recorded CI status — 3 November 2026
 
 Owner: CI audit maintainer; branch `fix/main-health-status`, based on

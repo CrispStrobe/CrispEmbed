@@ -5,6 +5,7 @@ sha256 (v2: also checks the pinned Commons file revision; a page whose bytes do 
 and not run), then runs one MODE (@MODE@; the same file is pushed once per mode so the four arms run in parallel
 sessions):
   native-uocr2   published alias `unlimited-ocr2` (F16), fast decoder, gundam tiles (the original default)
+  native-mineru-q4 published MinerU 2604 Q4_K_MIX; single-image text recognition (not document layout)
   native-minicpm published alias `minicpm-ocr` (F16), prompt "Text Recognition:"
   native-uocr2-vf32  as native-uocr2 with CRISPEMBED_UNLIMITED_OCR2_VISION_F32=1
   native-uocr2-default  as native-uocr2 with no VISION_F32 env (the flipped default; expect vf32 IDs)
@@ -114,6 +115,8 @@ def run(args, env):
 
 
 def native(alias, arm, env_extra, extra_args):
+    if not pages:
+        raise RuntimeError('no authenticated input images; refusing build and model execution')
     t0 = time.time()
     sh('git', 'submodule', 'update', '-q', '--init', '--depth', '1', 'ggml')
     sh('cmake', '-S', '.', '-B', TMP + '/b', '-DCMAKE_BUILD_TYPE=Release', '-DGGML_NATIVE=OFF', '-DGGML_CUDA=OFF')
@@ -126,6 +129,8 @@ def native(alias, arm, env_extra, extra_args):
     code, out, err, wall, rss = run([cli, '-m', alias, '--ocr', small['path'], '--ocr-max-tokens', '4', '-t', NT] + extra_args, env)
     report['alias'] = dict(alias=alias, exit=code, wall_seconds=wall, verified='Verifying SHA-256' in err, stderr_tail=err[-1500:])
     save(); print('alias', report['alias'], flush=True)
+    if MODE == 'native-mineru-q4' and (code != 0 or not report['alias']['verified']):
+        raise RuntimeError('model alias smoke or SHA-256 verification failed')
     for p in pages:
         row = dict(page=p['id'], arm=arm, max_tokens=p['max_tokens'])
         if el() > BUDGET:
@@ -137,7 +142,7 @@ def native(alias, arm, env_extra, extra_args):
         m = re.search(r'gen_ids \(\d+\):([^\n]*)', err)
         ids = [int(x) for x in m.group(1).split()] if m else None
         row.update(exit=code, wall_seconds=wall, peak_rss_mb=rss, n_ids=len(ids) if ids else None, ids=ids,
-                   cap_hit=bool(ids) and len(ids) >= p['max_tokens'], text=out.strip(), stderr_tail=err[-1500:] if code else err[-300:])
+                   cap_hit=(len(ids) >= p['max_tokens']) if ids is not None else None, text=out.strip(), stderr_tail=err[-1500:] if code else err[-300:])
         if code == 0: row.update(score(out, p['gt']))
         report['runs'].append(row); save()
         print(f"{arm} {p['id']} exit={code} {wall}s rss={rss} ids={row['n_ids']} cer={row.get('cer')} rec={row.get('word_recall')}", flush=True)
@@ -184,6 +189,10 @@ try:
         env = dict(CRISPEMBED_UNLIMITED_OCR2='1', CRISPEMBED_UNLIMITED_OCR2_FAST='1', CRISPEMBED_UNLIMITED_OCR2_TILES='1', UOCR_DBG='1')
         os.environ.pop('CRISPEMBED_UNLIMITED_OCR2_VISION_F32', None)
         native('unlimited-ocr2', 'uocr2-f16-fast-tiled-default', env, [])
+    elif MODE == 'native-mineru-q4':
+        report['scope']['task'] = 'single-image text recognition; no layout or document assembly'
+        report['scope']['completion_note'] = 'CLI does not expose MinerU token IDs or EOS; null means unobserved'
+        native('mineru25-pro-q4_k-mix', 'mineru2604-q4-k-mix', dict(CRISPEMBED_MINERU25_PRO='1'), [])
     elif MODE == 'native-minicpm':
         native('minicpm-ocr', 'minicpm-f16', dict(CRISPEMBED_MINICPM_OCR='1', CRISPEMBED_QWEN35_OCR='1',
                                                   CRISPEMBED_QWEN35_WEIGHT_CACHE='1'), ['--ocr-prompt', 'Text Recognition:'])
