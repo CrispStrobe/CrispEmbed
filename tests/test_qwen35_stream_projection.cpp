@@ -20,6 +20,7 @@ static void env(const char * name, const char * value) {
 }
 static int calls = 0;
 static bool observe(const char *, const float *, int, int, void *) { ++calls; return true; }
+static bool throwing_observer(const char *, const float *, int, int, void *) { throw 7; }
 static int run() {
     constexpr int width = 64, rows = 257, tokens = 3;
     std::unique_ptr<ggml_context, decltype(&ggml_free)> ctx(ggml_init({ 1024*1024, nullptr, true }), ggml_free);
@@ -90,6 +91,9 @@ static int run() {
         !qwen35_ocr::project_rows_cpu(f32, hidden.data(), width, tokens, 2, 31, output) || calls != 1) return 1;
     std::vector<std::vector<float>> ordinary;
     if (!qwen35_ocr::project_cpu({f32}, hidden.data(), width, tokens, 2, ordinary) || calls != 2) return 1;
+    qwen35_ocr::set_projection_observer(throwing_observer, nullptr);
+    output = {42};
+    if (qwen35_ocr::project_rows_cpu(f32, hidden.data(), width, tokens, 2, 31, output) || !output.empty()) return 1;
     qwen35_ocr::set_projection_observer(nullptr, nullptr);
     env("CRISPEMBED_QWEN35_OCR", "0");
     if (qwen35_ocr::project_rows_cpu(f32, hidden.data(), width, tokens, 2, 31, output) || !output.empty()) return 1;

@@ -292,7 +292,7 @@ bool project_rows_cpu(ggml_tensor * matrix, const float * hidden, int width, int
         }
         output = std::move(complete);
         return true;
-    } catch (const std::exception &) {
+    } catch (...) {
         return false;
     }
 }
