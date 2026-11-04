@@ -28,3 +28,17 @@ only: all723 tensor validation, loaded-payload provenance, original/native visio
 arrays and magnitudes/errors, full logits, decoded text/EOS and tokenizer parity
 remain required. Format5 production admission stays closed; no alias, precision
 qualification or release follows from this component.
+
+The initial ordinary Build
+[41926266003](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41926266003)
+at `0c1452d48` failed on an audit-copy duplicate symbol and the standalone test's
+iOS target placement. Corrected `fea7fc72f` renames the audit-copy symbol and
+places the target alongside existing non-iOS validation executables.
+Full Build dispatch
+[41927088394](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41927088394)
+has no mode input: dispatch selects the full matrix. Its actual
+[Linux job](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41927088394/job/126914390596)
+compiles the target and runs it successfully, printing `PASS LightOn4B vision
+ownership, 297 tensors and per-tensor malformed controls`. This proves the
+metadata-only ownership controls, not model inference. Other platform outcomes
+remain separately reviewable in the same run.
