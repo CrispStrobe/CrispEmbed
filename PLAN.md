@@ -66,6 +66,18 @@ Earlier Apple capacity cancellations and the M1 pressure stop remain in HISTORY;
 no further M1 work is needed for compilation. This is bounded regression evidence,
 not every-model/Apple-inference quality or a runtime release.
 
+### LightOn4B retained synthetic recurrence replay — 4 November 2026
+
+The [retained-only replay receipt](docs/lighton4b-retained-gdn-replay.md) closes a
+test-harness state-reset defect from negative41923599391, without a new original
+forward. Corrected41924863763 and independent small-report review41925188488
+pass all208 original stage comparisons (52 per case), including full-prefix
+output/state and an explicit cleared-cache-null control. Maximum absolute error
+is3.397465e-6; minimum row cosine0.999999945275. All checkpoint/export/quality/
+alias flags remain false. Preserve the original negative and its frozen arrays;
+full-width native ownership, vocabulary logits and decoded checkpoint/EOS parity
+remain separate acceptance gates. Temporary review-only workflow wiring is removed.
+
 ### Current bounded OCR execution and completion gates
 
 See the [reviewed reports and repairs](docs/ocr-benchmark-expansion.md#reviewed-retained-reports-and-further-repairs)
