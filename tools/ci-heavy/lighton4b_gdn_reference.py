@@ -41,7 +41,7 @@ FUNCTION_HASHES = {
 PACKAGES = {
     "torch": "2.13.0+cpu", "transformers": TRANSFORMERS_VERSION,
     "numpy": "2.3.5", "gguf": "0.19.0", "huggingface-hub": "1.31.0",
-    "tokenizers": "0.23.0", "safetensors": "0.8.0", "pillow": "12.0.0",
+    "tokenizers": "0.22.2", "safetensors": "0.8.0", "pillow": "12.0.0",
     "jinja2": "3.1.6",
 }
 PHASES = ("prefill", "cached0", "cached1", "full_prefix")
