@@ -9,6 +9,10 @@ name: Model-free controls
 on:
   workflow_dispatch:
     inputs:
+      retained_gdn_report:
+        description: 'Extract fixed41924863763 replay report only'
+        type: boolean
+        default: false
       retained_gdn_replay:
         description: 'Replay fixed41923599391 references without original forward'
         type: boolean
@@ -281,7 +285,7 @@ concurrency:
 
 jobs:
   controls:
-    if: ${{ !inputs.retained_gdn_replay }}
+    if: ${{ !inputs.retained_gdn_replay && !inputs.retained_gdn_report }}
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     outputs:
@@ -474,3 +478,27 @@ jobs:
           path: ${{ runner.temp }}/replay/
           retention-days: 90
           if-no-files-found: warn
+
+  retained-gdn-report:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.retained_gdn_report }}
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch exact replay and extract small report
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download 41924863763 --repo CrispStrobe/CrispEmbed -n lighton4b-retained-replay-41924863763 -D "$RUNNER_TEMP/replay"
+          mkdir -p "$RUNNER_TEMP/report"
+          cp "$RUNNER_TEMP/replay/retained-replay-report.json" "$RUNNER_TEMP/report/"
+          sha256sum "$RUNNER_TEMP/report/retained-replay-report.json"
+          python tools/ci-heavy/lighton4b_gdn_replay_report_check.py "$RUNNER_TEMP/report/retained-replay-report.json"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lighton4b-replay-small-report-${{ github.run_id }}
+          path: ${{ runner.temp }}/report/
+          retention-days: 90
