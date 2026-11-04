@@ -13,11 +13,12 @@ on:
     paths:
       - '.github/workflows/controls.yml'
       - '.github/workflows/heavy-cpu.yml'
-      - '.github/workflows/heavy-cpu.yml'
       - 'tools/ci-heavy/extract_ocr_nov4_evidence.py'
       - 'tools/ci-heavy/extract_ocr_followup_evidence.py'
       - 'tests/test_extract_ocr_followup_evidence.py'
       - 'tests/test_extract_ocr_nov4_evidence.py'
+      - 'tools/ci-heavy/preserve_ocr_nov4_archives.py'
+      - 'tests/test_preserve_ocr_nov4_archives.py'
       # Versioned document diagnostics (stdlib; no model execution)
       - 'tools/ocr_document_eval.py'
       - 'tests/test_ocr_document_eval.py'
@@ -107,11 +108,12 @@ on:
     paths:
       - '.github/workflows/controls.yml'
       - '.github/workflows/heavy-cpu.yml'
-      - '.github/workflows/heavy-cpu.yml'
       - 'tools/ci-heavy/extract_ocr_nov4_evidence.py'
       - 'tools/ci-heavy/extract_ocr_followup_evidence.py'
       - 'tests/test_extract_ocr_followup_evidence.py'
       - 'tests/test_extract_ocr_nov4_evidence.py'
+      - 'tools/ci-heavy/preserve_ocr_nov4_archives.py'
+      - 'tests/test_preserve_ocr_nov4_archives.py'
       # Versioned document diagnostics (stdlib; no model execution)
       - 'tools/ocr_document_eval.py'
       - 'tests/test_ocr_document_eval.py'
@@ -246,6 +248,7 @@ jobs:
         run: |
           python tests/test_extract_ocr_nov4_evidence.py -v
           python tests/test_extract_ocr_followup_evidence.py -v
+          python tests/test_preserve_ocr_nov4_archives.py -v
 
       - name: Nemotron Parse source and tensor census controls
         if: ${{ !cancelled() }}

@@ -78,7 +78,7 @@ concurrency:
 
 jobs:
   run:
-    if: inputs.script != 'tools/ci-heavy/extract_ocr_nov4_evidence.py' && inputs.script != 'tools/ci-heavy/extract_ocr_followup_evidence.py' && inputs.script != 'tools/ci-heavy/lighton3_pixtral_eps_ab.py'
+    if: inputs.script != 'tools/ci-heavy/extract_ocr_nov4_evidence.py' && inputs.script != 'tools/ci-heavy/extract_ocr_followup_evidence.py' && inputs.script != 'tools/ci-heavy/lighton3_pixtral_eps_ab.py' && inputs.script != 'tools/ci-heavy/preserve_ocr_nov4_archives.py'
     runs-on: ${{ inputs.runner }}
     timeout-minutes: 350
     env:
@@ -334,3 +334,58 @@ jobs:
           name: lighton3-eps-raw-${{ github.run_id }}
           path: ${{ runner.temp }}/lighton3-eps-out/raw/
           retention-days: 90
+
+  ocr_raw_preservation:
+    if: inputs.script == 'tools/ci-heavy/preserve_ocr_nov4_archives.py'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      actions: read
+    env:
+      PRESERVE_SELECTED_SCRIPT: ${{ inputs.script }}
+      PRESERVE_SELECTED_RUNNER: ${{ inputs.runner }}
+      PRESERVE_SELECTED_MODE: ${{ inputs.build_mode }}
+      PRESERVE_SELECTED_PIP: ${{ inputs.pip }}
+      PRESERVE_SELECTED_ARGS: ${{ inputs.args }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          submodules: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Preservation provenance, streaming and readback controls
+        run: python tests/test_preserve_ocr_nov4_archives.py -v
+      - name: Prepare disposable hosted archive capacity
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL
+          echo "PRESERVE_OUT=$RUNNER_TEMP/ocr-nov4-preserved" >> "$GITHUB_ENV"
+          echo "PRESERVE_SCRATCH=$RUNNER_TEMP/ocr-nov4-readback" >> "$GITHUB_ENV"
+      - name: Authenticate and copy original ZIP bytes without model calls
+        id: capture
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python -u tools/ci-heavy/preserve_ocr_nov4_archives.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        id: originals
+        with:
+          name: ocr-nov4-original-zips-${{ github.run_id }}
+          path: ${{ runner.temp }}/ocr-nov4-preserved/raw/
+          compression-level: 0
+          retention-days: 90
+          if-no-files-found: warn
+      - name: Read back uploaded archive and rehash every original ZIP
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PRESERVE_ARTIFACT: ${{ steps.originals.outputs.artifact-id }}
+        run: python -u tools/ci-heavy/preserve_ocr_nov4_archives.py --verify-artifact "$PRESERVE_ARTIFACT"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ocr-nov4-preservation-review-${{ github.run_id }}
+          path: ${{ runner.temp }}/ocr-nov4-preserved/review/
+          retention-days: 90
+          if-no-files-found: warn
