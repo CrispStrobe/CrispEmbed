@@ -115,10 +115,23 @@ retains its public-pin rejection receipt rather than reducing its protocol, and 
 attention op-by-op same-input replay v1` is an owner-run experiment with no `main` run. Neither
 is a regression of a shipped default.
 
-At the release-gate snapshot, the new OCR qualification jobs were prepared but had
-not run. The later first-batch review above supersedes that execution status;
-model qualification remains open and no alias, publication, default flip or
-quality claim follows from this release.
+No inference had run for the new OCR profiles when the tag was cut, so no alias, publication,
+default flip or quality claim follows from this release. Model qualification is still the next
+substantive step; the first hosted dispatches (four setup/model failures, one bounded pass) are
+preserved in the follow-up work on PR141.
+
+`v0.17.14` was tagged on `9c790c81` (the merge of PR140). Pushes of `v*` tags start no workflow
+here, so both release workflows were dispatched at the tag ref: `release.yml` as run 41810581314
+and `release-wasm.yml` as run 41867682813. The first attempt published the release but failed its
+linux-arm64 upload and `Create GitHub Release` with a transient GitHub 5xx while uploading the
+759 MB CUDA bundle, leaving an empty body and no WASM assets; `release-wasm` then attached the
+five WASM files, `gh release edit --notes-file` set the notes, and a rerun of the failed jobs
+finished green. Published assets: 16 — every required platform archive, both WASM bundles, the
+JS/WASM files and the CUDA/Vulkan extras. The macOS archive was downloaded and inspected:
+`crispembed`, `crispembed-quantize`, `include/` and all dylibs are present, install names are
+unversioned `@rpath/lib*.dylib`, and `libcrispembed.dylib` reports current version 0.17.14, so
+the PR128 packaging fix is in the shipped artifact. The pub.dev publisher job stayed skipped
+(not qualified).
 
 ## 3 November 2026 — Main-health outcomes retain their evidence limits
 
