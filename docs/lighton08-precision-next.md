@@ -95,6 +95,7 @@ both numerical arms and separately verifies literal `0` admission behavior;
 the report records that override explicitly. Strict intermediate/text failures
 stay visible even when the current numerical bar is met. A successful one-case
 job neither completes the three-case panel nor qualifies publication.
-The eight new lightweight controls and the preflight have run locally. They
+The eight new lightweight controls and the preflight pass locally and in the
+[hosted shared controls](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41735520715). They
 reject tokens after EOS without changing the frozen historical helper. The actual
 original/native replay remains pending hosted dispatch.

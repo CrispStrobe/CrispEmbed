@@ -89,7 +89,7 @@ satisfy this profile.
 ## Hosted qualification
 
 The existing heavy-CPU workflow is the entrypoint; no extra workflow is required.
-The coordinator wires these targets into CMake:
+CMake builds the separate contract and trace targets:
 
 ```cmake
 add_executable(test-lightonocr3-contract tests/test_lightonocr3_contract.cpp)
@@ -174,10 +174,11 @@ processor substitutions, dual stops, prompts, grounding edge cases, numerical
 nonfinites, missing/short logits, source/input/provenance substitutions, forcing,
 observer token changes and actual GGUF precision-label mismatches. The native
 control covers official resize dimensions, odd grids, invalid geometry,
-normalization and rejected repository/prompt/special-ID substitutions. The coordinator
-adds them to the existing model-free controls workflow.
+normalization and rejected repository/prompt/special-ID substitutions. Both are
+included in the existing hosted model-free workflows and pass at the reviewed
+PR138 source.
 
-Outstanding evidence: hosted build/link and original/native F32/F16 results;
+Outstanding evidence: hosted original/native F32/F16 results;
 Q8_0/Q4_K recipe search and original-logit results; actual multilingual/layout
 quality with licensed annotations; structured C ABI/orchestrator regions; artifact
 publication/readback and registry aliases only after applicable gates. Existing

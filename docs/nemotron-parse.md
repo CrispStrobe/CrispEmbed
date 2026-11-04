@@ -39,8 +39,9 @@ sizes, pads bottom/right to height 16 and width 64, and accepts tightly packed
 RGB8/grayscale8 pixels already resized by the original processor.
 `tools/nemotron_parse_frontend.py` captures the original processor's resized
 pixels and packed outputs on eleven frozen positive cases plus negative
-aspect-ratio controls. Native compilation and original/native execution remain
-pending. This does not establish native Pillow-resize equivalence, learned
+aspect-ratio controls. Hosted native compilation and the model-free `self`
+controls pass at the reviewed PR138 source; the original-processor comparison
+still awaits its manual hosted job. This does not establish native Pillow-resize equivalence, learned
 positional interpolation, neural model parity, an OCR engine ID, or publication
 qualification. Applicable NVIDIA copyright, OpenMDW-1.1 license and adaptation
 notices are retained under `licenses/`.

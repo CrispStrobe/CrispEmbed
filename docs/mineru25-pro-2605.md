@@ -133,8 +133,9 @@ artifact locally; review its small receipts and selected fields remotely.
 
 Artifacts retain failures. `summary.json` distinguishes selected cases from the
 complete eight-case panel and never grants an alias, publication, full benchmark
-score, cross-page claim or default change. Original/native hosted execution,
-portable C++ compilation and full-panel qualification are still pending.
+score, cross-page claim or default change. Native compilation and the model-free
+profile controls pass at the reviewed PR138 source. Original/native hosted model
+execution and full-panel qualification are still pending.
 
 ## Lightweight controls
 
