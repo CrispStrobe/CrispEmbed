@@ -1,0 +1,25 @@
+{
+  "schema": "crispembed.ocr-followup.retained-text.v1",
+  "source": "8bb8ff7b4299d795e6f7617c709891d1c9b9cdc6",
+  "model_execution": false,
+  "model_qualified": false,
+  "targets": [
+    {
+      "label": "xiaomi0-inference",
+      "run_id": 41871383235,
+      "artifact_id": 13345371804,
+      "bytes": 224953251,
+      "sha256": "453cd50bbdfc5b2e0a2732670886dff19c886d801b50d80ca4912ee29e49b3ca",
+      "source": "3a5a9a1dc519a624db58a09078060e388b61e43d",
+      "conclusion": "success",
+      "complete": true,
+      "verified_archive": {
+        "bytes": 224953251,
+        "sha256": "453cd50bbdfc5b2e0a2732670886dff19c886d801b50d80ca4912ee29e49b3ca"
+      },
+      "text_members": 22,
+      "text_bytes": 741341
+    }
+  ],
+  "complete": true
+}

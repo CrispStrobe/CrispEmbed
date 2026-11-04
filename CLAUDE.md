@@ -5,6 +5,13 @@ Start with [the current execution handoff](docs/handoff-2026-11-03.md) (supersed
 PLAN contains only open work (index table at the top); completed work and receipts are
 in HISTORY, newest first.
 
+For the current4 November OCR work, read the
+[actual qualification continuation](docs/ocr-benchmark-expansion.md#reviewed-retained-reports-and-further-repairs)
+and PLAN's current bounded-execution table first. PR141 contains further diagnosed
+workflow/loader/converter/test repairs and exact hosted jobs. The old source
+handoff is historical where it conflicts with those reviewed results. v0.17.14
+assets are published; model qualification and application upgrades remain separate.
+
 ## Read first: public task handoff
 
 Read the [current CrispMath/CrispEmbed state and executable lanes](https://github.com/CrispStrobe/CrispEmbed/blob/main/docs/current-state-and-next-steps.md)

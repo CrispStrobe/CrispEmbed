@@ -1,3 +1,33 @@
+## 4 November 2026 — Xiaomi bounded neural panel passes; exact LightOn namespace repair
+
+[Xiaomi41871383235](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41871383235)
+at3a5a9a1dc completes2 originals/4 native arms, with16 full248320-wide final-logit
+rows per arm and exact IDs/text/stops. Minimum final cosine exceeds0.9999999999994
+in every F32/F16 arm. All160 stage comparisons are retained, including6 strict
+failures; first `vision.layer.11` max0.03125–0.0518799 and text `decoder.norm`
+max0.008469–0.013526. All outputs hit the declared16-token cap, so no full-document
+or publication qualification follows. The [report](tests/results/ocr-benchmark-expansion/xiaomi0-inference-41871383235.json)
+and [independent review](tests/results/ocr-benchmark-expansion/xiaomi0-inference-review-41871383235.json)
+are public. Extraction41873946415 verified the full224953251-byte archive remotely;
+all22 small members and the88306-byte output ZIP were independently rehashed.
+Large arrays remained remote.
+
+LightOn's identity-only loader5297c4cc8/41871466965 rejected the actual saved text
+namespace before inference. Checkpoint-header inspection establishes532 tensors,
+310 text tensors under `language_model.model.*`; the222 vision tensors already
+have `model.*` names. Correction4476be6eb maps the exact text prefix consistently
+in the framework loader and the candidate GGUF converter, keeps vision unchanged,
+and checks unknown names/collisions, tied-head handling and complete loading.
+The71712-byte header fixture is retained;22 controls pass. Actual retry41873656972
+is executing; no successful model comparison is claimed yet.
+
+Main has advanced through release-record PR142 as2f748825f, merged into this branch
+without executable conflicts. All11 native jobs passed at merge2f1bbdb1; scheduled
+OCR regression41823109685 passes all6 jobs and main-health41848426718 passes its
+recorded-status/metadata controls. Their coverage is bounded; old MoEdern Q8 source
+closure still rejects current main as recorded in PLAN. No all-model regression
+claim follows from green CI.
+
 ## 4 November 2026 — Retained OCR failures diagnosed; Xiaomi frontend exact
 
 [Hosted extraction41869721715](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41869721715)

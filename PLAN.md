@@ -1,4 +1,4 @@
-# CrispEmbed plan — open work (updated 3 November 2026)
+# CrispEmbed plan — open work (updated 4 November 2026)
 
 Only open or active work lives here; completed runs move to [HISTORY](HISTORY.md) with their
 receipts, measured numbers go to [PERFORMANCE](PERFORMANCE.md). Start with
@@ -9,10 +9,8 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 | Lane | State | Next action | Done when |
 |---|---|---|---|
 | Q4_K_MIX publications (MiniCPM-OCR, Unlimited-OCR-2, MoEdern 27M/115M, Josev, UltraBERT) | Recipes and receipts on main. TeleOCR and MinerU Q4_K_MIX are already published and registered (`teleocr-q4_k-mix`, `mineru25-pro-q4_k-mix`, PR #116); the rest are not | Coordinator dispatches the cosine-gated publication per model (sections below); Josev needs a quantized branch in `josev_publish.py`, MoEdern needs SciFact/client panels first | Hub upload, empty-cache readback, registry alias with SHA-256 |
-| Main CI green at head | Build/Lint queued for hours on recent main; Windows compiler-cache fix `93209b32` and `sibling-crispasr` unconfirmed | Handoff 3 Nov lane A | Build+Lint+WASM green on one main commit |
 | `env_gate.h` false/off/no lockstep | CrispASR #572 open (46 checks pass); CrispEmbed side not written | Handoff 3 Nov lane B | Identical header in both repos, tests in CI, sibling sync green |
 | OXR native-doc parity | Rerun 41664201815 failed again (`native=fail`, not the trace-key bug) | Handoff 3 Nov lane C | Five-case parity receipt or scoped runtime bug |
-| Q4_K_MIX publications (MiniCPM-OCR, Unlimited-OCR-2, TeleOCR, MinerU, MoEdern 27M/115M, Josev, UltraBERT) | Recipes and receipts on main; nothing published | Coordinator dispatches the cosine-gated publication per model (sections below); Josev needs a quantized branch in `josev_publish.py`, MoEdern needs SciFact/client panels first | Hub upload, empty-cache readback, registry alias with SHA-256 |
 | Unlimited-OCR-2 Q8_0 on CUDA | 0.9555 < 0.97 (CPU 0.9739) | Search a CUDA-qualifying Q8_0 mix (F16 shared experts/attention) | ≥ 0.97 on CPU and CUDA |
 | GOT-OCR2 Q4_K drift | F16-r2 exact vs original; Q4_K diverges at 83/20; no final-logit cosine measured, so the 1 November precision policy cannot yet be applied | Teacher-forced final-logit cosine of the published Q4_K vs the F16-r2 pipeline (as for Unlimited/MiniCPM), then a mixed search only if < 0.94. Owner: the model is research-licensed (Tongyi), so whether a Q4_K is worth more compute is an owner call (handoff "Owner decisions") | Cosine > 0.94 recorded, or 3/3 token-exact, or owner accepts/declines |
 | Server load control (PR124) | Merged, gates default-off | Live A/B with a real GGUF; concurrent latency; chat-route parity | Receipts per item in the section below |
@@ -20,7 +18,7 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 | CUDA / Metal audit follow-ups | Matrices in `docs/gpu-support-matrix.md` | One gated GPU path or A/B at a time | Measured A/B before any default flip |
 | Ovis, Josev, MoEdern, UltraBERT, LFM2.5, EmbeddingGemma precision | See the 29 October table below | One bounded protocol at a time | Per-row gates in that table |
 | Issue 71 inpainting | Engines published (default-off); stream merged | Representative subtitle/video quality, MI-GAN512 Q4_K caveat (0.9019) | Owner-reviewed quality panel |
-| Releases / pub.dev / app pin | VERSION 0.17.14 dev, app on 0.17.12 | Qualified assets and fresh consumers first | Release procedure in the pub.dev section |
+| Releases / pub.dev / app pin | v0.17.14 published, pub.dev unqualified, app on 0.17.12 | Qualified assets and fresh consumers first | Release procedure in the pub.dev section |
 | OXR-1.0 quantized + GPU | Q8_0-large / Q4_K-head pass the owner bar (cos ≥ 0.998 vs F16, CPU/Metal/CUDA); German diverges 1 token from decode-step activation quantization | Opt-in F32-activation decode A/B (the recipes are already published and registered as `oxr-1.0-q8_0` / `oxr-1.0-q4_k-head`, PR #97) | A/B receipt; German page token-exact or the divergence attributed |
 | OXR native document route / D-FINE | Hosted helpers/replay/native pass (41249898971), `dfine` stage failed there; D-FINE regions match original 5/5 but 2.6x slower | Re-run `oxr_native_doc.sh` `dfine native` stages on main; encoder per-op profile | Hosted parity on all five cases; profile receipt |
 | MinerU2.5-Pro full native doc route | 8/8 model-backed cases identical (41251475795); default-off | Owner: default-on or not (handoff "Owner decisions"); image-bearing-table fixture | Decision recorded; fixture receipt |
@@ -34,18 +32,6 @@ into `main` unless the row says otherwise; start new work from `origin/main`.
 | MI-GAN256 Metal/Q4_K | Metal F32/F16/Q8_0 pass; Q4_K fails (masked 0.81); GPU default off | Q4_K probes with sensitive layers at Q8_0 (`CRISPEMBED_QUANTIZE_MIGAN_Q8`); flip to the padded-K Metal path only after measuring delivery-5 CPU kernels on Apple CPU | Q4_K ≥ 0.94 masked or declined; A/B before any default flip |
 | Big-LaMa (research only) | Weights' rights unclear; kept on `feat/issue71-lama-research`, private Hub copy only | Nothing until the owner clarifies the weight licence | Licence clarified (then publish) or lane closed |
 | Ovis 2048 / final-integrated source | 1024 default; 2048 has six composed final-norm numeric failures with exact text | Same-input attribution (section "Ovis 2048-patch") | Attributed; or 2048 stays unqualified |
-
-## Main-health recorded CI status — 3 November 2026
-
-Owner: CI audit maintainer; branch `fix/main-health-status`, based on
-`dd465a44290dca2cdefd45caf8831d7be55d5b4c`. The old probe reported cancelled checks
-as green. The replacement reports bounded, owned-main outcomes and exact validation
-SHAs; pending/cancelled/missing/API results remain unverified, while older successes
-are explicitly historical. All 18 focused offline regressions pass.
-
-Next: review the exact-path hosted controls and first scheduled/manual report.
-Done when both have run IDs and the report preserves these evidence limits.
-No additional native build or model qualification is required for this reporting change.
 
 ## Regression review and OCR continuation — 4 November 2026
 
@@ -79,8 +65,8 @@ for exact source commits, artifacts, initial failures and error magnitudes.
 | Lane | Current evidence / job | Exact next action and completion gate |
 |---|---|---|
 | MinerU2605 receipt | Original F32/F16/Q8 final-logit bars and helper comparison pass; Q4_0 fallback rejected. Aligned recipe retry41871894063 at1bb0ddb1d | Review all208 positions, role census384F32/273Q8/24Q4_K, actual decoded output and helper records; then dispatch the other7 protocol cases separately at the same reviewed executable source and aggregate all8. No alias/publication from one case |
-| LightOn3-1B | Dependency repair works; unrelated LLaVA loading migration exposed and corrected. Retry41871466965 at5297c4cc8 | Require zero unexpected/missing/mismatched loaded weights after the declared tied-head handling, then all frozen images/modes, all stages/full logits and decoded/grounding outputs. Investigate the earliest actual divergence before further precision recipes |
-| Xiaomi0 | Metadata/frontend41870593556 passes exact pixels/patches; inference41871383235 at3a5a9a1dc | Review two originals and four native F32/F16 arms, full stage/logit coverage, exact input/task/stop evidence and decoded output. Document/detector composition remains a separate frozen experiment |
+| LightOn3-1B | Dependency repair works; unrelated LLaVA loading migration exposed and corrected. Identity-only retry41871466965 rejected the saved prefix. Exact namespace retry41873656972 at4476be6eb | Require zero unexpected/missing/mismatched loaded weights after the declared tied-head handling, then all frozen images/modes, all stages/full logits and decoded/grounding outputs. Investigate the earliest actual divergence before further precision recipes |
+| Xiaomi0 | Metadata/frontend41870593556 passes exact pixels/patches; inference41871383235 at3a5a9a1dc passes all4 arms and exact IDs/text at the16-token cap | Bounded two-case integration complete. Preserve6 strict stage failures and capped outputs; freeze separate EOS/document and Q8/Q4 protocols before expanded precision/publication. External detector composition remains a separate experiment |
 | LightOn3-0.8B | Extraction diagnoses1759 float-metric/probability differences; IDs/text/all other original fields exact; no native calls | Preserve the old guard failure. Implement/review a separate retained-capture native continuation authenticating all905 arrays and old source/input/score identities; no blind original rerun or ignored-field broadening. Keep the first source result and all three-case requirements distinct |
 | Nemotron frontend | Actual11/11 geometry/packing and9/9 negatives pass | Bounded milestone complete. Native resize/positions and neural backend remain separate work in the model document |
 

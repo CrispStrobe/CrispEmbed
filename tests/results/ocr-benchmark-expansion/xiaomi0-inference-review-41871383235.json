@@ -1,0 +1,34 @@
+{
+  "schema": "crispembed.xiaomi0.independent-review.v1",
+  "run_id": 41871383235,
+  "source": "3a5a9a1dc519a624db58a09078060e388b61e43d",
+  "raw_artifact": {
+    "id": 13345371804,
+    "bytes": 224953251,
+    "sha256": "453cd50bbdfc5b2e0a2732670886dff19c886d801b50d80ca4912ee29e49b3ca"
+  },
+  "extraction_run": 41873946415,
+  "small_artifact": {
+    "id": 13344913691,
+    "bytes": 88306,
+    "sha256": "344e09e6884abfddc0fca170cf3ba321c05a53479d468cb87e22349748794beb"
+  },
+  "original_report_sha256": "b88d148478c2703a00b1621179174c78465472cac5f39ff95ee8da4f5c73eb6f",
+  "small_zip_sha256_verified": true,
+  "all_22_text_members_rehashed": true,
+  "review_scope": "Authenticated hosted full-archive extraction and all small text members; raw tensor arrays remain remote, not independently recomputed locally.",
+  "frontend_pass": true,
+  "public_admission_pass": true,
+  "bounded_final_logit_bars_pass": true,
+  "all_ids_and_text_exact": true,
+  "original_cases": 2,
+  "native_arms": 4,
+  "logit_rows_per_arm": 16,
+  "vocabulary": 248320,
+  "strict_stage_comparisons": 160,
+  "strict_stage_failures": 6,
+  "both_originals_and_all_native_arms_hit_declared_cap": true,
+  "full_document_qualified": false,
+  "publication_qualified": false,
+  "runtime_defaults_changed": false
+}

@@ -1,3 +1,14 @@
+## Xiaomi bounded F32/F16 neural comparison — 4 November 2026
+
+[Reviewed41871383235](tests/results/ocr-benchmark-expansion/xiaomi0-inference-review-41871383235.json)
+compares two owned images at16 generated tokens, four F32/F16 native arms and
+all248320 vocabulary values at every generated position. Worst final-logit
+cosine0.9999999999994335, maximum final absolute error0.000743865967; IDs/text/stops
+match. This covers capped outputs, not EOS-completed document quality. Six of160
+strict stage comparisons fail; first vision-layer11 maxima0.03125–0.0518799,
+text final-norm maxima0.008469–0.013526. Raw strict budgets and negative flags
+remain unchanged. No Q8/Q4, full-document, benchmark, publication or speed claim.
+
 ## OCR qualification review — 4 November 2026
 
 The [retained MinerU2605 receipt review](tests/results/ocr-benchmark-expansion/retained-review-20261104.json)

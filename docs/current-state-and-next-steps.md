@@ -1,5 +1,39 @@
 # CrispMath and CrispEmbed: current state and executable lanes
 
+## State on 4 November 2026 — release and OCR qualification review
+
+Main includes release-record PR142 at `2f748825f`. v0.17.14 native and WASM assets
+are published; the application still pins0.17.12 and pub.dev remains unqualified.
+Scheduled [OCR regression41823109685](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41823109685)
+and [main health41848426718](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41848426718)
+pass their bounded checks. This does not establish all-model numerical parity.
+
+The active [PR141 qualification continuation](ocr-benchmark-expansion.md#reviewed-retained-reports-and-further-repairs)
+records exact sources, original failures, current jobs and acceptance gates:
+
+- Xiaomi's repaired metadata/frontend is exact, and its two-image F32/F16 panel
+  passes all4 final-logit bars with exact IDs/text. All outputs hit the declared
+  16-token cap;6 strict intermediate failures remain. Full-document/Q8/Q4,
+  detector composition and publication remain separate work.
+- MinerU's retained receipt already passes F32/F16/Q8 final-logit bars and decoded
+  request parity. Plain Q4's unaligned rows became undeclared Q4_0. An explicit
+  aligned Q4_K/Q8 recipe is running as41871894063 at1bb0ddb1d.
+- LightOn1B's dependency setup is repaired. A further diagnosed saved-key namespace
+  mismatch is corrected in the reference loader and converter; full retry41873656972
+  runs at4476be6eb. No successful model qualification is claimed before review.
+- LightOn0.8's extracted reports identify1759 CPU-metric/probability differences,
+  with unchanged IDs/text/other original fields. Its exact guard remains failed;
+  a separately authenticated retained-capture continuation is scoped in PLAN.
+- Nemotron's bounded geometry/packing milestone passes; native resizing, learned
+  positions and the neural backend remain pending.
+
+The workflow parse defect is repaired and checksum-pinned actionlint now runs in
+hosted controls. The historical MoEdern Q8 source closure rejects current main
+following later mixed-Q4 runtime edits; keep it frozen and declare a separately
+reviewed current-source closure before reusing that harness. No inference
+regression is inferred from that source mismatch. Start with the current PLAN
+and the linked continuation, not historical queued-job commands below.
+
 ## State on 3 November 2026
 
 Start with [the 3 November handoff](handoff-2026-11-03.md) and the index table at the top of

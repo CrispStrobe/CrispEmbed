@@ -1,5 +1,11 @@
 # Current entry —29 October2026 wrap-up
 
+For4 November execution, begin with [the current OCR qualification continuation](ocr-benchmark-expansion.md#reviewed-retained-reports-and-further-repairs)
+and [PLAN](../PLAN.md). They record the exact running MinerU/LightOn sources,
+completed Xiaomi panel, retained LightOn0.8 guard failure and release status.
+Re-query those run IDs before dispatching anything. Older queued-job language below
+is historical; no new original capture or guard waiver follows from this handoff.
+
 Start with [the executable wrap-up handoff](handoff-2026-10-29.md),
 [active PLAN](../PLAN.md) and [current state](current-state-and-next-steps.md).
 They distinguish completed evidence, two queued jobs, executable source-only

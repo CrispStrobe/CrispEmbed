@@ -66,8 +66,8 @@ def prepare_checkpoint_loading(directory):
                                                 register_checkpoint_conversion_mapping, WeightRenaming)
 
     # The checkpoint config says mistral3, which the pinned loader aliases to
-    # llava. Class-specific empty migrations use the framework's registration
-    # API and preserve the actual LightOn model and strict loading checks.
+    # llava. Class-specific migrations map the saved text prefix through the
+    # framework API, preserving the LightOn model and strict loading checks.
     classes = ("LightOnOcrForConditionalGeneration", "LightOnOcrModel")
     register_checkpoint_conversion_mapping(classes[0], [WeightRenaming(
         source_patterns=r"^language_model\.model\.", target_patterns="model.language_model.")], overwrite=False)

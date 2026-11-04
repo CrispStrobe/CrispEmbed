@@ -75,17 +75,33 @@ are retained publicly. No original inference was repeated by extraction.
   all4 task streams,270336 resized values and540672 patch values match exactly,
   with zero image errors at the unchanged1.2e-7 patch budget. Separate two-image
   F32/F16 [inference41871383235](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41871383235)
-  is executing; no neural parity or document qualification follows yet.
+  completed successfully. The [full report](../tests/results/ocr-benchmark-expansion/xiaomi0-inference-41871383235.json)
+  and [independent review](../tests/results/ocr-benchmark-expansion/xiaomi0-inference-review-41871383235.json)
+  preserve all4 arms/160 stage comparisons and16 full248320-wide logit rows per
+  arm. Minimum final cosines are0.9999999999994335/0.9999999999999927 at F32 and
+  0.9999999999999366/0.9999999999999754 at F16, with exact IDs/text/stops.
+  Six strict stages fail: first `vision.layer.11` in every arm (max0.03125–0.0518799)
+  plus `decoder.norm` in the text arms (max0.013526/0.008469). Both originals and
+  all native arms hit the declared16-token cap; full-document/publication flags
+  remain false. Freeze a separately reviewed EOS/document/precision protocol
+  before extending caps, adding Q8/Q4 or publishing an alias.
 - LightOn1B [41869728304](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41869728304)
   passes dependency checks and builds but rejects loading before any forward:
  311 missing/310 unexpected keys. The pinned framework aliases config type
   `mistral3` to LLaVA and inserts an unwanted language-model namespace. Correction
-  `5297c4cc8` uses its class-specific identity-registration API for the two actual
-  LightOn classes, checks exact checkpoint/model key inventories, allows only the
-  declared tied-head omission, and retains strict complete-loading checks. Both
-  loader source files are additionally SHA-pinned. No checkpoint or model equations
-  change. The actual F32/F16 retry is
-  [41871466965](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41871466965).
+  `5297c4cc8` first suppressed that alias but its strict inventory check rejected
+  the actual saved text prefix, before any forward. Inspecting the71712-byte
+  checkpoint header establishes532 tensors:310 under `language_model.model.*`
+  and222 vision/projection tensors under `model.*`. The exact header fixture
+  SHA is028ca2de0140abe05988620d440826309657747b2387767fe6b592dc74340cfe.
+  Successor `4476be6eb` maps only the saved text prefix to `model.language_model.*`
+  through the framework's class-specific registration API and the candidate
+  converter, preserves the vision names, and rejects unknown namespaces/collisions.
+  Strict complete-loading checks and the declared tied-head exception remain.
+  Both loader sources are SHA-pinned;22 controls pass. No checkpoint value or model
+  equation changes. Actual F32/F16 retry
+  [41873656972](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41873656972)
+  remains executing; review it before any further run.
 
 These are bounded case results and executing jobs, not new registry aliases or
 publication. Query each exact run before retrying it; preserve every initial
