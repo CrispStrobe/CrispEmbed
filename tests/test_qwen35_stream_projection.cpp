@@ -71,6 +71,15 @@ static int run() {
         output = {42};
         if (qwen35_ocr::project_rows_cpu(f32, hidden.data(), width, tokens, 2, tile, output) || !output.empty()) return 1;
     }
+    output = {42};
+    if (qwen35_ocr::project_rows_cpu(f32, hidden.data(), width, 17, 2, 31, output) || !output.empty()) return 1;
+    ggml_tensor invalid = *f32;
+    invalid.buffer = nullptr;
+    if (qwen35_ocr::project_rows_cpu(&invalid, hidden.data(), width, tokens, 2, 31, output) || !output.empty()) return 1;
+    invalid = *f32;
+    invalid.type = GGML_TYPE_Q8_0;
+    env("CRISPEMBED_QWEN35_QUANT", "1");
+    if (qwen35_ocr::project_rows_cpu(&invalid, hidden.data(), width, tokens, 2, 31, output) || !output.empty()) return 1;
     // Failure after earlier valid tiles must not expose partial vocabulary.
     static_cast<float *>(f32->data)[width*200] = std::numeric_limits<float>::quiet_NaN();
     output = {42};
