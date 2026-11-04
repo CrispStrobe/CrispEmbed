@@ -13,24 +13,8 @@ import extract_ocr_nov4_evidence as archive
 SELECTOR = "tools/ci-heavy/extract_ocr_followup_evidence.py"
 HELPER_SHA256 = "5b52a1b14eb8658c3371fff920fade76c2df1346c0659b2d372322144bab84e6"
 TARGETS = (
-    {"label": "mineru2605-formula", "run_id": 41877117676, "artifact_id": 13347927913,
-     "bytes": 136053962, "sha256": "7a052a5a73b47d90431c9fabdcea9af10ada9239a105ecd642d21d98a8d0705e",
-     "source": "1bb0ddb1d9ac12ded51eb5bd0edd89be0a8259e6",
-     "branch": "audit/mineru2605-aligned-q4-20261104", "conclusion": "success"},
-    {"label": "mineru2605-japanese", "run_id": 41877121416, "artifact_id": 13348396823,
-     "bytes": 249816387, "sha256": "8919d773dc544e30084d3b3da14519fdd884297548bdf5e91d08d993688a868d",
-     "source": "1bb0ddb1d9ac12ded51eb5bd0edd89be0a8259e6",
-     "branch": "audit/mineru2605-aligned-q4-20261104", "conclusion": "success"},
-    {"label": "mineru2605-arabic", "run_id": 41877125216, "artifact_id": 13348311566,
-     "bytes": 68835208, "sha256": "fad1d207c52c1b37e0c6f65c10ac10a701e31b4cec84c0392f85792d42a3ae95",
-     "source": "1bb0ddb1d9ac12ded51eb5bd0edd89be0a8259e6",
-     "branch": "audit/mineru2605-aligned-q4-20261104", "conclusion": "success"},
-    {"label": "mineru2605-table", "run_id": 41877129385, "artifact_id": 13347724003,
-     "bytes": 386986678, "sha256": "1efd735469a8956aa6364e6fbd9587acf9f93958a48c39ad6a51393edf1164b5",
-     "source": "1bb0ddb1d9ac12ded51eb5bd0edd89be0a8259e6",
-     "branch": "audit/mineru2605-aligned-q4-20261104", "conclusion": "success"},
-    {"label": "mineru2605-layout-page", "run_id": 41877137082, "artifact_id": 13350809558,
-     "bytes": 1549053766, "sha256": "701decb5245cc0bdf5e1993370eec2da95fa66e96e94043ac594c3947989aba4",
+    {"label": "mineru2605-layout-rot90", "run_id": 41877141270, "artifact_id": 13353650933,
+     "bytes": 2466702003, "sha256": "4474b74df3b369e2d0f3c4f6f204d88f6de2ac7612605cbaa7f846444e3aa212",
      "source": "1bb0ddb1d9ac12ded51eb5bd0edd89be0a8259e6",
      "branch": "audit/mineru2605-aligned-q4-20261104", "conclusion": "success"},
 )
