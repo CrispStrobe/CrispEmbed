@@ -551,7 +551,7 @@ Regenerate with `python tools/list_env_vars.py --write`.
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_JOSEV_BACKBONE` | on | off | bool | default-off experimental / opt-in | `src/josev2b_backbone.cpp`, `src/josev2b_composed.cpp`, `src/qwen35_decoder.cpp` |  |
 | `CRISPEMBED_JOSEV_QUANT` | on | off | bool | default-off experimental / opt-in | `src/josev2b_backbone.cpp`, `src/josev2b_composed.cpp`, `src/josev2b_text_frontend.cpp` |  |
-| `CRISPEMBED_QWEN35_OCR` | on | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp`, `examples/server/server.cpp`, `src/josev2b_backbone.cpp` +14 | 'minicpm-ocr' registry alias (same default as the HTTP server). The decoder reuses the qwen35 kernels, so both gates are still required. |
+| `CRISPEMBED_QWEN35_OCR` | on | off | bool | default-off experimental / opt-in | `examples/cli/main.cpp`, `examples/server/server.cpp`, `src/josev2b_backbone.cpp` +15 | 'minicpm-ocr' registry alias (same default as the HTTP server). The decoder reuses the qwen35 kernels, so both gates are still required. |
 | `CRISPEMBED_QWEN35_QUANT` | on | off | bool | default-off experimental / opt-in | `src/josev2b_backbone.cpp`, `src/qwen35_linear.cpp` |  |
 
 ### josev2b_composed
@@ -623,6 +623,12 @@ Regenerate with `python tools/list_env_vars.py --write`.
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
 | `CRISPEMBED_ACCEPT_LFM_LICENSE` | on | off | bool | default-off experimental / opt-in | `src/lfm2_vl_ocr.cpp` | License gate |
+
+### lighton4b_vision_owner
+
+| Variable | Kind | Default | Type | Status | Where | Hint |
+|---|---|---|---|---|---|---|
+| `CRISPEMBED_LIGHTON4B_VISION_OWNER` | on | off | bool | default-off experimental / opt-in | `src/lighton4b_vision_owner.cpp` |  |
 
 ### lightonocr
 
@@ -1006,7 +1012,6 @@ Regenerate with `python tools/list_env_vars.py --write`.
 
 | Variable | Kind | Default | Type | Status | Where | Hint |
 |---|---|---|---|---|---|---|
-| `CRISPEMBED_LIGHTON4B_VISION_OWNER` | on | off | bool | default-off experimental / opt-in | `src/qwen35_vision.cpp` |  |
 | `CRISPEMBED_QWEN35_VISION_CASCADE_NORM` | on | off | bool | default-off experimental / opt-in | `src/qwen35_vision.cpp` |  |
 | `CRISPEMBED_QWEN35_VISION_PRECISE_ATTN` | on | off | bool | default-off experimental / opt-in | `src/qwen35_vision.cpp` |  |
 | `CRISPEMBED_QWEN35_VISION_PRECISE_NORM` | on | off | bool | default-off experimental / opt-in | `src/qwen35_vision.cpp` |  |
