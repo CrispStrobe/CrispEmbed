@@ -1,6 +1,29 @@
+## 3 November 2026 — Main-health outcomes retain their evidence limits
+
+The CI audit found [Main health 41654954696](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41654954696)
+reporting five cancelled checks at `7e5028e34` as green. PR134 left that probe unchanged.
+The bounded follow-up on `fix/main-health-status`, based on
+`dd465a44290dca2cdefd45caf8831d7be55d5b4c`, replaces it with a standard-library reporter:
+
+- The five existing watched workflows and repository identity are explicit. Only owned-main
+  push/manual/scheduled sources count; PR heads named `main` cannot supply validation.
+- Latest means creation time and run ID, never when an old queued/rerun job starts.
+  A timestamp seed bounds a fully paginated newer-run query; missing, truncated,
+  malformed or inaccessible results fail as unverified instead of becoming empty success.
+- Pending/cancelled/skipped outcomes fail as unverified. Explicit failures remain failed,
+  even if historical lookup fails. Older successes retain their exact validation SHA;
+  they do not claim coverage of every change at current main or demand redundant builds.
+- Exact helper/test/workflow changes run offline controls. Live status and model metadata
+  checks remain scheduled/manual; the existing selector sends these paths to no native lane.
+
+Validation: 18 focused offline tests pass, including the observed five-cancelled-run case,
+old reruns, fork sources, pagination, API/schema failures, exit status and workflow routing.
+No native build, model inference or live reporter execution was performed locally. Hosted
+controls and the first scheduled/manual report remain pending review; no runtime release.
+
 ## 3 November 2026 — Benchmark OCR source profiles and qualification preparation (PR138)
 
-[Draft PR138](https://github.com/CrispStrobe/CrispEmbed/pull/138), source checkpoint
+[PR138](https://github.com/CrispStrobe/CrispEmbed/pull/138), source checkpoint
 `7ac5b594e63a34b53a753d9520fccff4ceb888d0`, adds separate default-off MinerU2605,
 LightOnOCR-3-1B transcription/grounding and Xiaomi-OCR-0 profiles. It includes
 portable original-first jobs, actual source/tensor/precision checks, a shared
