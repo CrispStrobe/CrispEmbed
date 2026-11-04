@@ -202,7 +202,7 @@ def main():
             candidate = args.output/f'lightonocr3-4b-{recipe}-vision-f32.gguf'
             log = args.output/f'{recipe}.log'
             report[recipe] = command([args.quantizer.resolve(),baseline,candidate,recipe,
-                                      '--tensor-type','v.*=f32'], log)
+                                      '--tensor-type','v.*=f32','--standard-file-type'], log)
             require('(fallback ' not in log.read_text(), 'undeclared quantizer fallback')
             result = audit(candidate, plan, manifest, base, recipe)
             require(all(r['type'] in ('F32','F16','Q8_0') for r in result['tensors'].values())
