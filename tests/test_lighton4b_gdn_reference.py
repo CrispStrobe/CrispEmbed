@@ -95,7 +95,10 @@ class LightOnFourBGDNReferenceControls(unittest.TestCase):
             names = sorted(reference.expected_controls(equal))
             text = "\n".join("CONTROL name=" + name + " pass=1" for name in names)
             parsed = reference.parse_controls(text, equal)
-            self.assertEqual(len(parsed), 31 if equal else 25)
+            # The preserved empty-cache regression adds one mandatory control;
+            # keep the real parser protocol unchanged and require it explicitly.
+            self.assertIn('empty_cache_is_null', names)
+            self.assertEqual(len(parsed), 32 if equal else 26)
             self.assertTrue(all(item["passed"] for item in parsed))
             for invalid in ("\n".join(text.splitlines()[:-1]), text + "\n" + text.splitlines()[0],
                             text + "\nCONTROL name=extra pass=1", text.replace("pass=1", "pass=true", 1)):

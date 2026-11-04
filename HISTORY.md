@@ -1,3 +1,22 @@
+## 4 November 2026 — LightOn4B text-owner initial PR checks retained
+
+Initial PR145 checks at `16dac27f6` failed independently of the positive
+3498-component run: [Build41929695234](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41929695234)
+stopped at the clean-exit static guard and its aggregate correctly rejected the
+resulting skipped builds; [style41929695310](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41929695310)
+reported formatting in the two new C++ files. The test entry now uses the
+required clean-exit wrapper and those files use clang-format18.
+[Controls41929695255](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41929695255)
+exposed a stale GDN test census (25/31 expected versus mandatory26/32 after
+the preserved empty-cache correction). Only the test expectation is updated,
+with an explicit empty-cache-control assertion; the real parser protocol stays
+unchanged. [Controls41929695342](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41929695342)
+rejected a synthetic historical Ovis fixture that inadvertently included the
+new opt-in header. The fixture excludes that metadata-only file, matching its
+existing explicit opt-in exclusions; the real 29-file frozen guard and actual
+current-tree rejection stay unchanged. Fresh hosted component/protocol checks
+remain required for the corrected source. No initial failure is relabeled.
+
 ## 4 November 2026 — LightOn4B exact text ownership component
 
 [Hosted41929343665](https://github.com/CrispStrobe/CrispEmbed/actions/runs/41929343665)
