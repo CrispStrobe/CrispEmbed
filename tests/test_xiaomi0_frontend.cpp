@@ -69,16 +69,35 @@ static int run(int argc, char ** argv) {
     }
     const auto rgb = ref.get_f32("image.rgb"), patches = ref.get_f32("image.patches");
     const auto resized = ref.get_f32("image.resized");
+    constexpr int image_height = 257, image_width = 359;
     std::vector<uint8_t> pixels;
     for (size_t i = 0; rgb.first && i < rgb.second; ++i) pixels.push_back(uint8_t(rgb.first[i]));
     qwen35_ocr::image_inputs image;
-    bool image_ok = pixels.size() == 257 * 359 * 3 &&
-                    qwen35_ocr::preprocess_rgb(pixels.data(), 359, 257, tokenizer.image_limits(), image);
+    bool image_ok = pixels.size() == image_height * image_width * 3 &&
+                    qwen35_ocr::preprocess_rgb(pixels.data(), image_height, image_width, tokenizer.image_limits(), image);
+    std::printf("XIAOMI0_IMAGE_GEOMETRY input_height=%d input_width=%d native_height=%d native_width=%d "
+                "grid_match=%d patches=%zu expected_patches=%zu resized=%zu expected_resized=%zu\n",
+                image_height, image_width, image.height, image.width, ints(ref, "image.grid", image.grid),
+                image.patches.size(), patches.second, image.resized_rgb.size(), resized.second);
     image_ok &= ints(ref, "image.grid", image.grid) && patches.second == image.patches.size() &&
                 resized.second == image.resized_rgb.size();
     if (image_ok) {
-        for (size_t i = 0; i < patches.second; ++i) image_ok &= std::abs(image.patches[i] - patches.first[i]) <= 1.2e-7;
-        for (size_t i = 0; i < resized.second; ++i) image_ok &= image.resized_rgb[i] == resized.first[i];
+        double patch_max = 0, resized_max = 0;
+        size_t patch_failures = 0, resized_changes = 0;
+        for (size_t i = 0; i < patches.second; ++i) {
+            const double error = std::abs(double(image.patches[i]) - patches.first[i]);
+            patch_max = std::max(patch_max, error);
+            patch_failures += error > 1.2e-7;
+        }
+        for (size_t i = 0; i < resized.second; ++i) {
+            const double error = std::abs(double(image.resized_rgb[i]) - resized.first[i]);
+            resized_max = std::max(resized_max, error);
+            resized_changes += error != 0;
+        }
+        std::printf("XIAOMI0_IMAGE_DIFF resized_changes=%zu resized_max_abs=%.17g "
+                    "patch_failures=%zu patch_max_abs=%.17g patch_budget=1.2e-7\n",
+                    resized_changes, resized_max, patch_failures, patch_max);
+        image_ok &= patch_failures == 0 && resized_changes == 0;
     }
     ok &= image_ok;
     std::vector<int> ids, modalities;
