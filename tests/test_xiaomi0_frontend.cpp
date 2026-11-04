@@ -73,8 +73,9 @@ static int run(int argc, char ** argv) {
     std::vector<uint8_t> pixels;
     for (size_t i = 0; rgb.first && i < rgb.second; ++i) pixels.push_back(uint8_t(rgb.first[i]));
     qwen35_ocr::image_inputs image;
-    bool image_ok = pixels.size() == image_height * image_width * 3 &&
-                    qwen35_ocr::preprocess_rgb(pixels.data(), image_height, image_width, tokenizer.image_limits(), image);
+    bool image_ok =
+        pixels.size() == image_height * image_width * 3 &&
+        qwen35_ocr::preprocess_rgb(pixels.data(), image_height, image_width, tokenizer.image_limits(), image);
     std::printf("XIAOMI0_IMAGE_GEOMETRY input_height=%d input_width=%d native_height=%d native_width=%d "
                 "grid_match=%d patches=%zu expected_patches=%zu resized=%zu expected_resized=%zu\n",
                 image_height, image_width, image.height, image.width, ints(ref, "image.grid", image.grid),
