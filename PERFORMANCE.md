@@ -63,7 +63,7 @@ Real scans (`crispembed-ocr-real-scans-uocr2-vf32` at `7857ebf5`, receipt
 the default: 17/19 pages identical; `receipt-cord-test-4` becomes exact vs the original; `de-2col-meyers-b13-103`
 differs from both the default and the original (it was already inexact; CER 0.0368 vs default 0.0369 vs original
 0.0371). **Default since 2026-11-03** (owner decision on that page: no page goes from exact to inexact,
-original-exact 12 -> 13/20, mean CER unchanged or better). Read with `core_env::explicitly_off`;
+original-exact 12 -> 13/20, mean CER unchanged or better). Post-flip real scans with no env (`native-uocr2-default.json` + `-form.json`): ids identical to the vf32 receipt on 20/20 pages. Read with `core_env::explicitly_off`;
 `CRISPEMBED_UNLIMITED_OCR2_VISION_F32=0` restores the F16 vision products. `TILE_BATCH` stays default off.
 Frozen/verification kernels that measure the F16 path pin `=0` (`unlimited-ocr2-verify` `after`/`batch` arms,
 `ocr-real-scans` `native-uocr2`, `unlimited-ocr2-trial`, `unlimited-ocr2-precision`, `unlimited-ocr2-q4k` panel).
